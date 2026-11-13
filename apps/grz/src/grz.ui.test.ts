@@ -427,7 +427,7 @@ describe('Plan und Einstieg (G-22, G-24, G-27)', () => {
     const host = render(GrzGfzView);
     const texte = () => [...host.querySelectorAll('.lp-beschriftung')].map((t) => t.textContent);
     expect(texte()).toContain('1 · Zufahrt · 30,00 m²');
-    const schalter = [...host.querySelectorAll('.lp-tools label')].find((l) => l.textContent?.includes('Beschriftung'))!.querySelector('input')!;
+    const schalter = [...host.querySelectorAll('.lp-plan-steuerung label')].find((l) => l.textContent?.includes('Beschriftung'))!.querySelector('input')!;
     act(() => schalter.click());
     expect(texte().some((t) => t?.includes('Zufahrt'))).toBe(false);
     const hilfe = host.querySelector('.lp-hint')!.textContent!;
@@ -818,5 +818,38 @@ describe('Gesamt-Review: Bedienung der Oberfläche', () => {
     const schalter = [...host.querySelectorAll('label.toggle')].find((l) => l.textContent?.includes('§ 20 Abs. 3 S. 2'))!.querySelector('input') as HTMLInputElement;
     act(() => schalter.click());
     expect(hatFeld()).toBe(true);
+  });
+
+  it('Öffnen eines Projekts an anderen Koordinaten passt den Ausschnitt auf das neue Gebäude ein', () => {
+    useGrz.getState().load(projekt());
+    const host = render(GrzGfzView);
+    const verschoben = projekt();
+    const um = (pts: { x: number; y: number }[]) => pts.map((q) => ({ x: q.x + 1000, y: q.y + 500 }));
+    for (const st of verschoben.storeys) for (const sh of st.shapes) sh.points = um(sh.points);
+    verschoben.lageplan = { flaechen: [] };
+    act(() => useGrz.getState().load(verschoben));
+    const [x, y, w, h] = host.querySelector('svg.grz-skizze')!.getAttribute('viewBox')!.split(' ').map(Number);
+    // Gebäude 1000…1012 × 500…511,25 liegt ganz im Ausschnitt, nichts vom alten Ort (vorher begann er bei x < 0)
+    expect(x).toBeGreaterThan(900);
+    expect(x).toBeLessThan(1000);
+    expect(x + w).toBeGreaterThan(1012);
+    expect(y).toBeLessThan(500);
+    expect(y + h).toBeGreaterThan(511.25);
+  });
+
+  it('Flurstück gewählt, dann Fläche aus der Tabelle gewählt: Entf löscht die Fläche, nicht das Flurstück', () => {
+    const p = projekt();
+    p.lageplan!.grenze = [{ id: 'gr1', name: 'Flurstück 1', points: rectPoints({ x: -5, y: -4 }, { x: 18, y: 16 }) }];
+    useGrz.getState().load(p);
+    const host = render(GrzGfzView);
+    const svg = host.querySelector('svg.grz-skizze')!;
+    act(() => svg.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerId: 1, ...bildpunkt(svg, { x: -5, y: 10 }) })));
+    act(() => svg.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, button: 0, pointerId: 1, ...bildpunkt(svg, { x: -5, y: 10 }) })));
+    expect(host.querySelector('.lp-chip.active')).not.toBeNull();
+    act(() => (host.querySelector('.grz-plan .grz-table button.link') as HTMLButtonElement).click());
+    expect(host.querySelector('.lp-chip.active')).toBeNull();
+    act(() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', bubbles: true })));
+    expect(useGrz.getState().project.lageplan!.grenze).toHaveLength(1);
+    expect(useGrz.getState().project.lageplan!.flaechen).toHaveLength(1);
   });
 });

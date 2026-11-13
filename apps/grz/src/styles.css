@@ -16,6 +16,10 @@
     grid-column: 1 / -1;
   }
 }
+/* Sprungziel „zum Nachweis“: Überschrift nicht unter der klebenden Ergebnisleiste */
+#grz-nachweis {
+  scroll-margin-top: 52px;
+}
 /* Ergebnisleiste: nur, wenn der Nachweis unter Eingaben und Plan rutscht – Kennzahlen bleiben im Blick */
 .grz-ergebnis-leiste {
   display: none;
@@ -101,10 +105,10 @@
 }
 .grz-vg-tabelle th:nth-child(2),
 .grz-vg-tabelle th:nth-child(3) {
-  width: 12%;
+  width: 11%;
 }
 .grz-vg-tabelle th:nth-child(4) {
-  width: 11%;
+  width: 10%;
 }
 .grz-table.grz-vg-tabelle th.num,
 .grz-vg-tabelle th {
@@ -112,6 +116,7 @@
 }
 .grz-vg-tabelle select {
   width: 100%;
+  font-size: 11px;
   text-overflow: ellipsis;
 }
 .grz-hinweis-zeile {
@@ -644,13 +649,14 @@ button.link:hover {
 /* Lageplan-Leiste: Werkzeuge | Nutzung | Einpassen | Anzeige */
 .lp-gruppe {
   display: inline-flex;
+  align-items: center;
   gap: 4px;
 }
-.lp-trenner {
-  width: 1px;
-  align-self: stretch;
-  margin: 2px 4px;
-  background: var(--border);
+/* Trenner als Rand der Gruppe: beim Umbruch steht nie ein Strich allein */
+.lp-mit-trenner {
+  border-left: 1px solid var(--border);
+  padding-left: 8px;
+  margin-left: 4px;
 }
 .lp-nutzung {
   display: inline-flex;
@@ -659,6 +665,11 @@ button.link:hover {
 }
 .lp-nutzung select {
   width: auto;
+  max-width: 150px;
+}
+/* Nutzung/Versiegelung in der Flächentabelle: Tabelle bleibt ohne waagerechtes Scrollen */
+.grz-plan .grz-table select {
+  max-width: 150px;
 }
 .lp-deckkraft {
   display: inline-flex;
@@ -723,4 +734,27 @@ button.link:hover {
 }
 .grz-3d {
   margin-bottom: 8px;
+}
+
+/* Ansicht-Schalter als Bedienfeld oben links im Plan (wie die Zeichenflächen in QUADRIO) */
+.lp-plan-steuerung {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 12px;
+}
+.lp-plan-steuerung .toggle {
+  margin-right: 0;
+}
+.lp-plan-steuerung .lp-tasten-liste {
+  left: 0;
+  right: auto;
 }

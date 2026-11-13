@@ -118,8 +118,10 @@ Leertaste + Ziehen oder Ziehen auf freier Fläche verschiebt die Ansicht, „Ein
 werden auf die Innenfläche des Plans umgerechnet (ohne Rahmen), Abweichung unter 1 mm bei jedem Zoom. Der
 Ausschnitt (Zoom, Verschiebung) bleibt bei allen Änderungen stehen und wird nur beim Öffnen eines anderen Projekts
 neu eingepasst. Leertaste und Enter auf einem fokussierten Knopf oder Kästchen bedienen diesen, nicht den Plan; der
-Fokusrahmen des Plans erscheint nur bei Bedienung mit der Tastatur. Die Leiste ist gegliedert in Werkzeuge |
-Nutzung | Einpassen | Beschriftung, Raster und „?“ (Tastenübersicht, schließt mit Esc oder Klick daneben). Ohne
+Fokusrahmen des Plans erscheint nur bei Bedienung mit der Tastatur. Die Leiste über dem Plan hat Werkzeuge |
+Nutzung; „Einpassen“, „Beschriftung“, „Raster“ und „?“ (Tastenübersicht, schließt mit Esc oder Klick daneben) stehen
+als Bedienfeld oben links im Plan. Eingabezeile und Flurstück-Leiste stehen fest, damit der Plan beim
+Werkzeugwechsel nicht springt. Ohne
 Flächen bietet der Plan „Rechteck zeichnen“, „Polygon zeichnen“ und „Unterlage laden …“ an. Die Flächentabelle
 unter dem Plan beginnt mit der Nummer wie im Plan und im Druck.
 

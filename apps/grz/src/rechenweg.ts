@@ -66,7 +66,7 @@ export function rechenweg(n: Nachweis, nr: Map<string, number> = flaechenNummern
     if (garagen > 0.005) teile.push(`− Garagen anrechnungsfrei (§ 21a Abs. 3) ${m2(garagen)}`);
     formeln.push(`GR = ${teile.join(' + ').replace('+ −', '−')} = ${m2(n.grz.flaeche)}`);
     formeln.push(kennzahlFormel('GRZ = GR / FGst', n.grz, G));
-    if (n.grz.flaecheMitOffenen !== undefined) formeln.push(kennzahlFormel('GRZ mit offenen Flächen', n.grz, G, true));
+    if (n.grz.flaecheMitOffenen !== undefined) formeln.push(kennzahlFormel('GRZ mit ungeklärten Flächen', n.grz, G, true));
   } else {
     // GR I: Hauptanlage und Flächen, die ihr zugerechnet werden (Einstufung „GRZ I“)
     const zugerechnet = n.grz.flaeche - n.hauptanlage;
@@ -77,7 +77,7 @@ export function rechenweg(n: Nachweis, nr: Map<string, number> = flaechenNummern
     if (n.grz2) {
       formeln.push(`GR II = GR I ${m2(n.grz.flaeche)} + Anlagen nach § 19 Abs. 4 BauNVO ${m2(n.grz2.flaeche - n.grz.flaeche)} = ${m2(n.grz2.flaeche)}`);
       formeln.push(kennzahlFormel('GRZ II = GR II / FGst', n.grz2, G));
-      if (n.grz2.flaecheMitOffenen !== undefined) formeln.push(kennzahlFormel('GRZ II mit offenen Flächen', n.grz2, G, true));
+      if (n.grz2.flaecheMitOffenen !== undefined) formeln.push(kennzahlFormel('GRZ II mit ungeklärten Flächen', n.grz2, G, true));
     }
   }
   const gf = n.gfJeGeschoss.filter((g) => g.flaeche > 0.005);

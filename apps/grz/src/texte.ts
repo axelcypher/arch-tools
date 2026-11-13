@@ -105,7 +105,7 @@ export function flaechenVergleich(kurz: string, k: Kennzahl): string | undefined
   const zl = `${m2(z)} zulässig`;
   let t = `${kurz} ${m2(k.flaeche)} ${op(k.flaeche)} ${zl}`;
   if (fix(k.flaeche, 2) === fix(z, 2) && k.flaeche !== z) t = `${kurz} ${fix(k.flaeche, 4)} m² ${op(k.flaeche)} ${fix(z, 4)} m² zulässig`;
-  if (k.flaecheMitOffenen !== undefined) t += `; mit offenen Flächen ${m2(k.flaecheMitOffenen)}`;
+  if (k.flaecheMitOffenen !== undefined) t += `; mit ungeklärten Flächen („prüfen“) ${m2(k.flaecheMitOffenen)}`;
   return t;
 }
 

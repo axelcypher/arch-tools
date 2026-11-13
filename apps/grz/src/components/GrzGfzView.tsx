@@ -125,7 +125,7 @@ export function GrzGfzView() {
   const grz2Fehler = m.grzIIMax !== undefined && m.grz !== undefined && m.grzIIMax < m.grz ? 'Kleiner als die GRZ – die GRZ II umfasst die Hauptanlage mit.' : undefined;
   return (
     <div className="grz-view">
-      <div className="grz-ergebnis-leiste" role="group" aria-label="Ergebnis">
+      <div className="grz-ergebnis-leiste" role="region" aria-label="Ergebnis">
         <ErgebnisWert titel={n.recht.baunvo === '1990' ? 'GRZ I' : 'GRZ'} wert={kennzahlWert(n.grz)} s={n.grz.status} />
         {n.grz2 && <ErgebnisWert titel="GRZ II" wert={kennzahlWert(n.grz2)} s={n.grz2.status} />}
         <ErgebnisWert titel="GFZ" wert={kennzahlWert(n.gfz)} s={n.gfz.status} />
@@ -586,7 +586,7 @@ export function GrzGfzView() {
                   <tr key={v} className={v === variante ? 'selected' : undefined}>
                     <td>{v}</td>
                     <td className="num">{kennzahlWert(nv.grz)}</td>
-                    {nv.grz2 && <td className="num">{kennzahlWert(nv.grz2)}</td>}
+                    {n.recht.baunvo === '1990' && <td className="num">{nv.grz2 ? kennzahlWert(nv.grz2) : '–'}</td>}
                     <td className="num">{kennzahlWert(nv.gfz)}</td>
                   </tr>
                 ))}
@@ -646,10 +646,14 @@ export function GrzGfzView() {
               <tr>
                 <th>Geschoss</th>
                 <th className="num" title="Geländeoberfläche entlang der Außenwände des Geschosses: Mittel (tiefster – höchster Punkt), über ±0,00">
-                  Gelände [m]
+                  Gelände
+                  <br />
+                  [m]
                 </th>
                 <th className="num" title="Oberkante Fußboden des darüberliegenden Geschosses bzw. Dachhaut über der Geländeoberfläche">
-                  über Gel. [m]
+                  über Gel.
+                  <br />
+                  [m]
                 </th>
                 <th className="num" title="Anteil der Grundfläche mit der geforderten lichten Höhe">
                   Anteil

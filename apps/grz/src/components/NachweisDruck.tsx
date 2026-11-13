@@ -178,7 +178,7 @@ export function NachweisDruck({ onClose }: { onClose: () => void }) {
         )}
         {(n.grz.mitOffenen !== undefined || n.grz2?.mitOffenen !== undefined) && (
           <p className="report-note">
-            Noch nicht eingestufte Flächen („prüfen“): {n.grz2 ? 'GRZ II' : 'GRZ'} bis {kennzahlWert(n.grz2 ?? n.grz, (n.grz2 ?? n.grz).mitOffenen)} – Einstufung mit der Bauaufsicht klären.
+            Ungeklärte Flächen („prüfen“): {n.grz2 ? 'GRZ II' : 'GRZ'} bis {kennzahlWert(n.grz2 ?? n.grz, (n.grz2 ?? n.grz).mitOffenen)} – Einstufung mit der Bauaufsicht klären.
           </p>
         )}
 

@@ -100,7 +100,7 @@ export function buildGrzContext(project: Project, date = new Date(), n: Nachweis
     'bauo.fassung': bauoLabel(n.recht.bauo),
     'recht.hinweise': n.recht.hinweise.join(' '),
     // offene Spanne („prüfen“): zur GRZ II (1990) bzw. zur GRZ
-    'grz.offen.bezeichnung': (n.grz2 ?? n.grz).mitOffenen !== undefined ? `${n.grz2 ? 'GRZ II' : 'GRZ'} bei Anrechnung offener Flächen` : '',
+    'grz.offen.bezeichnung': (n.grz2 ?? n.grz).mitOffenen !== undefined ? `${n.grz2 ? 'GRZ II' : 'GRZ'} mit ungeklärten Flächen („prüfen“)` : '',
     'grundstueck.flaeche_nachweis': opt(G, r4),
     'grundstueck.quelle': GRUNDSTUECK_QUELLE[n.grundstueck.quelle],
     gelaende: r2(n.gelaende.hoehe),
@@ -300,7 +300,7 @@ export const GRZ_PLACEHOLDER_DOCS: PlaceholderDocs = [
       ['grz.stellen', 'Nachkommastellen der Kennzahl (mindestens 3, nahe am Grenzwert mehr)'],
       ['grz.zulaessig_flaeche, grz.vergleich', 'zulässige Grundfläche [m²]; Begründung in m², z. B. „GR 135,00 m² < 245,00 m² zulässig“'],
       ['grz.mit_offenen, grz.flaeche_mit_offenen', 'GRZ bzw. Grundfläche einschließlich der noch nicht eingestuften Flächen („prüfen“)'],
-      ['grz.offen.bezeichnung, grz.offen.flaeche', '„GRZ II bei Anrechnung offener Flächen“ (bzw. GRZ) und die Fläche dazu – leer ohne offene Flächen'],
+      ['grz.offen.bezeichnung, grz.offen.flaeche', '„GRZ II mit ungeklärten Flächen („prüfen“)“ (bzw. GRZ) und die Fläche dazu – leer ohne ungeklärte Flächen'],
       ['unterirdisch.flaeche, unterirdisch.angerechnet', 'Kellergeschoss außerhalb der Hauptanlage [m²] und davon angerechnet'],
       ['grz.ii, grz.ii.zulaessig, grz.ii.flaeche, grz.ii.reserve, grz.ii.status, grz.ii.mit_offenen', 'GRZ II nach § 19 Abs. 4 BauNVO 1990 (sonst leer)'],
       ['garagen.frei', 'anrechnungsfreie Garagenfläche nach § 21a Abs. 3 (1968/1977) [m²]'],

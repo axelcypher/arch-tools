@@ -158,15 +158,25 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
   const variante = aktiveVariante(project);
   const dokument = useGrz((s) => s.dokument);
 
+  // Flurstückauswahl endet, sobald Flächen gewählt werden, ein anderes Projekt geöffnet wird oder das Flurstück fehlt (Undo)
+  useEffect(() => {
+    if (selectedIds.length) setGrenzeSel(null);
+  }, [selectedIds.length]);
+  useEffect(() => setGrenzeSel(null), [dokument]);
+  useEffect(() => {
+    if (grenzeSel && !grenzen.some((g) => g.id === grenzeSel)) setGrenzeSel(null);
+  }, [grenzeSel, grenzen]);
   // Ausschnitt: eingepasst auf Gebäude und Flächen (Taste F, „Einpassen“)
   const passend = useMemo<Ausschnitt>(() => {
-    const pts: Point[] = [...n.hauptanlagePolygone.flat(), ...flaechen.flatMap((f) => f.points)];
+    // aus dem aktuellen Projekt (nicht aus dem verzögert gerechneten Nachweis): nach dem Öffnen passt der Ausschnitt sofort
+    const umrisse = project.storeys.flatMap((st) => st.shapes.filter((x) => x.kind === 'outline' && !x.subtract).flatMap((x) => x.points));
+    const pts: Point[] = [...umrisse, ...flaechen.flatMap((f) => f.points), ...grenzen.flatMap((g) => g.points)];
     if (!pts.length) return { x: -20, y: -15, w: 40, h: 30 };
     const b = bounds(pts);
     const pad = Math.max(b.maxX - b.minX, b.maxY - b.minY) * 0.08 + 1;
     return { x: b.minX - pad, y: b.minY - pad, w: b.maxX - b.minX + 2 * pad, h: b.maxY - b.minY + 2 * pad };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [project.storeys, n.hauptanlagePolygone.length]);
+  }, [project.storeys, project.lageplan]);
   const [vb, setVb] = useState<Ausschnitt>(passend);
   // neu einpassen nur beim Öffnen eines anderen Projekts – Änderungen an Geschossen (Vollgeschoss, Einstufung, Undo) lassen Zoom und Verschiebung stehen
   const passendAktuell = useRef(passend);
@@ -259,6 +269,7 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
     });
     setDraft([]);
     setEingabe({ a: '', b: '' });
+    setCursor(null);
     if (pts.length < 3 || polygonArea(pts) < 0.05) return;
     if (werkzeug === 'grenze') {
       st.update(
@@ -319,6 +330,7 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
       : mapFlaeche(p, id, (f) => ({ ...f, points: pts }));
   const grenzeLoeschen = (id: string) => {
     setGrenzeSel(null);
+    if (!istGrenze(id)) return;
     st.update(
       (p) => {
         const rest = (p.lageplan?.grenze ?? []).filter((g) => g.id !== id);
@@ -343,7 +355,9 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
     if (e.button !== 0 || werkzeug !== 'auswahl') return;
     const p = toWorld(e);
     // Kante eines Flurstücks getroffen: Flurstück wählen (die Fläche innen bleibt für die Lageplan-Flächen frei)
-    const grenzTreffer = grenzen.find((g) => g.points.some((a, i) => abstandZurStrecke(p, a, g.points[(i + 1) % g.points.length]) < FANG_PX * skala()));
+    // nur außerhalb der Flächen: eine Fläche bis an die Grenze bleibt an ihrer Kante greifbar
+    const inFlaeche = flaechen.some((f) => pointInPolygon(p, f.points));
+    const grenzTreffer = inFlaeche ? undefined : grenzen.find((g) => g.points.some((a, i) => abstandZurStrecke(p, a, g.points[(i + 1) % g.points.length]) < FANG_PX * skala()));
     if (grenzTreffer && !(e.shiftKey || e.ctrlKey || e.metaKey)) {
       st.select(null);
       setGrenzeSel(grenzTreffer.id);
@@ -709,7 +723,7 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
           ))}
         </div>
         <label
-          className="lp-nutzung small-text"
+          className="lp-nutzung lp-gruppe lp-mit-trenner small-text"
           title={werkzeug === 'polygon' || werkzeug === 'rechteck' ? 'Nutzung neuer Flächen (Versiegelung passend vorbelegt)' : 'Nutzung neuer Flächen – gilt für Polygon und Rechteck'}
         >
           Nutzung
@@ -726,46 +740,6 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
             ))}
           </select>
         </label>
-        <span className="lp-trenner" aria-hidden />
-        <button className="small" title="Ansicht auf Gebäude und Flächen einpassen (F)" onClick={() => setVb(passend)}>
-          Einpassen
-        </button>
-        <span className="lp-trenner" aria-hidden />
-        <label className="toggle small-text" title="Nummer, Nutzung und Fläche im Plan">
-          <input type="checkbox" checked={beschriften} onChange={(e) => setBeschriften(e.target.checked)} />
-          Beschriftung
-        </label>
-        <label className="toggle small-text">
-          <input type="checkbox" checked={raster} onChange={(e) => setRaster(e.target.checked)} />
-          Raster
-        </label>
-        <details className="lp-tasten" ref={tastenRef}>
-          <summary className="lp-tasten-knopf" title="Tastenübersicht" aria-label="Tastenübersicht">
-            ?
-          </summary>
-          <div className="lp-tasten-liste">
-            {WERKZEUGE.map((w) => (
-              <div key={w.id}>
-                <strong>
-                  {w.label} ({w.taste})
-                </strong>
-                <ul>
-                  {w.alle.map((t) => (
-                    <li key={t}>{t}</li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-            <div>
-              <strong>Allgemein</strong>
-              <ul>
-                {ALLGEMEIN.map((t) => (
-                  <li key={t}>{t}</li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </details>
         <span className="muted small-text lp-hint">
           {werkzeug === 'kalibrieren'
             ? 'Zwei Punkte einer bekannten Strecke auf der Unterlage klicken'
@@ -825,13 +799,14 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
                 onChange={(e) => setUnterlage({ ...(unterlage as RasterBackground), opacity: Number(e.target.value) }, 'deckkraft', 'Deckkraft ändern')}
               />
             </label>
-            <button className="small" onClick={() => setUnterlage(undefined)}>
-              Unterlage entfernen
+            <button className="small" title="Unterlage entfernen (rückgängig mit Strg+Z)" onClick={() => setUnterlage(undefined)}>
+              Entfernen
             </button>
           </>
         )}
       </div>
-      {(werkzeug === 'grenze' || grenzeSel) && grenzen.length > 0 && (
+      {/* immer, sobald es Flurstücke gibt – der Plan springt beim Wählen einer Grenze nicht */}
+      {grenzen.length > 0 && (
         <div className="lp-tools lp-grenzen" role="group" aria-label="Flurstücke der Grundstücksgrenze">
           <span className="muted small-text">Grenze:</span>
           {grenzen.map((g) => (
@@ -847,14 +822,15 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
               >
                 {g.name} · {fmt2(polygonArea(g.points))} m²
               </button>
-              <button className="icon small" aria-label={`${g.name} löschen`} title={`${g.name} löschen`} onClick={() => grenzeLoeschen(g.id)}>
+              <button className="icon small" aria-label={`${g.name} löschen`} title={`${g.name} löschen (rückgängig mit Strg+Z)`} onClick={() => grenzeLoeschen(g.id)}>
                 ×
               </button>
             </span>
           ))}
         </div>
       )}
-      {zeichnet && (
+      {/* Eingabezeile in jedem Werkzeug (außerhalb des Zeichnens gesperrt): der Plan bleibt beim Werkzeugwechsel an seiner Stelle */}
+      {
         <div className="lp-tools lp-eingabe">
           <label className="small-text">
             {werkzeug === 'rechteck' ? 'Breite [m]' : 'Länge [m]'}{' '}
@@ -862,7 +838,7 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
               ref={eingabeA}
               className="lp-eingabe-feld"
               inputMode="decimal"
-              disabled={!draft.length}
+              disabled={!zeichnet || !draft.length}
               value={eingabe.a}
               onChange={(e) => setEingabe({ ...eingabe, a: e.target.value })}
               onKeyDown={(e) => {
@@ -882,7 +858,7 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
             <input
               className="lp-eingabe-feld"
               inputMode="decimal"
-              disabled={!draft.length}
+              disabled={!zeichnet || !draft.length}
               value={eingabe.b}
               placeholder={werkzeug === 'rechteck' ? '' : 'Maus'}
               title={werkzeug === 'rechteck' ? undefined : 'gegen die Gebäudeachse, gegen den Uhrzeigersinn; leer: in Richtung des Mauszeigers'}
@@ -895,10 +871,52 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
               }}
             />
           </label>
-          <span className="small-text lp-mass">{draft.length ? masstext || 'Mauszeiger in den Plan bewegen' : 'erst einen Punkt im Plan setzen, dann Maße tippen'}</span>
+          <span className="small-text lp-mass">
+            {!zeichnet ? 'Polygon oder Rechteck wählen, dann Maße tippen' : draft.length ? masstext || 'Mauszeiger in den Plan bewegen' : 'erst einen Punkt im Plan setzen, dann Maße tippen'}
+          </span>
         </div>
-      )}
+      }
       <div className="lp-plan">
+        <div className="canvas-controls lp-plan-steuerung" role="group" aria-label="Ansicht">
+          <button className="small" title="Ansicht auf Gebäude, Flächen und Grenze einpassen (F)" onClick={() => setVb(passend)}>
+            Einpassen
+          </button>
+          <label className="toggle small-text" title="Nummer, Nutzung und Fläche im Plan">
+            <input type="checkbox" checked={beschriften} onChange={(e) => setBeschriften(e.target.checked)} />
+            Beschriftung
+          </label>
+          <label className="toggle small-text">
+            <input type="checkbox" checked={raster} onChange={(e) => setRaster(e.target.checked)} />
+            Raster
+          </label>
+          <details className="lp-tasten" ref={tastenRef}>
+            <summary className="lp-tasten-knopf" title="Tastenübersicht" aria-label="Tastenübersicht">
+              ?
+            </summary>
+            <div className="lp-tasten-liste">
+              {WERKZEUGE.map((w) => (
+                <div key={w.id}>
+                  <strong>
+                    {w.label} ({w.taste})
+                  </strong>
+                  <ul>
+                    {w.alle.map((t) => (
+                      <li key={t}>{t}</li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+              <div>
+                <strong>Allgemein</strong>
+                <ul>
+                  {ALLGEMEIN.map((t) => (
+                    <li key={t}>{t}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </details>
+        </div>
         <svg
           ref={svgRef}
           className={`grz-skizze lp-${werkzeug}`}

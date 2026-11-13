@@ -102,7 +102,7 @@ describe('GRZ-Excel', () => {
     const sumA = ws.getCell(sumZeile, 6).value as { result: number };
     expect(sumA.result + n.hauptanlage).toBeCloseTo(n.grz2!.flaeche, 1);
     // offene Spanne
-    const offen = zeileMit(ws, 'GRZ II bei Anrechnung offener Flächen');
+    const offen = zeileMit(ws, 'GRZ II mit ungeklärten Flächen („prüfen“)');
     expect(offen).toBeGreaterThan(0);
     expect((ws.getCell(offen, 4).value as { result: number }).result).toBeCloseTo(n.grz2!.mitOffenen!, 6);
   });
