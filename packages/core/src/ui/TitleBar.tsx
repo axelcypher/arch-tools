@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useEffect, useId, useRef, useState, useSyncExternalStore } from 'react';
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { appNameSetzen } from './appName';
 import { isTauri } from '../platform/files';
@@ -217,6 +217,7 @@ export function ThemeMenu({ zeichenflaeche = true }: { zeichenflaeche?: boolean 
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const knopfRef = useRef<HTMLButtonElement>(null);
+  const kopfId = useId();
   const listeRef = useRef<HTMLDivElement>(null);
   const schliessen = () => {
     setOpen(false);
@@ -263,10 +264,10 @@ export function ThemeMenu({ zeichenflaeche = true }: { zeichenflaeche?: boolean 
       </button>
       {open && (
         <div className="titlebar-dropdown">
-          <div className="titlebar-dropdown-head" id="farbschema-kopf">
+          <div className="titlebar-dropdown-head" id={kopfId}>
             Farbschema
           </div>
-          <div role="menu" aria-labelledby="farbschema-kopf" ref={listeRef} onKeyDown={pfeile}>
+          <div role="menu" aria-labelledby={kopfId} ref={listeRef} onKeyDown={pfeile}>
             {WAHL.map((w) => (
               <button
                 key={w.id}

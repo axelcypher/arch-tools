@@ -106,16 +106,16 @@ Das Farbschema-Menü zeigt ein gezeichnetes Symbol und den Namen der Wahl („Au
 
 ## Richtig und falsch
 
-| Richtig                                                              | Falsch                                                                                    |
-| -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| Abstände und Schriftgrade aus der Skala (`var(--s2)`, `var(--fs-s)`) | freie Werte wie `margin: 7px`, `font-size: 12.5px`                                        |
-| Farben über Variablen (`var(--muted)`, `var(--warn-bg)`)             | feste Farben (`#888`, `orange`) in App-CSS                                                |
-| `:focus-visible` mit sichtbarem Rahmen                               | `outline: none` ohne Ersatz                                                               |
-| Überschriften in Satzschreibung                                      | Versalien mit Sperrung (`text-transform: uppercase`)                                      |
-| Symbole als SVG, mit `aria-label` am Knopf                           | Schriftzeichen wie ◐ ◂ 📏 als einziges Erkennungsmerkmal                                  |
-| gemeinsame Klassen (`.field`, `.toolbar`, `.canvas-message`)         | App-eigene Kopien mit leicht anderen Abständen                                            |
-| `--sel-foto` mit hellem und dunklem Saum                             | Magenta-Linie allein auf dem Foto                                                         |
-| Enter übernimmt, Esc verwirft die Eingabe                            | Esc schließt zugleich den Dialog, wenn nichts bearbeitet war, und braucht ein zweites Esc |
+| Richtig                                                                          | Falsch                                                         |
+| -------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| Abstände und Schriftgrade aus der Skala (`var(--s2)`, `var(--fs-s)`)             | freie Werte wie `margin: 7px`, `font-size: 12.5px`             |
+| Farben über Variablen (`var(--muted)`, `var(--warn-bg)`)                         | feste Farben (`#888`, `orange`) in App-CSS                     |
+| `:focus-visible` mit sichtbarem Rahmen                                           | `outline: none` ohne Ersatz                                    |
+| Überschriften in Satzschreibung                                                  | Versalien mit Sperrung (`text-transform: uppercase`)           |
+| Symbole als SVG, mit `aria-label` am Knopf                                       | Schriftzeichen wie ◐ ◂ 📏 als einziges Erkennungsmerkmal       |
+| gemeinsame Klassen (`.field`, `.toolbar`, `.canvas-message`)                     | App-eigene Kopien mit leicht anderen Abständen                 |
+| `--sel-foto` mit hellem und dunklem Saum                                         | Magenta-Linie allein auf dem Foto                              |
+| Enter übernimmt; Esc verwirft eine Eingabe, ohne Eingabe schließt Esc den Dialog | Esc muss zweimal gedrückt werden, um einen Dialog zu schließen |
 
 ## Was die Apps nachziehen
 
