@@ -1,6 +1,0 @@
-{
-  "entzerrung": {
-    "stufe": "patch",
-    "notiz": "Vor dem Schließen, Andocken und Update-Neustart in Arkly wird der Zwischenstand sofort geschrieben und laufendes Speichern abgewartet; Hinzufügen-Knöpfe mit Plus-Symbol."
-  }
-}

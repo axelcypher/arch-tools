@@ -86,11 +86,12 @@ Konfigurationsordner) und Projektdateien sind dieselben.
   Rechte: Hauptfenster `capabilities/default.json`, herausgelöste Fenster `capabilities/fenster.json` (ohne Updates,
   Neustart und neue Fenster).
 - **Ausstehendes Schreiben vor dem Schließen** (`vorDemSchliessen` in `rahmen.ts`): Schreibt eine App verzögert
-  (ATLAS etwa 400 ms nach einer Änderung), meldet sie mit `vorDemSchliessen(async () => …)` an, was vor dem Ende noch
-  fertig werden muss – die Funktion soll das Schreiben sofort ausführen und abwarten. Liefert sie `false` oder scheitert
-  sie (Promise abgelehnt, z. B. Netzlaufwerk weg), gilt das als „nicht gespeichert“. Wird sie erneut aufgerufen
-  („Weiter warten“, „Erneut versuchen“), wartet sie ein laufendes Schreiben ab; ist das letzte gescheitert, schreibt
-  sie neu bzw. liefert weiter `false`, solange nichts gespeichert ist. Das gilt auch, wenn keine
+  (etwa QUADRIO 600 ms nach einer Änderung in IndexedDB, ATLAS etwa 400 ms), meldet sie mit
+  `vorDemSchliessen(async () => …)` an, was vor dem Ende noch fertig werden muss – die Funktion soll das Schreiben
+  sofort ausführen und abwarten. Liefert sie `false` oder scheitert sie (Promise abgelehnt, z. B. Netzlaufwerk weg),
+  gilt das als „nicht gespeichert“. Wird sie erneut aufgerufen („Weiter warten“, „Erneut versuchen“), wartet sie ein
+  laufendes Schreiben ab; ist das letzte gescheitert, schreibt sie neu bzw. liefert weiter `false`, solange nichts
+  gespeichert ist. Das gilt auch, wenn keine
   ungespeicherten Änderungen gemeldet sind. Abgewartet wird vor dem Schließen des Fensters (× und System), dem
   Andocken, dem Herauslösen, dem Schließen eines Tabs, dem Beenden von Arkly (alle Tabs und Fenster) und dem
   Update-Neustart, höchstens 5 s (`VORBEREITEN_MS`). Danach fragt die App (`ui/vorbereiten.ts`) bei Zeitablauf
@@ -166,11 +167,13 @@ am Tab bzw. in der Titelleiste ● erscheint.
 8. **App reagiert nicht:** Schwer nachzustellen; erwartet ist, dass *Speichern* bei einer hängenden App nach etwa
    3 Sekunden aufgibt und Arkly offen bleibt.
 9. **Neustart:** Eine App herauslösen, Arkly beenden und neu starten. Erwartet: Die App ist wieder als Tab da.
-10. **Verzögertes Schreiben** (ATLAS meldet `vorDemSchliessen` an): In ATLAS etwas ändern und sofort (innerhalb einer halben Sekunde) den Tab schließen
-    bzw. Arkly beenden. Erwartet: Die Änderung ist nach dem Neustart da. Hängt das Netzlaufwerk, erscheint nach etwa
-    5 s „ATLAS speichert noch“; ist es getrennt (Fehler sofort), „ATLAS konnte nicht speichern“. Enter bzw. „Weiter
-    warten“ wartet erneut, „Erneut versuchen“ speichert noch einmal (bleibt das Laufwerk getrennt, erscheint die
-    Rückfrage wieder), Esc bzw. „Abbrechen“ lässt Tab bzw. Fenster offen, „Trotzdem schließen“ schließt.
+10. **Verzögertes Schreiben** (ATLAS und QUADRIO melden `vorDemSchliessen` an): In ATLAS etwas ändern bzw. in QUADRIO
+    eine Fläche zeichnen oder verschieben und sofort (innerhalb einer halben Sekunde) den Tab schließen bzw. Arkly
+    beenden. Erwartet: Die Änderung ist nach dem Neustart da. Hängt das Netzlaufwerk, erscheint nach etwa 5 s „ATLAS
+    speichert noch“; scheitert das Schreiben sofort und die App meldet das (`false` bzw. Fehler), „ATLAS konnte nicht
+    speichern“. Enter bzw. „Weiter warten“ wartet erneut, „Erneut versuchen“ speichert noch einmal (bleibt das
+    Laufwerk getrennt, erscheint die Rückfrage wieder), Esc bzw. „Abbrechen“ lässt Tab bzw. Fenster offen, „Trotzdem
+    schließen“ schließt. Bei QUADRIO (lokale IndexedDB) erscheinen die Rückfragen praktisch nie.
 
 ## Entwicklung
 

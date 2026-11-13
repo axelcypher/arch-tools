@@ -1,3 +1,4 @@
+import { Symbol } from '@core/ui/Symbol';
 import { useMemo, useState } from 'react';
 import { modellRoofParams } from '@core/calc';
 import { fmt2 } from '@core/format';
@@ -161,11 +162,11 @@ export function RoofEditor({
           {d.typ !== 'flach' && (
             <div className="button-row">
               <button className="small" onClick={() => set({ firstrichtung: (roofStats(d, shape.points).frame.angle + 90) % 180 })}>
-                ⟳ Firstrichtung drehen
+                Firstrichtung drehen
               </button>
               {d.typ === 'pult' && (
                 <button className="small" onClick={() => set({ umkehren: !d.umkehren })}>
-                  ⇅ Hohe Seite wechseln
+                  Hohe Seite wechseln
                 </button>
               )}
               {d.firstrichtung !== undefined && (
@@ -321,8 +322,8 @@ function GaubenEditor({ dach, points, onChange }: { dach: Dach; points: OutlineS
         );
       })}
       <div className="button-row">
-        <button className="small" onClick={() => onChange([...gauben, defaultGaube(dach, fr)])}>
-          + Gaube
+        <button className="small" onClick={() => onChange([...gauben, defaultGaube(dach, fr)])} title="Gaube hinzufügen">
+          <Symbol name="plus" /> Gaube
         </button>
       </div>
     </div>

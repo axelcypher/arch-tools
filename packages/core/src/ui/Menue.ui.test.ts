@@ -487,6 +487,43 @@ describe('gemeinsames Menü', () => {
     expect(document.activeElement?.textContent).toBe('Öffnen');
   });
 
+  it('Einfachauswahl: menuitemradio mit aria-checked, Punkt nur beim gewählten Eintrag', () => {
+    const host = render(
+      createElement(
+        Fragment,
+        null,
+        createElement(
+          'button',
+          {
+            key: 'z',
+            onContextMenu: (e: React.MouseEvent) =>
+              zeigeMenue(e, [
+                { text: 'Fassung 1', gewaehlt: false },
+                { text: 'Fassung 2', gewaehlt: true },
+                { text: 'Fassung 3', gewaehlt: false, haken: true },
+                { trenner: true },
+                { text: 'Umbenennen' },
+              ]),
+          },
+          'Karte',
+        ),
+        createElement(MenueHost, { key: 'h' }),
+      ),
+    );
+    act(() => host.querySelector('button')!.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 5, clientY: 5 })));
+    const [eins, zwei, drei] = [...host.querySelectorAll('.menue [role="menuitemradio"]')];
+    // beide gesetzt: gewaehlt gilt (Rolle, aria-checked, kein Haken)
+    expect(drei.getAttribute('aria-checked')).toBe('false');
+    expect(drei.querySelector('.menue-symbol svg')).toBeNull();
+    expect(eins.getAttribute('aria-checked')).toBe('false');
+    expect(eins.querySelector('.menue-symbol svg')).toBeNull();
+    expect(zwei.getAttribute('aria-checked')).toBe('true');
+    expect(zwei.querySelector('.menue-symbol svg')).not.toBeNull();
+    expect(host.querySelectorAll('.menue [role="menuitemcheckbox"]').length).toBe(0);
+    expect(host.querySelectorAll('.menue [role="menuitem"]').length).toBe(1);
+    taste('Escape');
+  });
+
   it('Symbole: dekorativ ohne Titel, mit Titel als Bild benannt; jeder Name hat einen Pfad', () => {
     const host = render(createElement(Fragment, null, createElement(Symbol, { key: 'a', name: 'auswahl' }), createElement(Symbol, { key: 'b', name: 'lineal', titel: 'Messen' })));
     const [a, b] = [...host.querySelectorAll('svg.symbol')];
@@ -495,6 +532,6 @@ describe('gemeinsames Menü', () => {
     expect(b.querySelector('title')?.textContent).toBe('Messen');
     expect(SYMBOLE.length).toBeGreaterThan(30);
     expect(new Set(SYMBOLE).size).toBe(SYMBOLE.length);
-    expect(SYMBOLE).toEqual(expect.arrayContaining(['nachOben', 'nachUnten', 'mehr', 'grenze', 'ausrichten', 'einruecken', 'ausruecken']));
+    expect(SYMBOLE).toEqual(expect.arrayContaining(['nachOben', 'nachUnten', 'mehr', 'grenze', 'ausrichten', 'einruecken', 'ausruecken', 'frage', 'punkt']));
   });
 });
