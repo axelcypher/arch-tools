@@ -96,7 +96,7 @@ describe('Projektarchiv (.oap)', () => {
   });
 
   it('lehnt fremde ZIP-Dateien ab', () => {
-    expect(() => readProjectFile(zipSync({ 'a.txt': strToU8('x') }))).toThrow(/kein Projektarchiv/);
+    expect(() => readProjectFile(zipSync({ 'a.txt': strToU8('x') }))).toThrow(/keine Projektdatei dieser Apps/);
   });
 
   it('gleiche Originaldatei wird nur einmal gespeichert', () => {

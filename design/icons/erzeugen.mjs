@@ -1,4 +1,4 @@
-// Erzeugt das arch-tools-Iconset (Entwurf) – eine Quelle für Farben, Raster und Symbole aller Apps.
+// Erzeugt das Iconset von Arkly – eine Quelle für Farben, Raster und Symbole aller Apps.
 // Aufruf: node design/icons/erzeugen.mjs   → schreibt <app>.svg neben dieses Skript
 //
 // Regeln (siehe README.md):

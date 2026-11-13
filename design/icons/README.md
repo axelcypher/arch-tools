@@ -26,8 +26,8 @@ LEXIO (Baurecht) liegt noch auf dem Branch `claude/nice-fermi-702pde`; sein Icon
 - **Linien** 4 breit auf Koordinaten ≡ 2 (mod 4) – bei 16, 32 und 48 px liegt jede Linie auf ganzen Pixeln.
   Nichts unter 2 Breite (verschwindet unter 32 px). Keine Buchstaben; Zeichen wie € und § nur als gezeichnete
   Form mit Linie 4.
-- **Symbol** in Weiß, ein Motiv, Freiraum ringsum 10–12. Jedes Icon muss bei 14 px (Tab der Rahmen-App) erkennbar
-  bleiben.
+- **Symbol** in Weiß, ein Motiv, Freiraum ringsum 10–12. Jedes Icon muss bei 16 px (Tab und Menü der Rahmen-App,
+  Browser-Tab) erkennbar bleiben; die Startseite der Rahmen-App zeigt 32 px – beides Größen des Rasters.
 - **Bernstein** (`#fcba43`, OKLCH 0,83 / 0,15 / 78) für genau ein Element: das, was die App ermittelt oder
   hervorbringt. Nur auf der Kachelfarbe – auf Weiß fehlt der Kontrast (1,7 : 1), auf weißer Tönung ebenso; wo es
   daran grenzt oder es überlappt, trennt eine Fuge in Kachelfarbe (mind. 2).
@@ -35,6 +35,18 @@ LEXIO (Baurecht) liegt noch auf dem Branch `claude/nice-fermi-702pde`; sein Icon
   Bernstein ≥ 3,7 : 1. Der Farbton von Bernstein bleibt als Kachel frei. Der Rahmen ist dunkler und fast unbunt,
   damit er nicht wie eine weitere App wirkt. QUADRIO behält das Blau, das auch `--accent` der Oberfläche ist; LEXIO
   sitzt als gedämpftes Schiefer (C 0,07) zwischen Teal und Blau.
+
+### Festgehaltene Abweichungen
+
+Bewusst abweichend von den Regeln oben (bei 16 px geprüft, bei 2-facher Pixeldichte ohne Einschränkung):
+
+- **ATLAS**: die Zeilen im Ordner sind dunkle Linien 3,5 auf weißer Fläche (y 33/39/45) – drei Zeilen passen sonst
+  nicht hinein; bei 16 px leicht weich.
+- **NUMIO**: das € hat Linie 5 (Querstriche bei 36,5 und 42), damit es bei 16 px nicht zuläuft.
+- **Fuge**: mit `paint-order="stroke"` ist nur die halbe Strichbreite sichtbar – sichtbar mindestens 1,25 (RECTIO,
+  Arkly), 1,5 (FABRIO), 1,75 (PERMIO).
+- **Freiraum**: Werkzeuge, die über das Motiv hinausragen, dürfen näher an den Rand (PERMIO-Stift bis etwa 4,
+  FABRIO-Klammer, RECTIO-Passpunkte und NUMIO-Dach 8–9).
 
 ## Ausrollen
 

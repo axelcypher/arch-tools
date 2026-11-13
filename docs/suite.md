@@ -3,7 +3,7 @@
 Die Rahmen-App Arkly (`apps/suite`, eigene App mit eigenem Installer, bis 0.18.0 „arch-tools“) bündelt alle
 Werkzeuge in **einem Programm und einem Fenster**. Sie kann nichts weiter, als zwischen den Apps zu wechseln:
 
-- **Tabs:** Jede geöffnete App ist ein Tab in der Titelleiste – ATLAS (Projekt), PERMIO (Formulare),
+- **Tabs:** Jede geöffnete App ist ein Tab in der Titelleiste – ATLAS (Projektordner), PERMIO (Formulare),
   QUADRIO (Flächenrechner), TERRIO (GRZ-Nachweis), NUMIO (Kostenermittlung), RECTIO (Entzerrung), FABRIO (AVA). Ohne
   offene App zeigt der Rahmen die Startseite mit allen Apps; „+“ öffnet weitere. Startseite und „+“ nennen neben dem
   Namen, wofür die App da ist (den bisherigen Namen), am Tab steht das im Tooltip. Beim Wechseln bleibt jede App, wie

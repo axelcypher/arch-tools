@@ -148,7 +148,7 @@ export function App() {
     const zurueck = () => {
       if (!sichtbar()) return;
       void auffrischen(true);
-      // das Namensschema des Büros kann in ATLAS (Projekt) geändert worden sein
+      // das Namensschema des Büros kann in ATLAS (Projektordner) geändert worden sein
       void useFormulare.getState().namensschemaNeuLesen();
     };
     const takt = setInterval(() => sichtbar() && void auffrischen(), 15_000);

@@ -1,5 +1,5 @@
 /**
- * Katasterpläne in ATLAS (Projekt): Einstellungen (QGIS-Vorlage, Pläne, Ablage, Dateiname – für alle im Büro im
+ * Katasterpläne in ATLAS (Projektordner): Einstellungen (QGIS-Vorlage, Pläne, Ablage, Dateiname – für alle im Büro im
  * gemeinsamen Konfigurationsordner, Bereich „kataster“), der Pfad zu qgis_process (je Rechner) und der Export für ein
  * Projekt: Koordinaten und Kopfangaben aus der Projektdatei (.oap), die QGIS-Vorlage des Projekts ebenfalls dort.
  *

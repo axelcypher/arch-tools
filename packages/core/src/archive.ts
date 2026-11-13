@@ -117,7 +117,7 @@ export function readProjectFile(bytes: Uint8Array): Project {
   }
   const manifest = readJson(zip, MANIFEST) as Partial<Manifest> | null;
   if (!manifest || manifest.format !== ARCHIV_FORMAT)
-    throw new ProjectFormatError(`${KEINE_PROJEKTDATEI} (Das ZIP-Archiv ist kein Projektarchiv von Arkly.)`, 'manifest.json fehlt oder Format abweichend');
+    throw new ProjectFormatError(`${KEINE_PROJEKTDATEI} (Das ZIP-Archiv ist keine Projektdatei dieser Apps.)`, 'manifest.json fehlt oder Format abweichend');
   if (typeof manifest.version !== 'number' || manifest.version > ARCHIV_VERSION) {
     throw new ProjectFormatError(`Das Archiv stammt aus einer neueren Programmversion (Archivversion ${String(manifest.version)}).`);
   }

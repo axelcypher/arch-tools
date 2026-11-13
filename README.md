@@ -24,7 +24,7 @@ Speicher-Schlüssel, Bundle-Kennungen und die Release-Tags (`grz-v…` usw.).
 | Neuer Name | bisher | letzte Version mit altem Namen |
 |---|---|---|
 | **Arkly** | arch-tools (Rahmen-App) | 0.18.0 |
-| **ATLAS** | Projekt, davor Projektordner | 0.17.0 |
+| **ATLAS** | Projekt (Fenstertitel), Projektordner (Installer) | 0.17.0 |
 | **PERMIO** | Formulare | 0.42.0 |
 | **QUADRIO** | Flächenrechner | 0.33.0 |
 | **TERRIO** | GRZ-Nachweis | 0.22.0 |
@@ -37,6 +37,10 @@ Beim ersten Update unter dem neuen Namen entfernt der Installer die Installation
 Startmenü- und Desktop-Verknüpfung werden unter dem neuen Namen angelegt, wenn es sie vorher gab. Einstellungen und
 Daten bleiben erhalten, weil sie an der App-Kennung hängen, nicht am Namen. Ein MSI-Paket ersetzt das alte, weil der
 Upgrade-Code gleich bleibt. Details zum Installer-Hook: `apps/<app>/src-tauri/windows/umbenennung.nsh`.
+
+Die Namen stehen an einer Stelle: `packages/core/src/appNamen.ts` (Name und `was` – wofür die App da ist). Regel für
+Texte: Ein Verweis auf eine andere App nennt beim ersten Vorkommen in einem Text, Dialog oder einer Regelkarte den
+Namen mit Erklärung – „PERMIO (Formulare)“ –, danach den Namen allein; die eigene App steht ohne Erklärung.
 
 ## Gemeinsame Bedienung aller Apps
 
@@ -298,7 +302,7 @@ packages/core/       gemeinsamer Unterbau (TypeScript-Quelltext, in den Apps als
 apps/flaechenrechner/  QUADRIO (Flächenrechner, dieses Tool): Zeichenfläche, Bericht, Excel, DXF/PDF, 3D
 apps/grz/              TERRIO (GRZ/GFZ-Nachweis): Lageplan, Nachweis zum Drucken, Excel – siehe docs/grz-gfz.md
 apps/kosten/           NUMIO (Kostenermittlung nach DIN 276): Mengen, Kennwerte, Kostenstände, Druck, Excel – siehe docs/kosten.md
-apps/ordner/           ATLAS (Projekt): Assistent (neu/fortschreiben), Struktur-Editor, Vorlagen-Presets, Ordner prüfen, Katasterpläne – siehe docs/projektordner.md
+apps/ordner/           ATLAS (Projektordner): Assistent (neu/fortschreiben), Struktur-Editor, Vorlagen-Presets, Ordner prüfen, Katasterpläne – siehe docs/projektordner.md
 apps/entzerrung/       RECTIO (Entzerrung) – Fotos entzerren und messen: Homographie, Fluchtlinien, Verzeichnung, WebGL – siehe docs/entzerrung.md
 apps/formulare/        PERMIO (Formulare) – FORMA-Formulare ausfüllen: Formatkern (.frmsjf), Formular- und Feldansicht, Projektkarte, Verlauf, Projektordner – siehe docs/formulare.md
 apps/ava/              FABRIO (AVA) – Ausschreibung, Vergabe, Abrechnung, Bauleitung: LV-Formate (.aslv, .oalv, GAEB), Preisspiegel, Kostenkontrolle, Rechnungsprüfung, Bautagebuch – siehe docs/ava.md

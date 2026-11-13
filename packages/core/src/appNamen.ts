@@ -11,7 +11,7 @@ export interface AppName {
 
 export const APP_NAMEN = {
   suite: { name: 'Arkly', was: 'Rahmen-App' },
-  ordner: { name: 'ATLAS', was: 'Projekt' },
+  ordner: { name: 'ATLAS', was: 'Projektordner' },
   formulare: { name: 'PERMIO', was: 'Formulare' },
   flaechenrechner: { name: 'QUADRIO', was: 'Flächenrechner' },
   grz: { name: 'TERRIO', was: 'GRZ-Nachweis' },
@@ -23,5 +23,9 @@ export const APP_NAMEN = {
 
 export type AppKennung = keyof typeof APP_NAMEN;
 
-/** Name mit Erklärung, z. B. „PERMIO (Formulare)“ – für Stellen, an denen der neue Name noch nicht geläufig ist */
+/**
+ * Name mit Erklärung, z. B. „PERMIO (Formulare)“. Regel für Texte: Verweist ein Text, Dialog oder eine Regelkarte auf
+ * eine andere App, steht beim ersten Vorkommen der Name mit Erklärung (`appMitWas`), danach der Name allein; die
+ * eigene App ohne Erklärung. Titelleiste, Tabs und Startseite zeigen den Namen, Tooltips und Startseite zusätzlich `was`.
+ */
 export const appMitWas = (id: AppKennung): string => `${APP_NAMEN[id].name} (${APP_NAMEN[id].was})`;

@@ -38,8 +38,8 @@
   color: var(--text);
 }
 .rahmen-tab img {
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   flex: 0 0 auto;
 }
 .rahmen-tab-name {
@@ -98,10 +98,9 @@
 .rahmen-menue button:hover {
   background: var(--hover);
 }
-.rahmen-menue img,
-.rahmen-karte img {
-  width: 18px;
-  height: 18px;
+.rahmen-menue img {
+  width: 16px;
+  height: 16px;
 }
 .rahmen-inhalt {
   position: relative;
@@ -147,8 +146,8 @@
   height: auto;
 }
 .rahmen-karte img {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   flex: 0 0 auto;
 }
 .rahmen-karte > span {
@@ -161,12 +160,10 @@
   white-space: normal;
   min-width: 0;
 }
-/* Name der App und darunter klein, wofür sie da ist (früherer Name) */
+/* neben dem Namen der App klein, wofür sie da ist (wie im Menü „+“: muted small-text) */
 .rahmen-karte-was {
   margin-left: 4px;
-  font-size: 12px;
   font-weight: 400;
-  color: var(--muted);
 }
 
 /* Neues Projekt anlegen (Assistent von ATLAS) */

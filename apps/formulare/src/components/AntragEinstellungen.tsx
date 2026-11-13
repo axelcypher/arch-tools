@@ -58,7 +58,7 @@ export function AntragEinstellungen() {
               onBlur={(x) => setEinstellungen({ arten: x.target.value.split(/[,;\s]+/).filter(Boolean).map((a) => a.toUpperCase()) })}
             />
             <span className="field-hint" id="es-arten-hinweis">
-              Dazu kommen die Antragsarten aus ATLAS (Projekt) › Einstellungen › Namensschema: Kürzel und Plannummern.
+              Dazu kommen die Antragsarten aus ATLAS (Projektordner) › Einstellungen › Namensschema: Kürzel und Plannummern.
             </span>
           </label>
         </div>

@@ -341,7 +341,7 @@ function GemeinsameEinstellungen() {
   return (
     <>
       <h2>Gemeinsame Einstellungen</h2>
-      <p className="muted small-text">Gelten für alle Apps (ATLAS, PERMIO, QUADRIO …). Liegt der Konfigurationsordner auf dem Server, gelten sie für das ganze Büro.</p>
+      <p className="muted small-text">Gelten für alle Apps. Liegt der Konfigurationsordner auf dem Server, gelten sie für das ganze Büro.</p>
       {desktop ? (
         <div className="po-ort">
           <div>

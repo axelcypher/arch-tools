@@ -1863,7 +1863,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       if (!pfad) throw new Error('Kein Ort für neue Projektdateien eingestellt.');
       const p = createProject(meta.kurzname || meta.vorhaben || projekt.titel || projekt.ordner);
       p.meta = meta;
-      // wie in ATLAS (Projekt): jede neue Projektdatei trägt eine Kopie des Namensschemas des Büros
+      // wie in ATLAS (Projektordner): jede neue Projektdatei trägt eine Kopie des Namensschemas des Büros
       p.namensschema = wirksamesNamensschema(undefined, get().namensschemaBuero);
       if (!(await projektdateiAnlegen(ds.projektordner, root, pfad, p, APP_NAMEN.formulare.name))) throw new Error(`${pfad}: Dort liegt schon eine Datei – bitte in den Projektdaten auswählen.`);
       log.info(`Projektdatei angelegt: ${pfad}`);

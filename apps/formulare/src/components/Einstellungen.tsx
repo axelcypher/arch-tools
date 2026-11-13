@@ -586,7 +586,7 @@ function Projektdaten() {
       <h2>Projektdatei (.oap)</h2>
       <p className="muted">
         Die Projektstammdaten kommen aus der Projektdatei im Projektordner – dem gemeinsamen Projektarchiv von QUADRIO (Flächenrechner), TERRIO (GRZ-Nachweis),
-        NUMIO (Kostenermittlung) und ATLAS (Projekt). Gesucht wird bis vier Ebenen tief; bei mehreren gilt die im Ordner der Berechnungen, sonst die mit dem kürzesten Pfad –
+        NUMIO (Kostenermittlung) und ATLAS (Projektordner). Gesucht wird bis vier Ebenen tief; bei mehreren gilt die im Ordner der Berechnungen, sonst die mit dem kürzesten Pfad –
         je Projekt lässt sich in den Projektdaten eine andere wählen. In den Projektdaten lassen sich die Angaben in beide Richtungen abgleichen; beim Speichern der
         Projektdaten werden geänderte Angaben in die Projektdatei eingetragen, alles andere darin bleibt unverändert. Eine alte
         Projektdaten.xlsx wird nur noch gelesen, um ihre Angaben zu übernehmen.

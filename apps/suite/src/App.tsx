@@ -346,7 +346,7 @@ export function App() {
               else rahmen.current.delete(id);
             }}
             className={`rahmen-app${id === aktiv ? ' aktiv' : ''}`}
-            title={appInfo(id)!.name}
+            title={`${appInfo(id)!.name} (${appInfo(id)!.was})`}
             src={appAdresse(id, 'tab')}
             allow="clipboard-read; clipboard-write; fullscreen"
           />
@@ -367,7 +367,7 @@ export function App() {
                   <img src={`apps/${a.id}/favicon.svg`} alt="" />
                   <span>
                     <strong>
-                      {a.name} <span className="rahmen-karte-was">{a.was}</span>
+                      {a.name} <span className="muted small-text rahmen-karte-was">{a.was}</span>
                     </strong>
                     <span className="muted small-text">{fenster.includes(a.id) ? 'läuft in eigenem Fenster' : a.text}</span>
                   </span>

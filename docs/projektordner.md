@@ -1,6 +1,6 @@
-# ATLAS (Projekt)
+# ATLAS (Projektordner)
 
-Die App **ATLAS (Projekt)** (`apps/ordner`, eigene App mit eigenem Installer, in der Rahmen-App Arkly der Tab
+Die App **ATLAS (Projektordner)** (`apps/ordner`, eigene App mit eigenem Installer, in der Rahmen-App Arkly der Tab
 „ATLAS“) ist das Setup-Tool des Büros: Sie legt Projekte an und schreibt sie fort – mit einem **Assistenten**, der
 alle Angaben zum Projekt abfragt (Stammdaten, Grundstück, Bauherr, Umfang, Beteiligte) und in der Projektdatei
 (`.oap`) ablegt, den Projektordner nach der **Struktur** des Büros anlegt und Vorlagen einsetzt. Dazu prüft sie

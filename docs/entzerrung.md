@@ -45,7 +45,7 @@ In der Desktop-App beginnt RECTIO mit der **Projektübersicht** (wie die anderen
 die Stammdaten erfasst und die Projektdatei angelegt.
 
 Danach zeigt **„Fotos des Projekts“** alle Fotos (JPEG, PNG, WebP) im **Fotoordner** des Projekts – einer
-gemeinsamen Einstellung aller Apps, Vorgabe `09 Fotos`, zu ändern in ATLAS (Projekt) unter Einstellungen – samt
+gemeinsamen Einstellung aller Apps, Vorgabe `09 Fotos`, zu ändern in ATLAS (Projektordner) unter Einstellungen – samt
 allen Unterordnern, gruppiert nach Ordner und mit Suche. „Anderer Ordner …“ wählt einen beliebigen Ordner.
 
 Die Entzerrung eines Fotos liegt **immer neben dem Foto**: gleicher Name, Endung `.entz`

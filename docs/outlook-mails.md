@@ -1,6 +1,6 @@
 # Mails aus Outlook in die App – ohne Add-in (Recherche, Stand 12.11.2026)
 
-Frage: Lassen sich Mails aus Outlook in die App ATLAS (Projekt) holen, um sie dort zu benennen und abzulegen, **ohne
+Frage: Lassen sich Mails aus Outlook in die App ATLAS (Projektordner) holen, um sie dort zu benennen und abzulegen, **ohne
 Add-in oder sonstige Outlook-seitige Zusätze**? Sonst müsste das Outlook-Makro überarbeitet werden.
 
 ## Ergebnis

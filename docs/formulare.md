@@ -468,7 +468,7 @@ mehreren mit laufender Nummer – hinten (`BAUA 2`, `BAUA_2`, `BAUA2`) oder vorn
 nicht mit – nach Leerzeichen, Punkt, „_“ oder „-“ bzw. direkt als Buchstabe (`BAUA 2 Nachtrag`, `BAUA 2-alt`, `BAUA 2a`
 sind Fassung 2); ohne Nummer nur nach einem Leerzeichen (`BAUA Nachtrag` ist Fassung 1, `BAUA_alt` keine).
 Daneben andere Antragsarten wie `BAUVA` (Voranfrage) oder `DENK` (Denkmal). Erkannt wird mit den Antragsarten der
-Einstellungen und des Namensschemas – `packages/core/src/fassung.ts`, auch in ATLAS (Projekt) genutzt.
+Einstellungen und des Namensschemas – `packages/core/src/fassung.ts`, auch in ATLAS (Projektordner) genutzt.
 
 - **Aktive Fassung** (oben links am Projekt, „Antrag“): die gewählte, sonst die neueste der Standardart. Über das Menü
   lässt sich umschalten oder eine **neue Fassung anlegen** – in der Schreibweise der vorhandenen mit der höchsten Nummer
