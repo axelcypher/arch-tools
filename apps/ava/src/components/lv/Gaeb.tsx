@@ -48,8 +48,7 @@ export function GaebExportDialog({ onClose }: { onClose: () => void }) {
     }
   };
   return (
-    <Modal titel="GAEB-Export" onClose={onClose}>
-      <h2>GAEB-Export (DA XML 3.3)</h2>
+    <Modal kopf titel="GAEB-Export (DA XML 3.3)" onClose={onClose}>
       <div className="ava-formular">
         <label className="ava-feld ava-feld-breit">
           <span className="ava-feld-label">Phase</span>

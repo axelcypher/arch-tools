@@ -63,7 +63,7 @@ export function Angebote() {
   return (
     <div className={`ava-angebote ava-angebote-${modus}`}>
       <div className="toolbar">
-        <div className="tb-group ava-umschalter" role="group" aria-label="Ansicht">
+        <div className="segment" role="group" aria-label="Ansicht">
           <button className={modus === 'spiegel' ? 'active' : ''} aria-pressed={modus === 'spiegel'} onClick={() => setModus('spiegel')}>
             Preisspiegel
           </button>

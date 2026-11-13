@@ -183,16 +183,16 @@ Das Farbschema-Menü zeigt ein gezeichnetes Symbol und den Namen der Wahl („Au
 
 ## Was die Apps nachziehen
 
-| App                            | Datei und Aufgabe                                                                                                                                                                                            |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| RECTIO                         | `apps/entzerrung/src/components/Arbeitsflaeche.tsx:364`: Leerzustand „Foto hinzufügen …“ mit `className="canvas-message leer"`; Auswahl auf dem Foto mit `--sel-foto` und Saum statt eigener Farbe           |
-| TERRIO, NUMIO                  | Spalten-Überschriften (`h2` ohne Regel, sonst 22px) auf die Skala setzen: `--fs-l`, halbfett                                                                                                                 |
-| FABRIO                         | Versalien entfernen: `.ava-nav-titel` (`apps/ava/src/styles.css:77`); `outline: none` prüfen: `apps/ava/src/styles.css:492`, `:628`                                                                          |
-| PERMIO                         | erledigt (PERMIO 0.48.1): Versalien entfernt, Überschriften auf `--fs-*`, `outline: none` geprüft (Menüpunkte mit Fokusrahmen)                                                                               |
-| core                           | Versalien entfernen: `.pa-abschnitt-titel` (`packages/core/src/ui/projektuebersicht.css:60`, PERMIO und ATLAS), `.av-abschnitt-titel` und `.av-ed-gruppe-titel` (`packages/core/src/ui/ansicht.css`, PERMIO) |
-| ATLAS                          | `outline: none` prüfen: `apps/ordner/src/styles.css:415`                                                                                                                                                     |
-| QUADRIO, TERRIO, NUMIO, FABRIO | Druckvorschau: „Drucken / PDF“ als Hauptknopf (`.primary`), „Schließen“ normal (`Report.tsx`, `NachweisDruck.tsx`, `KostenDruck.tsx`, `Druck.tsx`)                                                           |
-| NUMIO, FABRIO, QUADRIO         | eigene Umschalter (`.mv-umschalter`, `.ava-tabs`, `.view-switch`) auf `.segment` umstellen                                                                                                                   |
-| alle                           | eigene `div.modal` auf `Modal` umstellen; Titel mit `kopf` statt `h3` im Inhalt; Werkzeugleisten-Befehle nach „Begriffe“ benennen (z. B. TERRIO „Öffnen“ → „Öffnen …“)                                       |
+| App                    | Datei und Aufgabe                                                                                                                                                                                            |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| RECTIO                 | `apps/entzerrung/src/components/Arbeitsflaeche.tsx:364`: Leerzustand „Foto hinzufügen …“ mit `className="canvas-message leer"`; Auswahl auf dem Foto mit `--sel-foto` und Saum statt eigener Farbe           |
+| TERRIO, NUMIO          | Spalten-Überschriften (`h2` ohne Regel, sonst 22px) auf die Skala setzen: `--fs-l`, halbfett                                                                                                                 |
+| FABRIO                 | erledigt (FABRIO 0.9.1): Versalien entfernt, `outline: none` geprüft; Druckvorschau, `.segment`, `Modal` mit `kopf`, „ …“ nachgezogen                                                                        |
+| PERMIO                 | erledigt (PERMIO 0.48.1): Versalien entfernt, Überschriften auf `--fs-*`, `outline: none` geprüft (Menüpunkte mit Fokusrahmen)                                                                               |
+| core                   | Versalien entfernen: `.pa-abschnitt-titel` (`packages/core/src/ui/projektuebersicht.css:60`, PERMIO und ATLAS), `.av-abschnitt-titel` und `.av-ed-gruppe-titel` (`packages/core/src/ui/ansicht.css`, PERMIO) |
+| ATLAS                  | `outline: none` prüfen: `apps/ordner/src/styles.css:415`                                                                                                                                                     |
+| QUADRIO, TERRIO, NUMIO | Druckvorschau: „Drucken / PDF“ als Hauptknopf (`.primary`), „Schließen“ normal (`Report.tsx`, `NachweisDruck.tsx`, `KostenDruck.tsx`)                                                                        |
+| NUMIO, QUADRIO         | eigene Umschalter (`.mv-umschalter`, `.view-switch`) auf `.segment` umstellen                                                                                                                                |
+| alle                   | eigene `div.modal` auf `Modal` umstellen; Titel mit `kopf` statt `h3` im Inhalt; Werkzeugleisten-Befehle nach „Begriffe“ benennen (z. B. TERRIO „Öffnen“ → „Öffnen …“)                                       |
 
 Zeilennummern beziehen sich auf den Stand dieser Richtlinie.

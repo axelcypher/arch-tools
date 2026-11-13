@@ -93,7 +93,7 @@ export function Navigation({ onStammdaten }: { onStammdaten: (meta: ProjectMeta,
         </ul>
         <div className="ava-nav-fuss">
           <button onClick={() => useAva.getState().setEinstellungenOffen(true)} title="Ablage, Benennung, Prüfung, Deckblatt, Scanordner, Mailvorlagen (Strg+,)">
-            ⚙ Einstellungen
+            ⚙ Einstellungen …
           </button>
         </div>
       </nav>
