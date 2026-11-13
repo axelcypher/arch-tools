@@ -103,6 +103,34 @@ Konfigurationsordner) und Projektdateien sind dieselben.
 - Dateien per Ziehen & Ablegen: Die Fenster des Rahmens haben `dragDropEnabled: false`, damit die Apps in den Tabs
   die Dateien selbst bekommen.
 
+## Prüfschritte auf Windows: Schließen, Update, herausgelöste Fenster
+
+Von Hand in der installierten Arkly durchzuklicken. „Ändern“ heißt: in der App etwas eingeben, ohne zu speichern, bis
+am Tab bzw. in der Titelleiste ● erscheint.
+
+1. **Alt+F4 im Hauptfenster:** NUMIO und QUADRIO als Tabs öffnen, in beiden ändern, Alt+F4. Erwartet: „Änderungen an
+   ‚NUMIO – …‘ speichern?“, danach dieselbe Frage für QUADRIO. Bei *Abbrechen* bleibt Arkly offen, mit allen
+   Änderungen.
+2. **Schließen über die Taskleiste:** Rechtsklick auf Arkly in der Taskleiste → „Fenster schließen“. Erwartet: wie in
+   Schritt 1.
+3. **Herausgelöstes Fenster beim Beenden:** ATLAS öffnen, ⧉ (in eigenem Fenster), dort ändern. Im Hauptfenster ×.
+   Erwartet: „Änderungen an ‚ATLAS – …‘ speichern?“. *Speichern* speichert im ATLAS-Fenster, dann schließen sich beide
+   Fenster. Im Task-Manager läuft danach kein Arkly mehr.
+4. **Alt+F4 im herausgelösten Fenster:** TERRIO herauslösen, ändern, im TERRIO-Fenster Alt+F4. Erwartet: „Vor dem
+   Beenden speichern?“ bzw. „Ungespeicherte Änderungen verwerfen?“; *Abbrechen* lässt das Fenster offen.
+5. **Andocken mit Änderungen:** FABRIO herauslösen, im LV ändern, „Andocken“. Erwartet: „Änderungen an ‚FABRIO – …‘
+   speichern?“ mit dem Hinweis, dass die App neu startet. *Abbrechen* lässt das Fenster stehen; *Speichern* speichert
+   und holt FABRIO als Tab zurück. Bei QUADRIO kommt stattdessen „QUADRIO andocken?“ (Änderungen bleiben im
+   Zwischenstand).
+6. **Herauslösen mit Änderungen:** ATLAS als Tab ändern, ⧉. Erwartet: Frage mit *Speichern*; bei RECTIO nur
+   „RECTIO herauslösen?“.
+7. **Update mit Änderungen:** Liegt ein Update vor, in einem Tab und einem herausgelösten Fenster ändern, Update-Knopf
+   → „Jetzt installieren“. Erwartet: erst die Fragen je App, *Abbrechen* bricht das Update ab; erst nach den Fragen
+   wird geladen und neu gestartet.
+8. **App reagiert nicht:** Schwer nachzustellen; erwartet ist, dass *Speichern* bei einer hängenden App nach etwa
+   3 Sekunden aufgibt und Arkly offen bleibt.
+9. **Neustart:** Eine App herauslösen, Arkly beenden und neu starten. Erwartet: Die App ist wieder als Tab da.
+
 ## Entwicklung
 
 ```bash
