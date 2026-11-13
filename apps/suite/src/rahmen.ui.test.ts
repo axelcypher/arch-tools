@@ -158,7 +158,7 @@ describe('Rahmen-App', () => {
     expect(useRahmen.getState()).toMatchObject({ tabs: ['ordner'], aktiv: 'ordner' });
   });
 
-  it('Tabs per Tastatur: nur der gewählte in der Tab-Reihenfolge, ←/→/Pos1/Ende wechseln sofort, Entf schließt; Zustand im Namen', () => {
+  it('Tabs per Tastatur: nur der gewählte in der Tab-Reihenfolge, ←/→/Pos1/Ende wechseln sofort, Entf schließt; Zustand im Namen', async () => {
     const host = render();
     act(() => useRahmen.getState().oeffnen('grz'));
     act(() => useRahmen.getState().oeffnen('kosten'));
@@ -181,10 +181,22 @@ describe('Rahmen-App', () => {
     act(() => window.dispatchEvent(new MessageEvent('message', { data: { typ: 'arch-tools:status', app: 'NUMIO', name: 'K1', dirty: true }, origin: window.location.origin, source: f.contentWindow })));
     expect(reiter()[1].getAttribute('aria-label')).toBe('NUMIO (Kostenermittlung) – K1, ungespeicherte Änderungen');
     expect(reiter()[1].querySelector('.rahmen-tab-dirty')?.getAttribute('aria-hidden')).toBe('true');
-    // Entf schließt (ohne Änderungen sofort)
+    // Entf schließt (ohne Änderungen sofort); der Fokus geht an den nun gewählten Tab
     reiter()[2].focus();
-    taste('Delete');
-    expect(useRahmen.getState().tabs).toEqual(['grz', 'kosten']);
+    await act(async () => void taste('Delete'));
+    await act(async () => {});
+    expect(useRahmen.getState()).toMatchObject({ tabs: ['grz', 'kosten'], aktiv: 'kosten' });
+    expect(document.activeElement).toBe(reiter()[1]);
+    // Strg+F4 ebenso – bei Änderungen erst die Rückfrage
+    await act(async () => void taste('F4', { ctrlKey: true }));
+    expect(host.querySelector('.modal.rf')?.textContent).toContain('Änderungen an „NUMIO – K1“ speichern?');
+    await act(async () => [...host.querySelector('.modal.rf')!.querySelectorAll('button')].find((b) => b.textContent === 'Nicht speichern')!.click());
+    await act(async () => {});
+    expect(useRahmen.getState().tabs).toEqual(['grz']);
+    // letzter Tab zu: Fokus an „+“
+    reiter()[0].focus();
+    await act(async () => void taste('Delete'));
+    expect(document.activeElement).toBe(host.querySelector('button.rahmen-plus'));
     // ⧉ und × liegen nicht in der Tab-Reihenfolge (Tastatur: Entf, Kontextmenü)
     expect([...host.querySelectorAll<HTMLButtonElement>('.rahmen-tab-knopf')].every((k) => k.tabIndex === -1)).toBe(true);
   });
@@ -222,5 +234,15 @@ describe('Rahmen-App', () => {
     expect(punkte).toEqual(['SchließenEntf', 'Andere schließen']);
     await act(async () => ([...document.querySelectorAll('.menue button')].find((b) => b.textContent === 'Andere schließen') as HTMLButtonElement).click());
     expect(useRahmen.getState()).toMatchObject({ tabs: ['kosten'], aktiv: 'kosten' });
+    // mit Änderungen: Rückfrage, Abbrechen hört auf (der Tab mit Änderungen ist gewählt und bleibt)
+    act(() => useRahmen.getState().oeffnen('grz'));
+    act(() => useRahmen.getState().oeffnen('ava'));
+    act(() => useRahmen.getState().setStatus('grz', { name: 'N1', dirty: true }));
+    act(() => tab(host, 'FABRIO').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 10, clientY: 10 })));
+    await act(async () => ([...document.querySelectorAll('.menue button')].find((b) => b.textContent === 'Andere schließen') as HTMLButtonElement).click());
+    expect(host.querySelector('.modal.rf')?.textContent).toContain('TERRIO – N1');
+    await act(async () => [...host.querySelector('.modal.rf')!.querySelectorAll('button')].find((b) => b.textContent === 'Abbrechen')!.click());
+    await act(async () => {});
+    expect(useRahmen.getState()).toMatchObject({ tabs: ['grz', 'ava'], aktiv: 'grz' });
   });
 });

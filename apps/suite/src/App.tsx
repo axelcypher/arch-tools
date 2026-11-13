@@ -25,6 +25,8 @@ type AppWindow = import('@tauri-apps/api/window').Window;
 /** Kennungen für Tab und Inhalt (aria-controls, aria-labelledby) */
 const tabKennung = (id: string) => `rahmen-tab-${id}`;
 const tafelKennung = (id: string) => `rahmen-tafel-${id}`;
+/** Fokusziel „Knopf +“ (nach dem Schließen des letzten Tabs) */
+const PLUS = '+';
 /** Tauri-Ereignisse (nur Desktop, nachgeladen) */
 const ereignisse = () => import('@tauri-apps/api/event');
 
@@ -36,7 +38,7 @@ const ereignisse = () => import('@tauri-apps/api/event');
  */
 export function App() {
   const desktop = isTauri();
-  const { tabs, aktiv, status, fenster, oeffnen, waehlen, schliessen, setStatus, herausgeloest, angedockt, fensterZu } = useRahmen();
+  const { tabs, aktiv, status, fenster, oeffnen, waehlen, startseite, schliessen, setStatus, herausgeloest, angedockt, fensterZu } = useRahmen();
   const rahmen = useRef(new Map<string, HTMLIFrameElement>());
   /** angedockte Fenster: ihr Schließen gibt keine Sperren mehr frei (die App läuft als Tab weiter) */
   const angedocktGerade = useRef(new Set<string>());
@@ -263,17 +265,25 @@ export function App() {
 
   /** ungespeicherte Änderungen eines Tabs: speichern (in der App), verwerfen oder abbrechen; true = weiter */
   const tabFreigeben = async (id: string): Promise<boolean> => {
-    if (!status[id]?.dirty) return true;
+    // aktueller Stand (auch aus Menüpunkten, die vor einer Meldung gebaut wurden)
+    const s = useRahmen.getState().status[id];
+    if (!s?.dirty) return true;
     const frame = rahmen.current.get(id);
-    return aenderungenSpeichern(`${appInfo(id)?.name}${status[id]?.name ? ` – ${status[id].name}` : ''}`, () => (frame ? speichernImTab(frame, { zeitablauf: antwortetNicht(id) }) : false));
+    return aenderungenSpeichern(`${appInfo(id)?.name}${s.name ? ` – ${s.name}` : ''}`, () => (frame ? speichernImTab(frame, { zeitablauf: antwortetNicht(id) }) : false));
   };
 
-  const tabSchliessen = async (id: string) => {
-    if (status[id]?.dirty && !(await tabFreigeben(id))) return;
+  /**
+   * Tab schließen (mit Rückfrage bei ungespeicherten Änderungen); true = geschlossen. Ohne Änderungen sofort (ohne
+   * await). `danach`: gleich nach dem Schließen, vor dem nächsten Zeichnen (z. B. Fokus festlegen)
+   */
+  const tabSchliessen = async (id: string, danach?: () => void): Promise<boolean> => {
+    if (useRahmen.getState().status[id]?.dirty && !(await tabFreigeben(id))) return false;
     schliessen(id);
+    danach?.();
     // Aufträge, die auf die App warteten, gelten nicht beim nächsten Öffnen
     warteschlange.current.delete(id);
     void sperrenFreigeben(id);
+    return true;
   };
 
   /** ungespeicherte Änderungen eines herausgelösten Fensters: Rückfrage hier, Speichern im Fenster; true = weiter */
@@ -335,7 +345,8 @@ export function App() {
   const fokusTab = useRef<string | null>(null);
   useEffect(() => {
     if (!fokusTab.current) return;
-    document.getElementById(tabKennung(fokusTab.current))?.focus();
+    // letzter Tab zu: an den Knopf „+“ (die Startseite hat keinen Tab)
+    (fokusTab.current === PLUS ? document.querySelector<HTMLElement>('button.rahmen-plus') : document.getElementById(tabKennung(fokusTab.current)))?.focus();
     fokusTab.current = null;
   });
 
@@ -349,7 +360,8 @@ export function App() {
       waehlen(ziel);
     } else if (e.key === 'Delete' || (e.key === 'F4' && e.ctrlKey)) {
       e.preventDefault();
-      void tabSchliessen(id);
+      // der Fokus geht an den nun gewählten Tab (sonst fiele er auf die Seite)
+      void tabSchliessen(id, () => (fokusTab.current = useRahmen.getState().aktiv ?? PLUS));
     }
   };
 
@@ -365,13 +377,11 @@ export function App() {
       `${appInfo(id)?.name}`,
     );
 
+  /** alle anderen Tabs schließen; ein Tab mit Änderungen wird für seine Rückfrage gezeigt, Abbrechen hört auf */
   const andereSchliessen = async (id: string) => {
     for (const t of useRahmen.getState().tabs.filter((x) => x !== id)) {
-      waehlen(t);
-      if (useRahmen.getState().status[t]?.dirty && !(await tabFreigeben(t))) return;
-      schliessen(t);
-      warteschlange.current.delete(t);
-      void sperrenFreigeben(t);
+      if (useRahmen.getState().status[t]?.dirty) waehlen(t);
+      if (!(await tabSchliessen(t))) return;
     }
     waehlen(id);
   };
@@ -385,7 +395,7 @@ export function App() {
       ...(zu.length
         ? zu.map((a): MenuePunkt => ({ text: `${a.name} – ${a.was}`, bild: `apps/${a.id}/favicon.svg`, hinweis: fenster.includes(a.id) ? 'eigenes Fenster' : undefined, titel: a.text, aktion: () => void oeffnenOderZeigen(a.id) }))
         : [{ text: 'Alle Apps sind geöffnet', deaktiviert: true }]),
-      ...(aktiv ? [{ trenner: true } as const, { text: 'Startseite', titel: 'Alle Apps im Überblick', aktion: () => useRahmen.setState({ aktiv: null }) }] : []),
+      ...(aktiv ? [{ trenner: true } as const, { text: 'Startseite', titel: 'Alle Apps im Überblick', aktion: startseite }] : []),
     ];
   };
 

@@ -233,6 +233,16 @@ describe('Rahmen-App auf dem Desktop', () => {
     expect(fenster.haupt!.destroy).toHaveBeenCalled();
   });
 
+  it('Kontextmenü am Tab: „In eigenem Fenster öffnen“ löst heraus', async () => {
+    const host = await render();
+    act(() => useRahmen.getState().oeffnen('entzerrung'));
+    act(() => tab(host, 'RECTIO').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 10, clientY: 10 })));
+    await act(async () => ([...document.querySelectorAll('.menue button')].find((b) => b.textContent?.includes('In eigenem Fenster öffnen')) as HTMLButtonElement).click());
+    await act(async () => {});
+    expect(useRahmen.getState()).toMatchObject({ tabs: [], fenster: ['entzerrung'] });
+    expect(fenster.offen.has('app-entzerrung')).toBe(true);
+  });
+
   it('Update: vor der Installation dieselben Rückfragen; Abbrechen verhindert sie', async () => {
     const host = await render();
     act(() => useRahmen.getState().oeffnen('grz'));
