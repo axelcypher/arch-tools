@@ -7,7 +7,7 @@ import type { Platzhalter } from '../nummer';
  * Eingabe eines Namensschemas (P-06): Platzhalter-Chips wie in allen Apps (global und lokal unterscheidbar; ein Klick
  * setzt den Platzhalter an der Schreibmarke ein), Vorschau schon beim Tippen, sofortige Markierung unbekannter
  * Platzhalter und Hinweis auf alte Namen („Vorlage anpassen“). Übernommen wird – wie in den übrigen Feldern – beim
- * Verlassen des Feldes bzw. mit Enter; Esc verwirft die Eingabe.
+ * Verlassen des Feldes bzw. mit Enter (der Fokus bleibt dabei im Feld); Esc verwirft die Eingabe.
  */
 export function SchemaFeld({
   value,
@@ -62,7 +62,8 @@ export function SchemaFeld({
           onChange={(e) => setText(e.target.value)}
           onBlur={() => uebernehmen()}
           onKeyDown={(e) => {
-            if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+            // Enter übernimmt den Wert – der Fokus bleibt im Feld (sonst begänne das nächste Tab wieder oben)
+            if (e.key === 'Enter') uebernehmen();
             if (e.key === 'Escape') {
               e.stopPropagation();
               textRef.current = value;
