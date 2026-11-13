@@ -99,7 +99,7 @@ const WERTE: Record<string, (string | undefined)[]> = {
 /**
  * Volle Matrizen (mehrere Minuten Rechenzeit, ohne Netz) nur in der CI (GitHub Actions setzt CI=true) oder mit VOLL=1.
  * Sonst – lokal, in Cloud-Sitzungen – eine feste Stichprobe, damit das Projekt in unter einer Minute durch ist statt
- * über zehn Minuten ohne Ausgabe zu laufen. Volle Prüfung lokal: VOLL=1 npx vitest run --project regeln (etwa 12 min)
+ * über zehn Minuten ohne Ausgabe zu laufen. Volle Prüfung lokal: VOLL=1 npx vitest run --project regeln (etwa 15 min)
  */
 const VOLL = !!process.env.CI || !!process.env.VOLL;
 /** Zeitgrenze der großen Matrizen: voll großzügig (Windows-Runner), mit Stichprobe knapp – nichts läuft still minutenlang */
@@ -327,10 +327,34 @@ describe('neue Merkmalwerte (Erweiterung, Wohn- und Geschäftshaus)', () => {
   });
 });
 
+/** Auslöser einer Frage (Angaben im `wenn` einer anderen Angabe, auch über Bausteine) → die Angaben, deren Frage sie auslösen */
+const AUSLOESER: ReadonlyMap<string, ReadonlySet<string>> = (() => {
+  const out = new Map<string, Set<string>>();
+  const bausteine: Record<string, unknown> = Object.assign({}, ...aktiveModule(paket.module, SOEST).map((m) => m.bausteine ?? {}));
+  for (const [id, d] of Object.entries(faktDefinitionen(aktiveModule(paket.module, SOEST)))) {
+    const besucht = new Set<string>();
+    const lauf = (k: unknown): void => {
+      if (Array.isArray(k)) k.forEach(lauf);
+      else if (k && typeof k === 'object') {
+        const o = k as Record<string, unknown>;
+        if (typeof o.f === 'string' && o.f !== id) out.set(o.f, (out.get(o.f) ?? new Set()).add(id));
+        if (typeof o.$ === 'string' && !besucht.has(o.$)) {
+          besucht.add(o.$);
+          lauf(bausteine[o.$]);
+        }
+        Object.values(o).forEach(lauf);
+      }
+    };
+    lauf(d.wenn);
+  }
+  return out;
+})();
+
 describe('Fallmatrix', () => {
   // nur voll sinnvoll: „Herabstufen“ und „Text“ prüfen je Paragraf den ersten grünen Fall – eine Stichprobe prüfte andere
   // Fälle als die CI und deckte nicht dasselbe ab
-  it.runIf(VOLL)('kein falsches Grün: Ergänzen, Herabstufen, Text, Begründung', { timeout: MATRIX_ZEIT }, () => {
+  // voll etwa 8 min (Auslöser je Satz tragender Antworten) – deshalb die lange Zeitgrenze
+  it.runIf(VOLL)('kein falsches Grün: Ergänzen, Herabstufen, Text, Begründung', { timeout: MATRIX_ZEIT_LANG }, () => {
     const fehler: string[] = [];
     const melde = (t: string) => {
       if (fehler.length < 40) fehler.push(t);
@@ -374,8 +398,13 @@ describe('Fallmatrix', () => {
       //    grün sein – sonst wurde der Hinweis wie eine gesicherte Angabe behandelt (je Paragraf und Fakt einmal)
       for (const { m, p, ref } of gruen) {
         for (const v of [...new Set([...p.verwendet, ...ref])]) {
-          if (v.includes(':') || !lauf.fakten[v] || geprueftHerab.has(`${p.id}|${v}`)) continue;
-          geprueftHerab.add(`${p.id}|${v}`);
+          // je Paragraf und Fakt einmal; ist der Fakt Auslöser einer Frage, deren Antwort das Grün mitträgt, dagegen je Satz
+          // solcher Antworten: Über eine Rückfrage kann ein Hinweis auf einem anderen Pfad ein Grün tragen (Befund: Umfang
+          // der Beseitigung nur Hinweis → „Altbau verfahrensfrei“ gestellt → § 74 BauO NRW grün)
+          const abh = p.verwendet.filter((x) => AUSLOESER.get(v)?.has(x)).sort();
+          const pfad = abh.length ? `${p.id}|${v}|${abh.join(',')}` : `${p.id}|${v}`;
+          if (v.includes(':') || !lauf.fakten[v] || geprueftHerab.has(pfad)) continue;
+          geprueftHerab.add(pfad);
           const alsHinweis = { ...lauf.fakten, [v]: { ...lauf.fakten[v], sicherheit: 'hinweis' as const, grund: 'Test' } };
           // „unbekannt“ ausdrücklich (leerer Wert von Hand) – sonst spränge eine Tabelle des Moduls mit anderem Wert ein
           const ohne = { ...lauf.fakten, [v]: { wert: null, herkunft: 'manuell' as const, sicherheit: 'sicher' as const } };
@@ -2352,6 +2381,51 @@ describe('Fälle aus dem Fachreview', () => {
   });
 });
 
+
+describe('Hinweise tragen kein Grün über gestellte Fragen', () => {
+  // Befund der Fallmatrix: Ist der Umfang der Beseitigung nur Hinweis („Abbruch mit Ersatzbau“), wird „Altbau
+  // verfahrensfrei“ gestellt – die Antwort darauf hob § 74 BauO NRW und §§ 1, 2, 15 BauPrüfVO auf „entfällt“, obwohl
+  // ohne den Umfang „prüfen“ gälte. Eine Antwort auf eine nur über Hinweise gestellte Frage bleibt beantwortet; Regeln,
+  // die sie verwenden, zählen den auslösenden Hinweis als nicht gesichert (bestätigt wird der Auslöser).
+  const m = { Vorhaben: 'Beseitigung', Gebäudeart: 'Einfamilienhaus', Gebäudeklasse: '1', Planungsrecht: 'Bebauungsplan', Verfahren: 'verfahrensfrei' };
+  const IDS = ['nw/bauo-nrw/74', 'nw/baupruefvo/1', 'nw/baupruefvo/2', 'nw/baupruefvo/15'];
+  const v = 'vorhaben.beseitigung_umfang';
+  const ampelnBei = (f: Record<string, FaktWert>) => {
+    const a = auswerten(eingabe(m, f, TEXTE));
+    return Object.fromEntries(IDS.map((id) => [id, a.paragrafen.find((p) => p.id === id)!.automatisch]));
+  };
+
+  it('Umfang nur als Hinweis: § 74 BauO NRW, §§ 1, 2, 15 BauPrüfVO „prüfen“, nicht „entfällt“; gesichert bleibt es „entfällt“', () => {
+    const f = alleFakten('ja');
+    expect(f[v]?.wert).toBe('Abbruch mit Ersatzbau');
+    // die Fallmatrix prüft den Umfang als Auslöser einer Frage je grünem Pfad (über den Baustein „ersatzbau“)
+    expect(AUSLOESER.get(v)?.has('nw.altbau_verfahrensfrei')).toBe(true);
+    const alle = (ampel: string) => Object.fromEntries(IDS.map((id) => [id, ampel]));
+    expect(ampelnBei(f)).toEqual(alle('gruen'));
+    expect(ampelnBei({ ...f, [v]: { ...f[v], sicherheit: 'hinweis', grund: 'aus dem Formular' } })).toEqual(alle('gelb'));
+    expect(ampelnBei({ ...f, [v]: { wert: null, herkunft: 'manuell', sicherheit: 'sicher' } })).toEqual(alle('gelb'));
+    // der bestätigte Hinweis zählt wieder wie eine gesicherte Angabe
+    expect(ampelnBei({ ...f, [v]: { ...f[v], sicherheit: 'hinweis', bestaetigt: { von: 'TP', am: '2026-11-13', grund: 'Abbruchantrag' } } })).toEqual(alle('gruen'));
+  });
+
+  it('die Antwort bleibt gesichert (beantwortet) und trägt den Auslöser; Paragraf nennt und bestätigt den Umfang, nicht die Antwort', () => {
+    const f = alleFakten('ja');
+    const umfangHinweis = { ...f, [v]: { ...f[v], sicherheit: 'hinweis' as const } };
+    const a = auswerten(eingabe(m, umfangHinweis, TEXTE));
+    expect(a.fakten['nw.altbau_verfahrensfrei']).toMatchObject({ wert: true, sicherheit: 'sicher', ueberHinweis: [v] });
+    for (const id of IDS) {
+      const p = a.paragrafen.find((x) => x.id === id)!;
+      expect(p.unsicher, id).toEqual([v]);
+      expect(p.bestaetigend, id).toBe(v);
+      expect(p.gruende.join(' '), id).toMatch(/Nur Hinweis, nicht gesichert: Umfang der Beseitigung/);
+    }
+    // die Antwort selbst zu „bestätigen“ bringt das Grün nicht zurück – der Umfang ist weiter nur Hinweis
+    const altbauBestaetigt = { ...umfangHinweis, 'nw.altbau_verfahrensfrei': { ...f['nw.altbau_verfahrensfrei'], bestaetigt: { von: 'TP', am: '2026-11-13' } } };
+    expect(ampelnBei(altbauBestaetigt)).toEqual(Object.fromEntries(IDS.map((id) => [id, 'gelb'])));
+    // gesichert: keine Markierung
+    expect(auswerten(eingabe(m, f, TEXTE)).fakten['nw.altbau_verfahrensfrei'].ueberHinweis).toBeUndefined();
+  });
+});
 
 describe('Werkzeuge', () => {
   it('index-pruefen: Laufnummer genau, keine mitgelieferte Signatur, Dateien wie im Repo', () => {

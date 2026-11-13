@@ -48,7 +48,8 @@ export function angabeVonHand(alt: FaktWert | undefined, id: string, wert: FaktW
  * bestimmt) – die Bestätigung löscht ihn nicht.
  */
 export function hinweisBestaetigen(wert: FaktWert, o: AngabeOptionen & { grund: string }): FaktWert {
-  const { widerspruch: _w, bestaetigt: _b, ...ohne } = wert;
+  // ueberHinweis gehört nur zur Auswertung (der Wert kommt oft von dort) – nie in die Projektdatei
+  const { widerspruch: _w, bestaetigt: _b, ueberHinweis: _u, ...ohne } = wert;
   const f: FaktWert = o.lage === null ? { ...ohne, grund: OHNE_LAGE } : { ...ohne, bestaetigt: { von: o.von, am: o.heute, grund: o.grund.trim(), ...(o.lage ? { lage: o.lage } : {}) } };
   return wert.dienst ? mitDienst(f, wert.dienst) : f;
 }
