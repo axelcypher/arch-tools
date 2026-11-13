@@ -244,17 +244,21 @@ mit `text`, optional `symbol`, `hinweis` (rechts, z. B. der Grund einer Sperre),
 
 ## Listen
 
-- Hinzufügen-Knöpfe mit `<Symbol name="plus" />` und dem Gegenstand als Text, ohne „+“ als Schriftzeichen. Das Verb
-  heißt immer „hinzufügen“ (nicht „anlegen“, „neu“ oder „einfügen“). In Leisten knapp nur der Gegenstand („Position“,
-  „Abschnitt“), dann mit `title` und `aria-label` der vollen Aktion („Position hinzufügen“); sonst gleich mit Verb
-  („Merkmal hinzufügen“). Öffnet der Knopf einen Dialog oder eine Rückfrage, endet er auf „ …“ („Geschoss …“).
+- Hinzufügen-Knöpfe mit `<Symbol name="plus" />` und dem Gegenstand als Text, ohne „+“ als Schriftzeichen. Für
+  Einträge einer Liste (Positionen, Punkte, Firmen, Merkmale) heißt das Verb „hinzufügen“, nicht „neu“ oder „einfügen“.
+  Eigenständige Gegenstände wie Projekt, Formular, Ordner oder Datei bleiben bei „Neu“ bzw. „anlegen“ (siehe
+  „Begriffe“), ebenfalls mit Symbol `plus` („Neues Projekt anlegen …“). In Leisten knapp nur der Gegenstand
+  („Position“, „Abschnitt“), dann mit `title` und `aria-label` der vollen Aktion („Position hinzufügen“); sonst gleich
+  mit Verb („Merkmal hinzufügen“). Öffnet der Knopf einen Dialog oder eine Rückfrage, endet er auf „ …“
+  („Geschoss …“). Rechenzeichen in Summenzeilen („+ 19 % USt.“) sind keine Knöpfe und bleiben.
 - In Auswahllisten (`<option>`) geht kein Symbol: dort als Platzhalter „Firma hinzufügen …“ – mit „ …“, weil die
   eigentliche Wahl erst folgt (Ausnahme zu „Begriffe“).
 - Hinweistexte nennen den Knopf so, wie er heißt: „mit ‚Abschnitt‘ beginnen“.
-- Einträge eines Menüs „Hinzufügen“ (`MenueKnopf`) tragen nur den Gegenstand („Hinweis“, „Vorbemerkung“), ohne „+“
-  und ohne eigenes Symbol – das Plus steht am Menüknopf.
+- Ein Menüknopf, der verschiedene Einträge hinzufügt, heißt „Hinzufügen“ mit `<Symbol name="plus" />`; seine Punkte
+  tragen nur den Gegenstand („Hinweis“, „Vorbemerkung“, „Aus Vorlage …“), ohne „+“ und ohne eigenes Symbol.
 - Gliederungsebenen (einrücken, ausrücken) mit `einruecken` und `ausruecken` – nicht mit Schriftzeichen wie ⇤/⇥ und
-  nicht mit `pfeilLinks`/`pfeilRechts`, die sich wie Zurück und Weiter lesen. Umsortieren mit `nachOben`/`nachUnten`, Zeilenaktionen mit `mehr`.
+  nicht mit `pfeilLinks`/`pfeilRechts`, die sich wie Zurück und Weiter lesen. Umsortieren mit `nachOben`/`nachUnten`,
+  Zeilenaktionen mit `mehr`.
 - Symbolknöpfe ohne Text (in Zeilen wie in Leisten) brauchen `aria-label` und `title` mit Gegenstand („Position
   einrücken“).
 

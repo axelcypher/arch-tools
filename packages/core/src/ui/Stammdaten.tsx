@@ -5,6 +5,7 @@ import { Field, NumberField, TextField } from './fields';
 import type { Pruefung } from './pruefen';
 import { alle, email, ordnername, plz } from './pruefen';
 import { useEscSchliessen } from './Dialog';
+import { Symbol } from './Symbol';
 import { abfragbar, adresseSchluessel, geokodierungMoeglich, koordinatenFuerQgis, koordinatenVeraltet, mitKoordinaten, QUELLE } from '../platform/geokodierung';
 
 /**
@@ -370,8 +371,13 @@ export function StammdatenFelder({
             </table>
           )}
           <div className="button-row sd-beteiligte-knoepfe">
-            <button className="small" onClick={() => onChange({ ...meta, beteiligte: [...beteiligte, { rolle: '', name: '', kontakt: '' }] })}>
-              + Beteiligter
+            <button
+              className="small"
+              title="Beteiligten hinzufügen"
+              aria-label="Beteiligten hinzufügen"
+              onClick={() => onChange({ ...meta, beteiligte: [...beteiligte, { rolle: '', name: '', kontakt: '' }] })}
+            >
+              <Symbol name="plus" /> Beteiligter
             </button>
             {rollenSchnell && (
               <span className="sd-rollen-schnell" role="group" aria-label="Beteiligte nach Rolle hinzufügen">

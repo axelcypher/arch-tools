@@ -9,3 +9,4 @@ sich auf den Stand beim Eintragen.
 - Tastenkürzel in Menüs von `hinweis` auf `tasten` umstellen: `App.tsx` (Strg+E)
 - eigene Menüs prüfen: Gefahr-Punkte (Löschen) ans Ende, abgesetzt durch einen Trenner
 - „Im Explorer öffnen“ → „Ordner öffnen“: `Seitenleiste.tsx`, `AblageBaum.tsx` (zwei Menüpunkte und ein `title`)
+- `AnsichtEditor` (core, Pflege bei PERMIO): „+ Abschnitt“ durch `<Symbol name="plus" />` mit „Abschnitt“ und `title`/`aria-label` „Abschnitt hinzufügen“ ersetzen: `packages/core/src/ui/AnsichtEditor.tsx`

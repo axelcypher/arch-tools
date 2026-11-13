@@ -158,7 +158,7 @@ describe('ATLAS (Projektordner)', () => {
     // Beteiligte: eigener Schritt, typische Rollen mit einem Klick
     weiter(host);
     expect(host.querySelector('h2')?.textContent).toBe('Beteiligte');
-    act(() => knopf(host, '+ Beteiligter').click());
+    act(() => knopf(host, 'Beteiligter').click());
     eingabe(host.querySelector('.sd-beteiligte input') as HTMLInputElement, 'Tragwerk');
     expect(useOrdner.getState().stamm.beteiligte).toEqual([{ rolle: 'Tragwerk', name: '', kontakt: '' }]);
     act(() => knopf(host, '+ Vermessung (ÖbVI)').click());

@@ -54,7 +54,11 @@ describe('Stammdaten-Dialog', () => {
     eingabe(feld(host, 'Name bzw. Firma'), 'Mustermann');
     eingabe(feld(host, 'E-Mail'), 'a@example.org, b@example.org');
     act(() => ([...host.querySelectorAll('.sd-lph input')][3] as HTMLInputElement).click());
-    act(() => knopf(host, '+ Beteiligter').click());
+    const hinzu = knopf(host, 'Beteiligter');
+    expect(hinzu.querySelector('svg.symbol')).not.toBeNull();
+    expect(hinzu.textContent).not.toContain('+');
+    expect(hinzu.getAttribute('aria-label')).toBe('Beteiligten hinzufügen');
+    act(() => hinzu.click());
     eingabe(host.querySelector('.sd-beteiligte input') as HTMLInputElement, 'Tragwerk');
     await act(async () => knopf(host, 'Projektdatei anlegen').click());
     expect(gespeichert).toHaveBeenCalledTimes(1);
