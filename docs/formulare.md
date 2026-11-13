@@ -971,7 +971,12 @@ Programm öffnen“). Bearbeitet wird so, dass alles, was nicht geändert wurde,
   zusammen stimmt: Speichern samt Warteschlange, Formular umbenennen mit der Projektdatei, Formular anlegen und
   aufnehmen, PDF-Export mit Verknüpfung. Offene Rückfragen und Lesen gelten nicht als Schreiben; es wird nur gewartet,
   nichts zusätzlich geschrieben. Ist ein abgewartetes Schreiben gescheitert, meldet die App das (Grund im Protokoll),
-  und Arkly fragt, statt still zu schließen.
+  und Arkly fragt, statt still zu schließen. Ein gescheitertes Speichern eines Stands (Formular, Dokument,
+  Projektkarte, Projektdatei; `standSpeichern`) bleibt gemerkt, bis dieselbe Datei erfolgreich gespeichert ist – auch
+  nach „Erneut versuchen“ oder beim Schließen lange nach dem Fehler fragt Arkly also weiter. Wird die Datei umbenannt,
+  wandert der Merker mit, wird sie gelöscht, entfällt er; Verwerfen löscht ihn nicht („Trotzdem schließen“ bleibt
+  möglich). Einmalige Aktionen (PDF-Export, Anlegen, Kopieren, Umbenennen, Löschen, Sperren) melden ihren Fehler sofort
+  und zählen nur, solange sie abgewartet werden.
 
 ### Sperren
 
@@ -997,6 +1002,15 @@ genauso:
   nur, wenn die Datei noch genau den angezeigten Inhalt hat.
 - **Übersicht** (🔒 über den Formularen): alle Sperrdateien des Projekts, auch solche ohne Formular, mit
   Bewertung und „Aufheben …“.
+
+### Bekannte Grenzen
+
+- **Außerhalb geändert:** Vor dem Speichern eines Formulars bzw. Dokuments liest die App die Datei frisch und schreibt
+  nicht, wenn sie sich seit dem Öffnen geändert hat. Zwischen diesem Vergleich und dem Ersetzen liegt aber ein kurzes
+  Zeitfenster ohne Standprüfung (anders als bei der Projektdatei): eine Änderung genau dann würde überschrieben. Die
+  vorige Fassung bleibt als Sicherungskopie im App-Ordner.
+- **Projektkarte:** geschrieben werden nur die geänderten Einträge; hat jemand anderes inzwischen denselben Eintrag
+  geändert, gewinnt ohne Rückfrage, wer zuletzt speichert.
 
 ### Einstellungen sichern und übertragen
 

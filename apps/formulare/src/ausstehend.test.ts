@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { schliessenVorbereiten } from '@core/platform/rahmen';
-import { ausstehendAbwarten, klammer, laufendeSchreibvorgaenge, mitVerfolgung, verfolgen, vorDemSchliessenAnmelden } from './ausstehend';
+import { ausstehendAbwarten, gescheitertVergessen, klammer, laufendeSchreibvorgaenge, mitVerfolgung, standSpeichern, verfolgen, vorDemSchliessenAnmelden } from './ausstehend';
+import { createProject } from '@core/model';
+import { writeArchive } from '@core/archive';
+import { projektdateiSchreiben } from '@core/platform/projektordner';
 import { SpeicherDateisystem } from './dateisystem';
 
 /** Promise, das sich von außen erfüllen bzw. zurückweisen lässt */
@@ -15,6 +18,7 @@ const tick = () => new Promise((r) => setTimeout(r, 0));
 // die Menge ist modulweit: nach jedem Test muss sie leer sein (sonst warteten folgende Tests auf Fremdes)
 afterEach(() => {
   expect(laufendeSchreibvorgaenge()).toBe(0);
+  gescheitertVergessen();
 });
 
 describe('laufende Schreibvorgänge vor dem Schließen', () => {
@@ -154,5 +158,117 @@ describe('laufende Schreibvorgänge vor dem Schließen', () => {
     // gescheitertes Schreiben verlässt die Menge ebenso
     await expect(ds.dokumentAnlegen('C:/P', 'a.pdf', new Uint8Array([3]))).rejects.toThrow();
     await tick();
+  });
+  it('gescheitertes Speichern eines Stands bleibt gemerkt: weiter false, bis dieselbe Datei gelingt (Vertrag von vorDemSchliessen)', async () => {
+    const roh = new SpeicherDateisystem();
+    const ds = mitVerfolgung(roh);
+    const speichern = (pfad: string) => standSpeichern('C:/F', pfad, ds.ersetze('C:/F', pfad, new Uint8Array([1])));
+    // Formular gibt es (noch) nicht: Speichern scheitert
+    await expect(speichern('a.frmsjf')).rejects.toThrow('nicht gefunden');
+    await tick();
+    expect(laufendeSchreibvorgaenge()).toBe(0);
+    // Schließen lange nach dem Fehler bzw. „Erneut versuchen“ ohne neues Speichern: weiter false
+    expect(await ausstehendAbwarten()).toBe(false);
+    expect(await ausstehendAbwarten()).toBe(false);
+    // Gegenprobe: eine andere Datei gelingt – die gescheiterte bleibt offen
+    roh.dateien.set('C:/F/b.frmsjf', new Uint8Array([0]));
+    await speichern('b.frmsjf');
+    await tick();
+    expect(await ausstehendAbwarten()).toBe(false);
+    // dieselbe Datei gelingt: gespeichert, true
+    roh.dateien.set('C:/F/a.frmsjf', new Uint8Array([0]));
+    await speichern('a.frmsjf');
+    await tick();
+    expect(await ausstehendAbwarten()).toBe(true);
+  });
+
+  it('beim Rahmen angemeldet: nach gescheitertem Speichern bleibt es „fehler“, nach gelungenem „fertig“', async () => {
+    const abmelden = vorDemSchliessenAnmelden();
+    try {
+      const roh = new SpeicherDateisystem();
+      const ds = mitVerfolgung(roh);
+      const speichern = () => standSpeichern('C:/P', 'liste.xlsx', ds.dokumentErsetzen('C:/P', 'liste.xlsx', new Uint8Array([1])));
+      await expect(speichern()).rejects.toThrow();
+      await tick();
+      expect(await schliessenVorbereiten(2000)).toBe('fehler');
+      expect(await schliessenVorbereiten(2000)).toBe('fehler');
+      roh.dateien.set('C:/P/liste.xlsx', new Uint8Array([0]));
+      await speichern();
+      await tick();
+      expect(await schliessenVorbereiten(2000)).toBe('fertig');
+    } finally {
+      abmelden();
+    }
+  });
+
+  it('einmalige Aktionen (PDF-Export ersetzt eine Datei, anlegen) zählen nur, solange sie abgewartet werden – kein bleibender Fehler', async () => {
+    const ds = mitVerfolgung(new SpeicherDateisystem());
+    // Export: dokumentErsetzen ohne standSpeichern (z. B. PDF im Reader gesperrt bzw. nicht vorhanden)
+    await expect(ds.dokumentErsetzen('C:/P', 'Export.pdf', new Uint8Array([1]))).rejects.toThrow();
+    await ds.dokumentAnlegen('C:/P', 'a.pdf', new Uint8Array([1]));
+    await expect(ds.dokumentAnlegen('C:/P', 'a.pdf', new Uint8Array([2]))).rejects.toThrow();
+    await tick();
+    expect(await ausstehendAbwarten()).toBe(true);
+  });
+
+  it('umbenannt wandert der Merker mit, gelöscht entfällt er', async () => {
+    const roh = new SpeicherDateisystem();
+    const ds = mitVerfolgung(roh);
+    const scheitern = (pfad: string) => standSpeichern('C:/F', pfad, Promise.reject(new Error('Netzlaufwerk weg'))).catch(() => undefined);
+    roh.dateien.set('C:/F/alt.pdf', new Uint8Array([0]));
+    await scheitern('alt.pdf');
+    await ds.umbenennen('C:/F', 'alt.pdf', 'neu.pdf');
+    await tick();
+    expect(await ausstehendAbwarten()).toBe(false);
+    // unter dem neuen Namen gespeichert: erledigt (der alte Name hängt nicht mehr)
+    await standSpeichern('C:/F', 'neu.pdf', ds.dokumentErsetzen('C:/F', 'neu.pdf', new Uint8Array([1])));
+    await tick();
+    expect(await ausstehendAbwarten()).toBe(true);
+    // gelöscht: nichts mehr zu speichern
+    await scheitern('neu.pdf');
+    expect(await ausstehendAbwarten()).toBe(false);
+    await ds.loeschen('C:/F', 'neu.pdf');
+    await tick();
+    expect(await ausstehendAbwarten()).toBe(true);
+    // Gegenprobe: gescheitertes Umbenennen lässt den Merker am alten Namen
+    roh.dateien.set('C:/F/x.pdf', new Uint8Array([0]));
+    await scheitern('x.pdf');
+    await expect(ds.umbenennen('C:/F', 'fehlt.pdf', 'y.pdf')).rejects.toThrow();
+    await tick();
+    expect(await ausstehendAbwarten()).toBe(false);
+    // Projektordner meldet „nichts umbenannt“ (false, Ziel vorhanden): der Merker bleibt am alten Namen
+    const po = { umbenennen: async () => false } as unknown as typeof roh.projektordner;
+    const ds2 = mitVerfolgung(Object.assign(Object.create(roh) as SpeicherDateisystem, { projektordner: po }));
+    expect(await ds2.projektordner.umbenennen!('C:/F', 'x.pdf', 'z.pdf')).toBe(false);
+    await tick();
+    await standSpeichern('C:/F', 'z.pdf', Promise.resolve());
+    expect(await ausstehendAbwarten()).toBe(false);
+  });
+
+  it('Projektdatei „inzwischen geändert“, zweiter Versuch gelingt (projektdateiSchreiben): danach ist nichts offen', async () => {
+    const roh = new SpeicherDateisystem();
+    const ds = mitVerfolgung(roh);
+    roh.dateien.set('C:/P/Projekt.oap', writeArchive(createProject('Muster')));
+    // beim ersten Ersetzen hat „jemand anderes“ die Datei eben geändert: Konflikt, neu lesen, zweiter Versuch
+    let versuche = 0;
+    const po = new Proxy(ds.projektordner, {
+      get(t, k) {
+        const w = Reflect.get(t, k) as unknown;
+        if (k !== 'projektdateiErsetzen') return w;
+        return (root: string, pfad: string, daten: Uint8Array, stand: { groesse: number; geaendert: number }) => {
+          if (++versuche === 1) roh.beruehren('C:/P/Projekt.oap');
+          return (w as typeof t.projektdateiErsetzen)(root, pfad, daten, stand);
+        };
+      },
+    });
+    const geschrieben = await standSpeichern(
+      'C:/P',
+      'Projekt.oap',
+      projektdateiSchreiben(po, 'C:/P', 'Projekt.oap', (roh2) => ({ ...roh2, notiz: 'neu' })),
+    );
+    await tick();
+    expect(geschrieben).toBe(true);
+    expect(versuche).toBe(2);
+    expect(await ausstehendAbwarten()).toBe(true);
   });
 });
