@@ -1,43 +1,56 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import type { KeyboardEvent } from 'react';
 import type { AreaTotals } from '@core/calc';
 import { computeProject } from '@core/calc';
 import { briKoerper, briRechenweg } from '@core/rechenweg';
 import { fmt2 } from '@core/format';
-import { MASSGRUNDLAGEN, NUF_IDS, nutzungInfo, WOFL_KATEGORIEN } from '@core/norms';
+import { NUF_IDS, nutzungInfo, WOFL_KATEGORIEN, ZWEITE_BV_KURZ, ZWEITE_BV_TEXT } from '@core/norms';
 import { polygonArea } from '@core/geometry';
 import { druckenAls } from '@core/platform/projektDatei';
 import { useEditor } from '../store/store';
 import { PlanFigure } from './PlanFigure';
 import { raumRechenweg, rechenwegText } from '../core/raumRechenweg';
-import { kontrollText } from '../core/background';
+import { gueltigesKontrollmass, kontrollText } from '../core/background';
 import { useEscSchliessen } from '@core/ui/Dialog';
 import { DruckKopf } from '@core/ui/DruckKopf';
 import type { Abschnitt, BerichtEinstellung, BerichtVorlage } from '../core/bericht';
-import { ABSCHNITTE, berichtEinstellung, berichtPlan, statistik, STATISTIK_MIN_RAUM, VORLAGEN } from '../core/bericht';
+import { ABSCHNITTE, berichtEinstellung, berichtPlan, messverfahren, planungsunterlagen, statistik, STATISTIK_MIN_RAUM, VORLAGEN } from '../core/bericht';
 
 /** Druckbare Flächenaufstellung (DIN 277 / WoFlV). */
 export function Report() {
   const project = useEditor((s) => s.project);
   const setOpen = useEditor((s) => s.setReportOpen);
   useEscSchliessen(() => setOpen(false));
+  // Bildschirmansicht als Dialog: Fokus beim Öffnen auf „Schließen“, beim Schließen zurück; Tab bleibt im Bericht
+  const berichtRef = useRef<HTMLDivElement>(null);
+  const schliessenRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    const vorher = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    schliessenRef.current?.focus();
+    return () => {
+      if (vorher?.isConnected) vorher.focus();
+    };
+  }, []);
   const r = useMemo(() => computeProject(project), [project]);
   const rechenweg = useMemo(() => briRechenweg(project), [project]);
   const fussnoten = useMemo(() => briKoerper(project).filter((k) => k.bemerkung), [project]);
   // Putzabzug sichtbar machen (FR-05): Rohfläche und Abzug je Raum, nur wenn ein Raum einen Abzug hat
   const raumById = useMemo(() => new Map(project.storeys.flatMap((s) => s.shapes.flatMap((x) => (x.kind === 'room' ? [[x.id, x] as const] : [])))), [project]);
   const mitPutz = [...raumById.values()].some((x) => (x.putzabzug ?? 0) > 0);
-  const massText = MASSGRUNDLAGEN.find((m) => m.id === project.settings.massgrundlage)?.text;
+  // Messverfahren und Planungsunterlagen (DIN 277:2021-08, 5.1)
+  const massText = messverfahren(project) || undefined;
+  const unterlagen = planungsunterlagen(project);
   // Maßgrundlage aus dem Plan (F-16): Kontrollmaß je kalibriertem Geschoss
   const kontrollZeilen = project.storeys.flatMap((s) => {
-    const k = project.settings.kontrollmasse?.[s.id];
-    return k && s.background ? [`${s.name}: ${kontrollText(k)}`] : [];
+    const k = gueltigesKontrollmass(project, s);
+    return k ? [`${s.name}: ${kontrollText(k)}`] : [];
   });
   const [showPlans, setShowPlans] = useState(true);
   const [showBackground, setShowBackground] = useState(false);
   const [showRechenweg, setShowRechenweg] = useState(false);
   // Vorlage und Abschnitte (F-17) – im Projekt gemerkt
   const einstellung = berichtEinstellung(project.settings.bericht);
-  const plan = berichtPlan(einstellung, r);
+  const plan = berichtPlan(einstellung, r, project);
   const zeigt = (a: Abschnitt) => plan.abschnitte.includes(a);
   const setEinstellung = (e: BerichtEinstellung) => useEditor.getState().update((p) => ({ ...p, settings: { ...p.settings, bericht: e } }));
   const stat = useMemo(() => statistik(r), [r]);
@@ -79,7 +92,7 @@ export function Report() {
 
   return (
     <div className="report-backdrop">
-      <div className="report">
+      <div className="report" ref={berichtRef} role="dialog" aria-modal="true" aria-label="Flächenaufstellung" onKeyDown={(e) => fokusImBericht(e, berichtRef.current)}>
         <div className="report-actions no-print">
           <label className="toggle">
             Vorlage
@@ -122,7 +135,7 @@ export function Report() {
             Rechenweg je Raum
           </label>
           <button onClick={() => druckenAls({ datei: useEditor.getState().datei, projektName: project.name, zusatz: 'WoFl+BGF+BRI' })}>Drucken / PDF</button>
-          <button className="primary" onClick={() => setOpen(false)}>
+          <button className="primary" ref={schliessenRef} onClick={() => setOpen(false)}>
             Schließen
           </button>
         </div>
@@ -132,9 +145,17 @@ export function Report() {
           project={project}
           zusatz={
             <p className="druck-kopf-normen">
-              Grundflächen und Rauminhalte nach DIN 277:2021-08 (BRI entspricht DIN 277-1:2016-01, § 6 BauPrüfVO NRW)
-              {zeigt('wofl') ? (project.settings.zweiteBV ? ' · Wohnfläche als Altberechnung nach II. BV (nur Vergleich)' : ' · Wohnfläche nach WoFlV vom 25.11.2003') : ''}
-              {massText ? ` · Maßgrundlage: ${massText}` : mitPutz ? ' · Putzabzug je Raum' : ''}
+              Grundflächen und Rauminhalte nach DIN 277:2021-08 (Gebührentarif NRW, Tarifstelle 3.1.1.2; § 6 Nr. 1 BauPrüfVO NRW nennt DIN 277-1:2016-01)
+              {zeigt('wofl') ? (project.settings.zweiteBV ? ` · Wohnfläche: ${ZWEITE_BV_KURZ}` : ' · Wohnfläche nach WoFlV vom 25.11.2003') : ''}
+              <br />
+              Messverfahren: {massText ?? 'nicht angegeben'}
+              {mitPutz ? ' · Putzabzug je Raum' : ''}
+              {unterlagen && (
+                <>
+                  <br />
+                  Planungsunterlagen: {unterlagen}
+                </>
+              )}
               {kontrollZeilen.map((z) => (
                 <span key={z} className="druck-kopf-kontrolle">
                   <br />
@@ -173,9 +194,11 @@ export function Report() {
               </tbody>
             </table>
             <p className="report-note">
-              {S ? 'R = Regelfall der Raumumschließung (allseitig in voller Höhe umschlossen), S = Sonderfall – getrennt ermittelt nach DIN 277:2021-08. ' : 'Alle Flächen und Rauminhalte im Regelfall R (allseitig in voller Höhe umschlossen). '}
-              KGF = BGF − NRF (rechnerisch). BRI nach DIN 277:2021-08 (entspricht für den BRI DIN 277-1:2016-01, § 6 BauPrüfVO NRW) = Σ Umrissfläche × Geschosshöhe bzw.
-              Volumen bis zur Dachhaut, ab UK Bodenplatte.
+              {S
+                ? 'R = Regelfall der Raumumschließung (bei allen Begrenzungsflächen vollständig umschlossen), S = Sonderfall (nicht allseitig umschlossen) – getrennt ermittelt nach DIN 277:2021-08. '
+                : 'Alle Flächen und Rauminhalte im Regelfall R (bei allen Begrenzungsflächen vollständig umschlossen). '}
+              KGF = BGF − NRF (rechnerisch). BRI nach DIN 277:2021-08 = Σ Umrissfläche × Geschosshöhe bzw. Volumen bis zur Dachhaut, ab Unterkante Bodenplatte
+              einschließlich Dämmung darunter.
             </p>
           </section>
         )}
@@ -304,9 +327,10 @@ export function Report() {
                         <td>
                           {room.name}
                           {room.subtract && <em>{room.abzugArt === 'wofl' ? ' (Abzug nur Wohnfläche)' : room.abzugArt === 'din' ? ' (Abzug nur NRF)' : ' (Abzug)'}</em>}
+                          {room.ausserhalbBgf && <em> (außerhalb der BGF, nur Wohnfläche)</em>}
                         </td>
-                        <td>{nutzungInfo(room.nutzung).kurz}</td>
-                        <td>{room.umschliessung}</td>
+                        <td>{room.ausserhalbBgf ? '–' : nutzungInfo(room.nutzung).kurz}</td>
+                        <td>{room.ausserhalbBgf ? '–' : room.umschliessung}</td>
                         {mitPutz && <td className="num">{fmt2(polygonArea(raumById.get(room.shapeId)?.points ?? []) * (room.subtract ? -1 : 1))}</td>}
                         {mitPutz && <td className="num">{raumById.get(room.shapeId)?.putzabzug ? `${fmt2(raumById.get(room.shapeId)!.putzabzug!)} %` : ''}</td>}
                         <td className="num">{fmt2(room.area)}</td>
@@ -332,7 +356,7 @@ export function Report() {
                     ])}
                     <tr className="sum">
                       <td />
-                      <td>Summe {sr.name}</td>
+                      <td>Summe {sr.name} (NRF bzw. Wohnfläche)</td>
                       <td />
                       <td />
                       {mitPutz && <td />}
@@ -354,13 +378,8 @@ export function Report() {
 
         {zeigt('wofl') && (
           <section className="bericht-abschnitt">
-        <h2>{project.settings.zweiteBV ? 'Wohnflächen – Altberechnung nach II. BV (nur Vergleich)' : 'Wohnflächen nach WoFlV'}</h2>
-        {project.settings.zweiteBV && (
-          <p className="warning">
-            Altberechnung nach §§ 42–44 II. BV, nur zum Vergleich mit Bestandsberechnungen bis 31.12.2003 (§ 5 WoFlV). Für neue Nachweise gilt die
-            Wohnflächenverordnung.
-          </p>
-        )}
+        <h2>{project.settings.zweiteBV ? 'Wohnflächen – Vergleichsrechnung (Freisitze zu ½)' : 'Wohnflächen nach WoFlV'}</h2>
+        {project.settings.zweiteBV && <p className="warning">{ZWEITE_BV_TEXT}</p>}
         <table className="report-table narrow">
           <thead>
             <tr>
@@ -389,10 +408,12 @@ export function Report() {
         </table>
         <p className="report-note">
           Anrechnung nach § 4 WoFlV: Räume und Raumteile mit lichter Höhe ≥ 2 m voll, 1–2 m zur Hälfte, &lt; 1 m nicht; unbeheizbare Wintergärten,
-          Schwimmbäder u. ä. zur Hälfte; Balkone, Loggien, Dachgärten und Terrassen i. d. R. zu einem Viertel, höchstens zur Hälfte. Nach § 3 Abs. 3
-          WoFlV bleiben Schornsteine, Pfeiler und Säulen über 1,50 m Höhe und mehr als 0,1 m² Grundfläche, Treppen mit mehr als drei Steigungen samt
-          Treppenabsätzen, Türnischen sowie Fenster- und offene Wandnischen, die nicht bis zum Fußboden reichen oder höchstens 0,13 m tief sind, außer Betracht; sie sind als Abzugsflächen im Raum erfasst
-          (Treppen nur von der Wohnfläche, sie bleiben Teil der NRF). WoFlV-Einstufung nach Raumnamen vorgeschlagen, vom Verfasser geprüft.
+          Schwimmbäder u. ä. zur Hälfte; Balkone, Loggien, Dachgärten und Terrassen{' '}
+          {project.settings.zweiteBV ? 'in dieser Vergleichsrechnung zur Hälfte' : 'i. d. R. zu einem Viertel, höchstens zur Hälfte'}. Nach § 3 Abs. 3 WoFlV bleiben Schornsteine,
+          Pfeiler und Säulen über 1,50 m Höhe und mehr als 0,1 m² Grundfläche sowie Treppen mit mehr als drei Steigungen samt Treppenabsätzen außer Betracht; sie
+          sind als Abzugsflächen im Raum erfasst (Treppen nur von der Wohnfläche, sie bleiben in der NRF des Raums). Tür- sowie Fenster- und offene Wandnischen,
+          die nicht bis zum Fußboden reichen oder höchstens 0,13 m tief sind, gehören nicht zur gemessenen Grundfläche. WoFlV-Einstufung nach Raumnamen
+          vorgeschlagen, vom Verfasser geprüft.
           {r.storeys.some((s) => s.rooms.some((x) => x.woflAnteile)) &&
             ' Räume unter Dachschrägen mit Teilflächen nach lichter Höhe (≥ 2 m voll, 1–2 m zur Hälfte, < 1 m nicht); Höhenlinien aus Planmaßen bzw. dem IFC-Modell abgeleitet.'}
         </p>
@@ -429,7 +450,7 @@ export function Report() {
               Sonstige Nutzfläche (NUF ohne Wohnflächenräume) {fmt2(stat.sonstigeNutzflaeche)} m² · Brutto-Rauminhalt {fmt2(stat.bri)} m³
             </p>
             <p className="report-note">
-              Räume: Wohn- und Aufenthaltsräume (NUF 1) ab {STATISTIK_MIN_RAUM} m² einschließlich Küchen, ohne Freisitze. Zusammenstellung als Hilfe für den Erhebungsbogen der
+              Räume: Wohn- und Aufenthaltsräume (NUF 1) ab {STATISTIK_MIN_RAUM} m², Küchen unabhängig von der Größe, ohne Freisitze. Zusammenstellung als Hilfe für den Erhebungsbogen der
               Bautätigkeitsstatistik (§ 3 HBauStatG) – die Zählregeln des aktuellen Erhebungsbogens von IT.NRW sind maßgebend.
             </p>
           </section>
@@ -452,4 +473,20 @@ export function Report() {
       </div>
     </div>
   );
+}
+
+/** Tab und Umschalt+Tab bleiben in der Bildschirmansicht des Berichts (wie in den gemeinsamen Dialogen) */
+function fokusImBericht(e: KeyboardEvent, bericht: HTMLElement | null) {
+  if (e.key !== 'Tab' || !bericht) return;
+  const ziele = [...bericht.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled]), select:not([disabled]), a[href]')];
+  if (!ziele.length) return;
+  const erstes = ziele[0];
+  const letztes = ziele[ziele.length - 1];
+  if (e.shiftKey && document.activeElement === erstes) {
+    e.preventDefault();
+    letztes.focus();
+  } else if (!e.shiftKey && document.activeElement === letztes) {
+    e.preventDefault();
+    erstes.focus();
+  }
 }

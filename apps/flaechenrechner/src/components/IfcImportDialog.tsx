@@ -134,8 +134,7 @@ export function IfcImportDialog({ onClose }: { onClose: () => void }) {
               als Räume, die <strong>BGF-Umrisse</strong> aus den Außenbauteilen und die <strong>Dachhaut</strong> für den Brutto-Rauminhalt.
             </p>
             <p className="muted small-text">
-              Archicad: Datei → Speichern unter → IFC, mit einem Übersetzer, der Zonen exportiert (siehe docs/archicad-ifc.md). Die Datei wird nur lokal
-              verarbeitet.
+              Archicad: Datei → Speichern unter → IFC, mit einem Übersetzer, der Zonen exportiert. Die Datei wird nur lokal verarbeitet.
             </p>
             <div className="dialog-buttons">
               <button onClick={onClose}>Abbrechen</button>
@@ -189,7 +188,14 @@ export function IfcImportDialog({ onClose }: { onClose: () => void }) {
                 <label className="toggle block">
                   <input type="radio" name="ifc-wohnung" checked={opts.wohnung === 'eine'} onChange={() => setOpts({ ...opts, wohnung: 'eine' })} />
                   eine Wohnung für alle Geschosse
-                  <input className="ifc-wohnung-name" value={opts.wohnungName ?? ''} disabled={opts.wohnung !== 'eine'} onChange={(e) => setOpts({ ...opts, wohnungName: e.target.value })} />
+                  <input
+                    className="ifc-wohnung-name"
+                    aria-label="Name der Wohnung"
+                    placeholder="WE 01"
+                    value={opts.wohnungName ?? ''}
+                    disabled={opts.wohnung !== 'eine'}
+                    onChange={(e) => setOpts({ ...opts, wohnungName: e.target.value })}
+                  />
                 </label>
                 <label className="toggle block">
                   <input type="radio" name="ifc-wohnung" checked={opts.wohnung === 'geschoss'} onChange={() => setOpts({ ...opts, wohnung: 'geschoss' })} />

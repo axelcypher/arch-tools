@@ -57,3 +57,32 @@ describe('Rechenweg je Raum (F-13)', () => {
     expect(w.wofl).toBeCloseTo(13, 10);
   });
 });
+
+describe('Fläche außerhalb der BGF (ebenerdige Terrasse) mit Abzug darin', () => {
+  it('NRF bleibt unverändert, der Abzug mindert nur die Wohnfläche; Rechenweg, CSV und Statistik ohne NRF', async () => {
+    const { createOutline, createProject, createRoom } = await import('@core/model');
+    const { rectPoints } = await import('@core/geometry');
+    const { computeProject } = await import('@core/calc');
+    const { projectToCsv } = await import('./export');
+    const { statistik } = await import('./bericht');
+    const p = createProject('Haus');
+    const eg = p.storeys[0];
+    eg.shapes.push(createOutline(rectPoints({ x: 0, y: 0 }, { x: 10, y: 8 })));
+    const wohnen = { ...createRoom(rectPoints({ x: 0.3, y: 0.3 }, { x: 9.7, y: 7.7 }), '0.01', 'Wohnen'), wofl: { kategorie: 'voll' as const, wohnung: 'WE 01' } };
+    const terrasse = { ...createRoom(rectPoints({ x: 0, y: 9 }, { x: 5, y: 13 }), '0.02', 'Terrasse'), ausserhalbBgf: true, wofl: { kategorie: 'freisitz' as const, wohnung: 'WE 01' } };
+    const beet = { ...createRoom(rectPoints({ x: 1, y: 10 }, { x: 2, y: 11 }), '', 'Pflanzbeet'), subtract: true, wofl: { kategorie: 'keine' as const, wohnung: '' } };
+    const gemeinschaft = { ...createRoom(rectPoints({ x: 6, y: 9 }, { x: 10, y: 14 }), '0.03', 'Gemeinschaftsterrasse'), ausserhalbBgf: true };
+    eg.shapes.push(wohnen, terrasse, beet, gemeinschaft);
+    const r = computeProject(p);
+    expect(r.total.nrf.total).toBeCloseTo(9.4 * 7.4, 10); // nur „Wohnen“
+    expect(r.total.wofl).toBeCloseTo(9.4 * 7.4 + (20 - 1) * 0.25, 10);
+    expect(r.storeys[0].rooms.find((x) => x.name === 'Pflanzbeet')?.ausserhalbBgf).toBe(true);
+    const w = raumRechenweg(terrasse, eg, p);
+    expect(w.nrf).toBe(0);
+    expect(w.zeilen.some((z) => z.art === 'nrf')).toBe(false);
+    expect(w.wofl).toBeCloseTo(19 * 0.25, 10);
+    const csv = projectToCsv(p, r);
+    expect(csv).toMatch(/0\.02;Terrasse;außerhalb BGF;;20,00/);
+    expect(statistik(r).sonstigeNutzflaeche).toBe(0);
+  });
+});

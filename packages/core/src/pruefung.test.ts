@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { rectPoints } from './geometry';
-import type { Project } from './model';
+import type { Project, RoomShape } from './model';
 import { createOutline, createProject, createRoom } from './model';
 import { pruefeGeschoss, raumAufUmriss } from './pruefung';
 
@@ -88,5 +88,57 @@ describe('Prüfliste (F-10)', () => {
     expect(e.art).toBe('hinweis');
     const pts = raumAufUmriss(flur, p.storeys[0])!;
     expect(Math.abs(pts.reduce((s, q, i) => s + q.x * pts[(i + 1) % pts.length].y - pts[(i + 1) % pts.length].x * q.y, 0) / 2)).toBeCloseTo(0.5, 6);
+  });
+});
+
+describe('Prüfliste: Selbstüberschneidung und Abzugsflächen', () => {
+  it('selbstüberschneidender Umriss bzw. Raum: Warnung (Fläche wäre falsch)', () => {
+    const p = haus();
+    const schleife = [
+      { x: 0, y: 0 },
+      { x: 4, y: 0 },
+      { x: 0, y: 3 },
+      { x: 4, y: 3 },
+    ];
+    p.storeys[0].shapes.push(createOutline(schleife), createRoom(schleife, '0.09', 'Diele'));
+    const e = pruefeGeschoss(p.storeys[0], p).filter((x) => x.regel === 'selbstueberschneidung');
+    expect(e.map((x) => x.art)).toEqual(['warnung', 'warnung']);
+    expect(e[1].text).toMatch(/0\.09 Diele überschneidet sich selbst/);
+  });
+
+  it('Abzugsfläche mit eigener, abweichender Anrechnung bzw. außerhalb aller Räume: Hinweis', () => {
+    const p = haus();
+    const [, a] = p.storeys[0].shapes;
+    const abzug: RoomShape = { ...createRoom(rect(1, 1, 1, 1), '', 'Schornstein'), subtract: true, wofl: { kategorie: 'voll', wohnung: 'WE 02' } };
+    p.storeys[0].shapes.push(abzug);
+    const e = pruefeGeschoss(p.storeys[0], p).find((x) => x.regel === 'abzug-abweichend')!;
+    expect(e.shapeIds).toEqual([abzug.id, a.id]);
+    // „keine“ = erbt vom Raum: kein Hinweis
+    abzug.wofl = { kategorie: 'keine', wohnung: '' };
+    expect(regeln(p)).not.toContain('abzug-abweichend');
+    // außerhalb aller Räume mit eigener Anrechnung
+    p.storeys[0].shapes.push({ ...createRoom(rect(5.9, 1, 0.2, 0.2), '', 'Pfeiler'), subtract: true, wofl: { kategorie: 'voll', wohnung: 'WE 01' } });
+    expect(regeln(p)).toContain('abzug-ohne-raum');
+  });
+});
+
+describe('Prüfliste: Sonderfall S und Flächen außerhalb der BGF (DIN 277:2021-08, 6.1 und 7.1)', () => {
+  it('S-Umriss: „überdeckt“ bestätigt die Geschosshöhe als obere Begrenzung – keine Warnung', () => {
+    const p = haus();
+    const balkon = { ...createOutline(rect(12, 2, 2, 4)), umschliessung: 'S' as const };
+    p.storeys[0].shapes.push(balkon);
+    expect(regeln(p)).toContain('s-ohne-hoehe');
+    balkon.ueberdeckt = true;
+    expect(regeln(p)).not.toContain('s-ohne-hoehe');
+  });
+
+  it('ebenerdige Terrasse außerhalb der BGF: kein „Raum außerhalb“, nicht in der NRF', () => {
+    const p = haus();
+    const terrasse: RoomShape = { ...createRoom(rect(0, 10.5, 6, 3), '0.07', 'Terrasse'), ausserhalbBgf: true, wofl: { kategorie: 'freisitz', wohnung: 'WE 01' } };
+    p.storeys[0].shapes.push(terrasse);
+    expect(regeln(p)).toEqual([]);
+    terrasse.ausserhalbBgf = undefined;
+    const e = pruefeGeschoss(p.storeys[0], p).find((x) => x.regel === 'raum-ausserhalb')!;
+    expect(e.text).toMatch(/außerhalb aller R-Umrisse/);
   });
 });

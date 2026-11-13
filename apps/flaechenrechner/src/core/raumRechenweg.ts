@@ -64,7 +64,9 @@ export function raumRechenweg(r: RoomShape, storey: Storey, project: Project): R
   // Abzugsflächen, die in diesem Raum liegen
   const abzuege = storey.shapes.filter((s): s is RoomShape => s.kind === 'room' && s.subtract && s.points.length >= 3 && raumUmAbzug(s, storey) === r);
   const fRaum = woflFaktor(r.wofl, project.settings);
-  let nrf = flaeche;
+  // außerhalb der BGF (ebenerdige Terrasse): keine NRF, auch nicht über die Abzüge darin
+  const draussen = !!r.ausserhalbBgf;
+  let nrf = draussen ? 0 : flaeche;
   let woflBasis = flaeche;
   // Wohnfläche wie in der Auswertung: Raum × Faktor − Σ Abzug × Faktor des Abzugs
   let wofl = r.wofl.kategorie === 'keine' ? 0 : flaeche * fRaum;
@@ -72,7 +74,7 @@ export function raumRechenweg(r: RoomShape, storey: Storey, project: Project): R
   for (const a of abzuege) {
     const art = a.abzugArt ?? 'beide';
     const f = roomArea(a);
-    const nrfJa = art !== 'wofl';
+    const nrfJa = art !== 'wofl' && !draussen;
     const fa = art === 'din' ? 0 : woflFaktor(effektiveWofl(a, storey), project.settings);
     const woflJa = fa > 0;
     zeilen.push({
@@ -90,7 +92,7 @@ export function raumRechenweg(r: RoomShape, storey: Storey, project: Project): R
       if (Math.abs(fa - fRaum) > 1e-9) gleicherFaktor = false;
     }
   }
-  if (abzuege.some((a) => (a.abzugArt ?? 'beide') !== 'wofl')) zeilen.push({ art: 'nrf', text: 'NRF des Raums', flaeche: nrf });
+  if (!draussen && abzuege.some((a) => (a.abzugArt ?? 'beide') !== 'wofl')) zeilen.push({ art: 'nrf', text: 'NRF des Raums', flaeche: nrf });
 
   // Anrechnung nach WoFlV
   if (r.wofl.kategorie !== 'keine' && !gleicherFaktor) {

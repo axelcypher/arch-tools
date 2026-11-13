@@ -33,8 +33,12 @@ export function Pruefliste() {
       {offen && eintraege.length > 0 && (
         <ul className="pruef-liste small-text">
           {eintraege.map((e, i) => (
-            <li key={i} className={e.art} onClick={() => waehlen(e)} title={e.shapeIds.length ? 'Klick wählt die Fläche(n)' : undefined}>
-              <span className="pruef-geschoss">{name(e.storeyId)}</span> {e.text}
+            <li key={i} className={`pruef-${e.art}`}>
+              <button type="button" className="list-btn" onClick={() => waehlen(e)} title={e.shapeIds.length ? 'Wählt die betroffene(n) Fläche(n)' : 'Wechselt ins Geschoss'}>
+                <span>
+                  <span className="pruef-geschoss">{name(e.storeyId)}</span> {e.text}
+                </span>
+              </button>
             </li>
           ))}
         </ul>

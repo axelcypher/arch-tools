@@ -178,8 +178,9 @@ mitbumpt).
 - [x] **FR-09** Bericht mit R/S-Trennung bei BRI, NRF, KGF – FR 0.22.0 (mit F-17): Tabelle „Grundflächen und
   Rauminhalte“ mit BGF/BRI/NRF/KGF je R | S | gesamt, S-Spalten nur bei Sonderfall; CSV und Excel-Standardlayout
   ebenso, Platzhalter `kgf_r`/`kgf_s` neu (`nrf_r`/`nrf_s` gab es schon).
-- [x] **FR-10** BRI von S-Umrissen – FR 0.20.0: Körperhöhe bei S als Pflichtangabe markiert (Unterkante Überdeckung
-  bzw. Oberkante Umwehrung) mit Warnung, solange sie fehlt; Bodenplatte unter S-Umrissen nur mit Haken
+- [x] **FR-10** BRI von S-Umrissen – FR 0.20.0: Körperhöhe bei S als Pflichtangabe markiert mit Warnung, solange sie
+  fehlt (FR 0.32.0 berichtigt nach DIN 277:2021-08, 7.1: überdeckt bis **Oberkante** der Überdeckung – „überdeckt“
+  bestätigt die Geschosshöhe –, nicht überdeckt bis Oberkante Brüstung/Geländer); Bodenplatte unter S-Umrissen nur mit Haken
   `sohleAnsetzen`. BRI S getrennt im Bericht mit FR-09/F-17.
 - [x] **FR-11** „unbeheizbarer“ Wintergarten – FR 0.20.0: Bezeichnung „unbeheizbarer Wintergarten, Schwimmbad u. ä.
   (50 %)“, Hilfetext „beheizbare Wintergärten: lichte Höhe ≥ 2 m (100 %) wählen“, Berichtstext.
@@ -193,7 +194,8 @@ mitbumpt).
   in voller Höhe umschlossen“ (mit F-06).
 - [x] **FR-14** Bezugsebene der Geschosshöhe – FR 0.20.0: einheitlich „Fußboden in derselben Bezugsebene wie die
   Geschosskoten (i. d. R. OK Fertigfußboden)“, Bodenplatte „UK Sohle bis Fußboden-Bezugsebene“ (Eigenschaften,
-  Nachschlagewerk, Modellkommentar, README).
+  Nachschlagewerk, Modellkommentar, README); FR 0.32.0: „Bodenplatte inkl. Dämmung darunter“ (DIN 277:2021-08, 7.1),
+  „Gründungen gehören nicht dazu“ ersetzt durch „Einzel-/Streifenfundamente und Tiefgründungen zählen nicht“.
 - [x] **FR-16** „Abzug aus IFC-Nettofläche“ – FR 0.20.0: neutrale Bezeichnung in Bemerkung und Importbericht, Werte mehr
   als 0,5 Prozentpunkte neben 3 % einzeln im Bericht.
 - [x] **FR-17** Spitzboden ohne BGF: Hinweis – FR 0.20.0: „Geschoss X ohne BGF übernommen – falls begehbar und nutzbar
@@ -202,14 +204,18 @@ mitbumpt).
   Fußnote `BriKoerper.bemerkung`, im Bericht unter dem BRI-Rechenweg und in Excel `koerper.bemerkung`.
 - [x] **FR-19** Normausgabe in Bauvorlage und Gebühr – Regel „BRI in Bauvorlage und Gebühr (NRW)“ im
   Nachschlagewerk seit FR 0.20.0; Berichtskopf, DIN-277-Tabelle und Excel nennen „BRI nach DIN 277:2021-08 (entspricht
-  für den BRI DIN 277-1:2016-01, § 6 BauPrüfVO NRW)“ – FR 0.22.0.
+  für den BRI DIN 277-1:2016-01, § 6 BauPrüfVO NRW)“ – FR 0.22.0; FR 0.32.0 ohne die unbelegte Gleichsetzung:
+  „DIN 277:2021-08 (Gebührentarif NRW, Tarifstelle 3.1.1.2; § 6 Nr. 1 BauPrüfVO NRW nennt DIN 277-1:2016-01)“.
 - [x] **FR-20** Angaben für die Hochbaustatistik – FR 0.22.0: Abschnitt „Angaben für die Hochbaustatistik“ (Wohnfläche
   und Räume je Wohnung, sonstige Nutzfläche = NUF ohne Wohnflächenräume, BRI), Excel `statistik.*` und
-  `wohnung.raeume_statistik`. Abweichung: Die Zählregel (Räume = NUF 1 ab 6 m² inkl. Küche, ohne Freisitze) ist
-  nicht am aktuellen Erhebungsbogen von IT.NRW geprüft (nicht verfügbar) – der Bericht weist darauf hin.
-- [x] **FR-21** Bestand nach II. BV – FR 0.20.0: Projektschalter „Altberechnung nach II. BV (nur Vergleich)“ mit
-  deutlichem Hinweis in Seitenleiste und Bericht; Wirkung nur auf den Standardfaktor für Freisitze (½); Standard
-  bleibt WoFlV, Schalter aus = unverändert (Test).
+  `wohnung.raeume_statistik`. FR 0.32.0: Zählregel nach den Erläuterungen zur Statistik der Baugenehmigungen –
+  Wohn- und Aufenthaltsräume (NUF 1) ab 6 m², Küchen unabhängig von der Größe, ohne Freisitze; der Bericht verweist
+  weiter auf den aktuellen Erhebungsbogen von IT.NRW.
+- [x] **FR-21** Bestand nach II. BV – FR 0.20.0: Projektschalter mit deutlichem Hinweis in Seitenleiste und Bericht;
+  Wirkung nur auf den Standardfaktor für Freisitze (½); Standard bleibt WoFlV, Schalter aus = unverändert (Test).
+  FR 0.32.0: ehrlich benannt als „Vergleich mit II. BV: Freisitze zu ½“ bzw. „Vergleichsrechnung WoFlV mit Freisitzen
+  zu ½“; Bericht und Excel (`projekt.normen`) nennen die nicht nachgebildeten Regeln (§ 44 Abs. 1 Nr. 2, Abs. 2,
+  Abs. 3 II. BV a. F.).
 Block 3 (Verbesserungen F-10, F-11, F-13, F-14): FR 0.21.0; Rechenkern (Nutzungsgruppe aus der Nutzungsart) auch
 KO 0.11.2 (Patch).
 
@@ -284,6 +290,33 @@ KO 0.11.2 (Patch).
   einklappbar (gemerkt), Fokusrahmen der Zeichenfläche dezenter. Zurückgestellt: F-23 (Speichern im Browser über
   `showSaveFilePicker`) und „Protokoll“ → „Diagnose“ – beides im gemeinsamen Unterbau (`platform/files.ts`,
   `ui/TitleBar.tsx`) aller Apps, gehört in einen Querschnittsschritt.
+
+### Gesamt-Review November 2026 (FR 0.32.0)
+
+Drei Prüfer (Code, Oberfläche, Baurecht) haben die ganze App bewertet; umgesetzt sind alle Pflichtpunkte:
+
+- **Code:** wiederhergestellter Zwischenstand gilt als ungespeichert, wenn er von der Datei abweicht (Rückfrage vor
+  Öffnen/Neu, kein Überschreiben durch ein spätes Lesen); Abzugsfläche erbt beim Markieren Anrechnung und Wohnung des
+  umgebenden Raums (`core/abzug.ts`); Nutzungsgruppe in Anzeige, Plan, 3D, Prüfliste und Mehrfachauswahl über
+  `raumNutzung` wie in der Rechnung; Kontrollmaß an den Planmaßstab gebunden (`gueltigesKontrollmass`); Prüfregel und
+  Berichtswarnung für selbstüberschneidende Flächen; Projekteinstellungen beim Laden geprüft (`normalizeSettings`),
+  Rasterfang ohne gültige Schrittweite rundet nicht.
+- **Baurecht:** obere Begrenzung bei S nach DIN 277:2021-08, 7.1 (Option „überdeckt“, Feld `ueberdeckt`); Räume
+  „außerhalb der BGF – nur Wohnfläche“ für ebenerdige Terrassen (6.1 a, Feld `ausserhalbBgf`; Katalog getrennt,
+  IFC-Import nennt Terrassen); Bodenplatte inkl. Dämmung darunter; Katalog „Flur“ ersetzt durch „Hausflur/
+  Gemeinschaftsflur“ (Flure in der Wohnung zählen); Vergleichsrechnung II. BV ehrlich benannt; Hochbaustatistik
+  zählt Küchen unabhängig von der Größe; Messverfahren und Planungsunterlagen im Kopf (5.1), sonst Warnung;
+  R/S-Erläuterungen nach 5.7.1/5.7.2.
+- **Oberfläche:** Kalibrier-, PDF- und Kopierdialog als gemeinsamer Dialog (Esc, Enter, Fokus); Maßstabsleiste in
+  Planfarben (dunkles Schema); Flächenaufstellung mit eigener Bedienzeile, Dialogrolle und Fokusführung;
+  Bedienleisten der Zeichenfläche brechen um, Seitenleisten in schmalen Fenstern schmaler; Listen (Geschosse,
+  Flächen, Prüfliste) per Tastatur; Screenreader-Namen und `aria-pressed`; Prüfliste ohne Klassenkollision und mit
+  Statusfarben; primäre Knöpfe im dunklen Schema mit ausreichendem Kontrast (`--on-accent`, core); Eigenschaften:
+  Kernangaben zuerst, „Weitere Angaben“ eingeklappt, Auswertung bleibt sichtbar; einheitliche Bezeichnungen.
+
+Wegen der Änderungen in `packages/core` (Prüfliste, Dateiformat, Kontrast primärer Knöpfe) Patch-Releases der übrigen
+Apps: AVA 0.3.1, Entzerrung 0.11.1, Formulare 0.39.1, GRZ-Nachweis 0.21.1, Kostenermittlung 0.18.1, Projekt 0.16.2;
+Rahmen-App 0.15.0.
 
 ## GRZ-Nachweis
 
