@@ -1429,9 +1429,11 @@ export const useAntrag = create<AntragState>((set, get) => {
       const projekt = f.projekt;
       if (!projekt) return info;
       // ein Antrag wird gerade geöffnet: der Stand im Store gehört noch zum bisherigen – nichts ändern
-      if (wechselLaeuft(get(), projekt)) {
-        meldung('info', 'Reihenfolge nicht geändert – der Antrag wird gerade geöffnet, gleich wieder möglich.');
-        return Object.assign(info, { vorab: 'fassung' as const, erneut: true });
+      const wechsel = wechselLaeuft(get(), projekt);
+      if (wechsel) {
+        const g = { grund: `Antrag ${wechsel} wird gerade geöffnet`, vorab: 'fassung' as const };
+        meldung('info', sperrMeldung(g, 'Reihenfolge nicht geändert'));
+        return Object.assign(info, g, { erneut: true });
       }
       if (f.oap === null && ablageVon(f, projekt)) await f.oapLaden();
       if (useFormulare.getState().projekt !== projekt) return info;
