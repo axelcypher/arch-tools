@@ -24,11 +24,12 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
   (unter 260 px – schmaler als die Vorgabe von 300 px) entfällt die Angabe, damit die Namen lesbar bleiben – der
   Tooltip zeigt sie weiter. Dort stehen auch „Projektdaten“ und „Antragsdaten“ untereinander statt gekürzt, und die
   Knöpfe eines Abschnittskopfs (etwa beim Projektordner) rücken bei Bedarf in die nächste Zeile.
-- **Menüs** (Kontextmenü, Knöpfe mit ▾ bzw. +) lassen sich mit der Tastatur bedienen: ↑/↓ wandern, Enter bzw. →
-  öffnet ein Untermenü (der Fokus geht hinein), ← bzw. Esc führt zurück zum Punkt darüber, Esc oder Tab im Hauptmenü
-  schließt. Nach Esc, Tab oder einer Auswahl steht der Fokus wieder auf dem Knopf bzw. Eintrag, der das Menü geöffnet
-  hat; Menüknöpfe melden „aufgeklappt“ (`aria-expanded`). Ein gesperrter Punkt nennt rechts den Grund; sein Untermenü
-  klappt nicht auf.
+- **Menüs** (Kontextmenü, Knöpfe mit ▾ bzw. +; das gemeinsame Menü aller Apps, `@core/ui/Menue`) lassen sich mit der
+  Tastatur bedienen: ↑/↓ wandern, Enter bzw. → öffnet ein Untermenü (der Fokus geht hinein), ← bzw. Esc führt zurück
+  zum Punkt darüber, Esc oder Tab im Hauptmenü schließt – Esc nur das Menü, ein Dialog darunter bleibt offen. Nach Esc,
+  Tab oder einer Auswahl steht der Fokus wieder auf dem Knopf bzw. Eintrag, der das Menü geöffnet hat; Menüknöpfe
+  melden „aufgeklappt“ (`aria-expanded`). Ein gesperrter Punkt bleibt per Tastatur erreichbar und nennt rechts den
+  Grund; er führt nichts aus, sein Untermenü klappt nicht auf.
 - **Dialoge** nutzen den gemeinsamen Rahmen (`Modal` aus `packages/core/src/ui/Dialog.tsx`): Esc und ein Klick daneben
   schließen (nicht während einer laufenden Aktion), der Fokus springt beim Öffnen hinein, bleibt mit Tab im Dialog
   und kehrt danach an die Stelle davor zurück. Das gilt auch für die Schnellwahl (<kbd>Strg</kbd>+<kbd>K</kbd>; der

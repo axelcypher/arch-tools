@@ -9,7 +9,7 @@ import { useProfil, wertVon } from '../store';
 import { PRUEFREGELN } from '../vorgaben/pruefregeln';
 import { Tipp } from './EntfallInfo';
 import { useGesetz } from './GesetzModal';
-import { Symbol } from './Symbol';
+import { Symbol } from '@core/ui/Symbol';
 
 /** Plausibilitätsmeldungen des offenen Formulars (U-04, U-05) */
 export function usePlausibel(offen: OffenesFormular): Plausi[] {
