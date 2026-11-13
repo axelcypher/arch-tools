@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
+import type { MockInstance } from 'vitest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { readProjectFile } from '@core/archive';
 import { baurechtAusRoh } from '@core/baurecht/projekt';
@@ -28,14 +29,16 @@ vi.setConfig({ testTimeout: 20000 });
 // Ausblendungen nach echter Zeit anhalten – „Gespeichert“ im Kopf nach 4 s (components/Kopf.tsx, GespeichertMeldung) und
 // die Ansage nach 1,5 s (components/Angaben.tsx): Auf langsamen Runnern (Windows im Release-Lauf) war die Meldung beim
 // Prüfen sonst schon weg. Kürzere Fristen (Entprellen, Fokus) laufen echt weiter; vi.useFakeTimers() ersetzt den Spion
-// und prüft die Ausblendung selbst.
+// und prüft die Ausblendung selbst (je ein Test für 4 s und 1,5 s). Wer die Fristen in Kopf.tsx oder Angaben.tsx ändert,
+// zieht AUSBLENDEN_MS mit – die beiden Tests mit falschen Uhren schlagen sonst an.
 const AUSBLENDEN_MS = new Set([1500, 4000]);
 const echtesSetTimeout = globalThis.setTimeout;
-let ausblendenAngehalten: { mockRestore: () => void } | null = null;
+let ausblendenAngehalten: MockInstance<typeof setTimeout> | null = null;
 beforeEach(() => {
   ausblendenAngehalten = vi
     .spyOn(globalThis, 'setTimeout')
-    .mockImplementation(((fn: () => void, ms?: number, ...args: unknown[]) => (AUSBLENDEN_MS.has(ms ?? 0) ? (0 as unknown as ReturnType<typeof setTimeout>) : echtesSetTimeout(fn, ms, ...args))) as typeof setTimeout);
+    .mockImplementation(((fn: () => void, ms?: number, ...args: unknown[]) =>
+      AUSBLENDEN_MS.has(ms ?? 0) ? (0 as unknown as ReturnType<typeof setTimeout>) : echtesSetTimeout(fn, ms, ...args)) as typeof setTimeout);
 });
 afterEach(() => {
   ausblendenAngehalten?.mockRestore();
@@ -54,6 +57,19 @@ function render(): HTMLElement {
 }
 const knopf = (host: ParentNode, text: string | RegExp) =>
   [...host.querySelectorAll<HTMLButtonElement>('button')].find((b) => (typeof text === 'string' ? b.textContent?.trim() === text : text.test(b.textContent ?? '')));
+/**
+ * warten, bis „Prüfung abschließen“ bedienbar ist (die Texte der Web-Version sind geladen) – nach Zustand statt fester
+ * Zeit, mit einer Grenze unter dem testTimeout und klarer Meldung, falls es nicht so weit kommt (langsame Runner)
+ */
+async function bisAbschliessbar(d: ParentNode): Promise<void> {
+  await vi.waitFor(
+    async () => {
+      await act(async () => void (await new Promise((r) => echtesSetTimeout(r, 20))));
+      expect(knopf(d, 'Prüfung abschließen')!.disabled, '„Prüfung abschließen“ ist noch gesperrt (Texte werden geholt)').toBe(false);
+    },
+    { timeout: 15000, interval: 50 },
+  );
+}
 const tippen = (el: HTMLTextAreaElement | HTMLInputElement, wert: string) =>
   act(() => {
     Object.getOwnPropertyDescriptor(Object.getPrototypeOf(el), 'value')!.set!.call(el, wert);
@@ -841,7 +857,7 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
     act(() => knopf(host, 'Prüfprotokoll')!.click());
     const d = document.querySelector<HTMLElement>('.br-protokoll')!;
     // warten, bis die (Web-)Texte durch sind
-    for (let i = 0; i < 20 && knopf(d, 'Prüfung abschließen')!.disabled; i++) await warten(100);
+    await bisAbschliessbar(d);
     act(() => knopf(d, 'Prüfung abschließen')!.click());
     await warten();
     const m = d.querySelector<HTMLElement>('.br-abgelegt')!;
@@ -859,6 +875,20 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
     expect(host.querySelector('.br-gespeichert')?.textContent).toMatch(/^Gespeichert/);
   });
 
+  it('die Ansage wird nach 1,5 s geleert (Zeit kontrolliert, unabhängig vom Runner)', () => {
+    render();
+    vi.useFakeTimers();
+    try {
+      act(() => useBaurecht.getState().ansagen('Probeansage'));
+      act(() => void vi.advanceTimersByTime(1400));
+      expect(useBaurecht.getState().ansage).toBe('Probeansage');
+      act(() => void vi.advanceTimersByTime(200));
+      expect(useBaurecht.getState().ansage).toBe('');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('„Gespeichert“ im Kopf blendet nach 4 s aus (Zeit kontrolliert, unabhängig vom Runner)', async () => {
     const host = render();
     await speichernOhneDialog();
@@ -866,7 +896,7 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
     // die Meldung erscheint neu, damit ihre Frist unter den falschen Uhren läuft
     vi.useFakeTimers();
     try {
-      act(() => useBaurecht.setState({ gespeichertMeldung: { text: 'Gespeichert', am: Date.now() + 1 } }));
+      act(() => useBaurecht.setState({ gespeichertMeldung: { text: 'Gespeichert', am: Date.now() } }));
       expect(host.querySelector('.br-gespeichert')?.textContent).toBe('Gespeichert');
       act(() => void vi.advanceTimersByTime(3900));
       expect(host.querySelector('.br-gespeichert')?.textContent).toBe('Gespeichert');
@@ -945,7 +975,7 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
     await speichernOhneDialog();
     act(() => knopf(host, 'Prüfprotokoll')!.click());
     const d = document.querySelector<HTMLElement>('.br-protokoll')!;
-    for (let i = 0; i < 20 && knopf(d, 'Prüfung abschließen')!.disabled; i++) await warten(100);
+    await bisAbschliessbar(d);
     act(() => knopf(d, 'Prüfung abschließen')!.click());
     await warten();
     await act(async () => {
@@ -968,7 +998,7 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
     const region = d.querySelector<HTMLElement>('#br-abgelegt-text')!;
     expect(region).not.toBeNull();
     expect(region.textContent).toBe('');
-    for (let i = 0; i < 20 && knopf(d, 'Prüfung abschließen')!.disabled; i++) await warten(100);
+    await bisAbschliessbar(d);
     act(() => knopf(d, 'Prüfung abschließen')!.click());
     await warten();
     expect(region.textContent).toMatch(/abgelegt/);
@@ -1016,7 +1046,7 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
     await speichernOhneDialog();
     act(() => knopf(host, 'Prüfprotokoll')!.click());
     const d = document.querySelector<HTMLElement>('.br-protokoll')!;
-    for (let i = 0; i < 20 && knopf(d, 'Prüfung abschließen')!.disabled; i++) await warten(100);
+    await bisAbschliessbar(d);
     act(() => knopf(d, 'Prüfung abschließen')!.click());
     await speichernOhneDialog();
     await warten();
@@ -1064,7 +1094,7 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
     act(() => knopf(host, 'Prüfprotokoll')!.click());
     let d = document.querySelector<HTMLElement>('.br-protokoll')!;
     expect(host.querySelector<HTMLElement>('.br-sprung')!.inert).toBe(true);
-    for (let i = 0; i < 20 && knopf(d, 'Prüfung abschließen')!.disabled; i++) await warten(100);
+    await bisAbschliessbar(d);
     act(() => knopf(d, 'Prüfung abschließen')!.click());
     await warten();
     // Fokus auf die Meldung (außerhalb der Tab-Folge), dann Tab: bleibt im Dialog
@@ -1186,7 +1216,7 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
     await speichernOhneDialog();
     act(() => knopf(host, 'Prüfprotokoll')!.click());
     const d = document.querySelector<HTMLElement>('.br-protokoll')!;
-    for (let i = 0; i < 20 && knopf(d, 'Prüfung abschließen')!.disabled; i++) await warten(100);
+    await bisAbschliessbar(d);
     act(() => knopf(d, 'Prüfung abschließen')!.click());
     await warten();
     expect(document.activeElement?.textContent).toBe('Jetzt speichern');
