@@ -98,7 +98,10 @@ function UpdateDialog({ app, dirty, vorInstallation, onClose }: { app: string; d
         {!laeuft && <button onClick={onClose}>{status === 'verfuegbar' ? 'Später' : 'Schließen'}</button>}
         {(status === 'fehler' || status === 'aus') && <button onClick={() => void suchen()}>{status === 'fehler' ? 'Erneut suchen' : 'Nach Updates suchen'}</button>}
         {status === 'verfuegbar' && (
-          <button className="primary" onClick={() => void (async () => (!vorInstallation || (await vorInstallation())) && (await schreibenAbwarten(app, () => schliessenVorbereiten())) && (await installieren()))()}>
+          <button
+            className="primary"
+            onClick={() => void (async () => (!vorInstallation || (await vorInstallation())) && (await schreibenAbwarten(app, () => schliessenVorbereiten())) && (await installieren()))()}
+          >
             Jetzt installieren
           </button>
         )}

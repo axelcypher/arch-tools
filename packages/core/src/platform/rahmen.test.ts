@@ -1,6 +1,18 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { anRahmenMelden, beimUmzug, rahmenApp, rahmenModus, schliessenVorbereiten, SPEICHERN_ANTWORT_MS, speichernImTab, tabBrauchtVorbereitung, VORBEREITEN_MS, vorbereitenImTab, vorDemSchliessen } from './rahmen';
+import {
+  anRahmenMelden,
+  beimUmzug,
+  rahmenApp,
+  rahmenModus,
+  schliessenVorbereiten,
+  SPEICHERN_ANTWORT_MS,
+  speichernImTab,
+  tabBrauchtVorbereitung,
+  VORBEREITEN_MS,
+  vorbereitenImTab,
+  vorDemSchliessen,
+} from './rahmen';
 
 afterEach(() => window.history.replaceState(null, '', '/'));
 
