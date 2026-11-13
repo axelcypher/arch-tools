@@ -156,7 +156,7 @@ Einstellungen“ (und über den Knopf „Einzelplatz“ bzw. „Netzwerk“ in d
 **Einzelplatz** (ein Ordner auf diesem Rechner, `%APPDATA%\arch-tools`) und **Netzwerkinstallation** (ein Ordner auf
 dem Netzlaufwerk – dann gilt er für das ganze Büro). Beim Wechsel ziehen alle gemeinsamen Einstellungen mit; liegen
 dort schon welche, fragt die App, ob sie gelten („Vorhandene übernehmen“, Fehlendes kommt dazu) oder ersetzt werden
-(„Mit meinen ersetzen“, mit Sicherung). Ist das Netzlaufwerk nicht erreichbar, sind die Einstellungen nur lesbar
+(„Mit diesem Rechner überschreiben“, mit Sicherung). Ist das Netzlaufwerk nicht erreichbar, sind die Einstellungen nur lesbar
 (lokale Kopie); Einzelheiten in der [README](../README.md#gemeinsame-bedienung-aller-apps).
 
 | Datei | Inhalt |
