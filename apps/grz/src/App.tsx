@@ -1,5 +1,5 @@
 import { speichernAbwarten } from '@core/platform/projektDatei';
-import { APP_NAMEN } from '@core/appNamen';
+import { APP_NAMEN, appMitWas } from '@core/appNamen';
 import { dialogOffen, eingabeAbschliessen, istEingabeZiel } from '@core/platform/eingabe';
 import { useEffect, useState } from 'react';
 import { isTauri } from '@core/platform/files';
@@ -50,7 +50,7 @@ export function App() {
     return !useGrz.getState().dirty || (await aenderungenSpeichern(useGrz.getState().project.name, () => onSave()));
   };
 
-  // „Neues Projekt“: leeres Projekt (z. B. nur Lageplan bzw. Mengen von Hand); verwirft auch den Zwischenstand
+  // Ansicht statt Einstieg: nach „Neues Projekt“ und nach jedem Öffnen – auch bei einem Projekt ohne Gebäude und Flächen
   const [neuBegonnen, setNeuBegonnen] = useState(false);
   const onNeu = async () => {
     if (!(await weiterNachRueckfrage())) return;
@@ -67,6 +67,7 @@ export function App() {
       if (r) {
         useGrz.getState().load(r.project, r.datei, r.basis);
         setBericht(r.basis === null ? ifcBericht(r.project, r.bericht, 'import') : null);
+        setNeuBegonnen(true);
       }
     } catch (e) {
       log.error('Öffnen fehlgeschlagen', e instanceof Error ? e.message : String(e));
@@ -176,14 +177,26 @@ export function App() {
             Nachweis drucken
           </button>
           <button onClick={() => setExcelOpen(true)} disabled={!hatGebaeude} title={hatGebaeude ? 'Nachweis als Excel-Datei – Standardlayout oder eigene Vorlage' : gesperrt}>
-            Excel …
+            Excel-Export …
           </button>
         </div>
         <div className="tb-group">
-          <button onClick={() => useGrz.getState().undo()} disabled={!canUndo} title={canUndo ? `Rückgängig: ${undoName ?? 'Änderung'} (Strg+Z)` : 'Rückgängig (Strg+Z)'}>
+          <button
+            className="icon"
+            aria-label="Rückgängig"
+            onClick={() => useGrz.getState().undo()}
+            disabled={!canUndo}
+            title={canUndo ? `Rückgängig: ${undoName ?? 'Änderung'} (Strg+Z)` : 'Rückgängig (Strg+Z)'}
+          >
             ↶
           </button>
-          <button onClick={() => useGrz.getState().redo()} disabled={!canRedo} title={canRedo ? `Wiederholen: ${redoName ?? 'Änderung'} (Strg+Y)` : 'Wiederholen (Strg+Y)'}>
+          <button
+            className="icon"
+            aria-label="Wiederholen"
+            onClick={() => useGrz.getState().redo()}
+            disabled={!canRedo}
+            title={canRedo ? `Wiederholen: ${redoName ?? 'Änderung'} (Strg+Y)` : 'Wiederholen (Strg+Y)'}
+          >
             ↷
           </button>
         </div>
@@ -192,8 +205,7 @@ export function App() {
       <main className="grz-main">
         {wiederhergestellt !== null && dirty && (
           <div className="grz-bericht grz-wiederhergestellt" role="status">
-            Ungespeicherter Stand vom {datumText(new Date(wiederhergestellt))}{' '}
-            {new Date(wiederhergestellt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} wiederhergestellt –{' '}
+            Ungespeicherter Stand vom {datumText(new Date(wiederhergestellt))} {new Date(wiederhergestellt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} wiederhergestellt –{' '}
             <button className="small" onClick={() => void onSave()}>
               Speichern
             </button>{' '}
@@ -209,26 +221,40 @@ export function App() {
           </div>
         )}
         {bericht && (
-          <div className="grz-bericht">
-            <strong>{bericht.titel}:</strong> {bericht.zusammenfassung}
+          // Warnfarbe nur, wenn der Bericht etwas meldet; Esc im Bericht schließt ihn
+          <div
+            className={bericht.zeilen.length > 0 ? 'grz-bericht' : 'grz-bericht grz-bericht-neutral'}
+            role="status"
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') setBericht(null);
+            }}
+          >
+            <div className="grz-bericht-kopf">
+              <span>
+                <strong>{bericht.titel}:</strong> {bericht.zusammenfassung}
+              </span>
+              <button className="icon small" aria-label="Bericht schließen" title="Bericht schließen" onClick={() => setBericht(null)}>
+                ×
+              </button>
+            </div>
             {bericht.zeilen.length > 0 && (
               <ul>
                 {bericht.zeilen.map((z, i) => (
                   <li key={i}>{z}</li>
                 ))}
               </ul>
-            )}{' '}
-            <button className="small" onClick={() => setBericht(null)}>
-              Schließen
-            </button>
+            )}
+          </div>
+        )}
+        {(neuBegonnen || hatFlaechen) && !hatGebaeude && (
+          <div className="grz-bericht grz-bericht-neutral" role="status">
+            Das Projekt enthält noch keinen Gebäudeumriss. Gebäude in {appMitWas('flaechenrechner')} zeichnen oder ein IFC-Modell öffnen; Lageplan und Festsetzungen lassen sich schon pflegen.
           </div>
         )}
         {!hatGebaeude && !hatFlaechen && !neuBegonnen ? (
           <ProjektEinstieg
-            titel="GRZ-Nachweis"
-            text={
-              'Projekt oder IFC öffnen: ein Projekt aus QUADRIO (Flächenrechner, .oap) oder direkt ein IFC-Modell. Gebäudeumrisse, Geschosse und Geschossflächen kommen aus dem Projekt, den Lageplan pflegt dieses Tool; gespeichert wird in dieselbe Projektdatei. „Neues Projekt“ beginnt mit leerem Lageplan.'
-            }
+            titel={`${APP_NAMEN.grz.name} – ${APP_NAMEN.grz.was}`}
+            text={`Öffnen Sie ein Projekt aus ${appMitWas('flaechenrechner')} oder ein IFC-Modell. Gebäude und Geschosse kommen von dort, den Lageplan zeichnen Sie hier. Gespeichert wird in dieselbe Projektdatei.`}
             onProjekte={isTauri() ? () => setProjekteOffen(true) : undefined}
             onDateiOeffnen={() => void onOpen()}
             dateiHinweis="Projektdatei (.oap) oder IFC-Modell"
@@ -248,6 +274,7 @@ export function App() {
             if (!(await weiterNachRueckfrage())) return;
             useGrz.getState().load(g.project, g.datei, g.project);
             setBericht(null);
+            setNeuBegonnen(true);
             setProjekteOffen(false);
           }}
           onSchliessen={() => setProjekteOffen(false)}
