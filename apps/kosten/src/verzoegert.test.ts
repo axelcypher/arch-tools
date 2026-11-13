@@ -105,7 +105,7 @@ describe('Zwischenstand: verzögertes Schreiben und Sichern vor dem Schließen',
 });
 
 /** gefälschte IndexedDB-Verbindung: die Transaktion endet, wie der Test es vorgibt */
-function falscheDb(ende: 'complete' | 'error' | 'werfen') {
+function falscheDb(ende: 'complete' | 'error' | 'abbruch' | 'werfen') {
   const geschrieben: unknown[] = [];
   const tx = { error: null as DOMException | null, objectStore: () => ({ put: (w: unknown) => geschrieben.push(w) }) } as unknown as IDBTransaction & Record<string, () => void>;
   const d = {
@@ -114,6 +114,8 @@ function falscheDb(ende: 'complete' | 'error' | 'werfen') {
       if (ende === 'werfen') throw new DOMException('nicht klonbar', 'DataCloneError');
       queueMicrotask(() => {
         if (ende === 'complete') tx.oncomplete();
+        else if (ende === 'abbruch')
+          tx.onabort(); // Abbruch ohne Fehler (tx.error bleibt null)
         else {
           (tx as { error: DOMException | null }).error = new DOMException('voll', 'QuotaExceededError');
           tx.onerror(); // bei einem Fehler feuern beide
@@ -137,6 +139,12 @@ describe('Zwischenstand: Schreiben in die IndexedDB', () => {
   it('Fehler und Abbruch: abgelehnt mit dem Fehler der Transaktion, Verbindung genau einmal geschlossen', async () => {
     const { d } = falscheDb('error');
     await expect(inStoreSchreiben(d, 'autosave', 'k', () => ({}))).rejects.toMatchObject({ name: 'QuotaExceededError' });
+    expect(d.close).toHaveBeenCalledTimes(1);
+  });
+
+  it('Abbruch ohne Fehler: abgelehnt mit Ersatzmeldung', async () => {
+    const { d } = falscheDb('abbruch');
+    await expect(inStoreSchreiben(d, 'autosave', 'k', () => ({}))).rejects.toThrow('Transaktion abgebrochen');
     expect(d.close).toHaveBeenCalledTimes(1);
   });
 
