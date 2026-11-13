@@ -9,7 +9,7 @@ import { parseProject, serializeProject } from './serialize';
 const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
 
 function project() {
-  let p = createProject('Sanierung EFH Sander');
+  let p = createProject('Sanierung EFH Beispiel');
   p.storeys[0].shapes.push(createOutline(rectPoints({ x: 0, y: 0 }, { x: 10, y: 8 })));
   const pdf = addDatei(p, 'EG.pdf', 'pdf', new Uint8Array([37, 80, 68, 70, 1, 2, 3]));
   p = pdf.project;
@@ -66,7 +66,7 @@ describe('Projektarchiv (.oap)', () => {
       ['manifest.json', 'projekt.json', 'plaene/01-EG.png', 'modell/dach.bin', ...p.dateien!.filter((d) => d.art !== 'dxf').map((d) => `quellen/${d.id}/${d.name}`)].sort(),
     );
     const manifest = JSON.parse(new TextDecoder().decode(files['manifest.json']));
-    expect(manifest).toMatchObject({ format: 'arch-flaechen-tool-archiv', version: 1, app: '9.9.9', projekt: 'Sanierung EFH Sander' });
+    expect(manifest).toMatchObject({ format: 'arch-flaechen-tool-archiv', version: 1, app: '9.9.9', projekt: 'Sanierung EFH Beispiel' });
     // Bilder nicht doppelt als Base64 im Projekt
     expect(new TextDecoder().decode(files['projekt.json'])).not.toContain(PNG);
 

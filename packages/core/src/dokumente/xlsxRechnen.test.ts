@@ -91,7 +91,7 @@ describe('Zellen mit Typ schreiben', () => {
       new Map([[0, new Map<string, string | ZellInhalt>([
         ['C3', { datum: '2025-10-27' }],
         ['D3', { zahl: 5418.8 }],
-        ['E3', { text: 'Witthaut, AB2' }],
+        ['E3', { text: 'Musterbau, AB2' }],
       ])]]),
       { ergebnisseAuffrischen: true },
     );
@@ -100,13 +100,13 @@ describe('Zellen mit Typ schreiben', () => {
     expect(liste.zellen.get('C3')!.anzeige).toBe('27.10.2025');
     expect(stilIstDatum(m.stile, liste.zellen.get('C3')!.stil)).toBe(true);
     expect(liste.zellen.get('D3')!.wert).toBe(5418.8);
-    expect(liste.zellen.get('E3')!.wert).toBe('Witthaut, AB2');
+    expect(liste.zellen.get('E3')!.wert).toBe('Musterbau, AB2');
     expect(liste.zellen.get('D10')!.wert).toBeCloseTo(5518.8, 6);
     expect(m.blaetter[1].zellen.get('E15')!.wert).toBeCloseTo(11037.6, 6);
     // ExcelJS liest die Datei wieder
     const wb = new ExcelJS.Workbook();
     await wb.xlsx.load(neu as unknown as ArrayBuffer);
-    expect(wb.getWorksheet('Liste')!.getCell('E3').value).toBe('Witthaut, AB2');
+    expect(wb.getWorksheet('Liste')!.getCell('E3').value).toBe('Musterbau, AB2');
   });
 
   it('schreibt geteilte Formeln aus, wenn ihre Hauptzelle geändert wird', () => {
