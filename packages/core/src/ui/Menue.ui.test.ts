@@ -459,6 +459,6 @@ describe('gemeinsames Menü', () => {
     expect(b.querySelector('title')?.textContent).toBe('Messen');
     expect(SYMBOLE.length).toBeGreaterThan(30);
     expect(new Set(SYMBOLE).size).toBe(SYMBOLE.length);
-    expect(SYMBOLE).toEqual(expect.arrayContaining(['nachOben', 'nachUnten', 'mehr']));
+    expect(SYMBOLE).toEqual(expect.arrayContaining(['nachOben', 'nachUnten', 'mehr', 'grenze', 'ausrichten']));
   });
 });

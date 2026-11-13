@@ -1979,6 +1979,23 @@ button.ph-lokal {
   color: var(--fehler-text);
 }
 
+/* ungespeicherte Änderungen am Knopf „Speichern“: Punkt außen an der oberen rechten Ecke – ändert die Breite der
+   Leiste nicht; der Knopf sagt es zusätzlich im aria-label („Speichern – ungespeicherte Änderungen“) */
+button.ungespeichert {
+  position: relative;
+}
+button.ungespeichert::after {
+  content: '';
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 7px;
+  height: 7px;
+  border: 1px solid var(--panel);
+  border-radius: 50%;
+  background: var(--sel);
+}
+
 /* Titelleiste in schmalen Fenstern (und im Tab der Rahmen-App): Knöpfe mit Symbol nur noch als Symbol;
    der Name bleibt über aria-label und title erhalten */
 @media (max-width: 960px) {

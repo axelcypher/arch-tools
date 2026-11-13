@@ -93,6 +93,10 @@ Zahlen in Tabellen und Feldern stehen rechtsbündig in Tabellenziffern (`.num`, 
 | `--sel-foto`                       | Auswahl auf Fotos (Magenta, in beiden Schemata gleich) – Orange kollidiert dort mit Mess- und Markierungsfarben |
 | `--danger`                         | zerstörende Aktionen (Löschen)                                                                                  |
 
+**Feste Farben – begründete Ausnahmen:** Zeichenfläche und Papier (siehe Grundsätze) sowie der Schließen-Knopf der
+Titelleiste (`.wc-close:hover` in `#c42b1c` mit weißem Symbol), weil Windows ihn in jedem Schema so zeigt und man ihn
+daran erkennt.
+
 **Auswahl auf Fotos** immer mit Saum zeichnen: Magenta allein hat auf mittleren Fototönen (Putz, Ziegel, Himmel) kaum
 Helligkeitskontrast. Unter der Linie in `--sel-foto` liegt ein Doppelsaum, außen 1px weiß, innen 1px `rgba(0, 0, 0, 0.5)`.
 
@@ -195,7 +199,8 @@ Gemeinsamer Satz in `ui/Symbol.tsx` (Raster 24, Linie 2, runde Enden, Farbe des 
 `<Symbol name="lineal" />`. Ohne `titel` ist das Symbol dekorativ, dann trägt der Knopf den Namen (Text oder
 `aria-label`); mit `titel` ist es ein benanntes Bild.
 
-- Werkzeuge: `auswahl`, `polygon`, `rechteck`, `erkennen` (Fläche aus dem Plan), `lineal` (Messen), `kalibrieren`, `einpassen`, `raster`.
+- Werkzeuge: `auswahl`, `polygon`, `rechteck`, `erkennen` (Fläche aus dem Plan), `lineal` (Messen), `kalibrieren`, `einpassen`, `raster`,
+  `grenze` (Grundstücksgrenze), `ausrichten` (Unterlage auf einen Punkt schieben).
 - Befehle: `speichern`, `drucken`, `export`, `kopie`, `einfuegen`, `muell`, `rueckgaengig`, `wiederholen`, `plus`,
   `suche`, `stift`.
 - Zustand: `haken`, `warnung`, `info`, `schliessen`, `auge`, `augeZu`, `stern`.
@@ -210,7 +215,7 @@ Neue Symbole kommen in diesen Satz, nicht in die App. Keine Emoji (📏 ✂ 🗑
 `ui/Menue.tsx`: Kontextmenü mit `zeigeMenue(e, punkte, name)` im `onContextMenu`, Aufklappmenü mit `<MenueKnopf>`.
 `name` benennt das Menü für Screenreader (z. B. „Projekt 2019-003“); der Aufklappknopf nimmt seinen eigenen Namen. Punkte
 mit `text`, optional `symbol`, `hinweis` (rechts, z. B. der Grund einer Sperre), `tasten` (Tastenkürzel, siehe unten),
-`haken` (Umschalter), `titel`, `gefahr`, `deaktiviert`, `unter` (Untermenü), Trenner mit `{ trenner: true }`.
+`haken` (Umschalter), `bild` (Bild statt Symbol, 16px, z. B. das Symbol einer App), `titel`, `gefahr`, `deaktiviert`, `unter` (Untermenü), Trenner mit `{ trenner: true }`.
 
 - Tastatur: der erste Punkt hat den Fokus, ↑/↓ und Pos1/Ende wandern, → bzw. Enter öffnet ein Untermenü, ← führt
   zurück. Esc schließt nur das Menü (ein Dialog darunter bleibt offen), Tab schließt und gibt den Fokus an den
@@ -261,6 +266,13 @@ Symbol: Text in `<span className="titlebar-text">`, der Name bleibt über `aria-
 unter 1100px am Tab nur Symbol und Namen der App (das Projekt steht im Tooltip); eine Fläche zum Ziehen des Fensters
 bleibt immer frei.
 
+## Ungespeicherte Änderungen
+
+Der Knopf „Speichern“ in der Werkzeugleiste bekommt bei ungespeicherten Änderungen die Klasse `ungespeichert`: ein Punkt
+in Auswahlfarbe außen an der oberen rechten Ecke, der die Breite der Leiste nicht ändert. Dazu sagt es der Knopf im
+`aria-label` („Speichern – ungespeicherte Änderungen“) und im `title`. Der Punkt ● hinter dem Namen in der Titelleiste
+(`TitleBar`, Feld `dirty`) bleibt davon unberührt.
+
 ## Richtig und falsch
 
 | Richtig                                                                                                | Falsch                                                         |
@@ -297,5 +309,7 @@ bleibt immer frei.
 | ATLAS                  | Umsortieren mit `Symbol` `nachOben`/`nachUnten` statt ↑/↓; Zeilenknopf „⋯“ mit Symbol `mehr` und `aria-haspopup="menu"` (dann setzt das Menü `aria-expanded`)                                                                                          |
 | alle                   | eigene Menüs prüfen: Gefahr-Punkte (Löschen) ans Ende, abgesetzt durch einen Trenner                                                                                                                                                                   |
 | ATLAS, PERMIO          | „Im Explorer öffnen“ → „Ordner öffnen“ (ATLAS `ProjektStart.tsx`; PERMIO `Seitenleiste.tsx`, `AblageBaum.tsx`)                                                                                                                                         |
+| QUADRIO, TERRIO        | eigenen Punkt `tb-dirty` am Knopf „Speichern“ durch `className="ungespeichert"` ersetzen, eigene CSS-Regel löschen (QUADRIO `Toolbar.tsx`, `styles.css`; TERRIO `App.tsx`)                                                                             |
+| TERRIO                 | Lageplan-Werkzeuge „Grenze“ mit `grenze`, „Ausrichten“ mit `ausrichten` statt `ziel`                                                                                                                                                                   |
 
 Zeilennummern beziehen sich auf den Stand dieser Richtlinie.
