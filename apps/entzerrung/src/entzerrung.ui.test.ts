@@ -293,7 +293,8 @@ describe('RECTIO (Entzerrung)', () => {
       const linie = [...host.querySelectorAll('path.ef-messung')][1]!;
       act(() => void linie.dispatchEvent(new PointerEvent('pointerdown', { button: 2, bubbles: true })));
       expect(useEntz.getState().auswahl).toEqual({ art: 'messung', id: 'm2' });
-      const loeschen = flaechenMenue()[0] as Exclude<MenuePunkt, { trenner: true }>;
+      const loeschen = flaechenMenue().at(-1) as Exclude<MenuePunkt, { trenner: true }>;
+      expect((flaechenMenue()[0] as { text: string }).text).toBe('Alles zeigen');
       expect(loeschen.text).toBe('„Strecke 2“ löschen');
       act(() => loeschen.aktion!());
       expect(aktuell(useEntz.getState()).ebene!.messungen.map((m) => m.id)).toEqual(['m1']);

@@ -233,16 +233,8 @@ export function flaechenMenue(): MenuePunkt[] {
   const entzerrbar = !!foto && !!ebene && entzerrung(foto, ebene).ok;
   const ecke = s.auswahl?.art === 'ecke';
   const name = auswahlName();
+  // der Löschpunkt steht am Ende: der erste Punkt hat den Fokus, Enter nach dem Rechtsklick soll nichts löschen
   return [
-    {
-      text: name ? `${name} löschen` : 'Löschen',
-      symbol: 'muell',
-      hinweis: ecke ? 'Ecken über „Ecken neu setzen“' : name ? 'Entf' : 'nichts ausgewählt',
-      deaktiviert: !name || ecke,
-      gefahr: true,
-      aktion: auswahlLoeschen,
-    },
-    { trenner: true },
     { text: 'Alles zeigen', symbol: 'einpassen', hinweis: 'Pos1', deaktiviert: !foto, aktion: () => window.dispatchEvent(new Event('entz:einpassen')) },
     {
       text: s.ansicht === 'entzerrt' ? 'Foto zeigen' : 'Entzerrt zeigen',
@@ -254,5 +246,14 @@ export function flaechenMenue(): MenuePunkt[] {
     { trenner: true },
     { text: 'Rückgängig', symbol: 'rueckgaengig', hinweis: 'Strg+Z', deaktiviert: !s.vergangenheit.length, aktion: s.rueckgaengig },
     { text: 'Wiederholen', symbol: 'wiederholen', hinweis: 'Strg+Y', deaktiviert: !s.zukunft.length, aktion: s.wiederholen },
+    { trenner: true },
+    {
+      text: name ? `${name} löschen` : 'Löschen',
+      symbol: 'muell',
+      hinweis: ecke ? 'Ecken über „Ecken neu setzen“' : name ? 'Entf' : 'nichts ausgewählt',
+      deaktiviert: !name || ecke,
+      gefahr: true,
+      aktion: auswahlLoeschen,
+    },
   ];
 }
