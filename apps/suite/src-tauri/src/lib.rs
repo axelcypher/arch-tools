@@ -37,6 +37,9 @@ pub fn run() {
             projekt_datei_umbenennen,
             // gemeinsam
             konfig_basis,
+            konfig_dateien,
+            konfig_schreiben_wenn,
+            ordner_erreichbar,
             ordner_waehlen,
             ordner_zeigen,
             projekt_liste,
