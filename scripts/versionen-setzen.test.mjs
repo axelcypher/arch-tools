@@ -112,7 +112,8 @@ test('setzt alle fünf Stellen jeder App (Crate-Name aus Cargo.toml), sonst nich
   const lock = JSON.parse(lies('package-lock.json'));
   assert.equal(lock.packages['apps/flaechenrechner'].version, '9.8.7');
   assert.equal(lock.packages['apps/suite'].version, '1.2.3');
-  assert.equal(lock.packages['apps/grz'].version, stand.grz);
+  // andere Apps unverändert (Vergleich mit dem Stand im Repo, nicht mit einer festen Nummer)
+  assert.equal(lock.packages['apps/grz'].version, JSON.parse(readFileSync('apps/grz/package.json', 'utf8')).version);
 });
 
 test('ein Fehler beim Setzen hinterlässt keinen halb gesetzten Stand', () => {
