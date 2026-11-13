@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { sichererDateiname } from '@core/projektdatei';
 import { verbinde, waehleOrdner } from '../dateisystem';
 import { useFormulare } from '../store';
-import { Symbol } from './Symbol';
+import { Symbol } from '@core/ui/Symbol';
 import { Modal } from '@core/ui/Dialog';
 
 /**

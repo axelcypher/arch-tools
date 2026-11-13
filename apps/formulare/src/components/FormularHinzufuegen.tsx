@@ -4,7 +4,7 @@ import { anzeigeName } from '../antrag';
 import type { Vorlage } from '../antragStore';
 import { useAntrag } from '../antragStore';
 import { useFormulare } from '../store';
-import { Symbol } from './Symbol';
+import { Symbol } from '@core/ui/Symbol';
 import { Modal } from '@core/ui/Dialog';
 
 /** Offener Dialog „Formular hinzufügen“ */

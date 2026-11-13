@@ -10,7 +10,7 @@ import type { Eintrag } from '../dateisystem';
 import { oeffnePfad, verbinde } from '../dateisystem';
 import { pdfOeffnen, pdfSchliessen } from '../dokumente/pdf';
 import { useFormulare } from '../store';
-import { Symbol } from './Symbol';
+import { Symbol } from '@core/ui/Symbol';
 
 /** Zoomstufen der Vorschau (0 = Seitenbreite) */
 export const VORSCHAU_ZOOM = [0, 0.5, 0.75, 1, 1.25, 1.5, 2, 3];
