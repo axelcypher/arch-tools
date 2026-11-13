@@ -1,5 +1,24 @@
 import { useEffect, useRef, useState } from 'react';
+import { create } from 'zustand';
 import { alsZahl } from '@core/dokumente/xlsx';
+
+/**
+ * Begonnene, noch nicht übernommene Eingabe (Felder übernehmen erst beim Verlassen oder mit Enter). Bei offenem LV
+ * zählt sie als ungespeicherte Änderung (●), damit Arkly beim Schließen „Änderungen speichern?“ fragt, auch wenn der
+ * Cursor noch im Feld steht; *Speichern* übernimmt sie dann über `eingabeAbschliessen`.
+ */
+export const useEntwurf = create<{ offen: boolean }>(() => ({ offen: false }));
+export const entwurfSetzen = (offen: boolean) => useEntwurf.getState().offen !== offen && useEntwurf.setState({ offen });
+
+/** Entwurf des Felds beim Abbau zurücksetzen (ein Feld mit Fokus verschwindet, ohne den Fokus abzugeben) */
+export function useEntwurfAufraeumen(fokus: React.MutableRefObject<boolean>) {
+  useEffect(
+    () => () => {
+      if (fokus.current) entwurfSetzen(false);
+    },
+    [fokus],
+  );
+}
 
 /** Zahl deutsch anzeigen */
 export const zahlDE = (n: number | null | undefined, stellen?: number) =>
@@ -41,6 +60,7 @@ export function ZahlEingabe({
   useEffect(() => {
     if (!fokus.current) setText(zahlDE(wert, stellen));
   }, [wert, stellen]);
+  useEntwurfAufraeumen(fokus);
   const uebernehmen = () => {
     // unverändert angezeigter Wert: nichts übernehmen (sonst würde ein gerundet angezeigter Wert still gekürzt)
     if (text === zahlDE(wert, stellen)) {
@@ -79,13 +99,17 @@ export function ZahlEingabe({
       }}
       onBlur={() => {
         fokus.current = false;
+        entwurfSetzen(false);
         if (verworfen.current) {
           verworfen.current = false;
           return;
         }
         uebernehmen();
       }}
-      onChange={(e) => setText(e.target.value)}
+      onChange={(e) => {
+        setText(e.target.value);
+        entwurfSetzen(e.target.value !== zahlDE(wert, stellen));
+      }}
       onKeyDown={(e) => {
         if (e.key === 'Enter') {
           uebernehmen();
@@ -137,6 +161,7 @@ export function TextEingabe({
   useEffect(() => {
     if (!fokus.current) setText(wert ?? '');
   }, [wert]);
+  useEntwurfAufraeumen(fokus);
   const props = {
     className,
     value: text,
@@ -150,13 +175,17 @@ export function TextEingabe({
     },
     onBlur: () => {
       fokus.current = false;
+      entwurfSetzen(false);
       if (verworfen.current) {
         verworfen.current = false;
         return;
       }
       if (text !== (wert ?? '')) onChange(text);
     },
-    onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setText(e.target.value),
+    onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      setText(e.target.value);
+      entwurfSetzen(e.target.value !== (wert ?? ''));
+    },
   };
   if (mehrzeilig) return <textarea {...props} rows={zeilen} />;
   return (

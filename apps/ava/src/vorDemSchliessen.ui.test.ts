@@ -3,8 +3,8 @@ import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { schliessenVorbereiten } from '@core/platform/rahmen';
-import { clearLog, getEntries } from '@core/platform/log';
-import { TextEingabe } from './components/eingaben';
+import { TextEingabe, useEntwurf } from './components/eingaben';
+import { Langtext } from './components/lv/Langtext';
 import { ausstehendesSchreibenAbwarten, schreibend, useAva } from './store';
 import { berichtAblegen } from './components/bauleitung/gemeinsam';
 import { App } from './App';
@@ -12,11 +12,25 @@ import { App } from './App';
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 let root: ReturnType<typeof createRoot> | null = null;
+/** weitere Wurzeln eines Tests – auch bei gescheiterter Erwartung abgebaut */
+const weitere: ReturnType<typeof createRoot>[] = [];
 afterEach(() => {
   act(() => root?.unmount());
   root = null;
+  act(() => weitere.splice(0).forEach((r) => r.unmount()));
+  useEntwurf.setState({ offen: false });
   document.body.innerHTML = '';
 });
+
+/** Komponente in einer weiteren Wurzel zeigen; liefert den Host */
+function zeigen(el: ReturnType<typeof createElement>): HTMLElement {
+  const host = document.createElement('div');
+  document.body.appendChild(host);
+  const r = createRoot(host);
+  weitere.push(r);
+  act(() => r.render(el));
+  return host;
+}
 
 const takt = () => new Promise((r) => setTimeout(r, 0));
 
@@ -47,23 +61,11 @@ describe('Vor dem Schließen: laufendes Schreiben abwarten (Arkly vorDemSchliess
     await expect(ausstehendesSchreibenAbwarten()).resolves.toBe(true);
   });
 
-  it('ungespeicherte Änderungen nach dem Warten: false mit Protokolleintrag, auch beim zweiten Aufruf, bis gespeichert oder verworfen', async () => {
-    clearLog();
-    let offen = true;
-    await expect(ausstehendesSchreibenAbwarten(() => offen)).resolves.toBe(false);
-    await expect(ausstehendesSchreibenAbwarten(() => offen)).resolves.toBe(false);
-    const warnungen = getEntries().filter((e) => e.scope === 'schreiben' && e.level === 'warn');
-    expect(warnungen).toHaveLength(2);
-    expect(warnungen[0].message).toContain('ungespeicherte Änderungen');
-    offen = false; // gespeichert oder verworfen
-    await expect(ausstehendesSchreibenAbwarten(() => offen)).resolves.toBe(true);
-  });
-
   it('ein Schreiben, das schon vor dem Aufruf gescheitert ist (z. B. Projektdatei), hält das Schließen nicht auf: im Speicher ist nichts ungespeichert', async () => {
     const p = schreibend(Promise.reject(new Error('Projektdatei gesperrt')));
     p.catch(() => {});
     await takt();
-    await expect(ausstehendesSchreibenAbwarten(() => false)).resolves.toBe(true);
+    await expect(ausstehendesSchreibenAbwarten()).resolves.toBe(true);
   });
 
   it('übernimmt die laufende Eingabe genau einmal, auch bei mehrfachem Aufruf', async () => {
@@ -156,20 +158,10 @@ describe('Vor dem Schließen: laufendes Schreiben abwarten (Arkly vorDemSchliess
     await act(takt);
     scheitern();
     await act(async () => void (await expect(gescheitert).resolves.toBe('fehler')));
-    // LV mit ungespeicherten Änderungen (z. B. nach gescheitertem Speichern): bleibt „fehler“, auch bei „Erneut versuchen“
+    // geändertes LV ist kein Schreibfehler: das fragt Arkly vorher als „Änderungen speichern?“ (dirty) – hier „fertig“
     const vorher = useAva.getState();
     try {
-      const alt = { positionen: [] };
-      useAva.setState({ lv: { lv: { positionen: [1] }, basis: alt } as never });
-      await act(async () => void (await expect(schliessenVorbereiten(1000)).resolves.toBe('fehler')));
-      await act(async () => void (await expect(schliessenVorbereiten(1000)).resolves.toBe('fehler')));
-      // gespeichert (Stand = Basis) → fertig
-      useAva.setState({ lv: { lv: alt, basis: alt } as never });
-      await act(async () => void (await expect(schliessenVorbereiten(1000)).resolves.toBe('fertig')));
-      // verworfen bzw. LV geschlossen → fertig
-      useAva.setState({ lv: { lv: { positionen: [2] }, basis: alt } as never });
-      await act(async () => void (await expect(schliessenVorbereiten(1000)).resolves.toBe('fehler')));
-      useAva.setState({ lv: null });
+      useAva.setState({ lv: { lv: { positionen: [1] }, basis: { positionen: [] } } as never });
       await act(async () => void (await expect(schliessenVorbereiten(1000)).resolves.toBe('fertig')));
     } finally {
       useAva.setState(vorher, true);
@@ -181,5 +173,93 @@ describe('Vor dem Schließen: laufendes Schreiben abwarten (Arkly vorDemSchliess
     void schreibend(new Promise<void>((r) => (haengt = r)));
     await expect(schliessenVorbereiten(50)).resolves.toBe('fertig');
     haengt();
+  });
+
+  it('im Arkly-Tab: geändertes LV meldet dirty an Arkly, „Speichern“ auf Anfrage speichert das LV', async () => {
+    const rahmen = { postMessage: vi.fn() };
+    const adresse = window.location.href;
+    const parentVorher = Object.getOwnPropertyDescriptor(window, 'parent');
+    const vorher = useAva.getState();
+    const lvSpeichern = vi.fn(async () => true);
+    try {
+      Object.defineProperty(window, 'parent', { configurable: true, value: rahmen });
+      window.history.replaceState(null, '', '/?rahmen=tab&app=ava');
+      const status = () => rahmen.postMessage.mock.calls.map(([n]) => n).filter((n) => n?.typ === 'arch-tools:status');
+      const host = document.createElement('div');
+      document.body.appendChild(host);
+      act(() => {
+        root = createRoot(host);
+        root.render(createElement(App));
+      });
+      // Gegenprobe: ohne Änderung nicht dirty
+      expect(status().at(-1)?.dirty).toBe(false);
+      const basis = { positionen: [] };
+      act(() => useAva.setState({ lv: { lv: { positionen: [1] }, basis, format: 'x83', datei: { name: 'LV 1.x83' } } as never, lvSpeichern }));
+      expect(status().at(-1)?.dirty).toBe(true);
+      // Arkly fragt „Änderungen speichern?“ → Speichern: Anfrage an den Tab, FABRIO speichert das LV
+      await act(async () => {
+        window.dispatchEvent(new MessageEvent('message', { data: { typ: 'arch-tools:speichern', anfrage: 'a1' }, origin: window.location.origin, source: rahmen as never }));
+        await takt();
+      });
+      expect(lvSpeichern).toHaveBeenCalledTimes(1);
+      expect(rahmen.postMessage).toHaveBeenCalledWith({ typ: 'arch-tools:gespeichert', anfrage: 'a1', ok: true }, window.location.origin);
+
+      // begonnene Eingabe im LV-Feld (Cursor noch im Feld): schon dirty, damit Arkly fragt; Speichern übernimmt sie
+      act(() => useAva.setState({ lv: { lv: basis, basis, format: 'x83', datei: { name: 'LV 1.x83' } } as never }));
+      expect(status().at(-1)?.dirty).toBe(false);
+      const menge = vi.fn(() => useAva.setState({ lv: { ...useAva.getState().lv!, lv: { positionen: [3] } } as never }));
+      const feld = zeigen(createElement(TextEingabe, { wert: '1', onChange: menge })).querySelector('input')!;
+      act(() => {
+        feld.focus();
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(feld, '12');
+        feld.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+      expect(menge).not.toHaveBeenCalled();
+      expect(status().at(-1)?.dirty).toBe(true);
+      await act(async () => {
+        window.dispatchEvent(new MessageEvent('message', { data: { typ: 'arch-tools:speichern', anfrage: 'a2' }, origin: window.location.origin, source: rahmen as never }));
+        await takt();
+      });
+      expect(menge).toHaveBeenCalledWith('12');
+      expect(lvSpeichern).toHaveBeenCalledTimes(2);
+      expect(rahmen.postMessage).toHaveBeenCalledWith({ typ: 'arch-tools:gespeichert', anfrage: 'a2', ok: true }, window.location.origin);
+
+      // Langtext (contentEditable) ebenso: Tippen macht dirty, Speichern übernimmt ihn
+      act(() => useAva.setState({ lv: { lv: basis, basis, format: 'x83', datei: { name: 'LV 1.x83' } } as never }));
+      expect(status().at(-1)?.dirty).toBe(false);
+      const langtext = vi.fn(() => useAva.setState({ lv: { ...useAva.getState().lv!, lv: { positionen: [4] } } as never }));
+      const flaeche = zeigen(createElement(Langtext, { wert: [{ laeufe: [{ text: 'Mauerwerk' }] }] as never, onChange: langtext })).querySelector<HTMLElement>('[role="textbox"]')!;
+      act(() => {
+        flaeche.focus();
+        flaeche.innerHTML = '<p>Mauerwerk aus Kalksandstein</p>';
+        flaeche.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+      expect(langtext).not.toHaveBeenCalled();
+      expect(status().at(-1)?.dirty).toBe(true);
+      await act(async () => {
+        window.dispatchEvent(new MessageEvent('message', { data: { typ: 'arch-tools:speichern', anfrage: 'a3' }, origin: window.location.origin, source: rahmen as never }));
+        await takt();
+      });
+      expect(langtext).toHaveBeenCalledTimes(1);
+      expect(lvSpeichern).toHaveBeenCalledTimes(3);
+
+      // Gegenprobe: ohne offenes LV macht eine begonnene Eingabe (z. B. Stammdaten, speichern beim Verlassen) nicht dirty
+      act(() => useAva.setState({ lv: null }));
+      const zweit = zeigen(createElement(TextEingabe, { wert: 'a', onChange: () => {} })).querySelector('input')!;
+      act(() => {
+        zweit.focus();
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(zweit, 'ab');
+        zweit.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+      expect(useEntwurf.getState().offen).toBe(true);
+      expect(status().at(-1)?.dirty).toBe(false);
+    } finally {
+      act(() => root?.unmount());
+      root = null;
+      useAva.setState(vorher, true);
+      window.history.replaceState(null, '', adresse);
+      if (parentVorher) Object.defineProperty(window, 'parent', parentVorher);
+      else delete (window as { parent?: unknown }).parent;
+    }
   });
 });
