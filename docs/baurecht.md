@@ -82,7 +82,10 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   Frage, die gerade nicht gestellt wird (nach einem Ortswechsel, einem zurückgesetzten Auslöser wie dem Umfang der
   Beseitigung), zählt nicht – weder in den Regeln noch für Ableitungen (bis zum Fixpunkt: eine weggelassene Antwort kann
   weitere Fragen verbergen); das Protokoll führt solche Antworten gesondert („Antworten auf derzeit nicht gestellte
-  Fragen (ohne Wirkung)“). Hängt ein Paragraf an einem anderen, der nur „gilt, Ausnahme möglich“ ist, und entfiele er
+  Fragen (ohne Wirkung)“). Wird eine Frage nur wegen eines Hinweises gestellt (z. B. „Altbau verfahrensfrei“, weil der
+  Umfang „Abbruch mit Ersatzbau“ nur Hinweis ist), zählt die Antwort darauf selbst nur als Hinweis („Frage nur über den
+  Hinweis … gestellt“): Ein Hinweis hebt so auch auf diesem Umweg keinen Paragrafen auf „entfällt“, höchstens bleibt er
+  „prüfen“; mit bestätigtem Hinweis zählt sie wieder voll. Hängt ein Paragraf an einem anderen, der nur „gilt, Ausnahme möglich“ ist, und entfiele er
   mit dessen Ausnahme, nennt er sie („Ausnahme möglich über § 14 BNatSchG – es fehlt dort: …“); die Ampel bleibt „gilt“.
   Unter „Ausnahme möglich – es fehlt“ stehen nur Fragen, die gerade gestellt werden (ohne Ausweichen auf nicht
   gestellte: eine Ausnahme, deren Fragen nicht gestellt sind, wird nicht angeboten). Ist die Ausnahme nur über Hinweise

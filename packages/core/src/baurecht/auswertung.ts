@@ -17,7 +17,7 @@ import type { Bewertung, KurzKontext, TextKontext } from './kurz';
 import { kurzText, offenText, warumText, werten } from './kurz';
 import type { Paket } from './paket';
 import { regeldateiFuer } from './paket';
-import { frageGestellt } from './fragen';
+import { frageGestellt, frageStand } from './fragen';
 import { plusMonate } from '../recht/quellen';
 import { ortGeaendert } from './ort';
 import type { Ampel, FaktDef, FaktWert, Festlegung, Hinweis, Kurz, Modul, NormErgebnis, Ort, ParagrafErgebnis, ParagrafRegel, Wahrheit } from './typen';
@@ -239,8 +239,25 @@ function modulQuellen(id: string, fakten: Record<string, FaktWert>, defs: Record
 }
 
 /**
+ * Antworten auf Fragen, die nur wegen eines Hinweises gestellt werden (frageStand), zählen selbst nur als Hinweis – sonst
+ * höbe der Hinweis über die Antwort einen Paragrafen auf „entfällt“ (z. B. „Altbau verfahrensfrei: ja“, gestellt nur, weil
+ * der Umfang „Abbruch mit Ersatzbau“ nicht gesichert ist). Eine Bestätigung von Hand bleibt (sie zählt wie bisher).
+ */
+function ueberHinweisGestellt(antworten: Record<string, FaktWert>, ableiten: (f: Record<string, FaktWert>) => Record<string, FaktWert>, defs: Record<string, FaktDef>, rest: Omit<KurzKontext, 'fakten'>): Record<string, FaktWert> {
+  const ctx: KurzKontext = { ...rest, fakten: ableiten(antworten) };
+  const out: Record<string, FaktWert> = {};
+  for (const [id, w] of Object.entries(antworten)) {
+    const hinweise = frageStand(id, defs[id], ctx).ueberHinweis.filter((h) => h !== id);
+    if (!hinweise.length || w.sicherheit === 'hinweis' || w.wert === null || w.wert === '') out[id] = w;
+    else out[id] = { ...w, sicherheit: 'hinweis', grund: `Frage nur über ${hinweise.length === 1 ? 'den Hinweis' : 'die Hinweise'} ${hinweise.map((h) => defs[h]?.titel ?? h).join(', ')} gestellt` };
+  }
+  return out;
+}
+
+/**
  * Die Antworten, deren Frage gestellt wird (frageGestellt) – ausgewertet mit den abgeleiteten Werten (`ableiten`), bis
- * sich nichts mehr ändert (höchstens einige Runden; eine weggelassene Antwort kann weitere Fragen verbergen)
+ * sich nichts mehr ändert (höchstens einige Runden; eine weggelassene Antwort kann weitere Fragen verbergen). Antworten
+ * auf Fragen, die nur über einen Hinweis gestellt werden, zählen nur als Hinweis (ueberHinweisGestellt).
  */
 export function gestellteAntworten(eingabe: Record<string, FaktWert>, ableiten: (f: Record<string, FaktWert>) => Record<string, FaktWert>, defs: Record<string, FaktDef>, rest: Omit<KurzKontext, 'fakten'>): Record<string, FaktWert> {
   let gestellt = eingabe;
@@ -251,14 +268,14 @@ export function gestellteAntworten(eingabe: Record<string, FaktWert>, ableiten: 
   for (let runde = 0; runde < runden; runde++) {
     const ctx: KurzKontext = { ...rest, fakten: ableiten(gestellt) };
     const naechste = Object.fromEntries(Object.entries(eingabe).filter(([id]) => frageGestellt(id, defs[id], ctx)));
-    if (Object.keys(naechste).length === Object.keys(gestellt).length && Object.keys(naechste).every((id) => id in gestellt)) return naechste;
+    if (Object.keys(naechste).length === Object.keys(gestellt).length && Object.keys(naechste).every((id) => id in gestellt)) return ueberHinweisGestellt(naechste, ableiten, defs, rest);
     immer = new Set([...immer].filter((id) => id in naechste));
     gestellt = naechste;
   }
   // kein Fixpunkt (Bedingungen, die sich gegenseitig ein- und ausschalten – paketPruefen lehnt solche Zyklen ab): nur die
   // Antworten, die in jeder Runde gestellt waren. Eine weggelassene Antwort führt nur zu „offen“ (Regeln dürfen nicht nach
   // „bekannt“ fragen), eine behaltene könnte ein Grün tragen
-  return Object.fromEntries(Object.entries(eingabe).filter(([id]) => immer.has(id)));
+  return ueberHinweisGestellt(Object.fromEntries(Object.entries(eingabe).filter(([id]) => immer.has(id))), ableiten, defs, rest);
 }
 
 /** ganze Tage von einem Zeitpunkt (ISO) bis zu einem Tag (JJJJ-MM-TT) */

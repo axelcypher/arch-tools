@@ -280,6 +280,27 @@ describe('neue Merkmalwerte (Erweiterung, Wohn- und Geschäftshaus)', () => {
   });
 });
 
+/** Angaben, die im `wenn` einer anderen Angabe stehen (auch über Bausteine) – sie entscheiden, ob eine Frage gestellt wird */
+const AUSLOESER: ReadonlySet<string> = (() => {
+  const out = new Set<string>();
+  const bausteine: Record<string, unknown> = Object.assign({}, ...aktiveModule(paket.module, SOEST).map((m) => m.bausteine ?? {}));
+  const besucht = new Set<string>();
+  const lauf = (k: unknown): void => {
+    if (Array.isArray(k)) k.forEach(lauf);
+    else if (k && typeof k === 'object') {
+      const o = k as Record<string, unknown>;
+      if (typeof o.f === 'string') out.add(o.f);
+      if (typeof o.$ === 'string' && !besucht.has(o.$)) {
+        besucht.add(o.$);
+        lauf(bausteine[o.$]);
+      }
+      Object.values(o).forEach(lauf);
+    }
+  };
+  for (const d of Object.values(faktDefinitionen(aktiveModule(paket.module, SOEST)))) lauf(d.wenn);
+  return out;
+})();
+
 describe('Fallmatrix', () => {
   it('kein falsches Grün: Ergänzen, Herabstufen, Text, Begründung', { timeout: 600000 }, () => {
     const fehler: string[] = [];
@@ -325,8 +346,12 @@ describe('Fallmatrix', () => {
       //    grün sein – sonst wurde der Hinweis wie eine gesicherte Angabe behandelt (je Paragraf und Fakt einmal)
       for (const { m, p, ref } of gruen) {
         for (const v of [...new Set([...p.verwendet, ...ref])]) {
-          if (v.includes(':') || !lauf.fakten[v] || geprueftHerab.has(`${p.id}|${v}`)) continue;
-          geprueftHerab.add(`${p.id}|${v}`);
+          // je Paragraf und Fakt einmal; Auslöser einer Frage (stehen im `wenn` einer anderen Angabe) dagegen je grünem Pfad
+          // (die Angaben, auf denen das Grün beruht): Über eine Rückfrage kann ein Hinweis auf einem anderen Pfad ein Grün
+          // tragen (Befund: Umfang der Beseitigung nur Hinweis → „Altbau verfahrensfrei“ gestellt → § 74 BauO NRW grün)
+          const pfad = AUSLOESER.has(v) ? `${p.id}|${v}|${[...p.verwendet].sort().join(',')}` : `${p.id}|${v}`;
+          if (v.includes(':') || !lauf.fakten[v] || geprueftHerab.has(pfad)) continue;
+          geprueftHerab.add(pfad);
           const alsHinweis = { ...lauf.fakten, [v]: { ...lauf.fakten[v], sicherheit: 'hinweis' as const, grund: 'Test' } };
           // „unbekannt“ ausdrücklich (leerer Wert von Hand) – sonst spränge eine Tabelle des Moduls mit anderem Wert ein
           const ohne = { ...lauf.fakten, [v]: { wert: null, herkunft: 'manuell' as const, sicherheit: 'sicher' as const } };
@@ -2289,6 +2314,41 @@ describe('Fälle aus dem Fachreview', () => {
   });
 });
 
+
+describe('Hinweise tragen kein Grün über gestellte Fragen', () => {
+  // Befund der Fallmatrix: Ist der Umfang der Beseitigung nur Hinweis („Abbruch mit Ersatzbau“), wird „Altbau
+  // verfahrensfrei“ gestellt – die Antwort darauf hob § 74 BauO NRW und §§ 1, 2, 15 BauPrüfVO auf „entfällt“, obwohl
+  // ohne den Umfang „prüfen“ gälte. Eine Antwort auf eine nur über Hinweise gestellte Frage zählt selbst nur als Hinweis.
+  const m = { Vorhaben: 'Beseitigung', Gebäudeart: 'Einfamilienhaus', Gebäudeklasse: '1', Planungsrecht: 'Bebauungsplan', Verfahren: 'verfahrensfrei' };
+  const IDS = ['nw/bauo-nrw/74', 'nw/baupruefvo/1', 'nw/baupruefvo/2', 'nw/baupruefvo/15'];
+  const v = 'vorhaben.beseitigung_umfang';
+  const ampelnBei = (f: Record<string, FaktWert>) => {
+    const a = auswerten(eingabe(m, f, TEXTE));
+    return Object.fromEntries(IDS.map((id) => [id, a.paragrafen.find((p) => p.id === id)!.automatisch]));
+  };
+
+  it('Umfang nur als Hinweis: § 74 BauO NRW, §§ 1, 2, 15 BauPrüfVO „prüfen“, nicht „entfällt“; gesichert bleibt es „entfällt“', () => {
+    const f = alleFakten('ja');
+    expect(f[v]?.wert).toBe('Abbruch mit Ersatzbau');
+    // die Fallmatrix prüft den Umfang als Auslöser einer Frage je grünem Pfad (über den Baustein „ersatzbau“)
+    expect(AUSLOESER.has(v)).toBe(true);
+    const alle = (ampel: string) => Object.fromEntries(IDS.map((id) => [id, ampel]));
+    expect(ampelnBei(f)).toEqual(alle('gruen'));
+    expect(ampelnBei({ ...f, [v]: { ...f[v], sicherheit: 'hinweis', grund: 'aus dem Formular' } })).toEqual(alle('gelb'));
+    expect(ampelnBei({ ...f, [v]: { wert: null, herkunft: 'manuell', sicherheit: 'sicher' } })).toEqual(alle('gelb'));
+    // der bestätigte Hinweis zählt wieder wie eine gesicherte Angabe
+    expect(ampelnBei({ ...f, [v]: { ...f[v], sicherheit: 'hinweis', bestaetigt: { von: 'TP', am: '2026-11-13', grund: 'Abbruchantrag' } } })).toEqual(alle('gruen'));
+  });
+
+  it('die Antwort auf die nur über den Hinweis gestellte Frage steht als Hinweis mit Grund in der Auswertung', () => {
+    const f = alleFakten('ja');
+    const a = auswerten(eingabe(m, { ...f, [v]: { ...f[v], sicherheit: 'hinweis' } }, TEXTE));
+    expect(a.fakten['nw.altbau_verfahrensfrei']).toMatchObject({ wert: true, sicherheit: 'hinweis' });
+    expect(a.fakten['nw.altbau_verfahrensfrei'].grund).toMatch(/^Frage nur über den Hinweis .*Beseitigung.* gestellt$/);
+    // gesichert: keine Herabstufung
+    expect(auswerten(eingabe(m, f, TEXTE)).fakten['nw.altbau_verfahrensfrei'].sicherheit).toBe('sicher');
+  });
+});
 
 describe('Werkzeuge', () => {
   it('index-pruefen: Laufnummer genau, keine mitgelieferte Signatur, Dateien wie im Repo', () => {
