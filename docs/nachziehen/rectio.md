@@ -10,3 +10,4 @@ sich auf den Stand beim Eintragen.
 - eigenes Kontextmenü der Arbeitsfläche auf `zeigeMenue` umstellen
 - Dialoge auf `Modal` (Titel mit `kopf` statt `h3` im Inhalt) und Befehle nach „Begriffe“ benennen (Befehle, die einen Dialog öffnen, mit „ …“) – prüfen, ob noch etwas offen ist
 - eigene Menüs prüfen: Gefahr-Punkte (Löschen) ans Ende, abgesetzt durch einen Trenner
+- „+ Foto …“ und „+ Ebene“ durch `<Symbol name="plus" />` mit „Foto …“ bzw. „Ebene“ ersetzen: `FotoLeiste.tsx`, `App.tsx`

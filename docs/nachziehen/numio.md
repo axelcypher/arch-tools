@@ -6,3 +6,5 @@ sich auf den Stand beim Eintragen.
 
 Zurzeit nichts offen (erledigt mit #37: Spaltenüberschriften, Druckvorschau, `.segment`, `Modal` mit `kopf` und „ …“,
 `planFuellungDunkel` im Mengenplan; NUMIO hat keine eigenen Menüs).
+
+- „+ Position“ durch `<Symbol name="plus" />` und „Position“ ersetzen: `KostenView.tsx`
