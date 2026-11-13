@@ -901,7 +901,7 @@ describe('Formulare', () => {
     const treffer = () => [...dialog.querySelectorAll<HTMLElement>('[role="option"]')];
     expect(treffer().length).toBeGreaterThan(1);
     expect(suche.getAttribute('aria-activedescendant')).toBe(treffer()[0].id);
-    // ↓: der zweite Treffer ist markiert und wird ins Bild gerollt; Tab erreicht die Treffer nicht (nur über das Suchfeld)
+    // ↓: der zweite Treffer ist markiert und wird ins Bild gerollt
     const gerollt: Element[] = [];
     const vorher = Element.prototype.scrollIntoView;
     Element.prototype.scrollIntoView = function (this: Element) {
@@ -916,7 +916,12 @@ describe('Formulare', () => {
     expect(suche.getAttribute('aria-activedescendant')).toBe(treffer()[1].id);
     expect(treffer()[1].getAttribute('aria-selected')).toBe('true');
     expect(gerollt).toContain(treffer()[1]);
-    expect(treffer().every((t) => t.tabIndex === -1)).toBe(true);
+    // Tab bleibt im Suchfeld: die Treffer sind keine Bedienelemente (kein Ziel der Fokusfalle), Tab wird abgefangen
+    expect(dialog.querySelectorAll('button, [tabindex]')).toHaveLength(0);
+    const tab = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true });
+    act(() => void suche.dispatchEvent(tab));
+    expect(tab.defaultPrevented).toBe(true);
+    expect(document.activeElement).toBe(suche);
     // Esc schließt – der Fokus kehrt zum Knopf „Suchen …“ zurück
     taste(suche, 'Escape');
     await warte();

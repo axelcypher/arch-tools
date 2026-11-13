@@ -26,6 +26,7 @@ export function DateiKopf({
   datei,
   geaendert,
   bearbeitbar,
+  beschaeftigt = false,
   hinweis,
   onSpeichern,
   onVerwerfen,
@@ -34,6 +35,8 @@ export function DateiKopf({
   datei: OffeneDatei;
   geaendert: boolean;
   bearbeitbar: boolean;
+  /** wird gerade gespeichert: Speichern, Verwerfen und Neu laden ruhen */
+  beschaeftigt?: boolean;
   hinweis?: string;
   onSpeichern?: () => void;
   onVerwerfen?: () => void;
@@ -53,15 +56,15 @@ export function DateiKopf({
         {werkzeuge}
         {bearbeitbar && onSpeichern && (
           <>
-            <button className="primary" disabled={!geaendert} title="In die Datei im Projektordner speichern (Strg+S); die vorige Fassung bleibt als Sicherung" onClick={onSpeichern}>
+            <button className="primary" disabled={!geaendert || beschaeftigt} title="In die Datei im Projektordner speichern (Strg+S); die vorige Fassung bleibt als Sicherung" onClick={onSpeichern}>
               Speichern
             </button>
-            <button disabled={!geaendert} onClick={onVerwerfen}>
+            <button disabled={!geaendert || beschaeftigt} onClick={onVerwerfen}>
               Verwerfen
             </button>
           </>
         )}
-        <button title="Datei neu einlesen" onClick={() => void dateiNeuLaden()}>
+        <button title="Datei neu einlesen" disabled={beschaeftigt} onClick={() => void dateiNeuLaden()}>
           Neu laden
         </button>
         <button title="Mit dem zugehörigen Programm öffnen" onClick={() => void oeffnePfad(verbinde(datei.root, datei.pfad)).catch(() => undefined)}>

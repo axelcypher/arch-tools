@@ -1610,7 +1610,7 @@ export const STATUS_TEXT: Record<Status, string> = {
   fehlt: 'fehlt',
   unvollstaendig: 'nicht vollständig ausgefüllt',
   offen: 'noch nicht (aktuell) im Antragsordner',
-  aktuell: 'liegt aktuell im Antragsordner',
+  aktuell: 'aktuell im Antragsordner',
 };
 
 /** Reihenfolge der Status vom besten zum schlimmsten (ohne „entfällt“) */

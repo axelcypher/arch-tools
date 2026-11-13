@@ -22,7 +22,17 @@
 
 import type { FormularProfil } from '../profil';
 import { blatt2, kopf, personen, unterschriften, zusammen } from './antrag';
-import { MIT_BETRIEB, brandschutzBescheinigung, gebaeudeImVordruck, keinEinfamilienhaus, nurBebauungsplan, nurGebaeudeStatistik, nurInnenAussenBasiskarte, nurInnenAussenFlurkarte, ohneHerstellungssumme } from './grundlagen';
+import {
+  MIT_BETRIEB,
+  brandschutzBescheinigung,
+  gebaeudeImVordruck,
+  keinEinfamilienhaus,
+  nurBebauungsplan,
+  nurGebaeudeStatistik,
+  nurInnenAussenBasiskarte,
+  nurInnenAussenFlurkarte,
+  ohneHerstellungssumme,
+} from './grundlagen';
 import { angekreuzt, begruendet, gruppeV, ist, nichtAngekreuzt, oder, q, s, und, wenn, zaehltNicht } from './hilfen';
 
 const s0 = s(0);

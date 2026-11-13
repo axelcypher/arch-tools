@@ -95,7 +95,6 @@ const UEBERSCHREIBUNGEN = 'formulare:export-projekte';
 const MERKMALE = 'formulare:merkmale';
 const PROJEKTSTATUS = 'formulare:projektstatus';
 
-
 /** Angaben zu einem Formular des Projekts (aus der Datei, mit ungespeicherten Eingaben) */
 export interface FormularInfo {
   pfad: string;

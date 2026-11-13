@@ -16,6 +16,7 @@ import { HinweisSymbol, hinweiseJeFeld, usePlausibel } from './Hinweise';
 import type { Plausi } from '../plausibel';
 import { useVorbelegt } from '../merkmalAbgleich';
 import { springeZuFeld } from '../navigation';
+import { anzahl } from '../text';
 
 const FILTER: { id: FeldFilter; label: string; title: string }[] = [
   { id: 'alle', label: 'Alle', title: 'Alle Felder' },
@@ -67,6 +68,13 @@ export function FelderAnsicht({ offen, gesperrt }: { offen: OffenesFormular; ges
   // gesucht oder gefiltert: Seiten ohne Treffer fallen weg
   const eingeschraenkt = !!q || filter !== 'alle';
   const listeGefiltert = q ? liste.filter((o) => `${o.abschnitt} ${o.titel}`.toLowerCase().includes(q)) : liste;
+  // gezählt wie in der Gliederung: „offen“ = fehlende Pflichtangaben, „ungeklärt“ = hängen an Antragsmerkmalen
+  const zaehlung = (l: typeof liste) => {
+    const ungeklaert = l.filter((o) => o.ungeklaert).length;
+    return { offen: l.length - ungeklaert, ungeklaert };
+  };
+  const gesamt = zaehlung(liste);
+  const gefiltert = zaehlung(listeGefiltert);
   // Hinweise (U-04, U-05), vorbelegte Kästchen (U-05)
   const hinweise = usePlausibel(offen);
   const hinweisFelder = useMemo(() => hinweiseJeFeld(hinweise), [hinweise]);
@@ -117,7 +125,7 @@ export function FelderAnsicht({ offen, gesperrt }: { offen: OffenesFormular; ges
           {FILTER.map((f) => (
             <button key={f.id} className={filter === f.id ? 'active' : ''} title={f.title} onClick={() => setFilter(f.id)}>
               {f.label}
-              {f.id === 'offen' && ` (${liste.length})`}
+              {f.id === 'offen' && ` (${gesamt.offen})${gesamt.ungeklaert ? ` · ${gesamt.ungeklaert} ungeklärt` : ''}`}
             </button>
           ))}
         </div>
@@ -129,7 +137,11 @@ export function FelderAnsicht({ offen, gesperrt }: { offen: OffenesFormular; ges
       {filter === 'offen' && (
         <section className="fo-pruefliste" aria-label="Was fehlt noch?">
           <h2>
-            Was fehlt noch? <span className="muted">{listeGefiltert.length === 1 ? '1 offene Angabe' : `${listeGefiltert.length} offene Angaben`}</span>
+            Was fehlt noch?{' '}
+            <span className="muted">
+              {anzahl(gefiltert.offen, 'offene Angabe', 'offene Angaben')}
+              {gefiltert.ungeklaert > 0 && ` · ${gefiltert.ungeklaert} ungeklärt`}
+            </span>
           </h2>
           {!listeGefiltert.length && <p className="muted small-text">{q ? 'Keine passenden offenen Angaben.' : 'Nach den Vorgaben der App keine offenen Angaben.'}</p>}
           {listeGefiltert.map((o) => (

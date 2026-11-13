@@ -530,7 +530,11 @@ function GruppeEinstellungen({ a, g, editor, onFeld, onGruppe }: { a: Aufbau; g:
           {felder.map((f) => (
             <li key={f.feld.schluessel}>
               <button className="fo-ein-link" onClick={() => onFeld(f.feld.schluessel)}>
-                {f.feld.art === 'kreuz' ? '☐ ' : ''}
+                {f.feld.art === 'kreuz' && (
+                  <>
+                    <Symbol name="kaestchen" />{' '}
+                  </>
+                )}
                 {f.titel}
               </button>
               <button className="icon" aria-label={`${f.titel} aus der Gruppe nehmen`} title="Aus der Gruppe nehmen" onClick={() => a.aendern((p) => ausGruppe(p, f.feld.schluessel))}>

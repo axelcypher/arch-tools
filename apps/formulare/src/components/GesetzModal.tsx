@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { create } from 'zustand';
 import { externOeffnen } from '@core/platform/links';
+import { logger } from '@core/platform/log';
 import type { Quelle } from '../bedingung';
 import type { Gesetz } from '../recht';
 import { absatzZeilen, gesetzBekannt, gesetzLaden, quelleText } from '../recht';
@@ -16,6 +17,8 @@ interface GesetzState {
   oeffnen: (quellen: Quelle[], merkmale?: string[]) => void;
   schliessen: () => void;
 }
+
+const log = logger('formulare');
 
 export const useGesetz = create<GesetzState>((set) => ({
   quellen: null,
@@ -54,7 +57,11 @@ export function GesetzModal() {
     let aktuell = true;
     gesetzLaden(q.gesetz)
       .then((g) => aktuell && setGesetz(g))
-      .catch((e) => aktuell && setFehler(String(e)));
+      .catch((e: unknown) => {
+        // die technische Ursache ins Protokoll, im Fenster ein verständlicher Satz
+        log.error(`Gesetzestext ${q.gesetz} nicht lesbar`, e instanceof Error ? e.message : String(e));
+        if (aktuell) setFehler(`Der Text von „${q.gesetz}“ ließ sich nicht laden. Einzelheiten stehen im Protokoll.`);
+      });
     return () => {
       aktuell = false;
     };

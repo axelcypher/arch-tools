@@ -40,9 +40,10 @@ function Abschnitt({ id, titel, kopf, children, start = true }: { id: string; ti
   return (
     <section className="nav-abschnitt">
       <div className="nav-kopf">
-        <button className="nav-kopf-titel" aria-expanded={auf} onClick={umschalten}>
+        <button className="nav-kopf-titel" aria-expanded={auf} onClick={umschalten} title={typeof titel === 'string' ? titel : undefined}>
           <Symbol name={auf ? 'pfeilUnten' : 'pfeilRechts'} />
-          {titel}
+          {/* in einer schmalen Navigation mit Auslassung; die Knöpfe daneben rücken bei Bedarf in die nächste Zeile */}
+          <span className="nav-kopf-titel-text">{titel}</span>
         </button>
         <span className="nav-kopf-knoepfe">{kopf}</span>
       </div>

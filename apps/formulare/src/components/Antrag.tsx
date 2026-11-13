@@ -800,22 +800,13 @@ export function AntragsdatenAnsicht() {
           </div>
         ) : (
           <>
+            {/* derselbe Wortlaut wie im Tooltip des Statuspunkts (STATUS_TEXT) */}
             <div className="pu-legende small-text">
-              <span>
-                <StatusPunkt status="fehlt" /> fehlt
-              </span>
-              <span>
-                <StatusPunkt status="unvollstaendig" /> nicht vollständig
-              </span>
-              <span>
-                <StatusPunkt status="offen" /> nicht (aktuell) exportiert
-              </span>
-              <span>
-                <StatusPunkt status="aktuell" /> aktuell in {fassung}
-              </span>
-              <span>
-                <StatusPunkt status="entfaellt" /> nicht erforderlich
-              </span>
+              {(['fehlt', 'unvollstaendig', 'offen', 'aktuell', 'entfaellt'] as const).map((st) => (
+                <span key={st}>
+                  <StatusPunkt status={st} /> {STATUS_TEXT[st]}
+                </span>
+              ))}
               <strong className="pu-summe">
                 {z.aktuell} von {z.gesamt} aktuell
               </strong>

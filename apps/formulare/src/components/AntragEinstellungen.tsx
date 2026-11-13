@@ -165,14 +165,13 @@ export function AntragEinstellungen() {
             <span className="es-zeile">
               <input value={e.vorlagenordner} onChange={(x) => setEinstellungen({ vorlagenordner: x.target.value })} aria-label="Vorlagenordner" placeholder="leer = aus anderen Projekten" />
               <button
-                aria-label="Vorlagenordner wählen …"
                 title="Vorlagenordner wählen …"
                 onClick={async () => {
                   const p = await waehleOrdner('Ordner mit leeren Formularen');
                   if (p) setEinstellungen({ vorlagenordner: p });
                 }}
               >
-                …
+                <Symbol name="ordner" /> Ordner wählen …
               </button>
             </span>
           </label>

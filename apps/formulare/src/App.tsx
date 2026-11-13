@@ -305,7 +305,7 @@ export function App() {
         {formularSichtbar && ansicht === 'seite' && (
           <div className="tb-group fo-zoom">
             <button title="Verkleinern" aria-label="Verkleinern" onClick={() => zoomStufe(-1)}>
-              −
+              <Symbol name="strich" />
             </button>
             <select value={zoom} onChange={(e) => setZoom(Number(e.target.value))} aria-label="Zoom">
               <option value={0}>Seitenbreite</option>
@@ -316,7 +316,7 @@ export function App() {
               ))}
             </select>
             <button title="Vergrößern" aria-label="Vergrößern" onClick={() => zoomStufe(1)}>
-              +
+              <Symbol name="plus" />
             </button>
           </div>
         )}

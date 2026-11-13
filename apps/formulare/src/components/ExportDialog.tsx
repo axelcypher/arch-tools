@@ -135,11 +135,11 @@ export function ExportDialog({ formularPfad, onClose }: { formularPfad: string; 
   );
 }
 
-/** Ordner des Projekts als aufklappbarer Baum – ein Klick wählt */
+/** Ordner des Projekts als aufklappbarer Baum – ein Klick wählt (Knöpfe mit aria-pressed, keine Baum-Rolle) */
 function OrdnerWahl({ basis, gewaehlt, onWahl }: { basis: string; gewaehlt: string; onWahl: (o: string) => void }) {
   return (
-    <div className="ex-baum" role="tree" aria-label="Ordner im Projekt">
-      <button className={`ex-baum-zeile${gewaehlt === '' ? ' aktiv' : ''}`} onClick={() => onWahl('')}>
+    <div className="ex-baum" role="group" aria-label="Ordner im Projekt">
+      <button className={`ex-baum-zeile${gewaehlt === '' ? ' aktiv' : ''}`} aria-pressed={gewaehlt === ''} onClick={() => onWahl('')}>
         <Symbol name="ordnerOffen" /> (Projektordner)
       </button>
       <OrdnerEbene basis={basis} rel="" gewaehlt={gewaehlt} onWahl={onWahl} tiefe={1} />
@@ -176,10 +176,10 @@ function OrdnerZeile({ basis, pfad, name, gewaehlt, onWahl, tiefe }: { basis: st
   return (
     <>
       <div className="ex-baum-knoten" style={{ paddingLeft: tiefe * 14 }}>
-        <button className="icon ex-baum-pfeil" aria-label={auf ? `${name} zuklappen` : `${name} aufklappen`} onClick={() => setAuf(!auf)}>
+        <button className="icon ex-baum-pfeil" aria-label={`${name}: Unterordner`} aria-expanded={auf} onClick={() => setAuf(!auf)}>
           <Symbol name={auf ? 'pfeilUnten' : 'pfeilRechts'} />
         </button>
-        <button className={`ex-baum-zeile${gewaehlt === pfad ? ' aktiv' : ''}`} onClick={() => onWahl(pfad)} onDoubleClick={() => setAuf(!auf)}>
+        <button className={`ex-baum-zeile${gewaehlt === pfad ? ' aktiv' : ''}`} aria-pressed={gewaehlt === pfad} onClick={() => onWahl(pfad)} onDoubleClick={() => setAuf(!auf)}>
           <Symbol name={auf ? 'ordnerOffen' : 'ordner'} /> {name}
         </button>
       </div>

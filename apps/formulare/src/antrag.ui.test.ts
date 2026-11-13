@@ -532,7 +532,9 @@ describe('Bedingungen: Antragsmerkmale und Felder', () => {
     expect(gl(host).querySelector('.fo-gl-zahl')!.textContent).toBe('3/5');
     expect(gl(host).querySelector('.fo-gl-punkt .fo-gl-offen')!.getAttribute('title')).toContain('hängt ab von: Gebäudeklasse (nicht festgelegt)');
     expect(gl(host).querySelector('.fo-gl-fortschritt')!.textContent).toContain('3 von 5');
-    expect(gl(host).querySelector('.fo-gl-fortschritt')!.textContent).toContain('2 ungeklärt (hängt von Merkmalen ab)');
+    // sichtbar nur die Zahl, die Erklärung steht im Tooltip (der Kopf bleibt schmal)
+    expect(gl(host).querySelector('.fo-gl-fortschritt .fo-gl-offen')!.textContent).toBe('2 ungeklärt');
+    expect(gl(host).querySelector('.fo-gl-fortschritt .fo-gl-offen')!.getAttribute('title')).toContain('hängen an Antragsmerkmalen');
     expect(gl(host).querySelector('.fo-gl-merkmal')!.textContent).toContain('Gebäudeklasse');
     // am Feld: gelb mit Hinweis „Offen“, nicht „Entfällt“
     expect(host.querySelector('.fo-papier [data-feld="0:Memo2"]')!.classList.contains('offen')).toBe(true);
@@ -575,6 +577,9 @@ describe('Bedingungen: Antragsmerkmale und Felder', () => {
     expect(wahl.textContent).toContain('Gebäudeklasse (§ 2 Abs. 3 BauO NRW 2018)');
     expect([...wahl.querySelectorAll('.fo-merkmal-werte button')].map((b) => b.textContent)).toEqual(['1', '2', '3', '4', '5']);
     expect(wahl.querySelector<HTMLButtonElement>('.fo-merkmal-werte button')!.title).toContain('freistehend');
+    // die Erklärung auch für Screenreader: Beschreibung des Knopfs
+    const beschreibung = wahl.querySelector<HTMLButtonElement>('.fo-merkmal-werte button')!.getAttribute('aria-describedby')!;
+    expect(document.getElementById(beschreibung)!.textContent).toContain('freistehend');
     await klick(knopf(wahl as HTMLElement, '3'));
     await warte();
     expect(antragIn()?.merkmale).toEqual({ Gebäudeklasse: '3' });

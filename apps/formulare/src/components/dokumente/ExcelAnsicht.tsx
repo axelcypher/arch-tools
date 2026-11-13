@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Aenderungen, Stil, Zelle } from '../../dokumente/xlsx';
 import { alsZahl, formatieren, spaltenName, xlsxAendern, xlsxLesen, zellName } from '../../dokumente/xlsx';
 import type { OffeneDatei } from '../../store';
-import { useFormulare } from '../../store';
+import { dateiSchluessel, useFormulare } from '../../store';
 import { DateiKopf, useSpeichernTaste } from './DateiAnsicht';
 
 /** höchstens so viele Zeilen/Spalten anzeigen (große Tabellen bleiben bedienbar) */
@@ -38,7 +38,7 @@ function zellStil(s: Stil | undefined): CSSProperties {
  */
 export function ExcelAnsicht({ datei }: { datei: OffeneDatei }) {
   const { dateiSpeichern, setDateiEntwurf } = useFormulare.getState();
-  const entwurf = useFormulare((s) => s.dateiEntwuerfe[`${datei.root}|${datei.pfad}`]) as Aenderungen | undefined;
+  const entwurf = useFormulare((s) => s.dateiEntwuerfe[dateiSchluessel(datei)]) as Aenderungen | undefined;
   const [fehler, setFehler] = useState('');
   const mappe = useMemo(() => {
     try {

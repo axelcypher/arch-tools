@@ -5,7 +5,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SpeicherDateisystem } from './dateisystem';
 import { sperrPfad } from './forma/sperre';
 import type { OffeneDatei } from './store';
-import { PDF_ENTWURF, entwurfVon, useFormulare } from './store';
+import { PDF_ENTWURF, dateiEntwurfVerschieben, entwurfVon, pdfAnbindung, useFormulare } from './store';
+import { pdfSpeichern } from './dokumente/pdfSpeichern';
 
 /** Rückfrage „Änderungen speichern?“ (Titelleiste) – im Test beantwortet `antwort` */
 const frage = vi.hoisted(() => ({ antwort: 'abbrechen' as 'abbrechen' | 'verwerfen' | 'speichern', gefragt: [] as string[] }));
@@ -105,22 +106,44 @@ describe('Speichern des Formulars, während weiter getippt wird', () => {
     expect(useFormulare.getState().offen!.aenderungen).toEqual({ [a.schluessel]: vorher });
   });
 
-  it('ein zweites Speichern während des Schreibens entfällt (kein Konflikt mit sich selbst)', async () => {
+  it('ein zweites Speichern während des Schreibens wartet – ohne neue Eingaben schreibt es nichts (kein Konflikt mit sich selbst)', async () => {
     const ds = await projekt();
     const o = await oeffnen(ERSTES);
     useFormulare.getState().wertSetzen(o.felder.flat().find((f) => f.art === 'text' && !f.berechnet)!, 'X');
     const halt = ersetzenAnhalten(ds);
     const lauf = useFormulare.getState().speichern();
     await kurz();
-    await useFormulare.getState().speichern();
+    const zweites = useFormulare.getState().speichern();
     halt.weiter();
-    await lauf;
+    await Promise.all([lauf, zweites]);
     expect(halt.aufrufe).toEqual([ERSTES]);
     expect(useFormulare.getState().konflikt).toBe(false);
     expect(useFormulare.getState().offen!.aenderungen).toEqual({});
   });
 
-  it('ein anderes Formular, während das erste noch geschrieben wird: das erste kommt nicht zurück, seine Sperre bleibt gelöst', async () => {
+  it('Strg+S während des Schreibens speichert danach, was inzwischen eingegeben wurde', async () => {
+    const ds = await projekt();
+    const o = await oeffnen(ERSTES);
+    const [a, b] = o.felder.flat().filter((f) => f.art === 'text' && !f.berechnet);
+    useFormulare.getState().wertSetzen(a, 'Eins');
+    const halt = ersetzenAnhalten(ds);
+    const lauf = useFormulare.getState().speichern();
+    await kurz();
+    useFormulare.getState().wertSetzen(b, 'Zwei');
+    const zweites = useFormulare.getState().speichern();
+    halt.weiter();
+    await lauf;
+    await kurz();
+    halt.weiter();
+    await zweites;
+    expect(halt.aufrufe).toEqual([ERSTES, ERSTES]);
+    expect(useFormulare.getState().konflikt).toBe(false);
+    const nachher = useFormulare.getState().offen!;
+    expect(nachher.aenderungen).toEqual({});
+    expect(nachher.felder.flat().find((f) => f.schluessel === b.schluessel)!.original).toBe('Zwei');
+  });
+
+  it('ein anderes Formular öffnen, während das erste noch geschrieben wird: dessen Sperre fällt erst nach dem Schreiben', async () => {
     const ds = await projekt();
     const o = await oeffnen(ERSTES);
     const a = o.felder.flat().find((f) => f.art === 'text' && !f.berechnet)!;
@@ -128,13 +151,18 @@ describe('Speichern des Formulars, während weiter getippt wird', () => {
     const halt = ersetzenAnhalten(ds);
     const lauf = useFormulare.getState().speichern();
     await kurz();
-    await oeffnen(ZWEITES);
+    const wechsel = oeffnen(ZWEITES);
+    await kurz();
+    // noch wird geschrieben: das erste bleibt gesperrt und offen
+    expect(await ds.sperrePruefen(ROOT, sperrPfad(ERSTES))).not.toBeNull();
+    expect(useFormulare.getState().offen!.pfad).toBe(ERSTES);
     halt.weiter();
-    await lauf;
+    await Promise.all([lauf, wechsel]);
     expect(useFormulare.getState().offen!.pfad).toBe(ZWEITES);
     expect(await ds.sperrePruefen(ROOT, sperrPfad(ERSTES))).toBeNull();
-    // der Entwurf des ersten ist mit dem Speichern erledigt
+    // gespeichert und der Entwurf des ersten erledigt
     expect(entwurfVon(o.projekt!, ERSTES)).toBeNull();
+    expect(useFormulare.getState().meldung?.text ?? '').not.toContain('nicht gespeichert');
   });
 });
 
@@ -154,14 +182,42 @@ describe('Projektkarte speichern, während weiter getippt wird', () => {
     const lauf = useFormulare.getState().karteSpeichern();
     await kurz();
     useFormulare.getState().karteSetzen(201, 40, 'Mustermann');
-    // ein zweites Speichern während des Schreibens entfällt
-    await useFormulare.getState().karteSpeichern();
     weiter();
     await lauf;
     const k = useFormulare.getState().karte!;
     expect(aufrufe).toBe(1);
     expect(k.aenderungen).toEqual({ '201:40': 'Mustermann' });
     expect(k.karte.eintraege.find((e) => e.id === 30)!.text).toBe('Max');
+    // ein zweites Speichern wartet auf das erste und schreibt dann den Rest – mit dem frischen Stand als „alt“
+    const zweites = useFormulare.getState().karteSpeichern();
+    await kurz();
+    weiter();
+    await zweites;
+    expect(aufrufe).toBe(2);
+    expect(useFormulare.getState().karte!.aenderungen).toEqual({});
+    expect(useFormulare.getState().meldung?.art).toBe('info');
+  });
+
+  it('anderes Projekt während des Schreibens: die alte Karte kommt nicht zurück, ihr gemerkter Entwurf ist erledigt', async () => {
+    const ds = await projekt();
+    await useFormulare.getState().karteLaden();
+    useFormulare.getState().karteSetzen(201, 30, 'Max');
+    expect(JSON.parse(localStorage.getItem('formulare:projektkarten') ?? '{}')).not.toEqual({});
+    const schreiben = ds.projektkarteSchreiben.bind(ds);
+    let weiter: () => void = () => undefined;
+    ds.projektkarteSchreiben = async (...args) => {
+      await new Promise<void>((r) => (weiter = r));
+      return schreiben(...args);
+    };
+    const lauf = useFormulare.getState().karteSpeichern();
+    await kurz();
+    // wie beim Wechsel des Projekts (projektWaehlen setzt die Karte zurück)
+    useFormulare.setState({ karte: null });
+    weiter();
+    await lauf;
+    expect(useFormulare.getState().karte).toBeNull();
+    expect(JSON.parse(localStorage.getItem('formulare:projektkarten') ?? '{}')).toEqual({});
+    expect(ds.projektkarten.get(`${ROOT}/BS9/sj_prokarte.sdb`)!.eintraege[0].text).toBe('Max');
   });
 
   it('Verlauf passt nicht mehr zur Karte (anderswo geändert): Strg+Z schreibt keine alten Werte darüber', async () => {
@@ -267,5 +323,81 @@ describe('Dokumente: Bearbeitungen gehen nicht still verloren', () => {
     expect(await lauf).toBe(true);
     expect(useFormulare.getState().dateiEntwuerfe).toEqual({ [`${ROOT}|BS9/Plan.pdf`]: 'zweiter' });
     expect(useFormulare.getState().datei!.stand).toBe(2);
+  });
+
+  it('„Speichern“ in der Rückfrage: die PDF wird gespeichert, dann gewechselt – scheitert es, bleibt sie offen', async () => {
+    const ds = await projekt();
+    useFormulare.setState({ datei: pdf(ds), haupt: 'datei', dateiEntwuerfe: { [`${ROOT}|BS9/Plan.pdf`]: PDF_ENTWURF } });
+    frage.antwort = 'speichern';
+    const gespeichert = vi.fn(async () => false);
+    pdfAnbindung.speichern = gespeichert;
+    try {
+      useFormulare.getState().setHaupt('formular');
+      await kurz();
+      expect(gespeichert).toHaveBeenCalledTimes(1);
+      expect(useFormulare.getState().haupt).toBe('datei');
+      expect(useFormulare.getState().dateiEntwuerfe).toEqual({ [`${ROOT}|BS9/Plan.pdf`]: PDF_ENTWURF });
+      gespeichert.mockResolvedValue(true);
+      useFormulare.getState().setHaupt('formular');
+      await kurz();
+      expect(useFormulare.getState().haupt).toBe('formular');
+    } finally {
+      delete pdfAnbindung.speichern;
+    }
+  });
+
+  it('Speichern einer PDF scheitert (Konflikt): Entwurf und Rückfrage bleiben, die Meldung warnt vor „Neu laden“', async () => {
+    const ds = await projekt();
+    useFormulare.setState({ datei: pdf(ds), haupt: 'datei', dateiEntwuerfe: { [`${ROOT}|BS9/Plan.pdf`]: PDF_ENTWURF } });
+    // inzwischen außerhalb geändert
+    ds.dateien.set(`${ROOT}/BS9/Plan.pdf`, new Uint8Array([37, 80, 68, 70, 50]));
+    expect(await useFormulare.getState().dateiSpeichern(new Uint8Array([1]))).toBe(false);
+    expect(useFormulare.getState().dateiEntwuerfe).toEqual({ [`${ROOT}|BS9/Plan.pdf`]: PDF_ENTWURF });
+    expect(useFormulare.getState().meldung?.text).toContain('„Neu laden“ verwirft die Eingaben in dieser PDF');
+  });
+
+  it('pdf.js setzt beim Erzeugen den Änderungsstand zurück: scheitert das Schreiben, gilt die PDF wieder als geändert', async () => {
+    const geaendert = vi.fn();
+    const fehler = vi.fn();
+    expect(
+      await pdfSpeichern(
+        async () => new Uint8Array([1]),
+        async () => false,
+        geaendert,
+        fehler,
+      ),
+    ).toBe(false);
+    expect(geaendert).toHaveBeenLastCalledWith(true);
+    geaendert.mockClear();
+    expect(
+      await pdfSpeichern(
+        async () => Promise.reject(new Error('gesperrt')),
+        async () => true,
+        geaendert,
+        fehler,
+      ),
+    ).toBe(false);
+    expect(geaendert).toHaveBeenLastCalledWith(true);
+    expect(fehler).toHaveBeenCalledWith('gesperrt');
+    geaendert.mockClear();
+    expect(
+      await pdfSpeichern(
+        async () => new Uint8Array([1]),
+        async () => true,
+        geaendert,
+        fehler,
+      ),
+    ).toBe(true);
+    expect(geaendert).not.toHaveBeenCalled();
+  });
+
+  it('umbenannte bzw. gelöschte Dokumente nehmen ihren Entwurf mit – kein verwaistes ●', async () => {
+    await projekt();
+    useFormulare.setState({ dateiEntwuerfe: { [`${ROOT}|BS9/Liste.xlsx`]: 'zellen', [`${ROOT}|BS9/Plan.pdf`]: PDF_ENTWURF } });
+    dateiEntwurfVerschieben(ROOT, 'BS9/Liste.xlsx', 'BS9/Liste neu.xlsx');
+    dateiEntwurfVerschieben(ROOT, 'BS9/Plan.pdf', 'BS9/Plan neu.pdf');
+    expect(useFormulare.getState().dateiEntwuerfe).toEqual({ [`${ROOT}|BS9/Liste neu.xlsx`]: 'zellen' });
+    dateiEntwurfVerschieben(ROOT, 'BS9/Liste neu.xlsx', null);
+    expect(useFormulare.getState().dateiEntwuerfe).toEqual({});
   });
 });

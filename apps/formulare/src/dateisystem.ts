@@ -206,7 +206,6 @@ export function verbinde(root: string, rel: string): string {
   return `${root.replace(/[\\/]+$/, '')}${sep}${rel.split('/').join(sep)}`;
 }
 
-
 /** Dateien von FORMA, die nur FORMA selbst anlegt oder umbenennt */
 export const istFormaDatei = (pfad: string) => /\.(frmsjf|frmtmp|sdb|ini)$/i.test(pfad);
 

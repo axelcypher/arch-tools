@@ -6,7 +6,7 @@ import { dateiArt, ebenenSchluessel, nachReihenfolge, sichtbarkeit } from '../ab
 import { istHilfsdatei } from '../antrag';
 import type { Eintrag } from '../dateisystem';
 import { oeffnePfad, verbinde } from '../dateisystem';
-import { dateiArtVon, useFormulare } from '../store';
+import { dateiArtVon, dateiSchluessel, useFormulare } from '../store';
 import { aktiveFassung, antragsOrdner, antragSperre, useAntrag, wechselLaeuft } from '../antragStore';
 import { duplizieren, einfuegen, loeschen, ordnerNeu, umbenennen, useDateiAktionen, verknuepfen } from '../dateiAktionen';
 import type { MenuePunkt } from './Menue';
@@ -209,7 +209,7 @@ function Ebene({ basis, rel, auswahl, ganz, tiefe }: { basis: string; rel: strin
                 <Symbol name={SYMBOL[dateiArt(x.e.pfad)]} />
               </span>
               <span className="fo-baum-name">{x.e.pfad}</span>
-              {`${basis}|${x.pfad}` in entwuerfe && <span className="fo-ungespeichert"> ●</span>}
+              {dateiSchluessel({ root: basis, pfad: x.pfad }) in entwuerfe && <span className="fo-ungespeichert"> ●</span>}
               {x.e.geaendert ? <span className="fo-baum-zeit">{zeitKurz(x.e.geaendert)}</span> : null}
             </button>
           </li>

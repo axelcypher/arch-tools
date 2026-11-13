@@ -11,8 +11,9 @@ interface Treffer {
 
 /**
  * Schnellwahl (Strg+K): Projekte nach Kürzel oder Titel und die Formulare des aktuellen Projekts finden und mit
- * Enter öffnen – ohne durch Listen zu scrollen. Der Fokus bleibt im Suchfeld; ↑/↓ markieren einen Treffer
- * (aria-activedescendant), Esc schließt, danach steht der Fokus wieder dort, wo er vorher war (Modal, dialoge.ts).
+ * Enter öffnen – ohne durch Listen zu scrollen. Der Fokus bleibt im Suchfeld (auch Tab führt nicht hinaus); ↑/↓
+ * markieren einen Treffer (aria-activedescendant), Esc schließt, danach steht der Fokus wieder dort, wo er vorher war
+ * (Modal, dialoge.ts).
  */
 export function Schnellwahl({ onClose }: { onClose: () => void }) {
   const projekte = useFormulare((s) => s.projekte);
@@ -73,18 +74,18 @@ export function Schnellwahl({ onClose }: { onClose: () => void }) {
           if (e.key === 'ArrowDown') setMarkiert((m) => Math.min(treffer.length - 1, m + 1));
           else if (e.key === 'ArrowUp') setMarkiert((m) => Math.max(0, m - 1));
           else if (e.key === 'Enter') waehle(treffer[aktiv]);
-          else return;
+          // das Suchfeld ist das einzige Bedienelement des Dialogs – Tab bleibt hier
+          else if (e.key !== 'Tab') return;
           e.preventDefault();
         }}
       />
       <div className="sw-liste" role="listbox" id={`${id}-liste`} aria-label="Treffer" ref={liste}>
         {treffer.map((t, i) => (
-          <button
+          // keine Knöpfe: Treffer wählt man über das Suchfeld (↑/↓, Enter) oder mit der Maus – sie sind kein Tab-Ziel
+          <div
             key={`${t.art}|${t.titel}|${t.unter}`}
             id={optionId(i)}
             role="option"
-            // nur über das Suchfeld (↑/↓, Enter) bzw. die Maus – Tab bleibt im Suchfeld
-            tabIndex={-1}
             aria-selected={i === aktiv}
             className={`sw-eintrag${i === aktiv ? ' active' : ''}`}
             onMouseEnter={() => setMarkiert(i)}
@@ -94,7 +95,7 @@ export function Schnellwahl({ onClose }: { onClose: () => void }) {
               <span className="fo-art">{t.art === 'projekt' ? 'Projekt' : 'Formular'}</span> <strong>{t.titel}</strong>
             </span>
             {t.unter && <span className="muted">{t.unter}</span>}
-          </button>
+          </div>
         ))}
         {!treffer.length && <p className="muted small-text">Nichts gefunden.</p>}
       </div>

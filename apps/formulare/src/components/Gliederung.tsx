@@ -105,7 +105,7 @@ export function Gliederung({ offen }: { offen: OffenesFormular }) {
             {gefuellt} von {gesamt}
             {ungeklaert > 0 && (
               <span className="fo-gl-offen" title="Diese Angaben hängen an Antragsmerkmalen, die noch nicht festgelegt sind – sie zählen wie erforderliche Angaben.">
-                {ungeklaert} ungeklärt (hängt von Merkmalen ab)
+                {ungeklaert} ungeklärt
               </span>
             )}
           </span>

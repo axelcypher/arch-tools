@@ -34,7 +34,17 @@
  */
 
 import type { FormularProfil } from '../profil';
-import { MIT_BETRIEB, brandschutzBescheinigung, gebaeudeImVordruck, keinEinfamilienhaus, nurBebauungsplan, nurGebaeudeStatistik, nurInnenAussenBasiskarte, nurInnenAussenFlurkarte, ohneHerstellungssumme } from './grundlagen';
+import {
+  MIT_BETRIEB,
+  brandschutzBescheinigung,
+  gebaeudeImVordruck,
+  keinEinfamilienhaus,
+  nurBebauungsplan,
+  nurGebaeudeStatistik,
+  nurInnenAussenBasiskarte,
+  nurInnenAussenFlurkarte,
+  ohneHerstellungssumme,
+} from './grundlagen';
 import { angekreuzt, begruendet, fuer, gruppeV, ist, oder, q, s, und, wenn, zaehltNicht } from './hilfen';
 import { nachweise } from './vordruck2018';
 

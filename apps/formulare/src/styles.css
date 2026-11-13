@@ -140,12 +140,14 @@ button.icon.active {
 }
 .nav-kopf {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 2px;
   padding: 0 0 2px;
 }
 .nav-kopf-titel {
-  flex: 1;
+  flex: 1 1 auto;
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 4px;
@@ -163,9 +165,18 @@ button.icon.active {
   background: none;
   color: var(--text);
 }
+.nav-kopf-titel-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* reicht der Platz nicht, rücken die Knöpfe rechtsbündig in die nächste Zeile (statt abgeschnitten zu werden) */
 .nav-kopf-knoepfe {
   display: flex;
+  flex-shrink: 0;
   gap: 1px;
+  margin-left: auto;
 }
 .nav-inhalt {
   display: flex;
@@ -330,6 +341,18 @@ button.icon.active {
   .fo-baum-zeit,
   .fo-aufnehmen-platz {
     display: none;
+  }
+  /* Projektdaten | Antragsdaten untereinander statt gekürzt („Projekt…“) */
+  .fo-daten {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .fo-daten > .nav-eintrag.fo-eintrag-karte:first-child {
+    border-radius: 6px 6px 0 0;
+  }
+  .fo-daten > .nav-eintrag.fo-eintrag-karte:last-child {
+    border-radius: 0 0 6px 6px;
+    border-left-width: 1px;
+    border-top-width: 0;
   }
 }
 .nav-zeit,
@@ -506,8 +529,9 @@ button.icon.active {
 }
 .fo-gl-fortschritt {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
+  gap: 4px 6px;
   font-size: 11px;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
@@ -1949,6 +1973,7 @@ button.icon.fo-gl-zaehlt.an {
   border: none;
   border-radius: 5px;
   padding: 6px 10px;
+  cursor: pointer;
 }
 .sw-eintrag.active {
   background: var(--accent-soft);
@@ -2020,6 +2045,9 @@ button.icon.fo-gl-zaehlt.an {
   /* Bedingungen beim Einrichten (Lila wie --bed-*, auf weißem Papier) */
   --p-bedingung: #9a4fc0;
   --p-bedingung-fuellung: #8e44b8;
+  /* Autofill: aus den Projektdaten übernommen bzw. von Hand überschrieben (das Papier bleibt hell) */
+  --p-auto: #2a5bd7;
+  --p-fixiert: #b86e00;
   padding: 16px 24px 48px;
   display: flex;
   flex-direction: column;
@@ -3367,12 +3395,12 @@ button.icon.fo-gl-bed {
   padding: 0;
 }
 button.icon.fo-gl-bed.gesetzt {
-  color: var(--accent);
+  color: var(--bed-text);
 }
 .fo-gl-bed-text {
   margin: 0 0 3px 30px;
   font-size: 11px;
-  color: var(--accent);
+  color: var(--bed-text);
 }
 .fo-gl-bed-text.entfaellt {
   color: var(--muted);
@@ -3384,7 +3412,7 @@ button.icon.fo-gl-bed.gesetzt {
   flex-shrink: 0;
   padding: 0 5px;
   border-radius: 8px;
-  font-size: 10px;
+  font-size: 11px;
   line-height: 16px;
   color: var(--muted);
   border: 1px dashed var(--border);
@@ -3433,7 +3461,7 @@ button.icon.fo-gl-bed.gesetzt {
   flex-shrink: 0;
   padding: 0 5px;
   border-radius: 8px;
-  font-size: 10px;
+  font-size: 11px;
   line-height: 16px;
   background: var(--warn-bg);
   border: 1px solid var(--warn-border);
@@ -3556,7 +3584,7 @@ button.icon.fo-gl-bed.gesetzt {
   flex-shrink: 0;
   padding: 0 5px;
   border-radius: 8px;
-  font-size: 10px;
+  font-size: 11px;
   line-height: 16px;
   color: var(--muted);
   background: var(--line-soft);
@@ -3570,7 +3598,7 @@ button.icon.fo-gl-bed.gesetzt {
   border-left-style: dashed;
 }
 .pu-bedingung {
-  color: var(--accent);
+  color: var(--bed-text);
 }
 .pu-bedingung-editor {
   grid-column: 1 / -1;
@@ -3596,8 +3624,8 @@ button.icon.fo-gl-bed.gesetzt {
   font-size: 11px;
 }
 .es-bedingung.gesetzt {
-  color: var(--accent);
-  border-color: var(--accent);
+  color: var(--bed-text);
+  border-color: var(--bed-linie);
 }
 .es-bedingung-zeile td {
   background: var(--bg);
@@ -4148,10 +4176,10 @@ tr[data-ziehen='danach'] > td {
 }
 /* Autofill: Wert aus der Projektkarte bzw. von Hand überschrieben */
 .fo-memo.auto {
-  box-shadow: inset 2px 0 0 color-mix(in srgb, var(--accent) 55%, transparent);
+  box-shadow: inset 2px 0 0 var(--p-auto);
 }
 .fo-memo.fixiert {
-  box-shadow: inset 2px 0 0 var(--warn-text);
+  box-shadow: inset 2px 0 0 var(--p-fixiert);
 }
 .fo-ausfuellen-haken {
   display: flex;
