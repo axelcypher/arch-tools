@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { Project, ProjectMeta } from '../model';
 import { anschriftEinzeilig, bebauungsplanText, flurText } from '../model';
-import { allgemeinLaden } from '../platform/konfig';
+import { allgemeinLaden, konfigNeuLesen } from '../platform/konfig';
 
 /**
  * Gemeinsamer Kopf für Ausdrucke und Excel aller Apps: Büro, Bearbeiter, Bauherr, Bauvorhaben, Adresse,
@@ -43,12 +43,21 @@ export function useBuero(): string {
   const [buero, setBuero] = useState('');
   useEffect(() => {
     let aktuell = true;
-    bueroCache ??= allgemeinLaden()
-      .then((a) => a.buero ?? '')
-      .catch(() => '');
-    void bueroCache.then((b) => aktuell && setBuero(b));
+    const lesen = () => {
+      bueroCache ??= allgemeinLaden()
+        .then((a) => a.buero ?? '')
+        .catch(() => '');
+      void bueroCache.then((b) => aktuell && setBuero(b));
+    };
+    lesen();
+    // nach einem Wechsel des Speicherorts gilt der Büroname am neuen Ort
+    const ab = konfigNeuLesen(() => {
+      bueroCache = null;
+      lesen();
+    });
     return () => {
       aktuell = false;
+      ab();
     };
   }, []);
   return buero;

@@ -193,3 +193,7 @@
   gap: 8px 12px;
   margin: 4px 0 18px;
 }
+.rahmen-speicherort {
+  margin-top: 20px;
+  max-width: 640px;
+}
