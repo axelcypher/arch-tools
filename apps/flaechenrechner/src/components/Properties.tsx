@@ -663,7 +663,7 @@ function StoreyProperties() {
                 }))
               }
             >
-              Anrechnung nach Raumnamen vorschlagen
+              Nach Raumnamen vorschlagen
             </button>
             <button
               className="small"

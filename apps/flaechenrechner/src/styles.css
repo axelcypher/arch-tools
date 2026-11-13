@@ -1172,3 +1172,10 @@
 .toggle.block.mit-feld {
   align-items: center;
 }
+
+/* lange Knopftexte im Leerhinweis umbrechen statt über den Rand zu laufen */
+.leer-hinweis button {
+  height: auto;
+  white-space: normal;
+  text-align: left;
+}
