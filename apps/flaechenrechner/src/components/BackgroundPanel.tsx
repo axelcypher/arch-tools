@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { create } from 'zustand';
 import { bgScale, ohneKontrollmass } from '../core/background';
 import { DXF_UNITS, decodeDxfText, importDxf } from '../core/dxf';
 import { fmt2 } from '@core/format';
@@ -17,103 +18,134 @@ const log = logger('plan');
 
 const ACCEPT = '.pdf,.dxf,image/png,image/jpeg,image/webp,image/gif,image/bmp';
 
+/** Laden eines Plans: Wartezustand und PDF-Seitenwahl – geteilt von Werkzeugleiste, Zeichenfläche und Geschoss-Eigenschaften */
+const usePlanLaden = create<{ busy: string | null; pdf: { doc: PdfDocumentHandle; name: string; bytes: Uint8Array; storeyId: string } | null }>(() => ({ busy: null, pdf: null }));
+const setBusy = (busy: string | null) => usePlanLaden.setState({ busy });
+
+/** Plan ersetzen oder entfernen: das Kontrollmaß des alten Plans entfällt */
+function setBg(storeyId: string, b: Background | undefined) {
+  useEditor.getState().update((p) => mapStorey(ohneKontrollmass(p, storeyId), storeyId, (s) => ({ ...s, background: b })));
+}
+
+/** Plan setzen und die Originaldatei fürs Projektarchiv mitnehmen */
+function setBgMitQuelle(storeyId: string, b: Background, name: string, art: DateiArt, bytes: Uint8Array) {
+  useEditor.getState().update((p) => {
+    const { project, id } = addDatei(ohneKontrollmass(p, storeyId), name, art, bytes);
+    return mapStorey(project, storeyId, (s) => ({ ...s, background: { ...b, quelle: id } }));
+  });
+}
+
+function afterLoad(calibrate: boolean) {
+  const st = useEditor.getState();
+  st.requestFit();
+  if (calibrate) st.setTool('calibrate');
+}
+
+/** Grundriss (PDF, DXF, Bild) für ein Geschoss wählen und laden; ersetzt einen vorhandenen Plan */
+export async function planLaden(storeyId: string) {
+  if (usePlanLaden.getState().busy) return;
+  const f = await pickFile(ACCEPT);
+  if (!f) return;
+  const ext = f.name.toLowerCase().split('.').pop();
+  try {
+    if (ext === 'pdf') {
+      setBusy('PDF wird geöffnet …');
+      const bytes = new Uint8Array(await f.arrayBuffer());
+      // pdf.js übergibt den Puffer an den Worker – Kopie für das Archiv behalten
+      const doc = await openPdf(bytes.slice().buffer);
+      usePlanLaden.setState({ pdf: { doc, name: f.name, bytes, storeyId } });
+    } else if (ext === 'dxf') {
+      setBusy('DXF wird gelesen …');
+      await new Promise((r) => setTimeout(r, 20));
+      const bytes = new Uint8Array(await f.arrayBuffer());
+      const res = importDxf(decodeDxfText(bytes.buffer), f.name);
+      setBgMitQuelle(storeyId, res.background, f.name, 'dxf', bytes);
+      afterLoad(false);
+      if (!res.unitDetected) {
+        void meldung(
+          'Einheit der DXF-Datei prüfen',
+          `Die DXF-Datei enthält keine Einheitenangabe. Angenommen: ${DXF_UNITS.find((u) => u.scale === res.background.scale)?.label ?? 'Meter'}. Bitte unter „Einheit“ prüfen oder kalibrieren.`,
+        );
+      }
+    } else {
+      setBusy('Bild wird geladen …');
+      const dataUrl = await readAsDataUrl(f);
+      const { width, height } = await imageSize(dataUrl);
+      // Startmaßstab: Bildbreite ≈ 20 m, danach kalibrieren
+      setBg(storeyId, { type: 'raster', name: f.name, dataUrl, widthPx: width, heightPx: height, x: 0, y: 0, metersPerPixel: 20 / width, opacity: 0.6, visible: true });
+      afterLoad(true);
+    }
+  } catch (e) {
+    log.error('Plan konnte nicht geladen werden', e);
+    void meldung('Plan ließ sich nicht laden', `${e instanceof Error ? e.message : String(e)}\nDer bisherige Hintergrundplan bleibt unverändert.`, e);
+  } finally {
+    setBusy(null);
+  }
+}
+
+async function importPdfPage(page: number, massstab: number | null) {
+  const pdf = usePlanLaden.getState().pdf;
+  if (!pdf) return;
+  setBusy(`Seite ${page} wird gerendert …`);
+  try {
+    const r = await pdf.doc.render(page);
+    const mpp = massstab ? r.metersPerPixelAt1 * massstab : 20 / r.width;
+    setBgMitQuelle(
+      pdf.storeyId,
+      {
+        type: 'raster',
+        name: pdf.doc.numPages > 1 ? `${pdf.name} (S. ${page})` : pdf.name,
+        dataUrl: r.dataUrl,
+        widthPx: r.width,
+        heightPx: r.height,
+        x: 0,
+        y: 0,
+        metersPerPixel: mpp,
+        opacity: 0.6,
+        visible: true,
+        pdf: { page, metersPerPixelAt1: r.metersPerPixelAt1 },
+      },
+      pdf.name,
+      'pdf',
+      pdf.bytes,
+    );
+    pdf.doc.destroy();
+    usePlanLaden.setState({ pdf: null });
+    afterLoad(!massstab);
+  } catch (e) {
+    log.error('PDF konnte nicht gerendert werden', e);
+    void meldung('PDF ließ sich nicht darstellen', 'Die gewählte Seite ließ sich nicht als Hintergrundplan aufbereiten.', e);
+  } finally {
+    setBusy(null);
+  }
+}
+
+/** Seitenwahl beim PDF-Import – einmal in der App eingebunden (Zeichenfläche) */
+export function PlanLadenHost() {
+  const pdf = usePlanLaden((s) => s.pdf);
+  if (!pdf) return null;
+  return (
+    <PdfImportDialog
+      doc={pdf.doc}
+      name={pdf.name}
+      onImport={(page, m) => void importPdfPage(page, m)}
+      onCancel={() => {
+        pdf.doc.destroy();
+        usePlanLaden.setState({ pdf: null });
+      }}
+    />
+  );
+}
+
 /** Hintergrundplan eines Geschosses: laden (Bild, PDF, DXF), Maßstab, Lage, Layer. */
 export function BackgroundPanel({ storey }: { storey: Storey }) {
   const st = useEditor.getState();
   const bg = storey.background;
-  const [busy, setBusy] = useState<string | null>(null);
-  const [pdf, setPdf] = useState<{ doc: PdfDocumentHandle; name: string; bytes: Uint8Array } | null>(null);
+  const busy = usePlanLaden((s) => s.busy);
 
   /** Plan ändern (Maßstab, Lage, Layer …): ein Kontrollmaß mit anderem Maßstab gilt dann nicht mehr (gueltigesKontrollmass) */
   const patchBg = (patch: Partial<Background>) => bg && st.update((p) => mapStorey(p, storey.id, (s) => ({ ...s, background: { ...bg, ...patch } as Background })));
-  /** Plan ersetzen oder entfernen: das Kontrollmaß des alten Plans entfällt */
-  const setBg = (b: Background | undefined) => st.update((p) => mapStorey(ohneKontrollmass(p, storey.id), storey.id, (s) => ({ ...s, background: b })));
-  /** Plan setzen und die Originaldatei fürs Projektarchiv mitnehmen */
-  const setBgMitQuelle = (b: Background, name: string, art: DateiArt, bytes: Uint8Array) =>
-    st.update((p) => {
-      const { project, id } = addDatei(ohneKontrollmass(p, storey.id), name, art, bytes);
-      return mapStorey(project, storey.id, (s) => ({ ...s, background: { ...b, quelle: id } }));
-    });
-
-  const afterLoad = (calibrate: boolean) => {
-    st.requestFit();
-    if (calibrate) st.setTool('calibrate');
-  };
-
-  const load = async () => {
-    const f = await pickFile(ACCEPT);
-    if (!f) return;
-    const ext = f.name.toLowerCase().split('.').pop();
-    try {
-      if (ext === 'pdf') {
-        setBusy('PDF wird geöffnet …');
-        const bytes = new Uint8Array(await f.arrayBuffer());
-        // pdf.js übergibt den Puffer an den Worker – Kopie für das Archiv behalten
-        const doc = await openPdf(bytes.slice().buffer);
-        setPdf({ doc, name: f.name, bytes });
-      } else if (ext === 'dxf') {
-        setBusy('DXF wird gelesen …');
-        await new Promise((r) => setTimeout(r, 20));
-        const bytes = new Uint8Array(await f.arrayBuffer());
-        const res = importDxf(decodeDxfText(bytes.buffer), f.name);
-        setBgMitQuelle(res.background, f.name, 'dxf', bytes);
-        afterLoad(false);
-        if (!res.unitDetected) {
-          void meldung(
-            'Einheit der DXF-Datei prüfen',
-            `Die DXF-Datei enthält keine Einheitenangabe. Angenommen: ${DXF_UNITS.find((u) => u.scale === res.background.scale)?.label ?? 'Meter'}. Bitte unter „Einheit“ prüfen oder kalibrieren.`,
-          );
-        }
-      } else {
-        setBusy('Bild wird geladen …');
-        const dataUrl = await readAsDataUrl(f);
-        const { width, height } = await imageSize(dataUrl);
-        // Startmaßstab: Bildbreite ≈ 20 m, danach kalibrieren
-        setBg({ type: 'raster', name: f.name, dataUrl, widthPx: width, heightPx: height, x: 0, y: 0, metersPerPixel: 20 / width, opacity: 0.6, visible: true });
-        afterLoad(true);
-      }
-    } catch (e) {
-      log.error('Plan konnte nicht geladen werden', e);
-      void meldung('Plan ließ sich nicht laden', `${e instanceof Error ? e.message : String(e)}\nDer bisherige Hintergrundplan bleibt unverändert.`, e);
-    } finally {
-      setBusy(null);
-    }
-  };
-
-  const importPdfPage = async (page: number, massstab: number | null) => {
-    if (!pdf) return;
-    setBusy(`Seite ${page} wird gerendert …`);
-    try {
-      const r = await pdf.doc.render(page);
-      const mpp = massstab ? r.metersPerPixelAt1 * massstab : 20 / r.width;
-      setBgMitQuelle(
-        {
-          type: 'raster',
-          name: pdf.doc.numPages > 1 ? `${pdf.name} (S. ${page})` : pdf.name,
-          dataUrl: r.dataUrl,
-          widthPx: r.width,
-          heightPx: r.height,
-          x: 0,
-          y: 0,
-          metersPerPixel: mpp,
-          opacity: 0.6,
-          visible: true,
-          pdf: { page, metersPerPixelAt1: r.metersPerPixelAt1 },
-        },
-        pdf.name,
-        'pdf',
-        pdf.bytes,
-      );
-      pdf.doc.destroy();
-      setPdf(null);
-      afterLoad(!massstab);
-    } catch (e) {
-      log.error('PDF konnte nicht gerendert werden', e);
-      void meldung('PDF ließ sich nicht darstellen', 'Die gewählte Seite ließ sich nicht als Hintergrundplan aufbereiten.', e);
-    } finally {
-      setBusy(null);
-    }
-  };
+  const load = () => planLaden(storey.id);
 
   return (
     <>
@@ -204,7 +236,10 @@ export function BackgroundPanel({ storey }: { storey: Storey }) {
             <button className="small" onClick={load}>
               Ersetzen
             </button>
-            <button className="small danger" onClick={() => void bestaetigen('Hintergrundplan entfernen?', 'Der Plan wird aus dem Geschoss entfernt.', 'Entfernen', true).then((ok) => ok && setBg(undefined))}>
+            <button
+              className="small danger"
+              onClick={() => void bestaetigen('Hintergrundplan entfernen?', 'Der Plan wird aus dem Geschoss entfernt.', 'Entfernen', true).then((ok) => ok && setBg(storey.id, undefined))}
+            >
               Entfernen
             </button>
           </div>
@@ -241,7 +276,6 @@ export function BackgroundPanel({ storey }: { storey: Storey }) {
           )}
         </>
       )}
-      {pdf && <PdfImportDialog doc={pdf.doc} name={pdf.name} onImport={importPdfPage} onCancel={() => (pdf.doc.destroy(), setPdf(null))} />}
     </>
   );
 }

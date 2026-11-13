@@ -57,4 +57,53 @@ describe('Bericht (F-17)', () => {
     expect(html).toContain('Planungsunterlagen: Grundrisse 1:100, Stand 01.10.2026');
     expect(html).not.toContain('nicht angegeben (DIN 277:2021-08, 5.1)');
   });
+
+  it('Bedienhinweise nur am Bildschirm (no-print), Zahlenspalten mit rechtsbündigem Kopf, Raumzeile samt Rechenweg als Einheit', () => {
+    const p = createProject('Haus');
+    p.storeys[0].shapes.push(createOutline(rectPoints({ x: 0, y: 0 }, { x: 10, y: 8 })));
+    p.storeys[0].shapes.push(createRoom(rectPoints({ x: 0.3, y: 0.3 }, { x: 9.7, y: 7.7 }), '0.01', 'Wohnen'));
+    useEditor.getState().loadProject(p);
+    bericht();
+    const warnung = [...document.querySelectorAll('.report .warning')].find((e) => e.textContent?.includes('Messverfahren nicht angegeben'));
+    expect(warnung?.classList.contains('no-print')).toBe(true);
+    const kopf = [...document.querySelectorAll('.report th')];
+    expect(kopf.find((t) => t.textContent === 'BGF [m²]')?.classList.contains('num')).toBe(true);
+    expect(kopf.find((t) => t.textContent === 'Geschoss')?.classList.contains('num')).toBe(false); // Gegenprobe: Textspalte links
+    expect(document.querySelectorAll('tbody.raum-zeilen')).toHaveLength(1);
+  });
+
+  it('Nutzungsgruppen-Tabelle nur mit Spalten, die Fläche haben; die übrigen stehen in der Anmerkung', () => {
+    const p = createProject('Haus');
+    p.storeys[0].shapes.push(createOutline(rectPoints({ x: 0, y: 0 }, { x: 10, y: 8 })));
+    p.storeys[0].shapes.push(createRoom(rectPoints({ x: 0.3, y: 0.3 }, { x: 5, y: 7.7 }), '0.01', 'Wohnen'));
+    const flur = createRoom(rectPoints({ x: 5, y: 0.3 }, { x: 9.7, y: 7.7 }), '0.02', 'Flur');
+    flur.nutzung = 'VF';
+    p.storeys[0].shapes.push(flur);
+    useEditor.getState().loadProject(p);
+    bericht();
+    const abschnitt = [...document.querySelectorAll('.bericht-abschnitt')].find((e) => e.querySelector('h2')?.textContent === 'Netto-Raumfläche nach Nutzungsgruppen')!;
+    const kopf = [...abschnitt.querySelectorAll('th')].map((t) => t.textContent);
+    expect(kopf).toEqual(['Geschoss', 'NUF 1', 'VF 9']);
+    expect(abschnitt.textContent).toContain('Nicht aufgeführt, weil ohne Fläche: NUF 2');
+    expect(abschnitt.textContent).toContain('TF 8');
+    expect(abschnitt.textContent).not.toMatch(/ohne Fläche:[^.]*VF 9/); // Gegenprobe: VF hat Fläche
+  });
+
+  it('Anzeige (Grundrisse, Rechenweg) wird gemerkt und beim nächsten Öffnen übernommen', () => {
+    const p = createProject('Haus');
+    p.storeys[0].shapes.push(createOutline(rectPoints({ x: 0, y: 0 }, { x: 10, y: 8 })));
+    p.storeys[0].shapes.push(createRoom(rectPoints({ x: 0.3, y: 0.3 }, { x: 9.7, y: 7.7 }), '0.01', 'Wohnen'));
+    useEditor.getState().loadProject(p);
+    localStorage.clear();
+    bericht();
+    expect(document.querySelector('tr.rechenweg')).toBeNull();
+    const rechenweg = [...document.querySelectorAll<HTMLLabelElement>('.report-actions label')].find((l) => l.textContent?.startsWith('Rechenweg je Raum'))!;
+    act(() => rechenweg.querySelector('input')!.click());
+    expect(document.querySelector('tr.rechenweg')).not.toBeNull();
+    act(() => root?.unmount());
+    document.body.innerHTML = '';
+    bericht();
+    expect(document.querySelector('tr.rechenweg')).not.toBeNull();
+    localStorage.clear();
+  });
 });

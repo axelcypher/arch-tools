@@ -91,7 +91,7 @@ export function RoofEditor({
           <span>ohne</span>
         </button>
         {DACH_TYPEN.map((t) => (
-          <button key={t.id} className={d?.typ === t.id ? 'roof-choice active' : 'roof-choice'} aria-pressed={d?.typ === t.id} onClick={() => choose(t.id)} title={t.hint}>
+          <button key={t.id} className={d?.typ === t.id ? 'roof-choice active' : 'roof-choice'} aria-pressed={d?.typ === t.id} onClick={() => choose(t.id)} title={`${t.label}: ${t.hint}`}>
             <RoofIcon typ={t.id} />
             <span>{t.label}</span>
           </button>
@@ -114,8 +114,8 @@ export function RoofEditor({
       {d && d.typ !== 'modell' && (
         <>
           <div className="field-row">
-            <Field label="Traufhöhe [m]" hint="OK Dachhaut an der Außenwand über der Unterkante des Körpers">
-              <NumberField value={d.traufhoehe} min={0} onChange={(v) => v !== undefined && set({ traufhoehe: v })} />
+            <Field label="Traufhöhe [m]">
+              <NumberField value={d.traufhoehe} min={0} title="OK Dachhaut an der Außenwand über der Unterkante des Körpers" onChange={(v) => v !== undefined && set({ traufhoehe: v })} />
             </Field>
             {d.typ !== 'flach' && d.typ !== 'tonne' && d.typ !== 'shed' && (
               <Field label={d.typ.startsWith('mansard') ? 'Neigung oben [°]' : 'Neigung [°]'}>
@@ -320,9 +320,11 @@ function GaubenEditor({ dach, points, onChange }: { dach: Dach; points: OutlineS
           </div>
         );
       })}
-      <button className="small" onClick={() => onChange([...gauben, defaultGaube(dach, fr)])}>
-        + Gaube
-      </button>
+      <div className="button-row">
+        <button className="small" onClick={() => onChange([...gauben, defaultGaube(dach, fr)])}>
+          + Gaube
+        </button>
+      </div>
     </div>
   );
 }
@@ -362,7 +364,7 @@ export function RoofIcon({ typ }: { typ: DachTyp | null }) {
   return (
     <svg viewBox="-5.8 -7.2 15.2 15.6" className="roof-icon">
       {paths.map((p, i) => (
-        <path key={i} d={p.d} fill={p.fill} stroke="#444" strokeWidth={0.12} strokeLinejoin="round" />
+        <path key={i} d={p.d} fill={p.fill} stroke="var(--muted)" strokeWidth={0.12} strokeLinejoin="round" />
       ))}
     </svg>
   );

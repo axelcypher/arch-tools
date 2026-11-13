@@ -116,7 +116,8 @@
   position: absolute;
   left: 8px;
   bottom: 8px;
-  right: 160px;
+  /* Platz für die Maßstabsleiste rechts unten (bis etwa 200 px breit) */
+  right: 232px;
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -146,8 +147,151 @@
   color: var(--sel);
 }
 
+.hud-zeile {
+  display: flex;
+  min-width: 0;
+}
+
+/* Hinweis einzeilig; der volle Text steht im Tooltip, alle Kürzel unter „?“ */
 .hud-hint {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  max-width: 100%;
   color: var(--muted);
+  background: var(--overlay-bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0 2px 0 6px;
+}
+
+.hud-hint-text {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+/* Meldungen auf der Zeichenfläche: Erfolg grün, Hinweis neutral (Warnung gelb wie im Designsystem) */
+.canvas-wrap .canvas-message.ok {
+  background: var(--ok-bg);
+  border-color: var(--ok-border);
+  color: var(--ok-text);
+}
+
+.canvas-wrap .canvas-message.info {
+  background: var(--chip-bg);
+  border-color: var(--border);
+  color: var(--text);
+}
+
+/* leere Zeichenfläche: Einstieg mittig */
+.canvas-leer {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  width: min(340px, calc(100% - 32px));
+  padding: 16px 20px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  text-align: center;
+}
+
+.canvas-leer p {
+  margin: 0;
+}
+
+.canvas-leer-titel {
+  font-weight: 600;
+}
+
+.canvas-leer kbd {
+  font: inherit;
+  font-weight: 600;
+  padding: 0 4px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+}
+
+/* Griffe: größere unsichtbare Trefferfläche um die sichtbaren Punkte */
+.griff-treffer {
+  fill: transparent;
+  stroke: none;
+  pointer-events: all;
+}
+
+.griff:hover .vertex-handle {
+  fill: var(--sel);
+}
+
+.griff:hover .mid-handle {
+  opacity: 1;
+}
+
+/* Raster unter einem Plan: nur Hauptlinien, blass */
+.grid-unter-plan {
+  opacity: 0.5;
+}
+
+/* erkannter, noch nicht bearbeiteter BGF-Umriss */
+.pruefen-label {
+  fill: #8a5300;
+  font-weight: 600;
+}
+
+.kuerzel-tabelle {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.kuerzel-tabelle th,
+.kuerzel-tabelle td {
+  padding: 3px 6px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.kuerzel-tabelle th {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Werkzeugsymbole verschieden breit (⟷): nicht in die Beschriftung ragen */
+.toolbar .tb-icon {
+  width: auto;
+  min-width: 1.1em;
+}
+
+/* Werkzeugleiste bis 1600 px etwas knapper, damit sie bei 1440 px in eine Zeile passt */
+@media (max-width: 1600px) {
+  .toolbar button {
+    padding: 4px 6px;
+  }
+}
+
+/* schmale Fenster: Optionen der Zeichenfläche einzeilig (seitlich scrollbar) statt gestapelt */
+@media (max-width: 1100px) {
+  .canvas-oben .canvas-controls {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    max-width: 100%;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .canvas-wrap .canvas-message {
+    max-width: min(360px, 100%);
+  }
 }
 
 /* rechts oben: Ansichtsoptionen, darunter Werkzeugoptionen und Meldung – links bleibt Platz für „Grundriss | 3D“ */
@@ -275,6 +419,23 @@
   margin: 3px 0;
 }
 
+.ifc-block {
+  margin: 0 0 10px;
+  padding: 6px 10px 4px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.ifc-block legend {
+  padding: 0 4px;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.ifc-modus-text {
+  margin: 4px 0 2px;
+}
+
 .modal hr {
   border: none;
   border-top: 1px solid var(--border);
@@ -367,7 +528,39 @@
 
 .legend-items {
   display: flex;
-  gap: 10px;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+}
+
+.view3d-legend-kopf {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.view3d-legend.zu {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 3D ohne Umrisse: Hinweis mittig statt leerer Fläche */
+.view3d-leer {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  max-width: 360px;
+  padding: 16px 20px;
+  text-align: center;
+  background: var(--overlay-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.view3d-leer p {
+  margin: 0 0 8px;
 }
 
 .legend-items i {
@@ -389,7 +582,8 @@
 
 .roof-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  /* minmax(0, …): lange Namen („Krüppelwalm“) dürfen die Leiste nicht verbreitern */
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 4px;
   margin-bottom: 8px;
 }
@@ -403,6 +597,13 @@
   line-height: 1.15;
   white-space: normal;
   text-align: center;
+  min-width: 0;
+}
+
+.roof-choice span {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  hyphens: auto;
 }
 
 .roof-choice.active {
@@ -484,7 +685,7 @@
   list-style: none;
   margin: 4px 0 0;
   padding: 0;
-  max-height: 260px;
+  max-height: 200px;
   overflow: auto;
   border: 1px solid var(--border);
   border-radius: 4px;
@@ -523,12 +724,44 @@
 }
 
 /* Bericht für die Bauvorlage (F-17) */
-.bericht-abschnitte {
-  display: inline-flex;
-  flex-wrap: wrap;
-  gap: 2px 8px;
+/* Zahlenspalten: Kopf rechtsbündig über den Werten */
+.report-table th.num {
+  text-align: right;
+}
+
+/* Abschnitte als Ausklapper – die Bedienleiste bleibt einzeilig */
+.bericht-ausklapper {
+  position: relative;
   font-size: 12px;
 }
+
+.bericht-ausklapper > summary {
+  cursor: pointer;
+  padding: 3px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--panel);
+}
+
+.bericht-ausklapper-inhalt {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 2;
+  min-width: 300px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.bericht-knoepfe {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+
 
 .druck-kopf-normen {
   margin: 4px 0 0;
@@ -568,8 +801,30 @@
   }
 
   .report-storey h2,
-  .report-keyfigures {
+  .report-keyfigures,
+  .plan-figure,
+  .plan-legende {
     break-after: avoid;
+  }
+
+  /* Raumzeile und ihr Rechenweg auf derselben Seite */
+  .report-table tbody.raum-zeilen,
+  .report-table tr {
+    break-inside: avoid;
+  }
+
+  .report-table tr.rechenweg {
+    break-before: avoid;
+  }
+
+  /* Grundriss und Raumliste eines Geschosses möglichst auf einer Seite; ist es länger, bricht der Browser trotzdem */
+  .report-storey {
+    break-inside: avoid;
+  }
+
+  /* etwas kleiner als am Bildschirm, damit Raumliste und Summe neben dem Grundriss auf die Seite passen */
+  .report-storey .plan-svg {
+    max-height: 120mm;
   }
 }
 
@@ -596,8 +851,29 @@
 }
 
 /* Raumtabelle (F-21) */
-.raumtabelle-dialog {
-  max-width: min(1200px, 96vw);
+.modal.raumtabelle-dialog {
+  width: min(1200px, 96vw);
+  max-width: 96vw;
+}
+
+.raumtabelle td.raumtabelle-nutzung select {
+  min-width: 76px;
+}
+
+/* Zwischenzeile je Geschoss und Gesamtsumme */
+.raumtabelle .raumtabelle-geschoss th,
+.raumtabelle .raumtabelle-geschoss td,
+.raumtabelle tfoot th,
+.raumtabelle tfoot td {
+  position: static;
+  padding-top: 6px;
+  font-weight: 600;
+  background: var(--hover);
+}
+
+.raumtabelle th.num,
+.raumtabelle td.num {
+  text-align: right;
 }
 
 .raumtabelle-rahmen {
@@ -650,6 +926,15 @@
   stroke: #fff;
   stroke-width: 1;
   cursor: move;
+  opacity: 0.35;
+}
+
+.stempel-griff {
+  cursor: move;
+}
+
+.stempel-griff:hover .stempel-handle {
+  opacity: 1;
 }
 
 .umriss-label {
@@ -710,11 +995,12 @@
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .sidebar-right > .summary {
   flex: none;
-  max-height: 50%;
+  max-height: 40%;
   overflow-y: auto;
   border-top: 1px solid var(--border);
 }
@@ -779,4 +1065,41 @@
 /* fehlende Pflichtangabe in einer eingeklappten Zeile (z. B. Messverfahren nach DIN 277, 5.1) */
 .fehlt-text {
   color: var(--warn-text);
+}
+
+/* Auswertung eingeklappt: Kurzfassung des Geschosses (und des Projekts) */
+.summary-kurz {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 8px;
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.summary-kurz dt {
+  color: var(--muted);
+}
+
+.summary-kurz dd {
+  margin: 0;
+}
+
+/* Raumnummer in der Flächenliste: Ordnungsmerkmal, Ziffern gleich breit */
+.raum-nr {
+  flex: none;
+  min-width: 3.2em;
+  font-variant-numeric: tabular-nums;
+}
+
+.nummern-knoepfe {
+  align-items: center;
+}
+
+.geschoss-umbenennen {
+  width: 100%;
+}
+
+.leer-hinweis .button-row {
+  margin-top: 4px;
 }

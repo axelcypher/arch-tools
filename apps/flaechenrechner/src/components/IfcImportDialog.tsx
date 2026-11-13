@@ -6,13 +6,16 @@ import type { IfcImportOptions } from '@core/ifcImport';
 import { buildFromIfc } from '@core/ifcImport';
 import { hatIfcHerkunft, ifcAbgleichen, ifcHinzufuegen, projektAusIfc, wohnflaecheAusProjekt } from '@core/ifcAbgleich';
 import { ifcDateiErsetzen } from '@core/platform/ifcAktualisieren';
+// statisch: klein; das große web-ifc lädt loadIfc erst bei Bedarf nach
+import { ifcReference, loadIfc } from '@core/platform/ifc';
 import { addDatei } from '@core/model';
 import { pickFile } from '@core/platform/files';
 import { useEditor } from '../store/store';
 import { NumberField } from '@core/ui/fields';
 import { logger } from '@core/platform/log';
 import { verwerfenOk } from './Toolbar';
-import { useEscSchliessen } from '@core/ui/Dialog';
+import { Modal } from '@core/ui/Dialog';
+import { anzahl } from '../core/text';
 
 const log = logger('ifc');
 
@@ -20,7 +23,6 @@ type Step = { kind: 'start' } | { kind: 'loading'; msg: string; abbrechbar?: boo
 
 /** IFC-Import (z. B. Archicad): Geschosse, Zonen → Räume, BGF-Umrisse, Dach für den BRI. */
 export function IfcImportDialog({ onClose }: { onClose: () => void }) {
-  useEscSchliessen(onClose);
   const [step, setStep] = useState<Step>({ kind: 'start' });
   const [error, setError] = useState<string | null>(null);
   /** Originaldatei – wird im Projektarchiv mitgespeichert */
@@ -41,7 +43,6 @@ export function IfcImportDialog({ onClose }: { onClose: () => void }) {
 
   // web-ifc schon beim Öffnen des Dialogs laden (F-22) – das Lesen der Datei startet dann ohne Wartezeit
   useEffect(() => {
-    void import('@core/platform/ifc').catch(() => undefined);
     void import('web-ifc').catch(() => undefined);
   }, []);
   /** zählt bei jedem Laden bzw. Abbrechen weiter – ein abgebrochener Ladevorgang wird verworfen */
@@ -56,7 +57,6 @@ export function IfcImportDialog({ onClose }: { onClose: () => void }) {
     try {
       const data = new Uint8Array(await f.arrayBuffer());
       original.current = data;
-      const { loadIfc } = await import('@core/platform/ifc');
       const done = log.time(`IFC lesen: ${f.name}`);
       const x = await loadIfc(data.slice(), (msg) => {
         log.debug(msg);
@@ -64,11 +64,17 @@ export function IfcImportDialog({ onClose }: { onClose: () => void }) {
       });
       if (lauf.current !== meiner) return; // abgebrochen
       done({ bytes: data.byteLength, geschosse: x.storeys.length, zonen: x.spaces.length });
+      if (!x.storeys.length) {
+        log.warn(`IFC ohne Geschosse: ${f.name}`);
+        setError('Die Datei enthält keine Geschosse (IfcBuildingStorey). Bitte im CAD-Programm das Gebäudemodell samt Geschossen als IFC exportieren.');
+        setStep({ kind: 'start' });
+        return;
+      }
       setStep({ kind: 'options', x, file: f.name });
     } catch (e) {
       if (lauf.current !== meiner) return;
       log.error(`IFC-Datei konnte nicht gelesen werden: ${f.name}`, e);
-      setError(`IFC-Datei konnte nicht gelesen werden: ${e instanceof Error ? e.message : String(e)}`);
+      setError('Die Datei ist keine gültige IFC-Datei oder beschädigt. Bitte im CAD-Programm erneut als IFC 2x3 oder IFC4 exportieren. Einzelheiten stehen im Protokoll.');
       setStep({ kind: 'start' });
     }
   };
@@ -85,7 +91,6 @@ export function IfcImportDialog({ onClose }: { onClose: () => void }) {
         st.update(() => {
           return original.current ? ifcDateiErsetzen(a.project, file, original.current) : a.project;
         });
-        const { ifcReference } = await import('@core/platform/ifc');
         st.setIfcModel(ifcReference(x, file));
         log.info('IFC abgeglichen', { datei: file, ...a.zaehler });
         setStep({ kind: 'done', report: [...a.bericht, ...r.report.filter((z) => !/übernommen\.$/.test(z))] });
@@ -105,7 +110,6 @@ export function IfcImportDialog({ onClose }: { onClose: () => void }) {
           return original.current ? addDatei(next, file, 'ifc', original.current).project : next;
         });
       }
-      const { ifcReference } = await import('@core/platform/ifc');
       st.setIfcModel(ifcReference(x, file));
       const res = computeProject(useEditor.getState().project);
       log.info('IFC-Import abgeschlossen', { datei: file, bericht: r.report, bgf: res.total.bgf.total, bri: res.total.bri.total, nrf: res.total.nrf.total, wofl: res.total.wofl });
@@ -118,15 +122,19 @@ export function IfcImportDialog({ onClose }: { onClose: () => void }) {
       });
     } catch (e) {
       log.error('IFC-Import fehlgeschlagen', e);
-      setError(`Import fehlgeschlagen: ${e instanceof Error ? e.message : String(e)}`);
+      setError('Der Import ist fehlgeschlagen; das Projekt bleibt unverändert. Einzelheiten stehen im Protokoll.');
       setStep({ kind: 'options', x, file });
     }
   };
 
   return (
-    <div className="modal-backdrop">
-      <div className="modal modal-wide">
+    <Modal titel="IFC-Import" breit klickDaneben={false} onClose={step.kind === 'loading' ? undefined : onClose}>
         <h3>IFC-Import</h3>
+        {error && (
+          <p className="warning" role="alert">
+            {error}
+          </p>
+        )}
         {step.kind === 'start' && (
           <>
             <p className="small-text">
@@ -138,7 +146,7 @@ export function IfcImportDialog({ onClose }: { onClose: () => void }) {
             </p>
             <div className="dialog-buttons">
               <button onClick={onClose}>Abbrechen</button>
-              <button className="primary" onClick={choose}>
+              <button className="primary" autoFocus onClick={choose}>
                 IFC-Datei wählen …
               </button>
             </div>
@@ -164,94 +172,110 @@ export function IfcImportDialog({ onClose }: { onClose: () => void }) {
         {step.kind === 'options' && (
           <>
             <p className="small-text">
-              <strong>{step.file}</strong> ({step.x.schema}) – {step.x.storeys.length} Geschosse, {step.x.spaces.length} Räume/Zonen, {step.x.elements.length} Bauteile
+              <strong>{step.file}</strong> ({step.x.schema}) – {anzahl(step.x.storeys.length, 'Geschoss', 'Geschosse')}, {anzahl(step.x.spaces.length, 'Raum/Zone', 'Räume/Zonen')},{' '}
+              {anzahl(step.x.elements.length, 'Bauteil', 'Bauteile')}
             </p>
+            {/* oberstes Geschoss oben – wie in der Seitenleiste */}
             <ul className="ifc-storeys">
               {[...step.x.storeys]
-                .sort((a, b) => a.elevation - b.elevation)
+                .sort((a, b) => b.elevation - a.elevation)
                 .map((s) => (
                   <li key={s.expressId}>
-                    {s.name} <span className="muted">(± {fmt2(s.elevation)} m, {step.x.spaces.filter((sp) => step.x.storeys[sp.storey] === s).length} Räume)</span>
+                    {s.name}{' '}
+                    <span className="muted">
+                      (± {fmt2(s.elevation)} m, {anzahl(step.x.spaces.filter((sp) => step.x.storeys[sp.storey] === s).length, 'Raum', 'Räume')})
+                    </span>
                   </li>
                 ))}
             </ul>
-            <label className="toggle block">
-              <input type="checkbox" checked={opts.rooms} onChange={(e) => setOpts({ ...opts, rooms: e.target.checked })} />
-              Räume aus Zonen (IfcSpace) – Nummer, Name, Putzabzug wie im Modell
-            </label>
-            <label className="toggle block indent">
-              <input type="checkbox" checked={opts.wohnflaeche} disabled={!opts.rooms} onChange={(e) => setOpts({ ...opts, wohnflaeche: e.target.checked })} />
-              als Wohnfläche anrechnen (Vorschlag nach Raumname, WoFlV-Faktor aus den lichten Raumhöhen)
-            </label>
-            {opts.rooms && opts.wohnflaeche && (
-              <div className="ifc-wohnung indent">
-                <label className="toggle block">
-                  <input type="radio" name="ifc-wohnung" checked={opts.wohnung === 'eine'} onChange={() => setOpts({ ...opts, wohnung: 'eine' })} />
-                  eine Wohnung für alle Geschosse
-                  <input
-                    className="ifc-wohnung-name"
-                    aria-label="Name der Wohnung"
-                    placeholder="WE 01"
-                    value={opts.wohnungName ?? ''}
-                    disabled={opts.wohnung !== 'eine'}
-                    onChange={(e) => setOpts({ ...opts, wohnungName: e.target.value })}
-                  />
-                </label>
-                <label className="toggle block">
-                  <input type="radio" name="ifc-wohnung" checked={opts.wohnung === 'geschoss'} onChange={() => setOpts({ ...opts, wohnung: 'geschoss' })} />
-                  je Geschoss eine Wohnung (Wohnung = Geschossname)
-                </label>
-                <label className="toggle block">
-                  <input type="radio" name="ifc-wohnung" checked={opts.wohnung === 'zone'} onChange={() => setOpts({ ...opts, wohnung: 'zone' })} />
-                  aus der Zonenkategorie (IFC-Objekttyp der Zone)
-                </label>
-              </div>
-            )}
-            <label className="toggle block">
-              <input type="checkbox" checked={opts.outlines} onChange={(e) => setOpts({ ...opts, outlines: e.target.checked })} />
-              BGF-Umrisse aus Wänden, Stützen, Fenstern und Türen je Geschoss
-            </label>
-            <label className="toggle block">
-              <input type="checkbox" checked={opts.roof} onChange={(e) => setOpts({ ...opts, roof: e.target.checked })} />
-              Dach aus dem Modell für den BRI (Volumen bis zur Dachhaut)
-            </label>
-            <label className="toggle block indent">
-              <input type="checkbox" checked={!!opts.dachform} disabled={!opts.roof} onChange={(e) => setOpts({ ...opts, dachform: e.target.checked })} />
-              Dachform und Gauben erkennen (BRI mit Formeln, z. B. Walmdach + Schleppgaube) – nur wenn sie das Modell genau treffen
-            </label>
-            <label className="toggle block">
-              <input
-                type="checkbox"
-                checked={!!opts.planSchnitthoehe}
-                onChange={(e) => setOpts({ ...opts, planSchnitthoehe: e.target.checked ? 1 : 0 })}
-              />
-              Geschossschnitt als Plan hinterlegen (zum Prüfen und Korrigieren im Grundriss)
-            </label>
-            {!!opts.planSchnitthoehe && (
-              <label className="toggle block indent">
-                Schnitthöhe über Fußboden
-                <span className="inline-num">
-                  <NumberField value={opts.planSchnitthoehe} min={0.1} max={5} onChange={(v) => v && setOpts({ ...opts, planSchnitthoehe: v })} />
-                </span>
-                m
+            <fieldset className="ifc-block">
+              <legend>Art des Imports</legend>
+              <label className="toggle block">
+                <input type="radio" name="ifc-modus" checked={opts.modus === 'aktualisieren'} onChange={() => setOpts({ ...opts, modus: 'aktualisieren' })} />
+                aktuelles Projekt aktualisieren
               </label>
-            )}
-            <hr />
-            <label className="toggle block" title="Räume über die IFC-GlobalId zuordnen: neue Geometrie aus der IFC, von Hand geänderte Angaben bleiben, neue Zonen kommen hinzu">
-              <input type="radio" name="ifc-modus" checked={opts.modus === 'aktualisieren'} onChange={() => setOpts({ ...opts, modus: 'aktualisieren' })} />
-              aktuelles Projekt aktualisieren (erneuter Export desselben Modells – Ihre Änderungen bleiben)
-            </label>
-            <label className="toggle block">
-              <input type="radio" name="ifc-modus" checked={opts.modus === 'neu'} onChange={() => setOpts({ ...opts, modus: 'neu' })} />
-              als neues Projekt öffnen
-            </label>
-            <label className="toggle block">
-              <input type="radio" name="ifc-modus" checked={opts.modus === 'hinzufuegen'} onChange={() => setOpts({ ...opts, modus: 'hinzufuegen' })} />
-              Geschosse zum aktuellen Projekt hinzufügen
-            </label>
+              <label className="toggle block">
+                <input type="radio" name="ifc-modus" checked={opts.modus === 'neu'} onChange={() => setOpts({ ...opts, modus: 'neu' })} />
+                als neues Projekt öffnen
+              </label>
+              <label className="toggle block">
+                <input type="radio" name="ifc-modus" checked={opts.modus === 'hinzufuegen'} onChange={() => setOpts({ ...opts, modus: 'hinzufuegen' })} />
+                Geschosse zum aktuellen Projekt hinzufügen
+              </label>
+              <p className="muted small-text ifc-modus-text">
+                {opts.modus === 'aktualisieren'
+                  ? 'Für einen erneuten Export desselben Modells: Räume werden über die IFC-GlobalId zugeordnet und erhalten die neue Geometrie; von Hand geänderte Angaben bleiben, neue Zonen kommen hinzu.'
+                  : opts.modus === 'neu'
+                    ? 'Ersetzt das geöffnete Projekt durch ein neues aus dem Modell (vorher wird nach ungespeicherten Änderungen gefragt).'
+                    : 'Fügt die Geschosse des Modells zum geöffneten Projekt hinzu; vorhandene Geschosse bleiben unverändert.'}
+              </p>
+            </fieldset>
+            <fieldset className="ifc-block">
+              <legend>Übernehmen</legend>
+              <label className="toggle block">
+                <input type="checkbox" checked={opts.rooms} onChange={(e) => setOpts({ ...opts, rooms: e.target.checked })} />
+                Räume aus Zonen (IfcSpace) – Nummer, Name, Putzabzug wie im Modell
+              </label>
+              <label className="toggle block indent">
+                <input type="checkbox" checked={opts.wohnflaeche} disabled={!opts.rooms} onChange={(e) => setOpts({ ...opts, wohnflaeche: e.target.checked })} />
+                als Wohnfläche anrechnen (Vorschlag nach Raumname, WoFlV-Faktor aus den lichten Raumhöhen)
+              </label>
+              {opts.rooms && opts.wohnflaeche && (
+                <div className="ifc-wohnung indent">
+                  <label className="toggle block">
+                    <input type="radio" name="ifc-wohnung" checked={opts.wohnung === 'eine'} onChange={() => setOpts({ ...opts, wohnung: 'eine' })} />
+                    eine Wohnung für alle Geschosse
+                    <input
+                      className="ifc-wohnung-name"
+                      aria-label="Name der Wohnung"
+                      placeholder="WE 01"
+                      value={opts.wohnungName ?? ''}
+                      disabled={opts.wohnung !== 'eine'}
+                      onChange={(e) => setOpts({ ...opts, wohnungName: e.target.value })}
+                    />
+                  </label>
+                  <label className="toggle block">
+                    <input type="radio" name="ifc-wohnung" checked={opts.wohnung === 'geschoss'} onChange={() => setOpts({ ...opts, wohnung: 'geschoss' })} />
+                    je Geschoss eine Wohnung (Wohnung = Geschossname)
+                  </label>
+                  <label className="toggle block">
+                    <input type="radio" name="ifc-wohnung" checked={opts.wohnung === 'zone'} onChange={() => setOpts({ ...opts, wohnung: 'zone' })} />
+                    aus der Zonenkategorie (IFC-Objekttyp der Zone)
+                  </label>
+                </div>
+              )}
+              <label className="toggle block">
+                <input type="checkbox" checked={opts.outlines} onChange={(e) => setOpts({ ...opts, outlines: e.target.checked })} />
+                BGF-Umrisse aus Wänden, Stützen, Fenstern und Türen je Geschoss
+              </label>
+              <label className="toggle block">
+                <input type="checkbox" checked={opts.roof} onChange={(e) => setOpts({ ...opts, roof: e.target.checked })} />
+                Dach aus dem Modell für den BRI (Volumen bis zur Dachhaut)
+              </label>
+            </fieldset>
+            <fieldset className="ifc-block">
+              <legend>Prüfhilfen</legend>
+              <label className="toggle block">
+                <input type="checkbox" checked={!!opts.dachform} disabled={!opts.roof} onChange={(e) => setOpts({ ...opts, dachform: e.target.checked })} />
+                Dachform und Gauben erkennen (BRI mit Formeln, z. B. Walmdach + Schleppgaube) – nur wenn sie das Modell genau treffen
+              </label>
+              <label className="toggle block">
+                <input type="checkbox" checked={!!opts.planSchnitthoehe} onChange={(e) => setOpts({ ...opts, planSchnitthoehe: e.target.checked ? 1 : 0 })} />
+                Geschossschnitt als Plan hinterlegen (zum Prüfen und Korrigieren im Grundriss)
+              </label>
+              {!!opts.planSchnitthoehe && (
+                <label className="toggle block indent">
+                  Schnitthöhe über Fußboden
+                  <span className="inline-num">
+                    <NumberField value={opts.planSchnitthoehe} min={0.1} max={5} onChange={(v) => v && setOpts({ ...opts, planSchnitthoehe: v })} />
+                  </span>
+                  m
+                </label>
+              )}
+            </fieldset>
             <div className="dialog-buttons">
               <button onClick={onClose}>Abbrechen</button>
-              <button className="primary" onClick={() => doImport(step.x, step.file)}>
+              <button className="primary" autoFocus onClick={() => doImport(step.x, step.file)}>
                 {opts.modus === 'aktualisieren' ? 'Aktualisieren' : 'Importieren'}
               </button>
             </div>
@@ -271,6 +295,7 @@ export function IfcImportDialog({ onClose }: { onClose: () => void }) {
               <button onClick={onClose}>Schließen</button>
               <button
                 className="primary"
+                autoFocus
                 onClick={() => {
                   useEditor.getState().setMainView('3d');
                   onClose();
@@ -281,8 +306,6 @@ export function IfcImportDialog({ onClose }: { onClose: () => void }) {
             </div>
           </>
         )}
-        {error && <p className="warning">{error}</p>}
-      </div>
-    </div>
+    </Modal>
   );
 }

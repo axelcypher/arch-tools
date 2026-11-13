@@ -1,3 +1,4 @@
+import type { KeyboardEvent } from 'react';
 import { fmt2 } from '@core/format';
 import type { Nutzungsgruppe, Raumumschliessung, RoomShape, Shape, WoflKategorie } from '@core/model';
 import { shapeArea } from '@core/model';
@@ -9,23 +10,51 @@ import { wohnungNormalisieren } from '../core/katalog';
 import { abzugSetzen } from '../core/abzug';
 import { mapShape, useEditor } from '../store/store';
 
+/** Spalten, in denen Enter bzw. ↓ in dieselbe Spalte der nächsten Zeile springt (zügiges Durchnummerieren) */
+const SPRUNG_SPALTEN = new Set(['nummer', 'name', 'wohnung']);
+
 /**
- * Tabellenansicht aller Räume des Projekts (F-21): je Geschoss nach Nummer sortiert, Spalten direkt bearbeitbar
- * (Nr., Bezeichnung, R/S, Nutzung, WoFlV-Anrechnung, Faktor, Wohnung, Abzug, Putzabzug). Jede Änderung ist ein
- * eigener Rückgängig-Schritt.
+ * Enter/↓ bzw. Umschalt+Enter/↑ in einer Sprungspalte: Fokus in dieselbe Spalte der nächsten bzw. vorigen Raumzeile
+ * (das Feld übernimmt seinen Wert beim Verlassen). In der Spalte Wohnung bleiben ↑/↓ der Vorschlagsliste.
+ */
+function zeilenSprung(e: KeyboardEvent<HTMLTableSectionElement>) {
+  const feld = e.target as HTMLElement;
+  const spalte = feld.closest('td')?.dataset.spalte;
+  if (!spalte || !SPRUNG_SPALTEN.has(spalte) || e.altKey || e.ctrlKey || e.metaKey) return;
+  const pfeil = spalte !== 'wohnung' && (e.key === 'ArrowDown' || e.key === 'ArrowUp');
+  if (e.key !== 'Enter' && !pfeil) return;
+  const zurueck = e.key === 'ArrowUp' || (e.key === 'Enter' && e.shiftKey);
+  const felder = [...e.currentTarget.querySelectorAll<HTMLInputElement>(`td[data-spalte="${spalte}"] input`)];
+  const ziel = felder[felder.indexOf(feld as HTMLInputElement) + (zurueck ? -1 : 1)];
+  if (!ziel) return;
+  e.preventDefault();
+  ziel.focus();
+  ziel.select();
+}
+
+/**
+ * Raumtabelle aller Räume des Projekts (F-21): Geschosse wie in der Seitenleiste von oben nach unten, je Geschoss nach
+ * Nummer sortiert, mit Zwischensumme und Gesamtsumme. Spalten direkt bearbeitbar (Nr., Bezeichnung, R/S, Nutzung,
+ * WoFlV-Anrechnung, Faktor, Wohnung, Abzug, Putzabzug). Jede Änderung ist ein eigener Rückgängig-Schritt.
  */
 export function RaumTabelle({ onClose }: { onClose: () => void }) {
   const project = useEditor((s) => s.project);
   const wohnungen = wohnungenImProjekt(project);
+  const flaeche = (r: RoomShape) => shapeArea(r) * (r.subtract ? -1 : 1);
+  const geschosse = [...project.storeys]
+    .reverse()
+    .map((st) => ({ st, raeume: nachNummer(st.shapes.filter((s): s is RoomShape => s.kind === 'room')) }))
+    .filter((g) => g.raeume.length > 0);
+  const gesamt = geschosse.reduce((a, g) => a + g.raeume.reduce((b, r) => b + flaeche(r), 0), 0);
   const upd = (storeyId: string, id: string, fn: (r: RoomShape) => Shape) => useEditor.getState().update((p) => mapShape(p, storeyId, id, (s) => (s.kind === 'room' ? fn(s) : s)));
   return (
     <Modal titel="Raumtabelle" onClose={onClose} breit className="raumtabelle-dialog">
-      <h3>Räume des Projekts</h3>
+      <h3>Raumtabelle</h3>
+      <p className="muted small-text">Enter bzw. ↓ in Nr., Bezeichnung und Wohnung: weiter zur nächsten Zeile; Umschalt+Enter bzw. ↑: zurück.</p>
       <div className="raumtabelle-rahmen">
         <table className="raumtabelle">
           <thead>
             <tr>
-              <th>Geschoss</th>
               <th>Nr.</th>
               <th>Bezeichnung</th>
               <th>R/S</th>
@@ -35,18 +64,23 @@ export function RaumTabelle({ onClose }: { onClose: () => void }) {
               <th>Wohnung</th>
               <th>Abzug</th>
               <th>Putzabzug [%]</th>
-              <th>Fläche [m²]</th>
+              <th className="num">Fläche [m²]</th>
             </tr>
           </thead>
-          <tbody>
-            {project.storeys.flatMap((st) =>
-              nachNummer(st.shapes.filter((s): s is RoomShape => s.kind === 'room')).map((r) => (
+          {geschosse.map(({ st, raeume }) => (
+            <tbody key={st.id} onKeyDown={zeilenSprung}>
+              <tr className="raumtabelle-geschoss">
+                <th colSpan={9} scope="rowgroup">
+                  {st.name}
+                </th>
+                <td className="num">{fmt2(raeume.reduce((a, r) => a + flaeche(r), 0))}</td>
+              </tr>
+              {raeume.map((r) => (
                 <tr key={r.id}>
-                  <td>{st.name}</td>
-                  <td>
+                  <td data-spalte="nummer">
                     <TextField label="Nr." value={r.nummer} onChange={(v) => upd(st.id, r.id, (x) => ({ ...x, nummer: v }))} />
                   </td>
-                  <td>
+                  <td data-spalte="name">
                     <TextField label="Bezeichnung" value={r.name} onChange={(v) => upd(st.id, r.id, (x) => ({ ...x, name: v }))} />
                   </td>
                   <td>
@@ -70,7 +104,7 @@ export function RaumTabelle({ onClose }: { onClose: () => void }) {
                       )}
                     </select>
                   </td>
-                  <td>
+                  <td className="raumtabelle-nutzung">
                     <select
                       aria-label="Nutzung"
                       value={r.nutzung}
@@ -108,7 +142,7 @@ export function RaumTabelle({ onClose }: { onClose: () => void }) {
                       />
                     ) : null}
                   </td>
-                  <td>
+                  <td data-spalte="wohnung">
                     <TextField
                       label="Wohnung"
                       value={r.wofl.wohnung}
@@ -127,9 +161,17 @@ export function RaumTabelle({ onClose }: { onClose: () => void }) {
                     {fmt2(shapeArea(r))}
                   </td>
                 </tr>
-              )),
-            )}
-          </tbody>
+              ))}
+            </tbody>
+          ))}
+          <tfoot>
+            <tr>
+              <th colSpan={9} scope="row">
+                Summe aller Räume
+              </th>
+              <td className="num">{fmt2(gesamt)}</td>
+            </tr>
+          </tfoot>
         </table>
         <datalist id="fr-tabelle-wohnungen">
           {wohnungen.map((w) => (

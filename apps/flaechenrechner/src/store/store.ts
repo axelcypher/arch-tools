@@ -72,6 +72,10 @@ interface EditorState {
   fitRequest: number;
   reportOpen: boolean;
   excelOpen: boolean;
+  /** IFC-Import-Dialog offen (Werkzeugleiste, Einstieg auf der leeren Zeichenfläche) */
+  ifcOpen: boolean;
+  /** Zeichenfläche hat einen Entwurf (Punkte, Messung, Kalibrierstrecke): Rückgängig nimmt zuerst dort zurück */
+  entwurf: boolean;
   detect: DetectSettings;
   mainView: '2d' | '3d';
   ifcModel: IfcReference | null;
@@ -107,6 +111,8 @@ interface EditorState {
   requestFit: () => void;
   setReportOpen: (open: boolean) => void;
   setExcelOpen: (open: boolean) => void;
+  setIfcOpen: (open: boolean) => void;
+  setEntwurf: (aktiv: boolean) => void;
   setMainView: (v: '2d' | '3d') => void;
   setIfcModel: (m: IfcReference | null) => void;
   setDetect: (d: Partial<DetectSettings>) => void;
@@ -143,6 +149,8 @@ export const useEditor = create<EditorState>((set, get) => {
     fitRequest: 1,
     reportOpen: false,
     excelOpen: false,
+    ifcOpen: false,
+    entwurf: false,
     detect: loadDetectSettings(),
     mainView: '2d',
     ifcModel: null,
@@ -229,6 +237,8 @@ export const useEditor = create<EditorState>((set, get) => {
     requestFit: () => set({ fitRequest: get().fitRequest + 1 }),
     setReportOpen: (open) => set({ reportOpen: open }),
     setExcelOpen: (open) => set({ excelOpen: open }),
+    setIfcOpen: (open) => set({ ifcOpen: open }),
+    setEntwurf: (aktiv) => set({ entwurf: aktiv }),
     setMainView: (v) => set({ mainView: v }),
     setIfcModel: (m) => set({ ifcModel: m }),
     setDetect: (d) => {
@@ -330,8 +340,15 @@ export function addStorey(p: Project, name?: string, bezugId?: string, lage: Lag
 /**
  * Kopiert ein Geschoss inkl. aller Flächen (neue IDs), z. B. für Regelgeschosse. Die Kopie ist kein Element des
  * IFC-Modells: ohne GlobalId und Vergleichsstand – sonst hielte ein späterer Abgleich sie für das Original.
+ * `ziel`: Name und Lage (über bzw. unter dem Original); ohne Angabe darüber mit Namen nach der Lage.
  */
-export function duplicateStorey(p: Project, storeyId: string, o: KopieOptionen = { nummernAnpassen: false, wohnung: null }): { project: Project; id: string } {
+export function duplicateStorey(
+  p: Project,
+  storeyId: string,
+  o: KopieOptionen = { nummernAnpassen: false, wohnung: null },
+  ziel: { name?: string; lage?: Lage } = {},
+): { project: Project; id: string } {
+  const lage = ziel.lage ?? 'darueber';
   const idx = p.storeys.findIndex((s) => s.id === storeyId);
   if (idx < 0) return { project: p, id: storeyId };
   const src = p.storeys[idx];
@@ -339,12 +356,14 @@ export function duplicateStorey(p: Project, storeyId: string, o: KopieOptionen =
   const copy: Storey = {
     ...structuredClone(src),
     id: newId('st'),
-    name: geschossNameVorschlag(p, src, 'darueber'),
+    name: ziel.name?.trim() || geschossNameVorschlag(p, src, lage),
   };
   delete copy.ifcId;
   delete copy.ifcStand;
   delete copy.nummernPraefix;
   delete copy.elevation;
+  // darunter: Fußbodenhöhe aus der Höhe der Kopie (wie „+ Neu“ unter einem Geschoss)
+  if (lage === 'darunter') copy.elevation = neueKote(p, src, lage, copy.hoehe);
   copy.shapes = copy.shapes.map((s) => {
     const { ifcId: _id, ifcStand: _stand, ...rest } = s;
     void _id;
@@ -352,7 +371,7 @@ export function duplicateStorey(p: Project, storeyId: string, o: KopieOptionen =
     return { ...rest, id: newId('sh') } as Shape;
   });
   const storeys = [...p.storeys];
-  storeys.splice(idx + 1, 0, copy);
+  storeys.splice(lage === 'darueber' ? idx + 1 : idx, 0, copy);
   const project = { ...p, storeys };
   copy.shapes = kopieAnpassen(copy.shapes, raumNummernPraefix(project, copy), [], o);
   return { project, id: copy.id };
@@ -597,4 +616,17 @@ export function auswahlVerschieben(dx: number, dy: number): void {
     })),
   );
   nachSchritt = useEditor.getState().project;
+}
+
+/** von der Zeichenfläche angemeldet: nimmt den letzten Entwurfsschritt zurück; false, wenn kein Entwurf läuft */
+let entwurfZurueck: (() => boolean) | null = null;
+
+export function entwurfZuruecknehmenAnmelden(fn: (() => boolean) | null) {
+  entwurfZurueck = fn;
+}
+
+/** Strg+Z bzw. ↶: zuerst den laufenden Entwurf (letzter Punkt), erst danach den letzten fertigen Schritt */
+export function rueckgaengig() {
+  if (entwurfZurueck?.()) return;
+  useEditor.getState().undo();
 }

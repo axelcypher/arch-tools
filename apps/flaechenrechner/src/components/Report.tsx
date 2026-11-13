@@ -20,7 +20,12 @@ import { ABSCHNITTE, berichtEinstellung, berichtPlan, messverfahren, planungsunt
 export function Report() {
   const project = useEditor((s) => s.project);
   const setOpen = useEditor((s) => s.setReportOpen);
-  useEscSchliessen(() => setOpen(false));
+  // Esc schließt zuerst einen offenen Ausklapper der Bedienleiste, dann den Bericht
+  useEscSchliessen(() => {
+    const offen = [...(berichtRef.current?.querySelectorAll<HTMLDetailsElement>('details.bericht-ausklapper[open]') ?? [])];
+    if (offen.length) offen.forEach((d) => (d.open = false));
+    else setOpen(false);
+  });
   // Bildschirmansicht als Dialog: Fokus beim Öffnen auf „Schließen“, beim Schließen zurück; Tab bleibt im Bericht
   const berichtRef = useRef<HTMLDivElement>(null);
   const schliessenRef = useRef<HTMLButtonElement>(null);
@@ -30,6 +35,14 @@ export function Report() {
     return () => {
       if (vorher?.isConnected) vorher.focus();
     };
+  }, []);
+  // Ausklapper der Bedienleiste (Abschnitte, Anzeige) schließen bei Klick daneben
+  useEffect(() => {
+    const zu = (e: Event) => {
+      for (const d of berichtRef.current?.querySelectorAll<HTMLDetailsElement>('details.bericht-ausklapper[open]') ?? []) if (!d.contains(e.target as Node)) d.open = false;
+    };
+    document.addEventListener('pointerdown', zu);
+    return () => document.removeEventListener('pointerdown', zu);
   }, []);
   const r = useMemo(() => computeProject(project), [project]);
   const rechenweg = useMemo(() => briRechenweg(project), [project]);
@@ -45,15 +58,26 @@ export function Report() {
     const k = gueltigesKontrollmass(project, s);
     return k ? [`${s.name}: ${kontrollText(k)}`] : [];
   });
-  const [showPlans, setShowPlans] = useState(true);
-  const [showBackground, setShowBackground] = useState(false);
-  const [showRechenweg, setShowRechenweg] = useState(false);
+  // Anzeige (Grundrisse, Hintergrundplan, Rechenweg) – Vorliebe des Nutzers, in diesem Browser bzw. Rechner gemerkt
+  const [anzeige, setAnzeigeState] = useState<BerichtAnzeige>(anzeigeLaden);
+  const setAnzeige = (a: BerichtAnzeige) => {
+    setAnzeigeState(a);
+    anzeigeMerken(a);
+  };
+  const showPlans = anzeige.plaene;
+  const showBackground = anzeige.hintergrund;
+  const showRechenweg = anzeige.rechenweg;
   // Vorlage und Abschnitte (F-17) – im Projekt gemerkt
   const einstellung = berichtEinstellung(project.settings.bericht);
   const plan = berichtPlan(einstellung, r, project);
   const zeigt = (a: Abschnitt) => plan.abschnitte.includes(a);
   const setEinstellung = (e: BerichtEinstellung) => useEditor.getState().update((p) => ({ ...p, settings: { ...p.settings, bericht: e } }));
   const stat = useMemo(() => statistik(r), [r]);
+  // Nutzungsgruppen-Tabelle nur mit Spalten, die Fläche haben (sonst überwiegend Nullen); mindestens NUF 1
+  const nutzSpalten = useMemo(() => {
+    const mit = NUTZ_ALLE.filter((id) => Math.abs(r.total.nutzung[id]) >= 0.005);
+    return mit.length ? mit : [NUTZ_ALLE[0]];
+  }, [r]);
   const S = plan.sSpalten;
 
   // R/S getrennt (FR-09): BGF, BRI, NRF, KGF je Regelfall und Sonderfall; reine R-Projekte ohne S-Spalten
@@ -75,7 +99,23 @@ export function Report() {
             {fmt2(v.total)}
           </td>,
         ];
-  const rsKopf = (k: string, e: string) => (S ? [<th key="r">{k} R [{e}]</th>, <th key="s">{k} S [{e}]</th>, <th key="t">{k} [{e}]</th>] : [<th key="t">{k} [{e}]</th>]);
+  const rsKopf = (k: string, e: string) => S
+      ? [
+          <th key="r" className="num">
+            {k} R [{e}]
+          </th>,
+          <th key="s" className="num">
+            {k} S [{e}]
+          </th>,
+          <th key="t" className="num">
+            {k} [{e}]
+          </th>,
+        ]
+      : [
+          <th key="t" className="num">
+            {k} [{e}]
+          </th>,
+        ];
   const din277Row = (name: string, h: number | null, t: AreaTotals, cls = '') => (
     <tr className={cls} key={name}>
       <td>{name}</td>
@@ -95,7 +135,7 @@ export function Report() {
       <div className="report" ref={berichtRef} role="dialog" aria-modal="true" aria-label="Flächenaufstellung" onKeyDown={(e) => fokusImBericht(e, berichtRef.current)}>
         <div className="report-actions no-print">
           <label className="toggle">
-            Vorlage
+            Umfang
             <select value={einstellung.vorlage} onChange={(e) => setEinstellung({ ...einstellung, vorlage: e.target.value as BerichtVorlage })}>
               {VORLAGEN.map((v) => (
                 <option key={v.id} value={v.id}>
@@ -105,39 +145,55 @@ export function Report() {
             </select>
           </label>
           {einstellung.vorlage !== 'vollstaendig' && (
-            <span className="bericht-abschnitte">
-              {ABSCHNITTE.map((a) => {
-                const gesperrt = plan.gesperrt.includes(a.id);
-                return (
-                  <label key={a.id} className="toggle" title={gesperrt ? 'In der Vorlage „Bauantrag NRW“ nicht abwählbar (§ 6 Nr. 1 BauPrüfVO NRW, Gebührentarif 3.1.1.2)' : undefined}>
-                    <input
-                      type="checkbox"
-                      checked={gesperrt || einstellung.abschnitte.includes(a.id)}
-                      disabled={gesperrt}
-                      onChange={(e) => setEinstellung({ ...einstellung, abschnitte: e.target.checked ? [...einstellung.abschnitte, a.id] : einstellung.abschnitte.filter((x) => x !== a.id) })}
-                    />
-                    {a.label}
-                  </label>
-                );
-              })}
-            </span>
+            <details className="bericht-ausklapper">
+              <summary>
+                Abschnitte ({plan.abschnitte.length} von {ABSCHNITTE.length})
+              </summary>
+              <div className="bericht-ausklapper-inhalt">
+                {ABSCHNITTE.map((a) => {
+                  const gesperrt = plan.gesperrt.includes(a.id);
+                  return (
+                    <label key={a.id} className="toggle block" title={gesperrt ? '§ 6 Nr. 1 BauPrüfVO NRW, Gebührentarif NRW Tarifstelle 3.1.1.2' : undefined}>
+                      <input
+                        type="checkbox"
+                        checked={gesperrt || einstellung.abschnitte.includes(a.id)}
+                        disabled={gesperrt}
+                        onChange={(e) => setEinstellung({ ...einstellung, abschnitte: e.target.checked ? [...einstellung.abschnitte, a.id] : einstellung.abschnitte.filter((x) => x !== a.id) })}
+                      />
+                      <span>
+                        {a.label}
+                        {gesperrt && <span className="muted"> (Pflicht im Bauantrag)</span>}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            </details>
           )}
-          <label className="toggle">
-            <input type="checkbox" checked={showPlans} onChange={(e) => setShowPlans(e.target.checked)} />
-            Grundrisse
-          </label>
-          <label className="toggle">
-            <input type="checkbox" checked={showBackground} disabled={!showPlans} onChange={(e) => setShowBackground(e.target.checked)} />
-            Hintergrundplan
-          </label>
-          <label className="toggle" title="Rechenweg je Raum: Maße, Putzabzug, Abzugsflächen, Anrechnung">
-            <input type="checkbox" checked={showRechenweg} onChange={(e) => setShowRechenweg(e.target.checked)} />
-            Rechenweg je Raum
-          </label>
-          <button onClick={() => druckenAls({ datei: useEditor.getState().datei, projektName: project.name, zusatz: 'WoFl+BGF+BRI' })}>Drucken / PDF</button>
-          <button className="primary" ref={schliessenRef} onClick={() => setOpen(false)}>
-            Schließen
-          </button>
+          <details className="bericht-ausklapper">
+            <summary>Anzeige</summary>
+            <div className="bericht-ausklapper-inhalt">
+              <label className="toggle block">
+                <input type="checkbox" checked={anzeige.plaene} onChange={(e) => setAnzeige({ ...anzeige, plaene: e.target.checked })} />
+                Grundrisse
+              </label>
+              <label className="toggle block indent">
+                <input type="checkbox" checked={anzeige.hintergrund} disabled={!anzeige.plaene} onChange={(e) => setAnzeige({ ...anzeige, hintergrund: e.target.checked })} />
+                mit Hintergrundplan
+              </label>
+              <label className="toggle block">
+                <input type="checkbox" checked={anzeige.rechenweg} onChange={(e) => setAnzeige({ ...anzeige, rechenweg: e.target.checked })} />
+                Rechenweg je Raum (Maße, Putzabzug, Abzugsflächen, Anrechnung)
+              </label>
+              <p className="muted small-text">Wird auf diesem Rechner gemerkt.</p>
+            </div>
+          </details>
+          <span className="bericht-knoepfe">
+            <button onClick={() => druckenAls({ datei: useEditor.getState().datei, projektName: project.name, zusatz: 'WoFl+BGF+BRI' })}>Drucken / PDF</button>
+            <button className="primary" ref={schliessenRef} onClick={() => setOpen(false)}>
+              Schließen
+            </button>
+          </span>
         </div>
 
         <DruckKopf
@@ -166,7 +222,7 @@ export function Report() {
           }
         />
         {plan.warnungen.map((w) => (
-          <p key={w} className="warning">
+          <p key={w} className="warning no-print">
             {w}
           </p>
         ))}
@@ -178,12 +234,12 @@ export function Report() {
               <thead>
                 <tr>
                   <th>Geschoss</th>
-                  <th>Höhe [m]</th>
+                  <th className="num">Höhe [m]</th>
                   {rsKopf('BGF', 'm²')}
                   {rsKopf('BRI', 'm³')}
-                  <th>NUF [m²]</th>
-                  <th>TF [m²]</th>
-                  <th>VF [m²]</th>
+                  <th className="num">NUF [m²]</th>
+                  <th className="num">TF [m²]</th>
+                  <th className="num">VF [m²]</th>
                   {rsKopf('NRF', 'm²')}
                   {rsKopf('KGF', 'm²')}
                 </tr>
@@ -213,7 +269,7 @@ export function Report() {
               <th>Umriss</th>
               <th>Teilkörper</th>
               <th>Rechenweg [m]</th>
-              <th>Volumen [m³]</th>
+              <th className="num">Volumen [m³]</th>
             </tr>
           </thead>
           <tbody>
@@ -258,35 +314,35 @@ export function Report() {
         {zeigt('nutzung') && (
           <section className="bericht-abschnitt">
         <h2>Netto-Raumfläche nach Nutzungsgruppen</h2>
-        <table className="report-table">
+        <table className={nutzSpalten.length <= 4 ? 'report-table narrow' : 'report-table'}>
           <thead>
             <tr>
               <th>Geschoss</th>
-              {NUF_IDS.map((id) => (
-                <th key={id} title={nutzungInfo(id).label}>
-                  {nutzungInfo(id).kurz}
+              {nutzSpalten.map((id) => (
+                <th key={id} className="num" title={id === 'TF' ? 'Technikfläche' : id === 'VF' ? 'Verkehrsfläche' : nutzungInfo(id).label}>
+                  {nutzKurz(id)}
                 </th>
               ))}
-              <th>TF 8</th>
-              <th>VF 9</th>
             </tr>
           </thead>
           <tbody>
             {[...r.storeys, { name: 'Summe', ...r.total, storeyId: 'sum' }].map((s) => (
               <tr key={s.storeyId} className={s.storeyId === 'sum' ? 'sum' : ''}>
                 <td>{s.name}</td>
-                {NUF_IDS.map((id) => (
+                {nutzSpalten.map((id) => (
                   <td key={id} className="num">
                     {fmt2(s.nutzung[id])}
                   </td>
                 ))}
-                <td className="num">{fmt2(s.nutzung.TF)}</td>
-                <td className="num">{fmt2(s.nutzung.VF)}</td>
               </tr>
             ))}
           </tbody>
         </table>
-
+        {nutzSpalten.length < NUTZ_ALLE.length && (
+          <p className="report-note">
+            Nicht aufgeführt, weil ohne Fläche: {NUTZ_ALLE.filter((id) => !nutzSpalten.includes(id)).map(nutzKurz).join(', ')}.
+          </p>
+        )}
           </section>
         )}
 
@@ -311,18 +367,18 @@ export function Report() {
                       <th>Raum</th>
                       <th>Nutzung</th>
                       <th>R/S</th>
-                      {mitPutz && <th>Fläche roh [m²]</th>}
-                      {mitPutz && <th>Putzabzug</th>}
-                      <th>Fläche [m²]</th>
+                      {mitPutz && <th className="num">Fläche roh [m²]</th>}
+                      {mitPutz && <th className="num">Putzabzug</th>}
+                      <th className="num">Fläche [m²]</th>
                       <th>WoFlV</th>
-                      <th>Faktor</th>
-                      <th>WoFl [m²]</th>
+                      <th className="num">Faktor</th>
+                      <th className="num">WoFl [m²]</th>
                       <th>Wohnung</th>
                     </tr>
                   </thead>
-                  <tbody>
-                    {sr.rooms.map((room) => [
-                      <tr key={room.shapeId}>
+                  {sr.rooms.map((room) => (
+                    <tbody key={room.shapeId} className="raum-zeilen">
+                      <tr>
                         <td>{room.nummer}</td>
                         <td>
                           {room.name}
@@ -344,16 +400,19 @@ export function Report() {
                         <td className="num">{room.woflKategorie === 'keine' || room.woflAnteile ? '' : fmt2(room.woflFaktor)}</td>
                         <td className="num">{room.woflKategorie === 'keine' ? '' : fmt2(room.woflArea)}</td>
                         <td>{room.wohnung}</td>
-                      </tr>,
+                      </tr>
+                      {
                       showRechenweg && !room.subtract && raumById.get(room.shapeId) ? (
-                        <tr key={`${room.shapeId}-rw`} className="rechenweg">
+                        <tr className="rechenweg">
                           <td />
                           <td colSpan={mitPutz ? 10 : 8} className="formula">
                             {rechenwegText(raumRechenweg(raumById.get(room.shapeId)!, storey, project))}
                           </td>
                         </tr>
-                      ) : null,
-                    ])}
+                      ) : null}
+                    </tbody>
+                  ))}
+                  <tbody>
                     <tr className="sum">
                       <td />
                       <td>Summe {sr.name} (NRF bzw. Wohnfläche)</td>
@@ -384,9 +443,9 @@ export function Report() {
           <thead>
             <tr>
               <th>Wohnung</th>
-              <th>Räume</th>
-              <th>Grundfläche [m²]</th>
-              <th>Wohnfläche [m²]</th>
+              <th className="num">Räume</th>
+              <th className="num">Grundfläche [m²]</th>
+              <th className="num">Wohnfläche [m²]</th>
             </tr>
           </thead>
           <tbody>
@@ -427,8 +486,8 @@ export function Report() {
               <thead>
                 <tr>
                   <th>Wohnung</th>
-                  <th>Räume</th>
-                  <th>Wohnfläche [m²]</th>
+                  <th className="num">Räume</th>
+                  <th className="num">Wohnfläche [m²]</th>
                 </tr>
               </thead>
               <tbody>
@@ -473,6 +532,39 @@ export function Report() {
       </div>
     </div>
   );
+}
+
+/** Spalten der Nutzungsgruppen-Tabelle: NUF 1–7, TF 8, VF 9 */
+const NUTZ_ALLE = [...NUF_IDS, 'TF', 'VF'] as const;
+type NutzSpalte = (typeof NUTZ_ALLE)[number];
+const nutzKurz = (id: NutzSpalte) => (id === 'TF' ? 'TF 8' : id === 'VF' ? 'VF 9' : nutzungInfo(id).kurz);
+
+export interface BerichtAnzeige {
+  plaene: boolean;
+  hintergrund: boolean;
+  rechenweg: boolean;
+}
+
+const ANZEIGE_SCHLUESSEL = 'arch-flaechen-tool:bericht-anzeige';
+const ANZEIGE_VORGABE: BerichtAnzeige = { plaene: true, hintergrund: false, rechenweg: false };
+
+/** gemerkte Anzeige des Berichts; fehlt oder unlesbar → Vorgabe */
+export function anzeigeLaden(): BerichtAnzeige {
+  try {
+    const roh = JSON.parse(localStorage.getItem(ANZEIGE_SCHLUESSEL) ?? 'null') as Partial<BerichtAnzeige> | null;
+    if (!roh || typeof roh !== 'object') return ANZEIGE_VORGABE;
+    return { plaene: roh.plaene ?? true, hintergrund: roh.hintergrund === true, rechenweg: roh.rechenweg === true };
+  } catch {
+    return ANZEIGE_VORGABE;
+  }
+}
+
+function anzeigeMerken(a: BerichtAnzeige) {
+  try {
+    localStorage.setItem(ANZEIGE_SCHLUESSEL, JSON.stringify(a));
+  } catch {
+    // ohne Speicher (privates Fenster): nur für diese Sitzung
+  }
 }
 
 /** Tab und Umschalt+Tab bleiben in der Bildschirmansicht des Berichts (wie in den gemeinsamen Dialogen) */
