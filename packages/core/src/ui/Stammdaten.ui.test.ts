@@ -4,7 +4,7 @@ import { createRoot } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ProjectMeta } from '../model';
 import { leereMeta } from '../model';
-import { StammdatenDialog, StammdatenFelder } from './Stammdaten';
+import { ROLLEN, StammdatenDialog, StammdatenFelder } from './Stammdaten';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -110,6 +110,12 @@ describe('Stammdaten-Dialog', () => {
     const rolle = host.querySelector<HTMLInputElement>('input[aria-label="Rolle 1"]')!;
     expect(liste(rolle)).toContain('Prüfingenieur/-in für Standsicherheit');
     expect(liste(rolle)).toContain('Vermessung (ÖbVI)');
+    // NRW: Prüfsachverständige für Brandschutz (§ 68 Abs. 2), Schall- und Wärmeschutz (§ 68 Abs. 4), SiGeKo – nur als Vorschlag
+    expect(liste(rolle)).toEqual(expect.arrayContaining(['Prüfsachverständige/-r für Brandschutz', 'Sachverständige/-r Schall- und Wärmeschutz (§ 87 Abs. 2)', 'SiGeKo (BaustellV)']));
+    // Gegenprobe: die Schnellwahl-Knöpfe (die ersten acht Rollen) bleiben die bisherigen – Bodengutachten ja, die neuen nicht
+    const schnell = ROLLEN.slice(0, 8);
+    expect(schnell).toContain('Bodengutachten');
+    expect(schnell.some((t) => t.includes('Prüfsachverständige') || t.includes('SiGeKo'))).toBe(false);
     expect(host.querySelector('button[aria-label="Beteiligten 1 entfernen"]')).not.toBeNull();
     eingabe(rolle, 'Lichtplanung');
     expect(meta.beteiligte![0].rolle).toBe('Lichtplanung');
