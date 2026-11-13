@@ -55,7 +55,9 @@
   min-width: 0;
 }
 .grz-col h2 {
-  font-size: 15px;
+  /* docs/design.md: Titel einer Spalte ohne .sidebar */
+  font-size: var(--fs-l);
+  font-weight: 600;
   margin: 18px 0 10px;
   display: flex;
   align-items: center;
@@ -137,7 +139,8 @@
 }
 .grz-col h3 {
   margin: 14px 0 6px;
-  font-size: 12px;
+  font-size: var(--fs-s);
+  font-weight: 600;
 }
 .grz-col input[type='date'] {
   font: inherit;
@@ -708,7 +711,7 @@ button.link:hover {
   outline: none;
 }
 .lp-plan:has(.grz-skizze:focus-visible) {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--fokus);
   outline-offset: 2px;
 }
 .lp-leer {
