@@ -72,8 +72,9 @@ media?.addEventListener('change', () => {
 });
 
 /**
- * Ist die Zeichenfläche gerade gefiltert (`--canvas-filter`: dunkles Schema und „Zeichenfläche im dunklen Schema abdunkeln“)? Nur dann
- * werden Planfüllungen mit `planFuellungDunkel` vorgerechnet. Als Hook, damit die Zeichnung bei jedem Wechsel neu entsteht.
+ * Ist die Zeichenfläche gerade gefiltert (`--canvas-filter`: dunkles Schema und „Zeichenfläche im dunklen Schema
+ * abdunkeln“)? Nur dann werden Planfüllungen mit `planFuellungDunkel` vorgerechnet. Als Hook, damit die Zeichnung bei
+ * jedem Wechsel neu entsteht.
  */
 export const useZeichenflaecheGefiltert = (): boolean => useTheme((s) => s.theme === 'dunkel' && s.canvasDunkel);
 
