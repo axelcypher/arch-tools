@@ -5,5 +5,6 @@ Designsystem ein. Erledigte Punkte löscht die App in ihrem eigenen PR (löschen
 sich auf den Stand beim Eintragen.
 
 - eigene Menüs prüfen: Gefahr-Punkte (Löschen) ans Ende, abgesetzt durch einen Trenner
-- „+“ in Knöpfen durch `<Symbol name="plus" />` ersetzen (Text ohne „+“): `LvEditor.tsx` („Position“, „Abschnitt“, Menüpunkte „Hinweis“, „Vorbemerkung“ ohne „+“), `Angebote.tsx` („Bieter“), `Protokolle.tsx` („Punkt“), `Maengel.tsx` („Mangel“); Auswahlliste in `Bautagebuch.tsx` als „Firma hinzufügen …“; Hinweistexte, die „+ Abschnitt“ usw. nennen, anpassen
-- Gliederungsebene im LV-Editor mit Symbol `einruecken`/`ausruecken` statt `pfeilRechts`/`pfeilLinks`
+- Hinzufügen-Knöpfe mit `<Symbol name="plus" />` statt „+“ als Schriftzeichen (Regel „Listen“): `lv/LvEditor.tsx` (Position, Abschnitt; Menüpunkte Hinweis, Vorbemerkung ohne „+“), `lv/Angebote.tsx` (Bieter), `lv/Auftrag.tsx` (Nachtrag), `Einstellungen.tsx` (Vorlage), `abrechnung/RechnungPruefen.tsx` (Zahlung), `bauleitung/Bautagebuch.tsx` (Tagesbericht; Auswahlliste „Firma hinzufügen …“), `bauleitung/Protokolle.tsx` (Protokoll, Teilnehmer, Punkt), `bauleitung/Beteiligte.tsx` (Beteiligter), `bauleitung/Maengel.tsx` (Mangel); knappe Knöpfe mit `title` „… hinzufügen“; Hinweistexte, die „+ Abschnitt“ usw. nennen, anpassen; UI-Tests, die die Knöpfe beim Text suchen (`bauleitung.ui.test.ts`), mitziehen
+- Gliederungsebene im LV-Editor mit Symbol `ausruecken`/`einruecken` statt ⇤/⇥ als Schriftzeichen, aria-label mit Gegenstand („Position einrücken“): `lv/LvEditor.tsx`
+- Umsortieren im LV-Editor mit Symbol `nachOben`/`nachUnten` statt ↑/↓ als Schriftzeichen: `lv/LvEditor.tsx`

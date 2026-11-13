@@ -6,4 +6,4 @@ sich auf den Stand beim Eintragen.
 
 - Dialoge auf `Modal` (Titel mit `kopf` statt `h3` im Inhalt) und Befehle nach „Begriffe“ benennen (Befehle, die einen Dialog öffnen, mit „ …“) – prüfen, ob noch etwas offen ist
 - eigenen Punkt `tb-dirty` am Knopf „Speichern“ durch `className="ungespeichert"` ersetzen und die eigene Regel löschen: `Toolbar.tsx`, `styles.css`
-- „+ Neu“ (Geschoss) durch `<Symbol name="plus" />` und „Neu“ bzw. „Geschoss …“ ersetzen: `Sidebar.tsx`
+- Hinzufügen-Knöpfe mit `<Symbol name="plus" />` statt „+“ als Schriftzeichen (Regel „Listen“): `Sidebar.tsx` „+ Neu“ → „Geschoss …“ (öffnet eine Rückfrage; „Neu“ ist schon „Neues Projekt“), `RoofEditor.tsx` „+ Gaube“ → „Gaube“, jeweils mit `title` „… hinzufügen“

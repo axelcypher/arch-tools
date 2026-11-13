@@ -23,20 +23,22 @@ Review-Agent `review-design`.
 
 Werte nicht frei wählen, sondern aus der Skala nehmen.
 
-| Variable | Wert | Verwendung |
-| `--s1` | 4px | Abstand innerhalb einer Gruppe (Knopf zu Knopf) |
-| `--s2` | 8px | Feld zu Feld, Überschrift zu Inhalt |
-| `--s3` | 12px | Innenabstand von Abschnitten |
-| `--s4` | 16px | Abschnitt zu Abschnitt |
-| `--s5` | 24px | große Gliederung (Zielwert für den Dialog-Innenabstand; `.modal` hat heute 18/22px) |
-| `--s6` | 32px | Leerzustände, Abstand zum Fensterrand bei Seiten |
+| Variable | Wert | Verwendung                                                                          |
+| -------- | ---- | ----------------------------------------------------------------------------------- |
+| `--s1`   | 4px  | Abstand innerhalb einer Gruppe (Knopf zu Knopf)                                     |
+| `--s2`   | 8px  | Feld zu Feld, Überschrift zu Inhalt                                                 |
+| `--s3`   | 12px | Innenabstand von Abschnitten                                                        |
+| `--s4`   | 16px | Abschnitt zu Abschnitt                                                              |
+| `--s5`   | 24px | große Gliederung (Zielwert für den Dialog-Innenabstand; `.modal` hat heute 18/22px) |
+| `--s6`   | 32px | Leerzustände, Abstand zum Fensterrand bei Seiten                                    |
 
-| Variable | Wert | Verwendung |
+| Variable  | Wert | Verwendung                                             |
+| --------- | ---- | ------------------------------------------------------ |
 | `--fs-xs` | 11px | Feldbeschriftung, Hinweis unter dem Feld, Tabellenkopf |
-| `--fs-s` | 12px | Nebentext, kleine Knöpfe, dichte Tabellen |
-| `--fs-m` | 13px | Grundschrift, Abschnittsüberschrift (`.sidebar h2`) |
-| `--fs-l` | 15px | Dialogtitel, Titel einer Spalte ohne `.sidebar` |
-| `--fs-xl` | 18px | Seitentitel (Einstieg, Bericht), Kennzahl |
+| `--fs-s`  | 12px | Nebentext, kleine Knöpfe, dichte Tabellen              |
+| `--fs-m`  | 13px | Grundschrift, Abschnittsüberschrift (`.sidebar h2`)    |
+| `--fs-l`  | 15px | Dialogtitel, Titel einer Spalte ohne `.sidebar`        |
+| `--fs-xl` | 18px | Seitentitel (Einstieg, Bericht), Kennzahl              |
 
 Weitere: `--radius-s` 4px (Felder, Knöpfe), `--radius` 6px (Dialoge, Karten), `--ctl-h` 28px und `--ctl-h-s` 24px
 (Höhe der Bedienelemente).
@@ -81,15 +83,16 @@ Zahlen in Tabellen und Feldern stehen rechtsbündig in Tabellenziffern (`.num`, 
 
 ## Farben
 
-| Variable | Bedeutung |
-| `--bg`, `--panel` | Fensterhintergrund, Flächen (Leisten, Dialoge) |
-| `--text`, `--muted` | Text, Nebentext |
-| `--border`, `--line-soft` | Linien, feine Trennlinien in Tabellen |
-| `--accent`, `--accent-soft` | Akzent (aktive Werkzeuge, primärer Knopf, Links), Tönung |
-| `--ok-*`, `--warn-*`, `--fehler-*` | Status: eingehalten, prüfen, überschritten/Fehler |
-| `--sel` | Auswahl auf Plänen (Orange); auch ungespeicherte Änderungen (Punkt in Titelleiste und an „Speichern“) |
-| `--sel-foto` | Auswahl auf Fotos (Magenta, in beiden Schemata gleich) – Orange kollidiert dort mit Mess- und Markierungsfarben |
-| `--danger` | zerstörende Aktionen (Löschen) |
+| Variable                           | Bedeutung                                                                                                       |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `--bg`, `--panel`                  | Fensterhintergrund, Flächen (Leisten, Dialoge)                                                                  |
+| `--text`, `--muted`                | Text, Nebentext                                                                                                 |
+| `--border`, `--line-soft`          | Linien, feine Trennlinien in Tabellen                                                                           |
+| `--accent`, `--accent-soft`        | Akzent (aktive Werkzeuge, primärer Knopf, Links), Tönung                                                        |
+| `--ok-*`, `--warn-*`, `--fehler-*` | Status: eingehalten, prüfen, überschritten/Fehler                                                               |
+| `--sel`                            | Auswahl auf Plänen (Orange); auch ungespeicherte Änderungen (Punkt in Titelleiste und an „Speichern“)           |
+| `--sel-foto`                       | Auswahl auf Fotos (Magenta, in beiden Schemata gleich) – Orange kollidiert dort mit Mess- und Markierungsfarben |
+| `--danger`                         | zerstörende Aktionen (Löschen)                                                                                  |
 
 **Feste Farben – begründete Ausnahmen:** Zeichenfläche und Papier (siehe Grundsätze) sowie der Schließen-Knopf der
 Titelleiste (`.wc-close:hover` in `#c42b1c` mit weißem Symbol), weil Windows ihn in jedem Schema so zeigt und man ihn
@@ -187,6 +190,7 @@ gewählte Register liegt in der Tab-Reihenfolge (`tabIndex` 0, die übrigen -1).
   („Speichern“, „Neu“).
 - Gleiches Verb überall: Werkzeugleiste „Öffnen …“, Einstieg „Datei öffnen …“ (mit Objekt, weil der Zusammenhang
   fehlt); „Neu“ bzw. „Neues Projekt“.
+- Hinzufügen-Knöpfe und Platzhalter in Auswahllisten: siehe „Listen“.
 - Texte sagen, was zu tun ist, nicht was fehlt; was es nur in der Desktop-App gibt, steht als Fußnote darunter.
 - Ordner im Dateimanager zeigen (`ordnerZeigen`): „Ordner öffnen“, Symbol `ordnerOffen` – nicht „Im Explorer öffnen“
   (hängt an Windows). Ist der Gegenstand nicht klar, mit Objekt: „Projektordner öffnen“.
@@ -240,13 +244,19 @@ mit `text`, optional `symbol`, `hinweis` (rechts, z. B. der Grund einer Sperre),
 
 ## Listen
 
-- Hinzufügen-Knöpfe mit `<Symbol name="plus" />` und dem Gegenstand als Text, ohne „+“ als Schriftzeichen: in Leisten
-  knapp („Position“, „Abschnitt“), sonst mit Verb („Merkmal hinzufügen“); öffnet der Knopf einen Dialog, mit „ …“.
-  In Auswahllisten (`<option>`) geht kein Symbol: dort „Firma hinzufügen …“. Hinweistexte nennen den Knopf so, wie er
-  heißt („mit „Abschnitt“ beginnen“).
-- Gliederungsebenen (einrücken, ausrücken) mit `einruecken` und `ausruecken`, nicht mit `pfeilLinks`/`pfeilRechts` –
-  die lesen sich wie Zurück und Weiter. Umsortieren mit `nachOben`/`nachUnten`, Zeilenaktionen mit `mehr`.
-- Symbolknöpfe in Zeilen brauchen `aria-label` und `title` mit Gegenstand („Position einrücken“).
+- Hinzufügen-Knöpfe mit `<Symbol name="plus" />` und dem Gegenstand als Text, ohne „+“ als Schriftzeichen. Das Verb
+  heißt immer „hinzufügen“ (nicht „anlegen“, „neu“ oder „einfügen“). In Leisten knapp nur der Gegenstand („Position“,
+  „Abschnitt“), dann mit `title` und `aria-label` der vollen Aktion („Position hinzufügen“); sonst gleich mit Verb
+  („Merkmal hinzufügen“). Öffnet der Knopf einen Dialog oder eine Rückfrage, endet er auf „ …“ („Geschoss …“).
+- In Auswahllisten (`<option>`) geht kein Symbol: dort als Platzhalter „Firma hinzufügen …“ – mit „ …“, weil die
+  eigentliche Wahl erst folgt (Ausnahme zu „Begriffe“).
+- Hinweistexte nennen den Knopf so, wie er heißt: „mit ‚Abschnitt‘ beginnen“.
+- Einträge eines Menüs „Hinzufügen“ (`MenueKnopf`) tragen nur den Gegenstand („Hinweis“, „Vorbemerkung“), ohne „+“
+  und ohne eigenes Symbol – das Plus steht am Menüknopf.
+- Gliederungsebenen (einrücken, ausrücken) mit `einruecken` und `ausruecken` – nicht mit Schriftzeichen wie ⇤/⇥ und
+  nicht mit `pfeilLinks`/`pfeilRechts`, die sich wie Zurück und Weiter lesen. Umsortieren mit `nachOben`/`nachUnten`, Zeilenaktionen mit `mehr`.
+- Symbolknöpfe ohne Text (in Zeilen wie in Leisten) brauchen `aria-label` und `title` mit Gegenstand („Position
+  einrücken“).
 
 ## Seitenleisten
 
@@ -284,14 +294,15 @@ Namen in der Titelleiste (`TitleBar`, Feld `dirty`) bleibt davon unberührt.
 
 ## Richtig und falsch
 
-| Richtig | Falsch |
-| Abstände und Schriftgrade aus der Skala (`var(--s2)`, `var(--fs-s)`) | freie Werte wie `margin: 7px`, `font-size: 12.5px` |
-| Farben über Variablen (`var(--muted)`, `var(--warn-bg)`) | feste Farben (`#888`, `orange`) in App-CSS |
-| `:focus-visible` mit sichtbarem Rahmen | `outline: none` ohne Ersatz |
-| Überschriften in Satzschreibung | Versalien mit Sperrung (`text-transform: uppercase`) |
-| Symbole als SVG, mit `aria-label` am Knopf | Schriftzeichen wie ◐ ◂ 📏 als einziges Erkennungsmerkmal |
-| gemeinsame Klassen (`.field`, `.toolbar`, `.canvas-message`) | App-eigene Kopien mit leicht anderen Abständen |
-| `--sel-foto` mit hellem und dunklem Saum | Magenta-Linie allein auf dem Foto |
+| Richtig                                                                                                | Falsch                                                         |
+| ------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------- |
+| Abstände und Schriftgrade aus der Skala (`var(--s2)`, `var(--fs-s)`)                                   | freie Werte wie `margin: 7px`, `font-size: 12.5px`             |
+| Farben über Variablen (`var(--muted)`, `var(--warn-bg)`)                                               | feste Farben (`#888`, `orange`) in App-CSS                     |
+| `:focus-visible` mit sichtbarem Rahmen                                                                 | `outline: none` ohne Ersatz                                    |
+| Überschriften in Satzschreibung                                                                        | Versalien mit Sperrung (`text-transform: uppercase`)           |
+| Symbole als SVG, mit `aria-label` am Knopf                                                             | Schriftzeichen wie ◐ ◂ 📏 als einziges Erkennungsmerkmal       |
+| gemeinsame Klassen (`.field`, `.toolbar`, `.canvas-message`)                                           | App-eigene Kopien mit leicht anderen Abständen                 |
+| `--sel-foto` mit hellem und dunklem Saum                                                               | Magenta-Linie allein auf dem Foto                              |
 | Enter übernimmt und verlässt das Feld; Esc verwirft eine Eingabe, ohne Eingabe schließt Esc den Dialog | Esc muss zweimal gedrückt werden, um einen Dialog zu schließen |
 
 ## Was die Apps nachziehen
