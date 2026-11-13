@@ -194,22 +194,36 @@ const zaehlerLeer = (): Record<Ampel, number> => ({ rot: 0, gelb: 0, gruen: 0 })
 const RANG: Record<Ampel, number> = { gruen: 0, gelb: 1, rot: 2 };
 const datumText = (iso: string) => iso.slice(0, 10).split('-').reverse().join('.');
 /**
- * Wo ein unsicherer Modulwert zu bestätigen ist, damit er gesichert wird – genau eine Quelle der Unsicherheit:
- *  - der Gemeindeschlüssel, solange er nicht gesichert ist (Werte eines Gebietsmoduls gelten erst mit ihm),
- *  - der Bezug der Tabelle (`nach.fakt`), wenn er selbst nur Hinweis ist,
+ * Wo ein unsicherer Modulwert zu bestätigen ist, damit er gesichert wird. Quellen der Unsicherheit:
+ *  - der Gemeindeschlüssel, solange er nicht gesichert ist (Werte eines Gebietsmoduls gelten erst mit ihm – nicht bei
+ *    Werten des Bundesmoduls, `bund`),
+ *  - der Bezug der Tabelle (`nach.fakt`), wenn er selbst nur Hinweis ist – ist der Bezug selbst ein Modulwert, zählen
+ *    dessen Quellen (z. B. Landschaftsplan ← Name des Landschaftsplans ← Gemeindeschlüssel: der Gemeindeschlüssel),
  *  - der Wert selbst, wenn die Tabelle von der Lage abhängt (`nach.hinweis`).
- * Sind es mehrere, entscheidet keine dieser Bestätigungen allein – dann der Wert selbst (ein Tabellenwert lässt sich mit
- * Beleg bestätigen); ein fester Wert (`wert`) hat keine solche Möglichkeit: `undefined`.
+ * Genau eine Quelle: dort bestätigen. Mehrere: keine davon entschiede allein – dann der Wert selbst (ein Tabellenwert
+ * lässt sich mit Beleg bestätigen); ein fester Wert hängt nur am Gemeindeschlüssel.
  */
-export function modulZiel(id: string, fakten: Record<string, FaktWert>, defs: Record<string, FaktDef>): string | undefined {
-  const unsicher = (f: FaktWert | undefined) => !f || f.wert == null || (f.sicherheit === 'hinweis' && !f.bestaetigt) || !!f.widerspruch;
+export function modulZiel(id: string, fakten: Record<string, FaktWert>, defs: Record<string, FaktDef>, bund: ReadonlySet<string> = new Set()): string {
+  const q = modulQuellen(id, fakten, defs, bund, new Set());
+  if (q.size === 1) return [...q][0];
+  return defs[id]?.nach ? id : 'lage.ags';
+}
+
+const unsicherWert = (f: FaktWert | undefined) => !f || f.wert == null || (f.sicherheit === 'hinweis' && !f.bestaetigt) || !!f.widerspruch;
+
+function modulQuellen(id: string, fakten: Record<string, FaktWert>, defs: Record<string, FaktDef>, bund: ReadonlySet<string>, besucht: Set<string>): Set<string> {
+  besucht.add(id);
   const d = defs[id];
-  const quellen = new Set<string>();
-  if (unsicher(fakten['lage.ags'])) quellen.add('lage.ags');
-  if (d?.nach && unsicher(fakten[d.nach.fakt])) quellen.add(d.nach.fakt);
-  if (d?.nach?.hinweis) quellen.add(id);
-  if (quellen.size === 1) return [...quellen][0];
-  return d?.nach ? id : quellen.size ? undefined : 'lage.ags';
+  const q = new Set<string>();
+  if (!bund.has(id) && unsicherWert(fakten['lage.ags'])) q.add('lage.ags');
+  if (d?.nach && unsicherWert(fakten[d.nach.fakt])) {
+    const b = fakten[d.nach.fakt];
+    // ein Bezug, der selbst ein Modulwert ist (und nicht eigens bestätigt): seine Quellen
+    if (b?.herkunft === 'modul' && !b.bestaetigt && !b.widerspruch && !besucht.has(d.nach.fakt)) for (const x of modulQuellen(d.nach.fakt, fakten, defs, bund, besucht)) q.add(x);
+    else q.add(d.nach.fakt);
+  }
+  if (d?.nach?.hinweis) q.add(id);
+  return q;
 }
 
 /** ganze Tage von einem Zeitpunkt (ISO) bis zu einem Tag (JJJJ-MM-TT) */
@@ -608,14 +622,11 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
   // nur Paragrafen, die allein wegen genau dieses Hinweises gelb sind. Ein Modulwert ist dort zu bestätigen, woher seine
   // Unsicherheit kommt (Ziel: modulZiel)
   const zahlB = new Map<string, number>();
+  // Werte des Bundesmoduls hängen nicht am Gemeindeschlüssel
+  const bundFakten = new Set(e.module.filter((m) => m.ebene === 'bund').flatMap((m) => Object.keys(m.fakten ?? {})));
   for (const p of paragrafen) {
     if (!p.bestaetigend || p.bestaetigend.includes(':') || !offenAuto(p)) continue;
-    const ziel = fakten[p.bestaetigend]?.herkunft === 'modul' ? modulZiel(p.bestaetigend, fakten, faktDefs) : p.bestaetigend;
-    // keine einzelne Bestätigung entscheidet (fester Modulwert mit mehreren unsicheren Quellen): nicht „bestätigen klärt“
-    if (!ziel) {
-      delete p.bestaetigend;
-      continue;
-    }
+    const ziel = fakten[p.bestaetigend]?.herkunft === 'modul' ? modulZiel(p.bestaetigend, fakten, faktDefs, bundFakten) : p.bestaetigend;
     p.bestaetigend = ziel;
     zahlB.set(ziel, (zahlB.get(ziel) ?? 0) + 1);
   }

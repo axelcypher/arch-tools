@@ -245,9 +245,12 @@ export function usePlanungsrechtWirkung(stand: Pruefstand): number {
       setN(s.planungsrechtFrueher ? planungsrechtWirkung(s.auswertung) : 0);
     }, 250);
   }, [stand]);
+  // beim Aushängen (auch dem gedachten unter StrictMode) den Timer verwerfen – und vergessen, sonst plante der nächste
+  // Effekt nie wieder
   useEffect(
     () => () => {
       if (geplant.current) clearTimeout(geplant.current);
+      geplant.current = null;
     },
     [],
   );
@@ -299,8 +302,10 @@ export function folgenBeimSpeichern(ids: string[], jetzt: Auswertung): { je: Rec
   }
   for (const id of ids) {
     const andere = ids.filter((x) => x !== id && je[x].herab.length);
-    const auch = je[id].herab.filter((h) => andere.some((x) => je[x].herab.some((k) => k.id === h.id)));
-    if (auch.length) je[id].auch = { anzahl: auch.length, mit: andere.filter((x) => je[x].herab.some((k) => auch.some((a) => a.id === k.id))) };
+    // dieselbe Vorschrift mit demselben Ziel (eine andere Zielampel ist keine Überschneidung)
+    const gleich = (h: Herabstufung, k: Herabstufung) => k.id === h.id && k.nach === h.nach;
+    const auch = je[id].herab.filter((h) => andere.some((x) => je[x].herab.some((k) => gleich(h, k))));
+    if (auch.length) je[id].auch = { anzahl: auch.length, mit: andere.filter((x) => je[x].herab.some((k) => auch.some((a) => gleich(a, k)))) };
   }
   return { je, zusammen: herabstufungen(basis, jetzt) };
 }

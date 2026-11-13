@@ -429,7 +429,7 @@ export function BestaetigenDialog({ titel, faktTitel, folgen, faktDef = () => un
     if (!a) return null;
     return (
       <p className="br-leise">
-        {a.anzahl === folgenJe[id].herab.length ? (a.anzahl === 1 ? 'Diese' : 'Alle') : `${a.anzahl} davon`} auch durch {aufzaehlen(a.mit.map(name))} – siehe „Zusammen“ unten.
+        {a.anzahl === folgenJe[id].herab.length ? (a.anzahl === 1 ? 'Diese' : 'Alle') : `${a.anzahl} davon`} ebenso durch {aufzaehlen(a.mit.map(name))} – siehe „Zusammen“ unten.
       </p>
     );
   };
@@ -560,7 +560,7 @@ export function BestaetigenDialog({ titel, faktTitel, folgen, faktDef = () => un
       {/* mehrere Bestätigungen: was sie zusammen gegenüber der Datei bewirken (auch, was jede allein schon entschiede) */}
       {fb && ids.length > 1 && (
         <div className="br-folgen-zusammen">
-          <strong>Zusammen gegenüber der gespeicherten Datei:</strong>
+          <strong>Zusammen (gegenüber dem Stand ohne diese Bestätigungen):</strong>
           <Folgen folgen={{ herab: fb.zusammen }} />
         </div>
       )}

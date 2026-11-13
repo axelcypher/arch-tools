@@ -540,7 +540,7 @@ describe('Runde 14: Planungsrecht als Entwurf, eingeklappte Rückfragen', () => 
   it('der Hinweis nennt vorher, was die Bestätigung klärt – die Zahl stimmt; danach „Entwurf“ mit „zurücknehmen“', async () => {
     const { auswertungMit } = await import('./pruefung');
     const host = render();
-    // die Zahl kommt entprellt (zweite Auswertung erst, wenn die Eingabe ruht)
+    // die Zahl kommt gedrosselt (zweite Auswertung höchstens alle 250 ms)
     await warten(400);
     await warten();
     const hinweis = host.querySelector<HTMLElement>('.br-planungsrecht-hinweis')!;
@@ -689,13 +689,21 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
     const jetzt = auswertungMit(useBaurecht.getState().pruefung.fakten);
     const fb = folgenBeimSpeichern(ids, jetzt);
     const zusammen = new Set(fb.zusammen.map((h) => h.id));
-    // nichts geht verloren: was ein Punkt allein bewirkt, steht auch unter „zusammen“ …
+    // nichts geht verloren: was ein Punkt allein bewirkt, steht auch unter „zusammen“ (hier wirken beide in dieselbe
+    // Richtung – gegenläufige Bestätigungen könnten sich aufheben) …
     for (const id of ids) for (const h of fb.je[id].herab) expect(zusammen.has(h.id)).toBe(true);
     // … und Überschneidungen sind vermerkt
     expect(ids.some((id) => (fb.je[id].auch?.anzahl ?? 0) > 0)).toBe(true);
     expect(fb.zusammen.length).toBeGreaterThanOrEqual(Math.max(...ids.map((id) => fb.je[id].herab.length)));
+    // das Protokoll zählt dieselben Paragrafen (gegenüber dem Stand ohne diese Bestätigungen)
+    const { anUngespeichertem } = await import('./pruefung');
+    const n = anUngespeichertem(ids, jetzt);
+    expect(n).toBe(fb.zusammen.length);
     // der Dialog zeigt die Zeile „Zusammen“
-    render();
+    const host = render();
+    act(() => knopf(host, 'Prüfprotokoll')!.click());
+    expect(document.querySelector('.br-protokoll')!.textContent).toContain(`${n} Paragrafen hängen an noch nicht gespeicherten Bestätigungen`);
+    act(() => knopf(document.querySelector('.br-protokoll')!, 'Schließen')!.click());
     let fertig: Promise<boolean> | null = null;
     await act(async () => {
       fertig = speichern();
@@ -729,6 +737,45 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
     act(() => host.querySelector<HTMLButtonElement>('.br-bilanz button')!.click());
     await warten();
     expect(zeile()).not.toMatch(/dem jetzigen Ort zugeordnet/);
+  });
+
+  it('StrictMode: „klärt N“ erscheint trotzdem (gedrosselte zweite Auswertung)', async () => {
+    const { StrictMode } = await import('react');
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    act(() => {
+      root = createRoot(host);
+      root.render(createElement(StrictMode, null, createElement(App)));
+    });
+    await warten(400);
+    await warten();
+    expect(host.querySelector('.br-planungsrecht-hinweis')?.textContent).toMatch(/klärt \d+/);
+  });
+
+  it('Sprungziel während einer Suche: die Suche wird geleert (angesagt), der Fokus landet am Ziel', async () => {
+    const { auswertungMit } = await import('./pruefung');
+    const host = render();
+    const suchfeld = host.querySelector<HTMLInputElement>('input[aria-label="Angaben durchsuchen"]')!;
+    tippen(suchfeld, 'Kampfmittel');
+    const p = auswertungMit(useBaurecht.getState().pruefung.fakten).paragrafen.find((x) => x.gruende.some((g) => g.startsWith('Nicht gesichert: Planungsrecht')))!;
+    act(() => useBaurecht.getState().waehlen(p.id));
+    act(() => knopf(host.querySelector('.br-detail')!, 'Zum Bestätigen')!.click());
+    await warten(150);
+    expect(suchfeld.value).toBe('');
+    expect(document.activeElement?.textContent).toBe('Für diesen Ort bestätigen');
+    expect(useBaurecht.getState().fokus).toBeNull();
+  });
+
+  it('Protokoll: eine Rückfrage, die nur Hinweis ist, steht mit Vermerk da (wie in der App offen)', () => {
+    const s = useBaurecht.getState();
+    act(() => {
+      s.merkmalSetzen('Vorhaben', 'Beseitigung');
+      s.faktSetzen('vorhaben.beseitigung_vollstaendig', true, 'TP');
+    });
+    const host = render();
+    act(() => knopf(host, 'Prüfprotokoll')!.click());
+    const zeile = [...document.querySelectorAll('.br-protokoll tr')].find((tr) => tr.textContent?.startsWith('Antragsmerkmale'))!.textContent!;
+    expect(zeile).toMatch(/Art des Vorhabens: Beseitigung \(vollständiger Abbruch ohne Ersatzbau – nur Hinweis, nicht bestätigt\)/);
   });
 });
 

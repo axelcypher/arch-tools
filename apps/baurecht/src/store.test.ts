@@ -188,3 +188,27 @@ describe('Zustand der App', () => {
     expect(useBaurecht.getState().merkmale).toEqual({});
   });
 });
+
+describe('Runde 15: veraltete Modulwerte', () => {
+  beforeEach(() => {
+    const bytes = beispielOap();
+    useBaurecht.getState().projektSetzen({ art: 'datei', name: 'EFH.oap', bytes }, readProjectFile(bytes), projektdateiRoh(bytes));
+  });
+  it('gespeicherte Modulwerte, die kein Modul mehr ableitet, fallen weg – abgeleitete und eigene bleiben', () => {
+    const modul = (wert: string) => ({ wert, herkunft: 'modul' as const, sicherheit: 'hinweis' as const, bestaetigt: { von: 'TP', am: '2026-11-12', grund: 'Auskunft' } });
+    const p = structuredClone(useBaurecht.getState().pruefung);
+    p.fakten['alt.modulwert'] = modul('x');
+    p.fakten['noch.abgeleitet'] = modul('y');
+    p.fakten['eigene.angabe'] = { wert: true, herkunft: 'manuell', sicherheit: 'sicher' };
+    useBaurecht.setState({ pruefung: p });
+    useBaurecht.getState().veralteteModulwerteEntfernen({ 'noch.abgeleitet': { wert: 'y', herkunft: 'modul', sicherheit: 'sicher' } });
+    const f = useBaurecht.getState().pruefung.fakten;
+    expect(f['alt.modulwert']).toBeUndefined();
+    expect(f['noch.abgeleitet']).toBeDefined();
+    expect(f['eigene.angabe']).toBeDefined();
+    // ohne Änderung kein neuer Zustand
+    const vorher = useBaurecht.getState().pruefung;
+    useBaurecht.getState().veralteteModulwerteEntfernen({ 'noch.abgeleitet': { wert: 'y', herkunft: 'modul', sicherheit: 'sicher' } });
+    expect(useBaurecht.getState().pruefung).toBe(vorher);
+  });
+});

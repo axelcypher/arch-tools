@@ -292,6 +292,11 @@ describe('Runde 14: Zitatsuche, Kürzen', () => {
     const t = 'Erster Satz mit Inhalt. Zweiter Satz (z. B. Garage, Dach) mit mehr Inhalt. Dritter Satz, der zu lang ist und abgeschnitten werden muss.';
     expect(kuerzen(t, 90)).toBe('Erster Satz mit Inhalt. Zweiter Satz (z. B. Garage, Dach) mit mehr Inhalt.');
     expect(kuerzen('kurz', 90)).toBe('kurz');
+    // zitierte Nummern und Jahre beenden einen Satz, Ordnungszahlen nicht
+    expect(kuerzen('Gilt nach § 62 Abs. 1. Danach kommt ein langer zweiter Satz, der nicht mehr hineinpasst.', 40)).toBe('Gilt nach § 62 Abs. 1.');
+    expect(kuerzen('Gilt nach Satz 1 Nr. 3. Er betrifft dann etwas ganz anderes und ist sehr lang.', 40)).toBe('Gilt nach Satz 1 Nr. 3.');
+    expect(kuerzen('Die Satzung gilt seit 2024. Danach kommt ein langer zweiter Satz ohne Ende.', 40)).toBe('Die Satzung gilt seit 2024.');
+    expect(kuerzen('Bekannt gemacht am 3. Juni im Amtsblatt der Stadt und sehr lang danach.', 40)).toBe('Bekannt gemacht am 3. Juni im Amtsblatt');
     expect(kuerzen('ein langer Text ohne Satzende der nur aus Wörtern besteht und weiter geht', 30)).toBe('ein langer Text ohne Satzende');
   });
 });

@@ -12,6 +12,7 @@ import type { Pruefstand } from '../pruefung';
 import { aktuelleLage, anUngespeichertem, OHNE_LAGEBEZUG, verwendeteFassungen } from '../pruefung';
 import { istGeaendert, offeneBestaetigungen, offeneFestlegungen, PLANUNGSRECHT, useBaurecht } from '../store';
 import { AMPEL_TEXT, aufzaehlen, datum, nb } from './Ampel';
+import { RUECKFRAGEN, rueckfrageOffen } from './Angaben';
 
 
 
@@ -109,9 +110,12 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
       // nur Rückfragen, die gerade gestellt sind (nach einem Wechsel auf „Errichtung“ zählt der Umfang nicht mehr)
       const a0 = pruefstand.auswertung;
       const gestellt = (id: string) => !!a0.faktDefs[id] && (!a0.faktDefs[id].wenn || werten(a0.faktDefs[id].wenn, a0.kontext).w === 'ja');
-      const teile = ['vorhaben.beseitigung_umfang', 'nw.altbau_verfahrensfrei', 'nw.beseitigung_mit_beantragt']
-        .filter((id) => pruefstand.auswertung.fakten[id]?.wert != null && gestellt(id))
-        .map((id) => (id === 'vorhaben.beseitigung_umfang' ? String(pruefstand.auswertung.fakten[id].wert) : `${faktName(pruefstand.auswertung.faktDefs[id], id)}: ${wertAnzeige(pruefstand.auswertung.fakten[id].wert, pruefstand.auswertung.faktDefs[id])}`));
+      // wie in der App: ein Wert, der nur Hinweis ist, gilt dort als offen – hier mit Vermerk
+      const teile = RUECKFRAGEN.Vorhaben.filter((id) => pruefstand.auswertung.fakten[id]?.wert != null && gestellt(id)).map((id) => {
+        const f = pruefstand.auswertung.fakten[id];
+        const text = id === 'vorhaben.beseitigung_umfang' ? String(f.wert) : `${faktName(pruefstand.auswertung.faktDefs[id], id)}: ${wertAnzeige(f.wert, pruefstand.auswertung.faktDefs[id])}`;
+        return rueckfrageOffen(f) ? `${text} – nur Hinweis, nicht bestätigt` : text;
+      });
       return teile.length ? ` (${teile.join('; ')})` : '';
     }
     return '';

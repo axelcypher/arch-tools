@@ -73,7 +73,7 @@ export const RUECKFRAGEN: Record<string, string[]> = { Vorhaben: ['vorhaben.bese
 const RUECKFRAGEN_ALLE = new Set(Object.values(RUECKFRAGEN).flat());
 
 /** offen ist eine Rückfrage ohne Wert oder mit einem Wert, der nur Hinweis ist (z. B. aus einer älteren Angabe) */
-const rueckfrageOffen = (w: FaktWert | undefined) => w?.wert == null || (w.sicherheit === 'hinweis' && !w.bestaetigt);
+export const rueckfrageOffen = (w: FaktWert | undefined) => w?.wert == null || (w.sicherheit === 'hinweis' && !w.bestaetigt);
 
 /** eine Rückfrage wird gestellt, wenn es die Angabe gibt und ihre Bedingung („wenn“) zutrifft */
 function rueckfrageSichtbar(id: string, stand: Pruefstand, merkmale: Record<string, string>): boolean {
@@ -132,7 +132,7 @@ function Merkmale({ klaerung, suche = '', planungsrechtOffen, planungsrechtKlaer
   // Fokus erst setzen, wenn die Gruppe offen ist (sonst gibt es das Merkmal noch nicht – der Fokus fiele auf die Seite)
   useEffect(() => {
     if (!fokus?.startsWith('merkmal:') || !ref.current || !auf) return;
-    // „merkmal:<Name>:bestaetigen“ (Chip „Planungsrecht bestätigen klärt N“): direkt auf „Für diesen Ort bestätigen“
+    // „merkmal:<Name>:bestaetigen“ (z. B. „Zum Bestätigen“ in den Einzelheiten): direkt auf „Für diesen Ort bestätigen“
     const [name, ziel] = fokus.slice(8).split(':');
     const el = ref.current.querySelector<HTMLElement>(`[data-merkmal="${CSS.escape(name)}"]`);
     if (el) {
@@ -309,10 +309,7 @@ function Merkmale({ klaerung, suche = '', planungsrechtOffen, planungsrechtKlaer
                   // derselbe Wert erneut gewählt bestätigt das Planungsrecht für diesen Ort
                   onClick={() => {
                     if (wert !== w) return setzen(m.name, w);
-                    if (m.name === 'Planungsrecht' && planungsrechtOffen) {
-                      useBaurecht.getState().planungsrechtBestaetigen();
-                      useBaurecht.getState().ansagen('Planungsrecht für diesen Ort bestätigt');
-                    }
+                    if (m.name === 'Planungsrecht' && planungsrechtOffen) planungsrechtGiltHier(planungsrechtKlaert);
                   }}
                 >
                   {w}
@@ -607,13 +604,21 @@ function FaktZeile({ id, def, wert, klaert, eigen, alsKnoepfe = false }: { id: s
 /** Abkürzungen, nach denen kein Satz endet („z. B.“, „bzw.“, „Abs.“ …) */
 const ABKUERZUNG = /(?:^|[\s(])(?:bzw|usw|ca|vgl|ggf|etc|evtl|inkl|max|min|Nr|Abs|Art|Buchst|Ziff|lit|Anm|sog|[A-Za-zÄÖÜäöü])\.$/;
 
+/** „am 3. Juni“: Ordnungszahl (kein Satzende) – nicht bei zitierten Nummern („Abs. 1.“, „Nr. 3.“, „§ 62.“) und Jahren („2024.“) */
+function ordnungszahl(vorn: string): boolean {
+  const m = /(\S*)\s*(\d+)\.$/.exec(vorn);
+  if (!m) return false;
+  return m[2].length < 3 && !/^(?:Nr|Abs|Satz|Art|Buchst|Ziff|§|§§)\.?$/.test(m[1]);
+}
+
 /** Text bis zum letzten Satzende vor `max` Zeichen (nicht nach Abkürzungen oder Ordnungszahlen), sonst bis zum letzten Wort */
 export function kuerzen(t: string, max: number): string {
   if (t.length <= max) return t;
   let ende = -1;
   for (const m of t.slice(0, max + 1).matchAll(/[.!?](?=\s+[A-ZÄÖÜ„(§])/g)) {
     const vorn = t.slice(0, m.index + 1);
-    if (!ABKUERZUNG.test(vorn) && !/\d\.$/.test(vorn)) ende = m.index + 1;
+    if (ABKUERZUNG.test(vorn) || ordnungszahl(vorn)) continue;
+    ende = m.index + 1;
   }
   if (ende >= max / 2) return t.slice(0, ende);
   return t.slice(0, max).replace(/\s+\S*$/, '');
@@ -645,23 +650,46 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
   const [alle, setAlle] = useState(false);
   const [suche, setSuche] = useState('');
   const suchfeld = useRef<HTMLInputElement>(null);
-  // ein noch nicht erreichtes Fokusziel verfällt, wenn sich die Suche ändert (sonst spränge der Fokus später weg)
+  // ein noch nicht erreichtes Fokusziel verfällt, wenn der Nutzer die Suche ändert (sonst spränge der Fokus später weg) –
+  // nicht, wenn die Suche geleert wurde, um ein Sprungziel zu zeigen
+  const fuerZiel = useRef(false);
   useEffect(() => {
+    if (fuerZiel.current) {
+      fuerZiel.current = false;
+      return;
+    }
     if (useBaurecht.getState().fokus) useBaurecht.getState().fokusSetzen(null);
   }, [suche]);
-  // ein Fokusziel ohne Zeile (Angabe, an der gerade keine Regel hängt): „alle Angaben“ zeigen; gibt es die Angabe auch
-  // dann nicht (anderes Regelpaket, Suche), verfällt das Ziel – es bleibt nicht im Store hängen
+  // ein Sprungziel (Chip, Einzelheiten, Kopf) während einer Suche: Suche leeren, damit das Ziel zu sehen ist – angesagt
   const fokus = useBaurecht((s) => s.fokus);
   useEffect(() => {
-    if (!fokus || fokus.startsWith('merkmal:')) return;
+    if (!fokus || !suche) return;
+    // steht das Ziel auch in der Trefferliste, bleibt die Suche
+    const merkmal = fokus.startsWith('merkmal:') ? fokus.slice(8).split(':')[0] : null;
+    const sel = merkmal ? `[data-merkmal="${CSS.escape(merkmal)}"]` : `[data-fakt="${CSS.escape(fokus.replace(/:bestaetigen$/, ''))}"]`;
+    if (document.querySelector(`.br-angaben ${sel}`)) return;
+    fuerZiel.current = true;
+    setSuche('');
+    useBaurecht.getState().ansagen('Suche geleert, um die Angabe zu zeigen');
+  }, [fokus]);
+  // ein Fokusziel ohne Zeile (Angabe, an der gerade keine Regel hängt): „alle Angaben“ zeigen; gibt es die Angabe bzw.
+  // das Merkmal auch dann nicht (anderes Regelpaket), verfällt das Ziel – es bleibt nicht im Store hängen
+  useEffect(() => {
+    if (!fokus || suche) return;
+    const merkmal = fokus.startsWith('merkmal:') ? fokus.slice(8).split(':')[0] : null;
     const id = fokus.replace(/:bestaetigen$/, '');
     const t = setTimeout(() => {
-      if (useBaurecht.getState().fokus !== fokus || document.querySelector(`.br-angaben [data-fakt="${CSS.escape(id)}"]`)) return;
+      if (useBaurecht.getState().fokus !== fokus) return;
+      if (merkmal) {
+        if (!document.querySelector(`.br-angaben [data-merkmal="${CSS.escape(merkmal)}"]`)) useBaurecht.getState().fokusSetzen(null);
+        return;
+      }
+      if (document.querySelector(`.br-angaben [data-fakt="${CSS.escape(id)}"]`)) return;
       if (!alle) setAlle(true);
       else useBaurecht.getState().fokusSetzen(null);
     }, 60);
     return () => clearTimeout(t);
-  }, [fokus, alle]);
+  }, [fokus, alle, suche]);
   const { auswertung } = stand;
   const klaerung = useMemo(() => new Map(auswertung.klaerung.map((k) => [k.id, k.anzahl])), [auswertung.klaerung]);
   const relevant = useMemo(() => {
@@ -675,7 +703,7 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
   const merkmale = useBaurecht((s) => s.merkmale);
   const ansage = useBaurecht((s) => s.ansage);
   // so viele Paragrafen ändert die Bestätigung des Planungsrechts für diesen Ort – vorher genannt, nicht erst danach
-  // (entprellt: eine zweite Auswertung erst, wenn die Eingabe ruht)
+  // (gedrosselt: höchstens alle 250 ms eine zweite Auswertung)
   const planungsrechtKlaert = usePlanungsrechtWirkung(stand);
   const ortAnzeige = ortVon(useBaurecht((s) => s.project))?.anzeige;
   // Ansagen nach kurzer Zeit leeren – derselbe Text wird dann beim nächsten Mal wieder vorgelesen
@@ -738,7 +766,7 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
       </div>
       {/* Suche: die Trefferzahl ansagen (der Leerzustand sagt sich selbst an) */}
       <div className="br-unsichtbar" role="status">
-        {suche && (gruppen.length || merkmaleSichtbar) ? `${gruppen.reduce((n, g) => n + g.ids.length, 0) + VORGABE_MERKMALE.filter((m) => merkmalPasst(m, suche)).length} Angaben zu „${suche}“` : ''}
+        {suche && (gruppen.length || merkmaleSichtbar) ? `${gruppen.reduce((n, g) => n + g.ids.length, 0) + VORGABE_MERKMALE.filter((m) => merkmalPasst(m, suche)).length + alsRueckfrage.size} Angaben zu „${suche}“` : ''}
       </div>
       <div className="br-angaben-liste">
         {!suche && <Klaeren stand={stand} />}

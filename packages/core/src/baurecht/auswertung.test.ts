@@ -640,6 +640,18 @@ describe('Runde 15: Ziel von „bestätigen klärt“ bei Modulwerten', () => {
     // Tabelle nach Lage: der Wert selbst
     expect(modulZiel('lp.nach_lage', agsSicher, defs)).toBe('lp.nach_lage');
   });
+  it('Kette: ist der Bezug selbst ein Modulwert, zählen dessen Quellen; Bundeswerte hängen nicht am Gemeindeschlüssel', () => {
+    const kette = {
+      ...defs,
+      'kreis.lp_name': { titel: 'Name des Landschaftsplans', gruppe: 'lage', typ: 'wahl', nach: { fakt: 'lage.ags', tabelle: { '05974040': 'kein' } } },
+      'schutz.lp': { titel: 'Landschaftsplan', gruppe: 'schutz', typ: 'janein', nach: { fakt: 'kreis.lp_name', tabelle: { kein: false } } },
+    } as unknown as Record<string, import('./typen').FaktDef>;
+    const name = { wert: 'kein', herkunft: 'modul' as const, sicherheit: 'hinweis' as const, grund: 'Gemeindeschlüssel nur vorgeschlagen' };
+    // nur der Gemeindeschlüssel ist unsicher – er klärt auch den abgeleiteten Wert
+    expect(modulZiel('schutz.lp', { ...agsHinweis, 'kreis.lp_name': name }, kette)).toBe('lage.ags');
+    // Bundeswert nach einem unsicheren Bezug: nur der Bezug
+    expect(modulZiel('schutz.denkmalbereich', { ...agsHinweis, 'soest.denkmalbereich': hinweis(false) }, defs, new Set(['schutz.denkmalbereich']))).toBe('soest.denkmalbereich');
+  });
   it('mehrere unsichere Quellen: keine allein entscheidet – der Tabellenwert selbst', () => {
     expect(modulZiel('schutz.denkmalbereich', { ...agsHinweis, 'soest.denkmalbereich': hinweis(false) }, defs)).toBe('schutz.denkmalbereich');
     expect(modulZiel('lp.nach_lage', agsHinweis, defs)).toBe('lp.nach_lage');

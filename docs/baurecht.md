@@ -70,10 +70,12 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   ändert (führen alle Antworten zum selben Ergebnis, zählt sie nicht).
   Hinweise, deren Bestätigung allein einen Paragrafen entschiede, stehen dort als „bestätigen klärt N“ (Werte eines
   Gebietsmoduls dort, woher die Unsicherheit kommt: beim Gemeindeschlüssel, solange er nicht gesichert ist, beim Bezug
-  der Tabelle, wenn er nur Hinweis ist, beim Wert selbst, wenn die Tabelle von der Lage abhängt; sind es mehrere
-  Quellen, beim Wert selbst – eine einzelne der anderen Bestätigungen entschiede nicht). Ziele, an denen keine Regel
+  der Tabelle, wenn er nur Hinweis ist – ist der Bezug selbst ein Modulwert, zählen dessen Quellen –, beim Wert selbst,
+  wenn die Tabelle von der Lage abhängt; sind es mehrere Quellen, beim Wert selbst. Werte des Bundesmoduls hängen nicht
+  am Gemeindeschlüssel). Ziele, an denen keine Regel
   unmittelbar hängt (der Bezug einer Tabelle), stehen dafür in der Liste; ein Sprungziel ohne Zeile schaltet „alle
-  Angaben“ ein. Gespeicherte Modulwerte gelten nur, solange ein aktives Modul sie für den jetzigen Bezug liefert; beim
+  Angaben“ ein; während einer Suche wird die Suche geleert (angesagt), wenn das Ziel nicht unter den Treffern steht.
+  Gespeicherte Modulwerte gelten nur, solange ein aktives Modul sie für den jetzigen Bezug liefert; beim
   Speichern fallen die übrigen aus der Datei. Nur zulässige Werte zählen: Ein Merkmalwert außerhalb der Werteliste
   (eigener Wert aus Formulare) und eine Angabe mit falschem Typ oder einem Wert außerhalb ihrer Auswahl (ältere Datei,
   umbenannter Auswahlwert) gelten als offen und sind so gekennzeichnet; Zahlen, die als Text gespeichert sind, werden
@@ -162,7 +164,7 @@ mit genau der Rechnung, die danach gilt. Widerspricht ein Dienst der Angabe, ble
 Bestätigung bestehen; der Dialog sagt das. Auch Bestätigungen werden beim Speichern noch einmal bestätigt und stehen
 im Prüfprotokoll. Der Dialog beim Speichern nennt, was genau neu ist (neue, geänderte, aufgehobene Festlegungen, neu
 gesicherte Angaben, das Planungsrecht), mit Name und Datum; die Folgen je Punkt allein gegenüber der Datei, mit Vermerk,
-was eine andere Bestätigung ebenso bewirkt, und bei mehreren Punkten „Zusammen gegenüber der gespeicherten Datei“ – so
+was eine andere Bestätigung ebenso bewirkt, und bei mehreren Punkten „Zusammen (gegenüber dem Stand ohne diese Bestätigungen)“ – so
 fehlt keine Herabstufung, auch wenn zwei Bestätigungen dieselbe Vorschrift entscheiden. Der Fokus beginnt am Häkchen. Eine bestätigte Angabe aus dem Modell bzw. aus einer Tabelle des Regelmoduls gilt nur für genau
 diesen Wert – ändert sich das Modell bzw. die Tabelle, ist sie wieder Hinweis.
 
