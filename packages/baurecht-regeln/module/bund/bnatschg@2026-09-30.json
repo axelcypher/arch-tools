@@ -214,7 +214,7 @@
         "34/8"
       ],
       "pruefen": {
-        "grund": "Einfacher Bebauungsplan: ob die Ausnahme nach Abs. 8 greift, im Einzelfall klären.",
+        "grund": "Einfacher Bebauungsplan: ob die Ausnahme nach Abs. 8 greift.",
         "wenn": {
           "und": [
             {

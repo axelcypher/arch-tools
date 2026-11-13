@@ -327,8 +327,23 @@ describe('Fragen und Regeln', () => {
               const f = { ...grund(), ...extra, ...(bes ? { 'vorhaben.beseitigung_umfang': v, 'nw.altbau_verfahrensfrei': true, 'nw.beseitigung_mit_beantragt': false } : {}) };
               if (art === 'Mehrfamilienhaus') Object.assign(f, { 'gebaeude.wohnungen': 8, 'gebaeude.nutzungseinheiten': 8, 'gebaeude.hoehe': 11, 'nw.geschosse_oberirdisch': 4, 'gebaeude.stellplaetze': 8 });
               if (art === 'kein Gebäude') Object.assign(f, { 'gebaeude.aufenthaltsraeume': false, 'gebaeude.beheizt': false, 'vorhaben.entwaesserung': false, 'vorhaben.heizung': false, 'gebaeude.wohnungen': 0 });
+              // ein Nichtwohngebäude ohne Wohnung (Laden, Büro) – sonst blieben Fragen unentdeckt, die nur mit Wohnung gestellt werden
+              if (art === 'Nichtwohngebäude') Object.assign(f, { 'gebaeude.wohnungen': 0 });
               faelle.push({ name: `${ags} ${lage} ${v} ${art} ${p} ${vf}`, ags, m, f });
             }
+
+  it('§ 47 Abs. 6 BauO NRW: Nutzungsänderung eines Nichtwohngebäudes ohne Wohnung – keine „Ausnahme möglich“ über die nicht gestellte Umnutzung', () => {
+    const m = { Vorhaben: 'Nutzungsänderung', Gebäudeart: 'Nichtwohngebäude', Gebäudeklasse: '3', Planungsrecht: 'Innenbereich', Verfahren: 'vereinfachtes Verfahren', Sonderbau: 'nein' };
+    const r = lauf(SOEST, m, { ...grund(), 'gebaeude.wohnungen': 0, 'gebaeude.nutzungseinheiten': 3 });
+    for (const id of ['nw/bauo-nrw/29', 'nw/bauo-nrw/34', 'nw/bauo-nrw/36']) {
+      const p = r.paragrafen.find((x) => x.id === id)!;
+      expect(p.offen, id).not.toContain('nw.umnutzung_wohnraum');
+      expect(p.hinweise.join(' '), id).not.toMatch(/Ausnahme möglich.*Umnutzung/);
+    }
+    // mit Wohnung: die Frage wird gestellt, „ja“ lässt §§ 34, 36 entfallen
+    const mitWohnung = lauf(SOEST, m, { ...grund(), 'gebaeude.wohnungen': 2, 'gebaeude.nutzungseinheiten': 3, 'nw.umnutzung_wohnraum': true });
+    for (const id of ['nw/bauo-nrw/34', 'nw/bauo-nrw/36']) expect(mitWohnung.paragrafen.find((x) => x.id === id)!.ampel, id).toBe('gruen');
+  });
 
   it('eine Angabe, deren Frage nicht gestellt wird, ändert keinen Paragrafen und steht nicht unter „klärt am meisten“', { timeout: 600000 }, () => {
     const fehler = new Set<string>();

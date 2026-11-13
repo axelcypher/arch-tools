@@ -1228,6 +1228,31 @@
           ]
         }
       ]
+    },
+    "nw_umnutzung_wohnraum": {
+      "und": [
+        {
+          "$": "nutzungsaenderung"
+        },
+        {
+          "$": "gebaeude"
+        },
+        {
+          "oder": [
+            {
+              "$": "wohngebaeude"
+            },
+            {
+              "f": "gebaeude.wohnungen",
+              "min": 1
+            }
+          ]
+        },
+        {
+          "f": "nw.umnutzung_wohnraum",
+          "ist": true
+        }
+      ]
     }
   },
   "hinweise": [

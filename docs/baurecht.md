@@ -78,7 +78,8 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   verbergen); das Protokoll führt solche Antworten gesondert („Antworten auf derzeit nicht gestellte Fragen (ohne Wirkung)“). Hängt ein
   Paragraf an einem anderen, der nur „gilt,
   Ausnahme möglich“ ist, und entfiele er mit dessen Ausnahme, nennt er sie („Ausnahme möglich über § 14 BNatSchG – es
-  fehlt dort: …“); die Ampel bleibt „gilt“.
+  fehlt dort: …“); die Ampel bleibt „gilt“. Unter „Ausnahme möglich – es fehlt“ stehen nur Fragen, die gerade gestellt
+  werden (ohne Ausweichen auf nicht gestellte: eine Ausnahme, deren Fragen nicht gestellt sind, wird nicht angeboten).
   Hinweise, deren Bestätigung allein einen Paragrafen entschiede, stehen dort als „bestätigen klärt N“ (Werte eines
   Gebietsmoduls dort, woher die Unsicherheit kommt: beim Gemeindeschlüssel, solange er nicht gesichert ist, beim Bezug
   der Tabelle, wenn er nur Hinweis ist – ist der Bezug selbst ein Modulwert, zählen dessen Quellen –, beim Wert selbst,
@@ -310,7 +311,8 @@ weder als „ja“ noch als „nein“ etwas ändern. § 36 BauGB (Einvernehmen)
 Bauaufsicht ist („Gemeinde ist selbst Bauaufsicht“: im Kreis Soest Lippstadt, Soest, Warstein, Werl; in NRW die
 kreisfreien Städte und Aachen nach Gemeindeschlüssel; sonst offen – „gilt, Ausnahme möglich“). § 47 Abs. 6 BauO NRW
 (Fassung ab 01.09.2026): Bei einer Nutzungsänderung zu Wohnraum wird gefragt, ob Nutzungseinheiten mit Aufenthaltsräumen
-in einem bestehenden Gebäude umgenutzt werden; dann entfallen §§ 29, 34 und 36, § 35 gilt nur noch mit Abs. 2 (Hinweis),
+in einem bestehenden Gebäude umgenutzt werden (Baustein `nw_umnutzung_wohnraum`: Nutzungsänderung an einem Gebäude,
+das Wohngebäude ist oder mindestens eine Wohnung hat – bei einem Nichtwohngebäude ohne Wohnung wird nicht gefragt); dann entfallen §§ 29, 34 und 36, § 35 gilt nur noch mit Abs. 2 (Hinweis),
 §§ 6, 15, 27, 28, 30 bis 32 gelten mit dem Hinweis „nicht für bestehende Bauteile“. Die Entwässerungssatzung Soest § 9
 bleibt ohne neue Entwässerung ein Einzelfall, wo Niederschlagswasser anfällt (Dach eines Gebäudes ohne Aufenthaltsräume,
 befestigte Fläche einer Anlage ohne Gebäude, d. h. Stellplätze oder Garagen auf dem Grundstück). Einzelfalltexte im Paket tragen kein „im Einzelfall prüfen“ – das setzt die

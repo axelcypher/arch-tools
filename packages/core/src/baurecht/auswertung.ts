@@ -332,8 +332,10 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
     return g;
   };
   // nur gestellte Angaben (und Verweise) – bleibt nichts übrig, alle (sonst stünde ein Gelb ohne Grund da)
+  const nurGestellteStreng = (offen: string[]) => offen.filter((o) => o.startsWith('paragraf:') || gestellt(o));
+  // gelb: bleibt sonst kein Grund, wird die Angabe weiter genannt (die Ampel ist ja gelb)
   const nurGestellte = (offen: string[]) => {
-    const g = offen.filter((o) => o.startsWith('paragraf:') || gestellt(o));
+    const g = nurGestellteStreng(offen);
     return g.length ? g : offen;
   };
 
@@ -425,7 +427,10 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
       ampel = 'rot';
       gruende.push(r.grund);
       tragend = [g, gilt];
-      if (entf?.w === 'offen') hinweise.push(`Ausnahme möglich – es fehlt: ${nurGestellte(entf.offen).map((o) => offenText(o, text)).join(' · ')}`);
+      // „Ausnahme möglich“ nur mit einer Frage, die gestellt wird – sonst kann niemand sie beantworten (die Ausnahme greift
+      // dann gar nicht, z. B. Umnutzung zu Wohnraum bei einem Gebäude ohne Wohnung)
+      const ausnahmeOffen = entf?.w === 'offen' ? nurGestellteStreng(entf.offen) : [];
+      if (ausnahmeOffen.length) hinweise.push(`Ausnahme möglich – es fehlt: ${ausnahmeOffen.map((o) => offenText(o, text)).join(' · ')}`);
       // hängt die Regel an einem Paragrafen, der nur „rot, Ausnahme möglich“ ist, und entfiele sie mit dessen Ausnahme:
       // der Hinweis geht mit (die Ampel bleibt rot – zur sicheren Seite)
       for (const v of gilt.verwendet) {
@@ -459,7 +464,7 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
     if (fassung && r.stand) for (const [k, summe] of Object.entries(r.stand)) if (fassung.summen[k] !== summe) geaendert.push(k);
     const unsicher = [...new Set(tragend.flatMap((b) => b.unsicher))];
     const widerspruch = [...new Set(tragend.flatMap((b) => b.widerspruch))];
-    const offen = nurGestellte(ampel === 'gelb' ? [...new Set(tragend.flatMap((b) => b.offen))] : entf?.w === 'offen' && ampel === 'rot' ? entf.offen : []);
+    const offen = ampel === 'gelb' ? nurGestellte([...new Set(tragend.flatMap((b) => b.offen))]) : entf?.w === 'offen' && ampel === 'rot' ? nurGestellteStreng(entf.offen) : [];
 
     // zur sicheren Seite
     if (ampel === 'gruen') {

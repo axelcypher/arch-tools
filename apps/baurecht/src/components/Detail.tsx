@@ -203,6 +203,7 @@ export function Detail({ stand }: { stand: Pruefstand }) {
     if (!p.festlegung) return;
     setAufgehoben({ id: p.id, f: p.festlegung });
     useBaurecht.getState().festlegungAufheben(p.id);
+    useBaurecht.getState().ansagen(`Festlegung aufgehoben – automatisch: „${AMPEL_TEXT[p.automatisch]}“${p.festlegung.bestaetigt ? '; beim Speichern noch einmal bestätigen' : ''}`);
   };
   return (
     <aside className="br-detail" aria-label={`Einzelheiten ${titel}`} tabIndex={-1}>

@@ -562,7 +562,7 @@
         }
       },
       "pruefen": {
-        "grund": "Teilabbruch an einem angebauten Gebäude: Ist ein eigenständiges angebautes Gebäude betroffen, ist es eine Beseitigung nach § 62 Abs. 3 BauO NRW – mit Bauvorlagen nach Abs. 1 (Flurkarte, Standsicherheitsnachweis für das Gebäude, an das angebaut ist); prüfen.",
+        "grund": "Teilabbruch an einem angebauten Gebäude: Ist ein eigenständiges angebautes Gebäude betroffen, ist es eine Beseitigung nach § 62 Abs. 3 BauO NRW – mit Bauvorlagen nach Abs. 1 (Flurkarte, Standsicherheitsnachweis für das Gebäude, an das angebaut ist).",
         "wenn": {
           "und": [
             {

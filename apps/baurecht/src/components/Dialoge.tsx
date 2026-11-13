@@ -78,7 +78,8 @@ export function FestlegenDialog({ fakten, widerspruchMerkmale = [] }: { fakten: 
     benutzerMerken(von);
     useBaurecht.getState().festlegen(p, ampel, grund, von.trim(), summen, werte, sicherheit);
     // angesagt (der Dialog verschwindet): was jetzt gilt – Entwurf bis zum Speichern
-    useBaurecht.getState().ansagen(`${verweisName(p.paragraf, p.titel, useBaurecht.getState().paket.module.find((m) => m.id === p.modul)?.normen[p.norm]?.kurz ?? p.norm)}: von Hand „${AMPEL_TEXT[ampel]}“ festgelegt – Entwurf, beim Speichern noch einmal bestätigen`);
+    const ohneText = ampel === 'gruen' && !texte[`${p.modul}/${p.norm}`]?.fassung;
+    useBaurecht.getState().ansagen(`${verweisName(p.paragraf, p.titel, useBaurecht.getState().paket.module.find((m) => m.id === p.modul)?.normen[p.norm]?.kurz ?? p.norm)}: von Hand „${AMPEL_TEXT[ampel]}“ festgelegt – ${ohneText ? `noch nicht wirksam (ohne geprüften Gesetzestext), es bleibt bei „${AMPEL_TEXT[p.automatisch === 'gruen' ? 'gelb' : p.automatisch]}“; ` : ''}Entwurf, beim Speichern noch einmal bestätigen`);
     schliessen();
   };
   // Überschrift mit Norm, benannte Einheiten ohne Doppelung („§ 1 ND-VO – Schutzobjekte“)
@@ -477,7 +478,8 @@ export function BestaetigenDialog({ titel, faktTitel, folgen, faktDef = () => un
           Seit dem letzten Speichern: {aufzaehlen(teile)}. Bitte noch einmal prüfen – alles steht mit Begründung, Namen und Datum im Prüfprotokoll.
         </p>
       </div>
-      <div className="br-bestaetigen-inhalt">
+      {/* mit Tab erreichbar (mit Pfeiltasten scrollbar) – sonst bestätigte man Einträge, die man nicht sehen kann */}
+      <div className="br-bestaetigen-inhalt" tabIndex={0} role="region" aria-label="Änderungen seit dem letzten Speichern">
       <ul className="br-bestaetigen-liste">
         {offen.festlegungen.map((id) => {
           const f = festlegungen[id];
@@ -600,7 +602,7 @@ export function BestaetigenDialog({ titel, faktTitel, folgen, faktDef = () => un
       </div>
       <div className="br-bestaetigen-fuss">
       <label className="toggle br-geprueft">
-        <input type="checkbox" checked={geprueft} disabled={ueberholte.length > 0} onChange={(e) => setGeprueft(e.target.checked)} /> Ich habe {aufzaehlen(geprueftTeile)} geprüft.
+        <input type="checkbox" data-startfokus="" checked={geprueft} disabled={ueberholte.length > 0} onChange={(e) => setGeprueft(e.target.checked)} /> Ich habe {aufzaehlen(geprueftTeile)} geprüft.
       </label>
       <div className="dialog-buttons">
         <button type="button" onClick={() => antwort('abbrechen')}>

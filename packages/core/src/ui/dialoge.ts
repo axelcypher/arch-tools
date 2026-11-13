@@ -29,7 +29,8 @@ function geoeffnet(d: HTMLElement) {
   requestAnimationFrame(() => {
     if (!d.isConnected || d.contains(document.activeElement)) return;
     // Startfokus nicht auf eine Aufklappzeile (z. B. „Liste anzeigen“ vor dem Häkchen) – sie bleibt im Tab-Zyklus
-    (d.querySelector<HTMLElement>('[autofocus]') ?? d.querySelector<HTMLElement>(START))?.focus();
+    // `data-startfokus`: ein Dialog bestimmt selbst, wo es losgeht (React setzt kein autofocus-Attribut)
+    (d.querySelector<HTMLElement>('[autofocus], [data-startfokus]:not([disabled])') ?? d.querySelector<HTMLElement>(START))?.focus();
   });
 }
 

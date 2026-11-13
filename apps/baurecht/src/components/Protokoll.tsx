@@ -154,16 +154,19 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
     if (knopf) knopf.focus();
     else fenster.current?.querySelector<HTMLElement>('.br-drucken')?.focus();
   }, [abgelegt]);
-  useEffect(() => {
-    if (abgelegt?.speichern && !ungespeichertGesamt) setAbgelegt({ text: 'Gespeichert – die abgeschlossene Prüfung steht in der Projektdatei.', speichern: false });
-  }, [ungespeichertGesamt, abgelegt]);
   // jedes Speichern, solange das Protokoll offen ist (auch Strg+S): das Ergebnis in der Live-Region des Dialogs – die
   // Meldung im Kopf liegt hinter dem modalen Protokoll
   const gespeichertMeldung = useBaurecht((s) => s.gespeichertMeldung);
   const meldungBeimOeffnen = useRef(gespeichertMeldung);
   useEffect(() => {
     if (!gespeichertMeldung || gespeichertMeldung === meldungBeimOeffnen.current) return;
+    // war eine Ablage offen und ist jetzt gespeichert: die genaue Meldung (nicht nur „Gespeichert.“)
     setAbgelegt((vorher) => (vorher?.speichern && !istGeaendert(useBaurecht.getState()) ? { text: 'Gespeichert – die abgeschlossene Prüfung steht in der Projektdatei.', speichern: false } : vorher?.speichern ? vorher : { text: `${gespeichertMeldung.text}.`, speichern: false }));
+    // verschwand der fokussierte Knopf („Jetzt speichern“), bleibt der Fokus im Protokoll
+    setTimeout(() => {
+      const a = document.activeElement;
+      if ((!a || a === document.body || !a.isConnected || !fenster.current?.contains(a)) && !document.querySelector('.modal')) fenster.current?.querySelector<HTMLElement>('.br-drucken')?.focus();
+    }, 0);
   }, [gespeichertMeldung]);
   const fenster = useRef<HTMLDivElement>(null);
   // Höhe der klebenden Aktionsleiste als CSS-Variable – der feste Tabellenkopf klebt darunter
@@ -332,8 +335,10 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
             <button
               type="button"
               className="small"
-              disabled={speichertJetzt}
+              aria-disabled={speichertJetzt || undefined}
+              aria-describedby="br-sperre-grund"
               onClick={async () => {
+                if (speichertJetzt) return;
                 setSpeichertJetzt(true);
                 fokusNachMeldung.current = true;
                 const ok = await onSpeichern();
@@ -373,8 +378,9 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
               <button
                 type="button"
                 className="small"
-                disabled={speichertJetzt}
+                aria-disabled={speichertJetzt || undefined}
                 onClick={async () => {
+                  if (speichertJetzt) return;
                   setSpeichertJetzt(true);
                   fokusNachMeldung.current = true;
                   const ok = await onSpeichern();

@@ -1090,5 +1090,48 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
       await fertig;
     });
   });
+
+  it('Speichern-Dialog: der Scrollbereich ist ein benannter Tabstopp; Startfokus bleibt am Häkchen', async () => {
+    const host = render();
+    festlegen(host, 'Begehung am 03.11.2026 ohne Befund', 'rot');
+    let fertig: Promise<boolean> | null = null;
+    await act(async () => {
+      fertig = speichern();
+    });
+    const best = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find((d) => d.textContent?.includes('Vor dem Speichern bestätigen'))!;
+    const bereich = best.querySelector<HTMLElement>('.br-bestaetigen-inhalt')!;
+    expect(bereich.getAttribute('tabindex')).toBe('0');
+    expect(bereich.getAttribute('role')).toBe('region');
+    expect(bereich.getAttribute('aria-label')).toBe('Änderungen seit dem letzten Speichern');
+    await warten(50);
+    expect((document.activeElement as HTMLInputElement | null)?.type).toBe('checkbox');
+    await act(async () => {
+      knopf(best, 'Abbrechen')!.click();
+      await fertig;
+    });
+  });
+
+  it('Protokoll: nach Abschließen und Strg+S bleibt die genaue Meldung, der Fokus im Dialog', async () => {
+    const host = render();
+    await speichernOhneDialog();
+    act(() => knopf(host, 'Prüfprotokoll')!.click());
+    const d = document.querySelector<HTMLElement>('.br-protokoll')!;
+    for (let i = 0; i < 20 && knopf(d, 'Prüfung abschließen')!.disabled; i++) await warten(100);
+    act(() => knopf(d, 'Prüfung abschließen')!.click());
+    await warten();
+    expect(document.activeElement?.textContent).toBe('Jetzt speichern');
+    await speichernOhneDialog();
+    await warten(50);
+    expect(d.querySelector('#br-abgelegt-text')?.textContent).toBe('Gespeichert – die abgeschlossene Prüfung steht in der Projektdatei.');
+    expect(d.contains(document.activeElement)).toBe(true);
+  });
+
+  it('Festlegen ohne geprüften Text und Aufheben werden angesagt', () => {
+    const host = render();
+    festlegen(host, 'Begehung am 03.11.2026 ohne Befund', 'gruen');
+    expect(useBaurecht.getState().ansage).toMatch(/festgelegt – noch nicht wirksam \(ohne geprüften Gesetzestext\), es bleibt bei/);
+    act(() => knopf(host.querySelector('.br-detail')!, /Festlegung aufheben/)!.click());
+    expect(useBaurecht.getState().ansage).toMatch(/^Festlegung aufgehoben – automatisch: „/);
+  });
 });
 

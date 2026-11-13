@@ -53,4 +53,16 @@ describe('Dialoge', () => {
     expect(document.activeElement?.id).toBe('haken');
     hinter.remove();
   });
+
+  it('data-startfokus bestimmt den Startfokus (vor einem Tabstopp davor)', async () => {
+    dialogVerhaltenEinrichten();
+    const hinter = document.createElement('div');
+    hinter.className = 'modal-backdrop';
+    hinter.innerHTML = '<div class="modal"><div tabindex="0" id="bereich">Liste</div><input id="haken" type="checkbox" data-startfokus=""><button>OK</button></div>';
+    document.body.appendChild(hinter);
+    await warten();
+    expect(document.activeElement?.id).toBe('haken');
+    hinter.remove();
+  });
 });
+
