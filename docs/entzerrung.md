@@ -9,7 +9,8 @@ Bis Version 0.12.0 hieß die App „Entzerrung“. Einstellungen und Daten bleib
 
 ## Ablauf
 
-1. **Foto hinzufügen**: über „+ Foto …“ (auch mehrere auf einmal), den Knopf in der leeren Fläche oder per Ziehen ins
+1. **Foto hinzufügen**: über „+ Foto …“ (auch mehrere auf einmal; danach ist das erste gewählt, nicht lesbare
+   Dateien nennt eine gemeinsame Meldung), den Knopf in der leeren Fläche oder per Ziehen ins
    Fenster (JPEG, PNG, WebP). Die Ausrichtung vom
    Handy (Hochformat) wird übernommen. HEIC-Fotos vom iPhone lassen sich nicht lesen; dann am iPhone unter
    Einstellungen › Kamera › Formate „Maximale Kompatibilität“ wählen.
@@ -96,6 +97,7 @@ das Foto. Öffnen und Speichern über den Dateidialog bleiben wie bisher.
 | Ziehen auf freier Fläche, mittlere Maustaste oder `Leertaste`+Ziehen | Verschieben |
 | Punkt ziehen | Punkt verschieben (Ecken, Passpunkte, Kanten, Hilfslinien, Messpunkte) |
 | `Enter`, Doppelklick, Rechtsklick | Linienzug, Fläche bzw. Hilfslinie abschließen |
+| Rechtsklick ohne laufendes Zeichnen | Kontextmenü zum angeklickten Element: Alles zeigen, Foto/Entzerrt, Rückgängig, Wiederholen und zuletzt „… löschen“ (z. B. „Strecke 1 löschen“) |
 | `Rücktaste` | letzten Punkt beim Zeichnen zurücknehmen bzw. Auswahl löschen |
 | `Entf` | Auswahl löschen (bei Messungen mit gewähltem Punkt nur diesen Punkt) |
 | `Esc` | Zeichnen abbrechen, Auswahl aufheben, zurück zur Auswahl |
@@ -109,11 +111,18 @@ das Foto. Öffnen und Speichern über den Dateidialog bleiben wie bisher.
 Die Kürzel ohne Strg wirken nur, wenn kein Dialog offen ist und der Fokus nicht auf einem Knopf oder Feld liegt;
 `Tab`, Leertaste und Enter bleiben so der Bedienung mit der Tastatur erhalten. Fotos und Ebenen in der linken
 Leiste sind mit `Tab` erreichbar (Enter wählt, `Entf` entfernt). Beide Seitenleisten lassen sich in der Breite
-ziehen (Doppelklick: Vorgabe), die linke mit „◂ Fotos“ ausblenden.
+ziehen (Doppelklick: Vorgabe), die linke mit „Fotos“ (Pfeil) in der Werkzeugleiste ausblenden.
 
 Beim Schließen fragt die App nach, solange ungespeicherte Änderungen bestehen. „Öffnen …“ merkt sich auf dem
 Desktop den Pfad: „Speichern“ schreibt danach ohne Rückfrage in dieselbe Datei. Ändert man während des
 Speicherns weiter, bleibt das Projekt als ungespeichert markiert.
+
+Wurde die geöffnete `.entz` inzwischen außerhalb von RECTIO geändert oder angelegt (z. B. von einem anderen
+Rechner im Büro), überschreibt „Speichern“ sie nicht. Es erscheint die Meldung „Datei wurde inzwischen
+geändert“. Die Änderungen bleiben in der App, und „Unter neuem Namen speichern …“ legt eine Kopie an (Vorschlag
+„… (Kopie).entz“); danach lassen sich beide Fassungen vergleichen. Das gilt auch für eine neue Entzerrung neben dem Foto: Hat jemand die `.entz`
+inzwischen angelegt, wird sie nicht überschrieben. Beim Speichern liest RECTIO die bisherige Datei nicht mehr ein,
+das spart bei großen Projekten Zeit.
 
 ## Projektdatei
 

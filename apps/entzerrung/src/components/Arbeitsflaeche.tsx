@@ -2,7 +2,8 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import type { PointerEvent as RPointerEvent, ReactNode } from 'react';
 import { fmt2, fmt3 } from '@core/format';
 import { logger } from '@core/platform/log';
-import { abschliessen, klick, punktVerschieben } from '../aktionen';
+import { abschliessen, flaechenMenue, klick, punktVerschieben } from '../aktionen';
+import { zeigeMenue } from '@core/ui/Menue';
 import { ebenenAbbildung, einpassen, fotoAbbildung, zoomen } from '../ansicht';
 import type { Abbildung, Sicht } from '../ansicht';
 import { bitmap } from '../bilder';
@@ -277,6 +278,11 @@ export function Arbeitsflaeche() {
   };
 
   const griffRunter = (e: RPointerEvent, a: Auswahl) => {
+    // Rechtsklick auf ein Element: erst auswählen, damit sich das Kontextmenü darauf bezieht (beim Zeichnen schließt er ab)
+    if (e.button === 2) {
+      if (!useEntz.getState().entwurf.length) useEntz.getState().setze({ auswahl: a });
+      return;
+    }
     if (e.button !== 0 || leertaste.current) return;
     const ziehbar = werkzeug === 'auswahl' || (ansicht === 'foto' && entwurf.length === 0);
     if (!ziehbar) return; // Klick geht an die Fläche (Fang)
@@ -369,7 +375,9 @@ export function Arbeitsflaeche() {
         onDoubleClick={() => abschliessen()}
         onContextMenu={(e) => {
           e.preventDefault();
-          abschliessen();
+          // beim Zeichnen schließt der Rechtsklick ab (wie Enter); sonst das Kontextmenü der Fläche
+          if (useEntz.getState().entwurf.length) abschliessen();
+          else zeigeMenue(e, flaechenMenue(), 'Zeichenfläche');
         }}
       >
         {lupeAn && lupePos && (
@@ -618,3 +626,4 @@ function eckenVorschau(el: ReactNode[], abb: Abbildung, ecken: Pt[], zeiger: Pt 
   const z = pts[pts.length - 1];
   if (z) el.push(beschriftung('evt', { x: z.x + 14, y: z.y }, `${ECKEN_KURZ[ecken.length]} · ${ECKEN[ecken.length]}`, 'ref ef-zeiger-text', 22));
 }
+
