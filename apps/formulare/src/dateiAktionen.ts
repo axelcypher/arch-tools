@@ -6,7 +6,7 @@
  */
 
 import { create } from 'zustand';
-import { verfolgen } from './ausstehend';
+import { vorgang } from './ausstehend';
 import { gleicheFassung } from '@core/fassung';
 import { logger } from '@core/platform/log';
 import { projektdateiSchreiben } from '@core/platform/projektordner';
@@ -395,90 +395,94 @@ export async function formularUmbenennen(f: FormularEintrag) {
   } catch {
     // nicht lesbar: ohne eigene Einstellungen
   }
-  const r = await ds.rechner();
-  const sperre = sperreSchreiben({ benutzer: r.benutzer, computer: r.computer, angemeldet: zeitstempel(new Date()), inGebrauch: String(r.prozess) });
-  // den neuen Namen sperren, bis die Projektdatei geschrieben ist – sonst könnte FORMA ihn öffnen und das Zurückbenennen
-  // verhindern (nur Groß-/Kleinschreibung: dieselbe Sperrdatei, die Hülle sperrt selbst)
-  const zielSperre = sperrPfad(ziel);
-  let zielGesperrt = false;
-  if (!nurSchreibweise) {
+  // ab hier ein Vorgang (Sperre, Umbenennen, Projektdatei, Sperre lösen): vor dem Schließen wird er ganz abgewartet,
+  // sonst bliebe das Formular umbenannt ohne Zuordnung bzw. die eigene Sperre liegen
+  return vorgang(async () => {
+    const r = await ds.rechner();
+    const sperre = sperreSchreiben({ benutzer: r.benutzer, computer: r.computer, angemeldet: zeitstempel(new Date()), inGebrauch: String(r.prozess) });
+    // den neuen Namen sperren, bis die Projektdatei geschrieben ist – sonst könnte FORMA ihn öffnen und das Zurückbenennen
+    // verhindern (nur Groß-/Kleinschreibung: dieselbe Sperrdatei, die Hülle sperrt selbst)
+    const zielSperre = sperrPfad(ziel);
+    let zielGesperrt = false;
+    if (!nurSchreibweise) {
+      try {
+        zielGesperrt = await ds.sperreSetzen(projekt.root, zielSperre, sperre);
+      } catch (e) {
+        fehler('Umbenennen', e);
+        return wiederOeffnen(f.pfad);
+      }
+      if (!zielGesperrt) {
+        fehler('Umbenennen', new Error(`„${name}“ ist schon als geöffnet markiert (Sperrdatei) – nicht umbenannt. Bitte einen anderen Namen wählen`));
+        return wiederOeffnen(f.pfad);
+      }
+      sperreVermerken(projekt.root, zielSperre, sperre);
+    }
+    const zielFrei = async () => {
+      if (!zielGesperrt) return;
+      zielGesperrt = false;
+      await ds.sperreLoesen(projekt.root, zielSperre, sperre).catch(() => false);
+      sperreVergessen(projekt.root, zielSperre);
+    };
     try {
-      zielGesperrt = await ds.sperreSetzen(projekt.root, zielSperre, sperre);
+      await ds.formularUmbenennen(projekt.root, f.pfad, ziel, sperre);
     } catch (e) {
-      fehler('Umbenennen', e);
-      return wiederOeffnen(f.pfad);
-    }
-    if (!zielGesperrt) {
-      fehler('Umbenennen', new Error(`„${name}“ ist schon als geöffnet markiert (Sperrdatei) – nicht umbenannt. Bitte einen anderen Namen wählen`));
-      return wiederOeffnen(f.pfad);
-    }
-    sperreVermerken(projekt.root, zielSperre, sperre);
-  }
-  const zielFrei = async () => {
-    if (!zielGesperrt) return;
-    zielGesperrt = false;
-    await ds.sperreLoesen(projekt.root, zielSperre, sperre).catch(() => false);
-    sperreVergessen(projekt.root, zielSperre);
-  };
-  try {
-    await ds.formularUmbenennen(projekt.root, f.pfad, ziel, sperre);
-  } catch (e) {
-    await zielFrei();
-    fehler('Umbenennen', e);
-    await neuLesen();
-    return wiederOeffnen(f.pfad);
-  }
-  // bei vollem Speicher bleiben Entwurf bzw. Verlauf am alten Namen – das wird gemeldet
-  const lokalOk = formularLokalVerschieben(projekt, f.pfad, ziel);
-  log.info(`Formular umbenannt: ${f.pfad} → ${ziel}`);
-  let verweise = 0;
-  let fehlgeschlagen = false;
-  if (oapZiel) {
-    try {
-      // frisch gelesen gezählt und umgeschrieben; ohne Verweise wird nichts geschrieben
-      await verfolgen(projektdateiSchreiben(ds.projektordner, oapZiel.root, oapZiel.pfad, (roh) => {
-        const x = oapMitUmbenanntem(roh, alt, neu, gehoertZu, festschreiben);
-        verweise = x.anzahl;
-        return x.roh;
-      }));
-    } catch (e) {
-      log.warn(`Projektdatei beim Umbenennen von ${f.pfad} nicht geschrieben: ${e instanceof Error ? e.message : String(e)}`);
-      fehlgeschlagen = true;
-    }
-  }
-  if (fehlgeschlagen) {
-    // zurück zum alten Namen – sonst verlöre das Formular seine Zuordnung (am neuen Namen liegt noch die eigene Sperre)
-    try {
-      await ds.formularUmbenennen(projekt.root, ziel, f.pfad, sperre);
-      formularLokalVerschieben(projekt, ziel, f.pfad);
       await zielFrei();
-      fehler('Umbenennen', new Error(`Die Projektdatei (.oap) ließ sich nicht schreiben – „${f.name}“ heißt weiter so`));
+      fehler('Umbenennen', e);
       await neuLesen();
       return wiederOeffnen(f.pfad);
-    } catch (e) {
-      log.warn(`Alter Name von ${ziel} nicht wiederhergestellt: ${e instanceof Error ? e.message : String(e)}`);
     }
-  }
-  await zielFrei();
-  if (profil && profil[0] !== profil[1]) useFormulare.getState().profilKopieren(profil[0], profil[1]);
-  const ohneEingaben = lokalOk ? '' : ' Nicht gespeicherte Eingaben ließen sich nicht mitnehmen (Speicher voll) – sie gelten weiter für den alten Namen.';
-  const zuordnungPruefen = new Error(
-    `„${name}“ umbenannt, aber die Projektdatei (.oap) ließ sich nicht schreiben – bitte die Zuordnung in den Antragsdaten von ${projekt.ordner} prüfen.${ohneEingaben}`,
-  );
-  // inzwischen ein anderes Projekt: die Fehlermeldung trotzdem zeigen, die Erfolgsmeldung entfällt
-  if (useFormulare.getState().projekt !== projekt) {
+    // bei vollem Speicher bleiben Entwurf bzw. Verlauf am alten Namen – das wird gemeldet
+    const lokalOk = formularLokalVerschieben(projekt, f.pfad, ziel);
+    log.info(`Formular umbenannt: ${f.pfad} → ${ziel}`);
+    let verweise = 0;
+    let fehlgeschlagen = false;
+    if (oapZiel) {
+      try {
+        // frisch gelesen gezählt und umgeschrieben; ohne Verweise wird nichts geschrieben
+        await projektdateiSchreiben(ds.projektordner, oapZiel.root, oapZiel.pfad, (roh) => {
+          const x = oapMitUmbenanntem(roh, alt, neu, gehoertZu, festschreiben);
+          verweise = x.anzahl;
+          return x.roh;
+        });
+      } catch (e) {
+        log.warn(`Projektdatei beim Umbenennen von ${f.pfad} nicht geschrieben: ${e instanceof Error ? e.message : String(e)}`);
+        fehlgeschlagen = true;
+      }
+    }
+    if (fehlgeschlagen) {
+      // zurück zum alten Namen – sonst verlöre das Formular seine Zuordnung (am neuen Namen liegt noch die eigene Sperre)
+      try {
+        await ds.formularUmbenennen(projekt.root, ziel, f.pfad, sperre);
+        formularLokalVerschieben(projekt, ziel, f.pfad);
+        await zielFrei();
+        fehler('Umbenennen', new Error(`Die Projektdatei (.oap) ließ sich nicht schreiben – „${f.name}“ heißt weiter so`));
+        await neuLesen();
+        return wiederOeffnen(f.pfad);
+      } catch (e) {
+        log.warn(`Alter Name von ${ziel} nicht wiederhergestellt: ${e instanceof Error ? e.message : String(e)}`);
+      }
+    }
+    await zielFrei();
+    if (profil && profil[0] !== profil[1]) useFormulare.getState().profilKopieren(profil[0], profil[1]);
+    const ohneEingaben = lokalOk ? '' : ' Nicht gespeicherte Eingaben ließen sich nicht mitnehmen (Speicher voll) – sie gelten weiter für den alten Namen.';
+    const zuordnungPruefen = new Error(
+      `„${name}“ umbenannt, aber die Projektdatei (.oap) ließ sich nicht schreiben – bitte die Zuordnung in den Antragsdaten von ${projekt.ordner} prüfen.${ohneEingaben}`,
+    );
+    // inzwischen ein anderes Projekt: die Fehlermeldung trotzdem zeigen, die Erfolgsmeldung entfällt
+    if (useFormulare.getState().projekt !== projekt) {
+      if (fehlgeschlagen) fehler('Umbenennen', zuordnungPruefen);
+      else if (!lokalOk) fehler('Umbenennen', new Error(`„${name}“ umbenannt.${ohneEingaben}`));
+      return;
+    }
+    if (oapZiel) await useFormulare.getState().oapLaden();
+    await neuLesen();
+    await useAntrag.getState().laden();
+    await wiederOeffnen(ziel);
     if (fehlgeschlagen) fehler('Umbenennen', zuordnungPruefen);
-    else if (!lokalOk) fehler('Umbenennen', new Error(`„${name}“ umbenannt.${ohneEingaben}`));
-    return;
-  }
-  if (oapZiel) await useFormulare.getState().oapLaden();
-  await neuLesen();
-  await useAntrag.getState().laden();
-  await wiederOeffnen(ziel);
-  if (fehlgeschlagen) fehler('Umbenennen', zuordnungPruefen);
-  else
-    useFormulare.getState().setMeldung({
-      art: lokalOk ? 'info' : 'fehler',
-      text: `„${f.name}“ in „${name}“ umbenannt${verweise ? ' – die Zuordnung im Antragsumfang ist erhalten geblieben' : ''}.${ohneEingaben}`,
-    });
+    else
+      useFormulare.getState().setMeldung({
+        art: lokalOk ? 'info' : 'fehler',
+        text: `„${f.name}“ in „${name}“ umbenannt${verweise ? ' – die Zuordnung im Antragsumfang ist erhalten geblieben' : ''}.${ohneEingaben}`,
+      });
+  });
 }

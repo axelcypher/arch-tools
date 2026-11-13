@@ -50,7 +50,7 @@ import type { FeldAenderung, Verlauf } from './verlauf';
 import { abgleichen, eintragen, eintragenMehrere, kannRueckgaengig, kannWiederholen, leererVerlauf, springe, verlaufAus } from './verlauf';
 import { GRUNDSTUECK, PLZ_GRUNDSTUECK, istZusatz, mitZusatz } from './zusatz';
 import { adresseSchluessel, koordinatenVeraltet, mitKoordinaten } from '@core/platform/geokodierung';
-import { verfolgen } from './ausstehend';
+import { mitVerfolgung, verfolgen, vorgang } from './ausstehend';
 
 /**
  * Zustand der App: Einstellungen, die gefundenen Projekte, das geöffnete Formular und die Projektkarte.
@@ -1202,7 +1202,8 @@ export const useFormulare = create<FormulareState>()((set, get) => {
 
   return {
     ...ladeEinstellungen(),
-    ds: hatDateisystem() ? tauriDateisystem : null,
+    // Schreibbefehle verfolgt: vor dem Schließen wartet Arkly darauf (ausstehend.ts)
+    ds: hatDateisystem() ? mitVerfolgung(tauriDateisystem) : null,
     projekte: [],
     suchfehler: [],
     sucht: false,
@@ -1616,18 +1617,20 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       aktualisieren({ ...o, verlauf, aenderungen: mitWerten(o, werte) });
     },
 
-    speichern: async () => {
-      // läuft schon ein Speichern (Strg+S doppelt, Speichern beim Beenden): abwarten, dann den Rest speichern – was
-      // während des Schreibens eingegeben wurde; parallel verglichen beide mit demselben alten Stand
-      while (laufendFormular) await laufendFormular;
-      const lauf = verfolgen(formularSpeichern());
-      laufendFormular = lauf;
-      try {
-        await lauf;
-      } finally {
-        if (laufendFormular === lauf) laufendFormular = null;
-      }
-    },
+    // als ein Vorgang verfolgt, samt Warten auf ein laufendes Speichern (vor dem Schließen wird beides abgewartet)
+    speichern: () =>
+      vorgang(async () => {
+        // läuft schon ein Speichern (Strg+S doppelt, Speichern beim Beenden): abwarten, dann den Rest speichern – was
+        // während des Schreibens eingegeben wurde; parallel verglichen beide mit demselben alten Stand
+        while (laufendFormular) await laufendFormular;
+        const lauf = formularSpeichern();
+        laufendFormular = lauf;
+        try {
+          await lauf;
+        } finally {
+          if (laufendFormular === lauf) laufendFormular = null;
+        }
+      }),
 
     neuLaden: async () => {
       const { offen: o, ds } = get();
@@ -2156,17 +2159,18 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       set({ dateiEntwuerfe: entwuerfe });
     },
 
-    karteSpeichern: async () => {
-      // läuft schon ein Speichern: abwarten, dann den Rest – parallel schickten beide dieselben Änderungen mit veraltetem „alt“
-      while (laufendKarte) await laufendKarte;
-      const lauf = verfolgen(karteSchreiben());
-      laufendKarte = lauf;
-      try {
-        await lauf;
-      } finally {
-        if (laufendKarte === lauf) laufendKarte = null;
-      }
-    },
+    karteSpeichern: () =>
+      vorgang(async () => {
+        // läuft schon ein Speichern: abwarten, dann den Rest – parallel schickten beide dieselben Änderungen mit veraltetem „alt“
+        while (laufendKarte) await laufendKarte;
+        const lauf = karteSchreiben();
+        laufendKarte = lauf;
+        try {
+          await lauf;
+        } finally {
+          if (laufendKarte === lauf) laufendKarte = null;
+        }
+      }),
   };
 });
 
