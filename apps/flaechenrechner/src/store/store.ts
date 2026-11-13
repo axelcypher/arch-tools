@@ -6,6 +6,7 @@ import { createProject, createStorey, leereMeta, newId } from '@core/model';
 import { parseProject, parseProjectData } from '@core/serialize';
 import { gleich } from '@core/zusammenfuehren';
 import { logger } from '@core/platform/log';
+import { vorDemSchliessen } from '@core/platform/rahmen';
 import { zwischenstandErsetzt, zwischenstandLadenErlaubt, zwischenstandWirdGeladen } from '@core/platform/startschutz';
 import type { KopieOptionen, Lage } from '../core/geschosse';
 import { geschossNameVorschlag, kopieAnpassen, naechsteRaumnummer, neueKote, raumNummernPraefix } from '../core/geschosse';
@@ -503,27 +504,61 @@ if (typeof indexedDB !== 'undefined' && zwischenstandLadenErlaubt(APP)) {
     });
 }
 
+/** Verzögerung des Zwischenspeicherns nach einer Änderung */
+const AUTOSAVE_MS = 600;
 let autosaveTimer: ReturnType<typeof setTimeout> | undefined;
+/** laufendes Schreiben des Zwischenstands (bis es fertig ist) */
+let laufend: Promise<void> | null = null;
+
+/** aktuellen Stand in IndexedDB schreiben – hinter ein laufendes Schreiben gehängt, damit die Reihenfolge stimmt */
+function zwischenstandSchreiben(): Promise<void> {
+  const davor = laufend ?? Promise.resolve();
+  const p: Promise<void> = davor
+    .then(() => {
+      const { project, basis, datei } = useEditor.getState();
+      return idbSet(AUTOSAVE_KEY, { project, basis, datei });
+    })
+    .then(() => {
+      zwischenstandErsetzt(APP);
+      try {
+        localStorage.removeItem(AUTOSAVE_KEY);
+      } catch {
+        // ignorieren
+      }
+    })
+    .catch((e) => {
+      // Autosave ist nur ein Komfortmerkmal
+      log.warn('Zwischenspeichern fehlgeschlagen', e);
+    })
+    .finally(() => {
+      if (laufend === p) laufend = null;
+    });
+  laufend = p;
+  return p;
+}
+
+/**
+ * Vor dem Schließen (Arkly, `vorDemSchliessen`): ausstehendes Zwischenspeichern sofort ausführen und abwarten. Mehrfach
+ * aufrufbar – ohne ausstehende Änderung wartet ein weiterer Aufruf nur auf das laufende Schreiben, statt doppelt zu schreiben.
+ */
+export function zwischenstandSichern(): Promise<void> {
+  if (autosaveTimer !== undefined) {
+    clearTimeout(autosaveTimer);
+    autosaveTimer = undefined;
+    return zwischenstandSchreiben();
+  }
+  return laufend ?? Promise.resolve();
+}
+
 useEditor.subscribe((s, prev) => {
   if (s.project === prev.project && s.basis === prev.basis && s.datei === prev.datei) return;
   clearTimeout(autosaveTimer);
   autosaveTimer = setTimeout(() => {
-    const { project, basis, datei } = useEditor.getState();
-    idbSet(AUTOSAVE_KEY, { project, basis, datei })
-      .then(() => {
-        zwischenstandErsetzt(APP);
-        try {
-          localStorage.removeItem(AUTOSAVE_KEY);
-        } catch {
-          // ignorieren
-        }
-      })
-      .catch((e) => {
-        // Autosave ist nur ein Komfortmerkmal
-        log.warn('Zwischenspeichern fehlgeschlagen', e);
-      });
-  }, 600);
+    autosaveTimer = undefined;
+    void zwischenstandSchreiben();
+  }, AUTOSAVE_MS);
 });
+vorDemSchliessen(zwischenstandSichern);
 
 /* ---------- Kopieren, Einfügen, Duplizieren, mit Pfeiltasten verschieben ---------- */
 
