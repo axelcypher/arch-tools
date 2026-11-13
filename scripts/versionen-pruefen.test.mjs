@@ -14,7 +14,7 @@ test('Tag-Schema wie release.yml; Versionen numerisch vergleichen', () => {
   assert.ok(vergleich('0.10.0', '0.9.0') > 0);
 });
 
-test('betroffene Apps: App-Ordner, Kern betrifft alle außer Arkly; Doku, Tests und Notizen nicht', () => {
+test('betroffene Apps: App-Ordner, Kern die einbindenden Apps außer Arkly; Doku, Tests und Notizen nicht', () => {
   assert.deepEqual(betroffeneApps(['apps/grz/src/store.ts', 'apps/grz/README.md', 'docs/grz.md']), ['grz']);
   assert.deepEqual(
     betroffeneApps(['packages/core/src/platform/konfig.ts']),
