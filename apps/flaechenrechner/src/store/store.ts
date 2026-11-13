@@ -593,6 +593,22 @@ export function flaechenDuplizieren(): number {
   return neu.length;
 }
 
+/** Gewählte Flächen des aktiven Geschosses löschen (Entf, Kontextmenü); liefert die Anzahl */
+export function flaechenLoeschen(): number {
+  const { storey, shapes } = gewaehlteFlaechen();
+  if (!shapes.length) return 0;
+  const ids = new Set(shapes.map((s) => s.id));
+  const st = useEditor.getState();
+  st.update((p) => mapStorey(p, storey.id, (s) => ({ ...s, shapes: s.shapes.filter((x) => !ids.has(x.id)) })));
+  st.select(null);
+  return shapes.length;
+}
+
+/** Zwischenablage leeren (für Tests; Kopieren zwischen Projekten bleibt möglich) */
+export function ablageLeeren() {
+  ablage = null;
+}
+
 /**
  * Gewählte Flächen verschieben (Pfeiltasten) – zusammenhängende Schritte ergeben einen Undo-Schritt. Zusammenhängend
  * heißt: kurz hintereinander und das Projekt ist noch das Ergebnis des letzten Schritts (kein Rückgängig dazwischen).

@@ -134,7 +134,15 @@ export const useGrz = create<GrzState>()((set, get) => ({
     const { past, project, future, pastAktionen, futureAktionen } = get();
     if (!past.length) return;
     const a = pastAktionen[pastAktionen.length - 1] ?? 'Änderung';
-    set({ project: past[past.length - 1], past: past.slice(0, -1), future: [project, ...future], pastAktionen: pastAktionen.slice(0, -1), futureAktionen: [a, ...futureAktionen], dirty: true });
+    const zurueck = past[past.length - 1];
+    set({
+      project: zurueck,
+      past: past.slice(0, -1),
+      future: [project, ...future],
+      pastAktionen: pastAktionen.slice(0, -1),
+      futureAktionen: [a, ...futureAktionen],
+      dirty: weichtAb(zurueck, get().basis),
+    });
     auswahlBereinigen(set, get);
   },
   redo: () => {
@@ -146,7 +154,7 @@ export const useGrz = create<GrzState>()((set, get) => ({
       future: future.slice(1),
       pastAktionen: [...pastAktionen, futureAktionen[0] ?? 'Änderung'],
       futureAktionen: futureAktionen.slice(1),
-      dirty: true,
+      dirty: weichtAb(future[0], get().basis),
     });
     auswahlBereinigen(set, get);
   },
@@ -247,6 +255,11 @@ export function addFlaeche(p: Project, f: LageplanFlaeche): Project {
 export function removeFlaeche(p: Project, id: string | string[]): Project {
   const weg = new Set(Array.isArray(id) ? id : [id]);
   return { ...p, lageplan: { ...p.lageplan, flaechen: (p.lageplan?.flaechen ?? []).filter((f) => !weg.has(f.id)) } };
+}
+
+/** ungespeichert, wenn der Stand vom gespeicherten (Datei) abweicht; ohne Datei immer (Rückgängig zum leeren Projekt bleibt eine Änderung) */
+export function weichtAb(p: Project, basis: Project | null): boolean {
+  return !basis || (p !== basis && !gleich(p, basis));
 }
 
 /* ---------- Zwischenspeicher (IndexedDB) ---------- */

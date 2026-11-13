@@ -12,6 +12,11 @@ const PFADE = {
   pfeilRechts: 'M9 6l6 6-6 6',
   pfeilLinks: 'M15 6l-6 6 6 6',
   pfeilUnten: 'M6 9l6 6 6-6',
+  /** Umsortieren: eine Stelle nach oben bzw. unten */
+  nachOben: 'M12 19V5M6 11l6-6 6 6',
+  nachUnten: 'M12 5v14M6 13l6 6 6-6',
+  /** drei Punkte waagerecht: Zeilenknopf „Aktionen“ (öffnet ein Menü; nicht pfeilUnten, das ist der Aufklapp-Pfeil). Kreise statt `h.01` wie in `liste`: ein Symbol nur aus Punkten bliebe sonst bei 1em kaum sichtbar */
+  mehr: 'M5 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM12 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM19 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2z',
   ordner: 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z',
   ordnerOffen: 'M3 7a2 2 0 0 1 2-2h4l2 2h7a2 2 0 0 1 2 2v1H7.5a2 2 0 0 0-1.9 1.4L3.4 18M3 7v10a2 2 0 0 0 2 2h12.6a2 2 0 0 0 1.9-1.4l1.9-6A1.5 1.5 0 0 0 20 10',
   datei: 'M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5zM14 3v5h5',
@@ -67,6 +72,8 @@ const PFADE = {
   speichern: 'M5 3h11l3 3v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V3zM8 3v5h7V3M8 21v-7h8v7',
   einpassen: 'M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5',
   raster: 'M4 4h16v16H4zM4 12h16M12 4v16',
+  /** Fläche aus dem Plan erkennen: gestrichelter Rahmen mit Zeiger */
+  erkennen: 'M4 7V4h3M10 4h4M17 4h3v3M4 10v4M4 17v3h3M10 20h1M20 10v1M12 12l8 3-3.5 1.5L15 20l-3-8z',
 } as const;
 
 export type SymbolName = keyof typeof PFADE;

@@ -120,18 +120,18 @@ describe('QUADRIO: Mehrfachauswahl (Eigenschaften)', () => {
 });
 
 describe('QUADRIO: Flächenaufstellung am Bildschirm', () => {
-  it('ist ein Dialog: Fokus auf „Schließen“, Esc schließt und gibt den Fokus zurück', () => {
+  it('ist ein Dialog: Fokus auf „Drucken / PDF …“, Esc schließt und gibt den Fokus zurück', () => {
     useEditor.getState().loadProject(createProject('Haus'), null, 'Haus.oap');
     const host = render();
     act(() => [...host.querySelectorAll<HTMLButtonElement>('.pw-einstieg button')].find((x) => x.textContent === 'Schließen')?.click());
-    const oeffnen = [...host.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent === 'Flächenaufstellung …')!;
+    const oeffnen = [...host.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent?.trim() === 'Flächenaufstellung …')!;
     act(() => {
       oeffnen.focus();
       oeffnen.click();
     });
     const bericht = host.querySelector<HTMLElement>('.report')!;
     expect([bericht.getAttribute('role'), bericht.getAttribute('aria-modal'), bericht.getAttribute('aria-label')]).toEqual(['dialog', 'true', 'Flächenaufstellung']);
-    expect(document.activeElement?.textContent).toBe('Drucken / PDF'); // Erstfokus auf dem Hauptknopf (docs/design.md)
+    expect(document.activeElement?.textContent).toBe('Drucken / PDF …'); // Erstfokus auf dem Hauptknopf (docs/design.md)
     act(() => {
       document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     });

@@ -1955,10 +1955,11 @@ button.ph-lokal {
 }
 /* ---------- Meldungen im Inhalt (Dialoge, Seitenleisten) – eine Familie, Art über die zweite Klasse ---------- */
 
+/* neutral leicht im Akzent getönt: sonst sieht die Meldung in Seitenleisten wie ein Eingabefeld aus */
 .meldung {
   padding: 6px 8px;
-  border: 1px solid var(--border);
-  background: var(--panel);
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
+  background: color-mix(in srgb, var(--accent) 12%, var(--panel));
   color: var(--text);
   border-radius: var(--radius-s);
   font-size: var(--fs-s);
@@ -2004,13 +2005,16 @@ button.ph-lokal {
   border: none;
   border-radius: 0;
   background: transparent;
+  /* Höhe kommt aus min-height (unten), nicht aus dem Innenabstand */
+  padding-block: 2px;
 }
 /* außerhalb der Leisten 24px; in .toolbar gilt deren 28px (beide mit Spezifität null, die Leiste steht vorher) */
 :where(.segment) > :where(button) {
-  min-height: var(--ctl-h-s);
+  /* der Rahmen des Segments (2 × 1px) zählt mit: außen 24px bzw. in Leisten 28px wie die übrigen Knöpfe */
+  min-height: calc(var(--ctl-h-s) - 2px);
 }
 :where(.toolbar) :where(.segment) > :where(button) {
-  min-height: var(--ctl-h);
+  min-height: calc(var(--ctl-h) - 2px);
 }
 .segment > button + button {
   border-left: 1px solid var(--border);
@@ -2085,7 +2089,8 @@ button.ph-lokal {
   background: none;
 }
 .menue-punkt[aria-disabled='true'] .menue-text,
-.menue-punkt[aria-disabled='true'] .menue-symbol {
+.menue-punkt[aria-disabled='true'] .menue-symbol,
+.menue-punkt[aria-disabled='true'] .menue-tasten {
   opacity: 0.6;
 }
 .menue-punkt.gefahr {
@@ -2104,6 +2109,10 @@ button.ph-lokal {
 .menue-punkt.gefahr .menue-symbol {
   color: var(--danger);
 }
+/* Haken eines angehakten Umschalters ist die Zustandsanzeige: in Textfarbe, nicht blass wie ein Schmucksymbol */
+.menue-punkt[aria-checked='true']:not([aria-disabled='true']) .menue-symbol {
+  color: var(--text);
+}
 .menue-text {
   flex: 1;
   min-width: 0;
@@ -2114,6 +2123,10 @@ button.ph-lokal {
 .menue-hinweis {
   font-size: var(--fs-xs);
   color: var(--muted);
+}
+/* Tastenkürzel nie umbrechen (rechts steht es, weil .menue-text den Platz füllt) */
+.menue-tasten {
+  white-space: nowrap;
 }
 .menue-trenner {
   height: 1px;

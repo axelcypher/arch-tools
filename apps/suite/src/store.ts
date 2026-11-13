@@ -3,7 +3,8 @@ import { appInfo } from './apps';
 
 /**
  * Zustand der Rahmen-App: offene Tabs (Reihenfolge, aktiver), herausgelöste Fenster und was die Tabs melden
- * (Projektname, ungespeicherte Änderungen). Die offenen Tabs bleiben bis zum nächsten Start erhalten.
+ * bzw. Fenster melden (Projektname, ungespeicherte Änderungen). Die offenen Tabs bleiben bis zum nächsten Start erhalten;
+ * herausgelöste Apps kommen dann als Tab wieder (hinten angehängt).
  */
 
 const KEY = 'arch-tools:rahmen';
@@ -18,10 +19,13 @@ interface RahmenState {
   aktiv: string | null;
   /** herausgelöste Apps (eigene Fenster) */
   fenster: string[];
+  /** Meldungen der Tabs und Fenster je Kennung */
   status: Record<string, TabStatus>;
   /** App als Tab öffnen (oder zu ihrem Tab wechseln) */
   oeffnen: (id: string) => void;
   waehlen: (id: string) => void;
+  /** Startseite zeigen (die Tabs bleiben offen) */
+  startseite: () => void;
   schliessen: (id: string) => void;
   setStatus: (id: string, s: TabStatus) => void;
   /** Tab in ein eigenes Fenster verschoben */
@@ -56,6 +60,7 @@ export const useRahmen = create<RahmenState>()((set, get) => ({
   status: {},
   oeffnen: (id) => set((s) => ({ tabs: s.tabs.includes(id) ? s.tabs : [...s.tabs, id], aktiv: id })),
   waehlen: (id) => set({ aktiv: id }),
+  startseite: () => set({ aktiv: null }),
   schliessen: (id) =>
     set((s) => {
       const { [id]: _weg, ...status } = s.status;
@@ -71,16 +76,21 @@ export const useRahmen = create<RahmenState>()((set, get) => ({
     set((s) => ({ fenster: s.fenster.includes(id) ? s.fenster : [...s.fenster, id] }));
   },
   angedockt: (id) => {
-    set((s) => ({ fenster: s.fenster.filter((f) => f !== id) }));
+    get().fensterZu(id);
     get().oeffnen(id);
   },
-  fensterZu: (id) => set((s) => ({ fenster: s.fenster.filter((f) => f !== id) })),
+  // die Meldung des Fensters gilt nicht mehr (der neue Tab meldet sich selbst)
+  fensterZu: (id) =>
+    set((s) => {
+      const { [id]: _weg, ...status } = s.status;
+      return { fenster: s.fenster.filter((f) => f !== id), status: s.fenster.includes(id) ? status : s.status };
+    }),
 }));
 
 useRahmen.subscribe((s, vorher) => {
-  if (s.tabs === vorher.tabs && s.aktiv === vorher.aktiv) return;
+  if (s.tabs === vorher.tabs && s.aktiv === vorher.aktiv && s.fenster === vorher.fenster) return;
   try {
-    localStorage.setItem(KEY, JSON.stringify({ tabs: s.tabs, aktiv: s.aktiv }));
+    localStorage.setItem(KEY, JSON.stringify({ tabs: [...s.tabs, ...s.fenster.filter((f) => !s.tabs.includes(f))], aktiv: s.aktiv }));
   } catch {
     // ohne Speicher beginnt der nächste Start leer
   }

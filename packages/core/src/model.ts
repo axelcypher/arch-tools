@@ -761,6 +761,11 @@ export interface MassNutzung {
    * unberücksichtigt (nur bei Festsetzung im Bebauungsplan bzw. als Ausnahme zugelassen)
    */
   garagenGfFrei?: boolean;
+  /**
+   * § 21a Abs. 2 BauNVO 1968/1977/1990: Flächenanteile an außerhalb des Baugrundstücks festgesetzten
+   * Gemeinschaftsanlagen (§ 9 Abs. 1 Nr. 22 BauGB) [m²], der Grundstücksfläche hinzuzurechnen (bei Festsetzung)
+   */
+  gemeinschaftsanlagen?: number;
   /** Variante, für die der Nachweis gilt (Lageplan-Flächen mit `variante`); ohne Angabe „A“ */
   variante?: string;
 }

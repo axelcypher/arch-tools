@@ -16,25 +16,27 @@ Kommunikation, Oberfläche, Commit-Texte und Doku sind auf **Deutsch**.
 - **Das Repo `axelcypher/arch-tools` ist öffentlich.** Echte Formulare (`.frmsjf`) und Kundendaten nie committen.
   `.ref/` ist gitignored und in der Cloud nicht vorhanden. Tests, die `.ref` brauchen, überspringen sich dort; das
   ist so gewollt. Für Formulare deshalb nur synthetische Testdaten verwenden (vgl. `apps/formulare/src/forma/felder.test.ts`).
-- **Version bumpen nach jeder abgeschlossenen Änderung** und auf `main` bringen. Neue Funktionen erhöhen die
-  Minor-Version (0.x.0), reine Fehlerkorrekturen die Patch-Version. Je App gibt es fünf Stellen, die gleich sein müssen:
-  `apps/<app>/package.json`, `apps/<app>/src-tauri/tauri.conf.json`, `apps/<app>/src-tauri/Cargo.toml`, den Eintrag
-  im `apps/<app>/src-tauri/Cargo.lock` und `package-lock.json` (Letzteren mit `npm install --package-lock-only`
-  nachziehen). Crate-Namen im Cargo.lock: `arch-flaechen-tool` (QUADRIO, Name bleibt absichtlich so),
-  `grz-nachweis`, `kostenermittlung`, `projektordner`, `entzerrung`, `formulare`, `ava` und `arch-tools` (Rahmen-App
-  Arkly, siehe `docs/suite.md`).
-  - Unmittelbar vor dem Merge `git fetch origin main && node scripts/versionen-pruefen.mjs main HEAD` (gegen das aktuelle
-    main; volle Historie nötig). Die CI prüft es im PR ebenfalls (Schritt „Versionen prüfen“: Tag noch frei, größer als
-    auf main, und jede Änderung am Code einer App bzw. an `packages/core` hat eine neue Version), aber nur zum Stand
-    von main beim letzten Push. Ist eine Nummer vergeben: main
-    mergen, neu hochsetzen, CI abwarten, dann mergen. Eine neue App in `release.yml` und im Skript eintragen.
-  - Änderungen an `packages/core` betreffen **alle** Apps, die den Code nutzen: QUADRIO, TERRIO, NUMIO, ATLAS,
-    RECTIO, PERMIO und FABRIO. Alle betroffenen Apps bumpen.
-  - Die Rahmen-App Arkly (`apps/suite`) **nicht** mit hochsetzen: Hat eine andere App eine neue Version, setzt der
-    Release-Lauf Arkly automatisch auf die nächste freie Nummer (`scripts/suite-version.mjs`) und committet sie nach
-    main – deshalb nach dem Merge `main` frisch holen. Nur Änderungen an `apps/suite` selbst verlangen eine Arkly-Version
-    im PR. Von Hand setzen (alle fünf Stellen): `node scripts/suite-version.mjs setzen x.y.z`.
-  - Ein Push auf `main` mit geänderter Version startet sofort den Release-Workflow (Installer und GitHub-Release).
+- **Versionsnotiz statt Version:** Versionen setzt nur der Release-Lauf (nach dem Muster von Changesets). Ein PR, der
+  Code einer App (`apps/<app>/…`) oder `packages/core` ändert, legt eine Datei `.versionen/<zweig>.json` an: je
+  betroffener App die Stufe – `minor` für neue Funktionen, `patch` für Fehlerkorrekturen, `major` – und ein Satz für
+  die Release-Notiz (Format und Beispiel in `.versionen/LIESMICH.md`). Ein PR ändert **keine** Version.
+  - Änderungen an `packages/core` betreffen die Apps, die die geänderte Datei einbinden (Importe, auch über andere
+    Kerndateien, bzw. `include!` der Rust-Befehle; `scripts/kern-nutzer.mjs`) – im Zweifel alle (Konfiguration,
+    Typdeklarationen, gelöschte oder nicht sicher verfolgbare Dateien). Nur von Tests genutzte Kerndateien brauchen
+    keine Notiz. Welche Apps es sind, nennt die CI-Meldung; lokal `node scripts/versionen-pruefen.mjs main HEAD` mit
+    sauberem Arbeitsbaum nach `git merge origin/main`. Arkly (`apps/suite`) braucht eine Notiz nur bei Änderungen an
+    `apps/suite` selbst oder an einer Kerndatei, die allein Arkly einbindet; sonst setzt der Release-Lauf ihre Version
+    (Minor, wenn eine App Minor oder Major erhöht, sonst Patch).
+  - Die CI prüft im PR (Schritt „Versionen prüfen“, `scripts/versionen-pruefen.mjs`): jede betroffene App steht in
+    einer gültigen Notiz, und keine Version ist geändert. Von Hand vor dem Merge:
+    `git fetch origin main && node scripts/versionen-pruefen.mjs main HEAD` (volle Historie nötig).
+  - Nach dem Merge sammelt der Release-Lauf alle Notizen, hebt je App die größte Stufe an allen fünf Stellen
+    (`apps/<app>/package.json`, `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml`, `src-tauri/Cargo.lock`,
+    `package-lock.json`), löscht die Notizen, committet als github-actions nach `main` und baut. Danach `main` frisch
+    holen. Von Hand setzen, falls nötig: `node scripts/versionen-setzen.mjs setzen <app> x.y.z`.
+  - Crate-Namen im Cargo.lock: `arch-flaechen-tool` (QUADRIO), `grz-nachweis`, `kostenermittlung`, `projektordner`,
+    `entzerrung`, `formulare`, `ava` und `arch-tools` (Arkly). Eine neue App in `release.yml` und in
+    `scripts/versionen-pruefen.mjs` eintragen.
 - **Rust nur über die CI:** Änderungen an `apps/*/src-tauri` (Rust, capabilities, tauri.conf.json außer der
   Versionsnummer) erst als Branch mit PR einreichen, den CI-Job „Tauri-Hülle prüfen“ abwarten und dann per
   Fast-Forward nach `main` bringen. Die Punkte unten sollten fast alle ohne Rust auskommen. Wo ein Punkt Rust
