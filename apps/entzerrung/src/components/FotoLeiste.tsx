@@ -4,6 +4,7 @@ import { entzerrung } from '../geo/ebene';
 import type { Foto } from '../model';
 import { fotosHinzufuegen } from '../projekt';
 import { bestaetigen } from '@core/ui/Rueckfrage';
+import { Symbol } from '@core/ui/Symbol';
 import { ebeneHinzufuegen, mitEbene, mitFoto, useEntz } from '../store';
 
 /** Linke Leiste: Fotos des Projekts und Ebenen des gewählten Fotos */
@@ -81,7 +82,7 @@ function FotoEintrag({ foto, aktiv }: { foto: Foto; aktiv: boolean }) {
           void loeschen();
         }}
       >
-        ×
+        <Symbol name="muell" />
       </button>
     </li>
   );
@@ -174,7 +175,7 @@ function EbenenListe({ foto }: { foto: Foto }) {
                   setUmbenennen(e.id);
                 }}
               >
-                ✎
+                <Symbol name="stift" />
               </button>
             )}
             {foto.ebenen.length > 1 && (
@@ -187,7 +188,7 @@ function EbenenListe({ foto }: { foto: Foto }) {
                   void loeschen(e.id, e.name);
                 }}
               >
-                ×
+                <Symbol name="muell" />
               </button>
             )}
           </li>

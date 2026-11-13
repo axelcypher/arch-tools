@@ -35,5 +35,8 @@ export default defineConfig({
     name: 'suite',
     environment: 'node',
     include: ['src/**/*.test.ts'],
+    // Tabs sind iframes: in Tests nicht laden (happy-dom schreibt dazu je Tab eine Meldung an seine eigene Konsole –
+    // die erscheint trotzdem und bedeutet nichts)
+    environmentOptions: { happyDOM: { settings: { disableIframePageLoading: true } } },
   },
 });
