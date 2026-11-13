@@ -139,7 +139,8 @@ export function mailVorschlag(k: MsgKopf, o: { code: string; eigene: string[]; b
     richtung = o.bisher?.richtung ?? 'von';
     const p = richtung === 'an' ? (k.empfaenger.find((e) => e.art === 'an') ?? k.empfaenger[0]) : null;
     name = richtung === 'an' && p ? nachname(p.name, p.mail) : nachname(k.vonName, k.vonMail);
-    herkunft = 'Richtung aus dem bisherigen Namen – eigene Domain in den Einstellungen festlegen, dann erkennt die App sie selbst';
+    // der Hinweis auf „Eigene Domains“ steht einmal über der Liste (MailView), nicht in jeder Zeile
+    herkunft = 'Richtung aus dem bisherigen Namen';
   } else if (!vonEigen) {
     richtung = 'von';
     name = nachname(k.vonName, k.vonMail);

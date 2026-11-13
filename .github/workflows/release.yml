@@ -13,6 +13,10 @@ name: Build & Release
 #   FABRIO    apps/ava               Tag ava-v<version>         (Ausschreibung, Vergabe, Abrechnung, Bauleitung)
 #   Arkly     apps/suite             Tag suite-v<version>       (Rahmen-App: alle Apps in einem Fenster)
 #
+# Arkly enthält alle Apps. Ihre Version hebt der Lauf selbst: Hat eine andere App eine neue Version und ist die
+# Arkly-Version schon veröffentlicht, setzt „Arkly-Version setzen“ die nächste freie Nummer (scripts/suite-version.mjs),
+# committet sie mit GITHUB_TOKEN nach main (das startet keine weiteren Läufe) und baut Arkly aus diesem Commit mit.
+#
 # Automatische Updates: Die Installer werden signiert (Secrets TAURI_SIGNING_PRIVATE_KEY und
 # TAURI_SIGNING_PRIVATE_KEY_PASSWORD). Das Update-Manifest jeder App liegt als <app>.json im Release
 # „updater“ – diese feste Adresse fragen die installierten Apps ab (tauri.conf.json → plugins.updater).
@@ -45,8 +49,41 @@ jobs:
     outputs:
       matrix: ${{ steps.v.outputs.matrix }}
       any: ${{ steps.v.outputs.any }}
+      # der gebaute Stand: mit automatisch gesetzter Arkly-Version der neue Commit, sonst der auslösende
+      sha: ${{ steps.v.outputs.sha }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          # volle Historie, damit der Versions-Commit auf ein inzwischen weitergeführtes main aufsetzen kann
+          fetch-depth: 0
+      - name: Arkly-Version setzen
+        if: github.event_name == 'push'
+        run: |
+          # ein Fehler hier darf die Releases der anderen Apps nie blockieren: dann nur Warnung, Arkly diesmal nicht
+          if ! out=$(node scripts/suite-version.mjs automatisch); then
+            echo "::warning::Arkly-Version nicht automatisch gesetzt (Fehler im Skript, siehe oben) – Arkly wird diesmal nicht gebaut."
+            git reset -q --hard "$GITHUB_SHA"
+            exit 0
+          fi
+          echo "$out"
+          neu=$(printf '%s\n' "$out" | sed -n 's/^neu=//p')
+          [ -n "$neu" ] || exit 0
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -q -a -m "Arkly $neu: neue Fassungen der Apps (automatisch im Release-Lauf)"
+          for i in 1 2 3; do
+            if git push -q origin HEAD:main; then
+              echo "Arkly $neu nach main geschrieben ($(git rev-parse --short HEAD))."
+              exit 0
+            fi
+            # main inzwischen weiter: darauf aufsetzen und erneut versuchen
+            if ! git pull -q --rebase origin main; then
+              git rebase --abort 2>/dev/null || true
+              break
+            fi
+          done
+          echo "::warning::Arkly $neu ließ sich nicht nach main schreiben (Schutzregel, Netz oder Konflikt – etwa weil ein PR Arkly inzwischen selbst gehoben hat; dann baut dessen Lauf Arkly). Arkly wird diesmal nicht gebaut. Bitte die Arkly-Version auf main prüfen und ggf. über der aktuellen setzen: node scripts/suite-version.mjs setzen x.y.z"
+          git reset -q --hard "$GITHUB_SHA"
       - id: v
         env:
           EVENT: ${{ github.event_name }}
@@ -89,6 +126,7 @@ jobs:
             apps=$(echo "$apps" | jq -c --arg d "$d" --arg v "$v" --arg tag "$tag" --arg name "$name" --arg web "$web" '. + [{app: $d, version: $v, tag: $tag, name: $name, web: $web}]')
           done
           echo "matrix={\"include\":$apps}" >> "$GITHUB_OUTPUT"
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
           if [ "$apps" = "[]" ]; then echo "any=false" >> "$GITHUB_OUTPUT"; else echo "any=true" >> "$GITHUB_OUTPUT"; fi
           echo "Releases: $apps"
       - name: Release für die Update-Manifeste anlegen
@@ -110,6 +148,8 @@ jobs:
       matrix: ${{ fromJSON(needs.version.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.version.outputs.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -129,6 +169,8 @@ jobs:
           projectPath: apps/${{ matrix.app }}
           tauriScript: npx tauri
           tagName: ${{ matrix.tag }}
+          # Tag am gebauten Stand (mit automatisch gesetzter Arkly-Version), nicht am auslösenden Commit
+          releaseCommitish: ${{ needs.version.outputs.sha }}
           releaseName: ${{ matrix.name }} v${{ matrix.version }}
           releaseBody: Windows-Installer (.exe / .msi) und Web-Version (${{ matrix.web }}).
           releaseDraft: false

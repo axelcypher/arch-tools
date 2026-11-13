@@ -90,7 +90,7 @@ describe('Katasterpläne exportieren', () => {
     expect(auftrag.koordinaten).toEqual({ ost: 405577.31, nord: 5757743.76, epsg: 25832 });
     const d = jjmmtt();
     // ohne aktiven Antrag in der Projektdatei entfällt {Art}
-    const namen = ['Katasterauszug A4.pdf', 'Katasterauszug A3.pdf', 'Schwarzplan.dxf', 'Katasterplan.dxf'].map((n) => `Kataster/MUS ${d} ${n}`);
+    const namen = ['Katasterplan A4.pdf', 'Katasterplan A3.pdf', 'Schwarzplan.dxf', 'Katasterplan.dxf'].map((n) => `Kataster/MUS ${d} ${n}`);
     expect(auftrag.plaene.map((p) => p.ausgabe)).toEqual(namen.map((n) => `${ORDNER}/${n}`));
     for (const n of namen) expect(fs.eintraege.has(`${ORDNER}/${n}`)).toBe(true);
     expect(host.querySelectorAll('.ka-ergebnis.ok')).toHaveLength(4);
@@ -162,7 +162,7 @@ describe('Ablage im Ordner des aktiven Antrags', () => {
     const host = await zeige(createElement(KatasterDialog, { basis: ORDNER, name: 'BS9', onClose: () => undefined }));
     expect(host.textContent).toContain('Ablage: TÖB/BAUA 2');
     await klick(knopf(host, '4 Pläne exportieren'));
-    expect(fs.eintraege.has(`${ORDNER}/TÖB/BAUA 2/MUS BAUA ${jjmmtt()} Katasterauszug A4.pdf`)).toBe(true);
+    expect(fs.eintraege.has(`${ORDNER}/TÖB/BAUA 2/MUS BAUA ${jjmmtt()} Katasterplan A4.pdf`)).toBe(true);
 
     act(() => root!.unmount());
     root = null;
@@ -171,6 +171,22 @@ describe('Ablage im Ordner des aktiven Antrags', () => {
     const h2 = await zeige(createElement(KatasterDialog, { basis: ORDNER, name: 'BS9', onClose: () => undefined }));
     expect(h2.textContent).toContain('Kein aktiver Antrag in der Projektdatei');
     expect(knopf(h2, 'Pläne exportieren').disabled).toBe(true);
+  });
+
+  it('säubert den Antragsnamen aus der Projektdatei: kein „/“ oder „..“ führt aus dem Antragsordner', async () => {
+    const p = readProjectFile(fs.eintraege.get(OAP)!);
+    await useKataster.getState().aendern({ ziel: 'antrag' });
+    const ziel = async (name: string) => {
+      p.meta.antrag = { name };
+      fs.setze(OAP, writeArchive(p));
+      await useKataster.getState().projektWaehlen(ORDNER, 'BS9');
+      return useKataster.getState().zielOrdner();
+    };
+    expect(await ziel('BAUA 2/../../Fremd')).toBe('TÖB/BAUA 2 .. .. Fremd');
+    expect(await ziel('..')).toBeNull();
+    expect(await ziel('BAUA: 3?')).not.toMatch(/[:?]/);
+    // Gegenprobe: ein sauberer Name bleibt, wie er ist
+    expect(await ziel('BAUA 2')).toBe('TÖB/BAUA 2');
   });
 
   it('übernimmt die Einstellungen aus PERMIO (Formulare) beim ersten Laden', async () => {
@@ -198,11 +214,89 @@ describe('Einstellungen der Katasterpläne', () => {
     await act(() => useKataster.getState().planAendern('schwarzplan', { thema: 'Luftbild' }));
     await warte();
     expect(host.textContent).toContain('Kartenthema „Luftbild“ gibt es in der Vorlage nicht.');
+    // Entfernen erst nach Rückfrage (die Pläne gelten für das ganze Büro)
     await klick(host.querySelector<HTMLButtonElement>('button[aria-label="Katasterplan entfernen"]')!);
+    expect(document.body.textContent).toContain('„Katasterplan“ entfernen?');
+    await klick(knopf(document.body.querySelector('.rueckfrage, [role="alertdialog"], .modal')!, 'Abbrechen'));
+    expect(useKataster.getState().einstellungen.plaene).toHaveLength(4);
+    await klick(host.querySelector<HTMLButtonElement>('button[aria-label="Katasterplan entfernen"]')!);
+    await klick(knopf(document.body, 'Entfernen'));
     await klick(knopf(host, 'DXF'));
-    expect(useKataster.getState().einstellungen.plaene.map((p) => p.name)).toEqual(['Katasterauszug A4', 'Katasterauszug A3', 'Schwarzplan', 'Neue DXF']);
+    expect(useKataster.getState().einstellungen.plaene.map((p) => p.name)).toEqual(['Katasterplan A4', 'Katasterplan A3', 'Schwarzplan', 'Neue DXF']);
     // gespeichert im gemeinsamen Konfigurationsbereich
     const roh = JSON.parse(Object.entries(localStorage).find(([k]) => k.includes('kataster') && String(localStorage.getItem(k)).includes('plaene'))![1] as string);
     expect(roh.plaene).toHaveLength(4);
+
+    // „Vorgaben“ ersetzt alle Pläne – erst nach Rückfrage
+    await klick(knopf(host, 'Vorgaben'));
+    expect(document.body.textContent).toContain('Standardpläne wiederherstellen?');
+    await klick(knopf(document.body.querySelector('.modal')!, 'Abbrechen'));
+    expect(useKataster.getState().einstellungen.plaene.map((p) => p.name)).toContain('Neue DXF');
+    await klick(knopf(host, 'Vorgaben'));
+    await klick(knopf(document.body, 'Wiederherstellen'));
+    expect(useKataster.getState().einstellungen.plaene.map((p) => p.name)).toEqual(['Katasterplan A4', 'Katasterplan A3', 'Schwarzplan', 'Katasterplan']);
+  });
+
+  it('Plankarte: Raster, DXF ohne Beschriftungsfeld, Vorwahl mit Namen, Platzhalter beim festen Ordner', async () => {
+    const host = await zeige(createElement(KatasterEinstellungen));
+    const karten = [...host.querySelectorAll('.ka-plan')];
+    expect(karten.every((k) => k.querySelector('.es-raster'))).toBe(true);
+    const beschriftung = (k: Element) => k.querySelector('input[aria-label="Beschriftung"]');
+    expect(beschriftung(karten[0])).toBeTruthy();
+    expect(beschriftung(karten[2])).toBeNull();
+    expect(host.querySelector('input[type="checkbox"][aria-label="Schwarzplan im Export vorwählen"]')).toBeTruthy();
+    // die Platzhalter des festen Ordners gehören zur ersten Option
+    expect(host.querySelector('.ex-ziel')!.querySelector('.ka-ziel-platzhalter')).toBeTruthy();
+    expect(host.textContent).toContain('kein amtlicher Auszug aus dem Liegenschaftskataster');
+  });
+});
+
+describe('Export: Sperre und Dateinamen', () => {
+  it('ein Doppelklick startet nur einen Lauf', async () => {
+    await useKataster.getState().projektWaehlen(ORDNER, 'BS9');
+    const ids = useKataster.getState().einstellungen.plaene.map((p) => p.id);
+    const [a, b] = await Promise.all([useKataster.getState().exportieren(ids), useKataster.getState().exportieren(ids)]);
+    expect(qgis.aufrufe).toHaveLength(1);
+    expect(a).toHaveLength(4);
+    expect(b).toEqual([]);
+    expect(useKataster.getState().laeuft).toBe(false);
+  });
+
+  it('gleiche Dateinamen im Lauf werden vorher gemeldet', async () => {
+    await useKataster.getState().aendern({ dateiname: '{PROJEKT_KUERZEL} {DATUM}' });
+    await useKataster.getState().projektWaehlen(ORDNER, 'BS9');
+    expect(await useKataster.getState().exportieren(['a4', 'a3', 'schwarzplan'])).toEqual([]);
+    expect(qgis.aufrufe).toHaveLength(0);
+    expect(useKataster.getState().ausgang?.meldung).toContain(`Mehrere Pläne bekämen denselben Dateinamen: „MUS ${jjmmtt()}.pdf“ (Katasterplan A4, Katasterplan A3)`);
+    // Gegenprobe: mit nur einem PDF geht es
+    expect(await useKataster.getState().exportieren(['a4', 'schwarzplan'])).toHaveLength(2);
+  });
+
+  it('„Mit neuem Namen“ vergibt keinen Namen, den ein anderer Plan desselben Laufs bekommt', async () => {
+    await useKataster.getState().aendern({ dateiname: '{Name}' });
+    await useKataster.getState().planAendern('a3', { name: 'Katasterplan A4 (2)' });
+    fs.setze(`${ORDNER}/Kataster/Katasterplan A4.pdf`, new Uint8Array([1]));
+    const host = await zeige(createElement(KatasterDialog, { basis: ORDNER, name: 'BS9', onClose: () => undefined }));
+    await klick(knopf(host, '4 Pläne exportieren'));
+    await klick(knopf(document.body, 'Mit neuem Namen ablegen'));
+    const ausgaben = (qgis.aufrufe[0].auftrag as { plaene: { ausgabe: string }[] }).plaene.map((p) => p.ausgabe.split('/').pop());
+    expect(ausgaben).toEqual(['Katasterplan A4 (3).pdf', 'Katasterplan A4 (2).pdf', 'Schwarzplan.dxf', 'Katasterplan.dxf']);
+  });
+
+  it('Beschriftung mit Datum ersetzt im Auftrag; Dialog: erster Fokus auf dem ersten Plan, Link zu den Einstellungen', async () => {
+    let einstellungen = 0;
+    useKataster.getState().programmSetzen('');
+    const host = await zeige(createElement(KatasterDialog, { basis: ORDNER, name: 'BS9', onClose: () => undefined, onEinstellungen: () => einstellungen++ }));
+    expect(document.activeElement).toBe(host.querySelector('.ka-wahl input[type="checkbox"]'));
+    const meldung = [...host.querySelectorAll('.ka-fehlt')].find((p) => p.textContent?.includes('qgis_process'))!;
+    await klick(knopf(meldung, 'Einstellungen öffnen'));
+    expect(einstellungen).toBe(1);
+
+    act(() => useKataster.getState().programmSetzen('C:/qgis_process.bat'));
+    await act(async () => void (await useKataster.getState().exportieren(['a4'])));
+    const plan = (qgis.aufrufe[0].auftrag as { plaene: { beschriftung: string }[] }).plaene[0];
+    expect(plan.beschriftung).toBe(
+      `Kartengrundlage: Liegenschaftskarte (ALKIS), Geobasis NRW, Stand ${new Date().toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })} – kein amtlicher Auszug`,
+    );
   });
 });
