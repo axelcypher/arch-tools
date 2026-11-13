@@ -50,6 +50,8 @@ export function LvEditor() {
   const tabelle = useRef<HTMLDivElement>(null);
   const aendern = useAva.getState().lvAendern;
   const gewaehlt = auswahl ? finde(lv.elemente, auswahl) : null;
+  /** Gegenstand der Symbolknöpfe (Umsortieren, Ein-/Ausrücken); ohne Auswahl sind sie gesperrt */
+  const gegenstand = gewaehlt?.el.art === 'abschnitt' ? 'Abschnitt' : gewaehlt?.el.art === 'hinweis' ? (gewaehlt.el.vorbemerkung ? 'Vorbemerkung' : 'Hinweis') : 'Position';
   const sichtbar = useMemo(() => {
     const q = suche.trim().toLowerCase();
     if (!q) return zeilen;
@@ -200,7 +202,7 @@ export function LvEditor() {
             punkte={() => [
               { text: 'Hinweis', titel: 'Hinweistext im Abschnitt', aktion: () => neu('hinweis') },
               { text: 'Vorbemerkung', titel: 'Vorbemerkung vor der Gliederung', aktion: () => neu('vorbemerkung') },
-              { text: 'Aus Vorlage …', titel: 'Position aus den Vorlagetexten des Büros einfügen', aktion: () => setBibliothek('einfuegen') },
+              { text: 'Aus Vorlage …', titel: 'Position aus den Vorlagetexten des Büros hinzufügen', aktion: () => setBibliothek('einfuegen') },
             ]}
           >
             <Symbol name="plus" /> Hinzufügen
@@ -210,21 +212,21 @@ export function LvEditor() {
           <button onClick={duplizieren} disabled={!gewaehlt} title="Duplizieren (Strg+D)">
             Duplizieren
           </button>
-          <button className="icon" onClick={() => verschieben(-1)} disabled={!gewaehlt || gewaehlt.index === 0} title="Nach oben" aria-label="Nach oben">
+          <button className="icon" onClick={() => verschieben(-1)} disabled={!gewaehlt || gewaehlt.index === 0} title={`${gegenstand} nach oben`} aria-label={`${gegenstand} nach oben`}>
             <Symbol name="nachOben" />
           </button>
-          <button className="icon" onClick={() => verschieben(1)} disabled={!gewaehlt || gewaehlt.index >= gewaehlt.eltern.length - 1} title="Nach unten" aria-label="Nach unten">
+          <button className="icon" onClick={() => verschieben(1)} disabled={!gewaehlt || gewaehlt.index >= gewaehlt.eltern.length - 1} title={`${gegenstand} nach unten`} aria-label={`${gegenstand} nach unten`}>
             <Symbol name="nachUnten" />
           </button>
-          <button className="icon" onClick={() => einruecken(false)} disabled={!gewaehlt?.pfad.length} title="Element ausrücken: aus dem Abschnitt heraus (eine Ebene höher)" aria-label="Element ausrücken">
+          <button className="icon" onClick={() => einruecken(false)} disabled={!gewaehlt?.pfad.length} title={`${gegenstand} ausrücken: aus dem Abschnitt heraus (eine Ebene höher)`} aria-label={`${gegenstand} ausrücken`}>
             <Symbol name="ausruecken" />
           </button>
           <button
             className="icon"
             onClick={() => einruecken(true)}
             disabled={!gewaehlt || !gewaehlt.eltern.slice(0, gewaehlt.index).some((e) => e.art === 'abschnitt')}
-            title="Element einrücken: in den Abschnitt davor (eine Ebene tiefer)"
-            aria-label="Element einrücken"
+            title={`${gegenstand} einrücken: in den Abschnitt davor (eine Ebene tiefer)`}
+            aria-label={`${gegenstand} einrücken`}
           >
             <Symbol name="einruecken" />
           </button>
@@ -339,7 +341,7 @@ export function LvEditor() {
               {!zeilen.length && (
                 <tr>
                   <td colSpan={8} className="muted ava-leer-zelle">
-                    Das LV ist leer – mit „Abschnitt“ und „Position“ beginnen oder Positionen aus den Vorlagetexten einfügen.
+                    Das LV ist leer – mit „Abschnitt“ und „Position“ beginnen oder über „Hinzufügen“ › „Aus Vorlage …“ Positionen übernehmen.
                   </td>
                 </tr>
               )}

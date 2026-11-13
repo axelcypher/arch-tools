@@ -283,7 +283,8 @@ function ProtokollEditor({ p }: { p: Protokoll }) {
         </datalist>
       </div>
       <div className="button-row">
-        <button title="Besprechungspunkt hinzufügen"
+        <button
+          title="Besprechungspunkt hinzufügen"
           onClick={() => {
             const id = neueId('t');
             setNeuerTop(id);

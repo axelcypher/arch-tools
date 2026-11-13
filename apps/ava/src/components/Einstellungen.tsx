@@ -312,7 +312,8 @@ function MailVorlagen({ vorlagen, onChange }: { vorlagen: MailVorlage[]; onChang
             </option>
           ))}
         </select>
-        <button title="Mailvorlage hinzufügen"
+        <button
+          title="Mailvorlage hinzufügen"
           onClick={() => {
             const n = { id: neueId('m'), name: 'Neue Vorlage', an: '', cc: '', betreff: '{PROJEKT_KUERZEL} {PROJEKT_VORHABEN}', text: '' };
             onChange([...vorlagen, n]);

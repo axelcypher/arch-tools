@@ -208,7 +208,7 @@ export function AuftragAnsicht({ gewerk }: { gewerk: string }) {
           <div className="button-row">
             <button
               disabled={nurAslv}
-              title={nurAslv ? aslvHinweis(ASLV_NICHT_GESPEICHERT.nachtraege) : 'Neuen Nachtrag anlegen'}
+              title={nurAslv ? aslvHinweis(ASLV_NICHT_GESPEICHERT.nachtraege) : 'Nachtrag hinzufügen'}
               onClick={() => {
                 const nr = Math.max(0, ...lv.nachtraege.map((n) => n.nr), ...[...(s?.nachtraege.keys() ?? [])]) + 1;
                 aendern((l) => ({ ...l, nachtraege: [...l.nachtraege, { nr, titel: `Nachtrag ${nr}`, datum: heuteIso(), status: 'angeboten' }] }));

@@ -92,18 +92,21 @@ describe('Vor dem Schließen: laufendes Schreiben abwarten (Arkly vorDemSchliess
     let fertig!: () => void;
     const anlegen = vi.fn(() => new Promise<boolean>((r) => (fertig = () => r(true))));
     const vorher = useAva.getState();
-    useAva.setState({ fs: { anlegen } as never, projekt: { ordner: '/p' } as never });
-    const abgelegt = berichtAblegen('Bautagebuch 1', new Uint8Array([1]), 'Bautagebuch');
-    let erledigt = false;
-    const warten = ausstehendesSchreibenAbwarten().then(() => (erledigt = true));
-    await takt();
-    expect(erledigt).toBe(false);
-    fertig();
-    await warten;
-    expect(erledigt).toBe(true);
-    await expect(abgelegt).resolves.toBe('Bauleitung/Bautagebuch/Bautagebuch 1.pdf');
-    expect(anlegen).toHaveBeenCalledTimes(1);
-    useAva.setState(vorher, true);
+    try {
+      useAva.setState({ fs: { anlegen } as never, projekt: { ordner: '/p' } as never });
+      const abgelegt = berichtAblegen('Bautagebuch 1', new Uint8Array([1]), 'Bautagebuch');
+      let erledigt = false;
+      const warten = ausstehendesSchreibenAbwarten().then(() => (erledigt = true));
+      await takt();
+      expect(erledigt).toBe(false);
+      fertig();
+      await warten;
+      expect(erledigt).toBe(true);
+      await expect(abgelegt).resolves.toBe('Bauleitung/Bautagebuch/Bautagebuch 1.pdf');
+      expect(anlegen).toHaveBeenCalledTimes(1);
+    } finally {
+      useAva.setState(vorher, true);
+    }
   });
 
   it('die App meldet sich an: Arkly wartet beim Schließen auf laufendes Schreiben', async () => {

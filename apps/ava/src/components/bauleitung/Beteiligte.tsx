@@ -40,7 +40,8 @@ export function Beteiligte() {
         <h1>Beteiligte</h1>
       </div>
       <div className="toolbar">
-        <button title="Beteiligten hinzufügen"
+        <button
+          title="Beteiligten hinzufügen"
           className="primary"
           onClick={() => {
             const id = neueId('b');
@@ -48,7 +49,7 @@ export function Beteiligte() {
             void speichern((a) => ({ ...a, beteiligte: [...a.beteiligte, { id, rolle: '' }] }));
           }}
         >
-          <Symbol name="plus" /> Beteiligten hinzufügen
+          <Symbol name="plus" /> Beteiligter
         </button>
         <button onClick={() => void uebernehmen()} title="Bauherr und Beteiligte aus den Stammdaten, Auftragnehmer aus der Kostenkontrolle">
           Aus Stammdaten und Gewerken übernehmen
