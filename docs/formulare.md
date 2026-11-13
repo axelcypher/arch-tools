@@ -36,7 +36,12 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
   schließen (nicht während einer laufenden Aktion), der Fokus springt beim Öffnen hinein, bleibt mit Tab im Dialog
   und kehrt danach an die Stelle davor zurück. Das gilt auch für die Schnellwahl (<kbd>Strg</kbd>+<kbd>K</kbd>; der
   Fokus bleibt im Suchfeld, ↑/↓ markieren einen Treffer, der im Bild bleibt) und die Vorschau der Antragsunterlagen
-  (Startfokus auf „Schließen“).
+  (Startfokus auf „Schließen“). Der Titel steht als Kopf des Dialogs (`kopf`) und benennt ihn zugleich für
+  Screenreader; Ausnahmen sind die Einstellungen und die Vorschau der Antragsunterlagen, die als Vollfläche eine
+  eigene Kopfleiste haben.
+- **Befehle** enden auf „ …“, wenn sie einen Dialog, eine Rückfrage oder die Dateiauswahl öffnen („Formular
+  öffnen …“, „Ordner hinzufügen …“), nicht aber, wenn sie nur zu einer Ansicht führen („Antragsdaten“, „Alle
+  Antragsmerkmale“, „Zum Adressbuch“). Hinzufügen-Knöpfe tragen das Symbol Plus.
 - **Begriffe:** Die Ansicht der Projektkarte heißt in der Oberfläche durchgehend **„Projektdaten“** (Navigation, Titel,
   „Projektdaten speichern“, Suche, Dialoge); „Projektkarte“ erscheint nur noch erklärend in Tooltips. **„ungeklärt“**
   heißt: hängt an einem noch nicht festgelegten Antragsmerkmal; **„offen“** steht nur für fehlende Pflichtangaben.
@@ -213,7 +218,7 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
   bietet je fehlendem Merkmal Segmentknöpfe mit Kurzerklärung und Fundstelle (z. B. „Gebäudeklasse (§ 2 Abs. 3 BauO
   NRW 2018)“, die Erklärung je Wert beim Zeigen; „§“ öffnet den Gesetzestext). Dieselbe Auswahl öffnet das
   Info-Symbol an einem offenen Feld („Gebäudeart festlegen“ im Gesetzes-Fenster). Die Wahl wirkt sofort. Mit Projekt
-  steht sie im aktiven Antrag der Projektdatei (gilt für alle Formulare; „Alle Antragsmerkmale …“ führt zum
+  steht sie im aktiven Antrag der Projektdatei (gilt für alle Formulare; „Alle Antragsmerkmale“ führt zum
   Antragsumfang), ohne Projekt (Web-Version) gilt sie für die Datei und liegt im lokalen Speicher
   (`formulare:merkmale-datei`, `merkmalWerte.ts`). Bedingungen aus früheren Versionen (eine Liste, alle
   Teile müssen zutreffen) werden als Und-Gruppe übernommen.
@@ -296,12 +301,12 @@ Anschrift, wie sie in Formularen steht.
   aus den Bürostammdaten – in einem Schritt, der sich rückgängig machen lässt. „Leeren“ entfernt alle Angaben.
 - **Adressbuch** (Einstellungen): alle Adressen aus den Projektkarten aller Projekte – Bauherren,
   Entwurfsverfasser, Behörden, Fachplaner –, gleiche Adressen einmal mit allen Verwendungen („BS5 ·
-  Bauaufsichtsbehörde“), dazu die **eigenen**: „Neue Adresse“ legt eine an, „Bearbeiten“ ändert eine (bei einer
+  Bauaufsichtsbehörde“), dazu die **eigenen**: „Adresse hinzufügen“ legt eine an, „Bearbeiten“ ändert eine (bei einer
   Adresse aus den Projektkarten entsteht eine eigene Fassung, Marke „geändert“, „Änderungen verwerfen“ nimmt sie
   zurück), „Löschen“ bzw. „Ausblenden“ nimmt sie aus dem Adressbuch (ausgeblendete unten wieder einblendbar). Die
   eigenen Adressen stehen im gemeinsamen Konfigurationsordner (Bereich `formulare`, Eintrag `adressen`) und gelten für
-  alle im Büro; die Projektkarten selbst ändert das Adressbuch nicht. „Aus den Projektdaten einlesen“ liest alle
-  Projektkarten neu. So funktioniert das Adressbuch auch ohne Projektkarten.
+  alle im Büro; die Projektkarten selbst ändert das Adressbuch nicht. „Aus den Projektdaten einlesen“ (danach „Neu einlesen“)
+  liest alle Projektkarten neu. So funktioniert das Adressbuch auch ohne Projektkarten.
 - **Eigene Ansicht der Projektkarte:** oben in der Leiste der Projektkarte – die Einträge, die das Büro nutzt, aus
   allen Gruppen auf einer Seite, in eigenen Abschnitten und eigener Reihenfolge.
   „Ansicht bearbeiten …“ öffnet den **Ansicht-Editor** (gemeinsam in `packages/core/src/ui/AnsichtEditor.tsx`): rechts
@@ -749,7 +754,7 @@ Einstellungen und des Namensschemas – `packages/core/src/fassung.ts`, auch in 
   Projektkarte („BAUA 2 · eingereicht 03.11.2026“ bzw. „BAUA 2 in Arbeit“); die Startseite von PERMIO zeigt ihn
   auch dann, wenn nicht alle Formulare lesbar sind.
 - **Eingereicht = gesperrt:** Ist der aktive Antrag eingereicht, lassen sich die Formulare nur ansehen (Hinweis über
-  dem Formular, „Antragsdaten …“), Antragsmerkmale, Antragsumfang, Export, „bereit“ und „Daten aktualisieren“ bleiben,
+  dem Formular, „Antragsdaten“), Antragsmerkmale, Antragsumfang, Export, „bereit“ und „Daten aktualisieren“ bleiben,
   wie eingereicht. **Nachgereicht** wird im laufenden Verfahren im selben Antrag: den Status vorübergehend auf „in
   Arbeit“ setzen (Tag und Stand bleiben), Formulare berichtigen bzw. Unterlagen ablegen, dann wieder „eingereicht“ –
   die Nachreichung erscheint als „neu“ bzw. „geändert seit der Einreichung“ (für nachgereichte oder ausgetauschte

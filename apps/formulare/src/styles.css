@@ -4400,6 +4400,12 @@ li.es-dok[data-ziehen='danach'] {
   margin-bottom: 10px;
   flex-wrap: wrap;
 }
+.fo-gesetz .fo-gesetz-para {
+  /* Paragraf unter dem Kopf „Gesetzestext“: Zeile ohne Überschriftenrang (der Kopf ist die Überschrift) */
+  margin: 0 0 var(--s1);
+  font-size: var(--fs-m);
+  font-weight: 600;
+}
 .fo-gesetz-titel {
   font-weight: normal;
 }

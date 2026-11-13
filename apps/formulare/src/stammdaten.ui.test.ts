@@ -111,6 +111,7 @@ afterEach(() => {
 const warte = () => act(async () => new Promise((r) => setTimeout(r, 0)));
 const knopf = (host: Element, text: string) => [...host.querySelectorAll('button')].find((b) => b.textContent?.includes(text)) as HTMLButtonElement;
 const knopfGenau = (host: Element, text: string) => [...host.querySelectorAll('button')].find((b) => b.textContent?.trim() === text) as HTMLButtonElement;
+const knoepfe = (host: Element, text: string) => [...host.querySelectorAll('button')].filter((b) => b.textContent?.includes(text));
 const knopfMit = (host: Element, label: string) => host.querySelector<HTMLButtonElement>(`button[aria-label="${label}"]`)!;
 const klick = async (el: HTMLElement) => {
   act(() => el.click());
@@ -384,15 +385,31 @@ describe('Einstellungen', () => {
     expect(host.querySelector('.es-adresse')!.textContent).toContain('Hoher Weg 1');
   });
 
-  it('leeres Adressbuch: „Adresse anlegen …“ öffnet das Formular für eine neue Adresse; unter „Büro & Stammdaten“ führt der Knopf ins Adressbuch', async () => {
+  it('leeres Adressbuch: „Adresse hinzufügen“ öffnet das Formular für eine neue Adresse; unter „Büro & Stammdaten“ führt der Knopf ins Adressbuch', async () => {
     const host = await render();
     await klick(knopfMit(host, 'Einstellungen …'));
     await klick(knopf(host, 'Büro & Stammdaten'));
-    expect(knopf(host, 'Adresse anlegen')).toBeUndefined();
+    expect(knopf(host, 'Adresse hinzufügen')).toBeUndefined();
     await klick(knopf(host, 'Zum Adressbuch'));
-    expect(knopf(host, 'Neue Adresse')).toBeDefined();
-    await klick(knopf(host, 'Adresse anlegen'));
+    // die Leerseite trägt die Knöpfe – jeder nur einmal (nicht zusätzlich in der Titelzeile)
+    expect(knoepfe(host, 'Adresse hinzufügen')).toHaveLength(1);
+    expect(knoepfe(host, 'Aus den Projektdaten einlesen')).toHaveLength(1);
+    await klick(knopf(host, 'Adresse hinzufügen'));
     expect(host.querySelector('form[aria-label="Neue Adresse"]')).not.toBeNull();
+    // mit dem Formular verschwindet die Leerseite, die Titelzeile zeigt ihre Knöpfe – noch nie eingelesen, also nicht „Neu einlesen“
+    expect(knoepfe(host, 'Adresse hinzufügen')).toHaveLength(1);
+    expect(knoepfe(host, 'Aus den Projektdaten einlesen')).toHaveLength(1);
+    expect(knoepfe(host, 'Neu einlesen')).toHaveLength(0);
+    // nur eigene Adressen, nie eingelesen: weiter „Aus den Projektdaten einlesen“
+    eingabe(host.querySelector<HTMLInputElement>('.es-adress-form input[aria-label="Name/Firma"]')!, 'Statik Nord GmbH');
+    await klick(knopf(host.querySelector('.es-adress-form')!, 'Speichern'));
+    expect(useFormulare.getState().adressbuch).toMatchObject({ stand: 0 });
+    expect(knoepfe(host, 'Aus den Projektdaten einlesen')).toHaveLength(1);
+    expect(knoepfe(host, 'Neu einlesen')).toHaveLength(0);
+    // nach dem Einlesen heißt der Knopf „Neu einlesen“
+    await klick(knopf(host, 'Aus den Projektdaten einlesen'));
+    await warte();
+    expect(knoepfe(host, 'Neu einlesen')).toHaveLength(1);
   });
 
   it('Adressbuch bearbeiten: neue Adresse anlegen, eine aus den Projektkarten ändern und ausblenden – gespeichert im Konfigurationsordner', async () => {
@@ -406,7 +423,7 @@ describe('Einstellungen', () => {
     const formFeld = (titel: string) => host.querySelector<HTMLInputElement>(`.es-adress-form input[aria-label="${titel}"]`)!;
 
     // neu anlegen – ohne Projektkarte
-    await klick(knopf(host, 'Neue Adresse'));
+    await klick(knopf(host, 'Adresse hinzufügen'));
     eingabe(formFeld('Name/Firma'), 'Statik Nord GmbH');
     eingabe(formFeld('Ort'), 'Lippstadt');
     await klick(knopf(host.querySelector('.es-adress-form')!, 'Speichern'));

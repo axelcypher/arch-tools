@@ -153,6 +153,9 @@ describe('Web-Version', () => {
     await klick(host.querySelector<HTMLButtonElement>('.fo-papier .fo-entfall-info.offen')!);
     const fenster = document.querySelector('.fo-gesetz')!;
     expect(fenster.textContent).toContain('Gebäudeart festlegen');
+    // hier ohne Quelle: der Kopf nennt das Merkmal, die Zeile darunter wiederholt es nicht
+    expect(fenster.querySelector('.modal-kopf')!.textContent).toBe('Gebäudeart festlegen');
+    expect(fenster.querySelector('.fo-gesetz-merkmale strong')).toBeNull();
     await klick(knopfGenau(fenster.querySelector('[aria-label="Gebäudeart festlegen"]')!, 'Mehrfamilienhaus')!);
     expect(useDateiMerkmale.getState().werte['datei|Bauantrag.frmsjf']).toEqual({ Gebäudeart: 'Mehrfamilienhaus' });
     expect(memo2().classList.contains('offen') || memo2().classList.contains('entfaellt')).toBe(false);
