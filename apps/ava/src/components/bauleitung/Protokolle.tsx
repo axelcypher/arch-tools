@@ -50,8 +50,8 @@ export function Protokolle() {
       <div className="ava-liste-spalte">
         <div className="ava-eingang-kopf">
           <h2>Protokolle</h2>
-          <button className="primary small" onClick={() => void neu()}>
-            + Protokoll
+          <button title="Protokoll hinzufügen" className="primary small" onClick={() => void neu()}>
+            <Symbol name="plus" /> Protokoll
           </button>
         </div>
         <ul className="list" role="listbox" aria-label="Protokolle">
@@ -83,7 +83,7 @@ export function Protokolle() {
           {!liste.length && <li className="muted">Noch keine Protokolle.</li>}
         </ul>
       </div>
-      <div className="ava-editor-spalte">{p ? <ProtokollEditor key={p.id} p={p} /> : <p className="muted">Mit „+ Protokoll“ beginnen.</p>}</div>
+      <div className="ava-editor-spalte">{p ? <ProtokollEditor key={p.id} p={p} /> : <p className="muted">Mit „Protokoll“ beginnen.</p>}</div>
     </div>
   );
 }
@@ -226,15 +226,15 @@ function ProtokollEditor({ p }: { p: Protokoll }) {
           {!p.teilnehmer.length && (
             <tr>
               <td colSpan={5} className="muted">
-                Noch keine Teilnehmer – „+ Teilnehmer“ oder aus den Beteiligten wählen.
+                Noch keine Teilnehmer – „Teilnehmer“ oder aus den Beteiligten wählen.
               </td>
             </tr>
           )}
         </tbody>
       </table>
       <div className="button-row">
-        <button className="small" onClick={() => setze((x) => ({ teilnehmer: [...x.teilnehmer, { name: '', anwesend: true }] }))}>
-          + Teilnehmer
+        <button title="Teilnehmer hinzufügen" className="small" onClick={() => setze((x) => ({ teilnehmer: [...x.teilnehmer, { name: '', anwesend: true }] }))}>
+          <Symbol name="plus" /> Teilnehmer
         </button>
         {projekt.ava.beteiligte.length > 0 && (
           <select
@@ -283,14 +283,14 @@ function ProtokollEditor({ p }: { p: Protokoll }) {
         </datalist>
       </div>
       <div className="button-row">
-        <button
+        <button title="Besprechungspunkt hinzufügen"
           onClick={() => {
             const id = neueId('t');
             setNeuerTop(id);
             setze((x) => ({ tops: [...x.tops, { id, nr: `${x.tops.length + 1}.`, titel: '', text: '' }] }));
           }}
         >
-          + Punkt
+          <Symbol name="plus" /> Punkt
         </button>
       </div>
       <Feld label="Verteiler" breit>

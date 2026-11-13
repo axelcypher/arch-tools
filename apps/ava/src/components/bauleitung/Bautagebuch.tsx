@@ -49,8 +49,8 @@ export function Bautagebuch() {
       <div className="ava-liste-spalte">
         <div className="ava-eingang-kopf">
           <h2>Bautagebuch</h2>
-          <button className="primary small" onClick={() => void neu()}>
-            + Tagesbericht
+          <button title="Tagesbericht hinzufügen" className="primary small" onClick={() => void neu()}>
+            <Symbol name="plus" /> Tagesbericht
           </button>
         </div>
         <ul className="list" role="listbox" aria-label="Tagesberichte">
@@ -80,7 +80,7 @@ export function Bautagebuch() {
           {!liste.length && <li className="muted">Noch keine Tagesberichte.</li>}
         </ul>
       </div>
-      <div className="ava-editor-spalte">{t ? <Bericht key={t.id} t={t} neu={t.id === neuerBericht} /> : <p className="muted">Mit „+ Tagesbericht“ beginnen.</p>}</div>
+      <div className="ava-editor-spalte">{t ? <Bericht key={t.id} t={t} neu={t.id === neuerBericht} /> : <p className="muted">Mit „Tagesbericht“ beginnen.</p>}</div>
     </div>
   );
 }
@@ -207,7 +207,7 @@ function Bericht({ t, neu }: { t: Tagesbericht; neu: boolean }) {
           {!t.firmen.length && (
             <tr>
               <td colSpan={5} className="muted">
-                Noch keine Firmen – unten „+ Firma …“ wählen.
+                Noch keine Firmen – unten „Firma hinzufügen …“ wählen.
               </td>
             </tr>
           )}
@@ -227,7 +227,7 @@ function Bericht({ t, neu }: { t: Tagesbericht; neu: boolean }) {
             setze((x) => ({ firmen: [...x.firmen, f ? { ...f } : { firma: '' }] }));
           }}
         >
-          <option value="">+ Firma …</option>
+          <option value="">Firma hinzufügen …</option>
           {firmenVorschlag.map((f) => (
             <option key={f.firma} value={f.firma}>
               {f.gewerk ? `${gewerkZweistellig(f.gewerk)} ` : ''}

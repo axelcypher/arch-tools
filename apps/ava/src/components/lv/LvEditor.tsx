@@ -189,21 +189,21 @@ export function LvEditor() {
     <div className="ava-lv">
       <div className="toolbar ava-lv-leiste">
         <div className="tb-group">
-          <button onClick={() => neu('position')} title="Neue Position – im gewählten Abschnitt bzw. hinter der gewählten Position (Einfg)">
-            + Position
+          <button onClick={() => neu('position')} title="Position hinzufügen – im gewählten Abschnitt bzw. hinter der gewählten Position (Einfg)">
+            <Symbol name="plus" /> Position
           </button>
-          <button onClick={() => neu('abschnitt')} title="Neuer Abschnitt (Los, Titel) – hinter dem gewählten bzw. am Ende">
-            + Abschnitt
+          <button onClick={() => neu('abschnitt')} title="Abschnitt hinzufügen (Los, Titel) – hinter dem gewählten bzw. am Ende">
+            <Symbol name="plus" /> Abschnitt
           </button>
           <MenueKnopf
-            title="Hinweis, Vorbemerkung oder Position aus den Vorlagetexten einfügen"
+            title="Hinweis, Vorbemerkung oder Position aus den Vorlagetexten hinzufügen"
             punkte={() => [
-              { text: 'Hinweis', symbol: 'plus', titel: 'Hinweistext im Abschnitt', aktion: () => neu('hinweis') },
-              { text: 'Vorbemerkung', symbol: 'plus', titel: 'Vorbemerkung vor der Gliederung', aktion: () => neu('vorbemerkung') },
+              { text: 'Hinweis', titel: 'Hinweistext im Abschnitt', aktion: () => neu('hinweis') },
+              { text: 'Vorbemerkung', titel: 'Vorbemerkung vor der Gliederung', aktion: () => neu('vorbemerkung') },
               { text: 'Aus Vorlage …', titel: 'Position aus den Vorlagetexten des Büros einfügen', aktion: () => setBibliothek('einfuegen') },
             ]}
           >
-            Einfügen
+            <Symbol name="plus" /> Hinzufügen
           </MenueKnopf>
         </div>
         <div className="tb-group">
@@ -216,17 +216,17 @@ export function LvEditor() {
           <button className="icon" onClick={() => verschieben(1)} disabled={!gewaehlt || gewaehlt.index >= gewaehlt.eltern.length - 1} title="Nach unten" aria-label="Nach unten">
             <Symbol name="nachUnten" />
           </button>
-          <button className="icon" onClick={() => einruecken(false)} disabled={!gewaehlt?.pfad.length} title="Ausrücken: aus dem Abschnitt heraus (eine Ebene höher)" aria-label="Ausrücken, eine Ebene höher">
-            <Symbol name="pfeilLinks" />
+          <button className="icon" onClick={() => einruecken(false)} disabled={!gewaehlt?.pfad.length} title="Element ausrücken: aus dem Abschnitt heraus (eine Ebene höher)" aria-label="Element ausrücken">
+            <Symbol name="ausruecken" />
           </button>
           <button
             className="icon"
             onClick={() => einruecken(true)}
             disabled={!gewaehlt || !gewaehlt.eltern.slice(0, gewaehlt.index).some((e) => e.art === 'abschnitt')}
-            title="Einrücken: in den Abschnitt davor (eine Ebene tiefer)"
-            aria-label="Einrücken, in den Abschnitt davor"
+            title="Element einrücken: in den Abschnitt davor (eine Ebene tiefer)"
+            aria-label="Element einrücken"
           >
-            <Symbol name="pfeilRechts" />
+            <Symbol name="einruecken" />
           </button>
           <button className="danger" onClick={() => void loeschen()} disabled={!gewaehlt} title="Entfernen (Entf)">
             Entfernen
@@ -339,7 +339,7 @@ export function LvEditor() {
               {!zeilen.length && (
                 <tr>
                   <td colSpan={8} className="muted ava-leer-zelle">
-                    Das LV ist leer – mit „+ Abschnitt“ und „+ Position“ beginnen oder Positionen aus den Vorlagetexten einfügen.
+                    Das LV ist leer – mit „Abschnitt“ und „Position“ beginnen oder Positionen aus den Vorlagetexten einfügen.
                   </td>
                 </tr>
               )}

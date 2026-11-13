@@ -422,7 +422,7 @@ function BereitsErhalten({ liste, onChange, vorschlag }: { liste: VorigeZahlung[
           aus der Kostenkontrolle
         </button>
         <button className="small" onClick={() => onChange([...liste, { text: '', betrag: 0 }])} title="Zahlung hinzufügen" aria-label="Zahlung hinzufügen">
-          + Zahlung
+          <Symbol name="plus" /> Zahlung
         </button>
       </div>
       {liste.map((z, i) => (

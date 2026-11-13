@@ -78,9 +78,9 @@ Hinweis „wird in LV-Dateien (.aslv) nicht gespeichert – im eigenen Format (.
 - Tabelle der Gliederung: Abschnitte (mit Summe des Kostenansatzes), Positionen, Hinweise und Vorbemerkungen;
   volle OZ nach der OZ-Maske („02.0010“). Menge und Einheitspreis des Kostenansatzes lassen sich direkt in der
   Tabelle ändern (deutsche Schreibweise, ungültige Eingaben bleiben rot stehen).
-- Werkzeugleiste in einer Zeile: + Position (im gewählten Abschnitt bzw. hinter der gewählten Position),
-  + Abschnitt, „Einfügen ▾“ (Hinweis, Vorbemerkung, „Aus Vorlage …“); Duplizieren (Strg+D, ein Abschnitt
-  bekommt die nächste freie OZ), Nach oben/Nach unten, Ausrücken/Einrücken (aus dem Abschnitt heraus bzw. in den Abschnitt davor; alle mit Symbol), Entfernen (Entf);
+- Werkzeugleiste in einer Zeile: Position (im gewählten Abschnitt bzw. hinter der gewählten Position),
+  Abschnitt, „Hinzufügen ▾“ (Hinweis, Vorbemerkung, „Aus Vorlage …“) – Hinzufügen-Knöpfe mit Plus-Symbol; Duplizieren (Strg+D, ein Abschnitt
+  bekommt die nächste freie OZ), Nach oben/Nach unten, Ausrücken/Einrücken (aus dem Abschnitt heraus bzw. in den Abschnitt davor; alle mit Symbol, Ein-/Ausrücken mit eigenen Symbolen), Entfernen (Entf);
   Rückgängig/Wiederholen (Strg+Z/Y); rechts die Suche nach OZ und Kurztext (Treffer mit ihren Abschnitten; ohne
   Treffer eine Meldung mit „Suche leeren“, Esc leert). Tastatur in der Tabelle (Fokus sichtbar): ↑/↓ wählen, Enter
   springt in den Kurztext des Seitenpanels, Esc dort zurück, Einfg neue Position. Bei schmalem Fenster (unter

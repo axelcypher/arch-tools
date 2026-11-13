@@ -73,7 +73,9 @@ export function Angebote() {
           </button>
         </div>
         <div className="tb-group">
-          <button onClick={() => void neuerBieter()}>+ Bieter</button>
+          <button onClick={() => void neuerBieter()} title="Bieter hinzufügen">
+            <Symbol name="plus" /> Bieter …
+          </button>
           <button
             onClick={async () => {
               const id = await angebotEinlesen();
@@ -281,7 +283,7 @@ export function Preisspiegel({ nurAuffaellige = false, druck = false }: { nurAuf
   if (!druck && !ids.length)
     return (
       <div className="ava-leer-hinweis">
-        {lv.bieter.some((b) => b.id !== 0) ? 'Kein Bieter wird gewertet – in der Tabelle oben „gewertet“ ankreuzen.' : 'Noch keine Angebote – mit „+ Bieter“ anlegen oder „Angebot aus GAEB (X84) …“ einlesen.'}
+        {lv.bieter.some((b) => b.id !== 0) ? 'Kein Bieter wird gewertet – in der Tabelle oben „gewertet“ ankreuzen.' : 'Noch keine Angebote – mit „Bieter …“ hinzufügen oder „Angebot aus GAEB (X84) …“ einlesen.'}
       </div>
     );
   return (

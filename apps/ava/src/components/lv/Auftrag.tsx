@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { bestaetigen, meldung } from '@core/ui/Rueckfrage';
+import { Symbol } from '@core/ui/Symbol';
 import type { GewerkAngaben } from '../../avaDaten';
 import { auftragEintragen } from '../../abrechnung/kostenkontrolle';
 import { datumDE, euro } from '../../abrechnung/pruefung';
@@ -213,7 +214,7 @@ export function AuftragAnsicht({ gewerk }: { gewerk: string }) {
                 aendern((l) => ({ ...l, nachtraege: [...l.nachtraege, { nr, titel: `Nachtrag ${nr}`, datum: heuteIso(), status: 'angeboten' }] }));
               }}
             >
-              + Nachtrag
+              <Symbol name="plus" /> Nachtrag
             </button>
           </div>
         </section>

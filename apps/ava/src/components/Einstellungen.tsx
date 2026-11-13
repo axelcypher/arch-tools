@@ -6,6 +6,7 @@ import { openFileWithPath } from '@core/platform/files';
 import { bueroName, KonfigNichtErreichbar, konfigNeuLesen } from '@core/platform/konfig';
 import { modernisieren } from '@core/platzhalter';
 import { PlatzhalterChips, PlatzhalterHinweise, platzhalterEinfuegen } from '@core/ui/Platzhalter';
+import { Symbol } from '@core/ui/Symbol';
 import { nameBilden, nameErkennen } from '../abrechnung/benennung';
 import { LV_NAME_VARIABLEN, mailVariablen, RECHNUNG_NAME_VARIABLEN } from '../platzhalter';
 import type { AvaEinstellungen, MailVorlage } from '../einstellungen';
@@ -311,14 +312,14 @@ function MailVorlagen({ vorlagen, onChange }: { vorlagen: MailVorlage[]; onChang
             </option>
           ))}
         </select>
-        <button
+        <button title="Mailvorlage hinzufügen"
           onClick={() => {
             const n = { id: neueId('m'), name: 'Neue Vorlage', an: '', cc: '', betreff: '{PROJEKT_KUERZEL} {PROJEKT_VORHABEN}', text: '' };
             onChange([...vorlagen, n]);
             setId(n.id);
           }}
         >
-          + Vorlage
+          <Symbol name="plus" /> Vorlage
         </button>
         {v && !['rechnung', 'auftrag', 'protokoll'].includes(v.id) && (
           <button
