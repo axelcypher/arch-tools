@@ -224,6 +224,7 @@ describe('Prüfregeln', () => {
         createElement(NumberField, { key: 'a', value: 400, onChange: () => {}, ungueltig: true, fehlerId: 'summe', label: 'Teilfläche A' }),
         createElement(TextField, { key: 'b', value: 'x', onChange: () => {}, ungueltig: true, fehlerId: 'summe', label: 'Name' }),
         createElement(NumberField, { key: 'c', value: 1, min: 0, max: 2, onChange: () => {}, label: 'ohne' }),
+        createElement(NumberField, { key: 'd', value: 5, onChange: () => {}, ungueltig: true, fehlerId: 'summe', title: 'Teilfläche D' }),
         createElement('p', { key: 'm', id: 'summe' }, 'Summe der Teilflächen größer als das Grundstück'),
       ),
     );
@@ -234,6 +235,7 @@ describe('Prüfregeln', () => {
       expect(el.getAttribute('aria-describedby')).toBe('summe');
     }
     expect(a.title).toBe('Siehe Meldung zu diesen Feldern');
+    expect(host.querySelectorAll('input')[3].title).toBe('Teilfläche D – siehe Meldung zu diesen Feldern');
     expect(c.hasAttribute('aria-invalid')).toBe(false);
     expect(c.hasAttribute('aria-describedby')).toBe(false);
     // eigene Meldung zusätzlich: beide ids

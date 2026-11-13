@@ -193,7 +193,7 @@ export function NumberField({
         value={text}
         onFocus={pending.onFocus}
         placeholder={placeholder}
-        title={fehler ?? (ungueltig ? 'Siehe Meldung zu diesen Feldern' : title)}
+        title={fehler ?? (ungueltig ? siehMeldung(title) : title)}
         inputMode="decimal"
         aria-label={label}
         aria-invalid={fehler || ungueltig ? true : undefined}
@@ -228,6 +228,9 @@ export function NumberField({
     </>
   );
 }
+
+/** Tooltip bei einem Fehler von außen: vorhandene Erklärung behalten, Verweis auf die gemeinsame Meldung anhängen */
+const siehMeldung = (title?: string): string => (title ? `${title} – siehe Meldung zu diesen Feldern` : 'Siehe Meldung zu diesen Feldern');
 
 /** ids für aria-describedby (eigene Meldung, gemeinsame Meldung); keine = undefined */
 const beschrieben = (...ids: (string | undefined)[]): string | undefined => ids.filter(Boolean).join(' ') || undefined;
@@ -293,7 +296,7 @@ export function TextField({
         value={text}
         placeholder={placeholder}
         list={list}
-        title={meldung ?? (ungueltig ? 'Siehe Meldung zu diesen Feldern' : title)}
+        title={meldung ?? (ungueltig ? siehMeldung(title) : title)}
         className={meldung || ungueltig ? 'feld-fehler' : undefined}
         aria-label={label}
         aria-invalid={meldung || ungueltig ? true : undefined}
