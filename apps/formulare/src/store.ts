@@ -478,6 +478,8 @@ async function eigeneAendern(aendern: (liste: EigeneAdresse[]) => EigeneAdresse[
     const liste = neu.adressen;
     useFormulare.setState({ eigeneAdressen: liste, adressbuch: wirksamesAdressbuch(useFormulare.getState().adressbuchKarten, liste) });
   } catch (e) {
+    // nicht gespeichert: wieder den gültigen Stand zeigen
+    useFormulare.setState({ eigeneAdressen: s.eigeneAdressen, adressbuch: wirksamesAdressbuch(useFormulare.getState().adressbuchKarten, s.eigeneAdressen) });
     useFormulare.getState().setMeldung({ art: 'fehler', text: `Adressbuch nicht gespeichert: ${e instanceof Error ? e.message : String(e)}` });
   }
 }

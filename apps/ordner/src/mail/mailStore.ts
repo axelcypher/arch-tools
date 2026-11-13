@@ -61,6 +61,8 @@ export const useMails = create<MailState>()((set, get) => ({
       });
       set({ eigene: ergebnis.eigene });
     } catch (e) {
+      // nicht gespeichert: wieder den gültigen Stand zeigen
+      set({ eigene: vorher });
       set({ fehler: `Einstellungen nicht gespeichert: ${e instanceof Error ? e.message : String(e)}` });
     }
   },

@@ -259,7 +259,8 @@ async fn konfig_dateien(ordner: String) -> Result<Vec<String>, String> {
 /// Unmittelbar vor dem Entfernen wird das Zeichen noch einmal verglichen, damit nicht die frische Sperre eines anderen
 /// Rechners verschwindet (ein winziges Zeitfenster zwischen Vergleich und Entfernen bleibt). Bekannte Grenze: Hängt
 /// ein Schreibvorgang länger als 10 s (hängende Freigabe), kann ein anderer Rechner dessen Sperre für verwaist halten;
-/// der erneute Vergleich unter der Sperre verhindert dann trotzdem, dass eine fremde Änderung still überschrieben wird.
+/// der erneute Vergleich unter der Sperre verringert dann das Risiko, eine fremde Änderung zu überschreiben, kann es
+/// aber nicht ganz ausschließen.
 fn konfig_sperre(pfad: &std::path::Path) -> Result<(std::path::PathBuf, String), String> {
     use std::io::Write;
     let name = pfad.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
