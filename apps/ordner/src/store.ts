@@ -425,7 +425,7 @@ export const useOrdner = create<OrdnerState>()((set, get) => {
         await jetztSpeichern();
         // im Protokoll erst, wenn wirklich gespeichert ist (kein neuer Konflikt, kein Schreibfehler)
         const s = get();
-        if (!s.konflikt && !s.konfigFehler?.startsWith(NICHT_GESPEICHERT))
+        if (!s.konflikt && !s.strukturNichtGeschrieben)
           log.info(`Konflikt in projektordner.json: eigene Fassung gespeichert${name ? `, die des anderen Rechners liegt in den Sicherungen (${name})` : ''}`);
       } finally {
         set({ konfliktLaeuft: false });
