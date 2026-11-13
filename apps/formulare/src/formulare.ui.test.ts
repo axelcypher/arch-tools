@@ -96,6 +96,9 @@ afterEach(() => {
 });
 
 /** wartet, bis die (im Speicher sofort erledigten) Dateizugriffe durch sind */
+/** Dialog nach seinem zugänglichen Namen (aria-label bzw. sichtbarer Kopf über aria-labelledby) */
+const dialogMit = (name: string) =>
+  [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find((d) => (d.getAttribute('aria-label') ?? document.getElementById(d.getAttribute('aria-labelledby') ?? '')?.textContent) === name) ?? null;
 const warte = () => act(async () => new Promise((r) => setTimeout(r, 0)));
 
 async function render(): Promise<HTMLElement> {
@@ -289,7 +292,7 @@ describe('Formulare', () => {
     expect(host.querySelector('.fo-meldung.hinweis')!.textContent).toContain('Verwaist');
     expect(host.textContent).toContain('kein Programm mit der Nummer 67802 mehr');
     await klick(knopf(host, 'Sperre aufheben'));
-    expect(host.querySelector('[aria-label="Sperre aufheben"]')!.textContent).toContain('t.test auf HELEN');
+    expect(dialogMit('Sperre aufheben?')!.textContent).toContain('t.test auf HELEN');
     await klick(knopfGenau(host, 'Sperre aufheben und bearbeiten'));
     expect(feld(host, 'Bauherrschaft', 1).disabled).toBe(false);
     expect(cp1252Lesen(ds.dateien.get(SPERRE)!)).toContain('InGebrauch=4242');
@@ -317,7 +320,7 @@ describe('Formulare', () => {
     ds.offeneSperren.add(SPERRE);
     const host = await render();
     await projektOeffnen(host, 'BS9');
-    await klick(knopfMit(host, 'Sperren'));
+    await klick(knopfMit(host, 'Sperren …'));
     await warte();
     const zeilen = [...host.querySelectorAll('.fo-sperr-zeile')];
     expect(zeilen.map((z) => z.querySelector('strong')!.textContent)).toEqual(['001-Muster', '002-Umbenannt']);

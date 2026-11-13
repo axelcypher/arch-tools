@@ -387,13 +387,13 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
                   <button
                     className="icon"
                     title={`Formular hinzufügen – aus dem Vorlagenordner oder einem anderen Projekt${zielText ? `; neue entstehen ${zielText.trim()}` : ''}`}
-                    aria-label="Formular hinzufügen"
+                    aria-label="Formular hinzufügen …"
                     onClick={() => useHinzufuegenDialog.getState().setOffen(true)}
                   >
                     <Symbol name="plus" />
                   </button>
                   <SammelExportKnopf />
-                  <button className="icon" title="Sperren in diesem Projekt prüfen und aufheben" aria-label="Sperren" onClick={onSperren}>
+                  <button className="icon" title="Sperren in diesem Projekt prüfen und aufheben" aria-label="Sperren …" onClick={onSperren}>
                     <Symbol name="schloss" />
                   </button>
                   <button className="icon" title="Formularordner des Projekts im Explorer öffnen" aria-label="Formularordner im Explorer öffnen" onClick={() => void oeffnePfad(verbinde(projekt.root, projekt.ordner)).catch(() => undefined)}>

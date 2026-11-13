@@ -2704,9 +2704,6 @@ button.icon.fo-gl-zaehlt.an {
   flex-direction: column;
   gap: 10px;
 }
-.ex h3 {
-  margin-bottom: 0;
-}
 .ex-feld {
   display: flex;
   flex-direction: column;
@@ -3629,7 +3626,6 @@ button.icon.fo-gl-bed.gesetzt {
   flex-direction: column;
   gap: 8px;
 }
-.fh h3,
 .fh p {
   margin: 0;
 }

@@ -48,8 +48,7 @@ export function AktualisierenDialog({ offen, onClose }: { offen: OffenesFormular
   };
 
   return (
-    <Modal titel="Daten aktualisieren" onClose={onClose} breit className="fo-ausfuellen">
-      <h3>Daten aktualisieren</h3>
+    <Modal titel="Daten aktualisieren" kopf onClose={onClose} breit className="fo-ausfuellen">
       <label className="fo-ausfuellen-haken">
         <input
           type="checkbox"
@@ -105,8 +104,7 @@ export function UnterlagenDialog() {
   if (!plaene) return null;
   return (
     // während des Aktualisierens nicht schließbar (kein Esc, kein Klick daneben)
-    <Modal titel="Unterlagen aktualisieren" onClose={laeuft ? undefined : schliessen} breit>
-      <h3>Projektdaten geändert – Unterlagen aktualisieren?</h3>
+    <Modal titel="Projektdaten geändert – Unterlagen aktualisieren?" kopf onClose={laeuft ? undefined : schliessen} breit>
       <p className="muted small-text">
         Felder mit dem bisher aus den Projektdaten übernommenen Wert und leere werden aktualisiert. Von Hand überschriebene und anders ausgefüllte bleiben, wie sie sind; nicht geöffnete Formulare
         werden gleich gespeichert (mit ungespeicherten Eingaben: dort hinein).
