@@ -99,7 +99,8 @@ Konfigurationsordner) und Projektdateien sind dieselben.
   gesperrt. Grenzen: Im Browser (Tab schließen, neu laden) und beim Neuladen eines Tabs oder des Rahmens gibt es keinen
   Hook; nach *Trotzdem …* endet das Fenster auch mitten im Schreiben.
   Die gemeinsamen Einstellungen (`konfig.ts`, alle Schreibvorgänge nacheinander) melden ihre laufenden Schreibvorgänge
-  selbst an – dafür muss keine App etwas tun.
+  selbst an – dafür muss keine App etwas tun. Damit nimmt praktisch jeder Tab den Warteweg (meist sofort fertig). Die
+  lokale Kopie für den Notbetrieb wird bewusst nicht abgewartet (sie wird atomar ersetzt; bleibt höchstens älter).
 - **Speichern auf Anfrage** (`speichernImTab`, `speichernImFenster`, `speichernAnfragenBeantworten`): Der Rahmen
   schickt `arch-tools:speichern`, die App bestätigt sofort (`arch-tools:speichert`) und meldet danach das Ergebnis
   (`arch-tools:gespeichert`). Kommt binnen 3 s keine Bestätigung (App lädt, hängt, ist abgestürzt), gilt „nicht

@@ -348,7 +348,14 @@ function nacheinander<T>(f: () => Promise<T>): Promise<T> {
 }
 
 /** laufende Schreibvorgänge der Einstellungen vor Schließen, Andocken und Update-Neustart abwarten (für alle Apps) */
-export const konfigSchreibenAbwarten = (): Promise<void> => kette.then(() => undefined);
+export async function konfigSchreibenAbwarten(): Promise<void> {
+  // so lange, bis keine neuen Schreibvorgänge mehr dazukommen (etwa aus der Vorbereitung einer App)
+  let k: Promise<unknown>;
+  do {
+    k = kette;
+    await k;
+  } while (k !== kette);
+}
 vorDemSchliessen(konfigSchreibenAbwarten);
 
 /** Bereich schreiben (ganz ersetzen) */
