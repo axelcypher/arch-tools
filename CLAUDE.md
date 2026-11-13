@@ -30,11 +30,11 @@ Sobald die Reviews bestanden sind, immer Pull Request auf `main` anlegen und mer
 5. Den Arbeitszweig danach löschen – auf GitHub und lokal. Nach getaner Arbeit soll kein Branch übrig bleiben.
 6. Den Release-Lauf („Build & Release“) bis zum Ende verfolgen und das Ergebnis melden.
 
-Ein Release (Windows-Installer + Auto-Update) entsteht nur, wenn sich die Version einer App ändert.
-Bei Änderungen an einer App deshalb ihre Version in `apps/<app>/package.json`,
-`apps/<app>/src-tauri/tauri.conf.json`, `apps/<app>/src-tauri/Cargo.toml` und `apps/<app>/src-tauri/Cargo.lock` gleich
-hochsetzen (dazu `package-lock.json`). Die Rahmen-App Arkly (`apps/suite`) hebt ein PR nur bei Änderungen an
-`apps/suite` selbst; enthält sie nur neue Fassungen anderer Apps, setzt der Release-Lauf ihre Version automatisch.
+Ein Release (Windows-Installer + Auto-Update) entsteht, wenn der Release-Lauf eine neue Version setzt. **Versionen
+setzt nur der Release-Lauf** – ein PR ändert keine Version. Stattdessen legt jeder PR, der Code einer App oder
+`packages/core` ändert, eine Versionsnotiz an: `.versionen/<zweig>.json` mit je App Stufe (`patch`, `minor`, `major`)
+und einem Satz für die Release-Notiz (Format in `.versionen/LIESMICH.md`). Die CI prüft das; nach dem Merge setzt der
+Release-Lauf die Versionen aller Apps und der Rahmen-App Arkly und committet sie nach `main` – danach `main` frisch holen.
 
 ## Konventionen
 
