@@ -400,8 +400,9 @@ aktualisieren sich nicht selbst.
   `TAURI_UPDATER_PUBKEY` abweicht.
 - Ein Release entsteht nur für eine Version, deren Tag es noch nicht gibt. Damit parallele PRs keine Version doppelt
   vergeben, prüft die CI im PR (`scripts/versionen-pruefen.mjs`, Schritt „Versionen prüfen“): Eine geänderte
-  App-Version darf noch nicht als Tag existieren und muss größer sein als auf dem aktuellen main; wer eine App-Version
-  ändert, setzt auch die Rahmen-App (Arkly) hoch. Schlägt der Schritt fehl: main mergen und die genannte Version über
+  App-Version darf noch nicht als Tag existieren und muss größer sein als auf dem aktuellen main; jede Änderung am
+  Code einer App bzw. an `packages/core` (dann alle Apps) verlangt eine neue Version (Doku und Tests nicht), und wer
+  eine App ändert, setzt auch die Rahmen-App (Arkly) hoch. Schlägt der Schritt fehl: main mergen und die genannte Version über
   den angegebenen Stand setzen. Der grüne Haken gilt für den Stand von main beim letzten Push in den PR – unmittelbar
   vor dem Merge deshalb `git fetch origin main && node scripts/versionen-pruefen.mjs main HEAD` (volle Historie nötig).
   Empfohlen in den Einstellungen des Repositorys: „Require branches to be up to date before merging“ mit „Tests &

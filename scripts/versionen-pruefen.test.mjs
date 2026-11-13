@@ -1,7 +1,7 @@
 // Tests für scripts/versionen-pruefen.mjs – Aufruf: node --test scripts/
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { pruefen, tagVon, vergleich, versionAusTag } from './versionen-pruefen.mjs';
+import { betroffeneApps, pruefen, tagVon, vergleich, versionAusTag } from './versionen-pruefen.mjs';
 
 const stand = { flaechenrechner: '0.35.0', grz: '0.26.0', kosten: '0.21.0', ordner: '0.19.0', entzerrung: '0.14.0', formulare: '0.47.0', ava: '0.6.0', suite: '0.23.0' };
 const tags = ['v0.35.0', 'grz-v0.26.0', 'kosten-v0.21.0', 'ordner-v0.19.0', 'entzerrung-v0.14.0', 'formulare-v0.47.0', 'ava-v0.6.0', 'suite-v0.23.0', 'suite-v0.22.0'];
@@ -40,7 +40,7 @@ test('1. Version schon als Tag vorhanden', () => {
 test('2. App-Version geändert, Suite nicht', () => {
   const f = pruefen({ kopf: { ...stand, grz: '0.27.0' }, basis: stand, main: stand, tags });
   assert.equal(f.length, 1);
-  assert.match(f[0], /Geänderte App-Versionen \(grz\).*Rahmen-App.*main mergen und die Version von suite über 0\.23\.0 setzen/);
+  assert.match(f[0], /Geänderte Apps \(grz\).*Rahmen-App.*main mergen und die Version von suite über 0\.23\.0 setzen/);
 });
 
 test('3. geänderte Version nicht größer als auf main (main ist weiter, Tag noch nicht da)', () => {
@@ -64,16 +64,35 @@ test('parallele PRs mit derselben Version: der zweite fällt auf, obwohl die Mer
 });
 
 test('neue App: mit hochgesetzter Suite erlaubt; Gegenprobe: ohne Suite ein Fehler', () => {
-  const { ava, ...ohne } = stand;
+  const ohne = structuredClone(stand);
+  delete ohne.ava;
   assert.deepEqual(pruefen({ kopf: { ...stand, suite: '0.24.0' }, basis: ohne, main: ohne, tags: tags.filter((t) => !t.startsWith('ava-')) }), []);
   const f = pruefen({ kopf: stand, basis: ohne, main: ohne, tags: tags.filter((t) => !t.startsWith('ava-')) });
   assert.equal(f.length, 1);
-  assert.match(f[0], new RegExp(`Geänderte App-Versionen \\(ava\\)`));
-  void ava;
+  assert.match(f[0], /Geänderte Apps \(ava\)/);
 });
 
 test('Version außerhalb von x.y.z wird gemeldet statt still durchgelassen', () => {
   const f = pruefen({ kopf: { ...stand, kosten: '0.22.0-beta', suite: '0.24.0' }, basis: stand, main: stand, tags });
   assert.equal(f.length, 1);
   assert.match(f[0], /kosten 0\.22\.0-beta: keine Version der Form x\.y\.z/);
+});
+
+test('betroffene Apps aus der Dateiliste: App-Ordner, Kern betrifft alle; Doku und Tests nicht', () => {
+  assert.deepEqual(betroffeneApps(['apps/grz/src/store.ts', 'apps/grz/README.md', 'docs/grz.md']), ['grz']);
+  assert.deepEqual(betroffeneApps(['packages/core/src/platform/konfig.ts']).length, 8);
+  assert.deepEqual(betroffeneApps(['packages/core/src/platform/konfig.test.ts', 'packages/core/src/__fixtures__/a.ts', 'apps/ava/src/x.ui.test.ts', 'scripts/x.mjs']), []);
+});
+
+test('4. B hat main mit derselben Version hereingemergt: App-Dateien geändert, Version gleich – Fehler', () => {
+  // nach dem Merge von main ist die Version an der Merge-Base schon 0.27.0 / 0.24.0
+  const nachA = { ...stand, grz: '0.27.0', suite: '0.24.0' };
+  const f = pruefen({ kopf: nachA, basis: nachA, main: nachA, tags, dateien: ['apps/grz/src/nachweis.ts'] });
+  assert.equal(f.length, 2);
+  assert.match(f[0], /grz: Dateien geändert, Version nicht hochgesetzt.*über 0\.27\.0/);
+  assert.match(f[1], /Geänderte Apps \(grz\), aber die Rahmen-App.*über 0\.24\.0/);
+  // Gegenprobe: B setzt danach neu hoch – in Ordnung
+  assert.deepEqual(pruefen({ kopf: { ...nachA, grz: '0.28.0', suite: '0.25.0' }, basis: nachA, main: nachA, tags, dateien: ['apps/grz/src/nachweis.ts'] }), []);
+  // Gegenprobe: nur Doku geändert – keine neue Version nötig
+  assert.deepEqual(pruefen({ kopf: nachA, basis: nachA, main: nachA, tags, dateien: ['docs/grz.md', 'apps/grz/README.md'] }), []);
 });
