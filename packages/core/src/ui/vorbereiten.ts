@@ -21,7 +21,7 @@ export async function schreibenAbwarten(app: string, vorbereiten: () => Promise<
     const a = await fragen({
       titel: gescheitert ? `${app} konnte nicht speichern` : `${app} speichert noch`,
       text: gescheitert
-        ? `Die letzte Änderung ließ sich nicht speichern – womöglich ist das Netzlaufwerk nicht erreichbar. Versuchen Sie es erneut. Wenn Sie jetzt ${verb}, geht sie verloren.`
+        ? `Die letzte Änderung ließ sich nicht speichern – womöglich ist das Netzlaufwerk nicht erreichbar. Prüfen Sie die Verbindung und versuchen Sie es erneut. Wenn Sie jetzt ${verb}, geht sie womöglich verloren.`
         : `Das Speichern dauert länger als ${VORBEREITEN_MS / 1000} Sekunden – womöglich ist das Netzlaufwerk langsam oder nicht erreichbar. Warten Sie, bis es fertig ist. Wenn Sie jetzt ${verb}, geht die letzte Änderung womöglich verloren.`,
       knoepfe: [
         { id: 'abbrechen', label: 'Abbrechen' },

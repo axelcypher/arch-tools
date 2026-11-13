@@ -166,8 +166,8 @@ am Tab bzw. in der Titelleiste ● erscheint.
 10. **Verzögertes Schreiben** (sobald ATLAS `vorDemSchliessen` anmeldet): In ATLAS etwas ändern und sofort (innerhalb einer halben Sekunde) den Tab schließen
     bzw. Arkly beenden. Erwartet: Die Änderung ist nach dem Neustart da. Hängt das Netzlaufwerk, erscheint nach etwa
     5 s „ATLAS speichert noch“; ist es getrennt (Fehler sofort), „ATLAS konnte nicht speichern“. Enter bzw. „Weiter
-    warten“ / „Erneut versuchen“ versucht es erneut, Esc bzw. „Abbrechen“ lässt Tab bzw. Fenster offen, „Trotzdem
-    schließen“ schließt.
+    warten“ wartet erneut, „Erneut versuchen“ speichert noch einmal (bleibt das Laufwerk getrennt, erscheint die
+    Rückfrage wieder), Esc bzw. „Abbrechen“ lässt Tab bzw. Fenster offen, „Trotzdem schließen“ schließt.
 
 ## Entwicklung
 
