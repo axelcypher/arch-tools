@@ -92,6 +92,20 @@ describe('laufende Schreibvorgänge vor dem Schließen', () => {
     }
   });
 
+  it('Ergebnis: true, wenn alles geschrieben ist; false, wenn ein abgewartetes Schreiben gescheitert ist', async () => {
+    expect(await ausstehendAbwarten()).toBe(true);
+    void verfolgen(Promise.resolve());
+    expect(await ausstehendAbwarten()).toBe(true);
+    const a = offen();
+    void verfolgen(a.p).catch(() => undefined);
+    void verfolgen(Promise.resolve());
+    const ergebnis = ausstehendAbwarten();
+    a.fehler(new Error('Netzlaufwerk weg'));
+    expect(await ergebnis).toBe(false);
+    // danach wieder sauber
+    expect(await ausstehendAbwarten()).toBe(true);
+  });
+
   it('Klammer: verfolgt bis zum Aufruf, mehrfacher Aufruf schadet nicht', async () => {
     const fertig = klammer();
     expect(laufendeSchreibvorgaenge()).toBe(1);

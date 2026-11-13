@@ -13,9 +13,11 @@
  * Lesen, Sperren prüfen und Rückfragen werden nicht abgewartet.
  */
 import type { ProjektordnerZugriff } from '@core/platform/projektordner';
+import { logger } from '@core/platform/log';
 import { vorDemSchliessen } from '@core/platform/rahmen';
 import type { Dateisystem } from './dateisystem';
 
+const log = logger('ausstehend');
 const laufend = new Set<Promise<unknown>>();
 
 /** Schreibvorgang merken, bis er fertig (oder gescheitert) ist; liefert ihn unverändert zurück */
@@ -42,13 +44,26 @@ export function klammer(): () => void {
 /** Zahl der laufenden Schreibvorgänge (für Tests) */
 export const laufendeSchreibvorgaenge = () => laufend.size;
 
-/** bis alle laufenden Schreibvorgänge fertig sind – auch die, die währenddessen dazukommen (Folgeschreiben) */
-export async function ausstehendAbwarten(): Promise<void> {
-  while (laufend.size) await Promise.allSettled([...laufend]);
+/**
+ * bis alle laufenden Schreibvorgänge fertig sind – auch die, die währenddessen dazukommen (Folgeschreiben). Liefert
+ * `false`, wenn einer davon gescheitert ist (dann fragt Arkly „… konnte nicht speichern“); der Grund steht im Protokoll
+ */
+export async function ausstehendAbwarten(): Promise<boolean> {
+  let alleOk = true;
+  while (laufend.size) {
+    for (const r of await Promise.allSettled([...laufend])) {
+      if (r.status === 'rejected') {
+        alleOk = false;
+        log.warn(`Vor dem Schließen: Schreiben fehlgeschlagen – ${r.reason instanceof Error ? r.reason.message : String(r.reason)}`);
+      }
+    }
+  }
+  return alleOk;
 }
 
 /** beim Rahmen anmelden; liefert die Abmeldung */
-export const vorDemSchliessenAnmelden = () => vorDemSchliessen(ausstehendAbwarten);
+// (bis Arkly/core #93 das Ergebnis `false` = „nicht gespeichert“ im Typ führt, hier umgewandelt; geliefert wird es schon)
+export const vorDemSchliessenAnmelden = () => vorDemSchliessen(ausstehendAbwarten as unknown as () => Promise<void>);
 
 /**
  * Einteilung aller Befehle – vom Typsystem erzwungen: ein neuer Befehl im Dateisystem bzw. Projektordner muss hier

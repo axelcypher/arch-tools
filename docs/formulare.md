@@ -965,7 +965,8 @@ Programm öffnen“). Bearbeitet wird so, dass alles, was nicht geändert wurde,
   (Formular, Sperrdatei, Projektkarte, Dokumente, Anlegen, Kopieren, Umbenennen, Löschen) und, als ein Vorgang, was nur
   zusammen stimmt: Speichern samt Warteschlange, Formular umbenennen mit der Projektdatei, Formular anlegen und
   aufnehmen, PDF-Export mit Verknüpfung. Offene Rückfragen und Lesen gelten nicht als Schreiben; es wird nur gewartet,
-  nichts zusätzlich geschrieben.
+  nichts zusätzlich geschrieben. Ist ein abgewartetes Schreiben gescheitert, meldet die App das (Grund im Protokoll),
+  und Arkly fragt, statt still zu schließen.
 
 ### Sperren
 
