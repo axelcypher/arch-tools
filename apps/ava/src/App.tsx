@@ -204,7 +204,7 @@ export function App() {
           <Navigation
             onStammdaten={async (meta, neuerName) => {
               try {
-                await schreibend(projektdateiSchreiben(useAva.getState().fs.projektordner, projekt.ordner, projekt.oap, (roh) => ({ ...roh, name: neuerName, meta })));
+                await schreibend(projektdateiSchreiben(useAva.getState().fs.projektordner, projekt.ordner, projekt.oap, (roh) => ({ ...roh, name: neuerName, meta })), 'projektdatei');
                 useAva.getState().setMeta(meta, neuerName);
               } catch (e) {
                 await meldung('Stammdaten nicht gespeichert', 'Die Projektdatei ließ sich nicht schreiben.', e);

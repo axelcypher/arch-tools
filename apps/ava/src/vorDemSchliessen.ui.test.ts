@@ -3,6 +3,7 @@ import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { schliessenVorbereiten } from '@core/platform/rahmen';
+import { clearLog, getEntries } from '@core/platform/log';
 import { TextEingabe } from './components/eingaben';
 import { ausstehendesSchreibenAbwarten, schreibend, useAva } from './store';
 import { berichtAblegen } from './components/bauleitung/gemeinsam';
@@ -43,6 +44,32 @@ describe('Vor dem Schließen: laufendes Schreiben abwarten (Arkly vorDemSchliess
     await expect(ausstehendesSchreibenAbwarten()).resolves.toBe(false);
     // Gegenprobe: erfolgreiches Schreiben → true
     void schreibend(Promise.resolve());
+    await expect(ausstehendesSchreibenAbwarten()).resolves.toBe(true);
+  });
+
+  it('gescheitertes Schreiben eines Ziels: false mit Grund im Protokoll, auch beim zweiten Aufruf, bis dasselbe Ziel gespeichert ist', async () => {
+    clearLog();
+    const p = schreibend(Promise.reject(new Error('Projektdatei gesperrt')), 'projektdatei');
+    p.catch(() => {});
+    await takt(); // schon vor dem Aufruf gescheitert (nicht mehr laufend)
+    await expect(ausstehendesSchreibenAbwarten()).resolves.toBe(false);
+    const fehler = getEntries().filter((e) => e.scope === 'schreiben' && e.level === 'error');
+    expect(fehler).toHaveLength(1);
+    expect(fehler[0].message).toContain('projektdatei');
+    expect(fehler[0].data).toContain('Projektdatei gesperrt');
+    // „Erneut versuchen“: weiterhin false, auch wenn ein anderes Ziel gelingt
+    void schreibend(Promise.resolve(), 'kostenkontrolle');
+    void schreibend(Promise.resolve());
+    await expect(ausstehendesSchreibenAbwarten()).resolves.toBe(false);
+    // erst ein gelungenes Schreiben desselben Ziels gibt frei
+    void schreibend(Promise.resolve(), 'projektdatei');
+    await expect(ausstehendesSchreibenAbwarten()).resolves.toBe(true);
+  });
+
+  it('einmalige Aktion ohne Ziel: ein Fehler vor dem Aufruf hält das Schließen nicht auf (die Oberfläche hat ihn gemeldet)', async () => {
+    const p = schreibend(Promise.reject(new Error('Mailentwurf gescheitert')));
+    p.catch(() => {});
+    await takt();
     await expect(ausstehendesSchreibenAbwarten()).resolves.toBe(true);
   });
 
@@ -136,6 +163,12 @@ describe('Vor dem Schließen: laufendes Schreiben abwarten (Arkly vorDemSchliess
     await act(takt);
     scheitern();
     await act(async () => void (await expect(gescheitert).resolves.toBe('fehler')));
+    // „Erneut versuchen“ bei nicht gespeichertem Ziel: bleibt „fehler“, bis dasselbe Ziel gespeichert ist
+    schreibend(Promise.reject(new Error('LV gesperrt')), 'lv:/p/LV 1.x83').catch(() => {});
+    await act(async () => void (await expect(schliessenVorbereiten(1000)).resolves.toBe('fehler')));
+    await act(async () => void (await expect(schliessenVorbereiten(1000)).resolves.toBe('fehler')));
+    void schreibend(Promise.resolve(), 'lv:/p/LV 1.x83');
+    await act(async () => void (await expect(schliessenVorbereiten(1000)).resolves.toBe('fertig')));
     // Gegenprobe: nach dem Abbau ist FABRIO abgemeldet – Arkly wartet nicht mehr auf FABRIO
     act(() => root?.unmount());
     root = null;

@@ -45,7 +45,7 @@ export async function vorlagenLaden(): Promise<Vorlagetext[]> {
 }
 
 export function vorlagenAendern(f: (v: Vorlagetext[]) => Vorlagetext[]): Promise<Vorlagetext[]> {
-  return schreibend(konfigAendern(BEREICH, (roh) => f(Array.isArray(roh) ? (roh as Vorlagetext[]) : [])));
+  return schreibend(konfigAendern(BEREICH, (roh) => f(Array.isArray(roh) ? (roh as Vorlagetext[]) : [])), 'vorlagen');
 }
 
 export function vorlageAusPosition(p: Position, gruppe: string): Vorlagetext {

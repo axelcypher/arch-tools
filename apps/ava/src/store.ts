@@ -205,6 +205,7 @@ export const useAva = create<AvaZustand>((set, get) => ({
         const p = get().projekt;
         if (p?.ordner === projekt.ordner) set({ projekt: { ...p, kk, kkFehler: null } });
       })(),
+      'kostenkontrolle',
     );
   },
 
@@ -217,6 +218,7 @@ export const useAva = create<AvaZustand>((set, get) => ({
         const p = get().projekt;
         if (p?.ordner === projekt.ordner) set({ projekt: { ...p, ava } });
       })(),
+      'projektdatei',
     );
   },
 
@@ -283,6 +285,7 @@ export const useAva = create<AvaZustand>((set, get) => ({
         log.info('LV gespeichert', lv.datei.pfad);
         return true;
       })(),
+      `lv:${get().lv?.datei.pfad ?? ''}`,
     );
   },
   lvNeu(g, gewerk, format, bezeichnung, vorlage) {
