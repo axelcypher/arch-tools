@@ -158,10 +158,14 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
   // Meldung im Kopf liegt hinter dem modalen Protokoll
   const gespeichertMeldung = useBaurecht((s) => s.gespeichertMeldung);
   const meldungBeimOeffnen = useRef(gespeichertMeldung);
+  // der Sperrgrund des letzten Renderns (für die Meldung nach dem Speichern)
+  const sperreJetzt = useRef('');
   useEffect(() => {
     if (!gespeichertMeldung || gespeichertMeldung === meldungBeimOeffnen.current) return;
     // war eine Ablage offen und ist jetzt gespeichert: die genaue Meldung (nicht nur „Gespeichert.“)
-    setAbgelegt((vorher) => (vorher?.speichern && !istGeaendert(useBaurecht.getState()) ? { text: 'Gespeichert – die abgeschlossene Prüfung steht in der Projektdatei.', speichern: false } : vorher?.speichern ? vorher : { text: `${gespeichertMeldung.text}.`, speichern: false }));
+    // gespeichert und nichts sperrt mehr: dazusagen, dass jetzt abgeschlossen werden kann
+    const abschliessbar = gespeichertMeldung.text === 'Gespeichert' && !sperreJetzt.current;
+    setAbgelegt((vorher) => (vorher?.speichern && !istGeaendert(useBaurecht.getState()) ? { text: 'Gespeichert – die abgeschlossene Prüfung steht in der Projektdatei.', speichern: false } : vorher?.speichern ? vorher : { text: abschliessbar ? 'Gespeichert – die Prüfung lässt sich jetzt abschließen.' : `${gespeichertMeldung.text}.`, speichern: false }));
     // verschwand der fokussierte Knopf („Jetzt speichern“), bleibt der Fokus im Protokoll
     setTimeout(() => {
       const a = document.activeElement;
@@ -258,6 +262,7 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
   const protokolleDatei = useBaurecht.getState().pruefungDatei.protokolle;
   const ungespeichertAbgelegt = new Set(protokolle.filter((p) => !protokolleDatei.some((b) => b.am === p.am)).map((p) => p.am));
   const sperre = entwuerfe ? 'Erst speichern – Entwürfe brauchen die zweite Bestätigung' : ungespeichertGesamt ? (abgelegt?.speichern || ungespeichertAbgelegt.size ? 'Abgelegt – zum Übernehmen speichern' : 'Erst speichern: Es gibt ungespeicherte Änderungen') : laedt ? 'Die Gesetzestexte werden noch geholt – bitte warten' : schonAbgeschlossen ? 'Dieser Stand ist schon abgeschlossen' : '';
+  sperreJetzt.current = sperre;
   // offene Punkte nach der fehlenden Angabe gruppiert („Baugebiet – 20 Paragrafen“), der Rest nach dem Grund
   const ohneRegel = a.normen.filter((n) => n.ohneRegel);
   // fehlende Angaben genau wie „Klärt am meisten“ gezählt (ein Paragraf kann unter mehreren Angaben stehen)
@@ -271,7 +276,9 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
     if (!sonder && ((p.klaerend?.length ?? 0) > 0 || p.bestaetigend)) continue; // steht schon unter seinen klärenden Angaben
     // sonst nach dem Grund: hängt an einem offenen Paragrafen, oder die fehlenden Angaben entscheiden nur zusammen
     const o = p.offen[0];
-    const k = sonder || (o?.startsWith('paragraf:') ? `Hängt an ${offenText(o, a.text)} – dort offen` : p.gruende[0].replace(/\s*\(.*$/, '').replace(/^Offen – /, '').replace(/\.$/, ''));
+    // „Einzelfall möglich – es fehlt: A · B. <Grund>“: nur die fehlenden Angaben (sonst bis vor die erste Klammer)
+    const g0 = p.gruende[0];
+    const k = sonder || (o?.startsWith('paragraf:') ? `Hängt an ${offenText(o, a.text)} – dort offen` : (/^Einzelfall möglich – es fehlt: /.test(g0) ? g0.replace(/\. .*$/, '') : g0.replace(/\s*\(.*$/, '')).replace(/^Offen – /, '').replace(/\.$/, ''));
     gruppen.set(k, [...(gruppen.get(k) ?? []), p]);
   }
   // Gruppen mit nur einem Paragrafen kommen zusammen in eine Zeile „Weitere“
@@ -615,7 +622,8 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
                   {weitereZeilen.map((z) => (
                     <tr key={`${z.sort}|${z.nr}`}>
                       <td>{z.norm}</td>
-                      <td>{nb(z.nr)}</td>
+                      {/* kurze Nummern („§ 248“, „Art. 14“) bleiben zusammen, Titel brechen um */}
+                      <td className={z.nr.length <= 8 ? 'br-nr-kurz' : undefined}>{nb(z.nr)}</td>
                       <td>{nb(z.gruende.join(' · '))}</td>
                     </tr>
                   ))}

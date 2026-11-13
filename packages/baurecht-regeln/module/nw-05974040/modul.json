@@ -493,7 +493,7 @@
     },
     "soest.befestigte_flaeche": {
       "titel": "Neue oder vergrößerte Dach- oder befestigte Fläche (z. B. Anbau, Überdachung, Hof, Lagerplatz, Zufahrt)",
-      "kurz": "neue Dach- oder befestigte Fläche",
+      "kurz": "Neue Dach- oder befestigte Fläche",
       "gruppe": "vorhaben",
       "typ": "janein",
       "frage": "Entsteht eine neue oder größere Dach- oder befestigte Fläche, von der Niederschlagswasser abfließt (z. B. Anbau, Überdachung, Hof, Lagerplatz, Zufahrt)?",

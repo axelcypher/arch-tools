@@ -1070,7 +1070,9 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
       await new Promise((r) => setTimeout(r, 100));
     });
     await warten();
-    expect(d.querySelector('#br-abgelegt-text')?.textContent).toBe('Gespeichert.');
+    // nichts sperrt mehr: die Meldung sagt, dass jetzt abgeschlossen werden kann
+    expect(d.querySelector('.br-sperre')).toBeNull();
+    expect(d.querySelector('#br-abgelegt-text')?.textContent).toBe('Gespeichert – die Prüfung lässt sich jetzt abschließen.');
     expect(d.contains(document.activeElement)).toBe(true);
   });
 

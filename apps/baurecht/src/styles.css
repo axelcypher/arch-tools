@@ -1231,6 +1231,7 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
 .br-wahl-zeile input {
   width: auto;
   margin: 0;
+  flex: none;
 }
 .br-wahl-zeile.br-gewaehlt {
   border-color: var(--accent);
@@ -1238,6 +1239,7 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
 }
 .br-wahl-zeile .br-ampel {
   width: 80px;
+  flex: none;
 }
 .modal textarea {
   width: 100%;
@@ -1660,9 +1662,14 @@ h2.br-detail-name {
 }
 /* lange Wörter und Adressen in Begründungen umbrechen statt abschneiden */
 .br-festlegung-text,
-.br-detail-inhalt,
-.br-protokoll td {
+.br-detail-inhalt {
   overflow-wrap: anywhere;
+}
+/* Protokoll: erst nach Silben trennen, nur notfalls mitten im Wort („Altstadt-satzung“ statt „Altstadtsat|zung“) */
+.br-protokoll td,
+.br-protokoll th {
+  overflow-wrap: break-word;
+  hyphens: auto;
 }
 
 /* Protokoll ist Papier: auch im dunklen Schema helle Farben für die Grautöne der App */
@@ -1936,7 +1943,7 @@ h2.br-detail-name {
   }
   .br-protokoll .report-table td,
   .br-protokoll .report-table th {
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
     hyphens: auto;
   }
 }
@@ -2000,7 +2007,7 @@ h2.br-detail-name {
   .br-protokoll .report-table th {
     white-space: normal;
     hyphens: auto;
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
   }
   .br-protokoll .report-table.narrow td:first-child {
     white-space: normal;
@@ -2029,14 +2036,11 @@ h2.br-detail-name {
     width: 8.5em !important;
   }
   .br-protokoll-weitere th:nth-child(2) {
-    width: 4.5em !important;
+    width: 5.5em !important;
   }
-  .br-protokoll-weitere td:nth-child(1) {
-    overflow-wrap: break-word;
-  }
-  .br-protokoll-weitere td:nth-child(2) {
+  /* nur reine Nummern („§ 248“, „Art. 14“) zusammenhalten – Titel („Veränderungssperre (§ 14 BauGB)“) brechen um */
+  .br-protokoll-weitere td.br-nr-kurz {
     white-space: nowrap;
-    overflow-wrap: normal;
   }
 }
 /* sehr niedrige Fenster (400 % Zoom): die Aktionsleiste klebt nicht – sonst nähme sie die halbe Höhe; der Tabellenkopf
@@ -2058,4 +2062,9 @@ h2.br-detail-name {
 :root[data-theme='dunkel'] .br-app button.primary:disabled {
   filter: grayscale(1);
   opacity: 0.5;
+}
+/* Gruppenüberschrift während der Suche: aria-disabled (zuklappen gesperrt), aber lesbar – sie beschriftet die Gruppe */
+.br-gruppe-knopf[aria-disabled='true'] {
+  opacity: 1;
+  cursor: default;
 }

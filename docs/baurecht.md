@@ -79,8 +79,8 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   Wirkung)“). Hängt ein Paragraf an einem anderen, der nur „gilt, Ausnahme möglich“ ist, und entfiele er mit dessen Ausnahme, nennt er sie („Ausnahme möglich über § 14 BNatSchG – es
   fehlt dort: …“); die Ampel bleibt „gilt“. Unter „Ausnahme möglich – es fehlt“ stehen nur Fragen, die gerade gestellt
   werden (ohne Ausweichen auf nicht gestellte: eine Ausnahme, deren Fragen nicht gestellt sind, wird nicht angeboten).
-  Ist die Ausnahme nur über Hinweise bzw. widersprüchliche Angaben ausgeschlossen, steht „Ausnahme nicht gesichert
-  ausgeschlossen – nur Hinweis: …“ dabei (die Ampel bleibt „gilt“).
+  Ist die Ausnahme nur über Hinweise bzw. widersprüchliche Angaben ausgeschlossen, steht „Ausnahme ausgeschlossen,
+  aber nicht gesichert (beruht auf: Wohnungen – nur Hinweis)“ dabei (die Ampel bleibt „gilt“).
   Einzelfall einer Regel (`pruefen.wenn`): liegt er vor, wird Grün zu „Einzelfall: …“; ist offen, ob er vorliegt,
   heißt es „Einzelfall möglich – es fehlt: …“ (die Angaben stehen unter „es fehlt“ und zählen für „klärt am meisten“ –
   als eigenes Ergebnis neben rot/grün, eine Angabe, deren Antwort am Einzelfall nichts ändert, klärt nichts); beruht
@@ -183,7 +183,8 @@ wirksam (Text der Norm nicht verfügbar), es bleibt bei „gilt““) – mit d
 (`entfaelltVorbehalt`: nur bei Regeln mit Prüfsummen; Verweise ohne abrufbaren Text brauchen keinen Text; sonst Text
 fehlt, Rechtsstand alt, neuere Fassung zum Stichtag, Text für anderen Stichtag, angekündigte Fassung). **Aufheben**
 wird angesagt („Festlegung aufgehoben – automatisch: „gilt““), ebenso „Rückgängig“ („Festlegung wiederhergestellt –
-„prüfen“ (Entwurf)“).
+„prüfen“ (Entwurf)“, bei einem noch nicht wirksamen „entfällt“ mit Grund). Die Gruppenüberschrift „Antragsmerkmale“
+ist während einer Suche `aria-disabled` (nicht zuklappbar), bleibt aber voll lesbar.
 
 **Hinweise bestätigen:** Angaben, die nur Hinweis sind (z. B. „kein Treffer im Landschaftsschutzgebiet“, Flächen aus
 dem Modell), lassen sich mit „Bestätigen …“ als gesichert übernehmen – nur mit Angabe, worauf die Bestätigung beruht
@@ -272,7 +273,9 @@ meisten“ (ein Paragraf kann unter mehreren Angaben stehen); Punkte mit nur ein
 Überschriften werden nicht von ihrer Tabelle getrennt. Warum „Prüfung abschließen“ gesperrt ist, steht sichtbar
 neben dem Knopf. „Drucken / PDF …“ schlägt den Dateinamen `<Projektdatei> Baurecht <Antrag>.pdf` vor. Am Bildschirm
 klebt die Aktionsleiste oben und der Tabellenkopf darunter (in sehr niedrigen Fenstern – 400 % Zoom – klebt nur der
-Tabellenkopf); schmal (≤ 600 px) brechen die Tabellen um, ohne kurze Wörter zu zerlegen. **„Prüfung abschließen“** legt den Stand (Fassungen, Ampeln,
+Tabellenkopf); Tabellenzellen trennen nach Silben (erst notfalls mitten im Wort), kurze Nummern („§ 248“) und
+Kennungen („SO‑076“) bleiben zusammen. Nach dem Speichern bei offenem Protokoll heißt es „Gespeichert – die Prüfung
+lässt sich jetzt abschließen.“, wenn nichts mehr sperrt. **„Prüfung abschließen“** legt den Stand (Fassungen, Ampeln,
 Zähler, Regelpaket) in der Projektdatei ab – erst, wenn nichts mehr Entwurf, alles gespeichert und jeder Text geladen
 ist. Danach steht oben eine Meldung („Prüfung vom … abgelegt (… gilt · … prüfen · … entfällt) – zum Übernehmen in die
 Datei speichern“, stehende Live-Region) mit „Jetzt speichern“, der Fokus geht dorthin; „Jetzt speichern“ steht auch

@@ -435,7 +435,7 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
       if (ausnahmeOffen.length) hinweise.push(`Ausnahme möglich – es fehlt: ${ausnahmeOffen.map((o) => offenText(o, text)).join(' · ')}`);
       // die Ausnahme ist nur über Hinweise ausgeschlossen: nicht gesichert – bestätigen (oder berichtigen) klärt
       else if (entf?.w === 'nein' && (entf.unsicher.length || entf.widerspruch.length))
-        hinweise.push(`Ausnahme nicht gesichert ausgeschlossen – ${entf.unsicher.length ? `nur Hinweis: ${entf.unsicher.map((u) => offenText(u, text)).join(', ')}` : ''}${entf.unsicher.length && entf.widerspruch.length ? '; ' : ''}${entf.widerspruch.length ? `Widerspruch: ${entf.widerspruch.map((u) => offenText(u, text)).join(', ')}` : ''}`);
+        hinweise.push(`Ausnahme ausgeschlossen, aber nicht gesichert (beruht auf: ${[...entf.unsicher.map((u) => `${offenText(u, text)} – nur Hinweis`), ...entf.widerspruch.map((w) => `${offenText(w, text)} – widersprüchlich`)].join('; ')})`);
       // hängt die Regel an einem Paragrafen, der nur „rot, Ausnahme möglich“ ist, und entfiele sie mit dessen Ausnahme:
       // der Hinweis geht mit (die Ampel bleibt rot – zur sicheren Seite)
       for (const v of gilt.verwendet) {

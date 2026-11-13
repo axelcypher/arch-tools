@@ -361,10 +361,10 @@ describe('Fragen und Regeln', () => {
     const x15 = auswerten(eingabe(m, { ...ohneUmnutzung, 'gebaeude.wohnungen': { wert: 0, herkunft: 'flaechen', sicherheit: 'hinweis' }, 'gebaeude.nutzungseinheiten': sicher(3) }, TEXTE));
     const p34 = x15.paragrafen.find((x) => x.id === 'nw/bauo-nrw/34')!;
     expect(p34.ampel).toBe('rot');
-    expect(p34.hinweise.join(' ')).toMatch(/Ausnahme nicht gesichert ausgeschlossen – nur Hinweis: .*Wohnungen/);
+    expect(p34.hinweise.join(' ')).toMatch(/Ausnahme ausgeschlossen, aber nicht gesichert \(beruht auf: Wohnungen.* – nur Hinweis\)/);
     // gesichert keine Wohnung: kein solcher Hinweis
     const gesichert = auswerten(eingabe(m, { ...ohneUmnutzung, 'gebaeude.wohnungen': sicher(0), 'gebaeude.nutzungseinheiten': sicher(3) }, TEXTE));
-    expect(gesichert.paragrafen.find((x) => x.id === 'nw/bauo-nrw/34')!.hinweise.join(' ')).not.toMatch(/Ausnahme nicht gesichert/);
+    expect(gesichert.paragrafen.find((x) => x.id === 'nw/bauo-nrw/34')!.hinweise.join(' ')).not.toMatch(/aber nicht gesichert/);
   });
 
   it('eine Angabe, deren Frage nicht gestellt wird, ändert keinen Paragrafen und steht nicht unter „klärt am meisten“', { timeout: 600000 }, () => {
@@ -2134,7 +2134,7 @@ describe('Fälle aus dem Fachreview', () => {
     // offen: gelb, die Angabe steht unter „es fehlt“ und klärt
     const offen = p9(anbau, nein('vorhaben.entwaesserung'));
     expect(offen.ampel).toBe('gelb');
-    expect(offen.gruende[0]).toMatch(/^Einzelfall möglich – es fehlt: neue Dach- oder befestigte Fläche\. /);
+    expect(offen.gruende[0]).toMatch(/^Einzelfall möglich – es fehlt: Neue Dach- oder befestigte Fläche\. /);
     expect(offen.offen).toEqual(['soest.befestigte_flaeche']);
     expect(offen.klaerend).toEqual(['soest.befestigte_flaeche']);
     // mit neuer Entwässerung bzw. beim reinen Abbruch nicht gefragt

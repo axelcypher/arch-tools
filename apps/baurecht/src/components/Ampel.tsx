@@ -1,7 +1,10 @@
 import type { Ampel } from '@core/baurecht/typen';
 
-/** geschütztes Leerzeichen nach §, §§, Abs., Nr., Satz – „§ 33 Abs. 1“ bricht nicht zwischen Zeichen und Nummer um */
-export const nb = (s: string): string => s.replace(/(§§?|Abs\.|Nr\.|Satz|Art\.) (?=[\dIVX])/g, '$1\u00a0');
+/**
+ * geschütztes Leerzeichen nach §, §§, Abs., Nr., Satz – „§ 33 Abs. 1“ bricht nicht zwischen Zeichen und Nummer um; in
+ * Kennungen wie „SO-076“ ein geschützter Bindestrich (kein Umbruch „SO-|076“)
+ */
+export const nb = (s: string): string => s.replace(/(§§?|Abs\.|Nr\.|Satz|Art\.) (?=[\dIVX])/g, '$1\u00a0').replace(/\b([A-ZÄÖÜ]{1,4})-(?=\d)/g, '$1\u2011');
 
 /**
  * Element in seinem Scrollbereich einblenden, ohne Vorfahren mitzuscrollen (scrollIntoView verschöbe sonst auch die
