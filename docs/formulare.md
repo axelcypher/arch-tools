@@ -1003,6 +1003,15 @@ genauso:
 - **Übersicht** (🔒 über den Formularen): alle Sperrdateien des Projekts, auch solche ohne Formular, mit
   Bewertung und „Aufheben …“.
 
+### Bekannte Grenzen
+
+- **Außerhalb geändert:** Vor dem Speichern eines Formulars bzw. Dokuments liest die App die Datei frisch und schreibt
+  nicht, wenn sie sich seit dem Öffnen geändert hat. Zwischen diesem Vergleich und dem Ersetzen liegt aber ein kurzes
+  Zeitfenster ohne Standprüfung (anders als bei der Projektdatei): eine Änderung genau dann würde überschrieben. Die
+  vorige Fassung bleibt als Sicherungskopie im App-Ordner.
+- **Projektkarte:** geschrieben werden nur die geänderten Einträge; hat jemand anderes inzwischen denselben Eintrag
+  geändert, gewinnt ohne Rückfrage, wer zuletzt speichert.
+
 ### Einstellungen sichern und übertragen
 
 Die Einstellungen liegen im Speicher der App auf diesem Rechner. Unter **Einstellungen › Sichern & Übertragen**
