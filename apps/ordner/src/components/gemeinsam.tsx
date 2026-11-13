@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Symbol } from '@core/ui/Symbol';
 import { hatDateisystem, oeffneOrdner, waehleOrdner, waehleOrdnerImBrowser } from '../dateisystem';
 import type { Ergebnis, Herkunft, Plan, PresetAbweichung } from '../plan';
 import { tutEtwas, vorlagenAnzahl } from '../plan';
@@ -279,7 +280,7 @@ export function ErgebnisAnzeige({ ordner, liste, children }: { ordner: string; l
       <div className="button-row">
         {ordner && (
           <button className="small" onClick={() => void oeffneOrdner(ordner).catch((e) => setFehler(String(e)))}>
-            Ordner öffnen
+            <Symbol name="ordnerOffen" /> Ordner öffnen
           </button>
         )}
         {children}

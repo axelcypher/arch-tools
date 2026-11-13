@@ -254,6 +254,25 @@ describe('Einstellungen der Katasterpläne', () => {
     expect(host.querySelector('.ex-ziel')!.querySelector('.ka-ziel-platzhalter')).toBeTruthy();
     expect(host.textContent).toContain('kein amtlicher Auszug aus dem Liegenschaftskataster');
   });
+
+  it('Pläne umsortieren: Symbolknöpfe „Nach oben“/„Nach unten“ mit Namen und Tooltip, am Rand gesperrt', async () => {
+    const host = await zeige(createElement(KatasterEinstellungen));
+    const namen = () => useKataster.getState().einstellungen.plaene.map((p) => p.name);
+    const [erster, zweiter] = namen();
+    const knopfFuer = (name: string, richtung: 'oben' | 'unten') => host.querySelector<HTMLButtonElement>(`button[aria-label="${name} nach ${richtung}"]`)!;
+    const runter = knopfFuer(erster, 'unten');
+    expect(runter.title).toBe('Nach unten');
+    expect(knopfFuer(zweiter, 'oben').title).toBe('Nach oben');
+    expect(runter.querySelector('svg.symbol')).not.toBeNull();
+    expect(host.querySelector('.ka-plan-kopf')!.textContent).not.toMatch(/[↑↓]/);
+    // der erste kann nicht nach oben, der letzte nicht nach unten
+    expect(knopfFuer(erster, 'oben').disabled).toBe(true);
+    expect(knopfFuer(namen().at(-1)!, 'unten').disabled).toBe(true);
+    await klick(runter);
+    expect(namen().slice(0, 2)).toEqual([zweiter, erster]);
+    await klick(knopfFuer(erster, 'oben'));
+    expect(namen().slice(0, 2)).toEqual([erster, zweiter]);
+  });
 });
 
 describe('Export: Sperre und Dateinamen', () => {

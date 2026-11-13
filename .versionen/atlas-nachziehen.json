@@ -1,0 +1,6 @@
+{
+  "ordner": {
+    "stufe": "patch",
+    "notiz": "Designsystem nachgezogen: Umsortieren mit gezeichneten Pfeilsymbolen, Zeilenknopf „Aktionen“ mit Drei-Punkte-Symbol, Menü-Kürzel für Screenreader (aria-keyshortcuts) und „Ordner öffnen“ statt „Im Explorer öffnen“."
+  }
+}
