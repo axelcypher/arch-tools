@@ -339,7 +339,14 @@ describe('Projektformat: neue Felder (Block 2)', () => {
     eg.shapes.push(o, r, a);
     p.settings.massgrundlage = 'rohbau';
     p.settings.zweiteBV = true;
+    p.settings.planunterlagen = 'Grundrisse 1:100';
+    o.ueberdeckt = true;
+    const terrasse = { ...createRoom(rect(0, 7, 3, 3), '0.09', 'Terrasse'), ausserhalbBgf: true };
+    eg.shapes.push(terrasse);
     const q = parseProject(serializeProject(p));
+    expect(q.storeys[0].shapes[0]).toMatchObject({ ueberdeckt: true });
+    expect(q.storeys[0].shapes[3]).toMatchObject({ ausserhalbBgf: true });
+    expect(q.settings.planunterlagen).toBe('Grundrisse 1:100');
     expect(q.storeys[0]).toMatchObject({ dachaufbau: 0.3, fussbodenaufbau: 0.12 });
     expect(q.storeys[0].shapes[0]).toMatchObject({ sohleAnsetzen: true, pruefen: true, stempel: { x: 0.5, y: 0.5 } });
     expect(q.storeys[0].shapes[1]).toMatchObject({ rsVonHand: true, nutzungsart: '1.1', katalog: 'Kinderzimmer', stempel: { x: 1, y: 2 }, wofl: { kategorie: 'hoehen', anteile: { h2: 0.5, h12: 0.3 } } });
@@ -348,6 +355,33 @@ describe('Projektformat: neue Felder (Block 2)', () => {
     const alt = parseProject(JSON.stringify({ format: 'arch-flaechen-tool', version: 1, storeys: [{ name: 'EG', hoehe: 3, shapes: [{ kind: 'room', name: 'Bad', nummer: '1', points: rect(0, 0, 2, 2), wofl: { kategorie: 'voll', wohnung: '' } }] }] }));
     const raum = alt.storeys[0].shapes[0];
     expect(raum.kind === 'room' && [raum.rsVonHand, raum.abzugArt, raum.nutzungsart, raum.katalog, raum.stempel, raum.wofl.anteile]).toEqual([undefined, undefined, undefined, undefined, undefined, undefined]);
+  });
+});
+
+describe('Projekteinstellungen aus der Datei', () => {
+  const laden = (settings: unknown) => parseProject(JSON.stringify({ format: 'arch-flaechen-tool', version: 1, settings, storeys: [{ name: 'EG', hoehe: 3, shapes: [] }] })).settings;
+
+  it('ungültige Werte fallen auf die Vorgabe zurück bzw. entfallen; unbekannte Felder bleiben', () => {
+    expect(laden({ freisitzFaktor: null, gridStep: 0 })).toMatchObject({ freisitzFaktor: 0.25, gridStep: 0.05 });
+    expect(laden({ freisitzFaktor: '0,25', gridStep: null })).toMatchObject({ freisitzFaktor: 0.25, gridStep: 0.05 });
+    expect(laden({ freisitzFaktor: 0.8, gridStep: -1 })).toMatchObject({ freisitzFaktor: 0.25, gridStep: 0.05 });
+    expect(laden({ freisitzFaktor: 0.5, gridStep: 0.01 })).toMatchObject({ freisitzFaktor: 0.5, gridStep: 0.01 });
+    const s = laden({ massgrundlage: 'gibts-nicht', zweiteBV: 'ja', bericht: 3, andereApp: { x: 1 } });
+    expect(['massgrundlage' in s, 'zweiteBV' in s, 'bericht' in s]).toEqual([false, false, false]);
+    expect((s as unknown as Record<string, unknown>).andereApp).toEqual({ x: 1 });
+    expect(laden(undefined)).toEqual(createProject().settings);
+  });
+
+  it('Kontrollmaße: nur vollständige Einträge mit endlichen Zahlen', () => {
+    const s = laden({ kontrollmasse: { a: { soll: 8, ist: 8.01, abweichung: 0.00125, massstab: 0.01 }, b: { soll: 8, ist: null, abweichung: 0 }, c: 'x', d: { soll: 5, ist: 5, abweichung: 0, massstab: 0 } } });
+    expect(s.kontrollmasse).toEqual({ a: { soll: 8, ist: 8.01, abweichung: 0.00125, massstab: 0.01 }, d: { soll: 5, ist: 5, abweichung: 0 } });
+  });
+
+  it('Raster ohne gültige Schrittweite rundet nicht (keine NaN-Koordinaten)', async () => {
+    const { roundTo } = await import('./geometry');
+    expect(roundTo(1.234, 0)).toBe(1.234);
+    expect(roundTo(1.234, NaN)).toBe(1.234);
+    expect(roundTo(1.234, 0.05)).toBe(1.25);
   });
 });
 

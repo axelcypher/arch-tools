@@ -81,6 +81,8 @@ export function Toolbar() {
   const canUndo = useEditor((s) => s.past.length > 0);
   const canRedo = useEditor((s) => s.future.length > 0);
   const dirty = useEditor((s) => s.dirty);
+  // Kalibrieren braucht einen Plan im aktiven Geschoss
+  const hatPlan = useEditor((s) => !!(s.project.storeys.find((x) => x.id === s.activeStoreyId) ?? s.project.storeys[0]).background);
   const st = useEditor.getState();
 
   const [ifcOpen, setIfcOpen] = useState(false);
@@ -150,10 +152,10 @@ export function Toolbar() {
       </div>
       {ifcOpen && <IfcImportDialog onClose={() => setIfcOpen(false)} />}
       <div className="tb-group">
-        <button onClick={st.undo} disabled={!canUndo} title="Rückgängig (Strg+Z)">
+        <button onClick={st.undo} disabled={!canUndo} title="Rückgängig (Strg+Z)" aria-label="Rückgängig">
           ↶
         </button>
-        <button onClick={st.redo} disabled={!canRedo} title="Wiederholen (Strg+Y)">
+        <button onClick={st.redo} disabled={!canRedo} title="Wiederholen (Strg+Y)" aria-label="Wiederholen">
           ↷
         </button>
       </div>
@@ -162,8 +164,10 @@ export function Toolbar() {
           <button
             key={t.id}
             className={tool === t.id ? 'active' : ''}
+            aria-pressed={tool === t.id}
+            disabled={t.id === 'calibrate' && !hatPlan && tool !== 'calibrate'}
             onClick={() => st.setTool(t.id)}
-            title={`${t.label}${t.key ? ` (${t.key})` : ''}`}
+            title={t.id === 'calibrate' && !hatPlan ? 'Kalibrieren – zuerst einen Plan laden (rechts unter „Hintergrundplan“)' : `${t.label}${t.key ? ` (${t.key})` : ''}`}
           >
             <span className="tb-icon">{t.icon}</span> {t.label}
           </button>
@@ -171,10 +175,10 @@ export function Toolbar() {
       </div>
       <div className="tb-group" title="Art der neu gezeichneten Fläche">
         <span className="tb-label">als</span>
-        <button className={drawKind === 'outline' ? 'active kind-outline' : ''} onClick={() => st.setDrawKind('outline')} title="BGF-Umriss (B)">
+        <button className={drawKind === 'outline' ? 'active kind-outline' : ''} aria-pressed={drawKind === 'outline'} onClick={() => st.setDrawKind('outline')} title="BGF-Umriss (B)">
           BGF-Umriss
         </button>
-        <button className={drawKind === 'room' ? 'active kind-room' : ''} onClick={() => st.setDrawKind('room')} title="Raum / NRF (N)">
+        <button className={drawKind === 'room' ? 'active kind-room' : ''} aria-pressed={drawKind === 'room'} onClick={() => st.setDrawKind('room')} title="Raum / NRF (N)">
           Raum
         </button>
       </div>

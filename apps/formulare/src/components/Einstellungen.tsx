@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Modal } from '@core/ui/Dialog';
 import { dateiname } from '@core/platform/files';
-import { OAP_PLATZHALTER, projektdateiPfad, unbekanntePlatzhalter } from '@core/projektdatei';
+import { OAP_VARIABLEN, projektdateiPfad } from '@core/projektdatei';
+import { PlatzhalterChips, PlatzhalterHinweise } from '@core/ui/Platzhalter';
 import { hatVorgabe } from '../vorgabe';
 import { VORGABEN } from '../vorgaben';
 import type { Adresse } from '../adressbuch';
@@ -11,6 +12,7 @@ import { waehleOrdner } from '../dateisystem';
 import { IN_PROJEKTKARTE } from '../projektdaten';
 import { stammdatenLaden, stammdatenSpeichern } from '../stammdaten';
 import { AntragEinstellungen } from './AntragEinstellungen';
+import { Karte } from './EinstellungsKarte';
 import { SicherungEinstellungen } from './SicherungEinstellungen';
 import type { EinstellungsBereich } from '../store';
 import { VORGABE_OAP_PFAD, useFormulare } from '../store';
@@ -116,19 +118,6 @@ export function EinstellungenAnsicht() {
         {bereich === 'sicherung' && <SicherungEinstellungen />}
       </section>
     </div>
-  );
-}
-
-function Karte({ titel, text, children, kopf }: { titel: string; text?: React.ReactNode; children: React.ReactNode; kopf?: React.ReactNode }) {
-  return (
-    <section className="es-karte">
-      <div className="es-karte-kopf">
-        <h3>{titel}</h3>
-        {kopf}
-      </div>
-      {text && <p className="muted small-text">{text}</p>}
-      {children}
-    </section>
   );
 }
 
@@ -614,12 +603,9 @@ function Projektdaten() {
         <div className="es-zeile">
           <input defaultValue={neu} key={neu} placeholder={VORGABE_OAP_PFAD} onBlur={(e) => e.target.value.trim() !== neu && setOapVorlage(e.target.value)} aria-label="Pfad für neue Projektdateien" />
         </div>
-        <div className="es-platzhalter">
-          {OAP_PLATZHALTER.map((p) => (
-            <button key={p.name} className="small" title={p.text} onClick={() => setOapVorlage(mitPlatzhalter(neu, p.name))}>
-              {p.name}
-            </button>
-          ))}
+        <PlatzhalterHinweise vorlage={neu} variablen={OAP_VARIABLEN} onAnpassen={setOapVorlage} />
+        <div className="es-platzhalter-zeile">
+          <PlatzhalterChips variablen={OAP_VARIABLEN} label="Pfad für neue Projektdateien" fokusBehalten={false} onEinfuegen={(p) => setOapVorlage(mitPlatzhalter(neu, p))} />
           {neu !== VORGABE_OAP_PFAD && (
             <button className="small" onClick={() => setOapVorlage(VORGABE_OAP_PFAD)}>
               Vorgabe
@@ -629,7 +615,6 @@ function Projektdaten() {
         <p className="muted es-beispiel" role="note" aria-label="Beispiel für den Pfad">
           Beispiel: <code>{projektdateiPfad(neu, OAP_BEISPIEL)}</code>
         </p>
-        {unbekanntePlatzhalter(neu).length > 0 && <p className="warning">Unbekannt, bleibt so im Namen stehen: {unbekanntePlatzhalter(neu).join(', ')}</p>}
       </Karte>
       <Karte titel="Angaben">
         <table className="es-tabelle">

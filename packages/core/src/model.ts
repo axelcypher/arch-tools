@@ -81,10 +81,15 @@ export interface OutlineShape extends ShapeBase {
   kind: 'outline';
   /**
    * Körperhöhe für den BRI (Unter- bis Oberkante des Körpers, z. B. Galerie, Luftraum); sonst Geschosshöhe.
-   * Bei Umschließung S (Balkon, Loggia, Dachterrasse) ausdrücklich anzugeben: Unterkante Überdeckung bzw.
-   * Oberkante Umwehrung.
+   * Bei Umschließung S (Balkon, Loggia, Dachterrasse) nach DIN 277:2021-08, 7.1: überdeckt bis Oberkante der
+   * Überdeckung (Decke, Dach), nicht überdeckt bis Oberkante Brüstung/Attika/Geländer, ohne Umwehrung 0.
    */
   hoehe?: number;
+  /**
+   * Nur Umschließung S: überdeckt, Rauminhalt bis zur Geschosshöhe (Oberkante der Überdeckung, z. B. Balkon unter
+   * dem Balkon darüber) – ausdrücklich bestätigt. Ohne diese Angabe und ohne Körperhöhe warnt die Prüfung.
+   */
+  ueberdeckt?: boolean;
   /** Bodenplatte des Geschosses auch unter diesem S-Umriss ansetzen (sonst nur unter R-Umrissen) */
   sohleAnsetzen?: boolean;
   /** Umriss ist zu prüfen (z. B. aus dem Geschoss darunter übernommen) */
@@ -119,6 +124,11 @@ export interface RoomShape extends ShapeBase {
   abzugArt?: AbzugArt;
   /** Nutzungsart (zweite Ebene unter der Nutzungsgruppe, Nummer aus dem Katalog des Büros, z. B. „7.1“) */
   nutzungsart?: string;
+  /**
+   * Fläche außerhalb der BGF (DIN 277:2021-08, 6.1 a): z. B. ebenerdige Terrasse, die nicht unterbaut und nicht
+   * konstruktiv fest mit dem Gebäude verbunden ist. Zählt nur zur Wohnfläche (§ 2 Abs. 2 Nr. 2 WoFlV), nicht zur NRF.
+   */
+  ausserhalbBgf?: boolean;
   /** Bezeichnung des Katalogeintrags, aus dem Nutzung und Anrechnung stammen (Vorschlag „aus Katalog“) */
   katalog?: string;
   /** Lage des Raumstempels (Weltkoordinaten); ohne Angabe automatisch */
@@ -271,7 +281,8 @@ export interface Storey {
   /** Vollgeschoss für GFZ und Zahl der Vollgeschosse (GRZ/GFZ-Nachweis); ohne Angabe nach der Bauordnung geprüft */
   vollgeschoss?: boolean;
   /**
-   * Bodenplatte: Abstand UK Sohle bis zum Geschossfußboden in m. Der BRI rechnet ab der Unterseite der Sohle
+   * Bodenplatte: Abstand Unterkante Boden-/Fundamentplatte einschließlich Dämmung darunter bis zum Geschossfußboden
+   * in m. Der BRI rechnet im untersten Geschoss ab dieser Unterkante
    * (DIN 277) – für alle Teile des Geschosses, unter denen kein anderes Geschoss liegt.
    */
   sohle?: number;
@@ -283,6 +294,14 @@ export interface Storey {
   background?: Background;
 }
 
+export interface Kontrollmass {
+  soll: number;
+  ist: number;
+  abweichung: number;
+  /** Maßstab des Plans beim Messen (m/px bzw. m/DXF-Einheit); fehlt bei Projekten bis Flächenrechner 0.31 */
+  massstab?: number;
+}
+
 export interface ProjectSettings {
   /** Rasterweite für den Fang in m */
   gridStep: number;
@@ -290,12 +309,20 @@ export interface ProjectSettings {
   freisitzFaktor: number;
   /** Maßgrundlage der Flächen (Bericht, Excel): Planmaß Rohbau, Planmaß Fertigmaß oder Aufmaß */
   massgrundlage?: Massgrundlage;
-  /** Altberechnung nach der II. BV (§§ 42–44, nur zum Vergleich mit Bestandsberechnungen bis 31.12.2003) */
+  /**
+   * Vergleichsrechnung in Anlehnung an die II. BV a. F.: WoFlV mit Freisitzen standardmäßig zu ½ (nur zum Vergleich
+   * mit Bestandsberechnungen bis 31.12.2003; weitere Abweichungen der II. BV sind nicht nachgebildet)
+   */
   zweiteBV?: boolean;
+  /** Planungsunterlagen der Ermittlung (DIN 277:2021-08, 5.1), z. B. „Grundrisse 1:100, Stand 01.10.2026“; leer = hinterlegte Pläne */
+  planunterlagen?: string;
   /** Flächenrechner: Vorlage und Abschnitte des Berichts (geprüft in der App) */
   bericht?: { vorlage?: string; abschnitte?: string[] };
-  /** Flächenrechner: Kontrollmaß nach dem Kalibrieren je Geschoss (Geschoss-Kennung → Soll, gemessen, Abweichung) */
-  kontrollmasse?: Record<string, { soll: number; ist: number; abweichung: number }>;
+  /**
+   * Flächenrechner: Kontrollmaß nach dem Kalibrieren je Geschoss (Geschoss-Kennung → Soll, gemessen, Abweichung und
+   * Maßstab des Plans beim Messen – passt er nicht mehr zum Plan, gilt das Kontrollmaß nicht, siehe gueltigesKontrollmass)
+   */
+  kontrollmasse?: Record<string, Kontrollmass>;
 }
 
 export type Massgrundlage = 'rohbau' | 'fertig' | 'aufmass';

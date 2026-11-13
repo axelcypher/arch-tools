@@ -554,9 +554,14 @@ describe('Projektdatei (.oap) als Quelle der Projektstammdaten', () => {
     expect(beispiel()).toBe(`Beispiel: Organisation/BS9 ${heute} Neubau Einfamilienhaus.oap`);
     act(() => useFormulare.getState().setOapVorlage('Organisation/{Kürzel} {Bauherr}.oap'));
     await warte();
-    expect(document.querySelector('.warning')!.textContent).toContain('{Bauherr}');
-    await klick(knopf(document.body, '{Kurzname}'));
-    expect(useFormulare.getState().oapVorlage).toBe('Organisation/{Kürzel} {Bauherr} {Kurzname}.oap');
+    expect(document.querySelector('.feld-meldung')!.textContent).toContain('{Bauherr}');
+    await klick(knopf(document.body, '{PROJEKT_KURZNAME}'));
+    expect(useFormulare.getState().oapVorlage).toBe('Organisation/{Kürzel} {Bauherr} {PROJEKT_KURZNAME}.oap');
+    expect(beispiel()).toBe('Beispiel: Organisation/BS9 {Bauherr} EFH Musterweg.oap');
+    // alte Namen: Hinweis mit „Vorlage anpassen“, erst der Klick stellt um
+    expect(document.querySelector('.ph-veraltet')!.textContent).toContain('{Kürzel} → {PROJEKT_KUERZEL}');
+    await klick(knopf(document.querySelector('.ph-veraltet') as HTMLElement, 'Auf neue Namen umstellen'));
+    expect(useFormulare.getState().oapVorlage).toBe('Organisation/{PROJEKT_KUERZEL} {Bauherr} {PROJEKT_KURZNAME}.oap');
     expect(beispiel()).toBe('Beispiel: Organisation/BS9 {Bauherr} EFH Musterweg.oap');
   });
 

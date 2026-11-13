@@ -19,9 +19,9 @@ import {
   formularSchluessel,
   hauptArt,
   dateiname,
+  zielpfadAus,
   einstellungenAus,
   einstellungenFuer,
-  ueberschreibungenAus,
   vorlageMitAntragsart,
   externStatus,
   fassungenAus,
@@ -53,6 +53,7 @@ import {
   quelleVon,
   standardFassung,
   UEBERSCHREIBBAR,
+  ueberschreibungenAus,
   umfangErforderlich,
   vorlagenAus,
   antragsNameFehler,
@@ -94,6 +95,14 @@ const VORLAGEN = 'formulare:vorlagen';
 const UEBERSCHREIBUNGEN = 'formulare:export-projekte';
 const MERKMALE = 'formulare:merkmale';
 const PROJEKTSTATUS = 'formulare:projektstatus';
+
+/** Abweichungen je Projekt, bereinigt (`ueberschreibungenAus`); Veraltetes (z. B. nur „Phase“) wird dabei auch aus dem Speicher genommen */
+function ueberschreibungenLesen(): Record<string, ExportUeberschreibung> {
+  const roh = lesen<unknown>(UEBERSCHREIBUNGEN, {});
+  const sauber = ueberschreibungenAus(roh);
+  if (JSON.stringify(sauber) !== JSON.stringify(roh ?? {})) schreiben(UEBERSCHREIBUNGEN, sauber);
+  return sauber;
+}
 
 /** Angaben zu einem Formular des Projekts (aus der Datei, mit ungespeicherten Eingaben) */
 export interface FormularInfo {
@@ -367,15 +376,20 @@ export const zeilenFassung = (s: Pick<AntragState, 'projektdatei' | 'fassungen' 
 /** Ordner der aktiven Fassung relativ zum Projektordner */
 export const antragsOrdner = (s: Parameters<typeof aktiveFassung>[0], p: Projekt | null) => `${wirksameEinstellungen(s, p).antragsordner.replace(/^\/+|\/+$/g, '')}/${aktiveFassung(s, p)}`;
 
+/** Stammdaten der Projektdatei (.oap) des gewählten Projekts, sofern gelesen – für die globalen Variablen */
+const oapMeta = (p: Projekt | null) => {
+  const { oap: o, projekt } = useFormulare.getState();
+  // nur die Projektdatei des gewählten Projekts – für ein anderes gibt es keine gelesenen Stammdaten
+  if (!p || !projekt || p.root !== projekt.root || p.ordner !== projekt.ordner) return undefined;
+  return o && o !== 'fehlt' ? o.inhalt.meta : undefined;
+};
+
 /** voreingestellter Zielordner des Exports (relativ zum Projektordner) */
 export function zielOrdner(s: Parameters<typeof aktiveFassung>[0], p: Projekt | null): string {
   const e = wirksameEinstellungen(s, p);
   if (e.ziel === 'aktiv' || !e.zielpfad.trim()) return antragsOrdner(s, p);
-  return e.zielpfad
-    .replace(/\{antrag\}/gi, aktiveFassung(s, p))
-    .replace(/\{k(ü|ue)rzel\}/gi, p?.ordner ?? '')
-    .replace(/\\/g, '/')
-    .replace(/^\/+|\/+$/g, '');
+  const meta = oapMeta(p);
+  return zielpfadAus(e.zielpfad, { kuerzel: p?.ordner ?? '', antrag: aktiveFassung(s, p), art: artVonFassung(s, p, aktiveFassung(s, p)), kurzname: meta?.kurzname, vorhaben: meta?.vorhaben, bearbeiter: meta?.bearbeiter });
 }
 
 const ohneEndung = (n: string) => n.replace(/\.[^.]+$/, '');
@@ -967,7 +981,7 @@ export const useAntrag = create<AntragState>((set, get) => {
     katalog: katalogAus(lesen<unknown>(KATALOG, null)),
     vorlagen: vorlagenAus(lesen<unknown>(VORLAGEN, null), katalogAus(lesen<unknown>(KATALOG, null))),
     merkmalDefinitionen: merkmaleAus(lesen<unknown>(MERKMALE, null)),
-    ueberschreibungen: ueberschreibungenAus(lesen<unknown>(UEBERSCHREIBUNGEN, {})),
+    ueberschreibungen: ueberschreibungenLesen(),
     projektdatei: null,
     fassungen: [],
     dateien: [],
@@ -986,7 +1000,7 @@ export const useAntrag = create<AntragState>((set, get) => {
         katalog: katalogAus(lesen<unknown>(KATALOG, null)),
         vorlagen: vorlagenAus(lesen<unknown>(VORLAGEN, null), katalogAus(lesen<unknown>(KATALOG, null))),
         merkmalDefinitionen: merkmaleAus(lesen<unknown>(MERKMALE, null)),
-        ueberschreibungen: ueberschreibungenAus(lesen<unknown>(UEBERSCHREIBUNGEN, {})),
+        ueberschreibungen: ueberschreibungenLesen(),
       });
       void get().laden();
     },
@@ -1793,9 +1807,13 @@ export function exportVorschlag(formularPfad: string, datum = new Date()): Expor
   const info = st.formularInfo[formularPfad];
   const doc = st.dokumente.find((d) => d.formular?.pfad === formularPfad);
   const formularName = ohneEndung(nurName(formularPfad));
+  const meta = oapMeta(projekt);
   const name = dateiname(e.namensvorlage, {
+    // Projektkürzel ist in den Formularen der Name des Projektordners (wie bisher)
     kuerzel: projekt?.ordner ?? '',
-    phase: e.phase,
+    kurzname: meta?.kurzname,
+    vorhaben: meta?.vorhaben,
+    bearbeiter: meta?.bearbeiter,
     datum,
     nr: doc?.eintrag.nr,
     name: doc?.eintrag.titel ?? anzeigeName(formularName),

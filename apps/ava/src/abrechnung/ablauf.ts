@@ -19,6 +19,8 @@ import type { AvaEinstellungen, MailVorlage } from '../einstellungen';
 import { neueId } from '../lv/modell';
 import type { Gewerk } from '../projekt';
 import { nameBilden } from './benennung';
+import type { Wert } from '@core/platzhalter';
+import { globaleAva } from '../platzhalter';
 import type { DeckblattDaten } from './deckblatt';
 import { deckblattPdf, deckblattVoranstellen } from './deckblatt';
 import { gewerkZweistellig } from './gewerk';
@@ -170,7 +172,7 @@ export async function deckblattErzeugen(k: Kontext, d: RechnungsDatensatz): Prom
 
 /** Dateiname der Rechnung im Auftragsordner (erstes Muster) */
 export function rechnungsDateiname(k: Kontext, d: RechnungsDatensatz): string {
-  return `${nameBilden(k.e.rechnungen.muster[0], { kuerzel: k.meta.projektcode, nr: typeof d.nr === 'number' ? d.nr : Number(d.nr) || undefined, art: d.art, lfd: d.lfd, firma: d.firma, datum: d.rechnungsdatum, gewerk: gewerkZweistellig(d.gewerk) })}.pdf`;
+  return `${nameBilden(k.e.rechnungen.muster[0], { kuerzel: k.meta.projektcode, nr: typeof d.nr === 'number' ? d.nr : Number(d.nr) || undefined, art: d.art, lfd: d.lfd, firma: d.firma, datum: d.rechnungsdatum, gewerk: gewerkZweistellig(d.gewerk) }, globaleAva(k.meta, k.projektName, k.e.deckblatt.bearbeiter))}.pdf`;
 }
 
 /** Zielordner des Gewerks (Auftrag) relativ zum Projektordner */
@@ -201,20 +203,18 @@ export async function scanAblegen(k: Kontext, d: RechnungsDatensatz, g: Gewerk |
 }
 
 /** Werte für die Platzhalter der Mailvorlagen */
-export function mailWerte(k: Kontext, d: RechnungsDatensatz, ava: AvaProjekt): Record<string, string> {
+export function mailWerte(k: Kontext, d: RechnungsDatensatz, ava: AvaProjekt): Record<string, Wert> {
   const zahler = ava.gewerke[d.gewerk]?.zahler || ava.zahler || k.meta.bauherr.kontakte.find((c) => c.art === 'email')?.wert || '';
   return {
-    Projekt: k.meta.vorhaben || k.projektName,
-    Kürzel: k.meta.projektcode,
+    ...globaleAva(k.meta, k.projektName, k.e.deckblatt.bearbeiter),
     Gewerk: `${gewerkZweistellig(d.gewerk)} ${ava.gewerke[d.gewerk]?.kostengruppe ?? ''}`.trim(),
     Firma: d.firma,
-    'Firma-Mail': ava.gewerke[d.gewerk]?.email ?? '',
+    FirmaMail: ava.gewerke[d.gewerk]?.email ?? '',
     Rechnung: `${d.art} ${d.lfd ?? ''}`.trim(),
     Nr: String(d.nr),
     Betrag: euro(d.betrag),
-    Datum: datumDE(d.rechnungsdatum),
+    Rechnungsdatum: datumDE(d.rechnungsdatum),
     Zahler: zahler,
-    Bearbeiter: k.e.deckblatt.bearbeiter || k.meta.bearbeiter || '',
   };
 }
 

@@ -5,6 +5,8 @@
  */
 
 import { bytesToBase64 } from '@core/platform/files';
+import { ersetzen, type Variable, type Wert } from '@core/platzhalter';
+import { MAIL_RECHNUNG_VARIABLEN } from '../platzhalter';
 
 export interface MailAnhang {
   name: string;
@@ -73,10 +75,10 @@ export function emlBauen(m: Mail, jetzt = new Date(), grenze = `----=_arch-tools
   return new TextEncoder().encode(eml);
 }
 
-/** Platzhalter in Betreff und Text der Mailvorlagen: {Projekt}, {Kürzel}, {Gewerk}, {Firma}, {Rechnung}, {Nr}, {Betrag}, {Datum}, {Bearbeiter} */
-export function vorlageFuellen(vorlage: string, werte: Record<string, string>): string {
-  return vorlage.replace(/\{([^}]+)\}/g, (m, k: string) => {
-    const schl = Object.keys(werte).find((x) => x.toLowerCase() === k.toLowerCase().replace('kuerzel', 'kürzel'));
-    return schl !== undefined ? werte[schl] : m;
-  });
+/**
+ * Platzhalter in Empfängern, Betreff und Text der Mailvorlagen ersetzen – Variablen siehe ../platzhalter.ts (Rechnung
+ * bzw. Protokoll); `werte` nach den neuen Namen. Platzhalter ohne Wert bleiben sichtbar stehen.
+ */
+export function vorlageFuellen(vorlage: string, werte: Record<string, Wert>, variablen: Variable[] = MAIL_RECHNUNG_VARIABLEN): string {
+  return ersetzen(vorlage, variablen, werte, { ohneWert: 'stehen' });
 }

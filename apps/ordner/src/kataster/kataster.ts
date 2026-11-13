@@ -1,6 +1,7 @@
 import { strFromU8, unzipSync } from 'fflate';
 import { isZip } from '@core/archive';
 import type { Koordinaten } from '@core/model';
+import { ersetzen, globaleWerte, GLOBALE_VARIABLEN, mitAliasen, platzhalterIn, type Variable } from '@core/platzhalter';
 import { sichererDateiname } from '@core/projektdatei';
 
 /**
@@ -46,9 +47,9 @@ export interface KatasterEinstellungen {
   vorlage: string;
   /** Ablage: Ordner der aktiven Antragsfassung oder fester Ordner im Projektordner */
   ziel: KatasterZiel;
-  /** fester Ordner relativ zum Projektordner ({antrag} = aktive Fassung) */
+  /** fester Ordner relativ zum Projektordner ({Antrag} = aktive Fassung) */
   zielpfad: string;
-  /** Dateiname ohne Endung: {Code} {Art} {Datum} {Name} {Kürzel} */
+  /** Dateiname ohne Endung – Variablen siehe {@link KATASTER_VARIABLEN} */
   dateiname: string;
   plaene: KatasterPlan[];
 }
@@ -120,7 +121,7 @@ export const VORGABE_KATASTER: KatasterEinstellungen = {
   vorlage: '',
   ziel: 'pfad',
   zielpfad: 'Kataster',
-  dateiname: '{Code} {Art} {Datum} {Name}',
+  dateiname: '{PROJEKT_KUERZEL} {Art} {DATUM} {Name}',
   plaene: VORGABE_PLAENE,
 };
 
@@ -254,27 +255,45 @@ export interface PlanKopf {
 }
 
 export interface Namensteile {
-  code: string;
+  /** Projektkürzel (ohne Projektcode der Name des Projekts) */
   kuerzel: string;
   /** Antragsart (z. B. BAUA) */
   art: string;
   datum: Date;
+  kurzname?: string;
+  vorhaben?: string;
+  bearbeiter?: string;
 }
 
-/** JJMMTT */
-const jjmmtt = (d: Date) => `${String(d.getFullYear() % 100).padStart(2, '0')}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+/** globale Variablen; {Code} hieß hier früher das Projektkürzel */
+const GLOBAL_KATASTER: Variable[] = GLOBALE_VARIABLEN.map((v) =>
+  v.name === 'PROJEKT_KUERZEL' ? { ...mitAliasen(v.name, ['Code']), quelle: 'Projektdatei (.oap), Stammdaten „Projektcode“; ohne Projektcode der Name des Projekts' } : v,
+);
+/** Variablen im Dateinamen der Katasterpläne */
+export const KATASTER_VARIABLEN: Variable[] = [
+  ...GLOBAL_KATASTER,
+  { name: 'Art', text: 'Antragsart der aktiven Fassung, z. B. BAUA' },
+  { name: 'Name', text: 'Name des Plans, z. B. Katasterauszug A4' },
+];
+/** Variablen im festen Ablageordner */
+export const KATASTER_ZIEL_VARIABLEN: Variable[] = [...GLOBAL_KATASTER, { name: 'Antrag', text: 'aktive Antragsfassung, z. B. BAUA 2' }];
+
+const globaleAus = (t: Namensteile) => globaleWerte({ projektcode: t.kuerzel, kurzname: t.kurzname, vorhaben: t.vorhaben, bearbeiter: t.bearbeiter, datum: t.datum });
 
 /** Dateiname eines Plans (mit Endung) nach der Vorlage */
 export function planDateiname(vorlage: string, plan: Pick<KatasterPlan, 'name' | 'art'>, t: Namensteile): string {
-  const name = vorlage
-    .replace(/\{code\}/gi, t.code)
-    .replace(/\{art\}/gi, t.art)
-    .replace(/\{datum\}/gi, jjmmtt(t.datum))
-    .replace(/\{name\}/gi, plan.name)
-    .replace(/\{k(ü|ue)rzel\}/gi, t.kuerzel)
+  const name = ersetzen(vorlage, KATASTER_VARIABLEN, { ...globaleAus(t), Art: t.art, Name: plan.name })
     .replace(/\s+/g, ' ')
     .trim();
   return `${sichererDateiname(name) || sichererDateiname(plan.name) || 'Plan'}.${plan.art}`;
+}
+
+/** fester Ablageordner mit eingesetzten Variablen; null, wenn er {Antrag} enthält und kein Antrag aktiv ist */
+export function katasterZielpfad(zielpfad: string, antrag: string | undefined, t: Namensteile): string | null {
+  if (!antrag && platzhalterIn(zielpfad, KATASTER_ZIEL_VARIABLEN).some((f) => f.treffer?.variable.name === 'Antrag')) return null;
+  return ersetzen(zielpfad, KATASTER_ZIEL_VARIABLEN, { ...globaleAus(t), Antrag: antrag ?? '' }, { saeubern: (v) => v.replace(/[\\/]+/g, ' ') })
+    .replace(/\\/g, '/')
+    .replace(/^\/+|\/+$/g, '');
 }
 
 export interface Auftrag {

@@ -72,7 +72,7 @@ kalibrierten Planbild nachgezeichnet; die Anwendung ermittelt daraus:
 | Kennwert | Grundlage | Ermittlung |
 |---|---|---|
 | **BGF** – Brutto-Grundfläche | DIN 277 | Σ BGF-Umrisse je Geschoss, getrennt nach Raumumschließung **R** (Regelfall) und **S** (Sonderfall) |
-| **BRI** – Brutto-Rauminhalt | DIN 277 | Σ Umrissfläche × Geschosshöhe bzw. Volumen vom Fußboden bis zur Dachhaut (Dachform oder Dach aus IFC), unten ab **UK Bodenplatte** (Sohle) inkl. tiefer liegender Bereiche |
+| **BRI** – Brutto-Rauminhalt | DIN 277 | Σ Umrissfläche × Geschosshöhe bzw. Volumen vom Fußboden bis zur Dachhaut (Dachform oder Dach aus IFC), unten ab **Unterkante Bodenplatte einschließlich Dämmung darunter** inkl. tiefer liegender Bereiche |
 | **NRF** – Netto-Raumfläche | DIN 277 | Σ Räume = NUF 1–7 + TF 8 + VF 9 |
 | **KGF** – Konstruktions-Grundfläche | DIN 277 | BGF − NRF (rechnerisch) |
 | **WoFl** – Wohnfläche | WoFlV § 4 | Σ Raumfläche × Anrechnungsfaktor, gruppiert nach Wohnung |
@@ -80,9 +80,12 @@ kalibrierten Planbild nachgezeichnet; die Anwendung ermittelt daraus:
 Anrechnungsfaktoren WoFlV: lichte Höhe ≥ 2 m → 100 %, 1–2 m → 50 %, < 1 m → 0 % (auch als Teilflächen eines
 Raums nach lichter Höhe), unbeheizbare Wintergärten/Schwimmbäder → 50 %, Balkone/Loggien/Dachgärten/Terrassen →
 i. d. R. 25 % (Projektstandard einstellbar, max. 50 %) sowie ein individueller Faktor. Optional eine
-**Altberechnung nach II. BV** (nur zum Vergleich mit Bestandsberechnungen bis 2003, Balkone dann standardmäßig 50 %,
-deutlicher Hinweis im Bericht). Die **Maßgrundlage** (Planmaß Rohbau, Planmaß Fertigmaß, Aufmaß) wird beim Projekt
-festgehalten.
+**Vergleichsrechnung „II. BV“** (nur zum Vergleich mit Bestandsberechnungen bis 2003): gerechnet wird nach WoFlV,
+nur Balkone, Loggien, Dachgärten und Terrassen zählen standardmäßig zur Hälfte; weitere Regeln der II. BV a. F.
+(§ 44 Abs. 1 Nr. 2, Abs. 2, Abs. 3) sind nicht nachgebildet – so steht es auch im Bericht. **Messverfahren**
+(Maßgrundlage: Planmaß Rohbau, Planmaß Fertigmaß, Aufmaß) und **Planungsunterlagen** (Eingabe, sonst die
+hinterlegten Pläne) werden beim Projekt festgehalten und stehen im Kopf von Bericht und Excel (DIN 277:2021-08, 5.1);
+fehlen sie, warnt der Bericht.
 
 ### Funktionen
 
@@ -112,7 +115,8 @@ festgehalten.
   Einheit aus `$INSUNITS`, Blöcke, Bemaßungen, Texte) sowie **PNG/JPG**; Kalibrierung über eine bekannte Strecke
   (Länge mit Einheit: „12,00 m“, „1200 cm“, „12000 mm“; Fang auf Plankanten und Eckpunkte), danach **Kontrollmaß**
   an einer zweiten Strecke mit Abweichung in % – steht als Maßgrundlage („aus Plan abgegriffen, Maßstab kalibriert,
-  Kontrollmaß … Abweichung x %“) im Berichtskopf und in Excel (`projekt.kontrollmass`)
+  Kontrollmaß … Abweichung x %“) im Berichtskopf und in Excel (`projekt.kontrollmass`). Das Kontrollmaß gilt nur
+  für den Plan im gemessenen Maßstab: Ein neuer Plan, Neukalibrieren oder ein anderer Planmaßstab verwirft es
 - **Fang** auf Raster, Eckpunkte und Kanten (auch DXF-Geometrie und darunterliegendes Geschoss), **Alt** = Fang aus
 - **Hilfslinienfang** für schräg stehende (genordete) Gebäude: Verlängerungen der Nachbarkanten, Gebäudeachsen
   und Fluchten bestehender Eckpunkte; **Shift** hält die Linie auf der Gebäudeachse, Rechtecke richten sich an ihr aus
@@ -134,8 +138,9 @@ festgehalten.
   Quellenangaben, Links und Suche – zentral und je Funktion gefiltert
 - **Numerische Eingabe** beim Zeichnen: Länge tippen + Enter (in Mausrichtung), `dx;dy` relativ, Rechteck `4,5x3,2`
 - Eckpunkte ziehen, auf Kantenmitte ziehen = Punkt einfügen, Rechtsklick = Punkt löschen, Koordinaten-Tabelle
-- **Abzugsflächen**: am BGF-Umriss z. B. Innenhof oder Luftraum über einer Galerie, im Raum z. B. Schornstein,
-  Pfeiler, Schacht im Raum
+- **Abzugsflächen**: am BGF-Umriss z. B. Innenhof, Luftraum über einer Galerie oder Deckenöffnung über 1,0 m², im
+  Raum z. B. Schornstein, Pfeiler, Schacht im Raum. Wird ein Raum zur Abzugsfläche, erbt er Anrechnung und Wohnung
+  des Raums, in dem er liegt (Anrechnung „keine“)
 - Mehrere **Geschosse**: „+ Neu“ fügt über oder unter dem aktiven Geschoss ein (Name und Fußbodenhöhe nach der
   Lage, z. B. KG unter dem EG), Geschoss duplizieren (Regelgeschosse, die Kopie heißt nach ihrer Lage),
   darunterliegendes Geschoss einblenden. **Geschossart** Keller-, Normal- oder Dachgeschoss (ohne Angabe nach Name
@@ -169,16 +174,20 @@ festgehalten.
   freie Auswahl der Abschnitte (Grundflächen und Rauminhalte, BRI-Rechenweg, Nutzungsgruppen, Raumlisten,
   Wohnflächen, Hochbaustatistik). In „Bauantrag NRW“ sind die Tabelle nach DIN 277 mit R/S-Trennung und der
   BRI-Rechenweg nicht abwählbar (§ 6 Nr. 1 BauPrüfVO NRW, Gebührentarif 3.1.1.2). Kopf aus den Stammdaten mit
-  Normausgaben („BRI nach DIN 277:2021-08 (entspricht für den BRI DIN 277-1:2016-01, § 6 BauPrüfVO NRW)“, WoFlV vom
-  25.11.2003) und Maßgrundlage, „Seite x von y“, Unterschriftszeilen (Aufsteller, Entwurfsverfasser). BGF, BRI, NRF
+  Normausgaben („DIN 277:2021-08 (Gebührentarif NRW, Tarifstelle 3.1.1.2; § 6 Nr. 1 BauPrüfVO NRW nennt
+  DIN 277-1:2016-01)“, WoFlV vom 25.11.2003), Messverfahren und Planungsunterlagen, „Seite x von y“, Unterschriftszeilen (Aufsteller, Entwurfsverfasser). BGF, BRI, NRF
   und KGF getrennt nach R und S (S-Spalten nur, wenn es einen Sonderfall gibt; ebenso in CSV und Excel:
-  `nrf_r`/`nrf_s`, `kgf_r`/`kgf_s`); leere Abschnitte entfallen, ein fehlender BRI erscheint als Warnung; keine
-  erzwungenen Seitenumbrüche mehr. **Angaben für die Hochbaustatistik**: Wohnfläche und Räume je Wohnung, sonstige
-  Nutzfläche, BRI (Excel `statistik.*`, `wohnung.raeume_statistik`; Zählregeln am Erhebungsbogen prüfen)
+  `nrf_r`/`nrf_s`, `kgf_r`/`kgf_s`); leere Abschnitte entfallen; ein fehlender BRI, fehlendes Messverfahren bzw.
+  fehlende Planungsunterlagen und selbstüberschneidende Flächen erscheinen als Warnung; keine erzwungenen
+  Seitenumbrüche mehr. **Angaben für die Hochbaustatistik**: Wohnfläche und Räume je Wohnung (Wohn- und
+  Aufenthaltsräume ab 6 m², Küchen unabhängig von der Größe), sonstige Nutzfläche, BRI (Excel `statistik.*`,
+  `wohnung.raeume_statistik`; Zählregeln am Erhebungsbogen prüfen)
 - **Prüfliste** in der Auswertung (Ampel „Prüfen“): Räume außerhalb bzw. über den Umriss hinaus (je R/S),
   NRF > BGF je Bereich, überlappende Umrisse oder Räume (z. B. versetzt eingefügte Kopie; Abzugsflächen
   ausgenommen), breite Bereiche ohne Raum, doppelte Raumnummern, Räume ohne Wohnung, „keine Wohnfläche“ im
-  Wohngeschoss, „voll“ im Dachgeschoss, S-Umrisse ohne Körperhöhe – alles als Hinweis; ein Klick wählt die
+  Wohngeschoss, „voll“ im Dachgeschoss, S-Umrisse ohne obere Begrenzung, selbstüberschneidende Flächen,
+  Abzugsflächen mit eigener, vom umgebenden Raum abweichender Anrechnung bzw. außerhalb aller Räume, Räume nicht im
+  Raumkatalog (mit eigenem Katalog), zum Prüfen markierte Umrisse – Warnungen und Hinweise; ein Klick wählt die
   Fläche. Ragt ein Raum über den Umriss, lässt er sich in den Eigenschaften „auf den Umriss beschneiden“
 - **Raumkatalog**: Die Bezeichnung schlägt Raumnamen vor; ein Katalogname setzt Nutzungsgruppe (ggf. Nutzungsart)
   und WoFlV-Anrechnung, gekennzeichnet als Vorschlag „aus Katalog“. Der Katalog des Büros liegt im
@@ -234,7 +243,7 @@ festgehalten.
 | `Enter` | Polygon schließen bzw. Zahleneingabe übernehmen |
 | `Backspace` | letzten Punkt bzw. letzte Ziffer entfernen |
 | `Esc` | Abbrechen / Auswahl aufheben |
-| `Entf` | ausgewählte Fläche(n) löschen |
+| `Entf` (oder `Backspace` ohne laufende Eingabe) | ausgewählte Fläche(n) löschen |
 | `Shift`+Klick / `Shift`+Ziehen | Mehrfachauswahl / Auswahlrahmen |
 | `Strg+A` | alle Flächen des Geschosses wählen |
 | `Strg+C` / `Strg+V` / `Strg+D` | Flächen kopieren / einfügen (in ein anderes Geschoss deckungsgleich) / duplizieren |
@@ -347,19 +356,29 @@ aktualisieren sich nicht selbst.
 
 - Die Raumumschließung R/S wird je BGF-Umriss festgelegt; Räume übernehmen sie vom Umriss, in dem sie liegen
   (ein Balkonraum auf einem S-Umriss zählt zur NRF S), lassen sich aber von Hand festlegen. Der IFC-Import setzt
-  Balkone, Loggien und Terrassen auf S. Die Auswertung warnt getrennt, wenn NRF (R) > BGF (R) oder NRF (S) > BGF (S).
-- **S-Umrisse** (Balkon, Loggia, Dachterrasse): Die Körperhöhe ist Pflichtangabe (Unterkante Überdeckung bzw.
-  Oberkante Umwehrung) – ohne sie rechnet der BRI mit der Geschosshöhe und warnt. Die Bodenplatte wird unter
-  S-Umrissen nur auf ausdrücklichen Wunsch angesetzt.
+  Balkone, Loggien und Terrassen auf S und nennt Terrassen im Importbericht. Die Auswertung warnt getrennt, wenn
+  NRF (R) > BGF (R) oder NRF (S) > BGF (S).
+- **Ebenerdige Terrasse** (nicht unterbaut, nicht konstruktiv fest mit dem Gebäude verbunden): gehört nicht zur BGF
+  und NRF (DIN 277:2021-08, 6.1 a), zählt aber zur Wohnfläche (§ 2 Abs. 2 Nr. 2 WoFlV). Im Raum unter
+  „Raumumschließung“ „außerhalb der BGF – nur Wohnfläche“ wählen (Katalog: „Terrasse (ebenerdig, nicht
+  unterbaut)“); unterbaute Terrassen und Dachterrassen sind S.
+- **S-Umrisse** (Balkon, Loggia, Dachterrasse): Die obere Begrenzung ist Pflichtangabe (DIN 277:2021-08, 7.1) –
+  überdeckt bis Oberkante der Überdeckung (bei übereinanderliegenden Balkonen i. d. R. die Geschosshöhe: „überdeckt“
+  bestätigen), nicht überdeckt bis Oberkante Brüstung bzw. Geländer (Körperhöhe), ohne Umwehrung 0. Ohne Angabe
+  rechnet der BRI mit der Geschosshöhe und warnt. Die Bodenplatte wird unter S-Umrissen nur auf ausdrücklichen
+  Wunsch angesetzt.
 - Geschosshöhe und Bodenplatte beziehen sich auf den Fußboden in derselben Bezugsebene wie die Geschosskoten
-  (i. d. R. OK Fertigfußboden); die Bodenplatte zählt von UK Sohle bis zu dieser Bezugsebene.
+  (i. d. R. OK Fertigfußboden); die Bodenplatte zählt von der Unterkante der Boden- bzw. Fundamentplatte
+  einschließlich darunter liegender Dämmschichten bis zu dieser Bezugsebene; Einzel- und Streifenfundamente zählen
+  nicht.
 - KGF wird rechnerisch als BGF − NRF ermittelt; sie ist nur aussagekräftig, wenn alle Räume erfasst sind.
 - Dachschrägen: Anrechnung „Raumteile nach lichter Höhe“ mit Teilflächen ≥ 2 m / 1–2 m / < 1 m (aus dem IFC
   automatisch); die Wohnfläche ergibt sich exakt als ≥ 2 m + ½ × 1–2 m. Steht ein Raum im Dachgeschoss auf „voll“,
   erinnert ein Hinweis daran, die lichte Höhe zu prüfen.
 - **Abzugsflächen im Raum** (§ 3 Abs. 3 WoFlV): Sie erben die WoFlV-Anrechnung und Wohnung des Raums, in dem sie
   liegen, und mindern wahlweise „NRF und Wohnfläche“ (Schornstein, Pfeiler über 0,1 m² und 1,50 m Höhe, Schacht im
-  Raum), „nur Wohnfläche“ (Treppe mit mehr als drei Steigungen samt Absätzen – bleibt Verkehrsfläche der NRF) oder
+  Raum), „nur Wohnfläche“ (Treppe mit mehr als drei Steigungen samt Absätzen – bleibt in der NRF des Raums; für
+  VF 9 die Treppe als eigenen Raum zeichnen) oder
   „nur NRF“ (Pfeiler bis 0,1 m², der zur Wohnfläche zählt).
 - „Automatisch nach Raumname“ ist ein Vorschlag: Treppenhaus/Treppenraum zählt nicht, ein Raum mit Treppe
   (z. B. „Diele/Treppe“) zählt ohne die Treppenfläche, Hauswirtschaftsraum zählt, Waschküche nicht; Räume eines

@@ -158,16 +158,18 @@ AB 1 → 3.091,58 €.
 
 ### Dateinamen der Rechnungen
 
-Muster mit Platzhaltern (Einstellungen › Rechnungen & Benennung): `{Kürzel}` Projektnummer, `{Nr}` bzw. `{Nr:3}`
-Nummer der Rechnungsliste (dreistellig), `{Art}` Rechnungsart (AB, SR, TSR, R – einstellbar), `{Lfd}` laufende
-Nummer der Art, `{Firma}`, `{Datum}` Rechnungsdatum JJMMTT, `{Gewerk}` („G08“). Das erste Muster gilt für neue
-Dateien, alle zum Erkennen vorhandener – die Benennung war nicht immer einheitlich. Vorgabe:
+Muster mit Platzhaltern (Einstellungen › Rechnungen & Benennung; Schreibweise wie in allen Apps, siehe
+[platzhalter.md](platzhalter.md)): global `{PROJEKT_KUERZEL}` Projektnummer (und die übrigen globalen Variablen,
+beim Erkennen als beliebiger Text), lokal `{Nr}` bzw. `{Nr:3}` Nummer der Rechnungsliste (dreistellig), `{Art}`
+Rechnungsart (AB, SR, TSR, R – einstellbar), `{Lfd}` laufende Nummer der Art, `{Firma}`, `{Rechnungsdatum}` als
+JJMMTT, `{Gewerk}` („G08“). Das erste Muster gilt für neue Dateien, alle zum Erkennen vorhandener – die Benennung war
+nicht immer einheitlich. Gespeicherte Muster mit `{Kürzel}` und `{Datum}` (= Rechnungsdatum) gelten weiter. Vorgabe:
 
 | Muster | Beispiel |
 |---|---|
-| `{Kürzel} R{Nr:3} {Firma} {Datum} {Art}{Lfd}` | `K62 R021 Witthaut 251024 AB1.pdf` |
-| `{Kürzel} {Datum} {Lfd}.{Art} Fa. {Firma}` | `HVO 261111 1.AB Fa. Tischer.pdf` |
-| `{Kürzel} {Datum} {Art}{Lfd} {Firma}` | `K62 251024 SR1 Witthaut.pdf` |
+| `{PROJEKT_KUERZEL} R{Nr:3} {Firma} {Rechnungsdatum} {Art}{Lfd}` | `K62 R021 Witthaut 251024 AB1.pdf` |
+| `{PROJEKT_KUERZEL} {Rechnungsdatum} {Lfd}.{Art} Fa. {Firma}` | `HVO 261111 1.AB Fa. Tischer.pdf` |
+| `{PROJEKT_KUERZEL} {Rechnungsdatum} {Art}{Lfd} {Firma}` | `K62 251024 SR1 Witthaut.pdf` |
 
 Unterstriche statt Leerzeichen werden erkannt. Die Einstellungen zeigen ein Beispiel und probieren das Erkennen
 an einem Dateinamen aus.
@@ -186,9 +188,13 @@ zum Drucken im PDF-Programm (Temp-Ordner) und lässt sich jederzeit aus der Rech
 
 Mails entstehen als `.eml` mit `X-Unsent: 1` und eingebettetem Anhang (`abrechnung/mail.ts`) und öffnen sich im
 Mailprogramm – Outlook zeigt sie als neue, ungesendete Nachricht mit Empfänger, Betreff, Text und Anhang: nur
-noch „Senden“. Vorlagen (Einstellungen › Mailvorlagen) mit Platzhaltern `{Projekt} {Kürzel} {Gewerk} {Firma}
-{Firma-Mail} {Rechnung} {Nr} {Betrag} {Datum} {Zahler} {Teilnehmer} {Bearbeiter}`; mitgeliefert: geprüfte Rechnung
-an den Zahler, Auftrag an die Firma, Protokoll an die Teilnehmer.
+noch „Senden“. Vorlagen (Einstellungen › Mailvorlagen) mit den globalen Platzhaltern
+(`{PROJEKT_KUERZEL}`, `{PROJEKT_VORHABEN}` – ohne Vorhaben der Projektname –, `{BEARBEITER}` – zuerst die Angabe des
+Deckblatts – …, siehe [platzhalter.md](platzhalter.md)) und lokal `{Gewerk} {Firma} {FirmaMail} {Rechnung} {Nr}
+{Betrag} {Rechnungsdatum} {Zahler}`, in der Protokollvorlage `{Nr} {Protokolldatum} {Teilnehmer}`. Die Chips unter
+der Vorlage fügen in das zuletzt bearbeitete Feld ein. Alte Namen (`{Kürzel}`, `{Projekt}`, `{Datum}`, `{Firma-Mail}`,
+`{Bearbeiter}`) gelten weiter; „Auf neue Namen umstellen“ stellt um. Mitgeliefert: geprüfte Rechnung an den Zahler, Auftrag
+an die Firma, Protokoll an die Teilnehmer.
 
 ### Kostenkontrolle (Excel)
 

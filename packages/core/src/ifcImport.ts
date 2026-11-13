@@ -117,14 +117,16 @@ export function buildFromIfc(x: IfcExtract, o: IfcImportOptions): IfcImportResul
   }
   const storeyFor = (i: number) => storeyByIfcIndex.get(i) ?? storeys[0];
 
-  // Bodenplatte des untersten Geschosses: BRI ab UK Sohle (DIN 277)
+  // Bodenplatte des untersten Geschosses: BRI ab Unterkante Platte einschließlich Dämmung darunter (DIN 277:2021-08, 7.1)
   if (order.length) {
     const unten = order[0];
     const sohle = sohlenDicke(x.elements, unten.elevation);
     if (sohle !== undefined) {
       storeyFor(unten.i).sohle = sohle;
-      report.push(`${storeyFor(unten.i).name}: Bodenplatte ${fmt(sohle, 3)} m (UK Sohle bis Fußboden) – der BRI rechnet ab Unterseite der Sohle.`);
-    } else report.push(`${storeyFor(unten.i).name}: keine Bodenplatte gefunden – Dicke im Geschoss eintragen, damit der BRI ab UK Sohle rechnet.`);
+      report.push(
+        `${storeyFor(unten.i).name}: Bodenplatte ${fmt(sohle, 3)} m (Unterkante Platte bis Fußboden) – der BRI rechnet ab dieser Unterkante. Dämmschicht unter der Bodenplatte prüfen: sie zählt nach DIN 277 mit.`,
+      );
+    } else report.push(`${storeyFor(unten.i).name}: keine Bodenplatte gefunden – Dicke inkl. Dämmung darunter im Geschoss eintragen, damit der BRI ab Unterkante Platte rechnet.`);
   }
 
   // Geschossschnitt als hinterlegter Plan
@@ -169,6 +171,7 @@ export function buildFromIfc(x: IfcExtract, o: IfcImportOptions): IfcImportResul
     const abzugAusreisser: string[] = [];
     const imKeller: string[] = [];
     const treppen: string[] = [];
+    const terrassen: string[] = [];
     for (const sp of x.spaces) {
       if (!imGebaeude(sp.storey)) continue; // Zonen im Lageplan werden Lageplan-Flächen
       const pts = footprintFromTriangles(sp.tris);
@@ -205,8 +208,10 @@ export function buildFromIfc(x: IfcExtract, o: IfcImportOptions): IfcImportResul
       const gemischt = !!hc && hc.a2 < 1 - 1e-6;
       if (hc && gemischt) notes.push(`lichte Höhe ≥ 2 m: ${fmt(hc.a2 * 100, 0)} %, 1–2 m: ${fmt(hc.a12 * 100, 0)} %, < 1 m: ${fmt(hc.a01 * 100, 0)} %`);
       const art = woflArt(room.name, st, room.nutzung);
-      // Balkone, Loggien, Terrassen: nicht allseitig in voller Höhe umschlossen (DIN 277: Sonderfall S)
+      // Balkone, Loggien, Terrassen: nicht allseitig umschlossen (DIN 277: Sonderfall S). Eine ebenerdige, nicht
+      // unterbaute Terrasse gehört gar nicht zur BGF (6.1 a) – das lässt sich am Modell nicht sicher erkennen: nennen
       if (art === 'freisitz') room.umschliessung = 'S';
+      if (art === 'freisitz' && /terrasse/i.test(room.name) && !/dach/i.test(room.name)) terrassen.push(`${room.nummer} ${room.name}`.trim());
       if (o.wohnflaeche) {
         const wohnung = o.wohnung === 'geschoss' ? st.name : o.wohnung === 'zone' ? (sp.kategorie ?? '').trim() : o.wohnungName?.trim() || 'WE 01';
         if (o.wohnung === 'zone' && !wohnung && art !== 'keine') ohneKategorie++;
@@ -230,6 +235,10 @@ export function buildFromIfc(x: IfcExtract, o: IfcImportOptions): IfcImportResul
     if (o.wohnflaeche && keineWofl) report.push(`${keineWofl} Räume nicht als Wohnfläche angerechnet (Keller, Technik, Treppenhaus, Garage, Dachboden …) – Vorschlag nach Raumname, bei Bedarf im Raum ändern.`);
     if (imKeller.length)
       report.push(`Vorschlag „keine Wohnfläche“, weil im Kellergeschoss: ${imKeller.join(', ')} – bei einer Souterrainwohnung die Geschossart auf „Normalgeschoss“ setzen.`);
+    if (terrassen.length)
+      report.push(
+        `Terrassen als Sonderfall S übernommen: ${terrassen.join(', ')} – ist eine davon ebenerdig und nicht unterbaut, gehört sie nicht zur BGF (DIN 277, 6.1 a): im Raum „außerhalb der BGF – nur Wohnfläche“ wählen.`,
+      );
     if (treppen.length) report.push(`Räume mit Treppe angerechnet: ${treppen.join(', ')} – die Treppenfläche als Abzugsfläche „nur Wohnfläche“ erfassen (§ 3 Abs. 3 Nr. 2 WoFlV).`);
     if (putz) report.push(`${putz} Räume mit Abzug aus der IFC-Nettofläche übernommen (Nettofläche kleiner als die Zonengeometrie, z. B. 3 % Putzabzug bei Rohbaumaßen).`);
     if (abzugAusreisser.length) report.push(`Abzug aus der IFC-Nettofläche deutlich abseits von 3 % – bitte prüfen: ${abzugAusreisser.join(', ')}.`);

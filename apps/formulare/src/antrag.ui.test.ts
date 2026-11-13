@@ -261,6 +261,14 @@ describe('Antragsfassung und Export', () => {
     expect(ds.dateien.has('C:/FORMA/BS9/formulare.json')).toBe(false);
     expect(host.querySelector('.an-fassung')?.textContent).toContain('BAUA 3');
   });
+
+  it('alte Abweichungen je Projekt nur mit „Phase“ entfallen beim Lesen – auch im Speicher', async () => {
+    localStorage.setItem('formulare:export-projekte', JSON.stringify({ BS9: { phase: 'EP' }, HVO: { phase: 'EP', zielpfad: 'TÖB/Formulare' } }));
+    act(() => useAntrag.getState().einstellungenNeuLesen());
+    await warte();
+    expect(useAntrag.getState().ueberschreibungen).toEqual({ HVO: { zielpfad: 'TÖB/Formulare' } });
+    expect(JSON.parse(localStorage.getItem('formulare:export-projekte')!)).toEqual({ HVO: { zielpfad: 'TÖB/Formulare' } });
+  });
 });
 
 describe('Antragsumfang und Vollständigkeit', () => {
@@ -910,8 +918,13 @@ describe('Antragsvorlagen und Reihenfolge', () => {
     useFormulare.setState({ einstellungenOffen: true, einstellungsBereich: 'antrag' });
     const host = await render();
     const katalogTitel = () => useAntrag.getState().katalog.map((k) => k.id);
-    // Spalten je Vorlage im Katalog
-    const kreuz = (dok: string, vorlage: string) => host.querySelector<HTMLInputElement>(`input[aria-label="${dok} in ${vorlage}"]`)!;
+    // Antragsdokumente: über der Liste die Vorlage wählen, dann je Dokument ankreuzen
+    const wahl = host.querySelector<HTMLSelectElement>('.es-dok-kopf select')!;
+    act(() => {
+      wahl.value = 'bauva';
+      wahl.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    const kreuz = (dok: string, vorlage: string) => host.querySelector<HTMLInputElement>(`input[aria-label="${dok} gehört zu ${vorlage}"]`)!;
     expect(kreuz('Lageplan', 'Bauvoranfrage').checked).toBe(true);
     expect(kreuz('Bauantrag', 'Bauvoranfrage').checked).toBe(false);
     act(() => kreuz('Bauantrag', 'Bauvoranfrage').click());

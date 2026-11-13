@@ -17,11 +17,14 @@ import type {
   KostenBezug,
   KostenPosition,
   KostenStufe,
+  Kontrollmass,
   LageplanFlaeche,
   LageplanNutzung,
+  Massgrundlage,
   MassNutzung,
   Nutzungsgruppe,
   Project,
+  ProjectSettings,
   ProjectMeta,
   ProjektDatei,
   RasterBackground,
@@ -115,7 +118,7 @@ export function parseProjectData(raw: unknown): Project {
     version: 1,
     name: str(raw.name, base.name),
     meta: normalizeMeta(raw.meta),
-    settings: { ...base.settings, ...(isObj(raw.settings) ? raw.settings : {}) } as Project['settings'],
+    settings: normalizeSettings(raw.settings, base.settings),
     // Lageplan-Geschosse aus 0.7.0 gehören nicht zum Gebäude – ihre Flächen wandern in project.lageplan
     storeys: storeysRaw.filter(isObj).filter((s) => s.lageplan !== true).map(normalizeStorey),
   };
@@ -424,6 +427,7 @@ function normalizeShape(s: Record<string, unknown>): Shape | null {
       hoehe: typeof s.hoehe === 'number' ? s.hoehe : undefined,
       dach: normalizeDach(s.dach),
       ...(s.sohleAnsetzen === true ? { sohleAnsetzen: true } : {}),
+      ...(s.ueberdeckt === true ? { ueberdeckt: true } : {}),
       ...(s.pruefen === true ? { pruefen: true } : {}),
       ...stempel,
       ...(s.anlage === 'garage' || s.anlage === 'nebenanlage' ? { anlage: s.anlage } : {}),
@@ -438,6 +442,7 @@ function normalizeShape(s: Record<string, unknown>): Shape | null {
       putzabzug: typeof s.putzabzug === 'number' && s.putzabzug > 0 && s.putzabzug < 100 ? s.putzabzug : undefined,
       ...(s.aufenthalt === 'ja' || s.aufenthalt === 'nein' || s.aufenthalt === 'treppe' ? { aufenthalt: s.aufenthalt } : {}),
       ...(s.rsVonHand === true ? { rsVonHand: true } : {}),
+      ...(s.ausserhalbBgf === true ? { ausserhalbBgf: true } : {}),
       ...(s.abzugArt === 'wofl' || s.abzugArt === 'din' || s.abzugArt === 'beide' ? { abzugArt: s.abzugArt } : {}),
       ...(typeof s.nutzungsart === 'string' && s.nutzungsart.trim() ? { nutzungsart: s.nutzungsart.trim() } : {}),
       ...(typeof s.katalog === 'string' && s.katalog.trim() ? { katalog: s.katalog } : {}),
@@ -529,6 +534,34 @@ function normalizeBackground(b: unknown): Background | undefined {
   }
   return undefined;
 }
+
+/**
+ * Projekteinstellungen aus der Datei prüfen: bekannte Felder mit falschem Typ oder außerhalb des gültigen Bereichs
+ * fallen auf die Vorgabe zurück bzw. entfallen (z. B. „freisitzFaktor": null rechnete Balkone sonst still mit 0 %,
+ * „gridStep": 0 erzeugte beim Verschieben NaN-Koordinaten). Unbekannte Felder (andere Apps, neuere Versionen) bleiben.
+ */
+export function normalizeSettings(roh: unknown, base: ProjectSettings): ProjectSettings {
+  const r = isObj(roh) ? roh : {};
+  const out: Record<string, unknown> = { ...r };
+  const zahl = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
+  out.gridStep = zahl(r.gridStep) && r.gridStep > 0 ? r.gridStep : base.gridStep;
+  out.freisitzFaktor = zahl(r.freisitzFaktor) && r.freisitzFaktor >= 0 && r.freisitzFaktor <= 0.5 ? r.freisitzFaktor : base.freisitzFaktor;
+  if (!MASSGRUNDLAGE_IDS.includes(r.massgrundlage as Massgrundlage)) delete out.massgrundlage;
+  if (typeof r.zweiteBV !== 'boolean') delete out.zweiteBV;
+  if (typeof r.planunterlagen !== 'string') delete out.planunterlagen;
+  if (!isObj(r.bericht)) delete out.bericht;
+  if (isObj(r.kontrollmasse)) {
+    const k: Record<string, Kontrollmass> = {};
+    for (const [id, v] of Object.entries(r.kontrollmasse)) {
+      if (!isObj(v) || !zahl(v.soll) || v.soll <= 0 || !zahl(v.ist) || !zahl(v.abweichung)) continue;
+      k[id] = { soll: v.soll, ist: v.ist, abweichung: v.abweichung, ...(zahl(v.massstab) && v.massstab > 0 ? { massstab: v.massstab } : {}) };
+    }
+    out.kontrollmasse = k;
+  } else delete out.kontrollmasse;
+  return out as unknown as ProjectSettings;
+}
+
+const MASSGRUNDLAGE_IDS: readonly Massgrundlage[] = ['rohbau', 'fertig', 'aufmass'];
 
 function oneOf<T extends string>(v: unknown, allowed: readonly T[], d: T): T {
   return allowed.includes(v as T) ? (v as T) : d;

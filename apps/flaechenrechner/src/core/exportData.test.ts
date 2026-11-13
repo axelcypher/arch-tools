@@ -76,3 +76,45 @@ describe('R/S getrennt (FR-09)', () => {
     expect(c.scalars['summe.kgf_s']).toBe(1);
   });
 });
+
+describe('Kontrollmaß in Excel (F-16)', () => {
+  function mitPlan(massstabBeimMessen: number | undefined) {
+    const p = createProject('Haus');
+    const eg = p.storeys[0];
+    eg.background = { type: 'raster', name: 'EG.png', dataUrl: 'data:,', widthPx: 1000, heightPx: 800, x: 0, y: 0, metersPerPixel: 0.01, opacity: 0.6, visible: true };
+    p.settings.kontrollmasse = { [eg.id]: { soll: 8, ist: 8.0096, abweichung: 0.0012, ...(massstabBeimMessen ? { massstab: massstabBeimMessen } : {}) } };
+    return p;
+  }
+  const text = (p: ReturnType<typeof createProject>) => buildExportContext(p, computeProject(p)).scalars['projekt.kontrollmass'];
+
+  it('steht im Kopf, solange der Plan im gemessenen Maßstab vorliegt', () => {
+    expect(text(mitPlan(0.01))).toBe('EG: aus Plan abgegriffen, Maßstab kalibriert, Kontrollmaß 8,00 m: Abweichung +0,12 %');
+    // ältere Projekte ohne gespeicherten Maßstab: gilt, solange der Plan da ist
+    expect(text(mitPlan(undefined))).toMatch(/^EG: /);
+  });
+
+  it('entfällt nach Maßstabsänderung, ohne Plan und nach ohneKontrollmass (neuer Plan)', async () => {
+    const { ohneKontrollmass } = await import('./background');
+    const p = mitPlan(0.01);
+    const eg = p.storeys[0];
+    if (eg.background?.type === 'raster') eg.background.metersPerPixel = 0.02;
+    expect(text(p)).toBe('');
+    const q = mitPlan(0.01);
+    delete q.storeys[0].background;
+    expect(text(q)).toBe('');
+    const neu = mitPlan(0.01);
+    expect(ohneKontrollmass(neu, neu.storeys[0].id).settings.kontrollmasse).toEqual({});
+  });
+});
+
+describe('Normangaben und Planungsunterlagen in Excel', () => {
+  it('projekt.normen nennt die Vergleichsrechnung, projekt.planunterlagen Eingabe bzw. hinterlegte Pläne', () => {
+    const p = createProject('Haus');
+    expect(buildExportContext(p, computeProject(p)).scalars['projekt.normen']).toMatch(/^Wohnfläche nach WoFlV vom 25\.11\.2003; /);
+    p.settings.zweiteBV = true;
+    p.settings.planunterlagen = 'Grundrisse 1:100, Stand 01.10.2026';
+    const c = buildExportContext(p, computeProject(p));
+    expect(c.scalars['projekt.normen']).toMatch(/^Wohnfläche: Vergleichsrechnung WoFlV mit Freisitzen zu ½/);
+    expect(c.scalars['projekt.planunterlagen']).toBe('Grundrisse 1:100, Stand 01.10.2026');
+  });
+});

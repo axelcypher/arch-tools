@@ -3,6 +3,7 @@ import { bestaetigen, meldung } from '@core/ui/Rueckfrage';
 import type { Protokoll, Top } from '../../avaDaten';
 import { protokollPdf } from '../../bauleitung/berichte';
 import { vorlageFuellen } from '../../abrechnung/mail';
+import { globaleAva, MAIL_PROTOKOLL_VARIABLEN } from '../../platzhalter';
 import { heuteIso, neueId } from '../../lv/modell';
 import { useAva } from '../../store';
 import { datumKurz, DatumEingabe, Feld, TextEingabe } from '../eingaben';
@@ -80,11 +81,12 @@ function ProtokollEditor({ p }: { p: Protokoll }) {
         return;
       }
       const v = e.mail.vorlagen.find((x) => x.id === 'protokoll') ?? e.mail.vorlagen[0];
-      const werte = { Projekt: projekt.meta.vorhaben || projekt.name, Kürzel: projekt.meta.projektcode, Nr: String(p.nr), Datum: datumKurz(p.datum), Bearbeiter: e.deckblatt.bearbeiter || projekt.meta.bearbeiter };
+      const an = p.teilnehmer.map((t) => t.email).filter((x): x is string => !!x);
+      const werte = { ...globaleAva(projekt.meta, projekt.name, e.deckblatt.bearbeiter), Nr: String(p.nr), Protokolldatum: datumKurz(p.datum), Teilnehmer: an.join('; ') };
       await mitPdfMailen({
-        an: p.teilnehmer.map((t) => t.email).filter((x): x is string => !!x),
-        betreff: vorlageFuellen(v?.betreff ?? 'Protokoll Nr. {Nr} vom {Datum}', werte),
-        text: vorlageFuellen(v?.text ?? '', werte),
+        an,
+        betreff: vorlageFuellen(v?.betreff ?? 'Protokoll Nr. {Nr} vom {Protokolldatum}', werte, MAIL_PROTOKOLL_VARIABLEN),
+        text: vorlageFuellen(v?.text ?? '', werte, MAIL_PROTOKOLL_VARIABLEN),
         name,
         pdf: daten,
       });

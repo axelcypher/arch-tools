@@ -15,6 +15,7 @@ import { alleKuerzel, dateinameZerlegenMitStellen, kuerzelZu, planNummerAus, VOR
 import type { FassungsForm } from '@core/fassung';
 import { artDerFassung, fassungAus, fassungsName } from '@core/fassung';
 import { antragKurzAus } from '@core/serialize';
+import { ersetzen, globaleWerte, GLOBALE_VARIABLEN, mitAliasen, platzhalterIn, type Variable, type Wert } from '@core/platzhalter';
 import type { Zustaende } from './autofill';
 import { zustaendeAus } from './autofill';
 import type { Bedingung } from './bedingung';
@@ -34,11 +35,9 @@ export interface ExportEinstellungen {
   arten: string[];
   /** Vorlage für den Dateinamen (ohne Endung) */
   namensvorlage: string;
-  /** Phasenkürzel für {Phase}: BP, EP, GP, AP … */
-  phase: string;
   /** Ziel des Exports: Ordner der aktiven Antragsfassung oder ein fester Pfad */
   ziel: 'aktiv' | 'pfad';
-  /** fester Zielordner relativ zum Projektordner (Platzhalter erlaubt, z. B. „TÖB/{Antrag}/Formulare“) */
+  /** fester Zielordner relativ zum Projektordner (Platzhalter erlaubt, z. B. „TÖB/{Antrag}/Formulare“, siehe {@link ZIEL_VARIABLEN}) */
   zielpfad: string;
   /** Berechnungen im Projektordner (Quelle externer Dokumente) */
   berechnungsordner: string;
@@ -49,8 +48,7 @@ export interface ExportEinstellungen {
 export const VORGABE_EXPORT: ExportEinstellungen = {
   antragsordner: 'TÖB',
   arten: ['BAUA', 'BAUVA', 'DENK'],
-  namensvorlage: '{Kürzel} {Art} {Datum} {Nr} {Name}',
-  phase: 'GP',
+  namensvorlage: '{PROJEKT_KUERZEL} {Art} {DATUM} {Nr} {Name}',
   ziel: 'aktiv',
   zielpfad: 'TÖB/{Antrag}',
   berechnungsordner: 'Planung/Berechnungen',
@@ -58,9 +56,9 @@ export const VORGABE_EXPORT: ExportEinstellungen = {
 };
 
 /** Was je Projekt abweichen darf (wie die angezeigten Pfade im Projektordner) */
-export type ExportUeberschreibung = Partial<Pick<ExportEinstellungen, 'namensvorlage' | 'phase' | 'ziel' | 'zielpfad' | 'antragsordner'>>;
+export type ExportUeberschreibung = Partial<Pick<ExportEinstellungen, 'namensvorlage' | 'ziel' | 'zielpfad' | 'antragsordner'>>;
 
-export const UEBERSCHREIBBAR: (keyof ExportUeberschreibung)[] = ['antragsordner', 'namensvorlage', 'phase', 'ziel', 'zielpfad'];
+export const UEBERSCHREIBBAR: (keyof ExportUeberschreibung)[] = ['antragsordner', 'namensvorlage', 'ziel', 'zielpfad'];
 
 /** Hinweis an jeder Namensvorlage – überall derselbe Wortlaut */
 export const ART_HINWEIS = 'Die Antragsart ({Art}) kommt immer aus dem aktiven Antrag – „BAUA 2“ → BAUA –, nicht aus einer Einstellung.';
@@ -78,7 +76,7 @@ export function vorlageArtWarnung(vorlage: string, reihenfolge: NamensTeil[] = V
 /**
  * Die Antragsart im Dateinamen kommt immer aus dem Antrag (Ordner der aktiven Antragsfassung, „BAUA 2“ → BAUA), nie
  * aus einer Einstellung: Steht in der Vorlage an der Stelle der Antragsart (nach dem Namensschema; Vorgabe: nach dem
- * Kürzel) {Phase} – die Vorgabe früherer Fassungen, dann stand dort der Wert der Einstellung „Phase“ – oder ein festes
+ * Kürzel) {Phase} – die Vorgabe früherer Fassungen, dann stand dort der Wert der entfallenen Einstellung „Phase“ – oder ein festes
  * Kürzel wie „BVA“ (Großbuchstaben, mindestens ein Buchstabe – „2026“ ist keins), wird daraus {Art}. Das gilt nur, wenn
  * die Vorlage das Kürzel an seiner Stelle hat; sonst bleibt sie, wie sie ist.
  */
@@ -86,7 +84,9 @@ export function vorlageMitAntragsart(vorlage: string, reihenfolge: NamensTeil[] 
   // die Wörter der Vorlage entsprechen den Teilen des Namens (Platzhalter bzw. festes Wort)
   const teile = vorlage.trim().split(/\s+/);
   const [iCode, iArt] = [reihenfolge.indexOf('code'), reihenfolge.indexOf('art')];
-  if (iCode < 0 || iArt < 0 || !/^\{(k(ü|ue)rzel|projekt)\}$/i.test(teile[iCode] ?? '')) return vorlage;
+  // an der Stelle des Kürzels steht genau der Platzhalter des Projektkürzels (neu oder alt: {Kürzel}, {Projekt} …)
+  const code = platzhalterIn(teile[iCode] ?? '', NAMENS_VARIABLEN);
+  if (iCode < 0 || iArt < 0 || code.length !== 1 || code[0].roh !== teile[iCode] || code[0].treffer?.variable.name !== 'PROJEKT_KUERZEL') return vorlage;
   const t = teile[iArt];
   if (!t || !(/^\{phase\}$/i.test(t) || /^(?=.*[A-ZÄÖÜ])[A-ZÄÖÜ0-9]{2,8}$/.test(t))) return vorlage;
   teile[iArt] = '{Art}';
@@ -94,8 +94,9 @@ export function vorlageMitAntragsart(vorlage: string, reihenfolge: NamensTeil[] 
 }
 
 /**
- * Gelesene Abweichungen eines Projekts prüfen (lokaler Speicher, eingespielte Einstellungsdatei): nur Texte, `ziel` nur
- * „aktiv“ oder „pfad“ – Unbrauchbares entfällt (eine Zahl als Zielpfad legte sonst die Antragsdaten des Projekts lahm)
+ * Gelesene Abweichungen eines Projekts prüfen (lokaler Speicher, eingespielte Einstellungsdatei): nur, was je Projekt
+ * abweichen darf (`UEBERSCHREIBBAR`), nur nicht leere Texte, `ziel` nur „aktiv“ oder „pfad“ – Unbrauchbares entfällt
+ * (eine Zahl als Zielpfad legte sonst die Antragsdaten des Projekts lahm)
  */
 export function ueberschreibungAus(roh: unknown): ExportUeberschreibung {
   const o = roh && typeof roh === 'object' && !Array.isArray(roh) ? (roh as Record<string, unknown>) : {};
@@ -104,15 +105,9 @@ export function ueberschreibungAus(roh: unknown): ExportUeberschreibung {
     const v = o[k];
     if (k === 'ziel') {
       if (v === 'aktiv' || v === 'pfad') out.ziel = v;
-    } else if (typeof v === 'string') out[k] = v;
+    } else if (typeof v === 'string' && v !== '') out[k] = v;
   }
   return out;
-}
-
-/** Abweichungen aller Projekte (Kürzel → Abweichungen) prüfen, siehe `ueberschreibungAus` */
-export function ueberschreibungenAus(roh: unknown): Record<string, ExportUeberschreibung> {
-  if (!roh || typeof roh !== 'object' || Array.isArray(roh)) return {};
-  return Object.fromEntries(Object.entries(roh as Record<string, unknown>).map(([k, v]) => [k, ueberschreibungAus(v)]));
 }
 
 /** Einstellungen für ein Projekt: global, mit den Abweichungen des Projekts */
@@ -126,6 +121,20 @@ export function einstellungenFuer(global: ExportEinstellungen, ueber: ExportUebe
   return out;
 }
 
+/**
+ * gelesene Abweichungen je Projekt prüfen: nur, was je Projekt abweichen darf (`UEBERSCHREIBBAR`), ohne leere Werte;
+ * Projekte ohne Abweichung entfallen – auch solche, die nur die entfallene Einstellung „Phase“ hatten
+ */
+export function ueberschreibungenAus(roh: unknown): Record<string, ExportUeberschreibung> {
+  const out: Record<string, ExportUeberschreibung> = {};
+  if (!roh || typeof roh !== 'object' || Array.isArray(roh)) return out;
+  for (const [projekt, u] of Object.entries(roh as Record<string, unknown>)) {
+    const sauber = ueberschreibungAus(u);
+    if (Object.keys(sauber).length) out[projekt] = sauber;
+  }
+  return out;
+}
+
 /** gelesene Einstellungen prüfen und mit der Vorgabe ergänzen */
 export function einstellungenAus(roh: unknown): ExportEinstellungen {
   const o = (roh && typeof roh === 'object' ? roh : {}) as Partial<Record<keyof ExportEinstellungen, unknown>>;
@@ -135,7 +144,6 @@ export function einstellungenAus(roh: unknown): ExportEinstellungen {
     antragsordner: text('antragsordner'),
     arten: arten.length ? arten : VORGABE_EXPORT.arten,
     namensvorlage: text('namensvorlage') || VORGABE_EXPORT.namensvorlage,
-    phase: text('phase'),
     ziel: o.ziel === 'pfad' ? 'pfad' : 'aktiv',
     zielpfad: text('zielpfad'),
     berechnungsordner: text('berechnungsordner'),
@@ -147,7 +155,10 @@ export function einstellungenAus(roh: unknown): ExportEinstellungen {
 
 export interface NamensAngaben {
   kuerzel: string;
-  phase: string;
+  /** aus der Projektdatei (für die übrigen globalen Variablen) */
+  kurzname?: string;
+  vorhaben?: string;
+  bearbeiter?: string;
   datum: Date;
   nr?: string;
   /** Name des Dokuments (Titel im Antragsumfang, sonst der Name des Formulars) */
@@ -165,47 +176,62 @@ export interface NamensAngaben {
 const zweistellig = (n: number) => String(n).padStart(2, '0');
 export const jjmmtt = (d: Date) => `${zweistellig(d.getFullYear() % 100)}${zweistellig(d.getMonth() + 1)}${zweistellig(d.getDate())}`;
 
-/** Platzhalter der Namensvorlage mit Erklärung (für die Einstellungen) */
-export const PLATZHALTER: { name: string; text: string }[] = [
-  { name: '{Kürzel}', text: 'Projektkürzel, z. B. BS9' },
-  { name: '{Phase}', text: 'Phasenkürzel (BP, EP, GP, AP)' },
-  { name: '{Datum}', text: 'Datum des Exports als JJMMTT' },
-  { name: '{Nr}', text: 'Nummer im Antragsumfang (entfällt, wenn leer)' },
-  { name: '{Name}', text: 'Titel im Antragsumfang, sonst Name des Formulars' },
-  { name: '{Art}', text: 'Antragsart der aktiven Fassung, z. B. BAUA (Pflicht im Antragsordner)' },
-  { name: '{Antrag}', text: 'aktive Antragsfassung, z. B. BAUA 2' },
-  { name: '{Formular}', text: 'Dateiname des Formulars' },
-  { name: '{Kennung}', text: 'Kennung des Formulars, z. B. nw010005' },
-  { name: '{Stand}', text: 'Stand des Formulars, z. B. 2026A' },
+/** globale Variablen; {Projekt} hieß hier früher das Projektkürzel, Quelle ist der Name des Projektordners */
+const GLOBAL_FORMULARE: Variable[] = GLOBALE_VARIABLEN.map((v) => (v.name === 'PROJEKT_KUERZEL' ? { ...mitAliasen(v.name, ['Projekt']), quelle: 'Name des Projektordners (in den Formularen wie bisher)' } : v));
+
+/**
+ * Variablen der Namensvorlage exportierter PDFs: die globalen (@core/platzhalter) und die lokalen der Formulare.
+ * {Phase} aus Vorlagen früherer Fassungen gilt als {Art}.
+ */
+export const NAMENS_VARIABLEN: Variable[] = [
+  ...GLOBAL_FORMULARE,
+  { name: 'Art', text: 'Antragsart der aktiven Fassung, z. B. BAUA (Pflicht im Antragsordner)', aliase: ['Phase'] },
+  { name: 'Nr', text: 'Nummer im Antragsumfang (entfällt, wenn leer)' },
+  { name: 'Name', text: 'Titel im Antragsumfang, sonst Name des Formulars' },
+  { name: 'Antrag', text: 'aktive Antragsfassung, z. B. BAUA 2' },
+  { name: 'Formular', text: 'Dateiname des Formulars' },
+  { name: 'Kennung', text: 'Kennung des Formulars, z. B. nw010005' },
+  { name: 'Stand', text: 'Stand des Formulars, z. B. 2026A' },
 ];
+/** Variablen im festen Zielordner des Exports */
+export const ZIEL_VARIABLEN: Variable[] = [...GLOBAL_FORMULARE, NAMENS_VARIABLEN.find((v) => v.name === 'Antrag')!, { name: 'Art', text: 'Antragsart der aktiven Fassung, z. B. BAUA' }];
 
 /** Name des Formulars ohne laufende Nummer davor und Jahr dahinter („005-Bauantrag (2026)“ → „Bauantrag“) */
 export const anzeigeName = (formularName: string) => formularName.replace(/^\s*\d+\s*[-_ ]\s*/, '').replace(/\s*\(\d{4}\)\s*$/, '').trim() || formularName;
 
-/** Dateiname (ohne Endung) aus der Vorlage; Zeichen, die Windows nicht erlaubt, werden zu „-“ */
+/**
+ * Dateiname (ohne Endung) aus der Vorlage; Zeichen, die Windows nicht erlaubt, werden zu „-“. `{Phase}` aus Vorlagen
+ * früherer Fassungen (dort stand der Wert der entfallenen Einstellung „Phase“) gilt als `{Art}`.
+ */
 export function dateiname(vorlage: string, a: NamensAngaben): string {
-  const werte: Record<string, string> = {
-    kürzel: a.kuerzel,
-    kuerzel: a.kuerzel,
-    projekt: a.kuerzel,
-    phase: a.phase,
-    datum: jjmmtt(a.datum),
-    jahr: String(a.datum.getFullYear()),
-    nr: a.nr ?? '',
-    name: a.name,
-    formular: a.formular ?? a.name,
-    antrag: a.antrag ?? '',
-    art: a.art ?? artDerFassung(a.antrag ?? ''),
-    kennung: a.kennung ?? '',
-    stand: a.stand ?? '',
+  const werte: Record<string, Wert> = {
+    ...globaleWerte({ projektcode: a.kuerzel, kurzname: a.kurzname, vorhaben: a.vorhaben, bearbeiter: a.bearbeiter, datum: a.datum }),
+    Nr: a.nr ?? '',
+    Name: a.name,
+    Formular: a.formular ?? a.name,
+    Antrag: a.antrag ?? '',
+    Art: a.art ?? artDerFassung(a.antrag ?? ''),
+    Kennung: a.kennung ?? '',
+    Stand: a.stand ?? '',
   };
-  const roh = vorlage.replace(/\{([^{}]+)\}/g, (ganz, n: string) => (n.toLowerCase() in werte ? werte[n.toLowerCase()] : ganz));
+  const roh = ersetzen(vorlage, NAMENS_VARIABLEN, werte);
   const sauber = roh
     .replace(/[<>:"/\\|?*\u0000-\u001f]/g, '-')
     .replace(/\s+/g, ' ')
     .trim()
     .replace(/[. ]+$/, '');
   return sauber || 'Formular';
+}
+
+/**
+ * Fester Zielordner des Exports mit eingesetzten Variablen ({Antrag}, {PROJEKT_KUERZEL} …; alte Namen wie {antrag},
+ * {Kürzel} gelten weiter), relativ zum Projektordner mit „/“.
+ */
+export function zielpfadAus(zielpfad: string, w: { kuerzel: string; antrag: string; art?: string; kurzname?: string; vorhaben?: string; bearbeiter?: string; datum?: Date }): string {
+  const werte = { ...globaleWerte({ projektcode: w.kuerzel, kurzname: w.kurzname, vorhaben: w.vorhaben, bearbeiter: w.bearbeiter, datum: w.datum }), Antrag: w.antrag, Art: w.art ?? artDerFassung(w.antrag) };
+  return ersetzen(zielpfad, ZIEL_VARIABLEN, werte, { saeubern: (t) => t.replace(/[\\/]+/g, ' ') })
+    .replace(/\\/g, '/')
+    .replace(/^\/+|\/+$/g, '');
 }
 
 /* ---------- Antragsfassungen ---------- */

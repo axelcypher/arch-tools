@@ -1,16 +1,20 @@
 /**
  * Dateinamen der Rechnungen im Auftragsordner – nach einstellbaren Mustern, damit jedes Büro seine Schreibweise
- * behält. Platzhalter (Groß-/Kleinschreibung egal):
+ * behält. Platzhalter wie in allen Apps (@core/platzhalter, hier {@link RECHNUNG_NAME_VARIABLEN}):
  *
- *   {Kürzel}   Projektnummer („K62“)            {Datum}  Rechnungsdatum JJMMTT („251024“)
+ *   {PROJEKT_KUERZEL} Projektnummer („K62“)     {Rechnungsdatum}  JJMMTT („251024“)
  *   {Nr}       Nummer der Rechnungsliste         {Nr:3}   dreistellig („021“)
  *   {Art}      Rechnungsart („AB“, „SR“, „R“)   {Lfd}    laufende Nummer der Art („1“ bei AB1)
  *   {Firma}    Auftragnehmer                     {Gewerk} „G08“
  *
- * Beispiele: „{Kürzel} R{Nr:3} {Firma} {Datum} {Art}{Lfd}“ → „K62 R021 Witthaut 251024 AB1.pdf“,
- * „{Kürzel} {Datum} {Lfd}.{Art} Fa. {Firma}“ → „HVO 261111 1.AB Fa. Tischer.pdf“. Zum Erkennen vorhandener
- * Dateien gibt es mehrere Muster (die Benennung war nicht immer einheitlich); neue Dateien bekommen das erste.
+ * Alte Namen gelten weiter ({Kürzel}, {Datum} = Rechnungsdatum, Groß-/Kleinschreibung egal).
+ * Beispiele: „{PROJEKT_KUERZEL} R{Nr:3} {Firma} {Rechnungsdatum} {Art}{Lfd}“ → „K62 R021 Witthaut 251024 AB1.pdf“,
+ * „{PROJEKT_KUERZEL} {Rechnungsdatum} {Lfd}.{Art} Fa. {Firma}“ → „HVO 261111 1.AB Fa. Tischer.pdf“. Zum Erkennen
+ * vorhandener Dateien gibt es mehrere Muster (die Benennung war nicht immer einheitlich); neue Dateien bekommen das erste.
  */
+
+import { ersetzen, platzhalterIn, unbekanntePlatzhalter as unbekannteIn, type Wert } from '@core/platzhalter';
+import { RECHNUNG_NAME_VARIABLEN } from '../platzhalter';
 
 export interface Rechnungsart {
   /** Kürzel im Dateinamen und in der Liste, z. B. „AB“ */
@@ -29,7 +33,11 @@ export const VORGABE_ARTEN: Rechnungsart[] = [
   { kuerzel: 'R', name: 'Rechnung' },
 ];
 
-export const VORGABE_MUSTER = ['{Kürzel} R{Nr:3} {Firma} {Datum} {Art}{Lfd}', '{Kürzel} {Datum} {Lfd}.{Art} Fa. {Firma}', '{Kürzel} {Datum} {Art}{Lfd} {Firma}'];
+export const VORGABE_MUSTER = [
+  '{PROJEKT_KUERZEL} R{Nr:3} {Firma} {Rechnungsdatum} {Art}{Lfd}',
+  '{PROJEKT_KUERZEL} {Rechnungsdatum} {Lfd}.{Art} Fa. {Firma}',
+  '{PROJEKT_KUERZEL} {Rechnungsdatum} {Art}{Lfd} {Firma}',
+];
 
 export interface RechnungsName {
   kuerzel?: string;
@@ -41,8 +49,6 @@ export interface RechnungsName {
   datum?: string;
   gewerk?: string;
 }
-
-const PLATZHALTER = /\{(Kürzel|Kuerzel|Nr(?::(\d))?|Art|Lfd|Firma|Datum|Gewerk)\}/gi;
 
 const regexText = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -66,11 +72,12 @@ export function nameLesen(name: string, muster: string, arten: Rechnungsart[] = 
   const artMuster = [...arten].sort((a, b) => b.kuerzel.length - a.kuerzel.length).map((a) => regexText(a.kuerzel)).join('|');
   let quelle = '';
   let letzt = 0;
-  for (const m of muster.matchAll(PLATZHALTER)) {
-    quelle += regexText(muster.slice(letzt, m.index)).replace(/ /g, '[ _]+');
-    letzt = m.index! + m[0].length;
-    const p = m[1].toLowerCase();
-    if (p === 'kürzel' || p === 'kuerzel') {
+  for (const f of platzhalterIn(muster, RECHNUNG_NAME_VARIABLEN)) {
+    if (!f.treffer) continue;
+    quelle += regexText(muster.slice(letzt, f.index)).replace(/ /g, '[ _]+');
+    letzt = f.index + f.roh.length;
+    const p = f.treffer.variable.name.toLowerCase();
+    if (p === 'projekt_kuerzel') {
       felder.push('kuerzel');
       quelle += '([A-Za-z]{1,4}\\d{1,4}[A-Za-z]?|[A-ZÄÖÜ]{2,5})';
     } else if (p.startsWith('nr')) {
@@ -85,13 +92,13 @@ export function nameLesen(name: string, muster: string, arten: Rechnungsart[] = 
     } else if (p === 'firma') {
       felder.push('firma');
       quelle += '(.+?)';
-    } else if (p === 'datum') {
+    } else if (p === 'rechnungsdatum') {
       felder.push('datum');
       quelle += '(\\d{6})';
     } else if (p === 'gewerk') {
       felder.push('gewerk');
       quelle += '(G[ _]?\\d{1,3})';
-    }
+    } else quelle += '.+?';
   }
   quelle += regexText(muster.slice(letzt)).replace(/ /g, '[ _]+');
   const m = new RegExp(`^${quelle}$`, 'i').exec(ohneEndung);
@@ -130,21 +137,24 @@ export const dateinameSicher = (s: string) =>
     .replace(/\s+/g, ' ')
     .trim();
 
-/** Dateiname (ohne Endung) aus einem Muster */
-export function nameBilden(muster: string, w: RechnungsName): string {
-  const n = muster.replace(PLATZHALTER, (_, p: string, stellen?: string) => {
-    const k = p.toLowerCase();
-    if (k === 'kürzel' || k === 'kuerzel') return w.kuerzel ?? '';
-    if (k.startsWith('nr')) return w.nr === undefined ? '' : stellen ? String(w.nr).padStart(Number(stellen), '0') : String(w.nr);
-    if (k === 'art') return w.art ?? '';
-    if (k === 'lfd') return w.lfd === undefined ? '' : String(w.lfd);
-    if (k === 'firma') return w.firma ?? '';
-    if (k === 'datum') return w.datum ? jjmmtt(w.datum) : '';
-    if (k === 'gewerk') return w.gewerk ?? '';
-    return '';
-  });
-  return dateinameSicher(n);
+/**
+ * Dateiname (ohne Endung) aus einem Muster. `globale` = Werte der übrigen globalen Variablen ({PROJEKT_KURZNAME},
+ * {DATUM} …); ohne Wert bleiben sie leer.
+ */
+export function nameBilden(muster: string, w: RechnungsName, globale: Record<string, Wert> = {}): string {
+  const werte: Record<string, Wert> = {
+    ...globale,
+    PROJEKT_KUERZEL: w.kuerzel,
+    Nr: w.nr,
+    Art: w.art,
+    Lfd: w.lfd,
+    Firma: w.firma,
+    Rechnungsdatum: w.datum,
+    Gewerk: w.gewerk,
+  };
+  for (const k of Object.keys(werte)) if (werte[k] === undefined) werte[k] = '';
+  return dateinameSicher(ersetzen(muster, RECHNUNG_NAME_VARIABLEN, werte));
 }
 
 /** unbekannte Platzhalter im Muster (für den Hinweis in den Einstellungen) */
-export const unbekanntePlatzhalter = (muster: string) => [...muster.matchAll(/\{([^}]*)\}/g)].map((m) => m[1]).filter((p) => !/^(Kürzel|Kuerzel|Nr(:\d)?|Art|Lfd|Firma|Datum|Gewerk)$/i.test(p));
+export const unbekanntePlatzhalter = (muster: string) => unbekannteIn(muster, RECHNUNG_NAME_VARIABLEN);

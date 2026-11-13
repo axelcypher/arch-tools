@@ -1,7 +1,10 @@
 import { PDFDocument } from 'pdf-lib';
 import { strFromU8 } from 'fflate';
 import { describe, expect, it } from 'vitest';
-import { nameBilden, nameErkennen, nameLesen, VORGABE_MUSTER } from './benennung';
+import { veraltetePlatzhalter } from '@core/platzhalter';
+import { nameBilden, nameErkennen, nameLesen, unbekanntePlatzhalter, VORGABE_MUSTER } from './benennung';
+import { VORGABE_MAIL } from '../einstellungen';
+import { mailVariablen, MAIL_PROTOKOLL_VARIABLEN } from '../platzhalter';
 import { deckblattPdf, deckblattVoranstellen, seitenzahl } from './deckblatt';
 import { emlBauen, kopfWert, vorlageFuellen } from './mail';
 import { neuePruefung, pruefen, VORGABE_PRUEFUNG } from './pruefung';
@@ -19,6 +22,14 @@ describe('Benennung der Rechnungen', () => {
     expect(nameBilden(VORGABE_MUSTER[0], w)).toBe('K62 R053 Witthaut 261112 SR4');
     expect(nameBilden('{Kürzel} {Datum} {Lfd}.{Art} Fa. {Firma}', { ...w, firma: 'Müller/Söhne' })).toBe('HVO'.length && 'K62 261112 4.SR Fa. Müller Söhne');
     expect(nameLesen(`${nameBilden(VORGABE_MUSTER[0], w)}.pdf`, VORGABE_MUSTER[0])).toMatchObject(w);
+    // alte Muster ({Kürzel}, {Datum}) bilden und erkennen dasselbe wie die neuen (Gegenprobe)
+    const alt = '{Kürzel} R{Nr:3} {Firma} {Datum} {Art}{Lfd}';
+    expect(nameBilden(alt, w)).toBe(nameBilden(VORGABE_MUSTER[0], w));
+    expect(nameLesen('K62 R053 Witthaut 261112 SR4.pdf', alt)).toEqual(nameLesen('K62 R053 Witthaut 261112 SR4.pdf', VORGABE_MUSTER[0]));
+    // weitere globale Variablen: Wert aus der Projektdatei, beim Erkennen beliebiger Text
+    expect(nameBilden('{PROJEKT_KUERZEL} {PROJEKT_KURZNAME} {Rechnungsdatum:JJJJ-MM-TT}', w, { PROJEKT_KURZNAME: 'Kita' })).toBe('K62 Kita 2026-11-12');
+    expect(nameLesen('K62 Kita 261112 SR4.pdf', '{PROJEKT_KUERZEL} {PROJEKT_KURZNAME} {Rechnungsdatum} {Art}{Lfd}')).toMatchObject({ kuerzel: 'K62', datum: '2026-11-12', art: 'SR', lfd: 4 });
+    expect(unbekanntePlatzhalter('{Kürzel} {Foo} {Nr:3}')).toEqual(['{Foo}']);
   });
 });
 
@@ -76,6 +87,13 @@ describe('Mailentwurf', () => {
   });
 
   it('füllt Vorlagen', () => {
-    expect(vorlageFuellen('{Kürzel} – Rechnung {Nr} {Firma}', { Kürzel: 'K62', Nr: '53', Firma: 'Witthaut' })).toBe('K62 – Rechnung 53 Witthaut');
+    const w = { PROJEKT_KUERZEL: 'K62', PROJEKT_VORHABEN: 'Neubau', Nr: '53', Firma: 'Witthaut', FirmaMail: 'a@b.de', Rechnungsdatum: '12.11.2026', BEARBEITER: 'TP' };
+    expect(vorlageFuellen('{PROJEKT_KUERZEL} – Rechnung {Nr} {Firma}', w)).toBe('K62 – Rechnung 53 Witthaut');
+    // gespeicherte Vorlagen mit alten Namen ergeben dasselbe (Gegenprobe)
+    expect(vorlageFuellen('{Kürzel} {Projekt} – {Firma-Mail} {Datum} {Bearbeiter}', w)).toBe(vorlageFuellen('{PROJEKT_KUERZEL} {PROJEKT_VORHABEN} – {FirmaMail} {Rechnungsdatum} {BEARBEITER}', w));
+    expect(vorlageFuellen('{Kürzel} {Datum}', w)).toBe('K62 12.11.2026');
+    // im Protokoll ist {Datum} das Datum der Besprechung; Unbekanntes und Werte anderer Vorlagen bleiben stehen
+    expect(vorlageFuellen('Protokoll {Nr} vom {Datum} {Gewerk} {Foo}', { Nr: '3', Protokolldatum: '01.02.2026' }, MAIL_PROTOKOLL_VARIABLEN)).toBe('Protokoll 3 vom 01.02.2026 {Gewerk} {Foo}');
+    for (const v of VORGABE_MAIL) expect(veraltetePlatzhalter([v.an, v.betreff, v.text].join(' '), mailVariablen(v.id))).toEqual([]);
   });
 });

@@ -5,7 +5,7 @@ import { computeProject, raumBodenVersatz } from '@core/calc';
 import { disposeGroup, facesToGeometry, fitCamera, outlineFaces, prismaGeometrie, unterbauKoerper } from '@core/ui/three3d';
 import { fmt2 } from '@core/format';
 import { storeyElevations } from '@core/model';
-import { nutzungInfo } from '@core/norms';
+import { nutzungInfo, raumNutzung } from '@core/norms';
 import { useTheme } from '@core/platform/theme';
 import { useEditor } from '../store/store';
 
@@ -169,7 +169,7 @@ export default function View3D() {
           geo.rotateX(Math.PI / 2); // (x, y, 0) → (x, 0, y)
           geo.translate(0, z0 + raumBodenVersatz(s, storey) + 0.02, 0);
           const mat = new THREE.MeshStandardMaterial({
-            color: s.subtract ? 0xc0392b : nutzungInfo(s.nutzung).color,
+            color: s.subtract ? 0xc0392b : nutzungInfo(raumNutzung(s)).color,
             side: THREE.DoubleSide,
             transparent: true,
             opacity: 0.85,
@@ -229,29 +229,31 @@ export default function View3D() {
 
   return (
     <div className="view3d">
-      <div ref={hostRef} className="view3d-canvas" />
-      <div className="canvas-controls view3d-controls">
-        <label className="toggle">
-          <input type="checkbox" checked={explode} onChange={(e) => setExplode(e.target.checked)} />
-          Geschosse auseinanderziehen
-        </label>
-        <label className="toggle">
-          <input type="checkbox" checked={onlyActive} onChange={(e) => setOnlyActive(e.target.checked)} />
-          nur aktives Geschoss
-        </label>
-        <label className="toggle">
-          <input type="checkbox" checked={showRooms} onChange={(e) => setShowRooms(e.target.checked)} />
-          Räume
-        </label>
-        {ifcModel && (
-          <label className="toggle" title="Importiertes IFC-Modell zum Vergleich einblenden">
-            <input type="checkbox" checked={showIfc} onChange={(e) => setShowIfc(e.target.checked)} />
-            IFC-Modell
+      <div ref={hostRef} className="view3d-canvas" role="img" aria-label="3D-Ansicht der Rauminhalte (Maus: drehen, Mausrad: zoomen)" />
+      <div className="canvas-oben">
+        <div className="canvas-controls view3d-controls">
+          <label className="toggle">
+            <input type="checkbox" checked={explode} onChange={(e) => setExplode(e.target.checked)} />
+            Geschosse auseinanderziehen
           </label>
-        )}
-        <button className="small" onClick={fit}>
-          ⤢ Alles
-        </button>
+          <label className="toggle">
+            <input type="checkbox" checked={onlyActive} onChange={(e) => setOnlyActive(e.target.checked)} />
+            nur aktives Geschoss
+          </label>
+          <label className="toggle">
+            <input type="checkbox" checked={showRooms} onChange={(e) => setShowRooms(e.target.checked)} />
+            Räume
+          </label>
+          {ifcModel && (
+            <label className="toggle" title="Importiertes IFC-Modell zum Vergleich einblenden">
+              <input type="checkbox" checked={showIfc} onChange={(e) => setShowIfc(e.target.checked)} />
+              IFC-Modell
+            </label>
+          )}
+          <button className="small" onClick={fit}>
+            ⤢ Alles
+          </button>
+        </div>
       </div>
       <div className="view3d-legend">
         <strong>Brutto-Rauminhalt</strong>
