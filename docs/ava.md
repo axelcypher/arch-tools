@@ -295,7 +295,9 @@ Bauaufsicht).
   bekannter Mängel** (Text, „Aus der Mängelliste übernehmen“ hängt die offenen und angezeigten Mängel an) und
   **Vertragsstrafe vorbehalten**; im PDF mit Unterschriftsfeldern für Auftraggeber, Auftragnehmer und
   Objektüberwachung. Hinweis: Die rechtsgeschäftliche Abnahme erklärt der Auftraggeber (Bauherr); das Büro bereitet
-  sie vor und empfiehlt sie (§ 12 Abs. 4 und 5, § 11 Abs. 4 VOB/B; § 640 Abs. 3 BGB).
+  sie vor und empfiehlt sie. Ohne Vorbehalt entfallen wegen bekannter Mängel die Rechte auf Nacherfüllung,
+  Selbstvornahme, Rücktritt und Minderung (§ 640 Abs. 3 BGB, § 12 Abs. 4 und 5 VOB/B), ohne Vorbehalt der
+  Vertragsstrafe der Anspruch darauf (§ 341 Abs. 3 BGB, § 11 Abs. 4 VOB/B).
 - **Mängel:** Nummer, Gewerk, Firma (aus dem Gewerk) und Ort, Beschreibung, festgestellt und Frist, Status (offen,
   angezeigt, erledigt, abgenommen); überfällige rot. Wer im Filter „offene und angezeigte“ einen Mangel auf erledigt
   setzt, sieht ihn abgeblendet stehen, bis der Filter wechselt. Mängelliste als PDF, **Mängelanzeige** an die Firma

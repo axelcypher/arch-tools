@@ -449,5 +449,5 @@ function faelligText(typ: ArtTyp, eingang: string | undefined): string | undefin
   if (tage === null) return undefined;
   const d = new Date(`${eingang.slice(0, 10)}T12:00:00`);
   d.setDate(d.getDate() + tage);
-  return `fällig bis ${datumDE(heuteIso(d))} (${tage} Tage, § 16 VOB/B)`;
+  return `spätestens fällig am ${datumDE(heuteIso(d))} (${tage} Tage nach Zugang, § 16 Abs. ${typ === 'abschlag' ? '1 Nr. 3' : '3 Nr. 1'} VOB/B, wenn vereinbart; fällt der Tag auf ein Wochenende oder einen Feiertag, gilt der nächste Werktag)`;
 }

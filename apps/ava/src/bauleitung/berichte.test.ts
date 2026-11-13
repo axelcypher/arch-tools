@@ -39,6 +39,10 @@ describe('Berichte der Bauleitung', () => {
     expect(istAbnahme('Abnahmebegehung')).toBe(true);
     expect(istAbnahme('Baubesprechung')).toBe(false);
     expect(ABNAHME_HINWEIS).toContain('erklärt der Auftraggeber');
+    // nur die Rechte aus § 634 Nr. 1–3 BGB entfallen, nicht „die Ansprüche“ insgesamt (Schadensersatz bleibt)
+    expect(ABNAHME_HINWEIS).toContain('Nacherfüllung, Selbstvornahme, Rücktritt und Minderung');
+    expect(ABNAHME_HINWEIS).toContain('§ 341 Abs. 3 BGB');
+    expect(ABNAHME_HINWEIS).not.toContain('Ansprüche verloren');
     const ohne = await protokollPdf(kopf(), protokoll('Baubesprechung'));
     const mit = await protokollPdf(kopf(), { ...protokoll('Abnahmebegehung'), vorbehaltMaengel: 'Nr. 1: Kratzer am Fensterrahmen', vertragsstrafeVorbehalten: true });
     expect(mit.length).toBeGreaterThan(ohne.length);

@@ -33,7 +33,7 @@ export const PROTOKOLL_SCHLUSS =
 
 /** Hinweis bei Abnahmebegehungen: das Büro bereitet vor und empfiehlt, die Abnahme erklärt der Bauherr */
 export const ABNAHME_HINWEIS =
-  'Die rechtsgeschäftliche Abnahme erklärt der Auftraggeber (Bauherr). Bekannte Mängel und eine Vertragsstrafe müssen bei der Abnahme vorbehalten werden, sonst gehen die Ansprüche verloren (§ 12 Abs. 4 und 5, § 11 Abs. 4 VOB/B; § 640 Abs. 3 BGB).';
+  'Die rechtsgeschäftliche Abnahme erklärt der Auftraggeber (Bauherr). Bekannte Mängel und eine vereinbarte Vertragsstrafe sind bei der Abnahme vorzubehalten. Ohne Vorbehalt entfallen die Rechte auf Nacherfüllung, Selbstvornahme, Rücktritt und Minderung wegen dieser Mängel (§ 640 Abs. 3 BGB, § 12 Abs. 4 und 5 VOB/B) und der Anspruch auf die Vertragsstrafe (§ 341 Abs. 3 BGB, § 11 Abs. 4 VOB/B).';
 
 /** Text der Mängelanzeige: mit Frist je Mangel, einheitlicher Frist oder einer Lücke zum Ausfüllen */
 export function maengelanzeigeText(liste: Mangel[], bearbeiter: string | undefined): string {
