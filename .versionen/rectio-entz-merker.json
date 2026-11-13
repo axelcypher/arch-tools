@@ -1,0 +1,3 @@
+{
+  "entzerrung": { "stufe": "patch", "notiz": "Nach einem gescheiterten Speichern fragt Arkly beim Schließen nicht mehr nach, wenn inzwischen ein anderes Projekt geöffnet oder neu angelegt wurde." }
+}
