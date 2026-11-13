@@ -1,4 +1,4 @@
-# TERRIO (GRZ-Nachweis)
+# TERRIO (GRZ-Nachweis) – GRZ, GFZ und Vollgeschosse
 
 **TERRIO** (`apps/grz`, eigene App mit eigenem Installer) weist das Maß der baulichen Nutzung nach:
 Grundflächenzahl, Geschossflächenzahl und Zahl der Vollgeschosse – nach dem Recht, das für den jeweiligen

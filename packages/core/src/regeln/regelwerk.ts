@@ -426,7 +426,7 @@ export const REGELN: Regel[] = [
       '- **600** Ausstattung und Kunstwerke',
       '- **700** Baunebenkosten',
       '- **800** Finanzierung',
-      'Jede Kostengruppe gliedert sich in eine 2. Ebene (z. B. 330 Außenwände) und 3. Ebene (z. B. 331 Tragende Außenwände). Die Kostenermittlung rechnet Positionen auf jeder Ebene und summiert nach oben.',
+      'Jede Kostengruppe gliedert sich in eine 2. Ebene (z. B. 330 Außenwände) und 3. Ebene (z. B. 331 Tragende Außenwände). NUMIO rechnet Positionen auf jeder Ebene und summiert sie nach oben.',
     ],
     quellen: [DIN276],
     stichworte: ['Kostengruppe', 'KG', '300', '400', 'Bauwerkskosten', 'Ebene', 'Gliederung'],
@@ -457,7 +457,7 @@ export const REGELN: Regel[] = [
     kurz: 'Kosten = Menge × Kennwert × Index aktuell/Basis × Regionalfaktor – als Bandbreite von / Mittel / bis.',
     text: [
       'Die Kennwerte sind Eingaben des Büros (eigene Projekte, Kennwertsammlungen). Für die Fortschreibung auf den aktuellen Preisstand dient der Baupreisindex des Statistischen Bundesamts (Basis und aktuell), für Ortsunterschiede ein Regionalfaktor (1 = Bundesdurchschnitt).',
-      'Mengen kommen aus dem Projekt (BGF, BRI, NUF … nach DIN 277, WoFl nach WoFlV) bzw. aus den abgeleiteten Bauteilmengen – siehe „Mengen der Kostenermittlung“.',
+      'Mengen kommen aus dem Projekt (BGF, BRI, NUF … nach DIN 277, WoFl nach WoFlV) bzw. aus den abgeleiteten Bauteilmengen – siehe Abschnitt „Mengen“ in NUMIO.',
     ],
     quellen: [DIN276, { titel: 'Baupreisindizes (Statistisches Bundesamt)', url: 'https://www.destatis.de/DE/Themen/Wirtschaft/Preise/Baupreise-Immobilienpreisindex/_inhalt.html' }],
     stichworte: ['Kennwert', 'Baupreisindex', 'Regionalfaktor', 'Bandbreite', 'Preisstand', 'Umsatzsteuer'],
@@ -515,7 +515,7 @@ export const REGELN: Regel[] = [
   {
     id: 'verfahren-gelaende',
     bereich: 'verfahren',
-    titel: 'Geländeoberfläche im GRZ-Nachweis',
+    titel: 'Geländeoberfläche bei der Vollgeschossprüfung (TERRIO)',
     kurz: 'Festgelegt, sonst aus dem Geländemodell der IFC bzw. den Lageplan-Flächen – je Geschoss entlang seiner Außenwände.',
     text: [
       'Für „Deckenoberkante im Mittel über der Geländeoberfläche“ wird das Gelände alle 0,5 m in 0,4 m Abstand vor den Außenwänden des jeweiligen Geschosses abgegriffen und gemittelt. Quelle: die festgelegte Höhe (Eingabe), sonst das **Geländemodell** aus der IFC (Gelände, Geländeelemente, Bauteile des Lageplan-Geschosses), sonst Lageplan-Flächen mit Höhe.',

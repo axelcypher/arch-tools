@@ -134,7 +134,7 @@ export interface RoomShape extends ShapeBase {
   /** Lage des Raumstempels (Weltkoordinaten); ohne Angabe automatisch */
   stempel?: Point;
   /**
-   * Aufenthaltsraum im Sinne der BauNVO vor 1990 (Geschossfläche in Nicht-Vollgeschossen, GRZ-Nachweis);
+   * Aufenthaltsraum im Sinne der BauNVO vor 1990 (Geschossfläche in Nicht-Vollgeschossen, GRZ/GFZ-Nachweis);
    * „treppe“ = zugehöriger Treppenraum. Ohne Angabe nach Nutzung und Raumname.
    */
   aufenthalt?: 'ja' | 'nein' | 'treppe';
