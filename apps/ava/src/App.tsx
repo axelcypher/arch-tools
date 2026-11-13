@@ -126,9 +126,9 @@ export function App() {
 
   // Arkly (Schließen, Andocken, Herauslösen, Update-Neustart): laufende Eingabe übernehmen und laufendes Schreiben
   // der Projektdatei, Kostenkontrolle bzw. des LV abwarten
-  // (Rückgabe false = ein Schreiben ist gescheitert oder das offene LV hat ungespeicherte Änderungen; Arkly fragt dann
-  // nach, statt still zu schließen)
-  useEffect(() => vorDemSchliessen(() => ausstehendesSchreibenAbwarten(() => lvGeaendert(useAva.getState().lv))), []);
+  // (Rückgabe false = ein Schreiben ist gescheitert; Arkly fragt dann nach, statt still zu schließen). Ungespeicherte
+  // LV-Änderungen meldet die TitleBar als dirty – Arkly fragt vorher „Änderungen speichern?“ (onSpeichern)
+  useEffect(() => vorDemSchliessen(ausstehendesSchreibenAbwarten), []);
 
   useEffect(() => {
     const vorEnde = (e: BeforeUnloadEvent) => {

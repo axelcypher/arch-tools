@@ -17,12 +17,12 @@ export function schreibend<T>(p: Promise<T>): Promise<T> {
 /**
  * Vor dem Schließen (Arkly: `vorDemSchliessen`): die laufende Eingabe abschließen – sie speichert beim Verlassen des
  * Felds und meldet ihren Schreibvorgang dabei sofort an – und alle laufenden Schreibvorgänge abwarten. Schreibt selbst
- * nichts; ein zweiter Aufruf wartet nur mit. Liefert `false` („nicht gespeichert“, Grund im Protokoll), wenn ein
- * abgewartetes Schreiben scheitert oder danach noch etwas ungespeichert ist (`ungespeichert`, in FABRIO: das offene LV
- * hat Änderungen) – so auch nach einem früher gescheiterten Speichern und bei „Erneut versuchen“, bis gespeichert oder
- * verworfen ist. Arkly fragt dann nach, statt still zu schließen. Das Zeitlimit (5 s) setzt der Rahmen.
+ * nichts; ein zweiter Aufruf wartet nur mit. Liefert `false`, wenn ein abgewartetes Schreiben gescheitert ist (Grund im
+ * Protokoll) – Arkly fragt dann nach, statt still zu schließen. Ungespeicherte LV-Änderungen gehören nicht hierher:
+ * Sie meldet die TitleBar als `dirty`, Arkly fragt vorher „Änderungen speichern?“ und lässt über `onSpeichern`
+ * speichern. Das Zeitlimit (5 s) setzt der Rahmen.
  */
-export async function ausstehendesSchreibenAbwarten(ungespeichert: () => boolean = () => false): Promise<boolean> {
+export async function ausstehendesSchreibenAbwarten(): Promise<boolean> {
   eingabeAbschliessen();
   let ok = true;
   while (laufend.size) {
@@ -32,10 +32,6 @@ export async function ausstehendesSchreibenAbwarten(ungespeichert: () => boolean
         log.error('Schreiben vor dem Schließen gescheitert', r.reason);
       }
     }
-  }
-  if (ungespeichert()) {
-    log.warn('Vor dem Schließen: ungespeicherte Änderungen');
-    return false;
   }
   return ok;
 }
