@@ -35,7 +35,8 @@ const klick = async (b: HTMLElement | undefined) => {
 };
 const titelKnopf = () => [...document.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.title.startsWith('Speicherort der Einstellungen'));
 const esc = () => act(async () => document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
-const dialog = () => document.querySelector<HTMLElement>('.modal[aria-label="Speicherort der Einstellungen"]');
+// Dialog mit sichtbarem Kopf: benannt über aria-labelledby
+const dialog = () => [...document.querySelectorAll<HTMLElement>('.modal[aria-labelledby]')].find((m) => document.getElementById(m.getAttribute('aria-labelledby')!)?.textContent === 'Speicherort der Einstellungen') ?? null;
 const rueckfrage = () => document.querySelector<HTMLElement>('.modal.rf');
 
 beforeEach(() => {
@@ -81,7 +82,7 @@ describe('Speicherort der Einstellungen', () => {
 
     await klick(knopf('Speicherort wechseln', dialog()!));
     expect(rueckfrage()?.textContent).toContain('Gemeinsame Einstellungen aller Apps');
-    expect([...rueckfrage()!.querySelectorAll('button')].map((b) => b.textContent)).toEqual(['Abbrechen', 'Mit meinen ersetzen', 'Vorhandene übernehmen']);
+    expect([...rueckfrage()!.querySelectorAll('button')].map((b) => b.textContent)).toEqual(['Abbrechen', 'Mit diesem Rechner überschreiben', 'Vorhandene übernehmen']);
     // Enter und Fokus: „Vorhandene übernehmen“, nie das Ersetzen
     const standard = rueckfrage()!.querySelector<HTMLButtonElement>('button[type="submit"]');
     expect(standard?.textContent).toBe('Vorhandene übernehmen');
@@ -100,7 +101,7 @@ describe('Speicherort der Einstellungen', () => {
     expect(lies(`${BASIS}/konfig.json`)).toEqual({ modus: 'netzwerk', ordner: NAS });
     expect(lies(`${NAS}/allgemein.json`)).toEqual({ buero: 'Büro' });
     expect(lies(`${NAS}/kataster.json`)).toEqual({ zielpfad: 'Lagepläne' });
-    expect(dialog()!.querySelector('.sp-meldung')?.textContent).toContain('Mitgenommen: ATLAS: Kataster');
+    expect(dialog()!.querySelector('.meldung')?.textContent).toContain('Mitgenommen: ATLAS: Kataster');
     expect(dialog()!.querySelector('.sp-aktuell code')?.textContent).toBe(`Netzwerkinstallation – ${NAS}`);
     // Titelleiste und Zeile folgen
     expect(titelKnopf()?.textContent?.trim()).toBe('Netzwerk');
@@ -125,7 +126,7 @@ describe('Speicherort der Einstellungen', () => {
     expect(lies(`${NAS}/allgemein.json`)).toEqual({ buero: 'Hier' });
   });
 
-  it('„Mit meinen ersetzen“: überschreibt nach Sicherung und meldet sie; Gegenprobe „übernehmen“ oben', async () => {
+  it('„Mit diesem Rechner überschreiben“: überschreibt nach Sicherung und meldet sie; Gegenprobe „übernehmen“ oben', async () => {
     legeAn(`${BASIS}/allgemein.json`, { buero: 'Hier' });
     legeAn(`${NAS}/allgemein.json`, { buero: 'Büro' });
     attrappe.ordnerWahl = NAS;
@@ -134,10 +135,10 @@ describe('Speicherort der Einstellungen', () => {
     await klick(dialog()!.querySelectorAll<HTMLInputElement>('input[type="radio"]')[1]);
     await klick(knopf('Ordner wählen …', dialog()!));
     await klick(knopf('Speicherort wechseln', dialog()!));
-    await klick(knopf('Mit meinen ersetzen', rueckfrage()!));
+    await klick(knopf('Mit diesem Rechner überschreiben', rueckfrage()!));
     expect(lies(`${NAS}/allgemein.json`)).toEqual({ buero: 'Hier' });
     expect([...attrappe.dateien.keys()].some((p) => p.startsWith(`${NAS}/allgemein.json.vor-umzug-`))).toBe(true);
-    expect(dialog()!.querySelector('.sp-meldung')?.textContent).toContain('Gesichert vor dem Ersetzen: Gemeinsame Einstellungen aller Apps');
+    expect(dialog()!.querySelector('.meldung')?.textContent).toContain('Gesichert vor dem Ersetzen: Gemeinsame Einstellungen aller Apps');
   });
 
   it('während des Wechsels schließen weder Esc noch „Schließen“ den Dialog; ein lokaler Ordner als Netzordner wird abgelehnt', async () => {
@@ -201,7 +202,7 @@ describe('Speicherort der Einstellungen', () => {
     attrappe.nasErreichbar = true;
     await klick(knopf('Erneut versuchen', dialog()!));
     expect(dialog()!.querySelector('.sp-notbetrieb')).toBeNull();
-    expect(dialog()!.querySelector('.sp-meldung')?.textContent).toContain('wieder erreichbar');
+    expect(dialog()!.querySelector('.meldung')?.textContent).toContain('wieder erreichbar');
     expect(knopf('⚠ Einstellungen nur lesbar')).toBeUndefined();
   });
 

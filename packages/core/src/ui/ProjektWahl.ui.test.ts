@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
-import { act, createElement } from 'react';
+import { act, createElement, Fragment } from 'react';
+import { MenueHost } from './Menue';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { readProjectFile } from '../archive';
@@ -74,15 +75,15 @@ describe('Projektwahl (QUADRIO, TERRIO, NUMIO)', () => {
     document.body.appendChild(host);
     act(() => {
       root = createRoot(host);
-      root.render(createElement(ProjektWahl, { app: 'GRZ-Nachweis', fs, onGewaehlt: () => {} }));
+      root.render(createElement(Fragment, null, createElement(ProjektWahl, { app: 'GRZ-Nachweis', fs, onGewaehlt: () => {} }), createElement(MenueHost)));
     });
     await warten();
     // Ableitung nach dem Schema der Struktur – wie im Projektordner
     expect(karte(host, 'Altbau').querySelector('.pa-kuerzel')!.textContent).toBe('2019-003');
     act(() => karte(host, 'Altbau').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 10, clientY: 10 })));
-    const eintraege = () => [...host.querySelectorAll('.pa-menue [role="menuitem"]')].map((b) => b.textContent);
+    const eintraege = () => [...host.querySelectorAll('.menue [role="menuitem"]')].map((b) => b.textContent);
     expect(eintraege()).toEqual(['Öffnen', 'Im Explorer öffnen', 'Anheften']);
-    await act(async () => (host.querySelector('.pa-menue [role="menuitem"]:nth-child(3)') as HTMLButtonElement).click());
+    await act(async () => (host.querySelector('.menue [role="menuitem"]:nth-of-type(3)') as HTMLButtonElement).click());
     await warten();
     expect(JSON.parse(localStorage.getItem('arch-tools:lokal:angeheftet')!).pfade).toEqual(['/p/Altbau_2019-003']);
     expect(host.querySelector('[aria-label="Angeheftet"]')?.textContent).toContain('2019-003');
