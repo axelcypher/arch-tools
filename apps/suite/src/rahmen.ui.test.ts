@@ -96,6 +96,8 @@ describe('Rahmen-App', () => {
     act(() => (tab(host, 'QUADRIO').querySelector('button[title="Schließen (Entf)"]') as HTMLButtonElement).click());
     const dialog = () => host.querySelector('.modal.rf');
     expect(dialog()?.textContent).toContain('Änderungen an „QUADRIO – EFH Musterweg“ speichern?');
+    // ohne eigenen Satz der App der allgemeine
+    expect(dialog()?.textContent).toContain('Das Projekt hat ungespeicherte Änderungen.');
     expect([...dialog()!.querySelectorAll('button')].map((b) => b.textContent)).toEqual(['Abbrechen', 'Nicht speichern', 'Speichern']);
     await act(async () => [...dialog()!.querySelectorAll('button')].find((b) => b.textContent === 'Abbrechen')!.click());
     expect(useRahmen.getState().tabs).toEqual(['flaechenrechner']);
@@ -103,6 +105,33 @@ describe('Rahmen-App', () => {
     await act(async () => [...dialog()!.querySelectorAll('button')].find((b) => b.textContent === 'Nicht speichern')!.click());
     expect(useRahmen.getState().tabs).toEqual([]);
     expect(confirm).not.toHaveBeenCalled();
+  });
+
+  it('Rückfrage beim Schließen mit dem Satz der App (ungespeichert); leer oder überlang: der allgemeine', async () => {
+    const host = render();
+    act(() => karte(host, 'FABRIO').click());
+    const f = host.querySelector('iframe')!;
+    Object.defineProperty(f, 'contentWindow', { value: { postMessage: () => {} }, configurable: true });
+    const melden = (ungespeichert: unknown) =>
+      act(() => window.dispatchEvent(new MessageEvent('message', { data: { typ: 'arch-tools:status', app: 'FABRIO', name: 'LV 1', dirty: true, ungespeichert }, origin: window.location.origin, source: f.contentWindow })));
+    const dialog = () => host.querySelector('.modal.rf');
+    const schliessenUndAbbrechen = async () => {
+      act(() => (tab(host, 'FABRIO').querySelector('button[title="Schließen (Entf)"]') as HTMLButtonElement).click());
+      const text = dialog()?.textContent;
+      await act(async () => [...dialog()!.querySelectorAll('button')].find((b) => b.textContent === 'Abbrechen')!.click());
+      return text;
+    };
+    melden('  Das LV hat ungespeicherte Änderungen. ');
+    expect(useRahmen.getState().status.ava).toEqual({ name: 'LV 1', dirty: true, ungespeichert: 'Das LV hat ungespeicherte Änderungen.' });
+    const mitSatz = await schliessenUndAbbrechen();
+    expect(mitSatz).toContain('Das LV hat ungespeicherte Änderungen.');
+    expect(mitSatz).not.toContain('Das Projekt hat');
+    for (const falsch of ['   ', 'x'.repeat(201), 42]) {
+      melden(falsch);
+      expect(useRahmen.getState().status.ava).toEqual({ name: 'LV 1', dirty: true });
+      expect(await schliessenUndAbbrechen()).toContain('Das Projekt hat ungespeicherte Änderungen.');
+    }
+    expect(useRahmen.getState().tabs).toEqual(['ava']);
   });
 
   it('im Browser kein Herauslösen (dort gäbe es kein Andocken); Andocken holt eine App als Tab zurück', () => {

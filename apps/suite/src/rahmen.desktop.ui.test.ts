@@ -188,16 +188,19 @@ describe('Rahmen-App auf dem Desktop', () => {
     act(() => useRahmen.getState().oeffnen('ordner'));
     await herausloesen(host, 'ATLAS');
     // das Fenster meldet Projekt und Änderungen; der Tab ebenso
-    await senden('arch-tools:an-rahmen', { typ: 'arch-tools:status', app: 'ATLAS', kennung: 'ordner', name: 'P1', dirty: true });
+    // (das Fenster mit eigenem Satz für die Rückfrage)
+    await senden('arch-tools:an-rahmen', { typ: 'arch-tools:status', app: 'ATLAS', kennung: 'ordner', name: 'P1', dirty: true, ungespeichert: 'Die Ordnerstruktur hat ungespeicherte Änderungen.' });
     statusTab(host, 'kosten', 'Kosten 1', true);
-    expect(useRahmen.getState().status.ordner).toEqual({ name: 'P1', dirty: true });
+    expect(useRahmen.getState().status.ordner).toEqual({ name: 'P1', dirty: true, ungespeichert: 'Die Ordnerstruktur hat ungespeicherte Änderungen.' });
     expect(update.dirty).toBe(true);
     const verhindert = vi.fn();
     await act(async () => fenster.haupt!.schliessenAngefragt!({ preventDefault: verhindert }));
     expect(verhindert).toHaveBeenCalled();
     expect(dialog(host)?.textContent).toContain('Änderungen an „NUMIO – Kosten 1“ speichern?');
+    expect(dialog(host)?.textContent).toContain('Das Projekt hat ungespeicherte Änderungen.');
     await antwort(host, 'Nicht speichern');
     expect(dialog(host)?.textContent).toContain('Änderungen an „ATLAS – P1“ speichern?');
+    expect(dialog(host)?.textContent).toContain('Die Ordnerstruktur hat ungespeicherte Änderungen.');
     // Abbrechen: nichts wird geschlossen
     await antwort(host, 'Abbrechen');
     expect(fenster.haupt!.destroy).not.toHaveBeenCalled();

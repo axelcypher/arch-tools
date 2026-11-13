@@ -119,6 +119,18 @@ describe('Titelleiste auf dem Desktop', () => {
     expect(speichern).toHaveBeenCalledTimes(2);
   });
 
+  it('Meldung an den Rahmen mit dem Satz für dessen Rückfrage (ungespeichert); ohne ihn ohne das Feld', async () => {
+    window.history.replaceState(null, '', '/?rahmen=fenster&app=ava');
+    const gemeldet: object[] = [];
+    await listen<object>('arch-tools:an-rahmen', (e) => void gemeldet.push(e.payload));
+    await render({ app: 'FABRIO', name: 'LV 1', ungespeichert: 'Das LV hat ungespeicherte Änderungen.' });
+    await warten();
+    expect(gemeldet.at(-1)).toEqual({ typ: 'arch-tools:status', app: 'FABRIO', kennung: 'ava', name: 'LV 1', dirty: true, ungespeichert: 'Das LV hat ungespeicherte Änderungen.' });
+    await act(async () => root!.render(createElement(TitleBar, { app: 'FABRIO', name: 'LV 1', dirty: true, onOpenLog: () => {} })));
+    await warten();
+    expect(gemeldet.at(-1)).toEqual({ typ: 'arch-tools:status', app: 'FABRIO', kennung: 'ava', name: 'LV 1', dirty: true });
+  });
+
   it('vor dem Schließen wartet das Fenster auf ausstehendes Schreiben (vorDemSchliessen), auch ohne ungespeicherte Änderungen', async () => {
     let schreiben: (() => void) | undefined;
     const aus = vorDemSchliessen(() => new Promise<void>((fertig) => (schreiben = fertig)));

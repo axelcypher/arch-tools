@@ -47,6 +47,15 @@ const PLUS = '+';
 const ereignisse = () => import('@tauri-apps/api/event');
 
 /**
+ * Meldung eines Tabs bzw. Fensters → Status. Der Satz für die Rückfrage (`ungespeichert`) gilt nur als kurzer Text,
+ * sonst bleibt der allgemeine.
+ */
+const statusAus = (d: Partial<RahmenStatus>) => {
+  const satz = typeof d.ungespeichert === 'string' ? d.ungespeichert.trim() : '';
+  return { name: d.name ?? '', dirty: !!d.dirty, ...(satz && satz.length <= 200 ? { ungespeichert: satz } : {}) };
+};
+
+/**
  * Rahmen-App: alle Apps in einem Fenster. Jede geöffnete App ist ein Tab (iframe, bleibt beim Wechseln
  * erhalten); „Herauslösen“ öffnet sie in einem eigenen Fenster (nur Desktop), „Andocken“ dort holt sie zurück. Beim
  * Beenden (auch über das System) und vor einem Update fragt der Rahmen für jeden Tab und jedes Fenster mit
@@ -113,7 +122,7 @@ export function App() {
       const d = e.data as (Partial<RahmenStatus> & RahmenNachricht) | null;
       if (!d || e.origin !== window.location.origin) return;
       if (d.typ === 'arch-tools:status') {
-        for (const [id, f] of rahmen.current) if (f.contentWindow && f.contentWindow === e.source) setStatus(id, { name: d.name ?? '', dirty: !!d.dirty });
+        for (const [id, f] of rahmen.current) if (f.contentWindow && f.contentWindow === e.source) setStatus(id, statusAus(d));
         return;
       }
       verarbeiten.current(d, e.source as Window | null);
@@ -132,7 +141,7 @@ export function App() {
         const d = e.payload;
         // Meldung eines herausgelösten Fensters: Projekt und ungespeicherte Änderungen (für Rückfragen beim Beenden)
         if (d?.typ === 'arch-tools:status') {
-          if (d.kennung && useRahmen.getState().fenster.includes(d.kennung)) setStatus(d.kennung, { name: d.name ?? '', dirty: !!d.dirty });
+          if (d.kennung && useRahmen.getState().fenster.includes(d.kennung)) setStatus(d.kennung, statusAus(d));
           return;
         }
         verarbeiten.current(d, null);
@@ -294,7 +303,7 @@ export function App() {
     const s = useRahmen.getState().status[id];
     if (!s?.dirty) return true;
     const frame = rahmen.current.get(id);
-    return aenderungenSpeichern(`${appInfo(id)?.name}${s.name ? ` – ${s.name}` : ''}`, () => (frame ? speichernImTab(frame, { zeitablauf: antwortetNicht(id) }) : false));
+    return aenderungenSpeichern(`${appInfo(id)?.name}${s.name ? ` – ${s.name}` : ''}`, () => (frame ? speichernImTab(frame, { zeitablauf: antwortetNicht(id) }) : false), s.ungespeichert);
   };
 
   /**
@@ -335,6 +344,7 @@ export function App() {
           return () => warten.delete(f);
         },
       }),
+      s.ungespeichert,
     );
   };
 
