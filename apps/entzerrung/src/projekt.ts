@@ -1,6 +1,6 @@
 import { logger } from '@core/platform/log';
 import { zwischenstandErsetzt, zwischenstandLadenErlaubt, zwischenstandWirdGeladen } from '@core/platform/startschutz';
-import { istPfad, openFileWithPath, saveMergedFile } from '@core/platform/files';
+import { DateiVonAussenGeaendert, istPfad, openFileWithPath, pickFile, saveMergedFile } from '@core/platform/files';
 import type { ProjektordnerZugriff } from '@core/platform/projektordner';
 import { verbinde } from '@core/platform/projektordner';
 import { fotoEinlesen } from './bilder';
@@ -8,7 +8,8 @@ import { ENDUNG, entpacken, packen } from './datei';
 import { neueId, neuesFoto } from './model';
 import { fotoSchreiben, standLesen, standSchreiben } from './speicher';
 import { useEntz } from './store';
-import { aenderungenSpeichern, meldung, oeffnenFehlgeschlagen } from '@core/ui/Rueckfrage';
+import { aenderungenSpeichern, fragen, meldung, oeffnenFehlgeschlagen } from '@core/ui/Rueckfrage';
+import { dateiStandLesen } from './dateistand';
 
 /** Projekt neu, öffnen, speichern, Fotos hinzufügen und automatisch zwischenspeichern */
 
@@ -41,7 +42,9 @@ export async function oeffnen(datei?: File) {
     if (!gewaehlt) return;
     name = gewaehlt.name;
     const { doc, fotos } = entpacken(gewaehlt.bytes);
-    useEntz.getState().laden(doc, fotos, gewaehlt.pfad ?? gewaehlt.name);
+    // Stand merken: „Speichern“ schreibt später ohne Dialog hierher und darf eine inzwischen außen geänderte Datei nicht überschreiben
+    const stand = gewaehlt.pfad ? await dateiStandLesen(gewaehlt.pfad) : undefined;
+    useEntz.getState().laden(doc, fotos, gewaehlt.pfad ?? gewaehlt.name, false, stand);
     for (const [id, d] of Object.entries(fotos)) await fotoSchreiben(id, d);
     log.info(`Geöffnet: ${gewaehlt.pfad ?? gewaehlt.name}`, { fotos: doc.fotos.length });
   } catch (e) {
@@ -55,36 +58,57 @@ let speichertGerade: Promise<boolean> | null = null;
 
 /**
  * true, wenn gespeichert wurde. Ein zweiter Aufruf während des Speicherns wartet auf den ersten. Ändert sich das
- * Projekt während des Schreibens, bleibt es als ungespeichert markiert.
+ * Projekt während des Schreibens, bleibt es als ungespeichert markiert. `unterNeuemNamen`: immer mit Dateidialog.
  */
-export function speichern(): Promise<boolean> {
+export function speichern(unterNeuemNamen = false): Promise<boolean> {
   if (speichertGerade) return speichertGerade;
   // ein gerade bearbeitetes Feld zuerst übernehmen (Strg+S ohne Verlassen des Felds)
   if (typeof document !== 'undefined' && document.activeElement instanceof HTMLInputElement) document.activeElement.blur();
-  speichertGerade = speichernJetzt().finally(() => (speichertGerade = null));
+  speichertGerade = speichernJetzt(unterNeuemNamen).finally(() => (speichertGerade = null));
   return speichertGerade;
 }
 
-async function speichernJetzt(): Promise<boolean> {
+const dateiTeil = (pfad: string) => pfad.split(/[\\/]/).pop() ?? pfad;
+const ordnerTeil = (pfad: string) => (istPfad(pfad) ? pfad.slice(0, Math.max(pfad.lastIndexOf('/'), pfad.lastIndexOf('\\'))) || null : null);
+
+async function speichernJetzt(unterNeuemNamen: boolean): Promise<boolean> {
   const s = useEntz.getState();
   if (!s.doc.fotos.length) return false;
-  const vorschlag = s.dateiname ?? `${s.doc.fotos[0].name}.${ENDUNG}`;
+  // ohne Dialog direkt in die geöffnete Datei (z. B. neben dem Foto im Projekt) – nur, wenn sie noch den gemerkten Stand hat
+  const direkt = !unterNeuemNamen && !!s.dateiname && istPfad(s.dateiname);
+  const vorschlag = s.dateiname ? dateiTeil(s.dateiname) : `${s.doc.fotos[0].name}.${ENDUNG}`;
   try {
     const name = await saveMergedFile({
-      // neben dem Foto im Projekt: ohne Rückfrage in diese Datei (sie gehört der Entzerrung)
-      pfad: s.dateiname && istPfad(s.dateiname) ? s.dateiname : null,
-      defaultName: vorschlag,
+      pfad: direkt ? s.dateiname : null,
+      defaultName: unterNeuemNamen ? vorschlag.replace(new RegExp(`\\.${ENDUNG}$`, 'i'), ` (Kopie).${ENDUNG}`) : vorschlag,
+      defaultDir: s.dateiname ? ordnerTeil(s.dateiname) : null,
       filterName: 'Entzerrung',
       extension: ENDUNG,
       mime: 'application/zip',
+      // die bisherige Datei wird nicht gebraucht (die Fotos stecken im Projekt) – bei großen .entz spart das Zeit
+      vorhandenLesen: false,
+      // im Dialog gewählte Dateien hat man selbst bestätigt; geprüft wird nur das Schreiben ohne Dialog
+      ...(direkt && s.dateiStand !== undefined ? { stand: s.dateiStand } : {}),
       build: () => packen(s.doc, s.bilder),
     });
     if (name) {
-      useEntz.getState().gespeichert(name, s.doc);
+      useEntz.getState().gespeichert(name, s.doc, istPfad(name) ? await dateiStandLesen(name) : undefined);
       log.info(`Gespeichert: ${name}`);
     }
     return !!name;
   } catch (e) {
+    if (e instanceof DateiVonAussenGeaendert) {
+      log.warn('Speichern abgelehnt: Datei von außen geändert', s.dateiname);
+      const wahl = await fragen({
+        titel: 'Nicht gespeichert – Datei wurde außen geändert',
+        text: `„${dateiTeil(s.dateiname ?? '')}“ wurde nach dem Öffnen außerhalb von RECTIO geändert oder angelegt (z. B. auf einem anderen Rechner im Büro). Damit dort nichts verloren geht, wurde sie nicht überschrieben. Die Änderungen bleiben in der App erhalten.`,
+        knoepfe: [
+          { id: 'abbrechen', label: 'Abbrechen' },
+          { id: 'neu', label: 'Unter neuem Namen speichern …', art: 'primary' },
+        ],
+      });
+      return wahl === 'neu' ? speichernJetzt(true) : false;
+    }
     const text = e instanceof Error ? e.message : String(e);
     log.error('Speichern fehlgeschlagen', text);
     await meldung('Speichern fehlgeschlagen', 'Die Entzerrung ließ sich nicht speichern. Die Änderungen bleiben in der App erhalten.', e);
@@ -95,7 +119,7 @@ async function speichernJetzt(): Promise<boolean> {
 export async function fotosHinzufuegen(dateien?: File[]) {
   let liste = dateien;
   if (!liste) {
-    liste = await fotosWaehlen();
+    liste = await pickFile('image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp', { mehrere: true });
   }
   for (const d of liste) {
     try {
@@ -111,20 +135,6 @@ export async function fotosHinzufuegen(dateien?: File[]) {
       await meldung('Foto ließ sich nicht hinzufügen', `${d.name}: ${text}`, e);
     }
   }
-}
-
-/** Dateidialog für Fotos mit Mehrfachauswahl */
-function fotosWaehlen(): Promise<File[]> {
-  if (typeof document === 'undefined') return Promise.resolve([]);
-  return new Promise((resolve) => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.multiple = true;
-    input.accept = 'image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp';
-    input.onchange = () => resolve([...(input.files ?? [])]);
-    input.addEventListener('cancel', () => resolve([]));
-    input.click();
-  });
 }
 
 /* ---------- Fotos im Projektordner ---------- */
@@ -148,7 +158,7 @@ export async function fotoImProjektOeffnen(fs: ProjektordnerZugriff, root: strin
     const vorhanden = await fs.liesMitStand(root, entz);
     if (vorhanden) {
       const { doc, fotos } = entpacken(vorhanden.daten);
-      useEntz.getState().laden(doc, fotos, ziel);
+      useEntz.getState().laden(doc, fotos, ziel, false, vorhanden.stand);
       for (const [id, d] of Object.entries(fotos)) await fotoSchreiben(id, d);
       log.info(`Geöffnet: ${ziel}`, { fotos: doc.fotos.length });
       return;
@@ -157,7 +167,8 @@ export async function fotoImProjektOeffnen(fs: ProjektordnerZugriff, root: strin
     const name = pfad.split('/').pop()!;
     const b = await fotoEinlesen(new File([daten as BlobPart], name));
     const id = neueId();
-    useEntz.getState().laden({ fotos: [neuesFoto(id, b.name, b.mime, b.breite, b.hoehe)] }, { [id]: b.daten }, ziel);
+    // die .entz gibt es noch nicht (Stand null): legt sie inzwischen jemand anders an, wird sie nicht überschrieben
+    useEntz.getState().laden({ fotos: [neuesFoto(id, b.name, b.mime, b.breite, b.hoehe)] }, { [id]: b.daten }, ziel, false, null);
     await fotoSchreiben(id, b.daten);
     log.info(`Foto geöffnet: ${verbinde(root, pfad)}`, { breite: b.breite, hoehe: b.hoehe });
   } catch (e) {
@@ -191,21 +202,21 @@ export async function zwischenspeicherStarten(): Promise<() => void> {
   const z = zwischenstandLadenErlaubt(APP) ? await standLesen() : null;
   if (z && z.stand.doc.fotos.length) {
     zwischenstandWirdGeladen(APP);
-    useEntz.getState().laden(z.stand.doc, z.bilder, z.stand.dateiname, z.stand.dirty);
+    useEntz.getState().laden(z.stand.doc, z.bilder, z.stand.dateiname, z.stand.dirty, z.stand.dateiStand);
     log.info('Zwischenstand wiederhergestellt', { fotos: z.stand.doc.fotos.length });
   }
   let timer: ReturnType<typeof setTimeout> | undefined;
   const schreiben = () => {
     timer = undefined;
     const a = useEntz.getState();
-    void standSchreiben({ doc: a.doc, dateiname: a.dateiname, dirty: a.dirty }, a.bilder, () => verwendeteFotos(useEntz.getState())).then(() => zwischenstandErsetzt(APP));
+    void standSchreiben({ doc: a.doc, dateiname: a.dateiname, dateiStand: a.dateiStand, dirty: a.dirty }, a.bilder, () => verwendeteFotos(useEntz.getState())).then(() => zwischenstandErsetzt(APP));
   };
   // beim Schließen den ausstehenden Stand sofort schreiben
   const sofort = () => timer !== undefined && (clearTimeout(timer), schreiben());
   window.addEventListener('pagehide', sofort);
   window.addEventListener('beforeunload', sofort);
   const ende = useEntz.subscribe((s, vorher) => {
-    if (s.doc === vorher.doc && s.dateiname === vorher.dateiname && s.dirty === vorher.dirty) return;
+    if (s.doc === vorher.doc && s.dateiname === vorher.dateiname && s.dateiStand === vorher.dateiStand && s.dirty === vorher.dirty) return;
     clearTimeout(timer);
     timer = setTimeout(schreiben, 600);
   });

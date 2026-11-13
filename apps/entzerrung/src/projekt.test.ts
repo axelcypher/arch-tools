@@ -6,14 +6,28 @@ import { useEntz } from './store';
  * IndexedDB (Fotos für Rückgängig/Wiederholen bleiben, fehlende werden nachgetragen) und Öffnen mit Pfad.
  */
 
+type SpeicherOptionen = { build: () => Uint8Array; pfad: string | null; vorhandenLesen?: boolean; stand?: { groesse: number; geaendert: number } | null; defaultName: string };
 const datei = vi.hoisted(() => ({
-  speichern: null as null | ((o: { build: () => Uint8Array; pfad: string | null }) => Promise<string | null>),
+  speichern: null as null | ((o: SpeicherOptionen) => Promise<string | null>),
   oeffnen: null as null | (() => Promise<{ name: string; pfad: string | null; bytes: Uint8Array } | null>),
+  /** Stand je Pfad für dateiStandLesen */
+  staende: new Map<string, { groesse: number; geaendert: number } | null>(),
+  /** Antwort auf die Rückfrage nach abgelehntem Speichern */
+  antwort: null as string | null,
+  fragen: [] as string[],
 }));
 vi.mock('@core/platform/files', async (original) => ({
   ...(await original<typeof import('@core/platform/files')>()),
-  saveMergedFile: (o: { build: () => Uint8Array; pfad: string | null }) => datei.speichern!(o),
+  saveMergedFile: (o: SpeicherOptionen) => datei.speichern!(o),
   openFileWithPath: () => datei.oeffnen!(),
+}));
+vi.mock('./dateistand', () => ({ dateiStandLesen: async (p: string) => (datei.staende.has(p) ? datei.staende.get(p) : undefined) }));
+vi.mock('@core/ui/Rueckfrage', async (original) => ({
+  ...(await original<typeof import('@core/ui/Rueckfrage')>()),
+  fragen: async (f: { titel: string }) => {
+    datei.fragen.push(f.titel);
+    return datei.antwort;
+  },
 }));
 
 /** kleine IndexedDB-Attrappe: zwei Speicher, Ergebnisse asynchron wie im Browser */
@@ -54,7 +68,9 @@ function attrappe() {
 }
 const idb = attrappe();
 
-const { speichern, verwendeteFotos, oeffnen } = await import('./projekt');
+const { speichern, verwendeteFotos, oeffnen, fotoImProjektOeffnen } = await import('./projekt');
+const { SpeicherProjektordner } = await import('@core/platform/projektordner');
+const { DateiVonAussenGeaendert } = await import('@core/platform/files');
 const { standSchreiben } = await import('./speicher');
 const { packen } = await import('./datei');
 const { mitEbene } = await import('./store');
@@ -63,6 +79,9 @@ const bytes = (n: number, v = 7) => new Uint8Array(n).fill(v);
 
 beforeEach(() => {
   useEntz.getState().laden({ fotos: [] }, {}, null);
+  datei.staende.clear();
+  datei.fragen = [];
+  datei.antwort = null;
   idb.stand.clear();
   idb.fotos.clear();
 });
@@ -111,6 +130,87 @@ describe('Speichern', () => {
     expect(useEntz.getState().dateiname).toBe('C:\\Projekt\\Hof.entz');
     expect(useEntz.getState().doc.fotos[0].name).toBe('Hof');
     expect(idb.fotos.has('a1')).toBe(true);
+  });
+});
+
+describe('Datei von außen geändert', () => {
+  const geoeffnet = () => {
+    const z = packen({ fotos: [{ id: 'a1', name: 'Hof', mime: 'image/png', breite: 10, hoehe: 8, linse: { k1: 0, k2: 0 }, hilfslinien: [], ebenen: [] }] }, { a1: bytes(4) });
+    datei.oeffnen = async () => ({ name: 'Hof.entz', pfad: 'C:\\Projekt\\Hof.entz', bytes: z });
+    datei.staende.set('C:\\Projekt\\Hof.entz', { groesse: 100, geaendert: 1 });
+    return oeffnen();
+  };
+
+  it('Speichern ohne Dialog prüft den Stand vom Öffnen und liest die alte Datei nicht', async () => {
+    await geoeffnet();
+    expect(useEntz.getState().dateiStand).toEqual({ groesse: 100, geaendert: 1 });
+    const optionen: SpeicherOptionen[] = [];
+    datei.speichern = async (o) => {
+      optionen.push(o);
+      o.build();
+      datei.staende.set('C:\\Projekt\\Hof.entz', { groesse: 120, geaendert: 2 });
+      return 'C:\\Projekt\\Hof.entz';
+    };
+    useEntz.getState().aendern((d) => ({ fotos: d.fotos.map((f) => ({ ...f, name: 'Ost' })) }));
+    expect(await speichern()).toBe(true);
+    expect(optionen[0]).toMatchObject({ pfad: 'C:\\Projekt\\Hof.entz', vorhandenLesen: false, stand: { groesse: 100, geaendert: 1 } });
+    // danach gilt der neue Stand
+    expect(useEntz.getState().dateiStand).toEqual({ groesse: 120, geaendert: 2 });
+    expect(useEntz.getState().dirty).toBe(false);
+  });
+
+  it('außen geändert: nichts überschrieben, Rückfrage, Änderungen bleiben; „Unter neuem Namen“ speichert mit Dialog', async () => {
+    await geoeffnet();
+    useEntz.getState().aendern((d) => ({ fotos: d.fotos.map((f) => ({ ...f, name: 'Ost' })) }));
+    const optionen: SpeicherOptionen[] = [];
+    datei.speichern = async (o) => {
+      optionen.push(o);
+      if (o.stand !== undefined) throw new DateiVonAussenGeaendert(o.pfad ?? '');
+      o.build();
+      return 'C:\\Projekt\\Hof (Kopie).entz';
+    };
+    // Abbrechen: nicht gespeichert, weiter ungespeichert
+    expect(await speichern()).toBe(false);
+    expect(datei.fragen).toEqual(['Nicht gespeichert – Datei wurde außen geändert']);
+    expect(useEntz.getState().dirty).toBe(true);
+    expect(useEntz.getState().dateiname).toBe('C:\\Projekt\\Hof.entz');
+    // Unter neuem Namen: Dialog (kein Pfad, keine Prüfung), Vorschlag mit „(Kopie)“
+    datei.antwort = 'neu';
+    expect(await speichern()).toBe(true);
+    expect(optionen[2]).toMatchObject({ pfad: null, defaultName: 'Hof (Kopie).entz' });
+    expect(optionen[2].stand).toBeUndefined();
+    expect(useEntz.getState().dateiname).toBe('C:\\Projekt\\Hof (Kopie).entz');
+    expect(useEntz.getState().dirty).toBe(false);
+  });
+
+  it('.entz neben dem Foto im Projekt: Stand aus dem Projektordner wird beim Speichern geprüft', async () => {
+    const fs = new SpeicherProjektordner();
+    const root = '/p/2026-014 Haus/09 Fotos';
+    const z = packen({ fotos: [{ id: 'a1', name: 'Nord', mime: 'image/png', breite: 10, hoehe: 8, linse: { k1: 0, k2: 0 }, hilfslinien: [], ebenen: [] }] }, { a1: bytes(4) });
+    await fs.dateiAnlegen(root, 'Bestand/Nord.entz', z);
+    const stand = (await fs.liesMitStand(root, 'Bestand/Nord.entz'))!.stand;
+    await fotoImProjektOeffnen(fs, root, 'Bestand/Nord.jpg');
+    expect(useEntz.getState().dateiname).toBe(`${root}/Bestand/Nord.entz`);
+    expect(useEntz.getState().dateiStand).toEqual(stand);
+    let o0: SpeicherOptionen | null = null;
+    datei.speichern = async (o) => {
+      o0 = o;
+      return o.pfad;
+    };
+    await speichern();
+    expect(o0!).toMatchObject({ pfad: `${root}/Bestand/Nord.entz`, stand });
+  });
+
+  it('Gegenprobe: im Browser (Stand unbekannt) wird nicht geprüft', async () => {
+    useEntz.getState().fotoHinzufuegen('f1', 'Süd', 'image/jpeg', 100, 80, bytes(5));
+    let o0: SpeicherOptionen | null = null;
+    datei.speichern = async (o) => {
+      o0 = o;
+      return 'Süd.entz';
+    };
+    await speichern();
+    expect(o0!.stand).toBeUndefined();
+    expect(o0!.vorhandenLesen).toBe(false);
   });
 });
 
