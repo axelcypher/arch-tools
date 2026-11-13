@@ -358,6 +358,11 @@ describe('Antragsumfang und Vollständigkeit', () => {
     // das Kontextmenü bleibt (mit gesperrten Punkten)
     await rechtsklick(fehlt);
     expect(menuePunkt('Antragsumfang zeigen')).toBeDefined();
+    // „Aus dem Antragsumfang nehmen“ als Gefahr-Punkt am Ende hinter einem Trenner
+    const kinder = [...document.querySelector('.menue')!.children];
+    expect(kinder[kinder.length - 1].textContent).toContain('Aus dem Antragsumfang nehmen');
+    expect(kinder[kinder.length - 1].classList.contains('gefahr')).toBe(true);
+    expect(kinder[kinder.length - 2].classList.contains('menue-trenner')).toBe(true);
   });
 
   it('Formular anlegen: Meldung schon während der Suche; ein zweiter Aufruf legt kein zweites Formular an', async () => {
@@ -5831,6 +5836,16 @@ describe('Reihenfolge der Formulare in der Navigation', () => {
     act(() => void document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
     expect(document.querySelector('.menue')).toBeNull();
     expect(document.activeElement).toBe(z);
+  });
+
+  it('Kontextmenü einer Datei im Projektordner: Löschen als Gefahr-Punkt am Ende hinter einem Trenner, „Ordner öffnen“', async () => {
+    await projektBS9();
+    const punkte = dateiMenue('C:/Projekte/BS9', 'Planung/Lageplan.pdf');
+    const letzter = punkte[punkte.length - 1];
+    expect(letzter).toMatchObject({ text: 'Löschen …', gefahr: true });
+    expect(punkte[punkte.length - 2]).toEqual({ trenner: true });
+    expect(punkte.some((p) => !p.trenner && p.text === 'Ordner öffnen' && p.symbol === 'ordnerOffen')).toBe(true);
+    expect(punkte.filter((p) => !p.trenner && p.gefahr)).toHaveLength(1);
   });
 
   it('Kontextmenü eines Formulars: „Ordner öffnen“, Löschen als Gefahr-Punkt am Ende hinter einem Trenner', async () => {

@@ -193,8 +193,8 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
   const menue = (pfad: string, zustand: Bereitschaft, fehler: string | null, geaendert?: number, ohneDokument = false): MenuePunkt[] => [
     ...(ohneDokument ? [...aufnehmenMenue(pfad), { trenner: true as const }] : []),
     {
+      // Befehl mit wechselndem Text, kein Umschalter: ohne Haken (der stünde im Menü für „an“)
       text: zustand === 'bereit' || zustand === 'geaendert' ? 'Nicht mehr bereit' : 'Als bereit markieren',
-      symbol: 'haken',
       deaktiviert: gesperrt || wechsel,
       ...(gesperrt ? { hinweis: 'Antrag eingereicht' } : wechsel ? { hinweis: 'Antrag wird geöffnet' } : fehler ? { hinweis: 'Namensformat passt nicht' } : {}),
       aktion: bereitAktion(pfad),

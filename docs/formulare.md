@@ -454,7 +454,7 @@ Neben den FORMA-Projekten lassen sich die **echten Projektordner** anbinden – 
 schon als PDF vorliegen, welche Berechnungen es gibt), als Ziel des PDF-Exports und für einfache Dateibefehle.
 
 - **Immer aktuell:** Nach allem, was die App selbst schreibt (Export, neue Fassung, Verknüpfen, Projektdatei,
-  Dateibefehle), liest der Baum neu. Was von außen dazukommt – neue Dokumente im Explorer oder von Kollegen, neue
+  Dateibefehle), liest der Baum neu. Was von außen dazukommt – neue Dokumente im Dateimanager oder von Kollegen, neue
   Formulare und Sperren aus FORMA –, übernimmt die App, sobald das Fenster wieder in den Vordergrund kommt, und alle
   15 Sekunden, solange es sichtbar ist (FORMA-Formulare, Projektordner, Antragsstatus; beim Zurückkommen auch die
   Projektdatei und in der Übersicht die Liste der Projekte).
@@ -472,8 +472,10 @@ schon als PDF vorliegen, welche Berechnungen es gibt), als Ziel des PDF-Exports 
   auf einen Ordner › Einfügen), **Duplizieren** („Name (Kopie).pdf“), **Umbenennen …**, mit einem
   **Antragsdokument verknüpfen** (liegt die Datei nicht im Ordner der aktiven Fassung, wird sie dorthin kopiert), Pfad
   kopieren und – abgesetzt am Ende – **Löschen …** (nach Bestätigung, mit Sicherungskopie im App-Ordner). Rechtsklick
-  auf einen Ordner: Einfügen, Neuer Ordner …, Ordner öffnen. Überschrieben wird nie; Dateien von FORMA (`.frmsjf`, `.frmtmp`, `.sdb`,
-  `.ini`) lassen sich hier nicht umbenennen – Formulare benennt man in der Navigation um (siehe unten).
+  auf einen Ordner: Einfügen, Neuer Ordner …, Ordner öffnen. Überschrieben wird nie; Dateien von FORMA (`.frmsjf`,
+  `.frmtmp`, `.sdb`, `.ini`) lassen sich hier nicht umbenennen – Formulare benennt man in der Navigation um (siehe
+  unten). In Auswahllisten im Menü (aktive Fassung, Zuordnung, Verknüpfung) steht beim gewählten Eintrag ein Haken
+  und rechts „aktiv“, „zugeordnet“ bzw. „verknüpft“.
 - **Formulare umbenennen** (Rechtsklick auf ein Formular › Umbenennen …): nur im selben Ordner und nie über ein
   vorhandenes. Mit dem Namen ändern sich auch alle Verweise darauf: die Zuordnung im Antragsumfang (bestand sie nur
   über den Namen und passte der neue nicht mehr, wird sie festgeschrieben) und die Werte aus der Projektkarte in
