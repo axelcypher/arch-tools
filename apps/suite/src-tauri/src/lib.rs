@@ -54,6 +54,7 @@ pub fn run() {
             pick_save_path,
             pick_open_path,
             read_binary_file,
+            datei_stand,
             write_binary_file,
             // Formulare (apps/formulare/src-tauri/src/befehle.rs – dieselbe Liste wie dort in lib.rs)
             pick_folder,

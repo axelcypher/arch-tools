@@ -11,6 +11,7 @@ import { APPS, appAdresse, appInfo, fensterLabel } from './apps';
 import { sperrenFreigeben } from './sperren';
 import { useRahmen } from './store';
 import { aenderungenSpeichern, bestaetigen, RueckfrageHost } from '@core/ui/Rueckfrage';
+import { MenueHost } from '@core/ui/Menue';
 import { speichernImTab } from '@core/platform/rahmen';
 
 const log = logger('rahmen');
@@ -387,6 +388,7 @@ export function App() {
       {logOffen && <LogDialog onClose={() => setLogOffen(false)} />}
       <SpeicherortHost />
       <RueckfrageHost />
+      <MenueHost />
     </div>
   );
 }

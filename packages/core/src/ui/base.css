@@ -55,6 +55,8 @@
   --overlay-bg: rgba(255, 255, 255, 0.92);
   --code-bg: rgba(0, 0, 0, 0.05);
   --backdrop: rgba(20, 24, 31, 0.4);
+  /* Schatten schwebender Flächen (Menüs, Aufklappfelder) */
+  --schatten-schwebend: 0 6px 24px rgba(0, 0, 0, 0.18), 0 1px 3px rgba(0, 0, 0, 0.12);
   --titlebar: #e9ebef;
   /* Zeichenfläche: im dunklen Schema invertiert (Pläne bleiben lesbar, Farbtöne erhalten) */
   --canvas-filter: none;
@@ -136,6 +138,10 @@ body,
   height: 100%;
   cursor: col-resize;
   z-index: 3;
+}
+.leiste-griff-links {
+  right: auto;
+  left: -3px;
 }
 .leiste-griff:hover {
   background: var(--accent-soft);
@@ -619,11 +625,15 @@ textarea:focus {
 
 .modal h3 {
   margin: 0 0 10px;
+  font-size: var(--fs-l);
+  font-weight: 600;
 }
 
 .modal h4 {
-  margin: 10px 0 4px;
-  font-size: 12px;
+  /* Unterabschnitt im Dialog (der Titel ist der Kopf bzw. h3) */
+  margin: var(--s3) 0 var(--s1);
+  font-size: var(--fs-s);
+  font-weight: 600;
 }
 
 .radio-row {
@@ -1126,6 +1136,7 @@ code {
   --overlay-bg: rgba(31, 34, 40, 0.92);
   --code-bg: rgba(255, 255, 255, 0.08);
   --backdrop: rgba(0, 0, 0, 0.55);
+  --schatten-schwebend: 0 6px 24px rgba(0, 0, 0, 0.55), 0 1px 3px rgba(0, 0, 0, 0.5);
   --titlebar: #121418;
   color-scheme: dark;
 }
@@ -1948,13 +1959,37 @@ button.ph-lokal {
 .sp-wahl .radio-row {
   margin: 6px 0;
 }
-.sp-meldung {
+/* ---------- Meldungen im Inhalt (Dialoge, Seitenleisten) – eine Familie, Art über die zweite Klasse ---------- */
+
+.meldung {
   padding: 6px 8px;
-  border: 1px solid var(--ok-border);
-  background: var(--ok-bg);
+  border: 1px solid var(--border);
+  background: var(--panel);
   color: var(--text);
-  border-radius: 4px;
-  font-size: 12px;
+  border-radius: var(--radius-s);
+  font-size: var(--fs-s);
+}
+.meldung.ok {
+  border-color: var(--ok-border);
+  background: var(--ok-bg);
+}
+.meldung.warnung {
+  border-color: var(--warn-border);
+  background: var(--warn-bg);
+  color: var(--warn-text);
+}
+.meldung.fehler {
+  border-color: var(--fehler-border);
+  background: var(--fehler-bg);
+  color: var(--fehler-text);
+}
+
+/* Titelleiste in schmalen Fenstern (und im Tab der Rahmen-App): Knöpfe mit Symbol nur noch als Symbol;
+   der Name bleibt über aria-label und title erhalten */
+@media (max-width: 960px) {
+  .titlebar-text {
+    display: none;
+  }
 }
 
 /* ---------- Stammdaten-Knopf in Seitenleisten ---------- */
@@ -1994,8 +2029,101 @@ button.ph-lokal {
   border-radius: 0 var(--radius-s) var(--radius-s) 0;
 }
 .segment > button[aria-pressed='true'],
+.segment > button[aria-selected='true'],
 .segment > button.active {
   background: var(--accent-soft);
   color: var(--accent);
   font-weight: 600;
+}
+
+/* ---------- Symbole (ui/Symbol.tsx) ---------- */
+
+.symbol {
+  flex-shrink: 0;
+  vertical-align: -0.15em;
+}
+
+/* ---------- Menü und Kontextmenü (ui/Menue.tsx) ---------- */
+
+.menue {
+  position: fixed;
+  /* über Dialogen und Rückfragen (100): ein Menü kann aus einer Rückfrage heraus geöffnet werden */
+  z-index: 110;
+  min-width: 200px;
+  max-width: 360px;
+  padding: var(--s1);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--schatten-schwebend);
+  display: flex;
+  flex-direction: column;
+  font-size: var(--fs-m);
+}
+.menue-punkt {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  width: 100%;
+  padding: var(--s1) var(--s2);
+  border: none;
+  border-radius: var(--radius-s);
+  background: none;
+  color: var(--text);
+  text-align: left;
+}
+.menue-punkt:hover:not([aria-disabled='true']),
+.menue-punkt:focus-visible,
+.menue-punkt.offen {
+  background: var(--accent-soft);
+  outline: none;
+}
+/* Tastaturfokus zusätzlich mit Rahmen innen: die Tönung allein ist im dunklen Schema zu schwach */
+.menue-punkt:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--fokus);
+}
+/* gesperrt (aria-disabled, bleibt per Tastatur erreichbar): Text und Symbol blass, der Hinweis mit dem Grund
+   (z. B. „Antrag eingereicht“) bleibt lesbar; auch ein Gefahr-Punkt wirkt dann nicht bedienbar */
+.menue-punkt[aria-disabled='true'] {
+  color: var(--muted);
+  cursor: default;
+}
+.menue-punkt[aria-disabled='true']:hover {
+  background: none;
+}
+.menue-punkt[aria-disabled='true'] .menue-text,
+.menue-punkt[aria-disabled='true'] .menue-symbol {
+  opacity: 0.6;
+}
+.menue-punkt.gefahr {
+  color: var(--danger);
+}
+.menue-punkt.gefahr[aria-disabled='true'],
+.menue-punkt.gefahr[aria-disabled='true'] .menue-symbol {
+  color: var(--muted);
+}
+.menue-symbol {
+  width: var(--s4);
+  display: inline-flex;
+  justify-content: center;
+  color: var(--muted);
+}
+.menue-punkt.gefahr .menue-symbol {
+  color: var(--danger);
+}
+.menue-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.menue-hinweis {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+.menue-trenner {
+  height: 1px;
+  margin: var(--s1) var(--s2);
+  background: var(--border);
 }

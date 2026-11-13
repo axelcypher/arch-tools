@@ -242,4 +242,90 @@ describe('Prüfregeln', () => {
     expect(ids).toContain('summe');
     expect(document.getElementById(ids.find((i) => i !== 'summe')!)?.textContent).toContain('keine Zahl');
   });
+
+  it('Enter im Formular ohne Absendeknopf: übernimmt den Wert und sendet danach ab (der Handler sieht den neuen Wert)', async () => {
+    const gesendet: (number | undefined)[] = [];
+    function Formular() {
+      const [wert, setWert] = useState<number | undefined>(1);
+      return createElement(
+        'form',
+        {
+          onSubmit: (e: React.FormEvent) => {
+            e.preventDefault();
+            gesendet.push(wert);
+          },
+        },
+        createElement(NumberField, { value: wert, onChange: setWert }),
+        createElement('button', { type: 'button' }, 'Abbrechen'),
+      );
+    }
+    const host = render(createElement(Formular));
+    const input = host.querySelector('input')!;
+    tippen(input, '7');
+    await act(async () => {
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    expect(gesendet).toEqual([7]);
+  });
+
+  it('Enter im Formular mit Hauptknopf: einmal absenden (über den Knopf); gesperrter Hauptknopf: gar nicht', async () => {
+    const gesendet: string[] = [];
+    function Formular({ gesperrt }: { gesperrt: boolean }) {
+      const [wert, setWert] = useState('a');
+      return createElement(
+        'form',
+        {
+          onSubmit: (e: React.FormEvent<HTMLFormElement>) => {
+            e.preventDefault();
+            gesendet.push(`${wert}|${((e.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null)?.textContent ?? ''}`);
+          },
+        },
+        createElement(TextField, { value: wert, onChange: setWert }),
+        createElement('button', { type: 'submit', disabled: gesperrt }, 'Übernehmen'),
+      );
+    }
+    const enter = async (input: HTMLInputElement) =>
+      act(async () => {
+        const ev = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+        input.dispatchEvent(ev);
+        expect(ev.defaultPrevented).toBe(true);
+        await new Promise((r) => setTimeout(r, 0));
+      });
+    let host = render(createElement(Formular, { gesperrt: false }));
+    tippen(host.querySelector('input')!, 'b');
+    await enter(host.querySelector('input')!);
+    expect(gesendet).toEqual(['b|Übernehmen']);
+    act(() => root?.unmount());
+    host = render(createElement(Formular, { gesperrt: true }));
+    tippen(host.querySelector('input')!, 'c');
+    await enter(host.querySelector('input')!);
+    expect(gesendet).toEqual(['b|Übernehmen']);
+  });
+
+  it('Enter: der Hauptknopf wird erst nach dem Übernehmen geprüft – ein Wert, der ihn freigibt, sendet sofort ab', async () => {
+    const gesendet: (number | undefined)[] = [];
+    function Formular() {
+      const [wert, setWert] = useState<number | undefined>(undefined);
+      return createElement(
+        'form',
+        {
+          onSubmit: (e: React.FormEvent) => {
+            e.preventDefault();
+            gesendet.push(wert);
+          },
+        },
+        createElement(NumberField, { value: wert, onChange: setWert, allowEmpty: true }),
+        createElement('button', { type: 'submit', className: 'primary', disabled: wert === undefined }, 'Übernehmen'),
+      );
+    }
+    const host = render(createElement(Formular));
+    const input = host.querySelector('input')!;
+    tippen(input, '3,5');
+    await act(async () => {
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    expect(gesendet).toEqual([3.5]);
+  });
 });
