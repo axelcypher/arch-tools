@@ -6,37 +6,78 @@
   overflow: auto;
   background: var(--bg);
 }
+/* Leisten über der Ansicht (Zwischenstand, IFC-Bericht): Farben aus .meldung, hier nur Lage und Innenabstand */
 .ko-bericht {
-  margin: 12px 12px 0;
-  padding: 10px 14px;
-  background: var(--warn-bg);
-  border: 1px solid var(--warn-border);
-  border-radius: 6px;
-  font-size: 12px;
+  margin: var(--s3) var(--s3) 0;
+  padding: var(--s2) var(--s3);
 }
 .ko-bericht ul {
   margin: 4px 0 8px;
   padding-left: 18px;
 }
+/* IFC-Bericht: nur Warnzeilen hervorgehoben */
+.ko-bericht li.warnung {
+  color: var(--warn-text, var(--text));
+  font-weight: 600;
+}
+.ko-bericht p {
+  margin: 0 0 8px;
+}
 
+/*
+ * Kostenansicht: links Grundlagen und Mengen, rechts Positionen und Übersicht (untereinander, ab 1800 px nebeneinander);
+ * unter 1200 px Grundlagen und Mengen nebeneinander über den Positionen, damit die Positionstabelle die volle Breite hat
+ */
 .ko-view {
   display: grid;
-  grid-template-columns: minmax(250px, 300px) minmax(480px, 1fr) minmax(360px, 440px);
+  grid-template-columns: minmax(260px, 300px) minmax(0, 1fr);
   gap: 12px;
   padding: 12px;
   align-items: start;
 }
-@media (max-width: 1400px) {
+.ko-links,
+.ko-rechts {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+@media (min-width: 1800px) {
+  .ko-rechts {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(460px, 500px);
+    align-items: start;
+  }
+}
+@media (max-width: 1200px) {
   .ko-view {
-    grid-template-columns: minmax(250px, 300px) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
   }
-  /* schmal: Grundlagen und Mengen links über beide Zeilen, Übersicht unter den Positionen */
-  .ko-view > .ko-col:first-child {
-    grid-row: 1 / span 2;
+  .ko-links {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
   }
-  .ko-uebersicht {
-    grid-column: 2;
+}
+@media (max-width: 760px) {
+  .ko-links {
+    grid-template-columns: minmax(0, 1fr);
   }
+}
+.ko-col .ko-hint {
+  margin: -2px 0 8px;
+}
+.ko-col select {
+  max-width: 100%;
+}
+/* nur für Screenreader (Spaltenköpfe über Häkchen und Löschknöpfen) */
+.ko-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 .ko-col {
   background: var(--panel);
@@ -47,6 +88,9 @@
 }
 .ko-col h2 {
   margin-top: 0;
+  /* Spaltenüberschrift nach docs/design.md: --fs-l, halbfett */
+  font-size: var(--fs-l);
+  font-weight: 600;
 }
 .ko-col h2:not(:first-child) {
   margin-top: 18px;
@@ -105,8 +149,36 @@
 .ko-table td.ko-menge {
   width: 96px;
 }
+/* abgeleitete Mengen stehen als Platzhalter im Feld – lesbar wie ein Wert, nur nicht fett */
+.ko-table td.ko-menge input::placeholder {
+  color: var(--text);
+  opacity: 0.85;
+}
+.ko-table tr.festgelegt td.ko-menge input {
+  font-weight: 600;
+  border-color: var(--accent);
+}
 .ko-table tr.festgelegt td:first-child strong {
   color: var(--accent);
+}
+.ko-fest {
+  color: var(--accent);
+}
+.ko-table td.ko-einheit {
+  white-space: nowrap;
+}
+.ko-zurueck {
+  margin-left: 4px;
+  min-width: 24px;
+  min-height: 24px;
+}
+.ko-loeschen {
+  min-width: 26px;
+  min-height: 26px;
+}
+.ko-stand-neu input {
+  flex: 1;
+  min-width: 0;
 }
 
 /* Positionen */
@@ -165,21 +237,20 @@
 .ko-table tr.ko-kg2 td {
   color: var(--muted);
 }
-.ko-table tr.ko-kg2 td:first-child {
-  padding-left: 16px;
+/* lange Namen der Kostengruppen umbrechen statt abschneiden */
+/* Übersicht: Nummer und Name der Kostengruppe in eigenen Spalten, der Name bricht um */
+.ko-summen td.ko-kgnr {
+  width: 2.6em;
+  padding-right: 0;
 }
-.ko-table tr.ko-kg1 td:first-child,
-.ko-table tr.ko-kg2 td:first-child {
-  max-width: 130px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.ko-table tr.ko-kg2 td.ko-kgname {
+  padding-left: 16px;
 }
 .ko-table td.mehr {
   color: var(--danger);
 }
 .ko-table td.weniger {
-  color: #1f8a4c;
+  color: var(--ok-text);
 }
 .ko-hinweise {
   padding-left: 18px;
@@ -216,15 +287,28 @@ button.link:hover {
   padding: 12px;
   align-items: start;
 }
-@media (max-width: 1400px) {
+/* schmaler: Mengenliste nur mit Kürzel und Wert (Name als Tooltip), Bild und Rechenweg bleiben nebeneinander */
+@media (max-width: 1300px) {
   .mv-view {
-    grid-template-columns: minmax(250px, 300px) minmax(0, 1fr);
+    grid-template-columns: 170px minmax(300px, 1fr) minmax(280px, 360px);
+  }
+  .mv-liste .mv-menge-name {
+    display: none;
+  }
+}
+/* noch schmaler: Rechenweg unter dem Bild, ohne eigenen Rollbereich */
+@media (max-width: 999px) {
+  .mv-view {
+    grid-template-columns: 170px minmax(0, 1fr);
   }
   .mv-view > .mv-liste {
     grid-row: 1 / span 2;
   }
   .mv-rechenweg {
     grid-column: 2;
+  }
+  .mv-rechenweg .tbl-wrap {
+    max-height: none;
   }
 }
 .mv-liste tbody tr {
@@ -236,14 +320,69 @@ button.link:hover {
 .mv-liste tbody tr.selected td {
   background: var(--accent-soft);
 }
-.mv-liste .warning {
+/* je Menge eine Zeile: Kürzel und Name | Wert; mit Handwert oder geänderter Auswahl eine zweite Zeile darunter */
+.mv-liste table,
+.mv-liste tbody {
   display: block;
-  width: fit-content;
-  margin: 2px 0 0 auto;
-  padding: 0 5px;
 }
-.mv-liste td:first-child {
-  white-space: normal;
+.mv-liste tbody tr {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  border-bottom: 1px solid var(--border);
+}
+.mv-liste tbody td {
+  border-bottom: none;
+}
+.mv-liste tr.festgelegt .mv-menge-wert {
+  font-weight: 600;
+}
+.mv-menge-zusatz {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 6px;
+}
+.ko-table td.mv-menge-zusatz {
+  padding-top: 0;
+}
+.mv-abgeleitet {
+  margin-left: auto;
+}
+.mv-menge-knopf {
+  display: block;
+  max-width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+.mv-menge-knopf:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.mv-kennzeichen {
+  padding: 0 5px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  white-space: nowrap;
+}
+.mv-handwert {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.mv-handwert span {
+  flex: 1;
+}
+.mv-handwert button {
+  flex: none;
 }
 .mv-kopf {
   display: flex;
@@ -256,20 +395,6 @@ button.link:hover {
 .mv-kopf h2 {
   margin: 0;
 }
-.mv-umschalter {
-  display: flex;
-}
-.mv-umschalter button {
-  border-radius: 0;
-  margin-left: -1px;
-}
-.mv-umschalter button:first-child {
-  border-radius: 4px 0 0 4px;
-  margin-left: 0;
-}
-.mv-umschalter button:last-child {
-  border-radius: 0 4px 4px 0;
-}
 .mv-rechenweg .tbl-wrap {
   max-height: calc(100vh - 220px);
   overflow-y: auto;
@@ -279,12 +404,32 @@ button.link:hover {
   top: 0;
   background: var(--panel);
 }
+.mv-rechenweg tr.mv-aktiv td {
+  background: color-mix(in srgb, var(--sel) 14%, transparent);
+}
 .mv-rechenweg tr.mv-abzug td {
   color: var(--danger);
 }
 .mv-rechenweg tr.mv-aus td:not(:first-child) {
   color: var(--muted);
   text-decoration: line-through;
+}
+/* erste Zelle als Klickfläche des Häkchens */
+.mv-rechenweg .ko-table .mv-check {
+  width: 1px;
+  padding: 0;
+}
+.mv-check label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  min-height: 28px;
+  cursor: pointer;
+}
+.mv-check input {
+  margin: 0;
+  cursor: pointer;
 }
 .mv-auswahl {
   display: flex;
@@ -308,27 +453,27 @@ button.link:hover {
   height: 12px;
   margin-right: 4px;
   vertical-align: -2px;
-  border: 1px solid #9aa0a6;
+  border: 1px solid var(--muted);
   border-radius: 2px;
 }
+/* Muster auf dem Grund des Bildes: in den Grundrissen gehören sie zur Zeichenfläche (.canvas, dort hell) */
 .mv-legende i.zaehlt {
-  background: rgba(42, 91, 215, 0.45);
-  border-color: #1d3f96;
+  background: color-mix(in srgb, var(--accent) 40%, var(--panel));
+  border-color: var(--accent);
 }
 .mv-legende i.abzug {
-  background: repeating-linear-gradient(-45deg, #c0392b 0 1.5px, transparent 1.5px 4px);
-  border-color: #c0392b;
+  background: repeating-linear-gradient(-45deg, var(--danger) 0 1.5px, transparent 1.5px 4px) var(--panel);
+  border-color: var(--danger);
 }
 .mv-legende i.aus {
-  background: rgba(154, 160, 166, 0.25);
+  background: color-mix(in srgb, var(--muted) 20%, var(--panel));
   border-style: dashed;
 }
-.mv-legende i.aktiv {
-  background: rgba(255, 122, 0, 0.6);
-  border-color: #b35900;
-}
 .mv-legende i.bezug {
-  background: transparent;
+  background: var(--panel);
+}
+.mp-hilfe {
+  margin: 6px 0 0;
 }
 
 /* Grundrisse je Geschoss */
@@ -355,67 +500,94 @@ button.link:hover {
 .mp-geschoss.leer figcaption {
   color: var(--muted);
 }
+/* Zeichenfläche (Klasse canvas): helle Planfarben, im dunklen Schema je nach Einstellung als Ganzes umgekehrt */
 .mp-svg {
   display: block;
   width: 100%;
   max-height: 340px;
-  background: #fff;
+  background: var(--canvas);
+}
+.mp-lageplan {
+  stroke: var(--muted);
+  stroke-width: 0.6;
 }
 .mp-umriss {
-  fill: rgba(31, 35, 40, 0.03);
-  stroke: #6b7280;
+  fill: color-mix(in srgb, var(--text) 3%, transparent);
+  stroke: var(--muted);
   stroke-width: 1;
 }
 .mp-raum {
   fill: none;
-  stroke: #c5c9d0;
+  stroke: var(--border);
   stroke-width: 0.6;
 }
+.mp-schraffur rect {
+  fill: color-mix(in srgb, var(--danger) 10%, transparent);
+}
+.mp-schraffur line {
+  stroke: var(--danger);
+}
 .mp-teil path {
-  fill: rgba(42, 91, 215, 0.32);
-  stroke: #1d3f96;
+  fill: color-mix(in srgb, var(--accent) 32%, transparent);
+  stroke: color-mix(in srgb, var(--accent) 75%, var(--text));
   stroke-width: 1.4;
 }
+/* Schraffur je Geschoss: --mp-schraffur steht am Teil (MengenPlan.tsx) */
 .mp-teil.abzug path {
-  stroke: #c0392b;
+  fill: var(--mp-schraffur);
+  stroke: var(--danger);
 }
 .mp-teil.kanten path {
-  fill: rgba(42, 91, 215, 0.04);
-  stroke: #2a5bd7;
+  fill: color-mix(in srgb, var(--accent) 4%, transparent);
+  stroke: var(--accent);
   stroke-width: 3;
 }
 .mp-teil.klickbar {
   cursor: pointer;
 }
+.mp-teil:focus {
+  /* Ersatz für den Fokusrahmen: das fokussierte Teil wird wie beim Zeigen hervorgehoben (.aktiv) */
+  outline: none;
+}
 .mp-teil.aus path {
-  fill: rgba(154, 160, 166, 0.18);
-  stroke: #9aa0a6;
+  fill: color-mix(in srgb, var(--muted) 18%, transparent);
+  stroke: var(--muted);
   stroke-width: 1;
   stroke-dasharray: 4 3;
 }
 .mp-teil.aktiv path {
-  fill: rgba(255, 122, 0, 0.5);
-  stroke: #b35900;
+  fill: color-mix(in srgb, var(--sel) 50%, transparent);
+  stroke: color-mix(in srgb, var(--sel) 70%, var(--text));
   stroke-width: 2.2;
 }
 .mp-teil.kanten.aktiv path {
-  fill: rgba(255, 122, 0, 0.12);
-  stroke: #ff7a00;
+  fill: color-mix(in srgb, var(--sel) 12%, transparent);
+  stroke: var(--sel);
   stroke-width: 4;
 }
+/* abgewählt bleibt auch unter dem Mauszeiger grau – nur der Umriss wird orange */
+.mp-teil.aus.aktiv path {
+  fill: color-mix(in srgb, var(--muted) 30%, transparent);
+  stroke: var(--sel);
+  stroke-width: 2.4;
+  stroke-dasharray: none;
+}
+.mp-teil:focus-visible path {
+  stroke-width: 3.2;
+}
 .mp-wert {
-  fill: #1f2328;
+  fill: var(--text);
   font-weight: 600;
   pointer-events: none;
   paint-order: stroke;
-  stroke: rgba(255, 255, 255, 0.85);
+  stroke: color-mix(in srgb, var(--panel) 85%, transparent);
   stroke-width: 0.12px;
 }
 .mp-leiste rect {
-  fill: #6b7280;
+  fill: var(--muted);
 }
 .mp-leiste text {
-  fill: #6b7280;
+  fill: var(--muted);
 }
 
 /* 3D-Modell */
@@ -452,15 +624,27 @@ button.link:hover {
   left: 8px;
   bottom: 6px;
   margin: 0;
+  right: 8px;
+  width: fit-content;
   padding: 2px 6px;
   background: var(--overlay-bg);
   border-radius: 4px;
 }
+/* Teil unter dem Mauszeiger: Bezeichnung und Wert */
+.m3d-etikett {
+  position: absolute;
+  top: 44px;
+  left: 8px;
+  max-width: calc(100% - 16px);
+  padding: 4px 8px;
+  background: var(--overlay-bg);
+  border: 1px solid var(--sel);
+  border-radius: 4px;
+  font-size: 12px;
+  pointer-events: none;
+}
 
 /* Kennwertkatalog */
-.modal.modal-wide:has(.ko-katalog) {
-  width: 820px;
-}
 .ko-katalog {
   max-height: 46vh;
   overflow: auto;
@@ -529,4 +713,28 @@ button.link:hover {
   .ko-report tr {
     break-inside: avoid;
   }
+}
+
+/* Kennwertkatalog: Suche, Dateiformat, Auswahlhinweis */
+.ko-katalog-suche {
+  width: 100%;
+  margin: 0 0 6px;
+}
+.ko-format {
+  margin: 0 0 8px;
+}
+.ko-format summary {
+  cursor: pointer;
+  color: var(--muted);
+}
+.ko-format code {
+  font-size: 11px;
+}
+.dialog-buttons .ko-katalog-info {
+  margin-right: auto;
+  align-self: center;
+}
+/* Betrag einer Position, die nicht gerechnet wird (ausgeschaltet oder ohne gültige Kostengruppe) */
+.ko-nicht-gerechnet {
+  text-decoration: line-through;
 }
