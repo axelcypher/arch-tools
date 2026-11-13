@@ -400,11 +400,11 @@ export function RechnungPruefen({ gewerk: vorgabeGewerk, onClose, onErfasst }: {
         <span className="muted small-text">Ablage: {vorschauName}</span>
       </div>
       <div className="dialog-buttons">
-        {fehlt.length > 0 && <span className={versucht ? 'ava-fehlt fehler' : 'ava-fehlt'}>Es fehlt: {fehlt.join(', ')}</span>}
+        {fehlt.length > 0 && <span className={versucht ? 'ava-fehlt fehler' : 'ava-fehlt'}>Noch eintragen: {fehlt.join(', ')}</span>}
         <button onClick={() => void schliessen()} disabled={laeuft}>
           Abbrechen
         </button>
-        <button className="primary" disabled={laeuft} aria-disabled={fehlt.length > 0} onClick={() => void erfassen()} title={fehlt.length ? `Es fehlt: ${fehlt.join(', ')}` : 'In die Kostenkontrolle eintragen, Nummer vergeben, Prüfung in der Projektdatei speichern'}>
+        <button className="primary" disabled={laeuft} aria-disabled={fehlt.length > 0} onClick={() => void erfassen()} title={fehlt.length ? `Noch eintragen: ${fehlt.join(', ')}` : 'In die Kostenkontrolle eintragen, Nummer vergeben, Prüfung in der Projektdatei speichern'}>
           {laeuft ? 'Wird eingetragen …' : `Erfassen & Nr. ${naechsteNr ?? ''} vergeben`}
         </button>
       </div>

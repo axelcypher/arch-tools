@@ -432,10 +432,6 @@
   border-bottom: 1px solid var(--border);
 }
 
-.ava-tabs .segment > button {
-  padding: 0 var(--s3);
-}
-
 .ava-tab-info {
   margin-left: auto;
   padding: 0 4px 6px;
@@ -1603,12 +1599,6 @@ input.ava-fehler {
   cursor: default;
 }
 
-.ava-umschalter button.active {
-  background: var(--accent-soft);
-  border-color: var(--accent);
-  font-weight: 600;
-}
-
 .ava-chip-warn {
   background: var(--warn-bg);
   color: var(--warn-text);
@@ -1947,4 +1937,10 @@ input.ava-fehler {
 .ava-langtext-flaeche:focus {
   outline: 2px solid var(--fokus-saum);
   outline-offset: -2px;
+}
+
+/* Unterabschnitt im Dialog (z. B. „OZ-Maske“): h3 nach docs/design.md, nicht in Browser-Vorgabe */
+.modal h3:not(.modal-kopf) {
+  font-size: var(--fs-s);
+  font-weight: 600;
 }
