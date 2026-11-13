@@ -13,8 +13,21 @@ const HERKUNFT: Record<Herkunft, string> = { struktur: 'Struktur', vorlage: 'Vor
 /**
  * Trockenlauf als Baum: jeder Ordner und jede Datei mit Herkunft und dem Vermerk „neu“ oder „vorhanden“.
  * Mit `abgewaehlt`/`onUmschalten` lassen sich neue Einträge abwählen – mit einem Ordner entfällt alles darin.
+ * `neuOhneVermerk` (neues Projekt): „neu“ wäre in jeder Zeile reines Rauschen – dann nur Abweichungen vermerken.
  */
-export function PlanTabelle({ plan, abgewaehlt, onUmschalten, nurNeu = false }: { plan: Plan; abgewaehlt?: Set<string>; onUmschalten?: (pfad: string) => void; nurNeu?: boolean }) {
+export function PlanTabelle({
+  plan,
+  abgewaehlt,
+  onUmschalten,
+  nurNeu = false,
+  neuOhneVermerk = false,
+}: {
+  plan: Plan;
+  abgewaehlt?: Set<string>;
+  onUmschalten?: (pfad: string) => void;
+  nurNeu?: boolean;
+  neuOhneVermerk?: boolean;
+}) {
   const weg = [...(abgewaehlt ?? [])].map((p) => p.toLowerCase());
   const entfaellt = (pfad: string) => weg.some((w) => pfad.toLowerCase() === w || pfad.toLowerCase().startsWith(`${w}/`));
   // nur Neues: Ordner bleiben stehen, wenn darin etwas neu ist (sonst fehlt im Baum der Zusammenhang)
@@ -29,6 +42,8 @@ export function PlanTabelle({ plan, abgewaehlt, onUmschalten, nurNeu = false }: 
             const tiefe = s.pfad.split('/').length - 1;
             const aus = entfaellt(s.pfad);
             const herkunft = s.art === 'datei' || s.herkunft === 'vorlage' ? `${HERKUNFT[s.herkunft]}${s.preset ? ` · ${s.preset}` : ''}` : '';
+            const name = (s.vorhandenAls ?? s.pfad).split('/').pop();
+            const status = aus ? 'abgewählt' : s.aenderung?.teile.length ? 'wird ergänzt' : s.vorhandenAls ? 'vorhanden*' : s.vorhanden ? 'vorhanden' : neuOhneVermerk ? '' : 'neu';
             return (
               <tr key={`${s.art}:${s.pfad}`} className={`${s.vorhanden && !tutEtwas(s) ? 'vorhanden' : ''}${aus ? ' abgewaehlt' : ''}`}>
                 <td style={{ paddingLeft: 6 + tiefe * 16 }} title={s.pfad}>
@@ -40,12 +55,13 @@ export function PlanTabelle({ plan, abgewaehlt, onUmschalten, nurNeu = false }: 
                       // mit einem abgewählten Ordner ist auch sein Inhalt abgewählt
                       disabled={aus && !weg.includes(s.pfad.toLowerCase())}
                       title={aus ? 'wird nicht angelegt' : 'abwählen: wird nicht angelegt'}
+                      aria-label={`${name} anlegen`}
                       onChange={() => onUmschalten(s.pfad)}
                     />
                   )}
                   <span className={`po-art ${s.art}`} aria-hidden />
                   {/* mit anderem Datum vorhanden: die vorhandene Datei zeigen */}
-                  {(s.vorhandenAls ?? s.pfad).split('/').pop()}
+                  {name}
                 </td>
                 <td className="muted small-text" title={s.quelle ? `aus dem Vorlagenordner: ${s.quelle}` : undefined}>
                   {herkunft}
@@ -54,7 +70,7 @@ export function PlanTabelle({ plan, abgewaehlt, onUmschalten, nurNeu = false }: 
                   className="po-status"
                   title={s.aenderung?.teile.length ? `wird ergänzt: ${s.aenderung.teile.join(', ')}` : s.vorhandenAls ? `mit anderem Datum vorhanden – nach dem Schema hieße sie heute ${s.pfad.split('/').pop()}` : undefined}
                 >
-                  {aus ? 'abgewählt' : s.aenderung?.teile.length ? 'wird ergänzt' : s.vorhandenAls ? 'vorhanden*' : s.vorhanden ? 'vorhanden' : 'neu'}
+                  {status}
                 </td>
               </tr>
             );
@@ -116,7 +132,7 @@ export function VorlagenordnerZeile({ leerText = 'keiner – es entstehen nur Or
             Vorlagenordner
             {gewaehlt && <span className="muted"> – {vorlagenLaden ? 'wird gelesen …' : `${anzahl} ${anzahl === 1 ? 'Datei' : 'Dateien'}`}</span>}
           </span>
-          <code title={vorlagenordner}>{gewaehlt || leerText}</code>
+          {gewaehlt ? <code title={vorlagenordner}>{gewaehlt}</code> : <span className="muted small-text">{leerText}</span>}
         </div>
         <button className="small" onClick={() => void waehlen()}>
           Wählen …
@@ -241,7 +257,7 @@ export function ErgebnisAnzeige({ ordner, liste, children }: { ordner: string; l
   return (
     <div className={`po-ergebnis${fehlgeschlagen.length ? ' fehler' : ''}`}>
       <strong>
-        {angelegt} angelegt{ergaenzt ? ', Projektdatei ergänzt' : ''}
+        {angelegt} {angelegt === 1 ? 'Eintrag' : 'Ordner und Dateien'} angelegt{ergaenzt ? ', Projektdatei ergänzt' : ''}
         {unveraendert ? `, ${unveraendert} schon vorhanden` : ''}
         {fehlgeschlagen.length ? `, ${fehlgeschlagen.length} fehlgeschlagen` : ''}
       </strong>

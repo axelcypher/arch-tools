@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { saveBinaryFile } from '@core/platform/files';
 import { logger } from '@core/platform/log';
 import { Field, TextField } from '@core/ui/fields';
+import { bestaetigen } from '@core/ui/Rueckfrage';
 import { hatDateisystem, SpeicherDateisystem, tauriDateisystem, waehleOrdner } from '../dateisystem';
 import { nummerAus, PLATZHALTER_VORLAGE } from '../nummer';
 import { SchemaFeld } from './SchemaFeld';
@@ -36,8 +37,10 @@ export function VorlagenView() {
   const { struktur, setStruktur, vorlagen, stamm, setVorlagenordner } = useOrdner();
   const [gewaehlt, setGewaehlt] = useState(0);
   const [filter, setFilter] = useState('');
-  const [loeschen, setLoeschen] = useState(false);
   const [meldung, setMeldung] = useState<{ art: 'ok' | 'fehler'; text: string } | null>(null);
+  /** zuletzt entfernte Zuordnung – „Rückgängig“ setzt sie wieder an ihre Stelle */
+  const [entfernt, setEntfernt] = useState<{ preset: string; k: number; eintrag: VorlagenEintrag } | null>(null);
+  const strukturFehler = useOrdner((s) => s.strukturFehler);
   /** Zuordnungen, deren Vorschau ganz aufgeklappt ist */
   const [aufgeklappt, setAufgeklappt] = useState<Set<number>>(new Set());
 
@@ -49,7 +52,7 @@ export function VorlagenView() {
   const setEintrag = (k: number, patch: Partial<VorlagenEintrag>) => preset && setPreset({ eintraege: preset.eintraege.map((e, i) => (i === k ? { ...e, ...patch } : e)) });
   const waehle = (i: number) => {
     setGewaehlt(i);
-    setLoeschen(false);
+    setEntfernt(null);
     setAufgeklappt(new Set());
   };
 
@@ -89,7 +92,8 @@ export function VorlagenView() {
     }
     return [...set].sort((a, b) => a.localeCompare(b, 'de', { numeric: true }));
   }, [struktur.ordner]);
-  const inStruktur = (ziel: string) => !ziel || strukturOrdner.some((o) => o.toLowerCase() === ziel.toLowerCase()) || struktur.ordner.some((o) => ziel.toLowerCase().startsWith(`${o.pfad.toLowerCase()}/`));
+  const inStruktur = (ziel: string) =>
+    !ziel || strukturOrdner.some((o) => o.toLowerCase() === ziel.toLowerCase()) || struktur.ordner.some((o) => ziel.toLowerCase().startsWith(`${o.pfad.toLowerCase()}/`));
 
   const hinzufuegen = (pfad: string, ordner: boolean) => {
     if (!preset) return;
@@ -109,6 +113,35 @@ export function VorlagenView() {
     setPresets([...presets, { ...preset, name: freierName(`${preset.name} Kopie`, presets), standard: false, eintraege: preset.eintraege.map((e) => ({ ...e })) }]);
     waehle(presets.length);
   };
+  /** Preset löschen – wie Bausteine und Ordner mit Rückfrage */
+  const presetLoeschen = async () => {
+    if (!preset) return;
+    const n = preset.eintraege.length;
+    if (
+      !(await bestaetigen(
+        `Preset „${preset.name}“ löschen?`,
+        `${n ? `Seine ${n} ${n === 1 ? 'Zuordnung entfällt' : 'Zuordnungen entfallen'}. ` : ''}Projekte, die es gewählt haben, finden es danach nicht mehr; bereits angelegte Dateien bleiben unverändert.`,
+        'Löschen',
+        true,
+      ))
+    )
+      return;
+    setPresets(presets.filter((_, i) => i !== index));
+    waehle(Math.max(0, index - 1));
+  };
+  const zuordnungEntfernen = (k: number) => {
+    if (!preset) return;
+    setEntfernt({ preset: preset.name, k, eintrag: preset.eintraege[k] });
+    setPreset({ eintraege: preset.eintraege.filter((_, i) => i !== k) });
+  };
+  const entferntZurueck = () => {
+    if (!entfernt || preset?.name !== entfernt.preset) return;
+    const liste = [...preset.eintraege];
+    liste.splice(Math.min(entfernt.k, liste.length), 0, entfernt.eintrag);
+    setPreset({ eintraege: liste });
+    setEntfernt(null);
+  };
+
   const umbenennen = (name: string) => {
     const n = name.trim();
     if (!preset || !n || n === preset.name) return;
@@ -127,7 +160,10 @@ export function VorlagenView() {
         for (const m of MUSTER_VORLAGEN) if (await tauriDateisystem.dateiAnlegen(ziel, m.pfad, strToU8(m.inhalt))) neu++;
         setVorlagenordner(ziel);
         log.info(`Muster-Vorlagen geschrieben: ${ziel}`, { neu });
-        setMeldung({ art: 'ok', text: `${neu} Muster-Vorlagen angelegt${neu < MUSTER_VORLAGEN.length ? `, ${MUSTER_VORLAGEN.length - neu} schon vorhanden` : ''}. Der Ordner ist jetzt als Vorlagenordner eingestellt: ${ziel}` });
+        setMeldung({
+          art: 'ok',
+          text: `${neu} Muster-Vorlagen angelegt${neu < MUSTER_VORLAGEN.length ? `, ${MUSTER_VORLAGEN.length - neu} schon vorhanden` : ''}. Der Ordner ist jetzt als Vorlagenordner eingestellt: ${ziel}`,
+        });
       } else {
         const fs = new SpeicherDateisystem();
         for (const m of MUSTER_VORLAGEN) await fs.dateiAnlegen('/zip', `Vorlagen/${m.pfad}`, strToU8(m.inhalt));
@@ -142,43 +178,33 @@ export function VorlagenView() {
 
   return (
     <div className="po-view">
-      <section className="po-col">
+      <section className="po-col po-vorlagen-links">
         <h2>Vorlagen</h2>
         <p className="muted small-text">
-          Die Vorlagen des Büros liegen in einem eigenen Ordner, gegliedert, wie es dem Büro passt. Presets legen fest, welche Datei an welche Stelle im Projekt kommt und wie
-          sie dort heißt. Beim Anlegen und beim Aktualisieren eines Projekts werden fehlende Dateien ergänzt – vorhandene bleiben unverändert.
+          Die Vorlagen des Büros liegen in einem eigenen Ordner, gegliedert, wie es dem Büro passt. Presets legen fest, welche Datei an welche Stelle im Projekt kommt und wie sie dort heißt. Beim
+          Anlegen und beim Aktualisieren eines Projekts werden fehlende Dateien ergänzt – vorhandene bleiben unverändert.
         </p>
-        <VorlagenordnerZeile leerText="noch nicht gewählt" />
-        {[...nichtAutomatisch].map(([name, a]) => (
-          <p key={name} className="po-hinweis">
-            Der Vorlagenordner ist anders gegliedert als die Struktur: Mit „{name}“ {abweichungText(a)}. Das Preset wird deshalb bei neuen Projekten nicht vorausgewählt –
-            besser seine Ordner gezielt einem Zielordner der Struktur zuordnen.
+        {strukturFehler && (
+          <p className="warning" role="alert">
+            {strukturFehler}
           </p>
-        ))}
-        <Field label="Dateinamen im Projekt" hint="{Name} = Name der Vorlage ohne Endung. Vorlagen mit Platzhaltern im eigenen Namen behalten ihn.">
-          <SchemaFeld
-            label="Dateinamen im Projekt"
-            value={struktur.vorlagenname}
-            placeholder="{Name}"
-            platzhalter={PLATZHALTER_VORLAGE}
-            vorschau={(t) => `Beispiel: Kostenschätzung.xlsx → ${schemaBeispiel(t)}`}
-            onChange={(v) => setStruktur({ ...struktur, vorlagenname: v.trim() || '{Name}' })}
-          />
-        </Field>
+        )}
 
-        <h2>Presets</h2>
+        <h3>Presets</h3>
         <p className="muted small-text">
-          Ein Preset fasst Vorlagen zusammen, etwa für jedes Projekt, für den Bauantrag oder die Ausschreibung. Im Assistenten (Projekt) wird gewählt,
-          welche gelten; Presets mit „Standard“ sind bei neuen Projekten vorausgewählt. Die Presets gehören zur Struktur und werden mit ihr gespeichert.
+          Ein Preset fasst Vorlagen zusammen, etwa für jedes Projekt, für den Bauantrag oder die Ausschreibung. Im Assistenten (Projekt) wird gewählt, welche gelten; Presets mit „Standard“ sind bei
+          neuen Projekten vorausgewählt. Die Presets gehören zur Struktur und werden mit ihr gespeichert.
         </p>
-        <ul className="list po-presets">
+        <ul className="list po-presets" aria-label="Presets">
           {presets.map((p, i) => (
-            <li key={`${i}:${p.name}`} className={i === index ? 'active' : ''} onClick={() => waehle(i)}>
-              <span>{p.name}</span>
-              <span className="muted small-text">
-                {p.standard ? 'Standard · ' : ''}
-                {p.eintraege.length} {p.eintraege.length === 1 ? 'Zuordnung' : 'Zuordnungen'}
-              </span>
+            <li key={`${i}:${p.name}`} className={i === index ? 'active' : ''}>
+              <button className="po-preset-knopf" aria-current={i === index ? 'true' : undefined} onClick={() => waehle(i)}>
+                <span>{p.name}</span>
+                <span className="muted small-text">
+                  {p.standard ? 'Standard · ' : ''}
+                  {p.eintraege.length} {p.eintraege.length === 1 ? 'Zuordnung' : 'Zuordnungen'}
+                </span>
+              </button>
             </li>
           ))}
           {!presets.length && <li className="muted">Noch keine Presets.</li>}
@@ -190,55 +216,64 @@ export function VorlagenView() {
           <button className="small" disabled={!preset} onClick={duplizieren}>
             Duplizieren
           </button>
-          {preset && !loeschen && (
-            <button className="small" onClick={() => setLoeschen(true)}>
-              Löschen
-            </button>
-          )}
-          {preset && loeschen && (
-            <>
-              <button
-                className="small danger"
-                onClick={() => {
-                  setPresets(presets.filter((_, i) => i !== index));
-                  waehle(Math.max(0, index - 1));
-                }}
-              >
-                „{preset.name}“ wirklich löschen
-              </button>
-              <button className="small" onClick={() => setLoeschen(false)}>
-                Abbrechen
-              </button>
-            </>
-          )}
+          <button className="small danger" disabled={!preset} onClick={() => void presetLoeschen()}>
+            Löschen …
+          </button>
         </div>
-        {meldung && <p className={meldung.art === 'fehler' ? 'warning' : 'po-meldung'}>{meldung.text}</p>}
+        {meldung && (
+          <p className={meldung.art === 'fehler' ? 'warning' : 'po-meldung'} role={meldung.art === 'fehler' ? 'alert' : 'status'}>
+            {meldung.text}
+          </p>
+        )}
 
-        <h2>Muster und Platzhalter</h2>
+        <h3>Vorlagenordner und Dateinamen</h3>
+        <VorlagenordnerZeile leerText="noch nicht gewählt" />
+        {[...nichtAutomatisch].map(([name, a]) => (
+          <p key={name} className="po-hinweis">
+            Der Vorlagenordner ist anders gegliedert als die Struktur: Mit „{name}“ {abweichungText(a)}. Das Preset wird deshalb bei neuen Projekten nicht vorausgewählt – besser seine Ordner gezielt
+            einem Zielordner der Struktur zuordnen.
+          </p>
+        ))}
+        <Field label="Dateinamen im Projekt" hint="{Name} = Name der Vorlage ohne Endung. Vorlagen mit Platzhaltern im eigenen Namen behalten ihn.">
+          <SchemaFeld
+            label="Dateinamen im Projekt"
+            value={struktur.vorlagenname}
+            placeholder="{Name}"
+            platzhalter={PLATZHALTER_VORLAGE}
+            kompakt
+            vorschau={(t) => `Beispiel: Kostenschätzung.xlsx → ${schemaBeispiel(t)}`}
+            onChange={(v) => setStruktur({ ...struktur, vorlagenname: v.trim() || '{Name}' })}
+          />
+        </Field>
+
+        <h3>Muster und Platzhalter</h3>
         <div className="button-row">
           <button onClick={() => void musterSchreiben()} title="Projektblatt, Planliste und Besprechungsprotokoll als Ausgangspunkt für eigene Vorlagen – aufgebaut wie ein Projektordner">
             {desktop ? 'Muster-Vorlagen in einen Ordner schreiben …' : 'Muster-Vorlagen als ZIP herunterladen'}
           </button>
         </div>
-        <div className="placeholder-help">
-          {PLATZHALTER_DOCS.map((g) => (
-            <div key={g.gruppe}>
-              <h4>{g.gruppe}</h4>
-              <table>
-                <tbody>
-                  {g.zeilen.map(([k, d]) => (
-                    <tr key={k}>
-                      <td>
-                        <code>{k}</code>
-                      </td>
-                      <td>{d}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ))}
-        </div>
+        <details className="po-platzhalter-klapp">
+          <summary>Platzhalter in Vorlagen anzeigen</summary>
+          <div className="placeholder-help">
+            {PLATZHALTER_DOCS.map((g) => (
+              <div key={g.gruppe}>
+                <h4>{g.gruppe}</h4>
+                <table>
+                  <tbody>
+                    {g.zeilen.map(([k, d]) => (
+                      <tr key={k}>
+                        <td>
+                          <code>{k}</code>
+                        </td>
+                        <td>{d}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ))}
+          </div>
+        </details>
       </section>
 
       <section className="po-col">
@@ -266,6 +301,14 @@ export function VorlagenView() {
                 <option key={o} value={o} />
               ))}
             </datalist>
+            {entfernt && entfernt.preset === preset.name && (
+              <p className="po-meldung po-rueckgaengig" role="status">
+                Zuordnung „{entfernt.eintrag.quelle || 'ganzer Vorlagenordner'}“ entfernt.{' '}
+                <button className="small" onClick={entferntZurueck}>
+                  Rückgängig
+                </button>
+              </p>
+            )}
             {preset.eintraege.length === 0 && <p className="muted small-text">Noch keine Vorlagen zugeordnet – unten aus dem Vorlagenordner hinzufügen.</p>}
             {abweichung && <PresetAbweichungen a={abweichung} />}
             <ul className="po-zuordnungen">
@@ -277,19 +320,31 @@ export function VorlagenView() {
                   <li key={k} className={fehlt ? 'fehlt' : ''}>
                     <div className="po-z-kopf">
                       <span className={`po-art ${istOrdner ? 'ordner' : 'datei'}`} aria-hidden />
-                      <TextField value={e.quelle} placeholder="ganzer Vorlagenordner" title="Pfad im Vorlagenordner – Datei oder Ordner" onChange={(v) => setEintrag(k, { quelle: normPfad(v) })} />
+                      <TextField
+                        value={e.quelle}
+                        placeholder="ganzer Vorlagenordner"
+                        title="Pfad im Vorlagenordner – Datei oder Ordner"
+                        label={`Pfad im Vorlagenordner (Zuordnung ${k + 1})`}
+                        onChange={(v) => setEintrag(k, { quelle: normPfad(v) })}
+                      />
                       <span className="po-z-lph" title="nur, wenn eine dieser Leistungsphasen beauftragt ist – z. B. 4 oder 6-7; leer = immer">
-                        LPh
+                        <span aria-hidden>LPh</span>
                         <TextField
                           value={lphText(e.lph ?? [])}
-                          placeholder="alle"
+                          placeholder="immer"
+                          label={`Leistungsphasen (Zuordnung ${k + 1}) – leer = immer`}
                           onChange={(v) => {
                             const lph = lphAus(v);
                             setEintrag(k, { lph: lph.length ? lph : undefined });
                           }}
                         />
                       </span>
-                      <button className="small danger" title="Zuordnung entfernen" onClick={() => setPreset({ eintraege: preset.eintraege.filter((_, i) => i !== k) })}>
+                      <button
+                        className="small danger icon"
+                        title="Zuordnung entfernen („Rückgängig“ holt sie zurück)"
+                        aria-label={`Zuordnung ${k + 1} entfernen`}
+                        onClick={() => zuordnungEntfernen(k)}
+                      >
                         ×
                       </button>
                     </div>
@@ -345,7 +400,7 @@ export function VorlagenView() {
             ) : (
               <>
                 <div className="button-row">
-                  <input className="po-suche" value={filter} placeholder="Suchen …" onChange={(e) => setFilter(e.target.value)} />
+                  <input className="po-suche" type="search" value={filter} placeholder="Suchen …" aria-label="Vorlagen durchsuchen" onChange={(e) => setFilter(e.target.value)} />
                   <button className="small" disabled={imPreset.has('')} title="Alle Dateien an denselben Ort wie im Vorlagenordner" onClick={() => hinzufuegen('', true)}>
                     + ganzer Vorlagenordner
                   </button>
@@ -372,7 +427,12 @@ export function VorlagenView() {
                               {drin ? (
                                 'im Preset'
                               ) : (
-                                <button className="small" title={q.ordner ? 'Alle Dateien dieses Ordners zuordnen' : 'Diese Datei zuordnen'} onClick={() => hinzufuegen(q.pfad, q.ordner)}>
+                                <button
+                                  className="small"
+                                  title={q.ordner ? 'Alle Dateien dieses Ordners zuordnen' : 'Diese Datei zuordnen'}
+                                  aria-label={`„${q.pfad}“ zuordnen`}
+                                  onClick={() => hinzufuegen(q.pfad, q.ordner)}
+                                >
                                   +
                                 </button>
                               )}
@@ -383,11 +443,7 @@ export function VorlagenView() {
                     </tbody>
                   </table>
                 </div>
-                {gefiltert.length > MAX_QUELLEN && (
-                  <p className="muted small-text">
-                    {gefiltert.length - MAX_QUELLEN} weitere Einträge – bitte die Suche eingrenzen.
-                  </p>
-                )}
+                {gefiltert.length > MAX_QUELLEN && <p className="muted small-text">{gefiltert.length - MAX_QUELLEN} weitere Einträge – bitte die Suche eingrenzen.</p>}
               </>
             )}
           </>

@@ -31,7 +31,7 @@ export function messung(punkte: readonly Point[], geschlossen = false): Messung 
     const a = punkte[i];
     const b = punkte[(i + 1) % n];
     const dx = b.x - a.x;
-    const dy = -(b.y - a.y);
+    const dy = -(b.y - a.y) || 0; // kein „−0°“ bei waagerechten Strecken
     let w = (Math.atan2(dy, dx) * 180) / Math.PI;
     if (w < 0) w += 360;
     abschnitte.push({ laenge: Math.hypot(dx, dy), dx, dy, winkel: w });

@@ -116,14 +116,26 @@ export function normPfad(p: string): string {
     .join('/');
 }
 
-/** in Datei- und Ordnernamen unzulässige Zeichen (Windows) entfernen; keine Punkte/Leerzeichen am Ende */
-export function sichererName(name: string): string {
-  return name
+/** unter Windows reservierte Gerätenamen – auch mit Endung („CON.txt“) nicht als Datei- oder Ordnername nutzbar */
+// Leerzeichen vor der Endung zählen unter Windows nicht („AUX .txt“ ist AUX) – sie entfallen mit
+const RESERVIERT = /^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9]) *(?=\.|$)/i;
+
+/** Ist der Name unter Windows reserviert (CON, PRN, AUX, NUL, COM1–9, LPT1–9, auch mit Endung)? */
+export const istReserviert = (name: string): boolean => RESERVIERT.test(name.trim());
+
+/** nur die unzulässigen Zeichen entfernen (ohne Behandlung reservierter Namen) */
+const ohneZeichen = (name: string) =>
+  name
     .replace(/[\\/:*?"<>|\u0000-\u001f]+/g, ' ')
     .replace(/\s+/g, ' ')
     .replace(/[. ]+$/g, '')
     .trim();
-}
+
+/**
+ * in Datei- und Ordnernamen unzulässige Zeichen (Windows) entfernen; keine Punkte/Leerzeichen am Ende. Reservierte
+ * Gerätenamen bekommen ein „_“ angehängt („CON“ → „CON_“, „AUX.txt“ → „AUX_.txt“).
+ */
+export const sichererName = (name: string): string => ohneZeichen(name).replace(RESERVIERT, '$1_');
 
 /** „5-8“, „6, 7“ oder „4“ → Leistungsphasen */
 export function lphAus(text: string): number[] {
@@ -187,6 +199,12 @@ export function ordnerAusTextMitMeldungen(text: string): { ordner: OrdnerRegel[]
     const [roh, ...zusaetze] = zeile.split('|');
     const zeichen = [...new Set(roh.match(ENTFERNT) ?? [])].filter((z) => z.trim());
     if (zeichen.length) meldungen.push({ zeile: nr, text: `Zeile ${nr}: Zeichen ${zeichen.join(' ')} ${zeichen.length === 1 ? 'wird' : 'werden'} entfernt.` });
+    const reserviert = [...new Set(normPfad(roh).split('/').map(ohneZeichen).filter(istReserviert))];
+    if (reserviert.length)
+      meldungen.push({
+        zeile: nr,
+        text: `Zeile ${nr}: ${reserviert.map((r) => `„${r}“`).join(', ')} ${reserviert.length === 1 ? 'ist' : 'sind'} unter Windows reserviert – wird zu ${reserviert.map((r) => `„${sichererName(r)}“`).join(', ')}.`,
+      });
     const pfad = normPfad(roh).split('/').map(sichererName).filter(Boolean).join('/');
     if (!pfad) {
       meldungen.push({ zeile: nr, text: `Zeile ${nr}: kein Ordnername – die Zeile entfällt.` });
@@ -301,7 +319,8 @@ export function strukturAusJson(json: string): Struktur {
       if (r) ordner.push(r);
     }
   }
-  if (liste && !ordner.length) throw new Error('Die Konfiguration enthält keinen gültigen Ordner.');
+  // eine leere Liste ist gültig (alle Ordner gelöscht); nur Einträge, von denen keiner taugt, gelten als fehlerhaft
+  if (liste?.length && !ordner.length) throw new Error('Die Konfiguration enthält keinen gültigen Ordner.');
   // Konfigurationen ohne Presets (bis Version 0.1.x): der ganze Vorlagenordner wie bisher, Dateinamen unverändert
   const ohnePresets = !Array.isArray(o.presets);
   const bausteine = bausteineAus(o.bausteine);

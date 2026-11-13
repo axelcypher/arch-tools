@@ -263,6 +263,8 @@ describe('Struktur', () => {
     expect(alterOapPfad({})).toBeNull();
     expect(() => strukturAusJson('kein json')).toThrow(/kein gültiges JSON/);
     expect(() => strukturAusJson('{"ordner":[1,2]}')).toThrow(/keinen gültigen Ordner/);
+    // Gegenprobe: eine leere Ordnerliste ist gültig (alle Ordner gelöscht) und sperrt das Speichern nicht
+    expect(strukturAusJson('{"ordner":[]}').ordner).toEqual([]);
   });
 });
 
@@ -950,5 +952,53 @@ describe('Prüfmodus', () => {
       { pfad: 'projekt.json', ordner: false, groesse: 5 },
     ]);
     expect(strFromU8(await o.lies('projekt.json'))).toBe('{}');
+  });
+});
+
+describe('Plan: Warnungen vor dem Anlegen (Gesamt-Review)', () => {
+  it('zu lange Pfade (Windows-Grenze) schon im Plan – mit Stammordner bzw. Projektordner; Gegenprobe kurz', async () => {
+    const { WINDOWS_PFAD_GRENZE } = await import('./plan');
+    const lang = `P:/${'Sehr langer Stammordner/'.repeat(9)}Projekte`;
+    const p = planen(stamm(), KLEIN, [], [], TAG, { ort: lang });
+    const w = p.warnungen.find((x) => x.includes('Zeichen oder länger'));
+    expect(w).toMatch(/^\d+ Pfade wären 260 Zeichen oder länger – Explorer und Office öffnen sie unter Windows nicht\./);
+    const laengster = w!.split('): ').pop()!;
+    expect(laengster.startsWith(`${lang}/2026-014 EFH Musterweg/`)).toBe(true);
+    expect(laengster.length).toBeGreaterThanOrEqual(WINDOWS_PFAD_GRENZE);
+    // Ergänzen: der Projektordner selbst ist der Ort; Vorhandenes zählt nicht
+    const vorhanden = p.schritte.map((x) => ({ pfad: x.pfad, ordner: x.art === 'ordner', groesse: 0 }));
+    expect(planen(stamm(), KLEIN, [], vorhanden, TAG, { ordner: '2026-014 EFH Musterweg', ort: `${lang}/2026-014 EFH Musterweg` }).warnungen.join(' ')).not.toContain('Zeichen oder länger');
+    // Gegenprobe: kurzer Stammordner bzw. ohne Ort (Browser)
+    expect(planen(stamm(), KLEIN, [], [], TAG, { ort: 'P:/Projekte' }).warnungen.join(' ')).not.toContain('Zeichen oder länger');
+    expect(planen(stamm(), KLEIN, [], [], TAG).warnungen.join(' ')).not.toContain('Zeichen oder länger');
+  });
+
+  it('vorhandene, aber nicht gelesene Projektdatei: Warnung, dass die Stammdaten nicht ankommen; Gegenprobe gelesen', () => {
+    const oap = { pfad: '03 Berechnungen/Flächen/2026-014 EFH Musterweg.oap', ordner: false, groesse: 5 };
+    const ohne = planen(stamm(), KLEIN, [], [oap], TAG, { ordner: '2026-014 EFH Musterweg', projektdatei: null });
+    expect(ohne.warnungen).toContain('Die vorhandene Projektdatei „03 Berechnungen/Flächen/2026-014 EFH Musterweg.oap“ bleibt unverändert – Stammdaten und Presets werden darin nicht gespeichert.');
+    const gelesen = planen(stamm(), KLEIN, [], [oap], TAG, { ordner: '2026-014 EFH Musterweg', projektdatei: { pfad: oap.pfad, meta: alsProject(stamm(), { struktur: KLEIN, presets: [] }).meta } });
+    expect(gelesen.warnungen.join(' ')).not.toContain('bleibt unverändert');
+  });
+
+  it('Ergänzen ohne bekanntes Anlagejahr: Hinweis, dass {JAHR} das laufende Jahr ist; Gegenprobe mit Jahr bzw. ohne {JAHR}', () => {
+    const mitJahr: Struktur = { ...KLEIN, ordner: [...KLEIN.ordner, { pfad: 'Archiv {JAHR}' }] };
+    const hinweis = (s: Struktur, jahr?: number) => planen(stamm(), s, [], [], TAG, { ordner: '2026-014 EFH Musterweg', ...(jahr ? { jahr } : {}) }).hinweise.find((h) => h.includes('Jahr der Anlage'));
+    expect(hinweis(mitJahr)).toBe('Das Jahr der Anlage ist nicht bekannt (die Projektdatei nennt keins) – für {JAHR} in neuen Namen gilt das laufende Jahr 2026.');
+    expect(hinweis(mitJahr, 2019)).toBeUndefined();
+    expect(hinweis(KLEIN)).toBeUndefined();
+    // neues Projekt: das laufende Jahr ist richtig – kein Hinweis
+    expect(planen(stamm(), mitJahr, [], [], TAG).hinweise.join(' ')).not.toContain('Jahr der Anlage');
+  });
+
+  it('Zielordner frisch geprüft: vorhanden (auch anders geschrieben, mit fremder Projektdatei) bzw. frei', async () => {
+    const { zielordnerVorhanden } = await import('./plan');
+    const fs = new SpeicherDateisystem();
+    await fs.ordnerAnlegen('P:/Projekte', '2026-014 efh musterweg');
+    fs.setze('P:/Projekte/2026-014 efh musterweg/Kollege.oap', strToU8('x'));
+    expect(await zielordnerVorhanden(fs, 'P:/Projekte', '2026-014 EFH Musterweg')).toBe('2026-014 efh musterweg');
+    expect(await zielordnerVorhanden(fs, 'P:/Projekte', '2026-015 Anderes')).toBeNull();
+    // nur die oberste Ebene zählt
+    expect(await zielordnerVorhanden(fs, 'P:/Projekte', 'Kollege.oap')).toBeNull();
   });
 });

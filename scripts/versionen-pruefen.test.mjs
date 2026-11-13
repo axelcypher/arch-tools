@@ -34,27 +34,25 @@ test('in Ordnung: App und Suite über main hochgesetzt; Gegenprobe: PR ohne Vers
   assert.deepEqual(pruefen({ kopf: { ...stand, suite: '0.24.0' }, basis: stand, main: stand, tags }), []);
 });
 
-test('1. Version schon als Tag vorhanden', () => {
+test('Version schon als Tag vorhanden', () => {
   // Zweig auf altem Stand: Suite 0.22.0 → 0.23.0, die gibt es schon
   const alt = { ...stand, suite: '0.22.0', kosten: '0.20.0' };
   const f = pruefen({ kopf: { ...alt, kosten: '0.21.0', suite: '0.23.0' }, basis: alt, main: stand, tags });
   assert.equal(f.length, 2);
   assert.match(f[0], /kosten 0\.21\.0: Tag kosten-v0\.21\.0 gibt es schon.*main mergen und die Version von kosten über 0\.21\.0 setzen/);
-  assert.match(f[1], /suite 0\.23\.0: Tag suite-v0\.23\.0 gibt es schon.*über 0\.23\.0/);
+  assert.match(f[1], /suite 0\.23\.0: Tag suite-v0\.23\.0 gibt es schon.*zurücksetzen/);
 });
 
-test('2. App-Version geändert, Suite nicht', () => {
-  const f = pruefen({ kopf: { ...stand, grz: '0.27.0' }, basis: stand, main: stand, tags });
-  assert.equal(f.length, 1);
-  assert.match(f[0], /Geänderte Apps \(grz\).*Rahmen-App.*main mergen und die Version von suite über 0\.23\.0 setzen/);
+test('App-Version geändert, Arkly nicht: erlaubt – Arkly setzt der Release-Lauf', () => {
+  assert.deepEqual(pruefen({ kopf: { ...stand, grz: '0.27.0' }, basis: stand, main: stand, tags }), []);
 });
 
-test('3. geänderte Version nicht größer als auf main (main ist weiter, Tag noch nicht da)', () => {
+test('geänderte Version nicht größer als auf main (main ist weiter, Tag noch nicht da)', () => {
   const neuerMain = { ...stand, ava: '0.7.0', suite: '0.25.0' };
   const f = pruefen({ kopf: { ...stand, ava: '0.6.5', suite: '0.24.0' }, basis: stand, main: neuerMain, tags });
   assert.equal(f.length, 2);
   assert.match(f[0], /ava 0\.6\.5: nicht größer als auf main \(0\.7\.0\).*über 0\.7\.0/);
-  assert.match(f[1], /suite 0\.24\.0: nicht größer als auf main \(0\.25\.0\).*über 0\.25\.0/);
+  assert.match(f[1], /suite 0\.24\.0: nicht größer als auf main \(0\.25\.0\).*auf den Stand von main \(0\.25\.0\) zurücksetzen/);
 });
 
 test('parallele PRs mit derselben Version: der zweite fällt auf, obwohl die Merge-Ref keinen Unterschied zeigt', () => {
@@ -69,13 +67,20 @@ test('parallele PRs mit derselben Version: der zweite fällt auf, obwohl die Mer
   assert.match(g[0], /grz 0\.27\.0: nicht größer als auf main \(0\.27\.0\)/);
 });
 
-test('neue App: mit hochgesetzter Suite erlaubt; Gegenprobe: ohne Suite ein Fehler', () => {
+test('neue App ohne Stand auf main und ohne Tags ist erlaubt', () => {
   const ohne = structuredClone(stand);
   delete ohne.ava;
-  assert.deepEqual(pruefen({ kopf: { ...stand, suite: '0.24.0' }, basis: ohne, main: ohne, tags: tags.filter((t) => !t.startsWith('ava-')) }), []);
-  const f = pruefen({ kopf: stand, basis: ohne, main: ohne, tags: tags.filter((t) => !t.startsWith('ava-')) });
+  assert.deepEqual(pruefen({ kopf: stand, basis: ohne, main: ohne, tags: tags.filter((t) => !t.startsWith('ava-')) }), []);
+});
+
+test('Arkly in einem PR ohne eigene Änderungen gehoben und vom Release-Lauf überholt: zurücksetzen statt hochzählen', () => {
+  const nachBot = { ...stand, suite: '0.24.0' };
+  const f = pruefen({ kopf: { ...stand, grz: '0.27.0', suite: '0.24.0' }, basis: stand, main: nachBot, tags: [...tags, 'suite-v0.24.0'], dateien: ['apps/grz/src/a.ts'] });
   assert.equal(f.length, 1);
-  assert.match(f[0], /Geänderte Apps \(ava\)/);
+  assert.match(f[0], /suite 0\.24\.0: .*Arkly-Version auf den Stand von main \(0\.24\.0\) zurücksetzen/);
+  // Gegenprobe: mit eigenen Änderungen an apps/suite der gewohnte Rat
+  const g = pruefen({ kopf: { ...stand, suite: '0.24.0' }, basis: stand, main: nachBot, tags: [...tags, 'suite-v0.24.0'], dateien: ['apps/suite/src/App.tsx'] });
+  assert.match(g[0], /über 0\.24\.0 setzen/);
 });
 
 test('Version außerhalb von x.y.z wird gemeldet statt still durchgelassen', () => {
@@ -84,21 +89,26 @@ test('Version außerhalb von x.y.z wird gemeldet statt still durchgelassen', () 
   assert.match(f[0], /kosten 0\.22\.0-beta: keine Version der Form x\.y\.z/);
 });
 
-test('betroffene Apps aus der Dateiliste: App-Ordner, Kern betrifft alle; Doku und Tests nicht', () => {
+test('betroffene Apps aus der Dateiliste: App-Ordner, Kern betrifft alle außer Arkly; Doku und Tests nicht', () => {
   assert.deepEqual(betroffeneApps(['apps/grz/src/store.ts', 'apps/grz/README.md', 'docs/grz.md']), ['grz']);
-  assert.deepEqual(betroffeneApps(['packages/core/src/platform/konfig.ts']), APPS);
+  assert.deepEqual(
+    betroffeneApps(['packages/core/src/platform/konfig.ts']),
+    APPS.filter((a) => a !== 'suite'),
+  );
+  assert.deepEqual(betroffeneApps(['apps/suite/src/App.tsx']), ['suite']);
   assert.deepEqual(betroffeneApps(['packages/core/src/platform/konfig.test.ts', 'packages/core/src/__fixtures__/a.ts', 'apps/ava/src/x.ui.test.ts', 'scripts/x.mjs']), []);
 });
 
-test('4. B hat main mit derselben Version hereingemergt: App-Dateien geändert, Version gleich – Fehler', () => {
-  // nach dem Merge von main ist die Version an der Merge-Base schon 0.27.0 / 0.24.0
+test('B hat main mit derselben Version hereingemergt: App-Dateien geändert, Version gleich – Fehler', () => {
+  // nach dem Merge von main ist die Version an der Merge-Base schon 0.27.0
   const nachA = { ...stand, grz: '0.27.0', suite: '0.24.0' };
   const f = pruefen({ kopf: nachA, basis: nachA, main: nachA, tags, dateien: ['apps/grz/src/nachweis.ts'] });
-  assert.equal(f.length, 2);
+  assert.equal(f.length, 1);
   assert.match(f[0], /grz: Dateien geändert, Version nicht hochgesetzt.*über 0\.27\.0/);
-  assert.match(f[1], /Geänderte Apps \(grz\), aber die Rahmen-App.*über 0\.24\.0/);
   // Gegenprobe: B setzt danach neu hoch – in Ordnung
-  assert.deepEqual(pruefen({ kopf: { ...nachA, grz: '0.28.0', suite: '0.25.0' }, basis: nachA, main: nachA, tags, dateien: ['apps/grz/src/nachweis.ts'] }), []);
+  assert.deepEqual(pruefen({ kopf: { ...nachA, grz: '0.28.0' }, basis: nachA, main: nachA, tags, dateien: ['apps/grz/src/nachweis.ts'] }), []);
   // Gegenprobe: nur Doku geändert – keine neue Version nötig
   assert.deepEqual(pruefen({ kopf: nachA, basis: nachA, main: nachA, tags, dateien: ['docs/grz.md', 'apps/grz/README.md'] }), []);
+  // Arkly-eigener Code verlangt eine Arkly-Version
+  assert.match(pruefen({ kopf: nachA, basis: nachA, main: nachA, tags, dateien: ['apps/suite/src/App.tsx'] })[0], /suite: Dateien geändert/);
 });

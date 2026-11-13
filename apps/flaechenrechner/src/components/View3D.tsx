@@ -8,6 +8,7 @@ import { storeyElevations } from '@core/model';
 import { nutzungInfo, raumNutzung } from '@core/norms';
 import { useTheme } from '@core/platform/theme';
 import { useEditor } from '../store/store';
+import { trefferWaehlen } from '../core/auswahl3d';
 
 /**
  * 3D-Ansicht der Rauminhalte: jeder BGF-Umriss als Körper vom Fußboden bis zur Dachhaut
@@ -24,6 +25,15 @@ export default function View3D() {
   const [showRooms, setShowRooms] = useState(true);
   const [showIfc, setShowIfc] = useState(true);
   const [onlyActive, setOnlyActive] = useState(false);
+  const [legendeZu, setLegendeZu] = useState(false);
+  const setMainView = useEditor((s) => s.setMainView);
+  const hatUmriss = project.storeys.some((st) => st.shapes.some((x) => x.kind === 'outline' && x.points.length >= 3));
+  // Nutzungsgruppen der sichtbaren Räume für die Legende
+  const nutzungen = useMemo(() => {
+    const ids = new Set<ReturnType<typeof raumNutzung>>();
+    for (const st of project.storeys) for (const x of st.shapes) if (x.kind === 'room' && !x.subtract && x.points.length >= 3) ids.add(raumNutzung(x));
+    return [...ids].sort().map((id) => nutzungInfo(id));
+  }, [project]);
   const three = useRef<{
     renderer: THREE.WebGLRenderer;
     scene: THREE.Scene;
@@ -85,7 +95,7 @@ export default function View3D() {
       const ndc = new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
       const rc = new THREE.Raycaster();
       rc.setFromCamera(ndc, camera);
-      const hit = rc.intersectObjects(three.current!.pickables, false)[0];
+      const hit = trefferWaehlen(rc.intersectObjects(three.current!.pickables, false), useEditor.getState().selectedShapeId);
       const st = useEditor.getState();
       if (hit?.object.userData.shapeId) {
         st.setActiveStorey(hit.object.userData.storeyId);
@@ -130,7 +140,7 @@ export default function View3D() {
           const mat = new THREE.MeshStandardMaterial({
             color: sel ? 0xff7a00 : color,
             transparent: true,
-            opacity: sel ? 0.55 : active ? 0.38 : 0.22,
+            opacity: sel ? 0.4 : active ? 0.38 : 0.22,
             side: THREE.DoubleSide,
             depthWrite: false,
             roughness: 0.8,
@@ -164,17 +174,30 @@ export default function View3D() {
             t.content.add(new THREE.LineSegments(new THREE.EdgesGeometry(ug, 25), new THREE.LineBasicMaterial({ color: u.art === 'sohle' ? 0x5b6068 : 0x1d3f96 })));
           }
         } else if (showRooms) {
+          const sel = s.id === selectedId;
           const shape = new THREE.Shape(s.points.map((p) => new THREE.Vector2(p.x, p.y)));
           const geo = new THREE.ShapeGeometry(shape);
           geo.rotateX(Math.PI / 2); // (x, y, 0) → (x, 0, y)
           geo.translate(0, z0 + raumBodenVersatz(s, storey) + 0.02, 0);
           const mat = new THREE.MeshStandardMaterial({
-            color: s.subtract ? 0xc0392b : nutzungInfo(raumNutzung(s)).color,
+            color: sel ? 0xff7a00 : s.subtract ? 0xc0392b : nutzungInfo(raumNutzung(s)).color,
             side: THREE.DoubleSide,
             transparent: true,
-            opacity: 0.85,
+            opacity: sel ? 0.95 : 0.85,
           });
-          t.content.add(new THREE.Mesh(geo, mat));
+          if (sel) {
+            // gewählter Raum über dem durchscheinenden Körper, mit kräftigem Rand – nicht mit „Abzug“ (rot) zu verwechseln
+            mat.depthTest = false;
+            const rand = new THREE.LineSegments(new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({ color: 0xb35900, depthTest: false }));
+            rand.renderOrder = 4;
+            t.content.add(rand);
+          }
+          const mesh = new THREE.Mesh(geo, mat);
+          if (sel) mesh.renderOrder = 3;
+          // Raumflächen sind anwählbar wie die Körper
+          mesh.userData = { shapeId: s.id, storeyId: storey.id, raum: true };
+          t.content.add(mesh);
+          t.pickables.push(mesh);
         }
       }
     });
@@ -214,6 +237,17 @@ export default function View3D() {
     }
   }, [project, explode, showRooms, showIfc, onlyActive, activeStoreyId, selectedId, ifcModel, dunkel]);
 
+  // Auseinanderziehen bzw. nur aktives Geschoss ändern die Ausdehnung: Kamera neu einpassen (läuft nach dem Aufbau)
+  const ersterAufbau = useRef(true);
+  useEffect(() => {
+    if (ersterAufbau.current) {
+      ersterAufbau.current = false;
+      return;
+    }
+    fit();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [explode, onlyActive]);
+
   // Hintergrund passend zum Farbschema
   useEffect(() => {
     three.current?.renderer.setClearColor(dunkel ? 0x1a1d22 : 0xf4f5f7);
@@ -224,6 +258,7 @@ export default function View3D() {
     if (!t) return;
     const box = new THREE.Box3();
     for (const o of t.pickables) box.expandByObject(o);
+    if (box.isEmpty()) box.setFromObject(t.content);
     if (!box.isEmpty()) fitCamera(t.camera, t.controls, box);
   };
 
@@ -255,36 +290,73 @@ export default function View3D() {
           </button>
         </div>
       </div>
-      <div className="view3d-legend">
-        <strong>Brutto-Rauminhalt</strong>
-        <table>
-          <tbody>
-            {result.storeys.map((s) => (
-              <tr key={s.storeyId} className={s.storeyId === activeStoreyId ? 'active' : ''}>
-                <td>{s.name}</td>
-                <td className="num">{fmt2(s.bri.total)} m³</td>
-              </tr>
-            ))}
-            <tr className="sum">
-              <td>Summe</td>
-              <td className="num">{fmt2(result.total.bri.total)} m³</td>
-            </tr>
-          </tbody>
-        </table>
-        <div className="legend-items">
-          <span>
-            <i style={{ background: '#2a5bd7' }} />R
-          </span>
-          <span>
-            <i style={{ background: '#2fa39a' }} />S
-          </span>
-          <span>
-            <i style={{ background: '#c0392b' }} />
-            Abzug
-          </span>
+      {!hatUmriss && (
+        <div className="view3d-leer">
+          <p>
+            <strong>Noch keine BGF-Umrisse</strong>
+          </p>
+          <p className="muted">Die 3D-Ansicht zeigt die Körper, aus denen der Brutto-Rauminhalt berechnet wird. Umrisse im Grundriss zeichnen oder per IFC-Import übernehmen.</p>
+          <button className="primary" onClick={() => setMainView('2d')}>
+            Zum Grundriss
+          </button>
         </div>
-        <p className="muted small-text">Klick auf einen Körper wählt den Umriss aus. Linke Maus: drehen · rechte Maus: verschieben · Rad: zoomen</p>
-      </div>
+      )}
+      {hatUmriss && (
+        <div className={`view3d-legend${legendeZu ? ' zu' : ''}`}>
+          <div className="view3d-legend-kopf">
+            <strong>Brutto-Rauminhalt</strong>
+            <button className="icon hud-hint-knopf" onClick={() => setLegendeZu(!legendeZu)} aria-expanded={!legendeZu} title={legendeZu ? 'Legende aufklappen' : 'Legende einklappen'} aria-label={legendeZu ? 'Legende aufklappen' : 'Legende einklappen'}>
+              {legendeZu ? '▸' : '▾'}
+            </button>
+          </div>
+          {legendeZu ? (
+            <span className="num">{fmt2(result.total.bri.total)} m³</span>
+          ) : (
+            <>
+              <table>
+                <tbody>
+                  {/* oberstes Geschoss oben – wie in der Seitenleiste */}
+                  {[...result.storeys].reverse().map((s) => (
+                    <tr key={s.storeyId} className={s.storeyId === activeStoreyId ? 'active' : ''}>
+                      <td>{s.name}</td>
+                      <td className="num">{fmt2(s.bri.total)} m³</td>
+                    </tr>
+                  ))}
+                  <tr className="sum">
+                    <td>Summe</td>
+                    <td className="num">{fmt2(result.total.bri.total)} m³</td>
+                  </tr>
+                </tbody>
+              </table>
+              <div className="legend-items">
+                <span>
+                  <i style={{ background: '#2a5bd7' }} />
+                  Regelfall (R)
+                </span>
+                <span>
+                  <i style={{ background: '#2fa39a' }} />
+                  Sonderfall (S)
+                </span>
+                <span>
+                  <i style={{ background: '#c0392b' }} />
+                  Abzug
+                </span>
+              </div>
+              {showRooms && nutzungen.length > 0 && (
+                <div className="legend-items">
+                  {nutzungen.map((n) => (
+                    <span key={n.id} title={n.label}>
+                      <i style={{ background: n.color }} />
+                      {n.kurz}
+                    </span>
+                  ))}
+                </div>
+              )}
+              <p className="muted small-text">Klick wählt den Raum, ein zweiter Klick den Umriss. Linke Maus: drehen · rechte Maus: verschieben · Rad: zoomen</p>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }
