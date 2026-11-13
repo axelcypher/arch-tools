@@ -276,7 +276,7 @@
   border-bottom: 1px solid var(--border);
 }
 
-/* ungespeicherte Änderungen: Punkt in der Ecke des Knopfs „Speichern“ */
+/* ungespeicherte Änderungen: Punkt außen an der oberen rechten Ecke des Knopfs „Speichern“ */
 .toolbar button.tb-dirty {
   position: relative;
 }
@@ -284,10 +284,11 @@
 .toolbar button.tb-dirty::after {
   content: '';
   position: absolute;
-  top: 3px;
-  right: 3px;
-  width: 6px;
-  height: 6px;
+  top: -3px;
+  right: -3px;
+  width: 7px;
+  height: 7px;
+  border: 1px solid var(--panel);
   border-radius: 50%;
   background: var(--sel);
 }
