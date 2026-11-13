@@ -1,5 +1,5 @@
 import type { KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent, ReactNode } from 'react';
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useId, useMemo, useRef, useState } from 'react';
 import type { Ansicht, AnsichtAbschnitt, FeldDef, FeldOptionen } from './ansicht';
 import {
   abschnittVerschieben,
@@ -295,78 +295,103 @@ function FeldLayout({ optionen, def, titel, onChange }: { optionen?: FeldOptione
 }
 
 /**
- * Verknüpfung eines Felds mit anderen der Ansicht: sie werden gemeinsam ausgefüllt (nur passende Felder). Ein Knopf
- * öffnet eine kleine Liste mit Kästchen – gewählt wird bewusst (Klick bzw. Leertaste), nicht schon mit den Pfeiltasten
- * wie bei einer Auswahlliste. Ohne passendes Feld bleibt nur ein Platzhalter (die Zeilen fluchten weiter).
+ * Verknüpfung eines Felds: es wird mit anderen gemeinsam ausgefüllt. Der Knopf öffnet ein eigenes Auswahlfenster mit
+ * **allen** passenden Feldern des Katalogs – auch solchen, die nicht in der Ansicht stehen –, nach Gruppen gegliedert und
+ * mit Suche; gewählt wird bewusst per Kästchen. Ohne passendes Feld bleibt nur ein Platzhalter (die Zeilen fluchten weiter).
  */
 function Verknuepfung({ a, feld: def, nach, passt, onChange }: { a: Ansicht; feld: FeldDef; nach: Map<string, FeldDef>; passt: (a: FeldDef, b: FeldDef) => boolean; onChange: (a: Ansicht) => void }) {
   const feld = def.id;
   const [offen, setOffen] = useState(false);
-  const huelle = useRef<HTMLSpanElement>(null);
-  const knopf = useRef<HTMLButtonElement>(null);
-  const listeId = useId();
   const mit = verknuepfteFelder(a, feld);
-  const kandidaten = felderDerAnsicht(a).filter((f) => f !== feld && nach.has(f) && (mit.includes(f) || passt(def, nach.get(f)!)));
-  // außerhalb klicken schließt die Liste
-  useEffect(() => {
-    if (!offen) return;
-    const weg = (e: PointerEvent) => !huelle.current?.contains(e.target as Node) && setOffen(false);
-    document.addEventListener('pointerdown', weg, true);
-    return () => document.removeEventListener('pointerdown', weg, true);
-  }, [offen]);
+  const kandidaten = useMemo(() => [...nach.values()].filter((f) => f.id !== feld && (mit.includes(f.id) || passt(def, f))), [nach, feld, def, passt, mit.join('|')]);
   if (!kandidaten.length) return <span className="av-ed-link-platz" aria-hidden />;
   const name = (f: string) => {
     const d = nach.get(f);
     return d ? `${d.titel}${d.gruppe ? ` (${d.gruppe})` : ''}` : f;
   };
   const zustand = mit.length ? ` – verknüpft mit ${mit.length === 1 ? '1 Feld' : `${mit.length} Feldern`}` : '';
-  const schliessen = () => {
-    setOffen(false);
-    knopf.current?.focus();
-  };
   return (
-    <span
-      className="av-ed-link-huelle"
-      ref={huelle}
-      // verlässt der Fokus Knopf und Liste (Tab), schließt die Liste – sie läge sonst über den nächsten Zeilen
-      onBlur={(e) => offen && !huelle.current?.contains(e.relatedTarget as Node | null) && setOffen(false)}
-    >
+    <>
       <button
-        ref={knopf}
         type="button"
         className={`small av-ed-link${mit.length ? ' active' : ''}`}
         aria-label={`${def.titel} verknüpfen${zustand}`}
-        aria-expanded={offen}
-        aria-controls={offen ? listeId : undefined}
-        title={mit.length ? `Verknüpft mit: ${mit.map(name).join(', ')} – wird gemeinsam ausgefüllt` : 'Mit einem anderen Feld verknüpfen – beide werden gemeinsam ausgefüllt'}
-        onClick={() => setOffen(!offen)}
+        aria-haspopup="dialog"
+        title={mit.length ? `Verknüpft mit: ${mit.map(name).join(', ')} – wird gemeinsam ausgefüllt` : 'Mit anderen Feldern verknüpfen – sie werden gemeinsam ausgefüllt'}
+        onClick={() => setOffen(true)}
       >
         {/* ⛓ mit Textdarstellung (U+FE0E) – nicht als farbiges Emoji */}
         {`⛓\uFE0E${mit.length ? ` ${mit.length}` : ''}`}
       </button>
-      {offen && (
-        <span
-          className="av-ed-link-liste"
-          id={listeId}
-          role="group"
-          aria-label={`${def.titel} gemeinsam ausfüllen mit`}
-          onKeyDown={(e) => {
-            if (e.key !== 'Escape') return;
-            // Esc schließt nur die Liste, nicht den Editor
-            e.stopPropagation();
-            schliessen();
-          }}
-        >
-          <span className="av-ed-link-titel">Gemeinsam ausfüllen mit …</span>
-          {kandidaten.map((f, i) => (
-            <label key={f}>
-              <input type="checkbox" autoFocus={i === 0} checked={mit.includes(f)} onChange={(e) => onChange(e.target.checked ? verknuepfen(a, feld, f) : verknuepfungLoesen(a, f))} />
-              {name(f)}
-            </label>
-          ))}
-        </span>
-      )}
-    </span>
+      {offen && <VerknuepfenAuswahl a={a} def={def} kandidaten={kandidaten} drin={new Set(felderDerAnsicht(a))} onChange={onChange} onSchliessen={() => setOffen(false)} />}
+    </>
+  );
+}
+
+/** Auswahlfenster „Gemeinsam ausfüllen“: alle passenden Felder nach Gruppen, mit Suche; Esc schließt nur dieses Fenster */
+function VerknuepfenAuswahl({
+  a,
+  def,
+  kandidaten,
+  drin,
+  onChange,
+  onSchliessen,
+}: {
+  a: Ansicht;
+  def: FeldDef;
+  kandidaten: FeldDef[];
+  drin: Set<string>;
+  onChange: (a: Ansicht) => void;
+  onSchliessen: () => void;
+}) {
+  const [suche, setSuche] = useState('');
+  const titelId = useId();
+  const mit = verknuepfteFelder(a, def.id);
+  const q = suche.trim().toLowerCase();
+  const gruppen = useMemo(() => {
+    const m = new Map<string, FeldDef[]>();
+    for (const f of kandidaten) {
+      if (q && !`${f.gruppe ?? ''} ${f.titel}`.toLowerCase().includes(q)) continue;
+      const g = f.gruppe ?? '';
+      m.set(g, [...(m.get(g) ?? []), f]);
+    }
+    return [...m];
+  }, [kandidaten, q]);
+  return (
+    <Modal titel={`${def.titel} gemeinsam ausfüllen mit`} className="av-verknuepfen" onClose={onSchliessen}>
+      <header className="av-ed-titel">
+        <h3 id={titelId}>
+          Gemeinsam ausfüllen: {def.titel}
+          {def.gruppe ? <span className="muted"> ({def.gruppe})</span> : null}
+        </h3>
+        <p className="muted small-text">Angehakte Felder bekommen bei jeder Eingabe denselben Wert – auch Felder, die nicht in der Ansicht stehen. Angeboten werden nur passende Felder.</p>
+      </header>
+      <input type="search" autoFocus placeholder="Felder suchen …" aria-label="Felder suchen" value={suche} onChange={(e) => setSuche(e.target.value)} />
+      <p className="muted small-text" aria-live="polite">
+        {mit.length ? `verknüpft mit ${mit.length === 1 ? '1 Feld' : `${mit.length} Feldern`}` : 'noch nicht verknüpft'}
+      </p>
+      <div className="av-ed-liste av-verknuepfen-liste" role="group" aria-labelledby={titelId}>
+        {gruppen.map(([g, felder]) => (
+          <div key={g} className="av-ed-gruppe">
+            {g && <div className="av-ed-gruppe-titel">{g}</div>}
+            {felder.map((f) => (
+              <label key={f.id} className={`av-ed-kat-feld${mit.includes(f.id) ? ' drin' : ''}`} title={f.hinweis}>
+                <input type="checkbox" checked={mit.includes(f.id)} onChange={(e) => onChange(e.target.checked ? verknuepfen(a, def.id, f.id) : verknuepfungLoesen(a, f.id))} />
+                <span>{f.titel}</span>
+                {drin.has(f.id) && <span className="muted small-text av-verknuepfen-marke">in der Ansicht</span>}
+              </label>
+            ))}
+          </div>
+        ))}
+        {!gruppen.length && <p className="muted small-text">Kein passendes Feld passt zu „{suche.trim()}“.</p>}
+      </div>
+      <footer className="av-ed-fuss">
+        <span className="av-ed-abstand" />
+        <button type="button" className="primary" onClick={onSchliessen}>
+          Fertig
+        </button>
+      </footer>
+    </Modal>
   );
 }
 

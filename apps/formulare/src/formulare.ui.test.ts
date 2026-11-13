@@ -680,13 +680,15 @@ describe('Formulare', () => {
     eingabe(feldZeile(0).querySelector<HTMLInputElement>('.av-ed-label')!, 'Bauherrschaft');
     waehle(feldZeile(0).querySelector<HTMLSelectElement>('select[aria-label^="Breite"]')!, '8');
     await klick(feldZeile(1).querySelector<HTMLInputElement>('input[aria-label$="beginnt eine neue Zeile"]')!);
-    // Ort der Gemeinde mit dem Ort des Bauherrn verknüpfen (Knopf ⛓, dann das Kästchen)
-    const verknuepfeMit = async (zeile: HTMLElement, text: string) => {
-      const knopf = zeile.querySelector<HTMLButtonElement>('button.av-ed-link')!;
-      if (knopf.getAttribute('aria-expanded') !== 'true') await klick(knopf);
-      await klick([...editor.querySelectorAll<HTMLLabelElement>('.av-ed-link-liste label')].find((l) => l.textContent?.startsWith(text))!.querySelector('input')!);
+    // Ort der Gemeinde mit dem Ort des Bauherrn verknüpfen (Knopf ⛓ öffnet das Auswahlfenster, dort das Kästchen, „Fertig“)
+    const verknuepfeMit = async (zeile: HTMLElement, gruppe: string, titel: string) => {
+      await klick(zeile.querySelector<HTMLButtonElement>('button.av-ed-link')!);
+      const fenster = document.querySelector<HTMLElement>('.modal.av-verknuepfen')!;
+      const g = [...fenster.querySelectorAll('.av-ed-gruppe')].find((x) => x.querySelector('.av-ed-gruppe-titel')?.textContent === gruppe)!;
+      await klick([...g.querySelectorAll<HTMLLabelElement>('.av-ed-kat-feld')].find((l) => l.querySelector('span')!.textContent === titel)!.querySelector('input')!);
+      await klick([...fenster.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent === 'Fertig')!);
     };
-    await verknuepfeMit(feldZeile(1), 'Ort (Bauherr)');
+    await verknuepfeMit(feldZeile(1), 'Bauherr', 'Ort');
     await warte();
     const gespeichert = JSON.parse(localStorage.getItem('formulare:ansicht:projektkarte')!);
     expect(gespeichert.abschnitte[0].optionen).toEqual({ '201:40': { label: 'Bauherrschaft', breite: 8 }, '232:110': { neueZeile: true } });
@@ -695,7 +697,7 @@ describe('Formulare', () => {
     // Bauherr › Ort wieder heraus
     await klick(feldZeile(2).querySelector<HTMLButtonElement>('.av-ed-weg')!);
     expect(JSON.parse(localStorage.getItem('formulare:ansicht:projektkarte')!).verknuepfungen).toBeUndefined();
-    await verknuepfeMit(feldZeile(1), 'Name/Firma (Bauherr)');
+    await verknuepfeMit(feldZeile(1), 'Bauherr', 'Name/Firma');
     await warte();
     expect(imAufbau()).toEqual(['Name/Firma', 'Ort']);
     // mit der Tastatur umordnen

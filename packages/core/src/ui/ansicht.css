@@ -336,6 +336,359 @@ html.zieht * {
 .av-ed-umbruch:hover {
   background: var(--hover);
 }
+/* Verknüpfen: Knopf öffnet ein eigenes Auswahlfenster; ohne passendes Feld ein gleich breiter Platzhalter */
+.av-ed-link,
+.av-ed-link-platz {
+  width: 44px;
+}
+.av-ed-link-platz {
+  display: inline-block;
+  flex-shrink: 0;
+}
+/* verknüpft: wie button.active, dazu der Akzentrahmen */
+.av-ed-link.active {
+  border-color: var(--accent);
+}
+/* Kästchen im Editor: deutlicher Fokusrahmen (der blasse aus base.css ist auf Weiß kaum zu sehen) */
+.av-ed-umbruch input:focus-visible,
+.av-verknuepfen-liste input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+/* Auswahlfenster „Gemeinsam ausfüllen“: alle passenden Felder nach Gruppen, die Liste rollt allein */
+.modal.av-verknuepfen {
+  width: min(560px, 94vw);
+  height: min(640px, 86vh);
+  max-height: 86vh;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow: hidden;
+}
+.modal.av-verknuepfen > p {
+  margin: 0;
+}
+.av-verknuepfen-liste {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  padding: 10px;
+}
+.av-verknuepfen-marke {
+  margin-left: auto;
+  font-weight: 400;
+}
+.av-ed-vorschau {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+}
+.av-raster {
+  gap: 10px 14px;
+  align-items: start;
+}
+/* Breite in Spalten von 12, „neue Zeile“ beginnt in Spalte 1 */
+.av-feld,
+.av-ed-vorschau-feld {
+  grid-column: span var(--breite, 4);
+}
+/* nur in der Anzeige und der Vorschau des Editors (data-breite gibt es sonst auch anderswo) */
+:is(.av-feld, .av-ed-vorschau-feld)[data-breite='3'] {
+  --breite: 3;
+}
+:is(.av-feld, .av-ed-vorschau-feld)[data-breite='4'] {
+  --breite: 4;
+}
+:is(.av-feld, .av-ed-vorschau-feld)[data-breite='6'] {
+  --breite: 6;
+}
+:is(.av-feld, .av-ed-vorschau-feld)[data-breite='8'] {
+  --breite: 8;
+}
+:is(.av-feld, .av-ed-vorschau-feld)[data-breite='9'] {
+  --breite: 9;
+}
+:is(.av-feld, .av-ed-vorschau-feld)[data-breite='12'] {
+  --breite: 12;
+}
+.av-feld[data-neue-zeile],
+.av-ed-vorschau-feld[data-neue-zeile] {
+  grid-column: 1 / span var(--breite, 4);
+}
+/* schmaler Abschnitt (nicht das Fenster): erst halbe, dann ganze Breite – die zweite Regel steht später und ist
+   gleich spezifisch, gilt also auch für die Felder, die die erste schon auf halbe Breite gesetzt hat */
+@container av-abschnitt (max-width: 760px) {
+  .av-feld[data-breite='3'],
+  .av-feld[data-breite='4'] {
+    --breite: 6;
+  }
+  .av-feld[data-breite='8'],
+  .av-feld[data-breite='9'] {
+    --breite: 12;
+  }
+}
+@container av-abschnitt (max-width: 480px) {
+  .av-feld[data-breite] {
+    --breite: 12;
+  }
+}
+.av-feld {
+  min-width: 0;
+}
+.av-fehlt {
+  padding: 6px 8px;
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+}
+
+/* ---------- Editor ---------- */
+
+.modal.av-editor {
+  container: av-editor / inline-size;
+  width: min(980px, 94vw);
+  height: min(720px, 88vh);
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow: hidden;
+}
+.av-ed-titel h3 {
+  margin: 0 0 4px;
+}
+.av-ed-titel p {
+  margin: 0;
+}
+.av-ed-koerper {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: 14px;
+}
+/* schmales Fenster: Aufbau über dem Katalog, damit jede Feldzeile (Griff, Beschriftung, Breite, neue Zeile, ⛓, ×) Platz hat */
+@container av-editor (max-width: 820px) {
+  .av-ed-koerper {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 3fr) minmax(0, 2fr);
+  }
+}
+.av-ed-aufbau,
+.av-ed-katalog {
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  padding: 10px;
+}
+.av-ed-aufbau {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.av-ed-abschnitt {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px 10px;
+}
+.av-ed-abschnitt.aktiv {
+  border-color: var(--accent);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+.av-ed-abschnitt.ziel {
+  background: color-mix(in srgb, var(--accent) 6%, var(--panel));
+}
+.av-ed-kopf {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+.av-ed-abschnitt-titel {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+}
+.av-ed-felder {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.av-ed-feld {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 3px 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel);
+}
+.av-ed-feld.quelle {
+  opacity: 0.45;
+}
+.av-ed-feld.davor {
+  box-shadow: 0 -3px 0 var(--accent);
+}
+/* Feld fehlt im Katalog: Beschriftung gedämpft und durchgestrichen, die Erklärung darunter lesbar */
+.av-ed-feld.fehlt .av-ed-label,
+.av-ed-feld.fehlt .av-ed-label::placeholder {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+.av-ed-feld.fehlt .av-ed-label:disabled {
+  opacity: 1;
+  background: transparent;
+  border-color: transparent;
+}
+.av-ed-einfuegen {
+  height: 3px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+.av-ed-feld-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+.av-ed-feld-text > .small-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.av-griff {
+  cursor: grab;
+  border: none;
+  background: none;
+  padding: 2px 4px;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1;
+  touch-action: none;
+}
+.av-griff:focus-visible {
+  outline: 2px solid var(--accent);
+  border-radius: 4px;
+}
+.av-ed-weg {
+  opacity: 0.6;
+}
+.av-ed-feld:hover .av-ed-weg {
+  opacity: 1;
+}
+.av-ed-leer {
+  padding: 10px 6px;
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  text-align: center;
+}
+.av-ed-neu {
+  align-self: flex-start;
+}
+.av-ed-katalog {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.av-ed-katalog > p {
+  margin: 0;
+}
+.av-ed-liste {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.av-ed-gruppe-titel {
+  position: sticky;
+  top: -10px;
+  padding: 4px 2px;
+  background: var(--bg);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.av-ed-kat-feld {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 6px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.av-ed-kat-feld:hover {
+  background: var(--hover);
+}
+.av-ed-kat-feld.drin {
+  color: var(--accent);
+  font-weight: 600;
+}
+.av-ed-fuss {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.av-ed-abstand {
+  flex: 1;
+}
+
+/* Editor: Beschriftung, Breite, Zeilenumbruch, Verknüpfung, Vorschau */
+/* Beschriftung direkt bearbeiten (wie die Feldtitel in der Gliederung): Rahmen erst bei Hover und Fokus */
+.av-ed-label {
+  width: 100%;
+  min-width: 0;
+  font-weight: 600;
+  border-color: transparent;
+  background: transparent;
+  padding-left: 4px;
+  margin-left: -4px;
+}
+.av-ed-label:hover {
+  border-color: var(--border);
+  background: var(--input-bg);
+}
+.av-ed-label:focus {
+  border-color: var(--accent);
+  background: var(--input-bg);
+}
+/* Platzhalter = Beschriftung aus dem Katalog: gedämpft, damit eine eigene Beschriftung davon absticht */
+.av-ed-label::placeholder {
+  color: var(--muted);
+  opacity: 1;
+}
+.av-ed-layout {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.av-ed-layout select {
+  width: 64px;
+}
+.av-ed-umbruch {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 4px 4px;
+  border-radius: 4px;
+  color: var(--muted);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.av-ed-umbruch:hover {
+  background: var(--hover);
+}
 /* Verknüpfen: Knopf mit kleiner Liste; ohne passendes Feld ein gleich breiter Platzhalter */
 .av-ed-link-huelle {
   position: relative;
