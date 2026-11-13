@@ -46,6 +46,9 @@ prüft die CI sie nicht oder der Release-Lauf baut sie nicht:
 - `scripts/versionen-setzen.mjs`: `NAMEN` (Produktname, wie in `packages/core/src/appNamen.ts`).
 - `.github/workflows/release.yml`: Kopfkommentar, Auswahl `options` beim Start von Hand, die Schleife `for d in …` und
   der `case` mit Tag, Release-Name und Name des Web-Zips (`<produkt>-web.zip`, klein geschrieben).
+- Testprojekt: `test.name` in `apps/<kennung>/vite.config.ts` gleich der Kennung – der Release-Lauf testet je App nur
+  dieses Projekt und den Kern (`--project`); bindet die App weitere Pakete ein, sie im `case` des Schritts „Tests“ in
+  `release.yml` ergänzen.
 - `.github/workflows/ci.yml`: Pfad unter `web-dist` und ein Eintrag in der Matrix „Tauri-Hülle prüfen“ (`app`, `pkg`
   = Name in `package.json`).
 - Wurzel-`package.json`: Skripte `build`, `dev:<kennung>`, `tauri:dev:<kennung>`.
