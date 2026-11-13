@@ -509,8 +509,10 @@ if (typeof indexedDB !== 'undefined' && zwischenstandLadenErlaubt(APP)) {
 /** Verzögerung des Zwischenspeicherns nach einer Änderung */
 const AUTOSAVE_MS = 600;
 /** so lange darf ein einzelnes Schreiben dauern, bevor es als gescheitert gilt – ein hängendes blockiert sonst die Kette */
-export const SCHREIBEN_MAX_MS = 10_000;
+const SCHREIBEN_MAX_MS = 10_000;
 
+/** Wird eine Transaktion nach dem Zeitlimit doch noch fertig, bleibt die Reihenfolge richtig: IndexedDB führt
+ *  readwrite-Transaktionen auf denselben Store in der Reihenfolge ihres Anlegens aus. */
 function mitZeitlimit<T>(arbeit: Promise<T>, ms: number): Promise<T> {
   return new Promise<T>((ok, fehler) => {
     const uhr = setTimeout(() => fehler(new Error(`Zwischenspeichern dauerte länger als ${ms} ms`)), ms);
