@@ -1,8 +1,8 @@
 import { logger } from '@core/platform/log';
 import { zwischenstandErsetzt, zwischenstandLadenErlaubt, zwischenstandWirdGeladen } from '@core/platform/startschutz';
-import { DateiVonAussenGeaendert, istPfad, openFileWithPath, pickFile, saveMergedFile } from '@core/platform/files';
+import { DateiVonAussenGeaendert, isTauri, istPfad, openFileWithPath, pickFile, saveMergedFile } from '@core/platform/files';
 import type { ProjektordnerZugriff } from '@core/platform/projektordner';
-import { verbinde } from '@core/platform/projektordner';
+import { ordnerZeigen, verbinde } from '@core/platform/projektordner';
 import { fotoEinlesen } from './bilder';
 import { ENDUNG, entpacken, packen } from './datei';
 import { neueId, neuesFoto } from './model';
@@ -103,19 +103,30 @@ async function speichernJetzt(unterNeuemNamen: boolean): Promise<boolean> {
   } catch (e) {
     if (e instanceof DateiVonAussenGeaendert) {
       log.warn('Speichern abgelehnt: Datei von außen geändert', s.dateiname);
-      const wahl = await fragen({
-        titel: 'Datei wurde inzwischen geändert',
-        text: `${
-          s.dateiStand === null
-            ? `„${dateiTeil(s.dateiname ?? '')}“ wurde inzwischen außerhalb von RECTIO angelegt, z. B. auf einem anderen Rechner im Büro.`
-            : `„${dateiTeil(s.dateiname ?? '')}“ wurde nach dem Öffnen außerhalb von RECTIO geändert, z. B. auf einem anderen Rechner im Büro.`
-        } Sie wurde deshalb nicht überschrieben; Ihre Änderungen sind noch in RECTIO. Unter neuem Namen speichern und danach beide Fassungen vergleichen.`,
-        knoepfe: [
-          { id: 'abbrechen', label: 'Abbrechen' },
-          { id: 'neu', label: 'Unter neuem Namen speichern …', art: 'primary' },
-        ],
-      });
-      return wahl === 'neu' ? speichernJetzt(true) : false;
+      // „Ordner öffnen“ zeigt den Ordner der Datei (Desktop), danach kommt die Rückfrage wieder – entschieden wird erst dann
+      const ordner = s.dateiname ? ordnerTeil(s.dateiname) : null;
+      for (;;) {
+        const wahl = await fragen({
+          titel: 'Datei wurde inzwischen geändert',
+          text: `${
+            s.dateiStand === null
+              ? `„${dateiTeil(s.dateiname ?? '')}“ wurde inzwischen außerhalb von RECTIO angelegt, z. B. auf einem anderen Rechner im Büro.`
+              : `„${dateiTeil(s.dateiname ?? '')}“ wurde nach dem Öffnen außerhalb von RECTIO geändert, z. B. auf einem anderen Rechner im Büro.`
+          } Sie wurde deshalb nicht überschrieben; Ihre Änderungen sind noch in RECTIO. Unter neuem Namen speichern und danach beide Fassungen vergleichen.`,
+          knoepfe: [
+            { id: 'abbrechen', label: 'Abbrechen' },
+            ...(ordner && isTauri() ? [{ id: 'ordner' as const, label: 'Ordner öffnen' }] : []),
+            { id: 'neu', label: 'Unter neuem Namen speichern …', art: 'primary' as const },
+          ],
+        });
+        if (wahl !== 'ordner' || !ordner) return wahl === 'neu' ? speichernJetzt(true) : false;
+        try {
+          await ordnerZeigen(ordner);
+        } catch (err) {
+          log.warn('Ordner ließ sich nicht öffnen', { ordner, fehler: String(err) });
+          await meldung('Ordner ließ sich nicht öffnen', ordner, err);
+        }
+      }
     }
     const text = e instanceof Error ? e.message : String(e);
     log.error('Speichern fehlgeschlagen', text);
