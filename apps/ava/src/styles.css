@@ -72,10 +72,9 @@
 }
 
 .ava-nav-titel {
-  padding: 12px 12px 4px;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  padding: var(--s3) var(--s3) var(--s1);
+  font-size: var(--fs-s);
+  font-weight: 600;
   color: var(--muted);
 }
 
@@ -489,7 +488,6 @@
 .ava-lv-tabelle {
   flex: 1;
   overflow: auto;
-  outline: none;
 }
 
 .ava-lv-zeilen td {
@@ -1966,8 +1964,8 @@ input.ava-fehler {
   white-space: nowrap;
 }
 
-/* Textfelder (mehrzeilig) mit demselben Fokusrahmen wie einzeilige Felder (base.css: input/select) */
-textarea:focus {
-  outline: 2px solid var(--accent-soft);
-  border-color: var(--accent);
+/* Langtext (bearbeitbare Fläche): Fokus wie bei Textfeldern (base.css), statt ihn auszublenden */
+.ava-langtext-flaeche:focus {
+  outline: 2px solid var(--fokus-saum);
+  outline-offset: -2px;
 }
