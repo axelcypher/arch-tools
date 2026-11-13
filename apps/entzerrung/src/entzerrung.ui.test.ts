@@ -134,7 +134,7 @@ describe('RECTIO (Entzerrung)', () => {
     act(() => useEntz.getState().setze({ auswahl: { art: 'messung', id: 'm1' } }));
     const taste = (ziel: EventTarget, key: string) => act(() => void ziel.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true })));
     // Entf auf einem Knopf bzw. in einem Feld: nichts gelöscht
-    taste(knopf(host, '+ Foto')!, 'Delete');
+    taste(knopf(host, '+ Foto …')!, 'Delete');
     taste(feld(host, 'Breite (m)'), 'Delete');
     expect(aktuell(useEntz.getState()).ebene!.messungen).toHaveLength(1);
     // offener Dialog: nichts gelöscht
@@ -236,10 +236,10 @@ describe('RECTIO (Entzerrung)', () => {
     taste(feld(host, 'Höhe (m)'), 'z', true);
     expect(aktuell(useEntz.getState()).ebene!.rechteck.breite).toBe(2);
     // auf einem Knopf: Rückgängig der App
-    taste(knopf(host, '+ Foto')!, 'z', true);
+    taste(knopf(host, '+ Foto …')!, 'z', true);
     expect(aktuell(useEntz.getState()).ebene!.rechteck.breite).toBeUndefined();
     act(() => useEntz.getState().setze({ werkzeug: 'ecken' }));
-    taste(knopf(host, '+ Foto')!, 'Escape');
+    taste(knopf(host, '+ Foto …')!, 'Escape');
     expect(useEntz.getState().werkzeug).toBe('auswahl');
   });
 });

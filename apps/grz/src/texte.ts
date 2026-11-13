@@ -1,6 +1,7 @@
 import type { Anrechnung, GelaendeQuelle, Kennzahl, Nachweis, Status } from './massNutzung';
 import type { BauNVOFassung, LageplanNutzung } from '@core/model';
 import { nutzungLabel } from '@core/lageplan';
+import { fmt2 } from '@core/format';
 
 /** Bezeichnungen für Ansicht, Druck und Excel */
 
@@ -124,18 +125,24 @@ export function anrechnungErklaerung(n: LageplanNutzung, f: BauNVOFassung, a: An
   const fest = regel === 'pruefen' && a !== 'pruefen' ? ' – so festgelegt unter „Einstufung offener Fälle“' : '';
   switch (a) {
     case 'pruefen':
+      if (n === 'garage' && f === '1962')
+        return `${was} im Kern-, Gewerbe- oder Industriegebiet: anrechnungsfrei nur bei Zulassung, nur eingeschossig (§ 19 Abs. 5 S. 1 BauNVO 1962) – ohne und mit dieser Fläche gerechnet; Zulassung mit der Bauaufsicht klären.`;
       return n === 'terrasse' && f === '1990'
         ? `${was}: nicht ausdrücklich geregelt. Praxis A: angebaute, ebenerdige Terrasse gehört zur Hauptanlage (GRZ I); Praxis B: Nebenanlage (GRZ II) bzw. nicht überdeckt außer Betracht. Mit der Bauaufsicht klären.`
         : `${was}: nicht eindeutig geregelt – ohne und mit dieser Fläche gerechnet; Einstufung mit der Bauaufsicht klären.`;
     case 'grz2':
       return `${was}: zählt zur GRZ II (§ 19 Abs. 4 BauNVO – Garagen, Stellplätze mit Zufahrten, Nebenanlagen, Unterbauungen)${fest}.`;
     case 'garage01':
-      return `${was}: bis 0,1 der Grundstücksfläche anrechnungsfrei (§ 21a Abs. 3 BauNVO 1968/1977).`;
+      return `${was}: bis 0,1 der Grundstücksfläche anrechnungsfrei (${f === '1962' ? '§ 19 Abs. 5 S. 2 BauNVO 1962' : '§ 21a Abs. 3 BauNVO 1968/1977'}).`;
     case 'hauptanlage':
       return `${was}: zählt zur Grundfläche${f === '1990' ? ' der Hauptanlage (GRZ I)' : ''}${fest}.`;
     default:
       return n === 'garage' && f === '1962'
-        ? `${was}: im Kern-, Gewerbe- und Industriegebiet nicht angerechnet (§ 19 Abs. 5 BauNVO 1962)${fest}.`
+        ? `${was}: im Kern-, Gewerbe- und Industriegebiet ohne Anrechnung zugelassen (§ 19 Abs. 5 S. 1 BauNVO 1962)${fest}.`
         : `${was}: zählt nicht zur Grundfläche${f === '1968' ? ' (§ 19 Abs. 4 BauNVO 1968/1977)' : n === 'garten' ? ' (nicht überbaut)' : ''}${fest}.`;
   }
 }
+
+/** Hinweis zu den anrechnungsfreien Garagen (vor 1990) für Ansicht und Druck */
+export const garagenFreiText = (f: BauNVOFassung, frei: number) =>
+  `Garagen und überdachte Stellplätze: ${fmt2(frei)} m² anrechnungsfrei (${f === '1962' ? '§ 19 Abs. 5 S. 2 BauNVO 1962' : '§ 21a Abs. 3 BauNVO 1968/1977'}, bis 0,1 der Grundstücksfläche).`;
