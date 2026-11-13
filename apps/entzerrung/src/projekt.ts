@@ -61,8 +61,12 @@ let speichertGerade: Promise<boolean> | null = null;
 /** das letzte Speichern der .entz ist an einem Fehler gescheitert (nicht abgebrochen) */
 let speichernGescheitert = false;
 
+/** zählt die Dokumentwechsel: ein Speichern, das erst nach einem Wechsel fertig wird, betrifft das neue Dokument nicht */
+let dokumentNr = 0;
+
 /** anderes Dokument (neu, geöffnet, Foto aus dem Projekt): ein gescheitertes Speichern des vorigen zählt nicht mehr */
 function dokumentLaden(...args: Parameters<ReturnType<typeof useEntz.getState>['laden']>) {
+  dokumentNr++;
   speichernGescheitert = false;
   useEntz.getState().laden(...args);
 }
@@ -90,6 +94,10 @@ const ordnerTeil = (pfad: string) => {
 
 async function speichernJetzt(unterNeuemNamen: boolean): Promise<boolean> {
   const s = useEntz.getState();
+  const nr = dokumentNr;
+  // inzwischen ein anderes Dokument (z. B. „Neu“ mit „Nicht speichern“ während des Schreibens): Dateiname, Stand und
+  // Fehler des alten nicht auf das neue übertragen – sonst schriebe „Speichern“ das neue ohne Dialog in die alte Datei
+  const gewechselt = () => nr !== dokumentNr;
   if (!s.doc.fotos.length) return false;
   // ohne Dialog direkt in die geöffnete Datei (z. B. neben dem Foto im Projekt) – nur, wenn sie noch den gemerkten Stand hat
   const direkt = !unterNeuemNamen && !!s.dateiname && istPfad(s.dateiname);
@@ -108,14 +116,23 @@ async function speichernJetzt(unterNeuemNamen: boolean): Promise<boolean> {
       ...(direkt && s.dateiStand !== undefined ? { stand: s.dateiStand } : {}),
       build: () => packen(s.doc, s.bilder),
     });
+    if (name && gewechselt()) {
+      log.info(`Gespeichert: ${name} (inzwischen ein anderes Dokument geöffnet)`);
+      return true;
+    }
     if (name) {
       const stand = istPfad(name) ? await dateiStandLesen(name) : undefined;
       if (istPfad(name) && stand === undefined) log.warn('Stand nach dem Speichern unbekannt – beim nächsten Speichern keine Prüfung', name);
+      if (gewechselt()) return true;
       useEntz.getState().gespeichert(name, s.doc, stand);
       log.info(`Gespeichert: ${name}`);
     }
     return !!name;
   } catch (e) {
+    if (gewechselt()) {
+      log.warn('Speichern des vorigen Dokuments fehlgeschlagen', e instanceof Error ? e.message : String(e));
+      return false;
+    }
     if (e instanceof DateiVonAussenGeaendert) {
       log.warn('Speichern abgelehnt: Datei von außen geändert', s.dateiname);
       // „Ordner öffnen“ zeigt den Ordner der Datei (Desktop), danach kommt die Rückfrage wieder – entschieden wird erst dann
