@@ -36,8 +36,8 @@ export interface TitleBarProps {
   dirty: boolean;
   /**
    * Satz für die Rückfragen beim Schließen, wenn `dirty` (Rahmen-App und eigenes Schließen mit Speichern) – genauer als
-   * der allgemeine, z. B. „Das LV hat ungespeicherte Änderungen.“; ein kurzer Satz, höchstens UNGESPEICHERT_MAX Zeichen (sonst nimmt
-   * die Rahmen-App den allgemeinen „Das Projekt hat ungespeicherte Änderungen.“)
+   * der allgemeine, z. B. „Das LV hat ungespeicherte Änderungen.“; ein kurzer Satz, höchstens UNGESPEICHERT_MAX Zeichen
+   * (sonst nimmt die Rahmen-App den allgemeinen „Das Projekt hat ungespeicherte Änderungen.“)
    */
   ungespeichert?: string;
   onOpenLog: () => void;

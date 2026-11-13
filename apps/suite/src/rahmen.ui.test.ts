@@ -8,6 +8,7 @@ import { useTheme } from '@core/platform/theme';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { APPS } from './apps';
+import { UNGESPEICHERT_MAX } from '@core/platform/rahmen';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -130,11 +131,14 @@ describe('Rahmen-App', () => {
     const mitSatz = await schliessenUndAbbrechen();
     expect(mitSatz).toContain('Das LV hat ungespeicherte Änderungen.');
     expect(mitSatz).not.toContain('Das Projekt hat');
-    for (const falsch of ['   ', 'x'.repeat(201), 42]) {
+    for (const falsch of ['   ', 'x'.repeat(UNGESPEICHERT_MAX + 1), 42]) {
       melden(falsch);
       expect(useRahmen.getState().status.ava).toEqual({ name: 'LV 1', dirty: true });
       expect(await schliessenUndAbbrechen()).toContain('Das Projekt hat ungespeicherte Änderungen.');
     }
+    // genau an der Grenze gilt der Satz noch
+    melden('x'.repeat(UNGESPEICHERT_MAX));
+    expect(useRahmen.getState().status.ava?.ungespeichert).toHaveLength(UNGESPEICHERT_MAX);
     expect(useRahmen.getState().tabs).toEqual(['ava']);
   });
 
