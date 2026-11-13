@@ -27,11 +27,14 @@ function formularText(k: KatalogEintrag): string {
   return /^[a-z]{2}\d{6}$/i.test(f) ? `Formular mit Kennung ${f}` : `Formular mit „${f}“ im Namen`;
 }
 
-/** Fokus auf ein Element, sonst ein anderes (falls das erste nicht mehr da ist) */
+/**
+ * Fokus auf ein Element, sonst das nächste (falls es nicht mehr da ist). `body` zählt nicht – in WKWebView (macOS)
+ * bekommt ein angeklickter Knopf keinen Fokus, dann greift das nächste Ziel (eine feste Id).
+ */
 function fokussieren(...ziele: (HTMLElement | string | null | undefined)[]) {
   for (const z of ziele) {
     const el = typeof z === 'string' ? document.getElementById(z) : z;
-    if (el?.isConnected) {
+    if (el?.isConnected && el !== document.body) {
       el.focus();
       return;
     }
@@ -100,7 +103,7 @@ export function DokumenteEinstellungen() {
   const entfernen = async (k: KatalogEintrag) => {
     const ausloeser = document.activeElement as HTMLElement | null;
     if (!(await bestaetigen('Dokument entfernen', `„${k.titel}“ aus den Antragsdokumenten entfernen? In Projekten, die es im Antragsumfang haben, bleibt es dort.`, 'Entfernen', true))) {
-      fokussieren(ausloeser);
+      fokussieren(ausloeser, `${dokId(k.id)}-entfernen`);
       return;
     }
     const { katalog: jetzt, vorlagen: vorlagenJetzt } = useAntrag.getState();
@@ -116,7 +119,7 @@ export function DokumenteEinstellungen() {
   const vorlageEntfernen = async (v: AntragsVorlage) => {
     const ausloeser = document.activeElement as HTMLElement | null;
     if (!(await bestaetigen('Vorlage entfernen', `Die Vorlage „${v.name}“ entfernen? Die Antragsdokumente selbst bleiben erhalten.`, 'Entfernen', true))) {
-      fokussieren(ausloeser);
+      fokussieren(ausloeser, `${id}-${v.id}-entfernen`);
       return;
     }
     setVorlagen(useAntrag.getState().vorlagen.filter((x) => x.id !== v.id));
@@ -128,11 +131,13 @@ export function DokumenteEinstellungen() {
     if (
       !(await bestaetigen('Vorgabe wiederherstellen', 'Die Antragsdokumente auf die Vorgabe zurücksetzen? Eigene Dokumente und Änderungen gehen verloren; die Vorlagen bleiben.', 'Zurücksetzen', true))
     ) {
-      fokussieren(ausloeser);
+      fokussieren(ausloeser, `${id}-katalog-vorgabe`);
       return;
     }
-    // die Vorlagen bleiben: auch solche, die (noch nie gespeichert) aus dem Katalog abgeleitet sind, vorher festschreiben
-    setVorlagen(useAntrag.getState().vorlagen);
+    // die Vorlagen bleiben: auch solche, die (noch nie gespeichert) aus dem Katalog abgeleitet sind – festschreiben, wenn
+    // sie sonst nach dem Zurücksetzen anders abgeleitet würden
+    const vorlagenJetzt = useAntrag.getState().vorlagen;
+    if (JSON.stringify(vorlagenJetzt) !== JSON.stringify(vorlagenAus(null, VORGABE_KATALOG))) setVorlagen(vorlagenJetzt);
     setKatalog(null);
     setOffen(null);
     setFokus([hinzufuegenId]);
@@ -140,7 +145,7 @@ export function DokumenteEinstellungen() {
   const vorlagenVorgabe = async () => {
     const ausloeser = document.activeElement as HTMLElement | null;
     if (!(await bestaetigen('Vorgabe wiederherstellen', 'Die Antragsvorlagen auf die Vorgabe zurücksetzen? Eigene Vorlagen und Zuordnungen gehen verloren.', 'Zurücksetzen', true))) {
-      fokussieren(ausloeser);
+      fokussieren(ausloeser, `${id}-vorlagen-vorgabe`);
       return;
     }
     setVorlagen(null);
@@ -200,7 +205,7 @@ export function DokumenteEinstellungen() {
                     </button>
                   </td>
                   <td>
-                    <button className="icon" aria-label={`Vorlage ${v.name} entfernen`} title="Entfernen" onClick={() => void vorlageEntfernen(v)}>
+                    <button id={`${id}-${v.id}-entfernen`} className="icon" aria-label={`Vorlage ${v.name} entfernen`} title="Entfernen" onClick={() => void vorlageEntfernen(v)}>
                       <Symbol name="muell" />
                     </button>
                   </td>
@@ -214,7 +219,9 @@ export function DokumenteEinstellungen() {
             <Symbol name="plus" /> Vorlage hinzufügen
           </button>
           {JSON.stringify(vorlagen) !== JSON.stringify(vorlagenAus(null, katalog)) && JSON.stringify(vorlagen) !== JSON.stringify(VORGABE_VORLAGEN) && (
-            <button onClick={() => void vorlagenVorgabe()}>Vorgabe wiederherstellen</button>
+            <button id={`${id}-vorlagen-vorgabe`} onClick={() => void vorlagenVorgabe()}>
+              Vorgabe wiederherstellen
+            </button>
           )}
         </div>
       </Karte>
@@ -380,7 +387,7 @@ export function DokumenteEinstellungen() {
                         <BedingungEditor wert={k.bedingung} merkmale={merkmale} onChange={(b) => setzen(k.id, { bedingung: b })} />
                       </div>
                       <div className="es-zeile es-dok-fuss">
-                        <button className="small gefahr" onClick={() => void entfernen(k)}>
+                        <button id={`${kid}-entfernen`} className="small gefahr" onClick={() => void entfernen(k)}>
                           <Symbol name="muell" /> Dokument entfernen …
                         </button>
                         <button className="small" onClick={() => schliessen(k.id)}>
@@ -400,7 +407,11 @@ export function DokumenteEinstellungen() {
           <button id={hinzufuegenId} onClick={hinzufuegen}>
             <Symbol name="plus" /> Dokument hinzufügen
           </button>
-          {JSON.stringify(katalog) !== JSON.stringify(VORGABE_KATALOG) && <button onClick={() => void katalogVorgabe()}>Vorgabe wiederherstellen</button>}
+          {JSON.stringify(katalog) !== JSON.stringify(VORGABE_KATALOG) && (
+            <button id={`${id}-katalog-vorgabe`} onClick={() => void katalogVorgabe()}>
+              Vorgabe wiederherstellen
+            </button>
+          )}
         </div>
       </Karte>
     </>

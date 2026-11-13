@@ -259,6 +259,14 @@ describe('Antragsfassung und Export', () => {
     expect(ds.dateien.has('C:/FORMA/BS9/formulare.json')).toBe(false);
     expect(host.querySelector('.an-fassung')?.textContent).toContain('BAUA 3');
   });
+
+  it('alte Abweichungen je Projekt nur mit „Phase“ entfallen beim Lesen – auch im Speicher', async () => {
+    localStorage.setItem('formulare:export-projekte', JSON.stringify({ BS9: { phase: 'EP' }, HVO: { phase: 'EP', zielpfad: 'TÖB/Formulare' } }));
+    act(() => useAntrag.getState().einstellungenNeuLesen());
+    await warte();
+    expect(useAntrag.getState().ueberschreibungen).toEqual({ HVO: { zielpfad: 'TÖB/Formulare' } });
+    expect(JSON.parse(localStorage.getItem('formulare:export-projekte')!)).toEqual({ HVO: { zielpfad: 'TÖB/Formulare' } });
+  });
 });
 
 describe('Antragsumfang und Vollständigkeit', () => {
@@ -1058,14 +1066,6 @@ describe('Plansatz', () => {
       wahl().dispatchEvent(new Event('change', { bubbles: true }));
     });
     expect(knopf(host, 'Antragsumfang festlegen').disabled).toBe(false);
-  });
-
-  it('alte Abweichungen je Projekt nur mit „Phase“ entfallen beim Lesen – auch im Speicher', async () => {
-    localStorage.setItem('formulare:export-projekte', JSON.stringify({ BS9: { phase: 'EP' }, HVO: { phase: 'EP', zielpfad: 'TÖB/Formulare' } }));
-    act(() => useAntrag.getState().einstellungenNeuLesen());
-    await warte();
-    expect(useAntrag.getState().ueberschreibungen).toEqual({ HVO: { zielpfad: 'TÖB/Formulare' } });
-    expect(JSON.parse(localStorage.getItem('formulare:export-projekte')!)).toEqual({ HVO: { zielpfad: 'TÖB/Formulare' } });
   });
 
   it('Dateiname beim Export: die Antragsart kommt aus dem aktiven Antrag, auch bei einer alten Vorlage mit {Phase}', async () => {

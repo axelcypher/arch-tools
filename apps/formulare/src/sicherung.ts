@@ -34,7 +34,7 @@ export const SICHERUNG_BEREICHE: SicherungsBereich[] = [
     umfang: (w) => anzahl(eintraege(w), 'Formular', 'Formulare'),
   },
   { schluessel: 'formulare:merkmale', titel: 'Antragsmerkmale', umfang: (w) => anzahl(liste(w), 'Merkmal', 'Merkmale') },
-  { schluessel: 'formulare:katalog', titel: 'Antragsdokumente (Katalog)', umfang: (w) => anzahl(liste(w), 'Dokument', 'Dokumente') },
+  { schluessel: 'formulare:katalog', titel: 'Antragsdokumente', umfang: (w) => anzahl(liste(w), 'Dokument', 'Dokumente') },
   { schluessel: 'formulare:vorlagen', titel: 'Antragsvorlagen', umfang: (w) => anzahl(liste(w), 'Vorlage', 'Vorlagen') },
   { schluessel: 'formulare:export', titel: 'Antrag & Export (Ordner, Namensvorlage, Ziel)', umfang: () => 'angepasst' },
   {

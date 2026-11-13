@@ -49,7 +49,7 @@ describe('Einstellungen sichern und übertragen', () => {
       }),
     );
     const titel = sicherungEinspielen(s, ['formulare:katalog', 'formulare:profile']);
-    expect(titel).toEqual(['Gliederung der Formulare (Titel, Gruppen, Bedingungen)', 'Antragsdokumente (Katalog)']);
+    expect(titel).toEqual(['Gliederung der Formulare (Titel, Gruppen, Bedingungen)', 'Antragsdokumente']);
     expect(JSON.parse(localStorage.getItem('formulare:katalog')!)).toEqual([{ id: 'neu' }]);
     const profile = JSON.parse(localStorage.getItem('formulare:profile')!);
     expect(Object.keys(profile).sort()).toEqual(['eigenes', 'gleich', 'halb']);

@@ -911,7 +911,7 @@ gehören nicht dazu.
 | --- | --- | --- |
 | Gliederung der Formulare (Titel, Gruppen, Bedingungen) | `formulare:profile` | ergänzt – gleiche Formulare ersetzt |
 | Antragsmerkmale | `formulare:merkmale` | ersetzt |
-| Antragsdokumente (Katalog) | `formulare:katalog` | ersetzt |
+| Antragsdokumente | `formulare:katalog` | ersetzt |
 | Antrag & Export | `formulare:export` | ersetzt |
 | Antrag & Export: Abweichungen je Projekt | `formulare:export-projekte` | ergänzt – gleiche Projekte ersetzt |
 | Bürostammdaten | `formulare:stammdaten` | ersetzt |

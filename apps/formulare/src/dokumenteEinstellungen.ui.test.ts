@@ -165,10 +165,13 @@ describe('Einstellungen › Antrag & Export › Antragsdokumente', () => {
     await warte();
     const muell = () => document.querySelector<HTMLButtonElement>('button[aria-label="Vorlage Denkmalrechtliche Erlaubnis entfernen"]')!;
     const dialog = () => document.querySelector('.modal.rf')!;
+    // ohne Fokus auf dem Knopf (WKWebView fokussiert angeklickte Knöpfe nicht): nach „Abbrechen“ trotzdem dorthin
+    (document.activeElement as HTMLElement | null)?.blur();
     await klick(muell());
     expect(dialog().textContent).toContain('„Denkmalrechtliche Erlaubnis“ entfernen?');
     await klick(knopf('Abbrechen', dialog()));
     expect(vorlage('denk')).toBeDefined();
+    expect(document.activeElement).toBe(muell());
     expect(vorlageWahl().value).toBe('denk');
     await klick(muell());
     await klick(knopf('Entfernen', dialog()));
