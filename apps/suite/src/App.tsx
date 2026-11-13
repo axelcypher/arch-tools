@@ -3,7 +3,22 @@ import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { isTauri } from '@core/platform/files';
 import { getEntries, logger, logVersion, subscribe } from '@core/platform/log';
 import type { RahmenNachricht, RahmenStatus } from '@core/platform/rahmen';
-import { AN_APP, AN_RAHMEN, ANDOCKEN, ASSISTENT_NEU, BEREIT, PROJEKT_ANGELEGT, PROJEKT_ANLEGEN, PROJEKT_APP, speichernImFenster, speichernImTab, ZUR_APP } from '@core/platform/rahmen';
+import {
+  AN_APP,
+  AN_RAHMEN,
+  ANDOCKEN,
+  ASSISTENT_NEU,
+  BEREIT,
+  PROJEKT_ANGELEGT,
+  PROJEKT_ANLEGEN,
+  PROJEKT_APP,
+  speichernImFenster,
+  speichernImTab,
+  tabBrauchtVorbereitung,
+  vorbereitenImFenster,
+  vorbereitenImTab,
+  ZUR_APP,
+} from '@core/platform/rahmen';
 import { APP_NAMEN } from '@core/appNamen';
 import { LogDialog } from '@core/ui/LogDialog';
 import type { MenuePunkt } from '@core/ui/Menue';
@@ -14,6 +29,7 @@ import { dialogVerhaltenEinrichten } from '@core/ui/dialoge';
 import { aenderungenSpeichern, meldung, RueckfrageHost } from '@core/ui/Rueckfrage';
 import { SpeicherortHost, SpeicherortKnopf, SpeicherortZeile } from '@core/ui/Speicherort';
 import { umzugBestaetigen } from '@core/ui/umzug';
+import { schreibenAbwarten } from '@core/ui/vorbereiten';
 import { UpdateKnopf } from '@core/ui/UpdateKnopf';
 import { APPS, appAdresse, appInfo, fensterLabel } from './apps';
 import { sperrenFreigeben } from './sperren';
@@ -54,6 +70,8 @@ export function App() {
   fensterJetzt.current = fenster;
   /** Generation je herausgelöstem Fenster: Ereignisse eines alten Fensters (Andocken, gleich wieder herausgelöst) zählen nicht */
   const fensterGen = useRef(new Map<string, number>());
+  /** Tabs, deren Schließen gerade läuft (Rückfrage oder Warten auf ausstehendes Schreiben) */
+  const schliesstGerade = useRef(new Set<string>());
   /** Beenden läuft (Rückfragen offen): ein zweites Alt+F4 fragt nicht noch einmal */
   const beendet = useRef(false);
   /** wer auf das Ende eines herausgelösten Fensters wartet (Speichern auf Anfrage: dann „nicht gespeichert“) */
@@ -208,6 +226,13 @@ export function App() {
     const info = appInfo(id)!;
     const frame = rahmen.current.get(id);
     if (status[id]?.dirty && !(await umzugBestaetigen(id, info.name, status[id].name, 'herausloesen', () => (frame ? speichernImTab(frame, { zeitablauf: antwortetNicht(id) }) : false)))) return;
+    if (tabBrauchtVorbereitung(frame)) {
+      // während des Wartens kein zweites Herauslösen bzw. Schließen dieses Tabs
+      if (schliesstGerade.current.has(id)) return;
+      schliesstGerade.current.add(id);
+      const weiter = await tabVorbereiten(id, 'herauslösen').finally(() => schliesstGerade.current.delete(id));
+      if (!weiter) return;
+    }
     // Tab zu, Sperren frei – dann das Fenster, das die geöffneten Formulare neu sperrt
     herausgeloest(id);
     await sperrenFreigeben(id);
@@ -277,13 +302,22 @@ export function App() {
    * await). `danach`: gleich nach dem Schließen, vor dem nächsten Zeichnen (z. B. Fokus festlegen)
    */
   const tabSchliessen = async (id: string, danach?: () => void): Promise<boolean> => {
-    if (useRahmen.getState().status[id]?.dirty && !(await tabFreigeben(id))) return false;
-    schliessen(id);
-    danach?.();
-    // Aufträge, die auf die App warteten, gelten nicht beim nächsten Öffnen
-    warteschlange.current.delete(id);
-    void sperrenFreigeben(id);
-    return true;
+    // schon unterwegs (Rückfrage oder Warten offen): ein zweiter Klick, Entf oder „Andere schließen“ tut nichts
+    if (schliesstGerade.current.has(id)) return false;
+    schliesstGerade.current.add(id);
+    try {
+      if (useRahmen.getState().status[id]?.dirty && !(await tabFreigeben(id))) return false;
+      // ausstehendes Schreiben der App abwarten (vorDemSchliessen) – nur wenn sie etwas angemeldet hat, sonst sofort
+      if (tabBrauchtVorbereitung(rahmen.current.get(id)) && !(await tabVorbereiten(id, 'schließen'))) return false;
+      schliessen(id);
+      danach?.();
+      // Aufträge, die auf die App warteten, gelten nicht beim nächsten Öffnen
+      warteschlange.current.delete(id);
+      void sperrenFreigeben(id);
+      return true;
+    } finally {
+      schliesstGerade.current.delete(id);
+    }
   };
 
   /** ungespeicherte Änderungen eines herausgelösten Fensters: Rückfrage hier, Speichern im Fenster; true = weiter */
@@ -304,7 +338,7 @@ export function App() {
   };
 
   /** vor dem Beenden bzw. Update: alle Tabs und Fenster mit ungespeicherten Änderungen nacheinander; true = weiter */
-  const allesFreigeben = async (): Promise<boolean> => {
+  const allesFreigeben = async (verb: 'beenden' | 'neu starten'): Promise<boolean> => {
     const { tabs: offen, fenster: draussen, status: st } = useRahmen.getState();
     for (const id of offen) {
       if (!st[id]?.dirty) continue;
@@ -312,7 +346,17 @@ export function App() {
       if (!(await tabFreigeben(id))) return false;
     }
     for (const id of draussen) if (!(await fensterFreigeben(id))) return false;
+    // danach ausstehendes Schreiben abwarten (vorDemSchliessen), in Tabs und herausgelösten Fenstern
+    for (const id of offen) if (tabBrauchtVorbereitung(rahmen.current.get(id)) && !(await tabVorbereiten(id, verb))) return false;
+    // nur Fenster, die schon hören (ein ladendes hat nichts Ausstehendes); ohne Vorbereitung antworten sie sofort
+    for (const id of draussen.filter((x) => bereitFenster.current.has(x))) if (!(await schreibenAbwarten(appInfo(id)?.name ?? id, () => vorbereitenImFenster(id), verb))) return false;
     return true;
+  };
+
+  /** ausstehendes Schreiben eines Tabs abwarten; true = weiter (fertig oder trotzdem) */
+  const tabVorbereiten = (id: string, verb: string) => {
+    const frame = rahmen.current.get(id);
+    return frame ? schreibenAbwarten(appInfo(id)?.name ?? id, () => vorbereitenImTab(frame), verb) : Promise.resolve(true);
   };
 
   /** Beenden (× oder System): Rückfragen, dann alle herausgelösten Fenster und das Hauptfenster schließen */
@@ -320,7 +364,7 @@ export function App() {
     if (beendet.current) return;
     beendet.current = true;
     try {
-      if (!(await allesFreigeben())) return;
+      if (!(await allesFreigeben('beenden'))) return;
       log.info('Arkly wird beendet');
       const { WebviewWindow } = await import('@tauri-apps/api/webviewWindow');
       for (const id of useRahmen.getState().fenster) {
@@ -371,7 +415,7 @@ export function App() {
       e,
       [
         ...(desktop ? [{ text: 'In eigenem Fenster öffnen', symbol: 'extern' as const, aktion: () => void herausloesen(id) }] : []),
-        { text: 'Schließen', symbol: 'schliessen' as const, hinweis: 'Entf', aktion: () => void tabSchliessen(id) },
+        { text: 'Schließen', symbol: 'schliessen' as const, tasten: 'Entf / Strg+F4', aktion: () => void tabSchliessen(id) },
         { text: 'Andere schließen', deaktiviert: tabs.length < 2, hinweis: tabs.length < 2 ? 'nur ein Tab offen' : undefined, aktion: () => void andereSchliessen(id) },
       ],
       `${appInfo(id)?.name}`,
@@ -415,7 +459,7 @@ export function App() {
             const s = status[id];
             const name = `${info.name} (${info.was})${s?.name ? ` – ${s.name}` : ''}`;
             return (
-              // Wahl per Tastatur am Tab-Knopf; ⧉ und × sind für die Maus da (Tastatur: Entf, Kontextmenü)
+              // Wahl per Tastatur am Tab-Knopf; ⧉ und × sind für die Maus da (Tastatur: Entf bzw. Strg+F4, Kontextmenü)
               <div key={id} role="presentation" className={`rahmen-tab${id === aktiv ? ' aktiv' : ''}`} onAuxClick={(e) => e.button === 1 && void tabSchliessen(id)} onContextMenu={(e) => tabMenue(e, id)}>
                 <button
                   id={tabKennung(id)}
@@ -454,7 +498,7 @@ export function App() {
           <Symbol name="plus" />
         </MenueKnopf>
         <span className="titlebar-drag" data-tauri-drag-region />
-        {desktop && <UpdateKnopf app={APP_NAMEN.suite.name} dirty={[...tabs, ...fenster].some((id) => status[id]?.dirty)} vorInstallation={allesFreigeben} />}
+        {desktop && <UpdateKnopf app={APP_NAMEN.suite.name} dirty={[...tabs, ...fenster].some((id) => status[id]?.dirty)} vorInstallation={() => allesFreigeben('neu starten')} />}
         <SpeicherortKnopf />
         <ThemeMenu zeichenflaeche={false} />
         <button
