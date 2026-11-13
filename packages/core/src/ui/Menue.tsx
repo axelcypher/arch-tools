@@ -134,6 +134,8 @@ export function zeigeMenue(e: ReactMouseEvent | MouseEvent, punkte: MenuePunkt[]
     x = r.left + 8;
     y = r.top + Math.min(r.height, 24);
   }
+  // ein Kontextmenü ist kein zweiter Klick auf einen Öffner
+  geradeZu = null;
   if (punkte.length) useMenue.getState().zeigen(x, y, punkte, ziel, name);
 }
 
