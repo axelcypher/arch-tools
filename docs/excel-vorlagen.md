@@ -327,11 +327,13 @@ und auf ganze Euro gerundet.
 | `{{kennwert.bgf}}`, `{{kennwert.bri}}`, `{{kennwert.nuf}}`, `{{kennwert.wofl}}` | Bauwerkskosten KG 300 + 400 brutto je Einheit (+ `.von`/`.bis`) |
 | `{{mengen.bgf}}`, `{{mengen.awf}}` … | Mengen als Einzelwert |
 | `{{stufe}}`, `{{stufe.lph}}`, `{{preisstand}}`, `{{katalog}}`, `{{faktor}}` | Grundlagen der Ermittlung |
+| `{{stufe.hinweis}}` | bei Kostenvoranschlag, -anschlag und -feststellung der Hinweis auf die Fortschreibung mit Kennwerten, sonst leer |
+| `{{risiko}}`, `{{risiko.von}}`, `{{risiko.bis}}` | Kostenrisiken (gesondert ausgewiesen, im Gesamt netto enthalten); im Block `#kg` als Zeile „Kostenrisiken“ ohne KG nach den Kostengruppen |
 | `{{kg.kg}}`, `{{kg.name}}`, `{{kg.von}}`, `{{kg.mittel}}`, `{{kg.bis}}` | Zeile je Kostengruppe der 1. Ebene; `kg2.*` für die 2. Ebene |
 | `{{#kg}}` … `{{/kg}}` | Block je Kostengruppe; `position`- und `kg2`-Zeilen darin nur für diese Kostengruppe |
 | `{{position[aktiv].bezeichnung}}`, `{{position.menge}}`, `{{position.bezug}}`, `{{position.kennwert}}`, `{{position.kosten}}` | Zeile je Position; Filter `[aktiv]`, `[aus]`, `[kg=330]` |
 | `{{menge.kurz}}`, `{{menge.wert}}`, `{{menge.ermittlung}}` | Zeile je Menge; Filter `[festgelegt]` |
-| `{{stand.datum}}`, `{{stand.stufe}}`, `{{stand.brutto}}` | Zeile je festgehaltenem Kostenstand |
+| `{{stand.datum}}`, `{{stand.stufe}}`, `{{stand.brutto}}` | Zeile je festgehaltenem Stand |
 | `{{hinweis.text}}` | Zeile je Hinweis für die Bauaufsicht (ohne Bedienhinweise der App) |
 | `{{formel.text}}` | Zeile je Formel des Rechenwegs („GRZ I = GR I / FGst = 135,00 m² / 612,50 m² = 0,220“) |
 | `{{teil.name}}`, `{{teil.laenge}}`, `{{teil.breite}}`, `{{teil.faktor}}`, `{{teil.flaeche}}` | Zeile je Teilfläche (Rechteck/Dreieck) des Rechenwegs; `teil.flaeche_nr`, `teil.flaeche_name` nennen die Fläche |

@@ -20,7 +20,7 @@ test('dieselben Apps wie die Schleife in release.yml (neue App: beide Stellen)',
   assert.deepEqual(/^\s*for d in ([a-z ]+); do$/m.exec(yml)[1].trim().split(/\s+/), APPS);
 });
 
-test('betroffene Apps: App-Ordner, Kern betrifft alle außer Arkly; Doku, Tests und Notizen nicht', () => {
+test('betroffene Apps: App-Ordner, Kern die einbindenden Apps außer Arkly; Doku, Tests und Notizen nicht', () => {
   assert.deepEqual(betroffeneApps(['apps/grz/src/store.ts', 'apps/grz/README.md', 'docs/grz.md']), ['grz']);
   assert.deepEqual(
     betroffeneApps(['packages/core/src/platform/konfig.ts']),

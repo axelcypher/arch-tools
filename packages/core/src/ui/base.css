@@ -1987,10 +1987,11 @@ button.ph-lokal {
 }
 /* ---------- Meldungen im Inhalt (Dialoge, Seitenleisten) – eine Familie, Art über die zweite Klasse ---------- */
 
+/* neutral leicht im Akzent getönt: sonst sieht die Meldung in Seitenleisten wie ein Eingabefeld aus */
 .meldung {
   padding: 6px 8px;
-  border: 1px solid var(--border);
-  background: var(--panel);
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
+  background: color-mix(in srgb, var(--accent) 12%, var(--panel));
   color: var(--text);
   border-radius: var(--radius-s);
   font-size: var(--fs-s);
@@ -2120,7 +2121,8 @@ button.ph-lokal {
   background: none;
 }
 .menue-punkt[aria-disabled='true'] .menue-text,
-.menue-punkt[aria-disabled='true'] .menue-symbol {
+.menue-punkt[aria-disabled='true'] .menue-symbol,
+.menue-punkt[aria-disabled='true'] .menue-tasten {
   opacity: 0.6;
 }
 .menue-punkt.gefahr {
@@ -2139,6 +2141,10 @@ button.ph-lokal {
 .menue-punkt.gefahr .menue-symbol {
   color: var(--danger);
 }
+/* Haken eines angehakten Umschalters ist die Zustandsanzeige: in Textfarbe, nicht blass wie ein Schmucksymbol */
+.menue-punkt[aria-checked='true']:not([aria-disabled='true']) .menue-symbol {
+  color: var(--text);
+}
 .menue-text {
   flex: 1;
   min-width: 0;
@@ -2149,6 +2155,10 @@ button.ph-lokal {
 .menue-hinweis {
   font-size: var(--fs-xs);
   color: var(--muted);
+}
+/* Tastenkürzel nie umbrechen (rechts steht es, weil .menue-text den Platz füllt) */
+.menue-tasten {
+  white-space: nowrap;
 }
 .menue-trenner {
   height: 1px;

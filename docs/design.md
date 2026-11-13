@@ -189,6 +189,8 @@ gewählte Register liegt in der Tab-Reihenfolge (`tabIndex` 0, die übrigen -1).
 - Gleiches Verb überall: Werkzeugleiste „Öffnen …“, Einstieg „Datei öffnen …“ (mit Objekt, weil der Zusammenhang
   fehlt); „Neu“ bzw. „Neues Projekt“.
 - Texte sagen, was zu tun ist, nicht was fehlt; was es nur in der Desktop-App gibt, steht als Fußnote darunter.
+- Ordner im Dateimanager zeigen (`ordnerZeigen`): „Ordner öffnen“, Symbol `ordnerOffen` – nicht „Im Explorer öffnen“
+  (hängt an Windows). Ist der Gegenstand nicht klar, mit Objekt: „Projektordner öffnen“.
 
 ## Symbole
 
@@ -201,6 +203,8 @@ Gemeinsamer Satz in `ui/Symbol.tsx` (Raster 24, Linie 2, runde Enden, Farbe des 
   `suche`, `stift`.
 - Zustand: `haken`, `warnung`, `info`, `schliessen`, `auge`, `augeZu`, `stern`.
 - Navigation: `pfeilRechts`, `pfeilLinks`, `pfeilUnten`, `ordner`, `ordnerOffen`, `datei`.
+- Listen: `nachOben`, `nachUnten` zum Umsortieren (statt ↑/↓ als Schriftzeichen); `mehr` (drei Punkte, Knopf mit `aria-label="Aktionen"` und `title`) für
+  Zeilenknöpfe „Aktionen“, die ein Menü öffnen – `pfeilUnten` bleibt dem Aufklapp-Pfeil an Knöpfen mit Text vorbehalten.
 
 Neue Symbole kommen in diesen Satz, nicht in die App. Keine Emoji (📏 ✂ 🗑) und keine Schriftzeichen als Symbol.
 
@@ -208,8 +212,8 @@ Neue Symbole kommen in diesen Satz, nicht in die App. Keine Emoji (📏 ✂ 🗑
 
 `ui/Menue.tsx`: Kontextmenü mit `zeigeMenue(e, punkte, name)` im `onContextMenu`, Aufklappmenü mit `<MenueKnopf>`.
 `name` benennt das Menü für Screenreader (z. B. „Projekt 2019-003“); der Aufklappknopf nimmt seinen eigenen Namen. Punkte
-mit `text`, optional `symbol`, `hinweis` (rechts, z. B. Tastenkürzel), `titel`, `gefahr`, `deaktiviert`, `unter`
-(Untermenü), Trenner mit `{ trenner: true }`.
+mit `text`, optional `symbol`, `hinweis` (rechts, z. B. der Grund einer Sperre), `tasten` (Tastenkürzel, siehe unten),
+`haken` (Umschalter), `titel`, `gefahr`, `deaktiviert`, `unter` (Untermenü), Trenner mit `{ trenner: true }`.
 
 - Tastatur: der erste Punkt hat den Fokus, ↑/↓ und Pos1/Ende wandern, → bzw. Enter öffnet ein Untermenü, ← führt
   zurück. Esc schließt nur das Menü (ein Dialog darunter bleibt offen), Tab schließt und gibt den Fokus an den
@@ -218,7 +222,20 @@ mit `text`, optional `symbol`, `hinweis` (rechts, z. B. Tastenkürzel), `titel`,
 - Gesperrte Punkte (`deaktiviert`) mit Grund im `hinweis` („Antrag eingereicht“), statt sie wegzulassen. Sie bleiben
   per Tastatur erreichbar (`aria-disabled`), damit der Grund vorgelesen wird, und führen nichts aus.
 - Ohne Mausposition (Kontextmenütaste) erscheint das Menü am Auslöser.
+- Gefahr-Punkte (Löschen) ans Ende, abgesetzt durch einen Trenner. Der Erstfokus liegt nie auf einem Gefahr-Punkt,
+  sondern auf dem ersten bedienbaren anderen – Rechtsklick plus Enter löscht so nichts.
 - Menüs liegen über Dialogen und Rückfragen; Schatten schwebender Flächen über `--schatten-schwebend`.
+- Tastenkürzel in `tasten` in der Schreibweise deutscher Windows-Menüs: Strg, Umschalt, Alt, Entf, Einfg, Pos1, Ende,
+  Bild↑/Bild↓, Pfeile als ↑ ↓ ← →, Buchstaben groß, verbunden mit „+“ ohne Leerzeichen („Strg+Umschalt+Z“),
+  Alternativen mit „/“ („Entf / Rücktaste“). Sie stehen rechts und werden als `aria-keyshortcuts` vorgelesen (`tastenAria`), nicht als
+  Teil des Namens. `hinweis` nicht mehr für Tastenkürzel verwenden.
+- Umschalter im Menü (an/aus, z. B. „Raster zeigen“) mit `haken: true | false`: Der Punkt wird ein Kästchen
+  (`menuitemcheckbox`, `aria-checked`) und zeigt den Haken anstelle des Symbols. Das Menü schließt nach dem Umschalten
+  wie bei jedem Befehl. Mehrere Schalter, die man oft nacheinander umlegt (Ebenen, Spalten), gehören nicht ins Menü,
+  sondern in eine Seitenleiste oder ein `.segment`.
+- Eigene Öffner ohne `MenueKnopf` (z. B. Zeilenknopf „⋯“ mit `zeigeMenueAn`) tragen `aria-haspopup="menu"`; dann
+  setzt das Menü `aria-expanded` am Öffner selbst. Wer den Zustand im Render braucht, nimmt `useMenueOffen(ref)`.
+- Ein zweiter Klick auf den Öffner eines offenen Menüs schließt es (Knopf wie Zeilenknopf).
 
 ## Seitenleisten
 
@@ -228,7 +245,8 @@ Doppelklick setzt die Vorgabe. Keine eigenen Leisten-Komponenten je App.
 
 ## Meldungen im Inhalt
 
-`.meldung` (neutral) mit `.ok`, `.warnung` oder `.fehler` für Meldungen in Dialogen und Seitenleisten; `role="status"`
+`.meldung` (neutral, leicht im Akzent getönt, damit sie sich von Eingabefeldern abhebt) mit `.ok`, `.warnung` oder
+`.fehler` für Meldungen in Dialogen und Seitenleisten; `role="status"`
 für Rückmeldungen, `role="alert"` für Fehler. `.warning` bleibt als Hinweis in Warnfarben.
 
 ## Meldungen auf der Zeichenfläche
@@ -261,22 +279,28 @@ bleibt immer frei.
 
 ## Was die Apps nachziehen
 
-| App                    | Datei und Aufgabe                                                                                                                                                                                                                                      |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| RECTIO                 | `apps/entzerrung/src/components/Arbeitsflaeche.tsx:364`: Leerzustand „Foto hinzufügen …“ mit `className="canvas-message leer"`; Auswahl auf dem Foto mit `--sel-foto` und Saum statt eigener Farbe                                                     |
-| TERRIO, NUMIO          | Spalten-Überschriften (`h2` ohne Regel, sonst 22px) auf die Skala setzen: `--fs-l`, halbfett                                                                                                                                                           |
-| FABRIO                 | erledigt (FABRIO 0.9.1): Versalien entfernt, `outline: none` geprüft; Druckvorschau, `.segment`, `Modal` mit `kopf`, „ …“ nachgezogen                                                                                                                  |
-| PERMIO                 | erledigt (PERMIO 0.48.1): Versalien entfernt, Überschriften auf `--fs-*`, `outline: none` geprüft (Menüpunkte mit Fokusrahmen)                                                                                                                         |
-| core                   | erledigt: Versalien in `.pa-abschnitt-titel`, `.av-abschnitt-titel`, `.av-ed-gruppe-titel` entfernt; `.modal h3`/`h4` aus der Skala                                                                                                                    |
-| ATLAS                  | `outline: none` prüfen: `apps/ordner/src/styles.css:415`                                                                                                                                                                                               |
-| QUADRIO                | erledigt (Werkzeugleisten-PR): Druckvorschau „Drucken / PDF …“, Umschalter `.segment`, Werkzeugleiste mit `Symbol` (neu: `erkennen`), Kontextmenüs der Zeichenfläche über `zeigeMenue`, Meldungen `.meldung`                                           |
-| TERRIO, NUMIO          | Druckvorschau: „Drucken / PDF …“ als Hauptknopf (`.primary`), „Schließen“ normal (`NachweisDruck.tsx`, `KostenDruck.tsx`)                                                                                                                              |
-| NUMIO                  | eigene Umschalter (`.mv-umschalter`) auf `.segment` umstellen                                                                                                                                                                                          |
-| PERMIO                 | eigenes Menü und eigene Symbole (`components/Menue.tsx`, `components/Symbol.tsx`, `.menue`- und `.symbol`-Regeln in `styles.css`) durch `@core/ui/Menue` und `@core/ui/Symbol` ersetzen; fehlende Symbole im core-Satz ergänzen                        |
-| RECTIO                 | eigene `RechteLeiste` durch `BreitenLeiste seite="rechts"` ersetzen                                                                                                                                                                                    |
-| TERRIO, RECTIO         | Werkzeugleisten mit `Symbol` statt Emoji und Schriftzeichen (📏, ⇔, ⊡, ▭, ↶/↷)                                                                                                                                                                         |
-| alle                   | eigene Kontextmenüs auf `zeigeMenue` umstellen (TERRIO Lageplan, RECTIO Arbeitsfläche, ATLAS Ordner-Editor)                                                                                                                                            |
-| alle                   | eigene `div.modal` auf `Modal` umstellen; Titel mit `kopf` statt `h3` im Inhalt; Werkzeugleisten-Befehle nach „Begriffe“ benennen (z. B. TERRIO „Öffnen“ → „Öffnen …“)                                                                                 |
-| QUADRIO, TERRIO, NUMIO | Raumfüllungen bzw. Lageplanflächen bei `useZeichenflaecheGefiltert()` mit `planFuellungDunkel` vorrechnen (`Canvas.tsx` Deckung 0,45; `LageplanEditor.tsx` alle Deckungen 0,55/0,45/0,15/0,12; NUMIO `MengenPlan.tsx` 0,3); Marken bleiben unverändert |
+| App             | Datei und Aufgabe                                                                                                                                                                                                                             |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| RECTIO          | `apps/entzerrung/src/components/Arbeitsflaeche.tsx:364`: Leerzustand „Foto hinzufügen …“ mit `className="canvas-message leer"`; Auswahl auf dem Foto mit `--sel-foto` und Saum statt eigener Farbe                                            |
+| TERRIO, NUMIO   | Spalten-Überschriften (`h2` ohne Regel, sonst 22px) auf die Skala setzen: `--fs-l`, halbfett                                                                                                                                                  |
+| FABRIO          | erledigt (FABRIO 0.9.1): Versalien entfernt, `outline: none` geprüft; Druckvorschau, `.segment`, `Modal` mit `kopf`, „ …“ nachgezogen                                                                                                         |
+| PERMIO          | erledigt (PERMIO 0.48.1): Versalien entfernt, Überschriften auf `--fs-*`, `outline: none` geprüft (Menüpunkte mit Fokusrahmen)                                                                                                                |
+| core            | erledigt: Versalien in `.pa-abschnitt-titel`, `.av-abschnitt-titel`, `.av-ed-gruppe-titel` entfernt; `.modal h3`/`h4` aus der Skala                                                                                                           |
+| ATLAS           | `outline: none` prüfen: `apps/ordner/src/styles.css:415`                                                                                                                                                                                      |
+| QUADRIO         | erledigt (Werkzeugleisten-PR): Druckvorschau „Drucken / PDF …“, Umschalter `.segment`, Werkzeugleiste mit `Symbol` (neu: `erkennen`), Kontextmenüs der Zeichenfläche über `zeigeMenue`, Meldungen `.meldung`                                  |
+| TERRIO          | erledigt (Designsystem-PR): Druckvorschau „Drucken / PDF …“, Werkzeugleisten mit `Symbol`, Kontextmenü des Lageplans über `zeigeMenue`, Meldungen `.meldung`, Feldfehler mit `ungueltig`/`fehlerId`, Lageplanflächen mit `planFuellungDunkel` |
+| Symbolsatz      | offen für TERRIO: eigenes Symbol `grenze` (Polygon strichpunktiert, Grenzsteine an den Ecken; „Grenze“ steht bis dahin ohne Symbol) und `ausrichten` (zwei Punkte mit Pfeil; bis dahin `ziel`)                                                |
+| NUMIO           | Druckvorschau: „Drucken / PDF …“ als Hauptknopf (`.primary`), „Schließen“ normal (`KostenDruck.tsx`)                                                                                                                                          |
+| NUMIO           | eigene Umschalter (`.mv-umschalter`) auf `.segment` umstellen                                                                                                                                                                                 |
+| PERMIO          | eigenes Menü und eigene Symbole (`components/Menue.tsx`, `components/Symbol.tsx`, `.menue`- und `.symbol`-Regeln in `styles.css`) durch `@core/ui/Menue` und `@core/ui/Symbol` ersetzen; fehlende Symbole im core-Satz ergänzen               |
+| RECTIO          | eigene `RechteLeiste` durch `BreitenLeiste seite="rechts"` ersetzen                                                                                                                                                                           |
+| RECTIO          | Werkzeugleisten mit `Symbol` statt Emoji und Schriftzeichen (📏, ⇔, ⊡, ▭)                                                                                                                                                                     |
+| alle            | eigene Kontextmenüs auf `zeigeMenue` umstellen (RECTIO Arbeitsfläche, ATLAS Ordner-Editor)                                                                                                                                                    |
+| alle            | eigene `div.modal` auf `Modal` umstellen; Titel mit `kopf` statt `h3` im Inhalt; Werkzeugleisten-Befehle nach „Begriffe“ benennen (z. B. TERRIO „Öffnen“ → „Öffnen …“)                                                                        |
+| QUADRIO, NUMIO  | Raumfüllungen bei `useZeichenflaecheGefiltert()` mit `planFuellungDunkel` vorrechnen (`Canvas.tsx` Deckung 0,45; NUMIO `MengenPlan.tsx` 0,3); Marken bleiben unverändert                                                                      |
+| QUADRIO, PERMIO | Tastenkürzel in Menüs von `hinweis` auf `tasten` umstellen (`Canvas.tsx` Strg+C, Strg+D, Entf, F; PERMIO `App.tsx` Strg+E)                                                                                                                    |
+| ATLAS           | Umsortieren mit `Symbol` `nachOben`/`nachUnten` statt ↑/↓; Zeilenknopf „⋯“ mit Symbol `mehr` und `aria-haspopup="menu"` (dann setzt das Menü `aria-expanded`)                                                                                 |
+| alle            | eigene Menüs prüfen: Gefahr-Punkte (Löschen) ans Ende, abgesetzt durch einen Trenner                                                                                                                                                          |
+| ATLAS, PERMIO   | „Im Explorer öffnen“ → „Ordner öffnen“ (ATLAS `ProjektStart.tsx`; PERMIO `Seitenleiste.tsx`, `AblageBaum.tsx`)                                                                                                                                |
 
 Zeilennummern beziehen sich auf den Stand dieser Richtlinie.
