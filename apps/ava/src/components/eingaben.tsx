@@ -19,6 +19,7 @@ export function ZahlEingabe({
   placeholder,
   autoFocus,
   onEnter,
+  label,
 }: {
   wert: number | null | undefined;
   onChange: (n: number | null) => void;
@@ -29,6 +30,8 @@ export function ZahlEingabe({
   placeholder?: string;
   autoFocus?: boolean;
   onEnter?: () => void;
+  /** Beschriftung für Screenreader (aria-label), wo kein sichtbares Label steht */
+  label?: string;
 }) {
   const [text, setText] = useState(zahlDE(wert, stellen));
   const [fehler, setFehler] = useState(false);
@@ -37,6 +40,11 @@ export function ZahlEingabe({
     if (!fokus.current) setText(zahlDE(wert, stellen));
   }, [wert, stellen]);
   const uebernehmen = () => {
+    // unverändert angezeigter Wert: nichts übernehmen (sonst würde ein gerundet angezeigter Wert still gekürzt)
+    if (text === zahlDE(wert, stellen)) {
+      setFehler(false);
+      return;
+    }
     const t = text.trim().replace(/\s*(€|%|m²|m³|m)$/, '');
     if (!t) {
       if (leerErlaubt) {
@@ -61,6 +69,7 @@ export function ZahlEingabe({
       title={fehler ? 'Keine gültige Zahl – z. B. „1.234,56“' : title}
       placeholder={placeholder}
       autoFocus={autoFocus}
+      aria-label={label}
       inputMode="decimal"
       onFocus={(e) => {
         fokus.current = true;
@@ -96,6 +105,7 @@ export function TextEingabe({
   zeilen = 3,
   liste,
   autoFocus,
+  label,
 }: {
   wert: string | undefined;
   onChange: (s: string) => void;
@@ -106,6 +116,8 @@ export function TextEingabe({
   zeilen?: number;
   liste?: string;
   autoFocus?: boolean;
+  /** Beschriftung für Screenreader (aria-label) */
+  label?: string;
 }) {
   const [text, setText] = useState(wert ?? '');
   const fokus = useRef(false);
@@ -118,6 +130,7 @@ export function TextEingabe({
     placeholder,
     title,
     autoFocus,
+    'aria-label': label,
     onFocus: () => {
       fokus.current = true;
     },
@@ -144,8 +157,8 @@ export function TextEingabe({
 }
 
 /** Datum (JJJJ-MM-TT) */
-export function DatumEingabe({ wert, onChange, title }: { wert: string | undefined; onChange: (s: string | undefined) => void; title?: string }) {
-  return <input type="date" value={wert?.slice(0, 10) ?? ''} title={title} onChange={(e) => onChange(e.target.value || undefined)} />;
+export function DatumEingabe({ wert, onChange, title, label }: { wert: string | undefined; onChange: (s: string | undefined) => void; title?: string; label?: string }) {
+  return <input type="date" value={wert?.slice(0, 10) ?? ''} title={title} aria-label={label ?? title} onChange={(e) => onChange(e.target.value || undefined)} />;
 }
 
 /** Beschriftetes Feld */
