@@ -38,7 +38,7 @@ import { parseProjectData } from '@core/serialize';
 import { VORGABE_OAP_PFAD, projektdateiPfad } from '@core/projektdatei';
 import type { DateiStand } from '@core/platform/projektordner';
 import { projektdateiAnlegen, projektdateiLaden, projektdateiSchreiben } from '@core/platform/projektordner';
-import { allgemeinAendern, konfigAendern, konfigLesen } from '@core/platform/konfig';
+import { allgemeinAendern, konfigAendern, konfigLesen, konfigNeuLesen } from '@core/platform/konfig';
 import { ordnerName } from '@core/platform/projektordner';
 import { sichererDateiname } from '@core/projektdatei';
 import type { FormularProfil } from './profil';
@@ -461,13 +461,25 @@ function wirksamesAdressbuch(karten: { adressen: Adresse[]; stand: number } | nu
   return { adressen: wirksameAdressen(karten?.adressen ?? [], eigene), stand: karten?.stand ?? 0 };
 }
 
-/** eigene Adressen in den gemeinsamen Konfigurationsordner (Bereich „formulare“, Eintrag „adressen“) */
-async function eigeneSchreiben(liste: EigeneAdresse[]) {
+/**
+ * eigene Adressen im gemeinsamen Konfigurationsordner ändern (Bereich „formulare“, Eintrag „adressen“): `aendern` wirkt
+ * auf den frisch gelesenen Stand, nicht auf die Liste im Speicher – so bleiben Adressen erhalten, die ein anderer
+ * Rechner inzwischen ergänzt hat bzw. die nach einem Wechsel des Speicherorts am neuen Ort liegen
+ */
+async function eigeneAendern(aendern: (liste: EigeneAdresse[]) => EigeneAdresse[]) {
   const s = useFormulare.getState();
-  useFormulare.setState({ eigeneAdressen: liste, adressbuch: wirksamesAdressbuch(s.adressbuchKarten, liste) });
+  const sofort = aendern(s.eigeneAdressen);
+  useFormulare.setState({ eigeneAdressen: sofort, adressbuch: wirksamesAdressbuch(s.adressbuchKarten, sofort) });
   try {
-    await konfigAendern('formulare', (roh) => ({ ...((roh ?? {}) as Record<string, unknown>), adressen: liste }));
+    const neu = await konfigAendern('formulare', (roh) => {
+      const o = (roh && typeof roh === 'object' ? roh : {}) as Record<string, unknown>;
+      return { ...o, adressen: aendern(eigeneAdressenAus(o.adressen)) };
+    });
+    const liste = neu.adressen;
+    useFormulare.setState({ eigeneAdressen: liste, adressbuch: wirksamesAdressbuch(useFormulare.getState().adressbuchKarten, liste) });
   } catch (e) {
+    // nicht gespeichert: wieder den gültigen Stand zeigen
+    useFormulare.setState({ eigeneAdressen: s.eigeneAdressen, adressbuch: wirksamesAdressbuch(useFormulare.getState().adressbuchKarten, s.eigeneAdressen) });
     useFormulare.getState().setMeldung({ art: 'fehler', text: `Adressbuch nicht gespeichert: ${e instanceof Error ? e.message : String(e)}` });
   }
 }
@@ -2063,11 +2075,11 @@ export const useFormulare = create<FormulareState>()((set, get) => {
     },
 
     eigeneAdresseSpeichern: async (a) => {
-      const liste = [...get().eigeneAdressen.filter((x) => x.schluessel !== a.schluessel), { ...a, geaendert: Date.now() }];
-      await eigeneSchreiben(liste);
+      const neu = { ...a, geaendert: Date.now() };
+      await eigeneAendern((liste) => [...liste.filter((x) => x.schluessel !== a.schluessel), neu]);
     },
     eigeneAdresseEntfernen: async (schluessel) => {
-      await eigeneSchreiben(get().eigeneAdressen.filter((x) => x.schluessel !== schluessel));
+      await eigeneAendern((liste) => liste.filter((x) => x.schluessel !== schluessel));
     },
 
     projektdatenLaden: async () => {
@@ -2257,3 +2269,7 @@ useFormulare.subscribe((s) => {
 
 /** Wirksames Profil eines Formulars (Vorgabe + eigene Einstellungen) */
 export const useProfil = (schluessel: string) => useFormulare((s) => profilFuer(s.profile, schluessel));
+
+// Speicherort der Einstellungen gewechselt (auch in einem anderen Fenster) bzw. Netzlaufwerk weg oder wieder da:
+// gemeinsame Einstellungen (Adressbuch, Stammordner, Projektordner-Zuordnung) neu lesen
+konfigNeuLesen(() => void useFormulare.getState().gemeinsamLaden());

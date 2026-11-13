@@ -1,7 +1,7 @@
 {
   "name": "formulare",
   "private": true,
-  "version": "0.45.0",
+  "version": "0.46.0",
   "type": "module",
   "description": "Bauantragsformulare bequem ausfüllen – die Dateien bleiben im Originalformat lesbar",
   "scripts": {

@@ -4,6 +4,7 @@ import { logger } from '@core/platform/log';
 import type { RahmenNachricht, RahmenStatus } from '@core/platform/rahmen';
 import { AN_APP, AN_RAHMEN, ANDOCKEN, ASSISTENT_NEU, BEREIT, PROJEKT_ANGELEGT, PROJEKT_ANLEGEN, PROJEKT_APP, ZUR_APP } from '@core/platform/rahmen';
 import { LogDialog } from '@core/ui/LogDialog';
+import { SpeicherortHost, SpeicherortKnopf, SpeicherortZeile } from '@core/ui/Speicherort';
 import { UpdateKnopf } from '@core/ui/UpdateKnopf';
 import { APP_NAMEN } from '@core/appNamen';
 import { APPS, appAdresse, appInfo, fensterLabel } from './apps';
@@ -308,6 +309,7 @@ export function App() {
         </nav>
         <span className="titlebar-drag" data-tauri-drag-region />
         {desktop && <UpdateKnopf app={APP_NAMEN.suite.name} dirty={tabs.some((id) => status[id]?.dirty)} />}
+        <SpeicherortKnopf />
         <button className="titlebar-btn" title="Protokoll des Rahmens" onClick={() => setLogOffen(true)}>
           <span aria-hidden>≡</span>
         </button>
@@ -374,10 +376,16 @@ export function App() {
                 </button>
               ))}
             </div>
+            {desktop && (
+              <div className="rahmen-speicherort">
+                <SpeicherortZeile />
+              </div>
+            )}
           </div>
         )}
       </main>
       {logOffen && <LogDialog onClose={() => setLogOffen(false)} />}
+      <SpeicherortHost />
       <RueckfrageHost />
     </div>
   );
