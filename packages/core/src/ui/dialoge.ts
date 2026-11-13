@@ -2,8 +2,8 @@
  * Einheitliches Verhalten aller modalen Dialoge (Elemente mit Klasse „modal“ und die Druckvorschau `.report` in
  * `.report-backdrop`), einmal je App eingerichtet:
  *  - role="dialog" und aria-modal="true", falls nicht gesetzt; ohne Namen benennt die erste Überschrift den Dialog
- *  - Erstfokus: `autofocus`, sonst das erste Textfeld (nur Dialoge, nicht die Druckvorschau), sonst der Hauptknopf (`.primary`) – nicht „Abbrechen“ –, sonst das gewählte Optionsfeld
- *    oder eine Auswahlliste –, sonst das erste fokussierbare Element
+ *  - Erstfokus: `autofocus`, sonst das erste Textfeld (nur Dialoge, nicht die Druckvorschau), sonst der Hauptknopf
+ *    (`.primary`), sonst das gewählte Optionsfeld, sonst das erste fokussierbare Element – nie „Abbrechen“
  *  - Fokus beim Öffnen in den Dialog (sofern er nicht schon darin liegt), beim Schließen zurück an die
  *    Stelle davor (z. B. der Knopf, der ihn geöffnet hat)
  *  - Tab und Umschalt+Tab bleiben im obersten Dialog

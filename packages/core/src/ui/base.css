@@ -642,15 +642,15 @@ textarea:focus {
   justify-content: flex-end;
   flex-wrap: wrap;
   gap: 6px;
-  margin-top: 12px;
+  margin-top: var(--s3);
 }
 /* in langen Dialogen bleiben die Knöpfe unten sichtbar */
 .modal > .dialog-buttons,
 .modal > form > .dialog-buttons {
   position: sticky;
   bottom: calc(-1 * var(--modal-pad-y));
-  margin: 12px calc(-1 * var(--modal-pad-x)) calc(-1 * var(--modal-pad-y));
-  padding: 10px var(--modal-pad-x) var(--modal-pad-y);
+  margin: var(--s3) calc(-1 * var(--modal-pad-x)) calc(-1 * var(--modal-pad-y));
+  padding: var(--s3) var(--modal-pad-x) var(--modal-pad-y);
   background: var(--panel);
   border-top: 1px solid var(--line-soft);
   z-index: 1;
@@ -817,8 +817,8 @@ code {
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
-  margin: calc(-1 * var(--report-pad-y, 28px)) calc(-1 * var(--report-pad-x, 36px)) 20px;
-  padding: 10px var(--report-pad-x, 36px);
+  margin: calc(-1 * var(--report-pad-y, 28px)) calc(-1 * var(--report-pad-x, 36px)) var(--s4);
+  padding: var(--s2) var(--report-pad-x, 36px);
   background: var(--panel);
   border-bottom: 1px solid var(--border);
   border-radius: 6px 6px 0 0;

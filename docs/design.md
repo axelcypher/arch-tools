@@ -131,8 +131,8 @@ Helligkeitskontrast. Unter der Linie in `--sel-foto` liegt ein Doppelsaum, auße
 ## Umschalter
 
 `.segment` für eine Wahl aus wenigen (Ansicht, Modus): Knöpfe direkt nebeneinander in einem Rahmen, der gewählte mit
-`aria-pressed="true"` in Akzent-Tönung. Höhe 24px, in `.toolbar` 28px wie die übrigen Knöpfe dort. Statt eigener Varianten je App (`.mv-umschalter`, `.ava-tabs`,
-`.view-switch`).
+`aria-pressed="true"` in Akzent-Tönung. Höhe 24px, in `.toolbar` 28px wie die übrigen Knöpfe dort. Statt eigener
+Varianten je App (`.mv-umschalter`, `.ava-tabs`, `.view-switch`).
 
 ```html
 <div class="segment" role="group" aria-label="Ansicht">
