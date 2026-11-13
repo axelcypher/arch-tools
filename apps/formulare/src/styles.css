@@ -304,7 +304,8 @@ button.icon.active {
 }
 @container navigation (max-width: 259px) {
   .nav-zeit,
-  .fo-baum-zeit {
+  .fo-baum-zeit,
+  .fo-aufnehmen-platz {
     display: none;
   }
 }
@@ -4345,6 +4346,15 @@ tr[data-ziehen='danach'] > td {
 }
 .fo-bereit-zeile.name .fo-bereit-unter {
   color: var(--fehler-text);
+}
+/* Quick-Add hinter einer Datei ohne Dokument im Antragsumfang; Zeilen mit Dokument halten den Platz frei */
+.fo-bereit-zeile > button.icon.fo-aufnehmen,
+.fo-bereit-zeile > button.icon.fo-aufnehmen:hover:not(:disabled) {
+  flex: 0 0 24px;
+  color: var(--accent);
+}
+.fo-aufnehmen-platz {
+  flex: 0 0 24px;
 }
 /* Antragsstand bei der Einreichung: Zeile darüber, Kennzeichen an neuen bzw. geänderten Dateien */
 .fo-stand {
