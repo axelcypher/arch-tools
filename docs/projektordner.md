@@ -205,7 +205,7 @@ Plannummern“) – gemeinsam für alle Apps (`allgemein.json`, Eintrag `namenss
   Meldung sagt warum (beim Lesen werden solche Einträge ebenso verworfen); in einer neuen Zeile bleibt die Eingabe
   dagegen markiert zum Korrigieren stehen. Leistungsphasen sind ganze Zahlen von 0 bis
   9 (die HOAI kennt 1 bis 9; 0 heißt „von Anfang an“) – eine andere Eingabe bleibt mit Meldung stehen, leer = keine.
-  Ein neues Kürzel („+ Kürzel“) wird erst gespeichert, wenn man die Zeile mit einem gültigen Kürzel verlässt (Esc
+  Ein neues Kürzel (Knopf „Kürzel“ mit Plus) wird erst gespeichert, wenn man die Zeile mit einem gültigen Kürzel verlässt (Esc
   verwirft es) – vorher gilt es in keiner App. Entfernen fragt nach. Die Stellen tauschen beim Umstellen die Plätze;
   das Beispiel zeigt die Zerlegung mit den Kürzeln des Schemas. „Vorgabe wiederherstellen“ (mit Rückfrage) setzt die
   eingebaute Vorgabe, auch in allen Feldern.
@@ -244,8 +244,12 @@ Nach dem Ersetzen nimmt „Rückgängig“ die Änderung zurück, solange nichts
 Lässt sich die Struktur in `projektordner.json` nicht lesen (etwa das Format einer neueren ATLAS-Fassung), zeigt ATLAS
 vorläufig die Vorgabe mit einer Warnung, **schreibt aber nichts** – weder die Struktur noch das Ordnerschema für die
 anderen Apps. Solange **sperrt** ATLAS das Bearbeiten in „Struktur“ (Name, Schemata, Ordnerliste) und „Vorlagen“
-(Presets, Dateinamen, Vorlagenordner – auch im Assistenten): Die Bereiche bleiben sichtbar, aber abgeschwächt und
-nicht bedienbar – Eingaben gingen sonst beim nächsten Laden verloren. Erst wenn die Struktur bewusst ersetzt wird
+(Presets, Dateinamen, Vorlagenordner – auch im Assistenten) – Eingaben gingen sonst beim nächsten Laden verloren. Alles
+bleibt **lesbar**: Felder und Knöpfe sind gesperrt (der Tooltip nennt den Grund „Die Bürostruktur ist nicht lesbar – erst
+übernehmen“), Menüpunkte bleiben sichtbar und tragen „Struktur nicht lesbar“ als Hinweis. Der Ordnerbaum lässt sich
+weiter scrollen, mit den Pfeiltasten durchgehen, auswählen, kopieren und in der LPh-Vorschau ansehen; Anlegen,
+Umbenennen (F2, Doppelklick), Ziehen, Einfügen, Löschen, Bausteine und Rückgängig sind gesperrt – F2, Entf und
+Doppelklick nennen den Grund. Die Textansicht zeigt die Liste schreibgeschützt. Erst wenn die Struktur bewusst ersetzt wird
 („Angezeigte Struktur übernehmen …“ unter der Warnung, „Struktur laden …“, eine Sicherung oder „Vorgabe
 wiederherstellen …“), wird gespeichert und die Sperre aufgehoben; der unlesbare Inhalt kommt vorher in die
 Sicherungen. Das gilt auch für „Rückgängig“ nach „Neu laden“ einer für diese Fassung unlesbaren Struktur eines anderen
@@ -268,8 +272,8 @@ Die **Ordnerliste** wird mit der Maus bearbeitet – ein Baum wie im Explorer, r
 - **Auswählen:** Klick; Strg+Klick und Umschalt+Klick wählen mehrere. Rechts dann Name, **Leistungsphasen** (Knöpfe
   1–9, „immer“ und Schnellwahl 1–4, 5–8, 6–7, 8) und „Dateinamen prüfen“ – bei mehreren Ordnern für alle auf einmal
   (teilweise gesetzte Phasen gestrichelt).
-- **Anlegen:** „+ Unterordner“ (Strg+N), „Ordner daneben“ (Strg+Umschalt+N, im Menü), „+ Ordner“ im
-  Stamm. Der neue Ordner steht gleich zum Benennen bereit (Enter übernimmt, Esc behält den Vorschlag).
+- **Anlegen:** „Unterordner“ (Knopf mit Plus, Strg+N), „Ordner daneben“ (Strg+Umschalt+N, im Menü), „Ordner“ (mit
+  Plus) im Stamm. Der neue Ordner steht gleich zum Benennen bereit (Enter übernimmt, Esc behält den Vorschlag).
 - **Mehrere anlegen …:** eine Zeile je Ordner, eingerückte Zeilen (Tab oder Leerzeichen) werden Unterordner, „/“
   trennt ebenfalls, Zusätze wie in der Textansicht (`| LPh 6-7`, `| Dateischema`); mit Vorschau als Baum. Strg+Enter
   legt an. Ohne Auswahl entstehen die Ordner im Stamm; sind mehrere Ordner markiert, entsteht die Liste in **jedem**
@@ -291,11 +295,11 @@ Die **Ordnerliste** wird mit der Maus bearbeitet – ein Baum wie im Explorer, r
   gibt einen Ausgangspunkt. Bausteine stehen in der Struktur (`bausteine`), werden mit ihr gespeichert, geladen und
   gesichert.
 - **Löschen:** Entf bzw. Rechtsklick → Löschen; mit Unterordnern oder mehreren erst nach Rückfrage.
-- **Rückgängig/Wiederholen** (↶ ↷, Strg+Z/Strg+Y) für jeden Schritt des Editors.
+- **Rückgängig/Wiederholen** (Strg+Z/Strg+Y) für jeden Schritt des Editors.
 - **LPh-Vorschau:** eigener Modus (Knopf in der Werkzeugleiste, „Vorschau beenden“) – die Leistungsphasen eines
   Beispielprojekts wählen; Ordner, die dann nicht entstehen, sind blass und durchgestrichen („12 von 44 Ordnern
   entstehen“). Die Vorschau ändert nichts an der Struktur.
-- **Menüs:** Rechtsklick, der Pfeilknopf am Ende der Zeile oder Umschalt+F10 bzw. die Menütaste (für die Zeile mit der
+- **Menüs:** Rechtsklick, der Knopf „Aktionen“ am Ende der Zeile (Listensymbol) oder Umschalt+F10 bzw. die Menütaste (für die Zeile mit der
   Schreibmarke) zeigen alle Aktionen mit ihren Tastenkürzeln – im gemeinsamen Menü aller Apps. Es ist ganz per Tastatur
   bedienbar: Pfeil auf/ab, Pos1/Ende, Enter; Esc oder Tab schließt, der Fokus kehrt in den Baum zurück (Tab geht von
   dort weiter). Kopieren, Einfügen, Duplizieren sowie Alle aufklappen/zuklappen stehen außerdem im Menü „Weitere“ der

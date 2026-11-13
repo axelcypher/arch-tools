@@ -5,6 +5,11 @@ import { useOrdner } from '../store';
 
 const log = logger('struktur');
 
+/** Grund der Sperre bei unlesbarer Struktur – Tooltip gesperrter Knöpfe und Felder */
+export const SPERRGRUND = 'Die Bürostruktur ist nicht lesbar – erst übernehmen';
+/** kurz, als Hinweis an gesperrten Menüpunkten */
+export const SPERRGRUND_KURZ = 'Struktur nicht lesbar';
+
 /**
  * Hinweis bei nicht lesbarer Struktur (`strukturFehler`) für Struktur- und Vorlagen-Editor: nennt den Grund, sagt, dass
  * Bearbeiten gesperrt ist, und bietet an, die angezeigte Struktur (die Vorgabe) bewusst zu übernehmen – über
@@ -33,14 +38,21 @@ export function StrukturSperre() {
     }
   };
   return (
-    <div className="warning po-struktur-fehler" role="alert">
-      <p>{strukturFehler}</p>
-      <div className="button-row">
-        <button className="small" onClick={() => void uebernehmen()}>
-          Angezeigte Struktur übernehmen …
-        </button>
+    <>
+      <div className="warning po-struktur-fehler" role="alert">
+        <p>{strukturFehler}</p>
+        <div className="button-row">
+          <button className="small" onClick={() => void uebernehmen()}>
+            Angezeigte Struktur übernehmen …
+          </button>
+        </div>
       </div>
-      {fehler && <p>{fehler}</p>}
-    </div>
+      {/* eigene Meldung neben dem Hinweis (nicht darin: keine verschachtelten Live-Regionen) */}
+      {fehler && (
+        <p className="meldung fehler" role="alert">
+          {fehler}
+        </p>
+      )}
+    </>
   );
 }

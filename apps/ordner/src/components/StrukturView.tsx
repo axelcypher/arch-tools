@@ -7,7 +7,7 @@ import { OAP_VARIABLEN, projektdateiPfad } from '@core/projektdatei';
 import { hatDateisystem, waehleOrdner } from '../dateisystem';
 import { dateimuster, nameAus, nummerAus, PLATZHALTER_NUMMER, PLATZHALTER_PLAN, PLATZHALTER_PROJEKT } from '../nummer';
 import { SchemaFeld } from './SchemaFeld';
-import { StrukturSperre } from './StrukturSperre';
+import { SPERRGRUND, StrukturSperre } from './StrukturSperre';
 import type { Sicherung } from '../sicherung';
 import { strukturUnterschied, unterschiedText } from '../sicherung';
 import { useOrdner } from '../store';
@@ -43,8 +43,9 @@ export function StrukturView() {
   const setStruktur = useOrdner((s) => s.setStruktur);
   const strukturErsetzen = useOrdner((s) => s.strukturErsetzen);
   const strukturFehler = useOrdner((s) => s.strukturFehler);
-  /** unlesbare Struktur: Name, Schemata und Ordnerliste lassen sich nicht bearbeiten (siehe StrukturSperre) */
+  /** unlesbare Struktur: Name, Schemata und Ordnerliste nur lesen (siehe StrukturSperre) – echt gesperrt, nicht verborgen */
   const gesperrt = !!strukturFehler;
+  const grund = gesperrt ? SPERRGRUND : undefined;
   const rueckgaengig = useOrdner((s) => s.rueckgaengig);
   const strukturRueckgaengig = useOrdner((s) => s.strukturRueckgaengig);
   const sicherungenLesen = useOrdner((s) => s.sicherungenLesen);
@@ -192,11 +193,7 @@ export function StrukturView() {
         <button aria-pressed={ordnerAnsicht === 'baum'} onClick={() => void zumBaum()}>
           Baum
         </button>
-        <button
-          aria-pressed={ordnerAnsicht === 'text'}
-          title="Die Ordnerliste als Text mit eigener Schreibweise bearbeiten"
-          onClick={() => setOrdnerAnsicht('text')}
-        >
+        <button aria-pressed={ordnerAnsicht === 'text'} title="Die Ordnerliste als Text mit eigener Schreibweise bearbeiten" onClick={() => setOrdnerAnsicht('text')}>
           Text (Experte)
         </button>
       </div>
@@ -249,12 +246,12 @@ export function StrukturView() {
       <section className="po-col po-struktur-kopf">
         <div className="po-struktur-titel">
           <h2>Struktur</h2>
-          {/* unlesbare Struktur: Bearbeiten gesperrt (Erklärung und „Angezeigte Struktur übernehmen …“ darunter) */}
-          <div className={gesperrt ? 'po-gesperrt' : undefined} inert={gesperrt}>
+          {/* unlesbare Struktur: Feld gesperrt (Erklärung und „Angezeigte Struktur übernehmen …“ darunter) */}
+          <fieldset className="po-sperre" disabled={gesperrt} title={grund}>
             <Field label="Name der Struktur">
               <TextField value={struktur.name} onChange={(v) => set({ name: v.trim() || struktur.name })} />
             </Field>
-          </div>
+          </fieldset>
           <div className="button-row">
             <button onClick={() => void laden()}>Struktur laden …</button>
             <button onClick={() => void speichern()}>Struktur speichern …</button>
@@ -317,62 +314,61 @@ export function StrukturView() {
             </ul>
           </div>
         )}
-        <div className={gesperrt ? 'po-gesperrt' : undefined} inert={gesperrt}>
+        <fieldset className="po-sperre" disabled={gesperrt} title={grund}>
           {schemata}
-        </div>
+        </fieldset>
       </section>
 
-      {/* Ordnerliste: bei unlesbarer Struktur gesperrt – der Baum bleibt sichtbar, lässt sich aber nicht ändern */}
-      <div className={`po-struktur-ordner${gesperrt ? ' po-gesperrt' : ''}`} inert={gesperrt} aria-disabled={gesperrt || undefined}>
-        {ordnerAnsicht === 'baum' ? (
-          <OrdnerEditor
-            ordner={struktur.ordner}
-            onChange={(ordner) => set({ ordner })}
-            bausteine={struktur.bausteine ?? []}
-            onBausteine={(b) => {
-              const { bausteine: _alt, ...rest } = struktur;
-              setStruktur(b.length ? { ...rest, bausteine: b } : rest);
-            }}
-            kopf={ordnerKopf}
-          />
-        ) : (
-          <div className="po-editor po-editor-text">
-            <section className="po-col po-editor-baum">
-              {ordnerKopf}
-              <p className="muted small-text">
-                Eine Zeile je Ordner, Unterordner mit „/“. Zusätze nach „|“: <code>LPh 5</code> oder <code>LPh 6-7</code> – der Ordner entsteht nur, wenn eine dieser Leistungsphasen beauftragt ist
-                (Unterordner erben sie); <code>Dateischema</code> – Dateien darin werden im Prüfmodus gegen das Dateinamenschema geprüft. Änderungen gelten erst mit „Ordnerliste übernehmen“.
+      {/* Ordnerliste: bei unlesbarer Struktur nur lesen – Baum (scrollen, Pfeiltasten, Auswahl) bzw. Text bleiben zugänglich */}
+      {ordnerAnsicht === 'baum' ? (
+        <OrdnerEditor
+          ordner={struktur.ordner}
+          onChange={(ordner) => set({ ordner })}
+          bausteine={struktur.bausteine ?? []}
+          onBausteine={(b) => {
+            const { bausteine: _alt, ...rest } = struktur;
+            setStruktur(b.length ? { ...rest, bausteine: b } : rest);
+          }}
+          kopf={ordnerKopf}
+          gesperrt={gesperrt}
+        />
+      ) : (
+        <div className="po-editor po-editor-text">
+          <section className="po-col po-editor-baum">
+            {ordnerKopf}
+            <p className="muted small-text">
+              Eine Zeile je Ordner, Unterordner mit „/“. Zusätze nach „|“: <code>LPh 5</code> oder <code>LPh 6-7</code> – der Ordner entsteht nur, wenn eine dieser Leistungsphasen beauftragt ist
+              (Unterordner erben sie); <code>Dateischema</code> – Dateien darin werden im Prüfmodus gegen das Dateinamenschema geprüft. Änderungen gelten erst mit „Ordnerliste übernehmen“.
+            </p>
+            <textarea className="po-ordnertext" aria-label="Ordnerliste" value={text} readOnly={gesperrt} title={grund} spellCheck={false} onChange={(e) => setText(e.target.value)} />
+            {veraltet && (
+              <p className="warning po-text-veraltet" role="status">
+                Die Ordnerliste wurde inzwischen geändert (z. B. auf einem anderen Rechner). Der Text oben geht noch vom alten Stand aus: „Ordnerliste übernehmen“ ersetzt den neuen Stand durch ihn,
+                „Verwerfen“ zeigt den neuen Stand.
               </p>
-              <textarea className="po-ordnertext" aria-label="Ordnerliste" value={text} spellCheck={false} onChange={(e) => setText(e.target.value)} />
-              {veraltet && (
-                <p className="warning po-text-veraltet" role="status">
-                  Die Ordnerliste wurde inzwischen geändert (z. B. auf einem anderen Rechner). Der Text oben geht noch vom alten Stand aus: „Ordnerliste übernehmen“ ersetzt den neuen Stand durch ihn,
-                  „Verwerfen“ zeigt den neuen Stand.
-                </p>
-              )}
-              {gelesen.meldungen.length > 0 && (
-                <div className="warning po-ordnermeldungen">
-                  <ul>
-                    {gelesen.meldungen.map((m) => (
-                      <li key={`${m.zeile}:${m.text}`}>{m.text}</li>
-                    ))}
-                  </ul>
-                  {geaendert && <span className="small-text">Mit „Ordnerliste übernehmen“ gilt die Liste so, wie oben beschrieben bereinigt.</span>}
-                </div>
-              )}
-              <div className="button-row">
-                <button className="primary" disabled={!geaendert} onClick={() => void ordnerUebernehmen()}>
-                  Ordnerliste übernehmen
-                </button>
-                <button disabled={!geaendert} onClick={textVerwerfen}>
-                  Verwerfen
-                </button>
-                {geaendert && <span className="muted small-text">noch nicht übernommen</span>}
+            )}
+            {gelesen.meldungen.length > 0 && (
+              <div className="warning po-ordnermeldungen">
+                <ul>
+                  {gelesen.meldungen.map((m) => (
+                    <li key={`${m.zeile}:${m.text}`}>{m.text}</li>
+                  ))}
+                </ul>
+                {geaendert && <span className="small-text">Mit „Ordnerliste übernehmen“ gilt die Liste so, wie oben beschrieben bereinigt.</span>}
               </div>
-            </section>
-          </div>
-        )}
-      </div>
+            )}
+            <div className="button-row">
+              <button className="primary" disabled={!geaendert || gesperrt} title={grund} onClick={() => void ordnerUebernehmen()}>
+                Ordnerliste übernehmen
+              </button>
+              <button disabled={!geaendert || gesperrt} title={grund} onClick={textVerwerfen}>
+                Verwerfen
+              </button>
+              {geaendert && <span className="muted small-text">noch nicht übernommen</span>}
+            </div>
+          </section>
+        </div>
+      )}
     </div>
   );
 }
@@ -415,7 +411,11 @@ function GemeinsameEinstellungen() {
       <h2>Gemeinsame Einstellungen</h2>
       <p className="muted small-text">Gelten für alle Apps. Bei einer Netzwerkinstallation liegen sie auf dem Netzlaufwerk und gelten für das ganze Büro.</p>
       <SpeicherortZeile />
-      {konfigFehler && <p className="meldung fehler" role="alert">{konfigFehler}</p>}
+      {konfigFehler && (
+        <p className="meldung fehler" role="alert">
+          {konfigFehler}
+        </p>
+      )}
 
       <h3 className="po-abschnitt">Stammordner der Projekte</h3>
       <p className="muted small-text">
@@ -487,13 +487,15 @@ function GemeinsameEinstellungen() {
           </li>
         ))}
         {!allgemein.projekte.length && (
-          <li className="muted">{desktop ? 'Noch kein Stammordner – mit „+ Stammordner“ hinzufügen.' : 'Noch kein Stammordner – hinzufügen lässt er sich nur in der Desktop-App.'}</li>
+          <li className="muted">
+            {desktop ? 'Noch kein Stammordner – mit dem Knopf „Stammordner“ (mit Plus) hinzufügen.' : 'Noch kein Stammordner – hinzufügen lässt er sich nur in der Desktop-App.'}
+          </li>
         )}
       </ul>
       {desktop && (
         <div className="button-row">
           <button className="small" onClick={() => void stammordnerHinzufuegen()}>
-            + Stammordner
+            <Symbol name="plus" /> Stammordner
           </button>
         </div>
       )}

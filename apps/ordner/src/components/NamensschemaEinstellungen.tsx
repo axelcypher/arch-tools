@@ -270,7 +270,7 @@ function KuerzelListe({
         </tbody>
       </table>
       <button className="small" disabled={neu} title={neu ? 'Erst das neue Kürzel eintragen' : undefined} onClick={() => setNeu(true)}>
-        + Kürzel
+        <Symbol name="plus" /> Kürzel
       </button>
     </div>
   );

@@ -149,6 +149,8 @@ export function App() {
           >
             Meine Fassung trotzdem speichern
           </button>
+          {/* solange gesichert und gespeichert wird: Knöpfe gesperrt, der Grund sichtbar */}
+          {konfliktLaeuft && <span className="muted small-text">Speichert …</span>}
         </div>
       )}
       <main className="po-main">

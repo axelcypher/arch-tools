@@ -15,7 +15,7 @@ import type { VorlagenEintrag, VorlagenPreset } from '../struktur';
 import { lphAus, lphText, normPfad, zielordnerAus } from '../struktur';
 import { MUSTER_VORLAGEN, PLATZHALTER_DOCS, zielDateiname } from '../vorlagen';
 import { abweichungText, PresetAbweichungen, VorlagenordnerZeile } from './gemeinsam';
-import { StrukturSperre } from './StrukturSperre';
+import { SPERRGRUND, StrukturSperre } from './StrukturSperre';
 
 const log = logger('vorlagen');
 
@@ -45,8 +45,9 @@ export function VorlagenView() {
    * Liste fest (Namen können doppelt vorkommen); der Name dient nur als Gegenprobe, falls die Liste inzwischen anders ist
    */
   const [entfernt, setEntfernt] = useState<{ index: number; preset: string; k: number; eintrag: VorlagenEintrag } | null>(null);
-  /** unlesbare Struktur: Presets und Dateinamen lassen sich nicht bearbeiten (siehe StrukturSperre) */
+  /** unlesbare Struktur: Presets und Dateinamen nur lesen (siehe StrukturSperre) – echt gesperrt, nicht verborgen */
   const gesperrt = !!useOrdner((s) => s.strukturFehler);
+  const grund = gesperrt ? SPERRGRUND : undefined;
   /** Zuordnungen, deren Vorschau ganz aufgeklappt ist */
   const [aufgeklappt, setAufgeklappt] = useState<Set<number>>(new Set());
 
@@ -214,13 +215,13 @@ export function VorlagenView() {
           {!presets.length && <li className="muted">Noch keine Presets.</li>}
         </ul>
         <div className="button-row">
-          <button className="small" disabled={gesperrt} onClick={neuesPreset}>
-            + Preset
+          <button className="small" disabled={gesperrt} title={grund} onClick={neuesPreset}>
+            <Symbol name="plus" /> Preset
           </button>
-          <button className="small" disabled={!preset || gesperrt} onClick={duplizieren}>
+          <button className="small" disabled={!preset || gesperrt} title={grund} onClick={duplizieren}>
             Duplizieren
           </button>
-          <button className="small danger" disabled={!preset || gesperrt} onClick={() => void presetLoeschen()}>
+          <button className="small danger" disabled={!preset || gesperrt} title={grund} onClick={() => void presetLoeschen()}>
             Löschen …
           </button>
         </div>
@@ -238,7 +239,7 @@ export function VorlagenView() {
             einem Zielordner der Struktur zuordnen.
           </p>
         ))}
-        <div className={gesperrt ? 'po-gesperrt' : undefined} inert={gesperrt}>
+        <fieldset className="po-sperre" disabled={gesperrt} title={grund}>
           <Field label="Dateinamen im Projekt" hint="{Name} = Name der Vorlage ohne Endung. Vorlagen mit Platzhaltern im eigenen Namen behalten ihn.">
             <SchemaFeld
               label="Dateinamen im Projekt"
@@ -250,7 +251,7 @@ export function VorlagenView() {
               onChange={(v) => setStruktur({ ...struktur, vorlagenname: v.trim() || '{Name}' })}
             />
           </Field>
-        </div>
+        </fieldset>
 
         <h3>Muster und Platzhalter</h3>
         <div className="button-row">
@@ -282,18 +283,18 @@ export function VorlagenView() {
         </details>
       </section>
 
-      {/* unlesbare Struktur: das gewählte Preset bleibt sichtbar, lässt sich aber nicht ändern */}
-      <section className={`po-col${gesperrt ? ' po-gesperrt-bereich' : ''}`} inert={gesperrt}>
+      {/* unlesbare Struktur: das gewählte Preset nur lesen – Felder und Knöpfe gesperrt, Vorschau und Suche bleiben */}
+      <section className="po-col po-preset">
         {!preset && (
           <>
             <h2>Preset</h2>
-            <p className="muted small-text">Mit „+ Preset“ ein Preset anlegen und ihm Vorlagen aus dem Vorlagenordner zuordnen.</p>
+            <p className="muted small-text">Mit dem Knopf „Preset“ (links, mit Plus) ein Preset anlegen und ihm Vorlagen aus dem Vorlagenordner zuordnen.</p>
           </>
         )}
         {preset && (
           <>
             <h2>Preset „{preset.name}“</h2>
-            <div className="field-row">
+            <fieldset className="po-sperre field-row" disabled={gesperrt} title={grund}>
               <Field label="Name" hint="Projekte merken sich ihre Presets beim Namen (in der Projektdatei)">
                 <TextField value={preset.name} onChange={umbenennen} />
               </Field>
@@ -301,7 +302,7 @@ export function VorlagenView() {
                 <input type="checkbox" checked={!!preset.standard} onChange={() => setPreset({ standard: !preset.standard })} />
                 Standard für neue Projekte
               </label>
-            </div>
+            </fieldset>
 
             <datalist id="po-strukturordner">
               {strukturOrdner.map((o) => (
@@ -311,7 +312,7 @@ export function VorlagenView() {
             {entfernt && entferntHier && (
               <p className="meldung ok po-rueckgaengig" role="status">
                 Zuordnung „{entfernt.eintrag.quelle || 'ganzer Vorlagenordner'}“ entfernt.{' '}
-                <button className="small" onClick={entferntZurueck}>
+                <button className="small" disabled={gesperrt} title={grund} onClick={entferntZurueck}>
                   Rückgängig
                 </button>
               </p>
@@ -325,51 +326,53 @@ export function VorlagenView() {
                 const fehlt = dateien.length > 0 && !ziele.length;
                 return (
                   <li key={k} className={fehlt ? 'fehlt' : ''}>
-                    <div className="po-z-kopf">
-                      <span className={`po-art ${istOrdner ? 'ordner' : 'datei'}`} aria-hidden />
-                      <TextField
-                        value={e.quelle}
-                        placeholder="ganzer Vorlagenordner"
-                        title="Pfad im Vorlagenordner – Datei oder Ordner"
-                        label={`Pfad im Vorlagenordner (Zuordnung ${k + 1})`}
-                        onChange={(v) => setEintrag(k, { quelle: normPfad(v) })}
-                      />
-                      <span className="po-z-lph" title="nur, wenn eine dieser Leistungsphasen beauftragt ist – z. B. 4 oder 6-7; leer = immer">
-                        <span aria-hidden>LPh</span>
+                    <fieldset className="po-sperre" disabled={gesperrt} title={grund}>
+                      <div className="po-z-kopf">
+                        <span className={`po-art ${istOrdner ? 'ordner' : 'datei'}`} aria-hidden />
                         <TextField
-                          value={lphText(e.lph ?? [])}
-                          placeholder="immer"
-                          label={`Leistungsphasen (Zuordnung ${k + 1}) – leer = immer`}
-                          onChange={(v) => {
-                            const lph = lphAus(v);
-                            setEintrag(k, { lph: lph.length ? lph : undefined });
-                          }}
+                          value={e.quelle}
+                          placeholder="ganzer Vorlagenordner"
+                          title="Pfad im Vorlagenordner – Datei oder Ordner"
+                          label={`Pfad im Vorlagenordner (Zuordnung ${k + 1})`}
+                          onChange={(v) => setEintrag(k, { quelle: normPfad(v) })}
                         />
-                      </span>
-                      <button
-                        className="small danger icon"
-                        title="Zuordnung entfernen („Rückgängig“ holt sie zurück)"
-                        aria-label={`Zuordnung ${k + 1} entfernen`}
-                        onClick={() => zuordnungEntfernen(k)}
-                      >
-                        <Symbol name="muell" />
-                      </button>
-                    </div>
-                    <div className="field-row">
-                      <Field label="Zielordner im Projekt">
-                        <TextField value={e.ziel} list="po-strukturordner" placeholder="Stamm des Projektordners" onChange={(v) => setEintrag(k, { ziel: zielordnerAus(v) })} />
-                      </Field>
-                      <Field label={istOrdner ? 'Dateinamen im Projekt (je Datei)' : 'Dateiname im Projekt'}>
-                        <SchemaFeld
-                          label={`Dateiname im Projekt (Zuordnung ${k + 1})`}
-                          value={e.name ?? ''}
-                          placeholder={struktur.vorlagenname}
-                          platzhalter={PLATZHALTER_VORLAGE}
-                          kompakt
-                          onChange={(v) => setEintrag(k, { name: v.trim() || undefined })}
-                        />
-                      </Field>
-                    </div>
+                        <span className="po-z-lph" title="nur, wenn eine dieser Leistungsphasen beauftragt ist – z. B. 4 oder 6-7; leer = immer">
+                          <span aria-hidden>LPh</span>
+                          <TextField
+                            value={lphText(e.lph ?? [])}
+                            placeholder="immer"
+                            label={`Leistungsphasen (Zuordnung ${k + 1}) – leer = immer`}
+                            onChange={(v) => {
+                              const lph = lphAus(v);
+                              setEintrag(k, { lph: lph.length ? lph : undefined });
+                            }}
+                          />
+                        </span>
+                        <button
+                          className="small danger icon"
+                          title="Zuordnung entfernen („Rückgängig“ holt sie zurück)"
+                          aria-label={`Zuordnung ${k + 1} entfernen`}
+                          onClick={() => zuordnungEntfernen(k)}
+                        >
+                          <Symbol name="muell" />
+                        </button>
+                      </div>
+                      <div className="field-row">
+                        <Field label="Zielordner im Projekt">
+                          <TextField value={e.ziel} list="po-strukturordner" placeholder="Stamm des Projektordners" onChange={(v) => setEintrag(k, { ziel: zielordnerAus(v) })} />
+                        </Field>
+                        <Field label={istOrdner ? 'Dateinamen im Projekt (je Datei)' : 'Dateiname im Projekt'}>
+                          <SchemaFeld
+                            label={`Dateiname im Projekt (Zuordnung ${k + 1})`}
+                            value={e.name ?? ''}
+                            placeholder={struktur.vorlagenname}
+                            platzhalter={PLATZHALTER_VORLAGE}
+                            kompakt
+                            onChange={(v) => setEintrag(k, { name: v.trim() || undefined })}
+                          />
+                        </Field>
+                      </div>
+                    </fieldset>
                     <div className="po-z-vorschau">
                       {fehlt && <span className="po-warn">{e.quelle ? `„${e.quelle}“ gibt es im Vorlagenordner nicht.` : 'Der Vorlagenordner enthält keine Vorlagen.'}</span>}
                       {!dateien.length && <span className="muted">Vorschau, sobald der Vorlagenordner eingelesen ist.</span>}
@@ -408,8 +411,8 @@ export function VorlagenView() {
               <>
                 <div className="button-row">
                   <input className="po-suche" type="search" value={filter} placeholder="Suchen …" aria-label="Vorlagen durchsuchen" onChange={(e) => setFilter(e.target.value)} />
-                  <button className="small" disabled={imPreset.has('')} title="Alle Dateien an denselben Ort wie im Vorlagenordner" onClick={() => hinzufuegen('', true)}>
-                    + ganzer Vorlagenordner
+                  <button className="small" disabled={imPreset.has('') || gesperrt} title={grund ?? 'Alle Dateien an denselben Ort wie im Vorlagenordner'} onClick={() => hinzufuegen('', true)}>
+                    <Symbol name="plus" /> Ganzer Vorlagenordner
                   </button>
                 </div>
                 <div className="po-plan po-quellen">
@@ -435,12 +438,13 @@ export function VorlagenView() {
                                 'im Preset'
                               ) : (
                                 <button
-                                  className="small"
-                                  title={q.ordner ? 'Alle Dateien dieses Ordners zuordnen' : 'Diese Datei zuordnen'}
+                                  className="small icon"
+                                  title={grund ?? (q.ordner ? 'Alle Dateien dieses Ordners zuordnen' : 'Diese Datei zuordnen')}
                                   aria-label={`„${q.pfad}“ zuordnen`}
+                                  disabled={gesperrt}
                                   onClick={() => hinzufuegen(q.pfad, q.ordner)}
                                 >
-                                  +
+                                  <Symbol name="plus" />
                                 </button>
                               )}
                             </td>

@@ -341,14 +341,18 @@
 .po-struktur-fehler .button-row {
   margin: 0;
 }
-/* gesperrte Bereiche (inert): Hülle ohne eigenes Layout, der Inhalt sichtbar abgeschwächt, aber lesbar */
-.po-struktur-ordner,
-.po-gesperrt {
-  display: contents;
+/* nur lesen bei unlesbarer Struktur: Felder und Knöpfe über `<fieldset disabled>` echt gesperrt – mit dem Aussehen
+   gesperrter Elemente aus base.css; die Hülle selbst ohne Rahmen und Abstände */
+.po-sperre {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+  min-inline-size: 0;
 }
-.po-gesperrt > *,
-.po-gesperrt-bereich {
-  opacity: 0.6;
+.po-struktur-titel > .po-sperre {
+  flex: 1 1 220px;
+  max-width: 320px;
 }
 .po-editor {
   flex: 1 1 auto;

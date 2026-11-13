@@ -71,7 +71,10 @@ const eingabe = (el: HTMLInputElement | HTMLTextAreaElement, value: string) => {
   act(() => el.blur());
 };
 const knopf = (host: Element, text: string) => [...host.querySelectorAll('button')].find((b) => b.textContent?.trim().startsWith(text)) as HTMLButtonElement;
-const feld = (host: Element, label: string) => [...host.querySelectorAll('label.field')].find((l) => l.querySelector('.field-label')?.textContent?.replace(/\s*\*$/, '') === label)!.querySelector('input') as HTMLInputElement;
+/** Knopf „+ …“: gezeichnetes Plus-Symbol und genau dieser Text */
+const plusKnopf = (host: Element, text: string) => [...host.querySelectorAll('button')].find((b) => b.textContent?.trim() === text && b.querySelector('svg.symbol')) as HTMLButtonElement;
+const feld = (host: Element, label: string) =>
+  [...host.querySelectorAll('label.field')].find((l) => l.querySelector('.field-label')?.textContent?.replace(/\s*\*$/, '') === label)!.querySelector('input') as HTMLInputElement;
 const zeilen = (host: Element) => [...host.querySelectorAll('.po-plan tr')].map((z) => z.querySelector('td')!.getAttribute('title'));
 const warten = () =>
   act(async () => {
@@ -329,7 +332,12 @@ describe('ATLAS (Projektordner)', () => {
     expect(host.querySelector('.po-editor-meldung')!.textContent).toContain('in 2 Ordner eingefügt');
     // Leistungsphasen für beide auf einmal
     act(() => host.querySelector<HTMLButtonElement>('.po-auswahl-panel button[aria-label="LPh 6"]')!.click());
-    expect(useOrdner.getState().struktur.ordner.filter((o) => o.lph?.includes(6)).map((o) => o.pfad)).toEqual(['07 Ausschreibung', '07 Ausschreibung/Dach', '07 Ausschreibung/Fenster']);
+    expect(
+      useOrdner
+        .getState()
+        .struktur.ordner.filter((o) => o.lph?.includes(6))
+        .map((o) => o.pfad),
+    ).toEqual(['07 Ausschreibung', '07 Ausschreibung/Dach', '07 Ausschreibung/Fenster']);
 
     // kopieren und in einen anderen Ordner einfügen
     klick('05 Protokolle');
@@ -585,8 +593,8 @@ describe('ATLAS (Projektordner)', () => {
 
     // neues Kürzel: erst gespeichert, wenn die Zeile mit einem gültigen Kürzel verlassen wird
     const antragsarten = bereich.querySelectorAll<HTMLElement>('.po-kuerzel')[1];
-    act(() => knopf(antragsarten, '+ Kürzel').click());
-    expect(knopf(antragsarten, '+ Kürzel').disabled).toBe(true);
+    act(() => plusKnopf(antragsarten, 'Kürzel').click());
+    expect(plusKnopf(antragsarten, 'Kürzel').disabled).toBe(true);
     expect(schema().antragsarten.map((k) => k.kuerzel)).not.toContain('');
     eingabe(eingabeMit('Antrags- und Verfahrensarten: Bedeutung von neues Kürzel'), 'Wohnungseigentum');
     expect(schema().antragsarten).toHaveLength(6);
@@ -595,12 +603,12 @@ describe('ATLAS (Projektordner)', () => {
     expect(schema().antragsarten).toHaveLength(6);
     eingabe(eingabeMit('Antrags- und Verfahrensarten: Kürzel neues Kürzel'), 'weg');
     expect(schema().antragsarten.at(-1)).toEqual({ kuerzel: 'WEG', name: 'Wohnungseigentum' });
-    expect(knopf(antragsarten, '+ Kürzel').disabled).toBe(false);
+    expect(plusKnopf(antragsarten, 'Kürzel').disabled).toBe(false);
     // verwerfen (× oder Esc) speichert nichts
-    act(() => knopf(antragsarten, '+ Kürzel').click());
+    act(() => plusKnopf(antragsarten, 'Kürzel').click());
     act(() => bereich.querySelector<HTMLButtonElement>('button[aria-label="Neues Kürzel verwerfen"]')!.click());
     expect(schema().antragsarten).toHaveLength(7);
-    act(() => knopf(antragsarten, '+ Kürzel').click());
+    act(() => plusKnopf(antragsarten, 'Kürzel').click());
     act(() => void eingabeMit('Antrags- und Verfahrensarten: Kürzel neues Kürzel').dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
     expect(bereich.querySelector('button[aria-label="Neues Kürzel verwerfen"]')).toBeNull();
     expect(schema().antragsarten).toHaveLength(7);
@@ -705,7 +713,7 @@ describe('ATLAS (Projektordner)', () => {
     // Dateinamenschema mit Beispiel
     expect(host.textContent).toContain('Kostenschätzung.xlsx → 2026-014 Kostenschätzung.xlsx');
 
-    act(() => knopf(host, '+ Preset').click());
+    act(() => plusKnopf(host, 'Preset').click());
     expect(useOrdner.getState().struktur.presets.map((p) => p.name)).toEqual(['Alle Vorlagen', 'Neues Preset']);
     eingabe(feld(host, 'Name'), 'Jedes Projekt');
     expect(useOrdner.getState().struktur.presets[1].name).toBe('Jedes Projekt');
@@ -720,7 +728,8 @@ describe('ATLAS (Projektordner)', () => {
     ]);
     expect(host.textContent).toContain('Die Datei landet im Stamm des Projektordners');
     const zuordnung = (i: number) => host.querySelectorAll('.po-zuordnungen > li')[i];
-    const zielFeld = (i: number, label: string) => [...zuordnung(i).querySelectorAll('label.field')].find((l) => l.querySelector('.field-label')?.textContent?.startsWith(label))!.querySelector('input') as HTMLInputElement;
+    const zielFeld = (i: number, label: string) =>
+      [...zuordnung(i).querySelectorAll('label.field')].find((l) => l.querySelector('.field-label')?.textContent?.startsWith(label))!.querySelector('input') as HTMLInputElement;
     eingabe(zielFeld(0, 'Zielordner'), '04 Schriftverkehr/Bauherr');
     eingabe(zielFeld(0, 'Dateiname'), '{nummer} Brief an {kurzname}');
     eingabe(zielFeld(1, 'Zielordner'), '03 Berechnungen/Kosten');
@@ -840,7 +849,10 @@ describe('ATLAS (Projektordner)', () => {
   });
 
   it('Einstellungen älterer Fassungen werden beim ersten Start in den Konfigurationsordner übernommen', async () => {
-    localStorage.setItem('projektordner:zustand', JSON.stringify({ stamm: { nummer: 'X' }, stammordner: 'P:\\Projekte', vorlagenordner: 'P:\\Vorlagen', struktur: { name: 'Büro', ordner: ['A'], flaechenprojekt: 'A/{nummer}.oap' } }));
+    localStorage.setItem(
+      'projektordner:zustand',
+      JSON.stringify({ stamm: { nummer: 'X' }, stammordner: 'P:\\Projekte', vorlagenordner: 'P:\\Vorlagen', struktur: { name: 'Büro', ordner: ['A'], flaechenprojekt: 'A/{nummer}.oap' } }),
+    );
     vi.resetModules();
     const { useOrdner: frisch } = await import('./store');
     expect(frisch.getState()).toMatchObject({ stammordner: 'P:\\Projekte', vorlagenordner: 'P:\\Vorlagen', stamm: { nummer: 'X' } });
@@ -928,7 +940,11 @@ describe('Auftrag aus einer anderen App (Rahmen-App)', () => {
     act(() => knopf(host, 'Struktur').click());
     act(() =>
       window.dispatchEvent(
-        new MessageEvent('message', { data: { typ: 'arch-tools:assistent-neu', von: 'flaechenrechner', vonName: 'QUADRIO', kannOeffnen: true, an: 'ordner' }, origin: window.location.origin, source: rahmen }),
+        new MessageEvent('message', {
+          data: { typ: 'arch-tools:assistent-neu', von: 'flaechenrechner', vonName: 'QUADRIO', kannOeffnen: true, an: 'ordner' },
+          origin: window.location.origin,
+          source: rahmen,
+        }),
       ),
     );
     expect(knopf(host, 'Assistent').className).toContain('active');
@@ -949,7 +965,11 @@ describe('Startseite mit der gemeinsamen Projektübersicht', () => {
     const { zuletztMerken } = await import('@core/platform/konfig');
     const fs = new SpeicherDateisystem();
     // ein Projekt mit Projektdatei, eines ohne
-    await ausfuehren(fs, 'P:/Projekte', planen({ ...leereStammdaten(), nummer: '2026-014', kurzname: 'EFH Musterweg', bezeichnung: 'Neubau EFH', leistungsphasen: [1, 2] }, STANDARD, [], [], new Date(2026, 9, 1)));
+    await ausfuehren(
+      fs,
+      'P:/Projekte',
+      planen({ ...leereStammdaten(), nummer: '2026-014', kurzname: 'EFH Musterweg', bezeichnung: 'Neubau EFH', leistungsphasen: [1, 2] }, STANDARD, [], [], new Date(2026, 9, 1)),
+    );
     await fs.ordnerAnlegen('P:/Projekte', '2019-003 Altbau/Pläne');
     await zuletztMerken('P:/Projekte/2019-003 Altbau', 'PERMIO', 1000);
     store.setState({ allgemein: { ...VORGABE_ALLGEMEIN, projekte: ['P:/Projekte'] }, struktur: STANDARD });
@@ -977,7 +997,14 @@ describe('Startseite mit der gemeinsamen Projektübersicht', () => {
     // Kontextmenü (P-09): ergänzen, prüfen, Katasterpläne, Explorer, abschließen (P-15), anheften
     const karteVon = (text: string) => [...host.querySelectorAll('.pa-karte')].find((k) => k.textContent?.includes(text)) as HTMLElement;
     act(() => karteVon('Neubau EFH').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 5, clientY: 5 })));
-    expect([...host.querySelectorAll('.menue [role="menuitem"]')].map((b) => b.textContent)).toEqual(['Ergänzen …', 'Katasterpläne …', 'Im Explorer öffnen', 'Projekt abschließen', 'Als Akquise kennzeichnen', 'Anheften']);
+    expect([...host.querySelectorAll('.menue [role="menuitem"]')].map((b) => b.textContent)).toEqual([
+      'Ergänzen …',
+      'Katasterpläne …',
+      'Im Explorer öffnen',
+      'Projekt abschließen',
+      'Als Akquise kennzeichnen',
+      'Anheften',
+    ]);
     await act(async () => ([...host.querySelectorAll('.menue [role="menuitem"]')].find((b) => b.textContent === 'Projekt abschließen') as HTMLButtonElement).click());
     await warten();
     await warten();

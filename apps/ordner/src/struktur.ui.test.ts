@@ -10,6 +10,7 @@ import { leereStammdaten } from './stammdaten';
 import { useOrdner } from './store';
 import { getEntries } from '@core/platform/log';
 import { istReserviert, ordnerAusTextMitMeldungen, sichererName, STANDARD } from './struktur';
+import { SPERRGRUND, SPERRGRUND_KURZ } from './components/StrukturSperre';
 
 /**
  * Struktur und Vorlagen (Gesamt-Review ATLAS): Kontextmenü per Tastatur, Meldungen, Werkzeugleiste, Ziehen, Textansicht
@@ -84,6 +85,8 @@ const warten = () =>
     await new Promise((r) => setTimeout(r, 0));
   });
 const knopf = (host: Element, text: string) => [...host.querySelectorAll('button')].find((b) => b.textContent?.trim().startsWith(text)) as HTMLButtonElement;
+/** Knopf „+ …“: gezeichnetes Plus-Symbol und genau dieser Text */
+const plusKnopf = (host: Element, text: string) => [...host.querySelectorAll('button')].find((b) => b.textContent?.trim() === text && b.querySelector('svg.symbol')) as HTMLButtonElement;
 const eingabe = (el: HTMLInputElement | HTMLTextAreaElement, value: string, verlassen = true) => {
   const proto = el instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
   act(() => {
@@ -330,15 +333,17 @@ describe('Struktur-Editor', () => {
     const { host, klick, taste, baum, z } = strukturAnsicht();
     const leiste = host.querySelector('.po-werkzeuge')!;
     expect([...leiste.querySelectorAll('button')].map((b) => b.getAttribute('aria-label') ?? b.textContent?.trim())).toEqual([
-      '+ Ordner',
-      '+ Unterordner',
+      'Ordner',
+      'Unterordner',
       'Mehrere anlegen …',
       'Rückgängig',
       'Wiederholen',
       'LPh-Vorschau',
       'Weitere',
     ]);
-    // Symbole statt Schriftzeichen (↶ ↷ ▾): gezeichnet, der Name steht im aria-label bzw. im Text
+    // Symbole statt Schriftzeichen (↶ ↷ ▾ +): gezeichnet, der Name steht im aria-label bzw. im Text
+    for (const n of ['Ordner', 'Unterordner']) expect(plusKnopf(leiste, n)).toBeTruthy();
+    expect(leiste.textContent).not.toContain('+');
     for (const n of ['Rückgängig', 'Wiederholen']) expect(leiste.querySelector(`button[aria-label="${n}"] svg.symbol`)).not.toBeNull();
     expect(knopf(leiste, 'Weitere').querySelector('svg.symbol')).not.toBeNull();
     expect(leiste.textContent).not.toMatch(/[↶↷▾]/);
@@ -362,7 +367,7 @@ describe('Struktur-Editor', () => {
     // Seitenleiste: nur Name, LPh, Dateischema, Löschen
     klick('07 Ausschreibung');
     const seite = host.querySelector('.po-auswahl-panel')!;
-    expect(['+ Unterordner', 'Mehrere', 'Duplizieren', 'Als Baustein'].map((t) => knopf(seite, t))).toEqual([undefined, undefined, undefined, undefined]);
+    expect(['Unterordner', 'Mehrere', 'Duplizieren', 'Als Baustein'].map((t) => knopf(seite, t))).toEqual([undefined, undefined, undefined, undefined]);
     expect(knopf(seite, 'Löschen')).toBeTruthy();
     // oberste Ebene: keine Pfadzeile, die nur die Überschrift wiederholt
     expect(seite.querySelector('.po-k-pfad')).toBeNull();
@@ -547,7 +552,7 @@ describe('Kürzel (Einstellungen)', () => {
     expect(bereich.textContent).not.toContain('LPH');
     expect(knopf(bereich, 'Vorgabe wiederherstellen').textContent).toBe('Vorgabe wiederherstellen …');
     const antragsarten = [...bereich.querySelectorAll('.po-kuerzel')].find((k) => k.querySelector('h3')?.textContent === 'Antrags- und Verfahrensarten')!;
-    act(() => knopf(antragsarten, '+ Kürzel').click());
+    act(() => plusKnopf(antragsarten, 'Kürzel').click());
     const feld = () => bereich.querySelector<HTMLInputElement>('input[aria-label="Antrags- und Verfahrensarten: Kürzel neues Kürzel"]')!;
     eingabe(feld(), 'baua');
     expect(feld().value).toBe('baua');
@@ -665,6 +670,83 @@ describe('Runde 3: Entwurf, Rückfrage, Sicherung, Ziehen, Menüs', () => {
     expect(eintraege(host).some((b) => b.textContent?.startsWith('Mehrere Unterordner anlegen …'))).toBe(true);
   });
 
+  it('Rechtsklick auf eine nicht markierte Zeile gilt nur ihr: „Aktionen für B“, „Löschen“ entfernt nur B; Gegenprobe: Rechtsklick in die Mehrfachauswahl gilt allen', async () => {
+    const { host, z, klick } = strukturAnsicht();
+    const pfade = () => useOrdner.getState().struktur.ordner.map((o) => o.pfad);
+    const rechtsklick = (pfad: string) => act(() => z(pfad).dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, button: 2, clientX: 5, clientY: 5 })));
+    // A markieren, auf B rechtsklicken
+    klick('05 Protokolle');
+    rechtsklick('09 Fotos');
+    expect(menue(host)?.getAttribute('aria-label')).toBe('Aktionen für 09 Fotos');
+    expect(z('09 Fotos').getAttribute('aria-selected')).toBe('true');
+    expect(z('05 Protokolle').getAttribute('aria-selected')).toBe('false');
+    act(() =>
+      eintraege(host)
+        .find((b) => name(b) === 'Löschen')!
+        .click(),
+    );
+    await warten();
+    expect(host.querySelector('.modal.rf')).toBeNull();
+    expect(pfade()).toEqual(['05 Protokolle', '07 Ausschreibung', '07 Ausschreibung/Dach']);
+    // Gegenprobe: zwei markiert, Rechtsklick auf eine markierte Zeile – das Menü gilt beiden
+    klick('05 Protokolle');
+    act(() => z('07 Ausschreibung/Dach').dispatchEvent(new MouseEvent('click', { bubbles: true, ctrlKey: true })));
+    rechtsklick('07 Ausschreibung/Dach');
+    expect(menue(host)?.getAttribute('aria-label')).toBe('Aktionen für 2 Ordner');
+    act(() =>
+      eintraege(host)
+        .find((b) => name(b) === '2 Ordner löschen …')!
+        .click(),
+    );
+    await warten();
+    expect(host.querySelector('.modal.rf')?.textContent).toContain('2 Ordner löschen?');
+    act(() => knopf(host.querySelector('.modal.rf')!, 'Löschen').click());
+    await warten();
+    expect(pfade()).toEqual(['07 Ausschreibung']);
+  });
+
+  it('Zeilenknopf „Aktionen“: Symbol „liste“ (nicht der Aufklapp-Pfeil), aria-expanded folgt dem Menü – auch bei Esc und einem anderen Menü', async () => {
+    const { host, z, baum, taste } = strukturAnsicht();
+    const aktionen = (pfad: string) => z(pfad).querySelector<HTMLButtonElement>('.po-k-aktionen button')!;
+    const pfad = (b: Element) => b.querySelector('svg.symbol path')?.getAttribute('d');
+    // nicht dasselbe Symbol wie der Pfeil zum Auf-/Zuklappen
+    const pfeil = z('07 Ausschreibung').querySelector('.po-k-pfeil')!;
+    expect(pfad(aktionen('07 Ausschreibung'))).not.toBe(pfad(pfeil));
+    expect(pfad(aktionen('07 Ausschreibung'))).toMatch(/^M8 6h12/);
+    const nachlaufen = () => act(async () => {});
+    expect(aktionen('09 Fotos').getAttribute('aria-expanded')).toBe('false');
+    act(() => aktionen('09 Fotos').click());
+    await nachlaufen();
+    expect(menue(host)?.getAttribute('aria-label')).toBe('Aktionen für 09 Fotos');
+    expect(aktionen('09 Fotos').getAttribute('aria-expanded')).toBe('true');
+    expect(aktionen('05 Protokolle').getAttribute('aria-expanded')).toBe('false');
+    // Esc schließt: wieder zu
+    taste(menue(host)!, 'Escape');
+    await nachlaufen();
+    expect(menue(host)).toBeNull();
+    expect(aktionen('09 Fotos').getAttribute('aria-expanded')).toBe('false');
+    // ein anderes Menü (Rechtsklick auf eine andere Zeile) löst das Zeilenmenü ab
+    act(() => aktionen('09 Fotos').click());
+    await nachlaufen();
+    expect(aktionen('09 Fotos').getAttribute('aria-expanded')).toBe('true');
+    act(() => z('05 Protokolle').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, button: 2, clientX: 5, clientY: 5 })));
+    await nachlaufen();
+    expect(menue(host)?.getAttribute('aria-label')).toBe('Aktionen für 05 Protokolle');
+    expect(aktionen('09 Fotos').getAttribute('aria-expanded')).toBe('false');
+    // Auswahl eines Punkts schließt ebenfalls
+    act(() => aktionen('09 Fotos').click());
+    await nachlaufen();
+    act(() =>
+      eintraege(host)
+        .find((b) => name(b) === 'Kopieren')!
+        .click(),
+    );
+    await nachlaufen();
+    expect(menue(host)).toBeNull();
+    expect(aktionen('09 Fotos').getAttribute('aria-expanded')).toBe('false');
+    expect(document.activeElement).toBe(baum);
+  });
+
   it('reservierte Namen auch mit Leerzeichen vor der Endung („AUX .txt“)', () => {
     expect(istReserviert('AUX .txt')).toBe(true);
     expect(sichererName('AUX .txt')).toBe('AUX_.txt');
@@ -685,7 +767,10 @@ describe('Folgerunde: unlesbare Struktur sperrt die Bearbeitung', () => {
   };
   const sicherungen = () => JSON.parse(localStorage.getItem('arch-tools:konfig:projektordner-sicherungen') ?? '{"sicherungen":[]}').sicherungen;
 
-  it('Struktur: Name, Schemata und Ordnerliste gesperrt (inert) mit Erklärung; „Angezeigte Struktur übernehmen …“ sichert und hebt die Sperre auf', async () => {
+  /** echt gesperrt: selbst `disabled` oder in einem gesperrten `<fieldset>` */
+  const istGesperrt = (el: Element) => (el as HTMLButtonElement).disabled === true || !!el.closest('fieldset[disabled]');
+
+  it('Struktur: nur lesen – Felder und Knöpfe echt gesperrt (kein inert), Baum bleibt bedienbar; „Angezeigte Struktur übernehmen …“ sichert und hebt die Sperre auf', async () => {
     await unlesbarLaden();
     const host = render();
     act(() => knopf(host, 'Struktur').click());
@@ -693,14 +778,74 @@ describe('Folgerunde: unlesbare Struktur sperrt die Bearbeitung', () => {
     const sperre = host.querySelector('.po-struktur-fehler')!;
     expect(sperre.getAttribute('role')).toBe('alert');
     expect(sperre.textContent).toContain('Bearbeiten ist gesperrt');
-    expect(host.querySelector('.po-struktur-ordner')!.hasAttribute('inert')).toBe(true);
-    expect(host.querySelector('.po-schemata')!.closest('[inert]')).not.toBeNull();
-    expect(host.querySelector('input[aria-label="Name der Struktur"], .po-struktur-titel .field input')!.closest('[inert]')).not.toBeNull();
+    // nichts verborgen oder abgeschwächt: kein inert, keine Hülle mit Deckkraft
+    expect(host.querySelector('[inert]')).toBeNull();
+    // Name und Namensschemata: in einem gesperrten fieldset, der Grund im Tooltip
+    const nameFeld = host.querySelector('.po-struktur-titel .field input')!;
+    expect(istGesperrt(nameFeld)).toBe(true);
+    expect(nameFeld.closest('fieldset')!.title).toBe(SPERRGRUND);
+    for (const f of host.querySelectorAll('.po-schemata input')) expect(istGesperrt(f)).toBe(true);
+    // Werkzeugleiste: Ändern gesperrt mit Grund; LPh-Vorschau und „Weitere“ bleiben
+    const leiste = host.querySelector('.po-werkzeuge')!;
+    for (const k of [plusKnopf(leiste, 'Ordner'), plusKnopf(leiste, 'Unterordner'), knopf(leiste, 'Mehrere anlegen'), leiste.querySelector<HTMLButtonElement>('[aria-label="Rückgängig"]')!]) {
+      expect(k.disabled).toBe(true);
+      expect(k.title).toBe(SPERRGRUND);
+    }
+    expect(knopf(leiste, 'LPh-Vorschau').disabled).toBe(false);
+    expect(knopf(leiste, 'Weitere').disabled).toBe(false);
+    // Baum: fokussierbar, Pfeiltasten und Auswahl wie gewohnt; nicht ziehbar
+    const baum = host.querySelector<HTMLElement>('[role="tree"]')!;
+    expect(baum.tabIndex).toBe(0);
+    const taste = (key: string, mod: KeyboardEventInit = {}) => act(() => baum.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...mod })));
+    taste('ArrowDown');
+    taste('ArrowDown');
+    const zweite = host.querySelectorAll<HTMLElement>('[role="treeitem"]')[1];
+    expect(baum.getAttribute('aria-activedescendant')).toBe(zweite.id);
+    expect(zweite.getAttribute('aria-selected')).toBe('true');
+    expect(zweite.getAttribute('draggable')).toBe('false');
+    // Seitenleiste zur Auswahl: Name, LPh, Dateischema, Löschen gesperrt
+    const seite = host.querySelector('.po-auswahl-panel')!;
+    expect(seite.querySelector('h3')?.textContent).toBe(zweite.querySelector('.po-k-name')?.textContent);
+    for (const el of seite.querySelectorAll('input, button')) expect(istGesperrt(el)).toBe(true);
+    for (const el of host.querySelectorAll('.po-bausteine button')) expect(istGesperrt(el)).toBe(true);
+    // F2, Entf und Doppelklick ändern nichts, sondern nennen den Grund
+    const vorher = JSON.stringify(useOrdner.getState().struktur.ordner);
+    taste('F2');
+    expect(host.querySelector('.po-k-eingabe')).toBeNull();
+    expect(host.querySelector('.po-editor-meldung.fehler')?.textContent).toContain(SPERRGRUND);
+    taste('Delete');
+    taste('n', { ctrlKey: true });
+    act(() => zweite.dispatchEvent(new MouseEvent('dblclick', { bubbles: true })));
+    expect(host.querySelector('.po-k-eingabe')).toBeNull();
+    expect(host.querySelector('.modal.rf')).toBeNull();
+    expect(JSON.stringify(useOrdner.getState().struktur.ordner)).toBe(vorher);
+    // Kontextmenü: Punkte sichtbar, aber gesperrt mit Grund im Hinweis – nur Kopieren bleibt
+    act(() => zweite.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, button: 2, clientX: 5, clientY: 5 })));
+    const punkte = eintraege(host);
+    const kopieren = punkte.find((b) => name(b) === 'Kopieren')!;
+    expect(kopieren.getAttribute('aria-disabled')).toBeNull();
+    const loeschen = punkte.find((b) => name(b)?.startsWith('Löschen'))!;
+    expect(loeschen.getAttribute('aria-disabled')).toBe('true');
+    expect(loeschen.querySelector('.menue-hinweis')?.textContent).toBe(SPERRGRUND_KURZ);
+    expect(punkte.filter((b) => b !== kopieren).every((b) => b.getAttribute('aria-disabled') === 'true')).toBe(true);
+    act(() => loeschen.click());
+    expect(menue(host)).not.toBeNull();
+    expect(JSON.stringify(useOrdner.getState().struktur.ordner)).toBe(vorher);
+    act(() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+    // Textansicht: lesbar, aber schreibgeschützt; „Ordnerliste übernehmen“ gesperrt
+    act(() => knopf(host, 'Text (Experte)').click());
+    const text = host.querySelector<HTMLTextAreaElement>('textarea.po-ordnertext')!;
+    expect(text.readOnly).toBe(true);
+    expect(text.value).toContain('00 Projekt');
+    expect(knopf(host, 'Ordnerliste übernehmen').disabled).toBe(true);
+    act(() => knopf(host, 'Baum').click());
+    await warten();
     // auch der Store nimmt keine Bearbeitung an
     act(() => useOrdner.getState().setStruktur({ ...useOrdner.getState().struktur, name: 'Versehentlich' }));
     expect(useOrdner.getState().struktur.name).toBe(STANDARD.name);
     // Laden, Sicherungen und Vorgabe bleiben bedienbar
-    expect(knopf(host, 'Struktur laden').closest('[inert]')).toBeNull();
+    expect(istGesperrt(knopf(host, 'Struktur laden'))).toBe(false);
+    expect(istGesperrt(knopf(host, 'Vorgabe wiederherstellen'))).toBe(false);
     // übernehmen: Rückfrage – Abbrechen lässt alles, wie es ist
     act(() => knopf(sperre, 'Angezeigte Struktur übernehmen').click());
     await warten();
@@ -717,26 +862,65 @@ describe('Folgerunde: unlesbare Struktur sperrt die Bearbeitung', () => {
     expect(useOrdner.getState().strukturFehler).toBeNull();
     expect(sicherungen()[0].inhalt).toEqual({ struktur: kaputt, vorlagenordner: '/v' });
     expect(gespeichert().struktur.ordner).toEqual(STANDARD.ordner);
-    // Gegenprobe: ohne Fehler keine Sperre und kein Angebot
+    // Gegenprobe: ohne Fehler keine Sperre, kein Angebot, alles bedienbar
     expect(host.querySelector('.po-struktur-fehler')).toBeNull();
-    expect(host.querySelector('[inert]')).toBeNull();
+    expect(host.querySelector('fieldset[disabled]')).toBeNull();
+    expect(plusKnopf(host.querySelector('.po-werkzeuge')!, 'Ordner').disabled).toBe(false);
+    expect(plusKnopf(host.querySelector('.po-werkzeuge')!, 'Ordner').title).toBe('Ordner im Stamm anlegen');
+    expect(host.querySelector('[role="treeitem"]')!.getAttribute('draggable')).toBe('true');
   });
 
-  it('Vorlagen: Presets und Dateinamen gesperrt, das Preset bleibt sichtbar; Gegenprobe ohne Fehler', async () => {
+  it('„Angezeigte Struktur übernehmen“ scheitert: Fehler als .meldung.fehler (role=alert) neben dem Hinweis; Gegenprobe ohne Fehler', async () => {
+    await unlesbarLaden();
+    const echt = useOrdner.getState().strukturErsetzen;
+    useOrdner.setState({ strukturErsetzen: async () => Promise.reject(new Error('Kein Schreibrecht im Konfigurationsordner')) });
+    const host = render();
+    act(() => knopf(host, 'Struktur').click());
+    await warten();
+    act(() => knopf(host.querySelector('.po-struktur-fehler')!, 'Angezeigte Struktur übernehmen').click());
+    await warten();
+    act(() => knopf(host.querySelector('.modal.rf')!, 'Übernehmen').click());
+    await warten();
+    const fehler = host.querySelector('.po-struktur-kopf p.meldung.fehler')!;
+    expect(fehler.getAttribute('role')).toBe('alert');
+    expect(fehler.textContent).toBe('Kein Schreibrecht im Konfigurationsordner');
+    // nicht in der Live-Region des Hinweises verschachtelt
+    expect(fehler.closest('.po-struktur-fehler')).toBeNull();
+    // Gegenprobe: gelingt es, verschwinden Hinweis und Fehler
+    useOrdner.setState({ strukturErsetzen: echt });
+    act(() => knopf(host.querySelector('.po-struktur-fehler')!, 'Angezeigte Struktur übernehmen').click());
+    await warten();
+    act(() => knopf(host.querySelector('.modal.rf')!, 'Übernehmen').click());
+    await warten();
+    expect(host.querySelector('.po-struktur-fehler')).toBeNull();
+    expect(host.querySelector('.meldung.fehler')).toBeNull();
+  });
+
+  it('Vorlagen: nur lesen – „Preset“, Dateinamen und das gewählte Preset echt gesperrt (kein inert), das Preset bleibt sichtbar; Gegenprobe ohne Fehler', async () => {
     await unlesbarLaden();
     const host = render();
     act(() => knopf(host, 'Vorlagen').click());
     await warten();
     expect(host.querySelector('.po-struktur-fehler')?.textContent).toContain('Angezeigte Struktur übernehmen');
-    expect(knopf(host, '+ Preset').disabled).toBe(true);
-    // rechts das gewählte Preset: sichtbar, aber nicht bedienbar
-    const preset = host.querySelector('section.po-gesperrt-bereich')!;
-    expect(preset.hasAttribute('inert')).toBe(true);
-    expect(preset.querySelector('h2')?.textContent).toContain('Preset');
-    expect(host.querySelector('.po-gesperrt[inert]')?.textContent).toContain('Dateinamen im Projekt');
-    act(() => useOrdner.setState({ strukturFehler: null }));
-    expect(knopf(host, '+ Preset').disabled).toBe(false);
     expect(host.querySelector('[inert]')).toBeNull();
+    expect(plusKnopf(host, 'Preset').disabled).toBe(true);
+    expect(plusKnopf(host, 'Preset').title).toBe(SPERRGRUND);
+    expect(knopf(host, 'Duplizieren').disabled).toBe(true);
+    // Dateinamen links
+    expect(istGesperrt(host.querySelector('input[aria-label="Dateinamen im Projekt"]')!)).toBe(true);
+    // rechts das gewählte Preset: sichtbar, Felder gesperrt
+    const preset = host.querySelector('section.po-preset')!;
+    expect(preset.querySelector('h2')?.textContent).toContain('Preset');
+    const felder = [...preset.querySelectorAll('input:not([type="search"])')];
+    expect(felder.length).toBeGreaterThan(2);
+    for (const f of felder) expect(istGesperrt(f)).toBe(true);
+    for (const b of preset.querySelectorAll('.po-zuordnungen .po-z-kopf button')) expect(istGesperrt(b)).toBe(true);
+    // Presets links bleiben wählbar (lesen)
+    expect(knopf(host.querySelector('.po-presets')!, STANDARD.presets[0].name).disabled).toBe(false);
+    act(() => useOrdner.setState({ strukturFehler: null }));
+    expect(plusKnopf(host, 'Preset').disabled).toBe(false);
+    expect(host.querySelector('fieldset[disabled]')).toBeNull();
+    expect(istGesperrt(host.querySelector('input[aria-label="Dateinamen im Projekt"]')!)).toBe(false);
   });
 
   it('„Rückgängig“ nach „Neu laden“ einer unlesbaren fremden Fassung: läuft über strukturErsetzen – sichert sie und hebt die Sperre auf', async () => {
@@ -864,10 +1048,13 @@ describe('Nachbesserung: Konflikt lösen ohne Rennen', () => {
     await warten();
     const auf = tor();
     const meine = () => knopf(host.querySelector('.po-konflikt')!, 'Meine Fassung');
+    // Gegenprobe vorher: kein „Speichert …“
+    expect(host.querySelector('.po-konflikt')!.textContent).not.toContain('Speichert …');
     act(() => meine().click());
     await warten();
     expect(meine().disabled).toBe(true);
     expect(knopf(host.querySelector('.po-konflikt')!, 'Neu laden').disabled).toBe(true);
+    expect(host.querySelector('.po-konflikt')!.textContent).toContain('Speichert …');
     // zweiter Aufruf (wie ein Doppelklick an der Sperre vorbei) tut nichts
     await act(() => useOrdner.getState().konfliktLoesen('meine'));
     auf();
