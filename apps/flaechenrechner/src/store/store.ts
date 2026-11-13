@@ -454,6 +454,8 @@ async function idbSet(key: string, value: unknown): Promise<void> {
     tx.objectStore(STORE).put(value, key);
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
+    // z. B. Speicherplatz voll beim Abschluss: ohne onabort bliebe das Schreiben (und alles danach) für immer offen
+    tx.onabort = () => reject(tx.error ?? new DOMException('Transaktion abgebrochen', 'AbortError'));
   });
 }
 
@@ -506,6 +508,18 @@ if (typeof indexedDB !== 'undefined' && zwischenstandLadenErlaubt(APP)) {
 
 /** Verzögerung des Zwischenspeicherns nach einer Änderung */
 const AUTOSAVE_MS = 600;
+/** so lange darf ein einzelnes Schreiben dauern, bevor es als gescheitert gilt – ein hängendes blockiert sonst die Kette */
+export const SCHREIBEN_MAX_MS = 10_000;
+
+function mitZeitlimit<T>(arbeit: Promise<T>, ms: number): Promise<T> {
+  return new Promise<T>((ok, fehler) => {
+    const uhr = setTimeout(() => fehler(new Error(`Zwischenspeichern dauerte länger als ${ms} ms`)), ms);
+    arbeit.then(
+      (w) => (clearTimeout(uhr), ok(w)),
+      (e) => (clearTimeout(uhr), fehler(e)),
+    );
+  });
+}
 let autosaveTimer: ReturnType<typeof setTimeout> | undefined;
 /** laufendes Schreiben des Zwischenstands (bis es fertig ist) */
 let laufend: Promise<void> | null = null;
@@ -516,7 +530,7 @@ function zwischenstandSchreiben(): Promise<void> {
   const p: Promise<void> = davor
     .then(() => {
       const { project, basis, datei } = useEditor.getState();
-      return idbSet(AUTOSAVE_KEY, { project, basis, datei });
+      return mitZeitlimit(idbSet(AUTOSAVE_KEY, { project, basis, datei }), SCHREIBEN_MAX_MS);
     })
     .then(() => {
       zwischenstandErsetzt(APP);
@@ -558,7 +572,9 @@ useEditor.subscribe((s, prev) => {
     void zwischenstandSchreiben();
   }, AUTOSAVE_MS);
 });
-vorDemSchliessen(zwischenstandSichern);
+const abmelden = vorDemSchliessen(zwischenstandSichern);
+// Entwicklung (Vite-HMR): die alte Fassung abmelden, sonst bleibt sie angemeldet
+import.meta.hot?.dispose(abmelden);
 
 /* ---------- Kopieren, Einfügen, Duplizieren, mit Pfeiltasten verschieben ---------- */
 
