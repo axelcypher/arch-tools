@@ -208,12 +208,7 @@ export function Sidebar() {
         </div>
         {storey.shapes.length === 0 && (
           <div className="leer-hinweis">
-            <p className="muted">Noch keine Flächen. Plan laden und darauf zeichnen (Werkzeug „Rechteck“ R oder „Polygon“ P), oder den Umriss übernehmen:</p>
-            <div className="button-row">
-              <button className="small" onClick={planLadenOeffnen} title="Hintergrundplan laden (PDF, DXF oder Bild) – rechts unter „Hintergrundplan“">
-                Plan laden …
-              </button>
-            </div>
+            <p className="muted">Noch keine Flächen. Plan laden (Werkzeugleiste „Plan laden …“) und Räume erkennen (E) oder mit Rechteck (R) bzw. Polygon (P) zeichnen.</p>
             <UmrissUebernehmen />
           </div>
         )}
@@ -258,12 +253,6 @@ export function Sidebar() {
       </section>
     </aside>
   );
-}
-
-/** „Plan laden …“ aus dem Leerzustand: öffnet die Dateiauswahl des Hintergrundplans in der rechten Leiste (leeres Geschoss: dort ganz oben) */
-function planLadenOeffnen() {
-  const knopf = [...document.querySelectorAll<HTMLButtonElement>('.sidebar-right button')].find((b) => b.textContent?.trim() === 'Plan laden …');
-  knopf?.click();
 }
 
 function StoreyRow({ id, name, active }: { id: string; name: string; active: boolean }) {

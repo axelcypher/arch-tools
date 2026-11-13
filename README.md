@@ -168,7 +168,12 @@ fehlen sie, warnt der Bericht.
   geänderte Werte bleiben erhalten, Konflikte werden gemeldet
 - **Nachschlagewerk** der Berechnungsregeln (`F1` bzw. „§ Regeln“, `?` an den Abschnitten) mit Zitaten,
   Quellenangaben, Links und Suche – zentral und je Funktion gefiltert
-- **Numerische Eingabe** beim Zeichnen: Länge tippen + Enter (in Mausrichtung), `dx;dy` relativ, Rechteck `4,5x3,2`
+- **Numerische Eingabe** beim Zeichnen: Länge tippen + Enter (in Mausrichtung), `dx;dy` relativ (wie im Plan nach
+  rechts und oben positiv, ebenso die Koordinatenanzeige und das Messen), Rechteck `4,5x3,2`
+- **Einstieg**: Die leere Zeichenfläche bietet „Grundriss laden“, „IFC-Modell importieren“ und Zeichnen an; „Plan
+  laden …“ und „Kalibrieren“ stehen auch in der Werkzeugleiste. Kantenfang rastet bei aktivem Rasterfang entlang der
+  Kante auf das Raster; beim Kalibrieren fängt das Raster nicht. Erkannte BGF-Umrisse tragen „prüfen“, bis ein
+  Eckpunkt bearbeitet wurde
 - Eckpunkte ziehen, auf Kantenmitte ziehen = Punkt einfügen, Rechtsklick = Punkt löschen, Koordinaten-Tabelle
 - **Abzugsflächen**: am BGF-Umriss z. B. Innenhof, Luftraum über einer Galerie oder Deckenöffnung über 1,0 m², im
   Raum z. B. Schornstein, Pfeiler, Schacht im Raum. Wird ein Raum zur Abzugsfläche, erbt er Anrechnung und Wohnung
@@ -270,11 +275,12 @@ fehlen sie, warnt der Bericht.
 
 | Taste | Funktion |
 |---|---|
-| `V` / `P` / `R` / `E` / `M` | Auswählen / Polygon / Rechteck / Erkennen / Messen |
+| `V` / `P` / `R` / `E` / `M` / `K` | Auswählen / Polygon / Rechteck / Erkennen / Messen / Kalibrieren |
+| `?` | alle Tastenkürzel der Zeichenfläche |
 | `B` / `N` | neue Flächen als BGF-Umriss / Raum zeichnen |
 | `Enter` | Polygon schließen bzw. Zahleneingabe übernehmen |
 | `Backspace` | letzten Punkt bzw. letzte Ziffer entfernen |
-| `Esc` | Abbrechen / Auswahl aufheben |
+| `Esc` | Eingabe, Entwurf, Messung bzw. Werkzeug verwerfen, zuletzt Auswahl aufheben |
 | `Entf` (oder `Backspace` ohne laufende Eingabe) | ausgewählte Fläche(n) löschen |
 | `Shift`+Klick / `Shift`+Ziehen | Mehrfachauswahl / Auswahlrahmen |
 | `Strg+A` | alle Flächen des Geschosses wählen |
@@ -284,7 +290,7 @@ fehlen sie, warnt der Bericht.
 | `Strg+S` / `Strg+Shift+S` / `Strg+O` | Speichern / Speichern unter / Öffnen |
 | `F1` | Nachschlagewerk der Berechnungsregeln |
 | `F` | alles zeigen |
-| `Strg+Z` / `Strg+Y` | Rückgängig / Wiederholen |
+| `Strg+Z` / `Strg+Y` | Rückgängig (beim Zeichnen zuerst der letzte Punkt) / Wiederholen |
 | Mausrad / mittlere Maustaste / `Leertaste`+Ziehen | Zoomen / Verschieben |
 
 ## Aufbau des Repositorys
