@@ -319,6 +319,14 @@ describe('Rahmen-App auf dem Desktop', () => {
     expect(dialog(host)?.textContent).toContain('Trotzdem beenden');
     await antwort(host, 'Abbrechen');
     expect(fenster.haupt!.destroy).not.toHaveBeenCalled();
+    // gescheitert im Fenster: „konnte nicht speichern“
+    await act(async () => fenster.haupt!.schliessenAngefragt!({ preventDefault: () => {} }));
+    await senden('x', null);
+    await act(async () => antworten!('fehler'));
+    await senden('x', null);
+    expect(dialog(host)?.textContent).toContain('NUMIO konnte nicht speichern');
+    await antwort(host, 'Abbrechen');
+    expect(fenster.haupt!.destroy).not.toHaveBeenCalled();
     // erneut: diesmal fertig – alles schließt
     await act(async () => fenster.haupt!.schliessenAngefragt!({ preventDefault: () => {} }));
     await senden('x', null);

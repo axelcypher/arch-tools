@@ -134,7 +134,7 @@ describe('Titelleiste auf dem Desktop', () => {
 
   it('herausgelöstes Fenster: Vorbereitungs-Anfrage des Rahmens wird nach dem Schreiben beantwortet', async () => {
     window.history.replaceState(null, '', '/?rahmen=fenster&app=ordner');
-    const antworten: { typ: string; anfrage?: string; ok?: boolean; ergebnis?: string }[] = [];
+    const antworten: { typ: string; anfrage?: string; ergebnis?: string }[] = [];
     await listen<(typeof antworten)[number]>('arch-tools:an-rahmen', (e) => void antworten.push(e.payload));
     let schreiben: (() => void) | undefined;
     const aus = vorDemSchliessen(() => new Promise<void>((fertig) => (schreiben = fertig)));

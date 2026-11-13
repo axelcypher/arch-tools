@@ -88,7 +88,9 @@ Konfigurationsordner) und Projektdateien sind dieselben.
 - **Ausstehendes Schreiben vor dem Schließen** (`vorDemSchliessen` in `rahmen.ts`): Schreibt eine App verzögert
   (ATLAS etwa 400 ms nach einer Änderung), meldet sie mit `vorDemSchliessen(async () => …)` an, was vor dem Ende noch
   fertig werden muss – die Funktion soll das Schreiben sofort ausführen und abwarten. Liefert sie `false` oder scheitert
-  sie (Promise abgelehnt, z. B. Netzlaufwerk weg), gilt das als „nicht gespeichert“. Das gilt auch, wenn keine
+  sie (Promise abgelehnt, z. B. Netzlaufwerk weg), gilt das als „nicht gespeichert“. Wird sie erneut aufgerufen
+  („Weiter warten“, „Erneut versuchen“), wartet sie ein laufendes Schreiben ab; ist das letzte gescheitert, schreibt
+  sie neu bzw. liefert weiter `false`, solange nichts gespeichert ist. Das gilt auch, wenn keine
   ungespeicherten Änderungen gemeldet sind. Abgewartet wird vor dem Schließen des Fensters (× und System), dem
   Andocken, dem Herauslösen, dem Schließen eines Tabs, dem Beenden von Arkly (alle Tabs und Fenster) und dem
   Update-Neustart, höchstens 5 s (`VORBEREITEN_MS`). Danach fragt die App (`ui/vorbereiten.ts`) bei Zeitablauf
@@ -100,7 +102,8 @@ Konfigurationsordner) und Projektdateien sind dieselben.
   Wartens sind Schließen, Andocken und „Jetzt installieren“ gegen ein zweites Auslösen gesperrt. Grenzen: Im Browser
   (Tab schließen, neu laden) und beim Neuladen eines Tabs oder des Rahmens gibt es keinen Hook; nach *Trotzdem …* endet
   das Fenster auch mitten im Schreiben. Die gemeinsamen Einstellungen (`konfig.ts`, alle Schreibvorgänge nacheinander)
-  melden ihre laufenden Schreibvorgänge selbst an – dafür muss keine App etwas tun. Damit nimmt praktisch jeder Tab den
+  melden ihre laufenden Schreibvorgänge selbst an – dafür muss keine App etwas tun; Fehler beim Schreiben der
+  Einstellungen meldet der Schreibvorgang selbst, sie lösen keine Rückfrage beim Schließen aus. Damit nimmt praktisch jeder Tab den
   Warteweg (meist sofort fertig). Die lokale Kopie für den Notbetrieb wird bewusst nicht abgewartet (sie wird atomar
   ersetzt; bleibt höchstens älter).
 - **Speichern auf Anfrage** (`speichernImTab`, `speichernImFenster`, `speichernAnfragenBeantworten`): Der Rahmen

@@ -332,9 +332,10 @@ const vorbereitungen = new Set<() => Promise<void | boolean> | void | boolean>()
  * App: etwas, das vor dem Ende dieses Fensters bzw. Tabs noch fertig werden muss – etwa ein verzögertes Schreiben
  * (sofort ausführen und abwarten). Läuft vor dem Schließen (× und System), Andocken, Herauslösen, Schließen des Tabs und
  * dem Update-Neustart, auch wenn keine ungespeicherten Änderungen gemeldet sind. Sie kann mehrfach aufgerufen werden
- * (etwa nach „Weiter warten“ bzw. „Erneut versuchen“) und soll dann nicht doppelt schreiben, sondern das laufende
- * Schreiben abwarten. Liefert sie `false` oder scheitert sie (Promise abgelehnt), gilt das als „nicht gespeichert“ – die
- * App fragt dann nach, statt zu schließen. Liefert die Abmeldung.
+ * (etwa nach „Weiter warten“ bzw. „Erneut versuchen“): Läuft noch ein Schreiben, soll sie es abwarten statt doppelt zu
+ * schreiben; ist das letzte gescheitert, muss sie neu schreiben bzw. weiter `false` liefern, solange nichts gespeichert
+ * ist. Liefert sie `false` oder scheitert sie (Promise abgelehnt), gilt das als „nicht gespeichert“ – die App fragt dann
+ * nach, statt zu schließen. Liefert die Abmeldung.
  */
 export function vorDemSchliessen(f: () => Promise<void | boolean> | void | boolean): () => void {
   vorbereitungen.add(f);
@@ -391,9 +392,9 @@ export async function vorbereitenImFenster(kennung: string, ms = VORBEREITEN_MS)
   const anfrage = Math.random().toString(36).slice(2);
   let fertig: (e: Vorbereitet) => void = () => {};
   const antwort = new Promise<Vorbereitet>((f) => (fertig = f));
-  const aus = await listen<{ typ?: string; anfrage?: string; ergebnis?: string }>(
+  const aus = await listen<{ typ?: string; anfrage?: string; ergebnis?: string; ok?: boolean }>(
     AN_RAHMEN,
-    (e) => e.payload?.typ === VORBEREITET && e.payload.anfrage === anfrage && fertig(alsVorbereitet(e.payload.ergebnis)),
+    (e) => e.payload?.typ === VORBEREITET && e.payload.anfrage === anfrage && fertig(alsVorbereitet(e.payload.ergebnis ?? (e.payload.ok ? 'fertig' : 'zeitlimit'))),
   );
   try {
     await emit(AN_APP, { typ: VORBEREITEN, anfrage, an: kennung });
