@@ -17,7 +17,7 @@ import type { Bewertung, KurzKontext, TextKontext } from './kurz';
 import { kurzText, offenText, warumText, werten } from './kurz';
 import type { Paket } from './paket';
 import { regeldateiFuer } from './paket';
-import { frageGestellt } from './fragen';
+import { frageGestellt, frageStand } from './fragen';
 import { plusMonate } from '../recht/quellen';
 import { ortGeaendert } from './ort';
 import type { Ampel, FaktDef, FaktWert, Festlegung, Hinweis, Kurz, Modul, NormErgebnis, Ort, ParagrafErgebnis, ParagrafRegel, Wahrheit } from './typen';
@@ -170,6 +170,8 @@ export function modulFakten(module: Modul[], fakten: Record<string, FaktWert>): 
             sicherheit: unsicher ? 'hinweis' : 'sicher',
             ...(unsicher ? { grund: d.nach.hinweis ? `Tabelle nach ${d.nach.fakt === 'lage.ags' ? 'Gemeinde' : d.nach.fakt} – hängt von der Lage ab, bitte prüfen` : (basis.grund ?? 'abgeleitet aus einem nicht gesicherten Wert') } : {}),
             ...(basis.widerspruch ? { widerspruch: basis.widerspruch } : {}),
+            // abgeleitet aus einer Antwort, die nur über Hinweise gestellt ist: deren Auslöser gehen mit
+            ...(basis.ueberHinweis?.length ? { ueberHinweis: basis.ueberHinweis } : {}),
             ...(bestaetigt ? { bestaetigt } : {}),
           };
       }
@@ -221,7 +223,7 @@ export function modulZiel(id: string, fakten: Record<string, FaktWert>, defs: Re
   return defs[id]?.nach ? id : 'lage.ags';
 }
 
-const unsicherWert = (f: FaktWert | undefined) => !f || f.wert == null || (f.sicherheit === 'hinweis' && !f.bestaetigt) || !!f.widerspruch;
+const unsicherWert = (f: FaktWert | undefined) => !f || f.wert == null || (f.sicherheit === 'hinweis' && !f.bestaetigt) || !!f.widerspruch || !!f.ueberHinweis?.length;
 
 function modulQuellen(id: string, fakten: Record<string, FaktWert>, defs: Record<string, FaktDef>, bund: ReadonlySet<string>, besucht: Set<string>): Set<string> {
   besucht.add(id);
@@ -239,8 +241,50 @@ function modulQuellen(id: string, fakten: Record<string, FaktWert>, defs: Record
 }
 
 /**
+ * Antworten auf Fragen, die nur wegen eines Hinweises gestellt werden (frageStand), bekommen diese Hinweise als
+ * `ueberHinweis` mit: Regeln, die die Antwort verwenden, zählen dann den Auslöser als unsicher (kurz.ts) – sonst höbe der
+ * Hinweis über die Antwort einen Paragrafen auf „entfällt“ (z. B. „Altbau verfahrensfrei: ja“, gestellt nur, weil der
+ * Umfang „Abbruch mit Ersatzbau“ nicht gesichert ist). Die Antwort selbst bleibt gesichert (sie ist beantwortet);
+ * bestätigt wird der Auslöser. Bis zum Fixpunkt: eine markierte Antwort kann ihrerseits eine Frage nur über Hinweise
+ * stellen (Kette).
+ */
+function ueberHinweisGestellt(eingang: Record<string, FaktWert>, ableiten: (f: Record<string, FaktWert>) => Record<string, FaktWert>, defs: Record<string, FaktDef>, rest: Omit<KurzKontext, 'fakten'>): Record<string, FaktWert> {
+  // `ueberHinweis` bestimmt allein die Auswertung – ein mitgegebenes (aus einer Datei, einem kopierten Wert) zählt nicht
+  const antworten = ohneUeberHinweis(eingang);
+  let out = antworten;
+  let vorher = '';
+  for (let runde = 0; runde <= Object.keys(antworten).length + 1; runde++) {
+    const ctx: KurzKontext = { ...rest, fakten: ableiten(out) };
+    const naechste: Record<string, FaktWert> = {};
+    for (const [id, w] of Object.entries(antworten)) {
+      const hinweise = w.wert === null || w.wert === '' ? [] : [...new Set(frageStand(id, defs[id], ctx).ueberHinweis.filter((h) => h !== id))].sort();
+      naechste[id] = hinweise.length ? { ...w, ueberHinweis: hinweise } : w;
+    }
+    const schluessel = JSON.stringify(Object.entries(naechste).map(([id, w]) => [id, w.ueberHinweis ?? []]));
+    out = naechste;
+    if (schluessel === vorher) break;
+    vorher = schluessel;
+  }
+  return out;
+}
+
+/** `ueberHinweis` entfernen – das Feld entsteht nur in der Auswertung und wird nie gespeichert */
+export function ohneUeberHinweis(fakten: Record<string, FaktWert>): Record<string, FaktWert> {
+  const out: Record<string, FaktWert> = {};
+  for (const [id, f] of Object.entries(fakten)) {
+    if (!f.ueberHinweis) out[id] = f;
+    else {
+      const { ueberHinweis: _u, ...ohne } = f;
+      out[id] = ohne;
+    }
+  }
+  return out;
+}
+
+/**
  * Die Antworten, deren Frage gestellt wird (frageGestellt) – ausgewertet mit den abgeleiteten Werten (`ableiten`), bis
- * sich nichts mehr ändert (höchstens einige Runden; eine weggelassene Antwort kann weitere Fragen verbergen)
+ * sich nichts mehr ändert (höchstens einige Runden; eine weggelassene Antwort kann weitere Fragen verbergen). Antworten
+ * auf Fragen, die nur über einen Hinweis gestellt werden, tragen ihn mit (ueberHinweisGestellt).
  */
 export function gestellteAntworten(eingabe: Record<string, FaktWert>, ableiten: (f: Record<string, FaktWert>) => Record<string, FaktWert>, defs: Record<string, FaktDef>, rest: Omit<KurzKontext, 'fakten'>): Record<string, FaktWert> {
   let gestellt = eingabe;
@@ -251,14 +295,14 @@ export function gestellteAntworten(eingabe: Record<string, FaktWert>, ableiten: 
   for (let runde = 0; runde < runden; runde++) {
     const ctx: KurzKontext = { ...rest, fakten: ableiten(gestellt) };
     const naechste = Object.fromEntries(Object.entries(eingabe).filter(([id]) => frageGestellt(id, defs[id], ctx)));
-    if (Object.keys(naechste).length === Object.keys(gestellt).length && Object.keys(naechste).every((id) => id in gestellt)) return naechste;
+    if (Object.keys(naechste).length === Object.keys(gestellt).length && Object.keys(naechste).every((id) => id in gestellt)) return ueberHinweisGestellt(naechste, ableiten, defs, rest);
     immer = new Set([...immer].filter((id) => id in naechste));
     gestellt = naechste;
   }
   // kein Fixpunkt (Bedingungen, die sich gegenseitig ein- und ausschalten – paketPruefen lehnt solche Zyklen ab): nur die
   // Antworten, die in jeder Runde gestellt waren. Eine weggelassene Antwort führt nur zu „offen“ (Regeln dürfen nicht nach
   // „bekannt“ fragen), eine behaltene könnte ein Grün tragen
-  return Object.fromEntries(Object.entries(eingabe).filter(([id]) => immer.has(id)));
+  return ueberHinweisGestellt(Object.fromEntries(Object.entries(eingabe).filter(([id]) => immer.has(id))), ableiten, defs, rest);
 }
 
 /** ganze Tage von einem Zeitpunkt (ISO) bis zu einem Tag (JJJJ-MM-TT) */
@@ -278,7 +322,7 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
   // nicht „trifft nicht zu“ (sonst entstünde ein falsches Grün)
   // vor UND nach der Ableitung: ein ungültiger Bezug (z. B. „false“ als Text) darf keinen gesicherten Wert ableiten
   const merkmale = gueltigeMerkmale(e.merkmale);
-  const eingabe = gueltigeFakten(e.fakten, faktDefs);
+  const eingabe = gueltigeFakten(ohneUeberHinweis(e.fakten), faktDefs);
   // eine gespeicherte Antwort auf eine Frage, die gerade nicht gestellt wird (nach einem Ortswechsel, einem zurückgesetzten
   // Auslöser – z. B. „Altbau verfahrensfrei“ nach zurückgesetztem Umfang), zählt nicht: weder in den Regeln noch für
   // Ableitungen. Bis zum Fixpunkt, denn eine weggelassene Antwort kann weitere Fragen verbergen (oder wieder stellen)

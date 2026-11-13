@@ -104,7 +104,8 @@ export function werten(k: Kurz | undefined, ctx: KurzKontext, tiefe = 0): Bewert
       const ab = k.min === undefined ? undefined : ueberBasis(k.min);
       w = aus((k.min === undefined || (ab !== undefined ? n > ab : n >= k.min)) && (k.max === undefined || n <= k.max));
     }
-    const unsicher = fw.sicherheit === 'hinweis' && !fw.bestaetigt ? [k.f] : [];
+    // eine Antwort auf eine nur über Hinweise gestellte Frage: unsicher sind die auslösenden Hinweise (dort bestätigen)
+    const unsicher = [...(fw.sicherheit === 'hinweis' && !fw.bestaetigt ? [k.f] : []), ...(fw.ueberHinweis ?? [])];
     return { w, offen: [], unsicher, widerspruch: fw.widerspruch ? [k.f] : [], verwendet };
   }
   if ('tag' in k) {
@@ -435,7 +436,7 @@ export function kurzBaum(k: Kurz | undefined, t: TextKontext, ctx?: KurzKontext,
   }
   const ist = ctx ? istWert(k, t, ctx) : undefined;
   const f = 'f' in k && ctx ? ctx.fakten[k.f] : undefined;
-  const unsicher = !!f && f.wert != null && ((f.sicherheit === 'hinweis' && !f.bestaetigt) || !!f.widerspruch);
+  const unsicher = !!f && f.wert != null && ((f.sicherheit === 'hinweis' && !f.bestaetigt) || !!f.widerspruch || !!f.ueberHinweis?.length);
   return mitW({ text: kurzText(k, t, true, tiefe), ...(ist ? { ist } : {}), ...(unsicher ? { unsicher: true } : {}) });
 }
 

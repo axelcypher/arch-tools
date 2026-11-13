@@ -242,6 +242,12 @@ export interface FaktWert {
   bestaetigt?: { von: string; am: string; grund?: string; lage?: string };
   /** Lage (Koordinaten), an der ein Geodienst abgefragt wurde */
   lage?: string;
+  /**
+   * nur in der Auswertung: Die Frage zu dieser Angabe wird nur wegen dieser Hinweise gestellt (z. B. „Altbau verfahrensfrei“,
+   * weil der Umfang der Beseitigung nur Hinweis ist). Die Antwort bleibt, wie sie ist; Regeln, die sie verwenden, zählen
+   * dafür die auslösenden Hinweise als unsicher – bestätigt wird der Auslöser, nicht die Antwort.
+   */
+  ueberHinweis?: string[];
   /** widersprechende Angabe (z. B. Treffer im Geodienst gegen „nein“ von Hand) – macht Grün gelb */
   widerspruch?: string;
   /** bei Angaben von Hand: das letzte Ergebnis des Dienstes – daraus wird der Widerspruch bei jedem Setzen neu bestimmt */
