@@ -45,8 +45,9 @@ export function TitleBar({ app, name, dirty, onOpenLog, regeln, onProjekte, zeic
   const desktop = isTauri() && rahmen !== 'tab';
   const ziehen = rahmen === 'tab' ? {} : { 'data-tauri-drag-region': true };
 
-  // im Tab: Name und ungespeicherte Änderungen an den Rahmen melden (Tab-Beschriftung, Rückfrage beim Schließen)
+  // Name der App für Stellen, die allen Apps gehören (z. B. gespeichertes Protokoll)
   appNameSetzen(app);
+  // im Tab: Name und ungespeicherte Änderungen an den Rahmen melden (Tab-Beschriftung, Rückfrage beim Schließen)
   useEffect(() => anRahmenMelden(app, name, dirty), [app, name, dirty]);
   // im Tab: „Speichern“ aus der Rückfrage des Rahmens beim Schließen
   const speichernRef = useRef(onSpeichern);
