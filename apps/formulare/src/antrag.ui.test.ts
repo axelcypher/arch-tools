@@ -1646,7 +1646,8 @@ describe('Antragsunterlagen ansehen und alle Formulare exportieren', () => {
     const ebene = () => document.querySelector<HTMLElement>('.vs-ebene');
     // Klasse „modal“: Startfokus, Fokusfang und Fokusrückgabe aus dialoge.ts
     expect(ebene()!.classList.contains('modal')).toBe(true);
-    expect(document.activeElement?.textContent).toBe('Schließen');
+    // den Startfokus setzt dialoge.ts nach dem nächsten Bild (requestAnimationFrame) – auf ihn warten, nicht auf eine feste Zeit
+    await vi.waitFor(() => expect(document.activeElement?.textContent).toBe('Schließen'));
     expect(ebene()!.contains(document.activeElement)).toBe(true);
     expect(ebene()!.textContent).toContain('Mit Programm öffnen');
     act(() => document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
