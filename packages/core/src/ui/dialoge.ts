@@ -8,7 +8,9 @@
  *    ein Eingabefeld, das Esc selbst nutzt (Eingabe verwerfen), hält das Ereignis an und schließt nichts
  */
 
-const FOKUSSIERBAR = 'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])';
+// „details > summary“: die Aufklappzeile (z. B. „Liste anzeigen“ im Bestätigen-Dialog) gehört in den Fokuszyklus
+const FOKUSSIERBAR =
+  'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href], details > summary, [tabindex]:not([tabindex="-1"])';
 
 let eingerichtet = false;
 const vorher = new WeakMap<Element, HTMLElement | null>();

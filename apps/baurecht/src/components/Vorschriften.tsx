@@ -248,14 +248,14 @@ export function suchTreffer(sucheRoh: string, normen: NormErgebnis[] = []): ((p:
     if (!normen.length || normen.some((n) => n.paragrafen.some((p) => passt(p, n)))) {
       // teilweise nicht erfasst („§§ 1 bis 3 BauNVO“ ohne § 1): das sagt die Trefferzeile
       const fehlen = ab ? [] : nrs.filter((nr) => !normen.some((n) => st(n) && n.paragrafen.some((p) => p.paragraf.toLowerCase() === nr)));
-      return fehlen.length ? Object.assign(passt, { hinweis: `${fehlen.length > 1 ? '§§' : '§'} ${fehlen.join(', ')} nicht erfasst` }) : passt;
+      return fehlen.length ? Object.assign(passt, { hinweis: `${fehlen.length > 1 ? '§§' : '§'} ${fehlen.join(', ')} ${fehlen.length > 1 ? 'sind' : 'ist'} nicht erfasst` }) : passt;
     }
   }
   // keinen dieser Paragrafen gibt es in den Regeln – dann die Norm selbst, wenn sie genannt ist („§ 1 BauNVO“ → BauNVO)
   if (rest)
     for (const st of stufen.slice(0, 2)) {
       const n0 = normen.find(st);
-      if (n0) return Object.assign((_p: ParagrafErgebnis, n: NormErgebnis) => st(n), { hinweis: `${nrs.length > 1 ? '§§' : '§'} ${nrs.join(', ')} ${n0.def.kurz} ist nicht erfasst – gezeigt: ${n0.def.kurz}` });
+      if (n0) return Object.assign((_p: ParagrafErgebnis, n: NormErgebnis) => st(n), { hinweis: `${nrs.length > 1 ? '§§' : '§'} ${nrs.join(', ')} ${n0.def.kurz} ${nrs.length > 1 ? 'sind' : 'ist'} nicht erfasst – gezeigt: ${n0.def.kurz}` });
     }
   // ausdrücklich nach einem Paragrafen gefragt, ohne Norm und ohne Treffer: nichts (der Leerzustand sagt das)
   if (suche.includes('§')) return () => false;
@@ -308,7 +308,8 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
   const summe = zaehler.rot + zaehler.gelb + zaehler.gruen || 1;
   const filterAktiv = !!suche || nurHand || nurGeaendert || w.ampeln.length < 3;
   const suchfeld = useRef<HTMLInputElement>(null);
-  const [ortMeldung, setOrtMeldung] = useState('');
+  // Meldung der Sammelaktion – gilt nur für den Filterstand, den die Aktion gesetzt hat (jede Filteränderung löscht sie)
+  const [ortMeldung, setOrtMeldung] = useState<{ text: string; filter: string } | null>(null);
   const zuruecksetzen = () => {
     setSuche('');
     setNurHand(false);
@@ -370,8 +371,9 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
     const zeile = gewaehlteZeile();
     if (zeile) inBereichZeigen(liste.current, zeile, 'mitte');
   }, [filterSchluessel]);
-  // die Meldung der Sammelaktion gilt nur, bis die Suche geändert wird
-  useEffect(() => setOrtMeldung(''), [suche]);
+  useEffect(() => {
+    if (ortMeldung && ortMeldung.filter !== filterSchluessel) setOrtMeldung(null);
+  }, [filterSchluessel, ortMeldung]);
   // Filter-Menü (schmal): Klick daneben und Tab hinaus schließen; Esc nur, wenn der Fokus im Menü steht (nicht hinter
   // einem Dialog)
   const menue = useRef<HTMLDetailsElement>(null);
@@ -521,7 +523,7 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
               // ins Suchfeld statt auf die Seite
               setNurGeaendert(false);
               setNurHand(true);
-              setOrtMeldung(`${n === 1 ? 'Eine Festlegung' : `${n} Festlegungen`} dem jetzigen Ort zugeordnet – als Entwurf, beim Speichern bestätigen`);
+              setOrtMeldung({ text: `${n === 1 ? 'Eine Festlegung' : `${n} Festlegungen`} dem jetzigen Ort zugeordnet – als Entwurf, beim Speichern bestätigen`, filter: `${suche}|true|false|${w.ampeln.join(',')}` });
               setTimeout(() => suchfeld.current?.focus(), 0);
             }}
             title="Dem jetzigen Ort zuordnen – als Entwurf; beim Speichern wird jede noch einmal bestätigt"
@@ -533,7 +535,7 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
       <div className="br-treffer" aria-live="polite">
         {filterAktiv ? (
           <>
-            {ortMeldung ? `${ortMeldung} · ` : ''}
+            {ortMeldung && ortMeldung.filter === filterSchluessel ? `${ortMeldung.text} · ` : ''}
             {treffer} von {auswertung.paragrafen.length} Paragrafen{passt.hinweis ? ` – ${passt.hinweis}` : ''}{' '}
             <button type="button" className="small br-link" onClick={zuruecksetzen}>
               Filter zurücksetzen

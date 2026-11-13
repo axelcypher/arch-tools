@@ -24,6 +24,11 @@ const SYNONYME: Record<string, string[]> = {
   efh: ['einfamilienhaus'],
   zfh: ['zweifamilienhaus'],
   mfh: ['mehrfamilienhaus'],
+  // beide Schreibweisen (die Altstadtsatzung sagt „Einfriedigung“, die BauO NRW „Einfriedung“)
+  einfriedung: ['einfriedigung'],
+  einfriedungen: ['einfriedigung'],
+  einfriedigung: ['einfriedung'],
+  einfriedigungen: ['einfriedung'],
 };
 
 // Satzzeichen zählen nicht („Abstandsflächen.“, „Stellplätze,“)

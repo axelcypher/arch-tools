@@ -1778,27 +1778,35 @@ h2.br-detail-name {
   flex: 1 1 100%;
   min-width: 0;
 }
-/* Fußzeile eines Merkmals: die Erklärung des Werts über die volle Breite, die Knöpfe darunter (nichts wird gequetscht) */
-.br-merkmal-fuss {
-  flex-wrap: wrap;
-  justify-content: flex-start;
-}
-.br-merkmal-fuss > .br-erklaerung {
-  flex: 1 1 100%;
-  min-width: 0;
-}
 /* schmale Angaben-Leiste: „Klärt am meisten“ kompakt (drei Chips, je eine Zeile) */
 .br-angaben {
   container: angaben / inline-size;
 }
 @container angaben (max-width: 300px) {
-  .br-klaeren .br-chip-knopf:nth-of-type(n + 4) {
-    display: none;
-  }
+  /* je Chip eine Zeile: gekürzt wird nur der Name, die Zahl bleibt stehen */
   .br-angaben .br-klaeren .br-chip-knopf {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
     white-space: nowrap;
+  }
+  .br-klaeren .br-chip-name {
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+  .br-klaeren .br-chip-zahl {
+    flex-shrink: 0;
+  }
+  .br-angaben .br-klaeren .br-chip-knopf:nth-of-type(n + 4) {
+    display: none;
+  }
+}
+/* schmale Leiste: der Titel einer Angabe über die volle Breite, „klärt N“ und Marken darunter (sonst bliebe für die
+   Frage eine Spalte von wenigen Wörtern) */
+@container angaben (max-width: 340px) {
+  .br-fakt-kopf > .br-fakt-titel {
+    flex-basis: 100%;
   }
 }
 /* Marke am Planungsrecht im selben Info-Stil wie der Hinweis */
@@ -1809,4 +1817,41 @@ h2.br-detail-name {
   border-radius: 9px;
   padding: 0 6px;
   white-space: nowrap;
+}
+/* Stand der Bestätigung des Planungsrechts: eigene Zeile unter dem Titel */
+.br-merkmal-marken {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+  margin: -2px 0 6px;
+}
+/* „leeren“ läuft hinter der Erklärung des Werts mit (im Satz: ohne eigene Zielhöhe) */
+.br-merkmal-fuss .br-leeren,
+.br-erklaerung .br-mehr {
+  padding: 0 2px;
+  min-height: 0;
+  vertical-align: baseline;
+  font-size: 12px;
+}
+.br-bestaetigen-zeile {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+}
+/* eingeklappt beantwortete Rückfrage: kompakt, mit „ändern“ */
+.br-rueckfrage-erledigt {
+  margin: 0 0 4px;
+  font-size: 12px;
+}
+.br-rueckfrage-erledigt .br-link {
+  padding: 0 2px;
+  min-height: 0;
+  font-size: 12px;
+}
+.br-merkmal-marken .br-link {
+  padding: 0 2px;
+  min-height: 0;
+  font-size: 12px;
 }

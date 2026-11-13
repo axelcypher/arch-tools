@@ -9,7 +9,10 @@ import { Modal } from '@core/ui/Dialog';
 import { benutzer, benutzerMerken } from '../benutzer';
 import { aktuelleLage } from '../pruefung';
 import { heute, PLANUNGSRECHT, useBaurecht } from '../store';
-import { AMPEL_ERKLAERUNG, AMPEL_TEXT, AmpelMarke } from './Ampel';
+import { AMPEL_ERKLAERUNG, AMPEL_TEXT, AmpelMarke, datum } from './Ampel';
+
+/** „a, b und c“ */
+const aufzaehlen = (t: string[]) => (t.length > 1 ? `${t.slice(0, -1).join(', ')} und ${t[t.length - 1]}` : (t[0] ?? ''));
 
 const RANG: Record<Ampel, number> = { rot: 2, gelb: 1, gruen: 0 };
 
@@ -424,14 +427,17 @@ export function BestaetigenDialog({ titel, faktTitel, folgen, faktDef = () => un
   // überholte Festlegungen lassen sich so nicht bestätigen – erst erneut festlegen oder aufheben
   const ueberholte = offen.festlegungen.filter((id) => festlegungen[id] && titel(id).ueberholt);
   // getrennt gezählt: Festlegungen von Hand und gesicherte Angaben
+  // das Planungsrecht eigens benannt (es ist ein Antragsmerkmal, keine Angabe)
   const nf = offen.festlegungen.length;
-  const na = offen.fakten.length;
-  const teile = [nf ? (nf === 1 ? 'eine Festlegung von Hand' : `${nf} Festlegungen von Hand`) : '', na ? (na === 1 ? 'eine gesicherte Angabe' : `${na} gesicherte Angaben`) : ''].filter(Boolean);
+  const pr = offen.fakten.includes(PLANUNGSRECHT);
+  const na = offen.fakten.length - (pr ? 1 : 0);
+  const teile = [nf ? (nf === 1 ? 'eine Festlegung von Hand' : `${nf} Festlegungen von Hand`) : '', na ? (na === 1 ? 'eine gesicherte Angabe' : `${na} gesicherte Angaben`) : '', pr ? 'die Bestätigung des Planungsrechts für diesen Ort' : ''].filter(Boolean);
+  const geprueftTeile = [nf ? (nf === 1 ? 'diese Festlegung' : 'diese Festlegungen') : '', na ? (na === 1 ? 'diese Angabe' : 'diese Angaben') : '', pr ? 'das Planungsrecht für diesen Ort' : ''].filter(Boolean);
   return (
     <Modal titel="Vor dem Speichern bestätigen" onClose={() => antwort('abbrechen')} breit klickDaneben={false}>
       <h3>Vor dem Speichern bestätigen</h3>
       <p>
-        Seit dem letzten Speichern {nf + na === 1 ? 'ist' : 'sind'} {teile.join(' und ')} neu, geändert oder aufgehoben. Bitte noch einmal prüfen – alles steht mit Begründung und Namen im Prüfprotokoll.
+        Seit dem letzten Speichern {teile.length === 1 && nf + na <= 1 ? 'ist' : 'sind'} {aufzaehlen(teile)} neu, geändert oder aufgehoben. Bitte noch einmal prüfen – alles steht mit Begründung und Namen im Prüfprotokoll.
       </p>
       <ul className="br-bestaetigen-liste">
         {offen.festlegungen.map((id) => {
@@ -501,7 +507,7 @@ export function BestaetigenDialog({ titel, faktTitel, folgen, faktDef = () => un
                   <span className="br-marke">für diesen Ort bestätigt: {po?.wert ?? '–'}</span>
                 </div>
                 <div className="br-leise-stark">
-                  {po?.von ? `${po.von}: ` : ''}gilt für {po?.anzeige ?? 'diesen Ort'}
+                  {po?.von ? `${po.von}${po.am ? `, ${datum(po.am)}` : ''}: ` : ''}gilt für {po?.anzeige ?? 'diesen Ort'}
                 </div>
                 <Folgen folgen={fo} />
               </li>
@@ -532,7 +538,7 @@ export function BestaetigenDialog({ titel, faktTitel, folgen, faktDef = () => un
         </div>
       )}
       <label className="toggle br-geprueft">
-        <input type="checkbox" checked={geprueft} disabled={ueberholte.length > 0} onChange={(e) => setGeprueft(e.target.checked)} /> Ich habe {[nf ? (nf === 1 ? 'diese Festlegung' : 'diese Festlegungen') : '', na ? (na === 1 ? (nf ? 'die Angabe' : 'diese Angabe') : nf ? 'die Angaben' : 'diese Angaben') : ''].filter(Boolean).join(' und ')} geprüft.
+        <input type="checkbox" checked={geprueft} disabled={ueberholte.length > 0} onChange={(e) => setGeprueft(e.target.checked)} /> Ich habe {aufzaehlen(geprueftTeile)} geprüft.
       </label>
       <div className="dialog-buttons">
         <button type="button" onClick={() => antwort('abbrechen')}>

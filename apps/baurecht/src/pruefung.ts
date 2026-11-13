@@ -211,6 +211,20 @@ export function auswertungMit(eigene: Record<string, FaktWert>, mit?: { planungs
   return pruefstandBerechnen(s.paket, s.project, s.merkmale, eigene, s.pruefung.festlegungen, s.pruefung.einreichung, s.texte, planungsrechtOrt).auswertung;
 }
 
+/**
+ * Wie viele Paragrafen die Bestätigung des Planungsrechts für den jetzigen Ort ändern würde („klärt N“) – dieselbe
+ * Rechnung wie danach in der Ansicht (Ort und Wert wie beim Bestätigen)
+ */
+export function planungsrechtWirkung(jetzt: Auswertung): number {
+  const s = useBaurecht.getState();
+  const o = ortVon(s.project);
+  const wert = s.merkmale['Planungsrecht'];
+  if (!o || !wert) return 0;
+  const dann = auswertungMit(s.pruefung.fakten, { planungsrechtOrt: { ...o, wert } });
+  const vorher = new Map(jetzt.paragrafen.map((p) => [p.id, p.ampel]));
+  return dann.paragrafen.filter((p) => vorher.has(p.id) && vorher.get(p.id) !== p.ampel).length;
+}
+
 /* ---------- Rechtsstand ---------- */
 
 let rechtsstand: Rechtsstand | null = null;

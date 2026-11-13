@@ -349,10 +349,10 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
       const angaben = fehlt.filter((o) => !o.startsWith('paragraf:'));
       const haengt = fehlt.filter((o) => o.startsWith('paragraf:'));
       // überall derselbe kurze Name der Angabe (nicht die Frage)
-      const teile = [angaben.length ? `es fehlt: ${angaben.map((o) => offenText(o, text)).join(' · ')}` : '', haengt.length ? `hängt an ${haengt.map((o) => offenText(o, text)).join(' · ')} (dort offen)` : ''].filter(Boolean);
+      const teile = [angaben.length ? `es fehlt: ${angaben.map((o) => offenText(o, text)).join(' · ')}` : '', haengt.length ? `hängt an ${haengt.map((o) => offenText(o, text)).join(' · ')} – dort offen` : ''].filter(Boolean);
       const satz = teile.join('; ') || 'es fehlt: Angaben';
       // kein Punkt nach einer Frage („… (LINFOS-Kennung)?“)
-      gruende.push(`Offen – ${satz}${/[?.!)]$/.test(satz) && !satz.endsWith('(dort offen)') ? '' : '.'}`);
+      gruende.push(`Offen – ${satz}${/[?.!)]$/.test(satz) ? '' : '.'}`);
       tragend = [g, gilt];
     }
 

@@ -55,6 +55,8 @@ export interface Zustand {
   auswahl: string | null;
   /** Fakt, zu dem die Angaben-Leiste springen soll */
   fokus: string | null;
+  /** Antragsmerkmale auf- bzw. zugeklappt (null: Vorgabe – offen, solange eines fehlt); im Store, damit der Zustand eine Suche übersteht */
+  merkmaleAuf: boolean | null;
 
   projektSetzen: (q: Projektquelle, project: Project, roh: Record<string, unknown>) => void;
   /**
@@ -125,6 +127,7 @@ export const useBaurecht = create<Zustand>((set, get) => ({
   rechtsstandGeprueft: null,
   auswahl: null,
   fokus: null,
+  merkmaleAuf: null,
   ansage: '',
   // derselbe Text noch einmal: unsichtbar verändert, damit der Screenreader ihn erneut vorliest
   ansagen: (text) => set((s) => ({ ansage: s.ansage === text ? `${text}\u200b` : text })),
@@ -134,7 +137,7 @@ export const useBaurecht = create<Zustand>((set, get) => ({
     const antraege = antraegeAus(roh);
     const merkmale = merkmaleAusRoh(roh, antrag);
     const pruefung = baurechtAusRoh(roh).pruefungen[antrag] ?? leerePruefung();
-    set({ quelle, project, roh, antrag, antraege: antraege.includes(antrag) ? antraege : [...antraege, antrag], merkmale, merkmaleDatei: { ...merkmale }, pruefung: kopie(pruefung), pruefungDatei: kopie(pruefung), auswahl: null, fokus: null });
+    set({ quelle, project, roh, antrag, antraege: antraege.includes(antrag) ? antraege : [...antraege, antrag], merkmale, merkmaleDatei: { ...merkmale }, pruefung: kopie(pruefung), pruefungDatei: kopie(pruefung), auswahl: null, fokus: null, merkmaleAuf: null });
   },
   gespeichert: (roh, quelle, seit, project) => {
     const s = get();
@@ -174,7 +177,7 @@ export const useBaurecht = create<Zustand>((set, get) => ({
     // Koordinaten) für die Ortsbindung unsichtbar
     set({ roh, quelle: quelle ?? s.quelle, merkmale, merkmaleDatei, pruefung, pruefungDatei: kopie(pruefungDatei), ...(project ? { project } : {}) });
   },
-  schliessen: () => set({ quelle: null, project: null, roh: null, antrag: 'Projekt', antraege: [], merkmale: {}, merkmaleDatei: {}, pruefung: leerePruefung(), pruefungDatei: leerePruefung(), auswahl: null }),
+  schliessen: () => set({ quelle: null, project: null, roh: null, antrag: 'Projekt', antraege: [], merkmale: {}, merkmaleDatei: {}, pruefung: leerePruefung(), pruefungDatei: leerePruefung(), auswahl: null, merkmaleAuf: null }),
   antragWaehlen: (antrag) => {
     const roh = get().roh;
     if (!roh) return;

@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { offenText, werten } from '@core/baurecht/kurz';
 import { MERKMAL_TITEL } from '@core/baurecht/fakten';
 import { VORGABE_MERKMALE } from '@core/bedingung';
@@ -9,8 +9,8 @@ import { DruckKopf } from '@core/ui/DruckKopf';
 import { useEscSchliessen } from '@core/ui/Dialog';
 import { benutzer } from '../benutzer';
 import type { Pruefstand } from '../pruefung';
-import { aktuelleLage, OHNE_LAGEBEZUG, verwendeteFassungen } from '../pruefung';
-import { istGeaendert, offeneBestaetigungen, offeneFestlegungen, useBaurecht } from '../store';
+import { aktuelleLage, auswertungMit, OHNE_LAGEBEZUG, verwendeteFassungen } from '../pruefung';
+import { istGeaendert, offeneBestaetigungen, offeneFestlegungen, PLANUNGSRECHT, useBaurecht } from '../store';
 import { AMPEL_TEXT, datum, nb } from './Ampel';
 
 
@@ -90,12 +90,22 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
   const offeneB = useBaurecht((s) => offeneBestaetigungen(s).join('|'));
   const eigeneFakten = useBaurecht((s) => s.pruefung.fakten);
   const planungsrechtOrt = useBaurecht((s) => s.pruefung.planungsrechtOrt);
+  // so viele Paragrafen hängen an der noch nicht gespeicherten Bestätigung des Planungsrechts (Vergleich mit dem Stand der Datei)
+  const prGeaendert = useMemo(() => {
+    if (!offeneB.split('|').includes(PLANUNGSRECHT)) return 0;
+    const datei = auswertungMit(eigeneFakten, { planungsrechtOrt: useBaurecht.getState().pruefungDatei.planungsrechtOrt });
+    const dort = new Map(datei.paragrafen.map((p) => [p.id, p.ampel]));
+    return pruefstand.auswertung.paragrafen.filter((p) => dort.has(p.id) && dort.get(p.id) !== p.ampel).length;
+  }, [offeneB, eigeneFakten, pruefstand]);
   // an den Antragsmerkmalen: Bestätigung des Planungsrechts (wer, wann) bzw. Vorbehalt; Umfang der Beseitigung und
   // Angaben zum Altbau beim Merkmal „Art des Vorhabens“ (wie in der App unter dem Merkmal)
   const merkmalVermerk = (name: string): string => {
     if (name === 'Planungsrecht') {
       if (pruefstand.planungsrechtFrueher) return ' (nicht für diesen Ort bestätigt)';
-      return planungsrechtOrt?.von ? ` (für diesen Ort bestätigt: ${planungsrechtOrt.von}${planungsrechtOrt.am ? `, ${datum(planungsrechtOrt.am)}` : ''})` : '';
+      if (!planungsrechtOrt?.von) return '';
+      const wer = `${planungsrechtOrt.von}${planungsrechtOrt.am ? `, ${datum(planungsrechtOrt.am)}` : ''}`;
+      // noch nicht gespeichert: zählt schon, ist aber Entwurf (zweite Bestätigung beim Speichern)
+      return offeneB.split('|').includes(PLANUNGSRECHT) ? ` (Entwurf – für diesen Ort bestätigt: ${wer}; zweite Bestätigung beim Speichern fehlt)` : ` (für diesen Ort bestätigt: ${wer})`;
     }
     if (name === 'Vorhaben') {
       // nur Rückfragen, die gerade gestellt sind (nach einem Wechsel auf „Errichtung“ zählt der Umfang nicht mehr)
@@ -165,10 +175,13 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
   if (!project) return null;
   const a = pruefstand.auswertung;
   const ungespeichert = new Set(offeneB ? offeneB.split('|') : []);
+  // die Bestätigung des Planungsrechts eigens (ein Antragsmerkmal, keine gesicherte Angabe)
+  const prEntwurf = ungespeichert.delete(PLANUNGSRECHT);
   const nF = offeneF ? offeneF.split('|').length : 0;
-  const entwuerfe = nF + ungespeichert.size;
-  // getrennt benannt: Festlegungen von Hand und gesicherte Angaben
-  const entwurfText = [nF ? (nF === 1 ? 'eine Festlegung von Hand' : `${nF} Festlegungen von Hand`) : '', ungespeichert.size ? (ungespeichert.size === 1 ? 'eine gesicherte Angabe' : `${ungespeichert.size} gesicherte Angaben`) : ''].filter(Boolean).join(' und ');
+  const entwuerfe = nF + ungespeichert.size + (prEntwurf ? 1 : 0);
+  // getrennt benannt: Festlegungen von Hand, gesicherte Angaben und das Planungsrecht
+  const entwurfTeile = [nF ? (nF === 1 ? 'eine Festlegung von Hand' : `${nF} Festlegungen von Hand`) : '', ungespeichert.size ? (ungespeichert.size === 1 ? 'eine gesicherte Angabe' : `${ungespeichert.size} gesicherte Angaben`) : '', prEntwurf ? 'die Bestätigung des Planungsrechts' : ''].filter(Boolean);
+  const entwurfText = entwurfTeile.length > 1 ? `${entwurfTeile.slice(0, -1).join(', ')} und ${entwurfTeile[entwurfTeile.length - 1]}` : (entwurfTeile[0] ?? '');
   const offen = a.paragrafen.filter((p) => p.ampel === 'gelb');
   const vonHand = a.paragrafen.filter((p) => p.festlegung);
   const ausEntwurf = vonHand.filter((p) => !p.festlegung!.bestaetigt);
@@ -192,7 +205,7 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
     if (!sonder && ((p.klaerend?.length ?? 0) > 0 || p.bestaetigend)) continue; // steht schon unter seinen klärenden Angaben
     // sonst nach dem Grund: hängt an einem offenen Paragrafen, oder die fehlenden Angaben entscheiden nur zusammen
     const o = p.offen[0];
-    const k = sonder || (o?.startsWith('paragraf:') ? `Hängt an ${offenText(o, a.text)} (dort offen)` : p.gruende[0].replace(/\s*\(.*$/, '').replace(/^Offen – /, '').replace(/\.$/, ''));
+    const k = sonder || (o?.startsWith('paragraf:') ? `Hängt an ${offenText(o, a.text)} – dort offen` : p.gruende[0].replace(/\s*\(.*$/, '').replace(/^Offen – /, '').replace(/\.$/, ''));
     gruppen.set(k, [...(gruppen.get(k) ?? []), p]);
   }
   // Gruppen mit nur einem Paragrafen kommen zusammen in eine Zeile „Weitere“
@@ -294,7 +307,7 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
               {/* Reihenfolge und Namen wie in der Leiste */}
               <td>
                 {VORGABE_MERKMALE.filter((m) => merkmale[m.name])
-                  .map((m) => `${MERKMAL_TITEL[m.name] ?? m.name}: ${merkmale[m.name]}${m.werte.includes(merkmale[m.name]) ? merkmalVermerk(m.name) : ' (nicht in der Liste – zählt nicht)'}`)
+                  .map((m) => `${MERKMAL_TITEL[m.name] ?? m.name}: ${merkmale[m.name]}${m.werte.includes(merkmale[m.name]) ? merkmalVermerk(m.name) : ' (passt nicht zur Liste – nicht gewertet)'}`)
                   .join(' · ') || '–'}
               </td>
             </tr>
@@ -303,6 +316,12 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
               <td className="strong">
                 {a.zaehler.rot} gilt · {a.zaehler.gelb} prüfen · {a.zaehler.gruen} entfällt
                 {ausEntwurf.length > 0 && <span className="br-entwurf-text"> – davon {ausEntwurf.length} aus Entwürfen von Hand</span>}
+                {prGeaendert > 0 && (
+                  <span className="br-entwurf-text">
+                    {' '}
+                    – {prGeaendert === 1 ? 'ein Paragraf' : `${prGeaendert} Paragrafen`} nur durch die noch nicht gespeicherte Bestätigung des Planungsrechts
+                  </span>
+                )}
               </td>
             </tr>
           </tbody>

@@ -269,9 +269,16 @@ export function Kopf({ stand, onRechtsstand, onLage, onProtokoll, onSpeichern, o
 }
 
 /** „Klärt am meisten“: die Angaben, die die meisten offenen Paragrafen entscheiden (oben in den Angaben) */
-export function Klaeren({ stand }: { stand: Pruefstand }) {
-  // fehlende Angaben und Hinweise, deren Bestätigung entscheidet – zusammen nach Wirkung geordnet
-  const liste = [...stand.auswertung.klaerung.map((k) => ({ ...k, bestaetigen: false })), ...(stand.auswertung.bestaetigen ?? []).map((k) => ({ ...k, bestaetigen: true }))].sort((a, b) => b.anzahl - a.anzahl).slice(0, 4);
+export function Klaeren({ stand, planungsrecht = 0 }: { stand: Pruefstand; planungsrecht?: number }) {
+  // fehlende Angaben und Hinweise, deren Bestätigung entscheidet – zusammen nach Wirkung geordnet; dazu das Planungsrecht,
+  // solange es für diesen Ort nicht bestätigt ist (`planungsrecht`: so viele Paragrafen ändert die Bestätigung)
+  const liste = [
+    ...stand.auswertung.klaerung.map((k) => ({ ...k, bestaetigen: false })),
+    ...(stand.auswertung.bestaetigen ?? []).map((k) => ({ ...k, bestaetigen: true })),
+    ...(planungsrecht > 0 ? [{ id: 'merkmal:Planungsrecht', titel: 'Planungsrecht', anzahl: planungsrecht, bestaetigen: true }] : []),
+  ]
+    .sort((a, b) => b.anzahl - a.anzahl)
+    .slice(0, 4);
   if (!liste.length) return null;
   return (
     <div className="br-klaeren" role="group" aria-label="Angaben, die am meisten klären">
@@ -282,9 +289,16 @@ export function Klaeren({ stand }: { stand: Pruefstand }) {
           type="button"
           className="br-chip-knopf"
           onClick={() => useBaurecht.getState().fokusSetzen(k.bestaetigen ? `${k.id}:bestaetigen` : k.id)}
-          title={k.bestaetigen ? `Bestätigen entscheidet ${k.anzahl} Paragrafen, die nur wegen dieses Hinweises offen sind` : `Diese Angabe entscheidet ${k.anzahl} offene Paragrafen`}
+          title={
+            k.id === 'merkmal:Planungsrecht'
+              ? `Für diesen Ort bestätigen ändert ${k.anzahl} Paragrafen – bis dahin zählt das Planungsrecht nicht als gesichert`
+              : k.bestaetigen
+                ? `Bestätigen entscheidet ${k.anzahl} Paragrafen, die nur wegen dieses Hinweises offen sind`
+                : `Diese Angabe entscheidet ${k.anzahl} offene Paragrafen`
+          }
         >
-          {k.titel} <span className="br-chip-zahl">{k.bestaetigen ? 'bestätigen klärt' : 'klärt'} {k.anzahl}</span>
+          {/* bei schmaler Leiste wird nur der Name gekürzt – die Zahl bleibt stehen */}
+          <span className="br-chip-name">{k.titel}</span> <span className="br-chip-zahl">{k.bestaetigen ? 'bestätigen klärt' : 'klärt'} {k.anzahl}</span>
         </button>
       ))}
     </div>

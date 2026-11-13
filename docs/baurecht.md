@@ -39,11 +39,15 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   Gespeichert wird, was das Feld zeigt: Anzahlen (z. B. Stellplätze) ganzzahlig, andere Zahlen auf zwei Nachkommastellen,
   keine negativen Werte. Schwellen „über x“ (im Regelschema „x,01“) gelten als echtes „größer als x“ – 22,005 m sind
   über 22 m. Das **Planungsrecht** zählt erst als gesichert, wenn es für genau diesen Ort und Wert bestätigt ist: in
-  Baurecht gesetzt oder mit „Bestätigen“ bzw. „Für diesen Ort bestätigen“ bestätigt. Ein Wert aus Formulare oder einer älteren Datei, ein seither
+  Baurecht gesetzt oder mit „Für diesen Ort bestätigen“ (im Hinweis oben und am Merkmal) bestätigt. Vorher steht dort,
+  wie viel die Bestätigung klärt („klärt 30“), und „Planungsrecht bestätigen klärt N“ ordnet sich unter „Klärt am
+  meisten“ ein. Ein Wert aus Formulare oder einer älteren Datei, ein seither
   geänderter Wert und ein Umzug (Anschrift, Grundstück, Koordinaten) zeigen oben einen Hinweis; was daran hängt, kann
   bis dahin nicht sicher entfallen (in den Begründungen und im Protokoll „Nicht gesichert: Planungsrecht …“). Die
   Bestätigung sagt ihre Wirkung an („30 Vorschriften entfallen jetzt“), wird beim Speichern mit ihren Folgen noch einmal
-  abgefragt (bis dahin „Entwurf“ am Merkmal) und steht mit Name und Datum im Protokoll. Ein Wert außerhalb der Liste
+  abgefragt (bis dahin „Entwurf – beim Speichern bestätigen“ am Merkmal, mit „zurücknehmen“; im Protokoll „Entwurf – für
+  diesen Ort bestätigt …“ und beim Ergebnis, wie viele Paragrafen nur daran hängen) und steht mit Name und Datum im
+  Protokoll. „Speichern, diese als Entwurf behalten“ lässt sie Entwurf. Ein Wert außerhalb der Liste
   lässt sich nicht für den Ort bestätigen – er zählt ohnehin nicht. Angaben
   von Hand aus älteren Dateien werden wie bei der Eingabe geprüft: negative Werte und halbe Anzahlen sind nur Hinweis,
   Angaben zur Lage ohne Lagebezug ebenso („Für diese Lage übernehmen“).
@@ -55,8 +59,11 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
 - **Rückfrage zum Antragsmerkmal:** Bei „Beseitigung“ steht der **Umfang der Beseitigung** (vollständiger Abbruch
   ohne Ersatzbau, Teilabbruch, Abbruch mit Ersatzbau) direkt unter „Art des Vorhabens“ (als Knöpfe, unter der Erklärung des Werts);
   Teilabbruch wird wie eine Änderung geprüft, Ersatzbau wie Errichtung und Beseitigung; beim Ersatzbau folgen dort die
-  Angaben zum Altbau (verfahrensfrei zu beseitigen, Abbruch im Bauantrag mitbeantragt). Die Rückfragen stehen auch bei
-  eingeklappten Merkmalen da („eine Rückfrage offen“). Ändert sich ein Merkmal, ordnen
+  Angaben zum Altbau (verfahrensfrei zu beseitigen, Abbruch im Bauantrag mitbeantragt). Offene Rückfragen stehen auch bei
+  eingeklappten Merkmalen da („eine Rückfrage offen“), mit ihrer Erläuterung (gekürzt, „mehr“); eine neue Rückfrage wird
+  angesagt. Eingeklappt Beantwortetes bleibt bis zum Aufklappen kompakt stehen („Umfang der Beseitigung: Abbruch mit
+  Ersatzbau – ändern“), der Fokus geht auf die nächste offene Rückfrage bzw. den Gruppenknopf („Rückfragen
+  beantwortet“). Auf- bzw. Zugeklappt bleibt auch nach einer Suche. Ändert sich ein Merkmal, ordnen
   sich die Angaben neu. „Klärt am meisten“ zählt eine Angabe bei einem Paragrafen nur, wenn ihre Antwort dort etwas
   ändert (führen alle Antworten zum selben Ergebnis, zählt sie nicht).
   Hinweise, deren Bestätigung allein einen Paragrafen entschiede, stehen dort als „bestätigen klärt N“ (Werte eines
@@ -87,7 +94,7 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   tragen). Oben das Ergebnis je Ampel (zugleich Ein-/Ausblenden), Suche und Filter „nur von Hand festgelegte“ bzw.
   „nur geänderte/überholte“, mit Trefferzahl. Marken: „von Hand“ bzw. „von Hand · Entwurf“, „überholt“, „nicht
   wirksam“, „Text geändert“, „eigene Verantwortung“ (prüft die Bauaufsicht nicht). Hängt eine Regel an einem anderen
-  Paragrafen, der selbst offen ist, heißt es „hängt an § … (dort offen)“; in den Einzelheiten steht das unter „Hängt an“
+  Paragrafen, der selbst offen ist, heißt es „hängt an § … – dort offen“; in den Einzelheiten steht das unter „Hängt an“
   (getrennt von den fehlenden Angaben). Ist die Spalte schmaler als 900 px, steht der
   Grund unter dem Titel.
 - **Einzelheiten (rechts):** Ampel, Begründung in Worten, Hinweise (Ausnahmen, Einzelfall, Vorrang des Ortsrechts,
@@ -180,9 +187,12 @@ zwischen Kopf, Angaben, Vorschriften und Einzelheiten; ist kein Paragraf gewähl
 Fokus (der Bereich wird angesagt, F6 geht weiter). Menüs (Mehr ▾, Filter ▾, Farbschema) nehmen beim Öffnen den Fokus,
 bedienen sich mit ↑/↓ und Pos1/Ende, schließen mit Esc (Fokus zurück an ihren Knopf) und schließen, sobald der Fokus sie
 mit Tab verlässt; ihre Einträge sind keine eigenen Tabstopps; ↓/↑ auf dem geschlossenen Knopf „Mehr“ öffnet es.
-Die Suche in den Vorschriften findet „§ 6 BauO NRW“ und „§ 6 Abs. 1 BauO NRW“ genau (Norm nach Kurzform); ein „§“, den
-die Regeln nicht kennen, ergibt keinen Treffer; ohne „§“ und ohne Paragrafentreffer sucht sie im Text (Zahlen als ganzes
-Wort, Kürzel bis drei Zeichen wie „GK“, „GRZ“ nur am Wortanfang und auch ausgeschrieben). Nach Suche, Filter und
+Die Suche in den Vorschriften findet Zitate genau (Norm nach Kurzform): „§ 6 BauO NRW“, „§ 62 Abs. 1 Satz 1 Nr. 1a BauO
+NRW“, „§§ 30, 34 BauGB“, Bereiche „§§ 30 bis 35“, „§§ 30–35“, „§§ 30-35“, „§§ 30 ff.“ und „§ 30 f.“, benannte Einheiten
+wie „C.3“. Ein „§“, den die Regeln nicht kennen, zeigt die genannte Norm mit dem Hinweis „§ 248 BauGB ist nicht erfasst
+– gezeigt: BauGB“ (bei Bereichen „§ 29 ist nicht erfasst“ in der Trefferzeile); ohne Norm ergibt er keinen Treffer.
+Ohne „§“ und ohne Paragrafentreffer sucht sie im Text (Zahlen als ganzes Wort, Kürzel bis drei Zeichen wie „GK“, „GRZ“
+nur am Wortanfang und auch ausgeschrieben, gängige Synonyme wie Abriss/Rückbau, Einfriedung/Einfriedigung). Nach Suche, Filter und
 „Filter zurücksetzen“ bleibt die gewählte Zeile im Blick, der Fokus geht ins Suchfeld. Die Sammelmarke der Warnungen öffnet und schließt „Mehr“, Esc gibt
 den Fokus an den Öffner zurück. Nach „Bestätigen“, „zurücknehmen“ und der Wahl des Farbschemas bleibt der Fokus an der
 Angabe bzw. am Knopf.

@@ -23,4 +23,23 @@ describe('Dialoge', () => {
     await warten();
     expect(document.activeElement).toBe(knopf);
   });
+
+  it('nehmen die Aufklappzeile (summary) in den Tab-Zyklus auf', async () => {
+    dialogVerhaltenEinrichten();
+    const hinter = document.createElement('div');
+    hinter.className = 'modal-backdrop';
+    hinter.innerHTML = '<div class="modal"><button id="x">Abbrechen</button><details><summary id="s">Liste anzeigen</summary><p>…</p></details></div>';
+    document.body.appendChild(hinter);
+    await warten();
+    const s = hinter.querySelector<HTMLElement>('#s')!;
+    // offsetParent ist in happy-dom immer null – sichtbar machen wie im Browser
+    for (const el of hinter.querySelectorAll<HTMLElement>('button, summary')) Object.defineProperty(el, 'offsetParent', { get: () => hinter });
+    s.focus();
+    const tab = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true });
+    document.dispatchEvent(tab);
+    // summary ist das letzte Ziel: Tab springt zurück an den Anfang statt aus dem Dialog
+    expect(tab.defaultPrevented).toBe(true);
+    expect(document.activeElement?.id).toBe('x');
+    hinter.remove();
+  });
 });

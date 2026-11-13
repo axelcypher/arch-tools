@@ -4,7 +4,7 @@ import { baurechtAusRoh, leerePruefung, pruefungSetzen } from '@core/baurecht/pr
 import type { FaktWert, NormErgebnis, ParagrafErgebnis } from '@core/baurecht/typen';
 import { projektdateiRoh } from '@core/projektdatei';
 import { beispielOap } from './beispiel.test';
-import { merkmalUnterzeile, ohneKlammer, wieAngezeigt } from './components/Angaben';
+import { kuerzen, merkmalUnterzeile, ohneKlammer, wieAngezeigt } from './components/Angaben';
 import { textPasst } from './suche';
 import { suchTreffer } from './components/Vorschriften';
 import { aenderungenAnwenden } from './projekt';
@@ -272,3 +272,26 @@ describe('Runde 13: Gebäudeklasse nur aus gültigen Angaben', () => {
   });
 });
 
+
+describe('Runde 14: Zitatsuche, Kürzen', () => {
+  const para = (paragraf: string, titel: string) => ({ paragraf, titel, gruende: [] }) as unknown as ParagrafErgebnis;
+  const norm = (kurz: string, titel: string, paragrafen: ParagrafErgebnis[]) => ({ def: { kurz, titel }, paragrafen }) as unknown as NormErgebnis;
+  const normen = [norm('BauGB', 'Baugesetzbuch', [para('30', 'B-Plan'), para('33', 'Planreife'), para('34', 'Innenbereich'), para('35', 'Außenbereich')])];
+  const treffer = (q: string) => normen.flatMap((n) => n.paragrafen.filter((p) => suchTreffer(q, normen)(p, n)).map((p) => `${n.def.kurz} ${p.paragraf}`));
+  it('Bereiche mit Gedanken- und Bindestrich, Mehrzahl im Hinweis, Einfriedung/Einfriedigung', () => {
+    const alle = ['BauGB 30', 'BauGB 33', 'BauGB 34', 'BauGB 35'];
+    expect(treffer('§§ 30–35 BauGB')).toEqual(alle);
+    expect(treffer('§§ 30-35 BauGB')).toEqual(alle);
+    expect(treffer('§§ 30 – 35 BauGB')).toEqual(alle);
+    expect(suchTreffer('§§ 248, 249 BauGB', normen).hinweis).toBe('§§ 248, 249 BauGB sind nicht erfasst – gezeigt: BauGB');
+    expect(suchTreffer('§§ 29 bis 30 BauGB', normen).hinweis).toBe('§ 29 ist nicht erfasst');
+    expect(textPasst('Einfriedigungen der Vorgärten', 'Einfriedung')).toBe(true);
+    expect(textPasst('Einfriedungen', 'Einfriedigung')).toBe(true);
+  });
+  it('lange Erläuterungen werden am Satzende gekürzt, nicht nach „z. B.“', () => {
+    const t = 'Erster Satz mit Inhalt. Zweiter Satz (z. B. Garage, Dach) mit mehr Inhalt. Dritter Satz, der zu lang ist und abgeschnitten werden muss.';
+    expect(kuerzen(t, 90)).toBe('Erster Satz mit Inhalt. Zweiter Satz (z. B. Garage, Dach) mit mehr Inhalt.');
+    expect(kuerzen('kurz', 90)).toBe('kurz');
+    expect(kuerzen('ein langer Text ohne Satzende der nur aus Wörtern besteht und weiter geht', 30)).toBe('ein langer Text ohne Satzende');
+  });
+});

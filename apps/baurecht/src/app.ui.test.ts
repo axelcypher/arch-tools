@@ -524,3 +524,88 @@ describe('Baurecht – Oberfläche', () => {
     expect(host.querySelector('.titlebar-dirty')).not.toBeNull();
   });
 });
+
+describe('Runde 14: Planungsrecht als Entwurf, eingeklappte Rückfragen', () => {
+  beforeEach(() => {
+    geschrieben = null;
+    const bytes = beispielOap();
+    useBaurecht.getState().projektSetzen({ art: 'datei', name: 'EFH.oap', bytes }, readProjectFile(bytes), projektdateiRoh(bytes));
+  });
+  afterEach(() => {
+    act(() => root?.unmount());
+    document.body.innerHTML = '';
+  });
+  const warten = () => act(async () => void (await new Promise((r) => setTimeout(r, 20))));
+
+  it('der Hinweis nennt vorher, was die Bestätigung klärt – die Zahl stimmt; danach „Entwurf“ mit „zurücknehmen“', async () => {
+    const { auswertungMit } = await import('./pruefung');
+    const host = render();
+    const hinweis = host.querySelector<HTMLElement>('.br-planungsrecht-hinweis')!;
+    const n = Number(/klärt (\d+)/.exec(hinweis.textContent ?? '')?.[1]);
+    expect(n).toBeGreaterThan(0);
+    const vorher = new Map(auswertungMit(useBaurecht.getState().pruefung.fakten).paragrafen.map((p) => [p.id, p.ampel]));
+    act(() => knopf(hinweis, 'Für diesen Ort bestätigen')!.click());
+    const nachher = auswertungMit(useBaurecht.getState().pruefung.fakten).paragrafen.filter((p) => vorher.get(p.id) !== p.ampel);
+    expect(nachher.length).toBe(n);
+    // am Merkmal: Entwurf (zählt schon, zweite Bestätigung beim Speichern), zurücknehmbar
+    const merkmal = host.querySelector<HTMLElement>('[data-merkmal="Planungsrecht"]')!;
+    expect(merkmal.querySelector('.br-merkmal-marken')?.textContent).toMatch(/Entwurf – beim Speichern bestätigen/);
+    // im Protokoll als Entwurf, mit der Zahl der Paragrafen, die nur daran hängen
+    act(() => knopf(host, 'Prüfprotokoll')!.click());
+    const d = document.querySelector<HTMLElement>('.br-protokoll')!;
+    expect(d.textContent).toMatch(/Planungsrecht: .+ \(Entwurf – für diesen Ort bestätigt: /);
+    expect(d.textContent).toContain(`${n} Paragrafen nur durch die noch nicht gespeicherte Bestätigung des Planungsrechts`);
+    expect(d.textContent).toMatch(/Die Bestätigung des Planungsrechts ist noch nicht gespeichert/);
+    act(() => knopf(d, 'Schließen')!.click());
+    act(() => knopf(host.querySelector('[data-merkmal="Planungsrecht"]')!, 'zurücknehmen')!.click());
+    expect(useBaurecht.getState().pruefung.planungsrechtOrt).toBeUndefined();
+    expect(host.querySelector('[data-merkmal="Planungsrecht"] .br-info-marke')?.textContent).toMatch(/nicht für diesen Ort bestätigt/);
+  });
+
+  it('der Chip „Planungsrecht bestätigen klärt N“ führt direkt auf „Für diesen Ort bestätigen“', async () => {
+    const host = render();
+    const chip = [...host.querySelectorAll<HTMLButtonElement>('.br-klaeren .br-chip-knopf')].find((b) => b.textContent?.startsWith('Planungsrecht'));
+    // im Beispiel klärt die Bestätigung mehr als die meisten Angaben – der Chip steht unter den ersten vier
+    expect(chip).toBeTruthy();
+    if (!chip) return;
+    expect(chip.textContent).toMatch(/Planungsrecht bestätigen klärt \d+/);
+    act(() => chip.click());
+    await warten();
+    expect(document.activeElement?.textContent).toBe('Für diesen Ort bestätigen');
+  });
+
+  it('eingeklappt: die beantwortete Rückfrage bleibt kompakt stehen, Fokus auf die nächste, zuletzt auf den Gruppenknopf', async () => {
+    act(() => useBaurecht.getState().merkmalSetzen('Vorhaben', 'Beseitigung'));
+    act(() => useBaurecht.setState({ merkmaleAuf: false }));
+    const host = render();
+    const gruppe = () => host.querySelector<HTMLElement>('#br-merkmale')!.closest('section')!;
+    const rf = () => gruppe().querySelector<HTMLElement>('.br-rueckfrage')!;
+    expect(rf().textContent).toMatch(/Umfang der Beseitigung/);
+    act(() => knopf(rf(), 'Abbruch mit Ersatzbau')!.click());
+    await warten();
+    // die Antwort bleibt zu sehen, der Anlass steht über den Fragen zum Altbau
+    expect(rf().querySelector('.br-rueckfrage-erledigt')?.textContent).toMatch(/Umfang der Beseitigung: Abbruch mit Ersatzbau/);
+    expect(rf().contains(document.activeElement) && document.activeElement !== document.body).toBe(true);
+    // alle weiteren beantworten (nein: verfahrenspflichtiger Abbruch – keine weitere Rückfrage)
+    for (let i = 0; i < 3 && rf().querySelector('.br-fakt.br-offen'); i++) {
+      act(() => knopf(rf().querySelector('.br-fakt.br-offen')!, 'nein')!.click());
+      await warten();
+    }
+    expect(rf().querySelector('.br-fakt.br-offen')).toBeNull();
+    expect(document.activeElement?.classList.contains('br-gruppe-knopf')).toBe(true);
+    // „ändern“ klappt auf und führt zur Rückfrage
+    act(() => knopf(rf(), /^ändern/)!.click());
+    await warten();
+    expect(gruppe().querySelector('.br-gruppe-knopf')!.getAttribute('aria-expanded')).toBe('true');
+    expect(document.activeElement?.closest('[data-fakt="vorhaben.beseitigung_umfang"]')).not.toBeNull();
+  });
+
+  it('auf- bzw. zugeklappt bleibt nach einer Suche, die die Merkmale ausblendet', () => {
+    act(() => useBaurecht.setState({ merkmaleAuf: true }));
+    const host = render();
+    const suchfeld = host.querySelector<HTMLInputElement>('input[aria-label="Angaben durchsuchen"]')!;
+    tippen(suchfeld, 'Kampfmittel');
+    tippen(suchfeld, '');
+    expect(host.querySelector('#br-merkmale .br-gruppe-knopf')!.getAttribute('aria-expanded')).toBe('true');
+  });
+});
