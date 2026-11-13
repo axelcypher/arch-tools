@@ -33,7 +33,8 @@ Sobald die Reviews bestanden sind, immer Pull Request auf `main` anlegen und mer
 Ein Release (Windows-Installer + Auto-Update) entsteht nur, wenn sich die Version einer App ändert.
 Bei Änderungen an einer App deshalb ihre Version in `apps/<app>/package.json`,
 `apps/<app>/src-tauri/tauri.conf.json`, `apps/<app>/src-tauri/Cargo.toml` und `apps/<app>/src-tauri/Cargo.lock` gleich
-hochsetzen – und die Rahmen-App (`apps/suite`) mit, weil sie alle Apps enthält.
+hochsetzen (dazu `package-lock.json`). Die Rahmen-App Arkly (`apps/suite`) hebt ein PR nur bei Änderungen an
+`apps/suite` selbst; enthält sie nur neue Fassungen anderer Apps, setzt der Release-Lauf ihre Version automatisch.
 
 ## Konventionen
 
