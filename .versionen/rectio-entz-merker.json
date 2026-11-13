@@ -1,6 +1,0 @@
-{
-  "entzerrung": {
-    "stufe": "patch",
-    "notiz": "Nach einem Wechsel des Projekts fragt Arkly beim Schließen nicht mehr wegen eines gescheiterten Speicherns nach, und ein erst danach fertiges Speichern überträgt Dateiname und Stand nicht mehr auf das neue Projekt."
-  }
-}
