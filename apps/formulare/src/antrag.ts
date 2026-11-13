@@ -236,7 +236,7 @@ export function naechsteFassung(fassungen: Fassung[], art: string, arten: Kuerze
   const nr = Math.max(...da.map((f) => f.nr)) + 1;
   // Vorlage: die höchste mit Nummer (ohne Nummer gibt es nur „BAUA“ – dann „BAUA 2“); hinten ohne Trenner („BAUA3“)
   // kommt das übliche Leerzeichen hinein
-  const vorlage = [...da].filter((f) => f.form).sort((a, b) => b.nr - a.nr)[0]?.form;
+  const vorlage = da.filter((f) => f.form).sort((a, b) => b.nr - a.nr)[0]?.form;
   return fassungsName(art, nr, vorlage && !vorlage.vorn && !vorlage.trenner ? { ...vorlage, trenner: ' ' } : vorlage);
 }
 
@@ -1555,16 +1555,16 @@ export function quelleVon(u: UmfangEintrag, dateien: Eintrag[], codes: string[] 
   );
 }
 
-/** Das Formular eines internen Dokuments im FORMA-Projekt: zugeordnet, sonst nach Name oder Kennung */
 /**
  * Schlüssel eines Formulars im Formularprojekt (Autofill-Zustand, Zuordnung im Antragsumfang): der Pfad ab dem
- * Projektordner – im Stammordner der Dateiname, im Unterordner eines Sammelprojekts „2. BAUA/001-….frmsjf“
+ * Formularprojekt – auf der obersten Ebene der Dateiname, im Unterordner eines Sammelprojekts „2. BAUA/001-….frmsjf“
  */
 export function formularSchluessel(pfad: string): string {
   const teile = pfad.split('/');
   return teile.length > 2 ? teile.slice(1).join('/') : teile[teile.length - 1];
 }
 
+/** Das Formular eines internen Dokuments im Formularprojekt: zugeordnet, sonst nach Name oder Kennung */
 export function formularVon<T extends { pfad: string; name: string; kennung?: string | null }>(u: UmfangEintrag, formulare: T[]): T | null {
   if (u.formularDatei) {
     const schluessel = u.formularDatei.toLowerCase();

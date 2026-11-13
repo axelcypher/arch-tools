@@ -16,6 +16,7 @@ import type { Sperre, SperrBewertung, SperrProbe } from './forma/sperre';
 import { bewerten, sperreLesen, sperreSchreiben, sperrPfad, zeitstempel } from './forma/sperre';
 import { istEigeneSperre, sperreVergessen, sperreVermerken, verwaisteEigeneSperrenAufraeumen } from './eigeneSperren';
 import { finde } from './forma/dfm';
+import { gleicheFassung } from '@core/fassung';
 import { formularSchluessel } from './antrag';
 import type { FormularEintrag, Projekt, UnterordnerWahl } from './projekte';
 import { formulareMitUnterordner, projekteSuchen } from './projekte';
@@ -634,8 +635,20 @@ export const sperrAnbindung: { antrag: (projekt: Projekt | null) => string | nul
  */
 export const unterordnerAnbindung: { wahl: (projekt: Projekt) => UnterordnerWahl | undefined } = { wahl: () => undefined };
 
-/** Ordner, in dem neue Formulare des Projekts entstehen: im Sammelprojekt der Unterordner des aktiven Antrags */
-export const formularOrdner = (s: Pick<FormulareState, 'sammel'>, projekt: Projekt) => (s.sammel?.unterordner ? `${projekt.ordner}/${s.sammel.unterordner}` : projekt.ordner);
+/**
+ * Ordner, in dem neue Formulare des Projekts entstehen: im Sammelprojekt der Unterordner des Antrags `fassung` (der
+ * beim Klick angezeigte – auch, wenn inzwischen ein anderer aktiv ist), ohne `fassung` der des aktiven; gibt es keinen,
+ * die oberste Ebene
+ */
+export function formularOrdner(s: Pick<FormulareState, 'sammel'>, projekt: Projekt, fassung?: string): string {
+  if (!s.sammel) return projekt.ordner;
+  const wahl = unterordnerAnbindung.wahl(projekt);
+  const unter = fassung && wahl ? s.sammel.alle.find((u) => gleicheFassung(u, fassung, wahl.antragsarten, wahl.arten)) : s.sammel.unterordner;
+  return unter ? `${projekt.ordner}/${unter}` : projekt.ordner;
+}
+
+/** Lauf des Neulesens der Formularliste – ein früher begonnener, später fertiger setzt seinen Stand nicht mehr */
+let formulareLeseNr = 0;
 
 /** Warum ein offenes Formular nicht bearbeitet werden kann (Datei, eingereichter Antrag) – null, wenn es geht */
 export const bearbeitungGesperrt = (o: OffenesFormular) => o.nurLesen ?? (o.projekt ? sperrAnbindung.antrag(o.projekt) : null);
@@ -1096,10 +1109,12 @@ export const useFormulare = create<FormulareState>()((set, get) => {
     formulareNeuLesen: async (o = {}) => {
       const { ds, projekt } = get();
       if (!ds || !projekt) return false;
+      const nr = ++formulareLeseNr;
       try {
         const r = await formulareMitUnterordner(ds, projekt, unterordnerAnbindung.wahl(projekt));
-        // inzwischen ein anderes Projekt: dessen Liste bleibt; unverändert: nichts setzen (kein Neuberechnen)
-        if (get().projekt !== projekt) return false;
+        // inzwischen ein anderes Projekt bzw. ein neueres Lesen (etwa nach einem Wechsel des Antrags): dessen Stand gilt;
+        // unverändert: nichts setzen (kein Neuberechnen)
+        if (get().projekt !== projekt || nr !== formulareLeseNr) return false;
         const sammel = r.antragsUnterordner.length ? { unterordner: r.unterordner, alle: r.antragsUnterordner } : null;
         const s = get();
         if (JSON.stringify(s.sammel) !== JSON.stringify(sammel)) set({ sammel });
@@ -1107,6 +1122,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
         set({ formulare: r.formulare });
         return true;
       } catch (e) {
+        if (nr !== formulareLeseNr) return false;
         if (o.still) throw e;
         if (get().projekt === projekt) fehler(`Formulare von ${projekt.ordner} nicht lesbar`, e);
         return false;

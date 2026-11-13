@@ -1,4 +1,3 @@
-import { alleKuerzel } from '@core/namensschema';
 import type { AblageOrdner } from '../ablage';
 import { dateiArt } from '../ablage';
 import type { Bereitschaft } from '../antrag';
@@ -6,7 +5,6 @@ import {
   antragsMuster,
   antragsNameFehler,
   aufnahmeVorschlag,
-  artDerFassung,
   BEREIT_TEXT,
   bereitschaft,
   eingereichtVon,
@@ -17,7 +15,7 @@ import {
   standBezug,
   standFestgehaltenText,
 } from '../antrag';
-import { aktiveFassung, antragSperre, antragsOrdner, dokumentZu, namensschemaVon, projektCodes, useAntrag, wechselLaeuft, zeilenFassung } from '../antragStore';
+import { aktiveFassung, antragSperre, antragsOrdner, artVonFassung, dokumentZu, namensschemaVon, projektCodes, useAntrag, wechselLaeuft, zeilenFassung } from '../antragStore';
 import { umbenennen } from '../dateiAktionen';
 import { oeffnePfad, verbinde } from '../dateisystem';
 import { dateiArtVon, useFormulare } from '../store';
@@ -112,7 +110,7 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
   const codes = projektCodes(projekt);
   // Stellen von Projektcode, Antragsart und Datum nach dem Namensschema (der Projektdatei bzw. des Büros)
   const schema = useFormulare(namensschemaVon);
-  const art = artDerFassung(fassung, alleKuerzel(schema.antragsarten));
+  const art = useAntrag((s) => artVonFassung(s, projekt, fassung));
   const reihenfolge = schema.reihenfolge;
 
   const liste = dateien

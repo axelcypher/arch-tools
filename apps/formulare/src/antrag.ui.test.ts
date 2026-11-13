@@ -15,7 +15,7 @@ import { parseFormular } from './forma/formular';
 import { formularPdf } from './forma/pdf';
 import { pdfjs } from './dokumente/pdf';
 import { useAufgeklappt } from './components/ProjektUebersicht';
-import { useFormulare } from './store';
+import { formularOrdner, useFormulare } from './store';
 import { verknuepfen as dateiVerknuepfen } from './dateiAktionen';
 import { formularePunkte } from './components/Antrag';
 import { dateiMenue } from './components/AblageBaum';
@@ -1304,50 +1304,62 @@ describe('Projektordner, Ansicht „Antrag“: Quick-Add für Dateien ohne Dokum
   });
 });
 
-describe('Sammelprojekt: Formulare aus dem Unterordner des aktiven Antrags und dem Stammordner', () => {
+describe('Sammelprojekt: Formulare aus dem Unterordner des aktiven Antrags und der obersten Ebene', () => {
+  const UNTER = 'BS9/2. BAUA/002-Bauantrag (2026).frmsjf';
   const gruppen = (host: HTMLElement) => [...host.querySelectorAll('.nav-gruppe')].map((g) => g.textContent);
-  const namenIn = (host: HTMLElement, label: string) => [...host.querySelectorAll(`.nav-liste[aria-label="${label}"] .nav-eintrag:not(.fehlt) .nav-text`)].map((t) => t.textContent);
+  // Formulare einer Liste – die Gruppe über ihre Überschrift (aria-labelledby), ohne Gruppen über das aria-label
+  const namenIn = (host: HTMLElement, gruppe: string) => {
+    const kopf = [...host.querySelectorAll('.nav-gruppe')].find((g) => g.textContent === gruppe);
+    const liste = kopf ? host.querySelector(`.nav-liste[aria-labelledby="${kopf.id}"]`) : host.querySelector(`.nav-liste[aria-label="${gruppe}"]`);
+    return liste ? [...liste.querySelectorAll('.nav-eintrag:not(.fehlt) .nav-text')].map((t) => t.textContent) : null;
+  };
   const sammelprojekt = () => {
-    ds.dateien.set('C:/FORMA/BS9/2. BAUA/002-Bauantrag (2026).frmsjf', MUSTER);
+    ds.dateien.set(`C:/FORMA/${UNTER}`, MUSTER);
     // Unterordner eines anderen Antrags: nur, wenn er aktiv ist
     ds.dateien.set('C:/FORMA/BS9/BAUA/005-Altantrag.frmsjf', MUSTER);
     // kein Antrag: bleibt unbeachtet
     ds.dateien.set('C:/FORMA/BS9/Vorlagen/009-Entwurf.frmsjf', MUSTER);
   };
 
-  it('zeigt den Unterordner des aktiven Antrags („2. BAUA“ zu BAUA 2) und den Stammordner – andere Anträge nicht', async () => {
+  it('zeigt den Unterordner des aktiven Antrags („2. BAUA“ zu BAUA 2) und die oberste Ebene – andere Anträge nicht', async () => {
     sammelprojekt();
     const host = await projektBS9();
     await warte();
     expect(useAntrag.getState().projektdatei?.ansicht).toBe('BAUA 2');
-    expect(gruppen(host)).toEqual(['Antrag BAUA 2 · Unterordner 2. BAUA', 'Stammordner · für alle Anträge']);
-    expect(namenIn(host, 'Formulare von Antrag BAUA 2')).toEqual(['002-Bauantrag (2026)']);
-    expect(namenIn(host, 'Formulare im Stammordner')).toEqual(['001-Muster']);
+    expect(gruppen(host)).toEqual(['Antrag BAUA 2 · Unterordner 2. BAUA', 'Alle Anträge · oberste Ebene']);
+    expect(namenIn(host, 'Antrag BAUA 2 · Unterordner 2. BAUA')).toEqual(['002-Bauantrag (2026)']);
+    expect(namenIn(host, 'Alle Anträge · oberste Ebene')).toEqual(['001-Muster']);
+    // beide Gruppen in einem Rollbereich
+    expect(host.querySelectorAll('.nav-gruppen').length).toBe(1);
     expect(host.textContent).not.toContain('005-Altantrag');
     expect(host.textContent).not.toContain('009-Entwurf');
     expect(useFormulare.getState().sammel).toEqual({ unterordner: '2. BAUA', alle: expect.arrayContaining(['2. BAUA', 'BAUA']) });
     expect(useFormulare.getState().sammel!.alle).toHaveLength(2);
+    // „+“ nennt das Ziel neuer Formulare
+    expect(host.querySelector<HTMLButtonElement>('button[aria-label="Formular hinzufügen"]')!.title).toContain('neue entstehen in 2. BAUA');
     // das Formular im Unterordner öffnet sich wie jedes andere
     await klick(knopf(host, '002-Bauantrag (2026)'));
-    expect(useFormulare.getState().offen?.pfad).toBe('BS9/2. BAUA/002-Bauantrag (2026).frmsjf');
+    expect(useFormulare.getState().offen?.pfad).toBe(UNTER);
   });
 
-  it('anderer Antrag aktiv: dessen Unterordner; Antrag ohne Unterordner: Hinweis, nur der Stammordner', async () => {
+  it('anderer Antrag aktiv: dessen Unterordner („eigener“, wenn er so heißt); ohne Unterordner: Hinweis, nur die oberste Ebene', async () => {
     sammelprojekt();
     const host = await projektBS9();
     await warte();
     await act(() => useAntrag.getState().fassungWaehlen('BAUA'));
     for (let i = 0; i < 3; i++) await warte();
-    expect(gruppen(host)).toEqual(['Antrag BAUA · Unterordner BAUA', 'Stammordner · für alle Anträge']);
-    expect(namenIn(host, 'Formulare von Antrag BAUA')).toEqual(['005-Altantrag']);
+    expect(gruppen(host)).toEqual(['Antrag BAUA · eigener Unterordner', 'Alle Anträge · oberste Ebene']);
+    expect(namenIn(host, 'Antrag BAUA · eigener Unterordner')).toEqual(['005-Altantrag']);
     expect(host.textContent).not.toContain('002-Bauantrag (2026)');
-    // ein neuer Antrag ohne eigenen Unterordner
+    // ein neuer Antrag ohne eigenen Unterordner: Hinweis, keine leere Liste
     ds.ordner.add(`${PROJEKT}/TÖB/BAUA 3`);
     await act(() => useAntrag.getState().fassungWaehlen('BAUA 3'));
     for (let i = 0; i < 3; i++) await warte();
     expect(gruppen(host)[0]).toBe('Antrag BAUA 3 · kein eigener Unterordner');
-    expect(host.textContent).toContain('Im Formularprojekt gibt es keinen Unterordner für Antrag BAUA 3');
-    expect(namenIn(host, 'Formulare im Stammordner')).toEqual(['001-Muster']);
+    expect(host.textContent).toContain('Neue Formulare entstehen auf der obersten Ebene.');
+    expect(host.textContent).toMatch(/Unterordner: (2\. BAUA, BAUA|BAUA, 2\. BAUA)/);
+    expect(host.querySelector('.nav-liste[aria-labelledby="nav-gruppe-antrag"]')).toBeNull();
+    expect(namenIn(host, 'Alle Anträge · oberste Ebene')).toEqual(['001-Muster']);
     expect(useFormulare.getState().sammel?.unterordner).toBeNull();
   });
 
@@ -1358,32 +1370,115 @@ describe('Sammelprojekt: Formulare aus dem Unterordner des aktiven Antrags und d
     expect(gruppen(host)).toEqual([]);
     expect(namenIn(host, 'Formulare')).toEqual(['001-Muster']);
     expect(useFormulare.getState().sammel).toBeNull();
+    expect(host.querySelector<HTMLButtonElement>('button[aria-label="Formular hinzufügen"]')!.title).not.toContain('neue entstehen');
   });
 
-  it('gleicher Name im Unterordner und im Stammordner: der Antragsumfang findet das im Unterordner', async () => {
+  it('gleicher Name im Unterordner und auf der obersten Ebene: der Antragsumfang findet das im Unterordner – auch nach dem Export', async () => {
     sammelprojekt();
     ds.dateien.set('C:/FORMA/BS9/003-Bauantrag.frmsjf', MUSTER);
     const host = await projektBS9();
     await klick(antragsdaten(host));
     await klick(knopf(host, 'Antragsumfang festlegen'));
     for (let i = 0; i < 3; i++) await warte();
-    expect(useAntrag.getState().dokumente.find((d) => d.eintrag.id === 'bauantrag')?.formular?.pfad).toBe('BS9/2. BAUA/002-Bauantrag (2026).frmsjf');
+    const formularVonBauantrag = () => useAntrag.getState().dokumente.find((d) => d.eintrag.id === 'bauantrag')?.formular?.pfad;
+    expect(formularVonBauantrag()).toBe(UNTER);
+    // der Export merkt sich den Pfad ab dem Formularprojekt – nicht nur den Dateinamen
+    const ziel = exportVorschlag(UNTER);
+    await act(() => useAntrag.getState().exportieren(UNTER, ziel, false));
+    for (let i = 0; i < 3; i++) await warte();
+    expect(useAntrag.getState().projektdatei?.umfang?.find((u) => u.id === 'bauantrag')?.formularDatei).toBe('2. BAUA/002-Bauantrag (2026).frmsjf');
+    expect(formularVonBauantrag()).toBe(UNTER);
+    // im Menü „Vorhandenes Formular zuordnen“ steht der Unterordner als Hinweis
+    expect(formularePunkte('bauantrag').find((p) => !p.trenner && p.text === '002-Bauantrag (2026)')).toMatchObject({ hinweis: 'in 2. BAUA' });
   });
 
-  it('Formular anlegen: im Unterordner des aktiven Antrags, zugeordnet mit dem Pfad ab dem Projektordner', async () => {
+  it('„Antragsdokument“ im Menü eines Formulars im Unterordner: zugeordnet mit dem Pfad ab dem Formularprojekt', async () => {
+    sammelprojekt();
+    const host = await projektBS9();
+    await klick(antragsdaten(host));
+    await klick(knopf(host, 'Antragsumfang festlegen'));
+    for (let i = 0; i < 3; i++) await warte();
+    await rechtsklick(knopf(host, '002-Bauantrag (2026)'));
+    await klick(menuePunkt('Antragsdokument'));
+    await klick([...document.querySelectorAll<HTMLButtonElement>('.menue .menue .menue-punkt')].find((b) => b.textContent?.includes('Musterformular'))!);
+    for (let i = 0; i < 3; i++) await warte();
+    expect(useAntrag.getState().projektdatei?.umfang?.find((u) => u.id === 'muster')?.formularDatei).toBe('2. BAUA/002-Bauantrag (2026).frmsjf');
+  });
+
+  it('Größe und Zeit gelten je Pfad: „zuletzt bearbeitet“ und Status auch für ein Formular im Unterordner', async () => {
+    sammelprojekt();
+    const zeit = new Date('2026-11-10T09:30').getTime();
+    ds.geaendert.set(`C:/FORMA/${UNTER}`, zeit);
+    // gleicher Name auf der obersten Ebene, andere Zeit – darf nicht gelten
+    ds.dateien.set('C:/FORMA/BS9/002-Bauantrag (2026).frmsjf', MUSTER);
+    ds.geaendert.set('C:/FORMA/BS9/002-Bauantrag (2026).frmsjf', new Date('2026-01-01T08:00').getTime());
+    await projektBS9();
+    await warte();
+    await act(() => useAntrag.getState().aktualisieren());
+    expect(useAntrag.getState().formularInfo[UNTER]?.letzteAenderung).toBe(zeit);
+    // geändert (etwa in FORMA): die neue Zeit gilt nach dem Neu-Prüfen
+    const spaeter = new Date('2026-11-12T14:00').getTime();
+    ds.geaendert.set(`C:/FORMA/${UNTER}`, spaeter);
+    await act(() => useAntrag.getState().aktualisieren());
+    expect(useAntrag.getState().formularInfo[UNTER]?.letzteAenderung).toBe(spaeter);
+  });
+
+  it('Formular anlegen: im Unterordner des Antrags, für den angelegt wird; zugeordnet mit dem Pfad ab dem Formularprojekt', async () => {
     ds.ordner.add('C:/FORMA/BS9/02 BAUA');
+    ds.ordner.add('C:/FORMA/BS9/BAUA');
     const host = await projektBS9();
     await klick(antragsdaten(host));
     await klick(knopf(host, 'Antragsumfang festlegen'));
     for (let i = 0; i < 3; i++) await warte();
     expect(useFormulare.getState().sammel?.unterordner).toBe('02 BAUA');
-    await klick(host.querySelector<HTMLButtonElement>('.nav-eintrag.fehlt')!);
+    // Ziel aus der Fassung des Klicks – auch, wenn inzwischen ein anderer Antrag aktiv ist
+    const projekt = useFormulare.getState().projekt!;
+    expect(formularOrdner(useFormulare.getState(), projekt, 'BAUA')).toBe('BS9/BAUA');
+    expect(formularOrdner(useFormulare.getState(), projekt, 'BAUA 2')).toBe('BS9/02 BAUA');
+    expect(formularOrdner(useFormulare.getState(), projekt, 'BAUA 7')).toBe('BS9');
+    const fehlt = host.querySelector<HTMLButtonElement>('.nav-eintrag.fehlt')!;
+    expect(fehlt.title).toContain('klicken, um das Formular in 02 BAUA anzulegen');
+    await klick(fehlt);
     for (let i = 0; i < 3; i++) await warte();
     expect(ds.dateien.has('C:/FORMA/BS9/02 BAUA/002-Bauantrag (2026).frmsjf')).toBe(true);
     expect(ds.dateien.has('C:/FORMA/BS9/002-Bauantrag (2026).frmsjf')).toBe(false);
     expect(useAntrag.getState().projektdatei?.umfang?.find((u) => u.id === 'bauantrag')?.formularDatei).toBe('02 BAUA/002-Bauantrag (2026).frmsjf');
     expect(useFormulare.getState().offen?.pfad).toBe('BS9/02 BAUA/002-Bauantrag (2026).frmsjf');
-    expect(namenIn(host, 'Formulare von Antrag BAUA 2')).toEqual(['002-Bauantrag (2026)']);
+    expect(namenIn(host, 'Antrag BAUA 2 · Unterordner 02 BAUA')).toEqual(['002-Bauantrag (2026)']);
+  });
+
+  it('Lesen der Liste überholt: ein noch für den alten Antrag begonnenes, später fertiges setzt seinen Stand nicht', async () => {
+    sammelprojekt();
+    await projektBS9();
+    await warte();
+    // das Lesen des Unterordners von BAUA 2 hängt
+    const echt = ds.liste.bind(ds);
+    let los!: () => void;
+    const tor = new Promise<void>((r) => (los = r));
+    let anhalten = true;
+    ds.liste = async (pfad: string, tiefe: number) => {
+      if (anhalten && pfad.endsWith('/2. BAUA')) await tor;
+      return echt(pfad, tiefe);
+    };
+    try {
+      let alt!: Promise<boolean>;
+      act(() => {
+        alt = useFormulare.getState().formulareNeuLesen();
+      });
+      await warte();
+      anhalten = false;
+      await act(() => useAntrag.getState().fassungWaehlen('BAUA'));
+      for (let i = 0; i < 3; i++) await warte();
+      expect(useFormulare.getState().sammel?.unterordner).toBe('BAUA');
+      los();
+      await act(async () => void (await alt));
+      await warte();
+    } finally {
+      ds.liste = echt;
+    }
+    expect(useFormulare.getState().sammel?.unterordner).toBe('BAUA');
+    expect(useFormulare.getState().formulare.map((f) => f.name)).toContain('005-Altantrag');
+    expect(useFormulare.getState().formulare.map((f) => f.name)).not.toContain('002-Bauantrag (2026)');
   });
 
   it('Sperren: auch die im Unterordner des aktiven Antrags', async () => {

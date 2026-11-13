@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { formularAktualisieren } from '../aktualisieren';
 import { useMemo, useState } from 'react';
 import { oeffnePfad, verbinde } from '../dateisystem';
-import { ablageVon, auswahlVon, hatEntwurf, istGeaendert, useFormulare } from '../store';
+import { ablageVon, auswahlVon, formularDatei, hatEntwurf, istGeaendert, useFormulare } from '../store';
 import { aktiveFassung, aktiverEingereicht, antragSperre, useAntrag, wechselLaeuft, zeilenFassung } from '../antragStore';
 import { AntragsAblage, SammelExportKnopf } from './AntragsAblage';
 import type { FormularEintrag } from '../projekte';
@@ -132,12 +132,13 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
                   text: u.titel,
                   symbol: (zugeordnet?.eintrag.id === u.id ? 'haken' : undefined) as 'haken' | undefined,
                   aktion: () =>
-                    void useAntrag.getState().umfangAendern((aktuell) => aktuell.map((x) => (x.id === u.id ? { ...x, formularDatei: f.pfad.split('/').pop() } : x)), { ansicht, eintrag: u.id, titel: u.titel, was: 'Nicht zugeordnet' }),
+                    void useAntrag.getState().umfangAendern((aktuell) => aktuell.map((x) => (x.id === u.id ? { ...x, formularDatei: formularDatei(f.pfad) } : x)), { ansicht, eintrag: u.id, titel: u.titel, was: 'Nicht zugeordnet' }),
                 })),
             },
           ]
         : []),
-      { text: 'Im Explorer zeigen', symbol: 'extern', aktion: () => void oeffnePfad(verbinde(projekt!.root, projekt!.ordner)).catch(() => undefined) },
+      // der Ordner des Formulars (im Sammelprojekt ggf. der Unterordner des Antrags)
+      { text: 'Im Explorer zeigen', symbol: 'extern', aktion: () => void oeffnePfad(verbinde(projekt!.root, f.pfad.slice(0, f.pfad.lastIndexOf('/')))).catch(() => undefined) },
       { text: 'Pfad kopieren', symbol: 'kopie', aktion: () => void navigator.clipboard?.writeText(verbinde(projekt!.root, f.pfad)) },
       { trenner: true },
       { text: 'Löschen …', symbol: 'muell', aktion: () => void formularLoeschen(f) },
@@ -157,9 +158,11 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
     window.addEventListener('pointerup', ende);
   };
 
-  // Sammelprojekt: Formulare im Unterordner des aktiven Antrags bzw. im Stammordner
+  // Sammelprojekt: Formulare im Unterordner des aktiven Antrags bzw. auf der obersten Ebene; wo neue entstehen (mit
+  // Leerzeichen am Ende, für „… das Formular in 2. BAUA anlegen“)
   const imUnterordner = formulare.filter((f) => f.unterordner);
   const imStamm = formulare.filter((f) => !f.unterordner);
+  const zielText = sammel ? (sammel.unterordner ? `in ${sammel.unterordner} ` : 'auf der obersten Ebene ') : null;
   const formularZeile = (f: FormularEintrag) => {
     const aktiv = offen?.pfad === f.pfad;
     const ungespeichert = aktiv ? istGeaendert(offen) : !!projekt && hatEntwurf(projekt, f.pfad);
@@ -221,7 +224,7 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
               ? `${d.eintrag.titel} fehlt – der Antrag wird gerade geöffnet, gleich wieder möglich`
               : doppelt
               ? `${d.eintrag.titel}: „${doppelt.name}“ ist schon „${statusVon.get(doppelt.pfad)!.eintrag.titel}“ zugeordnet – doppelter Eintrag? Klicken: zuordnen oder aus dem Antragsumfang nehmen`
-              : `${d.eintrag.titel} fehlt im Projekt – klicken, um das Formular anzulegen`
+              : `${d.eintrag.titel} fehlt im Projekt – klicken, um das Formular ${zielText ?? ''}anzulegen`
         }
         aria-haspopup={doppelt && !gesperrt && !wechsel ? 'menu' : undefined}
         // das Menü am Eintrag öffnen (auch mit Enter/Leertaste, ohne Mauszeiger); gesperrt bzw. beim Öffnen: nur die Meldung
@@ -324,7 +327,12 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
               titel="Formulare"
               kopf={
                 <>
-                  <button className="icon" title="Formular hinzufügen – aus dem Vorlagenordner oder einem anderen Projekt" aria-label="Formular hinzufügen" onClick={() => useHinzufuegenDialog.getState().setOffen(true)}>
+                  <button
+                    className="icon"
+                    title={`Formular hinzufügen – aus dem Vorlagenordner oder einem anderen Projekt${zielText ? `; neue entstehen ${zielText.trim()}` : ''}`}
+                    aria-label="Formular hinzufügen"
+                    onClick={() => useHinzufuegenDialog.getState().setOffen(true)}
+                  >
                     <Symbol name="plus" />
                   </button>
                   <SammelExportKnopf />
@@ -338,25 +346,41 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
               }
             >
               {sammel ? (
-                <>
-                  {/* Sammelprojekt: zuerst die Formulare im Unterordner des aktiven Antrags (neue entstehen dort), dann die des Stammordners für alle Anträge */}
-                  <p className="nav-gruppe">{sammel.unterordner ? `Antrag ${fassung} · Unterordner ${sammel.unterordner}` : `Antrag ${fassung} · kein eigener Unterordner`}</p>
+                // Sammelprojekt: zuerst die Formulare im Unterordner des aktiven Antrags (neue entstehen dort), dann die der
+                // obersten Ebene für alle Anträge – beide in einem Rollbereich; leere Gruppen nur mit Hinweis, ohne Liste
+                <div className="nav-gruppen">
+                  <p className="nav-gruppe" id="nav-gruppe-antrag">
+                    {!sammel.unterordner
+                      ? `Antrag ${fassung} · kein eigener Unterordner`
+                      : sammel.unterordner.toLowerCase() === fassung.toLowerCase()
+                        ? `Antrag ${fassung} · eigener Unterordner`
+                        : `Antrag ${fassung} · Unterordner ${sammel.unterordner}`}
+                  </p>
                   {!sammel.unterordner && (
-                    <p className="nav-leer">
-                      Im Formularprojekt gibt es keinen Unterordner für Antrag {fassung} (vorhanden: {sammel.alle.join(', ')}) – neue Formulare entstehen im Stammordner.
-                    </p>
+                    <>
+                      <p className="nav-leer">Neue Formulare entstehen auf der obersten Ebene.</p>
+                      <p className="nav-leer">Unterordner: {sammel.alle.join(', ')}</p>
+                    </>
                   )}
-                  <div className="nav-liste" role="list" aria-label={`Formulare von Antrag ${fassung}`}>
-                    {imUnterordner.map(formularZeile)}
-                    {fehlende.map(fehlendeZeile)}
-                  </div>
-                  {sammel.unterordner && !imUnterordner.length && !fehlende.length && <p className="nav-leer">Noch keine Formulare in {sammel.unterordner}.</p>}
-                  <p className="nav-gruppe">Stammordner · für alle Anträge</p>
-                  <div className="nav-liste" role="list" aria-label="Formulare im Stammordner">
-                    {imStamm.map(formularZeile)}
-                  </div>
-                  {!imStamm.length && <p className="nav-leer">Keine Formulare im Stammordner.</p>}
-                </>
+                  {imUnterordner.length + fehlende.length > 0 ? (
+                    <div className="nav-liste" role="list" aria-labelledby="nav-gruppe-antrag">
+                      {imUnterordner.map(formularZeile)}
+                      {fehlende.map(fehlendeZeile)}
+                    </div>
+                  ) : (
+                    sammel.unterordner && <p className="nav-leer">Noch keine Formulare in {sammel.unterordner}.</p>
+                  )}
+                  <p className="nav-gruppe" id="nav-gruppe-alle">
+                    Alle Anträge · oberste Ebene
+                  </p>
+                  {imStamm.length ? (
+                    <div className="nav-liste" role="list" aria-labelledby="nav-gruppe-alle">
+                      {imStamm.map(formularZeile)}
+                    </div>
+                  ) : (
+                    <p className="nav-leer">Keine Formulare für alle Anträge.</p>
+                  )}
+                </div>
               ) : (
                 <div className="nav-liste" role="list" aria-label="Formulare">
                   {formulare.map(formularZeile)}

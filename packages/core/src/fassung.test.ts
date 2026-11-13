@@ -27,6 +27,17 @@ describe('Namen von Antragsfassungen', () => {
     // die längere Art wird nicht als kürzere gelesen
     expect(fassungAus('2. BAUVA', ARTEN)?.art).toBe('BAUVA');
   });
+  it('ein Zusatz nach der Nummer auch mit „-“, „_“ oder Punkt; vorn höchstens zwei Stellen', () => {
+    expect(fassungAus('BAUA 2-Nachtrag', ARTEN)).toMatchObject({ art: 'BAUA', nr: 2 });
+    expect(fassungAus('BAUA 2_alt', ARTEN)).toMatchObject({ art: 'BAUA', nr: 2 });
+    expect(fassungAus('BAUA 2. Nachtrag', ARTEN)).toMatchObject({ art: 'BAUA', nr: 2 });
+    expect(fassungAus('BAUA-Umbau', ARTEN)).toEqual({ art: 'BAUA', nr: 1 });
+    // kein Zusatz, sondern ein anderes Wort: keine Fassung
+    expect(fassungAus('BAUA2x', ARTEN)).toBeNull();
+    // Jahreszahl vorn ist keine Nummer
+    expect(fassungAus('2023 BAUA', ARTEN)).toBeNull();
+    expect(fassungAus('12 BAUA', ARTEN)?.nr).toBe(12);
+  });
   it('Antragsart einer Fassung – mit und ohne Liste der Arten', () => {
     expect(artDerFassung('02. BAUA', ARTEN)).toBe('BAUA');
     expect(artDerFassung('BAUA 2', ARTEN)).toBe('BAUA');
@@ -35,6 +46,9 @@ describe('Namen von Antragsfassungen', () => {
     expect(artDerFassung('02 DENK')).toBe('DENK');
     expect(artDerFassung('BAUA 3')).toBe('BAUA');
     expect(artDerFassung('XYZ_4')).toBe('XYZ');
+    // ohne Liste der Arten: ein Zusatz fällt weg
+    expect(artDerFassung('BAUA 2 Nachtrag')).toBe('BAUA');
+    expect(artDerFassung('02. BAUA Umbau')).toBe('BAUA');
   });
   it('Name in einer Schreibweise – ohne Vorlage „BAUA 2“', () => {
     expect(fassungsName('baua', 1)).toBe('BAUA');
