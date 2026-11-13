@@ -119,6 +119,7 @@ describe('Stammdaten-Dialog', () => {
     const schnell = [...host.querySelectorAll('[aria-label="Beteiligte nach Rolle hinzufügen"] button')].map((b) => b.textContent?.trim() ?? '');
     expect(schnell).toContain('+ Bodengutachten');
     expect(schnell.some((t) => t.includes('Prüfsachverständige') || t.includes('SiGeKo') || t.includes('Schall'))).toBe(false);
+    expect(host.querySelector('button[aria-label="Beteiligten 1 entfernen"]')).not.toBeNull();
     eingabe(rolle, 'Lichtplanung');
     expect(meta.beteiligte![0].rolle).toBe('Lichtplanung');
     // Name aus einem früheren Projekt: Kontakt wird ergänzt, die eigene Rolle bleibt
