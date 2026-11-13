@@ -312,11 +312,11 @@
     display: none;
   }
 
-  .hud {
+  .view-pane .hud {
     right: 8px;
   }
 
-  .scalebar {
+  .view-pane .scalebar {
     bottom: 64px;
   }
 }
@@ -411,9 +411,19 @@
 
 .toggle.block {
   display: flex;
+  align-items: flex-start;
   margin: 5px 0;
   justify-content: flex-start;
   text-align: left;
+}
+
+/* Kästchen behält seine Größe, auch wenn die Beschriftung umbricht */
+.toggle.block input[type='checkbox'],
+.toggle.block input[type='radio'] {
+  flex: none;
+  width: 15px;
+  height: 15px;
+  margin-top: 1px;
 }
 
 /* Optionsfelder wie die Checkboxen: Knopf links, Text daneben (F-04) */
@@ -745,7 +755,7 @@
 /* Rechenweg je Raum im Bericht (F-13) */
 .report-table tr.rechenweg td {
   font-size: 0.85em;
-  color: #4b5563;
+  color: var(--muted);
   padding-top: 0;
   border-top: none;
 }
@@ -792,7 +802,7 @@
 .druck-kopf-normen {
   margin: 4px 0 0;
   font-size: 11px;
-  color: #4b5563;
+  color: var(--muted);
 }
 
 .bericht-abschnitt h2 {
@@ -821,6 +831,16 @@
 }
 
 @media print {
+  /* Unterschriften nicht allein auf der letzten Seite */
+  .bericht-unterschrift {
+    break-before: avoid;
+    margin-top: 16px;
+  }
+
+  .unterschrift-linie {
+    height: 24px;
+  }
+
   /* keine fast leeren Seiten: kein erzwungener Umbruch je Geschoss, Tabellenzeilen und Grundrisse bleiben zusammen */
   .report-storey {
     break-before: auto;
