@@ -213,7 +213,7 @@ describe('QUADRIO: Kontextmenü der Zeichenfläche und Werkzeugleiste (gemeinsam
     expect(menue()?.getAttribute('aria-label')).toBe('BGF-Umriss');
     const gesperrt = punkt(/Einfügen/);
     expect(gesperrt.getAttribute('aria-disabled')).toBe('true');
-    expect(gesperrt.textContent).toMatch(/nichts kopiert/);
+    expect(gesperrt.textContent).toMatch(/Nichts kopiert/);
     act(() => punkt(/Fläche kopieren/).click());
     rechtsklick(flaeche);
     expect(punkt(/Einfügen/).getAttribute('aria-disabled')).toBeNull();

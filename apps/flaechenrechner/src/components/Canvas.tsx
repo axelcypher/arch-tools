@@ -799,7 +799,7 @@ export function Canvas() {
           symbol: 'muell',
           gefahr: true,
           deaktiviert: zuWenig,
-          hinweis: zuWenig ? 'mind. 3 Punkte' : undefined,
+          hinweis: zuWenig ? 'Mind. 3 Punkte' : undefined,
           titel: zuWenig ? 'Eine Fläche braucht mindestens drei Punkte' : undefined,
           // aus dem aktuellen Stand rechnen: bei offenem Menü kann sich die Fläche geändert haben (z. B. Rückgängig)
           aktion: () =>
@@ -1708,7 +1708,7 @@ function menueName(s: Shape): string {
 /** „Einfügen“ – gesperrt mit sichtbarem Grund, solange nichts kopiert ist */
 function einfuegenPunkt(): MenuePunkt {
   const leer = ablageStatus().leer;
-  return { text: 'Einfügen', symbol: 'einfuegen', hinweis: leer ? 'nichts kopiert' : 'Strg+V', deaktiviert: leer, titel: leer ? 'Zuerst Flächen kopieren (Strg+C)' : undefined, aktion: () => void einfuegenAktion() };
+  return { text: 'Einfügen', symbol: 'einfuegen', hinweis: leer ? 'Nichts kopiert' : 'Strg+V', deaktiviert: leer, titel: leer ? 'Zuerst Flächen kopieren (Strg+C)' : undefined, aktion: () => void einfuegenAktion() };
 }
 
 /** Befehle für gewählte Flächen im Kontextmenü – dieselben wie die Tastenkürzel */
