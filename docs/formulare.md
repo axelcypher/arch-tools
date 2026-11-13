@@ -971,7 +971,11 @@ Programm öffnen“). Bearbeitet wird so, dass alles, was nicht geändert wurde,
   zusammen stimmt: Speichern samt Warteschlange, Formular umbenennen mit der Projektdatei, Formular anlegen und
   aufnehmen, PDF-Export mit Verknüpfung. Offene Rückfragen und Lesen gelten nicht als Schreiben; es wird nur gewartet,
   nichts zusätzlich geschrieben. Ist ein abgewartetes Schreiben gescheitert, meldet die App das (Grund im Protokoll),
-  und Arkly fragt, statt still zu schließen.
+  und Arkly fragt, statt still zu schließen. Ein gescheitertes Speichern eines Stands (Formular, Dokument,
+  Projektkarte, Projektdatei) bleibt gemerkt, bis dieselbe Datei erfolgreich geschrieben ist – auch nach „Erneut
+  versuchen“ oder beim Schließen lange nach dem Fehler fragt Arkly also weiter; Verwerfen löscht den Merker nicht
+  („Trotzdem schließen“ bleibt möglich). Einmalige Aktionen (Anlegen, Kopieren, Umbenennen, Löschen, Sperren) melden
+  ihren Fehler sofort und zählen nur, solange sie abgewartet werden.
 
 ### Sperren
 
