@@ -474,12 +474,6 @@ textarea:focus {
   border-radius: 2px;
   flex: none;
 }
-/* Farbmarke einer Planfarbe (z. B. Nutzung eines Raums): bekommt im dunklen Schema denselben Filter wie die
-   Zeichenfläche, damit Liste und Plan denselben Farbton zeigen */
-.swatch.plan-farbe,
-.plan-farbe {
-  filter: var(--canvas-filter);
-}
 
 .muted {
   color: var(--muted);

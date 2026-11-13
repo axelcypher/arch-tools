@@ -193,7 +193,7 @@ export function NumberField({
         value={text}
         onFocus={pending.onFocus}
         placeholder={placeholder}
-        title={fehler ?? title}
+        title={fehler ?? (ungueltig ? 'Siehe Meldung zu diesen Feldern' : title)}
         inputMode="decimal"
         aria-label={label}
         aria-invalid={fehler || ungueltig ? true : undefined}
@@ -293,7 +293,7 @@ export function TextField({
         value={text}
         placeholder={placeholder}
         list={list}
-        title={meldung ?? title}
+        title={meldung ?? (ungueltig ? 'Siehe Meldung zu diesen Feldern' : title)}
         className={meldung || ungueltig ? 'feld-fehler' : undefined}
         aria-label={label}
         aria-invalid={meldung || ungueltig ? true : undefined}

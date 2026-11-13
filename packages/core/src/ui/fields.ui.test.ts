@@ -233,6 +233,7 @@ describe('Prüfregeln', () => {
       expect(el.getAttribute('aria-invalid')).toBe('true');
       expect(el.getAttribute('aria-describedby')).toBe('summe');
     }
+    expect(a.title).toBe('Siehe Meldung zu diesen Feldern');
     expect(c.hasAttribute('aria-invalid')).toBe(false);
     expect(c.hasAttribute('aria-describedby')).toBe(false);
     // eigene Meldung zusätzlich: beide ids
@@ -241,6 +242,14 @@ describe('Prüfregeln', () => {
     const ids = a.getAttribute('aria-describedby')!.split(' ');
     expect(ids).toContain('summe');
     expect(document.getElementById(ids.find((i) => i !== 'summe')!)?.textContent).toContain('keine Zahl');
+    // TextField mit eigener Prüfung: eigene Meldung und gemeinsame Meldung
+    act(() => b.blur());
+    const host2 = render(createElement(TextField, { value: '12', onChange: () => {}, pruefen: plz, zeigen: true, ungueltig: true, fehlerId: 'summe', label: 'PLZ' }));
+    const plzFeld = host2.querySelector('input')!;
+    const plzIds = plzFeld.getAttribute('aria-describedby')!.split(' ');
+    expect(plzIds).toHaveLength(2);
+    expect(plzIds).toContain('summe');
+    expect(document.getElementById(plzIds.find((i) => i !== 'summe')!)?.classList.contains('feld-meldung')).toBe(true);
   });
 
   it('Enter im Formular ohne Absendeknopf: übernimmt den Wert und sendet danach ab (der Handler sieht den neuen Wert)', async () => {
