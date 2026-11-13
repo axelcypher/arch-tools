@@ -310,9 +310,9 @@ if (typeof indexedDB !== 'undefined') {
     await new Promise<void>((resolve, reject) => {
       const tx = d.transaction(STORE, 'readwrite');
       tx.objectStore(STORE).put({ project, datei, basis, zeit: Date.now() }, KEY);
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
-      tx.onabort = () => reject(tx.error);
+      tx.oncomplete = () => (d.close(), resolve());
+      tx.onerror = () => (d.close(), reject(tx.error));
+      tx.onabort = () => (d.close(), reject(tx.error));
     });
     zwischenstandErsetzt(DB);
   });
@@ -327,7 +327,7 @@ if (typeof indexedDB !== 'undefined') {
 /**
  * Verzögertes Schreiben (Zwischenstand): `planen` schreibt `ms` nach der letzten Änderung; `jetzt` schreibt Ausstehendes
  * sofort und wartet auf das laufende Schreiben. Mehrfaches `jetzt` schreibt nicht doppelt (nichts ausstehend → nur
- * abwarten). Fehler beim Schreiben werden verschluckt (der Zwischenstand ist ein Notnagel, kein Speichern).
+ * abwarten). Fehler beim Schreiben werden protokolliert und halten das nächste Schreiben nicht auf.
  */
 export function verzoegertesSchreiben(schreiben: () => Promise<void>, ms = 600): { planen: () => void; jetzt: () => Promise<void> } {
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -338,7 +338,8 @@ export function verzoegertesSchreiben(schreiben: () => Promise<void>, ms = 600):
     if (ausstehend) {
       ausstehend = false;
       // nach einem noch laufenden Schreiben, damit der neuere Stand zuletzt geschrieben wird
-      laufend = laufend.then(schreiben).catch(() => undefined);
+      // Fehler protokollieren und weitermachen: das nächste Schreiben soll trotzdem laufen
+      laufend = laufend.then(schreiben).catch((e) => log.warn('Zwischenstand ließ sich nicht schreiben', e));
     }
     return laufend;
   };
