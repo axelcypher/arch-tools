@@ -66,6 +66,15 @@ test('Gegenproben: keine Notizen – nichts; Übergang mit von Hand gehobener, u
   assert.equal(t.grz.neu, '0.28.4');
 });
 
+test('von Hand gehobene App ohne Notiz, schon in der veröffentlichten Arkly (gescheiterter Bau): Arkly nicht erneut heben', () => {
+  const versionen = { ...stand, grz: '0.29.0' };
+  assert.equal(neueVersionen({ versionen, tags, eintraege: [], inArkly: { ...stand, grz: '0.29.0' } }).suite, undefined);
+  // Gegenprobe: noch nicht in Arkly – Arkly kommt mit
+  assert.equal(neueVersionen({ versionen, tags, eintraege: [], inArkly: stand }).suite.neu, '0.31.0');
+  // mit Notiz zählt sie immer
+  assert.equal(neueVersionen({ versionen, tags, eintraege: [e('grz', 'patch')], inArkly: { ...stand, grz: '0.29.0' } }).suite.neu, '0.31.0');
+});
+
 test('Major-Sprung einer App: Arkly Minor; App ohne package.json wird übergangen', () => {
   const r = neueVersionen({ versionen: stand, tags, eintraege: [e('grz', 'major')] });
   assert.equal(r.grz.neu, '1.0.0');
@@ -153,8 +162,8 @@ test('automatisch: setzt Versionen, löscht gültige Notizen, ungültige bleiben
   assert.match(r.zusammenfassung, new RegExp(`^TERRIO ${neuGrz.replace(/\./g, '\\.')}, NUMIO [\\d.]+, Arkly [\\d.]+$`));
   assert.equal(JSON.parse(readFileSync(join(w, 'apps/grz/package.json'), 'utf8')).version, neuGrz);
   assert.equal(JSON.parse(readFileSync(join(w, 'package-lock.json'), 'utf8')).packages['apps/grz'].version, neuGrz);
-  assert.deepEqual(r.notizen.grz, 'Neuer Nachweis.');
-  assert.deepEqual(r.notizen.suite, 'TERRIO: Neuer Nachweis.\nNUMIO: Rundung.');
+  assert.deepEqual(r.notizen.grz, '- Neuer Nachweis.');
+  assert.deepEqual(r.notizen.suite, '- TERRIO: Neuer Nachweis.\n- NUMIO: Rundung.');
   assert.equal(existsSync(join(w, '.versionen/a.json')), false);
   assert.equal(existsSync(join(w, '.versionen/b.json')), false);
   // ungültig: bleibt liegen, mit Warnung; FABRIO unverändert

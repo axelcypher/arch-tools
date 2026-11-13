@@ -58,8 +58,10 @@ jobs:
         with:
           # volle Historie, damit der Versions-Commit auf ein inzwischen weitergeführtes main aufsetzen kann
           fetch-depth: 0
-      # auch beim manuellen Start: so lassen sich liegengebliebene Notizen jederzeit abarbeiten
+      # auch beim manuellen Start mit „alle“: so lassen sich liegengebliebene Notizen jederzeit abarbeiten (mit einer
+      # einzelnen App nicht – sonst bekämen andere Apps neue Versionen, die dieser Lauf nicht baut)
       - name: Versionen setzen
+        if: github.event_name == 'push' || inputs.app == 'alle'
         env:
           NOTIZEN_AUS: ${{ runner.temp }}/notizen.json
         run: |

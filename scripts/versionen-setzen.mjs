@@ -52,10 +52,11 @@ export function erhoehen(version, stufe) {
 /**
  * Neue Versionen aus Notizen. `versionen`: aktuelle Version je App auf main; `tags`: alle Tags; `eintraege`: aus allen
  * Notizen. Liefert je App, die eine neue Version bekommt: { alt, neu, stufe, notizen }. Arkly bekommt eine neue
- * Version, sobald eine andere App eine bekommt oder eine Notiz für Arkly vorliegt. Übergang: Hat eine App noch eine
+ * Version, sobald eine andere App eine bekommt oder eine Notiz für Arkly vorliegt. `inArkly`: Versionen der Apps im
+ * Stand des höchsten Arkly-Tags (für von Hand gehobene Apps ohne Notiz). Übergang: Hat eine App noch eine
  * von Hand gesetzte, unveröffentlichte Version, bleibt sie (ohne Notiz) unverändert und zählt für Arkly mit.
  */
-export function neueVersionen({ versionen, tags, eintraege }) {
+export function neueVersionen({ versionen, tags, eintraege, inArkly = {} }) {
   const ergebnis = {};
   const stufeVon = (app) => eintraege.filter((e) => e.app === app).reduce((s, e) => hoehere(s, e.stufe), null);
   const notizenVon = (app) => eintraege.filter((e) => e.app === app).map((e) => e.notiz);
@@ -73,8 +74,10 @@ export function neueVersionen({ versionen, tags, eintraege }) {
       ergebnis[app] = { alt: versionen[app], neu: erhoehen(basisVon(app), stufe), stufe, notizen: notizenVon(app) };
     }
   }
-  // Arkly enthält alle Apps: neue Version, sobald eine andere App eine bekommt (Minor bei Minor/Major, sonst Patch)
-  const andere = APPS.filter((a) => a !== SUITE && ergebnis[a]);
+  // Arkly enthält alle Apps: neue Version, sobald eine andere App eine bekommt (Minor bei Minor/Major, sonst Patch). Eine
+  // von Hand gehobene App ohne Notiz zählt nur, wenn die veröffentlichte Arkly sie noch nicht enthält (`inArkly`: Versionen
+  // im Stand des höchsten Arkly-Tags) – sonst höbe jeder Lauf nach einem gescheiterten Bau Arkly erneut
+  const andere = APPS.filter((a) => a !== SUITE && ergebnis[a] && (ergebnis[a].neu !== ergebnis[a].alt || ergebnis[a].notizen.length || inArkly[a] !== versionen[a]));
   const abgeleitet = andere.length ? (andere.some((a) => ergebnis[a].stufe !== 'patch') ? 'minor' : 'patch') : null;
   const stufe = hoehere(stufeVon(SUITE), abgeleitet);
   if (stufe && versionen[SUITE]) {
@@ -158,12 +161,12 @@ export function notizenLesen(wurzel = '.') {
  * Der Ablauf im Release-Lauf (ohne Git, testbar): Notizen lesen, Versionen setzen, gültige Notizen löschen. Liefert
  * die Zusammenfassung für den Commit (leer = nichts zu tun), die Release-Sätze je App und die Warnungen.
  */
-export function automatisch({ wurzel = '.', tags }) {
+export function automatisch({ wurzel = '.', tags, inArkly = {} }) {
   const versionen = Object.fromEntries(
     APPS.filter((x) => existsSync(`${wurzel}/apps/${x}/package.json`)).map((x) => [x, JSON.parse(readFileSync(`${wurzel}/apps/${x}/package.json`, 'utf8')).version]),
   );
   const { gueltig, eintraege, fehler } = notizenLesen(wurzel);
-  const neu = neueVersionen({ versionen, tags, eintraege });
+  const neu = neueVersionen({ versionen, tags, eintraege, inArkly });
   const geaendert = Object.fromEntries(
     Object.entries(neu)
       .filter(([, e]) => e.neu !== e.alt)
@@ -172,7 +175,8 @@ export function automatisch({ wurzel = '.', tags }) {
   for (const [app, v] of Object.entries(geaendert)) versionSetzen(app, v, wurzel);
   if (Object.keys(geaendert).length) lockSetzen(geaendert, wurzel);
   for (const d of gueltig) rmSync(d);
-  const notizen = Object.fromEntries(Object.entries(neu).map(([app, e]) => [app, e.notizen.join('\n')]));
+  // als Markdown-Liste für die Release-Notiz
+  const notizen = Object.fromEntries(Object.entries(neu).map(([app, e]) => [app, e.notizen.map((n) => `- ${n}`).join('\n')]));
   const zusammenfassung = Object.keys(geaendert).length
     ? Object.entries(geaendert)
         .map(([app, v]) => `${NAMEN[app]} ${v}`)
@@ -197,7 +201,19 @@ function main() {
     process.exit(2);
   }
   const tags = tagsAus(execFileSync('git', ['ls-remote', '--tags', '--refs', 'origin'], { encoding: 'utf8' }));
-  const r = automatisch({ tags });
+  // Versionen der Apps in der veröffentlichten Arkly (Stand ihres höchsten Tags; fehlt der Tag lokal, gilt: unbekannt)
+  const arklyTag = veroeffentlicht(SUITE, tags);
+  const inArkly = {};
+  if (arklyTag) {
+    for (const a of APPS) {
+      try {
+        inArkly[a] = JSON.parse(execFileSync('git', ['show', `${tagVon(SUITE, arklyTag)}:apps/${a}/package.json`], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })).version;
+      } catch {
+        // Tag nicht geholt oder App dort nicht vorhanden
+      }
+    }
+  }
+  const r = automatisch({ tags, inArkly });
   for (const w of r.warnungen) console.log(`::warning::${w}`);
   // Release-Sätze je App für den Bau (Datei aus der Umgebung)
   if (process.env.NOTIZEN_AUS) writeFileSync(process.env.NOTIZEN_AUS, JSON.stringify(r.notizen));
