@@ -16,6 +16,7 @@ import {
   BILANZ_REST,
   BILANZ_UEBER,
   flaechenVergleich,
+  garagenFreiText,
   GELAENDE_QUELLE,
   GF_ART,
   GF_ART_KURZ,
@@ -107,18 +108,18 @@ export function GrzGfzView() {
       undefined,
       'Aufenthaltsraum festlegen',
     );
-  // Grundstücksfläche: eingetragener Wert (Kataster) ist maßgebend; Grenze bzw. Lageplan nur als Vergleich oder Ersatz
+  // Grundstücksfläche im Bauland (§ 19 Abs. 3): eingetragener Wert ist maßgebend; Grenze bzw. Lageplan nur als Vergleich oder Ersatz
   const gEingetragen = project.meta.grundstueck.flaeche !== undefined && project.meta.grundstueck.flaeche > 0;
   const ersatzFlaeche = n.grundstueck.grenze ?? n.grundstueck.ausLageplan;
   const grundstueckHinweis = gEingetragen
     ? n.grundstueck.grenze !== undefined
-      ? `maßgebend: eingetragener Wert (Kataster); gezeichnete Grenze ${fmt2(n.grundstueck.grenze)} m²`
-      : 'maßgebend: eingetragener Wert (Kataster)'
+      ? `maßgebend: eingetragener Wert; gezeichnete Grenze ${fmt2(n.grundstueck.grenze)} m²`
+      : 'nur die Fläche im Bauland hinter der Straßenbegrenzungslinie (§ 19 Abs. 3 BauNVO) – Katasterfläche ggf. mindern'
     : n.grundstueck.grenze !== undefined
       ? `leer: gezeichnete Grenze ${fmt2(n.grundstueck.grenze)} m²`
       : n.grundstueck.ausLageplan !== undefined
         ? `leer: Summe der Lageplan-Flächen mit Gebäude ${fmt2(n.grundstueck.ausLageplan)} m² – besser laut Kataster eintragen`
-        : 'laut Kataster (Fläche des Baulands, § 19 Abs. 3 BauNVO)';
+        : 'nur die Fläche im Bauland hinter der Straßenbegrenzungslinie (§ 19 Abs. 3 BauNVO)';
   const vgFehler =
     !m.vollgeschosseZwingend && m.vollgeschosseMin !== undefined && m.vollgeschosseMax !== undefined && m.vollgeschosseMin > m.vollgeschosseMax ? 'Mindestens ist größer als höchstens.' : undefined;
   const vonHand = n.geschosse.filter((g) => !g.automatisch).length;
@@ -138,7 +139,7 @@ export function GrzGfzView() {
         <h2>Projekt und Grundstück</h2>
         <StammdatenKnopf project={project} onAendern={(meta, name) => st.update((p) => ({ ...p, meta, name }), undefined, 'Stammdaten ändern')} />
         <div id="grz-grundstueck">
-          <Field label="Grundstücksfläche [m²]" hint={grundstueckHinweis}>
+          <Field label="Grundstücksfläche im Bauland [m²]" hint={grundstueckHinweis}>
             <NumberField
               value={project.meta.grundstueck.flaeche}
               allowEmpty
@@ -157,9 +158,17 @@ export function GrzGfzView() {
             <TextField value={project.meta.bebauungsplan?.name ?? ''} onChange={(v) => setBplan({ name: v })} />
           </Field>
         </div>
-        <Field label="in Kraft seit" hint="leer = kein Bebauungsplan (§ 34/35 BauGB), aktuelles Recht">
-          <input type="date" value={m.planDatum ?? ''} onChange={(e) => setM({ planDatum: e.target.value || undefined })} />
-        </Field>
+        <div className="field-row">
+          <Field label="Inkrafttreten">
+            <input type="date" aria-label="Inkrafttreten des Bebauungsplans" value={m.planDatum ?? ''} onChange={(e) => setM({ planDatum: e.target.value || undefined })} />
+          </Field>
+          <Field label="Öffentliche Auslegung">
+            <input type="date" aria-label="Öffentliche Auslegung des Planentwurfs" value={m.auslegungDatum ?? ''} onChange={(e) => setM({ auslegungDatum: e.target.value || undefined })} />
+          </Field>
+        </div>
+        <p className="field-hint grz-hinweis-zeile">
+          Inkrafttreten: Vollgeschossbegriff; leer = kein Bebauungsplan (§ 34/35 BauGB). Auslegung: BauNVO-Fassung (§ 25c BauNVO); leer = wie Inkrafttreten.
+        </p>
 
         <h2>
           Festsetzungen
@@ -253,6 +262,12 @@ export function GrzGfzView() {
           <input type="checkbox" checked={!!m.vollgeschosseZwingend} onChange={(e) => setM({ vollgeschosseZwingend: e.target.checked || undefined })} />
           zwingend (genau diese Zahl)
         </label>
+        {n.recht.baunvo !== '1962' && (
+          <label className="toggle block" title="nur, wenn der Bebauungsplan es festsetzt">
+            <input type="checkbox" checked={!!m.garagenGfFrei} onChange={(e) => setM({ garagenGfFrei: e.target.checked || undefined })} />
+            Garagen in Vollgeschossen nicht zur Geschossfläche (§ 21a Abs. 4 Nr. 3 BauNVO, festgesetzt)
+          </label>
+        )}
         {n.recht.baunvo === '1990' && (
           <label className="toggle block" title="nur, wenn der Bebauungsplan es festsetzt">
             <input type="checkbox" checked={!!m.aufenthaltNichtVollgeschoss} onChange={(e) => setM({ aufenthaltNichtVollgeschoss: e.target.checked || undefined })} />
@@ -626,9 +641,7 @@ export function GrzGfzView() {
             ))}
           </ul>
         </details>
-        {n.garagenFrei !== undefined && n.garagenFrei > 0 && (
-          <p className="small-text">Garagen und überdachte Stellplätze: {fmt2(n.garagenFrei)} m² anrechnungsfrei (§ 21a Abs. 3, bis 0,1 der Grundstücksfläche).</p>
-        )}
+        {n.garagenFrei !== undefined && n.garagenFrei > 0 && <p className="small-text">{garagenFreiText(n.recht.baunvo, n.garagenFrei)}</p>}
 
         <div className="grz-h3-zeile">
           <h3>

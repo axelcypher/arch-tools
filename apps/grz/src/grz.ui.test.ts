@@ -852,4 +852,21 @@ describe('Gesamt-Review: Bedienung der Oberfläche', () => {
     expect(useGrz.getState().project.lageplan!.grenze).toHaveLength(1);
     expect(useGrz.getState().project.lageplan!.flaechen).toHaveLength(1);
   });
+
+  it('Baurecht: Auslegungsdatum wählt die BauNVO-Fassung, Inkrafttreten den Vollgeschossbegriff; Kästchen § 21a Abs. 4 Nr. 3 ab 1968', () => {
+    const p = projekt();
+    p.massNutzung = { ...p.massNutzung, planDatum: '1990-06-01' };
+    useGrz.getState().load(p);
+    const host = render(GrzGfzView);
+    const kopf = () => host.querySelector('.grz-nachweis .muted')!.textContent!;
+    expect(kopf()).toContain('BauNVO 1990');
+    change(host.querySelector('input[aria-label="Öffentliche Auslegung des Planentwurfs"]') as HTMLInputElement, '1989-10-01');
+    expect(useGrz.getState().project.massNutzung?.auslegungDatum).toBe('1989-10-01');
+    expect(kopf()).toContain('BauNVO 1968/1977');
+    expect([...host.querySelectorAll('label.toggle')].some((l) => l.textContent?.includes('§ 21a Abs. 4 Nr. 3'))).toBe(true);
+    // Gegenprobe: 1962 ohne das Kästchen; Feld heißt „Grundstücksfläche im Bauland“
+    act(() => useGrz.getState().update((x) => ({ ...x, massNutzung: { ...x.massNutzung, planDatum: '1965-01-01', auslegungDatum: undefined } }), undefined, 'Datum'));
+    expect([...host.querySelectorAll('label.toggle')].some((l) => l.textContent?.includes('§ 21a Abs. 4 Nr. 3'))).toBe(false);
+    expect(host.querySelector('#grz-grundstueck')!.textContent).toContain('Grundstücksfläche im Bauland');
+  });
 });

@@ -513,7 +513,7 @@ describe('Fachliche Lücken (G-26) und Grundstücksgrenze (G-22)', () => {
     p.meta.grundstueck.flaeche = 600;
     const m = massNachweis(p);
     expect(m.grundstueck).toMatchObject({ quelle: 'projektdaten', flaeche: 600 });
-    expect(m.hinweise.some((h) => h.text.includes('gezeichnete Grenze 612,50 m²') && h.text.includes('Katasterangabe'))).toBe(true);
+    expect(m.hinweise.some((h) => h.text.includes('gezeichnete Grenze 612,50 m²') && h.text.includes('§ 19 Abs. 3 BauNVO'))).toBe(true);
   });
 });
 

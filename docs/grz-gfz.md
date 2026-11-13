@@ -69,8 +69,8 @@ Mindest- bzw. zwingende Vollgeschosse stehen als „unterschritten“.
 
 ## Welches Recht gilt
 
-Unter „Projekt und Bebauungsplan“ wird das **Datum des Bebauungsplans** eingetragen (Inkrafttreten bzw. Satzungsbeschluss),
-optional das **Datum der öffentlichen Auslegung** des Planentwurfs. Daraus wählt das Tool zwei Regelwerke; beide lassen
+Unter „Projekt und Grundstück“ → „Bebauungsplan“ wird das **Inkrafttreten** des Bebauungsplans eingetragen,
+optional das Datum der **öffentlichen Auslegung** des Planentwurfs (Feld neben „Inkrafttreten“). Daraus wählt das Tool zwei Regelwerke; beide lassen
 sich übersteuern, maßgebend ist die Planurkunde. Ohne Datum gilt das aktuelle Recht (Vorhaben nach § 34 oder § 35 BauGB).
 
 - **BauNVO-Fassung:** nach der öffentlichen Auslegung (§ 25c Abs. 1 BauNVO 1990: Auslegung nach § 3 Abs. 2 BauGB vor
@@ -156,7 +156,7 @@ unter dem Plan beginnt mit der Nummer wie im Plan und im Druck.
   und löscht sie einzeln. Die strichpunktierte Linie in Plan und Druck ist dann die gezeichnete Grenze;
   ohne Grenze ist sie als „Umriss der erfassten Flächen“ beschriftet. Die Fläche der Grenze wird mit der
   eingetragenen Grundstücksfläche abgeglichen: Bei Abweichung nennt der Nachweis beide Werte, maßgebend bleibt die
-  Katasterangabe (§ 19 Abs. 3 BauNVO). Ohne eingetragene Grundstücksfläche gilt die Fläche der Grenze.
+  eingetragene Fläche des Baugrundstücks im Bauland (§ 19 Abs. 3 BauNVO). Ohne eingetragene Grundstücksfläche gilt die Fläche der Grenze.
 - **Nutzung beim Zeichnen:** Die Auswahl „Nutzung“ neben den Werkzeugen (aktiv bei Polygon und Rechteck) wählt die
   Nutzung neuer Flächen mit denselben Bezeichnungen wie in der Tabelle. Die
   Versiegelung wird passend vorbelegt (z. B. Zufahrt vollversiegelt, Garten Grünfläche), der Name zählt je Nutzung
@@ -205,7 +205,10 @@ unter dem Plan beginnt mit der Nummer wie im Plan und im Druck.
 
 ### Grundstück und Gelände
 
-- **Grundstücksfläche:** aus den Projektdaten (Kataster); fehlt sie, aus der gezeichneten Grundstücksgrenze, sonst aus den eigenen Lageplan-Flächen zusammen mit dem
+- **Grundstücksfläche im Bauland:** Maßgebend ist nach § 19 Abs. 3 BauNVO nur die Fläche des Baugrundstücks im
+  Bauland hinter der festgesetzten (sonst tatsächlichen) Straßenbegrenzungslinie – nicht ohne Weiteres die
+  Katasterfläche, die Verkehrs-, Grün- oder Waldflächen enthalten kann. Das Feld heißt deshalb „Grundstücksfläche im
+  Bauland [m²]“; die Katasterfläche ist gegebenenfalls zu mindern. Sie kommt aus den Projektdaten; fehlt sie, aus der gezeichneten Grundstücksgrenze, sonst aus den eigenen Lageplan-Flächen zusammen mit dem
   Gebäude. Weichen beide voneinander ab, weist der Nachweis darauf hin. Eine Grundstücksfläche von 0 oder darunter (etwa aus einer
   fremden Datei) zählt wie „nicht angegeben“; dann springen Grenze bzw. Lageplan ein.
 - **Geländeoberfläche:** eingetragener Wert (vor 1985: die festgelegte Geländeoberfläche). Sonst wird das Gelände
@@ -250,7 +253,8 @@ unter dem Plan beginnt mit der Nummer wie im Plan und im Druck.
   **Geschossfläche:** Nebenanlagen zählen nicht (§ 20 Abs. 4 BauNVO 1990, § 20 Abs. 3 der früheren Fassungen).
   Garagen zählen nach BauNVO 1962 und 1968/1977 nicht, soweit sie nicht auf die Grundfläche angerechnet werden
   (§ 21a Abs. 4 Nr. 2 BauNVO 1968/1977); nach 1968/1977 und 1990 ganz nicht, wenn der Bebauungsplan das nach § 21a
-  Abs. 4 Nr. 3 festsetzt (Festsetzung „Garagen in Vollgeschossen nicht zur GF“).
+  Abs. 4 Nr. 3 festsetzt (Kästchen „Garagen in Vollgeschossen nicht zur Geschossfläche“ unter „Vollgeschosse“ in den
+  Festsetzungen, ab BauNVO 1968).
 - **BauNVO 1962, § 19 Abs. 5:** Außerhalb von Kern-, Gewerbe- und Industriegebieten werden eingeschossige Garagen und
   überdachte Stellplätze bis 0,1 der Grundstücksfläche nicht angerechnet („bis 0,1 frei“, wie 1968/1977). Im Kern-,
   Gewerbe- und Industriegebiet (MK, GE, GI) können sie ohne Anrechnung zugelassen werden: Das Tool zeigt „prüfen“

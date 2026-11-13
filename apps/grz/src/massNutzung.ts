@@ -874,7 +874,7 @@ export function massNachweis(project: Project): Nachweis {
   };
   if (gProjekt !== undefined && ausGrenze !== undefined && Math.abs(gProjekt - ausGrenze) > Math.max(0.5, gProjekt * 0.005)) {
     hinweise.push({
-      text: `Grundstücksfläche laut Projektdaten (Kataster) ${fmtA(gProjekt)}, gezeichnete Grenze ${fmtA(ausGrenze)} – maßgebend ist die Katasterangabe (§ 19 Abs. 3 BauNVO: Fläche des Baulands).`,
+      text: `Eingetragene Grundstücksfläche ${fmtA(gProjekt)}, gezeichnete Grenze ${fmtA(ausGrenze)} – maßgebend ist die eingetragene Fläche des Baugrundstücks im Bauland hinter der Straßenbegrenzungslinie (§ 19 Abs. 3 BauNVO).`,
       art: 'sachlich',
     });
   }
