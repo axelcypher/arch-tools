@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { verzoegertSchreiben } from './verzoegert';
+import { inStoreSchreiben, verzoegertSchreiben } from './verzoegert';
 
 afterEach(() => vi.useRealTimers());
 
@@ -75,7 +75,7 @@ describe('Zwischenstand: verzögertes Schreiben und Sichern vor dem Schließen',
     expect(f).toHaveBeenCalledTimes(1);
   });
 
-  it('gescheitertes Schreiben: protokolliert, sichern() meldet false, das nächste Schreiben läuft trotzdem', async () => {
+  it('gescheitertes Schreiben: protokolliert, sichern() meldet false, das nächste sichern() schreibt erneut', async () => {
     const fehler = new Error('voll');
     const f = vi.fn().mockRejectedValueOnce(fehler).mockResolvedValue(undefined);
     const beiFehler = vi.fn();
@@ -83,13 +83,66 @@ describe('Zwischenstand: verzögertes Schreiben und Sichern vor dem Schließen',
     z.anstossen();
     expect(await z.sichern()).toBe(false);
     expect(beiFehler).toHaveBeenCalledWith(fehler);
-    // ohne neue Änderung bleibt der Zwischenstand veraltet: weiter false, kein erneutes Schreiben
-    expect(await z.sichern()).toBe(false);
-    expect(f).toHaveBeenCalledTimes(1);
-    // Gegenprobe: das nächste Schreiben gelingt, dann wieder true
-    z.anstossen();
+    // „Erneut versuchen“ in Arkly: ohne neue Änderung wird erneut geschrieben, diesmal mit Erfolg
+    expect(await z.sichern()).toBe(true);
+    expect(f).toHaveBeenCalledTimes(2);
+    // Gegenprobe: danach ist nichts mehr ausstehend
     expect(await z.sichern()).toBe(true);
     expect(f).toHaveBeenCalledTimes(2);
     expect(beiFehler).toHaveBeenCalledTimes(1);
+  });
+
+  it('scheitert das Schreiben im Hintergrund, holt das Schließen es nach', async () => {
+    vi.useFakeTimers();
+    const f = vi.fn().mockRejectedValueOnce(new Error('blockiert')).mockResolvedValue(undefined);
+    const z = verzoegertSchreiben(f, 600);
+    z.anstossen();
+    await vi.advanceTimersByTimeAsync(600);
+    expect(f).toHaveBeenCalledTimes(1);
+    expect(await z.sichern()).toBe(true);
+    expect(f).toHaveBeenCalledTimes(2);
+  });
+});
+
+/** gefälschte IndexedDB-Verbindung: die Transaktion endet, wie der Test es vorgibt */
+function falscheDb(ende: 'complete' | 'error' | 'werfen') {
+  const geschrieben: unknown[] = [];
+  const tx = { error: null as DOMException | null, objectStore: () => ({ put: (w: unknown) => geschrieben.push(w) }) } as unknown as IDBTransaction & Record<string, () => void>;
+  const d = {
+    close: vi.fn(),
+    transaction: () => {
+      if (ende === 'werfen') throw new DOMException('nicht klonbar', 'DataCloneError');
+      queueMicrotask(() => {
+        if (ende === 'complete') tx.oncomplete();
+        else {
+          (tx as { error: DOMException | null }).error = new DOMException('voll', 'QuotaExceededError');
+          tx.onerror(); // bei einem Fehler feuern beide
+          tx.onabort();
+        }
+      });
+      return tx;
+    },
+  };
+  return { d: d as unknown as IDBDatabase & { close: ReturnType<typeof vi.fn> }, geschrieben };
+}
+
+describe('Zwischenstand: Schreiben in die IndexedDB', () => {
+  it('wartet auf das Ende der Transaktion und schließt die Verbindung', async () => {
+    const { d, geschrieben } = falscheDb('complete');
+    await inStoreSchreiben(d, 'autosave', 'k', () => ({ a: 1 }));
+    expect(geschrieben).toEqual([{ a: 1 }]);
+    expect(d.close).toHaveBeenCalledTimes(1);
+  });
+
+  it('Fehler und Abbruch: abgelehnt mit dem Fehler der Transaktion, Verbindung genau einmal geschlossen', async () => {
+    const { d } = falscheDb('error');
+    await expect(inStoreSchreiben(d, 'autosave', 'k', () => ({}))).rejects.toMatchObject({ name: 'QuotaExceededError' });
+    expect(d.close).toHaveBeenCalledTimes(1);
+  });
+
+  it('Ausnahme beim Anlegen der Transaktion: abgelehnt, Verbindung geschlossen', async () => {
+    const { d } = falscheDb('werfen');
+    await expect(inStoreSchreiben(d, 'autosave', 'k', () => ({}))).rejects.toMatchObject({ name: 'DataCloneError' });
+    expect(d.close).toHaveBeenCalledTimes(1);
   });
 });

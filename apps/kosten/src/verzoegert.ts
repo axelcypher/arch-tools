@@ -5,7 +5,8 @@
  * (vorDemSchliessen), auch wiederholt. Schreibvorgänge laufen nacheinander, nie gleichzeitig.
  *
  * `sichern()` liefert, ob der Zwischenstand auf dem neuesten Stand ist: `false`, wenn das letzte Schreiben gescheitert
- * ist (Arkly fragt dann nach, statt still zu schließen). Ein Fehler geht an `beiFehler` und hält die Kette nicht an.
+ * ist (Arkly fragt dann nach, statt still zu schließen); das nächste `sichern()` versucht es erneut. Ein Fehler geht an
+ * `beiFehler` und hält die Kette nicht an.
  */
 export function verzoegertSchreiben(schreiben: () => Promise<void>, ms: number, beiFehler: (e: unknown) => void = () => undefined): { anstossen: () => void; sichern: () => Promise<boolean> } {
   let uhr: ReturnType<typeof setTimeout> | undefined;
@@ -21,6 +22,8 @@ export function verzoegertSchreiben(schreiben: () => Promise<void>, ms: number, 
         () => true,
         (e: unknown) => {
           beiFehler(e);
+          // der Zwischenstand bleibt veraltet: das nächste sichern() (z. B. „Erneut versuchen“ in Arkly) schreibt erneut
+          ausstehend = true;
           return false;
         },
       ),
@@ -36,4 +39,30 @@ export function verzoegertSchreiben(schreiben: () => Promise<void>, ms: number, 
     },
     sichern: () => (ausstehend ? jetzt() : laufend),
   };
+}
+
+/**
+ * Einen Wert in einen Object Store schreiben und auf das Ende der Transaktion warten. Scheitert sie (Fehler, Abbruch,
+ * Ausnahme z. B. bei nicht klonbaren Daten), wird das Promise abgelehnt. Die Verbindung wird in jedem Fall geschlossen.
+ */
+export function inStoreSchreiben(d: IDBDatabase, store: string, key: IDBValidKey, wert: () => unknown): Promise<void> {
+  return new Promise<void>((fertig, scheitern) => {
+    let erledigt = false;
+    const ende = (fehler?: unknown) => {
+      // onerror und onabort feuern bei einem Fehler beide: nur der erste Aufruf zählt
+      if (erledigt) return;
+      erledigt = true;
+      d.close();
+      if (fehler === undefined) fertig();
+      else scheitern(fehler);
+    };
+    try {
+      const tx = d.transaction(store, 'readwrite');
+      tx.objectStore(store).put(wert(), key);
+      tx.oncomplete = () => ende();
+      tx.onerror = tx.onabort = () => ende(tx.error ?? new Error('Transaktion abgebrochen'));
+    } catch (e) {
+      ende(e ?? new Error('Transaktion gescheitert'));
+    }
+  });
 }

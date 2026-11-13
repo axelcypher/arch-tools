@@ -7,7 +7,7 @@ import { parseProjectData } from '@core/serialize';
 import { logger } from '@core/platform/log';
 import { vorDemSchliessen } from '@core/platform/rahmen';
 import { zwischenstandErsetzt, zwischenstandLadenErlaubt, zwischenstandWirdGeladen } from '@core/platform/startschutz';
-import { verzoegertSchreiben } from './verzoegert';
+import { inStoreSchreiben, verzoegertSchreiben } from './verzoegert';
 
 /**
  * Zustand von NUMIO: das Projekt im gemeinsamen Format (.oap) – Gebäude, Geschosse und
@@ -179,25 +179,10 @@ if (typeof indexedDB !== 'undefined') {
     () =>
       db().then(
         (d) =>
-          new Promise<void>((fertig, scheitern) => {
-            try {
-              const { project, datei, basis } = useKosten.getState();
-              const tx = d.transaction(STORE, 'readwrite');
-              tx.objectStore(STORE).put({ project, datei, basis, zeit: Date.now() }, KEY);
-              tx.oncomplete = () => {
-                zwischenstandErsetzt(DB);
-                d.close();
-                fertig();
-              };
-              tx.onerror = tx.onabort = () => {
-                d.close();
-                scheitern(tx.error ?? new Error('Zwischenstand abgebrochen'));
-              };
-            } catch (e) {
-              d.close();
-              scheitern(e);
-            }
-          }),
+          inStoreSchreiben(d, STORE, KEY, () => {
+            const { project, datei, basis } = useKosten.getState();
+            return { project, datei, basis, zeit: Date.now() };
+          }).then(() => zwischenstandErsetzt(DB)),
       ),
     600,
     (e) => log.warn('Zwischenstand ließ sich nicht schreiben', e),
