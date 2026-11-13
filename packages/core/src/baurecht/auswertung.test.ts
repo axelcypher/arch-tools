@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { VORGABE_MERKMALE } from '../bedingung';
 import type { Fassung } from '../recht/typen';
 import type { AuswertungsEingabe } from './auswertung';
-import { auswerten, gueltigeFakten, gueltigeMerkmale, modulFakten, modulZiel } from './auswertung';
+import { auswerten, bundGelieferte, gueltigeFakten, gueltigeMerkmale, modulFakten, modulZiel } from './auswertung';
 import type { TextStand } from './auswertung';
 import { kurzText, werten } from './kurz';
 import { agsVorschlag, aktiveModule, fehlendeEbenen, paketAusDateien, paketPruefen, regeldateiFuer, signaturPruefen } from './paket';
@@ -717,3 +717,17 @@ describe('Runde 13 (Fachprüfung): nicht gestellte Fragen fehlen nicht', () => {
     expect(a.paragrafen.find((x) => x.id === 'bund/t/2')!.klaerend ?? []).toEqual([]);
   });
 });
+
+describe('Runde 17: wer einen Modulwert liefert', () => {
+  it('entscheidend ist das Modul, das den Wert setzt – nicht das, das die Angabe definiert', () => {
+    const m = (id: string, ebene: Modul['ebene'], fakten: Modul['fakten']) => ({ format: 1, id, name: id, ebene, version: '2026-11-13', normen: {}, fakten }) as unknown as Modul;
+    const def = { titel: 'Naturdenkmal', gruppe: 'schutz', typ: 'janein' } as const;
+    const set = bundGelieferte([
+      m('bund', 'bund', { 'schutz.naturdenkmal': { ...def }, 'bund.fest': { ...def, wert: true } }),
+      m('kreis', 'kreis', { 'schutz.naturdenkmal': { ...def, nach: { fakt: 'kreis.nd', tabelle: { true: true } } } }),
+    ] as Modul[]);
+    expect(set.has('schutz.naturdenkmal')).toBe(false);
+    expect(set.has('bund.fest')).toBe(true);
+  });
+});
+

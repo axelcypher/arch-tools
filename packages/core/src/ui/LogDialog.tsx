@@ -49,7 +49,7 @@ export function LogDialog({ onClose }: { onClose: () => void }) {
     await saveTextFile({
       defaultName: `flaechenrechner-protokoll_${stamp}.log`,
       contents: `Flächenrechner ${__APP_VERSION__} · ${navigator.userAgent}\n\n${logText()}\n`,
-      filterName: 'Protokoll',
+      filterName: 'Fehlerprotokoll',
       extension: 'log',
       mime: 'text/plain;charset=utf-8',
     });

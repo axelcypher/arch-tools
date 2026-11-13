@@ -17,6 +17,7 @@ import type { Bewertung, KurzKontext, TextKontext } from './kurz';
 import { kurzText, offenText, warumText, werten } from './kurz';
 import type { Paket } from './paket';
 import { regeldateiFuer } from './paket';
+import { frageGestellt } from './fragen';
 import { plusMonate } from '../recht/quellen';
 import { ortGeaendert } from './ort';
 import type { Ampel, FaktDef, FaktWert, Festlegung, Hinweis, Kurz, Modul, NormErgebnis, Ort, ParagrafErgebnis, ParagrafRegel, Wahrheit } from './typen';
@@ -194,6 +195,17 @@ const zaehlerLeer = (): Record<Ampel, number> => ({ rot: 0, gelb: 0, gruen: 0 })
 const RANG: Record<Ampel, number> = { gruen: 0, gelb: 1, rot: 2 };
 const datumText = (iso: string) => iso.slice(0, 10).split('-').reverse().join('.');
 /**
+ * Angaben, deren Modulwert das Bundesmodul liefert – entscheidend ist das Modul, das den Wert setzt (wie in modulFakten
+ * das letzte mit `wert` bzw. `nach`), nicht das, das die Angabe definiert (z. B. Naturdenkmal: im Bund definiert, vom
+ * Kreis nach seiner Liste geliefert)
+ */
+export function bundGelieferte(module: Modul[]): Set<string> {
+  const ebene = new Map<string, string>();
+  for (const m of module) for (const [id, d] of Object.entries(m.fakten ?? {})) if (d.wert !== undefined || d.nach) ebene.set(id, m.ebene);
+  return new Set([...ebene].filter(([, e]) => e === 'bund').map(([id]) => id));
+}
+
+/**
  * Wo ein unsicherer Modulwert zu bestätigen ist, damit er gesichert wird. Quellen der Unsicherheit:
  *  - der Gemeindeschlüssel, solange er nicht gesichert ist (Werte eines Gebietsmoduls gelten erst mit ihm – nicht bei
  *    Werten des Bundesmoduls, `bund`),
@@ -282,19 +294,14 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
     },
   };
 
-  // eine Angabe, deren Frage gerade nicht gestellt wird (ihr `wenn` ergibt „nein“), fehlt nicht: sie steht nicht unter
-  // „es fehlt“, nicht in `offen` und nicht unter „klärt am meisten“ – die Ampel bleibt, wie die Regel sie ergibt
+  // eine Angabe, deren Frage gerade nicht gestellt wird (frageGestellt – dasselbe Kriterium wie die App), fehlt nicht:
+  // sie steht nicht unter „es fehlt“, nicht in `offen` und nicht unter „klärt am meisten“ – die Ampel bleibt
   const gestelltCache = new Map<string, boolean>();
   const gestellt = (o: string): boolean => {
-    const d = faktDefs[o];
-    if (!d?.wenn) return true;
+    if (o.startsWith('merkmal:') || o.startsWith('paragraf:')) return true;
     let g = gestelltCache.get(o);
     if (g === undefined) {
-      try {
-        g = werten(d.wenn, ctx).w !== 'nein';
-      } catch {
-        g = true;
-      }
+      g = frageGestellt(o, faktDefs[o], ctx);
       gestelltCache.set(o, g);
     }
     return g;
@@ -418,7 +425,7 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
       const teile = [angaben.length ? `es fehlt: ${angaben.map((o) => offenText(o, text)).join(' · ')}` : '', haengt.length ? `hängt an ${haengt.map((o) => offenText(o, text)).join(' · ')} – dort offen` : ''].filter(Boolean);
       const satz = teile.join('; ') || 'es fehlt: Angaben';
       // kein Punkt nach einer Frage („… (LINFOS-Kennung)?“)
-      gruende.push(`Offen – ${satz}${/[?.!)]$/.test(satz) ? '' : '.'}`);
+      gruende.push(`Offen – ${satz}${/[?.!]$/.test(satz) ? '' : '.'}`);
       tragend = [g, gilt];
     }
 
@@ -469,7 +476,7 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
         gruende.splice(0, gruende.length, ...herab, ...sonst);
       }
     } else if (ampel === 'rot') {
-      if (pruef.w === 'ja' && r.pruefen) hinweise.push(`Im Einzelfall prüfen: ${r.pruefen.grund}`);
+      if (pruef.w === 'ja' && r.pruefen) hinweise.push(/^Im Einzelfall prüfen/i.test(r.pruefen.grund) ? r.pruefen.grund : `Im Einzelfall prüfen: ${r.pruefen.grund}`);
       const neu = (n.stand?.kuenftige ?? []).filter((k) => k.gueltigAb > e.einreichung && k.gueltigAb <= entscheidungBis);
       if (neu.length) hinweise.push(`Neue Fassung ab ${neu.map((k) => datumText(k.gueltigAb)).join(', ')} angekündigt – voraussichtlich vor der Entscheidung; Anforderungen der künftigen Fassung prüfen.`);
       if (geaendert.length) hinweise.push(`Text seit der Prüfung der Regel geändert (${geaendert.map(fundstelleName).join(', ')}).`);
@@ -656,8 +663,8 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
   // nur Paragrafen, die allein wegen genau dieses Hinweises gelb sind. Ein Modulwert ist dort zu bestätigen, woher seine
   // Unsicherheit kommt (Ziel: modulZiel)
   const zahlB = new Map<string, number>();
-  // Werte des Bundesmoduls hängen nicht am Gemeindeschlüssel
-  const bundFakten = new Set(e.module.filter((m) => m.ebene === 'bund').flatMap((m) => Object.keys(m.fakten ?? {})));
+  // Werte, die das Bundesmodul liefert, hängen nicht am Gemeindeschlüssel
+  const bundFakten = bundGelieferte(e.module);
   for (const p of paragrafen) {
     if (!p.bestaetigend || p.bestaetigend.includes(':') || !offenAuto(p)) continue;
     const ziel = fakten[p.bestaetigend]?.herkunft === 'modul' ? modulZiel(p.bestaetigend, fakten, faktDefs, bundFakten) : p.bestaetigend;

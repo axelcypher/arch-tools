@@ -830,5 +830,66 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
     await warten(400);
     expect(region()).toMatch(/Keine Angabe zu „zzzz“/);
   });
+
+  it('Rückmeldung nach dem Speichern: Entwürfe zuerst, sonst „keine Änderungen“ bzw. „Gespeichert“', async () => {
+    const host = render();
+    const text = () => host.querySelector('.br-gespeichert')?.textContent;
+    await speichernOhneDialog();
+    expect(text()).toBe('Gespeichert – keine Änderungen');
+    act(() => useBaurecht.getState().merkmalSetzen('Gebäudeart', 'Doppelhaushälfte'));
+    await speichernOhneDialog();
+    expect(text()).toBe('Gespeichert');
+    festlegen(host, 'Begehung am 03.11.2026 ohne Befund', 'rot');
+    await speichernMit('Speichern, diese als Entwurf behalten');
+    expect(text()).toBe('Gespeichert – ein Entwurf bleibt offen');
+  });
+
+  it('Sprungziel zu einem Merkmal während einer Suche, die ein anderes Merkmal trifft: Fokus am Ziel', async () => {
+    const { auswertungMit } = await import('./pruefung');
+    const host = render();
+    const suchfeld = host.querySelector<HTMLInputElement>('input[aria-label="Angaben durchsuchen"]')!;
+    tippen(suchfeld, 'Gebäudeart');
+    expect(host.querySelector('[data-merkmal="Gebäudeart"]')).not.toBeNull();
+    expect(host.querySelector('[data-merkmal="Planungsrecht"]')).toBeNull();
+    const p = auswertungMit(useBaurecht.getState().pruefung.fakten).paragrafen.find((x) => x.gruende.some((g) => g.startsWith('Nicht gesichert: Planungsrecht')))!;
+    act(() => useBaurecht.getState().waehlen(p.id));
+    act(() => knopf(host.querySelector('.br-detail')!, 'Zum Bestätigen')!.click());
+    await warten(150);
+    expect(suchfeld.value).toBe('');
+    expect(document.activeElement?.textContent).toBe('Für diesen Ort bestätigen');
+  });
+
+  it('Hinweis-Knopf während einer Suche: die Suche bleibt, Fokus ins Suchfeld, die Wirkung wird angesagt', async () => {
+    const host = render();
+    await warten(400);
+    await warten();
+    const suchfeld = host.querySelector<HTMLInputElement>('input[aria-label="Angaben durchsuchen"]')!;
+    tippen(suchfeld, 'Kampfmittel');
+    act(() => knopf(host.querySelector('.br-planungsrecht-hinweis')!, 'Für diesen Ort bestätigen')!.click());
+    expect(useBaurecht.getState().ansage).toMatch(/Vorschriften? entf/);
+    await warten(50);
+    expect(suchfeld.value).toBe('Kampfmittel');
+    expect(document.activeElement).toBe(suchfeld);
+    expect(useBaurecht.getState().ansage).toMatch(/Vorschriften? entf/);
+  });
+
+  it('Protokoll „Jetzt speichern“: die Meldung sagt das Ergebnis, der Fokus bleibt im Dialog', async () => {
+    const host = render();
+    await speichernOhneDialog();
+    act(() => knopf(host, 'Prüfprotokoll')!.click());
+    const d = document.querySelector<HTMLElement>('.br-protokoll')!;
+    for (let i = 0; i < 20 && knopf(d, 'Prüfung abschließen')!.disabled; i++) await warten(100);
+    act(() => knopf(d, 'Prüfung abschließen')!.click());
+    await warten();
+    await act(async () => {
+      knopf(d, 'Jetzt speichern')!.click();
+      await new Promise((r) => setTimeout(r, 100));
+    });
+    await warten();
+    const m = d.querySelector<HTMLElement>('.br-abgelegt')!;
+    expect(m.textContent).toMatch(/^Gespeichert – die abgeschlossene Prüfung steht in der Projektdatei/);
+    expect(d.contains(document.activeElement)).toBe(true);
+    expect(knopf(d, 'Jetzt speichern')).toBeUndefined();
+  });
 });
 

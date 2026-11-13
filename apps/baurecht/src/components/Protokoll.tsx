@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
-import { offenText, werten } from '@core/baurecht/kurz';
+import { offenText } from '@core/baurecht/kurz';
 import { MERKMAL_TITEL } from '@core/baurecht/fakten';
 import { VORGABE_MERKMALE } from '@core/bedingung';
 import type { Ampel, FaktWert, ParagrafErgebnis } from '@core/baurecht/typen';
@@ -12,7 +12,8 @@ import type { Pruefstand } from '../pruefung';
 import { aktuelleLage, anUngespeichertem, OHNE_LAGEBEZUG, verwendeteFassungen } from '../pruefung';
 import { istGeaendert, offeneBestaetigungen, offeneFestlegungen, PLANUNGSRECHT, useBaurecht } from '../store';
 import { AMPEL_TEXT, aufzaehlen, datum, nb } from './Ampel';
-import { RUECKFRAGEN, rueckfrageOffen } from './Angaben';
+import { rueckfrageOffen } from './Angaben';
+import { frageGestellt, RUECKFRAGEN } from '@core/baurecht/fragen';
 
 
 
@@ -82,7 +83,7 @@ function ampelText(p: ParagrafErgebnis): string {
  * Punkte als Tabelle (was fehlt – Anzahl – Paragrafen), dann alle Vorschriften je Ebene. „Prüfung abschließen“ legt einen Stand in der
  * Projektdatei ab – erst, wenn nichts mehr Entwurf ist.
  */
-export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: Pruefstand; onClose: () => void; onSpeichern?: () => void }) {
+export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: Pruefstand; onClose: () => void; onSpeichern?: () => Promise<boolean> }) {
   const project = useBaurecht((s) => s.project);
   const antrag = useBaurecht((s) => s.antrag);
   const merkmale = useBaurecht((s) => s.merkmale);
@@ -109,7 +110,7 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
     if (name === 'Vorhaben') {
       // nur Rückfragen, die gerade gestellt sind (nach einem Wechsel auf „Errichtung“ zählt der Umfang nicht mehr)
       const a0 = pruefstand.auswertung;
-      const gestellt = (id: string) => !!a0.faktDefs[id] && (!a0.faktDefs[id].wenn || werten(a0.faktDefs[id].wenn, a0.kontext).w === 'ja');
+      const gestellt = (id: string) => !!a0.faktDefs[id] && frageGestellt(id, a0.faktDefs[id], a0.kontext);
       // wie in der App: ein Wert, der nur Hinweis ist, gilt dort als offen – hier mit Vermerk
       const teile = RUECKFRAGEN.Vorhaben.filter((id) => pruefstand.auswertung.fakten[id]?.wert != null && gestellt(id)).map((id) => {
         const f = pruefstand.auswertung.fakten[id];
@@ -132,12 +133,16 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
   const ungespeichertGesamt = useBaurecht(istGeaendert);
   const laedt = useBaurecht((s) => s.laedt.length);
   const [nurRelevant, setNurRelevant] = useState(false);
-  // Meldung nach „Prüfung abschließen“ (mit „Jetzt speichern“) – der Fokus geht dorthin
-  const [abgelegt, setAbgelegt] = useState<string | null>(null);
+  // Meldung nach „Prüfung abschließen“ (mit „Jetzt speichern“, solange nicht gespeichert) – der Fokus geht dorthin;
+  // nach dem Speichern (hier oder mit Strg+S) sagt sie das Ergebnis, im Dialog selbst
+  const [abgelegt, setAbgelegt] = useState<{ text: string; speichern: boolean } | null>(null);
   const meldung = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (abgelegt) (meldung.current?.querySelector<HTMLElement>('button') ?? meldung.current)?.focus();
   }, [abgelegt]);
+  useEffect(() => {
+    if (abgelegt?.speichern && !ungespeichertGesamt) setAbgelegt({ text: 'Gespeichert – die abgeschlossene Prüfung steht in der Projektdatei.', speichern: false });
+  }, [ungespeichertGesamt, abgelegt]);
   const fenster = useRef<HTMLDivElement>(null);
   // Höhe der klebenden Aktionsleiste als CSS-Variable – der feste Tabellenkopf klebt darunter
   useEffect(() => {
@@ -201,7 +206,7 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
   const vonHandOhneBeleg = Object.entries(a.fakten).filter(([id, f]) => id in eigeneFakten && !!a.faktDefs[id] && id !== 'antrag.einreichung' && f.herkunft === 'manuell' && !f.bestaetigt && f.wert != null);
   // abgeschlossen wird nur ein gespeicherter, zweimal bestätigter und vollständig geladener Stand
   // knapp (die Einzelheiten stehen im Hinweis darunter); nach dem Abschließen neutral: die Ablage will gespeichert werden
-  const sperre = entwuerfe ? 'Erst speichern – Entwürfe brauchen die zweite Bestätigung' : ungespeichertGesamt ? (abgelegt ? 'Abgelegt – zum Übernehmen speichern' : 'Erst speichern: Es gibt ungespeicherte Änderungen') : laedt ? 'Die Gesetzestexte werden noch geholt – bitte warten' : '';
+  const sperre = entwuerfe ? 'Erst speichern – Entwürfe brauchen die zweite Bestätigung' : ungespeichertGesamt ? (abgelegt?.speichern ? 'Abgelegt – zum Übernehmen speichern' : 'Erst speichern: Es gibt ungespeicherte Änderungen') : laedt ? 'Die Gesetzestexte werden noch geholt – bitte warten' : '';
   // offene Punkte nach der fehlenden Angabe gruppiert („Baugebiet – 20 Paragrafen“), der Rest nach dem Grund
   const ohneRegel = a.normen.filter((n) => n.ohneRegel);
   // fehlende Angaben genau wie „Klärt am meisten“ gezählt (ein Paragraf kann unter mehreren Angaben stehen)
@@ -254,7 +259,7 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
     const am = new Date().toISOString();
     useBaurecht.getState().protokollAnhaengen({ am, von: benutzer(), paket: paket.version, einreichung: pruefstand.einreichung, fassungen: verwendeteFassungen(a), zaehler: a.zaehler, ampeln, offen: offen.length + ueberholt.length + ohneRegel.length });
     // sichtbar und angesagt, Fokus auf die Meldung (der Knopf ist danach gesperrt – sonst fiele der Fokus auf die Seite)
-    setAbgelegt(`Prüfung vom ${datum(am)} abgelegt (${a.zaehler.rot} gilt · ${a.zaehler.gelb} prüfen · ${a.zaehler.gruen} entfällt) – zum Übernehmen in die Datei speichern.`);
+    setAbgelegt({ text: `Prüfung vom ${datum(am)} abgelegt (${a.zaehler.rot} gilt · ${a.zaehler.gelb} prüfen · ${a.zaehler.gruen} entfällt) – zum Übernehmen in die Datei speichern.`, speichern: true });
   };
   const datei = quelle?.art === 'ordner' ? quelle.datei : quelle?.art === 'datei' ? quelle.name : null;
   const geo = [...new Set(Object.values(a.fakten).filter((f) => f.herkunft === 'geodienst' && f.quelle).map((f) => `${f.quelle}${f.stand ? `, abgefragt ${datum(f.stand)}` : ''}`))];
@@ -291,14 +296,14 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
         </div>
         {abgelegt && (
           <div ref={meldung} tabIndex={-1} className="br-meldung br-meldung-info no-print br-abgelegt" role="status">
-            {abgelegt}{' '}
-            {onSpeichern && (
+            {abgelegt.text}{' '}
+            {onSpeichern && abgelegt.speichern && (
               <button
                 type="button"
                 className="small"
-                onClick={() => {
-                  onSpeichern();
-                  setAbgelegt(null);
+                onClick={async () => {
+                  const ok = await onSpeichern();
+                  setAbgelegt(ok ? { text: 'Gespeichert – die abgeschlossene Prüfung steht in der Projektdatei.', speichern: false } : { text: 'Nicht gespeichert – die Prüfung ist abgelegt, steht aber noch nicht in der Datei.', speichern: true });
                 }}
               >
                 Jetzt speichern
