@@ -45,45 +45,45 @@ describe('Rahmen-App', () => {
   it('Apps als Tabs öffnen, wechseln (die anderen bleiben geladen), schließen; offene Tabs bleiben für den nächsten Start', () => {
     const host = render();
     expect(host.querySelectorAll('.rahmen-karte')).toHaveLength(8);
-    act(() => karte(host, 'Projekt').click());
+    act(() => karte(host, 'ATLAS').click());
     expect(host.querySelector('iframe')?.getAttribute('src')).toBe('apps/ordner/index.html?rahmen=tab&app=ordner');
     // weitere App über „+“
     act(() => (host.querySelector('.rahmen-plus button') as HTMLButtonElement).click());
-    act(() => ([...host.querySelectorAll('.rahmen-menue button')].find((b) => b.textContent?.includes('Formulare')) as HTMLButtonElement).click());
-    expect([...host.querySelectorAll('.rahmen-tab-name')].map((t) => t.textContent)).toEqual(['Projekt', 'Formulare']);
+    act(() => ([...host.querySelectorAll('.rahmen-menue button')].find((b) => b.textContent?.includes('PERMIO')) as HTMLButtonElement).click());
+    expect([...host.querySelectorAll('.rahmen-tab-name')].map((t) => t.textContent)).toEqual(['ATLAS', 'PERMIO']);
     expect([...host.querySelectorAll('iframe')].map((f) => f.className)).toEqual(['rahmen-app', 'rahmen-app aktiv']);
-    act(() => tab(host, 'Projekt').click());
+    act(() => tab(host, 'ATLAS').click());
     expect([...host.querySelectorAll('iframe')].map((f) => f.className)).toEqual(['rahmen-app aktiv', 'rahmen-app']);
     expect(JSON.parse(localStorage.getItem('arch-tools:rahmen')!)).toEqual({ tabs: ['ordner', 'formulare'], aktiv: 'ordner' });
-    act(() => (tab(host, 'Projekt').querySelector('button[title="Schließen"]') as HTMLButtonElement).click());
-    expect([...host.querySelectorAll('.rahmen-tab-name')].map((t) => t.textContent)).toEqual(['Formulare']);
+    act(() => (tab(host, 'ATLAS').querySelector('button[title="Schließen"]') as HTMLButtonElement).click());
+    expect([...host.querySelectorAll('.rahmen-tab-name')].map((t) => t.textContent)).toEqual(['PERMIO']);
     expect(useRahmen.getState().aktiv).toBe('formulare');
   });
 
   it('Meldungen der App im Tab: Projektname und ungespeicherte Änderungen; Rückfrage beim Schließen', async () => {
     const host = render();
-    act(() => karte(host, 'Flächenrechner').click());
+    act(() => karte(host, 'QUADRIO').click());
     const f = host.querySelector('iframe')!;
     act(() => {
-      window.dispatchEvent(new MessageEvent('message', { data: { typ: 'arch-tools:status', app: 'Flächenrechner', name: 'EFH Musterweg', dirty: true }, origin: window.location.origin, source: f.contentWindow }));
+      window.dispatchEvent(new MessageEvent('message', { data: { typ: 'arch-tools:status', app: 'QUADRIO', name: 'EFH Musterweg', dirty: true }, origin: window.location.origin, source: f.contentWindow }));
     });
-    expect(tab(host, 'Flächenrechner').textContent).toContain('EFH Musterweg');
-    expect(tab(host, 'Flächenrechner').querySelector('.rahmen-tab-dirty')).toBeTruthy();
+    expect(tab(host, 'QUADRIO').textContent).toContain('EFH Musterweg');
+    expect(tab(host, 'QUADRIO').querySelector('.rahmen-tab-dirty')).toBeTruthy();
     // fremde Herkunft zählt nicht
     act(() => {
       window.dispatchEvent(new MessageEvent('message', { data: { typ: 'arch-tools:status', app: 'X', name: 'fremd', dirty: false }, origin: 'https://example.org', source: f.contentWindow }));
     });
-    expect(tab(host, 'Flächenrechner').textContent).toContain('EFH Musterweg');
+    expect(tab(host, 'QUADRIO').textContent).toContain('EFH Musterweg');
     // Rückfrage mit drei Knöpfen statt window.confirm
     const confirm = vi.fn(() => true);
     window.confirm = confirm;
-    act(() => (tab(host, 'Flächenrechner').querySelector('button[title="Schließen"]') as HTMLButtonElement).click());
+    act(() => (tab(host, 'QUADRIO').querySelector('button[title="Schließen"]') as HTMLButtonElement).click());
     const dialog = () => host.querySelector('.modal.rf');
-    expect(dialog()?.textContent).toContain('Änderungen an „Flächenrechner – EFH Musterweg“ speichern?');
+    expect(dialog()?.textContent).toContain('Änderungen an „QUADRIO – EFH Musterweg“ speichern?');
     expect([...dialog()!.querySelectorAll('button')].map((b) => b.textContent)).toEqual(['Abbrechen', 'Nicht speichern', 'Speichern']);
     await act(async () => [...dialog()!.querySelectorAll('button')].find((b) => b.textContent === 'Abbrechen')!.click());
     expect(useRahmen.getState().tabs).toEqual(['flaechenrechner']);
-    act(() => (tab(host, 'Flächenrechner').querySelector('button[title="Schließen"]') as HTMLButtonElement).click());
+    act(() => (tab(host, 'QUADRIO').querySelector('button[title="Schließen"]') as HTMLButtonElement).click());
     await act(async () => [...dialog()!.querySelectorAll('button')].find((b) => b.textContent === 'Nicht speichern')!.click());
     expect(useRahmen.getState().tabs).toEqual([]);
     expect(confirm).not.toHaveBeenCalled();
@@ -91,18 +91,18 @@ describe('Rahmen-App', () => {
 
   it('Herauslösen (Browser: neues Fenster) nimmt den Tab weg; Andocken holt ihn zurück', () => {
     const host = render();
-    act(() => karte(host, 'Entzerrung').click());
+    act(() => karte(host, 'RECTIO').click());
     const offen = vi.fn(() => null);
     window.open = offen as unknown as typeof window.open;
-    act(() => (tab(host, 'Entzerrung').querySelector('button[title="In eigenem Fenster öffnen"]') as HTMLButtonElement).click());
+    act(() => (tab(host, 'RECTIO').querySelector('button[title="In eigenem Fenster öffnen"]') as HTMLButtonElement).click());
     expect(offen).toHaveBeenCalledWith('apps/entzerrung/index.html?rahmen=fenster&app=entzerrung', 'arch-tools-entzerrung');
     expect(useRahmen.getState()).toMatchObject({ tabs: [], fenster: ['entzerrung'] });
-    expect(karte(host, 'Entzerrung').textContent).toContain('läuft in eigenem Fenster');
+    expect(karte(host, 'RECTIO').textContent).toContain('läuft in eigenem Fenster');
     act(() => useRahmen.getState().angedockt('entzerrung'));
     expect(useRahmen.getState()).toMatchObject({ tabs: ['entzerrung'], aktiv: 'entzerrung', fenster: [] });
   });
 
-  it('Neues Projekt anlegen: aus einer App oder vom Rahmen – der Assistent der Projekt-App, danach zurück mit dem neuen Projekt', () => {
+  it('Neues Projekt anlegen: aus einer App oder vom Rahmen – der Assistent von ATLAS, danach zurück mit dem neuen Projekt', () => {
     const host = render();
     // je Tab ein eigenes Fenster (happy-dom lädt keine iframes)
     const frame = (id: string) => {
@@ -115,21 +115,21 @@ describe('Rahmen-App', () => {
       return f;
     };
     const melden = (id: string, data: object) => act(() => window.dispatchEvent(new MessageEvent('message', { data, origin: window.location.origin, source: frame(id).contentWindow })));
-    act(() => karte(host, 'Flächenrechner').click());
+    act(() => karte(host, 'QUADRIO').click());
     const anFlaechen = vi.spyOn(frame('flaechenrechner').contentWindow!, 'postMessage');
     melden('flaechenrechner', { typ: 'arch-tools:bereit', app: 'flaechenrechner' });
-    // Auftrag aus dem Flächenrechner: der Projekt-Tab öffnet sich, der Auftrag wartet, bis die App hört
+    // Auftrag aus QUADRIO: der Tab von ATLAS öffnet sich, der Auftrag wartet, bis die App hört
     melden('flaechenrechner', { typ: 'arch-tools:projekt-anlegen', von: 'flaechenrechner', kannOeffnen: true, app: 'flaechenrechner' });
     expect(useRahmen.getState()).toMatchObject({ tabs: ['flaechenrechner', 'ordner'], aktiv: 'ordner' });
     const anProjekt = vi.spyOn(frame('ordner').contentWindow!, 'postMessage');
     expect(anProjekt).not.toHaveBeenCalled();
     melden('ordner', { typ: 'arch-tools:bereit', app: 'ordner' });
-    expect(anProjekt).toHaveBeenCalledWith({ typ: 'arch-tools:assistent-neu', von: 'flaechenrechner', vonName: 'Flächenrechner', kannOeffnen: true, an: 'ordner' }, window.location.origin);
-    // angelegt: zurück zum Flächenrechner, der das Projekt öffnet
+    expect(anProjekt).toHaveBeenCalledWith({ typ: 'arch-tools:assistent-neu', von: 'flaechenrechner', vonName: 'QUADRIO', kannOeffnen: true, an: 'ordner' }, window.location.origin);
+    // angelegt: zurück zu QUADRIO, die App öffnet das Projekt
     melden('ordner', { typ: 'arch-tools:zur-app', an: 'flaechenrechner', ordner: 'P:\\Projekte\\2026-014 Neu', app: 'ordner' });
     expect(useRahmen.getState().aktiv).toBe('flaechenrechner');
     expect(anFlaechen).toHaveBeenCalledWith({ typ: 'arch-tools:projekt-angelegt', ordner: 'P:\\Projekte\\2026-014 Neu', an: 'flaechenrechner' }, window.location.origin);
-    // vom Rahmen selbst: „+“-Menü – der Projekt-Tab hört schon, der Auftrag geht sofort hin
+    // vom Rahmen selbst: „+“-Menü – der Tab von ATLAS hört schon, der Auftrag geht sofort hin
     anProjekt.mockClear();
     act(() => (host.querySelector('.rahmen-plus button') as HTMLButtonElement).click());
     act(() => ([...host.querySelectorAll('.rahmen-menue button')].find((b) => b.textContent?.includes('Neues Projekt anlegen')) as HTMLButtonElement).click());
@@ -141,7 +141,7 @@ describe('Rahmen-App', () => {
     expect(useRahmen.getState()).toMatchObject({ tabs: ['flaechenrechner', 'ordner'], aktiv: 'ordner' });
   });
 
-  it('Startseite: „Neues Projekt anlegen“ öffnet den Projekt-Tab mit dem Assistenten', () => {
+  it('Startseite: „Neues Projekt anlegen“ öffnet den Tab von ATLAS mit dem Assistenten', () => {
     const host = render();
     act(() => knopfMit(host, '+ Neues Projekt anlegen').click());
     expect(useRahmen.getState()).toMatchObject({ tabs: ['ordner'], aktiv: 'ordner' });

@@ -341,7 +341,7 @@ function GemeinsameEinstellungen() {
   return (
     <>
       <h2>Gemeinsame Einstellungen</h2>
-      <p className="muted small-text">Gelten für alle Apps (Projekt, Formulare, Flächenrechner …). Liegt der Konfigurationsordner auf dem Server, gelten sie für das ganze Büro.</p>
+      <p className="muted small-text">Gelten für alle Apps. Liegt der Konfigurationsordner auf dem Server, gelten sie für das ganze Büro.</p>
       {desktop ? (
         <div className="po-ort">
           <div>
@@ -445,7 +445,7 @@ function GemeinsameEinstellungen() {
           onChange={(v) => setAllgemein({ oapPfad: v.trim() })}
         />
       </Field>
-      <Field label="Fotoordner im Projekt" hint="Hier sucht die Entzerrung (auch in Unterordnern) nach Fotos; die .entz-Datei liegt beim Foto.">
+      <Field label="Fotoordner im Projekt" hint="Hier sucht RECTIO (Entzerrung) auch in Unterordnern nach Fotos; die .entz-Datei liegt beim Foto.">
         <TextField value={allgemein.fotoordner} onChange={(v) => setAllgemein({ fotoordner: v.trim() })} />
       </Field>
       <Field label="Büro" hint="Name des Büros im Kopf der Ausdrucke und Excel-Dateien aller Apps (leer = ohne)">

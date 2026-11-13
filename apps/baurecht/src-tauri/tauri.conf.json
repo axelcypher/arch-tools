@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Baurecht",
+  "productName": "LEXIO",
   "version": "0.9.0",
   "identifier": "de.pendzialek.baurecht",
   "build": {
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "Baurecht",
+        "title": "LEXIO",
         "width": 1440,
         "height": 900,
         "minWidth": 1100,

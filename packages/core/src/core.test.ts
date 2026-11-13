@@ -198,7 +198,7 @@ describe('Projektdaten', () => {
     const m = alt('Deiringser Weg 7a, 59494 Soest');
     expect(m).toMatchObject({ projektcode: 'HSA', bearbeiter: 'TP', grundstueck: { gemarkung: '', flur: '', flurstueck: '' }, bauherr: { name: '', kontakte: [] } });
   });
-  it('Vorhaben, Aktenzeichen und Vorname des Bauherrn bleiben erhalten (für die Formulare-App); fehlen sie, bleibt es wie bisher', () => {
+  it('Vorhaben, Aktenzeichen und Vorname des Bauherrn bleiben erhalten (für PERMIO); fehlen sie, bleibt es wie bisher', () => {
     const roh = { format: 'arch-flaechen-tool', version: 1, meta: { projektcode: 'BS9', vorhaben: 'Neubau EFH', aktenzeichen: '63/123/26', bauherr: { name: 'Mustermann', vorname: 'Max' } }, storeys: [] };
     const m = parseProject(JSON.stringify(roh)).meta;
     expect(m).toMatchObject({ vorhaben: 'Neubau EFH', aktenzeichen: '63/123/26', bauherr: { name: 'Mustermann', vorname: 'Max' } });

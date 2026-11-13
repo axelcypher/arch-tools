@@ -114,7 +114,7 @@ export function pruefe(ordnerName: string, eintraege: Eintrag[], struktur: Struk
     });
   if (projekt) {
     const soll = sichererName(nameAus(struktur.ordnername, { nummer: projekt.nummer, kurzname: projekt.kurzname, jahr: projekt.angelegt.slice(0, 4) }));
-    // ohne Kurzname (etwa eine Projektdatei aus der Formulare-App) lässt sich der Name nicht beurteilen
+    // ohne Kurzname (etwa eine Projektdatei aus PERMIO, der Formulare-App) lässt sich der Name nicht beurteilen
     const vollstaendig = projekt.nummer && (projekt.kurzname || !/kurzname/i.test(struktur.ordnername));
     if (soll && vollstaendig && soll.toLowerCase() !== ordnerName.toLowerCase())
       befunde.push({ art: 'warnung', titel: 'Der Ordnername weicht vom Schema ab', text: `Der Ordner heißt „${ordnerName}“, nach dem Schema „${struktur.ordnername}“ und den Stammdaten wäre es „${soll}“.` });

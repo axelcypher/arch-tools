@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { REGELN, suche } from './regelwerk';
 
-describe('Regeln im GRZ-Nachweis (G-29)', () => {
+describe('Regeln in TERRIO (G-29)', () => {
   it('Suche „Terrasse“ im Regelsatz „grz“ liefert § 19 BauNVO und keine WoFlV-Treffer', () => {
     const t = suche('Terrasse', { app: 'grz' }).map((x) => x.regel);
     expect(t.map((r) => r.id)).toContain('baunvo-19');

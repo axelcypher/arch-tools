@@ -124,7 +124,7 @@ export function pdfErzeugen(inhalt: PdfInhalt): Uint8Array {
   }
   objekt(7, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>');
   const info = inhalt.titel ? `(${textBytes(inhalt.titel)})` : '()';
-  objekt(8, `<< /Title ${info} /Producer (arch-tools Entzerrung) >>`);
+  objekt(8, `<< /Title ${info} /Producer (RECTIO) >>`);
   const xref = laenge;
   let x_ = 'xref\n0 9\n0000000000 65535 f \n';
   for (let i = 1; i <= 8; i++) x_ += `${String(offsets[i]).padStart(10, '0')} 00000 n \n`;

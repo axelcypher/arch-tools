@@ -23,7 +23,7 @@ function statusText(st: ProjektStatus | undefined): string {
 }
 
 /**
- * Projektübersicht von Formulare: die gemeinsame Startseite (packages/core) mit den FORMA-Projekten je Quelle,
+ * Projektübersicht von PERMIO: die gemeinsame Startseite (packages/core) mit den FORMA-Projekten je Quelle,
  * dem Antragsstatus vom letzten Öffnen, Marken für Sperren, ungespeicherte Eingaben und fehlende Projektordner.
  */
 export function ProjektUebersicht({ onEinstellungen }: { onEinstellungen: () => void }) {

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { appNameSetzen } from './appName';
 import { isTauri } from '../platform/files';
 import { andocken, anRahmenMelden, rahmenModus, speichernAnfragenBeantworten } from '../platform/rahmen';
 import { getEntries, logger, logVersion, subscribe } from '../platform/log';
@@ -21,7 +22,7 @@ type AppWindow = import('@tauri-apps/api/window').Window;
  * Im Browser ohne Update- und Fensterknöpfe.
  */
 export interface TitleBarProps {
-  /** Name der Anwendung, z. B. „Flächenrechner“ */
+  /** Name der Anwendung, z. B. „QUADRIO“ */
   app: string;
   /** Name des geöffneten Projekts */
   name: string;
@@ -44,6 +45,8 @@ export function TitleBar({ app, name, dirty, onOpenLog, regeln, onProjekte, zeic
   const desktop = isTauri() && rahmen !== 'tab';
   const ziehen = rahmen === 'tab' ? {} : { 'data-tauri-drag-region': true };
 
+  // Name der App für Stellen, die allen Apps gehören (z. B. gespeichertes Protokoll)
+  appNameSetzen(app);
   // im Tab: Name und ungespeicherte Änderungen an den Rahmen melden (Tab-Beschriftung, Rückfrage beim Schließen)
   useEffect(() => anRahmenMelden(app, name, dirty), [app, name, dirty]);
   // im Tab: „Speichern“ aus der Rückfrage des Rahmens beim Schließen

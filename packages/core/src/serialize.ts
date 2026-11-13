@@ -167,7 +167,7 @@ export function parseProjectData(raw: unknown): Project {
     const po = normalizeProjektordner(raw.projektordner);
     if (Object.keys(po).length) project.projektordner = po;
   }
-  // Abschnitt der Formulare-App: unverändert durchgereicht (die App prüft ihn selbst)
+  // Abschnitt von PERMIO: unverändert durchgereicht (die App prüft ihn selbst)
   if (raw.formulare !== undefined && raw.formulare !== null) project.formulare = raw.formulare;
   const schema = namensschemaAus(raw.namensschema);
   if (schema) project.namensschema = schema;

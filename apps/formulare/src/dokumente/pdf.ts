@@ -1,5 +1,5 @@
 /**
- * PDFs anzeigen und Formularfelder ausfüllen – mit pdf.js (Legacy-Build wie im Flächenrechner, weil der
+ * PDFs anzeigen und Formularfelder ausfüllen – mit pdf.js (Legacy-Build wie in QUADRIO, weil der
  * Standard-Build sehr neue JS-Funktionen voraussetzt). Ausgefüllte Werte speichert pdf.js als Nachtrag ans Ende
  * der Datei (inkrementelles Speichern): der ursprüngliche Inhalt bleibt Byte für Byte erhalten.
  */

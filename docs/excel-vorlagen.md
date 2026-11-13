@@ -273,18 +273,18 @@ Geschosseigenschaften lässt sich das je Geschoss neu zuordnen („automatisch n
 Die vollständige Liste steht im Excel-Dialog unter **Platzhalter anzeigen** und im Blatt „Platzhalter“
 der Muster-Vorlage.
 
-Neu im Flächenrechner: `{{raum.hoehenlage}}` (Höhenversatz eines Raums gegenüber seinem Geschoss, negativ =
+Neu in QUADRIO (Flächenrechner): `{{raum.hoehenlage}}` (Höhenversatz eines Raums gegenüber seinem Geschoss, negativ =
 tiefer), `{{geschoss.sohle}}` (Dicke der Bodenplatte einschließlich Dämmung darunter, ab deren Unterkante der BRI zählt) und `{{bri.unterbau}}`
 („Bodenplatte“ bzw. „Split-Level“ bei BRI-Teilkörpern unter dem Geschossfußboden).
 
-Der Export schlägt als Dateinamen den Namen der Projektdatei mit Zusatz vor: `… WoFl+BGF+BRI.xlsx`
-(Flächenrechner), `… GRZ+GFZ.xlsx` (GRZ-Nachweis), `… Kosten Kostenberechnung.xlsx` (Kostenermittlung, mit der
+Der Export schlägt als Dateinamen den Namen der Projektdatei mit Zusatz vor: `… WoFl+BGF+BRI.xlsx` in QUADRIO,
+`… GRZ+GFZ.xlsx` in TERRIO (GRZ-Nachweis), `… Kosten Kostenberechnung.xlsx` in NUMIO (Kostenermittlung; mit der
 gewählten Stufe).
 
-## GRZ-Nachweis
+## TERRIO (GRZ-Nachweis)
 
-Der GRZ-Nachweis (`apps/grz`) nutzt dieselbe Vorlagen-Engine mit eigenen Werten. Seine Vorlage wird getrennt
-von der des Flächenrechners gespeichert (im Projektarchiv als eigene Datei, im Browser unter eigenem
+TERRIO (`apps/grz`) nutzt dieselbe Vorlagen-Engine mit eigenen Werten. Seine Vorlage wird getrennt
+von der Vorlage in QUADRIO gespeichert (im Projektarchiv als eigene Datei, im Browser unter eigenem
 Schlüssel); ein Projekt kann also beide Vorlagen enthalten. Das Standardlayout ist die Muster-Vorlage
 (Blatt „GRZ GFZ“) ohne Hilfeblatt.
 
@@ -313,9 +313,9 @@ Fläche und Ergebnis; der Haftungssatz steht dort nicht mehr (Platzhalter `{{haf
 Projektangaben (`projekt.*`, `grundstueck.*`, `bauherr.*`, `datum`) und die globalen Variablen (`PROJEKT_KUERZEL`,
 `PROJEKT_KURZNAME`, `PROJEKT_VORHABEN`, `BEARBEITER`, `DATUM`, `JAHR`, `JAHR_KURZ`) sind in allen Apps gleich.
 
-## Kostenermittlung
+## NUMIO (Kostenermittlung)
 
-Die Kostenermittlung (`apps/kosten`) nutzt dieselbe Vorlagen-Engine; ihre Vorlage wird ebenfalls getrennt
+NUMIO (`apps/kosten`) nutzt dieselbe Vorlagen-Engine; die Vorlage wird ebenfalls getrennt
 gespeichert. Das Standardlayout ist die Muster-Vorlage (Blatt „Kosten“) ohne Hilfeblatt. Beträge sind netto
 und auf ganze Euro gerundet.
 

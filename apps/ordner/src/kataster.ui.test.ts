@@ -173,7 +173,7 @@ describe('Ablage im Ordner des aktiven Antrags', () => {
     expect(knopf(h2, 'Pläne exportieren').disabled).toBe(true);
   });
 
-  it('übernimmt die Einstellungen aus Formulare beim ersten Laden', async () => {
+  it('übernimmt die Einstellungen aus PERMIO (Formulare) beim ersten Laden', async () => {
     const { konfigAendern, konfigLesen } = await import('@core/platform/konfig');
     localStorage.clear();
     await konfigAendern('formulare', () => ({ kataster: { vorlage: 'C:/Alt/Kataster.qgz', ziel: 'pfad', zielpfad: 'Lagepläne', dateiname: '{Code} {Name}', plaene: [] } }));

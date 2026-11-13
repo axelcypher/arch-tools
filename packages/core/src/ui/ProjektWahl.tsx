@@ -15,6 +15,7 @@ import { ProjektUebersicht } from './ProjektUebersicht';
 import { StammdatenDialog } from './Stammdaten';
 import './projektwahl.css';
 import { useEscSchliessen } from './Dialog';
+import { appMitWas } from '../appNamen';
 
 const log = logger('projektwahl');
 
@@ -35,7 +36,7 @@ const isoHeute = () => {
 };
 
 /**
- * Projektwahl für Apps, die mit der Projektdatei arbeiten (Flächenrechner, GRZ-Nachweis, Kostenermittlung …): die
+ * Projektwahl für Apps, die mit der Projektdatei arbeiten (QUADRIO, TERRIO, NUMIO …): die
  * gemeinsame Projektübersicht über das ganze Fenster unter der Titelleiste. Ein Klick öffnet die Projektdatei des
  * Projektordners. Hat der Ordner noch keine, ist das kein Fehler: Der Stammdaten-Dialog erfasst die Stammdaten,
  * und die Projektdatei wird am eingestellten Ort angelegt (gemeinsame Einstellung „Projektdatei in neuen
@@ -68,7 +69,7 @@ export function ProjektWahl({
   /** Ordnerzugriff (Tests); Vorgabe: die gemeinsamen Befehle der Desktop-App */
   fs?: ProjektordnerZugriff;
   /**
-   * nur den Projektordner wählen (z. B. Entzerrung): Die Projektdatei muss es geben (sonst wird sie angelegt),
+   * nur den Projektordner wählen (z. B. RECTIO): Die Projektdatei muss es geben (sonst wird sie angelegt),
    * gelesen werden aber nur Name und Stammdaten – nicht Pläne und Modelle.
    */
   nurOrdner?: boolean;
@@ -184,7 +185,7 @@ export function ProjektWahl({
         >
           {projektAnlegenMoeglich() && (
             <div className="button-row pw-aktionen">
-              <button className="primary" onClick={() => projektAnlegenStarten(false)} title="Neues Projekt mit dem Assistenten der App „Projekt“ anlegen">
+              <button className="primary" onClick={() => projektAnlegenStarten(false)} title={`Neues Projekt mit dem Assistenten von ${appMitWas('ordner')} anlegen`}>
                 + Neues Projekt anlegen
               </button>
             </div>
@@ -222,7 +223,7 @@ export function ProjektWahl({
         marken={liste.marken}
         angeheftet={angeheftet}
         kontextMenue={kontextMenue}
-        // ein mit dem Assistenten der Projekt-App angelegtes Projekt gleich öffnen
+        // ein mit dem Assistenten von ATLAS angelegtes Projekt gleich öffnen
         onAngelegt={(ordner) => void oeffnen(ordner)}
         // Stammordner per Ziehen umsortieren – gilt für alle Apps (gemeinsame Einstellung); der erste nimmt neue Projekte auf
         onGruppenOrdnen={(projekte) => void allgemeinAendern({ projekte }).then(setAllgemein, (e) => setFehler(e instanceof Error ? e.message : String(e)))}

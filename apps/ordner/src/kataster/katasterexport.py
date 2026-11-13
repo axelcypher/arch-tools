@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Katasterpläne aus einer QGIS-Vorlage exportieren (Formulare, arch-tools).
+Katasterpläne aus einer QGIS-Vorlage exportieren (ATLAS, arch-tools).
 
 Aufruf:  qgis_process run katasterexport.py -- AUFTRAG=<auftrag.json>
 
@@ -66,7 +66,7 @@ class KatasterExport(QgsProcessingAlgorithm):
         return "katasterexport"
 
     def displayName(self):
-        return "Katasterpläne exportieren (arch-tools)"
+        return "Katasterpläne exportieren (ATLAS)"
 
     def createInstance(self):
         return KatasterExport()

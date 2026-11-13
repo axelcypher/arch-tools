@@ -101,7 +101,7 @@ export function projektdateiPfad(vorlage: string, werte: { nummer: string; kurzn
  * werden.
  */
 export function projektdateiAendern(bytes: Uint8Array, aendern: (roh: Record<string, unknown>) => Record<string, unknown>): Uint8Array | null {
-  if (!isZip(bytes)) throw new Error('Die Projektdatei ist kein Archiv (ältere JSON-Fassung) – bitte einmal im Flächenrechner öffnen und speichern.');
+  if (!isZip(bytes)) throw new Error('Die Projektdatei ist kein Archiv (ältere JSON-Fassung) – bitte einmal in QUADRIO (Flächenrechner) öffnen und speichern.');
   let zip: ReturnType<typeof unzipSync>;
   try {
     zip = unzipSync(bytes);

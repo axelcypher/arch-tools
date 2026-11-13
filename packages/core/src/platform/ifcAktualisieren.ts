@@ -19,7 +19,7 @@ export function ifcDateiErsetzen(p: Project, name: string, daten: Uint8Array): P
 
 /**
  * IFC-Datei wählen und das Projekt damit aktualisieren (Abgleich über die GlobalIds, siehe ifcAbgleich.ts) –
- * für GRZ-Nachweis und Kostenermittlung. Liefert null bei Abbruch.
+ * für TERRIO und NUMIO. Liefert null bei Abbruch.
  */
 export async function ifcAktualisieren(
   p: Project,

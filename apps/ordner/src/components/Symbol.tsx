@@ -1,4 +1,4 @@
-/** Symbole (Strichzeichnungen, 24×24) für den Projektordner – wie in Formulare */
+/** Symbole (Strichzeichnungen, 24×24) für ATLAS – wie in PERMIO (Formulare) */
 const PFADE = {
   ordner: 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z',
   karte: 'M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zM9 12a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM6 16c.6-1.5 1.7-2 3-2s2.4.5 3 2M14 9h4M14 13h4',

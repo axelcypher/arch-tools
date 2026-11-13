@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
+import { APP_NAMEN } from '@core/appNamen';
 import { Canvas } from './components/Canvas';
 import { ExcelDialog } from './components/ExcelDialog';
 import { Properties } from './components/Properties';
@@ -35,7 +36,7 @@ export function App() {
   useEffect(() => void katalogLaden(), []);
 
   useEffect(() => {
-    document.title = `${dirty ? '• ' : ''}${name} – Flächenrechner`;
+    document.title = `${dirty ? '• ' : ''}${name} – ${APP_NAMEN.flaechenrechner.name}`;
   }, [name, dirty]);
 
   useEffect(() => {
@@ -49,7 +50,7 @@ export function App() {
   return (
     <div className="app">
       <TitleBar
-        app="Flächenrechner"
+        app={APP_NAMEN.flaechenrechner.name}
         name={name}
         dirty={dirty}
         onOpenLog={() => setLogOpen(true)}
@@ -86,7 +87,7 @@ export function App() {
       {excelOpen && <ExcelDialog />}
       {projekteOffen && (
         <ProjektWahl
-          app="Flächenrechner"
+          app={APP_NAMEN.flaechenrechner.name}
           offeneDatei={datei}
           onGewaehlt={async (g) => {
             if (await projektUebernehmen(g.project, g.datei)) setProjekteOffen(false);

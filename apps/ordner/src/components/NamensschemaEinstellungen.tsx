@@ -56,8 +56,8 @@ export function NamensschemaEinstellungen() {
     <section className="po-namensschema" aria-labelledby="po-namensschema-titel">
       <h2 id="po-namensschema-titel">Namensschema: Kürzel und Plannummern</h2>
       <p className="muted small-text">
-        Gilt für alle Apps – Formulare erkennt daran Antragsordner und die Pläne eines Plansatzes (GP-04, GP01-07). Neue Projektdateien bekommen eine Kopie, das Ergänzen eines Projekts bringt sie auf
-        den Stand des Büros; die übrigen Teile der Dateinamen regelt das „Dateinamenschema für Pläne“ der Struktur.
+        Gilt für alle Apps – PERMIO (Formulare) erkennt daran Antragsordner und die Pläne eines Plansatzes (GP-04, GP01-07). Neue Projektdateien bekommen eine Kopie, das Ergänzen eines Projekts bringt
+        sie auf den Stand des Büros; die übrigen Teile der Dateinamen regelt das „Dateinamenschema für Pläne“ der Struktur.
       </p>
 
       <h3>Stellen der Teile im Dateinamen</h3>

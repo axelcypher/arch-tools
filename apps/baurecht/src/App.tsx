@@ -4,6 +4,7 @@ import { faktName } from '@core/baurecht/typen';
 import { isTauri } from '@core/platform/files';
 import { logger } from '@core/platform/log';
 import { BreitenLeiste } from '@core/ui/Leiste';
+import { APP_NAMEN } from '@core/appNamen';
 import { LogDialog } from '@core/ui/LogDialog';
 import { ProjektWahl } from '@core/ui/ProjektWahl';
 import { aenderungenSpeichern, fehlerText, meldung } from '@core/ui/Rueckfrage';
@@ -158,7 +159,8 @@ function Start({ onWahl }: { onWahl: () => void }) {
   return (
     <div className="br-start">
       <div className="br-start-karte">
-        <h1>Baurecht</h1>
+        <h1>{APP_NAMEN.baurecht.name}</h1>
+        <p className="br-start-was">{APP_NAMEN.baurecht.was}</p>
         <p>Rechtsprüfung vor dem Einreichen eines Antrags: alle Vorschriften, die für das Vorhaben eine Rolle spielen – je Paragraf als Ampel, mit Begründung und dem Text in der maßgeblichen Fassung.</p>
         <dl className="br-legende">
           {(['rot', 'gelb', 'gruen'] as const).map((a) => (
@@ -198,7 +200,7 @@ export function App() {
   const name = project?.name ?? 'Kein Projekt';
 
   useEffect(() => {
-    document.title = project ? `${name} – Baurecht` : 'Baurecht';
+    document.title = project ? `${name} – ${APP_NAMEN.baurecht.name}` : APP_NAMEN.baurecht.name;
   }, [project, name]);
   // schmale Fenster (waagerecht scrollende Arbeitsfläche): nach dem Öffnen am linken Rand beginnen – das Einblenden der
   // Spalten verschiebt sonst die Ansicht
@@ -301,10 +303,12 @@ export function App() {
           ))}
         </nav>
       )}
-      <TitleBar app="Baurecht" name={name} dirty={dirty} zeichenflaeche={false} onOpenLog={() => setLogOffen(true)} onProjekte={() => void projekteOeffnen()} onSpeichern={quelle ? speichernMitMeldung : undefined} />
+      <TitleBar app={APP_NAMEN.baurecht.name} name={name} dirty={dirty} zeichenflaeche={false} onOpenLog={() => setLogOffen(true)} onProjekte={() => void projekteOeffnen()} onSpeichern={quelle ? speichernMitMeldung : undefined} />
       {project ? (
         <>
-          <h1 className="br-unsichtbar">Baurecht – {name}</h1>
+          <h1 className="br-unsichtbar">
+            {APP_NAMEN.baurecht.name} – {name}
+          </h1>
           <Kopf stand={stand} onRechtsstand={() => void texteLaden(stand.module, stand.einreichung, { aktualisieren: true })} onLage={() => void lage()} onProtokoll={() => setProtokoll(true)} onSpeichern={() => void speichern()} onAntrag={(a) => void antragWechseln(a)} lageLaeuft={lageLaeuft} />
           {!isTauri() && (
             <div className="br-hinweisband" role="note">
@@ -327,7 +331,7 @@ export function App() {
       )}
       {wahl && (
         <ProjektWahl
-          app="Baurecht"
+          app={APP_NAMEN.baurecht.name}
           offeneDatei={quelle?.art === 'ordner' ? quelle.datei : null}
           onGewaehlt={async (g) => {
             try {
@@ -349,7 +353,7 @@ export function App() {
       <FestlegenDialog fakten={stand.auswertung.fakten} widerspruchMerkmale={stand.widerspruchMerkmale} paragrafen={stand.auswertung.paragrafen} />
       <FaktBestaetigenDialog folgen={folgen} faktDef={faktDef} />
       <BestaetigenDialog titel={titel} faktTitel={faktTitel} folgen={folgenSeitDatei} faktDef={faktDef} />
-      {logOffen && <LogDialog app="Baurecht" onClose={() => setLogOffen(false)} />}
+      {logOffen && <LogDialog onClose={() => setLogOffen(false)} />}
     </div>
   );
 }

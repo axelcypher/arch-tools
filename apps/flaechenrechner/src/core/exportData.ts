@@ -29,7 +29,7 @@ export { hasPlaceholder, repeatCollection, resolveText, shiftFormulaForInsert, s
 export const COLLECTIONS = ['geschoss', 'raum', 'bgf', 'wohnung', 'nutzung', 'bri', 'koerper'] as const;
 export type Collection = (typeof COLLECTIONS)[number];
 
-/** Kontext des Flächenrechners: alle Sammlungen sind immer vorhanden */
+/** Kontext von QUADRIO: alle Sammlungen sind immer vorhanden */
 export type FlaechenContext = ExportContext & { collections: Record<Collection, Row[]> };
 
 const r2 = (v: number) => Math.round(v * 100) / 100;
@@ -266,7 +266,7 @@ export const PLACEHOLDER_DOCS: PlaceholderDocs = [
   },
   PROJEKT_DOCS,
   {
-    group: 'Maßgrundlage und Normen (Flächenrechner)',
+    group: 'Maßgrundlage und Normen (QUADRIO)',
     keys: [
       ['projekt.massgrundlage', 'Maßgrundlage: „Planmaß Rohbau“, „Planmaß Fertigmaß“ oder „Aufmaß“ (Projekt-Einstellung)'],
       ['projekt.massgrundlage_text', 'als Satz, z. B. „Flächen aus Planmaßen (Rohbau), Putzabzug je Raum“'],

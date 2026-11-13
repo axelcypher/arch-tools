@@ -1,10 +1,10 @@
-# Archicad → Flächenrechner (IFC)
+# Archicad → QUADRIO (IFC)
 
 Archicad-Projektdateien (`.pln`) sind ein proprietäres, nicht dokumentiertes Binärformat von
 Graphisoft und lassen sich außerhalb von Archicad nicht lesen. Der verlässliche Weg ist der
-**IFC-Export**, den Archicad ohne Zusatzsoftware beherrscht. Der Flächenrechner übernimmt daraus:
+**IFC-Export**, den Archicad ohne Zusatzsoftware beherrscht. QUADRIO (Flächenrechner) übernimmt daraus:
 
-| Archicad | IFC | Flächenrechner |
+| Archicad | IFC | QUADRIO |
 |---|---|---|
 | Geschosse | `IfcBuildingStorey` (Name, Höhe) | Geschosse mit Fußbodenhöhe; Geschosshöhe = Abstand zum nächsten Geschoss |
 | Zonen | `IfcSpace` (Nummer = Name, Zonenname = LongName) | Räume mit Nummer und Bezeichnung, Nutzungsgruppe per Stichwort vorbelegt |
@@ -37,7 +37,7 @@ richtet sich nach der **Geschossart** (Geschosseigenschaften), ohne Angabe nach 
 
 Die Fußbodenhöhe eines Geschosses ist der flächengewichtete Median der Zonenunterseiten (die Höhe, auf der der größere Teil der Zonenfläche liegt). Liegt eine
 Zone mindestens 5 cm tiefer oder höher, erhält der Raum eine **Höhenlage** (z. B. −0,60 m); der Import
-meldet das. Im Flächenrechner lässt sich die Höhenlage auch von Hand eintragen – nach oben wie nach unten.
+meldet das. In QUADRIO lässt sich die Höhenlage auch von Hand eintragen – nach oben wie nach unten.
 Bei Umrissen heißt sie **Höhenversatz Körper**: Sie verschiebt den ganzen Körper samt Dach, seine
 **Körperhöhe** (leer = Geschosshöhe) bleibt. Ein Raum ohne eigene Höhenlage liegt auf der Unterkante des
 Umrisses, in dem er liegt (0,000 heißt ausdrücklich: auf dem Geschossfußboden).
@@ -48,7 +48,7 @@ dieser Rauminhalt steckt schon im Geschoss darunter und wird nicht doppelt gezä
 Der **BRI** reicht nach DIN 277:2021-08 (7.1) im untersten Geschoss bis zur Unterkante der Boden- bzw.
 Fundamentplatte einschließlich darunter liegender Dämmschichten (Einzel- und Streifenfundamente zählen nicht). Die
 BGF steht dagegen auf OK Fußboden. Ist die Dämmung unter der Platte im Modell ein eigenes Bauteil, die erkannte Dicke
-im Geschoss um ihre Stärke ergänzen – der Importbericht erinnert daran. Der Flächenrechner rechnet deshalb unter dem Geschossfußboden eigene BRI-Teilkörper:
+im Geschoss um ihre Stärke ergänzen – der Importbericht erinnert daran. QUADRIO rechnet deshalb unter dem Geschossfußboden eigene BRI-Teilkörper:
 
 - **Bodenplatte:** Umriss des untersten Geschosses (bzw. der Teil eines Geschosses, unter dem kein anderes liegt)
   × Dicke der Bodenplatte. Die Dicke wird aus den Platten unter dem untersten Geschoss erkannt und lässt sich je
@@ -61,7 +61,7 @@ Rechenweg, Excel (`{{bri.unterbau}}`) und 3D-Ansicht weisen diese Teile gesonder
 ## IFC aktualisieren
 
 Ein neuer Export desselben Modells lässt sich in ein bestehendes Projekt einlesen (Import-Dialog, Modus
-„aktualisieren“; im GRZ-Nachweis und in der Kostenermittlung „IFC aktualisieren …“). Archicad behält die
+„aktualisieren“; in TERRIO (GRZ-Nachweis) und NUMIO (Kostenermittlung) „IFC aktualisieren …“). Archicad behält die
 GlobalIds von Geschossen, Zonen und Bauteilen über Exporte hinweg bei; darüber werden Geschosse, Räume und
 Lageplan-Flächen zugeordnet (Projekte aus älteren Importen über Nummer/Name bzw. Überdeckung, Umrisse über
 Überdeckung). Je Feld gilt:
@@ -75,7 +75,7 @@ Weitere Regeln:
 - **Von Hand Gelöschtes bleibt gelöscht:** Das Projekt merkt sich die GlobalIds und BGF-Umrisse des letzten Imports.
   Was dort steht, im Projekt aber fehlt, wird nicht wieder angelegt (auch nach Teil-Importen, z. B. ohne Räume).
   Ein von Hand neu gezeichneter Umriss an der Stelle eines gelöschten ersetzt diesen – die IFC-Fassung kommt nicht
-  dazu. Projekte, die vor Flächenrechner 0.12.0 importiert wurden, kennen ihre Umrisse noch nicht: Ein dort gelöschter
+  dazu. Projekte, die vor QUADRIO 0.12.0 importiert wurden, kennen ihre Umrisse noch nicht: Ein dort gelöschter
   Umriss kommt beim ersten Abgleich einmal wieder. Gelöschtes zurückholen: Rückgängig (Strg+Z) oder neu zeichnen; ein Neu-Import
   (Modus „neu“) setzt das ganze Projekt neu auf – Angaben von Hand gehen dabei verloren.
 - **Kopierte Geschosse und Flächen** („Geschoss duplizieren“, Strg+C/V, Strg+D) tragen keine IFC-Herkunft. Steht
@@ -84,8 +84,8 @@ Weitere Regeln:
   samt Nutzung, Wohnfläche und Bemerkung. Wurde das Zielgeschoss von Hand gelöscht, bleibt er, wo er war.
 - **Wohnfläche:** Der Abgleich leitet sie ab, wenn der bisherige Import es tat – unabhängig davon, in welcher App
   er ausgeführt wird. Abgeglichen wird sie nur bei Räumen, deren Wohnfläche beim ersten Import abgeleitet wurde
-  (Option „Wohnfläche“); sonst ist sie eine Angabe des Nutzers und bleibt unberührt. So setzt z. B. die
-  Kostenermittlung keine geratenen Wohnflächen in ein Projekt, das ohne Wohnfläche importiert wurde.
+  (Option „Wohnfläche“); sonst ist sie eine Angabe des Nutzers und bleibt unberührt. So setzt z. B.
+  NUMIO keine geratenen Wohnflächen in ein Projekt, das ohne Wohnfläche importiert wurde.
 - **Platzhalter-Geschosse:** Ein von Hand gezeichnetes oder kopiertes Geschoss, das später in der IFC modelliert wird,
   behält seine Flächen; die Flächen aus der IFC kommen hinzu. Liegen sie deckungsgleich, warnt der Bericht – dann die
   Platzhalter löschen, sonst zählen BGF und NRF doppelt.
@@ -114,7 +114,7 @@ gleicher Kote (z. B. „Lageplan“ neben „UG“) zählen dabei nicht.
 Ein Geschoss, dessen Name „Lageplan“ enthält, wird kein Gebäudegeschoss (keine BGF, kein BRI, keine
 Geschosshöhe) – egal, wo es im IFC einsortiert ist. Seine Bauteile und das IFC-Gelände werden als
 Lageplan-Flächen in die Projektdatei übernommen (Nutzung und Versiegelung aus dem Namen, Höhe der
-Oberseite) und im GRZ-Nachweis ausgewertet: [GRZ, GFZ und Vollgeschosse](grz-gfz.md).
+Oberseite) und in TERRIO ausgewertet: [GRZ, GFZ und Vollgeschosse](grz-gfz.md).
 
 **Freiflächen getrennt exportieren:** Als „Gelände“ klassifizierte Freiflächen legt der IFC-Übersetzer alle
 zusammen in den einen Körper des `IfcSite` – Namen und Versiegelung je Fläche gehen dabei verloren. Abhilfe:
@@ -173,7 +173,7 @@ Raumflächen identisch mit den Archicad-Nettoflächen, Wohnfläche der Galerie i
 
 1. In Archicad Zonen für alle Räume anlegen (Zonenstempel mit Nummer und Name).
 2. IFC exportieren.
-3. Im Flächenrechner **IFC-Import** → Datei wählen → Optionen prüfen → Importieren.
+3. In QUADRIO **IFC-Import** → Datei wählen → Optionen prüfen → Importieren.
 4. In der **3D-Ansicht** kontrollieren, ob die Körper (BRI) zum Modell passen („IFC-Modell“ ein-/ausblenden).
 5. Nutzungsgruppen (NUF/TF/VF) und R/S bei Bedarf in den Eigenschaften anpassen.
 

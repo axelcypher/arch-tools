@@ -3,7 +3,7 @@ import type { RasterBackground } from '@core/model';
 /**
  * Unterlage des Lageplans (G-22): amtlicher Lageplan als Bild (PNG/JPG) oder PDF-Seite, als Rasterbild im Projekt
  * gespeichert. Die Größe wird zunächst grob auf den sichtbaren Ausschnitt gesetzt; den Maßstab legt die Kalibrierung an
- * einer bekannten Strecke fest (core/kalibrierung.ts). pdf.js wird erst bei Bedarf geladen (wie im Flächenrechner).
+ * einer bekannten Strecke fest (core/kalibrierung.ts). pdf.js wird erst bei Bedarf geladen (wie in QUADRIO).
  */
 
 /** längste Bildseite einer PDF-Seite in Pixeln (der Lageplan braucht weniger als ein Grundriss) */

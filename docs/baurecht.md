@@ -1,6 +1,7 @@
-# Baurecht
+# LEXIO (Baurecht)
 
-Rechtsprüfung **vor dem Einreichen eines Antrags**: Die App zeigt alle Vorschriften, die für das Vorhaben eine Rolle
+Die App **LEXIO** (`apps/baurecht`, eigene App mit eigenem Installer, auch als Tab in Arkly, der Rahmen-App) ist für die
+Rechtsprüfung **vor dem Einreichen eines Antrags**: Sie zeigt alle Vorschriften, die für das Vorhaben eine Rolle
 spielen, **je Paragraf als Ampel** – mit Begründung, den beteiligten Angaben und dem Text in der maßgeblichen Fassung.
 Die Gesetzestexte holt sie live aus den amtlichen Quellen; die Regeln, wann was gilt, kommen aus einem eigenen,
 signierten **Regelpaket** mit austauschbaren Modulen je Gebiet (Bund, Land, Kreis, Gemeinde). Hintergrund und

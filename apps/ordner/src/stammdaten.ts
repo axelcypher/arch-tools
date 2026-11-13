@@ -156,7 +156,7 @@ export function angabenAusProjekt(p: Project): ProjektAngaben {
 
 /**
  * Neue Projektdatei: leere Flächenberechnung mit den Stammdaten, dem Anlagedatum und den Angaben dieses Tools
- * (Struktur, Dateischema, gewählte Presets). Flächenrechner, GRZ-Nachweis, Kostenermittlung und Formulare öffnen sie.
+ * (Struktur, Dateischema, gewählte Presets). QUADRIO, TERRIO, NUMIO und PERMIO öffnen sie.
  */
 export function alsProject(stamm: Stammdaten, o: { struktur?: { name: string; dateischema: string }; presets?: string[]; date?: Date; namensschema?: Namensschema } = {}): Project {
   const s = bereinigt(stamm);

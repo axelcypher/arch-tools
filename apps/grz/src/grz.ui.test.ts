@@ -43,7 +43,7 @@ const change = (el: HTMLSelectElement | HTMLInputElement, value: string) =>
     }
   });
 
-describe('GRZ-Nachweis', () => {
+describe('TERRIO', () => {
   it('Esc schließt Druck und Excel-Dialog (gemeinsamer Dialog-Stapel)', () => {
     useGrz.getState().load(projekt());
     const host = render(App);
@@ -162,7 +162,7 @@ describe('GRZ-Nachweis', () => {
     expect(host.textContent).toContain('Muster-Vorlage herunterladen');
   });
 
-  it('Punkte wie im Flächenrechner: ziehen, über ◇ einfügen, per Rechtsklick löschen; Fläche verschieben', () => {
+  it('Punkte wie in QUADRIO: ziehen, über ◇ einfügen, per Rechtsklick löschen; Fläche verschieben', () => {
     useGrz.getState().load(projekt());
     const host = render(GrzGfzView);
     const id = useGrz.getState().project.lageplan!.flaechen[0].id;

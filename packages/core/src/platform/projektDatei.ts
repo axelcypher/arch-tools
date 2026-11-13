@@ -8,7 +8,7 @@ import { logger } from './log';
 const log = logger('datei');
 
 /**
- * Projektdatei der Apps (Flächenrechner, GRZ-Nachweis, Kostenermittlung): Öffnen, Speichern und
+ * Projektdatei der Apps (QUADRIO, TERRIO, NUMIO): Öffnen, Speichern und
  * Speichern unter, Dateinamen für Exporte.
  *
  * `datei` ist auf dem Desktop der vollständige Pfad der geöffneten bzw. zuletzt gespeicherten Datei –

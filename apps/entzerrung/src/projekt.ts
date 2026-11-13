@@ -95,7 +95,7 @@ export async function fotosHinzufuegen(dateien?: File[]) {
 
 /* ---------- Fotos im Projektordner ---------- */
 
-/** Fotos, die die Entzerrung lesen kann */
+/** Fotos, die RECTIO lesen kann */
 export const FOTO_ENDUNG = /\.(jpe?g|png|webp)$/i;
 
 /** die Entzerrungsdatei eines Fotos: daneben, gleicher Name, Endung .entz */

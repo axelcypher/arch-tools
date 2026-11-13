@@ -20,18 +20,21 @@ Kommunikation, Oberfläche, Commit-Texte und Doku sind auf **Deutsch**.
   Minor-Version (0.x.0), reine Fehlerkorrekturen die Patch-Version. Je App gibt es fünf Stellen, die gleich sein müssen:
   `apps/<app>/package.json`, `apps/<app>/src-tauri/tauri.conf.json`, `apps/<app>/src-tauri/Cargo.toml`, den Eintrag
   im `apps/<app>/src-tauri/Cargo.lock` und `package-lock.json` (Letzteren mit `npm install --package-lock-only`
-  nachziehen). Crate-Namen im Cargo.lock: `arch-flaechen-tool` (Flächenrechner, Name bleibt absichtlich so),
-  `grz-nachweis`, `kostenermittlung`, `projektordner`, `entzerrung`, `formulare`; für die Rahmen-App `apps/suite`
-  siehe `docs/suite.md`.
-  - Änderungen an `packages/core` betreffen **alle** Apps, die den Code nutzen: Flächenrechner, GRZ, Kosten,
-    Projektordner, Entzerrung, Formulare, Suite. Alle betroffenen Apps bumpen.
+  nachziehen). Crate-Namen im Cargo.lock: `arch-flaechen-tool` (QUADRIO, Name bleibt absichtlich so),
+  `grz-nachweis`, `kostenermittlung`, `projektordner`, `entzerrung`, `formulare`, `ava` und `arch-tools` (Rahmen-App
+  Arkly, siehe `docs/suite.md`).
+  - Änderungen an `packages/core` betreffen **alle** Apps, die den Code nutzen: QUADRIO, TERRIO, NUMIO, ATLAS,
+    RECTIO, PERMIO, FABRIO und die Rahmen-App Arkly. Alle betroffenen Apps bumpen.
   - Ein Push auf `main` mit geänderter Version startet sofort den Release-Workflow (Installer und GitHub-Release).
 - **Rust nur über die CI:** Änderungen an `apps/*/src-tauri` (Rust, capabilities, tauri.conf.json außer der
   Versionsnummer) erst als Branch mit PR einreichen, den CI-Job „Tauri-Hülle prüfen“ abwarten und dann per
   Fast-Forward nach `main` bringen. Die Punkte unten sollten fast alle ohne Rust auskommen. Wo ein Punkt Rust
   braucht, steht das dabei.
 - **Alte Kennungen bleiben:** `arch-flaechen-tool` im Projektformat, in den Speicherschlüsseln und im Crate nicht
-  „aufräumen“.
+  „aufräumen“. Ebenso nach der Umbenennung der Apps: Die Produktnamen (Arkly, ATLAS, PERMIO, QUADRIO, TERRIO, NUMIO,
+  RECTIO, FABRIO, LEXIO) stehen in `packages/core/src/appNamen.ts`; Ordner unter `apps/`, `?app=…`, Speicherschlüssel,
+  `arch-tools:…`-Nachrichten, Bundle-Kennungen, Crate-Namen und Release-Tags bleiben. Welche App früher wie hieß:
+  README, Abschnitt „Neue Namen“. Die Abschnitte unten nennen die Apps mit den Namen zur Zeit des Reviews.
 - **Vor jedem Push:**
   - `npm run typecheck`, `npx vitest run` und `npm run build` grün.
   - Prettier nur auf eigene neue Dateien oder auf Dateien, die vorher schon Prettier-sauber waren:

@@ -5,6 +5,7 @@
  */
 
 import { ueberschreibungenAus } from './antrag';
+import { APP_NAMEN } from '@core/appNamen';
 import type { Abweichung } from './vorgabe';
 import { abweichungAus, istLeer } from './vorgabe';
 import { anzahl } from './text';
@@ -85,10 +86,10 @@ export function sicherungErstellen(app?: string, jetzt = new Date()): Sicherung 
 
 export const sicherungText = (s: Sicherung) => `${JSON.stringify(s, null, 2)}\n`;
 
-/** Vorschlag für den Dateinamen: „Formulare-Einstellungen 261110.json“ */
+/** Vorschlag für den Dateinamen: „PERMIO-Einstellungen 261110.json“ (bis 0.42 „Formulare-Einstellungen …“ – beide lassen sich einspielen) */
 export function sicherungDateiname(jetzt = new Date()): string {
   const zwei = (n: number) => String(n).padStart(2, '0');
-  return `Formulare-Einstellungen ${zwei(jetzt.getFullYear() % 100)}${zwei(jetzt.getMonth() + 1)}${zwei(jetzt.getDate())}.json`;
+  return `${APP_NAMEN.formulare.name}-Einstellungen ${zwei(jetzt.getFullYear() % 100)}${zwei(jetzt.getMonth() + 1)}${zwei(jetzt.getDate())}.json`;
 }
 
 /** Liest eine Einstellungsdatei; wirft mit verständlicher Meldung, wenn es keine ist */
@@ -99,7 +100,7 @@ export function sicherungLesen(text: string): Sicherung {
   } catch {
     throw new Error('Die Datei ist kein gültiges JSON.');
   }
-  if (!istObjekt(o) || o.art !== SICHERUNG_ART) throw new Error('Die Datei enthält keine Einstellungen der App „Formulare“.');
+  if (!istObjekt(o) || o.art !== SICHERUNG_ART) throw new Error('Die Datei enthält keine Einstellungen der App PERMIO.');
   if (typeof o.version !== 'number' || o.version > 1) throw new Error('Die Datei stammt aus einer neueren Version der App – bitte zuerst aktualisieren.');
   const daten = istObjekt(o.daten) ? o.daten : {};
   const bekannt = new Set(SICHERUNG_BEREICHE.map((b) => b.schluessel));

@@ -3,6 +3,7 @@ import { isTauri, saveTextFile } from '../platform/files';
 import type { LogLevel } from '../platform/log';
 import { clearLog, formatTime, getEntries, isDebugEnabled, levelRank, logText, logVersion, setDebugEnabled, subscribe } from '../platform/log';
 import { useEscSchliessen } from './Dialog';
+import { appName } from './appName';
 
 const FILTER: { id: LogLevel; label: string }[] = [
   { id: 'debug', label: 'Alles' },
@@ -12,8 +13,7 @@ const FILTER: { id: LogLevel; label: string }[] = [
 ];
 
 /** Protokoll-Fenster: Einträge filtern, kopieren, als Datei speichern */
-/** `app`: Name der App für Dateiname und Kopfzeile des gespeicherten Protokolls */
-export function LogDialog({ onClose, app = 'Flächenrechner' }: { onClose: () => void; app?: string }) {
+export function LogDialog({ onClose }: { onClose: () => void }) {
   const version = useSyncExternalStore(subscribe, logVersion);
   const [min, setMin] = useState<LogLevel>('info');
   const [q, setQ] = useState('');
@@ -48,8 +48,9 @@ export function LogDialog({ onClose, app = 'Flächenrechner' }: { onClose: () =>
     const d = new Date();
     const stamp = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}_${String(d.getHours()).padStart(2, '0')}${String(d.getMinutes()).padStart(2, '0')}`;
     await saveTextFile({
-      defaultName: `${app.toLowerCase().replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss').replace(/[^a-z0-9]+/g, '-')}-protokoll_${stamp}.log`,
-      contents: `${app} ${__APP_VERSION__} · ${navigator.userAgent}\n\n${logText()}\n`,
+      // Name der App aus der Titelleiste – der Dialog gehört allen Apps
+      defaultName: `${appName()}-Fehlerprotokoll_${stamp}.log`,
+      contents: `${appName()} ${__APP_VERSION__} · ${navigator.userAgent}\n\n${logText()}\n`,
       filterName: 'Fehlerprotokoll',
       extension: 'log',
       mime: 'text/plain;charset=utf-8',

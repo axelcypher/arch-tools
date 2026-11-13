@@ -1,3 +1,4 @@
+import { appMitWas } from '@core/appNamen';
 import type { KeyboardEvent } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { FAKT_GRUPPEN, faktName, ortsgebunden, wertAnzeige, zaehlEinheit } from '@core/baurecht/typen';
@@ -197,7 +198,7 @@ function Merkmale({ klaerung, suche = '', planungsrechtOffen, planungsrechtKlaer
           <span aria-hidden="true">{suche ? '' : auf ? '▾' : '▸'}</span> Antragsmerkmale <span className="br-gruppe-stand">{standText}</span>
         </button>
       </h3>
-      {auf && <p className="br-leise">Gemeinsam mit der App Formulare – gilt für den ganzen Antrag.</p>}
+      {auf && <p className="br-leise">Gemeinsam mit {appMitWas('formulare')} – gilt für den ganzen Antrag.</p>}
       {/* eingeklappt: die offenen Rückfragen; beantwortete derselben Gruppe kompakt darüber (der Anlass, z. B. „Abbruch
           mit Ersatzbau“ vor den Fragen zum Altbau – und die eben gegebene Antwort) */}
       {!auf &&
@@ -308,7 +309,7 @@ function Merkmale({ klaerung, suche = '', planungsrechtOffen, planungsrechtKlaer
             </div>
             {fremd && (
               <p className="br-merkmal-fremd" role="note">
-                Wert „{wert}“ aus Formulare passt nicht zur Liste – zählt nicht; bitte einen der Werte wählen.
+                Wert „{wert}“ aus {appMitWas('formulare')} passt nicht zur Liste – zählt nicht; bitte einen der Werte wählen.
               </p>
             )}
             {wert && (
@@ -316,7 +317,7 @@ function Merkmale({ klaerung, suche = '', planungsrechtOffen, planungsrechtKlaer
                 {/* „leeren“ läuft hinter der Erklärung mit – keine eigene Zeile je Merkmal */}
                 <span className="br-leise br-erklaerung">
                   {e?.werte?.[wert] && <>{nb(e.werte[wert])} </>}
-                  <button type="button" className="small br-link br-leeren" aria-label={`${MERKMAL_TITEL[m.name] ?? m.name} leeren`} onClick={() => useBaurecht.getState().merkmalSetzen(m.name, '')} title="Merkmal für den ganzen Antrag leeren (auch in Formulare)">
+                  <button type="button" className="small br-link br-leeren" aria-label={`${MERKMAL_TITEL[m.name] ?? m.name} leeren`} onClick={() => useBaurecht.getState().merkmalSetzen(m.name, '')} title={`Merkmal für den ganzen Antrag leeren (auch in ${appMitWas('formulare')})`}>
                     leeren
                   </button>
                 </span>

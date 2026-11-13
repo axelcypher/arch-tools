@@ -1,8 +1,9 @@
-# GRZ, GFZ und Vollgeschosse
+# TERRIO (GRZ-Nachweis) – GRZ, GFZ und Vollgeschosse
 
-Der **GRZ-Nachweis** (`apps/grz`, eigene App mit eigenem Installer) weist das Maß der baulichen Nutzung nach:
+**TERRIO** (`apps/grz`, eigene App mit eigenem Installer) weist das Maß der baulichen Nutzung nach:
 Grundflächenzahl, Geschossflächenzahl und Zahl der Vollgeschosse – nach dem Recht, das für den jeweiligen
-Bebauungsplan gilt.
+Bebauungsplan gilt. Bis Version 0.22.0 hieß die App „GRZ-Nachweis“; Einstellungen und Daten bleiben beim Update
+erhalten.
 
 ## Arbeitsweise
 
@@ -12,16 +13,16 @@ Bebauungsplan gilt.
   verwirft damit auch den Zwischenstand. Gesperrte Knöpfe nennen im Tooltip den Grund. Der Hinweis
   „Grundstücksfläche fehlt“ springt mit „zum Feld“ in das Feld „Grundstücksfläche [m²]“.
 
-- **Öffnen:** ein Projekt des Flächenrechners (`.oap`, auch ältere `.json`) oder direkt ein IFC-Modell.
-  Gebäudeumrisse, Geschosse, Räume und Dach kommen aus dem Projekt bzw. dem IFC-Import (derselbe Import wie im
-  Flächenrechner, mit Dachform- und Gaubenerkennung).
+- **Öffnen:** ein Projekt aus QUADRIO (Flächenrechner; `.oap`, auch ältere `.json`) oder direkt ein IFC-Modell.
+  Gebäudeumrisse, Geschosse, Räume und Dach kommen aus dem Projekt bzw. dem IFC-Import (derselbe Import wie in
+  QUADRIO, mit Dachform- und Gaubenerkennung).
 - **Pflegen:** Festsetzungen, Lageplan-Flächen (zeichnen als Polygon oder Rechteck, Nutzung, Versiegelung,
   Nachbar-Kennzeichen), Vollgeschoss je Geschoss festlegen, Aufenthaltsräume einstufen.
-- **Speichern:** in dieselbe Projektdatei. Der Flächenrechner zeigt Lageplan und Festsetzungen nicht an,
-  bewahrt sie aber beim Speichern; umgekehrt bewahrt der GRZ-Nachweis alles, was der Flächenrechner pflegt. Beim Speichern
+- **Speichern:** in dieselbe Projektdatei. QUADRIO zeigt Lageplan und Festsetzungen nicht an,
+  bewahrt sie aber beim Speichern; umgekehrt bewahrt TERRIO alles, was QUADRIO pflegt. Beim Speichern
   liest jede App die Zieldatei neu und übernimmt, was eine andere App dort inzwischen gespeichert hat, statt es
-  mit ihrem eigenen, älteren Stand zu überschreiben (ab Flächenrechner 0.11.0, GRZ-Nachweis 0.4.0,
-  Kostenermittlung 0.4.0). „Speichern“ (Strg+S) schreibt in die geöffnete Datei, „Speichern unter …“
+  mit ihrem eigenen, älteren Stand zu überschreiben (ab QUADRIO 0.11.0, TERRIO 0.4.0,
+  NUMIO (Kostenermittlung) 0.4.0). „Speichern“ (Strg+S) schreibt in die geöffnete Datei, „Speichern unter …“
   (Strg+Shift+S) fragt nach einem neuen Namen.
 - **IFC aktualisieren …:** ein neuer Export desselben Modells wird in das bestehende Projekt eingelesen, ohne es
   neu aufzusetzen. Geschosse, Räume und Lageplan-Flächen werden über ihre IFC-GlobalId zugeordnet (ältere Projekte
@@ -30,13 +31,13 @@ Bebauungsplan gilt.
   einen Konflikt. Festsetzungen, Einstufungen und Nutzungen bleiben unberührt.
 - **Regeln nachschlagen:** „§ Regeln“ in der Titelleiste bzw. F1 öffnet das Nachschlagewerk mit den
   angewandten Vorschriften (Zitat, Fundstelle, Link, Suche); die `?`-Knöpfe an den Abschnitten zeigen nur die
-  dort maßgebenden Regeln. Im GRZ-Nachweis zeigt es nur die eigenen Regeln (keine WoFlV); die Suche findet § 19
+  dort maßgebenden Regeln. In TERRIO zeigt es nur die eigenen Regeln (keine WoFlV); die Suche findet § 19
   BauNVO auch über Terrasse, Carport, Zufahrt, Weg. Die Pillen der Anrechnung („prüfen“, „GRZ II“, „zählt nicht“ …)
   begründen im Tooltip die Einstufung je Nutzung und Fassung und öffnen per Klick die passende Regel.
 - **Rückgängig** (Strg+Z) nennt im Tooltip den Schritt („Rückgängig: Nutzung ändern“), ebenso Wiederholen.
 - **IFC-Bericht:** Nach dem Import („IFC-Import“) bzw. „IFC aktualisieren“ („IFC-Abgleich“) steht oben eine
-  Zusammenfassung („Lageplan: n Flächen, Geländemodell: ja/nein, Geschosse: …“); Hinweise, die nur den
-  Flächenrechner betreffen (BRI, Bodenplatte, Putzabzug, Wohnfläche, Dachform), entfallen.
+  Zusammenfassung („Lageplan: n Flächen, Geländemodell: ja/nein, Geschosse: …“); Hinweise, die nur
+  QUADRIO betreffen (BRI, Bodenplatte, Putzabzug, Wohnfläche, Dachform), entfallen.
 
 ## Projekt und Bebauungsplan
 
@@ -96,7 +97,7 @@ Geschosshöhe. Er besteht aus **Lageplan-Flächen** mit zwei Merkmalen:
 Flächen von **Nachbargrundstücken** (zur Darstellung, oft größer als ihr Flurstück) werden als „Nachbar“ markiert und
 zählen nirgends mit.
 
-Bedienung im Lageplan – wie im Flächenrechner: Werkzeug „Polygon“ (P; Punkte setzen, Startpunkt, Doppelklick
+Bedienung im Lageplan – wie in QUADRIO: Werkzeug „Polygon“ (P; Punkte setzen, Startpunkt, Doppelklick
 oder Enter schließt, Rück löscht den letzten Punkt, Esc bricht ab) oder „Rechteck“ (R; zwei Ecken); Ecken von
 Gebäude und Flächen werden gefangen. „Auswahl“ (V): Klicken wählt eine Fläche, Ziehen verschiebt sie, Punkte
 ziehen ändert sie, ◇ in der Kantenmitte ziehen fügt einen Punkt ein, Rechtsklick auf einen Punkt löscht ihn
@@ -155,7 +156,7 @@ werden auf die Innenfläche des Plans umgerechnet (ohne Rahmen), Abweichung unte
 
 - Ein Geschoss, dessen Name „Lageplan“ enthält, wird kein Gebäudegeschoss, sondern der Lageplan – unabhängig
   davon, wo es im IFC einsortiert ist (in Archicad liegt es meist auf Höhe des UG). Es beeinflusst die
-  Geschosshöhen nicht. Das gilt auch beim IFC-Import im Flächenrechner.
+  Geschosshöhen nicht. Das gilt auch beim IFC-Import in QUADRIO.
 - Seine Bauteile (Decken, Beläge, Zonen, Objekte, Wände) und das IFC-Gelände (`IfcSite`, z. B. eine
   Garageneinfahrt aus dem Gelände-Werkzeug) werden Lageplan-Flächen. Nutzung und Versiegelung werden aus dem Namen
   vorgeschlagen (z. B. „Zufahrt Rasengitter“ → Zufahrt, teilversiegelt; ausdrückliche Angaben wie
@@ -255,7 +256,7 @@ werden auf die Innenfläche des Plans umgerechnet (ohne Rahmen), Abweichung unte
     des Tools steht nur auf dem Blatt, wenn „Haftungshinweis“ gewählt ist.
 - **Excel …**: Standardlayout (Blatt „GRZ GFZ“ mit Summenformeln) oder eigene Vorlage mit Platzhaltern wie
   `{{grz}}`, `{{gfz}}`, `{{vollgeschosse}}`, `{{bilanz.*}}` und den Sammlungen `geschoss`, `lageplan`, `raum`,
-  `hinweis` – siehe [Excel-Vorlagen](excel-vorlagen.md#grz-nachweis). Die Vorlage wird wie im Flächenrechner im
+  `hinweis` – siehe [Excel-Vorlagen](excel-vorlagen.md#terrio-grz-nachweis). Die Vorlage wird wie in QUADRIO im
   Projekt mitgespeichert, aber getrennt von dessen Vorlage.
   - Im Standardlayout sind die Kennzahlen Formeln aus den Zellen (GRZ = Grundfläche / Grundstücksfläche), dazu die
     zulässige Fläche (zulässig × Grundstücksfläche) und das Ergebnis als Vergleich – Prüfer können nachrechnen.

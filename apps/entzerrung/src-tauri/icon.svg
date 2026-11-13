@@ -1,7 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect x="2" y="2" width="60" height="60" rx="10" fill="#3d3a8c"/>
-  <path d="M9 47 L19 17 L30 21 L30 43 Z" fill="#c9c6f2" stroke="#c9c6f2" stroke-width="2" stroke-linejoin="round"/>
-  <path d="M34 32h6m0 0l-3-3m3 3l-3 3" fill="none" stroke="#f3f2ff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
-  <rect x="44" y="18" width="12" height="28" rx="1" fill="#f3f2ff"/>
-  <path d="M44 51h12M44 49v4M56 49v4" fill="none" stroke="#f3a93b" stroke-width="2" stroke-linecap="round"/>
+  <rect width="64" height="64" rx="14" fill="#63489a"/>
+  <path d="M16 14l32 6v24l-32 6z" fill="#ffffff" opacity=".16"/>
+  <path d="M32 17v30M16 32h32" stroke="#ffffff" stroke-width="2" opacity=".55"/>
+  <path d="M16 14l32 6v24l-32 6z" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke="#ffffff" stroke-width="4"/>
+  <g fill="#fcba43" stroke="#63489a" stroke-width="2.5" stroke-linejoin="round" paint-order="stroke">
+    <rect x="11" y="9" width="10" height="10" rx="2"/><rect x="43" y="15" width="10" height="10" rx="2"/>
+    <rect x="43" y="39" width="10" height="10" rx="2"/><rect x="11" y="45" width="10" height="10" rx="2"/>
+  </g>
 </svg>

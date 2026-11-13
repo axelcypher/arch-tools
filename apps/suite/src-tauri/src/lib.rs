@@ -92,7 +92,7 @@ pub fn run() {
             rahmen_formulare_freigeben
         ])
         .setup(|app| {
-            log::info!("arch-tools {} gestartet", app.package_info().version);
+            log::info!("{} {} gestartet", app.package_info().name, app.package_info().version);
             Ok(())
         })
         .build(tauri::generate_context!())

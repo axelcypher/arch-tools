@@ -4,15 +4,15 @@ name: Build & Release
 # der App (apps/<app>/package.json) auf main ändert. Manuell startbar – dann wird die gewählte App
 # in ihrer aktuellen Version (neu) gebaut.
 #
-#   Flächenrechner   apps/flaechenrechner   Tag v<version>
-#   GRZ-Nachweis     apps/grz               Tag grz-v<version>
-#   Kostenermittlung apps/kosten            Tag kosten-v<version>
-#   Projektordner    apps/ordner            Tag ordner-v<version>
-#   Entzerrung       apps/entzerrung        Tag entzerrung-v<version>
-#   Formulare        apps/formulare         Tag formulare-v<version>
-#   AVA              apps/ava               Tag ava-v<version>  (Ausschreibung, Vergabe, Abrechnung, Bauleitung)
-#   Baurecht         apps/baurecht          Tag baurecht-v<version>
-#   arch-tools       apps/suite             Tag suite-v<version>  (Rahmen-App: alle Apps in einem Fenster)
+#   QUADRIO   apps/flaechenrechner   Tag v<version>             (Flächenrechner)
+#   TERRIO    apps/grz               Tag grz-v<version>         (GRZ-Nachweis)
+#   NUMIO     apps/kosten            Tag kosten-v<version>      (Kostenermittlung)
+#   ATLAS     apps/ordner            Tag ordner-v<version>      (Projektordner)
+#   RECTIO    apps/entzerrung        Tag entzerrung-v<version>  (Entzerrung)
+#   PERMIO    apps/formulare         Tag formulare-v<version>   (Formulare)
+#   FABRIO    apps/ava               Tag ava-v<version>         (Ausschreibung, Vergabe, Abrechnung, Bauleitung)
+#   LEXIO     apps/baurecht          Tag baurecht-v<version>    (Baurecht)
+#   Arkly     apps/suite             Tag suite-v<version>       (Rahmen-App: alle Apps in einem Fenster)
 #
 # Automatische Updates: Die Installer werden signiert (Secrets TAURI_SIGNING_PRIVATE_KEY und
 # TAURI_SIGNING_PRIVATE_KEY_PASSWORD). Das Update-Manifest jeder App liegt als <app>.json im Release
@@ -70,15 +70,16 @@ jobs:
               exit 1
             fi
             case "$d" in
-              flaechenrechner) tag="v$v"; name="Flächenrechner"; web="flaechenrechner-web.zip" ;;
-              grz) tag="$d-v$v"; name="GRZ-Nachweis"; web="grz-nachweis-web.zip" ;;
-              kosten) tag="$d-v$v"; name="Kostenermittlung"; web="kostenermittlung-web.zip" ;;
-              ordner) tag="$d-v$v"; name="Projektordner"; web="projektordner-web.zip" ;;
-              entzerrung) tag="$d-v$v"; name="Entzerrung"; web="entzerrung-web.zip" ;;
-              formulare) tag="$d-v$v"; name="Formulare"; web="formulare-web.zip" ;;
-              ava) tag="$d-v$v"; name="AVA"; web="ava-web.zip" ;;
-              baurecht) tag="$d-v$v"; name="Baurecht"; web="baurecht-web.zip" ;;
-              suite) tag="$d-v$v"; name="arch-tools"; web="arch-tools-web.zip" ;;
+              # Release-Name = Produktname (packages/core/src/appNamen.ts); Tags bleiben bei der Kennung
+              flaechenrechner) tag="v$v"; name="QUADRIO"; web="quadrio-web.zip" ;;
+              grz) tag="$d-v$v"; name="TERRIO"; web="terrio-web.zip" ;;
+              kosten) tag="$d-v$v"; name="NUMIO"; web="numio-web.zip" ;;
+              ordner) tag="$d-v$v"; name="ATLAS"; web="atlas-web.zip" ;;
+              entzerrung) tag="$d-v$v"; name="RECTIO"; web="rectio-web.zip" ;;
+              formulare) tag="$d-v$v"; name="PERMIO"; web="permio-web.zip" ;;
+              ava) tag="$d-v$v"; name="FABRIO"; web="fabrio-web.zip" ;;
+              baurecht) tag="$d-v$v"; name="LEXIO"; web="lexio-web.zip" ;;
+              suite) tag="$d-v$v"; name="Arkly"; web="arkly-web.zip" ;;
             esac
             if [ "$EVENT" = "workflow_dispatch" ]; then
               if [ "$WAHL" != "alle" ] && [ "$WAHL" != "$d" ]; then continue; fi

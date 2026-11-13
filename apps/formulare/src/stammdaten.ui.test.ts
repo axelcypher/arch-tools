@@ -525,7 +525,7 @@ describe('Projektdatei (.oap) als Quelle der Projektstammdaten', () => {
     expect(ds.schreibvorgaenge).toContain('neu Planung/Berechnungen/BS9.oap');
     const p = readProjectFile(ds.dateien.get(`${ORDNER}/Planung/Berechnungen/BS9.oap`)!);
     expect(p.meta).toMatchObject({ projektcode: 'BS9', bauherr: { name: 'Neue Bauherrin' } });
-    // wie im Projektordner-Tool: eine Kopie des Namensschemas des Büros (hier: die Vorgabe)
+    // wie in ATLAS (Projektordner): eine Kopie des Namensschemas des Büros (hier: die Vorgabe)
     expect(p.namensschema).toEqual(VORGABE_NAMENSSCHEMA);
     expect(knopf(host, 'Projektdatei (.oap)').textContent).toContain('BS9.oap');
     // der Ort neuer Projektdateien gilt für alle Apps

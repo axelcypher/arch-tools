@@ -1,20 +1,52 @@
-# arch-tools
+# Arkly
 
 Werkzeuge für Architekturbüros: sieben Desktop-Apps (Windows, Tauri) mit gemeinsamem Unterbau – einzeln oder alle
-zusammen in der Rahmen-App „arch-tools“ (Tabs, herauslösbare Fenster). Flächenrechner,
-GRZ-Nachweis und Kostenermittlung arbeiten mit derselben Projektdatei (`.oap`).
+zusammen in der Rahmen-App Arkly (Tabs, herauslösbare Fenster). QUADRIO, TERRIO und NUMIO arbeiten mit derselben
+Projektdatei (`.oap`). Die Suite heißt wie ihre Rahmen-App; das Repository heißt weiterhin `arch-tools`. Die Apps
+haben neue Namen – siehe [Neue Namen](#neue-namen).
 
 | App | Zweck | Dokumentation |
 |---|---|---|
-| **Flächenrechner** | Flächen- und Rauminhaltsberechnung nach DIN 277 und WoFlV | unten |
-| **GRZ-Nachweis** | GRZ/GFZ-Nachweis nach BauNVO und BauO NRW | [docs/grz-gfz.md](docs/grz-gfz.md) |
-| **Kostenermittlung** | Massen- und Kostenermittlung nach DIN 276 | [docs/kosten.md](docs/kosten.md) |
-| **Projekt** (früher Projektordner) | Das Setup-Tool: Projekte mit einem Assistenten anlegen und fortschreiben – Stammdaten, Grundstück, Bauherr, Umfang, Beteiligte in der Projektdatei, Ordner nach der Bürostruktur (Klick-Editor mit Bausteinen), Vorlagen-Presets; Ordner prüfen; Mails prüfen, benennen und aus Outlook ablegen; Katasterpläne aus einer QGIS-Vorlage | [docs/projektordner.md](docs/projektordner.md) |
-| **Entzerrung** | Fotos perspektivisch entzerren und darin messen | [docs/entzerrung.md](docs/entzerrung.md) |
-| **Formulare** | Bauantragsformulare aus SJ FORMA bequem ausfüllen – die Dateien bleiben im Original lesbar | [docs/formulare.md](docs/formulare.md) |
-| **AVA** | Ausschreibung, Vergabe, Abrechnung und Bauleitung: Leistungsverzeichnisse (LV-Dateien des bisherigen LV-Programms oder eigenes Format), Preisspiegel, Aufträge, Rechnungsprüfung mit Deckblatt, Kostenkontrolle (Excel), Bautagebuch, Protokolle, Mängel, Mailverlauf | [docs/ava.md](docs/ava.md) |
-| **Baurecht** | Rechtsprüfung vor dem Bauantrag: alle relevanten Vorschriften je Paragraf als Ampel, Gesetzestexte live aus den amtlichen Quellen, Regeln als austauschbares, signiertes Regelpaket (Bund, NRW, Kreis Soest, Stadt Soest) | [docs/baurecht.md](docs/baurecht.md) |
-| **arch-tools** | Rahmen-App: alle Apps in einem Fenster als Tabs, einzelne in eigene Fenster herauslösen | [docs/suite.md](docs/suite.md) |
+| **QUADRIO** – Flächenrechner | Flächen- und Rauminhaltsberechnung nach DIN 277 und WoFlV | unten |
+| **TERRIO** – GRZ-Nachweis | GRZ/GFZ-Nachweis nach BauNVO und BauO NRW | [docs/grz-gfz.md](docs/grz-gfz.md) |
+| **NUMIO** – Kostenermittlung | Massen- und Kostenermittlung nach DIN 276 | [docs/kosten.md](docs/kosten.md) |
+| **ATLAS** – Projektordner | Das Setup-Tool: Projekte mit einem Assistenten anlegen und fortschreiben – Stammdaten, Grundstück, Bauherr, Umfang, Beteiligte in der Projektdatei, Ordner nach der Bürostruktur (Klick-Editor mit Bausteinen), Vorlagen-Presets; Ordner prüfen; Mails prüfen, benennen und aus Outlook ablegen; Katasterpläne aus einer QGIS-Vorlage | [docs/projektordner.md](docs/projektordner.md) |
+| **RECTIO** – Entzerrung | Fotos perspektivisch entzerren und darin messen | [docs/entzerrung.md](docs/entzerrung.md) |
+| **PERMIO** – Formulare | Bauantragsformulare aus SJ FORMA bequem ausfüllen – die Dateien bleiben im Original lesbar | [docs/formulare.md](docs/formulare.md) |
+| **FABRIO** – AVA | Ausschreibung, Vergabe, Abrechnung und Bauleitung: Leistungsverzeichnisse (LV-Dateien des bisherigen LV-Programms oder eigenes Format), Preisspiegel, Aufträge, Rechnungsprüfung mit Deckblatt, Kostenkontrolle (Excel), Bautagebuch, Protokolle, Mängel, Mailverlauf | [docs/ava.md](docs/ava.md) |
+| **LEXIO** – Baurecht | Rechtsprüfung vor dem Bauantrag: alle relevanten Vorschriften je Paragraf als Ampel, Gesetzestexte live aus den amtlichen Quellen, Regeln als austauschbares, signiertes Regelpaket (Bund, NRW, Kreis Soest, Stadt Soest) | [docs/baurecht.md](docs/baurecht.md) |
+| **Arkly** – Rahmen-App (früher arch-tools) | alle Apps in einem Fenster als Tabs, einzelne in eigene Fenster herauslösen | [docs/suite.md](docs/suite.md) |
+
+## Neue Namen
+
+Die Apps haben eigene Produktnamen bekommen. Kennungen bleiben: Ordner unter `apps/`, Adressen (`?app=…`),
+Speicher-Schlüssel, Bundle-Kennungen und die Release-Tags (`grz-v…` usw.).
+
+| Neuer Name | bisher | letzte Version mit altem Namen |
+|---|---|---|
+| **Arkly** | arch-tools (Rahmen-App) | 0.18.0 |
+| **ATLAS** | Projekt (Fenstertitel), Projektordner (Installer) | 0.17.0 |
+| **PERMIO** | Formulare | 0.42.0 |
+| **QUADRIO** | Flächenrechner | 0.33.0 |
+| **TERRIO** | GRZ-Nachweis | 0.22.0 |
+| **NUMIO** | Kostenermittlung | 0.19.0 |
+| **RECTIO** | Entzerrung | 0.12.0 |
+| **FABRIO** | AVA | 0.4.0 |
+| **LEXIO** | Baurecht (erstes Release unter dem neuen Namen) | – |
+
+Beim ersten Update unter dem neuen Namen entfernt der Installer die Installation unter dem alten Namen – aber nur,
+wenn sie sicher von uns stammt (gleicher Herausgeber, gleiche Programmdatei). Läuft die alte App noch, fragt er wie
+sonst auch nach (beim automatischen Update wird sie beendet). Startmenü- und Desktop-Verknüpfung werden unter dem neuen
+Namen angelegt, wenn es sie vorher gab; Anheftungen an die Taskleiste löst die alte Deinstallation, sie sind neu
+anzuheften. Schlägt die alte Deinstallation fehl, bleibt sie vollständig bestehen, und das nächste Update versucht es
+erneut. Einstellungen und Daten bleiben erhalten, weil sie an der App-Kennung hängen, nicht am Namen. Ein MSI-Paket
+ersetzt das alte, weil der Upgrade-Code gleich bleibt; Verknüpfungen mit dem alten Namen können dabei stehen bleiben
+und sind dann von Hand zu löschen. Details zum Installer-Hook: `apps/<app>/src-tauri/windows/umbenennung.nsh`
+(geprüft mit `scripts/nsis-hooks-pruefen.sh` in der CI).
+
+Die Namen stehen an einer Stelle: `packages/core/src/appNamen.ts` (Name und `was` – wofür die App da ist). Regel für
+Texte: Ein Verweis auf eine andere App nennt beim ersten Vorkommen in einem Text, Dialog oder einer Regelkarte den
+Namen mit Erklärung – „PERMIO (Formulare)“ –, danach den Namen allein; die eigene App steht ohne Erklärung.
 
 ## Gemeinsame Bedienung aller Apps
 
@@ -34,7 +66,7 @@ GRZ-Nachweis und Kostenermittlung arbeiten mit derselben Projektdatei (`.oap`).
 - **Stammdaten** (Bauvorhaben, Adresse, Gemarkung/Flur/Flurstück, Bebauungsplan Nr./Name, Bauherr, Bearbeitung)
   stehen einmal in der Projektdatei. Jede App zeigt sie mit demselben Dialog („Stammdaten …“) und lässt sie ändern,
   ohne die App zu wechseln; andere Apps sehen die Änderung, sobald das Projekt dort neu geladen wird. Ausdrucke und
-  Excel-Dateien haben denselben Kopf aus diesen Angaben, dazu den Büronamen (Projekt → Einstellungen) und
+  Excel-Dateien haben denselben Kopf aus diesen Angaben, dazu den Büronamen (ATLAS → Einstellungen) und
   „Seite x von y“.
 - **Koordinaten der Projektadresse:** Sobald Straße und PLZ bzw. Ort des Vorhabens eingetragen sind (und bei jeder
   Änderung, spätestens beim Speichern), fragt die App die Lage bei OpenStreetMap (Nominatim) ab und sichert sie in den
@@ -42,30 +74,30 @@ GRZ-Nachweis und Kostenermittlung arbeiten mit derselben Projektdatei (`.oap`).
   Stammdaten stehen sie als „O … · N …“; **Kopieren** liefert „Ost, Nord“ mit Punkt als Dezimalzeichen, z. B. zum
   Springen in QGIS (Projekt-KBS EPSG:25832). Liegt nur ein Treffer für die Straße oder den Ort vor, steht das dabei;
   „Neu abfragen“ fragt erneut. Gesendet wird nur die Adresse des Vorhabens, eine Abfrage je geänderter Adresse; die
-  Desktop-Apps erlauben dafür in ihrer CSP genau diesen Dienst (AVA und die Rahmen-App zusätzlich den Wetterdienst
+  Desktop-Apps erlauben dafür in ihrer CSP genau diesen Dienst (FABRIO und die Rahmen-App zusätzlich den Wetterdienst
   Open-Meteo fürs Bautagebuch, nur auf Knopfdruck). Die Umrechnung rechnet die App selbst (Krüger-Reihen,
   im Millimeterbereich genau); WGS84 und ETRS89 weichen um weniger als einen Meter ab.
-- **Einstieg**: „Projekte“ in der Titelleiste aller Apps (auch Projekt und Formulare). Ohne geöffnetes Projekt
+- **Einstieg**: „Projekte“ in der Titelleiste aller Apps (auch ATLAS und PERMIO). Ohne geöffnetes Projekt
   zeigt jede App denselben Einstieg mit denselben Aktionen: *Projekt wählen …* (Desktop: Übersicht mit „zuletzt
   geöffnet“), *Datei öffnen …*, *Neues Projekt*. Die Projektübersicht scrollt als Ganzes (aufgeklappte Quellen werden
   nicht mehr auf die Fensterhöhe gequetscht); „Zuletzt geöffnet“ steht auf einem farbigen Streifen.
 - **Projektübersicht mit Sammelordnern:** Projekte in Gruppen-, Akquise- und Archivordnern der Stammordner stehen in
   eigenen Abschnitten (Archiv = abgeschlossen, Akquise = Akquise, solange die Projektdatei nichts anderes sagt); die
-  Reihenfolge der Stammordner lässt sich per Ziehen ändern – in der Übersicht und unter „Einstellungen“ der App „Projekt“.
-- **Neues Projekt anlegen** aus jeder App (in der Rahmen-App „arch-tools“): Der Knopf auf der Projektübersicht startet
-  den Assistenten der App „Projekt“ in deren Tab; nach dem Anlegen führt „In … öffnen“ zurück, und Flächenrechner,
-  GRZ-Nachweis, Kostenermittlung und Entzerrung öffnen das neue Projekt gleich. Auch über „+“ und die Startseite des
-  Rahmens. In den einzeln installierten Apps gibt es den Knopf nicht (sie können die App „Projekt“ nicht starten).
+  Reihenfolge der Stammordner lässt sich per Ziehen ändern – in der Übersicht und unter „Einstellungen“ von ATLAS.
+- **Neues Projekt anlegen** aus jeder App (in der Rahmen-App Arkly): Der Knopf auf der Projektübersicht startet
+  den Assistenten von ATLAS in dessen Tab; nach dem Anlegen führt „In … öffnen“ zurück, und QUADRIO, TERRIO, NUMIO
+  und RECTIO öffnen das neue Projekt gleich. Auch über „+“ und die Startseite des Rahmens. In den einzeln
+  installierten Apps gibt es den Knopf nicht (sie können ATLAS nicht starten).
 - **Rollbalken** in den Farben des Schemas (schmal, abgerundet); Seitenleisten halten Platz für den Rollbalken frei,
   damit sich ihre Breite beim Wechsel der Ansicht nicht ändert.
 - **Eigene Ansichten** (Ansicht-Editor in `packages/core/src/ui/AnsichtEditor.tsx`): aus einem Katalog von Feldern
-  Abschnitte mit genau den benötigten Feldern zusammenstellen – Reihenfolge per Ziehen. Genutzt in Formulare
+  Abschnitte mit genau den benötigten Feldern zusammenstellen – Reihenfolge per Ziehen. Genutzt in PERMIO
   (Projektkarte, Antragsmerkmale); für weitere Apps (Startseite, Vorlagen) vorbereitet.
 - **Datei ließ sich nicht öffnen**: Die Meldung nennt Datei und Grund in Klartext („Keine gültige Projektdatei
   (.oap) – beschädigt oder aus einer anderen Anwendung.“); technische Einzelheiten stehen aufklappbar darunter und im
   Protokoll. Ein fehlgeschlagenes Öffnen ändert das geöffnete Projekt nicht.
 
-## Flächenrechner
+## QUADRIO (Flächenrechner)
 
 Visuell gestützte Flächenberechnung für Gebäude. Grundrisse werden direkt gezeichnet oder auf einem
 kalibrierten Planbild nachgezeichnet; die Anwendung ermittelt daraus:
@@ -206,12 +238,12 @@ fehlen sie, warnt der Bericht.
 - **Dateinamen**: „Speichern“ (`Strg+S`) schreibt in die geöffnete Datei, „Speichern unter“ (`Strg+Shift+S`) fragt neu;
   Exporte heißen `<Projektdatei> WoFl+BGF+BRI`, `<Projektdatei> GRZ+GFZ` bzw. `<Projektdatei> Kosten <Stufe>`
   und landen vorgeschlagen im Ordner der Projektdatei
-- **GRZ/GFZ-Nachweis** als eigene App im selben Repository (`apps/grz`), die dieselbe Projektdatei öffnet –
+- **TERRIO** (GRZ/GFZ-Nachweis) als eigene App im selben Repository (`apps/grz`), die dieselbe Projektdatei öffnet –
   siehe [docs/grz-gfz.md](docs/grz-gfz.md)
-- **Massen- und Kostenermittlung nach DIN 276** als eigene App (`apps/kosten`): Mengen aus dem Projekt mit
+- **NUMIO** (Massen- und Kostenermittlung nach DIN 276) als eigene App (`apps/kosten`): Mengen aus dem Projekt mit
   Nachweis im Grundriss und im 3D-Modell, Kennwerte mit Bandbreite, Kennwertkatalog, Kostenstände – siehe
   [docs/kosten.md](docs/kosten.md)
-- **Projekt** (früher Projektordner) als eigene App (`apps/ordner`): Assistent für neue und bestehende Projekte
+- **ATLAS** (Projektordner) als eigene App (`apps/ordner`): Assistent für neue und bestehende Projekte
   (Stammdaten, Grundstück, Bauherr, Umfang, Beteiligte, Vorlagen, Zusammenfassung und Trockenlauf), alles in der
   Projektdatei (`.oap`) des Projektordners, **Struktur-Editor zum Klicken** (Mehrfachauswahl, Ziehen, Kopieren in
   mehrere Ordner, **Bausteine** für wiederkehrende Unterordner wie Gewerke), **Vorlagen-Presets** aus
@@ -221,7 +253,7 @@ fehlen sie, warnt der Bericht.
   (`platform/konfig.ts`), die Projektdatei im Projektordner finden, gezielt ergänzen und anlegen
   (`projektdatei.ts`, `platform/projektordner.ts`), Stammdaten-Dialog für Projektordner ohne Projektdatei
   (`ui/Stammdaten.tsx`), Projektübersicht als Startseite (`ui/ProjektUebersicht.tsx`) und Projektwahl für
-  Flächenrechner, GRZ-Nachweis, Kostenermittlung und Entzerrung (`ui/ProjektWahl.tsx`: Projektordner wählen,
+  QUADRIO, TERRIO, NUMIO und RECTIO (`ui/ProjektWahl.tsx`: Projektordner wählen,
   Projektdatei öffnen oder – wenn sie fehlt – mit den Stammdaten anlegen); unbekannte Abschnitte der Projektdatei
   bleiben erhalten
 - **Projektübersicht** beim Start (Desktop, auch über „Projekte“ in der Titelleiste): Projektordner aus den
@@ -258,7 +290,7 @@ fehlen sie, warnt der Bericht.
 
 ## Aufbau des Repositorys
 
-Ein Repository mit npm-Workspaces, acht Apps, einem gemeinsamen Unterbau und dem Regelpaket der App Baurecht:
+Ein Repository mit npm-Workspaces, acht Apps, einem gemeinsamen Unterbau und dem Regelpaket von LEXIO (Baurecht):
 
 ```
 packages/core/       gemeinsamer Unterbau (TypeScript-Quelltext, in den Apps als @core/… eingebunden)
@@ -273,21 +305,21 @@ packages/core/       gemeinsamer Unterbau (TypeScript-Quelltext, in den Apps als
                      Rueckfrage.tsx: Rückfragen und Meldungen), Grund-Styles (base.css), Ansicht-Editor
                      (AnsichtEditor.tsx, ansicht.ts), Ziehen mit dem Zeiger (ziehen.ts), ziehbare Leisten (Leiste.tsx)
   tauri/commands.rs  gemeinsame Tauri-Befehle, per include! in alle Tauri-Hüllen eingebunden
-apps/flaechenrechner/  Flächenrechner (dieses Tool): Zeichenfläche, Bericht, Excel, DXF/PDF, 3D
-apps/grz/              GRZ/GFZ-Nachweis: Lageplan, Nachweis zum Drucken, Excel – siehe docs/grz-gfz.md
-apps/kosten/           Kostenermittlung nach DIN 276: Mengen, Kennwerte, Kostenstände, Druck, Excel – siehe docs/kosten.md
-apps/ordner/           App „Projekt“: Assistent (neu/fortschreiben), Struktur-Editor, Vorlagen-Presets, Ordner prüfen, Katasterpläne – siehe docs/projektordner.md
-apps/entzerrung/       Fotos entzerren und messen: Homographie, Fluchtlinien, Verzeichnung, WebGL – siehe docs/entzerrung.md
-apps/formulare/        FORMA-Formulare ausfüllen: Formatkern (.frmsjf), Formular- und Feldansicht, Projektkarte, Verlauf, Projektordner – siehe docs/formulare.md
-apps/ava/              Ausschreibung, Vergabe, Abrechnung, Bauleitung: LV-Formate (.aslv, .oalv, GAEB), Preisspiegel, Kostenkontrolle, Rechnungsprüfung, Bautagebuch – siehe docs/ava.md
-apps/baurecht/         Rechtsprüfung vor dem Bauantrag: Ampel je Paragraf, Rechtsstand, Geodienste, Prüfprotokoll – siehe docs/baurecht.md
-packages/baurecht-regeln/  Regelpaket der App Baurecht (Module je Gebiet, je Norm und Fassung eine Regeldatei), Werkzeuge, Wächter
-apps/suite/            Rahmen-App „arch-tools“: alle Apps in einem Fenster (Tabs, herauslösbare Fenster) – siehe docs/suite.md
+apps/flaechenrechner/  QUADRIO (Flächenrechner, dieses Tool): Zeichenfläche, Bericht, Excel, DXF/PDF, 3D
+apps/grz/              TERRIO (GRZ/GFZ-Nachweis): Lageplan, Nachweis zum Drucken, Excel – siehe docs/grz-gfz.md
+apps/kosten/           NUMIO (Kostenermittlung nach DIN 276): Mengen, Kennwerte, Kostenstände, Druck, Excel – siehe docs/kosten.md
+apps/ordner/           ATLAS (Projektordner): Assistent (neu/fortschreiben), Struktur-Editor, Vorlagen-Presets, Ordner prüfen, Katasterpläne – siehe docs/projektordner.md
+apps/entzerrung/       RECTIO (Entzerrung) – Fotos entzerren und messen: Homographie, Fluchtlinien, Verzeichnung, WebGL – siehe docs/entzerrung.md
+apps/formulare/        PERMIO (Formulare) – FORMA-Formulare ausfüllen: Formatkern (.frmsjf), Formular- und Feldansicht, Projektkarte, Verlauf, Projektordner – siehe docs/formulare.md
+apps/ava/              FABRIO (AVA) – Ausschreibung, Vergabe, Abrechnung, Bauleitung: LV-Formate (.aslv, .oalv, GAEB), Preisspiegel, Kostenkontrolle, Rechnungsprüfung, Bautagebuch – siehe docs/ava.md
+apps/baurecht/         LEXIO (Baurecht) – Rechtsprüfung vor dem Bauantrag: Ampel je Paragraf, Rechtsstand, Geodienste, Prüfprotokoll – siehe docs/baurecht.md
+packages/baurecht-regeln/  Regelpaket von LEXIO (Module je Gebiet, je Norm und Fassung eine Regeldatei), Werkzeuge, Wächter
+apps/suite/            Rahmen-App Arkly: alle Apps in einem Fenster (Tabs, herauslösbare Fenster) – siehe docs/suite.md
 ```
 
 Jede App hat ihre eigene Tauri-Hülle (`apps/<app>/src-tauri`), eigenen Installer und eigene Releases.
-Flächenrechner, GRZ-Nachweis und Kostenermittlung öffnen dieselbe Projektdatei (`.oap`): Der Flächenrechner liefert Gebäude, Geschosse und
-Flächen, der GRZ-Nachweis pflegt Lageplan und Festsetzungen, die Kostenermittlung Positionen, Kennwerte und
+QUADRIO, TERRIO und NUMIO öffnen dieselbe Projektdatei (`.oap`): QUADRIO liefert Gebäude, Geschosse und
+Flächen, TERRIO pflegt Lageplan und Festsetzungen, NUMIO Positionen, Kennwerte und
 Kostenstände. Was eine App nicht kennt, bewahrt sie beim Speichern. Weil jede App mit ihrer eigenen
 Kopie arbeitet, liest sie beim Speichern die Zieldatei neu und führt zusammen (`packages/core/src/zusammenfuehren.ts`):
 Was sie seit dem Öffnen nicht geändert hat, kommt aus der Datei – Änderungen anderer Apps gehen nicht verloren.
@@ -303,37 +335,37 @@ die WebView2-Runtime (in Windows 10/11 enthalten) sowie die MSVC-Build-Tools.
 
 ```bash
 npm install              # alle Workspaces
-npm run dev              # Flächenrechner unter http://localhost:1420
-npm run dev:grz          # GRZ-Nachweis unter http://localhost:1430
-npm run dev:kosten       # Kostenermittlung unter http://localhost:1440
-npm run dev:ordner       # Projekt (früher Projektordner) unter http://localhost:1450
-npm run dev:entzerrung   # Entzerrung unter http://localhost:1460
-npm run dev:formulare    # Formulare unter http://localhost:1470
-npm run dev:ava          # AVA unter http://localhost:1490 (Demo-Projekt: http://localhost:1490/?demo)
-npm run dev:baurecht     # Baurecht unter http://localhost:1500
-npm run dev:suite        # Rahmen-App unter http://localhost:1480 (nach npm run build)
+npm run dev              # QUADRIO unter http://localhost:1420
+npm run dev:grz          # TERRIO unter http://localhost:1430
+npm run dev:kosten       # NUMIO unter http://localhost:1440
+npm run dev:ordner       # ATLAS unter http://localhost:1450
+npm run dev:entzerrung   # RECTIO unter http://localhost:1460
+npm run dev:formulare    # PERMIO unter http://localhost:1470
+npm run dev:ava          # FABRIO unter http://localhost:1490 (Demo-Projekt: http://localhost:1490/?demo)
+npm run dev:baurecht     # LEXIO unter http://localhost:1500
+npm run dev:suite        # Rahmen-App Arkly unter http://localhost:1480 (nach npm run build)
 npm test                 # alle Tests (Unterbau und Apps, vitest)
 npm run typecheck        # TypeScript für alle Workspaces
 npm run build            # Web-Builds aller Apps nach apps/<app>/dist/
 
-npm run tauri:dev        # Flächenrechner als Desktop-App
-npm run tauri:dev:grz    # GRZ-Nachweis als Desktop-App
-npm run tauri:dev:kosten # Kostenermittlung als Desktop-App
-npm run tauri:dev:ordner # Projekt als Desktop-App
-npm run tauri:dev:entzerrung # Entzerrung als Desktop-App
-npm run tauri:dev:formulare  # Formulare als Desktop-App
-npm run tauri:dev:ava        # AVA als Desktop-App
-npm run tauri:dev:baurecht   # Baurecht als Desktop-App
-npm run tauri:dev:suite      # Rahmen-App als Desktop-App
+npm run tauri:dev        # QUADRIO als Desktop-App
+npm run tauri:dev:grz    # TERRIO als Desktop-App
+npm run tauri:dev:kosten # NUMIO als Desktop-App
+npm run tauri:dev:ordner # ATLAS als Desktop-App
+npm run tauri:dev:entzerrung # RECTIO als Desktop-App
+npm run tauri:dev:formulare  # PERMIO als Desktop-App
+npm run tauri:dev:ava        # FABRIO als Desktop-App
+npm run tauri:dev:baurecht   # LEXIO als Desktop-App
+npm run tauri:dev:suite      # Rahmen-App Arkly als Desktop-App
 npm run tauri:build -w flaechenrechner   # Windows-Installer unter apps/<app>/src-tauri/target/release/bundle/
 ```
 
 Der Workflow **Build & Release** (GitHub Actions) baut je App die Windows-Installer und veröffentlicht ein
 GitHub-Release (mit Web-Version als ZIP), sobald die Version der App auf `main` erhöht wird:
-Flächenrechner als `v<version>`, GRZ-Nachweis als `grz-v<version>`, Kostenermittlung als `kosten-v<version>`,
-Projekt (früher Projektordner) als `ordner-v<version>`, Entzerrung als `entzerrung-v<version>`, Formulare als `formulare-v<version>`,
-AVA als `ava-v<version>`, Baurecht als `baurecht-v<version>`,
-die Rahmen-App als `suite-v<version>`.
+QUADRIO als `v<version>`, TERRIO als `grz-v<version>`, NUMIO als `kosten-v<version>`,
+ATLAS als `ordner-v<version>`, RECTIO als `entzerrung-v<version>`, PERMIO als `formulare-v<version>`,
+FABRIO als `ava-v<version>`, LEXIO als `baurecht-v<version>`,
+die Rahmen-App Arkly als `suite-v<version>`. Das Release trägt den Produktnamen, das Tag die Kennung.
 Die Version steht je App in
 `package.json`, `src-tauri/tauri.conf.json` und `src-tauri/Cargo.toml` und muss dort überall gleich sein.
 Manuell gestartet wird die gewählte App in ihrer aktuellen Version (neu) gebaut. Die CI prüft zusätzlich
@@ -357,7 +389,7 @@ aktualisieren sich nicht selbst.
 - Versionen ohne Updater (Flächenrechner bis 0.9.4, GRZ-Nachweis bis 0.2.3, Kostenermittlung 0.1.0) müssen
   einmal von Hand über den Installer aktualisiert werden.
 
-## Hinweise zur Normanwendung (Flächenrechner)
+## Hinweise zur Normanwendung (QUADRIO)
 
 - Die Raumumschließung R/S wird je BGF-Umriss festgelegt; Räume übernehmen sie vom Umriss, in dem sie liegen
   (ein Balkonraum auf einem S-Umriss zählt zur NRF S), lassen sich aber von Hand festlegen. Der IFC-Import setzt
@@ -388,7 +420,7 @@ aktualisieren sich nicht selbst.
 - „Automatisch nach Raumname“ ist ein Vorschlag: Treppenhaus/Treppenraum zählt nicht, ein Raum mit Treppe
   (z. B. „Diele/Treppe“) zählt ohne die Treppenfläche, Hauswirtschaftsraum zählt, Waschküche nicht; Räume eines
   Kellergeschosses (Geschossart) zählen nicht. Die Nutzungsgruppe entscheidet nicht über die Wohnfläche.
-- Beim IFC-Import schlägt der Flächenrechner die Nutzungsgruppe nach DIN 277:2021-08 vor (u. a. Abstellraum,
+- Beim IFC-Import schlägt QUADRIO die Nutzungsgruppe nach DIN 277:2021-08 vor (u. a. Abstellraum,
   Keller, Garage, Hauswirtschaftsraum → NUF 7, Galerie → NUF 1, Lager/Archiv → NUF 4). Eine kleinere
   IFC-Nettofläche wird als „Abzug aus IFC-Nettofläche“ je Raum übernommen; Werte deutlich abseits von 3 % nennt der
   Importbericht einzeln. Geschosse ohne Wände (z. B. Spitzboden) erhalten keine BGF – der Bericht weist darauf hin.

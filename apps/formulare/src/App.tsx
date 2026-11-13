@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { APP_NAMEN } from '@core/appNamen';
 import { LogDialog } from '@core/ui/LogDialog';
 import { StammdatenDialog } from '@core/ui/Stammdaten';
 import { ProjektEinstieg } from '@core/ui/ProjektWahl';
@@ -130,7 +131,7 @@ export function App() {
 
   useEffect(() => {
     // ungespeichert auch bei Bearbeitungen in Dokumenten (PDF, Excel, Word) – wie die Titelleiste (dirty)
-    document.title = `${geaendert || dokGeaendert ? '● ' : ''}${name} – Formulare`;
+    document.title = `${geaendert || dokGeaendert ? '● ' : ''}${name} – ${APP_NAMEN.formulare.name}`;
   }, [name, geaendert, dokGeaendert]);
 
   useEffect(() => {
@@ -147,7 +148,7 @@ export function App() {
     const zurueck = () => {
       if (!sichtbar()) return;
       void auffrischen(true);
-      // das Namensschema des Büros kann im Projektordner-Tool geändert worden sein
+      // das Namensschema des Büros kann in ATLAS (Projektordner) geändert worden sein
       void useFormulare.getState().namensschemaNeuLesen();
     };
     const takt = setInterval(() => sichtbar() && void auffrischen(), 15_000);
@@ -214,7 +215,7 @@ export function App() {
   return (
     <div className="app">
       <TitleBar
-        app="Formulare"
+        app={APP_NAMEN.formulare.name}
         name={name}
         dirty={geaendert || dokGeaendert}
         onOpenLog={() => setDialog('log')}

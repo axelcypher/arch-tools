@@ -39,7 +39,7 @@ export interface ProjektordnerZugriff {
   /** einen Eintrag eines ZIP-Archivs lesen, ohne das ganze Archiv zu laden; `null`, wenn es ihn nicht gibt */
   zipEintrag?(root: string, pfad: string, name: string): Promise<{ daten: Uint8Array; stand: DateiStand } | null>;
   /**
-   * Datei umbenennen (App „Projekt“, nur deren Hülle und die Rahmen-App): nur innerhalb von `root`, Endung bleibt, der
+   * Datei umbenennen (nur die Hülle von ATLAS und die Rahmen-App): nur innerhalb von `root`, Endung bleibt, der
    * Zielordner muss es geben; `false`, wenn es das Ziel schon gibt – überschrieben wird nie.
    */
   umbenennen?(root: string, alt: string, neu: string): Promise<boolean>;

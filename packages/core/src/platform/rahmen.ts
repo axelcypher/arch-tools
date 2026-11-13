@@ -102,11 +102,11 @@ export function speichernAnfragenBeantworten(speichern: (() => Promise<boolean |
 
 /* ---------- Nachrichten zwischen den Apps über den Rahmen (z. B. „Neues Projekt anlegen“ aus jeder App) ---------- */
 
-/** App → Rahmen: den Assistenten der Projekt-App für ein neues Projekt starten */
+/** App → Rahmen: den Assistenten von ATLAS für ein neues Projekt starten */
 export const PROJEKT_ANLEGEN = 'arch-tools:projekt-anlegen';
-/** Rahmen → Projekt-App: Assistent für ein neues Projekt (mit der App, aus der der Auftrag kommt) */
+/** Rahmen → ATLAS: Assistent für ein neues Projekt (mit der App, aus der der Auftrag kommt) */
 export const ASSISTENT_NEU = 'arch-tools:assistent-neu';
-/** Projekt-App → Rahmen: zurück zu einer App (`an`), mit dem neu angelegten Projektordner (`ordner`) */
+/** ATLAS → Rahmen: zurück zu einer App (`an`), mit dem neu angelegten Projektordner (`ordner`) */
 export const ZUR_APP = 'arch-tools:zur-app';
 /** Rahmen → App: ein neues Projekt wurde angelegt (`ordner`) – Übersicht neu laden, wenn möglich öffnen */
 export const PROJEKT_ANGELEGT = 'arch-tools:projekt-angelegt';
@@ -116,7 +116,7 @@ export const BEREIT = 'arch-tools:bereit';
 export const AN_RAHMEN = 'arch-tools:an-rahmen';
 export const AN_APP = 'arch-tools:an-app';
 
-/** Kennung der Projekt-App im Rahmen */
+/** Kennung der Projekt-App (ATLAS) im Rahmen */
 export const PROJEKT_APP = 'ordner';
 
 export interface RahmenNachricht {
@@ -181,10 +181,10 @@ export function vomRahmen(typ: string, f: (n: RahmenNachricht) => void): () => v
   };
 }
 
-/** Lässt sich aus dieser App ein neues Projekt mit dem Assistenten der Projekt-App anlegen? (nur in der Rahmen-App) */
+/** Lässt sich aus dieser App ein neues Projekt mit dem Assistenten von ATLAS anlegen? (nur in der Rahmen-App) */
 export const projektAnlegenMoeglich = (): boolean => rahmenModus() !== null && rahmenApp() !== PROJEKT_APP;
 
-/** Assistenten der Projekt-App starten; `kannOeffnen`: diese App öffnet das neue Projekt danach selbst */
+/** Assistenten von ATLAS starten; `kannOeffnen`: diese App öffnet das neue Projekt danach selbst */
 export function projektAnlegenStarten(kannOeffnen = false): void {
   anRahmen({ typ: PROJEKT_ANLEGEN, von: rahmenApp(), kannOeffnen });
 }

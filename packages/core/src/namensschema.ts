@@ -11,8 +11,8 @@
  *   „HVO GP 261111 GP01-07 Plansatz.pdf“        zusammengefasster Satz: Pläne 01 bis 07
  *   „HVO BAUA 261110 01 Bauantrag.pdf“          Formular: reine Zahl = Dokumentnummer, kein Plan
  *
- * Die Bürovorgabe steht in den gemeinsamen Einstellungen (`allgemein.json`, Eintrag `namensschema`, gepflegt im
- * Projektordner-Tool), jede Projektdatei trägt ihre Kopie (Abschnitt `namensschema`). Es gilt die der Projektdatei,
+ * Die Bürovorgabe steht in den gemeinsamen Einstellungen (`allgemein.json`, Eintrag `namensschema`, gepflegt in
+ * ATLAS), jede Projektdatei trägt ihre Kopie (Abschnitt `namensschema`). Es gilt die der Projektdatei,
  * sonst die des Büros, sonst die eingebaute Vorgabe.
  */
 

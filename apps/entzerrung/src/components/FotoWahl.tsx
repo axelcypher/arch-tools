@@ -96,8 +96,8 @@ export function FotoWahl({
         {!eintraege && <p className="busy">Fotos werden gesucht …</p>}
         {fehler && (
           <p className="warning">
-            Den Fotoordner gibt es nicht oder er ist nicht lesbar: {fehler}. Der Fotoordner ist eine gemeinsame Einstellung aller Apps (in der App „Projekt“ unter
-            Einstellungen); mit „Anderer Ordner …“ lässt sich ein beliebiger wählen.
+            Den Fotoordner gibt es nicht oder er ist nicht lesbar: {fehler}. Der Fotoordner ist eine gemeinsame Einstellung aller Apps – in ATLAS (Projektordner) unter
+            Einstellungen; mit „Anderer Ordner …“ lässt sich ein beliebiger wählen.
           </p>
         )}
         {eintraege && !fehler && !anzahl && <p className="muted">{suche ? 'Kein Foto passt zur Suche.' : 'Keine Fotos (JPEG, PNG, WebP) in diesem Ordner.'}</p>}

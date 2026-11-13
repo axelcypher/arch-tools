@@ -357,7 +357,7 @@ export function buildFromIfc(x: IfcExtract, o: IfcImportOptions): IfcImportResul
   );
   const gelaendeTris = upwardTriangles(gelaendeTeile);
   const gelaendeModell = gelaendeTris.length ? { name: 'IFC-Gelände', triangles: gelaendeTris } : undefined;
-  if (gelaendeModell) report.push('Geländeoberfläche aus dem Modell übernommen – der GRZ-Nachweis prüft die Geschossigkeit am tatsächlichen Geländeverlauf.');
+  if (gelaendeModell) report.push('Geländeoberfläche aus dem Modell übernommen – TERRIO (GRZ-Nachweis) prüft die Geschossigkeit am tatsächlichen Geländeverlauf.');
   return { storeys, dachModell, gelaendeModell, lageplan, report };
 }
 

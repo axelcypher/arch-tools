@@ -1,4 +1,5 @@
 import { eingabeAbschliessen } from '@core/platform/eingabe';
+import { APP_NAMEN } from '@core/appNamen';
 import { useEffect, useState } from 'react';
 import { computeProject } from '@core/calc';
 import { projectToCsv } from '../core/export';
@@ -22,7 +23,7 @@ export async function projektSpeichernAktion(unter = false): Promise<boolean> {
   await speichernAbwarten(); // Strg+S während eines Speicherns: danach den aktuellen Stand speichern
   const { project: p, basis, datei, dokument } = useEditor.getState();
   try {
-    const r = await projektSpeichern({ project: p, basis, datei, unter, app: __APP_VERSION__, filterName: 'Flächenprojekt', fuerDatei: mitVorlage });
+    const r = await projektSpeichern({ project: p, basis, datei, unter, app: `${APP_NAMEN.flaechenrechner.name} ${__APP_VERSION__}`, filterName: 'Flächenprojekt', fuerDatei: mitVorlage });
     // während des Speicherns weitergezeichnet? Dann bleibt der neue Stand ungespeichert (mit den Änderungen aus der Datei).
     if (r) useEditor.getState().markSaved(r.project, r.datei, p, dokument);
     return !!r;

@@ -1305,8 +1305,14 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
   padding: 26px 30px;
 }
 .br-start-karte h1 {
-  margin: 0 0 8px;
+  margin: 0;
   font-size: 22px;
+}
+/* wofür die App da ist – unter dem Namen (wie Startseite und Tooltips der Rahmen-App) */
+.br-start-karte p.br-start-was {
+  margin: 2px 0 10px;
+  color: var(--muted);
+  font-size: 14px;
 }
 .br-start-karte p {
   line-height: 1.5;

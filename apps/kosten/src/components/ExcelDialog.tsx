@@ -20,7 +20,7 @@ export function ExcelDialog({ onClose }: { onClose: () => void }) {
           Vorlagen sind normale .xlsx-Dateien mit Platzhaltern in doppelten geschweiften Klammern, z. B. <code>{'{{gesamt.brutto}}'}</code> oder <code>{'{{kg:300.mittel}}'}</code>.
           Enthält eine Zeile <code>{'{{kg.…}}'}</code>, <code>{'{{position.…}}'}</code>, <code>{'{{menge.…}}'}</code>, <code>{'{{stand.…}}'}</code> oder{' '}
           <code>{'{{hinweis.…}}'}</code>, wird sie je Eintrag wiederholt. Formatierung bleibt erhalten, Formeln wie <code>=SUMME(G5:G5)</code> werden auf alle eingefügten Zeilen
-          erweitert. Die Vorlage ist unabhängig von denen des Flächenrechners und des GRZ-Nachweises.
+          erweitert. Die Vorlage ist unabhängig von denen in QUADRIO (Flächenrechner) und TERRIO (GRZ-Nachweis).
         </>
       }
       docs={KOSTEN_PLACEHOLDER_DOCS}
