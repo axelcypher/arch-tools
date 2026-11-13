@@ -15,6 +15,8 @@ import {
 import { fmt2, parseNum } from '@core/format';
 import { NumberField } from '@core/ui/fields';
 import { Modal } from '@core/ui/Dialog';
+import type { MenuePunkt } from '@core/ui/Menue';
+import { zeigeMenue } from '@core/ui/Menue';
 import type { Hilfslinie } from '@core/fang';
 import { achsBeschraenkt, achsRechteck, achsRichtungen, eckpunktHilfslinien, gebaeudeAchse, hilfslinienFang, zeichenHilfslinien } from '@core/fang';
 import type { OutlineShape, Shape, Storey } from '@core/model';
@@ -34,8 +36,10 @@ import { clippedPieces } from '@core/roof';
 import {
   auswahlVerschieben,
   entwurfZuruecknehmenAnmelden,
+  ablageStatus,
   flaechenDuplizieren,
   flaechenKopieren,
+  flaechenLoeschen,
   mapShape,
   mapStorey,
   nextRoomNumber,
@@ -390,6 +394,8 @@ export function Canvas() {
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
+      // Esc hat schon ein Menü bzw. Dialog geschlossen (gemeinsamer Esc-Stapel) – nicht zusätzlich die Auswahl aufheben
+      if (e.key === 'Escape' && e.defaultPrevented) return;
       if (!zeichenKuerzelErlaubt(e, svgRef.current)) return;
       const st = useEditor.getState();
       const ctrl = e.ctrlKey || e.metaKey;
@@ -543,11 +549,7 @@ export function Canvas() {
       if (e.key === ' ') setSpaceDown(false);
     };
     function deleteSelected() {
-      const st = useEditor.getState();
-      const ids = st.selectedIds.length ? st.selectedIds : st.selectedShapeId ? [st.selectedShapeId] : [];
-      if (!ids.length) return;
-      st.update((p) => mapStorey(p, storey.id, (s) => ({ ...s, shapes: s.shapes.filter((x) => !ids.includes(x.id)) })));
-      st.select(null);
+      flaechenLoeschen();
     }
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('keyup', onKeyUp);
@@ -786,11 +788,65 @@ export function Canvas() {
     svgRef.current!.setPointerCapture(e.pointerId);
   };
 
+  // Kontextmenü am Eckpunkt (gemeinsames Menü: Tastatur, Esc-Stapel, gesperrte Punkte mit Grund)
   const onVertexContextMenu = (e: React.MouseEvent, shape: Shape, index: number) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (shape.points.length <= 3) return;
-    update((p) => setShapePoints(p, storey.id, shape.id, shape.points.filter((_, i) => i !== index)));
+    const zuWenig = shape.points.length <= 3;
+    zeigeMenue(
+      e,
+      [
+        {
+          text: `Punkt ${index + 1} löschen`,
+          symbol: 'muell',
+          gefahr: true,
+          deaktiviert: zuWenig,
+          hinweis: zuWenig ? 'Mind. 3 Punkte' : undefined,
+          titel: zuWenig ? 'Eine Fläche braucht mindestens drei Punkte' : undefined,
+          // aus dem aktuellen Stand rechnen: bei offenem Menü kann sich die Fläche geändert haben (z. B. Rückgängig)
+          aktion: () =>
+            update((p) => {
+              const aktuell = p.storeys.find((s) => s.id === storey.id)?.shapes.find((s) => s.id === shape.id);
+              if (!aktuell || aktuell.points.length <= 3 || index >= aktuell.points.length) return p;
+              return setShapePoints(p, storey.id, shape.id, aktuell.points.filter((_, i) => i !== index));
+            }),
+        },
+      ],
+      'Eckpunkt',
+    );
+  };
+
+  // Kontextmenü auf einer Fläche (Auswahlwerkzeug): wählt die Fläche, falls sie noch nicht gewählt ist
+  const onShapeContextMenu = (e: React.MouseEvent, shape: Shape) => {
+    if (tool !== 'select') {
+      e.preventDefault();
+      return;
+    }
+    const st = useEditor.getState();
+    if (!st.selectedIds.includes(shape.id) && st.selectedShapeId !== shape.id) select(shape.id);
+    zeigeMenue(e, flaechenMenue(), menueName(shape));
+  };
+
+  // Kontextmenü auf der leeren Zeichenfläche
+  const onCanvasContextMenu = (e: React.MouseEvent) => {
+    if (tool !== 'select' || draft.length) {
+      e.preventDefault();
+      return;
+    }
+    // mit Auswahl (auch per Kontextmenütaste): das Menü der gewählten Flächen
+    const st = useEditor.getState();
+    const gewaehlt = st.selectedIds.length ? st.selectedIds : st.selectedShapeId ? [st.selectedShapeId] : [];
+    const erste = storey.shapes.find((s) => s.id === gewaehlt[0]);
+    if (erste) {
+      zeigeMenue(e, flaechenMenue(), gewaehlt.length > 1 ? `${gewaehlt.length} Flächen` : menueName(erste));
+      return;
+    }
+    zeigeMenue(
+      e,
+      [
+        einfuegenPunkt(),
+        { text: 'Alles zeigen', symbol: 'einpassen', hinweis: 'F', aktion: () => useEditor.getState().requestFit() },
+      ],
+      'Zeichenfläche',
+    );
   };
 
   const onPointerMove = (e: React.PointerEvent<SVGSVGElement>) => {
@@ -1081,7 +1137,7 @@ export function Canvas() {
         selectedIds.length > 1
           ? `${selectedIds.length} Flächen gewählt · Ziehen/Pfeiltasten: verschieben · Strg+D: duplizieren · Entf: löschen · Esc: Auswahl aufheben`
           : selected
-            ? 'Punkt ziehen: ändern · ◇ ziehen: Punkt einfügen · Rechtsklick auf Punkt: löschen · Entf: Fläche löschen'
+            ? 'Punkt ziehen: ändern · ◇ ziehen: Punkt einfügen · Rechtsklick: Menü · Entf: Fläche löschen'
             : leer
               ? ''
               : 'Klicken: wählen · Ziehen: verschieben · Umschalt+Klick/Rahmen: mehrere';
@@ -1128,7 +1184,7 @@ export function Canvas() {
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerLeave={() => !drag.current && setCursor(null)}
-        onContextMenu={(e) => e.preventDefault()}
+        onContextMenu={onCanvasContextMenu}
       >
         <defs>
           <pattern id="hatch-s" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
@@ -1159,6 +1215,7 @@ export function Canvas() {
               fillRule="evenodd"
               strokeLinejoin="round"
               onPointerDown={(e) => onShapePointerDown(e, s)}
+              onContextMenu={(e) => onShapeContextMenu(e, s)}
               style={{ cursor: tool === 'select' ? 'move' : undefined }}
             />
           ))}
@@ -1175,7 +1232,7 @@ export function Canvas() {
               const m = toScreen({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
               if (distance(a, b) * vp.scale < 24) return null;
               return (
-                <g key={`m${i}`} className="griff" onPointerDown={(e) => onMidpointPointerDown(e, selected, i)}>
+                <g key={`m${i}`} className="griff" onPointerDown={(e) => onMidpointPointerDown(e, selected, i)} onContextMenu={(e) => onShapeContextMenu(e, selected)}>
                   {/* unsichtbare, größere Trefferfläche */}
                   <circle cx={m.x} cy={m.y} r={9} className="griff-treffer" />
                   <rect className="mid-handle" x={m.x - 4} y={m.y - 4} width={8} height={8} transform={`rotate(45 ${m.x} ${m.y})`} />
@@ -1438,7 +1495,8 @@ const KUERZEL: [string, string][] = [
   ['Umschalt/Strg+Klick · Umschalt+Rahmen · Strg+A', 'Flächen zur Auswahl hinzufügen · alle wählen'],
   ['Strg+C · Strg+V · Strg+D', 'kopieren · einfügen · duplizieren (Messen: Strg+C kopiert die Messung)'],
   ['Entf · Rücktaste', 'Auswahl löschen · letzten Entwurfspunkt löschen'],
-  ['Punkt ziehen · ◇ ziehen · Rechtsklick auf Punkt', 'Punkt ändern · Punkt einfügen · Punkt löschen'],
+  ['Punkt ziehen · ◇ ziehen', 'Punkt ändern · Punkt einfügen'],
+  ['Rechtsklick (oder Kontextmenütaste)', 'Menü: Punkt löschen, Flächen kopieren, duplizieren, einfügen, löschen'],
 ];
 
 function KuerzelDialog({ onClose }: { onClose: () => void }) {
@@ -1639,4 +1697,30 @@ function MessAnzeige({
         })()}
     </g>
   );
+}
+
+/** Name des Menüs für Screenreader: „Raum 0.01 Bad“ bzw. „BGF-Umriss Anbau“, ohne Angaben nur die Art */
+function menueName(s: Shape): string {
+  const teile = s.kind === 'room' ? [s.nummer, s.name] : s.name && s.name !== 'BGF' ? [s.name] : [];
+  return [s.kind === 'room' ? 'Raum' : 'BGF-Umriss', ...teile.map((t) => t?.trim()).filter(Boolean)].join(' ');
+}
+
+/** „Einfügen“ – gesperrt mit sichtbarem Grund, solange nichts kopiert ist */
+function einfuegenPunkt(): MenuePunkt {
+  const leer = ablageStatus().leer;
+  return { text: 'Einfügen', symbol: 'einfuegen', hinweis: leer ? 'Nichts kopiert' : 'Strg+V', deaktiviert: leer, titel: leer ? 'Zuerst Flächen kopieren (Strg+C)' : undefined, aktion: () => void einfuegenAktion() };
+}
+
+/** Befehle für gewählte Flächen im Kontextmenü – dieselben wie die Tastenkürzel */
+function flaechenMenue(): MenuePunkt[] {
+  const st = useEditor.getState();
+  const n = Math.max(st.selectedIds.length, 1);
+  const flaechen = n > 1 ? `${n} Flächen` : 'Fläche';
+  return [
+    { text: `${flaechen} kopieren`, symbol: 'kopie', hinweis: 'Strg+C', aktion: () => void flaechenKopieren() },
+    { text: `${flaechen} duplizieren`, hinweis: 'Strg+D', aktion: () => void flaechenDuplizieren() },
+    einfuegenPunkt(),
+    { trenner: true },
+    { text: `${flaechen} löschen`, symbol: 'muell', hinweis: 'Entf', gefahr: true, aktion: () => void flaechenLoeschen() },
+  ];
 }

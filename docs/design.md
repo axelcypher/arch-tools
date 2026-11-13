@@ -177,7 +177,7 @@ Gemeinsamer Satz in `ui/Symbol.tsx` (Raster 24, Linie 2, runde Enden, Farbe des 
 `<Symbol name="lineal" />`. Ohne `titel` ist das Symbol dekorativ, dann trägt der Knopf den Namen (Text oder
 `aria-label`); mit `titel` ist es ein benanntes Bild.
 
-- Werkzeuge: `auswahl`, `polygon`, `rechteck`, `lineal` (Messen), `kalibrieren`, `einpassen`, `raster`.
+- Werkzeuge: `auswahl`, `polygon`, `rechteck`, `erkennen` (Fläche aus dem Plan), `lineal` (Messen), `kalibrieren`, `einpassen`, `raster`.
 - Befehle: `speichern`, `drucken`, `export`, `kopie`, `einfuegen`, `muell`, `rueckgaengig`, `wiederholen`, `plus`,
   `suche`, `stift`.
 - Zustand: `haken`, `warnung`, `info`, `schliessen`, `auge`, `augeZu`, `stern`.
@@ -240,20 +240,21 @@ Symbol: Text in `<span className="titlebar-text">`, der Name bleibt über `aria-
 
 ## Was die Apps nachziehen
 
-| App                     | Datei und Aufgabe                                                                                                                                                                                                               |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| RECTIO                  | `apps/entzerrung/src/components/Arbeitsflaeche.tsx:364`: Leerzustand „Foto hinzufügen …“ mit `className="canvas-message leer"`; Auswahl auf dem Foto mit `--sel-foto` und Saum statt eigener Farbe                              |
-| TERRIO, NUMIO           | Spalten-Überschriften (`h2` ohne Regel, sonst 22px) auf die Skala setzen: `--fs-l`, halbfett                                                                                                                                    |
-| FABRIO                  | erledigt (FABRIO 0.9.1): Versalien entfernt, `outline: none` geprüft; Druckvorschau, `.segment`, `Modal` mit `kopf`, „ …“ nachgezogen                                                                                           |
-| PERMIO                  | erledigt (PERMIO 0.48.1): Versalien entfernt, Überschriften auf `--fs-*`, `outline: none` geprüft (Menüpunkte mit Fokusrahmen)                                                                                                  |
-| core                    | erledigt: Versalien in `.pa-abschnitt-titel`, `.av-abschnitt-titel`, `.av-ed-gruppe-titel` entfernt; `.modal h3`/`h4` aus der Skala                                                                                             |
-| ATLAS                   | erledigt: Ordner-Editor mit `zeigeMenue`/`MenueKnopf`, `Symbol` statt Schriftzeichen, Meldungen als `.meldung`; offen: ↑/↓ zum Umsortieren (Stammordner, Katasterpläne), bis `core` ein Symbol „nach oben“ hat                  |
-| QUADRIO, TERRIO, NUMIO  | Druckvorschau: „Drucken / PDF …“ als Hauptknopf (`.primary`), „Schließen“ normal (`Report.tsx`, `NachweisDruck.tsx`, `KostenDruck.tsx`)                                                                                         |
-| NUMIO, QUADRIO          | eigene Umschalter (`.mv-umschalter`, `.view-switch`) auf `.segment` umstellen                                                                                                                                                   |
-| PERMIO                  | eigenes Menü und eigene Symbole (`components/Menue.tsx`, `components/Symbol.tsx`, `.menue`- und `.symbol`-Regeln in `styles.css`) durch `@core/ui/Menue` und `@core/ui/Symbol` ersetzen; fehlende Symbole im core-Satz ergänzen |
-| RECTIO                  | eigene `RechteLeiste` durch `BreitenLeiste seite="rechts"` ersetzen                                                                                                                                                             |
-| QUADRIO, TERRIO, RECTIO | Werkzeugleisten mit `Symbol` statt Emoji und Schriftzeichen (📏, ⇔, ⊡, ▭, ↶/↷)                                                                                                                                                  |
-| alle                    | eigene Kontextmenüs auf `zeigeMenue` umstellen (QUADRIO Canvas, TERRIO Lageplan, RECTIO Arbeitsfläche)                                                                                                                          |
-| alle                    | eigene `div.modal` auf `Modal` umstellen; Titel mit `kopf` statt `h3` im Inhalt; Werkzeugleisten-Befehle nach „Begriffe“ benennen (z. B. TERRIO „Öffnen“ → „Öffnen …“)                                                          |
+| App            | Datei und Aufgabe                                                                                                                                                                                                               |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| RECTIO         | `apps/entzerrung/src/components/Arbeitsflaeche.tsx:364`: Leerzustand „Foto hinzufügen …“ mit `className="canvas-message leer"`; Auswahl auf dem Foto mit `--sel-foto` und Saum statt eigener Farbe                              |
+| TERRIO, NUMIO  | Spalten-Überschriften (`h2` ohne Regel, sonst 22px) auf die Skala setzen: `--fs-l`, halbfett                                                                                                                                    |
+| FABRIO         | erledigt (FABRIO 0.9.1): Versalien entfernt, `outline: none` geprüft; Druckvorschau, `.segment`, `Modal` mit `kopf`, „ …“ nachgezogen                                                                                           |
+| PERMIO         | erledigt (PERMIO 0.48.1): Versalien entfernt, Überschriften auf `--fs-*`, `outline: none` geprüft (Menüpunkte mit Fokusrahmen)                                                                                                  |
+| core           | erledigt: Versalien in `.pa-abschnitt-titel`, `.av-abschnitt-titel`, `.av-ed-gruppe-titel` entfernt; `.modal h3`/`h4` aus der Skala                                                                                             |
+| ATLAS          | erledigt: Ordner-Editor mit `zeigeMenue`/`MenueKnopf`, `Symbol` statt Schriftzeichen, Meldungen als `.meldung`; offen: ↑/↓ zum Umsortieren (Stammordner, Katasterpläne), bis `core` ein Symbol „nach oben“ hat                  |
+| QUADRIO        | erledigt (Werkzeugleisten-PR): Druckvorschau „Drucken / PDF …“, Umschalter `.segment`, Werkzeugleiste mit `Symbol` (neu: `erkennen`), Kontextmenüs der Zeichenfläche über `zeigeMenue`, Meldungen `.meldung`                    |
+| TERRIO, NUMIO  | Druckvorschau: „Drucken / PDF …“ als Hauptknopf (`.primary`), „Schließen“ normal (`NachweisDruck.tsx`, `KostenDruck.tsx`)                                                                                                       |
+| NUMIO          | eigene Umschalter (`.mv-umschalter`) auf `.segment` umstellen                                                                                                                                                                   |
+| PERMIO         | eigenes Menü und eigene Symbole (`components/Menue.tsx`, `components/Symbol.tsx`, `.menue`- und `.symbol`-Regeln in `styles.css`) durch `@core/ui/Menue` und `@core/ui/Symbol` ersetzen; fehlende Symbole im core-Satz ergänzen |
+| RECTIO         | eigene `RechteLeiste` durch `BreitenLeiste seite="rechts"` ersetzen                                                                                                                                                             |
+| TERRIO, RECTIO | Werkzeugleisten mit `Symbol` statt Emoji und Schriftzeichen (📏, ⇔, ⊡, ▭, ↶/↷)                                                                                                                                                  |
+| alle           | eigene Kontextmenüs auf `zeigeMenue` umstellen (TERRIO Lageplan, RECTIO Arbeitsfläche)                                                                                                                                          |
+| alle           | eigene `div.modal` auf `Modal` umstellen; Titel mit `kopf` statt `h3` im Inhalt; Werkzeugleisten-Befehle nach „Begriffe“ benennen (z. B. TERRIO „Öffnen“ → „Öffnen …“)                                                          |
 
 Zeilennummern beziehen sich auf den Stand dieser Richtlinie.
