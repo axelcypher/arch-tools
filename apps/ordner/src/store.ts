@@ -12,6 +12,7 @@ import {
   konfigVorWechsel,
   VORGABE_ALLGEMEIN,
 } from '@core/platform/konfig';
+import { logger } from '@core/platform/log';
 import { hatDateisystem, tauriDateisystem } from './dateisystem';
 import type { Vorlage } from './plan';
 import { ladeVorlagen } from './plan';
@@ -20,7 +21,9 @@ import { SICHERUNGEN, sicherungenAus, sicherungenMit, sicherungsName } from './s
 import type { Stammdaten } from './stammdaten';
 import { leereStammdaten } from './stammdaten';
 import type { Struktur } from './struktur';
-import { alterOapPfad, STANDARD, strukturAusJson } from './struktur';
+import { alterOapPfad, ordnerAlsText, ordnerAusTextMitMeldungen, STANDARD, strukturAusJson } from './struktur';
+
+const log = logger('einstellungen');
 
 /**
  * Zustand des Tools. Die Einstellungen liegen im gemeinsamen Konfigurationsordner aller Apps:
@@ -54,6 +57,14 @@ interface OrdnerState {
   /** wo die Einstellungen liegen (null im Browser bzw. bevor sie geladen sind) */
   konfig: KonfigOrt | null;
   konfigFehler: string | null;
+  /**
+   * das letzte Schreiben der Struktur (projektordner.json) ist gescheitert – Grund; bis zum nächsten gelungenen
+   * Schreiben bzw. frischen Lesen sind die eigenen Änderungen nicht gespeichert. Getrennt von `konfigFehler`, das auch
+   * gescheiterte allgemeine Einstellungen meldet.
+   */
+  strukturNichtGeschrieben: string | null;
+  /** ausstehendes Schreiben der Struktur jetzt ausführen und ein gescheitertes erneut versuchen (Speichern auf Anfrage) */
+  strukturSchreiben: () => Promise<void>;
   /** Dateien im Vorlagenordner (Desktop: aus `vorlagenordner` gelesen, Browser: über den Dateidialog gewählt) */
   vorlagen: Vorlage[];
   /** im Browser: Name des gewählten Vorlagenordners */
@@ -66,6 +77,8 @@ interface OrdnerState {
   konfigStandEigen: string | null;
   /** projektordner.json wurde inzwischen anderswo geändert: deren Inhalt; nichts wird geschrieben, bis entschieden ist */
   konflikt: { roh: unknown } | null;
+  /** „Meine Fassung trotzdem speichern“ läuft (Sichern, Schreiben) – die Knöpfe des Konflikts sind solange gesperrt */
+  konfliktLaeuft: boolean;
   /**
    * Die Struktur in projektordner.json ließ sich nicht lesen (z. B. Format einer neueren Fassung): der Grund. Angezeigt
    * wird solange die Vorgabe, geschrieben wird nichts (auch nicht das Ordnerschema für alle Apps), bis die Struktur
@@ -88,6 +101,12 @@ interface OrdnerState {
   ordnerEntwurf: { text: string; basis: string } | null;
   setOrdnerAnsicht: (a: 'baum' | 'text') => void;
   setOrdnerEntwurf: (e: { text: string; basis: string } | null) => void;
+  /**
+   * den Entwurf der Textansicht als Ordnerliste übernehmen – wie jedes Ersetzen vorher gesichert, mit „Rückgängig“.
+   * Liefert null, wenn übernommen (oder nichts offen), sonst den Grund, warum nicht (leere Liste); Fehler beim
+   * Sichern bzw. Ersetzen werden geworfen.
+   */
+  ordnerEntwurfUebernehmen: () => Promise<string | null>;
   /** die Struktur vor der letzten Ersetzung („Rückgängig“) – entfällt mit der nächsten Änderung */
   rueckgaengig: { struktur: Struktur; text: string } | null;
   setStamm: (patch: Partial<Stammdaten>) => void;
@@ -98,15 +117,18 @@ interface OrdnerState {
    * (`strukturFehler`) wird immer gesichert.
    */
   strukturErsetzen: (neu: Struktur, grund: string, optionen?: { sicherung?: boolean }) => Promise<void>;
-  /** die letzte Ersetzung zurücknehmen */
-  strukturRueckgaengig: () => void;
+  /**
+   * die letzte Ersetzung zurücknehmen – ist die Struktur gerade nicht lesbar (nach „Neu laden“ einer fremden Fassung),
+   * über `strukturErsetzen`: der unlesbare Inhalt wird gesichert, die Sperre aufgehoben
+   */
+  strukturRueckgaengig: () => Promise<void>;
   /** Sicherungen der Struktur im Konfigurationsordner, neueste zuerst */
   sicherungenLesen: () => Promise<Sicherung[]>;
   /** anstehendes Schreiben sofort ausführen (statt nach der Wartezeit) */
   speichernJetzt: () => Promise<void>;
   /** projektordner.json frisch lesen (beim Wechsel in Einstellungen bzw. Vorlagen) – fremde Änderungen übernehmen */
   neuLesen: () => Promise<void>;
-  /** Konflikt lösen: die andere Fassung laden oder die eigene trotzdem speichern */
+  /** Konflikt lösen: die andere Fassung laden oder die eigene trotzdem speichern (die andere kommt vorher in die Sicherungen) */
   konfliktLoesen: (wie: 'neu-laden' | 'meine') => Promise<void>;
   setStammordner: (p: string) => void;
   setVorlagenordner: (p: string) => void;
@@ -152,6 +174,10 @@ const anfang = {
 };
 
 const fehlertext = (e: unknown) => (e instanceof Error ? e.message : String(e));
+/** Anfang der Meldung, wenn Einstellungen nicht gespeichert wurden – nach dem nächsten gelungenen Speichern entfällt sie */
+export const NICHT_GESPEICHERT = 'Einstellungen nicht gespeichert';
+/** Textansicht: eine leere Ordnerliste übernimmt sie nicht */
+export const LEERE_ORDNERLISTE = 'Die Liste enthält keinen Ordner – die bisherige Struktur bleibt bestehen. Eine leere Liste übernimmt die Textansicht nicht; alle Ordner löschen geht im Baum.';
 
 /** so lange nach der letzten Änderung wird projektordner.json geschrieben */
 export const SPEICHERN_NACH_MS = 400;
@@ -178,10 +204,12 @@ const eigenAus = (roh: unknown) => {
     struktur,
     vorlagenordner: typeof eigen.vorlagenordner === 'string' ? eigen.vorlagenordner : '',
     rohEigen: eigen,
+    // frisch gelesen: was vorher nicht geschrieben werden konnte, ist ersetzt
+    strukturNichtGeschrieben: null,
     // kein JSON-Objekt: der ganze Inhalt (rohEigen ist dann leer), sonst die unlesbare Struktur
     strukturRoh: fehler ? (roh === eigen ? eigen.struktur : roh) : null,
     strukturFehler: fehler
-      ? `Die Struktur in projektordner.json lässt sich nicht lesen (${fehler}). Angezeigt wird die Vorgabe; gespeichert wird nichts, bis Sie die Struktur bewusst ersetzen – über „Struktur laden …“, eine Sicherung oder „Vorgabe wiederherstellen …“. Der bisherige Inhalt wird dann vorher gesichert.`
+      ? `Die Struktur in projektordner.json lässt sich nicht lesen (${fehler}). Angezeigt wird die Vorgabe; Bearbeiten ist gesperrt und gespeichert wird nichts, bis Sie die Struktur bewusst ersetzen – mit „Angezeigte Struktur übernehmen …“, über „Struktur laden …“, eine Sicherung oder „Vorgabe wiederherstellen …“. Der bisherige Inhalt wird dann vorher gesichert.`
       : null,
   };
 };
@@ -203,10 +231,10 @@ export const useOrdner = create<OrdnerState>()((set, get) => {
       try {
         const wert = eigenesMit(rohEigen, struktur, vorlagenordner);
         const r = await konfigSchreibenWennUnveraendert(BEREICH, wert, konfigStandEigen);
-        if (r.ok) set({ konfigStandEigen: r.stand, rohEigen: wert });
+        if (r.ok) set({ konfigStandEigen: r.stand, rohEigen: wert, strukturNichtGeschrieben: null, ...gespeichert() });
         else set({ konflikt: { roh: r.aktuell } });
       } catch (e) {
-        set({ konfigFehler: `Einstellungen nicht gespeichert: ${fehlertext(e)}` });
+        set({ konfigFehler: `${NICHT_GESPEICHERT}: ${fehlertext(e)}`, strukturNichtGeschrieben: fehlertext(e) });
       }
     });
     return schreiben;
@@ -225,11 +253,35 @@ export const useOrdner = create<OrdnerState>()((set, get) => {
     timer = null;
     return jetztSpeichern();
   };
+  const strukturSchreiben = async () => {
+    await speichernJetzt();
+    if (get().strukturNichtGeschrieben) await jetztSpeichern();
+  };
   const allgemeinSetzen = (patch: Partial<AllgemeineEinstellungen>) => {
     const allgemein = { ...get().allgemein, ...patch };
     set({ allgemein, stammordner: allgemein.projekte[0] ?? '' });
-    allgemeinAendern(patch).catch((e) => set({ konfigFehler: `Einstellungen nicht gespeichert: ${fehlertext(e)}` }));
+    allgemeinAendern(patch).then(
+      () => set(gespeichert()),
+      (e) => set({ konfigFehler: `${NICHT_GESPEICHERT}: ${fehlertext(e)}` }),
+    );
   };
+  /**
+   * Sicherung der Struktur vor dem Ersetzen bzw. Überschreiben; scheitert sie, bleibt alles unverändert – der Fehler
+   * beginnt mit `fehler` (z. B. „Die Sicherung … ließ sich nicht anlegen – die Struktur bleibt unverändert.“)
+   */
+  const sichern = async (inhalt: Sicherung['inhalt'], grund: string, fehler: string) => {
+    const name = sicherungsName(new Date());
+    try {
+      await konfigAendern(SICHERUNGEN, (roh) => sicherungenMit(roh, { name, grund: `vor: ${grund}`, inhalt }));
+    } catch (e) {
+      throw new Error(`${fehler} (${fehlertext(e)})`);
+    }
+    return name;
+  };
+  /** nach gelungenem Speichern: eine Meldung „nicht gespeichert“ ist überholt (andere Meldungen bleiben) */
+  const gespeichert = (): Partial<OrdnerState> => (get().konfigFehler?.startsWith(NICHT_GESPEICHERT) ? { konfigFehler: null } : {});
+  /** Kennung des Einlesens des Vorlagenordners – nur der letzte Lauf beendet die Anzeige „wird gelesen“ */
+  let vorlagenLauf = 0;
   let ladevorgang: Promise<void> | null = null;
   let nochmalLaden = false;
   const konfigLadenJetzt = async () => {
@@ -274,6 +326,7 @@ export const useOrdner = create<OrdnerState>()((set, get) => {
     stammordner: anfang.allgemein.projekte[0] ?? '',
     konfig: null,
     konfigFehler: null,
+    strukturNichtGeschrieben: null,
     vorlagen: [],
     vorlagenName: '',
     vorlagenFehler: null,
@@ -282,6 +335,7 @@ export const useOrdner = create<OrdnerState>()((set, get) => {
     geladen: false,
     konfigStandEigen: null,
     konflikt: null,
+    konfliktLaeuft: false,
     strukturFehler: null,
     rohEigen: {},
     strukturRoh: null,
@@ -289,8 +343,20 @@ export const useOrdner = create<OrdnerState>()((set, get) => {
     ordnerEntwurf: null,
     setOrdnerAnsicht: (ordnerAnsicht) => set({ ordnerAnsicht }),
     setOrdnerEntwurf: (ordnerEntwurf) => set({ ordnerEntwurf }),
+    ordnerEntwurfUebernehmen: async () => {
+      const entwurf = get().ordnerEntwurf;
+      if (!entwurf) return null;
+      const { ordner } = ordnerAusTextMitMeldungen(entwurf.text);
+      // Schutz vor versehentlichem Leeren über die Textansicht; im Baum lassen sich alle Ordner einzeln löschen
+      if (!ordner.length) return LEERE_ORDNERLISTE;
+      await get().strukturErsetzen({ ...get().struktur, ordner }, 'Ordnerliste übernommen.');
+      set({ ordnerEntwurf: null });
+      return null;
+    },
     rueckgaengig: null,
     setStruktur: (struktur) => {
+      // unlesbare Struktur: Bearbeiten ist gesperrt (Struktur- und Vorlagen-Editor) – Eingaben gingen beim nächsten Laden verloren
+      if (get().strukturFehler) return;
       set({ struktur, rueckgaengig: null });
       eigeneSpeichern();
     },
@@ -300,24 +366,23 @@ export const useOrdner = create<OrdnerState>()((set, get) => {
         // eine unlesbare Struktur wird so gesichert, wie sie in der Datei steht (ein leerer Wert eingepackt – Sicherungen
         // ohne Inhalt gelten als ungültig)
         const inhalt = { struktur: (strukturFehler ? strukturRoh || { inhalt: strukturRoh } : alt) as Struktur, vorlagenordner };
-        try {
-          await konfigAendern(SICHERUNGEN, (roh) => sicherungenMit(roh, { name: sicherungsName(new Date()), grund: `vor: ${grund}`, inhalt }));
-        } catch (e) {
-          throw new Error(`Die Sicherung der bisherigen Struktur ließ sich nicht anlegen – die Struktur bleibt unverändert. (${fehlertext(e)})`);
-        }
+        await sichern(inhalt, grund, 'Die Sicherung der bisherigen Struktur ließ sich nicht anlegen – die Struktur bleibt unverändert.');
       }
       // die unlesbare Fassung lässt sich nicht „rückgängig“ herstellen – sie liegt in den Sicherungen
       set({ struktur: neu, strukturFehler: null, strukturRoh: null, rueckgaengig: strukturFehler ? null : { struktur: alt, text: grund } });
       eigeneSpeichern();
     },
-    strukturRueckgaengig: () => {
+    strukturRueckgaengig: async () => {
       const r = get().rueckgaengig;
       if (!r) return;
+      // nach „Neu laden“ einer unlesbaren fremden Fassung: wie jedes bewusste Ersetzen – sichert sie und hebt die Sperre auf
+      if (get().strukturFehler) return get().strukturErsetzen(r.struktur, 'Rückgängig: eigene Fassung wiederhergestellt.');
       set({ struktur: r.struktur, rueckgaengig: null });
       eigeneSpeichern();
     },
     sicherungenLesen: async () => sicherungenAus(await konfigLesen(SICHERUNGEN)),
     speichernJetzt,
+    strukturSchreiben,
     neuLesen: async () => {
       await speichernJetzt();
       if (get().konflikt) return;
@@ -339,13 +404,38 @@ export const useOrdner = create<OrdnerState>()((set, get) => {
         set({ ...eigenAus(k.roh), konfigStandEigen: konfigStand(k.roh), konflikt: null, rueckgaengig: { struktur: eigene, text: 'Die Struktur des anderen Rechners wurde geladen.' } });
         return;
       }
-      // die Felder der anderen Fassung, die dieses Tool nicht kennt, bleiben erhalten
-      set({ konfigStandEigen: konfigStand(k.roh), rohEigen: alsObjekt(k.roh), konflikt: null, strukturFehler: null, strukturRoh: null });
-      await jetztSpeichern();
+      // läuft schon (Doppelklick): nur eine Sicherung, ein Schreiben
+      if (get().konfliktLaeuft) return;
+      set({ konfliktLaeuft: true });
+      try {
+        // die Fassung des anderen Rechners nicht ungesichert überschreiben – sie kommt so, wie sie in der Datei steht, in die
+        // Sicherungen (auch eine für diese Fassung unlesbare Struktur; ist die Datei kein JSON-Objekt, der ganze Inhalt)
+        const fremd = alsObjekt(k.roh);
+        const fremdeStruktur = k.roh != null && fremd !== k.roh ? { inhalt: k.roh } : fremd.struktur;
+        let name: string | null = null;
+        if (fremdeStruktur != null) {
+          const grund = 'Meine Fassung trotzdem gespeichert – gesichert ist die Fassung des anderen Rechners.';
+          const vorlagenordner = typeof fremd.vorlagenordner === 'string' ? fremd.vorlagenordner : '';
+          name = await sichern({ struktur: fremdeStruktur as Struktur, vorlagenordner }, grund, 'Die Fassung des anderen Rechners ließ sich nicht sichern – nichts wurde gespeichert.');
+        }
+        // während des Sicherns anders entschieden (z. B. „Neu laden“) oder ein neuer Konflikt: nichts überschreiben
+        if (get().konflikt !== k) return;
+        // die Felder der anderen Fassung, die dieses Tool nicht kennt, bleiben erhalten
+        set({ konfigStandEigen: konfigStand(k.roh), rohEigen: fremd, konflikt: null, strukturFehler: null, strukturRoh: null });
+        await jetztSpeichern();
+        // im Protokoll erst, wenn wirklich gespeichert ist (kein neuer Konflikt, kein Schreibfehler)
+        const s = get();
+        if (!s.konflikt && !s.strukturNichtGeschrieben)
+          log.info(`Konflikt in projektordner.json: eigene Fassung gespeichert${name ? `, die des anderen Rechners liegt in den Sicherungen (${name})` : ''}`);
+      } finally {
+        set({ konfliktLaeuft: false });
+      }
     },
     setStammordner: (p) => allgemeinSetzen({ projekte: [p, ...get().allgemein.projekte.filter((x) => x !== p)].filter(Boolean) }),
     // eingelesen wird in App (bei jedem Wechsel des Ordners und der Ansicht)
     setVorlagenordner: (vorlagenordner) => {
+      // unlesbare Struktur: wie die Struktur gesperrt – gespeichert würde der Vorlagenordner ohnehin nicht
+      if (get().strukturFehler) return;
       set({ vorlagenordner, vorlagenFehler: null, ...(vorlagenordner ? {} : { vorlagen: [], vorlagenName: '' }) });
       eigeneSpeichern();
     },
@@ -370,6 +460,7 @@ export const useOrdner = create<OrdnerState>()((set, get) => {
       const ordner = get().vorlagenordner;
       if (!hatDateisystem()) return;
       if (!ordner) return set({ vorlagen: [], vorlagenFehler: null });
+      const kennung = ++vorlagenLauf;
       set({ vorlagenLaden: true });
       try {
         const vorlagen = await ladeVorlagen(tauriDateisystem, ordner);
@@ -377,7 +468,8 @@ export const useOrdner = create<OrdnerState>()((set, get) => {
       } catch (e) {
         if (get().vorlagenordner === ordner) set({ vorlagen: [], vorlagenFehler: `Vorlagenordner: ${fehlertext(e)}` });
       } finally {
-        set({ vorlagenLaden: false });
+        // ein späterer Ladevorgang läuft noch: seine Anzeige „wird gelesen“ bleibt
+        if (kennung === vorlagenLauf) set({ vorlagenLaden: false });
       }
     },
     setVorlagenImBrowser: (vorlagenName, vorlagen) => set({ vorlagenName, vorlagen, vorlagenFehler: null }),
@@ -391,6 +483,13 @@ useOrdner.subscribe((s, vorher) => {
   // eine unlesbare Struktur (es gilt nur vorläufig die Vorgabe) schreibt nichts in die gemeinsamen Einstellungen
   if (!s.geladen || s.strukturFehler || (s.struktur === vorher.struktur && s.geladen === vorher.geladen && s.strukturFehler === vorher.strukturFehler)) return;
   if (s.struktur.ordnername !== s.allgemein.ordnerSchema) s.setAllgemein({ ordnerSchema: s.struktur.ordnername });
+});
+
+// Textansicht der Ordnerliste: entspricht ein Entwurf inzwischen der Struktur (z. B. nach „Rückgängig“ oder einer
+// Änderung auf einem anderen Rechner), ist er erledigt – sonst tauchte er später als veralteter Text wieder auf
+useOrdner.subscribe((s, vorher) => {
+  if (s.struktur === vorher.struktur || !s.ordnerEntwurf || s.ordnerEntwurf.text !== ordnerAlsText(s.struktur.ordner)) return;
+  useOrdner.setState({ ordnerEntwurf: null });
 });
 
 // Speicherort der Einstellungen (core, für alle Apps): vor dem Wechsel Ausstehendes speichern, danach neu lesen –

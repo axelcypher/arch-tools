@@ -24,7 +24,15 @@ Werkzeuge in **einem Programm und einem Fenster**. Sie kann nichts weiter, als z
   Zwischenstand wieder her; PERMIO behält nicht gespeicherte Eingaben als Entwurf und zeigt sie beim erneuten
   Öffnen des Formulars wieder – nur ungespeicherte Bearbeitungen von PDF-, Excel- und Word-Dokumenten in der
   Dateiansicht gehen verloren. Bei ungespeicherten Änderungen fragt der Rahmen vor dem Herauslösen und das Fenster vor
-  dem Andocken, was mit ihnen geschieht; bei ATLAS und FABRIO, die sie verlieren würden, mit *Speichern*. Jede App ist
+  dem Andocken, was mit ihnen geschieht; bei ATLAS und FABRIO, die sie verlieren würden, mit *Speichern*. ATLAS meldet
+  als ungespeichert, was beim Beenden verloren ginge: offene Eingaben im Assistenten (geänderte Stammdaten beim
+  Ergänzen, im Trockenlauf abgewählte Einträge – nicht den Entwurf eines neuen Projekts, der gespeichert bleibt), den
+  nicht übernommenen Text der Ordnerliste und Änderungen an der Struktur, die wegen eines Konflikts mit einem anderen
+  Rechner oder eines gescheiterten Schreibens nicht gespeichert sind. *Speichern* schreibt die Struktur erneut und
+  übernimmt den Text der Ordnerliste (gesichert, mit „Rückgängig“), wenn er gültig ist und vom aktuellen Stand
+  ausgeht; den Projektordner anlegen, die Projektdatei
+  schreiben oder einen Konflikt entscheiden tut es nicht still – dann gilt „nicht gespeichert“, die Aktion unterbleibt
+  und ATLAS sagt, was noch offen ist. Jede App ist
   höchstens einmal offen – ist sie herausgelöst, holt „+“ bzw. die Startseite ihr Fenster nach vorn. Im Browser gibt
   es kein Herauslösen (dort fehlte der Weg zurück).
 - **Neues Projekt anlegen** aus jeder App: Der Knopf auf der Projektübersicht der Apps, „+“ → „Neues Projekt
@@ -127,7 +135,9 @@ am Tab bzw. in der Titelleiste ● erscheint.
    und holt FABRIO als Tab zurück. Bei QUADRIO kommt stattdessen „QUADRIO andocken?“ (Änderungen bleiben im
    Zwischenstand).
 6. **Herauslösen mit Änderungen:** FABRIO als Tab im LV ändern, ⧉. Erwartet: Frage mit *Speichern*; bei RECTIO nur
-   „RECTIO herauslösen?“. (ATLAS meldet keine ungespeicherten Änderungen und fragt deshalb nicht.)
+   „RECTIO herauslösen?“. Bei ATLAS mit geänderten Stammdaten im Assistenten (Ergänzen): Frage mit *Speichern*;
+   *Speichern* legt nichts an, ATLAS bleibt als Tab und meldet „Nicht alles gespeichert“. Mit geändertem Text der
+   Ordnerliste (Struktur, Textansicht) übernimmt *Speichern* ihn, danach wird herausgelöst.
 7. **Update mit Änderungen:** Liegt ein Update vor, in einem Tab und einem herausgelösten Fenster ändern, Update-Knopf
    → „Jetzt installieren“. Erwartet: erst die Fragen je App, *Abbrechen* bricht das Update ab; erst nach den Fragen
    wird geladen und neu gestartet.

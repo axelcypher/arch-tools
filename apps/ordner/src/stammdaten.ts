@@ -192,6 +192,30 @@ const META_TEILE: [keyof ProjectMeta, string][] = [
 /** leere Liste und fehlender Wert gelten als gleich */
 const wert = (v: unknown) => (Array.isArray(v) && !v.length ? undefined : v === '' ? undefined : v);
 
+/**
+ * Unterfelder, die dieses Tool in den Teilen der Stammdaten kennt (und schreibt) – je Feld darunter die bekannten
+ * Unterfelder eines enthaltenen Objekts. Alle übrigen, etwa von einer neueren Fassung einer App angelegt, bleiben beim
+ * Ergänzen erhalten, auch wenn der Teil geändert wird.
+ */
+type Bekannt = { felder: string[]; unter?: Record<string, Bekannt> };
+const ANSCHRIFT: Bekannt = { felder: ['strasse', 'plz', 'ort'] };
+const BEKANNTE_FELDER: Partial<Record<keyof ProjectMeta, Bekannt>> = {
+  adresse: ANSCHRIFT,
+  grundstueck: { felder: ['gemarkung', 'flur', 'flurstueck', 'flaeche'] },
+  bebauungsplan: { felder: ['nummer', 'name'] },
+  bauherr: { felder: ['name', 'vorname', 'adresse', 'kontakte'], unter: { adresse: ANSCHRIFT } },
+};
+const istObjekt = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
+
+/** neuen Wert eines Teils mit dem bisherigen zusammenführen: bekannte Unterfelder aus `neu`, unbekannte aus `alt` */
+function zusammengefuehrt(alt: unknown, neu: unknown, bekannt?: Bekannt): unknown {
+  if (!bekannt || !istObjekt(alt) || !istObjekt(neu)) return structuredClone(neu);
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(alt)) if (!bekannt.felder.includes(k)) out[k] = structuredClone(v);
+  for (const [k, v] of Object.entries(neu)) out[k] = zusammengefuehrt(alt[k], v, bekannt.unter?.[k]);
+  return out;
+}
+
 export interface ProjektdateiAenderung {
   /** was sich ändert, in Worten („Leistungsphasen“, „Vorlagen-Presets“ …); leer = nichts */
   teile: string[];
@@ -211,7 +235,10 @@ export function projektdateiAenderung(
   ziel: { struktur: { name: string; dateischema: string }; presets: string[]; namensschema?: Namensschema },
 ): ProjektdateiAenderung {
   const neu = metaAus(stamm);
-  const geaendert = META_TEILE.filter(([k]) => !gleich(wert(basis.meta[k]), wert(neu[k])));
+  // verglichen mit dem Stand beim Laden in derselben Form (bereinigt): Leerzeichen am Rand gespeicherter Werte und
+  // Unterfelder, die dieses Tool nicht kennt, gelten nicht als Änderung
+  const vorher = metaAus(stammAusMeta(basis.meta));
+  const geaendert = META_TEILE.filter(([k]) => !gleich(wert(vorher[k]), wert(neu[k])));
   const po: ProjektordnerAngaben = { struktur: ziel.struktur.name, ...(ziel.struktur.dateischema ? { dateischema: ziel.struktur.dateischema } : {}), presets: [...ziel.presets] };
   const alt = basis.projektordner ?? {};
   const poGeaendert = (['struktur', 'dateischema', 'presets'] as const).filter((k) => !gleich(wert(alt[k]), wert(po[k])));
@@ -231,7 +258,7 @@ export function projektdateiAenderung(
       const meta = { ...((roh.meta && typeof roh.meta === 'object' ? roh.meta : {}) as Record<string, unknown>) };
       for (const [k] of geaendert) {
         if (neu[k] === undefined) delete meta[k];
-        else meta[k] = structuredClone(neu[k]);
+        else meta[k] = zusammengefuehrt(meta[k], neu[k], BEKANNTE_FELDER[k]);
       }
       const bisher = (roh.projektordner && typeof roh.projektordner === 'object' ? roh.projektordner : {}) as Record<string, unknown>;
       const projektordner = { ...bisher };

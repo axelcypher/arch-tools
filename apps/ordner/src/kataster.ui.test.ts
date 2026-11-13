@@ -94,7 +94,9 @@ describe('Katasterpläne exportieren', () => {
     expect(auftrag.plaene.map((p) => p.ausgabe)).toEqual(namen.map((n) => `${ORDNER}/${n}`));
     for (const n of namen) expect(fs.eintraege.has(`${ORDNER}/${n}`)).toBe(true);
     expect(host.querySelectorAll('.ka-ergebnis.ok')).toHaveLength(4);
-    expect(host.textContent).toContain(`✓ Kataster/MUS ${d} Schwarzplan.dxf`);
+    // erledigt mit gezeichnetem Häkchen (Symbol statt „✓“)
+    expect([...host.querySelectorAll('.ka-ergebnis.ok')].map((e) => e.textContent?.trim())).toContain(`Kataster/MUS ${d} Schwarzplan.dxf`);
+    expect(host.querySelectorAll('.ka-ergebnis.ok svg.symbol')).toHaveLength(4);
 
     // noch einmal: vorhandene Dateien – überspringen heißt hier: nichts zu tun
     await klick(knopf(host, '4 Pläne exportieren'));
@@ -119,7 +121,8 @@ describe('Katasterpläne exportieren', () => {
     await klick(knopf(host, 'Vorlage aktualisieren'));
     expect(plaeneInOap()).toHaveLength(1);
     expect(vorlageLesen(plaeneInOap()[0].daten).layouts.map((l) => l.name)).toContain('Lageplan A2');
-    expect(host.textContent).toContain('✓ übernommen');
+    expect(host.querySelector('.ka-ok')?.textContent?.trim()).toBe('übernommen');
+    expect(host.querySelector('.ka-ok svg.symbol')).not.toBeNull();
   });
 
   it('Fehler je Plan aus QGIS; ohne Koordinaten kein Export', async () => {
@@ -135,7 +138,9 @@ describe('Katasterpläne exportieren', () => {
     const host = await zeige(createElement(KatasterDialog, { basis: ORDNER, name: 'BS9 Musterstraße 9', onClose: () => undefined }));
     await klick(knopf(host, '4 Pläne exportieren'));
     expect(host.querySelectorAll('.ka-ergebnis.ok')).toHaveLength(1);
-    expect(host.textContent).toContain('✗ schwarzplan: Layer nicht erreichbar');
+    const fehler = [...host.querySelectorAll('.ka-ergebnis.fehler')];
+    expect(fehler.map((e) => e.textContent?.trim())).toContain('schwarzplan: Layer nicht erreichbar');
+    expect(fehler.every((e) => e.querySelector('svg.symbol'))).toBe(true);
 
     // QGIS bricht ohne Ergebnis ab: Auszug der Fehlerausgabe
     qgis.lauf = () => ({ code: 1, ausgabe: '', fehler: 'Traceback …\nModuleNotFoundError: No module named qgis' });
@@ -298,5 +303,55 @@ describe('Export: Sperre und Dateinamen', () => {
     expect(plan.beschriftung).toBe(
       `Kartengrundlage: Liegenschaftskarte (ALKIS), Geobasis NRW, Stand ${new Date().toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })} – kein amtlicher Auszug`,
     );
+  });
+});
+
+describe('Projekt wählen: späte Ergebnisse', () => {
+  /** liste() wartet, bis das Tor aufgeht – so ist das Lesen der Projektdatei noch unterwegs */
+  const gebremst = () => {
+    let auf!: () => void;
+    const tor = new Promise<void>((r) => (auf = r));
+    const echt = fs.liste.bind(fs);
+    fs.liste = async (wurzel, tiefe) => {
+      await tor;
+      return echt(wurzel, tiefe);
+    };
+    return () => {
+      fs.liste = echt;
+      auf();
+    };
+  };
+
+  it('ein spätes Ergebnis nach projektWaehlen(null) bzw. nach einem anderen Projekt wird verworfen; Gegenprobe ohne Schließen', async () => {
+    let auf = gebremst();
+    const spaet = useKataster.getState().projektWaehlen(ORDNER, 'BS9');
+    await useKataster.getState().projektWaehlen(null);
+    auf();
+    await spaet;
+    expect(useKataster.getState().projekt).toBeNull();
+    // ein anderes Projekt inzwischen gewählt: das frühere setzt sich nicht darüber
+    auf = gebremst();
+    const frueher = useKataster.getState().projektWaehlen(ORDNER, 'BS9');
+    auf();
+    await useKataster.getState().projektWaehlen('Z:/Projekte/Anderes', 'Anderes');
+    await frueher;
+    expect(useKataster.getState().projekt?.basis).toBe('Z:/Projekte/Anderes');
+    // Gegenprobe: ohne Schließen kommt das Projekt an
+    await useKataster.getState().projektWaehlen(ORDNER, 'BS9');
+    expect(useKataster.getState().projekt?.basis).toBe(ORDNER);
+    expect(useKataster.getState().projekt?.oap).not.toBeNull();
+  });
+
+  it('Dialog geschlossen, bevor die Projektdatei gelesen ist: danach ist kein Projekt gewählt', async () => {
+    const auf = gebremst();
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    root = createRoot(host);
+    act(() => root!.render(createElement(KatasterDialog, { basis: ORDNER, name: 'BS9 Musterstraße 9', onClose: () => undefined })));
+    act(() => root!.unmount());
+    root = null;
+    auf();
+    for (let i = 0; i < 4; i++) await warte();
+    expect(useKataster.getState().projekt).toBeNull();
   });
 });

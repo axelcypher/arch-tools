@@ -109,7 +109,7 @@ describe('Mails prüfen und benennen', () => {
     expect(zeile().textContent).toContain('Name ist eine E-Mail-Adresse – nur der Nachname');
     expect(zeile().querySelector('.po-mail-ordner')!.textContent).toBe('04 Schriftverkehr/Bauherr');
     // ohne eigene Domain: Richtung aus dem bisherigen Namen, Absender der Nachricht – und der Vorschlag der Domain
-    expect(host.querySelector('.po-hinweis')!.textContent).toContain('architekten-beispiel.example');
+    expect(host.querySelector('.meldung:not(.ok):not(.warnung):not(.fehler)')!.textContent).toContain('architekten-beispiel.example');
     act(() => knopf(host, 'Übernehmen').click());
     await warten();
     expect(useMails.getState().eigene).toEqual(['architekten-beispiel.example']);
@@ -209,7 +209,9 @@ describe('Mails prüfen und benennen', () => {
       ordner.dispatchEvent(new Event('change', { bubbles: true }));
     });
     expect(zeile('AW Raumaufteilung').querySelector('.po-mail-problem')!.textContent).toContain('diesen Namen gibt es in dem Ordner schon');
-    act(() => knopf(zeile('AW Raumaufteilung'), '×').click());
+    const verwerfen = zeile('AW Raumaufteilung').querySelector<HTMLButtonElement>('button[aria-label$=" verwerfen"]')!;
+    expect(verwerfen.querySelector('svg.symbol')).not.toBeNull();
+    act(() => verwerfen.click());
     await act(async () => knopf(host, 'Alle ablegen').click());
     await warten();
     expect([...fs.eintraege.keys()]).toContain('/p/BSP Sanierung/04 Schriftverkehr/Bauherr/BSP von Muster 261112 Türen Flurseite.msg');
@@ -342,8 +344,8 @@ describe('Mails: Bedienung per Tastatur', () => {
     act(() => knopf(host.querySelector('.po-ablage')!, 'wählen …').click());
     expect(geoeffnet).toBe(1);
     // der Hinweis auf „Eigene Domains“ steht einmal über der Liste, nicht in jeder Zeile
-    expect(host.querySelectorAll('.po-mails .po-hinweis').length).toBe(1);
-    expect(host.querySelector('.po-mails .po-hinweis')!.textContent).toContain('links unter „Eigene Domains“ eintragen');
+    expect(host.querySelectorAll('.po-mails .meldung:not(.ok):not(.warnung):not(.fehler)').length).toBe(1);
+    expect(host.querySelector('.po-mails .meldung:not(.ok):not(.warnung):not(.fehler)')!.textContent).toContain('links unter „Eigene Domains“ eintragen');
     expect(host.textContent).not.toContain('in den Einstellungen festlegen');
   });
 });
@@ -471,5 +473,86 @@ describe('Mails: kein Rennen beim Einlesen', () => {
     expect(neuerName('zwei.msg')).toContain('Absender max@extern.example');
     expect(neuerName('zwei.msg')).not.toContain('Richtung aus dem bisherigen Namen');
     expect(host.querySelector('.busy')).toBeNull();
+  });
+});
+
+describe('Mails: Sammel-Umbenennen und Pfadlänge', () => {
+  const mail = (thema: string, tag: string) => testMsg({ betreff: thema, vonName: 'Muster, Max', vonMail: 'max@extern.example', an: [], gesendet: mittag(tag), empfangen: mittag(tag) });
+
+  it('mehrere Mails umbenennen: erst nach Rückfrage mit Anzahl und Vorschau – Abbrechen ändert nichts', async () => {
+    const fs = new SpeicherDateisystem();
+    const p = createProject('Haus');
+    p.meta.projektcode = 'BSP';
+    await projektdateiAnlegen(fs, '/p/BSP Haus', 'BSP.oap', p, 'Test');
+    for (let i = 1; i <= 6; i++) await fs.dateiAnlegen('/p/BSP Haus', `Post/m${i}.msg`, mail(`Thema ${i}`, `2026-11-0${i}`));
+    useMails.setState({ eigene: ['architekten-beispiel.example'] });
+    const host = zeigen(fs, '/p/BSP Haus');
+    await warten();
+    const msg = () => [...fs.eintraege.keys()].filter((x) => x.endsWith('.msg')).sort();
+    const vorher = msg();
+    await act(async () => knopf(host, '6 Mails umbenennen').click());
+    await warten();
+    const dialog = () => document.body.querySelector('.modal');
+    expect(dialog()!.querySelector('h3')!.textContent).toBe('6 Mails umbenennen?');
+    const text = dialog()!.querySelector('.rf-text')!.textContent!;
+    expect(text).toContain('m1.msg\n   → BSP von Muster 261101 Thema 1.msg');
+    expect(text).toContain('m4.msg');
+    expect(text).not.toContain('m5.msg');
+    expect(text).toContain('… und 2 weitere');
+    expect(text).toContain('rückgängig machen lässt es sich nicht');
+    act(() => knopf(dialog()!, 'Abbrechen').click());
+    await warten();
+    expect(msg()).toEqual(vorher);
+    await act(async () => knopf(host, '6 Mails umbenennen').click());
+    await warten();
+    await act(async () => knopf(dialog()!, 'Umbenennen').click());
+    await warten();
+    expect(msg()).toContain('/p/BSP Haus/Post/BSP von Muster 261106 Thema 6.msg');
+    expect(msg().some((x) => /\/m\d\.msg$/.test(x))).toBe(false);
+  });
+
+  it('Gegenprobe: eine einzelne Mail wird ohne Rückfrage umbenannt', async () => {
+    const fs = new SpeicherDateisystem();
+    const p = createProject('Haus');
+    p.meta.projektcode = 'BSP';
+    await projektdateiAnlegen(fs, '/p/BSP Haus', 'BSP.oap', p, 'Test');
+    await fs.dateiAnlegen('/p/BSP Haus', 'Post/m1.msg', mail('Thema 1', '2026-11-01'));
+    useMails.setState({ eigene: ['architekten-beispiel.example'] });
+    const host = zeigen(fs, '/p/BSP Haus');
+    await warten();
+    await act(async () => knopf(host, '1 Mail umbenennen').click());
+    await warten();
+    expect(document.body.querySelector('.modal')).toBeNull();
+    expect([...fs.eintraege.keys()]).toContain('/p/BSP Haus/Post/BSP von Muster 261101 Thema 1.msg');
+  });
+
+  it('zu langer Zielpfad: Klartext in der Zeile, Umbenennen und Ablegen gesperrt; Gegenprobe mit kürzerem Thema', async () => {
+    const fs = new SpeicherDateisystem();
+    const p = createProject('Haus');
+    p.meta.projektcode = 'BSP';
+    // Projektordner mit 200 Zeichen: Name „BSP von Muster 261101 …“ mit langem Thema überschreitet 260
+    const ordner = `/p/BSP ${'x'.repeat(193)}`;
+    expect(ordner.length).toBe(200);
+    await projektdateiAnlegen(fs, ordner, 'BSP.oap', p, 'Test');
+    const lang = 'Abstimmung der Ausführungsplanung Tragwerk';
+    await fs.dateiAnlegen(ordner, 'Post/m1.msg', mail(lang, '2026-11-01'));
+    useMails.setState({ eigene: ['architekten-beispiel.example'] });
+    const host = zeigen(fs, ordner);
+    await warten();
+    const zeile = () => [...host.querySelectorAll('.po-mail')].find((z) => z.textContent?.includes('m1.msg'))!;
+    expect(zeile().querySelector('.po-mail-problem')!.textContent).toMatch(/Pfad zu lang \(\d+ Zeichen, Windows erlaubt höchstens 259\) – Thema oder Name kürzen/);
+    expect(knopf(zeile(), 'Umbenennen').disabled).toBe(true);
+    // ablegen: dieselbe Prüfung
+    await fallenLassen(host, [new File([mail(lang, '2026-11-02')], 'Neu.msg')]);
+    const neu = host.querySelector('.po-mail.neu')!;
+    expect(neu.querySelector('.po-mail-problem')!.textContent).toContain('Pfad zu lang');
+    expect(knopf(neu, 'Ablegen').disabled).toBe(true);
+    // Gegenprobe: kürzeres Thema – der Pfad passt
+    eintippen(zeile().querySelector('input[aria-label="Thema"]') as HTMLInputElement, 'Tragwerk');
+    expect(zeile().querySelector('.po-mail-problem')).toBeNull();
+    expect(knopf(zeile(), 'Umbenennen').disabled).toBe(false);
+    await act(async () => knopf(zeile(), 'Umbenennen').click());
+    await warten();
+    expect([...fs.eintraege.keys()]).toContain(`${ordner}/Post/BSP von Muster 261101 Tragwerk.msg`);
   });
 });

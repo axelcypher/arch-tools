@@ -81,7 +81,7 @@ describe('Prüfbericht', () => {
     const unten = [...host.querySelectorAll('.button-row')].pop()!;
     expect([...unten.querySelectorAll('button')].map((b) => b.textContent)).toEqual(['Als CSV speichern …', 'Projekt ergänzen …']);
     // Rückkehr steht oben am Bericht (es gibt eine Projektliste)
-    expect(knopf(host.querySelector('.po-bericht-kopf')!, '← Zur Projektliste')).toBeTruthy();
+    expect(knopf(host.querySelector('.po-bericht-kopf')!, 'Zur Projektliste')).toBeTruthy();
   });
 
   it('Teilstand nach Fehler beim Anlegen: Bericht neu geprüft und Fehler mit Zahl genannt', async () => {
@@ -90,7 +90,7 @@ describe('Prüfbericht', () => {
     fs.bisFehler = 2;
     await act(async () => knopf(host, '7 fehlende Ordner anlegen').click());
     await warten();
-    expect(host.querySelector('.warning')?.textContent).toBe('2 von 7 Ordnern angelegt, dann Fehler: Netzlaufwerk nicht erreichbar');
+    expect(host.querySelector('.meldung.fehler[role="alert"]')?.textContent).toBe('2 von 7 Ordnern angelegt, dann Fehler: Netzlaufwerk nicht erreichbar');
     expect(knopf(host, '5 fehlende Ordner anlegen')).toBeTruthy();
   });
 

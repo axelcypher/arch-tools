@@ -3,6 +3,7 @@ import type { ProjektordnerEintrag } from '@core/platform/projektordner';
 import { projekteAuflisten } from '@core/platform/projektordner';
 import { saveTextFile } from '@core/platform/files';
 import { logger } from '@core/platform/log';
+import { Symbol } from '@core/ui/Symbol';
 import type { Dateisystem } from '../dateisystem';
 import { hatDateisystem, oeffneOrdner, tauriDateisystem, waehleOrdner, waehleOrdnerImBrowser } from '../dateisystem';
 import type { GeladenerOrdner } from '../projekt';
@@ -145,7 +146,7 @@ export function PruefView({ onErgaenzen, onMails, fs: fsVorgabe, start }: { onEr
         .map(([n, eins, mehr]) => `${n} ${n === 1 ? eins : mehr}`)
         .join(' · ')
     : '';
-  const zurueck = alle ? '← Zur Übersicht' : '← Zur Projektliste';
+  const zurueck = alle ? 'Zur Übersicht' : 'Zur Projektliste';
   const gefiltert = suche.trim() ? projekte.filter((p) => `${p.gruppe ?? ''} ${p.name}`.toLowerCase().includes(suche.trim().toLowerCase())) : projekte;
 
   return (
@@ -176,7 +177,7 @@ export function PruefView({ onErgaenzen, onMails, fs: fsVorgabe, start }: { onEr
           )}
           {laeuft && <span className="busy">{laeuft}</span>}
         </div>
-        {fehler && <p className="warning">{fehler}</p>}
+        {fehler && <p className="meldung fehler" role="alert">{fehler}</p>}
 
         {projekte.length > 0 && !g && !alle && (
           <>
@@ -234,7 +235,9 @@ export function PruefView({ onErgaenzen, onMails, fs: fsVorgabe, start }: { onEr
             </div>
             <div className="button-row">
               <button onClick={() => csvSpeichern(`Prüfung aller Projekte ${new Date().toISOString().slice(0, 10)}`, sammelCsv(alle))}>{CSV_KNOPF}</button>
-              <button onClick={() => setAlle(null)}>← Zur Projektliste</button>
+              <button onClick={() => setAlle(null)}>
+                <Symbol name="pfeilLinks" /> Zur Projektliste
+              </button>
             </div>
           </>
         )}
@@ -251,7 +254,7 @@ export function PruefView({ onErgaenzen, onMails, fs: fsVorgabe, start }: { onEr
               </h3>
               {(projekte.length > 0 || alle) && (
                 <button className="small" onClick={() => setG(null)}>
-                  {zurueck}
+                  <Symbol name="pfeilLinks" /> {zurueck}
                 </button>
               )}
             </div>
