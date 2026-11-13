@@ -125,7 +125,7 @@ export function GrzGfzView() {
   const grz2Fehler = m.grzIIMax !== undefined && m.grz !== undefined && m.grzIIMax < m.grz ? 'Kleiner als die GRZ – die GRZ II umfasst die Hauptanlage mit.' : undefined;
   return (
     <div className="grz-view">
-      <div className="grz-ergebnis-leiste" aria-label="Ergebnis">
+      <div className="grz-ergebnis-leiste" role="group" aria-label="Ergebnis">
         <ErgebnisWert titel={n.recht.baunvo === '1990' ? 'GRZ I' : 'GRZ'} wert={kennzahlWert(n.grz)} s={n.grz.status} />
         {n.grz2 && <ErgebnisWert titel="GRZ II" wert={kennzahlWert(n.grz2)} s={n.grz2.status} />}
         <ErgebnisWert titel="GFZ" wert={kennzahlWert(n.gfz)} s={n.gfz.status} />
@@ -149,17 +149,16 @@ export function GrzGfzView() {
           </Field>
         </div>
         <h3>Bebauungsplan</h3>
-        <div className="field-row">
+        <div className="field-row grz-bplan-zeile">
           <Field label="Nummer">
             <TextField value={project.meta.bebauungsplan?.nummer ?? ''} onChange={(v) => setBplan({ nummer: v })} />
           </Field>
-          <Field label="in Kraft seit">
-            <input type="date" value={m.planDatum ?? ''} onChange={(e) => setM({ planDatum: e.target.value || undefined })} />
+          <Field label="Name">
+            <TextField value={project.meta.bebauungsplan?.name ?? ''} onChange={(v) => setBplan({ name: v })} />
           </Field>
         </div>
-        <p className="field-hint grz-hinweis-zeile">Datum leer = kein Bebauungsplan (§ 34/35 BauGB), aktuelles Recht.</p>
-        <Field label="Name">
-          <TextField value={project.meta.bebauungsplan?.name ?? ''} onChange={(v) => setBplan({ name: v })} />
+        <Field label="in Kraft seit" hint="leer = kein Bebauungsplan (§ 34/35 BauGB), aktuelles Recht">
+          <input type="date" value={m.planDatum ?? ''} onChange={(e) => setM({ planDatum: e.target.value || undefined })} />
         </Field>
 
         <h2>
@@ -208,7 +207,11 @@ export function GrzGfzView() {
         {n.recht.baunvo === '1990' && (
           <Field label="GRZ II höchstens" hint="leer = 1,5 × GRZ, höchstens 0,8 (§ 19 Abs. 4 S. 2)">
             <NumberField value={m.grzIIMax} allowEmpty min={0} max={1} onChange={(v) => setM({ grzIIMax: v })} />
-            {grz2Fehler && <span className="feld-meldung">{grz2Fehler}</span>}
+            {grz2Fehler && (
+              <span className="feld-meldung" role="alert">
+                {grz2Fehler}
+              </span>
+            )}
           </Field>
         )}
         <div className="field-row">
@@ -285,7 +288,7 @@ export function GrzGfzView() {
             <NumberField value={m.dachaufbau} allowEmpty min={0} max={2} placeholder="0,30" onChange={(v) => setM({ dachaufbau: v })} />
           </Field>
           {n.aufenthaltZaehlt && (
-            <Field label="Wandzuschlag [m]" hint="leer = 0,25 m; Umfassungswände der Aufenthaltsräume">
+            <Field label="Wandzuschlag [m]" hint="leer = 0,25 m">
               <NumberField value={m.wandzuschlag} allowEmpty min={0} max={2} placeholder="0,25" onChange={(v) => setM({ wandzuschlag: v })} />
             </Field>
           )}

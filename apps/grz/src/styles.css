@@ -69,6 +69,9 @@
   flex: 1 1 0;
   min-width: 0;
 }
+.grz-fest .grz-bplan-zeile > .field:first-child {
+  flex: 0 0 34%;
+}
 .grz-fest .toggle.block,
 .lp-eigenschaften .toggle.block {
   display: flex;
