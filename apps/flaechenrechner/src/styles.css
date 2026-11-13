@@ -268,6 +268,15 @@
 
 /* Werkzeugleiste bis 1600 px etwas knapper, damit sie bei 1440 px in eine Zeile passt */
 @media (max-width: 1600px) {
+  .toolbar {
+    gap: 2px;
+  }
+
+  .toolbar .tb-group {
+    gap: 2px;
+    padding-right: 4px;
+  }
+
   .toolbar button {
     padding: 4px 6px;
   }
