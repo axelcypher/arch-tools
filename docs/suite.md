@@ -169,8 +169,8 @@ am Tab bzw. in der Titelleiste ● erscheint.
 9. **Neustart:** Eine App herauslösen, Arkly beenden und neu starten. Erwartet: Die App ist wieder als Tab da.
 10. **Verzögertes Schreiben** (ATLAS, QUADRIO und TERRIO melden `vorDemSchliessen` an): In ATLAS etwas ändern bzw. in
     QUADRIO oder im Lageplan von TERRIO eine Fläche zeichnen oder verschieben und sofort (innerhalb einer halben
-    Sekunde) den Tab schließen bzw. Arkly beenden. Erwartet: Die Änderung ist nach dem Neustart da. Hängt das Netzlaufwerk, erscheint nach etwa 5 s „ATLAS
-    speichert noch“; scheitert das Schreiben sofort und die App meldet das (`false` bzw. Fehler), „ATLAS konnte nicht
+    Sekunde) den Tab schließen bzw. Arkly beenden. Erwartet: Die Änderung ist nach dem Neustart da. Hängt das
+    Netzlaufwerk, erscheint nach etwa 5 s „ATLAS speichert noch“; scheitert das Schreiben sofort und die App meldet das (`false` bzw. Fehler), „ATLAS konnte nicht
     speichern“. Enter bzw. „Weiter warten“ wartet erneut, „Erneut versuchen“ speichert noch einmal (bleibt das
     Laufwerk getrennt, erscheint die Rückfrage wieder), Esc bzw. „Abbrechen“ lässt Tab bzw. Fenster offen, „Trotzdem
     schließen“ schließt. Bei QUADRIO und TERRIO (lokale IndexedDB) erscheinen die Rückfragen praktisch
