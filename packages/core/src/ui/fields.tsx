@@ -143,8 +143,8 @@ export function NumberField({
         onBlur={commit}
         onKeyDown={(e) => {
           if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
-          if (e.key === 'Escape') {
-            // Esc verwirft die Eingabe – und schließt nicht zugleich den Dialog
+          // Esc verwirft eine Eingabe – und schließt dann nicht zugleich den Dialog; ohne Eingabe schließt Esc ihn sofort
+          if (e.key === 'Escape' && (bearbeitet.current || fehler)) {
             e.stopPropagation();
             bearbeitet.current = false;
             setFehler(null);
@@ -225,7 +225,7 @@ export function TextField({
         onBlur={commit}
         onKeyDown={(e) => {
           if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
-          if (e.key === 'Escape') {
+          if (e.key === 'Escape' && textRef.current !== value) {
             e.stopPropagation();
             textRef.current = value;
             setText(value);
