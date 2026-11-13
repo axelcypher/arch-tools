@@ -95,7 +95,7 @@ export function Textbibliothek({ onClose, onUebernehmen, ersetzen = false }: { o
         <div className="ava-bib-vorschau">
           {v ? (
             <>
-              <h3>{v.kurztext}</h3>
+              <h3 className="ava-bib-titel">{v.kurztext}</h3>
               <div className="muted small-text">
                 {[v.einheit && `Einheit ${v.einheit}`, v.kostengruppe && `KG ${v.kostengruppe}`, v.richtpreis !== undefined && `Richtpreis ${zahlDE(v.richtpreis, 2)} €`].filter(Boolean).join(' · ')}
               </div>

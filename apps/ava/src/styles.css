@@ -1940,7 +1940,7 @@ input.ava-fehler {
 }
 
 /* Unterabschnitt im Dialog (z. B. „OZ-Maske“): h3 nach docs/design.md, nicht in Browser-Vorgabe */
-.modal h3:not(.modal-kopf) {
+.modal h3:not(.modal-kopf, .ava-bib-titel) {
   font-size: var(--fs-s);
   font-weight: 600;
 }
