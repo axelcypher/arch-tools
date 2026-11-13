@@ -37,10 +37,13 @@ describe('Vor dem Schließen: laufendes Schreiben abwarten (Arkly vorDemSchliess
     expect(erledigt).toBe(true);
   });
 
-  it('ein fehlgeschlagener Schreibvorgang zählt als fertig (kein Hängen)', async () => {
+  it('ein gescheiterter Schreibvorgang beendet das Warten und meldet „nicht gespeichert“ (false)', async () => {
     const p = schreibend(Promise.reject(new Error('gesperrt')));
     p.catch(() => {});
-    await expect(ausstehendesSchreibenAbwarten()).resolves.toBeUndefined();
+    await expect(ausstehendesSchreibenAbwarten()).resolves.toBe(false);
+    // Gegenprobe: erfolgreiches Schreiben → true
+    void schreibend(Promise.resolve());
+    await expect(ausstehendesSchreibenAbwarten()).resolves.toBe(true);
   });
 
   it('übernimmt die laufende Eingabe genau einmal, auch bei mehrfachem Aufruf', async () => {
