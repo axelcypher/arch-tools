@@ -176,6 +176,39 @@ describe('Formulare schnell nacheinander öffnen', () => {
     expect(await ds.sperrePruefen(ROOT, sperrPfad(ZWEITES))).not.toBeNull();
   });
 
+  it('das überholte Lösen der Sperre dauert (Netzlaufwerk): die Liste zeigt danach kein Schloss mehr am ersten', async () => {
+    const ds = await projekt();
+    const [e1, e2] = [ERSTES, ZWEITES].map((p) => useFormulare.getState().formulare.find((f) => f.pfad === p)!);
+    // das Lösen der Sperre des ersten hält an, bis das zweite geöffnet ist und die Liste schon gelesen hat
+    const loesen = ds.sperreLoesen.bind(ds);
+    let weiter: () => void = () => undefined;
+    const angehalten = new Promise<void>((r) => (weiter = r));
+    ds.sperreLoesen = async (root, pfad, inhalt) => {
+      if (pfad === sperrPfad(ERSTES)) await angehalten;
+      return loesen(root, pfad, inhalt);
+    };
+    // das erste sperrt schon (Sperrdatei angelegt), da wird das zweite angeklickt
+    const setzen = ds.sperreSetzen.bind(ds);
+    let gesetzt: () => void = () => undefined;
+    const sperreDa = new Promise<void>((r) => (gesetzt = r));
+    ds.sperreSetzen = async (root, pfad, daten) => {
+      const ok = await setzen(root, pfad, daten);
+      if (pfad === sperrPfad(ERSTES)) gesetzt();
+      return ok;
+    };
+    const a = useFormulare.getState().formularOeffnen(e1);
+    await sperreDa;
+    const b = useFormulare.getState().formularOeffnen(e2);
+    await b;
+    expect(useFormulare.getState().offen!.pfad).toBe(ZWEITES);
+    // Gegenprobe: solange die Sperre liegt, steht das Schloss am ersten
+    expect(useFormulare.getState().formulare.find((f) => f.pfad === ERSTES)!.gesperrt).toBe(true);
+    weiter();
+    await a;
+    expect(await ds.sperrePruefen(ROOT, sperrPfad(ERSTES))).toBeNull();
+    expect(useFormulare.getState().formulare.find((f) => f.pfad === ERSTES)!.gesperrt).toBe(false);
+  });
+
   it('auch während ein Speichern läuft: der überholte Klick sperrt nichts', async () => {
     const ds = await projekt();
     const o = await oeffnen(ERSTES);
