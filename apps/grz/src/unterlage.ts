@@ -8,6 +8,41 @@ import type { RasterBackground } from '@core/model';
 
 /** längste Bildseite einer PDF-Seite in Pixeln (der Lageplan braucht weniger als ein Grundriss) */
 const PDF_MAX = 3000;
+/** größere Bilder werden verkleinert: die Unterlage liegt als Bild in der Projektdatei und in jedem Zwischenstand */
+export const BILD_MAX = 4000;
+/** größere Dateien werden gar nicht erst gelesen */
+export const DATEI_MAX_MB = 40;
+
+/** Unterlage zu groß – die Meldung ist für die Oberfläche formuliert */
+export class UnterlageZuGross extends Error {}
+
+/** Zielgröße eines Bilds mit höchstens `max` Pixeln an der längsten Seite (Seitenverhältnis bleibt) */
+export function zielGroesse(w: number, h: number, max = BILD_MAX): { w: number; h: number; verkleinert: boolean } {
+  const s = Math.max(w, h);
+  if (s <= max) return { w, h, verkleinert: false };
+  const k = max / s;
+  return { w: Math.round(w * k), h: Math.round(h * k), verkleinert: true };
+}
+
+/** Bild auf die Zielgröße verkleinern (Fotos als JPEG, sonst PNG) */
+async function verkleinern(dataUrl: string, w: number, h: number): Promise<{ dataUrl: string; w: number; h: number }> {
+  const z = zielGroesse(w, h);
+  if (!z.verkleinert) return { dataUrl, w, h };
+  const img = new Image();
+  await new Promise<void>((resolve, reject) => {
+    img.onload = () => resolve();
+    img.onerror = () => reject(new Error('Das Bild ließ sich nicht lesen.'));
+    img.src = dataUrl;
+  });
+  const canvas = document.createElement('canvas');
+  canvas.width = z.w;
+  canvas.height = z.h;
+  canvas.getContext('2d')!.drawImage(img, 0, 0, z.w, z.h);
+  const out = canvas.toDataURL(dataUrl.startsWith('data:image/jpeg') ? 'image/jpeg' : 'image/png', 0.9);
+  canvas.width = 0;
+  canvas.height = 0;
+  return { dataUrl: out, w: z.w, h: z.h };
+}
 
 async function bildGroesse(dataUrl: string): Promise<{ w: number; h: number }> {
   return new Promise((resolve, reject) => {
@@ -51,8 +86,17 @@ async function pdfSeite(daten: ArrayBuffer): Promise<{ dataUrl: string; w: numbe
 
 /** Datei als Unterlage einlesen; `ausschnitt` (Weltmaß) bestimmt Lage und vorläufigen Maßstab */
 export async function unterlageLesen(datei: File, ausschnitt: { x: number; y: number; w: number; h: number }): Promise<RasterBackground> {
+  if (datei.size > DATEI_MAX_MB * 1024 * 1024)
+    throw new UnterlageZuGross(
+      `Die Datei „${datei.name}“ ist ${Math.round(datei.size / 1024 / 1024)} MB groß; höchstens ${DATEI_MAX_MB} MB sind möglich. Bitte als PDF mit einer Seite oder als kleineres Bild (PNG, JPG) speichern.`,
+    );
   const pdf = /\.pdf$/i.test(datei.name) || datei.type === 'application/pdf';
-  const { dataUrl, w, h } = pdf ? await pdfSeite(await datei.arrayBuffer()) : await alsDataUrl(datei).then(async (d) => ({ dataUrl: d, ...(await bildGroesse(d)) }));
+  const { dataUrl, w, h } = pdf
+    ? await pdfSeite(await datei.arrayBuffer())
+    : await alsDataUrl(datei).then(async (d) => {
+        const g = await bildGroesse(d);
+        return verkleinern(d, g.w, g.h);
+      });
   const metersPerPixel = Math.min(ausschnitt.w / w, ausschnitt.h / h);
   return { type: 'raster', name: datei.name, dataUrl, widthPx: w, heightPx: h, metersPerPixel, x: ausschnitt.x, y: ausschnitt.y, opacity: 0.5, visible: true };
 }

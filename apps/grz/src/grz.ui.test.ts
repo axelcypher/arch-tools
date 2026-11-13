@@ -873,3 +873,55 @@ describe('Gesamt-Review: Bedienung der Oberfläche', () => {
     expect(host.querySelector('#grz-grundstueck')!.textContent).toContain('Grundstücksfläche im Bauland');
   });
 });
+
+describe('Folgerunde: Undo, Einstieg, Gesten, Unterlage', () => {
+  it('Rückgängig bis zum gespeicherten Stand gilt als gespeichert; Wiederholen wieder als geändert (ohne Datei bleibt es geändert)', () => {
+    const p = projekt();
+    useGrz.getState().load(p, 'a.oap', p);
+    act(() => useGrz.getState().update((x) => ({ ...x, name: 'Neu' }), undefined, 'Name'));
+    expect(useGrz.getState().dirty).toBe(true);
+    act(() => useGrz.getState().undo());
+    expect(useGrz.getState().dirty).toBe(false);
+    act(() => useGrz.getState().redo());
+    expect(useGrz.getState().dirty).toBe(true);
+    useGrz.getState().load(projekt());
+    act(() => useGrz.getState().update((x) => ({ ...x, name: 'Neu' }), undefined, 'Name'));
+    act(() => useGrz.getState().undo());
+    expect(useGrz.getState().dirty).toBe(true);
+  });
+
+  it('„Speichern“ ist auf der Einstiegsseite gesperrt, nach „Neues Projekt“ frei', async () => {
+    useGrz.getState().load(createProject());
+    const host = render(App);
+    const speichern = () => [...host.querySelectorAll('.toolbar button')].find((b) => b.textContent?.startsWith('Speichern')) as HTMLButtonElement;
+    expect(speichern().disabled).toBe(true);
+    await act(async () => ([...host.querySelectorAll('button')].find((b) => b.textContent === 'Neues Projekt') as HTMLButtonElement).click());
+    expect(speichern().disabled).toBe(false);
+  });
+
+  it('Abgebrochene Geste (pointercancel) übernimmt nichts (Gegenprobe: pointerup übernimmt)', () => {
+    useGrz.getState().load(projekt());
+    const host = render(GrzGfzView);
+    const svg = host.querySelector('svg.grz-skizze')!;
+    const vorher = useGrz.getState().project.lageplan!.flaechen[0].points;
+    const ev = (typ: string, q: { x: number; y: number }) => act(() => svg.dispatchEvent(new PointerEvent(typ, { bubbles: true, button: 0, pointerId: 1, ...bildpunkt(svg, q) })));
+    ev('pointerdown', { x: 13.5, y: 5 });
+    ev('pointermove', { x: 15.5, y: 5 });
+    ev('pointercancel', { x: 15.5, y: 5 });
+    ev('pointerup', { x: 15.5, y: 5 });
+    expect(useGrz.getState().project.lageplan!.flaechen[0].points).toEqual(vorher);
+    ev('pointerdown', { x: 13.5, y: 5 });
+    ev('pointermove', { x: 15.5, y: 5 });
+    ev('pointerup', { x: 15.5, y: 5 });
+    expect(useGrz.getState().project.lageplan!.flaechen[0].points[0].x).toBeCloseTo(vorher[0].x + 2, 1);
+  });
+
+  it('Unterlage: große Bilder werden verkleinert, zu große Dateien mit verständlicher Meldung abgelehnt', async () => {
+    const { zielGroesse, unterlageLesen, UnterlageZuGross, BILD_MAX } = await import('./unterlage');
+    expect(zielGroesse(8000, 4000)).toEqual({ w: BILD_MAX, h: BILD_MAX / 2, verkleinert: true });
+    expect(zielGroesse(3000, 2000)).toEqual({ w: 3000, h: 2000, verkleinert: false });
+    const gross = { name: 'plan.png', type: 'image/png', size: 60 * 1024 * 1024 } as File;
+    await expect(unterlageLesen(gross, { x: 0, y: 0, w: 10, h: 10 })).rejects.toBeInstanceOf(UnterlageZuGross);
+    await expect(unterlageLesen(gross, { x: 0, y: 0, w: 10, h: 10 })).rejects.toThrow(/höchstens 40 MB/);
+  });
+});

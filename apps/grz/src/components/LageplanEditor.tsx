@@ -16,7 +16,7 @@ import { unterlageKalibrieren, unterlageVerschieben } from '@core/kalibrierung';
 import { frageText, meldung } from '@core/ui/Rueckfrage';
 import { newId } from '@core/model';
 import type { LageplanNutzung, Project, RasterBackground } from '@core/model';
-import { unterlageLesen } from '../unterlage';
+import { unterlageLesen, UnterlageZuGross } from '../unterlage';
 import type { Werkzeug } from '../store';
 
 export interface Ausschnitt {
@@ -464,6 +464,15 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
     }
   };
 
+  /** abgebrochene Geste (Stift, Touch, Fokuswechsel): nichts übernehmen, keine halben Zustände */
+  const gesteAbbrechen = () => {
+    ziehen.current = null;
+    setVorschau(null);
+    setRahmen(null);
+    setLinien([]);
+    setKfang(null);
+  };
+
   const onPointerUp = () => {
     const z = ziehen.current;
     ziehen.current = null;
@@ -562,6 +571,7 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
     try {
       setUnterlage(await unterlageLesen(datei, vb));
     } catch (e) {
+      if (e instanceof UnterlageZuGross) return void (await meldung('Unterlage zu groß', e.message));
       await meldung('Unterlage ließ sich nicht lesen', `Die Datei „${datei.name}“ ist kein lesbares Bild (PNG, JPG) bzw. PDF.`, e);
     }
   };
@@ -933,6 +943,7 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
           onPointerDownCapture={() => svgRef.current?.focus({ preventScroll: true, focusVisible: false } as FocusOptions)}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
+        onPointerCancel={gesteAbbrechen}
           onPointerLeave={() => setCursor(null)}
           onContextMenu={(e) => e.preventDefault()}
         >
