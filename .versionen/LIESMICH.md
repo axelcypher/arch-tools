@@ -5,7 +5,7 @@ Versionen setzt nur der Release-Lauf. Ein PR, der Code einer App ändert (`apps/
 `.versionen/<zweig>.json`. Dateien mit verschiedenen Namen kollidieren nie – so gibt es kein Wettrennen um
 Versionsnummern.
 
-Eine Änderung am Kern betrifft nur die Apps (außer Arkly), die die Datei einbinden – über Importe, auch über andere
+Eine Änderung am Kern betrifft nur die Apps (außer Arkly, siehe unten), die die Datei einbinden – über Importe, auch über andere
 Kerndateien, bzw. `include!` bei den Rust-Befehlen (`scripts/kern-nutzer.mjs`). Was sich nicht sicher zuordnen lässt
 (Konfiguration wie `package.json`, Typdeklarationen, gelöschte Dateien), gilt für alle. Welche Apps es sind, nennt die
 CI-Meldung samt Vorlage; lokal: `node scripts/versionen-pruefen.mjs main HEAD` (mit sauberem Arbeitsbaum nach

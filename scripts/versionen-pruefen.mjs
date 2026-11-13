@@ -4,7 +4,7 @@
 // eindeutigem Namen an (.versionen/<zweig>.json, Format in .versionen/LIESMICH.md). Fehlschlag, wenn
 //   1. der PR eine App-Version ändert (das macht der Release-Lauf; zurücknehmen und eine Notiz anlegen),
 //   2. Dateien einer App (apps/<app>/…) bzw. des gemeinsamen Kerns (packages/core/…: die Apps außer Arkly, die die Datei
-//      einbinden – scripts/kern-nutzer.mjs, im Zweifel alle) geändert sind, die App aber in keiner Notiz des PRs
+//      einbinden, bzw. Arkly, wenn nur sie sie einbindet – scripts/kern-nutzer.mjs, im Zweifel alle) geändert sind, die App aber in keiner Notiz des PRs
 //      steht – Doku (*.md) und Tests zählen nicht,
 //   3. eine Notiz des PRs ungültig ist (unbekannte App, Stufe nicht patch/minor/major, Satz fehlt),
 //   4. der PR eine Notiz löscht oder umbenennt (etwa durch eine falsche Konfliktauflösung – ihr Satz ginge verloren).
