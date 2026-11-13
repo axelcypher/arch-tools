@@ -4,7 +4,7 @@ import { anschriftEinzeilig, bebauungsplanText, flurText, LEISTUNGSPHASEN } from
 import { Field, NumberField, TextField } from './fields';
 import type { Pruefung } from './pruefen';
 import { alle, email, ordnername, plz } from './pruefen';
-import { useEscSchliessen } from './Dialog';
+import { Modal } from './Dialog';
 import { Symbol } from './Symbol';
 import { abfragbar, adresseSchluessel, geokodierungMoeglich, koordinatenFuerQgis, koordinatenVeraltet, mitKoordinaten, QUELLE } from '../platform/geokodierung';
 
@@ -423,8 +423,8 @@ export function StammdatenDialog({
   const [name, setName] = useState(nameAnfang ?? '');
   const [fehler, setFehler] = useState<string | null>(null);
   const [laeuft, setLaeuft] = useState(false);
+  const textId = useId();
   const [versucht, setVersucht] = useState(false);
-  useEscSchliessen(laeuft ? undefined : onAbbrechen);
   const offen = projektnummerPflicht ? stammdatenFehlen(meta) : [];
   const speichern = async () => {
     setVersucht(true);
@@ -442,27 +442,29 @@ export function StammdatenDialog({
     }
   };
   return (
-    <div className="modal-backdrop">
-      <div className="modal modal-wide sd-dialog" role="dialog" aria-modal="true" aria-label={titel}>
-        <h3>{titel}</h3>
-        {text && <p className="muted small-text">{text}</p>}
-        {nameAnfang !== undefined && (
-          <Field label="Bezeichnung des Projekts">
-            <TextField value={name} onChange={setName} />
-          </Field>
-        )}
-        <StammdatenFelder meta={meta} onChange={setMeta} fehlerZeigen={versucht} kurznameHinweis={projektnummerPflicht ? undefined : null} />
-        {fehler && <p className="warning">{fehler}</p>}
-        <div className="dialog-buttons">
-          <button onClick={onAbbrechen} disabled={laeuft}>
-            Abbrechen
-          </button>
-          <button className="primary" disabled={laeuft} title={offen.join(' ')} onClick={() => void speichern()}>
-            {speichernText}
-          </button>
-        </div>
+    // Klick daneben schließt nicht: ein Formular mit Eingaben; Esc bricht ab wie „Abbrechen“ (nicht, solange gespeichert wird)
+    <Modal titel={titel} kopf breit className="sd-dialog" onClose={laeuft ? undefined : onAbbrechen} klickDaneben={false} beschreibung={text ? textId : undefined}>
+      {text && (
+        <p className="muted small-text" id={textId}>
+          {text}
+        </p>
+      )}
+      {nameAnfang !== undefined && (
+        <Field label="Bezeichnung des Projekts">
+          <TextField value={name} onChange={setName} />
+        </Field>
+      )}
+      <StammdatenFelder meta={meta} onChange={setMeta} fehlerZeigen={versucht} kurznameHinweis={projektnummerPflicht ? undefined : null} />
+      {fehler && <p className="warning">{fehler}</p>}
+      <div className="dialog-buttons">
+        <button onClick={onAbbrechen} disabled={laeuft}>
+          Abbrechen
+        </button>
+        <button className="primary" disabled={laeuft} title={offen.join(' ')} onClick={() => void speichern()}>
+          {speichernText}
+        </button>
       </div>
-    </div>
+    </Modal>
   );
 }
 

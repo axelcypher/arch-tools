@@ -817,6 +817,7 @@ Stand: Review von GRZ-Nachweis 0.7.0. Pfade relativ zum Repo `arch-tools`; `apps
 **Test:** `apps/grz/src/massNutzung.test.ts`: Hinweis „Gelände unbekannt“ hat Art Bedienhinweis und fehlt in der Druckliste; `grz.ui.test.ts`: Datumstext „01.06.1975“, kein „((“.
 
 ### G-11 Esc schließt Druck, Excel und Projektübersicht nicht  (S)  → zentral (Querschnitt)
+**Stand:** erledigt – gemeinsames `Modal` mit Esc-Stapel und Fokusrückgabe (`ui/dialoge.ts`); Protokoll, Regeln und Stammdaten nutzen es seit dem Designsystem-PR „core-Dialoge im gemeinsamen Modal“ (Test `ui/kernDialoge.ui.test.ts`).
 **Problem:** `apps/grz/src/components/NachweisDruck.tsx`, `ExcelDialog.tsx` und `packages/core/src/ui/ProjektWahl.tsx` reagieren nicht auf Esc. Regeln (`ui/Nachschlagewerk.tsx:138`), Protokoll (`ui/LogDialog.tsx:27`) und `ui/UpdateKnopf.tsx:46` haben je einen eigenen `keydown`-Handler.
 **Soll:**
 - Einheitlich in `packages/core` (z. B. gemeinsamer Dialograhmen oder Hook, Anknüpfung an `ui/dialoge.ts`): Esc schließt jeden Dialog, Fokusfalle (Tab bleibt im Dialog), Fokus-Rückgabe an das auslösende Element; vorhandene Einzel-Handler darauf umstellen.

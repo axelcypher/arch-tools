@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { isTauri, saveTextFile } from '../platform/files';
 import type { LogLevel } from '../platform/log';
 import { clearLog, formatTime, getEntries, isDebugEnabled, levelRank, logText, logVersion, setDebugEnabled, subscribe } from '../platform/log';
-import { useEscSchliessen } from './Dialog';
+import { Modal } from './Dialog';
 import { appName } from './appName';
 
 const FILTER: { id: LogLevel; label: string }[] = [
@@ -24,8 +24,6 @@ export function LogDialog({ onClose }: { onClose: () => void }) {
     if (!isTauri()) return;
     void import('@tauri-apps/api/path').then((p) => p.appLogDir()).then(setLogDir, () => undefined);
   }, []);
-
-  useEscSchliessen(onClose);
 
   const list = useMemo(() => {
     const s = q.trim().toLowerCase();
@@ -58,53 +56,52 @@ export function LogDialog({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="modal-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="modal modal-log" role="dialog" aria-label="Fehlerprotokoll">
-        <div className="log-head">
-          <h3>Fehlerprotokoll</h3>
-          <div className="button-row">
-            {FILTER.map((f) => (
-              <button key={f.id} type="button" className={min === f.id ? 'active' : ''} aria-pressed={min === f.id} onClick={() => setMin(f.id)}>
-                {f.label}
-              </button>
-            ))}
-          </div>
-          <input className="log-search" type="search" aria-label="Fehlerprotokoll durchsuchen" placeholder="Suchen …" value={q} onChange={(e) => setQ(e.target.value)} />
-        </div>
-        <div className="log-list" role="log">
-          {list.length === 0 && <p className="muted">Keine Einträge.</p>}
-          {list.map((e) => (
-            <div key={e.id} className={`log-entry log-${e.level}`}>
-              <span className="log-time">{formatTime(e.time)}</span>
-              <span className="log-level">{e.level.toUpperCase()}</span>
-              <span className="log-scope">{e.scope}</span>
-              <span className="log-msg">
-                {e.message}
-                {e.data && <pre className="log-data">{e.data}</pre>}
-              </span>
-            </div>
+    <Modal titel="Fehlerprotokoll" kopf className="modal-log" onClose={onClose}>
+      <div className="log-head">
+        <div className="segment" role="group" aria-label="Einträge zeigen">
+          {FILTER.map((f) => (
+            <button key={f.id} type="button" aria-pressed={min === f.id} onClick={() => setMin(f.id)}>
+              {f.label}
+            </button>
           ))}
         </div>
-        <label className="toggle block">
-          <input type="checkbox" checked={isDebugEnabled()} onChange={(e) => setDebugEnabled(e.target.checked)} />
-          Debug-Meldungen aufzeichnen (ausführlicher, für die Fehlersuche)
-        </label>
-        {logDir && (
-          <p className="muted small-text">
-            Logdatei: <code>{logDir}</code>
-          </p>
-        )}
-        {hinweis && <p className="muted small-text">{hinweis}</p>}
-        <div className="button-row log-actions">
-          <button onClick={() => void copy()}>Kopieren</button>
-          <button onClick={() => void save()}>Speichern …</button>
-          <button onClick={clearLog}>Leeren</button>
-          <span className="tb-spacer" />
-          <button className="primary" onClick={onClose}>
-            Schließen
-          </button>
-        </div>
+        <input className="log-search" type="search" aria-label="Fehlerprotokoll durchsuchen" placeholder="Suchen …" value={q} onChange={(e) => setQ(e.target.value)} />
       </div>
-    </div>
+      <div className="log-list" role="log">
+        {list.length === 0 && <p className="muted">Keine Einträge.</p>}
+        {list.map((e) => (
+          <div key={e.id} className={`log-entry log-${e.level}`}>
+            <span className="log-time">{formatTime(e.time)}</span>
+            <span className="log-level">{e.level.toUpperCase()}</span>
+            <span className="log-scope">{e.scope}</span>
+            <span className="log-msg">
+              {e.message}
+              {e.data && <pre className="log-data">{e.data}</pre>}
+            </span>
+          </div>
+        ))}
+      </div>
+      <label className="toggle block">
+        <input type="checkbox" checked={isDebugEnabled()} onChange={(e) => setDebugEnabled(e.target.checked)} />
+        Debug-Meldungen aufzeichnen (ausführlicher, für die Fehlersuche)
+      </label>
+      {logDir && (
+        <p className="muted small-text">
+          Logdatei: <code>{logDir}</code>
+        </p>
+      )}
+      {hinweis && <p className="muted small-text">{hinweis}</p>}
+      <div className="dialog-buttons log-actions">
+        <button onClick={() => void copy()}>Kopieren</button>
+        <button onClick={() => void save()}>Speichern …</button>
+        <button onClick={clearLog} title="Liste leeren – die Logdatei bleibt erhalten">
+          Leeren
+        </button>
+        <span className="tb-spacer" />
+        <button className="primary" onClick={onClose}>
+          Schließen
+        </button>
+      </div>
+    </Modal>
   );
 }

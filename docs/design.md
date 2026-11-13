@@ -137,6 +137,8 @@ und `ZEICHENFLAECHE_GRUND` in `planFarbe.ts` müssen zu `--canvas-filter` und `-
 - **Knöpfe** in `.dialog-buttons` als letztes Kind des Dialogs (oder seines `<form>`, das dann selbst letztes Kind
   ist): rechtsbündig, Hauptknopf rechts außen, „Abbrechen“ links davon. In langen Dialogen bleiben sie unten stehen
   (sticky).
+- Werkzeug-Dialoge mit Nebenaktionen (z. B. Fehlerprotokoll: „Kopieren“, „Speichern …“, „Leeren“): Nebenaktionen
+  links, dann ein Abstandhalter (`.tb-spacer`), der Hauptknopf („Schließen“) rechts – alles in `.dialog-buttons`.
 - **Enter** löst den Hauptknopf aus: Inhalt in `<form onSubmit>`, Hauptknopf `type="submit"`, alle anderen
   `type="button"`.
 - Optionen, die nur zu einer Wahl gehören, erst bei dieser Wahl zeigen (Beispiel: Vorlagen-Knöpfe im Excel-Dialog nur
