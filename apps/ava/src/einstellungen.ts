@@ -4,7 +4,7 @@
  * nicht nur mit der Struktur eines Büros funktioniert.
  */
 
-import { konfigLesen, konfigSchreiben } from '@core/platform/konfig';
+import { konfigLesen, konfigSchreibenWennUnveraendert, konfigStand } from '@core/platform/konfig';
 import type { Rechnungsart } from './abrechnung/benennung';
 import { VORGABE_ARTEN, VORGABE_MUSTER } from './abrechnung/benennung';
 import type { PruefVorgaben } from './abrechnung/pruefung';
@@ -145,12 +145,32 @@ export function einstellungenAus(roh: unknown): AvaEinstellungen {
   return e;
 }
 
+/** Stand der Datei beim letzten Lesen (`undefined` = noch nicht gelesen) – zum Vergleich vor dem Speichern */
+let stand: string | null | undefined;
+
 export async function einstellungenLaden(): Promise<AvaEinstellungen> {
-  return einstellungenAus(await konfigLesen('ava'));
+  const roh = await konfigLesen('ava');
+  stand = konfigStand(roh);
+  return einstellungenAus(roh);
 }
 
-export function einstellungenSpeichern(e: AvaEinstellungen): Promise<void> {
-  return konfigSchreiben('ava', e);
+/** Die Einstellungen wurden seit dem Lesen auf einem anderen Rechner geändert – nichts gespeichert */
+export class EinstellungenKonflikt extends Error {
+  constructor() {
+    super('Die Einstellungen wurden inzwischen auf einem anderen Rechner geändert. Sie sind neu geladen – bitte die Änderung noch einmal vornehmen.');
+    this.name = 'EinstellungenKonflikt';
+  }
+}
+
+/** Speichern nur, wenn die Datei seit dem Lesen unverändert ist (mehrere Rechner einer Netzwerkinstallation) */
+export async function einstellungenSpeichern(e: AvaEinstellungen): Promise<void> {
+  if (stand === undefined) stand = konfigStand(await konfigLesen('ava'));
+  const r = await konfigSchreibenWennUnveraendert('ava', e, stand);
+  if (!r.ok) {
+    stand = konfigStand(r.aktuell);
+    throw new EinstellungenKonflikt();
+  }
+  stand = r.stand;
 }
 
 /** Liegt ein Pfad (relativ, „/“) in einem Archivordner? */
