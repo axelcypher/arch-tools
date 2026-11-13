@@ -51,6 +51,12 @@ const PFADE = {
   ziel: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 1v4M12 19v4M1 12h4M19 12h4',
   /** Verzweigung: nur erforderlich, wenn … */
   bedingung: 'M7 4v10M17 8v1a5 5 0 0 1-5 5H7M7 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM17 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4z',
+  /** Favorit (gefüllt über CSS: fill: currentColor) */
+  stern: 'M12 3l2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3l-5.6 2.9 1.1-6.2L3 9.6l6.2-.9L12 3z',
+  /** Verknüpfte Einträge (gemeinsam ausgefüllt) – nicht „Datei verknüpfen“ (link) */
+  kette: 'M9 17H7a5 5 0 0 1 0-10h2M15 7h2a5 5 0 0 1 0 10h-2M8 12h8',
+  /** leeres Kästchen (Feld zum Ankreuzen) */
+  kaestchen: 'M5 5h14v14H5z',
 } as const;
 
 export type SymbolName = keyof typeof PFADE;

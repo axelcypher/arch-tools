@@ -8,10 +8,13 @@ import { create } from 'zustand';
 
 interface EinrichtenState {
   aktiv: boolean;
+  /** Aufbau des Formulars als Baum (in der Gliederung) – bei knapper Breite einklappbar; beim Einschalten wieder offen */
+  baumOffen: boolean;
   auswahl: string[];
   /** Feld durch Klick ins Formular wählen: wird mit dem Schlüssel aufgerufen */
   waehlen: ((schluessel: string) => void) | null;
   setAktiv: (aktiv: boolean) => void;
+  setBaumOffen: (offen: boolean) => void;
   /** wählen; `erweitern` (Strg/Umschalt) nimmt dazu bzw. wieder heraus */
   auswaehlen: (id: string, erweitern?: boolean) => void;
   setAuswahl: (auswahl: string[]) => void;
@@ -21,9 +24,11 @@ interface EinrichtenState {
 
 export const useEinrichten = create<EinrichtenState>((set, get) => ({
   aktiv: false,
+  baumOffen: true,
   auswahl: [],
   waehlen: null,
-  setAktiv: (aktiv) => set({ aktiv, auswahl: [], waehlen: null }),
+  setAktiv: (aktiv) => set({ aktiv, auswahl: [], waehlen: null, ...(aktiv ? { baumOffen: true } : {}) }),
+  setBaumOffen: (baumOffen) => set({ baumOffen }),
   auswaehlen: (id, erweitern = false) => {
     const a = get().auswahl;
     if (!erweitern) set({ auswahl: [id] });
