@@ -4,7 +4,7 @@
  * Antragsmerkmale (Abschnitt `formulare`, eine Quelle mit der App Formulare) lesen und schreiben.
  */
 
-import { APP_NAMEN } from '../appNamen';
+import { APP_NAMEN, appMitWas } from '../appNamen';
 import { computeProject } from '../calc';
 import type { Project } from '../model';
 import { istKellergeschoss, storeyElevations } from '../model';
@@ -317,26 +317,25 @@ export function projektFakten(p: Project, heute = new Date().toISOString().slice
   setze('lage.gemeinde', p.meta.adresse.ort.trim(), 'stammdaten', 'Stammdaten');
   if (p.meta.bebauungsplan?.nummer) setze('planung.bplan_nr', p.meta.bebauungsplan.nummer, 'stammdaten', 'Stammdaten');
   const mn = p.massNutzung;
-  if (mn?.gebietsart) setze('planung.gebietsart', mn.gebietsart, 'grz', `${APP_NAMEN.grz.name} (Festsetzungen)`);
+  if (mn?.gebietsart) setze('planung.gebietsart', mn.gebietsart, 'grz', 'Festsetzungen');
   if (mn?.planDatum) {
-    setze('planung.bplan_datum', mn.planDatum, 'grz', `${APP_NAMEN.grz.name} (Festsetzungen)`);
+    setze('planung.bplan_datum', mn.planDatum, 'grz', 'Festsetzungen');
     // der GRZ-Nachweis fasst 1968/1977 zusammen – für die Regeln zählt die genaue Fassung nach dem Plandatum
     const nachDatum = baunvoNachDatum(mn.planDatum);
     const fassung = !mn.baunvo ? nachDatum : mn.baunvo === '1968' && nachDatum === '1977' ? '1977' : mn.baunvo;
-    setze('planung.baunvo', fassung, 'grz', `${APP_NAMEN.grz.name} (Plandatum)`, 'hinweis', 'aus dem Plandatum abgeleitet – maßgeblich ist die Fassung zum Zeitpunkt der öffentlichen Auslegung (§§ 25c ff. BauNVO); bitte im Plan prüfen');
+    setze('planung.baunvo', fassung, 'grz', 'Plandatum', 'hinweis', 'aus dem Plandatum abgeleitet – maßgeblich ist die Fassung zum Zeitpunkt der öffentlichen Auslegung (§§ 25c ff. BauNVO); bitte im Plan prüfen');
   }
   if (p.storeys.some((s) => s.shapes.length)) {
     // Werte aus dem Modell sind nur so gut wie das Modell: Hinweis, bis bestätigt ist, dass es vollständig ist
     const MODELL = `aus dem Modell in ${APP_NAMEN.flaechenrechner.name} – bitte bestätigen, dass das Modell vollständig ist`;
-    const FR = APP_NAMEN.flaechenrechner.name;
     const r = computeProject(p);
-    if (r.total.bgf.total > 0) setze('gebaeude.bgf', runde(r.total.bgf.total), 'flaechen', FR, 'hinweis', MODELL);
-    if (r.total.bri.total > 0) setze('gebaeude.bri', runde(r.total.bri.total), 'flaechen', FR, 'hinweis', MODELL);
-    if (r.total.nuf.total > 0) setze('gebaeude.nutzflaeche', runde(r.total.nuf.total), 'flaechen', `${FR} (NUF nach DIN 277)`, 'hinweis', MODELL);
+    if (r.total.bgf.total > 0) setze('gebaeude.bgf', runde(r.total.bgf.total), 'flaechen', 'Modell', 'hinweis', MODELL);
+    if (r.total.bri.total > 0) setze('gebaeude.bri', runde(r.total.bri.total), 'flaechen', 'Modell', 'hinweis', MODELL);
+    if (r.total.nuf.total > 0) setze('gebaeude.nutzflaeche', runde(r.total.nuf.total), 'flaechen', 'NUF nach DIN 277', 'hinweis', MODELL);
     const wohnungen = r.wohnungen.filter((w) => w.wohnung.trim()).length;
-    if (wohnungen) setze('gebaeude.wohnungen', wohnungen, 'flaechen', `${FR} (Wohnungen der Räume)`, 'hinweis', MODELL);
+    if (wohnungen) setze('gebaeude.wohnungen', wohnungen, 'flaechen', 'Wohnungen der Räume', 'hinweis', MODELL);
     const gk = gebaeudeklasseAbleiten(p);
-    if (gk?.hoehe !== undefined) setze('gebaeude.hoehe', gk.hoehe, 'abgeleitet', `${FR} (Geschosskoten)`, 'hinweis', gk.hinweis ? `Geländeoberfläche nicht festgelegt (±0,00 angenommen); ${MODELL}` : `Fußboden des obersten Geschosses mit Räumen – § 2 Abs. 3 BauO NRW meint das oberste Geschoss, in dem ein Aufenthaltsraum möglich ist; ${MODELL}`);
+    if (gk?.hoehe !== undefined) setze('gebaeude.hoehe', gk.hoehe, 'abgeleitet', `Geschosskoten in ${appMitWas('flaechenrechner')}`, 'hinweis', gk.hinweis ? `Geländeoberfläche nicht festgelegt (±0,00 angenommen); ${MODELL}` : `Fußboden des obersten Geschosses mit Räumen – § 2 Abs. 3 BauO NRW meint das oberste Geschoss, in dem ein Aufenthaltsraum möglich ist; ${MODELL}`);
     const garagen = (p.lageplan?.flaechen ?? []).filter((x) => x.nutzung === 'garage' && !x.nachbar);
     if (garagen.length) {
       const flaeche = garagen.reduce((s, g) => s + Math.abs(polygonFlaeche(g.points)), 0);

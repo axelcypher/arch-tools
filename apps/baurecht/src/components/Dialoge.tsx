@@ -322,7 +322,7 @@ export function FaktBestaetigenDialog({ folgen, faktDef = () => undefined }: { f
       </h3>
       {ziel.modus === 'bestaetigen' ? (
         <p className="br-leise-stark">
-          Bisher nur Hinweis{ziel.wert.quelle ? ` (${ziel.wert.quelle})` : ''}: {ziel.wert.grund ?? 'nicht gesichert'}
+          Bisher nur Hinweis{ziel.wert.quelle ? ` – ${ziel.wert.quelle}` : ''}: {ziel.wert.grund ?? 'nicht gesichert'}
         </p>
       ) : (
         <p className="br-leise-stark">Angaben zu Schutzgebieten und Geodaten gelten von Hand nur mit Beleg. Widerspricht die Angabe einem Treffer eines Dienstes, bleibt der Widerspruch sichtbar – betroffene Vorschriften werden dann nicht „entfällt“.</p>

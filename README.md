@@ -1,6 +1,6 @@
 # Arkly
 
-Werkzeuge für Architekturbüros: sieben Desktop-Apps (Windows, Tauri) mit gemeinsamem Unterbau – einzeln oder alle
+Werkzeuge für Architekturbüros: acht Desktop-Apps (Windows, Tauri) mit gemeinsamem Unterbau – einzeln oder alle
 zusammen in der Rahmen-App Arkly (Tabs, herauslösbare Fenster). QUADRIO, TERRIO und NUMIO arbeiten mit derselben
 Projektdatei (`.oap`). Die Suite heißt wie ihre Rahmen-App; das Repository heißt weiterhin `arch-tools`. Die Apps
 haben neue Namen – siehe [Neue Namen](#neue-namen).

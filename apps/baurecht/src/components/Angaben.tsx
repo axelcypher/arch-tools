@@ -309,7 +309,7 @@ function Merkmale({ klaerung, suche = '', planungsrechtOffen, planungsrechtKlaer
             </div>
             {fremd && (
               <p className="br-merkmal-fremd" role="note">
-                Wert „{wert}“ aus {auf ? APP_NAMEN.formulare.name : appMitWas('formulare')} passt nicht zur Liste – zählt nicht; bitte einen der Werte wählen.
+                Wert „{wert}“ aus {APP_NAMEN.formulare.name} passt nicht zur Liste – zählt nicht; bitte einen der Werte wählen.
               </p>
             )}
             {wert && (

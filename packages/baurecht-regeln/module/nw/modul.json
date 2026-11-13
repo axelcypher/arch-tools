@@ -544,7 +544,7 @@
           },
           {
             "nicht": {
-              "$": "wohngebaeude"
+              "$": "wohnnutzung"
             }
           }
         ]
@@ -712,6 +712,27 @@
                 "min": 1
               }
             ]
+          }
+        ]
+      }
+    },
+    "nw.neue_dachflaeche": {
+      "titel": "Durch den Anbau bzw. Ausbau entsteht eine neue, für Photovoltaik geeignete Dachfläche",
+      "kurz": "Neue PV-geeignete Dachfläche",
+      "gruppe": "vorhaben",
+      "typ": "janein",
+      "frage": "Entsteht durch den Anbau, die Aufstockung oder den Ausbau eine neue, für Photovoltaik geeignete Dachfläche?",
+      "hilfe": "§ 2 Abs. 7 SAN-VO NRW: Der Neuerrichtung eines Gebäudes steht der Ausbau oder Anbau gleich, sofern hierdurch eine neue zur Photovoltaiknutzung geeignete Dachfläche entsteht; bestehende Dachflächen werden nicht berücksichtigt (Mindestgröße: 30 % der neuen Bruttodachfläche, § 4 Abs. 1).",
+      "wenn": {
+        "und": [
+          {
+            "m": "Vorhaben",
+            "in": [
+              "Erweiterung"
+            ]
+          },
+          {
+            "$": "gebaeude"
           }
         ]
       }
@@ -889,6 +910,48 @@
         {
           "und": [
             {
+              "m": "Vorhaben",
+              "in": [
+                "Erweiterung"
+              ]
+            },
+            {
+              "$": "nichtwohnnutzung"
+            },
+            {
+              "tag": "einreichung",
+              "ab": "2024-01-02"
+            },
+            {
+              "f": "nw.neue_dachflaeche",
+              "ist": true
+            }
+          ]
+        },
+        {
+          "und": [
+            {
+              "m": "Vorhaben",
+              "in": [
+                "Erweiterung"
+              ]
+            },
+            {
+              "$": "wohnnutzung"
+            },
+            {
+              "tag": "einreichung",
+              "ab": "2025-01-02"
+            },
+            {
+              "f": "nw.neue_dachflaeche",
+              "ist": true
+            }
+          ]
+        },
+        {
+          "und": [
+            {
               "$": "nw_vorhaben_gebaeude"
             },
             {
@@ -1034,7 +1097,7 @@
           "und": [
             {
               "nicht": {
-                "$": "wohngebaeude"
+                "$": "wohnnutzung"
               }
             },
             {
@@ -1260,7 +1323,7 @@
         {
           "oder": [
             {
-              "$": "wohngebaeude"
+              "$": "wohnnutzung"
             },
             {
               "f": "gebaeude.wohnungen",

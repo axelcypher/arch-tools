@@ -28,7 +28,7 @@
           }
         ]
       },
-      "grund": "Anwendungsbereich der PV-Pflicht: Neubau von Nichtwohngebäuden (Bauantrag nach dem 01.01.2024) und Wohngebäuden (nach dem 01.01.2025), vollständige Erneuerung der Dachhaut ab 01.01.2026, Stellplatzflächen mit mehr als 35 notwendigen Stellplätzen für Nichtwohngebäude – auch in der Genehmigungsfreistellung.",
+      "grund": "Anwendungsbereich der PV-Pflicht: Neubau von Nichtwohngebäuden (Bauantrag nach dem 01.01.2024) und Wohngebäuden (nach dem 01.01.2025) – gleichgestellt Anbau und Ausbau mit neuer PV-geeigneter Dachfläche (§ 2 Abs. 7) –, vollständige Erneuerung der Dachhaut ab 01.01.2026, Stellplatzflächen mit mehr als 35 notwendigen Stellplätzen für Nichtwohngebäude – auch in der Genehmigungsfreistellung.",
       "fundstellen": [
         "1/2",
         "1/4"
@@ -50,7 +50,7 @@
       "entfaellt": {
         "$": "nw_pv_ausnahme"
       },
-      "grund": "Mindestgröße: bei Neubauten 30 % der Bruttodachfläche; bei Dacherneuerung 30 % der Nettodachfläche oder 3/4/8 kWp je nach Gebäude.",
+      "grund": "Mindestgröße: bei Neubauten 30 % der Bruttodachfläche (bei Anbau bzw. Ausbau nur der neuen Dachfläche, § 2 Abs. 7); bei Dacherneuerung 30 % der Nettodachfläche oder 3/4/8 kWp je nach Gebäude.",
       "fundstellen": [
         "4/1",
         "4/2"

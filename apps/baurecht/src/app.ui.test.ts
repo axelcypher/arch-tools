@@ -1234,6 +1234,21 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
     expect(host.querySelector('[data-fakt="lage.kampfmittel"]')).toBeNull();
   });
 
+  it('Neue App-Namen: Startseite und Herkunft der Angaben nennen PERMIO, TERRIO und QUADRIO mit Erklärung', () => {
+    const host = render();
+    // Herkunfts-Chip kurz mit Namen, die Erklärung im Tooltip
+    act(() => knopf(host, 'alle Angaben')?.click());
+    const chip = host.querySelector<HTMLElement>('.br-herkunft-flaechen')!;
+    expect(chip.textContent).toBe('QUADRIO');
+    expect(chip.title).toBe('QUADRIO (Flächenrechner)');
+    // Startseite ohne Projekt
+    act(() => useBaurecht.setState({ project: null }));
+    const start = host.querySelector<HTMLElement>('.br-start-karte')!;
+    expect(start.querySelector('h1')?.textContent).toBe('LEXIO');
+    expect(start.querySelector('.br-start-was')?.textContent).toBe('Baurecht');
+    expect(start.textContent).toMatch(/aus PERMIO \(Formulare\), Festsetzungen aus TERRIO \(GRZ-Nachweis\), Geschosse aus QUADRIO \(Flächenrechner\)/);
+  });
+
   it('Verweis ohne abrufbaren Text: „entfällt“ wirkt sofort – keine Warnung im Dialog, keine „noch nicht wirksam“-Ansage', () => {
     const host = render();
     const id = 'nw-05974/nsg/andere';

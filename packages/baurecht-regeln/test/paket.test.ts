@@ -185,10 +185,12 @@ describe('neue Merkmalwerte (Erweiterung, Wohn- und Geschäftshaus)', () => {
   // Geschäftshaus muss die Anforderungen an Wohnen und an die gewerbliche Nutzung erfüllen – nie milder als das
   // strengere von Mehrfamilienhaus und Nichtwohngebäude
   const RANG: Record<string, number> = { gruen: 0, gelb: 1, rot: 2 };
+  // klein genug für jeden Testlauf (auch im Release-Job), mit Sonderbau ja/nein
   const MATRIX: Record<string, (string | undefined)[]> = {
-    Gebäudeklasse: ['1', '3', '5', undefined],
-    Planungsrecht: ['Bebauungsplan', 'Innenbereich', 'Außenbereich', undefined],
-    Verfahren: ['verfahrensfrei', 'vereinfachtes Verfahren', 'Baugenehmigungsverfahren', undefined],
+    Gebäudeklasse: ['1', '3', undefined],
+    Planungsrecht: ['Bebauungsplan', 'Außenbereich', undefined],
+    Verfahren: ['verfahrensfrei', 'vereinfachtes Verfahren', undefined],
+    Sonderbau: ['nein', 'ja'],
   };
   const FAKTEN: [string, Record<string, FaktWert>, Map<string, TextStand>][] = [
     ['ohne Fakten', {}, new Map()],
@@ -197,14 +199,14 @@ describe('neue Merkmalwerte (Erweiterung, Wohn- und Geschäftshaus)', () => {
   ];
   const ampeln = (m: Record<string, string>, f: Record<string, FaktWert>, t: Map<string, TextStand>) => new Map(auswerten(eingabe(m, f, t)).paragrafen.map((p) => [p.id, p.automatisch]));
 
-  it('Erweiterung wie Änderung – je Paragraf dieselbe Ampel', { timeout: 600000 }, () => {
+  it('Erweiterung nie milder als Änderung – je Paragraf mindestens dieselbe Ampel', { timeout: 600000 }, () => {
     const fehler: string[] = [];
     for (const [name, f, t] of FAKTEN)
       for (const art of ['Einfamilienhaus', 'Mehrfamilienhaus', 'Wohn- und Geschäftshaus', 'Nichtwohngebäude', 'kein Gebäude'])
         for (const m of kombinationen(MATRIX)) {
           const basis = { ...m, Gebäudeart: art };
           const aend = ampeln({ ...basis, Vorhaben: 'Änderung' }, f, t);
-          for (const [id, a] of ampeln({ ...basis, Vorhaben: 'Erweiterung' }, f, t)) if (a !== aend.get(id) && fehler.length < 30) fehler.push(`${id}: Erweiterung ${a}, Änderung ${aend.get(id)} (${name}, ${JSON.stringify(basis)})`);
+          for (const [id, a] of ampeln({ ...basis, Vorhaben: 'Erweiterung' }, f, t)) if (RANG[a] < RANG[aend.get(id) ?? 'gruen'] && fehler.length < 30) fehler.push(`${id}: Erweiterung ${a}, Änderung ${aend.get(id)} (${name}, ${JSON.stringify(basis)})`);
         }
     expect(fehler).toEqual([]);
   });
@@ -218,11 +220,61 @@ describe('neue Merkmalwerte (Erweiterung, Wohn- und Geschäftshaus)', () => {
           const mfh = ampeln({ ...basis, Gebäudeart: 'Mehrfamilienhaus' }, f, t);
           const nwg = ampeln({ ...basis, Gebäudeart: 'Nichtwohngebäude' }, f, t);
           for (const [id, a] of ampeln({ ...basis, Gebäudeart: 'Wohn- und Geschäftshaus' }, f, t)) {
+            // GEIG: nach der überwiegenden Nutzung (§ 11 GEIG) – eigener Test unten
+            if (id.startsWith('bund/geig/')) continue;
             const soll = Math.max(RANG[mfh.get(id) ?? 'gruen'], RANG[nwg.get(id) ?? 'gruen']);
             if (RANG[a] < soll && fehler.length < 30) fehler.push(`${id}: W+G ${a}, MFH ${mfh.get(id)}, NWG ${nwg.get(id)} (${name}, ${JSON.stringify(basis)})`);
           }
         }
     expect(fehler).toEqual([]);
+  });
+
+  it('GEIG beim Wohn- und Geschäftshaus nach der überwiegenden Nutzung (§ 11 GEIG); offen nie grün, wo eine Seite gilt', () => {
+    const m = { Vorhaben: 'Errichtung', Gebäudeklasse: '3', Planungsrecht: 'Innenbereich', Verfahren: 'vereinfachtes Verfahren' };
+    const f = { ...alleFakten('nein'), 'gebaeude.stellplaetze': sicher(30) };
+    const wg = (x: Record<string, FaktWert>) => ampeln({ ...m, Gebäudeart: 'Wohn- und Geschäftshaus' }, { ...f, ...x }, TEXTE);
+    const mfh = ampeln({ ...m, Gebäudeart: 'Mehrfamilienhaus' }, f, TEXTE);
+    const nwg = ampeln({ ...m, Gebäudeart: 'Nichtwohngebäude' }, f, TEXTE);
+    const wohnen = wg({ 'gebaeude.ueberwiegend_wohnen': sicher(true) });
+    const gewerbe = wg({ 'gebaeude.ueberwiegend_wohnen': sicher(false) });
+    const ohneUw = Object.fromEntries(Object.entries(f).filter(([k]) => k !== 'gebaeude.ueberwiegend_wohnen'));
+    const offen = ampeln({ ...m, Gebäudeart: 'Wohn- und Geschäftshaus' }, ohneUw, TEXTE);
+    const warum = (mm: Record<string, string>, x: Record<string, FaktWert>, id: string) => auswerten(eingabe(mm, { ...f, ...x }, TEXTE)).paragrafen.find((p) => p.id === id)!.gruende.join(' | ');
+    for (const id of ['bund/geig/6', 'bund/geig/7']) {
+      expect(wohnen.get(id), `${id} überwiegend Wohnen: ${warum({ ...m, Gebäudeart: 'Wohn- und Geschäftshaus' }, { 'gebaeude.ueberwiegend_wohnen': sicher(true) }, id)} / MFH: ${warum({ ...m, Gebäudeart: 'Mehrfamilienhaus' }, {}, id)}`).toBe(mfh.get(id));
+      expect(gewerbe.get(id), `${id} überwiegend Gewerbe: ${warum({ ...m, Gebäudeart: 'Wohn- und Geschäftshaus' }, { 'gebaeude.ueberwiegend_wohnen': sicher(false) }, id)} / NWG: ${warum({ ...m, Gebäudeart: 'Nichtwohngebäude' }, {}, id)}`).toBe(nwg.get(id));
+      if (mfh.get(id) !== 'gruen' || nwg.get(id) !== 'gruen') expect(offen.get(id), `${id} offen`).not.toBe('gruen');
+    }
+    // genau eine der beiden Seiten gilt (kein doppeltes Rot)
+    expect([wohnen.get('bund/geig/6'), wohnen.get('bund/geig/7')]).toEqual(['rot', 'gruen']);
+    expect([gewerbe.get('bund/geig/6'), gewerbe.get('bund/geig/7')]).toEqual(['gruen', 'rot']);
+  });
+
+  it('Erweiterung strenger als Änderung: PV-Pflicht bei neuer Dachfläche (SAN-VO § 2 Abs. 7), Artenschutz wie beim Neubau (§ 44 BNatSchG)', () => {
+    const m = { Vorhaben: 'Erweiterung', Gebäudeart: 'Einfamilienhaus', Gebäudeklasse: '1', Planungsrecht: 'Innenbereich', Verfahren: 'vereinfachtes Verfahren' };
+    const f = { ...alleFakten('nein'), 'gebaeude.nutzflaeche': sicher(150) };
+    const mit = (x: Record<string, FaktWert>) => ampeln(m, { ...f, ...x }, TEXTE);
+    const neu = mit({ 'nw.neue_dachflaeche': sicher(true) });
+    const ohne = mit({ 'nw.neue_dachflaeche': sicher(false) });
+    for (const id of ['nw/bauo-nrw/42a', 'nw/san-vo/1', 'nw/san-vo/4']) {
+      expect(neu.get(id), `${id} neue Dachfläche`).toBe('rot');
+      expect(ohne.get(id), `${id} ohne neue Dachfläche`).not.toBe('rot');
+    }
+    // offen: nicht grün
+    const { 'nw.neue_dachflaeche': _weg, ...ohneAngabe } = { ...f, 'nw.neue_dachflaeche': sicher(true) };
+    void _weg;
+    expect(ampeln(m, ohneAngabe, TEXTE).get('nw/san-vo/1')).not.toBe('gruen');
+    // § 44 BNatSchG: auch ohne Dach/Fassade und Baumfällung
+    expect(ohne.get('bund/bnatschg/44')).toBe('rot');
+    // bei einer Änderung ohne Dach/Fassade nicht „gilt“ (nur von Hand auszuschließen – deshalb „prüfen“)
+    expect(ampeln({ ...m, Vorhaben: 'Änderung' }, f, TEXTE).get('bund/bnatschg/44')).not.toBe('rot');
+  });
+
+  it('Beseitigung: ein Wohn- und Geschäftshaus ist nie eine Anlage nach § 62 Abs. 1 (Frage nicht gestellt, keine verfahrensfreie Beseitigung)', () => {
+    const defs = faktDefinitionen(paket.module);
+    const m = { Vorhaben: 'Beseitigung', Gebäudeart: 'Wohn- und Geschäftshaus', Gebäudeklasse: '3', Planungsrecht: 'Innenbereich' };
+    const a = auswerten(eingabe(m, { 'vorhaben.beseitigung_umfang': sicher('vollständiger Abbruch ohne Ersatzbau') }, TEXTE));
+    expect(frageGestellt('nw.beseitigung_abs1', defs['nw.beseitigung_abs1'], a.kontext)).toBe(false);
   });
 });
 

@@ -92,14 +92,14 @@ export const MERKMAL_ERKLAERUNG: Record<string, { text: string; quelle?: Quelle;
     },
   },
   Vorhaben: {
-    text: 'Art des Vorhabens (§ 60 BauO NRW)',
+    text: 'Art des Vorhabens (§ 60 BauO NRW 2018)',
     quelle: { gesetz: 'bauo-nrw', paragraf: '60' },
     werte: {
       Errichtung: 'Neubau einer Anlage; Abbruch und Neubau in einem Antrag: „Beseitigung“ mit Umfang „Abbruch mit Ersatzbau“',
       Erweiterung: 'Anbau oder Aufstockung – bauordnungsrechtlich eine Änderung mit Vergrößerung; für die Kosten zählt wie beim Neubau der Brutto-Rauminhalt (Rohbausumme)',
       Änderung: 'bauliche Änderung einer bestehenden Anlage ohne Vergrößerung (Anbau, Aufstockung: „Erweiterung“) – für die Kosten zählt die Herstellungssumme',
       Nutzungsänderung: 'andere Nutzung einer bestehenden Anlage, auch ohne bauliche Änderung',
-      Beseitigung: 'Abbruch einer Anlage (§ 62 Abs. 3 BauO NRW) – ganz oder teilweise, mit oder ohne Ersatzbau; der Umfang steht darunter (Teilabbruch wird wie eine Änderung geprüft, Ersatzbau wie Errichtung und Beseitigung)',
+      Beseitigung: 'Abbruch einer Anlage (§ 62 Abs. 3 BauO NRW 2018) – ganz oder teilweise, mit oder ohne Ersatzbau; der Umfang steht darunter (Teilabbruch wird wie eine Änderung geprüft, Ersatzbau wie Errichtung und Beseitigung)',
     },
   },
   Planungsrecht: {

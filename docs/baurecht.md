@@ -18,8 +18,8 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
 ## Bedienung
 
 - **Projekt öffnen:** „Projekte“ in der Titelleiste (Desktop: Projektübersicht) bzw. „Projektdatei öffnen …“. Die
-  Angaben kommen aus der Projektdatei (.oap): Stammdaten, **Antragsmerkmale** des aktiven Antrags (gemeinsam mit PERMIO
-  (Formulare) – eine Änderung hier gilt dort und umgekehrt), Festsetzungen aus TERRIO (GRZ-Nachweis), Geschosse, Räume
+  Angaben kommen aus der Projektdatei (.oap): Stammdaten, **Antragsmerkmale** des aktiven Antrags – gemeinsam mit PERMIO
+  (Formulare), eine Änderung hier gilt dort und umgekehrt –, Festsetzungen aus TERRIO (GRZ-Nachweis), Geschosse, Räume
   und Wohnungen aus QUADRIO (Flächenrechner).
 - **Kopfleiste:** Antrag, **geplante Einreichung** (Stichtag – z. B. § 42a BauO NRW knüpft an das Datum des Bauantrags
   an, § 90 an das Verfahrensrecht zur Zeit der Antragstellung), die aktiven Regelmodule, der Rechtsstand (Datum des
@@ -59,34 +59,37 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
 - **Rückfrage zum Antragsmerkmal:** Bei „Beseitigung“ steht der **Umfang der Beseitigung** (vollständiger Abbruch ohne
   Ersatzbau, Teilabbruch, Abbruch mit Ersatzbau) direkt unter „Art des Vorhabens“ (als Knöpfe, unter der Erklärung des
   Werts); Teilabbruch wird wie eine Änderung geprüft, Ersatzbau wie Errichtung und Beseitigung; „Erweiterung“ (Anbau,
-  Aufstockung) ist bauordnungsrechtlich eine Änderung und wird wie sie geprüft (je Paragraf dieselbe Ampel, als Test
-  festgehalten); ein „Wohn- und Geschäftshaus“ ist nie milder als das strengere von Mehrfamilienhaus und
+  Aufstockung) ist bauordnungsrechtlich eine Änderung und wird wie sie geprüft, aber nie milder (als Test festgehalten);
+  strenger ist sie bei der PV-Pflicht – entsteht eine neue, für Photovoltaik geeignete Dachfläche (Frage
+  `nw.neue_dachflaeche`), steht sie der Neuerrichtung gleich (SAN-VO § 2 Abs. 7) – und beim Artenschutz (§ 44 BNatSchG
+  wie beim Neubau); ein „Wohn- und Geschäftshaus“ ist nie milder als das strengere von Mehrfamilienhaus und
   Nichtwohngebäude (Bausteine `wohnnutzung`/`nichtwohnnutzung` in Anforderungen, `wohngebaeude`/`nichtwohngebaeude` nur
-  in Ausnahmen; als Test festgehalten); beim Ersatzbau folgen dort die Angaben zum Altbau (verfahrensfrei zu beseitigen,
-  Abbruch im Bauantrag mitbeantragt). Offene Rückfragen (auch solche, deren Wert nur Hinweis ist, mit „Bestätigen …“)
-  stehen auch bei eingeklappten Merkmalen da („eine Rückfrage offen“), mit ihrer Erläuterung (gekürzt, „mehr“); eine
-  neue Rückfrage wird angesagt. Eingeklappt Beantwortetes bleibt bis zum Aufklappen kompakt stehen („Umfang der
-  Beseitigung: Abbruch mit Ersatzbau – ändern“), der Fokus geht auf die nächste offene Rückfrage bzw. den Gruppenknopf
-  („Rückfragen beantwortet“). Auf- bzw. Zugeklappt bleibt auch nach einer Suche. Ändert sich ein Merkmal, ordnen sich
-  die Angaben neu. „Klärt am meisten“ zählt eine Angabe bei einem Paragrafen nur, wenn ihre Antwort dort etwas ändert
-  (führen alle Antworten zum selben Ergebnis, zählt sie nicht). Eine Angabe, deren Frage gerade nicht gestellt wird,
-  fehlt nicht: Sie steht nicht unter „es fehlt“ und nicht unter „klärt am meisten“ – nur wenn sonst kein Grund für Gelb
-  bliebe, wird sie genannt. „Gestellt“ heißt für Kern, App und Protokoll dasselbe (`frageGestellt`): ohne Bedingung
-  immer, sonst solange das `wenn` nicht sicher „nein“ ergibt (ein „nein“ nur aus Hinweisen verbirgt keine Frage, ein
-  Widerspruch bzw. Vorbehalt an einem Merkmal öffnet keine; Kern, Leiste und Protokoll urteilen im selben Kontext); eine
-  Rückfrage (Umfang, Angaben zum Altbau) erst, wenn es „ja“ ergibt. Eine gespeicherte Antwort auf eine Frage, die gerade
-  nicht gestellt wird (nach einem Ortswechsel, einem zurückgesetzten Auslöser wie dem Umfang der Beseitigung), zählt
-  nicht – weder in den Regeln noch für Ableitungen (bis zum Fixpunkt: eine weggelassene Antwort kann weitere Fragen
-  verbergen); das Protokoll führt solche Antworten gesondert („Antworten auf derzeit nicht gestellte Fragen (ohne
-  Wirkung)“). Hängt ein Paragraf an einem anderen, der nur „gilt, Ausnahme möglich“ ist, und entfiele er mit dessen
-  Ausnahme, nennt er sie („Ausnahme möglich über § 14 BNatSchG – es fehlt dort: …“); die Ampel bleibt „gilt“. Unter
-  „Ausnahme möglich – es fehlt“ stehen nur Fragen, die gerade gestellt werden (ohne Ausweichen auf nicht gestellte: eine
-  Ausnahme, deren Fragen nicht gestellt sind, wird nicht angeboten). Ist die Ausnahme nur über Hinweise bzw.
-  widersprüchliche Angaben ausgeschlossen, steht „Ausnahme ausgeschlossen, aber nicht gesichert (beruht auf: Wohnungen –
-  nur Hinweis)“ dabei (die Ampel bleibt „gilt“; bei Modulwerten die Quelle, z. B. der Gemeindeschlüssel). Einzelfall
-  einer Regel (`pruefen.wenn`): liegt er vor, wird Grün zu „Einzelfall: …“; ist offen, ob er vorliegt, heißt es
-  „Einzelfall möglich – es fehlt: …“ bzw. „Einzelfall möglich – hängt an § … – dort offen“ (die Angaben stehen unter „es
-  fehlt“ und zählen für „klärt am meisten“ – als eigenes Ergebnis neben rot/grün, eine Angabe, deren Antwort am
+  in Ausnahmen; als Test festgehalten; beim GEIG zählen die Stellplätze insgesamt, die überwiegende Nutzung entscheidet
+  – Frage `gebaeude.ueberwiegend_wohnen`, § 11 GEIG); beim Ersatzbau folgen dort die Angaben zum Altbau (verfahrensfrei
+  zu beseitigen, Abbruch im Bauantrag mitbeantragt). Offene Rückfragen (auch solche, deren Wert nur Hinweis ist, mit
+  „Bestätigen …“) stehen auch bei eingeklappten Merkmalen da („eine Rückfrage offen“), mit ihrer Erläuterung (gekürzt,
+  „mehr“); eine neue Rückfrage wird angesagt. Eingeklappt Beantwortetes bleibt bis zum Aufklappen kompakt stehen
+  („Umfang der Beseitigung: Abbruch mit Ersatzbau – ändern“), der Fokus geht auf die nächste offene Rückfrage bzw. den
+  Gruppenknopf („Rückfragen beantwortet“). Auf- bzw. Zugeklappt bleibt auch nach einer Suche. Ändert sich ein Merkmal,
+  ordnen sich die Angaben neu. „Klärt am meisten“ zählt eine Angabe bei einem Paragrafen nur, wenn ihre Antwort dort
+  etwas ändert (führen alle Antworten zum selben Ergebnis, zählt sie nicht). Eine Angabe, deren Frage gerade nicht
+  gestellt wird, fehlt nicht: Sie steht nicht unter „es fehlt“ und nicht unter „klärt am meisten“ – nur wenn sonst kein
+  Grund für Gelb bliebe, wird sie genannt. „Gestellt“ heißt für Kern, App und Protokoll dasselbe (`frageGestellt`): ohne
+  Bedingung immer, sonst solange das `wenn` nicht sicher „nein“ ergibt (ein „nein“ nur aus Hinweisen verbirgt keine
+  Frage, ein Widerspruch bzw. Vorbehalt an einem Merkmal öffnet keine; Kern, Leiste und Protokoll urteilen im selben
+  Kontext); eine Rückfrage (Umfang, Angaben zum Altbau) erst, wenn es „ja“ ergibt. Eine gespeicherte Antwort auf eine
+  Frage, die gerade nicht gestellt wird (nach einem Ortswechsel, einem zurückgesetzten Auslöser wie dem Umfang der
+  Beseitigung), zählt nicht – weder in den Regeln noch für Ableitungen (bis zum Fixpunkt: eine weggelassene Antwort kann
+  weitere Fragen verbergen); das Protokoll führt solche Antworten gesondert („Antworten auf derzeit nicht gestellte
+  Fragen (ohne Wirkung)“). Hängt ein Paragraf an einem anderen, der nur „gilt, Ausnahme möglich“ ist, und entfiele er
+  mit dessen Ausnahme, nennt er sie („Ausnahme möglich über § 14 BNatSchG – es fehlt dort: …“); die Ampel bleibt „gilt“.
+  Unter „Ausnahme möglich – es fehlt“ stehen nur Fragen, die gerade gestellt werden (ohne Ausweichen auf nicht
+  gestellte: eine Ausnahme, deren Fragen nicht gestellt sind, wird nicht angeboten). Ist die Ausnahme nur über Hinweise
+  bzw. widersprüchliche Angaben ausgeschlossen, steht „Ausnahme ausgeschlossen, aber nicht gesichert (beruht auf:
+  Wohnungen – nur Hinweis)“ dabei (die Ampel bleibt „gilt“; bei Modulwerten die Quelle, z. B. der Gemeindeschlüssel).
+  Einzelfall einer Regel (`pruefen.wenn`): liegt er vor, wird Grün zu „Einzelfall: …“; ist offen, ob er vorliegt, heißt
+  es „Einzelfall möglich – es fehlt: …“ bzw. „Einzelfall möglich – hängt an § … – dort offen“ (die Angaben stehen unter
+  „es fehlt“ und zählen für „klärt am meisten“ – als eigenes Ergebnis neben rot/grün, eine Angabe, deren Antwort am
   Einzelfall nichts ändert, klärt nichts); beruht das „kein Einzelfall“ nur auf Hinweisen bzw. widersprüchlichen
   Angaben, steht das als „Nur Hinweis, nicht gesichert“ bzw. „Widerspruch“ da (bestätigen klärt). Hinweise, deren
   Bestätigung allein einen Paragrafen entschiede, stehen dort als „bestätigen klärt N“ (Werte eines Gebietsmoduls dort,

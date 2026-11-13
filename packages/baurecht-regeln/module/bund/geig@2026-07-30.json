@@ -13,7 +13,7 @@
             "$": "errichtung"
           },
           {
-            "$": "wohnnutzung"
+            "$": "geig_wohnen"
           },
           {
             "f": "gebaeude.stellplaetze",
@@ -30,7 +30,7 @@
         "6": "6a76865c"
       },
       "pruefen": {
-        "grund": "Gemischt genutztes Gebäude: Wohn- und Nichtwohnteil getrennt betrachten (Stellplätze je Teil, § 106 GEG entsprechend).",
+        "grund": "Gemischt genutztes Gebäude: die Stellplätze zählen insgesamt, die Anforderungen richten sich nach der überwiegenden Nutzung (§ 11 Abs. 3 bis 5 GEIG).",
         "wenn": {
           "und": [
             {
@@ -59,7 +59,7 @@
             "$": "errichtung"
           },
           {
-            "$": "nichtwohnnutzung"
+            "$": "geig_nichtwohnen"
           },
           {
             "f": "gebaeude.stellplaetze",
@@ -80,7 +80,7 @@
         "7": "b973443e"
       },
       "pruefen": {
-        "grund": "Gemischt genutztes Gebäude: Wohn- und Nichtwohnteil getrennt betrachten (Stellplätze je Teil, § 106 GEG entsprechend).",
+        "grund": "Gemischt genutztes Gebäude: die Stellplätze zählen insgesamt, die Anforderungen richten sich nach der überwiegenden Nutzung (§ 11 Abs. 3 bis 5 GEIG).",
         "wenn": {
           "und": [
             {
@@ -116,7 +116,7 @@
             ]
           },
           {
-            "$": "wohnnutzung"
+            "$": "geig_wohnen"
           },
           {
             "f": "gebaeude.stellplaetze",
@@ -159,7 +159,7 @@
         "8/2": "2252aa93"
       },
       "pruefen": {
-        "grund": "Gemischt genutztes Gebäude: Wohn- und Nichtwohnteil getrennt betrachten (Stellplätze je Teil, § 106 GEG entsprechend).",
+        "grund": "Gemischt genutztes Gebäude: die Stellplätze zählen insgesamt, die Anforderungen richten sich nach der überwiegenden Nutzung (§ 11 Abs. 3 bis 5 GEIG).",
         "wenn": {
           "und": [
             {
@@ -216,7 +216,7 @@
             ]
           },
           {
-            "$": "nichtwohnnutzung"
+            "$": "geig_nichtwohnen"
           },
           {
             "f": "gebaeude.stellplaetze",
@@ -259,7 +259,7 @@
         "9/2": "07a6ce23"
       },
       "pruefen": {
-        "grund": "Gemischt genutztes Gebäude: Wohn- und Nichtwohnteil getrennt betrachten (Stellplätze je Teil, § 106 GEG entsprechend).",
+        "grund": "Gemischt genutztes Gebäude: die Stellplätze zählen insgesamt, die Anforderungen richten sich nach der überwiegenden Nutzung (§ 11 Abs. 3 bis 5 GEIG).",
         "wenn": {
           "und": [
             {
@@ -316,7 +316,7 @@
             ]
           },
           {
-            "$": "nichtwohnnutzung"
+            "$": "geig_nichtwohnen"
           },
           {
             "f": "gebaeude.stellplaetze",
@@ -336,7 +336,7 @@
         "10/1": "59f32712"
       },
       "pruefen": {
-        "grund": "Gemischt genutztes Gebäude: Wohn- und Nichtwohnteil getrennt betrachten (Stellplätze je Teil, § 106 GEG entsprechend).",
+        "grund": "Gemischt genutztes Gebäude: die Stellplätze zählen insgesamt, die Anforderungen richten sich nach der überwiegenden Nutzung (§ 11 Abs. 3 bis 5 GEIG).",
         "wenn": {
           "und": [
             {

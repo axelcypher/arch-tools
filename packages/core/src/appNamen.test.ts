@@ -41,6 +41,25 @@ interface TauriConf {
   bundle: { windows: { nsis: { installerHooks?: string }; wix: { upgradeCode?: string } } };
 }
 
+/** Produktname, Fenstertitel, <title>, Release-Name und Icon einer App – gleich für umbenannte Apps und LEXIO */
+function grundpruefungen(id: string, conf: TauriConf, neu: string): void {
+  it('Produktname, Fenstertitel und <title> = APP_NAMEN', () => {
+    expect(conf.productName).toBe(neu);
+    expect(conf.app.windows[0].title).toBe(neu);
+    expect(datei(`apps/${id}/index.html`)).toContain(`<title>${neu}</title>`);
+  });
+
+  it('Release-Name im Workflow', () => {
+    expect(datei('.github/workflows/release.yml')).toMatch(new RegExp(`^\\s+${id}\\) tag="[^"]+"; name="${neu}";`, 'm'));
+  });
+
+  it('Icon der App = Iconset', () => {
+    const icon = datei(`design/icons/${id}.svg`);
+    expect(datei(`apps/${id}/src-tauri/icon.svg`)).toBe(icon);
+    expect(datei(`apps/${id}/public/favicon.svg`)).toBe(icon);
+  });
+}
+
 describe('Namen der Apps', () => {
   it('Upgrade-Code wie Tauri („tauri inspect wix-upgrade-code“)', () => {
     expect(upgradeCode('Formulare')).toBe('157a720b-7bc8-590d-93b4-80de89309be5');
@@ -56,15 +75,7 @@ describe('Namen der Apps', () => {
       const conf = JSON.parse(datei(`apps/${id}/src-tauri/tauri.conf.json`)) as TauriConf;
       const neu = APP_NAMEN[id as keyof typeof APP_NAMEN].name;
 
-      it('Produktname, Fenstertitel und <title> = APP_NAMEN', () => {
-        expect(conf.productName).toBe(neu);
-        expect(conf.app.windows[0].title).toBe(neu);
-        expect(datei(`apps/${id}/index.html`)).toContain(`<title>${neu}</title>`);
-      });
-
-      it('Release-Name im Workflow', () => {
-        expect(datei('.github/workflows/release.yml')).toMatch(new RegExp(`^\\s+${id}\\) tag="[^"]+"; name="${neu}";`, 'm'));
-      });
+      grundpruefungen(id, conf, neu);
 
       it('MSI ersetzt das Paket unter dem alten Namen (gleicher Upgrade-Code)', () => {
         expect(conf.bundle.windows.wix.upgradeCode).toBe(upgradeCode(alt));
@@ -85,39 +96,16 @@ describe('Namen der Apps', () => {
         const ohne = (t: string) => t.replace(/^!define ALTER_NAME .*$/m, '').replace(/^; Umbenennung der App: .*$/m, '');
         expect(ohne(hook)).toBe(ohne(readFileSync(new URL('apps/formulare/src-tauri/windows/umbenennung.nsh', wurzel), 'utf8')));
       });
-
-      it('Icon der App = Iconset', () => {
-        const icon = datei(`design/icons/${id}.svg`);
-        expect(datei(`apps/${id}/src-tauri/icon.svg`)).toBe(icon);
-        expect(datei(`apps/${id}/public/favicon.svg`)).toBe(icon);
-      });
     });
   }
 
   // LEXIO erscheint zum ersten Mal – unter diesem Namen; ohne Installer-Hook und ohne Upgrade-Code eines alten Namens
   describe('baurecht', () => {
     const conf = JSON.parse(datei('apps/baurecht/src-tauri/tauri.conf.json')) as TauriConf;
-    const neu = APP_NAMEN.baurecht.name;
-
-    it('Produktname, Fenstertitel und <title> = APP_NAMEN', () => {
-      expect(conf.productName).toBe(neu);
-      expect(conf.app.windows[0].title).toBe(neu);
-      expect(datei('apps/baurecht/index.html')).toContain(`<title>${neu}</title>`);
-    });
-
-    it('Release-Name im Workflow', () => {
-      expect(datei('.github/workflows/release.yml')).toMatch(new RegExp(`^\\s+baurecht\\) tag="[^"]+"; name="${neu}";`, 'm'));
-    });
-
-    it('Icon der App = Iconset', () => {
-      const icon = datei('design/icons/baurecht.svg');
-      expect(datei('apps/baurecht/src-tauri/icon.svg')).toBe(icon);
-      expect(datei('apps/baurecht/public/favicon.svg')).toBe(icon);
-    });
+    grundpruefungen('baurecht', conf, APP_NAMEN.baurecht.name);
 
     it('kein Umbenennungs-Hook (nie unter anderem Namen veröffentlicht)', () => {
       expect(conf.bundle.windows.nsis?.installerHooks).toBeUndefined();
     });
   });
 });
-

@@ -21,10 +21,10 @@ Kommunikation, Oberfläche, Commit-Texte und Doku sind auf **Deutsch**.
   `apps/<app>/package.json`, `apps/<app>/src-tauri/tauri.conf.json`, `apps/<app>/src-tauri/Cargo.toml`, den Eintrag
   im `apps/<app>/src-tauri/Cargo.lock` und `package-lock.json` (Letzteren mit `npm install --package-lock-only`
   nachziehen). Crate-Namen im Cargo.lock: `arch-flaechen-tool` (QUADRIO, Name bleibt absichtlich so),
-  `grz-nachweis`, `kostenermittlung`, `projektordner`, `entzerrung`, `formulare`, `ava` und `arch-tools` (Rahmen-App
-  Arkly, siehe `docs/suite.md`).
+  `grz-nachweis`, `kostenermittlung`, `projektordner`, `entzerrung`, `formulare`, `ava`, `baurecht` (LEXIO) und
+  `arch-tools` (Rahmen-App Arkly, siehe `docs/suite.md`).
   - Änderungen an `packages/core` betreffen **alle** Apps, die den Code nutzen: QUADRIO, TERRIO, NUMIO, ATLAS,
-    RECTIO, PERMIO, FABRIO und die Rahmen-App Arkly. Alle betroffenen Apps bumpen.
+    RECTIO, PERMIO, FABRIO, LEXIO und die Rahmen-App Arkly. Alle betroffenen Apps bumpen.
   - Ein Push auf `main` mit geänderter Version startet sofort den Release-Workflow (Installer und GitHub-Release).
 - **Rust nur über die CI:** Änderungen an `apps/*/src-tauri` (Rust, capabilities, tauri.conf.json außer der
   Versionsnummer) erst als Branch mit PR einreichen, den CI-Job „Tauri-Hülle prüfen“ abwarten und dann per

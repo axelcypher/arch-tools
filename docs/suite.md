@@ -40,7 +40,8 @@ Konfigurationsordner) und Projektdateien sind dieselben.
 
 - **Ein Programm:** Die Tauri-Hülle (`apps/suite/src-tauri/src/lib.rs`) registriert die Befehle aller Apps – die
   gemeinsamen (`packages/core/tauri/commands.rs`), die von PERMIO (`apps/formulare/src-tauri/src/befehle.rs`)
-  und die von FABRIO (`apps/ava/src-tauri/src/befehle.rs`), jeweils per `include!`. Neue Befehle einer App gehören deshalb auch in die Liste der Rahmen-App.
+  die von FABRIO (`apps/ava/src-tauri/src/befehle.rs`) und die von LEXIO (`apps/baurecht/src-tauri/src/netz.rs`:
+  Abruf der Gesetzestexte und Geodienste über die Host-Liste, Ablage), jeweils per `include!`. Neue Befehle einer App gehören deshalb auch in die Liste der Rahmen-App.
 - **Web-Builds eingebettet:** `npm run build:alle` (in `apps/suite`) baut alle Apps und kopiert ihre `dist/` nach
   `apps/suite/dist/apps/<app>/` (`scripts/apps-einbauen.mjs`). Jede eingebettete `index.html` lädt vorab
   `rahmen-bruecke.js`: Richtet die Webansicht in einem Tab den Zugang zu den Befehlen nicht selbst ein (macOS,
@@ -57,7 +58,7 @@ Konfigurationsordner) und Projektdateien sind dieselben.
   `postMessage` an den Rahmen; im herausgelösten Fenster zeigt sie „Andocken“ (Tauri-Ereignis `arch-tools:andocken`).
 - Die Apps teilen sich im Rahmen einen Ursprung und damit den Browser-Speicher; ihre Schlüssel und Datenbanken sind
   je App verschieden (`projektordner:…`, `formulare:…`, `arch-flaechen-tool`, `grz-nachweis`, `kostenermittlung`,
-  `arch-tools-entzerrung`, `ava:…`). Gemeinsam ist nur das Farbschema – ein Wechsel in einem Tab oder Fenster wirkt sofort in allen.
+  `arch-tools-entzerrung`, `ava:…`, `baurecht:…`). Gemeinsam ist nur das Farbschema – ein Wechsel in einem Tab oder Fenster wirkt sofort in allen.
 - **Nachrichten zwischen den Apps** (`rahmen.ts`: `anRahmen`, `vomRahmen`): Tabs schicken per `postMessage`, herausgelöste
   Fenster per Tauri-Ereignis `arch-tools:an-rahmen`; der Rahmen stellt per `postMessage` bzw. `arch-tools:an-app`
   (mit Empfänger `an`) zu. Eine App meldet sich mit `arch-tools:bereit`, sobald sie hört – Nachrichten an Apps, die

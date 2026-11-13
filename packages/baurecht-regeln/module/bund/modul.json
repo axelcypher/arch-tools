@@ -229,6 +229,48 @@
         "Wohn- und Geschäftshaus"
       ]
     },
+    "geig_wohnen": {
+      "oder": [
+        {
+          "$": "wohngebaeude"
+        },
+        {
+          "und": [
+            {
+              "m": "Gebäudeart",
+              "in": [
+                "Wohn- und Geschäftshaus"
+              ]
+            },
+            {
+              "f": "gebaeude.ueberwiegend_wohnen",
+              "ist": true
+            }
+          ]
+        }
+      ]
+    },
+    "geig_nichtwohnen": {
+      "oder": [
+        {
+          "$": "nichtwohngebaeude"
+        },
+        {
+          "und": [
+            {
+              "m": "Gebäudeart",
+              "in": [
+                "Wohn- und Geschäftshaus"
+              ]
+            },
+            {
+              "f": "gebaeude.ueberwiegend_wohnen",
+              "ist": false
+            }
+          ]
+        }
+      ]
+    },
     "bplan": {
       "m": "Planungsrecht",
       "in": [
@@ -783,6 +825,20 @@
       "hilfe": "Solche Teile werden nach § 106 GEG getrennt als Nichtwohn- bzw. Wohngebäude behandelt (z. B. Wohn- und Geschäftshaus)",
       "wenn": {
         "$": "gebaeude"
+      }
+    },
+    "gebaeude.ueberwiegend_wohnen": {
+      "titel": "Gemischt genutztes Gebäude dient überwiegend dem Wohnen",
+      "kurz": "Überwiegend Wohnnutzung",
+      "gruppe": "gebaeude",
+      "typ": "janein",
+      "frage": "Dient das Wohn- und Geschäftshaus überwiegend dem Wohnen (nach Fläche)?",
+      "hilfe": "§ 11 Abs. 4 und 5 GEIG: Bei gemischt genutzten Gebäuden zählen die Stellplätze insgesamt; die Anforderungen richten sich nach der überwiegenden Nutzung (Wohngebäude §§ 6, 8 – Nichtwohngebäude §§ 7, 9, 10).",
+      "wenn": {
+        "m": "Gebäudeart",
+        "in": [
+          "Wohn- und Geschäftshaus"
+        ]
       }
     },
     "technik.heizung_fossil": {
