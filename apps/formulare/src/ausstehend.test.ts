@@ -236,6 +236,13 @@ describe('laufende Schreibvorgänge vor dem Schließen', () => {
     await expect(ds.umbenennen('C:/F', 'fehlt.pdf', 'y.pdf')).rejects.toThrow();
     await tick();
     expect(await ausstehendAbwarten()).toBe(false);
+    // Projektordner meldet „nichts umbenannt“ (false, Ziel vorhanden): der Merker bleibt am alten Namen
+    const po = { umbenennen: async () => false } as unknown as typeof roh.projektordner;
+    const ds2 = mitVerfolgung(Object.assign(Object.create(roh) as SpeicherDateisystem, { projektordner: po }));
+    expect(await ds2.projektordner.umbenennen!('C:/F', 'x.pdf', 'z.pdf')).toBe(false);
+    await tick();
+    await standSpeichern('C:/F', 'z.pdf', Promise.resolve());
+    expect(await ausstehendAbwarten()).toBe(false);
   });
 
   it('Projektdatei „inzwischen geändert“, zweiter Versuch gelingt (projektdateiSchreiben): danach ist nichts offen', async () => {

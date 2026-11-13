@@ -54,14 +54,15 @@ export function klammer(): () => void {
 /** Zahl der laufenden Schreibvorgänge (für Tests) */
 export const laufendeSchreibvorgaenge = () => laufend.size;
 
-const ziel = (root: string, pfad: string) => `${root}/${pfad}`;
+const schluessel = (root: string, pfad: string) => `${root}/${pfad}`;
 
 /**
  * Speichern eines Bearbeitungsstands (Formular, Dokument, Projektkarte, Projektdatei) verfolgen und sein Ergebnis merken:
- * gescheitert bleibt es „nicht gespeichert“, bis dieselbe Datei gelingt
+ * gescheitert bleibt es „nicht gespeichert“, bis dieselbe Datei gelingt. Bei der Projektdatei, die nur Unterschiede
+ * schreibt, heißt „gelingt“: der letzte Schreiblauf in diese Datei (auch ein automatischer), nicht jede einzelne Änderung
  */
 export function standSpeichern<T>(root: string, pfad: string, arbeit: Promise<T>): Promise<T> {
-  const z = ziel(root, pfad);
+  const z = schluessel(root, pfad);
   arbeit.then(
     () => void gescheitert.delete(z),
     (e: unknown) => void gescheitert.set(z, grundVon(e)),
@@ -71,10 +72,10 @@ export function standSpeichern<T>(root: string, pfad: string, arbeit: Promise<T>
 
 /** umbenannt bzw. gelöscht: der Merker wandert mit bzw. entfällt (sonst bliebe er am alten Namen, ohne Weg zum Auflösen) */
 function dateiBewegt(root: string, alt: string, neu: string | null) {
-  const grund = gescheitert.get(ziel(root, alt));
+  const grund = gescheitert.get(schluessel(root, alt));
   if (grund === undefined) return;
-  gescheitert.delete(ziel(root, alt));
-  if (neu !== null) gescheitert.set(ziel(root, neu), grund);
+  gescheitert.delete(schluessel(root, alt));
+  if (neu !== null) gescheitert.set(schluessel(root, neu), grund);
 }
 
 /** gemerkte Fehler vergessen (für Tests) */
@@ -161,7 +162,8 @@ function umhuellt<T extends object>(ziel: T, schreiben: Set<PropertyKey>, weiter
           const arbeit = Promise.resolve((wert as (...x: unknown[]) => unknown).apply(t, a));
           if (BEWEGT.has(k) || GELOESCHT.has(k))
             arbeit.then(
-              () => dateiBewegt(String(a[0]), String(a[1]), BEWEGT.has(k) ? String(a[2]) : null),
+              // `false`: nichts umbenannt (z. B. Ziel vorhanden, ProjektordnerZugriff.umbenennen) – der Merker bleibt
+              (r) => void (r !== false && dateiBewegt(String(a[0]), String(a[1]), BEWEGT.has(k) ? String(a[2]) : null)),
               () => undefined,
             );
           return verfolgen(arbeit);
