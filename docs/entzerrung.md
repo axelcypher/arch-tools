@@ -9,7 +9,7 @@ Bis Version 0.12.0 hieß die App „Entzerrung“. Einstellungen und Daten bleib
 
 ## Ablauf
 
-1. **Foto hinzufügen**: über „+ Foto …“ (auch mehrere auf einmal; danach ist das erste gewählt, nicht lesbare
+1. **Foto hinzufügen**: über den Knopf „Foto …“ mit Plus-Symbol (auch mehrere auf einmal; danach ist das erste gewählt, nicht lesbare
    Dateien nennt eine gemeinsame Meldung), den Knopf in der leeren Fläche oder per Ziehen ins
    Fenster (JPEG, PNG, WebP). Die Ausrichtung vom
    Handy (Hochformat) wird übernommen. HEIC-Fotos vom iPhone lassen sich nicht lesen; dann am iPhone unter
@@ -130,8 +130,9 @@ mehr ein, das spart bei großen Projekten Zeit.
 Gespeichert wird als `.entz`: ein ZIP mit `entzerrung.json` (Fotos, Ebenen, Referenzen, Messungen) und den
 unveränderten Originalfotos unter `fotos/`. Entzerrt wird bei jedem Öffnen neu. Zusätzlich speichert die
 Anwendung laufend im Browser-Speicher zwischen (IndexedDB) und stellt den Stand nach einem Neustart wieder her;
-beim Schließen wird der letzte Stand sofort geschrieben. Fotos, die Rückgängig/Wiederholen noch braucht, bleiben
-dort erhalten. Beim Öffnen prüft die Anwendung die Datei: Ungültige Zahlen, Punkte und Messungen werden
+beim Schließen wird der letzte Stand sofort geschrieben. In Arkly warten Schließen, Andocken, Herauslösen und
+Update-Neustart außerdem höchstens 5 s, bis laufendes Schreiben (`.entz`, Zwischenstand, Fotos) fertig ist.
+Fotos, die Rückgängig/Wiederholen noch braucht, bleiben dort erhalten. Beim Öffnen prüft die Anwendung die Datei: Ungültige Zahlen, Punkte und Messungen werden
 verworfen, fehlende Teile ergänzt; bei fehlender Bildgröße oder doppelten Kennungen gilt die Datei als beschädigt.
 
 ## Technik
