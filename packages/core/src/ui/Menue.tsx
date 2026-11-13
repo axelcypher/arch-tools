@@ -38,7 +38,7 @@ export type MenuePunkt =
 interface MenueZustand {
   /** `ausloeser`: Element, das das Menü geöffnet hat – bekommt den Fokus nach Esc, Tab oder einer Auswahl zurück */
   /** `oeffner`: am Auslöser aufgeklappt (`zeigeMenueAn`), nicht nur dorthin der Fokus zurück (Kontextmenü) */
-  offen: { x: number; y: number; punkte: MenuePunkt[]; ausloeser: HTMLElement | SVGElement | null; name?: string; oeffner: boolean } | null;
+  offen: { x: number; y: number; punkte: MenuePunkt[]; ausloeser: HTMLElement | SVGElement | null; name?: string; oeffner: boolean; nr: number } | null;
   zeigen: (x: number, y: number, punkte: MenuePunkt[], ausloeser?: HTMLElement | SVGElement | null, name?: string, oeffner?: boolean) => void;
   /** `fokusZurueck`: den Fokus an den Auslöser geben (nicht bei einem Klick daneben – dann gilt, was angeklickt wurde) */
   schliessen: (fokusZurueck?: boolean) => void;
@@ -82,7 +82,8 @@ const useMenue = create<MenueZustand>((set, get) => ({
   zeigen: (x, y, punkte, ausloeser = null, name, oeffner = false) => {
     const vorher = get().offen;
     if (vorher && vorher.ausloeser !== ausloeser) offenZeigen(vorher, false);
-    const offen = { x, y, punkte, ausloeser, name, oeffner };
+    // nr: jedes Öffnen baut das Menü neu auf (Erstfokus, kein Untermenü von vorher)
+    const offen = { x, y, punkte, ausloeser, name, oeffner, nr: (vorher?.nr ?? 0) + 1 };
     set({ offen });
     offenZeigen(offen, true);
   },
@@ -255,7 +256,7 @@ export function MenueHost() {
     };
   }, [offen, schliessen]);
   if (!offen) return null;
-  return <Liste punkte={offen.punkte} x={offen.x} y={offen.y} name={offen.name} schliessen={() => schliessen(true)} wurzel />;
+  return <Liste key={offen.nr} punkte={offen.punkte} x={offen.x} y={offen.y} name={offen.name} schliessen={() => schliessen(true)} wurzel />;
 }
 
 /**
@@ -305,8 +306,7 @@ function Liste({
     // gibt es nur Gefahr-Punkte, bekommt das Menü selbst den Fokus – ↓ bzw. Pos1 erreichen dann den Punkt
     const el = ref.current;
     (el?.querySelector<HTMLButtonElement>(':scope > button:not([aria-disabled="true"]):not(.gefahr)') ?? el?.querySelector<HTMLButtonElement>(':scope > button:not(.gefahr)') ?? el)?.focus();
-    // auch, wenn ein offenes Menü neue Punkte bekommt (erneut geöffnet, ohne vorher zu schließen)
-  }, [wurzel, fokus, punkte]);
+  }, [wurzel, fokus]);
 
   const oeffnen = (index: number, el: HTMLElement, tastatur: boolean) => {
     const r = el.getBoundingClientRect();

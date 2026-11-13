@@ -2134,6 +2134,11 @@ button.ungespeichert::after {
 .menue-punkt.gefahr .menue-symbol {
   color: var(--danger);
 }
+/* Fokus auf dem Menü selbst (nur Gefahr-Punkte, siehe Menue.tsx): sichtbare Marke, auch mit tabindex="-1" */
+.menue:focus-visible {
+  outline: none;
+  box-shadow: var(--schatten-schwebend), inset 0 0 0 2px var(--fokus);
+}
 /* Haken eines angehakten Umschalters ist die Zustandsanzeige: in Textfarbe, nicht blass wie ein Schmucksymbol */
 .menue-punkt[aria-checked='true']:not([aria-disabled='true']) .menue-symbol {
   color: var(--text);
