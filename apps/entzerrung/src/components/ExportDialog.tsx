@@ -117,7 +117,7 @@ export function ExportDialog({ foto, ebene, e, aufloesung, bereich, onClose }: {
         )}
         <label className="toggle">
           <input type="checkbox" checked={mitMessungen} disabled={!ebene.messungen.length} onChange={(x) => setMitMessungen(x.target.checked)} />
-          Messungen einzeichnen
+          Messungen einzeichnen{!ebene.messungen.length && <span className="muted"> (noch keine Messungen)</span>}
         </label>
         {fehler && <div className="warning">{fehler}</div>}
         <div className="dialog-buttons">
