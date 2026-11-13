@@ -5,7 +5,8 @@ import type { FeldDef } from '@core/ui/ansicht';
 import { useAnsicht } from '@core/ui/ansicht';
 import { AnsichtAnzeige, AnsichtEditor } from '@core/ui/AnsichtEditor';
 import type { ExportUeberschreibung, Status, UmfangEintrag } from '../antrag';
-import { eingereichtVon, PLANSATZ_QUELLE, standFestgehaltenText, tagVon } from '../antrag';
+import { artDerFassung, eingereichtVon, PLANSATZ_QUELLE, standFestgehaltenText, tagVon } from '../antrag';
+import { alleKuerzel } from '@core/namensschema';
 import { ART_HINWEIS, vorlageArtWarnung, STATUS_TEXT, alsUmfang, dokumenteDerVorlage, naechsteFassung, umfangAusKatalog, verschieben, vorlageFuer, vorlageMitAntragsart } from '../antrag';
 import { bedingungText, hatBedingung, MERKMAL_ERKLAERUNG } from '../bedingung';
 import { BedingungEditor } from './BedingungEditor';
@@ -637,7 +638,7 @@ export function AntragsdatenAnsicht() {
   if (!projekt) return null;
   const fassung = aktiveFassung(st, projekt);
   // Vorschlag: die Vorlage zur Antragsart der aktiven Fassung („BAUA 2“ → BAUA, „BVA“ → BAUVA); keine passende = keine Vorwahl
-  const art = st.fassungen.find((f) => f.name === fassung)?.art ?? fassung.replace(/[\s_-]*\d+$/, '');
+  const art = st.fassungen.find((f) => f.name === fassung)?.art ?? artDerFassung(fassung, alleKuerzel(schema.antragsarten));
   const vorlage = vorlagen.find((v) => v.id === vorlageWahl) ?? vorlageFuer(vorlagen, art, schema.antragsarten);
   const ohneVorlage = vorlagen.length > 0 && !vorlage;
   const ordner = antragsOrdner(st, projekt);

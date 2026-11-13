@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { dateinameZerlegen, planNummerAus, VORGABE_NAMENSSCHEMA } from '@core/namensschema';
 import type { UmfangEintrag } from './antrag';
-import { abschnittAus, abschnittVon, aktuellsterAntrag, ansichtVon, aufnahmeVorschlag, eingereichtAus, neuerAntrag } from './antrag';
+import { abschnittAus, abschnittVon, aktuellsterAntrag, ansichtVon, aufnahmeVorschlag, eingereichtAus, formularSchluessel, neuerAntrag } from './antrag';
 import { merkmalVorgaben } from './bedingung';
 import { aenderungAnwenden, alsAngaben, bereitAnwenden, klein, stabil, umfangAnwenden, VORGABE_EXPORT, einstellungenAus, entferntSeitEinreichung, imStand, nachEinreichungErwartet, nameNachFormat, seitEinreichung, standAus, vorlageMitAntragsart, datumAusName, standVergleich, antragsNameFehler, artDerFassung, bereitschaft, ordnerPasst, anzeigeName, dateiImAntrag, dateiname, einstellungenFuer, externStatus, fassungenAus, formularStatus, formularVon, naechsteFassung, passt, projektDateiAus, quelleVon, standardFassung, projektStatusAus, projektStatusLesen, schlimmsterStatus, statusGesamt, verschieben, vorlagenAus, vorlageFuer, umfangAusKatalog, VORGABE_KATALOG } from './antrag';
 
@@ -71,6 +71,23 @@ describe('Antragsfassungen', () => {
     expect(naechsteFassung(vb, 'BVA', VORGABE_NAMENSSCHEMA.antragsarten)).toBe('BVA 3');
     expect(naechsteFassung(vb, 'BVA')).toBe('BVA 3');
     expect(naechsteFassung(fassungenAus(['BAUVA'], ['BAUVA', 'BVA']), 'BVA', VORGABE_NAMENSSCHEMA.antragsarten)).toBe('BVA 2');
+  });
+  it('Nummer vorn („2 BAUA“, „2. BAUA“, „02. BAUA“, „02 BAUA“): erkannt, die nächste in derselben Schreibweise', () => {
+    const f = fassungenAus(['BAUA', '02. BAUA', '2 DENK', 'Schriftverkehr'], arten);
+    expect(f.map((x) => [x.name, x.art, x.nr])).toEqual([
+      ['BAUA', 'BAUA', 1],
+      ['02. BAUA', 'BAUA', 2],
+      ['2 DENK', 'DENK', 2],
+    ]);
+    expect(standardFassung(f, arten)?.name).toBe('02. BAUA');
+    expect(naechsteFassung(f, 'BAUA')).toBe('03. BAUA');
+    expect(naechsteFassung(f, 'DENK')).toBe('3 DENK');
+    expect(naechsteFassung(fassungenAus(['BAUA', '2.BAUA'], arten), 'BAUA')).toBe('3.BAUA');
+    expect(naechsteFassung(fassungenAus(['BAUA', 'BAUA_02'], arten), 'BAUA')).toBe('BAUA_03');
+    // nur „BAUA“ (ohne Nummer): wie bisher „BAUA 2“
+    expect(naechsteFassung(fassungenAus(['BAUA'], arten), 'BAUA')).toBe('BAUA 2');
+    // die Antragsart einer Fassung, auch mit Nummer vorn
+    expect(artDerFassung('02. BAUA')).toBe('BAUA');
   });
 });
 
@@ -623,6 +640,28 @@ describe('Antragsstand bei der Einreichung', () => {
     expect(nachEinreichungErwartet('Bescheid über die Verlängerung der Geltungsdauer der Baugenehmigung.pdf', o)).toBe(true);
     expect(nachEinreichungErwartet('Verlängerung der Geltungsdauer.pdf', o)).toBe(false);
     expect(nachEinreichungErwartet('zur Baugenehmigung vom 20.11.2026.pdf', o)).toBe(false);
+  });
+});
+
+describe('Schlüssel eines Formulars (Sammelprojekt)', () => {
+  it('Pfad ab dem Projektordner: im Stammordner der Dateiname, im Unterordner mit ihm', () => {
+    expect(formularSchluessel('BS9/001-Muster.frmsjf')).toBe('001-Muster.frmsjf');
+    expect(formularSchluessel('BS9/2. BAUA/002-Bauantrag.frmsjf')).toBe('2. BAUA/002-Bauantrag.frmsjf');
+    // ohne Projekt (einzeln geöffnet): der Dateiname
+    expect(formularSchluessel('Formular.frmsjf')).toBe('Formular.frmsjf');
+  });
+  it('Zuordnung im Antragsumfang: genau das Formular; eine ältere nur mit Dateinamen findet es auch im Unterordner', () => {
+    const formulare = [
+      { pfad: 'BS9/2. BAUA/002-Bauantrag.frmsjf', name: '002-Bauantrag' },
+      { pfad: 'BS9/002-Bauantrag.frmsjf', name: '002-Bauantrag' },
+    ];
+    // Titel passt zu keinem Formularnamen – gefunden wird nur über die Zuordnung
+    const u = (formularDatei: string): UmfangEintrag => ({ id: 'b', titel: 'Statik', art: 'intern', formularDatei });
+    expect(formularVon(u('002-Bauantrag.frmsjf'), formulare)?.pfad).toBe('BS9/002-Bauantrag.frmsjf');
+    expect(formularVon(u('2. BAUA/002-Bauantrag.frmsjf'), formulare)?.pfad).toBe('BS9/2. BAUA/002-Bauantrag.frmsjf');
+    expect(formularVon(u('002-Bauantrag.frmsjf'), [formulare[0]])?.pfad).toBe('BS9/2. BAUA/002-Bauantrag.frmsjf');
+    // ein Schlüssel mit Unterordner (eines anderen Antrags) findet nicht über den bloßen Dateinamen ein anderes
+    expect(formularVon(u('3. BAUA/002-Bauantrag.frmsjf'), [formulare[1]])).toBeNull();
   });
 });
 

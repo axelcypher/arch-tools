@@ -77,6 +77,7 @@ beforeEach(() => {
     projekte: [],
     projekt: null,
     formulare: [],
+    sammel: null,
     offen: null,
     karte: null,
     haupt: 'formular',
@@ -1300,6 +1301,98 @@ describe('Projektordner, Ansicht „Antrag“: Quick-Add für Dateien ohne Dokum
     expect(ds.dateien.get(OAP)).toBe(bytes);
     expect(umfangVon('BAUA 2').filter((u) => u.dateien?.['BAUA 2'] === BSK).map((u) => u.titel)).toEqual(['Brandschutzkonzept']);
     expect(useFormulare.getState().meldung).toEqual({ art: 'info', text: `Nicht aufgenommen – „${BSK}“ ist schon mit „Brandschutzkonzept“ verknüpft.` });
+  });
+});
+
+describe('Sammelprojekt: Formulare aus dem Unterordner des aktiven Antrags und dem Stammordner', () => {
+  const gruppen = (host: HTMLElement) => [...host.querySelectorAll('.nav-gruppe')].map((g) => g.textContent);
+  const namenIn = (host: HTMLElement, label: string) => [...host.querySelectorAll(`.nav-liste[aria-label="${label}"] .nav-eintrag:not(.fehlt) .nav-text`)].map((t) => t.textContent);
+  const sammelprojekt = () => {
+    ds.dateien.set('C:/FORMA/BS9/2. BAUA/002-Bauantrag (2026).frmsjf', MUSTER);
+    // Unterordner eines anderen Antrags: nur, wenn er aktiv ist
+    ds.dateien.set('C:/FORMA/BS9/BAUA/005-Altantrag.frmsjf', MUSTER);
+    // kein Antrag: bleibt unbeachtet
+    ds.dateien.set('C:/FORMA/BS9/Vorlagen/009-Entwurf.frmsjf', MUSTER);
+  };
+
+  it('zeigt den Unterordner des aktiven Antrags („2. BAUA“ zu BAUA 2) und den Stammordner – andere Anträge nicht', async () => {
+    sammelprojekt();
+    const host = await projektBS9();
+    await warte();
+    expect(useAntrag.getState().projektdatei?.ansicht).toBe('BAUA 2');
+    expect(gruppen(host)).toEqual(['Antrag BAUA 2 · Unterordner 2. BAUA', 'Stammordner · für alle Anträge']);
+    expect(namenIn(host, 'Formulare von Antrag BAUA 2')).toEqual(['002-Bauantrag (2026)']);
+    expect(namenIn(host, 'Formulare im Stammordner')).toEqual(['001-Muster']);
+    expect(host.textContent).not.toContain('005-Altantrag');
+    expect(host.textContent).not.toContain('009-Entwurf');
+    expect(useFormulare.getState().sammel).toEqual({ unterordner: '2. BAUA', alle: expect.arrayContaining(['2. BAUA', 'BAUA']) });
+    expect(useFormulare.getState().sammel!.alle).toHaveLength(2);
+    // das Formular im Unterordner öffnet sich wie jedes andere
+    await klick(knopf(host, '002-Bauantrag (2026)'));
+    expect(useFormulare.getState().offen?.pfad).toBe('BS9/2. BAUA/002-Bauantrag (2026).frmsjf');
+  });
+
+  it('anderer Antrag aktiv: dessen Unterordner; Antrag ohne Unterordner: Hinweis, nur der Stammordner', async () => {
+    sammelprojekt();
+    const host = await projektBS9();
+    await warte();
+    await act(() => useAntrag.getState().fassungWaehlen('BAUA'));
+    for (let i = 0; i < 3; i++) await warte();
+    expect(gruppen(host)).toEqual(['Antrag BAUA · Unterordner BAUA', 'Stammordner · für alle Anträge']);
+    expect(namenIn(host, 'Formulare von Antrag BAUA')).toEqual(['005-Altantrag']);
+    expect(host.textContent).not.toContain('002-Bauantrag (2026)');
+    // ein neuer Antrag ohne eigenen Unterordner
+    ds.ordner.add(`${PROJEKT}/TÖB/BAUA 3`);
+    await act(() => useAntrag.getState().fassungWaehlen('BAUA 3'));
+    for (let i = 0; i < 3; i++) await warte();
+    expect(gruppen(host)[0]).toBe('Antrag BAUA 3 · kein eigener Unterordner');
+    expect(host.textContent).toContain('Im Formularprojekt gibt es keinen Unterordner für Antrag BAUA 3');
+    expect(namenIn(host, 'Formulare im Stammordner')).toEqual(['001-Muster']);
+    expect(useFormulare.getState().sammel?.unterordner).toBeNull();
+  });
+
+  it('gewöhnliches Projekt (ohne Antrags-Unterordner): eine Liste wie bisher, keine Gruppen', async () => {
+    ds.dateien.set('C:/FORMA/BS9/Vorlagen/009-Entwurf.frmsjf', MUSTER);
+    const host = await projektBS9();
+    await warte();
+    expect(gruppen(host)).toEqual([]);
+    expect(namenIn(host, 'Formulare')).toEqual(['001-Muster']);
+    expect(useFormulare.getState().sammel).toBeNull();
+  });
+
+  it('gleicher Name im Unterordner und im Stammordner: der Antragsumfang findet das im Unterordner', async () => {
+    sammelprojekt();
+    ds.dateien.set('C:/FORMA/BS9/003-Bauantrag.frmsjf', MUSTER);
+    const host = await projektBS9();
+    await klick(antragsdaten(host));
+    await klick(knopf(host, 'Antragsumfang festlegen'));
+    for (let i = 0; i < 3; i++) await warte();
+    expect(useAntrag.getState().dokumente.find((d) => d.eintrag.id === 'bauantrag')?.formular?.pfad).toBe('BS9/2. BAUA/002-Bauantrag (2026).frmsjf');
+  });
+
+  it('Formular anlegen: im Unterordner des aktiven Antrags, zugeordnet mit dem Pfad ab dem Projektordner', async () => {
+    ds.ordner.add('C:/FORMA/BS9/02 BAUA');
+    const host = await projektBS9();
+    await klick(antragsdaten(host));
+    await klick(knopf(host, 'Antragsumfang festlegen'));
+    for (let i = 0; i < 3; i++) await warte();
+    expect(useFormulare.getState().sammel?.unterordner).toBe('02 BAUA');
+    await klick(host.querySelector<HTMLButtonElement>('.nav-eintrag.fehlt')!);
+    for (let i = 0; i < 3; i++) await warte();
+    expect(ds.dateien.has('C:/FORMA/BS9/02 BAUA/002-Bauantrag (2026).frmsjf')).toBe(true);
+    expect(ds.dateien.has('C:/FORMA/BS9/002-Bauantrag (2026).frmsjf')).toBe(false);
+    expect(useAntrag.getState().projektdatei?.umfang?.find((u) => u.id === 'bauantrag')?.formularDatei).toBe('02 BAUA/002-Bauantrag (2026).frmsjf');
+    expect(useFormulare.getState().offen?.pfad).toBe('BS9/02 BAUA/002-Bauantrag (2026).frmsjf');
+    expect(namenIn(host, 'Formulare von Antrag BAUA 2')).toEqual(['002-Bauantrag (2026)']);
+  });
+
+  it('Sperren: auch die im Unterordner des aktiven Antrags', async () => {
+    sammelprojekt();
+    ds.dateien.set('C:/FORMA/BS9/2. BAUA/002-Bauantrag (2026).frmtmp', new Uint8Array([1]));
+    await projektBS9();
+    await warte();
+    const sperren = await act(() => useFormulare.getState().sperrenAuflisten());
+    expect(sperren.map((x) => x.pfad)).toContain('BS9/2. BAUA/002-Bauantrag (2026).frmtmp');
   });
 });
 

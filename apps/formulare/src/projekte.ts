@@ -4,7 +4,9 @@
  * Ältere Fassungen eines Formulars liegen in `_archiv` und werden nicht angezeigt.
  */
 
-import type { Dateisystem } from './dateisystem';
+import { fassungAus, gleicheFassung } from '@core/fassung';
+import type { Kuerzel } from '@core/namensschema';
+import type { Dateisystem, Eintrag } from './dateisystem';
 import { verbinde } from './dateisystem';
 import { cp1252Lesen, iniLesen } from './forma/cp1252';
 import { sperrPfad } from './forma/sperre';
@@ -36,6 +38,27 @@ export interface FormularEintrag {
   name: string;
   /** daneben liegt eine Sperrdatei: in FORMA (oder hier) geöffnet */
   gesperrt: boolean;
+  /** Sammelprojekt: der Unterordner des Antrags, in dem das Formular liegt (z. B. „2. BAUA“) – fehlt im Stammordner */
+  unterordner?: string;
+}
+
+/** Welcher Antrag aktiv ist und wie Antragsarten geschrieben werden – damit sich sein Unterordner finden lässt */
+export interface UnterordnerWahl {
+  /** aktive Antragsfassung, z. B. „BAUA 2“ */
+  fassung: string;
+  /** alle Schreibweisen der Antragsarten */
+  arten: string[];
+  /** Antragsarten des Namensschemas (gleichwertige Schreibweisen) */
+  antragsarten: Kuerzel[];
+}
+
+/** Formulare des Projekts samt Sammelprojekt-Angaben */
+export interface FormulareDesProjekts {
+  formulare: FormularEintrag[];
+  /** Unterordner des aktiven Antrags (relativ zum Projektordner) – null, wenn es keinen gibt */
+  unterordner: string | null;
+  /** alle Unterordner, die Antragsfassungen sind (Sammelprojekt) – leer bei einem gewöhnlichen Projekt */
+  antragsUnterordner: string[];
 }
 
 const istProjektdatei = (name: string) => /\.frmsjf$/i.test(name) || /^sj_prokarte\.sdb$/i.test(name);
@@ -86,15 +109,36 @@ async function projektTitel(ds: Dateisystem, root: string, ordner: string): Prom
   }
 }
 
-export async function formulareDesProjekts(ds: Dateisystem, p: Projekt): Promise<FormularEintrag[]> {
-  const eintraege = await ds.liste(verbinde(p.root, p.ordner), 1);
+/** Formulare eines Ordners (eine Ebene), `ordner` relativ zum Projektordner-Root */
+function formulareIn(eintraege: Eintrag[], ordner: string, unterordner?: string): FormularEintrag[] {
   const namen = new Set(eintraege.filter((e) => !e.ordner).map((e) => e.pfad.toLowerCase()));
   return eintraege
     .filter((e) => !e.ordner && /\.frmsjf$/i.test(e.pfad))
     .map((e) => ({
-      pfad: `${p.ordner}/${e.pfad}`,
+      pfad: `${ordner}/${e.pfad}`,
       name: e.pfad.replace(/\.frmsjf$/i, ''),
       gesperrt: namen.has(sperrPfad(e.pfad).toLowerCase()),
+      ...(unterordner ? { unterordner } : {}),
     }))
     .sort((a, b) => sortiere(a.name, b.name));
+}
+
+/**
+ * Formulare des Projekts. Ein Sammelprojekt hat je Antrag einen Unterordner, benannt wie die Antragsfassung („BAUA 2“,
+ * „2. BAUA“, „02 BAUA“ …, @core/fassung): Mit `wahl` kommen die Formulare aus dem Unterordner des aktiven Antrags dazu –
+ * vor denen des Stammordners (antragsübergreifend), damit sie bei gleichem Namen Vorrang haben.
+ */
+export async function formulareMitUnterordner(ds: Dateisystem, p: Projekt, wahl?: UnterordnerWahl): Promise<FormulareDesProjekts> {
+  const eintraege = await ds.liste(verbinde(p.root, p.ordner), 1);
+  const stamm = formulareIn(eintraege, p.ordner);
+  const antragsUnterordner = wahl ? eintraege.filter((e) => e.ordner && fassungAus(e.pfad, wahl.arten)).map((e) => e.pfad) : [];
+  const unterordner = wahl ? (antragsUnterordner.find((u) => gleicheFassung(u, wahl.fassung, wahl.antragsarten, wahl.arten)) ?? null) : null;
+  if (!unterordner) return { formulare: stamm, unterordner: null, antragsUnterordner };
+  const darin = await ds.liste(verbinde(p.root, `${p.ordner}/${unterordner}`), 1);
+  return { formulare: [...formulareIn(darin, `${p.ordner}/${unterordner}`, unterordner), ...stamm], unterordner, antragsUnterordner };
+}
+
+/** Formulare des Projekts (siehe formulareMitUnterordner) */
+export async function formulareDesProjekts(ds: Dateisystem, p: Projekt, wahl?: UnterordnerWahl): Promise<FormularEintrag[]> {
+  return (await formulareMitUnterordner(ds, p, wahl)).formulare;
 }

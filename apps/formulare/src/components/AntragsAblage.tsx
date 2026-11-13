@@ -1,3 +1,4 @@
+import { alleKuerzel } from '@core/namensschema';
 import type { AblageOrdner } from '../ablage';
 import { dateiArt } from '../ablage';
 import type { Bereitschaft } from '../antrag';
@@ -108,10 +109,10 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
   // Ordner nicht lesbar und noch keine Liste von vorher: nichts zählen, nichts als fehlend melden
   const ohneListe = lesefehler && !dateien.length;
   const basis = verbinde(ablage.root, ablage.pfad);
-  const art = artDerFassung(fassung);
   const codes = projektCodes(projekt);
   // Stellen von Projektcode, Antragsart und Datum nach dem Namensschema (der Projektdatei bzw. des Büros)
   const schema = useFormulare(namensschemaVon);
+  const art = artDerFassung(fassung, alleKuerzel(schema.antragsarten));
   const reihenfolge = schema.reihenfolge;
 
   const liste = dateien

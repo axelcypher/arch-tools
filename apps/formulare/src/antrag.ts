@@ -12,6 +12,8 @@
 import type { AntragKurz } from '@core/model';
 import type { Kuerzel, Namensschema, NamensTeil } from '@core/namensschema';
 import { alleKuerzel, dateinameZerlegenMitStellen, kuerzelZu, planNummerAus, VORGABE_NAMENSSCHEMA } from '@core/namensschema';
+import type { FassungsForm } from '@core/fassung';
+import { artDerFassung, fassungAus, fassungsName } from '@core/fassung';
 import { antragKurzAus } from '@core/serialize';
 import type { Zustaende } from './autofill';
 import { zustaendeAus } from './autofill';
@@ -170,7 +172,7 @@ export function dateiname(vorlage: string, a: NamensAngaben): string {
     name: a.name,
     formular: a.formular ?? a.name,
     antrag: a.antrag ?? '',
-    art: a.art ?? (a.antrag ?? '').replace(/[\s_-]*\d+$/, ''),
+    art: a.art ?? artDerFassung(a.antrag ?? ''),
     kennung: a.kennung ?? '',
     stand: a.stand ?? '',
   };
@@ -186,7 +188,7 @@ export function dateiname(vorlage: string, a: NamensAngaben): string {
 /* ---------- Antragsfassungen ---------- */
 
 export interface Fassung {
-  /** Ordnername, z. B. „BAUA 2“ */
+  /** Ordnername, z. B. „BAUA 2“ oder „02. BAUA“ */
   name: string;
   /** Antragsart, z. B. „BAUA“ */
   art: string;
@@ -194,18 +196,16 @@ export interface Fassung {
   nr: number;
   /** Ordner gibt es schon */
   vorhanden: boolean;
+  /** Schreibweise der Nummer (vorn/hinten, Stellen, Punkt) – fehlt ohne Nummer */
+  form?: FassungsForm;
 }
 
-const regexText = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-/** Antragsfassungen aus den Ordnernamen im Antragsordner, nach Art und Nummer sortiert */
+/** Antragsfassungen aus den Ordnernamen im Antragsordner (Nummer hinten oder vorn, @core/fassung), nach Art und Nummer sortiert */
 export function fassungenAus(ordner: string[], arten: string[]): Fassung[] {
   const out: Fassung[] = [];
   for (const name of ordner) {
-    const art = arten.find((a) => new RegExp(`^${regexText(a)}(?:[\\s_-]*\\d+)?(?:\\s.*)?$`, 'i').test(name.trim()));
-    if (!art) continue;
-    const nr = Number(new RegExp(`^${regexText(art)}[\\s_-]*(\\d+)`, 'i').exec(name.trim())?.[1] ?? 1);
-    out.push({ name, art: art.toUpperCase(), nr, vorhanden: true });
+    const f = fassungAus(name, arten);
+    if (f) out.push({ name, art: f.art, nr: f.nr, vorhanden: true, ...(f.form ? { form: f.form } : {}) });
   }
   const index = (a: string) => arten.findIndex((x) => x.toUpperCase() === a);
   return out.sort((a, b) => index(a.art) - index(b.art) || a.nr - b.nr || a.name.localeCompare(b.name, 'de'));
@@ -226,13 +226,18 @@ export const hauptArt = (art: string, arten: Kuerzel[] = []) => kuerzelZu(arten,
 
 /**
  * Name der nächsten Fassung einer Art: „BAUA“, dann „BAUA 2“, „BAUA 3“ … – gezählt über alle gleichwertigen
- * Schreibweisen (BVA und BAUVA); der neue Name verwendet die übergebene Schreibweise („BVA“ → „BVA 3“)
+ * Schreibweisen (BVA und BAUVA); der neue Name verwendet die übergebene Schreibweise („BVA“ → „BVA 3“) und die
+ * Schreibweise der Nummer der vorhandenen mit der höchsten („02. BAUA“ → „03. BAUA“, „2 BAUA“ → „3 BAUA“)
  */
 export function naechsteFassung(fassungen: Fassung[], art: string, arten: Kuerzel[] = []): string {
   const haupt = hauptArt(art, arten);
   const da = fassungen.filter((f) => hauptArt(f.art, arten) === haupt);
   if (!da.length) return art.toUpperCase();
-  return `${art.toUpperCase()} ${Math.max(...da.map((f) => f.nr)) + 1}`;
+  const nr = Math.max(...da.map((f) => f.nr)) + 1;
+  // Vorlage: die höchste mit Nummer (ohne Nummer gibt es nur „BAUA“ – dann „BAUA 2“); hinten ohne Trenner („BAUA3“)
+  // kommt das übliche Leerzeichen hinein
+  const vorlage = [...da].filter((f) => f.form).sort((a, b) => b.nr - a.nr)[0]?.form;
+  return fassungsName(art, nr, vorlage && !vorlage.vorn && !vorlage.trenner ? { ...vorlage, trenner: ' ' } : vorlage);
 }
 
 /* ---------- Katalog und Antragsumfang ---------- */
@@ -1205,8 +1210,8 @@ export function eingereichtAus(dateien: Eintrag[]): { datei: string; datum: stri
 
 /* ---------- Dokumente im Antragsordner: Namensformat und „bereit“ ---------- */
 
-/** Antragsart einer Fassung: „BAUA 2“ → „BAUA“ */
-export const artDerFassung = (fassung: string) => fassung.trim().replace(/[\s_-]*\d+$/, '').toUpperCase();
+/** Antragsart einer Fassung: „BAUA 2“, „02. BAUA“ → „BAUA“ (aus @core/fassung) */
+export { artDerFassung };
 
 const gueltigesDatum = (t: string | undefined) => {
   const m = /^(\d{2})(\d{2})(\d{2})$/.exec(t ?? '');
@@ -1551,9 +1556,20 @@ export function quelleVon(u: UmfangEintrag, dateien: Eintrag[], codes: string[] 
 }
 
 /** Das Formular eines internen Dokuments im FORMA-Projekt: zugeordnet, sonst nach Name oder Kennung */
+/**
+ * Schlüssel eines Formulars im Formularprojekt (Autofill-Zustand, Zuordnung im Antragsumfang): der Pfad ab dem
+ * Projektordner – im Stammordner der Dateiname, im Unterordner eines Sammelprojekts „2. BAUA/001-….frmsjf“
+ */
+export function formularSchluessel(pfad: string): string {
+  const teile = pfad.split('/');
+  return teile.length > 2 ? teile.slice(1).join('/') : teile[teile.length - 1];
+}
+
 export function formularVon<T extends { pfad: string; name: string; kennung?: string | null }>(u: UmfangEintrag, formulare: T[]): T | null {
   if (u.formularDatei) {
-    const f = formulare.find((x) => nurName(x.pfad).toLowerCase() === u.formularDatei!.toLowerCase());
+    const schluessel = u.formularDatei.toLowerCase();
+    // genau dieses Formular; eine ältere Zuordnung nur mit Dateinamen findet es auch im Unterordner
+    const f = formulare.find((x) => formularSchluessel(x.pfad).toLowerCase() === schluessel) ?? (schluessel.includes('/') ? undefined : formulare.find((x) => nurName(x.pfad).toLowerCase() === schluessel));
     if (f) return f;
   }
   const muster = u.formular || u.titel;

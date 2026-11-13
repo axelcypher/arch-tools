@@ -5,6 +5,7 @@ import { useEscSchliessen } from '@core/ui/Dialog';
 import type { AblageOrdner } from '../ablage';
 import { dateiArt } from '../ablage';
 import { antragsNameFehler, artDerFassung, BEREIT_TEXT, bereitschaft, istHilfsdatei } from '../antrag';
+import { alleKuerzel } from '@core/namensschema';
 import { aktiveFassung, antragSperre, antragsOrdner, dateienVon, dokumentZu, namensschemaVon, projektCodes, useAntrag, wechselLaeuft, zeilenFassung } from '../antragStore';
 import type { Eintrag } from '../dateisystem';
 import { oeffnePfad, verbinde } from '../dateisystem';
@@ -55,7 +56,9 @@ export function UnterlagenVorschau({ ablage, start, onClose }: { ablage: AblageO
   const aktuell = liste[Math.min(index, liste.length - 1)];
   const art = aktuell ? dateiArt(aktuell.pfad) : 'sonst';
   const schema = useFormulare(namensschemaVon);
-  const fehlerName = aktuell ? antragsNameFehler(aktuell.pfad, { codes: projektCodes(projekt), art: artDerFassung(fassung), reihenfolge: schema.reihenfolge, schema }) : null;
+  const fehlerName = aktuell
+    ? antragsNameFehler(aktuell.pfad, { codes: projektCodes(projekt), art: artDerFassung(fassung, alleKuerzel(schema.antragsarten)), reihenfolge: schema.reihenfolge, schema })
+    : null;
   const zustand = aktuell
     ? bereitschaft(
         aktuell,

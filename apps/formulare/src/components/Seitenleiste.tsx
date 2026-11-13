@@ -58,6 +58,7 @@ function Abschnitt({ id, titel, kopf, children, start = true }: { id: string; ti
 export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void; onSperren: () => void }) {
   const projekt = useFormulare((s) => s.projekt);
   const formulare = useFormulare((s) => s.formulare);
+  const sammel = useFormulare((s) => s.sammel);
   const offen = useFormulare((s) => s.offen);
   const haupt = useFormulare((s) => s.haupt);
   const karte = useFormulare((s) => s.karte);
@@ -156,6 +157,91 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
     window.addEventListener('pointerup', ende);
   };
 
+  // Sammelprojekt: Formulare im Unterordner des aktiven Antrags bzw. im Stammordner
+  const imUnterordner = formulare.filter((f) => f.unterordner);
+  const imStamm = formulare.filter((f) => !f.unterordner);
+  const formularZeile = (f: FormularEintrag) => {
+    const aktiv = offen?.pfad === f.pfad;
+    const ungespeichert = aktiv ? istGeaendert(offen) : !!projekt && hatEntwurf(projekt, f.pfad);
+    const fremd = f.gesperrt && !(aktiv && offen?.sperre.art === 'eigen');
+    const gezeigt = aktiv && haupt === 'formular';
+    const doc = umfangDa ? statusVon.get(f.pfad) : undefined;
+    return (
+      <button
+        key={f.pfad}
+        role="listitem"
+        className={`nav-eintrag${gezeigt ? ' aktiv' : ''}`}
+        aria-current={gezeigt ? 'page' : undefined}
+        title={`${doc ? `${f.name} – ${doc.eintrag.titel}` : f.name}\n${zeitLang(formularInfo[f.pfad]?.letzteAenderung)}`}
+        onClick={() => (aktiv ? setHaupt('formular') : void formularOeffnen(f))}
+        onContextMenu={(e) => zeigeMenue(e, formularMenue(f))}
+      >
+        <span className="nav-symbol">
+          <Symbol name="formular" />
+          {doc && <StatusPunkt status={doc.status} />}
+        </span>
+        <span className="nav-text">{f.name}</span>
+        {fremd && (
+          <span className="nav-schloss" title="Anderswo geöffnet (Sperrdatei vorhanden)" aria-label="gesperrt">
+            <Symbol name="schloss" />
+          </span>
+        )}
+        {ungespeichert && (
+          <span className="fo-ungespeichert" title="Nicht gespeicherte Eingaben">
+            ●
+          </span>
+        )}
+        {/* die Zeit immer als letztes, rechtsbündig – Markierungen davor */}
+        {formularInfo[f.pfad]?.letzteAenderung ? <span className="nav-zeit">{zeitKurz(formularInfo[f.pfad].letzteAenderung)}</span> : null}
+      </button>
+    );
+  };
+  const fehlendeZeile = (d: (typeof fehlende)[number]) => {
+    const doppelt = doppeltVon(d);
+    const menue = (): MenuePunkt[] => {
+      // die Fassung der angezeigten Zeile beim Öffnen – angelegt bzw. geändert wird nur für sie
+      const ansicht = zeilenFassung(useAntrag.getState(), projekt);
+      return [
+        { text: 'Formular anlegen', symbol: 'plus', ...aus, aktion: () => void useAntrag.getState().formularAnlegen(d.eintrag.id, { ansicht }) },
+        ...(formulare.length ? [{ text: 'Vorhandenes Formular zuordnen', symbol: 'link' as const, unter: formularePunkte(d.eintrag.id), ...aus }] : []),
+        { text: 'Aus dem Antragsumfang nehmen', symbol: 'muell', gefahr: true, ...aus, aktion: () => void ausUmfangEntfernen(d.eintrag.id, ansicht, d.eintrag.titel) },
+        { trenner: true },
+        { text: 'Antragsumfang zeigen', symbol: 'stapel', aktion: umfangZeigen },
+      ];
+    };
+    return (
+      <button
+        key={d.eintrag.id}
+        role="listitem"
+        className={`nav-eintrag fehlt${gesperrt || wechsel ? ' gesperrt' : ''}`}
+        title={
+          gesperrt
+            ? `${d.eintrag.titel} fehlt – der Antrag ist eingereicht und gesperrt; zum Nachreichen den Status in den Antragsdaten vorübergehend auf „in Arbeit“ setzen`
+            : wechsel
+              ? `${d.eintrag.titel} fehlt – der Antrag wird gerade geöffnet, gleich wieder möglich`
+              : doppelt
+              ? `${d.eintrag.titel}: „${doppelt.name}“ ist schon „${statusVon.get(doppelt.pfad)!.eintrag.titel}“ zugeordnet – doppelter Eintrag? Klicken: zuordnen oder aus dem Antragsumfang nehmen`
+              : `${d.eintrag.titel} fehlt im Projekt – klicken, um das Formular anzulegen`
+        }
+        aria-haspopup={doppelt && !gesperrt && !wechsel ? 'menu' : undefined}
+        // das Menü am Eintrag öffnen (auch mit Enter/Leertaste, ohne Mauszeiger); gesperrt bzw. beim Öffnen: nur die Meldung
+        onClick={(e) =>
+          doppelt && !gesperrt && !wechsel
+            ? zeigeMenueAn(e.currentTarget, menue())
+            : void useAntrag.getState().formularAnlegen(d.eintrag.id, { ansicht: zeilenFassung(useAntrag.getState(), projekt) })
+        }
+        onContextMenu={(e) => zeigeMenue(e, menue())}
+      >
+        <span className="nav-symbol">
+          <Symbol name="formular" />
+          <StatusPunkt status="fehlt" />
+        </span>
+        <span className="nav-text">{d.eintrag.titel}</span>
+        {!gesperrt && !wechsel && <span className={`nav-unter${doppelt ? ' nav-doppelt' : ''}`}>{doppelt ? 'doppelt?' : 'anlegen'}</span>}
+      </button>
+    );
+  };
+
   return (
     <aside className="nav" style={{ width: breite }} aria-label="Navigation">
       {/* fester Kopf: Projekt, Antrag und die Daten-Knöpfe bleiben stehen, darunter rollt die Navigation */}
@@ -251,90 +337,33 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
                 </>
               }
             >
-              <div className="nav-liste" role="list" aria-label="Formulare">
-                {formulare.map((f) => {
-                  const aktiv = offen?.pfad === f.pfad;
-                  const ungespeichert = aktiv ? istGeaendert(offen) : hatEntwurf(projekt, f.pfad);
-                  const fremd = f.gesperrt && !(aktiv && offen?.sperre.art === 'eigen');
-                  const gezeigt = aktiv && haupt === 'formular';
-                  const doc = umfangDa ? statusVon.get(f.pfad) : undefined;
-                  return (
-                    <button
-                      key={f.pfad}
-                      role="listitem"
-                      className={`nav-eintrag${gezeigt ? ' aktiv' : ''}`}
-                      aria-current={gezeigt ? 'page' : undefined}
-                      title={`${doc ? `${f.name} – ${doc.eintrag.titel}` : f.name}\n${zeitLang(formularInfo[f.pfad]?.letzteAenderung)}`}
-                      onClick={() => (aktiv ? setHaupt('formular') : void formularOeffnen(f))}
-                      onContextMenu={(e) => zeigeMenue(e, formularMenue(f))}
-                    >
-                      <span className="nav-symbol">
-                        <Symbol name="formular" />
-                        {doc && <StatusPunkt status={doc.status} />}
-                      </span>
-                      <span className="nav-text">{f.name}</span>
-                      {fremd && (
-                        <span className="nav-schloss" title="Anderswo geöffnet (Sperrdatei vorhanden)" aria-label="gesperrt">
-                          <Symbol name="schloss" />
-                        </span>
-                      )}
-                      {ungespeichert && (
-                        <span className="fo-ungespeichert" title="Nicht gespeicherte Eingaben">
-                          ●
-                        </span>
-                      )}
-                      {/* die Zeit immer als letztes, rechtsbündig – Markierungen davor */}
-                      {formularInfo[f.pfad]?.letzteAenderung ? <span className="nav-zeit">{zeitKurz(formularInfo[f.pfad].letzteAenderung)}</span> : null}
-                    </button>
-                  );
-                })}
-                {fehlende.map((d) => {
-                  const doppelt = doppeltVon(d);
-                  const menue = (): MenuePunkt[] => {
-                    // die Fassung der angezeigten Zeile beim Öffnen – angelegt bzw. geändert wird nur für sie
-                    const ansicht = zeilenFassung(useAntrag.getState(), projekt);
-                    return [
-                      { text: 'Formular anlegen', symbol: 'plus', ...aus, aktion: () => void useAntrag.getState().formularAnlegen(d.eintrag.id, { ansicht }) },
-                      ...(formulare.length ? [{ text: 'Vorhandenes Formular zuordnen', symbol: 'link' as const, unter: formularePunkte(d.eintrag.id), ...aus }] : []),
-                      { text: 'Aus dem Antragsumfang nehmen', symbol: 'muell', gefahr: true, ...aus, aktion: () => void ausUmfangEntfernen(d.eintrag.id, ansicht, d.eintrag.titel) },
-                      { trenner: true },
-                      { text: 'Antragsumfang zeigen', symbol: 'stapel', aktion: umfangZeigen },
-                    ];
-                  };
-                  return (
-                    <button
-                      key={d.eintrag.id}
-                      role="listitem"
-                      className={`nav-eintrag fehlt${gesperrt || wechsel ? ' gesperrt' : ''}`}
-                      title={
-                        gesperrt
-                          ? `${d.eintrag.titel} fehlt – der Antrag ist eingereicht und gesperrt; zum Nachreichen den Status in den Antragsdaten vorübergehend auf „in Arbeit“ setzen`
-                          : wechsel
-                            ? `${d.eintrag.titel} fehlt – der Antrag wird gerade geöffnet, gleich wieder möglich`
-                            : doppelt
-                            ? `${d.eintrag.titel}: „${doppelt.name}“ ist schon „${statusVon.get(doppelt.pfad)!.eintrag.titel}“ zugeordnet – doppelter Eintrag? Klicken: zuordnen oder aus dem Antragsumfang nehmen`
-                            : `${d.eintrag.titel} fehlt im Projekt – klicken, um das Formular anzulegen`
-                      }
-                      aria-haspopup={doppelt && !gesperrt && !wechsel ? 'menu' : undefined}
-                      // das Menü am Eintrag öffnen (auch mit Enter/Leertaste, ohne Mauszeiger); gesperrt bzw. beim Öffnen: nur die Meldung
-                      onClick={(e) =>
-                        doppelt && !gesperrt && !wechsel
-                          ? zeigeMenueAn(e.currentTarget, menue())
-                          : void useAntrag.getState().formularAnlegen(d.eintrag.id, { ansicht: zeilenFassung(useAntrag.getState(), projekt) })
-                      }
-                      onContextMenu={(e) => zeigeMenue(e, menue())}
-                    >
-                      <span className="nav-symbol">
-                        <Symbol name="formular" />
-                        <StatusPunkt status="fehlt" />
-                      </span>
-                      <span className="nav-text">{d.eintrag.titel}</span>
-                      {!gesperrt && !wechsel && <span className={`nav-unter${doppelt ? ' nav-doppelt' : ''}`}>{doppelt ? 'doppelt?' : 'anlegen'}</span>}
-                    </button>
-                  );
-                })}
-                {!formulare.length && !fehlende.length && <p className="nav-leer">Keine Formulare in diesem Projekt.</p>}
-              </div>
+              {sammel ? (
+                <>
+                  {/* Sammelprojekt: zuerst die Formulare im Unterordner des aktiven Antrags (neue entstehen dort), dann die des Stammordners für alle Anträge */}
+                  <p className="nav-gruppe">{sammel.unterordner ? `Antrag ${fassung} · Unterordner ${sammel.unterordner}` : `Antrag ${fassung} · kein eigener Unterordner`}</p>
+                  {!sammel.unterordner && (
+                    <p className="nav-leer">
+                      Im Formularprojekt gibt es keinen Unterordner für Antrag {fassung} (vorhanden: {sammel.alle.join(', ')}) – neue Formulare entstehen im Stammordner.
+                    </p>
+                  )}
+                  <div className="nav-liste" role="list" aria-label={`Formulare von Antrag ${fassung}`}>
+                    {imUnterordner.map(formularZeile)}
+                    {fehlende.map(fehlendeZeile)}
+                  </div>
+                  {sammel.unterordner && !imUnterordner.length && !fehlende.length && <p className="nav-leer">Noch keine Formulare in {sammel.unterordner}.</p>}
+                  <p className="nav-gruppe">Stammordner · für alle Anträge</p>
+                  <div className="nav-liste" role="list" aria-label="Formulare im Stammordner">
+                    {imStamm.map(formularZeile)}
+                  </div>
+                  {!imStamm.length && <p className="nav-leer">Keine Formulare im Stammordner.</p>}
+                </>
+              ) : (
+                <div className="nav-liste" role="list" aria-label="Formulare">
+                  {formulare.map(formularZeile)}
+                  {fehlende.map(fehlendeZeile)}
+                  {!formulare.length && !fehlende.length && <p className="nav-leer">Keine Formulare in diesem Projekt.</p>}
+                </div>
+              )}
             </Abschnitt>
 
             {ablageordner > 0 && <hr className="nav-trenner" />}
