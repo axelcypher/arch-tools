@@ -57,6 +57,14 @@ interface OrdnerState {
   /** wo die Einstellungen liegen (null im Browser bzw. bevor sie geladen sind) */
   konfig: KonfigOrt | null;
   konfigFehler: string | null;
+  /**
+   * das letzte Schreiben der Struktur (projektordner.json) ist gescheitert – Grund; bis zum nächsten gelungenen
+   * Schreiben bzw. frischen Lesen sind die eigenen Änderungen nicht gespeichert. Getrennt von `konfigFehler`, das auch
+   * gescheiterte allgemeine Einstellungen meldet.
+   */
+  strukturNichtGeschrieben: string | null;
+  /** ausstehendes Schreiben der Struktur jetzt ausführen und ein gescheitertes erneut versuchen (Speichern auf Anfrage) */
+  strukturSchreiben: () => Promise<void>;
   /** Dateien im Vorlagenordner (Desktop: aus `vorlagenordner` gelesen, Browser: über den Dateidialog gewählt) */
   vorlagen: Vorlage[];
   /** im Browser: Name des gewählten Vorlagenordners */
@@ -196,6 +204,8 @@ const eigenAus = (roh: unknown) => {
     struktur,
     vorlagenordner: typeof eigen.vorlagenordner === 'string' ? eigen.vorlagenordner : '',
     rohEigen: eigen,
+    // frisch gelesen: was vorher nicht geschrieben werden konnte, ist ersetzt
+    strukturNichtGeschrieben: null,
     // kein JSON-Objekt: der ganze Inhalt (rohEigen ist dann leer), sonst die unlesbare Struktur
     strukturRoh: fehler ? (roh === eigen ? eigen.struktur : roh) : null,
     strukturFehler: fehler
@@ -221,10 +231,10 @@ export const useOrdner = create<OrdnerState>()((set, get) => {
       try {
         const wert = eigenesMit(rohEigen, struktur, vorlagenordner);
         const r = await konfigSchreibenWennUnveraendert(BEREICH, wert, konfigStandEigen);
-        if (r.ok) set({ konfigStandEigen: r.stand, rohEigen: wert, ...gespeichert() });
+        if (r.ok) set({ konfigStandEigen: r.stand, rohEigen: wert, strukturNichtGeschrieben: null, ...gespeichert() });
         else set({ konflikt: { roh: r.aktuell } });
       } catch (e) {
-        set({ konfigFehler: `${NICHT_GESPEICHERT}: ${fehlertext(e)}` });
+        set({ konfigFehler: `${NICHT_GESPEICHERT}: ${fehlertext(e)}`, strukturNichtGeschrieben: fehlertext(e) });
       }
     });
     return schreiben;
@@ -242,6 +252,10 @@ export const useOrdner = create<OrdnerState>()((set, get) => {
     clearTimeout(timer);
     timer = null;
     return jetztSpeichern();
+  };
+  const strukturSchreiben = async () => {
+    await speichernJetzt();
+    if (get().strukturNichtGeschrieben) await jetztSpeichern();
   };
   const allgemeinSetzen = (patch: Partial<AllgemeineEinstellungen>) => {
     const allgemein = { ...get().allgemein, ...patch };
@@ -312,6 +326,7 @@ export const useOrdner = create<OrdnerState>()((set, get) => {
     stammordner: anfang.allgemein.projekte[0] ?? '',
     konfig: null,
     konfigFehler: null,
+    strukturNichtGeschrieben: null,
     vorlagen: [],
     vorlagenName: '',
     vorlagenFehler: null,
@@ -367,6 +382,7 @@ export const useOrdner = create<OrdnerState>()((set, get) => {
     },
     sicherungenLesen: async () => sicherungenAus(await konfigLesen(SICHERUNGEN)),
     speichernJetzt,
+    strukturSchreiben,
     neuLesen: async () => {
       await speichernJetzt();
       if (get().konflikt) return;

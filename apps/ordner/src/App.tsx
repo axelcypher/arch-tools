@@ -12,7 +12,7 @@ import { MailView } from './components/MailView';
 import { ASSISTENT_NEU, vomRahmen } from '@core/platform/rahmen';
 import type { Auftrag } from './components/AssistentView';
 import type { GeladenerOrdner } from './projekt';
-import { NICHT_GESPEICHERT, useOrdner } from './store';
+import { useOrdner } from './store';
 import { ordnerAlsText } from './struktur';
 
 type Ansicht = 'projekt' | 'pruefen' | 'mails' | 'struktur' | 'vorlagen' | 'kataster' | 'einstellungen';
@@ -71,7 +71,7 @@ export function App() {
   const strukturEntwurf = useOrdner((s) => s.ordnerEntwurf !== null);
   const strukturKonflikt = useOrdner((s) => s.konflikt !== null);
   // das Schreiben der Struktur ist gescheitert (z. B. Netzlaufwerk weg): bis zum nächsten gelungenen Schreiben offen
-  const schreibenGescheitert = useOrdner((s) => !!s.konfigFehler?.startsWith(NICHT_GESPEICHERT));
+  const schreibenGescheitert = useOrdner((s) => s.strukturNichtGeschrieben !== null);
   const dirty = !!assistentOffenText || strukturEntwurf || strukturKonflikt || schreibenGescheitert;
 
   /**
@@ -101,14 +101,15 @@ export function App() {
         }
       }
     }
-    // ausstehendes Schreiben der Struktur jetzt, nicht erst nach der Wartezeit – sonst wäre „gespeichert“ nicht wahr
-    await useOrdner.getState().speichernJetzt();
+    // ausstehendes Schreiben der Struktur jetzt, nicht erst nach der Wartezeit, und ein gescheitertes erneut – sonst
+    // wäre „gespeichert“ nicht wahr
+    await useOrdner.getState().strukturSchreiben();
     const n = useOrdner.getState();
     if (n.konflikt)
       offen.push(
         `Ihre Änderungen an der Struktur${n.ordnerEntwurf ? ' samt dem Text der Ordnerliste' : ''} – ein anderer Rechner hat sie inzwischen geändert; bitte „Neu laden“ oder „Meine Fassung trotzdem speichern“ wählen`,
       );
-    else if (n.konfigFehler?.startsWith(NICHT_GESPEICHERT)) offen.push(`die Struktur (${n.konfigFehler})`);
+    else if (n.strukturNichtGeschrieben) offen.push(`Ihre Änderungen an der Struktur – das Schreiben ist erneut gescheitert (${n.strukturNichtGeschrieben})`);
     if (assistentOffen.current)
       offen.push(`im Assistenten ${assistentOffen.current} – „Speichern“ hieße, den Projektordner anzulegen bzw. die Projektdatei zu schreiben; das geschieht nur im Assistenten selbst`);
     if (!offen.length) return true;

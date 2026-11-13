@@ -29,7 +29,7 @@ vi.mock('./dateisystem', async (original) => {
 });
 
 /** Sicherungen der Struktur scheitern lassen (sonst unverändert) */
-const konfigMock = vi.hoisted(() => ({ sicherungScheitert: false }));
+const konfigMock = vi.hoisted(() => ({ sicherungScheitert: false, schreibenScheitert: false, allgemeinScheitert: false }));
 vi.mock('@core/platform/konfig', async (original) => {
   const echt = await original<typeof import('@core/platform/konfig')>();
   return {
@@ -37,6 +37,14 @@ vi.mock('@core/platform/konfig', async (original) => {
     konfigAendern: async (...a: Parameters<typeof echt.konfigAendern>) => {
       if (a[0] === 'projektordner-sicherungen' && konfigMock.sicherungScheitert) throw new Error('Laufwerk nicht erreichbar');
       return echt.konfigAendern(...a);
+    },
+    konfigSchreibenWennUnveraendert: async (...a: Parameters<typeof echt.konfigSchreibenWennUnveraendert>) => {
+      if (konfigMock.schreibenScheitert) throw new Error('Netzlaufwerk getrennt');
+      return echt.konfigSchreibenWennUnveraendert(...a);
+    },
+    allgemeinAendern: async (...a: Parameters<typeof echt.allgemeinAendern>) => {
+      if (konfigMock.allgemeinScheitert) throw new Error('Allgemein nicht schreibbar');
+      return echt.allgemeinAendern(...a);
     },
   };
 });
@@ -422,11 +430,15 @@ describe('Rahmen-App Arkly: ungespeicherte Änderungen melden und auf Anfrage sp
   beforeEach(() => {
     gesendet = [];
     konfigMock.sicherungScheitert = false;
-    useOrdner.setState({ ordnerEntwurf: null, strukturFehler: null, strukturRoh: null, konfigFehler: null });
+    konfigMock.schreibenScheitert = false;
+    konfigMock.allgemeinScheitert = false;
+    useOrdner.setState({ ordnerEntwurf: null, strukturFehler: null, strukturRoh: null, konfigFehler: null, strukturNichtGeschrieben: null });
     Object.defineProperty(window, 'parent', { value: rahmen, configurable: true });
     setUrl('http://localhost:3000/?rahmen=tab&app=ordner');
   });
   afterEach(() => {
+    // offene Meldungen (gemeinsame Warteschlange) nicht in den nächsten Test tragen
+    for (let i = 0; i < 5 && document.querySelector('.modal.rf'); i++) act(() => knopf(document.querySelector('.modal.rf')!, 'OK').click());
     Object.defineProperty(window, 'parent', { value: window, configurable: true });
     setUrl('http://localhost:3000/');
   });
@@ -530,17 +542,39 @@ describe('Rahmen-App Arkly: ungespeicherte Änderungen melden und auf Anfrage sp
     expect(dirty()).toBe(true);
   });
 
-  it('Schreiben gescheitert: meldet „ungespeichert“ (Beenden fragt), Speichern sagt „nicht gespeichert“ – Gegenprobe', async () => {
+  it('Schreiben der Struktur gescheitert: meldet „ungespeichert“; „Speichern“ versucht es erneut – scheitert es wieder, „nicht gespeichert“', async () => {
     render();
     await warten();
-    act(() => useOrdner.setState({ konfigFehler: 'Einstellungen nicht lesbar: x' }));
-    expect(dirty()).toBe(false);
-    act(() => useOrdner.setState({ konfigFehler: `${NICHT_GESPEICHERT}: Zugriff verweigert` }));
+    konfigMock.schreibenScheitert = true;
+    act(() => useOrdner.getState().setStruktur({ ...STANDARD, name: 'Büro neu' }));
+    await act(() => useOrdner.getState().speichernJetzt());
+    expect(useOrdner.getState().strukturNichtGeschrieben).toBe('Netzlaufwerk getrennt');
     expect(dirty()).toBe(true);
+    // Laufwerk weiter weg: erneuter Versuch scheitert
     expect(await speichernAnfragen()).toBe(false);
-    expect(meldungText()).toContain('Zugriff verweigert');
-    act(() => useOrdner.setState({ konfigFehler: null }));
+    expect(meldungText()).toContain('Netzlaufwerk getrennt');
+    act(() => knopf(document.querySelector('.modal.rf')!, 'OK').click());
+    await warten();
+    // Laufwerk wieder da: „Speichern“ schreibt (ohne neue Änderung, also ohne laufende Wartezeit)
+    konfigMock.schreibenScheitert = false;
+    expect(await speichernAnfragen()).toBe(true);
+    expect(localStorage.getItem('arch-tools:konfig:projektordner')).toContain('Büro neu');
+    expect(useOrdner.getState().strukturNichtGeschrieben).toBeNull();
+    expect(useOrdner.getState().konfigFehler).toBeNull();
     expect(dirty()).toBe(false);
+  });
+
+  it('gescheiterte allgemeine Einstellungen: Meldung wie bisher, aber nicht „ungespeichert“ und keine Struktur-Meldung', async () => {
+    render();
+    await warten();
+    konfigMock.allgemeinScheitert = true;
+    act(() => useOrdner.getState().setAllgemein({ buero: 'Anderes Büro' }));
+    await warten();
+    expect(useOrdner.getState().konfigFehler).toBe(`${NICHT_GESPEICHERT}: Allgemein nicht schreibbar`);
+    expect(useOrdner.getState().strukturNichtGeschrieben).toBeNull();
+    expect(dirty()).toBe(false);
+    expect(await speichernAnfragen()).toBe(true);
+    expect(meldungText()).toBe('');
   });
 
   it('Konflikt mit einem anderen Rechner: meldet „ungespeichert“, Speichern entscheidet ihn nicht still', async () => {

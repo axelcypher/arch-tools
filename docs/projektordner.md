@@ -117,9 +117,11 @@ auch beim Ergänzen.
 der Titelleiste bzw. am Tab der Rahmen-App Arkly): offene Eingaben im Assistenten wie oben, den nicht übernommenen
 Text der Ordnerliste (Struktur, Textansicht) und Änderungen an der Struktur, die wegen eines Konflikts mit einem
 anderen Rechner oder eines gescheiterten Schreibens („Einstellungen nicht gespeichert“, etwa bei getrenntem
-Netzlaufwerk) nicht gespeichert sind. Beim Beenden, vor einem Update und in Arkly beim Schließen des Tabs,
+Netzlaufwerk) nicht gespeichert sind; ein gescheitertes Schreiben der allgemeinen Einstellungen zählt nicht dazu (es
+bleibt bei der Meldung unter „Einstellungen“). Beim Beenden, vor einem Update und in Arkly beim Schließen des Tabs,
 Herauslösen und Andocken kommt dann „Änderungen speichern?“. *Speichern* übernimmt nur, was ohne weitere
-Entscheidung geht: den Text der Ordnerliste wie mit „Übernehmen“ (vorher gesichert, mit „Rückgängig“), wenn er
+Entscheidung geht: Es schreibt die Struktur erneut (ist das Laufwerk wieder da, ist sie danach gespeichert) und übernimmt
+den Text der Ordnerliste wie mit „Übernehmen“ (vorher gesichert, mit „Rückgängig“), wenn er
 gültig ist und vom aktuellen Stand ausgeht. Im Assistenten hieße Speichern, den Projektordner anzulegen bzw. die
 Projektdatei zu schreiben, ein Konflikt verlangt „Neu laden“ oder „Meine Fassung trotzdem speichern“ – das
 geschieht nicht still: Es gilt „nicht gespeichert“, die Aktion unterbleibt, und ATLAS meldet, was noch offen ist.
