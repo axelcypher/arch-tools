@@ -7,7 +7,7 @@ import { parseProjectData } from '@core/serialize';
 import { logger } from '@core/platform/log';
 import { vorDemSchliessen } from '@core/platform/rahmen';
 import { zwischenstandErsetzt, zwischenstandLadenErlaubt, zwischenstandWirdGeladen } from '@core/platform/startschutz';
-import { verzoegertSchreiben } from './verzoegert';
+import { inStoreSchreiben, verzoegertSchreiben } from './verzoegert';
 
 /**
  * Zustand von NUMIO: das Projekt im gemeinsamen Format (.oap) – Gebäude, Geschosse und
@@ -173,27 +173,19 @@ if (typeof indexedDB !== 'undefined') {
         // kein Zwischenstand
       });
 
-  // Zwischenstand 600 ms nach der letzten Änderung schreiben; vor dem Schließen (Arkly) sofort und abgewartet
+  // Zwischenstand 600 ms nach der letzten Änderung schreiben; vor dem Schließen (Arkly) sofort und abgewartet –
+  // scheitert das Schreiben, meldet sichern() false und Arkly fragt nach, statt still zu schließen
   const zwischenstand = verzoegertSchreiben(
     () =>
       db().then(
         (d) =>
-          new Promise<void>((fertig) => {
+          inStoreSchreiben(d, STORE, KEY, () => {
             const { project, datei, basis } = useKosten.getState();
-            const tx = d.transaction(STORE, 'readwrite');
-            tx.objectStore(STORE).put({ project, datei, basis, zeit: Date.now() }, KEY);
-            tx.oncomplete = () => {
-              zwischenstandErsetzt(DB);
-              d.close();
-              fertig();
-            };
-            tx.onerror = tx.onabort = () => {
-              d.close();
-              fertig();
-            };
-          }),
+            return { project, datei, basis, zeit: Date.now() };
+          }).then(() => zwischenstandErsetzt(DB)),
       ),
     600,
+    (e) => log.warn('Zwischenstand ließ sich nicht schreiben', e),
   );
   useKosten.subscribe((s, prev) => {
     if (s.project === prev.project && s.basis === prev.basis) return;

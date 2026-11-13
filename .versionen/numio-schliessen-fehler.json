@@ -1,0 +1,6 @@
+{
+  "kosten": {
+    "stufe": "patch",
+    "notiz": "Lässt sich der Zwischenstand vor dem Schließen nicht schreiben, fragt Arkly nach, statt still zu schließen."
+  }
+}
