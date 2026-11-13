@@ -775,17 +775,31 @@
         "$": "nw_vorhaben_gebaeude"
       },
       "entfaellt": {
-        "$": "gk_1_2"
+        "und": [
+          {
+            "$": "gk_1_2"
+          },
+          {
+            "f": "gebaeude.aufenthaltsraeume",
+            "ist": false
+          },
+          {
+            "f": "nw.kellergeschoss",
+            "ist": false
+          }
+        ]
       },
-      "grund": "Notwendige Treppen liegen in einem eigenen, durchgehenden Treppenraum (Abs. 1, ab Gebäudeklasse 3); von jeder Stelle eines Aufenthaltsraums ist ein notwendiger Treppenraum oder ein Ausgang ins Freie in höchstens 35 m erreichbar (Abs. 2).",
+      "grund": "Von jeder Stelle eines Aufenthaltsraums sowie eines Kellergeschosses ist ein notwendiger Treppenraum oder ein Ausgang ins Freie in höchstens 35 m erreichbar, übereinanderliegende Kellergeschosse haben je zwei Ausgänge (Abs. 2, jede Gebäudeklasse); notwendige Treppen liegen in einem eigenen, durchgehenden Treppenraum (Abs. 1, ab Gebäudeklasse 3).",
       "fundstellen": [
-        "35/1"
+        "35/1",
+        "35/2"
       ],
       "behoerde": {
         "$": "nw_prueft_brandschutz"
       },
       "stand": {
-        "35/1": "5ae5000b"
+        "35/1": "5ae5000b",
+        "35/2": "8ee33fb7"
       },
       "pruefen": {
         "grund": "Bei Nutzungsänderung gelten die Anforderungen für die neue Nutzung – der Bestandsschutz deckt nur die bisherige Nutzung, auch bei verfahrensfreier oder freigestellter Nutzungsänderung (§ 60 Abs. 2). Bei der Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen in bestehenden Gebäuden zu Wohnraum sind Abs. 1 und 3 bis 8 nicht anzuwenden (§ 47 Abs. 6 Satz 2) – es bleibt Abs. 2 (Ausgang in einen notwendigen Treppenraum oder ins Freie in höchstens 35 m).",

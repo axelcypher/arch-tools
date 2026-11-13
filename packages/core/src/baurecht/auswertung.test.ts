@@ -791,6 +791,16 @@ describe('Runde 13 (Fachprüfung): nicht gestellte Fragen fehlen nicht', () => {
     expect(ja.klaerend).toEqual(['x.b']);
   });
 
+  it('Einzelfall, der nur an einem offenen Paragrafen hängt: „Einzelfall möglich – hängt an … – dort offen“', () => {
+    const r6: Regeldatei = { ...regel, paragrafen: { '6': { gilt: { f: 'x.c', ist: true }, grund: 'Test 6.' }, '7': { gilt: { f: 'x.a', ist: true }, pruefen: { wenn: { n: 'bund/t/6', ampel: ['rot'] }, grund: 'Einzelfall nach § 6.' }, grund: 'Test 7.' } } };
+    const p6 = paketAusDateien({ 'module/bund/modul.json': modul, 'module/bund/t@2026-11-13.json': r6 }, 'test');
+    const a = auswerten({ paket: p6, module: p6.module, merkmale: {}, fakten: { 'lage.ags': sicher('05974040'), 'x.a': sicher(false) }, einreichung: '2026-12-01', heute: '2026-11-13', texte: new Map(), festlegungen: {} });
+    const q = a.paragrafen.find((x) => x.id === 'bund/t/7')!;
+    expect(q.ampel).toBe('gelb');
+    expect(q.gruende[0]).toMatch(/^Einzelfall möglich – hängt an .+ – dort offen\. Einzelfall nach § 6\.$/);
+    expect(q.offen).toEqual(['paragraf:bund/t/6']);
+  });
+
   it('Rot, Ausnahme nur über einen Hinweis ausgeschlossen: „Ausnahme ausgeschlossen, aber nicht gesichert (beruht auf: …)“', () => {
     const r5: Regeldatei = { ...regel, paragrafen: { '5': { gilt: { f: 'x.c', ist: true }, entfaellt: { f: 'x.a', ist: true }, grund: 'Test 5.' } } };
     const p5 = paketAusDateien({ 'module/bund/modul.json': modul, 'module/bund/t@2026-11-13.json': r5 }, 'test');
@@ -881,6 +891,15 @@ describe('Runde 19: Kriterium „gestellt“ und Paketregeln für Fragen', () =>
     expect(mit({ 'x.q': j({ $: 'ueber_n' }) }, { ueber_n: { n: 'bund/bnatschg/14', ist: 'rot' } as never })).toMatch(/x\.q: die Bedingung .* nicht auf Paragrafen verweisen/);
     expect(mit({ 'x.a': j({ f: 'x.b', ist: true }), 'x.b': j({ f: 'x.a', ist: true }) })).toMatch(/Fragen-Zyklus: x\.a → x\.b → x\.a/);
     expect(mit({ 'x.a': j({ f: 'x.c', ist: true }), 'x.c': { titel: 'C', gruppe: 'x', typ: 'janein' } as never })).not.toMatch(/Fragen-Zyklus|nicht auf Paragrafen/);
+  });
+
+  it('paketPruefen: Prüfsumme eines leeren Texts wird abgelehnt; Unterabschnitte gehören zu ihrem Abschnitt', () => {
+    const r = (stand: Record<string, string>, fundstellen: string[]) =>
+      paketPruefen(paketAusDateien({ 'module/bund/modul.json': bund, 'module/bund/bnatschg@2026-09-30.json': { ...bnatschg, paragrafen: { '14': { ...bnatschg.paragrafen['14'], fundstellen, stand } } } }, 'test'), VORGABE_MERKMALE).join('\n');
+    expect(r({ '14/1': 'e3b0c442' }, ['14/1'])).toMatch(/Prüfsumme von „14\/1“ ist die eines leeren Texts/);
+    expect(r({ '14/1': 'aaaaaaaa' }, ['14/1'])).toBe('');
+    expect(r({ '14.1': 'aaaaaaaa' }, ['14.1'])).toBe('');
+    expect(r({ '15/1': 'aaaaaaaa' }, ['15/1'])).toMatch(/gehört zu einem anderen Paragrafen/);
   });
 
   it('paketPruefen: Zyklus im Landesmodul auch dann, wenn die Gemeinde die Angabe überschreibt (Orte ohne Gemeindemodul)', () => {

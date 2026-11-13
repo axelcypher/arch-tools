@@ -269,6 +269,8 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
   // nur die aktiven Module: Bausteine und Fakten inaktiver Module dürfen nichts beeinflussen
   const bausteine: Record<string, Kurz> = Object.assign({}, ...e.module.map((m) => m.bausteine ?? {}));
   const faktDefs = faktDefinitionen(e.module);
+  // Werte, die das Bundesmodul liefert, hängen nicht am Gemeindeschlüssel
+  const bundFakten = bundGelieferte(e.module);
   const tageAlt = e.rechtsstandTage ?? RECHTSSTAND_TAGE;
   const entscheidungBis = plusMonate(e.einreichung, e.entscheidungMonate ?? ENTSCHEIDUNG_MONATE);
   // nur zulässige Werte zählen – ein Merkmalwert außerhalb der Werteliste (Formulare erlaubt eigene Werte) oder eine
@@ -434,8 +436,15 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
       const ausnahmeOffen = entf?.w === 'offen' ? nurGestellteStreng(entf.offen) : [];
       if (ausnahmeOffen.length) hinweise.push(`Ausnahme möglich – es fehlt: ${ausnahmeOffen.map((o) => offenText(o, text)).join(' · ')}`);
       // die Ausnahme ist nur über Hinweise ausgeschlossen: nicht gesichert – bestätigen (oder berichtigen) klärt
-      else if (entf?.w === 'nein' && (entf.unsicher.length || entf.widerspruch.length))
-        hinweise.push(`Ausnahme ausgeschlossen, aber nicht gesichert (beruht auf: ${[...entf.unsicher.map((u) => `${offenText(u, text)} – nur Hinweis`), ...entf.widerspruch.map((w) => (w.startsWith('merkmal:') && e.vorbehalte?.[w.slice(8)] ? `${offenText(w, text)} – nicht gesichert: ${e.vorbehalte[w.slice(8)]}` : `${offenText(w, text)} – widersprüchlich`))].join('; ')})`);
+      else if (entf?.w === 'nein' && (entf.unsicher.length || entf.widerspruch.length)) {
+        // ein Modulwert ist dort zu bestätigen, woher seine Unsicherheit kommt (z. B. der Gemeindeschlüssel)
+        const quellen = [...new Set(entf.unsicher.map((u) => (fakten[u]?.herkunft === 'modul' ? modulZiel(u, fakten, faktDefs, bundFakten) : u)))];
+        const beruht = [
+          ...quellen.map((u) => `${offenText(u, text)} – nur Hinweis`),
+          ...entf.widerspruch.map((w) => (w.startsWith('merkmal:') && e.vorbehalte?.[w.slice(8)] ? `${offenText(w, text)} – nicht gesichert: ${e.vorbehalte[w.slice(8)]}` : `${offenText(w, text)} – widersprüchlich`)),
+        ];
+        hinweise.push(`Ausnahme ausgeschlossen, aber nicht gesichert (beruht auf: ${beruht.join('; ')})`);
+      }
       // hängt die Regel an einem Paragrafen, der nur „rot, Ausnahme möglich“ ist, und entfiele sie mit dessen Ausnahme:
       // der Hinweis geht mit (die Ampel bleibt rot – zur sicheren Seite)
       for (const v of gilt.verwendet) {
@@ -485,10 +494,13 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
       if (!mitNorm && r.pruefen?.wenn) {
         if (pruef.w === 'ja') herab.push(`Einzelfall: ${r.pruefen.grund}`);
         else if (pruef.w === 'offen') {
-          // nur gestellte Fragen (ohne Rückfall auf nicht gestellte – dann bleibt es bei „Einzelfall: …“)
+          // nur gestellte Fragen (ohne Rückfall auf nicht gestellte – dann bleibt es bei „Einzelfall: …“); offene
+          // Paragrafen, an denen die Bedingung hängt, als „hängt an … – dort offen“ (wie beim offenen Tatbestand)
           const fehlt = nurGestellteStreng(pruef.offen ?? []);
           const angaben = fehlt.filter((o) => !o.startsWith('paragraf:'));
-          herab.push(angaben.length ? `Einzelfall möglich – es fehlt: ${angaben.map((o) => offenText(o, text)).join(' · ')}. ${r.pruefen.grund}` : `Einzelfall: ${r.pruefen.grund}`);
+          const haengt = fehlt.filter((o) => o.startsWith('paragraf:'));
+          const teile = [angaben.length ? `es fehlt: ${angaben.map((o) => offenText(o, text)).join(' · ')}` : '', haengt.length ? `hängt an ${haengt.map((o) => offenText(o, text)).join(' · ')} – dort offen` : ''].filter(Boolean);
+          herab.push(teile.length ? `Einzelfall möglich – ${teile.join('; ')}. ${r.pruefen.grund}` : `Einzelfall: ${r.pruefen.grund}`);
           offen = fehlt;
         } else {
           unsicher = [...new Set([...unsicher, ...(pruef.unsicher ?? [])])];
@@ -731,8 +743,6 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
   // nur Paragrafen, die allein wegen genau dieses Hinweises gelb sind. Ein Modulwert ist dort zu bestätigen, woher seine
   // Unsicherheit kommt (Ziel: modulZiel)
   const zahlB = new Map<string, number>();
-  // Werte, die das Bundesmodul liefert, hängen nicht am Gemeindeschlüssel
-  const bundFakten = bundGelieferte(e.module);
   for (const p of paragrafen) {
     if (!p.bestaetigend || p.bestaetigend.includes(':') || !offenAuto(p)) continue;
     const ziel = fakten[p.bestaetigend]?.herkunft === 'modul' ? modulZiel(p.bestaetigend, fakten, faktDefs, bundFakten) : p.bestaetigend;

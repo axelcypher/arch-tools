@@ -28,14 +28,14 @@
       },
       "grund": "In den Erdbebenzonen 1 bis 3 sind Gebäude nach DIN 4149:2005-04 mit den Maßgaben der Anlage A 1.2.9/1 zu bemessen.",
       "fundstellen": [
-        "A 1.2.9"
+        "A 1.2.9.1"
       ],
       "behoerde": {
         "nie": true
       },
       "hinweis": "Zone und geologische Untergrundklasse nach der Karte der Erdbebenzonen NRW (GD NRW) bzw. der Zuordnung nach Gemeinden; Grün nur mit bestätigter Zone 0. Nachweis im Rahmen der Standsicherheit (§ 68 Abs. 3 BauO NRW).",
       "stand": {
-        "A 1.2.9": "e3b0c442"
+        "A 1.2.9.1": "a0ef4da7"
       },
       "pruefen": {
         "grund": "Nutzungsänderung: ob die Anforderung für die neue Nutzung greift.",

@@ -223,6 +223,9 @@ function verweistAufParagraf(k: unknown, bausteine: Map<string, Kurz[]>, besucht
   return Object.values(o).some((v) => typeof v === 'object' && verweistAufParagraf(v, bausteine, besucht));
 }
 
+/** Prüfsumme (SHA-256, 8 Zeichen) eines leeren Texts */
+const LEER_SUMME = 'e3b0c442';
+
 /** Fehler im Paket: unbekannte Fakten, Bausteine, Merkmalwerte, Verweise, doppelte Module, falsches Format */
 export function paketPruefen(p: Paket, merkmale: { name: string; werte: string[] }[]): string[] {
   const fehler: string[] = [];
@@ -347,7 +350,10 @@ export function paketPruefen(p: Paket, merkmale: { name: string; werte: string[]
         pruefe(wo, m, r.pruefen?.wenn);
         pruefe(wo, m, r.behoerde);
         for (const v of r.verweise ?? []) if (!alleParagrafen.has(v)) fehler.push(`${wo}: Verweis auf „${v}“ – diesen Paragrafen gibt es im Paket nicht`);
-        for (const fs of r.fundstellen ?? []) if (fs.split('/')[0] !== nr) fehler.push(`${wo}: Fundstelle „${fs}“ gehört zu einem anderen Paragrafen`);
+        // „35/2“ gehört zu § 35, „A 1.2.9.1“ zu A 1.2.9 (Unterabschnitt der MVV TB)
+        for (const fs of r.fundstellen ?? []) if (fs.split('/')[0] !== nr && !fs.startsWith(`${nr}.`)) fehler.push(`${wo}: Fundstelle „${fs}“ gehört zu einem anderen Paragrafen`);
+        // die Prüfsumme eines leeren Texts bemerkt keine Änderung (der Absatz wurde beim Abruf nicht gefunden)
+        for (const [fs, summe] of Object.entries(r.stand ?? {})) if (summe === LEER_SUMME) fehler.push(`${wo}: Prüfsumme von „${fs}“ ist die eines leeren Texts – Fundstelle im Text nicht gefunden`);
       }
     }
   }

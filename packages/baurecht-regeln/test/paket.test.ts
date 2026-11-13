@@ -570,8 +570,9 @@ describe('Fälle aus dem Fachreview', () => {
       expect(wohnen(`nw/bauo-nrw/${nr}`), `§ ${nr} (Wohnen)`).not.toBe('gruen');
       expect(gast(`nw/bauo-nrw/${nr}`), `§ ${nr} (Gaststätte)`).not.toBe('gruen');
     }
-    // Gegenprobe: beim Neubau eines Einfamilienhauses GK 1 entfällt der notwendige Treppenraum
-    expect(a({ Vorhaben: 'Errichtung', Gebäudeart: 'Einfamilienhaus', Gebäudeklasse: '1', Planungsrecht: 'Innenbereich', Verfahren: 'vereinfachtes Verfahren', Sonderbau: 'nein' })('nw/bauo-nrw/35')).toBe('gruen');
+    // Gegenprobe: beim Neubau eines Einfamilienhauses GK 1 entfällt der notwendige Treppenraum (Abs. 1) – § 35 gilt aber
+    // mit Abs. 2 (Rettungsweglänge 35 m, jede Gebäudeklasse; Runde 18)
+    expect(a({ Vorhaben: 'Errichtung', Gebäudeart: 'Einfamilienhaus', Gebäudeklasse: '1', Planungsrecht: 'Innenbereich', Verfahren: 'vereinfachtes Verfahren', Sonderbau: 'nein' })('nw/bauo-nrw/35')).toBe('rot');
   });
 
   it('Garage im Innenbereich: § 62 ist offen, solange das Verfahren nicht feststeht; „verfahrensfrei“ → gilt', () => {
@@ -1190,10 +1191,12 @@ describe('Fälle aus dem Fachreview', () => {
   });
 
   it('Runde 6: Nutzungsänderung übersteuert kein sicheres „entfällt“ – §§ 29, 35, 36 BauO NRW und SV-VO § 23 beim Wohngebäude GK 1/2, MVV TB A 1.2.9 außerhalb der Erdbebenzonen', () => {
-    const ids = ['nw/bauo-nrw/29', 'nw/bauo-nrw/35', 'nw/bauo-nrw/36', 'nw/svvo/23', 'nw/mvv-tb/A 1.2.9'];
+    const ids = ['nw/bauo-nrw/29', 'nw/bauo-nrw/36', 'nw/svvo/23', 'nw/mvv-tb/A 1.2.9'];
     // Fall D4: Wohnung → Ferienwohnung im Einfamilienhaus, Erdbebenzone 0
     const d4 = a(M4({ Vorhaben: 'Nutzungsänderung' }), { ...nein('gebaeude.gemischt'), ...wert('lage.erdbebenzone', '0') });
     for (const id of ids) expect(d4(id), id).toBe('gruen');
+    // § 35 gilt mit Abs. 2 auch in GK 1/2 (Aufenthaltsräume; Runde 18) – kein Einzelfall aus der Nutzungsänderung
+    expect(d4('nw/bauo-nrw/35')).toBe('rot');
     // Gegenprobe: Nutzungsänderung im gemischt genutzten Mehrfamilienhaus GK 3 (Fall D1), Erdbebenzone offen – Einzelfall bleibt
     const d1 = a(M4({ Vorhaben: 'Nutzungsänderung', Gebäudeart: 'Mehrfamilienhaus', Gebäudeklasse: '3' }), ja('gebaeude.gemischt'));
     for (const id of ids) expect(d1(id), `${id} (D1)`).not.toBe('gruen');
@@ -2115,6 +2118,41 @@ describe('Fälle aus dem Fachreview', () => {
     // ohne befestigte Fläche (z. B. Mast): entfällt; Angabe offen: nicht grün
     expect(a(anlage, nein('vorhaben.entwaesserung', 'vorhaben.stellplaetze_grundstueck', 'soest.befestigte_flaeche'))(id)).toBe('gruen');
     expect(a(anlage, nein('vorhaben.entwaesserung'))(id)).not.toBe('gruen');
+  });
+
+  it('Runde 18: § 35 Abs. 2 BauO NRW gilt in jeder Gebäudeklasse – Aufenthaltsräume bzw. Kellergeschoss (Fall B1)', () => {
+    const id = 'nw/bauo-nrw/35';
+    const p35 = (m: Record<string, string>, f: Record<string, FaktWert>) => auswerten(eingabe(m, f, TEXTE)).paragrafen.find((x) => x.id === id)!;
+    // B1: landwirtschaftliches Nichtwohngebäude GK 1 mit Aufenthaltsräumen – gilt (Abs. 2), nicht „entfällt“
+    const b1 = p35(M4({ Gebäudeart: 'Nichtwohngebäude' }), ja('gebaeude.aufenthaltsraeume'));
+    expect(b1.ampel).toBe('rot');
+    expect(b1.gruende[0]).toMatch(/Abs\. 2, jede Gebäudeklasse/);
+    expect(p35(M4(), ja('gebaeude.aufenthaltsraeume')).ampel).toBe('rot');
+    // GK 1 ohne Aufenthaltsräume: entfällt nur ohne Kellergeschoss; offen → gilt, „Ausnahme möglich – es fehlt: Kellergeschoss“
+    const garage = M4({ Gebäudeart: 'Nichtwohngebäude' });
+    expect(p35(garage, nein('gebaeude.aufenthaltsraeume', 'nw.kellergeschoss')).automatisch).toBe('gruen');
+    expect(p35(garage, { ...nein('gebaeude.aufenthaltsraeume'), ...ja('nw.kellergeschoss') }).ampel).toBe('rot');
+    const offen = p35(garage, nein('gebaeude.aufenthaltsraeume'));
+    expect(offen.ampel).toBe('rot');
+    expect(offen.offen).toContain('nw.kellergeschoss');
+    expect(offen.hinweise.join(' ')).toMatch(/Ausnahme möglich – es fehlt: Kellergeschoss/);
+    // gefragt nur bei GK 1/2 ohne Aufenthaltsräume
+    const defs = faktDefinitionen(paket.module);
+    const gestellt = (m: Record<string, string>, f: Record<string, FaktWert>) => frageGestellt('nw.kellergeschoss', defs['nw.kellergeschoss'], auswerten(eingabe(m, f, TEXTE)).kontext);
+    expect(gestellt(garage, nein('gebaeude.aufenthaltsraeume'))).toBe(true);
+    expect(gestellt(garage, ja('gebaeude.aufenthaltsraeume'))).toBe(false);
+    expect(gestellt(M4({ Gebäudeklasse: '3' }), nein('gebaeude.aufenthaltsraeume'))).toBe(false);
+  });
+
+  it('Runde 18: „Ausnahme … nicht gesichert“ nennt bei Modulwerten die Quelle (Gemeindeschlüssel nur Hinweis, Fall A8)', () => {
+    const r = auswerten({ ...eingabe(M4(), {}, TEXTE), fakten: { 'lage.ags': { wert: SOEST, herkunft: 'geodienst', sicherheit: 'hinweis' } } });
+    const mit = r.paragrafen.filter((p) => p.hinweise.some((h) => h.startsWith('Ausnahme ausgeschlossen, aber nicht gesichert')));
+    expect(mit.length).toBeGreaterThan(0);
+    for (const p of mit) {
+      const h = p.hinweise.find((x) => x.startsWith('Ausnahme ausgeschlossen, aber nicht gesichert'))!;
+      // kein abgeleiteter Modulwert („Ortsrecht regelt …“), sondern der Gemeindeschlüssel
+      expect(h, p.id).not.toMatch(/Ortsrecht regelt|Gemeinde ist selbst Bauaufsicht/);
+    }
   });
 
   it('Runde 16: Entwässerungssatzung § 9 – Lagerplatz/Hof ohne Stellplätze und Anbau ohne neue Entwässerung (Fälle W10, W12)', () => {

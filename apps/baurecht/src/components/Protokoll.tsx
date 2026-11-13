@@ -276,9 +276,11 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
     if (!sonder && ((p.klaerend?.length ?? 0) > 0 || p.bestaetigend)) continue; // steht schon unter seinen klärenden Angaben
     // sonst nach dem Grund: hängt an einem offenen Paragrafen, oder die fehlenden Angaben entscheiden nur zusammen
     const o = p.offen[0];
-    // „Einzelfall möglich – es fehlt: A · B. <Grund>“: nur die fehlenden Angaben (sonst bis vor die erste Klammer)
+    // „Einzelfall möglich – es fehlt: A · B. <Grund>“: nur die fehlenden Angaben (aus `offen`, nicht aus dem Text – Namen
+    // können selbst „Abs. 6“ enthalten); sonst bis vor die erste Klammer
     const g0 = p.gruende[0];
-    const k = sonder || (o?.startsWith('paragraf:') ? `Hängt an ${offenText(o, a.text)} – dort offen` : (/^Einzelfall möglich – es fehlt: /.test(g0) ? g0.replace(/\. .*$/, '') : g0.replace(/\s*\(.*$/, '')).replace(/^Offen – /, '').replace(/\.$/, ''));
+    const einzelfallFehlt = /^Einzelfall möglich – /.test(g0) ? p.offen.filter((x) => !x.startsWith('paragraf:')).map((x) => offenText(x, a.text)) : [];
+    const k = sonder || (o?.startsWith('paragraf:') ? `Hängt an ${offenText(o, a.text)} – dort offen` : einzelfallFehlt.length ? `Einzelfall möglich – es fehlt: ${einzelfallFehlt.join(' · ')}` : g0.replace(/\s*\(.*$/, '').replace(/^Offen – /, '').replace(/\.$/, ''));
     gruppen.set(k, [...(gruppen.get(k) ?? []), p]);
   }
   // Gruppen mit nur einem Paragrafen kommen zusammen in eine Zeile „Weitere“

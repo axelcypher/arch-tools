@@ -78,24 +78,24 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   …“); die Ampel bleibt „gilt“. Unter „Ausnahme möglich – es fehlt“ stehen nur Fragen, die gerade gestellt werden (ohne
   Ausweichen auf nicht gestellte: eine Ausnahme, deren Fragen nicht gestellt sind, wird nicht angeboten). Ist die
   Ausnahme nur über Hinweise bzw. widersprüchliche Angaben ausgeschlossen, steht „Ausnahme ausgeschlossen, aber nicht
-  gesichert (beruht auf: Wohnungen – nur Hinweis)“ dabei (die Ampel bleibt „gilt“). Einzelfall einer Regel
-  (`pruefen.wenn`): liegt er vor, wird Grün zu „Einzelfall: …“; ist offen, ob er vorliegt, heißt es „Einzelfall möglich
-  – es fehlt: …“ (die Angaben stehen unter „es fehlt“ und zählen für „klärt am meisten“ – als eigenes Ergebnis neben
-  rot/grün, eine Angabe, deren Antwort am Einzelfall nichts ändert, klärt nichts); beruht das „kein Einzelfall“ nur auf
-  Hinweisen bzw. widersprüchlichen Angaben, steht das als „Nur Hinweis, nicht gesichert“ bzw. „Widerspruch“ da
-  (bestätigen klärt). Hinweise, deren Bestätigung allein einen Paragrafen entschiede, stehen dort als „bestätigen klärt
-  N“ (Werte eines Gebietsmoduls dort, woher die Unsicherheit kommt: beim Gemeindeschlüssel, solange er nicht gesichert
-  ist, beim Bezug der Tabelle, wenn er nur Hinweis ist – ist der Bezug selbst ein Modulwert, zählen dessen Quellen –,
-  beim Wert selbst, wenn die Tabelle von der Lage abhängt; sind es mehrere Quellen, beim Wert selbst. Werte, die das
-  Bundesmodul liefert, hängen nicht am Gemeindeschlüssel). Ziele, an denen keine Regel unmittelbar hängt (der Bezug
-  einer Tabelle), stehen dafür in der Liste; ein Sprungziel ohne Zeile schaltet „alle Angaben“ ein; während einer Suche
-  wird die Suche geleert (angesagt), wenn das Ziel nicht unter den Treffern steht. „Für diesen Ort bestätigen“ im
-  Hinweis behält dagegen eine Suche, die das Merkmal ausblendet: der Fokus geht ins Suchfeld, die Wirkung wird angesagt.
-  Gespeicherte Modulwerte gelten nur, solange ein aktives Modul sie für den jetzigen Bezug liefert; beim Speichern
-  fallen die übrigen aus der Datei. Nur zulässige Werte zählen: Ein Merkmalwert außerhalb der Werteliste (eigener Wert
-  aus Formulare) und eine Angabe mit falschem Typ oder einem Wert außerhalb ihrer Auswahl (ältere Datei, umbenannter
-  Auswahlwert) gelten als offen und sind so gekennzeichnet; Zahlen, die als Text gespeichert sind, werden wie im
-  Eingabefeld gelesen.
+  gesichert (beruht auf: Wohnungen – nur Hinweis)“ dabei (die Ampel bleibt „gilt“; bei Modulwerten die Quelle, z. B. der
+  Gemeindeschlüssel). Einzelfall einer Regel (`pruefen.wenn`): liegt er vor, wird Grün zu „Einzelfall: …“; ist offen, ob
+  er vorliegt, heißt es „Einzelfall möglich – es fehlt: …“ bzw. „Einzelfall möglich – hängt an § … – dort offen“ (die
+  Angaben stehen unter „es fehlt“ und zählen für „klärt am meisten“ – als eigenes Ergebnis neben rot/grün, eine Angabe,
+  deren Antwort am Einzelfall nichts ändert, klärt nichts); beruht das „kein Einzelfall“ nur auf Hinweisen bzw.
+  widersprüchlichen Angaben, steht das als „Nur Hinweis, nicht gesichert“ bzw. „Widerspruch“ da (bestätigen klärt).
+  Hinweise, deren Bestätigung allein einen Paragrafen entschiede, stehen dort als „bestätigen klärt N“ (Werte eines
+  Gebietsmoduls dort, woher die Unsicherheit kommt: beim Gemeindeschlüssel, solange er nicht gesichert ist, beim Bezug
+  der Tabelle, wenn er nur Hinweis ist – ist der Bezug selbst ein Modulwert, zählen dessen Quellen –, beim Wert selbst,
+  wenn die Tabelle von der Lage abhängt; sind es mehrere Quellen, beim Wert selbst. Werte, die das Bundesmodul liefert,
+  hängen nicht am Gemeindeschlüssel). Ziele, an denen keine Regel unmittelbar hängt (der Bezug einer Tabelle), stehen
+  dafür in der Liste; ein Sprungziel ohne Zeile schaltet „alle Angaben“ ein; während einer Suche wird die Suche geleert
+  (angesagt), wenn das Ziel nicht unter den Treffern steht. „Für diesen Ort bestätigen“ im Hinweis behält dagegen eine
+  Suche, die das Merkmal ausblendet: der Fokus geht ins Suchfeld, die Wirkung wird angesagt. Gespeicherte Modulwerte
+  gelten nur, solange ein aktives Modul sie für den jetzigen Bezug liefert; beim Speichern fallen die übrigen aus der
+  Datei. Nur zulässige Werte zählen: Ein Merkmalwert außerhalb der Werteliste (eigener Wert aus Formulare) und eine
+  Angabe mit falschem Typ oder einem Wert außerhalb ihrer Auswahl (ältere Datei, umbenannter Auswahlwert) gelten als
+  offen und sind so gekennzeichnet; Zahlen, die als Text gespeichert sind, werden wie im Eingabefeld gelesen.
 - **Angaben (links):** oben **„Klärt am meisten“** – die fehlenden Angaben, die die meisten offenen Paragrafen
   entscheiden würden (Klick springt zur Angabe); dann die Antragsmerkmale als Knöpfe mit Erklärung (eingeklappt, wenn
   alle festgelegt sind; „leeren“ setzt ein Merkmal bewusst zurück); darunter alle Angaben, an denen eine Regel hängt,
@@ -330,12 +330,16 @@ Gebäude umgenutzt werden (gefragt bei einer Nutzungsänderung an einem Gebäude
 Wohnung hat – bei einem Nichtwohngebäude ohne Wohnung nicht; der Baustein `nw_umnutzung_wohnraum` verlangt nur
 Nutzungsänderung, Wohngebäude bzw. Wohnung und „ja“, so bleibt eine offene Gebäudeart ohne Wirkung); dann entfallen §§
 29, 34 und 36, § 35 gilt nur noch mit Abs. 2 (Hinweis), §§ 6, 15, 27, 28, 30 bis 32 gelten mit dem Hinweis „nicht für
-bestehende Bauteile“. Die Entwässerungssatzung Soest § 9 bleibt ohne neue Entwässerung ein Einzelfall, wo
-Niederschlagswasser anfällt (Dach eines Gebäudes ohne Aufenthaltsräume, befestigte Fläche einer Anlage ohne Gebäude –
-Stellplätze bzw. Garagen auf dem Grundstück oder sonst eine neue befestigte Fläche wie Lagerplatz oder Hof –, neue Dach-
-oder befestigte Fläche einer Änderung wie ein Anbau; gefragt als `soest.befestigte_flaeche`, wenn keine neue
-Entwässerung angegeben ist). Einzelfalltexte im Paket tragen kein „im Einzelfall prüfen“ – das setzt die Auswertung
-davor.
+bestehende Bauteile“. § 35 BauO NRW gilt mit Abs. 2 (Rettungsweglänge 35 m von Aufenthaltsräumen und Kellergeschossen)
+in jeder Gebäudeklasse, der notwendige Treppenraum (Abs. 1) erst ab Gebäudeklasse 3; „entfällt“ nur bei Gebäudeklasse
+1/2 ohne Aufenthaltsräume und ohne Kellergeschoss (`nw.kellergeschoss`, nur dann gefragt). MVV TB A 1.2.9 wird an der
+Fundstelle A 1.2.9.1 (DIN 4149) geprüft; `paketPruefen` lehnt Prüfsummen leerer Texte ab (die Fundstelle wurde beim
+Abruf nicht gefunden) und ordnet Unterabschnitte („A 1.2.9.1“) ihrem Abschnitt zu. Die Entwässerungssatzung Soest § 9
+bleibt ohne neue Entwässerung ein Einzelfall, wo Niederschlagswasser anfällt (Dach eines Gebäudes ohne Aufenthaltsräume,
+befestigte Fläche einer Anlage ohne Gebäude – Stellplätze bzw. Garagen auf dem Grundstück oder sonst eine neue
+befestigte Fläche wie Lagerplatz oder Hof –, neue Dach- oder befestigte Fläche einer Änderung wie ein Anbau; gefragt als
+`soest.befestigte_flaeche`, wenn keine neue Entwässerung angegeben ist). Einzelfalltexte im Paket tragen kein „im
+Einzelfall prüfen“ – das setzt die Auswertung davor.
 
 Auslieferung und Wächter: `.github/workflows/regeln.yml` – Prüfen und Bauen in einem Job ohne Schreibrechte und ohne
 Schlüssel, Signieren (OpenSSL, Ed25519) und Hochladen in das Release „regeln“ in einem eigenen Job ohne npm; der Wächter

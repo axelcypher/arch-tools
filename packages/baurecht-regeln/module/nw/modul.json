@@ -221,6 +221,28 @@
       "typ": "zahl",
       "hilfe": "§ 39 Abs. 4 BauO NRW: Aufzugspflicht bei mehr als drei oberirdischen Geschossen (außer Ein- und Zweifamilienhäusern)"
     },
+    "nw.kellergeschoss": {
+      "titel": "Kellergeschoss im Gebäude",
+      "kurz": "Kellergeschoss",
+      "gruppe": "gebaeude",
+      "typ": "janein",
+      "frage": "Hat das Gebäude ein Kellergeschoss?",
+      "hilfe": "§ 35 Abs. 2 BauO NRW: Von jeder Stelle eines Aufenthaltsraums sowie eines Kellergeschosses muss ein Ausgang in einen notwendigen Treppenraum oder ins Freie in höchstens 35 m erreichbar sein; übereinanderliegende Kellergeschosse brauchen je zwei Ausgänge. Gefragt nur bei Gebäudeklasse 1 und 2 ohne Aufenthaltsräume.",
+      "wenn": {
+        "und": [
+          {
+            "$": "gebaeude"
+          },
+          {
+            "$": "gk_1_2"
+          },
+          {
+            "f": "gebaeude.aufenthaltsraeume",
+            "ist": false
+          }
+        ]
+      }
+    },
     "nw.elt_betriebsraum": {
       "titel": "Elektrischer Betriebsraum nach § 143 SBauVO",
       "kurz": "Elektrischer Betriebsraum",
