@@ -4,13 +4,14 @@ import { nutzungLabel } from '@core/lageplan';
 
 /** Bezeichnungen für Ansicht, Druck und Excel */
 
-export const STATUS: Record<Status, { label: string; cls: string }> = {
+/** label: Druck und Tooltip; kurz: Pille in der schmalen Kennzahl-Karte */
+export const STATUS: Record<Status, { label: string; cls: string; kurz?: string }> = {
   ok: { label: 'eingehalten', cls: 'ok' },
   ueberschritten: { label: 'überschritten', cls: 'bad' },
   unterschritten: { label: 'unterschritten', cls: 'bad' },
   pruefen: { label: 'prüfen', cls: 'warn' },
-  offen: { label: 'Festsetzung fehlt', cls: 'off' },
-  fehlt: { label: 'Grundstücksfläche fehlt', cls: 'off' },
+  offen: { label: 'Festsetzung fehlt', cls: 'off', kurz: 'offen' },
+  fehlt: { label: 'Grundstücksfläche fehlt', cls: 'off', kurz: 'fehlt' },
 };
 
 export const ANRECHNUNG: Record<Anrechnung, string> = {
@@ -32,6 +33,17 @@ export const GELAENDE_QUELLE: Record<GelaendeQuelle, string> = {
 export const GRUNDSTUECK_QUELLE = { projektdaten: 'Projektdaten (Kataster)', grenze: 'aus der gezeichneten Grenze', lageplan: 'aus dem Lageplan', fehlt: 'fehlt' } as const;
 
 export const AUFENTHALT = { ja: 'Aufenthaltsraum', nein: 'kein Aufenthaltsraum', treppe: 'Treppenraum' } as const;
+
+/** kurz für die schmale Tabelle der App (Langfassung im Tooltip) */
+export const GF_ART_KURZ: Record<Nachweis['gfJeGeschoss'][number]['art'], string> = {
+  vollgeschoss: 'Vollgeschoss',
+  aufenthalt: 'Aufenthaltsräume',
+  keine: 'zählt nicht',
+};
+
+/** Flächenbilanz: Rest des Grundstücks (Normalfall, nicht gezeichnete Gartenfläche) bzw. Überlappung */
+export const BILANZ_REST = 'nicht gezeichnet (Rest des Grundstücks)';
+export const BILANZ_UEBER = 'Flächen überlappen bzw. reichen über das Grundstück um';
 
 export const GF_ART: Record<Nachweis['gfJeGeschoss'][number]['art'], string> = {
   vollgeschoss: 'Vollgeschoss, Außenmaße (ohne Balkone, Loggien, Terrassen)',
@@ -97,7 +109,7 @@ export function flaechenVergleich(kurz: string, k: Kennzahl): string | undefined
   return t;
 }
 
-export const HAFTUNG = 'Das Tool rechnet nach und zeigt die angewandte Fassung; die Verantwortung für den Nachweis bleibt bei der Entwurfsverfasserin bzw. dem Entwurfsverfasser.';
+export const HAFTUNG = 'TERRIO rechnet nach und zeigt die angewandte Fassung; die Verantwortung für den Nachweis bleibt bei der Entwurfsverfasserin bzw. dem Entwurfsverfasser.';
 
 /** Regel im Nachschlagewerk, die eine Anrechnung begründet */
 export function anrechnungRegelId(a: Anrechnung): string {

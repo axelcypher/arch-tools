@@ -81,7 +81,7 @@ describe('TERRIO', () => {
 
   it('zeigt ohne Projekt den Einstieg', () => {
     useGrz.getState().load(createProject());
-    expect(render(App).textContent).toContain('Projekt oder IFC öffnen');
+    expect(render(App).textContent).toContain('TERRIO – GRZ-Nachweis');
   });
 
   it('rechnet nach dem Recht des Plandatums und zeigt Lageplan und Nachweis', () => {
@@ -288,6 +288,11 @@ describe('Zeichnen (G-21, G-23)', () => {
   const knopf = (host: HTMLElement, t: string) => [...host.querySelectorAll('button')].find((b) => b.textContent === t) as HTMLButtonElement;
   const klick = (svg: Element, q: { x: number; y: number }) => act(() => svg.dispatchEvent(new MouseEvent('click', { bubbles: true, button: 0, ...bildpunkt(svg, q) })));
   const bewege = (svg: Element, q: { x: number; y: number }) => act(() => svg.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, ...bildpunkt(svg, q) })));
+  /** Werkzeug wählen, dann die Nutzung neuer Flächen (Auswahlliste neben den Werkzeugen) */
+  const zeichne = (host: HTMLElement, werkzeug: 'Rechteck' | 'Polygon', nutzung: string) => {
+    act(() => knopf(host, werkzeug).click());
+    change(host.querySelector('select[aria-label="Nutzung neuer Flächen"]') as HTMLSelectElement, nutzung);
+  };
 
   it('Vorlage „Zufahrt“: Nutzung, passende Versiegelung, Name „Zufahrt 1“; keine offene Spanne', () => {
     const p = projekt();
@@ -295,7 +300,9 @@ describe('Zeichnen (G-21, G-23)', () => {
     p.lageplan!.flaechen = p.lageplan!.flaechen.filter((f) => f.nutzung !== 'terrasse');
     useGrz.getState().load(p);
     const host = render(GrzGfzView);
-    act(() => knopf(host, 'Zufahrt').click());
+    // Nutzung ist nur bei Polygon/Rechteck wählbar; die Wahl wechselt das Werkzeug nicht
+    expect((host.querySelector('select[aria-label="Nutzung neuer Flächen"]') as HTMLSelectElement).disabled).toBe(true);
+    zeichne(host, 'Rechteck', 'zufahrt');
     expect(useGrz.getState().werkzeug).toBe('rechteck');
     const svg = host.querySelector('svg.grz-skizze')!;
     klick(svg, { x: 16, y: 2 });
@@ -305,12 +312,12 @@ describe('Zeichnen (G-21, G-23)', () => {
     const n = massNachweis(useGrz.getState().project);
     expect(n.grz2!.mitOffenen).toBeUndefined();
     // Auswahlbereich unter dem Plan: Nutzung, Versiegelung, Nachbar
-    const auswahl = host.querySelector('.lp-auswahl')!;
+    const auswahl = host.querySelector('.lp-eigenschaften')!;
     expect(auswahl.textContent).toContain('Nutzung');
     expect(auswahl.textContent).toContain('Versiegelung');
     expect(auswahl.textContent).toContain('Nachbargrundstück');
     // Garten: unversiegelt
-    act(() => knopf(host, 'Garten').click());
+    change(host.querySelector('select[aria-label="Nutzung neuer Flächen"]') as HTMLSelectElement, 'garten');
     klick(svg, { x: 16, y: 8 });
     klick(svg, { x: 19, y: 9 });
     expect(useGrz.getState().project.lageplan!.flaechen.at(-1)).toMatchObject({ name: 'Garten 1', nutzung: 'garten', versiegelung: 'gruen' });
@@ -320,8 +327,10 @@ describe('Zeichnen (G-21, G-23)', () => {
     const p = projekt();
     useGrz.getState().load(p);
     const host = render(GrzGfzView);
-    act(() => knopf(host, 'Terrasse').click());
+    zeichne(host, 'Rechteck', 'terrasse');
     const svg = host.querySelector('svg.grz-skizze')!;
+    // Eingabezeile steht schon vor dem ersten Punkt (kein Springen des Plans), Felder noch gesperrt
+    expect((host.querySelector('.lp-eingabe-feld') as HTMLInputElement).disabled).toBe(true);
     // erste Ecke an der Hausecke (wird gefangen), Richtung mit der Maus
     klick(svg, { x: 12.05, y: 11.3 });
     bewege(svg, { x: 14, y: 14 });
@@ -344,8 +353,7 @@ describe('Zeichnen (G-21, G-23)', () => {
   it('Polygon per Länge und Winkel; Kantenlänge in der Auswahl bearbeiten', () => {
     useGrz.getState().load(projekt());
     const host = render(GrzGfzView);
-    act(() => knopf(host, 'Weg').click());
-    act(() => knopf(host, 'Polygon').click());
+    zeichne(host, 'Polygon', 'weg');
     const svg = host.querySelector('svg.grz-skizze')!;
     klick(svg, { x: 0, y: 11.25 }); // Hausecke
     const setze = (l: string, w: string) => {
@@ -385,7 +393,7 @@ describe('Stammdaten und Bebauungsplan (G-25)', () => {
     p.meta.grundstueck.flurstueck = '123';
     useGrz.getState().load(p);
     const host = render(App);
-    const feld = [...host.querySelectorAll('.field')].find((f) => f.textContent?.startsWith('Bebauungsplan Nr.'))!.querySelector('input') as HTMLInputElement;
+    const feld = [...host.querySelectorAll('.field')].find((f) => f.textContent?.startsWith('Nummer'))!.querySelector('input') as HTMLInputElement;
     change(feld, '7');
     act(() => feld.dispatchEvent(new FocusEvent('blur', { bubbles: true })));
     act(() => feld.dispatchEvent(new FocusEvent('focusout', { bubbles: true })));
@@ -450,7 +458,8 @@ describe('Plan und Einstieg (G-22, G-24, G-27)', () => {
     expect(n.grundstueck.quelle).toBe('grenze');
     expect(n.grundstueck.flaeche).toBeCloseTo(23 * 20, 0);
     expect(host.querySelector('.lp-legende')!.textContent).toContain('Grundstücksgrenze');
-    act(() => [...host.querySelectorAll('button')].find((b) => b.textContent === 'Grenze löschen')!.click());
+    // Flurstück einzeln löschen (Leiste „Grenze“ im Werkzeug Grenze)
+    act(() => (host.querySelector('button[aria-label="Flurstück 1 löschen"]') as HTMLButtonElement).click());
     expect(useGrz.getState().project.lageplan!.grenze).toBeUndefined();
   });
 
@@ -495,11 +504,22 @@ describe('Nachweis-Spalte, Regeln, Rückgängig (G-28, G-29, G-32)', () => {
     expect(css).toMatch(/@media \(max-width: 1280px\)/);
     useGrz.getState().load(projekt());
     const host = render(GrzGfzView);
+    // Begründungen auf Wunsch als eigene, ganz breite Zeile
+    expect(host.querySelectorAll('tr.grz-begruendung')).toHaveLength(0);
+    const schalter = [...host.querySelectorAll('label.toggle')].find((l) => l.textContent?.includes('Begründungen zeigen'))!.querySelector('input') as HTMLInputElement;
+    act(() => schalter.click());
     const zeilen = host.querySelectorAll('tr.grz-begruendung');
     expect(zeilen).toHaveLength(3);
     expect(zeilen[0].querySelector('td')!.getAttribute('colspan')).toBe('5');
-    expect(zeilen[0].querySelector('details summary')!.textContent).toBe('Begründung');
-    expect([...(host.querySelector('select.grz-wahl') as HTMLSelectElement).options].map((o) => o.textContent)).toEqual(['auto', 'ja', 'nein']);
+    // eine Auswahl: automatisch (mit Ergebnis) oder von Hand; von Hand sichtbar gekennzeichnet
+    const wahl = host.querySelector('select.grz-wahl') as HTMLSelectElement;
+    expect([...wahl.options].map((o) => o.textContent)).toEqual(['automatisch: Vollgeschoss', 'Vollgeschoss (von Hand)', 'kein Vollgeschoss (von Hand)']);
+    expect(wahl.classList.contains('grz-von-hand')).toBe(false);
+    change(wahl, 'nein');
+    const neu = host.querySelector('select.grz-wahl') as HTMLSelectElement;
+    expect(neu.classList.contains('grz-von-hand')).toBe(true);
+    expect(neu.options[0].textContent).toBe('automatisch: Vollgeschoss');
+    expect(host.querySelector('.kpis')!.textContent).toContain('davon eines von Hand festgelegt');
   });
 
   it('G-29: Pille begründet die Anrechnung und öffnet die passende Regel', async () => {
@@ -521,7 +541,7 @@ describe('Nachweis-Spalte, Regeln, Rückgängig (G-28, G-29, G-32)', () => {
     const host = render(App);
     const id = useGrz.getState().project.lageplan!.flaechen[0].id;
     act(() => useGrz.getState().select(id));
-    const nutzung = [...host.querySelectorAll('.lp-auswahl select')][0] as HTMLSelectElement;
+    const nutzung = [...host.querySelectorAll('.lp-eigenschaften select')][0] as HTMLSelectElement;
     change(nutzung, 'stellplatz');
     const undo = [...host.querySelectorAll('button')].find((b) => b.textContent === '↶')!;
     expect(undo.title).toBe('Rückgängig: Nutzung ändern (Strg+Z)');
@@ -659,7 +679,7 @@ describe('Gesamt-Review: Tastatur, Ausschnitt, Zeichnen, Unterlage, Speichern', 
     const feld = host.querySelector('.grz-fest input') as HTMLInputElement;
     taste('z', feld, { ctrlKey: true });
     expect(useGrz.getState().project.name).toBe('Geändert');
-    act(() => knopf(host, 'Excel …').click());
+    act(() => knopf(host, 'Excel-Export …').click());
     taste('z', document.body, { ctrlKey: true });
     expect(useGrz.getState().project.name).toBe('Geändert');
     taste('Escape', document.body);

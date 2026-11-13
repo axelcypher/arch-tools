@@ -216,6 +216,8 @@ export interface VollgeschossPruefung {
   bezugsflaeche: number;
   automatisch: boolean;
   vollgeschoss: boolean;
+  /** Ergebnis der Prüfung ohne Festlegung von Hand */
+  vollgeschossAuto: boolean;
   begruendung: string;
 }
 
@@ -618,7 +620,7 @@ export function massNachweis(project: Project): Nachweis {
       const hoch = samples.filter((s) => (licht ? s.h - aufbau : s.h) >= soll - 1e-9).length * (samples[0]?.zelle ?? 0);
       return { hoch, anteil: bezug > 0 ? hoch / bezug : 0 };
     };
-    let p: Omit<VollgeschossPruefung, 'storeyId' | 'name' | 'automatisch' | 'vollgeschoss'> & { vg: boolean };
+    let p: Omit<VollgeschossPruefung, 'storeyId' | 'name' | 'automatisch' | 'vollgeschoss' | 'vollgeschossAuto'> & { vg: boolean };
     if (re.bauo === 'nrw2019') {
       const ob = ueber > 1.6;
       const { hoch, anteil } = anteilVon(2.3, true, darunter);
@@ -695,7 +697,7 @@ export function massNachweis(project: Project): Nachweis {
       };
     }
     const { vg, ...rest } = p;
-    pruefungen.push({ ...rest, storeyId: st.id, name: st.name, automatisch: st.vollgeschoss === undefined, vollgeschoss: st.vollgeschoss ?? vg });
+    pruefungen.push({ ...rest, storeyId: st.id, name: st.name, automatisch: st.vollgeschoss === undefined, vollgeschoss: st.vollgeschoss ?? vg, vollgeschossAuto: vg });
     if (st.vollgeschoss ?? vg) baumasse += A * (decke - e);
   });
   if (re.bauo === 'nw1962')

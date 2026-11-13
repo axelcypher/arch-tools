@@ -2,7 +2,7 @@
 
 .grz-view {
   display: grid;
-  grid-template-columns: minmax(230px, 280px) minmax(320px, 1fr) minmax(300px, 380px);
+  grid-template-columns: minmax(250px, 300px) minmax(320px, 1fr) minmax(360px, 440px);
   gap: 12px;
   padding: 12px;
   align-items: start;
@@ -10,10 +10,37 @@
 /* bis 1280 px zwei Spalten: Festsetzungen | Plan, der Nachweis darunter über die volle Breite */
 @media (max-width: 1280px) {
   .grz-view {
-    grid-template-columns: minmax(230px, 280px) minmax(0, 1fr);
+    grid-template-columns: minmax(250px, 300px) minmax(0, 1fr);
   }
   .grz-nachweis {
     grid-column: 1 / -1;
+  }
+}
+/* Ergebnisleiste: nur, wenn der Nachweis unter Eingaben und Plan rutscht – Kennzahlen bleiben im Blick */
+.grz-ergebnis-leiste {
+  display: none;
+}
+@media (max-width: 1280px) {
+  .grz-ergebnis-leiste {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 16px;
+    grid-column: 1 / -1;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    padding: 6px 12px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 12px;
+  }
+  .grz-ergebnis-leiste strong {
+    font-variant-numeric: tabular-nums;
+  }
+  .grz-ergebnis-leiste button.link {
+    margin-left: auto;
   }
 }
 .grz-col {
@@ -24,7 +51,81 @@
   min-width: 0;
 }
 .grz-col h2 {
+  font-size: 15px;
+  margin: 18px 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.grz-col h2:first-child,
+.grz-col > .section-head h2 {
   margin-top: 0;
+}
+/* Eingaben: Felder einer Zeile unten bündig, auch wenn ein Label umbricht */
+.grz-fest .field-row {
+  align-items: flex-end;
+}
+.grz-fest .field-row > .field {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.grz-fest .toggle.block,
+.lp-eigenschaften .toggle.block {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 2px 0 10px;
+}
+.grz-fest .toggle input,
+.grz-table .toggle input {
+  flex: none;
+  margin-top: 2px;
+}
+/* Stammdaten-Knopf: Abstand zum folgenden Feld (app-seitig, bis base.css nachzieht) */
+.grz-fest .sd-knopf {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+/* Vollgeschoss-Tabelle: feste Spalten, die Einstufung bekommt die Hälfte – kein Überlauf bei 360 px */
+.grz-vg-tabelle {
+  table-layout: fixed;
+}
+.grz-vg-tabelle th:nth-child(1) {
+  width: 14%;
+}
+.grz-vg-tabelle th:nth-child(2),
+.grz-vg-tabelle th:nth-child(3) {
+  width: 12%;
+}
+.grz-vg-tabelle th:nth-child(4) {
+  width: 11%;
+}
+.grz-table.grz-vg-tabelle th.num,
+.grz-vg-tabelle th {
+  white-space: normal;
+}
+.grz-vg-tabelle select {
+  width: 100%;
+  text-overflow: ellipsis;
+}
+.grz-hinweis-zeile {
+  display: block;
+  margin: -4px 0 10px;
+}
+.grz-fest .feld-meldung {
+  margin: -4px 0 8px;
+}
+.grz-h3-zeile {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.grz-h3-zeile .toggle {
+  margin-right: 0;
 }
 .grz-col h3 {
   margin: 14px 0 6px;
@@ -92,10 +193,10 @@
 .grz-table tr.nachbar td {
   opacity: 0.55;
 }
-/* Auswahlfelder in Tabellen so breit wie ihr Inhalt – nichts abgeschnitten („vollversiegelt“) */
+/* Auswahlfelder in Tabellen so breit wie ihr Inhalt, aber nie breiter als die Zelle */
 .grz-table select {
   width: auto;
-  max-width: none;
+  max-width: 100%;
 }
 .grz-table select.grz-wahl {
   padding: 1px 2px;
@@ -103,8 +204,15 @@
 .grz-vg-zeile td {
   border-bottom: none;
 }
-.grz-vg-ergebnis {
-  white-space: nowrap;
+/* Einstufung von Hand: kursiv und mit Warnrand, damit sie sich von „automatisch“ abhebt */
+.grz-table select.grz-von-hand {
+  font-style: italic;
+  border-color: var(--warn-border);
+  background: var(--warn-bg);
+  color: var(--warn-text);
+}
+.grz-raum-tabelle select {
+  margin: 2px 0;
 }
 .grz-begruendung td {
   padding-top: 0;
@@ -147,9 +255,10 @@ button.link:hover {
 }
 .kpi-head {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
-  gap: 6px;
+  gap: 2px 6px;
   font-size: 11px;
   color: var(--muted);
 }
@@ -167,8 +276,16 @@ button.link:hover {
   font-size: 11px;
   color: var(--muted);
 }
-.kpi-vergleich {
+.kpi-titel {
+  white-space: nowrap;
+}
+.kpi-offen {
   margin-top: 2px;
+  color: var(--warn-text);
+}
+/* letzte Karte allein in der Zeile: über die volle Breite */
+.kpis > .kpi:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
 }
 /* Zahl und Einheit nie trennen („100,00 m²“) */
 .nowrap,
@@ -187,20 +304,20 @@ button.link:hover {
   white-space: nowrap;
 }
 .pill.ok {
-  color: #1f6b3d;
-  background: #e2f2e8;
+  color: var(--ok-text);
+  background: var(--ok-bg);
 }
 .pill.bad {
-  color: #a3281d;
-  background: #fbe4e1;
+  color: var(--fehler-text);
+  background: var(--fehler-bg);
 }
 .pill.warn {
-  color: #8a5a0b;
-  background: #fbefd6;
+  color: var(--warn-text);
+  background: var(--warn-bg);
 }
 .pill.off {
-  color: var(--muted);
-  background: #eef0f2;
+  color: var(--text);
+  background: var(--chip-bg);
 }
 .grz-hinweise {
   padding-left: 18px;
@@ -225,6 +342,16 @@ button.link:hover {
   border-radius: 6px;
   font-size: 12px;
 }
+.grz-bericht-neutral {
+  background: var(--panel);
+  border-color: var(--border);
+}
+.grz-bericht-kopf {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
 .grz-bericht ul {
   margin: 4px 0 8px;
   padding-left: 18px;
@@ -247,14 +374,28 @@ button.link:hover {
 .lp-hint {
   flex: 1 1 100%;
 }
-.lp-auswahl {
+.lp-eigenschaften {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  align-items: flex-end;
+  align-items: flex-start;
   margin-bottom: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--sel);
+  border-radius: 4px;
 }
-.lp-auswahl .field {
+.lp-eigenschaften-titel,
+.lp-eigenschaften .lp-kanten,
+.lp-eigenschaften .grz-teile,
+.lp-eigenschaften-fuss {
+  flex: 1 1 100%;
+}
+.lp-eigenschaften-fuss {
+  display: flex;
+  justify-content: flex-end;
+}
+.lp-eigenschaften .field {
   flex: 1 1 160px;
 }
 .grz-table tr.selected td {
@@ -331,9 +472,30 @@ button.link:hover {
     break-after: avoid;
   }
 
-  .grz-report .plan-figure {
+  .grz-report .plan-figure,
+  .grz-report .report-table.narrow {
     break-inside: avoid;
   }
+}
+.grz-report .legende-muster {
+  vertical-align: -1px;
+  margin-right: 4px;
+}
+/* Druckvorschau: Bedienleiste als eigene Zeile über dem Blatt statt über der Überschrift (app-seitig, bis base.css nachzieht) */
+.grz-report .report-actions {
+  position: sticky;
+  top: 0;
+  right: auto;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px 10px;
+  margin: -8px -8px 12px;
+  padding: 8px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
 }
 
 /* 3D-Ansicht */
@@ -436,17 +598,22 @@ button.link:hover {
   list-style: none;
   border: 1px solid var(--border);
   border-radius: 999px;
-  width: 20px;
-  height: 20px;
-  line-height: 18px;
+  width: 24px;
+  height: 24px;
+  line-height: 22px;
   text-align: center;
   font-size: 12px;
+  background: var(--panel);
+}
+.lp-tasten summary::-webkit-details-marker {
+  display: none;
 }
 .lp-tasten-liste {
   position: absolute;
   z-index: 20;
-  top: 24px;
-  left: 0;
+  top: 28px;
+  right: 0;
+  left: auto;
   width: 380px;
   max-width: 80vw;
   padding: 8px 12px;
@@ -469,4 +636,88 @@ button.link:hover {
   border: none;
   cursor: help;
   font-family: inherit;
+}
+
+/* Lageplan-Leiste: Werkzeuge | Nutzung | Einpassen | Anzeige */
+.lp-gruppe {
+  display: inline-flex;
+  gap: 4px;
+}
+.lp-trenner {
+  width: 1px;
+  align-self: stretch;
+  margin: 2px 4px;
+  background: var(--border);
+}
+.lp-nutzung {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.lp-nutzung select {
+  width: auto;
+}
+.lp-deckkraft {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.lp-deckkraft input[type='range'] {
+  width: 100px;
+  padding: 0;
+}
+.lp-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 2px 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 12px;
+}
+.lp-chip.active {
+  border-color: var(--sel);
+}
+.lp-eingabe-feld:disabled {
+  opacity: 0.6;
+}
+/* Plan mit Einblendungen (Leerzustand); Fokusrahmen außerhalb des Farbfilters, nur bei Tastaturfokus */
+.lp-plan {
+  position: relative;
+  margin-bottom: 8px;
+  border-radius: 4px;
+}
+.lp-plan .grz-skizze {
+  margin-bottom: 0;
+}
+.lp-plan .grz-skizze:focus {
+  outline: none;
+}
+.lp-plan:has(.grz-skizze:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.lp-leer {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  max-width: min(420px, 90%);
+  padding: 12px 16px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+  font-size: 12px;
+  text-align: center;
+}
+.lp-leer p {
+  margin: 0 0 8px;
+}
+.lp-leer .button-row {
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.grz-3d {
+  margin-bottom: 8px;
 }

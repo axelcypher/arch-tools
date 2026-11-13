@@ -4,11 +4,11 @@ import type { Point } from '@core/geometry';
 import { bounds, centroid, polygonArea } from '@core/geometry';
 import { nutzungLabel, VERSIEGELUNGEN, versiegelungInfo } from '@core/lageplan';
 import type { Project, RoomShape } from '@core/model';
-import type { Anrechnung, Kennzahl, Nachweis } from '../massNutzung';
+import type { Anrechnung, Kennzahl, Nachweis, Status } from '../massNutzung';
 import { aktiveVariante, baunvoLabel, bauoLabel, flaechenDerVariante, massNachweis, sachlicheHinweise, varianten } from '../massNutzung';
 import { druckenAls } from '@core/platform/projektDatei';
 import { setMassNutzung, useGrz } from '../store';
-import { ANRECHNUNG, AUFENTHALT, flaechenVergleich, GELAENDE_QUELLE, GF_ART, HAFTUNG, kennzahlWert, roemisch, STATUS, vollgeschosseZulaessig, zahl } from '../texte';
+import { ANRECHNUNG, AUFENTHALT, BILANZ_REST, BILANZ_UEBER, flaechenVergleich, GELAENDE_QUELLE, GF_ART, HAFTUNG, kennzahlWert, roemisch, STATUS, vollgeschosseZulaessig, zahl } from '../texte';
 import { bebauungsplanText, GEBIETSARTEN } from '@core/model';
 import { useEscSchliessen } from '@core/ui/Dialog';
 import { datumText, DruckKopf } from '@core/ui/DruckKopf';
@@ -47,6 +47,7 @@ export function NachweisDruck({ onClose }: { onClose: () => void }) {
     <div className="report-backdrop">
       <div className="report grz-report">
         <div className="report-actions no-print">
+          <span className="muted">Inhalt:</span>
           <label className="toggle">
             <input type="checkbox" checked={plan} onChange={(e) => setPlan(e.target.checked)} />
             Lageplan
@@ -68,10 +69,10 @@ export function NachweisDruck({ onClose }: { onClose: () => void }) {
           <label className="toggle" title="Stand des Nachweises im Kopf – leer: ohne Angabe">
             Stand <input type="date" value={stand} onChange={(e) => setStand(e.target.value)} />
           </label>
-          <button onClick={() => druckenAls({ datei: useGrz.getState().datei, projektName: project.name, zusatz: 'GRZ+GFZ' })}>Drucken / PDF</button>
-          <button className="primary" onClick={onClose}>
-            Schließen
+          <button className="primary" onClick={() => druckenAls({ datei: useGrz.getState().datei, projektName: project.name, zusatz: 'GRZ+GFZ' })}>
+            Drucken / PDF
           </button>
+          <button onClick={onClose}>Schließen</button>
         </div>
 
         <DruckKopf
@@ -168,7 +169,7 @@ export function NachweisDruck({ onClose }: { onClose: () => void }) {
               <td className="num strong">{roemisch(n.vollgeschosse.anzahl)}</td>
               <td className="num">{vollgeschosseZulaessig(n.vollgeschosse, '').replace('zulässig ', '') || '–'}</td>
               <td className="num" />
-              <td>{STATUS[n.vollgeschosse.status].label}</td>
+              <StatusZelle s={n.vollgeschosse.status} />
             </tr>
           </tbody>
         </table>
@@ -294,7 +295,7 @@ export function NachweisDruck({ onClose }: { onClose: () => void }) {
                 <td className="num">{g.oberirdisch ? `${Math.round(g.anteil * 100)} %` : '–'}</td>
                 <td className="strong">
                   {g.vollgeschoss ? 'Vollgeschoss' : 'kein Vollgeschoss'}
-                  {!g.automatisch && ' (festgelegt)'}
+                  {!g.automatisch && ' (von Hand festgelegt)'}
                 </td>
                 <td>{g.begruendung}</td>
               </tr>
@@ -343,7 +344,7 @@ export function NachweisDruck({ onClose }: { onClose: () => void }) {
                     <td className="num">{fmt2(polygonArea(r.points))}</td>
                     <td>
                       {AUFENTHALT[pr.ergebnis]}
-                      {r.aufenthalt ? ' (festgelegt)' : ''}
+                      {r.aufenthalt ? ' (von Hand festgelegt)' : ''}
                       <div className="report-note">{pr.anforderung.text}</div>
                     </td>
                   </tr>
@@ -372,10 +373,16 @@ export function NachweisDruck({ onClose }: { onClose: () => void }) {
                   <td>Summe</td>
                   <td className="num">{fmt2(n.bilanz.summe)} m²</td>
                 </tr>
-                {n.bilanz.differenz !== undefined && Math.abs(n.bilanz.differenz) > 0.5 && (
+                {n.bilanz.differenz !== undefined && n.bilanz.differenz > 0.5 && (
                   <tr>
-                    <td>nicht erfasst bzw. überlappend</td>
+                    <td>{BILANZ_REST}</td>
                     <td className="num">{fmt2(n.bilanz.differenz)} m²</td>
+                  </tr>
+                )}
+                {n.bilanz.differenz !== undefined && n.bilanz.differenz < -0.5 && (
+                  <tr>
+                    <td className="strong">{BILANZ_UEBER}</td>
+                    <td className="num strong">{fmt2(-n.bilanz.differenz)} m²</td>
                   </tr>
                 )}
               </tbody>
@@ -422,10 +429,7 @@ function KennzahlZeile({ titel, kurz, k }: { titel: string; kurz: string; k: Ken
       </td>
       <td className="num">{k.zulaessig !== undefined ? zahl(k.zulaessig) : '–'}</td>
       <td className="num">{k.reserve !== undefined ? fmt2(k.reserve) : '–'}</td>
-      <td>
-        {STATUS[k.status].label}
-        {vergleich && <div className="report-note">{vergleich}</div>}
-      </td>
+      <StatusZelle s={k.status}>{vergleich && <div className="report-note">{vergleich}</div>}</StatusZelle>
     </tr>
   );
 }
@@ -503,7 +507,7 @@ function AbsolutZeile({ titel, a }: { titel: string; a: NonNullable<Nachweis['gr
       <td className="num" />
       <td className="num">{fmt2(a.zulaessig)} m²</td>
       <td className="num">{fmt2(a.zulaessig - a.flaeche)}</td>
-      <td>{STATUS[a.status].label}</td>
+      <StatusZelle s={a.status} />
     </tr>
   );
 }
@@ -566,13 +570,17 @@ export function LageplanSkizze({ n, project, nr, rechenweg }: { n: Nachweis; pro
           <pattern id="grz-druck-hatch" width={k * 8} height={k * 8} patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
             <line x1="0" y1="0" x2="0" y2={k * 8} stroke="#2a5bd7" strokeWidth={k * 2} strokeOpacity={0.5} />
           </pattern>
+          {VERSIEGELUNGEN.map((v) => (
+            <VersiegelungsMuster key={v.id} id={`grz-druck-${v.id}`} v={v} u={k} />
+          ))}
         </defs>
         {flaechen.map((f) => (
           <path
             key={f.id}
             d={d(f.points)}
-            fill={versiegelungInfo(f.versiegelung).color}
-            fillOpacity={f.nachbar ? 0.12 : 0.55}
+            // Farbe und Muster: auch im Graustufendruck unterscheidbar (Legende gleich)
+            fill={f.nachbar ? versiegelungInfo(f.versiegelung).color : `url(#grz-druck-${f.versiegelung})`}
+            fillOpacity={f.nachbar ? 0.12 : 1}
             stroke={f.nachbar ? '#9aa0a6' : '#5b6068'}
             strokeWidth={k}
             strokeDasharray={f.nachbar ? `${k * 4} ${k * 3}` : undefined}
@@ -646,7 +654,12 @@ export function LageplanSkizze({ n, project, nr, rechenweg }: { n: Nachweis; pro
         </span>
         {VERSIEGELUNGEN.map((v) => (
           <span key={v.id}>
-            <i style={{ background: v.color }} />
+            <svg className="legende-muster" width="14" height="10" aria-hidden>
+              <defs>
+                <VersiegelungsMuster id={`grz-legende-${v.id}`} v={v} u={0.6} />
+              </defs>
+              <rect x="0.5" y="0.5" width="13" height="9" fill={`url(#grz-legende-${v.id})`} stroke="#5b6068" strokeWidth="0.6" />
+            </svg>
             {v.label}
           </span>
         ))}
@@ -654,5 +667,30 @@ export function LageplanSkizze({ n, project, nr, rechenweg }: { n: Nachweis; pro
         <span>Nummern: siehe „Grundfläche“</span>
       </figcaption>
     </figure>
+  );
+}
+
+/**
+ * Füllung je Versiegelung: Farbe wie im Plan der App (Deckkraft 0,55), dazu ein Muster, damit die Klassen auch
+ * schwarz-weiß unterscheidbar sind – voll: dichte Schraffur, teil: Punkte, Grünfläche: nur Farbe. u: Weltmaß je Druckpixel
+ */
+function VersiegelungsMuster({ id, v, u }: { id: string; v: { id: string; color: string }; u: number }) {
+  const w = u * 6;
+  return (
+    <pattern id={id} width={w} height={w} patternUnits="userSpaceOnUse" patternTransform={v.id === 'voll' ? 'rotate(45)' : undefined}>
+      <rect width={w} height={w} fill={v.color} fillOpacity={0.55} />
+      {v.id === 'voll' && <line x1="0" y1="0" x2="0" y2={w} stroke="#1f2328" strokeWidth={u * 1.2} strokeOpacity={0.7} />}
+      {v.id === 'teil' && <circle cx={w / 2} cy={w / 2} r={u * 0.9} fill="#1f2328" fillOpacity={0.7} />}
+    </pattern>
+  );
+}
+
+/** Ergebnis im Druck: Verstoß fett – schwarz-weiß das einzige Mittel zur Hervorhebung */
+function StatusZelle({ s, children }: { s: Status; children?: React.ReactNode }) {
+  return (
+    <td>
+      {s === 'ueberschritten' || s === 'unterschritten' ? <strong>{STATUS[s].label}</strong> : STATUS[s].label}
+      {children}
+    </td>
   );
 }
