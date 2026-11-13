@@ -1,8 +1,10 @@
 # Umsetzung des Usability- und Rechts-Reviews – Checkliste
 
 Grundlage: [review-umsetzung-handoff.md](review-umsetzung-handoff.md) (6 Querschnittspunkte, 108 App-Punkte).
-Je Punkt: erledigt in Version (App) bzw. Abweichung mit Grund. Kürzel der Apps: FR = Flächenrechner, GRZ =
-GRZ-Nachweis, KO = Kostenermittlung, PO = Projektordner, EZ = Entzerrung, FO = Formulare, SU = Rahmen-App.
+Je Punkt: erledigt in Version (App) bzw. Abweichung mit Grund. Kürzel der Apps (heutiger Name in Klammern): FR =
+Flächenrechner (QUADRIO), GRZ = GRZ-Nachweis (TERRIO), KO = Kostenermittlung (NUMIO), PO = Projektordner (ATLAS),
+EZ = Entzerrung (RECTIO), FO = Formulare (PERMIO), SU = Rahmen-App (Arkly). Die Einträge sind ein Protokoll und nennen
+die Apps mit den Namen ihrer Zeit; die neuen Namen erklärt die README im Abschnitt „Neue Namen“.
 
 Querschnittspunkte in `packages/core` betreffen alle Apps; deren Versionen stehen beim Punkt.
 

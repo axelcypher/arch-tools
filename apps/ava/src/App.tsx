@@ -141,7 +141,15 @@ export function App() {
 
   return (
     <div className="app">
-      <TitleBar app={APP_NAMEN.ava.name} name={name} dirty={dirty} onOpenLog={() => setLogOffen(true)} onProjekte={() => setProjekteOffen(true)} zeichenflaeche={false} onSpeichern={() => lvSpeichernMitMeldung()} />
+      <TitleBar
+        app={APP_NAMEN.ava.name}
+        name={name}
+        dirty={dirty}
+        onOpenLog={() => setLogOffen(true)}
+        onProjekte={() => setProjekteOffen(true)}
+        zeichenflaeche={false}
+        onSpeichern={() => lvSpeichernMitMeldung()}
+      />
       {projekteOffen || !projekt ? (
         isTauri() ? (
           <ProjektWahl
