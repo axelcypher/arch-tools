@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { App } from './App';
 import { aktuell, mitEbene, useEntz } from './store';
 import { oeffnen } from './projekt';
+import { klick } from './aktionen';
 import { farbschemaWechseln } from '@core/ui/rauchtest';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -54,6 +55,10 @@ describe('RECTIO (Entzerrung)', () => {
     expect(host.querySelector('.modal.rf')!.textContent).toContain('Die Datei „Fassade.entz“ ließ sich nicht lesen');
     expect(host.querySelector('.modal.rf')!.textContent).toContain('Die geöffnete Entzerrung bleibt unverändert.');
     expect(useEntz.getState().doc).toBe(vorher);
+    // Meldung schließen, sonst bleibt sie für die folgenden Tests offen
+    act(() => host.querySelector<HTMLButtonElement>('.modal.rf button')!.click());
+    for (let i = 0; i < 5 && host.querySelector('.modal.rf'); i++) await act(async () => new Promise((r) => setTimeout(r, 0)));
+    expect(host.querySelector('.modal.rf')).toBeNull();
   });
 
   it('Farbschema wechselt sofort (Menü ◐)', () => {
@@ -73,12 +78,12 @@ describe('RECTIO (Entzerrung)', () => {
     const host = render();
     act(() => useEntz.getState().fotoHinzufuegen('f1', 'Fassade', 'image/jpeg', 3000, 2000, new Uint8Array(4)));
     expect(host.querySelector('.ef-fotos')?.textContent).toContain('Fassade');
-    expect(host.querySelector('.sidebar-right .warning')?.textContent).toContain('Noch 4 Ecken');
+    expect(host.querySelector('.sidebar-right .ef-fehlt')?.textContent).toContain('Noch 4 Ecken');
 
     const s = useEntz.getState();
     const { foto, ebene } = aktuell(s);
     act(() => s.aendern(mitEbene(foto!.id, ebene!.id, (e) => ({ ...e, rechteck: { ...e.rechteck, ecken: ECKEN } }))));
-    expect(host.querySelector('.sidebar-right .warning')?.textContent).toContain('Breite und Höhe');
+    expect(host.querySelector('.sidebar-right .ef-fehlt')?.textContent).toContain('Breite und Höhe');
     eingabe(feld(host, 'Breite (m)'), '1,26');
     eingabe(feld(host, 'Höhe (m)'), '1,51');
     expect(aktuell(useEntz.getState()).ebene!.rechteck).toMatchObject({ breite: 1.26, hoehe: 1.51 });
@@ -96,11 +101,13 @@ describe('RECTIO (Entzerrung)', () => {
         mitEbene(foto!.id, ebene!.id, (e) => ({ ...e, messungen: [{ id: 'm1', art: 'strecke', name: 'Fenster', punkte: [ECKEN[0], ECKEN[1]] }] })),
       ),
     );
-    expect(host.querySelector('.ef-messungen')?.textContent).toContain('1,260 m');
+    expect(host.querySelector('.ef-messungen')?.textContent).toContain('1,26 m');
     expect(host.textContent).toContain('Exportieren');
 
-    // Tab wechselt zurück zur Fotoansicht
+    // Tab bleibt der Fokus-Navigation, E wechselt zurück zur Fotoansicht
     act(() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab' })));
+    expect(useEntz.getState().ansicht).toBe('entzerrt');
+    act(() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'e' })));
     expect(useEntz.getState().ansicht).toBe('foto');
     expect(host.textContent).toContain('Referenz · Ebene 1');
   });
@@ -109,12 +116,75 @@ describe('RECTIO (Entzerrung)', () => {
     const host = render();
     act(() => useEntz.getState().fotoHinzufuegen('f1', 'Fassade', 'image/jpeg', 3000, 2000, new Uint8Array(4)));
     act(() => knopf(host, '+ Ebene')!.click());
-    expect([...host.querySelectorAll('.sidebar-left .list')[1].querySelectorAll('li')].map((l) => l.textContent)).toEqual(['Ebene 1×', 'Ebene 2×']);
+    expect([...host.querySelectorAll('.sidebar-left .list')[1].querySelectorAll('li')].map((l) => l.textContent)).toEqual(['Ebene 1✎×', 'Ebene 2✎×']);
     act(() => knopf(host, 'Fluchtlinien')!.click());
     expect(aktuell(useEntz.getState()).ebene!.methode).toBe('fluchtlinien');
-    expect(host.querySelector('.sidebar-right .warning')?.textContent).toContain('waagerechte und senkrechte Kanten');
-    expect(knopf(host, 'Waagerechte Kante')).toBeDefined();
+    expect(host.querySelector('.sidebar-right .ef-fehlt')?.textContent).toContain('2 waagerechte Kanten, 2 senkrechte Kanten');
+    expect(knopf(host, 'Waagerechte (0)')).toBeDefined();
     act(() => knopf(host, 'Passpunkte')!.click());
-    expect(knopf(host, 'Passpunkt setzen')).toBeDefined();
+    expect(knopf(host, 'Passpunkt setzen (0)')).toBeDefined();
+  });
+
+  it('Tastenkürzel greifen nicht auf Bedienelementen und nicht hinter Dialogen (Gegenproben)', () => {
+    const host = render();
+    act(() => useEntz.getState().fotoHinzufuegen('f1', 'Fassade', 'image/jpeg', 3000, 2000, new Uint8Array(4)));
+    const s = useEntz.getState();
+    const { foto, ebene } = aktuell(s);
+    act(() => s.aendern(mitEbene(foto!.id, ebene!.id, (e) => ({ ...e, messungen: [{ id: 'm1', art: 'strecke', name: 'A', punkte: [ECKEN[0], ECKEN[1]] }] }))));
+    act(() => useEntz.getState().setze({ auswahl: { art: 'messung', id: 'm1' } }));
+    const taste = (ziel: EventTarget, key: string) => act(() => void ziel.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true })));
+    // Entf auf einem Knopf bzw. in einem Feld: nichts gelöscht
+    taste(knopf(host, '+ Foto')!, 'Delete');
+    taste(feld(host, 'Breite (m)'), 'Delete');
+    expect(aktuell(useEntz.getState()).ebene!.messungen).toHaveLength(1);
+    // offener Dialog: nichts gelöscht
+    const dialog = document.createElement('div');
+    dialog.setAttribute('role', 'dialog');
+    document.body.appendChild(dialog);
+    taste(window, 'Delete');
+    expect(aktuell(useEntz.getState()).ebene!.messungen).toHaveLength(1);
+    dialog.remove();
+    // Gegenprobe: ohne Fokus auf einem Element und ohne Dialog wirkt Entf
+    taste(window, 'Delete');
+    expect(aktuell(useEntz.getState()).ebene!.messungen).toHaveLength(0);
+  });
+
+  it('nach einem Passpunkt bekommt sein x-Feld den Fokus; fehlende Werte sind markiert', () => {
+    const host = render();
+    act(() => useEntz.getState().fotoHinzufuegen('f1', 'Fassade', 'image/jpeg', 3000, 2000, new Uint8Array(4)));
+    act(() => knopf(host, 'Passpunkte')!.click());
+    act(() => useEntz.getState().setze({ werkzeug: 'passpunkt' }));
+    act(() => klick({ x: 100, y: 100 }));
+    const zeile = host.querySelector('.ef-tabelle tbody tr')!;
+    expect(zeile.classList.contains('fehlt')).toBe(true);
+    expect(document.activeElement).toBe(zeile.querySelector('td[data-fokus] input'));
+    expect(useEntz.getState().fokus).toBeNull();
+  });
+
+  it('ohne Foto: Schrittfolge rechts und Knopf in der Fläche; Messung hinter dem Horizont ist „nicht messbar“', () => {
+    const host = render();
+    expect(host.querySelector('.ef-schritte')?.textContent).toContain('Referenz');
+    expect(host.querySelector('.ef-leer button')?.textContent).toContain('Foto hinzufügen');
+    act(() => useEntz.getState().fotoHinzufuegen('f1', 'Fassade', 'image/jpeg', 3000, 2000, new Uint8Array(4)));
+    expect(host.querySelector('.ef-leer')).toBeNull();
+    const s = useEntz.getState();
+    const { foto, ebene } = aktuell(s);
+    // Fenster als Referenz; der zweite Messpunkt liegt weit jenseits der Fluchtlinie des Fensters
+    act(() =>
+      s.aendern(
+        mitEbene(foto!.id, ebene!.id, (e) => ({
+          ...e,
+          rechteck: { ecken: ECKEN, breite: 1.26, hoehe: 1.51 },
+          messungen: [
+            { id: 'm1', art: 'strecke', name: 'gut', punkte: [ECKEN[0], ECKEN[1]] },
+            { id: 'm2', art: 'strecke', name: 'weg', punkte: [ECKEN[0], { x: 1500, y: -60000 }] },
+          ],
+        })),
+      ),
+    );
+    act(() => useEntz.getState().setze({ ansicht: 'entzerrt' }));
+    const zeilen = [...host.querySelectorAll('.ef-messungen li')].map((l) => l.textContent);
+    expect(zeilen[0]).toContain('1,26 m');
+    expect(zeilen[1]).toContain('nicht messbar');
   });
 });

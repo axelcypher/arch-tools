@@ -38,7 +38,10 @@ export function verzeichnen(k: Kamera, u: Pt): Pt {
   return { x: k.cx + dx * f, y: k.cy + dy * f };
 }
 
-/** Punkt im Foto → idealer Punkt (Newton auf dem Radius) */
+/**
+ * Punkt im Foto → idealer Punkt (Newton auf dem Radius). Lässt sich der Punkt nicht eindeutig zurückrechnen
+ * (Verzeichnung faltet sich dort), ist das Ergebnis NaN – nie ein stiller Näherungswert.
+ */
 export function entzeichnen(k: Kamera, d: Pt): Pt {
   if (ohneVerzeichnung(k)) return d;
   const dx = d.x - k.cx;
@@ -46,15 +49,20 @@ export function entzeichnen(k: Kamera, d: Pt): Pt {
   const rd = Math.hypot(dx, dy) / k.r;
   if (rd === 0) return d;
   let ru = rd;
-  for (let i = 0; i < 30; i++) {
+  let konvergiert = false;
+  for (let i = 0; i < 50; i++) {
     const r2 = ru * ru;
     const g = ru * (1 + k.k1 * r2 + k.k2 * r2 * r2) - rd;
     const dg = 1 + 3 * k.k1 * r2 + 5 * k.k2 * r2 * r2;
-    if (dg <= 0) break;
+    if (!(dg > 0)) break;
     const schritt = g / dg;
     ru -= schritt;
-    if (Math.abs(schritt) < 1e-12) break;
+    if (Math.abs(schritt) < 1e-12) {
+      konvergiert = true;
+      break;
+    }
   }
+  if (!konvergiert || !(ru > 0)) return { x: NaN, y: NaN };
   const s = ru / rd;
   return { x: k.cx + dx * s, y: k.cy + dy * s };
 }
@@ -64,6 +72,7 @@ export function entzeichnen(k: Kamera, d: Pt): Pt {
  * Sonst falten sich die Ränder – solche Werte sind unbrauchbar.
  */
 export function linseGueltig(k: Linse): boolean {
+  if (!Number.isFinite(k.k1) || !Number.isFinite(k.k2)) return false;
   for (let i = 0; i <= 60; i++) {
     const r2 = (i / 50) ** 2; // bis 1,2 × halbe Diagonale
     if (1 + 3 * k.k1 * r2 + 5 * k.k2 * r2 * r2 <= 0.05) return false;

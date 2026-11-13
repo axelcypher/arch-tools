@@ -1,10 +1,10 @@
 import { fmt2 } from '@core/format';
 import { bitmap } from '../bilder';
-import { zuEbene } from '../geo/ebene';
 import type { Entzerrung } from '../geo/ebene';
 import { mul } from '../geo/mat';
-import type { Pt } from '../geo/mat';
-import { ausgabe, flaecheVon } from '../geo/messen';
+import type { Mat3, Pt } from '../geo/mat';
+import { bezugspunkte } from '../geo/ebene';
+import { ausgabe, flaecheVon, inEbene, pixelGroesse } from '../geo/messen';
 import type { Ausgabe } from '../geo/messen';
 import type { Bereich, Ebene, Foto } from '../model';
 import { Renderer } from '../render/gl';
@@ -32,6 +32,8 @@ export interface Optionen {
   /** Maßstabszahl (1:N), nur PDF */
   massstab: number;
   papier: Papier;
+  /** Projekt (Nummer · Vorhaben) für den Plankopf im PDF */
+  projekt?: string | null;
 }
 
 export function dateiName(s: string): string {
@@ -43,6 +45,12 @@ export function aufloesungText(m: number): string {
   return `${String(+(m * 1000).toFixed(3)).replace('.', ',')}mm-px`;
 }
 
+/** Ausgabepixel (Ursprung oben links, y nach unten) → Ebene (m, y nach oben); Pixelmitte bei +0,5 */
+export function pixelZuEbene(a: Pick<Ausgabe, 'bereich' | 'aufloesung'>): Mat3 {
+  const s = a.aufloesung;
+  return [s, 0, a.bereich.x0, 0, -s, a.bereich.y1, 0, 0, 1];
+}
+
 /** Entzerrtes Bild des Bereichs in der gewählten Auflösung */
 export async function entzerrtesBild(foto: Foto, daten: Uint8Array, e: Entzerrung, a: Ausgabe, weiss: boolean): Promise<HTMLCanvasElement> {
   const glCanvas = document.createElement('canvas');
@@ -51,10 +59,7 @@ export async function entzerrtesBild(foto: Foto, daten: Uint8Array, e: Entzerrun
   const r = new Renderer(glCanvas);
   try {
     await r.setzeFoto(await bitmap(foto.id, daten, foto.mime), foto.breite, foto.hoehe);
-    const { x0, y1 } = a.bereich;
-    const s = a.aufloesung;
-    // Ausgabepixel (Mitte bei +0,5) → Ebene (y nach oben) → idealer Fotopunkt
-    const m = mul(e.hInv, [s, 0, x0, 0, -s, y1, 0, 0, 1]);
+    const m = mul(e.hInv, pixelZuEbene(a));
     const bild = r.rendereBild(m, e.kamera, a.breite, a.hoehe, weiss ? [1, 1, 1, 1] : [0, 0, 0, 0]);
     const c = document.createElement('canvas');
     c.width = a.breite;
@@ -66,7 +71,7 @@ export async function entzerrtesBild(foto: Foto, daten: Uint8Array, e: Entzerrun
   }
 }
 
-interface Linienzug {
+export interface Linienzug {
   punkte: Pt[];
   zu: boolean;
   /** Teillängen und Beschriftung */
@@ -74,10 +79,12 @@ interface Linienzug {
   flaeche?: { mitte: Pt; text: string };
 }
 
-/** Messungen in Ebenenkoordinaten mit Beschriftungen */
-function messLinien(e: Entzerrung, ebene: Ebene): Linienzug[] {
-  return ebene.messungen.map((m) => {
-    const p = m.punkte.map((q) => zuEbene(e, q));
+/** Messungen in Ebenenkoordinaten mit Beschriftungen; Messungen mit Punkten außerhalb der Ebene entfallen */
+export function messLinien(e: Entzerrung, ebene: Ebene): Linienzug[] {
+  return ebene.messungen.flatMap((m) => {
+    const roh = m.punkte.map((q) => inEbene(e, q));
+    if (roh.some((q) => !q)) return [];
+    const p = roh as Pt[];
     const zu = m.art === 'flaeche' && p.length > 2;
     const texte: Linienzug['texte'] = [];
     const n = zu ? p.length : p.length - 1;
@@ -89,7 +96,7 @@ function messLinien(e: Entzerrung, ebene: Ebene): Linienzug[] {
     const flaeche = zu
       ? { mitte: { x: p.reduce((s, q) => s + q.x, 0) / p.length, y: p.reduce((s, q) => s + q.y, 0) / p.length }, text: `${m.name}: ${fmt2(flaecheVon(p))} m²` }
       : undefined;
-    return { punkte: p, zu, texte, flaeche };
+    return [{ punkte: p, zu, texte, flaeche }];
   });
 }
 
@@ -136,6 +143,11 @@ function messungenZeichnen(c: HTMLCanvasElement, e: Entzerrung, ebene: Ebene, a:
       haloText(ctx, l.flaeche.text, m.x, m.y, strich);
     }
   }
+  // Einheit der Maße als Legende unten links
+  ctx.font = `${schrift}px "Segoe UI", sans-serif`;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'bottom';
+  haloText(ctx, 'Maße in m', schrift * 0.6, a.hoehe - schrift * 0.5, strich);
 }
 
 function haloText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, strich: number) {
@@ -171,12 +183,15 @@ export interface PdfPlan {
 }
 
 const RAND = 10;
-const FUSS = 16;
+/** Höhe des Plankopfs unter dem Bild (mm) */
+const FUSS = 26;
+/** Mindestbreite des Satzspiegels bei „passend“, damit der Plankopf Platz hat (mm) */
+const MIN_SATZ = 150;
 
 /** Seitengröße und Bildgröße (mm) im PDF */
 export function pdfPlan(b: Bereich, massstab: number, papier: Papier): PdfPlan {
   const bild: [number, number] = [((b.x1 - b.x0) * 1000) / massstab, ((b.y1 - b.y0) * 1000) / massstab];
-  if (papier === 'passend') return { seite: [bild[0] + 2 * RAND, bild[1] + 2 * RAND + FUSS], bild, passt: true };
+  if (papier === 'passend') return { seite: [Math.max(bild[0], MIN_SATZ) + 2 * RAND, bild[1] + 2 * RAND + FUSS], bild, passt: true };
   const [k, l] = PAPIER[papier];
   const seite: [number, number] = bild[0] > bild[1] ? [l, k] : [k, l];
   const passt = bild[0] <= seite[0] - 2 * RAND + 1e-6 && bild[1] <= seite[1] - 2 * RAND - FUSS + 1e-6;
@@ -200,7 +215,7 @@ export async function exportieren(foto: Foto, daten: Uint8Array, ebene: Ebene, e
     return { daten: png, name: `${name} ${aufloesungText(a.aufloesung)}.png`, endung: 'png', mime: 'image/png', filter: 'PNG-Bild' };
   }
   if (o.format === 'jpeg') {
-    const jpg = jpegMitMassstab(await blobBytes(c, 'image/jpeg', 0.92), a.aufloesung);
+    const jpg = jpegMitMassstab(await blobBytes(c, 'image/jpeg', 0.92), a.aufloesung).daten;
     return { daten: jpg, name: `${name} ${aufloesungText(a.aufloesung)}.jpg`, endung: 'jpg', mime: 'image/jpeg', filter: 'JPEG-Bild' };
   }
   return { daten: await pdfAusBild(c, a, foto, ebene, e, o), name: `${name} M 1-${o.massstab}.pdf`, endung: 'pdf', mime: 'application/pdf', filter: 'PDF' };
@@ -212,21 +227,16 @@ async function pdfAusBild(c: HTMLCanvasElement, a: Ausgabe, foto: Foto, ebene: E
   const [sb, sh] = plan.seite;
   const [bb, bh] = plan.bild;
   const jpeg = await blobBytes(c, 'image/jpeg', 0.9);
+  if (Math.abs(c.width * a.aufloesung * (1000 / o.massstab) - bb) > 1e-6) throw new Error('Bildgröße und Maßstab passen nicht zusammen.');
   const linien: PdfLinie[] = [{ punkte: rechteck(RAND, RAND, bb, bh), zu: true, staerke: 0.15, farbe: [0.4, 0.4, 0.4] }];
   const texte: PdfText[] = [];
   if (o.mitMessungen) pdfMessungen(linien, texte, e, ebene, a.bereich, 1000 / o.massstab);
-  const fussY = RAND + bh + 6;
-  texte.push({ x: RAND, y: fussY + 3, text: `${foto.name} – ${ebene.name}`, groesse: 9, fett: true });
-  const datum = new Date().toLocaleDateString('de-DE');
-  texte.push({
-    x: RAND,
-    y: fussY + 8,
-    text: `Maßstab 1:${o.massstab} · Bildauflösung ${fmt2(a.aufloesung * 1000)} mm je Pixel · entzerrt nach ${METHODE[ebene.methode]} · ${datum}`,
-    groesse: 6.5,
-    farbe: [0.3, 0.3, 0.3],
-  });
-  texte.push({ x: RAND, y: fussY + 11.5, text: 'Maße gelten nur für Punkte in der entzerrten Ebene.', groesse: 6, farbe: [0.45, 0.45, 0.45] });
-  massstabsleiste(linien, texte, RAND + bb, fussY + 1, o.massstab);
+  plankopf(linien, texte, sb - 2 * RAND, RAND + bh + 5, o.massstab, [
+    { text: [o.projekt?.trim(), `${foto.name} – ${ebene.name}`].filter(Boolean).join(' · '), groesse: 9, fett: true },
+    { text: `M 1:${o.massstab} – nur bei Druck in tatsächlicher Größe (100 %) · Maße in m · ${new Date().toLocaleDateString('de-DE')}`, groesse: 6.5, farbe: [0.3, 0.3, 0.3] },
+    { text: genauigkeitText(e, ebene, a), groesse: 6.5, farbe: [0.3, 0.3, 0.3] },
+    { text: 'Maße aus entzerrtem Foto ermittelt; sie gelten nur für Punkte in der entzerrten Ebene. Maßgebliche Maße am Bau prüfen.', groesse: 6, farbe: [0.45, 0.45, 0.45] },
+  ]);
   return pdfErzeugen({
     breite: sb,
     hoehe: sh,
@@ -248,13 +258,19 @@ function rechteck(x: number, y: number, b: number, h: number): Pt[] {
   ];
 }
 
-/** Maßstabsleiste rechtsbündig bei (rechts, y): vier Felder im Wechsel schwarz/weiß */
-function massstabsleiste(linien: PdfLinie[], texte: PdfText[], rechts: number, y: number, massstab: number) {
-  const mmJeM = 1000 / massstab;
+/** Feldgröße der Maßstabsleiste in m: kleinste übliche Stufe mit mindestens 8 mm auf dem Papier */
+export function leistenFeld(massstab: number): number {
   const stufen = [0.01, 0.02, 0.05, 0.1, 0.2, 0.25, 0.5, 1, 2, 2.5, 5, 10, 20, 25, 50, 100, 200, 250, 500];
-  const feld = stufen.find((s) => s * mmJeM >= 8) ?? 500;
-  const fb = feld * mmJeM;
-  const links = rechts - 4 * fb;
+  return stufen.find((s) => (s * 1000) / massstab >= 8) ?? 500;
+}
+
+/** Breite der Maßstabsleiste (vier Felder) in mm */
+export const leistenBreite = (massstab: number) => (4 * leistenFeld(massstab) * 1000) / massstab;
+
+/** Maßstabsleiste mit linker Kante bei (links, y): vier Felder im Wechsel schwarz/weiß */
+function massstabsleiste(linien: PdfLinie[], texte: PdfText[], links: number, y: number, massstab: number) {
+  const feld = leistenFeld(massstab);
+  const fb = (feld * 1000) / massstab;
   for (let i = 0; i < 4; i++) {
     linien.push({ punkte: rechteck(links + i * fb, y, fb, 1.6), zu: true, staerke: 0.15, farbe: [0, 0, 0], fuellung: i % 2 ? [1, 1, 1] : [0, 0, 0] });
   }
@@ -262,6 +278,46 @@ function massstabsleiste(linien: PdfLinie[], texte: PdfText[], rechts: number, y
     const v = String(+(i * feld).toFixed(3)).replace('.', ',');
     texte.push({ x: links + i * fb, y: y + 4.6, text: i === 4 ? `${v} m` : v, groesse: 6, ausrichtung: i === 4 ? 'rechts' : 'mitte' });
   }
+}
+
+type KopfZeile = Pick<PdfText, 'text' | 'groesse' | 'fett' | 'farbe'>;
+
+/**
+ * Plankopf unter dem Bild: Zeilen links, Maßstabsleiste rechts im Satzspiegel (Breite `satz`, ab RAND). Ist die
+ * erste Zeile zu lang für die Leiste daneben, steht die Leiste unter den Zeilen. Zu lange Zeilen werden gekürzt.
+ */
+export function plankopfLayout(satz: number, massstab: number, zeilen: KopfZeile[]): { zeilen: { y: number; text: string }[]; leiste: { x: number; dy: number } } {
+  const lb = leistenBreite(massstab);
+  const kuerzen = (z: KopfZeile, max: number) => {
+    let t = z.text;
+    while (t.length > 1 && textBreite(t, z.groesse, z.fett) > max) t = `${t.slice(0, -2)}…`;
+    return t;
+  };
+  const neben = textBreite(zeilen[0]?.text ?? '', zeilen[0]?.groesse ?? 9, zeilen[0]?.fett) + 6 + lb <= satz;
+  let y = 0;
+  const aus = zeilen.map((z, i) => {
+    y += i === 0 ? 3 : z.groesse * 0.55;
+    return { y, text: kuerzen(z, i === 0 && neben ? satz - lb - 6 : satz) };
+  });
+  return { zeilen: aus, leiste: { x: RAND + satz - lb, dy: neben ? -1 : y + 2 } };
+}
+
+function plankopf(linien: PdfLinie[], texte: PdfText[], satz: number, y: number, massstab: number, zeilen: KopfZeile[]) {
+  const l = plankopfLayout(satz, massstab, zeilen);
+  l.zeilen.forEach((z, i) => texte.push({ ...zeilen[i], x: RAND, y: y + z.y, text: z.text }));
+  massstabsleiste(linien, texte, l.leiste.x, y + l.leiste.dy, massstab);
+}
+
+/** Zeile zur Genauigkeit: Verfahren, Bildauflösung, Fotopixel in der Bezugsfläche, größte Abweichung */
+function genauigkeitText(e: Entzerrung, ebene: Ebene, a: Ausgabe): string {
+  const bezug = bezugspunkte(ebene);
+  const mitte = { x: bezug.reduce((s, p) => s + p.x, 0) / bezug.length, y: bezug.reduce((s, p) => s + p.y, 0) / bezug.length };
+  const px = pixelGroesse(e, mitte);
+  const teile = [`entzerrt nach ${METHODE[ebene.methode]}`, `Bildauflösung ${fmt2(a.aufloesung * 1000)} mm je Pixel`];
+  if (Number.isFinite(px)) teile.push(`Fotopixel in der Bezugsfläche ≈ ${fmt2(px * 1000)} mm`);
+  const m = e.residuen.filter((r) => r.einheit === 'm');
+  if (m.length) teile.push(`größte Abweichung der Bezugsmaße ${fmt2(Math.max(...m.map((r) => r.wert)) * 1000)} mm`);
+  return teile.join(' · ');
 }
 
 /** Messungen als Vektoren mit Beschriftung in pt-Größen */

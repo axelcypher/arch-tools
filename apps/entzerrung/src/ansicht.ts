@@ -2,7 +2,7 @@ import type { Entzerrung } from './geo/ebene';
 import { zuEbene, zuFoto } from './geo/ebene';
 import { mul } from './geo/mat';
 import type { Mat3, Pt } from './geo/mat';
-import { entzeichnen, kamera, ohneVerzeichnung, verzeichnen } from './geo/verzeichnung';
+import { entzeichnen, kamera, linseGueltig, ohneVerzeichnung, verzeichnen } from './geo/verzeichnung';
 import type { Kamera } from './geo/verzeichnung';
 import type { Bereich, Foto } from './model';
 
@@ -31,13 +31,14 @@ export interface Abbildung {
 
 export function fotoAbbildung(foto: Foto, sicht: Sicht, korrigiert: boolean): Abbildung {
   const kam = kamera(foto.breite, foto.hoehe, foto.linse);
-  const mitLinse = korrigiert && !ohneVerzeichnung(kam);
+  // ungültige Werte (falten das Bild) nicht anwenden – die Referenz meldet sie
+  const mitLinse = korrigiert && !ohneVerzeichnung(kam) && linseGueltig(kam);
   const { skala, ox, oy } = sicht;
   const schirmZuFoto: Mat3 = [1 / skala, 0, -ox / skala, 0, 1 / skala, -oy / skala, 0, 0, 1];
   return {
     zuSchirm: (p) => {
       const u = mitLinse ? entzeichnen(kam, p) : p;
-      return { x: ox + skala * u.x, y: oy + skala * u.y };
+      return Number.isFinite(u.x) && Number.isFinite(u.y) ? { x: ox + skala * u.x, y: oy + skala * u.y } : null;
     },
     vonSchirm: (s) => {
       const u = { x: (s.x - ox) / skala, y: (s.y - oy) / skala };
@@ -56,7 +57,7 @@ export function ebenenAbbildung(e: Entzerrung, sicht: Sicht): Abbildung {
   return {
     zuSchirm: (p) => {
       const q = zuEbene(e, p);
-      return q.w > 0 ? ebeneZuSchirm(q) : null;
+      return q.w > 0 && Number.isFinite(q.x) && Number.isFinite(q.y) ? ebeneZuSchirm(q) : null;
     },
     vonSchirm: (s) => {
       const p = zuFoto(e, schirmZuEbene(s));

@@ -47,18 +47,23 @@ interface Zustand {
   korrigiert: boolean;
   vergangenheit: Dokument[];
   zukunft: Dokument[];
+  /** Projekt (Nummer · Vorhaben) aus der Projektwahl, für den Plankopf im PDF; nicht in der .entz */
+  projekt: string | null;
+  /** Id eines eben gesetzten Passpunkts bzw. Maßes, dessen Eingabefeld den Fokus bekommen soll */
+  fokus: string | null;
 
   /** Dokument ändern; `verlauf: false` für Zwischenschritte beim Ziehen (vorher `merken()`) */
   aendern: (f: (d: Dokument) => Dokument, verlauf?: boolean) => void;
   merken: () => void;
   rueckgaengig: () => void;
   wiederholen: () => void;
-  setze: (p: Partial<Pick<Zustand, 'ansicht' | 'werkzeug' | 'auswahl' | 'entwurf' | 'korrigiert'>>) => void;
+  setze: (p: Partial<Pick<Zustand, 'ansicht' | 'werkzeug' | 'auswahl' | 'entwurf' | 'korrigiert' | 'projekt' | 'fokus'>>) => void;
   waehleFoto: (id: string | null) => void;
   waehleEbene: (id: string) => void;
   fotoHinzufuegen: (id: string, name: string, mime: string, breite: number, hoehe: number, daten: Uint8Array) => void;
   laden: (doc: Dokument, bilder: Record<string, Uint8Array>, dateiname: string | null, dirty?: boolean) => void;
-  gespeichert: (dateiname: string) => void;
+  /** nach dem Speichern: `doc` = der gespeicherte Stand; hat er sich inzwischen geändert, bleibt `dirty` */
+  gespeichert: (dateiname: string, doc?: Dokument) => void;
 }
 
 const MAX_VERLAUF = 100;
@@ -77,6 +82,8 @@ export const useEntz = create<Zustand>((set, get) => ({
   korrigiert: true,
   vergangenheit: [],
   zukunft: [],
+  projekt: null,
+  fokus: null,
 
   aendern: (f, verlauf = true) =>
     set((s) => {
@@ -115,7 +122,7 @@ export const useEntz = create<Zustand>((set, get) => ({
     set({ doc, bilder, dateiname, dirty, vergangenheit: [], zukunft: [] });
     get().waehleFoto(doc.fotos[0]?.id ?? null);
   },
-  gespeichert: (dateiname) => set({ dateiname, dirty: false }),
+  gespeichert: (dateiname, doc) => set((s) => ({ dateiname, dirty: doc !== undefined && s.doc !== doc })),
 }));
 
 /** nach Rückgängig: Auswahl von Foto und Ebene gültig halten */

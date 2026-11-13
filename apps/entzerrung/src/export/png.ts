@@ -1,6 +1,6 @@
 /**
  * Maßstab im Bild: PNG bekommt einen pHYs-Block (Pixel je Meter), JPEG die Dichte im JFIF-Kopf
- * (Pixel je Zentimeter). Mit „1 Pixel = s Meter“ entspricht die physische Bildgröße der Wirklichkeit (1:1).
+ * (Pixel je Zentimeter bzw. Zoll, nur wenn genau darstellbar). Mit „1 Pixel = s Meter“ entspricht die physische Bildgröße der Wirklichkeit (1:1).
  */
 
 let tabelle: Uint32Array | null = null;
@@ -40,6 +40,7 @@ export function pngMitMassstab(png: Uint8Array, meterJePixel: number): Uint8Arra
     const len = pv.getUint32(o);
     const typ = String.fromCharCode(...png.subarray(o + 4, o + 8));
     const ende = o + 12 + len;
+    if (ende > png.length) throw new Error('PNG ist unvollständig');
     if (typ !== 'pHYs') teile.push(png.subarray(o, ende));
     if (typ === 'IHDR') teile.push(block);
     o = ende;
@@ -53,17 +54,39 @@ export function pngMitMassstab(png: Uint8Array, meterJePixel: number): Uint8Arra
   return out;
 }
 
-/** Setzt die Dichte im JFIF-Kopf (APP0) auf Pixel je Zentimeter, falls vorhanden. */
-export function jpegMitMassstab(jpeg: Uint8Array, meterJePixel: number): Uint8Array {
+/**
+ * Dichte für den JFIF-Kopf: ganze Pixel je cm (Einheit 2) oder je Zoll (Einheit 1), sofern einer davon die
+ * Auflösung auf 0,1 % genau trifft (der genauere von beiden); sonst null – ein gerundeter Wert ergäbe einen falschen Maßstab.
+ */
+export function jpegDichte(meterJePixel: number): { einheit: 1 | 2; wert: number } | null {
+  if (!(meterJePixel > 0)) return null;
+  let best: { einheit: 1 | 2; wert: number; fehler: number } | null = null;
+  for (const [einheit, laenge] of [
+    [2, 0.01],
+    [1, 0.0254],
+  ] as const) {
+    const genau = laenge / meterJePixel;
+    const wert = Math.round(genau);
+    const fehler = Math.abs(wert - genau) / genau;
+    if (wert >= 1 && wert <= 65535 && fehler <= 1e-3 && (!best || fehler < best.fehler)) best = { einheit, wert, fehler };
+  }
+  return best && { einheit: best.einheit, wert: best.wert };
+}
+
+/**
+ * Setzt die Dichte im JFIF-Kopf (APP0), wenn sie sich genau darstellen lässt (siehe `jpegDichte`); sonst wird
+ * „ohne Einheit, 1:1“ eingetragen. `mitMassstab` sagt, ob der Maßstab im Bild steht.
+ */
+export function jpegMitMassstab(jpeg: Uint8Array, meterJePixel: number): { daten: Uint8Array; mitMassstab: boolean } {
   const out = jpeg.slice();
   // SOI, dann APP0 mit „JFIF\0“
-  if (out[0] !== 0xff || out[1] !== 0xd8 || out[2] !== 0xff || out[3] !== 0xe0) return out;
-  if (String.fromCharCode(...out.subarray(6, 10)) !== 'JFIF') return out;
-  const ppcm = Math.max(1, Math.min(65535, Math.round(0.01 / meterJePixel)));
-  out[13] = 2; // Einheit: Pixel je cm
-  out[14] = ppcm >> 8;
-  out[15] = ppcm & 0xff;
-  out[16] = ppcm >> 8;
-  out[17] = ppcm & 0xff;
-  return out;
+  if (out[0] !== 0xff || out[1] !== 0xd8 || out[2] !== 0xff || out[3] !== 0xe0) return { daten: out, mitMassstab: false };
+  if (String.fromCharCode(...out.subarray(6, 10)) !== 'JFIF') return { daten: out, mitMassstab: false };
+  const d = jpegDichte(meterJePixel) ?? { einheit: 0, wert: 1 };
+  out[13] = d.einheit;
+  out[14] = d.wert >> 8;
+  out[15] = d.wert & 0xff;
+  out[16] = d.wert >> 8;
+  out[17] = d.wert & 0xff;
+  return { daten: out, mitMassstab: d.einheit !== 0 };
 }

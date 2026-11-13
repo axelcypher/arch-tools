@@ -83,13 +83,24 @@ export class Renderer {
     gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
   }
 
-  /** Lädt das Foto als Textur. Größere Fotos als die Grafikkarte erlaubt werden verkleinert. */
-  async setzeFoto(bild: ImageBitmap, breite: number, hoehe: number) {
+  /** zählt Ladevorgänge; nur der jüngste darf die Textur setzen */
+  private generation = 0;
+
+  /**
+   * Lädt das Foto als Textur. Größere Fotos als die Grafikkarte erlaubt werden verkleinert. Liefert false, wenn
+   * inzwischen ein anderes Foto geladen wurde (dann bleibt dessen Textur) oder `aktiv()` false meldet.
+   */
+  async setzeFoto(bild: ImageBitmap, breite: number, hoehe: number, aktiv: () => boolean = () => true): Promise<boolean> {
     const gl = this.gl;
+    const nr = ++this.generation;
     let quelle: ImageBitmap = bild;
     if (bild.width > this.maxTextur || bild.height > this.maxTextur) {
       const f = this.maxTextur / Math.max(bild.width, bild.height);
       quelle = await createImageBitmap(bild, { resizeWidth: Math.floor(bild.width * f), resizeHeight: Math.floor(bild.height * f), resizeQuality: 'high' });
+    }
+    if (nr !== this.generation || !aktiv()) {
+      if (quelle !== bild) quelle.close();
+      return false;
     }
     if (this.tex) gl.deleteTexture(this.tex);
     this.tex = gl.createTexture();
@@ -105,6 +116,7 @@ export class Renderer {
     if (ext) gl.texParameterf(gl.TEXTURE_2D, ext.TEXTURE_MAX_ANISOTROPY_EXT, Math.min(8, gl.getParameter(ext.MAX_TEXTURE_MAX_ANISOTROPY_EXT) as number));
     if (quelle !== bild) quelle.close();
     this.fotoGroesse = [breite, hoehe];
+    return true;
   }
 
   get hatFoto() {
@@ -154,6 +166,8 @@ export class Renderer {
    */
   rendereBild(m: Mat3, kamera: Kamera, breite: number, hoehe: number, leer: [number, number, number, number]): ImageData {
     const gl = this.gl;
+    if (!this.tex) throw new Error('Das Foto ist nicht geladen.');
+    if (gl.isContextLost()) throw new Error('Die Grafikausgabe ist verloren gegangen – bitte erneut exportieren.');
     const kachel = Math.min(4096, gl.getParameter(gl.MAX_RENDERBUFFER_SIZE) as number);
     const fb = gl.createFramebuffer();
     const rb = gl.createRenderbuffer();
