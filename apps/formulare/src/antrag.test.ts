@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { dateinameZerlegen, planNummerAus, VORGABE_NAMENSSCHEMA } from '@core/namensschema';
 import type { UmfangEintrag } from './antrag';
-import { abschnittAus, abschnittVon, aktuellsterAntrag, ansichtVon, aufnahmeVorschlag, eingereichtAus, formularSchluessel, neuerAntrag } from './antrag';
+import { abschnittAus, abschnittVon, aktuellsterAntrag, ansichtVon, aufnahmeVorschlag, eingereichtAus, formularSchluessel, formularVerweiseUmbenennen, neuerAntrag, pdfOhneZuordnung } from './antrag';
 import { merkmalVorgaben } from './bedingung';
 import { ueberschreibungenAus, aenderungAnwenden, alsAngaben, bereitAnwenden, klein, stabil, umfangAnwenden, VORGABE_EXPORT, einstellungenAus, entferntSeitEinreichung, imStand, nachEinreichungErwartet, nameNachFormat, seitEinreichung, standAus, vorlageMitAntragsart, zielpfadAus, datumAusName, standVergleich, antragsNameFehler, artDerFassung, bereitschaft, ordnerPasst, anzeigeName, dateiImAntrag, dateiname, einstellungenFuer, externStatus, fassungenAus, formularStatus, formularVon, naechsteFassung, passt, projektDateiAus, quelleVon, standardFassung, projektStatusAus, projektStatusLesen, schlimmsterStatus, statusGesamt, verschieben, vorlagenAus, vorlageFuer, umfangAusKatalog, VORGABE_KATALOG, ueberschreibungAus } from './antrag';
 
@@ -1156,5 +1156,74 @@ describe('Änderung auf den frisch gelesenen Abschnitt anwenden', () => {
     expect(stabil({ a: 1, b: { c: 2, d: 3 } })).toBe(stabil({ b: { d: 3, c: 2 }, a: 1 }));
     expect(stabil({ a: 1, b: undefined })).toBe(stabil({ a: 1 }));
     expect(stabil(undefined)).toBe('undefined');
+  });
+});
+
+describe('formularVerweiseUmbenennen', () => {
+  const z = { felder: { '0:Name': { auto: 'X' } } };
+  it('Zuordnung und Autofill in allen Anträgen und den früheren projektweiten Angaben; andere bleiben', () => {
+    const roh = {
+      aktiveFassung: 'BAUA 2',
+      umfang: [{ id: 'a', formularDatei: '001-Muster.frmsjf' }],
+      antraege: {
+        BAUA: { umfang: [{ id: 'a', formularDatei: '001-MUSTER.frmsjf' }, { id: 'b', formularDatei: '002-Anderes.frmsjf' }], felder: { '001-Muster.frmsjf': z, '002-Anderes.frmsjf': z }, eigen: 1 },
+        'BAUA 2': { merkmale: { GK: '3' } },
+      },
+    };
+    const { abschnitt, anzahl } = formularVerweiseUmbenennen(roh, '001-Muster.frmsjf', '010-Neu.frmsjf');
+    expect(anzahl).toBe(3);
+    expect(abschnitt).toEqual({
+      aktiveFassung: 'BAUA 2',
+      umfang: [{ id: 'a', formularDatei: '010-Neu.frmsjf' }],
+      antraege: {
+        BAUA: { umfang: [{ id: 'a', formularDatei: '010-Neu.frmsjf' }, { id: 'b', formularDatei: '002-Anderes.frmsjf' }], felder: { '002-Anderes.frmsjf': z, '010-Neu.frmsjf': z }, eigen: 1 },
+        'BAUA 2': { merkmale: { GK: '3' } },
+      },
+    });
+    // das Original bleibt unverändert
+    expect(roh.antraege.BAUA.umfang[0].formularDatei).toBe('001-MUSTER.frmsjf');
+  });
+
+  it('im Unterordner: eine ältere Zuordnung nur mit dem Dateinamen gilt nur in den Anträgen dieses Unterordners', () => {
+    const roh = { antraege: { 'BAUA 2': { umfang: [{ id: 'a', formularDatei: '002-Bauantrag.frmsjf' }] }, BAUA: { umfang: [{ id: 'a', formularDatei: '002-Bauantrag.frmsjf' }] } } };
+    const { abschnitt, anzahl } = formularVerweiseUmbenennen(roh, '2. BAUA/002-Bauantrag.frmsjf', '2. BAUA/003-Bauantrag.frmsjf', (f) => f === 'BAUA 2');
+    expect(anzahl).toBe(1);
+    expect(abschnitt).toEqual({ antraege: { 'BAUA 2': { umfang: [{ id: 'a', formularDatei: '2. BAUA/003-Bauantrag.frmsjf' }] }, BAUA: { umfang: [{ id: 'a', formularDatei: '002-Bauantrag.frmsjf' }] } } });
+  });
+
+  it('festschreiben: nur Einträge ohne formularDatei, je Antrag mit dessen Fassung (null: frühere projektweite Angaben)', () => {
+    const roh = {
+      umfang: [{ id: 'a', art: 'intern', titel: 'Muster' }],
+      antraege: { BAUA: { umfang: [{ id: 'a', art: 'intern', titel: 'Muster' }, { id: 'x', art: 'extern', titel: 'Muster' }] }, 'BAUA 2': { umfang: [{ id: 'a', art: 'intern', titel: 'Muster' }] } },
+    };
+    const gefragt: (string | null)[] = [];
+    const { abschnitt, anzahl } = formularVerweiseUmbenennen(roh, 'm.frmsjf', 'n.frmsjf', undefined, (_u, fassung) => {
+      gefragt.push(fassung);
+      return fassung === 'BAUA 2';
+    });
+    expect(gefragt).toEqual([null, 'BAUA', 'BAUA 2']);
+    expect(anzahl).toBe(1);
+    expect(abschnitt).toMatchObject({ umfang: [{ id: 'a' }], antraege: { BAUA: { umfang: [{ id: 'a' }, { id: 'x' }] }, 'BAUA 2': { umfang: [{ id: 'a', formularDatei: 'n.frmsjf' }] } } });
+    expect((abschnitt as typeof roh).antraege.BAUA.umfang[0]).not.toHaveProperty('formularDatei');
+  });
+
+  it('nichts zugeordnet: dasselbe Objekt zurück, kein Verweis gezählt', () => {
+    const roh = { antraege: { BAUA: { umfang: [{ id: 'a', formularDatei: 'x.frmsjf' }] } } };
+    expect(formularVerweiseUmbenennen(roh, 'y.frmsjf', 'z.frmsjf')).toEqual({ abschnitt: roh, anzahl: 0 });
+    expect(formularVerweiseUmbenennen(undefined, 'y.frmsjf', 'z.frmsjf')).toEqual({ abschnitt: undefined, anzahl: 0 });
+  });
+});
+
+describe('pdfOhneZuordnung', () => {
+  const d = (pfad: string, geaendert = 1) => ({ pfad, ordner: false, groesse: 1, geaendert });
+  it('nach dem Namen ohne Nummer und Jahr, PDFs vor anderen Dateien', () => {
+    const dateien = [d('BS9 BAUA 261110 Baubeschreibung.docx'), d('BS9 BAUA 261110 Baubeschreibung.pdf'), d('BS9 BAUA 261110 Lageplan.pdf')];
+    expect(pdfOhneZuordnung('003-Baubeschreibung (2026)', dateien, new Set())?.pfad).toBe('BS9 BAUA 261110 Baubeschreibung.pdf');
+    // Gegenprobe: ohne passende Datei keine
+    expect(pdfOhneZuordnung('003-Baubeschreibung (2026)', [d('BS9 BAUA 261110 Lageplan.pdf')], new Set())).toBeNull();
+  });
+  it('eine PDF, die schon einem Dokument des Antragsumfangs gehört, zählt nicht', () => {
+    const dateien = [d('BS9 BAUA 261110 Baubeschreibung.pdf')];
+    expect(pdfOhneZuordnung('004-Baubeschreibung', dateien, new Set(['bs9 baua 261110 baubeschreibung.pdf']))).toBeNull();
   });
 });
