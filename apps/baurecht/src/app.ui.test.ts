@@ -78,6 +78,13 @@ async function speichernMit(antwort: 'Bestätigen und speichern' | 'Speichern, d
   return inhalt;
 }
 
+/** speichern, wenn nichts zu bestätigen ist */
+async function speichernOhneDialog(): Promise<void> {
+  await act(async () => {
+    await speichern();
+  });
+}
+
 describe('Baurecht – Oberfläche', () => {
   beforeEach(() => {
     geschrieben = null;
@@ -709,7 +716,7 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
       fertig = speichern();
     });
     const best = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find((d) => d.textContent?.includes('Vor dem Speichern bestätigen'))!;
-    expect(best.querySelector('.br-folgen-zusammen')?.textContent).toContain(`Stuft ${fb.zusammen.length} Vorschriften herab`);
+    expect(best.querySelector('.br-folgen-zusammen')?.textContent).toMatch(new RegExp(`Stuft ${fb.zusammen.length} Vorschriften( auf „entfällt“)? herab`));
     expect(best.getAttribute('aria-describedby')).toBe('br-bestaetigen-einleitung');
     // Startfokus: das Häkchen, nicht die Aufklappzeile
     await warten(50);
@@ -737,6 +744,8 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
     act(() => host.querySelector<HTMLButtonElement>('.br-bilanz button')!.click());
     await warten();
     expect(zeile()).not.toMatch(/dem jetzigen Ort zugeordnet/);
+    // Filter zurück (die Ansicht wird gemerkt)
+    act(() => host.querySelector<HTMLButtonElement>('.br-bilanz button')!.click());
   });
 
   it('StrictMode: „klärt N“ erscheint trotzdem (gedrosselte zweite Auswertung)', async () => {
@@ -776,6 +785,50 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
     act(() => knopf(host, 'Prüfprotokoll')!.click());
     const zeile = [...document.querySelectorAll('.br-protokoll tr')].find((tr) => tr.textContent?.startsWith('Antragsmerkmale'))!.textContent!;
     expect(zeile).toMatch(/Art des Vorhabens: Beseitigung \(vollständiger Abbruch ohne Ersatzbau – nur Hinweis, nicht bestätigt\)/);
+  });
+
+  it('Prüfung abschließen: Meldung (Live-Region) mit „Jetzt speichern“, der Fokus geht dorthin; Sperrtext neutral', async () => {
+    const host = render();
+    await speichernOhneDialog();
+    act(() => knopf(host, 'Prüfprotokoll')!.click());
+    const d = document.querySelector<HTMLElement>('.br-protokoll')!;
+    // warten, bis die (Web-)Texte durch sind
+    for (let i = 0; i < 20 && knopf(d, 'Prüfung abschließen')!.disabled; i++) await warten(100);
+    act(() => knopf(d, 'Prüfung abschließen')!.click());
+    await warten();
+    const m = d.querySelector<HTMLElement>('.br-abgelegt')!;
+    expect(m.getAttribute('role')).toBe('status');
+    expect(m.textContent).toMatch(/Prüfung vom \d\d\.\d\d\.\d{4} abgelegt \(\d+ gilt · \d+ prüfen · \d+ entfällt\)/);
+    expect(document.activeElement?.textContent).toBe('Jetzt speichern');
+    expect(d.querySelector('.br-sperre')?.textContent).toBe('Abgelegt – zum Übernehmen speichern');
+  });
+
+  it('nach dem Speichern: „Gespeichert“ im Kopf (Live-Region)', async () => {
+    const host = render();
+    await speichernOhneDialog();
+    expect(host.querySelector('.br-gespeichert')?.getAttribute('role')).toBe('status');
+    expect(host.querySelector('.br-gespeichert')?.textContent).toMatch(/^Gespeichert/);
+  });
+
+  it('Speichern-Dialog: eine geänderte Festlegung nennt den bisherigen Stand mit Datum; der Pfeil ist Text für Screenreader', async () => {
+    const host = render();
+    festlegen(host, 'Begehung am 03.11.2026 ohne Befund', 'rot');
+    const id = Object.keys(useBaurecht.getState().pruefung.festlegungen)[0];
+    await speichernMit('Bestätigen und speichern');
+    festlegen(host, 'Neue Unterlagen vom 10.11.2026', 'gruen', id);
+    const inhalt = await speichernMit('Speichern, diese als Entwurf behalten');
+    expect(inhalt.textContent).toMatch(/bisher: gilt \(TP|bisher: gilt \([^,]+, \d\d\.\d\d\.\d{4}: Begehung/);
+    expect(inhalt.querySelector('[aria-label="wird zu"]')).toBeNull();
+  });
+
+  it('Angaben-Suche: Ansage entprellt in der stehenden Region, auch „Keine Angabe“', async () => {
+    const host = render();
+    const suchfeld = host.querySelector<HTMLInputElement>('input[aria-label="Angaben durchsuchen"]')!;
+    tippen(suchfeld, 'zzzz');
+    const region = () => [...host.querySelectorAll('.br-angaben > [role="status"]')].map((e) => e.textContent).join('|');
+    expect(region()).not.toMatch(/zzzz/);
+    await warten(400);
+    expect(region()).toMatch(/Keine Angabe zu „zzzz“/);
   });
 });
 

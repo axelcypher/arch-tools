@@ -57,6 +57,8 @@ export interface Zustand {
   fokus: string | null;
   /** Antragsmerkmale auf- bzw. zugeklappt (null: Vorgabe – offen, solange eines fehlt); im Store, damit der Zustand eine Suche übersteht */
   merkmaleAuf: boolean | null;
+  /** Rückmeldung nach dem Speichern (Kopf, Live-Region): Zeitpunkt und Text */
+  gespeichertMeldung: { am: number; text: string } | null;
 
   projektSetzen: (q: Projektquelle, project: Project, roh: Record<string, unknown>) => void;
   /**
@@ -134,6 +136,7 @@ export const useBaurecht = create<Zustand>((set, get) => ({
   auswahl: null,
   fokus: null,
   merkmaleAuf: null,
+  gespeichertMeldung: null,
   ansage: '',
   // derselbe Text noch einmal: unsichtbar verändert, damit der Screenreader ihn erneut vorliest
   ansagen: (text) => set((s) => ({ ansage: s.ansage === text ? `${text}\u200b` : text })),

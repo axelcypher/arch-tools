@@ -541,7 +541,8 @@ function FaktZeile({ id, def, wert, klaert, eigen, alsKnoepfe = false }: { id: s
           {wert.bestaetigt && (
             <>
               <span className="br-leise-stark" title={wert.bestaetigt.grund}>
-                {wert.herkunft === 'manuell' ? 'mit Beleg' : 'bestätigt'} ({wert.bestaetigt.von})
+                {wert.herkunft === 'manuell' ? 'mit Beleg' : 'bestätigt'} ({wert.bestaetigt.von}
+                {wert.bestaetigt.am ? `, ${datum(wert.bestaetigt.am)}` : ''})
               </span>
               {entwurf && <span className="br-marke br-marke-entwurf">Entwurf</span>}
               {eigen && (
@@ -750,6 +751,13 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
       .sort((a, b) => (rang.get(a) ?? Infinity) - (rang.get(b) ?? Infinity) || vergleich(a, b));
     return { ...g, ids };
   }).filter((g) => g.ids.length);
+  const trefferZahl = suche ? gruppen.reduce((n, g) => n + g.ids.length, 0) + VORGABE_MERKMALE.filter((m) => merkmalPasst(m, suche)).length + (merkmaleSichtbar ? alsRueckfrage.size : 0) : 0;
+  const suchText = !suche ? '' : trefferZahl ? `${trefferZahl === 1 ? 'eine Angabe' : `${trefferZahl} Angaben`} zu „${suche}“` : `Keine Angabe zu „${suche}“`;
+  const [suchAnsage, setSuchAnsage] = useState('');
+  useEffect(() => {
+    const t = setTimeout(() => setSuchAnsage(suchText), 300);
+    return () => clearTimeout(t);
+  }, [suchText]);
   return (
     <aside className="br-angaben" aria-label="Angaben zum Projekt">
       <div className="br-unsichtbar" role="status" aria-live="polite">
@@ -764,9 +772,9 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
       <div className="br-suche">
         <input ref={suchfeld} type="search" placeholder="Angabe suchen …" value={suche} onChange={(e) => setSuche(e.target.value)} aria-label="Angaben durchsuchen" />
       </div>
-      {/* Suche: die Trefferzahl ansagen (der Leerzustand sagt sich selbst an) */}
+      {/* Suche: Trefferzahl bzw. „keine Angabe“ in einer stehenden Live-Region, entprellt (nicht bei jedem Tastendruck) */}
       <div className="br-unsichtbar" role="status">
-        {suche && (gruppen.length || merkmaleSichtbar) ? `${gruppen.reduce((n, g) => n + g.ids.length, 0) + VORGABE_MERKMALE.filter((m) => merkmalPasst(m, suche)).length + alsRueckfrage.size} Angaben zu „${suche}“` : ''}
+        {suchAnsage}
       </div>
       <div className="br-angaben-liste">
         {!suche && <Klaeren stand={stand} />}
@@ -795,7 +803,7 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
         )}
         {(!suche || VORGABE_MERKMALE.some((m) => merkmalPasst(m, suche))) && <Merkmale klaerung={klaerung} suche={suche} planungsrechtOffen={stand.planungsrechtFrueher} planungsrechtKlaert={planungsrechtKlaert} stand={stand} />}
         {suche && !gruppen.length && !VORGABE_MERKMALE.some((m) => merkmalPasst(m, suche)) && (
-          <div className="br-leer-zustand" role="status">
+          <div className="br-leer-zustand">
             <p>Keine Angabe zu „{suche}“{alle ? '' : ' unter den Angaben, an denen eine Regel hängt'}.</p>
             <button
               type="button"

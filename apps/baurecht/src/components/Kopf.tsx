@@ -97,6 +97,23 @@ function Menue({ titel, label, offen, setOffen, children }: { titel: string; lab
   );
 }
 
+/** „Gespeichert“ neben dem Knopf – einige Sekunden sichtbar, in einer stehenden Live-Region (wird verlässlich vorgelesen) */
+function GespeichertMeldung() {
+  const m = useBaurecht((s) => s.gespeichertMeldung);
+  const [zeigen, setZeigen] = useState(false);
+  useEffect(() => {
+    if (!m) return;
+    setZeigen(true);
+    const t = setTimeout(() => setZeigen(false), 4000);
+    return () => clearTimeout(t);
+  }, [m]);
+  return (
+    <span className="br-gespeichert" role="status">
+      {zeigen && m ? m.text : ''}
+    </span>
+  );
+}
+
 /**
  * Kopfleiste in einer Zeile: Antrag, Einreichung, Module, Rechtsstand, Aktionen. Unter 1600 px (Breite der App)
  * wandern „Lage abfragen“ und „Rechtsstand prüfen“ in „Mehr ▾“, die Warnungen werden zu einer Sammelmarke; „Speichern“
@@ -261,6 +278,7 @@ export function Kopf({ stand, onRechtsstand, onLage, onProtokoll, onSpeichern, o
       <button type="button" onClick={onProtokoll} title="Prüfprotokoll ansehen, drucken, abschließen">
         Prüfprotokoll
       </button>
+      <GespeichertMeldung />
       <button type="button" className="primary" onClick={onSpeichern} title="In der Projektdatei speichern (Strg+S)">
         Speichern
       </button>

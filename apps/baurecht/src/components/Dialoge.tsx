@@ -211,6 +211,16 @@ export type FaktDefVon = (id: string) => FaktDef | undefined;
 /** Folgen einer Angabe: wie viele Paragrafen dadurch auf „entfällt“ (bzw. schwächer) gehen – für die Dialoge */
 export type FolgenRechner = (id: string, wert: FaktWert | null) => { herab: { id: string; titel: string; von: Ampel; nach: Ampel }[]; nachher?: FaktWert };
 
+/** „→“ sichtbar, „wird zu“ für Screenreader (ein aria-label an einem span ohne Rolle wird nicht verlässlich vorgelesen) */
+function Pfeil() {
+  return (
+    <>
+      <span aria-hidden="true">→</span>
+      <span className="br-unsichtbar"> wird zu </span>
+    </>
+  );
+}
+
 function Folgen({ folgen, allein }: { folgen: { herab: Herabstufung[] }; allein?: boolean }) {
   if (!folgen.herab.length) return <p className="br-leise">{allein ? 'Allein ändert dadurch keine Vorschrift ihre Ampel.' : 'Keine Vorschrift ändert dadurch ihre Ampel.'}</p>;
   const gruen = folgen.herab.filter((h) => h.nach === 'gruen').length;
@@ -218,14 +228,15 @@ function Folgen({ folgen, allein }: { folgen: { herab: Herabstufung[] }; allein?
     <details className="br-folgen">
       <summary>
         <strong>
-          Stuft {folgen.herab.length} {folgen.herab.length === 1 ? 'Vorschrift' : 'Vorschriften'} herab
+          Stuft {folgen.herab.length} {folgen.herab.length === 1 ? 'Vorschrift' : 'Vorschriften'}
+          {gruen === folgen.herab.length ? ' auf „entfällt“' : ''} herab
         </strong>
-        {gruen ? `, davon ${gruen} auf „entfällt“` : ''} – Liste anzeigen
+        {gruen && gruen < folgen.herab.length ? `, davon ${gruen} auf „entfällt“` : ''} – Liste anzeigen
       </summary>
       <ul>
         {folgen.herab.map((h) => (
           <li key={h.id}>
-            <AmpelMarke ampel={h.von} klein /> <span aria-label="wird zu">→</span> <AmpelMarke ampel={h.nach} klein /> {h.titel}
+            <AmpelMarke ampel={h.von} klein /> <Pfeil /> <AmpelMarke ampel={h.nach} klein /> {h.titel}
           </li>
         ))}
       </ul>
@@ -477,7 +488,7 @@ export function BestaetigenDialog({ titel, faktTitel, folgen, faktDef = () => un
                     </span>
                   ) : (
                     <span className="br-bestaetigen-ampeln">
-                      <AmpelMarke ampel={f.automatisch} klein /> <span aria-label="wird zu">→</span> <AmpelMarke ampel={f.ampel} klein />
+                      <AmpelMarke ampel={f.automatisch} klein /> <Pfeil /> <AmpelMarke ampel={f.ampel} klein />
                     </span>
                   )}
                 </div>
@@ -485,6 +496,13 @@ export function BestaetigenDialog({ titel, faktTitel, folgen, faktDef = () => un
                   {f.von}
                   {f.am ? `, ${datum(f.am)}` : ''}: {f.grund}
                 </div>
+                {/* geändert: der Stand der Datei daneben – was die zweite Bestätigung ersetzt */}
+                {alt && (alt.ampel !== f.ampel || alt.grund !== f.grund) && (
+                  <div className="br-leise">
+                    bisher: {AMPEL_TEXT[alt.ampel]} ({alt.von}
+                    {alt.am ? `, ${datum(alt.am)}` : ''}: {alt.grund})
+                  </div>
+                )}
                 {herab && <div className="br-warn-text">Herabstufung</div>}
                 {f.ampel === f.automatisch && <div className="br-leise">Wie automatisch – die Festlegung bleibt, solange sich die beteiligten Angaben nicht ändern.</div>}
                 {t.ueberholt && (
@@ -509,10 +527,13 @@ export function BestaetigenDialog({ titel, faktTitel, folgen, faktDef = () => un
               <div className="br-bestaetigen-kopf">
                 <strong>{t.titel}</strong>
                 <span className="br-bestaetigen-ampeln">
-                  <AmpelMarke ampel={alt.ampel} klein /> <span aria-label="wird zu">→</span> <AmpelMarke ampel={jetzt} klein />
+                  <AmpelMarke ampel={alt.ampel} klein /> <Pfeil /> <AmpelMarke ampel={jetzt} klein />
                 </span>
               </div>
-              <div className="br-leise-stark">Festlegung aufgehoben (bisher {alt.von}: {alt.grund}) – es gilt wieder die automatische Ampel.</div>
+              <div className="br-leise-stark">
+                Festlegung aufgehoben (bisher {AMPEL_TEXT[alt.ampel]}, {alt.von}
+                {alt.am ? `, ${datum(alt.am)}` : ''}: {alt.grund}) – es gilt wieder die automatische Ampel.
+              </div>
               {herab && <div className="br-warn-text">Herabstufung</div>}
             </li>
           );

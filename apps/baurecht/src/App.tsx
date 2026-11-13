@@ -66,9 +66,15 @@ async function speichernLauf(): Promise<boolean> {
       useBaurecht.getState().aufDateistand(festlegungen, fakten);
     }
   }
+  const warGeaendert = istGeaendert(useBaurecht.getState());
   try {
     const konflikte: string[] = [];
     const ok = await speichernJetzt(konflikte);
+    // Rückmeldung im Kopf (sichtbar und angesagt) – bleiben Entwürfe, sagt sie das
+    if (ok) {
+      const offen = offeneFestlegungen(useBaurecht.getState()).length + offeneBestaetigungen(useBaurecht.getState()).length;
+      useBaurecht.setState({ gespeichertMeldung: { am: Date.now(), text: !warGeaendert ? 'Gespeichert – keine Änderungen' : offen ? `Gespeichert – ${offen === 1 ? 'ein Entwurf bleibt' : `${offen} Entwürfe bleiben`} offen` : 'Gespeichert' } });
+    }
     if (ok && konflikte.length)
       await meldung('Gleichzeitig geändert', `Diese Einträge wurden inzwischen auch an anderer Stelle (andere App-Instanz) geändert; gespeichert ist Ihr Stand:\n\n${konflikte.join('\n')}\n\nBitte prüfen, ob das so stimmt.`);
     return ok;
@@ -192,6 +198,12 @@ export function App() {
   useEffect(() => {
     document.title = project ? `${name} – Baurecht` : 'Baurecht';
   }, [project, name]);
+  // schmale Fenster (waagerecht scrollende Arbeitsfläche): nach dem Öffnen am linken Rand beginnen – das Einblenden der
+  // Spalten verschiebt sonst die Ansicht
+  useEffect(() => {
+    const t = setTimeout(() => document.getElementById('root')?.scrollTo({ left: 0 }), 50);
+    return () => clearTimeout(t);
+  }, [project]);
 
   // Regelpaket: abgelegtes (falls neuer), dann nachladen
   useEffect(() => {
@@ -330,7 +342,7 @@ export function App() {
           dateiHinweis="Projektdatei (.oap)"
         />
       )}
-      {protokoll && project && <Protokoll stand={stand} onClose={() => setProtokoll(false)} />}
+      {protokoll && project && <Protokoll stand={stand} onClose={() => setProtokoll(false)} onSpeichern={() => void speichern()} />}
       <FestlegenDialog fakten={stand.auswertung.fakten} widerspruchMerkmale={stand.widerspruchMerkmale} />
       <FaktBestaetigenDialog folgen={folgen} faktDef={faktDef} />
       <BestaetigenDialog titel={titel} faktTitel={faktTitel} folgen={folgenSeitDatei} faktDef={faktDef} />

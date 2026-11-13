@@ -57,9 +57,9 @@ export function LogDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="modal-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="modal modal-log" role="dialog" aria-label="Protokoll">
+      <div className="modal modal-log" role="dialog" aria-label="Fehlerprotokoll">
         <div className="log-head">
-          <h3>Protokoll</h3>
+          <h3>Fehlerprotokoll</h3>
           <div className="button-row">
             {FILTER.map((f) => (
               <button key={f.id} className={min === f.id ? 'active' : ''} onClick={() => setMin(f.id)}>
@@ -67,7 +67,7 @@ export function LogDialog({ onClose }: { onClose: () => void }) {
               </button>
             ))}
           </div>
-          <input className="log-search" placeholder="Suchen …" value={q} onChange={(e) => setQ(e.target.value)} />
+          <input className="log-search" type="search" aria-label="Fehlerprotokoll durchsuchen" placeholder="Suchen …" value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
         <div className="log-list" role="log">
           {list.length === 0 && <p className="muted">Keine Einträge.</p>}

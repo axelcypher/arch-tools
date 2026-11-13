@@ -82,7 +82,7 @@ function ampelText(p: ParagrafErgebnis): string {
  * Punkte als Tabelle (was fehlt – Anzahl – Paragrafen), dann alle Vorschriften je Ebene. „Prüfung abschließen“ legt einen Stand in der
  * Projektdatei ab – erst, wenn nichts mehr Entwurf ist.
  */
-export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; onClose: () => void }) {
+export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: Pruefstand; onClose: () => void; onSpeichern?: () => void }) {
   const project = useBaurecht((s) => s.project);
   const antrag = useBaurecht((s) => s.antrag);
   const merkmale = useBaurecht((s) => s.merkmale);
@@ -132,6 +132,12 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
   const ungespeichertGesamt = useBaurecht(istGeaendert);
   const laedt = useBaurecht((s) => s.laedt.length);
   const [nurRelevant, setNurRelevant] = useState(false);
+  // Meldung nach „Prüfung abschließen“ (mit „Jetzt speichern“) – der Fokus geht dorthin
+  const [abgelegt, setAbgelegt] = useState<string | null>(null);
+  const meldung = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (abgelegt) (meldung.current?.querySelector<HTMLElement>('button') ?? meldung.current)?.focus();
+  }, [abgelegt]);
   const fenster = useRef<HTMLDivElement>(null);
   // Höhe der klebenden Aktionsleiste als CSS-Variable – der feste Tabellenkopf klebt darunter
   useEffect(() => {
@@ -186,14 +192,16 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
   const entwurfText = aufzaehlen(entwurfTeile);
   const offen = a.paragrafen.filter((p) => p.ampel === 'gelb');
   const vonHand = a.paragrafen.filter((p) => p.festlegung);
-  const ausEntwurf = vonHand.filter((p) => !p.festlegung!.bestaetigt);
+  // nur Entwürfe, die die Ampel tragen (nicht überholt, nicht „noch nicht wirksam“)
+  const ausEntwurf = vonHand.filter((p) => !p.festlegung!.bestaetigt && !p.ueberholt && !p.unwirksam);
   const ueberholt = a.paragrafen.filter((p) => p.ueberholt && p.ampel !== 'gelb');
   const gesichert = Object.entries(a.fakten).filter(([, f]) => f.bestaetigt);
   // Angaben von Hand ohne Beleg: auch sie tragen Ampeln (z. B. „Kampfmittelverdacht: nein“) – mit wer und wann
   // nur Angaben, die das Regelpaket kennt (eine Angabe einer früheren Fassung stünde sonst mit ihrer rohen Kennung da)
   const vonHandOhneBeleg = Object.entries(a.fakten).filter(([id, f]) => id in eigeneFakten && !!a.faktDefs[id] && id !== 'antrag.einreichung' && f.herkunft === 'manuell' && !f.bestaetigt && f.wert != null);
   // abgeschlossen wird nur ein gespeicherter, zweimal bestätigter und vollständig geladener Stand
-  const sperre = entwuerfe ? `Erst speichern: ${entwurfText} ${entwuerfe === 1 ? 'ist' : 'sind'} noch Entwurf (zweite Bestätigung fehlt)` : ungespeichertGesamt ? 'Erst speichern: Es gibt ungespeicherte Änderungen' : laedt ? 'Die Gesetzestexte werden noch geholt – bitte warten' : '';
+  // knapp (die Einzelheiten stehen im Hinweis darunter); nach dem Abschließen neutral: die Ablage will gespeichert werden
+  const sperre = entwuerfe ? 'Erst speichern – Entwürfe brauchen die zweite Bestätigung' : ungespeichertGesamt ? (abgelegt ? 'Abgelegt – zum Übernehmen speichern' : 'Erst speichern: Es gibt ungespeicherte Änderungen') : laedt ? 'Die Gesetzestexte werden noch geholt – bitte warten' : '';
   // offene Punkte nach der fehlenden Angabe gruppiert („Baugebiet – 20 Paragrafen“), der Rest nach dem Grund
   const ohneRegel = a.normen.filter((n) => n.ohneRegel);
   // fehlende Angaben genau wie „Klärt am meisten“ gezählt (ein Paragraf kann unter mehreren Angaben stehen)
@@ -243,7 +251,10 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
   const abschliessen = () => {
     if (sperre) return;
     const ampeln: Record<string, Ampel> = Object.fromEntries(a.paragrafen.map((p) => [p.id, p.ampel]));
-    useBaurecht.getState().protokollAnhaengen({ am: new Date().toISOString(), von: benutzer(), paket: paket.version, einreichung: pruefstand.einreichung, fassungen: verwendeteFassungen(a), zaehler: a.zaehler, ampeln, offen: offen.length + ueberholt.length + ohneRegel.length });
+    const am = new Date().toISOString();
+    useBaurecht.getState().protokollAnhaengen({ am, von: benutzer(), paket: paket.version, einreichung: pruefstand.einreichung, fassungen: verwendeteFassungen(a), zaehler: a.zaehler, ampeln, offen: offen.length + ueberholt.length + ohneRegel.length });
+    // sichtbar und angesagt, Fokus auf die Meldung (der Knopf ist danach gesperrt – sonst fiele der Fokus auf die Seite)
+    setAbgelegt(`Prüfung vom ${datum(am)} abgelegt (${a.zaehler.rot} gilt · ${a.zaehler.gelb} prüfen · ${a.zaehler.gruen} entfällt) – zum Übernehmen in die Datei speichern.`);
   };
   const datei = quelle?.art === 'ordner' ? quelle.datei : quelle?.art === 'datei' ? quelle.name : null;
   const geo = [...new Set(Object.values(a.fakten).filter((f) => f.herkunft === 'geodienst' && f.quelle).map((f) => `${f.quelle}${f.stand ? `, abgefragt ${datum(f.stand)}` : ''}`))];
@@ -278,6 +289,23 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
             Schließen
           </button>
         </div>
+        {abgelegt && (
+          <div ref={meldung} tabIndex={-1} className="br-meldung br-meldung-info no-print br-abgelegt" role="status">
+            {abgelegt}{' '}
+            {onSpeichern && (
+              <button
+                type="button"
+                className="small"
+                onClick={() => {
+                  onSpeichern();
+                  setAbgelegt(null);
+                }}
+              >
+                Jetzt speichern
+              </button>
+            )}
+          </div>
+        )}
         {entwuerfe > 0 && (
           <p className="br-meldung br-meldung-warn br-entwurf-hinweis no-print" role="status">
             Entwurf: {entwurfText.charAt(0).toUpperCase() + entwurfText.slice(1)} {entwuerfe === 1 ? 'ist' : 'sind'} noch nicht gespeichert und bestätigt – unten als „Entwurf“ bzw. „noch nicht gespeichert“ gekennzeichnet. Abschließen lässt sich die Prüfung erst nach dem Speichern.

@@ -244,7 +244,10 @@ meisten“ (ein Paragraf kann unter mehreren Angaben stehen); Punkte mit nur ein
 neben dem Knopf. „Drucken / PDF …“ schlägt den
 Dateinamen `<Projektdatei> Baurecht <Antrag>.pdf` vor. **„Prüfung abschließen“** legt den Stand (Fassungen, Ampeln,
 Zähler, Regelpaket) in der Projektdatei ab – erst, wenn nichts mehr Entwurf, alles gespeichert und jeder Text geladen
-ist.
+ist. Danach steht oben eine Meldung („Prüfung vom … abgelegt (… gilt · … prüfen · … entfällt) – zum Übernehmen in die
+Datei speichern“, Live-Region) mit „Jetzt speichern“, der Fokus geht dorthin. Nach jedem Speichern steht im Kopf kurz
+„Gespeichert“ (bzw. „– keine Änderungen“, „– N Entwürfe bleiben offen“), auch angesagt. Im Speichern-Dialog nennt eine
+geänderte Festlegung den bisherigen Stand der Datei („bisher: gilt (Name, Datum: Grund)“).
 
 ## Daten
 
