@@ -162,8 +162,9 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
 - **Antragsmerkmale der App:** Gebäudeklasse, Sonderbau, Verfahren, **Gebäudeart** (Einfamilienhaus,
   Zweifamilienhaus, Mehrfamilienhaus, Wohn- und Geschäftshaus – gemischt genutzt, mit Betrieb bzw. öffentlich
   zugänglicher Nutzung –, Nichtwohngebäude, kein Gebäude), **Vorhaben** (Errichtung, Erweiterung – Anbau,
-  Aufstockung, für die Kosten wie eine Errichtung –, Änderung, Nutzungsänderung, Beseitigung) und **Planungsrecht** (Bebauungsplan = qualifiziert oder vorhabenbezogen nach § 30
-  Abs. 1, 2 BauGB, einfacher Bebauungsplan nach § 30 Abs. 3 BauGB, Innenbereich, Außenbereich, Satzung nach BauGB). Der
+  Aufstockung, für die Kosten wie eine Errichtung –, Änderung, Nutzungsänderung, Beseitigung) und **Planungsrecht**
+  (Bebauungsplan = qualifiziert oder vorhabenbezogen nach § 30 Abs. 1, 2 BauGB, einfacher Bebauungsplan nach § 30
+  Abs. 3 BauGB, Innenbereich, Außenbereich, Satzung nach BauGB). Der
   einfache Bebauungsplan zählt für die Bauvorlagen als Bebauungsplan (Maß der baulichen Nutzung) und als Vorhaben nach
   §§ 34/35 (Flurkarte, Basiskarte). Ein gespeichertes „Bebauungsplan“ wird nicht umgedeutet; Antragsumfang und
   Hinweise erklären die Werte (`MERKMAL_ERKLAERUNG` in `bedingung.ts`). Die Vorgaben

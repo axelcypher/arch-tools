@@ -115,7 +115,7 @@ export const nw010002_2026I: FormularProfil = zusammen(kopf, personen, blatt2, u
     ),
     '2:CheckBox4': begruendet(
       und(ist('Gebäudeklasse', '1', '2', '3'), ist('Sonderbau', 'nein'), nichtAngekreuzt('0:CheckBox24')),
-      'Die Erklärung der Entwurfsverfassenden genügt bei Gebäuden der Gebäudeklassen 1 bis 3 und Kleingaragen – für eine Mittelgarage (über 100 m² bis 1.000 m²) nicht: Für sie ist die Bescheinigung von Prüfsachverständigen nötig (Nr. 11.2); für ein Gebäude der Gebäudeklassen 1 bis 3 daneben bleibt die Erklärung zulässig. Bei Sonderbauten prüft die Bauaufsichtsbehörde den Brandschutz (auch durch Prüfingenieure) – dann gehört das Brandschutzkonzept/der Brandschutznachweis zu Nr. 9.',
+      'Die Erklärung der Entwurfsverfassenden genügt bei Gebäuden der Gebäudeklassen 1 bis 3 und Kleingaragen – für eine Mittelgarage (über 100 m² bis 1.000 m²) nicht: Für sie ist die Bescheinigung von Prüfsachverständigen nötig (Nr. 11.2); für ein Gebäude der Gebäudeklassen 1 bis 3 daneben ist die Erklärung erforderlich, soweit die Bescheinigung nur die Garage umfasst. Bei Sonderbauten prüft die Bauaufsichtsbehörde den Brandschutz (auch durch Prüfingenieure) – dann gehört das Brandschutzkonzept/der Brandschutznachweis zu Nr. 9.',
       q('bauo-nrw', '68', 2, 2),
       q('bauo-nrw', '68', 2, 3),
       q('bauo-nrw', '68', 2, 5),
