@@ -322,6 +322,8 @@ export interface ParagrafErgebnis {
    * aktuell, neue Fassung zum Stichtag) – kein Fehler der Festlegung, erneutes Festlegen hilft dagegen nicht
    */
   unwirksam?: string;
+  /** warum ein von Hand festgelegtes „entfällt“ hier jetzt noch nicht wirksam wäre (Text fehlt, Rechtsstand alt …) – sonst leer */
+  entfaelltVorbehalt?: string;
   /** Regeldatei */
   regel?: { datei: string; version: number; fassung: string };
   /** Annahme des Büros */

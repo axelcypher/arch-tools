@@ -246,7 +246,9 @@ export function gestellteAntworten(eingabe: Record<string, FaktWert>, ableiten: 
   let gestellt = eingabe;
   // in jeder Runde gestellt (für den Ausweg ohne Fixpunkt)
   let immer = new Set(Object.keys(eingabe));
-  for (let runde = 0; runde < 8; runde++) {
+  // ohne Zyklus steht der Fixpunkt nach höchstens Tiefe + 1 Runden – die Tiefe ist durch die Zahl der Antworten begrenzt
+  const runden = Object.keys(eingabe).length + 2;
+  for (let runde = 0; runde < runden; runde++) {
     const ctx: KurzKontext = { ...rest, fakten: ableiten(gestellt) };
     const naechste = Object.fromEntries(Object.entries(eingabe).filter(([id]) => frageGestellt(id, defs[id], ctx)));
     if (Object.keys(naechste).length === Object.keys(gestellt).length && Object.keys(naechste).every((id) => id in gestellt)) return naechste;
@@ -462,9 +464,9 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
     // Änderungen am Text seit der Prüfung der Regel
     const geaendert: string[] = [];
     if (fassung && r.stand) for (const [k, summe] of Object.entries(r.stand)) if (fassung.summen[k] !== summe) geaendert.push(k);
-    const unsicher = [...new Set(tragend.flatMap((b) => b.unsicher))];
-    const widerspruch = [...new Set(tragend.flatMap((b) => b.widerspruch))];
-    const offen = ampel === 'gelb' ? nurGestellte([...new Set(tragend.flatMap((b) => b.offen))]) : entf?.w === 'offen' && ampel === 'rot' ? nurGestellteStreng(entf.offen) : [];
+    let unsicher = [...new Set(tragend.flatMap((b) => b.unsicher))];
+    let widerspruch = [...new Set(tragend.flatMap((b) => b.widerspruch))];
+    let offen = ampel === 'gelb' ? nurGestellte([...new Set(tragend.flatMap((b) => b.offen))]) : entf?.w === 'offen' && ampel === 'rot' ? nurGestellteStreng(entf.offen) : [];
 
     // zur sicheren Seite
     if (ampel === 'gruen') {
@@ -475,7 +477,20 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
       // Einzelfall macht Grün nur gelb, wenn die Regel sagt, wann (sonst nur Hinweis bei Rot) – und nur, wenn die Norm
       // überhaupt gilt: außerhalb ihres Anwendungsbereichs (z. B. außerhalb der Altstadt) gibt es keinen Einzelfall;
       // … und auch dann, wenn das „nein“ nur auf Hinweisen oder widersprüchlichen Angaben beruht
-      if (!mitNorm && r.pruefen?.wenn && (pruef.w !== 'nein' || pruef.unsicher?.length || pruef.widerspruch?.length)) herab.push(`Einzelfall: ${r.pruefen.grund}`);
+      // Ist offen, ob der Einzelfall vorliegt, stehen die Angaben dazu unter „es fehlt“ (nur gestellte Fragen); beruht das
+      // „kein Einzelfall“ nur auf Hinweisen bzw. widersprüchlichen Angaben, steht das als „Nur Hinweis“/„Widerspruch“ da
+      if (!mitNorm && r.pruefen?.wenn) {
+        if (pruef.w === 'ja') herab.push(`Einzelfall: ${r.pruefen.grund}`);
+        else if (pruef.w === 'offen') {
+          const fehlt = nurGestellte(pruef.offen ?? []);
+          const angaben = fehlt.filter((o) => !o.startsWith('paragraf:'));
+          herab.push(angaben.length ? `Einzelfall möglich – es fehlt: ${angaben.map((o) => offenText(o, text)).join(' · ')}. ${r.pruefen.grund}` : `Einzelfall: ${r.pruefen.grund}`);
+          offen = fehlt;
+        } else {
+          unsicher = [...new Set([...unsicher, ...(pruef.unsicher ?? [])])];
+          widerspruch = [...new Set([...widerspruch, ...(pruef.widerspruch ?? [])])];
+        }
+      }
       if (r.gruenNurVonHand) herab.push('Kann nur von Hand ausgeschlossen werden (z. B. nach Prüfung vor Ort).');
       if (geaendert.length) herab.push(`Text seit der Prüfung der Regel geändert (${geaendert.map(fundstelleName).join(', ')}) – Regel noch nicht nachgezogen.`);
       if (unsicher.length) herab.push(`Nur Hinweis, nicht gesichert: ${unsicher.map((u) => offenText(u, text)).join(', ')}.`);
@@ -516,6 +531,20 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
     if (fassung?.texterkennung) hinweise.push('Text aus Texterkennung (Scan) – maßgeblich ist die Originalurkunde.');
 
     const automatisch = ampel;
+    // ein von Hand festgelegtes „entfällt“ braucht wie das automatische einen geprüften, aktuellen Text – nur bei Regeln mit
+    // Prüfsummen (Verweise ohne abrufbaren Text brauchen keinen). Was fehlt, steht als `entfaelltVorbehalt` am Ergebnis
+    // (für Festlegen-Dialog und Ansage: dieselbe Bedingung wie hier)
+    const systemVorbehalt: string[] = [];
+    if (r.stand && Object.keys(r.stand).length) {
+      if (!fassung) systemVorbehalt.push('Text der Norm nicht verfügbar');
+      else if (Object.keys(r.stand).some((k) => !fassung.summen[k])) systemVorbehalt.push('Fundstelle fehlt im Text der geltenden Fassung');
+      else if (!n.stand?.geprueft || tageSeit(n.stand.geprueft, e.heute) > tageAlt) systemVorbehalt.push('Rechtsstand nicht aktuell an der Quelle bestätigt');
+      else if (n.stand?.ueberholtAb) systemVorbehalt.push(`zum Stichtag gilt schon die Fassung ab ${datumText(n.stand.ueberholtAb)}`);
+      else if (n.stand?.stichtag && n.stand.stichtag !== e.einreichung) systemVorbehalt.push('Text für einen anderen Stichtag geholt – wird aktualisiert');
+      // wie beim automatischen „entfällt“: eine angekündigte Fassung vor der Entscheidung ist erst noch zu prüfen
+      const angekuendigt = (n.stand?.kuenftige ?? []).filter((k) => k.gueltigAb > e.einreichung && k.gueltigAb <= entscheidungBis);
+      if (angekuendigt.length) systemVorbehalt.push(`neue Fassung ab ${angekuendigt.map((k) => datumText(k.gueltigAb)).join(', ')} angekündigt – an der künftigen Fassung prüfen`);
+    }
     const fl = e.festlegungen[id];
     let ueberholt: string | undefined;
     let unwirksam: string | undefined;
@@ -547,17 +576,11 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
       // ein festgelegtes „entfällt“ braucht wie das automatische einen geprüften, aktuellen Text. Fehlt der Systemstand,
       // ist es „noch nicht wirksam“ (erneut festlegen hilft nicht); wurde ohne Text festgelegt und liegt er jetzt vor,
       // ist es überholt (jetzt am Text erneut festlegen)
-      const system: string[] = [];
-      if (fl.ampel === 'gruen' && r.stand && Object.keys(r.stand).length) {
-        if (!fassung) system.push('Text der Norm nicht verfügbar');
-        else if (Object.keys(r.stand).some((k) => !fl.stand?.[k])) gruende2.push('Festlegung ohne geprüften Text getroffen – an der geltenden Fassung erneut festlegen');
-        else if (!n.stand?.geprueft || tageSeit(n.stand.geprueft, e.heute) > tageAlt) system.push('Rechtsstand nicht aktuell an der Quelle bestätigt');
-        else if (n.stand?.ueberholtAb) system.push(`zum Stichtag gilt schon die Fassung ab ${datumText(n.stand.ueberholtAb)}`);
-        else if (n.stand?.stichtag && n.stand.stichtag !== e.einreichung) system.push('Text für einen anderen Stichtag geholt – wird aktualisiert');
-        // wie beim automatischen „entfällt“: eine angekündigte Fassung vor der Entscheidung ist erst noch zu prüfen
-        const angekuendigt = (n.stand?.kuenftige ?? []).filter((k) => k.gueltigAb > e.einreichung && k.gueltigAb <= entscheidungBis);
-        if (angekuendigt.length) system.push(`neue Fassung ab ${angekuendigt.map((k) => datumText(k.gueltigAb)).join(', ')} angekündigt – an der künftigen Fassung prüfen`);
-      }
+      // ohne geprüften Text getroffen, jetzt liegt er vor: überholt (an der geltenden Fassung erneut festlegen) – sonst
+      // „noch nicht wirksam“, solange der Systemstand fehlt (erneut festlegen hilft dagegen nicht)
+      const ohneGeprueftenText = fl.ampel === 'gruen' && !!fassung && !!r.stand && Object.keys(r.stand).some((k) => !fl.stand?.[k]);
+      if (ohneGeprueftenText) gruende2.push('Festlegung ohne geprüften Text getroffen – an der geltenden Fassung erneut festlegen');
+      const system = fl.ampel === 'gruen' && !ohneGeprueftenText ? systemVorbehalt : [];
       if (gruende2.length) ueberholt = gruende2.join('; ');
       if (system.length) unwirksam = system.join('; ');
       // eine überholte bzw. nicht wirksame Festlegung schwächt nie ab (zur sicheren Seite): ein „entfällt“ wird
@@ -598,6 +621,7 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
       ...(fl ? { festlegung: fl } : {}),
       ...(ueberholt ? { ueberholt } : {}),
       ...(unwirksam ? { unwirksam } : {}),
+      ...(systemVorbehalt.length ? { entfaelltVorbehalt: systemVorbehalt.join('; ') } : {}),
       ...(n.datei ? { regel: { datei: n.datei.datei, version: n.datei.regel.version, fassung: n.datei.regel.fassung } } : {}),
       ...(def.annahme ? { annahme: def.annahme } : {}),
       bedingung: [
@@ -663,13 +687,21 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
     if (d?.typ === 'janein') return [true, false];
     return d?.typ === 'wahl' && d.werte?.length ? d.werte : null;
   };
-  const ausgang = (id: string, c: KurzKontext): Ampel => {
+  // „einzelfall“: grün, aber der Einzelfall der Regel liegt vor – ein festes Ergebnis wie rot/grün; „einzelfall?“: ob er
+  // vorliegt, hängt an anderen Angaben – zählt wie ein eigenes Ergebnis (ändert die Antwort daran nichts, klärt sie
+  // nichts); „gelb“: Tatbestand bzw. Ausnahme weiter offen
+  const ausgang = (id: string, c: KurzKontext): Ampel | 'einzelfall' | 'einzelfall?' => {
     const { n, r } = regelVon.get(id)!;
     try {
       const g = werten(n.datei?.regel.geltung, c).w;
-      if (g === 'nein' || (r.entfaellt && werten(r.entfaellt, c).w === 'ja')) return 'gruen';
+      if (g === 'nein') return 'gruen';
+      const gruen = () => {
+        const w = r.pruefen?.wenn ? werten(r.pruefen.wenn, c).w : 'nein';
+        return w === 'ja' ? 'einzelfall' : w === 'offen' ? 'einzelfall?' : 'gruen';
+      };
+      if (r.entfaellt && werten(r.entfaellt, c).w === 'ja') return gruen();
       const t = undW(g, werten(r.gilt, c).w);
-      return t === 'ja' ? 'rot' : t === 'nein' ? 'gruen' : 'gelb';
+      return t === 'ja' ? 'rot' : t === 'nein' ? gruen() : 'gelb';
     } catch {
       return 'gelb';
     }

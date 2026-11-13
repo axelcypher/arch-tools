@@ -1920,7 +1920,7 @@ describe('Fälle aus dem Fachreview', () => {
     const mauer = M4({ Gebäudeart: 'kein Gebäude', Verfahren: 'verfahrensfrei' });
     delete (mauer as Record<string, string>).Gebäudeklasse;
     // (ohne Stellplätze auf dem Grundstück – sonst bliebe § 9 Einzelfall für das Niederschlagswasser, Fall W9)
-    const ohne = a(mauer, nein('vorhaben.entwaesserung', 'vorhaben.versickerung', 'vorhaben.stellplaetze_grundstueck'));
+    const ohne = a(mauer, nein('vorhaben.entwaesserung', 'vorhaben.versickerung', 'vorhaben.stellplaetze_grundstueck', 'soest.befestigte_flaeche'));
     for (const id of ids) expect(ohne(id), id).toBe('gruen');
     // Gegenproben: mit Entwässerung (Stellplatzanlage) rot; Neubau eines Gebäudes rot auch ohne Angabe
     const mit = a(mauer, { ...ja('vorhaben.entwaesserung'), ...nein('vorhaben.versickerung') });
@@ -2091,8 +2091,41 @@ describe('Fälle aus dem Fachreview', () => {
     expect(w9.ampel).toBe('gelb');
     expect(w9.gruende.join(' ')).toMatch(/befestigter Fläche/);
     // ohne befestigte Fläche (z. B. Mast): entfällt; Angabe offen: nicht grün
-    expect(a(anlage, nein('vorhaben.entwaesserung', 'vorhaben.stellplaetze_grundstueck'))(id)).toBe('gruen');
+    expect(a(anlage, nein('vorhaben.entwaesserung', 'vorhaben.stellplaetze_grundstueck', 'soest.befestigte_flaeche'))(id)).toBe('gruen');
     expect(a(anlage, nein('vorhaben.entwaesserung'))(id)).not.toBe('gruen');
+  });
+
+  it('Runde 16: Entwässerungssatzung § 9 – Lagerplatz/Hof ohne Stellplätze und Anbau ohne neue Entwässerung (Fälle W10, W12)', () => {
+    const id = 'nw-05974040/entwaesserungssatzung/9';
+    const p9 = (m: Record<string, string>, f: Record<string, FaktWert>) => auswerten(eingabe(m, f, TEXTE)).paragrafen.find((x) => x.id === id)!;
+    // W10: befestigter Lagerplatz ohne Stellplätze, keine neue Entwässerung → Einzelfall Niederschlagswasser
+    const anlage = M4({ Gebäudeart: 'kein Gebäude', Verfahren: 'Baugenehmigungsverfahren' });
+    const w10 = p9(anlage, { ...nein('vorhaben.entwaesserung', 'vorhaben.stellplaetze_grundstueck'), ...ja('soest.befestigte_flaeche') });
+    expect(w10.ampel).toBe('gelb');
+    expect(w10.gruende[0]).toMatch(/^Einzelfall: .*Lagerplatz/);
+    // W12: Anbau (Änderung) ohne neue Entwässerung – neue Dachfläche → Einzelfall; ohne neue Fläche → entfällt
+    const anbau = M4({ Vorhaben: 'Änderung' });
+    const w12 = p9(anbau, { ...nein('vorhaben.entwaesserung'), ...ja('soest.befestigte_flaeche') });
+    expect(w12.ampel).toBe('gelb');
+    expect(w12.gruende[0]).toMatch(/^Einzelfall: .*Anbau/);
+    expect(p9(anbau, nein('vorhaben.entwaesserung', 'soest.befestigte_flaeche')).ampel).toBe('gruen');
+    // offen: gelb, die Angabe steht unter „es fehlt“ und klärt
+    const offen = p9(anbau, nein('vorhaben.entwaesserung'));
+    expect(offen.ampel).toBe('gelb');
+    expect(offen.gruende[0]).toMatch(/^Einzelfall möglich – es fehlt: neue Dach- oder befestigte Fläche\. /);
+    expect(offen.offen).toEqual(['soest.befestigte_flaeche']);
+    expect(offen.klaerend).toEqual(['soest.befestigte_flaeche']);
+    // mit neuer Entwässerung bzw. beim reinen Abbruch nicht gefragt
+    const defs = faktDefinitionen(paket.module);
+    const gestellt = (m: Record<string, string>, f: Record<string, FaktWert>) => frageGestellt('soest.befestigte_flaeche', defs['soest.befestigte_flaeche'], auswerten(eingabe(m, f, TEXTE)).kontext);
+    expect(gestellt(anbau, nein('vorhaben.entwaesserung'))).toBe(true);
+    expect(gestellt(anbau, ja('vorhaben.entwaesserung'))).toBe(false);
+    expect(gestellt(M4({ Vorhaben: 'Errichtung' }), nein('vorhaben.entwaesserung'))).toBe(false);
+    expect(gestellt(M4({ Vorhaben: 'Nutzungsänderung' }), nein('vorhaben.entwaesserung'))).toBe(false);
+    // nicht gestellt: eine gespeicherte Antwort wirkt nicht, die Angabe fehlt nicht
+    const nutz = p9(M4({ Vorhaben: 'Nutzungsänderung' }), { ...nein('vorhaben.entwaesserung'), ...ja('soest.befestigte_flaeche') });
+    expect(nutz.ampel).toBe('gruen');
+    expect(nutz.offen).not.toContain('soest.befestigte_flaeche');
   });
 });
 

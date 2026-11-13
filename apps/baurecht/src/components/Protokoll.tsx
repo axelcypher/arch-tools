@@ -603,7 +603,7 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
           {weitereZeilen.length > 0 && (
             <>
               <h3>Weitere offene Punkte (je ein Paragraf)</h3>
-              <table className="report-table">
+              <table className="report-table br-protokoll-weitere">
                 <thead>
                   <tr>
                     <th style={{ width: '16%' }}>Norm</th>

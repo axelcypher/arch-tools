@@ -400,6 +400,7 @@ export function Detail({ stand }: { stand: Pruefstand }) {
               className="small"
               onClick={() => {
                 useBaurecht.getState().festlegungWiederherstellen(aufgehoben.id, aufgehoben.f);
+                useBaurecht.getState().ansagen(`Festlegung wiederhergestellt – „${AMPEL_TEXT[aufgehoben.f.ampel]}“${aufgehoben.f.bestaetigt ? '' : ' (Entwurf)'}`);
                 setAufgehoben(null);
                 // der Knopf verschwindet – Fokus auf „Festlegung ändern …“
                 setTimeout(() => festlegenKnopf.current?.focus(), 0);

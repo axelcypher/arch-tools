@@ -195,11 +195,13 @@ button {
   white-space: nowrap;
 }
 
-button:hover:not(:disabled) {
+button:hover:not(:disabled):not([aria-disabled='true']) {
   background: var(--hover);
 }
 
-button:disabled {
+/* aria-disabled: bleibt fokussierbar (z. B. während des Speicherns), sieht aber gesperrt aus */
+button:disabled,
+button[aria-disabled='true'] {
   opacity: 0.45;
   cursor: default;
 }

@@ -6,7 +6,7 @@ import { auswerten, bundGelieferte, gestellteAntworten, gueltigeFakten, gueltige
 import type { TextStand } from './auswertung';
 import { kurzText, werten } from './kurz';
 import { agsVorschlag, aktiveModule, fehlendeEbenen, paketAusDateien, paketPruefen, regeldateiFuer, signaturPruefen } from './paket';
-import type { FaktWert, Modul, Regeldatei } from './typen';
+import type { FaktWert, Festlegung, Modul, Regeldatei } from './typen';
 
 const sicher = (wert: FaktWert['wert']): FaktWert => ({ wert, herkunft: 'manuell', sicherheit: 'sicher' });
 const hinweis = (wert: FaktWert['wert']): FaktWert => ({ wert, herkunft: 'geodienst', sicherheit: 'hinweis', grund: 'Grenze nahe' });
@@ -200,9 +200,25 @@ describe('Ampel je Paragraf', () => {
       },
       'x',
     );
-    const a = auswerten(eingabe({ paket: mitWenn, module: aktiveModule(mitWenn.module, '05974040'), einreichung: '2024-06-01' }));
+    const mit = (fakten: Record<string, FaktWert> = {}) => auswerten(eingabe({ paket: mitWenn, module: aktiveModule(mitWenn.module, '05974040'), einreichung: '2024-06-01', fakten: { 'lage.ags': sicher('05974040'), ...fakten } }));
+    // offen, ob der Einzelfall vorliegt: gelb, die Angabe dazu steht unter „es fehlt“ und klärt
+    const a = mit();
     expect(p(a, 'nw/bauo-nrw/42a').ampel).toBe('gelb');
-    expect(p(a, 'nw/bauo-nrw/42a').gruende.join(' ')).toMatch(/Einzelfall: Planreife/);
+    expect(p(a, 'nw/bauo-nrw/42a').gruende[0]).toMatch(/^Einzelfall möglich – es fehlt: .+\. Planreife$/);
+    expect(p(a, 'nw/bauo-nrw/42a').offen).toEqual(['planung.planaufstellung']);
+    expect(p(a, 'nw/bauo-nrw/42a').klaerend).toEqual(['planung.planaufstellung']);
+    // liegt er vor: gelb „Einzelfall“, nichts fehlt; liegt er nicht vor: grün
+    const ja = p(mit({ 'planung.planaufstellung': sicher(true) }), 'nw/bauo-nrw/42a');
+    expect(ja.ampel).toBe('gelb');
+    expect(ja.gruende[0]).toBe('Einzelfall: Planreife');
+    expect(ja.offen).toEqual([]);
+    expect(p(mit({ 'planung.planaufstellung': sicher(false) }), 'nw/bauo-nrw/42a').ampel).toBe('gruen');
+    // „kein Einzelfall“ nur als Hinweis: gelb als „Nur Hinweis“ (bestätigen klärt), nicht als „Einzelfall“
+    const nurHinweis = p(mit({ 'planung.planaufstellung': hinweis(false) }), 'nw/bauo-nrw/42a');
+    expect(nurHinweis.ampel).toBe('gelb');
+    expect(nurHinweis.gruende[0]).toMatch(/^Nur Hinweis, nicht gesichert: /);
+    expect(nurHinweis.gruende.join(' ')).not.toMatch(/Einzelfall/);
+    expect(nurHinweis.bestaetigend).toBe('planung.planaufstellung');
   });
 
   it('Norm gilt nicht → alle Paragrafen grün', () => {
@@ -458,6 +474,24 @@ describe('kein falsches Grün – Fälle aus dem Code-Review', () => {
     expect(alt.ampel).toBe('rot');
     expect(alt.ueberholt).toBeUndefined();
     expect(alt.unwirksam).toMatch(/Rechtsstand/);
+  });
+
+  it('entfaelltVorbehalt sagt vor dem Festlegen, ob ein „entfällt“ von Hand wirkte – dieselbe Bedingung wie danach', () => {
+    const id = 'bund/bnatschg/14';
+    const vor = (texte: Map<string, TextStand>) => p(auswerten(eingabe({ merkmale: innen, texte })), id).entfaelltVorbehalt;
+    expect(vor(text())).toBeUndefined();
+    expect(vor(new Map())).toBe('Text der Norm nicht verfügbar');
+    expect(vor(text({ geprueft: '2026-10-01T08:00:00Z' }))).toMatch(/Rechtsstand nicht aktuell/);
+    expect(vor(text({ ueberholtAb: '2026-11-20' }))).toMatch(/gilt schon die Fassung ab 20\.11\.2026/);
+    expect(vor(text({ stichtag: '2026-11-12' }))).toMatch(/anderen Stichtag/);
+    // Regel ohne Prüfsummen (wie ein Verweis ohne abrufbaren Text): kein Vorbehalt – ein festgelegtes „entfällt“ wirkt
+    const e = (fl?: Festlegung) => auswerten(eingabe({ merkmale: innen, texte: new Map(), ...(fl ? { festlegungen: { 'nw/bauo-nrw/6': fl } } : {}) }));
+    const auto = p(e(), 'nw/bauo-nrw/6');
+    expect(auto.automatisch).toBe('rot');
+    expect(auto.entfaelltVorbehalt).toBeUndefined();
+    const fest = p(e({ ampel: 'gruen', grund: 'Sonderfall mit Begründung', von: 'TP', am: '2026-11-12', automatisch: 'rot', fakten: { 'merkmal:Vorhaben': 'Errichtung' }, stand: {}, bestaetigt: '2026-11-12T10:00:00Z' }), 'nw/bauo-nrw/6');
+    expect(fest.ampel).toBe('gruen');
+    expect(fest.unwirksam).toBeUndefined();
   });
 
   describe('„entfällt mit der Norm“', () => {
@@ -716,6 +750,23 @@ describe('Runde 13 (Fachprüfung): nicht gestellte Fragen fehlen nicht', () => {
     expect(a.paragrafen.find((x) => x.id === 'bund/t/2')!.offen).toEqual(['x.b']);
     expect(a.paragrafen.find((x) => x.id === 'bund/t/2')!.klaerend ?? []).toEqual([]);
   });
+
+  it('Rot mit Ausnahme an einer nicht gestellten Frage: kein „Ausnahme möglich“, `offen` leer (ohne Rückgriff)', () => {
+    const r2: Regeldatei = { ...regel, paragrafen: { '3': { gilt: { f: 'x.c', ist: true }, entfaellt: { f: 'x.b', ist: true }, grund: 'Test 3.' } } };
+    const p3 = paketAusDateien({ 'module/bund/modul.json': modul, 'module/bund/t@2026-11-13.json': r2 }, 'test');
+    const l = (fakten: Record<string, FaktWert>) =>
+      auswerten({ paket: p3, module: p3.module, merkmale: {}, fakten: { 'lage.ags': sicher('05974040'), ...fakten }, einreichung: '2026-12-01', heute: '2026-11-13', texte: new Map(), festlegungen: {} }).paragrafen.find((x) => x.id === 'bund/t/3')!;
+    // x.a = nein: x.b nicht gestellt – die Ausnahme greift nicht, niemand kann sie beantworten
+    const nicht = l({ 'x.a': sicher(false), 'x.c': sicher(true) });
+    expect(nicht.ampel).toBe('rot');
+    expect(nicht.hinweise.join(' ')).not.toMatch(/Ausnahme möglich/);
+    expect(nicht.offen).toEqual([]);
+    // Gegenprobe: x.a = ja – x.b gestellt und offen: „Ausnahme möglich – es fehlt: B“
+    const gestellt = l({ 'x.a': sicher(true), 'x.c': sicher(true) });
+    expect(gestellt.ampel).toBe('rot');
+    expect(gestellt.hinweise.join(' ')).toMatch(/Ausnahme möglich – es fehlt: B/);
+    expect(gestellt.offen).toEqual(['x.b']);
+  });
 });
 
 describe('Runde 17: wer einen Modulwert liefert', () => {
@@ -781,5 +832,13 @@ describe('Runde 19: Kriterium „gestellt“ und Paketregeln für Fragen', () =>
     expect(mit({ 'x.q': j({ $: 'ueber_n' }) }, { ueber_n: { n: 'bund/bnatschg/14', ist: 'rot' } as never })).toMatch(/x\.q: die Bedingung .* nicht auf Paragrafen verweisen/);
     expect(mit({ 'x.a': j({ f: 'x.b', ist: true }), 'x.b': j({ f: 'x.a', ist: true }) })).toMatch(/Fragen-Zyklus: x\.a → x\.b → x\.a/);
     expect(mit({ 'x.a': j({ f: 'x.c', ist: true }), 'x.c': { titel: 'C', gruppe: 'x', typ: 'janein' } as never })).not.toMatch(/Fragen-Zyklus|nicht auf Paragrafen/);
+  });
+
+  it('paketPruefen: Zyklus im Landesmodul auch dann, wenn die Gemeinde die Angabe überschreibt (Orte ohne Gemeindemodul)', () => {
+    const j = (wenn: unknown) => ({ titel: 'T', gruppe: 'x', typ: 'janein', wenn }) as unknown as NonNullable<Modul['fakten']>[string];
+    const lnd = { ...land, fakten: { 'x.a': j({ f: 'x.b', ist: true }), 'x.b': j({ f: 'x.a', ist: true }) } };
+    const gem = { ...gemeinde, fakten: { ...gemeinde.fakten, 'x.a': { titel: 'A', gruppe: 'x', typ: 'janein', wert: true } as never } };
+    const f = paketPruefen(paketAusDateien({ 'module/bund/modul.json': bund, 'module/nw/modul.json': lnd, 'module/nw-05974040/modul.json': gem, 'module/bund/bnatschg@2026-09-30.json': bnatschg }, 'test'), VORGABE_MERKMALE).join('\n');
+    expect(f).toMatch(/Fragen-Zyklus: x\.a → x\.b → x\.a/);
   });
 });

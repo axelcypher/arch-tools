@@ -736,7 +736,8 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
       // der Suche nicht zu sehen ist)
       .filter(([id, d]) => d.gruppe === g.id && id !== 'antrag.einreichung' && (alle || relevant.has(id)) && (!RUECKFRAGE_IDS.has(id) || (!(merkmaleSichtbar && alsRueckfrage.has(id)) && rueckfrageSichtbar(id, stand))))
       .filter(([id, d]) => frageGestellt(id, d, ctx))
-      .filter(([id, d]) => textPasst(`${d.kurz ?? ''} ${d.titel} ${d.frage ?? ''} ${(d.werte ?? []).join(' ')} ${id}`, suche))
+      // gesucht wird im sichtbaren Text, nicht in der internen Kennung („gebaeude.…“ träfe sonst jede Gebäudeangabe)
+      .filter(([, d]) => textPasst(`${d.kurz ?? ''} ${d.titel} ${d.frage ?? ''} ${(d.werte ?? []).join(' ')}`, suche))
       .map(([id]) => id)
       .sort((a, b) => (rang.get(a) ?? Infinity) - (rang.get(b) ?? Infinity) || vergleich(a, b));
     return { ...g, ids };

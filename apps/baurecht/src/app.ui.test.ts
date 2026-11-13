@@ -1129,9 +1129,49 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
   it('Festlegen ohne geprüften Text und Aufheben werden angesagt', () => {
     const host = render();
     festlegen(host, 'Begehung am 03.11.2026 ohne Befund', 'gruen');
-    expect(useBaurecht.getState().ansage).toMatch(/festgelegt – noch nicht wirksam \(ohne geprüften Gesetzestext\), es bleibt bei/);
+    expect(useBaurecht.getState().ansage).toMatch(/festgelegt – noch nicht wirksam \(Text der Norm nicht verfügbar\), es bleibt bei/);
     act(() => knopf(host.querySelector('.br-detail')!, /Festlegung aufheben/)!.click());
     expect(useBaurecht.getState().ansage).toMatch(/^Festlegung aufgehoben – automatisch: „/);
+  });
+
+  it('Protokoll: „Jetzt speichern“ abgebrochen – Knopf wieder bereit, ein späteres Strg+S verschiebt den Fokus nicht', async () => {
+    const host = render();
+    festlegen(host, 'Begehung am 03.11.2026 ohne Befund', 'rot');
+    act(() => knopf(host, 'Prüfprotokoll')!.click());
+    const d = document.querySelector<HTMLElement>('.br-protokoll')!;
+    const jetzt = () => knopf(d, 'Jetzt speichern')!;
+    await act(async () => {
+      jetzt().click();
+      await warten(20);
+    });
+    expect(jetzt().getAttribute('aria-disabled')).toBe('true');
+    const best = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find((x) => x.textContent?.includes('Vor dem Speichern bestätigen'))!;
+    await act(async () => {
+      knopf(best, 'Abbrechen')!.click();
+      await warten(50);
+    });
+    expect(jetzt().getAttribute('aria-disabled')).toBeNull();
+    // der Fokus woanders im Protokoll – ein Speichern von anderswo (Strg+S) lässt ihn dort
+    const haken = d.querySelector<HTMLInputElement>('.br-protokoll-aktionen input[type="checkbox"]')!;
+    act(() => haken.focus());
+    await speichernMit('Speichern, diese als Entwurf behalten');
+    await warten(50);
+    expect(document.activeElement).toBe(haken);
+  });
+
+  it('Verweis ohne abrufbaren Text: „entfällt“ wirkt sofort – keine Warnung im Dialog, keine „noch nicht wirksam“-Ansage', () => {
+    const host = render();
+    const id = 'nw-05974/nsg/andere';
+    const vorher = useBaurecht.getState();
+    expect(vorher.paket.regeln.get('nw-05974/nsg')?.at(-1)?.regel.paragrafen.andere?.stand ?? {}).toEqual({});
+    act(() => host.querySelector<HTMLButtonElement>(`[data-roving="p:${CSS.escape(id)}"]`)!.click());
+    act(() => knopf(host, /^(Von Hand festlegen|Festlegung ändern) …$/)!.click());
+    const dialog = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find((d) => d.textContent?.includes('von Hand festlegen'))!;
+    act(() => dialog.querySelectorAll<HTMLInputElement>('input[type="radio"]')[2].click());
+    expect(dialog.textContent).not.toMatch(/greift „entfällt“ nicht|greift noch nicht/);
+    tippen(dialog.querySelector('textarea')!, 'Abstimmung mit der UNB ohne Befund');
+    act(() => knopf(dialog, 'Festlegen')!.click());
+    expect(useBaurecht.getState().ansage).toMatch(/von Hand „entfällt“ festgelegt – Entwurf, beim Speichern noch einmal bestätigen$/);
   });
 });
 

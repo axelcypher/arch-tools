@@ -172,13 +172,12 @@ function zyklen(bausteine: Map<string, Kurz[]>): string[] {
  * an ihr selbst hängt – dann gäbe es keinen festen Stand, welche Antworten zählen
  */
 function fragenZyklen(module: Modul[], bausteine: Map<string, Kurz[]>): string[] {
-  const defs = new Map<string, FaktDef>();
-  for (const m of module) for (const [id, d] of Object.entries(m.fakten ?? {})) defs.set(id, d);
+  // alle Definitionen je Angabe: welche gilt, hängt an den aktiven Modulen (ein Ort ohne Gemeindemodul nimmt die des
+  // Landes) – geprüft wird die Vereinigung ihrer Abhängigkeiten (zur sicheren Seite)
+  const defs = new Map<string, FaktDef[]>();
+  for (const m of module) for (const [id, d] of Object.entries(m.fakten ?? {})) defs.set(id, [...(defs.get(id) ?? []), d]);
   const abhaengig = (id: string): Set<string> => {
     const out = new Set<string>();
-    const d = defs.get(id);
-    // ein abgeleiteter Wert hängt an seinem Bezug (ist der nicht gestellt, wird nichts abgeleitet)
-    if (d?.nach) out.add(d.nach.fakt);
     const besucht = new Set<string>();
     const sammeln = (k: Kurz | undefined) => {
       for (const b of blaetter(k)) {
@@ -189,7 +188,11 @@ function fragenZyklen(module: Modul[], bausteine: Map<string, Kurz[]>): string[]
         }
       }
     };
-    sammeln(d?.wenn);
+    for (const d of defs.get(id) ?? []) {
+      // ein abgeleiteter Wert hängt an seinem Bezug (ist der nicht gestellt, wird nichts abgeleitet)
+      if (d.nach) out.add(d.nach.fakt);
+      sammeln(d.wenn);
+    }
     return out;
   };
   const fehler: string[] = [];

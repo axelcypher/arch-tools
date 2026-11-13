@@ -75,11 +75,15 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   Rückfrage (Umfang, Angaben zum Altbau) erst, wenn es „ja“ ergibt. Eine gespeicherte Antwort auf eine Frage, die gerade
   nicht gestellt wird (nach einem Ortswechsel, einem zurückgesetzten Auslöser wie dem Umfang der Beseitigung), zählt
   nicht – weder in den Regeln noch für Ableitungen (bis zum Fixpunkt: eine weggelassene Antwort kann weitere Fragen
-  verbergen); das Protokoll führt solche Antworten gesondert („Antworten auf derzeit nicht gestellte Fragen (ohne Wirkung)“). Hängt ein
-  Paragraf an einem anderen, der nur „gilt,
-  Ausnahme möglich“ ist, und entfiele er mit dessen Ausnahme, nennt er sie („Ausnahme möglich über § 14 BNatSchG – es
+  verbergen); das Protokoll führt solche Antworten gesondert („Antworten auf derzeit nicht gestellte Fragen (ohne
+  Wirkung)“). Hängt ein Paragraf an einem anderen, der nur „gilt, Ausnahme möglich“ ist, und entfiele er mit dessen Ausnahme, nennt er sie („Ausnahme möglich über § 14 BNatSchG – es
   fehlt dort: …“); die Ampel bleibt „gilt“. Unter „Ausnahme möglich – es fehlt“ stehen nur Fragen, die gerade gestellt
   werden (ohne Ausweichen auf nicht gestellte: eine Ausnahme, deren Fragen nicht gestellt sind, wird nicht angeboten).
+  Einzelfall einer Regel (`pruefen.wenn`): liegt er vor, wird Grün zu „Einzelfall: …“; ist offen, ob er vorliegt,
+  heißt es „Einzelfall möglich – es fehlt: …“ (die Angaben stehen unter „es fehlt“ und zählen für „klärt am meisten“ –
+  als eigenes Ergebnis neben rot/grün, eine Angabe, deren Antwort am Einzelfall nichts ändert, klärt nichts); beruht
+  das „kein Einzelfall“ nur auf Hinweisen bzw. widersprüchlichen Angaben, steht das als „Nur Hinweis, nicht gesichert“
+  bzw. „Widerspruch“ da (bestätigen klärt).
   Hinweise, deren Bestätigung allein einen Paragrafen entschiede, stehen dort als „bestätigen klärt N“ (Werte eines
   Gebietsmoduls dort, woher die Unsicherheit kommt: beim Gemeindeschlüssel, solange er nicht gesichert ist, beim Bezug
   der Tabelle, wenn er nur Hinweis ist – ist der Bezug selbst ein Modulwert, zählen dessen Quellen –, beim Wert selbst,
@@ -171,7 +175,13 @@ dagegen nicht. Verweist eine Regel auf einen anderen Paragrafen, zählt dort nur
 automatische Ampel oder eine bestätigte, nicht überholte Festlegung – und auch die nur als unsicher (ein „entfällt“, das
 darauf beruht, wird „prüfen“).
 
-**Festlegen** wird angesagt („§ … : von Hand „gilt“ festgelegt – Entwurf, beim Speichern noch einmal bestätigen“).
+**Festlegen** wird angesagt („§ 6 BauO NRW: von Hand „gilt“ festgelegt – Entwurf, beim Speichern noch einmal
+bestätigen“). Wirkte ein „entfällt“ von Hand noch nicht, sagen Dialog und Ansage es vorher bzw. danach („noch nicht
+wirksam (Text der Norm nicht verfügbar), es bleibt bei „gilt““) – mit derselben Bedingung wie der Kern
+(`entfaelltVorbehalt`: nur bei Regeln mit Prüfsummen; Verweise ohne abrufbaren Text brauchen keinen Text; sonst Text
+fehlt, Rechtsstand alt, neuere Fassung zum Stichtag, Text für anderen Stichtag, angekündigte Fassung). **Aufheben**
+wird angesagt („Festlegung aufgehoben – automatisch: „gilt““), ebenso „Rückgängig“ („Festlegung wiederhergestellt –
+„prüfen“ (Entwurf)“).
 
 **Hinweise bestätigen:** Angaben, die nur Hinweis sind (z. B. „kein Treffer im Landschaftsschutzgebiet“, Flächen aus
 dem Modell), lassen sich mit „Bestätigen …“ als gesichert übernehmen – nur mit Angabe, worauf die Bestätigung beruht
@@ -223,10 +233,10 @@ wie „C.3“. Ein „§“, den die Regeln nicht kennen, zeigt die genannte Nor
 §§ sind nicht erfasst“); ohne Norm ergibt er keinen Treffer. Ohne „§“ und ohne Paragrafentreffer sucht sie im Text
 (Zahlen als ganzes Wort, ein Bindestrich bleibt Teil des Worts – „DIN 4108-2“; Kürzel bis drei Zeichen wie „GK“, „GRZ“
 nur am Wortanfang und auch ausgeschrieben, gängige Synonyme wie Abriss/Rückbau, Einfriedung/Einfriedigung; Umlaute
-auch als „a“ bzw. „ae“ – „Stellpla“, „Stellplaetze“, „Ruckbau“). Die
-Trefferzahl wird angesagt (Angaben wie Vorschriften); wer nur sucht, bekommt „Suche leeren“ statt „Filter
-zurücksetzen“. Nach Suche, Filter und
-„Filter zurücksetzen“ bleibt die gewählte Zeile im Blick, der Fokus geht ins Suchfeld. Die Sammelmarke der Warnungen öffnet und schließt „Mehr“, Esc gibt
+auch als „a“ bzw. „ae“ – „Stellpla“, „Stellplaetze“, „Ruckbau“). Die Suche in den Angaben geht über den sichtbaren
+Text (Kurzname, Titel, Frage, Werte), nicht über interne Kennungen. Die Trefferzahl wird angesagt (Angaben wie
+Vorschriften); wer nur sucht, bekommt „Suche leeren“ statt „Filter zurücksetzen“. Nach Suche, Filter und „Filter
+zurücksetzen“ bleibt die gewählte Zeile im Blick, der Fokus geht ins Suchfeld. Die Sammelmarke der Warnungen öffnet und schließt „Mehr“, Esc gibt
 den Fokus an den Öffner zurück. Nach „Bestätigen“, „zurücknehmen“ und der Wahl des Farbschemas bleibt der Fokus an der
 Angabe bzw. am Knopf.
 
@@ -258,13 +268,13 @@ Angaben von Hand ohne Beleg stehen in einer eigenen Tabelle (mit wer und wann). 
 meisten“ (ein Paragraf kann unter mehreren Angaben stehen); Punkte mit nur einem Paragrafen stehen gesammelt unter
 „Weitere“. Enthält es Entwürfe, steht „ENTWURF …“ als Kopfzeile im oberen Seitenrand jeder Druckseite (überdruckt keinen Text);
 Überschriften werden nicht von ihrer Tabelle getrennt. Warum „Prüfung abschließen“ gesperrt ist, steht sichtbar
-neben dem Knopf. „Drucken / PDF …“ schlägt den
-Dateinamen `<Projektdatei> Baurecht <Antrag>.pdf` vor. **„Prüfung abschließen“** legt den Stand (Fassungen, Ampeln,
+neben dem Knopf. „Drucken / PDF …“ schlägt den Dateinamen `<Projektdatei> Baurecht <Antrag>.pdf` vor. Am Bildschirm
+klebt die Aktionsleiste oben und der Tabellenkopf darunter (in sehr niedrigen Fenstern – 400 % Zoom – klebt nur der
+Tabellenkopf); schmal (≤ 600 px) brechen die Tabellen um, ohne kurze Wörter zu zerlegen. **„Prüfung abschließen“** legt den Stand (Fassungen, Ampeln,
 Zähler, Regelpaket) in der Projektdatei ab – erst, wenn nichts mehr Entwurf, alles gespeichert und jeder Text geladen
 ist. Danach steht oben eine Meldung („Prüfung vom … abgelegt (… gilt · … prüfen · … entfällt) – zum Übernehmen in die
 Datei speichern“, stehende Live-Region) mit „Jetzt speichern“, der Fokus geht dorthin; „Jetzt speichern“ steht auch
-neben jedem Sperrtext „Erst speichern …“. Danach (auch nach Strg+S)
-„Gespeichert – …“ bzw. „Nicht gespeichert – …“ im Dialog, der Fokus geht dann auf „Drucken / PDF …“; jedes Speichern
+neben jedem Sperrtext „Erst speichern …“. Danach (auch nach Strg+S) „Gespeichert – …“ bzw. „Nicht gespeichert – …“ im Dialog, der Fokus geht dann auf „Drucken / PDF …“; jedes Speichern
 bei offenem Protokoll (auch Strg+S) meldet sich in dessen Live-Region, ohne den Fokus zu verschieben. Eine abgelegte,
 noch nicht gespeicherte Prüfung ist auch nach dem Wiederöffnen erkennbar (Meldung mit „Jetzt speichern“, Eintrag „noch
 nicht in der Datei gespeichert“). Derselbe Stand (gleiche Ampeln, Fassungen, Regelpaket,
@@ -272,7 +282,11 @@ Stichtag) wird
 nicht zweimal abgeschlossen; abgeschlossene Prüfungen stehen mit Datum und Uhrzeit. Mit „ohne „entfällt““ vermerkt
 das Ergebnis, dass diese Vorschriften im Ausdruck fehlen. Nach jedem Speichern steht im Kopf kurz
 „Gespeichert“ (bzw. „– keine Änderungen“, „– N Entwürfe bleiben offen“), auch angesagt. Im Speichern-Dialog nennt eine
-geänderte Festlegung den bisherigen Stand der Datei („bisher: gilt (Name, Datum: Grund)“).
+geänderte Festlegung den bisherigen Stand der Datei („bisher: gilt (Name, Datum: Grund)“); Kopf und Fuß (Häkchen,
+Knöpfe) stehen fest, die Liste dazwischen ist ein benannter Scrollbereich („Änderungen seit dem letzten Speichern“,
+Tabstopp, Pfeiltasten scrollen), der Startfokus bleibt am Häkchen. Schmal (≤ 600 px) stehen die Knöpfe untereinander,
+in sehr niedrigen Fenstern scrollt der ganze Dialog. „Jetzt speichern“ ist während des Speicherns `aria-disabled`
+(fokussierbar, gesperrt dargestellt).
 
 ## Daten
 
@@ -305,9 +319,11 @@ Frage hängt, nimmt deshalb deren Bedingung in die Geltung auf (z. B. Heilquelle
 Wasser- oder Heilquellenschutzgebiet, außerhalb von Bad Sassendorf und Soest „nein“ aus dem Gemeindeschlüssel). Ob
 nicht gestellt, prüft das Paket mit demselben `frageGestellt` wie die App. Fragebedingungen (`wenn`) dürfen nicht auf
 Paragrafen verweisen (`n`) und keine Zyklen bilden (eine Frage, deren Bedingung über Bausteine oder den Bezug
-abgeleiteter Werte an ihr selbst hängt) – `paketPruefen` lehnt beides ab. Fände die Auswertung dennoch keinen festen
-Stand, zählen nur Antworten, die in jeder Runde gestellt waren (eine weggelassene Antwort führt nur zu „offen“); Antworten auf nicht gestellte Fragen dürfen
-weder als „ja“ noch als „nein“ etwas ändern. § 36 BauGB (Einvernehmen) entfällt, wo die Gemeinde selbst untere
+abgeleiteter Werte an ihr selbst hängt) – `paketPruefen` lehnt beides ab, über alle Definitionen einer Angabe (ein Ort
+ohne Gemeindemodul nimmt die des Landes). Der Fixpunkt steht nach höchstens Tiefe + 1 Runden (gerechnet wird mit der
+Zahl der Antworten + 2). Fände die Auswertung dennoch keinen festen Stand, zählen nur Antworten, die in jeder Runde
+gestellt waren (eine weggelassene Antwort führt nur zu „offen“); Antworten auf nicht gestellte Fragen dürfen weder als
+„ja“ noch als „nein“ etwas ändern. § 36 BauGB (Einvernehmen) entfällt, wo die Gemeinde selbst untere
 Bauaufsicht ist („Gemeinde ist selbst Bauaufsicht“: im Kreis Soest Lippstadt, Soest, Warstein, Werl; in NRW die
 kreisfreien Städte und Aachen nach Gemeindeschlüssel; sonst offen – „gilt, Ausnahme möglich“). § 47 Abs. 6 BauO NRW
 (Fassung ab 01.09.2026): Bei einer Nutzungsänderung zu Wohnraum wird gefragt, ob Nutzungseinheiten mit Aufenthaltsräumen
@@ -315,7 +331,9 @@ in einem bestehenden Gebäude umgenutzt werden (Baustein `nw_umnutzung_wohnraum`
 das Wohngebäude ist oder mindestens eine Wohnung hat – bei einem Nichtwohngebäude ohne Wohnung wird nicht gefragt); dann entfallen §§ 29, 34 und 36, § 35 gilt nur noch mit Abs. 2 (Hinweis),
 §§ 6, 15, 27, 28, 30 bis 32 gelten mit dem Hinweis „nicht für bestehende Bauteile“. Die Entwässerungssatzung Soest § 9
 bleibt ohne neue Entwässerung ein Einzelfall, wo Niederschlagswasser anfällt (Dach eines Gebäudes ohne Aufenthaltsräume,
-befestigte Fläche einer Anlage ohne Gebäude, d. h. Stellplätze oder Garagen auf dem Grundstück). Einzelfalltexte im Paket tragen kein „im Einzelfall prüfen“ – das setzt die
+befestigte Fläche einer Anlage ohne Gebäude – Stellplätze bzw. Garagen auf dem Grundstück oder sonst eine neue
+befestigte Fläche wie Lagerplatz oder Hof –, neue Dach- oder befestigte Fläche einer Änderung wie ein Anbau; gefragt
+als `soest.befestigte_flaeche`, wenn keine neue Entwässerung angegeben ist). Einzelfalltexte im Paket tragen kein „im Einzelfall prüfen“ – das setzt die
 Auswertung davor.
 
 Auslieferung und Wächter: `.github/workflows/regeln.yml` – Prüfen und Bauen in einem Job ohne Schreibrechte und ohne

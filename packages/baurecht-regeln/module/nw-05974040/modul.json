@@ -491,6 +491,17 @@
         ]
       }
     },
+    "soest.befestigte_flaeche": {
+      "titel": "Neue oder vergrößerte Dach- oder befestigte Fläche (z. B. Anbau, Überdachung, Hof, Lagerplatz, Zufahrt)",
+      "kurz": "neue Dach- oder befestigte Fläche",
+      "gruppe": "vorhaben",
+      "typ": "janein",
+      "frage": "Entsteht eine neue oder größere Dach- oder befestigte Fläche, von der Niederschlagswasser abfließt (z. B. Anbau, Überdachung, Hof, Lagerplatz, Zufahrt)?",
+      "hilfe": "§ 9 Abs. 5 mit § 2 Abs. 3 Entwässerungssatzung Soest: Niederschlagswasser von bebauten oder befestigten Flächen unterliegt dem Anschluss- und Benutzungszwang, soweit es nicht auf dem Grundstück versickert oder genutzt werden darf (Freistellung).",
+      "wenn": {
+        "$": "soest_flaeche_gefragt"
+      }
+    },
     "planung.sanierung_144_ausgeschlossen": {
       "titel": "Genehmigungspflicht nach § 144 BauGB in der Sanierungssatzung ausgeschlossen (vereinfachtes Verfahren, § 142 Abs. 4)",
       "kurz": "Genehmigungspflicht § 144 ausgeschlossen",
@@ -617,6 +628,43 @@
             },
             {
               "$": "gebaeude"
+            }
+          ]
+        }
+      ]
+    },
+    "soest_flaeche_gefragt": {
+      "und": [
+        {
+          "f": "vorhaben.entwaesserung",
+          "ist": false
+        },
+        {
+          "nicht": {
+            "$": "nur_beseitigung"
+          }
+        },
+        {
+          "oder": [
+            {
+              "$": "aenderung"
+            },
+            {
+              "und": [
+                {
+                  "$": "errichtung"
+                },
+                {
+                  "m": "Gebäudeart",
+                  "in": [
+                    "kein Gebäude"
+                  ]
+                },
+                {
+                  "f": "vorhaben.stellplaetze_grundstueck",
+                  "ist": false
+                }
+              ]
             }
           ]
         }

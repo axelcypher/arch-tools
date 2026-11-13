@@ -2013,6 +2013,46 @@ h2.br-detail-name {
     white-space: nowrap;
     overflow-wrap: normal;
   }
+  /* der klebende Tabellenkopf unter der Leiste (die hier bei −12px klebt, nicht bei −28px) */
+  .br-protokoll .report-table thead th {
+    top: calc(var(--br-aktionen-h, 46px) - 12px);
+  }
+  /* Spalten mit kurzen Wörtern nicht in Bruchstücke zerlegen („A|nz|ah|l“, „BauG|B“) */
+  .br-protokoll-offen th:nth-child(2) {
+    width: 5em !important;
+  }
+  .br-protokoll-offen th:nth-child(2),
+  .br-protokoll-offen td:nth-child(2) {
+    overflow-wrap: normal;
+  }
+  .br-protokoll-weitere th:nth-child(1) {
+    width: 8.5em !important;
+  }
+  .br-protokoll-weitere th:nth-child(2) {
+    width: 4.5em !important;
+  }
+  .br-protokoll-weitere td:nth-child(1) {
+    overflow-wrap: break-word;
+  }
+  .br-protokoll-weitere td:nth-child(2) {
+    white-space: nowrap;
+    overflow-wrap: normal;
+  }
+}
+/* sehr niedrige Fenster (400 % Zoom): die Aktionsleiste klebt nicht – sonst nähme sie die halbe Höhe; der Tabellenkopf
+   klebt dann am oberen Rand (gegen den Innenabstand des Hintergrunds: 24px, schmal 4px) */
+@media screen and (max-height: 420px) {
+  .br-protokoll .report-actions.br-protokoll-aktionen {
+    position: static;
+  }
+  .br-protokoll .report-table thead th {
+    top: -24px;
+  }
+}
+@media screen and (max-height: 420px) and (max-width: 600px) {
+  .br-protokoll .report-table thead th {
+    top: -4px;
+  }
 }
 /* dunkles Thema: ein gesperrter Primärknopf sichtbar anders als ein aktiver */
 :root[data-theme='dunkel'] .br-app button.primary:disabled {

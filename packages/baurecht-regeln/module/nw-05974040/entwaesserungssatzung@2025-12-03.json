@@ -88,7 +88,7 @@
       },
       "titel": "Anschluss- und Benutzungszwang",
       "pruefen": {
-        "grund": "Ohne neue Entwässerung – beim Neubau eines Gebäudes ohne Aufenthaltsräume (z. B. Gartenhaus, Garage) das Niederschlagswasser vom Dach, bei einer Anlage ohne Gebäude mit befestigter Fläche (z. B. Stellplatzanlage) das Niederschlagswasser dieser Fläche (Abs. 5, § 2 Abs. 3): Der Anschluss- und Benutzungszwang entfällt nur, wenn es auf dem Grundstück versickert oder genutzt werden darf (Freistellung).",
+        "grund": "Ohne neue Entwässerung – beim Neubau eines Gebäudes ohne Aufenthaltsräume (z. B. Gartenhaus, Garage) das Niederschlagswasser vom Dach, bei einer Anlage ohne Gebäude mit befestigter Fläche (z. B. Stellplatzanlage, Lagerplatz, Hof) und bei einer Änderung mit neuer Dach- oder befestigter Fläche (z. B. Anbau) das Niederschlagswasser dieser Fläche (Abs. 5, § 2 Abs. 3): Der Anschluss- und Benutzungszwang entfällt nur, wenn es auf dem Grundstück versickert oder genutzt werden darf (Freistellung).",
         "wenn": {
           "oder": [
             {
@@ -126,6 +126,17 @@
                 },
                 {
                   "f": "vorhaben.stellplaetze_grundstueck",
+                  "ist": true
+                }
+              ]
+            },
+            {
+              "und": [
+                {
+                  "$": "soest_flaeche_gefragt"
+                },
+                {
+                  "f": "soest.befestigte_flaeche",
                   "ist": true
                 }
               ]

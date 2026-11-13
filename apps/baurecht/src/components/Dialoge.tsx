@@ -78,8 +78,9 @@ export function FestlegenDialog({ fakten, widerspruchMerkmale = [] }: { fakten: 
     benutzerMerken(von);
     useBaurecht.getState().festlegen(p, ampel, grund, von.trim(), summen, werte, sicherheit);
     // angesagt (der Dialog verschwindet): was jetzt gilt – Entwurf bis zum Speichern
-    const ohneText = ampel === 'gruen' && !texte[`${p.modul}/${p.norm}`]?.fassung;
-    useBaurecht.getState().ansagen(`${verweisName(p.paragraf, p.titel, useBaurecht.getState().paket.module.find((m) => m.id === p.modul)?.normen[p.norm]?.kurz ?? p.norm)}: von Hand „${AMPEL_TEXT[ampel]}“ festgelegt – ${ohneText ? `noch nicht wirksam (ohne geprüften Gesetzestext), es bleibt bei „${AMPEL_TEXT[p.automatisch === 'gruen' ? 'gelb' : p.automatisch]}“; ` : ''}Entwurf, beim Speichern noch einmal bestätigen`);
+    // wirksam wie im Kern: ein „entfällt“ nur mit geprüftem, aktuellem Text, wo die Regel Prüfsummen hat
+    const vorbehalt = ampel === 'gruen' ? p.entfaelltVorbehalt : undefined;
+    useBaurecht.getState().ansagen(`${verweisName(p.paragraf, p.titel, useBaurecht.getState().paket.module.find((m) => m.id === p.modul)?.normen[p.norm]?.kurz ?? p.norm)}: von Hand „${AMPEL_TEXT[ampel]}“ festgelegt – ${vorbehalt ? `noch nicht wirksam (${vorbehalt}), es bleibt bei „${AMPEL_TEXT[p.automatisch === 'gruen' ? 'gelb' : p.automatisch]}“; ` : ''}Entwurf, beim Speichern noch einmal bestätigen`);
     schliessen();
   };
   // Überschrift mit Norm, benannte Einheiten ohne Doppelung („§ 1 ND-VO – Schutzobjekte“)
@@ -105,9 +106,12 @@ export function FestlegenDialog({ fakten, widerspruchMerkmale = [] }: { fakten: 
           </label>
         ))}
       </fieldset>
-      {ampel === 'gruen' && !texte[`${p.modul}/${p.norm}`]?.fassung && (
+      {ampel === 'gruen' && p.entfaelltVorbehalt && (
         <div className="br-meldung br-meldung-warn" role="note">
-          Ohne geprüften Gesetzestext greift „entfällt“ nicht: Die Ampel bleibt „prüfen“, bis der Text vorliegt (Desktop-App) und Sie dort erneut festlegen. Die Begründung wird trotzdem gespeichert.
+          {!texte[`${p.modul}/${p.norm}`]?.fassung
+            ? `Ohne geprüften Gesetzestext greift „entfällt“ nicht: Die Ampel bleibt „${AMPEL_TEXT[p.automatisch === 'gruen' ? 'gelb' : p.automatisch]}“, bis der Text vorliegt (Desktop-App) und Sie dort erneut festlegen.`
+            : `„Entfällt“ greift noch nicht (${p.entfaelltVorbehalt}): Die Ampel bleibt „${AMPEL_TEXT[p.automatisch === 'gruen' ? 'gelb' : p.automatisch]}“, bis das behoben ist (z. B. „Rechtsstand prüfen“).`}{' '}
+          Die Begründung wird trotzdem gespeichert.
         </div>
       )}
       {herab && (
