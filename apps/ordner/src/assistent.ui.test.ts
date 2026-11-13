@@ -203,8 +203,16 @@ describe('Assistent: Anlegen', () => {
     expect(anlegen.disabled).toBe(true);
     expect(host.querySelector('.po-navigation .po-sperr-grund')?.textContent).toBe('Erst den Stammordner für Projekte wählen.');
     expect(anlegen.title).toBe('Erst den Stammordner für Projekte wählen.');
+    // ein Hinweis, kein Fehler: grau
+    expect(host.querySelector('.po-sperr-grund')!.classList.contains('fehler')).toBe(false);
     act(() => useOrdner.setState({ stammordner: 'P:/Projekte' }));
     expect(knopf(host, 'Projektordner anlegen').disabled).toBe(false);
+    expect(host.querySelector('.po-sperr-grund')).toBeNull();
+    // offene Fehler (hier: Nummer fehlt) stehen in Fehlerfarbe – wie „Noch offen“ der anderen Schritte
+    act(() => useOrdner.setState({ stamm: { ...useOrdner.getState().stamm, nummer: '' } }));
+    expect(host.querySelector('.po-sperr-grund')!.textContent).toMatch(/^Noch offen: /);
+    expect(host.querySelector('.po-sperr-grund')!.classList.contains('fehler')).toBe(true);
+    act(() => useOrdner.setState({ stamm: { ...useOrdner.getState().stamm, nummer: '2026-014' } }));
     expect(host.querySelector('.po-sperr-grund')).toBeNull();
     // neues Projekt: kein „alles abwählen“, keine Spalte voller „neu“; Kontrollkästchen mit dem Namen des Eintrags
     expect(knopf(host, 'Alle neuen Einträge abwählen')).toBeUndefined();
@@ -251,6 +259,23 @@ describe('Assistent: Anlegen', () => {
     expect(host.querySelector('.po-kontext')).toBeNull();
     expect([...host.querySelectorAll<HTMLButtonElement>('.po-schritte button')].every((b) => b.disabled)).toBe(true);
     expect(host.querySelector('.po-ergebnis strong')?.textContent).toMatch(/^\d+ Ordner und Dateien angelegt$/);
+  });
+});
+
+describe('Hinweis bei nicht lesbarer Bürostruktur', () => {
+  it('nennt die Standardstruktur von ATLAS, nach der neue Projekte entstehen; ohne Fehler kein Hinweis', () => {
+    useOrdner.setState({ strukturFehler: 'Die Struktur lässt sich nicht lesen.' });
+    const host = render();
+    expect(host.querySelector('.po-konflikt[role="alert"]')!.textContent).toContain(
+      'Die Bürostruktur ist nicht lesbar – bis zur Klärung gilt die Standardstruktur von ATLAS; neue Projekte entstehen nach ihr.',
+    );
+    // Gegenprobe
+    act(() => useOrdner.setState({ strukturFehler: null }));
+    expect(host.textContent).not.toContain('Bürostruktur ist nicht lesbar');
+    // die Ansichten in der Werkzeugleiste sind Umschalter: genau einer ist gedrückt
+    const ansichten = [...host.querySelectorAll('.toolbar .tb-group button')];
+    expect(ansichten.filter((b) => b.getAttribute('aria-pressed') === 'true')).toHaveLength(1);
+    expect(ansichten.every((b) => b.hasAttribute('aria-pressed'))).toBe(true);
   });
 });
 

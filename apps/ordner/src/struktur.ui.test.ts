@@ -48,7 +48,10 @@ beforeEach(() => {
     konflikt: null,
     strukturFehler: null,
     rohEigen: {},
+    strukturRoh: null,
     rueckgaengig: null,
+    ordnerAnsicht: 'baum',
+    ordnerEntwurf: null,
     geladen: false,
   });
 });
@@ -236,7 +239,7 @@ describe('Struktur-Editor', () => {
     act(() => baum.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, button: 2, clientX: 40, clientY: 300 })));
     expect(menue(host)?.getAttribute('aria-label')).toBe('Aktionen');
     expect([...menue(host)!.children].map((c) => c.tagName)).toEqual(['BUTTON', 'BUTTON']);
-    expect(eintraege(host).map((b) => b.getAttribute('aria-label'))).toEqual(['Ordner anlegen', 'Mehrere Unterordner anlegen …']);
+    expect(eintraege(host).map((b) => b.getAttribute('aria-label'))).toEqual(['Ordner anlegen', 'Mehrere Ordner anlegen …']);
   });
 
   it('Trenner nur zwischen Gruppen – nie am Anfang, am Ende oder doppelt', () => {
@@ -520,5 +523,113 @@ describe('Kürzel (Einstellungen)', () => {
     expect(gespeichertes.getAttribute('aria-invalid')).toBeNull();
     expect(gespeichertes.className).not.toContain('feld-fehler');
     expect(useOrdner.getState().allgemein.namensschema!.antragsarten.map((k) => k.kuerzel)).toContain('WEG');
+  });
+});
+
+describe('Runde 3: Entwurf, Rückfrage, Sicherung, Ziehen, Menüs', () => {
+  it('ungespeicherter Text der Textansicht übersteht den Wechsel der App-Ansicht („Vorlagen“ und zurück)', () => {
+    const { host } = strukturAnsicht();
+    act(() => knopf(host, 'Text (Experte)').click());
+    const text = () => host.querySelector<HTMLTextAreaElement>('textarea[aria-label="Ordnerliste"]');
+    eingabe(text()!, 'Mein Entwurf\nNoch einer');
+    act(() => knopf(host, 'Vorlagen').click());
+    expect(text()).toBeNull();
+    act(() => knopf(host, 'Struktur').click());
+    // Textansicht und Entwurf sind noch da, weiterhin nicht übernommen
+    expect(text()?.value).toBe('Mein Entwurf\nNoch einer');
+    expect(host.textContent).toContain('noch nicht übernommen');
+    expect(useOrdner.getState().struktur.ordner).toHaveLength(4);
+    // Gegenprobe: verworfen – nach dem Wechsel steht wieder der gespeicherte Stand
+    act(() => knopf(host, 'Verwerfen').click());
+    act(() => knopf(host, 'Vorlagen').click());
+    act(() => knopf(host, 'Struktur').click());
+    expect(text()?.value).toBe('05 Protokolle\n07 Ausschreibung | LPh 6-7\n07 Ausschreibung/Dach\n09 Fotos');
+    expect(host.textContent).not.toContain('noch nicht übernommen');
+  });
+
+  it('Rückfrage beim Wechsel zum Baum: Vorgabe (Fokus, Enter) ist „Übernehmen“, „Verwerfen“ nicht hervorgehoben', async () => {
+    const { host } = strukturAnsicht();
+    act(() => knopf(host, 'Text (Experte)').click());
+    eingabe(host.querySelector<HTMLTextAreaElement>('textarea[aria-label="Ordnerliste"]')!, 'A');
+    act(() => knopf(host, 'Baum').click());
+    await warten();
+    const frage = host.querySelector('.modal.rf')!;
+    expect(document.activeElement?.textContent).toBe('Übernehmen');
+    expect(knopf(frage, 'Übernehmen').type).toBe('submit');
+    // Gegenprobe: „Verwerfen“ ist weder Vorgabe noch rot
+    expect(knopf(frage, 'Verwerfen').type).toBe('button');
+    expect(knopf(frage, 'Verwerfen').className).not.toContain('danger');
+    act(() => knopf(frage, 'Abbrechen').click());
+    await warten();
+  });
+
+  it('projektordner.json ist kein JSON-Objekt (Liste): vor dem Ersetzen wird der ganze Inhalt gesichert', async () => {
+    const liste = [{ name: 'Fremd' }, 'x'];
+    localStorage.setItem(SCHLUESSEL, JSON.stringify(liste));
+    useOrdner.setState({ konfigLaden: echtesKonfigLaden });
+    await act(() => useOrdner.getState().konfigLaden());
+    expect(useOrdner.getState().strukturFehler).toContain('kein JSON-Objekt');
+    await act(() => useOrdner.getState().strukturErsetzen(STANDARD, 'Vorgabe wiederhergestellt.'));
+    await act(() => useOrdner.getState().speichernJetzt());
+    const sicherungen = JSON.parse(localStorage.getItem('arch-tools:konfig:projektordner-sicherungen')!).sicherungen;
+    expect(sicherungen).toHaveLength(1);
+    expect(sicherungen[0].inhalt.struktur).toEqual(liste);
+    expect(gespeichert().struktur.ordner).toEqual(STANDARD.ordner);
+    // Gegenprobe: ein Objekt mit unlesbarer Struktur sichert nur die Struktur, nicht den ganzen Inhalt
+    localStorage.clear();
+    const kaputt = { name: 'Neuere Fassung', ordner: [{ weg: 'A' }] };
+    localStorage.setItem(SCHLUESSEL, JSON.stringify({ struktur: kaputt, vorlagenordner: '/v' }));
+    await act(() => useOrdner.getState().konfigLaden());
+    expect(useOrdner.getState().strukturFehler).not.toBeNull();
+    await act(() => useOrdner.getState().strukturErsetzen(STANDARD, 'Vorgabe wiederhergestellt.'));
+    const zweite = JSON.parse(localStorage.getItem('arch-tools:konfig:projektordner-sicherungen')!).sicherungen;
+    expect(zweite[0].inhalt).toEqual({ struktur: kaputt, vorlagenordner: '/v' });
+  });
+
+  it('Ziehen blendet eine Meldung aus – sie läge über der Ablagefläche „in den Stamm“', () => {
+    const { host, z, klick, taste, baum } = strukturAnsicht();
+    klick('09 Fotos');
+    taste(baum, 'c', { ctrlKey: true });
+    expect(host.querySelector('.po-editor-meldung')).not.toBeNull();
+    act(() => z('05 Protokolle').dispatchEvent(new Event('dragstart', { bubbles: true })));
+    expect(host.querySelector('.po-k-stamm')).not.toBeNull();
+    expect(host.querySelector('.po-editor-meldung')).toBeNull();
+  });
+
+  it('„⋯“ an der Zeile ist als Menüknopf ausgezeichnet; „Mehrere Ordner anlegen …“ ohne Auswahl; Strg+Enter sichtbar', () => {
+    const { host, z, klick, baum, taste } = strukturAnsicht();
+    const punkte = () => z('09 Fotos').querySelector<HTMLButtonElement>('.po-k-aktionen button')!;
+    expect(punkte().getAttribute('aria-haspopup')).toBe('menu');
+    expect(punkte().getAttribute('aria-expanded')).toBe('false');
+    act(() => punkte().click());
+    expect(menue(host)).not.toBeNull();
+    expect(punkte().getAttribute('aria-expanded')).toBe('true');
+    taste(menue(host)!, 'Escape');
+    // ohne Auswahl: „Mehrere Ordner anlegen …“ (im Stamm)
+    act(() => baum.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    act(() => baum.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, button: 2, clientX: 5, clientY: 5 })));
+    const labels = eintraege(host).map((b) => b.textContent);
+    expect(labels.some((l) => l?.startsWith('Mehrere Ordner anlegen …'))).toBe(true);
+    expect(labels.some((l) => l?.startsWith('Mehrere Unterordner'))).toBe(false);
+    act(() =>
+      eintraege(host)
+        .find((b) => b.textContent?.startsWith('Mehrere Ordner anlegen'))!
+        .click(),
+    );
+    expect(host.querySelector('.modal')?.textContent).toContain('Strg+Enter legt an');
+    act(() => knopf(host.querySelector('.modal')!, 'Abbrechen').click());
+    // Gegenprobe: mit Auswahl heißt es „Mehrere Unterordner anlegen …“
+    klick('09 Fotos');
+    act(() => z('09 Fotos').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 5, clientY: 5 })));
+    expect(eintraege(host).some((b) => b.textContent?.startsWith('Mehrere Unterordner anlegen …'))).toBe(true);
+  });
+
+  it('reservierte Namen auch mit Leerzeichen vor der Endung („AUX .txt“)', () => {
+    expect(istReserviert('AUX .txt')).toBe(true);
+    expect(sichererName('AUX .txt')).toBe('AUX_.txt');
+    expect(sichererName('con  .docx')).toBe('con_.docx');
+    // Gegenprobe: ein Wort nach dem Leerzeichen macht den Namen frei
+    expect(istReserviert('AUX Plan.txt')).toBe(false);
+    expect(sichererName('AUX Plan.txt')).toBe('AUX Plan.txt');
   });
 });

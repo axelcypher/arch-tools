@@ -4,6 +4,7 @@ import { msgKopf } from '@core/mail/msg';
 import type { ProjektordnerEintrag } from '@core/platform/projektordner';
 import { projekteAuflisten } from '@core/platform/projektordner';
 import { logger } from '@core/platform/log';
+import { bestaetigen } from '@core/ui/Rueckfrage';
 import type { Dateisystem } from '../dateisystem';
 import { hatDateisystem, oeffneOrdner, tauriDateisystem, verbinde, waehleOrdner, waehleOrdnerImBrowser } from '../dateisystem';
 import type { MailTeile, MailVorschlag, NamensBefund, Richtung } from '../mail/mailname';
@@ -112,6 +113,8 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
   const lauf = useRef(0);
   const zeilenRef = useRef<Zeile[]>([]);
   zeilenRef.current = zeilen;
+  const neueRef = useRef<NeueMail[]>([]);
+  neueRef.current = neue;
 
   useEffect(() => {
     if (!einstellungenGeladen) void useMails.getState().laden();
@@ -134,10 +137,15 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
 
   /* ---------- Einlesen ---------- */
 
-  /** eine Nachricht lesen und daraus den Vorschlag bilden */
-  const lesen = async (o: GeladenerOrdner & { code: string }, z: Zeile, mitEigenen = eigene): Promise<Zeile> => {
+  /**
+   * eine Nachricht lesen und daraus den Vorschlag bilden – mit den eigenen Domains, die beim Lesen gelten (aus dem
+   * Speicher, nicht aus dem Stand beim Rendern: ein laufendes Einlesen sieht so auch inzwischen gespeicherte Domains)
+   */
+  const lesen = async (o: GeladenerOrdner & { code: string }, z: Zeile, vorgabe?: string[]): Promise<Zeile> => {
     try {
       const kopf = z.kopf ?? msgKopf(await o.lies(z.pfad), { mitText: true });
+      // erst nach dem Lesen nachsehen – das Lesen kann dauern
+      const mitEigenen = vorgabe ?? useMails.getState().eigene;
       const vorschlag = mailVorschlag(kopf, { code: o.code, eigene: mitEigenen, bisher: z.befund.teile });
       const bisher = z.befund.ok ? z.befund.teile : null;
       const inhalt = inhaltPruefen(bisher, vorschlag, mitEigenen.length > 0);
@@ -371,7 +379,7 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
       const m: NeueMail = { id: naechsteId++, herkunft: f.name, daten, ordner };
       try {
         m.kopf = msgKopf(daten, { mitText: true });
-        m.vorschlag = mailVorschlag(m.kopf, { code: projekt.code, eigene });
+        m.vorschlag = mailVorschlag(m.kopf, { code: projekt.code, eigene: useMails.getState().eigene });
         m.teile = m.vorschlag.teile;
       } catch (e) {
         m.lesefehler = e instanceof Error ? e.message : String(e);
@@ -382,15 +390,18 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
     // Doppelte: gegen alle Mails im Projekt, gegen die schon zum Ablegen bereiten und innerhalb dieses Drops
     const gelesen = neu.filter((m) => m.kopf);
     if (gelesen.length) {
-      if (laeuft === null) setLaeuft('Mails im Projekt werden abgeglichen …');
+      // nur eine eigene Meldung setzen bzw. wegnehmen – eine laufende (Einlesen, Umbenennen) bleibt stehen
+      const meldung = 'Mails im Projekt werden abgeglichen …';
+      setLaeuft((l) => l ?? meldung);
       const imProjekt = await koepfeZumAbgleich(
         projekt,
         gelesen.map((m) => m.kopf!),
         kennung,
       );
-      if (laeuft === null) setLaeuft(null);
+      setLaeuft((l) => (l === meldung ? null : l));
       if (kennung !== lauf.current) return;
-      const vorher: { herkunft: string; kopf: MsgKopf }[] = neue.filter((m) => m.kopf).map((m) => ({ herkunft: m.herkunft, kopf: m.kopf! }));
+      // schon bereite Mails aus dem aktuellen Stand (nicht aus dem beim Drop), damit ein zweiter, schneller Drop sie sieht
+      const vorher: { herkunft: string; kopf: MsgKopf }[] = neueRef.current.filter((m) => m.kopf).map((m) => ({ herkunft: m.herkunft, kopf: m.kopf! }));
       for (const m of gelesen) {
         const da = imProjekt.find((z) => gleicheMail(z.kopf, m.kopf!));
         if (da) m.schonDa = da.pfad;
@@ -459,6 +470,12 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
         setNeue((alt) => alt.map((x) => (x.id === m.id ? { ...x, status: { art: 'fehler', text: e instanceof Error ? e.message : String(e) } } : x)));
       }
     }
+  };
+  /** alle bereiten Mails verwerfen – ab zwei mit Rückfrage (in Outlook bleiben sie, aber die Namen von Hand wären weg) */
+  const alleVerwerfen = async () => {
+    const zahl = neue.length;
+    if (zahl > 1 && !(await bestaetigen(`${zahl} Mails verwerfen?`, 'Sie werden nicht abgelegt; in Outlook bleiben sie. Von Hand geänderte Namen gehen verloren.', 'Verwerfen', true))) return;
+    setNeue([]);
   };
   const neuAendern = (id: number, patch: Partial<MailTeile> | { ordner: string }) =>
     setNeue((alt) =>
@@ -583,26 +600,32 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
               {zeilen.some((z) => z.lesefehler) && <> · {zeilen.filter((z) => z.lesefehler).length} nicht lesbar</>}
             </p>
             <div className="button-row po-mails-knoepfe">
-              <label className="toggle">
-                <input type="checkbox" checked={nurFalsche} onChange={() => setNurFalsche(!nurFalsche)} />
-                nur abweichende
-              </label>
-              <button className="small" disabled={!!laeuft} title="Auch die korrekt benannten Mails lesen: stimmen Datum und von/an?" onClick={() => void allesLesen(projekt, zeilen, true)}>
-                Auch korrekt benannte prüfen
-              </button>
-              <button className="small" disabled={!!laeuft} onClick={() => projekt.pfad && void ladenPfad(projekt.pfad)}>
-                Neu einlesen
-              </button>
-              <span className="po-werkzeuge-trenner" />
-              <button className="small" onClick={() => setZeilen((alt) => alt.map((z) => ({ ...z, gewaehlt: istFalsch(z) && !!z.teile })))}>
-                Alle abweichenden wählen
-              </button>
-              <button className="small" onClick={() => setZeilen((alt) => alt.map((z) => ({ ...z, gewaehlt: false })))}>
-                Keine
-              </button>
-              <button className="primary small" disabled={!auswahl.length || !!laeuft || !fs?.umbenennen} onClick={() => void umbenennen(auswahl)}>
-                {auswahl.length ? `${auswahl.length} ${auswahl.length === 1 ? 'Mail' : 'Mails'} umbenennen` : 'Umbenennen'}
-              </button>
+              <div className="po-mails-gruppe" role="group" aria-label="Ansicht und Einlesen">
+                <label className="toggle">
+                  <input type="checkbox" checked={nurFalsche} onChange={() => setNurFalsche(!nurFalsche)} />
+                  nur abweichende
+                </label>
+                <button className="small" disabled={!!laeuft} title="Auch die korrekt benannten Mails lesen: stimmen Datum und von/an?" onClick={() => void allesLesen(projekt, zeilen, true)}>
+                  Auch korrekt benannte prüfen
+                </button>
+                <button className="small" disabled={!!laeuft} onClick={() => projekt.pfad && void ladenPfad(projekt.pfad)}>
+                  Neu einlesen
+                </button>
+              </div>
+              {/* Auswahl und Umbenennen nur, wenn es etwas umzubenennen gibt */}
+              {falsch.length > 0 && (
+                <div className="po-mails-gruppe po-mails-auswahl" role="group" aria-label="Auswahl und Umbenennen">
+                  <button className="small" onClick={() => setZeilen((alt) => alt.map((z) => ({ ...z, gewaehlt: istFalsch(z) && !!z.teile })))}>
+                    Alle abweichenden wählen
+                  </button>
+                  <button className="small" onClick={() => setZeilen((alt) => alt.map((z) => ({ ...z, gewaehlt: false })))}>
+                    Keine
+                  </button>
+                  <button className="primary small" disabled={!auswahl.length || !!laeuft || !fs?.umbenennen} onClick={() => void umbenennen(auswahl)}>
+                    {auswahl.length ? `${auswahl.length} ${auswahl.length === 1 ? 'Mail' : 'Mails'} umbenennen` : 'Umbenennen'}
+                  </button>
+                </div>
+              )}
             </div>
             <div
               className={`po-ablage${ziehtDrueber ? ' drueber' : ''}`}
@@ -647,7 +670,7 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
                     {neue.length} {neue.length === 1 ? 'Mail' : 'Mails'} zum Ablegen
                   </h3>
                   <div className="button-row">
-                    <button className="small" onClick={() => setNeue([])}>
+                    <button className="small" title={neue.length > 1 ? 'Alle nicht ablegen (mit Rückfrage)' : 'Nicht ablegen'} onClick={() => void alleVerwerfen()}>
                       Verwerfen
                     </button>
                     <button className="primary small" disabled={!fs || !neue.some((m) => neuZiel(m) && !neuZiel(m)!.problem)} onClick={() => void ablegen(neue)}>
@@ -698,10 +721,13 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
                               </select>
                               <input className="po-mail-gegenueber" value={m.teile.name} aria-label="Name" onChange={(e) => neuAendern(m.id, { name: e.target.value })} />
                               <input className="po-mail-datum" value={m.teile.datum} aria-label="Datum (JJMMTT)" maxLength={6} onChange={(e) => neuAendern(m.id, { datum: e.target.value.trim() })} />
-                              <input className="po-mail-thema" value={m.teile.thema} aria-label="Thema" list="po-mail-themen" onChange={(e) => neuAendern(m.id, { thema: e.target.value })} />
-                              <button className="small" disabled={!fs || !!t?.problem} title={t?.problem ?? `→ ${t?.pfad}`} onClick={() => void ablegen([m])}>
-                                Ablegen
-                              </button>
+                              {/* Thema und Knopf brechen gemeinsam um – der Knopf steht nie allein in einer Zeile */}
+                              <span className="po-mail-thema-knopf">
+                                <input className="po-mail-thema" value={m.teile.thema} aria-label="Thema" list="po-mail-themen" onChange={(e) => neuAendern(m.id, { thema: e.target.value })} />
+                                <button className="small" disabled={!fs || !!t?.problem} title={t?.problem ?? `→ ${t?.pfad}`} onClick={() => void ablegen([m])}>
+                                  Ablegen
+                                </button>
+                              </span>
                             </div>
                             <p className="small-text po-mail-neu">
                               → <strong>{t?.pfad}</strong>
@@ -764,17 +790,19 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
                             maxLength={6}
                             onChange={(e) => aendern(z.pfad, { datum: e.target.value.trim() })}
                           />
-                          <input
-                            className="po-mail-thema"
-                            value={z.teile.thema}
-                            aria-label="Thema"
-                            placeholder="Thema"
-                            list="po-mail-themen"
-                            onChange={(e) => aendern(z.pfad, { thema: e.target.value })}
-                          />
-                          <button className="small" disabled={!!t?.problem || !!laeuft || !fs?.umbenennen} title={t?.problem ?? `→ ${t?.name}`} onClick={() => void umbenennen([z])}>
-                            Umbenennen
-                          </button>
+                          <span className="po-mail-thema-knopf">
+                            <input
+                              className="po-mail-thema"
+                              value={z.teile.thema}
+                              aria-label="Thema"
+                              placeholder="Thema"
+                              list="po-mail-themen"
+                              onChange={(e) => aendern(z.pfad, { thema: e.target.value })}
+                            />
+                            <button className="small" disabled={!!t?.problem || !!laeuft || !fs?.umbenennen} title={t?.problem ?? `→ ${t?.name}`} onClick={() => void umbenennen([z])}>
+                              Umbenennen
+                            </button>
+                          </span>
                         </div>
                         <p className="small-text po-mail-neu">
                           → <strong>{t?.name}</strong>

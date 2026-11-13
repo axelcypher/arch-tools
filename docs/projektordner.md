@@ -257,8 +257,9 @@ Die **Ordnerliste** wird mit der Maus bearbeitet – ein Baum wie im Explorer, r
 - **Anlegen:** „+ Unterordner“ (Strg+N), „Ordner daneben“ (Strg+Umschalt+N, im Menü), „+ Ordner“ im
   Stamm. Der neue Ordner steht gleich zum Benennen bereit (Enter übernimmt, Esc behält den Vorschlag).
 - **Mehrere anlegen …:** eine Zeile je Ordner, eingerückte Zeilen (Tab oder Leerzeichen) werden Unterordner, „/“
-  trennt ebenfalls, Zusätze wie in der Textansicht (`| LPh 6-7`, `| Dateischema`); mit Vorschau als Baum. Sind
-  mehrere Ordner markiert, entsteht die Liste in **jedem** davon.
+  trennt ebenfalls, Zusätze wie in der Textansicht (`| LPh 6-7`, `| Dateischema`); mit Vorschau als Baum. Strg+Enter
+  legt an. Ohne Auswahl entstehen die Ordner im Stamm; sind mehrere Ordner markiert, entsteht die Liste in **jedem**
+  davon.
 - **Umbenennen:** Doppelklick oder F2 (bzw. das Feld rechts); Unterordner wandern mit.
 - **Verschieben:** ziehen und ablegen – auf einen Ordner: hinein, an den oberen bzw. unteren Rand: davor bzw.
   dahinter, auf die Fläche am unteren Rand des Baums (beim Ziehen immer sichtbar): in den Stamm; auch mehrere auf
@@ -310,13 +311,14 @@ mit `/`. Zusätze nach `|`:
 - `Dateischema` – Dateien in diesem Ordner werden im Prüfmodus gegen das Dateinamenschema geprüft.
 
 Unzulässige Zeichen in Namen (`\ / : * ? " < > |`) werden entfernt; unter Windows reservierte Namen (CON, PRN, AUX,
-NUL, COM1–9, LPT1–9, auch mit Endung) bekommen ein „_“ angehängt („CON“ → „CON_“). Was beim Lesen der Liste entfällt
+NUL, COM1–9, LPT1–9, auch mit Endung, auch mit Leerzeichen davor wie „AUX .txt“) bekommen ein „_“ angehängt („CON“ → „CON_“). Was beim Lesen der Liste entfällt
 oder bereinigt wird – doppelte Zeilen (nur die erste gilt), Leistungsphasen außerhalb 1 bis 9, entfernte Zeichen,
 reservierte Namen, unbekannte Zusätze nach `|` –, meldet das Tool zeilenweise unter dem Feld („Zeile 4 doppelt zu
 Zeile 1 – nur die erste gilt“). Übernommen wird der Text nur mit „Ordnerliste übernehmen“ (vorher gesichert, mit
 „Rückgängig“); „Verwerfen“ zeigt wieder die geltende Liste. Wer mit nicht übernommenen Änderungen zum „Baum“
-wechselt, wird gefragt (Übernehmen, Verwerfen, Abbrechen). Kommt die Struktur inzwischen neu herein (anderer
-Rechner), bleibt der eigene Text mit Hinweis stehen. Der Ort der Projektdatei stand bis Version 0.1
+wechselt, wird gefragt (Übernehmen, Verwerfen, Abbrechen; Enter übernimmt). Der nicht übernommene Text bleibt
+auch beim Wechsel in eine andere Ansicht (etwa „Vorlagen“ oder „Projekte“) erhalten, bis zum Schließen der App.
+Kommt die Struktur inzwischen neu herein (anderer Rechner), bleibt der eigene Text mit Hinweis stehen. Der Ort der Projektdatei stand bis Version 0.1
 in der Struktur („Leere Flächenrechner-Datei“); er ist jetzt eine gemeinsame Einstellung und wird übernommen.
 
 ## Vorlagen
@@ -465,11 +467,13 @@ Punkt/Unterstrich im Namen, ungültiges Datum, „AW“/„WG“ am Anfang des T
 
 Woran „aus dem Büro“ erkannt wird, stellen die **eigenen Domains** ein (gilt fürs Büro, Konfigurationsordner, Bereich
 `mails`); ohne Einstellung schlägt die App die Domain vor, die in den meisten Mails des Projekts vorkommt, und nimmt bis
-dahin die Richtung aus dem bisherigen Namen. **„Auch korrekt benannte prüfen“** liest auch die richtig benannten Mails
+dahin die Richtung aus dem bisherigen Namen (eigene Domains, die während des Einlesens gespeichert werden, gelten auch
+für die danach gelesenen Mails). **„Auch korrekt benannte prüfen“** liest auch die richtig benannten Mails
 und meldet ein abweichendes Datum („Datum 261103 – die Mail ist vom 261102 (Versand)“) bzw. eine falsche Richtung. Der
 Projektcode kommt aus der Projektdatei und lässt sich oben ändern.
 
-Umbenannt wird erst auf Klick – einzeln oder alle markierten –, im selben Ordner, die Endung bleibt, und **nie
+Umbenannt wird erst auf Klick – einzeln oder alle markierten (Auswahl und „Umbenennen“ stehen nur da, wenn es
+abweichende Mails gibt) –, im selben Ordner, die Endung bleibt, und **nie
 überschreibend**: Gibt es den Namen schon, bleibt alles, wie es war. Ist die Mail in Outlook geöffnet, sagt die App
 das. (Befehl `projekt_datei_umbenennen` in `packages/core/tauri/umbenennen.rs`, nur in den Hüllen von ATLAS und
 Rahmen-App.)
@@ -481,7 +485,8 @@ bleiben sie; die App meldet beim Ziehen „kopieren“, nie „verschieben“) u
 (gleicher Betreff und Versandzeit) schon im Projekt, steht das dabei – verglichen mit allen Mails im Projekt (noch
 ungelesene, deren Name nicht passt oder deren Datum um den Tag der neuen Mail liegt, werden dafür gelesen); ebenso,
 wenn dieselbe Mail in einer Ablage zweimal dabei ist. Entwürfe ohne Versandzeit gelten nie als doppelt. Eine Datei,
-die keine lesbare Outlook-Mail ist, wird so genannt und lässt sich mit „×“ verwerfen. Dafür gibt das Fenster das Ziehen & Ablegen an die
+die keine lesbare Outlook-Mail ist, wird so genannt und lässt sich mit „×“ verwerfen; „Verwerfen“ für alle fragt ab
+zwei Mails nach. Damit das Ziehen klappt, gibt das Fenster das Ziehen & Ablegen an die
 Oberfläche weiter (`dragDropEnabled: false`, wie in der Rahmen-App) – Outlook liefert die Mails dabei als virtuelle
 Dateien, die Chromium/WebView2 als .msg übergibt. Auf einem Büro-PC noch zu bestätigen; das neue Outlook liefert so
 nichts (dort: auf den Desktop ziehen bzw. „Speichern unter“ und dann wählen). Hintergrund und Alternativen (Graph,
@@ -532,8 +537,10 @@ QGIS 3.28; geprüft mit 3.34 LTR). Früher war das Teil von PERMIO; dessen Einst
   leere oder halbe Datei abgelegt; Kartenthema, Ausschnitt und abgeschaltete Beschriftungen eines Plans gelten nur für
   ihn. „Plan entfernen“ und „Vorgaben“ fragen vorher nach – die Pläne gelten für das ganze Büro.
 - **Kein amtlicher Auszug:** Der Export ist eine Arbeits- und Planungsgrundlage. Für den Bauantrag bleibt der
-  amtliche, beglaubigte Auszug aus dem Liegenschaftskataster bzw. der amtliche Lageplan nach § 3 BauPrüfVO NRW
-  nötig.
+  amtlich beglaubigte Auszug aus der Flurkarte (§ 2 BauPrüfVO NRW) bzw. der amtliche Lageplan (§ 3 Abs. 3 BauPrüfVO
+  NRW) nötig. Gespeicherte Einstellungen mit den alten Vorgaben werden beim Einlesen umgestellt: die Beschriftung
+  „Auszug aus der Liegenschaftskarte“ auf die heutige Vorgabe, die Namen „Katasterauszug A4/A3“ der beiden PDF-Pläne
+  auf „Katasterplan A4/A3“ – nur, wenn der Text genau der alten Vorgabe entspricht; selbst angepasste Texte bleiben.
 
 Umsetzung (`apps/ordner`): `src/kataster/kataster.ts` (Einstellungen, Auslesen der Vorlage, Auftrag), `katasterStore.ts`
 (Ablauf), `qgis.ts` (Befehle der Hülle bzw. Ersatz für die Tests), `components/KatasterDialog.tsx` und

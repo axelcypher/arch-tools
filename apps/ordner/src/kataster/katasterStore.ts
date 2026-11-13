@@ -414,7 +414,11 @@ export const useKataster = create<KatasterState>()((set, get) => {
     zielOrdner: () => {
       const e = get().einstellungen;
       const antrag = get().projekt?.oap?.projekt.meta.antrag?.name;
-      if (e.ziel === 'antrag' || !e.zielpfad.trim()) return antrag ? `${ANTRAGSORDNER}/${antrag}` : null;
+      if (e.ziel === 'antrag' || !e.zielpfad.trim()) {
+        // der Name aus der .oap wird wie ein Platzhalter gesäubert: kein „/“, kein „..“, keine unzulässigen Zeichen
+        const ordner = antrag ? katasterZielpfad('{Antrag}', antrag, get().namensteile()) : null;
+        return ordner ? `${ANTRAGSORDNER}/${ordner}` : null;
+      }
       return katasterZielpfad(e.zielpfad, antrag, get().namensteile());
     },
 

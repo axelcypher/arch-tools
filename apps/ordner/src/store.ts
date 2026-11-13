@@ -74,6 +74,20 @@ interface OrdnerState {
   strukturFehler: string | null;
   /** Rohinhalt von projektordner.json beim letzten Lesen bzw. Schreiben – Felder, die dieses Tool nicht kennt, bleiben beim Schreiben erhalten */
   rohEigen: Record<string, unknown>;
+  /**
+   * bei unlesbarer Struktur (`strukturFehler`): ihr Inhalt so, wie er in der Datei steht – ist projektordner.json gar
+   * kein JSON-Objekt (z. B. eine Liste), der ganze Inhalt. Er kommt vor dem Ersetzen in die Sicherungen.
+   */
+  strukturRoh: unknown;
+  /**
+   * Textansicht der Ordnerliste (Struktur): gewählte Ansicht und der noch nicht übernommene Text samt dem Stand, von
+   * dem er ausgeht – hier statt in der Ansicht, damit der Entwurf einen Wechsel der App-Ansicht übersteht (null = kein
+   * Entwurf, der Text folgt der Struktur)
+   */
+  ordnerAnsicht: 'baum' | 'text';
+  ordnerEntwurf: { text: string; basis: string } | null;
+  setOrdnerAnsicht: (a: 'baum' | 'text') => void;
+  setOrdnerEntwurf: (e: { text: string; basis: string } | null) => void;
   /** die Struktur vor der letzten Ersetzung („Rückgängig“) – entfällt mit der nächsten Änderung */
   rueckgaengig: { struktur: Struktur; text: string } | null;
   setStamm: (patch: Partial<Stammdaten>) => void;
@@ -164,6 +178,8 @@ const eigenAus = (roh: unknown) => {
     struktur,
     vorlagenordner: typeof eigen.vorlagenordner === 'string' ? eigen.vorlagenordner : '',
     rohEigen: eigen,
+    // kein JSON-Objekt: der ganze Inhalt (rohEigen ist dann leer), sonst die unlesbare Struktur
+    strukturRoh: fehler ? (roh === eigen ? eigen.struktur : roh) : null,
     strukturFehler: fehler
       ? `Die Struktur in projektordner.json lässt sich nicht lesen (${fehler}). Angezeigt wird die Vorgabe; gespeichert wird nichts, bis Sie die Struktur bewusst ersetzen – über „Struktur laden …“, eine Sicherung oder „Vorgabe wiederherstellen …“. Der bisherige Inhalt wird dann vorher gesichert.`
       : null,
@@ -268,16 +284,22 @@ export const useOrdner = create<OrdnerState>()((set, get) => {
     konflikt: null,
     strukturFehler: null,
     rohEigen: {},
+    strukturRoh: null,
+    ordnerAnsicht: 'baum',
+    ordnerEntwurf: null,
+    setOrdnerAnsicht: (ordnerAnsicht) => set({ ordnerAnsicht }),
+    setOrdnerEntwurf: (ordnerEntwurf) => set({ ordnerEntwurf }),
     rueckgaengig: null,
     setStruktur: (struktur) => {
       set({ struktur, rueckgaengig: null });
       eigeneSpeichern();
     },
     strukturErsetzen: async (neu, grund, { sicherung = true } = {}) => {
-      const { struktur: alt, vorlagenordner, strukturFehler, rohEigen } = get();
+      const { struktur: alt, vorlagenordner, strukturFehler, strukturRoh } = get();
       if (sicherung || strukturFehler) {
-        // eine unlesbare Struktur wird so gesichert, wie sie in der Datei steht
-        const inhalt = { struktur: (strukturFehler ? rohEigen.struktur : alt) as Struktur, vorlagenordner };
+        // eine unlesbare Struktur wird so gesichert, wie sie in der Datei steht (ein leerer Wert eingepackt – Sicherungen
+        // ohne Inhalt gelten als ungültig)
+        const inhalt = { struktur: (strukturFehler ? strukturRoh || { inhalt: strukturRoh } : alt) as Struktur, vorlagenordner };
         try {
           await konfigAendern(SICHERUNGEN, (roh) => sicherungenMit(roh, { name: sicherungsName(new Date()), grund: `vor: ${grund}`, inhalt }));
         } catch (e) {
@@ -285,7 +307,7 @@ export const useOrdner = create<OrdnerState>()((set, get) => {
         }
       }
       // die unlesbare Fassung lässt sich nicht „rückgängig“ herstellen – sie liegt in den Sicherungen
-      set({ struktur: neu, strukturFehler: null, rueckgaengig: strukturFehler ? null : { struktur: alt, text: grund } });
+      set({ struktur: neu, strukturFehler: null, strukturRoh: null, rueckgaengig: strukturFehler ? null : { struktur: alt, text: grund } });
       eigeneSpeichern();
     },
     strukturRueckgaengig: () => {
@@ -318,7 +340,7 @@ export const useOrdner = create<OrdnerState>()((set, get) => {
         return;
       }
       // die Felder der anderen Fassung, die dieses Tool nicht kennt, bleiben erhalten
-      set({ konfigStandEigen: konfigStand(k.roh), rohEigen: alsObjekt(k.roh), konflikt: null, strukturFehler: null });
+      set({ konfigStandEigen: konfigStand(k.roh), rohEigen: alsObjekt(k.roh), konflikt: null, strukturFehler: null, strukturRoh: null });
       await jetztSpeichern();
     },
     setStammordner: (p) => allgemeinSetzen({ projekte: [p, ...get().allgemein.projekte.filter((x) => x !== p)].filter(Boolean) }),

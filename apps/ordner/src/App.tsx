@@ -101,7 +101,7 @@ export function App() {
       <div className="toolbar">
         <div className="tb-group">
           {ANSICHTEN.map((a) => (
-            <button key={a.id} className={ansicht === a.id ? 'active' : ''} title={a.title} onClick={() => setAnsicht(a.id)}>
+            <button key={a.id} className={ansicht === a.id ? 'active' : ''} aria-pressed={ansicht === a.id} title={a.title} onClick={() => setAnsicht(a.id)}>
               {a.label}
             </button>
           ))}
@@ -110,7 +110,7 @@ export function App() {
       </div>
       {strukturFehler && ansicht !== 'struktur' && ansicht !== 'vorlagen' && (
         <div className="warning po-konflikt" role="alert">
-          Die Bürostruktur ist nicht lesbar – bis zur Klärung gilt nur die Vorgabe, neue Projekte entstehen nach ihr.
+          Die Bürostruktur ist nicht lesbar – bis zur Klärung gilt die Standardstruktur von ATLAS; neue Projekte entstehen nach ihr.
           <button className="small" onClick={() => setAnsicht('struktur')}>
             Zur Struktur
           </button>

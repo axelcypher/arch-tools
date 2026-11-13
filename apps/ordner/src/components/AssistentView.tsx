@@ -576,6 +576,7 @@ export function AssistentView({
                 </button>
                 {(entwurf.nummer.trim() || entwurf.kurzname.trim()) && (
                   <button
+                    title="Den angefangenen Entwurf verwerfen und ein neues Projekt mit leerem Formular beginnen"
                     onClick={() => {
                       neuesProjekt();
                       neuBeginnen();
@@ -916,7 +917,8 @@ export function AssistentView({
                   <span className="busy">{laeuft}</span>
                 ) : (
                   anlegenSperre && (
-                    <span className="po-sperr-grund" id="po-anlegen-grund">
+                    // offene Fehler wie „Noch offen“ der anderen Schritte in Fehlerfarbe, sonst (Hinweis) grau
+                    <span className={`po-sperr-grund${plan.fehler.length ? ' fehler' : ''}`} id="po-anlegen-grund">
                       {anlegenSperre}
                     </span>
                   )

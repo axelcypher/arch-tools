@@ -45,6 +45,8 @@ beforeEach(() => {
     konfigStandEigen: null,
     konflikt: null,
     rueckgaengig: null,
+    ordnerAnsicht: 'baum',
+    ordnerEntwurf: null,
   });
 });
 afterEach(async () => {
@@ -188,6 +190,7 @@ describe('ATLAS (Projektordner)', () => {
     // zurück zu den Stammdaten über die Schrittleiste (besucht und vollständig: Häkchen), dann „Leer beginnen“ auf der Startseite
     act(() => knopf(host, '✓Stammdaten').click());
     act(() => knopf(host, '← Anderes Projekt').click());
+    expect(knopf(host, 'Leer beginnen').title).toContain('Entwurf verwerfen');
     act(() => knopf(host, 'Leer beginnen').click());
     expect(useOrdner.getState().stamm).toMatchObject({ nummer: '', beteiligte: [], bearbeiter: 'TP' });
     // ohne Stammdaten sind die späteren Schritte gesperrt

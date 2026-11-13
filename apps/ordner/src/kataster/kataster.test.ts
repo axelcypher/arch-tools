@@ -65,6 +65,31 @@ describe('Einstellungen', () => {
     expect(r.dateiname).toBe(VORGABE_KATASTER.dateiname);
     expect(r.plaene).toEqual([expect.objectContaining({ id: 'plan1', name: 'X', art: 'dxf', aktiv: true, massstab: 1000, stil: 'symbollayer', breite: undefined })]);
   });
+
+  it('stellt gespeicherte alte Vorgaben um – nur bei genau dem alten Wert, eigene Texte bleiben', () => {
+    const alt = 'Auszug aus der Liegenschaftskarte';
+    const r = katasterAus({
+      plaene: [
+        { id: 'a4', name: 'Katasterauszug A4', beschriftung: alt },
+        { id: 'a3', name: 'Katasterauszug A3', beschriftung: alt },
+      ],
+    });
+    expect(r.plaene.map((p) => p.name)).toEqual(['Katasterplan A4', 'Katasterplan A3']);
+    expect(r.plaene.every((p) => p.beschriftung === VORGABE_BESCHRIFTUNG)).toBe(true);
+    // Gegenprobe: selbst angepasst, anderer Plan oder nur ähnlich – bleibt, wie es ist
+    const eigen = katasterAus({
+      plaene: [
+        { id: 'a4', name: 'Katasterauszug A4 (Büro)', beschriftung: `${alt}, Stand 2025` },
+        { id: 'a3', name: 'Katasterauszug A4', beschriftung: 'Unser Text' },
+        { id: 'plan3', name: 'Katasterauszug A3', beschriftung: '' },
+      ],
+    });
+    expect(eigen.plaene.map((p) => [p.name, p.beschriftung])).toEqual([
+      ['Katasterauszug A4 (Büro)', `${alt}, Stand 2025`],
+      ['Katasterauszug A4', 'Unser Text'],
+      ['Katasterauszug A3', ''],
+    ]);
+  });
 });
 
 describe('Auftrag und Ergebnis', () => {

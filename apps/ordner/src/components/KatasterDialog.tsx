@@ -72,15 +72,22 @@ export function KatasterDialog({ basis, name, onClose, onEinstellungen, onStammd
       {fehlt.map((f) => (
         <p key={f.text} className="warning small-text ka-fehlt">
           {f.text}
+          {/* Leerzeichen statt Außenabstand: bricht der Knopf um, steht er bündig am Zeilenanfang */}
           {f.ziel === 'einstellungen' && onEinstellungen && (
-            <button className="po-link" onClick={() => wechseln(onEinstellungen)}>
-              Einstellungen öffnen
-            </button>
+            <>
+              {' '}
+              <button className="po-link" onClick={() => wechseln(onEinstellungen)}>
+                Einstellungen öffnen
+              </button>
+            </>
           )}
           {f.ziel === 'stammdaten' && onStammdaten && (
-            <button className="po-link" onClick={() => wechseln(onStammdaten)}>
-              Stammdaten öffnen
-            </button>
+            <>
+              {' '}
+              <button className="po-link" onClick={() => wechseln(onStammdaten)}>
+                Stammdaten öffnen
+              </button>
+            </>
           )}
         </p>
       ))}

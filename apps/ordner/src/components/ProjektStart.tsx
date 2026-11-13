@@ -109,11 +109,19 @@ export function ProjektStart({
 
   return (
     <>
-      {kataster && <KatasterDialog basis={kataster.basis} name={kataster.name} onClose={() => setKataster(null)} onEinstellungen={onKatasterEinstellungen} onStammdaten={() => {
+      {kataster && (
+        <KatasterDialog
+          basis={kataster.basis}
+          name={kataster.name}
+          onClose={() => setKataster(null)}
+          onEinstellungen={onKatasterEinstellungen}
+          onStammdaten={() => {
             const basis = kataster.basis;
             setKataster(null);
             onOeffnen(basis);
-          }} />}
+          }}
+        />
+      )}
       <ProjektUebersicht
         titel="Projekte"
         gruppen={liste.gruppen}

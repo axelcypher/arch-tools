@@ -173,6 +173,22 @@ describe('Ablage im Ordner des aktiven Antrags', () => {
     expect(knopf(h2, 'Pläne exportieren').disabled).toBe(true);
   });
 
+  it('säubert den Antragsnamen aus der Projektdatei: kein „/“ oder „..“ führt aus dem Antragsordner', async () => {
+    const p = readProjectFile(fs.eintraege.get(OAP)!);
+    await useKataster.getState().aendern({ ziel: 'antrag' });
+    const ziel = async (name: string) => {
+      p.meta.antrag = { name };
+      fs.setze(OAP, writeArchive(p));
+      await useKataster.getState().projektWaehlen(ORDNER, 'BS9');
+      return useKataster.getState().zielOrdner();
+    };
+    expect(await ziel('BAUA 2/../../Fremd')).toBe('TÖB/BAUA 2 .. .. Fremd');
+    expect(await ziel('..')).toBeNull();
+    expect(await ziel('BAUA: 3?')).not.toMatch(/[:?]/);
+    // Gegenprobe: ein sauberer Name bleibt, wie er ist
+    expect(await ziel('BAUA 2')).toBe('TÖB/BAUA 2');
+  });
+
   it('übernimmt die Einstellungen aus PERMIO (Formulare) beim ersten Laden', async () => {
     const { konfigAendern, konfigLesen } = await import('@core/platform/konfig');
     localStorage.clear();

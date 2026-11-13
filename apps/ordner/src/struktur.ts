@@ -117,7 +117,8 @@ export function normPfad(p: string): string {
 }
 
 /** unter Windows reservierte Gerätenamen – auch mit Endung („CON.txt“) nicht als Datei- oder Ordnername nutzbar */
-const RESERVIERT = /^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?=\.|$)/i;
+// Leerzeichen vor der Endung zählen unter Windows nicht („AUX .txt“ ist AUX) – sie entfallen mit
+const RESERVIERT = /^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9]) *(?=\.|$)/i;
 
 /** Ist der Name unter Windows reserviert (CON, PRN, AUX, NUL, COM1–9, LPT1–9, auch mit Endung)? */
 export const istReserviert = (name: string): boolean => RESERVIERT.test(name.trim());

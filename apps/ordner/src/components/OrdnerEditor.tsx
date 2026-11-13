@@ -444,7 +444,10 @@ export function OrdnerEditor({
     return ohneLoseTrenner([
       { label: p ? 'Unterordner anlegen' : 'Ordner anlegen', kuerzel: 'Strg+N', tasten: 'Control+N', aktion: () => anlegen(p ?? '') },
       ...(p ? [{ label: 'Ordner daneben anlegen', kuerzel: 'Strg+Umschalt+N', tasten: 'Control+Shift+N', aktion: () => daneben(p) }] : []),
-      { label: gewaehlt.length > 1 ? `Unterordner in ${gewaehlt.length} Ordnern anlegen …` : 'Mehrere Unterordner anlegen …', aktion: () => setMehrere(gewaehlt.length ? gewaehlt : ['']) },
+      {
+        label: gewaehlt.length > 1 ? `Unterordner in ${gewaehlt.length} Ordnern anlegen …` : gewaehlt.length ? 'Mehrere Unterordner anlegen …' : 'Mehrere Ordner anlegen …',
+        aktion: () => setMehrere(gewaehlt.length ? gewaehlt : ['']),
+      },
       ...bausteine.map((b) => ({ label: `Baustein „${b.name}“ einfügen`, titel: b.ordner.map((o) => o.pfad).join(', '), aktion: () => einfuegenIn(b.ordner, gewaehlt, `Baustein „${b.name}“`) })),
       TRENNER,
       ...(p ? [{ label: 'Umbenennen', kuerzel: 'F2', tasten: 'F2', aktion: () => setBearbeitet({ pfad: p, neu: false }) }] : []),
@@ -622,6 +625,8 @@ export function OrdnerEditor({
                   }}
                   onDragStart={(e) => {
                     const pfade = sel ? gewaehlt : [z.pfad];
+                    // eine Meldung läge über der Ablagefläche „in den Stamm“
+                    setMeldungZustand(null);
                     if (!sel) waehlen(z.pfad);
                     setZiehen(obersteAuswahl(pfade));
                     try {
@@ -690,6 +695,8 @@ export function OrdnerEditor({
                       tabIndex={-1}
                       title="Aktionen (wie Rechtsklick)"
                       aria-label={`Aktionen für ${z.pfad}`}
+                      aria-haspopup="menu"
+                      aria-expanded={menue?.art === 'kontext' && sel}
                       onClick={(e) => {
                         e.stopPropagation();
                         if (!sel) waehlen(z.pfad);
@@ -1130,7 +1137,8 @@ function MehrereDialog({ ziele, onAbbrechen, onAnlegen }: { ziele: string[]; onA
         </ul>
       )}
       <div className="dialog-buttons">
-        <button className="primary" disabled={!gelesen.ordner.length} onClick={() => onAnlegen(gelesen.ordner)} title="Strg+Enter">
+        <span className="muted small-text po-mehrere-kuerzel">Strg+Enter legt an</span>
+        <button className="primary" disabled={!gelesen.ordner.length} onClick={() => onAnlegen(gelesen.ordner)} title="Strg+Enter" aria-keyshortcuts="Control+Enter">
           {wo.length > 1 ? `In ${wo.length} Ordnern anlegen` : 'Anlegen'}
         </button>
         <button onClick={onAbbrechen}>Abbrechen</button>

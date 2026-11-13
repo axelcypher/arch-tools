@@ -1,9 +1,10 @@
 // @vitest-environment happy-dom
-import { act, createElement } from 'react';
+import { act, createElement, Fragment } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { testMsg } from '@core/__fixtures__/msg';
 import { createProject } from '@core/model';
+import { RueckfrageHost } from '@core/ui/Rueckfrage';
 import { VORGABE_ALLGEMEIN } from '@core/platform/konfig';
 import { projektdateiAnlegen } from '@core/platform/projektordner';
 import { MailView } from './components/MailView';
@@ -235,7 +236,7 @@ function zeigen(fs: SpeicherDateisystem, start?: string) {
   document.body.appendChild(host);
   act(() => {
     root = createRoot(host);
-    root.render(createElement(MailView, { fs, start: start ?? '/p/BSP Sanierung' }));
+    root.render(createElement(Fragment, null, createElement(MailView, { fs, start: start ?? '/p/BSP Sanierung' }), createElement(RueckfrageHost)));
   });
   return host;
 }
@@ -274,7 +275,19 @@ describe('Mails ablegen: Doppelte und Lesefehler', () => {
     await fallenLassen(host, [new File([raumaufteilung()], 'Entwurf 1.msg'), new File([raumaufteilung()], 'Entwurf 2.msg')]);
     expect(host.textContent).not.toContain('liegt schon im Projekt');
     expect(host.textContent).not.toContain('doppelt');
+    // zwei Mails verwerfen: erst nach Rückfrage – Abbrechen lässt beide stehen
     act(() => knopf(host, 'Verwerfen').click());
+    await warten();
+    const dialog = () => document.body.querySelector('.modal');
+    expect(dialog()!.textContent).toContain('2 Mails verwerfen?');
+    act(() => knopf(dialog()!, 'Abbrechen').click());
+    await warten();
+    expect(host.textContent).toContain('2 Mails zum Ablegen');
+    act(() => knopf(host, 'Verwerfen').click());
+    await warten();
+    act(() => knopf(dialog()!, 'Verwerfen').click());
+    await warten();
+    expect(host.querySelector('.po-neue')).toBeNull();
     const mail = testMsg({ betreff: 'Fenster', vonName: 'Muster, Max', vonMail: 'max.muster@statik-muster.example', an: [], gesendet: mittag('2026-11-12'), empfangen: mittag('2026-11-12') });
     await fallenLassen(host, [new File([mail], 'Fenster.msg'), new File([mail], 'Fenster (Kopie).msg')]);
     const zeilen = [...host.querySelectorAll('.po-mail.neu')];
@@ -330,6 +343,29 @@ describe('Mails: Bedienung per Tastatur', () => {
     expect(host.querySelectorAll('.po-mails .po-hinweis').length).toBe(1);
     expect(host.querySelector('.po-mails .po-hinweis')!.textContent).toContain('links unter „Eigene Domains“ eintragen');
     expect(host.textContent).not.toContain('in den Einstellungen festlegen');
+  });
+});
+
+describe('Mails: Knöpfe der Auswahl', () => {
+  it('„Alle abweichenden wählen“ und „Umbenennen“ nur, wenn es abweichende Mails gibt', async () => {
+    const fs = new SpeicherDateisystem();
+    const p = createProject('Haus');
+    p.meta.projektcode = 'BSP';
+    await projektdateiAnlegen(fs, '/p/BSP Haus', 'BSP.oap', p, 'Test');
+    await fs.dateiAnlegen('/p/BSP Haus', 'BSP von Muster 261020 Raumaufteilung.msg', raumaufteilung(mittag('2026-10-20')));
+    const host = zeigen(fs, '/p/BSP Haus');
+    await warten();
+    expect(host.textContent).toContain('Alle Mails sind nach dem Schema benannt.');
+    expect(knopf(host, 'Alle abweichenden wählen')).toBeUndefined();
+    expect(host.querySelector('.po-mails-auswahl')).toBeNull();
+    // Gegenprobe: mit einer abweichenden Mail sind sie da
+    act(() => root?.unmount());
+    root = null;
+    document.body.innerHTML = '';
+    const host2 = zeigen(await projekt());
+    await warten();
+    expect(knopf(host2, 'Alle abweichenden wählen')).toBeTruthy();
+    expect(host2.querySelector('.po-mails-auswahl button.primary')!.textContent).toContain('1 Mail umbenennen');
   });
 });
 
@@ -396,5 +432,42 @@ describe('Mails: kein Rennen beim Einlesen', () => {
     await warten();
     const zwei = [...host.querySelectorAll('.po-mail')].find((z) => z.textContent?.includes('zwei.msg'))!;
     expect(zwei.querySelector('.po-mail-neu')!.textContent).toContain('BSP von Muster 261103 Zwei.msg');
+  });
+
+  it('eigene Domains gespeichert, bevor eine hängende Mail gelesen ist: auch sie bekommt den Vorschlag mit Domain', async () => {
+    const fs = new GebremstesDateisystem();
+    const p = createProject('Haus');
+    p.meta.projektcode = 'BSP';
+    await projektdateiAnlegen(fs, '/p/BSP Haus', 'BSP.oap', p, 'Test');
+    await fs.dateiAnlegen('/p/BSP Haus', 'Post/eins.msg', testMsg({ betreff: 'Eins', vonName: 'Muster, Max', vonMail: 'max@extern.example', an: [], gesendet: mittag('2026-11-02') }));
+    await fs.dateiAnlegen('/p/BSP Haus', 'Post/zwei.msg', testMsg({ betreff: 'Zwei', vonName: 'Muster, Max', vonMail: 'max@extern.example', an: [], gesendet: mittag('2026-11-03') }));
+    const lesen = schranke();
+    fs.sperren.set('zwei.msg', lesen.p);
+    const speichern = schranke();
+    const echt = useMails.getState().setEigene;
+    useMails.setState({
+      setEigene: async (l: string[]) => {
+        await speichern.p;
+        await echt(l);
+      },
+    });
+    const host = zeigen(fs, '/p/BSP Haus');
+    await warten();
+    const neuerName = (datei: string) => [...host.querySelectorAll('.po-mail')].find((z) => z.textContent?.includes(datei))!.querySelector('.po-mail-neu')!.textContent;
+    // Gegenprobe: ohne Domain gilt die Richtung aus dem bisherigen Namen
+    expect(neuerName('eins.msg')).toContain('Richtung aus dem bisherigen Namen');
+    const domains = host.querySelector('input[aria-label="Eigene Domains"]') as HTMLInputElement;
+    eintippen(domains, 'architekten-beispiel.example');
+    act(() => domains.dispatchEvent(new FocusEvent('focusout', { bubbles: true })));
+    // umgekehrt: erst ist das Speichern fertig, dann erst wird „zwei“ gelesen
+    speichern.auf();
+    await warten();
+    expect(useMails.getState().eigene).toEqual(['architekten-beispiel.example']);
+    expect(neuerName('eins.msg')).toContain('Absender max@extern.example');
+    lesen.auf();
+    await warten();
+    expect(neuerName('zwei.msg')).toContain('Absender max@extern.example');
+    expect(neuerName('zwei.msg')).not.toContain('Richtung aus dem bisherigen Namen');
+    expect(host.querySelector('.busy')).toBeNull();
   });
 });

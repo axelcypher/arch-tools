@@ -56,7 +56,8 @@ export interface KatasterEinstellungen {
 
 /**
  * Beschriftung der PDF-Vorgaben: neutral – der Export aus WMS/WFS ist eine Arbeits- und Planungsgrundlage, kein
- * amtlicher Auszug aus dem Liegenschaftskataster (für den Bauantrag bleibt der nach § 3 BauPrüfVO NRW nötig).
+ * amtlicher Auszug aus dem Liegenschaftskataster. Für den Bauantrag bleibt der amtlich beglaubigte Auszug aus der
+ * Flurkarte (§ 2 BauPrüfVO NRW) bzw. der amtliche Lageplan (§ 3 Abs. 3 BauPrüfVO NRW) nötig.
  */
 export const VORGABE_BESCHRIFTUNG = 'Kartengrundlage: Liegenschaftskarte (ALKIS), Geobasis NRW, Stand {DATUM:TT.MM.JJJJ} – kein amtlicher Auszug';
 
@@ -132,6 +133,17 @@ export const VORGABE_KATASTER: KatasterEinstellungen = {
 };
 
 const text = (v: unknown, vorgabe = '') => (typeof v === 'string' ? v : vorgabe);
+
+/**
+ * Alte Vorgaben, die gespeicherte Einstellungen noch tragen können: Sie klangen nach amtlichem Auszug und werden beim
+ * Einlesen auf die heutigen Vorgaben umgestellt – nur, wenn der Wert genau der alten Vorgabe entspricht. Selbst
+ * angepasste Texte bleiben.
+ */
+const ALTE_BESCHRIFTUNG = 'Auszug aus der Liegenschaftskarte';
+const ALTE_NAMEN: Record<string, { alt: string; neu: string }> = {
+  a4: { alt: 'Katasterauszug A4', neu: 'Katasterplan A4' },
+  a3: { alt: 'Katasterauszug A3', neu: 'Katasterplan A3' },
+};
 const zahl = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : undefined);
 
 /** Einstellungen aus der Konfiguration – Unbekanntes und Ungültiges wird auf die Vorgaben gesetzt */
@@ -143,9 +155,12 @@ export function katasterAus(roh: unknown): KatasterEinstellungen {
         .filter((p): p is Record<string, unknown> => !!p && typeof p === 'object')
         .map((p, i): KatasterPlan => {
           const art: PlanArt = p.art === 'dxf' ? 'dxf' : 'pdf';
+          const id = text(p.id) || `plan${i + 1}`;
+          const name = text(p.name);
+          const beschriftung = text(p.beschriftung);
           return {
-            id: text(p.id) || `plan${i + 1}`,
-            name: text(p.name) || `Plan ${i + 1}`,
+            id,
+            name: (ALTE_NAMEN[id]?.alt === name ? ALTE_NAMEN[id].neu : name) || `Plan ${i + 1}`,
             art,
             aktiv: p.aktiv !== false,
             layout: text(p.layout),
@@ -157,7 +172,7 @@ export function katasterAus(roh: unknown): KatasterEinstellungen {
             dpi: zahl(p.dpi) ?? 300,
             stil: p.stil === 'objekt' || p.stil === 'ohne' ? p.stil : 'symbollayer',
             beschriftungen: p.beschriftungen !== false,
-            beschriftung: text(p.beschriftung),
+            beschriftung: beschriftung === ALTE_BESCHRIFTUNG ? VORGABE_BESCHRIFTUNG : beschriftung,
           };
         })
     : structuredClone(VORGABE_PLAENE);

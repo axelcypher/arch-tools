@@ -234,7 +234,7 @@ export function PruefView({ onErgaenzen, onMails, fs: fsVorgabe, start }: { onEr
             </div>
             <div className="button-row">
               <button onClick={() => csvSpeichern(`Prüfung aller Projekte ${new Date().toISOString().slice(0, 10)}`, sammelCsv(alle))}>{CSV_KNOPF}</button>
-              <button onClick={() => setAlle(null)}>Zur Projektliste</button>
+              <button onClick={() => setAlle(null)}>← Zur Projektliste</button>
             </div>
           </>
         )}

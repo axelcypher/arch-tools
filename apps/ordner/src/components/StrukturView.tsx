@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { openTextFile, saveTextFile } from '@core/platform/files';
 import { logger } from '@core/platform/log';
 import { Field, TextField } from '@core/ui/fields';
@@ -46,33 +46,26 @@ export function StrukturView() {
   const strukturRueckgaengig = useOrdner((s) => s.strukturRueckgaengig);
   const sicherungenLesen = useOrdner((s) => s.sicherungenLesen);
   const [sicherungen, setSicherungen] = useState<Sicherung[] | null>(null);
-  /** Ordnerliste als Baum oder – für Geübte – als Text */
-  const [ordnerAnsicht, setOrdnerAnsicht] = useState<'baum' | 'text'>('baum');
+  /** Ordnerliste als Baum oder – für Geübte – als Text; Ansicht und Entwurf liegen im Store (überstehen den Wechsel der App-Ansicht) */
+  const ordnerAnsicht = useOrdner((s) => s.ordnerAnsicht);
+  const setOrdnerAnsicht = useOrdner((s) => s.setOrdnerAnsicht);
+  const entwurf = useOrdner((s) => s.ordnerEntwurf);
+  const setEntwurf = useOrdner((s) => s.setOrdnerEntwurf);
   const stand = ordnerAlsText(struktur.ordner);
-  const [text, setText] = useState(stand);
-  /** der Stand, von dem der Text der Textansicht ausgeht – kommt die Struktur neu herein, folgt nur ein unveränderter Text */
-  const basis = useRef(stand);
+  // ohne Entwurf folgt der Text dem Stand; ein Entwurf merkt sich den Stand, von dem er ausgeht – kommt die Struktur
+  // neu herein, bleibt ungespeicherter Text stehen
+  const text = entwurf?.text ?? stand;
+  const basis = entwurf?.basis ?? stand;
+  const setText = (t: string) => setEntwurf(t === stand ? null : { text: t, basis });
   const [meldung, setMeldung] = useState<{ art: 'ok' | 'fehler'; text: string } | null>(null);
-
-  useEffect(() => {
-    if (text === basis.current) {
-      basis.current = stand;
-      setText(stand);
-    }
-    // nur bei neuem Stand: ungespeicherter Text bleibt stehen
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stand]);
 
   const set = (patch: Partial<Struktur>) => setStruktur({ ...struktur, ...patch });
   // Meldungen zur Ordnerliste (doppelte Zeilen, falsche LPh, entfernte Zeichen) – vor dem Übernehmen sichtbar
   const gelesen = useMemo(() => ordnerAusTextMitMeldungen(text), [text]);
   const geaendert = text !== stand;
   /** der Text geht von einem älteren Stand aus (die Struktur kam inzwischen neu herein) */
-  const veraltet = geaendert && basis.current !== stand;
-  const textVerwerfen = () => {
-    basis.current = stand;
-    setText(stand);
-  };
+  const veraltet = geaendert && basis !== stand;
+  const textVerwerfen = () => setEntwurf(null);
   /** Ordnerliste aus der Textansicht übernehmen – wie jedes Ersetzen der Struktur vorher gesichert, mit „Rückgängig“ */
   const ordnerUebernehmen = async (): Promise<boolean> => {
     const { ordner } = gelesen;
@@ -82,8 +75,7 @@ export function StrukturView() {
     }
     try {
       await strukturErsetzen({ ...struktur, ordner }, 'Ordnerliste übernommen.');
-      basis.current = ordnerAlsText(ordner);
-      setText(basis.current);
+      setEntwurf(null);
       setMeldung(null);
       return true;
     } catch (e) {
@@ -100,7 +92,8 @@ export function StrukturView() {
         text: `Der Text ist noch nicht übernommen${gelesen.meldungen.length ? ` (${gelesen.meldungen.length} ${gelesen.meldungen.length === 1 ? 'Meldung' : 'Meldungen'})` : ''}. „Übernehmen“ ersetzt die Ordnerliste – vorher gesichert, mit „Rückgängig“; „Verwerfen“ zeigt wieder die bisherige.`,
         knoepfe: [
           { id: 'abbrechen', label: 'Abbrechen' },
-          { id: 'verwerfen', label: 'Verwerfen', art: 'danger' },
+          // „Verwerfen“ ohne Hervorhebung (wie „Nicht speichern“): Vorgabe für Enter und Fokus bleibt „Übernehmen“
+          { id: 'verwerfen', label: 'Verwerfen' },
           { id: 'uebernehmen', label: 'Übernehmen', art: 'primary' },
         ],
       });

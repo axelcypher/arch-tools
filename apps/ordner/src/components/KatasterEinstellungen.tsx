@@ -209,8 +209,8 @@ export function KatasterEinstellungen() {
         Projektdatei (.oap) übernommen und danach von dort verwendet; „Vorlage aktualisieren“ im Export-Dialog holt die aktuelle Fassung.
       </p>
       <p className="muted">
-        Die Pläne sind eine Arbeits- und Planungsgrundlage, kein amtlicher Auszug aus dem Liegenschaftskataster. Für den Bauantrag bleibt der amtliche Auszug bzw. der amtliche Lageplan nach § 3
-        BauPrüfVO NRW nötig.
+        Die Pläne sind eine Arbeits- und Planungsgrundlage, kein amtlicher Auszug aus dem Liegenschaftskataster. Für den Bauantrag bleibt der amtlich beglaubigte Auszug aus der Flurkarte (§ 2
+        BauPrüfVO NRW) bzw. der amtliche Lageplan (§ 3 Abs. 3 BauPrüfVO NRW) nötig.
       </p>
       {!desktop && <p className="warning small-text">Der Export braucht die Desktop-App (QGIS läuft auf diesem Rechner).</p>}
 
