@@ -72,9 +72,8 @@ export function EinstellungenModal() {
   const erkannt = nameErkennen(probe, e.rechnungen.muster, e.rechnungen.arten);
 
   return (
-    <Modal titel="Einstellungen" onClose={() => void abbrechen()} breit klickDaneben={false} className="ava-einstellungen">
+    <Modal kopf titel="Einstellungen" onClose={() => void abbrechen()} breit klickDaneben={false} className="ava-einstellungen">
       <div className="ava-einst-kopf">
-        <h2>Einstellungen</h2>
         <span className="muted small-text">gelten für das ganze Büro (gemeinsamer Konfigurationsordner)</span>
       </div>
       <div className="ava-einst-koerper">
