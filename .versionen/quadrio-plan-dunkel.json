@@ -1,6 +1,0 @@
-{
-  "flaechenrechner": {
-    "stufe": "patch",
-    "notiz": "Raumfüllungen auf der dunklen Zeichenfläche erscheinen im Ton der Farbmarke in der Raumliste; Kontextmenüs lesen Tastenkürzel vor, im Eckpunkt-Menü steht „Punkt löschen“ zuletzt."
-  }
-}
