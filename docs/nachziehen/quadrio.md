@@ -1,10 +1,11 @@
-# QUADRIO: aus dem Designsystem nachziehen
+# QUADRIO (`apps/flaechenrechner`): aus dem Designsystem nachziehen
 
 Offene Punkte aus der Designrichtlinie ([docs/design.md](../design.md)) für diese App. Neue Punkte trägt das
-Designsystem ein; die App löscht erledigte Punkte in ihrem PR. Dateiangaben beziehen sich auf den Stand beim Eintragen.
+Designsystem ein. Erledigte Punkte löscht die App in ihrem eigenen PR (löschen, nicht abhaken). Dateiangaben beziehen
+sich auf den Stand beim Eintragen.
 
-- [ ] eigene `div.modal` auf `Modal` umstellen; Titel mit `kopf` statt `h3` im Inhalt; Werkzeugleisten-Befehle nach „Begriffe“ benennen (z. B. TERRIO „Öffnen“ → „Öffnen …“)
-- [ ] Raumfüllungen bzw. Lageplanflächen bei `useZeichenflaecheGefiltert()` mit `planFuellungDunkel` vorrechnen (`Canvas.tsx` Deckung 0,45; `LageplanEditor.tsx` alle Deckungen 0,55/0,45/0,15/0,12; NUMIO `MengenPlan.tsx` 0,3); Marken bleiben unverändert
-- [ ] Tastenkürzel in Menüs von `hinweis` auf `tasten` umstellen (`Canvas.tsx` Strg+C, Strg+D, Entf, F; PERMIO `App.tsx` Strg+E)
-- [ ] eigene Menüs prüfen: Gefahr-Punkte (Löschen) ans Ende, abgesetzt durch einen Trenner
-- [ ] eigenen Punkt `tb-dirty` am Knopf „Speichern“ durch `className="ungespeichert"` ersetzen, eigene CSS-Regel löschen (QUADRIO `Toolbar.tsx`, `styles.css`; TERRIO mit bzw. nach #70 in `App.tsx`, bis dahin „Speichern •“ im Text)
+- Dialoge auf `Modal` (Titel mit `kopf` statt `h3` im Inhalt) und Befehle nach „Begriffe“ benennen (Befehle, die einen Dialog öffnen, mit „ …“) – prüfen, ob noch etwas offen ist
+- Raumfüllungen bei `useZeichenflaecheGefiltert()` mit `planFuellungDunkel` vorrechnen: `Canvas.tsx`, Deckung 0,45; Farbmarken bleiben unverändert
+- Tastenkürzel in Menüs von `hinweis` auf `tasten` umstellen: `Canvas.tsx` (Strg+C, Strg+D, Entf, F)
+- eigene Menüs prüfen: Gefahr-Punkte (Löschen) ans Ende, abgesetzt durch einen Trenner
+- eigenen Punkt `tb-dirty` am Knopf „Speichern“ durch `className="ungespeichert"` ersetzen und die eigene Regel löschen: `Toolbar.tsx`, `styles.css`

@@ -290,5 +290,5 @@ Namen in der Titelleiste (`TitleBar`, Feld `dirty`) bleibt davon unberührt.
 ## Was die Apps nachziehen
 
 Je App eine Datei in [`docs/nachziehen/`](nachziehen/) (`quadrio.md`, `terrio.md`, `numio.md`, `atlas.md`,
-`rectio.md`, `permio.md`, `fabrio.md`). Neue Punkte trägt das Designsystem dort ein, die App löscht erledigte Punkte in
-ihrem eigenen PR. Diese Richtlinie ändert sich dafür nicht – so kommen sich App-PRs und Designsystem nicht in die Quere.
+`rectio.md`, `permio.md`, `fabrio.md`, `arkly.md`). Neue Punkte trägt das Designsystem dort ein, die App löscht erledigte
+Punkte in ihrem eigenen PR (löschen, nicht abhaken). Diese Richtlinie ändert sich dafür nicht – so kommen sich App-PRs und Designsystem nicht in die Quere.
