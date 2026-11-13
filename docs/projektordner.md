@@ -129,7 +129,8 @@ geschieht nicht still: Es gilt „nicht gespeichert“, die Aktion unterbleibt, 
 hineingezogene, noch nicht abgelegte Mails unter „Mails“ (die Mails selbst bleiben im Projektordner bzw. in Outlook;
 schon ein Wechsel der Ansicht verwirft diese Eingaben) und alles, was ATLAS sofort speichert.
 Änderungen an der Struktur schreibt ATLAS kurz verzögert (zusammengefasst); vor dem Schließen, Andocken, Herauslösen
-und einem Update schreibt es eine noch wartende Änderung sofort und wartet darauf, auch ohne Rückfrage.
+und einem Update schreibt es eine noch wartende Änderung sofort und wartet darauf, auch ohne Rückfrage. Scheitert
+dieses letzte Schreiben sofort (etwa bei getrenntem Netzlaufwerk), geht die Änderung derzeit ohne Rückfrage verloren.
 
 ### Neues Projekt aus jeder App
 

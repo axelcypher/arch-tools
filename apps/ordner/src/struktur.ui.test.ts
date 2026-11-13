@@ -1171,4 +1171,15 @@ describe('Vor dem Schließen (Rahmen): verzögertes Schreiben nicht verlieren', 
     expect(gespeichert().struktur.name).toBe('Vor dem Schließen');
     expect(sicherungen_.schreiben).toBe(1);
   });
+
+  it('Gegenprobe: bei einem Konflikt mit einem anderen Rechner schreibt auch das Schließen nichts (ATLAS fragt vorher)', async () => {
+    useOrdner.setState({ konfigLaden: echtesKonfigLaden });
+    await act(() => useOrdner.getState().konfigLaden());
+    act(() => useOrdner.setState({ konflikt: { roh: { struktur: { name: 'Fremd', ordner: [] } } } }));
+    sicherungen_.schreiben = 0;
+    act(() => useOrdner.getState().setStruktur({ ...useOrdner.getState().struktur, name: 'Trotz Konflikt' }));
+    expect(await schliessenVorbereiten()).toBe(true);
+    expect(sicherungen_.schreiben).toBe(0);
+    expect(gespeichert().struktur.name).not.toBe('Trotz Konflikt');
+  });
 });
