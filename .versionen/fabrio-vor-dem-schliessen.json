@@ -1,6 +1,0 @@
-{
-  "ava": {
-    "stufe": "patch",
-    "notiz": "Vor dem Schließen, Andocken oder Update-Neustart in Arkly wartet FABRIO auf laufendes Speichern und übernimmt die laufende Eingabe; Hinzufügen-Knöpfe mit Plus-Symbol, Ein- und Ausrücken mit eigenen Symbolen."
-  }
-}
