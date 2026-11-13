@@ -36,8 +36,13 @@ Konfigurationsordner) und Projektdateien sind dieselben.
   und die der AVA-App (`apps/ava/src-tauri/src/befehle.rs`), jeweils per `include!`. Neue Befehle einer App gehören deshalb auch in die Liste der Rahmen-App.
 - **Web-Builds eingebettet:** `npm run build:alle` (in `apps/suite`) baut alle Apps und kopiert ihre `dist/` nach
   `apps/suite/dist/apps/<app>/` (`scripts/apps-einbauen.mjs`). Jede eingebettete `index.html` lädt vorab
-  `rahmen-bruecke.js`: Richtet die Webansicht in einem Tab den Zugang zu den Befehlen nicht selbst ein, übernimmt
-  die App den des Rahmens (gleicher Ursprung).
+  `rahmen-bruecke.js`: Richtet die Webansicht in einem Tab den Zugang zu den Befehlen nicht selbst ein (macOS,
+  Linux), übernimmt die App den des Rahmens (gleicher Ursprung). Unter Windows (WebView2) richtet Tauri ihn auch im
+  iframe ein; die Befehle gehen dann über das IPC-Protokoll – deshalb steht `ipc: http://ipc.localhost` in
+  `connect-src` der CSP (`tauri.conf.json`). Ohne das wiche Tauri auf `postMessage` aus, dessen Antwort nur das
+  Hauptdokument erreicht: In den Tabs reagierten dann alle Knöpfe, die einen Befehl brauchen, nicht (Ordner wählen,
+  Import, Speichern, Einstellungen). Tauri-Ereignisse erreichen Tabs aus demselben Grund nicht – Tabs sprechen mit dem
+  Rahmen deshalb per `postMessage`.
 - **Tabs** sind iframes mit `?rahmen=tab&app=<app>`, herausgelöste Fenster eigene Tauri-Fenster (`app-<app>`) mit
   `?rahmen=fenster&app=<app>`. `packages/core/src/platform/rahmen.ts` erkennt das; die gemeinsame Titelleiste blendet
   im Tab Fensterknöpfe, Ziehen und Updates aus und meldet Projektname und ungespeicherte Änderungen per
