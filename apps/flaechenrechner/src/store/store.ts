@@ -524,12 +524,17 @@ function mitZeitlimit<T>(arbeit: Promise<T>, ms: number): Promise<T> {
 }
 let autosaveTimer: ReturnType<typeof setTimeout> | undefined;
 /** laufendes Schreiben des Zwischenstands (bis es fertig ist) */
-let laufend: Promise<void> | null = null;
+let laufend: Promise<boolean> | null = null;
+/** ist das letzte Schreiben gescheitert? Dann ist der aktuelle Stand nicht gesichert */
+let letztesGescheitert = false;
 
-/** aktuellen Stand in IndexedDB schreiben – hinter ein laufendes Schreiben gehängt, damit die Reihenfolge stimmt */
-function zwischenstandSchreiben(): Promise<void> {
-  const davor = laufend ?? Promise.resolve();
-  const p: Promise<void> = davor
+/**
+ * aktuellen Stand in IndexedDB schreiben – hinter ein laufendes Schreiben gehängt, damit die Reihenfolge stimmt.
+ * Liefert, ob es geklappt hat (ein Fehler wird protokolliert, nicht geworfen).
+ */
+function zwischenstandSchreiben(): Promise<boolean> {
+  const davor = laufend ?? Promise.resolve(true);
+  const p: Promise<boolean> = davor
     .then(() => {
       const { project, basis, datei } = useEditor.getState();
       return mitZeitlimit(idbSet(AUTOSAVE_KEY, { project, basis, datei }), SCHREIBEN_MAX_MS);
@@ -541,10 +546,13 @@ function zwischenstandSchreiben(): Promise<void> {
       } catch {
         // ignorieren
       }
+      letztesGescheitert = false;
+      return true;
     })
     .catch((e) => {
-      // Autosave ist nur ein Komfortmerkmal
       log.warn('Zwischenspeichern fehlgeschlagen', e);
+      letztesGescheitert = true;
+      return false;
     })
     .finally(() => {
       if (laufend === p) laufend = null;
@@ -554,16 +562,19 @@ function zwischenstandSchreiben(): Promise<void> {
 }
 
 /**
- * Vor dem Schließen (Arkly, `vorDemSchliessen`): ausstehendes Zwischenspeichern sofort ausführen und abwarten. Mehrfach
- * aufrufbar – ohne ausstehende Änderung wartet ein weiterer Aufruf nur auf das laufende Schreiben, statt doppelt zu schreiben.
+ * Vor dem Schließen (Arkly, `vorDemSchliessen`): ausstehendes Zwischenspeichern sofort ausführen und abwarten.
+ * `false`, wenn der Stand nicht gesichert ist – Arkly fragt dann „… konnte nicht speichern“, statt still zu schließen.
+ * Mehrfach aufrufbar: Ein laufendes Schreiben wird abgewartet statt doppelt geschrieben; ist das letzte gescheitert,
+ * wird neu geschrieben (etwa nach „Erneut versuchen“).
  */
-export function zwischenstandSichern(): Promise<void> {
+export function zwischenstandSichern(): Promise<boolean> {
   if (autosaveTimer !== undefined) {
     clearTimeout(autosaveTimer);
     autosaveTimer = undefined;
     return zwischenstandSchreiben();
   }
-  return laufend ?? Promise.resolve();
+  if (laufend) return laufend;
+  return letztesGescheitert ? zwischenstandSchreiben() : Promise.resolve(true);
 }
 
 useEditor.subscribe((s, prev) => {

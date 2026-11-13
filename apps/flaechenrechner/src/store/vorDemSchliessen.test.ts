@@ -122,20 +122,26 @@ describe('QUADRIO: Zwischenstand vor dem Schließen (vorDemSchliessen)', () => {
     expect(puts.map((x) => (x as { project: { name: string } }).project.name)).toEqual(['Erster Stand', 'Zweiter Stand']);
   });
 
-  it.each(['fehler', 'abbruch'] as const)('Schreiben scheitert (%s): Schließen wartet nicht ewig, späteres Zwischenspeichern läuft wieder', async (art) => {
+  it.each(['fehler', 'abbruch'] as const)('Schreiben scheitert (%s): Arkly erfährt es („fehler“), erneuter Aufruf schreibt neu, danach wieder „fertig“', async (art) => {
     const { useEditor } = mod;
     puts.length = 0;
     ausgang = art;
     useEditor.getState().update((p) => ({ ...p, name: `Scheitert (${art})` }));
     const vorbereitet = rahmen.schliessenVorbereiten(5000);
     await alleAbschliessen();
-    expect(await vorbereitet).toBe('fertig'); // erledigt (Fehler ist protokolliert), kein Hängen bis zum Zeitlimit
+    // nicht gesichert: Rückfrage statt still schließen – und kein Hängen bis zum Zeitlimit
+    expect(await vorbereitet).toBe('fehler');
+    expect(puts).toHaveLength(1);
 
-    useEditor.getState().update((p) => ({ ...p, name: `Danach (${art})` }));
-    const danach = mod.zwischenstandSichern();
+    // „Erneut versuchen“ ohne neue Änderung: schreibt den Stand neu
+    const erneut = rahmen.schliessenVorbereiten(5000);
     await alleAbschliessen();
-    await danach;
+    expect(await erneut).toBe('fertig');
     expect(puts).toHaveLength(2);
-    expect((puts[1] as { project: { name: string } }).project.name).toBe(`Danach (${art})`);
+    expect((puts[1] as { project: { name: string } }).project.name).toBe(`Scheitert (${art})`);
+
+    // Gegenprobe: jetzt gesichert – ein weiterer Aufruf schreibt nicht noch einmal
+    expect(await mod.zwischenstandSichern()).toBe(true);
+    expect(puts).toHaveLength(2);
   });
 });

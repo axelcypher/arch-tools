@@ -1,0 +1,6 @@
+{
+  "flaechenrechner": {
+    "stufe": "patch",
+    "notiz": "Scheitert das Sichern des Zwischenstands vor dem Schließen, meldet QUADRIO das an Arkly, das dann nachfragt, statt still zu schließen."
+  }
+}
