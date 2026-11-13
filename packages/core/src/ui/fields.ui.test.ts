@@ -216,6 +216,43 @@ describe('Prüfregeln', () => {
     expect(zahlLesen('45.00')).toBe(45);
   });
 
+  it('Fehler von außen (ungueltig, fehlerId): rot markiert, aria-invalid, beschrieben von der gemeinsamen Meldung; eigene Meldung kommt dazu', () => {
+    const host = render(
+      createElement(
+        'div',
+        null,
+        createElement(NumberField, { key: 'a', value: 400, onChange: () => {}, ungueltig: true, fehlerId: 'summe', label: 'Teilfläche A' }),
+        createElement(TextField, { key: 'b', value: 'x', onChange: () => {}, ungueltig: true, fehlerId: 'summe', label: 'Name' }),
+        createElement(NumberField, { key: 'c', value: 1, min: 0, max: 2, onChange: () => {}, label: 'ohne' }),
+        createElement(NumberField, { key: 'd', value: 5, onChange: () => {}, ungueltig: true, fehlerId: 'summe', title: 'Teilfläche D' }),
+        createElement('p', { key: 'm', id: 'summe' }, 'Summe der Teilflächen größer als das Grundstück'),
+      ),
+    );
+    const [a, b, c] = [...host.querySelectorAll('input')];
+    for (const el of [a, b]) {
+      expect(el.classList.contains('feld-fehler')).toBe(true);
+      expect(el.getAttribute('aria-invalid')).toBe('true');
+      expect(el.getAttribute('aria-describedby')).toBe('summe');
+    }
+    expect(a.title).toBe('Siehe Meldung zu diesen Feldern');
+    expect(host.querySelectorAll('input')[3].title).toBe('Teilfläche D – siehe Meldung zu diesen Feldern');
+    expect(c.hasAttribute('aria-invalid')).toBe(false);
+    expect(c.hasAttribute('aria-describedby')).toBe(false);
+    // eigene Meldung zusätzlich: beide ids
+    tippen(a, 'abc');
+    act(() => a.blur());
+    const ids = a.getAttribute('aria-describedby')!.split(' ');
+    expect(ids).toContain('summe');
+    expect(document.getElementById(ids.find((i) => i !== 'summe')!)?.textContent).toContain('keine Zahl');
+    // TextField mit eigener Prüfung: eigene Meldung und gemeinsame Meldung
+    const host2 = render(createElement(TextField, { value: '12', onChange: () => {}, pruefen: plz, zeigen: true, ungueltig: true, fehlerId: 'summe', label: 'PLZ' }));
+    const plzFeld = host2.querySelector('input')!;
+    const plzIds = plzFeld.getAttribute('aria-describedby')!.split(' ');
+    expect(plzIds).toHaveLength(2);
+    expect(plzIds).toContain('summe');
+    expect(document.getElementById(plzIds.find((i) => i !== 'summe')!)?.classList.contains('feld-meldung')).toBe(true);
+  });
+
   it('Enter im Formular ohne Absendeknopf: übernimmt den Wert und sendet danach ab (der Handler sieht den neuen Wert)', async () => {
     const gesendet: (number | undefined)[] = [];
     function Formular() {

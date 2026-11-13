@@ -12,6 +12,8 @@ const log = logger('speicher');
 export interface Stand {
   doc: Dokument;
   dateiname: string | null;
+  /** Stand der Datei beim letzten Öffnen bzw. Speichern (siehe Zustand `dateiStand`) */
+  dateiStand?: { groesse: number; geaendert: number } | null;
   dirty: boolean;
 }
 

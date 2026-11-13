@@ -267,6 +267,11 @@
   .toolbar button {
     padding: 4px 5px;
   }
+
+  /* bekannte Befehle (Neu, Öffnen, Speichern) nur als Symbol – Name über aria-label und title */
+  .toolbar .tb-text {
+    display: none;
+  }
 }
 
 /* leeres Geschoss: Plan laden bzw. Umriss übernehmen als abgeschlossener Block über den Geschossangaben */
@@ -663,13 +668,9 @@
   }
 }
 
-/* Hinweis (kein Fehler) in den Eigenschaften */
-.hinweis {
-  background: var(--chip-bg);
-  border: 1px solid var(--border);
-  padding: 5px 8px;
-  border-radius: 4px;
-  margin: 6px 0;
+/* Meldungen in den Eigenschaften (gemeinsame Familie .meldung) */
+.sidebar-right .meldung {
+  margin: var(--s2) 0;
 }
 
 /* Prüfliste (F-10) */
