@@ -63,8 +63,9 @@ const CURTAIN_PARTS = new Set(['IFCPLATE', 'IFCMEMBER']);
 /** Bauteile, die nach ihrem Namen eine Gaube sind */
 const GAUBE_NAME = /gaube|dormer/i;
 const istGaube = (e: IfcMeshPart) => GAUBE_NAME.test(e.name) || GAUBE_NAME.test(e.predefinedType);
-/** „1 Raum“, „3 Räume“ – Anzahl mit Ein- bzw. Mehrzahl für den Bericht */
-const raeume = (n: number) => `${n} ${n === 1 ? 'Raum' : 'Räume'}`;
+/** Anzahl mit Ein- bzw. Mehrzahl für den Bericht: „1 Raum“, „3 Räume“ */
+const anzahl = (n: number, eins: string, mehr: string) => `${n} ${n === 1 ? eins : mehr}`;
+const raeume = (n: number) => anzahl(n, 'Raum', 'Räume');
 
 /** Dachbauteile; Gauben als Bibliotheksobjekt (z. B. Archicad → IfcBuildingElementProxy „Gaube“) gehören dazu */
 const isRoofPart = (e: IfcMeshPart) =>
@@ -319,7 +320,7 @@ export function buildFromIfc(x: IfcExtract, o: IfcImportOptions): IfcImportResul
           report.push(`${st.name}: ohne BGF-Umriss – der Rauminhalt darüber (z. B. Dachspitze) wird dem Geschoss darunter bis zur Dachhaut zugerechnet.`);
         }
       }
-      report.push(`Dach aus ${roofParts.length} ${roofParts.length === 1 ? 'Dachbauteil' : 'Dachbauteilen'} übernommen (BRI bis zur Dachhaut).`);
+      report.push(`Dach aus ${anzahl(roofParts.length, 'Dachbauteil', 'Dachbauteilen')} übernommen (BRI bis zur Dachhaut).`);
     } else report.push('Keine Dachbauteile (IfcRoof, IfcSlab.ROOF) gefunden – Dachform bei Bedarf manuell wählen.');
   }
 

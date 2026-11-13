@@ -50,6 +50,7 @@ const BGBL = (jahr: string, seite: string) => `https://www.bgbl.de/xaver/bgbl/st
 
 const DIN277: Quelle = { titel: 'DIN 277:2021-08 Grundflächen und Rauminhalte im Hochbau', fundstelle: 'DIN Media (kostenpflichtig)', url: 'https://www.dinmedia.de/de/norm/din-277/342217323' };
 const DIN276: Quelle = { titel: 'DIN 276:2018-12 Kosten im Bauwesen', fundstelle: 'DIN Media (kostenpflichtig)', url: 'https://www.dinmedia.de/de/norm/din-276/293154016' };
+const HOAI_2: Quelle = { titel: 'Honorarordnung für Architekten und Ingenieure (HOAI) 2021', fundstelle: '§ 2 HOAI, Anlage 10.1', url: GII('hoai_2013/__2.html') };
 const WOFLV = (p: string): Quelle => ({ titel: 'Wohnflächenverordnung (WoFlV) vom 25.11.2003', fundstelle: `§ ${p} WoFlV`, url: GII(`woflv/__${p}.html`) });
 const BAUNVO = (p: string): Quelle => ({ titel: 'Baunutzungsverordnung (BauNVO) in der geltenden Fassung', fundstelle: `§ ${p} BauNVO`, url: GII(`baunvo/__${p}.html`) });
 const BAUO2018: Quelle = { titel: 'Landesbauordnung 2018 (BauO NRW 2018), amtliche Fassung', fundstelle: 'recht.nrw.de', url: 'https://recht.nrw.de/lrgv/gesetz/01092026-landesbauordnung-2018-bauo-nrw-2018' };
@@ -469,7 +470,7 @@ export const REGELN: Regel[] = [
       'HOAI § 2 Abs. 10/11 verweist auf DIN 276:2008-12 und verlangt für Kostenschätzung bzw. Kostenberechnung mindestens die 1. bzw. 2. Ebene. Maßgeblich ist die im Vertrag vereinbarte Fassung.',
       'Exportdateien heißen nach der Stufe, z. B. „Projekt Kosten Kostenberechnung.xlsx“.',
     ],
-    quellen: [DIN276],
+    quellen: [DIN276, HOAI_2],
     stichworte: ['Kostenrahmen', 'Kostenschätzung', 'Kostenberechnung', 'Kostenvoranschlag', 'Kostenanschlag', 'Kostenfeststellung', 'Leistungsphase', 'HOAI'],
     apps: ['kosten'],
     themen: ['kosten', 'din276'],

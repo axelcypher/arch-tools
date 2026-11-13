@@ -344,6 +344,11 @@ describe('IFC-Import: Bericht mit Ein- und Mehrzahl', () => {
     ).report;
     expect(zwei).toContain('2 Räume aus IFC-Zonen übernommen.');
   });
+
+  it('„1 Dachbauteil“', () => {
+    const r = buildFromIfc(extract(false), { rooms: false, outlines: true, roof: true, wohnflaeche: false });
+    expect(r.report).toContain('Dach aus 1 Dachbauteil übernommen (BRI bis zur Dachhaut).');
+  });
 });
 
 describe('IFC-Import: normative Korrekturen (FR-02, FR-06, FR-16, FR-17)', () => {
