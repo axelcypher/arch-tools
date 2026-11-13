@@ -22,13 +22,16 @@ import { schliessenVorbereiten } from '@core/platform/rahmen';
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 /** Eingriff in das Schreiben der Sicherungen (sonst unverändert): warten lassen bzw. scheitern lassen */
-const sicherungen_ = vi.hoisted(() => ({ vorher: null as null | (() => Promise<void>), schreiben: 0 }));
+const sicherungen_ = vi.hoisted(() => ({ vorher: null as null | (() => Promise<void>), schreiben: 0, scheitern: false }));
 vi.mock('@core/platform/konfig', async (original) => {
   const echt = await original<typeof import('@core/platform/konfig')>();
   return {
     ...echt,
     konfigSchreibenWennUnveraendert: async (...a: Parameters<typeof echt.konfigSchreibenWennUnveraendert>) => {
-      if (a[0] === 'projektordner') sicherungen_.schreiben++;
+      if (a[0] === 'projektordner') {
+        sicherungen_.schreiben++;
+        if (sicherungen_.scheitern) throw new Error('Netzlaufwerk getrennt');
+      }
       return echt.konfigSchreibenWennUnveraendert(...a);
     },
     konfigAendern: async (...a: Parameters<typeof echt.konfigAendern>) => {
@@ -37,6 +40,22 @@ vi.mock('@core/platform/konfig', async (original) => {
     },
   };
 });
+
+/** bei vorDemSchliessen angemeldete Funktionen mitschreiben (sonst unverändert), um ihr Ergebnis prüfen zu können */
+const vorbereitungen_ = vi.hoisted(() => ({ liste: [] as (() => Promise<void> | void)[] }));
+vi.mock('@core/platform/rahmen', async (original) => {
+  const echt = await original<typeof import('@core/platform/rahmen')>();
+  return {
+    ...echt,
+    vorDemSchliessen: (f: () => Promise<void> | void) => {
+      vorbereitungen_.liste.push(f);
+      return echt.vorDemSchliessen(f);
+    },
+  };
+});
+const vorbereitungenAusfuehren = async () => {
+  await Promise.all(vorbereitungen_.liste.map((f) => f()));
+};
 
 const echtesKonfigLaden = useOrdner.getState().konfigLaden;
 const SCHLUESSEL = 'arch-tools:konfig:projektordner';
@@ -55,6 +74,7 @@ function render(element: ReactElement = createElement(App)): HTMLElement {
 }
 beforeEach(() => {
   sicherungen_.vorher = null;
+  sicherungen_.scheitern = false;
   localStorage.clear();
   useOrdner.setState({
     stamm: leereStammdaten(),
@@ -1181,5 +1201,18 @@ describe('Vor dem Schließen (Rahmen): verzögertes Schreiben nicht verlieren', 
     expect(await schliessenVorbereiten()).toBe(true);
     expect(sicherungen_.schreiben).toBe(0);
     expect(gespeichert().struktur.name).not.toBe('Trotz Konflikt');
+  });
+
+  it('scheitert das letzte Schreiben, meldet die Vorbereitung den Fehler an den Rahmen weiter (statt ihn zu schlucken)', async () => {
+    useOrdner.setState({ konfigLaden: echtesKonfigLaden });
+    await act(() => useOrdner.getState().konfigLaden());
+    sicherungen_.scheitern = true;
+    act(() => useOrdner.getState().setStruktur({ ...useOrdner.getState().struktur, name: 'Laufwerk weg' }));
+    await expect(vorbereitungenAusfuehren()).rejects.toThrow('Struktur nicht gespeichert');
+    // Gegenprobe: Laufwerk wieder da → kein Fehler, gespeichert
+    sicherungen_.scheitern = false;
+    act(() => useOrdner.getState().setStruktur({ ...useOrdner.getState().struktur, name: 'Laufwerk da' }));
+    await expect(vorbereitungenAusfuehren()).resolves.toBeUndefined();
+    expect(gespeichert().struktur.name).toBe('Laufwerk da');
   });
 });

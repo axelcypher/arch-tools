@@ -130,7 +130,7 @@ hineingezogene, noch nicht abgelegte Mails unter „Mails“ (die Mails selbst b
 schon ein Wechsel der Ansicht verwirft diese Eingaben) und alles, was ATLAS sofort speichert.
 Änderungen an der Struktur schreibt ATLAS kurz verzögert (zusammengefasst); vor dem Schließen, Andocken, Herauslösen
 und einem Update schreibt es eine noch wartende Änderung sofort und wartet darauf, auch ohne Rückfrage. Scheitert
-dieses letzte Schreiben sofort (etwa bei getrenntem Netzlaufwerk), geht die Änderung derzeit ohne Rückfrage verloren.
+dieses letzte Schreiben (etwa bei getrenntem Netzlaufwerk), meldet ATLAS den Fehler an den Rahmen, damit er nachfragen kann.
 
 ### Neues Projekt aus jeder App
 

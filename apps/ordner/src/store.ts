@@ -498,7 +498,14 @@ useOrdner.subscribe((s, vorher) => {
 konfigVorWechsel(() => useOrdner.getState().speichernJetzt());
 // vor dem Ende von Fenster bzw. Tab (Schließen, Andocken, Herauslösen, Update): ein verzögertes Schreiben sofort ausführen und
 // abwarten – auch ohne gemeldete ungespeicherte Änderungen. Mehrfach aufgerufen, wartet speichernJetzt nur das laufende Schreiben ab.
-vorDemSchliessen(() => useOrdner.getState().speichernJetzt());
+// Scheitert das Schreiben, wirft sie den Fehler weiter.
+vorDemSchliessen(async () => {
+  await useOrdner.getState().speichernJetzt();
+  // gescheitertes Schreiben nicht schlucken: der Fehler lässt den Rahmen nachfragen („konnte nicht speichern“); bei Konflikt
+  // bzw. unlesbarer Struktur wird bewusst nichts geschrieben – das fragt die Meldung ungespeicherter Änderungen vorher ab
+  const fehler = useOrdner.getState().strukturNichtGeschrieben;
+  if (fehler) throw new Error(`Struktur nicht gespeichert: ${fehler}`);
+});
 konfigOrtBeobachten((o) => {
   const s = useOrdner.getState();
   if (!s.geladen || (s.konfig && o && s.konfig.ordner === o.ordner && s.konfig.modus === o.modus && s.konfig.notbetrieb === o.notbetrieb)) return;
