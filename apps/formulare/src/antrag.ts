@@ -1093,7 +1093,12 @@ export function alsAngaben(a: Abschnitt): ProjektDatei {
  * übernimmt die Änderung ganz; einen, den der Aufrufer nicht kannte, den es inzwischen aber gibt, lässt sie
  * unverändert.
  */
-export function aenderungAnwenden(frisch: Abschnitt, vorher: ProjektDatei | null, nachher: ProjektDatei, o: { bewegt?: string } = {}): Abschnitt {
+export function aenderungAnwenden(
+  frisch: Abschnitt,
+  vorher: ProjektDatei | null,
+  nachher: ProjektDatei,
+  o: { bewegt?: string; kennzeichen?: { umfangBehalten?: boolean } } = {},
+): Abschnitt {
   const alt = vorher ? antraegeVon(vorher) : {};
   const neu = antraegeVon(nachher);
   const antraege: Record<string, AntragDaten> = { ...frisch.antraege };
@@ -1130,6 +1135,8 @@ export function aenderungAnwenden(frisch: Abschnitt, vorher: ProjektDatei | null
       } else if (k === 'umfang') {
         // je Eintrag – zwei Änderungen kurz nacheinander bzw. von zwei Arbeitsplätzen überschreiben sich nicht
         const u = umfangAnwenden(f[k] as UmfangEintrag[] | undefined, a[k] as UmfangEintrag[] | undefined, n[k] as UmfangEintrag[] | undefined, o.bewegt);
+        // festgelegt, wo der Aufrufer keinen kannte, in der Datei steht aber schon einer: der blieb – das sagen können
+        if (!a[k] && f[k] && n[k] && o.kennzeichen) o.kennzeichen.umfangBehalten = true;
         if (u) z[k] = u;
         else delete z[k];
       } else if (n[k] === undefined) delete z[k];

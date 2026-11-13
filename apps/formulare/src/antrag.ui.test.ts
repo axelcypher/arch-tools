@@ -4572,6 +4572,161 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     expect(meldungen.filter((m) => /keinen Antragsumfang|nicht mehr im Antragsumfang/.test(m))).toEqual([]);
   });
 
+  it('„Antragsumfang festlegen“ mit einem Katalogeintrag, dessen Muster geleert ist: festgelegt, keine Meldung „nicht festgelegt“', async () => {
+    useAntrag.setState({ katalog: KATALOG.map((k) => (k.id === 'lageplan' ? { ...k, muster: '' } : k)) });
+    const host = await projektBS9();
+    await klick(antragsdaten(host));
+    const meldungen: string[] = [];
+    const ab = useFormulare.subscribe((st, vorher) => void (st.meldung && st.meldung !== vorher.meldung && meldungen.push(st.meldung.text)));
+    await klick(knopf(host, 'Antragsumfang festlegen'));
+    for (let i = 0; i < 6; i++) await warte();
+    ab();
+    expect(umfangIdsIn('BAUA 2')).toEqual(['muster', 'bauantrag', 'lageplan']);
+    expect(meldungen.filter((m) => /nicht festgelegt/.test(m))).toEqual([]);
+  });
+
+  it('„Antragsumfang festlegen“ in BS9, das Schreiben hängt, inzwischen ist H24 offen (dort mit Antragsumfang): BS9 festgelegt, keine Meldung in H24', async () => {
+    const H24 = 'Z:/Projekte/H24 Höggenstraße';
+    ds.ordner.add(`${H24}/TÖB/BAUA 2`);
+    ds.dateien.set(`${H24}/TÖB/BAUA 2/x.pdf`, new Uint8Array([1]));
+    const p = createProject('Höggenstraße');
+    p.meta = { ...leereMeta(), projektcode: 'H24' };
+    ds.dateien.set(
+      `${H24}/Planung/Berechnungen/H24.oap`,
+      oapMit(writeArchive(p), (f) => {
+        f.aktiveFassung = 'BAUA 2';
+        f.antraege = { 'BAUA 2': { umfang: [{ id: 'h1', titel: 'Eigenes Dokument', art: 'extern' }] } };
+      }),
+    );
+    const host = await projektBS9();
+    await klick(antragsdaten(host));
+    const po = ds.projektordner as unknown as { projektdateiErsetzen: (...a: unknown[]) => Promise<unknown> };
+    const echt = po.projektdateiErsetzen.bind(po);
+    let los!: () => void;
+    const tor = new Promise<void>((r) => (los = r));
+    let einmal = true;
+    po.projektdateiErsetzen = async (...a: unknown[]) => {
+      if (einmal) {
+        einmal = false;
+        await tor;
+      }
+      return echt(...a);
+    };
+    const meldungen: string[] = [];
+    const ab = useFormulare.subscribe((st, vorher) => void (st.meldung && st.meldung !== vorher.meldung && meldungen.push(st.meldung.text)));
+    try {
+      await klick(knopf(host, 'Antragsumfang festlegen'));
+      for (let i = 0; i < 3; i++) await warte();
+      await act(() => useFormulare.getState().projektWaehlen(useFormulare.getState().projekte.find((x) => x.ordner === 'H24')!));
+      for (let i = 0; i < 8; i++) await warte();
+      los();
+      for (let i = 0; i < 8; i++) await warte();
+    } finally {
+      po.projektdateiErsetzen = echt;
+      ab();
+    }
+    expect(umfangIdsIn('BAUA 2')).toEqual(['muster', 'bauantrag', 'lageplan']);
+    expect(meldungen.filter((m) => /nicht festgelegt/.test(m))).toEqual([]);
+  });
+
+  it('„Antragsumfang festlegen“ in BS9 (dort woanders schon festgelegt), das Neuladen danach hängt, inzwischen ist H24 offen: der in BS9 bleibt, keine Meldung in H24', async () => {
+    ds.ordner.add('Z:/Projekte/H24 Höggenstraße/TÖB/BAUA 2');
+    ds.dateien.set('Z:/Projekte/H24 Höggenstraße/TÖB/BAUA 2/x.pdf', new Uint8Array([1]));
+    const host = await projektBS9();
+    await klick(antragsdaten(host));
+    ds.dateien.set(OAP, oapMit(ds.dateien.get(OAP)!, (f) => void ((f.antraege as Record<string, Record<string, unknown>>)['BAUA 2'].umfang = [{ id: 'ueigen', titel: 'Brandschutzkonzept', art: 'extern' }])));
+    // in der Datei steht schon einer: nichts zu schreiben – das Neuladen danach (zweites Lesen) hängt
+    const po = ds.projektordner as unknown as { liesMitStand: (r: string, p: string) => Promise<unknown> };
+    const echt = po.liesMitStand.bind(po);
+    let los!: () => void;
+    const tor = new Promise<void>((r) => (los = r));
+    let n = 0;
+    po.liesMitStand = async (r: string, p: string) => {
+      const x = await echt(r, p);
+      if (++n === 2) await tor;
+      return x;
+    };
+    const meldungen: string[] = [];
+    const ab = useFormulare.subscribe((st, vorher) => void (st.meldung && st.meldung !== vorher.meldung && meldungen.push(st.meldung.text)));
+    try {
+      await klick(knopf(host, 'Antragsumfang festlegen'));
+      for (let i = 0; i < 3; i++) await warte();
+      await act(() => useFormulare.getState().projektWaehlen(useFormulare.getState().projekte.find((x) => x.ordner === 'H24')!));
+      for (let i = 0; i < 8; i++) await warte();
+      los();
+      for (let i = 0; i < 8; i++) await warte();
+    } finally {
+      po.liesMitStand = echt;
+      ab();
+    }
+    expect(umfangIdsIn('BAUA 2')).toEqual(['ueigen']);
+    expect(meldungen.filter((m) => /nicht festgelegt/.test(m))).toEqual([]);
+  });
+
+  it('Projektdatei zweimal geladen: das frühere scheitert spät, das spätere gelingt – kein Fehler, neuer Stand; umgekehrt bleibt der Fehler', async () => {
+    await projektBS9();
+    await warte();
+    const po = ds.projektordner as unknown as { liesMitStand: (r: string, p: string) => Promise<unknown> };
+    const echt = po.liesMitStand.bind(po);
+    const zweimal = async (erstes: 'scheitert' | 'gelingt') => {
+      let los!: () => void;
+      const tor = new Promise<void>((r) => (los = r));
+      let n = 0;
+      po.liesMitStand = async (r: string, p: string) => {
+        const k = ++n;
+        if (k === 1) {
+          const x = erstes === 'gelingt' ? await echt(r, p) : null;
+          await tor;
+          if (erstes === 'scheitert') throw new Error('Netz weg');
+          return x;
+        }
+        if (erstes === 'gelingt') throw new Error('Netz weg');
+        return echt(r, p);
+      };
+      let fertig = false;
+      try {
+        const l1 = useFormulare.getState().oapLaden().then(() => (fertig = true));
+        await warte();
+        await act(() => useFormulare.getState().oapLaden());
+        los();
+        await act(async () => void (await Promise.race([l1, new Promise((r) => setTimeout(r, 500))])));
+      } finally {
+        po.liesMitStand = echt;
+      }
+      return fertig;
+    };
+    expect(await zweimal('scheitert')).toBe(true);
+    expect(useFormulare.getState().oap).not.toBe('fehlt');
+    expect(useFormulare.getState().meldung?.text ?? '').not.toMatch(/nicht lesbar/);
+    expect(await zweimal('gelingt')).toBe(true);
+    expect(useFormulare.getState().oap).toBe('fehlt');
+    expect(useFormulare.getState().meldung?.text).toMatch(/^Projektdatei von BS9 nicht lesbar/);
+  });
+
+  it('während des Schreibens eine andere Projektdatei gewählt (dort ohne Antragsumfang): keine Meldung „keinen Antragsumfang mehr“', async () => {
+    const KOPIE_REL = 'Planung/Berechnungen/BS9 Kopie.oap';
+    const host = await mitUmfangInBeiden();
+    // die Kopie: BAUA 2 ohne Antragsumfang
+    ds.dateien.set(`${PROJEKT}/${KOPIE_REL}`, oapMit(ds.dateien.get(OAP)!, (f) => void delete (f.antraege as Record<string, Record<string, unknown>>)['BAUA 2'].umfang));
+    const halt = schreibenAnhalten('BS9.oap');
+    const meldungen: string[] = [];
+    const ab = useFormulare.subscribe((st, vorher) => void (st.meldung && st.meldung !== vorher.meldung && meldungen.push(st.meldung.text)));
+    try {
+      const nr = zeileVon(host, 'Lageplan').querySelector<HTMLInputElement>('.pu-nr')!;
+      eingabe(nr, '09');
+      await verlassen(nr);
+      for (let i = 0; i < 20 && !halt.los; i++) await warte();
+      await act(() => useFormulare.getState().oapWaehlen(KOPIE_REL));
+      for (let i = 0; i < 6; i++) await warte();
+      halt.los?.();
+      for (let i = 0; i < 8; i++) await warte();
+    } finally {
+      ab();
+    }
+    expect(nrVon('BAUA 2', 'lageplan')).toBe('09');
+    expect(meldungen.filter((m) => /keinen Antragsumfang|nicht mehr im Antragsumfang/.test(m))).toEqual([]);
+  });
+
   it('Antragsstatus von Hand: „in Arbeit“ behält das Datum – zurück auf „eingereicht“ gilt derselbe Stand', async () => {
     const ordner = `${PROJEKT}/TÖB/BAUA 2`;
     ds.dateien.set(`${ordner}/BS9 BAUA 261101 01 Bauantrag.pdf`, new Uint8Array([1]));

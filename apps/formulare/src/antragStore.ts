@@ -450,9 +450,9 @@ function mitAbschnitt(roh: Record<string, unknown>, neu: ProjektDatei): Record<s
  * Die Änderung eines Aufrufers (`vorher` → `nachher`) in den frisch gelesenen Abschnitt von `roh` eintragen – je Antrag
  * und Feld nur, was er geändert hat (aenderungAnwenden); `meta.antrag` wie bei mitAbschnitt
  */
-function mitAenderung(roh: Record<string, unknown>, vorher: ProjektDatei | null, nachher: ProjektDatei, bewegt?: string): Record<string, unknown> {
+function mitAenderung(roh: Record<string, unknown>, vorher: ProjektDatei | null, nachher: ProjektDatei, bewegt?: string, kennzeichen?: { umfangBehalten?: boolean }): Record<string, unknown> {
   const frisch = abschnittAus(roh.formulare ?? (roh.erweiterungen as Record<string, unknown> | undefined)?.formulare, (roh.meta as { merkmale?: Record<string, string> } | undefined)?.merkmale);
-  return mitAbschnitt(roh, alsAngaben(aenderungAnwenden(frisch, vorher, nachher, { bewegt })));
+  return mitAbschnitt(roh, alsAngaben(aenderungAnwenden(frisch, vorher, nachher, { bewegt, kennzeichen })));
 }
 
 /** Bedingungen und Texte für umfangAendern */
@@ -485,6 +485,8 @@ export interface SchreibInfo {
   vorab?: 'fassung' | 'eintrag' | 'umfang' | 'sperre';
   /** nicht gespeichert, ein erneuter Versuch kann gehen (Schreibfehler, Datei gerade nicht lesbar, Antrag wird geöffnet) */
   erneut?: boolean;
+  /** beim Schreiben stand schon ein Antragsumfang in der Datei, wo der Aufrufer keinen kannte – der blieb */
+  umfangBehalten?: boolean;
   /** wird der offene Dialog abgebrochen: dies statt der allgemeinen Meldung (z. B. eine Zusage zurücknehmen) */
   beiAbbruch?: (art: DialogArt) => void;
 }
@@ -673,8 +675,15 @@ export const useAntrag = create<AntragState>((set, get) => {
     // nur die eigene Änderung in den frisch gelesenen Abschnitt – Gleichzeitiges von anderswo bleibt
     // nichts zu ändern (steht so schon in der Datei, bzw. was geändert werden sollte, ist woanders entfernt): dann
     // wird nicht geschrieben – den Stand der Datei trotzdem übernehmen, damit Store und Meldungen ihr entsprechen
-    if (!(await useFormulare.getState().oapAendern((roh) => mitAenderung(roh, basis, neu, o.bewegt)))) await useFormulare.getState().oapLaden();
+    // Kennzeichen aus dem Zusammenführen – bei einem erneuten Versuch (Datei inzwischen geändert) neu ermittelt
+    const kennzeichen: { umfangBehalten?: boolean } = {};
+    const zusammenfuehren = (roh: Record<string, unknown>) => {
+      kennzeichen.umfangBehalten = false;
+      return mitAenderung(roh, basis, neu, o.bewegt, kennzeichen);
+    };
+    if (!(await useFormulare.getState().oapAendern(zusammenfuehren))) await useFormulare.getState().oapLaden();
     info.geschrieben = true;
+    if (kennzeichen.umfangBehalten) info.umfangBehalten = true;
     // gespeichert: eine eigene „nicht gespeichert“-Meldung von vorhin gilt nicht mehr
     const m = useFormulare.getState().meldung;
     if (m?.art === 'fehler' && m.text.startsWith(`Angaben zum Antrag von ${projekt.ordner} nicht gespeichert`)) useFormulare.setState({ meldung: null });
@@ -1356,17 +1365,17 @@ export const useAntrag = create<AntragState>((set, get) => {
         return Object.assign(info, g, g.vorab === 'fassung' ? { erneut: true } : {});
       }
       try {
-        const vorher = get().projektdatei;
-        const neu: ProjektDatei = { ...(vorher ?? {}) };
+        const projekt = useFormulare.getState().projekt;
+        const neu: ProjektDatei = { ...(get().projektdatei ?? {}) };
         if (umfang) neu.umfang = umfang;
         else delete neu.umfang;
         await projektdateiSchreiben(neu, undefined, { info, bewegt: o.bewegt });
-        // festgelegt, während woanders inzwischen schon einer festgelegt war: der bleibt (er ist jetzt geladen)
-        const jetzt = get().projektdatei;
-        if (info.geschrieben && umfang && !vorher?.umfang && jetzt?.ansicht === vorher?.ansicht && jetzt?.umfang && stabil(jetzt.umfang) !== stabil(umfang)) {
+        // festgelegt, während woanders inzwischen schon einer festgelegt war (so beim Zusammenführen bemerkt): der
+        // bleibt – im selben Projekt ist er jetzt geladen
+        if (info.umfangBehalten) {
           delete info.geschrieben;
           info.grund = 'inzwischen ist schon einer festgelegt';
-          meldung('info', 'Antragsumfang nicht festgelegt – inzwischen ist schon einer festgelegt; er ist jetzt geladen.');
+          if (useFormulare.getState().projekt === projekt) meldung('info', 'Antragsumfang nicht festgelegt – inzwischen ist schon einer festgelegt; er ist jetzt geladen.');
         }
         await get().aktualisieren();
       } catch (e) {

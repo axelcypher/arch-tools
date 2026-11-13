@@ -1569,6 +1569,8 @@ export const useFormulare = create<FormulareState>()((set, get) => {
           if (eintraege.some((e, i) => e !== k.karte.eintraege[i])) set({ karte: { ...k, karte: { ...k.karte, eintraege } } });
         }
       } catch (e) {
+        // inzwischen ein anderes Projekt: nichts melden, nicht auf dessen Laden warten
+        if (get().projekt !== projekt) return;
         if (nr !== oapLadeNr) return void (await oapLadung);
         log.warn(`Projektdatei von ${projekt.ordner} nicht lesbar: ${fehlertext(e)}`);
         if (get().projekt === projekt) set({ oap: 'fehlt', meldung: { art: 'fehler', text: `Projektdatei von ${projekt.ordner} nicht lesbar: ${fehlertext(e)}` } });
