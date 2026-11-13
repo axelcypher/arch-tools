@@ -35,7 +35,8 @@ const klick = async (b: HTMLElement | undefined) => {
 };
 const titelKnopf = () => [...document.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.title.startsWith('Speicherort der Einstellungen'));
 const esc = () => act(async () => document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
-const dialog = () => document.querySelector<HTMLElement>('.modal[aria-label="Speicherort der Einstellungen"]');
+// Dialog mit sichtbarem Kopf: benannt über aria-labelledby
+const dialog = () => [...document.querySelectorAll<HTMLElement>('.modal')].find((m) => m.querySelector(':scope > .modal-kopf')?.textContent === 'Speicherort der Einstellungen') ?? null;
 const rueckfrage = () => document.querySelector<HTMLElement>('.modal.rf');
 
 beforeEach(() => {

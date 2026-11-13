@@ -215,8 +215,7 @@ export function SpeicherortDialog({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <Modal titel="Speicherort der Einstellungen" onClose={laeuft ? undefined : onClose} breit klickDaneben={!laeuft}>
-      <h3>Speicherort der Einstellungen</h3>
+    <Modal titel="Speicherort der Einstellungen" kopf onClose={laeuft ? undefined : onClose} breit klickDaneben={!laeuft}>
       <p className="small-text muted">Gilt für alle Apps – für dieses Benutzerkonto auf diesem Rechner.</p>
       {anzeige === 'fehler' && (
         <div className="warning sp-notbetrieb" role="status">

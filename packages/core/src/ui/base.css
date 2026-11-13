@@ -624,8 +624,10 @@ textarea:focus {
 }
 
 .modal h4 {
-  margin: 10px 0 4px;
-  font-size: 12px;
+  /* Unterabschnitt im Dialog (der Titel ist der Kopf bzw. h3) */
+  margin: var(--s3) 0 var(--s1);
+  font-size: var(--fs-s);
+  font-weight: 600;
 }
 
 .radio-row {
@@ -2020,6 +2022,7 @@ button.ph-lokal {
   border-radius: 0 var(--radius-s) var(--radius-s) 0;
 }
 .segment > button[aria-pressed='true'],
+.segment > button[aria-selected='true'],
 .segment > button.active {
   background: var(--accent-soft);
   color: var(--accent);

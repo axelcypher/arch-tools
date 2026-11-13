@@ -142,14 +142,13 @@ function RueckfrageDialog({ frage }: { frage: Frage }) {
   const standard = frage.knoepfe.find((k) => k.art === 'primary') ?? frage.knoepfe.find((k) => k.art) ?? frage.knoepfe.at(-1)!;
   const mitEingabe = frage.wert !== undefined;
   return (
-    <Modal titel={frage.titel} onClose={() => ende(frage.knoepfe.length === 1 ? frage.knoepfe[0].id : null)} className="rf" klickDaneben={!mitEingabe}>
+    <Modal titel={frage.titel} onClose={() => ende(frage.knoepfe.length === 1 ? frage.knoepfe[0].id : null)} className="rf" kopf klickDaneben={!mitEingabe}>
       <form
         onSubmit={(e) => {
           e.preventDefault();
           if (!mitEingabe || wert.trim()) ende(standard.id);
         }}
       >
-        <h3>{frage.titel}</h3>
         {frage.text && <p className="small-text rf-text">{frage.text}</p>}
         {frage.details && (
           <details className="rf-details">
