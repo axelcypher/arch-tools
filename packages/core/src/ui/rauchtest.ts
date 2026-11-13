@@ -7,10 +7,15 @@ import { act } from 'react';
 export function farbschemaWechseln(host: HTMLElement, wahl: 'Hell' | 'Dunkel'): string | undefined {
   const menue = host.querySelector<HTMLButtonElement>('.titlebar-menu > button');
   if (!menue) throw new Error('Farbschema-Menü fehlt');
+  if (menue.getAttribute('aria-expanded') !== 'false') throw new Error('Farbschema-Menü: aria-expanded vor dem Öffnen nicht „false“');
   act(() => menue.click());
+  if (menue.getAttribute('aria-expanded') !== 'true') throw new Error('Farbschema-Menü: aria-expanded nach dem Öffnen nicht „true“');
   const knopf = [...host.querySelectorAll<HTMLButtonElement>('.titlebar-dropdown button')].find((b) => b.textContent?.includes(wahl));
   if (!knopf) throw new Error(`Menüpunkt ${wahl} fehlt`);
   act(() => knopf.click());
+  // Knopf zeigt danach Symbol und Namen der Wahl, das Menü ist zu
+  if (!menue.textContent?.includes(wahl) || !menue.querySelector('svg.schema-symbol')) throw new Error(`Farbschema-Knopf zeigt nicht „${wahl}“ mit Symbol`);
+  if (host.querySelector('.titlebar-dropdown')) throw new Error('Farbschema-Menü bleibt nach der Wahl offen');
   return document.documentElement.dataset.theme;
 }
 

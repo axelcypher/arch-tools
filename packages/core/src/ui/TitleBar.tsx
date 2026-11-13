@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { appNameSetzen } from './appName';
 import { isTauri } from '../platform/files';
 import { andocken, anRahmenMelden, rahmenModus, speichernAnfragenBeantworten } from '../platform/rahmen';
@@ -9,6 +10,7 @@ import { UpdateKnopf } from './UpdateKnopf';
 import type { RegelApp } from '../regeln/regelwerk';
 import { Nachschlagewerk, useHilfe } from './Nachschlagewerk';
 import { dialogVerhaltenEinrichten } from './dialoge';
+import { useEscSchliessen } from './Dialog';
 import { aenderungenSpeichern, bestaetigen, RueckfrageHost } from './Rueckfrage';
 import { useBuero } from './DruckKopf';
 
@@ -184,7 +186,7 @@ export function TitleBar({ app, name, dirty, onOpenLog, regeln, onProjekte, zeic
 }
 
 const WAHL: { id: ThemeWahl; label: string; kurz: string }[] = [
-  { id: 'system', label: 'wie System', kurz: 'Auto' },
+  { id: 'system', label: 'Auto (wie System)', kurz: 'Auto' },
   { id: 'hell', label: 'Hell', kurz: 'Hell' },
   { id: 'dunkel', label: 'Dunkel', kurz: 'Dunkel' },
 ];
@@ -214,6 +216,27 @@ export function ThemeMenu({ zeichenflaeche = true }: { zeichenflaeche?: boolean 
   const { wahl, setWahl, canvasDunkel, setCanvasDunkel } = useTheme();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const knopfRef = useRef<HTMLButtonElement>(null);
+  const listeRef = useRef<HTMLDivElement>(null);
+  const schliessen = () => {
+    setOpen(false);
+    knopfRef.current?.focus();
+  };
+  // Esc schließt das Menü (über den gemeinsamen Esc-Stapel: offene Dialoge darunter bleiben offen)
+  useEscSchliessen(schliessen, open);
+  // beim Öffnen die aktuelle Wahl fokussieren
+  useEffect(() => {
+    if (open) listeRef.current?.querySelector<HTMLButtonElement>('[aria-checked="true"]')?.focus();
+  }, [open]);
+  /** ↑/↓ wechseln zwischen den Einträgen, Pos1/Ende springen an den Anfang/das Ende */
+  const pfeile = (e: ReactKeyboardEvent) => {
+    const eintraege = [...(listeRef.current?.querySelectorAll<HTMLButtonElement>('[role="menuitemradio"]') ?? [])];
+    const i = eintraege.indexOf(document.activeElement as HTMLButtonElement);
+    const ziel = { ArrowDown: i + 1, ArrowUp: i - 1, Home: 0, End: eintraege.length - 1 }[e.key];
+    if (ziel === undefined || !eintraege.length) return;
+    e.preventDefault();
+    eintraege[(ziel + eintraege.length) % eintraege.length].focus();
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -227,29 +250,42 @@ export function ThemeMenu({ zeichenflaeche = true }: { zeichenflaeche?: boolean 
   const cur = WAHL.find((w) => w.id === wahl)!;
   return (
     <div className="titlebar-menu" ref={ref}>
-      <button className="titlebar-btn" title={`Farbschema: ${cur.label}`} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)}>
+      <button
+        ref={knopfRef}
+        className="titlebar-btn"
+        title={`Farbschema: ${cur.label}`}
+        aria-label={`Farbschema: ${cur.label}`}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={() => setOpen(!open)}
+      >
         <SchemaSymbol id={wahl} /> {cur.kurz}
       </button>
       {open && (
-        <div className="titlebar-dropdown" role="menu">
-          <div className="titlebar-dropdown-head">Farbschema</div>
-          {WAHL.map((w) => (
-            <button
-              key={w.id}
-              role="menuitemradio"
-              aria-checked={wahl === w.id}
-              className={wahl === w.id ? 'active' : ''}
-              onClick={() => {
-                setWahl(w.id);
-                setOpen(false);
-              }}
-            >
-              <span className="tb-icon">
-                <SchemaSymbol id={w.id} />
-              </span>{' '}
-              {w.label}
-            </button>
-          ))}
+        <div className="titlebar-dropdown">
+          <div className="titlebar-dropdown-head" id="farbschema-kopf">
+            Farbschema
+          </div>
+          <div role="menu" aria-labelledby="farbschema-kopf" ref={listeRef} onKeyDown={pfeile}>
+            {WAHL.map((w) => (
+              <button
+                key={w.id}
+                role="menuitemradio"
+                aria-checked={wahl === w.id}
+                className={wahl === w.id ? 'active' : ''}
+                tabIndex={wahl === w.id ? 0 : -1}
+                onClick={() => {
+                  setWahl(w.id);
+                  schliessen();
+                }}
+              >
+                <span className="tb-icon">
+                  <SchemaSymbol id={w.id} />
+                </span>{' '}
+                {w.label}
+              </button>
+            ))}
+          </div>
           {zeichenflaeche && (
             <label className="toggle block">
               <input type="checkbox" checked={canvasDunkel} onChange={(e) => setCanvasDunkel(e.target.checked)} />

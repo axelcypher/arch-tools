@@ -49,8 +49,11 @@ Namen mit Erklärung – „PERMIO (Formulare)“ –, danach den Namen allein; 
 
 ## Gemeinsame Bedienung aller Apps
 
-- **Farbschema** (◐ in der Titelleiste): Hell, Dunkel oder wie das System – wirkt sofort in allen geöffneten Apps,
-  Fenstern und Tabs der Rahmen-App. „Zeichenfläche abdunkeln“ gibt es nur in Apps mit Zeichenfläche bzw. Lageplan.
+Die Regeln für Oberfläche und Bedienung (Skalen, Fokus, Knöpfe, Überschriften, Meldungen) stehen in der
+Designrichtlinie [docs/design.md](docs/design.md).
+
+- **Farbschema** (Menü in der Titelleiste, zeigt „Auto“, „Hell“ oder „Dunkel“): Hell, Dunkel oder wie das System
+  (Auto) – wirkt sofort in allen geöffneten Apps, Fenstern und Tabs der Rahmen-App. „Zeichenfläche abdunkeln“ gibt es nur in Apps mit Zeichenfläche bzw. Lageplan.
 - **Dialoge**: Esc schließt den obersten Dialog (in einem Eingabefeld verwirft Esc zuerst die Eingabe), der Fokus
   bleibt im Dialog und springt danach zurück.
 - **Ungespeicherte Änderungen**: Vor Öffnen, Neu und Beenden fragt die App „Änderungen an ‚…‘ speichern?“ mit

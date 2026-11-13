@@ -29,8 +29,9 @@
   --accent-hover: #2350bf;
   --accent-soft: #e6edfb;
   --sel: #ff7a00;
-  /* Auswahl auf Fotos (RECTIO): Magenta, weil Orange mit Mess- und Markierungsfarben und Fassadentönen kollidiert */
-  --sel-foto: #d81b8c;
+  /* Auswahl auf Fotos (RECTIO): Magenta, weil Orange mit Mess- und Markierungsfarben und Fassadentönen kollidiert.
+     In beiden Schemata gleich (das Foto ändert sich nicht); immer mit hellem und dunklem Saum zeichnen (docs/design.md) */
+  --sel-foto: #e6007e;
   --danger: #c0392b;
   --canvas: #fbfbfa;
   --input-bg: #ffffff;
@@ -136,9 +137,12 @@ body,
   cursor: col-resize;
   z-index: 3;
 }
-.leiste-griff:hover,
-.leiste-griff:focus-visible {
+.leiste-griff:hover {
   background: var(--accent-soft);
+}
+/* Tastaturfokus: Griff in voller Fokusfarbe statt Rahmen (der Griff ist nur 6px breit) */
+.leiste-griff:focus-visible {
+  background: var(--fokus);
   outline: none;
 }
 /* andere Browser (Web-Version): Standard-Eigenschaften */
@@ -366,7 +370,7 @@ input.num {
   font-variant-numeric: tabular-nums;
 }
 
-input:focus,
+input:not([type='checkbox'], [type='radio'], [type='range'], [type='color']):focus,
 select:focus,
 textarea:focus {
   outline: 2px solid var(--fokus-saum);
@@ -377,9 +381,10 @@ textarea:focus {
 /* ---------- Fokus und Zielgrößen ---------- */
 
 /* Tastaturfokus sichtbar an allen Bedienelementen (Maus: kein Rahmen – :focus-visible) */
+/* Abstand 2px: der Fokusrahmen steht frei und unterscheidet sich vom Rand eines aktiven Knopfs (gleiche Farbe) */
 :where(button, a[href], summary, [tabindex]:not([tabindex='-1']), [role='button']):focus-visible {
   outline: 2px solid var(--fokus);
-  outline-offset: 1px;
+  outline-offset: 2px;
 }
 :where(input[type='checkbox'], input[type='radio'], input[type='range']):focus-visible {
   outline: 2px solid var(--fokus);
@@ -387,9 +392,10 @@ textarea:focus {
 }
 
 /* Bedienelemente in Leisten, Knopfreihen, Dialogen und Feldern mindestens --ctl-h hoch; kleine und Symbolknöpfe
-   --ctl-h-s. :where() hält die Spezifität bei null – App-Regeln mit eigener Höhe gehen vor. */
+   --ctl-h-s. :where() hält die Spezifität bei null – App-Regeln mit eigener min-height gehen vor; height allein reicht
+   nicht (min-height setzt sich gegen ein kleineres height immer durch). */
 :where(.toolbar, .button-row, .dialog-buttons, .section-head) :where(button),
-:where(.field) :where(select, input:not([type='checkbox'], [type='radio'], [type='range'], [type='color'])) {
+:where(.toolbar, .field) :where(select, input:not([type='checkbox'], [type='radio'], [type='range'], [type='color'])) {
   min-height: var(--ctl-h);
 }
 :where(.toolbar, .button-row, .dialog-buttons, .section-head) :where(button.small, button.icon) {
@@ -1015,7 +1021,6 @@ code {
   --accent-hover: #7aa2ff;
   --accent-soft: #24324f;
   --sel: #ff9a3c;
-  --sel-foto: #ff4fb0;
   --danger: #ef6b5b;
   --input-bg: #262a31;
   --hover: #2b3038;
@@ -1047,6 +1052,8 @@ code {
 
 /* Papier (Flächenaufstellung, Planausschnitte) bleibt immer hell */
 .report {
+  --fokus: #2a5bd7;
+  --fokus-saum: rgba(42, 91, 215, 0.35);
   --bg: #f3f4f6;
   --panel: #ffffff;
   --border: #d8dbe0;
@@ -1066,6 +1073,8 @@ code {
 
 /* Die Zeichenfläche arbeitet immer mit den hellen Farben – im dunklen Schema wird sie als Ganzes invertiert */
 .canvas {
+  --fokus: #2a5bd7;
+  --fokus-saum: rgba(42, 91, 215, 0.35);
   --text: #1f2328;
   --muted: #6b7280;
   --border: #d8dbe0;
@@ -1125,6 +1134,7 @@ code {
 
 .titlebar-btn {
   position: relative;
+  flex-shrink: 0;
   border: none;
   background: transparent;
   height: 26px;
@@ -1213,9 +1223,8 @@ code {
 .titlebar-dropdown-head {
   padding: 2px 6px 4px;
   color: var(--muted);
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  font-size: var(--fs-xs);
+  font-weight: 600;
 }
 
 .titlebar-dropdown button {
@@ -1496,10 +1505,9 @@ code {
 }
 
 .nw-gruppe-titel {
-  font-size: 11px;
+  font-size: var(--fs-xs);
+  font-weight: 600;
   color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
   margin: 4px 0;
 }
 
