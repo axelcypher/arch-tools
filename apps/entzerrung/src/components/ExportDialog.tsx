@@ -50,80 +50,86 @@ export function ExportDialog({ foto, ebene, e, aufloesung, bereich, onClose }: {
   };
 
   return (
-    <Modal titel="Entzerrtes Bild exportieren" onClose={laeuft ? undefined : onClose}>
-      <h3>Entzerrtes Bild exportieren</h3>
-      <p className="small-text muted">
-        {foto.name} – {ebene.name}: {fmt2(a.bereich.x1 - a.bereich.x0)} × {fmt2(a.bereich.y1 - a.bereich.y0)} m, {a.breite.toLocaleString('de-DE')} × {a.hoehe.toLocaleString('de-DE')} px ({fmt2(a.aufloesung * 1000)} mm je Pixel)
-      </p>
-      {(
-        [
+    <Modal titel="Entzerrtes Bild exportieren" kopf onClose={laeuft ? undefined : onClose}>
+      <form
+        onSubmit={(x) => {
+          x.preventDefault();
+          if (!laeuft && !(format === 'pdf' && !plan.passt)) void los();
+        }}
+      >
+        <p className="small-text muted">
+          {foto.name} – {ebene.name}: {fmt2(a.bereich.x1 - a.bereich.x0)} × {fmt2(a.bereich.y1 - a.bereich.y0)} m, {a.breite.toLocaleString('de-DE')} × {a.hoehe.toLocaleString('de-DE')} px ({fmt2(a.aufloesung * 1000)} mm je Pixel)
+        </p>
+        {(
           [
-            'png',
-            'PNG',
-            pngMitDichte ? 'verlustfrei; Maßstab 1:1 in den Bilddaten (Pixel je Meter), Auflösung im Dateinamen' : 'verlustfrei; bei dieser groben Auflösung Maßstab nur im Dateinamen',
-          ],
-          [
-            'jpeg',
-            'JPEG',
-            jpegMitDichte
-              ? 'kleinere Datei; Maßstab in den Bilddaten und im Dateinamen'
-              : 'kleinere Datei; Maßstab nur im Dateinamen – diese Auflösung lässt sich im JPEG nicht genau eintragen (dafür PNG oder z. B. 1, 2, 2,5 oder 5 mm je Pixel)',
-          ],
-          ['pdf', 'PDF im Maßstab', 'zum Drucken: Bild im gewählten Maßstab mit Maßstabsleiste'],
-        ] as [Format, string, string][]
-      ).map(([f, name, text]) => (
-        <label key={f} className="radio-row">
-          <input type="radio" name="ef-format" value={f} checked={format === f} autoFocus={format === f} onChange={() => setFormat(f)} />
-          <span>
-            <strong>{name}</strong>
-            <br />
-            <span className="muted small-text">{text}</span>
-          </span>
-        </label>
-      ))}
-      {format === 'pdf' && (
-        <div className="indent">
-          <div className="field-row">
-            <Field label="Papier">
-              <select
-                value={papier}
-                onChange={(x) => {
-                  const p = x.target.value as Papier;
-                  setPapier(p);
-                  if (p !== 'passend') setMassstab(passenderMassstab(a.bereich, p));
-                }}
-              >
-                {Object.keys(PAPIER).map((p) => (
-                  <option key={p}>{p}</option>
-                ))}
-                <option value="passend">passend zum Bild</option>
-              </select>
-            </Field>
-            <Field label="Maßstab 1 :">
-              <NumberField value={massstab} min={1} digits={0} onChange={(v) => v && setMassstab(Math.round(v))} />
-            </Field>
+            [
+              'png',
+              'PNG',
+              pngMitDichte ? 'verlustfrei; Maßstab 1:1 in den Bilddaten (Pixel je Meter), Auflösung im Dateinamen' : 'verlustfrei; bei dieser groben Auflösung Maßstab nur im Dateinamen',
+            ],
+            [
+              'jpeg',
+              'JPEG',
+              jpegMitDichte
+                ? 'kleinere Datei; Maßstab in den Bilddaten und im Dateinamen'
+                : 'kleinere Datei; Maßstab nur im Dateinamen – diese Auflösung lässt sich im JPEG nicht genau eintragen (dafür PNG oder z. B. 1, 2, 2,5 oder 5 mm je Pixel)',
+            ],
+            ['pdf', 'PDF im Maßstab', 'zum Drucken: Bild im gewählten Maßstab mit Maßstabsleiste'],
+          ] as [Format, string, string][]
+        ).map(([f, name, text]) => (
+          <label key={f} className="radio-row">
+            <input type="radio" name="ef-format" value={f} checked={format === f} autoFocus={format === f} onChange={() => setFormat(f)} />
+            <span>
+              <strong>{name}</strong>
+              <br />
+              <span className="muted small-text">{text}</span>
+            </span>
+          </label>
+        ))}
+        {format === 'pdf' && (
+          <div className="indent">
+            <div className="field-row">
+              <Field label="Papier">
+                <select
+                  value={papier}
+                  onChange={(x) => {
+                    const p = x.target.value as Papier;
+                    setPapier(p);
+                    if (p !== 'passend') setMassstab(passenderMassstab(a.bereich, p));
+                  }}
+                >
+                  {Object.keys(PAPIER).map((p) => (
+                    <option key={p}>{p}</option>
+                  ))}
+                  <option value="passend">passend zum Bild</option>
+                </select>
+              </Field>
+              <Field label="Maßstab 1 :">
+                <NumberField value={massstab} min={1} digits={0} onChange={(v) => v && setMassstab(Math.round(v))} />
+              </Field>
+            </div>
+            <p className={`small-text ${plan.passt ? 'muted' : ''}`}>
+              Seite {Math.round(plan.seite[0])} × {Math.round(plan.seite[1])} mm, Bild {Math.round(plan.bild[0])} × {Math.round(plan.bild[1])} mm, etwa {Math.round(dpi)} dpi. Beim Drucken
+              „Tatsächliche Größe“ (100 %) wählen, sonst stimmt der Maßstab nicht.
+            </p>
+            {!plan.passt && <div className="warning">Passt bei 1:{massstab} nicht auf {papier}.</div>}
           </div>
-          <p className={`small-text ${plan.passt ? 'muted' : ''}`}>
-            Seite {Math.round(plan.seite[0])} × {Math.round(plan.seite[1])} mm, Bild {Math.round(plan.bild[0])} × {Math.round(plan.bild[1])} mm, etwa {Math.round(dpi)} dpi. Beim Drucken
-            „Tatsächliche Größe“ (100 %) wählen, sonst stimmt der Maßstab nicht.
-          </p>
-          {!plan.passt && <div className="warning">Passt bei 1:{massstab} nicht auf {papier}.</div>}
+        )}
+        <label className="toggle">
+          <input type="checkbox" checked={mitMessungen} disabled={!ebene.messungen.length} onChange={(x) => setMitMessungen(x.target.checked)} />
+          Messungen einzeichnen
+        </label>
+        {fehler && <div className="warning">{fehler}</div>}
+        <div className="dialog-buttons">
+          {laeuft && <span className="busy">wird erzeugt …</span>}
+          <button type="button" onClick={onClose} disabled={laeuft}>
+            Abbrechen
+          </button>
+          <button type="submit" className="primary" disabled={laeuft || (format === 'pdf' && !plan.passt)}>
+            Exportieren
+          </button>
         </div>
-      )}
-      <label className="toggle">
-        <input type="checkbox" checked={mitMessungen} disabled={!ebene.messungen.length} onChange={(x) => setMitMessungen(x.target.checked)} />
-        Messungen einzeichnen
-      </label>
-      {fehler && <div className="warning">{fehler}</div>}
-      <div className="dialog-buttons">
-        {laeuft && <span className="busy">wird erzeugt …</span>}
-        <button onClick={onClose} disabled={laeuft}>
-          Abbrechen
-        </button>
-        <button className="primary" onClick={() => void los()} disabled={laeuft || (format === 'pdf' && !plan.passt)}>
-          Exportieren
-        </button>
-      </div>
+      </form>
     </Modal>
   );
 }
