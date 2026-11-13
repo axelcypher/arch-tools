@@ -43,6 +43,10 @@ Gewerk – in Ordnern, Blattnamen und der Rechnungsliste.
 - **Projektwahl** wie in allen Apps (Projektübersicht aus den Stammordnern, zuletzt geöffnet). Gelesen werden
   nur die Ordnerliste, die Kostenkontrolle und die Projektdatei; LV-Dateien erst beim Öffnen. „Neu einlesen“ in der
   Navigation – und automatisch, wenn das Fenster wieder in den Vordergrund kommt.
+- **Schließen in Arkly** (Fenster, Tab, Andocken, Herauslösen, Update-Neustart): FABRIO übernimmt vorher die gerade
+  laufende Eingabe und wartet auf laufendes Speichern von Projektdatei, Kostenkontrolle, LV und Rechnungsablauf
+  (`vorDemSchliessen`, höchstens 5 s; `ausstehendesSchreibenAbwarten` in `store.ts`). Es wird dabei nichts doppelt
+  geschrieben.
 - **Navigation** (links, Breite ziehbar): Kostenübersicht, Rechnungen, Rechnungseingang; die **Gewerke** aus
   Ordnern, Kostenkontrolle und Prüfungen (Zahl der LV-Dateien, wenn es mehr als eine gibt); **Bauleitung**
   (Objektüberwachung nach HOAI Leistungsphase 8); Einstellungen (Strg+,). Die Einträge sind Knöpfe: mit Tab

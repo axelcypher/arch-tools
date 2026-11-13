@@ -3,6 +3,7 @@
  * Kostenkontrolle), geöffnetes LV mit Verlauf, Ansicht und Auswahl.
  */
 
+import { eingabeAbschliessen } from '@core/platform/eingabe';
 import { create } from 'zustand';
 import type { ProjectMeta } from '@core/model';
 import { projektdateiRoh } from '@core/projektdatei';
@@ -109,6 +110,26 @@ interface AvaZustand {
 /** ungespeicherte Änderungen am LV? */
 export const lvGeaendert = (lv: OffenesLv | null) => !!lv && lv.lv !== lv.basis;
 
+/** laufende Schreibvorgänge (Projektdatei, Kostenkontrolle, LV, Rechnungsablauf) – vor dem Schließen abwarten */
+const laufend = new Set<Promise<unknown>>();
+
+/** Schreibvorgang anmelden, bis er fertig ist (auch bei Fehler) */
+export function schreibend<T>(p: Promise<T>): Promise<T> {
+  laufend.add(p);
+  const weg = () => void laufend.delete(p);
+  p.then(weg, weg);
+  return p;
+}
+
+/**
+ * Vor dem Schließen (Arkly: `vorDemSchliessen`): die laufende Eingabe abschließen – sie speichert beim Verlassen des
+ * Felds – und alle laufenden Schreibvorgänge abwarten. Schreibt selbst nichts; ein zweiter Aufruf wartet nur mit.
+ */
+export async function ausstehendesSchreibenAbwarten(): Promise<void> {
+  eingabeAbschliessen();
+  while (laufend.size) await Promise.allSettled([...laufend]);
+}
+
 export const useAva = create<AvaZustand>((set, get) => ({
   fs: tauriDateien,
   einstellungen: VORGABE,
@@ -188,25 +209,33 @@ export const useAva = create<AvaZustand>((set, get) => ({
     await get().neuLaden();
   },
 
-  async kkSchreiben(f) {
-    const { fs, projekt } = get();
-    if (!projekt?.kk) throw new Error('Keine Kostenkontrolle im Projekt.');
-    const frisch = await kkLaden(fs, projekt.ordner, projekt.kk.pfad);
-    if (await fs.inOffice(projekt.ordner, frisch.pfad)) throw new Error('Die Kostenkontrolle ist gerade in Excel geöffnet – bitte dort schließen, dann erneut versuchen.');
-    const neu = xlsxAendern(frisch.bytes, f(frisch), { ergebnisseAuffrischen: true, heute: new Date() });
-    await fs.ersetzen(projekt.ordner, frisch.pfad, neu, frisch.stand);
-    const kk = await kkLaden(fs, projekt.ordner, frisch.pfad);
-    // inzwischen ein anderes Projekt geöffnet: nicht in dessen Zustand schreiben
-    const p = get().projekt;
-    if (p?.ordner === projekt.ordner) set({ projekt: { ...p, kk, kkFehler: null } });
+  kkSchreiben(f) {
+    return schreibend(
+      (async () => {
+      const { fs, projekt } = get();
+      if (!projekt?.kk) throw new Error('Keine Kostenkontrolle im Projekt.');
+      const frisch = await kkLaden(fs, projekt.ordner, projekt.kk.pfad);
+      if (await fs.inOffice(projekt.ordner, frisch.pfad)) throw new Error('Die Kostenkontrolle ist gerade in Excel geöffnet – bitte dort schließen, dann erneut versuchen.');
+      const neu = xlsxAendern(frisch.bytes, f(frisch), { ergebnisseAuffrischen: true, heute: new Date() });
+      await fs.ersetzen(projekt.ordner, frisch.pfad, neu, frisch.stand);
+      const kk = await kkLaden(fs, projekt.ordner, frisch.pfad);
+      // inzwischen ein anderes Projekt geöffnet: nicht in dessen Zustand schreiben
+      const p = get().projekt;
+      if (p?.ordner === projekt.ordner) set({ projekt: { ...p, kk, kkFehler: null } });
+      })(),
+    );
   },
 
-  async avaAendern(f) {
-    const { fs, projekt } = get();
-    if (!projekt) return;
-    const ava = await avaAendern(fs.projektordner, projekt.ordner, projekt.oap, f);
-    const p = get().projekt;
-    if (p?.ordner === projekt.ordner) set({ projekt: { ...p, ava } });
+  avaAendern(f) {
+    return schreibend(
+      (async () => {
+      const { fs, projekt } = get();
+      if (!projekt) return;
+      const ava = await avaAendern(fs.projektordner, projekt.ordner, projekt.oap, f);
+      const p = get().projekt;
+      if (p?.ordner === projekt.ordner) set({ projekt: { ...p, ava } });
+      })(),
+    );
   },
 
   setMeta(meta, name) {
@@ -250,25 +279,29 @@ export const useAva = create<AvaZustand>((set, get) => ({
     if (!o?.zukunft.length) return;
     set({ lv: { ...o, lv: o.zukunft[0], verlauf: [...o.verlauf, o.lv], zukunft: o.zukunft.slice(1) } });
   },
-  async lvSpeichern() {
-    const { fs, projekt, lv } = get();
-    if (!projekt || !lv) return false;
-    const daten = lv.format === 'aslv' ? aslvSchreiben(lv.bytes, lv.lv) : eigenSchreiben(lv.lv, lv.roh);
-    if (daten !== lv.bytes) await fs.ersetzen(projekt.ordner, lv.datei.pfad, daten, lv.stand);
-    const r = await fs.lies(projekt.ordner, lv.datei.pfad);
-    const aktuell = get().lv;
-    if (r && aktuell && aktuell.datei.pfad === lv.datei.pfad) {
-      // neue Elemente kennen jetzt ihre Kennung in der Datei; weitergearbeitet, während gespeichert wurde? Dann bleibt
-      // der neue Stand ungespeichert (mit den Kennungen).
-      if (lv.format === 'aslv') {
-        const gelesen = aslvLesen(r.daten).lv;
-        const basis = xmlIdsUebernehmen(lv.lv, lv.lv, gelesen);
-        const jetzt = aktuell.lv === lv.lv ? basis : xmlIdsUebernehmen(aktuell.lv, lv.lv, gelesen);
-        set({ lv: { ...aktuell, bytes: r.daten, stand: r.stand, basis, lv: jetzt, verlauf: aktuell.verlauf.map((v) => xmlIdsUebernehmen(v, lv.lv, gelesen)), zukunft: aktuell.zukunft.map((v) => xmlIdsUebernehmen(v, lv.lv, gelesen)) } });
-      } else set({ lv: { ...aktuell, bytes: r.daten, stand: r.stand, basis: lv.lv } });
-    }
-    log.info('LV gespeichert', lv.datei.pfad);
-    return true;
+  lvSpeichern() {
+    return schreibend(
+      (async () => {
+      const { fs, projekt, lv } = get();
+      if (!projekt || !lv) return false;
+      const daten = lv.format === 'aslv' ? aslvSchreiben(lv.bytes, lv.lv) : eigenSchreiben(lv.lv, lv.roh);
+      if (daten !== lv.bytes) await fs.ersetzen(projekt.ordner, lv.datei.pfad, daten, lv.stand);
+      const r = await fs.lies(projekt.ordner, lv.datei.pfad);
+      const aktuell = get().lv;
+      if (r && aktuell && aktuell.datei.pfad === lv.datei.pfad) {
+        // neue Elemente kennen jetzt ihre Kennung in der Datei; weitergearbeitet, während gespeichert wurde? Dann bleibt
+        // der neue Stand ungespeichert (mit den Kennungen).
+        if (lv.format === 'aslv') {
+          const gelesen = aslvLesen(r.daten).lv;
+          const basis = xmlIdsUebernehmen(lv.lv, lv.lv, gelesen);
+          const jetzt = aktuell.lv === lv.lv ? basis : xmlIdsUebernehmen(aktuell.lv, lv.lv, gelesen);
+          set({ lv: { ...aktuell, bytes: r.daten, stand: r.stand, basis, lv: jetzt, verlauf: aktuell.verlauf.map((v) => xmlIdsUebernehmen(v, lv.lv, gelesen)), zukunft: aktuell.zukunft.map((v) => xmlIdsUebernehmen(v, lv.lv, gelesen)) } });
+        } else set({ lv: { ...aktuell, bytes: r.daten, stand: r.stand, basis: lv.lv } });
+      }
+      log.info('LV gespeichert', lv.datei.pfad);
+      return true;
+      })(),
+    );
   },
   async lvNeu(g, gewerk, format, bezeichnung, vorlage) {
     const { fs, projekt, einstellungen } = get();

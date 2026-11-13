@@ -14,7 +14,7 @@ import type { Pruefung, VorigeZahlung } from '../../abrechnung/pruefung';
 import { datumDE, euro, neuePruefung, pruefen, pruefVorschlag } from '../../abrechnung/pruefung';
 import type { AvaProjekt, RechnungsDatensatz } from '../../avaDaten';
 import { heuteIso } from '../../lv/modell';
-import { gewerkOrdner, useAva } from '../../store';
+import { gewerkOrdner, useAva, schreibend } from '../../store';
 import { DatumEingabe, Feld, TextEingabe, zahlDE, ZahlEingabe } from '../eingaben';
 
 const log = logger('pruefung');
@@ -132,7 +132,7 @@ export function RechnungPruefen({ gewerk: vorgabeGewerk, onClose, onErfasst }: {
     if (fehlt.length) return;
     setLaeuft(true);
     try {
-      const ergebnis = await rechnungErfassen(k, projekt.kk?.pfad ?? null, er);
+      const ergebnis = await schreibend(rechnungErfassen(k, projekt.kk?.pfad ?? null, er));
       uebernehmen(ergebnis);
       setErfasst({ d: ergebnis.datensatz, beschreibung: ergebnis.beschreibung });
       onErfasst?.(ergebnis.datensatz);
@@ -153,7 +153,7 @@ export function RechnungPruefen({ gewerk: vorgabeGewerk, onClose, onErfasst }: {
   const nachtragen = async (t: TeilweiseErfasst) => {
     setLaeuft(true);
     try {
-      const ava = await datensatzNachtragen(k, t.datensatz);
+      const ava = await schreibend(datensatzNachtragen(k, t.datensatz));
       uebernehmen({ ava });
       setTeilweise(null);
       setErfasst({ d: t.datensatz, beschreibung: ['Kostenkontrolle: eingetragen', 'Projektdatei: Prüfung nachträglich gespeichert'] });

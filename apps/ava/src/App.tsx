@@ -3,6 +3,7 @@ import { APP_NAMEN } from '@core/appNamen';
 import { isTauri } from '@core/platform/files';
 import { logger } from '@core/platform/log';
 import { projektdateiSchreiben } from '@core/platform/projektordner';
+import { vorDemSchliessen } from '@core/platform/rahmen';
 import { dialogOffen, eingabeAbschliessen, istEingabeZiel } from '@core/platform/eingabe';
 import { LogDialog } from '@core/ui/LogDialog';
 import { ProjektEinstieg, ProjektWahl } from '@core/ui/ProjektWahl';
@@ -21,7 +22,7 @@ import { Maengel } from './components/bauleitung/Maengel';
 import { Notizen } from './components/bauleitung/Notizen';
 import { Beteiligte } from './components/bauleitung/Beteiligte';
 import { Mailverlauf } from './components/bauleitung/Mailverlauf';
-import { lvGeaendert, useAva } from './store';
+import { ausstehendesSchreibenAbwarten, lvGeaendert, useAva } from './store';
 
 const log = logger('app');
 
@@ -122,6 +123,10 @@ export function App() {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, []);
+
+  // Arkly (Schließen, Andocken, Herauslösen, Update-Neustart): laufende Eingabe übernehmen und laufendes Schreiben
+  // der Projektdatei, Kostenkontrolle bzw. des LV abwarten
+  useEffect(() => vorDemSchliessen(ausstehendesSchreibenAbwarten), []);
 
   useEffect(() => {
     const vorEnde = (e: BeforeUnloadEvent) => {
