@@ -1,6 +1,6 @@
 # Arkly
 
-Werkzeuge für Architekturbüros: sieben Desktop-Apps (Windows, Tauri) mit gemeinsamem Unterbau – einzeln oder alle
+Werkzeuge für Architekturbüros: acht Desktop-Apps (Windows, Tauri) mit gemeinsamem Unterbau – einzeln oder alle
 zusammen in der Rahmen-App Arkly (Tabs, herauslösbare Fenster). QUADRIO, TERRIO und NUMIO arbeiten mit derselben
 Projektdatei (`.oap`). Die Suite heißt wie ihre Rahmen-App; das Repository heißt weiterhin `arch-tools`. Die Apps
 haben neue Namen – siehe [Neue Namen](#neue-namen).
@@ -14,6 +14,7 @@ haben neue Namen – siehe [Neue Namen](#neue-namen).
 | **RECTIO** – Entzerrung | Fotos perspektivisch entzerren und darin messen | [docs/entzerrung.md](docs/entzerrung.md) |
 | **PERMIO** – Formulare | Bauantragsformulare aus SJ FORMA bequem ausfüllen – die Dateien bleiben im Original lesbar | [docs/formulare.md](docs/formulare.md) |
 | **FABRIO** – AVA | Ausschreibung, Vergabe, Abrechnung und Bauleitung: Leistungsverzeichnisse (LV-Dateien des bisherigen LV-Programms oder eigenes Format), Preisspiegel, Aufträge, Rechnungsprüfung mit Deckblatt, Kostenkontrolle (Excel), Bautagebuch, Protokolle, Mängel, Mailverlauf | [docs/ava.md](docs/ava.md) |
+| **LEXIO** – Baurecht | Rechtsprüfung vor dem Bauantrag: alle relevanten Vorschriften je Paragraf als Ampel, Gesetzestexte live aus den amtlichen Quellen, Regeln als austauschbares, signiertes Regelpaket (Bund, NRW, Kreis Soest, Stadt Soest) | [docs/baurecht.md](docs/baurecht.md) |
 | **Arkly** – Rahmen-App (früher arch-tools) | alle Apps in einem Fenster als Tabs, einzelne in eigene Fenster herauslösen | [docs/suite.md](docs/suite.md) |
 
 ## Neue Namen
@@ -31,7 +32,7 @@ Speicher-Schlüssel, Bundle-Kennungen und die Release-Tags (`grz-v…` usw.).
 | **NUMIO** | Kostenermittlung | 0.19.0 |
 | **RECTIO** | Entzerrung | 0.12.0 |
 | **FABRIO** | AVA | 0.4.0 |
-| **LEXIO** | Baurecht – folgt mit seiner App | – |
+| **LEXIO** | Baurecht (erstes Release unter dem neuen Namen) | – |
 
 Beim ersten Update unter dem neuen Namen entfernt der Installer die Installation unter dem alten Namen – aber nur,
 wenn sie sicher von uns stammt (gleicher Herausgeber, gleiche Programmdatei). Läuft die alte App noch, fragt er wie
@@ -201,7 +202,7 @@ fehlen sie, warnt der Bericht am Bildschirm, und im Druck steht im Kopf „nicht
 - **Abzugsflächen**: am BGF-Umriss z. B. Innenhof, Luftraum über einer Galerie oder Deckenöffnung über 1,0 m², im
   Raum z. B. Schornstein, Pfeiler, Schacht im Raum. Wird ein Raum zur Abzugsfläche, erbt er Anrechnung und Wohnung
   des Raums, in dem er liegt (Anrechnung „keine“)
-- Mehrere **Geschosse**: „+ Neu“ fügt über oder unter dem aktiven Geschoss ein (Name und Fußbodenhöhe nach der
+- Mehrere **Geschosse**: „+ Neu …“ fügt über oder unter dem aktiven Geschoss ein (Name und Fußbodenhöhe nach der
   Lage, z. B. KG unter dem EG), Geschoss duplizieren (Regelgeschosse, die Kopie heißt nach ihrer Lage),
   darunterliegendes Geschoss einblenden. **Geschossart** Keller-, Normal- oder Dachgeschoss (ohne Angabe nach Name
   bzw. Dach): Räume im Kellergeschoss werden nicht als Wohnfläche vorgeschlagen – eine Souterrainwohnung liegt in
@@ -324,7 +325,7 @@ fehlen sie, warnt der Bericht am Bildschirm, und im Druck steht im Kopf „nicht
 
 ## Aufbau des Repositorys
 
-Ein Repository mit npm-Workspaces, sieben Apps und einem gemeinsamen Unterbau:
+Ein Repository mit npm-Workspaces, acht Apps, einem gemeinsamen Unterbau und dem Regelpaket von LEXIO (Baurecht):
 
 ```
 packages/core/       gemeinsamer Unterbau (TypeScript-Quelltext, in den Apps als @core/… eingebunden)
@@ -346,6 +347,8 @@ apps/ordner/           ATLAS (Projektordner): Assistent (neu/fortschreiben), Str
 apps/entzerrung/       RECTIO (Entzerrung) – Fotos entzerren und messen: Homographie, Fluchtlinien, Verzeichnung, WebGL – siehe docs/entzerrung.md
 apps/formulare/        PERMIO (Formulare) – FORMA-Formulare ausfüllen: Formatkern (.frmsjf), Formular- und Feldansicht, Projektkarte, Verlauf, Projektordner – siehe docs/formulare.md
 apps/ava/              FABRIO (AVA) – Ausschreibung, Vergabe, Abrechnung, Bauleitung: LV-Formate (.aslv, .oalv, GAEB), Preisspiegel, Kostenkontrolle, Rechnungsprüfung, Bautagebuch – siehe docs/ava.md
+apps/baurecht/         LEXIO (Baurecht) – Rechtsprüfung vor dem Bauantrag: Ampel je Paragraf, Rechtsstand, Geodienste, Prüfprotokoll – siehe docs/baurecht.md
+packages/baurecht-regeln/  Regelpaket von LEXIO (Module je Gebiet, je Norm und Fassung eine Regeldatei), Werkzeuge, Wächter
 apps/suite/            Rahmen-App Arkly: alle Apps in einem Fenster (Tabs, herauslösbare Fenster) – siehe docs/suite.md
 ```
 
@@ -374,6 +377,7 @@ npm run dev:ordner       # ATLAS unter http://localhost:1450
 npm run dev:entzerrung   # RECTIO unter http://localhost:1460
 npm run dev:formulare    # PERMIO unter http://localhost:1470
 npm run dev:ava          # FABRIO unter http://localhost:1490 (Demo-Projekt: http://localhost:1490/?demo)
+npm run dev:baurecht     # LEXIO unter http://localhost:1500
 npm run dev:suite        # Rahmen-App Arkly unter http://localhost:1480 (nach npm run build)
 npm test                 # alle Tests (Unterbau und Apps, vitest)
 npm run typecheck        # TypeScript für alle Workspaces
@@ -386,6 +390,7 @@ npm run tauri:dev:ordner # ATLAS als Desktop-App
 npm run tauri:dev:entzerrung # RECTIO als Desktop-App
 npm run tauri:dev:formulare  # PERMIO als Desktop-App
 npm run tauri:dev:ava        # FABRIO als Desktop-App
+npm run tauri:dev:baurecht   # LEXIO als Desktop-App
 npm run tauri:dev:suite      # Rahmen-App Arkly als Desktop-App
 npm run tauri:build -w flaechenrechner   # Windows-Installer unter apps/<app>/src-tauri/target/release/bundle/
 ```
@@ -394,7 +399,7 @@ Der Workflow **Build & Release** (GitHub Actions) baut je App die Windows-Instal
 GitHub-Release (mit Web-Version als ZIP), sobald die Version der App auf `main` erhöht wird:
 QUADRIO als `v<version>`, TERRIO als `grz-v<version>`, NUMIO als `kosten-v<version>`,
 ATLAS als `ordner-v<version>`, RECTIO als `entzerrung-v<version>`, PERMIO als `formulare-v<version>`,
-FABRIO als `ava-v<version>`,
+FABRIO als `ava-v<version>`, LEXIO als `baurecht-v<version>`,
 die Rahmen-App Arkly als `suite-v<version>` (die Versionen setzt der Lauf selbst, siehe unten). Das Release trägt den
 Produktnamen, das Tag die Kennung.
 Die Version steht je App in

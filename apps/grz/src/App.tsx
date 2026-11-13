@@ -162,7 +162,7 @@ export function App() {
           </button>
           {/* ungespeicherte Änderungen als Punkt in der Ecke – ändert die Breite der Leiste nicht */}
           <button
-            className={dirty ? 'tb-dirty' : undefined}
+            className={dirty ? 'ungespeichert' : undefined}
             aria-label={dirty ? 'Speichern – ungespeicherte Änderungen' : 'Speichern'}
             onClick={() => void onSave()}
             disabled={einstieg && !dirty}

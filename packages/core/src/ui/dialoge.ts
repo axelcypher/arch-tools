@@ -11,7 +11,9 @@
  *    ein Eingabefeld, das Esc selbst nutzt (Eingabe verwerfen), hält das Ereignis an und schließt nichts
  */
 
-const FOKUSSIERBAR = 'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])';
+// „details > summary“: die Aufklappzeile (z. B. „Liste anzeigen“ im Bestätigen-Dialog) gehört in den Fokuszyklus
+const START = 'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])';
+export const FOKUSSIERBAR = `${START}, details > summary`;
 
 /** Textfelder, in die man beim Öffnen gleich schreiben will (keine Kästchen, Auswahllisten, Regler) */
 const KEIN_TEXT = ['checkbox', 'radio', 'range', 'file', 'color', 'hidden', 'submit', 'button', 'reset', 'image'];
@@ -44,19 +46,24 @@ function geoeffnet(d: HTMLElement) {
   // nach dem Rendern: Dialoge, die selbst fokussieren (z. B. ein Suchfeld), haben Vorrang
   requestAnimationFrame(() => {
     if (!d.isConnected || d.contains(document.activeElement)) return;
+    // `data-startfokus`: ein Dialog bestimmt selbst, wo es losgeht (React setzt kein autofocus-Attribut); am Ende START
+    // statt FOKUSSIERBAR: nie auf eine Aufklappzeile (z. B. „Liste anzeigen“ vor dem Häkchen) – sie bleibt im Tab-Zyklus
     (
-      d.querySelector<HTMLElement>('[autofocus]') ??
+      d.querySelector<HTMLElement>('[autofocus], [data-startfokus]:not([disabled])') ??
       (d.classList.contains('modal') ? d.querySelector<HTMLElement>(TEXTFELD) : null) ??
       d.querySelector<HTMLElement>('button.primary:not([disabled])') ??
       d.querySelector<HTMLElement>('input[type="radio"]:checked:not([disabled])') ??
-      d.querySelector<HTMLElement>(FOKUSSIERBAR)
+      d.querySelector<HTMLElement>(START)
     )?.focus();
   });
 }
 
 function geschlossen(d: Element) {
   const v = vorher.get(d);
-  if (v?.isConnected && !obersterDialog()) v.focus();
+  // zurück an die Stelle davor – auch in einen äußeren Dialog, der offen bleibt (z. B. Rückfrage über der
+  // Druckvorschau), nur nicht in einen Hintergrund, über dem noch ein anderer Dialog liegt
+  const oben = obersterDialog();
+  if (v?.isConnected && (!oben || oben.contains(v))) v.focus();
 }
 
 export function dialogVerhaltenEinrichten(): void {

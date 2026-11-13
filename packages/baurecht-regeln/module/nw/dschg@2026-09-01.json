@@ -1,0 +1,242 @@
+{
+  "format": 1,
+  "modul": "nw",
+  "norm": "dschg",
+  "fassung": "2026-09-01",
+  "version": 1,
+  "paragrafen": {
+    "9": {
+      "gilt": {
+        "und": [
+          {
+            "$": "nw_denkmalbezug"
+          },
+          {
+            "oder": [
+              {
+                "$": "vorhaben_oder_beseitigung"
+              }
+            ]
+          }
+        ]
+      },
+      "entfaellt": {
+        "$": "nw_kein_denkmalbezug"
+      },
+      "grund": "Erlaubnispflicht: Beseitigen, Verändern oder Nutzungsänderung eines Baudenkmals und Errichten, Verändern oder Beseitigen von Anlagen in seiner engeren Umgebung, wenn sich dies auf Substanz oder Erscheinungsbild auswirken kann.",
+      "fundstellen": [
+        "9/1",
+        "9/2",
+        "9/3",
+        "9/4"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "nachweis": [
+        "Unterlagen für die denkmalrechtliche Erlaubnis (§ 24) bzw. Angaben in den Bauvorlagen (Denkmäler im Lageplan, § 3 Abs. 1 Nr. 7 BauPrüfVO)"
+      ],
+      "hinweis": "Braucht das Vorhaben eine Baugenehmigung, berücksichtigt die Bauaufsicht die Belange des Denkmalschutzes (Abs. 4); bei Genehmigungsfreistellung und verfahrensfreien Vorhaben (z. B. Fenster, Solaranlagen) ist die Erlaubnis gesondert bei der unteren Denkmalbehörde zu beantragen. Bei der Abwägung zählen Wohnungsbau, Klima, erneuerbare Energien und Barrierefreiheit (Abs. 3).",
+      "stand": {
+        "9/1": "4966702b",
+        "9/2": "80974a64",
+        "9/3": "070d2a01",
+        "9/4": "c0a84ccf"
+      },
+      "titel": "Erlaubnispflichten bei Baudenkmälern"
+    },
+    "10": {
+      "gilt": {
+        "und": [
+          {
+            "oder": [
+              {
+                "f": "schutz.denkmalbereich",
+                "ist": true
+              },
+              {
+                "f": "schutz.denkmalbereich_umgebung",
+                "ist": true
+              }
+            ]
+          },
+          {
+            "oder": [
+              {
+                "$": "vorhaben_oder_beseitigung"
+              }
+            ]
+          }
+        ]
+      },
+      "entfaellt": {
+        "und": [
+          {
+            "f": "schutz.denkmalbereich",
+            "ist": false
+          },
+          {
+            "f": "schutz.denkmalbereich_umgebung",
+            "ist": false
+          }
+        ]
+      },
+      "grund": "Im Denkmalbereich sind die in der Denkmalbereichssatzung bezeichneten Maßnahmen nach §§ 9, 13 oder 15 erlaubnispflichtig.",
+      "fundstellen": [
+        "10/1",
+        "10/2"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "hinweis": "Maßgeblich ist die Denkmalbereichssatzung der Gemeinde (Geltungsbereich und erlaubnispflichtige Maßnahmen).",
+      "stand": {
+        "10/1": "7422f437",
+        "10/2": "2e5fd288"
+      },
+      "titel": "Unterschutzstellung von Denkmalbereichen"
+    },
+    "13": {
+      "titel": "Erlaubnispflichten bei Gartendenkmälern",
+      "gilt": {
+        "und": [
+          {
+            "f": "schutz.gartendenkmal",
+            "ist": true
+          },
+          {
+            "oder": [
+              {
+                "$": "vorhaben_oder_beseitigung"
+              }
+            ]
+          }
+        ]
+      },
+      "entfaellt": {
+        "f": "schutz.gartendenkmal",
+        "ist": false
+      },
+      "grund": "Erlaubnispflicht für Beseitigen, Verändern oder Nutzungsänderung eines Gartendenkmals und für Anlagen in seiner engeren Umgebung, wenn sich dies auf Substanz oder Erscheinungsbild auswirken kann.",
+      "fundstellen": [
+        "13/1",
+        "13/2"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "hinweis": "Braucht das Vorhaben eine Baugenehmigung, berücksichtigt die Bauaufsicht die Belange des Denkmalschutzes (Abs. 4 mit § 9 Abs. 4); sonst Erlaubnis bei der Unteren Denkmalbehörde (§ 24).",
+      "verweise": [
+        "nw/dschg/24"
+      ],
+      "stand": {
+        "13/1": "1013b746",
+        "13/2": "7fd21b1c"
+      }
+    },
+    "15": {
+      "gilt": {
+        "und": [
+          {
+            "f": "schutz.bodendenkmal",
+            "ist": true
+          },
+          {
+            "oder": [
+              {
+                "$": "vorhaben_oder_beseitigung"
+              },
+              {
+                "f": "vorhaben.erdarbeiten",
+                "ist": true
+              }
+            ]
+          }
+        ]
+      },
+      "entfaellt": {
+        "f": "schutz.bodendenkmal",
+        "ist": false
+      },
+      "grund": "Erlaubnispflicht für Veränderung oder Beseitigung eines Bodendenkmals und für Maßnahmen in seiner engeren Umgebung, die die denkmalwerte Substanz berühren können.",
+      "fundstellen": [
+        "15/2",
+        "15/3"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "hinweis": "Frühzeitig mit dem Denkmalfachamt (LWL-Archäologie bzw. LVR-Amt für Bodendenkmalpflege) abstimmen; Auflagen zu Grabung und Dokumentation sind möglich (Abs. 5).",
+      "stand": {
+        "15/2": "f408e156",
+        "15/3": "56472223"
+      },
+      "titel": "Erlaubnispflichten bei Bodendenkmälern"
+    },
+    "16": {
+      "gilt": {
+        "f": "vorhaben.erdarbeiten",
+        "ist": true
+      },
+      "entfaellt": {
+        "f": "vorhaben.erdarbeiten",
+        "ist": false
+      },
+      "grund": "Wer bei Erdarbeiten Bodendenkmäler entdeckt, muss dies unverzüglich anzeigen; Fundstelle eine Woche unverändert lassen.",
+      "fundstellen": [
+        "16/1",
+        "16/2"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "hinweis": "Anzeigepflichtig sind auch Eigentümer, Bauunternehmen und Bauleitung – Hinweis in die Ausschreibung aufnehmen.",
+      "stand": {
+        "16/1": "981f0d71",
+        "16/2": "18066fe9"
+      },
+      "titel": "Entdeckung von Bodendenkmälern"
+    },
+    "24": {
+      "gilt": {
+        "und": [
+          {
+            "$": "nw_denkmalbezug"
+          },
+          {
+            "$": "vorhaben_oder_beseitigung"
+          },
+          {
+            "nicht": {
+              "$": "nw_alles_genehmigt"
+            }
+          }
+        ]
+      },
+      "entfaellt": {
+        "oder": [
+          {
+            "$": "nw_alles_genehmigt"
+          },
+          {
+            "$": "nw_kein_denkmalbezug"
+          }
+        ]
+      },
+      "grund": "Ohne Baugenehmigungsverfahren ist die denkmalrechtliche Erlaubnis (§§ 9, 10, 13, 15) gesondert in Textform mit den erforderlichen Unterlagen bei der Denkmalbehörde zu beantragen – auch für Maßnahmen in der engeren Umgebung eines Denkmals oder Denkmalbereichs. Beim Abbruch mit Ersatzbau erfasst die Baugenehmigung den Abbruch nur, wenn er verfahrensfrei ist und mit beantragt wurde (§ 62 Abs. 3 Satz 2 BauO NRW).",
+      "fundstellen": [
+        "24/1",
+        "24/7"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "hinweis": "Die Erlaubnis erlischt, wenn nicht innerhalb von drei Jahren begonnen wird (Abs. 7).",
+      "stand": {
+        "24/1": "3167e814",
+        "24/7": "ae6a758c"
+      },
+      "titel": "Verfahren"
+    }
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "format": 1,
+  "modul": "nw",
+  "norm": "geg-uvo",
+  "fassung": "2022-10-27",
+  "version": 1,
+  "paragrafen": {
+    "2": {
+      "gilt": {
+        "oder": [
+          {
+            "und": [
+              {
+                "$": "nw_vorhaben_gebaeude"
+              },
+              {
+                "f": "gebaeude.beheizt",
+                "ist": true
+              }
+            ]
+          },
+          {
+            "n": "bund/geg/36",
+            "ampel": [
+              "rot"
+            ]
+          },
+          {
+            "n": "bund/geg/39",
+            "ampel": [
+              "rot"
+            ]
+          }
+        ]
+      },
+      "entfaellt": {
+        "f": "gebaeude.beheizt",
+        "ist": false
+      },
+      "grund": "Bei Errichtung oder Änderung von Gebäuden im Geltungsbereich des GEG beauftragt die Bauherrschaft eine staatlich anerkannte Sachverständige oder einen staatlich anerkannten Sachverständigen für Schall- und Wärmeschutz, die die Anforderungen nachweisen oder prüfen; Berechnungsdokumentation spätestens mit der Baubeginnsanzeige, Erfüllungserklärung mit der Fertigstellungsanzeige.",
+      "fundstellen": [
+        "2/1",
+        "2/2",
+        "2/4",
+        "2/5"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "nachweis": [
+        "Berechnungsdokumentation, Energieausweis und Erfüllungserklärung (Abs. 2)"
+      ],
+      "hinweis": "Werden die Nachweise nicht von einer oder einem Sachverständigen aufgestellt, prüft sie eine solche Person – außer in den Fällen des § 68 Abs. 3 BauO NRW (u. a. Wohngebäude GK 1 und 2). Die Verordnung verweist noch auf GEG-Paragrafen alter Fassung (§§ 46–51); seit dem Gesetz vom 23.07.2026 sind diese weggefallen. Befreiungen nach § 102 GEG beurteilen Sachverständige (§ 3).",
+      "stand": {
+        "2/1": "8ca3cd73",
+        "2/2": "b3647353",
+        "2/4": "db194245",
+        "2/5": "e182f27e"
+      },
+      "titel": "Nachweispflicht, Erfüllungs- und Unternehmererklärung"
+    }
+  }
+}

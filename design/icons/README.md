@@ -4,7 +4,7 @@ Einheitliche Icons für die Rahmen-App und alle acht Apps. Quelle ist `erzeugen.
 Symbole stehen dort an einer Stelle; `node design/icons/erzeugen.mjs` schreibt die SVG-Dateien neu.
 
 Ausgerollt in allen Apps: `src-tauri/icon.svg`, `public/favicon.svg` und die daraus erzeugten Icon-Sätze
-(PNG/ICO/ICNS) stammen von hier. Nur Baurecht (LEXIO) folgt mit seiner App.
+(PNG/ICO/ICNS) stammen von hier.
 
 |                                            | App                          | Motiv                          | Bernstein markiert                                             | Kachel    |
 | ------------------------------------------ | ---------------------------- | ------------------------------ | -------------------------------------------------------------- | --------- |
@@ -17,8 +17,6 @@ Ausgerollt in allen Apps: `src-tauri/icon.svg`, `public/favicon.svg` und die dar
 | <img src="entzerrung.svg" width="40">      | **RECTIO** (Entzerrung)      | Fassade in Perspektive         | vier Passpunkte                                                | `#63489a` |
 | <img src="ava.svg" width="40">             | **FABRIO** (AVA)             | Klemmbrett der Bauleitung      | Klammer                                                        | `#853a77` |
 | <img src="baurecht.svg" width="40">        | **LEXIO** (Baurecht)         | Paragraf mit Ampel             | gelbes Licht – „prüfen“                                        | `#33607e` |
-
-LEXIO (Baurecht) ist noch nicht auf main; sein Icon kommt mit der App.
 
 ## Regeln
 
@@ -50,7 +48,7 @@ Bewusst abweichend von den Regeln oben (bei 16 px geprüft, bei 2-facher Pixeldi
 
 ## Ausrollen
 
-Nach einer Änderung am Iconset und für eine neue App (als Nächstes LEXIO):
+Nach einer Änderung am Iconset und für eine neue App:
 
 1. `<app>.svg` nach `apps/<app>/src-tauri/icon.svg` und `apps/<app>/public/favicon.svg` kopieren
    (`suite.svg` → `apps/suite/…`).

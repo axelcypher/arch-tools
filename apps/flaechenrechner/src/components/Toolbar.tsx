@@ -149,7 +149,7 @@ export function Toolbar() {
         </button>
         {/* ungespeicherte Änderungen als Punkt in der Ecke – ändert die Breite der Leiste nicht */}
         <button
-          className={dirty ? 'tb-dirty' : undefined}
+          className={dirty ? 'ungespeichert' : undefined}
           onClick={() => void onSave()}
           title={`${isTauri() ? 'Projekt speichern – in die geöffnete Datei (Strg+S)' : 'Projekt als Datei herunterladen (Strg+S)'}${dirty ? ' – ungespeicherte Änderungen' : ''}`}
           aria-label={dirty ? 'Speichern – ungespeicherte Änderungen' : 'Speichern'}

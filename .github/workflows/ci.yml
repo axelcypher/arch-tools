@@ -5,6 +5,9 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   web:
     name: Tests & Web-Build
@@ -50,6 +53,7 @@ jobs:
             apps/entzerrung/dist
             apps/formulare/dist
             apps/ava/dist
+            apps/baurecht/dist
             apps/suite/dist
 
   tauri:
@@ -73,6 +77,10 @@ jobs:
             pkg: formulare
           - app: ava
             pkg: ava
+          - app: baurecht
+            pkg: baurecht
+            # Tests der Tauri-Hülle (Host-Liste, Umleitungen, Signatur, Ablage) – die Rahmen-App bindet dieselbe Datei ein
+            test: true
           # die Rahmen-App bettet die Web-Builds aller Apps ein
           - app: suite
             pkg: arch-tools-suite
@@ -100,3 +108,7 @@ jobs:
       - name: Rust-Tests
         if: matrix.app == 'ordner' || matrix.app == 'formulare'
         run: cargo test --manifest-path apps/${{ matrix.app }}/src-tauri/Cargo.toml
+      # LEXIO (matrix.test): netz.rs – Hosts, Umleitungen, Signatur des Regelpakets, Ablage
+      - name: Rust-Tests (LEXIO)
+        if: matrix.test
+        run: cargo test --lib --manifest-path apps/${{ matrix.app }}/src-tauri/Cargo.toml

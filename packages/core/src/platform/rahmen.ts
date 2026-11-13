@@ -66,6 +66,7 @@ export const BEIM_UMZUG: Record<string, { text: string; verliert: boolean }> = {
     verliert: false,
   },
   ava: { text: 'Ungespeicherte Änderungen am LV gehen verloren – bitte vorher speichern (alles andere speichert die App sofort).', verliert: true },
+  baurecht: { text: 'Ungespeicherte Angaben und Festlegungen gehen verloren – bitte vorher speichern.', verliert: true },
 };
 const ZWISCHENSTAND = { text: 'Ungespeicherte Änderungen bleiben im Zwischenstand und werden im neuen Fenster wiederhergestellt.', verliert: false };
 /** Umzug einer App (Kennung): Text und ob Änderungen verloren gehen */

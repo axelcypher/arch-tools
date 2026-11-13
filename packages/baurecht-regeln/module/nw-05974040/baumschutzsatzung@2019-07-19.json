@@ -1,0 +1,195 @@
+{
+  "format": 1,
+  "modul": "nw-05974040",
+  "norm": "baumschutzsatzung",
+  "fassung": "2019-07-19",
+  "version": 1,
+  "geltung": {
+    "$": "soest_innen"
+  },
+  "geltungGrund": "nur im Innenbereich und im Geltungsbereich der Bebauungspläne (§ 2 Abs. 1), nicht im Wald",
+  "paragrafen": {
+    "3": {
+      "gilt": {
+        "f": "soest.baeume",
+        "ist": true
+      },
+      "grund": "Geschützt sind Laubbäume ab 120 cm Stammumfang in 1 m Höhe (mehrstämmig zusammen 150 cm) sowie Bäume, die nach Bebauungsplan zu erhalten sind, und Ersatzpflanzungen.",
+      "fundstellen": [
+        "3/2",
+        "3/3",
+        "3/4",
+        "3/5"
+      ],
+      "hinweis": "Die Satzung gilt nicht, soweit eine Verordnung über Naturschutzgebiete, Naturdenkmale oder geschützte Landschaftsbestandteile den Baum regelt (§ 2 Abs. 2) – siehe Kreisverordnung Naturdenkmale.",
+      "verweise": [
+        "nw-05974/nd_vo_innen/2"
+      ],
+      "stand": {
+        "3/2": "2572828c",
+        "3/3": "9186c05a",
+        "3/4": "3253eea5",
+        "3/5": "0e6258d1"
+      },
+      "titel": "Geschützte Bäume"
+    },
+    "4": {
+      "gilt": {
+        "und": [
+          {
+            "f": "soest.baeume",
+            "ist": true
+          },
+          {
+            "oder": [
+              {
+                "f": "vorhaben.baeume_faellen",
+                "ist": true
+              },
+              {
+                "f": "vorhaben.erdarbeiten",
+                "ist": true
+              },
+              {
+                "$": "bauen"
+              }
+            ]
+          }
+        ]
+      },
+      "entfaellt": {
+        "f": "soest.baeume",
+        "ist": false
+      },
+      "grund": "Verboten ist, geschützte Bäume zu entfernen, zu schädigen oder wesentlich zu verändern – dazu zählen fehlender Baumschutz bei Baumaßnahmen, Abgrabungen, Aufschüttungen und Verdichtung im Wurzelbereich, Versiegelung und Befahren.",
+      "fundstellen": [
+        "4/1",
+        "4/2"
+      ],
+      "stand": {
+        "4/1": "2e1a7483",
+        "4/2": "f071351a"
+      },
+      "titel": "Verbotene Handlungen",
+      "pruefen": {
+        "grund": "Beseitigung: Verdichten, Abgraben und Lagern im Wurzelbereich geschützter Bäume ist verboten (§ 4) – Schutz während des Abbruchs prüfen.",
+        "wenn": {
+          "und": [
+            {
+              "$": "beseitigung"
+            },
+            {
+              "f": "soest.baeume",
+              "ist": true
+            }
+          ]
+        }
+      }
+    },
+    "6": {
+      "gilt": {
+        "und": [
+          {
+            "f": "soest.baeume",
+            "ist": true
+          },
+          {
+            "f": "vorhaben.baeume_faellen",
+            "ist": true
+          }
+        ]
+      },
+      "entfaellt": {
+        "oder": [
+          {
+            "f": "soest.baeume",
+            "ist": false
+          },
+          {
+            "f": "vorhaben.baeume_faellen",
+            "ist": false
+          }
+        ]
+      },
+      "grund": "Ausnahme ist zu genehmigen, wenn eine baurechtlich zulässige Nutzung sonst nicht oder nur wesentlich eingeschränkt verwirklicht werden kann (Abs. 1 b); schriftlicher Antrag mit Lageplan (Art, Stammumfang, Kronendurchmesser).",
+      "fundstellen": [
+        "6/1",
+        "6/3"
+      ],
+      "nachweis": [
+        "Antrag auf Ausnahme bei der Stadt Soest mit Lageplan"
+      ],
+      "stand": {
+        "6/1": "117b9115",
+        "6/3": "e2c5ce0e"
+      },
+      "titel": "Ausnahmen und Befreiungen"
+    },
+    "7": {
+      "gilt": {
+        "und": [
+          {
+            "f": "soest.baeume",
+            "ist": true
+          },
+          {
+            "f": "vorhaben.baeume_faellen",
+            "ist": true
+          }
+        ]
+      },
+      "entfaellt": {
+        "oder": [
+          {
+            "f": "soest.baeume",
+            "ist": false
+          },
+          {
+            "f": "vorhaben.baeume_faellen",
+            "ist": false
+          }
+        ]
+      },
+      "grund": "Ersatzpflanzung je entferntem Baum nach Stammumfang: 120–150 cm ein Baum, 151–250 cm zwei, 251–350 cm drei usw. (Mindestumfang 20 cm); sonst Ausgleichszahlung.",
+      "fundstellen": [
+        "7/1",
+        "7/2",
+        "7/3"
+      ],
+      "stand": {
+        "7/1": "1571fe7a",
+        "7/2": "d86fa185",
+        "7/3": "99d07483"
+      },
+      "titel": "Ersatzpflanzungen, Ausgleichszahlungen"
+    },
+    "8": {
+      "gilt": {
+        "und": [
+          {
+            "$": "genehmigung"
+          },
+          {
+            "f": "soest.baeume",
+            "ist": true
+          }
+        ]
+      },
+      "entfaellt": {
+        "f": "soest.baeume",
+        "ist": false
+      },
+      "grund": "Im Baugenehmigungsverfahren sind im Lageplan die geschützten Bäume auf dem Baugrundstück und, soweit möglich, auf den Nachbargrundstücken mit Standort, Art, Stammumfang und Kronendurchmesser einzutragen.",
+      "fundstellen": [
+        "8/1"
+      ],
+      "nachweis": [
+        "Eintrag im Lageplan (§ 3 BauPrüfVO)"
+      ],
+      "stand": {
+        "8/1": "817dcb0d"
+      },
+      "titel": "Baumschutz im Baugenehmigungsverfahren"
+    }
+  }
+}

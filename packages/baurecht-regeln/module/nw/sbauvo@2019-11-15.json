@@ -1,0 +1,465 @@
+{
+  "format": 1,
+  "modul": "nw",
+  "norm": "sbauvo",
+  "fassung": "2019-11-15",
+  "version": 1,
+  "paragrafen": {
+    "1": {
+      "gilt": {
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "f": "gebaeude.besucher",
+            "min": 201
+          }
+        ]
+      },
+      "entfaellt": {
+        "oder": [
+          {
+            "$": "efh_zfh"
+          },
+          {
+            "f": "gebaeude.besucher",
+            "max": 200
+          }
+        ]
+      },
+      "pruefen": {
+        "grund": "Nach den Angaben mehr als 200 Besucher – das wäre ein Sonderbau (Versammlungsstätte); Merkmal Sonderbau prüfen.",
+        "wenn": {
+          "und": [
+            {
+              "$": "vorhaben_29"
+            },
+            {
+              "f": "gebaeude.besucher",
+              "bekannt": true
+            },
+            {
+              "f": "gebaeude.besucher",
+              "min": 201
+            }
+          ]
+        }
+      },
+      "grund": "Teil 1 (Versammlungsstätten): Versammlungsräume für mehr als 200 Besucher, im Freien mit Szenenflächen für mehr als 1 000, Sportstadien für mehr als 5 000.",
+      "fundstellen": [
+        "1/1",
+        "1/2",
+        "1/3"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_brandschutz"
+      },
+      "nachweis": [
+        "Bestuhlungs- und Rettungswegeplan (§ 12 Abs. 1 BauPrüfVO)"
+      ],
+      "hinweis": "Besucherzahl nach Abs. 2 ermitteln (z. B. 1 Person je m² bei Tischen, 2 je m² bei Reihen und Stehplätzen).",
+      "stand": {
+        "1/1": "515b75cc",
+        "1/2": "f0916762",
+        "1/3": "a7c7cbd6"
+      },
+      "titel": "Anwendungsbereich, Anzahl der Besucherinnen und Besucher"
+    },
+    "47": {
+      "gilt": {
+        "und": [
+          {
+            "$": "nw_vorhaben_gebaeude"
+          },
+          {
+            "f": "gebaeude.gastbetten",
+            "min": 1
+          }
+        ]
+      },
+      "entfaellt": {
+        "f": "gebaeude.gastbetten",
+        "max": 0
+      },
+      "grund": "Teil 2 (Beherbergungsstätten) gilt für Beherbergungsstätten mit mehr als zwölf Gastbetten; die Rauchwarnmelder je Beherbergungsraum (§ 55 Abs. 2) für alle Beherbergungsstätten (Satz 2).",
+      "fundstellen": [
+        "47"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_brandschutz"
+      },
+      "nachweis": [
+        "Angaben zu Gastbetten und Beherbergungsräumen (§ 12 Abs. 2 BauPrüfVO)"
+      ],
+      "hinweis": "Ab mehr als 30 Betten großer Sonderbau (§ 50 Abs. 2 Nr. 7 BauO NRW) – Baugenehmigungsverfahren.",
+      "stand": {
+        "47": "55c7074c"
+      },
+      "titel": "Anwendungsbereich"
+    },
+    "55": {
+      "titel": "Alarmierungseinrichtungen, Brandmeldeanlagen, Brandfallsteuerung von Aufzügen",
+      "gilt": {
+        "und": [
+          {
+            "$": "nw_vorhaben_gebaeude"
+          },
+          {
+            "f": "gebaeude.gastbetten",
+            "min": 1
+          }
+        ]
+      },
+      "entfaellt": {
+        "f": "gebaeude.gastbetten",
+        "max": 0
+      },
+      "grund": "Bis 60 Gastbetten mindestens ein Rauchwarnmelder in jedem Beherbergungsraum – für alle Beherbergungsstätten (Abs. 2 mit § 47 Satz 2); ab 13 Gastbetten Alarmierungseinrichtungen (Abs. 1), über 60 Gastbetten Brandmeldeanlage und Brandfallsteuerung der Aufzüge (Abs. 3, 4).",
+      "fundstellen": [
+        "55/1",
+        "55/2",
+        "55/3"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_brandschutz"
+      },
+      "verweise": [
+        "nw/sbauvo/47"
+      ],
+      "stand": {
+        "55/1": "a7c6e2ab",
+        "55/2": "c3762ef8",
+        "55/3": "d2c29656"
+      }
+    },
+    "60": {
+      "gilt": {
+        "und": [
+          {
+            "$": "nw_vorhaben_gebaeude"
+          },
+          {
+            "f": "gebaeude.verkaufsflaeche",
+            "min": 2000.01
+          }
+        ]
+      },
+      "entfaellt": {
+        "oder": [
+          {
+            "$": "efh_zfh"
+          },
+          {
+            "f": "gebaeude.verkaufsflaeche",
+            "max": 2000
+          }
+        ]
+      },
+      "pruefen": {
+        "grund": "Nach den Angaben mehr als 2 000 m² Verkaufsfläche – großer Sonderbau; Merkmal Sonderbau prüfen.",
+        "wenn": {
+          "und": [
+            {
+              "$": "nw_vorhaben_gebaeude"
+            },
+            {
+              "f": "gebaeude.verkaufsflaeche",
+              "bekannt": true
+            },
+            {
+              "f": "gebaeude.verkaufsflaeche",
+              "min": 2000.01
+            }
+          ]
+        }
+      },
+      "grund": "Teil 3 (Verkaufsstätten): Verkaufsräume und Ladenstraßen mit insgesamt mehr als 2 000 m².",
+      "fundstellen": [
+        "60"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_brandschutz"
+      },
+      "nachweis": [
+        "Flächen- und Ausgangsbreitenberechnung (§ 12 Abs. 3 BauPrüfVO)"
+      ],
+      "stand": {
+        "60": "c020d925"
+      },
+      "titel": "Anwendungsbereich"
+    },
+    "92": {
+      "gilt": {
+        "und": [
+          {
+            "$": "nw_vorhaben_gebaeude"
+          },
+          {
+            "f": "gebaeude.hoehe",
+            "min": 22.01
+          }
+        ]
+      },
+      "entfaellt": {
+        "oder": [
+          {
+            "f": "gebaeude.hoehe",
+            "max": 22
+          },
+          {
+            "$": "gk_1_3"
+          }
+        ]
+      },
+      "pruefen": {
+        "grund": "Nach den Angaben liegt der Fußboden des obersten Aufenthaltsgeschosses mehr als 22 m über Gelände – Hochhaus; Merkmal Sonderbau prüfen.",
+        "wenn": {
+          "und": [
+            {
+              "$": "nw_vorhaben_gebaeude"
+            },
+            {
+              "f": "gebaeude.hoehe",
+              "bekannt": true
+            },
+            {
+              "f": "gebaeude.hoehe",
+              "min": 22.01
+            }
+          ]
+        }
+      },
+      "grund": "Teil 4 (Hochhäuser): Gebäude mit einer Höhe nach § 2 Abs. 3 Satz 2 BauO NRW von mehr als 22 m.",
+      "fundstellen": [
+        "92"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_voll"
+      },
+      "stand": {
+        "92": "cdcdba97"
+      },
+      "titel": "Anwendungsbereich"
+    },
+    "121": {
+      "gilt": {
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "oder": [
+              {
+                "$": "nw_garage"
+              },
+              {
+                "f": "gebaeude.stellplaetze",
+                "min": 1
+              },
+              {
+                "f": "vorhaben.stellplaetze_grundstueck",
+                "ist": true
+              }
+            ]
+          }
+        ]
+      },
+      "entfaellt": {
+        "oder": [
+          {
+            "$": "nur_beseitigung"
+          },
+          {
+            "und": [
+              {
+                "f": "gebaeude.garage_nutzflaeche",
+                "max": 0
+              },
+              {
+                "f": "gebaeude.stellplaetze",
+                "max": 0
+              },
+              {
+                "f": "vorhaben.stellplaetze_grundstueck",
+                "ist": false
+              }
+            ]
+          }
+        ]
+      },
+      "grund": "Teil 5 (Garagen) gilt für Stellplätze und Garagen im Sinne des § 2 Abs. 8 BauO NRW.",
+      "fundstellen": [
+        "121"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_voll"
+      },
+      "hinweis": "Im vereinfachten Verfahren prüft die Behörde den Brandschutz von Garagen bis 1 000 m² nicht (§ 64 Abs. 1 Satz 2 BauO NRW).",
+      "stand": {
+        "121": "f6855fb0"
+      },
+      "titel": "Anwendungsbereich"
+    },
+    "122": {
+      "gilt": {
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "$": "nw_garage"
+          }
+        ]
+      },
+      "entfaellt": {
+        "oder": [
+          {
+            "$": "nur_beseitigung"
+          },
+          {
+            "f": "gebaeude.garage_nutzflaeche",
+            "max": 0
+          }
+        ]
+      },
+      "grund": "Garagenarten nach Nutzfläche: Kleingarage bis 100 m², Mittelgarage über 100 bis 1 000 m², Großgarage über 1 000 m²; offene und geschlossene Garagen.",
+      "fundstellen": [
+        "122/1",
+        "122/2",
+        "122/3",
+        "122/8"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_voll"
+      },
+      "hinweis": "Nutzfläche = Einstellplätze und Verkehrsflächen der Garage (Abs. 8); die Grundfläche aus dem Lageplan ist nur eine Näherung.",
+      "stand": {
+        "122/1": "0eea3be6",
+        "122/2": "cb03623b",
+        "122/3": "fca6bcef",
+        "122/8": "9093ff94"
+      },
+      "titel": "Begriffe und allgemeine Anforderungen"
+    },
+    "131": {
+      "gilt": {
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "f": "gebaeude.garage_nutzflaeche",
+            "min": 0.01,
+            "max": 100
+          }
+        ]
+      },
+      "entfaellt": {
+        "oder": [
+          {
+            "$": "nur_beseitigung"
+          },
+          {
+            "oder": [
+              {
+                "f": "gebaeude.garage_nutzflaeche",
+                "max": 0
+              },
+              {
+                "f": "gebaeude.garage_nutzflaeche",
+                "min": 100.01
+              }
+            ]
+          }
+        ]
+      },
+      "grund": "Kleingaragen: tragende Wände und Decken ohne Feuerwiderstand zulässig; zu anderen Räumen feuerhemmend; Gebäudeabschlusswand feuerhemmend oder nichtbrennbar.",
+      "fundstellen": [
+        "131/1",
+        "131/2",
+        "131/3"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_voll"
+      },
+      "stand": {
+        "131/1": "2f52acdf",
+        "131/2": "80282cd2",
+        "131/3": "f89e51bb"
+      },
+      "titel": "Bauliche Anforderungen an Kleingaragen"
+    },
+    "132": {
+      "gilt": {
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "f": "gebaeude.garage_nutzflaeche",
+            "min": 100.01
+          }
+        ]
+      },
+      "entfaellt": {
+        "oder": [
+          {
+            "$": "nur_beseitigung"
+          },
+          {
+            "f": "gebaeude.garage_nutzflaeche",
+            "max": 100
+          }
+        ]
+      },
+      "grund": "Mittel- und Großgaragen: Rauch- und Brandabschnitte; dazu Rettungswege, Lüftung, Brandmelde- und Löschanlagen (§§ 133–138).",
+      "fundstellen": [
+        "132/1",
+        "132/2"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_voll"
+      },
+      "nachweis": [
+        "Angaben zu Einstellplätzen und Fahrgassen (§ 12 Abs. 4 BauPrüfVO)",
+        "Bescheinigung Prüfsachverständige Brandschutz bei Mittelgaragen (§ 68 Abs. 2 BauO NRW)"
+      ],
+      "stand": {
+        "132/1": "298cb652",
+        "132/2": "9d913467"
+      },
+      "titel": "Rauchabschnitte, Brandabschnitte"
+    },
+    "143": {
+      "gilt": {
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "f": "nw.elt_betriebsraum",
+            "ist": true
+          }
+        ]
+      },
+      "grund": "Teil 6: elektrische Betriebsräume für Transformatoren und Schaltanlagen über 1 kV, Stromerzeugungsaggregate und zentrale Batterieanlagen für sicherheitstechnische Anlagen.",
+      "fundstellen": [
+        "143"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_voll"
+      },
+      "nachweis": [
+        "Angaben zu Lage und Art der elektrischen Anlage (§ 12 Abs. 5 BauPrüfVO)"
+      ],
+      "stand": {
+        "143": "8e8eee14"
+      },
+      "entfaellt": {
+        "$": "efh_zfh"
+      },
+      "titel": "Anwendungsbereich für das Aufstellen elektrischer Anlagen in Betriebsräumen"
+    }
+  }
+}

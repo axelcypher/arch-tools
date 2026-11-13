@@ -1,0 +1,251 @@
+{
+  "format": 1,
+  "modul": "nw",
+  "norm": "svvo",
+  "fassung": "2024-11-26",
+  "version": 1,
+  "paragrafen": {
+    "12": {
+      "gilt": {
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "$": "nw_verfahren_bekannt"
+          }
+        ]
+      },
+      "entfaellt": {
+        "und": [
+          {
+            "$": "wohngebaeude"
+          },
+          {
+            "$": "gk_1_2"
+          },
+          {
+            "f": "gebaeude.gemischt",
+            "ist": false
+          }
+        ]
+      },
+      "pruefen": {
+        "grund": "Keine Prüfung der Standsicherheit auch bei freistehenden landwirtschaftlichen Betriebsgebäuden bis zwei Geschosse und eingeschossigen Gebäuden bis 200 m² (§ 68 Abs. 3 Satz 5 BauO NRW). Nutzungsänderung: ob die Anforderung für die neue Nutzung greift.",
+        "wenn": {
+          "und": [
+            {
+              "$": "vorhaben_29"
+            },
+            {
+              "$": "nw_verfahren_bekannt"
+            },
+            {
+              "oder": [
+                {
+                  "oder": [
+                    {
+                      "und": [
+                        {
+                          "f": "gebaeude.landwirtschaft",
+                          "bekannt": true
+                        },
+                        {
+                          "f": "gebaeude.landwirtschaft",
+                          "ist": true
+                        }
+                      ]
+                    },
+                    {
+                      "und": [
+                        {
+                          "f": "gebaeude.bgf",
+                          "bekannt": true
+                        },
+                        {
+                          "f": "gebaeude.bgf",
+                          "max": 200
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "$": "nutzungsaenderung"
+                }
+              ]
+            },
+            {
+              "nicht": {
+                "und": [
+                  {
+                    "$": "wohngebaeude"
+                  },
+                  {
+                    "$": "gk_1_2"
+                  },
+                  {
+                    "f": "gebaeude.gemischt",
+                    "ist": false
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "grund": "Staatlich anerkannte Sachverständige für Standsicherheit prüfen und bescheinigen die Standsicherheitsnachweise einschließlich des statisch-konstruktiven Brandschutzes und überzeugen sich stichprobenhaft bei der Bauausführung.",
+      "fundstellen": [
+        "12/1",
+        "12/2"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "nachweis": [
+        "Bescheinigung und Prüfbericht Standsicherheit, spätestens mit der Baubeginnsanzeige (§ 68 Abs. 3 BauO NRW)"
+      ],
+      "hinweis": "Bei schwierigem Baugrund ist zusätzlich eine Sachverständige oder ein Sachverständiger für Erd- und Grundbau zu beauftragen (Abs. 1 Satz 3).",
+      "stand": {
+        "12/1": "853e90fc",
+        "12/2": "d9ab5ff7"
+      },
+      "titel": "Aufgabenerledigung"
+    },
+    "16": {
+      "gilt": {
+        "und": [
+          {
+            "$": "nw_vorhaben_gebaeude"
+          },
+          {
+            "oder": [
+              {
+                "und": [
+                  {
+                    "$": "gk_4_5"
+                  },
+                  {
+                    "$": "kein_sonderbau"
+                  }
+                ]
+              },
+              {
+                "f": "gebaeude.garage_nutzflaeche",
+                "min": 100.01,
+                "max": 1000
+              }
+            ]
+          }
+        ]
+      },
+      "entfaellt": {
+        "und": [
+          {
+            "$": "gk_1_3"
+          },
+          {
+            "f": "gebaeude.garage_nutzflaeche",
+            "max": 100
+          }
+        ]
+      },
+      "pruefen": {
+        "grund": "Bei Sonderbauten verlangt die Behörde in der Regel ebenfalls eine Prüfung des Brandschutzes (Brandschutzkonzept, § 9 BauPrüfVO).",
+        "wenn": {
+          "und": [
+            {
+              "$": "nw_vorhaben_gebaeude"
+            },
+            {
+              "$": "sonderbau"
+            }
+          ]
+        }
+      },
+      "grund": "Staatlich anerkannte Sachverständige für Brandschutz prüfen und bescheinigen den baulichen Brandschutz bei Gebäuden der Gebäudeklassen 4 und 5, die keine Sonderbauten sind, und bei Mittelgaragen (§ 68 Abs. 2 BauO NRW).",
+      "fundstellen": [
+        "16/1",
+        "16/2"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "nachweis": [
+        "Bescheinigung Brandschutz vor Erteilung der Baugenehmigung (§ 68 Abs. 2 BauO NRW)"
+      ],
+      "hinweis": "Forderungen der Brandschutzdienststelle zum abwehrenden Brandschutz sind zu berücksichtigen (Abs. 2).",
+      "stand": {
+        "16/1": "415a7bb9",
+        "16/2": "9ea00014"
+      },
+      "titel": "Aufgabenerledigung"
+    },
+    "23": {
+      "gilt": {
+        "und": [
+          {
+            "$": "nw_vorhaben_gebaeude"
+          },
+          {
+            "$": "nw_verfahren_bekannt"
+          }
+        ]
+      },
+      "entfaellt": {
+        "und": [
+          {
+            "$": "wohngebaeude"
+          },
+          {
+            "$": "gk_1_2"
+          },
+          {
+            "f": "gebaeude.gemischt",
+            "ist": false
+          }
+        ]
+      },
+      "grund": "Staatlich anerkannte Sachverständige für Schall- und Wärmeschutz stellen die Nachweise auf oder prüfen sie und bescheinigen sie; Bescheinigung spätestens mit der Baubeginnsanzeige (§ 68 Abs. 4 BauO NRW).",
+      "fundstellen": [
+        "23/1",
+        "23/2"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "hinweis": "Für Wohngebäude der Gebäudeklassen 1 und 2 keine Bescheinigung nach § 68 Abs. 4 BauO NRW; der GEG-Nachweis ist trotzdem zu führen (GEG-UVO).",
+      "stand": {
+        "23/1": "0b8f8fd6",
+        "23/2": "a7f01888"
+      },
+      "pruefen": {
+        "grund": "Nutzungsänderung: ob die Anforderung für die neue Nutzung greift.",
+        "wenn": {
+          "und": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "nicht": {
+                "und": [
+                  {
+                    "$": "wohngebaeude"
+                  },
+                  {
+                    "$": "gk_1_2"
+                  },
+                  {
+                    "f": "gebaeude.gemischt",
+                    "ist": false
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "titel": "Aufgabenerledigung"
+    }
+  }
+}

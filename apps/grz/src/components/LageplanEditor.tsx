@@ -41,7 +41,7 @@ const ZIEH_PX = 3;
  * Werkzeuge und Tasten wie in QUADRIO. kurz: die zwei, drei wichtigsten Kürzel für die Hilfezeile; alle:
  * vollständige Übersicht hinter „?“
  */
-const WERKZEUGE: { id: Werkzeug; label: string; symbol?: SymbolName; taste: string; kurz: string[]; alle: string[]; titel: string }[] = [
+const WERKZEUGE: { id: Werkzeug; label: string; symbol: SymbolName; taste: string; kurz: string[]; alle: string[]; titel: string }[] = [
   {
     id: 'auswahl',
     label: 'Auswahl',
@@ -82,7 +82,7 @@ const WERKZEUGE: { id: Werkzeug; label: string; symbol?: SymbolName; taste: stri
   {
     id: 'grenze',
     label: 'Grenze',
-    // ohne Symbol, bis der core-Satz ein eigenes für die Grundstücksgrenze hat (kein irreführender Ersatz)
+    symbol: 'grenze',
     taste: 'G',
     titel: 'Grundstücksgrenze (Flurstück) als Polygon zeichnen',
     kurz: ['Klicken: Punkt', 'Enter: schließen', 'Esc: abbrechen'],
@@ -832,12 +832,7 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
         <div className="lp-gruppe" role="group" aria-label="Werkzeug">
           {WERKZEUGE.map((w) => (
             <button key={w.id} className={werkzeug === w.id ? 'small active' : 'small'} aria-pressed={werkzeug === w.id} title={`${w.titel} (${w.taste})`} onClick={() => st.setWerkzeug(w.id)}>
-              {w.symbol && (
-                <>
-                  <Symbol name={w.symbol} />{' '}
-                </>
-              )}
-              {w.label}
+              <Symbol name={w.symbol} /> {w.label}
             </button>
           ))}
         </div>
@@ -900,8 +895,7 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
               title="Unterlage verschieben: Punkt auf der Unterlage → Punkt im Plan"
               onClick={() => st.setWerkzeug('ausrichten')}
             >
-              {/* eigenes Symbol für „Ausrichten“ fehlt im core-Satz – bis dahin das Ziel (Zielpunkt im Plan) */}
-              <Symbol name="ziel" /> Ausrichten
+              <Symbol name="ausrichten" /> Ausrichten
             </button>
             <label className="toggle small-text">
               <input type="checkbox" checked={unterlage.visible} onChange={(e) => setUnterlage({ ...(unterlage as RasterBackground), visible: e.target.checked })} />

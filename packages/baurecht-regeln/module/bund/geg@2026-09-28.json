@@ -1,0 +1,818 @@
+{
+  "format": 1,
+  "modul": "bund",
+  "norm": "geg",
+  "fassung": "2026-09-28",
+  "version": 1,
+  "geltung": {
+    "und": [
+      {
+        "$": "gebaeude"
+      },
+      {
+        "nicht": {
+          "$": "nur_beseitigung"
+        }
+      },
+      {
+        "f": "gebaeude.beheizt",
+        "ist": true
+      }
+    ]
+  },
+  "geltungGrund": "das GEG gilt nach § 2 Abs. 1 für Gebäude, die nach ihrer Zweckbestimmung unter Einsatz von Energie beheizt oder gekühlt werden",
+  "paragrafen": {
+    "2": {
+      "titel": "Anwendungsbereich",
+      "grund": "Das Gebäude wird unter Einsatz von Energie beheizt oder gekühlt und fällt damit in den Anwendungsbereich des GEG (Abs. 1).",
+      "fundstellen": [
+        "2/1",
+        "2/2"
+      ],
+      "hinweis": "Ausgenommen sind u. a. unterirdische Bauten, provisorische Gebäude bis zwei Jahre, Gebäude für religiöse Zwecke, Wohngebäude mit Nutzung unter vier Monaten im Jahr und Betriebsgebäude mit Solltemperatur unter 12 °C (Abs. 2) – dann von Hand festlegen.",
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "2/1": "bb17751c",
+        "2/2": "1c8b636e"
+      }
+    },
+    "10": {
+      "titel": "Grundsatz und Niedrigstenergiegebäude",
+      "gilt": {
+        "$": "errichtung"
+      },
+      "grund": "Ein neues Gebäude ist als Niedrigstenergiegebäude zu errichten: Gesamtenergiebedarf nach § 15 bzw. § 18, baulicher Wärmeschutz nach § 16 bzw. § 19 und die Maßgaben der §§ 42 bis 45 entsprechend (Abs. 1, 2).",
+      "fundstellen": [
+        "10/1",
+        "10/2",
+        "10/4"
+      ],
+      "hinweis": "Stromdirektheizungen in Gebäuden mit Wohnungen nur bei 45 % besserem baulichem Wärmeschutz (Abs. 4).",
+      "nachweis": [
+        "Nachweis nach Landesrecht (in NRW: GEG-UVO, Bescheinigung staatlich anerkannter Sachverständiger nach § 68 Abs. 4 BauO NRW; nicht bei Wohngebäuden der Gebäudeklassen 1 und 2) – die Bauaufsicht prüft den Wärmeschutz nicht selbst."
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "10/1": "050f0c88",
+        "10/2": "b2f8d8e2",
+        "10/4": "c5332aa5"
+      }
+    },
+    "11": {
+      "titel": "Mindestwärmeschutz",
+      "gilt": {
+        "$": "errichtung"
+      },
+      "grund": "Bauteile gegen Außenluft, Erdreich oder deutlich kältere Gebäudeteile müssen den Mindestwärmeschutz nach DIN 4108-2 und DIN 4108-3 erfüllen; bei nicht gesicherter Nachbarbebauung auch Gebäudetrennwände (Abs. 1, 2).",
+      "fundstellen": [
+        "11/1",
+        "11/2"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "11/1": "b5c2dd85",
+        "11/2": "ddfd591b"
+      }
+    },
+    "12": {
+      "titel": "Wärmebrücken",
+      "gilt": {
+        "$": "errichtung"
+      },
+      "grund": "Der Einfluss konstruktiver Wärmebrücken auf den Jahres-Heizwärmebedarf ist nach den anerkannten Regeln der Technik und im wirtschaftlich vertretbaren Rahmen so gering wie möglich zu halten.",
+      "fundstellen": [
+        "12"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "12": "47bdd5ca"
+      }
+    },
+    "13": {
+      "titel": "Dichtheit",
+      "gilt": {
+        "$": "errichtung"
+      },
+      "grund": "Die wärmeübertragende Umfassungsfläche ist dauerhaft luftundurchlässig nach den anerkannten Regeln der Technik abzudichten; der Mindestluftwechsel muss sichergestellt sein.",
+      "fundstellen": [
+        "13"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "13": "ecbcaf3a"
+      }
+    },
+    "14": {
+      "titel": "Sommerlicher Wärmeschutz",
+      "gilt": {
+        "oder": [
+          {
+            "$": "errichtung"
+          },
+          {
+            "und": [
+              {
+                "oder": [
+                  {
+                    "$": "aenderung"
+                  },
+                  {
+                    "$": "nutzungsaenderung"
+                  }
+                ]
+              },
+              {
+                "f": "vorhaben.erweiterung_beheizt",
+                "ist": true
+              }
+            ]
+          }
+        ]
+      },
+      "grund": "Neue Gebäude brauchen einen ausreichenden baulichen sommerlichen Wärmeschutz, nachgewiesen nach DIN 4108-2 Abschnitt 8 (Abs. 1, 2); bei Erweiterungen über 50 m² zusammenhängender Nutzfläche ebenso (§ 39 Abs. 2).",
+      "fundstellen": [
+        "14/1"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "verweise": [
+        "bund/geg/39"
+      ],
+      "stand": {
+        "14/1": "c5b2a1d3"
+      }
+    },
+    "15": {
+      "titel": "Gesamtenergiebedarf",
+      "gilt": {
+        "und": [
+          {
+            "$": "errichtung"
+          },
+          {
+            "oder": [
+              {
+                "$": "wohnnutzung"
+              },
+              {
+                "und": [
+                  {
+                    "$": "nichtwohnnutzung"
+                  },
+                  {
+                    "f": "gebaeude.gemischt",
+                    "ist": true
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "grund": "Neue Wohngebäude: Jahres-Primärenergiebedarf höchstens das 0,55fache des Referenzgebäudes (Abs. 1).",
+      "fundstellen": [
+        "15/1",
+        "15/2"
+      ],
+      "nachweis": [
+        "Nachweis nach Landesrecht (in NRW: GEG-UVO, Bescheinigung staatlich anerkannter Sachverständiger nach § 68 Abs. 4 BauO NRW; nicht bei Wohngebäuden der Gebäudeklassen 1 und 2) – die Bauaufsicht prüft den Wärmeschutz nicht selbst."
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "15/1": "dc0fa608",
+        "15/2": "fcc6fb9e"
+      },
+      "hinweis": "Wohnteile eines Nichtwohngebäudes mit nicht unerheblichem Anteil werden getrennt als Wohngebäude behandelt (§ 106 Abs. 2)."
+    },
+    "16": {
+      "titel": "Baulicher Wärmeschutz",
+      "gilt": {
+        "und": [
+          {
+            "$": "errichtung"
+          },
+          {
+            "oder": [
+              {
+                "$": "wohnnutzung"
+              },
+              {
+                "und": [
+                  {
+                    "$": "nichtwohnnutzung"
+                  },
+                  {
+                    "f": "gebaeude.gemischt",
+                    "ist": true
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "grund": "Neue Wohngebäude: spezifischer Transmissionswärmeverlust höchstens das 1,0fache des Referenzgebäudes.",
+      "fundstellen": [
+        "16"
+      ],
+      "nachweis": [
+        "Nachweis nach Landesrecht (in NRW: GEG-UVO, Bescheinigung staatlich anerkannter Sachverständiger nach § 68 Abs. 4 BauO NRW; nicht bei Wohngebäuden der Gebäudeklassen 1 und 2) – die Bauaufsicht prüft den Wärmeschutz nicht selbst."
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "16": "0a2ba5ec"
+      },
+      "hinweis": "Wohnteile eines Nichtwohngebäudes mit nicht unerheblichem Anteil werden getrennt als Wohngebäude behandelt (§ 106 Abs. 2)."
+    },
+    "18": {
+      "titel": "Gesamtenergiebedarf",
+      "gilt": {
+        "und": [
+          {
+            "$": "errichtung"
+          },
+          {
+            "oder": [
+              {
+                "$": "nichtwohnnutzung"
+              },
+              {
+                "und": [
+                  {
+                    "$": "wohnnutzung"
+                  },
+                  {
+                    "f": "gebaeude.gemischt",
+                    "ist": true
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "grund": "Neue Nichtwohngebäude: Jahres-Primärenergiebedarf einschließlich eingebauter Beleuchtung höchstens das 0,55fache des Referenzgebäudes (Abs. 1).",
+      "fundstellen": [
+        "18/1",
+        "18/2"
+      ],
+      "nachweis": [
+        "Nachweis nach Landesrecht (in NRW: GEG-UVO, Bescheinigung staatlich anerkannter Sachverständiger nach § 68 Abs. 4 BauO NRW; nicht bei Wohngebäuden der Gebäudeklassen 1 und 2) – die Bauaufsicht prüft den Wärmeschutz nicht selbst."
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "18/1": "2500c672",
+        "18/2": "ac4390f2"
+      },
+      "hinweis": "Läden, Büros oder Praxen in einem Wohngebäude mit nicht unerheblichem Anteil werden getrennt als Nichtwohngebäude behandelt (§ 106 Abs. 1)."
+    },
+    "19": {
+      "titel": "Baulicher Wärmeschutz",
+      "gilt": {
+        "und": [
+          {
+            "$": "errichtung"
+          },
+          {
+            "oder": [
+              {
+                "$": "nichtwohnnutzung"
+              },
+              {
+                "und": [
+                  {
+                    "$": "wohnnutzung"
+                  },
+                  {
+                    "f": "gebaeude.gemischt",
+                    "ist": true
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "grund": "Neue Nichtwohngebäude: Höchstwerte der mittleren Wärmedurchgangskoeffizienten nach Anlage 3.",
+      "fundstellen": [
+        "19"
+      ],
+      "nachweis": [
+        "Nachweis nach Landesrecht (in NRW: GEG-UVO, Bescheinigung staatlich anerkannter Sachverständiger nach § 68 Abs. 4 BauO NRW; nicht bei Wohngebäuden der Gebäudeklassen 1 und 2) – die Bauaufsicht prüft den Wärmeschutz nicht selbst."
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "19": "89a42029"
+      },
+      "hinweis": "Läden, Büros oder Praxen in einem Wohngebäude mit nicht unerheblichem Anteil werden getrennt als Nichtwohngebäude behandelt (§ 106 Abs. 1)."
+    },
+    "34": {
+      "titel": "Aufrechterhaltung der energetischen Qualität; entgegenstehende Rechtsvorschriften",
+      "gilt": {
+        "und": [
+          {
+            "oder": [
+              {
+                "$": "aenderung"
+              },
+              {
+                "$": "nutzungsaenderung"
+              }
+            ]
+          },
+          {
+            "f": "vorhaben.aussenbauteile",
+            "ist": true
+          }
+        ]
+      },
+      "grund": "Außenbauteile eines bestehenden Gebäudes dürfen nicht so verändert werden, dass die energetische Qualität des Gebäudes verschlechtert wird – ausgenommen Änderungen bis 10 % der Fläche der jeweiligen Bauteilgruppe nach Anlage 7 (Abs. 1).",
+      "fundstellen": [
+        "34/1",
+        "34/2"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "hinweis": "Die Anforderungen an bestehende Gebäude gelten nicht, soweit sie Vorschriften zur Standsicherheit, zum Brand-, Schall-, Arbeits- oder Gesundheitsschutz widersprechen (Abs. 2).",
+      "verweise": [
+        "bund/geg/36"
+      ],
+      "stand": {
+        "34/1": "51a4c0b5",
+        "34/2": "293e3f33"
+      }
+    },
+    "36": {
+      "titel": "Anforderungen an ein bestehendes Gebäude bei Änderung",
+      "gilt": {
+        "und": [
+          {
+            "oder": [
+              {
+                "$": "aenderung"
+              },
+              {
+                "$": "nutzungsaenderung"
+              }
+            ]
+          },
+          {
+            "f": "vorhaben.aussenbauteile",
+            "ist": true
+          }
+        ]
+      },
+      "grund": "Werden Außenbauteile beheizter oder gekühlter Räume erneuert, ersetzt oder erstmals eingebaut, dürfen sie die Wärmedurchgangskoeffizienten der Anlage 7 nicht überschreiten; ausgenommen sind Änderungen bis 10 % der jeweiligen Bauteilgruppe (Satz 1, 2).",
+      "fundstellen": [
+        "36"
+      ],
+      "hinweis": "Eigentümer von Wohngebäuden mit höchstens zwei Wohnungen: informatorisches Beratungsgespräch bei Gesamtberechnung nach § 38 (Satz 3). Die Regelung zur Änderung stand bis 2026 in § 48.",
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "36": "e1868dd2"
+      }
+    },
+    "39": {
+      "titel": "Anforderungen an ein bestehendes Gebäude bei Erweiterung und Ausbau",
+      "gilt": {
+        "und": [
+          {
+            "oder": [
+              {
+                "$": "aenderung"
+              },
+              {
+                "$": "nutzungsaenderung"
+              }
+            ]
+          },
+          {
+            "f": "vorhaben.erweiterung_beheizt",
+            "ist": true
+          }
+        ]
+      },
+      "grund": "Bei Erweiterung oder Ausbau um beheizte oder gekühlte Räume gelten für die neuen Außenbauteile das 1,2fache des Referenzwerts (Wohngebäude) bzw. das 1,25fache der Höchstwerte (Nichtwohngebäude); über 50 m² zusätzlich sommerlicher Wärmeschutz (Abs. 1, 2).",
+      "fundstellen": [
+        "39/1",
+        "39/2"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "39/1": "fac5cc39",
+        "39/2": "48c07e5f"
+      }
+    },
+    "42": {
+      "titel": "Grundsatz",
+      "gilt": {
+        "$": "geg_heizungsanlage"
+      },
+      "grund": "Wird eine Heizungsanlage eingebaut oder ersetzt, sind für die gewählte Option (Abs. 2) die Maßgaben der §§ 43 bis 46 zu beachten – bei bestehenden Gebäuden unmittelbar, bei Neubauten die §§ 42 bis 45 entsprechend (§ 10 Abs. 2 Nr. 3).",
+      "fundstellen": [
+        "42/1",
+        "42/2"
+      ],
+      "hinweis": "Die frühere 65-%-Regel (§ 71) ist mit der Änderung vom 23.07.2026 weggefallen.",
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "42/1": "b3688bf0",
+        "42/2": "78917587"
+      },
+      "verweise": [
+        "bund/geg/10",
+        "bund/geg/43",
+        "bund/geg/44",
+        "bund/geg/45",
+        "bund/geg/46"
+      ]
+    },
+    "43": {
+      "titel": "Einbau einer Heizungsanlage, die mit Gas, Heizöl oder Flüssiggas beschickt wird",
+      "gilt": {
+        "und": [
+          {
+            "$": "geg_heizungsanlage"
+          },
+          {
+            "f": "technik.heizung_fossil",
+            "ist": true
+          }
+        ]
+      },
+      "entfaellt": {
+        "oder": [
+          {
+            "f": "technik.heizung_fossil",
+            "ist": false
+          },
+          {
+            "und": [
+              {
+                "oder": [
+                  {
+                    "$": "aenderung"
+                  },
+                  {
+                    "$": "nutzungsaenderung"
+                  }
+                ]
+              },
+              {
+                "f": "vorhaben.heizung",
+                "ist": false
+              }
+            ]
+          }
+        ]
+      },
+      "grund": "Neue Gas-, Öl- oder Flüssiggasheizungen (nach dem 29.07.2026): ab 2029 mindestens 10 %, ab 2030 15 %, ab 2035 30 %, ab 2040 60 % der Wärme aus Biomethan, Bioöl, biogenem Flüssiggas oder Wasserstoff; anrechenbar Solarthermie und Lüftung mit Wärmerückgewinnung (Abs. 1–5).",
+      "fundstellen": [
+        "43/1",
+        "43/3",
+        "43/5"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "hinweis": "Bei Neubauten über § 10 Abs. 2 Nr. 3 entsprechend. Eine Grüngas-/Grünheizölquote für Inverkehrbringer ist angekündigt (§ 42a).",
+      "stand": {
+        "43/1": "18ac08d3",
+        "43/3": "0c811a42",
+        "43/5": "614bbbcf"
+      }
+    },
+    "44": {
+      "titel": "Einbau einer solarthermischen Anlage",
+      "gilt": {
+        "und": [
+          {
+            "$": "geg_heizungsanlage"
+          },
+          {
+            "f": "technik.solarthermie",
+            "ist": true
+          }
+        ]
+      },
+      "entfaellt": {
+        "oder": [
+          {
+            "f": "technik.solarthermie",
+            "ist": false
+          },
+          {
+            "und": [
+              {
+                "oder": [
+                  {
+                    "$": "aenderung"
+                  },
+                  {
+                    "$": "nutzungsaenderung"
+                  }
+                ]
+              },
+              {
+                "f": "vorhaben.heizung",
+                "ist": false
+              }
+            ]
+          }
+        ]
+      },
+      "grund": "Kollektoren bzw. System einer solarthermischen Anlage mit flüssigem Wärmeträger müssen mit „Solar Keymark“ zertifiziert sein.",
+      "fundstellen": [
+        "44"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "44": "9b642c40"
+      }
+    },
+    "45": {
+      "titel": "Einbau einer Heizungsanlage zur Nutzung fester Biomasse",
+      "gilt": {
+        "und": [
+          {
+            "$": "geg_heizungsanlage"
+          },
+          {
+            "f": "technik.biomasse",
+            "ist": true
+          }
+        ]
+      },
+      "entfaellt": {
+        "oder": [
+          {
+            "f": "technik.biomasse",
+            "ist": false
+          },
+          {
+            "und": [
+              {
+                "oder": [
+                  {
+                    "$": "aenderung"
+                  },
+                  {
+                    "$": "nutzungsaenderung"
+                  }
+                ]
+              },
+              {
+                "f": "vorhaben.heizung",
+                "ist": false
+              }
+            ]
+          }
+        ]
+      },
+      "grund": "Feste Biomasse nur in einem Biomasseofen mit Wasser als Wärmeträger oder einem Biomassekessel und nur mit zugelassenen Brennstoffen (Abs. 1); Biomasse-Hybridheizungen erfüllen § 43 Abs. 1 (Abs. 2).",
+      "fundstellen": [
+        "45/1",
+        "45/2"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "45/1": "5d21b72c",
+        "45/2": "3b38e43c"
+      }
+    },
+    "46": {
+      "titel": "Einbau einer Stromdirektheizung",
+      "gilt": {
+        "und": [
+          {
+            "oder": [
+              {
+                "$": "aenderung"
+              },
+              {
+                "$": "nutzungsaenderung"
+              }
+            ]
+          },
+          {
+            "f": "vorhaben.heizung",
+            "ist": true
+          },
+          {
+            "f": "technik.stromdirekt",
+            "ist": true
+          },
+          {
+            "oder": [
+              {
+                "$": "wohnnutzung"
+              },
+              {
+                "f": "gebaeude.wohnungen",
+                "min": 1
+              },
+              {
+                "f": "gebaeude.gemischt",
+                "ist": true
+              }
+            ]
+          }
+        ]
+      },
+      "entfaellt": {
+        "oder": [
+          {
+            "f": "vorhaben.heizung",
+            "ist": false
+          },
+          {
+            "f": "technik.stromdirekt",
+            "ist": false
+          }
+        ]
+      },
+      "grund": "Stromdirektheizung in einem bestehenden Gebäude mit Wohnungen nur, wenn der bauliche Wärmeschutz die Anforderungen der §§ 16 und 19 um mindestens 30 % unterschreitet (Abs. 1) – nicht beim Austausch einer Einzelraum-Stromdirektheizung (Abs. 2).",
+      "fundstellen": [
+        "46/1",
+        "46/2"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "hinweis": "Ausgenommen Gebäude mit höchstens zwei Wohnungen, von denen der Eigentümer eine selbst bewohnt (Abs. 1 Satz 2). Beim Neubau gilt § 10 Abs. 4 (45 %).",
+      "stand": {
+        "46/1": "1e08d810",
+        "46/2": "72c1a9db"
+      }
+    },
+    "80": {
+      "titel": "Ausstellung und Verwendung von Energieausweisen",
+      "gilt": {
+        "$": "errichtung"
+      },
+      "pruefen": {
+        "grund": "Bei Änderung nach § 36, wenn für das ganze Gebäude nach § 38 gerechnet wird, ist ebenfalls ein Energiebedarfsausweis auszustellen (Abs. 2).",
+        "wenn": {
+          "n": "bund/geg/36",
+          "ampel": [
+            "rot"
+          ]
+        }
+      },
+      "grund": "Für ein neues Gebäude ist nach Fertigstellung ein Energiebedarfsausweis auszustellen und dem Eigentümer zu übergeben (Abs. 1); bei Änderungen mit Gesamtberechnung nach § 38 ebenso (Abs. 2).",
+      "fundstellen": [
+        "80/1",
+        "80/2"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "80/1": "cd3a181a",
+        "80/2": "d96ac191"
+      }
+    },
+    "92": {
+      "titel": "Erfüllungserklärung",
+      "gilt": {
+        "oder": [
+          {
+            "$": "errichtung"
+          },
+          {
+            "n": "bund/geg/39",
+            "ampel": [
+              "rot"
+            ]
+          }
+        ]
+      },
+      "grund": "Für ein neues Gebäude ist der zuständigen Behörde mit einer Erfüllungserklärung nachzuweisen, dass die Anforderungen eingehalten sind – in der Regel nach Fertigstellung (Abs. 1); bei Erweiterung und Ausbau entsprechend (Abs. 2).",
+      "fundstellen": [
+        "92/1",
+        "92/2"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "92/1": "c3ae78de",
+        "92/2": "96dc21b4"
+      },
+      "pruefen": {
+        "grund": "Bei Änderung nach § 36 Satz 1 ist eine Erfüllungserklärung abzugeben, wenn für das ganze Gebäude nach § 38 gerechnet wird (Abs. 2 Satz 1).",
+        "wenn": {
+          "n": "bund/geg/36",
+          "ampel": [
+            "rot"
+          ]
+        }
+      }
+    },
+    "105": {
+      "titel": "Baudenkmäler und sonstige besonders erhaltenswerte Bausubstanz",
+      "gilt": {
+        "oder": [
+          {
+            "f": "schutz.denkmal",
+            "ist": true
+          },
+          {
+            "f": "schutz.denkmalbereich",
+            "ist": true
+          }
+        ]
+      },
+      "grund": "Bei Baudenkmälern und besonders erhaltenswerter Bausubstanz kann von den Anforderungen abgewichen werden, soweit sie Substanz oder Erscheinungsbild beeinträchtigen oder unverhältnismäßigen Aufwand verursachen.",
+      "fundstellen": [
+        "105"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "105": "7f010a9f"
+      }
+    },
+    "106": {
+      "titel": "Gemischt genutzte Gebäude",
+      "gilt": {
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "f": "gebaeude.gemischt",
+            "ist": true
+          }
+        ]
+      },
+      "entfaellt": {
+        "f": "gebaeude.gemischt",
+        "ist": false
+      },
+      "grund": "Teile eines Wohngebäudes mit wesentlich anderer Nutzung und nicht unerheblichem Flächenanteil sind getrennt als Nichtwohngebäude zu behandeln, Wohnteile eines Nichtwohngebäudes getrennt als Wohngebäude (Abs. 1, 2).",
+      "fundstellen": [
+        "106/1",
+        "106/2"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "verweise": [
+        "bund/geg/15",
+        "bund/geg/18"
+      ],
+      "stand": {
+        "106/1": "ac34666c",
+        "106/2": "218f839f"
+      }
+    },
+    "42a": {
+      "titel": "Grüngas-/Grünheizölquote",
+      "gilt": {
+        "nie": true
+      },
+      "grund": "Auftrag an den Gesetzgeber (Quote für Inverkehrbringer von Gas und Öl ab 2045) – keine Pflicht aus dem Bauvorhaben.",
+      "fundstellen": [
+        "42a"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "42a": "3b58bfca"
+      }
+    }
+  }
+}

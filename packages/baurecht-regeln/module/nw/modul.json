@@ -1,0 +1,1366 @@
+{
+  "format": 1,
+  "id": "nw",
+  "name": "Nordrhein-Westfalen",
+  "ebene": "land",
+  "schluessel": "05",
+  "version": "2026-11-12",
+  "hosts": [
+    "recht.nrw.de",
+    "www.dibt.de",
+    "www.wms.nrw.de",
+    "www.wfs.nrw.de"
+  ],
+  "normen": {
+    "bauo-nrw": {
+      "kurz": "BauO NRW",
+      "titel": "Landesbauordnung 2018 (BauO NRW 2018)",
+      "thema": "bauordnung",
+      "quelle": {
+        "art": "recht-nrw",
+        "term": 32203
+      }
+    },
+    "baupruefvo": {
+      "kurz": "BauPrüfVO",
+      "titel": "Verordnung über bautechnische Prüfungen (BauPrüfVO)",
+      "thema": "verfahren",
+      "quelle": {
+        "art": "recht-nrw",
+        "term": 27719
+      }
+    },
+    "sbauvo": {
+      "kurz": "SBauVO",
+      "titel": "Verordnung über Bau und Betrieb von Sonderbauten (Sonderbauverordnung – SBauVO)",
+      "thema": "brandschutz",
+      "quelle": {
+        "art": "recht-nrw",
+        "term": 31721
+      }
+    },
+    "stellplatzvo": {
+      "kurz": "StellplatzVO NRW",
+      "titel": "Verordnung über notwendige Stellplätze für Kraftfahrzeuge und Fahrräder",
+      "thema": "stellplaetze",
+      "quelle": {
+        "art": "recht-nrw",
+        "url": "https://recht.nrw.de/lrgv/rechtsverordnung/01072022-verordnung-ueber-notwendige-stellplaetze-fuer-kraftfahrzeuge-und"
+      }
+    },
+    "san-vo": {
+      "kurz": "SAN-VO NRW",
+      "titel": "Verordnung zur Umsetzung der Solaranlagen-Pflicht nach § 42a und § 48 Absatz 1a BauO NRW (Solaranlagen-Verordnung)",
+      "thema": "energie",
+      "quelle": {
+        "art": "recht-nrw",
+        "term": 34102
+      }
+    },
+    "feuvo": {
+      "kurz": "FeuVO NRW",
+      "titel": "Feuerungsverordnung (FeuVO NRW)",
+      "thema": "brandschutz",
+      "quelle": {
+        "art": "recht-nrw",
+        "term": 32303
+      }
+    },
+    "svvo": {
+      "kurz": "SV-VO",
+      "titel": "Verordnung über staatlich anerkannte Sachverständige nach der Landesbauordnung 2018",
+      "thema": "verfahren",
+      "quelle": {
+        "art": "recht-nrw",
+        "term": 28042
+      }
+    },
+    "geg-uvo": {
+      "kurz": "GEG-UVO",
+      "titel": "Verordnung zur Umsetzung des Gebäudeenergiegesetzes (GEG-UVO)",
+      "thema": "energie",
+      "quelle": {
+        "art": "recht-nrw",
+        "term": 33174
+      }
+    },
+    "dschg": {
+      "kurz": "DSchG NRW",
+      "titel": "Denkmalschutzgesetz (DSchG NRW)",
+      "thema": "denkmal",
+      "quelle": {
+        "art": "recht-nrw",
+        "term": 33502
+      }
+    },
+    "lnatschg": {
+      "kurz": "LNatSchG NRW",
+      "titel": "Landesnaturschutzgesetz (LNatSchG NRW)",
+      "thema": "natur",
+      "quelle": {
+        "art": "recht-nrw",
+        "term": 28058
+      }
+    },
+    "lwg": {
+      "kurz": "LWG",
+      "titel": "Landeswassergesetz (LWG)",
+      "thema": "wasser",
+      "quelle": {
+        "art": "recht-nrw",
+        "term": 26930
+      }
+    },
+    "lbodschg": {
+      "kurz": "LBodSchG",
+      "titel": "Landesbodenschutzgesetz für das Land Nordrhein-Westfalen (LBodSchG)",
+      "thema": "boden",
+      "quelle": {
+        "art": "recht-nrw",
+        "term": 28047
+      }
+    },
+    "kampfmittelvo": {
+      "kurz": "KampfmittelVO",
+      "titel": "Ordnungsbehördliche Verordnung zur Verhütung von Schäden durch Kampfmittel (Kampfmittelverordnung)",
+      "thema": "boden",
+      "quelle": {
+        "art": "recht-nrw",
+        "term": 28341
+      }
+    },
+    "strwg": {
+      "kurz": "StrWG NRW",
+      "titel": "Straßen- und Wegegesetz des Landes Nordrhein-Westfalen (StrWG NRW)",
+      "thema": "sonstiges",
+      "quelle": {
+        "art": "recht-nrw",
+        "term": 27058
+      }
+    },
+    "nachbg": {
+      "kurz": "NachbG NRW",
+      "titel": "Nachbarrechtsgesetz (NachbG NRW) – Privatrecht",
+      "thema": "sonstiges",
+      "quelle": {
+        "art": "recht-nrw",
+        "term": 26658
+      },
+      "nurHinweis": true
+    },
+    "avwgebo": {
+      "kurz": "AVwGebO NRW",
+      "titel": "Allgemeine Verwaltungsgebührenordnung NRW (AVwGebO NRW)",
+      "thema": "verfahren",
+      "quelle": {
+        "art": "recht-nrw",
+        "term": 33844
+      }
+    },
+    "vv-tb": {
+      "kurz": "VV TB NRW",
+      "titel": "Verwaltungsvorschrift Technische Baubestimmungen NRW (Runderlass vom 15.06.2021, Fassung vom 21.11.2025)",
+      "thema": "bauordnung",
+      "quelle": {
+        "art": "verweis",
+        "url": "https://recht.nrw.de/taxonomy/term/33148"
+      }
+    },
+    "mvv-tb": {
+      "kurz": "MVV TB",
+      "titel": "Muster-Verwaltungsvorschrift Technische Baubestimmungen (DIBt) – gilt in NRW sechs Monate nach Veröffentlichung als VV TB NRW",
+      "thema": "bauordnung",
+      "quelle": {
+        "art": "mvvtb",
+        "seite": "https://www.dibt.de/de/service/bekanntmachungen",
+        "monate": 6
+      },
+      "lizenz": "Amtliche Mitteilungen des Deutschen Instituts für Bautechnik (DIBt); die eingeführten DIN-Normen sind urheberrechtlich geschützt und nur als Fundstelle genannt"
+    }
+  },
+  "fakten": {
+    "ortsrecht.stellplatzsatzung": {
+      "titel": "Stellplatzsatzung der Gemeinde (örtliche Bauvorschrift nach § 89 Abs. 1 Nr. 4 BauO NRW)",
+      "kurz": "Stellplatzsatzung der Gemeinde",
+      "gruppe": "ortsrecht",
+      "typ": "janein",
+      "hilfe": "setzt das Gemeindemodul; ohne Gemeindemodul von Hand – auch Stellplatzregeln im Bebauungsplan zählen (§ 1 Abs. 2 StellplatzVO NRW)"
+    },
+    "nw.stellplatzflaeche": {
+      "titel": "Notwendige Kfz-Stellplätze für ein Nichtwohngebäude auf einer neu errichteten Stellplatzfläche",
+      "kurz": "Stellplätze auf neuer Stellplatzfläche",
+      "einheit": "Stellplätze",
+      "gruppe": "vorhaben",
+      "typ": "zahl",
+      "hilfe": "für die Photovoltaik-Pflicht über Stellplatzflächen (§ 48 Abs. 1a BauO NRW, § 6 SAN-VO NRW): mehr als 35 – auch wenn die Stellplatzfläche selbst das Vorhaben ist; Stellplätze für Wohnnutzung zählen nicht",
+      "wenn": {
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "m": "Gebäudeart",
+            "nicht": [
+              "Einfamilienhaus",
+              "Zweifamilienhaus"
+            ]
+          }
+        ]
+      }
+    },
+    "nw.grenzabstand_unter_2_5": {
+      "titel": "Außenwand an der Nachbargrenze oder weniger als 2,50 m davon entfernt (Gebäudeabschlusswand)",
+      "kurz": "Außenwand unter 2,50 m zur Grenze",
+      "gruppe": "grundstueck",
+      "typ": "janein",
+      "hilfe": "§ 30 Abs. 2 Nr. 1 BauO NRW: dann Brandwand bzw. Gebäudeabschlusswand nach § 30 Abs. 3"
+    },
+    "nw.geschosse_oberirdisch": {
+      "titel": "Oberirdische Geschosse",
+      "gruppe": "gebaeude",
+      "typ": "zahl",
+      "hilfe": "§ 39 Abs. 4 BauO NRW: Aufzugspflicht bei mehr als drei oberirdischen Geschossen (außer Ein- und Zweifamilienhäusern)"
+    },
+    "nw.kellergeschoss": {
+      "titel": "Kellergeschoss im Gebäude",
+      "kurz": "Kellergeschoss",
+      "gruppe": "gebaeude",
+      "typ": "janein",
+      "frage": "Hat das Gebäude ein Kellergeschoss?",
+      "hilfe": "§ 35 Abs. 2 BauO NRW: Von jeder Stelle eines Aufenthaltsraums sowie eines Kellergeschosses muss ein Ausgang in einen notwendigen Treppenraum oder ins Freie in höchstens 35 m erreichbar sein; übereinanderliegende Kellergeschosse brauchen je zwei Ausgänge. Gefragt nur bei Gebäudeklasse 1 und 2 ohne Aufenthaltsräume.",
+      "wenn": {
+        "und": [
+          {
+            "$": "gebaeude"
+          },
+          {
+            "$": "gk_1_2"
+          },
+          {
+            "f": "gebaeude.aufenthaltsraeume",
+            "ist": false
+          }
+        ]
+      }
+    },
+    "nw.elt_betriebsraum": {
+      "titel": "Elektrischer Betriebsraum nach § 143 SBauVO",
+      "kurz": "Elektrischer Betriebsraum",
+      "gruppe": "technik",
+      "typ": "janein",
+      "hilfe": "Transformatoren und Schaltanlagen über 1 kV, ortsfeste Stromerzeugungsaggregate oder zentrale Batterieanlagen für bauordnungsrechtlich vorgeschriebene sicherheitstechnische Anlagen im Gebäude – nicht der Batteriespeicher einer PV-Anlage"
+    },
+    "nw.feste_brennstoffe_50kw": {
+      "titel": "Feuerstätten für feste Brennstoffe mit zusammen mehr als 50 kW Nennleistung",
+      "kurz": "Feststofffeuerung über 50 kW",
+      "gruppe": "technik",
+      "typ": "janein",
+      "hilfe": "§ 6 FeuVO NRW: dann eigener Heizraum",
+      "wenn": {
+        "f": "technik.feuerstaette",
+        "ist": true
+      }
+    },
+    "nw.nachbarrecht": {
+      "titel": "Privatrechtliche Nachbarfragen (NachbG NRW)",
+      "kurz": "Nachbarrechtliche Fragen",
+      "gruppe": "grundstueck",
+      "typ": "wahl",
+      "werte": [
+        "geklärt"
+      ],
+      "frage": "Sind die privatrechtlichen Nachbarfragen geklärt (Grenzabstand, Nachbar- oder Grenzwand, Einfriedung, schriftliche Einwilligung)?",
+      "hilfe": "Das Nachbarrechtsgesetz ist Privatrecht – die Bauaufsicht prüft es nicht. Die Ampel bleibt gelb, bis „geklärt“ gewählt ist."
+    },
+    "schutz.nsg": {
+      "titel": "Naturschutzgebiet (auch einstweilig sichergestellt)",
+      "kurz": "Naturschutzgebiet",
+      "gruppe": "schutz",
+      "typ": "janein",
+      "geodienst": {
+        "art": "wms",
+        "url": "https://www.wms.nrw.de/umwelt/linfos",
+        "ebene": "Naturschutzgebiete",
+        "vollstaendig": true,
+        "puffer": 25,
+        "quelle": "LINFOS NRW (LANUK)",
+        "lizenz": "Datenlizenz Deutschland – Namensnennung 2.0, Quellenvermerk „Land NRW“"
+      }
+    },
+    "schutz.lsg": {
+      "titel": "Landschaftsschutzgebiet",
+      "gruppe": "schutz",
+      "typ": "janein",
+      "geodienst": {
+        "art": "wms",
+        "url": "https://www.wms.nrw.de/umwelt/linfos",
+        "ebene": "Landschaftsschutzgebiet",
+        "vollstaendig": true,
+        "puffer": 25,
+        "quelle": "LINFOS NRW (LANUK)",
+        "lizenz": "Datenlizenz Deutschland – Namensnennung 2.0, Quellenvermerk „Land NRW“"
+      }
+    },
+    "schutz.ffh": {
+      "titel": "FFH-Gebiet (Natura 2000)",
+      "gruppe": "schutz",
+      "typ": "janein",
+      "geodienst": {
+        "art": "wms",
+        "url": "https://www.wms.nrw.de/umwelt/linfos",
+        "ebene": "FFH-Gebiete",
+        "vollstaendig": true,
+        "puffer": 25,
+        "quelle": "LINFOS NRW (LANUK)",
+        "lizenz": "Datenlizenz Deutschland – Namensnennung 2.0, Quellenvermerk „Land NRW“"
+      }
+    },
+    "schutz.vsg": {
+      "titel": "Vogelschutzgebiet (Natura 2000)",
+      "gruppe": "schutz",
+      "typ": "janein",
+      "geodienst": {
+        "art": "wms",
+        "url": "https://www.wms.nrw.de/umwelt/linfos",
+        "ebene": "Vogelschutzgebiete",
+        "vollstaendig": true,
+        "puffer": 25,
+        "quelle": "LINFOS NRW (LANUK)",
+        "lizenz": "Datenlizenz Deutschland – Namensnennung 2.0, Quellenvermerk „Land NRW“"
+      }
+    },
+    "schutz.biotop": {
+      "titel": "Gesetzlich geschütztes Biotop betroffen",
+      "gruppe": "schutz",
+      "typ": "janein",
+      "hilfe": "Biotopkartierung des LANUK (§ 30 BNatSchG, § 42 LNatSchG NRW); Streuobstbestände ab 2 500 m² sind auch ohne Kartierung geschützt (§ 42 Abs. 4 LNatSchG)",
+      "geodienst": {
+        "art": "wms",
+        "url": "https://www.wms.nrw.de/umwelt/linfos",
+        "ebene": "11,12,13",
+        "vollstaendig": false,
+        "puffer": 25,
+        "quelle": "LINFOS NRW (LANUK), geschützte Biotope (Fläche, Linie, Punkt)",
+        "lizenz": "Datenlizenz Deutschland – Namensnennung 2.0, Quellenvermerk „Land NRW“"
+      }
+    },
+    "schutz.uesg": {
+      "titel": "Überschwemmungsgebiet (festgesetzt oder vorläufig gesichert)",
+      "kurz": "Überschwemmungsgebiet",
+      "gruppe": "schutz",
+      "typ": "janein",
+      "geodienst": {
+        "art": "wms",
+        "url": "https://www.wms.nrw.de/umwelt/wasser/uesg",
+        "ebene": "6",
+        "vorstufen": [
+          "5",
+          "3"
+        ],
+        "vollstaendig": true,
+        "puffer": 25,
+        "quelle": "WMS Überschwemmungsgebiete NRW (LANUK): festgesetzt (6), vorläufig gesichert (5), ermittelt (3)",
+        "lizenz": "Datenlizenz Deutschland – Namensnennung 2.0, Quellenvermerk „Land NRW“"
+      }
+    },
+    "schutz.wsg": {
+      "titel": "Wasser- oder Heilquellenschutzgebiet",
+      "gruppe": "schutz",
+      "typ": "janein",
+      "hilfe": "Karte: ELWAS-WEB bzw. WMS „Wasserschutzgebiete NRW“ (LANUK). Die automatische Abfrage ist ausgeschaltet: Die Nutzungsbedingungen des Dienstes verlangen für die Nutzung zu Erwerbszwecken eine Genehmigung des Herausgebers – bis sie vorliegt, bitte von Hand eintragen."
+    },
+    "ortsrecht.stellplatz_regelt_zahl": {
+      "titel": "Die Stellplatzsatzung bzw. der Bebauungsplan regelt Pflicht und Zahl der notwendigen Stellplätze",
+      "kurz": "Ortsrecht regelt Stellplatzzahl",
+      "gruppe": "ortsrecht",
+      "typ": "janein",
+      "hilfe": "setzt das Gemeindemodul; ohne Gemeindemodul von Hand – § 1 Abs. 2 StellplatzVO NRW: Satzung und Bebauungsplan gehen nur vor, soweit sie Regelungen treffen",
+      "wenn": {
+        "$": "vorhaben_29"
+      }
+    },
+    "ortsrecht.stellplatz_regelt_lage": {
+      "titel": "Die Stellplatzsatzung bzw. der Bebauungsplan regelt Lage und Herstellung der Stellplätze (Entfernung, Sicherung)",
+      "kurz": "Ortsrecht regelt Lage der Stellplätze",
+      "gruppe": "ortsrecht",
+      "typ": "janein",
+      "hilfe": "setzt das Gemeindemodul; ohne Gemeindemodul von Hand – § 1 Abs. 2 StellplatzVO NRW: Satzung und Bebauungsplan gehen nur vor, soweit sie Regelungen treffen",
+      "wenn": {
+        "$": "vorhaben_29"
+      }
+    },
+    "ortsrecht.stellplatz_regelt_kfz": {
+      "titel": "Die Stellplatzsatzung bzw. der Bebauungsplan regelt Größe und Beschaffenheit der Kfz-Stellplätze einschließlich der Stellplätze für Menschen mit Behinderung",
+      "kurz": "Ortsrecht regelt Kfz-Stellplätze",
+      "gruppe": "ortsrecht",
+      "typ": "janein",
+      "hilfe": "setzt das Gemeindemodul; ohne Gemeindemodul von Hand – § 1 Abs. 2 StellplatzVO NRW: Satzung und Bebauungsplan gehen nur vor, soweit sie Regelungen treffen",
+      "wenn": {
+        "$": "vorhaben_29"
+      }
+    },
+    "ortsrecht.stellplatz_regelt_fahrrad": {
+      "titel": "Die Stellplatzsatzung bzw. der Bebauungsplan regelt die Beschaffenheit der Fahrradabstellplätze",
+      "kurz": "Ortsrecht regelt Fahrradplätze",
+      "gruppe": "ortsrecht",
+      "typ": "janein",
+      "hilfe": "setzt das Gemeindemodul; ohne Gemeindemodul von Hand – § 1 Abs. 2 StellplatzVO NRW: Satzung und Bebauungsplan gehen nur vor, soweit sie Regelungen treffen",
+      "wenn": {
+        "$": "vorhaben_29"
+      }
+    },
+    "ortsrecht.stellplatz_regelt_abloesung": {
+      "titel": "Die Stellplatzsatzung regelt die Ablösung notwendiger Stellplätze",
+      "kurz": "Satzung regelt Stellplatzablösung",
+      "gruppe": "ortsrecht",
+      "typ": "janein",
+      "hilfe": "setzt das Gemeindemodul; ohne Gemeindemodul von Hand – § 1 Abs. 2 StellplatzVO NRW: Satzung und Bebauungsplan gehen nur vor, soweit sie Regelungen treffen",
+      "wenn": {
+        "$": "vorhaben_29"
+      }
+    },
+    "lage.zufahrt_klassifiziert": {
+      "titel": "Neue oder wesentlich geänderte Zufahrt (auch mittelbar) zu einer Landes- oder Kreisstraße außerhalb der Ortsdurchfahrt",
+      "kurz": "Zufahrt zu Landes- oder Kreisstraße",
+      "gruppe": "grundstueck",
+      "typ": "janein",
+      "hilfe": "Zustimmung der Straßenbaubehörde nach § 25 Abs. 1 Nr. 2 StrWG NRW – unabhängig vom Abstand des Gebäudes"
+    },
+    "lage.anschluss_klassifiziert": {
+      "titel": "Grundstück an eine Landes- oder Kreisstraße außerhalb der Ortsdurchfahrt angeschlossen (auch bestehend, auch mittelbar über eine Zufahrt)",
+      "kurz": "Anschluss an Landes- oder Kreisstraße",
+      "gruppe": "grundstueck",
+      "typ": "janein",
+      "hilfe": "§ 25 Abs. 1 Satz 1 Nr. 2 StrWG NRW: auch bei erheblicher Änderung oder anderer Nutzung des bestehenden Anschlusses"
+    },
+    "schutz.denkmalbereich_umgebung": {
+      "titel": "Engere Umgebung eines Denkmalbereichs (z. B. Sichtbezug auf eine geschützte Altstadt)",
+      "kurz": "Umgebung eines Denkmalbereichs",
+      "gruppe": "schutz",
+      "typ": "janein",
+      "hilfe": "§ 5 Abs. 3 DSchG NRW – bei der Unteren Denkmalbehörde erfragen"
+    },
+    "vorhaben.stellplatz_abloesung": {
+      "titel": "Notwendige Stellplätze sollen abgelöst werden (Ablösungsbetrag)",
+      "kurz": "Stellplatzablösung beabsichtigt",
+      "gruppe": "vorhaben",
+      "typ": "janein",
+      "wenn": {
+        "$": "vorhaben_29"
+      }
+    },
+    "vorhaben.andere_gestattung": {
+      "titel": "Das Vorhaben braucht eine andere Gestattung, die die Baugenehmigung einschließt (z. B. wasserrechtliche Zulassung, Anlage der öffentlichen Versorgung, Abfallentsorgungsanlage)",
+      "kurz": "Andere Gestattung schließt Bau ein",
+      "gruppe": "vorhaben",
+      "typ": "janein",
+      "hilfe": "§ 61 BauO NRW",
+      "wenn": {
+        "$": "vorhaben_29"
+      }
+    },
+    "technik.lueftung": {
+      "titel": "Lüftungs-, Klima- oder raumlufttechnische Anlage geplant (auch freistehend)",
+      "kurz": "Lüftungs- oder Klimaanlage",
+      "gruppe": "technik",
+      "typ": "janein",
+      "wenn": {
+        "$": "vorhaben_29"
+      }
+    },
+    "gebaeude.abfallraum": {
+      "titel": "Feste Abfallstoffe werden im Gebäude aufbewahrt (Müllraum)",
+      "kurz": "Müllraum im Gebäude",
+      "gruppe": "gebaeude",
+      "typ": "janein",
+      "wenn": {
+        "$": "nw_vorhaben_gebaeude"
+      }
+    },
+    "schutz.gartendenkmal": {
+      "titel": "Gartendenkmal auf dem Grundstück oder in seiner engeren Umgebung",
+      "kurz": "Gartendenkmal",
+      "gruppe": "schutz",
+      "typ": "janein",
+      "hilfe": "§ 13 DSchG NRW (z. B. historische Park- und Gartenanlage) – Denkmalliste der Gemeinde"
+    },
+    "ortsrecht.abweichung": {
+      "titel": "Abweichung von einer örtlichen Bauvorschrift beabsichtigt (Gestaltungs-, Werbeanlagen- oder Stellplatzsatzung)",
+      "kurz": "Abweichung von örtlicher Bauvorschrift",
+      "gruppe": "ortsrecht",
+      "typ": "janein",
+      "hilfe": "§ 69 Abs. 1 und 3 BauO NRW: Abweichungen von örtlichen Bauvorschriften (§ 89) sind gesondert zu beantragen; die Satzungen nennen oft eigene Voraussetzungen"
+    },
+    "nw.landwirtschaft_angebaut": {
+      "titel": "Wohngebäude mit angebautem landwirtschaftlich (oder vergleichbar) genutztem Gebäude bzw. Gebäudeteil",
+      "kurz": "Angebautes landwirtschaftliches Gebäude",
+      "gruppe": "gebaeude",
+      "typ": "janein",
+      "hilfe": "§ 30 Abs. 2 Nr. 4 BauO NRW: Brandwand zwischen Wohnteil und Stall, Scheune oder Remise – z. B. Altenteilerhaus am Stall",
+      "wenn": {
+        "$": "nw_vorhaben_gebaeude"
+      }
+    },
+    "vorhaben.nutzung_befristet": {
+      "titel": "Nutzungsänderung auf höchstens zwölf Monate befristet (außerhalb des Außenbereichs)",
+      "kurz": "Befristete Nutzungsänderung",
+      "gruppe": "vorhaben",
+      "typ": "janein",
+      "hilfe": "§ 64 Abs. 3 BauO NRW: Nutzungsänderungsanzeige einen Monat vor Aufnahme der Nutzung",
+      "wenn": {
+        "$": "nutzungsaenderung"
+      }
+    },
+    "nw.anlage_ueber_10m": {
+      "titel": "Zu beseitigende Anlage (kein Gebäude) höher als 10 m",
+      "kurz": "Anlage höher als 10 m",
+      "gruppe": "vorhaben",
+      "typ": "janein",
+      "hilfe": "§ 62 Abs. 3 Satz 1 Nr. 3 BauO NRW: Die Beseitigung sonstiger Anlagen, die keine Gebäude sind, bis 10 m Höhe ist verfahrensfrei; höhere sind einen Monat vorher anzuzeigen (Satz 3) – außer, schon ihre Errichtung wäre verfahrensfrei (Satz 1 Nr. 1).",
+      "wenn": {
+        "und": [
+          {
+            "$": "nur_beseitigung"
+          },
+          {
+            "m": "Gebäudeart",
+            "in": [
+              "kein Gebäude"
+            ]
+          }
+        ]
+      }
+    },
+    "nw.beseitigung_abs1": {
+      "titel": "Die Errichtung der zu beseitigenden Anlage wäre verfahrensfrei (§ 62 Abs. 1 BauO NRW, z. B. Garage, Gartenhaus, Einfriedung)",
+      "kurz": "Errichtung wäre verfahrensfrei",
+      "gruppe": "vorhaben",
+      "typ": "janein",
+      "hilfe": "§ 62 Abs. 3 Satz 1 Nr. 1 BauO NRW: Die Beseitigung von Anlagen nach Absatz 1 ist verfahrensfrei – auch wenn sie angebaut sind. Wohngebäude gehören nie dazu.",
+      "wenn": {
+        "und": [
+          {
+            "$": "nur_beseitigung"
+          },
+          {
+            "nicht": {
+              "$": "wohnnutzung"
+            }
+          }
+        ]
+      }
+    },
+    "vorhaben.zu_abfahrtsverkehr": {
+      "titel": "Zu- oder Abfahrtsverkehr mit Kraftfahrzeugen bzw. Fahrrädern zu erwarten (Anlage, die kein Gebäude ist, bzw. Gebäude ohne Aufenthaltsräume)",
+      "kurz": "Zu-/Abfahrtsverkehr zu erwarten",
+      "gruppe": "vorhaben",
+      "typ": "janein",
+      "hilfe": "§ 48 Abs. 1 BauO NRW: Stellplätze und Fahrradabstellplätze sind bei Anlagen herzustellen, bei denen Zu- oder Abfahrtsverkehr zu erwarten ist – bei Wohngebäuden und Gebäuden mit Aufenthaltsräumen stets; sonst z. B. Sportanlage, Stellplatzanlage, Lagerplatz, Lagerhalle mit Anlieferung – nicht bei Mauer, Wärmepumpe, Werbeanlage, Gartenhaus oder Geräteschuppen.",
+      "wenn": {
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "oder": [
+              {
+                "m": "Gebäudeart",
+                "in": [
+                  "kein Gebäude"
+                ]
+              },
+              {
+                "und": [
+                  {
+                    "nicht": {
+                      "$": "wohngebaeude"
+                    }
+                  },
+                  {
+                    "f": "gebaeude.aufenthaltsraeume",
+                    "ist": false
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "nw.blitzschutz_anlass": {
+      "titel": "Nach Lage, Bauart oder Nutzung kann ein Blitzschlag leicht eintreten oder schwere Folgen haben (z. B. exponierte Lage, Mast oder Turm, weiche Bedachung, Lager brennbarer Stoffe, viele Menschen)",
+      "kurz": "Besondere Blitzgefahr oder -folgen",
+      "gruppe": "technik",
+      "typ": "janein",
+      "hilfe": "§ 45 BauO NRW: dann ist eine dauernd wirksame Blitzschutzanlage nötig – auch bei baulichen Anlagen, die keine Gebäude sind.",
+      "wenn": {
+        "$": "vorhaben_29"
+      }
+    },
+    "schutz.hecke_ausgleich": {
+      "titel": "Geförderte Anpflanzung oder Hecke ab 100 m im Außenbereich, Wallhecke oder als Ausgleich festgesetzte Anpflanzung betroffen",
+      "kurz": "Geschützte Hecke/Ausgleichspflanzung",
+      "gruppe": "schutz",
+      "typ": "janein",
+      "hilfe": "§ 39 Abs. 1 LNatSchG NRW: gesetzlich geschützt sind mit öffentlichen Mitteln geförderte Anpflanzungen außerhalb des Waldes und im Außenbereich (Nr. 1), Hecken ab 100 m Länge im Außenbereich und Wallhecken (Nr. 2) sowie Kompensationspflanzungen (Nr. 3)",
+      "wenn": {
+        "f": "vorhaben.baeume_faellen",
+        "ist": true
+      }
+    },
+    "schutz.allee": {
+      "titel": "Baum einer Allee an einer öffentlichen oder privaten Verkehrsfläche betroffen",
+      "kurz": "Allee betroffen",
+      "gruppe": "schutz",
+      "typ": "janein",
+      "hilfe": "§ 41 LNatSchG NRW; Alleenkataster des LANUK",
+      "wenn": {
+        "f": "schutz.baum",
+        "ist": true
+      }
+    },
+    "nw.altbau_verfahrensfrei": {
+      "titel": "Abbruch des Altbaus verfahrensfrei (§ 62 Abs. 3 Satz 1 BauO NRW): freistehendes Gebäude der Gebäudeklasse 1 oder 3, Anlage (kein Gebäude) bis 10 m oder verfahrensfreie Anlage nach § 62 Abs. 1",
+      "kurz": "Altbau verfahrensfrei zu beseitigen",
+      "gruppe": "vorhaben",
+      "typ": "janein",
+      "frage": "Ist der abzubrechende Altbau ein freistehendes Gebäude der Gebäudeklasse 1 oder 3, eine Anlage (kein Gebäude) bis 10 m Höhe oder eine verfahrensfreie Anlage nach § 62 Abs. 1?",
+      "hilfe": "Beim Abbruch mit Ersatzbau beschreiben Gebäudeart, Gebäudeklasse und „freistehend“ den Neubau. Für den Abbruch zählt der Altbau: verfahrensfrei nach § 62 Abs. 3 Satz 1 BauO NRW, sonst ist die Beseitigung anzuzeigen (Satz 3) – mit Bauvorlagen nach § 15 BauPrüfVO und, bei angebauten Gebäuden, Standsicherheitsnachweis für das Nachbargebäude und Überwachung (Sätze 4, 5).",
+      "wenn": {
+        "$": "ersatzbau"
+      }
+    },
+    "nw.beseitigung_mit_beantragt": {
+      "titel": "Abbruch des Altbaus im Bauantrag mit beantragt (§ 62 Abs. 3 Satz 2 BauO NRW)",
+      "kurz": "Abbruch im Bauantrag mitbeantragt",
+      "gruppe": "vorhaben",
+      "typ": "janein",
+      "frage": "Ist der (verfahrensfreie) Abbruch des Altbaus im Bauantrag für den Ersatzbau ausdrücklich mit beantragt?",
+      "hilfe": "Die Baugenehmigung für den Neubau erfasst den Abbruch nicht von selbst: Eine verfahrensfreie Beseitigung wird nur genehmigt, wenn sie beantragt ist; eine anzuzeigende Beseitigung kann nicht genehmigt werden. Ohne Genehmigung braucht der Abbruch eines Denkmals bzw. im Denkmalbereich eine eigene denkmalrechtliche Erlaubnis (§§ 9, 24 DSchG).",
+      "wenn": {
+        "und": [
+          {
+            "$": "ersatzbau"
+          },
+          {
+            "f": "nw.altbau_verfahrensfrei",
+            "ist": true
+          },
+          {
+            "$": "nw_genehmigungsbeduerftig"
+          }
+        ]
+      }
+    },
+    "zustaendig.gemeinde_bauaufsicht": {
+      "titel": "Gemeinde ist selbst untere Bauaufsichtsbehörde (kein Einvernehmen nach § 36 BauGB)",
+      "kurz": "Gemeinde ist selbst Bauaufsicht",
+      "gruppe": "zustaendig",
+      "typ": "janein",
+      "hilfe": "Kreisfreie Städte (und Aachen) sowie große und mittlere kreisangehörige Städte sind selbst untere Bauaufsichtsbehörde (§ 57 Abs. 1 Nr. 3 BauO NRW); dann entscheidet die Gemeinde selbst, ein Einvernehmen nach § 36 BauGB entfällt (BVerwG, Urt. v. 19.08.2004 – 4 C 16.03), das Planungsamt wird intern beteiligt. Für die übrigen Gemeinden ist der Kreis Bauaufsicht.",
+      "nach": {
+        "fakt": "lage.ags",
+        "tabelle": {
+          "05111000": true,
+          "05112000": true,
+          "05113000": true,
+          "05114000": true,
+          "05116000": true,
+          "05117000": true,
+          "05119000": true,
+          "05120000": true,
+          "05122000": true,
+          "05124000": true,
+          "05314000": true,
+          "05315000": true,
+          "05316000": true,
+          "05334002": true,
+          "05512000": true,
+          "05513000": true,
+          "05515000": true,
+          "05711000": true,
+          "05911000": true,
+          "05913000": true,
+          "05914000": true,
+          "05915000": true,
+          "05916000": true
+        }
+      }
+    },
+    "nw.umnutzung_wohnraum": {
+      "titel": "Nutzungseinheiten mit Aufenthaltsräumen in einem bestehenden Gebäude werden zu Wohnraum umgenutzt (§ 47 Abs. 6 BauO NRW)",
+      "kurz": "Umnutzung zu Wohnraum (§ 47 Abs. 6)",
+      "gruppe": "vorhaben",
+      "typ": "janein",
+      "frage": "Werden Nutzungseinheiten mit Aufenthaltsräumen (z. B. Büro, Praxis, Laden) in einem bestehenden Gebäude zu Wohnraum umgenutzt?",
+      "hilfe": "Dann sind §§ 29, 34, 35 Abs. 1 und 3 bis 8 sowie § 36 BauO NRW nicht anzuwenden, §§ 6, 15, 27, 28, 30 bis 32 gelten nicht für bestehende Bauteile (§ 47 Abs. 6). Nicht gemeint: Umnutzung von Räumen ohne Aufenthaltsräume (Lager, Scheune ohne Aufenthaltsräume) oder ein Neubau.",
+      "wenn": {
+        "und": [
+          {
+            "$": "nutzungsaenderung"
+          },
+          {
+            "$": "gebaeude"
+          },
+          {
+            "oder": [
+              {
+                "$": "wohnnutzung"
+              },
+              {
+                "f": "gebaeude.wohnungen",
+                "min": 1
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "nw.neue_dachflaeche": {
+      "titel": "Durch Anbau, Aufstockung oder Ausbau entsteht eine neue, für Photovoltaik geeignete Dachfläche",
+      "kurz": "Neue PV-geeignete Dachfläche",
+      "gruppe": "vorhaben",
+      "typ": "janein",
+      "frage": "Entsteht durch den Anbau, die Aufstockung oder den Ausbau eine neue, für Photovoltaik geeignete Dachfläche?",
+      "hilfe": "§ 2 Abs. 7 SAN-VO NRW: Der Neuerrichtung eines Gebäudes steht der Ausbau oder Anbau gleich, sofern hierdurch eine neue zur Photovoltaiknutzung geeignete Dachfläche entsteht; bestehende Dachflächen werden nicht berücksichtigt (Mindestgröße: 30 % der neuen Bruttodachfläche, § 4 Abs. 1).",
+      "wenn": {
+        "und": [
+          {
+            "m": "Vorhaben",
+            "in": [
+              "Erweiterung"
+            ]
+          },
+          {
+            "$": "gebaeude"
+          }
+        ]
+      }
+    }
+  },
+  "bausteine": {
+    "nw_prueft_kern": {
+      "m": "Verfahren",
+      "in": [
+        "vereinfachtes Verfahren",
+        "Baugenehmigungsverfahren"
+      ]
+    },
+    "nw_prueft_voll": {
+      "m": "Verfahren",
+      "in": [
+        "Baugenehmigungsverfahren"
+      ]
+    },
+    "nw_prueft_brandschutz": {
+      "oder": [
+        {
+          "m": "Verfahren",
+          "in": [
+            "Baugenehmigungsverfahren"
+          ]
+        },
+        {
+          "und": [
+            {
+              "m": "Verfahren",
+              "in": [
+                "vereinfachtes Verfahren"
+              ]
+            },
+            {
+              "m": "Sonderbau",
+              "in": [
+                "ja"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "nw_genehmigungsbeduerftig": {
+      "m": "Verfahren",
+      "in": [
+        "vereinfachtes Verfahren",
+        "Baugenehmigungsverfahren"
+      ]
+    },
+    "nw_verfahren_bekannt": {
+      "m": "Verfahren",
+      "in": [
+        "Genehmigungsfreistellung",
+        "vereinfachtes Verfahren",
+        "Baugenehmigungsverfahren"
+      ]
+    },
+    "nw_gross": {
+      "m": "Verfahren",
+      "in": [
+        "Baugenehmigungsverfahren"
+      ]
+    },
+    "nw_neubau_gebaeude": {
+      "und": [
+        {
+          "$": "errichtung"
+        },
+        {
+          "m": "Gebäudeart",
+          "nicht": [
+            "kein Gebäude"
+          ]
+        }
+      ]
+    },
+    "nw_bauen_gebaeude": {
+      "und": [
+        {
+          "$": "bauen"
+        },
+        {
+          "m": "Gebäudeart",
+          "nicht": [
+            "kein Gebäude"
+          ]
+        }
+      ]
+    },
+    "nw_vorhaben_gebaeude": {
+      "und": [
+        {
+          "$": "vorhaben_29"
+        },
+        {
+          "m": "Gebäudeart",
+          "nicht": [
+            "kein Gebäude"
+          ]
+        }
+      ]
+    },
+    "nw_wohnungen_gk3_5": {
+      "und": [
+        {
+          "m": "Gebäudeklasse",
+          "in": [
+            "3",
+            "4",
+            "5"
+          ]
+        },
+        {
+          "oder": [
+            {
+              "m": "Gebäudeart",
+              "in": [
+                "Mehrfamilienhaus",
+                "Zweifamilienhaus",
+                "Einfamilienhaus",
+                "Wohn- und Geschäftshaus"
+              ]
+            },
+            {
+              "f": "gebaeude.wohnungen",
+              "min": 1
+            }
+          ]
+        }
+      ]
+    },
+    "nw_garage": {
+      "f": "gebaeude.garage_nutzflaeche",
+      "min": 0.01
+    },
+    "nw_nachbarrecht_offen": {
+      "nicht": {
+        "f": "nw.nachbarrecht",
+        "ist": "geklärt"
+      }
+    },
+    "nw_pv_pflicht_gebaeude": {
+      "oder": [
+        {
+          "und": [
+            {
+              "$": "errichtung"
+            },
+            {
+              "$": "nichtwohnnutzung"
+            },
+            {
+              "tag": "einreichung",
+              "ab": "2024-01-02"
+            }
+          ]
+        },
+        {
+          "und": [
+            {
+              "$": "errichtung"
+            },
+            {
+              "$": "wohnnutzung"
+            },
+            {
+              "tag": "einreichung",
+              "ab": "2025-01-02"
+            }
+          ]
+        },
+        {
+          "und": [
+            {
+              "m": "Vorhaben",
+              "in": [
+                "Erweiterung"
+              ]
+            },
+            {
+              "$": "nichtwohnnutzung"
+            },
+            {
+              "tag": "einreichung",
+              "ab": "2024-01-02"
+            },
+            {
+              "f": "nw.neue_dachflaeche",
+              "ist": true
+            }
+          ]
+        },
+        {
+          "und": [
+            {
+              "m": "Vorhaben",
+              "in": [
+                "Erweiterung"
+              ]
+            },
+            {
+              "$": "wohnnutzung"
+            },
+            {
+              "tag": "einreichung",
+              "ab": "2025-01-02"
+            },
+            {
+              "f": "nw.neue_dachflaeche",
+              "ist": true
+            }
+          ]
+        },
+        {
+          "und": [
+            {
+              "$": "nw_vorhaben_gebaeude"
+            },
+            {
+              "f": "vorhaben.dachhaut",
+              "ist": true
+            }
+          ]
+        }
+      ]
+    },
+    "nw_pv_ausnahme": {
+      "oder": [
+        {
+          "f": "gebaeude.nutzflaeche",
+          "max": 50
+        },
+        {
+          "f": "gebaeude.behelfsbau",
+          "ist": true
+        }
+      ]
+    },
+    "nw_pv_pflicht_stellplatz": {
+      "und": [
+        {
+          "$": "vorhaben_29"
+        },
+        {
+          "nicht": {
+            "$": "efh_zfh"
+          }
+        },
+        {
+          "f": "nw.stellplatzflaeche",
+          "min": 36
+        }
+      ]
+    },
+    "nw_denkmalbezug": {
+      "oder": [
+        {
+          "f": "schutz.denkmal",
+          "ist": true
+        },
+        {
+          "f": "schutz.denkmal_umgebung",
+          "ist": true
+        },
+        {
+          "f": "schutz.denkmalbereich",
+          "ist": true
+        },
+        {
+          "f": "schutz.denkmalbereich_umgebung",
+          "ist": true
+        },
+        {
+          "f": "schutz.bodendenkmal",
+          "ist": true
+        },
+        {
+          "f": "schutz.gartendenkmal",
+          "ist": true
+        }
+      ]
+    },
+    "nw_kein_denkmalbezug": {
+      "und": [
+        {
+          "f": "schutz.denkmal",
+          "ist": false
+        },
+        {
+          "f": "schutz.denkmal_umgebung",
+          "ist": false
+        },
+        {
+          "f": "schutz.denkmalbereich",
+          "ist": false
+        },
+        {
+          "f": "schutz.denkmalbereich_umgebung",
+          "ist": false
+        },
+        {
+          "f": "schutz.bodendenkmal",
+          "ist": false
+        },
+        {
+          "f": "schutz.gartendenkmal",
+          "ist": false
+        }
+      ]
+    },
+    "nw_kein_gebaeude": {
+      "und": [
+        {
+          "$": "vorhaben_29"
+        },
+        {
+          "m": "Gebäudeart",
+          "in": [
+            "kein Gebäude"
+          ]
+        }
+      ]
+    },
+    "nw_beseitigung_frei_art": {
+      "oder": [
+        {
+          "und": [
+            {
+              "$": "gebaeude"
+            },
+            {
+              "f": "gebaeude.freistehend",
+              "ist": true
+            },
+            {
+              "m": "Gebäudeklasse",
+              "in": [
+                "1",
+                "3"
+              ]
+            }
+          ]
+        },
+        {
+          "und": [
+            {
+              "m": "Gebäudeart",
+              "in": [
+                "kein Gebäude"
+              ]
+            },
+            {
+              "f": "nw.anlage_ueber_10m",
+              "ist": false
+            }
+          ]
+        },
+        {
+          "und": [
+            {
+              "nicht": {
+                "$": "wohnnutzung"
+              }
+            },
+            {
+              "f": "nw.beseitigung_abs1",
+              "ist": true
+            }
+          ]
+        }
+      ]
+    },
+    "nw_beseitigung_verfahrensfrei": {
+      "und": [
+        {
+          "$": "beseitigung"
+        },
+        {
+          "$": "nw_abbruch_frei"
+        }
+      ]
+    },
+    "nw_beseitigung_anzeige": {
+      "und": [
+        {
+          "$": "beseitigung"
+        },
+        {
+          "nicht": {
+            "$": "nw_abbruch_frei"
+          }
+        }
+      ]
+    },
+    "nw_mit_baugenehmigung": {
+      "und": [
+        {
+          "$": "nw_genehmigungsbeduerftig"
+        },
+        {
+          "$": "nw_29_oder_frei_beseitigung"
+        }
+      ]
+    },
+    "nw_abbruch_frei": {
+      "oder": [
+        {
+          "und": [
+            {
+              "nicht": {
+                "$": "ersatzbau"
+              }
+            },
+            {
+              "$": "nw_beseitigung_frei_art"
+            }
+          ]
+        },
+        {
+          "und": [
+            {
+              "$": "ersatzbau"
+            },
+            {
+              "f": "nw.altbau_verfahrensfrei",
+              "ist": true
+            }
+          ]
+        },
+        {
+          "und": [
+            {
+              "$": "nw_beseitigung_frei_art"
+            },
+            {
+              "f": "nw.altbau_verfahrensfrei",
+              "ist": true
+            }
+          ]
+        }
+      ]
+    },
+    "nw_29_oder_frei_beseitigung": {
+      "oder": [
+        {
+          "$": "vorhaben_29"
+        },
+        {
+          "$": "nw_beseitigung_verfahrensfrei"
+        },
+        {
+          "und": [
+            {
+              "$": "beseitigung_art"
+            },
+            {
+              "$": "nw_beseitigung_frei_art"
+            }
+          ]
+        }
+      ]
+    },
+    "nw_beseitigung_genehmigt": {
+      "oder": [
+        {
+          "und": [
+            {
+              "nicht": {
+                "$": "ersatzbau"
+              }
+            },
+            {
+              "$": "nw_beseitigung_verfahrensfrei"
+            },
+            {
+              "$": "nw_genehmigungsbeduerftig"
+            }
+          ]
+        },
+        {
+          "und": [
+            {
+              "$": "ersatzbau"
+            },
+            {
+              "$": "nw_beseitigung_verfahrensfrei"
+            },
+            {
+              "$": "nw_genehmigungsbeduerftig"
+            },
+            {
+              "f": "nw.beseitigung_mit_beantragt",
+              "ist": true
+            }
+          ]
+        }
+      ]
+    },
+    "nw_alles_genehmigt": {
+      "und": [
+        {
+          "$": "nw_mit_baugenehmigung"
+        },
+        {
+          "oder": [
+            {
+              "nicht": {
+                "$": "ersatzbau"
+              }
+            },
+            {
+              "$": "nw_beseitigung_genehmigt"
+            }
+          ]
+        }
+      ]
+    },
+    "nw_stellplatzanlass": {
+      "und": [
+        {
+          "$": "vorhaben_29"
+        },
+        {
+          "oder": [
+            {
+              "$": "wohnnutzung"
+            },
+            {
+              "und": [
+                {
+                  "$": "gebaeude"
+                },
+                {
+                  "f": "gebaeude.aufenthaltsraeume",
+                  "ist": true
+                }
+              ]
+            },
+            {
+              "f": "vorhaben.zu_abfahrtsverkehr",
+              "ist": true
+            }
+          ]
+        }
+      ]
+    },
+    "nw_beseitigung_verfahren": {
+      "oder": [
+        {
+          "$": "nw_beseitigung_anzeige"
+        },
+        {
+          "$": "nw_beseitigung_genehmigt"
+        },
+        {
+          "und": [
+            {
+              "$": "beseitigung"
+            },
+            {
+              "$": "nw_genehmigungsbeduerftig"
+            },
+            {
+              "oder": [
+                {
+                  "nicht": {
+                    "$": "ersatzbau"
+                  }
+                },
+                {
+                  "f": "nw.beseitigung_mit_beantragt",
+                  "ist": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "nw_umnutzung_wohnraum": {
+      "und": [
+        {
+          "$": "nutzungsaenderung"
+        },
+        {
+          "oder": [
+            {
+              "$": "wohnnutzung"
+            },
+            {
+              "f": "gebaeude.wohnungen",
+              "min": 1
+            }
+          ]
+        },
+        {
+          "f": "nw.umnutzung_wohnraum",
+          "ist": true
+        }
+      ]
+    }
+  },
+  "hinweise": [
+    {
+      "titel": "Bauvorlageberechtigung (§ 67 BauO NRW)",
+      "text": "Bauvorlagen für die nicht verfahrensfreie Errichtung und Änderung von Gebäuden erstellt eine bauvorlageberechtigte Person (Architektin/Architekt, eingetragene Ingenieurin/eingetragener Ingenieur; für Gebäudeklassen 1 und 2 auch eingetragene Meister nach § 67 Abs. 4a)."
+    },
+    {
+      "titel": "Formulare und digitale Einreichung",
+      "text": "Der Bauantrag ist elektronisch einzureichen (§ 70 Abs. 1 BauO NRW); zu verwenden sind die Vordrucke nach § 1 Abs. 3 BauPrüfVO (Bekanntmachung im Ministerialblatt, Gliederungsnummer 23210)."
+    },
+    {
+      "titel": "Kampfmittel: Auskunft vor Erdarbeiten",
+      "text": "Vor Erdarbeiten über die örtliche Ordnungsbehörde eine Luftbildauswertung des Kampfmittelbeseitigungsdienstes beantragen. Die Kampfmittelverordnung regelt Funde und Räumung, nicht die Auskunft selbst.",
+      "wenn": {
+        "f": "vorhaben.erdarbeiten",
+        "ist": true
+      }
+    },
+    {
+      "titel": "Gebäudeenergiegesetz geändert (Gesetz vom 23.07.2026)",
+      "text": "Die GEG-UVO verweist noch auf die §§ 46 bis 51 und § 48 GEG alter Fassung; diese Paragrafen sind seit der Änderung durch das Gesetz vom 23.07.2026 weggefallen. Nachweise nach der geltenden Fassung des GEG führen und die Zuordnung mit der Bauaufsicht abstimmen.",
+      "wenn": {
+        "$": "vorhaben_29"
+      }
+    }
+  ]
+}

@@ -68,6 +68,7 @@ export function FassungsWahl() {
     ...fassungen.map((f) => ({
       text: `${f.name}${eingereichtVon(antraege?.[f.name]) ? ` – eingereicht ${tag(eingereichtVon(antraege?.[f.name])!.datum)}` : ''}`,
       symbol: f.name === aktiv ? ('haken' as const) : undefined,
+      ...(f.name === aktiv ? { hinweis: 'aktiv' } : {}),
       aktion: () => void fassungWaehlen(f.name),
     })),
     ...(fassungen.length ? [{ trenner: true as const }] : []),
@@ -713,6 +714,7 @@ export function AntragsdatenAnsicht() {
       ...pdfs.map((x) => ({
         text: x.pfad,
         symbol: (d.datei?.pfad === x.pfad ? 'haken' : 'datei') as 'haken' | 'datei',
+        ...(d.datei?.pfad === x.pfad ? { hinweis: 'verknüpft' } : {}),
         aktion: () => void verknuepfen(d.eintrag.id, x.pfad, o),
       })),
       ...(pdfs.length ? [] : [{ text: `Keine Dateien in ${ordner}`, deaktiviert: true }]),
@@ -741,8 +743,8 @@ export function AntragsdatenAnsicht() {
             <Symbol name="neuLaden" />
           </button>
           {basis && (
-            <button className="icon" title="Antragsordner im Explorer öffnen" aria-label="Antragsordner im Explorer öffnen" onClick={() => void oeffnePfad(verbinde(basis, ordner)).catch(() => undefined)}>
-              <Symbol name="ordner" />
+            <button className="icon" title="Antragsordner öffnen" aria-label="Antragsordner öffnen" onClick={() => void oeffnePfad(verbinde(basis, ordner)).catch(() => undefined)}>
+              <Symbol name="ordnerOffen" />
             </button>
           )}
         </div>

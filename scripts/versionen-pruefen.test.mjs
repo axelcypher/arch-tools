@@ -1,5 +1,6 @@
 // Tests für scripts/versionen-pruefen.mjs – Aufruf: node --test scripts/versionen-pruefen.test.mjs
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { APPS, betroffeneApps, notizAus, pruefen, tagVon, vergleich, versionAusTag } from './versionen-pruefen.mjs';
 
@@ -12,6 +13,11 @@ test('Tag-Schema wie release.yml; Versionen numerisch vergleichen', () => {
   assert.equal(versionAusTag('grz', 'grz-v0.26.0'), '0.26.0');
   assert.equal(versionAusTag('flaechenrechner', 'grz-v0.26.0'), null);
   assert.ok(vergleich('0.10.0', '0.9.0') > 0);
+});
+
+test('dieselben Apps wie die Schleife in release.yml (neue App: beide Stellen)', () => {
+  const yml = readFileSync(new URL('../.github/workflows/release.yml', import.meta.url), 'utf8');
+  assert.deepEqual(/^\s*for d in ([a-z ]+); do$/m.exec(yml)[1].trim().split(/\s+/), APPS);
 });
 
 test('betroffene Apps: App-Ordner, Kern die einbindenden Apps außer Arkly; Doku, Tests und Notizen nicht', () => {

@@ -1,0 +1,131 @@
+{
+  "format": 1,
+  "modul": "nw-05974040",
+  "norm": "bebauungsplan",
+  "fassung": "2026-11-12",
+  "version": 1,
+  "geltung": {
+    "oder": [
+      {
+        "$": "bplan_jeder"
+      },
+      {
+        "$": "satzung_baugb"
+      },
+      {
+        "f": "soest.bplan_entwurf",
+        "ist": true
+      },
+      {
+        "f": "planung.planaufstellung",
+        "ist": true
+      }
+    ]
+  },
+  "geltungGrund": "nur im Geltungsbereich eines Bebauungsplans oder einer Satzung nach dem BauGB oder eines Plans in Aufstellung nach § 33 BauGB, auch als Entwurf im Dienst der Stadt",
+  "paragrafen": {
+    "Festsetzungen": {
+      "titel": "Festsetzungen des Bebauungsplans",
+      "gilt": {
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "oder": [
+              {
+                "$": "bplan_jeder"
+              },
+              {
+                "$": "satzung_baugb"
+              },
+              {
+                "$": "planreif"
+              },
+              {
+                "und": [
+                  {
+                    "f": "soest.bplan_entwurf",
+                    "ist": true
+                  },
+                  {
+                    "nicht": {
+                      "f": "planung.planreife",
+                      "ist": false
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "grund": "Festsetzungen des Bebauungsplans (Art und Maß der Nutzung, überbaubare Fläche, Bauweise, Gestaltung, Grünordnung) aus der Planurkunde beachten; Planurkunde und Begründung stehen im Bebauungsplan-Dienst der Stadt.",
+      "fundstellen": [
+        "Festsetzungen"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "hinweis": "91 Bebauungspläne verweisen zusätzlich auf die Altstadtsatzung (Gestaltung). XPlanGML gibt es nur für B 187.",
+      "verweise": [
+        "bund/baugb/30"
+      ],
+      "pruefen": {
+        "grund": "Bei einer Beseitigung binden die Festsetzungen nur ausnahmsweise – etwa ein im Bebauungsplan bezeichneter Erhaltungsbereich (§ 172 Abs. 1 BauGB) bzw. eine Erhaltungssatzung, oder Bindungen für Bepflanzungen (§ 9 Abs. 1 Nr. 25 b BauGB).",
+        "wenn": {
+          "und": [
+            {
+              "$": "nur_beseitigung"
+            },
+            {
+              "oder": [
+                {
+                  "$": "bplan_jeder"
+                },
+                {
+                  "$": "satzung_baugb"
+                },
+                {
+                  "$": "planreif"
+                },
+                {
+                  "und": [
+                    {
+                      "f": "soest.bplan_entwurf",
+                      "ist": true
+                    },
+                    {
+                      "nicht": {
+                        "f": "planung.planreife",
+                        "ist": false
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "Verfahrensstand": {
+      "titel": "Stand des Plans im Dienst der Stadt",
+      "gilt": {
+        "f": "soest.bplan_entwurf",
+        "ist": true
+      },
+      "entfaellt": {
+        "f": "soest.bplan_entwurf",
+        "ist": false
+      },
+      "grund": "Der Plan ist im Dienst der Stadt als Entwurf geführt oder ein Bauleitplanverfahren läuft: Planreife (§ 33 BauGB) bzw. Rechtskraft mit der Bekanntmachungsseite der Stadt abgleichen.",
+      "fundstellen": [
+        "Verfahrensstand"
+      ],
+      "verweise": [
+        "bund/baugb/33"
+      ]
+    }
+  }
+}

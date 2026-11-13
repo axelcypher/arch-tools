@@ -34,6 +34,7 @@ export function Modal({
   tabelle = false,
   kopf = false,
   klickDaneben = true,
+  beschreibung,
   children,
 }: {
   /** Name des Dialogs (aria-label bzw. mit `kopf` sichtbarer Titel) */
@@ -48,6 +49,8 @@ export function Modal({
   kopf?: boolean;
   /** Klick neben den Dialog schließt ihn */
   klickDaneben?: boolean;
+  /** id des Einleitungssatzes (aria-describedby) – wird beim Öffnen mit vorgelesen */
+  beschreibung?: string;
   children: ReactNode;
 }) {
   useEscSchliessen(onClose);
@@ -55,7 +58,7 @@ export function Modal({
   const klassen = ['modal', breit && 'modal-wide', tabelle && 'modal-tabelle', className].filter(Boolean).join(' ');
   return (
     <div className="modal-backdrop" onPointerDown={(e) => e.target === e.currentTarget && klickDaneben && onClose?.()}>
-      <div className={klassen} role="dialog" aria-modal="true" aria-label={kopf ? undefined : titel} aria-labelledby={kopf ? kopfId : undefined}>
+      <div className={klassen} role="dialog" aria-modal="true" aria-label={kopf ? undefined : titel} aria-labelledby={kopf ? kopfId : undefined} aria-describedby={beschreibung}>
         {kopf && (
           <h3 className="modal-kopf" id={kopfId}>
             {titel}

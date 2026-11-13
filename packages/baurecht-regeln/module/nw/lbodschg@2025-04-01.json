@@ -1,0 +1,49 @@
+{
+  "format": 1,
+  "modul": "nw",
+  "norm": "lbodschg",
+  "fassung": "2025-04-01",
+  "version": 1,
+  "paragrafen": {
+    "2": {
+      "gilt": {
+        "oder": [
+          {
+            "f": "lage.altlasten",
+            "ist": true
+          },
+          {
+            "f": "vorhaben.boden_800",
+            "ist": true
+          }
+        ]
+      },
+      "entfaellt": {
+        "und": [
+          {
+            "f": "lage.altlasten",
+            "ist": false
+          },
+          {
+            "f": "vorhaben.boden_800",
+            "ist": false
+          }
+        ]
+      },
+      "grund": "Anhaltspunkte für Altlasten oder schädliche Bodenveränderungen – auch bei Baumaßnahmen – unverzüglich der Bodenschutzbehörde mitteilen; Auf- oder Einbringen von mehr als 800 m³ Material je Vorhaben anzeigen.",
+      "fundstellen": [
+        "2/1",
+        "2/2"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "hinweis": "Vor dem Bauantrag Auskunft aus dem Altlastenkataster (§ 8) der unteren Bodenschutzbehörde einholen.",
+      "stand": {
+        "2/1": "0b74ded3",
+        "2/2": "ea34db4d"
+      },
+      "titel": "Mitteilungspflichten"
+    }
+  }
+}
