@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
 import { beforeEach, describe, expect, it } from 'vitest';
+import { schliessenVorbereiten } from './rahmen';
 import { allgemeinAendern, allgemeinLaden, konfigLesen, konfigSchreiben, konfigSchreibenWennUnveraendert, konfigStand, zuletztLesen, zuletztMerken, zuletztVergessen } from './konfig';
 
 beforeEach(() => localStorage.clear());
@@ -43,5 +44,16 @@ describe('Schreiben mit Konfliktprüfung (P-02)', () => {
     // ein Bereich, den es noch nicht gibt: Stand null
     expect(konfigStand(await konfigLesen('neu'))).toBeNull();
     expect((await konfigSchreibenWennUnveraendert('neu', { a: 1 }, null)).ok).toBe(true);
+  });
+});
+
+describe('Einstellungen vor dem Schließen', () => {
+  it('laufendes Schreiben ist für alle Apps angemeldet: schliessenVorbereiten wartet, bis es fertig ist', async () => {
+    const reihenfolge: string[] = [];
+    const schreiben = konfigSchreiben('formulare', { a: 2 }).then(() => void reihenfolge.push('geschrieben'));
+    await schliessenVorbereiten().then(() => void reihenfolge.push('vorbereitet'));
+    await schreiben;
+    expect(reihenfolge).toEqual(['geschrieben', 'vorbereitet']);
+    expect(await konfigLesen('formulare')).toEqual({ a: 2 });
   });
 });
