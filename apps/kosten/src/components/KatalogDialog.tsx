@@ -144,7 +144,7 @@ export function KatalogDialog({ onClose }: { onClose: () => void }) {
         )}
       </div>
       {fehler && (
-        <p className="warning" role="alert">
+        <p className="meldung fehler" role="alert">
           {fehler}
         </p>
       )}

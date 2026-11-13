@@ -1,3 +1,4 @@
+import { Symbol } from '@core/ui/Symbol';
 import { speichernAbwarten } from '@core/platform/projektDatei';
 import { APP_NAMEN } from '@core/appNamen';
 import { dialogOffen, eingabeAbschliessen, istEingabeZiel } from '@core/platform/eingabe';
@@ -233,18 +234,18 @@ export function App() {
           </button>
         </div>
         <div className="tb-group">
-          <button onClick={() => useKosten.getState().undo()} disabled={!canUndo} title="Rückgängig (Strg+Z)">
-            ↶
+          <button onClick={() => useKosten.getState().undo()} disabled={!canUndo} title="Rückgängig (Strg+Z)" aria-label="Rückgängig">
+            <Symbol name="rueckgaengig" />
           </button>
-          <button onClick={() => useKosten.getState().redo()} disabled={!canRedo} title="Wiederholen (Strg+Y)">
-            ↷
+          <button onClick={() => useKosten.getState().redo()} disabled={!canRedo} title="Wiederholen (Strg+Y)" aria-label="Wiederholen">
+            <Symbol name="wiederholen" />
           </button>
         </div>
         {busy && <span className="busy">{busy}</span>}
       </div>
       <main className="ko-main">
         {wiederhergestellt !== null && dirty && (
-          <div className="ko-bericht" role="status">
+          <div className="ko-bericht meldung warnung" role="status">
             Ungespeicherter Stand vom {datumText(new Date(wiederhergestellt))}{' '}
             {new Date(wiederhergestellt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} wiederhergestellt –{' '}
             <button className="small" onClick={() => void onSave()}>
@@ -263,7 +264,7 @@ export function App() {
           </div>
         )}
         {bericht.length > 0 && (
-          <div className="ko-bericht ko-bericht-info" role="status">
+          <div className="ko-bericht meldung" role="status">
             <strong>IFC-Import{berichtDatei ? ` „${berichtDatei}“` : ''}:</strong>
             <ul>
               {bericht.map((z, i) => (

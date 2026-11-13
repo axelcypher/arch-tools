@@ -6,23 +6,16 @@
   overflow: auto;
   background: var(--bg);
 }
+/* Leisten über der Ansicht (Zwischenstand, IFC-Bericht): Farben aus .meldung, hier nur Lage und Innenabstand */
 .ko-bericht {
-  margin: 12px 12px 0;
-  padding: 10px 14px;
-  background: var(--warn-bg);
-  border: 1px solid var(--warn-border);
-  border-radius: 6px;
-  font-size: 12px;
+  margin: var(--s3) var(--s3) 0;
+  padding: var(--s2) var(--s3);
 }
 .ko-bericht ul {
   margin: 4px 0 8px;
   padding-left: 18px;
 }
-/* IFC-Bericht: neutral, nur Warnzeilen hervorgehoben */
-.ko-bericht.ko-bericht-info {
-  background: var(--panel);
-  border-color: var(--border);
-}
+/* IFC-Bericht: nur Warnzeilen hervorgehoben */
 .ko-bericht li.warnung {
   color: var(--warn-text, var(--text));
   font-weight: 600;

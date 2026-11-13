@@ -1,3 +1,4 @@
+import { Symbol } from '@core/ui/Symbol';
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
@@ -246,7 +247,7 @@ export default function Mengen3D({
           Geschosse auseinanderziehen
         </label>
         <button className="small" onClick={fit} title="Ganzes Modell zeigen">
-          ⤢ Alles
+          <Symbol name="einpassen" /> Alles
         </button>
       </div>
       {etikett && (

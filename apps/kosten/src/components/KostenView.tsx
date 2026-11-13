@@ -1,3 +1,4 @@
+import { Symbol } from '@core/ui/Symbol';
 import { useMemo, useState } from 'react';
 import { fmt2 } from '@core/format';
 import type { Kosten, KostenBezug, KostenPosition, KostenStufe } from '@core/model';
@@ -137,7 +138,7 @@ export function KostenView({ onKatalog, onMenge }: { onKatalog: () => void; onMe
             </tbody>
           </table>
           <p className="muted small-text">
-            Abgeleitet aus dem Projekt; ein eingetragener Wert gilt stattdessen (↺ setzt zurück).
+            Abgeleitet aus dem Projekt; ein eingetragener Wert gilt stattdessen (Zurücksetzen mit dem Pfeil daneben).
             {onMenge && ' Klick auf das Kürzel: Herkunft im Grundriss und 3D-Modell.'}
           </p>
         </section>
@@ -289,7 +290,7 @@ function MengeZeile({ b, e, onMenge }: { b: MengenBezug; e: Ergebnis; onMenge?: 
         {info.einheit}
         {m.festgelegt && (
           <button className="small icon ko-zurueck" aria-label={`${info.kurz} auf den abgeleiteten Wert zurücksetzen`} title={`Zurücksetzen auf abgeleitet: ${wert(m.abgeleitet)} ${info.einheit}`} onClick={() => setMenge(undefined)}>
-            ↺
+            <Symbol name="rueckgaengig" />
           </button>
         )}
       </td>
@@ -417,7 +418,7 @@ function PositionZeile({ x, e }: { x: PositionErgebnis; e: Ergebnis }) {
       </td>
       <td>
         <button className="small danger ko-loeschen" aria-label={`${name} löschen`} title="Position löschen (Strg+Z stellt sie wieder her)" onClick={() => st.update((pr) => removePosition(pr, p.id))}>
-          ×
+          <Symbol name="muell" />
         </button>
       </td>
     </tr>
@@ -580,7 +581,7 @@ function Uebersicht({ e, k }: { e: Ergebnis; k: Kosten }) {
                     title="Stand löschen (Strg+Z stellt ihn wieder her)"
                     onClick={() => st.update((p) => setKosten(p, { staende: (p.kosten?.staende ?? []).filter((x) => x.id !== s.id) }))}
                   >
-                    ×
+                    <Symbol name="muell" />
                   </button>
                 </td>
               </tr>
