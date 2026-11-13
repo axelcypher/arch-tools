@@ -86,6 +86,8 @@ beforeEach(() => {
   ds.dateien.set('C:/FORMA/BS9/_archiv/000-Alt.frmsjf', MUSTER);
   ds.dateien.set('C:/FORMA/Sonstiges/notiz.txt', new Uint8Array([1]));
   useFormulare.setState({ ds, ...ANFANG, kartenFavoriten: [], kartenAusgeblendet: [], kartenEintraegeAusgeblendet: [] });
+  // keine Rückfrage „Unterlagen aktualisieren“ aus einem früheren Test (sonst bliebe ein Dialog über der App offen)
+  useAktualisieren.setState({ unterlagen: null });
 });
 afterEach(() => {
   act(() => root?.unmount());
@@ -885,8 +887,6 @@ describe('Formulare', () => {
   });
 
   it('Schnellwahl als gemeinsamer Dialog: Fokus im Suchfeld, ↓ markiert und rollt den Treffer ins Bild, Esc schließt, Fokus zurück', async () => {
-    // keine Rückfrage „Unterlagen aktualisieren“ aus einem früheren Test (sonst bliebe ein Dialog offen)
-    useAktualisieren.setState({ unterlagen: null });
     const host = await render();
     await projektOeffnen(host, 'BS9');
     const suchen = knopf(host, 'Suchen');

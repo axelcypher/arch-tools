@@ -53,8 +53,6 @@ function sperrgrund(o: OffenesFormular): string | null {
   return `Nur ansehen: Das Formular ist bei ${wer(s)} geöffnet${s.angemeldet ? ` (seit ${s.angemeldet})` : ''}. ${o.sperre.bewertung.grund}`;
 }
 
-/** „1 Feld“, „3 Felder“ */
-
 const uhrzeit = (ms: number) => new Date(ms).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
 
 /** Formular drucken (auch als PDF): immer die Formularansicht, in Originalgröße */
@@ -131,8 +129,9 @@ export function App() {
   }, [offen, einrichten]);
 
   useEffect(() => {
-    document.title = `${geaendert ? '● ' : ''}${name} – Formulare`;
-  }, [name, geaendert]);
+    // ungespeichert auch bei Bearbeitungen in Dokumenten (PDF, Excel, Word) – wie die Titelleiste (dirty)
+    document.title = `${geaendert || dokGeaendert ? '● ' : ''}${name} – Formulare`;
+  }, [name, geaendert, dokGeaendert]);
 
   useEffect(() => {
     // erst die gemeinsamen Einstellungen (Stammordner der Projekte), dann suchen
@@ -390,7 +389,8 @@ export function App() {
       {(meldung || (formularSichtbar && grund)) && (
         <>
           {meldung && (
-            <div className={`fo-meldung ${meldung.art === 'fehler' ? 'fehler' : 'info'}`} role="status">
+            // Fehler werden sofort angesagt (alert), Hinweise höflich (status)
+            <div className={`fo-meldung ${meldung.art === 'fehler' ? 'fehler' : 'info'}`} role={meldung.art === 'fehler' ? 'alert' : 'status'}>
               <span>{meldung.text}</span>
               <button className="icon" title="Meldung schließen" aria-label="Meldung schließen" onClick={() => setMeldung(null)}>
                 <Symbol name="schliessen" />

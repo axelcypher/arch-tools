@@ -6,11 +6,9 @@ import { useAntrag } from '../antragStore';
 import type { OffenesFormular } from '../store';
 import { useFormulare } from '../store';
 import { Modal } from '@core/ui/Dialog';
+import { anzahl } from '../text';
 
 const REIHENFOLGE: SchrittArt[] = ['auto', 'leer', 'manuell', 'unbekannt'];
-
-/** „1 Feld“, „3 Felder“ */
-const felder = (n: number) => `${n} ${n === 1 ? 'Feld' : 'Felder'}`;
 
 /**
  * Daten aktualisieren im offenen Formular: Vorschau aller Felder, die die Projektdaten (Projektkarte) ändern würden.
@@ -92,7 +90,7 @@ export function AktualisierenDialog({ offen, onClose }: { offen: OffenesFormular
       <div className="dialog-buttons">
         <button onClick={onClose}>Abbrechen</button>
         <button className="primary" disabled={!liste || !auswahl.size} onClick={uebernehmen}>
-          {auswahl.size ? `${felder(auswahl.size)} übernehmen` : 'Übernehmen'}
+          {auswahl.size ? `${anzahl(auswahl.size, 'Feld', 'Felder')} übernehmen` : 'Übernehmen'}
         </button>
       </div>
     </Modal>
@@ -123,7 +121,7 @@ export function UnterlagenDialog() {
               {p.offen && <span className="muted small-text"> (geöffnet – als ungespeicherte Eingabe)</span>}
               <span className="small-text">
                 {' '}
-                – {felder(neu)} aktualisieren{bleiben ? `, ${bleiben} ${bleiben === 1 ? 'bleibt' : 'bleiben'}` : ''}
+                – {anzahl(neu, 'Feld', 'Felder')} aktualisieren{bleiben ? `, ${bleiben} ${bleiben === 1 ? 'bleibt' : 'bleiben'}` : ''}
               </span>
             </li>
           );

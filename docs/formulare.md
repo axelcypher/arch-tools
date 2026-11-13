@@ -20,7 +20,8 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
   Ansicht „Antrag“) steht kurz, wann zuletzt geändert wurde („heute 14:30“, „gestern 09:05“, „03.03.“) – beim Formular
   auch nicht gespeicherte Eingaben; der volle Zeitpunkt steht im Tooltip (`zeit.ts`). In einer schmalen Navigation
   (unter 260 px – schmaler als die Vorgabe von 300 px) entfällt die Angabe, damit die Namen lesbar bleiben – der
-  Tooltip zeigt sie weiter.
+  Tooltip zeigt sie weiter. Dort stehen auch „Projektdaten“ und „Antragsdaten“ untereinander statt gekürzt, und die
+  Knöpfe eines Abschnittskopfs (etwa beim Projektordner) rücken bei Bedarf in die nächste Zeile.
 - **Menüs** (Kontextmenü, Knöpfe mit ▾ bzw. +) lassen sich mit der Tastatur bedienen: ↑/↓ wandern, Enter bzw. →
   öffnet ein Untermenü (der Fokus geht hinein), ← bzw. Esc führt zurück zum Punkt darüber, Esc oder Tab im Hauptmenü
   schließt. Nach Esc, Tab oder einer Auswahl steht der Fokus wieder auf dem Knopf bzw. Eintrag, der das Menü geöffnet
@@ -82,7 +83,8 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
 - **Prüfliste „Was fehlt noch?“** (`pruefliste.ts`): Der Filter „Offene“ zeigt genau, was im Füllstand fehlt – je
   Angabe eine Zeile mit den Eingaben darin (Gruppen wie „Gebäudeklasse“ als eine Zeile), ohne entfallene und nicht
   zählende Felder (Behördenfelder), mit den ungeklärten (hängen an nicht festgelegten Antragsmerkmalen). Im Kopf der
-  Gliederung steht „4 offen · 2 ungeklärt“ (Klick öffnet die Liste) bzw. „Nach den Vorgaben der App keine offenen
+  Gliederung steht „4 offen · 2 ungeklärt“ (Klick öffnet die Liste), im Filterknopf der Feldansicht gleich gezählt
+  „Offene (4) · 2 ungeklärt“, bzw. „Nach den Vorgaben der App keine offenen
   Angaben“ – nie „vollständig“. „Nächste offene Angabe“ (auch <kbd>F8</kbd>) springt zum ersten Feld der nächsten
   offenen Angabe nach dem Feld mit dem Fokus. Dazu kommen **Hinweise** (gelb, Widersprüche rot; nie blockierend):
   - **Widersprüchliche Kreuze** (`plausibel.ts`): Gruppenregel „genau eine“ (zählt wie „eine genügt“, mehr als ein
@@ -136,7 +138,7 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
   oder **ungeklärt** sein, weil sie an einem Antragsmerkmal hängt, das noch nicht festgelegt ist. Ein fehlendes Merkmal
   lässt nichts entfallen (Fail-safe, `bedingung.ts`: dreiwertige Auswertung; ein sicheres „nein“ der übrigen Teile
   entscheidet trotzdem). Ungeklärte Angaben zählen im Füllstand wie erforderliche; Gliederung und Kopf zeigen sie
-  zusätzlich gelb („2 ungeklärt (hängt von Merkmalen ab)“), ✓ und voller Balken erscheinen erst, wenn nichts mehr fehlt.
+  zusätzlich gelb („2 ungeklärt“, die Erklärung im Tooltip), ✓ und voller Balken erscheinen erst, wenn nichts mehr fehlt.
   Am Feld sind sie gelb hinterlegt, das Info-Symbol sagt „Ungeklärt – hängt ab von: Gebäudeart (nicht festgelegt)“ /
   „Erforderlich, bis Gebäudeart festgelegt ist.“ Im Antragsumfang bekommen Dokumente mit fehlendem Merkmal den normalen
   Status, nie „nicht erforderlich“. Ein Abschnitt heißt „entfällt“, wenn seine Bedingung sicher nicht zutrifft oder
@@ -404,7 +406,8 @@ Anschrift, wie sie in Formularen steht.
   - **neue Formulare** (aus dem Antragsumfang oder „Formular hinzufügen“): leere Felder mit Auto-Wert werden gleich
     befüllt;
   - wer den Auto-Text durch eigenen ersetzt, **fixiert die Überschreibung** (beim Speichern) – sie bleibt beim
-    Aktualisieren; im Formular ist ein Feld aus der Projektkarte links blau, ein überschriebenes orange markiert;
+    Aktualisieren; im Formular trägt ein Feld aus den Projektdaten links einen blauen Strich, ein überschriebenes einen
+    dunkelorangen (Papierfarben `--p-auto`/`--p-fixiert`, in beiden Farbschemata gleich – das Papier bleibt hell);
   - ein **geleertes Feld** bekommt beim Verlassen wieder den Auto-Wert; **bewusst leer** ist ein Feld mit einem
     Leerzeichen;
   - **Daten aktualisieren …** (Werkzeugleiste des Formulars, auch im Kontextmenü eines Formulars in der Navigation):
@@ -439,7 +442,8 @@ schon als PDF vorliegen, welche Berechnungen es gibt), als Ziel des PDF-Exports 
   (`Organisation`, `03 Berechnungen/Flächen`), Platzhalter `*` und `?` je Ebene. Die Vorgabe steht in den
   Einstellungen, je Projekt lässt sie sich über ⚙ ändern. Ordner werden erst beim Aufklappen gelesen.
 - **Klick** auf eine PDF-, Excel-, Word- oder Bilddatei zeigt sie in der App (siehe unten), **Doppelklick** öffnet
-  sie mit ihrem Programm, ↗ zeigt einen Ordner im Explorer. Besitzerdateien von Office (`~$…`) werden ausgeblendet.
+  sie mit ihrem Programm, das Ordnersymbol rechts am Ordner („Im Explorer öffnen“, beim Überfahren oder per Tastatur
+  sichtbar) öffnet ihn im Explorer. Besitzerdateien von Office (`~$…`) werden ausgeblendet.
 - **Rechtsklick** auf eine Datei: Ansehen, Mit Programm öffnen, Im Explorer öffnen, **Kopieren** (danach Rechtsklick
   auf einen Ordner › Einfügen), **Duplizieren** („Name (Kopie).pdf“), **Umbenennen …**, **Löschen …** (nach
   Bestätigung, mit Sicherungskopie im App-Ordner), mit einem **Antragsdokument verknüpfen** (liegt die Datei nicht im

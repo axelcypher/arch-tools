@@ -97,6 +97,8 @@ beforeEach(() => {
     oapVorlage: 'Planung/Berechnungen/{nummer}.oap',
     stammdatenDialog: null,
     ordnerDialog: null,
+    // keine offenen Einstellungen aus einem früheren Test (sonst läge ein weiterer Dialog über der App)
+    einstellungenOffen: false,
   });
   useAntrag.setState({ einstellungen: { ...VORGABE_EXPORT }, katalog: KATALOG, vorlagen: VORLAGEN, merkmalDefinitionen: VORGABE_MERKMALE, ueberschreibungen: {}, projektdatei: null, fassungen: [], dateien: [], quellen: {}, formularInfo: {}, dokumente: [], dokumenteFuer: null, projektStatus: {} });
   useAufgeklappt.setState({ offen: [] });
@@ -1542,8 +1544,6 @@ describe('Antragsunterlagen ansehen und alle Formulare exportieren', () => {
   });
 
   it('Vorschau verhält sich wie ein Dialog: Startfokus auf „Schließen“, nach Esc zurück am Knopf „Ansehen“', async () => {
-    // keine offenen Einstellungen aus einem früheren Test (sonst läge ein weiterer Dialog darüber)
-    useFormulare.setState({ einstellungenOffen: false });
     ds.dateien.set(`${PROJEKT}/TÖB/BAUA 2/A Notiz.txt`, new Uint8Array([1]));
     const host = await projektBS9();
     await klick(knopfGenau(host, 'Antrag'));

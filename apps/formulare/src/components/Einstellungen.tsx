@@ -30,8 +30,6 @@ const BEREICHE: { id: EinstellungsBereich; titel: string; symbol: SymbolName; te
 ];
 
 /** Einträge einer Adressgruppe in der Projektkarte (für die Anzeige im Adressbuch) */
-/** „1 Formular“, „3 Formulare“ */
-
 const ADRESSFELDER: [string, string][] = [
   ['10', 'Branche'],
   ['20', 'Titel'],

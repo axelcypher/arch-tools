@@ -14,6 +14,7 @@ import { parseFormular } from './forma/formular';
 import type { Projektkarte } from './forma/projektkarte';
 import type { FormularEintrag } from './projekte';
 import { autofillAnbindung, autoWerteVon, entwurfVon, formularDatei, karteMitAenderungen, sperrAnbindung, useFormulare, wertVon } from './store';
+import { anzahl } from './text';
 
 /** Plan für ein Formular des Projekts */
 export interface UnterlagenPlan {
@@ -130,8 +131,8 @@ export async function planFuer(eintrag: FormularEintrag, pk: Projektkarte, alt?:
 export async function planAusfuehren(p: UnterlagenPlan): Promise<string> {
   const wahl = p.schritte.filter((s) => s.vorgewaehlt);
   const bleiben = p.schritte.length - wahl.length;
-  const rest = bleiben ? `, ${bleiben} von Hand bzw. anders ausgefüllte ${bleiben === 1 ? 'bleibt' : 'bleiben'}` : '';
-  const felder = `${wahl.length} ${wahl.length === 1 ? 'Feld' : 'Felder'}`;
+  const rest = bleiben ? `, ${anzahl(bleiben, 'von Hand bzw. anders ausgefülltes Feld bleibt', 'von Hand bzw. anders ausgefüllte Felder bleiben')}` : '';
+  const felder = anzahl(wahl.length, 'Feld', 'Felder');
   if (p.offen) {
     uebernehmenOffen(wahl, p.auto);
     return `${p.eintrag.name}: ${felder} eingetragen (noch nicht gespeichert)${rest}`;
