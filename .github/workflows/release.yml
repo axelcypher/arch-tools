@@ -178,7 +178,18 @@ jobs:
         with:
           workspaces: apps/${{ matrix.app }}/src-tauri
       - run: npm ci
-      - run: npm test
+      # Tests dieser App und der Pakete, die sie einbindet (den gemeinsamen Kern bindet jede App ein; LEXIO dazu das
+      # Regelpaket) – ein schwankender Test einer anderen App soll dieses Release nicht kippen; die PR-CI testet ohnehin
+      # das ganze Repo. Arkly bettet alle Apps ein: alle Tests. Projektname = Kennung der App (test.name in vite.config.ts).
+      - name: Tests (App und eingebundene Pakete)
+        env:
+          APP: ${{ matrix.app }}
+        run: |
+          case "$APP" in
+            suite) npm test ;;
+            baurecht) npx vitest run --project core --project regeln --project baurecht ;;
+            *) npx vitest run --project core --project "$APP" ;;
+          esac
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
