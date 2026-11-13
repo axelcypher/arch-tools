@@ -199,7 +199,8 @@ interface AntragState {
   neuBerechnen: () => void;
   fassungWaehlen: (name: string, anlegen?: boolean) => Promise<void>;
   /** Antragsumfang setzen – das Ergebnis sagt, ob gespeichert wurde (bzw. ein Dialog es nachholt) */
-  umfangSetzen: (umfang: UmfangEintrag[] | null, o?: { info?: SchreibInfo }) => Promise<SchreibInfo>;
+  /** `bewegt`: der Eintrag, der verschoben wurde (für das Zusammenführen mit gleichzeitigen Änderungen) */
+  umfangSetzen: (umfang: UmfangEintrag[] | null, o?: { info?: SchreibInfo; bewegt?: string }) => Promise<SchreibInfo>;
   /**
    * Antragsumfang ändern – gelesen wird er erst jetzt (Menüs, Verknüpfen, Formular anlegen halten keinen alten fest).
    * Mit `ansicht` nur, wenn noch diese Fassung angezeigt wird, mit `eintrag` nur, wenn es den Eintrag noch gibt; sonst
@@ -449,9 +450,9 @@ function mitAbschnitt(roh: Record<string, unknown>, neu: ProjektDatei): Record<s
  * Die Änderung eines Aufrufers (`vorher` → `nachher`) in den frisch gelesenen Abschnitt von `roh` eintragen – je Antrag
  * und Feld nur, was er geändert hat (aenderungAnwenden); `meta.antrag` wie bei mitAbschnitt
  */
-function mitAenderung(roh: Record<string, unknown>, vorher: ProjektDatei | null, nachher: ProjektDatei): Record<string, unknown> {
+function mitAenderung(roh: Record<string, unknown>, vorher: ProjektDatei | null, nachher: ProjektDatei, bewegt?: string): Record<string, unknown> {
   const frisch = abschnittAus(roh.formulare ?? (roh.erweiterungen as Record<string, unknown> | undefined)?.formulare, (roh.meta as { merkmale?: Record<string, string> } | undefined)?.merkmale);
-  return mitAbschnitt(roh, alsAngaben(aenderungAnwenden(frisch, vorher, nachher)));
+  return mitAbschnitt(roh, alsAngaben(aenderungAnwenden(frisch, vorher, nachher, { bewegt })));
 }
 
 /** Bedingungen und Texte für umfangAendern */
@@ -466,6 +467,8 @@ export interface UmfangAenderung {
   was?: string;
   /** nichts melden (der Aufrufer meldet selbst) */
   still?: boolean;
+  /** die Änderung verschiebt den Eintrag `eintrag` (Ziehen, ↑/↓) – so wird nur er umgesetzt */
+  verschoben?: boolean;
   /** Ergebnis-Objekt des Aufrufers (z. B. mit `beiAbbruch`, schon vor dem Schreiben gesetzt) */
   info?: SchreibInfo;
 }
@@ -478,7 +481,7 @@ export interface SchreibInfo {
   dialog?: boolean;
   /** warum nicht gespeichert wurde (ohne Punkt) */
   grund?: string;
-  /** schon vor dem Schreiben nicht möglich: andere Fassung angezeigt, Eintrag bzw. Antragsumfang entfernt, gesperrt */
+  /** nicht möglich: andere Fassung angezeigt, Eintrag bzw. Antragsumfang entfernt (vor bzw. beim Schreiben bemerkt), gesperrt */
   vorab?: 'fassung' | 'eintrag' | 'umfang' | 'sperre';
   /** nicht gespeichert, ein erneuter Versuch kann gehen (Schreibfehler, Datei gerade nicht lesbar, Antrag wird geöffnet) */
   erneut?: boolean;
@@ -577,7 +580,7 @@ export const useAntrag = create<AntragState>((set, get) => {
    * andere in der Datei bleibt. Fehlt die Projektdatei, fragt der Stammdaten-Dialog die Angaben ab, legt sie an und
    * speichert danach; ohne Projektordner wird erst einer zugeordnet. Liefert true, wenn gespeichert wurde.
    */
-  const projektdateiSchreiben = async (neu: ProjektDatei, erwartet?: Projekt, o: { basis?: ProjektDatei | null; info?: SchreibInfo } = {}): Promise<boolean> => {
+  const projektdateiSchreiben = async (neu: ProjektDatei, erwartet?: Projekt, o: { basis?: ProjektDatei | null; info?: SchreibInfo; bewegt?: string } = {}): Promise<boolean> => {
     const f = useFormulare.getState();
     // das Projekt des Aufrufers (nach seinen eigenen await) – sonst landeten seine Angaben im inzwischen geöffneten
     const projekt = erwartet ?? f.projekt;
@@ -619,6 +622,9 @@ export const useAntrag = create<AntragState>((set, get) => {
         ziel = { ...neu, aktiveFassung: gewollt };
         zielBasis = basis ? { ...basis, aktiveFassung: undefined } : null;
       }
+      // eben angelegte Projektdatei: ein Antragsumfang des Aufrufers war nie darin – er gilt ganz (nicht „woanders
+      // aufgehoben“)
+      if (art === 'oap' && zielBasis) zielBasis = { ...zielBasis, umfang: undefined };
       if (!(await projektdateiSchreiben(ziel, projekt, { basis: zielBasis }))) return;
       await get().laden();
       if (art === 'oap' && gewollt && ziel.aktiveFassung === gewollt && stabil(gewollt) !== stabil(basis?.aktiveFassung))
@@ -665,7 +671,9 @@ export const useAntrag = create<AntragState>((set, get) => {
     }
     const ziel = oapSchluessel();
     // nur die eigene Änderung in den frisch gelesenen Abschnitt – Gleichzeitiges von anderswo bleibt
-    await useFormulare.getState().oapAendern((roh) => mitAenderung(roh, basis, neu));
+    // nichts zu ändern (steht so schon in der Datei, bzw. was geändert werden sollte, ist woanders entfernt): dann
+    // wird nicht geschrieben – den Stand der Datei trotzdem übernehmen, damit Store und Meldungen ihr entsprechen
+    if (!(await useFormulare.getState().oapAendern((roh) => mitAenderung(roh, basis, neu, o.bewegt)))) await useFormulare.getState().oapLaden();
     info.geschrieben = true;
     // gespeichert: eine eigene „nicht gespeichert“-Meldung von vorhin gilt nicht mehr
     const m = useFormulare.getState().meldung;
@@ -1351,7 +1359,7 @@ export const useAntrag = create<AntragState>((set, get) => {
         const neu: ProjektDatei = { ...(get().projektdatei ?? {}) };
         if (umfang) neu.umfang = umfang;
         else delete neu.umfang;
-        await projektdateiSchreiben(neu, undefined, { info });
+        await projektdateiSchreiben(neu, undefined, { info, bewegt: o.bewegt });
         await get().aktualisieren();
       } catch (e) {
         info.grund = e instanceof Error ? e.message : String(e);
@@ -1406,14 +1414,18 @@ export const useAntrag = create<AntragState>((set, get) => {
         return Object.assign(o.info ?? {}, { grund, vorab: vorab ?? 'umfang' }, wechsel ? { erneut: true } : {});
       }
       const neu = aendern(umfang);
-      const info = await get().umfangSetzen(neu, { info: o.info });
-      // inzwischen woanders entfernt (beim Schreiben gelesen): die Änderung an ihm kam nicht hinein, er kommt auch nicht
-      // zurück – das sagen
+      const info = await get().umfangSetzen(neu, { info: o.info, bewegt: o.verschoben ? o.eintrag : undefined });
+      // inzwischen woanders entfernt bzw. aufgehoben (beim Schreiben gelesen): die Änderung kam nicht hinein, er kommt
+      // auch nicht zurück – das sagen; für die Aufrufer gilt es als nicht gespeichert
       const st = get().projektdatei;
-      if (o.eintrag && info.geschrieben && st?.ansicht === pd?.ansicht && neu?.some((x) => x.id === o.eintrag) && !st?.umfang?.some((x) => x.id === o.eintrag)) {
-        const grund = `der Eintrag ${o.titel ? `„${o.titel}“ ` : ''}ist inzwischen nicht mehr im Antragsumfang`;
-        if (!o.still) meldung('info', `${o.was ?? 'Antragsumfang nicht geändert'} – ${grund}.`);
-        return Object.assign(info, { grund, vorab: 'eintrag' as const });
+      if (info.geschrieben && neu && st?.ansicht === pd?.ansicht) {
+        const weg = !st?.umfang ? 'umfang' : o.eintrag && neu.some((x) => x.id === o.eintrag) && !st.umfang.some((x) => x.id === o.eintrag) ? 'eintrag' : null;
+        if (weg) {
+          const grund = weg === 'umfang' ? 'inzwischen gibt es keinen Antragsumfang mehr' : `der Eintrag ${o.titel ? `„${o.titel}“ ` : ''}ist inzwischen nicht mehr im Antragsumfang`;
+          if (!o.still) meldung('info', `${o.was ?? 'Antragsumfang nicht geändert'} – ${grund}.`);
+          delete info.geschrieben;
+          return Object.assign(info, { grund, vorab: weg });
+        }
       }
       return info;
     },

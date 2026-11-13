@@ -4352,6 +4352,128 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     expect(nr().value).toBe('');
   });
 
+  it('zwei Dateien kurz nacheinander als bereit markiert, das erste Speichern hängt: beide sind bereit', async () => {
+    ds.dateien.set(`${PROJEKT}/TÖB/BAUA 2/BS9 BAUA 261110 01 Bauantrag.pdf`, new Uint8Array([1]));
+    ds.dateien.set(`${PROJEKT}/TÖB/BAUA 2/BS9 BAUA 261110 02 Lageplan.pdf`, new Uint8Array([1]));
+    await mitUmfangInBeiden();
+    await act(() => useAntrag.getState().aktualisieren());
+    await warte();
+    const halt = schreibenAufhalten();
+    let p1!: Promise<void>;
+    let p2!: Promise<void>;
+    act(() => {
+      p1 = useAntrag.getState().bereitUmschalten('BS9 BAUA 261110 01 Bauantrag.pdf', { fassung: 'BAUA 2' });
+    });
+    await warte();
+    act(() => {
+      p2 = useAntrag.getState().bereitUmschalten('BS9 BAUA 261110 02 Lageplan.pdf', { fassung: 'BAUA 2' });
+    });
+    await warte();
+    halt.los();
+    await act(() => Promise.all([p1, p2]));
+    for (let i = 0; i < 6; i++) await warte();
+    halt.zurueck();
+    expect(((antragIn('BAUA 2')?.bereit as { datei: string }[] | undefined) ?? []).map((b) => b.datei)).toEqual(['BS9 BAUA 261110 01 Bauantrag.pdf', 'BS9 BAUA 261110 02 Lageplan.pdf']);
+  });
+
+  it('zweimal verschoben, während das erste Speichern hängt: beide Verschiebungen bleiben', async () => {
+    await mitUmfangInBeiden();
+    const nachOben = (id: string) => (aktuell: { id: string }[]) => {
+      const e = aktuell.find((x) => x.id === id)!;
+      return [e, ...aktuell.filter((x) => x.id !== id)];
+    };
+    const halt = schreibenAufhalten();
+    let p1!: Promise<unknown>;
+    let p2!: Promise<unknown>;
+    act(() => {
+      p1 = useAntrag.getState().umfangAendern(nachOben('lageplan') as never, { ansicht: 'BAUA 2', eintrag: 'lageplan', titel: 'Lageplan', was: 'Nicht verschoben', verschoben: true });
+    });
+    await warte();
+    act(() => {
+      p2 = useAntrag.getState().umfangAendern(nachOben('bauantrag') as never, { ansicht: 'BAUA 2', eintrag: 'bauantrag', titel: 'Bauantrag', was: 'Nicht verschoben', verschoben: true });
+    });
+    await warte();
+    halt.los();
+    await act(() => Promise.all([p1, p2]));
+    for (let i = 0; i < 6; i++) await warte();
+    halt.zurueck();
+    expect(umfangIdsIn('BAUA 2')).toEqual(['bauantrag', 'lageplan', 'muster']);
+  });
+
+  it('„Nach unten“, während woanders ein Eintrag dazukam (hier noch nicht gelesen): der verschobene Eintrag rückt hinter den, an dem er vorbeizog', async () => {
+    const host = await mitUmfangInBeiden();
+    // woanders kam „Statik“ hinter „Musterformular“
+    ds.dateien.set(
+      OAP,
+      oapMit(ds.dateien.get(OAP)!, (f) => {
+        const a = (f.antraege as Record<string, { umfang: { id: string }[] }>)['BAUA 2'];
+        a.umfang = [a.umfang[0], { id: 'statik', titel: 'Statik', art: 'extern' } as { id: string }, ...a.umfang.slice(1)];
+      }),
+    );
+    await rechtsklick(zeileVon(host, 'Musterformular'));
+    await klick(menuePunkt('Nach unten'));
+    for (let i = 0; i < 6; i++) await warte();
+    expect(umfangIdsIn('BAUA 2')).toEqual(['statik', 'bauantrag', 'muster', 'lageplan']);
+  });
+
+  it('woanders aufgehoben bzw. der Eintrag entfernt (hier noch nicht gelesen): nichts kommt zurück, keine Erfolgsmeldung', async () => {
+    const host = await mitUmfangInBeiden();
+    // Antragsumfang aufgehoben, hier eine Nr. übernommen
+    ds.dateien.set(OAP, oapMit(ds.dateien.get(OAP)!, (f) => void delete (f.antraege as Record<string, Record<string, unknown>>)['BAUA 2'].umfang));
+    const nr = zeileVon(host, 'Lageplan').querySelector<HTMLInputElement>('.pu-nr')!;
+    eingabe(nr, '07');
+    await verlassen(nr);
+    for (let i = 0; i < 6; i++) await warte();
+    expect(antragIn('BAUA 2')?.umfang).toBeUndefined();
+    expect(useFormulare.getState().meldung).toEqual({ art: 'info', text: 'Nicht geändert – inzwischen gibt es keinen Antragsumfang mehr.' });
+  });
+
+  it('Formular anlegen bzw. Verknüpfen mit Kopie, der Eintrag ist inzwischen woanders entfernt: kein „zugeordnet“ bzw. „verknüpft“', async () => {
+    h24Vorbereiten();
+    await mitUmfangInBeiden();
+    const ohne = (id: string) =>
+      ds.dateien.set(
+        OAP,
+        oapMit(ds.dateien.get(OAP)!, (f) => {
+          const a = (f.antraege as Record<string, { umfang: { id: string }[] }>)['BAUA 2'];
+          a.umfang = a.umfang.filter((x) => x.id !== id);
+        }),
+      );
+    ohne('bauantrag');
+    await act(() => useAntrag.getState().formularAnlegen('bauantrag', { ansicht: 'BAUA 2' }));
+    for (let i = 0; i < 6; i++) await warte();
+    expect(useFormulare.getState().meldung?.text).toMatch(/ angelegt \(leer\) – der Eintrag „Bauantrag“ ist inzwischen nicht mehr im Antragsumfang\.$/);
+    expect(umfangIdsIn('BAUA 2')).toEqual(['muster', 'lageplan']);
+    ohne('lageplan');
+    await act(() => dateiVerknuepfen(PROJEKT, 'Planung/BS9 Lageplan.pdf', 'lageplan', { fassung: 'BAUA 2', titel: 'Lageplan' }));
+    for (let i = 0; i < 6; i++) await warte();
+    expect(useFormulare.getState().meldung).toEqual({ art: 'info', text: '„BS9 Lageplan.pdf“ in BAUA 2 kopiert, aber nicht verknüpft – der Eintrag „Lageplan“ ist inzwischen nicht mehr im Antragsumfang.' });
+    expect(umfangIdsIn('BAUA 2')).toEqual(['muster']);
+  });
+
+  it('Textfeld: „12“ wird gespeichert, „123“ eingereiht – verschwindet das Feld (andere Ansicht), keine falsche Verlustmeldung, „123“ steht in der Datei', async () => {
+    const host = await mitUmfangInBeiden();
+    const nr = zeileVon(host, 'Lageplan').querySelector<HTMLInputElement>('.pu-nr')!;
+    const enter = () => act(() => void nr.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })));
+    const halt = schreibenAufhalten();
+    eingabe(nr, '12');
+    enter();
+    eingabe(nr, '123');
+    enter();
+    const meldungen: string[] = [];
+    const ab = useFormulare.subscribe((st, vorher) => void (st.meldung && st.meldung !== vorher.meldung && meldungen.push(st.meldung.text)));
+    // Projektkarte statt Antragsdaten: das Feld verschwindet
+    await klick(host.querySelectorAll<HTMLButtonElement>('.fo-daten .fo-eintrag-karte')[0]);
+    ab();
+    expect(host.querySelector('.pu-nr')).toBeNull();
+    // keine Verlustmeldung (eine andere, etwa zur Projektkarte, darf sein)
+    expect(meldungen.filter((m) => /nicht gespeichert/.test(m))).toEqual([]);
+    halt.los();
+    for (let i = 0; i < 10; i++) await warte();
+    halt.zurueck();
+    expect(nrVon('BAUA 2', 'lageplan')).toBe('123');
+  });
+
   it('Antragsstatus von Hand: „in Arbeit“ behält das Datum – zurück auf „eingereicht“ gilt derselbe Stand', async () => {
     const ordner = `${PROJEKT}/TÖB/BAUA 2`;
     ds.dateien.set(`${ordner}/BS9 BAUA 261101 01 Bauantrag.pdf`, new Uint8Array([1]));

@@ -3,7 +3,7 @@ import { dateinameZerlegen, planNummerAus, VORGABE_NAMENSSCHEMA } from '@core/na
 import type { UmfangEintrag } from './antrag';
 import { abschnittAus, abschnittVon, aktuellsterAntrag, ansichtVon, eingereichtAus, neuerAntrag } from './antrag';
 import { merkmalVorgaben } from './bedingung';
-import { aenderungAnwenden, alsAngaben, klein, stabil, umfangAnwenden, VORGABE_EXPORT, einstellungenAus, entferntSeitEinreichung, imStand, nachEinreichungErwartet, nameNachFormat, seitEinreichung, standAus, vorlageMitAntragsart, datumAusName, standVergleich, antragsNameFehler, artDerFassung, bereitschaft, ordnerPasst, anzeigeName, dateiImAntrag, dateiname, einstellungenFuer, externStatus, fassungenAus, formularStatus, formularVon, naechsteFassung, passt, projektDateiAus, quelleVon, standardFassung, projektStatusAus, projektStatusLesen, schlimmsterStatus, statusGesamt, verschieben, vorlagenAus, vorlageFuer, umfangAusKatalog, VORGABE_KATALOG } from './antrag';
+import { aenderungAnwenden, alsAngaben, bereitAnwenden, klein, stabil, umfangAnwenden, VORGABE_EXPORT, einstellungenAus, entferntSeitEinreichung, imStand, nachEinreichungErwartet, nameNachFormat, seitEinreichung, standAus, vorlageMitAntragsart, datumAusName, standVergleich, antragsNameFehler, artDerFassung, bereitschaft, ordnerPasst, anzeigeName, dateiImAntrag, dateiname, einstellungenFuer, externStatus, fassungenAus, formularStatus, formularVon, naechsteFassung, passt, projektDateiAus, quelleVon, standardFassung, projektStatusAus, projektStatusLesen, schlimmsterStatus, statusGesamt, verschieben, vorlagenAus, vorlageFuer, umfangAusKatalog, VORGABE_KATALOG } from './antrag';
 
 describe('Dateinamen aus der Vorlage', () => {
   const datum = new Date(2026, 10, 10);
@@ -879,16 +879,53 @@ describe('Antragsumfang je Eintrag zusammenführen (umfangAnwenden)', () => {
     expect(ids(umfangAnwenden([e('a'), e('neu')], [e('a')], [e('neu'), e('a')]))).toEqual(['a', 'neu']);
     expect(ids(umfangAnwenden([e('a')], [e('a')], [e('vorn'), e('a')]))).toEqual(['vorn', 'a']);
   });
-  it('Reihenfolge geändert: auf die gemeinsamen Einträge angewendet, was nur andere kennen bleibt an seiner Stelle', () => {
-    expect(ids(umfangAnwenden([e('x'), e('a'), e('b'), e('c')], [e('a'), e('b'), e('c')], [e('c'), e('a'), e('b')]))).toEqual(['x', 'c', 'a', 'b']);
+  it('Reihenfolge geändert: nur der verschobene Eintrag zieht um, was nur andere kennen bleibt an seiner Stelle', () => {
+    // ganz nach oben gezogen: oben (auch vor einem woanders hinzugekommenen)
+    expect(ids(umfangAnwenden([e('x'), e('a'), e('b'), e('c')], [e('a'), e('b'), e('c')], [e('c'), e('a'), e('b')]))).toEqual(['c', 'x', 'a', 'b']);
+    // zweimal kurz nacheinander verschoben (das zweite auf dem alten Stand): beide Verschiebungen bleiben
+    expect(ids(umfangAnwenden([e('l'), e('m'), e('b')], [e('m'), e('b'), e('l')], [e('b'), e('m'), e('l')]))).toEqual(['b', 'l', 'm']);
+    // ein einzelnes ↑ ersetzt eine Umstellung von anderswo nicht: „c“ soll über „b“ – dort steht es schon
+    expect(ids(umfangAnwenden([e('d'), e('c'), e('b'), e('a')], [e('a'), e('b'), e('c'), e('d')], [e('a'), e('c'), e('b'), e('d')]))).toEqual(['d', 'c', 'b', 'a']);
+    // ↓ an „a“ (an „b“ vorbei), woanders kam „x“ dazwischen: „a“ hinter „b“, „x“ bleibt
+    expect(ids(umfangAnwenden([e('a'), e('x'), e('b'), e('c')], [e('a'), e('b'), e('c')], [e('b'), e('a'), e('c')], 'a'))).toEqual(['x', 'b', 'a', 'c']);
+    // zwei getauschte Nachbarn sind mehrdeutig – der Aufrufer sagt, welchen er verschob
+    expect(ids(umfangAnwenden([e('a'), e('b'), e('c'), e('d')], [e('a'), e('b'), e('c'), e('d')], [e('a'), e('c'), e('b'), e('d')], 'b'))).toEqual(['a', 'c', 'b', 'd']);
     // unverändert gelassen: eine Umstellung von anderswo bleibt
     expect(ids(umfangAnwenden([e('b'), e('a')], [e('a'), e('b')], [e('a', { nr: '1' }), e('b')]))).toEqual(['b', 'a']);
+  });
+  it('woanders aufgehoben bleibt aufgehoben; angehängt, obwohl die Vorgänger woanders entfernt sind: hinten', () => {
+    expect(umfangAnwenden(undefined, [e('a')], [e('a', { nr: '1' })])).toBeUndefined();
+    expect(ids(umfangAnwenden([e('x'), e('y')], [e('a'), e('b'), e('x')], [e('a'), e('b'), e('x'), e('neu')]))).toEqual(['x', 'neu', 'y']);
+    expect(ids(umfangAnwenden([e('y')], [e('a'), e('b')], [e('a'), e('b'), e('neu')]))).toEqual(['y', 'neu']);
   });
   it('verknüpfte Dateien je Fassung; festlegen bzw. aufheben ganz', () => {
     const z = umfangAnwenden([e('lp', { dateien: { BAUA: 'a.pdf' } })], [e('lp')], [e('lp', { dateien: { 'BAUA 2': 'b.pdf' } })])!;
     expect(z[0].dateien).toEqual({ BAUA: 'a.pdf', 'BAUA 2': 'b.pdf' });
     expect(umfangAnwenden([e('x')], undefined, [e('a')])).toEqual([e('a')]);
     expect(umfangAnwenden([e('x')], [e('x')], undefined)).toBeUndefined();
+  });
+});
+
+describe('„bereit“ je Datei zusammenführen (bereitAnwenden)', () => {
+  const b = (datei: string, stand?: number) => ({ datei, ...(stand ? { stand } : {}) });
+  it('zwei Markierungen kurz nacheinander bzw. von zwei Arbeitsplätzen: beide bleiben; aufheben entfernt nur die eigene', () => {
+    expect(bereitAnwenden([b('A.pdf')], [], [b('B.pdf')])).toEqual([b('A.pdf'), b('B.pdf')]);
+    expect(bereitAnwenden([b('A.pdf'), b('B.pdf')], [b('a.pdf')], [])).toEqual([b('B.pdf')]);
+    expect(bereitAnwenden([b('A.pdf')], [b('A.pdf')], [])).toBeUndefined();
+  });
+  it('geänderter Stand wird übernommen, woanders Aufgehobenes kommt dadurch nicht zurück', () => {
+    expect(bereitAnwenden([b('A.pdf', 1)], [b('A.pdf', 1)], [b('A.pdf', 2)])).toEqual([b('A.pdf', 2)]);
+    expect(bereitAnwenden([], [b('A.pdf', 1)], [b('A.pdf', 2)])).toBeUndefined();
+  });
+});
+
+describe('Kennungen im Antragsumfang beim Lesen', () => {
+  it('fehlende bzw. doppelte Kennungen werden eindeutig – ohne eine ausdrücklich gesetzte zu treffen', () => {
+    const pd = projektDateiAus({ umfang: [{ id: 'u2', titel: 'Lageplan' }, { titel: 'Statik' }, { id: 'u2', titel: 'Doppelt' }, { titel: 'Vierter' }] });
+    const ids = pd.umfang!.map((u) => u.id);
+    expect(new Set(ids).size).toBe(4);
+    expect(ids[0]).toBe('u2');
+    expect(pd.umfang!.map((u) => u.titel)).toEqual(['Lageplan', 'Statik', 'Doppelt', 'Vierter']);
   });
 });
 

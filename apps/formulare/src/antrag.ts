@@ -774,11 +774,19 @@ export function projektDateiAus(roh: unknown): ProjektDatei {
   const o = (roh && typeof roh === 'object' ? roh : {}) as Record<string, unknown>;
   const out: ProjektDatei = {};
   if (typeof o.aktiveFassung === 'string' && o.aktiveFassung.trim()) out.aktiveFassung = o.aktiveFassung.trim();
-  if (Array.isArray(o.umfang))
-    out.umfang = o.umfang
-      .filter((e): e is Record<string, unknown> => !!e && typeof e === 'object' && typeof (e as { titel?: unknown }).titel === 'string')
-      .map((e, i) => {
-        const u: UmfangEintrag = { id: typeof e.id === 'string' && e.id ? e.id : `u${i + 1}`, titel: String(e.titel), art: dokArtAus(e.art) };
+  if (Array.isArray(o.umfang)) {
+    const roh = o.umfang.filter((e): e is Record<string, unknown> => !!e && typeof e === 'object' && typeof (e as { titel?: unknown }).titel === 'string');
+    // Kennungen eindeutig: eine fehlende bzw. doppelte bekommt eine freie (`u<n>`, ohne eine ausdrücklich gesetzte zu treffen)
+    const gesetzt = new Set(roh.flatMap((e) => (typeof e.id === 'string' && e.id ? [e.id] : [])));
+    const vergeben = new Set<string>();
+    const kennung = (e: Record<string, unknown>, i: number) => {
+      let id = typeof e.id === 'string' && e.id ? e.id : `u${i + 1}`;
+      for (let n = i + 1; vergeben.has(id) || (id !== e.id && gesetzt.has(id)); n++) id = `u${n}`;
+      vergeben.add(id);
+      return id;
+    };
+    out.umfang = roh.map((e, i) => {
+        const u: UmfangEintrag = { id: kennung(e, i), titel: String(e.titel), art: dokArtAus(e.art) };
         for (const k of ['formular', 'quelle', 'muster', 'nr', 'formularDatei'] as const) if (typeof e[k] === 'string' && e[k]) u[k] = e[k] as string;
         if (e.dateien && typeof e.dateien === 'object')
           u.dateien = Object.fromEntries(Object.entries(e.dateien as Record<string, unknown>).filter((x): x is [string, string] => typeof x[1] === 'string'));
@@ -786,6 +794,7 @@ export function projektDateiAus(roh: unknown): ProjektDatei {
         if (b) u.bedingung = b;
         return u;
       });
+  }
   if (o.merkmale && typeof o.merkmale === 'object') {
     const m = Object.fromEntries(Object.entries(o.merkmale as Record<string, unknown>).filter((x): x is [string, string] => typeof x[1] === 'string' && !!x[1]));
     if (Object.keys(m).length) out.merkmale = m;
@@ -944,12 +953,15 @@ const FELD_JE_SCHLUESSEL = new Set(['dateien']);
  * Antragsumfang je Eintrag ändern: nur was sich zwischen `alt` und `neu` unterscheidet, auf `frisch` – entfernte
  * Einträge, geänderte Felder (verknüpfte Dateien je Fassung), hinzugefügte (hinter ihrem Vorgänger) und eine geänderte
  * Reihenfolge (der Einträge, die beide kennen). Was andere inzwischen eingetragen, geändert oder entfernt haben, bleibt:
- * ein woanders entfernter Eintrag kommt durch eine Änderung an ihm nicht zurück. Ohne bisherigen bzw. frischen Umfang
- * gilt `neu` ganz (festgelegt), ohne `neu` keiner (aufgehoben).
+ * ein woanders entfernter Eintrag kommt durch eine Änderung an ihm nicht zurück. Ohne bisherigen Umfang gilt `neu` ganz
+ * (festgelegt), ohne `neu` keiner (aufgehoben); woanders aufgehoben bleibt aufgehoben. `bewegt`: der Eintrag, den der
+ * Aufrufer verschoben hat (sonst gelten die außerhalb der längsten gemeinsamen Teilfolge als verschoben).
  */
-export function umfangAnwenden(frisch: UmfangEintrag[] | undefined, alt: UmfangEintrag[] | undefined, neu: UmfangEintrag[] | undefined): UmfangEintrag[] | undefined {
+export function umfangAnwenden(frisch: UmfangEintrag[] | undefined, alt: UmfangEintrag[] | undefined, neu: UmfangEintrag[] | undefined, bewegt?: string): UmfangEintrag[] | undefined {
   if (!neu) return undefined;
-  if (!alt || !frisch) return neu;
+  // festgelegt (vorher keiner): ganz; inzwischen woanders aufgehoben: bleibt aufgehoben
+  if (!alt) return neu;
+  if (!frisch) return undefined;
   const altM = new Map(alt.map((u) => [u.id, u]));
   const neuM = new Map(neu.map((u) => [u.id, u]));
   // entfernt
@@ -971,25 +983,81 @@ export function umfangAnwenden(frisch: UmfangEintrag[] | undefined, alt: UmfangE
     }
     return e as unknown as UmfangEintrag;
   });
-  // hinzugefügt – hinter dem nächsten Vorgänger, den es noch gibt (sonst an den Anfang)
+  // an die Stelle wie in `neu`: hinter den nächsten Vorgänger, den es noch gibt, bzw. vor den nächsten Nachfolger –
+  // nach oben gezogen zuerst vor den Nachfolger (an dem er vorbeizog), sonst zuerst hinter den Vorgänger; als Erster in
+  // `neu` an den Anfang, sonst ohne Nachbarn ans Ende
+  const einsetzen = (e: UmfangEintrag, i: number, hoch = false) => {
+    const vor = () => {
+      for (let k = i - 1; k >= 0; k--) {
+        const j = z.findIndex((u) => u.id === neu[k].id);
+        if (j >= 0) return z.splice(j + 1, 0, e), true;
+      }
+      return false;
+    };
+    const nach = () => {
+      for (let k = i + 1; k < neu.length; k++) {
+        const j = z.findIndex((u) => u.id === neu[k].id);
+        if (j >= 0) return z.splice(j, 0, e), true;
+      }
+      return false;
+    };
+    if (i === 0) return void z.unshift(e);
+    if (hoch ? nach() || vor() : vor() || nach()) return;
+    z.push(e);
+  };
+  // hinzugefügt
   neu.forEach((n, i) => {
-    if (altM.has(n.id) || z.some((u) => u.id === n.id)) return;
-    let j = -1;
-    for (let k = i - 1; k >= 0 && j < 0; k--) j = z.findIndex((u) => u.id === neu[k].id);
-    z.splice(j + 1, 0, n);
+    if (!altM.has(n.id) && !z.some((u) => u.id === n.id)) einsetzen(n, i);
   });
-  // Reihenfolge geändert (unter den Einträgen, die beide kennen): die Einträge von `neu` in dessen Reihenfolge auf
-  // ihre Plätze – was nur andere kennen, bleibt an seiner Stelle
-  const gemeinsam = (l: UmfangEintrag[]) => l.filter((u) => altM.has(u.id) && neuM.has(u.id)).map((u) => u.id);
-  if (gemeinsam(alt).join('\u0000') !== gemeinsam(neu).join('\u0000')) {
-    const folge = neu.filter((n) => z.some((u) => u.id === n.id)).map((n) => n.id);
-    const plaetze = z.flatMap((u, i) => (folge.includes(u.id) ? [i] : []));
-    const nachId = new Map(z.map((u) => [u.id, u]));
-    const r = [...z];
-    plaetze.forEach((p, i) => (r[p] = nachId.get(folge[i])!));
-    z = r;
+  // verschoben: nur die Einträge, die nicht in der längsten gemeinsamen Teilfolge von `alt` und `neu` stehen – so
+  // bleibt eine Umstellung von anderswo (bzw. aus dem eigenen vorigen Speichern) bei den übrigen erhalten
+  const a = alt.filter((u) => neuM.has(u.id)).map((u) => u.id);
+  const n = neu.filter((u) => altM.has(u.id)).map((u) => u.id);
+  const l: number[][] = Array.from({ length: a.length + 1 }, () => new Array<number>(n.length + 1).fill(0));
+  for (let i = a.length - 1; i >= 0; i--) for (let j = n.length - 1; j >= 0; j--) l[i][j] = a[i] === n[j] ? l[i + 1][j + 1] + 1 : Math.max(l[i + 1][j], l[i][j + 1]);
+  const bleibt = new Set<string>();
+  for (let i = 0, j = 0; i < a.length && j < n.length; ) {
+    if (a[i] === n[j]) {
+      bleibt.add(a[i]);
+      i++;
+      j++;
+    } else if (l[i + 1][j] > l[i][j + 1]) i++;
+    // gleich lang: der in `neu` frühere gilt als verschoben (nach oben gezogen)
+    else j++;
   }
+  // der Aufrufer weiß, welchen er verschoben hat: dann nur der (zwei getauschte Nachbarn sind sonst mehrdeutig)
+  if (bewegt && altM.has(bewegt) && neuM.has(bewegt) && a.join('\u0000') !== n.join('\u0000')) {
+    bleibt.clear();
+    for (const id of a) if (id !== bewegt) bleibt.add(id);
+  }
+  neu.forEach((e, i) => {
+    if (!altM.has(e.id) || bleibt.has(e.id)) return;
+    const k = z.findIndex((u) => u.id === e.id);
+    if (k < 0) return;
+    const [x] = z.splice(k, 1);
+    einsetzen(x, i, n.indexOf(e.id) < a.indexOf(e.id));
+  });
   return z;
+}
+
+/**
+ * „bereit“ je Datei ändern (Groß-/Kleinschreibung gleich): entfernte Markierungen entfernen, neue anhängen, einen
+ * geänderten Stand übernehmen – was andere inzwischen markiert haben, bleibt; woanders Aufgehobenes kommt durch eine
+ * Änderung am Stand nicht zurück
+ */
+export function bereitAnwenden(frisch: BereitEintrag[] | undefined, alt: BereitEintrag[] | undefined, neu: BereitEintrag[] | undefined): BereitEintrag[] | undefined {
+  const k = (b: BereitEintrag) => b.datei.toLowerCase();
+  const altM = new Map((alt ?? []).map((b) => [k(b), b]));
+  const neuM = new Map((neu ?? []).map((b) => [k(b), b]));
+  const z = (frisch ?? []).filter((b) => !(altM.has(k(b)) && !neuM.has(k(b))));
+  for (const b of neu ?? []) {
+    const a = altM.get(k(b));
+    if (a && stabil(a) === stabil(b)) continue;
+    const i = z.findIndex((x) => k(x) === k(b));
+    if (i >= 0) z[i] = b;
+    else if (!a) z.push(b);
+  }
+  return z.length ? z : undefined;
 }
 
 /** Abschnitt als Angaben ohne Ansicht – „bereit“ wie beim Schreiben als Feld der Ansicht (antraegeVon holt es von dort) */
@@ -1001,12 +1069,13 @@ export function alsAngaben(a: Abschnitt): ProjektDatei {
 /**
  * Eine Änderung auf den frisch gelesenen Abschnitt anwenden: Nur was sich zwischen `vorher` und `nachher` (die
  * Angaben des Aufrufers vor bzw. nach seiner Änderung) unterscheidet, kommt hinein – je Antrag und Feld, bei den
- * Zuordnungen `merkmale` und `felder` je Eintrag, beim Antragsumfang je Eintrag und Feld (`umfangAnwenden`). Was andere
- * inzwischen gespeichert haben (ein anderer Arbeitsplatz, ein
- * gleichzeitiges Laden), bleibt. Einen Antrag, den es im frischen Abschnitt nicht gibt, übernimmt die Änderung ganz;
- * einen, den der Aufrufer nicht kannte, den es inzwischen aber gibt, lässt sie unverändert.
+ * Zuordnungen `merkmale` und `felder` je Eintrag, bei „bereit“ je Datei (`bereitAnwenden`), beim Antragsumfang je
+ * Eintrag und Feld (`umfangAnwenden`). Was andere inzwischen gespeichert haben (ein anderer Arbeitsplatz, ein
+ * gleichzeitiges Laden, das eigene vorige Speichern), bleibt. Einen Antrag, den es im frischen Abschnitt nicht gibt,
+ * übernimmt die Änderung ganz; einen, den der Aufrufer nicht kannte, den es inzwischen aber gibt, lässt sie
+ * unverändert.
  */
-export function aenderungAnwenden(frisch: Abschnitt, vorher: ProjektDatei | null, nachher: ProjektDatei): Abschnitt {
+export function aenderungAnwenden(frisch: Abschnitt, vorher: ProjektDatei | null, nachher: ProjektDatei, o: { bewegt?: string } = {}): Abschnitt {
   const alt = vorher ? antraegeVon(vorher) : {};
   const neu = antraegeVon(nachher);
   const antraege: Record<string, AntragDaten> = { ...frisch.antraege };
@@ -1035,9 +1104,14 @@ export function aenderungAnwenden(frisch: Abschnitt, vorher: ProjektDatei | null
         const m = mapAnwenden(istMap(f[k]) ? f[k] : {}, istMap(a[k]) ? a[k] : {}, istMap(n[k]) ? n[k] : {});
         if (Object.keys(m).length) z[k] = m;
         else delete z[k];
+      } else if (k === 'bereit') {
+        // je Datei – zwei Markierungen kurz nacheinander bzw. von zwei Arbeitsplätzen bleiben beide
+        const b = bereitAnwenden(f[k] as BereitEintrag[] | undefined, a[k] as BereitEintrag[] | undefined, n[k] as BereitEintrag[] | undefined);
+        if (b) z[k] = b;
+        else delete z[k];
       } else if (k === 'umfang') {
         // je Eintrag – zwei Änderungen kurz nacheinander bzw. von zwei Arbeitsplätzen überschreiben sich nicht
-        const u = umfangAnwenden(f[k] as UmfangEintrag[] | undefined, a[k] as UmfangEintrag[] | undefined, n[k] as UmfangEintrag[] | undefined);
+        const u = umfangAnwenden(f[k] as UmfangEintrag[] | undefined, a[k] as UmfangEintrag[] | undefined, n[k] as UmfangEintrag[] | undefined, o.bewegt);
         if (u) z[k] = u;
         else delete z[k];
       } else if (n[k] === undefined) delete z[k];

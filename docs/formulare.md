@@ -711,12 +711,15 @@ beschrieben.
   FORMA-Projekt wird noch gelesen und einmalig in die Projektdatei übernommen – sie selbst bleibt liegen und wird nicht
   mehr geschrieben.
 - **Schreiben als Änderung:** Jeder Schreibvorgang liest die Projektdatei frisch und trägt nur ein, was er selbst
-  geändert hat – je Antrag und Feld, Antragsmerkmale und Autofill je Eintrag, den Antragsumfang je Eintrag und Feld
-  (hinzugefügte hinter ihrem Vorgänger, entfernte, geänderte Felder, eine geänderte Reihenfolge; `aenderungAnwenden`,
-  `umfangAnwenden`). Was inzwischen anderswo gespeichert wurde (ein anderer Arbeitsplatz, ein gleichzeitiges Laden,
-  das eigene vorige Speichern), bleibt, ebenso ein Antrag, den der Schreibende nicht kannte; ein woanders entfernter
-  Eintrag kommt durch eine Änderung an ihm nicht zurück („Nicht geändert – der Eintrag „Lageplan“ ist inzwischen nicht
-  mehr im Antragsumfang.“). Das Laden ergänzt so nur fehlende Anträge, nie ersetzt es Vorhandenes.
+  geändert hat – je Antrag und Feld, Antragsmerkmale und Autofill je Eintrag, „bereit“ je Datei, den Antragsumfang je
+  Eintrag und Feld (`aenderungAnwenden`, `bereitAnwenden`, `umfangAnwenden`): hinzugefügte Einträge hinter ihren
+  Vorgänger, entfernte, geänderte Felder; beim Verschieben zieht nur der verschobene Eintrag um – nach oben gezogen vor
+  den Eintrag, an dem er vorbeizog, nach unten dahinter. Was inzwischen anderswo gespeichert wurde (ein anderer
+  Arbeitsplatz, ein gleichzeitiges Laden, das eigene vorige Speichern), bleibt, ebenso ein Antrag, den der Schreibende
+  nicht kannte; ein woanders entfernter Eintrag bzw. ein woanders aufgehobener Antragsumfang kommt durch eine Änderung
+  nicht zurück („Nicht geändert – der Eintrag „Lageplan“ ist inzwischen nicht mehr im Antragsumfang.“ bzw. „… –
+  inzwischen gibt es keinen Antragsumfang mehr.“). Kennungen im Antragsumfang werden beim Lesen eindeutig gemacht. Das
+  Laden ergänzt so nur fehlende Anträge, nie ersetzt es Vorhandenes.
   - **Bindung:** Geschrieben wird nur in die Projektdatei, aus der die Angaben stammen, und nur für das Projekt, in dem
     die Änderung begonnen hat. Wird währenddessen ein anderes Projekt geöffnet, bricht die Änderung mit Meldung ab
     (Formular anlegen bzw. hinzufügen sagen, was schon geschehen ist: „angelegt, aber nicht zugeordnet …“); wird eine
@@ -765,7 +768,9 @@ beschrieben.
     Antrag BAUA 2 – inzwischen ist Antrag BAUA angezeigt; Esc verwirft.“), gespeichert wird dann nicht. Verschwindet die
     Zeile mit ungespeicherter Eingabe, sagt eine Meldung es. Scheitert das Speichern (Schreibfehler, Antrag wird gerade geöffnet), bleibt das Getippte rot markiert
     stehen („Nicht gespeichert – Enter im Feld versucht es erneut, Esc verwirft.“); ein leerer Titel wird nicht
-    gespeichert („Der Titel darf nicht leer sein – Esc stellt „Lageplan“ wieder her.“).
+    gespeichert („Der Titel darf nicht leer sein – Esc stellt „Lageplan“ wieder her.“). Esc während eines laufenden
+    Speicherns verwirft nur die Eingabe im Feld – das Speichern läuft zu Ende, danach zeigt das Feld den gespeicherten
+    Wert.
   - **Nachholen:** Beim Anlegen bzw. Hinzufügen eines Formulars nennt die Meldung den Weg, wenn das Zuordnen nicht
     ging („Bitte später in den Antragsdaten von BAUA 2 über „Zuordnen“ nachholen.“, bei einem schon vorhandenen
     Formular „Bitte später zu Antrag BAUA 2 wechseln und per Rechtsklick auf „…“ in der Navigation ›

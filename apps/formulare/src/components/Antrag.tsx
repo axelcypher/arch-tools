@@ -141,7 +141,7 @@ export function eintragVerschieben(umfangId: string, um: -1 | 1, ansicht: string
       const i = umfang.findIndex((x) => x.id === umfangId);
       return i < 0 || i + um < 0 || i + um >= umfang.length ? umfang : verschieben(umfang, i, i + um);
     },
-    { ansicht, eintrag: umfangId, titel, was: 'Nicht verschoben' },
+    { ansicht, eintrag: umfangId, titel, was: 'Nicht verschoben', verschoben: true },
   );
 }
 
@@ -455,7 +455,7 @@ function UebernahmeFeld({
     () => () => {
       // ungespeichert ist, was weder gespeichert steht noch gerade gespeichert wird
       const { entwurf: e, wert: w, beiVerlust: b } = zuletzt.current;
-      if (e !== null && e !== w && e !== laeuft.current) b?.(e);
+      if (e !== null && e !== w && e !== laeuft.current && e !== danach.current) b?.(e);
     },
     [],
   );
@@ -630,7 +630,7 @@ export function AntragsdatenAnsicht() {
         const j = vor === undefined ? ohne.length : ohne.findIndex((x) => x.id === vor);
         return !eintrag || j < 0 ? aktuell : [...ohne.slice(0, j), eintrag, ...ohne.slice(j)];
       },
-      { ansicht: zf, eintrag: zeile.id, titel: zeile.titel, was: 'Nicht verschoben' },
+      { ansicht: zf, eintrag: zeile.id, titel: zeile.titel, was: 'Nicht verschoben', verschoben: true },
     );
   });
   if (!ds) return <div className="fo-leer">Antragsdaten gibt es nur in der Desktop-App.</div>;
