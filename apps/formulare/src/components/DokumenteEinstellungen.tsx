@@ -236,12 +236,14 @@ export function DokumenteEinstellungen() {
             </select>
           </label>
           <span className="field-hint" id={`${id}-vorlage-hinweis`} role="status">
-            {vorlage
-              ? (() => {
-                  const n = katalog.filter((k) => vorlage.dokumente.includes(k.id)).length;
-                  return `${n} von ${katalog.length} Dokumenten ${n === 1 ? 'gehört' : 'gehören'} zu „${vorlage.name}“ – ankreuzen, was dazugehört.`;
-                })()
-              : 'Eine Vorlage wählen, um anzukreuzen, welche Dokumente zu ihr gehören.'}
+            {vorlage && !katalog.length
+              ? 'Noch keine Dokumente zum Ankreuzen.'
+              : vorlage
+                ? (() => {
+                    const n = katalog.filter((k) => vorlage.dokumente.includes(k.id)).length;
+                    return `${n} von ${katalog.length} Dokumenten ${n === 1 ? 'gehört' : 'gehören'} zu „${vorlage.name}“ – ankreuzen, was dazugehört.`;
+                  })()
+                : 'Eine Vorlage wählen, um anzukreuzen, welche Dokumente zu ihr gehören.'}
           </span>
         </div>
         {katalog.length ? (
@@ -279,8 +281,10 @@ export function DokumenteEinstellungen() {
                         <Symbol name={art.symbol} />
                       </span>
                       <span className="es-dok-text">
-                        <strong>{k.titel}</strong>
-                        <span className="es-dok-unter">{herkunft(k)}</span>
+                        <strong title={k.titel}>{k.titel}</strong>
+                        <span className="es-dok-unter" title={herkunft(k)}>
+                          {herkunft(k)}
+                        </span>
                       </span>
                       <span className="es-dok-chips" aria-hidden="true">
                         {inVorlagen.map((v) => (

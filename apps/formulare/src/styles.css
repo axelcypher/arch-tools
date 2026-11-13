@@ -3905,7 +3905,7 @@ tr[data-ziehen='danach'] > td {
 }
 .es-dok-arten {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 6px;
 }
 .es-dok-art {
@@ -3953,6 +3953,8 @@ tr[data-ziehen='danach'] > td {
 }
 .es-dok-fuss {
   justify-content: space-between;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
 }
 li.es-dok[data-ziehen='davor'] {
   box-shadow: inset 0 2px 0 var(--accent);

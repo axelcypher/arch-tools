@@ -233,6 +233,10 @@ describe('Einstellungen › Antrag & Export › Antragsdokumente', () => {
     expect(document.querySelector('.es-dok-liste')).toBeNull();
     expect(document.querySelector('.es-dok-leer')!.textContent).toContain('Noch keine Dokumente');
     expect(document.activeElement).toBe(knopf('Dokument hinzufügen'));
+    // mit gewählter Vorlage kein „0 von 0 Dokumenten …“
+    waehlen(vorlageWahl(), 'baua');
+    await warte();
+    expect(document.querySelector('.es-dok-kopf [role="status"]')!.textContent).toBe('Noch keine Dokumente zum Ankreuzen.');
   });
 
   it('„Vorgabe wiederherstellen“ nur bei Abweichung und mit Rückfrage', async () => {
