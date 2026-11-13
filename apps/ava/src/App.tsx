@@ -34,12 +34,15 @@ function relativ(datei: string, ordner: string): string {
   return d.toLowerCase().startsWith(`${o.toLowerCase()}/`) ? d.slice(o.length + 1) : d.split('/').pop()!;
 }
 
+/** Satz für Rückfragen bei ungespeicherten Änderungen: in FABRIO ist nur das LV „ungespeichert“ (alles andere speichert sofort) */
+export const LV_UNGESPEICHERT = 'Das LV hat ungespeicherte Änderungen.';
+
 /** ungespeicherte Änderungen am LV vorher speichern, verwerfen oder abbrechen */
 export async function lvWeiter(): Promise<boolean> {
   eingabeAbschliessen();
   const { lv } = useAva.getState();
   if (!lvGeaendert(lv)) return true;
-  return aenderungenSpeichern(lv!.datei.name, () => lvSpeichernMitMeldung());
+  return aenderungenSpeichern(lv!.datei.name, () => lvSpeichernMitMeldung(), LV_UNGESPEICHERT);
 }
 
 export async function lvSpeichernMitMeldung(): Promise<boolean> {
@@ -175,6 +178,7 @@ export function App() {
         app={APP_NAMEN.ava.name}
         name={name}
         dirty={dirty}
+        ungespeichert={LV_UNGESPEICHERT}
         onOpenLog={() => setLogOffen(true)}
         onProjekte={() => setProjekteOffen(true)}
         zeichenflaeche={false}
