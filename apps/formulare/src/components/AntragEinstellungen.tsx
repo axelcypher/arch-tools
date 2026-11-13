@@ -9,7 +9,7 @@ import { Griff, useSortieren } from './Sortieren';
 import { namensschemaVon, useAntrag } from '../antragStore';
 import { useFormulare } from '../store';
 import { waehleOrdner } from '../dateisystem';
-import { Symbol } from './Symbol';
+import { Symbol } from '@core/ui/Symbol';
 
 /**
  * Einstellungen für Antrag und Export: wo die Anträge im Projektordner liegen, welche Antragsarten es gibt, wie

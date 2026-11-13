@@ -8,9 +8,9 @@ import { oeffnePfad, verbinde } from '../dateisystem';
 import type { Projekt } from '../projekte';
 import { projektSchluessel } from '../projekte';
 import { ablageVon, projektHatEntwuerfe, useFormulare } from '../store';
-import type { MenuePunkt } from './Menue';
-import { zeigeMenue } from './Menue';
-import { Symbol } from './Symbol';
+import type { MenuePunkt } from '@core/ui/Menue';
+import { zeigeMenue } from '@core/ui/Menue';
+import { Symbol } from '@core/ui/Symbol';
 
 export { useAufgeklappt } from '@core/ui/ProjektUebersicht';
 
@@ -91,7 +91,13 @@ export function ProjektUebersicht({ onEinstellungen }: { onEinstellungen: () => 
       { text: 'Öffnen', symbol: 'formular', aktion: () => oeffnen({ schluessel: projektSchluessel(p) } as UebersichtProjekt) },
       { trenner: true },
       { text: 'Formularordner im Explorer öffnen', symbol: 'ordner', aktion: () => void oeffnePfad(verbinde(p.root, p.ordner)).catch(() => undefined) },
-      { text: 'Projektordner im Explorer öffnen', symbol: 'ordner', deaktiviert: !a, aktion: () => a && void oeffnePfad(verbinde(a.root, a.pfad)).catch(() => undefined) },
+      {
+        text: 'Projektordner im Explorer öffnen',
+        symbol: 'ordner',
+        deaktiviert: !a,
+        ...(a ? {} : { hinweis: 'kein Projektordner' }),
+        aktion: () => a && void oeffnePfad(verbinde(a.root, a.pfad)).catch(() => undefined),
+      },
       { text: 'Pfad kopieren', symbol: 'kopie', aktion: () => void navigator.clipboard?.writeText(verbinde(p.root, p.ordner)) },
       ...(zuletztKarte ? [{ trenner: true as const }, { text: 'Aus „Zuletzt geöffnet“ entfernen', symbol: 'schliessen' as const, aktion: () => useFormulare.getState().zuletztEntfernen(p) }] : []),
     ];
@@ -111,7 +117,7 @@ export function ProjektUebersicht({ onEinstellungen }: { onEinstellungen: () => 
       onEinstellungen={onEinstellungen}
       onKontext={(e, ev, zuletztKarte) => {
         const p = nachSchluessel.get(e.schluessel);
-        if (p) zeigeMenue(ev, menue(p, zuletztKarte));
+        if (p) zeigeMenue(ev, menue(p, zuletztKarte), p.titel ? `${p.ordner} ${p.titel}` : p.ordner);
       }}
       status={status}
       marken={marken}

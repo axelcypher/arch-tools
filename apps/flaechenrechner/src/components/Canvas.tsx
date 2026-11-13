@@ -22,6 +22,8 @@ import { achsBeschraenkt, achsRechteck, achsRichtungen, eckpunktHilfslinien, geb
 import type { OutlineShape, Shape, Storey } from '@core/model';
 import { createOutline, createRoom, shapeArea } from '@core/model';
 import { nutzungInfo, raumNutzung } from '@core/norms';
+import { planFuellungDunkel } from '@core/planFarbe';
+import { useZeichenflaecheGefiltert } from '@core/platform/theme';
 import { bgScale, bgWorldBounds, ohneKontrollmass, scaleAround, vectorSegmentGrid } from '../core/background';
 import { detectOutline, detectRegion } from '@core/detect';
 import { SegmentGrid } from '@core/spatial';
@@ -80,6 +82,8 @@ type Drag =
 
 const VERTEX_SNAP_PX = 10;
 const HINWEIS_KEY = 'arch-flaechen-tool:hinweise-zu';
+/** Deckung der Raumfüllung (Nutzungsfarbe) auf der Zeichenfläche */
+const RAUM_DECKUNG = 0.45; // dieselbe Zahl steht in docs/design.md (QUADRIO)
 const EDGE_SNAP_PX = 7;
 const GUIDE_SNAP_PX = 8;
 /** Mausweg in px, ab dem ein Klick als Ziehen gilt: Flächen verschieben erst ab 6 px (kein Verrutschen beim Wählen) */
@@ -788,18 +792,21 @@ export function Canvas() {
     svgRef.current!.setPointerCapture(e.pointerId);
   };
 
-  // Kontextmenü am Eckpunkt (gemeinsames Menü: Tastatur, Esc-Stapel, gesperrte Punkte mit Grund)
+  // Kontextmenü am Eckpunkt (gemeinsames Menü: Tastatur, Esc-Stapel, gesperrte Punkte mit Grund).
+  // Ungefährliche Befehle der (gewählten) Fläche zuerst: der Erstfokus liegt nie auf „Punkt löschen“
   const onVertexContextMenu = (e: React.MouseEvent, shape: Shape, index: number) => {
     const zuWenig = shape.points.length <= 3;
     zeigeMenue(
       e,
       [
+        ...flaechenBefehle('Fläche'),
+        { trenner: true },
         {
           text: `Punkt ${index + 1} löschen`,
           symbol: 'muell',
           gefahr: true,
           deaktiviert: zuWenig,
-          hinweis: zuWenig ? 'Mind. 3 Punkte' : undefined,
+          hinweis: zuWenig ? 'Mindestens 3 Punkte' : undefined,
           titel: zuWenig ? 'Eine Fläche braucht mindestens drei Punkte' : undefined,
           // aus dem aktuellen Stand rechnen: bei offenem Menü kann sich die Fläche geändert haben (z. B. Rückgängig)
           aktion: () =>
@@ -843,7 +850,7 @@ export function Canvas() {
       e,
       [
         einfuegenPunkt(),
-        { text: 'Alles zeigen', symbol: 'einpassen', hinweis: 'F', aktion: () => useEditor.getState().requestFit() },
+        { text: 'Alles zeigen', symbol: 'einpassen', tasten: 'F', aktion: () => useEditor.getState().requestFit() },
       ],
       'Zeichenfläche',
     );
@@ -1019,6 +1026,19 @@ export function Canvas() {
     return m;
   }, [storey.shapes, view.showRooms]);
 
+  // dunkle Zeichenfläche (Filter): Raumfüllung vorgerechnet, damit sie im Ton der Farbmarke in der Liste erscheint.
+  // Gerechnet wird gegen den Grund der Zeichenfläche, auch über einer Unterlage (PDF/Bild) – bewusst hingenommen (s. @core/planFarbe).
+  const gefiltert = useZeichenflaecheGefiltert();
+  const raumFuellung = useMemo(() => {
+    const cache = new Map<string, { farbe: string; deckung: number }>();
+    return (farbe: string) => {
+      if (!gefiltert) return { farbe, deckung: RAUM_DECKUNG };
+      let f = cache.get(farbe);
+      if (!f) cache.set(farbe, (f = planFuellungDunkel(farbe, RAUM_DECKUNG)));
+      return f;
+    };
+  }, [gefiltert]);
+
   const shapeStyle = (s: Shape): React.SVGProps<SVGPathElement> => {
     const isSel = selectedIds.includes(s.id);
     if (s.subtract) {
@@ -1033,10 +1053,10 @@ export function Canvas() {
         strokeDasharray: s.pruefen && !isSel ? '7 4' : undefined,
       };
     }
-    const c = nutzungInfo(raumNutzung(s)).color;
+    const f = raumFuellung(nutzungInfo(raumNutzung(s)).color);
     return {
-      fill: c,
-      fillOpacity: 0.45,
+      fill: f.farbe,
+      fillOpacity: f.deckung,
       stroke: isSel ? 'var(--sel)' : '#444',
       strokeWidth: isSel ? 2.5 : 1,
       strokeDasharray: s.umschliessung === 'S' ? '5 3' : undefined,
@@ -1708,7 +1728,15 @@ function menueName(s: Shape): string {
 /** „Einfügen“ – gesperrt mit sichtbarem Grund, solange nichts kopiert ist */
 function einfuegenPunkt(): MenuePunkt {
   const leer = ablageStatus().leer;
-  return { text: 'Einfügen', symbol: 'einfuegen', hinweis: leer ? 'Nichts kopiert' : 'Strg+V', deaktiviert: leer, titel: leer ? 'Zuerst Flächen kopieren (Strg+C)' : undefined, aktion: () => void einfuegenAktion() };
+  return { text: 'Einfügen', symbol: 'einfuegen', hinweis: leer ? 'Nichts kopiert' : undefined, tasten: leer ? undefined : 'Strg+V', deaktiviert: leer, titel: leer ? 'Zuerst Flächen kopieren (Strg+C)' : undefined, aktion: () => void einfuegenAktion() };
+}
+
+/** Kopieren und Duplizieren der gewählten Flächen – ungefährlich, daher vorn im Menü */
+function flaechenBefehle(flaechen: string): MenuePunkt[] {
+  return [
+    { text: `${flaechen} kopieren`, symbol: 'kopie', tasten: 'Strg+C', aktion: () => void flaechenKopieren() },
+    { text: `${flaechen} duplizieren`, tasten: 'Strg+D', aktion: () => void flaechenDuplizieren() },
+  ];
 }
 
 /** Befehle für gewählte Flächen im Kontextmenü – dieselben wie die Tastenkürzel */
@@ -1717,10 +1745,9 @@ function flaechenMenue(): MenuePunkt[] {
   const n = Math.max(st.selectedIds.length, 1);
   const flaechen = n > 1 ? `${n} Flächen` : 'Fläche';
   return [
-    { text: `${flaechen} kopieren`, symbol: 'kopie', hinweis: 'Strg+C', aktion: () => void flaechenKopieren() },
-    { text: `${flaechen} duplizieren`, hinweis: 'Strg+D', aktion: () => void flaechenDuplizieren() },
+    ...flaechenBefehle(flaechen),
     einfuegenPunkt(),
     { trenner: true },
-    { text: `${flaechen} löschen`, symbol: 'muell', hinweis: 'Entf', gefahr: true, aktion: () => void flaechenLoeschen() },
+    { text: `${flaechen} löschen`, symbol: 'muell', tasten: 'Entf', gefahr: true, aktion: () => void flaechenLoeschen() },
   ];
 }

@@ -72,6 +72,11 @@ const PFADE = {
   speichern: 'M5 3h11l3 3v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V3zM8 3v5h7V3M8 21v-7h8v7',
   einpassen: 'M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5',
   raster: 'M4 4h16v16H4zM4 12h16M12 4v16',
+  /** Grundstücksgrenze: durchgezogener Umring mit Grenzpunkten an den Ecken (wie Flurstücksgrenzen im Lageplan) */
+  grenze:
+    'M4 17L7 5l12 3-2 12zM4 18.6a1.6 1.6 0 1 0 0-3.2 1.6 1.6 0 0 0 0 3.2zM7 6.6a1.6 1.6 0 1 0 0-3.2 1.6 1.6 0 0 0 0 3.2zM19 9.6a1.6 1.6 0 1 0 0-3.2 1.6 1.6 0 0 0 0 3.2zM17 21.6a1.6 1.6 0 1 0 0-3.2 1.6 1.6 0 0 0 0 3.2z',
+  /** Ausrichten: Punkt der Unterlage auf einen Zielpunkt im Plan schieben – Ziel als Ring mit Strichen (nicht wie plus) */
+  ausrichten: 'M4 20l8-8M12 12H7M12 12v5M17 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM17 1v2M17 11v2M12 7h1M21 7h2',
   /** Fläche aus dem Plan erkennen: gestrichelter Rahmen mit Zeiger */
   erkennen: 'M4 7V4h3M10 4h4M17 4h3v3M4 10v4M4 17v3h3M10 20h1M20 10v1M12 12l8 3-3.5 1.5L15 20l-3-8z',
 } as const;

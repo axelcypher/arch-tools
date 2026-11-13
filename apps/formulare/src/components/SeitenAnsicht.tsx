@@ -15,7 +15,7 @@ import { formularDatei, useFormulare, useProfil, wertVon } from '../store';
 import type { Entfallen } from './EntfallInfo';
 import { EntfallInfo, grundSignatur, hinweisPerF1, useEntfallen } from './EntfallInfo';
 import { HinweisSymbol, hinweiseJeFeld, usePlausibel } from './Hinweise';
-import { Symbol } from './Symbol';
+import { Symbol } from '@core/ui/Symbol';
 import type { Plausi } from '../plausibel';
 import type { Entfall } from '../entfall';
 import { useVorbelegt } from '../merkmalAbgleich';

@@ -426,7 +426,43 @@ describe('gemeinsames Menü', () => {
     expect(umbenennen).toHaveBeenCalledTimes(1);
   });
 
-  it('nur Gefahr-Punkte (bzw. sonst nur gesperrte): Fokus trotzdem im Menü, Gefahr nur als letzter Ausweg', () => {
+  it('nur Gefahr-Punkte: Fokus auf dem Menü selbst, Enter löscht nichts; ↓ bzw. ↑ erreichen die Punkte', () => {
+    const loeschen = vi.fn();
+    const host = render(
+      createElement(
+        Fragment,
+        null,
+        createElement(
+          'button',
+          {
+            key: 'z',
+            onContextMenu: (e: React.MouseEvent) =>
+              zeigeMenue(e, [
+                { text: 'Löschen', gefahr: true, aktion: loeschen },
+                { text: 'Alle löschen', gefahr: true },
+              ]),
+          },
+          'Karte',
+        ),
+        createElement(MenueHost, { key: 'h' }),
+      ),
+    );
+    act(() => host.querySelector('button')!.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 5, clientY: 5 })));
+    const menue = host.querySelector('.menue')!;
+    expect(document.activeElement).toBe(menue);
+    taste('Enter');
+    expect(loeschen).not.toHaveBeenCalled();
+    expect(host.querySelector('.menue')).not.toBeNull();
+    taste('ArrowUp');
+    expect(document.activeElement?.textContent).toBe('Alle löschen');
+    act(() => (menue as HTMLElement).focus());
+    taste('ArrowDown');
+    expect(document.activeElement?.textContent).toBe('Löschen');
+    taste('Escape');
+    expect(host.querySelector('.menue')).toBeNull();
+  });
+
+  it('nur Gefahr-Punkte (bzw. sonst nur gesperrte): Fokus trotzdem im Menü, gesperrter ungefährlicher Punkt geht vor', () => {
     const host = render(
       createElement(
         Fragment,
@@ -459,6 +495,6 @@ describe('gemeinsames Menü', () => {
     expect(b.querySelector('title')?.textContent).toBe('Messen');
     expect(SYMBOLE.length).toBeGreaterThan(30);
     expect(new Set(SYMBOLE).size).toBe(SYMBOLE.length);
-    expect(SYMBOLE).toEqual(expect.arrayContaining(['nachOben', 'nachUnten', 'mehr']));
+    expect(SYMBOLE).toEqual(expect.arrayContaining(['nachOben', 'nachUnten', 'mehr', 'grenze', 'ausrichten']));
   });
 });

@@ -9,10 +9,10 @@ import { oeffnePfad, verbinde } from '../dateisystem';
 import { dateiArtVon, dateiSchluessel, useFormulare } from '../store';
 import { aktiveFassung, antragsOrdner, antragSperre, useAntrag, wechselLaeuft } from '../antragStore';
 import { duplizieren, einfuegen, loeschen, ordnerNeu, umbenennen, useDateiAktionen, verknuepfen } from '../dateiAktionen';
-import type { MenuePunkt } from './Menue';
-import { zeigeMenue } from './Menue';
-import type { SymbolName } from './Symbol';
-import { Symbol } from './Symbol';
+import type { MenuePunkt } from '@core/ui/Menue';
+import { zeigeMenue } from '@core/ui/Menue';
+import type { SymbolName } from '@core/ui/Symbol';
+import { Symbol } from '@core/ui/Symbol';
 import { zeitKurz, zeitLang } from '../zeit';
 
 export const SYMBOL: Record<ReturnType<typeof dateiArt>, SymbolName> = {
@@ -68,14 +68,21 @@ export function dateiMenue(basis: string, pfad: string): MenuePunkt[] {
 /** Kontextmenü eines Ordners im Projektordner */
 function ordnerMenue(basis: string, pfad: string): MenuePunkt[] {
   const z = useDateiAktionen.getState().ablage;
+  const gemerkt = !!useFormulare.getState().ordnerReihenfolge[ebenenSchluessel(pfad.slice(0, Math.max(0, pfad.lastIndexOf('/'))))];
   return [
-    { text: z ? `„${z.pfad.split('/').pop()}“ einfügen` : 'Einfügen', symbol: 'einfuegen', deaktiviert: !z || z.basis !== basis, aktion: () => void einfuegen(basis, pfad) },
+    {
+      text: z ? `„${z.pfad.split('/').pop()}“ einfügen` : 'Einfügen',
+      symbol: 'einfuegen',
+      deaktiviert: !z || z.basis !== basis,
+      ...(!z ? { hinweis: 'nichts kopiert' } : z.basis !== basis ? { hinweis: 'aus anderem Ordner' } : {}),
+      aktion: () => void einfuegen(basis, pfad),
+    },
     { text: 'Neuer Ordner …', symbol: 'plus', aktion: () => void ordnerNeu(basis, pfad) },
     { trenner: true },
     {
       text: 'Reihenfolge dieser Ebene zurücksetzen',
-      hinweis: 'alphabetisch',
-      deaktiviert: !useFormulare.getState().ordnerReihenfolge[ebenenSchluessel(pfad.slice(0, Math.max(0, pfad.lastIndexOf('/'))))],
+      hinweis: gemerkt ? 'alphabetisch' : 'schon alphabetisch',
+      deaktiviert: !gemerkt,
       aktion: () => useFormulare.getState().ordnerReihenfolgeSetzen(ebenenSchluessel(pfad.slice(0, Math.max(0, pfad.lastIndexOf('/')))), []),
     },
     { text: 'Im Explorer öffnen', symbol: 'ordner', aktion: () => void oeffnePfad(verbinde(basis, pfad)).catch(() => undefined) },
@@ -203,7 +210,7 @@ function Ebene({ basis, rel, auswahl, ganz, tiefe }: { basis: string; rel: strin
               title={`${dateiArtVon(x.e.pfad) ? `${x.e.pfad} – Klick: hier ansehen, Doppelklick: im Programm öffnen` : `${x.e.pfad} – Doppelklick öffnet`}\n${zeitLang(x.e.geaendert)}`}
               onClick={() => dateiArtVon(x.e.pfad) && void dateiAnsehen(basis, x.pfad)}
               onDoubleClick={() => void oeffnePfad(verbinde(basis, x.pfad)).catch(() => undefined)}
-              onContextMenu={(e) => zeigeMenue(e, dateiMenue(basis, x.pfad))}
+              onContextMenu={(e) => zeigeMenue(e, dateiMenue(basis, x.pfad), x.e.pfad)}
             >
               <span className={`fo-baum-symbol ${dateiArt(x.e.pfad)}`}>
                 <Symbol name={SYMBOL[dateiArt(x.e.pfad)]} />
@@ -252,7 +259,7 @@ function OrdnerKnoten({
           title={`${name} – ziehen ändert die Reihenfolge (Alt+↑/↓)`}
           onPointerDown={onZiehen}
           onKeyDown={onTaste}
-          onContextMenu={(e) => zeigeMenue(e, ordnerMenue(basis, pfad))}
+          onContextMenu={(e) => zeigeMenue(e, ordnerMenue(basis, pfad), name)}
         >
           <span className="fo-baum-pfeil">
             <Symbol name={auf ? 'pfeilUnten' : 'pfeilRechts'} />

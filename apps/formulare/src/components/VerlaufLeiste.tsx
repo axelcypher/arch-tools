@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import type { OffenesFormular } from '../store';
 import { useFormulare } from '../store';
-import { Symbol } from './Symbol';
+import { Symbol } from '@core/ui/Symbol';
 
 const zeit = (ms: number) => {
   const d = new Date(ms);

@@ -17,7 +17,7 @@ import { umfangZeigen } from './Antrag';
 import { EinrichtenBaum } from './Einrichten';
 import { usePlausibel } from './Hinweise';
 import { MerkmalWahl } from './MerkmalWahl';
-import { Symbol } from './Symbol';
+import { Symbol } from '@core/ui/Symbol';
 
 interface Punkt extends AbschnittStand {
   geaendert: boolean;

@@ -101,6 +101,8 @@ beforeEach(() => {
   });
 });
 afterEach(() => {
+  // ein offenes Menü (gemeinsamer Store in core) schließen – sonst stünde es im nächsten Test wieder da
+  act(() => void window.dispatchEvent(new Event('blur')));
   act(() => root?.unmount());
   root = null;
   document.body.innerHTML = '';
