@@ -306,7 +306,8 @@ describe('Rahmen-App auf dem Desktop', () => {
     let antworten: ((ergebnis: string) => void) | undefined;
     void listen<{ typ: string; anfrage: string; an: string }>('arch-tools:an-app', (e) => {
       const d = e.payload;
-      if (d.typ === 'arch-tools:vorbereiten' && d.an === 'kosten') antworten = (ergebnis) => void emit('arch-tools:an-rahmen', { typ: 'arch-tools:vorbereitet', anfrage: d.anfrage, ergebnis, app: 'kosten' });
+      if (d.typ === 'arch-tools:vorbereiten' && d.an === 'kosten')
+        antworten = (ergebnis) => void emit('arch-tools:an-rahmen', { typ: 'arch-tools:vorbereitet', anfrage: d.anfrage, ergebnis, app: 'kosten' });
     });
     await act(async () => fenster.haupt!.schliessenAngefragt!({ preventDefault: () => {} }));
     await senden('x', null);
