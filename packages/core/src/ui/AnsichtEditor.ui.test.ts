@@ -40,43 +40,72 @@ const zeile = (editor: Element, n: number) => editor.querySelectorAll<HTMLElemen
 const link = (editor: Element, n: number) => zeile(editor, n).querySelector<HTMLButtonElement>('button.av-ed-link');
 const klick = (el: HTMLElement) => act(() => el.click());
 const taste = (el: Element, key: string) => act(() => void el.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true })));
-const kaestchen = (editor: Element, text: string) => [...editor.querySelectorAll<HTMLLabelElement>('.av-ed-link-liste label')].find((l) => l.textContent?.includes(text))!.querySelector('input')!;
+/** Auswahlfenster „Gemeinsam ausfüllen“ (eigenes Modal über dem Editor) */
+const auswahl = () => document.querySelector<HTMLElement>('.av-verknuepfen');
+const kaestchen = (text: string) => [...auswahl()!.querySelectorAll<HTMLLabelElement>('.av-ed-kat-feld')].find((l) => l.textContent?.includes(text))!.querySelector('input')!;
+const angeboten = () => [...auswahl()!.querySelectorAll('.av-ed-kat-feld')].map((l) => l.querySelector('span')!.textContent);
+const gruppenTitel = () => [...auswahl()!.querySelectorAll('.av-ed-gruppe-titel')].map((g) => g.textContent);
 
 describe('Ansicht-Editor: Verknüpfen', () => {
-  it('Knopf mit Liste: ohne passendes Feld nur ein Platzhalter; der Zustand steht im zugänglichen Namen', () => {
-    const editor = render({ abschnitte: [{ id: 'a', titel: 'A', felder: ['ort1', 'ort2', 'kreuz'] }] });
+  it('Knopf öffnet ein Auswahlfenster mit allen passenden Feldern nach Gruppen – auch außerhalb der Ansicht', () => {
+    // nur Ort (Bauherr) und das Kästchen stehen in der Ansicht; Ort (Gemeinde) nur im Katalog
+    const editor = render({ abschnitte: [{ id: 'a', titel: 'A', felder: ['ort1', 'kreuz'] }] });
     // das Kästchen hat kein passendes Gegenstück: kein Knopf, ein Platzhalter gleicher Breite
-    expect(link(editor, 2)).toBeNull();
-    expect(zeile(editor, 2).querySelector('.av-ed-link-platz')).not.toBeNull();
-    // Ort ↔ Ort: nur das passende Feld wird angeboten
+    expect(link(editor, 1)).toBeNull();
+    expect(zeile(editor, 1).querySelector('.av-ed-link-platz')).not.toBeNull();
     expect(link(editor, 0)!.getAttribute('aria-label')).toBe('Ort verknüpfen');
-    expect(link(editor, 0)!.getAttribute('aria-expanded')).toBe('false');
+    expect(link(editor, 0)!.getAttribute('aria-haspopup')).toBe('dialog');
     klick(link(editor, 0)!);
-    expect(link(editor, 0)!.getAttribute('aria-expanded')).toBe('true');
-    expect([...editor.querySelectorAll('.av-ed-link-liste label')].map((l) => l.textContent)).toEqual(['Ort (Gemeinde)']);
-    klick(kaestchen(editor, 'Ort (Gemeinde)'));
+    expect(auswahl()!.getAttribute('role')).toBe('dialog');
+    expect(auswahl()!.getAttribute('aria-label')).toBe('Gemeinsam ausfüllen: Ort (Bauherr)');
+    // außerhalb des Editors eingehängt
+    expect(auswahl()!.closest('.av-editor')).toBeNull();
+    // nur passende Felder (Text), gegliedert nach Gruppen, das eigene nicht
+    expect(gruppenTitel()).toEqual(['Gemeinde']);
+    expect(angeboten()).toEqual(['Ort']);
+    expect(auswahl()!.querySelector('.av-verknuepfen-marke')).toBeNull();
+    klick(kaestchen('Ort'));
     expect(link(editor, 0)!.getAttribute('aria-label')).toBe('Ort verknüpfen – verknüpft mit 1 Feld');
-    expect(link(editor, 1)!.getAttribute('aria-label')).toBe('Ort verknüpfen – verknüpft mit 1 Feld');
     expect(link(editor, 0)!.className).toContain('active');
-    // Esc schließt nur die Liste, der Fokus kehrt zum Knopf zurück
-    taste(kaestchen(editor, 'Ort (Gemeinde)'), 'Escape');
-    expect(editor.querySelector('.av-ed-link-liste')).toBeNull();
-    expect(document.activeElement).toBe(link(editor, 0));
+    expect(auswahl()!.textContent).toContain('verknüpft mit 1 Feld');
+    // Esc schließt nur das Auswahlfenster, nicht den Editor
+    act(() => void document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+    expect(auswahl()).toBeNull();
     expect(document.querySelector('.av-editor')).not.toBeNull();
+    // der Fokus kehrt zum Knopf zurück
+    expect(document.activeElement).toBe(link(editor, 0));
     // lösen
-    klick(link(editor, 1)!);
-    klick(kaestchen(editor, 'Ort (Bauherr)'));
+    klick(link(editor, 0)!);
+    klick(kaestchen('Ort'));
     expect(link(editor, 0)!.getAttribute('aria-label')).toBe('Ort verknüpfen');
+    klick([...auswahl()!.querySelectorAll('button')].find((b) => b.textContent === 'Fertig')!);
+    expect(auswahl()).toBeNull();
   });
 
-  it('die Liste schließt, wenn der Fokus sie verlässt (Tab) – nicht beim Wechsel zwischen ihren Kästchen', () => {
+  it('Suche nach Titel und Gruppe; Felder der Ansicht sind markiert', () => {
     const editor = render({ abschnitte: [{ id: 'a', titel: 'A', felder: ['ort1', 'ort2'] }] });
     klick(link(editor, 0)!);
-    const kasten = kaestchen(editor, 'Ort (Gemeinde)');
-    act(() => void kasten.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: link(editor, 0) })));
-    expect(editor.querySelector('.av-ed-link-liste')).not.toBeNull();
-    act(() => void kasten.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: zeile(editor, 1).querySelector('input') })));
-    expect(editor.querySelector('.av-ed-link-liste')).toBeNull();
+    expect(auswahl()!.querySelector('.av-ed-kat-feld .av-verknuepfen-marke')!.textContent).toBe('in der Ansicht');
+    const suche = auswahl()!.querySelector<HTMLInputElement>('input[type="search"]')!;
+    expect(document.activeElement).toBe(suche);
+    const tippen = (v: string) =>
+      act(() => {
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(suche, v);
+        suche.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+    tippen('gemein');
+    expect(angeboten()).toEqual(['Ort']);
+    tippen('bauherr');
+    expect(auswahl()!.textContent).toContain('Kein Feld passt zu „bauherr“');
+  });
+
+  it('verknüpft mit einem Feld, das es nicht mehr gibt: im Auswahlfenster zum Lösen angeboten', () => {
+    const editor = render({ abschnitte: [{ id: 'a', titel: 'A', felder: ['ort1'] }], verknuepfungen: [['ort1', 'weg']] });
+    expect(link(editor, 0)!.getAttribute('aria-label')).toBe('Ort verknüpfen – verknüpft mit 1 Feld');
+    klick(link(editor, 0)!);
+    expect(gruppenTitel()).toContain('Nicht mehr in der Projektkarte');
+    klick(kaestchen('weg'));
+    expect(link(editor, 0)!.getAttribute('aria-label')).toBe('Ort verknüpfen');
   });
 
   it('Pfeiltasten am Knopf verknüpfen nichts (anders als bei einer Auswahlliste)', () => {
