@@ -194,6 +194,11 @@ describe('QUADRIO: Kontextmenü der Zeichenfläche und Werkzeugleiste (gemeinsam
     act(() => useEditor.getState().select(useEditor.getState().project.storeys[0].shapes[0].id));
     rechtsklick(host.querySelector('.vertex-handle')!.parentElement!);
     expect(menue()?.getAttribute('aria-label')).toBe('Eckpunkt');
+    // Erstfokus nie auf dem Gefahr-Punkt: ungefährliche Flächenbefehle vorn, „Punkt löschen“ zuletzt hinter Trenner
+    expect(document.activeElement?.textContent).toMatch(/Fläche kopieren/);
+    const kinder = [...menue()!.children];
+    expect(kinder.at(-1)?.textContent).toMatch(/Punkt 1 löschen/);
+    expect(kinder.at(-2)?.getAttribute('role')).toBe('separator');
     act(() => punkt(/Punkt 1 löschen/).click());
     expect(useEditor.getState().project.storeys[0].shapes[0].points).toHaveLength(3);
     // Gegenprobe: mit drei Punkten gesperrt, Grund im Tooltip, nichts gelöscht

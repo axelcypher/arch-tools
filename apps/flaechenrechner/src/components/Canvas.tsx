@@ -792,18 +792,21 @@ export function Canvas() {
     svgRef.current!.setPointerCapture(e.pointerId);
   };
 
-  // Kontextmenü am Eckpunkt (gemeinsames Menü: Tastatur, Esc-Stapel, gesperrte Punkte mit Grund)
+  // Kontextmenü am Eckpunkt (gemeinsames Menü: Tastatur, Esc-Stapel, gesperrte Punkte mit Grund).
+  // Ungefährliche Befehle der (gewählten) Fläche zuerst: der Erstfokus liegt nie auf „Punkt löschen“
   const onVertexContextMenu = (e: React.MouseEvent, shape: Shape, index: number) => {
     const zuWenig = shape.points.length <= 3;
     zeigeMenue(
       e,
       [
+        ...flaechenBefehle('Fläche'),
+        { trenner: true },
         {
           text: `Punkt ${index + 1} löschen`,
           symbol: 'muell',
           gefahr: true,
           deaktiviert: zuWenig,
-          hinweis: zuWenig ? 'Mind. 3 Punkte' : undefined,
+          hinweis: zuWenig ? 'Mindestens 3 Punkte' : undefined,
           titel: zuWenig ? 'Eine Fläche braucht mindestens drei Punkte' : undefined,
           // aus dem aktuellen Stand rechnen: bei offenem Menü kann sich die Fläche geändert haben (z. B. Rückgängig)
           aktion: () =>
@@ -1728,14 +1731,21 @@ function einfuegenPunkt(): MenuePunkt {
   return { text: 'Einfügen', symbol: 'einfuegen', hinweis: leer ? 'Nichts kopiert' : undefined, tasten: leer ? undefined : 'Strg+V', deaktiviert: leer, titel: leer ? 'Zuerst Flächen kopieren (Strg+C)' : undefined, aktion: () => void einfuegenAktion() };
 }
 
+/** Kopieren und Duplizieren der gewählten Flächen – ungefährlich, daher vorn im Menü */
+function flaechenBefehle(flaechen: string): MenuePunkt[] {
+  return [
+    { text: `${flaechen} kopieren`, symbol: 'kopie', tasten: 'Strg+C', aktion: () => void flaechenKopieren() },
+    { text: `${flaechen} duplizieren`, tasten: 'Strg+D', aktion: () => void flaechenDuplizieren() },
+  ];
+}
+
 /** Befehle für gewählte Flächen im Kontextmenü – dieselben wie die Tastenkürzel */
 function flaechenMenue(): MenuePunkt[] {
   const st = useEditor.getState();
   const n = Math.max(st.selectedIds.length, 1);
   const flaechen = n > 1 ? `${n} Flächen` : 'Fläche';
   return [
-    { text: `${flaechen} kopieren`, symbol: 'kopie', tasten: 'Strg+C', aktion: () => void flaechenKopieren() },
-    { text: `${flaechen} duplizieren`, tasten: 'Strg+D', aktion: () => void flaechenDuplizieren() },
+    ...flaechenBefehle(flaechen),
     einfuegenPunkt(),
     { trenner: true },
     { text: `${flaechen} löschen`, symbol: 'muell', tasten: 'Entf', gefahr: true, aktion: () => void flaechenLoeschen() },
