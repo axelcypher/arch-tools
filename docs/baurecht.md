@@ -351,6 +351,7 @@ befestigte Fläche einer Anlage ohne Gebäude – Stellplätze bzw. Garagen auf 
 befestigte Fläche wie Lagerplatz oder Hof –, neue Dach- oder befestigte Fläche einer Änderung wie ein Anbau; gefragt als
 `soest.befestigte_flaeche`, wenn keine neue Entwässerung angegeben ist). Einzelfalltexte im Paket tragen kein „im
 Einzelfall prüfen“ – das setzt die Auswertung davor.
+
 Die großen Matrizen (Fallmatrix, „neue Merkmalwerte“, „Fragen und Regeln“) rechnen voll über zehn Minuten (ohne Netz).
 Voll laufen sie in der CI (GitHub Actions setzt `CI=true`) und mit `VOLL=1 npx vitest run --project regeln`; sonst –
 lokal, in Cloud-Sitzungen – prüft eine feste, über alle Merkmalswerte gestreute Stichprobe in unter einer Minute (Zeitgrenze

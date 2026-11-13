@@ -127,7 +127,8 @@ function stichprobeLokal<T>(liste: T[], n: number): T[] {
 /**
  * kleine Auswahl aus einer Merkmalsmatrix (mit VOLL alle Kombinationen): in Fall j hat Merkmal d den Wert Nr.
  * (j · q_d) mod Anzahl, q_d teilerfremd zu den üblichen Anzahlen (2, 3, 4) – jedes Merkmal durchläuft so alle Werte,
- * sobald n mindestens so groß ist wie die längste Werteliste, und die Merkmale wechseln nicht im Gleichschritt
+ * sobald n mindestens so groß ist wie die längste Werteliste. Paare von Werten deckt die Auswahl nicht ab (dafür die
+ * volle Matrix in der CI)
  */
 function matrixAuswahl(werte: Record<string, (string | undefined)[]>, n: number): Record<string, string>[] {
   if (VOLL) return [...kombinationen(werte)];
@@ -575,7 +576,7 @@ describe('Fragen und Regeln', () => {
         auswahl.push({ ...fall, name: `${fall.name} Umfang offen`, f: ohneUmfang });
       }
     }
-    // die eigens angelegten Varianten („Altbau nein“, „Umfang offen“) immer, dazu eine Stichprobe der Grundfälle
+    // je eine der eigens angelegten Varianten („Altbau nein“, „Umfang offen“), dazu eine Stichprobe der Grundfälle
     const varianten = auswahl.filter((x) => / (Altbau nein|Umfang offen)$/.test(x.name));
     const geprueft = VOLL ? auswahl : [...stichprobe(auswahl.filter((x) => !varianten.includes(x)), 4), ...varianten.slice(0, 2)];
     for (const fall of geprueft) {
