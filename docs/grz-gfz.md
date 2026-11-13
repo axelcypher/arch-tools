@@ -123,8 +123,14 @@ zählen nirgends mit.
 Bedienung im Lageplan – wie in QUADRIO: Werkzeug „Polygon“ (P; Punkte setzen, Startpunkt, Doppelklick
 oder Enter schließt, Rücktaste löscht den letzten Punkt, Esc bricht ab) oder „Rechteck“ (R; zwei Ecken); Ecken von
 Gebäude und Flächen werden gefangen. „Auswahl“ (V): Klicken wählt eine Fläche, Ziehen verschiebt sie, Punkte
-ziehen ändert sie, ◇ in der Kantenmitte ziehen fügt einen Punkt ein, Rechtsklick auf einen Punkt löscht ihn
-(mindestens drei bleiben), Entf/Rück löscht die Fläche. Mausrad zoomt (nur den Plan), mittlere Maustaste,
+ziehen ändert sie, ◇ in der Kantenmitte ziehen fügt einen Punkt ein, Entf/Rück löscht die Fläche. Rechtsklick (oder
+die Kontextmenütaste) öffnet das gemeinsame Menü der Suite: auf einem Punkt „Punkt löschen“ (gesperrt mit Grund „Nur noch 3 Punkte“, wenn
+nur noch drei Punkte da sind), auf einer Fläche bzw. der Auswahl „kopieren“, „duplizieren“, „Einfügen“ und „löschen“
+(dieselben Befehle wie Strg+C/D/V und Entf; die Kürzel stehen rechts im Menü), auf der Kante eines Flurstücks „Flurstück löschen“, im Leeren
+„Einfügen“ und „Einpassen“. Das Menü gibt es nur im Werkzeug „Auswahl“ und nicht während des Zeichnens.
+Im dunklen Schema mit „Zeichenfläche abdunkeln“ werden die Füllungen der Lageplanflächen vorgerechnet
+(`planFuellungDunkel`), damit sie nach dem Filter der Zeichenfläche im Ton der Farbmarken der Flächenbilanz erscheinen;
+die Farbmarken bleiben in der Originalfarbe. Über einer Unterlage (Bild, PDF) weicht der Ton dort etwas ab, weil der Grund nicht die helle Planfarbe ist. Mausrad zoomt (nur den Plan), mittlere Maustaste,
 Leertaste + Ziehen oder Ziehen auf freier Fläche verschiebt die Ansicht, „Einpassen“ (F) zeigt alles. Punkte
 werden auf die Innenfläche des Plans umgerechnet (ohne Rahmen), Abweichung unter 1 mm bei jedem Zoom. Der
 Ausschnitt (Zoom, Verschiebung) bleibt bei allen Änderungen stehen und wird nur beim Öffnen eines anderen Projekts
@@ -153,7 +159,7 @@ unter dem Plan beginnt mit der Nummer wie im Plan und im Druck.
   ein Rückgängig-Schritt; „Unterlage entfernen“ nimmt sie heraus.
 - **Grundstücksgrenze:** Das Werkzeug „Grenze“ (G) zeichnet das Flurstück als Polygon (mehrere nacheinander möglich,
   der Entwurf erscheint strichpunktiert ohne Füllung). Im Werkzeug „Auswahl“ wählt ein Klick auf die Kante ein
-  Flurstück; seine Punkte lassen sich ziehen, über ◇ einfügen und per Rechtsklick löschen, Entf löscht das
+  Flurstück; seine Punkte lassen sich ziehen, über ◇ einfügen und per Rechtsklick-Menü löschen, Entf löscht das
   Flurstück. Die Leiste „Grenze“ (im Werkzeug Grenze bzw. bei gewähltem Flurstück) listet die Flurstücke mit Fläche
   und löscht sie einzeln. Die strichpunktierte Linie in Plan und Druck ist dann die gezeichnete Grenze;
   ohne Grenze ist sie als „Umriss der erfassten Flächen“ beschriftet. Die Fläche der Grenze wird mit der
@@ -325,7 +331,7 @@ unter dem Plan beginnt mit der Nummer wie im Plan und im Druck.
   Geschossfläche, vor 1990 die Aufenthaltsräume in Nicht-Vollgeschossen, Flächenbilanz, sachliche Hinweise und
   Unterschriftszeile. Versiegelungen sind in Plan und Legende auch schwarz-weiß unterscheidbar (voll: Schraffur,
   teil: Punkte, Grün: Fläche), „überschritten“/„unterschritten“ steht fett, kleine Tabellen werden nicht getrennt;
-  „Drucken / PDF“ ist der Hauptknopf der Leiste. Über den Druckdialog auch als PDF; der vorgeschlagene Dateiname ist `<Projektdatei> GRZ+GFZ`.
+  „Drucken / PDF …“ ist der Hauptknopf der Leiste, „Schließen“ steht links davon. Über den Druckdialog auch als PDF; der vorgeschlagene Dateiname ist `<Projektdatei> GRZ+GFZ`.
   - Tabelle „Grundfläche“: Spalte „eindeutig“ (Überlagerungen nur einmal gezählt) und „angerechnet auf GR II“
     (BauNVO 1990) bzw. „auf GR“ – 0 bei „zählt nicht“, anteilig bei Garagen bis 0,1 der Grundstücksfläche, bei
     „prüfen“ als Spanne; Kellergeschosse außerhalb der Hauptanlage als eigene Zeile. Die Summenzeilen GR I und
