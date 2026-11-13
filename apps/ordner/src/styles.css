@@ -1532,3 +1532,8 @@
 .po-kuerzel-neu input {
   border-style: dashed;
 }
+
+/* Platzhalter des festen Ablageordners (Katasterpläne): eingerückt unter „Ordner im Projektordner“ */
+.ka-ziel-platzhalter {
+  margin-left: 24px;
+}

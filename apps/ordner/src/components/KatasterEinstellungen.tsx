@@ -287,7 +287,7 @@ export function KatasterEinstellungen() {
           </label>
         </div>
         {e.ziel === 'pfad' && (
-          <div className="ex-feld">
+          <div className="ex-feld ka-ziel-platzhalter">
             <PlatzhalterHinweise vorlage={e.zielpfad} variablen={KATASTER_ZIEL_VARIABLEN} onAnpassen={(v) => void aendern({ zielpfad: v })} />
             <PlatzhalterChips variablen={KATASTER_ZIEL_VARIABLEN} label="Ordner der Katasterpläne" fokusBehalten={false} onEinfuegen={(p) => void aendern({ zielpfad: platzhalterEinfuegen(e.zielpfad, p).text })} />
           </div>

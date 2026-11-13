@@ -1084,11 +1084,11 @@ function ExportFuerProjekt() {
   const reihenfolge = useFormulare((s) => namensschemaVon(s).reihenfolge);
   const { setUeberschreibung } = useAntrag.getState();
   const [offen, setOffen] = useState(!!ueber);
+  const vorlageFeld = useRef<HTMLInputElement>(null);
+  const zielFeld = useRef<HTMLInputElement>(null);
   if (!projekt) return null;
   const setzen = (teil: ExportUeberschreibung) => setUeberschreibung({ ...ueber, ...teil });
   const artWarnung = ueber?.namensvorlage ? vorlageArtWarnung(ueber.namensvorlage, reihenfolge) : null;
-  const vorlageFeld = useRef<HTMLInputElement>(null);
-  const zielFeld = useRef<HTMLInputElement>(null);
   return (
     <section className="pu-export">
       <button className="pu-export-kopf" aria-expanded={offen} onClick={() => setOffen(!offen)}>
