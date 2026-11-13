@@ -67,7 +67,11 @@ export function PdfVorschau({ daten, name, laedt = false }: { daten: Uint8Array 
   if (istBild) return <div className="ava-pdf">{bild && <img src={bild} alt={name} className="ava-pdf-seite" />}</div>;
   return (
     <div className="ava-pdf">
-      {fehler && <div className="meldung fehler" role="alert">Vorschau nicht möglich: {fehler}</div>}
+      {fehler && (
+        <div className="meldung fehler" role="alert">
+          Vorschau nicht möglich: {fehler}
+        </div>
+      )}
       <div ref={ref} />
     </div>
   );
