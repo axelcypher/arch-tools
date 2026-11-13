@@ -93,6 +93,12 @@
                   },
                   {
                     "$": "aussen_planrecht"
+                  },
+                  {
+                    "$": "bplan_einfach"
+                  },
+                  {
+                    "$": "satzung_baugb"
                   }
                 ]
               }

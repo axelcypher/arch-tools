@@ -629,6 +629,41 @@
           }
         ]
       }
+    },
+    "zustaendig.gemeinde_bauaufsicht": {
+      "titel": "Gemeinde ist selbst untere Bauaufsichtsbehörde (kein Einvernehmen nach § 36 BauGB)",
+      "kurz": "Gemeinde ist selbst Bauaufsicht",
+      "gruppe": "zustaendig",
+      "typ": "janein",
+      "hilfe": "Kreisfreie Städte (und Aachen) sowie große und mittlere kreisangehörige Städte sind selbst untere Bauaufsichtsbehörde (§ 57 Abs. 1 Nr. 3 BauO NRW); dann entscheidet die Gemeinde selbst, ein Einvernehmen nach § 36 BauGB entfällt (BVerwG, Urt. v. 19.08.2004 – 4 C 16.03), das Planungsamt wird intern beteiligt. Für die übrigen Gemeinden ist der Kreis Bauaufsicht.",
+      "nach": {
+        "fakt": "lage.ags",
+        "tabelle": {
+          "05111000": true,
+          "05112000": true,
+          "05113000": true,
+          "05114000": true,
+          "05116000": true,
+          "05117000": true,
+          "05119000": true,
+          "05120000": true,
+          "05122000": true,
+          "05124000": true,
+          "05314000": true,
+          "05315000": true,
+          "05316000": true,
+          "05334002": true,
+          "05512000": true,
+          "05513000": true,
+          "05515000": true,
+          "05711000": true,
+          "05911000": true,
+          "05913000": true,
+          "05914000": true,
+          "05915000": true,
+          "05916000": true
+        }
+      }
     }
   },
   "bausteine": {

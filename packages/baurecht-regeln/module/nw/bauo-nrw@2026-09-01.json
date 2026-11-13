@@ -65,7 +65,7 @@
         "5/2": "719ce238"
       },
       "pruefen": {
-        "grund": "Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 macht bei der Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum einzelne Vorschriften unanwendbar bzw. erleichtert sie für bestehende Bauteile – im Einzelfall prüfen.",
+        "grund": "Bei Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); bei einem Gebäude, dessen Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum werden, macht § 47 Abs. 6 einzelne Vorschriften unanwendbar bzw. erleichtert sie für bestehende Bauteile.",
         "wenn": {
           "$": "nutzungsaenderung"
         }
@@ -144,7 +144,7 @@
         "8/3": "0ce27438"
       },
       "pruefen": {
-        "grund": "Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 macht bei der Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum einzelne Vorschriften unanwendbar bzw. erleichtert sie für bestehende Bauteile – im Einzelfall prüfen. Anlagen, die keine Gebäude sind (z. B. Stellplatzanlage, Mast): Abs. 1 gilt für bebaute Grundstücke, auch mit vergleichbaren baulichen Anlagen; Veränderungen der Geländeoberfläche nur ohne Nachteile für Nachbarn und Ortsbild (Abs. 3) – im Einzelfall prüfen.",
+        "grund": "Bei Anlagen, die keine Gebäude sind (z. B. Stellplatzanlage, Mast): Abs. 1 gilt für bebaute Grundstücke, auch mit vergleichbaren baulichen Anlagen; Veränderungen der Geländeoberfläche nur ohne Nachteile für Nachbarn und Ortsbild (Abs. 3). Bei Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); bei einem Gebäude, dessen Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum werden, macht § 47 Abs. 6 einzelne Vorschriften unanwendbar bzw. erleichtert sie für bestehende Bauteile.",
         "wenn": {
           "oder": [
             {
@@ -333,7 +333,7 @@
         "Nachweise über Wärme- und Schallschutz (§ 68 BauO NRW, § 12 BauPrüfVO) – im vereinfachten Verfahren nicht geprüft, aber einzuhalten"
       ],
       "pruefen": {
-        "grund": "Im Einzelfall prüfen – bei Anlagen, die keine Gebäude sind: Geräusche und Erschütterungen ortsfester Einrichtungen in baulichen Anlagen oder auf Baugrundstücken sind zu dämmen (Abs. 2 Satz 2, Abs. 3). Bei Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 macht bei der Umnutzung zu Wohnraum einzelne Vorschriften unanwendbar bzw. erleichtert sie für bestehende Bauteile.",
+        "grund": "Bei Anlagen, die keine Gebäude sind: Geräusche und Erschütterungen ortsfester Einrichtungen in baulichen Anlagen oder auf Baugrundstücken sind zu dämmen (Abs. 2 Satz 2, Abs. 3). Bei Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); bei einem Gebäude, dessen Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum werden, macht § 47 Abs. 6 einzelne Vorschriften unanwendbar bzw. erleichtert sie für bestehende Bauteile.",
         "wenn": {
           "oder": [
             {
@@ -371,7 +371,7 @@
         "26/2": "1de64c20"
       },
       "pruefen": {
-        "grund": "Im Einzelfall prüfen – bei Anlagen, die keine Gebäude sind: Die Anforderungen an das Brandverhalten der Baustoffe gelten für alle baulichen Anlagen (Abs. 1). Bei Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 macht bei der Umnutzung zu Wohnraum einzelne Vorschriften unanwendbar bzw. erleichtert sie für bestehende Bauteile.",
+        "grund": "Bei Anlagen, die keine Gebäude sind: Die Anforderungen an das Brandverhalten der Baustoffe gelten für alle baulichen Anlagen (Abs. 1). Bei Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); bei einem Gebäude, dessen Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum werden, macht § 47 Abs. 6 einzelne Vorschriften unanwendbar bzw. erleichtert sie für bestehende Bauteile.",
         "wenn": {
           "oder": [
             {
@@ -933,7 +933,7 @@
         "38/1": "96b40213"
       },
       "pruefen": {
-        "grund": "Im Einzelfall prüfen – bei Anlagen, die keine Gebäude sind (z. B. Tribüne, Stützmauer, Rampe): begehbare Flächen an tiefer liegenden Flächen sind zu umwehren. Bei Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); § 47 Abs. 6 macht bei der Umnutzung zu Wohnraum einzelne Vorschriften unanwendbar bzw. erleichtert sie für bestehende Bauteile.",
+        "grund": "Bei Anlagen, die keine Gebäude sind (z. B. Tribüne, Stützmauer, Rampe): begehbare Flächen an tiefer liegenden Flächen sind zu umwehren. Bei Nutzungsänderung: Die Anforderungen gelten für die Anlage mit der neuen Nutzung (§ 60 Abs. 1); bei einem Gebäude, dessen Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum werden, macht § 47 Abs. 6 einzelne Vorschriften unanwendbar bzw. erleichtert sie für bestehende Bauteile.",
         "wenn": {
           "oder": [
             {
@@ -2060,7 +2060,7 @@
               },
               {
                 "nicht": {
-                  "$": "nw_abbruch_frei"
+                  "$": "nw_beseitigung_frei_art"
                 }
               }
             ]

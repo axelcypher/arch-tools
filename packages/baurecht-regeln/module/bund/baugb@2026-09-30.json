@@ -487,7 +487,7 @@
         "36/1",
         "36/2"
       ],
-      "hinweis": "Frühzeitige Abstimmung mit der Gemeinde (Planungsamt) spart Zeit – das Einvernehmen darf nur aus planungsrechtlichen Gründen versagt werden.",
+      "hinweis": "Ist die Gemeinde selbst Bauaufsicht, entfällt das Einvernehmen (BVerwG, Urt. v. 19.08.2004 – 4 C 16.03) – das Planungsamt wird intern beteiligt. Sonst spart eine frühzeitige Abstimmung mit der Gemeinde (Planungsamt) Zeit – das Einvernehmen darf nur aus planungsrechtlichen Gründen versagt werden.",
       "behoerde": {
         "$": "genehmigung"
       },
@@ -496,10 +496,18 @@
         "36/2": "b57bc9d6"
       },
       "entfaellt": {
-        "m": "Verfahren",
-        "in": [
-          "verfahrensfrei",
-          "Genehmigungsfreistellung"
+        "oder": [
+          {
+            "m": "Verfahren",
+            "in": [
+              "verfahrensfrei",
+              "Genehmigungsfreistellung"
+            ]
+          },
+          {
+            "f": "zustaendig.gemeinde_bauaufsicht",
+            "ist": true
+          }
         ]
       }
     },
