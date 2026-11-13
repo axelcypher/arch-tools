@@ -128,6 +128,14 @@ describe('Vor dem Schließen: laufendes Schreiben abwarten (Arkly vorDemSchliess
     fertig();
     await act(async () => void (await vorbereitet));
     expect(ok).toBe('fertig');
+    // gescheitertes Schreiben: Arkly erfährt „nicht gespeichert“ (fehler) statt still zu schließen
+    let scheitern!: () => void;
+    const kaputt = schreibend(new Promise<void>((_, nein) => (scheitern = () => nein(new Error('Projektdatei gesperrt')))));
+    kaputt.catch(() => {});
+    const gescheitert = schliessenVorbereiten(1000);
+    await act(takt);
+    scheitern();
+    await act(async () => void (await expect(gescheitert).resolves.toBe('fehler')));
     // Gegenprobe: nach dem Abbau ist FABRIO abgemeldet – Arkly wartet nicht mehr auf FABRIO
     act(() => root?.unmount());
     root = null;
