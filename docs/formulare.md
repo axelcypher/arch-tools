@@ -826,8 +826,8 @@ Projektarchiv von QUADRIO (Flächenrechner), TERRIO (GRZ-Nachweis), NUMIO (Koste
   Bereich `formulare`, `ordnerWahl`).
 - **Angaben zum Antrag** stehen im Abschnitt `formulare` von `projekt.json`: `aktiveFassung`, `reihenfolge` (Formulare in
   der Navigation, Schlüssel nach `formularSchluessel`, für das ganze Projekt; beim Zusammenführen werden nur die
-  Einträge der verschobenen Liste umgesetzt, die anderer Listen bleiben) und `antraege` – je
-  Fassung `angelegt`, `merkmale`, `umfang`, `felder` (Autofill), `bereit` und `eingereicht`; der zuletzt angelegte
+  Einträge der verschobenen Liste umgesetzt, die anderer Listen bleiben) und `antraege` – je Fassung `angelegt`,
+  `merkmale`, `umfang`, `felder` (Autofill), `bereit` und `eingereicht`; der zuletzt angelegte
   Antrag zusätzlich als Kurzfassung in `meta.antrag` (für die anderen Apps). Ein früheres `meta.merkmale` bzw.
   projektweite Angaben im Abschnitt werden gelesen und in die Anträge übernommen. Eine alte `formulare.json` im
   FORMA-Projekt wird noch gelesen und einmalig in die Projektdatei übernommen – sie selbst bleibt liegen und wird nicht
