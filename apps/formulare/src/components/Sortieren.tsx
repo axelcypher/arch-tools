@@ -1,6 +1,6 @@
 import type { KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent } from 'react';
 import { useRef, useState } from 'react';
-import { Symbol } from './Symbol';
+import { Symbol } from '@core/ui/Symbol';
 
 /**
  * Reihenfolge ändern: am Griff ziehen (Zeiger – unabhängig vom Drag & Drop des Browsers, das in der Desktop-App

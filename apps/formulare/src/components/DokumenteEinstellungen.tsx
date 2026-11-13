@@ -8,8 +8,8 @@ import { useAntrag } from '../antragStore';
 import { BedingungEditor } from './BedingungEditor';
 import { Karte } from './EinstellungsKarte';
 import { Griff, useSortieren } from './Sortieren';
-import type { SymbolName } from './Symbol';
-import { Symbol } from './Symbol';
+import type { SymbolName } from '@core/ui/Symbol';
+import { Symbol } from '@core/ui/Symbol';
 
 /** Art eines Dokuments: Bezeichnung und Erklärung (Auswahl im Editor) */
 const ARTEN: { art: KatalogEintrag['art']; titel: string; text: string; symbol: SymbolName }[] = [

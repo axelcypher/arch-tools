@@ -4,7 +4,7 @@ import { aktiveFassung, exportVorschlag, useAntrag } from '../antragStore';
 import type { Eintrag } from '../dateisystem';
 import { verbinde } from '../dateisystem';
 import { ablageVon, entwurfVon, useFormulare } from '../store';
-import { Symbol } from './Symbol';
+import { Symbol } from '@core/ui/Symbol';
 import { Modal } from '@core/ui/Dialog';
 
 /** Offener Export-Dialog (auch aus Kontextmenüs, für nicht geöffnete Formulare) */

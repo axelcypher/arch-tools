@@ -17,8 +17,8 @@ import { SicherungEinstellungen } from './SicherungEinstellungen';
 import type { EinstellungsBereich } from '../store';
 import { VORGABE_OAP_PFAD, useFormulare } from '../store';
 import { OAP_ANGABEN } from '../oap';
-import type { SymbolName } from './Symbol';
-import { Symbol } from './Symbol';
+import type { SymbolName } from '@core/ui/Symbol';
+import { Symbol } from '@core/ui/Symbol';
 import { anzahl } from '../text';
 
 const BEREICHE: { id: EinstellungsBereich; titel: string; symbol: SymbolName; text: string }[] = [
