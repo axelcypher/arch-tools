@@ -292,7 +292,7 @@ Schlüssel); ein Projekt kann also beide Vorlagen enthalten. Das Standardlayout 
 |---|---|
 | `{{grz}}`, `{{grz.zulaessig}}`, `{{grz.flaeche}}`, `{{grz.reserve}}`, `{{grz.status}}` | GRZ (vor 1990) bzw. GRZ I; ebenso `grz.ii.*` und `gfz.*` |
 | `{{vollgeschosse}}`, `{{vollgeschosse.roemisch}}`, `{{vollgeschosse.namen}}` | Zahl bzw. Namen der Vollgeschosse |
-| `{{baunvo.fassung}}`, `{{bauo.fassung}}`, `{{bplan.datum}}` | angewandtes Recht |
+| `{{baunvo.fassung}}`, `{{bauo.fassung}}`, `{{bplan.datum}}`, `{{bplan.auslegung}}` | angewandtes Recht; Datum des Plans bzw. der öffentlichen Auslegung (maßgebend für die BauNVO-Fassung) |
 | `{{bilanz.gebaeude}}`, `{{bilanz.vollversiegelt}}` … | Flächenbilanz |
 | `{{geschoss.name}}`, `{{geschoss.begruendung}}`, `{{geschoss.gf}}` | Zeile je Geschoss; Filter `[vollgeschoss]`, `[!vollgeschoss]` |
 | `{{lageplan[eigen].name}}`, `{{lageplan.anrechnung}}` | Zeile je Lageplan-Fläche; Filter `[eigen]`, `[nachbar]`, `[pruefen]`, `[teil]` … |
