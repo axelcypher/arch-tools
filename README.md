@@ -406,7 +406,7 @@ aktualisieren sich nicht selbst.
   im Wurzelverzeichnis wie `package.json`, `package-lock.json` oder `tsconfig*` prüft sie nicht – dort selbst
   entscheiden). Die Rahmen-App Arkly hebt ein PR nur bei Änderungen an `apps/suite` selbst: Hat eine andere App eine
   neue Version, setzt der Release-Lauf Arkly automatisch auf die nächste freie Nummer (Minor, wenn eine App Minor
-  erhöht, sonst Patch; `scripts/suite-version.mjs`), committet sie nach main und baut Arkly mit. Schlägt der Schritt fehl: main
+  oder Major erhöht, sonst Patch; `scripts/suite-version.mjs`), committet sie nach main und baut Arkly mit. Schlägt der Schritt fehl: main
   mergen und die genannte Version über den angegebenen Stand setzen. Der grüne Haken gilt für den Stand von main beim
   letzten Push in den PR – unmittelbar vor dem Merge deshalb
   `git fetch origin main && node scripts/versionen-pruefen.mjs main HEAD` (volle Historie nötig). Empfohlen in den

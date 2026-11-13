@@ -49,25 +49,41 @@ export function naechsteSuiteVersion(versionen, tags) {
   return minor ? `${x}.${y + 1}.0` : `${x}.${y}.${z + 1}`;
 }
 
-/** Arkly-Version an allen fünf Stellen setzen (package.json, tauri.conf.json, Cargo.toml, Cargo.lock, package-lock.json) */
+/**
+ * Arkly-Version an allen fünf Stellen setzen (package.json, tauri.conf.json, Cargo.toml, Cargo.lock, package-lock.json).
+ * Erst alle Inhalte lesen und prüfen, dann schreiben – ein Fehler hinterlässt keinen halb gesetzten Stand.
+ */
 export function suiteVersionSetzen(neu, wurzel = '.') {
   const pfad = (p) => `${wurzel}/${p}`;
-  const ersetzen = (p, alt, neuText) => {
-    const s = readFileSync(pfad(p), 'utf8');
-    if (!alt.test(s)) throw new Error(`${p}: Version nicht gefunden`);
-    writeFileSync(pfad(p), s.replace(alt, neuText));
-  };
-  const json = (p, f) => {
+  const neuJson = (p, f) => {
     const o = JSON.parse(readFileSync(pfad(p), 'utf8'));
     f(o);
-    writeFileSync(pfad(p), `${JSON.stringify(o, null, 2)}\n`);
+    return `${JSON.stringify(o, null, 2)}\n`;
   };
-  json('apps/suite/package.json', (o) => (o.version = neu));
-  json('apps/suite/src-tauri/tauri.conf.json', (o) => (o.version = neu));
-  ersetzen('apps/suite/src-tauri/Cargo.toml', /^version = "[^"]*"/m, `version = "${neu}"`);
-  ersetzen('apps/suite/src-tauri/Cargo.lock', /(name = "arch-tools"\nversion = )"[^"]*"/, `$1"${neu}"`);
-  json('package-lock.json', (o) => (o.packages['apps/suite'].version = neu));
+  const neuText = (p, alt, ersatz) => {
+    const s = readFileSync(pfad(p), 'utf8');
+    if (!alt.test(s)) throw new Error(`${p}: Version nicht gefunden`);
+    return s.replace(alt, ersatz);
+  };
+  const inhalte = {
+    'apps/suite/package.json': neuJson('apps/suite/package.json', (o) => (o.version = neu)),
+    'apps/suite/src-tauri/tauri.conf.json': neuJson('apps/suite/src-tauri/tauri.conf.json', (o) => (o.version = neu)),
+    'apps/suite/src-tauri/Cargo.toml': neuText('apps/suite/src-tauri/Cargo.toml', /^version = "[^"]*"/m, `version = "${neu}"`),
+    'apps/suite/src-tauri/Cargo.lock': neuText('apps/suite/src-tauri/Cargo.lock', /(name = "arch-tools"\nversion = )"[^"]*"/, `$1"${neu}"`),
+    'package-lock.json': neuJson('package-lock.json', (o) => {
+      if (!o.packages?.['apps/suite']) throw new Error('package-lock.json: apps/suite nicht gefunden');
+      o.packages['apps/suite'].version = neu;
+    }),
+  };
+  for (const [p, inhalt] of Object.entries(inhalte)) writeFileSync(pfad(p), inhalt);
 }
+
+/** Tags aus der Ausgabe von `git ls-remote --tags --refs` */
+export const tagsAus = (lsRemote) =>
+  lsRemote
+    .split('\n')
+    .map((z) => z.split('\t')[1]?.replace('refs/tags/', ''))
+    .filter(Boolean);
 
 /* ---------- Aufruf ---------- */
 
@@ -82,10 +98,7 @@ function main() {
     process.exit(2);
   }
   const versionen = Object.fromEntries(APPS.map((a) => [a, JSON.parse(readFileSync(`apps/${a}/package.json`, 'utf8')).version]));
-  const tags = execFileSync('git', ['ls-remote', '--tags', '--refs', 'origin'], { encoding: 'utf8' })
-    .split('\n')
-    .map((z) => z.split('\t')[1]?.replace('refs/tags/', ''))
-    .filter(Boolean);
+  const tags = tagsAus(execFileSync('git', ['ls-remote', '--tags', '--refs', 'origin'], { encoding: 'utf8' }));
   const neu = naechsteSuiteVersion(versionen, tags);
   if (!neu) {
     console.log(`Arkly ${versionen[SUITE]}: keine neue Version nötig.`);

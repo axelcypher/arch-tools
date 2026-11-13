@@ -83,7 +83,11 @@ export function pruefen({ kopf, basis, main, tags, dateien = [] }) {
     }
     // höchste vergebene Version: main oder ein schon veröffentlichter Tag
     const ueber = groesste([main[app], ...tags.map((t) => versionAusTag(app, t))]);
-    const rat = `main mergen und die Version von ${app} über ${ueber ?? v} setzen (an allen fünf Stellen).`;
+    // Arkly ohne eigene Änderungen: die setzt jetzt der Release-Lauf – zurücknehmen statt weiter hochzählen
+    const nurArkly = app === SUITE && !betroffeneApps(dateien).includes(SUITE);
+    const rat = nurArkly
+      ? `die Arkly-Version auf den Stand von main (${main[app]}) zurücksetzen – ohne eigene Änderungen an apps/suite setzt sie der Release-Lauf.`
+      : `main mergen und die Version von ${app} über ${ueber ?? v} setzen (an allen fünf Stellen).`;
     if (tags.includes(tagVon(app, v))) fehler.push(`${app} ${v}: Tag ${tagVon(app, v)} gibt es schon – der Release würde übersprungen. Bitte ${rat}`);
     else if (main[app] && vergleich(v, main[app]) <= 0) fehler.push(`${app} ${v}: nicht größer als auf main (${main[app]}). Bitte ${rat}`);
   }

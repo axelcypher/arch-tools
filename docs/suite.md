@@ -97,6 +97,7 @@ npm run tauri:dev:suite  # als Desktop-App
 ```
 
 Release: Tag `suite-v<version>`. Die Version setzt der Release-Lauf selbst, sobald eine andere App eine neue Version
-hat und die aktuelle Arkly-Version schon veröffentlicht ist (nächste freie Nummer: Minor, wenn eine App Minor erhöht,
-sonst Patch; `scripts/suite-version.mjs`); er committet sie nach main und baut Arkly aus diesem Commit. Ein PR hebt
-Arkly nur bei Änderungen an `apps/suite` selbst.
+hat und die aktuelle Arkly-Version schon veröffentlicht ist (nächste freie Nummer: Minor, wenn eine App Minor oder
+Major erhöht, sonst Patch; `scripts/suite-version.mjs`); er committet sie nach main und baut Arkly aus diesem Commit. Ein PR hebt
+Arkly nur bei Änderungen an `apps/suite` selbst. Setzt ein solcher PR zufällig dieselbe Nummer wie der Release-Lauf,
+fällt das bei der Prüfung vor dem Merge auf (`node scripts/versionen-pruefen.mjs main HEAD`).

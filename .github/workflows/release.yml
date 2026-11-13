@@ -59,7 +59,12 @@ jobs:
       - name: Arkly-Version setzen
         if: github.event_name == 'push'
         run: |
-          out=$(node scripts/suite-version.mjs automatisch)
+          # ein Fehler hier darf die Releases der anderen Apps nie blockieren: dann nur Warnung, Arkly diesmal nicht
+          if ! out=$(node scripts/suite-version.mjs automatisch); then
+            echo "::warning::Arkly-Version nicht automatisch gesetzt (Fehler im Skript, siehe oben) – Arkly wird diesmal nicht gebaut."
+            git reset -q --hard "$GITHUB_SHA"
+            exit 0
+          fi
           echo "$out"
           neu=$(printf '%s\n' "$out" | sed -n 's/^neu=//p')
           [ -n "$neu" ] || exit 0
@@ -72,9 +77,12 @@ jobs:
               exit 0
             fi
             # main inzwischen weiter: darauf aufsetzen und erneut versuchen
-            git pull -q --rebase origin main || { git rebase --abort; break; }
+            if ! git pull -q --rebase origin main; then
+              git rebase --abort 2>/dev/null || true
+              break
+            fi
           done
-          echo "::warning::Arkly $neu ließ sich nicht nach main schreiben (Schutzregel oder Konflikt) – Arkly wird diesmal nicht gebaut. Bitte die Version von Hand setzen: node scripts/suite-version.mjs setzen $neu"
+          echo "::warning::Arkly $neu ließ sich nicht nach main schreiben (Schutzregel, Netz oder Konflikt – etwa weil ein PR Arkly inzwischen selbst gehoben hat; dann baut dessen Lauf Arkly). Arkly wird diesmal nicht gebaut. Bitte die Arkly-Version auf main prüfen und ggf. über der aktuellen setzen: node scripts/suite-version.mjs setzen x.y.z"
           git reset -q --hard "$GITHUB_SHA"
       - id: v
         env:

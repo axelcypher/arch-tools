@@ -1,10 +1,10 @@
 // Tests für scripts/suite-version.mjs – Aufruf: node --test scripts/suite-version.test.mjs
 import assert from 'node:assert/strict';
-import { cpSync, mkdtempSync, readFileSync } from 'node:fs';
+import { cpSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
-import { erhoehung, naechsteSuiteVersion, suiteVersionSetzen, veroeffentlicht } from './suite-version.mjs';
+import { erhoehung, naechsteSuiteVersion, suiteVersionSetzen, tagsAus, veroeffentlicht } from './suite-version.mjs';
 
 const stand = { flaechenrechner: '0.35.0', grz: '0.26.0', kosten: '0.21.0', ordner: '0.19.0', entzerrung: '0.14.0', formulare: '0.47.0', ava: '0.6.0', suite: '0.27.0' };
 const tags = ['v0.35.0', 'grz-v0.26.0', 'grz-v0.25.0', 'kosten-v0.21.0', 'ordner-v0.19.0', 'entzerrung-v0.14.0', 'formulare-v0.47.0', 'ava-v0.6.0', 'suite-v0.27.0', 'suite-v0.26.0'];
@@ -20,6 +20,24 @@ test('Art der Erhöhung', () => {
 
 test('neue App-Version mit Minor: Arkly bekommt die nächste Minor', () => {
   assert.equal(naechsteSuiteVersion({ ...stand, grz: '0.27.0' }, tags), '0.28.0');
+});
+
+test('Major-Sprung einer App: Arkly bekommt eine Minor', () => {
+  assert.equal(naechsteSuiteVersion({ ...stand, grz: '1.0.0' }, tags), '0.28.0');
+});
+
+test('Tags aus git ls-remote', () => {
+  assert.deepEqual(tagsAus('abc\trefs/tags/suite-v0.27.0\ndef\trefs/tags/v0.35.0\n'), ['suite-v0.27.0', 'v0.35.0']);
+  assert.deepEqual(tagsAus(''), []);
+});
+
+test('ein Fehler beim Setzen hinterlässt keinen halb gesetzten Stand', () => {
+  const w = mkdtempSync(join(tmpdir(), 'suite-version-'));
+  for (const p of ['apps/suite/package.json', 'apps/suite/src-tauri/tauri.conf.json', 'apps/suite/src-tauri/Cargo.toml', 'package-lock.json']) cpSync(p, join(w, p));
+  writeFileSync(join(w, 'apps/suite/src-tauri/Cargo.lock'), 'kein arch-tools hier\n');
+  const vorher = readFileSync(join(w, 'apps/suite/package.json'), 'utf8');
+  assert.throws(() => suiteVersionSetzen('9.8.7', w), /Cargo\.lock: Version nicht gefunden/);
+  assert.equal(readFileSync(join(w, 'apps/suite/package.json'), 'utf8'), vorher);
 });
 
 test('nur Patch-Erhöhungen: Arkly bekommt einen Patch', () => {
