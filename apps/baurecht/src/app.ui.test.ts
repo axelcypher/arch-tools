@@ -119,7 +119,7 @@ describe('Baurecht – Oberfläche', () => {
     const dialog = document.querySelector<HTMLElement>('[role="dialog"]')!;
     expect(dialog.textContent).toContain('von Hand festlegen');
     // Vorgabe ist die automatische Ampel (keine voreingestellte Herabstufung)
-    expect(dialog.querySelector('.br-meldung-warn')).toBeNull();
+    expect(dialog.querySelector('.meldung.warnung')).toBeNull();
     // ohne Begründung: Meldung, keine Festlegung
     act(() => knopf(dialog, 'Festlegen')!.click());
     expect(dialog.textContent).toMatch(/Bitte begründen/);
@@ -341,7 +341,7 @@ describe('Baurecht – Oberfläche', () => {
   it('Prüfprotokoll: Name des Dialogs, Festlegungen und gesicherte Angaben vor den offenen Punkten, Sperrgrund sichtbar', () => {
     const host = render();
     festlegen(host, 'Begehung am 03.11.2026 ohne Befund', 'rot');
-    act(() => knopf(host, 'Prüfprotokoll')!.click());
+    act(() => knopf(host, 'Prüfprotokoll …')!.click());
     const d = document.querySelector<HTMLElement>('.br-protokoll')!;
     expect(d.getAttribute('aria-label')).toMatch(/^Baurechtliche Prüfung vor dem Einreichen – BAUA 1/);
     const h2 = [...d.querySelectorAll('h2')].map((h) => h.textContent ?? '');
@@ -363,7 +363,7 @@ describe('Baurecht – Oberfläche', () => {
     const host = render();
     const pause = () => act(async () => void (await new Promise((r) => setTimeout(r, 30))));
     for (const zu of ['Esc', 'Schließen']) {
-      const oeffnen = knopf(host, 'Prüfprotokoll')!;
+      const oeffnen = knopf(host, 'Prüfprotokoll …')!;
       // wie ein Mausklick im Browser: der Knopf hat den Fokus, dann öffnet er das Protokoll
       act(() => oeffnen.focus());
       act(() => oeffnen.click());
@@ -374,13 +374,13 @@ describe('Baurecht – Oberfläche', () => {
       else act(() => knopf(d, 'Schließen')!.click());
       await pause();
       expect(document.querySelector('.br-protokoll')).toBeNull();
-      expect(document.activeElement, `Fokus nach ${zu}`).toBe(knopf(host, 'Prüfprotokoll'));
+      expect(document.activeElement, `Fokus nach ${zu}`).toBe(knopf(host, 'Prüfprotokoll …'));
     }
   });
 
   it('Fokusfalle im Protokoll: Tab bleibt drin; liegt ein Dialog darüber, führt der den Fokus', () => {
     const host = render();
-    act(() => knopf(host, 'Prüfprotokoll')!.click());
+    act(() => knopf(host, 'Prüfprotokoll …')!.click());
     const d = document.querySelector<HTMLElement>('.br-protokoll')!;
     const ziele = [...d.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled]), [tabindex="0"]')];
     const tab = (shift = false) => act(() => void document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', shiftKey: shift, bubbles: true, cancelable: true })));
@@ -592,7 +592,7 @@ describe('Runde 14: Planungsrecht als Entwurf, eingeklappte Rückfragen', () => 
     const merkmal = host.querySelector<HTMLElement>('[data-merkmal="Planungsrecht"]')!;
     expect(merkmal.querySelector('.br-merkmal-marken')?.textContent).toMatch(/Entwurf – beim Speichern bestätigen/);
     // im Protokoll als Entwurf, mit der Zahl der Paragrafen, die nur daran hängen
-    act(() => knopf(host, 'Prüfprotokoll')!.click());
+    act(() => knopf(host, 'Prüfprotokoll …')!.click());
     const d = document.querySelector<HTMLElement>('.br-protokoll')!;
     expect(d.textContent).toMatch(/Planungsrecht: .+ \(Entwurf – für diesen Ort bestätigt: /);
     expect(d.textContent).toContain(`${n} Paragrafen hängen an der noch nicht gespeicherten Bestätigung des Planungsrechts`);
@@ -705,7 +705,7 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
     const st = useBaurecht.getState();
     expect(planungsrechtVerschoben(st.project, st.merkmale, st.pruefung.planungsrechtOrt)).toBeUndefined();
     const host = render();
-    act(() => knopf(host, 'Prüfprotokoll')!.click());
+    act(() => knopf(host, 'Prüfprotokoll …')!.click());
     const d = document.querySelector<HTMLElement>('.br-protokoll')!;
     const merkmalZeile = [...d.querySelectorAll('tr')].find((tr) => tr.textContent?.startsWith('Antragsmerkmale'))!.textContent!;
     expect(merkmalZeile).not.toMatch(/Teilabbruch/);
@@ -739,7 +739,7 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
     expect(n).toBe(fb.zusammen.length);
     // der Dialog zeigt die Zeile „Zusammen“
     const host = render();
-    act(() => knopf(host, 'Prüfprotokoll')!.click());
+    act(() => knopf(host, 'Prüfprotokoll …')!.click());
     expect(document.querySelector('.br-protokoll')!.textContent).toContain(`${n} Paragrafen hängen an noch nicht gespeicherten Bestätigungen`);
     act(() => knopf(document.querySelector('.br-protokoll')!, 'Schließen')!.click());
     let fertig: Promise<boolean> | null = null;
@@ -813,7 +813,7 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
       s.faktSetzen('vorhaben.beseitigung_vollstaendig', true, 'TP');
     });
     const host = render();
-    act(() => knopf(host, 'Prüfprotokoll')!.click());
+    act(() => knopf(host, 'Prüfprotokoll …')!.click());
     const zeile = [...document.querySelectorAll('.br-protokoll tr')].find((tr) => tr.textContent?.startsWith('Antragsmerkmale'))!.textContent!;
     expect(zeile).toMatch(/Art des Vorhabens: Beseitigung \(vollständiger Abbruch ohne Ersatzbau – nur Hinweis, nicht bestätigt\)/);
   });
@@ -821,7 +821,7 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
   it('Prüfung abschließen: Meldung (Live-Region) mit „Jetzt speichern“, der Fokus geht dorthin; Sperrtext neutral', async () => {
     const host = render();
     await speichernOhneDialog();
-    act(() => knopf(host, 'Prüfprotokoll')!.click());
+    act(() => knopf(host, 'Prüfprotokoll …')!.click());
     const d = document.querySelector<HTMLElement>('.br-protokoll')!;
     // warten, bis die (Web-)Texte durch sind
     for (let i = 0; i < 20 && knopf(d, 'Prüfung abschließen')!.disabled; i++) await warten(100);
@@ -908,7 +908,7 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
   it('Protokoll „Jetzt speichern“: die Meldung sagt das Ergebnis, der Fokus bleibt im Dialog', async () => {
     const host = render();
     await speichernOhneDialog();
-    act(() => knopf(host, 'Prüfprotokoll')!.click());
+    act(() => knopf(host, 'Prüfprotokoll …')!.click());
     const d = document.querySelector<HTMLElement>('.br-protokoll')!;
     for (let i = 0; i < 20 && knopf(d, 'Prüfung abschließen')!.disabled; i++) await warten(100);
     act(() => knopf(d, 'Prüfung abschließen')!.click());
@@ -927,7 +927,7 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
   it('Protokoll: stehende Live-Region für „abgelegt“, kein doppelter Sperrtext, gleicher Stand nicht zweimal; Druckvermerk beim Filter', async () => {
     const host = render();
     await speichernOhneDialog();
-    act(() => knopf(host, 'Prüfprotokoll')!.click());
+    act(() => knopf(host, 'Prüfprotokoll …')!.click());
     const d = document.querySelector<HTMLElement>('.br-protokoll')!;
     // die Region steht schon vor der Meldung da
     const region = d.querySelector<HTMLElement>('#br-abgelegt-text')!;
@@ -967,7 +967,7 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
     // mit bestätigtem Planungsrecht entfallen im Beispiel Vorschriften
     act(() => useBaurecht.getState().planungsrechtBestaetigen());
     const host = render();
-    act(() => knopf(host, 'Prüfprotokoll')!.click());
+    act(() => knopf(host, 'Prüfprotokoll …')!.click());
     const d = document.querySelector<HTMLElement>('.br-protokoll')!;
     const gruen = Number(/(\d+) entfällt/.exec(d.textContent ?? '')?.[1]);
     expect(gruen).toBeGreaterThan(0);
@@ -979,7 +979,7 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
   it('gleicher Stand mit anderen Fassungen lässt sich wieder abschließen', async () => {
     const host = render();
     await speichernOhneDialog();
-    act(() => knopf(host, 'Prüfprotokoll')!.click());
+    act(() => knopf(host, 'Prüfprotokoll …')!.click());
     const d = document.querySelector<HTMLElement>('.br-protokoll')!;
     for (let i = 0; i < 20 && knopf(d, 'Prüfung abschließen')!.disabled; i++) await warten(100);
     act(() => knopf(d, 'Prüfung abschließen')!.click());
@@ -1003,7 +1003,7 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
       s.faktSetzen('vorhaben.beseitigung_umfang', 'Teilabbruch', 'TP');
     });
     const host = render();
-    act(() => knopf(host, 'Prüfprotokoll')!.click());
+    act(() => knopf(host, 'Prüfprotokoll …')!.click());
     const d = document.querySelector<HTMLElement>('.br-protokoll')!;
     const tabelle = [...d.querySelectorAll('h2')].find((h) => h.textContent?.startsWith('Angaben von Hand ohne Beleg'))!.nextElementSibling!;
     expect(tabelle.textContent).not.toMatch(/Umfang der Beseitigung/);
@@ -1026,7 +1026,7 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
   it('Protokoll: Tab von der Meldung bleibt im Dialog, der Hintergrund ist inert; nach dem Wiederöffnen erkennbar abgelegt', async () => {
     const host = render();
     await speichernOhneDialog();
-    act(() => knopf(host, 'Prüfprotokoll')!.click());
+    act(() => knopf(host, 'Prüfprotokoll …')!.click());
     let d = document.querySelector<HTMLElement>('.br-protokoll')!;
     expect(host.querySelector<HTMLElement>('.br-sprung')!.inert).toBe(true);
     for (let i = 0; i < 20 && knopf(d, 'Prüfung abschließen')!.disabled; i++) await warten(100);
@@ -1045,7 +1045,7 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
     // schließen und wieder öffnen: der Eintrag ist als nicht gespeichert gekennzeichnet, die Sperre sagt warum
     act(() => knopf(d, 'Schließen')!.click());
     expect(host.querySelector<HTMLElement>('.br-sprung')!.inert).toBe(false);
-    act(() => knopf(host, 'Prüfprotokoll')!.click());
+    act(() => knopf(host, 'Prüfprotokoll …')!.click());
     d = document.querySelector<HTMLElement>('.br-protokoll')!;
     expect(d.textContent).toMatch(/noch nicht in der Datei gespeichert/);
     // wie direkt nach dem Abschließen: Meldung mit „Jetzt speichern“ (der Sperrtext nicht doppelt)
@@ -1057,7 +1057,7 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
   it('Strg+S bei offenem Protokoll: das Ergebnis steht in der Live-Region des Dialogs, der Fokus bleibt', async () => {
     const host = render();
     act(() => useBaurecht.getState().merkmalSetzen('Gebäudeart', 'Doppelhaushälfte'));
-    act(() => knopf(host, 'Prüfprotokoll')!.click());
+    act(() => knopf(host, 'Prüfprotokoll …')!.click());
     const d = document.querySelector<HTMLElement>('.br-protokoll')!;
     const druck = knopf(d, 'Drucken / PDF …')!;
     act(() => druck.focus());
@@ -1080,7 +1080,7 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
     const host = render();
     act(() => knopf(host, 'alle')?.click());
     expect(!!host.querySelector('.br-angaben [data-fakt="planung.innen"]')).toBe(gestellt);
-    act(() => knopf(host, 'Prüfprotokoll')!.click());
+    act(() => knopf(host, 'Prüfprotokoll …')!.click());
     const d = document.querySelector<HTMLElement>('.br-protokoll')!;
     const tabelle = [...d.querySelectorAll('h2')].find((h) => h.textContent?.startsWith('Angaben von Hand ohne Beleg'))!.nextElementSibling!.textContent ?? '';
     const ohneWirkung = /Antworten auf derzeit nicht gestellte Fragen \(ohne Wirkung\):[^\n]*Im Zusammenhang bebauter Ortsteil/.test(d.textContent ?? '');
@@ -1095,7 +1095,7 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
     expect(useBaurecht.getState().ansage).toMatch(/von Hand „gilt“ festgelegt – Entwurf/);
     await speichernMit('Bestätigen und speichern');
     act(() => useBaurecht.getState().merkmalSetzen('Gebäudeart', 'Doppelhaushälfte'));
-    act(() => knopf(host, 'Prüfprotokoll')!.click());
+    act(() => knopf(host, 'Prüfprotokoll …')!.click());
     const d = document.querySelector<HTMLElement>('.br-protokoll')!;
     expect(d.querySelector('.br-sperre')?.textContent).toMatch(/Erst speichern/);
     await act(async () => {
@@ -1149,7 +1149,7 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
   it('Protokoll: nach Abschließen und Strg+S bleibt die genaue Meldung, der Fokus im Dialog', async () => {
     const host = render();
     await speichernOhneDialog();
-    act(() => knopf(host, 'Prüfprotokoll')!.click());
+    act(() => knopf(host, 'Prüfprotokoll …')!.click());
     const d = document.querySelector<HTMLElement>('.br-protokoll')!;
     for (let i = 0; i < 20 && knopf(d, 'Prüfung abschließen')!.disabled; i++) await warten(100);
     act(() => knopf(d, 'Prüfung abschließen')!.click());
@@ -1172,7 +1172,7 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
   it('Protokoll: „Jetzt speichern“ abgebrochen – Knopf wieder bereit, ein späteres Strg+S verschiebt den Fokus nicht', async () => {
     const host = render();
     festlegen(host, 'Begehung am 03.11.2026 ohne Befund', 'rot');
-    act(() => knopf(host, 'Prüfprotokoll')!.click());
+    act(() => knopf(host, 'Prüfprotokoll …')!.click());
     const d = document.querySelector<HTMLElement>('.br-protokoll')!;
     const jetzt = () => knopf(d, 'Jetzt speichern')!;
     await act(async () => {
@@ -1205,7 +1205,7 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
     act(() => knopf(host, /^(Von Hand festlegen|Festlegung ändern) …$/)!.click());
     const dialog = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find((d) => d.textContent?.includes('von Hand festlegen'))!;
     act(() => dialog.querySelectorAll<HTMLInputElement>('input[type="radio"]')[2].click());
-    const warnung = () => dialog.querySelector('.br-meldung-warn[role="note"]')?.textContent ?? '';
+    const warnung = () => dialog.querySelector('.meldung.warnung[role="note"]')?.textContent ?? '';
     expect(warnung()).toMatch(/Ohne geprüften Gesetzestext greift „entfällt“ nicht/);
     const text = (geprueft: string) =>
       act(() =>
@@ -1319,5 +1319,59 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
     tippen(dialog.querySelector('textarea')!, 'Abstimmung mit der UNB ohne Befund');
     act(() => knopf(dialog, 'Festlegen')!.click());
     expect(useBaurecht.getState().ansage).toMatch(/von Hand „entfällt“ festgelegt – Entwurf, beim Speichern noch einmal bestätigen$/);
+  });
+});
+
+describe('Designsystem: Dialogkopf, Enter, Druckvorschau, Symbole', () => {
+  beforeEach(() => {
+    geschrieben = null;
+    const bytes = beispielOap();
+    useBaurecht.getState().projektSetzen({ art: 'datei', name: 'EFH.oap', bytes }, readProjectFile(bytes), projektdateiRoh(bytes));
+  });
+  afterEach(() => {
+    act(() => root?.unmount());
+    document.body.innerHTML = '';
+  });
+
+  it('„Von Hand festlegen“: Titel im Kopf (benennt den Dialog), Enter sendet über das Formular; zu kurze Begründung hält den Dialog offen', () => {
+    const host = render();
+    act(() => host.querySelector<HTMLButtonElement>('.br-paragraf')!.click());
+    act(() => knopf(host, /^(Von Hand festlegen|Festlegung ändern) …$/)!.click());
+    const dialog = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find((d) => d.textContent?.includes('von Hand festlegen'))!;
+    const kopf = dialog.querySelector<HTMLElement>('.modal-kopf')!;
+    expect(kopf.textContent).toMatch(/– von Hand festlegen$/);
+    expect(dialog.getAttribute('aria-labelledby')).toBe(kopf.id);
+    // keine zweite Überschrift mit dem Titel im Inhalt
+    expect(dialog.querySelectorAll('h2, h3').length).toBe(1);
+    const form = dialog.querySelector('form')!;
+    expect(form.lastElementChild?.classList.contains('dialog-buttons')).toBe(true);
+    expect(knopf(dialog, 'Festlegen')!.type).toBe('submit');
+    const absenden = () => act(() => void form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
+    tippen(dialog.querySelector('textarea')!, 'kurz');
+    absenden();
+    expect(dialog.isConnected).toBe(true);
+    expect(dialog.textContent).toContain('mindestens 10 Zeichen');
+    tippen(dialog.querySelector('textarea')!, 'Begehung am 03.11.2026 ohne Befund');
+    absenden();
+    expect(dialog.isConnected).toBe(false);
+    expect(Object.keys(useBaurecht.getState().pruefung.festlegungen ?? {})).toContain(useBaurecht.getState().auswahl);
+  });
+
+  it('Prüfprotokoll: „Drucken / PDF …“ ist der Hauptknopf rechts außen, „Schließen“ steht links davon', () => {
+    const host = render();
+    act(() => knopf(host, 'Prüfprotokoll …')!.click());
+    const knoepfe = [...document.querySelectorAll<HTMLButtonElement>('.br-protokoll .report-actions > button')];
+    expect(knoepfe.at(-1)!.textContent?.trim()).toBe('Drucken / PDF …');
+    expect(knoepfe.at(-1)!.classList.contains('primary')).toBe(true);
+    expect(knoepfe.at(-2)!.textContent?.trim()).toBe('Schließen');
+    expect(knoepfe.filter((k) => k.classList.contains('primary')).length).toBe(1);
+  });
+
+  it('Aufklapp- und Statuszeichen kommen aus dem Symbolsatz, nicht als Schriftzeichen', () => {
+    const host = render();
+    act(() => host.querySelector<HTMLButtonElement>('.br-paragraf')!.click());
+    expect(host.textContent).not.toMatch(/[▾▸✓✗↗→]/);
+    expect(document.body.textContent).not.toMatch(/[▾▸✓✗↗→]/);
+    expect(host.querySelector('.br-norm-pfeil svg.symbol')).not.toBeNull();
   });
 });

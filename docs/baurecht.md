@@ -24,10 +24,11 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
 - **Kopfleiste:** Antrag, **geplante Einreichung** (Stichtag – z. B. § 42a BauO NRW knüpft an das Datum des Bauantrags
   an, § 90 an das Verfahrensrecht zur Zeit der Antragstellung), die aktiven Regelmodule, der Rechtsstand (Datum des
   ältesten Stands der aktiven Normen), Warnmarken (nie geprüft, nicht abrufbar, geändert, neue Fassung), **Lage
-  abfragen**, **Rechtsstand prüfen**, **Prüfprotokoll**, **Speichern** (Strg+S). „Gemeinde unbestätigt“ bzw.
+  abfragen**, **Rechtsstand prüfen**, **Prüfprotokoll …**, **Speichern** (Strg+S; ungespeicherte Änderungen zeigt der
+  Punkt an der Ecke des Knopfs, wie in allen Apps). „Gemeinde unbestätigt“ bzw.
   „widersprüchlich“ ist ein Knopf und springt zum Gemeindeschlüssel. Ist die App schmaler als 1600 px, stehen „Lage
-  abfragen“ und „Rechtsstand prüfen“ unter **Mehr ▾** und die Warnungen zum Rechtsstand als eine Sammelmarke („2
-  Warnungen“, Einzelheiten im Tooltip und im Menü); unter 1200 px stehen „Antrag“ und „Einreichung“ nur noch im Feld.
+  abfragen“ und „Rechtsstand prüfen“ im Menü **Mehr** (das gemeinsame Menü der Suite) und die Warnungen zum Rechtsstand
+  als eine Sammelmarke („2 Warnungen“, Einzelheiten im Tooltip und als Hinweis an „Rechtsstand prüfen“ im Menü); unter 1200 px stehen „Antrag“ und „Einreichung“ nur noch im Feld.
   Gekürzt wird nur die Liste der Module, Warnungen und „Speichern“ nie. „≡ Fehlerprotokoll“ in der Titelleiste ist die
   Fehlersuche der App.
 - **Koordinaten:** Ergebnisse der Geodienste und Bestätigungen zur Lage gelten nur, solange die Koordinaten zur Adresse
@@ -54,7 +55,7 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   Werte und halbe Anzahlen sind nur Hinweis, Angaben zur Lage ohne Lagebezug ebenso („Für diese Lage übernehmen“).
 - **Filterleiste:** Ampelzähler (blenden ein/aus), Balken, Ordnung (offen zuerst, nach Ebene, nach Thema), Suche und die
   Kästchen „nur von Hand festgelegte“ / „nur geänderte/überholte“. Ist die mittlere Spalte schmaler als 640 px, wird die
-  Ordnung zur Auswahlliste, die Kästchen wandern in **Filter ▾** und der Balken entfällt. Die Zähler an den Normen
+  Ordnung zur Auswahlliste, die Kästchen wandern in **Filter** und der Balken entfällt. Die Zähler an den Normen
   zählen die sichtbaren Zeilen („11 prüfen von 14“). Beim Wechsel der Ordnung bleibt der gewählte Paragraf im Blick.
 - **Rückfrage zum Antragsmerkmal:** Bei „Beseitigung“ steht der **Umfang der Beseitigung** (vollständiger Abbruch ohne
   Ersatzbau, Teilabbruch, Abbruch mit Ersatzbau) direkt unter „Art des Vorhabens“ (als Knöpfe, unter der Erklärung des
@@ -229,9 +230,9 @@ Die ersten Tabstopps sind die Sprungmarken „Zu den Angaben / Vorschriften / Ei
 Fokus haben), danach die Titelleiste. Die Vorschriftenliste ist ein Tabstopp: ↑/↓, Pos1/Ende wählen den Paragrafen.
 Auswahlgruppen (ja/nein, Merkmale) bedienen sich mit ←/→ bzw. ↑/↓ (mit Umlauf), Pos1/Ende. F6 (Umschalt+F6) springt
 zwischen Kopf, Angaben, Vorschriften und Einzelheiten; ist kein Paragraf gewählt, bekommen die Einzelheiten selbst den
-Fokus (der Bereich wird angesagt, F6 geht weiter). Menüs (Mehr ▾, Filter ▾, Farbschema) nehmen beim Öffnen den Fokus,
+Fokus (der Bereich wird angesagt, F6 geht weiter). Menüs (Mehr, Filter, Farbschema) nehmen beim Öffnen den Fokus,
 bedienen sich mit ↑/↓ und Pos1/Ende, schließen mit Esc (Fokus zurück an ihren Knopf) und schließen, sobald der Fokus sie
-mit Tab verlässt; ihre Einträge sind keine eigenen Tabstopps; ↓/↑ auf dem geschlossenen Knopf „Mehr“ öffnet es. Die
+mit Tab verlässt; ihre Einträge sind keine eigenen Tabstopps; ein zweiter Klick auf den Öffner schließt das Menü. Die
 Suche in den Vorschriften findet Zitate genau (Norm nach Kurzform): „§ 6 BauO NRW“, „§ 62 Abs. 1 Satz 1 Nr. 1a BauO
 NRW“, „§§ 30, 34 BauGB“, Bereiche „§§ 30 bis 35“, „§§ 30–35“, „§§ 30-35“, „§§ 30 ff.“ und „§ 30 f.“, benannte Einheiten
 wie „C.3“. Ein „§“, den die Regeln nicht kennen, zeigt die genannte Norm mit dem Hinweis „§ 248 BauGB ist nicht erfasst
@@ -244,7 +245,8 @@ als „a“ bzw. „ae“ – „Stellpla“, „Stellplaetze“, „Ruckbau“)
 wer nur sucht, bekommt „Suche leeren“ statt „Filter zurücksetzen“. Nach Suche, Filter und „Filter zurücksetzen“ bleibt
 die gewählte Zeile im Blick, der Fokus geht ins Suchfeld. Die Sammelmarke der Warnungen öffnet und schließt „Mehr“, Esc
 gibt den Fokus an den Öffner zurück. Nach „Bestätigen“, „zurücknehmen“ und der Wahl des Farbschemas bleibt der Fokus an
-der Angabe bzw. am Knopf.
+der Angabe bzw. am Knopf. In den Dialogen „von Hand festlegen“, „Angabe bestätigen“ und „Angabe von Hand setzen“ löst
+Enter (außer im mehrzeiligen Begründungsfeld) den Hauptknopf aus; der Titel steht im Kopf des Dialogs.
 
 ## Rechtsstand
 
@@ -274,7 +276,8 @@ von Hand ohne Beleg stehen in einer eigenen Tabelle (mit wer und wann). Die offe
 (ein Paragraf kann unter mehreren Angaben stehen); Punkte mit nur einem Paragrafen stehen gesammelt unter „Weitere“.
 Enthält es Entwürfe, steht „ENTWURF …“ als Kopfzeile im oberen Seitenrand jeder Druckseite (überdruckt keinen Text);
 Überschriften werden nicht von ihrer Tabelle getrennt. Warum „Prüfung abschließen“ gesperrt ist, steht sichtbar neben
-dem Knopf. „Drucken / PDF …“ schlägt den Dateinamen `<Projektdatei> Baurecht <Antrag>.pdf` vor. Am Bildschirm klebt die
+dem Knopf. „Drucken / PDF …“ ist der Hauptknopf rechts außen (wie in allen Druckvorschauen), „Schließen“ steht links
+davon. „Drucken / PDF …“ schlägt den Dateinamen `<Projektdatei> Baurecht <Antrag>.pdf` vor. Am Bildschirm klebt die
 Aktionsleiste oben und der Tabellenkopf darunter (in sehr niedrigen Fenstern – 400 % Zoom – klebt nur der Tabellenkopf);
 Tabellenzellen trennen nach Silben (erst notfalls mitten im Wort), kurze Nummern („§ 248“) und Kennungen („SO‑076“)
 bleiben zusammen. Nach dem Speichern bei offenem Protokoll heißt es „Gespeichert – die Prüfung lässt sich jetzt

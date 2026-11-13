@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { Symbol } from '@core/ui/Symbol';
 import { verweisName } from '@core/baurecht/typen';
 import { create } from 'zustand';
 import type { Ampel, FaktDef, FaktStatus, FaktWert, ParagrafErgebnis } from '@core/baurecht/typen';
@@ -91,8 +92,15 @@ export function FestlegenDialog({ fakten, widerspruchMerkmale = [], paragrafen =
   const normKurz = useBaurecht.getState().paket.module.find((m) => m.id === p.modul)?.normen[p.norm]?.kurz ?? p.norm;
   const kopfzeile = verweisName(p.paragraf, p.titel, normKurz);
   return (
-    <Modal titel={`${kopfzeile} – von Hand festlegen`} onClose={zu} breit klickDaneben={false}>
-      <h2 className="br-dialog-titel">{kopfzeile} – von Hand festlegen</h2>
+    <Modal titel={`${kopfzeile} – von Hand festlegen`} onClose={zu} breit klickDaneben={false} kopf>
+      {/* Enter (z. B. in „Festgelegt von“) löst „Festlegen“ aus; die Pflichtfelder prüft der Dialog selbst */}
+      <form
+        noValidate
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!verwerfen) festlegen();
+        }}
+      >
       <p className="br-leise">
         Automatisch: <AmpelMarke ampel={p.automatisch} klein /> {p.gruende[0]}
       </p>
@@ -111,7 +119,7 @@ export function FestlegenDialog({ fakten, widerspruchMerkmale = [], paragrafen =
         ))}
       </fieldset>
       {ampel === 'gruen' && p.entfaelltVorbehalt && (
-        <div className="br-meldung br-meldung-warn" role="note">
+        <div className="meldung warnung" role="note">
           {!texte[`${p.modul}/${p.norm}`]?.fassung
             ? `Ohne geprüften Gesetzestext greift „entfällt“ nicht: Die Ampel bleibt „${AMPEL_TEXT[p.automatisch === 'gruen' ? 'gelb' : p.automatisch]}“, bis der Text vorliegt (Desktop-App) und Sie dort erneut festlegen.`
             : `„Entfällt“ greift noch nicht (${p.entfaelltVorbehalt}): Die Ampel bleibt „${AMPEL_TEXT[p.automatisch === 'gruen' ? 'gelb' : p.automatisch]}“, bis das behoben ist (z. B. „Rechtsstand prüfen“).`}{' '}
@@ -119,7 +127,7 @@ export function FestlegenDialog({ fakten, widerspruchMerkmale = [], paragrafen =
         </div>
       )}
       {herab && (
-        <div className="br-meldung br-meldung-warn" role="alert">
+        <div className="meldung warnung" role="alert">
           Sie stufen von „{AMPEL_TEXT[p.automatisch]}“ auf „{AMPEL_TEXT[ampel]}“ herab. Das ist erlaubt, wenn der Sonderfall begründet ist – die Festlegung steht im Prüfprotokoll und muss beim Speichern noch einmal bestätigt werden.
         </div>
       )}
@@ -155,7 +163,7 @@ export function FestlegenDialog({ fakten, widerspruchMerkmale = [], paragrafen =
         <input id="br-festlegen-von" value={von} onChange={(e) => setVon(e.target.value)} required />
       </div>
       {verwerfen ? (
-        <div className="br-meldung br-meldung-warn dialog-buttons br-verwerfen" role="alert">
+        <div className="meldung warnung dialog-buttons br-verwerfen" role="alert">
           <span>Die Begründung ist noch nicht übernommen. Verwerfen?</span>
           <button type="button" onClick={() => setVerwerfen(false)}>
             Weiter bearbeiten
@@ -169,11 +177,12 @@ export function FestlegenDialog({ fakten, widerspruchMerkmale = [], paragrafen =
           <button type="button" onClick={zu}>
             Abbrechen
           </button>
-          <button type="button" className="primary" onClick={festlegen}>
+          <button type="submit" className="primary">
             Festlegen
           </button>
         </div>
       )}
+      </form>
     </Modal>
   );
 }
@@ -222,11 +231,11 @@ export type FaktDefVon = (id: string) => FaktDef | undefined;
 /** Folgen einer Angabe: wie viele Paragrafen dadurch auf „entfällt“ (bzw. schwächer) gehen – für die Dialoge */
 export type FolgenRechner = (id: string, wert: FaktWert | null) => { herab: { id: string; titel: string; von: Ampel; nach: Ampel }[]; nachher?: FaktWert };
 
-/** „→“ sichtbar, „wird zu“ für Screenreader (ein aria-label an einem span ohne Rolle wird nicht verlässlich vorgelesen) */
+/** Pfeil sichtbar, „wird zu“ für Screenreader (ein aria-label an einem span ohne Rolle wird nicht verlässlich vorgelesen) */
 function Pfeil() {
   return (
     <>
-      <span aria-hidden="true">→</span>
+      <Symbol name="pfeilRechts" />
       <span className="br-unsichtbar"> wird zu </span>
     </>
   );
@@ -316,10 +325,14 @@ export function FaktBestaetigenDialog({ folgen, faktDef = () => undefined }: { f
   const geo = ziel.wert.herkunft === 'geodienst';
   const fehlerId = 'br-fakt-grund-fehler';
   return (
-    <Modal titel={ziel.modus === 'setzen' ? 'Angabe von Hand setzen' : 'Angabe bestätigen'} onClose={zu} breit klickDaneben={false}>
-      <h3>
-        {ziel.titel}: „{wertAnzeige(ziel.wert.wert, faktDef(ziel.id))}“ {ziel.modus === 'setzen' ? 'von Hand setzen' : 'bestätigen'}
-      </h3>
+    <Modal titel={`${ziel.titel}: „${wertAnzeige(ziel.wert.wert, faktDef(ziel.id))}“ ${ziel.modus === 'setzen' ? 'von Hand setzen' : 'bestätigen'}`} onClose={zu} breit klickDaneben={false} kopf>
+      <form
+        noValidate
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!verwerfen) bestaetigen();
+        }}
+      >
       {ziel.modus === 'bestaetigen' ? (
         <p className="br-leise-stark">
           {/* der Grund sagt schon, woher der Wert kommt – die Quelle nur ohne Grund */}
@@ -330,16 +343,16 @@ export function FaktBestaetigenDialog({ folgen, faktDef = () => undefined }: { f
       )}
       {vorschau && <Folgen folgen={vorschau} />}
       {vorschau?.nachher?.widerspruch && (
-        <div className="br-meldung br-meldung-fehler" role="note">
+        <div className="meldung fehler" role="note">
           <strong>Widerspruch bleibt:</strong> {vorschau.nachher.widerspruch}. Vorschriften, die an dieser Angabe hängen, werden dadurch nicht „entfällt“.
         </div>
       )}
-      <div className="br-meldung br-meldung-warn" role="note">
+      <div className="meldung warnung" role="note">
         Die Angabe gilt danach als gesichert. Bitte nur angeben, was belegt ist – die Begründung steht im Prüfprotokoll.
         {ziel.lagebezug ? (aktuelleLage(project).lage ? ' Sie gilt nur für die aktuelle Lage des Vorhabens.' : ' Ohne Koordinaten, die zur Adresse passen, lässt sie sich an keine Lage binden und bleibt Hinweis.') : ''}
       </div>
       {veraltet && (
-        <div className="br-meldung br-meldung-fehler" role="alert">
+        <div className="meldung fehler" role="alert">
           Die Angabe hat sich inzwischen geändert (z. B. durch „Lage abfragen“). Bitte den Dialog schließen und neu prüfen.
         </div>
       )}
@@ -380,7 +393,7 @@ export function FaktBestaetigenDialog({ folgen, faktDef = () => undefined }: { f
         <input value={von} onChange={(e) => setVon(e.target.value)} aria-required="true" />
       </label>
       {verwerfen ? (
-        <div className="br-meldung br-meldung-warn dialog-buttons br-verwerfen" role="alert">
+        <div className="meldung warnung dialog-buttons br-verwerfen" role="alert">
           <span>Die Begründung ist noch nicht übernommen. Verwerfen?</span>
           <button type="button" onClick={() => setVerwerfen(false)}>
             Weiter bearbeiten
@@ -394,11 +407,12 @@ export function FaktBestaetigenDialog({ folgen, faktDef = () => undefined }: { f
           <button type="button" onClick={zu}>
             Abbrechen
           </button>
-          <button type="button" className="primary" onClick={bestaetigen}>
+          <button type="submit" className="primary">
             {ziel.modus === 'setzen' ? 'Übernehmen' : 'Bestätigen'}
           </button>
         </div>
       )}
+      </form>
     </Modal>
   );
 }
@@ -604,7 +618,7 @@ export function BestaetigenDialog({ titel, faktTitel, folgen, faktDef = () => un
         </div>
       )}
       {ueberholte.length > 0 && (
-        <div className="br-meldung br-meldung-fehler" role="alert">
+        <div className="meldung fehler" role="alert">
           {ueberholte.length === 1 ? 'Eine Festlegung ist überholt' : `${ueberholte.length} Festlegungen sind überholt`} – „Bestätigen und speichern“ geht erst, wenn {ueberholte.length === 1 ? 'sie erneut festgelegt oder aufgehoben ist' : 'sie erneut festgelegt oder aufgehoben sind'}. „Speichern, diese als Entwurf behalten“ geht.
         </div>
       )}
