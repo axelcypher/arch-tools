@@ -50,7 +50,7 @@ import type { FeldAenderung, Verlauf } from './verlauf';
 import { abgleichen, eintragen, eintragenMehrere, kannRueckgaengig, kannWiederholen, leererVerlauf, springe, verlaufAus } from './verlauf';
 import { GRUNDSTUECK, PLZ_GRUNDSTUECK, istZusatz, mitZusatz } from './zusatz';
 import { adresseSchluessel, koordinatenVeraltet, mitKoordinaten } from '@core/platform/geokodierung';
-import { mitVerfolgung, verfolgen, vorgang } from './ausstehend';
+import { mitVerfolgung, standSpeichern, vorgang } from './ausstehend';
 
 /**
  * Zustand der App: Einstellungen, die gefundenen Projekte, das geöffnete Formular und die Projektkarte.
@@ -1126,7 +1126,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
           set({ konflikt: true, meldung: { art: 'fehler', text: 'Die Datei wurde seit dem Öffnen außerhalb geändert (z. B. in einem anderen Programm). Bitte neu laden – deine Eingaben bleiben erhalten.' } });
           return;
         }
-        await ds.ersetze(o.projekt.root, o.pfad, neu);
+        await standSpeichern(o.projekt.root, o.pfad, ds.ersetze(o.projekt.root, o.pfad, neu));
       } else {
         const ok = await saveBinaryFile({ defaultName: `${o.name}.frmsjf`, data: neu, filterName: 'Formular', extension: 'frmsjf', mime: 'application/octet-stream' });
         if (!ok) return;
@@ -1157,7 +1157,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       const aenderungen = alle.filter((a) => !istZusatz(a.gruppe, a.id));
       const zusatz = Object.fromEntries(alle.filter((a) => istZusatz(a.gruppe, a.id)).map((a) => [pkSchluessel(a.gruppe, a.id), String(a.neu ?? '')]));
       if (Object.keys(zusatz).length) zusatzMerken(k.projekt, zusatz);
-      if (aenderungen.length) await ds.projektkarteSchreiben(k.projekt.root, pfad, aenderungen);
+      if (aenderungen.length) await standSpeichern(k.projekt.root, pfad, ds.projektkarteSchreiben(k.projekt.root, pfad, aenderungen));
       const gelesen = await ds.projektkarteLesen(k.projekt.root, pfad);
       if (!gelesen) throw new Error('Projektdaten nach dem Speichern nicht lesbar');
       const frisch = mitZusatz(gelesen, zusatzWerte(k.projekt, get().oap));
@@ -1786,7 +1786,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
           set({ meldung: { art: 'fehler', text: `${d.name} wurde seit dem Öffnen außerhalb geändert und ist nicht gespeichert. ${rat}` } });
           return false;
         }
-        await verfolgen(ds.dokumentErsetzen(d.root, d.pfad, neu));
+        await standSpeichern(d.root, d.pfad, ds.dokumentErsetzen(d.root, d.pfad, neu));
         // während des Schreibens weiter bearbeitet: dieser Entwurf bleibt; ein anderes Dokument geöffnet: es bleibt offen
         const entwuerfe = { ...get().dateiEntwuerfe };
         if (entwuerfe[k] === entwurfVorher) delete entwuerfe[k];
@@ -1898,7 +1898,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       const o = get().oap;
       if (!ds || !o || o === 'fehlt') return false;
       // liest frisch und versucht es erneut, wenn eine andere App die Datei zwischen Lesen und Schreiben geändert hat
-      const geschrieben = await verfolgen(projektdateiSchreiben(ds.projektordner, o.root, o.pfad, aendern));
+      const geschrieben = await standSpeichern(o.root, o.pfad, projektdateiSchreiben(ds.projektordner, o.root, o.pfad, aendern));
       if (geschrieben) await get().oapLaden();
       return geschrieben;
     },

@@ -12,12 +12,12 @@
  *   einer Rückfrage, damit eine offene Rückfrage nicht als „speichert noch“ gilt.
  * Lesen, Sperren prüfen und Rückfragen werden nicht abgewartet.
  *
- * Gescheiterte Schreibbefehle des Bearbeitungsstands (Formular, Dokument, Projektkarte, Projektdatei) bleiben gemerkt,
- * bis dieselbe Datei erfolgreich geschrieben ist: so liefert auch ein späterer Aufruf (nach „Erneut versuchen“ oder ein
- * Schließen lange nach dem Fehler) weiter `false` – wie der Vertrag von `vorDemSchliessen` verlangt. Verwerfen löscht
- * den Merker nicht (Strg+Z holt die Änderungen zurück); Arkly fragt dann nach, „Trotzdem schließen“ bleibt möglich.
- * Einmalige Aktionen (anlegen, kopieren, umbenennen, löschen, Sperren) melden ihren Fehler sofort und zählen nur,
- * solange sie abgewartet werden.
+ * Gescheitertes Speichern eines Bearbeitungsstands (`standSpeichern`: Formular, Dokument, Projektkarte, Projektdatei)
+ * bleibt gemerkt, bis dieselbe Datei erfolgreich gespeichert ist: so liefert auch ein späterer Aufruf (nach „Erneut
+ * versuchen“ oder ein Schließen lange nach dem Fehler) weiter `false` – wie der Vertrag von `vorDemSchliessen` verlangt.
+ * Wird die Datei umbenannt, wandert der Merker mit; wird sie gelöscht, entfällt er. Verwerfen löscht ihn nicht (Strg+Z
+ * holt die Änderungen zurück); Arkly fragt dann nach, „Trotzdem schließen“ bleibt möglich. Einmalige Aktionen (PDF-Export,
+ * anlegen, kopieren, umbenennen, löschen, Sperren) melden ihren Fehler sofort und zählen nur, solange sie abgewartet werden.
  */
 import type { ProjektordnerZugriff } from '@core/platform/projektordner';
 import { logger } from '@core/platform/log';
@@ -26,7 +26,7 @@ import type { Dateisystem } from './dateisystem';
 
 const log = logger('ausstehend');
 const laufend = new Set<Promise<unknown>>();
-/** gescheiterte Schreibbefehle des Bearbeitungsstands: Ziel (Befehl, Ordner, Datei) → Grund */
+/** gescheitertes Speichern eines Bearbeitungsstands: Datei (Ordner/Pfad) → Grund */
 const gescheitert = new Map<string, string>();
 const grundVon = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
@@ -54,13 +54,27 @@ export function klammer(): () => void {
 /** Zahl der laufenden Schreibvorgänge (für Tests) */
 export const laufendeSchreibvorgaenge = () => laufend.size;
 
-/** Schreiben eines Stands verfolgen und sein Ergebnis merken: gescheitert bleibt es, bis dasselbe Ziel gelingt */
-function standVerfolgen<T>(ziel: string, arbeit: Promise<T>): Promise<T> {
+const ziel = (root: string, pfad: string) => `${root}/${pfad}`;
+
+/**
+ * Speichern eines Bearbeitungsstands (Formular, Dokument, Projektkarte, Projektdatei) verfolgen und sein Ergebnis merken:
+ * gescheitert bleibt es „nicht gespeichert“, bis dieselbe Datei gelingt
+ */
+export function standSpeichern<T>(root: string, pfad: string, arbeit: Promise<T>): Promise<T> {
+  const z = ziel(root, pfad);
   arbeit.then(
-    () => void gescheitert.delete(ziel),
-    (e: unknown) => void gescheitert.set(ziel, grundVon(e)),
+    () => void gescheitert.delete(z),
+    (e: unknown) => void gescheitert.set(z, grundVon(e)),
   );
   return verfolgen(arbeit);
+}
+
+/** umbenannt bzw. gelöscht: der Merker wandert mit bzw. entfällt (sonst bliebe er am alten Namen, ohne Weg zum Auflösen) */
+function dateiBewegt(root: string, alt: string, neu: string | null) {
+  const grund = gescheitert.get(ziel(root, alt));
+  if (grund === undefined) return;
+  gescheitert.delete(ziel(root, alt));
+  if (neu !== null) gescheitert.set(ziel(root, neu), grund);
 }
 
 /** gemerkte Fehler vergessen (für Tests) */
@@ -133,8 +147,9 @@ const PO_ART = {
 const schreibend = (art: Record<string, string>) => new Set<PropertyKey>(Object.keys(art).filter((k) => art[k] === 'schreiben'));
 const DS_SCHREIBEN = schreibend(DS_ART);
 const PO_SCHREIBEN = schreibend(PO_ART);
-/** Schreibbefehle, die einen Bearbeitungsstand speichern (Ordner, Datei, …): ihr Fehler bleibt gemerkt, bis dieselbe Datei gelingt */
-const STAND = new Set<PropertyKey>(['ersetze', 'dokumentErsetzen', 'projektkarteSchreiben', 'projektdateiErsetzen'] satisfies (keyof Dateisystem | keyof ProjektordnerZugriff)[]);
+/** Befehle, die eine Datei umbenennen (Ordner, alt, neu, …) bzw. löschen (Ordner, Datei): der Merker folgt ihnen */
+const BEWEGT = new Set<PropertyKey>(['umbenennen', 'formularUmbenennen'] satisfies (keyof Dateisystem | keyof ProjektordnerZugriff)[]);
+const GELOESCHT = new Set<PropertyKey>(['loeschen'] satisfies (keyof Dateisystem)[]);
 
 /** Hülle um ein Objekt: die genannten Methoden liefern verfolgte Promises (jeder Zugriff liefert eine neu gebundene Funktion) */
 function umhuellt<T extends object>(ziel: T, schreiben: Set<PropertyKey>, weitere: (k: PropertyKey, wert: unknown) => unknown = (_k, w) => w): T {
@@ -144,8 +159,12 @@ function umhuellt<T extends object>(ziel: T, schreiben: Set<PropertyKey>, weiter
       if (typeof wert === 'function' && schreiben.has(k))
         return (...a: unknown[]) => {
           const arbeit = Promise.resolve((wert as (...x: unknown[]) => unknown).apply(t, a));
-          // Ziel: Befehl, Ordner und Datei (die ersten beiden Argumente aller Stand-Befehle)
-          return STAND.has(k) ? standVerfolgen(`${String(k)} ${String(a[0])}/${String(a[1])}`, arbeit) : verfolgen(arbeit);
+          if (BEWEGT.has(k) || GELOESCHT.has(k))
+            arbeit.then(
+              () => dateiBewegt(String(a[0]), String(a[1]), BEWEGT.has(k) ? String(a[2]) : null),
+              () => undefined,
+            );
+          return verfolgen(arbeit);
         };
       if (typeof wert === 'function') return (wert as (...x: unknown[]) => unknown).bind(t);
       return weitere(k, wert);
