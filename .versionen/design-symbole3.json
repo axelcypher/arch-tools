@@ -1,0 +1,30 @@
+{
+  "flaechenrechner": {
+    "stufe": "minor",
+    "notiz": "Neue Symbole „Grenze“ und „Ausrichten“; gemeinsamer Punkt für ungespeicherte Änderungen am Knopf „Speichern“; Menüs nur mit Lösch-Punkten: Fokus liegt auf dem Menü, Enter löscht nichts."
+  },
+  "grz": {
+    "stufe": "minor",
+    "notiz": "Neue Symbole „Grenze“ und „Ausrichten“; gemeinsamer Punkt für ungespeicherte Änderungen am Knopf „Speichern“; Menüs nur mit Lösch-Punkten: Fokus liegt auf dem Menü, Enter löscht nichts."
+  },
+  "kosten": {
+    "stufe": "minor",
+    "notiz": "Neue Symbole „Grenze“ und „Ausrichten“; gemeinsamer Punkt für ungespeicherte Änderungen am Knopf „Speichern“; Menüs nur mit Lösch-Punkten: Fokus liegt auf dem Menü, Enter löscht nichts."
+  },
+  "ordner": {
+    "stufe": "minor",
+    "notiz": "Neue Symbole „Grenze“ und „Ausrichten“; gemeinsamer Punkt für ungespeicherte Änderungen am Knopf „Speichern“; Menüs nur mit Lösch-Punkten: Fokus liegt auf dem Menü, Enter löscht nichts."
+  },
+  "entzerrung": {
+    "stufe": "minor",
+    "notiz": "Neue Symbole „Grenze“ und „Ausrichten“; gemeinsamer Punkt für ungespeicherte Änderungen am Knopf „Speichern“; Menüs nur mit Lösch-Punkten: Fokus liegt auf dem Menü, Enter löscht nichts."
+  },
+  "formulare": {
+    "stufe": "minor",
+    "notiz": "Neue Symbole „Grenze“ und „Ausrichten“; gemeinsamer Punkt für ungespeicherte Änderungen am Knopf „Speichern“; Menüs nur mit Lösch-Punkten: Fokus liegt auf dem Menü, Enter löscht nichts."
+  },
+  "ava": {
+    "stufe": "minor",
+    "notiz": "Neue Symbole „Grenze“ und „Ausrichten“; gemeinsamer Punkt für ungespeicherte Änderungen am Knopf „Speichern“; Menüs nur mit Lösch-Punkten: Fokus liegt auf dem Menü, Enter löscht nichts."
+  }
+}
