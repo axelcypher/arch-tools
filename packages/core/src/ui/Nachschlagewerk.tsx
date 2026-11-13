@@ -4,7 +4,7 @@ import { create } from 'zustand';
 import { externOeffnen } from '../platform/links';
 import type { Regel, RegelApp } from '../regeln/regelwerk';
 import { BEREICHE, suche } from '../regeln/regelwerk';
-import { useEscSchliessen } from './Dialog';
+import { Modal } from './Dialog';
 
 /**
  * Nachschlagewerk der Berechnungsregeln: zentral über die Titelleiste („Regeln“) und an den einzelnen Funktionen
@@ -136,57 +136,47 @@ export function Nachschlagewerk({ app }: { app: RegelApp }) {
     requestAnimationFrame(() => suchfeld.current?.focus());
   }, [offen, themen, regel]);
 
-  useEscSchliessen(schliessen, offen);
-
   const treffer = useMemo(() => suche(q, { app, themen: nurKontext && themen.length ? themen : undefined }).map((t) => t.regel), [q, app, themen, nurKontext]);
   const aktiv = treffer.find((r) => r.id === gewaehlt) ?? treffer[0];
 
   if (!offen) return null;
   return (
-    <div className="modal-backdrop" onPointerDown={(e) => e.target === e.currentTarget && schliessen()}>
-      <div
-        className="modal nachschlagewerk"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Berechnungsregeln"
-      >
-        <div className="nw-kopf">
-          <h3>Berechnungsregeln</h3>
-          <input ref={suchfeld} className="nw-suche" type="search" placeholder="Suchen, z. B. Vollgeschoss, Putzabzug, Balkon …" value={q} onChange={(e) => setQ(e.target.value)} />
-          {themen.length > 0 && (
-            <label className="toggle small-text" title="nur die Regeln, die an dieser Stelle gelten">
-              <input type="checkbox" checked={nurKontext} onChange={(e) => setNurKontext(e.target.checked)} />
-              nur {kontext ?? 'dieses Thema'}
-            </label>
-          )}
-          <button className="small" onClick={schliessen}>
-            Schließen
-          </button>
-        </div>
-        <div className="nw-inhalt">
-          <nav className="nw-liste">
-            {treffer.length === 0 && <p className="muted small-text">Keine Regel gefunden.</p>}
-            {(q.trim() ? [{ id: 'treffer', titel: `${treffer.length} Treffer` }] : BEREICHE).map((b) => {
-              const liste = q.trim() ? treffer : treffer.filter((r) => r.bereich === b.id);
-              if (!liste.length) return null;
-              return (
-                <div key={b.id} className="nw-gruppe">
-                  <div className="nw-gruppe-titel">{b.titel}</div>
-                  {liste.map((r) => (
-                    <button key={r.id} className={r.id === aktiv?.id ? 'nw-eintrag active' : 'nw-eintrag'} onClick={() => setGewaehlt(r.id)} title={r.kurz}>
-                      {r.titel}
-                    </button>
-                  ))}
-                </div>
-              );
-            })}
-          </nav>
-          <div className="nw-text">{aktiv ? <RegelAnsicht r={aktiv} /> : null}</div>
-        </div>
-        <p className="muted small-text nw-fuss">
-          Wörtliche Zitate aus den amtlichen Texten (Stand Oktober 2026); DIN-Normen sinngemäß. Maßgebend ist der jeweilige Originaltext – die Links führen zu den Quellen.
-        </p>
+    <Modal titel="Berechnungsregeln" kopf className="nachschlagewerk" onClose={schliessen}>
+      <div className="nw-kopf">
+        <input ref={suchfeld} className="nw-suche" type="search" placeholder="Suchen, z. B. Vollgeschoss, Putzabzug, Balkon …" value={q} onChange={(e) => setQ(e.target.value)} />
+        {themen.length > 0 && (
+          <label className="toggle small-text" title="nur die Regeln, die an dieser Stelle gelten">
+            <input type="checkbox" checked={nurKontext} onChange={(e) => setNurKontext(e.target.checked)} />
+            nur {kontext ?? 'dieses Thema'}
+          </label>
+        )}
+        <button className="small" onClick={schliessen}>
+          Schließen
+        </button>
       </div>
-    </div>
+      <div className="nw-inhalt">
+        <nav className="nw-liste">
+          {treffer.length === 0 && <p className="muted small-text">Keine Regel gefunden.</p>}
+          {(q.trim() ? [{ id: 'treffer', titel: `${treffer.length} Treffer` }] : BEREICHE).map((b) => {
+            const liste = q.trim() ? treffer : treffer.filter((r) => r.bereich === b.id);
+            if (!liste.length) return null;
+            return (
+              <div key={b.id} className="nw-gruppe">
+                <div className="nw-gruppe-titel">{b.titel}</div>
+                {liste.map((r) => (
+                  <button key={r.id} className={r.id === aktiv?.id ? 'nw-eintrag active' : 'nw-eintrag'} onClick={() => setGewaehlt(r.id)} title={r.kurz}>
+                    {r.titel}
+                  </button>
+                ))}
+              </div>
+            );
+          })}
+        </nav>
+        <div className="nw-text">{aktiv ? <RegelAnsicht r={aktiv} /> : null}</div>
+      </div>
+      <p className="muted small-text nw-fuss">
+        Wörtliche Zitate aus den amtlichen Texten (Stand Oktober 2026); DIN-Normen sinngemäß. Maßgebend ist der jeweilige Originaltext – die Links führen zu den Quellen.
+      </p>
+    </Modal>
   );
 }

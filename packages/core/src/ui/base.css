@@ -1432,18 +1432,14 @@ code {
   height: min(680px, 86vh);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--s2);
   overflow: hidden;
 }
 
 .log-head {
   display: flex;
   align-items: center;
-  gap: 10px;
-}
-
-.log-head h3 {
-  margin: 0 8px 0 0;
+  gap: var(--s3);
 }
 
 .log-search {
@@ -1618,19 +1614,14 @@ code {
   height: min(760px, 88vh);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--s2);
   overflow: hidden;
 }
 
 .nw-kopf {
   display: flex;
   align-items: center;
-  gap: 10px;
-}
-
-.nw-kopf h3 {
-  margin: 0;
-  white-space: nowrap;
+  gap: var(--s3);
 }
 
 .nw-suche {

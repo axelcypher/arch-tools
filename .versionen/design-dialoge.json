@@ -1,0 +1,34 @@
+{
+  "flaechenrechner": {
+    "stufe": "patch",
+    "notiz": "Fehlerprotokoll, Stammdaten-Dialog und Berechnungsregeln im gemeinsamen Dialograhmen: sichtbarer Titel, Esc und Fokus wie überall."
+  },
+  "grz": {
+    "stufe": "patch",
+    "notiz": "Fehlerprotokoll, Stammdaten-Dialog und Berechnungsregeln im gemeinsamen Dialograhmen: sichtbarer Titel, Esc und Fokus wie überall."
+  },
+  "kosten": {
+    "stufe": "patch",
+    "notiz": "Fehlerprotokoll, Stammdaten-Dialog und Berechnungsregeln im gemeinsamen Dialograhmen: sichtbarer Titel, Esc und Fokus wie überall."
+  },
+  "ordner": {
+    "stufe": "patch",
+    "notiz": "Fehlerprotokoll, Stammdaten-Dialog und Berechnungsregeln im gemeinsamen Dialograhmen: sichtbarer Titel, Esc und Fokus wie überall."
+  },
+  "entzerrung": {
+    "stufe": "patch",
+    "notiz": "Fehlerprotokoll, Stammdaten-Dialog und Berechnungsregeln im gemeinsamen Dialograhmen: sichtbarer Titel, Esc und Fokus wie überall."
+  },
+  "formulare": {
+    "stufe": "patch",
+    "notiz": "Fehlerprotokoll, Stammdaten-Dialog und Berechnungsregeln im gemeinsamen Dialograhmen: sichtbarer Titel, Esc und Fokus wie überall."
+  },
+  "ava": {
+    "stufe": "patch",
+    "notiz": "Fehlerprotokoll, Stammdaten-Dialog und Berechnungsregeln im gemeinsamen Dialograhmen: sichtbarer Titel, Esc und Fokus wie überall."
+  },
+  "baurecht": {
+    "stufe": "patch",
+    "notiz": "Fehlerprotokoll, Stammdaten-Dialog und Berechnungsregeln im gemeinsamen Dialograhmen: sichtbarer Titel, Esc und Fokus wie überall."
+  }
+}
