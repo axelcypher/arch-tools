@@ -183,26 +183,28 @@ export function GewerkAnsicht({ gewerk, tab }: { gewerk: string; tab: GewerkTab 
           </div>
         )}
       </div>
-      <div className="ava-tabs" role="tablist" aria-label="Bereiche des Gewerks" onKeyDown={tabTasten}>
-        {TABS.map((x) => (
-          <button
-            key={x.id}
-            id={`ava-tab-${x.id}`}
-            role="tab"
-            aria-label={x.text}
-            aria-selected={x.id === t.id}
-            aria-controls="ava-gewerk-inhalt"
-            tabIndex={x.id === t.id ? 0 : -1}
-            className={x.id === t.id ? 'active' : ''}
-            title={x.title}
-            onClick={() => zeigeTab(x.id)}
-          >
-            <span className="ava-tab-lang">{x.text}</span>
-            <span className="ava-tab-kurz" aria-hidden="true">
-              {x.kurz}
-            </span>
-          </button>
-        ))}
+      <div className="ava-tabs">
+        <div className="segment" role="tablist" aria-label="Bereiche des Gewerks" onKeyDown={tabTasten}>
+          {TABS.map((x) => (
+            <button
+              key={x.id}
+              id={`ava-tab-${x.id}`}
+              role="tab"
+              aria-label={x.text}
+              aria-selected={x.id === t.id}
+              aria-controls="ava-gewerk-inhalt"
+              tabIndex={x.id === t.id ? 0 : -1}
+              className={x.id === t.id ? 'active' : ''}
+              title={x.title}
+              onClick={() => zeigeTab(x.id)}
+            >
+              <span className="ava-tab-lang">{x.text}</span>
+              <span className="ava-tab-kurz" aria-hidden="true">
+                {x.kurz}
+              </span>
+            </button>
+          ))}
+        </div>
       </div>
       {fehler && <div className="warning">{fehler}</div>}
       <div className="ava-gewerk-inhalt" id="ava-gewerk-inhalt" role="tabpanel" aria-labelledby={`ava-tab-${t.id}`}>
