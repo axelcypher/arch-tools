@@ -298,8 +298,9 @@ export function App() {
   };
 
   /**
-   * Tab schließen (mit Rückfrage bei ungespeicherten Änderungen); true = geschlossen. Ohne Änderungen sofort (ohne
-   * await). `danach`: gleich nach dem Schließen, vor dem nächsten Zeichnen (z. B. Fokus festlegen)
+   * Tab schließen (mit Rückfrage bei ungespeicherten Änderungen); true = geschlossen. Ohne Änderungen und ohne
+   * angemeldete Vorbereitung sofort (ohne await); eine geladene App hat praktisch immer eine (gemeinsame Einstellungen),
+   * dann einen Takt später. `danach`: gleich nach dem Schließen (z. B. Fokus festlegen)
    */
   const tabSchliessen = async (id: string, danach?: () => void): Promise<boolean> => {
     // schon unterwegs (Rückfrage oder Warten offen): ein zweiter Klick, Entf oder „Andere schließen“ tut nichts
@@ -307,7 +308,7 @@ export function App() {
     schliesstGerade.current.add(id);
     try {
       if (useRahmen.getState().status[id]?.dirty && !(await tabFreigeben(id))) return false;
-      // ausstehendes Schreiben der App abwarten (vorDemSchliessen) – nur wenn sie etwas angemeldet hat, sonst sofort
+      // ausstehendes Schreiben der App abwarten (vorDemSchliessen; meist sofort fertig)
       if (tabBrauchtVorbereitung(rahmen.current.get(id)) && !(await tabVorbereiten(id, 'schließen'))) return false;
       schliessen(id);
       danach?.();
