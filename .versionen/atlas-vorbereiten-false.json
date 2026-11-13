@@ -1,1 +1,0 @@
-{ "ordner": { "stufe": "patch", "notiz": "Scheitert das Speichern der Struktur vor dem Schließen (etwa bei getrenntem Netzlaufwerk), fragt Arkly nach, statt die Änderung zu verlieren." } }
