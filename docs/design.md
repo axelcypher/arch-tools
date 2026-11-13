@@ -148,7 +148,8 @@ Varianten je App (`.mv-umschalter`, `.ava-tabs`, `.view-switch`).
 
 Als Registerleiste (Bereiche wechseln, der Inhalt darunter tauscht sich) mit `role="tablist"`, Knöpfen mit
 `role="tab"` und `aria-selected`; `.segment` färbt `aria-selected="true"` wie `aria-pressed`. ←/→ wechseln zwischen den
-Registern.
+Registern, Pos1/Ende springen zum ersten bzw. letzten; der Wechsel wirkt sofort (automatische Aktivierung). Nur das
+gewählte Register liegt in der Tab-Reihenfolge (`tabIndex` 0, die übrigen -1).
 
 ```html
 <div class="segment" role="group" aria-label="Ansicht">

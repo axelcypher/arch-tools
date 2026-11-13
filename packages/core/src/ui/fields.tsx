@@ -36,7 +36,15 @@ function enterUebernehmen(e: ReactKeyboardEvent<HTMLInputElement>) {
   const form = el.form;
   el.blur();
   if (!form) return;
-  const knopf = form.querySelector<HTMLButtonElement | HTMLInputElement>('button[type="submit"], input[type="submit"], button:not([type])');
+  // Hauptknopf: der als .primary markierte Absendeknopf, sonst der erste (wie der Browser)
+  const absende = 'button[type="submit"], input[type="submit"], button:not([type])';
+  const knopf =
+    form.querySelector<HTMLButtonElement | HTMLInputElement>(
+      absende
+        .split(', ')
+        .map((x) => `${x}.primary`)
+        .join(', '),
+    ) ?? form.querySelector<HTMLButtonElement | HTMLInputElement>(absende);
   if (knopf?.disabled) return;
   setTimeout(() => form.isConnected && form.requestSubmit(knopf ?? undefined), 0);
 }
