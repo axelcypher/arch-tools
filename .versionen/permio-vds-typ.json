@@ -1,3 +1,0 @@
-{
-  "formulare": { "stufe": "patch", "notiz": "Interne Bereinigung: Abwarten laufender Schreibvorgänge vor dem Schließen ohne Typumwandlung, mit Test für gescheitertes Speichern." }
-}
