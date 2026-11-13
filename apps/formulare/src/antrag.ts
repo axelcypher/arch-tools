@@ -1594,6 +1594,18 @@ export function dateiImAntrag(u: UmfangEintrag, dateien: Eintrag[], fassung: str
   return neueste(pdfs.length ? pdfs : kandidaten, codes);
 }
 
+/**
+ * PDF eines Formulars, das keinem Dokument des Antragsumfangs zugeordnet ist (oberste Ebene im Sammelprojekt): nach
+ * dem Namen ohne Nummer und Jahr („003-Baubeschreibung (2026)“ → „Baubeschreibung“), wie der Export ihn vergibt – nur
+ * unter den Dateien im Ordner der Fassung, die noch keinem Dokument gehören (`vergeben`, Pfade klein)
+ */
+export function pdfOhneZuordnung(formularName: string, dateien: Eintrag[], vergeben: Set<string>, codes: string[] = []): Eintrag | null {
+  const name = anzeigeName(formularName);
+  const frei = dateien.filter((d) => !vergeben.has(d.pfad.toLowerCase()));
+  // ohne Fassung: ein solches Formular hat keine verknüpfte Datei je Fassung; die Dateien stammen schon aus dem Ordner der aktiven
+  return dateiImAntrag({ id: `ohne:${formularName}`, titel: name, art: 'intern', formular: name }, frei, '', codes);
+}
+
 /** Quelle eines externen Dokuments (z. B. die Berechnung) – die neueste passende Datei (nach dem Datum im Namen, sonst der Änderungszeit) */
 export function quelleVon(u: UmfangEintrag, dateien: Eintrag[], codes: string[] = []): Eintrag | null {
   return neueste(
@@ -1609,6 +1621,63 @@ export function quelleVon(u: UmfangEintrag, dateien: Eintrag[], codes: string[] 
 export function formularSchluessel(pfad: string): string {
   const teile = pfad.split('/');
   return teile.length > 2 ? teile.slice(1).join('/') : teile[teile.length - 1];
+}
+
+/**
+ * Ein Formular wurde umbenannt: seine Verweise im Abschnitt „formulare“ der Projektdatei (roh, wie gespeichert)
+ * mitnehmen – in **allen** Anträgen (und den früher projektweiten Angaben) die Zuordnung im Antragsumfang
+ * (`formularDatei`) und den Autofill-Zustand (`felder`, je Formular). `alt`/`neu` sind Schlüssel nach
+ * formularSchluessel. Liegt das Formular im Unterordner eines Sammelprojekts, gilt in den Anträgen, zu denen der
+ * Unterordner gehört (`gehoertZu`), auch eine ältere Zuordnung nur mit dem Dateinamen. Einträge ohne `formularDatei`,
+ * die das Formular nur über Name bzw. Titel finden und unter dem neuen Namen nicht mehr fänden (`festschreiben`, je
+ * Antrag – null: die früher projektweiten Angaben),
+ * bekommen den neuen Schlüssel fest. Liefert eine Kopie und die Zahl der umgeschriebenen Verweise; sonst bleibt alles,
+ * wie es ist.
+ */
+export function formularVerweiseUmbenennen(
+  abschnitt: unknown,
+  alt: string,
+  neu: string,
+  gehoertZu: (fassung: string) => boolean = () => false,
+  festschreiben: (u: UmfangEintrag, fassung: string | null) => boolean = () => false,
+): { abschnitt: unknown; anzahl: number } {
+  if (!abschnitt || typeof abschnitt !== 'object') return { abschnitt, anzahl: 0 };
+  const kopie = structuredClone(abschnitt) as Record<string, unknown>;
+  const altKlein = alt.toLowerCase();
+  const nameKlein = alt.includes('/') ? nurName(alt).toLowerCase() : null;
+  let anzahl = 0;
+  const umschreiben = (d: unknown, auchName: boolean, fassung: string | null) => {
+    if (!d || typeof d !== 'object') return;
+    const o = d as Record<string, unknown>;
+    const passt = (v: string) => v.toLowerCase() === altKlein || (auchName && nameKlein !== null && v.toLowerCase() === nameKlein);
+    if (Array.isArray(o.umfang))
+      for (const u of o.umfang as unknown[]) {
+        const e = u as Record<string, unknown> | null;
+        if (e && typeof e.formularDatei === 'string' && passt(e.formularDatei)) {
+          e.formularDatei = neu;
+          anzahl++;
+        } else if (e && e.formularDatei === undefined && e.art === 'intern' && festschreiben(e as unknown as UmfangEintrag, fassung)) {
+          // bisher nur über Name bzw. Titel gefunden – unter dem neuen Namen passte das nicht mehr: festschreiben
+          e.formularDatei = neu;
+          anzahl++;
+        }
+      }
+    if (o.felder && typeof o.felder === 'object' && !Array.isArray(o.felder)) {
+      const felder = o.felder as Record<string, unknown>;
+      // genau der Schlüssel geht vor einer älteren Angabe nur mit dem Dateinamen
+      const k = Object.keys(felder).find((x) => x.toLowerCase() === altKlein) ?? (auchName ? Object.keys(felder).find((x) => passt(x)) : undefined);
+      if (k !== undefined) {
+        const wert = felder[k];
+        delete felder[k];
+        felder[neu] = wert;
+        anzahl++;
+      }
+    }
+  };
+  umschreiben(kopie, false, null);
+  if (kopie.antraege && typeof kopie.antraege === 'object' && !Array.isArray(kopie.antraege))
+    for (const [fassung, d] of Object.entries(kopie.antraege as Record<string, unknown>)) umschreiben(d, gehoertZu(fassung), fassung);
+  return { abschnitt: anzahl ? kopie : abschnitt, anzahl };
 }
 
 /** Das Formular eines internen Dokuments im Formularprojekt: zugeordnet, sonst nach Name oder Kennung */

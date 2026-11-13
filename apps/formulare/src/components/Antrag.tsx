@@ -24,8 +24,8 @@ import { Griff, useSortieren } from './Sortieren';
 import { Symbol } from './Symbol';
 
 /** Farbpunkt für den Status eines Dokuments */
-export function StatusPunkt({ status, titel }: { status: Status; titel?: string }) {
-  return <span className={`st-punkt ${status}`} role="img" aria-label={titel ?? STATUS_TEXT[status]} title={titel ?? STATUS_TEXT[status]} />;
+export function StatusPunkt({ status, titel, neben = false }: { status: Status; titel?: string; /** blasser: das Formular steht nicht im Antragsumfang des aktiven Antrags (zählt nicht mit) */ neben?: boolean }) {
+  return <span className={`st-punkt ${status}${neben ? ' neben' : ''}`} role="img" aria-label={titel ?? STATUS_TEXT[status]} title={titel ?? STATUS_TEXT[status]} />;
 }
 
 /** Zusammenfassung „5 von 8 aktuell“ */
