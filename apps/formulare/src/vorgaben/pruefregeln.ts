@@ -38,15 +38,25 @@ const antrag: Pruefregeln = {
 export const PRUEFREGELN: Record<string, Pruefregeln> = {
   'nw010001|2026I': antrag,
   'nw010002|2026I': antrag,
-  'nw010002|2024D': antrag,
+  // ältere Fassung ohne Kästchen für Mittelgaragen: beim Sonderbau entfällt Nr. 10/14 – für die Mittelgarage nicht
+  'nw010002|2024D': {
+    ...antrag,
+    hinweise: [
+      {
+        bedingung: wenn(ist('Sonderbau', 'ja')),
+        text: 'Antragsmerkmal Sonderbau: ja – ist es eine Garage über 100 m² bis 1.000 m² (Mittelgarage), braucht sie trotzdem die Bescheinigung von Prüfsachverständigen für Brandschutz (Nr. 10): Ihren Brandschutz prüft die Bauaufsichtsbehörde nicht.',
+        quellen: [q('bauo-nrw', '68', 2, 3), q('bauo-nrw', '64', 1, 2)],
+      },
+    ],
+  },
   'nw010005|2026I': {
     merkmalFelder: { Gebäudeklasse: { '1': '0:CheckBox8', '2': '0:CheckBox9', '3': '0:CheckBox10', '4': '0:CheckBox11', '5': '0:CheckBox12' }, Gebäudeart: KEIN_GEBAEUDE },
     mehrfach: { 'v:gebaeudeklasse': MEHRERE_GEBAEUDEKLASSEN },
     hinweise: [
       {
         bedingung: wenn(ist('Sonderbau', 'ja')),
-        text: 'Antragsmerkmal Sonderbau: ja – Sonderbauten (außer Solaranlagen) sind von der Genehmigungsfreistellung ausgeschlossen (§ 63 Abs. 1 Satz 2 BauO NRW 2018).',
-        quellen: [q('bauo-nrw', '63', 1, 2)],
+        text: 'Antragsmerkmal Sonderbau: ja – Sonderbauten (außer Solaranlagen) sind von der Genehmigungsfreistellung ausgeschlossen (§ 63 Abs. 1 Satz 2 BauO NRW 2018). Garagen über 100 m² bis 1.000 m², die einer freigestellten Anlage dienen, sind freistellungsfähig (§ 63 Abs. 2 Satz 3).',
+        quellen: [q('bauo-nrw', '63', 1, 2), q('bauo-nrw', '63', 2, 3)],
       },
     ],
   },
@@ -54,7 +64,8 @@ export const PRUEFREGELN: Record<string, Pruefregeln> = {
   'nw010003|2022B': {
     hinweise: [
       {
-        text: 'Das referenzielle Baugenehmigungsverfahren (§ 66 Abs. 5 und 6 BauO NRW 2018 a. F.) ist seit 01.01.2024 aufgehoben – diesen Vordruck nicht mehr verwenden.',
+        text: 'Das referenzielle Baugenehmigungsverfahren (§ 66 Abs. 5 und 6 BauO NRW 2018 a. F.) ist seit 01.01.2024 aufgehoben – für neue Vorhaben gibt es diesen Vordruck nicht mehr; nur Verfahren, die vorher eingeleitet wurden, werden nach altem Verfahrensrecht fortgeführt.',
+        quellen: [q('bauo-nrw', '90', 4)],
       },
     ],
   },

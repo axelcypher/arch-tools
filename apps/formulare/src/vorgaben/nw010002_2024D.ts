@@ -33,25 +33,22 @@
  * - Unterschriften: „die Vordrucke müssen nicht unterschrieben werden“ – zählen nicht.
  */
 
-import type { Teilbedingung } from '../bedingung';
 import type { FormularProfil } from '../profil';
-import { MIT_BETRIEB, brandschutzBescheinigung, keinEinfamilienhaus, nurBebauungsplan, nurInnenAussenBasiskarte, nurInnenAussenFlurkarte, ohneHerstellungssumme } from './grundlagen';
+import { MIT_BETRIEB, brandschutzBescheinigung, gebaeudeImVordruck, keinEinfamilienhaus, nurBebauungsplan, nurGebaeudeStatistik, nurInnenAussenBasiskarte, nurInnenAussenFlurkarte, ohneHerstellungssumme } from './grundlagen';
 import { angekreuzt, begruendet, fuer, gruppeV, ist, oder, q, s, und, wenn, zaehltNicht } from './hilfen';
 import { nachweise } from './vordruck2018';
 
 const s0 = s(0);
 const s1 = s(1);
-/** Feld leer bzw. Kästchen nicht angekreuzt */
-const leer = (feld: string): Teilbedingung => ({ art: 'feld', feld, pruefung: 'leer' });
 
 const bauantrag = angekreuzt('0:CheckBox1');
 const vorbescheid = wenn(angekreuzt('0:CheckBox2'));
 const sonderbau = oder(ist('Sonderbau', 'ja'), angekreuzt('0:CheckBox21'), angekreuzt('0:CheckBox3'));
-/** ein Gebäude: „Sonstige bauliche Anlagen“ nicht angekreuzt */
-const gebaeude = wenn(leer('0:CheckBox22'));
+/** ein Gebäude: „Sonstige bauliche Anlagen“ nicht angekreuzt oder eine Gebäudeklasse angekreuzt (siehe gebaeudeImVordruck) */
+const gebaeude = gebaeudeImVordruck('0:CheckBox22', s0('CheckBox4', 'CheckBox5', 'CheckBox6', 'CheckBox7', 'CheckBox8'));
 /** Nr. 11 Schall- und Wärmeschutz: nur bei Gebäuden, nicht bei Wohngebäuden der Gebäudeklassen 1 und 2 */
 const schallWaerme = begruendet(
-  und(nachweise.nichtAbsatz2Gebaeude, leer('0:CheckBox22')),
+  und(nachweise.nichtAbsatz2Gebaeude, gebaeude),
   `${nachweise.nichtAbsatz2Gebaeude.grund} Bei baulichen Anlagen, die keine Gebäude sind („Sonstige bauliche Anlagen“), entfallen sie ebenfalls.`,
   ...(nachweise.nichtAbsatz2Gebaeude.quellen ?? []),
 );
@@ -183,7 +180,7 @@ export const nw010002_2024D: FormularProfil = {
     // beim Sonderbau weder Erklärung noch Bescheinigung: die Bauaufsichtsbehörde prüft (wie Fassung 2026)
     gruppeV('brandschutz', 'Nr. 10 Bescheinigung oder Nr. 14 Erklärung zum Brandschutz', 'eins', s1('CheckBox12', 'CheckBox22'), {
       bedingung: begruendet(
-        und(ist('Sonderbau', 'nein'), leer('0:CheckBox22')),
+        und(ist('Sonderbau', 'nein'), gebaeude),
         'Bei Sonderbauten prüft die Bauaufsichtsbehörde den Brandschutz (auch durch Prüfingenieure); bei baulichen Anlagen, die keine Gebäude sind, entfällt die Angabe. Garagen über 100 m² bis 1.000 m² (Mittelgaragen) brauchen auch als Sonderbau die Bescheinigung – das selbst prüfen.',
         q('bauo-nrw', '68', 2, 5),
         q('bauo-nrw', '68', 2, 3),
@@ -206,8 +203,9 @@ export const nw010002_2024D: FormularProfil = {
     '1:CheckBox3': nurInnenAussenFlurkarte,
     '1:CheckBox4': nurInnenAussenBasiskarte,
     '1:CheckBox6': keinEinfamilienhaus,
-    '1:CheckBox7': ohneHerstellungssumme('0:CheckBox22'),
-    '1:CheckBox8': ohneHerstellungssumme('0:CheckBox22'),
+    '1:CheckBox7': ohneHerstellungssumme(gebaeude),
+    '1:CheckBox8': ohneHerstellungssumme(gebaeude),
+    '1:CheckBox20': nurGebaeudeStatistik(gebaeude),
     '1:Memo1': wenn(angekreuzt('1:CheckBox9')),
     '1:CheckBox10': begruendet(
       wenn(MIT_BETRIEB),

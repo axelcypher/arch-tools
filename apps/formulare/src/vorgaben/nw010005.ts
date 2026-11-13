@@ -13,13 +13,15 @@
 
 import type { FormularProfil } from '../profil';
 import { zusammen } from './antrag';
-import { keinEinfamilienhaus, nurBebauungsplan, ohneHerstellungssumme } from './grundlagen';
+import { gebaeudeImVordruck, keinEinfamilienhaus, nurBebauungsplan, nurGebaeudeStatistik, ohneHerstellungssumme } from './grundlagen';
 import { angekreuzt, begruendet, gruppeV, ist, oder, q, s, und, wenn, zaehltNicht } from './hilfen';
 
 const s0 = s(0);
 const s1 = s(1);
 const ja = angekreuzt('0:CheckBox1');
 const nein = angekreuzt('0:CheckBox2');
+/** ein Gebäude: „Sonstige bauliche Anlagen“ nicht angekreuzt oder eine Gebäudeklasse angekreuzt */
+const gebaeude = gebaeudeImVordruck('0:CheckBox22', s0('CheckBox8', 'CheckBox9', 'CheckBox10', 'CheckBox11', 'CheckBox12'));
 
 export const nw010005_2026I: FormularProfil = zusammen({
   abschnitte: {
@@ -101,8 +103,9 @@ export const nw010005_2026I: FormularProfil = zusammen({
     '1:CheckBox2': nurBebauungsplan,
     '1:CheckBox12': nurBebauungsplan,
     '1:CheckBox14': keinEinfamilienhaus,
-    '1:CheckBox15': ohneHerstellungssumme('0:CheckBox22'),
-    '1:CheckBox16': ohneHerstellungssumme('0:CheckBox22'),
+    '1:CheckBox15': ohneHerstellungssumme(gebaeude),
+    '1:CheckBox16': ohneHerstellungssumme(gebaeude),
+    '1:CheckBox6': nurGebaeudeStatistik(gebaeude),
     '1:Memo1': wenn(angekreuzt('1:CheckBox17')),
     // Erklärung zum Brandschutz: bei Gebäudeklasse 1 und 2 immer (Merkmal oder Kästchen), bei Gebäudeklasse 3 bei „ja“
     // (R-03); bei Gebäudeklasse 4 und 5 genügt die Erklärung nicht

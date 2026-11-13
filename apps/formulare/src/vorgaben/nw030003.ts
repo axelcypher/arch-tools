@@ -47,7 +47,7 @@ export const nw030003_2021L: FormularProfil = zusammen(anzeigeKopf, grundstueck(
   gruppen: [
     gruppeV('einmessung', 'Gebäudeeinmessung: Katasterbehörde oder Vermessungsingenieur/in beauftragt', 'eins', s0('CheckBox1', 'CheckBox2'), {
       bedingung: begruendet(
-        und(ist('Vorhaben', 'Errichtung', 'Änderung'), istNicht('Gebäudeart', 'kein Gebäude')),
+        und(ist('Vorhaben', 'Errichtung', 'Erweiterung', 'Änderung'), istNicht('Gebäudeart', 'kein Gebäude')),
         'Die Gebäudeeinmessung ist für neu errichtete Gebäude und für Gebäude, deren Grundriss sich durch die Änderung verändert, zu beauftragen (§ 16 Abs. 2 Vermessungs- und Katastergesetz NRW, siehe Merkblatt Anlage I/11) – bei einer Änderung ohne veränderten Grundriss selbst als „zählt nicht“ einstellen.',
       ),
     }),

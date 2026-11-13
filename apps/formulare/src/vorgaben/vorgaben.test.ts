@@ -266,6 +266,20 @@ const FAELLE: [string, string, string, string | null, Record<string, string>, Re
   ['I/2 Nr. 7.2 Rohbaukosten, Sonstige bauliche Anlage angekreuzt', I2, '1:CheckBox8', '1:Panel1', { Vorhaben: 'Errichtung' }, { ...BA, '0:CheckBox22': true }, 'entfällt'],
   ['I/2 Nr. 7.1 Rauminhalt, Errichtung eines Gebäudes', I2, '1:CheckBox7', '1:Panel1', { Vorhaben: 'Errichtung', Gebäudeart: 'Mehrfamilienhaus' }, BA, 'erforderlich'],
   ['I/2 Nr. 7.3 Herstellungssumme, Änderung', I2, '1:CheckBox9', '1:Panel1', { Vorhaben: 'Änderung' }, BA, 'erforderlich'],
+  // Erweiterung (Anbau, Aufstockung): Brutto-Rauminhalt wie bei der Errichtung (§ 6 Nr. 1 BauPrüfVO, Tarifstelle 3.1.4.1)
+  ['I/2 Nr. 7.1 Rauminhalt, Erweiterung', I2, '1:CheckBox7', '1:Panel1', { Vorhaben: 'Erweiterung' }, BA, 'erforderlich'],
+  ['I/1 Nr. 10.1 Rauminhalt, Erweiterung', I1, '1:CheckBox34', '1:Panel1', { Vorhaben: 'Erweiterung' }, BA, 'erforderlich'],
+  ['Fertigstellung Gebäudeeinmessung, Erweiterung', FERTIG, '0:CheckBox1', null, { Vorhaben: 'Erweiterung', Gebäudeart: 'Einfamilienhaus' }, {}, 'erforderlich'],
+  // Gebäude und weitere Anlage in einem Antrag: eine angekreuzte Gebäudeklasse hält die Angaben für das Gebäude
+  ['I/2 Nr. 11.2 Bescheinigung, GK 4 und Sonstige bauliche Anlage angekreuzt', I2, '2:CheckBox5', '2:Panel3', { Gebäudeklasse: '4', Sonderbau: 'nein' }, { ...BA, '0:CheckBox22': true, '0:CheckBox7': true }, 'erforderlich'],
+  ['I/2 Nr. 7.1 Rauminhalt, GK 3 und Sonstige bauliche Anlage angekreuzt', I2, '1:CheckBox7', '1:Panel1', { Vorhaben: 'Errichtung' }, { ...BA, '0:CheckBox22': true, '0:CheckBox6': true }, 'erforderlich'],
+  ['I/2 (2024D) Nr. 14 Erklärung, GK 2 und Sonstige bauliche Anlagen angekreuzt', I2_24, '1:CheckBox22', '1:Panel1', { Gebäudeklasse: '2', Sonderbau: 'nein' }, { ...BA, '0:CheckBox22': true, '0:CheckBox5': true }, 'erforderlich'],
+  ['I/3 Nr. 2.5.1 Rauminhalt, GK 1 und Sonstige bauliche Anlagen angekreuzt', I3, '1:CheckBox15', '1:Panel10', { Vorhaben: 'Errichtung' }, { '0:CheckBox1': true, '0:CheckBox22': true, '0:CheckBox8': true }, 'erforderlich'],
+  // Baustatistik nur bei Gebäuden – in allen Bauanträgen
+  ['I/1 Nr. 12 Baustatistik, Sonstige bauliche Anlage angekreuzt', I1, '2:CheckBox6', '2:Panel4', {}, { ...BA, '0:CheckBox22': true }, 'entfällt'],
+  ['I/2 (2024D) Nr. 12 Baustatistik, Sonstige bauliche Anlagen angekreuzt', I2_24, '1:CheckBox20', '1:Panel1', {}, { ...BA, '0:CheckBox22': true }, 'entfällt'],
+  ['I/3 Nr. 4 Baustatistik, Sonstige bauliche Anlagen angekreuzt', I3, '1:CheckBox6', '1:Panel6', {}, { '0:CheckBox22': true }, 'entfällt'],
+  ['I/3 Nr. 4 Baustatistik, Gebäude', I3, '1:CheckBox6', '1:Panel6', {}, {}, 'erforderlich'],
   ['I/2 Nr. 7.1 Rauminhalt, Vorhaben nicht festgelegt', I2, '1:CheckBox7', '1:Panel1', {}, BA, 'offen'],
   ['I/1 Nr. 10.1 Rauminhalt, Änderung', I1, '1:CheckBox34', '1:Panel1', { Vorhaben: 'Änderung' }, BA, 'entfällt'],
   ['I/2 (2024D) Nr. 7.1 Rauminhalt, Änderung', I2_24, '1:CheckBox7', '1:Panel1', { Vorhaben: 'Änderung' }, BA, 'entfällt'],

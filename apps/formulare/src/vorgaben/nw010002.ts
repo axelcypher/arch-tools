@@ -22,7 +22,7 @@
 
 import type { FormularProfil } from '../profil';
 import { blatt2, kopf, personen, unterschriften, zusammen } from './antrag';
-import { MIT_BETRIEB, brandschutzBescheinigung, keinEinfamilienhaus, nurBebauungsplan, nurInnenAussenBasiskarte, nurInnenAussenFlurkarte, ohneHerstellungssumme } from './grundlagen';
+import { MIT_BETRIEB, brandschutzBescheinigung, gebaeudeImVordruck, keinEinfamilienhaus, nurBebauungsplan, nurGebaeudeStatistik, nurInnenAussenBasiskarte, nurInnenAussenFlurkarte, ohneHerstellungssumme } from './grundlagen';
 import { angekreuzt, begruendet, gruppeV, ist, nichtAngekreuzt, oder, q, s, und, wenn, zaehltNicht } from './hilfen';
 
 const s0 = s(0);
@@ -32,8 +32,8 @@ const bauantrag = angekreuzt('0:CheckBox1');
 const sonderbau = oder(ist('Sonderbau', 'ja'), angekreuzt('0:CheckBox26'), angekreuzt('0:CheckBox25'));
 /** Garage mit über 100 m² bis 1.000 m² Nutzfläche (Mittelgarage) */
 const mittelgarage = angekreuzt('0:CheckBox24');
-/** ein Gebäude: „Sonstige bauliche Anlage“ nicht angekreuzt (aus dem Merkmal „Gebäudeart: kein Gebäude“ vorbelegt, pruefregeln.ts) */
-const gebaeude = [nichtAngekreuzt('0:CheckBox22')];
+/** ein Gebäude: „Sonstige bauliche Anlage“ nicht angekreuzt oder eine Gebäudeklasse angekreuzt (siehe gebaeudeImVordruck) */
+const gebaeude = gebaeudeImVordruck('0:CheckBox22', s0('CheckBox4', 'CheckBox5', 'CheckBox6', 'CheckBox7', 'CheckBox8'));
 const NUR_GEBAEUDE = 'Nur bei Gebäuden – nicht bei baulichen Anlagen, die keine Gebäude sind („Sonstige bauliche Anlage“).';
 
 export const nw010002_2026I: FormularProfil = zusammen(kopf, personen, blatt2, unterschriften(2), {
@@ -75,14 +75,14 @@ export const nw010002_2026I: FormularProfil = zusammen(kopf, personen, blatt2, u
   zaehlt: zaehltNicht('2:CheckBox3'),
   gruppen: [
     gruppeV('art', 'Art des Gebäudes (alle zutreffenden)', 'eins', s0('CheckBox28', 'CheckBox26', 'CheckBox27', 'CheckBox25', 'CheckBox24'), {
-      bedingung: begruendet(und(...gebaeude), NUR_GEBAEUDE),
+      bedingung: begruendet(gebaeude, NUR_GEBAEUDE),
     }),
     gruppeV('kosten', 'Nr. 7 Rauminhalt, Rohbaukosten oder Herstellungssumme', 'eins', s1('CheckBox7', 'CheckBox8', 'CheckBox9')),
     // beim Sonderbau weder Erklärung noch Bescheinigung: die Bauaufsichtsbehörde prüft (R-06) – außer bei der
     // Mittelgarage: deren Brandschutz prüft sie nicht, die Bescheinigung ist Pflicht
     gruppeV('brandschutz', 'Nr. 11 Erklärung oder Bescheinigung zum Brandschutz', 'eins', s2('CheckBox4', 'CheckBox5'), {
       bedingung: begruendet(
-        oder(mittelgarage, und(ist('Sonderbau', 'nein'), ...gebaeude)),
+        oder(mittelgarage, und(ist('Sonderbau', 'nein'), gebaeude)),
         'Bei Sonderbauten prüft die Bauaufsichtsbehörde den Brandschutz (auch durch Prüfingenieure) – außer bei Garagen bis 1.000 m² Nutzfläche: Für Mittelgaragen bleibt die Bescheinigung (Nr. 11.2) Pflicht. Bei baulichen Anlagen, die keine Gebäude sind, entfällt Nr. 11.',
         q('bauo-nrw', '68', 2, 5),
         q('bauo-nrw', '64', 1, 2),
@@ -95,8 +95,8 @@ export const nw010002_2026I: FormularProfil = zusammen(kopf, personen, blatt2, u
     '1:CheckBox3': nurInnenAussenFlurkarte,
     '1:CheckBox4': nurInnenAussenBasiskarte,
     '1:CheckBox6': keinEinfamilienhaus,
-    '1:CheckBox7': ohneHerstellungssumme('0:CheckBox22'),
-    '1:CheckBox8': ohneHerstellungssumme('0:CheckBox22'),
+    '1:CheckBox7': ohneHerstellungssumme(gebaeude),
+    '1:CheckBox8': ohneHerstellungssumme(gebaeude),
     '1:Memo5': wenn(angekreuzt('1:CheckBox9')),
     '2:CheckBox1': begruendet(
       und(bauantrag, MIT_BETRIEB),
@@ -115,16 +115,13 @@ export const nw010002_2026I: FormularProfil = zusammen(kopf, personen, blatt2, u
     ),
     '2:CheckBox4': begruendet(
       und(ist('Gebäudeklasse', '1', '2', '3'), ist('Sonderbau', 'nein'), nichtAngekreuzt('0:CheckBox24')),
-      'Die Erklärung der Entwurfsverfassenden genügt bei Gebäuden der Gebäudeklassen 1 bis 3 und Kleingaragen – bei einer Mittelgarage (über 100 m² bis 1.000 m²) nicht: Dann ist die Bescheinigung von Prüfsachverständigen nötig (Nr. 11.2). Bei Sonderbauten prüft die Bauaufsichtsbehörde den Brandschutz (auch durch Prüfingenieure) – dann gehört das Brandschutzkonzept/der Brandschutznachweis zu Nr. 9.',
+      'Die Erklärung der Entwurfsverfassenden genügt bei Gebäuden der Gebäudeklassen 1 bis 3 und Kleingaragen – für eine Mittelgarage (über 100 m² bis 1.000 m²) nicht: Für sie ist die Bescheinigung von Prüfsachverständigen nötig (Nr. 11.2); für ein Gebäude der Gebäudeklassen 1 bis 3 daneben bleibt die Erklärung zulässig. Bei Sonderbauten prüft die Bauaufsichtsbehörde den Brandschutz (auch durch Prüfingenieure) – dann gehört das Brandschutzkonzept/der Brandschutznachweis zu Nr. 9.',
       q('bauo-nrw', '68', 2, 2),
       q('bauo-nrw', '68', 2, 3),
       q('bauo-nrw', '68', 2, 5),
     ),
     '2:CheckBox5': brandschutzBescheinigung(oder(und(ist('Gebäudeklasse', '4', '5'), ist('Sonderbau', 'nein')), mittelgarage)),
-    '2:CheckBox6': begruendet(
-      und(bauantrag, ...gebaeude),
-      'Der Erhebungsbogen für die Baustatistik gehört nur zum Bauantrag (nicht zum Vorbescheid) und nur zu Baumaßnahmen im Hochbau, bei denen Wohn- oder Nutzraum geschaffen oder verändert wird – nicht zu baulichen Anlagen, die keine Gebäude sind (§ 2 Hochbaustatistikgesetz).',
-    ),
+    '2:CheckBox6': nurGebaeudeStatistik(gebaeude, bauantrag),
     '2:CheckBox7': wenn(bauantrag),
   },
 });

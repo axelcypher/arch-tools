@@ -88,7 +88,10 @@ describe('Plausibilität', () => {
     const m = pruefen(bytes, 'nw010005|2026I', { Sonderbau: 'ja' });
     expect(m.map((x) => x.art)).toEqual(['fehler', 'hinweis']);
     expect(m[1].text).toContain('Sonderbauten (außer Solaranlagen) sind von der Genehmigungsfreistellung ausgeschlossen (§ 63 Abs. 1 Satz 2 BauO NRW 2018)');
-    expect(m[1].quellen).toEqual([{ gesetz: 'bauo-nrw', paragraf: '63', absatz: 1, satz: 2 }]);
+    expect(m[1].quellen).toEqual([
+      { gesetz: 'bauo-nrw', paragraf: '63', absatz: 1, satz: 2 },
+      { gesetz: 'bauo-nrw', paragraf: '63', absatz: 2, satz: 3 },
+    ]);
     expect(pruefen(bytes, 'nw010005|2026I', { Sonderbau: 'nein' }).map((x) => x.art)).toEqual(['fehler']);
   });
 

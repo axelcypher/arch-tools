@@ -3,7 +3,8 @@
  * wenn es deshalb entfällt; ein Klick öffnet den Paragrafen.
  */
 
-import { begruendet, ist, istNicht, nichtAngekreuzt, oder, q, und, wenn } from './hilfen';
+import type { BedingungTeil } from '../bedingung';
+import { angekreuzt, begruendet, ist, istNicht, nichtAngekreuzt, oder, q, und, wenn } from './hilfen';
 
 /**
  * Planungsrecht (R-25): „Bebauungsplan“ ist der qualifizierte oder vorhabenbezogene (§ 30 Abs. 1, 2 BauGB). Im
@@ -91,17 +92,31 @@ export const barrierefrei = begruendet(
 );
 
 /**
- * Rauminhalt (DIN 277) bzw. Rohbaukosten genügen nicht bei einer Änderung und bei baulichen Anlagen, die keine Gebäude
- * sind: Dann ist die Herstellungssumme anzugeben (Hinweis der Vordrucke; Gebührenberechnung). Ob es ein Gebäude ist,
- * sagt das Kästchen „Sonstige bauliche Anlage“ des Vordrucks (`sonstigeAnlage`) – es wird aus dem Merkmal „Gebäudeart:
- * kein Gebäude“ vorbelegt (pruefregeln.ts). Am Merkmal selbst hängt es nicht: Eine Anlage ohne Gebäude hat keine
- * Gebäudeklasse, „nicht festgelegt“ ließe die Angabe sonst nie entfallen.
+ * Umfasst der Antrag ein Gebäude? Nach den Kästchen des Vordrucks: „Sonstige bauliche Anlage“ nicht angekreuzt – oder
+ * eine Gebäudeklasse angekreuzt (ein Gebäude und eine weitere Anlage in einem Antrag). Das Kästchen wird aus dem Merkmal
+ * „Gebäudeart: kein Gebäude“ vorbelegt (pruefregeln.ts). Am Merkmal selbst hängt es nicht: Eine Anlage ohne Gebäude hat
+ * keine Gebäudeklasse, „nicht festgelegt“ ließe die Angaben sonst nie entfallen (R-01).
  */
-export const ohneHerstellungssumme = (sonstigeAnlage: string) =>
+export const gebaeudeImVordruck = (sonstigeAnlage: string, gebaeudeklassen: string[]) => oder(nichtAngekreuzt(sonstigeAnlage), ...gebaeudeklassen.map(angekreuzt));
+
+/**
+ * Rauminhalt (DIN 277) bzw. Rohbaukosten genügen nicht bei einer Änderung (Umbau ohne Vergrößerung) und bei baulichen
+ * Anlagen, die keine Gebäude sind: Dann ist die Herstellungssumme anzugeben (Hinweis der Vordrucke; Gebühren nach
+ * Tarifstelle 3.1.4.2 AVerwGebO NRW). Bei Errichtung und Erweiterung (Anbau, Aufstockung) gilt der Brutto-Rauminhalt
+ * (§ 6 Nr. 1 BauPrüfVO, Tarifstelle 3.1.4.1). `gebaeude`: siehe `gebaeudeImVordruck`.
+ */
+export const ohneHerstellungssumme = (gebaeude: BedingungTeil) =>
   begruendet(
-    und(istNicht('Vorhaben', 'Änderung'), nichtAngekreuzt(sonstigeAnlage)),
-    'Bei Änderungen und bei baulichen Anlagen, die keine Gebäude sind, ist die Herstellungssumme anzugeben – der umbaute Raum bzw. die Rohbaukosten genügen dann nicht.',
+    und(istNicht('Vorhaben', 'Änderung'), gebaeude),
+    'Bei einer Änderung ohne Vergrößerung (Umbau) und bei baulichen Anlagen, die keine Gebäude sind, ist die Herstellungssumme anzugeben – der umbaute Raum bzw. die Rohbaukosten genügen dann nicht. Für Errichtung und Erweiterung (Anbau, Aufstockung) gilt der Brutto-Rauminhalt: dann als Vorhaben „Erweiterung“ wählen.',
     q('baupruefvo', '6'),
+  );
+
+/** Erhebungsbogen für die Baustatistik: nur bei Gebäuden (Hochbau, § 2 Hochbaustatistikgesetz) – mit `bauantrag` nur beim Bauantrag */
+export const nurGebaeudeStatistik = (gebaeude: BedingungTeil, bauantrag?: BedingungTeil) =>
+  begruendet(
+    bauantrag ? und(bauantrag, gebaeude) : wenn(gebaeude),
+    `Der Erhebungsbogen für die Baustatistik gehört ${bauantrag ? 'nur zum Bauantrag (nicht zum Vorbescheid) und ' : ''}nur zu Baumaßnahmen im Hochbau, bei denen Wohn- oder Nutzraum geschaffen oder verändert wird – nicht zu baulichen Anlagen, die keine Gebäude sind (§ 2 Hochbaustatistikgesetz).`,
   );
 
 /** Bescheinigung einer Prüfsachverständigen Person zum Brandschutz statt Erklärung der Entwurfsverfassenden */
