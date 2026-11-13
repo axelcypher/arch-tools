@@ -6,6 +6,8 @@ import { App } from './App';
 import { aktuell, mitEbene, useEntz } from './store';
 import { oeffnen } from './projekt';
 import { klick } from './aktionen';
+import { flaechenMenue } from './components/Arbeitsflaeche';
+import type { MenuePunkt } from '@core/ui/Menue';
 import { farbschemaWechseln } from '@core/ui/rauchtest';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -116,7 +118,7 @@ describe('RECTIO (Entzerrung)', () => {
     const host = render();
     act(() => useEntz.getState().fotoHinzufuegen('f1', 'Fassade', 'image/jpeg', 3000, 2000, new Uint8Array(4)));
     act(() => knopf(host, '+ Ebene')!.click());
-    expect([...host.querySelectorAll('.sidebar-left .list')[1].querySelectorAll('li')].map((l) => l.textContent)).toEqual(['Ebene 1✎×', 'Ebene 2✎×']);
+    expect([...host.querySelectorAll('.sidebar-left .list')[1].querySelectorAll('li')].map((l) => l.textContent)).toEqual(['Ebene 1', 'Ebene 2']);
     act(() => knopf(host, 'Fluchtlinien')!.click());
     expect(aktuell(useEntz.getState()).ebene!.methode).toBe('fluchtlinien');
     expect(host.querySelector('.sidebar-right .ef-fehlt')?.textContent).toContain('2 waagerechte Kanten, 2 senkrechte Kanten');
@@ -241,5 +243,26 @@ describe('RECTIO (Entzerrung)', () => {
     act(() => useEntz.getState().setze({ werkzeug: 'ecken' }));
     taste(knopf(host, '+ Foto …')!, 'Escape');
     expect(useEntz.getState().werkzeug).toBe('auswahl');
+  });
+
+  it('Kontextmenü der Fläche: Befehle mit Kürzeln, gesperrt mit Grund; beim Zeichnen schließt Rechtsklick ab', () => {
+    render();
+    act(() => useEntz.getState().fotoHinzufuegen('f1', 'Fassade', 'image/jpeg', 3000, 2000, new Uint8Array(4)));
+    const punkt = (text: string) => flaechenMenue().find((p) => !p.trenner && p.text === text) as Exclude<MenuePunkt, { trenner: true }>;
+    expect(punkt('Auswahl entfernen')).toMatchObject({ deaktiviert: true, hinweis: 'nichts ausgewählt' });
+    expect(punkt('Entzerrt zeigen')).toMatchObject({ deaktiviert: true, hinweis: 'erst die Referenz vervollständigen' });
+    expect(punkt('Alles zeigen')).toMatchObject({ deaktiviert: false, hinweis: 'Pos1' });
+    // Ecke gewählt: nicht einzeln löschbar, Grund steht dabei
+    act(() => useEntz.getState().setze({ auswahl: { art: 'ecke', id: 'x', index: 0 } }));
+    expect(punkt('Auswahl entfernen')).toMatchObject({ deaktiviert: true, hinweis: 'Ecken über „Ecken neu setzen“' });
+    // Gegenprobe: Messung gewählt → aktiv und wirksam
+    const s = useEntz.getState();
+    const { foto, ebene } = aktuell(s);
+    act(() => s.aendern(mitEbene(foto!.id, ebene!.id, (e) => ({ ...e, rechteck: { ecken: ECKEN, breite: 1.26, hoehe: 1.51 }, messungen: [{ id: 'm1', art: 'strecke', name: 'A', punkte: [ECKEN[0], ECKEN[1]] }] }))));
+    act(() => useEntz.getState().setze({ auswahl: { art: 'messung', id: 'm1' } }));
+    expect(punkt('Auswahl entfernen')).toMatchObject({ deaktiviert: false, hinweis: 'Entf' });
+    expect(punkt('Entzerrt zeigen').deaktiviert).toBe(false);
+    act(() => punkt('Auswahl entfernen').aktion!());
+    expect(aktuell(useEntz.getState()).ebene!.messungen).toHaveLength(0);
   });
 });
