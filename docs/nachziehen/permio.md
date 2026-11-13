@@ -5,3 +5,4 @@ Designsystem ein. Erledigte Punkte löscht die App in ihrem eigenen PR (löschen
 sich auf den Stand beim Eintragen.
 
 - Dialoge auf `Modal` (Titel mit `kopf` statt `h3` im Inhalt) und Befehle nach „Begriffe“ benennen (Befehle, die einen Dialog öffnen, mit „ …“) – prüfen, ob noch etwas offen ist
+- Einfachauswahl im Menü (aktive Fassung, Zuordnung, Verknüpfung) mit `gewaehlt` statt `haken` plus Hinweis

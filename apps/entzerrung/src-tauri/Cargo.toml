@@ -1,6 +1,6 @@
 [package]
 name = "entzerrung"
-version = "0.26.2"
+version = "0.26.3"
 description = "Fotos perspektivisch entzerren und darin messen"
 authors = ["Tobias Pendzialek"]
 license = "MIT"
