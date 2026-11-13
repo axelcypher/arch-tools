@@ -313,7 +313,7 @@ function ReferenzPanel({ foto, ebene, ergebnis }: { foto: Foto; ebene: Ebene; er
         </div>
       ) : (
         <div className="meldung ef-fehlt" role="status">
-          {ergebnis.fehler}
+          <Symbol name="info" /> {ergebnis.fehler}
         </div>
       )}
     </section>
@@ -435,7 +435,7 @@ function MessPanel({ foto, ebene, e }: { foto: Foto; ebene: Ebene; e: Entzerrung
         )}
       </div>
       {kopiert && (
-        <div className={`meldung ${kopiert.startsWith('Kopieren nicht') ? 'fehler' : 'ok'}`} role="status">
+        <div className={`meldung ${kopiert.startsWith('Kopieren nicht') ? 'fehler' : 'ok'}`} role={kopiert.startsWith('Kopieren nicht') ? 'alert' : 'status'}>
           {kopiert}
         </div>
       )}

@@ -6,7 +6,7 @@ import { App } from './App';
 import { aktuell, mitEbene, useEntz } from './store';
 import { oeffnen } from './projekt';
 import { klick } from './aktionen';
-import { flaechenMenue } from './components/Arbeitsflaeche';
+import { flaechenMenue } from './aktionen';
 import type { MenuePunkt } from '@core/ui/Menue';
 import { farbschemaWechseln } from '@core/ui/rauchtest';
 
@@ -249,20 +249,61 @@ describe('RECTIO (Entzerrung)', () => {
     render();
     act(() => useEntz.getState().fotoHinzufuegen('f1', 'Fassade', 'image/jpeg', 3000, 2000, new Uint8Array(4)));
     const punkt = (text: string) => flaechenMenue().find((p) => !p.trenner && p.text === text) as Exclude<MenuePunkt, { trenner: true }>;
-    expect(punkt('Auswahl entfernen')).toMatchObject({ deaktiviert: true, hinweis: 'nichts ausgewählt' });
+    expect(punkt('Löschen')).toMatchObject({ deaktiviert: true, hinweis: 'nichts ausgewählt' });
     expect(punkt('Entzerrt zeigen')).toMatchObject({ deaktiviert: true, hinweis: 'erst die Referenz vervollständigen' });
     expect(punkt('Alles zeigen')).toMatchObject({ deaktiviert: false, hinweis: 'Pos1' });
     // Ecke gewählt: nicht einzeln löschbar, Grund steht dabei
     act(() => useEntz.getState().setze({ auswahl: { art: 'ecke', id: 'x', index: 0 } }));
-    expect(punkt('Auswahl entfernen')).toMatchObject({ deaktiviert: true, hinweis: 'Ecken über „Ecken neu setzen“' });
+    expect(punkt('Ecke LU löschen')).toMatchObject({ deaktiviert: true, hinweis: 'Ecken über „Ecken neu setzen“' });
     // Gegenprobe: Messung gewählt → aktiv und wirksam
     const s = useEntz.getState();
     const { foto, ebene } = aktuell(s);
     act(() => s.aendern(mitEbene(foto!.id, ebene!.id, (e) => ({ ...e, rechteck: { ecken: ECKEN, breite: 1.26, hoehe: 1.51 }, messungen: [{ id: 'm1', art: 'strecke', name: 'A', punkte: [ECKEN[0], ECKEN[1]] }] }))));
     act(() => useEntz.getState().setze({ auswahl: { art: 'messung', id: 'm1' } }));
-    expect(punkt('Auswahl entfernen')).toMatchObject({ deaktiviert: false, hinweis: 'Entf' });
+    expect(punkt('„A“ löschen')).toMatchObject({ deaktiviert: false, hinweis: 'Entf' });
     expect(punkt('Entzerrt zeigen').deaktiviert).toBe(false);
-    act(() => punkt('Auswahl entfernen').aktion!());
+    act(() => punkt('„A“ löschen').aktion!());
     expect(aktuell(useEntz.getState()).ebene!.messungen).toHaveLength(0);
+  });
+
+  it('Rechtsklick auf ein Element wählt es aus, das Kontextmenü löscht dann dieses (nicht die vorige Auswahl)', () => {
+    const w = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientWidth');
+    const h = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientHeight');
+    Object.defineProperty(HTMLElement.prototype, 'clientWidth', { configurable: true, get: () => 800 });
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, get: () => 600 });
+    try {
+      const host = render();
+      act(() => useEntz.getState().fotoHinzufuegen('f1', 'Fassade', 'image/jpeg', 3000, 2000, new Uint8Array(4)));
+      const s = useEntz.getState();
+      const { foto, ebene } = aktuell(s);
+      act(() =>
+        s.aendern(
+          mitEbene(foto!.id, ebene!.id, (e) => ({
+            ...e,
+            rechteck: { ecken: ECKEN, breite: 1.26, hoehe: 1.51 },
+            messungen: [
+              { id: 'm1', art: 'strecke', name: 'Strecke 1', punkte: [ECKEN[0], ECKEN[1]] },
+              { id: 'm2', art: 'strecke', name: 'Strecke 2', punkte: [ECKEN[1], ECKEN[2]] },
+            ],
+          })),
+        ),
+      );
+      act(() => useEntz.getState().setze({ ansicht: 'entzerrt', auswahl: { art: 'messung', id: 'm1' } }));
+      // Rechtsklick (Taste 2) auf die Linie von Strecke 2
+      const linie = [...host.querySelectorAll('path.ef-messung')][1]!;
+      act(() => void linie.dispatchEvent(new PointerEvent('pointerdown', { button: 2, bubbles: true })));
+      expect(useEntz.getState().auswahl).toEqual({ art: 'messung', id: 'm2' });
+      const loeschen = flaechenMenue()[0] as Exclude<MenuePunkt, { trenner: true }>;
+      expect(loeschen.text).toBe('„Strecke 2“ löschen');
+      act(() => loeschen.aktion!());
+      expect(aktuell(useEntz.getState()).ebene!.messungen.map((m) => m.id)).toEqual(['m1']);
+      // Gegenprobe: beim Zeichnen ändert der Rechtsklick die Auswahl nicht
+      act(() => useEntz.getState().setze({ werkzeug: 'linienzug', entwurf: [ECKEN[0]], auswahl: null }));
+      act(() => void host.querySelector('path.ef-messung')!.dispatchEvent(new PointerEvent('pointerdown', { button: 2, bubbles: true })));
+      expect(useEntz.getState().auswahl).toBeNull();
+    } finally {
+      if (w) Object.defineProperty(HTMLElement.prototype, 'clientWidth', w);
+      if (h) Object.defineProperty(HTMLElement.prototype, 'clientHeight', h);
+    }
   });
 });

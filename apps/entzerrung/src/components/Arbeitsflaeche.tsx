@@ -2,9 +2,8 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import type { PointerEvent as RPointerEvent, ReactNode } from 'react';
 import { fmt2, fmt3 } from '@core/format';
 import { logger } from '@core/platform/log';
-import { abschliessen, ansichtUmschalten, auswahlLoeschen, klick, punktVerschieben } from '../aktionen';
+import { abschliessen, flaechenMenue, klick, punktVerschieben } from '../aktionen';
 import { zeigeMenue } from '@core/ui/Menue';
-import type { MenuePunkt } from '@core/ui/Menue';
 import { ebenenAbbildung, einpassen, fotoAbbildung, zoomen } from '../ansicht';
 import type { Abbildung, Sicht } from '../ansicht';
 import { bitmap } from '../bilder';
@@ -279,6 +278,11 @@ export function Arbeitsflaeche() {
   };
 
   const griffRunter = (e: RPointerEvent, a: Auswahl) => {
+    // Rechtsklick auf ein Element: erst auswählen, damit sich das Kontextmenü darauf bezieht (beim Zeichnen schließt er ab)
+    if (e.button === 2) {
+      if (!useEntz.getState().entwurf.length) useEntz.getState().setze({ auswahl: a });
+      return;
+    }
     if (e.button !== 0 || leertaste.current) return;
     const ziehbar = werkzeug === 'auswahl' || (ansicht === 'foto' && entwurf.length === 0);
     if (!ziehbar) return; // Klick geht an die Fläche (Fang)
@@ -623,31 +627,3 @@ function eckenVorschau(el: ReactNode[], abb: Abbildung, ecken: Pt[], zeiger: Pt 
   if (z) el.push(beschriftung('evt', { x: z.x + 14, y: z.y }, `${ECKEN_KURZ[ecken.length]} · ${ECKEN[ecken.length]}`, 'ref ef-zeiger-text', 22));
 }
 
-/** Kontextmenü der Zeichenfläche: dieselben Befehle wie die Tasten, mit Kürzel als Hinweis */
-export function flaechenMenue(): MenuePunkt[] {
-  const s = useEntz.getState();
-  const { foto, ebene } = aktuell(s);
-  const entzerrbar = !!foto && !!ebene && entzerrung(foto, ebene).ok;
-  const ecke = s.auswahl?.art === 'ecke';
-  return [
-    {
-      text: 'Auswahl entfernen',
-      symbol: 'muell',
-      hinweis: ecke ? 'Ecken über „Ecken neu setzen“' : s.auswahl ? 'Entf' : 'nichts ausgewählt',
-      deaktiviert: !s.auswahl || ecke,
-      gefahr: true,
-      aktion: auswahlLoeschen,
-    },
-    { trenner: true },
-    { text: 'Alles zeigen', symbol: 'einpassen', hinweis: 'Pos1', deaktiviert: !foto, aktion: () => window.dispatchEvent(new Event('entz:einpassen')) },
-    {
-      text: s.ansicht === 'entzerrt' ? 'Foto zeigen' : 'Entzerrt zeigen',
-      hinweis: s.ansicht === 'foto' && !entzerrbar ? 'erst die Referenz vervollständigen' : 'E',
-      deaktiviert: s.ansicht === 'foto' && !entzerrbar,
-      aktion: ansichtUmschalten,
-    },
-    { trenner: true },
-    { text: 'Rückgängig', symbol: 'rueckgaengig', hinweis: 'Strg+Z', deaktiviert: !s.vergangenheit.length, aktion: s.rueckgaengig },
-    { text: 'Wiederholen', symbol: 'wiederholen', hinweis: 'Strg+Y', deaktiviert: !s.zukunft.length, aktion: s.wiederholen },
-  ];
-}

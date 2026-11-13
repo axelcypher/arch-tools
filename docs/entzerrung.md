@@ -97,7 +97,7 @@ das Foto. Öffnen und Speichern über den Dateidialog bleiben wie bisher.
 | Ziehen auf freier Fläche, mittlere Maustaste oder `Leertaste`+Ziehen | Verschieben |
 | Punkt ziehen | Punkt verschieben (Ecken, Passpunkte, Kanten, Hilfslinien, Messpunkte) |
 | `Enter`, Doppelklick, Rechtsklick | Linienzug, Fläche bzw. Hilfslinie abschließen |
-| Rechtsklick ohne laufendes Zeichnen | Kontextmenü: Auswahl entfernen, Alles zeigen, Foto/Entzerrt, Rückgängig, Wiederholen |
+| Rechtsklick ohne laufendes Zeichnen | Kontextmenü zum angeklickten Element: „… löschen“ (z. B. „Strecke 1 löschen“), Alles zeigen, Foto/Entzerrt, Rückgängig, Wiederholen |
 | `Rücktaste` | letzten Punkt beim Zeichnen zurücknehmen bzw. Auswahl löschen |
 | `Entf` | Auswahl löschen (bei Messungen mit gewähltem Punkt nur diesen Punkt) |
 | `Esc` | Zeichnen abbrechen, Auswahl aufheben, zurück zur Auswahl |
