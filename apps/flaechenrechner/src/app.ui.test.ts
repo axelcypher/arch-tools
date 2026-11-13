@@ -177,6 +177,10 @@ describe('QUADRIO: Befehle, die einen Dialog öffnen, enden auf „ …“ (Begr
     act(() => knopf(host, '+ Neu …')!.click());
     expect(document.querySelector('.modal')?.textContent).toMatch(/Neues Geschoss/);
     act(() => void document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })));
+    expect(document.querySelector('.modal')).toBeNull();
+    // Umsortieren mit Symbolen statt ▲/▼
+    expect(host.querySelector('button[aria-label="Geschoss nach oben"] svg')).not.toBeNull();
+    expect(host.querySelector('button[aria-label="Geschoss nach unten"]')?.textContent?.trim()).toBe('');
     expect(useEditor.getState().project.storeys).toHaveLength(1);
 
     const kuerzel = [...host.querySelectorAll<HTMLButtonElement>('.hud-hint-knopf')].find((b) => /Tastenkürzel …/.test(b.textContent ?? '') || b.getAttribute('aria-label') === 'Alle Tastenkürzel …')!;

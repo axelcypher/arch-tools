@@ -1,3 +1,4 @@
+import { Symbol } from '@core/ui/Symbol';
 import { useDeferredValue, useMemo, useState } from 'react';
 import { computeProject, computeStorey, effektiveWofl, raumBodenVersatz, raumUmschliessung, raumUmAbzug, unterbau } from '@core/calc';
 import { fmt2 } from '@core/format';
@@ -324,7 +325,7 @@ function ShapeProperties({ shape }: { shape: Shape }) {
                     aria-label={`Punkt ${i + 1} entfernen`}
                     onClick={() => upd((s) => ({ ...s, points: s.points.filter((_, j) => j !== i) }))}
                   >
-                    ×
+                    <Symbol name="schliessen" />
                   </button>
                 </td>
               </tr>

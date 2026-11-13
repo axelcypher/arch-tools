@@ -162,7 +162,7 @@ export function Sidebar() {
           <button
             className="small"
             onClick={() => void geschossDuplizierenAktion(storey.id)}
-            title="Aktives Geschoss inkl. aller Flächen kopieren … (Name, Lage und Räume im Dialog)"
+            title="Aktives Geschoss mit allen Flächen kopieren …"
           >
             Duplizieren …
           </button>
