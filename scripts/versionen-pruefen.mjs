@@ -54,7 +54,10 @@ export function betroffeneApps(dateien, kernNutzer) {
   const apps = new Set();
   for (const pfad of dateien.filter(ausgeliefert)) {
     if (pfad.startsWith('packages/core/')) {
-      kernNutzer ??= kernNutzerAus('.', APPS.filter((a) => a !== SUITE));
+      kernNutzer ??= kernNutzerAus(
+        '.',
+        APPS.filter((a) => a !== SUITE),
+      );
       kernNutzer(pfad).forEach((a) => apps.add(a));
     }
     const m = /^apps\/([^/]+)\//.exec(pfad);
