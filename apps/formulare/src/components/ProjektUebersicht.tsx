@@ -90,10 +90,10 @@ export function ProjektUebersicht({ onEinstellungen }: { onEinstellungen: () => 
     return [
       { text: 'Öffnen', symbol: 'formular', aktion: () => oeffnen({ schluessel: projektSchluessel(p) } as UebersichtProjekt) },
       { trenner: true },
-      { text: 'Formularordner im Explorer öffnen', symbol: 'ordner', aktion: () => void oeffnePfad(verbinde(p.root, p.ordner)).catch(() => undefined) },
+      { text: 'Formularordner öffnen', symbol: 'ordnerOffen', aktion: () => void oeffnePfad(verbinde(p.root, p.ordner)).catch(() => undefined) },
       {
-        text: 'Projektordner im Explorer öffnen',
-        symbol: 'ordner',
+        text: 'Projektordner öffnen',
+        symbol: 'ordnerOffen',
         deaktiviert: !a,
         ...(a ? {} : { hinweis: 'kein Projektordner' }),
         aktion: () => a && void oeffnePfad(verbinde(a.root, a.pfad)).catch(() => undefined),

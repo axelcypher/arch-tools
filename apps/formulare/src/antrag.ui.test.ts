@@ -173,6 +173,9 @@ describe('Antragsfassung und Export', () => {
     expect(host.querySelector('.an-fassung')?.textContent).toContain('BAUA 2');
     await klick(knopf(host, '001-Muster'));
     await klick(knopf(host, 'PDF'));
+    // Tastenkürzel rechts, vorgelesen als aria-keyshortcuts – nicht Teil des Namens
+    expect(menuePunkt('Als PDF exportieren').getAttribute('aria-keyshortcuts')).toBe('Control+E');
+    expect(menuePunkt('Als PDF exportieren').querySelector('.menue-tasten')!.textContent).toBe('Strg+E');
     await klick(menuePunkt('Als PDF exportieren'));
     const dialog = dialogMit('Als PDF exportieren')!;
     const name = `BS9 BAUA ${jjmmtt(new Date())} Muster.pdf`;
@@ -1193,9 +1196,12 @@ describe('Projektordner, Ansicht „Antrag“: Quick-Add für Dateien ohne Dokum
     const plus = zeile().querySelector<HTMLButtonElement>('.fo-aufnehmen')!;
     expect(plus.getAttribute('aria-label')).toBe(`${BSK} in den Antragsumfang aufnehmen`);
     expect(plus.getAttribute('aria-haspopup')).toBe('menu');
+    expect(plus.getAttribute('aria-expanded')).toBe('false');
     expect(plus.title).toBe('Nicht im Antragsumfang – als neues Dokument aufnehmen oder mit einem fehlenden verknüpfen');
     expect(zeile().querySelector('.fo-aufnehmen-platz')).toBeNull();
     await klick(plus);
+    // meldet „aufgeklappt“, solange sein Menü offen ist
+    expect(plus.getAttribute('aria-expanded')).toBe('true');
     // voller Text auch als Tooltip (wird ein langer Titel gekürzt)
     expect(punktGenau(AUFNEHMEN).title).toBe(AUFNEHMEN);
     await klick(punktGenau(AUFNEHMEN));
@@ -5825,6 +5831,20 @@ describe('Reihenfolge der Formulare in der Navigation', () => {
     act(() => void document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
     expect(document.querySelector('.menue')).toBeNull();
     expect(document.activeElement).toBe(z);
+  });
+
+  it('Kontextmenü eines Formulars: „Ordner öffnen“, Löschen als Gefahr-Punkt am Ende hinter einem Trenner', async () => {
+    const host = await projektBS9();
+    await rechtsklick(knopf(host, '001-Muster'));
+    const kinder = [...document.querySelector('.menue')!.children];
+    const letzter = kinder[kinder.length - 1];
+    expect(letzter.textContent).toContain('Löschen');
+    expect(letzter.classList.contains('gefahr')).toBe(true);
+    expect(kinder[kinder.length - 2].classList.contains('menue-trenner')).toBe(true);
+    expect(menuePunkt('Ordner öffnen')).toBeTruthy();
+    expect(document.querySelector('.menue')!.textContent).not.toContain('Explorer');
+    // der Erstfokus liegt nicht auf dem Gefahr-Punkt
+    expect(document.activeElement?.textContent).not.toContain('Löschen');
   });
 
   it('Rechtsklick und Esc beim Ziehen verschieben nichts; an der Ausgangsstelle keine Einfügestelle', async () => {

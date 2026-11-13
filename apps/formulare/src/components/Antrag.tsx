@@ -741,8 +741,8 @@ export function AntragsdatenAnsicht() {
             <Symbol name="neuLaden" />
           </button>
           {basis && (
-            <button className="icon" title="Antragsordner im Explorer öffnen" aria-label="Antragsordner im Explorer öffnen" onClick={() => void oeffnePfad(verbinde(basis, ordner)).catch(() => undefined)}>
-              <Symbol name="ordner" />
+            <button className="icon" title="Antragsordner öffnen" aria-label="Antragsordner öffnen" onClick={() => void oeffnePfad(verbinde(basis, ordner)).catch(() => undefined)}>
+              <Symbol name="ordnerOffen" />
             </button>
           )}
         </div>
