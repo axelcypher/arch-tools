@@ -13,7 +13,7 @@ import { NachweisDruck } from './components/NachweisDruck';
 import { ablageLeeren, useGrz } from './store';
 import { projekt } from './testdaten';
 import { einstiegsAktionen, farbschemaWechseln, stammdatenAendern } from '@core/ui/rauchtest';
-import { MenueHost } from '@core/ui/Menue';
+import { MenueHost, tastenAria } from '@core/ui/Menue';
 import { useTheme } from '@core/platform/theme';
 import { planFuellungDunkel } from '@core/planFarbe';
 import { versiegelungInfo } from '@core/lageplan';
@@ -970,6 +970,9 @@ describe('Designsystem: Kontextmenü, Symbole, Druckvorschau, Feldfehler', () =>
     expect(useGrz.getState().selectedIds).toEqual([oben.id]);
     expect(host.querySelector('.menue')!.getAttribute('aria-label')).toBe(oben.name);
     expect(menueTexte(host)).toEqual(['Fläche kopieren', 'Fläche duplizieren', 'Einfügen', 'Fläche löschen']);
+    // Tastenkürzel als tasten (rechts, aria-keyshortcuts), nicht im Namen
+    expect(menuePunkt(host, 'Fläche kopieren').getAttribute('aria-keyshortcuts')).toBe(tastenAria('Strg+C'));
+    expect(menuePunkt(host, 'Fläche löschen').getAttribute('aria-keyshortcuts')).toBe(tastenAria('Entf / Rücktaste'));
     // duplizieren: eine Fläche mehr, die Kopie ist gewählt
     act(() => menuePunkt(host, 'Fläche duplizieren').click());
     expect(flaechen()).toHaveLength(zahl + 1);

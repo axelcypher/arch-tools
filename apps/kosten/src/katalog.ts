@@ -1,6 +1,6 @@
 import type { KostenBezug, KostenPosition, KostenStufe } from '@core/model';
 import { KOSTEN_BEZUEGE, newId } from '@core/model';
-import { kgName, standardBezug } from './din276';
+import { istRisiko, kgName, standardBezug } from './din276';
 import { MENGEN_INFO } from './mengen';
 
 /**
@@ -54,10 +54,22 @@ export function katalogSpeichern(k: Katalog | null): boolean {
 
 /* ---------- Lesen ---------- */
 
-const zahl = (v: unknown): number | undefined => {
+/**
+ * Zahl aus einer Zelle, je Zelle erkannt: Stehen Punkt und Komma darin, ist das zuletzt stehende das Dezimalzeichen
+ * („1.800,50“, „1,800.50“). Steht nur eines darin, ist es das Dezimalzeichen – außer es trennt genau Dreiergruppen
+ * nach einer Ziffer 1–9 („1.800“, „1,800“; „0.125“ bleibt 0,125); dann entscheidet die Datei: in einer CSV mit Komma als Trennzeichen (dezimalpunkt) gilt das
+ * Komma als Tausendertrenner, sonst der Punkt.
+ */
+const zahl = (v: unknown, dezimalpunkt = false): number | undefined => {
   if (typeof v === 'number') return Number.isFinite(v) ? v : undefined;
   if (typeof v !== 'string' || !v.trim()) return undefined;
-  const n = Number(v.trim().replace(/\s|€|%/g, '').replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.'));
+  let t = v.trim().replace(/\s|€|%/g, '');
+  const punkt = t.lastIndexOf('.');
+  const komma = t.lastIndexOf(',');
+  if (punkt >= 0 && komma >= 0) t = punkt > komma ? t.replace(/,/g, '') : t.replace(/\./g, '').replace(',', '.');
+  else if (komma >= 0) t = dezimalpunkt && /^-?[1-9]\d{0,2}(,\d{3})+$/.test(t) ? t.replace(/,/g, '') : t.replace(',', '.');
+  else if (punkt >= 0 && !dezimalpunkt && /^-?[1-9]\d{0,2}(\.\d{3})+$/.test(t)) t = t.replace(/\./g, '');
+  const n = Number(t);
   return Number.isFinite(n) ? n : undefined;
 };
 
@@ -74,39 +86,54 @@ function bezugAus(text: string, kg: string): { bezug: KostenBezug; einheit?: str
   return { bezug: 'menge', einheit: t };
 }
 
-function eintragAus(o: Record<string, unknown>): KatalogEintrag | null {
+function eintragAus(o: Record<string, unknown>, dezimalpunkt = false): KatalogEintrag | null {
   const kg = String(o.kg ?? '').trim();
-  if (!/^[1-8]\d\d$/.test(kg)) return null;
+  if (!/^[1-8]\d\d$/.test(kg) && !istRisiko(kg)) return null;
   const b = typeof o.bezug === 'string' ? bezugAus(o.bezug, kg) : { bezug: standardBezug(kg).bezug };
   const e: KatalogEintrag = { kg, bezeichnung: String(o.bezeichnung ?? '').trim() || kgName(kg), ...b };
   if (typeof o.einheit === 'string' && o.einheit.trim()) e.einheit = o.einheit.trim();
   const basis = Array.isArray(o.basis) ? o.basis.map(String) : typeof o.basis === 'string' ? o.basis.split(/[\s,+;]+/) : [];
   if (e.bezug === 'prozent') e.basis = basis.filter((x) => /^[1-8]\d\d$/.test(x)).length ? basis.filter((x) => /^[1-8]\d\d$/.test(x)) : (standardBezug(kg).basis ?? ['300', '400']);
-  for (const f of ['von', 'mittel', 'bis'] as const) if (zahl(o[f]) !== undefined) e[f] = zahl(o[f]);
+  for (const f of ['von', 'mittel', 'bis'] as const) {
+    const n = zahl(o[f], dezimalpunkt);
+    if (n !== undefined) e[f] = n;
+  }
   if (typeof o.bemerkung === 'string' && o.bemerkung.trim()) e.bemerkung = o.bemerkung.trim();
   return e;
 }
 
+const KEIN_KATALOG = 'Die Datei ist kein gültiger Kennwertkatalog (JSON)';
+
 function leseJson(text: string): Katalog {
-  const o = JSON.parse(text) as Record<string, unknown>;
+  let roh: unknown;
+  try {
+    roh = JSON.parse(text);
+  } catch (err) {
+    throw new Error(`${KEIN_KATALOG}: ${err instanceof Error ? err.message : String(err)}`);
+  }
+  if (!roh || typeof roh !== 'object') throw new Error(`${KEIN_KATALOG} – erwartet wird ein Objekt mit „eintraege“ oder eine Liste von Einträgen.`);
+  const o = roh as Record<string, unknown>;
+  const index = zahl(o.index);
   const list = Array.isArray(o) ? o : Array.isArray(o.eintraege) ? o.eintraege : [];
   const eintraege = (list as unknown[])
     .filter((x): x is Record<string, unknown> => !!x && typeof x === 'object')
-    .map(eintragAus)
+    .map((x) => eintragAus(x))
     .filter((x): x is KatalogEintrag => x !== null);
   return {
     name: typeof o.name === 'string' && o.name ? o.name : 'Kennwertkatalog',
     ...(typeof o.quelle === 'string' && o.quelle ? { quelle: o.quelle } : {}),
     ...(typeof o.stand === 'string' && o.stand ? { stand: o.stand } : {}),
-    ...(zahl(o.index) !== undefined ? { index: zahl(o.index) } : {}),
+    ...(index !== undefined ? { index } : {}),
     eintraege,
   };
 }
 
 const CSV_SPALTEN = ['KG', 'Bezeichnung', 'Bezug', 'Grundlage', 'von', 'Mittel', 'bis', 'Bemerkung'];
 
-function csvZeilen(text: string): string[][] {
-  const sep = (text.split('\n').find((l) => l.trim() && !l.startsWith('#')) ?? '').includes(';') ? ';' : ',';
+/** Trennzeichen der CSV: Semikolon (Excel, deutsch), sonst Komma – nach der ersten Zeile ohne „#“ */
+const csvTrenner = (text: string) => ((text.split('\n').find((l) => l.trim() && !l.startsWith('#')) ?? '').includes(';') ? ';' : ',');
+
+function csvZeilen(text: string, sep: string): string[][] {
   const rows: string[][] = [];
   let row: string[] = [];
   let cell = '';
@@ -140,18 +167,22 @@ function csvZeilen(text: string): string[][] {
 
 /**
  * CSV (Excel, Semikolon, Dezimalkomma): Kopfzeilen „# Name: …“, „# Quelle: …“, „# Stand: …“, „# Index: …“,
- * dann die Spalten KG; Bezeichnung; Bezug; Grundlage; von; Mittel; bis; Bemerkung.
+ * dann die Spalten KG; Bezeichnung; Bezug; Grundlage; von; Mittel; bis; Bemerkung. Mit Komma als Trennzeichen
+ * gilt der Punkt als Dezimalzeichen.
  */
 function leseCsv(text: string, dateiname: string): Katalog {
   const k: Katalog = { name: dateiname.replace(/\.[^.]+$/, ''), eintraege: [] };
   let kopf: string[] | null = null;
-  for (const r of csvZeilen(text.replace(/^﻿/, ''))) {
+  const inhalt = text.replace(/^﻿/, '');
+  const sep = csvTrenner(inhalt);
+  const dezimalpunkt = sep === ',';
+  for (const r of csvZeilen(inhalt, sep)) {
     const erste = (r[0] ?? '').trim();
     const meta = /^#\s*(name|quelle|stand|index)\s*:\s*(.*)$/i.exec(r.join(';').trim());
     if (meta) {
       const wert = meta[2].replace(/;+$/, '').trim();
       const f = meta[1].toLowerCase();
-      if (f === 'index') k.index = zahl(wert);
+      if (f === 'index') k.index = zahl(wert, dezimalpunkt);
       else if (wert) (k as unknown as Record<string, string>)[f] = wert;
       continue;
     }
@@ -166,7 +197,7 @@ function leseCsv(text: string, dateiname: string): Katalog {
       const key = s === 'grundlage' ? 'basis' : s;
       o[key] = r[i] ?? '';
     });
-    const e = eintragAus(o);
+    const e = eintragAus(o, dezimalpunkt);
     if (e) k.eintraege.push(e);
   }
   return k;
@@ -231,13 +262,18 @@ export function eintragAusPosition(p: KostenPosition): KatalogEintrag {
 /* ---------- Gliederungen ---------- */
 
 const GLIEDERUNG: Record<'grob' | 'fein', string[]> = {
-  // Kostenrahmen/-schätzung: 1. Ebene
+  // Kostenrahmen: 1. Ebene
   grob: ['300', '400', '500', '700'],
-  // Kostenberechnung: 2. Ebene für das Bauwerk
-  fein: ['310', '320', '330', '340', '350', '360', '390', '410', '420', '430', '440', '450', '500', '700'],
+  // ab der Kostenschätzung: 2. Ebene für das Bauwerk
+  fein: ['310', '320', '330', '340', '350', '360', '390', '410', '420', '430', '440', '450', '460', '480', '500', '700'],
 };
 
-export const gliederungFuer = (stufe: KostenStufe | undefined) => (stufe === 'rahmen' || stufe === 'schaetzung' || !stufe ? 'grob' : 'fein');
+/**
+ * Gliederungstiefe je Stufe: DIN 276:2018-12 verlangt für die Kostenschätzung die 2., für die Kostenberechnung die
+ * 3. Ebene; HOAI § 2 Abs. 10/11 (mit Bezug auf DIN 276:2008-12) die 1. bzw. 2. Ebene. Vorgeschlagen wird deshalb
+ * die 1. Ebene nur für den Kostenrahmen, ab der Kostenschätzung die 2. Ebene (die 3. Ebene ist frei eintragbar).
+ */
+export const gliederungFuer = (stufe: KostenStufe | undefined) => (stufe === 'rahmen' ? 'grob' : 'fein');
 
 /** leere Positionen (ohne Kennwerte) mit der üblichen Bezugsgröße je Kostengruppe */
 export function gliederung(art: 'grob' | 'fein'): KostenPosition[] {

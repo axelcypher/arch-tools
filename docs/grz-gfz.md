@@ -126,7 +126,7 @@ Gebäude und Flächen werden gefangen. „Auswahl“ (V): Klicken wählt eine Fl
 ziehen ändert sie, ◇ in der Kantenmitte ziehen fügt einen Punkt ein, Entf/Rück löscht die Fläche. Rechtsklick (oder
 die Kontextmenütaste) öffnet das gemeinsame Menü der Suite: auf einem Punkt „Punkt löschen“ (gesperrt mit Grund „Nur noch 3 Punkte“, wenn
 nur noch drei Punkte da sind), auf einer Fläche bzw. der Auswahl „kopieren“, „duplizieren“, „Einfügen“ und „löschen“
-(dieselben Befehle wie Strg+C/D/V und Entf), auf der Kante eines Flurstücks „Flurstück löschen“, im Leeren
+(dieselben Befehle wie Strg+C/D/V und Entf; die Kürzel stehen rechts im Menü), auf der Kante eines Flurstücks „Flurstück löschen“, im Leeren
 „Einfügen“ und „Einpassen“. Das Menü gibt es nur im Werkzeug „Auswahl“ und nicht während des Zeichnens.
 Im dunklen Schema mit „Zeichenfläche abdunkeln“ werden die Füllungen der Lageplanflächen vorgerechnet
 (`planFuellungDunkel`), damit sie nach dem Filter der Zeichenfläche im Ton der Farbmarken der Flächenbilanz erscheinen;

@@ -467,7 +467,8 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
     return {
       text: 'Einfügen',
       symbol: 'einfuegen',
-      hinweis: leer ? 'Nichts kopiert' : 'Strg+V',
+      hinweis: leer ? 'Nichts kopiert' : undefined,
+      tasten: leer ? undefined : 'Strg+V',
       deaktiviert: leer,
       titel: leer ? 'Zuerst Flächen kopieren (Strg+C)' : undefined,
       aktion: () => void flaechenEinfuegen(),
@@ -479,21 +480,21 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
     const ids = useGrz.getState().selectedIds;
     const was = ids.length > 1 ? `${ids.length} Flächen` : 'Fläche';
     return [
-      { text: `${was} kopieren`, symbol: 'kopie', hinweis: 'Strg+C', aktion: () => void flaechenKopieren() },
-      { text: `${was} duplizieren`, symbol: 'stapel', hinweis: 'Strg+D', aktion: () => void flaechenDuplizieren() },
+      { text: `${was} kopieren`, symbol: 'kopie', tasten: 'Strg+C', aktion: () => void flaechenKopieren() },
+      { text: `${was} duplizieren`, symbol: 'stapel', tasten: 'Strg+D', aktion: () => void flaechenDuplizieren() },
       einfuegenPunkt(),
       { trenner: true },
       {
         text: `${was} löschen`,
         symbol: 'muell',
-        hinweis: 'Entf',
+        tasten: 'Entf / Rücktaste',
         gefahr: true,
         aktion: () => st.update((p) => removeFlaeche(p, ids), undefined, ids.length > 1 ? 'Flächen löschen' : 'Fläche löschen'),
       },
     ];
   };
 
-  const grenzeMenue = (id: string): MenuePunkt[] => [{ text: 'Flurstück löschen', symbol: 'muell', hinweis: 'Entf', gefahr: true, aktion: () => grenzeLoeschen(id) }];
+  const grenzeMenue = (id: string): MenuePunkt[] => [{ text: 'Flurstück löschen', symbol: 'muell', tasten: 'Entf / Rücktaste', gefahr: true, aktion: () => grenzeLoeschen(id) }];
 
   // Kontextmenü im Plan (nur im Auswahlwerkzeug und nicht beim Zeichnen): Fläche, Flurstück oder leere Fläche
   const onPlanKontext = (e: React.MouseEvent) => {
@@ -522,7 +523,7 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
       const g = grenzen.find((x) => x.id === grenzeSel);
       if (g) return zeigeMenue(e, grenzeMenue(g.id), g.name);
     }
-    zeigeMenue(e, [einfuegenPunkt(), { text: 'Einpassen', symbol: 'einpassen', hinweis: 'F', aktion: () => setVb(passend) }], 'Lageplan');
+    zeigeMenue(e, [einfuegenPunkt(), { text: 'Einpassen', symbol: 'einpassen', tasten: 'F', aktion: () => setVb(passend) }], 'Lageplan');
   };
 
   const onPointerMove = (e: React.PointerEvent) => {
