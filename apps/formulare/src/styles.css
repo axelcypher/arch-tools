@@ -938,7 +938,7 @@ button.icon.fo-gl-zaehlt.an {
 }
 .fo-verlauf-kopf h3 {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--fs-m);
 }
 .fo-verlauf-liste {
   list-style: none;
@@ -993,7 +993,7 @@ button.icon.fo-gl-zaehlt.an {
 }
 .fo-verlauf-frueher h4 {
   margin: 0 0 4px;
-  font-size: 12px;
+  font-size: var(--fs-s);
 }
 .fo-verlauf-schritt.frueher:hover {
   background: none;
@@ -1021,7 +1021,7 @@ button.icon.fo-gl-zaehlt.an {
 }
 .fo-seite-felder h2 {
   margin: 18px 0 8px;
-  font-size: 15px;
+  font-size: var(--fs-l);
 }
 .fo-reihe {
   display: flex;
@@ -1042,7 +1042,7 @@ button.icon.fo-gl-zaehlt.an {
 }
 .fo-abschnitt h3 {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--fs-m);
 }
 .fo-zeile {
   display: flex;
@@ -1310,7 +1310,7 @@ button.icon.fo-gl-zaehlt.an {
 }
 .pk-kopf h2 {
   margin: 0;
-  font-size: 18px;
+  font-size: var(--fs-xl);
 }
 .pk-kopf-text .muted {
   font-size: 12.5px;
@@ -1355,8 +1355,6 @@ button.icon.fo-gl-zaehlt.an {
   padding: 0;
   font: inherit;
   color: inherit;
-  text-transform: inherit;
-  letter-spacing: inherit;
   cursor: pointer;
 }
 .pk-raster {
@@ -2322,7 +2320,7 @@ button.icon.fo-gl-zaehlt.an {
 }
 .es-inhalt > h2 {
   margin: 0 0 6px;
-  font-size: 20px;
+  font-size: var(--fs-xl);
 }
 .es-inhalt > p {
   max-width: 820px;
@@ -2334,7 +2332,7 @@ button.icon.fo-gl-zaehlt.an {
 }
 .es-titelzeile h2 {
   margin: 0;
-  font-size: 20px;
+  font-size: var(--fs-xl);
 }
 .es-karte {
   max-width: 820px;
@@ -2354,7 +2352,7 @@ button.icon.fo-gl-zaehlt.an {
 }
 .es-karte h3 {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--fs-l);
 }
 .es-karte > p {
   margin: 0;
@@ -2477,11 +2475,12 @@ button.icon.fo-gl-zaehlt.an {
   align-self: start;
 }
 .es-adress-detail h3 {
+  font-size: var(--fs-l);
   margin: 0 0 10px;
 }
 .es-adress-detail h4 {
   margin: 14px 0 4px;
-  font-size: 12px;
+  font-size: var(--fs-s);
   font-weight: 600;
   color: var(--muted);
 }
@@ -2938,7 +2937,7 @@ button.icon.ex-baum-pfeil {
 }
 .pu-kopf h2 {
   margin: 0 0 4px;
-  font-size: 18px;
+  font-size: var(--fs-xl);
 }
 .pu-kopf p {
   margin: 0;
@@ -3497,7 +3496,7 @@ button.icon.fo-gl-bed.gesetzt {
   margin: 0 0 16px;
 }
 .fo-pruefliste h2 {
-  font-size: 14px;
+  font-size: var(--fs-l);
   margin: 8px 0;
 }
 .fo-pruef-zeile {
@@ -3759,7 +3758,7 @@ button.icon.fo-gl-bed.gesetzt {
 }
 .po-teil h4 {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--fs-m);
 }
 .po-teil p {
   margin: 0;
@@ -4951,7 +4950,7 @@ li.es-dok[data-ziehen='danach'] {
 }
 .pu-abschnitt-kopf h3 {
   margin: 0;
-  font-size: 15px;
+  font-size: var(--fs-l);
 }
 .pu-abschnitt-kopf > .small {
   margin-left: auto;
