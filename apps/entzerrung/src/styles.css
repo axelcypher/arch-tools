@@ -249,6 +249,9 @@
   .ef-koord {
     margin-left: 0;
   }
+  .ef-status span {
+    max-width: 100%;
+  }
 }
 .ef-flaeche {
   container-type: size;

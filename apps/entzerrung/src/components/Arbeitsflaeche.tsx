@@ -73,7 +73,8 @@ export function Arbeitsflaeche() {
     }
     return () => {
       ro.disconnect();
-      renderer.current?.freigeben(true);
+      // den Kontext nicht aufgeben: unter StrictMode baut React die Fläche sofort neu auf und braucht ihn wieder
+      renderer.current?.freigeben();
       renderer.current = null;
     };
   }, []);
