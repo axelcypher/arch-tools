@@ -69,17 +69,23 @@ Mindest- bzw. zwingende Vollgeschosse stehen als „unterschritten“.
 
 ## Welches Recht gilt
 
-Unter „Projekt und Bebauungsplan“ wird das **Datum des Bebauungsplans** eingetragen (Inkrafttreten bzw. Satzungsbeschluss). Daraus wählt das
-Tool zwei Regelwerke; beide lassen sich übersteuern, maßgebend ist die Planurkunde. Ohne Datum gilt das aktuelle
-Recht (Vorhaben nach § 34 oder § 35 BauGB).
+Unter „Projekt und Bebauungsplan“ wird das **Datum des Bebauungsplans** eingetragen (Inkrafttreten bzw. Satzungsbeschluss),
+optional das **Datum der öffentlichen Auslegung** des Planentwurfs. Daraus wählt das Tool zwei Regelwerke; beide lassen
+sich übersteuern, maßgebend ist die Planurkunde. Ohne Datum gilt das aktuelle Recht (Vorhaben nach § 34 oder § 35 BauGB).
+
+- **BauNVO-Fassung:** nach der öffentlichen Auslegung (§ 25c Abs. 1 BauNVO 1990: Auslegung nach § 3 Abs. 2 BauGB vor
+  dem 27.01.1990 → alte Fassung; ebenso § 25a BauNVO 1977 und § 25 BauNVO 1968). Ohne Auslegungsdatum nimmt das Tool
+  das Plandatum an; liegt es weniger als zwei Jahre nach einem Fassungswechsel (01.08.1962, 01.01.1969, 27.01.1990),
+  steht ein Hinweis im Nachweis.
+- **Vollgeschossbegriff (BauO):** nach dem Inkrafttreten des Plans (Plandatum).
 
 **BauNVO** (Bundesrecht, gilt in allen Ländern gleich):
 
 | Fassung | Zeitraum | Grundfläche | Geschossfläche |
 |---|---|---|---|
-| 1962 | bis 31.12.1968 | Nebenanlagen (§ 14) werden nicht angerechnet; Garagen zählen (anrechnungsfrei nur in MK, GE, GI, § 19 Abs. 5) | Vollgeschosse nach Außenmaßen, dazu Aufenthaltsräume in anderen Geschossen |
-| 1968/1977 | 01.01.1969 – 26.01.1990 | zusätzlich unberücksichtigt: Balkone, Loggien, Terrassen, Anlagen in Bauwich/Abstandsflächen (§ 19 Abs. 4); überdachte Stellplätze und Garagen bis 0,1 der Grundstücksfläche anrechnungsfrei (§ 21a Abs. 3) | Vollgeschosse, dazu Aufenthaltsräume in anderen Geschossen einschließlich zugehöriger Treppenräume und Umfassungswände (§ 20 Abs. 2) |
-| 1990 ff. | ab 27.01.1990 | GRZ I für die Hauptanlage; GRZ II mit Garagen, Stellplätzen und Zufahrten, Nebenanlagen und unterirdischen Anlagen, bis 1,5 × GRZ, höchstens 0,8 (§ 19 Abs. 4) | nur Vollgeschosse (Aufenthaltsräume in anderen Geschossen nur bei Festsetzung) |
+| 1962 | bis 31.12.1968 | Nebenanlagen (§ 14) werden nicht angerechnet; eingeschossige Garagen und überdachte Stellplätze bis 0,1 der Grundstücksfläche anrechnungsfrei, in MK, GE, GI ohne Anrechnung nur bei Zulassung („prüfen“, § 19 Abs. 5) | Vollgeschosse nach Außenmaßen, dazu Aufenthaltsräume in anderen Geschossen samt zugehöriger Treppenräume; ohne Nebenanlagen |
+| 1968/1977 | 01.01.1969 – 26.01.1990 | zusätzlich unberücksichtigt: Balkone, Loggien, Terrassen, Anlagen in Bauwich/Abstandsflächen (§ 19 Abs. 4); überdachte Stellplätze und Garagen bis 0,1 der Grundstücksfläche anrechnungsfrei (§ 21a Abs. 3) | Vollgeschosse, dazu Aufenthaltsräume in anderen Geschossen einschließlich zugehöriger Treppenräume und Umfassungswände (§ 20 Abs. 2); ohne Nebenanlagen (§ 20 Abs. 3) und ohne nicht angerechnete Garagen (§ 21a Abs. 4) |
+| 1990 ff. | ab 27.01.1990 | GRZ I für die Hauptanlage; GRZ II mit Garagen, Stellplätzen und Zufahrten, Nebenanlagen und unterirdischen Anlagen, bis 1,5 × GRZ, höchstens 0,8 (§ 19 Abs. 4) | nur Vollgeschosse (Aufenthaltsräume in anderen Geschossen nur bei Festsetzung); ohne Nebenanlagen (§ 20 Abs. 4), Garagen in Vollgeschossen nur bei Festsetzung nach § 21a Abs. 4 Nr. 3 heraus |
 
 **Vollgeschoss** – statische Verweisung auf die Bauordnung NRW zum Zeitpunkt des Plans (OVG NRW, 03.05.2018,
 10 A 2937/15):
@@ -87,12 +93,15 @@ Recht (Vorhaben nach § 34 oder § 35 BauGB).
 | Fassung | Zeitraum | Vollgeschoss, wenn … |
 |---|---|---|
 | BauO NW 1962/1970 | 01.10.1962 – 31.12.1984 | vollständig über der festgelegten Geländeoberfläche und auf mindestens zwei Dritteln der eigenen Grundfläche die lichte Höhe für Aufenthaltsräume (2,50 m; im Einfamilienhaus und im Dachraum 2,30 m). Kellergeschosse, die im Mittel mehr als 1,40 m über das Gelände ragen, werden angerechnet. |
-| BauO NW 1984/1995, BauO NRW 2000 | 01.01.1985 – 31.12.2018 | Deckenoberkante im Mittel mehr als 1,60 m über Gelände und Höhe mindestens 2,30 m (bis OK Fußboden darüber bzw. OK Dachhaut). Geneigte Dachflächen: über mehr als drei Viertel der eigenen Grundfläche; Staffelgeschoss: über mehr als zwei Drittel der Grundfläche darunter. |
-| BauO NRW 2018 | ab 01.01.2019 | Deckenoberkante im Mittel mehr als 1,60 m über Gelände und lichte Höhe mindestens 2,30 m über mehr als drei Viertel der Grundfläche des Geschosses darunter. |
+| BauO NW 1984/1995, BauO NRW 2000 | 01.01.1985 – 31.12.2018 | Deckenoberkante im Mittel mehr als 1,60 m über Gelände und Höhe mindestens 2,30 m (bis OK Fußboden darüber bzw. OK Dachhaut). Geneigte Dachflächen: über mehr als drei Viertel der eigenen Grundfläche; Staffelgeschoss (nur das oberste Geschoss, zurückgesetzt gegenüber einem oberirdischen Geschoss darunter): über mehr als zwei Drittel der Grundfläche darunter. |
+| BauO NRW 2018 | ab 01.01.2019 | Deckenoberkante im Mittel mehr als 1,60 m über Gelände und lichte Höhe mindestens 2,30 m über mehr als drei Viertel der Grundfläche des Geschosses darunter. Fällt ein Geschoss nur wegen eines größeren Geschosses darunter durch (z. B. EG über Tiefgarage), steht ein Hinweis im Nachweis. |
+
+Grundflächen und Höhenraster der Vollgeschossprüfung rechnen nach Außenmaßen ohne Balkone, Loggien und Terrassen:
+nur Umrisse mit Raumumschließung R (§ 2 Abs. 6 BauO NRW 2018, § 2 Abs. 5 BauO NRW 2000).
 
 Nicht automatisch geprüft werden (BauO NW 1962/1970) Geschosse mit mehr als 1,80 m lichter Höhe unterhalb der
 Traufenoberkante und Garagengeschosse; sie lassen sich je Geschoss als Vollgeschoss festlegen. Kellergeschosse
-werden bei Plänen ab der BauO NW 1970 (ab 27.01.1970, ebenso ohne Plandatum) „im Lichten“ gemessen: Deckenoberkante
+werden bei Plänen ab der BauO NW 1970 (in Kraft ab 01.07.1970, ebenso ohne Plandatum) „im Lichten“ gemessen: Deckenoberkante
 minus Decken-/Dachaufbau muss im Mittel mehr als 1,40 m über dem Gelände liegen; bei älteren Plänen zählt die
 Deckenoberkante.
 
@@ -236,10 +245,21 @@ unter dem Plan beginnt mit der Nummer wie im Plan und im Druck.
   eine angebaute, ebenerdige Terrasse, die viele Bauaufsichten der Hauptanlage zurechnen.
 - **Gebäudeteile:** Hat ein Geschoss mehrere Umrisse (z. B. eine im IFC modellierte angebaute Garage), lassen sie sich
   unter „Gebäudeteile“ als „Garage / Carport“ oder „Nebenanlage“ kennzeichnen. Sie zählen dann nicht zur
-  Hauptanlage, sondern wie eine Lageplan-Fläche dieser Nutzung (§ 19 Abs. 4 BauNVO 1990 bzw. § 21a 1968/1977) und
-  erscheinen in der Tabelle „Grundfläche“; Vollgeschossprüfung und Geschossfläche bleiben unverändert.
-- **BauNVO 1962, § 19 Abs. 5:** Im Kern-, Gewerbe- und Industriegebiet (Baugebiet MK, GE, GI) werden Garagen nicht
-  auf die Grundfläche angerechnet, sonst schon.
+  Hauptanlage, sondern wie eine Lageplan-Fläche dieser Nutzung (§ 19 Abs. 4 BauNVO 1990, § 21a 1968/1977 bzw.
+  § 19 Abs. 5 1962) und erscheinen in der Tabelle „Grundfläche“; die Vollgeschossprüfung bleibt unverändert.
+  **Geschossfläche:** Nebenanlagen zählen nicht (§ 20 Abs. 4 BauNVO 1990, § 20 Abs. 3 der früheren Fassungen).
+  Garagen zählen nach BauNVO 1962 und 1968/1977 nicht, soweit sie nicht auf die Grundfläche angerechnet werden
+  (§ 21a Abs. 4 Nr. 2 BauNVO 1968/1977); nach 1968/1977 und 1990 ganz nicht, wenn der Bebauungsplan das nach § 21a
+  Abs. 4 Nr. 3 festsetzt (Festsetzung „Garagen in Vollgeschossen nicht zur GF“).
+- **BauNVO 1962, § 19 Abs. 5:** Außerhalb von Kern-, Gewerbe- und Industriegebieten werden eingeschossige Garagen und
+  überdachte Stellplätze bis 0,1 der Grundstücksfläche nicht angerechnet („bis 0,1 frei“, wie 1968/1977). Im Kern-,
+  Gewerbe- und Industriegebiet (MK, GE, GI) können sie ohne Anrechnung zugelassen werden: Das Tool zeigt „prüfen“
+  und rechnet ohne und mit ihnen; nach Klärung unter „Einstufung offener Fälle“ festlegen.
+- **GRZ I mit ungeklärten Flächen (BauNVO 1990):** Terrassen und Wege mit „prüfen“ rechnet ein Teil der Praxis der
+  Hauptanlage zu. Die GRZ I steht deshalb – wie die GRZ II – ohne und mit ihnen; überschreitet sie mit ihnen die
+  zulässige GRZ, lautet der Status „prüfen“.
+- **Treppenräume (vor 1990):** Ein Treppenraum in einem Nicht-Vollgeschoss zählt nur zur Geschossfläche, wenn im
+  selben Geschoss ein Aufenthaltsraum liegt („die zu ihnen gehörenden Treppenräume“, § 20 Abs. 2 BauNVO 1962/1968/1977).
 
 ## Ausgabe
 

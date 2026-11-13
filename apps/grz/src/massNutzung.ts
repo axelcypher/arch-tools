@@ -39,33 +39,55 @@ export const bauoLabel = (f: BauOFassung) => BAUO_FASSUNGEN.find((x) => x.id ===
 export interface Recht {
   baunvo: BauNVOFassung;
   bauo: BauOFassung;
-  /** aus dem Plandatum abgeleitet (sonst übersteuert oder aktuelles Recht) */
+  /** aus Plan- bzw. Auslegungsdatum abgeleitet (sonst übersteuert oder aktuelles Recht) */
   ausDatum: boolean;
   hinweise: string[];
 }
 
-/** Welche Fassungen gelten? Aus dem Plandatum, übersteuerbar; ohne Datum aktuelles Recht (§ 34/35 BauGB). */
+const DATUM = /^\d{4}-\d{2}-\d{2}$/;
+const datum = (v: string | undefined) => (v && DATUM.test(v) ? v : undefined);
+
+/** Inkrafttreten der BauNVO-Fassungen, bei denen sich die Rechnung ändert */
+const BAUNVO_WECHSEL = ['1962-08-01', '1969-01-01', '1990-01-27'];
+
+/** liegt das Datum weniger als zwei Jahre nach einem Fassungswechsel der BauNVO? */
+const naheAmWechsel = (d: string) => BAUNVO_WECHSEL.some((w) => d >= w && d < `${Number(w.slice(0, 4)) + 2}${w.slice(4)}`);
+
+/**
+ * Welche Fassungen gelten? Übersteuerbar; ohne Datum aktuelles Recht (§ 34/35 BauGB).
+ *  - BauNVO: nach der öffentlichen Auslegung des Planentwurfs (§ 25c Abs. 1 BauNVO 1990, § 25a BauNVO 1977,
+ *    § 25 BauNVO 1968), ohne Auslegungsdatum nach dem Plandatum
+ *  - Bauordnung (Vollgeschossbegriff): nach dem Inkrafttreten des Plans (Plandatum)
+ */
 export function recht(m: MassNutzung | undefined): Recht {
   const hinweise: string[] = [];
-  const d = m?.planDatum && /^\d{4}-\d{2}-\d{2}$/.test(m.planDatum) ? m.planDatum : undefined;
+  const d = datum(m?.planDatum);
+  const a = datum(m?.auslegungDatum);
+  const dNvo = a ?? d;
   let baunvo: BauNVOFassung = '1990';
   let bauo: BauOFassung = 'nrw2019';
+  if (dNvo) {
+    baunvo = dNvo < '1969-01-01' ? '1962' : dNvo < '1990-01-27' ? '1968' : '1990';
+    if (dNvo < '1962-08-01') hinweise.push('Plan vor Inkrafttreten der BauNVO 1962: Maßfestsetzungen nach damaligem Recht prüfen.');
+  }
   if (d) {
-    baunvo = d < '1969-01-01' ? '1962' : d < '1990-01-27' ? '1968' : '1990';
     bauo = d < '1985-01-01' ? 'nw1962' : d < '2019-01-01' ? 'nw1985' : 'nrw2019';
-    if (d < '1962-08-01') hinweise.push('Plan vor Inkrafttreten der BauNVO 1962: Maßfestsetzungen nach damaligem Recht prüfen.');
     if (d < '1962-10-01') hinweise.push('Plan vor der BauO NW 1962: Vollgeschossbegriff nach damaligem Recht prüfen.');
+    // kurz nach einem Fassungswechsel kann die Auslegung noch unter die alte Fassung fallen
+    if (!a && !m?.baunvo && naheAmWechsel(d))
+      hinweise.push('Für die BauNVO-Fassung zählt die öffentliche Auslegung des Planentwurfs (§ 25c BauNVO 1990 bzw. § 25a/§ 25 der früheren Fassungen); angenommen: Datum des Inkrafttretens.');
   } else hinweise.push('Ohne Plandatum gilt das aktuelle Recht (z. B. Vorhaben nach § 34 oder § 35 BauGB).');
   if (m?.baunvo) baunvo = m.baunvo;
   if (m?.bauo) bauo = m.bauo;
-  return { baunvo, bauo, ausDatum: !!d && !m?.baunvo && !m?.bauo, hinweise };
+  return { baunvo, bauo, ausDatum: !!dNvo && !m?.baunvo && !m?.bauo, hinweise };
 }
 
 /* ---------- Anrechnung der Lageplan-Flächen auf die Grundfläche ---------- */
 
 /**
  * hauptanlage: wie das Gebäude · grz2: GRZ II (§ 19 Abs. 4 BauNVO 1990) · garage01: bis 0,1 der
- * Grundstücksfläche anrechnungsfrei (§ 21a Abs. 3 BauNVO 1968/77) · nein · pruefen: die Fassung regelt es nicht eindeutig
+ * Grundstücksfläche anrechnungsfrei (§ 19 Abs. 5 Satz 2 BauNVO 1962, § 21a Abs. 3 BauNVO 1968/77) · nein ·
+ * pruefen: die Fassung regelt es nicht eindeutig
  */
 export type Anrechnung = 'hauptanlage' | 'grz2' | 'garage01' | 'nein' | 'pruefen';
 
@@ -73,8 +95,8 @@ const REGELN: Record<BauNVOFassung, Record<LageplanNutzung, Anrechnung>> = {
   '1962': {
     zufahrt: 'pruefen',
     stellplatz: 'pruefen',
-    // § 19 Abs. 5: Garagen nur in Kern-, Gewerbe- und Industriegebieten anrechnungsfrei
-    garage: 'hauptanlage',
+    // § 19 Abs. 5 Satz 2: außerhalb von MK, GE, GI bis 0,1 der Grundstücksfläche nicht angerechnet
+    garage: 'garage01',
     terrasse: 'pruefen',
     weg: 'pruefen',
     nebenanlage: 'nein', // § 19 Abs. 4
@@ -106,11 +128,14 @@ const REGELN: Record<BauNVOFassung, Record<LageplanNutzung, Anrechnung>> = {
   },
 };
 
-/** BauNVO 1962 § 19 Abs. 5: Garagen in Kern-, Gewerbe- und Industriegebieten werden nicht angerechnet */
-const GARAGEN_FREI_1962: Gebietsart[] = ['MK', 'GE', 'GI'];
+/**
+ * BauNVO 1962 § 19 Abs. 5 Satz 1: In Kern-, Gewerbe- und Industriegebieten können eingeschossige Garagen ohne
+ * Anrechnung zugelassen werden – ob das geschehen ist, weiß das Tool nicht („prüfen“)
+ */
+export const GARAGEN_ZULASSUNG_1962: Gebietsart[] = ['MK', 'GE', 'GI'];
 
 export function anrechnungRegel(n: LageplanNutzung, f: BauNVOFassung, gebietsart?: Gebietsart): Anrechnung {
-  if (f === '1962' && n === 'garage' && gebietsart && GARAGEN_FREI_1962.includes(gebietsart)) return 'nein';
+  if (f === '1962' && n === 'garage' && gebietsart && GARAGEN_ZULASSUNG_1962.includes(gebietsart)) return 'pruefen';
   return REGELN[f][n];
 }
 
@@ -156,8 +181,9 @@ function geschossFlaeche(st: Storey, nurR: boolean, ohneAnlagen = false): MultiP
  */
 function hoehenFunktion(project: Project, st: Storey, floorZ: number): (p: Point) => { h: number; schraeg: boolean } | null {
   const raeume = st.shapes.filter((r): r is RoomShape => r.kind === 'room' && !r.subtract && r.versatz !== undefined && r.points.length >= 3);
+  // nur Umrisse mit Raumumschließung R: Balkone, Loggien und Terrassen haben keine Geschosshöhe im Sinne der Bauordnung
   const teile = outlinesOf(st)
-    .filter((s) => !s.subtract)
+    .filter((s) => !s.subtract && s.umschliessung !== 'S')
     .map((s) => {
       // Höhen ab Unterkante des Körpers
       const hs = s.hoehe ?? st.hoehe;
@@ -342,6 +368,15 @@ function raeumePruefenRechnen(project: Project, st: Storey, floorZ: number, bauo
 }
 
 /**
+ * Räume eines Geschosses, die zur Geschossfläche zählen: Aufenthaltsräume und die „zu ihnen gehörenden“ Treppenräume
+ * (§ 20 Abs. 2 BauNVO 1962/1968/1977) – ein Treppenraum zählt nur, wenn im selben Geschoss ein Aufenthaltsraum liegt
+ */
+export function gezaehlteRaeume(pruefung: RaumPruefung[]): string[] {
+  const aufenthalt = pruefung.some((x) => x.ergebnis === 'ja');
+  return pruefung.filter((x) => x.ergebnis === 'ja' || (aufenthalt && x.ergebnis === 'treppe')).map((x) => x.roomId);
+}
+
+/**
  * Fläche der Aufenthaltsräume einschließlich zugehöriger Treppenräume und ihrer Umfassungswände:
  * Räume um die Wanddicke erweitert (Raster 5 cm), begrenzt auf den Geschossgrundriss.
  */
@@ -349,20 +384,16 @@ function raeumePruefenRechnen(project: Project, st: Storey, floorZ: number, bauo
 const aufenthaltCache = new WeakMap<Storey, { schluessel: string; flaeche: number }>();
 
 function aufenthaltsFlaeche(st: Storey, grundriss: MultiPolygon, wand: number, pruefung: RaumPruefung[]): number {
-  const schluessel = `${wand}|${pruefung
-    .filter((x) => x.ergebnis !== 'nein')
-    .map((x) => x.roomId)
-    .sort()
-    .join(',')}`;
+  const ids = gezaehlteRaeume(pruefung);
+  const schluessel = `${wand}|${[...ids].sort().join(',')}`;
   const c = aufenthaltCache.get(st);
   if (c && c.schluessel === schluessel) return c.flaeche;
-  const flaeche = aufenthaltsFlaecheRechnen(st, grundriss, wand, pruefung);
+  const flaeche = aufenthaltsFlaecheRechnen(st, grundriss, wand, new Set(ids));
   aufenthaltCache.set(st, { schluessel, flaeche });
   return flaeche;
 }
 
-function aufenthaltsFlaecheRechnen(st: Storey, grundriss: MultiPolygon, wand: number, pruefung: RaumPruefung[]): number {
-  const zaehlt = new Set(pruefung.filter((x) => x.ergebnis !== 'nein').map((x) => x.roomId));
+function aufenthaltsFlaecheRechnen(st: Storey, grundriss: MultiPolygon, wand: number, zaehlt: Set<string>): number {
   const rooms = st.shapes.filter((s): s is RoomShape => s.kind === 'room' && zaehlt.has(s.id));
   if (!rooms.length || !grundriss.length) return 0;
   const b = bounds(ringsOf(grundriss).flat());
@@ -486,7 +517,7 @@ export interface Nachweis {
   grz: Kennzahl;
   /** nur BauNVO 1990 ff. */
   grz2?: Kennzahl;
-  /** 1968/77: anrechnungsfreie Garagenfläche */
+  /** vor 1990: anrechnungsfreie Garagenfläche (§ 19 Abs. 5 Satz 2 BauNVO 1962, § 21a Abs. 3 BauNVO 1968/77) */
   garagenFrei?: number;
   gf: number;
   gfAufenthalt: number;
@@ -495,8 +526,11 @@ export interface Nachweis {
   gfz: Kennzahl;
   vollgeschosse: { anzahl: number; zulaessig?: number; mindestens?: number; zwingend?: boolean; status: Status };
   geschosse: VollgeschossPruefung[];
-  /** Geschossfläche je Geschoss (R-Umrisse der Vollgeschosse bzw. Aufenthaltsräume) */
-  gfJeGeschoss: { storeyId: string; name: string; flaeche: number; art: 'vollgeschoss' | 'aufenthalt' | 'keine' }[];
+  /**
+   * Geschossfläche je Geschoss (R-Umrisse der Vollgeschosse bzw. Aufenthaltsräume); abzug: nicht mitgerechnete
+   * Gebäudeteile (Nebenanlagen, nicht angerechnete Garagen) in Vollgeschossen [m²]
+   */
+  gfJeGeschoss: { storeyId: string; name: string; flaeche: number; art: 'vollgeschoss' | 'aufenthalt' | 'keine'; abzug?: number }[];
   lageplan: LageplanPosten[];
   /** Räume der Nicht-Vollgeschosse (vor 1990): Aufenthaltsraum nach Nutzung und lichter Höhe */
   raeume: RaumPruefung[];
@@ -566,6 +600,9 @@ export function massNachweis(project: Project): Nachweis {
   // Grundrisse je Geschoss
   const grundriss = new Map(geschosse.map(({ st }) => [st.id, geschossFlaeche(st, false)]));
   const alleGeschosse = unionMP(...grundriss.values());
+  // Vollgeschossprüfung nach Außenmaßen ohne Balkone, Loggien und Terrassen (§ 2 Abs. 6 BauO NRW 2018, § 2 Abs. 5
+  // BauO NRW 2000): nur Umrisse mit Raumumschließung R
+  const grundrissR = new Map(geschosse.map(({ st }) => [st.id, geschossFlaeche(st, true)]));
 
   // Geländeoberfläche: festgelegt, sonst aus dem Geländemodell (IFC) bzw. den Lageplan-Flächen mit Höhe –
   // je Geschoss entlang seiner eigenen Außenwände (Hanglage: das Gelände steigt oder fällt am Gebäude)
@@ -596,13 +633,13 @@ export function massNachweis(project: Project): Nachweis {
 
   // Vollgeschossprüfung
   const pruefungen: VollgeschossPruefung[] = [];
-  // BauO NW 1970 (ab 27.01.1970): Kellergeschosse „im Lichten“ gemessen; ohne Datum (Fassung von Hand) ebenso
-  const kellerImLichten = !m.planDatum || m.planDatum >= '1970-01-27';
+  // BauO NW 1970 (in Kraft ab 01.07.1970): Kellergeschosse „im Lichten“ gemessen; ohne Datum (Fassung von Hand) ebenso
+  const kellerImLichten = !m.planDatum || m.planDatum >= '1970-07-01';
   // Baumasse (§ 21 Abs. 2): Außenmaße vom Fußboden des untersten bis zur Decke des obersten Vollgeschosses – vereinfacht
   // als Grundfläche × Geschosshöhe je Vollgeschoss
   let baumasse = 0;
   geschosse.forEach(({ st, e }, idx) => {
-    const gr = grundriss.get(st.id)!;
+    const gr = grundrissR.get(st.id)!;
     const A = areaMP(gr);
     const next = geschosse.slice(idx + 1).find((x) => x.e > e + 1e-6);
     const decke = next ? next.e : e + st.hoehe;
@@ -611,11 +648,15 @@ export function massNachweis(project: Project): Nachweis {
     // Geschoss darunter: alle Geschosse der nächsttieferen Ebene (gleich hohe Geschosse nebeneinander zählen zusammen)
     const tiefer = geschosse.filter((x) => x.e < e - 1e-6);
     const eUnten = tiefer.length ? Math.max(...tiefer.map((x) => x.e)) : undefined;
-    const darunter = eUnten === undefined ? A : areaMP(unionMP(...tiefer.filter((x) => Math.abs(x.e - eUnten) < 1e-6).map((x) => grundriss.get(x.st.id)!)));
+    const unten = eUnten === undefined ? [] : tiefer.filter((x) => Math.abs(x.e - eUnten) < 1e-6);
+    const darunter = eUnten === undefined ? A : areaMP(unionMP(...unten.map((x) => grundrissR.get(x.st.id)!)));
     // Höhenraster über dem Grundriss
     const samples = rasterHoehen(project, st, e, gr);
     const schraeg = samples.some((s) => s.schraeg);
-    const staffel = eUnten !== undefined && A < darunter - 1 && !schraeg;
+    // Staffelgeschoss (BauO NW 1984/1995, BauO NRW 2000): nur das oberste Geschoss, zurückgesetzt gegenüber einem
+    // oberirdischen Geschoss darunter – ein EG über größerem Keller bzw. Tiefgarage ist keins
+    const untenOberirdisch = unten.length > 0 && unten.every((x) => pruefungen.find((q) => q.storeyId === x.st.id)?.oberirdisch);
+    const staffel = !next && untenOberirdisch && A < darunter - 1 && !schraeg;
     const anteilVon = (soll: number, licht: boolean, bezug: number) => {
       const hoch = samples.filter((s) => (licht ? s.h - aufbau : s.h) >= soll - 1e-9).length * (samples[0]?.zelle ?? 0);
       return { hoch, anteil: bezug > 0 ? hoch / bezug : 0 };
@@ -641,6 +682,12 @@ export function massNachweis(project: Project): Nachweis {
           ? `Decke im Mittel ${fmtM(ueber)} über Gelände (≤ 1,60 m): kein oberirdisches Geschoss`
           : `lichte Höhe ≥ 2,30 m auf ${pct(anteil)} der Grundfläche des Geschosses darunter (mehr als 75 % gefordert)`,
       };
+      // kein Vollgeschoss nur, weil das Geschoss darunter größer ist (z. B. EG über Tiefgarage)?
+      if (ob && anteil <= 0.75 && A > 0 && hoch / A > 0.75)
+        hinweise.push({
+          text: `${st.name}: kein Vollgeschoss nur wegen der größeren Grundfläche des Geschosses darunter (${fmtA(darunter)} gegenüber ${fmtA(A)}); auf die eigene Grundfläche bezogen ${pct(hoch / A)}. Ob der Bezug auf ein größeres Geschoss darunter (z. B. Keller, Tiefgarage) so gemeint ist, mit der Bauaufsicht klären (§ 2 Abs. 6 BauO NRW 2018).`,
+          art: 'sachlich',
+        });
     } else if (re.bauo === 'nw1985') {
       const ob = ueber > 1.6;
       const bezug = staffel ? darunter : A;
@@ -764,7 +811,12 @@ export function massNachweis(project: Project): Nachweis {
   // Überlagerungen eindeutig zuordnen: Flächen nach Rang der Anrechnung, gleiche Ränge in Listenfolge; Kellergeschosse
   // außerhalb der Hauptanlage (unterirdische Anlagen) reihen sich mit ihrer Anrechnung ein, hinter den Lageplan-Flächen
   const RANG: Record<Anrechnung, number> = { hauptanlage: 0, grz2: 1, garage01: 2, pruefen: 3, nein: 4 };
-  type Eintrag = { mp: MultiPolygon; name: string; post: Pick<LageplanPosten, 'anrechnung' | 'nachbar' | 'flaecheAussen' | 'flaecheEindeutig' | 'eindeutig' | 'ueberlagert'>; i: number };
+  type Eintrag = {
+    mp: MultiPolygon;
+    name: string;
+    post: Pick<LageplanPosten, 'anrechnung' | 'nachbar' | 'flaecheAussen' | 'flaecheEindeutig' | 'eindeutig' | 'ueberlagert'> & { nutzung?: LageplanNutzung };
+    i: number;
+  };
   const keller: Eintrag | null =
     areaMP(unterirdisch) > 1e-6
       ? {
@@ -843,29 +895,31 @@ export function massNachweis(project: Project): Nachweis {
 
   // Grundfläche: Summe der eindeutigen Anteile (disjunkt) – Summen im Druck stimmen so exakt mit den Kennzahlen überein
   const alle = reihenfolge.map((e) => e.post);
-  const summe = (pred: (a: Anrechnung) => boolean) => alle.filter((x) => !x.nachbar && pred(x.anrechnung)).reduce((a, x) => a + x.flaecheEindeutig, 0);
+  const summe = (pred: (a: Anrechnung) => boolean, nutzungen?: LageplanNutzung[]) =>
+    alle.filter((x) => !x.nachbar && pred(x.anrechnung) && (!nutzungen || (x.nutzung && nutzungen.includes(x.nutzung)))).reduce((a, x) => a + x.flaecheEindeutig, 0);
   const offen = summe((a) => a === 'pruefen');
   const anyOffen = offen > 1e-6;
+  // 1990: offene Terrassen und Wege rechnet ein Teil der Praxis der Hauptanlage zu (GRZ I) – auch dort als Spanne
+  const offenGrz1 = re.baunvo === '1990' ? summe((a) => a === 'pruefen', ['terrasse', 'weg']) : 0;
   let grz: Kennzahl;
   let grz2: Kennzahl | undefined;
   let garagenFrei: number | undefined;
-  /** Anteil der Garagenfläche, der angerechnet wird (1968/77) */
+  /** Anteil der Garagenfläche „bis 0,1 frei“, der angerechnet wird (1962 außerhalb MK/GE/GI, 1968/77) */
   let garagenAnteil = 1;
   if (re.baunvo === '1990') {
     const ii = hauptanlage + summe((a) => a === 'grz2' || a === 'hauptanlage');
     // GRZ I: Hauptanlage und Flächen, die ihr zugerechnet werden (z. B. angebaute Terrasse, Einstufung „GRZ I“)
-    grz = kennzahl(hauptanlage + summe((a) => a === 'hauptanlage'), G, m.grz);
+    const i = hauptanlage + summe((a) => a === 'hauptanlage');
+    grz = kennzahl(i, G, m.grz, offenGrz1 > 1e-6 ? i + offenGrz1 : undefined);
     const grz2Max = m.grzIIMax ?? (m.grz !== undefined ? Math.max(m.grz, Math.min(1.5 * m.grz, 0.8)) : undefined);
     grz2 = kennzahl(ii, G, grz2Max, anyOffen ? ii + offen : undefined);
   } else {
-    let flaeche = hauptanlage + summe((a) => a === 'hauptanlage');
-    if (re.baunvo === '1968') {
-      const garagen = summe((a) => a === 'garage01');
-      // ohne Grundstücksfläche keine anrechnungsfreie Garagenfläche (die GRZ fehlt dann ohnehin)
-      garagenFrei = G !== undefined ? Math.min(garagen, 0.1 * G) : 0;
-      flaeche += garagen - garagenFrei;
-      garagenAnteil = garagen > 1e-9 ? (garagen - garagenFrei) / garagen : 0;
-    }
+    // § 19 Abs. 5 Satz 2 BauNVO 1962 bzw. § 21a Abs. 3 BauNVO 1968/77: Garagen bis 0,1 der Grundstücksfläche nicht angerechnet
+    const garagen = summe((a) => a === 'garage01');
+    // ohne Grundstücksfläche keine anrechnungsfreie Garagenfläche (die GRZ fehlt dann ohnehin)
+    garagenFrei = G !== undefined ? Math.min(garagen, 0.1 * G) : 0;
+    garagenAnteil = garagen > 1e-9 ? (garagen - garagenFrei) / garagen : 0;
+    const flaeche = hauptanlage + summe((a) => a === 'hauptanlage') + garagen - garagenFrei;
     grz = kennzahl(flaeche, G, m.grz, anyOffen ? flaeche + offen : undefined);
   }
   // je Fläche: tatsächlich angerechnet
@@ -881,7 +935,7 @@ export function massNachweis(project: Project): Nachweis {
   const unterirdischPosten: Nachweis['unterirdisch'] = keller ? { flaeche: keller.post.flaecheEindeutig, anrechnung: keller.post.anrechnung, ...angerechnet(keller.post) } : undefined;
   if (anyOffen)
     hinweise.push({
-      text: 'Einzelne Flächen sind nach der maßgebenden BauNVO-Fassung nicht eindeutig einzustufen („prüfen“). Die GRZ ist ohne und mit ihnen angegeben.',
+      text: `Einzelne Flächen sind nach der maßgebenden BauNVO-Fassung nicht eindeutig einzustufen („prüfen“). ${re.baunvo !== '1990' ? 'Die GRZ ist' : offenGrz1 > 1e-6 ? 'GRZ I und GRZ II sind' : 'Die GRZ II ist'} ohne und mit ihnen angegeben.`,
       art: 'sachlich',
       tipp: 'Die Einstufung lässt sich je Nutzung unter „Einstufung offener Fälle“ festlegen.',
     });
@@ -897,9 +951,34 @@ export function massNachweis(project: Project): Nachweis {
         return pr.vollgeschoss ? [] : raeumePruefen(project, st, e, re.bauo, aufbau, !pr.oberirdisch, !!m.einfamilienhaus);
       })
     : [];
+  // Gebäudeteile in Vollgeschossen, die nicht zur Geschossfläche zählen: Nebenanlagen nach § 14 (§ 20 Abs. 4 BauNVO
+  // 1990, § 20 Abs. 3 BauNVO 1962–1977) und Garagen, soweit nicht auf die Grundfläche angerechnet (§ 19 Abs. 5 BauNVO
+  // 1962, § 21a Abs. 4 Nr. 2 BauNVO 1968/77), bzw. ganz bei Festsetzung nach § 21a Abs. 4 Nr. 3 (1968/77/90)
+  const garageAnr = anrechnung('garage', re.baunvo, m.einstufung, m.gebietsart);
+  const garageGfFrei = m.garagenGfFrei && re.baunvo !== '1962' ? 1 : re.baunvo === '1990' ? 0 : garageAnr === 'nein' ? 1 : garageAnr === 'garage01' ? 1 - garagenAnteil : 0;
+  let gfOhneNeben = 0;
+  let gfOhneGarage = 0;
+  const gfVollgeschoss = (st: Storey) => {
+    const r = geschossFlaeche(st, true);
+    const nurAnlagen = diffMP(r, geschossFlaeche(st, true, true));
+    const neben = areaMP(
+      intersectMP(
+        nurAnlagen,
+        unionAll(
+          outlinesOf(st)
+            .filter((o) => o.anlage === 'nebenanlage' && !o.subtract)
+            .map((o) => o.points),
+        ),
+      ),
+    );
+    const garage = (areaMP(nurAnlagen) - neben) * garageGfFrei;
+    gfOhneNeben += neben;
+    gfOhneGarage += garage;
+    return { flaeche: areaMP(r) - neben - garage, abzug: neben + garage > 1e-9 ? neben + garage : undefined };
+  };
   const gfJeGeschoss: Nachweis['gfJeGeschoss'] = geschosse.map(({ st }) => {
     const pr = pruefungen.find((x) => x.storeyId === st.id)!;
-    if (pr.vollgeschoss) return { storeyId: st.id, name: st.name, flaeche: areaMP(geschossFlaeche(st, true)), art: 'vollgeschoss' as const };
+    if (pr.vollgeschoss) return { storeyId: st.id, name: st.name, ...gfVollgeschoss(st), art: 'vollgeschoss' as const };
     if (vorher1990) {
       const a = aufenthaltsFlaeche(
         st,
@@ -918,6 +997,14 @@ export function massNachweis(project: Project): Nachweis {
       text: `${baunvoLabel(re.baunvo)}: Aufenthaltsräume in anderen Geschossen samt Treppenräumen und Umfassungswänden (${fmtM(wand)} Wandzuschlag) zählen zur Geschossfläche.`,
       art: 'sachlich',
     });
+  }
+  if (gfOhneNeben + gfOhneGarage > 0.005) {
+    const teile = [
+      gfOhneNeben > 0.005 && `Nebenanlagen ${fmtA(gfOhneNeben)} (${re.baunvo === '1990' ? '§ 20 Abs. 4 BauNVO 1990' : `§ 20 Abs. 3 ${baunvoLabel(re.baunvo)}`})`,
+      gfOhneGarage > 0.005 &&
+        `Garagen ${fmtA(gfOhneGarage)} (${m.garagenGfFrei && re.baunvo !== '1962' ? '§ 21a Abs. 4 Nr. 3 BauNVO, festgesetzt' : re.baunvo === '1962' ? 'nicht auf die Grundfläche angerechnet, § 19 Abs. 5 BauNVO 1962' : 'nicht auf die Grundfläche angerechnet, § 21a Abs. 4 Nr. 2 BauNVO 1968/1977'})`,
+    ].filter(Boolean);
+    hinweise.push({ text: `Nicht zur Geschossfläche gerechnet (Gebäudeteile in Vollgeschossen): ${teile.join('; ')}.`, art: 'sachlich' });
   }
   const gfz = kennzahl(gf, G, m.gfz);
 

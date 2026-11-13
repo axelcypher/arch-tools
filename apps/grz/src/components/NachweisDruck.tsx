@@ -8,7 +8,7 @@ import type { Anrechnung, Kennzahl, Nachweis, Status } from '../massNutzung';
 import { aktiveVariante, baunvoLabel, bauoLabel, flaechenDerVariante, massNachweis, sachlicheHinweise, varianten } from '../massNutzung';
 import { druckenAls } from '@core/platform/projektDatei';
 import { setMassNutzung, useGrz } from '../store';
-import { ANRECHNUNG, AUFENTHALT, BILANZ_REST, BILANZ_UEBER, flaechenVergleich, GELAENDE_QUELLE, GF_ART, HAFTUNG, kennzahlWert, roemisch, STATUS, vollgeschosseZulaessig, zahl } from '../texte';
+import { ANRECHNUNG, AUFENTHALT, BILANZ_REST, BILANZ_UEBER, flaechenVergleich, garagenFreiText, GELAENDE_QUELLE, GF_ART, HAFTUNG, kennzahlWert, roemisch, STATUS, vollgeschosseZulaessig, zahl } from '../texte';
 import { bebauungsplanText, GEBIETSARTEN } from '@core/model';
 import { useEscSchliessen } from '@core/ui/Dialog';
 import { datumText, DruckKopf } from '@core/ui/DruckKopf';
@@ -86,7 +86,9 @@ export function NachweisDruck({ onClose }: { onClose: () => void }) {
           <tbody>
             <tr>
               <td>Bebauungsplan</td>
-              <td>{[bebauungsplanText(project.meta.bebauungsplan), m.planDatum ? `in Kraft seit ${datumText(m.planDatum)}` : 'kein Datum (aktuelles Recht)'].filter(Boolean).join(', ')}</td>
+              <td>
+                {[bebauungsplanText(project.meta.bebauungsplan), m.planDatum ? `in Kraft seit ${datumText(m.planDatum)}` : 'kein Datum (aktuelles Recht)', m.auslegungDatum && `ausgelegt ab ${datumText(m.auslegungDatum)}`].filter(Boolean).join(', ')}
+              </td>
             </tr>
             {m.gebietsart && (
               <tr>
@@ -174,7 +176,7 @@ export function NachweisDruck({ onClose }: { onClose: () => void }) {
           </tbody>
         </table>
         {n.garagenFrei !== undefined && n.garagenFrei > 0 && (
-          <p className="report-note">Garagen und überdachte Stellplätze: {fmt2(n.garagenFrei)} m² anrechnungsfrei (§ 21a Abs. 3, bis 0,1 der Grundstücksfläche).</p>
+          <p className="report-note">{garagenFreiText(n.recht.baunvo, n.garagenFrei)}</p>
         )}
         {(n.grz.mitOffenen !== undefined || n.grz2?.mitOffenen !== undefined) && (
           <p className="report-note">

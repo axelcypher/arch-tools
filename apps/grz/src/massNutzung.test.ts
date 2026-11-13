@@ -49,7 +49,10 @@ describe('Maß der baulichen Nutzung: anzuwendendes Recht', () => {
   });
 
   it('Anrechnung je Fassung, offene Fälle über die Einstufung', () => {
-    expect(anrechnung('garage', '1962')).toBe('hauptanlage');
+    // § 19 Abs. 5 BauNVO 1962: außerhalb MK/GE/GI bis 0,1 frei, in MK/GE/GI nur bei Zulassung
+    expect(anrechnung('garage', '1962')).toBe('garage01');
+    expect(anrechnung('garage', '1962', undefined, 'GE')).toBe('pruefen');
+    expect(anrechnung('garage', '1962', { garage: 'nein' }, 'GE')).toBe('nein');
     expect(anrechnung('garage', '1968')).toBe('garage01');
     expect(anrechnung('terrasse', '1968')).toBe('nein');
     expect(anrechnung('zufahrt', '1990')).toBe('grz2');
@@ -438,15 +441,28 @@ describe('Fachliche Lücken (G-26) und Grundstücksgrenze (G-22)', () => {
     expect(massNachweis(p).hauptanlage).toBeCloseTo(153, 6);
   });
 
-  it('BauNVO 1962: Garage in GE nicht angerechnet, in WA angerechnet (§ 19 Abs. 5)', () => {
+  it('BauNVO 1962 (§ 19 Abs. 5): Garage im WA bis 0,1 der Grundstücksfläche frei, im GE „prüfen“', () => {
     const p = haus('1967-03-14');
     lageplan(p, flaeche(12, 0, 15, 6, { name: 'Garage', nutzung: 'garage' }));
     p.massNutzung = { ...p.massNutzung, gebietsart: 'WA' };
-    expect(massNachweis(p).grz.flaeche).toBeCloseTo(135 + 18, 6);
+    // WA: 18 m² ≤ 0,1 · 612,50 m² → ganz anrechnungsfrei
+    const wa = massNachweis(p);
+    expect(wa.lageplan[0].anrechnung).toBe('garage01');
+    expect(wa.garagenFrei).toBeCloseTo(18, 6);
+    expect(wa.grz.flaeche).toBeCloseTo(135, 6);
+    // Gegenprobe: über 0,1 · G zählt der Rest (G = 150 m² → 15 m² frei, 3 m² angerechnet)
+    p.meta.grundstueck.flaeche = 150;
+    const klein = massNachweis(p);
+    expect(klein.garagenFrei).toBeCloseTo(15, 6);
+    expect(klein.grz.flaeche).toBeCloseTo(135 + 3, 6);
+    p.meta.grundstueck.flaeche = 612.5;
+    // GE: anrechnungsfrei nur bei Zulassung → Spanne ohne/mit Garage
     p.massNutzung = { ...p.massNutzung, gebietsart: 'GE' };
-    const n = massNachweis(p);
-    expect(n.grz.flaeche).toBeCloseTo(135, 6);
-    expect(n.lageplan[0].anrechnung).toBe('nein');
+    const ge = massNachweis(p);
+    expect(ge.lageplan[0].anrechnung).toBe('pruefen');
+    expect(ge.grz.flaeche).toBeCloseTo(135, 6);
+    expect(ge.grz.flaecheMitOffenen).toBeCloseTo(135 + 18, 6);
+    expect(ge.garagenFrei).toBe(0);
   });
 
   it('absolute GR 120 m² gegen die vorhandene GR; Vollgeschosse mindestens/zwingend; BMZ', () => {
@@ -598,5 +614,182 @@ describe('Gesamt-Review: Rechenweg, Grundstücksfläche, Nummern', () => {
     expect(nr.get(p.lageplan!.flaechen[1].id)).toBe(1);
     expect(nr.has(p.lageplan!.flaechen[0].id)).toBe(false);
     expect(rechenweg(n).flaechen.find((f) => f.id === p.lageplan!.flaechen[1].id)?.nr).toBe('1');
+  });
+});
+
+describe('Fachliche Pflichtbefunde Baurecht (P2–P10)', () => {
+  /** Geschoss mit Rechteck-Umrissen; S: Balkon/Loggia/Terrasse */
+  const geschoss = (name: string, e: number, h: number, ...umrisse: { x0: number; y0: number; x1: number; y1: number; S?: boolean }[]): Storey => {
+    const s: Storey = { ...createStorey(name, h), elevation: e };
+    for (const u of umrisse) {
+      const o = createOutline(rectPoints({ x: u.x0, y: u.y0 }, { x: u.x1, y: u.y1 }));
+      if (u.S) o.umschliessung = 'S';
+      s.shapes.push(o);
+    }
+    return s;
+  };
+  const projekt = (planDatum: string, ...storeys: Storey[]): Project => {
+    const p = createProject('Befund');
+    p.storeys = storeys;
+    p.meta.grundstueck.flaeche = 612.5;
+    p.massNutzung = { planDatum, grz: 0.4, gfz: 0.8, gelaende: -0.2 };
+    return p;
+  };
+  const vg = (p: Project, name: string) => massNachweis(p).geschosse.find((g) => g.name === name)!;
+
+  it('P2: Auslegung 1989, Inkrafttreten 1990 → BauNVO 1968/1977, Vollgeschossbegriff nach dem Inkrafttreten', () => {
+    const r = recht({ planDatum: '1990-06-01', auslegungDatum: '1989-10-02' });
+    expect(r).toMatchObject({ baunvo: '1968', bauo: 'nw1985', ausDatum: true });
+    expect(r.hinweise.some((h) => h.includes('§ 25c'))).toBe(false);
+    // Gegenprobe: ohne Auslegungsdatum BauNVO 1990 – mit Hinweis, weil kurz nach dem Fassungswechsel
+    const ohne = recht({ planDatum: '1990-06-01' });
+    expect(ohne.baunvo).toBe('1990');
+    expect(ohne.hinweise.some((h) => h.includes('öffentliche Auslegung') && h.includes('§ 25c'))).toBe(true);
+    // weit weg vom Wechsel: kein Hinweis
+    expect(recht({ planDatum: '2005-03-01' }).hinweise).toEqual([]);
+    // Vollgeschossbegriff folgt dem Plandatum, nicht der Auslegung
+    expect(recht({ planDatum: '2019-02-01', auslegungDatum: '2018-06-01' }).bauo).toBe('nrw2019');
+  });
+
+  it('P2/P8: Speichern liest auslegungDatum und garagenGfFrei, verwirft ungültige Werte', async () => {
+    const { parseProject, serializeProject } = await import('@core/serialize');
+    const p = haus('1990-06-01');
+    p.massNutzung = { ...p.massNutzung, auslegungDatum: '1989-10-02', garagenGfFrei: true };
+    expect(parseProject(serializeProject(p)).massNutzung).toMatchObject({ auslegungDatum: '1989-10-02', garagenGfFrei: true });
+    // Gegenprobe: falsches Datumsformat und Nicht-Boolean werden verworfen
+    const roh = JSON.parse(serializeProject(p));
+    roh.massNutzung.auslegungDatum = '02.10.1989';
+    roh.massNutzung.garagenGfFrei = 'ja';
+    const back = parseProject(JSON.stringify(roh)).massNutzung!;
+    expect(back.auslegungDatum).toBeUndefined();
+    expect(back.garagenGfFrei).toBeUndefined();
+  });
+
+  it('P3: Rechenweg zeigt den Garagenabzug auch nach BauNVO 1962', async () => {
+    const { rechenweg } = await import('./rechenweg');
+    const p = haus('1967-03-14');
+    lageplan(p, flaeche(12, 0, 15, 6, { name: 'Garage', nutzung: 'garage' }));
+    const z = rechenweg(massNachweis(p), new Map()).formeln[0];
+    expect(z).toContain('− Garagen anrechnungsfrei (§ 19 Abs. 5 BauNVO 1962) 18,00 m²');
+    // Gegenprobe: 1968/77 mit § 21a Abs. 3
+    const q = haus('1978-06-01');
+    lageplan(q, flaeche(12, 0, 15, 6, { name: 'Garage', nutzung: 'garage' }));
+    expect(rechenweg(massNachweis(q), new Map()).formeln[0]).toContain('(§ 21a Abs. 3)');
+  });
+
+  it('P5/P6: Staffelgeschoss mit Dachterrasse (S) ist durch die Terrasse kein Vollgeschoss – 2018 und 1985', () => {
+    for (const datum of ['2020-05-01', '1995-01-01']) {
+      const eg = () => geschoss('EG', 0, 3, { x0: 0, y0: 0, x1: 12, y1: 11.25 });
+      // OG: 6 m Raum (R), daneben die Dachterrasse (S) auf dem Rest der EG-Decke
+      const p = projekt(datum, eg(), geschoss('OG', 3, 3, { x0: 0, y0: 0, x1: 6, y1: 11.25 }, { x0: 6, y0: 0, x1: 12, y1: 11.25, S: true }));
+      const og = vg(p, 'OG');
+      expect(og.flaeche).toBeCloseTo(6 * 11.25, 6);
+      expect(og.vollgeschoss).toBe(false);
+      if (datum === '1995-01-01') expect(og.bezug).toBe('darunter');
+      // Gegenprobe: 10 m Raum – mehr als drei Viertel bzw. zwei Drittel der EG-Fläche
+      const q = projekt(datum, eg(), geschoss('OG', 3, 3, { x0: 0, y0: 0, x1: 10, y1: 11.25 }, { x0: 10, y0: 0, x1: 12, y1: 11.25, S: true }));
+      expect(vg(q, 'OG').vollgeschoss).toBe(true);
+    }
+  });
+
+  it('P6: EG über größerem UG (BauO NW 1984/1995) bleibt Vollgeschoss; nur das oberste Geschoss ist Staffelgeschoss', () => {
+    const ug = () => geschoss('UG', -3, 3, { x0: -5, y0: -5, x1: 15, y1: 15 });
+    const eg = () => geschoss('EG', 0, 3, { x0: 0, y0: 0, x1: 12, y1: 11.25 });
+    const p = projekt('1995-01-01', ug(), eg(), geschoss('OG', 3, 3, { x0: 0, y0: 0, x1: 12, y1: 11.25 }));
+    const e = vg(p, 'EG');
+    expect(e.bezug).toBe('eigene');
+    expect(e.vollgeschoss).toBe(true);
+    // auch als oberstes Geschoss: das UG darunter ist nicht oberirdisch → kein Staffelgeschoss
+    expect(vg(projekt('1995-01-01', ug(), eg()), 'EG').vollgeschoss).toBe(true);
+    // Gegenprobe: zurückgesetztes oberstes Geschoss über dem oberirdischen EG ist Staffelgeschoss
+    const q = projekt('1995-01-01', ug(), eg(), geschoss('OG', 3, 3, { x0: 0, y0: 0, x1: 6, y1: 11.25 }));
+    expect(vg(q, 'OG')).toMatchObject({ bezug: 'darunter', vollgeschoss: false });
+  });
+
+  it('P6: BauO NRW 2018 – EG über größerer Tiefgarage: Hinweis, wenn nur der größere Bezug zum Nicht-Vollgeschoss führt', () => {
+    const p = projekt('2020-05-01', geschoss('TG', -3, 3, { x0: -5, y0: -5, x1: 15, y1: 15 }), geschoss('EG', 0, 3, { x0: 0, y0: 0, x1: 12, y1: 11.25 }));
+    const n = massNachweis(p);
+    expect(n.geschosse.find((g) => g.name === 'EG')!.vollgeschoss).toBe(false);
+    expect(n.hinweise.some((h) => h.art === 'sachlich' && h.text.startsWith('EG: kein Vollgeschoss nur wegen der größeren Grundfläche'))).toBe(true);
+    // Gegenprobe: gleich große Geschosse – kein Hinweis
+    const q = projekt('2020-05-01', geschoss('TG', -3, 3, { x0: 0, y0: 0, x1: 12, y1: 11.25 }), geschoss('EG', 0, 3, { x0: 0, y0: 0, x1: 12, y1: 11.25 }));
+    const m = massNachweis(q);
+    expect(m.geschosse.find((g) => g.name === 'EG')!.vollgeschoss).toBe(true);
+    expect(m.hinweise.some((h) => h.text.includes('kein Vollgeschoss nur wegen'))).toBe(false);
+  });
+
+  it('P7: GRZ I mit offener Terrasse (BauNVO 1990) als Spanne, Status „prüfen“ bei Überschreitung', async () => {
+    const { rechenweg } = await import('./rechenweg');
+    const p = haus('2020-05-01');
+    lageplan(p, flaeche(-3, 0, 0, 5, { name: 'Terrasse', nutzung: 'terrasse' }));
+    const n = massNachweis(p);
+    expect(n.grz.flaeche).toBeCloseTo(135, 6);
+    expect(n.grz.flaecheMitOffenen).toBeCloseTo(150, 6);
+    expect(n.grz.mitOffenen).toBeCloseTo(150 / 612.5, 6);
+    expect(n.hinweise.some((h) => h.text.includes('GRZ I und GRZ II sind ohne und mit ihnen angegeben'))).toBe(true);
+    expect(rechenweg(n, new Map()).formeln.some((f) => f.startsWith('GRZ I mit ungeklärten Flächen'))).toBe(true);
+    // zulässige GRZ zwischen ohne und mit Terrasse → „prüfen“
+    p.massNutzung = { ...p.massNutzung, grz: 0.23 };
+    expect(massNachweis(p).grz.status).toBe('pruefen');
+    // Gegenprobe: offene „sonstige“ Fläche zählt nur in der GRZ II-Spanne, nicht in der GRZ I
+    const q = haus('2020-05-01');
+    lageplan(q, flaeche(-3, 0, 0, 5, { name: 'Sonstiges', nutzung: 'sonstige' }));
+    const m = massNachweis(q);
+    expect(m.grz.mitOffenen).toBeUndefined();
+    expect(m.grz2!.mitOffenen).toBeDefined();
+  });
+
+  it('P8: Nebenanlage als Gebäudeteil nicht in der GF; Garage nur nach § 21a Abs. 4', () => {
+    const mitAnbau = (datum: string, anlage: 'nebenanlage' | 'garage') => {
+      const p = haus(datum);
+      const teil = createOutline(rectPoints({ x: 12, y: 0 }, { x: 15, y: 6 }), 'Anbau');
+      teil.anlage = anlage;
+      p.storeys[1].shapes.push(teil);
+      return p;
+    };
+    const egGf = (p: Project) => massNachweis(p).gfJeGeschoss.find((g) => g.name === 'EG')!;
+    const neben = egGf(mitAnbau('2020-05-01', 'nebenanlage'));
+    expect(neben.flaeche).toBeCloseTo(135, 6);
+    expect(neben.abzug).toBeCloseTo(18, 6);
+    // 1990: Garage zählt zur GF, außer bei Festsetzung nach § 21a Abs. 4 Nr. 3
+    const g90 = mitAnbau('2020-05-01', 'garage');
+    expect(egGf(g90).flaeche).toBeCloseTo(153, 6);
+    g90.massNutzung = { ...g90.massNutzung, garagenGfFrei: true };
+    expect(egGf(g90).flaeche).toBeCloseTo(135, 6);
+    // 1968/77: nicht angerechnete Garage (bis 0,1 frei) auch nicht in der GF (§ 21a Abs. 4 Nr. 2)
+    const g77 = mitAnbau('1978-06-01', 'garage');
+    expect(egGf(g77).flaeche).toBeCloseTo(135, 6);
+    // Gegenprobe: nur 15 von 18 m² frei → 3 m² zählen zur GF
+    g77.meta.grundstueck.flaeche = 150;
+    expect(egGf(g77).flaeche).toBeCloseTo(138, 6);
+    // Gegenprobe: ohne Kennzeichnung zählt der Anbau voll
+    const ohne = haus('2020-05-01');
+    ohne.storeys[1].shapes.push(createOutline(rectPoints({ x: 12, y: 0 }, { x: 15, y: 6 }), 'Anbau'));
+    expect(egGf(ohne).flaeche).toBeCloseTo(153, 6);
+  });
+
+  it('P9: Keller nur mit Treppe (BauNVO 1977) ohne GF; mit Aufenthaltsraum zählt die Treppe mit', () => {
+    const p = haus('1978-06-01');
+    p.storeys[0].shapes.push(createRoom(rectPoints({ x: 1, y: 1 }, { x: 4, y: 5 }), 'K1', 'Treppe'));
+    const n = massNachweis(p);
+    expect(n.raeume.find((r) => r.name.includes('Treppe'))!.ergebnis).toBe('treppe');
+    expect(n.gfJeGeschoss.find((g) => g.name === 'UG')!.flaeche).toBe(0);
+    // Gegenprobe: Hobbyraum als Aufenthaltsraum im selben Geschoss → Treppe zählt mit
+    const hobby = createRoom(rectPoints({ x: 6, y: 1 }, { x: 10, y: 5 }), 'K2', 'Hobbyraum');
+    hobby.aufenthalt = 'ja';
+    const q = { ...p, storeys: p.storeys.map((s, i) => (i === 0 ? { ...s, shapes: [...s.shapes, hobby] } : s)) };
+    const ugQ = massNachweis(q).gfJeGeschoss.find((g) => g.name === 'UG')!;
+    // Hobbyraum 4 × 4 und Treppe 3 × 4, je um 0,25 m erweitert (Ecken gerundet)
+    expect(ugQ.flaeche).toBeGreaterThan(4.5 * 4.5 + 3.5 * 4.5 - 1);
+  });
+
+  it('P10: BauO NW 1970 erst ab 01.07.1970 – Keller „im Lichten“ nicht für Pläne vom Frühjahr 1970', () => {
+    const p = haus('1970-03-01');
+    // Decke 1,50 m über Gelände, im Lichten 1,20 m: nach BauO NW 1962 (bis OK Decke) angerechnet
+    p.massNutzung = { ...p.massNutzung, dachaufbau: 0.3, gelaende: -1.5 };
+    expect(vg(p, 'UG').vollgeschoss).toBe(true);
+    // Gegenprobe: Plan vom August 1970 – im Lichten gemessen, kein Vollgeschoss
+    p.massNutzung = { ...p.massNutzung, planDatum: '1970-08-01' };
+    expect(vg(p, 'UG').vollgeschoss).toBe(false);
   });
 });
