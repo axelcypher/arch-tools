@@ -31,15 +31,15 @@ export type MenuePunkt =
 
 interface MenueZustand {
   /** `ausloeser`: Element, das das Menü geöffnet hat – bekommt den Fokus nach Esc, Tab oder einer Auswahl zurück */
-  offen: { x: number; y: number; punkte: MenuePunkt[]; ausloeser: HTMLElement | null } | null;
-  zeigen: (x: number, y: number, punkte: MenuePunkt[], ausloeser?: HTMLElement | null) => void;
+  offen: { x: number; y: number; punkte: MenuePunkt[]; ausloeser: HTMLElement | null; name?: string } | null;
+  zeigen: (x: number, y: number, punkte: MenuePunkt[], ausloeser?: HTMLElement | null, name?: string) => void;
   /** `fokusZurueck`: den Fokus an den Auslöser geben (nicht bei einem Klick daneben – dann gilt, was angeklickt wurde) */
   schliessen: (fokusZurueck?: boolean) => void;
 }
 
 const useMenue = create<MenueZustand>((set, get) => ({
   offen: null,
-  zeigen: (x, y, punkte, ausloeser = null) => set({ offen: { x, y, punkte, ausloeser } }),
+  zeigen: (x, y, punkte, ausloeser = null, name) => set({ offen: { x, y, punkte, ausloeser, name } }),
   schliessen: (fokusZurueck = false) => {
     const ausloeser = get().offen?.ausloeser;
     set({ offen: null });
@@ -49,18 +49,25 @@ const useMenue = create<MenueZustand>((set, get) => ({
 
 const FOKUSSIERBAR = 'button, input, select, textarea, a[href], [tabindex]';
 
-/** Kontextmenü an der Mausposition zeigen (Rechtsklick bzw. Kontextmenütaste) */
-export function zeigeMenue(e: ReactMouseEvent | MouseEvent, punkte: MenuePunkt[]) {
+/** Kontextmenü an der Mausposition zeigen (Rechtsklick bzw. Kontextmenütaste); `name` benennt das Menü (aria-label) */
+export function zeigeMenue(e: ReactMouseEvent | MouseEvent, punkte: MenuePunkt[], name?: string) {
   e.preventDefault();
   e.stopPropagation();
   const ziel = e.currentTarget instanceof HTMLElement && e.currentTarget.matches(FOKUSSIERBAR) ? e.currentTarget : document.activeElement instanceof HTMLElement ? document.activeElement : null;
-  if (punkte.length) useMenue.getState().zeigen(e.clientX, e.clientY, punkte, ziel);
+  // Kontextmenütaste (Umschalt+F10): ohne Mausposition – das Menü erscheint dann am Auslöser
+  let { clientX: x, clientY: y } = e;
+  if (x === 0 && y === 0 && e.currentTarget instanceof HTMLElement) {
+    const r = e.currentTarget.getBoundingClientRect();
+    x = r.left + 8;
+    y = r.top + Math.min(r.height, 24);
+  }
+  if (punkte.length) useMenue.getState().zeigen(x, y, punkte, ziel, name);
 }
 
 /** Menü unter einem Element zeigen (Knopf mit Pfeil) */
-export function zeigeMenueAn(el: HTMLElement, punkte: MenuePunkt[]) {
+export function zeigeMenueAn(el: HTMLElement, punkte: MenuePunkt[], name?: string) {
   const r = el.getBoundingClientRect();
-  useMenue.getState().zeigen(r.left, r.bottom + 2, punkte, el);
+  useMenue.getState().zeigen(r.left, r.bottom + 2, punkte, el, name ?? el.getAttribute('aria-label') ?? el.textContent?.trim() ?? undefined);
 }
 
 /** Knopf, der ein Menü aufklappt */
@@ -71,6 +78,7 @@ export function MenueKnopf({
   ariaLabel,
   className,
   disabled = false,
+  name,
 }: {
   punkte: () => MenuePunkt[];
   children: ReactNode;
@@ -79,6 +87,8 @@ export function MenueKnopf({
   ariaLabel?: string;
   className?: string;
   disabled?: boolean;
+  /** Name des Menüs (Vorgabe: aria-label bzw. Text des Knopfs) */
+  name?: string;
 }) {
   const ref = useRef<HTMLButtonElement>(null);
   const offen = useMenue((s) => !!s.offen && !!ref.current && s.offen.ausloeser === ref.current);
@@ -91,7 +101,7 @@ export function MenueKnopf({
       aria-haspopup="menu"
       aria-expanded={offen}
       disabled={disabled}
-      onClick={(e) => zeigeMenueAn(e.currentTarget, punkte())}
+      onClick={(e) => zeigeMenueAn(e.currentTarget, punkte(), name)}
     >
       {children} <Symbol name="pfeilUnten" />
     </button>
@@ -127,7 +137,7 @@ export function MenueHost() {
     };
   }, [offen, schliessen]);
   if (!offen) return null;
-  return <Liste punkte={offen.punkte} x={offen.x} y={offen.y} schliessen={() => schliessen(true)} wurzel />;
+  return <Liste punkte={offen.punkte} x={offen.x} y={offen.y} name={offen.name} schliessen={() => schliessen(true)} wurzel />;
 }
 
 /**
@@ -143,8 +153,11 @@ function Liste({
   wurzel = false,
   fokus = false,
   zurueck,
+  name,
 }: {
   punkte: MenuePunkt[];
+  /** Name des Menüs für Screenreader (Untermenü: Text des Punkts darüber) */
+  name?: string;
   x: number;
   y: number;
   schliessen: () => void;
@@ -169,7 +182,7 @@ function Liste({
   }, [x, y]);
 
   useEffect(() => {
-    if (wurzel || fokus) ref.current?.querySelector<HTMLButtonElement>(':scope > button:not(:disabled)')?.focus();
+    if (wurzel || fokus) (ref.current?.querySelector<HTMLButtonElement>(':scope > button:not([aria-disabled="true"])') ?? ref.current?.querySelector<HTMLButtonElement>(':scope > button'))?.focus();
   }, [wurzel, fokus]);
 
   const oeffnen = (index: number, el: HTMLElement, tastatur: boolean) => {
@@ -184,7 +197,8 @@ function Liste({
   };
 
   const tasten = (e: ReactKeyboardEvent) => {
-    const knoepfe = [...(ref.current?.querySelectorAll<HTMLButtonElement>(':scope > button:not(:disabled)') ?? [])];
+    // gesperrte Punkte bleiben erreichbar (aria-disabled): ihr Grund im Hinweis soll vorgelesen werden
+    const knoepfe = [...(ref.current?.querySelectorAll<HTMLButtonElement>(':scope > button') ?? [])];
     const aktiv = document.activeElement as HTMLButtonElement;
     const i = knoepfe.indexOf(aktiv);
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
@@ -198,7 +212,7 @@ function Liste({
     } else if (e.key === 'ArrowRight' && i >= 0) {
       const index = Number(aktiv.dataset.index);
       const p = punkte[index];
-      if (p && !p.trenner && p.unter) {
+      if (p && !p.trenner && p.unter && !p.deaktiviert) {
         e.preventDefault();
         e.stopPropagation();
         oeffnen(index, aktiv, true);
@@ -211,7 +225,7 @@ function Liste({
   };
 
   return (
-    <div ref={ref} className="menue" role="menu" style={{ left: lage.x, top: lage.y }} onKeyDown={tasten} onContextMenu={(e) => e.preventDefault()}>
+    <div ref={ref} className="menue" role="menu" aria-label={name} style={{ left: lage.x, top: lage.y }} onKeyDown={tasten} onContextMenu={(e) => e.preventDefault()}>
       {punkte.map((p, i) =>
         p.trenner ? (
           <div key={i} className="menue-trenner" role="separator" />
@@ -222,15 +236,16 @@ function Liste({
             className={`menue-punkt${p.gefahr ? ' gefahr' : ''}${unter?.index === i ? ' offen' : ''}`}
             data-index={i}
             title={p.titel}
-            disabled={p.deaktiviert}
+            aria-disabled={p.deaktiviert || undefined}
             aria-haspopup={p.unter ? 'menu' : undefined}
             aria-expanded={p.unter ? unter?.index === i : undefined}
             onMouseEnter={(e) => {
-              // deaktiviert: React ruft onMouseEnter an einem deaktivierten Knopf nicht auf – sein Untermenü bleibt zu
-              if (p.unter) oeffnen(i, e.currentTarget, false);
+              // gesperrt: sein Untermenü bleibt zu
+              if (p.unter && !p.deaktiviert) oeffnen(i, e.currentTarget, false);
               else setUnter(null);
             }}
             onClick={(e) => {
+              if (p.deaktiviert) return;
               if (p.unter) {
                 // per Tastatur (Enter/Leertaste – ohne Mausklick, detail 0): der Fokus geht ins Untermenü
                 oeffnen(i, e.currentTarget, e.detail === 0);
@@ -256,6 +271,7 @@ function Liste({
           schliessen={schliessen}
           fokus={unter.tastatur}
           zurueck={unterZurueck}
+          name={(punkte[unter.index] as { text: string }).text}
         />
       )}
     </div>

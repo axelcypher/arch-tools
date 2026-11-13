@@ -3,8 +3,9 @@ import { useState } from 'react';
 import { zeigerZiehen } from './ziehen';
 
 /**
- * Seitenleisten mit veränderbarer Breite: Breite je Leiste gemerkt (lokal je Benutzer), Ziehgriff am rechten Rand
- * (Doppelklick: Vorgabe), mit der Tastatur ←/→ in 16-px-Schritten.
+ * Seitenleisten mit veränderbarer Breite: Breite je Leiste gemerkt (lokal je Benutzer), Ziehgriff am Rand zur
+ * Arbeitsfläche – rechts bei einer linken Leiste, links bei einer rechten (`seite="rechts"`). Doppelklick: Vorgabe;
+ * Tastatur ←/→ in 16-px-Schritten, die Pfeile bewegen den Griff in ihre Richtung.
  */
 
 const lesen = (schluessel: string, vorgabe: number, min: number, max: number) => {
@@ -31,11 +32,25 @@ export function useLeistenBreite(schluessel: string, vorgabe: number, min = 180,
   return [breite, setBreite];
 }
 
-/** Ziehgriff am rechten Rand einer Leiste (das Elternelement braucht `position: relative`) */
-export function Ziehgriff({ breite, setBreite, vorgabe, titel = 'Breite ändern' }: { breite: number; setBreite: (b: number) => void; vorgabe?: number; titel?: string }) {
+/** Ziehgriff am Rand einer Leiste (das Elternelement braucht `position: relative`); `seite`: wo die Leiste steht */
+export function Ziehgriff({
+  breite,
+  setBreite,
+  vorgabe,
+  titel = 'Breite ändern',
+  seite = 'links',
+}: {
+  breite: number;
+  setBreite: (b: number) => void;
+  vorgabe?: number;
+  titel?: string;
+  seite?: 'links' | 'rechts';
+}) {
+  // rechte Leiste: Griff am linken Rand, nach links ziehen macht sie breiter
+  const richtung = seite === 'rechts' ? -1 : 1;
   return (
     <div
-      className="leiste-griff"
+      className={`leiste-griff${seite === 'rechts' ? ' leiste-griff-links' : ''}`}
       role="separator"
       aria-orientation="vertical"
       aria-label={titel}
@@ -46,13 +61,13 @@ export function Ziehgriff({ breite, setBreite, vorgabe, titel = 'Breite ändern'
         e.preventDefault();
         const x0 = e.clientX;
         const b0 = breite;
-        zeigerZiehen(e, { schwelle: 0, bewegen: (ev) => setBreite(b0 + ev.clientX - x0), ende: () => undefined });
+        zeigerZiehen(e, { schwelle: 0, bewegen: (ev) => setBreite(b0 + richtung * (ev.clientX - x0)), ende: () => undefined });
       }}
       onDoubleClick={() => vorgabe && setBreite(vorgabe)}
       onKeyDown={(e) => {
         if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
           e.preventDefault();
-          setBreite(breite + (e.key === 'ArrowLeft' ? -16 : 16));
+          setBreite(breite + richtung * (e.key === 'ArrowLeft' ? -16 : 16));
         }
       }}
     />
@@ -66,6 +81,7 @@ export function BreitenLeiste({
   min,
   max,
   className = '',
+  seite = 'links',
   children,
 }: {
   schluessel: string;
@@ -73,13 +89,15 @@ export function BreitenLeiste({
   min?: number;
   max?: number;
   className?: string;
+  /** links (Griff rechts, Vorgabe) oder rechts neben der Arbeitsfläche (Griff links) */
+  seite?: 'links' | 'rechts';
   children: ReactNode;
 }) {
   const [breite, setBreite] = useLeistenBreite(schluessel, vorgabe, min, max);
   return (
     <div className={`leiste ${className}`} style={{ width: breite }}>
       {children}
-      <Ziehgriff breite={breite} setBreite={setBreite} vorgabe={vorgabe} />
+      <Ziehgriff breite={breite} setBreite={setBreite} vorgabe={vorgabe} seite={seite} />
     </div>
   );
 }

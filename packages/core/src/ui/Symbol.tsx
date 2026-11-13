@@ -66,7 +66,7 @@ const PFADE = {
   kalibrieren: 'M4 12h16M4 8v8M20 8v8M8 10v4M12 10v4M16 10v4',
   speichern: 'M5 3h11l3 3v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V3zM8 3v5h7V3M8 21v-7h8v7',
   einpassen: 'M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5',
-  raster: 'M4 4h16v16H4zM4 10h16M4 15h16M10 4v16M15 4v16',
+  raster: 'M4 4h16v16H4zM4 12h16M12 4v16',
 } as const;
 
 export type SymbolName = keyof typeof PFADE;

@@ -14,6 +14,7 @@ import { PROJEKT_STATUS } from '../model';
 import { PROJEKT_ANGELEGT, projektAnlegenMoeglich, projektAnlegenStarten, vomRahmen } from '../platform/rahmen';
 import { appMitWas } from '../appNamen';
 import { zeigeMenue } from './Menue';
+import type { SymbolName } from './Symbol';
 import './projektuebersicht.css';
 
 /** Stufen des Status vom besten zum schlimmsten – Farben wie in der Vollständigkeitsprüfung */
@@ -64,6 +65,12 @@ export interface KontextEintrag {
   aktion: () => void;
   gefahr?: boolean;
   titel?: string;
+  /** Symbol links (gemeinsamer Satz, ui/Symbol.tsx) */
+  symbol?: SymbolName;
+  /** gesperrt – der Grund gehört in `hinweis` */
+  deaktiviert?: boolean;
+  /** rechts daneben, z. B. der Grund einer Sperre */
+  hinweis?: string;
 }
 
 export type Sortierung = 'vorgabe' | 'nummer' | 'geaendert' | 'name';
@@ -283,7 +290,12 @@ export function ProjektUebersicht(props: ProjektUebersichtProps) {
 
   const kontextMenue = props.kontextMenue;
   const kontext: ProjektUebersichtProps['onKontext'] = kontextMenue
-    ? (p, e) => zeigeMenue(e, kontextMenue(p).map((k) => ({ text: k.label, titel: k.titel, aktion: k.aktion, gefahr: k.gefahr })))
+    ? (p, e) =>
+        zeigeMenue(
+          e,
+          kontextMenue(p).map((k) => ({ text: k.label, titel: k.titel, aktion: k.aktion, gefahr: k.gefahr, symbol: k.symbol, deaktiviert: k.deaktiviert, hinweis: k.hinweis })),
+          `Projekt ${p.kuerzel}`,
+        )
     : props.onKontext;
 
   const nachSchluessel = useMemo(() => new Map(projekte.map((p) => [p.schluessel, p])), [projekte]);

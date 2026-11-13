@@ -284,7 +284,7 @@ export function SpeicherortDialog({ onClose }: { onClose: () => void }) {
       <p className="small-text muted">Immer nur auf diesem Rechner bleiben: zuletzt geöffnete und angeheftete Projekte, Fenster, Farbschema und Leistenbreiten.</p>
 
       {meldung && (
-        <p className={meldung.art === 'fehler' ? 'warning' : 'meldung ok'} role={meldung.art === 'fehler' ? 'alert' : 'status'}>
+        <p className={meldung.art === 'fehler' ? 'meldung fehler' : 'meldung ok'} role={meldung.art === 'fehler' ? 'alert' : 'status'}>
           {meldung.text}
         </p>
       )}

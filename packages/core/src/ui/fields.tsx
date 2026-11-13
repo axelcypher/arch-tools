@@ -23,6 +23,17 @@ export function zahlLesen(text: string): number | null {
   return rest.length === 1 ? parseNum(`${ganz.replace(/\./g, '')},${rest[0]}`) : null;
 }
 
+/**
+ * Enter in einem Feld: übernehmen (Fokus verlassen) und – in einem `<form>` – absenden. Hat das Formular einen
+ * Absendeknopf, sendet der Browser selbst (implizites Absenden); sonst hier, nach dem Übernehmen der Eingabe, damit der
+ * Absende-Handler den neuen Wert sieht.
+ */
+function enterUebernehmen(el: HTMLInputElement) {
+  const form = el.form;
+  el.blur();
+  if (form && !form.querySelector('button[type="submit"], input[type="submit"], button:not([type])')) setTimeout(() => form.isConnected && form.requestSubmit(), 0);
+}
+
 /** Zahl in Meldungen: so kurz wie möglich, mindestens eine Nachkommastelle (1,0 · 0,4 · 0,25) */
 const kurz = new Intl.NumberFormat('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 4 });
 
@@ -166,8 +177,8 @@ export function NumberField({
         onBlur={commit}
         onKeyDown={(e) => {
           // Enter übernimmt und verlässt das Feld: danach gehören Strg+Z (Rückgängig der App), Entf und die Werkzeugtasten
-          // wieder der Arbeitsfläche
-          if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+          // wieder der Arbeitsfläche; im Formular löst Enter danach den Hauptknopf aus
+          if (e.key === 'Enter') enterUebernehmen(e.target as HTMLInputElement);
           // Esc verwirft eine Eingabe – und schließt dann nicht zugleich den Dialog; ohne Eingabe schließt Esc ihn sofort
           if (e.key === 'Escape' && (bearbeitet.current || fehler)) {
             e.stopPropagation();
@@ -250,8 +261,8 @@ export function TextField({
         onBlur={commit}
         onKeyDown={(e) => {
           // Enter übernimmt und verlässt das Feld: danach gehören Strg+Z (Rückgängig der App), Entf und die Werkzeugtasten
-          // wieder der Arbeitsfläche
-          if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+          // wieder der Arbeitsfläche; im Formular löst Enter danach den Hauptknopf aus
+          if (e.key === 'Enter') enterUebernehmen(e.target as HTMLInputElement);
           if (e.key === 'Escape' && textRef.current !== value) {
             e.stopPropagation();
             textRef.current = value;

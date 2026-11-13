@@ -274,29 +274,6 @@
   align-self: center;
   justify-self: start;
 }
-.pa-menue {
-  position: fixed;
-  z-index: 50;
-  display: flex;
-  flex-direction: column;
-  min-width: 200px;
-  padding: 4px;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
-}
-.pa-menue button {
-  text-align: left;
-  border: none;
-  background: none;
-  padding: 5px 10px;
-}
-.pa-menue button:hover,
-.pa-menue button:focus-visible {
-  background: var(--accent-soft);
-}
-
 /* „Neues Projekt anlegen“ (Assistent von ATLAS über die Rahmen-App) */
 .pa-anlegen {
   display: inline-flex;

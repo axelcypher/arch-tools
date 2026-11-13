@@ -215,4 +215,30 @@ describe('Prüfregeln', () => {
     // ohne Komma gilt parseNum: „45.00“ ist 45 (sichtbar, weil das Feld danach „45,00“ zeigt)
     expect(zahlLesen('45.00')).toBe(45);
   });
+
+  it('Enter im Formular ohne Absendeknopf: übernimmt den Wert und sendet danach ab (der Handler sieht den neuen Wert)', async () => {
+    const gesendet: (number | undefined)[] = [];
+    function Formular() {
+      const [wert, setWert] = useState<number | undefined>(1);
+      return createElement(
+        'form',
+        {
+          onSubmit: (e: React.FormEvent) => {
+            e.preventDefault();
+            gesendet.push(wert);
+          },
+        },
+        createElement(NumberField, { value: wert, onChange: setWert }),
+        createElement('button', { type: 'button' }, 'Abbrechen'),
+      );
+    }
+    const host = render(createElement(Formular));
+    const input = host.querySelector('input')!;
+    tippen(input, '7');
+    await act(async () => {
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    expect(gesendet).toEqual([7]);
+  });
 });

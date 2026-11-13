@@ -124,7 +124,7 @@ Helligkeitskontrast. Unter der Linie in `--sel-foto` liegt ein Doppelsaum, auße
   unverändert (Cursor und Auswahl stimmen); Punkte vor dem Komma werden beim Lesen immer als Tausendertrenner
   verstanden, auch wenn nach dem Bearbeiten die Dreiergruppen nicht mehr stimmen. Ganze Zahlen (`digits={0}`) stehen
   ohne Punkte, weil „45.00“ dort mehrdeutig wäre.
-- **Enter** übernimmt die Eingabe und verlässt das Feld, damit Strg+Z (Rückgängig der App), Entf und die
+- **Enter** übernimmt die Eingabe und verlässt das Feld (in einem `<form>` ohne Absendeknopf wird danach abgesendet), damit Strg+Z (Rückgängig der App), Entf und die
   Werkzeugtasten wieder der Arbeitsfläche gehören und nicht ins leere Rückgängig des Browsers gehen. Weiter zum nächsten
   Feld mit Tab. **Esc** verwirft eine Eingabe; ohne Eingabe schließt Esc den Dialog.
 - In `.toolbar` und `.report-actions` füllen Felder nicht die Zeile: Auswahllisten sind so breit wie ihr Inhalt,
@@ -169,7 +169,8 @@ Neue Symbole kommen in diesen Satz, nicht in die App. Keine Emoji (📏 ✂ 🗑
 
 ## Menüs
 
-`ui/Menue.tsx`: Kontextmenü mit `zeigeMenue(e, punkte)` im `onContextMenu`, Aufklappmenü mit `<MenueKnopf>`. Punkte
+`ui/Menue.tsx`: Kontextmenü mit `zeigeMenue(e, punkte, name)` im `onContextMenu`, Aufklappmenü mit `<MenueKnopf>`.
+`name` benennt das Menü für Screenreader (z. B. „Projekt 2019-003“); der Aufklappknopf nimmt seinen eigenen Namen. Punkte
 mit `text`, optional `symbol`, `hinweis` (rechts, z. B. Tastenkürzel), `titel`, `gefahr`, `deaktiviert`, `unter`
 (Untermenü), Trenner mit `{ trenner: true }`.
 
@@ -177,7 +178,16 @@ mit `text`, optional `symbol`, `hinweis` (rechts, z. B. Tastenkürzel), `titel`,
   zurück. Esc schließt nur das Menü (ein Dialog darunter bleibt offen), Tab schließt und gibt den Fokus an den
   Auslöser zurück.
 - `MenueHost` steckt schon in der Titelleiste jeder App und in der Rahmen-App; nicht selbst einhängen.
-- Deaktivierte Punkte mit Grund im `hinweis` („Antrag eingereicht“), statt sie wegzulassen.
+- Gesperrte Punkte (`deaktiviert`) mit Grund im `hinweis` („Antrag eingereicht“), statt sie wegzulassen. Sie bleiben
+  per Tastatur erreichbar (`aria-disabled`), damit der Grund vorgelesen wird, und führen nichts aus.
+- Ohne Mausposition (Kontextmenütaste) erscheint das Menü am Auslöser.
+- Menüs liegen über Dialogen und Rückfragen; Schatten schwebender Flächen über `--schatten-schwebend`.
+
+## Seitenleisten
+
+`BreitenLeiste` (`ui/Leiste.tsx`) mit gemerkter, ziehbarer Breite. Der Griff sitzt am Rand zur Arbeitsfläche: links
+stehende Leiste (Vorgabe) rechts, rechts stehende Leiste mit `seite="rechts"` links. Tastatur ←/→ bewegen den Griff,
+Doppelklick setzt die Vorgabe. Keine eigenen Leisten-Komponenten je App.
 
 ## Meldungen im Inhalt
 
@@ -222,6 +232,7 @@ Symbol: Text in `<span className="titlebar-text">`, der Name bleibt über `aria-
 | QUADRIO, TERRIO, NUMIO, FABRIO | Druckvorschau: „Drucken / PDF“ als Hauptknopf (`.primary`), „Schließen“ normal (`Report.tsx`, `NachweisDruck.tsx`, `KostenDruck.tsx`, `Druck.tsx`)                                                                              |
 | NUMIO, FABRIO, QUADRIO         | eigene Umschalter (`.mv-umschalter`, `.ava-tabs`, `.view-switch`) auf `.segment` umstellen                                                                                                                                      |
 | PERMIO                         | eigenes Menü und eigene Symbole (`components/Menue.tsx`, `components/Symbol.tsx`, `.menue`- und `.symbol`-Regeln in `styles.css`) durch `@core/ui/Menue` und `@core/ui/Symbol` ersetzen; fehlende Symbole im core-Satz ergänzen |
+| RECTIO                         | eigene `RechteLeiste` durch `BreitenLeiste seite="rechts"` ersetzen                                                                                                                                                             |
 | QUADRIO, TERRIO, RECTIO        | Werkzeugleisten mit `Symbol` statt Emoji und Schriftzeichen (📏, ⇔, ⊡, ▭, ↶/↷)                                                                                                                                                  |
 | alle                           | eigene Kontextmenüs auf `zeigeMenue` umstellen (QUADRIO Canvas, TERRIO Lageplan, RECTIO Arbeitsfläche, ATLAS Ordner-Editor)                                                                                                     |
 | alle                           | eigene `div.modal` auf `Modal` umstellen; Titel mit `kopf` statt `h3` im Inhalt; Werkzeugleisten-Befehle nach „Begriffe“ benennen (z. B. TERRIO „Öffnen“ → „Öffnen …“)                                                          |
