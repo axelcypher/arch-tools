@@ -61,7 +61,7 @@ Designrichtlinie [docs/design.md](docs/design.md).
   Server), und alle Rechner, die ihn wählen, haben denselben Stand. Die Wahl gilt je Benutzer für alle Apps und steht
   lokal (`konfig.json`), nie auf dem Netzlaufwerk. Beim Wechsel ziehen die Einstellungen mit; liegen am Ziel schon
   welche, fragt die App: *Vorhandene übernehmen* (sie gelten, Fehlendes kommt dazu – z. B. für einen weiteren
-  Rechner), *Mit meinen ersetzen* (die bisherigen bleiben als `….json.vor-umzug-JJJJ-MM-TT-hhmmss` im Ordner) oder
+  Rechner), *Mit diesem Rechner überschreiben* (die bisherigen bleiben als `….json.vor-umzug-JJJJ-MM-TT-hhmmss` im Ordner) oder
   *Abbrechen*. Gelöscht wird nichts. Immer nur auf diesem Rechner bleiben zuletzt geöffnete und angeheftete Projekte,
   Fenster, Farbschema und Leistenbreiten. **Ohne Netzlaufwerk** (getrennt, VPN aus) arbeiten die Apps mit der lokalen
   Kopie weiter, die bei jedem Lesen entsteht; gemeinsame Einstellungen sind dann nur lesbar, die Titelleiste zeigt
