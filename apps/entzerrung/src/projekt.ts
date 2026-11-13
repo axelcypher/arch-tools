@@ -277,8 +277,7 @@ export async function zwischenspeicherStarten(): Promise<() => void> {
     const ok = await schreibenAbgeschlossen();
     return ok && !(lief && speichernGescheitert);
   };
-  // Umwandlung entfällt mit core #93 (vorDemSchliessen nimmt dann `false` als „nicht gespeichert“ an)
-  const abmelden = vorDemSchliessen(vorbereiten as unknown as () => Promise<void>);
+  const abmelden = vorDemSchliessen(vorbereiten);
   const ende = useEntz.subscribe((s, vorher) => {
     if (s.doc === vorher.doc && s.dateiname === vorher.dateiname && s.dateiStand === vorher.dateiStand && s.dirty === vorher.dirty) return;
     clearTimeout(timer);

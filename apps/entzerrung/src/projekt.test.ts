@@ -26,8 +26,8 @@ const datei = vi.hoisted(() => ({
   zeigenFehler: 0,
   /** IndexedDB-Attrappe: Schreiben scheitert (Transaktion meldet einen Fehler) */
   idbFehler: false,
-  /** zuletzt bei vorDemSchliessen angemeldete Funktion (ihr Ergebnis prüft core erst mit #93) */
-  vorbereitung: null as null | (() => Promise<unknown>),
+  /** zuletzt bei vorDemSchliessen angemeldete Funktion (ihr Ergebnis direkt prüfen) */
+  vorbereitung: null as null | (() => Promise<void | boolean> | void | boolean),
 }));
 vi.mock('@core/platform/files', async (original) => ({
   ...(await original<typeof import('@core/platform/files')>()),
@@ -49,7 +49,7 @@ vi.mock('@core/platform/rahmen', async (original) => {
   const o = await original<typeof import('@core/platform/rahmen')>();
   return {
     ...o,
-    vorDemSchliessen: (f: () => Promise<void>) => {
+    vorDemSchliessen: (f: Parameters<typeof o.vorDemSchliessen>[0]) => {
       datei.vorbereitung = f;
       return o.vorDemSchliessen(f);
     },
@@ -431,6 +431,8 @@ describe('Zwischenspeicher', () => {
       datei.idbFehler = true;
       expect(await vorbereiten()).toBe(false);
       expect(idb.stand.has('stand')).toBe(false);
+      // über core: Arkly bekommt „nicht gespeichert“ und fragt nach
+      expect(await schliessenVorbereiten()).toBe('fehler');
       // „Erneut versuchen“: schreibt noch einmal, jetzt gelingt es
       datei.idbFehler = false;
       expect(await vorbereiten()).toBe(true);
