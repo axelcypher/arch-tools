@@ -146,7 +146,7 @@ function RueckfrageDialog({ frage }: { frage: Frage }) {
   return (
     <Modal titel={frage.titel} onClose={() => ende(frage.knoepfe.length === 1 && frage.knoepfe[0].art !== 'danger' ? frage.knoepfe[0].id : null)} className="rf" kopf klickDaneben={!mitEingabe}>
       <form
-        tabIndex={-1}
+        tabIndex={standard ? undefined : -1}
         data-startfokus={standard ? undefined : ''}
         onSubmit={(e) => {
           e.preventDefault();
