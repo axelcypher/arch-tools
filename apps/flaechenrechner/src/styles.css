@@ -274,11 +274,6 @@
   }
 }
 
-/* Symbole in der Werkzeugleiste: etwas Luft zum Text, mittig zur Schrift */
-.toolbar button .symbol {
-  vertical-align: -2px;
-}
-
 /* leeres Geschoss: Plan laden bzw. Umriss übernehmen als abgeschlossener Block über den Geschossangaben */
 .plan-einstieg {
   margin-bottom: 12px;

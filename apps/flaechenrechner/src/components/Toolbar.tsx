@@ -142,7 +142,7 @@ export function Toolbar() {
       <div className="tb-group">
         {/* bekannte Befehle: unter 1600 px nur das Symbol (Name über aria-label und title) */}
         <button onClick={() => void onNew()} title="Neues Projekt" aria-label="Neu">
-          <Symbol name="plus" /> <span className="tb-text">Neu</span>
+          <Symbol name="datei" /> <span className="tb-text">Neu</span>
         </button>
         <button onClick={() => void onOpen()} title="Projekt öffnen … (Strg+O)" aria-label="Öffnen …">
           <Symbol name="ordnerOffen" /> <span className="tb-text">Öffnen …</span>
@@ -158,7 +158,7 @@ export function Toolbar() {
         </button>
         {isTauri() && (
           <button onClick={() => void onSave(true)} title="Projekt unter neuem Namen oder an anderem Ort speichern (Strg+Umschalt+S)">
-            Speichern unter …
+            <Symbol name="speichern" /> Speichern unter …
           </button>
         )}
         <button onClick={() => setIfcOpen(true)} title="Gebäudemodell aus Archicad, Revit & Co. importieren">
@@ -215,7 +215,7 @@ export function Toolbar() {
           <Symbol name="tabelle" /> Excel …
         </button>
         <button className="primary" onClick={() => st.setReportOpen(true)} title="Flächenaufstellung zum Prüfen, Drucken und als PDF">
-          <Symbol name="drucken" /> Flächenaufstellung …
+          <Symbol name="formular" /> Flächenaufstellung …
         </button>
       </div>
     </div>
