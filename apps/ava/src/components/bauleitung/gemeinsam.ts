@@ -2,7 +2,7 @@ import { bueroName } from '@core/platform/konfig';
 import { meldung } from '@core/ui/Rueckfrage';
 import type { BerichtKopf } from '../../bauleitung/berichte';
 import { emlBauen } from '../../abrechnung/mail';
-import { useAva } from '../../store';
+import { schreibend, useAva } from '../../store';
 
 export function berichtKopf(): BerichtKopf {
   const { projekt, einstellungen } = useAva.getState();
@@ -13,7 +13,11 @@ export function berichtKopf(): BerichtKopf {
  * PDF im Ordner Bauleitung des Projekts ablegen (nie überschreibend – gibt es den Namen schon, mit „(2)“ …).
  * Liefert den Pfad relativ zum Projektordner.
  */
-export async function berichtAblegen(name: string, pdf: Uint8Array, unterordner?: string): Promise<string> {
+export function berichtAblegen(name: string, pdf: Uint8Array, unterordner?: string): Promise<string> {
+  return schreibend(ablegen(name, pdf, unterordner));
+}
+
+async function ablegen(name: string, pdf: Uint8Array, unterordner?: string): Promise<string> {
   const { projekt, einstellungen, fs } = useAva.getState();
   const ordner = [einstellungen.ablage.bauleitung, unterordner].filter(Boolean).join('/');
   const basis = name.replace(/\.pdf$/i, '').replace(/[\\/:*?"<>|]+/g, ' ').trim();
@@ -37,7 +41,7 @@ export async function pdfZeigen(name: string, pdf: Uint8Array) {
 export async function mitPdfMailen(o: { an: string[]; betreff: string; text: string; name: string; pdf: Uint8Array }): Promise<boolean> {
   try {
     const eml = emlBauen({ an: o.an, betreff: o.betreff, text: o.text, anhaenge: [{ name: o.name.endsWith('.pdf') ? o.name : `${o.name}.pdf`, daten: o.pdf }] });
-    await useAva.getState().fs.mailEntwurf(o.name.replace(/\.pdf$/i, ''), eml);
+    await schreibend(useAva.getState().fs.mailEntwurf(o.name.replace(/\.pdf$/i, ''), eml));
     return true;
   } catch (e) {
     await meldung('Mailentwurf nicht erstellt', String(e instanceof Error ? e.message : e), e);

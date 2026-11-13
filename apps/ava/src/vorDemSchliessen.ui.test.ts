@@ -4,7 +4,8 @@ import { createRoot } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { schliessenVorbereiten } from '@core/platform/rahmen';
 import { TextEingabe } from './components/eingaben';
-import { ausstehendesSchreibenAbwarten, schreibend } from './store';
+import { ausstehendesSchreibenAbwarten, schreibend, useAva } from './store';
+import { berichtAblegen } from './components/bauleitung/gemeinsam';
 import { App } from './App';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -60,6 +61,49 @@ describe('Vor dem Schließen: laufendes Schreiben abwarten (Arkly vorDemSchliess
     await act(async () => ausstehendesSchreibenAbwarten());
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(onChange).toHaveBeenCalledWith('neu');
+  });
+
+  it('Blur speichert die laufende Eingabe, und das Abwarten wartet genau auf dieses Speichern', async () => {
+    let fertig!: () => void;
+    const onChange = vi.fn(() => void schreibend(new Promise<void>((r) => (fertig = r))));
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    act(() => {
+      root = createRoot(host);
+      root.render(createElement(TextEingabe, { wert: 'alt', onChange }));
+    });
+    const input = host.querySelector('input')!;
+    act(() => {
+      input.focus();
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, 'neu');
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    let erledigt = false;
+    const warten = ausstehendesSchreibenAbwarten().then(() => (erledigt = true));
+    await act(takt);
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(erledigt).toBe(false);
+    fertig();
+    await act(async () => void (await warten));
+    expect(erledigt).toBe(true);
+  });
+
+  it('PDF in der Bauleitung ablegen ist angemeldet: das Abwarten wartet auf das langsame Schreiben', async () => {
+    let fertig!: () => void;
+    const anlegen = vi.fn(() => new Promise<boolean>((r) => (fertig = () => r(true))));
+    const vorher = useAva.getState();
+    useAva.setState({ fs: { anlegen } as never, projekt: { ordner: '/p' } as never });
+    const abgelegt = berichtAblegen('Bautagebuch 1', new Uint8Array([1]), 'Bautagebuch');
+    let erledigt = false;
+    const warten = ausstehendesSchreibenAbwarten().then(() => (erledigt = true));
+    await takt();
+    expect(erledigt).toBe(false);
+    fertig();
+    await warten;
+    expect(erledigt).toBe(true);
+    await expect(abgelegt).resolves.toBe('Bauleitung/Bautagebuch/Bautagebuch 1.pdf');
+    expect(anlegen).toHaveBeenCalledTimes(1);
+    useAva.setState(vorher, true);
   });
 
   it('die App meldet sich an: Arkly wartet beim Schließen auf laufendes Schreiben', async () => {

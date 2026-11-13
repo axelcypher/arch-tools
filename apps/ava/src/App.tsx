@@ -22,7 +22,7 @@ import { Maengel } from './components/bauleitung/Maengel';
 import { Notizen } from './components/bauleitung/Notizen';
 import { Beteiligte } from './components/bauleitung/Beteiligte';
 import { Mailverlauf } from './components/bauleitung/Mailverlauf';
-import { ausstehendesSchreibenAbwarten, lvGeaendert, useAva } from './store';
+import { ausstehendesSchreibenAbwarten, lvGeaendert, schreibend, useAva } from './store';
 
 const log = logger('app');
 
@@ -203,7 +203,7 @@ export function App() {
           <Navigation
             onStammdaten={async (meta, neuerName) => {
               try {
-                await projektdateiSchreiben(useAva.getState().fs.projektordner, projekt.ordner, projekt.oap, (roh) => ({ ...roh, name: neuerName, meta }));
+                await schreibend(projektdateiSchreiben(useAva.getState().fs.projektordner, projekt.ordner, projekt.oap, (roh) => ({ ...roh, name: neuerName, meta })));
                 useAva.getState().setMeta(meta, neuerName);
               } catch (e) {
                 await meldung('Stammdaten nicht gespeichert', 'Die Projektdatei ließ sich nicht schreiben.', e);
