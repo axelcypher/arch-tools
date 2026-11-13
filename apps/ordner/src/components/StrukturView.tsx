@@ -411,8 +411,8 @@ function GemeinsameEinstellungen() {
 
       <h3 className="po-abschnitt">Stammordner der Projekte</h3>
       <p className="muted small-text">
-        Reihenfolge wie in der Projektübersicht aller Apps – zum Umsortieren ziehen (oder ↑ ↓; auch die Abschnitte der Projektübersicht lassen sich ziehen). Im ersten entstehen neue Projekte. Projekte
-        in Gruppen-, Akquise- und Archivordnern darin werden mit erfasst.
+        Reihenfolge wie in der Projektübersicht aller Apps – zum Umsortieren ziehen (oder die Knöpfe „Nach oben“/„Nach unten“; auch die Abschnitte der Projektübersicht lassen sich ziehen). Im ersten
+        entstehen neue Projekte. Projekte in Gruppen-, Akquise- und Archivordnern darin werden mit erfasst.
       </p>
       <ul className="list po-stammordner" aria-label="Stammordner der Projekte">
         {allgemein.projekte.map((p, i) => (
@@ -463,10 +463,10 @@ function GemeinsameEinstellungen() {
               </button>
             )}
             <button className="icon" title="Nach oben" aria-label={`${p} nach oben`} disabled={i === 0} onClick={() => verschieben(i, i - 1)}>
-              ↑
+              <Symbol name="nachOben" />
             </button>
             <button className="icon" title="Nach unten" aria-label={`${p} nach unten`} disabled={i === allgemein.projekte.length - 1} onClick={() => verschieben(i, i + 2)}>
-              ↓
+              <Symbol name="nachUnten" />
             </button>
             <button
               className="icon"
