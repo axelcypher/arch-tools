@@ -265,10 +265,11 @@ mit `text`, optional `symbol`, `hinweis` (rechts, z. B. der Grund einer Sperre),
 - Verb: Für Einträge einer Liste (Positionen, Punkte, Firmen, Merkmale) „hinzufügen“, nicht „neu“ oder „einfügen“.
   Eigenständige Gegenstände wie Projekt, Formular, Ordner oder Datei bleiben bei „Neu“ bzw. „anlegen“ (siehe
   „Begriffe“), ebenfalls mit Symbol `plus` („Neues Projekt anlegen …“).
-- Länge: In Leisten (`.toolbar`, Kopfzeile eines Abschnitts `.section-head` – auch mit Hauptknopf) knapp nur der
-  Gegenstand („Position“, „Abschnitt“) mit `title` der vollen Aktion („Position hinzufügen“); sonst gleich mit Verb
-  („Beteiligten hinzufügen“). Ein `aria-label` enthält den sichtbaren Text wörtlich (sonst trifft Sprachsteuerung den
-  Knopf nicht); geht das nur mit Beugung, nur `title` setzen.
+- Länge: In Leisten – das sind `.toolbar` und die Kopfzeile eines Abschnitts (`.section-head`), auch wenn der
+  Hinzufügen-Knopf dort der Hauptknopf (`.primary`) ist – knapp nur der Gegenstand („Position“, „Abschnitt“) mit
+  `title` der vollen Aktion („Position hinzufügen“); überall sonst (Knopfreihen unter Tabellen, `.button-row`,
+  Dialoge) gleich mit Verb („Beteiligten hinzufügen“). Ein `aria-label` enthält den sichtbaren Text wörtlich (sonst
+  trifft Sprachsteuerung den Knopf nicht); geht das nur mit Beugung, nur `title` setzen.
 - Öffnet der Knopf einen Dialog oder eine Rückfrage, endet er auf „ …“ („Geschoss …“).
 - In Auswahllisten (`<option>`) geht kein Symbol: dort als Platzhalter „Firma hinzufügen …“ – mit „ …“, weil die
   eigentliche Wahl erst folgt (Ausnahme zu „Begriffe“).
