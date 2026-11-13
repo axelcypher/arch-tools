@@ -40,6 +40,56 @@ fn qgis_ablegen(von: &std::path::Path, nach: &std::path::Path) -> Result<(), Str
     Ok(())
 }
 
+/// so lange darf qgis_process laufen, bevor es beendet wird (je Plan 3 Minuten, mindestens 5) – sonst sperrte ein
+/// hängendes QGIS den Katasterdialog dauerhaft
+fn qgis_zeitlimit(plaene: usize) -> std::time::Duration {
+    std::time::Duration::from_secs(60 * (3 * plaene as u64).max(5))
+}
+
+/// Kennungen der Pläne, die das Skript als gelungen meldet (Zeilen „ERGEBNIS {json}“ mit "ok": true)
+fn qgis_gelungen(ausgabe: &str) -> std::collections::HashSet<String> {
+    ausgabe
+        .lines()
+        .filter_map(|z| z.find("ERGEBNIS ").map(|i| &z[i + "ERGEBNIS ".len()..]))
+        .filter_map(|j| serde_json::from_str::<serde_json::Value>(j.trim()).ok())
+        .filter(|v| v.get("ok").and_then(|o| o.as_bool()) == Some(true))
+        .filter_map(|v| v.get("id").and_then(|i| i.as_str()).map(String::from))
+        .collect()
+}
+
+/// Programm ausführen, Ausgaben sammeln; nach `limit` beenden. Fehlertext bei Zeitüberschreitung.
+fn qgis_mit_zeitlimit(cmd: &mut std::process::Command, limit: std::time::Duration) -> Result<std::process::Output, String> {
+    use std::io::Read;
+    use std::process::Stdio;
+    let mut kind = cmd.stdout(Stdio::piped()).stderr(Stdio::piped()).spawn().map_err(|e| e.to_string())?;
+    // Ausgaben in eigenen Fäden lesen – sonst blockiert QGIS bei vollem Puffer und das Zeitlimit liefe ins Leere
+    let mut out = kind.stdout.take().ok_or("keine Ausgabe")?;
+    let mut err = kind.stderr.take().ok_or("keine Fehlerausgabe")?;
+    let lies_out = std::thread::spawn(move || {
+        let mut b = Vec::new();
+        let _ = out.read_to_end(&mut b);
+        b
+    });
+    let lies_err = std::thread::spawn(move || {
+        let mut b = Vec::new();
+        let _ = err.read_to_end(&mut b);
+        b
+    });
+    let beginn = std::time::Instant::now();
+    let status = loop {
+        match kind.try_wait().map_err(|e| e.to_string())? {
+            Some(s) => break s,
+            None if beginn.elapsed() >= limit => {
+                let _ = kind.kill();
+                let _ = kind.wait();
+                return Err(format!("QGIS hat nach {} Minuten nicht geantwortet und wurde beendet.", limit.as_secs() / 60));
+            }
+            None => std::thread::sleep(std::time::Duration::from_millis(200)),
+        }
+    };
+    Ok(std::process::Output { status, stdout: lies_out.join().unwrap_or_default(), stderr: lies_err.join().unwrap_or_default() })
+}
+
 /// Ist das der Name eines qgis_process-Aufrufs? (qgis_process, qgis_process.exe, qgis_process-qgis.bat, -qgis-ltr.bat …)
 fn ist_qgis_process(pfad: &std::path::Path) -> bool {
     let name = pfad.file_name().map(|n| n.to_string_lossy().to_lowercase()).unwrap_or_default();
@@ -154,10 +204,12 @@ async fn qgis_ausfuehren(programm: String, skript: String, auftrag: String, vorl
                 cmd.creation_flags(0x0800_0000);
             }
             log::info!("QGIS: {} run katasterexport.py", prog.display());
-            let out = cmd.output().map_err(|e| format!("{}: {e}", prog.display()))?;
+            let out = qgis_mit_zeitlimit(&mut cmd, qgis_zeitlimit(ziele.len())).map_err(|e| format!("{}: {e}", prog.display()))?;
+            // nur Pläne ablegen, die das Skript als gelungen meldet – nie die Datei eines fehlgeschlagenen
+            let gelungen = qgis_gelungen(&String::from_utf8_lossy(&out.stdout));
             let abgelegt = ziele
                 .into_iter()
-                .filter(|(_, tmp, _)| tmp.is_file())
+                .filter(|(id, tmp, _)| gelungen.contains(id) && tmp.is_file())
                 .map(|(id, tmp, ziel)| match qgis_ablegen(&tmp, &ziel) {
                     Ok(()) => QgisAblage { id, datei: Some(ziel.to_string_lossy().into_owned()), fehler: None },
                     Err(e) => QgisAblage { id, datei: None, fehler: Some(e) },

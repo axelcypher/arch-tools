@@ -5,6 +5,29 @@
 // Zielordner muss es schon geben, und eine vorhandene Datei wird nie überschrieben: Gibt es das Ziel schon, bleibt
 // alles, wie es ist (Ok(false)). Gelöscht wird nichts.
 
+/// Zeigen beide Pfade auf dieselbe Datei? (gleicher Pfad ohne Rücksicht auf die Schreibweise und dieselbe Datei auf
+/// dem Datenträger – Windows: Volume und Dateinummer über die kanonischen Pfade, sonst Gerät und Inode)
+fn gleiche_datei(a: &std::path::Path, b: &std::path::Path) -> bool {
+    if a.to_string_lossy().to_lowercase() != b.to_string_lossy().to_lowercase() {
+        return false;
+    }
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::MetadataExt;
+        match (std::fs::metadata(a), std::fs::metadata(b)) {
+            (Ok(x), Ok(y)) => x.dev() == y.dev() && x.ino() == y.ino(),
+            _ => false,
+        }
+    }
+    #[cfg(not(unix))]
+    {
+        match (std::fs::canonicalize(a), std::fs::canonicalize(b)) {
+            (Ok(x), Ok(y)) => x == y,
+            _ => false,
+        }
+    }
+}
+
 /// Benennt `alt` in `neu` um (beide relativ zu `root`, mit „/“ getrennt). `true` = umbenannt, `false` = das Ziel gibt
 /// es schon (nichts geändert).
 #[tauri::command]
@@ -23,12 +46,13 @@ async fn projekt_datei_umbenennen(root: String, alt: String, neu: String) -> Res
         Some(p) if p.is_dir() => {}
         _ => return Err(format!("{}: den Zielordner gibt es nicht", nach.display())),
     }
-    // nur die Groß-/Kleinschreibung ändert sich (unter Windows dieselbe Datei) – das ist erlaubt
-    let nur_schreibweise = von.to_string_lossy().to_lowercase() == nach.to_string_lossy().to_lowercase();
     if von == nach {
         return Ok(true);
     }
-    if !nur_schreibweise && std::fs::symlink_metadata(&nach).is_ok() {
+    // gibt es das Ziel schon, nie überschreiben – außer es ist dieselbe Datei in anderer Schreibweise (Windows, macOS:
+    // Groß-/Kleinschreibung egal). Auf einem Dateisystem, das sie unterscheidet, ist ein Ziel in anderer Schreibweise
+    // eine andere Datei und bleibt unangetastet.
+    if std::fs::symlink_metadata(&nach).is_ok() && !gleiche_datei(&von, &nach) {
         return Ok(false);
     }
     std::fs::rename(&von, &nach).map_err(|e| {
