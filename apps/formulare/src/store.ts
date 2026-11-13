@@ -1332,7 +1332,8 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       }
       if (ueberholt()) return;
       await get().schliessen();
-      if (ueberholt()) return;
+      // überholt oder inzwischen ein anderes Projekt gewählt: nichts mehr öffnen
+      if (ueberholt() || get().projekt !== projekt) return;
       let gesperrt: SperrZustand | null = null;
       const sperreLoesen = async () => {
         if (gesperrt?.art !== 'eigen') return;
@@ -1358,7 +1359,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
         // gesperrt, aber nicht geöffnet (z. B. das frisch gelesene ist nicht lesbar): die eigene Sperre gleich wieder
         // lösen – sonst bliebe das Formular für FORMA bis zum Beenden der App gesperrt
         await sperreLoesen();
-        fehler(`${eintrag.name} lässt sich nicht öffnen`, e);
+        if (!ueberholt()) fehler(`${eintrag.name} lässt sich nicht öffnen`, e);
       }
     },
 
