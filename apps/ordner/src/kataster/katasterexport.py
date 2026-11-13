@@ -20,10 +20,13 @@ project_zip_code) und die Pläne. Je Plan:
   ausgabe      Zieldatei (vollständiger Pfad)
 Im Layout stehen zusätzlich @plan_massstab („1:1000“), @plan_name und @plan_datum zur Verfügung.
 
-Je Plan schreibt das Skript eine Zeile „ERGEBNIS {json}“ (id, ok, datei, fehler).
+Je Plan schreibt das Skript eine Zeile „ERGEBNIS {json}“ (id, ok, datei, fehler). Schlägt ein Plan fehl, löscht es
+seine (leere oder halb geschriebene) Ausgabedatei. Was ein Plan an der Vorlage ändert (Kartenthema und Ausschnitt des
+Kartenobjekts, abgeschaltete Beschriftungen), wird danach zurückgesetzt – der nächste Plan beginnt mit der Vorlage.
 """
 
 import json
+import os
 from datetime import date
 
 from qgis.core import (
@@ -109,12 +112,23 @@ class KatasterExport(QgsProcessingAlgorithm):
                 ok += 1
             except Exception as e:  # noqa: BLE001 – jeder Fehler gehört in die Meldung des Plans
                 ergebnis["fehler"] = str(e)
+                self.ausgabe_loeschen(plan.get("ausgabe"))
             feedback.pushInfo("ERGEBNIS " + json.dumps(ergebnis, ensure_ascii=False))
             feedback.setProgress(100 * (i + 1) / max(1, len(plaene)))
         projekt.clear()
         return {}
 
     # ---------- Hilfen ----------
+
+    def ausgabe_loeschen(self, ausgabe):
+        """Ausgabe eines fehlgeschlagenen Plans entfernen – sonst würde eine leere oder kaputte Datei abgelegt"""
+        if not ausgabe:
+            return
+        try:
+            if os.path.isfile(ausgabe):
+                os.remove(ausgabe)
+        except OSError:
+            pass
 
     def thema_pruefen(self, projekt, thema):
         if thema and thema not in projekt.mapThemeCollection().mapThemes():
@@ -142,6 +156,18 @@ class KatasterExport(QgsProcessingAlgorithm):
             raise Exception(f"Kartenobjekt „{kennung}“ gibt es im Layout „{name}“ nicht")
         thema = plan.get("thema") or ""
         self.thema_pruefen(projekt, thema)
+        # Zustand des Kartenobjekts sichern: ein späterer Plan mit demselben Layout beginnt wieder mit der Vorlage
+        alt_folgen = karte.followVisibilityPreset()
+        alt_thema = karte.followVisibilityPresetName()
+        alt_ausschnitt = QgsRectangle(karte.extent())
+        try:
+            self.pdf_schreiben(layout, karte, plan, thema, mitte, projekt)
+        finally:
+            karte.setFollowVisibilityPreset(alt_folgen)
+            karte.setFollowVisibilityPresetName(alt_thema)
+            karte.zoomToExtent(alt_ausschnitt)
+
+    def pdf_schreiben(self, layout, karte, plan, thema, mitte, projekt):
         if thema:
             karte.setFollowVisibilityPreset(True)
             karte.setFollowVisibilityPresetName(thema)
@@ -186,9 +212,18 @@ class KatasterExport(QgsProcessingAlgorithm):
         breite, hoehe = plan.get("breite"), plan.get("hoehe")
         if not (breite and hoehe):
             raise Exception("Für DXF fehlt die Ausdehnung (Breite × Höhe in m)")
-        if not plan.get("beschriftungen", True):
+        # abgeschaltete Beschriftungen gelten nur für diesen Plan – die Layer gehören allen Plänen der Vorlage
+        beschriftet = {l.id(): l.labelsEnabled() for l in vektor}
+        try:
+            if not plan.get("beschriftungen", True):
+                for l in vektor:
+                    l.setLabelsEnabled(False)
+            self.dxf_schreiben(plan, vektor, stile, mitte, breite, hoehe)
+        finally:
             for l in vektor:
-                l.setLabelsEnabled(False)
+                l.setLabelsEnabled(beschriftet[l.id()])
+
+    def dxf_schreiben(self, plan, vektor, stile, mitte, breite, hoehe):
         ausschnitt = QgsRectangle.fromCenterAndSize(mitte, float(breite), float(hoehe))
         ms = QgsMapSettings()
         ms.setDestinationCrs(ETRS89_UTM32)

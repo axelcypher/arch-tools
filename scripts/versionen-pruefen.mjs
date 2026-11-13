@@ -5,12 +5,13 @@
 // gegen die Merge-Ref, denn setzen zwei PRs dieselbe Version, mergt Git das ohne Konflikt und der Unterschied wäre weg.
 // Fehlschlag, wenn
 //   1. eine geänderte App-Version schon als Tag existiert,
-//   2. eine App-Version geändert wurde, die Version der Rahmen-App (Arkly, apps/suite) aber nicht,
-//   3. eine geänderte Version nicht größer ist als die auf dem aktuellen main,
-//   4. Dateien einer App (apps/<app>/…) bzw. des gemeinsamen Kerns (packages/core/…, betrifft alle Apps) geändert
-//      wurden, ihre Version aber nicht – das fängt auch zwei PRs mit derselben Nummer, nachdem der zweite main
+//   2. eine geänderte Version nicht größer ist als die auf dem aktuellen main,
+//   3. Dateien einer App (apps/<app>/…) bzw. des gemeinsamen Kerns (packages/core/…, betrifft alle Apps außer Arkly)
+//      geändert wurden, ihre Version aber nicht – das fängt auch zwei PRs mit derselben Nummer, nachdem der zweite main
 //      hereingemergt hat (dann ist die Version an der Merge-Base schon dieselbe); Doku (*.md) und Tests zählen nicht,
-//   (5. eine Version nicht die Form x.y.z hat).
+//   (4. eine Version nicht die Form x.y.z hat).
+// Die Rahmen-App Arkly (apps/suite) hebt ein PR nur bei Änderungen an apps/suite selbst; enthält sie nur neue Fassungen
+// anderer Apps, setzt der Release-Lauf ihre Version automatisch (scripts/suite-version.mjs).
 // Aufruf in der CI (nur pull_request, volle Historie): node scripts/versionen-pruefen.mjs <Ziel-Branch> <PR-Kopf-SHA>
 // Vor dem Merge von Hand: git fetch origin main && node scripts/versionen-pruefen.mjs main HEAD
 // Die Tag-Schemata und die Liste der Apps entsprechen .github/workflows/release.yml (neue App: beide Stellen).
@@ -47,11 +48,14 @@ const FORM = /^\d+\.\d+\.\d+$/;
 /** ausgelieferter Code? Doku und Tests nicht */
 const ausgeliefert = (pfad) => !/\.md$/i.test(pfad) && !/\.test\.[cm]?[jt]sx?$/.test(pfad) && !pfad.includes('/__fixtures__/');
 
-/** Apps, deren ausgelieferter Code sich laut Dateiliste ändert (packages/core betrifft alle) */
+/**
+ * Apps, deren ausgelieferter Code sich laut Dateiliste ändert. packages/core betrifft alle außer Arkly: Arkly bekommt
+ * ihre Version automatisch im Release-Lauf, sobald eine der anderen Apps eine neue hat.
+ */
 export function betroffeneApps(dateien) {
   const apps = new Set();
   for (const pfad of dateien.filter(ausgeliefert)) {
-    if (pfad.startsWith('packages/core/')) APPS.forEach((a) => apps.add(a));
+    if (pfad.startsWith('packages/core/')) APPS.filter((a) => a !== SUITE).forEach((a) => apps.add(a));
     const m = /^apps\/([^/]+)\//.exec(pfad);
     if (m && APPS.includes(m[1])) apps.add(m[1]);
   }
@@ -79,17 +83,13 @@ export function pruefen({ kopf, basis, main, tags, dateien = [] }) {
     }
     // höchste vergebene Version: main oder ein schon veröffentlichter Tag
     const ueber = groesste([main[app], ...tags.map((t) => versionAusTag(app, t))]);
-    const rat = `main mergen und die Version von ${app} über ${ueber ?? v} setzen (an allen fünf Stellen).`;
+    // Arkly ohne eigene Änderungen: die setzt jetzt der Release-Lauf – zurücknehmen statt weiter hochzählen
+    const nurArkly = app === SUITE && !betroffeneApps(dateien).includes(SUITE);
+    const rat = nurArkly
+      ? `die Arkly-Version auf den Stand von main (${main[app]}) zurücksetzen – ohne eigene Änderungen an apps/suite setzt sie der Release-Lauf.`
+      : `main mergen und die Version von ${app} über ${ueber ?? v} setzen (an allen fünf Stellen).`;
     if (tags.includes(tagVon(app, v))) fehler.push(`${app} ${v}: Tag ${tagVon(app, v)} gibt es schon – der Release würde übersprungen. Bitte ${rat}`);
     else if (main[app] && vergleich(v, main[app]) <= 0) fehler.push(`${app} ${v}: nicht größer als auf main (${main[app]}). Bitte ${rat}`);
-  }
-  // die Rahmen-App enthält alle Apps: Ändert sich eine (Version oder Code), braucht auch sie eine neue Version
-  const apps = [...new Set([...geaendert, ...betroffeneApps(dateien)])].filter((x) => x !== SUITE);
-  if (apps.length && !geaendert.includes(SUITE)) {
-    const ueber = groesste([main[SUITE], basis[SUITE], ...tags.map((t) => versionAusTag(SUITE, t))]);
-    fehler.push(
-      `Geänderte Apps (${apps.join(', ')}), aber die Rahmen-App (Arkly, apps/suite) ist unverändert – sie enthält alle Apps. Bitte main mergen und die Version von suite über ${ueber} setzen (an allen fünf Stellen).`,
-    );
   }
   return fehler;
 }

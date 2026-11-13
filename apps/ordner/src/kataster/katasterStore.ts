@@ -16,7 +16,20 @@ import type { GeladeneProjektdatei, ProjektordnerZugriff } from '@core/platform/
 import { projektdateiDateiSetzen, projektdateiLaden, tauriProjektordner, verbinde } from '@core/platform/projektordner';
 import { fragen } from '@core/ui/Rueckfrage';
 import type { KatasterEinstellungen, KatasterPlan, PlanArt, VorlageInfo } from './kataster';
-import { auftragBauen, ergebnisseLesen, fehlerAuszug, katasterAus, katasterZielpfad, neueKennung, planDateiname, planFehler, VORGABE_KATASTER, vorlageLesen, type Namensteile } from './kataster';
+import {
+  auftragBauen,
+  ergebnisseLesen,
+  fehlerAuszug,
+  katasterAus,
+  katasterZielpfad,
+  neueKennung,
+  planBeschriftung,
+  planDateiname,
+  planFehler,
+  VORGABE_KATASTER,
+  vorlageLesen,
+  type Namensteile,
+} from './kataster';
 import type { QgisZugriff } from './qgis';
 import { tauriQgis } from './qgis';
 import skript from './katasterexport.py?raw';
@@ -128,6 +141,108 @@ export const useKataster = create<KatasterState>()((set, get) => {
   const fehlschlag = (text: string): PlanAusgang[] => {
     set({ ausgang: { plaene: [], meldung: text } });
     return [];
+  };
+
+  /** der eigentliche Export – `exportieren` sperrt vorher (gegen Doppelklick) und gibt die Sperre am Ende frei */
+  const exportLauf = async (ids: string[]): Promise<PlanAusgang[]> => {
+    const { fs, qgis, projekt } = get();
+    if (!projekt) return [];
+    const { basis, oap } = projekt;
+    if (!oap) return fehlschlag('Keine Projektdatei (.oap) im Projektordner – dort stehen Koordinaten und QGIS-Vorlage des Projekts.');
+    const meta = oap.projekt.meta;
+    if (!meta.koordinaten) return fehlschlag('Für das Projekt sind keine Koordinaten gespeichert – bitte die Projektadresse in den Stammdaten speichern (die Koordinaten werden dabei abgefragt).');
+    const programm = get().programm;
+    if (!programm) return fehlschlag('Pfad zu qgis_process fehlt – bitte unter „Katasterpläne“ wählen oder suchen lassen.');
+    const plaene = get().einstellungen.plaene.filter((p) => ids.includes(p.id));
+    if (!plaene.length) return fehlschlag('Bitte mindestens einen Plan wählen.');
+    const ordner = get().zielOrdner();
+    if (ordner === null) return fehlschlag('In der Projektdatei steht kein aktiver Antrag – bitte unter „Katasterpläne“ einen festen Ordner für die Ablage wählen.');
+
+    // Vorlage: die der Projektdatei; beim ersten Export die globale übernehmen
+    if (!get().projektVorlage() && !(await get().projektVorlageAktualisieren())) return [];
+    const vorlage = get().projektVorlage();
+    if (!vorlage) return fehlschlag('Die QGIS-Vorlage der Projektdatei ist nicht lesbar.');
+    const info = get().projektVorlageInfo();
+    const falsch = plaene.flatMap((p) => planFehler(p, info).map((t) => `${p.name}: ${t}`));
+    if (falsch.length) return fehlschlag(`Pläne passen nicht zur QGIS-Vorlage des Projekts: ${falsch.join(' ')}`);
+
+    const teile = get().namensteile();
+    const relativ = new Map(plaene.map((p) => [p.id, `${ordner ? `${ordner}/` : ''}${planDateiname(get().einstellungen.dateiname, p, teile)}`]));
+
+    // zwei Pläne mit demselben Dateinamen (etwa ohne {Name} im Dateinamen): vorher melden statt nach dem Rechnen scheitern
+    const gleich = new Map<string, KatasterPlan[]>();
+    for (const p of plaene) {
+      const k = relativ.get(p.id)!.toLowerCase();
+      gleich.set(k, [...(gleich.get(k) ?? []), p]);
+    }
+    const doppelt = [...gleich.values()].filter((ps) => ps.length > 1);
+    if (doppelt.length)
+      return fehlschlag(
+        `Mehrere Pläne bekämen denselben Dateinamen: ${doppelt.map((ps) => `„${relativ.get(ps[0].id)!.split('/').pop()}“ (${ps.map((p) => p.name).join(', ')})`).join('; ')}. Bitte {Name} in den Dateinamen der Einstellungen aufnehmen oder nur einen dieser Pläne wählen.`,
+      );
+
+    // Vorhandene Dateien: überspringen oder mit neuem Namen ablegen – im Projektordner wird nichts überschrieben
+    const da = async (rel: string) => !!(await fs.liesMitStand(basis, rel).catch(() => null));
+    const vorhanden: KatasterPlan[] = [];
+    for (const p of plaene) if (await da(relativ.get(p.id)!)) vorhanden.push(p);
+    let auswahl = plaene;
+    if (vorhanden.length) {
+      const antwort = await fragen({
+        titel: `${vorhanden.length === 1 ? 'Eine Datei gibt' : `${vorhanden.length} Dateien gibt`} es schon`,
+        text: `${vorhanden.map((p) => relativ.get(p.id)).join('\n')}\n\nVorhandene Dateien werden nicht überschrieben.`,
+        knoepfe: [
+          { id: 'abbrechen', label: 'Abbrechen' },
+          { id: 'ueberspringen', label: 'Vorhandene überspringen' },
+          { id: 'neu', label: 'Mit neuem Namen ablegen', art: 'primary' },
+        ],
+      });
+      if (antwort === 'ueberspringen') auswahl = plaene.filter((p) => !vorhanden.includes(p));
+      else if (antwort === 'neu') {
+        // Namen, die schon ein Plan dieses Laufs bekommt, sind ebenfalls belegt
+        const belegt = new Set([...relativ.values()].map((r) => r.toLowerCase()));
+        for (const p of vorhanden) {
+          const alt = relativ.get(p.id)!;
+          const punkt = alt.lastIndexOf('.');
+          for (let i = 2; ; i++) {
+            const kandidat = `${alt.slice(0, punkt)} (${i})${alt.slice(punkt)}`;
+            if (!belegt.has(kandidat.toLowerCase()) && !(await da(kandidat))) {
+              relativ.set(p.id, kandidat);
+              belegt.add(kandidat.toLowerCase());
+              break;
+            }
+          }
+        }
+      } else return [];
+      if (!auswahl.length) return [];
+    }
+
+    const kopf = { titel: meta.vorhaben?.trim() || oap.projekt.name, kennung: teile.kuerzel, strasse: meta.adresse?.strasse ?? '', ort: meta.adresse?.ort ?? '', plz: meta.adresse?.plz ?? '' };
+    const mitBeschriftung = auswahl.map((p) => ({ ...p, beschriftung: planBeschriftung(p.beschriftung, p, teile) }));
+    const auftrag = auftragBauen(mitBeschriftung, meta.koordinaten, kopf, (p) => verbinde(basis, relativ.get(p.id)!));
+    set({ ausgang: null });
+    let ausgang: PlanAusgang[] = [];
+    let meldungText: string | null = null;
+    try {
+      log.info(`${projekt.name}: Katasterpläne ${auswahl.map((p) => p.name).join(', ')} mit ${programm}`);
+      const r = await qgis.ausfuehren({ programm, skript, auftrag, vorlage: vorlage.daten, vorlageName: vorlage.name });
+      const ergebnisse = ergebnisseLesen(r.ausgabe);
+      ausgang = auswahl.map((p) => {
+        const e = ergebnisse.find((x) => x.id === p.id);
+        const abgelegt = r.abgelegt.find((x) => x.id === p.id);
+        if (e?.ok && abgelegt?.datei) return { id: p.id, name: p.name, ok: true, datei: relativ.get(p.id) };
+        return { id: p.id, name: p.name, ok: false, fehler: abgelegt?.fehler ?? e?.fehler ?? 'QGIS hat den Plan nicht erzeugt' };
+      });
+      if (!ergebnisse.length) meldungText = `QGIS ist ohne Ergebnis beendet (Code ${r.code}).${fehlerAuszug(r.fehler, r.ausgabe) ? `\n${fehlerAuszug(r.fehler, r.ausgabe)}` : ''}`;
+      for (const x of ausgang) {
+        if (x.ok) log.info(`${x.name}: ${x.datei}`);
+        else log.warn(`${x.name}: ${x.fehler}`);
+      }
+    } catch (e) {
+      meldungText = `QGIS konnte nicht gestartet werden: ${fehlertext(e)}`;
+      ausgang = auswahl.map((p) => ({ id: p.id, name: p.name, ok: false, fehler: 'nicht ausgeführt' }));
+    }
+    set({ ausgang: { plaene: ausgang, meldung: meldungText } });
+    return ausgang;
   };
 
   return {
@@ -299,95 +414,23 @@ export const useKataster = create<KatasterState>()((set, get) => {
     zielOrdner: () => {
       const e = get().einstellungen;
       const antrag = get().projekt?.oap?.projekt.meta.antrag?.name;
-      if (e.ziel === 'antrag' || !e.zielpfad.trim()) return antrag ? `${ANTRAGSORDNER}/${antrag}` : null;
+      if (e.ziel === 'antrag' || !e.zielpfad.trim()) {
+        // der Name aus der .oap wird wie ein Platzhalter gesäubert: kein „/“, kein „..“, keine unzulässigen Zeichen
+        const ordner = antrag ? katasterZielpfad('{Antrag}', antrag, get().namensteile()) : null;
+        return ordner ? `${ANTRAGSORDNER}/${ordner}` : null;
+      }
       return katasterZielpfad(e.zielpfad, antrag, get().namensteile());
     },
 
     exportieren: async (ids) => {
-      const { fs, qgis, projekt } = get();
-      if (!projekt || get().laeuft) return [];
-      const { basis, oap } = projekt;
-      if (!oap) return fehlschlag('Keine Projektdatei (.oap) im Projektordner – dort stehen Koordinaten und QGIS-Vorlage des Projekts.');
-      const meta = oap.projekt.meta;
-      if (!meta.koordinaten) return fehlschlag('Für das Projekt sind keine Koordinaten gespeichert – bitte die Projektadresse in den Stammdaten speichern (die Koordinaten werden dabei abgefragt).');
-      const programm = get().programm;
-      if (!programm) return fehlschlag('Pfad zu qgis_process fehlt – bitte unter „Katasterpläne“ wählen oder suchen lassen.');
-      const plaene = get().einstellungen.plaene.filter((p) => ids.includes(p.id));
-      if (!plaene.length) return fehlschlag('Bitte mindestens einen Plan wählen.');
-      const ordner = get().zielOrdner();
-      if (ordner === null) return fehlschlag('In der Projektdatei steht kein aktiver Antrag – bitte unter „Katasterpläne“ einen festen Ordner für die Ablage wählen.');
-
-      // Vorlage: die der Projektdatei; beim ersten Export die globale übernehmen
-      if (!get().projektVorlage() && !(await get().projektVorlageAktualisieren())) return [];
-      const vorlage = get().projektVorlage();
-      if (!vorlage) return fehlschlag('Die QGIS-Vorlage der Projektdatei ist nicht lesbar.');
-      const info = get().projektVorlageInfo();
-      const falsch = plaene.flatMap((p) => planFehler(p, info).map((t) => `${p.name}: ${t}`));
-      if (falsch.length) return fehlschlag(`Pläne passen nicht zur QGIS-Vorlage des Projekts: ${falsch.join(' ')}`);
-
-      const teile = get().namensteile();
-      const relativ = new Map(plaene.map((p) => [p.id, `${ordner ? `${ordner}/` : ''}${planDateiname(get().einstellungen.dateiname, p, teile)}`]));
-
-      // Vorhandene Dateien: überspringen oder mit neuem Namen ablegen – im Projektordner wird nichts überschrieben
-      const da = async (rel: string) => !!(await fs.liesMitStand(basis, rel).catch(() => null));
-      const vorhanden: KatasterPlan[] = [];
-      for (const p of plaene) if (await da(relativ.get(p.id)!)) vorhanden.push(p);
-      let auswahl = plaene;
-      if (vorhanden.length) {
-        const antwort = await fragen({
-          titel: `${vorhanden.length === 1 ? 'Eine Datei gibt' : `${vorhanden.length} Dateien gibt`} es schon`,
-          text: `${vorhanden.map((p) => relativ.get(p.id)).join('\n')}\n\nVorhandene Dateien werden nicht überschrieben.`,
-          knoepfe: [
-            { id: 'abbrechen', label: 'Abbrechen' },
-            { id: 'ueberspringen', label: 'Vorhandene überspringen' },
-            { id: 'neu', label: 'Mit neuem Namen ablegen', art: 'primary' },
-          ],
-        });
-        if (antwort === 'ueberspringen') auswahl = plaene.filter((p) => !vorhanden.includes(p));
-        else if (antwort === 'neu') {
-          for (const p of vorhanden) {
-            const alt = relativ.get(p.id)!;
-            const punkt = alt.lastIndexOf('.');
-            for (let i = 2; ; i++) {
-              const kandidat = `${alt.slice(0, punkt)} (${i})${alt.slice(punkt)}`;
-              if (!(await da(kandidat))) {
-                relativ.set(p.id, kandidat);
-                break;
-              }
-            }
-          }
-        } else return [];
-        if (!auswahl.length) return [];
-      }
-
-      const kopf = { titel: meta.vorhaben?.trim() || oap.projekt.name, kennung: teile.kuerzel, strasse: meta.adresse?.strasse ?? '', ort: meta.adresse?.ort ?? '', plz: meta.adresse?.plz ?? '' };
-      const auftrag = auftragBauen(auswahl, meta.koordinaten, kopf, (p) => verbinde(basis, relativ.get(p.id)!));
+      // Sperre sofort setzen: ein Doppelklick startet sonst während der Dateiprüfung einen zweiten Lauf
+      if (!get().projekt || get().laeuft) return [];
       set({ laeuft: true, ausgang: null });
-      let ausgang: PlanAusgang[] = [];
-      let meldungText: string | null = null;
       try {
-        log.info(`${projekt.name}: Katasterpläne ${auswahl.map((p) => p.name).join(', ')} mit ${programm}`);
-        const r = await qgis.ausfuehren({ programm, skript, auftrag, vorlage: vorlage.daten, vorlageName: vorlage.name });
-        const ergebnisse = ergebnisseLesen(r.ausgabe);
-        ausgang = auswahl.map((p) => {
-          const e = ergebnisse.find((x) => x.id === p.id);
-          const abgelegt = r.abgelegt.find((x) => x.id === p.id);
-          if (e?.ok && abgelegt?.datei) return { id: p.id, name: p.name, ok: true, datei: relativ.get(p.id) };
-          return { id: p.id, name: p.name, ok: false, fehler: abgelegt?.fehler ?? e?.fehler ?? 'QGIS hat den Plan nicht erzeugt' };
-        });
-        if (!ergebnisse.length) meldungText = `QGIS ist ohne Ergebnis beendet (Code ${r.code}).${fehlerAuszug(r.fehler, r.ausgabe) ? `\n${fehlerAuszug(r.fehler, r.ausgabe)}` : ''}`;
-        for (const x of ausgang) {
-          if (x.ok) log.info(`${x.name}: ${x.datei}`);
-          else log.warn(`${x.name}: ${x.fehler}`);
-        }
-      } catch (e) {
-        meldungText = `QGIS konnte nicht gestartet werden: ${fehlertext(e)}`;
-        ausgang = auswahl.map((p) => ({ id: p.id, name: p.name, ok: false, fehler: 'nicht ausgeführt' }));
+        return await exportLauf(ids);
       } finally {
         set({ laeuft: false });
       }
-      set({ ausgang: { plaene: ausgang, meldung: meldungText } });
-      return ausgang;
     },
     ausgangSchliessen: () => set({ ausgang: null }),
   };

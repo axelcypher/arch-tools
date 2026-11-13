@@ -111,7 +111,7 @@ export function NamensschemaEinstellungen() {
           title="Die eingebaute Vorgabe wiederherstellen (mit Rückfrage)"
           onClick={() => void zuruecksetzen()}
         >
-          Vorgabe wiederherstellen
+          Vorgabe wiederherstellen …
         </button>
       </div>
     </section>
@@ -121,7 +121,7 @@ export function NamensschemaEinstellungen() {
 /**
  * Leistungsphase 0 bis 9 (ganze Zahl): übernommen beim Verlassen (oder Enter), Esc verwirft. Eine ungültige Eingabe
  * wird nicht gekappt oder verworfen, sondern bleibt zum Korrigieren stehen – mit Meldung am Feld (wie NumberField).
- * Leer heißt „keine“, wo das erlaubt ist (Phase ohne LPH).
+ * Leer heißt „keine“, wo das erlaubt ist (Phase ohne LPh).
  */
 function LphFeld({
   id,
@@ -241,7 +241,7 @@ function KuerzelListe({
           <tr>
             <th>Kürzel</th>
             <th>Bedeutung</th>
-            <th>{mitLph ? 'LPH' : 'Schreibweisen'}</th>
+            <th>{mitLph ? 'LPh' : 'Schreibweisen'}</th>
             <th>
               <span className="po-unsichtbar">Entfernen</span>
             </th>
@@ -304,7 +304,7 @@ function KuerzelZeile({
   const [kuerzel, setKuerzel] = useState(k.kuerzel);
   const [name, setName] = useState(k.name);
   const [synonyme, setSynonyme] = useState(synonymText);
-  // LPH der neuen Zeile: auch als Ref, weil die Zeile beim Verlassen im selben Ereignis gespeichert wird
+  // LPh der neuen Zeile: auch als Ref, weil die Zeile beim Verlassen im selben Ereignis gespeichert wird
   const [lph, setLphZustand] = useState<number | undefined>(k.lph);
   const lphRef = useRef<number | undefined>(k.lph);
   const setLph = (n: number | undefined) => {
@@ -330,7 +330,8 @@ function KuerzelZeile({
     if (wert === k.kuerzel) return setKuerzel(wert);
     const grund = grundGegen(wert) || (schreibweisenAus(synonyme, '').includes(wert) ? 'steht schon bei den Schreibweisen' : '');
     if (grund) {
-      setKuerzel(k.kuerzel);
+      // in der neuen Zeile bleibt die Eingabe zum Korrigieren stehen (wie bei LPh und Schreibweisen)
+      if (!neu) setKuerzel(k.kuerzel);
       return setFehler(neu ? `„${getippt}“: ${grund} – noch nicht gespeichert.` : `„${getippt}“: ${grund} – es bleibt ${k.kuerzel}.`);
     }
     setFehler('');
@@ -359,6 +360,10 @@ function KuerzelZeile({
     if (!neu && liste.join(', ') !== synonymText) onChange({ synonyme: liste });
   };
   const bezeichnung = neu ? 'neues Kürzel' : k.kuerzel;
+  /** das getippte (neue) Kürzel ist ungültig oder schon vergeben */
+  const kuerzelFalsch = !!fehler && !!kuerzel.trim() && !!grundGegen(kuerzel.trim().toUpperCase());
+  /** die getippten (neuen) Schreibweisen sind ungültig – die Marke nur am Feld, das den Fehler hat */
+  const schreibweisenFalsch = !!fehler && falscheSchreibweisen(schreibweisenAus(synonyme, kuerzel.trim().toUpperCase()), kuerzel.trim().toUpperCase()).length > 0;
 
   return (
     <>
@@ -378,6 +383,8 @@ function KuerzelZeile({
             placeholder={neu ? (mitLph ? 'z. B. VP' : 'z. B. ABBR') : undefined}
             aria-label={`${titel}: Kürzel ${bezeichnung}`}
             aria-describedby={fehler ? meldungId : undefined}
+            aria-invalid={neu && kuerzelFalsch ? true : undefined}
+            className={neu && kuerzelFalsch ? 'feld-fehler' : undefined}
             onChange={(e) => {
               setKuerzel(e.target.value);
               setFehler('');
@@ -409,8 +416,8 @@ function KuerzelZeile({
               aria-label={`${titel}: Schreibweisen von ${bezeichnung}`}
               aria-describedby={fehler ? meldungId : undefined}
               // in der neuen Zeile bleibt eine ungültige Eingabe zum Korrigieren stehen – dann als fehlerhaft markiert
-              aria-invalid={neu && !!fehler ? true : undefined}
-              className={neu && fehler ? 'feld-fehler' : undefined}
+              aria-invalid={neu && schreibweisenFalsch ? true : undefined}
+              className={neu && schreibweisenFalsch ? 'feld-fehler' : undefined}
               onChange={(e) => {
                 setSynonyme(e.target.value);
                 setFehler('');

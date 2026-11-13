@@ -30,6 +30,8 @@
 }
 .po-col h2 {
   margin-top: 0;
+  font-size: var(--fs-l);
+  font-weight: 600;
 }
 .po-col h2:not(:first-child) {
   margin-top: 18px;
@@ -187,11 +189,6 @@
 }
 
 /* Prüfen */
-.po-befundgruppe h4 {
-  margin: 12px 0 4px;
-  font-size: 12px;
-  color: var(--muted);
-}
 .po-projekt-knopf {
   border: none;
   background: none;
@@ -224,7 +221,7 @@
   flex: 0 0 92px;
   align-self: flex-start;
   text-align: center;
-  font-size: 10.5px;
+  font-size: var(--fs-xs);
   font-weight: 600;
   padding: 1px 7px;
   border-radius: 999px;
@@ -247,10 +244,35 @@
   margin: 4px 0 0;
   padding-left: 16px;
   font-family: Consolas, 'Cascadia Mono', monospace;
-  font-size: 11.5px;
+  font-size: var(--fs-s);
   color: var(--muted);
   user-select: text;
   -webkit-user-select: text;
+}
+.po-bericht-kopf {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.po-bericht-kopf > button {
+  flex: 0 0 auto;
+}
+.po-befund-inhalt {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+.po-pfade-klapp summary {
+  margin-top: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--muted);
+}
+.po-befund-aktion {
+  margin-top: 6px;
 }
 
 /* Struktur */
@@ -259,7 +281,7 @@
   min-height: 52vh;
   padding: 8px 10px;
   font-family: Consolas, 'Cascadia Mono', monospace;
-  font-size: 12.5px;
+  font-size: var(--fs-m);
   line-height: 1.5;
   color: var(--text);
   background: var(--input-bg);
@@ -295,7 +317,7 @@
 .po-ordner-kopf h2 {
   margin: 0 !important;
 }
-.po-ordner-kopf .tb-group {
+.po-ordner-kopf .segment {
   margin-left: auto;
 }
 
@@ -305,6 +327,9 @@
   flex-direction: column;
   gap: 12px;
   padding: 12px;
+  /* füllt das Fenster: der Baum (bzw. das Textfeld) nimmt die Resthöhe – Meldung, Ablagefläche und Hilfetext bleiben
+     ohne Scrollen sichtbar, gleich wie hoch der Kopf ist */
+  min-height: 100%;
 }
 .po-struktur-titel {
   display: flex;
@@ -318,6 +343,7 @@
 .po-struktur-titel .field {
   margin: 0;
   min-width: 220px;
+  max-width: 320px;
 }
 .po-struktur-titel .button-row {
   margin: 0;
@@ -326,14 +352,21 @@
   margin: 6px 0 0;
 }
 .po-editor {
+  flex: 1 1 auto;
   display: grid;
   grid-template-columns: minmax(420px, 1fr) minmax(300px, 380px);
   gap: 12px;
   align-items: start;
 }
+.po-editor-baum {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+}
 @media (max-width: 980px) {
   .po-editor {
     grid-template-columns: minmax(0, 1fr);
+    align-content: start;
   }
 }
 .po-editor-seite {
@@ -344,40 +377,58 @@
   top: 0;
   min-width: 0;
 }
+/* breit: die Seitenleiste bestimmt die Höhe nicht mit (sonst wüchse der Baum mit ihr über das Fenster) – sie füllt die
+   Zeile und rollt bei Bedarf selbst */
+@media (min-width: 981px) {
+  .po-editor-seite {
+    align-self: stretch;
+    contain: size;
+    overflow: auto;
+  }
+}
 .po-editor-seite .po-col h3 {
   margin: 0 0 6px;
   font-size: 13px;
 }
+/* Werkzeugleiste: Gruppen statt Trennstrichen – beim Umbruch bleibt keine Gruppe zerrissen und kein Strich verwaist */
 .po-werkzeuge {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  margin-bottom: 6px;
+}
+.po-werkzeuge-gruppe {
+  display: flex;
+  gap: 4px;
+}
+/* LPh-Vorschau: eigener Modus mit Rahmen, Chips als Umriss (ansehen statt Regel setzen) */
+.po-vorschau-lph {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 4px;
   margin-bottom: 6px;
+  padding: 5px 8px;
+  border: 1px dashed var(--accent);
+  border-radius: 4px;
 }
-.po-werkzeuge-trenner {
-  width: 1px;
-  height: 18px;
-  margin: 0 4px;
-  background: var(--border);
-}
-.po-vorschau-lph {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 3px 4px;
-  margin-bottom: 6px;
-}
-.po-vorschau-lph > span:first-child {
+.po-vorschau-titel {
   margin-right: 4px;
+  font-size: 12px;
+  font-weight: 600;
 }
-.po-vorschau-lph > span:last-child {
-  margin-left: 6px;
+.po-vorschau-stand {
+  margin: 0 4px 0 6px;
+  color: var(--muted);
+}
+.po-vorschau-lph > button:last-child {
+  margin-left: auto;
 }
 .po-chip {
   min-width: 24px;
   padding: 1px 6px;
-  font-size: 11.5px;
+  font-size: var(--fs-s);
   line-height: 18px;
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -398,27 +449,58 @@
   border-color: var(--accent);
   border-style: dashed;
 }
+.po-chip.umriss {
+  background: transparent;
+  border-radius: 4px;
+}
+.po-chip.umriss.aktiv {
+  background: transparent;
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+}
+/* Meldungen über dem unteren Rand des Baums – der Baum springt nicht */
+.po-k-rahmen {
+  position: relative;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+}
 .po-editor-meldung {
-  margin: 0 0 6px;
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--text) 22%, transparent);
+}
+.po-editor-meldung > span {
+  flex: 1;
 }
 
 /* der Baum */
 .po-k-baum {
+  /* Resthöhe der Spalte (height 0: der Inhalt treibt die Spalte nicht in die Höhe), mindestens 240px */
+  flex: 1 1 auto;
+  height: 0;
   min-height: 240px;
-  max-height: calc(100vh - 330px);
   overflow: auto;
   padding: 4px 0;
   border: 1px solid var(--border);
   border-radius: 4px;
   background: var(--input-bg);
-  font-size: 12.5px;
-  outline: none;
+  font-size: var(--fs-m);
   user-select: none;
   -webkit-user-select: none;
 }
+/* Tastaturfokus: der gemeinsame Fokusrahmen (base.css), dazu der Rand in Akzentfarbe */
 .po-k-baum:focus-visible {
   border-color: var(--accent);
-  box-shadow: 0 0 0 2px var(--accent-soft);
 }
 .po-k-leer {
   padding: 8px 10px;
@@ -441,9 +523,6 @@
 }
 .po-k-baum:focus .po-k-zeile.cursor {
   box-shadow: inset 0 0 0 1px var(--accent);
-}
-.po-k-zeile.implizit .po-k-name {
-  font-style: italic;
 }
 .po-k-zeile.entfaellt .po-k-name,
 .po-k-zeile.entfaellt .po-art {
@@ -496,13 +575,13 @@
 .po-k-eingabe {
   min-width: 180px;
   padding: 1px 5px;
-  font-size: 12.5px;
+  font-size: var(--fs-m);
 }
 .po-k-marke {
   flex: 0 0 auto;
   padding: 0 6px;
   border-radius: 8px;
-  font-size: 10.5px;
+  font-size: var(--fs-xs);
   line-height: 16px;
   background: var(--chip-bg);
   color: var(--muted);
@@ -534,7 +613,12 @@
   padding: 0 5px;
   line-height: 16px;
 }
+/* beim Ziehen immer sichtbar: klebt am unteren Rand des sichtbaren Baums */
 .po-k-stamm {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  background: var(--input-bg);
   margin: 6px;
   padding: 8px;
   border: 1px dashed var(--border);
@@ -602,7 +686,7 @@
 }
 .po-baustein-liste summary {
   cursor: pointer;
-  font-size: 12.5px;
+  font-size: var(--fs-m);
 }
 .po-baustein-knoepfe {
   display: flex;
@@ -618,12 +702,39 @@
   max-height: 220px;
   overflow: auto;
   font-family: Consolas, 'Cascadia Mono', monospace;
-  font-size: 11.5px;
+  font-size: var(--fs-s);
   background: var(--code-bg);
   border-radius: 4px;
 }
+.po-schemata h3 {
+  margin: 12px 0 4px;
+  font-size: 13px;
+}
+.po-schemata-felder {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0 14px;
+}
+@media (max-width: 900px) {
+  .po-schemata-felder {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
 .po-schemata .field {
-  margin-bottom: 8px;
+  margin-bottom: 4px;
+}
+.po-editor.po-editor-text {
+  grid-template-columns: minmax(0, 1fr);
+}
+/* Textansicht: das Textfeld nimmt die Resthöhe – „Ordnerliste übernehmen“ bleibt ohne Scrollen sichtbar */
+.po-editor-text .po-ordnertext {
+  flex: 1 1 auto;
+  height: 0;
+  min-height: 140px;
+  resize: none;
+}
+.po-editor-text .button-row {
+  align-items: center;
 }
 
 /* Kontextmenü */
@@ -635,21 +746,41 @@
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 6px;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 6px 24px color-mix(in srgb, var(--text) 18%, transparent);
   display: flex;
   flex-direction: column;
 }
 .po-menue button {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
   padding: 5px 14px;
   border: none;
   border-radius: 0;
   background: none;
   color: var(--text);
   text-align: left;
-  font-size: 12.5px;
+  font-size: var(--fs-m);
 }
 .po-menue button:hover:not(:disabled) {
   background: var(--hover);
+}
+.po-menue button:focus {
+  background: var(--accent-soft);
+}
+/* Fokusrahmen innen statt mit Abstand – er stünde sonst über den Nachbareinträgen */
+.po-menue button:focus-visible {
+  outline: 2px solid var(--fokus);
+  outline-offset: -2px;
+}
+.po-menue button:disabled {
+  color: var(--muted);
+}
+.po-menue-kuerzel {
+  color: var(--muted);
+  font: inherit;
+  font-size: var(--fs-s);
+  white-space: nowrap;
 }
 .po-menue button.danger {
   color: var(--danger);
@@ -673,6 +804,10 @@
 .po-mehrere-vorschau pre {
   max-height: 260px;
   min-height: 240px;
+}
+.po-mehrere-kuerzel {
+  margin-right: auto;
+  align-self: center;
 }
 .po-ordnermeldungen {
   margin: 6px 0;
@@ -740,6 +875,35 @@
   display: flex;
   justify-content: space-between;
   gap: 8px;
+  padding: 0;
+}
+/* der ganze Eintrag ist ein Knopf – per Tab erreichbar, Enter/Leertaste wählt */
+.po-preset-knopf {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  width: 100%;
+  padding: 4px 6px;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.po-preset-knopf:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.po-platzhalter-klapp {
+  margin-top: 8px;
+}
+.po-platzhalter-klapp summary {
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--muted);
 }
 .po-standard {
   align-self: center;
@@ -793,7 +957,7 @@
 }
 .po-z-vorschau {
   font-family: Consolas, 'Cascadia Mono', monospace;
-  font-size: 11.5px;
+  font-size: var(--fs-s);
   user-select: text;
   -webkit-user-select: text;
 }
@@ -815,8 +979,24 @@
 }
 
 /* Assistent */
+/* bleibt beim Wechsel der Ansicht eingehängt: nur ausblenden, sonst ohne eigenen Kasten */
+.po-assistent-huelle {
+  display: contents;
+}
+.po-assistent-huelle[hidden] {
+  display: none;
+}
 .po-view.po-assistent {
   grid-template-columns: minmax(0, 940px);
+}
+/* Überschriften bekommen den Fokus beim Schrittwechsel (Hilfsmittel lesen sie vor) – bei Tastaturbedienung mit dem
+   gemeinsamen Fokusrahmen (base.css nimmt tabindex="-1" aus), bei Maus ohne */
+.po-assistent h2[tabindex='-1']:focus-visible {
+  outline: 2px solid var(--fokus);
+  outline-offset: 2px;
+}
+.po-assistent .po-plan {
+  max-height: 32vh;
 }
 .po-schritte {
   display: flex;
@@ -854,12 +1034,41 @@
 .po-weiter-grund {
   align-self: center;
   font-size: 12px;
-  color: var(--warn-text);
+  color: var(--danger);
 }
-.po-schritte li.aktiv .po-schritt-nr,
-.po-schritte li.erledigt .po-schritt-nr {
+.po-weiter-grund:empty {
+  display: none;
+}
+/* steht rechts direkt neben „Weiter“ */
+.po-weiter-grund:not(:empty) {
+  margin-left: auto;
+}
+.po-navigation .po-weiter-grund:not(:empty) + .primary {
+  margin-left: 0;
+}
+.po-weiter-grund .po-mehr {
+  color: var(--danger);
+  text-decoration: underline;
+}
+.po-sperr-grund {
+  align-self: center;
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--muted);
+  text-align: right;
+}
+/* offene Fehler (nicht nur ein Hinweis): Farbe wie „Noch offen“ in den anderen Schritten */
+.po-sperr-grund.fehler {
+  color: var(--danger);
+}
+.po-schritte li.aktiv .po-schritt-nr {
   background: var(--accent);
   color: var(--on-accent);
+}
+.po-schritte li.erledigt .po-schritt-nr {
+  background: var(--ok-bg);
+  color: var(--ok-text);
+  box-shadow: inset 0 0 0 1px var(--ok-border);
 }
 .po-kontext {
   margin: 0 0 10px;
@@ -891,7 +1100,24 @@
 }
 .po-projektliste li {
   cursor: pointer;
-  font-size: 12.5px;
+  font-size: var(--fs-m);
+}
+.po-start .po-projekt-knopf {
+  flex: 1;
+  min-width: 0;
+}
+.po-vorlagenwahl {
+  margin: 10px 0 0;
+  padding: 0;
+  border: none;
+  min-width: 0;
+}
+.po-vorlagenwahl legend {
+  padding: 0;
+  margin-bottom: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
 }
 .po-karte .po-suche {
   width: 100%;
@@ -931,12 +1157,39 @@
 .po-navigation .primary {
   margin-left: auto;
 }
+.po-navigation .po-sperr-grund + .primary,
+.po-navigation .busy + .primary {
+  margin-left: 0;
+}
+/* im Assistenten bleibt die Navigation unten sichtbar – auch bei langem Trockenlauf */
+.po-assistent .po-navigation {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  margin-bottom: -12px;
+  padding-bottom: 12px;
+  background: var(--panel);
+}
 
 /* Einstellungen */
+/* Abschnitt der gemeinsamen Einstellungen (Stammordner) – so groß wie die übrigen Abschnittsüberschriften */
+h3.po-abschnitt {
+  margin: 18px 0 2px;
+  font-size: 14px;
+}
+.po-stammordner {
+  margin-bottom: 12px;
+}
 .po-stammordner li {
   display: flex;
   align-items: center;
   gap: 6px;
+}
+/* „neue Projekte“ und „Neue Projekte hier“ gleich breit – die Pfade stehen bündig */
+.po-stamm-neu {
+  flex: 0 0 auto;
+  min-width: 132px;
+  text-align: center;
 }
 .po-stammordner li[draggable='true'] {
   cursor: grab;
@@ -1132,15 +1385,62 @@
   color: var(--muted);
 }
 .ka-art.pdf {
-  background: var(--fehler-bg);
-  color: var(--fehler-text);
+  /* neutral – Rot läse sich wie ein Fehler */
+  background: var(--chip-bg);
+  color: var(--text);
 }
 .ka-art.dxf {
   background: var(--accent-soft);
   color: var(--accent);
 }
+/* Felder einer Plankarte im Raster; Zahlenfelder bleiben kurz */
+.es-raster {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 8px 12px;
+  align-items: end;
+}
+.es-raster > label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.es-raster input:not([type='checkbox']) {
+  width: 100%;
+}
+.es-breit {
+  grid-column: 1 / -1;
+}
+/* Auswahl mit langen Einträgen (Stil der DXF) über zwei Spalten */
+.es-raster > .ka-zwei {
+  grid-column: span 2;
+}
 .ka-raster select {
   width: 100%;
+}
+/* Einstellungen links im Dialogfuß, Abbrechen und Exportieren rechts */
+.ka-dialog .dialog-buttons .ex-links {
+  margin-right: auto;
+}
+/* Knopf, der wie ein Verweis aussieht (Einstellungen öffnen, Datei wählen …) */
+button.po-link {
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: var(--accent);
+  text-decoration: underline;
+  cursor: pointer;
+}
+button.po-link:hover:not(:disabled) {
+  background: none;
+  color: var(--accent-hover);
+}
+button.po-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 2px;
 }
 .ka-check {
   flex-direction: row !important;
@@ -1239,7 +1539,7 @@
   border: 1px solid var(--border);
   border-radius: 6px;
   background: var(--bg);
-  font-size: 12.5px;
+  font-size: var(--fs-m);
 }
 .po-steckbrief summary {
   cursor: pointer;
@@ -1299,7 +1599,17 @@
 .po-mails-knoepfe {
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px;
+  gap: var(--s1) var(--s3);
+}
+/* Knopfgruppen bleiben beim Umbruch zusammen; die Auswahl steht rechts */
+.po-mails-gruppe {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s1);
+}
+.po-mails-auswahl {
+  margin-left: auto;
 }
 .po-mailliste {
   list-style: none;
@@ -1327,7 +1637,7 @@
   min-width: 0;
 }
 .po-mail-name {
-  font-size: 12.5px;
+  font-size: var(--fs-m);
   font-weight: 600;
   overflow-wrap: anywhere;
 }
@@ -1358,7 +1668,7 @@
 .po-mail-teile select {
   width: auto;
   padding: 2px 6px;
-  font-size: 12.5px;
+  font-size: var(--fs-m);
 }
 .po-mail-teile input.po-mail-gegenueber {
   width: 140px;
@@ -1367,9 +1677,20 @@
   width: 72px;
   font-variant-numeric: tabular-nums;
 }
+/* Thema und Knopf (Umbenennen/Ablegen) brechen gemeinsam um */
+.po-mail-teile > .po-mail-thema-knopf {
+  flex: 1 1 260px;
+  display: flex;
+  align-items: center;
+  gap: var(--s1);
+  min-width: 0;
+}
 .po-mail-teile input.po-mail-thema {
-  flex: 1 1 200px;
-  min-width: 160px;
+  flex: 1 1 auto;
+  min-width: 120px;
+}
+.po-mail-thema-knopf > button {
+  flex: 0 0 auto;
 }
 .po-mail-neu {
   margin: 4px 0 0 24px;
@@ -1427,13 +1748,13 @@
   border-color: var(--accent);
   background: var(--accent-soft);
 }
-.po-ablage-wahl {
-  color: var(--accent);
-  cursor: pointer;
-  text-decoration: underline;
+.po-mail-kopf .po-mail-verwerfen {
+  flex: 0 0 auto;
+  align-self: center;
 }
-.po-ablage-wahl input {
-  display: none;
+/* ohne Ordnerwahl (nicht lesbar) steht „×“ am Zeilenende */
+.po-mail-kopf .po-mail-verwerfen.rechts {
+  margin-left: auto;
 }
 .po-neue {
   margin-bottom: 14px;
@@ -1535,5 +1856,5 @@
 
 /* Platzhalter des festen Ablageordners (Katasterpläne): eingerückt unter „Ordner im Projektordner“ */
 .ka-ziel-platzhalter {
-  margin-left: 24px;
+  margin-top: 4px;
 }

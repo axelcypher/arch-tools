@@ -2,7 +2,7 @@ import type { Namensschema } from '@core/namensschema';
 import { APP_NAMEN } from '@core/appNamen';
 import { writeArchive } from '@core/archive';
 import type { ProjectMeta, ProjektordnerAngaben } from '@core/model';
-import { projektdateiSchreiben } from '@core/platform/projektordner';
+import { projektdateiSchreiben, verbinde } from '@core/platform/projektordner';
 import { projektdateiPfad, projektdateiWaehlen, VORGABE_OAP_PFAD } from '@core/projektdatei';
 import type { Dateisystem, Eintrag } from './dateisystem';
 import { DATUM_MUSTER, nameAus } from './nummer';
@@ -77,7 +77,18 @@ export interface PlanOptionen {
   namensschema?: Namensschema;
   /** die vorhandene Projektdatei des Ordners (Ergänzen) – sie wird gezielt ergänzt statt neu angelegt */
   projektdatei?: { pfad: string; meta: ProjectMeta; projektordner?: ProjektordnerAngaben; namensschema?: Namensschema } | null;
+  /**
+   * Desktop: wo der Projektordner liegt – beim neuen Projekt der Stammordner (der Ordnername kommt dazu), beim Ergänzen
+   * (`ordner` gesetzt) der vollständige Pfad des Projektordners. Für die Warnung vor zu langen Pfaden.
+   */
+  ort?: string;
 }
+
+/** Windows: Pfade ab dieser Länge (einschließlich Laufwerk) öffnen Explorer und Office nicht (MAX_PATH = 260 mit Endzeichen) */
+export const WINDOWS_PFAD_GRENZE = 260;
+
+/** {JAHR}, {JAHR_KURZ} bzw. die alten Namen {jahr}, {jj} – auch mit Format */
+const JAHR_PLATZHALTER = /\{\s*(jahr|jahr_kurz|jj)\s*[:}]/i;
 
 /** Dateien, die keine Vorlagen sind: Systemdateien, Sperrdateien von Office, die Anleitung im Stamm */
 const KEINE_VORLAGE = /(^|\/)(thumbs\.db|desktop\.ini|\.ds_store|~\$[^/]*|\.[^/]*)$/i;
@@ -307,9 +318,10 @@ export function planen(stamm: Stammdaten, struktur: Struktur, vorlagen: Vorlage[
     schritte.set(geladen.pfad.toLowerCase(), { art: 'datei', pfad: geladen.pfad, herkunft: 'projektdatei', vorhanden: true, aenderung });
     projektdatei = { pfad: geladen.pfad, neu: false, teile: aenderung.teile };
   } else if (schonDa) {
-    // vorhanden, aber nicht geladen (z. B. im Browser nicht lesbar): bleibt unverändert
+    // vorhanden, aber nicht geladen (etwa nicht lesbar): bleibt unverändert – die Stammdaten kommen dann nirgends an
     datei(schonDa.pfad, 'projektdatei', async () => new Uint8Array());
     projektdatei = { pfad: schonDa.pfad, neu: false, teile: [] };
+    warnungen.push(`Die vorhandene Projektdatei „${schonDa.pfad}“ bleibt unverändert – Stammdaten und Presets werden darin nicht gespeichert.`);
   } else {
     const pfad = projektdateiPfad(optionen.oapPfad ?? VORGABE_OAP_PFAD, { nummer: s.nummer, kurzname: s.kurzname, vorhaben: s.bezeichnung, jahr: werte.jahr, datum: date });
     datei(pfad, 'projektdatei', async () => writeArchive(alsProject(s, { struktur, presets: presetNamen, date, namensschema: optionen.namensschema }), { app: `${APP_NAMEN.ordner.name} ${__APP_VERSION__}`, date }));
@@ -347,6 +359,29 @@ export function planen(stamm: Stammdaten, struktur: Struktur, vorlagen: Vorlage[
   if (nachLph) hinweise.push(`${nachLph} ${nachLph === 1 ? 'Zuordnung gehört' : 'Zuordnungen gehören'} zu nicht beauftragten Leistungsphasen und ${nachLph === 1 ? 'entfällt' : 'entfallen'}.`);
 
   const liste = [...schritte.values()];
+
+  // Desktop: zu lange Pfade schon vor dem Anlegen melden (die Prüfung fände sie erst hinterher)
+  if (optionen.ort) {
+    const basis = optionen.ordner === undefined ? verbinde(optionen.ort, ordner) : optionen.ort;
+    const lang = liste.filter((x) => !x.vorhanden && verbinde(basis, x.pfad).length >= WINDOWS_PFAD_GRENZE).map((x) => verbinde(basis, x.pfad));
+    if (lang.length) {
+      const laengster = lang.reduce((a, b) => (b.length > a.length ? b : a));
+      warnungen.push(
+        `${lang.length} ${lang.length === 1 ? 'Pfad wäre' : 'Pfade wären'} ${WINDOWS_PFAD_GRENZE} Zeichen oder länger – Explorer und Office öffnen ${lang.length === 1 ? 'ihn' : 'sie'} unter Windows nicht. Ein kürzerer Kurzname, Ordnername oder Stammordner hilft. Längster (${laengster.length} Zeichen): ${laengster}`,
+      );
+    }
+  }
+  // Ergänzen ohne bekanntes Anlagejahr: {JAHR} in neuen Namen ist das laufende Jahr
+  if (optionen.ordner !== undefined && optionen.jahr === undefined) {
+    const namen = [
+      ...struktur.ordner.filter((r) => ordnerGilt(struktur.ordner, r.pfad, s.leistungsphasen)).map((r) => r.pfad),
+      ...(presets.length ? [struktur.vorlagenname, ...presets.flatMap((p) => p.eintraege.flatMap((e) => [e.ziel, e.name ?? '']))] : []),
+      ...liste.filter((x) => x.quelle).map((x) => x.quelle!),
+      ...(projektdatei.neu ? [optionen.oapPfad ?? VORGABE_OAP_PFAD] : []),
+    ];
+    if (namen.some((n) => JAHR_PLATZHALTER.test(n)) && liste.some((x) => !x.vorhanden))
+      hinweise.push(`Das Jahr der Anlage ist nicht bekannt (die Projektdatei nennt keins) – für {JAHR} in neuen Namen gilt das laufende Jahr ${werte.jahr}.`);
+  }
   const vorhanden = liste.filter((x) => x.vorhanden).length;
   if (vorhanden) hinweise.push(`${vorhanden} ${vorhanden === 1 ? 'Eintrag ist' : 'Einträge sind'} schon vorhanden und ${vorhanden === 1 ? 'bleibt' : 'bleiben'} unverändert.`);
 
@@ -404,6 +439,17 @@ export async function ausfuehren(fs: Dateisystem, root: string, plan: Plan, opti
     optionen.fortschritt?.(i + 1, plan.schritte.length);
   }
   return out;
+}
+
+/**
+ * Gibt es den Projektordner im Stammordner schon? Frisch nachgesehen, unmittelbar vor dem Anlegen eines neuen Projekts
+ * – ein Kollege kann ihn inzwischen angelegt haben (gleiche Nummer). Groß-/Kleinschreibung zählt nicht (Windows).
+ * Liefert den Namen, wie er im Stammordner steht, sonst null.
+ */
+export async function zielordnerVorhanden(fs: Dateisystem, stammordner: string, ordner: string): Promise<string | null> {
+  const name = ordner.toLowerCase();
+  const eintraege = await fs.liste(stammordner, 1);
+  return eintraege.find((e) => e.pfad.toLowerCase() === name)?.pfad ?? null;
 }
 
 /** Vorlagen aus einem Vorlagenordner */
