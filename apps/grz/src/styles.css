@@ -492,22 +492,6 @@ button.link:hover {
   vertical-align: -1px;
   margin-right: 4px;
 }
-/* Druckvorschau: Bedienleiste als eigene Zeile über dem Blatt statt über der Überschrift (app-seitig, bis base.css nachzieht) */
-.grz-report .report-actions {
-  position: sticky;
-  top: 0;
-  right: auto;
-  z-index: 2;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 6px 10px;
-  margin: -8px -8px 12px;
-  padding: 8px;
-  background: var(--panel);
-  border-bottom: 1px solid var(--border);
-}
 
 /* 3D-Ansicht */
 .grz-3d {
