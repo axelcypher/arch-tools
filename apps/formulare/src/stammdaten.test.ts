@@ -49,7 +49,7 @@ describe('Projektdaten.xlsx allgemein auslesen', () => {
       ['Projektdaten', null],
       ['Bauvorhaben:', 'Umnutzung DG'],
       ['Grundstück', null],
-      ['Straße / Nr.:', 'Birkenstraße 5'],
+      ['Straße / Nr.:', 'Buchenstraße 5'],
       ['PLZ / Ort:', '59514 Welver'],
       ['Gemarkung', 'Meyerich', 'Flur', 2, 'Flurstück', '566'],
       ['Bauherr', null],
@@ -67,7 +67,7 @@ describe('Projektdaten.xlsx allgemein auslesen', () => {
     const nach = Object.fromEntries(e.map((x) => [x.angabe, [x.wert, x.zelle]]));
     expect(nach).toEqual({
       vorhaben: ['Umnutzung DG', 'B2'],
-      'grundstueck.strasse': ['Birkenstraße 5', 'B4'],
+      'grundstueck.strasse': ['Buchenstraße 5', 'B4'],
       'grundstueck.plz': ['59514', 'B5'],
       'grundstueck.ort': ['Welver', 'B5'],
       gemarkung: ['Meyerich', 'B6'],
