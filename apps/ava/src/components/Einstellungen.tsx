@@ -4,7 +4,10 @@ import { meldung } from '@core/ui/Rueckfrage';
 import { ordnerWaehlen } from '@core/platform/projektordner';
 import { openFileWithPath } from '@core/platform/files';
 import { bueroName } from '@core/platform/konfig';
-import { nameBilden, nameErkennen, unbekanntePlatzhalter } from '../abrechnung/benennung';
+import { modernisieren } from '@core/platzhalter';
+import { PlatzhalterChips, PlatzhalterHinweise, platzhalterEinfuegen } from '@core/ui/Platzhalter';
+import { nameBilden, nameErkennen } from '../abrechnung/benennung';
+import { LV_NAME_VARIABLEN, mailVariablen, RECHNUNG_NAME_VARIABLEN } from '../platzhalter';
 import type { AvaEinstellungen, MailVorlage } from '../einstellungen';
 import { VORGABE } from '../einstellungen';
 import { neueId } from '../lv/modell';
@@ -95,13 +98,19 @@ export function EinstellungenModal() {
           )}
           {ebene === 'rechnungen' && (
             <div className="ava-formular">
-              <p className="muted ava-feld-breit">
-                Muster der Dateinamen im Auftragsordner. Das erste gilt für neue Dateien, alle zum Erkennen vorhandener. Platzhalter: {'{Kürzel} {Nr} {Nr:3} {Art} {Lfd} {Firma} {Datum} {Gewerk}'}.
-              </p>
+              <p className="muted ava-feld-breit">Muster der Dateinamen im Auftragsordner. Das erste gilt für neue Dateien, alle zum Erkennen vorhandener.</p>
               <Feld label="Muster (je Zeile eines)" breit>
                 <TextEingabe mehrzeilig zeilen={4} wert={e.rechnungen.muster.join('\n')} onChange={(s) => setze('rechnungen', { muster: s.split('\n').map((x) => x.trim()).filter(Boolean) })} />
               </Feld>
-              {e.rechnungen.muster.flatMap(unbekanntePlatzhalter).length > 0 && <div className="warning ava-feld-breit">Unbekannte Platzhalter: {e.rechnungen.muster.flatMap(unbekanntePlatzhalter).join(', ')}</div>}
+              <div className="ava-feld-breit">
+                <PlatzhalterHinweise vorlage={e.rechnungen.muster.join('\n')} variablen={RECHNUNG_NAME_VARIABLEN} onAnpassen={(s) => setze('rechnungen', { muster: s.split('\n') })} />
+                <PlatzhalterChips
+                  variablen={RECHNUNG_NAME_VARIABLEN}
+                  label="Muster der Rechnungsdateien (an das erste Muster angehängt)"
+                  fokusBehalten={false}
+                  onEinfuegen={(p) => setE((x) => ({ ...x, rechnungen: { ...x.rechnungen, muster: [platzhalterEinfuegen(x.rechnungen.muster[0] ?? '', p).text, ...x.rechnungen.muster.slice(1)] } }))}
+                />
+              </div>
               <Feld label="Beispiel für neue Dateien" breit>
                 <code>{nameBilden(e.rechnungen.muster[0] ?? '', { kuerzel: 'K62', nr: 53, firma: 'Witthaut', datum: '2026-11-12', art: 'SR', lfd: 4, gewerk: 'G08' })}.pdf</code>
               </Feld>
@@ -215,9 +224,18 @@ export function EinstellungenModal() {
                   <option value="oalv">eigenes Format (.oalv) – alle Positionsarten, ohne LV-Programm</option>
                 </select>
               </Feld>
-              <Feld label="Name neuer LV-Dateien" hinweis="Platzhalter {Kürzel} {Datum} {Gewerk}; dahinter folgt die Bezeichnung">
+              <Feld label="Name neuer LV-Dateien" hinweis="dahinter folgt die Bezeichnung">
                 <TextEingabe wert={e.lv.dateiname} onChange={(dateiname) => setze('lv', { dateiname })} />
               </Feld>
+              <div className="ava-feld-breit">
+                <PlatzhalterHinweise vorlage={e.lv.dateiname} variablen={LV_NAME_VARIABLEN} onAnpassen={(dateiname) => setze('lv', { dateiname })} />
+                <PlatzhalterChips
+                  variablen={LV_NAME_VARIABLEN}
+                  label="Name neuer LV-Dateien"
+                  fokusBehalten={false}
+                  onEinfuegen={(p) => setE((x) => ({ ...x, lv: { ...x.lv, dateiname: platzhalterEinfuegen(x.lv.dateiname, p).text } }))}
+                />
+              </div>
             </div>
           )}
         </div>
@@ -236,16 +254,20 @@ export function EinstellungenModal() {
   );
 }
 
+type MailFeld = 'an' | 'cc' | 'betreff' | 'text';
+const MAIL_FELDER: Record<MailFeld, string> = { an: 'An', cc: 'Cc', betreff: 'Betreff', text: 'Text' };
+
 function MailVorlagen({ vorlagen, onChange }: { vorlagen: MailVorlage[]; onChange: (v: MailVorlage[]) => void }) {
   const [id, setId] = useState(vorlagen[0]?.id ?? '');
+  /** Feld, in das die Platzhalter-Chips einfügen: das zuletzt bearbeitete */
+  const [ziel, setZiel] = useState<MailFeld>('text');
   const v = vorlagen.find((x) => x.id === id);
   const setze = (patch: Partial<MailVorlage>) => onChange(vorlagen.map((x) => (x.id === id ? { ...x, ...patch } : x)));
+  const variablen = mailVariablen(id);
+  const alle = v ? [v.an, v.cc, v.betreff, v.text].join('\n') : '';
   return (
     <div className="ava-mailvorlagen">
-      <p className="muted">
-        Platzhalter: {'{Projekt} {Kürzel} {Gewerk} {Firma} {Firma-Mail} {Rechnung} {Nr} {Betrag} {Datum} {Zahler} {Teilnehmer} {Bearbeiter}'}. Die Mail öffnet sich als Entwurf mit Anhang im
-        Mailprogramm (Outlook: als neue Nachricht) – nur noch „Senden“.
-      </p>
+      <p className="muted">Die Mail öffnet sich als Entwurf mit Anhang im Mailprogramm (Outlook: als neue Nachricht) – nur noch „Senden“.</p>
       <div className="ava-reihe">
         <select value={id} onChange={(x) => setId(x.target.value)}>
           {vorlagen.map((x) => (
@@ -256,7 +278,7 @@ function MailVorlagen({ vorlagen, onChange }: { vorlagen: MailVorlage[]; onChang
         </select>
         <button
           onClick={() => {
-            const n = { id: neueId('m'), name: 'Neue Vorlage', an: '', cc: '', betreff: '{Kürzel} {Projekt}', text: '' };
+            const n = { id: neueId('m'), name: 'Neue Vorlage', an: '', cc: '', betreff: '{PROJEKT_KUERZEL} {PROJEKT_VORHABEN}', text: '' };
             onChange([...vorlagen, n]);
             setId(n.id);
           }}
@@ -271,17 +293,34 @@ function MailVorlagen({ vorlagen, onChange }: { vorlagen: MailVorlage[]; onChang
             <TextEingabe wert={v.name} onChange={(name) => setze({ name })} />
           </Feld>
           <Feld label="An">
-            <TextEingabe wert={v.an} onChange={(an) => setze({ an })} />
+            <span className="ava-mailfeld" onFocus={() => setZiel('an')}>
+              <TextEingabe wert={v.an} onChange={(an) => setze({ an })} />
+            </span>
           </Feld>
           <Feld label="Cc">
-            <TextEingabe wert={v.cc} onChange={(cc) => setze({ cc })} />
+            <span className="ava-mailfeld" onFocus={() => setZiel('cc')}>
+              <TextEingabe wert={v.cc} onChange={(cc) => setze({ cc })} />
+            </span>
           </Feld>
           <Feld label="Betreff" breit>
-            <TextEingabe wert={v.betreff} onChange={(betreff) => setze({ betreff })} />
+            <span className="ava-mailfeld" onFocus={() => setZiel('betreff')}>
+              <TextEingabe wert={v.betreff} onChange={(betreff) => setze({ betreff })} />
+            </span>
           </Feld>
           <Feld label="Text" breit>
-            <TextEingabe mehrzeilig zeilen={8} wert={v.text} onChange={(text) => setze({ text })} />
+            <span className="ava-mailfeld" onFocus={() => setZiel('text')}>
+              <TextEingabe mehrzeilig zeilen={8} wert={v.text} onChange={(text) => setze({ text })} />
+            </span>
           </Feld>
+          <div className="ava-feld-breit">
+            <PlatzhalterHinweise
+              vorlage={alle}
+              variablen={variablen}
+              onAnpassen={() => setze({ an: modernisieren(v.an, variablen), cc: modernisieren(v.cc, variablen), betreff: modernisieren(v.betreff, variablen), text: modernisieren(v.text, variablen) })}
+            />
+            <PlatzhalterChips variablen={variablen} label={`Mailvorlage, eingefügt in „${MAIL_FELDER[ziel]}“`} fokusBehalten={false} onEinfuegen={(p) => setze({ [ziel]: platzhalterEinfuegen(v[ziel], p).text })} />
+            <span className="ava-feld-hinweis">Ein Klick fügt den Platzhalter am Ende von „{MAIL_FELDER[ziel]}“ ein (zuletzt bearbeitetes Feld).</span>
+          </div>
         </div>
       )}
     </div>

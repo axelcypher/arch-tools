@@ -5,9 +5,21 @@ const titel = (v: Variable) => [v.text, v.quelle && `Quelle: ${v.quelle}`, v.bei
 
 /**
  * Chips der Platzhalter einer Einstellung – in allen Apps gleich: zuerst die globalen Variablen (gelten überall gleich,
- * GROSSBUCHSTABEN), dann die lokalen (nur hier). Ein Klick setzt den Platzhalter ein (`onEinfuegen`).
+ * GROSSBUCHSTABEN), dann die lokalen (nur hier). Ein Klick setzt den Platzhalter ein (`onEinfuegen`). `fokusBehalten`
+ * (Vorgabe): der Fokus bleibt im Feld, damit der Platzhalter an der Schreibmarke landet; aus bei Feldern, die erst beim
+ * Verlassen übernehmen – dann wird angehängt.
  */
-export function PlatzhalterChips({ variablen, onEinfuegen, label }: { variablen: Variable[]; onEinfuegen: (platzhalter: string) => void; label: string }) {
+export function PlatzhalterChips({
+  variablen,
+  onEinfuegen,
+  label,
+  fokusBehalten = true,
+}: {
+  variablen: Variable[];
+  onEinfuegen: (platzhalter: string) => void;
+  label: string;
+  fokusBehalten?: boolean;
+}) {
   const global = variablen.filter((v) => istGlobal(v));
   const lokal = variablen.filter((v) => !istGlobal(v));
   const chip = (v: Variable, art: 'global' | 'lokal') => (
@@ -17,8 +29,7 @@ export function PlatzhalterChips({ variablen, onEinfuegen, label }: { variablen:
       className={`small ph-chip ph-${art}`}
       title={titel(v)}
       aria-label={`{${v.name}} einfügen – ${v.text}${art === 'global' ? ' (global)' : ' (nur hier)'}`}
-      // Fokus bleibt im Feld, damit der Platzhalter an der Schreibmarke landet
-      onMouseDown={(e) => e.preventDefault()}
+      onMouseDown={fokusBehalten ? (e) => e.preventDefault() : undefined}
       onClick={() => onEinfuegen(`{${v.name}}`)}
     >
       {`{${v.name}}`}
@@ -51,7 +62,7 @@ export function PlatzhalterHinweise({ vorlage, variablen, onAnpassen }: { vorlag
   const alt = veraltetePlatzhalter(vorlage, variablen);
   return (
     <>
-      {fremd.length > 0 && <span className="feld-meldung">Unbekannt, bleibt so im Namen stehen: {fremd.join(', ')}</span>}
+      {fremd.length > 0 && <span className="feld-meldung">Unbekannter Platzhalter, bleibt so stehen: {fremd.join(', ')}</span>}
       {alt.length > 0 && (
         <span className="ph-veraltet">
           Alte Schreibweise (funktioniert weiter): {alt.map((a) => `${a.alt} → ${a.neu}`).join(', ')}

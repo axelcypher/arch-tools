@@ -20,11 +20,11 @@ import { einstellungenLaden, einstellungenSpeichern, VORGABE } from './einstellu
 import { aslvLesen, aslvNeu, aslvSchreiben } from './format/aslv';
 import { eigenLesen, eigenSchreiben } from './format/eigen';
 import type { Lv } from './lv/modell';
-import { heuteIso, leeresLv, xmlIdsUebernehmen } from './lv/modell';
+import { leeresLv, xmlIdsUebernehmen } from './lv/modell';
 import type { Gewerk, LvDatei, LvFormat, Projektstruktur } from './projekt';
 import { projektLesen } from './projekt';
 import { gewerkZweistellig } from './abrechnung/gewerk';
-import { nameBilden } from './abrechnung/benennung';
+import { globaleAva, lvDateiname } from './platzhalter';
 
 const log = logger('ava');
 
@@ -271,7 +271,7 @@ export const useAva = create<AvaZustand>((set, get) => ({
     lv.kopf.nummer ??= gewerk.slice(1);
     const ordner = g ? g.pfad : `${einstellungen.ablage.gewerke}/${gewerkZweistellig(gewerk)}`;
     const unter = einstellungen.ablage.lv ? `${ordner}/${einstellungen.ablage.lv}` : ordner;
-    const name = nameBilden(einstellungen.lv.dateiname, { kuerzel: projekt.meta.projektcode, datum: heuteIso(), gewerk: gewerkZweistellig(gewerk) }).replace(/\{[^}]*\}/g, '').trim() || bezeichnung;
+    const name = lvDateiname(einstellungen.lv.dateiname, { ...globaleAva(projekt.meta, projekt.name, einstellungen.deckblatt.bearbeiter), Gewerk: gewerkZweistellig(gewerk) }) || bezeichnung;
     const pfad = `${unter}/${name} ${bezeichnung.replace(/^G\d+\s*/i, '')}`.replace(/\s+$/, '').replace(/[\\:*?"<>|]/g, ' ') + `.${format}`;
     const daten = format === 'aslv' ? aslvNeu(lv) : eigenSchreiben(lv);
     if (!(await fs.anlegen(projekt.ordner, pfad, daten))) throw new Error(`${pfad}: Die Datei gibt es schon.`);
