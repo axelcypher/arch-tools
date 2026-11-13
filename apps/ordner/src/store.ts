@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { AllgemeineEinstellungen, KonfigOrt } from '@core/platform/konfig';
+import { vorDemSchliessen } from '@core/platform/rahmen';
 import {
   allgemeinAendern,
   allgemeinAus,
@@ -495,6 +496,9 @@ useOrdner.subscribe((s, vorher) => {
 // Speicherort der Einstellungen (core, für alle Apps): vor dem Wechsel Ausstehendes speichern, danach neu lesen –
 // auch nach einem Wechsel in einem anderen Fenster und wenn das Netzlaufwerk wieder erreichbar ist
 konfigVorWechsel(() => useOrdner.getState().speichernJetzt());
+// vor dem Ende von Fenster bzw. Tab (Schließen, Andocken, Herauslösen, Update): ein verzögertes Schreiben sofort ausführen und
+// abwarten – auch ohne gemeldete ungespeicherte Änderungen. Mehrfach aufgerufen, wartet speichernJetzt nur das laufende Schreiben ab.
+vorDemSchliessen(() => useOrdner.getState().speichernJetzt());
 konfigOrtBeobachten((o) => {
   const s = useOrdner.getState();
   if (!s.geladen || (s.konfig && o && s.konfig.ordner === o.ordner && s.konfig.modus === o.modus && s.konfig.notbetrieb === o.notbetrieb)) return;

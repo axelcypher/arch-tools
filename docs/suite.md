@@ -158,7 +158,7 @@ am Tab bzw. in der Titelleiste ● erscheint.
 8. **App reagiert nicht:** Schwer nachzustellen; erwartet ist, dass *Speichern* bei einer hängenden App nach etwa
    3 Sekunden aufgibt und Arkly offen bleibt.
 9. **Neustart:** Eine App herauslösen, Arkly beenden und neu starten. Erwartet: Die App ist wieder als Tab da.
-10. **Verzögertes Schreiben** (sobald ATLAS `vorDemSchliessen` anmeldet): In ATLAS etwas ändern und sofort (innerhalb einer halben Sekunde) den Tab schließen
+10. **Verzögertes Schreiben** (ATLAS meldet `vorDemSchliessen` an): In ATLAS etwas ändern und sofort (innerhalb einer halben Sekunde) den Tab schließen
     bzw. Arkly beenden. Erwartet: Die Änderung ist nach dem Neustart da. Mit getrenntem Netzlaufwerk erscheint nach
     etwa 5 s „ATLAS speichert noch“: Enter bzw. „Weiter warten“ wartet erneut, Esc bzw. „Abbrechen“ lässt Tab bzw.
     Fenster offen, „Trotzdem schließen“ schließt.

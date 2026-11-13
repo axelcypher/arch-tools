@@ -11,6 +11,7 @@ import { useOrdner } from './store';
 import { getEntries } from '@core/platform/log';
 import { istReserviert, ordnerAusTextMitMeldungen, sichererName, STANDARD } from './struktur';
 import { SPERRGRUND, SPERRGRUND_KURZ } from './components/StrukturSperre';
+import { schliessenVorbereiten } from '@core/platform/rahmen';
 
 /**
  * Struktur und Vorlagen (Gesamt-Review ATLAS): Kontextmenü per Tastatur, Meldungen, Werkzeugleiste, Ziehen, Textansicht
@@ -21,11 +22,15 @@ import { SPERRGRUND, SPERRGRUND_KURZ } from './components/StrukturSperre';
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 /** Eingriff in das Schreiben der Sicherungen (sonst unverändert): warten lassen bzw. scheitern lassen */
-const sicherungen_ = vi.hoisted(() => ({ vorher: null as null | (() => Promise<void>) }));
+const sicherungen_ = vi.hoisted(() => ({ vorher: null as null | (() => Promise<void>), schreiben: 0 }));
 vi.mock('@core/platform/konfig', async (original) => {
   const echt = await original<typeof import('@core/platform/konfig')>();
   return {
     ...echt,
+    konfigSchreibenWennUnveraendert: async (...a: Parameters<typeof echt.konfigSchreibenWennUnveraendert>) => {
+      if (a[0] === 'projektordner') sicherungen_.schreiben++;
+      return echt.konfigSchreibenWennUnveraendert(...a);
+    },
     konfigAendern: async (...a: Parameters<typeof echt.konfigAendern>) => {
       if (a[0] === 'projektordner-sicherungen' && sicherungen_.vorher) await sicherungen_.vorher();
       return echt.konfigAendern(...a);
@@ -1149,5 +1154,21 @@ describe('Nachbesserung: Vorlagenordner bei unlesbarer Struktur gesperrt', () =>
     expect(host.querySelector('.po-vorlagenordner-gesperrt')).toBeNull();
     act(() => useOrdner.getState().setVorlagenordner('/anders'));
     expect(useOrdner.getState().vorlagenordner).toBe('/anders');
+  });
+});
+
+describe('Vor dem Schließen (Rahmen): verzögertes Schreiben nicht verlieren', () => {
+  it('schliessenVorbereiten schreibt eine noch wartende Strukturänderung sofort – auch zweimal hintereinander nur einmal', async () => {
+    useOrdner.setState({ konfigLaden: echtesKonfigLaden });
+    await act(() => useOrdner.getState().konfigLaden());
+    sicherungen_.schreiben = 0;
+    act(() => useOrdner.getState().setStruktur({ ...useOrdner.getState().struktur, name: 'Vor dem Schließen' }));
+    // noch entprellt: nichts geschrieben
+    expect(gespeichert().struktur.name).not.toBe('Vor dem Schließen');
+    // zweimal (etwa nach „Weiter warten“), ohne die Wartezeit abzuwarten
+    const [a, b] = await Promise.all([schliessenVorbereiten(), schliessenVorbereiten()]);
+    expect([a, b]).toEqual([true, true]);
+    expect(gespeichert().struktur.name).toBe('Vor dem Schließen');
+    expect(sicherungen_.schreiben).toBe(1);
   });
 });

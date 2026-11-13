@@ -1,0 +1,6 @@
+{
+  "ordner": {
+    "stufe": "patch",
+    "notiz": "Vor dem Schließen, Andocken, Herauslösen und Update schreibt ATLAS eine noch wartende Strukturänderung sofort, statt sie zu verlieren."
+  }
+}

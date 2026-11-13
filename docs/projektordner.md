@@ -128,6 +128,8 @@ geschieht nicht still: Es gilt „nicht gespeichert“, die Aktion unterbleibt, 
 *Nicht speichern* verwirft. Nicht gemeldet werden von Hand geänderte, noch nicht umbenannte Mailnamen und
 hineingezogene, noch nicht abgelegte Mails unter „Mails“ (die Mails selbst bleiben im Projektordner bzw. in Outlook;
 schon ein Wechsel der Ansicht verwirft diese Eingaben) und alles, was ATLAS sofort speichert.
+Änderungen an der Struktur schreibt ATLAS kurz verzögert (zusammengefasst); vor dem Schließen, Andocken, Herauslösen
+und einem Update schreibt es eine noch wartende Änderung sofort und wartet darauf, auch ohne Rückfrage.
 
 ### Neues Projekt aus jeder App
 
