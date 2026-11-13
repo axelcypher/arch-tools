@@ -83,6 +83,13 @@ const WERKZEUGE: { id: Werkzeug; label: string; taste: string; kurz: string[]; a
 /** allgemeine Kürzel (Übersicht hinter „?“) */
 const ALLGEMEIN = ['Mausrad: zoomen · mittlere Maustaste oder Leertaste + Ziehen: verschieben', 'F: einpassen · Alt: Fang aus', 'Esc: Zeichnen abbrechen bzw. zur Auswahl'];
 
+/** Knopf, Kästchen, Link oder Aufklapper: Leertaste und Enter gehören dem Element */
+function bedienelement(t: EventTarget | null): boolean {
+  if (typeof HTMLElement === 'undefined' || !(t instanceof HTMLElement)) return false;
+  if (t.tagName === 'INPUT') return ['checkbox', 'radio', 'button', 'submit', 'file', 'color'].includes((t as HTMLInputElement).type);
+  return ['BUTTON', 'SUMMARY', 'A'].includes(t.tagName) || t.getAttribute('role') === 'button';
+}
+
 /** Rasterweite: runde Weite, mindestens etwa 25 px auf dem Bildschirm */
 function rasterWeite(k: number): number {
   for (const s of [0.5, 1, 2, 5, 10, 20, 50, 100]) if (s / k >= 25) return s;
@@ -131,8 +138,9 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
   const unterlage = project.lageplan?.unterlage;
   const grenzen = project.lageplan?.grenze ?? [];
   const variante = aktiveVariante(project);
+  const dokument = useGrz((s) => s.dokument);
 
-  // Ausschnitt: eingepasst auf Gebäude und Flächen; neu beim Öffnen eines anderen Projekts
+  // Ausschnitt: eingepasst auf Gebäude und Flächen (Taste F, „Einpassen“)
   const passend = useMemo<Ausschnitt>(() => {
     const pts: Point[] = [...n.hauptanlagePolygone.flat(), ...flaechen.flatMap((f) => f.points)];
     if (!pts.length) return { x: -20, y: -15, w: 40, h: 30 };
@@ -142,7 +150,17 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [project.storeys, n.hauptanlagePolygone.length]);
   const [vb, setVb] = useState<Ausschnitt>(passend);
-  useEffect(() => setVb(passend), [passend]);
+  // neu einpassen nur beim Öffnen eines anderen Projekts – Änderungen an Geschossen (Vollgeschoss, Einstufung, Undo) lassen Zoom und Verschiebung stehen
+  const passendAktuell = useRef(passend);
+  passendAktuell.current = passend;
+  const ersterLauf = useRef(true);
+  useEffect(() => {
+    if (ersterLauf.current) {
+      ersterLauf.current = false;
+      return;
+    }
+    setVb(passendAktuell.current);
+  }, [dokument]);
 
   useEffect(() => {
     setDraft([]);
@@ -215,7 +233,12 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
     return p;
   };
 
-  const fertig = (pts: Point[]) => {
+  const fertig = (roh: Point[]) => {
+    // aufeinanderfolgende gleiche Punkte (z. B. vom Doppelklick) entfernen, auch Ende = Anfang
+    const pts = roh.filter((q, i) => {
+      const v = roh[(i + roh.length - 1) % roh.length];
+      return roh.length < 2 || Math.hypot(q.x - v.x, q.y - v.y) > 1e-6;
+    });
     setDraft([]);
     setEingabe({ a: '', b: '' });
     if (pts.length < 3 || polygonArea(pts) < 0.05) return;
@@ -413,6 +436,8 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
 
   const onClick = (e: React.MouseEvent) => {
     if (e.button !== 0 || leertaste || werkzeug === 'auswahl') return;
+    // zweiter Klick eines Doppelklicks: kein weiterer Punkt (der Doppelklick schließt das Polygon)
+    if (e.detail > 1 && (werkzeug === 'polygon' || werkzeug === 'grenze')) return;
     const roh = toWorld(e);
     const letzter = draft[draft.length - 1];
     const p = e.shiftKey && letzter ? achsBeschraenkt(letzter, roh, theta) : fang(roh, { von: letzter, hilfslinien: zeichenHilfslinien(draft, theta), alt: e.altKey });
@@ -435,7 +460,9 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
     if ((werkzeug === 'polygon' || werkzeug === 'grenze') && draft.length >= 3) fertig(draft);
   };
 
-  const setUnterlage = (u: RasterBackground | undefined) => st.update((p) => ({ ...p, lageplan: { flaechen: [], ...p.lageplan, unterlage: u } }), undefined, 'Unterlage ändern');
+  /** schluessel: zusammenhängende Änderungen (Deckkraft-Regler) ergeben einen Undo-Schritt */
+  const setUnterlage = (u: RasterBackground | undefined, schluessel?: string, aktion = 'Unterlage ändern') =>
+    st.update((p) => ({ ...p, lageplan: { flaechen: [], ...p.lageplan, unterlage: u } }), schluessel, aktion);
 
   /** Kalibrieren (Strecke a–b, wahre Länge erfragen) bzw. Ausrichten (Punkt a der Unterlage auf b) */
   const unterlageEinrichten = async (a: Point, b: Point) => {
@@ -479,7 +506,8 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
       }
       if ((e.ctrlKey || e.metaKey) && werkzeug === 'auswahl' && !e.shiftKey && !e.altKey) {
         const k = e.key.toLowerCase();
-        if (k === 'c' && flaechenKopieren()) e.preventDefault();
+        // markierter Text (z. B. aus den Hinweisen) wird normal kopiert
+        if (k === 'c' && !window.getSelection()?.toString() && flaechenKopieren()) e.preventDefault();
         else if (k === 'v' && flaechenEinfuegen()) e.preventDefault();
         else if (k === 'd') {
           e.preventDefault();
@@ -488,6 +516,8 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
         if (k === 'c' || k === 'v' || k === 'd') return;
       }
       if (e.ctrlKey || e.metaKey || e.altKey) return;
+      // Leertaste und Enter auf einem Knopf, Kästchen oder Aufklapper bedienen diesen – nicht den Plan
+      if ((e.key === ' ' || e.key === 'Enter') && bedienelement(e.target)) return;
       const sel = useGrz.getState().selectedIds;
       // Zahl beim Zeichnen: in die genaue Eingabe (Länge bzw. Breite) springen
       if ((werkzeug === 'polygon' || werkzeug === 'rechteck' || werkzeug === 'grenze') && draft.length && /^[0-9]$/.test(e.key)) {
@@ -548,11 +578,15 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
     const onKeyUp = (e: KeyboardEvent) => {
       if (e.key === ' ') setLeertaste(false);
     };
+    // Fenster verliert den Fokus bei gedrückter Leertaste: kein hängendes Verschieben
+    const onBlur = () => setLeertaste(false);
     window.addEventListener('keydown', onKey);
     window.addEventListener('keyup', onKeyUp);
+    window.addEventListener('blur', onBlur);
     return () => {
       window.removeEventListener('keydown', onKey);
       window.removeEventListener('keyup', onKeyUp);
+      window.removeEventListener('blur', onBlur);
     };
   });
 
@@ -648,7 +682,17 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
       </div>
       <div className="lp-tools lp-unterlage">
         <span className="muted small-text">Unterlage:</span>
-        <input ref={dateiRef} type="file" accept="image/png,image/jpeg,application/pdf,.pdf" hidden onChange={(e) => void unterlageWaehlen(e.target.files?.[0])} />
+        <input
+          ref={dateiRef}
+          type="file"
+          accept="image/png,image/jpeg,application/pdf,.pdf"
+          hidden
+          onChange={(e) => {
+            void unterlageWaehlen(e.target.files?.[0]);
+            // dieselbe Datei später erneut wählbar (nach „Entfernen“)
+            e.target.value = '';
+          }}
+        />
         <button className="small" title="Amtlicher Lageplan als Bild (PNG, JPG) oder PDF zum Nachzeichnen" onClick={() => dateiRef.current?.click()}>
           {unterlage ? 'Ersetzen …' : 'Bild/PDF …'}
         </button>
@@ -676,7 +720,7 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
               value={unterlage.opacity}
               title="Deckkraft"
               aria-label="Deckkraft der Unterlage"
-              onChange={(e) => setUnterlage({ ...(unterlage as RasterBackground), opacity: Number(e.target.value) })}
+              onChange={(e) => setUnterlage({ ...(unterlage as RasterBackground), opacity: Number(e.target.value) }, 'deckkraft', 'Deckkraft ändern')}
             />
             <button className="small" onClick={() => setUnterlage(undefined)}>
               Entfernen

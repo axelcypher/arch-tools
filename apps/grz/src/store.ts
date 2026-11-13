@@ -55,7 +55,6 @@ interface GrzState {
   update: (fn: (p: Project) => Project, zusammenfassen?: string, aktion?: string) => void;
   undo: () => void;
   redo: () => void;
-  /** nach dem Speichern: Dateiname und das gespeicherte (ggf. mit der Datei zusammengeführte) Projekt */
   /** nach dem Speichern: Datei, gespeichertes Projekt und der Stand, der gespeichert wurde */
   markSaved: (datei: string, gespeichert: Project, vorher: Project, dokument: number) => void;
   select: (id: string | null) => void;
@@ -279,7 +278,8 @@ if (typeof indexedDB !== 'undefined') {
       )
       .then((raw) => {
         const st = useGrz.getState();
-        if (!raw || st.dirty || st.past.length) return;
+        // inzwischen ein Projekt geöffnet (Projektwahl, Neu)? Dann bleibt es – der Zwischenstand ersetzt es nicht
+        if (!raw || st.dirty || st.past.length || st.dokument !== 0) return;
         const r = raw as { project: unknown; datei: string | null; basis?: unknown; zeit?: number };
         const project = parseProjectData(r.project);
         const basis = r.basis ? parseProjectData(r.basis) : null;

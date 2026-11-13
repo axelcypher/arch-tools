@@ -530,3 +530,161 @@ describe('Nachweis-Spalte, Regeln, Rückgängig (G-28, G-29, G-32)', () => {
     expect(redo.title).toBe('Wiederholen: Nutzung ändern (Strg+Y)');
   });
 });
+
+describe('Gesamt-Review: Tastatur, Ausschnitt, Zeichnen, Unterlage, Speichern', () => {
+  const knopf = (host: HTMLElement, t: string) => [...host.querySelectorAll('button')].find((b) => b.textContent === t) as HTMLButtonElement;
+  const klick = (svg: Element, q: { x: number; y: number }, detail = 1) => act(() => svg.dispatchEvent(new MouseEvent('click', { bubbles: true, button: 0, detail, ...bildpunkt(svg, q) })));
+  const taste = (key: string, ziel: EventTarget = window, extra: KeyboardEventInit = {}) => {
+    const e = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...extra });
+    act(() => {
+      ziel.dispatchEvent(e);
+    });
+    return e;
+  };
+  const unterlage = { type: 'raster' as const, name: 'Plan', dataUrl: 'data:image/png;base64,', widthPx: 100, heightPx: 100, metersPerPixel: 0.1, x: 0, y: 0, opacity: 0.5, visible: true };
+
+  it('Leertaste und Enter auf einem Knopf bedienen den Knopf, nicht den Plan (Gegenprobe: im Plan verschiebt die Leertaste)', () => {
+    useGrz.getState().load(projekt());
+    const host = render(GrzGfzView);
+    const b = knopf(host, 'Rechteck');
+    b.focus();
+    expect(taste(' ', b).defaultPrevented).toBe(false);
+    expect(taste('Enter', b).defaultPrevented).toBe(false);
+    const svg = host.querySelector('svg.grz-skizze') as unknown as HTMLElement;
+    svg.focus();
+    expect(taste(' ', svg).defaultPrevented).toBe(true);
+    act(() => window.dispatchEvent(new KeyboardEvent('keyup', { key: ' ' })));
+  });
+
+  it('Vollgeschoss umstellen lässt den Ausschnitt stehen; ein anderes Projekt passt neu ein', () => {
+    useGrz.getState().load(projekt());
+    const host = render(GrzGfzView);
+    const svg = host.querySelector('svg.grz-skizze')!;
+    const vorher = svg.getAttribute('viewBox');
+    act(() => knopf(host, 'Einpassen')?.click());
+    // Zoom per Mausrad
+    act(() => svg.dispatchEvent(new WheelEvent('wheel', { deltaY: -200, bubbles: true, cancelable: true, ...bildpunkt(svg, { x: 6, y: 5 }) })));
+    const gezoomt = svg.getAttribute('viewBox');
+    expect(gezoomt).not.toBe(vorher);
+    change(host.querySelector('select[aria-label^="Vollgeschoss EG"]') as HTMLSelectElement, 'nein');
+    expect(useGrz.getState().project.storeys[0].vollgeschoss).toBe(false);
+    expect(svg.getAttribute('viewBox')).toBe(gezoomt);
+    act(() => useGrz.getState().undo());
+    expect(svg.getAttribute('viewBox')).toBe(gezoomt);
+    act(() => useGrz.getState().load(projekt()));
+    expect(host.querySelector('svg.grz-skizze')!.getAttribute('viewBox')).toBe(vorher);
+  });
+
+  it('Polygon per Doppelklick: genau die geklickten Punkte, kein doppelter Eckpunkt', () => {
+    useGrz.getState().load(projekt());
+    const host = render(GrzGfzView);
+    act(() => knopf(host, 'Polygon').click());
+    const svg = host.querySelector('svg.grz-skizze')!;
+    klick(svg, { x: 20, y: 0 });
+    klick(svg, { x: 26, y: 0 });
+    klick(svg, { x: 26, y: 6 }, 1);
+    klick(svg, { x: 26, y: 6 }, 2);
+    act(() => svg.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, ...bildpunkt(svg, { x: 26, y: 6 }) })));
+    const f = useGrz.getState().project.lageplan!.flaechen.at(-1)!;
+    expect(f.points).toHaveLength(3);
+  });
+
+  it('Deckkraft-Regler: ein Zug ist ein Undo-Schritt', () => {
+    const p = projekt();
+    p.lageplan!.unterlage = unterlage;
+    useGrz.getState().load(p);
+    const host = render(GrzGfzView);
+    const regler = host.querySelector('input[aria-label="Deckkraft der Unterlage"]') as HTMLInputElement;
+    for (const v of ['0.55', '0.6', '0.65', '0.7']) {
+      act(() => {
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(regler, v);
+        regler.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+    }
+    expect((useGrz.getState().project.lageplan!.unterlage as typeof unterlage).opacity).toBe(0.7);
+    expect(useGrz.getState().past).toHaveLength(1);
+    expect(useGrz.getState().pastAktionen).toEqual(['Deckkraft ändern']);
+  });
+
+  it('Unterlage ausrichten und kalibrieren', async () => {
+    const p = projekt();
+    p.lageplan!.unterlage = unterlage;
+    useGrz.getState().load(p);
+    const host = render(App);
+    act(() => knopf(host, 'Ausrichten').click());
+    let svg = host.querySelector('svg.grz-skizze')!;
+    klick(svg, { x: 20, y: 20 });
+    klick(svg, { x: 23, y: 24 });
+    const u = useGrz.getState().project.lageplan!.unterlage as typeof unterlage;
+    expect(u.x).toBeCloseTo(3, 1);
+    expect(u.y).toBeCloseTo(4, 1);
+    act(() => knopf(host, 'Kalibrieren').click());
+    svg = host.querySelector('svg.grz-skizze')!;
+    klick(svg, { x: 20, y: 20 });
+    klick(svg, { x: 25, y: 20 });
+    const feld = document.querySelector('.modal input') as HTMLInputElement;
+    expect(feld).not.toBeNull();
+    change(feld, '10');
+    await act(async () => knopf(document.body, 'Kalibrieren').click());
+    expect((useGrz.getState().project.lageplan!.unterlage as typeof unterlage).metersPerPixel).toBeCloseTo(0.2, 2);
+  });
+
+  it('Entf löscht die Auswahl, Rückgängig stellt sie wieder her; Strg+A, Strg+C, Strg+V, Umschalt+Klick', () => {
+    useGrz.getState().load(projekt());
+    const host = render(GrzGfzView);
+    const ids = useGrz.getState().project.lageplan!.flaechen.map((f) => f.id);
+    const links = [...host.querySelectorAll('.grz-table button.link')] as HTMLButtonElement[];
+    act(() => links[0].click());
+    act(() => links[1].dispatchEvent(new MouseEvent('click', { bubbles: true, shiftKey: true })));
+    expect(useGrz.getState().selectedIds).toEqual(ids);
+    taste('Delete');
+    expect(useGrz.getState().project.lageplan!.flaechen).toHaveLength(0);
+    expect(useGrz.getState().selectedIds).toEqual([]);
+    act(() => useGrz.getState().undo());
+    expect(useGrz.getState().project.lageplan!.flaechen.map((f) => f.id)).toEqual(ids);
+    taste('a', window, { ctrlKey: true });
+    expect(useGrz.getState().selectedIds).toEqual(ids);
+    taste('c', window, { ctrlKey: true });
+    taste('v', window, { ctrlKey: true });
+    const neu = useGrz.getState().project.lageplan!.flaechen;
+    expect(neu).toHaveLength(4);
+    expect(useGrz.getState().selectedIds).toEqual(neu.slice(2).map((f) => f.id));
+    expect(neu[2].points[0].x).toBeCloseTo(useGrz.getState().project.lageplan!.flaechen[0].points[0].x + 0.5, 6);
+  });
+
+  it('Strg+Z im Eingabefeld und hinter einem Dialog ändert das Projekt nicht (Gegenprobe: sonst Rückgängig)', () => {
+    useGrz.getState().load(projekt());
+    const host = render(App);
+    act(() => useGrz.getState().update((p) => ({ ...p, name: 'Geändert' }), undefined, 'Name'));
+    const feld = host.querySelector('.grz-fest input') as HTMLInputElement;
+    taste('z', feld, { ctrlKey: true });
+    expect(useGrz.getState().project.name).toBe('Geändert');
+    act(() => knopf(host, 'Excel …').click());
+    taste('z', document.body, { ctrlKey: true });
+    expect(useGrz.getState().project.name).toBe('Geändert');
+    taste('Escape', document.body);
+    taste('z', document.body, { ctrlKey: true });
+    expect(useGrz.getState().project.name).toBe('GRZ-Test');
+  });
+
+  it('Speichern: Änderung während des Speicherns bleibt ungespeichert; inzwischen anderes Projekt geöffnet bleibt unberührt', () => {
+    useGrz.getState().load(projekt());
+    const st = useGrz.getState;
+    act(() => st().update((p) => ({ ...p, name: 'A' }), undefined, 'Name'));
+    const gespeichert = st().project;
+    const dok = st().dokument;
+    act(() => st().update((p) => ({ ...p, name: 'B' }), undefined, 'Name'));
+    act(() => st().markSaved('x.oap', gespeichert, gespeichert, dok));
+    expect(st().dirty).toBe(true);
+    expect(st().project.name).toBe('B');
+    expect(st().datei).toBe('x.oap');
+    // Gegenprobe: ohne Weiterarbeiten gilt der Stand als gespeichert
+    act(() => st().markSaved('x.oap', st().project, st().project, st().dokument));
+    expect(st().dirty).toBe(false);
+    const alt = st().dokument;
+    act(() => st().load(createProject('Anderes')));
+    act(() => st().markSaved('y.oap', gespeichert, gespeichert, alt));
+    expect(st().project.name).toBe('Anderes');
+    expect(st().datei).toBeNull();
+  });
+});
