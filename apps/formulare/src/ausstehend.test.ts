@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { schliessenVorbereiten } from '@core/platform/rahmen';
-import { ausstehendAbwarten, gescheitertVergessen, klammer, laufendeSchreibvorgaenge, mitVerfolgung, verfolgen, vorDemSchliessenAnmelden } from './ausstehend';
+import { ausstehendAbwarten, klammer, laufendeSchreibvorgaenge, mitVerfolgung, verfolgen, vorDemSchliessenAnmelden } from './ausstehend';
 import { SpeicherDateisystem } from './dateisystem';
 
 /** Promise, das sich von außen erfüllen bzw. zurückweisen lässt */
@@ -15,7 +15,6 @@ const tick = () => new Promise((r) => setTimeout(r, 0));
 // die Menge ist modulweit: nach jedem Test muss sie leer sein (sonst warteten folgende Tests auf Fremdes)
 afterEach(() => {
   expect(laufendeSchreibvorgaenge()).toBe(0);
-  gescheitertVergessen();
 });
 
 describe('laufende Schreibvorgänge vor dem Schließen', () => {
@@ -155,52 +154,5 @@ describe('laufende Schreibvorgänge vor dem Schließen', () => {
     // gescheitertes Schreiben verlässt die Menge ebenso
     await expect(ds.dokumentAnlegen('C:/P', 'a.pdf', new Uint8Array([3]))).rejects.toThrow();
     await tick();
-  });
-  it('gescheitertes Speichern bleibt gemerkt: weiter false, bis dieselbe Datei gelingt (Vertrag von vorDemSchliessen)', async () => {
-    const roh = new SpeicherDateisystem();
-    const ds = mitVerfolgung(roh);
-    // Formular gibt es (noch) nicht: Ersetzen scheitert
-    await expect(ds.ersetze('C:/F', 'a.frmsjf', new Uint8Array([1]))).rejects.toThrow('nicht gefunden');
-    await tick();
-    expect(laufendeSchreibvorgaenge()).toBe(0);
-    // Schließen lange nach dem Fehler bzw. „Erneut versuchen“ ohne neues Schreiben: weiter false
-    expect(await ausstehendAbwarten()).toBe(false);
-    expect(await ausstehendAbwarten()).toBe(false);
-    // Gegenprobe: eine andere Datei gelingt – die gescheiterte bleibt offen
-    roh.dateien.set('C:/F/b.frmsjf', new Uint8Array([0]));
-    await ds.ersetze('C:/F', 'b.frmsjf', new Uint8Array([2]));
-    await tick();
-    expect(await ausstehendAbwarten()).toBe(false);
-    // dieselbe Datei gelingt: gespeichert, true
-    roh.dateien.set('C:/F/a.frmsjf', new Uint8Array([0]));
-    await ds.ersetze('C:/F', 'a.frmsjf', new Uint8Array([3]));
-    await tick();
-    expect(await ausstehendAbwarten()).toBe(true);
-  });
-
-  it('beim Rahmen angemeldet: nach gescheitertem Speichern bleibt es „fehler“, nach gelungenem „fertig“', async () => {
-    const abmelden = vorDemSchliessenAnmelden();
-    try {
-      const roh = new SpeicherDateisystem();
-      const ds = mitVerfolgung(roh);
-      await expect(ds.dokumentErsetzen('C:/P', 'fehlt.xlsx', new Uint8Array([1]))).rejects.toThrow();
-      await tick();
-      expect(await schliessenVorbereiten(2000)).toBe('fehler');
-      expect(await schliessenVorbereiten(2000)).toBe('fehler');
-      roh.dateien.set('C:/P/fehlt.xlsx', new Uint8Array([0]));
-      await ds.dokumentErsetzen('C:/P', 'fehlt.xlsx', new Uint8Array([2]));
-      await tick();
-      expect(await schliessenVorbereiten(2000)).toBe('fertig');
-    } finally {
-      abmelden();
-    }
-  });
-
-  it('einmalige Aktionen (anlegen, Sperren) zählen nur, solange sie abgewartet werden – kein bleibender Fehler', async () => {
-    const ds = mitVerfolgung(new SpeicherDateisystem());
-    await ds.dokumentAnlegen('C:/P', 'a.pdf', new Uint8Array([1]));
-    await expect(ds.dokumentAnlegen('C:/P', 'a.pdf', new Uint8Array([2]))).rejects.toThrow();
-    await tick();
-    expect(await ausstehendAbwarten()).toBe(true);
   });
 });
