@@ -158,12 +158,12 @@ describe('ATLAS (Projektordner)', () => {
     // Beteiligte: eigener Schritt, typische Rollen mit einem Klick
     weiter(host);
     expect(host.querySelector('h2')?.textContent).toBe('Beteiligte');
-    act(() => knopf(host, 'Beteiligter').click());
+    act(() => knopf(host, 'Beteiligten hinzufügen').click());
     eingabe(host.querySelector('.sd-beteiligte input') as HTMLInputElement, 'Tragwerk');
     expect(useOrdner.getState().stamm.beteiligte).toEqual([{ rolle: 'Tragwerk', name: '', kontakt: '' }]);
-    act(() => knopf(host, '+ Vermessung (ÖbVI)').click());
+    act(() => knopf(host, 'Vermessung (ÖbVI)').click());
     expect(useOrdner.getState().stamm.beteiligte[1]).toEqual({ rolle: 'Vermessung (ÖbVI)', name: '', kontakt: '' });
-    expect(knopf(host, '+ Vermessung (ÖbVI)')).toBeUndefined();
+    expect(knopf(host, 'Vermessung (ÖbVI)')).toBeUndefined();
 
     // Vorlagen: Standard-Preset vorausgewählt – mit Strg+Enter (P-12)
     act(() => host.querySelector('.po-col')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', ctrlKey: true, bubbles: true })));

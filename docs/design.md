@@ -248,7 +248,9 @@ mit `text`, optional `symbol`, `hinweis` (rechts, z. B. der Grund einer Sperre),
   Einträge einer Liste (Positionen, Punkte, Firmen, Merkmale) heißt das Verb „hinzufügen“, nicht „neu“ oder „einfügen“.
   Eigenständige Gegenstände wie Projekt, Formular, Ordner oder Datei bleiben bei „Neu“ bzw. „anlegen“ (siehe
   „Begriffe“), ebenfalls mit Symbol `plus` („Neues Projekt anlegen …“). In Leisten knapp nur der Gegenstand
-  („Position“, „Abschnitt“), dann mit `title` und `aria-label` der vollen Aktion („Position hinzufügen“); sonst gleich
+  („Position“, „Abschnitt“), dann mit `title` und `aria-label` der vollen Aktion („Position hinzufügen“) – das `aria-label`
+  enthält den sichtbaren Text wörtlich (sonst trifft Sprachsteuerung den Knopf nicht); geht das nur mit Beugung, nur
+  `title` setzen; sonst gleich
   mit Verb („Merkmal hinzufügen“). Öffnet der Knopf einen Dialog oder eine Rückfrage, endet er auf „ …“
   („Geschoss …“). Rechenzeichen in Summenzeilen („+ 19 % USt.“) sind keine Knöpfe und bleiben.
 - In Auswahllisten (`<option>`) geht kein Symbol: dort als Platzhalter „Firma hinzufügen …“ – mit „ …“, weil die

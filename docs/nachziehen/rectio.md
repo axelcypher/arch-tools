@@ -10,4 +10,4 @@ sich auf den Stand beim Eintragen.
 - eigenes Kontextmenü der Arbeitsfläche auf `zeigeMenue` umstellen
 - Dialoge auf `Modal` (Titel mit `kopf` statt `h3` im Inhalt) und Befehle nach „Begriffe“ benennen (Befehle, die einen Dialog öffnen, mit „ …“) – prüfen, ob noch etwas offen ist
 - eigene Menüs prüfen: Gefahr-Punkte (Löschen) ans Ende, abgesetzt durch einen Trenner
-- Hinzufügen-Knöpfe mit `<Symbol name="plus" />` statt „+“ als Schriftzeichen (Regel „Listen“): „Foto …“ in `FotoLeiste.tsx` und `App.tsx`, „Ebene“ in `FotoLeiste.tsx`, mit `title` „… hinzufügen“
+- Hinzufügen-Knöpfe mit `<Symbol name="plus" />` statt „+“ als Schriftzeichen (Regel „Listen“): „Foto …“ in `FotoLeiste.tsx` und `App.tsx`, „Ebene“ in `FotoLeiste.tsx`, mit `title` „… hinzufügen“; UI-Tests, die die Knöpfe beim Text suchen (`entzerrung.ui.test.ts`), mitziehen
