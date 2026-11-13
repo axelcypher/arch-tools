@@ -359,6 +359,25 @@ describe('Baurecht – Oberfläche', () => {
     act(() => knopf(d, 'Schließen')!.click());
   });
 
+  it('Protokoll: Startfokus auf der Aktionsleiste, nach Esc bzw. „Schließen“ zurück auf „Prüfprotokoll“', async () => {
+    const host = render();
+    const pause = () => act(async () => void (await new Promise((r) => setTimeout(r, 30))));
+    for (const zu of ['Esc', 'Schließen']) {
+      const oeffnen = knopf(host, 'Prüfprotokoll')!;
+      // wie ein Mausklick im Browser: der Knopf hat den Fokus, dann öffnet er das Protokoll
+      act(() => oeffnen.focus());
+      act(() => oeffnen.click());
+      await pause();
+      const d = document.querySelector<HTMLElement>('.br-protokoll')!;
+      expect(document.activeElement?.closest('.br-protokoll-aktionen'), 'Startfokus in der Aktionsleiste').toBeTruthy();
+      if (zu === 'Esc') act(() => void document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })));
+      else act(() => knopf(d, 'Schließen')!.click());
+      await pause();
+      expect(document.querySelector('.br-protokoll')).toBeNull();
+      expect(document.activeElement, `Fokus nach ${zu}`).toBe(knopf(host, 'Prüfprotokoll'));
+    }
+  });
+
   it('Fokusfalle im Protokoll: Tab bleibt drin; liegt ein Dialog darüber, führt der den Fokus', () => {
     const host = render();
     act(() => knopf(host, 'Prüfprotokoll')!.click());

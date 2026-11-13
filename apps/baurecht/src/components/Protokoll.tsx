@@ -192,12 +192,12 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
     return () => ro.disconnect();
   }, []);
   useEscSchliessen(onClose);
-  // Fokus: Tab-Falle und Rückgabe beim Schließen führt der gemeinsame Unterbau (ui/dialoge.ts – die Druckvorschau
-  // `.report-backdrop > .report` zählt dort als Dialog); hier nur der Startfokus auf der Aktionsleiste und der Fall,
-  // den der Unterbau nicht kennt: Fokus auf einem Element außerhalb der Tab-Folge (z. B. der Meldung)
+  // Fokus: Startfokus (data-startfokus an „Jetzt speichern“ bzw. „Drucken / PDF“), Tab-Falle und Rückgabe beim
+  // Schließen führt der gemeinsame Unterbau (ui/dialoge.ts – die Druckvorschau `.report-backdrop > .report` zählt dort
+  // als Dialog; fokussierte das Protokoll selbst, merkte er sich die Stelle davor nicht). Hier nur der Fall, den der
+  // Unterbau nicht kennt: Fokus auf einem Element außerhalb der Tab-Folge (z. B. der Meldung)
   useEffect(() => {
     const d = fenster.current;
-    d?.querySelector<HTMLElement>('.br-protokoll-aktionen button:not([disabled])')?.focus();
     const taste = (e: KeyboardEvent) => {
       // liegt ein Dialog über dem Protokoll (z. B. Bestätigen beim Speichern), führt der den Fokus
       if (e.key !== 'Tab' || !d || document.querySelector('.modal')) return;
@@ -402,6 +402,7 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
               className="small"
               aria-disabled={speichertJetzt || undefined}
               aria-describedby="br-sperre-grund"
+              data-startfokus=""
               onClick={async () => {
                 if (speichertJetzt) return;
                 setSpeichertJetzt(true);
@@ -415,7 +416,7 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
               Jetzt speichern
             </button>
           )}
-          <button type="button" className="br-drucken" onClick={() => druckenAls({ datei, projektName: project.name, zusatz: `Baurecht ${antrag}` })}>
+          <button type="button" className="br-drucken" data-startfokus="" onClick={() => druckenAls({ datei, projektName: project.name, zusatz: `Baurecht ${antrag}` })}>
             Drucken / PDF …
           </button>
           <button
