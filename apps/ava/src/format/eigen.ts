@@ -37,11 +37,12 @@ export function eigenLesen(bytes: Uint8Array): { lv: Lv; roh: Record<string, unk
     ...basis,
     ...d.lv,
     kopf: { ...basis.kopf, ...d.lv.kopf },
-    ozMaske: d.lv.ozMaske ?? basis.ozMaske,
+    ozMaske: d.lv.ozMaske && Array.isArray(d.lv.ozMaske.ebenen) && d.lv.ozMaske.position ? d.lv.ozMaske : basis.ozMaske,
     bieter: Array.isArray(d.lv.bieter) && d.lv.bieter.length ? d.lv.bieter : basis.bieter,
     elemente: idsSichern(Array.isArray(d.lv.elemente) ? d.lv.elemente : []),
-    einbehalte: d.lv.einbehalte ?? basis.einbehalte,
-    nachtraege: d.lv.nachtraege ?? [],
+    einbehalte: Array.isArray(d.lv.einbehalte) ? d.lv.einbehalte : basis.einbehalte,
+    nachtraege: Array.isArray(d.lv.nachtraege) ? d.lv.nachtraege : [],
+    preisanteile: Array.isArray(d.lv.preisanteile) ? d.lv.preisanteile : basis.preisanteile,
     auftrag: d.lv.auftrag ?? null,
   };
   return { lv, roh: roh as Record<string, unknown> };
@@ -49,10 +50,23 @@ export function eigenLesen(bytes: Uint8Array): { lv: Lv; roh: Record<string, unk
 
 /** jedes Element braucht eine Kennung; xmlId gehört nur zur Datei des Originalprogramms */
 function idsSichern(el: LvElement[]): LvElement[] {
-  return el.map((e) => {
-    const basis = { ...e, id: e.id || neueId(), xmlId: undefined, langtext: Array.isArray(e.langtext) ? e.langtext : [] };
-    return basis.art === 'abschnitt' ? { ...basis, kinder: idsSichern(basis.kinder ?? []) } : basis;
-  }) as LvElement[];
+  return el
+    .filter((e) => !!e && typeof e === 'object')
+    .map((e) => {
+      const basis = { ...e, id: e.id || neueId(), xmlId: undefined, kurztext: typeof e.kurztext === 'string' ? e.kurztext : '', langtext: Array.isArray(e.langtext) ? e.langtext : [] };
+      if (basis.art === 'abschnitt') return { ...basis, oz: typeof basis.oz === 'string' ? basis.oz : '', kinder: idsSichern(Array.isArray(basis.kinder) ? basis.kinder : []) };
+      if (basis.art === 'position')
+        return {
+          ...basis,
+          oz: typeof basis.oz === 'string' ? basis.oz : '',
+          einheit: typeof basis.einheit === 'string' ? basis.einheit : '',
+          menge: typeof basis.menge === 'number' ? basis.menge : null,
+          positionsart: basis.positionsart ?? 'normal',
+          preise: basis.preise && typeof basis.preise === 'object' ? basis.preise : {},
+        };
+      return basis;
+    })
+    .filter((e) => e.art === 'abschnitt' || e.art === 'position' || e.art === 'hinweis') as LvElement[];
 }
 
 export function eigenSchreiben(lv: Lv, roh: Record<string, unknown> = {}, app = __APP_VERSION__, jetzt = new Date()): Uint8Array {

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { bestaetigen, meldung } from '@core/ui/Rueckfrage';
 import type { Beteiligter } from '../../avaDaten';
 import { gewerkZweistellig } from '../../abrechnung/gewerk';
@@ -10,6 +11,7 @@ import { speichern } from './gemeinsam';
 export function Beteiligte() {
   const projekt = useAva((s) => s.projekt)!;
   const liste = projekt.ava.beteiligte;
+  const [neuerEintrag, setNeuerEintrag] = useState<string | null>(null);
   const setze = (id: string, patch: Partial<Beteiligter>) => void speichern((a) => ({ ...a, beteiligte: a.beteiligte.map((b) => (b.id === id ? { ...b, ...patch } : b)) }));
 
   const uebernehmen = async () => {
@@ -37,7 +39,14 @@ export function Beteiligte() {
         <h1>Beteiligte</h1>
       </div>
       <div className="toolbar">
-        <button className="primary" onClick={() => void speichern((a) => ({ ...a, beteiligte: [...a.beteiligte, { id: neueId('b'), rolle: '' }] }))}>
+        <button
+          className="primary"
+          onClick={() => {
+            const id = neueId('b');
+            setNeuerEintrag(id);
+            void speichern((a) => ({ ...a, beteiligte: [...a.beteiligte, { id, rolle: '' }] }));
+          }}
+        >
           + Beteiligter
         </button>
         <button onClick={() => void uebernehmen()} title="Bauherr und Beteiligte aus den Stammdaten, Auftragnehmer aus der Kostenkontrolle">
@@ -57,27 +66,31 @@ export function Beteiligte() {
           </tr>
         </thead>
         <tbody>
-          {liste.map((b) => (
+          {liste.map((b, i) => {
+            const wer = [b.rolle, b.firma, b.name].filter(Boolean).join(' – ') || `Beteiligter ${i + 1}`;
+            return (
             <tr key={b.id}>
               <td>
-                <TextEingabe wert={b.rolle} onChange={(rolle) => setze(b.id, { rolle })} />
+                <TextEingabe wert={b.rolle} onChange={(rolle) => setze(b.id, { rolle })} label={`Rolle ${wer}`} autoFocus={b.id === neuerEintrag} />
               </td>
               <td>
-                <TextEingabe wert={b.firma} onChange={(firma) => setze(b.id, { firma })} />
+                <TextEingabe wert={b.firma} onChange={(firma) => setze(b.id, { firma })} label={`Firma ${wer}`} />
               </td>
               <td>
-                <TextEingabe wert={b.name} onChange={(name) => setze(b.id, { name })} />
+                <TextEingabe wert={b.name} onChange={(name) => setze(b.id, { name })} label={`Name ${wer}`} />
               </td>
               <td>
-                <TextEingabe wert={b.email} onChange={(email) => setze(b.id, { email })} />
+                <TextEingabe wert={b.email} onChange={(email) => setze(b.id, { email })} label={`E-Mail ${wer}`} />
               </td>
               <td>
-                <TextEingabe wert={b.telefon} onChange={(telefon) => setze(b.id, { telefon })} />
+                <TextEingabe wert={b.telefon} onChange={(telefon) => setze(b.id, { telefon })} label={`Telefon ${wer}`} />
               </td>
               <td>{b.gewerk ? gewerkZweistellig(b.gewerk) : ''}</td>
               <td>
                 <button
-                  className="small"
+                  className="small icon"
+                  title="Beteiligten entfernen"
+                  aria-label={`${wer} entfernen`}
                   onClick={async () => {
                     if (await bestaetigen('Beteiligten entfernen?', [b.rolle, b.firma, b.name].filter(Boolean).join(' – '), 'Entfernen', true)) await speichern((a) => ({ ...a, beteiligte: a.beteiligte.filter((x) => x.id !== b.id) }));
                   }}
@@ -86,7 +99,8 @@ export function Beteiligte() {
                 </button>
               </td>
             </tr>
-          ))}
+            );
+          })}
           {!liste.length && (
             <tr>
               <td colSpan={7} className="muted">
