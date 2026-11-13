@@ -5752,3 +5752,154 @@ describe('Formulare umbenennen', () => {
     expect(ds.dateien.get('C:/FORMA/BS9/002-Anderes.frmsjf')).toBe(MUSTER);
   });
 });
+
+describe('Reihenfolge der Formulare in der Navigation', () => {
+  const namen = (host: HTMLElement, liste = 'formulare') => [...host.querySelectorAll(`[data-formular-liste="${liste}"] > [data-formular] .nav-text`)].map((t) => t.textContent);
+  const zeile = (host: HTMLElement, name: string) => knopf(host, name);
+  const gemerkt = () => (abschnitt() as { reihenfolge?: string[] } | undefined)?.reihenfolge;
+
+  it('Alt+↑/↓ und Ziehen – für das ganze Projekt in der Projektdatei; ein Klick bleibt ein Klick; zurücksetzen', async () => {
+    ds.dateien.set('C:/FORMA/BS9/002-Anderes.frmsjf', MUSTER);
+    ds.dateien.set('C:/FORMA/BS9/003-Dritt.frmsjf', MUSTER);
+    const host = await projektBS9();
+    expect(namen(host)).toEqual(['001-Muster', '002-Anderes', '003-Dritt']);
+    // Tastatur
+    act(() => void zeile(host, '001-Muster').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', altKey: true, bubbles: true })));
+    await warte();
+    expect(namen(host)).toEqual(['002-Anderes', '001-Muster', '003-Dritt']);
+    expect(gemerkt()).toEqual(['002-Anderes.frmsjf', '001-Muster.frmsjf', '003-Dritt.frmsjf']);
+    // Gegenprobe: ohne Alt nichts
+    act(() => void zeile(host, '001-Muster').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true })));
+    await warte();
+    expect(namen(host)).toEqual(['002-Anderes', '001-Muster', '003-Dritt']);
+    // Ziehen: „002-Anderes“ ans Ende
+    act(() => void zeile(host, '002-Anderes').dispatchEvent(new PointerEvent('pointerdown', { button: 0, clientX: 0, clientY: 0, bubbles: true })));
+    act(() => void window.dispatchEvent(new PointerEvent('pointermove', { clientX: 0, clientY: 40 })));
+    expect(host.querySelector('[data-formular="BS9/002-Anderes.frmsjf"]')!.getAttribute('data-ziehen')).toBe('quelle');
+    act(() => void window.dispatchEvent(new PointerEvent('pointerup', { clientX: 0, clientY: 40 })));
+    await warte();
+    expect(namen(host)).toEqual(['001-Muster', '003-Dritt', '002-Anderes']);
+    expect(useFormulare.getState().offen).toBeNull();
+    // ein Klick ohne Bewegung öffnet das Formular und verschiebt nichts
+    act(() => void zeile(host, '003-Dritt').dispatchEvent(new PointerEvent('pointerdown', { button: 0, clientX: 0, clientY: 0, bubbles: true })));
+    act(() => void window.dispatchEvent(new PointerEvent('pointerup', { clientX: 0, clientY: 0 })));
+    await klick(zeile(host, '003-Dritt'));
+    expect(useFormulare.getState().offen?.pfad).toBe('BS9/003-Dritt.frmsjf');
+    expect(namen(host)).toEqual(['001-Muster', '003-Dritt', '002-Anderes']);
+    // zurücksetzen
+    await rechtsklick(zeile(host, '001-Muster'));
+    await klick(menuePunkt('Reihenfolge zurücksetzen'));
+    await warte();
+    expect(namen(host)).toEqual(['001-Muster', '002-Anderes', '003-Dritt']);
+    expect(gemerkt()).toBeUndefined();
+  });
+
+  it('ohne Projektdatei: kein Ziehen, kein Hinweis darauf – alphabetisch', async () => {
+    ds.dateien.delete(OAP);
+    ds.dateien.set('C:/FORMA/BS9/002-Anderes.frmsjf', MUSTER);
+    const host = await projektBS9();
+    expect(useFormulare.getState().oap).toBe('fehlt');
+    act(() => void zeile(host, '001-Muster').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', altKey: true, bubbles: true })));
+    await warte();
+    expect(namen(host)).toEqual(['001-Muster', '002-Anderes']);
+    expect(zeile(host, '001-Muster').title).not.toContain('Reihenfolge');
+    expect(zeile(host, '001-Muster').hasAttribute('aria-keyshortcuts')).toBe(false);
+  });
+
+  it('Rechtsklick und Esc beim Ziehen verschieben nichts; an der Ausgangsstelle keine Einfügestelle', async () => {
+    ds.dateien.set('C:/FORMA/BS9/002-Anderes.frmsjf', MUSTER);
+    const host = await projektBS9();
+    act(() => void zeile(host, '001-Muster').dispatchEvent(new PointerEvent('pointerdown', { button: 2, clientX: 0, clientY: 0, bubbles: true })));
+    act(() => void window.dispatchEvent(new PointerEvent('pointermove', { clientX: 0, clientY: 40 })));
+    expect(host.querySelector('[data-ziehen]')).toBeNull();
+    act(() => void window.dispatchEvent(new PointerEvent('pointerup', { clientX: 0, clientY: 40 })));
+    // Esc während des Ziehens
+    act(() => void zeile(host, '001-Muster').dispatchEvent(new PointerEvent('pointerdown', { button: 0, clientX: 0, clientY: 0, bubbles: true })));
+    act(() => void window.dispatchEvent(new PointerEvent('pointermove', { clientX: 0, clientY: 40 })));
+    expect(host.querySelector('[data-formular="BS9/001-Muster.frmsjf"]')!.getAttribute('data-ziehen')).toBe('quelle');
+    act(() => void window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+    act(() => void window.dispatchEvent(new PointerEvent('pointerup', { clientX: 0, clientY: 40 })));
+    await warte();
+    expect(namen(host)).toEqual(['001-Muster', '002-Anderes']);
+    expect(gemerkt()).toBeUndefined();
+    // Ziehen zurück an die Ausgangsstelle: keine Markierung „davor“
+    act(() => void zeile(host, '001-Muster').dispatchEvent(new PointerEvent('pointerdown', { button: 0, clientX: 0, clientY: 0, bubbles: true })));
+    act(() => void window.dispatchEvent(new PointerEvent('pointermove', { clientX: 0, clientY: -40 })));
+    expect(host.querySelector('[data-ziehen="davor"]')).toBeNull();
+    act(() => void window.dispatchEvent(new PointerEvent('pointerup', { clientX: 0, clientY: -40 })));
+  });
+
+  it('gleichzeitig hat ein anderer Arbeitsplatz ein Merkmal geändert: es bleibt; schlägt das Schreiben fehl, wird die Anzeige zurückgenommen', async () => {
+    ds.dateien.set('C:/FORMA/BS9/002-Anderes.frmsjf', MUSTER);
+    const host = await projektBS9();
+    // in der Datei, ohne dass die App neu liest
+    const p = readProjectFile(ds.dateien.get(OAP)!);
+    const f = p.formulare as { antraege: Record<string, Record<string, unknown>> };
+    f.antraege['BAUA 2'] = { ...f.antraege['BAUA 2'], merkmale: { Gebäudeklasse: '4' } };
+    ds.dateien.set(OAP, writeArchive(p));
+    act(() => void zeile(host, '001-Muster').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', altKey: true, bubbles: true })));
+    await warte();
+    expect(gemerkt()).toEqual(['002-Anderes.frmsjf', '001-Muster.frmsjf']);
+    expect(antragIn('BAUA 2')?.merkmale).toEqual({ Gebäudeklasse: '4' });
+    // Schreiben schlägt fehl: zurück zur gespeicherten Folge
+    ds.projektordner.projektdateiErsetzen = async () => {
+      throw new Error('Netzlaufwerk weg');
+    };
+    act(() => void zeile(host, '001-Muster').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', altKey: true, bubbles: true })));
+    for (let i = 0; i < 3; i++) await warte();
+    expect(namen(host)).toEqual(['002-Anderes', '001-Muster']);
+    expect(useFormulare.getState().meldung?.art).toBe('fehler');
+  });
+
+  it('ohne Projektdatei: die Store-Aktion meldet es und ändert nichts', async () => {
+    ds.dateien.delete(OAP);
+    const host = await projektBS9();
+    await act(() => useAntrag.getState().reihenfolgeSetzen(['001-Muster.frmsjf']));
+    expect(useFormulare.getState().meldung?.text).toContain('Reihenfolge nicht gespeichert');
+    expect(useAntrag.getState().projektdatei?.reihenfolge).toBeUndefined();
+    expect(ds.dateien.has(OAP)).toBe(false);
+    expect(namen(host)).toEqual(['001-Muster']);
+  });
+
+  it('Umbenennen nach dem Verschieben: der Platz ist keine Zuordnung – die Rückfrage spricht nicht vom Antragsumfang', async () => {
+    ds.dateien.set('C:/FORMA/BS9/002-Anderes.frmsjf', MUSTER);
+    const host = await projektBS9();
+    act(() => void zeile(host, '001-Muster').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', altKey: true, bubbles: true })));
+    await warte();
+    await rechtsklick(knopf(host, '001-Muster'));
+    await klick(menuePunkt('Umbenennen'));
+    expect(document.querySelector('.rf')!.textContent).not.toContain('Antragsumfang');
+    await klick(knopf(document.querySelector('.rf')!, 'Abbrechen'));
+  });
+
+  it('Sammelprojekt: je Gruppe verschoben – die gemerkte Folge der anderen Gruppe bleibt', async () => {
+    ds.dateien.set('C:/FORMA/BS9/2. BAUA/002-Bauantrag (2026).frmsjf', MUSTER);
+    ds.dateien.set('C:/FORMA/BS9/2. BAUA/001-Lageplan.frmsjf', MUSTER);
+    ds.dateien.set('C:/FORMA/BS9/003-Dritt.frmsjf', MUSTER);
+    const host = await projektBS9();
+    expect(namen(host, 'antrag')).toEqual(['001-Lageplan', '002-Bauantrag (2026)']);
+    expect(namen(host, 'alle')).toEqual(['001-Muster', '003-Dritt']);
+    act(() => void zeile(host, '001-Lageplan').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', altKey: true, bubbles: true })));
+    await warte();
+    act(() => void zeile(host, '003-Dritt').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', altKey: true, bubbles: true })));
+    await warte();
+    expect(namen(host, 'antrag')).toEqual(['002-Bauantrag (2026)', '001-Lageplan']);
+    expect(namen(host, 'alle')).toEqual(['003-Dritt', '001-Muster']);
+    expect(gemerkt()).toEqual(['003-Dritt.frmsjf', '001-Muster.frmsjf', '2. BAUA/002-Bauantrag (2026).frmsjf', '2. BAUA/001-Lageplan.frmsjf']);
+  });
+
+  it('umbenannt: die Reihenfolge behält das Formular an seinem Platz', async () => {
+    ds.dateien.set('C:/FORMA/BS9/002-Anderes.frmsjf', MUSTER);
+    const host = await projektBS9();
+    act(() => void zeile(host, '001-Muster').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', altKey: true, bubbles: true })));
+    await warte();
+    await rechtsklick(knopf(host, '001-Muster'));
+    await klick(menuePunkt('Umbenennen'));
+    eingabe(document.querySelector<HTMLInputElement>('.rf input')!, '000-Erstes');
+    await klick(knopf(document.querySelector('.rf')!, 'Umbenennen'));
+    for (let i = 0; i < 3; i++) await warte();
+    // alphabetisch stünde „000-Erstes“ vorn – gemerkt ist es hinter „002-Anderes“
+    expect(namen(host)).toEqual(['002-Anderes', '000-Erstes']);
+    expect(gemerkt()).toEqual(['002-Anderes.frmsjf', '000-Erstes.frmsjf']);
+  });
+});

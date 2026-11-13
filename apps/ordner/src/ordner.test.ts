@@ -263,6 +263,8 @@ describe('Struktur', () => {
     expect(alterOapPfad({})).toBeNull();
     expect(() => strukturAusJson('kein json')).toThrow(/kein gültiges JSON/);
     expect(() => strukturAusJson('{"ordner":[1,2]}')).toThrow(/keinen gültigen Ordner/);
+    // Gegenprobe: eine leere Ordnerliste ist gültig (alle Ordner gelöscht) und sperrt das Speichern nicht
+    expect(strukturAusJson('{"ordner":[]}').ordner).toEqual([]);
   });
 });
 

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { konfigAendern, konfigLesen } from '@core/platform/konfig';
+import { konfigAendern, konfigLesen, konfigNeuLesen } from '@core/platform/konfig';
 
 /**
  * Einstellungen für „Mails“ im gemeinsamen Konfigurationsordner (Bereich `mails`, gilt fürs Büro): die eigenen
@@ -35,7 +35,7 @@ interface MailState extends MailEinstellungen {
   setEigene: (eigene: string[]) => Promise<void>;
 }
 
-export const useMails = create<MailState>()((set) => ({
+export const useMails = create<MailState>()((set, get) => ({
   eigene: [],
   geladen: false,
   fehler: null,
@@ -47,11 +47,22 @@ export const useMails = create<MailState>()((set) => ({
     }
   },
   setEigene: async (eigene) => {
+    // als Änderung gegenüber dem bisherigen Stand auf den frisch gelesenen anwenden – so bleiben Einträge erhalten, die
+    // ein anderer Rechner inzwischen ergänzt hat
+    const vorher = get().eigene;
     const neu = aus({ eigene });
+    const dazu = neu.eigene.filter((x) => !vorher.includes(x));
+    const weg = vorher.filter((x) => !neu.eigene.includes(x));
     set(neu);
     try {
-      await konfigAendern(BEREICH_MAILS, (roh) => ({ ...((roh && typeof roh === 'object' ? roh : {}) as object), eigene: neu.eigene }));
+      const ergebnis = await konfigAendern(BEREICH_MAILS, (roh) => {
+        const o = (roh && typeof roh === 'object' ? roh : {}) as Record<string, unknown>;
+        return { ...o, eigene: [...aus(o).eigene.filter((x) => !weg.includes(x)), ...dazu.filter((x) => !aus(o).eigene.includes(x))] };
+      });
+      set({ eigene: ergebnis.eigene });
     } catch (e) {
+      // nicht gespeichert: wieder den gültigen Stand zeigen
+      set({ eigene: vorher });
       set({ fehler: `Einstellungen nicht gespeichert: ${e instanceof Error ? e.message : String(e)}` });
     }
   },
@@ -68,3 +79,8 @@ export function eigeneDomainRaten(mails: { domains: string[] }[]): string | null
   const [d, n] = [...zahl].sort((a, b) => b[1] - a[1])[0] ?? [];
   return d && n * 2 > mails.length ? d : null;
 }
+
+// Speicherort der Einstellungen gewechselt bzw. Netzlaufwerk weg oder wieder da: neu lesen (gelesen wird erst bei Bedarf)
+konfigNeuLesen(() => {
+  if (useMails.getState().geladen) void useMails.getState().laden();
+});

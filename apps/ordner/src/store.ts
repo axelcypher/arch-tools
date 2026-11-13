@@ -5,11 +5,11 @@ import {
   allgemeinAus,
   konfigAendern,
   konfigLesen,
-  konfigOrdnerWechseln,
   konfigOrt,
-  konfigSchreiben,
+  konfigOrtBeobachten,
   konfigSchreibenWennUnveraendert,
   konfigStand,
+  konfigVorWechsel,
   VORGABE_ALLGEMEIN,
 } from '@core/platform/konfig';
 import { hatDateisystem, tauriDateisystem } from './dateisystem';
@@ -35,8 +35,6 @@ import { alterOapPfad, STANDARD, strukturAusJson } from './struktur';
 
 const KEY = 'projektordner:zustand';
 export const BEREICH = 'projektordner';
-/** Bereiche, die beim Wechsel des Konfigurationsordners mitgenommen werden */
-const BEREICHE = ['allgemein', BEREICH];
 
 interface Lokal {
   stamm: Stammdaten;
@@ -102,7 +100,6 @@ interface OrdnerState {
   /** Einstellungen aus dem Konfigurationsordner laden (beim Start) */
   konfigLaden: () => Promise<void>;
   /** anderen Konfigurationsordner wählen (null = lokal); fehlende Bereiche werden mitgenommen */
-  konfigOrdnerSetzen: (ordner: string | null) => Promise<string[]>;
   /** Desktop: Vorlagenordner (neu) einlesen */
   ladeVorlagen: () => Promise<void>;
   /** Browser: über den Dateidialog gewählter Vorlagenordner */
@@ -217,6 +214,44 @@ export const useOrdner = create<OrdnerState>()((set, get) => {
     set({ allgemein, stammordner: allgemein.projekte[0] ?? '' });
     allgemeinAendern(patch).catch((e) => set({ konfigFehler: `Einstellungen nicht gespeichert: ${fehlertext(e)}` }));
   };
+  let ladevorgang: Promise<void> | null = null;
+  let nochmalLaden = false;
+  const konfigLadenJetzt = async () => {
+    try {
+      const [rohAllgemein, rohEigenGelesen] = await Promise.all([konfigLesen('allgemein'), konfigLesen(BEREICH)]);
+      // nach dem Lesen: Fällt das Netzlaufwerk dabei weg, gilt schon der Notbetrieb
+      const ort = await konfigOrt();
+      // erster Start mit dem Konfigurationsordner: Einstellungen älterer Fassungen übernehmen – nicht im Notbetrieb
+      // (Netzlaufwerk nicht erreichbar): dann gelten die Vorgaben, gespeichert wird nichts
+      const darfSchreiben = !ort?.notbetrieb;
+      if (rohAllgemein == null && darfSchreiben) {
+        const oap = alterOapPfad(lokal.struktur);
+        await allgemeinAendern({ projekte: anfang.allgemein.projekte, ...(oap ? { oapPfad: oap } : {}) });
+      }
+      const anfangEigen = { struktur: anfang.struktur, vorlagenordner: anfang.vorlagenordner };
+      let rohEigen = rohEigenGelesen;
+      if (rohEigen == null && darfSchreiben) {
+        // nur anlegen, wenn es die Datei noch immer nicht gibt – sonst gilt, was ein anderer Rechner inzwischen schrieb
+        const r = await konfigSchreibenWennUnveraendert(BEREICH, anfangEigen, null);
+        rohEigen = r.ok ? anfangEigen : r.aktuell;
+      }
+      const allgemein = rohAllgemein == null && darfSchreiben ? allgemeinAus(await konfigLesen('allgemein')) : allgemeinAus(rohAllgemein);
+      const eigen = rohEigen ?? anfangEigen;
+      set({
+        konfig: ort,
+        konfigFehler: null,
+        allgemein,
+        stammordner: allgemein.projekte[0] ?? '',
+        ...eigenAus(eigen),
+        // Stand wie beim Lesen der Datei (JSON hin und zurück); ohne Datei (Notbetrieb) null
+        konfigStandEigen: rohEigen == null ? null : konfigStand(JSON.parse(JSON.stringify(eigen))),
+        konflikt: null,
+        geladen: true,
+      });
+    } catch (e) {
+      set({ konfigFehler: `Einstellungen nicht lesbar: ${fehlertext(e)}` });
+    }
+  };
   return {
     stamm: lokal.stamm,
     ...anfang,
@@ -293,38 +328,21 @@ export const useOrdner = create<OrdnerState>()((set, get) => {
       eigeneSpeichern();
     },
     setAllgemein: allgemeinSetzen,
-    konfigLaden: async () => {
-      try {
-        const [ort, rohAllgemein, rohEigen] = await Promise.all([konfigOrt(), konfigLesen('allgemein'), konfigLesen(BEREICH)]);
-        // erster Start mit dem Konfigurationsordner: Einstellungen älterer Fassungen übernehmen
-        if (rohAllgemein == null) {
-          const oap = alterOapPfad(lokal.struktur);
-          await allgemeinAendern({ projekte: anfang.allgemein.projekte, ...(oap ? { oapPfad: oap } : {}) });
-        }
-        const anfangEigen = { struktur: anfang.struktur, vorlagenordner: anfang.vorlagenordner };
-        if (rohEigen == null) await konfigSchreiben(BEREICH, anfangEigen);
-        const allgemein = rohAllgemein == null ? allgemeinAus(await konfigLesen('allgemein')) : allgemeinAus(rohAllgemein);
-        const eigen = rohEigen ?? anfangEigen;
-        set({
-          konfig: ort,
-          konfigFehler: null,
-          allgemein,
-          stammordner: allgemein.projekte[0] ?? '',
-          ...eigenAus(eigen),
-          // Stand wie beim Lesen der Datei (JSON hin und zurück)
-          konfigStandEigen: konfigStand(JSON.parse(JSON.stringify(eigen))),
-          konflikt: null,
-          geladen: true,
-        });
-      } catch (e) {
-        set({ konfigFehler: `Einstellungen nicht lesbar: ${fehlertext(e)}` });
+    konfigLaden: () => {
+      // läuft schon ein Ladevorgang, danach genau einmal erneut laden (der Ort kann sich inzwischen geändert haben)
+      if (ladevorgang) {
+        nochmalLaden = true;
+        return ladevorgang;
       }
-    },
-    konfigOrdnerSetzen: async (ordner) => {
-      await speichernJetzt();
-      const uebernommen = await konfigOrdnerWechseln(ordner, BEREICHE);
-      await get().konfigLaden();
-      return uebernommen;
+      ladevorgang = (async () => {
+        do {
+          nochmalLaden = false;
+          await konfigLadenJetzt();
+        } while (nochmalLaden);
+      })().finally(() => {
+        ladevorgang = null;
+      });
+      return ladevorgang;
     },
     ladeVorlagen: async () => {
       const ordner = get().vorlagenordner;
@@ -351,6 +369,15 @@ useOrdner.subscribe((s, vorher) => {
   // eine unlesbare Struktur (es gilt nur vorläufig die Vorgabe) schreibt nichts in die gemeinsamen Einstellungen
   if (!s.geladen || s.strukturFehler || (s.struktur === vorher.struktur && s.geladen === vorher.geladen && s.strukturFehler === vorher.strukturFehler)) return;
   if (s.struktur.ordnername !== s.allgemein.ordnerSchema) s.setAllgemein({ ordnerSchema: s.struktur.ordnername });
+});
+
+// Speicherort der Einstellungen (core, für alle Apps): vor dem Wechsel Ausstehendes speichern, danach neu lesen –
+// auch nach einem Wechsel in einem anderen Fenster und wenn das Netzlaufwerk wieder erreichbar ist
+konfigVorWechsel(() => useOrdner.getState().speichernJetzt());
+konfigOrtBeobachten((o) => {
+  const s = useOrdner.getState();
+  if (!s.geladen || (s.konfig && o && s.konfig.ordner === o.ordner && s.konfig.modus === o.modus && s.konfig.notbetrieb === o.notbetrieb)) return;
+  void s.konfigLaden();
 });
 
 // nur das angefangene Formular bleibt lokal

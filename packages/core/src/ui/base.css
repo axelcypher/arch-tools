@@ -4,6 +4,22 @@
  */
 
 :root {
+  /* Skalen (docs/design.md): Abstände in 4er-Schritten, Schriftgrade, Ecken, Höhe der Bedienelemente */
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 24px;
+  --s6: 32px;
+  --fs-xs: 11px;
+  --fs-s: 12px;
+  --fs-m: 13px;
+  --fs-l: 15px;
+  --fs-xl: 18px;
+  --radius-s: 4px;
+  --radius: 6px;
+  --ctl-h: 28px;
+  --ctl-h-s: 24px;
   --bg: #f3f4f6;
   --panel: #ffffff;
   --border: #d8dbe0;
@@ -13,6 +29,9 @@
   --accent-hover: #2350bf;
   --accent-soft: #e6edfb;
   --sel: #ff7a00;
+  /* Auswahl auf Fotos (RECTIO): Magenta, weil Orange mit Mess- und Markierungsfarben und Fassadentönen kollidiert.
+     In beiden Schemata gleich (das Foto ändert sich nicht); immer mit hellem und dunklem Saum zeichnen (docs/design.md) */
+  --sel-foto: #e6007e;
   --danger: #c0392b;
   --canvas: #fbfbfa;
   --input-bg: #ffffff;
@@ -43,9 +62,12 @@
   --scroll-thumb: color-mix(in srgb, var(--text) 22%, transparent);
   --scroll-thumb-hover: color-mix(in srgb, var(--text) 38%, transparent);
   --scroll-track: transparent;
+  /* Fokus: Rahmen bei Tastaturbedienung, Saum um das aktive Eingabefeld */
+  --fokus: var(--accent);
+  --fokus-saum: color-mix(in srgb, var(--accent) 35%, transparent);
   color-scheme: light;
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-  font-size: 13px;
+  font-size: var(--fs-m);
   color: var(--text);
   background: var(--bg);
 }
@@ -115,9 +137,12 @@ body,
   cursor: col-resize;
   z-index: 3;
 }
-.leiste-griff:hover,
-.leiste-griff:focus-visible {
+.leiste-griff:hover {
   background: var(--accent-soft);
+}
+/* Tastaturfokus: Griff in voller Fokusfarbe statt Rahmen (der Griff ist nur 6px breit) */
+.leiste-griff:focus-visible {
+  background: var(--fokus);
   outline: none;
 }
 /* andere Browser (Web-Version): Standard-Eigenschaften */
@@ -273,11 +298,11 @@ button.icon {
 }
 
 .sidebar h2 {
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--muted);
-  margin: 0 0 8px;
+  /* Satzschreibung statt Versalien: liest sich schneller, auch bei langen Titeln („Referenz · Ebene 1“) */
+  font-size: var(--fs-m);
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 var(--s2);
 }
 
 .sidebar h3 {
@@ -345,10 +370,36 @@ input.num {
   font-variant-numeric: tabular-nums;
 }
 
-input:focus,
-select:focus {
-  outline: 2px solid var(--accent-soft);
+input:not([type='checkbox'], [type='radio'], [type='range'], [type='color']):focus,
+select:focus,
+textarea:focus {
+  outline: 2px solid var(--fokus-saum);
+  outline-offset: 0;
   border-color: var(--accent);
+}
+
+/* ---------- Fokus und Zielgrößen ---------- */
+
+/* Tastaturfokus sichtbar an allen Bedienelementen (Maus: kein Rahmen – :focus-visible) */
+/* Abstand 2px: der Fokusrahmen steht frei und unterscheidet sich vom Rand eines aktiven Knopfs (gleiche Farbe) */
+:where(button, a[href], summary, [tabindex]:not([tabindex='-1']), [role='button']):focus-visible {
+  outline: 2px solid var(--fokus);
+  outline-offset: 2px;
+}
+:where(input[type='checkbox'], input[type='radio'], input[type='range']):focus-visible {
+  outline: 2px solid var(--fokus);
+  outline-offset: 2px;
+}
+
+/* Bedienelemente in Leisten, Knopfreihen, Dialogen und Feldern mindestens --ctl-h hoch; kleine und Symbolknöpfe
+   --ctl-h-s. :where() hält die Spezifität bei null – App-Regeln mit eigener min-height gehen vor; height allein reicht
+   nicht (min-height setzt sich gegen ein kleineres height immer durch). */
+:where(.toolbar, .button-row, .dialog-buttons, .section-head) :where(button),
+:where(.toolbar, .field) :where(select, input:not([type='checkbox'], [type='radio'], [type='range'], [type='color'])) {
+  min-height: var(--ctl-h);
+}
+:where(.toolbar, .button-row, .dialog-buttons, .section-head) :where(button.small, button.icon) {
+  min-height: var(--ctl-h-s);
 }
 
 .button-row {
@@ -636,7 +687,21 @@ code {
   padding: 6px 12px;
   border-radius: 4px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+/* Meldung, die sich per Klick schließt (Hand nur dort) */
+.canvas-message.klickbar,
+.canvas-message[title] {
   cursor: pointer;
+}
+/* Leerzustand („Foto hinzufügen …“): neutral statt Warnfarbe, mittig auf der Fläche */
+.canvas-message.leer {
+  top: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--panel);
+  border-color: var(--border);
+  color: var(--muted);
+  box-shadow: none;
+  text-align: center;
 }
 
 /* ---------- Griffe an Punkten (Zeichenflächen) ---------- */
@@ -987,6 +1052,9 @@ code {
 
 /* Papier (Flächenaufstellung, Planausschnitte) bleibt immer hell */
 .report {
+  /* Fokus = helles --accent: Papier und Zeichenfläche bleiben auch im dunklen Schema hell */
+  --fokus: #2a5bd7;
+  --fokus-saum: rgba(42, 91, 215, 0.35);
   --bg: #f3f4f6;
   --panel: #ffffff;
   --border: #d8dbe0;
@@ -1006,6 +1074,9 @@ code {
 
 /* Die Zeichenfläche arbeitet immer mit den hellen Farben – im dunklen Schema wird sie als Ganzes invertiert */
 .canvas {
+  /* Fokus = helles --accent: Papier und Zeichenfläche bleiben auch im dunklen Schema hell */
+  --fokus: #2a5bd7;
+  --fokus-saum: rgba(42, 91, 215, 0.35);
   --text: #1f2328;
   --muted: #6b7280;
   --border: #d8dbe0;
@@ -1065,11 +1136,16 @@ code {
 
 .titlebar-btn {
   position: relative;
+  flex-shrink: 0;
   border: none;
   background: transparent;
   height: 26px;
   padding: 0 8px;
   color: var(--muted);
+}
+
+.schema-symbol {
+  vertical-align: -2px;
 }
 
 .titlebar-btn:hover:not(:disabled) {
@@ -1149,9 +1225,14 @@ code {
 .titlebar-dropdown-head {
   padding: 2px 6px 4px;
   color: var(--muted);
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+}
+
+.titlebar-dropdown [role='menu'] {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .titlebar-dropdown button {
@@ -1371,6 +1452,7 @@ code {
   justify-content: center;
   width: 18px;
   height: 18px;
+  min-height: 0;
   padding: 0;
   margin-left: 6px;
   border-radius: 50%;
@@ -1431,10 +1513,9 @@ code {
 }
 
 .nw-gruppe-titel {
-  font-size: 11px;
+  font-size: var(--fs-xs);
+  font-weight: 600;
   color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
   margin: 4px 0;
 }
 
@@ -1581,6 +1662,8 @@ svg[tabindex]:focus:not(:focus-visible) {
 }
 .rf-text {
   white-space: pre-line;
+  /* lange Pfade (\\NAS\Freigabe\…) ohne Leerzeichen umbrechen */
+  overflow-wrap: anywhere;
 }
 .rf input {
   width: 100%;
@@ -1693,4 +1776,93 @@ button.ph-lokal {
   margin-top: 2px;
   font-size: 11px;
   color: var(--warn-text);
+}
+
+/* ---------- Speicherort der Einstellungen (ui/Speicherort.tsx) ---------- */
+
+.titlebar-btn.titlebar-notbetrieb {
+  white-space: nowrap;
+  background: var(--warn-bg);
+  color: var(--warn-text);
+  border: 1px solid var(--warn-border);
+  border-radius: 4px;
+}
+.titlebar-btn.titlebar-notbetrieb:hover:not(:disabled) {
+  background: var(--warn-bg);
+  color: var(--warn-text);
+  border-color: var(--warn-text);
+}
+.titlebar-btn .sp-symbol {
+  width: 12px;
+  height: 12px;
+  margin-right: 2px;
+  vertical-align: -1px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.2;
+  stroke-linecap: round;
+}
+.sp-zeile {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.sp-zeile > div {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.sp-zeile .sp-voll {
+  flex-basis: 100%;
+  margin: 0;
+}
+.sp-aktuell {
+  margin-bottom: 10px;
+}
+.sp-ort {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+.sp-zeile code,
+.sp-ort code {
+  display: block;
+  flex: 1;
+  min-width: 0;
+  padding: 3px 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  user-select: text;
+  -webkit-user-select: text;
+}
+.sp-notbetrieb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+.sp-notbetrieb > span {
+  flex: 1;
+}
+.sp-wahl {
+  border: none;
+  padding: 0;
+  margin: 0 0 6px;
+}
+.sp-wahl .radio-row {
+  margin: 6px 0;
+}
+.sp-meldung {
+  padding: 6px 8px;
+  border: 1px solid var(--ok-border);
+  background: var(--ok-bg);
+  color: var(--text);
+  border-radius: 4px;
+  font-size: 12px;
 }

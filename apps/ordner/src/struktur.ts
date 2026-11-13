@@ -318,7 +318,8 @@ export function strukturAusJson(json: string): Struktur {
       if (r) ordner.push(r);
     }
   }
-  if (liste && !ordner.length) throw new Error('Die Konfiguration enthält keinen gültigen Ordner.');
+  // eine leere Liste ist gültig (alle Ordner gelöscht); nur Einträge, von denen keiner taugt, gelten als fehlerhaft
+  if (liste?.length && !ordner.length) throw new Error('Die Konfiguration enthält keinen gültigen Ordner.');
   // Konfigurationen ohne Presets (bis Version 0.1.x): der ganze Vorlagenordner wie bisher, Dateinamen unverändert
   const ohnePresets = !Array.isArray(o.presets);
   const bausteine = bausteineAus(o.bausteine);
