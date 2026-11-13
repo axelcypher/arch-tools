@@ -371,7 +371,7 @@ export function App() {
       e,
       [
         ...(desktop ? [{ text: 'In eigenem Fenster öffnen', symbol: 'extern' as const, aktion: () => void herausloesen(id) }] : []),
-        { text: 'Schließen', symbol: 'schliessen' as const, hinweis: 'Entf', aktion: () => void tabSchliessen(id) },
+        { text: 'Schließen', symbol: 'schliessen' as const, tasten: 'Entf / Strg+F4', aktion: () => void tabSchliessen(id) },
         { text: 'Andere schließen', deaktiviert: tabs.length < 2, hinweis: tabs.length < 2 ? 'nur ein Tab offen' : undefined, aktion: () => void andereSchliessen(id) },
       ],
       `${appInfo(id)?.name}`,
