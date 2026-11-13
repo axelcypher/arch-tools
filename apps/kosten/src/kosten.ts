@@ -6,6 +6,7 @@ import { istKg, istRisiko, KG_RISIKO, kg1, kg2, kgInBasis, kgName, kgUnter } fro
 import type { Mengen, MengenBezug } from './mengen';
 import type { IfcWand } from './waende';
 import { MENGEN_INFO, mengen, mengenWerte } from './mengen';
+import { heuteIso } from './datum';
 
 /**
  * Rechenkern der Kostenermittlung (unabhängig von der Oberfläche):
@@ -303,7 +304,7 @@ export const HAFTUNG =
 /** Bezeichnung der Stufe – wie in der Oberfläche, ohne Angabe die Vorbelegung (siehe stufen.ts) */
 export { stufeLabel } from './stufen';
 
-export function standAus(e: Ergebnis, stufe: KostenStufe, bemerkung: string, datum = new Date().toISOString().slice(0, 10)): KostenStand {
+export function standAus(e: Ergebnis, stufe: KostenStufe, bemerkung: string, datum = heuteIso()): KostenStand {
   return {
     id: newId('ks'),
     datum,

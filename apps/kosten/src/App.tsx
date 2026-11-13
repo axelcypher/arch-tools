@@ -15,7 +15,7 @@ import { KatalogDialog } from './components/KatalogDialog';
 import { KostenDruck } from './components/KostenDruck';
 import { KostenView } from './components/KostenView';
 import { MengenView } from './components/MengenView';
-import { bauteileLaden } from './bauteile';
+import { bauteileAusModell, bauteileLaden } from './bauteile';
 import { ifcAktualisierenWaehlen, oeffnen, speichern } from './datei';
 import type { MengenBezug } from './mengen';
 import { useKosten } from './store';
@@ -45,7 +45,8 @@ export function App() {
   const [menge, setMenge] = useState<MengenBezug>('bgf');
   const [busy, setBusy] = useState<string | null>(null);
   const [bericht, setBericht] = useState<string[]>([]);
-  const berichtDatei = bericht.length ? (datei?.split(/[\\/]/).pop() ?? null) : null;
+  // Name der gelesenen IFC-Datei (die zuletzt dem Projekt hinzugefügte), nicht der Projektdatei
+  const berichtDatei = useKosten((s) => (bericht.length ? (s.project.dateien?.filter((d) => d.art === 'ifc').pop()?.name ?? null) : null));
 
   // Wände des mitgespeicherten IFC-Modells für die Innenwandfläche
   useEffect(() => {
@@ -106,6 +107,7 @@ export function App() {
           return;
         }
         jetzt.update(() => r.project);
+        bauteileAusModell(r.project, r.extract);
         setBericht(r.bericht);
       }
     } catch (e) {
@@ -200,7 +202,7 @@ export function App() {
           </button>
         </div>
         <div className="tb-group">
-          <button className={ansicht === 'kosten' || !hatGebaeude ? 'active' : ''} aria-pressed={ansicht === 'kosten' || !hatGebaeude} onClick={() => setAnsicht('kosten')} title="Grundlagen, Positionen und Kostenübersicht">
+          <button className={!einstieg && (ansicht === 'kosten' || !hatGebaeude) ? 'active' : ''} aria-pressed={!einstieg && (ansicht === 'kosten' || !hatGebaeude)} onClick={() => setAnsicht('kosten')} title="Grundlagen, Positionen und Kostenübersicht">
             Kosten
           </button>
           <button

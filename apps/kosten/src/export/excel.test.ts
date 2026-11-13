@@ -176,7 +176,12 @@ describe('Kosten-Excel', () => {
     // Standardlayout: Gesamt netto (Summe der Kostengruppen-Zeilen) enthält das Risiko
     const ws = (await lesen(await exportDefault(p))).getWorksheet('Kosten')!;
     expect(texte(ws)).toContain('Kostenrisiken');
+    // die Summenformel „Gesamt netto“ reicht bis einschließlich der Zeile „Kostenrisiken“
     const r = zeileMit(ws, 'Gesamt netto');
-    expect(formel(ws.getCell(`G${r}`)).result ?? ctx.scalars['gesamt.netto']).toBe(ctx.scalars['gesamt.netto']);
+    const rr = zeileMit(ws, 'Kostenrisiken');
+    const bereich = /SUM\(G(\d+):G(\d+)\)/.exec(formel(ws.getCell(`G${r}`)).formula)!;
+    expect(Number(bereich[1])).toBeLessThan(rr);
+    expect(Number(bereich[2])).toBe(rr);
+    expect(ws.getCell(`G${rr}`).value).toBe(64800);
   });
 });

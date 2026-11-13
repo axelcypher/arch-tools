@@ -10,11 +10,13 @@ import { KatalogDialog } from './components/KatalogDialog';
 import { katalogSpeichern, leseKatalog } from './katalog';
 import { setKosten, useKosten } from './store';
 import { projektMitKosten } from './testdaten';
+import { useBauteile } from './bauteile';
+import type { IfcExtract } from '@core/ifcData';
 
 /** Speichern und IFC-Aktualisieren ohne Dateisystem: Aufrufe mitschneiden, Ergebnis von außen freigeben */
 const mock = vi.hoisted(() => ({
   gespeichert: [] as Project[],
-  ifc: null as null | { resolve: (r: { project: Project; bericht: string[] } | null) => void },
+  ifc: null as null | { resolve: (r: { project: Project; bericht: string[]; extract: IfcExtract } | null) => void },
 }));
 vi.mock('./datei', async (original) => ({
   ...(await original<typeof import('./datei')>()),
@@ -27,6 +29,9 @@ vi.mock('./datei', async (original) => ({
       mock.ifc = { resolve };
     }),
 }));
+
+/** leeres IFC-Modell (keine Wände) */
+const EXTRACT: IfcExtract = { schema: 'IFC4', projectName: 'Haus', storeys: [], spaces: [], elements: [], offset: { x: 0, y: 0 } };
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -143,6 +148,7 @@ describe('Zwischenstand, Verlauf und Speichern', () => {
   });
 
   it('IFC aktualisieren: Änderungen während des Lesens bleiben, das Ergebnis wird verworfen', async () => {
+    useBauteile.setState({ quelle: null, status: 'keins', waende: null });
     const p = projektMitKosten();
     useKosten.getState().load(p, 'Haus.oap', p);
     const host = render(App);
@@ -150,19 +156,22 @@ describe('Zwischenstand, Verlauf und Speichern', () => {
     await act(async () => knopf.click());
     expect(mock.ifc).not.toBeNull();
     act(() => useKosten.getState().update((x) => setKosten(x, { mwst: 7 })));
-    await act(async () => mock.ifc!.resolve({ project: { ...p, name: 'Aus IFC' }, bericht: ['neu'] }));
+    await act(async () => mock.ifc!.resolve({ project: { ...p, name: 'Aus IFC' }, bericht: ['neu'], extract: EXTRACT }));
     await warten();
     expect(useKosten.getState().project.name).toBe('Kosten-Test');
     expect(useKosten.getState().project.kosten?.mwst).toBe(7);
     expect(host.querySelector('.modal.rf')?.textContent).toContain('IFC nicht übernommen');
+    // die Wände des verworfenen Modells kommen nicht in die Mengen
+    expect(useBauteile.getState().waende).toBeNull();
     // Gegenprobe: ohne Änderung wird das Ergebnis übernommen
     act(() => (host.querySelector('.modal.rf button') as HTMLButtonElement).click());
     await warten();
     await act(async () => knopf.click());
     const stand = useKosten.getState().project;
-    await act(async () => mock.ifc!.resolve({ project: { ...stand, name: 'Aus IFC' }, bericht: ['neu'] }));
+    await act(async () => mock.ifc!.resolve({ project: { ...stand, name: 'Aus IFC' }, bericht: ['neu'], extract: EXTRACT }));
     await warten();
     expect(useKosten.getState().project.name).toBe('Aus IFC');
+    expect(useBauteile.getState().waende).toEqual([]);
   });
 
   it('Kennwertkatalog: Meldung, wenn der Browserspeicher den Katalog nicht fasst', async () => {

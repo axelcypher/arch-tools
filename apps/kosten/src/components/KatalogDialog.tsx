@@ -6,6 +6,7 @@ import { kgName } from '../din276';
 import type { Katalog } from '../katalog';
 import { eintragAusPosition, gespeicherterKatalog, katalogCsv, katalogJson, katalogSpeichern, leseKatalog, positionAusEintrag } from '../katalog';
 import { MENGEN_INFO } from '../mengen';
+import { datumAnzeige } from '../datum';
 import type { MengenBezug } from '../mengen';
 import { addPositionen, setKosten, useKosten } from '../store';
 import { Modal } from '@core/ui/Dialog';
@@ -40,6 +41,7 @@ export function KatalogDialog({ onClose }: { onClose: () => void }) {
     if (!f) return;
     try {
       const k = leseKatalog(await f.text(), f.name);
+      if (katalog && !(await bestaetigen('Katalog ersetzen?', `Der hinterlegte Katalog „${katalog.name}“ wird durch „${k.name}“ ersetzt.`, 'Ersetzen', true))) return;
       setzen(k);
       log.info(`Kennwertkatalog geladen: ${k.name}`, { eintraege: k.eintraege.length });
     } catch (e) {
@@ -69,7 +71,7 @@ export function KatalogDialog({ onClose }: { onClose: () => void }) {
     setzen({
       name: k.katalog?.name ?? `Kennwerte ${project.name}`,
       quelle: k.katalog?.quelle ?? `Projekt ${project.name}`,
-      stand: k.katalog?.stand ?? (k.datum ? new Date(k.datum).toLocaleDateString('de-DE') : undefined),
+      stand: k.katalog?.stand ?? (k.datum ? datumAnzeige(k.datum) : undefined),
       ...(k.indexBasis !== undefined ? { index: k.indexBasis } : {}),
       eintraege: k.positionen.map(eintragAusPosition),
     });

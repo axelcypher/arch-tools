@@ -6,6 +6,7 @@ import type { Ergebnis } from '../kosten';
 import { berechne, bezugLabel, HAFTUNG, katalogText } from '../kosten';
 import { istSpaeteStufe, ohneBandbreite, SPAETE_STUFE_HINWEIS, STUFEN, stufeLabel, stufeVon } from '../stufen';
 import { MENGEN_BEZUEGE, MENGEN_INFO } from '../mengen';
+import { datumAnzeige as datum } from '../datum';
 
 /**
  * Datengrundlage für Excel-Export und Vorlagen der Kostenermittlung (Syntax siehe docs/excel-vorlagen.md).
@@ -19,8 +20,6 @@ import { MENGEN_BEZUEGE, MENGEN_INFO } from '../mengen';
 const r0 = (v: number) => Math.round(v);
 const r2 = (v: number) => Math.round(v * 100) / 100;
 const r4 = (v: number) => Math.round(v * 10000) / 10000;
-/** ISO-Datum als TT.MM.JJJJ, ohne Umweg über Date (UTC) */
-const datum = (iso: string) => (/^\d{4}-\d{2}-\d{2}$/.test(iso) ? `${Number(iso.slice(8, 10))}.${Number(iso.slice(5, 7))}.${iso.slice(0, 4)}` : iso);
 /** Schlüssel der Zeile „Kostenrisiken“ im Block #kg (zählt zu keiner Kostengruppe) */
 const RISIKO = 'risiko';
 

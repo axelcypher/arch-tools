@@ -9,12 +9,11 @@ import { MENGEN_BEZUEGE, MENGEN_INFO } from '../mengen';
 import { druckenAls } from '@core/platform/projektDatei';
 import { useKosten } from '../store';
 import { useBauteile } from '../bauteile';
+import { datumAnzeige as datum } from '../datum';
 import { useEscSchliessen } from '@core/ui/Dialog';
 import { DruckKopf } from '@core/ui/DruckKopf';
 
 const zahl = (v: number, d = 2) => v.toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
-// ISO-Datum ohne Umweg über Date (das als UTC gelesen westlich von Greenwich den Vortag ergäbe)
-const datum = (iso: string) => (/^\d{4}-\d{2}-\d{2}$/.test(iso) ? `${Number(iso.slice(8, 10))}.${Number(iso.slice(5, 7))}.${iso.slice(0, 4)}` : iso);
 
 /** Druckbare Kostenermittlung nach DIN 276 – über den Druckdialog auch als PDF. */
 export function KostenDruck({ onClose }: { onClose: () => void }) {

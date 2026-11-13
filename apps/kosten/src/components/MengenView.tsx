@@ -218,7 +218,7 @@ export function MengenView({ bezug, onBezug }: { bezug: MengenBezug; onBezug: (b
 
       <section className="ko-col mv-rechenweg">
         <h2>Rechenweg</h2>
-        {festgelegt && <p className="warning small-text">Die Auswahl wirkt erst ohne Handwert – für die Kosten gilt der festgelegte Wert.</p>}
+        {festgelegt && <p className="muted small-text">Die Auswahl wirkt erst ohne Handwert – für die Kosten gilt der festgelegte Wert.</p>}
         {menge.teile.length > 1 && (
           <div className="mv-auswahl small-text">
             <span className="muted">

@@ -12,12 +12,12 @@ import { MENGEN_BEZUEGE, MENGEN_INFO } from '../mengen';
 import { addPositionen, mapPosition, removePosition, setKosten, useKosten } from '../store';
 import { GLIEDERUNG_KURZ, GLIEDERUNGSTIEFE, STUFEN, stufeLabel, stufeVon } from '../stufen';
 import { useBauteile } from '../bauteile';
+import { datumAnzeige as datum } from '../datum';
 import { HilfeKnopf } from '@core/ui/Nachschlagewerk';
 import { bestaetigen } from '@core/ui/Rueckfrage';
 import { StammdatenKnopf } from '@core/ui/Stammdaten';
 
 const zahl = (v: number, d = 2) => v.toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
-const datum = (iso: string) => (/^\d{4}-\d{2}-\d{2}$/.test(iso) ? `${Number(iso.slice(8, 10))}.${Number(iso.slice(5, 7))}.${iso.slice(0, 4)}` : iso);
 
 /** neue Zeile in den Blick holen und das Feld für die Kostengruppe fokussieren */
 function fokussieren(id: string) {
@@ -41,8 +41,8 @@ export function KostenView({ onKatalog, onMenge }: { onKatalog: () => void; onMe
   // übergeordnete (KG 300 neben 330) werden beim Anlegen der feineren Gliederung zum Ausschalten angeboten
   const fehlend = (art: 'grob' | 'fein') => gliederung(art).filter((g) => !k.positionen.some((p) => p.kg === g.kg || kgUnter(p.kg, g.kg)));
   const gliederungAnlegen = async (art: 'grob' | 'fein') => {
-    const neu = fehlend(art);
-    const ueber = k.positionen.filter((p) => !p.aus && istKg(p.kg) && neu.some((g) => kgUnter(g.kg, p.kg)));
+    const fehlende = fehlend(art);
+    const ueber = k.positionen.filter((p) => !p.aus && istKg(p.kg) && fehlende.some((g) => kgUnter(g.kg, p.kg)));
     if (ueber.length) {
       const liste = [...new Set(ueber.map((p) => p.kg))].join(', ');
       const ok = await bestaetigen(
@@ -53,7 +53,7 @@ export function KostenView({ onKatalog, onMenge }: { onKatalog: () => void; onMe
       if (!ok) return;
     }
     const ids = new Set(ueber.map((p) => p.id));
-    st.update((p) => addPositionen(setKosten(p, { positionen: (p.kosten?.positionen ?? []).map((x) => (ids.has(x.id) ? { ...x, aus: true } : x)) }), neu));
+    st.update((p) => addPositionen(setKosten(p, { positionen: (p.kosten?.positionen ?? []).map((x) => (ids.has(x.id) ? { ...x, aus: true } : x)) }), fehlende));
   };
   const neu = (pos: KostenPosition) => {
     st.update((p) => addPositionen(p, [pos]));

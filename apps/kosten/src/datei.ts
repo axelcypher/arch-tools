@@ -2,6 +2,7 @@ import { ARCHIV_ENDUNG, readProjectFile } from '@core/archive';
 import { APP_NAMEN } from '@core/appNamen';
 import { buildFromIfc } from '@core/ifcImport';
 import { projektAusIfc } from '@core/ifcAbgleich';
+import type { IfcExtract } from '@core/ifcData';
 import type { Project } from '@core/model';
 import { addDatei } from '@core/model';
 import type { ProjektGespeichert } from '@core/platform/projektDatei';
@@ -58,9 +59,9 @@ export function speichern(p: Project, datei: string | null, basis: Project | nul
 }
 
 /** Projekt mit einem neuen Export desselben IFC-Modells aktualisieren – Änderungen von Hand bleiben */
-export async function ifcAktualisierenWaehlen(p: Project, datei: string | null, onProgress?: (msg: string) => void): Promise<{ project: Project; bericht: string[] } | null> {
+/** Die Wände des neuen Modells übernimmt erst der Aufrufer (bauteileAusModell), wenn er das Ergebnis übernimmt. */
+export async function ifcAktualisierenWaehlen(p: Project, datei: string | null, onProgress?: (msg: string) => void): Promise<{ project: Project; bericht: string[]; extract: IfcExtract } | null> {
   const r = await ifcAktualisieren(p, { optionen: { rooms: true, outlines: true, roof: true, wohnflaeche: true, dachform: true }, datei, onProgress });
   if (!r) return null;
-  bauteileAusModell(r.project, r.extract);
-  return { project: r.project, bericht: r.bericht };
+  return { project: r.project, bericht: r.bericht, extract: r.extract };
 }

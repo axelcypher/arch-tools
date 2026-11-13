@@ -292,7 +292,7 @@ button.link:hover {
   align-items: start;
 }
 /* schmaler: Mengenliste nur mit Kürzel und Wert (Name als Tooltip), Bild und Rechenweg bleiben nebeneinander */
-@media (max-width: 1400px) {
+@media (max-width: 1300px) {
   .mv-view {
     grid-template-columns: 170px minmax(300px, 1fr) minmax(280px, 360px);
   }
