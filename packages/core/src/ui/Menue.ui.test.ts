@@ -267,7 +267,7 @@ describe('gemeinsames Menü', () => {
   });
 
   it('zweiter Klick auf den offenen MenueKnopf schließt das Menü, ein dritter öffnet es wieder', () => {
-    const host = render(createElement(Fragment, null, createElement(MenueKnopf, { key: 'k', punkte: () => [{ text: 'A' }] }, 'Datei'), createElement(MenueHost, { key: 'h' })));
+    const host = render(createElement(Fragment, null, createElement(MenueKnopf, { key: 'k', punkte: () => [{ text: 'A' }], children: 'Datei' }), createElement(MenueHost, { key: 'h' })));
     const knopf = host.querySelector('button')!;
     const klick = () =>
       act(() => {
