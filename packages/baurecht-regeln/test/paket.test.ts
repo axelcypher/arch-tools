@@ -99,7 +99,7 @@ const WERTE: Record<string, (string | undefined)[]> = {
 /**
  * Volle Matrizen (mehrere Minuten Rechenzeit, ohne Netz) nur in der CI (GitHub Actions setzt CI=true) oder mit VOLL=1.
  * Sonst – lokal, in Cloud-Sitzungen – eine feste Stichprobe, damit das Projekt in unter einer Minute durch ist statt
- * über zehn Minuten ohne Ausgabe zu laufen. Volle Prüfung lokal: VOLL=1 npx vitest run --project regeln (etwa 12 min)
+ * über zehn Minuten ohne Ausgabe zu laufen. Volle Prüfung lokal: VOLL=1 npx vitest run --project regeln (etwa 15 min)
  */
 const VOLL = !!process.env.CI || !!process.env.VOLL;
 /** Zeitgrenze der großen Matrizen: voll großzügig (Windows-Runner), mit Stichprobe knapp – nichts läuft still minutenlang */
@@ -353,7 +353,7 @@ const AUSLOESER: ReadonlyMap<string, ReadonlySet<string>> = (() => {
 describe('Fallmatrix', () => {
   // nur voll sinnvoll: „Herabstufen“ und „Text“ prüfen je Paragraf den ersten grünen Fall – eine Stichprobe prüfte andere
   // Fälle als die CI und deckte nicht dasselbe ab
-  // voll mehrere Minuten (Auslöser je Satz tragender Antworten) – deshalb die lange Zeitgrenze
+  // voll etwa 8 min (Auslöser je Satz tragender Antworten) – deshalb die lange Zeitgrenze
   it.runIf(VOLL)('kein falsches Grün: Ergänzen, Herabstufen, Text, Begründung', { timeout: MATRIX_ZEIT_LANG }, () => {
     const fehler: string[] = [];
     const melde = (t: string) => {
@@ -2385,7 +2385,8 @@ describe('Fälle aus dem Fachreview', () => {
 describe('Hinweise tragen kein Grün über gestellte Fragen', () => {
   // Befund der Fallmatrix: Ist der Umfang der Beseitigung nur Hinweis („Abbruch mit Ersatzbau“), wird „Altbau
   // verfahrensfrei“ gestellt – die Antwort darauf hob § 74 BauO NRW und §§ 1, 2, 15 BauPrüfVO auf „entfällt“, obwohl
-  // ohne den Umfang „prüfen“ gälte. Eine Antwort auf eine nur über Hinweise gestellte Frage zählt selbst nur als Hinweis.
+  // ohne den Umfang „prüfen“ gälte. Eine Antwort auf eine nur über Hinweise gestellte Frage bleibt beantwortet; Regeln,
+  // die sie verwenden, zählen den auslösenden Hinweis als nicht gesichert (bestätigt wird der Auslöser).
   const m = { Vorhaben: 'Beseitigung', Gebäudeart: 'Einfamilienhaus', Gebäudeklasse: '1', Planungsrecht: 'Bebauungsplan', Verfahren: 'verfahrensfrei' };
   const IDS = ['nw/bauo-nrw/74', 'nw/baupruefvo/1', 'nw/baupruefvo/2', 'nw/baupruefvo/15'];
   const v = 'vorhaben.beseitigung_umfang';

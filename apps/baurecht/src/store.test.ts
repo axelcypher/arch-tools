@@ -73,6 +73,13 @@ describe('Zustand der App', () => {
     expect(istGeaendert(useBaurecht.getState())).toBe(false);
   });
 
+  it('Bestätigen mit einem Wert aus der Auswertung: „ueberHinweis“ (nur Auswertung) kommt nicht in die Prüfung', () => {
+    useBaurecht.getState().faktBestaetigen('nw.altbau_verfahrensfrei', { wert: true, herkunft: 'manuell', sicherheit: 'hinweis', ueberHinweis: ['vorhaben.beseitigung_umfang'] }, 'TP', 'Auskunft vom 13.11.2026');
+    const f = useBaurecht.getState().pruefung.fakten['nw.altbau_verfahrensfrei'];
+    expect(f).toMatchObject({ wert: true, bestaetigt: { von: 'TP' } });
+    expect(f.ueberHinweis).toBeUndefined();
+  });
+
   it('Angabe von Hand gegen einen Treffer: mit Begründung, Widerspruch bleibt, braucht die zweite Bestätigung', () => {
     const st = useBaurecht.getState();
     st.geoFakten({ 'schutz.lsg': { wert: true, herkunft: 'geodienst', sicherheit: 'sicher', quelle: 'LINFOS', stand: '2026-11-12' } });

@@ -223,7 +223,7 @@ export function modulZiel(id: string, fakten: Record<string, FaktWert>, defs: Re
   return defs[id]?.nach ? id : 'lage.ags';
 }
 
-const unsicherWert = (f: FaktWert | undefined) => !f || f.wert == null || (f.sicherheit === 'hinweis' && !f.bestaetigt) || !!f.widerspruch;
+const unsicherWert = (f: FaktWert | undefined) => !f || f.wert == null || (f.sicherheit === 'hinweis' && !f.bestaetigt) || !!f.widerspruch || !!f.ueberHinweis?.length;
 
 function modulQuellen(id: string, fakten: Record<string, FaktWert>, defs: Record<string, FaktDef>, bund: ReadonlySet<string>, besucht: Set<string>): Set<string> {
   besucht.add(id);
@@ -248,7 +248,9 @@ function modulQuellen(id: string, fakten: Record<string, FaktWert>, defs: Record
  * bestätigt wird der Auslöser. Bis zum Fixpunkt: eine markierte Antwort kann ihrerseits eine Frage nur über Hinweise
  * stellen (Kette).
  */
-function ueberHinweisGestellt(antworten: Record<string, FaktWert>, ableiten: (f: Record<string, FaktWert>) => Record<string, FaktWert>, defs: Record<string, FaktDef>, rest: Omit<KurzKontext, 'fakten'>): Record<string, FaktWert> {
+function ueberHinweisGestellt(eingang: Record<string, FaktWert>, ableiten: (f: Record<string, FaktWert>) => Record<string, FaktWert>, defs: Record<string, FaktDef>, rest: Omit<KurzKontext, 'fakten'>): Record<string, FaktWert> {
+  // `ueberHinweis` bestimmt allein die Auswertung – ein mitgegebenes (aus einer Datei, einem kopierten Wert) zählt nicht
+  const antworten = ohneUeberHinweis(eingang);
   let out = antworten;
   let vorher = '';
   for (let runde = 0; runde <= Object.keys(antworten).length + 1; runde++) {
@@ -262,6 +264,19 @@ function ueberHinweisGestellt(antworten: Record<string, FaktWert>, ableiten: (f:
     out = naechste;
     if (schluessel === vorher) break;
     vorher = schluessel;
+  }
+  return out;
+}
+
+/** `ueberHinweis` entfernen – das Feld entsteht nur in der Auswertung und wird nie gespeichert */
+export function ohneUeberHinweis(fakten: Record<string, FaktWert>): Record<string, FaktWert> {
+  const out: Record<string, FaktWert> = {};
+  for (const [id, f] of Object.entries(fakten)) {
+    if (!f.ueberHinweis) out[id] = f;
+    else {
+      const { ueberHinweis: _u, ...ohne } = f;
+      out[id] = ohne;
+    }
   }
   return out;
 }
@@ -307,7 +322,7 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
   // nicht „trifft nicht zu“ (sonst entstünde ein falsches Grün)
   // vor UND nach der Ableitung: ein ungültiger Bezug (z. B. „false“ als Text) darf keinen gesicherten Wert ableiten
   const merkmale = gueltigeMerkmale(e.merkmale);
-  const eingabe = gueltigeFakten(e.fakten, faktDefs);
+  const eingabe = gueltigeFakten(ohneUeberHinweis(e.fakten), faktDefs);
   // eine gespeicherte Antwort auf eine Frage, die gerade nicht gestellt wird (nach einem Ortswechsel, einem zurückgesetzten
   // Auslöser – z. B. „Altbau verfahrensfrei“ nach zurückgesetztem Umfang), zählt nicht: weder in den Regeln noch für
   // Ableitungen. Bis zum Fixpunkt, denn eine weggelassene Antwort kann weitere Fragen verbergen (oder wieder stellen)

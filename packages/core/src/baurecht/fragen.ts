@@ -22,14 +22,15 @@ export function frageGestellt(id: string, def: Pick<FaktDef, 'wenn'> | undefined
 /**
  * Wie frageGestellt, dazu die Hinweise (nicht bestätigte Angaben), auf denen das „gestellt“ beruht: Eine Frage, die nur
  * wegen eines Hinweises gestellt wird (z. B. „Altbau verfahrensfrei“, weil der Umfang „Abbruch mit Ersatzbau“ nur
- * Hinweis ist), trägt ihre Antwort nicht weiter als dieser Hinweis – sie zählt in der Auswertung selbst nur als Hinweis.
+ * Hinweis ist), trägt ihre Antwort nicht weiter als dieser Hinweis – die Antwort bekommt in der Auswertung den Auslöser
+ * als `ueberHinweis` mit, Regeln zählen dann ihn als nicht gesichert.
  */
 export function frageStand(id: string, def: Pick<FaktDef, 'wenn'> | undefined, ctx: KurzKontext): { gestellt: boolean; ueberHinweis: string[] } {
   if (!def?.wenn) return { gestellt: true, ueberHinweis: [] };
   try {
     const b = werten(def.wenn, ctx);
     if (RUECKFRAGE_IDS.has(id)) return b.w === 'ja' ? { gestellt: true, ueberHinweis: b.unsicher } : { gestellt: false, ueberHinweis: [] };
-    // „ja“ nur aus Hinweisen: gestellt, die Antwort zählt nur als Hinweis; „nein“ nur aus Hinweisen verbirgt die Frage
+    // „ja“ nur aus Hinweisen: gestellt, die Antwort trägt die Hinweise mit; „nein“ nur aus Hinweisen verbirgt die Frage
     // nicht (die Antwort könnte zählen) – auch dann beruht das Stellen auf Hinweisen
     if (b.w !== 'nein') return { gestellt: true, ueberHinweis: b.w === 'ja' ? b.unsicher : [] };
     return { gestellt: b.unsicher.length > 0, ueberHinweis: b.unsicher };

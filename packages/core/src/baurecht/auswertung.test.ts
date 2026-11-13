@@ -859,6 +859,9 @@ describe('Runde 18: nur gestellte Antworten zählen', () => {
     expect(s.b.ueberHinweis).toBeUndefined();
     const best = gestellteAntworten({ h: { ...hinweis(true), bestaetigt: { von: 'TP', am: '2026-11-13' } }, a: sicher(true) }, (f) => f, defs, rest);
     expect(best.a.ueberHinweis).toBeUndefined();
+    // ein mitgegebenes ueberHinweis (aus einer Datei, einem kopierten Wert) zählt nicht – bestimmt wird es neu
+    const alt = gestellteAntworten({ h: sicher(true), a: { ...sicher(true), ueberHinweis: ['h'] } }, (f) => f, defs, rest);
+    expect(alt.a.ueberHinweis).toBeUndefined();
   });
 });
 
