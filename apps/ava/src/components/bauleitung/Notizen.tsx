@@ -32,9 +32,9 @@ export function Notizen() {
         <h1>Notizen & Aufgaben</h1>
       </div>
       <div className="ava-notiz-neu">
-        <textarea rows={2} placeholder="Neue Notiz bzw. Aufgabe … (Strg+Enter)" value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && (e.ctrlKey || e.metaKey) && neu()} />
+        <textarea rows={2} aria-label="Neue Notiz bzw. Aufgabe" placeholder="Neue Notiz bzw. Aufgabe … (Strg+Enter)" value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && (e.ctrlKey || e.metaKey) && neu()} />
         <div className="ava-reihe">
-          <select value={gewerk} onChange={(e) => setGewerk(e.target.value)}>
+          <select value={gewerk} onChange={(e) => setGewerk(e.target.value)} aria-label="Bezug: Projekt oder Gewerk" title="Bezug: Projekt oder Gewerk">
             <option value="">Projekt</option>
             {gewerke.map((g) => (
               <option key={g} value={g}>
@@ -42,14 +42,17 @@ export function Notizen() {
               </option>
             ))}
           </select>
-          <label className="small-text">
-            Frist <DatumEingabe wert={frist} onChange={setFrist} />
-          </label>
+          <span className="ava-notiz-frist">
+            <span className="muted small-text" aria-hidden="true">
+              Frist
+            </span>
+            <DatumEingabe wert={frist} onChange={setFrist} title="Frist (macht die Notiz zur Aufgabe)" label="Frist" />
+          </span>
           <button className="primary" onClick={neu} disabled={!text.trim()}>
             Hinzufügen
           </button>
           <span className="tb-spacer" />
-          <select value={filter} onChange={(e) => setFilter(e.target.value as typeof filter)}>
+          <select value={filter} onChange={(e) => setFilter(e.target.value as typeof filter)} aria-label="Filter">
             <option value="alle">alle</option>
             <option value="aufgaben">nur Aufgaben</option>
             <option value="offen">offene Aufgaben</option>
@@ -57,19 +60,37 @@ export function Notizen() {
         </div>
       </div>
       <ul className="ava-notizen">
-        {liste.map((n) => (
-          <li key={n.id} className={`${n.erledigt ? 'ava-erledigt ' : ''}${n.frist && !n.erledigt && n.frist < heute ? 'ava-ueberfaellig' : ''}`}>
-            {n.frist !== undefined && <input type="checkbox" checked={!!n.erledigt} onChange={(e) => void speichern((a) => ({ ...a, notizen: a.notizen.map((x) => (x.id === n.id ? { ...x, erledigt: e.target.checked } : x)) }))} title="erledigt" />}
+        {liste.map((n) => {
+          const ueberfaellig = !!n.frist && !n.erledigt && n.frist < heute;
+          const kurz = n.text.split('\n')[0].slice(0, 40);
+          return (
+          <li key={n.id} className={`${n.erledigt ? 'ava-erledigt ' : ''}${ueberfaellig ? 'ava-ueberfaellig' : ''}`}>
+            {n.frist !== undefined && (
+              <input
+                type="checkbox"
+                checked={!!n.erledigt}
+                onChange={(e) => {
+                  const erledigt = e.target.checked;
+                  void speichern((a) => ({ ...a, notizen: a.notizen.map((x) => (x.id === n.id ? { ...x, erledigt } : x)) }));
+                }}
+                title="erledigt"
+                aria-label={`Aufgabe „${kurz}“ erledigt`}
+              />
+            )}
             <div className="ava-notiz-text">
-              <TextEingabe mehrzeilig zeilen={Math.min(6, n.text.split('\n').length)} wert={n.text} onChange={(t) => void speichern((a) => ({ ...a, notizen: a.notizen.map((x) => (x.id === n.id ? { ...x, text: t } : x)) }))} />
+              <TextEingabe mehrzeilig zeilen={Math.min(6, n.text.split('\n').length)} wert={n.text} label="Notiz" onChange={(t) => void speichern((a) => ({ ...a, notizen: a.notizen.map((x) => (x.id === n.id ? { ...x, text: t } : x)) }))} />
               <span className="muted small-text">
                 {datumKurz(n.datum)}
                 {n.gewerk ? ` · ${gewerkZweistellig(n.gewerk)}` : ''}
                 {n.frist ? ` · Frist ${datumKurz(n.frist)}` : ''}
+                {ueberfaellig && <span className="ava-ueberfaellig-text"> · überfällig</span>}
+                {n.erledigt && ' · erledigt'}
               </span>
             </div>
             <button
-              className="small"
+              className="small icon"
+              title="Notiz entfernen"
+              aria-label={`Notiz „${kurz}“ entfernen`}
               onClick={async () => {
                 if (await bestaetigen('Notiz entfernen?', n.text.slice(0, 120), 'Entfernen', true)) await speichern((a) => ({ ...a, notizen: a.notizen.filter((x) => x.id !== n.id) }));
               }}
@@ -77,8 +98,9 @@ export function Notizen() {
               ×
             </button>
           </li>
-        ))}
-        {!liste.length && <li className="muted">Keine Einträge.</li>}
+          );
+        })}
+        {!liste.length && <li className="muted">{projekt.ava.notizen.length ? 'Keine Einträge für diesen Filter.' : 'Noch keine Notizen – oben eintragen und „Hinzufügen“.'}</li>}
       </ul>
     </div>
   );

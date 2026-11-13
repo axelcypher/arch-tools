@@ -4,10 +4,12 @@
  * die bereits geleisteten Zahlungen. Jeder Schritt wird auf Cent gerundet, wie im Deckblatt des Büros:
  *
  *   Netto-Freigabesumme − Nachlass = 1. Zwischensumme; + USt = Brutto-Freigabesumme; − Umlage = 2. Zwischensumme;
- *   − Sicherheitseinbehalt = 3. Zwischensumme; − Skonto = Endsumme; − bereits erhalten = Zahlungsfreigabe.
+ *   − Sicherheitseinbehalt = 3. Zwischensumme; − Skonto = Endsumme; − bisher freigegeben = Zahlungsfreigabe.
  */
 
 import { rund2 } from '../lv/rechnen';
+import type { Rechnungsart } from './benennung';
+import { artTyp } from './benennung';
 
 export interface VorigeZahlung {
   text: string;
@@ -24,12 +26,14 @@ export interface Pruefung {
   mwstProzent: number;
   /** Gemeinkostenumlage / Bauumlage in % vom Bruttobetrag */
   umlageProzent: number;
-  /** Sicherheitseinbehalt in % (bei Schlussrechnungen meist 0) */
+  /** Sicherheitseinbehalt in % (Abschläge: Vertragserfüllung; Schlussrechnung: Sicherheit für Mängelansprüche) */
   einbehaltProzent: number;
-  /** Text neben dem Einbehalt, z. B. „ä Abschlagsrechnungen“ */
+  /** Text neben dem Einbehalt, z. B. „bei Abschlagsrechnungen“ */
   einbehaltText?: string;
   skontoProzent: number;
-  /** bereits erhaltene Zahlungen (vorige Abschläge) */
+  /** Skontofrist in Tagen ab Zugang (nur Anzeige auf dem Deckblatt) */
+  skontoTage?: number;
+  /** bisher freigegebene Zahlungen (vorige Abschläge) */
   bereits: VorigeZahlung[];
   /** Anmerkungen zur Prüfung (Korrekturen) */
   anmerkung?: string;
@@ -90,22 +94,57 @@ export interface PruefVorgaben {
   einbehaltProzent: number;
   nachlassProzent: number;
   skontoProzent: number;
+  /**
+   * Sicherheit für Mängelansprüche in % (§ 17 VOB/B) bei Schluss- und Teilschlussrechnungen, falls im Büro üblich;
+   * ohne Wert fragt die Prüfung nach (nichts wird als „vereinbart“ unterstellt)
+   */
+  sicherheitMaengelProzent?: number;
 }
 
 export const VORGABE_PRUEFUNG: PruefVorgaben = { mwstProzent: 19, umlageProzent: 0.5, einbehaltProzent: 10, nachlassProzent: 0, skontoProzent: 0 };
 
-/** neue Prüfung mit den Vorgaben; bei Schlussrechnungen ohne Einbehalt */
-export function neuePruefung(v: PruefVorgaben, o: { schluss?: boolean; forderungNetto?: number | null; bereits?: VorigeZahlung[] } = {}): Pruefung {
+export const TEXT_EINBEHALT_ABSCHLAG = 'bei Abschlagsrechnungen';
+export const TEXT_EINBEHALT_SCHLUSS = 'Sicherheit für Mängelansprüche';
+
+/** Vorschlag für Einbehalt und bisherige Zahlungen je nach Rechnungsart */
+export interface PruefVorschlag {
+  einbehaltProzent: number;
+  einbehaltText: string;
+  bereits: VorigeZahlung[];
+  /** Schluss-/Teilschlussrechnung ohne hinterlegten Satz für die Sicherheit für Mängelansprüche: bitte prüfen */
+  einbehaltUnklar: boolean;
+}
+
+/**
+ * Vorschlag je Rechnungsart:
+ * - Abschlagsrechnung: Einbehalt nach Vorgabe; ab der zweiten die bisherigen Zahlungen der Reihe als „bisher freigegeben“.
+ * - Schlussrechnung: alle bisherigen Zahlungen; Einbehalt = Sicherheit für Mängelansprüche (aus dem LV, sonst aus
+ *   den Einstellungen, sonst 0 mit Hinweis „bitte prüfen“).
+ * - Teilschlussrechnung (§ 16 Abs. 4 VOB/B): wie Schlussrechnung, aber bisherige Zahlungen nur nach Auswahl (leer).
+ * - Rechnung: Einbehalt nach Vorgabe, keine bisherigen Zahlungen.
+ */
+export function pruefVorschlag(v: PruefVorgaben, art: Rechnungsart | undefined, lfd: number | null | undefined, vorige: VorigeZahlung[], maengelAusLv?: number): PruefVorschlag {
+  const typ = artTyp(art);
+  if (typ === 'schluss' || typ === 'teilschluss') {
+    const satz = maengelAusLv ?? v.sicherheitMaengelProzent;
+    return { einbehaltProzent: satz ?? 0, einbehaltText: TEXT_EINBEHALT_SCHLUSS, bereits: typ === 'schluss' ? vorige : [], einbehaltUnklar: satz === undefined };
+  }
+  if (typ === 'abschlag') return { einbehaltProzent: v.einbehaltProzent, einbehaltText: TEXT_EINBEHALT_ABSCHLAG, bereits: (lfd ?? 1) > 1 ? vorige : [], einbehaltUnklar: false };
+  return { einbehaltProzent: v.einbehaltProzent, einbehaltText: TEXT_EINBEHALT_ABSCHLAG, bereits: [], einbehaltUnklar: false };
+}
+
+/** neue Prüfung mit den Vorgaben und dem Vorschlag der Rechnungsart */
+export function neuePruefung(v: PruefVorgaben, o: { vorschlag?: PruefVorschlag; forderungNetto?: number | null } = {}): Pruefung {
   return {
     forderungNetto: o.forderungNetto ?? null,
     freigabeNetto: o.forderungNetto ?? 0,
     nachlassProzent: v.nachlassProzent,
     mwstProzent: v.mwstProzent,
     umlageProzent: v.umlageProzent,
-    einbehaltProzent: o.schluss ? 0 : v.einbehaltProzent,
-    einbehaltText: o.schluss ? 'Bei Schlussrechnung' : 'ä Abschlagsrechnungen',
+    einbehaltProzent: o.vorschlag?.einbehaltProzent ?? v.einbehaltProzent,
+    einbehaltText: o.vorschlag?.einbehaltText ?? TEXT_EINBEHALT_ABSCHLAG,
     skontoProzent: v.skontoProzent,
-    bereits: o.bereits ?? [],
+    bereits: o.vorschlag?.bereits ?? [],
   };
 }
 

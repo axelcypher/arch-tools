@@ -33,13 +33,15 @@ export async function pdfZeigen(name: string, pdf: Uint8Array) {
   }
 }
 
-/** Mailentwurf mit PDF im Anhang */
-export async function mitPdfMailen(o: { an: string[]; betreff: string; text: string; name: string; pdf: Uint8Array }) {
+/** Mailentwurf mit PDF im Anhang; liefert, ob der Entwurf entstanden ist (Fehler werden gemeldet) */
+export async function mitPdfMailen(o: { an: string[]; betreff: string; text: string; name: string; pdf: Uint8Array }): Promise<boolean> {
   try {
     const eml = emlBauen({ an: o.an, betreff: o.betreff, text: o.text, anhaenge: [{ name: o.name.endsWith('.pdf') ? o.name : `${o.name}.pdf`, daten: o.pdf }] });
     await useAva.getState().fs.mailEntwurf(o.name.replace(/\.pdf$/i, ''), eml);
+    return true;
   } catch (e) {
     await meldung('Mailentwurf nicht erstellt', String(e instanceof Error ? e.message : e), e);
+    return false;
   }
 }
 

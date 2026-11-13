@@ -22,14 +22,30 @@ export interface Rechnungsart {
   name: string;
   /** wird in der Reihe der Abschlagsrechnungen gezählt (Sicherheitseinbehalt) */
   abschlag?: boolean;
-  /** Schlussrechnung: zieht alle vorigen Zahlungen ab, ohne Einbehalt */
+  /** Schlussrechnung: zieht alle vorigen Zahlungen ab; Einbehalt = Sicherheit für Mängelansprüche (§ 17 VOB/B) */
   schluss?: boolean;
+  /**
+   * Teilschlussrechnung (§ 16 Abs. 4 VOB/B): betrifft nur einen abgeschlossenen Teil – bisherige Zahlungen werden
+   * nicht automatisch abgezogen, sondern nur nach Auswahl
+   */
+  teilschluss?: boolean;
+}
+
+export type ArtTyp = 'abschlag' | 'schluss' | 'teilschluss' | 'einzel';
+
+/** Typ einer Rechnungsart; „TSR“ gilt auch in älteren Einstellungen (dort als Schlussrechnung gespeichert) als Teilschluss */
+export function artTyp(a: Rechnungsart | undefined): ArtTyp {
+  if (!a) return 'einzel';
+  if (a.teilschluss || a.kuerzel.trim().toUpperCase() === 'TSR') return 'teilschluss';
+  if (a.schluss) return 'schluss';
+  if (a.abschlag) return 'abschlag';
+  return 'einzel';
 }
 
 export const VORGABE_ARTEN: Rechnungsart[] = [
   { kuerzel: 'AB', name: 'Abschlagsrechnung', abschlag: true },
   { kuerzel: 'SR', name: 'Schlussrechnung', schluss: true },
-  { kuerzel: 'TSR', name: 'Teilschlussrechnung', schluss: true },
+  { kuerzel: 'TSR', name: 'Teilschlussrechnung', teilschluss: true },
   { kuerzel: 'R', name: 'Rechnung' },
 ];
 
@@ -130,11 +146,13 @@ export function nameErkennen(name: string, muster: string[], arten: Rechnungsart
   return null;
 }
 
-/** Zeichen, die in Windows-Dateinamen nicht erlaubt sind, fallen weg */
+/** Zeichen, die in Windows-Dateinamen nicht erlaubt sind, fallen weg (auch Leerzeichen vor der Endung und Punkte am Ende) */
 export const dateinameSicher = (s: string) =>
   s
-    .replace(/[\\/:*?"<>|]+/g, ' ')
+    .replace(/[\\/:*?"<>|\u0000-\u001f]+/g, ' ')
     .replace(/\s+/g, ' ')
+    .replace(/ (\.[A-Za-z0-9]{1,5})$/, '$1')
+    .replace(/[. ]+$/, '')
     .trim();
 
 /**
