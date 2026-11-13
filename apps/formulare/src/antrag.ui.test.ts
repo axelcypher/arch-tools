@@ -1357,8 +1357,9 @@ describe('Sammelprojekt: Formulare aus dem Unterordner des aktiven Antrags und d
     for (let i = 0; i < 3; i++) await warte();
     expect(gruppen(host)[0]).toBe('Antrag BAUA 3 · kein eigener Unterordner');
     expect(host.textContent).toContain('Neue Formulare entstehen auf der obersten Ebene.');
-    expect(host.textContent).toMatch(/Unterordner: (2\. BAUA, BAUA|BAUA, 2\. BAUA)/);
-    expect(host.querySelector('.nav-liste[aria-labelledby="nav-gruppe-antrag"]')).toBeNull();
+    expect(host.textContent).toMatch(/Vorhanden: (2\. BAUA, BAUA|BAUA, 2\. BAUA)/);
+    // keine leere Liste unter der Überschrift
+    expect(namenIn(host, 'Antrag BAUA 3 · kein eigener Unterordner')).toBeNull();
     expect(namenIn(host, 'Alle Anträge · oberste Ebene')).toEqual(['001-Muster']);
     expect(useFormulare.getState().sammel?.unterordner).toBeNull();
   });

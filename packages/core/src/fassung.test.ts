@@ -27,13 +27,19 @@ describe('Namen von Antragsfassungen', () => {
     // die längere Art wird nicht als kürzere gelesen
     expect(fassungAus('2. BAUVA', ARTEN)?.art).toBe('BAUVA');
   });
-  it('ein Zusatz nach der Nummer auch mit „-“, „_“ oder Punkt; vorn höchstens zwei Stellen', () => {
+  it('nach einer Nummer ein Zusatz auch mit „-“, „_“, Punkt oder direkt als Buchstabe; ohne Nummer nur nach Leerzeichen', () => {
     expect(fassungAus('BAUA 2-Nachtrag', ARTEN)).toMatchObject({ art: 'BAUA', nr: 2 });
     expect(fassungAus('BAUA 2_alt', ARTEN)).toMatchObject({ art: 'BAUA', nr: 2 });
     expect(fassungAus('BAUA 2. Nachtrag', ARTEN)).toMatchObject({ art: 'BAUA', nr: 2 });
-    expect(fassungAus('BAUA-Umbau', ARTEN)).toEqual({ art: 'BAUA', nr: 1 });
-    // kein Zusatz, sondern ein anderes Wort: keine Fassung
-    expect(fassungAus('BAUA2x', ARTEN)).toBeNull();
+    expect(fassungAus('BAUA 2a', ARTEN)).toMatchObject({ art: 'BAUA', nr: 2 });
+    expect(fassungAus('BAUA2x', ARTEN)).toMatchObject({ art: 'BAUA', nr: 2 });
+    // ohne Nummer: nur ein Zusatz nach Leerzeichen (wie bisher) – sonst keine Fassung
+    expect(fassungAus('BAUA Nachtrag', ARTEN)).toEqual({ art: 'BAUA', nr: 1 });
+    expect(fassungAus('BAUA_alt', ARTEN)).toBeNull();
+    expect(fassungAus('BAUA-Kopie', ARTEN)).toBeNull();
+    expect(fassungAus('BAUA.2', ARTEN)).toBeNull();
+    // „BAUA“ und „BAUA 2a“ sind verschiedene Fassungen
+    expect(gleicheFassung('BAUA', 'BAUA 2a', VORGABE_NAMENSSCHEMA.antragsarten, ARTEN)).toBe(false);
     // Jahreszahl vorn ist keine Nummer
     expect(fassungAus('2023 BAUA', ARTEN)).toBeNull();
     expect(fassungAus('12 BAUA', ARTEN)?.nr).toBe(12);
@@ -49,6 +55,8 @@ describe('Namen von Antragsfassungen', () => {
     // ohne Liste der Arten: ein Zusatz fällt weg
     expect(artDerFassung('BAUA 2 Nachtrag')).toBe('BAUA');
     expect(artDerFassung('02. BAUA Umbau')).toBe('BAUA');
+    // ohne Buchstaben: leer (wie bisher)
+    expect(artDerFassung('2024')).toBe('');
   });
   it('Name in einer Schreibweise – ohne Vorlage „BAUA 2“', () => {
     expect(fassungsName('baua', 1)).toBe('BAUA');

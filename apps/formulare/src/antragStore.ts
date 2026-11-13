@@ -1614,7 +1614,7 @@ export const useAntrag = create<AntragState>((set, get) => {
         await useFormulare.getState().formulareNeuLesen();
         const was = !aufnehmen ? ', aber nicht geöffnet' : info.geschrieben ? ' und in den Antragsumfang aufgenommen, aber nicht geöffnet' : ', aber nicht in den Antragsumfang aufgenommen und nicht geöffnet';
         if (angelegtImAnderen(name, projekt, was)) return null;
-        const eintrag = useFormulare.getState().formulare.find((f) => f.pfad === pfad);
+        const eintrag = await angelegtesFormular(pfad);
         if (eintrag) await useFormulare.getState().formularOeffnen(eintrag);
         // im selben Projekt nicht gespeichert (Projektdatei nicht lesbar): angelegt ist es – das Aufnehmen nachholen
         // im selben Projekt nicht aufgenommen: der Grund – und wo es nachzuholen ist, wenn das noch geht
@@ -1703,7 +1703,7 @@ export const useAntrag = create<AntragState>((set, get) => {
           : {};
         await useFormulare.getState().formulareNeuLesen();
         if (angelegtImAnderen(name, projekt, info.geschrieben ? ` und „${u.titel}“ zugeordnet, aber nicht geöffnet` : ', aber nicht zugeordnet und nicht geöffnet')) return null;
-        const eintrag = useFormulare.getState().formulare.find((f) => f.pfad === pfad);
+        const eintrag = await angelegtesFormular(pfad);
         if (eintrag) await useFormulare.getState().formularOeffnen(eintrag);
         // im selben Projekt nicht gespeichert (Projektdatei nicht lesbar): angelegt ist es – das Zuordnen nachholen
         if (info.geschrieben) {
@@ -1871,6 +1871,17 @@ export function neuerName(vorlage: string, formulare: FormularEintrag[]): string
   let kandidat = name;
   for (let i = 2; vorhanden.has(kandidat.toLowerCase()); i++) kandidat = name.replace(/\.frmsjf$/i, ` (${i}).frmsjf`);
   return kandidat;
+}
+
+/**
+ * Das eben angelegte Formular in der Liste – hat ein späteres Lesen (Takt, Fokus) das eigene überholt und fehlt es noch,
+ * einmal neu lesen
+ */
+async function angelegtesFormular(pfad: string) {
+  const suchen = () => useFormulare.getState().formulare.find((f) => f.pfad === pfad);
+  if (suchen()) return suchen();
+  await useFormulare.getState().formulareNeuLesen();
+  return suchen();
 }
 
 /* ---------- mit dem Formulare-Store verbinden ---------- */

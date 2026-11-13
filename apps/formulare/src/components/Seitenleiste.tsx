@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { formularAktualisieren } from '../aktualisieren';
-import { useMemo, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 import { oeffnePfad, verbinde } from '../dateisystem';
 import { ablageVon, auswahlVon, formularDatei, hatEntwurf, istGeaendert, useFormulare } from '../store';
 import { aktiveFassung, aktiverEingereicht, antragSperre, useAntrag, wechselLaeuft, zeilenFassung } from '../antragStore';
@@ -59,6 +59,8 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
   const projekt = useFormulare((s) => s.projekt);
   const formulare = useFormulare((s) => s.formulare);
   const sammel = useFormulare((s) => s.sammel);
+  // Sammelprojekt: Überschriften der Gruppen (aria-labelledby der Listen)
+  const gruppenId = useId();
   const offen = useFormulare((s) => s.offen);
   const haupt = useFormulare((s) => s.haupt);
   const karte = useFormulare((s) => s.karte);
@@ -349,7 +351,7 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
                 // Sammelprojekt: zuerst die Formulare im Unterordner des aktiven Antrags (neue entstehen dort), dann die der
                 // obersten Ebene für alle Anträge – beide in einem Rollbereich; leere Gruppen nur mit Hinweis, ohne Liste
                 <div className="nav-gruppen">
-                  <p className="nav-gruppe" id="nav-gruppe-antrag">
+                  <p className="nav-gruppe" id={`${gruppenId}-antrag`}>
                     {!sammel.unterordner
                       ? `Antrag ${fassung} · kein eigener Unterordner`
                       : sammel.unterordner.toLowerCase() === fassung.toLowerCase()
@@ -359,22 +361,22 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
                   {!sammel.unterordner && (
                     <>
                       <p className="nav-leer">Neue Formulare entstehen auf der obersten Ebene.</p>
-                      <p className="nav-leer">Unterordner: {sammel.alle.join(', ')}</p>
+                      <p className="nav-leer">Vorhanden: {sammel.alle.join(', ')}</p>
                     </>
                   )}
                   {imUnterordner.length + fehlende.length > 0 ? (
-                    <div className="nav-liste" role="list" aria-labelledby="nav-gruppe-antrag">
+                    <div className="nav-liste" role="list" aria-labelledby={`${gruppenId}-antrag`}>
                       {imUnterordner.map(formularZeile)}
                       {fehlende.map(fehlendeZeile)}
                     </div>
                   ) : (
                     sammel.unterordner && <p className="nav-leer">Noch keine Formulare in {sammel.unterordner}.</p>
                   )}
-                  <p className="nav-gruppe" id="nav-gruppe-alle">
+                  <p className="nav-gruppe" id={`${gruppenId}-alle`}>
                     Alle Anträge · oberste Ebene
                   </p>
                   {imStamm.length ? (
-                    <div className="nav-liste" role="list" aria-labelledby="nav-gruppe-alle">
+                    <div className="nav-liste" role="list" aria-labelledby={`${gruppenId}-alle`}>
                       {imStamm.map(formularZeile)}
                     </div>
                   ) : (

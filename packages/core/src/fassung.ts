@@ -27,32 +27,36 @@ export interface FassungsName {
 
 /**
  * Art und Nummer aus einem Ordnernamen – null, wenn er mit keiner der Antragsarten (`arten`, alle Schreibweisen)
- * gebildet ist. Nach der Nummer endet der Name oder es folgt ein Zusatz nach Leerzeichen, Punkt, „_“ oder „-“ („BAUA
- * 2-Nachtrag“ ist Fassung 2); vorn hat die Nummer höchstens zwei Stellen („2023 BAUA“ ist keine Fassung).
+ * gebildet ist. Nach einer Nummer darf ein Zusatz folgen – nach Leerzeichen, Punkt, „_“ oder „-“ („BAUA 2-Nachtrag“)
+ * oder direkt als Buchstabe („BAUA 2a“): Fassung 2. Ohne Nummer zählt ein Zusatz nur nach einem Leerzeichen und
+ * nicht mit einer Ziffer am Anfang („BAUA Nachtrag“ ist Fassung 1; „BAUA_alt“ und „BAUA.2“ sind keine Fassung). Vorn
+ * hat die Nummer höchstens zwei Stellen („2023 BAUA“ ist keine Fassung).
  */
 export function fassungAus(name: string, arten: string[]): FassungsName | null {
   const n = name.trim();
   for (const a of arten) {
     const t = regexText(a.trim());
     if (!t) continue;
-    const hinten = new RegExp(`^${t}(?:([\\s_-]*)(\\d+)(?=$|[\\s._-]))?(?:[\\s._-].*)?$`, 'i').exec(n);
-    if (hinten)
-      return { art: a.trim().toUpperCase(), nr: hinten[2] ? Number(hinten[2]) : 1, ...(hinten[2] ? { form: { vorn: false, stellen: hinten[2].length, punkt: false, trenner: hinten[1] } } : {}) };
+    const art = a.trim().toUpperCase();
+    const hinten = new RegExp(`^${t}([\\s_-]*)(\\d+)(?:[\\s._-].*|[A-Za-zÄÖÜäöüß].*)?$`, 'i').exec(n);
+    if (hinten) return { art, nr: Number(hinten[2]), form: { vorn: false, stellen: hinten[2].length, punkt: false, trenner: hinten[1] } };
+    if (new RegExp(`^${t}(?:\\s+\\D.*)?$`, 'i').test(n)) return { art, nr: 1 };
     const vorn = new RegExp(`^(\\d{1,2})(\\.?)([\\s_-]*)${t}(?:[\\s._-].*)?$`, 'i').exec(n);
-    if (vorn) return { art: a.trim().toUpperCase(), nr: Number(vorn[1]), form: { vorn: true, stellen: vorn[1].length, punkt: !!vorn[2], trenner: vorn[3] } };
+    if (vorn) return { art, nr: Number(vorn[1]), form: { vorn: true, stellen: vorn[1].length, punkt: !!vorn[2], trenner: vorn[3] } };
   }
   return null;
 }
 
 /**
  * Antragsart einer Fassung („BAUA 2“, „02. BAUA“, „BAUA 2 Nachtrag“ → „BAUA“). Mit `arten` (alle Schreibweisen) nach
- * `fassungAus`; sonst – oder wenn keine passt – die Buchstaben am Anfang nach einer Nummer vorn, groß geschrieben.
+ * `fassungAus`; sonst – oder wenn keine passt – die Buchstaben am Anfang nach einer Nummer vorn, groß geschrieben (ohne
+ * Buchstaben leer).
  */
 export function artDerFassung(name: string, arten: string[] = []): string {
   const gefunden = fassungAus(name, arten)?.art;
   if (gefunden) return gefunden;
   const ohneNummer = name.trim().replace(/^\d{1,2}\.?[\s_-]*(?=\D)/, '');
-  return (/^[A-Za-zÄÖÜäöüß]+/.exec(ohneNummer)?.[0] ?? ohneNummer).toUpperCase();
+  return (/^[A-Za-zÄÖÜäöüß]+/.exec(ohneNummer)?.[0] ?? '').toUpperCase();
 }
 
 /** Name einer Fassung in einer Schreibweise: ohne `form` „BAUA“ bzw. „BAUA 2“, sonst wie die Vorlage („03. BAUA“) */
