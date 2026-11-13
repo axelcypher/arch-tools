@@ -183,16 +183,18 @@ Als Registerleiste (Bereiche wechseln, der Inhalt darunter tauscht sich) mit `ro
 Registern, Pos1/Ende springen zum ersten bzw. letzten; der Wechsel wirkt sofort (automatische Aktivierung). Nur das
 gewählte Register liegt in der Tab-Reihenfolge (`tabIndex` 0, die übrigen -1).
 
-Lange oder viele Werte (z. B. Antworten im Regelbaum von LEXIO) mit `.segment.senkrecht`: die Knöpfe untereinander,
-linksbündig, Text darf umbrechen. Eine umbrechende Variante gibt es bewusst nicht – umbrechende Segmente lesen sich
-treppenartig, und welcher Knopf zu welcher Zeile gehört, ist nicht mehr klar.
-
 ```html
 <div class="segment" role="group" aria-label="Ansicht">
   <button aria-pressed="true">Grundriss</button>
   <button aria-pressed="false">3D</button>
 </div>
 ```
+
+Lange oder viele Werte (z. B. Antworten im Regelbaum von LEXIO) mit `.segment.senkrecht`: die Knöpfe untereinander,
+linksbündig, Text darf umbrechen; die Wahl zeigt Tönung und eine Akzentlinie links, ohne halbfette Schrift (sonst
+springt der Umbruch). Eine umbrechende Variante gibt es bewusst nicht – umbrechende Segmente lesen sich
+treppenartig, und welcher Knopf zu welcher Zeile gehört, ist nicht mehr klar. Dient die Variante als Registerleiste
+oder Auswahlgruppe, wechseln ↑/↓ statt ←/→ (`aria-orientation="vertical"`).
 
 ## Begriffe
 
@@ -228,7 +230,7 @@ Neue Symbole kommen in diesen Satz, nicht in die App. Keine Emoji (📏 ✂ 🗑
 `ui/Menue.tsx`: Kontextmenü mit `zeigeMenue(e, punkte, name)` im `onContextMenu`, Aufklappmenü mit `<MenueKnopf>`.
 `name` benennt das Menü für Screenreader (z. B. „Projekt 2019-003“); der Aufklappknopf nimmt seinen eigenen Namen. Punkte
 mit `text`, optional `symbol`, `hinweis` (rechts, z. B. der Grund einer Sperre), `tasten` (Tastenkürzel, siehe unten),
-`haken` (Umschalter), `gewaehlt` (Einfachauswahl), `bild` (Bild statt Symbol, 16px, z. B. das Symbol einer App), `titel`, `gefahr`, `deaktiviert`, `unter` (Untermenü), Trenner mit `{ trenner: true }`.
+`haken` (Umschalter), `gewaehlt` (Einfachauswahl; nicht zusammen mit `haken`), `bild` (Bild statt Symbol, 16px, z. B. das Symbol einer App), `titel`, `gefahr`, `deaktiviert`, `unter` (Untermenü), Trenner mit `{ trenner: true }`.
 
 - Tastatur: der erste Punkt hat den Fokus, ↑/↓ und Pos1/Ende wandern, → bzw. Enter öffnet ein Untermenü, ← führt
   zurück. Esc schließt nur das Menü (ein Dialog darunter bleibt offen), Tab schließt und gibt den Fokus an den
@@ -289,7 +291,8 @@ Doppelklick setzt die Vorgabe. Keine eigenen Leisten-Komponenten je App.
 `.fehler` für Meldungen in Dialogen und Seitenleisten; `role="status"`
 für Rückmeldungen, `role="alert"` für Fehler. `.warning` bleibt als Hinweis in Warnfarben.
 
-**Statuspunkt (Ampel):** `<span class="statuspunkt ok"></span> gilt` (bzw. `.warnung`, `.fehler`) – ein Punkt in
+**Statuspunkt (Ampel):** `<span class="statuspunkt ok"></span> gilt` (bzw. `.warnung`, `.fehler`) – ein Punkt (10px,
+Abstand zum Wort per Leerzeichen bzw. `gap: var(--s1)`) in
 `--ok-punkt`, `--warn-punkt` oder `--fehler-punkt` mit dunklem Saum, immer neben dem Wort, nie allein (Gelb hat auf
 hellem Grund nur 2,2 : 1). Der Text daneben in `--ok-text` usw. bzw. `--text`.
 

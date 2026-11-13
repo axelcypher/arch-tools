@@ -26,7 +26,8 @@ export type MenuePunkt =
       tasten?: string;
       /** Umschalter mit Haken: `true`/`false` macht den Punkt zu einem Kästchen (menuitemcheckbox), angehakt bei `true` */
       haken?: boolean;
-      /** Einfachauswahl: `true`/`false` macht den Punkt zu einer Wahl unter mehreren (menuitemradio), gewählt bei `true` */
+      /** Einfachauswahl: `true`/`false` macht den Punkt zu einer Wahl unter mehreren (menuitemradio), gewählt bei `true`.
+       *  Nicht zusammen mit `haken` – sind beide gesetzt, gilt `gewaehlt` */
       gewaehlt?: boolean;
       /** Tooltip – z. B. der volle Text, wenn er gekürzt werden kann */
       titel?: string;

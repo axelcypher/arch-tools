@@ -496,7 +496,14 @@ describe('gemeinsames Menü', () => {
           'button',
           {
             key: 'z',
-            onContextMenu: (e: React.MouseEvent) => zeigeMenue(e, [{ text: 'Fassung 1', gewaehlt: false }, { text: 'Fassung 2', gewaehlt: true }, { trenner: true }, { text: 'Umbenennen' }]),
+            onContextMenu: (e: React.MouseEvent) =>
+              zeigeMenue(e, [
+                { text: 'Fassung 1', gewaehlt: false },
+                { text: 'Fassung 2', gewaehlt: true },
+                { text: 'Fassung 3', gewaehlt: false, haken: true },
+                { trenner: true },
+                { text: 'Umbenennen' },
+              ]),
           },
           'Karte',
         ),
@@ -504,7 +511,10 @@ describe('gemeinsames Menü', () => {
       ),
     );
     act(() => host.querySelector('button')!.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 5, clientY: 5 })));
-    const [eins, zwei] = [...host.querySelectorAll('.menue [role="menuitemradio"]')];
+    const [eins, zwei, drei] = [...host.querySelectorAll('.menue [role="menuitemradio"]')];
+    // beide gesetzt: gewaehlt gilt (Rolle, aria-checked, kein Haken)
+    expect(drei.getAttribute('aria-checked')).toBe('false');
+    expect(drei.querySelector('.menue-symbol svg')).toBeNull();
     expect(eins.getAttribute('aria-checked')).toBe('false');
     expect(eins.querySelector('.menue-symbol svg')).toBeNull();
     expect(zwei.getAttribute('aria-checked')).toBe('true');

@@ -6,3 +6,4 @@ sich auf den Stand beim Eintragen.
 
 - Dialoge auf `Modal` (Titel mit `kopf` statt `h3` im Inhalt) und Befehle nach „Begriffe“ benennen (Befehle, die einen Dialog öffnen, mit „ …“) – prüfen, ob noch etwas offen ist
 - `AnsichtEditor` (core, Pflege bei PERMIO): „+ Abschnitt“ durch `<Symbol name="plus" />` mit „Abschnitt“ ersetzen, `title` „Abschnitt hinzufügen“: `packages/core/src/ui/AnsichtEditor.tsx`
+- Einfachauswahl im Menü (aktive Fassung, Zuordnung, Verknüpfung) mit `gewaehlt` statt `haken` plus Hinweis

@@ -44,16 +44,16 @@
   --warn-border: #f5c26b;
   --warn-text: #8a5300;
   /* Statusfarben (Erfolg, Fehler, neutrale Marke) – nie feste Farben in den Apps */
-  /* Statuspunkte (Ampel): kräftig, nur als Grafik neben einem Wort – nie als einziger Hinweis */
-  --ok-punkt: #2f9a5b;
-  --warn-punkt: #e0a420;
-  --fehler-punkt: #d64534;
   --ok-bg: #e9f6ee;
   --ok-border: #9fd3b3;
   --ok-text: #1f6b3d;
   --fehler-bg: #fbe4e1;
   --fehler-border: #e8a59c;
   --fehler-text: #a3281d;
+  /* Statuspunkte (Ampel): kräftig, nur als Grafik neben einem Wort – nie als einziger Hinweis */
+  --ok-punkt: #2f9a5b;
+  --warn-punkt: #e0a420;
+  --fehler-punkt: #d64534;
   --chip-bg: #eef0f2;
   --on-accent: #ffffff;
   /* Akzent als Schrift auf getönten Flächen (aktive Knöpfe, Chips) – mindestens 4,5:1 */
@@ -1022,7 +1022,7 @@ code {
     @bottom-right {
       content: 'Seite ' counter(page) ' von ' counter(pages);
       font: 9px 'Segoe UI', system-ui, sans-serif;
-      color: #6b7280;
+      color: #5f6673;
     }
   }
 
@@ -1188,6 +1188,16 @@ code {
   --warn-bg: #fff4e5;
   --warn-border: #f5c26b;
   --warn-text: #8a5300;
+  /* übrige Status- und Punktfarben ebenfalls hell, sonst landen die Werte des dunklen Schemas auf dem Papier */
+  --ok-bg: #e9f6ee;
+  --ok-border: #9fd3b3;
+  --ok-text: #1f6b3d;
+  --fehler-bg: #fbe4e1;
+  --fehler-border: #e8a59c;
+  --fehler-text: #a3281d;
+  --ok-punkt: #2f9a5b;
+  --warn-punkt: #e0a420;
+  --fehler-punkt: #d64534;
   color: var(--text);
 }
 
@@ -2107,6 +2117,14 @@ button.ungespeichert::after {
   text-align: left;
   white-space: normal;
   border-radius: 0;
+  padding-block: var(--s1);
+}
+/* gewählt: Strichstärke bleibt (sonst ändert sich der Umbruch und die Liste springt) – Tönung plus Akzentlinie links */
+.segment.senkrecht > button[aria-pressed='true'],
+.segment.senkrecht > button[aria-selected='true'],
+.segment.senkrecht > button.active {
+  font-weight: inherit;
+  box-shadow: inset 3px 0 0 var(--accent);
 }
 .segment.senkrecht > button + button {
   border-left: none;
@@ -2130,7 +2148,7 @@ button.ungespeichert::after {
   border-radius: 50%;
   flex-shrink: 0;
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2);
-  vertical-align: baseline;
+  vertical-align: -1px;
 }
 .statuspunkt.ok {
   background: var(--ok-punkt);
