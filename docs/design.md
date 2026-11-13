@@ -94,7 +94,7 @@ Zahlen in Tabellen und Feldern stehen rechtsbündig in Tabellenziffern (`.num`, 
 **Auswahl auf Fotos** immer mit Saum zeichnen: Magenta allein hat auf mittleren Fototönen (Putz, Ziegel, Himmel) kaum
 Helligkeitskontrast. Unter der Linie in `--sel-foto` liegt ein Doppelsaum, außen 1px weiß, innen 1px `rgba(0, 0, 0, 0.5)`.
 
-**Planfarben auf der dunklen Zeichenfläche:** Im dunklen Schema mit „Zeichenfläche abdunkeln“ wird die Zeichenfläche
+**Planfarben auf der dunklen Zeichenfläche:** Im dunklen Schema mit „Zeichenfläche im dunklen Schema abdunkeln“ wird die Zeichenfläche
 als Ganzes gefiltert (`--canvas-filter`). Raumfüllungen in Nutzungsfarbe sähen danach dunkel und im Ton verschoben aus,
 anders als die Farbmarke derselben Nutzung in der Liste. Deshalb Füllungen vorrechnen, solange
 `useZeichenflaecheGefiltert()` (`@core/platform/theme`) wahr ist – als Hook, damit bei jedem Wechsel neu gezeichnet
@@ -262,5 +262,6 @@ Symbol: Text in `<span className="titlebar-text">`, der Name bleibt über `aria-
 | QUADRIO, TERRIO, RECTIO | Werkzeugleisten mit `Symbol` statt Emoji und Schriftzeichen (📏, ⇔, ⊡, ▭, ↶/↷)                                                                                                                                                  |
 | alle                    | eigene Kontextmenüs auf `zeigeMenue` umstellen (QUADRIO Canvas, TERRIO Lageplan, RECTIO Arbeitsfläche, ATLAS Ordner-Editor)                                                                                                     |
 | alle                    | eigene `div.modal` auf `Modal` umstellen; Titel mit `kopf` statt `h3` im Inhalt; Werkzeugleisten-Befehle nach „Begriffe“ benennen (z. B. TERRIO „Öffnen“ → „Öffnen …“)                                                          |
+| QUADRIO, TERRIO         | Raumfüllungen bzw. Lageplanflächen bei `useZeichenflaecheGefiltert()` mit `planFuellungDunkel` vorrechnen (`Canvas.tsx` Deckung 0,45; `LageplanEditor.tsx` alle Deckungen 0,55/0,45/0,15/0,12); Marken bleiben unverändert      |
 
 Zeilennummern beziehen sich auf den Stand dieser Richtlinie.
