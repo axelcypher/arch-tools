@@ -202,7 +202,7 @@ fehlen sie, warnt der Bericht am Bildschirm, und im Druck steht im Kopf „nicht
 - **Abzugsflächen**: am BGF-Umriss z. B. Innenhof, Luftraum über einer Galerie oder Deckenöffnung über 1,0 m², im
   Raum z. B. Schornstein, Pfeiler, Schacht im Raum. Wird ein Raum zur Abzugsfläche, erbt er Anrechnung und Wohnung
   des Raums, in dem er liegt (Anrechnung „keine“)
-- Mehrere **Geschosse**: „+ Neu …“ fügt über oder unter dem aktiven Geschoss ein (Name und Fußbodenhöhe nach der
+- Mehrere **Geschosse**: „Geschoss …“ fügt über oder unter dem aktiven Geschoss ein (Name und Fußbodenhöhe nach der
   Lage, z. B. KG unter dem EG), Geschoss duplizieren (Regelgeschosse, die Kopie heißt nach ihrer Lage),
   darunterliegendes Geschoss einblenden. **Geschossart** Keller-, Normal- oder Dachgeschoss (ohne Angabe nach Name
   bzw. Dach): Räume im Kellergeschoss werden nicht als Wohnfläche vorgeschlagen – eine Souterrainwohnung liegt in
@@ -295,7 +295,8 @@ fehlen sie, warnt der Bericht am Bildschirm, und im Druck steht im Kopf „nicht
   Projekts – fehlt sie, werden die Stammdaten erfasst und sie wird angelegt. „Datei öffnen …“ bleibt
 - **Projektdaten** (Projektcode, Adresse, Grundstück mit Gemarkung/Flur/Flurstück, Bauherr mit beliebig vielen
   E-Mail-Adressen und Telefonnummern) im Dialog; als Platzhalter für Excel-Vorlagen (`{{bauherr.name}}` …)
-- Rückgängig/Wiederholen, automatische Zwischenspeicherung (IndexedDB); stürzt eine App kurz nach dem Laden des
+- Rückgängig/Wiederholen, automatische Zwischenspeicherung (IndexedDB; QUADRIO sichert vor dem Schließen,
+  Andocken oder Update in Arkly noch die letzte Änderung); stürzt eine App kurz nach dem Laden des
   Zwischenstands ab, startet sie beim nächsten Mal ohne ihn und bietet „Trotzdem laden“ an (alle Apps)
 - **Projektarchiv** `*.oap` (ZIP): Projekt, Planbilder, Dachmodell sowie die
   Originaldateien der Importe (IFC, DXF, PDF) und die Excel-Vorlage – auf einem anderen Rechner vollständig

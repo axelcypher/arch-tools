@@ -159,7 +159,7 @@ describe('QUADRIO: ungespeicherte Änderungen am Knopf „Speichern“ (Designsy
 describe('QUADRIO: Befehle, die einen Dialog öffnen, enden auf „ …“ (Begriffe)', () => {
   const knopf = (host: HTMLElement, text: string) => [...host.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent?.trim() === text);
 
-  it('„Duplizieren …“ und „+ Neu …“ beim Geschoss öffnen einen Dialog; „Tastenkürzel …“ öffnet die Kürzelübersicht', async () => {
+  it('„Duplizieren …“ und „Geschoss …“ (Symbol plus) öffnen einen Dialog; „Tastenkürzel …“ öffnet die Kürzelübersicht', async () => {
     const { rectPoints } = await import('@core/geometry');
     const { createOutline } = await import('@core/model');
     const p = createProject('Haus');
@@ -173,8 +173,10 @@ describe('QUADRIO: Befehle, die einen Dialog öffnen, enden auf „ …“ (Begr
     act(() => void document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })));
     expect(document.querySelector('.modal')).toBeNull();
     expect(useEditor.getState().project.storeys).toHaveLength(1); // abgebrochen: nichts dupliziert
-    expect(knopf(host, '+ Neu')).toBeUndefined();
-    act(() => knopf(host, '+ Neu …')!.click());
+    expect(knopf(host, '+ Neu …')).toBeUndefined(); // Gegenprobe: kein „+“ als Schriftzeichen mehr
+    const geschossKnopf = knopf(host, 'Geschoss …')!;
+    expect(geschossKnopf.querySelector('svg')).not.toBeNull();
+    act(() => geschossKnopf.click());
     expect(document.querySelector('.modal')?.textContent).toMatch(/Neues Geschoss/);
     act(() => void document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })));
     expect(document.querySelector('.modal')).toBeNull();
