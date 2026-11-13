@@ -217,9 +217,18 @@ describe('QUADRIO: Kontextmenü der Zeichenfläche und Werkzeugleiste (gemeinsam
     const gesperrt = punkt(/Einfügen/);
     expect(gesperrt.getAttribute('aria-disabled')).toBe('true');
     expect(gesperrt.textContent).toMatch(/Nichts kopiert/);
+    expect(gesperrt.hasAttribute('aria-keyshortcuts')).toBe(false); // gesperrt: Grund statt Kürzel
+    // Kürzel als tasten (vorgelesen), Löschen zuletzt hinter dem Trenner
+    expect(punkt(/Fläche kopieren/).getAttribute('aria-keyshortcuts')).toBe('Control+C');
+    expect(punkt(/Fläche duplizieren/).getAttribute('aria-keyshortcuts')).toBe('Control+D');
+    const kinder = [...menue()!.children];
+    expect(kinder.at(-1)?.classList.contains('gefahr')).toBe(true);
+    expect(kinder.at(-1)?.getAttribute('aria-keyshortcuts')).toBe('Delete');
+    expect(kinder.at(-2)?.getAttribute('role')).toBe('separator');
     act(() => punkt(/Fläche kopieren/).click());
     rechtsklick(flaeche);
     expect(punkt(/Einfügen/).getAttribute('aria-disabled')).toBeNull();
+    expect(punkt(/Einfügen/).getAttribute('aria-keyshortcuts')).toBe('Control+V');
     act(() => punkt(/Einfügen/).click());
     expect(flaechen()).toBe(2);
     rechtsklick(flaeche);
@@ -250,7 +259,7 @@ describe('QUADRIO: Kontextmenü der Zeichenfläche und Werkzeugleiste (gemeinsam
     act(() => useEditor.getState().select(null));
     act(() => void svg.dispatchEvent(new MouseEvent('contextmenu', { clientX: 0, clientY: 0, bubbles: true, cancelable: true })));
     expect(menue()?.getAttribute('aria-label')).toBe('Zeichenfläche');
-    expect(punkt(/Alles zeigen/)).toBeDefined();
+    expect(punkt(/Alles zeigen/).getAttribute('aria-keyshortcuts')).toBe('F');
     act(() => void document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })));
   });
 

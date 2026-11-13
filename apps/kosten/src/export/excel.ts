@@ -68,7 +68,7 @@ function kostenBlatt(wb: Workbook): Worksheet {
   const euro3 = [undefined, undefined, undefined, undefined, undefined, EURO, EURO, EURO];
 
   // Kopf
-  put('A1', 'Kostenermittlung nach DIN 276');
+  put('A1', 'Kostenermittlung nach DIN 276:2018-12');
   ws.getCell('A1').font = { size: 11, color: { argb: 'FF6B7280' } };
   put('A3', '{{projekt.name}}');
   ws.getCell('A3').font = { bold: true, size: 12 };
@@ -81,9 +81,11 @@ function kostenBlatt(wb: Workbook): Worksheet {
   ws.getCell('H6').font = { size: 9 };
   put('A7', '{{kopf.angaben}}');
   ws.getCell('A7').font = { size: 9 };
+  put('A2', '{{stufe.hinweis}}');
+  ws.getCell('A2').font = { size: 9, italic: true };
 
   abschnitt(8, 'Grundlagen');
-  put('A9', 'Preisstand');
+  put('A9', 'Kostenstand (Preisstand)');
   put('C9', '{{preisstand}}');
   put('A10', 'Kennwerte');
   put('C10', '{{katalog}}');
@@ -138,7 +140,7 @@ function kostenBlatt(wb: Workbook): Worksheet {
   zeile(36, ['{{menge.kurz}}', '{{menge.label}}', '{{menge.wert}}', '{{menge.einheit}}', '{{menge.ermittlung}}'], { fmts: [undefined, undefined, ZAHL] });
   ws.mergeCells('E36:H36');
 
-  abschnitt(38, 'Kostenstände (brutto)');
+  abschnitt(38, 'Festgehaltene Stände (brutto)');
   kopf(39, ['Nr.', 'Stufe', 'Datum', 'Bemerkung', '', 'von', 'Mittel', 'bis'], 5);
   zeile(40, ['{{stand.nr}}', '{{stand.stufe}}', '{{stand.datum}}', '{{stand.bemerkung}}', null, '{{stand.brutto_von}}', '{{stand.brutto}}', '{{stand.brutto_bis}}'], { fmts: euro3 });
   ws.mergeCells('D40:E40');

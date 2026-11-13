@@ -1,1 +1,6 @@
-{ "flaechenrechner": { "stufe": "patch", "notiz": "Raumfüllungen auf der dunklen Zeichenfläche erscheinen im Ton der Farbmarke in der Raumliste." } }
+{
+  "flaechenrechner": {
+    "stufe": "patch",
+    "notiz": "Raumfüllungen auf der dunklen Zeichenfläche erscheinen im Ton der Farbmarke in der Raumliste; Kontextmenüs zeigen Tastenkürzel barrierefrei an (Löschen zuletzt)."
+  }
+}

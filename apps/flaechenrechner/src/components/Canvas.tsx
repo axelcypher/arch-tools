@@ -847,7 +847,7 @@ export function Canvas() {
       e,
       [
         einfuegenPunkt(),
-        { text: 'Alles zeigen', symbol: 'einpassen', hinweis: 'F', aktion: () => useEditor.getState().requestFit() },
+        { text: 'Alles zeigen', symbol: 'einpassen', tasten: 'F', aktion: () => useEditor.getState().requestFit() },
       ],
       'Zeichenfläche',
     );
@@ -1725,7 +1725,7 @@ function menueName(s: Shape): string {
 /** „Einfügen“ – gesperrt mit sichtbarem Grund, solange nichts kopiert ist */
 function einfuegenPunkt(): MenuePunkt {
   const leer = ablageStatus().leer;
-  return { text: 'Einfügen', symbol: 'einfuegen', hinweis: leer ? 'Nichts kopiert' : 'Strg+V', deaktiviert: leer, titel: leer ? 'Zuerst Flächen kopieren (Strg+C)' : undefined, aktion: () => void einfuegenAktion() };
+  return { text: 'Einfügen', symbol: 'einfuegen', hinweis: leer ? 'Nichts kopiert' : undefined, tasten: leer ? undefined : 'Strg+V', deaktiviert: leer, titel: leer ? 'Zuerst Flächen kopieren (Strg+C)' : undefined, aktion: () => void einfuegenAktion() };
 }
 
 /** Befehle für gewählte Flächen im Kontextmenü – dieselben wie die Tastenkürzel */
@@ -1734,10 +1734,10 @@ function flaechenMenue(): MenuePunkt[] {
   const n = Math.max(st.selectedIds.length, 1);
   const flaechen = n > 1 ? `${n} Flächen` : 'Fläche';
   return [
-    { text: `${flaechen} kopieren`, symbol: 'kopie', hinweis: 'Strg+C', aktion: () => void flaechenKopieren() },
-    { text: `${flaechen} duplizieren`, hinweis: 'Strg+D', aktion: () => void flaechenDuplizieren() },
+    { text: `${flaechen} kopieren`, symbol: 'kopie', tasten: 'Strg+C', aktion: () => void flaechenKopieren() },
+    { text: `${flaechen} duplizieren`, tasten: 'Strg+D', aktion: () => void flaechenDuplizieren() },
     einfuegenPunkt(),
     { trenner: true },
-    { text: `${flaechen} löschen`, symbol: 'muell', hinweis: 'Entf', gefahr: true, aktion: () => void flaechenLoeschen() },
+    { text: `${flaechen} löschen`, symbol: 'muell', tasten: 'Entf', gefahr: true, aktion: () => void flaechenLoeschen() },
   ];
 }
