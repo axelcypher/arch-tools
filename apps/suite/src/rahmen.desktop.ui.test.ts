@@ -250,7 +250,7 @@ describe('Rahmen-App auf dem Desktop', () => {
     act(() => useRahmen.getState().oeffnen('entzerrung'));
     statusTab(host, 'entzerrung', 'Foto', true);
     vi.useFakeTimers();
-    await act(async () => (tab(host, 'RECTIO').querySelector('button[title="Schließen"]') as HTMLButtonElement).click());
+    await act(async () => (tab(host, 'RECTIO').querySelector('button[title="Schließen (Entf)"]') as HTMLButtonElement).click());
     await antwort(host, 'Speichern');
     await act(async () => void vi.advanceTimersByTime(3100));
     await act(async () => {});
@@ -264,7 +264,7 @@ describe('Rahmen-App auf dem Desktop', () => {
     // „Neues Projekt anlegen“ öffnet ATLAS, das noch nicht hört
     await act(async () => [...host.querySelectorAll('button')].find((b) => b.textContent?.includes('Neues Projekt anlegen'))!.click());
     expect(useRahmen.getState().tabs).toEqual(['ordner']);
-    await act(async () => (tab(host, 'ATLAS').querySelector('button[title="Schließen"]') as HTMLButtonElement).click());
+    await act(async () => (tab(host, 'ATLAS').querySelector('button[title="Schließen (Entf)"]') as HTMLButtonElement).click());
     act(() => useRahmen.getState().oeffnen('ordner'));
     const f = frame(host, 'ordner');
     act(() => window.dispatchEvent(new MessageEvent('message', { data: { typ: 'arch-tools:bereit', app: 'ordner' }, origin: window.location.origin, source: f.contentWindow })));

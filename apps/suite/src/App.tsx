@@ -1,11 +1,16 @@
-import { useEffect, useRef, useState } from 'react';
+import type { KeyboardEvent as ReactKeyboardEvent, MouseEvent as ReactMouseEvent } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { isTauri } from '@core/platform/files';
-import { logger } from '@core/platform/log';
+import { getEntries, logger, logVersion, subscribe } from '@core/platform/log';
 import type { RahmenNachricht, RahmenStatus } from '@core/platform/rahmen';
 import { AN_APP, AN_RAHMEN, ANDOCKEN, ASSISTENT_NEU, BEREIT, PROJEKT_ANGELEGT, PROJEKT_ANLEGEN, PROJEKT_APP, speichernImFenster, speichernImTab, ZUR_APP } from '@core/platform/rahmen';
 import { APP_NAMEN } from '@core/appNamen';
 import { LogDialog } from '@core/ui/LogDialog';
-import { MenueHost } from '@core/ui/Menue';
+import type { MenuePunkt } from '@core/ui/Menue';
+import { MenueHost, MenueKnopf, zeigeMenue } from '@core/ui/Menue';
+import { Symbol } from '@core/ui/Symbol';
+import { ThemeMenu } from '@core/ui/TitleBar';
+import { dialogVerhaltenEinrichten } from '@core/ui/dialoge';
 import { aenderungenSpeichern, meldung, RueckfrageHost } from '@core/ui/Rueckfrage';
 import { SpeicherortHost, SpeicherortKnopf, SpeicherortZeile } from '@core/ui/Speicherort';
 import { umzugBestaetigen } from '@core/ui/umzug';
@@ -17,6 +22,9 @@ import { useRahmen } from './store';
 const log = logger('rahmen');
 
 type AppWindow = import('@tauri-apps/api/window').Window;
+/** Kennungen für Tab und Inhalt (aria-controls, aria-labelledby) */
+const tabKennung = (id: string) => `rahmen-tab-${id}`;
+const tafelKennung = (id: string) => `rahmen-tafel-${id}`;
 /** Tauri-Ereignisse (nur Desktop, nachgeladen) */
 const ereignisse = () => import('@tauri-apps/api/event');
 
@@ -34,7 +42,6 @@ export function App() {
   const angedocktGerade = useRef(new Set<string>());
   const [win, setWin] = useState<AppWindow | null>(null);
   const [maximiert, setMaximiert] = useState(false);
-  const [menue, setMenue] = useState(false);
   const [logOffen, setLogOffen] = useState(false);
   /** Apps, die auf Nachrichten hören: Tabs (ihr Fenster) und herausgelöste Fenster (Kennung) */
   const bereitTabs = useRef(new WeakSet<Window>());
@@ -49,6 +56,9 @@ export function App() {
   const beendet = useRef(false);
   /** wer auf das Ende eines herausgelösten Fensters wartet (Speichern auf Anfrage: dann „nicht gespeichert“) */
   const fensterEnde = useRef(new Map<string, Set<() => void>>());
+
+  // Dialoge: aria-modal, Fokus hinein und zurück, Tab bleibt im Dialog (in den Apps macht das die Titelleiste)
+  useEffect(() => dialogVerhaltenEinrichten(), []);
 
   // Fenster (Desktop): Knöpfe, Größe
   useEffect(() => {
@@ -139,7 +149,6 @@ export function App() {
   }, [desktop, angedockt]);
 
   const oeffnenOderZeigen = async (id: string) => {
-    setMenue(false);
     if (fenster.includes(id) && desktop) {
       // schon herausgelöst: dieses Fenster nach vorn
       const { WebviewWindow } = await import('@tauri-apps/api/webviewWindow');
@@ -168,7 +177,6 @@ export function App() {
 
   /** Neues Projekt: der Assistent von ATLAS – aus einer App (`von`) oder vom Rahmen selbst */
   const projektAnlegen = (von: string | null, kannOeffnen = false) => {
-    setMenue(false);
     const info = von && von !== PROJEKT_APP ? appInfo(von) : undefined;
     log.info(`Neues Projekt anlegen${info ? ` (aus ${info.name})` : ''}`);
     void oeffnenOderZeigen(PROJEKT_APP);
@@ -323,91 +331,137 @@ export function App() {
   const beendenRef = useRef(fensterSchliessen);
   beendenRef.current = fensterSchliessen;
 
-  const zuMenue = APPS.filter((a) => !tabs.includes(a.id));
+  /** Tab per Tastatur gewählt: danach seinen Knopf fokussieren (nach dem Rendern) */
+  const fokusTab = useRef<string | null>(null);
+  useEffect(() => {
+    if (!fokusTab.current) return;
+    document.getElementById(tabKennung(fokusTab.current))?.focus();
+    fokusTab.current = null;
+  });
+
+  /** Tastatur am Tab: ←/→ wechseln, Pos1/Ende springen (der Wechsel wirkt sofort), Entf bzw. Strg+F4 schließt */
+  const tabTasten = (e: ReactKeyboardEvent, id: string) => {
+    const i = tabs.indexOf(id);
+    const ziel = e.key === 'ArrowRight' ? tabs[(i + 1) % tabs.length] : e.key === 'ArrowLeft' ? tabs[(i - 1 + tabs.length) % tabs.length] : e.key === 'Home' ? tabs[0] : e.key === 'End' ? tabs[tabs.length - 1] : null;
+    if (ziel) {
+      e.preventDefault();
+      fokusTab.current = ziel;
+      waehlen(ziel);
+    } else if (e.key === 'Delete' || (e.key === 'F4' && e.ctrlKey)) {
+      e.preventDefault();
+      void tabSchliessen(id);
+    }
+  };
+
+  /** Kontextmenü am Tab (Rechtsklick, Kontextmenütaste) */
+  const tabMenue = (e: ReactMouseEvent, id: string) =>
+    zeigeMenue(
+      e,
+      [
+        ...(desktop ? [{ text: 'In eigenem Fenster öffnen', symbol: 'extern' as const, aktion: () => void herausloesen(id) }] : []),
+        { text: 'Schließen', symbol: 'schliessen' as const, hinweis: 'Entf', aktion: () => void tabSchliessen(id) },
+        { text: 'Andere schließen', deaktiviert: tabs.length < 2, aktion: () => void andereSchliessen(id) },
+      ],
+      `${appInfo(id)?.name}`,
+    );
+
+  const andereSchliessen = async (id: string) => {
+    for (const t of useRahmen.getState().tabs.filter((x) => x !== id)) {
+      waehlen(t);
+      if (useRahmen.getState().status[t]?.dirty && !(await tabFreigeben(t))) return;
+      schliessen(t);
+      warteschlange.current.delete(t);
+      void sperrenFreigeben(t);
+    }
+    waehlen(id);
+  };
+
+  /** Menü „+“: neues Projekt, Apps, die noch nicht als Tab offen sind, Startseite */
+  const plusMenue = (): MenuePunkt[] => {
+    const zu = APPS.filter((a) => !tabs.includes(a.id));
+    return [
+      { text: 'Neues Projekt anlegen …', symbol: 'plus', titel: `Assistent von ${APP_NAMEN.ordner.name} (${APP_NAMEN.ordner.was}): Stammdaten, Umfang, Beteiligte, Ordner und Vorlagen`, aktion: () => projektAnlegen(null) },
+      { trenner: true },
+      ...(zu.length
+        ? zu.map((a): MenuePunkt => ({ text: `${a.name} – ${a.was}`, bild: `apps/${a.id}/favicon.svg`, hinweis: fenster.includes(a.id) ? 'eigenes Fenster' : undefined, titel: a.text, aktion: () => void oeffnenOderZeigen(a.id) }))
+        : [{ text: 'Alle Apps sind geöffnet', deaktiviert: true }]),
+      ...(aktiv ? [{ trenner: true } as const, { text: 'Startseite', titel: 'Alle Apps im Überblick', aktion: () => useRahmen.setState({ aktiv: null }) }] : []),
+    ];
+  };
+
+  // Fehler seit dem letzten Öffnen des Protokolls (wie in der Titelleiste der Apps)
+  const logStand = useSyncExternalStore(subscribe, logVersion);
+  const [gesehen, setGesehen] = useState(0);
+  const fehler = getEntries().filter((e) => e.level === 'error' && e.id > gesehen).length;
+  void logStand;
 
   return (
     <div className="app rahmen">
       <header className="titlebar rahmen-leiste" data-tauri-drag-region>
         <img className="titlebar-icon" src="./favicon.svg" alt="" data-tauri-drag-region />
-        <nav className="rahmen-tabs" role="tablist" aria-label="Geöffnete Apps">
+        <div className="rahmen-tabs" role="tablist" aria-label="Geöffnete Apps">
           {tabs.map((id) => {
             const info = appInfo(id)!;
             const s = status[id];
+            const name = `${info.name} (${info.was})${s?.name ? ` – ${s.name}` : ''}`;
             return (
-              <div
-                key={id}
-                role="tab"
-                aria-selected={id === aktiv}
-                className={`rahmen-tab${id === aktiv ? ' aktiv' : ''}`}
-                title={s?.name ? `${info.name} (${info.was}) – ${s.name}` : `${info.name} (${info.was})`}
-                onClick={() => waehlen(id)}
-                onAuxClick={(e) => e.button === 1 && void tabSchliessen(id)}
-              >
-                <img src={`apps/${id}/favicon.svg`} alt="" />
-                <span className="rahmen-tab-name">{info.name}</span>
-                {s?.name && <span className="rahmen-tab-projekt">{s.name}</span>}
-                {s?.dirty && <span className="rahmen-tab-dirty" title="Ungespeicherte Änderungen">●</span>}
+              // Wahl per Tastatur am Tab-Knopf; ⧉ und × sind für die Maus da (Tastatur: Entf, Kontextmenü)
+              <div key={id} role="presentation" className={`rahmen-tab${id === aktiv ? ' aktiv' : ''}`} onAuxClick={(e) => e.button === 1 && void tabSchliessen(id)} onContextMenu={(e) => tabMenue(e, id)}>
+                <button
+                  id={tabKennung(id)}
+                  role="tab"
+                  className="rahmen-tab-wahl"
+                  aria-selected={id === aktiv}
+                  aria-controls={tafelKennung(id)}
+                  aria-label={`${name}${s?.dirty ? ', ungespeicherte Änderungen' : ''}`}
+                  tabIndex={id === aktiv || (!aktiv && id === tabs[0]) ? 0 : -1}
+                  title={name}
+                  onClick={() => waehlen(id)}
+                  onKeyDown={(e) => tabTasten(e, id)}
+                >
+                  <img src={`apps/${id}/favicon.svg`} alt="" />
+                  <span className="rahmen-tab-name">{info.name}</span>
+                  {s?.name && <span className="rahmen-tab-projekt">{s.name}</span>}
+                  {s?.dirty && (
+                    <span className="titlebar-dirty rahmen-tab-dirty" aria-hidden>
+                      ●
+                    </span>
+                  )}
+                </button>
                 {desktop && (
-                  <button
-                    className="rahmen-tab-knopf"
-                    title="In eigenem Fenster öffnen"
-                    aria-label={`${info.name} in eigenem Fenster`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      void herausloesen(id);
-                    }}
-                  >
-                    ⧉
+                  <button className="rahmen-tab-knopf rahmen-tab-extern" tabIndex={-1} title="In eigenem Fenster öffnen" aria-label={`${info.name} in eigenem Fenster öffnen`} onClick={() => void herausloesen(id)}>
+                    <Symbol name="extern" />
                   </button>
                 )}
-                <button
-                  className="rahmen-tab-knopf"
-                  title="Schließen"
-                  aria-label={`${info.name} schließen`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    void tabSchliessen(id);
-                  }}
-                >
-                  ×
+                <button className="rahmen-tab-knopf" tabIndex={-1} title="Schließen (Entf)" aria-label={`${info.name} schließen`} onClick={() => void tabSchliessen(id)}>
+                  <Symbol name="schliessen" />
                 </button>
               </div>
             );
           })}
-          <div className="rahmen-plus">
-            <button className="titlebar-btn" title="App öffnen" aria-haspopup="menu" aria-expanded={menue} onClick={() => setMenue(!menue)}>
-              +
-            </button>
-            {menue && (
-              <div className="rahmen-menue" role="menu" onMouseLeave={() => setMenue(false)}>
-                <button role="menuitem" className="rahmen-menue-anlegen" onClick={() => projektAnlegen(null)} title={`Assistent von ${APP_NAMEN.ordner.name} (${APP_NAMEN.ordner.was}): Stammdaten, Umfang, Beteiligte, Ordner und Vorlagen`}>
-                  <span className="rahmen-plus-symbol" aria-hidden>
-                    +
-                  </span>
-                  Neues Projekt anlegen …
-                </button>
-                <hr />
-                {zuMenue.length ? (
-                  zuMenue.map((a) => (
-                    <button key={a.id} role="menuitem" onClick={() => void oeffnenOderZeigen(a.id)}>
-                      <img src={`apps/${a.id}/favicon.svg`} alt="" />
-                      {a.name}
-                      <span className="muted small-text"> {a.was}</span>
-                      {fenster.includes(a.id) && <span className="muted small-text"> – eigenes Fenster</span>}
-                    </button>
-                  ))
-                ) : (
-                  <span className="muted small-text">Alle Apps sind geöffnet.</span>
-                )}
-              </div>
-            )}
-          </div>
-        </nav>
+        </div>
+        <MenueKnopf className="titlebar-btn rahmen-plus" title="App öffnen oder neues Projekt anlegen" ariaLabel="App öffnen" name="App öffnen" punkte={plusMenue}>
+          <Symbol name="plus" />
+        </MenueKnopf>
         <span className="titlebar-drag" data-tauri-drag-region />
         {desktop && <UpdateKnopf app={APP_NAMEN.suite.name} dirty={[...tabs, ...fenster].some((id) => status[id]?.dirty)} vorInstallation={allesFreigeben} />}
         <SpeicherortKnopf />
-        <button className="titlebar-btn" title="Protokoll des Rahmens" onClick={() => setLogOffen(true)}>
-          <span aria-hidden>≡</span>
+        <ThemeMenu zeichenflaeche={false} />
+        <button
+          className="titlebar-btn"
+          title="Protokoll von Arkly (Fehlersuche)"
+          aria-label={fehler ? `Protokoll, ${fehler} neue Fehler` : 'Protokoll'}
+          onClick={() => {
+            setGesehen(getEntries().at(-1)?.id ?? 0);
+            setLogOffen(true);
+          }}
+        >
+          <span aria-hidden>≡</span> <span className="titlebar-text">Protokoll</span>
+          {fehler > 0 && (
+            <span className="titlebar-badge" aria-hidden>
+              {fehler}
+            </span>
+          )}
         </button>
         {desktop && win && (
           <div className="window-controls">
@@ -437,27 +491,27 @@ export function App() {
       </header>
       <main className="rahmen-inhalt">
         {tabs.map((id) => (
-          <iframe
-            key={id}
-            ref={(f) => {
-              if (f) rahmen.current.set(id, f);
-              else rahmen.current.delete(id);
-            }}
-            className={`rahmen-app${id === aktiv ? ' aktiv' : ''}`}
-            title={`${appInfo(id)!.name} (${appInfo(id)!.was})`}
-            src={appAdresse(id, 'tab')}
-            allow="clipboard-read; clipboard-write; fullscreen"
-          />
+          // jede App bleibt geladen; nur die gewählte ist sichtbar
+          <div key={id} id={tafelKennung(id)} role="tabpanel" aria-labelledby={tabKennung(id)} className={`rahmen-app${id === aktiv ? ' aktiv' : ''}`}>
+            <iframe
+              ref={(f) => {
+                if (f) rahmen.current.set(id, f);
+                else rahmen.current.delete(id);
+              }}
+              title={`${appInfo(id)!.name} (${appInfo(id)!.was})`}
+              src={appAdresse(id, 'tab')}
+              allow="clipboard-read; clipboard-write; fullscreen"
+            />
+          </div>
         ))}
         {!aktiv && (
           <div className="rahmen-start">
             <h2>{APP_NAMEN.suite.name}</h2>
-            <p className="muted">Eine App öffnen – sie erscheint als Tab. Mit ⧉ am Tab läuft sie in einem eigenen Fenster weiter, „Andocken“ holt sie zurück.</p>
+            <p className="muted">Eine App öffnen – sie erscheint als Tab.</p>
             <div className="rahmen-anlegen">
-              <button className="primary" onClick={() => projektAnlegen(null)}>
-                + Neues Projekt anlegen
+              <button className="primary" onClick={() => projektAnlegen(null)} title="Assistent: Stammdaten, Umfang, Beteiligte – dann entstehen Projektordner, Vorlagen und Projektdatei. Auch auf der Projektübersicht jeder App.">
+                <Symbol name="plus" /> Neues Projekt anlegen …
               </button>
-              <span className="muted small-text">Assistent: Stammdaten, Umfang, Beteiligte – dann entstehen Projektordner, Vorlagen und Projektdatei. Auch auf der Projektübersicht jeder App.</span>
             </div>
             <div className="rahmen-karten">
               {APPS.map((a) => (

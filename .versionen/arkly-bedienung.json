@@ -1,0 +1,10 @@
+{
+  "flaechenrechner": { "stufe": "patch", "notiz": "Update-Dialog mit Titel und Tastaturbedienung wie die übrigen Dialoge." },
+  "grz": { "stufe": "patch", "notiz": "Update-Dialog mit Titel und Tastaturbedienung wie die übrigen Dialoge." },
+  "kosten": { "stufe": "patch", "notiz": "Update-Dialog mit Titel und Tastaturbedienung wie die übrigen Dialoge." },
+  "ordner": { "stufe": "patch", "notiz": "Update-Dialog mit Titel und Tastaturbedienung wie die übrigen Dialoge." },
+  "entzerrung": { "stufe": "patch", "notiz": "Update-Dialog mit Titel und Tastaturbedienung wie die übrigen Dialoge." },
+  "formulare": { "stufe": "patch", "notiz": "Update-Dialog mit Titel und Tastaturbedienung wie die übrigen Dialoge." },
+  "ava": { "stufe": "patch", "notiz": "Update-Dialog mit Titel und Tastaturbedienung wie die übrigen Dialoge." },
+  "suite": { "stufe": "minor", "notiz": "Tabs und Menü „+“ per Tastatur, Kontextmenü am Tab, Tableiste ohne verdeckte Tabs, Farbschema und Protokoll mit Fehleranzeige in der Leiste." }
+}
