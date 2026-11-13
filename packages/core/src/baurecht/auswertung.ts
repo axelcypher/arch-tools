@@ -244,14 +244,19 @@ function modulQuellen(id: string, fakten: Record<string, FaktWert>, defs: Record
  */
 export function gestellteAntworten(eingabe: Record<string, FaktWert>, ableiten: (f: Record<string, FaktWert>) => Record<string, FaktWert>, defs: Record<string, FaktDef>, rest: Omit<KurzKontext, 'fakten'>): Record<string, FaktWert> {
   let gestellt = eingabe;
+  // in jeder Runde gestellt (für den Ausweg ohne Fixpunkt)
+  let immer = new Set(Object.keys(eingabe));
   for (let runde = 0; runde < 8; runde++) {
     const ctx: KurzKontext = { ...rest, fakten: ableiten(gestellt) };
     const naechste = Object.fromEntries(Object.entries(eingabe).filter(([id]) => frageGestellt(id, defs[id], ctx)));
     if (Object.keys(naechste).length === Object.keys(gestellt).length && Object.keys(naechste).every((id) => id in gestellt)) return naechste;
+    immer = new Set([...immer].filter((id) => id in naechste));
     gestellt = naechste;
   }
-  // kein Fixpunkt (Bedingungen, die sich gegenseitig ein- und ausschalten): auf der sicheren Seite alle Antworten behalten
-  return eingabe;
+  // kein Fixpunkt (Bedingungen, die sich gegenseitig ein- und ausschalten – paketPruefen lehnt solche Zyklen ab): nur die
+  // Antworten, die in jeder Runde gestellt waren. Eine weggelassene Antwort führt nur zu „offen“ (Regeln dürfen nicht nach
+  // „bekannt“ fragen), eine behaltene könnte ein Grün tragen
+  return Object.fromEntries(Object.entries(eingabe).filter(([id]) => immer.has(id)));
 }
 
 /** ganze Tage von einem Zeitpunkt (ISO) bis zu einem Tag (JJJJ-MM-TT) */

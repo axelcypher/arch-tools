@@ -167,6 +167,46 @@ function zyklen(bausteine: Map<string, Kurz[]>): string[] {
   return [...new Set(fehler)];
 }
 
+/**
+ * Zyklen zwischen Fragebedingungen: eine Frage, deren „wenn“ (über Bausteine und den Bezug abgeleiteter Werte) wieder
+ * an ihr selbst hängt – dann gäbe es keinen festen Stand, welche Antworten zählen
+ */
+function fragenZyklen(module: Modul[], bausteine: Map<string, Kurz[]>): string[] {
+  const defs = new Map<string, FaktDef>();
+  for (const m of module) for (const [id, d] of Object.entries(m.fakten ?? {})) defs.set(id, d);
+  const abhaengig = (id: string): Set<string> => {
+    const out = new Set<string>();
+    const d = defs.get(id);
+    // ein abgeleiteter Wert hängt an seinem Bezug (ist der nicht gestellt, wird nichts abgeleitet)
+    if (d?.nach) out.add(d.nach.fakt);
+    const besucht = new Set<string>();
+    const sammeln = (k: Kurz | undefined) => {
+      for (const b of blaetter(k)) {
+        if ('f' in b) out.add(b.f);
+        if ('$' in b && !besucht.has(b.$)) {
+          besucht.add(b.$);
+          for (const x of bausteine.get(b.$) ?? []) sammeln(x);
+        }
+      }
+    };
+    sammeln(d?.wenn);
+    return out;
+  };
+  const fehler: string[] = [];
+  const fertig = new Set<string>();
+  const lauf = (id: string, pfad: string[]) => {
+    if (pfad.includes(id)) {
+      fehler.push(`Fragen-Zyklus: ${[...pfad.slice(pfad.indexOf(id)), id].join(' → ')} – ob eine Frage gestellt wird, darf nicht an ihr selbst hängen`);
+      return;
+    }
+    if (fertig.has(id)) return;
+    for (const x of abhaengig(id)) if (defs.has(x)) lauf(x, [...pfad, id]);
+    fertig.add(id);
+  };
+  for (const id of defs.keys()) lauf(id, []);
+  return [...new Set(fehler)];
+}
+
 /** verweist eine Bedingung (auch über Bausteine) auf die Ampel eines Paragrafen („n“)? */
 function verweistAufParagraf(k: unknown, bausteine: Map<string, Kurz[]>, besucht = new Set<string>()): boolean {
   if (Array.isArray(k)) return k.some((x) => verweistAufParagraf(x, bausteine, besucht));
@@ -269,6 +309,7 @@ export function paketPruefen(p: Paket, merkmale: { name: string; werte: string[]
   const alleBausteine = new Map<string, Kurz[]>();
   for (const m of p.module) for (const [id, b] of Object.entries(m.bausteine ?? {})) alleBausteine.set(id, [...(alleBausteine.get(id) ?? []), b]);
   fehler.push(...zyklen(alleBausteine));
+  fehler.push(...fragenZyklen(p.module, alleBausteine));
   // Bausteine teilen sich einen Namensraum (die Auswertung nimmt den des letzten aktiven Moduls): ein zweiter Baustein
   // gleichen Namens würde z. B. einen Bundesbaustein für eine Gemeinde still umdefinieren
   const bausteinVon = new Map<string, string[]>();

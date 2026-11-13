@@ -360,3 +360,13 @@ describe('Runde 18: Suche ohne Umlaute', () => {
   });
 });
 
+
+describe('Runde 19: Suche mit ae/oe/ue', () => {
+  it('„Stellplaetze“, „Abstandsflaechen“, „Ruckbau“', () => {
+    expect(textPasst('Notwendige Stellplätze', 'Stellplaetze')).toBe(true);
+    expect(textPasst('Abstandsflächen', 'Abstandsflaechen')).toBe(true);
+    expect(textPasst('Gebäudeklasse 3', 'Gebaeudeklasse')).toBe(true);
+    expect(textPasst('Beseitigung von Anlagen', 'Ruckbau')).toBe(true);
+    expect(textPasst('Beseitigung von Anlagen', 'Rueckbau')).toBe(true);
+  });
+});

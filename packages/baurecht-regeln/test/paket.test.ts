@@ -7,7 +7,7 @@ import type { AuswertungsEingabe } from '@core/baurecht/auswertung';
 import type { TextStand } from '@core/baurecht/auswertung';
 import { auswerten, faktDefinitionen } from '@core/baurecht/auswertung';
 import { werten } from '@core/baurecht/kurz';
-import { frageGestellt } from '@core/baurecht/fragen';
+import { frageGestellt, RUECKFRAGE_IDS } from '@core/baurecht/fragen';
 import { aktiveModule, paketPruefen } from '@core/baurecht/paket';
 import { widersprueche } from '@core/baurecht/projekt';
 import type { FaktWert, ParagrafErgebnis } from '@core/baurecht/typen';
@@ -22,6 +22,13 @@ import { ohneFassungsdatum, paketLaden, WURZEL } from './laden';
 
 const paket = paketLaden();
 const SOEST = '05974040';
+
+describe('Rückfragen des Kerns', () => {
+  it('jede Kennung in RUECKFRAGEN gibt es im Paket (sonst kippte die Rückfrage still auf „gestellt, solange nicht nein“)', () => {
+    const defs = faktDefinitionen(paket.module);
+    for (const id of RUECKFRAGE_IDS) expect(defs[id], id).toBeDefined();
+  });
+});
 
 describe('Regelpaket', () => {
   it('enthält die Module Bund, NRW, Kreis Soest und Stadt Soest', () => {

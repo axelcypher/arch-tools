@@ -170,6 +170,8 @@ dagegen nicht. Verweist eine Regel auf einen anderen Paragrafen, zählt dort nur
 automatische Ampel oder eine bestätigte, nicht überholte Festlegung – und auch die nur als unsicher (ein „entfällt“, das
 darauf beruht, wird „prüfen“).
 
+**Festlegen** wird angesagt („§ … : von Hand „gilt“ festgelegt – Entwurf, beim Speichern noch einmal bestätigen“).
+
 **Hinweise bestätigen:** Angaben, die nur Hinweis sind (z. B. „kein Treffer im Landschaftsschutzgebiet“, Flächen aus
 dem Modell), lassen sich mit „Bestätigen …“ als gesichert übernehmen – nur mit Angabe, worauf die Bestätigung beruht
 (z. B. Auskunft der Behörde mit Datum). Der Dialog zeigt vorher, wie viele Vorschriften dadurch herabgestuft werden –
@@ -219,7 +221,8 @@ wie „C.3“. Ein „§“, den die Regeln nicht kennen, zeigt die genannte Nor
 – gezeigt: BauGB“ (bei Bereichen „§ 29 ist nicht erfasst“ in der Trefferzeile, lange Listen zusammengefasst: „32 der 35
 §§ sind nicht erfasst“); ohne Norm ergibt er keinen Treffer. Ohne „§“ und ohne Paragrafentreffer sucht sie im Text
 (Zahlen als ganzes Wort, ein Bindestrich bleibt Teil des Worts – „DIN 4108-2“; Kürzel bis drei Zeichen wie „GK“, „GRZ“
-nur am Wortanfang und auch ausgeschrieben, gängige Synonyme wie Abriss/Rückbau, Einfriedung/Einfriedigung). Die
+nur am Wortanfang und auch ausgeschrieben, gängige Synonyme wie Abriss/Rückbau, Einfriedung/Einfriedigung; Umlaute
+auch als „a“ bzw. „ae“ – „Stellpla“, „Stellplaetze“, „Ruckbau“). Die
 Trefferzahl wird angesagt (Angaben wie Vorschriften); wer nur sucht, bekommt „Suche leeren“ statt „Filter
 zurücksetzen“. Nach Suche, Filter und
 „Filter zurücksetzen“ bleibt die gewählte Zeile im Blick, der Fokus geht ins Suchfeld. Die Sammelmarke der Warnungen öffnet und schließt „Mehr“, Esc gibt
@@ -258,7 +261,8 @@ neben dem Knopf. „Drucken / PDF …“ schlägt den
 Dateinamen `<Projektdatei> Baurecht <Antrag>.pdf` vor. **„Prüfung abschließen“** legt den Stand (Fassungen, Ampeln,
 Zähler, Regelpaket) in der Projektdatei ab – erst, wenn nichts mehr Entwurf, alles gespeichert und jeder Text geladen
 ist. Danach steht oben eine Meldung („Prüfung vom … abgelegt (… gilt · … prüfen · … entfällt) – zum Übernehmen in die
-Datei speichern“, stehende Live-Region) mit „Jetzt speichern“, der Fokus geht dorthin; danach (auch nach Strg+S)
+Datei speichern“, stehende Live-Region) mit „Jetzt speichern“, der Fokus geht dorthin; „Jetzt speichern“ steht auch
+neben jedem Sperrtext „Erst speichern …“. Danach (auch nach Strg+S)
 „Gespeichert – …“ bzw. „Nicht gespeichert – …“ im Dialog, der Fokus geht dann auf „Drucken / PDF …“; jedes Speichern
 bei offenem Protokoll (auch Strg+S) meldet sich in dessen Live-Region, ohne den Fokus zu verschieben. Eine abgelegte,
 noch nicht gespeicherte Prüfung ist auch nach dem Wiederöffnen erkennbar (Meldung mit „Jetzt speichern“, Eintrag „noch
@@ -298,7 +302,10 @@ Paragrafen ändern, offen lassen oder unter „klärt am meisten“ stehen – a
 (je Grundfall jede gestellte Angabe einzeln offen gelassen, dazu Altbau „nein“ und Umfang offen). Eine Norm, die an einer nur bedingt gestellten
 Frage hängt, nimmt deshalb deren Bedingung in die Geltung auf (z. B. Heilquellenschutzgebiet Bad Sassendorf nur im
 Wasser- oder Heilquellenschutzgebiet, außerhalb von Bad Sassendorf und Soest „nein“ aus dem Gemeindeschlüssel). Ob
-nicht gestellt, prüft das Paket mit demselben `frageGestellt` wie die App; Antworten auf nicht gestellte Fragen dürfen
+nicht gestellt, prüft das Paket mit demselben `frageGestellt` wie die App. Fragebedingungen (`wenn`) dürfen nicht auf
+Paragrafen verweisen (`n`) und keine Zyklen bilden (eine Frage, deren Bedingung über Bausteine oder den Bezug
+abgeleiteter Werte an ihr selbst hängt) – `paketPruefen` lehnt beides ab. Fände die Auswertung dennoch keinen festen
+Stand, zählen nur Antworten, die in jeder Runde gestellt waren (eine weggelassene Antwort führt nur zu „offen“); Antworten auf nicht gestellte Fragen dürfen
 weder als „ja“ noch als „nein“ etwas ändern. § 36 BauGB (Einvernehmen) entfällt, wo die Gemeinde selbst untere
 Bauaufsicht ist („Gemeinde ist selbst Bauaufsicht“: im Kreis Soest Lippstadt, Soest, Warstein, Werl; in NRW die
 kreisfreien Städte und Aachen nach Gemeindeschlüssel; sonst offen – „gilt, Ausnahme möglich“). § 47 Abs. 6 BauO NRW

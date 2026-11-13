@@ -170,7 +170,7 @@ export function Kopf({ stand, onRechtsstand, onLage, onProtokoll, onSpeichern, o
         <input type="date" value={einreichung ?? heute()} min="2018-01-01" aria-label="Geplante Einreichung (Stichtag)" onChange={(e) => useBaurecht.getState().einreichungSetzen(e.target.value === heute() ? '' : e.target.value)} />
       </label>
       {/* Module kürzen sich zuerst; Warnungen sind eigene Marken und werden nie gekürzt */}
-      <span className="br-module-text" title={`Regelmodule: ${[...stand.module].reverse().map((m) => `${m.name} (Stand ${datum(m.version)})`).join(', ')}`}>
+      <span className="br-module-text" title={`Regelmodule: ${[...stand.module].reverse().map((m) => `${m.name} (Stand ${/^\d{4}-\d\d-\d\d$/.test(m.version) ? datum(m.version) : m.version})`).join(', ')}`}>
         {moduleText}
       </span>
       <span className="br-kopf-marken">

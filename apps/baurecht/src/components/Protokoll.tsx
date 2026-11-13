@@ -336,8 +336,10 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
               onClick={async () => {
                 setSpeichertJetzt(true);
                 fokusNachMeldung.current = true;
-                await onSpeichern();
+                const ok = await onSpeichern();
                 setSpeichertJetzt(false);
+                // abgebrochen bzw. gescheitert: kein Anlass mehr – ein späteres Strg+S verschiebt den Fokus nicht
+                if (!ok) fokusNachMeldung.current = false;
               }}
             >
               Jetzt speichern
@@ -378,6 +380,7 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
                   const ok = await onSpeichern();
                   setSpeichertJetzt(false);
                   fokusNachMeldung.current = true;
+                  if (!ok) setTimeout(() => (fokusNachMeldung.current = false), 0);
                   setAbgelegt(ok ? { text: 'Gespeichert – die abgeschlossene Prüfung steht in der Projektdatei.', speichern: false } : { text: 'Nicht gespeichert – die Prüfung ist abgelegt, steht aber noch nicht in der Datei.', speichern: true });
                 }}
               >

@@ -1898,7 +1898,8 @@ h2.br-detail-name {
 .modal.br-bestaetigen {
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  /* im Grenzfall (sehr niedriges Fenster, hoher Zoom) scrollt der ganze Dialog, statt den Fuß abzuschneiden */
+  overflow: auto;
 }
 .br-bestaetigen-inhalt {
   flex: 1 1 auto;
@@ -1954,8 +1955,7 @@ h2.br-detail-name {
     outline: 2px solid Highlight;
     outline-offset: -2px;
   }
-  .br-ampel-punkt,
-  .br-ampel::before {
+  .br-ampel-punkt {
     forced-color-adjust: none;
   }
 }

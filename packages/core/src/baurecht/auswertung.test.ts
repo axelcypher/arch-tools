@@ -748,3 +748,38 @@ describe('Runde 18: nur gestellte Antworten zählen', () => {
     expect(Object.keys(gestellteAntworten({ a: sicher(true), b: sicher(true), c: sicher(true) }, (f) => f, defs, rest)).sort()).toEqual(['a', 'b', 'c']);
   });
 });
+
+describe('Runde 19: Kriterium „gestellt“ und Paketregeln für Fragen', () => {
+  const rest = { merkmale: { Planungsrecht: 'Innenbereich' }, einreichung: '2026-12-01', heute: '2026-11-13', bausteine: {} };
+  it('ein Widerspruch bzw. Vorbehalt öffnet keine Frage, ein Hinweis schon', async () => {
+    const { frageGestellt } = await import('./fragen');
+    const def = { wenn: { m: 'Planungsrecht', in: ['Außenbereich'] } } as unknown as import('./typen').FaktDef;
+    // sicher „nein“: nicht gestellt – auch mit Vorbehalt am Merkmal (Planungsrecht nicht für den Ort bestätigt)
+    expect(frageGestellt('x.y', def, { ...rest, fakten: {} })).toBe(false);
+    expect(frageGestellt('x.y', def, { ...rest, fakten: {}, widersprueche: new Set(['Planungsrecht']) })).toBe(false);
+    // „nein“ nur aus einem Hinweis: gestellt
+    const defF = { wenn: { f: 'x.a', ist: true } } as unknown as import('./typen').FaktDef;
+    expect(frageGestellt('x.y', defF, { ...rest, fakten: { 'x.a': hinweis(false) } })).toBe(true);
+    expect(frageGestellt('x.y', defF, { ...rest, fakten: { 'x.a': sicher(false) } })).toBe(false);
+  });
+
+  it('ohne Fixpunkt: nur Antworten, die in jeder Runde gestellt waren (keine schwankende Antwort trägt eine Ampel)', () => {
+    const defs = {
+      'x.a': { titel: 'A', gruppe: 'x', typ: 'janein', wenn: { nicht: { f: 'x.b', ist: true } } },
+      'x.b': { titel: 'B', gruppe: 'x', typ: 'janein', wenn: { f: 'x.a', bekannt: false } },
+      'x.c': { titel: 'C', gruppe: 'x', typ: 'janein' },
+    } as unknown as Record<string, import('./typen').FaktDef>;
+    const r = gestellteAntworten({ 'x.a': sicher(true), 'x.b': sicher(true), 'x.c': sicher(true) }, (f) => f, defs, rest);
+    expect(Object.keys(r)).toEqual(['x.c']);
+  });
+
+  it('paketPruefen: Fragebedingungen ohne Verweis auf Paragrafen und ohne Zyklen', () => {
+    const mit = (fakten: Modul['fakten'], bausteine: Modul['bausteine'] = {}) =>
+      paketPruefen(paketAusDateien({ 'module/bund/modul.json': { ...bund, fakten: { ...bund.fakten, ...fakten }, bausteine: { ...bund.bausteine, ...bausteine } }, 'module/bund/bnatschg@2026-09-30.json': bnatschg }, 'test'), VORGABE_MERKMALE).join('\n');
+    const j = (wenn: unknown) => ({ titel: 'T', gruppe: 'x', typ: 'janein', wenn }) as unknown as NonNullable<Modul['fakten']>[string];
+    expect(mit({ 'x.p': j({ n: 'bund/bnatschg/14', ist: 'rot' }) })).toMatch(/x\.p: die Bedingung .* nicht auf Paragrafen verweisen/);
+    expect(mit({ 'x.q': j({ $: 'ueber_n' }) }, { ueber_n: { n: 'bund/bnatschg/14', ist: 'rot' } as never })).toMatch(/x\.q: die Bedingung .* nicht auf Paragrafen verweisen/);
+    expect(mit({ 'x.a': j({ f: 'x.b', ist: true }), 'x.b': j({ f: 'x.a', ist: true }) })).toMatch(/Fragen-Zyklus: x\.a → x\.b → x\.a/);
+    expect(mit({ 'x.a': j({ f: 'x.c', ist: true }), 'x.c': { titel: 'C', gruppe: 'x', typ: 'janein' } as never })).not.toMatch(/Fragen-Zyklus|nicht auf Paragrafen/);
+  });
+});
