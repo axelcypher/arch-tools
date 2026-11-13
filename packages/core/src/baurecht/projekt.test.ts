@@ -146,3 +146,12 @@ describe('Fakten aus dem Projekt', () => {
     expect(f['gebaeude.hoehe']).toMatchObject({ wert: 2.9 });
   });
 });
+
+describe('Runde 18: abgelegte Protokolle', () => {
+  it('nur vollständige Einträge werden gelesen (ein halber ließe die Anzeige abstürzen)', () => {
+    const voll = { am: '2026-11-13T10:00:00Z', von: 'TP', paket: '2026.11.13.15', einreichung: '2026-12-01', fassungen: {}, zaehler: { rot: 1, gelb: 2, gruen: 3 }, ampeln: {}, offen: 2 };
+    const a = baurechtAusRoh({ baurecht: { pruefungen: { 'BAUA 1': { fakten: {}, festlegungen: {}, protokolle: [voll, { am: '2026-11-13T11:00:00Z' }, { ...voll, zaehler: { rot: 1 } }] } } } });
+    expect(a.pruefungen['BAUA 1'].protokolle).toEqual([voll]);
+  });
+});
+

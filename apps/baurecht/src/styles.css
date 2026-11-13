@@ -1900,3 +1900,16 @@ h2.br-detail-name {
   min-height: 80px;
   overflow: auto;
 }
+/* „Zusammen“ im Speichern-Dialog: aufgeklappt scrollt nur die Liste, nicht der ganze Dialog */
+.br-folgen-zusammen .br-folgen ul {
+  max-height: 30vh;
+  overflow: auto;
+}
+/* Prüfprotokoll in schmalen Fenstern (Zoom): die Aktionsleiste bricht um, nichts wird angeschnitten */
+.br-protokoll-aktionen {
+  flex-wrap: wrap;
+}
+/* „nur Hinweis“ mit Abstand zum Wert davor */
+.br-hinweis-marke {
+  margin-left: 4px;
+}

@@ -72,19 +72,19 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   Gelb bliebe, wird sie genannt. „Gestellt“ heißt für Kern, App und Protokoll dasselbe (`frageGestellt`): ohne Bedingung
   immer, sonst solange das `wenn` nicht „nein“ ergibt; eine Rückfrage (Umfang, Angaben zum Altbau) erst, wenn es sicher
   „ja“ ergibt. Eine gespeicherte Antwort auf eine Frage, die gerade nicht gestellt wird (z. B. nach einem Ortswechsel),
-  leitet keinen Modulwert ab. Hängt ein Paragraf an einem anderen, der nur „gilt,
+  leitet keinen Modulwert ab; das Protokoll führt solche Antworten gesondert („Nicht gestellt – ohne Wirkung“). Hängt ein
+  Paragraf an einem anderen, der nur „gilt,
   Ausnahme möglich“ ist, und entfiele er mit dessen Ausnahme, nennt er sie („Ausnahme möglich über § 14 BNatSchG – es
   fehlt dort: …“); die Ampel bleibt „gilt“.
-  Wann eine Frage gestellt wird, entscheidet ein Kriterium für Kern, Leiste und Protokoll (`frageGestellt`): ohne
-  Bedingung immer, sonst solange sie nicht „nein“ ergibt – Rückfragen erst, wenn ihre Bedingung sicher zutrifft. Nicht
-  gestellte Angaben stehen nie unter „es fehlt“ oder „Klärt am meisten“.
   Hinweise, deren Bestätigung allein einen Paragrafen entschiede, stehen dort als „bestätigen klärt N“ (Werte eines
   Gebietsmoduls dort, woher die Unsicherheit kommt: beim Gemeindeschlüssel, solange er nicht gesichert ist, beim Bezug
   der Tabelle, wenn er nur Hinweis ist – ist der Bezug selbst ein Modulwert, zählen dessen Quellen –, beim Wert selbst,
-  wenn die Tabelle von der Lage abhängt; sind es mehrere Quellen, beim Wert selbst. Werte des Bundesmoduls hängen nicht
-  am Gemeindeschlüssel). Ziele, an denen keine Regel
+  wenn die Tabelle von der Lage abhängt; sind es mehrere Quellen, beim Wert selbst. Werte, die das Bundesmodul liefert,
+  hängen nicht am Gemeindeschlüssel). Ziele, an denen keine Regel
   unmittelbar hängt (der Bezug einer Tabelle), stehen dafür in der Liste; ein Sprungziel ohne Zeile schaltet „alle
   Angaben“ ein; während einer Suche wird die Suche geleert (angesagt), wenn das Ziel nicht unter den Treffern steht.
+  „Für diesen Ort bestätigen“ im Hinweis behält dagegen eine Suche, die das Merkmal ausblendet: der Fokus geht ins
+  Suchfeld, die Wirkung wird angesagt.
   Gespeicherte Modulwerte gelten nur, solange ein aktives Modul sie für den jetzigen Bezug liefert; beim
   Speichern fallen die übrigen aus der Datei. Nur zulässige Werte zählen: Ein Merkmalwert außerhalb der Werteliste
   (eigener Wert aus Formulare) und eine Angabe mit falschem Typ oder einem Wert außerhalb ihrer Auswahl (ältere Datei,
@@ -256,7 +256,8 @@ Dateinamen `<Projektdatei> Baurecht <Antrag>.pdf` vor. **„Prüfung abschließe
 Zähler, Regelpaket) in der Projektdatei ab – erst, wenn nichts mehr Entwurf, alles gespeichert und jeder Text geladen
 ist. Danach steht oben eine Meldung („Prüfung vom … abgelegt (… gilt · … prüfen · … entfällt) – zum Übernehmen in die
 Datei speichern“, stehende Live-Region) mit „Jetzt speichern“, der Fokus geht dorthin; danach (auch nach Strg+S)
-„Gespeichert – …“ bzw. „Nicht gespeichert – …“ im Dialog. Derselbe Stand (gleiche Ampeln, Regelpaket, Stichtag) wird
+„Gespeichert – …“ bzw. „Nicht gespeichert – …“ im Dialog. Derselbe Stand (gleiche Ampeln, Fassungen, Regelpaket,
+Stichtag) wird
 nicht zweimal abgeschlossen; abgeschlossene Prüfungen stehen mit Datum und Uhrzeit. Mit „ohne „entfällt““ vermerkt
 das Ergebnis, dass diese Vorschriften im Ausdruck fehlen. Nach jedem Speichern steht im Kopf kurz
 „Gespeichert“ (bzw. „– keine Änderungen“, „– N Entwürfe bleiben offen“), auch angesagt. Im Speichern-Dialog nennt eine

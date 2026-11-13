@@ -102,7 +102,8 @@ function GespeichertMeldung() {
   const m = useBaurecht((s) => s.gespeichertMeldung);
   const [zeigen, setZeigen] = useState(false);
   useEffect(() => {
-    if (!m) return;
+    // aus dem Prüfprotokoll gespeichert: dort steht die Rückmeldung (im Dialog) – hier nicht noch einmal
+    if (!m || document.querySelector('.br-protokoll')) return;
     setZeigen(true);
     const t = setTimeout(() => setZeigen(false), 4000);
     return () => clearTimeout(t);

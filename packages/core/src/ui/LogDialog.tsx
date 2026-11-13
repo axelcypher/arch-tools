@@ -12,7 +12,8 @@ const FILTER: { id: LogLevel; label: string }[] = [
 ];
 
 /** Protokoll-Fenster: Einträge filtern, kopieren, als Datei speichern */
-export function LogDialog({ onClose }: { onClose: () => void }) {
+/** `app`: Name der App für Dateiname und Kopfzeile des gespeicherten Protokolls */
+export function LogDialog({ onClose, app = 'Flächenrechner' }: { onClose: () => void; app?: string }) {
   const version = useSyncExternalStore(subscribe, logVersion);
   const [min, setMin] = useState<LogLevel>('info');
   const [q, setQ] = useState('');
@@ -47,8 +48,8 @@ export function LogDialog({ onClose }: { onClose: () => void }) {
     const d = new Date();
     const stamp = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}_${String(d.getHours()).padStart(2, '0')}${String(d.getMinutes()).padStart(2, '0')}`;
     await saveTextFile({
-      defaultName: `flaechenrechner-protokoll_${stamp}.log`,
-      contents: `Flächenrechner ${__APP_VERSION__} · ${navigator.userAgent}\n\n${logText()}\n`,
+      defaultName: `${app.toLowerCase().replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss').replace(/[^a-z0-9]+/g, '-')}-protokoll_${stamp}.log`,
+      contents: `${app} ${__APP_VERSION__} · ${navigator.userAgent}\n\n${logText()}\n`,
       filterName: 'Fehlerprotokoll',
       extension: 'log',
       mime: 'text/plain;charset=utf-8',

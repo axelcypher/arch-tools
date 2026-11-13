@@ -25,6 +25,26 @@ export interface Protokoll {
   offen: number;
 }
 
+/** ein abgelegtes Protokoll aus der Datei – nur vollständige Einträge (ein halber ließe die Anzeige abstürzen) */
+function protokollGueltig(x: unknown): x is Protokoll {
+  if (!istObjekt(x)) return false;
+  const zahl = (v: unknown) => typeof v === 'number' && Number.isFinite(v);
+  const z = x.zaehler;
+  return (
+    typeof x.am === 'string' &&
+    typeof x.von === 'string' &&
+    typeof x.paket === 'string' &&
+    typeof x.einreichung === 'string' &&
+    istObjekt(x.fassungen) &&
+    istObjekt(x.ampeln) &&
+    istObjekt(z) &&
+    zahl(z.rot) &&
+    zahl(z.gelb) &&
+    zahl(z.gruen) &&
+    zahl(x.offen)
+  );
+}
+
 export interface BaurechtPruefung {
   /** geplantes Einreichungsdatum (JJJJ-MM-TT) */
   einreichung?: string;
@@ -111,7 +131,7 @@ export function baurechtAus(roh: unknown): BaurechtAbschnitt {
       }
     const po = ortAus(p.planungsrechtOrt);
     if (po) pr.planungsrechtOrt = po;
-    if (Array.isArray(p.protokolle)) pr.protokolle = p.protokolle.filter((x): x is Protokoll => istObjekt(x) && typeof x.am === 'string') as Protokoll[];
+    if (Array.isArray(p.protokolle)) pr.protokolle = p.protokolle.filter(protokollGueltig);
     out.pruefungen[antrag] = pr;
   }
   return out;

@@ -67,9 +67,7 @@ export const ohneKlammer = (s: string) => {
 /** Merkmale, die zur Suche passen (Name, Erklärung, Werte) */
 const merkmalPasst = (m: { name: string; werte: string[] }, suche: string) => textPasst(`${MERKMAL_TITEL[m.name] ?? m.name} ${MERKMAL_ERKLAERUNG[m.name]?.text ?? ''} ${m.werte.join(' ')}`, suche);
 
-/** Rückfragen zu einem Antragsmerkmal (Kern: fragen.ts) – stehen direkt unter dem Merkmal, nicht tief in ihrer Gruppe */
-export { RUECKFRAGEN };
-const RUECKFRAGEN_ALLE = RUECKFRAGE_IDS;
+// Rückfragen zu einem Antragsmerkmal (Kern: fragen.ts) stehen direkt unter dem Merkmal, nicht tief in ihrer Gruppe
 
 /** offen ist eine Rückfrage ohne Wert oder mit einem Wert, der nur Hinweis ist (z. B. aus einer älteren Angabe) */
 export const rueckfrageOffen = (w: FaktWert | undefined) => w?.wert == null || (w.sicherheit === 'hinweis' && !w.bestaetigt);
@@ -120,7 +118,7 @@ function Merkmale({ klaerung, suche = '', planungsrechtOffen, planungsrechtKlaer
     if (fokus?.startsWith('merkmal:')) setAuf(true);
     // Fokus auf eine Rückfrage (z. B. „bestätigen klärt“), die eingeklappt keine eigene Zeile hat: aufklappen
     const rid = fokus?.replace(/:bestaetigen$/, '');
-    if (rid && RUECKFRAGEN_ALLE.has(rid) && !ref.current?.querySelector(`[data-fakt="${CSS.escape(rid)}"]`)) setAuf(true);
+    if (rid && RUECKFRAGE_IDS.has(rid) && !ref.current?.querySelector(`[data-fakt="${CSS.escape(rid)}"]`)) setAuf(true);
   }, [fokus]);
   // Fokus erst setzen, wenn die Gruppe offen ist (sonst gibt es das Merkmal noch nicht – der Fokus fiele auf die Seite)
   useEffect(() => {
@@ -726,7 +724,6 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
   const rang = ordnung.schluessel === schluessel ? ordnung.rang : rangBilden();
   // Rückfragen stehen unter ihrem Merkmal – solange die Merkmale zu sehen sind, nicht noch einmal in der Gruppe
   const merkmaleSichtbar = !suche || VORGABE_MERKMALE.some((m) => merkmalPasst(m, suche));
-  const alleRueckfragen = new Set(Object.values(RUECKFRAGEN).flat());
   const alsRueckfrage = new Set(
     Object.entries(RUECKFRAGEN)
       .filter(([name]) => !suche || VORGABE_MERKMALE.some((m) => m.name === name && merkmalPasst(m, suche)))
@@ -737,7 +734,7 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
     const ids = Object.entries(auswertung.faktDefs)
       // Rückfragen nur, wenn sie gestellt sind, und dann unter ihrem Merkmal (in der Gruppe nur, wenn das Merkmal wegen
       // der Suche nicht zu sehen ist)
-      .filter(([id, d]) => d.gruppe === g.id && id !== 'antrag.einreichung' && (alle || relevant.has(id)) && (!alleRueckfragen.has(id) || (!(merkmaleSichtbar && alsRueckfrage.has(id)) && rueckfrageSichtbar(id, stand, merkmale))))
+      .filter(([id, d]) => d.gruppe === g.id && id !== 'antrag.einreichung' && (alle || relevant.has(id)) && (!RUECKFRAGE_IDS.has(id) || (!(merkmaleSichtbar && alsRueckfrage.has(id)) && rueckfrageSichtbar(id, stand, merkmale))))
       .filter(([id, d]) => frageGestellt(id, d, ctx))
       .filter(([id, d]) => textPasst(`${d.kurz ?? ''} ${d.titel} ${d.frage ?? ''} ${(d.werte ?? []).join(' ')} ${id}`, suche))
       .map(([id]) => id)
@@ -781,7 +778,7 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
         {stand.planungsrechtHinweis && (
           // knapp (eine Zeile): der häufige Fall „noch nicht bestätigt“ kurz, die Anschrift im Titel und im Namen des Knopfs
           // role="note": ein stehender Hinweis – als Live-Region läse er bei jeder Änderung von „klärt N“ alles neu vor
-          <div className="br-meldung br-meldung-info br-planungsrecht-hinweis" role="note" title={stand.planungsrechtHinweis}>
+          <div className="br-meldung br-meldung-info br-planungsrecht-hinweis" role="note">
             <span>{/noch nicht bestätigt$/.test(stand.planungsrechtFrueher ?? '') ? 'Planungsrecht für diesen Ort noch nicht bestätigt.' : `${stand.planungsrechtHinweis}.`}</span>{' '}
             <span className="br-bestaetigen-zeile">
               <button type="button" className="small" onClick={() => planungsrechtGiltHier(planungsrechtKlaert, suche && !VORGABE_MERKMALE.some((m) => m.name === 'Planungsrecht' && merkmalPasst(m, suche)) ? () => suchfeld.current?.focus() : undefined)} aria-label={`Für diesen Ort bestätigen: Planungsrecht „${useBaurecht.getState().merkmale['Planungsrecht'] ?? ''}“, ${ortAnzeige ?? 'dieser Ort'}`} title="Das Planungsrecht gilt so für dieses Grundstück – bis dahin zählt es nicht als gesichert">

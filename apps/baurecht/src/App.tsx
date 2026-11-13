@@ -30,17 +30,16 @@ const log = logger('baurecht');
  * „Ohne diese speichern“ schreibt für sie den Stand der Datei zurück (nichts geht verloren, nichts Unbestätigtes wird
  * gespeichert) und lässt sie danach als Entwurf in der App. true = gespeichert.
  */
-let speichertGerade = false;
+let speichertGerade: Promise<boolean> | null = null;
 
-export async function speichern(): Promise<boolean> {
-  // ein zweites Strg+S während des Speicherns (oder während der Bestätigung) startet keinen zweiten Lauf
-  if (speichertGerade) return false;
-  speichertGerade = true;
-  try {
-    return await speichernLauf();
-  } finally {
-    speichertGerade = false;
-  }
+export function speichern(): Promise<boolean> {
+  // ein zweites Strg+S bzw. ein Doppelklick während des Speicherns (oder der Bestätigung) startet keinen zweiten Lauf –
+  // es bekommt das Ergebnis des laufenden
+  if (speichertGerade) return speichertGerade;
+  speichertGerade = speichernLauf().finally(() => {
+    speichertGerade = null;
+  });
+  return speichertGerade;
 }
 
 async function speichernLauf(): Promise<boolean> {
@@ -350,7 +349,7 @@ export function App() {
       <FestlegenDialog fakten={stand.auswertung.fakten} widerspruchMerkmale={stand.widerspruchMerkmale} />
       <FaktBestaetigenDialog folgen={folgen} faktDef={faktDef} />
       <BestaetigenDialog titel={titel} faktTitel={faktTitel} folgen={folgenSeitDatei} faktDef={faktDef} />
-      {logOffen && <LogDialog onClose={() => setLogOffen(false)} />}
+      {logOffen && <LogDialog app="Baurecht" onClose={() => setLogOffen(false)} />}
     </div>
   );
 }

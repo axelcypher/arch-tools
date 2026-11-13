@@ -222,16 +222,17 @@ function Pfeil() {
 }
 
 function Folgen({ folgen, allein }: { folgen: { herab: Herabstufung[] }; allein?: boolean }) {
+  const [auf, setAuf] = useState(false);
   if (!folgen.herab.length) return <p className="br-leise">{allein ? 'Allein ändert dadurch keine Vorschrift ihre Ampel.' : 'Keine Vorschrift ändert dadurch ihre Ampel.'}</p>;
   const gruen = folgen.herab.filter((h) => h.nach === 'gruen').length;
   return (
-    <details className="br-folgen">
+    <details className="br-folgen" onToggle={(e) => setAuf((e.currentTarget as HTMLDetailsElement).open)}>
       <summary>
         <strong>
           Stuft {folgen.herab.length} {folgen.herab.length === 1 ? 'Vorschrift' : 'Vorschriften'}
           {gruen === folgen.herab.length ? ' auf „entfällt“' : ''} herab
         </strong>
-        {gruen && gruen < folgen.herab.length ? `, davon ${gruen} auf „entfällt“` : ''} – Liste anzeigen
+        {gruen && gruen < folgen.herab.length ? `, davon ${gruen} auf „entfällt“` : ''} – Liste {auf ? 'ausblenden' : 'anzeigen'}
       </summary>
       <ul>
         {folgen.herab.map((h) => (
