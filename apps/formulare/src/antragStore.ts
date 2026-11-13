@@ -1456,10 +1456,11 @@ export const useAntrag = create<AntragState>((set, get) => {
       // der festgehaltenen Fassung (die dann angezeigt und aktiv ist) und nur, wenn es den Eintrag noch gibt
       const umfang = pd?.umfang;
       const wechsel = wechselLaeuft(get(), useFormulare.getState().projekt);
-      // eine andere Fassung angezeigt: das ist der Grund (auch wenn sie keinen Antragsumfang hat)
+      // eine andere Fassung angezeigt: das ist der Grund (auch wenn sie keinen Antragsumfang hat) – nur, wenn bekannt
+      // ist, welche (gleich nach einem Projektwechsel gibt es noch keine Ansicht: dann „kein Antragsumfang“)
       const vorab: SchreibInfo['vorab'] = wechsel
         ? 'fassung'
-        : o.ansicht !== undefined && pd?.ansicht !== o.ansicht
+        : o.ansicht !== undefined && pd?.ansicht !== undefined && pd.ansicht !== o.ansicht
           ? 'fassung'
           : !umfang
             ? 'umfang'

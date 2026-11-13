@@ -1261,10 +1261,21 @@ describe('Projektordner, Ansicht „Antrag“: Quick-Add für Dateien ohne Dokum
     expect(punkt.disabled).toBe(true);
     expect(punkt.textContent).toContain('Antrag eingereicht');
     expect(punktGenau('Mit fehlendem Dokument verknüpfen').disabled).toBe(true);
+    // ein deaktivierter Punkt klappt sein Untermenü auch beim Überfahren nicht auf (React meldet dort kein mouseenter)
+    act(() => void punktGenau('Mit fehlendem Dokument verknüpfen').dispatchEvent(new MouseEvent('mouseover', { bubbles: true })));
+    expect(document.querySelector('.menue .menue')).toBeNull();
     // auch direkt im Store nichts aufgenommen (Sperre)
     const vorher = umfangVon('BAUA 2').length;
     await act(async () => void (await useAntrag.getState().dateiAufnehmen(BSK, { titel: 'Brandschutzkonzept', ansicht: 'BAUA 2' })));
     expect(umfangVon('BAUA 2').length).toBe(vorher);
+  });
+
+  it('gleich nach einem Projektwechsel (noch keine Ansicht): Grund „kein Antragsumfang“, nie „Antrag undefined“', async () => {
+    await mitUmfang();
+    act(() => useAntrag.setState({ projektdatei: null }));
+    const info = await act(() => useAntrag.getState().dateiAufnehmen(BSK, { titel: 'Brandschutzkonzept', ansicht: 'BAUA 2' }));
+    expect(info.vorab).toBe('umfang');
+    expect(useFormulare.getState().meldung).toEqual({ art: 'info', text: 'Nicht aufgenommen – inzwischen gibt es keinen Antragsumfang mehr.' });
   });
 
   it('ohne Dokumente ohne Datei: nur „aufnehmen“ im Menü und im Tooltip', async () => {

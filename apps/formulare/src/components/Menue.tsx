@@ -186,6 +186,7 @@ function Liste({
             aria-haspopup={p.unter ? 'menu' : undefined}
             aria-expanded={p.unter ? unter?.index === i : undefined}
             onMouseEnter={(e) => {
+              // deaktiviert: React ruft onMouseEnter an einem deaktivierten Knopf nicht auf – sein Untermenü bleibt zu
               if (p.unter) oeffnen(i, e.currentTarget, false);
               else setUnter(null);
             }}

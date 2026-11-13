@@ -304,7 +304,8 @@ button.icon.active {
 }
 @container navigation (max-width: 259px) {
   .nav-zeit,
-  .fo-baum-zeit {
+  .fo-baum-zeit,
+  .fo-aufnehmen-platz {
     display: none;
   }
 }
