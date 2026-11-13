@@ -166,6 +166,34 @@ describe('Speichern des Formulars, während weiter getippt wird', () => {
   });
 });
 
+describe('Formulare schnell nacheinander öffnen', () => {
+  it('zwei Klicks kurz nacheinander: das zuletzt angeklickte ist offen, keine liegen gebliebene Sperre', async () => {
+    const ds = await projekt();
+    const [e1, e2] = [ERSTES, ZWEITES].map((p) => useFormulare.getState().formulare.find((f) => f.pfad === p)!);
+    await Promise.all([useFormulare.getState().formularOeffnen(e1), useFormulare.getState().formularOeffnen(e2)]);
+    expect(useFormulare.getState().offen!.pfad).toBe(ZWEITES);
+    expect(await ds.sperrePruefen(ROOT, sperrPfad(ERSTES))).toBeNull();
+    expect(await ds.sperrePruefen(ROOT, sperrPfad(ZWEITES))).not.toBeNull();
+  });
+
+  it('auch während ein Speichern läuft: der überholte Klick sperrt nichts', async () => {
+    const ds = await projekt();
+    const o = await oeffnen(ERSTES);
+    useFormulare.getState().wertSetzen(o.felder.flat().find((f) => f.art === 'text' && !f.berechnet)!, 'X');
+    const halt = ersetzenAnhalten(ds);
+    const lauf = useFormulare.getState().speichern();
+    await kurz();
+    const [e1, e2] = [ERSTES, ZWEITES].map((p) => useFormulare.getState().formulare.find((f) => f.pfad === p)!);
+    // erst das zweite, dann wieder das erste angeklickt – beide warten auf das Speichern
+    const a = useFormulare.getState().formularOeffnen(e2);
+    const b = useFormulare.getState().formularOeffnen(e1);
+    halt.weiter();
+    await Promise.all([lauf, a, b]);
+    expect(useFormulare.getState().offen!.pfad).toBe(ERSTES);
+    expect(await ds.sperrePruefen(ROOT, sperrPfad(ZWEITES))).toBeNull();
+  });
+});
+
 describe('Projektkarte speichern, während weiter getippt wird', () => {
   it('Eingaben während des Schreibens bleiben erhalten', async () => {
     const ds = await projekt();

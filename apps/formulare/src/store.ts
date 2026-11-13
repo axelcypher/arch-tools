@@ -647,6 +647,12 @@ export function dateiEntwurfVerschieben(root: string, von: string, nach: string 
 /** Lauf des Neulesens der Formularliste – ein früher begonnener, später fertiger setzt seinen Stand nicht mehr */
 let formulareLeseNr = 0;
 
+/**
+ * Lauf des Öffnens eines Formulars – zwei Klicks kurz nacheinander warten beide in `schliessen` (auch auf ein laufendes
+ * Speichern); nur der letzte öffnet, ein überholter bricht ab und löst eine schon gesetzte eigene Sperre wieder
+ */
+let oeffnenNr = 0;
+
 /** Warum ein offenes Formular nicht bearbeitet werden kann (Datei, eingereichter Antrag) – null, wenn es geht */
 export const bearbeitungGesperrt = (o: OffenesFormular) => o.nurLesen ?? (o.projekt ? sperrAnbindung.antrag(o.projekt) : null);
 
@@ -1311,6 +1317,8 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       const { ds, projekt } = get();
       if (!ds || !projekt) return;
       if (!(await dateiVerlassen())) return;
+      const nr = ++oeffnenNr;
+      const ueberholt = () => nr !== oeffnenNr;
       // erst lesen und prüfen – ein fehlgeschlagenes Öffnen lässt das geöffnete Formular unverändert
       let bytes: Uint8Array;
       try {
@@ -1319,16 +1327,26 @@ export const useFormulare = create<FormulareState>()((set, get) => {
         pruefen(b);
         bytes = b;
       } catch (e) {
-        nichtLesbar(eintrag.name, e);
+        if (!ueberholt()) nichtLesbar(eintrag.name, e);
         return;
       }
+      if (ueberholt()) return;
       await get().schliessen();
+      if (ueberholt()) return;
       let gesperrt: SperrZustand | null = null;
+      const sperreLoesen = async () => {
+        if (gesperrt?.art !== 'eigen') return;
+        const sp = sperrPfad(eintrag.pfad);
+        await ds.sperreLoesen(projekt.root, sp, gesperrt.daten).catch(() => false);
+        sperreVergessen(projekt.root, sp);
+      };
       try {
         const { zustand: sperre, aufgeraeumt } = await sperren(ds, projekt.root, eintrag.pfad);
         gesperrt = sperre;
         // Zwischen Lesen und Sperren könnte FORMA gespeichert haben: mit Sperre noch einmal lesen
         const frisch = sperre.art === 'eigen' ? ((await ds.lies(projekt.root, eintrag.pfad)) ?? bytes) : bytes;
+        // inzwischen ein anderes Formular angeklickt: das gilt – die eigene Sperre dieses Laufs wieder lösen
+        if (ueberholt()) return void (await sperreLoesen());
         await oeffnen(projekt, eintrag.pfad, eintrag.name, frisch, sperre);
         gesperrt = null;
         const offen = get().offen;
@@ -1339,11 +1357,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       } catch (e) {
         // gesperrt, aber nicht geöffnet (z. B. das frisch gelesene ist nicht lesbar): die eigene Sperre gleich wieder
         // lösen – sonst bliebe das Formular für FORMA bis zum Beenden der App gesperrt
-        if (gesperrt?.art === 'eigen') {
-          const sp = sperrPfad(eintrag.pfad);
-          await ds.sperreLoesen(projekt.root, sp, gesperrt.daten).catch(() => false);
-          sperreVergessen(projekt.root, sp);
-        }
+        await sperreLoesen();
         fehler(`${eintrag.name} lässt sich nicht öffnen`, e);
       }
     },

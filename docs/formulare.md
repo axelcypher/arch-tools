@@ -251,7 +251,10 @@ Neustarts übersteht. In die FORMA-Datei kommt sie erst mit „Speichern“; Kol
 - Je Formular bleiben die letzten 500 Schritte, für die 60 zuletzt bearbeiteten Formulare.
 - **Während des Speicherns weitertippen** geht nicht verloren: Was eingegeben wird, während die Datei noch geschrieben
   wird (langsames Netzlaufwerk), bleibt als ungespeicherte Änderung stehen – auch in der Projektkarte. Ein zweites
-  <kbd>Strg</kbd>+<kbd>S</kbd> in dieser Zeit entfällt.
+  <kbd>Strg</kbd>+<kbd>S</kbd> in dieser Zeit wartet und speichert danach, was inzwischen eingegeben wurde; ein anderes
+  Formular öffnet erst, wenn fertig geschrieben ist (die Sperre fällt nicht vorher). Während eine PDF gespeichert wird,
+  nimmt ihre Ansicht keine Eingaben an. Bearbeitete Dokumente nehmen ihre ungespeicherten Bearbeitungen beim
+  Umbenennen mit; beim Löschen entfallen sie (die Rückfrage nennt sie).
 - Lässt sich **nicht mehr lokal sichern** (Speicher voll), meldet die App das einmal – dann bald speichern.
 - Der Verlauf der **Projektkarte** wird beim Lesen ebenso abgeglichen: Hat sie jemand anderes geändert, kommen die
   alten Schritte unter „Frühere Sitzung“, damit <kbd>Strg</kbd>+<kbd>Z</kbd> keine alten Werte über die fremde Änderung
