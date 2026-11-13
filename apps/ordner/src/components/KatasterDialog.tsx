@@ -115,7 +115,7 @@ export function KatasterDialog({ basis, name, onClose, onEinstellungen, onStammd
                   {a.ok ? (
                     <button
                       className="link"
-                      title="Ordner im Explorer zeigen"
+                      title="Ordner öffnen"
                       onClick={() => a.datei && void oeffneOrdner(verbinde(basis, a.datei.split('/').slice(0, -1).join('/') || '.')).catch(() => undefined)}
                     >
                       <Symbol name="haken" /> {a.datei}
