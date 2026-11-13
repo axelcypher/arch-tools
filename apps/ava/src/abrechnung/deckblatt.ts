@@ -1,7 +1,7 @@
 /**
  * Deckblatt der Rechnungsprüfung als PDF („Kostenfeststellung / Anhang Rechnungsprüfung“) im Aufbau des
  * Büro-Vordrucks: Bauherr, Projekt, Gewerk, Firma, Zahlungsfreigabe, Rechnung, Netto-Forderung, die Rechnung
- * Schritt für Schritt bis zum Überweisungsbetrag, bereits erhaltene Zahlungen, Gruß und Unterschrift.
+ * Schritt für Schritt bis zum Überweisungsbetrag, bisher freigegebene Zahlungen, Gruß und Unterschrift.
  *
  * Mit einem Briefbogen (PDF, erste Seite) als Hintergrund sieht es aus wie bisher aus Word/Excel; ohne steht der
  * Büroname oben rechts und die Fußzeile aus den Einstellungen unten. Das Deckblatt lässt sich drucken (zum
@@ -12,6 +12,8 @@ import type { PDFFont, PDFPage } from 'pdf-lib';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import { APP_NAMEN } from '@core/appNamen';
 import type { Pruefung } from './pruefung';
+import { rund2 } from '../lv/rechnen';
+import { pdfText } from './pdfText';
 import { datumDE, euro, pruefen } from './pruefung';
 
 export interface DeckblattDaten {
@@ -40,13 +42,12 @@ export interface DeckblattDaten {
   fusszeile?: string;
   /** Text vor dem Gruß */
   schlusstext?: string;
+  /** Titel rechts über der Prüfung; Vorgabe „Kostenfeststellung/ Anhang Rechnungsprüfung“ (Büro-Vordruck) */
+  titel?: string;
 }
 
 export const VORGABE_SCHLUSSTEXT =
   'Wir bitten um kurzfristige Überweisung der von uns nach Rechnungsprüfung zur Auszahlung freigegebenen und verbuchten Summe und stehen für Rückfragen gerne zur Verfügung.';
-
-/** Zeilen- und Absatztrenner (U+2028/2029) kennt die Standardschrift nicht */
-const ZEILENTRENNER = new RegExp('[\\u2028\\u2029]', 'g');
 
 const A4: [number, number] = [595.28, 841.89];
 const MM = 72 / 25.4;
@@ -63,7 +64,7 @@ interface Stift {
 function schreib(s: Stift, text: string, x: number, y: number, o: { groesse?: number; fett?: boolean; rechts?: boolean; farbe?: ReturnType<typeof rgb> } = {}) {
   const font = o.fett ? s.fett : s.font;
   const size = o.groesse ?? 9;
-  const sauber = text.replace(ZEILENTRENNER, ' ');
+  const sauber = pdfText(text, font);
   const w = font.widthOfTextAtSize(sauber, size);
   s.page.drawText(sauber, { x: x * MM - (o.rechts ? w : 0), y: A4[1] - y * MM, size, font, color: o.farbe ?? SCHWARZ });
 }
@@ -79,7 +80,7 @@ function linie(s: Stift, x1: number, y: number, x2: number, dicke = 0.6) {
 /** Zeilenumbruch nach Breite (mm) */
 function umbrechen(font: PDFFont, text: string, size: number, breite: number): string[] {
   const out: string[] = [];
-  for (const absatz of text.split('\n')) {
+  for (const absatz of pdfText(text.replace(/\r/g, ''), font).split('\n')) {
     let zeile = '';
     for (const wort of absatz.split(/\s+/)) {
       const probe = zeile ? `${zeile} ${wort}` : wort;
@@ -91,6 +92,18 @@ function umbrechen(font: PDFFont, text: string, size: number, breite: number): s
     out.push(zeile);
   }
   return out;
+}
+
+/** höchstens so viele Zahlungen einzeln auf dem Deckblatt; der Rest in einer Sammelzeile mit Summe */
+export const MAX_ZAHLUNGEN = 12;
+
+/** Zeilen „bisher freigegeben“: bis zu {@link MAX_ZAHLUNGEN}, darüber die älteren als „weitere n Zahlungen“ zusammengefasst */
+export function zahlungsZeilen(bereits: Pruefung['bereits']): Pruefung['bereits'] {
+  if (bereits.length <= MAX_ZAHLUNGEN) return bereits;
+  const rest = bereits.length - (MAX_ZAHLUNGEN - 1);
+  const zusammen = bereits.slice(0, rest);
+  const summe = rund2(zusammen.reduce((x, z) => x + z.betrag, 0));
+  return [{ text: `${zusammen[0].text} bis ${zusammen[rest - 1].text} (${rest} Zahlungen)`, betrag: summe }, ...bereits.slice(rest)];
 }
 
 const prozentText = (n: number) => `${n.toLocaleString('de-DE', { maximumFractionDigits: 2 })}%`;
@@ -121,7 +134,7 @@ export async function deckblattPdf(d: DeckblattDaten, briefbogen?: Uint8Array | 
   schreib(s, d.kuerzel, L, 92, { groesse: 15, fett: true });
   schreib(s, d.vorhaben, 55, 89, { groesse: 9.5, fett: true });
   schreib(s, d.vorhabenAdresse, 55, 95, { groesse: 9.5, fett: true });
-  schreib(s, 'Kostenfeststellung/ Anhang Rechnungsprüfung', R, 101, { groesse: 9.5, fett: true, rechts: true });
+  schreib(s, d.titel ?? 'Kostenfeststellung/ Anhang Rechnungsprüfung', R, 101, { groesse: 9.5, fett: true, rechts: true });
   const r = pruefen(d.pruefung);
   // Kopfzeilen
   let y = 110;
@@ -152,8 +165,9 @@ export async function deckblattPdf(d: DeckblattDaten, briefbogen?: Uint8Array | 
     if (o.kasten) kasten(s, 160, y - 4, 31, 5.6);
     y += 5;
   };
-  const vereinbart = (pz: number, mitText = true) => {
-    if (mitText) schreib(s, 'vereinbarungsgemäß', 105, y);
+  // „vereinbarungsgemäß“ nur bei einem Satz über 0 – nichts wird als vereinbart behauptet, was nicht vereinbart ist
+  const vereinbart = (pz: number) => {
+    if (pz) schreib(s, 'vereinbarungsgemäß', 105, y);
     kasten(s, 135, y - 3.8, 17, 5);
     schreib(s, prozentText(pz), 145, y, { rechts: true });
   };
@@ -163,7 +177,7 @@ export async function deckblattPdf(d: DeckblattDaten, briefbogen?: Uint8Array | 
   wert('Abzüglich Nachlass', r.nachlass, { minus: true });
   wert('1. Zwischensumme:', r.zwischen1);
   schreib(s, prozentText(d.pruefung.mwstProzent), 145, y, { rechts: true });
-  wert(`${prozentText(d.pruefung.mwstProzent).replace('%', ' %')} Mwst.`, r.mwst);
+  wert(`${prozentText(d.pruefung.mwstProzent).replace('%', ' %')} USt`, r.mwst);
   wert('Brutto-Freigabesumme:', r.brutto, { fett: true });
   vereinbart(d.pruefung.umlageProzent);
   wert('Gemeinkostenumlage', r.umlage, { minus: true });
@@ -173,13 +187,14 @@ export async function deckblattPdf(d: DeckblattDaten, briefbogen?: Uint8Array | 
   wert('Sicherheitseinbehalt', r.einbehalt, { minus: true });
   wert('3. Zwischensumme:', r.zwischen3);
   vereinbart(d.pruefung.skontoProzent);
+  if (d.pruefung.skontoProzent && d.pruefung.skontoTage) schreib(s, `bei Zahlung binnen ${d.pruefung.skontoTage} Tagen`, 55, y);
   wert('Abzüglich Skonto', r.skonto, { minus: true });
   wert('Endsumme:', r.endsumme, { fett: true });
   linie(s, L, y - 4.2, R, 0.8);
   y += 4;
-  schreib(s, 'Davon bereits erhalten:', L, y);
+  schreib(s, 'Davon bisher freigegeben:', L, y);
   y += 7;
-  for (const z of d.pruefung.bereits.slice(0, 12)) {
+  for (const z of zahlungsZeilen(d.pruefung.bereits)) {
     schreib(s, z.text, 85, y);
     schreib(s, datumDE(z.datum), 125, y);
     schreib(s, '-', 150, y);

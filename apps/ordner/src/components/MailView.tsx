@@ -417,7 +417,7 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
           <input
             value={eigeneText}
             aria-label="Eigene Domains"
-            placeholder="z. B. akh-architektur.de"
+            placeholder="z. B. architekten-beispiel.example"
             onChange={(e) => setEigeneText(e.target.value)}
             onBlur={() => eigeneText !== eigene.join(', ') && void eigeneSetzen(eigeneText.split(/[,;\s]+/))}
             onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}

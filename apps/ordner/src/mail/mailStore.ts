@@ -9,7 +9,7 @@ import { konfigAendern, konfigLesen, konfigNeuLesen } from '@core/platform/konfi
 export const BEREICH_MAILS = 'mails';
 
 interface MailEinstellungen {
-  /** eigene Domains („akh-architektur.de“) oder einzelne Adressen */
+  /** eigene Domains („architekten-beispiel.example“) oder einzelne Adressen */
   eigene: string[];
 }
 

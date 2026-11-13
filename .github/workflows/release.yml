@@ -55,6 +55,7 @@ jobs:
           PUBKEY: ${{ secrets.TAURI_UPDATER_PUBKEY }}
         run: |
           apps='[]'
+          # dieselbe Liste und dieselben Tag-Schemata in scripts/versionen-pruefen.mjs (Versionsprüfung im PR)
           for d in flaechenrechner grz kosten ordner entzerrung formulare ava baurecht suite; do
             # der öffentliche Schlüssel in der App muss zum Signierschlüssel passen, sonst lehnen die Apps jedes Update ab
             k=$(node -p "require('./apps/$d/src-tauri/tauri.conf.json').plugins.updater.pubkey")

@@ -23,6 +23,11 @@ Kommunikation, Oberfläche, Commit-Texte und Doku sind auf **Deutsch**.
   nachziehen). Crate-Namen im Cargo.lock: `arch-flaechen-tool` (QUADRIO, Name bleibt absichtlich so),
   `grz-nachweis`, `kostenermittlung`, `projektordner`, `entzerrung`, `formulare`, `ava`, `baurecht` (LEXIO) und
   `arch-tools` (Rahmen-App Arkly, siehe `docs/suite.md`).
+  - Unmittelbar vor dem Merge `git fetch origin main && node scripts/versionen-pruefen.mjs main HEAD` (gegen das aktuelle
+    main; volle Historie nötig). Die CI prüft es im PR ebenfalls (Schritt „Versionen prüfen“: Tag noch frei, größer als
+    auf main, Rahmen-App mit hochgesetzt, und jede Änderung am Code einer App bzw. an `packages/core` hat eine neue
+    Version), aber nur zum Stand von main beim letzten Push. Ist eine Nummer vergeben: main
+    mergen, neu hochsetzen, CI abwarten, dann mergen. Eine neue App in `release.yml` und im Skript eintragen.
   - Änderungen an `packages/core` betreffen **alle** Apps, die den Code nutzen: QUADRIO, TERRIO, NUMIO, ATLAS,
     RECTIO, PERMIO, FABRIO, LEXIO und die Rahmen-App Arkly. Alle betroffenen Apps bumpen.
   - Ein Push auf `main` mit geänderter Version startet sofort den Release-Workflow (Installer und GitHub-Release).
@@ -33,7 +38,7 @@ Kommunikation, Oberfläche, Commit-Texte und Doku sind auf **Deutsch**.
 - **Alte Kennungen bleiben:** `arch-flaechen-tool` im Projektformat, in den Speicherschlüsseln und im Crate nicht
   „aufräumen“. Ebenso nach der Umbenennung der Apps: Die Produktnamen (Arkly, ATLAS, PERMIO, QUADRIO, TERRIO, NUMIO,
   RECTIO, FABRIO, LEXIO) stehen in `packages/core/src/appNamen.ts`; Ordner unter `apps/`, `?app=…`, Speicherschlüssel,
-  `arch-tools:…`-Nachrichten, Bundle-Kennungen, Crate-Namen und Release-Tags bleiben. Welche App früher wie hieß:
+  `arch-tools:…`-Nachrichten, Bundle-Kennungen, Crate-Namen und Release-Tags bleiben. Ebenso der Paketname `@akh/core` und die Kennungen `de.pendzialek.*` (Kennungen des Repo-Eigentümers, keine Kundendaten). Testdaten dagegen nur erfunden: Personen, Firmen und Projekte ausgedacht, Mailadressen mit `example.com`/`example.org` bzw. der Endung `.example`. Welche App früher wie hieß:
   README, Abschnitt „Neue Namen“. Die Abschnitte unten nennen die Apps mit den Namen zur Zeit des Reviews.
 - **Vor jedem Push:**
   - `npm run typecheck`, `npx vitest run` und `npm run build` grün.

@@ -166,7 +166,7 @@ function Ordner() {
         text={
           <>
             Stammordner mit den eigentlichen Projektordnern (z. B. <code>Z:\Projekte</code>) – gemeinsam für alle Apps (gemeinsamer Konfigurationsordner). Zuordnung
-            über das Kürzel – „BS5 Birkenstraße 5“ oder „JJ H24 …“ –, zwei Ebenen tief (auch in Unterordnern wie der Akquise).
+            über das Kürzel – „BS5 Buchenstraße 5“ oder „JJ H24 …“ –, zwei Ebenen tief (auch in Unterordnern wie der Akquise).
           </>
         }
       >

@@ -27,7 +27,20 @@ const BEREICH = 'ava-texte';
 
 export async function vorlagenLaden(): Promise<Vorlagetext[]> {
   const roh = await konfigLesen(BEREICH);
-  return Array.isArray(roh) ? (roh as Vorlagetext[]).filter((v) => v && typeof v.kurztext === 'string') : [];
+  if (!Array.isArray(roh)) return [];
+  // fehlerhafte Einträge im gemeinsamen Ordner nicht durchreichen: Pflichtfelder absichern
+  return (roh as Partial<Vorlagetext>[])
+    .filter((v): v is Partial<Vorlagetext> & { kurztext: string } => !!v && typeof v === 'object' && typeof v.kurztext === 'string')
+    .map(
+      (v) =>
+        ({
+          ...v,
+          id: typeof v.id === 'string' && v.id ? v.id : neueId('t'),
+          gruppe: typeof v.gruppe === 'string' ? v.gruppe : '',
+          langtext: Array.isArray(v.langtext) ? v.langtext : [],
+          geaendert: typeof v.geaendert === 'string' ? v.geaendert : '',
+        }) as Vorlagetext,
+    );
 }
 
 export function vorlagenAendern(f: (v: Vorlagetext[]) => Vorlagetext[]): Promise<Vorlagetext[]> {

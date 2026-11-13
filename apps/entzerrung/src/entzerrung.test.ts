@@ -2,9 +2,11 @@ import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { abbrechen, abschliessen, auswahlLoeschen, klick, punktVerschieben } from './aktionen';
 import { entpacken, fotoPfad, packen } from './datei';
-import { pdfPlan, passenderMassstab } from './export/export';
+import { leistenBreite, leistenFeld, pdfPlan, passenderMassstab, pixelZuEbene, plankopfLayout } from './export/export';
+import { abbilden } from './geo/mat';
+import { ausgabe } from './geo/messen';
 import { pdfErzeugen, winAnsi } from './export/pdf';
-import { crc32, jpegMitMassstab, pngMitMassstab } from './export/png';
+import { crc32, jpegDichte, jpegMitMassstab, pngDichte, pngMitMassstab } from './export/png';
 import { entzerrung } from './geo/ebene';
 import { neuesFoto } from './model';
 import { aktuell, ebeneHinzufuegen, useEntz } from './store';
@@ -43,6 +45,57 @@ describe('Projektdatei', () => {
     expect(entpacken(packen({ fotos: [] }, {})).doc.fotos).toEqual([]);
     expect(() => packen({ fotos: [foto] }, {})).toThrow(/fehlt/);
   });
+
+  it('prüft beim Laden Zahlen, Punkte, Methode und Kennungen', () => {
+    const json = (fotos: unknown[]) => zipSync({ 'entzerrung.json': strToU8(JSON.stringify({ format: 'arch-tools-entzerrung', version: 1, fotos })), 'fotos/a1.png': bytes(3) });
+    const basis = { id: 'a1', name: 'Hof', mime: 'image/png', breite: 100, hoehe: 80 };
+    // kaputte Bildgröße und kein JSON
+    expect(() => entpacken(json([{ ...basis, breite: 'x' }]))).toThrow(/Bildgröße/);
+    expect(() => entpacken(zipSync({ 'entzerrung.json': strToU8('{kein json') }))).toThrow(/beschädigt/);
+    // doppelte Kennungen
+    expect(() => entpacken(json([{ ...basis, ebenen: [{ id: 'a1' }] }]))).toThrow(/doppelte/);
+    // alter bzw. von Hand bearbeiteter Stand: fehlende Teile ergänzt, Unbrauchbares verworfen
+    const { doc } = entpacken(
+      json([
+        {
+          ...basis,
+          linse: { k1: null, k2: 0.01 },
+          hilfslinien: [{ id: 'h', punkte: [{ x: 1, y: 2 }, { x: 'a', y: 3 }, null] }],
+          ebenen: [
+            {
+              id: 'e1',
+              methode: 'kreis',
+              rechteck: { ecken: [{ x: 1, y: 1 }, { x: 2 }, { x: 3, y: 3 }], breite: -1 },
+              passpunkte: [{ id: 'p1', bild: { x: 1, y: 1 }, x: 2, y: 'z' }, { id: 'p2' }],
+              fluchtlinien: { waagerecht: [{ id: 'w1', a: { x: 0, y: 0 }, b: { x: 1, y: 0 } }, { id: 'w2', a: { x: 0, y: 0 } }], masse: [{ id: 'm', a: { x: 0, y: 0 }, b: { x: 0, y: 1 }, laenge: 0 }] },
+              ausschnitt: { x0: 0, y0: 0, x1: -1, y1: 1 },
+              aufloesung: 'fein',
+              messungen: [
+                { id: 's1', art: 'strecke', name: 'A', punkte: [{ x: 0, y: 0 }, { x: 1, y: 1 }] },
+                { id: 's2', art: 'flaeche', name: 'B', punkte: [{ x: 0, y: 0 }, { x: 1, y: 1 }] },
+                { id: 's3', art: 'kreis', punkte: [] },
+              ],
+            },
+          ],
+        },
+      ]),
+    );
+    const f = doc.fotos[0];
+    expect(f.linse).toMatchObject({ k1: 0, k2: 0.01 });
+    expect(f.hilfslinien[0].punkte).toEqual([{ x: 1, y: 2 }]);
+    const e = f.ebenen[0];
+    expect(e.methode).toBe('rechteck');
+    expect(e.rechteck).toEqual({ ecken: [{ x: 1, y: 1 }, { x: 3, y: 3 }], breite: undefined, hoehe: undefined });
+    expect(e.passpunkte).toEqual([{ id: 'p1', bild: { x: 1, y: 1 }, x: 2, y: undefined }]);
+    expect(e.fluchtlinien.waagerecht.map((l) => l.id)).toEqual(['w1']);
+    expect(e.fluchtlinien.senkrecht).toEqual([]);
+    expect(e.fluchtlinien.masse[0].laenge).toBeUndefined();
+    expect(e.ausschnitt).toBeUndefined();
+    expect(e.aufloesung).toBeUndefined();
+    expect(e.messungen.map((m) => m.id)).toEqual(['s1']);
+    // ohne Ebenen: eine leere Ebene
+    expect(entpacken(json([basis])).doc.fotos[0].ebenen).toHaveLength(1);
+  });
 });
 
 describe('Maßstab in Bilddateien', () => {
@@ -72,10 +125,26 @@ describe('Maßstab in Bilddateien', () => {
     expect(pngMitMassstab(out, 0.002).length).toBe(out.length);
   });
 
-  it('JPEG-Dichte in Pixel je cm', () => {
+  it('JPEG-Dichte nur, wenn sie genau darstellbar ist (sonst kein falscher Maßstab)', () => {
     const jfif = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0, 16, 0x4a, 0x46, 0x49, 0x46, 0, 1, 1, 0, 0, 1, 0, 1, 0, 0]);
-    const out = jpegMitMassstab(jfif, 0.002);
-    expect([...out.subarray(13, 18)]).toEqual([2, 0, 5, 0, 5]);
+    const kopf = (s: number) => {
+      const r = jpegMitMassstab(jfif, s);
+      return { kopf: [...r.daten.subarray(13, 18)], mit: r.mitMassstab };
+    };
+    expect(kopf(0.002)).toEqual({ kopf: [2, 0, 5, 0, 5], mit: true }); // 5 px/cm
+    expect(kopf(0.0025)).toEqual({ kopf: [2, 0, 4, 0, 4], mit: true });
+    expect(kopf(0.0254 / 300)).toEqual({ kopf: [1, 1, 44, 1, 44], mit: true }); // 300 dpi
+    // Gegenproben: 3 mm/px (3,33 px/cm), 20 und 25 mm/px (unter 1 px/cm) – ohne Einheit, Verhältnis 1:1
+    for (const s of [0.003, 0.02, 0.025]) expect(kopf(s)).toEqual({ kopf: [0, 0, 1, 0, 1], mit: false });
+    expect(jpegDichte(0.003)).toBeNull();
+    expect(jpegDichte(0.001)).toEqual({ einheit: 2, wert: 10 });
+  });
+
+  it('PNG-Dichte nur, wenn auf 0,1 % genau (sonst ohne Einheit)', () => {
+    expect(pngDichte(0.0025)).toBe(400);
+    expect(pngDichte(0.003)).toBe(333); // 0,1 % daneben – noch zulässig
+    expect(pngDichte(0.03)).toBeNull(); // 33 statt 33,3 px/m: 1 %
+    expect(pngDichte(0.15)).toBeNull();
   });
 });
 
@@ -113,7 +182,54 @@ describe('PDF', () => {
     expect(pdfPlan(b, 25, 'A3').passt).toBe(false);
     expect(passenderMassstab(b, 'A3')).toBe(50);
     expect(passenderMassstab(b, 'A0')).toBe(20);
-    expect(pdfPlan(b, 100, 'passend').seite).toEqual([140, 70 + 20 + 16]);
+    // „passend“: mindestens so breit, dass der Plankopf Platz hat
+    expect(pdfPlan(b, 100, 'passend').seite).toEqual([150 + 20, 70 + 20 + 26]);
+    expect(pdfPlan(b, 20, 'passend').seite).toEqual([600 + 20, 350 + 20 + 26]);
+  });
+
+  it('Maßstabsleiste: Felder mindestens 8 mm, übliche Stufen', () => {
+    expect(leistenFeld(50)).toBe(0.5); // 10 mm
+    expect(leistenFeld(100)).toBe(1); // 10 mm
+    expect(leistenFeld(20)).toBe(0.2); // 10 mm
+    expect(leistenFeld(25)).toBe(0.2); // 8 mm
+    for (const n of [1, 10, 50, 75, 125, 500, 2500]) {
+      const mm = (leistenFeld(n) * 1000) / n;
+      expect(mm).toBeGreaterThanOrEqual(8);
+      expect(mm).toBeLessThan(25.1);
+      expect(leistenBreite(n)).toBeCloseTo(4 * mm, 9);
+    }
+  });
+
+  it('Plankopf: Leiste neben dem Titel, bei langem Titel darunter; nie über den Satzspiegel', () => {
+    const zeilen = (titel: string) => [{ text: titel, groesse: 9, fett: true }, { text: 'M 1:50 · Maße in m', groesse: 6.5 }, { text: 'Hinweis', groesse: 6 }];
+    const kurz = plankopfLayout(190, 50, zeilen('Fassade – Ebene 1'));
+    expect(kurz.leiste.dy).toBeLessThan(0);
+    expect(kurz.leiste.x + leistenBreite(50)).toBeCloseTo(10 + 190, 9);
+    const lang = plankopfLayout(150, 50, zeilen('Projekt 2026-014 · Umbau und Erweiterung Wohnhaus Musterstraße · IMG_4711 – Ebene Straßenfassade'));
+    expect(lang.leiste.dy).toBeGreaterThan(lang.zeilen[lang.zeilen.length - 1].y);
+    expect(lang.leiste.x + leistenBreite(50)).toBeCloseTo(10 + 150, 9);
+  });
+
+  it('Ausgabe: Bereich auf ganze Pixel, Pixelmitte → Ebene, Bild im PDF genau im Maßstab', () => {
+    const a = ausgabe({ x0: 1, y0: 2, x1: 11.001, y1: 8 }, 0.0025);
+    expect(a.breite).toBe(4001);
+    expect(a.hoehe).toBe(2400); // 6 m / 2,5 mm genau, kein Pixel mehr durch Rundung
+    expect(a.bereich.x1).toBeCloseTo(1 + 4001 * 0.0025, 12);
+    expect(a.bereich.y0).toBeCloseTo(8 - 2400 * 0.0025, 12);
+    const p = abbilden(pixelZuEbene(a), { x: 0.5, y: 0.5 });
+    expect(p.x).toBeCloseTo(1 + 0.00125, 12);
+    expect(p.y).toBeCloseTo(8 - 0.00125, 12);
+    // Bildbreite im PDF = Pixel · Auflösung · 1000 / Maßstab
+    expect(pdfPlan(a.bereich, 50, 'A2').bild[0]).toBeCloseTo((a.breite * a.aufloesung * 1000) / 50, 9);
+  });
+
+  it('Ausgabe lehnt ungültige Bereiche und Auflösungen ab (keine Endlosschleife)', () => {
+    expect(() => ausgabe({ x0: 0, y0: 0, x1: NaN, y1: 1 }, 0.001)).toThrow(/Ausschnitt/);
+    expect(() => ausgabe({ x0: 0, y0: 0, x1: Infinity, y1: 1 }, 0.001)).toThrow(/Ausschnitt/);
+    expect(() => ausgabe({ x0: 2, y0: 0, x1: 1, y1: 1 }, 0.001)).toThrow(/Ausschnitt/);
+    expect(() => ausgabe({ x0: 0, y0: 0, x1: 1, y1: 1 }, 0)).toThrow(/Auflösung/);
+    expect(() => ausgabe({ x0: 0, y0: 0, x1: 1, y1: 1 }, NaN)).toThrow(/Auflösung/);
+    expect(ausgabe({ x0: 0, y0: 0, x1: 1, y1: 1 }, 0.01).breite).toBe(100);
   });
 });
 
@@ -182,6 +298,23 @@ describe('Bearbeiten', () => {
     expect(aktuell(useEntz.getState()).ebene!.messungen[0].punkte).toHaveLength(3);
     useEntz.getState().setze({ auswahl: { art: 'messung', id, index: 1 } });
     auswahlLoeschen(); // Fläche braucht drei Punkte → ganze Messung weg
+    expect(aktuell(useEntz.getState()).ebene!.messungen).toHaveLength(0);
+  });
+
+  it('Entf auf einer Ecke löscht nichts; „Ecken neu setzen“ bleibt der Weg', () => {
+    const s = mitFoto();
+    s.setze({ werkzeug: 'ecken' });
+    [{ x: 1, y: 9 }, { x: 9, y: 9 }, { x: 9, y: 1 }, { x: 1, y: 1 }].forEach((p) => klick(p));
+    useEntz.getState().setze({ auswahl: { art: 'ecke', id: aktuell(useEntz.getState()).ebene!.id, index: 2 } });
+    const vorher = useEntz.getState().doc;
+    auswahlLoeschen();
+    expect(useEntz.getState().doc).toBe(vorher);
+    expect(aktuell(useEntz.getState()).ebene!.rechteck.ecken).toHaveLength(4);
+    // Gegenprobe: eine Messung wird gelöscht
+    useEntz.getState().setze({ werkzeug: 'strecke' });
+    klick({ x: 2, y: 2 });
+    klick({ x: 3, y: 3 });
+    auswahlLoeschen();
     expect(aktuell(useEntz.getState()).ebene!.messungen).toHaveLength(0);
   });
 

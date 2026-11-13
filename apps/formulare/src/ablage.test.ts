@@ -4,23 +4,23 @@ import { SpeicherDateisystem } from './dateisystem';
 
 describe('Projektordner über das Kürzel zuordnen', () => {
   it('Kürzel als erstes oder zweites Wort, ganze Wörter, ohne Groß/Klein', () => {
-    expect(kuerzelPasst('BS5 Birkenstraße 5 Welver', 'BS5')).toBe(true);
-    expect(kuerzelPasst('JJ H24 Höggenstraße 24', 'H24')).toBe(true);
+    expect(kuerzelPasst('BS5 Buchenstraße 5 Welver', 'BS5')).toBe(true);
+    expect(kuerzelPasst('JJ H24 Hofstraße 24', 'H24')).toBe(true);
     expect(kuerzelPasst('26 OMW2 Umbau', 'omw2')).toBe(true);
     expect(kuerzelPasst('STRa Straßenhaus', 'STRa')).toBe(true);
     expect(kuerzelPasst('STRb Straßenhaus', 'STRa')).toBe(false);
     expect(kuerzelPasst('BS50 Bahnhofstraße 50', 'BS5')).toBe(false);
     expect(kuerzelPasst('Alt Neubau BS5', 'BS5')).toBe(false);
-    expect(kuerzelPasst('BS5_Birkenstraße', 'BS5')).toBe(true);
+    expect(kuerzelPasst('BS5_Buchenstraße', 'BS5')).toBe(true);
   });
 
   it('sucht zwei Ebenen tief und bevorzugt die oberste', async () => {
     const ds = new SpeicherDateisystem();
-    for (const p of ['BS5 Birkenstraße/Organisation/x.xlsx', '_Akquise/H24 Höggenstraße/notiz.txt', '_Akquise/BS5 alt/a.txt', 'AH5 Alter Hellweg/a.pdf']) ds.dateien.set(`Z:/Projekte/${p}`, new Uint8Array([1]));
+    for (const p of ['BS5 Buchenstraße/Organisation/x.xlsx', '_Akquise/H24 Hofstraße/notiz.txt', '_Akquise/BS5 alt/a.txt', 'AH5 Alter Weg/a.pdf']) ds.dateien.set(`Z:/Projekte/${p}`, new Uint8Array([1]));
     const { ordner, fehler } = await ablageSuchen(ds, ['Z:/Projekte']);
     expect(fehler).toEqual([]);
-    expect(zuordnen('BS5', ordner)?.pfad).toBe('BS5 Birkenstraße');
-    expect(zuordnen('H24', ordner)?.pfad).toBe('_Akquise/H24 Höggenstraße');
+    expect(zuordnen('BS5', ordner)?.pfad).toBe('BS5 Buchenstraße');
+    expect(zuordnen('H24', ordner)?.pfad).toBe('_Akquise/H24 Hofstraße');
     expect(zuordnen('XY1', ordner)).toBeNull();
   });
 });
