@@ -47,14 +47,14 @@ describe('Rahmen-App', () => {
     act(() => karte(host, 'ATLAS').click());
     expect(host.querySelector('iframe')?.getAttribute('src')).toBe('apps/ordner/index.html?rahmen=tab&app=ordner');
     // weitere App über „+“
-    act(() => (host.querySelector('.rahmen-plus button') as HTMLButtonElement).click());
-    act(() => ([...host.querySelectorAll('.rahmen-menue button')].find((b) => b.textContent?.includes('PERMIO')) as HTMLButtonElement).click());
+    act(() => (host.querySelector('button.rahmen-plus') as HTMLButtonElement).click());
+    act(() => ([...host.querySelectorAll('.menue button')].find((b) => b.textContent?.includes('PERMIO')) as HTMLButtonElement).click());
     expect([...host.querySelectorAll('.rahmen-tab-name')].map((t) => t.textContent)).toEqual(['ATLAS', 'PERMIO']);
-    expect([...host.querySelectorAll('iframe')].map((f) => f.className)).toEqual(['rahmen-app', 'rahmen-app aktiv']);
-    act(() => tab(host, 'ATLAS').click());
-    expect([...host.querySelectorAll('iframe')].map((f) => f.className)).toEqual(['rahmen-app aktiv', 'rahmen-app']);
+    expect([...host.querySelectorAll('[role="tabpanel"]')].map((f) => f.className)).toEqual(['rahmen-app', 'rahmen-app aktiv']);
+    act(() => (tab(host, 'ATLAS').querySelector('[role="tab"]') as HTMLButtonElement).click());
+    expect([...host.querySelectorAll('[role="tabpanel"]')].map((f) => f.className)).toEqual(['rahmen-app aktiv', 'rahmen-app']);
     expect(JSON.parse(localStorage.getItem('arch-tools:rahmen')!)).toEqual({ tabs: ['ordner', 'formulare'], aktiv: 'ordner' });
-    act(() => (tab(host, 'ATLAS').querySelector('button[title="Schließen"]') as HTMLButtonElement).click());
+    act(() => (tab(host, 'ATLAS').querySelector('button[title="Schließen (Entf)"]') as HTMLButtonElement).click());
     expect([...host.querySelectorAll('.rahmen-tab-name')].map((t) => t.textContent)).toEqual(['PERMIO']);
     expect(useRahmen.getState().aktiv).toBe('formulare');
   });
@@ -78,13 +78,13 @@ describe('Rahmen-App', () => {
     // Rückfrage mit drei Knöpfen statt window.confirm
     const confirm = vi.fn(() => true);
     window.confirm = confirm;
-    act(() => (tab(host, 'QUADRIO').querySelector('button[title="Schließen"]') as HTMLButtonElement).click());
+    act(() => (tab(host, 'QUADRIO').querySelector('button[title="Schließen (Entf)"]') as HTMLButtonElement).click());
     const dialog = () => host.querySelector('.modal.rf');
     expect(dialog()?.textContent).toContain('Änderungen an „QUADRIO – EFH Musterweg“ speichern?');
     expect([...dialog()!.querySelectorAll('button')].map((b) => b.textContent)).toEqual(['Abbrechen', 'Nicht speichern', 'Speichern']);
     await act(async () => [...dialog()!.querySelectorAll('button')].find((b) => b.textContent === 'Abbrechen')!.click());
     expect(useRahmen.getState().tabs).toEqual(['flaechenrechner']);
-    act(() => (tab(host, 'QUADRIO').querySelector('button[title="Schließen"]') as HTMLButtonElement).click());
+    act(() => (tab(host, 'QUADRIO').querySelector('button[title="Schließen (Entf)"]') as HTMLButtonElement).click());
     await act(async () => [...dialog()!.querySelectorAll('button')].find((b) => b.textContent === 'Nicht speichern')!.click());
     expect(useRahmen.getState().tabs).toEqual([]);
     expect(confirm).not.toHaveBeenCalled();
@@ -142,8 +142,8 @@ describe('Rahmen-App', () => {
     expect(anFlaechen).toHaveBeenCalledWith({ typ: 'arch-tools:projekt-angelegt', ordner: 'P:\\Projekte\\2026-014 Neu', an: 'flaechenrechner' }, window.location.origin);
     // vom Rahmen selbst: „+“-Menü – der Tab von ATLAS hört schon, der Auftrag geht sofort hin
     anProjekt.mockClear();
-    act(() => (host.querySelector('.rahmen-plus button') as HTMLButtonElement).click());
-    act(() => ([...host.querySelectorAll('.rahmen-menue button')].find((b) => b.textContent?.includes('Neues Projekt anlegen')) as HTMLButtonElement).click());
+    act(() => (host.querySelector('button.rahmen-plus') as HTMLButtonElement).click());
+    act(() => ([...host.querySelectorAll('.menue button')].find((b) => b.textContent?.includes('Neues Projekt anlegen')) as HTMLButtonElement).click());
     expect(useRahmen.getState().aktiv).toBe('ordner');
     expect(anProjekt).toHaveBeenCalledWith({ typ: 'arch-tools:assistent-neu', von: null, an: 'ordner' }, window.location.origin);
     // unbekannte Apps und fremde Herkunft zählen nicht
@@ -154,7 +154,95 @@ describe('Rahmen-App', () => {
 
   it('Startseite: „Neues Projekt anlegen“ öffnet den Tab von ATLAS mit dem Assistenten', () => {
     const host = render();
-    act(() => knopfMit(host, '+ Neues Projekt anlegen').click());
+    act(() => knopfMit(host, 'Neues Projekt anlegen').click());
     expect(useRahmen.getState()).toMatchObject({ tabs: ['ordner'], aktiv: 'ordner' });
+  });
+
+  it('Tabs per Tastatur: nur der gewählte in der Tab-Reihenfolge, ←/→/Pos1/Ende wechseln sofort, Entf schließt; Zustand im Namen', async () => {
+    const host = render();
+    act(() => useRahmen.getState().oeffnen('grz'));
+    act(() => useRahmen.getState().oeffnen('kosten'));
+    act(() => useRahmen.getState().oeffnen('ava'));
+    const reiter = () => [...host.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
+    expect(reiter().map((r) => r.tabIndex)).toEqual([-1, -1, 0]);
+    expect(reiter()[2].getAttribute('aria-controls')).toBe(host.querySelectorAll('[role="tabpanel"]')[2].id);
+    const taste = (key: string, extra: KeyboardEventInit = {}) => act(() => (document.activeElement ?? reiter()[0]).dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, ...extra })));
+    reiter()[2].focus();
+    taste('ArrowRight');
+    expect(useRahmen.getState().aktiv).toBe('grz');
+    expect(document.activeElement).toBe(reiter()[0]);
+    taste('End');
+    expect(useRahmen.getState().aktiv).toBe('ava');
+    taste('ArrowLeft');
+    expect(useRahmen.getState().aktiv).toBe('kosten');
+    // ungespeicherte Änderungen stehen im Namen des Tabs (das ● ist nur zu sehen)
+    const f = host.querySelector<HTMLIFrameElement>('iframe[src^="apps/kosten/"]')!;
+    Object.defineProperty(f, 'contentWindow', { value: { postMessage: () => {} }, configurable: true });
+    act(() => window.dispatchEvent(new MessageEvent('message', { data: { typ: 'arch-tools:status', app: 'NUMIO', name: 'K1', dirty: true }, origin: window.location.origin, source: f.contentWindow })));
+    expect(reiter()[1].getAttribute('aria-label')).toBe('NUMIO (Kostenermittlung) – K1, ungespeicherte Änderungen');
+    expect(reiter()[1].querySelector('.rahmen-tab-dirty')?.getAttribute('aria-hidden')).toBe('true');
+    // Entf schließt (ohne Änderungen sofort); der Fokus geht an den nun gewählten Tab
+    reiter()[2].focus();
+    await act(async () => void taste('Delete'));
+    await act(async () => {});
+    expect(useRahmen.getState()).toMatchObject({ tabs: ['grz', 'kosten'], aktiv: 'kosten' });
+    expect(document.activeElement).toBe(reiter()[1]);
+    // Strg+F4 ebenso – bei Änderungen erst die Rückfrage
+    await act(async () => void taste('F4', { ctrlKey: true }));
+    expect(host.querySelector('.modal.rf')?.textContent).toContain('Änderungen an „NUMIO – K1“ speichern?');
+    await act(async () => [...host.querySelector('.modal.rf')!.querySelectorAll('button')].find((b) => b.textContent === 'Nicht speichern')!.click());
+    await act(async () => {});
+    expect(useRahmen.getState().tabs).toEqual(['grz']);
+    // letzter Tab zu: Fokus an „+“
+    reiter()[0].focus();
+    await act(async () => void taste('Delete'));
+    expect(document.activeElement).toBe(host.querySelector('button.rahmen-plus'));
+    // ⧉ und × liegen nicht in der Tab-Reihenfolge (Tastatur: Entf, Kontextmenü)
+    expect([...host.querySelectorAll<HTMLButtonElement>('.rahmen-tab-knopf')].every((k) => k.tabIndex === -1)).toBe(true);
+  });
+
+  it('Menü „+“: gemeinsames Menü mit Tastatur, Esc schließt und gibt den Fokus zurück; Startseite bei offenem Tab', async () => {
+    const host = render();
+    const plus = host.querySelector<HTMLButtonElement>('button.rahmen-plus')!;
+    expect(plus.getAttribute('aria-label')).toBe('App öffnen');
+    expect(plus.getAttribute('aria-haspopup')).toBe('menu');
+    act(() => plus.click());
+    const menue = () => document.querySelector('.menue');
+    expect(menue()?.getAttribute('role')).toBe('menu');
+    expect(document.activeElement?.textContent).toContain('Neues Projekt anlegen …');
+    expect([...menue()!.querySelectorAll('[role="menuitem"]')].map((b) => b.textContent?.trim())).toHaveLength(8);
+    act(() => document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true })));
+    expect(document.activeElement?.textContent).toContain('ATLAS');
+    act(() => document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+    expect(menue()).toBeNull();
+    expect(document.activeElement).toBe(plus);
+    // bei offenem Tab: „Startseite“ zeigt die Übersicht, der Tab bleibt
+    act(() => useRahmen.getState().oeffnen('grz'));
+    act(() => plus.click());
+    act(() => ([...menue()!.querySelectorAll('button')].find((b) => b.textContent?.includes('Startseite')) as HTMLButtonElement).click());
+    expect(useRahmen.getState()).toMatchObject({ tabs: ['grz'], aktiv: null });
+    expect(host.querySelector('.rahmen-start')).not.toBeNull();
+  });
+
+  it('Kontextmenü am Tab: Schließen, Andere schließen', async () => {
+    const host = render();
+    act(() => useRahmen.getState().oeffnen('grz'));
+    act(() => useRahmen.getState().oeffnen('kosten'));
+    act(() => useRahmen.getState().oeffnen('ava'));
+    act(() => tab(host, 'NUMIO').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 10, clientY: 10 })));
+    const punkte = [...document.querySelectorAll('.menue [role="menuitem"]')].map((b) => b.textContent?.trim());
+    expect(punkte).toEqual(['SchließenEntf', 'Andere schließen']);
+    await act(async () => ([...document.querySelectorAll('.menue button')].find((b) => b.textContent === 'Andere schließen') as HTMLButtonElement).click());
+    expect(useRahmen.getState()).toMatchObject({ tabs: ['kosten'], aktiv: 'kosten' });
+    // mit Änderungen: Rückfrage, Abbrechen hört auf (der Tab mit Änderungen ist gewählt und bleibt)
+    act(() => useRahmen.getState().oeffnen('grz'));
+    act(() => useRahmen.getState().oeffnen('ava'));
+    act(() => useRahmen.getState().setStatus('grz', { name: 'N1', dirty: true }));
+    act(() => tab(host, 'FABRIO').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 10, clientY: 10 })));
+    await act(async () => ([...document.querySelectorAll('.menue button')].find((b) => b.textContent === 'Andere schließen') as HTMLButtonElement).click());
+    expect(host.querySelector('.modal.rf')?.textContent).toContain('TERRIO – N1');
+    await act(async () => [...host.querySelector('.modal.rf')!.querySelectorAll('button')].find((b) => b.textContent === 'Abbrechen')!.click());
+    await act(async () => {});
+    expect(useRahmen.getState()).toMatchObject({ tabs: ['grz', 'ava'], aktiv: 'grz' });
   });
 });
