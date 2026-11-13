@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { Modal } from '@core/ui/Dialog';
 import { useFormulare } from '../store';
 
 interface Treffer {
@@ -10,7 +11,9 @@ interface Treffer {
 
 /**
  * Schnellwahl (Strg+K): Projekte nach Kürzel oder Titel und die Formulare des aktuellen Projekts finden und mit
- * Enter öffnen – ohne durch Listen zu scrollen.
+ * Enter öffnen – ohne durch Listen zu scrollen. Der Fokus bleibt im Suchfeld (auch Tab führt nicht hinaus); ↑/↓
+ * markieren einen Treffer (aria-activedescendant), Esc schließt, danach steht der Fokus wieder dort, wo er vorher war
+ * (Modal, dialoge.ts).
  */
 export function Schnellwahl({ onClose }: { onClose: () => void }) {
   const projekte = useFormulare((s) => s.projekte);
@@ -19,6 +22,8 @@ export function Schnellwahl({ onClose }: { onClose: () => void }) {
   const { projektWaehlen, formularOeffnen } = useFormulare.getState();
   const [q, setQ] = useState('');
   const [markiert, setMarkiert] = useState(0);
+  const id = useId();
+  const liste = useRef<HTMLDivElement>(null);
 
   const treffer = useMemo((): Treffer[] => {
     const woerter = q.trim().toLowerCase().split(/\s+/).filter(Boolean);
@@ -34,6 +39,14 @@ export function Schnellwahl({ onClose }: { onClose: () => void }) {
     return (woerter.length ? [...p, ...f] : [...f, ...p]).slice(0, 50);
   }, [q, projekte, formulare, projekt, projektWaehlen, formularOeffnen]);
 
+  const optionId = (i: number) => `${id}-treffer-${i}`;
+  const aktiv = treffer.length ? Math.min(markiert, treffer.length - 1) : -1;
+
+  // der markierte Treffer bleibt beim Blättern mit ↑/↓ im Bild
+  useEffect(() => {
+    if (aktiv >= 0) liste.current?.querySelector(`[id="${optionId(aktiv)}"]`)?.scrollIntoView?.({ block: 'nearest' });
+  }, [aktiv]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const waehle = (t: Treffer | undefined) => {
     if (!t) return;
     onClose();
@@ -41,45 +54,51 @@ export function Schnellwahl({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="modal-backdrop fo-schnellwahl-huelle" onPointerDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="modal modal-wide fo-schnellwahl" aria-label="Schnellwahl">
-        <input
-          type="search"
-          autoFocus
-          placeholder="Projekt (Kürzel, Titel) oder Formular …"
-          value={q}
-          onChange={(e) => {
-            setQ(e.target.value);
-            setMarkiert(0);
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'ArrowDown') setMarkiert((m) => Math.min(treffer.length - 1, m + 1));
-            else if (e.key === 'ArrowUp') setMarkiert((m) => Math.max(0, m - 1));
-            else if (e.key === 'Enter') waehle(treffer[markiert]);
-            else if (e.key === 'Escape') onClose();
-            else return;
-            e.preventDefault();
-          }}
-        />
-        <div className="sw-liste" role="listbox">
-          {treffer.map((t, i) => (
-            <button
-              key={`${t.art}|${t.titel}|${t.unter}`}
-              role="option"
-              aria-selected={i === markiert}
-              className={`sw-eintrag${i === markiert ? ' active' : ''}`}
-              onMouseEnter={() => setMarkiert(i)}
-              onClick={() => waehle(t)}
-            >
-              <span>
-                <span className="fo-art">{t.art === 'projekt' ? 'Projekt' : 'Formular'}</span> <strong>{t.titel}</strong>
-              </span>
-              {t.unter && <span className="muted">{t.unter}</span>}
-            </button>
-          ))}
-          {!treffer.length && <p className="muted small-text">Nichts gefunden.</p>}
-        </div>
+    <Modal titel="Schnellwahl" onClose={onClose} breit className="fo-schnellwahl">
+      {/* kein autoFocus: den Startfokus setzt dialoge.ts (erstes Bedienelement) – so merkt es sich vorher die Stelle für die Rückkehr */}
+      <input
+        type="search"
+        role="combobox"
+        aria-label="Projekt oder Formular suchen"
+        aria-autocomplete="list"
+        aria-expanded={treffer.length > 0}
+        aria-controls={`${id}-liste`}
+        aria-activedescendant={aktiv >= 0 ? optionId(aktiv) : undefined}
+        placeholder="Projekt (Kürzel, Titel) oder Formular …"
+        value={q}
+        onChange={(e) => {
+          setQ(e.target.value);
+          setMarkiert(0);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'ArrowDown') setMarkiert((m) => Math.min(treffer.length - 1, m + 1));
+          else if (e.key === 'ArrowUp') setMarkiert((m) => Math.max(0, m - 1));
+          else if (e.key === 'Enter') waehle(treffer[aktiv]);
+          // das Suchfeld ist das einzige Bedienelement des Dialogs – Tab bleibt hier
+          else if (e.key !== 'Tab') return;
+          e.preventDefault();
+        }}
+      />
+      <div className="sw-liste" role="listbox" id={`${id}-liste`} aria-label="Treffer" ref={liste}>
+        {treffer.map((t, i) => (
+          // keine Knöpfe: Treffer wählt man über das Suchfeld (↑/↓, Enter) oder mit der Maus – sie sind kein Tab-Ziel
+          <div
+            key={`${t.art}|${t.titel}|${t.unter}`}
+            id={optionId(i)}
+            role="option"
+            aria-selected={i === aktiv}
+            className={`sw-eintrag${i === aktiv ? ' active' : ''}`}
+            onMouseEnter={() => setMarkiert(i)}
+            onClick={() => waehle(t)}
+          >
+            <span>
+              <span className="fo-art">{t.art === 'projekt' ? 'Projekt' : 'Formular'}</span> <strong>{t.titel}</strong>
+            </span>
+            {t.unter && <span className="muted">{t.unter}</span>}
+          </div>
+        ))}
+        {!treffer.length && <p className="muted small-text">Nichts gefunden.</p>}
       </div>
-    </div>
+    </Modal>
   );
 }

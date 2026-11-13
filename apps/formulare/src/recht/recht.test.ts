@@ -66,7 +66,7 @@ describe('Begründung an Bedingungen', () => {
     expect(offen.map((e) => e.ebene)).toEqual(['feld']);
     const text = entfallText(offen, [feld], p, {}, 'offen');
     expect(text.split('\n')).toEqual([
-      'Offen – hängt ab von: Gebäudeart (nicht festgelegt)',
+      'Ungeklärt – hängt ab von: Gebäudeart (nicht festgelegt)',
       'Erforderlich, bis Gebäudeart festgelegt ist.',
       'Nur für Betriebe.',
       '(nur erforderlich, wenn Gebäudeart Nichtwohngebäude)',

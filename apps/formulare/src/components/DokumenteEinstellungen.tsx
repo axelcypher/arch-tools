@@ -387,7 +387,7 @@ export function DokumenteEinstellungen() {
                         <BedingungEditor wert={k.bedingung} merkmale={merkmale} onChange={(b) => setzen(k.id, { bedingung: b })} />
                       </div>
                       <div className="es-zeile es-dok-fuss">
-                        <button id={`${kid}-entfernen`} className="small gefahr" onClick={() => void entfernen(k)}>
+                        <button id={`${kid}-entfernen`} className="small danger" onClick={() => void entfernen(k)}>
                           <Symbol name="muell" /> Dokument entfernen …
                         </button>
                         <button className="small" onClick={() => schliessen(k.id)}>

@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import type { OffenesFormular } from '../store';
 import { useFormulare } from '../store';
+import { Symbol } from './Symbol';
 
 const zeit = (ms: number) => {
   const d = new Date(ms);
@@ -32,8 +33,8 @@ export function VerlaufLeiste({ offen }: { offen: OffenesFormular }) {
     <aside className="fo-verlauf" aria-label="Verlauf">
       <div className="fo-verlauf-kopf">
         <h3>Verlauf</h3>
-        <button className="fo-klein" title="Schließen" onClick={() => setVerlaufOffen(false)}>
-          ×
+        <button className="icon" title="Verlauf ausblenden" aria-label="Verlauf ausblenden" onClick={() => setVerlaufOffen(false)}>
+          <Symbol name="schliessen" />
         </button>
       </div>
       <p className="muted small-text">

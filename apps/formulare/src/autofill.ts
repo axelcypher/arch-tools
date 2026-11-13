@@ -116,7 +116,7 @@ export interface Schritt {
 }
 
 export const ART_TEXT: Record<SchrittArt, string> = {
-  auto: 'Auto-Wert veraltet',
+  auto: 'übernommener Wert veraltet',
   leer: 'leer',
   manuell: 'von Hand überschrieben',
   unbekannt: 'anderer Inhalt (Herkunft unbekannt)',

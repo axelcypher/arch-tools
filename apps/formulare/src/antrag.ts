@@ -93,11 +93,29 @@ export function vorlageMitAntragsart(vorlage: string, reihenfolge: NamensTeil[] 
   return teile.join(' ');
 }
 
+/**
+ * Gelesene Abweichungen eines Projekts prüfen (lokaler Speicher, eingespielte Einstellungsdatei): nur, was je Projekt
+ * abweichen darf (`UEBERSCHREIBBAR`), nur nicht leere Texte, `ziel` nur „aktiv“ oder „pfad“ – Unbrauchbares entfällt
+ * (eine Zahl als Zielpfad legte sonst die Antragsdaten des Projekts lahm)
+ */
+export function ueberschreibungAus(roh: unknown): ExportUeberschreibung {
+  const o = roh && typeof roh === 'object' && !Array.isArray(roh) ? (roh as Record<string, unknown>) : {};
+  const out: ExportUeberschreibung = {};
+  for (const k of UEBERSCHREIBBAR) {
+    const v = o[k];
+    if (k === 'ziel') {
+      if (v === 'aktiv' || v === 'pfad') out.ziel = v;
+    } else if (typeof v === 'string' && v !== '') out[k] = v;
+  }
+  return out;
+}
+
 /** Einstellungen für ein Projekt: global, mit den Abweichungen des Projekts */
 export function einstellungenFuer(global: ExportEinstellungen, ueber: ExportUeberschreibung | undefined): ExportEinstellungen {
   const out = { ...global };
+  const u = ueberschreibungAus(ueber);
   for (const k of UEBERSCHREIBBAR) {
-    const v = ueber?.[k];
+    const v = u[k];
     if (v !== undefined && v !== '') (out as Record<string, unknown>)[k] = v;
   }
   return out;
@@ -111,10 +129,7 @@ export function ueberschreibungenAus(roh: unknown): Record<string, ExportUebersc
   const out: Record<string, ExportUeberschreibung> = {};
   if (!roh || typeof roh !== 'object' || Array.isArray(roh)) return out;
   for (const [projekt, u] of Object.entries(roh as Record<string, unknown>)) {
-    if (!u || typeof u !== 'object') continue;
-    const o = u as Record<string, unknown>;
-    const sauber = Object.fromEntries(UEBERSCHREIBBAR.filter((k) => typeof o[k] === 'string' && o[k] !== '').map((k) => [k, o[k]])) as ExportUeberschreibung;
-    if (sauber.ziel !== undefined && sauber.ziel !== 'aktiv' && sauber.ziel !== 'pfad') delete sauber.ziel;
+    const sauber = ueberschreibungAus(u);
     if (Object.keys(sauber).length) out[projekt] = sauber;
   }
   return out;
@@ -416,9 +431,8 @@ export interface UmfangEintrag {
   bedingung?: Bedingung;
 }
 
-/** Angaben der App zum Projekt – Abschnitt „formulare“ der Projektdatei (.oap), für alle im Büro gleich */
 /**
- * Angaben der App zum Projekt, wie sie die Oberfläche sieht: die Werte des **aktiven Antrags** (`ansicht`) – Antragsumfang,
+ * Angaben der App zum Projekt (Abschnitt „formulare“ der Projektdatei .oap, für alle im Büro gleich), wie sie die Oberfläche sieht: die Werte des **aktiven Antrags** (`ansicht`) – Antragsumfang,
  * Antragsmerkmale, Autofill-Zustände – und dazu alle Anträge (`antraege`), wie sie in der Projektdatei stehen.
  * Gespeichert wird im Abschnitt „formulare“ nur `aktiveFassung` und `antraege` (siehe `abschnittVon`).
  */
@@ -1406,7 +1420,6 @@ export function bereitschaft(datei: Pick<Eintrag, 'pfad' | 'geaendert'>, markier
   return 'bereit';
 }
 
-/** Antragsumfang aus den vorgewählten Einträgen des Katalogs */
 /** Antragsumfang aus Katalogeinträgen (ohne Vorlage: die früher vorgewählten) */
 export const umfangAusKatalog = (katalog: KatalogEintrag[], vorlage?: AntragsVorlage): UmfangEintrag[] =>
   (vorlage ? dokumenteDerVorlage(katalog, vorlage) : katalog.filter((k) => k.vorgewaehlt)).map(alsUmfang);
@@ -1613,7 +1626,7 @@ export function formularVon<T extends { pfad: string; name: string; kennung?: st
 /* ---------- Vollständigkeit ---------- */
 
 /**
- * grau: fehlt · rot: unvollständig · gelb: ausgefüllt, aber nicht (aktuell) im Antragsordner · grün: aktuell ·
+ * roter Ring: fehlt · rot: unvollständig · gelb: ausgefüllt, aber nicht (aktuell) im Antragsordner · grün: aktuell ·
  * entfällt: nach den Antragsmerkmalen nicht erforderlich
  */
 export type Status = 'fehlt' | 'unvollstaendig' | 'offen' | 'aktuell' | 'entfaellt';
@@ -1623,7 +1636,7 @@ export const STATUS_TEXT: Record<Status, string> = {
   fehlt: 'fehlt',
   unvollstaendig: 'nicht vollständig ausgefüllt',
   offen: 'noch nicht (aktuell) im Antragsordner',
-  aktuell: 'liegt aktuell im Antragsordner',
+  aktuell: 'aktuell im Antragsordner',
 };
 
 /** Reihenfolge der Status vom besten zum schlimmsten (ohne „entfällt“) */

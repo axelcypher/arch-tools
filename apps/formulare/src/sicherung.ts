@@ -4,8 +4,10 @@
  * Kolleginnen und Kollegen oder als Vorlage für die Vorgaben der App.
  */
 
+import { ueberschreibungenAus } from './antrag';
 import type { Abweichung } from './vorgabe';
 import { abweichungAus, istLeer } from './vorgabe';
+import { anzahl } from './text';
 
 export const SICHERUNG_ART = 'formulare-einstellungen';
 
@@ -21,7 +23,6 @@ export interface SicherungsBereich {
   umfang: (wert: unknown) => string;
 }
 
-const anzahl = (n: number, eins: string, mehr: string) => `${n} ${n === 1 ? eins : mehr}`;
 const istObjekt = (x: unknown): x is Record<string, unknown> => !!x && typeof x === 'object' && !Array.isArray(x);
 const eintraege = (x: unknown) => (istObjekt(x) ? Object.keys(x).length : 0);
 const liste = (x: unknown) => (Array.isArray(x) ? x.length : 0);
@@ -133,7 +134,8 @@ function geprueft(schluessel: string, wert: unknown): unknown {
       return p ? [[k, p]] : [];
     }));
   }
-  if (schluessel === 'formulare:export-projekte') return istObjekt(wert) ? Object.fromEntries(Object.entries(wert).filter(([, v]) => istObjekt(v))) : undefined;
+  // je Projekt nur brauchbare Abweichungen (Texte, Ziel „aktiv“/„pfad“) – eine Zahl als Zielpfad legte die Antragsdaten lahm
+  if (schluessel === 'formulare:export-projekte') return istObjekt(wert) ? ueberschreibungenAus(Object.fromEntries(Object.entries(wert).filter(([, v]) => istObjekt(v)))) : undefined;
   return wert;
 }
 

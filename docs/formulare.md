@@ -20,15 +20,36 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
   Ansicht „Antrag“) steht kurz, wann zuletzt geändert wurde („heute 14:30“, „gestern 09:05“, „03.03.“) – beim Formular
   auch nicht gespeicherte Eingaben; der volle Zeitpunkt steht im Tooltip (`zeit.ts`). In einer schmalen Navigation
   (unter 260 px – schmaler als die Vorgabe von 300 px) entfällt die Angabe, damit die Namen lesbar bleiben – der
-  Tooltip zeigt sie weiter.
+  Tooltip zeigt sie weiter. Dort stehen auch „Projektdaten“ und „Antragsdaten“ untereinander statt gekürzt, und die
+  Knöpfe eines Abschnittskopfs (etwa beim Projektordner) rücken bei Bedarf in die nächste Zeile.
 - **Menüs** (Kontextmenü, Knöpfe mit ▾ bzw. +) lassen sich mit der Tastatur bedienen: ↑/↓ wandern, Enter bzw. →
-  öffnet ein Untermenü (der Fokus geht hinein), ← bzw. Esc führt zurück zum Punkt darüber, Esc im Hauptmenü schließt.
-  Ein gesperrter Punkt nennt rechts den Grund; sein Untermenü klappt nicht auf.
+  öffnet ein Untermenü (der Fokus geht hinein), ← bzw. Esc führt zurück zum Punkt darüber, Esc oder Tab im Hauptmenü
+  schließt. Nach Esc, Tab oder einer Auswahl steht der Fokus wieder auf dem Knopf bzw. Eintrag, der das Menü geöffnet
+  hat; Menüknöpfe melden „aufgeklappt“ (`aria-expanded`). Ein gesperrter Punkt nennt rechts den Grund; sein Untermenü
+  klappt nicht auf.
+- **Dialoge** nutzen den gemeinsamen Rahmen (`Modal` aus `packages/core/src/ui/Dialog.tsx`): Esc und ein Klick daneben
+  schließen (nicht während einer laufenden Aktion), der Fokus springt beim Öffnen hinein, bleibt mit Tab im Dialog
+  und kehrt danach an die Stelle davor zurück. Das gilt auch für die Schnellwahl (<kbd>Strg</kbd>+<kbd>K</kbd>; der
+  Fokus bleibt im Suchfeld, ↑/↓ markieren einen Treffer, der im Bild bleibt) und die Vorschau der Antragsunterlagen
+  (Startfokus auf „Schließen“).
+- **Begriffe:** Die Ansicht der Projektkarte heißt in der Oberfläche durchgehend **„Projektdaten“** (Navigation, Titel,
+  „Projektdaten speichern“, Suche, Dialoge); „Projektkarte“ erscheint nur noch erklärend in Tooltips. **„ungeklärt“**
+  heißt: hängt an einem noch nicht festgelegten Antragsmerkmal; **„offen“** steht nur für fehlende Pflichtangaben.
+  Dateibefehle heißen überall „Mit Programm öffnen“ und „Im Explorer öffnen“ (Symbol Ordner).
+- **Farben:** Statusfarben kommen immer aus dem Designsystem (`--ok-*`, `--fehler-*`, `--warn-*` in
+  `packages/core/src/ui/base.css`), Schrift auf Akzentfarbe aus `--on-accent`; eigene Farben der App – Lila für
+  Bedingungen (`--bed-*`), Dateitypen (`--typ-*`) – stehen oben in `styles.css` mit Wert für das dunkle Schema. Status
+  der Antragsdokumente: roter Ring = fehlt, rot = unvollständig, gelb = noch nicht (aktuell) im Antragsordner, grün =
+  aktuell.
+- **Kleinste Fensterbreite (1000 px):** Navigation, Gliederung, Verlauf und das Einrichten-Panel schrumpfen bei
+  knapper Breite bis auf ihre Mindestbreite (220/180/220/280 px), das Papier behält mindestens 320 px. Die Projektdaten
+  ordnen ihr Raster nach dem Platz neben den Leisten (Containerabfrage): schmal 6 statt 12 Spalten, die Anschrift-Vorschau
+  rückt nach oben.
 - **Ohne Produktnamen:** Die Oberfläche nennt kein anderes Programm. Die App liest und schreibt das Dateiformat der
   Formularprojekte (siehe „Dateiformat“) und soll künftig auch ganz ohne das Originalprogramm auskommen.
 - **Seitenleisten** behalten ihre Breite, auch wenn eine Ansicht einen Rollbalken braucht (Platz dafür ist immer
-  frei); die Navigation, die Gliederung des Formulars und die Leiste der Projektkarte lassen sich am rechten Rand in der
-  Breite ziehen (gemerkt je Leiste, Doppelklick: Vorgabe). Rollbalken in den Farben des Schemas (alle Apps).
+  frei); die Navigation, die Gliederung des Formulars und die Leiste der Projektdaten lassen sich am rechten Rand in der
+  Breite ziehen – auch mit der Tastatur (Griff fokussieren, ←/→) – gemerkt je Leiste, Doppelklick: Vorgabe. Rollbalken in den Farben des Schemas (alle Apps).
   Rechts der **Inhalt**. Was zum Dokument gehört – Gliederung, Verlauf, Formularfläche –, steht im Grau der
   Formularfläche.
 - **Gemeinsame Einstellungen:** Die Stammordner der Projektordner und der Ort neuer Projektdateien gelten für alle
@@ -62,7 +83,8 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
 - **Prüfliste „Was fehlt noch?“** (`pruefliste.ts`): Der Filter „Offene“ zeigt genau, was im Füllstand fehlt – je
   Angabe eine Zeile mit den Eingaben darin (Gruppen wie „Gebäudeklasse“ als eine Zeile), ohne entfallene und nicht
   zählende Felder (Behördenfelder), mit den ungeklärten (hängen an nicht festgelegten Antragsmerkmalen). Im Kopf der
-  Gliederung steht „4 offen · 2 ungeklärt“ (Klick öffnet die Liste) bzw. „Nach den Vorgaben der App keine offenen
+  Gliederung steht „4 offen · 2 ungeklärt“ (Klick öffnet die Liste), im Filterknopf der Feldansicht gleich gezählt
+  „Offene (4) · 2 ungeklärt“, bzw. „Nach den Vorgaben der App keine offenen
   Angaben“ – nie „vollständig“. „Nächste offene Angabe“ (auch <kbd>F8</kbd>) springt zum ersten Feld der nächsten
   offenen Angabe nach dem Feld mit dem Fokus. Dazu kommen **Hinweise** (gelb, Widersprüche rot; nie blockierend):
   - **Widersprüchliche Kreuze** (`plausibel.ts`): Gruppenregel „genau eine“ (zählt wie „eine genügt“, mehr als ein
@@ -99,9 +121,9 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
 
   | Formulare | Was die Vorgabe schaltet |
   |---|---|
-  | Bauanträge I/1, I/2 (auch Stand 2024D), I/3 | Unterlagen nur beim Bauantrag; Maß der baulichen Nutzung nur mit Bebauungsplan (auch einfachem) oder Satzung, Flurkarte und Basiskarte nur nach §§ 34/35 BauGB (auch im einfachen Bebauungsplan), Baubeschreibung nicht beim Einfamilienhaus, eine Kostenangabe; Betriebsbeschreibung bei jedem Nichtwohngebäude (nicht nur bei Sonderbauten), Nr. 9 nur bei Sonderbauten; Nr. 11 Brandschutz: Erklärung bei GK 1–3, Bescheinigung bei GK 4/5, beim Sonderbau keins von beiden; I/1 Barrierefrei-Konzept bei der Errichtung; Vorbescheid-Teil nur beim Vorbescheid; I/3 „ja“ → Nr. 2 bis 6, „nein“ → Nr. 1, 4, 5, Nr. 6 Erklärung zum Brandschutz bei GK 1/2 immer |
+  | Bauanträge I/1, I/2 (auch Stand 2024D), I/3 | Unterlagen nur beim Bauantrag; Maß der baulichen Nutzung nur mit Bebauungsplan (auch einfachem) oder Satzung (auch in I/3), Flurkarte und Basiskarte nur nach §§ 34/35 BauGB (auch im einfachen Bebauungsplan und im Bereich einer Innen- oder Außenbereichssatzung), Baubeschreibung nicht beim Einfamilienhaus, eine Kostenangabe – bei einer Änderung (Umbau ohne Vergrößerung) und bei „Sonstige bauliche Anlage“ die Herstellungssumme, bei Errichtung und Erweiterung (Anbau, Aufstockung) der Rauminhalt bzw. die Rohbaukosten; Betriebsbeschreibung bei jedem Nichtwohngebäude und Wohn- und Geschäftshaus (nicht nur bei Sonderbauten), Nr. 9 bei Sonderbauten und Mittelgaragen; Nr. 11 Brandschutz: Erklärung bei GK 1–3, Bescheinigung bei GK 4/5 und bei einer Garage über 100 bis 1.000 m² (Mittelgarage, auch als Sonderbau – dann genügt die Erklärung nicht), bei anderen Sonderbauten und bei „Sonstige bauliche Anlage“ keins von beiden; in der Fassung 2024D nach geltendem § 68 (Erklärung GK 1–3, Bescheinigung GK 4/5, beim Sonderbau keins von beiden; Nr. 11 Schall-/Wärmeschutz und Standsicherheit nicht bei Wohngebäuden der GK 1/2) – ein Kästchen für Mittelgaragen gibt es dort nicht, beim Sonderbau weist ein Hinweis auf die Bescheinigung für Mittelgaragen hin; Art des Gebäudes (I/2) und Baustatistik (alle Bauanträge) nur bei Gebäuden – ein Gebäude ist es, wenn „Sonstige bauliche Anlage“ nicht oder zusätzlich eine Gebäudeklasse angekreuzt ist; I/1 Barrierefrei-Konzept bei der Errichtung; Vorbescheid-Teil nur beim Vorbescheid; I/3 „ja“ → Nr. 2 bis 6, „nein“ → Nr. 1, 4, 5, Nr. 6 Erklärung zum Brandschutz bei GK 1/2 immer, bei GK 3 mit „ja“, bei GK 4/5 nicht (Bescheinigung nötig). „Gebäudeart: kein Gebäude“ kreuzt „Sonstige bauliche Anlage“ vor |
   | Baubeschreibung I/7 | Nr. 8 bis 10 nicht im vereinfachten Verfahren; Nr. 11 nur bei Ortssatzung/Denkmalschutz |
-  | Anzeigen (Baubeginn, Rohbau, Fertigstellung), I/2.1, I/6 | Nachweise nach § 68 BauO NRW 2018 (Fassung ab 01.09.2026, nicht nach der alten Gliederung des Vordrucks): Schall-/Wärmeschutz und Standsicherheit entfallen nur bei Wohngebäuden der GK 1 und 2, Brandschutz bei GK 4/5 und Sonderbauten; Baugenehmigungsdatum nicht bei Freistellung |
+  | Anzeigen (Baubeginn, Rohbau, Fertigstellung), I/2.1, I/6 | Nachweise nach § 68 BauO NRW 2018 (Fassung ab 01.09.2026, nicht nach der alten Gliederung des Vordrucks): Schall-/Wärmeschutz und Standsicherheit entfallen nur bei Wohngebäuden der GK 1 und 2 (nicht beim Wohn- und Geschäftshaus), Brandschutz bei GK 4/5 und Sonderbauten; Baugenehmigungsdatum nicht bei Freistellung; Gebäudeeinmessung bei neuen Gebäuden und verändertem Grundriss; Hinweise: Nutzungsänderungsanzeige (I/2.1) seit 01.09.2026 an die Bauaufsichtsbehörde, referenzielles Verfahren (alte I/2.1, Stand 2022) seit 01.01.2024 aufgehoben (nur vorher eingeleitete Verfahren laufen nach altem Recht weiter, § 90 Abs. 4) |
   | Werbeanlage I/4, Teilung I/5, Beseitigung I/6.1, Abweichung I/10 und 2018 | Auswahlen, Detailangaben nur beim angekreuzten Kästchen, Bindungen nur wenn vorhanden |
   | Betriebsbeschreibungen I/8, I/9, Artenschutzprüfung | ja/nein-Fragen als Auswahl, Detailangaben nur bei „ja“ bzw. wenn Werte eingetragen sind |
   | Statistikbögen | Neubau-/Bestandsteile und Wohn-/Nichtwohnangaben nach den Kästchen des Bogens; Ziffernkästchen als eine Angabe; Behördenfelder zählen nicht |
@@ -112,12 +134,12 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
   und Unterschriftsfelder zählen nicht, bei Telefon/Telefax/E-Mail genügt eine Angabe. Bedingungen gibt es nur, wo der
   Vordruck oder BauO NRW/BauPrüfVO sie hergeben – im Zweifel keine. `vorgaben.test.ts` prüft gegen die echten
   Formulare unter `.ref/`, dass jeder Schlüssel existiert und dass jedes Formular dort eine Vorgabe hat.
-- **Erforderlich, entfällt, offen:** Eine Bedingung kann zutreffen (erforderlich), sicher nicht zutreffen (entfällt)
-  oder **offen** sein, weil sie an einem Antragsmerkmal hängt, das noch nicht festgelegt ist. Ein fehlendes Merkmal
+- **Erforderlich, entfällt, ungeklärt:** Eine Bedingung kann zutreffen (erforderlich), sicher nicht zutreffen (entfällt)
+  oder **ungeklärt** sein, weil sie an einem Antragsmerkmal hängt, das noch nicht festgelegt ist. Ein fehlendes Merkmal
   lässt nichts entfallen (Fail-safe, `bedingung.ts`: dreiwertige Auswertung; ein sicheres „nein“ der übrigen Teile
-  entscheidet trotzdem). Offene Angaben zählen im Füllstand wie erforderliche; Gliederung und Kopf zeigen sie
-  zusätzlich gelb („2 offen (hängt von Merkmalen ab)“), ✓ und voller Balken erscheinen erst, wenn nichts mehr fehlt.
-  Am Feld sind sie gelb hinterlegt, das Info-Symbol sagt „Offen – hängt ab von: Gebäudeart (nicht festgelegt)“ /
+  entscheidet trotzdem). Ungeklärte Angaben zählen im Füllstand wie erforderliche; Gliederung und Kopf zeigen sie
+  zusätzlich gelb („2 ungeklärt“, die Erklärung im Tooltip), ✓ und voller Balken erscheinen erst, wenn nichts mehr fehlt.
+  Am Feld sind sie gelb hinterlegt, das Info-Symbol sagt „Ungeklärt – hängt ab von: Gebäudeart (nicht festgelegt)“ /
   „Erforderlich, bis Gebäudeart festgelegt ist.“ Im Antragsumfang bekommen Dokumente mit fehlendem Merkmal den normalen
   Status, nie „nicht erforderlich“. Ein Abschnitt heißt „entfällt“, wenn seine Bedingung sicher nicht zutrifft oder
   alle seine zählenden Angaben entfallen; Abschnitte ganz ohne zählende Angaben heißen „freiwillig“.
@@ -140,9 +162,11 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
   festgelegt“ → erforderlich/entfällt/offen) für die Pflichtvorlagen. Eigene Bedingungen zeigen die
   Bedingung in Worten, ohne Gesetzestext.
 - **Antragsmerkmale der App:** Gebäudeklasse, Sonderbau, Verfahren, **Gebäudeart** (Einfamilienhaus,
-  Zweifamilienhaus, Mehrfamilienhaus, Nichtwohngebäude, kein Gebäude), **Vorhaben** (Errichtung, Änderung,
-  Nutzungsänderung, Beseitigung) und **Planungsrecht** (Bebauungsplan = qualifiziert oder vorhabenbezogen nach § 30
-  Abs. 1, 2 BauGB, einfacher Bebauungsplan nach § 30 Abs. 3 BauGB, Innenbereich, Außenbereich, Satzung nach BauGB). Der
+  Zweifamilienhaus, Mehrfamilienhaus, Wohn- und Geschäftshaus – gemischt genutzt, mit Betrieb bzw. öffentlich
+  zugänglicher Nutzung –, Nichtwohngebäude, kein Gebäude), **Vorhaben** (Errichtung, Erweiterung – Anbau,
+  Aufstockung, für die Kosten wie eine Errichtung –, Änderung, Nutzungsänderung, Beseitigung) und **Planungsrecht**
+  (Bebauungsplan = qualifiziert oder vorhabenbezogen nach § 30 Abs. 1, 2 BauGB, einfacher Bebauungsplan nach § 30
+  Abs. 3 BauGB, Innenbereich, Außenbereich, Satzung nach BauGB). Der
   einfache Bebauungsplan zählt für die Bauvorlagen als Bebauungsplan (Maß der baulichen Nutzung) und als Vorhaben nach
   §§ 34/35 (Flurkarte, Basiskarte). Ein gespeichertes „Bebauungsplan“ wird nicht umgedeutet; Antragsumfang und
   Hinweise erklären die Werte (`MERKMAL_ERKLAERUNG` in `bedingung.ts`). Die Vorgaben
@@ -152,7 +176,8 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
 - **Formular einrichten** („Einrichten“ in der Werkzeugleiste), je Formular und Stand – gilt in allen Projekten.
   Das Formular wird zur Fläche zum Auswählen: **Feld anklicken** (mit <kbd>Strg</kbd>/<kbd>Umschalt</kbd> mehrere),
   links zeigt die Gliederung den Aufbau als **Baum** (Abschnitte, Gruppen, Felder – mit Füllstand, Inhalt zum
-  Wiedererkennen und Zeichen für Bedingungen), rechts stehen **alle Einstellungen der Auswahl**:
+  Wiedererkennen und Zeichen für Bedingungen; bei knapper Breite mit × im Kopf einklappbar, „Gliederung“ in der
+  Werkzeugleiste zeigt ihn wieder), rechts stehen **alle Einstellungen der Auswahl**:
   - **Abschnitt:** Titel in der Gliederung, ein- oder ausblenden, Bedingung;
   - **Feld:** Titel (erscheint in den aufgeklappten Angaben und als Hinweis am Feld), „Zählt für den Füllstand“
     (z. B. Felder, die die Behörde ausfüllt), Bedingung – dazu wo es steht und wie es in FORMA heißt;
@@ -224,6 +249,16 @@ Neustarts übersteht. In die FORMA-Datei kommt sie erst mit „Speichern“; Kol
   Eingaben heruntergeladen, dann die Originaldatei wieder geöffnet; Desktop: Datei inzwischen außerhalb geändert),
   erscheinen sie unter „Frühere Sitzung – nicht in dieser Datei“ (nur zur Ansicht), und der Verlauf beginnt neu.
 - Je Formular bleiben die letzten 500 Schritte, für die 60 zuletzt bearbeiteten Formulare.
+- **Während des Speicherns weitertippen** geht nicht verloren: Was eingegeben wird, während die Datei noch geschrieben
+  wird (langsames Netzlaufwerk), bleibt als ungespeicherte Änderung stehen – auch in der Projektkarte. Ein zweites
+  <kbd>Strg</kbd>+<kbd>S</kbd> in dieser Zeit wartet und speichert danach, was inzwischen eingegeben wurde; ein anderes
+  Formular öffnet erst, wenn fertig geschrieben ist (die Sperre fällt nicht vorher). Während eine PDF gespeichert wird,
+  nimmt ihre Ansicht keine Eingaben an. Bearbeitete Dokumente nehmen ihre ungespeicherten Bearbeitungen beim
+  Umbenennen mit; beim Löschen entfallen sie (die Rückfrage nennt sie).
+- Lässt sich **nicht mehr lokal sichern** (Speicher voll), meldet die App das einmal – dann bald speichern.
+- Der Verlauf der **Projektkarte** wird beim Lesen ebenso abgeglichen: Hat sie jemand anderes geändert, kommen die
+  alten Schritte unter „Frühere Sitzung“, damit <kbd>Strg</kbd>+<kbd>Z</kbd> keine alten Werte über die fremde Änderung
+  schreibt.
 
 ### Projektkarte und Stammdaten
 
@@ -244,9 +279,9 @@ Anschrift, wie sie in Formularen steht.
   Aufbau), sonst für diese Gruppe – jeweils in allen Projekten. „n Einträge ausgeblendet – zeigen“ unter der Gruppe
   zeigt sie gedämpft wieder und lässt sie einblenden. Einträge mit ungespeicherten Änderungen bleiben sichtbar.
   Ausgeblendete Einträge befüllen die Formulare weiter.
-- **Werkzeugleiste:** ↶ ↷ (<kbd>Strg</kbd>+<kbd>Z</kbd> / <kbd>Strg</kbd>+<kbd>Y</kbd>), „Projektkarte speichern“
+- **Werkzeugleiste:** ↶ ↷ (<kbd>Strg</kbd>+<kbd>Z</kbd> / <kbd>Strg</kbd>+<kbd>Y</kbd>), „Projektdaten speichern“
   (<kbd>Strg</kbd>+<kbd>S</kbd>) und „Verwerfen“ (lässt sich rückgängig machen). Ungespeicherte Änderungen bleiben
-  lokal gesichert, auch über Neustarts. Geänderte Einträge sind orange markiert, ↺ setzt einen zurück.
+  lokal gesichert, auch über Neustarts. Geänderte Einträge sind orange markiert, der Pfeil am Eintrag setzt einen zurück.
 - **Auswahllisten und Optionen** wie in FORMA (Anrede, Land, Bodenklasse, Neigung …), Kästchen gesammelt unter einem
   Titel (Besondere Auflagen). Die Möglichkeiten selbst bleiben, wie FORMA sie angelegt hat.
 - **Übernehmen von …:** alle Angaben einer anderen Adressgruppe dieses Projekts (z. B. Eigentümer = Bauherr) oder
@@ -257,7 +292,7 @@ Anschrift, wie sie in Formularen steht.
   Adresse aus den Projektkarten entsteht eine eigene Fassung, Marke „geändert“, „Änderungen verwerfen“ nimmt sie
   zurück), „Löschen“ bzw. „Ausblenden“ nimmt sie aus dem Adressbuch (ausgeblendete unten wieder einblendbar). Die
   eigenen Adressen stehen im gemeinsamen Konfigurationsordner (Bereich `formulare`, Eintrag `adressen`) und gelten für
-  alle im Büro; die Projektkarten selbst ändert das Adressbuch nicht. „Aus den Projektkarten einlesen“ liest alle
+  alle im Büro; die Projektkarten selbst ändert das Adressbuch nicht. „Aus den Projektdaten einlesen“ liest alle
   Projektkarten neu. So funktioniert das Adressbuch auch ohne Projektkarten.
 - **Eigene Ansicht der Projektkarte:** oben in der Leiste der Projektkarte – die Einträge, die das Büro nutzt, aus
   allen Gruppen auf einer Seite, in eigenen Abschnitten und eigener Reihenfolge.
@@ -338,7 +373,7 @@ Anschrift, wie sie in Formularen steht.
   Vorschau durchblättern“) zeigt alle Unterlagen der aktiven Fassung im ganzen Fenster – zuerst die Dokumente des
   Antragsumfangs in ihrer Reihenfolge, dann die übrigen. Blättern mit ‹ ›, ← → oder Bild↑/Bild↓ bzw. über die Liste
   links; Zoom mit − + (Tasten − + 0) oder der Auswahl (Seitenbreite, 50–300 %). PDFs erscheinen mit allen Seiten,
-  Bilder ebenso, andere Dateien öffnet „Extern öffnen“. „Als bereit markieren“ geht auch hier. Esc schließt.
+  Bilder ebenso, andere Dateien öffnet „Mit Programm öffnen“. „Als bereit markieren“ geht auch hier. Esc schließt.
 - **Alle Formulare exportieren:** Knopf in der Ansicht „Antrag“ bzw. ⇪ im Kopf des Abschnitts „FORMA“: alle
   Formulare des FORMA-Projekts als PDF, Name und Ziel wie beim einzelnen Export (Namensvorlage, aktive Fassung).
   Formulare in `_archiv` bzw. `archiv` bleiben außen vor. Gibt es Dateien schon, fragt die App einmal: „Ersetzen“,
@@ -374,8 +409,9 @@ Anschrift, wie sie in Formularen steht.
   - **neue Formulare** (aus dem Antragsumfang oder „Formular hinzufügen“): leere Felder mit Auto-Wert werden gleich
     befüllt;
   - wer den Auto-Text durch eigenen ersetzt, **fixiert die Überschreibung** (beim Speichern) – sie bleibt beim
-    Aktualisieren; im Formular ist ein Feld aus der Projektkarte links blau, ein überschriebenes orange markiert;
-  - ein **geleertes Feld** bekommt beim Verlassen wieder den Auto-Wert; **erzwungen leer** ist ein Feld mit einem
+    Aktualisieren; im Formular trägt ein Feld aus den Projektdaten links einen blauen Strich, ein überschriebenes einen
+    dunkelorangen (Papierfarben `--p-auto`/`--p-fixiert`, in beiden Farbschemata gleich – das Papier bleibt hell);
+  - ein **geleertes Feld** bekommt beim Verlassen wieder den Auto-Wert; **bewusst leer** ist ein Feld mit einem
     Leerzeichen;
   - **Daten aktualisieren …** (Werkzeugleiste des Formulars, auch im Kontextmenü eines Formulars in der Navigation):
     Vorschau aller Felder, die sich ändern würden – vorgewählt sind Felder mit dem bisherigen Auto-Wert und leere;
@@ -409,12 +445,13 @@ schon als PDF vorliegen, welche Berechnungen es gibt), als Ziel des PDF-Exports 
   (`Organisation`, `03 Berechnungen/Flächen`), Platzhalter `*` und `?` je Ebene. Die Vorgabe steht in den
   Einstellungen, je Projekt lässt sie sich über ⚙ ändern. Ordner werden erst beim Aufklappen gelesen.
 - **Klick** auf eine PDF-, Excel-, Word- oder Bilddatei zeigt sie in der App (siehe unten), **Doppelklick** öffnet
-  sie mit ihrem Programm, ↗ zeigt einen Ordner im Explorer. Besitzerdateien von Office (`~$…`) werden ausgeblendet.
-- **Rechtsklick** auf eine Datei: Ansehen, Mit Programm öffnen, Im Explorer zeigen, **Kopieren** (danach Rechtsklick
+  sie mit ihrem Programm, das Ordnersymbol rechts am Ordner („Im Explorer öffnen“, beim Überfahren oder per Tastatur
+  sichtbar) öffnet ihn im Explorer. Besitzerdateien von Office (`~$…`) werden ausgeblendet.
+- **Rechtsklick** auf eine Datei: Ansehen, Mit Programm öffnen, Im Explorer öffnen, **Kopieren** (danach Rechtsklick
   auf einen Ordner › Einfügen), **Duplizieren** („Name (Kopie).pdf“), **Umbenennen …**, **Löschen …** (nach
   Bestätigung, mit Sicherungskopie im App-Ordner), mit einem **Antragsdokument verknüpfen** (liegt die Datei nicht im
   Ordner der aktiven Fassung, wird sie dorthin kopiert) und Pfad kopieren. Rechtsklick auf einen Ordner: Einfügen,
-  Neuer Ordner …, Im Explorer zeigen. Überschrieben wird nie; Dateien von FORMA (`.frmsjf`, `.frmtmp`, `.sdb`,
+  Neuer Ordner …, Im Explorer öffnen. Überschrieben wird nie; Dateien von FORMA (`.frmsjf`, `.frmtmp`, `.sdb`,
   `.ini`) lassen sich hier nicht umbenennen.
 - **Formulare löschen** (Rechtsklick auf ein Formular › Löschen …): nach Rückfrage und mit Sicherungskopie im
   App-Ordner. Ist das Formular hier geöffnet, wird es vorher geschlossen (die Rückfrage warnt vor nicht gespeicherten
@@ -448,7 +485,7 @@ Einstellungen und des Namensschemas (`packages/core/src/fassung.ts`, auch in der
   Unterordner vor; im Menü „Vorhandenes Formular zuordnen“ steht der Unterordner als Hinweis. Zugeordnet und für den
   Autofill gemerkt wird ein Formular mit dem Pfad ab dem Formularprojekt („2. BAUA/002-Bauantrag.frmsjf“; auf der
   obersten Ebene wie bisher der Dateiname) – auch beim Export. Größe und Zeit (Status „aktuell“, „zuletzt bearbeitet“)
-  gelten je Pfad; die Sperrenliste umfasst den Unterordner des aktiven Antrags, „Im Explorer zeigen“ öffnet den Ordner
+  gelten je Pfad; die Sperrenliste umfasst den Unterordner des aktiven Antrags, „Im Explorer öffnen“ öffnet den Ordner
   des Formulars.
 - **Dateiname** nach der Namensvorlage, Vorgabe `{PROJEKT_KUERZEL} {Art} {DATUM} {Nr} {Name}` → „BS9 BAUA 261110 03
   Baubeschreibung.pdf“ (Datum als JJMMTT, eine leere Nummer entfällt). Die **Antragsart kommt immer aus dem Antrag**
@@ -853,8 +890,8 @@ Die Katasterpläne (QGIS) sind ins Projektordner-Tool umgezogen – siehe [proje
 
 ### Dokumente ansehen und bearbeiten
 
-Dokumente aus dem Projektordner erscheinen in der App mit Kopfzeile (Art, Name, Ordner, „Neu laden“, „Extern
-öffnen“). Bearbeitet wird so, dass alles, was nicht geändert wurde, in der Datei bleibt, wie es war:
+Dokumente aus dem Projektordner erscheinen in der App mit Kopfzeile (Art, Name, Ordner, „Neu laden“, „Mit
+Programm öffnen“). Bearbeitet wird so, dass alles, was nicht geändert wurde, in der Datei bleibt, wie es war:
 
 - **PDF:** alle Seiten, Zoom (Seitenbreite oder 50–200 %). Hat die PDF **Formularfelder**, lassen sie sich direkt
   auf der Seite ausfüllen. Mit **Text** und **Kreuz** lässt sich auch in PDFs ohne Formularfelder etwas eintragen:
@@ -873,8 +910,12 @@ Dokumente aus dem Projektordner erscheinen in der App mit Kopfzeile (Art, Name, 
 - **Bilder** werden angezeigt.
 - Ist eine Datei in **Excel oder Word geöffnet** (Besitzerdatei `~$…`), wird sie nur angezeigt. Hat jemand sie
   **seit dem Öffnen geändert**, wird nicht gespeichert – „Neu laden“ liest die neue Fassung, die eigenen
-  Bearbeitungen bleiben als Entwurf erhalten (bis zum Schließen der App; die Datei ist in der Seitenleiste mit ●
-  markiert).
+  Bearbeitungen in Excel und Word bleiben als Entwurf erhalten (bis zum Schließen der App; die Datei ist in der
+  Seitenleiste mit ● markiert).
+- **Ungespeicherte Bearbeitungen in Dokumenten** gelten nur für diese Sitzung: Die Titelleiste zeigt dann ●, und beim
+  Beenden bzw. vor einem Update fragt die App nach. Eingaben in einer **PDF** hält nur die Ansicht – wer sie verlässt
+  (andere Ansicht, anderes Dokument, Formular oder Projekt, „Neu laden“), wird gefragt: „Speichern / Nicht speichern /
+  Abbrechen“.
 - Vor jedem Speichern legt die App eine **Sicherungskopie** der bisherigen Fassung im App-Ordner an
   (`%LOCALAPPDATA%\de.pendzialek.formulare\Sicherungen`, die letzten 200).
 
@@ -1003,6 +1044,9 @@ Adressgruppen (Typ 1) haben dieselben Einträge: 10 Branche, 20 Titel, 30 Vornam
 | 16 | Kästchen | Beschriftung (z. B. „Wärmeschutz“) | 1 = angekreuzt |
 
 Bei Auswahl, Optionen und Kästchen schreibt die App nur `Ganzzahl`; die Möglichkeiten in `Texte` bleiben unverändert.
+Texte stehen als UTF-8 darin; ältere Einträge in Windows-1252 werden als solche gelesen. Geschrieben wird ein Eintrag
+nur, wenn er noch genau die gelesenen Bytes enthält – bei einem Windows-1252-Text vergleicht die App deshalb mit
+dessen Rohbytes (neu geschrieben wird immer UTF-8).
 Die leere erste Zeile der Auswahlliste steht für „keine Angabe“ (−1); `Ganzzahl` 0 ist die erste Möglichkeit danach.
 So liest SJ Office die Projektkarte: Bei „Land“ ist 0 „NRW“ und 1 „RLP“, bei der Anrede 1 „Sehr geehrter Herr“. Bis
 Formulare 0.35 zählte die App die leere Zeile mit – dort gewählte Auswahlen erscheinen jetzt (wie in SJ Office) um

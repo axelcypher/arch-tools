@@ -112,6 +112,33 @@ Block 1 (Q-1, Q-2, Q-6): FR 0.16.0, GRZ 0.8.0, KO 0.8.0, PO 0.3.0, EZ 0.3.0, FO 
   Abschnitt: oben rechts am Rahmen); im Tab-Ablauf, F1 im Feld fokussiert das Symbol und zeigt den Hinweis, Enter
   öffnet den Gesetzestext, Esc zurück; nie im Druck
 
+### Gesamt-Review November 2026 (FO 0.42.0)
+
+Drei Prüfer (Code, Oberfläche, Baurecht) haben die ganze App bewertet; umgesetzt sind alle Pflichtpunkte:
+
+- **Code:** keine verlorenen Eingaben beim Speichern – was während des Schreibens eingegeben wird, bleibt stehen
+  (Formular, Projektkarte, Dokumente), Speichern läuft nacheinander, Schließen löst die Sperre erst nach dem Schreiben;
+  Projektkarte mit Texten in Windows-1252 speicherbar (Rohbytes als „alt“); Bearbeitungen in PDF, Excel und Word
+  zählen als ungespeichert (● , Rückfrage beim Beenden), Rückfrage „Speichern / Nicht speichern / Abbrechen“ vor dem
+  Verlassen einer bearbeiteten PDF, gescheitertes PDF-Speichern verliert nichts; Abweichungen je Projekt beim Laden und
+  Einspielen geprüft; Verlauf der Projektkarte abgeglichen; Sperre bei fehlgeschlagenem Öffnen gelöst; Meldung bei
+  voller lokaler Sicherung; Entwürfe ziehen beim Umbenennen mit; gemeinsame Helfer (`speicher.ts`, `text.ts`).
+- **Baurecht:** Innen- und Außenbereichssatzung zählen als Vorhaben nach §§ 34/35 (Katasterauszug); Mittelgarage:
+  Bescheinigung nach § 68 Abs. 2 Satz 3 auch als Sonderbau, Nr. 9 nach § 12 Abs. 4 BauPrüfVO; Herstellungssumme bei
+  Änderung und baulichen Anlagen ohne Gebäude, neues Vorhaben „Erweiterung“ (Brutto-Rauminhalt); Fassung 2024D nach
+  geltendem § 68; neue Gebäudeart „Wohn- und Geschäftshaus“ (Betriebsbeschreibung, Barrierefreiheit, Nachweise);
+  I/3: Maßberechnung nur mit Bebauungsplan/Satzung, Nr. 6 nicht bei GK 4/5; Gebäude-Erkennung über „Sonstige bauliche
+  Anlage“ und Gebäudeklasse (aus „kein Gebäude“ vorbelegt); Baustatistik nur bei Gebäuden; Hinweise zum aufgehobenen
+  referenziellen Verfahren (§ 90 Abs. 4) und zum Adressaten der Nutzungsänderungsanzeige; Einmessung nach § 16 Abs. 2
+  VermKatG NRW.
+- **Oberfläche:** feste Farben durch Variablen ersetzt (Kontrast in beiden Schemata, eigene Papierfarben); Layout bei
+  1000 px Fensterbreite (schrumpfende Leisten, einklappbare Gliederung im Einrichten, Containerabfragen); einheitlich
+  „Projektdaten“, „ungeklärt“, „Im Explorer öffnen“, „Mit Programm öffnen“, echte Einzahl/Mehrzahl; Dialoge über das
+  gemeinsame `Modal` (Esc, Fokus), Schnellwahl als Liste mit `aria-activedescendant`, Menü mit Fokusrückgabe,
+  Ziehgriff aus core; Klickflächen ≥ 24 px; keine Großbuchstaben für Nebeninfos; Symbole statt Zeichen.
+
+Versionen: Formulare 0.42.0, Rahmen-App 0.18.0.
+
 ## Flächenrechner
 
 Block 1 (Fehler F-01 bis F-09): FR 0.18.1; wegen des Projektformats (neue Geschossfelder) bzw. des IFC-Ladens auch

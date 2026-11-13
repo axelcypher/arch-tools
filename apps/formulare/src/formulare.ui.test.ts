@@ -10,6 +10,7 @@ import { cp1252Lesen, cp1252Schreiben } from './forma/cp1252';
 import type { Projektkarte } from './forma/projektkarte';
 import { sperreVermerken } from './eigeneSperren';
 import { kartenVerknuepfbar, mitAenderungen, useFormulare } from './store';
+import { useAktualisieren } from './aktualisieren';
 import { einstiegsAktionen, farbschemaWechseln } from '@core/ui/rauchtest';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -85,6 +86,8 @@ beforeEach(() => {
   ds.dateien.set('C:/FORMA/BS9/_archiv/000-Alt.frmsjf', MUSTER);
   ds.dateien.set('C:/FORMA/Sonstiges/notiz.txt', new Uint8Array([1]));
   useFormulare.setState({ ds, ...ANFANG, kartenFavoriten: [], kartenAusgeblendet: [], kartenEintraegeAusgeblendet: [] });
+  // keine Rückfrage „Unterlagen aktualisieren“ aus einem früheren Test (sonst bliebe ein Dialog über der App offen)
+  useAktualisieren.setState({ unterlagen: null });
 });
 afterEach(() => {
   act(() => root?.unmount());
@@ -215,7 +218,7 @@ describe('Formulare', () => {
     eingabe(feld(host, 'Bauherrschaft', 1), 'Musterweg 7');
     act(() => kreuz(host, 'Sonderbau').click());
     act(() => kreuz(host, 'Wohngebäude').click());
-    expect(host.textContent).toContain('3 Feld(er) geändert');
+    expect(host.textContent).toContain('3 Felder geändert');
     expect(host.textContent).toContain('lokal gesichert');
     expect(ds.dateien.get(FORMULAR)).toBe(MUSTER);
 
@@ -251,7 +254,7 @@ describe('Formulare', () => {
     sperreVermerken('C:/FORMA', 'BS9/001-Muster.frmtmp', alt);
     const host = await render();
     expect(ds.dateien.has(SPERRE)).toBe(false);
-    expect(host.textContent).toContain('Nach einem Absturz liegen gebliebene Sperre(n) entfernt: 001-Muster.');
+    expect(host.textContent).toContain('Nach einem Absturz liegen gebliebene Sperre entfernt: 001-Muster.');
     // fremde Sperren mit anderem Inhalt bleiben unberührt
     const fremd = cp1252Schreiben('[Zugriff]\r\nUser=kollegin\r\nComputer=CAD02\r\nAngemeldet=09.11.2026 08:00:00\r\nInGebrauch=1111\r\n\r\n');
     ds.dateien.set(SPERRE, fremd);
@@ -356,7 +359,7 @@ describe('Formulare', () => {
 
     host = await oeffneMuster(await neustart());
     expect(feld(host, 'Bauherrschaft', 1).value).toBe('Musterweg 7');
-    expect(host.textContent).toContain('2 nicht gespeicherte Eingabe(n) vom letzten Mal wiederhergestellt');
+    expect(host.textContent).toContain('2 nicht gespeicherte Eingaben vom letzten Mal wiederhergestellt');
     expect(ds.dateien.get(FORMULAR)).toBe(MUSTER);
 
     // Rückgängig über den Neustart hinweg – erst das Kästchen, dann die Straße
@@ -440,11 +443,11 @@ describe('Formulare', () => {
     expect(host.querySelector('.pk-vorschau')!.textContent).toContain('Musterweg 1');
 
     eingabe(kartenFeld(host, 'Name/Firma'), 'Musterfrau');
-    expect(host.textContent).toContain('1 Eintrag/Einträge geändert');
+    expect(host.textContent).toContain('1 Eintrag geändert');
     expect(host.querySelector('.pk-feld.geaendert')).not.toBeNull();
     // in der Zwischenzeit ändert jemand in FORMA einen anderen Eintrag – das stört nicht
     pkText(201, 110).text = 'Neustadt';
-    await klick(knopfGenau(host, 'Projektkarte speichern'));
+    await klick(knopfGenau(host, 'Projektdaten speichern'));
     expect(pkText(201, 40).text).toBe('Musterfrau');
     expect(ds.schreibvorgaenge).toEqual(['projektkarte BS9/sj_prokarte.sdb (1)']);
     expect(kartenFeld(host, 'Ort').value).toBe('Neustadt');
@@ -453,7 +456,7 @@ describe('Formulare', () => {
     // derselbe Eintrag inzwischen anders: nichts wird geschrieben
     eingabe(kartenFeld(host, 'Name/Firma'), 'Beispiel');
     pkText(201, 40).text = 'von FORMA';
-    await klick(knopfGenau(host, 'Projektkarte speichern'));
+    await klick(knopfGenau(host, 'Projektdaten speichern'));
     expect(host.textContent).toContain('inzwischen geändert');
     expect(pkText(201, 40).text).toBe('von FORMA');
   });
@@ -472,7 +475,7 @@ describe('Formulare', () => {
 
     await klick(knopfMit(host, 'Rückgängig'));
     expect(kartenFeld(host, 'PLZ Straße').value).toBe('12345');
-    await klick(knopfGenau(host, 'Projektkarte speichern'));
+    await klick(knopfGenau(host, 'Projektdaten speichern'));
     // „Sehr geehrter Herr“ ist die zweite Möglichkeit: Ganzzahl 1 – die leere Zeile zählt in der Datei nicht mit (wie SJ Office)
     expect(pkText(201, 210).zahl).toBe(1);
     // die Möglichkeiten selbst bleiben, wie FORMA sie angelegt hat
@@ -575,7 +578,7 @@ describe('Formulare', () => {
     expect(ziffer.defaultPrevented).toBe(false);
     eingabe(anzahl(), '3');
 
-    await klick(knopfGenau(host, 'Projektkarte speichern'));
+    await klick(knopfGenau(host, 'Projektdaten speichern'));
     expect(pkText(101, 100).text).toBe('Wohnen');
     expect(pkText(101, 110).text).toBe('3');
   });
@@ -704,7 +707,12 @@ describe('Formulare', () => {
     expect(document.querySelector('.av-editor')).toBeNull();
     // auf der Seite: eigene Beschriftung, Herkunft dezent unter dem Feld, Breite im Raster
     expect([...host.querySelectorAll('.pk-eigen .pk-feld-titel')].map((t) => t.textContent)).toEqual(['Ort', 'Bauherrschaft']);
-    expect([...host.querySelectorAll('.pk-eigen .pk-feld-unter')].map((g) => g.textContent)).toEqual(['Gemeinde · ⛓\uFE0E Bauherr', 'Bauherr · ⛓\uFE0E Gemeinde']);
+    // Verknüpfung: Symbol „Kette“ (role=img, „verknüpft mit“) statt eines Unicode-Zeichens
+    expect([...host.querySelectorAll('.pk-eigen .pk-feld-unter')].map((g) => g.textContent)).toEqual(['Gemeinde ·  Bauherr', 'Bauherr ·  Gemeinde']);
+    expect([...host.querySelectorAll('.pk-eigen .pk-feld-unter [role="img"]')].map((k) => [k.getAttribute('aria-label'), !!k.querySelector('svg.symbol')])).toEqual([
+      ['verknüpft mit', true],
+      ['verknüpft mit', true],
+    ]);
     expect([...host.querySelectorAll<HTMLElement>('.pk-eigen .av-feld')].map((f) => [f.dataset.breite, 'neueZeile' in f.dataset])).toEqual([
       ['4', true],
       ['8', false],
@@ -837,7 +845,7 @@ describe('Formulare', () => {
     // Memo2 (leer) → „12345 Musterstadt“; Memo1 („Mustermann, Max“) bekäme den leeren Eintrag der Behörde – nicht angeboten
     expect(zeilen.map((z) => [z.querySelector('strong')!.textContent, z.querySelector('input')!.checked])).toEqual([['Bauherrschaft', true]]);
     expect(zeilen[0].textContent).toContain('12345 Musterstadt');
-    await klick(knopf(host, '1 Feld(er) übernehmen'));
+    await klick(knopf(host, '1 Feld übernehmen'));
     expect(feld(host, 'Bauherrschaft', 1).value).toBe('12345 Musterstadt');
     expect(feld(host, 'Bauherrschaft', 0).value).toBe('Mustermann, Max');
 
@@ -876,5 +884,85 @@ describe('Formulare', () => {
     await warte();
     expect(host.querySelector('.fo-schnellwahl')).toBeNull();
     expect(useFormulare.getState().projekt?.ordner).toBe('BS9');
+  });
+
+  it('Schnellwahl als gemeinsamer Dialog: Fokus im Suchfeld, ↓ markiert und rollt den Treffer ins Bild, Esc schließt, Fokus zurück', async () => {
+    const host = await render();
+    await projektOeffnen(host, 'BS9');
+    const suchen = knopf(host, 'Suchen');
+    suchen.focus();
+    await klick(suchen);
+    await warte();
+    const dialog = host.querySelector<HTMLElement>('.modal.fo-schnellwahl')!;
+    expect(dialog.getAttribute('role')).toBe('dialog');
+    expect(dialog.getAttribute('aria-label')).toBe('Schnellwahl');
+    const suche = dialog.querySelector<HTMLInputElement>('input[aria-label="Projekt oder Formular suchen"]')!;
+    expect(document.activeElement).toBe(suche);
+    const treffer = () => [...dialog.querySelectorAll<HTMLElement>('[role="option"]')];
+    expect(treffer().length).toBeGreaterThan(1);
+    expect(suche.getAttribute('aria-activedescendant')).toBe(treffer()[0].id);
+    // ↓: der zweite Treffer ist markiert und wird ins Bild gerollt
+    const gerollt: Element[] = [];
+    const vorher = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = function (this: Element) {
+      gerollt.push(this);
+    };
+    try {
+      taste(suche, 'ArrowDown');
+      await warte();
+    } finally {
+      Element.prototype.scrollIntoView = vorher;
+    }
+    expect(suche.getAttribute('aria-activedescendant')).toBe(treffer()[1].id);
+    expect(treffer()[1].getAttribute('aria-selected')).toBe('true');
+    expect(gerollt).toContain(treffer()[1]);
+    // Tab bleibt im Suchfeld: die Treffer sind keine Bedienelemente (kein Ziel der Fokusfalle), Tab wird abgefangen
+    expect(dialog.querySelectorAll('button, [tabindex]')).toHaveLength(0);
+    const tab = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true });
+    act(() => void suche.dispatchEvent(tab));
+    expect(tab.defaultPrevented).toBe(true);
+    expect(document.activeElement).toBe(suche);
+    // Esc schließt – der Fokus kehrt zum Knopf „Suchen …“ zurück
+    taste(suche, 'Escape');
+    await warte();
+    await warte();
+    expect(host.querySelector('.fo-schnellwahl')).toBeNull();
+    expect(document.activeElement).toBe(suchen);
+  });
+
+  it('Breite der Navigation: Griff aus core – per Tastatur (←/→) und Doppelklick (Vorgabe) bedienbar', async () => {
+    const host = await render();
+    await projektOeffnen(host, 'BS9');
+    const griff = host.querySelector<HTMLElement>('.nav .leiste-griff')!;
+    expect(griff.getAttribute('role')).toBe('separator');
+    expect(griff.tabIndex).toBe(0);
+    expect(griff.getAttribute('aria-label')).toBe('Breite der Navigation ändern');
+    const vorher = useFormulare.getState().leisteBreite;
+    taste(griff, 'ArrowRight');
+    expect(useFormulare.getState().leisteBreite).toBe(vorher + 16);
+    act(() => void griff.dispatchEvent(new MouseEvent('dblclick', { bubbles: true })));
+    expect(useFormulare.getState().leisteBreite).toBe(300);
+  });
+
+  it('Menüknopf: aria-expanded, Esc und Tab schließen das Menü und geben den Fokus an den Knopf zurück', async () => {
+    const host = await oeffneMuster();
+    const pdf = host.querySelector<HTMLButtonElement>('.toolbar button[aria-haspopup="menu"][title^="Als PDF exportieren"]')!;
+    expect(pdf.getAttribute('aria-expanded')).toBe('false');
+    pdf.focus();
+    await klick(pdf);
+    expect(document.querySelector('.menue')).not.toBeNull();
+    expect(pdf.getAttribute('aria-expanded')).toBe('true');
+    expect(document.activeElement?.classList.contains('menue-punkt')).toBe(true);
+    taste(document.activeElement!, 'Escape');
+    await warte();
+    expect(document.querySelector('.menue')).toBeNull();
+    expect(document.activeElement).toBe(pdf);
+    expect(pdf.getAttribute('aria-expanded')).toBe('false');
+    // Tab schließt ebenfalls (das Menü bleibt nicht offen stehen)
+    await klick(pdf);
+    taste(document.activeElement!, 'Tab');
+    await warte();
+    expect(document.querySelector('.menue')).toBeNull();
+    expect(document.activeElement).toBe(pdf);
   });
 });

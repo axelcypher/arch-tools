@@ -90,8 +90,8 @@ export function ProjektUebersicht({ onEinstellungen }: { onEinstellungen: () => 
     return [
       { text: 'Öffnen', symbol: 'formular', aktion: () => oeffnen({ schluessel: projektSchluessel(p) } as UebersichtProjekt) },
       { trenner: true },
-      { text: 'Formularordner im Explorer zeigen', symbol: 'extern', aktion: () => void oeffnePfad(verbinde(p.root, p.ordner)).catch(() => undefined) },
-      { text: 'Projektordner im Explorer zeigen', symbol: 'ordner', deaktiviert: !a, aktion: () => a && void oeffnePfad(verbinde(a.root, a.pfad)).catch(() => undefined) },
+      { text: 'Formularordner im Explorer öffnen', symbol: 'ordner', aktion: () => void oeffnePfad(verbinde(p.root, p.ordner)).catch(() => undefined) },
+      { text: 'Projektordner im Explorer öffnen', symbol: 'ordner', deaktiviert: !a, aktion: () => a && void oeffnePfad(verbinde(a.root, a.pfad)).catch(() => undefined) },
       { text: 'Pfad kopieren', symbol: 'kopie', aktion: () => void navigator.clipboard?.writeText(verbinde(p.root, p.ordner)) },
       ...(zuletztKarte ? [{ trenner: true as const }, { text: 'Aus „Zuletzt geöffnet“ entfernen', symbol: 'schliessen' as const, aktion: () => useFormulare.getState().zuletztEntfernen(p) }] : []),
     ];

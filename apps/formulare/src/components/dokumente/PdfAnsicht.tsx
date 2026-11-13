@@ -5,7 +5,9 @@ import { pdfFelder, pdfjs, pdfOeffnen, pdfSchliessen, textEntfernen, textGroesse
 import { frageText } from '../Rueckfrage';
 import { Symbol } from '../Symbol';
 import type { OffeneDatei } from '../../store';
-import { useFormulare } from '../../store';
+import { PDF_ENTWURF, pdfAnbindung, useFormulare } from '../../store';
+import { pdfSpeichern } from '../../dokumente/pdfSpeichern';
+import { anzahl } from '../../text';
 import { DateiKopf, useSpeichernTaste } from './DateiAnsicht';
 
 /** Verweise in der PDF: externe im Browser, interne werden ignoriert (kein Blättern über Links) */
@@ -180,6 +182,8 @@ export function PdfAnsicht({ datei }: { datei: OffeneDatei }) {
   const [runde, setRunde] = useState(0);
   const [werkzeug, setWerkzeug] = useState<Werkzeug>(null);
   const [vorgemerkt, setVorgemerkt] = useState<Vormerk[]>([]);
+  /** wird gerade gespeichert – die Fläche nimmt dann keine Eingaben an (sie gingen mit dem Neuaufbau danach verloren) */
+  const [speichert, setSpeichert] = useState(false);
   const flaeche = useRef<HTMLDivElement>(null);
   const zaehler = useRef(0);
 
@@ -239,15 +243,31 @@ export function PdfAnsicht({ datei }: { datei: OffeneDatei }) {
     setVorgemerkt((v) => v.filter((x) => x.id !== id));
   };
 
-  const speichern = useCallback(async () => {
-    if (!doc || !geaendert) return;
+  const speichern = useCallback(async (): Promise<boolean> => {
+    if (!doc || !geaendert) return true;
+    if (speichert) return false;
+    setSpeichert(true);
+    setWerkzeug(null);
     try {
-      await dateiSpeichern(await doc.saveDocument());
-    } catch (e) {
-      setFehler(e instanceof Error ? e.message : String(e));
+      return await pdfSpeichern(() => doc.saveDocument(), dateiSpeichern, setGeaendert, setFehler);
+    } finally {
+      setSpeichert(false);
     }
-  }, [doc, geaendert, dateiSpeichern]);
+  }, [doc, geaendert, speichert, dateiSpeichern]);
   useSpeichernTaste(() => void speichern(), true);
+
+  // Ungespeicherte Eingaben dem Store melden (● in der Titelleiste, Rückfrage beim Verlassen und Beenden); mit der
+  // Ansicht verfallen sie – dann auch die Meldung
+  useEffect(() => {
+    const { setDateiEntwurf } = useFormulare.getState();
+    // auch während des Speicherns (pdf.js hat den Änderungsstand dann schon zurückgesetzt)
+    setDateiEntwurf(geaendert || speichert ? PDF_ENTWURF : null, datei);
+    pdfAnbindung.speichern = speichern;
+    return () => {
+      if (pdfAnbindung.speichern === speichern) delete pdfAnbindung.speichern;
+    };
+  }, [geaendert, speichert, speichern, datei]);
+  useEffect(() => () => useFormulare.getState().setDateiEntwurf(null, datei), [datei]);
 
   const massstab = zoom > 0 ? zoom : breite > 0 ? Math.max(0.4, Math.min(3, (breite - 48) / seitenBreite)) : 1;
   const hinweis = fehler
@@ -255,7 +275,7 @@ export function PdfAnsicht({ datei }: { datei: OffeneDatei }) {
     : werkzeug
       ? `${werkzeug === 'kreuz' ? 'Kreuz' : 'Text'}: auf die Stelle in der PDF klicken. Esc oder erneuter Klick auf das Werkzeug beendet.`
       : felder > 0
-        ? `${felder} Formularfeld(er) – direkt auf der Seite ausfüllen; „Text“ und „Kreuz“ tragen auch anderswo etwas ein. Gespeichert wird als Nachtrag, der Inhalt der PDF bleibt unverändert.`
+        ? `${anzahl(felder, 'Formularfeld', 'Formularfelder')} – direkt auf der Seite ausfüllen; „Text“ und „Kreuz“ tragen auch anderswo etwas ein. Gespeichert wird als Nachtrag, der Inhalt der PDF bleibt unverändert.`
         : '„Text“ und „Kreuz“ tragen etwas in die PDF ein. Gespeichert wird als Nachtrag, der Inhalt der PDF bleibt unverändert.';
 
   useEffect(() => {
@@ -271,7 +291,8 @@ export function PdfAnsicht({ datei }: { datei: OffeneDatei }) {
         datei={datei}
         geaendert={geaendert}
         bearbeitbar
-        hinweis={hinweis}
+        beschaeftigt={speichert}
+        hinweis={speichert ? 'Wird gespeichert …' : hinweis}
         onSpeichern={() => void speichern()}
         onVerwerfen={() => {
           setGeaendert(false);
@@ -280,10 +301,10 @@ export function PdfAnsicht({ datei }: { datei: OffeneDatei }) {
         }}
         werkzeuge={
           <>
-            <button className={werkzeug === 'text' ? 'active' : ''} aria-pressed={werkzeug === 'text'} disabled={!doc} title="Text in die PDF eintragen: Werkzeug wählen, dann auf die Stelle klicken" onClick={() => setWerkzeug(werkzeug === 'text' ? null : 'text')}>
+            <button className={werkzeug === 'text' ? 'active' : ''} aria-pressed={werkzeug === 'text'} disabled={!doc || speichert} title="Text in die PDF eintragen: Werkzeug wählen, dann auf die Stelle klicken" onClick={() => setWerkzeug(werkzeug === 'text' ? null : 'text')}>
               <Symbol name="textfeld" /> Text
             </button>
-            <button className={werkzeug === 'kreuz' ? 'active' : ''} aria-pressed={werkzeug === 'kreuz'} disabled={!doc} title="Kreuz setzen (z. B. in ein Kästchen): Werkzeug wählen, dann auf die Stelle klicken" onClick={() => setWerkzeug(werkzeug === 'kreuz' ? null : 'kreuz')}>
+            <button className={werkzeug === 'kreuz' ? 'active' : ''} aria-pressed={werkzeug === 'kreuz'} disabled={!doc || speichert} title="Kreuz setzen (z. B. in ein Kästchen): Werkzeug wählen, dann auf die Stelle klicken" onClick={() => setWerkzeug(werkzeug === 'kreuz' ? null : 'kreuz')}>
               <Symbol name="kreuz" /> Kreuz
             </button>
             <select value={zoom} onChange={(e) => setZoom(Number(e.target.value))} aria-label="Zoom">
@@ -297,7 +318,7 @@ export function PdfAnsicht({ datei }: { datei: OffeneDatei }) {
           </>
         }
       />
-      <div className="dok-flaeche pdf-flaeche" ref={flaeche}>
+      <div className="dok-flaeche pdf-flaeche" ref={flaeche} inert={speichert} aria-busy={speichert}>
         {doc &&
           Array.from({ length: doc.numPages }, (_, i) => (
             <Seite

@@ -12,7 +12,7 @@ import { klein } from './antrag';
 import { bestaetigen, frageText } from './components/Rueckfrage';
 import { nurFormaLoescht, verbinde } from './dateisystem';
 import type { FormularEintrag } from './projekte';
-import { hatEntwurf, useFormulare } from './store';
+import { dateiEntwurfVerschieben, dateiSchluessel, dateiVerlassen, hatEntwurf, useFormulare } from './store';
 
 interface Zwischenablage {
   basis: string;
@@ -57,10 +57,14 @@ function fehler(was: string, e: unknown) {
   useFormulare.getState().setMeldung({ art: 'fehler', text: `${was}: ${e instanceof Error ? e.message : String(e)}` });
 }
 
+const istGeoeffnet = (basis: string, pfad: string) => {
+  const d = useFormulare.getState().datei;
+  return d?.root === basis && d.pfad === pfad;
+};
+
 /** geöffnetes Dokument schließen, wenn es umbenannt oder gelöscht wurde */
 function geoeffnetesSchliessen(basis: string, pfad: string) {
-  const s = useFormulare.getState();
-  if (s.datei?.root === basis && s.datei.pfad === pfad) useFormulare.setState({ datei: null, haupt: 'formular' });
+  if (istGeoeffnet(basis, pfad)) useFormulare.setState({ datei: null, haupt: 'formular' });
 }
 
 export async function duplizieren(basis: string, pfad: string) {
@@ -83,8 +87,11 @@ export async function umbenennen(basis: string, pfad: string, vorschlag?: string
   if (!neu || neu === nameVon(pfad)) return;
   if (/[<>:"/\\|?*]/.test(neu)) return fehler('Umbenennen', new Error('Diese Zeichen sind in Dateinamen nicht erlaubt: < > : " / \\ | ? *'));
   try {
-    await ds.umbenennen(basis, pfad, zusammen(ordnerVon(pfad), neu));
+    if (istGeoeffnet(basis, pfad) && !(await dateiVerlassen())) return;
+    const ziel = zusammen(ordnerVon(pfad), neu);
+    await ds.umbenennen(basis, pfad, ziel);
     geoeffnetesSchliessen(basis, pfad);
+    dateiEntwurfVerschieben(basis, pfad, ziel);
     geaendert();
   } catch (e) {
     fehler('Umbenennen', e);
@@ -95,10 +102,13 @@ export async function loeschen(basis: string, pfad: string) {
   const ds = useFormulare.getState().ds;
   if (!ds) return;
   if (nurFormaLoescht(pfad)) return fehler('Löschen', new Error('Projektkarte, Sperrdateien und Projekttitel werden hier nicht gelöscht'));
-  if (!(await bestaetigen('Löschen', `„${nameVon(pfad)}“ löschen? Eine Sicherungskopie bleibt im Ordner „Sicherungen“ der App.`, 'Löschen', true))) return;
+  const entwurf = dateiSchluessel({ root: basis, pfad }) in useFormulare.getState().dateiEntwuerfe;
+  const text = `„${nameVon(pfad)}“ löschen? Eine Sicherungskopie bleibt im Ordner „Sicherungen“ der App.${entwurf ? ' Nicht gespeicherte Bearbeitungen gehen verloren.' : ''}`;
+  if (!(await bestaetigen('Löschen', text, 'Löschen', true))) return;
   try {
     await ds.loeschen(basis, pfad);
     geoeffnetesSchliessen(basis, pfad);
+    dateiEntwurfVerschieben(basis, pfad, null);
     geaendert();
   } catch (e) {
     fehler('Löschen', e);

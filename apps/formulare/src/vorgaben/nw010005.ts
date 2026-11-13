@@ -3,20 +3,25 @@
  *
  * Der Vordruck sagt selbst, was auszufüllen ist: „Behandlung als Bauantrag …“ – ja: „bitte Nummer 2 bis 6
  * ausfüllen“, nein: „bitte Nummer 1, 4 und 5 ausfüllen“. Nr. 3 (Bescheinigung nach § 6) ist freiwillig. Dazu: die
- * Baubeschreibung (Nr. 2.4) entfällt beim Einfamilienhaus, bei den Kosten (Nr. 2.5) genügt eine Angabe. Nr. 6
- * (Erklärung zum Brandschutz) gehört bei Gebäudeklasse 1 und 2 immer dazu (§ 13 Abs. 1 Satz 3 BauPrüfVO), sonst nur
- * bei Behandlung als Bauantrag.
+ * Baubeschreibung (Nr. 2.4) entfällt beim Einfamilienhaus, bei den Kosten (Nr. 2.5) genügt eine Angabe – bei einer
+ * Änderung und bei baulichen Anlagen, die keine Gebäude sind, muss es die Herstellungssumme sein. Die Berechnung des
+ * Maßes der baulichen Nutzung (Nr. 1.2, 2.2) nur im Bereich eines Bebauungsplans oder einer Satzung (seit 01.09.2026
+ * gibt es die Freistellung auch ohne Bebauungsplan, § 63 Abs. 1 Satz 1 Nr. 2 BauO NRW 2018). Nr. 6 (Erklärung zum
+ * Brandschutz) gehört bei Gebäudeklasse 1 und 2 immer dazu (§ 13 Abs. 1 Satz 3 BauPrüfVO), bei Gebäudeklasse 3 bei
+ * Behandlung als Bauantrag; bei Gebäudeklasse 4 und 5 genügt sie nicht (Bescheinigung nach § 68 Abs. 2 Satz 3).
  */
 
 import type { FormularProfil } from '../profil';
 import { zusammen } from './antrag';
-import { keinEinfamilienhaus } from './grundlagen';
-import { angekreuzt, begruendet, gruppeV, ist, oder, q, s, wenn, zaehltNicht } from './hilfen';
+import { gebaeudeImVordruck, keinEinfamilienhaus, nurBebauungsplan, nurGebaeudeStatistik, ohneHerstellungssumme } from './grundlagen';
+import { angekreuzt, begruendet, gruppeV, ist, oder, q, s, und, wenn, zaehltNicht } from './hilfen';
 
 const s0 = s(0);
 const s1 = s(1);
 const ja = angekreuzt('0:CheckBox1');
 const nein = angekreuzt('0:CheckBox2');
+/** ein Gebäude: „Sonstige bauliche Anlagen“ nicht angekreuzt oder eine Gebäudeklasse angekreuzt */
+const gebaeude = gebaeudeImVordruck('0:CheckBox22', s0('CheckBox8', 'CheckBox9', 'CheckBox10', 'CheckBox11', 'CheckBox12'));
 
 export const nw010005_2026I: FormularProfil = zusammen({
   abschnitte: {
@@ -95,14 +100,21 @@ export const nw010005_2026I: FormularProfil = zusammen({
     gruppeV('kosten', 'Nr. 2.5 Rauminhalt, Rohbaukosten oder Herstellungssumme', 'eins', s1('CheckBox15', 'CheckBox16', 'CheckBox17')),
   ],
   bedingungen: {
+    '1:CheckBox2': nurBebauungsplan,
+    '1:CheckBox12': nurBebauungsplan,
     '1:CheckBox14': keinEinfamilienhaus,
+    '1:CheckBox15': ohneHerstellungssumme(gebaeude),
+    '1:CheckBox16': ohneHerstellungssumme(gebaeude),
+    '1:CheckBox6': nurGebaeudeStatistik(gebaeude),
     '1:Memo1': wenn(angekreuzt('1:CheckBox17')),
-    // Erklärung zum Brandschutz: bei Gebäudeklasse 1 und 2 immer (Merkmal oder Kästchen), sonst bei „ja“ (R-03)
+    // Erklärung zum Brandschutz: bei Gebäudeklasse 1 und 2 immer (Merkmal oder Kästchen), bei Gebäudeklasse 3 bei „ja“
+    // (R-03); bei Gebäudeklasse 4 und 5 genügt die Erklärung nicht
     '1:CheckBox8': begruendet(
-      oder(ja, ist('Gebäudeklasse', '1', '2'), angekreuzt('0:CheckBox8'), angekreuzt('0:CheckBox9')),
-      'Bei Gebäuden der Gebäudeklassen 1 und 2 ist die Erklärung zum Brandschutz in der Genehmigungsfreistellung immer beizufügen (auch wenn die Unterlagen nicht als Bauantrag behandelt werden sollen); sonst nur bei Behandlung als Bauantrag.',
+      oder(ist('Gebäudeklasse', '1', '2'), angekreuzt('0:CheckBox8'), angekreuzt('0:CheckBox9'), und(ja, oder(ist('Gebäudeklasse', '3'), angekreuzt('0:CheckBox10')))),
+      'Bei Gebäuden der Gebäudeklassen 1 und 2 ist die Erklärung zum Brandschutz in der Genehmigungsfreistellung immer beizufügen (auch wenn die Unterlagen nicht als Bauantrag behandelt werden sollen), bei Gebäudeklasse 3 bei Behandlung als Bauantrag. Bei Gebäudeklasse 4 und 5 genügt die Erklärung nicht: Vor der Genehmigung ist die Bescheinigung von Prüfsachverständigen für Brandschutz einzureichen.',
       q('baupruefvo', '13', 1, 3),
       q('bauo-nrw', '68', 2, 2),
+      q('bauo-nrw', '68', 2, 3),
     ),
   },
 });

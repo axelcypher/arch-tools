@@ -14,7 +14,7 @@ import { Symbol } from './Symbol';
 /**
  * Einstellungen für Antrag und Export: wo die Anträge im Projektordner liegen, welche Antragsarten es gibt, wie
  * exportierte PDFs heißen und wohin sie kommen, und die grundlegende Liste der Antragsdokumente. Alles gilt für
- * alle Projekte; Abweichungen je Projekt stehen in der Projektkarte unter „Antragsumfang“.
+ * alle Projekte; Abweichungen je Projekt stehen in den Antragsdaten unter „Antragsumfang“.
  */
 /** beginnt die Vorlage mit Projektkürzel, Antragsart und Datum JJMMTT (alte oder neue Namen)? Das verlangt der Antragsordner. */
 const beginntRichtig = (vorlage: string) => /^\{PROJEKT_KUERZEL\}\s+\{Art\}\s+\{DATUM\}\s/.test(modernisieren(vorlage.trim(), NAMENS_VARIABLEN));
@@ -37,7 +37,7 @@ export function AntragEinstellungen() {
       <h2>Antrag & Export</h2>
       <p className="muted">
         Ausgefüllte Formulare lassen sich als PDF exportieren – in den Ordner der aktiven Antragsfassung (z. B. <code>TÖB\BAUA 2</code>) oder an jeden anderen Ort. Was zu einem
-        Antrag gehört, wird je Projekt in der Projektkarte unter „Antragsumfang“ ausgewählt; daran prüft die App, ob alles vollständig und aktuell vorliegt. Abweichungen je
+        Antrag gehört, wird je Antrag in den Antragsdaten unter „Antragsumfang“ ausgewählt; daran prüft die App, ob alles vollständig und aktuell vorliegt. Abweichungen je
         Projekt lassen sich dort ebenfalls einstellen.
       </p>
 
@@ -111,13 +111,13 @@ export function AntragEinstellungen() {
 
       <Karte titel="Ziel des Exports" text="Der voreingestellte Ordner im Export-Dialog; dort lässt sich jedes Mal auch ein anderer Ordner im Projekt wählen oder „Speichern unter …“.">
         <label className="radio-row">
-          <input type="radio" checked={e.ziel === 'aktiv'} onChange={() => setEinstellungen({ ziel: 'aktiv' })} />
+          <input type="radio" name="export-ziel" checked={e.ziel === 'aktiv'} onChange={() => setEinstellungen({ ziel: 'aktiv' })} />
           <span>
             <strong>Aktive Antragsfassung</strong> <span className="muted small-text">– {e.antragsordner || 'TÖB'}\{e.arten[0]} bzw. die oben links am Projekt gewählte Fassung</span>
           </span>
         </label>
         <label className="radio-row">
-          <input type="radio" checked={e.ziel === 'pfad'} onChange={() => setEinstellungen({ ziel: 'pfad' })} />
+          <input type="radio" name="export-ziel" checked={e.ziel === 'pfad'} onChange={() => setEinstellungen({ ziel: 'pfad' })} />
           <span className="es-breit">
             <strong>Fester Ordner im Projekt</strong>
             <input
@@ -149,12 +149,13 @@ export function AntragEinstellungen() {
             <span className="es-zeile">
               <input value={e.vorlagenordner} onChange={(x) => setEinstellungen({ vorlagenordner: x.target.value })} aria-label="Vorlagenordner" placeholder="leer = aus anderen Projekten" />
               <button
+                title="Vorlagenordner wählen …"
                 onClick={async () => {
                   const p = await waehleOrdner('Ordner mit leeren Formularen');
                   if (p) setEinstellungen({ vorlagenordner: p });
                 }}
               >
-                …
+                <Symbol name="ordner" /> Ordner wählen …
               </button>
             </span>
           </label>
@@ -167,7 +168,7 @@ export function AntragEinstellungen() {
 
       <Karte
         titel="Antragsmerkmale"
-        text="Merkmale eines Antrags, von denen Formularteile und Dokumente abhängen können (z. B. Gebäudeklasse). Jeder Antrag hat seine eigenen Werte (im Antragsumfang gewählt); ein neuer Antrag übernimmt einmalig die Vorgabe – spätere Änderungen hier ändern bestehende Anträge nicht. Bedingungen stellst du in der Gliederung (Anpassen) und bei den Antragsdokumenten ein."
+        text="Merkmale eines Antrags, von denen Formularteile und Dokumente abhängen können (z. B. Gebäudeklasse). Jeder Antrag hat seine eigenen Werte (in den Antragsdaten unter „Antragsmerkmale“ gewählt); ein neuer Antrag übernimmt einmalig die Vorgabe – spätere Änderungen hier ändern bestehende Anträge nicht. Bedingungen stellst du im Formular über „Einrichten“ und bei den Antragsdokumenten ein."
       >
         <table className="es-tabelle es-katalog" data-sortier-liste="">
           <thead>

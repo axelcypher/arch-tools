@@ -3,7 +3,7 @@ import { useCallback, useMemo, useState } from 'react';
 import type { Block, Lauf } from '../../dokumente/docx';
 import { docxAendern, docxLesen } from '../../dokumente/docx';
 import type { OffeneDatei } from '../../store';
-import { useFormulare } from '../../store';
+import { dateiSchluessel, useFormulare } from '../../store';
 import { DateiKopf, useSpeichernTaste } from './DateiAnsicht';
 
 /**
@@ -42,7 +42,7 @@ function laufStil(l: Lauf): CSSProperties {
  */
 export function WordAnsicht({ datei }: { datei: OffeneDatei }) {
   const { dateiSpeichern, setDateiEntwurf } = useFormulare.getState();
-  const entwurf = useFormulare((s) => s.dateiEntwuerfe[`${datei.root}|${datei.pfad}`]) as Map<number, string> | undefined;
+  const entwurf = useFormulare((s) => s.dateiEntwuerfe[dateiSchluessel(datei)]) as Map<number, string> | undefined;
   const [bearbeiten, setBearbeiten] = useState(!!entwurf);
   const [fehler, setFehler] = useState('');
   /** zählt bei „Verwerfen“ hoch: bearbeitbare Textstücke neu zeichnen */

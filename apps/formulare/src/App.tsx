@@ -35,8 +35,9 @@ import { springeZuFeld } from './navigation';
 import { zurNaechstenOffenen } from './pruefen';
 import { useVorbelegung } from './merkmalAbgleich';
 import type { Ansicht, OffenesFormular } from './store';
-import { ZOOMSTUFEN, bearbeitungGesperrt, istGeaendert, kannVor, kannZurueck, karteGeaendert, useFormulare } from './store';
+import { ZOOMSTUFEN, bearbeitungGesperrt, dokumenteGeaendert, istGeaendert, kannVor, kannZurueck, karteGeaendert, useFormulare } from './store';
 import { kannRueckgaengig, kannWiederholen } from './verlauf';
+import { anzahl } from './text';
 
 const ANSICHTEN: { id: Ansicht; label: string; title: string }[] = [
   { id: 'seite', label: 'Formular', title: 'Die Seiten wie auf Papier – so werden sie gedruckt' },
@@ -82,6 +83,9 @@ export function App() {
   const verlaufOffen = useFormulare((s) => s.verlaufOffen);
   const gliederungOffen = useFormulare((s) => s.gliederungOffen);
   const einrichten = useEinrichten((s) => s.aktiv);
+  // im Einrichten-Modus zeigt die Gliederung den Aufbau als Baum – einklappbar, damit bei knapper Breite das Papier Platz hat
+  const einrichtenBaum = useEinrichten((s) => s.baumOffen);
+  const gliederungSichtbar = einrichten ? einrichtenBaum : gliederungOffen;
   const karte = useFormulare((s) => s.karte);
   const datei = useFormulare((s) => s.datei);
   const meldung = useFormulare((s) => s.meldung);
@@ -97,6 +101,9 @@ export function App() {
   const antragGesperrt = useAntrag((s) => !!antragSperre(s, projekt));
   const kartenansicht = haupt === 'projektkarte' && !!projekt;
   const geaendert = kartenansicht ? karteGeaendert(karte) : istGeaendert(offen);
+  // Bearbeitungen in Dokumenten (PDF, Excel, Word) gelten nur für diese Sitzung – anders als Formular und Projektkarte,
+  // deren Eingaben als Entwurf einen Neustart überstehen. Beim Beenden bzw. Update wird deshalb nach ihnen gefragt.
+  const dokGeaendert = useFormulare(dokumenteGeaendert);
   const grund = offen ? sperrgrund(offen) : null;
   const name =
     ds && (!projekt || haupt === 'projekte') ? 'Projekte' : haupt === 'projektkarte' && projekt ? `Projektdaten ${projekt.ordner}` : haupt === 'antrag' && projekt ? `Antragsdaten ${projekt.ordner}` : haupt === 'datei' && datei ? datei.name : (offen?.name ?? (projekt ? projekt.ordner : 'Kein Formular geöffnet'));
@@ -122,8 +129,9 @@ export function App() {
   }, [offen, einrichten]);
 
   useEffect(() => {
-    document.title = `${geaendert ? '● ' : ''}${name} – Formulare`;
-  }, [name, geaendert]);
+    // ungespeichert auch bei Bearbeitungen in Dokumenten (PDF, Excel, Word) – wie die Titelleiste (dirty)
+    document.title = `${geaendert || dokGeaendert ? '● ' : ''}${name} – Formulare`;
+  }, [name, geaendert, dokGeaendert]);
 
   useEffect(() => {
     // erst die gemeinsamen Einstellungen (Stammordner der Projekte), dann suchen
@@ -208,12 +216,13 @@ export function App() {
       <TitleBar
         app="Formulare"
         name={name}
-        dirty={geaendert}
+        dirty={geaendert || dokGeaendert}
         onOpenLog={() => setDialog('log')}
         zeichenflaeche={false}
         onProjekte={ds ? () => useFormulare.getState().setHaupt('projekte') : undefined}
         onSpeichern={
-          offen && haupt === 'formular' && !bearbeitungGesperrt(offen) && offen.sperre.art !== 'fremd'
+          // „Speichern“ beim Beenden speichert nur das Formular – mit offenen Dokument-Bearbeitungen deshalb „Verwerfen?“
+          offen && haupt === 'formular' && !dokGeaendert && !bearbeitungGesperrt(offen) && offen.sperre.art !== 'fremd'
             ? async () => {
                 await speichern();
                 return !istGeaendert(useFormulare.getState().offen);
@@ -224,7 +233,12 @@ export function App() {
       <div className="toolbar">
         {formularSichtbar && (
           <div className="tb-group">
-            <button className={gliederungOffen ? 'active' : ''} title="Gliederung des Formulars ein- oder ausblenden" onClick={() => setGliederungOffen(!gliederungOffen)}>
+            <button
+              className={gliederungSichtbar ? 'active' : ''}
+              title={einrichten ? 'Aufbau des Formulars als Baum ein- oder ausblenden' : 'Gliederung des Formulars ein- oder ausblenden'}
+              aria-pressed={gliederungSichtbar}
+              onClick={() => (einrichten ? useEinrichten.getState().setBaumOffen(!einrichtenBaum) : setGliederungOffen(!gliederungOffen))}
+            >
               <Symbol name="liste" /> Gliederung
             </button>
             <button
@@ -266,11 +280,12 @@ export function App() {
         )}
         {formularSichtbar && ds && projekt && zugeordnet > 0 && (
           <div className="tb-group">
-            <button disabled={!!grund} title={`${zugeordnet} Felder dieses Formulars kommen aus der Projektkarte`} onClick={() => useAktualisieren.getState().dialogOeffnen()}>
+            <button disabled={!!grund} title={`${zugeordnet} Felder dieses Formulars kommen aus den Projektdaten (Projektkarte)`} onClick={() => useAktualisieren.getState().dialogOeffnen()}>
               <Symbol name="neuLaden" /> Daten aktualisieren …
             </button>
             <MenueKnopf
-              title="Formular"
+              title="Weitere Befehle zum Aktualisieren"
+              ariaLabel="Weitere Befehle zum Aktualisieren"
               className="fo-menue-knopf"
               punkte={() => [
                 { text: 'Daten aktualisieren …', symbol: 'neuLaden', deaktiviert: !!grund, aktion: () => useAktualisieren.getState().dialogOeffnen() },
@@ -289,7 +304,7 @@ export function App() {
         {formularSichtbar && ansicht === 'seite' && (
           <div className="tb-group fo-zoom">
             <button title="Verkleinern" aria-label="Verkleinern" onClick={() => zoomStufe(-1)}>
-              −
+              <Symbol name="strich" />
             </button>
             <select value={zoom} onChange={(e) => setZoom(Number(e.target.value))} aria-label="Zoom">
               <option value={0}>Seitenbreite</option>
@@ -300,7 +315,7 @@ export function App() {
               ))}
             </select>
             <button title="Vergrößern" aria-label="Vergrößern" onClick={() => zoomStufe(1)}>
-              +
+              <Symbol name="plus" />
             </button>
           </div>
         )}
@@ -333,8 +348,8 @@ export function App() {
             <button disabled={!kannWiederholen(karte.verlauf)} title="Wiederholen (Strg+Y)" aria-label="Wiederholen" onClick={() => zeigeKarte(karteWiederholen())}>
               <Symbol name="wiederholen" />
             </button>
-            <button className="primary" disabled={!geaendert} title="In die Projektkarte des Projekts speichern (Strg+S)" onClick={() => void karteSpeichern()}>
-              Projektkarte speichern
+            <button className="primary" disabled={!geaendert} title="Projektdaten in die Projektkarte des Projekts speichern (Strg+S)" onClick={() => void karteSpeichern()}>
+              Projektdaten speichern
             </button>
             <button disabled={!geaendert} title="Alle ungespeicherten Änderungen zurücknehmen (Strg+Z holt sie zurück)" onClick={karteVerwerfen}>
               Verwerfen
@@ -349,14 +364,14 @@ export function App() {
         <span className="tb-spacer" />
         {kartenansicht && karte && (
           <span className="muted small-text fo-status">
-            {geaendert ? `${Object.keys(karte.aenderungen).length} Eintrag/Einträge geändert` : 'Alles gespeichert'}
+            {geaendert ? `${anzahl(Object.keys(karte.aenderungen).length, 'Eintrag', 'Einträge')} geändert` : 'Alles gespeichert'}
             {geaendert && karte.gesichert && ` · lokal gesichert ${uhrzeit(karte.gesichert)}`}
           </span>
         )}
         {formularSichtbar && (
           <span className="muted small-text fo-status">
             {[kennung(offen.formular), stand(offen.formular) && `Stand ${stand(offen.formular)}`].filter(Boolean).join(' · ')}
-            {geaendert && ` · ${Object.keys(offen.aenderungen).length} Feld(er) geändert`}
+            {geaendert && ` · ${anzahl(Object.keys(offen.aenderungen).length, 'Feld', 'Felder')} geändert`}
             {geaendert && offen.gesichert && ` · lokal gesichert ${uhrzeit(offen.gesichert)}`}
           </span>
         )}
@@ -374,10 +389,12 @@ export function App() {
       {(meldung || (formularSichtbar && grund)) && (
         <>
           {meldung && (
-            <div className={`fo-meldung ${meldung.art === 'fehler' ? 'fehler' : 'info'}`} role="status">
+            // Fehler werden sofort angesagt (alert), Hinweise höflich (status) – je Meldung ein eigenes Element, denn ein
+            // Rollenwechsel am selben Element wird nicht zuverlässig angesagt
+            <div key={`${meldung.art}|${meldung.text}`} className={`fo-meldung ${meldung.art === 'fehler' ? 'fehler' : 'info'}`} role={meldung.art === 'fehler' ? 'alert' : 'status'}>
               <span>{meldung.text}</span>
-              <button className="fo-klein" title="Schließen" onClick={() => setMeldung(null)}>
-                ×
+              <button className="icon" title="Meldung schließen" aria-label="Meldung schließen" onClick={() => setMeldung(null)}>
+                <Symbol name="schliessen" />
               </button>
             </div>
           )}
@@ -411,7 +428,7 @@ export function App() {
       )}
       <main className="fo-main">
         {ds && projekt && haupt !== 'projekte' && <Seitenleiste onProjekte={() => useFormulare.getState().setHaupt('projekte')} onSperren={() => setDialog('sperren')} />}
-        {formularSichtbar && (gliederungOffen || einrichten) && (
+        {formularSichtbar && gliederungSichtbar && (
           <BreitenLeiste schluessel="formulare:breite:gliederung" vorgabe={260}>
             <Gliederung offen={offen} />
           </BreitenLeiste>
@@ -493,7 +510,7 @@ function Leer({ desktop, onEinstellungen }: { desktop: boolean; onEinstellungen:
           Wähle links ein Projekt – oder suche mit <kbd>Strg</kbd>+<kbd>K</kbd> nach Kürzel oder Titel.
         </p>
       )}
-      {desktop && projekt && <p>Wähle links ein Formular oder die Projektkarte.</p>}
+      {desktop && projekt && <p>Wähle links ein Formular oder die Projektdaten.</p>}
       <p className="muted small-text">
         Jede Eingabe wird sofort lokal gesichert, mit Verlauf (<kbd>Strg</kbd>+<kbd>Z</kbd> / <kbd>Strg</kbd>+<kbd>Y</kbd>). In die Formulardatei kommt sie mit „Speichern“ (
         <kbd>Strg</kbd>+<kbd>S</kbd>) – geändert wird nur der Inhalt der Felder, Layout und alles andere bleiben Byte für Byte erhalten. Ist ein Formular in einem anderen Programm geöffnet, lässt

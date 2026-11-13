@@ -99,25 +99,26 @@ export function UnterlagenVorschau({ ablage, start, onClose }: { ablage: AblageO
   // per Portal an <body>: die Navigation, in der die Ansicht „Antrag“ steht, ist ein Container (Containerabfrage) –
   // in manchen Browsern wäre position: fixed sonst auf sie beschränkt
   return createPortal(
-    <div className="vs-ebene" role="dialog" aria-modal="true" aria-label="Antragsunterlagen ansehen">
+    // Klasse „modal“: Startfokus, Fokusfang und Fokusrückgabe wie bei allen Dialogen (dialoge.ts)
+    <div className="vs-ebene modal" role="dialog" aria-modal="true" aria-label="Antragsunterlagen ansehen">
       <header className="vs-leiste">
         <strong className="vs-titel">
           Antragsunterlagen <span className="muted">{ordner}</span>
         </strong>
         <span className="vs-blaettern">
           <button onClick={() => blaettern(-1)} disabled={index <= 0} title="Vorheriges Dokument (←, Bild↑)" aria-label="Vorheriges Dokument">
-            ‹
+            <Symbol name="pfeilLinks" />
           </button>
           <span className="vs-zaehler" aria-live="polite">
             {liste.length ? `${index + 1} / ${liste.length}` : '0 / 0'}
           </span>
           <button onClick={() => blaettern(1)} disabled={index >= liste.length - 1} title="Nächstes Dokument (→, Bild↓)" aria-label="Nächstes Dokument">
-            ›
+            <Symbol name="pfeilRechts" />
           </button>
         </span>
         <span className="vs-zoom">
           <button onClick={() => zoomen(-1)} disabled={zoom === VORSCHAU_ZOOM[0]} title="Verkleinern (−)" aria-label="Verkleinern">
-            −
+            <Symbol name="strich" />
           </button>
           <select value={zoom} onChange={(e) => setZoom(Number(e.target.value))} aria-label="Zoom">
             {VORSCHAU_ZOOM.map((z) => (
@@ -127,7 +128,7 @@ export function UnterlagenVorschau({ ablage, start, onClose }: { ablage: AblageO
             ))}
           </select>
           <button onClick={() => zoomen(1)} disabled={zoom === VORSCHAU_ZOOM.at(-1)} title="Vergrößern (+)" aria-label="Vergrößern">
-            +
+            <Symbol name="plus" />
           </button>
         </span>
         <span className="tb-spacer" />
@@ -148,14 +149,22 @@ export function UnterlagenVorschau({ ablage, start, onClose }: { ablage: AblageO
               }
               onClick={() => void useAntrag.getState().bereitUmschalten(aktuell.pfad, { fassung: listeFassung })}
             >
-              {zustand === 'bereit' ? '✓ Bereit' : 'Als bereit markieren'}
+              {zustand === 'bereit' ? (
+                <>
+                  <Symbol name="haken" /> Bereit
+                </>
+              ) : (
+                'Als bereit markieren'
+              )}
             </button>
             <button title="Mit dem zugehörigen Programm öffnen" onClick={() => void oeffnePfad(verbinde(basis, `${ordner}/${aktuell.pfad}`)).catch(() => undefined)}>
-              <Symbol name="extern" /> Extern öffnen
+              <Symbol name="extern" /> Mit Programm öffnen
             </button>
           </>
         )}
-        <button className="primary" onClick={onClose} title="Schließen (Esc)">
+        {/* Startfokus (dialoge.ts fokussiert [autofocus]) – als Attribut, nicht über React-autoFocus: das fokussierte vor dem
+            Merken der Rücksprungstelle, und der Fokus käme danach nicht zurück */}
+        <button className="primary" ref={startFokus} onClick={onClose} title="Schließen (Esc)">
           Schließen
         </button>
       </header>
@@ -178,13 +187,16 @@ export function UnterlagenVorschau({ ablage, start, onClose }: { ablage: AblageO
           {fehler && <p className="warning">{fehler}</p>}
           {aktuell && art === 'pdf' && bytes?.pfad === aktuell.pfad && <PdfSeiten key={aktuell.pfad} daten={bytes.daten} zoom={zoom} />}
           {aktuell && art === 'bild' && bytes?.pfad === aktuell.pfad && <BildSeite daten={bytes.daten} zoom={zoom} name={aktuell.pfad} />}
-          {aktuell && art !== 'pdf' && art !== 'bild' && <p className="vs-hinweis">Für diese Datei gibt es hier keine Vorschau – „Extern öffnen“ zeigt sie im zugehörigen Programm.</p>}
+          {aktuell && art !== 'pdf' && art !== 'bild' && <p className="vs-hinweis">Für diese Datei gibt es hier keine Vorschau – „Mit Programm öffnen“ zeigt sie im zugehörigen Programm.</p>}
         </main>
       </div>
     </div>,
     document.body,
   );
 }
+
+/** Startfokus eines Dialogs festlegen (ausgewertet von dialoge.ts) */
+const startFokus = (el: HTMLElement | null) => el?.setAttribute('autofocus', '');
 
 /** Breite der Fläche verfolgen (für „Seitenbreite“) */
 function useBreite() {

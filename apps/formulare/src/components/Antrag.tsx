@@ -738,11 +738,11 @@ export function AntragsdatenAnsicht() {
           </span>
           <FassungsWahl />
           <button className="icon" title="Neu prüfen" aria-label="Neu prüfen" onClick={() => void aktualisieren()}>
-            <Symbol name="verlauf" />
+            <Symbol name="neuLaden" />
           </button>
           {basis && (
-            <button className="icon" title="Antragsordner im Explorer zeigen" aria-label="Antragsordner zeigen" onClick={() => void oeffnePfad(verbinde(basis, ordner)).catch(() => undefined)}>
-              <Symbol name="extern" />
+            <button className="icon" title="Antragsordner im Explorer öffnen" aria-label="Antragsordner im Explorer öffnen" onClick={() => void oeffnePfad(verbinde(basis, ordner)).catch(() => undefined)}>
+              <Symbol name="ordner" />
             </button>
           )}
         </div>
@@ -801,22 +801,13 @@ export function AntragsdatenAnsicht() {
           </div>
         ) : (
           <>
+            {/* derselbe Wortlaut wie im Tooltip des Statuspunkts (STATUS_TEXT) */}
             <div className="pu-legende small-text">
-              <span>
-                <StatusPunkt status="fehlt" /> fehlt
-              </span>
-              <span>
-                <StatusPunkt status="unvollstaendig" /> nicht vollständig
-              </span>
-              <span>
-                <StatusPunkt status="offen" /> nicht (aktuell) exportiert
-              </span>
-              <span>
-                <StatusPunkt status="aktuell" /> aktuell in {fassung}
-              </span>
-              <span>
-                <StatusPunkt status="entfaellt" /> nicht erforderlich
-              </span>
+              {(['fehlt', 'unvollstaendig', 'offen', 'aktuell', 'entfaellt'] as const).map((st) => (
+                <span key={st}>
+                  <StatusPunkt status={st} /> {STATUS_TEXT[st]}
+                </span>
+              ))}
               <strong className="pu-summe">
                 {z.aktuell} von {z.gesamt} aktuell
               </strong>
@@ -1033,7 +1024,7 @@ export function AntragsdatenAnsicht() {
                           <button className="small" onClick={() => setBearbeiten(null)}>
                             Fertig
                           </button>
-                          <button className="small gefahr" onClick={() => void ausUmfangEntfernen(u.id, zf, u.titel)}>
+                          <button className="small danger" onClick={() => void ausUmfangEntfernen(u.id, zf, u.titel)}>
                             Aus dem Antragsumfang nehmen
                           </button>
                         </div>

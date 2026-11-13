@@ -2,6 +2,7 @@ import { ansichtLesen, verknuepfteFelder } from '@core/ui/ansicht';
 import { create } from 'zustand';
 import { pickFile, saveBinaryFile } from '@core/platform/files';
 import { logger } from '@core/platform/log';
+import { aenderungenSpeichern } from '@core/ui/Rueckfrage';
 import type { AblageOrdner } from './ablage';
 import { VORGABE_AUSWAHL, ablageSuchen, auswahlBereinigt, zuordnen } from './ablage';
 import type { Dateisystem, PkAenderung } from './dateisystem';
@@ -23,6 +24,8 @@ import { formulareMitUnterordner, projekteSuchen } from './projekte';
 import type { Adresse, EigeneAdresse } from './adressbuch';
 import { adressenAusKarte, eigeneAdressenAus, wirksameAdressen, zusammenfuehren } from './adressbuch';
 import { xlsxLesen } from './dokumente/xlsx';
+import { bytesGleich as gleich, lesen, schreiben } from './speicher';
+import { anzahl } from './text';
 import type { Angabe, ProjektdatenEintrag } from './projektdaten';
 import { IN_PROJEKTKARTE, projektdatenLesen } from './projektdaten';
 import type { OapInhalt } from './oap';
@@ -224,8 +227,7 @@ interface FormulareState extends Gespeichert {
   dateiEntwuerfe: Record<string, unknown>;
   /** eigene Einstellungen der Formulare (Gliederung, Füllstand, Bedingungen) je Formular und Stand – als Abweichung von der Vorgabe der App */
   profile: Record<string, Abweichung>;
-  /** Adressen aus den Projektkarten aller FORMA-Projekte (zwischengespeichert) */
-  /** das Adressbuch, wie es gilt: Adressen der Projektkarten mit den eigenen zusammengeführt (null = noch nichts da) */
+  /** das Adressbuch, wie es gilt: Adressen der Projektkarten aller FORMA-Projekte mit den eigenen zusammengeführt (null = noch nichts da) */
   adressbuch: { adressen: Adresse[]; stand: number } | null;
   /** zuletzt aus den Projektkarten eingelesene Adressen */
   adressbuchKarten: { adressen: Adresse[]; stand: number } | null;
@@ -330,9 +332,9 @@ interface FormulareState extends Gespeichert {
   dateiNeuLaden: () => Promise<void>;
   /** neue Fassung speichern – vorher prüfen, dass die Datei seit dem Öffnen unverändert ist */
   dateiSpeichern: (neu: Uint8Array) => Promise<boolean>;
-  setDateiEntwurf: (wert: unknown) => void;
-  /** Profil eines Formulars setzen; null = wieder die Vorgabe */
-  /** wirksames Profil speichern (gespeichert wird die Abweichung von der Vorgabe); null = alles auf die Vorgabe */
+  /** Entwurf des gezeigten Dokuments (bzw. von `fuer`) setzen; null = keiner (gespeichert oder verworfen) */
+  setDateiEntwurf: (wert: unknown, fuer?: Pick<OffeneDatei, 'root' | 'pfad'>) => void;
+  /** wirksames Profil eines Formulars speichern (gespeichert wird die Abweichung von der Vorgabe); null = alles auf die Vorgabe */
   profilSetzen: (schluessel: string, profil: FormularProfil | null) => void;
   /** eigene Änderungen an einem Abschnitt, Feld oder einer Gruppe verwerfen – es gilt wieder die Vorgabe */
   eigenesVerwerfen: (schluessel: string, eintrag: Eintrag) => void;
@@ -357,14 +359,12 @@ interface FormulareState extends Gespeichert {
   namensschemaNeuLesen: () => Promise<void>;
   /** Projektdatei gezielt ändern (frisch lesen, nur `projekt.json`); legt sie nicht an – dann false */
   oapAendern: (aendern: (roh: Record<string, unknown>) => Record<string, unknown>) => Promise<boolean>;
-  /** Stammdaten-Dialog öffnen, um die fehlende Projektdatei anzulegen; `danach` läuft nach dem Anlegen */
-  /** Stammdaten-Dialog öffnen; `danach` läuft nach dem Anlegen, `abgebrochen` beim Abbrechen (z. B. eine Zusage zurücknehmen) */
+  /** Stammdaten-Dialog öffnen, um die fehlende Projektdatei anzulegen; `danach` läuft nach dem Anlegen, `abgebrochen` beim Abbrechen (z. B. eine Zusage zurücknehmen) */
   stammdatenErfassen: (grund: string, danach?: () => Promise<void>, abgebrochen?: (art: DialogArt) => void) => Promise<void>;
   /** Projektdatei mit diesen Stammdaten anlegen (aus dem Dialog) */
   projektdateiAnlegen: (meta: ProjectMeta) => Promise<void>;
   stammdatenAbbrechen: () => void;
-  /** Dialog öffnen, um dem gewählten Projekt einen Projektordner zuzuordnen; `danach` läuft, sobald es eine Projektdatei gibt */
-  /** Projektordner zuordnen lassen; `danach` läuft nach dem Zuordnen (bzw. Anlegen der Projektdatei), `abgebrochen` beim Abbrechen */
+  /** Dialog öffnen, um dem gewählten Projekt einen Projektordner zuzuordnen; `danach` läuft nach dem Zuordnen (bzw. Anlegen der Projektdatei), `abgebrochen` beim Abbrechen */
   projektordnerZuordnen: (grund: string, danach?: () => Promise<void>, abgebrochen?: (art: DialogArt) => void) => void;
   /** vorhandenen Ordner zuordnen */
   projektordnerWaehlen: (pfad: string) => Promise<void>;
@@ -420,25 +420,6 @@ export interface ProjektdatenDatei {
 }
 
 /* ---------- lokaler Speicher ---------- */
-
-function lesen<T>(schluessel: string, vorgabe: T): T {
-  try {
-    const roh = localStorage.getItem(schluessel);
-    return roh ? (JSON.parse(roh) as T) : vorgabe;
-  } catch {
-    return vorgabe;
-  }
-}
-
-function schreiben(schluessel: string, wert: unknown): boolean {
-  try {
-    localStorage.setItem(schluessel, JSON.stringify(wert));
-    return true;
-  } catch {
-    // ohne Speicher gibt es keinen Entwurf
-    return false;
-  }
-}
 
 const strings = (x: unknown) => (Array.isArray(x) ? x.filter((p): p is string => typeof p === 'string') : []);
 const zahlen = (x: unknown) => (Array.isArray(x) ? [...new Set(x.filter((p): p is number => Number.isInteger(p)))] : []);
@@ -647,8 +628,30 @@ export function formularOrdner(s: Pick<FormulareState, 'sammel'>, projekt: Proje
   return unter ? `${projekt.ordner}/${unter}` : projekt.ordner;
 }
 
+/**
+ * Entwurf eines Dokuments mitnehmen, wenn es umbenannt wird (`nach`), bzw. entfernen, wenn es gelöscht wird (null) –
+ * sonst hielte ein verwaister Entwurf das ● der Titelleiste. Der Hinweis auf eine bearbeitete PDF zieht nicht mit: Ihre
+ * Eingaben verfallen mit der Ansicht (vorher fragt `dateiVerlassen`).
+ */
+export function dateiEntwurfVerschieben(root: string, von: string, nach: string | null) {
+  const alt = dateiSchluessel({ root, pfad: von });
+  const s = useFormulare.getState();
+  if (!(alt in s.dateiEntwuerfe)) return;
+  const entwuerfe = { ...s.dateiEntwuerfe };
+  const wert = entwuerfe[alt];
+  delete entwuerfe[alt];
+  if (nach && wert !== PDF_ENTWURF) entwuerfe[dateiSchluessel({ root, pfad: nach })] = wert;
+  useFormulare.setState({ dateiEntwuerfe: entwuerfe });
+}
+
 /** Lauf des Neulesens der Formularliste – ein früher begonnener, später fertiger setzt seinen Stand nicht mehr */
 let formulareLeseNr = 0;
+
+/**
+ * Lauf des Öffnens eines Formulars – zwei Klicks kurz nacheinander warten beide in `schliessen` (auch auf ein laufendes
+ * Speichern); nur der letzte öffnet, ein überholter bricht ab und löst eine schon gesetzte eigene Sperre wieder
+ */
+let oeffnenNr = 0;
 
 /** Warum ein offenes Formular nicht bearbeitet werden kann (Datei, eingereichter Antrag) – null, wenn es geht */
 export const bearbeitungGesperrt = (o: OffenesFormular) => o.nurLesen ?? (o.projekt ? sperrAnbindung.antrag(o.projekt) : null);
@@ -664,8 +667,6 @@ export function autoWerteVon(o: OffenesFormular, karte: OffeneKarte | null) {
 
 export const kannZurueck = (o: OffenesFormular | null) => !!o && kannRueckgaengig(o.verlauf);
 export const kannVor = (o: OffenesFormular | null) => !!o && kannWiederholen(o.verlauf);
-
-const gleich = (a: Uint8Array, b: Uint8Array) => a.length === b.length && a.every((x, i) => x === b[i]);
 
 function aufbereiten(bytes: Uint8Array) {
   const formular = parseFormular(bytes);
@@ -830,7 +831,7 @@ function kartenAenderungen(k: OffeneKarte): PkAenderung[] {
       const neu = typeof w === 'number' ? pkZahlAus(e, w) : e.zahl === null ? null : -1;
       return neu === e.zahl ? [] : [{ gruppe, id, typ: e.typ, spalte: 'ganzzahl', alt: e.zahl, neu }];
     }
-    return [{ gruppe, id, typ: e.typ, spalte: 'texte', alt: e.text, neu: (typeof w === 'string' ? w : '').replace(/\n/g, '\r\n') }];
+    return [{ gruppe, id, typ: e.typ, spalte: 'texte', alt: e.text, ...(e.textRoh ? { altRoh: e.textRoh } : {}), neu: (typeof w === 'string' ? w : '').replace(/\n/g, '\r\n') }];
   });
 }
 
@@ -844,6 +845,41 @@ class KeinFormular extends Error {
 
 /** Meldung, wenn eine Datei kein lesbares FORMA-Formular ist (die technische Einzelheit steht im Protokoll) */
 export const KEIN_FORMULAR = 'Das ist keine Formulardatei (.frmsjf). Bitte ein Formular aus einem Formularprojekt wählen.';
+
+/* ---------- Bearbeitete PDF ---------- */
+
+/**
+ * Entwurf einer PDF in `dateiEntwuerfe`: Die Eingaben selbst hält pdf.js in der Ansicht (sie lassen sich nicht in den
+ * Store heben); der Eintrag zeigt nur an, dass es ungespeicherte gibt – für das ● der Titelleiste, die Rückfrage beim
+ * Beenden und beim Verlassen der PDF.
+ */
+export const PDF_ENTWURF = Object.freeze({ pdf: true });
+
+/** Speichern der gerade gezeigten PDF (trägt die Ansicht ein, solange sie da ist); liefert, ob gespeichert wurde */
+export const pdfAnbindung: { speichern?: () => Promise<boolean> } = {};
+
+/** Schlüssel eines Dokuments in `dateiEntwuerfe` */
+export const dateiSchluessel = (d: Pick<OffeneDatei, 'root' | 'pfad'>) => `${d.root}|${d.pfad}`;
+
+/** Ist die gezeigte Datei eine PDF mit ungespeicherten Bearbeitungen? */
+export const pdfGeaendert = (s: Pick<FormulareState, 'datei' | 'dateiEntwuerfe'>) => s.datei?.art === 'pdf' && !!s.dateiEntwuerfe[dateiSchluessel(s.datei)];
+
+/** Ungespeicherte Bearbeitungen in irgendeinem Dokument (PDF, Excel, Word) – sie gelten nur für diese Sitzung */
+export const dokumenteGeaendert = (s: Pick<FormulareState, 'dateiEntwuerfe'>) => Object.keys(s.dateiEntwuerfe).length > 0;
+
+/**
+ * Vor dem Verlassen einer bearbeiteten PDF (andere Ansicht, anderes Dokument, Formular, Projekt): „Speichern / Nicht
+ * speichern / Abbrechen“. Liefert, ob es weitergehen darf; ohne ungespeicherte PDF sofort true.
+ */
+export async function dateiVerlassen(): Promise<boolean> {
+  const s = useFormulare.getState();
+  if (!s.datei || !pdfGeaendert(s)) return true;
+  const d = s.datei;
+  const weiter = await aenderungenSpeichern(d.name, () => pdfAnbindung.speichern?.() ?? false, 'Die Eingaben in dieser PDF sind noch nicht gespeichert und gingen sonst verloren.');
+  // „Nicht speichern“: die Eingaben verfallen mit der Ansicht – der Hinweis darauf auch
+  if (weiter) useFormulare.getState().setDateiEntwurf(null, d);
+  return weiter;
+}
 
 export const useFormulare = create<FormulareState>()((set, get) => {
   const fehler = (text: string, e?: unknown) => {
@@ -881,7 +917,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       offen,
       haupt: 'formular',
       konflikt: false,
-      meldung: wiederhergestellt ? { art: 'info', text: `${wiederhergestellt} nicht gespeicherte Eingabe(n) vom letzten Mal wiederhergestellt.` } : null,
+      meldung: wiederhergestellt ? { art: 'info', text: `${anzahl(wiederhergestellt, 'nicht gespeicherte Eingabe', 'nicht gespeicherte Eingaben')} vom letzten Mal wiederhergestellt.` } : null,
     });
   };
 
@@ -889,8 +925,44 @@ export const useFormulare = create<FormulareState>()((set, get) => {
   const aktualisieren = (o: OffenesFormular) => {
     const neu = { ...o };
     neu.gesichert = sichern(neu);
+    if (neu.gesichert === null) sicherungFehlgeschlagen();
     set({ offen: neu });
     return neu;
+  };
+
+  /** Laufendes Speichern des Formulars bzw. der Projektkarte – ein weiteres wartet darauf, Schließen ebenso */
+  let laufendFormular: Promise<void> | null = null;
+  let laufendKarte: Promise<void> | null = null;
+
+  /** Lokale Sicherung gescheitert (Speicher voll o. Ä.): einmal je Sitzung melden, statt still weiterzumachen */
+  let sicherungGemeldet = false;
+  const sicherungFehlgeschlagen = () => {
+    if (sicherungGemeldet) return;
+    sicherungGemeldet = true;
+    fehler('Die Eingaben lassen sich gerade nicht lokal sichern (Speicher voll?). Bitte bald speichern – bei einem Absturz gingen sie sonst verloren.');
+  };
+
+  /**
+   * Nach dem Schreiben einer Formulardatei: Die Datei trägt jetzt `gespeichert`. Was während des Schreibens eingegeben
+   * wurde, bleibt als Änderung gegenüber der neuen Fassung stehen (auch ein Zurücksetzen auf den alten Dateiwert); der
+   * Verlauf von jetzt bleibt. Ist inzwischen ein anderes Formular offen, wird nur dessen gemerkter Entwurf bereinigt –
+   * das gespeicherte darf nicht wieder als offen (mit längst gelöster Sperre) erscheinen.
+   */
+  const nachDemSchreiben = (o: OffenesFormular, gespeichert: Record<string, Wert>, datei: Pick<OffenesFormular, 'bytes' | 'formular' | 'felder' | 'nurLesen'>) => {
+    const k = dokSchluessel(o);
+    const jetzt = get().offen;
+    if (!jetzt || dokSchluessel(jetzt) !== k) {
+      const entwurf = entwuerfe()[k];
+      if (entwurf) sichernUnter(ENTWUERFE, k, bereinige(entwurf, datei.felder), verlaufLaden(k));
+      return;
+    }
+    const bisher = new Map(jetzt.felder.flat().map((f) => [f.schluessel, f]));
+    const stand: Record<string, Wert> = {};
+    for (const s of new Set([...Object.keys(gespeichert), ...Object.keys(jetzt.aenderungen)])) {
+      const f = bisher.get(s);
+      if (f) stand[s] = wertVon(jetzt, f);
+    }
+    aktualisieren({ ...jetzt, ...datei, aenderungen: bereinige(stand, datei.felder) });
   };
 
   /**
@@ -904,11 +976,11 @@ export const useFormulare = create<FormulareState>()((set, get) => {
     if (!ds || !ablage || !werte.size || get().projekt !== projekt) return null;
     const o = get().oap;
     if (o === 'fehlt') {
-      void get().stammdatenErfassen('Die Projektkarte ist gespeichert. Für die Projektstammdaten fehlt im Projektordner noch die Projektdatei (.oap) – mit diesen Angaben wird sie angelegt.');
+      void get().stammdatenErfassen('Die Projektdaten sind gespeichert. Für die Projektstammdaten fehlt im Projektordner noch die Projektdatei (.oap) – mit diesen Angaben wird sie angelegt.');
       return null;
     }
     if (!o) return null;
-    let anzahl = 0;
+    let geaendertAnzahl = 0;
     // Koordinaten zur geänderten Adresse des Vorhabens vorab abfragen (das Schreiben selbst liest frisch und ist synchron)
     const lage = (await mitKoordinaten(metaMit(o.inhalt.meta, werte))).meta.koordinaten;
     const geschrieben = await get().oapAendern((roh) => {
@@ -916,7 +988,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       // nur, was sich unterscheidet – steht schon alles so darin, bleibt die Datei unberührt
       const vorher = angabenAus(bisher);
       const geaendert = new Map([...werte].filter(([a, w]) => (vorher.get(a) ?? '').trim() !== w.trim()));
-      anzahl = geaendert.size;
+      geaendertAnzahl = geaendert.size;
       if (!geaendert.size) return roh;
       const meta = metaMit(bisher, geaendert);
       if (lage && lage.adresse === adresseSchluessel(meta.adresse)) meta.koordinaten = lage;
@@ -924,8 +996,8 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       return { ...roh, meta };
     });
     if (!geschrieben) return null;
-    log.info(`Projektdatei ${o.pfad}: ${anzahl} Angabe(n)`);
-    return `Projektdatei mitgeführt (${anzahl} Angabe(n))`;
+    log.info(`Projektdatei ${o.pfad}: ${anzahl(geaendertAnzahl, 'Angabe', 'Angaben')}`);
+    return `Projektdatei mitgeführt (${anzahl(geaendertAnzahl, 'Angabe', 'Angaben')})`;
   };
 
   /** Vorbelegung der Stammdaten aus der Projektkarte (alle Angaben mit Gegenstück) */
@@ -965,7 +1037,113 @@ export const useFormulare = create<FormulareState>()((set, get) => {
   /** Neuer Stand der Projektkarte: übernehmen und lokal sichern (Entwurf und Verlauf) */
   const karteAktualisieren = (k: OffeneKarte) => {
     const neu = { ...k, gesichert: sichernUnter(PK_ENTWUERFE, karteSchluessel(k.projekt), k.aenderungen, k.verlauf) };
+    if (neu.gesichert === null) sicherungFehlgeschlagen();
     set({ karte: neu });
+  };
+
+  /** Formular in die Datei schreiben (nur über `speichern`, das parallele Läufe nacheinander abarbeitet) */
+  const formularSpeichern = async (): Promise<void> => {
+    const { ds, konflikt } = get();
+    let o = get().offen;
+    if (!o || !istGeaendert(o)) return;
+    if (bearbeitungGesperrt(o)) return fehler(bearbeitungGesperrt(o)!);
+    if (o.sperre.art === 'fremd') return fehler(`${o.name} ist bei ${o.sperre.sperre.benutzer || 'jemand anderem'} geöffnet – Speichern nicht möglich`);
+    if (konflikt) return fehler('Die Datei wurde inzwischen geändert – bitte erst neu laden');
+    try {
+      // Autofill: geleerte Felder bekommen den Auto-Wert (erzwungen leer ist ein Leerzeichen)
+      const datei = formularDatei(o.pfad);
+      const zustand = o.projekt ? autofillAnbindung.zustand(datei) : undefined;
+      const auto = autoWerteVon(o, get().karte);
+      const bezug = (k: string) => ({ aktuell: auto?.get(k)?.wert, zuletzt: zustand?.felder[k]?.auto });
+      const zugeordnet = autofillFelder(o.formular, o.felder);
+      const alt = o.aenderungen;
+      const aenderungen = { ...alt };
+      for (const [k, w] of Object.entries(aenderungen)) {
+        const b = bezug(k);
+        if (w === '' && zugeordnet.has(k) && (b.aktuell || b.zuletzt)) aenderungen[k] = (b.aktuell || b.zuletzt)!;
+      }
+      if (Object.keys(aenderungen).some((k) => aenderungen[k] !== alt[k])) o = aktualisieren({ ...o, aenderungen });
+      // Stand, der jetzt geschrieben wird – Eingaben während des Schreibens kommen danach wieder obenauf
+      const gespeichert = o.aenderungen;
+      const neu = mitAenderungen(o.bytes, gespeichert);
+      if (o.projekt && ds) {
+        const aktuell = await ds.lies(o.projekt.root, o.pfad);
+        if (!aktuell || !gleich(aktuell, o.bytes)) {
+          set({ konflikt: true, meldung: { art: 'fehler', text: 'Die Datei wurde seit dem Öffnen außerhalb geändert (z. B. in einem anderen Programm). Bitte neu laden – deine Eingaben bleiben erhalten.' } });
+          return;
+        }
+        await ds.ersetze(o.projekt.root, o.pfad, neu);
+      } else {
+        const ok = await saveBinaryFile({ defaultName: `${o.name}.frmsjf`, data: neu, filterName: 'Formular', extension: 'frmsjf', mime: 'application/octet-stream' });
+        if (!ok) return;
+      }
+      const { formular, felder, nurLesen } = aufbereiten(neu);
+      const geaendert = Object.keys(gespeichert).filter((k) => zugeordnet.has(k));
+      nachDemSchreiben(o, gespeichert, { bytes: neu, formular, felder, nurLesen });
+      // im Browser entsteht eine neue Datei (Download) – die geöffnete bleibt, wie sie war
+      set({ meldung: { art: 'info', text: o.projekt && ds ? `${o.name} gespeichert.` : `${o.name} heruntergeladen als „${o.name}.frmsjf“ – bitte die neue Datei weiterverwenden.` } });
+      if (o.projekt && geaendert.length) {
+        const z = zustandBeimSpeichern(zustand, geaendert, (k) => (typeof gespeichert[k] === 'string' ? (gespeichert[k] as string) : undefined), bezug);
+        if (JSON.stringify(z) !== JSON.stringify(zustand ?? { felder: {} })) autofillAnbindung.speichern(datei, z);
+      }
+      log.info(`Gespeichert: ${o.pfad} (${Object.keys(gespeichert).length} Feld(er))`);
+    } catch (e) {
+      fehler(`${o.name} nicht gespeichert`, e);
+    }
+  };
+
+  /** Projektkarte schreiben (nur über `karteSpeichern`, das parallele Läufe nacheinander abarbeitet) */
+  const karteSchreiben = async (): Promise<void> => {
+    const { ds, karte: k } = get();
+    if (!ds || !k || !karteGeaendert(k)) return;
+    const pfad = `${k.projekt.ordner}/sj_prokarte.sdb`;
+    try {
+      // Ergänzungen der App (zusatz.ts) nie in die Projektkarte von FORMA – sie merkt sich die App selbst
+      const alle = kartenAenderungen(k);
+      const aenderungen = alle.filter((a) => !istZusatz(a.gruppe, a.id));
+      const zusatz = Object.fromEntries(alle.filter((a) => istZusatz(a.gruppe, a.id)).map((a) => [pkSchluessel(a.gruppe, a.id), String(a.neu ?? '')]));
+      if (Object.keys(zusatz).length) zusatzMerken(k.projekt, zusatz);
+      if (aenderungen.length) await ds.projektkarteSchreiben(k.projekt.root, pfad, aenderungen);
+      const gelesen = await ds.projektkarteLesen(k.projekt.root, pfad);
+      if (!gelesen) throw new Error('Projektdaten nach dem Speichern nicht lesbar');
+      const frisch = mitZusatz(gelesen, zusatzWerte(k.projekt, get().oap));
+      // Eingaben während des Schreibens bleiben als Änderung gegenüber der neuen Fassung stehen (wie beim Formular);
+      // ist inzwischen ein anderes Projekt gewählt, gehört die angezeigte Karte nicht mehr zu diesem Speichern
+      const jetzt = get().karte;
+      if (jetzt && karteSchluessel(jetzt.projekt) === karteSchluessel(k.projekt)) {
+        const stand = new Map<string, unknown>();
+        for (const s of new Set([...Object.keys(k.aenderungen), ...Object.keys(jetzt.aenderungen)])) {
+          const [g, i] = s.split(':').map(Number);
+          stand.set(s, karteWert(jetzt, g, i));
+        }
+        const neu: OffeneKarte = { ...jetzt, karte: frisch, aenderungen: {} };
+        karteAktualisieren({ ...neu, aenderungen: karteMitWerten(neu, stand) });
+      } else {
+        const gemerkt = lesen<Record<string, Record<string, unknown>>>(PK_ENTWUERFE, {})[karteSchluessel(k.projekt)];
+        if (gemerkt) {
+          const neu: OffeneKarte = { ...k, karte: frisch, aenderungen: {} };
+          sichernUnter(PK_ENTWUERFE, karteSchluessel(k.projekt), karteMitWerten(neu, new Map(Object.entries(gemerkt))), verlaufLaden(karteSchluessel(k.projekt)));
+        }
+      }
+      set({ meldung: { art: 'info', text: `Projektdaten von ${k.projekt.ordner} gespeichert.` } });
+      if (alle.length) autofillAnbindung.karteGespeichert?.(k.karte, frisch);
+      // die Projektdatei (.oap) im Projektordner gleich mitführen: geänderte Angaben mit Gegenstück
+      const geaendert = new Set(alle.map((a) => pkSchluessel(a.gruppe, a.id)));
+      const werte = new Map<Angabe, string>();
+      for (const { angabe } of OAP_ANGABEN) {
+        const z = IN_PROJEKTKARTE[angabe];
+        if (z && geaendert.has(pkSchluessel(z.gruppe, z.id))) werte.set(angabe, pkWert(frisch, z.gruppe, z.id));
+      }
+      try {
+        const text = await inProjektdatei(k.projekt, werte);
+        if (text) set({ meldung: { art: 'info', text: `Projektdaten gespeichert – ${text}.` } });
+      } catch (e) {
+        fehler('Projektdaten gespeichert, aber nicht in die Projektdatei übernommen', e);
+      }
+      log.info(`Projektkarte gespeichert: ${pfad} (${aenderungen.length} Einträge${Object.keys(zusatz).length ? `, ${Object.keys(zusatz).length} Ergänzung(en) der App` : ''})`);
+    } catch (e) {
+      fehler('Projektdaten nicht gespeichert', e);
+    }
   };
 
   return {
@@ -1006,8 +1184,13 @@ export const useFormulare = create<FormulareState>()((set, get) => {
     setHaupt: (haupt) => {
       // nie auf eine Ansicht, die es nicht gibt: ohne Projekt keine Projektkarte (sonst verschwände das Formular, B-03)
       if ((haupt === 'projektkarte' || haupt === 'antrag') && !get().projekt) return;
-      set({ haupt });
-      if (haupt === 'projektkarte' && !get().karte) void get().karteLaden();
+      const wechseln = () => {
+        set({ haupt });
+        if (haupt === 'projektkarte' && !get().karte) void get().karteLaden();
+      };
+      // eine bearbeitete PDF ginge beim Verlassen verloren: erst fragen (sonst sofort wechseln)
+      if (haupt !== 'datei' && pdfGeaendert(get())) void dateiVerlassen().then((weiter) => weiter && wechseln());
+      else wechseln();
     },
     setZoom: (zoom) => set({ zoom }),
     setLeisteBreite: (b) => set({ leisteBreite: Math.min(600, Math.max(220, Math.round(b))) }),
@@ -1057,7 +1240,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       if (verwaist.length) {
         const namen = verwaist.map((v) => v.split('/').pop()!.replace(/\.frmtmp$/i, '')).join(', ');
         log.info(`Verwaiste eigene Sperren entfernt: ${verwaist.join(', ')}`);
-        set({ meldung: { art: 'info', text: `Nach einem Absturz liegen gebliebene Sperre(n) entfernt: ${namen}.` } });
+        set({ meldung: { art: 'info', text: `Nach einem Absturz liegen gebliebene ${verwaist.length === 1 ? 'Sperre' : 'Sperren'} entfernt: ${namen}.` } });
       }
       set({ sucht: true });
       try {
@@ -1085,6 +1268,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
     },
 
     projektWaehlen: async (projekt) => {
+      if (!(await dateiVerlassen())) return;
       await get().schliessen();
       nachAnlegen = null;
       beiAbbruch = null;
@@ -1132,6 +1316,9 @@ export const useFormulare = create<FormulareState>()((set, get) => {
     formularOeffnen: async (eintrag) => {
       const { ds, projekt } = get();
       if (!ds || !projekt) return;
+      if (!(await dateiVerlassen())) return;
+      const nr = ++oeffnenNr;
+      const ueberholt = () => nr !== oeffnenNr;
       // erst lesen und prüfen – ein fehlgeschlagenes Öffnen lässt das geöffnete Formular unverändert
       let bytes: Uint8Array;
       try {
@@ -1140,22 +1327,39 @@ export const useFormulare = create<FormulareState>()((set, get) => {
         pruefen(b);
         bytes = b;
       } catch (e) {
-        nichtLesbar(eintrag.name, e);
+        if (!ueberholt()) nichtLesbar(eintrag.name, e);
         return;
       }
+      if (ueberholt()) return;
       await get().schliessen();
+      // überholt oder inzwischen ein anderes Projekt gewählt: nichts mehr öffnen
+      if (ueberholt() || get().projekt !== projekt) return;
+      let gesperrt: SperrZustand | null = null;
+      const sperreLoesen = async () => {
+        if (gesperrt?.art !== 'eigen') return;
+        const sp = sperrPfad(eintrag.pfad);
+        await ds.sperreLoesen(projekt.root, sp, gesperrt.daten).catch(() => false);
+        sperreVergessen(projekt.root, sp);
+      };
       try {
         const { zustand: sperre, aufgeraeumt } = await sperren(ds, projekt.root, eintrag.pfad);
+        gesperrt = sperre;
         // Zwischen Lesen und Sperren könnte FORMA gespeichert haben: mit Sperre noch einmal lesen
         const frisch = sperre.art === 'eigen' ? ((await ds.lies(projekt.root, eintrag.pfad)) ?? bytes) : bytes;
+        // inzwischen ein anderes Formular angeklickt: das gilt – die eigene Sperre dieses Laufs wieder lösen
+        if (ueberholt()) return void (await sperreLoesen());
         await oeffnen(projekt, eintrag.pfad, eintrag.name, frisch, sperre);
+        gesperrt = null;
         const offen = get().offen;
         if (offen && !get().karte && autofillFelder(offen.formular, offen.felder).size) void get().karteLaden();
         if (aufgeraeumt && !get().meldung) set({ meldung: { art: 'info', text: 'Eine verwaiste Sperre dieser App (nach einem Absturz) wurde entfernt.' } });
         log.info(`Geöffnet: ${eintrag.pfad}${sperre.art === 'fremd' ? ` (nur ansehen: ${sperre.bewertung.art})` : ''}`);
         await get().formulareNeuLesen();
       } catch (e) {
-        fehler(`${eintrag.name} lässt sich nicht öffnen`, e);
+        // gesperrt, aber nicht geöffnet (z. B. das frisch gelesene ist nicht lesbar): die eigene Sperre gleich wieder
+        // lösen – sonst bliebe das Formular für FORMA bis zum Beenden der App gesperrt
+        await sperreLoesen();
+        if (!ueberholt()) fehler(`${eintrag.name} lässt sich nicht öffnen`, e);
       }
     },
 
@@ -1180,6 +1384,8 @@ export const useFormulare = create<FormulareState>()((set, get) => {
     },
 
     schliessen: async () => {
+      // erst fertig schreiben lassen: die Sperre darf nicht fallen, solange die Datei noch ersetzt wird
+      while (laufendFormular) await laufendFormular;
       const { offen, ds } = get();
       if (!offen) return;
       set({ offen: null, konflikt: false });
@@ -1349,51 +1555,15 @@ export const useFormulare = create<FormulareState>()((set, get) => {
     },
 
     speichern: async () => {
-      const { ds, konflikt } = get();
-      let o = get().offen;
-      if (!o || !istGeaendert(o)) return;
-      if (bearbeitungGesperrt(o)) return fehler(bearbeitungGesperrt(o)!);
-      if (o.sperre.art === 'fremd') return fehler(`${o.name} ist bei ${o.sperre.sperre.benutzer || 'jemand anderem'} geöffnet – Speichern nicht möglich`);
-      if (konflikt) return fehler('Die Datei wurde inzwischen geändert – bitte erst neu laden');
+      // läuft schon ein Speichern (Strg+S doppelt, Speichern beim Beenden): abwarten, dann den Rest speichern – was
+      // während des Schreibens eingegeben wurde; parallel verglichen beide mit demselben alten Stand
+      while (laufendFormular) await laufendFormular;
+      const lauf = formularSpeichern();
+      laufendFormular = lauf;
       try {
-        // Autofill: geleerte Felder bekommen den Auto-Wert (erzwungen leer ist ein Leerzeichen)
-        const datei = formularDatei(o.pfad);
-        const zustand = o.projekt ? autofillAnbindung.zustand(datei) : undefined;
-        const auto = autoWerteVon(o, get().karte);
-        const bezug = (k: string) => ({ aktuell: auto?.get(k)?.wert, zuletzt: zustand?.felder[k]?.auto });
-        const zugeordnet = autofillFelder(o.formular, o.felder);
-        const alt = o.aenderungen;
-        const aenderungen = { ...alt };
-        for (const [k, w] of Object.entries(aenderungen)) {
-          const b = bezug(k);
-          if (w === '' && zugeordnet.has(k) && (b.aktuell || b.zuletzt)) aenderungen[k] = (b.aktuell || b.zuletzt)!;
-        }
-        if (Object.keys(aenderungen).some((k) => aenderungen[k] !== alt[k])) o = aktualisieren({ ...o, aenderungen });
-        const neu = mitAenderungen(o.bytes, o.aenderungen);
-        if (o.projekt && ds) {
-          const aktuell = await ds.lies(o.projekt.root, o.pfad);
-          if (!aktuell || !gleich(aktuell, o.bytes)) {
-            set({ konflikt: true, meldung: { art: 'fehler', text: 'Die Datei wurde seit dem Öffnen außerhalb geändert (z. B. in einem anderen Programm). Bitte neu laden – deine Eingaben bleiben erhalten.' } });
-            return;
-          }
-          await ds.ersetze(o.projekt.root, o.pfad, neu);
-        } else {
-          const ok = await saveBinaryFile({ defaultName: `${o.name}.frmsjf`, data: neu, filterName: 'Formular', extension: 'frmsjf', mime: 'application/octet-stream' });
-          if (!ok) return;
-        }
-        const { formular, felder, nurLesen } = aufbereiten(neu);
-        const geaendert = Object.keys(o.aenderungen).filter((k) => zugeordnet.has(k));
-        aktualisieren({ ...o, bytes: neu, formular, felder, nurLesen, aenderungen: {} });
-        // im Browser entsteht eine neue Datei (Download) – die geöffnete bleibt, wie sie war
-        set({ meldung: { art: 'info', text: o.projekt && ds ? `${o.name} gespeichert.` : `${o.name} heruntergeladen als „${o.name}.frmsjf“ – bitte die neue Datei weiterverwenden.` } });
-        if (o.projekt && geaendert.length) {
-          const werte = o.aenderungen;
-          const z = zustandBeimSpeichern(zustand, geaendert, (k) => (typeof werte[k] === 'string' ? (werte[k] as string) : undefined), bezug);
-          if (JSON.stringify(z) !== JSON.stringify(zustand ?? { felder: {} })) autofillAnbindung.speichern(datei, z);
-        }
-        log.info(`Gespeichert: ${o.pfad} (${Object.keys(o.aenderungen).length} Feld(er))`);
-      } catch (e) {
-        fehler(`${o.name} nicht gespeichert`, e);
+        await lauf;
+      } finally {
+        if (laufendFormular === lauf) laufendFormular = null;
       }
     },
 
@@ -1404,7 +1574,10 @@ export const useFormulare = create<FormulareState>()((set, get) => {
         const bytes = await ds.lies(o.projekt.root, o.pfad);
         if (!bytes) throw new Error('Datei nicht gefunden');
         const { formular, felder, nurLesen } = aufbereiten(bytes);
-        aktualisieren({ ...o, bytes, formular, felder, nurLesen, aenderungen: bereinige(o.aenderungen, felder) });
+        // inzwischen ein anderes Formular offen: nichts übernehmen; sonst die Eingaben von jetzt (nicht die vor dem Lesen)
+        const jetzt = get().offen;
+        if (!jetzt || dokSchluessel(jetzt) !== dokSchluessel(o)) return;
+        aktualisieren({ ...jetzt, bytes, formular, felder, nurLesen, aenderungen: bereinige(jetzt.aenderungen, felder) });
         set({ konflikt: false, meldung: { art: 'info', text: 'Neu geladen – deine Eingaben sind eingetragen, aber noch nicht gespeichert.' } });
       } catch (e) {
         fehler(`${o.name} nicht neu geladen`, e);
@@ -1418,17 +1591,25 @@ export const useFormulare = create<FormulareState>()((set, get) => {
         const karte = await ds.projektkarteLesen(projekt.root, `${projekt.ordner}/sj_prokarte.sdb`);
         if (get().projekt !== projekt) return;
         if (!karte) {
-          set({ karte: null, meldung: { art: 'info', text: `${projekt.ordner} hat keine Projektkarte.` } });
+          set({ karte: null, meldung: { art: 'info', text: `${projekt.ordner} hat keine Projektdaten (keine Projektkarte im Formularprojekt).` } });
           return;
         }
         const k = karteSchluessel(projekt);
-        const offen: OffeneKarte = { projekt, karte: mitZusatz(karte, zusatzWerte(projekt, get().oap)), aenderungen: {}, verlauf: verlaufLaden(k), gesichert: null };
+        const geladen = verlaufLaden(k);
+        const offen: OffeneKarte = { projekt, karte: mitZusatz(karte, zusatzWerte(projekt, get().oap)), aenderungen: {}, verlauf: geladen, gesichert: null };
         // nur Entwürfe übernehmen, die zum Eintrag passen und noch vom gespeicherten Wert abweichen
         const entwurf = lesen<Record<string, Record<string, unknown>>>(PK_ENTWUERFE, {})[k] ?? {};
         offen.aenderungen = karteMitWerten(offen, new Map(Object.entries(entwurf)));
+        // der Verlauf muss zum Inhalt der Karte passen (wie beim Formular, B-08): Hat sie jemand anderes geändert, kommen
+        // die alten Schritte unter „frühere Sitzung“ – sonst schriebe Strg+Z alte Werte über die fremde Änderung
+        offen.verlauf = abgleichen(geladen, (s) => {
+          const [g, i] = s.split(':').map(Number);
+          return pkEintrag(offen.karte, g, i) ? karteWert(offen, g, i) : undefined;
+        });
+        if (offen.verlauf !== geladen) offen.gesichert = sichernUnter(PK_ENTWUERFE, k, offen.aenderungen, offen.verlauf);
         set({ karte: offen });
       } catch (e) {
-        fehler(`Projektkarte von ${projekt.ordner} nicht lesbar`, e);
+        fehler(`Projektdaten von ${projekt.ordner} nicht lesbar`, e);
       }
     },
 
@@ -1501,7 +1682,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       });
       // nur die geänderten Einträge zurück – nicht über Verknüpfungen auf andere übertragen
       get().karteMehrere(zurueck, 'Änderungen verworfen', { ohneVerknuepfungen: true });
-      set({ meldung: { art: 'info', text: 'Ungespeicherte Änderungen der Projektkarte verworfen – Strg+Z holt sie zurück.' } });
+      set({ meldung: { art: 'info', text: 'Ungespeicherte Änderungen der Projektdaten verworfen – Strg+Z holt sie zurück.' } });
     },
 
     dateiAnsehen: async (root, pfad) => {
@@ -1509,6 +1690,8 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       const name = pfad.split('/').pop()!;
       const art = dateiArtVon(name);
       if (!ds || !art) return;
+      // auch dasselbe Dokument: neu Einlesen baut die Ansicht neu auf, die Bearbeitungen einer PDF wären weg
+      if (!(await dateiVerlassen())) return;
       try {
         const bytes = await ds.lies(root, pfad);
         if (!bytes) throw new Error('Datei nicht gefunden');
@@ -1527,17 +1710,28 @@ export const useFormulare = create<FormulareState>()((set, get) => {
     dateiSpeichern: async (neu) => {
       const { ds, datei: d } = get();
       if (!ds || !d) return false;
+      const k = dateiSchluessel(d);
+      // der Entwurf, aus dem `neu` entstand – nur er ist danach gespeichert
+      const entwurfVorher = get().dateiEntwuerfe[k];
       try {
         const aktuell = await ds.lies(d.root, d.pfad);
         if (!aktuell || !gleich(aktuell, d.bytes)) {
-          set({ meldung: { art: 'fehler', text: `${d.name} wurde seit dem Öffnen außerhalb geändert – bitte neu laden (deine Bearbeitungen bleiben erhalten).` } });
+          // Excel/Word: der Entwurf liegt im Store und übersteht das Neuladen; die Eingaben einer PDF hält nur die Ansicht
+          const rat = d.art === 'pdf' ? 'Achtung: „Neu laden“ verwirft die Eingaben in dieser PDF.' : 'Bitte neu laden – deine Bearbeitungen bleiben erhalten.';
+          set({ meldung: { art: 'fehler', text: `${d.name} wurde seit dem Öffnen außerhalb geändert und ist nicht gespeichert. ${rat}` } });
           return false;
         }
         await ds.dokumentErsetzen(d.root, d.pfad, neu);
-        const k = `${d.root}|${d.pfad}`;
+        // während des Schreibens weiter bearbeitet: dieser Entwurf bleibt; ein anderes Dokument geöffnet: es bleibt offen
         const entwuerfe = { ...get().dateiEntwuerfe };
-        delete entwuerfe[k];
-        set({ datei: { ...d, bytes: neu, stand: d.stand + 1 }, dateiEntwuerfe: entwuerfe, meldung: { art: 'info', text: `${d.name} gespeichert (die vorige Fassung liegt als Sicherung im App-Ordner).` } });
+        if (entwuerfe[k] === entwurfVorher) delete entwuerfe[k];
+        const jetzt = get().datei;
+        const gleichesDokument = !!jetzt && jetzt.root === d.root && jetzt.pfad === d.pfad;
+        set({
+          ...(gleichesDokument ? { datei: { ...jetzt, bytes: neu, stand: jetzt.stand + 1 } } : {}),
+          dateiEntwuerfe: entwuerfe,
+          meldung: { art: 'info', text: `${d.name} gespeichert (die vorige Fassung liegt als Sicherung im App-Ordner).` },
+        });
         log.info(`Dokument gespeichert: ${d.pfad}`);
         return true;
       } catch (e) {
@@ -1670,7 +1864,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       p.meta = meta;
       // wie im Projektordner-Tool: jede neue Projektdatei trägt eine Kopie des Namensschemas des Büros
       p.namensschema = wirksamesNamensschema(undefined, get().namensschemaBuero);
-      if (!(await projektdateiAnlegen(ds.projektordner, root, pfad, p, 'Formulare'))) throw new Error(`${pfad}: Dort liegt schon eine Datei – bitte in der Projektkarte auswählen.`);
+      if (!(await projektdateiAnlegen(ds.projektordner, root, pfad, p, 'Formulare'))) throw new Error(`${pfad}: Dort liegt schon eine Datei – bitte in den Projektdaten auswählen.`);
       log.info(`Projektdatei angelegt: ${pfad}`);
       set({ stammdatenDialog: null, meldung: { art: 'info', text: `Projektdatei angelegt: ${pfad}` } });
       get().ordnerNeuLesen();
@@ -1882,10 +2076,11 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       set({ profile });
     },
 
-    setDateiEntwurf: (wert) => {
-      const d = get().datei;
+    setDateiEntwurf: (wert, fuer) => {
+      const d = fuer ?? get().datei;
       if (!d) return;
-      const k = `${d.root}|${d.pfad}`;
+      const k = dateiSchluessel(d);
+      if (wert === null || wert === undefined ? !(k in get().dateiEntwuerfe) : get().dateiEntwuerfe[k] === wert) return;
       const entwuerfe = { ...get().dateiEntwuerfe };
       if (wert === null || wert === undefined) delete entwuerfe[k];
       else entwuerfe[k] = wert;
@@ -1893,47 +2088,23 @@ export const useFormulare = create<FormulareState>()((set, get) => {
     },
 
     karteSpeichern: async () => {
-      const { ds, karte: k } = get();
-      if (!ds || !k || !karteGeaendert(k)) return;
-      const pfad = `${k.projekt.ordner}/sj_prokarte.sdb`;
+      // läuft schon ein Speichern: abwarten, dann den Rest – parallel schickten beide dieselben Änderungen mit veraltetem „alt“
+      while (laufendKarte) await laufendKarte;
+      const lauf = karteSchreiben();
+      laufendKarte = lauf;
       try {
-        // Ergänzungen der App (zusatz.ts) nie in die Projektkarte von FORMA – sie merkt sich die App selbst
-        const alle = kartenAenderungen(k);
-        const aenderungen = alle.filter((a) => !istZusatz(a.gruppe, a.id));
-        const zusatz = Object.fromEntries(alle.filter((a) => istZusatz(a.gruppe, a.id)).map((a) => [pkSchluessel(a.gruppe, a.id), String(a.neu ?? '')]));
-        if (Object.keys(zusatz).length) zusatzMerken(k.projekt, zusatz);
-        if (aenderungen.length) await ds.projektkarteSchreiben(k.projekt.root, pfad, aenderungen);
-        const gelesen = await ds.projektkarteLesen(k.projekt.root, pfad);
-        if (!gelesen) throw new Error('Projektkarte nach dem Speichern nicht lesbar');
-        const frisch = mitZusatz(gelesen, zusatzWerte(k.projekt, get().oap));
-        karteAktualisieren({ ...k, karte: frisch, aenderungen: {} });
-        set({ meldung: { art: 'info', text: `Projektkarte von ${k.projekt.ordner} gespeichert.` } });
-        if (alle.length) autofillAnbindung.karteGespeichert?.(k.karte, frisch);
-        // die Projektdatei (.oap) im Projektordner gleich mitführen: geänderte Angaben mit Gegenstück
-        const geaendert = new Set(alle.map((a) => pkSchluessel(a.gruppe, a.id)));
-        const werte = new Map<Angabe, string>();
-        for (const { angabe } of OAP_ANGABEN) {
-          const z = IN_PROJEKTKARTE[angabe];
-          if (z && geaendert.has(pkSchluessel(z.gruppe, z.id))) werte.set(angabe, pkWert(frisch, z.gruppe, z.id));
-        }
-        try {
-          const text = await inProjektdatei(k.projekt, werte);
-          if (text) set({ meldung: { art: 'info', text: `Projektkarte gespeichert – ${text}.` } });
-        } catch (e) {
-          fehler('Projektkarte gespeichert, aber nicht in die Projektdatei übernommen', e);
-        }
-        log.info(`Projektkarte gespeichert: ${pfad} (${aenderungen.length} Einträge${Object.keys(zusatz).length ? `, ${Object.keys(zusatz).length} Ergänzung(en) der App` : ''})`);
-      } catch (e) {
-        fehler('Projektkarte nicht gespeichert', e);
+        await lauf;
+      } finally {
+        if (laufendKarte === lauf) laufendKarte = null;
       }
     },
   };
 });
 
-/** Echter Projektordner des gewählten FORMA-Projekts (über das Kürzel) */
 /** von Hand zugeordnete Ordner als AblageOrdner – je Pfad dasselbe Objekt (stabil für Selektoren) */
 const gewaehlteOrdner = new Map<string, AblageOrdner>();
 
+/** Echter Projektordner des gewählten FORMA-Projekts (über das Kürzel bzw. von Hand zugeordnet) */
 export function ablageVon(s: Pick<FormulareState, 'ablage' | 'ordnerWahl'>, p: Projekt | null): AblageOrdner | null {
   if (!p) return null;
   const gewaehlt = s.ordnerWahl[p.ordner];
@@ -2000,7 +2171,12 @@ function verknuepfteWerte(k: OffeneKarte, gruppe: number, id: number, wert: PkWe
 /** Angezeigte Pfade im echten Projektordner eines Projekts */
 export const auswahlVon = (s: Pick<FormulareState, 'auswahl' | 'vorgabeAuswahl'>, p: Projekt | null) => (p && s.auswahl[p.ordner]) || s.vorgabeAuswahl;
 
+/** zuletzt geschriebene Einstellungen – geschrieben wird nur, wenn sich eine geändert hat (nicht bei jedem Tastendruck) */
+let gespeichertZuletzt: Gespeichert | null = null;
+
 useFormulare.subscribe((s) => {
+  const z = gespeichertZuletzt;
+  if (z && (Object.keys(z) as (keyof Gespeichert)[]).every((k) => z[k] === s[k])) return;
   const g: Gespeichert = {
     projektordner: s.projektordner,
     ablageordner: s.ablageordner,
@@ -2019,6 +2195,7 @@ useFormulare.subscribe((s) => {
     kartenAusgeblendet: s.kartenAusgeblendet,
     kartenEintraegeAusgeblendet: s.kartenEintraegeAusgeblendet,
   };
+  gespeichertZuletzt = g;
   schreiben(EINSTELLUNGEN, g);
 });
 

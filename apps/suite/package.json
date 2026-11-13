@@ -1,7 +1,7 @@
 {
   "name": "arch-tools-suite",
   "private": true,
-  "version": "0.17.0",
+  "version": "0.18.0",
   "type": "module",
   "description": "Rahmen-App: alle arch-tools in einem Fenster – Tabs, herauslösbare Fenster",
   "scripts": {
