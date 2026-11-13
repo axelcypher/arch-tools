@@ -387,7 +387,7 @@ export function Arbeitsflaeche() {
         )}
       </svg>
       {!foto && (
-        <div className="ef-leer">
+        <div className="canvas-message leer ef-leer">
           <p>
             <strong>Noch kein Foto</strong>
             <br />

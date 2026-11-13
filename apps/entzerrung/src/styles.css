@@ -1,11 +1,11 @@
 /* RECTIO (Entzerrung; Grund-Styles: @core/ui/base.css) */
 
 /*
- * Auswahl auf dem Foto: Cyan mit weißem Rand – deutlich anders als Messungen und Maße (Orange) und die übrigen
- * Linienfarben. Gilt hell und dunkel gleich, weil das Foto nicht invertiert wird.
+ * Auswahl auf dem Foto: --sel-foto (Magenta, gemeinsam, docs/design.md) mit Doppelsaum – innen dunkel, außen weiß –,
+ * damit sie auf jedem Fototon und neben den orangen Messungen sichtbar bleibt.
  */
 :root {
-  --ef-sel: #00b4d8;
+  --ef-saum: drop-shadow(0 0 0.6px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 1px #fff);
 }
 
 .ef-flaeche {
@@ -64,10 +64,10 @@
   fill: #ffe7b3;
 }
 .ef-griff.sel {
-  fill: var(--ef-sel);
+  fill: var(--sel-foto);
   stroke: #fff;
-  stroke-width: 2.5;
-  filter: drop-shadow(0 0 1.5px rgba(0, 0, 0, 0.7));
+  stroke-width: 2;
+  filter: var(--ef-saum);
 }
 .ef-overlay:not(.wz-auswahl) .ef-griff {
   cursor: crosshair;
@@ -138,10 +138,10 @@
 .ef-linie.sel,
 .ef-hilfslinie.sel,
 .ef-messung.sel {
-  stroke: var(--ef-sel);
-  stroke-width: 3.5;
+  stroke: var(--sel-foto);
+  stroke-width: 3;
   stroke-dasharray: none;
-  filter: drop-shadow(0 0 1.5px #fff) drop-shadow(0 0 1px rgba(0, 0, 0, 0.6));
+  filter: var(--ef-saum);
 }
 .ef-ref-entwurf {
   stroke: #1c3faa;
@@ -261,30 +261,21 @@
   outline-offset: -2px;
 }
 
-/* Leerzustand ohne Foto */
+/* Leerzustand ohne Foto: gemeinsame .canvas-message.leer, darin Text und Knopf */
 .ef-leer {
-  position: absolute;
-  inset: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 12px;
-  pointer-events: none;
+  gap: 10px;
+  padding: 14px 18px;
+  line-height: 1.5;
 }
 .ef-leer p {
   margin: 0;
-  max-width: 360px;
-  text-align: center;
-  background: var(--panel);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 12px 16px;
-  line-height: 1.5;
+  max-width: 340px;
 }
-.ef-leer button {
-  pointer-events: auto;
+.ef-leer strong {
+  color: var(--text);
 }
 
 .ef-ablegen {
