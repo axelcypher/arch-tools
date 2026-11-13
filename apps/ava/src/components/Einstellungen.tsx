@@ -13,7 +13,7 @@ import { EinstellungenKonflikt, VORGABE } from '../einstellungen';
 import { neueId } from '../lv/modell';
 import { useAva } from '../store';
 import { Feld, TextEingabe, ZahlEingabe } from './eingaben';
-import { listenTaste } from './abrechnung/tastatur';
+import { listenTaste } from './tastatur';
 
 type Ebene = 'ablage' | 'rechnungen' | 'pruefung' | 'deckblatt' | 'scan' | 'mail' | 'lv';
 

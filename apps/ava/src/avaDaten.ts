@@ -86,10 +86,6 @@ export interface Tagesbericht {
   /** Fotos, relativ zum Projektordner */
   fotos: string[];
   verfasser?: string;
-  /** Abnahmebegehung: Vorbehalt bekannter Mängel (§ 12 Abs. 4/5 VOB/B, § 640 Abs. 3 BGB) */
-  vorbehaltMaengel?: string;
-  /** Abnahmebegehung: Vertragsstrafe vorbehalten (§ 11 Abs. 4 VOB/B) */
-  vertragsstrafeVorbehalten?: boolean;
 }
 
 export interface Top {
@@ -117,6 +113,10 @@ export interface Protokoll {
   verteiler?: string;
   naechsterTermin?: string;
   verfasser?: string;
+  /** Abnahmebegehung: Vorbehalt bekannter Mängel (§ 12 Abs. 4/5 VOB/B, § 640 Abs. 3 BGB) */
+  vorbehaltMaengel?: string;
+  /** Abnahmebegehung: Vertragsstrafe vorbehalten (§ 11 Abs. 4 VOB/B) */
+  vertragsstrafeVorbehalten?: boolean;
 }
 
 export type MangelStatus = 'offen' | 'angezeigt' | 'erledigt' | 'abgenommen';

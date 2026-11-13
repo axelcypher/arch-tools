@@ -12,7 +12,6 @@ import { berichtAblegen, berichtKopf, mitPdfMailen, pdfZeigen, speichern } from 
 const STATUS: MangelStatus[] = ['offen', 'angezeigt', 'erledigt', 'abgenommen'];
 
 /** Mangel mit dem Datum der Mängelanzeige (versendet am) */
-type MangelMitAnzeige = Mangel & { angezeigtAm?: string };
 
 const istOffen = (m: Mangel) => m.status === 'offen' || m.status === 'angezeigt';
 
@@ -35,14 +34,14 @@ export function Maengel() {
   const kk = projekt.kk?.kk ?? null;
   const gewerke = useMemo(() => alleGewerke(kk, projekt.struktur?.gewerke ?? [], []), [kk, projekt.struktur]);
   const firmaVon = (g?: string) => (g ? projekt.ava.gewerke[g]?.firma || kk?.gewerke.find((x) => x.gewerk === g)?.auftragnehmer || '' : '');
-  const liste = (projekt.ava.maengel as MangelMitAnzeige[]).filter((m) => (filter === 'alle' || istOffen(m) || behalten.has(m.id)) && (!gewerk || m.gewerk === gewerk)).sort((a, b) => a.nr - b.nr);
+  const liste = projekt.ava.maengel.filter((m) => (filter === 'alle' || istOffen(m) || behalten.has(m.id)) && (!gewerk || m.gewerk === gewerk)).sort((a, b) => a.nr - b.nr);
   const offeneListe = liste.filter(istOffen);
-  const setze = (id: string, patch: Partial<MangelMitAnzeige>) =>
+  const setze = (id: string, patch: Partial<Mangel>) =>
     void speichern((a) => ({
       ...a,
       maengel: a.maengel.map((m) =>
         m.id === id
-          ? { ...m, ...patch, ...(patch.status === 'erledigt' && !m.erledigtAm ? { erledigtAm: heuteIso() } : {}), ...(patch.status === 'angezeigt' && !(m as MangelMitAnzeige).angezeigtAm ? { angezeigtAm: heuteIso() } : {}) }
+          ? { ...m, ...patch, ...(patch.status === 'erledigt' && !m.erledigtAm ? { erledigtAm: heuteIso() } : {}), ...(patch.status === 'angezeigt' && !m.angezeigtAm ? { angezeigtAm: heuteIso() } : {}) }
           : m,
       ),
     }));

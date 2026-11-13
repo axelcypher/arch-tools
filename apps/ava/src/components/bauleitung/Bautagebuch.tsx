@@ -9,7 +9,8 @@ import { heuteIso, neueId } from '../../lv/modell';
 import { vollerPfad } from '../../dateien';
 import { useAva } from '../../store';
 import { datumKurz, DatumEingabe, Feld, TextEingabe, ZahlEingabe } from '../eingaben';
-import { berichtAblegen, berichtKopf, listenTaste, pdfZeigen, speichern } from './gemeinsam';
+import { listenTaste } from '../tastatur';
+import { berichtAblegen, berichtKopf, pdfZeigen, speichern } from './gemeinsam';
 
 /** Bautagebuch: ein Tagesbericht je Tag mit Wetter, Firmen, Leistungen, Behinderungen, Anordnungen, Fotos */
 export function Bautagebuch() {
@@ -63,9 +64,9 @@ export function Bautagebuch() {
               onKeyDown={(e) =>
                 listenTaste(
                   e,
-                  liste.map((y) => y.id),
-                  t?.id ?? null,
-                  setId,
+                  liste,
+                  liste.findIndex((y) => y.id === t?.id),
+                  (y) => setId(y.id),
                 )
               }
             >

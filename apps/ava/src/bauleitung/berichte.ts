@@ -16,14 +16,6 @@ export interface BerichtKopf {
   buero: string;
 }
 
-/** Protokoll mit den Angaben einer Abnahmebegehung (Vorbehalte) */
-export type ProtokollMitAbnahme = Protokoll & {
-  /** bei der Abnahme vorzubehaltende bekannte Mängel (§ 12 Abs. 4 Nr. 1 und Abs. 5 Nr. 3 VOB/B) */
-  vorbehaltMaengel?: string;
-  /** Vertragsstrafe vorbehalten (§ 11 Abs. 4 VOB/B) */
-  vertragsstrafeVorbehalten?: boolean;
-};
-
 /** Abnahmebegehung (auch die frühere Art „Abnahme“) */
 export const istAbnahme = (art: string) => /abnahme/i.test(art);
 
@@ -50,7 +42,7 @@ export function maengelanzeigeText(liste: Mangel[], bearbeiter: string | undefin
 const kopfVon = (k: BerichtKopf) => ({ links: k.buero.split('\n')[0] ?? '', rechts: `${k.meta.projektcode} ${k.meta.vorhaben || k.projektName}`.trim() });
 const adresse = (m: ProjectMeta) => [m.adresse.strasse, `${m.adresse.plz} ${m.adresse.ort}`.trim()].filter(Boolean).join(', ');
 
-export async function protokollPdf(k: BerichtKopf, p: ProtokollMitAbnahme): Promise<Uint8Array> {
+export async function protokollPdf(k: BerichtKopf, p: Protokoll): Promise<Uint8Array> {
   const d = await PdfDokument.neu(kopfVon(k), `Protokoll Nr. ${p.nr}`);
   d.titel(`${p.art} Nr. ${p.nr}`, `${k.meta.vorhaben || k.projektName}${adresse(k.meta) ? ` · ${adresse(k.meta)}` : ''}`);
   d.angaben([

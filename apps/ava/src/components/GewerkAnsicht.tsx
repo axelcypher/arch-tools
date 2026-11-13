@@ -181,6 +181,7 @@ export function GewerkAnsicht({ gewerk, tab }: { gewerk: string; tab: GewerkTab 
             key={x.id}
             id={`ava-tab-${x.id}`}
             role="tab"
+            aria-label={x.text}
             aria-selected={x.id === t.id}
             aria-controls="ava-gewerk-inhalt"
             tabIndex={x.id === t.id ? 0 : -1}

@@ -74,7 +74,7 @@ Hinweis „wird in LV-Dateien (.aslv) nicht gespeichert – im eigenen Format (.
   volle OZ nach der OZ-Maske („02.0010“). Menge und Einheitspreis des Kostenansatzes lassen sich direkt in der
   Tabelle ändern (deutsche Schreibweise, ungültige Eingaben bleiben rot stehen).
 - Werkzeugleiste in einer Zeile: + Position (im gewählten Abschnitt bzw. hinter der gewählten Position),
-  + Abschnitt, „Weitere ▾“ (+ Hinweis, + Vorbemerkung, „Aus Vorlage …“); Duplizieren (Strg+D, ein Abschnitt
+  + Abschnitt, „Einfügen ▾“ (+ Hinweis, + Vorbemerkung, „Aus Vorlage …“); Duplizieren (Strg+D, ein Abschnitt
   bekommt die nächste freie OZ), ↑/↓, ⇤/⇥ (aus dem Abschnitt heraus bzw. in den Abschnitt davor), Entfernen (Entf);
   Rückgängig/Wiederholen (Strg+Z/Y); rechts die Suche nach OZ und Kurztext (Treffer mit ihren Abschnitten; ohne
   Treffer eine Meldung mit „Suche leeren“, Esc leert). Tastatur in der Tabelle (Fokus sichtbar): ↑/↓ wählen, Enter

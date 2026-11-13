@@ -11,7 +11,7 @@ import { gewerkOrdner, useAva } from '../../store';
 import { datumKurz } from '../eingaben';
 import { PdfVorschau } from '../PdfVorschau';
 import { RechnungPruefen } from './RechnungPruefen';
-import { listenTaste } from './tastatur';
+import { listenTaste } from '../tastatur';
 
 const regexText = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 

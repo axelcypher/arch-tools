@@ -195,7 +195,7 @@ export function LvEditor() {
             + Abschnitt
           </button>
           <MenueKnopf
-            text="Weitere"
+            text="Einfügen"
             title="Hinweis, Vorbemerkung oder Position aus den Vorlagetexten einfügen"
             punkte={[
               { text: '+ Hinweis', title: 'Hinweistext im Abschnitt', aktion: () => neu('hinweis') },

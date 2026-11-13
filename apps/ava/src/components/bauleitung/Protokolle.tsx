@@ -1,13 +1,14 @@
 import { useMemo, useState } from 'react';
 import { bestaetigen, meldung } from '@core/ui/Rueckfrage';
 import type { Protokoll, Top } from '../../avaDaten';
-import { ABNAHME_HINWEIS, istAbnahme, protokollPdf, type ProtokollMitAbnahme } from '../../bauleitung/berichte';
+import { ABNAHME_HINWEIS, istAbnahme, protokollPdf } from '../../bauleitung/berichte';
 import { vorlageFuellen } from '../../abrechnung/mail';
 import { globaleAva, MAIL_PROTOKOLL_VARIABLEN } from '../../platzhalter';
 import { heuteIso, neueId } from '../../lv/modell';
 import { useAva } from '../../store';
 import { datumKurz, DatumEingabe, Feld, TextEingabe, ZahlEingabe } from '../eingaben';
-import { berichtAblegen, berichtKopf, listenTaste, mitPdfMailen, pdfZeigen, speichern } from './gemeinsam';
+import { listenTaste } from '../tastatur';
+import { berichtAblegen, berichtKopf, mitPdfMailen, pdfZeigen, speichern } from './gemeinsam';
 
 const ARTEN = ['Baubesprechung', 'Jour fixe', 'Baustellenbegehung', 'Abnahmebegehung', 'Planungsbesprechung'];
 
@@ -64,9 +65,9 @@ export function Protokolle() {
               onKeyDown={(e) =>
                 listenTaste(
                   e,
-                  liste.map((y) => y.id),
-                  p?.id ?? null,
-                  setId,
+                  liste,
+                  liste.findIndex((y) => y.id === p?.id),
+                  (y) => setId(y.id),
                 )
               }
             >
@@ -88,12 +89,12 @@ export function Protokolle() {
 
 type Teilnehmer = Protokoll['teilnehmer'][number];
 
-function ProtokollEditor({ p }: { p: ProtokollMitAbnahme }) {
+function ProtokollEditor({ p }: { p: Protokoll }) {
   const projekt = useAva((s) => s.projekt)!;
   const e = useAva((s) => s.einstellungen);
   const [neuerTop, setNeuerTop] = useState<string | null>(null);
   /** Änderung auf dem frischen Stand des Protokolls (zwei schnelle Eingaben überschreiben sich nicht) */
-  const setze = (patch: Partial<ProtokollMitAbnahme> | ((x: ProtokollMitAbnahme) => Partial<ProtokollMitAbnahme>)) =>
+  const setze = (patch: Partial<Protokoll> | ((x: Protokoll) => Partial<Protokoll>)) =>
     void speichern((a) => ({ ...a, protokolle: a.protokolle.map((x) => (x.id === p.id ? { ...x, ...(typeof patch === 'function' ? patch(x) : patch) } : x)) }));
   const top = (id: string, patch: Partial<Top>) => setze((x) => ({ tops: x.tops.map((t) => (t.id === id ? { ...t, ...patch } : t)) }));
   const teilnehmer = (i: number, patch: Partial<Teilnehmer>) => setze((x) => ({ teilnehmer: x.teilnehmer.map((t, j) => (j === i ? { ...t, ...patch } : t)) }));
