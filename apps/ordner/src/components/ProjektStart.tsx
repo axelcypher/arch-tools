@@ -91,7 +91,7 @@ export function ProjektStart({
         titel: 'Katasterauszüge (PDF) und DXF-Pläne aus der QGIS-Vorlage um die Projektadresse exportieren',
         aktion: () => setKataster({ basis: p.schluessel, name: p.titel ? `${p.kuerzel} ${p.titel}` : p.kuerzel }),
       },
-      { label: 'Ordner öffnen', aktion: () => void ordnerZeigen(p.schluessel).catch((e) => void meldung('Ordner ließ sich nicht öffnen', String(e))) },
+      { label: 'Ordner öffnen', symbol: 'ordnerOffen', aktion: () => void ordnerZeigen(p.schluessel).catch((e) => void meldung('Ordner ließ sich nicht öffnen', String(e))) },
       ...(status !== 'abgeschlossen'
         ? [
             {
