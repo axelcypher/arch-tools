@@ -4,7 +4,7 @@ import type { Point } from '@core/geometry';
 import { bounds, labelPoint } from '@core/geometry';
 import type { Nutzungsgruppe, Storey } from '@core/model';
 import { shapeArea } from '@core/model';
-import { nutzungInfo } from '@core/norms';
+import { nutzungInfo, raumNutzung } from '@core/norms';
 import { BackgroundLayer } from './BackgroundLayer';
 
 /**
@@ -34,7 +34,7 @@ export function PlanFigure({ storey, showBackground }: { storey: Storey; showBac
   const path = (pts: Point[]) => pts.map((p, i) => `${i ? 'L' : 'M'}${p.x} ${p.y}`).join('') + 'Z';
   const outlines = shapes.filter((s) => s.kind === 'outline');
   const rooms = shapes.filter((s) => s.kind === 'room');
-  const used = [...new Set(rooms.map((r) => (r.kind === 'room' ? r.nutzung : 'NUF1')))] as Nutzungsgruppe[];
+  const used = [...new Set(rooms.map((r) => (r.kind === 'room' ? raumNutzung(r) : 'NUF1')))] as Nutzungsgruppe[];
 
   // Maßstabsleiste: runde Länge ≈ 1/5 der Breite
   const nice = [0.5, 1, 2, 5, 10, 20, 50, 100].find((v) => v >= vb.w / 6) ?? 100;
@@ -68,7 +68,7 @@ export function PlanFigure({ storey, showBackground }: { storey: Storey; showBac
             <path
               key={s.id}
               d={path(s.points)}
-              fill={s.subtract ? `url(#ph-x-${storey.id})` : nutzungInfo(s.nutzung).color}
+              fill={s.subtract ? `url(#ph-x-${storey.id})` : nutzungInfo(raumNutzung(s)).color}
               fillOpacity={s.subtract ? 1 : 0.5}
               stroke="#333"
               strokeWidth={0.8}

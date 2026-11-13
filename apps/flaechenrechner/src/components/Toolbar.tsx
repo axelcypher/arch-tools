@@ -150,10 +150,10 @@ export function Toolbar() {
       </div>
       {ifcOpen && <IfcImportDialog onClose={() => setIfcOpen(false)} />}
       <div className="tb-group">
-        <button onClick={st.undo} disabled={!canUndo} title="Rückgängig (Strg+Z)">
+        <button onClick={st.undo} disabled={!canUndo} title="Rückgängig (Strg+Z)" aria-label="Rückgängig">
           ↶
         </button>
-        <button onClick={st.redo} disabled={!canRedo} title="Wiederholen (Strg+Y)">
+        <button onClick={st.redo} disabled={!canRedo} title="Wiederholen (Strg+Y)" aria-label="Wiederholen">
           ↷
         </button>
       </div>
@@ -162,6 +162,7 @@ export function Toolbar() {
           <button
             key={t.id}
             className={tool === t.id ? 'active' : ''}
+            aria-pressed={tool === t.id}
             onClick={() => st.setTool(t.id)}
             title={`${t.label}${t.key ? ` (${t.key})` : ''}`}
           >
@@ -171,10 +172,10 @@ export function Toolbar() {
       </div>
       <div className="tb-group" title="Art der neu gezeichneten Fläche">
         <span className="tb-label">als</span>
-        <button className={drawKind === 'outline' ? 'active kind-outline' : ''} onClick={() => st.setDrawKind('outline')} title="BGF-Umriss (B)">
+        <button className={drawKind === 'outline' ? 'active kind-outline' : ''} aria-pressed={drawKind === 'outline'} onClick={() => st.setDrawKind('outline')} title="BGF-Umriss (B)">
           BGF-Umriss
         </button>
-        <button className={drawKind === 'room' ? 'active kind-room' : ''} onClick={() => st.setDrawKind('room')} title="Raum / NRF (N)">
+        <button className={drawKind === 'room' ? 'active kind-room' : ''} aria-pressed={drawKind === 'room'} onClick={() => st.setDrawKind('room')} title="Raum / NRF (N)">
           Raum
         </button>
       </div>

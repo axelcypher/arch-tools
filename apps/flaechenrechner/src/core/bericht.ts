@@ -1,4 +1,7 @@
 import type { ProjectResult } from '@core/calc';
+import { isSelfIntersecting } from '@core/geometry';
+import type { Project } from '@core/model';
+import { MASSGRUNDLAGEN } from '@core/norms';
 import { NUF_IDS } from '@core/norms';
 
 /**
@@ -62,8 +65,26 @@ export interface BerichtPlan {
 
 const nah0 = (v: number) => Math.abs(v) < 0.005;
 
-/** Welche Abschnitte gedruckt werden: Vorlage, Auswahl, leere Abschnitte entfallen; ein fehlender BRI ist ein Mangel */
-export function berichtPlan(e: BerichtEinstellung, result: ProjectResult): BerichtPlan {
+/**
+ * Planungsunterlagen für Kopf von Bericht und Excel (DIN 277:2021-08, 5.1: „Messverfahren und zugrundeliegende
+ * Planungsunterlagen sind anzugeben“): Eingabe im Projekt, sonst die hinterlegten Pläne je Geschoss.
+ */
+export function planungsunterlagen(project: Project): string {
+  const eigen = project.settings.planunterlagen?.trim();
+  if (eigen) return eigen;
+  return project.storeys.flatMap((s) => (s.background?.name ? [`${s.name}: ${s.background.name}`] : [])).join('; ');
+}
+
+/** Messverfahren (Maßgrundlage) als Satz – leer, wenn nicht angegeben */
+export function messverfahren(project: Project): string {
+  return MASSGRUNDLAGEN.find((m) => m.id === project.settings.massgrundlage)?.text ?? '';
+}
+
+/**
+ * Welche Abschnitte gedruckt werden: Vorlage, Auswahl, leere Abschnitte entfallen; ein fehlender BRI ist ein Mangel,
+ * ebenso (mit Projekt) selbstüberschneidende Flächen, deren Fläche so nicht stimmt.
+ */
+export function berichtPlan(e: BerichtEinstellung, result: ProjectResult, project?: Project): BerichtPlan {
   const gewaehlt = new Set<Abschnitt>(e.vorlage === 'vollstaendig' ? ABSCHNITTE.map((a) => a.id) : e.abschnitte);
   const gesperrt = e.vorlage === 'bauantrag' ? [...BAUANTRAG_PFLICHT] : [];
   for (const a of gesperrt) gewaehlt.add(a);
@@ -80,6 +101,12 @@ export function berichtPlan(e: BerichtEinstellung, result: ProjectResult): Beric
   const warnungen: string[] = [];
   if (nah0(t.bri.total)) warnungen.push('Kein Brutto-Rauminhalt ermittelt – BGF-Umrisse und Geschosshöhen fehlen. Für Bauantrag und Gebühr ist eine nachprüfbare BRI-Berechnung erforderlich.');
   if (nah0(t.bgf.total) && hatRaeume) warnungen.push('Keine Brutto-Grundfläche – es sind nur Räume gezeichnet.');
+  const verdreht = (project?.storeys ?? []).flatMap((s) =>
+    s.shapes.filter((x) => isSelfIntersecting(x.points)).map((x) => `${s.name}: ${x.kind === 'room' ? [x.nummer, x.name].filter(Boolean).join(' ') || 'Raum' : `BGF-Umriss „${x.name}“`}`),
+  );
+  if (project && !messverfahren(project)) warnungen.push('Messverfahren nicht angegeben (DIN 277:2021-08, 5.1) – links unter „Projekt“ die Maßgrundlage wählen.');
+  if (project && !planungsunterlagen(project)) warnungen.push('Planungsunterlagen nicht angegeben (DIN 277:2021-08, 5.1) – links unter „Projekt“ eintragen, z. B. „Grundrisse 1:100, Stand …“.');
+  if (verdreht.length) warnungen.push(`Selbstüberschneidende Flächen – ihre Fläche ist so nicht korrekt, Eckpunkte prüfen: ${verdreht.join('; ')}.`);
   const sSpalten = [t.bgf.S, t.bri.S, t.nrf.S, t.kgf.S].some((v) => !nah0(v));
   return { abschnitte, gesperrt, sSpalten, warnungen };
 }
@@ -89,7 +116,10 @@ export function berichtPlan(e: BerichtEinstellung, result: ProjectResult): Beric
 export interface StatistikWohnung {
   wohnung: string;
   wohnflaeche: number;
-  /** Räume: Wohn- und Aufenthaltsräume (NUF 1) ab 6 m² einschließlich Küche – Zählregel am Erhebungsbogen prüfen */
+  /**
+   * Räume nach der Bautätigkeitsstatistik: Wohn-, Ess-, Schlafzimmer und andere Wohn- und Aufenthaltsräume (NUF 1) ab
+   * 6 m² sowie Küchen unabhängig von ihrer Größe; Bad, WC, Flur, Abstell- und Wirtschaftsräume zählen nicht
+   */
   raeume: number;
 }
 
@@ -104,11 +134,14 @@ export interface Statistik {
 /** kleinste Raumgröße, ab der ein Wohnraum gezählt wird [m²] */
 export const STATISTIK_MIN_RAUM = 6;
 
+/** Küche (auch Kochnische, Wohnküche) nach dem Raumnamen – zählt in der Statistik unabhängig von der Größe */
+export const istKueche = (name: string) => /k(ü|ue)che|kochnische/i.test(name);
+
 export function statistik(result: ProjectResult): Statistik {
   const wohnungen = result.wohnungen.map((w) => ({
     wohnung: w.wohnung,
     wohnflaeche: w.wofl,
-    raeume: w.rooms.filter((r) => !r.subtract && r.nutzung === 'NUF1' && r.woflKategorie !== 'freisitz' && r.area >= STATISTIK_MIN_RAUM).length,
+    raeume: w.rooms.filter((r) => !r.subtract && r.woflKategorie !== 'freisitz' && !r.ausserhalbBgf && (istKueche(r.name) || (r.nutzung === 'NUF1' && r.area >= STATISTIK_MIN_RAUM))).length,
   }));
   const nuf = new Set<string>(NUF_IDS);
   let sonstige = 0;

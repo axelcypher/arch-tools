@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { bgScale } from '../core/background';
+import { bgScale, ohneKontrollmass } from '../core/background';
 import { DXF_UNITS, decodeDxfText, importDxf } from '../core/dxf';
 import { fmt2 } from '@core/format';
 import type { Background, DateiArt, Storey } from '@core/model';
@@ -11,7 +11,7 @@ import { mapStorey, useEditor } from '../store/store';
 import { Field, NumberField } from '@core/ui/fields';
 import { logger } from '@core/platform/log';
 import { bestaetigen, meldung } from '@core/ui/Rueckfrage';
-import { useEscSchliessen } from '@core/ui/Dialog';
+import { Modal } from '@core/ui/Dialog';
 
 const log = logger('plan');
 
@@ -24,14 +24,16 @@ export function BackgroundPanel({ storey }: { storey: Storey }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [pdf, setPdf] = useState<{ doc: PdfDocumentHandle; name: string; bytes: Uint8Array } | null>(null);
 
-  const setBg = (b: Background | undefined) => st.update((p) => mapStorey(p, storey.id, (s) => ({ ...s, background: b })));
+  /** Plan ändern (Maßstab, Lage, Layer …): ein Kontrollmaß mit anderem Maßstab gilt dann nicht mehr (gueltigesKontrollmass) */
+  const patchBg = (patch: Partial<Background>) => bg && st.update((p) => mapStorey(p, storey.id, (s) => ({ ...s, background: { ...bg, ...patch } as Background })));
+  /** Plan ersetzen oder entfernen: das Kontrollmaß des alten Plans entfällt */
+  const setBg = (b: Background | undefined) => st.update((p) => mapStorey(ohneKontrollmass(p, storey.id), storey.id, (s) => ({ ...s, background: b })));
   /** Plan setzen und die Originaldatei fürs Projektarchiv mitnehmen */
   const setBgMitQuelle = (b: Background, name: string, art: DateiArt, bytes: Uint8Array) =>
     st.update((p) => {
-      const { project, id } = addDatei(p, name, art, bytes);
+      const { project, id } = addDatei(ohneKontrollmass(p, storey.id), name, art, bytes);
       return mapStorey(project, storey.id, (s) => ({ ...s, background: { ...b, quelle: id } }));
     });
-  const patchBg = (patch: Partial<Background>) => bg && setBg({ ...bg, ...patch } as Background);
 
   const afterLoad = (calibrate: boolean) => {
     st.requestFit();
@@ -258,11 +260,9 @@ function PdfImportDialog({
   const [page, setPage] = useState(1);
   const [known, setKnown] = useState(true);
   const [massstab, setMassstab] = useState<number | undefined>(100);
-  useEscSchliessen(onCancel);
   return (
-    <div className="modal-backdrop">
+    <Modal titel="PDF importieren" onClose={onCancel}>
       <form
-        className="modal"
         onSubmit={(e) => {
           e.preventDefault();
           onImport(page, known && massstab ? massstab : null);
@@ -296,6 +296,6 @@ function PdfImportDialog({
           </button>
         </div>
       </form>
-    </div>
+    </Modal>
   );
 }

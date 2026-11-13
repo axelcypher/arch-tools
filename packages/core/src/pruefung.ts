@@ -1,8 +1,9 @@
 import type { Point } from './geometry';
-import { polygonArea } from './geometry';
-import { computeStorey, effektiveWofl, raumUmschliessung } from './calc';
+import { isSelfIntersecting, polygonArea } from './geometry';
+import { computeStorey, effektiveWofl, raumUmAbzug, raumUmschliessung } from './calc';
 import type { OutlineShape, Project, RoomShape, Storey } from './model';
 import { istDachgeschoss, istKellergeschoss } from './model';
+import { raumNutzung } from './norms';
 import type { MultiPolygon } from './polygon';
 import { areaMP, diffMP, intersectMP, oeffnen, polygoneOf, unionAll } from './polygon';
 
@@ -66,6 +67,8 @@ export function pruefeGeschoss(storey: Storey, project: Project, o: PruefOptione
   const minus = umrisse.filter((s) => s.subtract);
   const raeume = storey.shapes.filter((s): s is RoomShape => s.kind === 'room' && s.points.length >= 3);
   const echteRaeume = raeume.filter((r) => !r.subtract);
+  // Räume der NRF – ohne Flächen außerhalb der BGF (ebenerdige Terrasse), die zu keinem Umriss gehören
+  const nrfRaeume = echteRaeume.filter((r) => !r.ausserhalbBgf);
 
   // BGF-Fläche je Raumumschließung (Umrisse abzüglich Abzugsflächen)
   const bgfFlaeche = (rs: 'R' | 'S'): MultiPolygon => {
@@ -74,9 +77,14 @@ export function pruefeGeschoss(storey: Storey, project: Project, o: PruefOptione
   };
   const flaecheRS = { R: bgfFlaeche('R'), S: bgfFlaeche('S') };
 
+  // Selbstüberschneidung: die Fläche (Gaußsche Formel) ist dann falsch – sie ginge still in Bericht und Excel ein
+  for (const s of [...umrisse, ...raeume])
+    if (isSelfIntersecting(s.points))
+      add('warnung', 'selbstueberschneidung', [s.id], `${s.kind === 'room' ? raumText(s) : `BGF-Umriss „${s.name}“`} überschneidet sich selbst – die Fläche ist so nicht korrekt; Eckpunkte prüfen.`);
+
   // Räume außerhalb bzw. über den Umriss hinaus – je Raumumschließung (FR-02)
   if (plus.length) {
-    for (const r of echteRaeume) {
+    for (const r of nrfRaeume) {
       const rs = raumUmschliessung(r, storey);
       const draussen = ausserhalb(r.points, flaecheRS[rs]);
       if (draussen <= MIN_FLAECHE) continue;
@@ -85,14 +93,16 @@ export function pruefeGeschoss(storey: Storey, project: Project, o: PruefOptione
         'warnung',
         'raum-ausserhalb',
         [r.id],
-        ganz ? `${raumText(r)} (${rs}) liegt außerhalb aller ${rs}-Umrisse.` : `${raumText(r)} (${rs}) ragt ${f2(draussen)} m² über den ${rs}-Umriss hinaus (NRF muss innerhalb der BGF liegen).`,
+        ganz
+          ? `${raumText(r)} (${rs}) liegt außerhalb aller ${rs}-Umrisse${rs === 'S' ? ' – ebenerdige, nicht unterbaute Terrasse? Dann „außerhalb der BGF“ wählen' : ''}.`
+          : `${raumText(r)} (${rs}) ragt ${f2(draussen)} m² über den ${rs}-Umriss hinaus (NRF muss innerhalb der BGF liegen).`,
       );
     }
-  } else if (echteRaeume.length)
+  } else if (nrfRaeume.length)
     add(
       'warnung',
       'kein-umriss',
-      echteRaeume.map((r) => r.id),
+      nrfRaeume.map((r) => r.id),
       'Räume ohne BGF-Umriss – BGF und BRI fehlen für dieses Geschoss.',
     );
 
@@ -124,9 +134,9 @@ export function pruefeGeschoss(storey: Storey, project: Project, o: PruefOptione
     }
 
   // Lücken zwischen den Räumen: nur breite Bereiche ohne Raum (schmale Streifen sind Wände = KGF)
-  if (echteRaeume.length && plus.length) {
+  if (nrfRaeume.length && plus.length) {
     const frei = sicher(() => {
-      const rest = diffMP(flaecheRS.R, unionAll(echteRaeume.map((r) => r.points)));
+      const rest = diffMP(flaecheRS.R, unionAll(nrfRaeume.map((r) => r.points)));
       return areaMP(oeffnen(rest, LUECKE_BREITE / 2));
     });
     if (frei > LUECKE_FLAECHE) add('hinweis', 'luecke', [], `${f2(frei)} m² innerhalb der BGF (R) liegen in keinem Raum (Bereiche breiter als ${f2(LUECKE_BREITE)} m) – fehlt ein Raum?`);
@@ -149,7 +159,7 @@ export function pruefeGeschoss(storey: Storey, project: Project, o: PruefOptione
   for (const r of echteRaeume) {
     const w = effektiveWofl(r, storey);
     if (w.kategorie !== 'keine' && !w.wohnung.trim()) add('hinweis', 'ohne-wohnung', [r.id], `${raumText(r)} zählt zur Wohnfläche, ist aber keiner Wohnung zugeordnet.`);
-    if (w.kategorie === 'keine' && wohngeschoss && r.nutzung !== 'TF')
+    if (w.kategorie === 'keine' && wohngeschoss && raumNutzung(r) !== 'TF')
       add('hinweis', 'keine-wofl', [r.id], `${raumText(r)} zählt nicht zur Wohnfläche – richtig z. B. bei Treppenraum, Heizung, Abstellraum außerhalb der Wohnung.`);
     if (w.kategorie === 'voll' && istDachgeschoss(storey))
       add('hinweis', 'dachschraege', [r.id], `${raumText(r)}: im Dachgeschoss voll angerechnet – lichte Höhe prüfen (Raumteile unter 2 m nach § 4 WoFlV).`);
@@ -157,9 +167,26 @@ export function pruefeGeschoss(storey: Storey, project: Project, o: PruefOptione
       add('hinweis', 'ohne-katalog', [r.id], `${raumText(r)}: Bezeichnung nicht im Raumkatalog – Nutzung und Anrechnung prüfen.`);
   }
 
-  // S-Umriss ohne Körperhöhe (FR-10)
+  // Abzugsfläche mit eigener Anrechnung: mindert sonst die Wohnfläche einer anderen Wohnung bzw. mit anderem Faktor
+  for (const a of raeume) {
+    if (!a.subtract || a.abzugArt === 'din' || a.wofl.kategorie === 'keine') continue;
+    const raum = raumUmAbzug(a, storey);
+    const text = `Abzugsfläche „${a.name || 'Abzug'}“`;
+    if (!raum) add('hinweis', 'abzug-ohne-raum', [a.id], `${text} liegt in keinem Raum, mindert aber die Wohnfläche${a.wofl.wohnung.trim() ? ` von ${a.wofl.wohnung.trim()}` : ''} – Lage prüfen.`);
+    else if (raum.wofl.kategorie !== a.wofl.kategorie || raum.wofl.wohnung.trim() !== a.wofl.wohnung.trim() || raum.wofl.faktor !== a.wofl.faktor)
+      add('hinweis', 'abzug-abweichend', [a.id, raum.id], `${text} hat eine eigene Anrechnung, die von ${raumText(raum)} abweicht – Anrechnung „keine“ wählen, dann erbt sie die des Raums.`);
+  }
+
+  // S-Umriss ohne obere Begrenzung (FR-10, DIN 277:2021-08, 7.1): überdeckt bis OK Überdeckung – Geschosshöhe bestätigen –,
+  // nicht überdeckt bis OK Brüstung/Geländer
   for (const u of plus)
-    if (u.umschliessung === 'S' && u.hoehe === undefined) add('warnung', 's-ohne-hoehe', [u.id], `S-Umriss „${u.name}“ ohne Körperhöhe – der BRI rechnet mit der vollen Geschosshöhe.`);
+    if (u.umschliessung === 'S' && u.hoehe === undefined && !u.ueberdeckt)
+      add(
+        'warnung',
+        's-ohne-hoehe',
+        [u.id],
+        `S-Umriss „${u.name}“ ohne obere Begrenzung – überdeckt: „bis Oberkante Überdeckung (Geschosshöhe)“ bestätigen; nicht überdeckt: Körperhöhe bis Oberkante Brüstung bzw. Geländer eintragen.`,
+      );
   // Umriss zum Prüfen markiert (z. B. aus dem Geschoss darunter übernommen)
   for (const u of umrisse) if (u.pruefen) add('hinweis', 'umriss-pruefen', [u.id], `BGF-Umriss „${u.name}“ ist zum Prüfen markiert (übernommen) – Außenmaße kontrollieren.`);
   return out;

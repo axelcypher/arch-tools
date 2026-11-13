@@ -44,6 +44,8 @@ export interface RoomResult {
   wohnung: string;
   /** nur Abzugsflächen: was sie mindern (NRF und/oder Wohnfläche) */
   abzugArt?: AbzugArt;
+  /** Fläche außerhalb der BGF (z. B. ebenerdige Terrasse): nur Wohnfläche, nicht in der NRF */
+  ausserhalbBgf?: true;
   /** Anrechnung „Raumteile nach lichter Höhe“: Anteile der Fläche */
   woflAnteile?: HoehenAnteile;
 }
@@ -165,7 +167,7 @@ function labelVon(pts: readonly Point[]): Point {
 }
 
 /**
- * Rauminhalt unter dem Körper eines BGF-Umrisses (DIN 277: BRI ab Unterseite der konstruktiven Sohle):
+ * Rauminhalt unter dem Körper eines BGF-Umrisses (DIN 277: BRI ab Unterkante Boden-/Fundamentplatte inkl. Dämmung):
  *  - absenkung: Räume im Umriss liegen tiefer als dessen Fußboden (Split-Level) → Raumfläche (Polygon) × Absenkung
  *  - sohle:     Bodenplatte des Geschosses → Teil des Umrisses ohne Geschoss darunter × Sohlendicke
  * Beides zählt nur dort, wo kein Geschoss darunter liegt: Über einem Keller verschiebt ein tiefer liegender
@@ -197,7 +199,7 @@ export function unterbau(s: OutlineShape, storey: Storey, project: Project): Unt
   }
   // nicht umschlossene Bereiche (S: Balkon, Dachterrasse) haben i. d. R. keine Bodenplatte – nur auf ausdrücklichen Wunsch
   if (sohle > 1e-9 && freiFlaeche > 1e-6 && (s.umschliessung === 'R' || s.sohleAnsetzen))
-    out.push({ art: 'sohle', bezeichnung: 'Bodenplatte (UK Sohle bis Fußboden)', flaeche: freiFlaeche, hoehe: sohle });
+    out.push({ art: 'sohle', bezeichnung: 'Bodenplatte inkl. Dämmung (UK bis Fußboden)', flaeche: freiFlaeche, hoehe: sohle });
   return out;
 }
 
@@ -330,7 +332,9 @@ export function computeStorey(storey: Storey, project: Project): StoreyResult {
       const art: AbzugArt | undefined = s.subtract ? (s.abzugArt ?? 'beide') : undefined;
       // Nutzungsart (zweite Ebene) bestimmt die Gruppe mit; ohne Nutzungsart wie bisher
       const gruppe = raumNutzung(s);
-      if (art !== 'wofl') {
+      // außerhalb der BGF (DIN 277, 6.1 a – z. B. ebenerdige Terrasse): nicht in der NRF, nur Wohnfläche
+      const draussen = !s.subtract && !!s.ausserhalbBgf;
+      if (art !== 'wofl' && !draussen) {
         t.nutzung[gruppe] += a;
         const bereich = nutzungInfo(gruppe).bereich;
         addRS(bereich === 'NUF' ? t.nuf : bereich === 'TF' ? t.tf : t.vf, rs, a);
@@ -356,6 +360,7 @@ export function computeStorey(storey: Storey, project: Project): StoreyResult {
         woflArea,
         wohnung: w.wohnung.trim(),
         ...(art ? { abzugArt: art } : {}),
+        ...(draussen ? { ausserhalbBgf: true as const } : {}),
         ...(!keineWofl && w.kategorie === 'hoehen' && w.anteile ? { woflAnteile: w.anteile } : {}),
       });
     }

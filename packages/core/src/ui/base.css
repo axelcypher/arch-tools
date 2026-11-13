@@ -202,7 +202,8 @@ button.active.kind-room {
 button.primary {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  /* hell: Weiß, dunkel: fast Schwarz auf dem helleren Blau – Kontrast mindestens 4,5 : 1 */
+  color: var(--on-accent);
 }
 
 button.primary:hover:not(:disabled) {
@@ -992,6 +993,7 @@ code {
   --text: #1f2328;
   --muted: #6b7280;
   --accent: #2a5bd7;
+  --on-accent: #ffffff;
   --accent-soft: #e6edfb;
   --input-bg: #ffffff;
   --hover: #f1f3f6;
@@ -1077,13 +1079,13 @@ code {
 
 .titlebar-btn.titlebar-update {
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
   border-radius: 4px;
 }
 
 .titlebar-btn.titlebar-update:hover:not(:disabled) {
   background: var(--accent-hover);
-  color: #fff;
+  color: var(--on-accent);
 }
 
 .update-notizen {

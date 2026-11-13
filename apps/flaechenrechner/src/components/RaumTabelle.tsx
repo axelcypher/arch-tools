@@ -6,6 +6,7 @@ import { Modal } from '@core/ui/Dialog';
 import { NumberField, TextField } from '@core/ui/fields';
 import { nachNummer, wohnungenImProjekt } from '../core/geschosse';
 import { wohnungNormalisieren } from '../core/katalog';
+import { abzugSetzen } from '../core/abzug';
 import { mapShape, useEditor } from '../store/store';
 
 /**
@@ -49,9 +50,24 @@ export function RaumTabelle({ onClose }: { onClose: () => void }) {
                     <TextField label="Bezeichnung" value={r.name} onChange={(v) => upd(st.id, r.id, (x) => ({ ...x, name: v }))} />
                   </td>
                   <td>
-                    <select aria-label="R/S" value={r.umschliessung} onChange={(e) => upd(st.id, r.id, (x) => ({ ...x, umschliessung: e.target.value as Raumumschliessung, rsVonHand: true }))}>
+                    <select
+                      aria-label="R/S"
+                      value={r.ausserhalbBgf && !r.subtract ? 'aussen' : r.umschliessung}
+                      onChange={(e) =>
+                        upd(st.id, r.id, (x) => {
+                          const { ausserhalbBgf: _a, ...rest } = x;
+                          void _a;
+                          return e.target.value === 'aussen' ? { ...x, ausserhalbBgf: true } : { ...rest, umschliessung: e.target.value as Raumumschliessung, rsVonHand: true };
+                        })
+                      }
+                    >
                       <option value="R">R</option>
                       <option value="S">S</option>
+                      {!r.subtract && (
+                        <option value="aussen" title="außerhalb der BGF (z. B. ebenerdige Terrasse) – nur Wohnfläche">
+                          außerhalb BGF
+                        </option>
+                      )}
                     </select>
                   </td>
                   <td>
@@ -101,7 +117,7 @@ export function RaumTabelle({ onClose }: { onClose: () => void }) {
                     />
                   </td>
                   <td className="mitte">
-                    <input type="checkbox" aria-label="Abzugsfläche" checked={r.subtract} onChange={(e) => upd(st.id, r.id, (x) => ({ ...x, subtract: e.target.checked }))} />
+                    <input type="checkbox" aria-label="Abzugsfläche" checked={r.subtract} onChange={(e) => upd(st.id, r.id, (x) => abzugSetzen(x, e.target.checked))} />
                   </td>
                   <td>
                     <NumberField label="Putzabzug" value={r.putzabzug} allowEmpty min={0} max={20} digits={1} onChange={(v) => upd(st.id, r.id, (x) => ({ ...x, putzabzug: v || undefined }))} />

@@ -35,9 +35,25 @@ export function raumNutzung(r: { nutzung: Nutzungsgruppe; nutzungsart?: string }
 
 /** Raumumschließung nach DIN 277:2021-08 (sinngemäß): kurz für Auswahllisten, label als Erläuterung */
 export const UMSCHLIESSUNG: { id: Raumumschliessung; kurz: string; label: string }[] = [
-  { id: 'R', kurz: 'R – Regelfall', label: 'R – Regelfall: allseitig in voller Höhe umschlossen' },
-  { id: 'S', kurz: 'S – Sonderfall', label: 'S – Sonderfall: nicht allseitig in voller Höhe umschlossen (z. B. Balkon, Loggia, Terrasse, Dachterrasse)' },
+  { id: 'R', kurz: 'R – Regelfall', label: 'R – Regelfall: bei allen Begrenzungsflächen vollständig umschlossen, auch über Öffnungen mit dem Außenklima verbunden (z. B. Garage mit Rollgitter)' },
+  {
+    id: 'S',
+    kurz: 'S – Sonderfall',
+    label: 'S – Sonderfall: mit dem Bauwerk konstruktiv fest verbunden, nicht allseitig umschlossen (z. B. Loggia, Balkon, Dachterrasse, unterbaute Terrasse, Außentreppe)',
+  },
 ];
+
+/**
+ * Schalter „Vergleich II. BV“ (settings.zweiteBV): gerechnet wird nach WoFlV, nur Balkone, Loggien, Dachgärten und
+ * Terrassen zählen standardmäßig zur Hälfte. Die übrigen Regeln der II. BV a. F. sind nicht nachgebildet – so benannt.
+ */
+export const ZWEITE_BV_KURZ = 'Vergleichsrechnung WoFlV mit Freisitzen zu ½ (Anlehnung an II. BV a. F.)';
+export const ZWEITE_BV_TEXT =
+  'Vergleichsrechnung nach WoFlV mit Balkonen, Loggien, Dachgärten und Terrassen zur Hälfte – nur zum Vergleich mit Bestandsberechnungen nach §§ 42–44 II. BV a. F. (bis 31.12.2003, § 5 WoFlV). Weitere Abweichungen der II. BV a. F. sind nicht berücksichtigt (u. a. § 44 Abs. 1 Nr. 2: Wintergärten und Schwimmbäder ohne Unterscheidung nach Beheizbarkeit; § 44 Abs. 2: nur gedeckte Freisitze; § 44 Abs. 3: Abzug bis 10 % bei Ein- und Zweifamilienhäusern). Für neue Nachweise gilt die WoFlV.';
+
+/** Raum außerhalb der BGF (DIN 277:2021-08, 6.1 a) – Erläuterung in der Oberfläche */
+export const AUSSERHALB_BGF_HINWEIS =
+  'nicht unterbaut und nicht fest mit dem Gebäude verbunden (z. B. ebenerdige Terrasse): gehört nicht zur BGF und NRF (DIN 277, 6.1 a), zählt aber zur Wohnfläche (§ 2 Abs. 2 Nr. 2 WoFlV)';
 
 export const WOFL_KATEGORIEN: { id: WoflKategorie; label: string; faktor: number | null }[] = [
   { id: 'keine', label: 'keine Wohnfläche', faktor: 0 },

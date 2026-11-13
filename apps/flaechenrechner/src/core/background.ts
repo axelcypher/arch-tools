@@ -1,5 +1,5 @@
 import type { Bounds, Point } from '@core/geometry';
-import type { Background, VectorBackground } from '@core/model';
+import type { Background, Kontrollmass, Project, Storey, VectorBackground } from '@core/model';
 import { SegmentGrid } from '@core/spatial';
 
 /** Faktor lokal → Meter (Raster: m/px, Vektor: m/DXF-Einheit). */
@@ -122,4 +122,25 @@ export function kontrollAbweichung(gemessen: number, tatsaechlich: number): numb
 export function kontrollText(k: { soll: number; abweichung: number }): string {
   const pct = (k.abweichung * 100).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   return `aus Plan abgegriffen, Maßstab kalibriert, Kontrollmaß ${k.soll.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 3 })} m: Abweichung ${k.abweichung > 0 ? '+' : ''}${pct} %`;
+}
+
+/**
+ * Kontrollmaß eines Geschosses für Bericht und Excel – nur, solange es zum Plan passt: Ohne Plan oder nach einer
+ * Maßstabsänderung (Neukalibrieren, Planmaßstab, Einheit) gilt es nicht mehr. Ein neuer Plan verwirft es
+ * (ohneKontrollmass); Kontrollmaße ohne gespeicherten Maßstab (bis 0.31) gelten, solange der Plan da ist.
+ */
+export function gueltigesKontrollmass(project: Project, storey: Storey): Kontrollmass | undefined {
+  const k = project.settings.kontrollmasse?.[storey.id];
+  const bg = storey.background;
+  if (!k || !bg) return undefined;
+  if (k.massstab !== undefined && !(Math.abs(k.massstab / bgScale(bg) - 1) < 1e-9)) return undefined;
+  return k;
+}
+
+/** Kontrollmaß eines Geschosses entfernen (neuer bzw. entfernter Plan, neue Kalibrierung) */
+export function ohneKontrollmass(p: Project, storeyId: string): Project {
+  if (!p.settings.kontrollmasse?.[storeyId]) return p;
+  const { [storeyId]: _weg, ...rest } = p.settings.kontrollmasse;
+  void _weg;
+  return { ...p, settings: { ...p.settings, kontrollmasse: rest } };
 }

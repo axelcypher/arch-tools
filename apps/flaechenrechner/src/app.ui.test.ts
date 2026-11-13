@@ -63,12 +63,78 @@ describe('Flächenrechner: Prüfliste und Raumtabelle (F-10, F-21)', () => {
     const knopf = host.querySelector<HTMLButtonElement>('.pruef-knopf')!;
     expect(knopf.textContent).toMatch(/Prüfen: 1 Warnung/);
     act(() => knopf.click());
-    const eintrag = [...host.querySelectorAll<HTMLLIElement>('.pruef-liste li')].find((li) => /ragt/.test(li.textContent ?? ''))!;
+    const eintrag = [...host.querySelectorAll<HTMLButtonElement>('.pruef-liste li button')].find((b) => /ragt/.test(b.textContent ?? ''))!;
     act(() => eintrag.click());
     expect(useEditor.getState().selectedIds).toEqual([b.id]);
     act(() => useEditor.getState().select(null));
     act(() => [...host.querySelectorAll<HTMLButtonElement>('button')].find((x) => x.textContent === 'Tabelle …')!.click());
     const zeilen = [...document.querySelectorAll('.raumtabelle tbody tr')].map((tr) => (tr.querySelectorAll('input')[0] as HTMLInputElement).value);
     expect(zeilen).toEqual(['0.01', '0.02']);
+  });
+});
+
+describe('Flächenrechner: Mehrfachauswahl (Eigenschaften)', () => {
+  it('Nutzungsgruppe für alle: Anzeige und Rechnung gleich (Nutzungsart der alten Gruppe entfällt), Wohnung in vorhandener Schreibweise', async () => {
+    const { rectPoints } = await import('@core/geometry');
+    const { createOutline, createRoom } = await import('@core/model');
+    const { computeProject } = await import('@core/calc');
+    const p = createProject('Haus');
+    p.storeys[0].shapes.push(createOutline(rectPoints({ x: 0, y: 0 }, { x: 10, y: 8 })));
+    const bad = {
+      ...createRoom(rectPoints({ x: 0.3, y: 0.3 }, { x: 4.3, y: 3.3 }), '0.01', 'Bad'),
+      nutzung: 'NUF7' as const,
+      nutzungsart: '7.1',
+      wofl: { kategorie: 'voll' as const, wohnung: 'WE 01' },
+    };
+    const flur = { ...createRoom(rectPoints({ x: 4.5, y: 0.3 }, { x: 8.5, y: 3.3 }), '0.02', 'Diele'), wofl: { kategorie: 'voll' as const, wohnung: '' } };
+    p.storeys[0].shapes.push(bad, flur);
+    useEditor.getState().loadProject(p, p, 'Haus.oap');
+    const host = render();
+    act(() => [...host.querySelectorAll<HTMLButtonElement>('.pw-einstieg button')].find((x) => x.textContent === 'Schließen')?.click());
+    act(() => useEditor.getState().selectMany([bad.id, flur.id]));
+    const feld = (name: string) => [...host.querySelectorAll<HTMLLabelElement>('.sidebar-right label.field')].find((l) => l.querySelector('.field-label')?.textContent === name)!;
+    const gruppe = feld('Nutzungsgruppe (DIN 277)').querySelector('select')!;
+    act(() => {
+      gruppe.value = 'VF';
+      gruppe.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    const raeume = useEditor.getState().project.storeys[0].shapes.filter((s) => s.kind === 'room');
+    expect(raeume.map((r) => (r.kind === 'room' ? [r.nutzung, r.nutzungsart] : []))).toEqual([
+      ['VF', undefined],
+      ['VF', undefined],
+    ]);
+    expect(computeProject(useEditor.getState().project).total.vf.total).toBeCloseTo(24);
+    expect(computeProject(useEditor.getState().project).total.nuf.total).toBeCloseTo(0);
+
+    const wohnung = feld('Wohnung').querySelector('input')!;
+    act(() => {
+      wohnung.focus();
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(wohnung, 'we01');
+      wohnung.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    act(() => wohnung.blur());
+    const wohnungen = useEditor.getState().project.storeys[0].shapes.flatMap((s) => (s.kind === 'room' ? [s.wofl.wohnung] : []));
+    expect(wohnungen).toEqual(['WE 01', 'WE 01']);
+  });
+});
+
+describe('Flächenrechner: Flächenaufstellung am Bildschirm', () => {
+  it('ist ein Dialog: Fokus auf „Schließen“, Esc schließt und gibt den Fokus zurück', () => {
+    useEditor.getState().loadProject(createProject('Haus'), null, 'Haus.oap');
+    const host = render();
+    act(() => [...host.querySelectorAll<HTMLButtonElement>('.pw-einstieg button')].find((x) => x.textContent === 'Schließen')?.click());
+    const oeffnen = [...host.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent === 'Flächenaufstellung')!;
+    act(() => {
+      oeffnen.focus();
+      oeffnen.click();
+    });
+    const bericht = host.querySelector<HTMLElement>('.report')!;
+    expect([bericht.getAttribute('role'), bericht.getAttribute('aria-modal'), bericht.getAttribute('aria-label')]).toEqual(['dialog', 'true', 'Flächenaufstellung']);
+    expect(document.activeElement?.textContent).toBe('Schließen');
+    act(() => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    });
+    expect(host.querySelector('.report')).toBeNull();
+    expect(document.activeElement).toBe(oeffnen);
   });
 });

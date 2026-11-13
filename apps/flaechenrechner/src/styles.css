@@ -150,11 +150,27 @@
   color: var(--muted);
 }
 
-.canvas-controls {
+/* rechts oben: Ansichtsoptionen, darunter Werkzeugoptionen und Meldung – links bleibt Platz für „Grundriss | 3D“ */
+.canvas-oben {
   position: absolute;
   top: 8px;
   right: 8px;
+  left: 150px;
   display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  pointer-events: none;
+}
+
+.canvas-oben > * {
+  pointer-events: auto;
+}
+
+.canvas-controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   align-items: center;
   gap: 4px;
   background: var(--overlay-bg);
@@ -191,20 +207,13 @@
 
 /* Werkzeugoptionen („Erkennen“) in eigener Zeile unter den Ansichtsoptionen; Meldungen darunter – nichts verdeckt
    Punktfang/Hilfslinien (F-05) */
-.canvas-controls.detect-controls {
-  top: 44px;
-  flex-wrap: wrap;
-  max-width: calc(100% - 200px);
-}
-
 .canvas-wrap .canvas-message {
-  top: 84px;
-  left: auto;
-  right: 8px;
+  position: static;
   transform: none;
-  max-width: min(480px, 60%);
+  max-width: min(480px, 100%);
 }
 
+/* Maßstabsleiste: liegt auf der Zeichenfläche, also in deren (hellen) Planfarben und mit ihr invertiert */
 .scalebar {
   position: absolute;
   right: 12px;
@@ -213,6 +222,8 @@
   flex-direction: column;
   align-items: flex-end;
   font-size: 11px;
+  color: #1f2328;
+  filter: var(--canvas-filter);
   pointer-events: none;
 }
 
@@ -223,31 +234,8 @@
   background: linear-gradient(90deg, #333 50%, #fff 50%);
 }
 
-.overlay-dialog {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.15);
-}
-
-.overlay-dialog form {
-  background: var(--panel);
-  padding: 16px 20px;
-  border-radius: 6px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
-  width: 320px;
-}
-
-.overlay-dialog h3 {
-  margin: 0 0 8px;
-}
-
-.overlay-dialog label {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+.kalibrier-dialog .field input {
+  width: 100%;
 }
 
 .toggle.block {
@@ -411,7 +399,7 @@
   flex-direction: column;
   align-items: center;
   padding: 3px 2px;
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1.15;
   white-space: normal;
   text-align: center;
@@ -481,15 +469,15 @@
   height: 10px;
   border-radius: 50%;
   flex: none;
-  background: var(--ok-text, #2e7d32);
+  background: var(--ok-text);
 }
 
 .pruef-hinweis .ampel {
-  background: #d4a017;
+  background: var(--warn-border);
 }
 
 .pruef-warnung .ampel {
-  background: var(--fehler-text, #c0392b);
+  background: var(--fehler-text);
 }
 
 .pruef-liste {
@@ -503,21 +491,19 @@
 }
 
 .pruef-liste li {
-  padding: 4px 6px;
   border-bottom: 1px solid var(--border);
-  cursor: pointer;
 }
 
 .pruef-liste li:last-child {
   border-bottom: none;
 }
 
-.pruef-liste li.warnung {
-  border-left: 3px solid var(--fehler-text, #c0392b);
+.pruef-liste li.pruef-warnung {
+  border-left: 3px solid var(--fehler-text);
 }
 
-.pruef-liste li.hinweis {
-  border-left: 3px solid #d4a017;
+.pruef-liste li.pruef-hinweis {
+  border-left: 3px solid var(--warn-border);
 }
 
 .pruef-liste li:hover {
@@ -688,9 +674,104 @@
   border: none;
   background: none;
   padding: 0 2px;
+  min-width: 20px;
+  min-height: 20px;
 }
 
 .canvas:focus-visible {
-  outline: 1px solid var(--accent-soft);
+  outline: 1px solid var(--accent);
   outline-offset: -2px;
+}
+
+/* Flächenaufstellung am Bildschirm: Bedienleiste als eigene Zeile über dem Papier, bleibt beim Blättern oben und
+   bricht um, statt Überschrift und Kopf zu überdecken; Bedienelemente in hellen Farben wie das Papier */
+.report {
+  color-scheme: light;
+}
+
+.report .report-actions {
+  position: sticky;
+  top: -24px;
+  z-index: 1;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  margin: -12px 0 14px;
+  padding: 8px 0;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+}
+
+/* Rechte Seitenleiste: Eigenschaften scrollen für sich, die Auswertung bleibt unten sichtbar */
+.sidebar-right {
+  overflow: hidden;
+}
+
+.sidebar-right > section:first-child {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.sidebar-right > .summary {
+  flex: none;
+  max-height: 50%;
+  overflow-y: auto;
+  border-top: 1px solid var(--border);
+}
+
+/* Weitere Angaben (Höhenlage, Putzabzug, Bemerkung) eingeklappt unter den Kernangaben */
+.weitere-angaben {
+  margin-top: 8px;
+}
+
+/* wie „Eckpunkte“ darunter */
+.weitere-angaben > summary {
+  cursor: pointer;
+  color: var(--muted);
+}
+
+/* schmale Fenster: Seitenleisten schmaler, damit die Zeichenfläche bleibt */
+@media (max-width: 1280px) {
+  .sidebar-left {
+    width: 240px;
+  }
+
+  .sidebar-right {
+    width: 270px;
+  }
+}
+
+/* Listeneinträge als Knöpfe: per Tab erreichbar, Enter bzw. Leertaste wählt (Geschosse, Flächen, Prüfliste) */
+.list li:has(> .list-btn) {
+  padding: 0;
+}
+
+.list-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  height: auto;
+  padding: 4px 6px;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.list-btn:hover:not(:disabled) {
+  background: none;
+}
+
+.list-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.pruef-liste .list-btn {
+  align-items: flex-start;
+  white-space: normal;
 }
