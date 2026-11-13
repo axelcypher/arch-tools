@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { APP_NAMEN } from '@core/appNamen';
 import { LogDialog } from '@core/ui/LogDialog';
 import { TitleBar } from '@core/ui/TitleBar';
 import { AssistentView } from './components/AssistentView';
@@ -83,7 +84,7 @@ export function App() {
   return (
     <div className="app">
       <TitleBar
-        app="Projekt"
+        app={APP_NAMEN.ordner.name}
         name={start?.ordner.name ?? ''}
         dirty={false}
         onOpenLog={() => setLogOpen(true)}

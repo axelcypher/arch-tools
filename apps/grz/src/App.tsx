@@ -1,4 +1,5 @@
 import { speichernAbwarten } from '@core/platform/projektDatei';
+import { APP_NAMEN } from '@core/appNamen';
 import { dialogOffen, eingabeAbschliessen, istEingabeZiel } from '@core/platform/eingabe';
 import { useEffect, useState } from 'react';
 import { isTauri } from '@core/platform/files';
@@ -145,7 +146,7 @@ export function App() {
 
   return (
     <div className="app">
-      <TitleBar app="GRZ-Nachweis" name={name} dirty={dirty} onOpenLog={() => setLogOpen(true)} regeln="grz" onProjekte={() => setProjekteOffen(true)} onSpeichern={() => onSave()} />
+      <TitleBar app={APP_NAMEN.grz.name} name={name} dirty={dirty} onOpenLog={() => setLogOpen(true)} regeln="grz" onProjekte={() => setProjekteOffen(true)} onSpeichern={() => onSave()} />
       <div className="toolbar">
         <div className="tb-group">
           <button onClick={() => void onNeu()} title="Neues, leeres Projekt (fragt bei ungespeicherten Änderungen nach)">
@@ -241,7 +242,7 @@ export function App() {
       {excelOpen && <ExcelDialog onClose={() => setExcelOpen(false)} />}
       {projekteOffen && (
         <ProjektWahl
-          app="GRZ-Nachweis"
+          app={APP_NAMEN.grz.name}
           offeneDatei={datei}
           onGewaehlt={async (g) => {
             if (!(await weiterNachRueckfrage())) return;

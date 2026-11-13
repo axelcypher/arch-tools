@@ -5,6 +5,7 @@ import type { RahmenNachricht, RahmenStatus } from '@core/platform/rahmen';
 import { AN_APP, AN_RAHMEN, ANDOCKEN, ASSISTENT_NEU, BEREIT, PROJEKT_ANGELEGT, PROJEKT_ANLEGEN, PROJEKT_APP, ZUR_APP } from '@core/platform/rahmen';
 import { LogDialog } from '@core/ui/LogDialog';
 import { UpdateKnopf } from '@core/ui/UpdateKnopf';
+import { APP_NAMEN } from '@core/appNamen';
 import { APPS, appAdresse, appInfo, fensterLabel } from './apps';
 import { sperrenFreigeben } from './sperren';
 import { useRahmen } from './store';
@@ -243,7 +244,7 @@ export function App() {
                 role="tab"
                 aria-selected={id === aktiv}
                 className={`rahmen-tab${id === aktiv ? ' aktiv' : ''}`}
-                title={s?.name ? `${info.name} – ${s.name}` : info.name}
+                title={s?.name ? `${info.name} (${info.was}) – ${s.name}` : `${info.name} (${info.was})`}
                 onClick={() => waehlen(id)}
                 onAuxClick={(e) => e.button === 1 && void tabSchliessen(id)}
               >
@@ -282,7 +283,7 @@ export function App() {
             </button>
             {menue && (
               <div className="rahmen-menue" role="menu" onMouseLeave={() => setMenue(false)}>
-                <button role="menuitem" className="rahmen-menue-anlegen" onClick={() => projektAnlegen(null)} title="Assistent der App „Projekt“: Stammdaten, Umfang, Beteiligte, Ordner und Vorlagen">
+                <button role="menuitem" className="rahmen-menue-anlegen" onClick={() => projektAnlegen(null)} title={`Assistent von ${APP_NAMEN.ordner.name} (${APP_NAMEN.ordner.was}): Stammdaten, Umfang, Beteiligte, Ordner und Vorlagen`}>
                   <span className="rahmen-plus-symbol" aria-hidden>
                     +
                   </span>
@@ -294,6 +295,7 @@ export function App() {
                     <button key={a.id} role="menuitem" onClick={() => void oeffnenOderZeigen(a.id)}>
                       <img src={`apps/${a.id}/favicon.svg`} alt="" />
                       {a.name}
+                      <span className="muted small-text"> {a.was}</span>
                       {fenster.includes(a.id) && <span className="muted small-text"> – eigenes Fenster</span>}
                     </button>
                   ))
@@ -305,7 +307,7 @@ export function App() {
           </div>
         </nav>
         <span className="titlebar-drag" data-tauri-drag-region />
-        {desktop && <UpdateKnopf app="arch-tools" dirty={tabs.some((id) => status[id]?.dirty)} />}
+        {desktop && <UpdateKnopf app={APP_NAMEN.suite.name} dirty={tabs.some((id) => status[id]?.dirty)} />}
         <button className="titlebar-btn" title="Protokoll des Rahmens" onClick={() => setLogOffen(true)}>
           <span aria-hidden>≡</span>
         </button>
@@ -351,7 +353,7 @@ export function App() {
         ))}
         {!aktiv && (
           <div className="rahmen-start">
-            <h2>arch-tools</h2>
+            <h2>{APP_NAMEN.suite.name}</h2>
             <p className="muted">Eine App öffnen – sie erscheint als Tab. Mit ⧉ am Tab läuft sie in einem eigenen Fenster weiter, „Andocken“ holt sie zurück.</p>
             <div className="rahmen-anlegen">
               <button className="primary" onClick={() => projektAnlegen(null)}>
@@ -364,7 +366,9 @@ export function App() {
                 <button key={a.id} className="rahmen-karte" onClick={() => void oeffnenOderZeigen(a.id)}>
                   <img src={`apps/${a.id}/favicon.svg`} alt="" />
                   <span>
-                    <strong>{a.name}</strong>
+                    <strong>
+                      {a.name} <span className="rahmen-karte-was">{a.was}</span>
+                    </strong>
                     <span className="muted small-text">{fenster.includes(a.id) ? 'läuft in eigenem Fenster' : a.text}</span>
                   </span>
                 </button>

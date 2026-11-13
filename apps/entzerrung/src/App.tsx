@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { APP_NAMEN } from '@core/appNamen';
 import { LogDialog } from '@core/ui/LogDialog';
 import { TitleBar } from '@core/ui/TitleBar';
 import { isTauri } from '@core/platform/files';
@@ -111,7 +112,7 @@ export function App() {
         void ablegen([...e.dataTransfer.files]);
       }}
     >
-      <TitleBar app="Entzerrung" name={name} dirty={dirty} onOpenLog={() => setLogOpen(true)} onProjekte={() => setWahl(projektordner ? 'fotos' : 'projekt')} onSpeichern={() => speichern()} />
+      <TitleBar app={APP_NAMEN.entzerrung.name} name={name} dirty={dirty} onOpenLog={() => setLogOpen(true)} onProjekte={() => setWahl(projektordner ? 'fotos' : 'projekt')} onSpeichern={() => speichern()} />
       <div className="toolbar">
         <div className="tb-group">
           <button onClick={() => void neu()} title="Neues Projekt">
@@ -189,7 +190,7 @@ export function App() {
       </div>
       {wahl === 'projekt' && (
         <ProjektWahl
-          app="Entzerrung"
+          app={APP_NAMEN.entzerrung.name}
           nurOrdner
           onGewaehlt={(g) => {
             setProjektordner(g.ordner);

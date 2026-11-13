@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { APP_NAMEN } from '@core/appNamen';
 import { LogDialog } from '@core/ui/LogDialog';
 import { StammdatenDialog } from '@core/ui/Stammdaten';
 import { ProjektEinstieg } from '@core/ui/ProjektWahl';
@@ -214,7 +215,7 @@ export function App() {
   return (
     <div className="app">
       <TitleBar
-        app="Formulare"
+        app={APP_NAMEN.formulare.name}
         name={name}
         dirty={geaendert || dokGeaendert}
         onOpenLog={() => setDialog('log')}

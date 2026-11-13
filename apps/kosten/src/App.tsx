@@ -1,4 +1,5 @@
 import { speichernAbwarten } from '@core/platform/projektDatei';
+import { APP_NAMEN } from '@core/appNamen';
 import { dialogOffen, eingabeAbschliessen, istEingabeZiel } from '@core/platform/eingabe';
 import { useEffect, useState } from 'react';
 import { isTauri } from '@core/platform/files';
@@ -151,7 +152,7 @@ export function App() {
 
   return (
     <div className="app">
-      <TitleBar app="Kostenermittlung" name={name} dirty={dirty} onOpenLog={() => setLogOpen(true)} regeln="kosten" onProjekte={() => setProjekteOffen(true)} onSpeichern={() => onSave()} />
+      <TitleBar app={APP_NAMEN.kosten.name} name={name} dirty={dirty} onOpenLog={() => setLogOpen(true)} regeln="kosten" onProjekte={() => setProjekteOffen(true)} onSpeichern={() => onSave()} />
       <div className="toolbar">
         <div className="tb-group">
           <button onClick={onOpen} title="Projekt (.oap) oder IFC-Modell öffnen (Strg+O)">
@@ -254,7 +255,7 @@ export function App() {
       {katalogOpen && <KatalogDialog onClose={() => setKatalogOpen(false)} />}
       {projekteOffen && (
         <ProjektWahl
-          app="Kostenermittlung"
+          app={APP_NAMEN.kosten.name}
           offeneDatei={datei}
           onGewaehlt={async (g) => {
             if (!(await weiterNachRueckfrage())) return;

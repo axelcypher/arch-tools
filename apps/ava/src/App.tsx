@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { APP_NAMEN } from '@core/appNamen';
 import { isTauri } from '@core/platform/files';
 import { logger } from '@core/platform/log';
 import { projektdateiSchreiben } from '@core/platform/projektordner';
@@ -140,11 +141,11 @@ export function App() {
 
   return (
     <div className="app">
-      <TitleBar app="AVA" name={name} dirty={dirty} onOpenLog={() => setLogOffen(true)} onProjekte={() => setProjekteOffen(true)} zeichenflaeche={false} onSpeichern={() => lvSpeichernMitMeldung()} />
+      <TitleBar app={APP_NAMEN.ava.name} name={name} dirty={dirty} onOpenLog={() => setLogOffen(true)} onProjekte={() => setProjekteOffen(true)} zeichenflaeche={false} onSpeichern={() => lvSpeichernMitMeldung()} />
       {projekteOffen || !projekt ? (
         isTauri() ? (
           <ProjektWahl
-            app="AVA"
+            app={APP_NAMEN.ava.name}
             nurOrdner
             offeneDatei={projekt ? `${projekt.ordner}/${projekt.oap}` : null}
             onGewaehlt={async (g) => {

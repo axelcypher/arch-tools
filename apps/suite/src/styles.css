@@ -161,6 +161,13 @@
   white-space: normal;
   min-width: 0;
 }
+/* Name der App und darunter klein, wofür sie da ist (früherer Name) */
+.rahmen-karte-was {
+  margin-left: 4px;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--muted);
+}
 
 /* Neues Projekt anlegen (Assistent der Projekt-App) */
 .rahmen-menue hr {
