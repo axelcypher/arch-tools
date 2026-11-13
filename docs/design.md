@@ -210,6 +210,8 @@ mit `text`, optional `symbol`, `hinweis` (rechts, z. B. der Grund einer Sperre),
   setzt das Menü `aria-expanded` am Öffner selbst. Wer den Zustand im Render braucht, nimmt `useMenueOffen(ref)`.
 - Ein zweiter Klick auf den Öffner eines offenen Menüs schließt es (Knopf wie Zeilenknopf).
 - Umsortieren mit den Symbolen `nachOben` und `nachUnten` (statt ↑/↓ als Schriftzeichen).
+- Zeilenknöpfe „Aktionen“, die ein Menü öffnen, mit dem Symbol `mehr` (drei Punkte); `pfeilUnten` bleibt dem
+  Aufklapp-Pfeil an Knöpfen mit Text vorbehalten.
 
 ## Seitenleisten
 
