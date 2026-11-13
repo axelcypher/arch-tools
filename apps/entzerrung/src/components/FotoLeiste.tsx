@@ -19,7 +19,7 @@ export function FotoLeiste() {
         <div className="section-head">
           <h2>Fotos</h2>
           <button className="small" onClick={() => void fotosHinzufuegen()} title="Fotos hinzufügen (JPEG, PNG, WebP)">
-            + Foto …
+            <Symbol name="plus" /> Foto …
           </button>
         </div>
         {!fotos.length && <p className="muted small-text">Noch kein Foto. Fotos lassen sich auch einfach ins Fenster ziehen.</p>}
@@ -104,8 +104,8 @@ function EbenenListe({ foto }: { foto: Foto }) {
     <section className="grow">
       <div className="section-head">
         <h2>Ebenen</h2>
-        <button className="small" onClick={() => ebeneHinzufuegen(foto.id)} title="Weitere Ebene in diesem Foto, z. B. die zweite Fassadenseite an einer Gebäudeecke">
-          + Ebene
+        <button className="small" onClick={() => ebeneHinzufuegen(foto.id)} title="Ebene hinzufügen – weitere Ebene in diesem Foto, z. B. die zweite Fassadenseite an einer Gebäudeecke">
+          <Symbol name="plus" /> Ebene
         </button>
       </div>
       <ul className="list">

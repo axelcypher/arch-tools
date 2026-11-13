@@ -9,7 +9,7 @@ Bis Version 0.12.0 hieß die App „Entzerrung“. Einstellungen und Daten bleib
 
 ## Ablauf
 
-1. **Foto hinzufügen**: über „+ Foto …“ (auch mehrere auf einmal; danach ist das erste gewählt, nicht lesbare
+1. **Foto hinzufügen**: über den Knopf „Foto …“ mit Plus-Symbol (auch mehrere auf einmal; danach ist das erste gewählt, nicht lesbare
    Dateien nennt eine gemeinsame Meldung), den Knopf in der leeren Fläche oder per Ziehen ins
    Fenster (JPEG, PNG, WebP). Die Ausrichtung vom
    Handy (Hochformat) wird übernommen. HEIC-Fotos vom iPhone lassen sich nicht lesen; dann am iPhone unter
