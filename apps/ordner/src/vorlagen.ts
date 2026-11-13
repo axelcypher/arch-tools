@@ -247,7 +247,10 @@ export const PLATZHALTER_DOCS: { gruppe: string; zeilen: [string, string][] }[] 
       ['{{bauherr.name}}, {{bauherr.adresse}}, {{bauherr.email}}, {{bauherr.telefon}}', 'Bauherr'],
       ['{{projekt.bearbeiter}}, {{projekt.leistungsphasen}}, {{projekt.ordner}}', 'Bearbeitung, Leistungsphasen, Name des Projektordners'],
       ['{{datum}}, {{datum.iso}}, {{jahr}}', 'Datum des Anlegens'],
-      ['{{PROJEKT_KUERZEL}}, {{PROJEKT_KURZNAME}}, {{PROJEKT_VORHABEN}}, {{BEARBEITER}}, {{DATUM}}, {{JAHR}}, {{JAHR_KURZ}}', 'globale Variablen wie in den Namen; Datum mit Format z. B. {{DATUM:TT.MM.JJJJ}}'],
+      [
+        '{{PROJEKT_KUERZEL}}, {{PROJEKT_KURZNAME}}, {{PROJEKT_VORHABEN}}, {{BEARBEITER}}, {{DATUM}}, {{JAHR}}, {{JAHR_KURZ}}',
+        'globale Variablen wie in den Namen; Datum mit Format z. B. {{DATUM:TT.MM.JJJJ}}',
+      ],
       ['{{beteiligte}}', 'alle Beteiligten, je Zeile „Rolle: Name (Kontakt)“'],
       ['{{beteiligter.rolle}}, {{beteiligter.name}}, {{beteiligter.kontakt}}', 'nur Excel: Zeile je Beteiligtem'],
       ['{{lph.nr}}, {{lph.name}}', 'nur Excel: Zeile je Leistungsphase'],

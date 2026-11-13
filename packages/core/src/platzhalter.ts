@@ -179,7 +179,13 @@ export function platzhalterIn(vorlage: string, variablen: Variable[]): Fundstell
 }
 
 /** Platzhalter ohne Variable (bleiben so stehen) */
-export const unbekanntePlatzhalter = (vorlage: string, variablen: Variable[]) => [...new Set(platzhalterIn(vorlage, variablen).filter((f) => !f.treffer).map((f) => f.roh))];
+export const unbekanntePlatzhalter = (vorlage: string, variablen: Variable[]) => [
+  ...new Set(
+    platzhalterIn(vorlage, variablen)
+      .filter((f) => !f.treffer)
+      .map((f) => f.roh),
+  ),
+];
 
 /** Platzhalter mit altem Namen und ihr neuer Name – für den Hinweis „Vorlage anpassen“ */
 export function veraltetePlatzhalter(vorlage: string, variablen: Variable[]): { alt: string; neu: string }[] {
