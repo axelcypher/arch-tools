@@ -720,10 +720,12 @@ beschrieben.
   nicht zurück („Nicht geändert – der Eintrag „Lageplan“ ist inzwischen nicht mehr im Antragsumfang.“ bzw. „… –
   inzwischen gibt es keinen Antragsumfang mehr.“), und „Antragsumfang festlegen“ ersetzt keinen, der woanders
   inzwischen festgelegt wurde („Antragsumfang nicht festgelegt – inzwischen ist schon einer festgelegt; er ist jetzt
-  geladen.“). „Antragsumfang aufheben …“ hebt ihn ganz auf – auch Einträge, die woanders inzwischen dazukamen. Ganz
-  nach oben bzw. unten gezogen bleibt ganz oben bzw. unten. Kennungen im Antragsumfang werden beim Lesen eindeutig
-  gemacht. Ein späteres Laden der Projektdatei gilt vor einem früheren, das erst danach zurückkommt. Das Laden ergänzt
-  so nur fehlende Anträge, nie ersetzt es Vorhandenes.
+  geladen.“; ist die Ansicht dabei einer woanders aktiv gemachten Fassung gefolgt, nennt die Meldung beide Fassungen;
+  ist inzwischen ein anderes Projekt bzw. eine andere Projektdatei gewählt, nennt sie das Projekt bzw. die Datei).
+  „Antragsumfang aufheben …“ hebt ihn ganz auf – auch Einträge, die woanders inzwischen dazukamen. Ganz nach oben bzw.
+  unten gezogen bleibt ganz oben bzw. unten. Kennungen im Antragsumfang werden beim Lesen eindeutig gemacht. Ein
+  späteres Laden der Projektdatei gilt vor einem früheren, das erst danach zurückkommt. Das Laden ergänzt so nur
+  fehlende Anträge, nie ersetzt es Vorhandenes.
   - **Bindung:** Geschrieben wird nur in die Projektdatei, aus der die Angaben stammen, und nur für das Projekt, in dem
     die Änderung begonnen hat. Wird währenddessen ein anderes Projekt geöffnet, bricht die Änderung mit Meldung ab
     (Formular anlegen bzw. hinzufügen sagen, was schon geschehen ist: „angelegt, aber nicht zugeordnet …“); wird eine
