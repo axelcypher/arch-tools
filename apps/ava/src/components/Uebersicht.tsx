@@ -20,6 +20,10 @@ export function Uebersicht() {
   const ks = summe((z) => z.kostenschaetzung);
   const ka = summe((z) => z.kostenanschlag);
   const kf = summe((z) => z.kostenfeststellung);
+  // Abweichung Kostenanschlag/Kostenschätzung nur für vergebene Gewerke – sonst erschiene ein Gewerk ohne Auftrag als Einsparung
+  const abweichung = (z: (typeof zeilen)[number]) => (z.kostenanschlag && z.kostenschaetzung ? z.kostenanschlag - z.kostenschaetzung : null);
+  const abwSumme = summe(abweichung);
+  const oeffneGewerk = (gewerk: string, tab: 'lv' | 'rechnungen') => useAva.getState().setAnsicht({ art: 'gewerk', gewerk, tab });
   const hinweise = [...(projekt.struktur?.hinweise ?? []), ...(kk?.hinweise ?? []), ...zeilen.flatMap((z) => z.hinweise.map((h) => `${gewerkZweistellig(z.gewerk)}: ${h}`))];
   const rechnungsHinweise = zeilen.reduce((n, z) => n + z.rechnungen.filter((r) => r.hinweise.length).length, 0);
 
@@ -78,15 +82,16 @@ export function Uebersicht() {
           <small>{ks ? `${prozent((ka / ks) * 100)} der Schätzung` : ''}</small>
         </div>
         <div className="metric">
-          <span>Kostenfeststellung (Rechnungen)</span>
+          <span title="Summe der geprüften Zahlungsfreigaben (Rechnungen) – nach Einbehalt, Umlagen und Skonto">Zahlungsfreigaben (Rechnungen)</span>
           <strong>{euro(kf)}</strong>
           <small>{ka ? `${prozent((kf / ka) * 100)} des Anschlags` : ''}</small>
         </div>
         <div className="metric">
-          <span>noch abzurechnen</span>
-          <strong>{euro(ka - kf)}</strong>
+          <span title="Kostenanschlag (Aufträge) abzüglich Zahlungsfreigaben">noch auszuzahlen</span>
+          <strong className={ka - kf < 0 ? 'ava-ueber' : ''}>{euro(ka - kf)}</strong>
         </div>
       </div>
+      <div className="ava-tabelle-rahmen">
       <table className="ava-tabelle">
         <thead>
           <tr>
@@ -95,30 +100,61 @@ export function Uebersicht() {
             <th>Auftragnehmer</th>
             <th className="num">Kostenschätzung</th>
             <th className="num">Kostenanschlag</th>
-            <th className="num">Abw. KS/KA</th>
-            <th className="num">Kostenfeststellung</th>
-            <th className="num">offen</th>
-            <th>abgerechnet</th>
-            <th />
+            <th className="num" title="Kostenanschlag minus Kostenschätzung – nur für vergebene Gewerke">
+              Abw. KA/KS
+            </th>
+            <th className="num" title="Summe der geprüften Zahlungsfreigaben">
+              Zahlungsfreigaben
+            </th>
+            <th className="num" title="Kostenanschlag abzüglich Zahlungsfreigaben">
+              offen
+            </th>
+            <th>freigegeben</th>
+            <th>
+              <span className="ava-sr-only">Hinweise</span>
+            </th>
           </tr>
         </thead>
         <tbody>
           {zeilen.map((z) => {
-            const abw = z.kostenanschlag !== null && z.kostenschaetzung ? z.kostenanschlag - z.kostenschaetzung : null;
+            const abw = abweichung(z);
             const hinweise = z.hinweise.length + z.rechnungen.filter((r) => r.hinweise.length).length;
             return (
-              <tr key={z.gewerk} className="ava-klickbar" onClick={() => useAva.getState().setAnsicht({ art: 'gewerk', gewerk: z.gewerk, tab: 'rechnungen' })}>
-                <td className="ava-kennung">{gewerkZweistellig(z.gewerk)}</td>
+              <tr
+                key={z.gewerk}
+                className="ava-klickbar"
+                tabIndex={0}
+                title="Rechnungen dieses Gewerks zeigen (Enter)"
+                onClick={() => oeffneGewerk(z.gewerk, 'rechnungen')}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && e.target === e.currentTarget) oeffneGewerk(z.gewerk, 'rechnungen');
+                }}
+              >
+                <td>
+                  <button
+                    type="button"
+                    className="small ava-kennung-knopf"
+                    title="Gewerk öffnen (Leistungsverzeichnis)"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      oeffneGewerk(z.gewerk, 'lv');
+                    }}
+                  >
+                    {gewerkZweistellig(z.gewerk)}
+                  </button>
+                </td>
                 <td>{z.bezeichnung}</td>
                 <td>{z.firma}</td>
                 <td className="num">{euro(z.kostenschaetzung)}</td>
                 <td className="num">{euro(z.kostenanschlag)}</td>
                 <td className={`num ${abw !== null && abw > 0 ? 'ava-ueber' : abw !== null && abw < 0 ? 'ava-unter' : ''}`}>{abw ? euro(abw) : ''}</td>
                 <td className="num">{euro(z.kostenfeststellung)}</td>
-                <td className="num">{z.offen ? euro(z.offen) : ''}</td>
+                <td className={`num${z.offen !== null && z.offen < 0 ? ' ava-ueber' : ''}`} title={z.offen !== null && z.offen < 0 ? 'Mehr freigegeben als beauftragt' : undefined}>
+                  {z.offen ? euro(z.offen) : ''}
+                </td>
                 <td>
                   {z.anteil !== null && (
-                    <div className="ava-balken" title={prozent(z.anteil)}>
+                    <div className="ava-balken" title={`${prozent(z.anteil)} des Kostenanschlags freigegeben`} role="img" aria-label={`${prozent(z.anteil)} freigegeben`}>
                       <div style={{ width: `${Math.min(100, Math.max(0, z.anteil))}%` }} className={z.anteil > 100.5 ? 'ava-balken-ueber' : ''} />
                     </div>
                   )}
@@ -133,13 +169,14 @@ export function Uebersicht() {
             <td colSpan={3}>Summe</td>
             <td className="num">{euro(ks)}</td>
             <td className="num">{euro(ka)}</td>
-            <td className="num">{euro(ka - ks)}</td>
+            <td className="num">{abwSumme ? euro(abwSumme) : ''}</td>
             <td className="num">{euro(kf)}</td>
-            <td className="num">{euro(ka - kf)}</td>
+            <td className={`num${ka - kf < 0 ? ' ava-ueber' : ''}`}>{euro(ka - kf)}</td>
             <td colSpan={2} />
           </tr>
         </tfoot>
       </table>
+      </div>
       {(hinweise.length > 0 || rechnungsHinweise > 0) && (
         <div className="warning ava-hinweise">
           <strong>Hinweise</strong>

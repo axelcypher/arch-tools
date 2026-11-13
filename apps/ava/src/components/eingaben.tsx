@@ -19,6 +19,7 @@ export function ZahlEingabe({
   placeholder,
   autoFocus,
   onEnter,
+  label,
 }: {
   wert: number | null | undefined;
   onChange: (n: number | null) => void;
@@ -29,14 +30,23 @@ export function ZahlEingabe({
   placeholder?: string;
   autoFocus?: boolean;
   onEnter?: () => void;
+  /** Beschriftung für Screenreader (aria-label), wo kein sichtbares Label steht */
+  label?: string;
 }) {
   const [text, setText] = useState(zahlDE(wert, stellen));
   const [fehler, setFehler] = useState(false);
   const fokus = useRef(false);
+  // Esc: Verlassen des Felds danach übernimmt nichts (sonst käme der verworfene Text über den alten Zustand doch an)
+  const verworfen = useRef(false);
   useEffect(() => {
     if (!fokus.current) setText(zahlDE(wert, stellen));
   }, [wert, stellen]);
   const uebernehmen = () => {
+    // unverändert angezeigter Wert: nichts übernehmen (sonst würde ein gerundet angezeigter Wert still gekürzt)
+    if (text === zahlDE(wert, stellen)) {
+      setFehler(false);
+      return;
+    }
     const t = text.trim().replace(/\s*(€|%|m²|m³|m)$/, '');
     if (!t) {
       if (leerErlaubt) {
@@ -61,6 +71,7 @@ export function ZahlEingabe({
       title={fehler ? 'Keine gültige Zahl – z. B. „1.234,56“' : title}
       placeholder={placeholder}
       autoFocus={autoFocus}
+      aria-label={label}
       inputMode="decimal"
       onFocus={(e) => {
         fokus.current = true;
@@ -68,6 +79,10 @@ export function ZahlEingabe({
       }}
       onBlur={() => {
         fokus.current = false;
+        if (verworfen.current) {
+          verworfen.current = false;
+          return;
+        }
         uebernehmen();
       }}
       onChange={(e) => setText(e.target.value)}
@@ -76,8 +91,11 @@ export function ZahlEingabe({
           uebernehmen();
           onEnter?.();
         } else if (e.key === 'Escape') {
+          // geändertes Feld: Esc setzt nur das Feld zurück und schließt nicht zugleich den Dialog
+          if (text !== zahlDE(wert, stellen) || fehler) e.preventDefault();
           setText(zahlDE(wert, stellen));
           setFehler(false);
+          verworfen.current = true;
           (e.target as HTMLInputElement).blur();
         }
       }}
@@ -96,6 +114,8 @@ export function TextEingabe({
   zeilen = 3,
   liste,
   autoFocus,
+  label,
+  feld,
 }: {
   wert: string | undefined;
   onChange: (s: string) => void;
@@ -106,9 +126,14 @@ export function TextEingabe({
   zeilen?: number;
   liste?: string;
   autoFocus?: boolean;
+  /** Beschriftung für Screenreader (aria-label) */
+  label?: string;
+  /** Kennung zum Ansprechen per Tastatur (data-feld), z. B. „kurztext“ */
+  feld?: string;
 }) {
   const [text, setText] = useState(wert ?? '');
   const fokus = useRef(false);
+  const verworfen = useRef(false);
   useEffect(() => {
     if (!fokus.current) setText(wert ?? '');
   }, [wert]);
@@ -118,11 +143,17 @@ export function TextEingabe({
     placeholder,
     title,
     autoFocus,
+    'aria-label': label,
+    'data-feld': feld,
     onFocus: () => {
       fokus.current = true;
     },
     onBlur: () => {
       fokus.current = false;
+      if (verworfen.current) {
+        verworfen.current = false;
+        return;
+      }
       if (text !== (wert ?? '')) onChange(text);
     },
     onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setText(e.target.value),
@@ -135,7 +166,9 @@ export function TextEingabe({
       onKeyDown={(e) => {
         if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
         if (e.key === 'Escape') {
+          if (text !== (wert ?? '')) e.preventDefault();
           setText(wert ?? '');
+          verworfen.current = true;
           (e.target as HTMLInputElement).blur();
         }
       }}
@@ -144,8 +177,8 @@ export function TextEingabe({
 }
 
 /** Datum (JJJJ-MM-TT) */
-export function DatumEingabe({ wert, onChange, title }: { wert: string | undefined; onChange: (s: string | undefined) => void; title?: string }) {
-  return <input type="date" value={wert?.slice(0, 10) ?? ''} title={title} onChange={(e) => onChange(e.target.value || undefined)} />;
+export function DatumEingabe({ wert, onChange, title, label }: { wert: string | undefined; onChange: (s: string | undefined) => void; title?: string; label?: string }) {
+  return <input type="date" value={wert?.slice(0, 10) ?? ''} title={title} aria-label={label ?? title} onChange={(e) => onChange(e.target.value || undefined)} />;
 }
 
 /** Beschriftetes Feld */

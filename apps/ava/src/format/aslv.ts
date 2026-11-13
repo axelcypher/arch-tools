@@ -17,7 +17,7 @@ import { unzlibSync, zlibSync } from 'fflate';
 import type { Abschnitt, Bieter, Einbehalt, Hinweis, Lv, LvElement, LvKopf, OzMaske, Position, Preis } from '../lv/modell';
 import { neueId, STANDARD_OZ_MASKE } from '../lv/modell';
 import type { Summen } from '../lv/rechnen';
-import { summen } from '../lv/rechnen';
+import { brutto, rund2, summen } from '../lv/rechnen';
 import type { Formattext } from './rtf';
 import { alsText, ersteZeile, gleicherText, istRtf, kurztextRtf, rtfLesen, rtfSchreiben } from './rtf';
 import type { XDokument, XElement } from './xmlDom';
@@ -29,6 +29,52 @@ export const ASLV_ENDUNG = 'aslv';
 const ORDER_GESAMT = '2147483647';
 
 export class AslvFehler extends Error {}
+
+/**
+ * Angaben des LV-Modells, die eine LV-Datei (.aslv) nicht aufnimmt: Für sie ist im Format der Datei kein
+ * bekanntes Feld vorhanden. Sie gehen beim Speichern als .aslv verloren; die Oberfläche sperrt bzw. kennzeichnet
+ * die Felder (nur im eigenen Format .oalv speicherbar). Schlüssel → Bezeichnung für Hinweise.
+ */
+export const ASLV_NICHT_GESPEICHERT = {
+  nachtraege: 'Nachträge (Titel, Status, Betrag)',
+  auftragDatum: 'Auftragsdatum',
+  auftragBemerkung: 'Bemerkung zum Auftrag',
+  bieterStatus: 'Bieter gewertet/ausgeschlossen',
+  bieterAngebotsdatum: 'Angebotsdatum',
+  bieterAnschrift: 'Anschrift des Bieters',
+  bieterSkonto: 'Skonto',
+  bieterBemerkung: 'Bemerkung zum Bieter',
+  bieterKontakt: 'Kontakt des Bieters',
+  preisanteile: 'Preisanteile',
+  positionsart: 'Grund-, Wahl- und Zulagepositionen',
+} as const;
+
+export type AslvNichtGespeichert = keyof typeof ASLV_NICHT_GESPEICHERT;
+
+/**
+ * Welche der nicht speicherbaren Angaben (siehe ASLV_NICHT_GESPEICHERT) hat sich gegenüber dem Stand der Datei
+ * geändert? Leere Liste = Speichern als .aslv verliert nichts.
+ */
+export function aslvVerluste(datei: Lv, lv: Lv): AslvNichtGespeichert[] {
+  const out = new Set<AslvNichtGespeichert>();
+  const j = (x: unknown) => JSON.stringify(x ?? null);
+  if (j(datei.nachtraege) !== j(lv.nachtraege)) out.add('nachtraege');
+  if ((datei.auftrag?.datum ?? '') !== (lv.auftrag?.datum ?? '')) out.add('auftragDatum');
+  if ((datei.auftrag?.bemerkung ?? '') !== (lv.auftrag?.bemerkung ?? '')) out.add('auftragBemerkung');
+  if (j(datei.preisanteile) !== j(lv.preisanteile)) out.add('preisanteile');
+  for (const b of lv.bieter) {
+    const a = datei.bieter.find((x) => x.id === b.id);
+    if (!!a?.ausgeschlossen !== !!b.ausgeschlossen) out.add('bieterStatus');
+    if ((a?.angebotsdatum ?? '') !== (b.angebotsdatum ?? '')) out.add('bieterAngebotsdatum');
+    if ((a?.anschrift ?? '') !== (b.anschrift ?? '')) out.add('bieterAnschrift');
+    if ((a?.skonto ?? null) !== (b.skonto ?? null) || (a?.skontoTage ?? null) !== (b.skontoTage ?? null)) out.add('bieterSkonto');
+    if ((a?.bemerkung ?? '') !== (b.bemerkung ?? '')) out.add('bieterBemerkung');
+    if (j(a?.kontakt) !== j(b.kontakt)) out.add('bieterKontakt');
+  }
+  const arten = (l: LvElement[]): boolean => l.some((e) => (e.art === 'abschnitt' ? arten(e.kinder) : e.art === 'position' && e.positionsart !== 'normal' && e.positionsart !== 'bedarf'));
+  if (arten(lv.elemente)) out.add('positionsart');
+  return [...out];
+}
 
 /* ---------- Datei ---------- */
 
@@ -484,7 +530,7 @@ function positionSchreiben(s: Schreiber, x: XElement, pos: Position, bieterIds: 
       a = true;
     }
     const menge = preis?.menge ?? pos.menge ?? 0;
-    const gb = Math.round((preis?.pauschal ?? menge * ep) * 100) / 100;
+    const gb = rund2(preis?.pauschal ?? menge * ep);
     let ba = zahlSetzen(s, b, 'EP', ep);
     ba = zahlSetzen(s, b, 'GBoA', gb) || ba;
     ba = zahlSetzen(s, b, 'GB', gb) || ba;
@@ -507,7 +553,7 @@ function folderSummenSchreiben(s: Schreiber, x: XElement, el: Abschnitt, abschni
   const alt = el.xmlId !== undefined ? s.basis.get(el.xmlId) : undefined;
   const altSummen = alt && s.basisSummen ? s.basisSummen.abschnitte.get(alt.id) : undefined;
   for (const id of bieterIds) {
-    const summe = Math.round((abschnittSummen.get(id) ?? 0) * 100) / 100;
+    const summe = rund2(abschnittSummen.get(id) ?? 0);
     if (altSummen && Math.abs((altSummen.get(id) ?? 0) - summe) < 0.005) continue;
     let b = bieterIn(x, id);
     if (!b) {
@@ -560,7 +606,8 @@ function elementeSchreiben(s: Schreiber, liste: XElement, model: LvElement[], lv
 function kopfSchreiben(s: Schreiber, lvEl: XElement, k: LvKopf) {
   const p = params(lvEl);
   let a = false;
-  a = textSetzen(s, lvEl, 'Text1', k.bezeichnung) || a;
+  // Bezeichnung kann als RTF in der Datei stehen: dann nur ersetzen, wenn sich der lesbare Text ändert
+  a = (istRtf(p.get('Text1')) ? kurztextSetzen(s, lvEl, k.bezeichnung) : textSetzen(s, lvEl, 'Text1', k.bezeichnung)) || a;
   a = textSetzen(s, lvEl, 'LVNr', k.nummer) || a;
   const datum = (name: string, wert: string | undefined) => {
     const alt = p.get(name);
@@ -656,14 +703,13 @@ function auftragSchreiben(s: Schreiber, lvEl: XElement, lv: Lv, sums: ReturnType
     const sum = sums.bieter.get(lv.auftrag.bieterId);
     const netto = lv.auftrag.summeNetto ?? sum?.netto ?? 0;
     const nachtraege = lv.nachtraege.filter((n) => n.status === 'beauftragt').reduce((x, n) => x + (n.betrag ?? sums.nachtraege.get(n.nr) ?? 0), 0);
-    const mwst = lv.kopf.mwst / 100;
-    const r = (x: number) => Math.round(x * 100) / 100;
+
     for (const o of elemente(erstes(erstes(lvEl, 'Ordering'), 'OrderList'), 'Order')) {
       const id = attr(o, 'OrderID');
       const n = id === '0' ? netto : id === ORDER_GESAMT ? netto + nachtraege : null;
       if (n === null) continue;
-      let oa = zahlSetzen(s, o, 'GB', r(n));
-      oa = zahlSetzen(s, o, 'GBBrutto', r(r(n) * (1 + mwst))) || oa;
+      let oa = zahlSetzen(s, o, 'GB', rund2(n));
+      oa = zahlSetzen(s, o, 'GBBrutto', brutto(n, lv.kopf.mwst)) || oa;
       if (oa) geaendert(s, o);
       a = oa || a;
     }

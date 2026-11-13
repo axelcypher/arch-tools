@@ -27,28 +27,37 @@ export function Navigation({ onStammdaten }: { onStammdaten: (meta: ProjectMeta,
     useAva.getState().setAnsicht(a);
   };
 
-  const eintrag = (a: Ansicht, text: React.ReactNode, title?: string, marke?: number | string | null) => (
-    <li key={a.art === 'gewerk' ? `g${a.gewerk}` : a.art} className={gleicheAnsicht(a, ansicht) ? 'active' : ''} onClick={() => void gehe(a)} title={title}>
-      <span className="ava-nav-text">{text}</span>
-      {marke ? <span className="ava-marke">{marke}</span> : null}
-    </li>
-  );
+  const eintrag = (a: Ansicht, text: React.ReactNode, title?: string, marke?: number | string | null) => {
+    const aktiv = gleicheAnsicht(a, ansicht);
+    return (
+      <li key={a.art === 'gewerk' ? `g${a.gewerk}` : a.art} className={aktiv ? 'active' : ''}>
+        <button type="button" className="ava-nav-knopf" onClick={() => void gehe(a)} title={title} aria-current={aktiv ? 'page' : undefined}>
+          <span className="ava-nav-text">{text}</span>
+          {marke ? <span className="ava-marke">{marke}</span> : null}
+        </button>
+      </li>
+    );
+  };
 
   return (
     <BreitenLeiste schluessel="ava:breite:navigation" vorgabe={250}>
-      <nav className="ava-nav">
+      <nav className="ava-nav" aria-label="Bereiche des Projekts">
         <div className="ava-nav-kopf">
           <div className="ava-nav-code">{projekt.meta.projektcode || '—'}</div>
           <div className="ava-nav-name" title={projekt.ordner}>
             {projekt.name}
           </div>
           <StammdatenKnopf project={{ name: projekt.name, meta: projekt.meta }} onAendern={onStammdaten} kurz={false} />
-          <button className="small" onClick={() => void useAva.getState().neuLaden()} title="Ordner, Kostenkontrolle und Projektdatei neu einlesen">
+          <button
+            className="small"
+            onClick={() => void useAva.getState().neuLaden()}
+            title="Ordner, Kostenkontrolle und Projektdatei neu einlesen (geschieht auch automatisch, wenn das Fenster wieder in den Vordergrund kommt)"
+          >
             Neu einlesen
           </button>
         </div>
         <ul className="ava-nav-liste">
-          {eintrag({ art: 'uebersicht' }, 'Kostenübersicht', 'Kostenschätzung, Kostenanschlag und Kostenfeststellung je Gewerk')}
+          {eintrag({ art: 'uebersicht' }, 'Kostenübersicht', 'Kostenschätzung, Kostenanschlag (Aufträge) und Zahlungsfreigaben je Gewerk')}
           {eintrag({ art: 'rechnungen' }, 'Rechnungen', 'Alle Rechnungen des Projekts aus Kostenkontrolle, Auftragsordnern und Prüfungen', offeneRechnungen ? `${offeneRechnungen} offen` : null)}
           {eintrag({ art: 'eingang' }, 'Rechnungseingang', 'Neue Rechnung prüfen, Scan zuordnen und ablegen')}
         </ul>
@@ -66,12 +75,14 @@ export function Navigation({ onStammdaten }: { onStammdaten: (meta: ProjectMeta,
                 {!g && <span className="muted small-text"> (kein Ordner)</span>}
               </>,
               [g ? g.pfad : 'kein Gewerkeordner', lvs ? `${lvs} LV` : 'kein LV', blatt?.auftragnehmer].filter(Boolean).join(' · '),
-              lvs ? `${lvs} LV` : null,
+              lvs > 1 ? `${lvs} LV` : null,
             );
           })}
           {!gewerke.length && <li className="muted">Keine Gewerke gefunden – Ablage in den Einstellungen prüfen.</li>}
         </ul>
-        <div className="ava-nav-titel">Bauleitung</div>
+        <div className="ava-nav-titel" title="Objektüberwachung (HOAI Leistungsphase 8): Dokumentation, Termine, Mängel">
+          Bauleitung
+        </div>
         <ul className="ava-nav-liste">
           {eintrag({ art: 'bautagebuch' }, 'Bautagebuch', 'Tagesberichte: Wetter, Firmen, Leistungen, Behinderungen, Fotos', projekt.ava.bautagebuch.length || null)}
           {eintrag({ art: 'protokolle' }, 'Protokolle', 'Baubesprechungen mit Tagesordnungspunkten, Zuständigkeit und Fristen', projekt.ava.protokolle.length || null)}
