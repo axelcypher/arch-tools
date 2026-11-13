@@ -16,8 +16,10 @@ import type { Sperre, SperrBewertung, SperrProbe } from './forma/sperre';
 import { bewerten, sperreLesen, sperreSchreiben, sperrPfad, zeitstempel } from './forma/sperre';
 import { istEigeneSperre, sperreVergessen, sperreVermerken, verwaisteEigeneSperrenAufraeumen } from './eigeneSperren';
 import { finde } from './forma/dfm';
-import type { FormularEintrag, Projekt } from './projekte';
-import { formulareDesProjekts, projekteSuchen } from './projekte';
+import { gleicheFassung } from '@core/fassung';
+import { formularSchluessel } from './antrag';
+import type { FormularEintrag, Projekt, UnterordnerWahl } from './projekte';
+import { formulareMitUnterordner, projekteSuchen } from './projekte';
 import type { Adresse, EigeneAdresse } from './adressbuch';
 import { adressenAusKarte, eigeneAdressenAus, wirksameAdressen, zusammenfuehren } from './adressbuch';
 import { xlsxLesen } from './dokumente/xlsx';
@@ -207,6 +209,11 @@ interface FormulareState extends Gespeichert {
   sucht: boolean;
   projekt: Projekt | null;
   formulare: FormularEintrag[];
+  /**
+   * Sammelprojekt (Unterordner je Antrag): Unterordner des aktiven Antrags (null, wenn es für ihn keinen gibt) und alle
+   * Antrags-Unterordner; null bei einem gewöhnlichen Projekt
+   */
+  sammel: { unterordner: string | null; alle: string[] } | null;
   offen: OffenesFormular | null;
   haupt: Hauptansicht;
   /** zuletzt geöffnete Projekte, das neueste zuerst */
@@ -273,6 +280,11 @@ interface FormulareState extends Gespeichert {
   /** Projekt aus „Zuletzt geöffnet“ streichen */
   zuletztEntfernen: (p: Pick<Projekt, 'root' | 'ordner'>) => void;
   formularOeffnen: (e: FormularEintrag) => Promise<void>;
+  /**
+   * Formulare des Projekts neu lesen – im Sammelprojekt mit dem Unterordner des aktiven Antrags. Liefert, ob sich die
+   * Liste geändert hat; `still`: ein Lesefehler wird weitergereicht statt gemeldet (regelmäßiges Auffrischen)
+   */
+  formulareNeuLesen: (o?: { still?: boolean }) => Promise<boolean>;
   /** Browser: einzelne .frmsjf-Datei über den Dateidialog */
   dateiOeffnen: () => Promise<void>;
   schliessen: () => Promise<void>;
@@ -617,11 +629,32 @@ export const eingabeAnbindung: { nachEingabe?: (o: OffenesFormular, feld: Feld, 
  */
 export const sperrAnbindung: { antrag: (projekt: Projekt | null) => string | null } = { antrag: () => null };
 
+/**
+ * Aktiver Antrag für die Unterordner eines Sammelprojekts (antragStore.ts trägt ihn ein – sobald seine Angaben für das
+ * Projekt geladen sind; vorher undefined: dann nur der Stammordner)
+ */
+export const unterordnerAnbindung: { wahl: (projekt: Projekt) => UnterordnerWahl | undefined } = { wahl: () => undefined };
+
+/**
+ * Ordner, in dem neue Formulare des Projekts entstehen: im Sammelprojekt der Unterordner des Antrags `fassung` (der
+ * beim Klick angezeigte – auch, wenn inzwischen ein anderer aktiv ist), ohne `fassung` der des aktiven; gibt es keinen,
+ * die oberste Ebene
+ */
+export function formularOrdner(s: Pick<FormulareState, 'sammel'>, projekt: Projekt, fassung?: string): string {
+  if (!s.sammel) return projekt.ordner;
+  const wahl = unterordnerAnbindung.wahl(projekt);
+  const unter = fassung && wahl ? s.sammel.alle.find((u) => gleicheFassung(u, fassung, wahl.antragsarten, wahl.arten)) : s.sammel.unterordner;
+  return unter ? `${projekt.ordner}/${unter}` : projekt.ordner;
+}
+
+/** Lauf des Neulesens der Formularliste – ein früher begonnener, später fertiger setzt seinen Stand nicht mehr */
+let formulareLeseNr = 0;
+
 /** Warum ein offenes Formular nicht bearbeitet werden kann (Datei, eingereichter Antrag) – null, wenn es geht */
 export const bearbeitungGesperrt = (o: OffenesFormular) => o.nurLesen ?? (o.projekt ? sperrAnbindung.antrag(o.projekt) : null);
 
-/** Dateiname eines Formulars im FORMA-Projekt (Schlüssel des Autofill-Zustands) */
-export const formularDatei = (pfad: string) => pfad.split('/').pop() ?? pfad;
+/** Schlüssel eines Formulars im Formularprojekt (Autofill-Zustand): Pfad ab dem Projektordner, siehe formularSchluessel */
+export const formularDatei = formularSchluessel;
 
 /** Auto-Werte des offenen Formulars aus der Projektkarte (mit ihren ungespeicherten Änderungen); null, solange sie nicht gelesen ist */
 export function autoWerteVon(o: OffenesFormular, karte: OffeneKarte | null) {
@@ -943,6 +976,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
     sucht: false,
     projekt: null,
     formulare: [],
+    sammel: null,
     offen: null,
     haupt: 'formular',
     zuletzt: zuletztLaden(),
@@ -1054,18 +1088,14 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       await get().schliessen();
       nachAnlegen = null;
       beiAbbruch = null;
-      set({ projekt, formulare: [], karte: null, datei: null, projektdaten: null, oap: null, stammdatenDialog: null, ordnerDialog: null, haupt: 'formular' });
+      set({ projekt, formulare: [], sammel: null, karte: null, datei: null, projektdaten: null, oap: null, stammdatenDialog: null, ordnerDialog: null, haupt: 'formular' });
       const ds = get().ds;
       if (!projekt || !ds) return;
       const gleich = (z: Pick<Projekt, 'root' | 'ordner'>) => z.root === projekt.root && z.ordner === projekt.ordner;
       const zuletzt = [{ root: projekt.root, ordner: projekt.ordner, zeit: Date.now() }, ...get().zuletzt.filter((z) => !gleich(z))].slice(0, MAX_ZULETZT);
       schreiben(ZULETZT, zuletzt);
       set({ zuletzt });
-      try {
-        set({ formulare: await formulareDesProjekts(ds, projekt) });
-      } catch (e) {
-        fehler(`Formulare von ${projekt.ordner} nicht lesbar`, e);
-      }
+      await get().formulareNeuLesen();
       void get().oapLaden();
       void get().projektdatenLaden();
     },
@@ -1074,6 +1104,29 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       const zuletzt = get().zuletzt.filter((z) => z.root !== p.root || z.ordner !== p.ordner);
       schreiben(ZULETZT, zuletzt);
       set({ zuletzt });
+    },
+
+    formulareNeuLesen: async (o = {}) => {
+      const { ds, projekt } = get();
+      if (!ds || !projekt) return false;
+      const nr = ++formulareLeseNr;
+      try {
+        const r = await formulareMitUnterordner(ds, projekt, unterordnerAnbindung.wahl(projekt));
+        // inzwischen ein anderes Projekt bzw. ein neueres Lesen (etwa nach einem Wechsel des Antrags): dessen Stand gilt;
+        // unverändert: nichts setzen (kein Neuberechnen)
+        if (get().projekt !== projekt || nr !== formulareLeseNr) return false;
+        const sammel = r.antragsUnterordner.length ? { unterordner: r.unterordner, alle: r.antragsUnterordner } : null;
+        const s = get();
+        if (JSON.stringify(s.sammel) !== JSON.stringify(sammel)) set({ sammel });
+        if (JSON.stringify(s.formulare) === JSON.stringify(r.formulare)) return false;
+        set({ formulare: r.formulare });
+        return true;
+      } catch (e) {
+        if (nr !== formulareLeseNr) return false;
+        if (o.still) throw e;
+        if (get().projekt === projekt) fehler(`Formulare von ${projekt.ordner} nicht lesbar`, e);
+        return false;
+      }
     },
 
     formularOeffnen: async (eintrag) => {
@@ -1100,7 +1153,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
         if (offen && !get().karte && autofillFelder(offen.formular, offen.felder).size) void get().karteLaden();
         if (aufgeraeumt && !get().meldung) set({ meldung: { art: 'info', text: 'Eine verwaiste Sperre dieser App (nach einem Absturz) wurde entfernt.' } });
         log.info(`Geöffnet: ${eintrag.pfad}${sperre.art === 'fremd' ? ` (nur ansehen: ${sperre.bewertung.art})` : ''}`);
-        set({ formulare: await formulareDesProjekts(ds, projekt) });
+        await get().formulareNeuLesen();
       } catch (e) {
         fehler(`${eintrag.name} lässt sich nicht öffnen`, e);
       }
@@ -1171,26 +1224,29 @@ export const useFormulare = create<FormulareState>()((set, get) => {
     },
 
     sperrenAuflisten: async () => {
-      const { ds, projekt } = get();
+      const { ds, projekt, sammel } = get();
       if (!ds || !projekt) return [];
-      const eintraege = await ds.liste(verbinde(projekt.root, projekt.ordner), 1);
-      const formulare = new Set(eintraege.filter((e) => !e.ordner && /\.frmsjf$/i.test(e.pfad)).map((e) => e.pfad.toLowerCase()));
       const out: SperrEintrag[] = [];
-      for (const e of eintraege.filter((x) => !x.ordner && /\.frmtmp$/i.test(x.pfad))) {
-        const pfad = `${projekt.ordner}/${e.pfad}`;
-        const probe = await ds.sperrePruefen(projekt.root, pfad);
-        if (!probe) continue;
-        const sperre = sperreLesen(probe.inhalt);
-        const name = e.pfad.replace(/\.frmtmp$/i, '');
-        out.push({
-          pfad,
-          name,
-          waise: !formulare.has(`${name}.frmsjf`.toLowerCase()),
-          sperre,
-          daten: probe.inhalt,
-          eigen: probe.eigen,
-          bewertung: probe.eigen ? { art: 'benutzt', grund: 'Hier in dieser App geöffnet – wird beim Schließen des Formulars aufgehoben.', aufhebbar: false, seit: null } : await sperreBewerten(ds, sperre, probe),
-        });
+      // Stammordner und – im Sammelprojekt – der Unterordner des aktiven Antrags
+      for (const ordner of [projekt.ordner, ...(sammel?.unterordner ? [`${projekt.ordner}/${sammel.unterordner}`] : [])]) {
+        const eintraege = await ds.liste(verbinde(projekt.root, ordner), 1);
+        const formulare = new Set(eintraege.filter((e) => !e.ordner && /\.frmsjf$/i.test(e.pfad)).map((e) => e.pfad.toLowerCase()));
+        for (const e of eintraege.filter((x) => !x.ordner && /\.frmtmp$/i.test(x.pfad))) {
+          const pfad = `${ordner}/${e.pfad}`;
+          const probe = await ds.sperrePruefen(projekt.root, pfad);
+          if (!probe) continue;
+          const sperre = sperreLesen(probe.inhalt);
+          const name = e.pfad.replace(/\.frmtmp$/i, '');
+          out.push({
+            pfad,
+            name,
+            waise: !formulare.has(`${name}.frmsjf`.toLowerCase()),
+            sperre,
+            daten: probe.inhalt,
+            eigen: probe.eigen,
+            bewertung: probe.eigen ? { art: 'benutzt', grund: 'Hier in dieser App geöffnet – wird beim Schließen des Formulars aufgehoben.', aufhebbar: false, seit: null } : await sperreBewerten(ds, sperre, probe),
+          });
+        }
       }
       return out.sort((a, b) => a.name.localeCompare(b.name, 'de', { numeric: true }));
     },
@@ -1203,7 +1259,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
         if (ok) {
           sperreVergessen(projekt.root, pfad);
           log.warn(`Sperre von Hand aufgehoben: ${pfad} (${sperreLesen(daten).benutzer}@${sperreLesen(daten).computer})`);
-          set({ formulare: await formulareDesProjekts(ds, projekt) });
+          await get().formulareNeuLesen();
         } else {
           set({ meldung: { art: 'fehler', text: 'Die Sperre hat sich inzwischen geändert (das Formular wurde dort neu geöffnet) – sie wurde nicht aufgehoben.' } });
         }

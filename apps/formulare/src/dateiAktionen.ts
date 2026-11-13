@@ -12,7 +12,6 @@ import { klein } from './antrag';
 import { bestaetigen, frageText } from './components/Rueckfrage';
 import { nurFormaLoescht, verbinde } from './dateisystem';
 import type { FormularEintrag } from './projekte';
-import { formulareDesProjekts } from './projekte';
 import { hatEntwurf, useFormulare } from './store';
 
 interface Zwischenablage {
@@ -122,7 +121,7 @@ export async function formularLoeschen(f: FormularEintrag) {
   try {
     if (hier) await useFormulare.getState().schliessen();
     await ds.loeschen(projekt.root, f.pfad);
-    if (useFormulare.getState().projekt === projekt) useFormulare.setState({ formulare: await formulareDesProjekts(ds, projekt) });
+    if (useFormulare.getState().projekt === projekt) await useFormulare.getState().formulareNeuLesen();
     useFormulare.getState().setMeldung({ art: 'info', text: `„${f.name}“ gelöscht – die Sicherungskopie liegt im Ordner „Sicherungen“ der App.` });
   } catch (e) {
     fehler('Löschen', e);
@@ -143,12 +142,11 @@ export async function auffrischen(voll = false) {
   try {
     const projekt = s.projekt;
     if (projekt) {
-      const neu = await formulareDesProjekts(s.ds, projekt);
-      const st = useFormulare.getState();
-      if (st.projekt !== projekt) return;
+      // im Sammelprojekt mit dem Unterordner des aktiven Antrags; ein Lesefehler bleibt still (beim nächsten Mal wieder)
+      const geaendert = await useFormulare.getState().formulareNeuLesen({ still: true });
+      if (useFormulare.getState().projekt !== projekt) return;
       // geänderte Liste: das Abo des Antrags gleicht danach selbst ab (samt Projektordner-Baum)
-      if (JSON.stringify(neu) !== JSON.stringify(st.formulare)) useFormulare.setState({ formulare: neu });
-      else await useAntrag.getState().aktualisieren();
+      if (!geaendert) await useAntrag.getState().aktualisieren();
       if (voll) await useFormulare.getState().oapAuffrischen();
     }
     if (voll && (!projekt || s.haupt === 'projekte') && !s.sucht) await useFormulare.getState().projekteLaden();

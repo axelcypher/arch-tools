@@ -8,6 +8,7 @@
  */
 
 import { create } from 'zustand';
+import { artDerFassung } from '@core/fassung';
 import { openFileWithPath } from '@core/platform/files';
 import { konfigAendern, konfigLesen } from '@core/platform/konfig';
 import { logger } from '@core/platform/log';
@@ -41,8 +42,6 @@ function programmLesen(): string {
 
 const fehlertext = (e: unknown) => (e instanceof Error ? e.message : String(e));
 const heute = () => new Date().toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
-/** Antragsart einer Fassung: „BAUA 2“ → „BAUA“ */
-const artDerFassung = (fassung: string) => fassung.trim().replace(/[\s_-]*\d+$/, '').toUpperCase();
 
 /** Ergebnis je Plan nach dem Export */
 export interface PlanAusgang {

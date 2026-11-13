@@ -424,11 +424,32 @@ schon als PDF vorliegen, welche Berechnungen es gibt), als Ziel des PDF-Exports 
 ### Antrag, Export und Vollständigkeit
 
 Die Anträge liegen im Projektordner unter `TÖB` (einstellbar), darin je **Antragsfassung** ein Ordner: `BAUA`, bei
-mehreren `BAUA 2` oder `BAUA2` …, daneben andere Antragsarten wie `BAUVA` (Voranfrage) oder `DENK` (Denkmal).
+mehreren mit laufender Nummer – hinten (`BAUA 2`, `BAUA_2`, `BAUA2`) oder vorn (`2 BAUA`, `2. BAUA`, `02. BAUA`,
+`02 BAUA`, `2.BAUA`; vorn höchstens zwei Stellen, „2023 BAUA“ ist keine Fassung). Ein Zusatz nach der Nummer zählt
+nicht mit – nach Leerzeichen, Punkt, „_“ oder „-“ bzw. direkt als Buchstabe (`BAUA 2 Nachtrag`, `BAUA 2-alt`, `BAUA 2a`
+sind Fassung 2); ohne Nummer nur nach einem Leerzeichen (`BAUA Nachtrag` ist Fassung 1, `BAUA_alt` keine).
+Daneben andere Antragsarten wie `BAUVA` (Voranfrage) oder `DENK` (Denkmal). Erkannt wird mit den Antragsarten der
+Einstellungen und des Namensschemas (`packages/core/src/fassung.ts`, auch in der App „Projekt“ genutzt).
 
 - **Aktive Fassung** (oben links am Projekt, „Antrag“): die gewählte, sonst die neueste der Standardart. Über das Menü
-  lässt sich umschalten oder eine **neue Fassung anlegen** („BAUA 3“ – der Ordner entsteht sofort). Die aktive Fassung
-  ist das voreingestellte Ziel des Exports und der Maßstab der Vollständigkeitsprüfung.
+  lässt sich umschalten oder eine **neue Fassung anlegen** – in der Schreibweise der vorhandenen mit der höchsten Nummer
+  („03. BAUA“ nach „02. BAUA“, „3 BAUA“ nach „2 BAUA“; nach nur „BAUA“ bzw. „BAUA2“ wird es „BAUA 2“ bzw. „BAUA 3“); der
+  Ordner entsteht sofort. Die aktive Fassung ist das voreingestellte Ziel des Exports und der Maßstab der
+  Vollständigkeitsprüfung.
+- **Sammelprojekte:** Hat ein Formularprojekt je Antrag einen Unterordner (benannt wie die Antragsfassung, in einer der
+  Schreibweisen oben), zeigt die Navigation unter „Formulare“ zwei Gruppen in einem Rollbereich: „Antrag BAUA 2 ·
+  Unterordner 2. BAUA“ mit den Formularen aus dem Unterordner des **aktiven** Antrags (zugeordnet über Art und Nummer –
+  `BAUA 2` im Antragsordner ist `2. BAUA` oder `02 BAUA` im Formularprojekt; heißt er wie die Fassung, „eigener
+  Unterordner“) und „Alle Anträge · oberste Ebene“ mit denen der obersten Ebene des Formularprojekts. Unterordner
+  anderer Anträge bleiben verborgen; wechselt der aktive Antrag, zeigt die erste Gruppe dessen Unterordner. Neue
+  Formulare („Formular anlegen“, „Formular hinzufügen“) entstehen im Unterordner des Antrags, der beim Klick angezeigt
+  war – die Tooltips nennen das Ziel; gibt es für ihn keinen, steht „kein eigener Unterordner“ mit den vorhandenen
+  darunter, und sie entstehen auf der obersten Ebene. Bei gleichem Namen geht für den Antragsumfang das Formular im
+  Unterordner vor; im Menü „Vorhandenes Formular zuordnen“ steht der Unterordner als Hinweis. Zugeordnet und für den
+  Autofill gemerkt wird ein Formular mit dem Pfad ab dem Formularprojekt („2. BAUA/002-Bauantrag.frmsjf“; auf der
+  obersten Ebene wie bisher der Dateiname) – auch beim Export. Größe und Zeit (Status „aktuell“, „zuletzt bearbeitet“)
+  gelten je Pfad; die Sperrenliste umfasst den Unterordner des aktiven Antrags, „Im Explorer zeigen“ öffnet den Ordner
+  des Formulars.
 - **Dateiname** nach der Namensvorlage, Vorgabe `{Kürzel} {Art} {Datum} {Nr} {Name}` → „BS9 BAUA 261110 03
   Baubeschreibung.pdf“ (Datum als JJMMTT, eine leere Nummer entfällt). Die **Antragsart kommt immer aus dem Antrag**
   (Ordner der aktiven Fassung, „BAUA 2“ → BAUA), nie aus einer Einstellung: Steht in einer Vorlage nach dem Kürzel

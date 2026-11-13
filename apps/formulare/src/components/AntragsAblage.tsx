@@ -5,7 +5,6 @@ import {
   antragsMuster,
   antragsNameFehler,
   aufnahmeVorschlag,
-  artDerFassung,
   BEREIT_TEXT,
   bereitschaft,
   eingereichtVon,
@@ -16,7 +15,7 @@ import {
   standBezug,
   standFestgehaltenText,
 } from '../antrag';
-import { aktiveFassung, antragSperre, antragsOrdner, dokumentZu, namensschemaVon, projektCodes, useAntrag, wechselLaeuft, zeilenFassung } from '../antragStore';
+import { aktiveFassung, antragSperre, antragsOrdner, artVonFassung, dokumentZu, namensschemaVon, projektCodes, useAntrag, wechselLaeuft, zeilenFassung } from '../antragStore';
 import { umbenennen } from '../dateiAktionen';
 import { oeffnePfad, verbinde } from '../dateisystem';
 import { dateiArtVon, useFormulare } from '../store';
@@ -108,10 +107,10 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
   // Ordner nicht lesbar und noch keine Liste von vorher: nichts zählen, nichts als fehlend melden
   const ohneListe = lesefehler && !dateien.length;
   const basis = verbinde(ablage.root, ablage.pfad);
-  const art = artDerFassung(fassung);
   const codes = projektCodes(projekt);
   // Stellen von Projektcode, Antragsart und Datum nach dem Namensschema (der Projektdatei bzw. des Büros)
   const schema = useFormulare(namensschemaVon);
+  const art = useAntrag((s) => artVonFassung(s, projekt, fassung));
   const reihenfolge = schema.reihenfolge;
 
   const liste = dateien

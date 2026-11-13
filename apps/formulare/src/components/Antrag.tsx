@@ -10,7 +10,7 @@ import { ART_HINWEIS, vorlageArtWarnung, STATUS_TEXT, alsUmfang, dokumenteDerVor
 import { bedingungText, hatBedingung, MERKMAL_ERKLAERUNG } from '../bedingung';
 import { BedingungEditor } from './BedingungEditor';
 import type { DokZustand, SchreibInfo } from '../antragStore';
-import { aktiveFassung, antragSperre, antragsarten, antragsOrdner, nachtragName, namensschemaVon, quelleVonEintrag, useAntrag, wechselLaeuft, wirksameEinstellungen, zeilenFassung } from '../antragStore';
+import { aktiveFassung, antragSperre, antragsarten, antragsOrdner, artVonFassung, nachtragName, namensschemaVon, quelleVonEintrag, useAntrag, wechselLaeuft, wirksameEinstellungen, zeilenFassung } from '../antragStore';
 import type { PlansatzErgebnis } from '../plansatz';
 import { PLAN_ZUSTAND_KURZ, PLAN_ZUSTAND_TEXT, plansatzKurz } from '../plansatz';
 import { oeffnePfad, verbinde } from '../dateisystem';
@@ -118,7 +118,8 @@ export function formularePunkte(umfangId: string): MenuePunkt[] {
   return useFormulare.getState().formulare.map((f) => ({
     text: f.name,
     symbol: 'formular' as const,
-    hinweis: zugeordnet.has(f.pfad) ? `schon „${zugeordnet.get(f.pfad)}“` : undefined,
+    // schon anders zugeordnet bzw. im Unterordner eines Sammelprojekts (gleiche Namen bleiben unterscheidbar)
+    hinweis: [zugeordnet.has(f.pfad) ? `schon „${zugeordnet.get(f.pfad)}“` : '', f.unterordner ? `in ${f.unterordner}` : ''].filter(Boolean).join(' · ') || undefined,
     // Antragsumfang erst beim Klick lesen (das Menü kann länger offen sein) – nur in derselben Fassung
     aktion: () => void st.umfangAendern((umfang) => umfang.map((x) => (x.id === umfangId ? { ...x, formularDatei: formularDatei(f.pfad) } : x)), { ansicht, eintrag: umfangId, titel, was: 'Nicht zugeordnet' }),
   }));
@@ -637,7 +638,7 @@ export function AntragsdatenAnsicht() {
   if (!projekt) return null;
   const fassung = aktiveFassung(st, projekt);
   // Vorschlag: die Vorlage zur Antragsart der aktiven Fassung („BAUA 2“ → BAUA, „BVA“ → BAUVA); keine passende = keine Vorwahl
-  const art = st.fassungen.find((f) => f.name === fassung)?.art ?? fassung.replace(/[\s_-]*\d+$/, '');
+  const art = artVonFassung(st, projekt, fassung);
   const vorlage = vorlagen.find((v) => v.id === vorlageWahl) ?? vorlageFuer(vorlagen, art, schema.antragsarten);
   const ohneVorlage = vorlagen.length > 0 && !vorlage;
   const ordner = antragsOrdner(st, projekt);

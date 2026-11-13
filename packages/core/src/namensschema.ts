@@ -227,7 +227,8 @@ export interface PlanNummer {
   index?: string;
 }
 
-const regexText = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+/** Text als Teil eines regulären Ausdrucks (Sonderzeichen maskiert) */
+export const regexText = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /**
  * Plannummer aus dem Teil „nummer“: Plankürzel einer Phase des Schemas und Nummer – „GP-01“, „GP01“, „GP_01“, ein
