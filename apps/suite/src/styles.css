@@ -1,32 +1,39 @@
-/* Rahmen-App (Grund-Styles: @core/ui/base.css) */
+/* Rahmen-App (Grund-Styles und Werte: @core/ui/base.css – Abstände --s*, Schrift --fs-*, Radien --radius*) */
 
 .rahmen {
   height: 100vh;
 }
 .rahmen-leiste {
-  gap: 4px;
+  gap: var(--s1);
 }
+/* auch bei vielen Tabs bleibt Fläche zum Ziehen des Fensters */
+.rahmen-leiste .titlebar-drag {
+  flex: 1 0 auto;
+  min-width: calc(2 * var(--s6));
+}
+
+/* Tableiste: Tabs schrumpfen statt aus dem Bild zu rollen; „+“ steht fest daneben */
 .rahmen-tabs {
   display: flex;
   align-items: stretch;
-  gap: 2px;
+  gap: var(--s1);
   min-width: 0;
   height: 100%;
-  overflow-x: auto;
-  scrollbar-width: none;
+  overflow: hidden;
 }
 .rahmen-tab {
   display: flex;
+  flex: 0 1 auto;
   align-items: center;
-  gap: 6px;
+  gap: var(--s1);
+  min-width: 0;
   max-width: 260px;
-  padding: 0 4px 0 10px;
-  margin-top: 4px;
+  padding: 0 var(--s1) 0 0;
+  margin-top: var(--s1);
   border: 1px solid transparent;
   border-bottom: none;
-  border-radius: 6px 6px 0 0;
+  border-radius: var(--radius) var(--radius) 0 0;
   color: var(--muted);
-  cursor: default;
   white-space: nowrap;
 }
 .rahmen-tab:hover {
@@ -37,71 +44,82 @@
   border-color: var(--border);
   color: var(--text);
 }
+.rahmen-tab-wahl {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: var(--s2);
+  min-width: 0;
+  height: 100%;
+  padding: 0 var(--s1) 0 var(--s3);
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  overflow: hidden;
+  cursor: default;
+}
+.rahmen-tab-wahl:focus-visible {
+  /* innen statt außen: die Leiste schneidet ab (overflow: hidden) – Ausnahme in docs/design.md */
+  outline: 2px solid var(--fokus);
+  outline-offset: -2px;
+  border-radius: var(--radius-s);
+}
 .rahmen-tab img {
   width: 16px;
   height: 16px;
   flex: 0 0 auto;
 }
 .rahmen-tab-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
   font-weight: 600;
 }
 .rahmen-tab-projekt {
   overflow: hidden;
   text-overflow: ellipsis;
   min-width: 0;
-  font-size: 11.5px;
+  font-size: var(--fs-xs);
+}
+/* wenig Platz (Mindestbreite des Fensters 1000px; Umbruchpunkt in docs/design.md, Titelleiste): nur Symbol und Name,
+   das Projekt steht im Tooltip */
+@media (max-width: 1100px) {
+  .rahmen-tab-projekt {
+    display: none;
+  }
 }
 .rahmen-tab-dirty {
-  color: var(--accent);
-  font-size: 10px;
+  font-size: var(--fs-xs);
 }
 .rahmen-tab-knopf {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  min-width: var(--ctl-h-s);
+  min-height: var(--ctl-h-s);
+  padding: 0;
   border: none;
   background: transparent;
-  padding: 0 5px;
-  height: 20px;
-  line-height: 1;
   color: var(--muted);
-  border-radius: 4px;
+  border-radius: var(--radius-s);
 }
 .rahmen-tab-knopf:hover:not(:disabled) {
   background: var(--hover);
   color: var(--text);
 }
+/* „In eigenem Fenster öffnen“ nur am gewählten bzw. überfahrenen Tab sichtbar (Platz bleibt, nichts springt) */
+.rahmen-tab:not(.aktiv):not(:hover) .rahmen-tab-extern {
+  visibility: hidden;
+}
 .rahmen-plus {
-  position: relative;
-  display: flex;
-  align-items: center;
+  flex: 0 0 auto;
 }
-.rahmen-menue {
-  position: fixed;
-  top: 34px;
-  z-index: 50;
-  display: flex;
-  flex-direction: column;
-  min-width: 220px;
-  padding: 4px;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+/* App-Symbole im Menü „+“ (Bild statt Symbol) */
+.rahmen .menue-symbol img {
+  display: block;
 }
-.rahmen-menue button {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  border: none;
-  background: transparent;
-  text-align: left;
-  padding: 6px 8px;
-}
-.rahmen-menue button:hover {
-  background: var(--hover);
-}
-.rahmen-menue img {
-  width: 16px;
-  height: 16px;
-}
+
 .rahmen-inhalt {
   position: relative;
   flex: 1;
@@ -111,89 +129,77 @@
 .rahmen-app {
   position: absolute;
   inset: 0;
-  width: 100%;
-  height: 100%;
-  border: none;
   visibility: hidden;
 }
 .rahmen-app.aktiv {
   visibility: visible;
 }
+.rahmen-app iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+/* Startseite */
 .rahmen-start {
   max-width: 880px;
-  margin: 48px auto;
-  padding: 0 16px;
+  margin: var(--s6) auto;
+  padding: 0 var(--s4);
 }
 .rahmen-start h2 {
-  margin: 0 0 6px;
-  font-size: 22px;
+  margin: 0 0 var(--s1);
+  font-size: var(--fs-xl);
 }
 .rahmen-karten {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 10px;
-  margin-top: 16px;
+  gap: var(--s2);
+  margin-top: var(--s4);
 }
 .rahmen-karte {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  padding: 12px 14px;
+  gap: var(--s2);
+  padding: var(--s3) var(--s4);
   text-align: left;
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius);
   height: auto;
 }
+.rahmen-karte:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: var(--hover);
+}
 .rahmen-karte img {
-  width: 32px;
-  height: 32px;
+  width: var(--s6);
+  height: var(--s6);
   flex: 0 0 auto;
 }
 .rahmen-karte > span {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--s1);
 }
 .rahmen-karte,
 .rahmen-karte > span {
   white-space: normal;
   min-width: 0;
 }
-/* neben dem Namen der App klein, wofür sie da ist (wie im Menü „+“: muted small-text) */
+/* neben dem Namen der App klein, wofür sie da ist (wie im Menü „+“) */
 .rahmen-karte-was {
-  margin-left: 4px;
+  margin-left: var(--s1);
   font-weight: 400;
 }
-
 /* Neues Projekt anlegen (Assistent von ATLAS) */
-.rahmen-menue hr {
-  margin: 4px 0;
-  border: none;
-  border-top: 1px solid var(--line-soft);
-}
-.rahmen-menue button.rahmen-menue-anlegen {
-  font-weight: 600;
-}
-.rahmen-plus-symbol {
-  display: inline-grid;
-  place-items: center;
-  width: 18px;
-  height: 18px;
-  border-radius: 4px;
-  background: var(--accent);
-  color: var(--on-accent);
-  font-weight: 700;
-  line-height: 1;
-}
 .rahmen-anlegen {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 8px 12px;
-  margin: 4px 0 18px;
+  gap: var(--s2) var(--s3);
+  margin: var(--s1) 0 var(--s4);
 }
 .rahmen-speicherort {
-  margin-top: 20px;
+  margin-top: var(--s5);
   max-width: 640px;
 }

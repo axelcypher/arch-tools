@@ -4,15 +4,18 @@ Die Rahmen-App Arkly (`apps/suite`, eigene App mit eigenem Installer, bis 0.18.0
 Werkzeuge in **einem Programm und einem Fenster**. Sie kann nichts weiter, als zwischen den Apps zu wechseln:
 
 - **Tabs:** Jede geöffnete App ist ein Tab in der Titelleiste – ATLAS (Projektordner), LEXIO (Baurecht), PERMIO
-  (Formulare), QUADRIO (Flächenrechner), TERRIO (GRZ-Nachweis), NUMIO (Kostenermittlung), RECTIO (Entzerrung), FABRIO (AVA). Ohne
-  offene App zeigt der Rahmen die Startseite mit allen Apps; „+“ öffnet weitere. Startseite und „+“ nennen neben dem
+  (Formulare), QUADRIO (Flächenrechner), TERRIO (GRZ-Nachweis), NUMIO (Kostenermittlung), RECTIO (Entzerrung), FABRIO
+  (AVA). Ohne offene App zeigt der Rahmen die Startseite mit allen Apps; „+“ öffnet weitere, legt ein neues Projekt an
+  oder führt zur Startseite zurück. Startseite und „+“ nennen neben dem
   Namen, wofür die App da ist (den bisherigen Namen), am Tab steht das im Tooltip. Beim Wechseln bleibt jede App, wie
   sie war (sie läuft im Hintergrund weiter). Der Tab zeigt das geöffnete Projekt und ● bei ungespeicherten
   Änderungen; Schließen (× oder mittlere Maustaste) fragt dann „Änderungen an ‚…‘ speichern?“ – *Speichern* lässt
   die App im Tab speichern, *Nicht speichern* verwirft, *Abbrechen* lässt den Tab offen. Beim Beenden – über × wie
   über das System (Alt+F4, Taskleiste) – und vor der Installation eines Updates fragt der Rahmen so für jeden Tab und
   jedes herausgelöste Fenster mit ungespeicherten Änderungen; *Speichern* lässt dann die App im Fenster speichern.
-  Danach schließt er auch die herausgelösten Fenster. Welche Tabs offen waren, steht beim nächsten Start wieder da;
+  Danach schließt er auch die herausgelösten Fenster. Tastatur: ←/→ wechseln die Tabs, Pos1/Ende springen, Entf (bzw. Strg+F4) schließt; Rechtsklick bzw. die
+  Kontextmenütaste am Tab bietet „In eigenem Fenster öffnen“, „Schließen“ und „Andere schließen“. Bei wenig Platz
+  schrumpfen die Tabs (das Projekt steht dann im Tooltip). Welche Tabs offen waren, steht beim nächsten Start wieder da;
   herausgelöste Apps kommen dann als Tab zurück.
 - **Herauslösen** (nur Desktop): ⧉ am Tab öffnet die App in einem **eigenen Fenster** (z. B. auf dem zweiten
   Bildschirm) – mit eigenen Fensterknöpfen. **„Andocken“** in dessen Titelleiste holt sie als Tab zurück. Die App
