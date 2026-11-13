@@ -371,7 +371,8 @@ function VerknuepfenAuswahl({
   const titelId = useId();
   const mit = verknuepfteFelder(a, def.id);
   // alle passenden Felder des Katalogs (einmal je Öffnen), dazu die schon verknüpften – auch wenn sie nicht mehr passen
-  const kandidaten = useMemo(() => [...nach.values()].filter((f) => f.id !== def.id && (mit.includes(f.id) || passt(def, f))), [nach, def, passt]); // eslint-disable-line react-hooks/exhaustive-deps
+  // (neu hinzukommende verknüpfte – etwa beim Verschmelzen zweier Gruppen – stehen sofort mit darin)
+  const kandidaten = useMemo(() => [...nach.values()].filter((f) => f.id !== def.id && (mit.includes(f.id) || passt(def, f))), [nach, def, passt, mit.join('|')]); // eslint-disable-line react-hooks/exhaustive-deps
   // verknüpft, aber im Katalog nicht (mehr) da: zum Lösen angeboten, sonst blieben sie für immer gespeichert
   const unbekannt = mit.filter((f) => !nach.has(f));
   const q = suche.trim().toLowerCase();
@@ -412,9 +413,9 @@ function VerknuepfenAuswahl({
         ))}
         {unbekannt.length > 0 && (
           <div className="av-ed-gruppe">
-            <div className="av-ed-gruppe-titel">Gibt es hier nicht mehr</div>
+            <div className="av-ed-gruppe-titel">Nicht mehr in der Projektkarte</div>
             {unbekannt.map((f) => (
-              <label key={f} className="av-ed-kat-feld" title="Dieses Feld gibt es in der Projektkarte nicht mehr – Haken entfernen löst die Verknüpfung">
+              <label key={f} className="av-ed-kat-feld fehlt" title="Dieses Feld gibt es in der Projektkarte nicht mehr – Haken entfernen löst die Verknüpfung">
                 <input type="checkbox" checked onChange={() => onChange(verknuepfungLoesen(a, f))} />
                 <span>{f}</span>
               </label>

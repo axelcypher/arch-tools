@@ -312,7 +312,9 @@ Anschrift, wie sie in Formularen steht.
   …“ mit **allen** passenden Feldern der Projektkarte – auch solchen, die nicht in der eigenen Ansicht stehen (die der
   Ansicht tragen „in der Ansicht“) –, nach Gruppen gegliedert und mit Suche; gewählt wird per Kästchen, Esc oder
   „Fertig“ schließt nur das Auswahlfenster. Eine Verknüpfung gilt, solange mindestens eins ihrer Felder in der Ansicht
-  steht; wird ein Feld aus der Ansicht genommen, löst es sich aus seiner Verknüpfung. Felder mit demselben Inhalt (z. B.
+  steht; wird ein Feld aus der Ansicht genommen, löst es sich aus seiner Verknüpfung. Verknüpfte Felder, die es in der
+  Projektkarte nicht mehr gibt, stehen unter „Nicht mehr in der Projektkarte“ und lösen sich, wenn man den Haken
+  entfernt. Felder mit demselben Inhalt (z. B.
   Ort des Bauherrn und Ort des Eigentümers) werden gemeinsam ausgefüllt – eine Eingabe trägt den Wert in alle
   verknüpften Einträge der Projektkarte ein – überall in der Projektkarte, auch beim Übernehmen aus einer anderen
   Gruppe; zusammenhängendes Tippen ist ein Schritt im Verlauf. Angeboten werden nur Felder, die zusammenpassen: Text
@@ -337,7 +339,7 @@ Anschrift, wie sie in Formularen steht.
 - **Reihenfolge der Formulare:** In der Navigation lässt sich ein Formular an seiner Zeile an eine andere Stelle ziehen
   (ein Klick ohne Bewegung öffnet es weiter) oder mit Alt+↑/↓ verschieben – im Sammelprojekt je Gruppe. Die
   Reihenfolge steht in der Projektdatei (`.oap`) und gilt für alle im Büro; Formulare, die noch keinen Platz haben,
-  folgen alphabetisch. „Reihenfolge zurücksetzen (alphabetisch)“ im Kontextmenü eines Formulars hebt sie auf; beim
+  folgen alphabetisch. „Reihenfolge zurücksetzen“ (alphabetisch) im Kontextmenü eines Formulars hebt sie auf; beim
   Umbenennen behält das Formular seinen Platz. Ohne Projektdatei bleibt es alphabetisch, gezogen wird dann nicht.
   Während ein anderer Antrag geöffnet wird, ändert sich die Reihenfolge nicht (Hinweis); lässt sie sich nicht
   speichern, springt die Liste zurück. Ein gelöschtes Formular behält seinen gemerkten Platz – ein später gleich

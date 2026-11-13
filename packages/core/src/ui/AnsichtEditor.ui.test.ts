@@ -103,7 +103,7 @@ describe('Ansicht-Editor: Verknüpfen', () => {
     const editor = render({ abschnitte: [{ id: 'a', titel: 'A', felder: ['ort1'] }], verknuepfungen: [['ort1', 'weg']] });
     expect(link(editor, 0)!.getAttribute('aria-label')).toBe('Ort verknüpfen – verknüpft mit 1 Feld');
     klick(link(editor, 0)!);
-    expect(gruppenTitel()).toContain('Gibt es hier nicht mehr');
+    expect(gruppenTitel()).toContain('Nicht mehr in der Projektkarte');
     klick(kaestchen('weg'));
     expect(link(editor, 0)!.getAttribute('aria-label')).toBe('Ort verknüpfen');
   });

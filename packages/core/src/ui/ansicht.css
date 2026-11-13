@@ -378,6 +378,11 @@ html.zieht * {
   background: var(--bg);
   padding: 10px;
 }
+/* verknüpft, aber nicht mehr im Katalog: gedämpft und durchgestrichen wie im Aufbau */
+.av-ed-kat-feld.fehlt span {
+  color: var(--muted);
+  text-decoration: line-through;
+}
 .av-verknuepfen-marke {
   margin-left: auto;
   font-weight: 400;
