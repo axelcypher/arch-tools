@@ -71,14 +71,64 @@ describe('Zwischenstand: verzögertes Schreiben und vorDemSchliessen', () => {
     expect(reihenfolge).toEqual([1, 2]);
   });
 
-  it('ein Fehler beim Schreiben blockiert weder jetzt noch das nächste Schreiben', async () => {
+  it('Fehler beim Schreiben: jetzt liefert false, der Stand bleibt ausstehend und der nächste Aufruf schreibt neu (Gegenprobe: Erfolg → true)', async () => {
     const schreiben = vi.fn().mockRejectedValueOnce(new Error('voll')).mockResolvedValue(undefined);
     const z = verzoegertesSchreiben(schreiben);
     z.planen();
-    await expect(z.jetzt()).resolves.toBeUndefined();
-    z.planen();
-    await z.jetzt();
+    await expect(z.jetzt()).resolves.toBe(false);
+    // „Erneut versuchen“ ohne neue Änderung: schreibt noch einmal und meldet jetzt Erfolg
+    await expect(z.jetzt()).resolves.toBe(true);
     expect(schreiben).toHaveBeenCalledTimes(2);
+    // nichts mehr ausstehend: kein drittes Schreiben, weiterhin true
+    await expect(z.jetzt()).resolves.toBe(true);
+    expect(schreiben).toHaveBeenCalledTimes(2);
+  });
+
+  it('Rennen: das laufende Schreiben scheitert, während ein neueres schon angehängt ist – kein drittes Schreiben (Gegenprobe: das neuere meldet true)', async () => {
+    const fertig: Array<{ ok: () => void; weg: (e: Error) => void }> = [];
+    const schreiben = vi.fn(() => new Promise<void>((ok, weg) => fertig.push({ ok, weg })));
+    const z = verzoegertesSchreiben(schreiben);
+    z.planen();
+    const a = z.jetzt();
+    await Promise.resolve();
+    z.planen();
+    const b = z.jetzt();
+    fertig[0].weg(new Error('voll'));
+    await expect(a).resolves.toBe(false);
+    await Promise.resolve();
+    fertig[1].ok();
+    await expect(b).resolves.toBe(true);
+    await expect(z.jetzt()).resolves.toBe(true);
+    expect(schreiben).toHaveBeenCalledTimes(2);
+  });
+
+  it('scheitert das Schreiben aus dem Timer, schreibt der nächste Aufruf (vor dem Schließen) neu und meldet „fertig“', async () => {
+    const schreiben = vi.fn().mockRejectedValueOnce(new Error('voll')).mockResolvedValue(undefined);
+    const z = verzoegertesSchreiben(schreiben);
+    const abmelden = vorDemSchliessen(z.jetzt);
+    try {
+      z.planen();
+      await vi.advanceTimersByTimeAsync(700);
+      expect(schreiben).toHaveBeenCalledTimes(1);
+      await expect(schliessenVorbereiten(1000)).resolves.toBe('fertig');
+      expect(schreiben).toHaveBeenCalledTimes(2);
+    } finally {
+      abmelden();
+    }
+  });
+
+  it('gescheitertes Schreiben vor dem Schließen: schliessenVorbereiten meldet „fehler“, nach erfolgreichem Wiederholen „fertig“', async () => {
+    const schreiben = vi.fn().mockRejectedValueOnce(new Error('Laufwerk weg')).mockResolvedValue(undefined);
+    const z = verzoegertesSchreiben(schreiben);
+    const abmelden = vorDemSchliessen(z.jetzt);
+    try {
+      z.planen();
+      await expect(schliessenVorbereiten(1000)).resolves.toBe('fehler');
+      await expect(schliessenVorbereiten(1000)).resolves.toBe('fertig');
+      expect(schreiben).toHaveBeenCalledTimes(2);
+    } finally {
+      abmelden();
+    }
   });
 
   it('über vorDemSchliessen angemeldet: schliessenVorbereiten schreibt den ausstehenden Stand vor dem Schließen (Gegenprobe: abgemeldet nicht)', async () => {

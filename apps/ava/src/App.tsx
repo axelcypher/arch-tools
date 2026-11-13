@@ -126,8 +126,9 @@ export function App() {
 
   // Arkly (Schließen, Andocken, Herauslösen, Update-Neustart): laufende Eingabe übernehmen und laufendes Schreiben
   // der Projektdatei, Kostenkontrolle bzw. des LV abwarten
-  // (Rückgabe false = nicht gespeichert; bis core #93 nimmt vorDemSchliessen nur void entgegen und überhört sie)
-  useEffect(() => vorDemSchliessen(ausstehendesSchreibenAbwarten as unknown as () => Promise<void>), []);
+  // (Rückgabe false = ein Schreiben ist gescheitert oder das offene LV hat ungespeicherte Änderungen; Arkly fragt dann
+  // nach, statt still zu schließen)
+  useEffect(() => vorDemSchliessen(() => ausstehendesSchreibenAbwarten(() => lvGeaendert(useAva.getState().lv))), []);
 
   useEffect(() => {
     const vorEnde = (e: BeforeUnloadEvent) => {

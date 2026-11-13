@@ -47,6 +47,11 @@ Gewerk – in Ordnern, Blattnamen und der Rechnungsliste.
   laufende Eingabe und wartet auf laufendes Speichern: Projektdatei (auch Stammdaten), Kostenkontrolle, LV (auch neu
   angelegt), Rechnungsablauf, PDF-Ablage und Mailentwürfe der Bauleitung, Vorlagetexte (`vorDemSchliessen`, höchstens
   5 s; `schreibend` und `ausstehendesSchreibenAbwarten` in `schreiben.ts`). Es wird dabei nichts doppelt geschrieben.
+  Scheitert dabei ein Speichern oder hat das offene LV danach noch ungespeicherte Änderungen (etwa nach einem
+  gescheiterten Speichern), meldet FABRIO „nicht gespeichert“ (Grund im Protokoll) und Arkly fragt nach, statt still
+  zu schließen – auch nach „Erneut versuchen“, bis das LV gespeichert oder verworfen ist. Ein früher gescheitertes
+  Speichern von Projektdatei, Kostenkontrolle oder Vorlagen, das FABRIO schon gemeldet hat, hält das Schließen nicht
+  auf: Dort übernimmt FABRIO eine Änderung erst nach erfolgreichem Schreiben.
 - **Navigation** (links, Breite ziehbar): Kostenübersicht, Rechnungen, Rechnungseingang; die **Gewerke** aus
   Ordnern, Kostenkontrolle und Prüfungen (Zahl der LV-Dateien, wenn es mehr als eine gibt); **Bauleitung**
   (Objektüberwachung nach HOAI Leistungsphase 8); Einstellungen (Strg+,). Die Einträge sind Knöpfe: mit Tab

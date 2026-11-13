@@ -497,16 +497,19 @@ useOrdner.subscribe((s, vorher) => {
 // auch nach einem Wechsel in einem anderen Fenster und wenn das Netzlaufwerk wieder erreichbar ist
 konfigVorWechsel(() => useOrdner.getState().speichernJetzt());
 // vor dem Ende von Fenster bzw. Tab (Schließen, Andocken, Herauslösen, Update): ein verzögertes Schreiben sofort ausführen und
-// abwarten – auch ohne gemeldete ungespeicherte Änderungen. Mehrfach aufgerufen, wartet speichernJetzt nur das laufende Schreiben ab.
+// abwarten – auch ohne gemeldete ungespeicherte Änderungen. Mehrfach aufgerufen („Weiter warten“, „Erneut versuchen“), wartet
+// strukturSchreiben ein laufendes Schreiben ab bzw. versucht ein gescheitertes erneut.
 vorDemSchliessen(async () => {
   // schreibt Wartendes sofort und versucht ein früher gescheitertes Schreiben erneut (etwa wenn das Laufwerk wieder da ist)
   await useOrdner.getState().strukturSchreiben();
   const s = useOrdner.getState();
   // Bei Konflikt bzw. unlesbarer Struktur wird bewusst nichts geschrieben – das fragt die Meldung ungespeicherter Änderungen
-  // vorher ab. Ein gescheitertes Schreiben nur protokollieren und NICHT werfen: core wartet die Vorbereitungen noch mit
-  // Promise.all ab, ein Fehler hier schnitte das Abwarten der übrigen (z. B. der Einstellungen) ab. Sobald core eine
-  // Rückfrage für „nicht fertig“ kennt, hier false liefern bzw. werfen.
-  if (s.strukturNichtGeschrieben && !s.konflikt && !s.strukturFehler) log.warn(`Vor dem Schließen: Struktur nicht gespeichert (${s.strukturNichtGeschrieben})`);
+  // vorher ab. Ein gescheitertes Schreiben meldet false („nicht gespeichert“): Arkly fragt dann mit „Erneut versuchen“ nach.
+  if (s.strukturNichtGeschrieben && !s.konflikt && !s.strukturFehler) {
+    log.warn(`Vor dem Schließen: Struktur nicht gespeichert (${s.strukturNichtGeschrieben})`);
+    return false;
+  }
+  return true;
 });
 konfigOrtBeobachten((o) => {
   const s = useOrdner.getState();

@@ -3,6 +3,7 @@ import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { schliessenVorbereiten } from '@core/platform/rahmen';
+import { clearLog, getEntries } from '@core/platform/log';
 import { TextEingabe } from './components/eingaben';
 import { ausstehendesSchreibenAbwarten, schreibend, useAva } from './store';
 import { berichtAblegen } from './components/bauleitung/gemeinsam';
@@ -44,6 +45,25 @@ describe('Vor dem Schließen: laufendes Schreiben abwarten (Arkly vorDemSchliess
     // Gegenprobe: erfolgreiches Schreiben → true
     void schreibend(Promise.resolve());
     await expect(ausstehendesSchreibenAbwarten()).resolves.toBe(true);
+  });
+
+  it('ungespeicherte Änderungen nach dem Warten: false mit Protokolleintrag, auch beim zweiten Aufruf, bis gespeichert oder verworfen', async () => {
+    clearLog();
+    let offen = true;
+    await expect(ausstehendesSchreibenAbwarten(() => offen)).resolves.toBe(false);
+    await expect(ausstehendesSchreibenAbwarten(() => offen)).resolves.toBe(false);
+    const warnungen = getEntries().filter((e) => e.scope === 'schreiben' && e.level === 'warn');
+    expect(warnungen).toHaveLength(2);
+    expect(warnungen[0].message).toContain('ungespeicherte Änderungen');
+    offen = false; // gespeichert oder verworfen
+    await expect(ausstehendesSchreibenAbwarten(() => offen)).resolves.toBe(true);
+  });
+
+  it('ein Schreiben, das schon vor dem Aufruf gescheitert ist (z. B. Projektdatei), hält das Schließen nicht auf: im Speicher ist nichts ungespeichert', async () => {
+    const p = schreibend(Promise.reject(new Error('Projektdatei gesperrt')));
+    p.catch(() => {});
+    await takt();
+    await expect(ausstehendesSchreibenAbwarten(() => false)).resolves.toBe(true);
   });
 
   it('übernimmt die laufende Eingabe genau einmal, auch bei mehrfachem Aufruf', async () => {
@@ -128,6 +148,32 @@ describe('Vor dem Schließen: laufendes Schreiben abwarten (Arkly vorDemSchliess
     fertig();
     await act(async () => void (await vorbereitet));
     expect(ok).toBe('fertig');
+    // gescheitertes Schreiben: Arkly erfährt „nicht gespeichert“ (fehler) statt still zu schließen
+    let scheitern!: () => void;
+    const kaputt = schreibend(new Promise<void>((_, nein) => (scheitern = () => nein(new Error('Projektdatei gesperrt')))));
+    kaputt.catch(() => {});
+    const gescheitert = schliessenVorbereiten(1000);
+    await act(takt);
+    scheitern();
+    await act(async () => void (await expect(gescheitert).resolves.toBe('fehler')));
+    // LV mit ungespeicherten Änderungen (z. B. nach gescheitertem Speichern): bleibt „fehler“, auch bei „Erneut versuchen“
+    const vorher = useAva.getState();
+    try {
+      const alt = { positionen: [] };
+      useAva.setState({ lv: { lv: { positionen: [1] }, basis: alt } as never });
+      await act(async () => void (await expect(schliessenVorbereiten(1000)).resolves.toBe('fehler')));
+      await act(async () => void (await expect(schliessenVorbereiten(1000)).resolves.toBe('fehler')));
+      // gespeichert (Stand = Basis) → fertig
+      useAva.setState({ lv: { lv: alt, basis: alt } as never });
+      await act(async () => void (await expect(schliessenVorbereiten(1000)).resolves.toBe('fertig')));
+      // verworfen bzw. LV geschlossen → fertig
+      useAva.setState({ lv: { lv: { positionen: [2] }, basis: alt } as never });
+      await act(async () => void (await expect(schliessenVorbereiten(1000)).resolves.toBe('fehler')));
+      useAva.setState({ lv: null });
+      await act(async () => void (await expect(schliessenVorbereiten(1000)).resolves.toBe('fertig')));
+    } finally {
+      useAva.setState(vorher, true);
+    }
     // Gegenprobe: nach dem Abbau ist FABRIO abgemeldet – Arkly wartet nicht mehr auf FABRIO
     act(() => root?.unmount());
     root = null;

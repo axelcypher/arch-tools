@@ -3,7 +3,8 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 /*
  * Zwischenstand vor dem Schließen (Arkly, vorDemSchliessen): ein ausstehendes, verzögertes Schreiben in IndexedDB wird
- * sofort ausgeführt und abgewartet – mehrfach aufgerufen, ohne doppelt zu schreiben.
+ * sofort ausgeführt und abgewartet – mehrfach aufgerufen, ohne doppelt zu schreiben (außer nach einem gescheiterten
+ * Schreiben: dann wird neu geschrieben, und Arkly erfährt „nicht gesichert“).
  * IndexedDB ist hier ein kleiner Nachbau: jedes put wird gezählt und erst nach einem Takt abgeschlossen.
  */
 
@@ -111,31 +112,62 @@ describe('QUADRIO: Zwischenstand vor dem Schließen (vorDemSchliessen)', () => {
 
     useEditor.getState().update((p) => ({ ...p, name: 'Zweiter Stand' }));
     let fertig = false;
-    const zweites = mod.zwischenstandSichern().then(() => void (fertig = true));
+    const zweites = mod.zwischenstandSichern();
+    void zweites.then(() => void (fertig = true));
     await takt();
     await takt();
     expect(puts).toHaveLength(1); // wartet, bis das erste abgeschlossen ist – Reihenfolge bleibt
     expect(fertig).toBe(false);
 
     await alleAbschliessen();
-    await Promise.all([erstes, zweites]);
+    expect(await erstes).toBe(true);
+    expect(await zweites).toBe(true);
     expect(puts.map((x) => (x as { project: { name: string } }).project.name)).toEqual(['Erster Stand', 'Zweiter Stand']);
   });
 
-  it.each(['fehler', 'abbruch'] as const)('Schreiben scheitert (%s): Schließen wartet nicht ewig, späteres Zwischenspeichern läuft wieder', async (art) => {
+  it.each(['fehler', 'abbruch'] as const)('Schreiben scheitert (%s): Arkly erfährt es („fehler“), erneuter Aufruf schreibt neu, danach wieder „fertig“', async (art) => {
     const { useEditor } = mod;
     puts.length = 0;
     ausgang = art;
     useEditor.getState().update((p) => ({ ...p, name: `Scheitert (${art})` }));
     const vorbereitet = rahmen.schliessenVorbereiten(5000);
     await alleAbschliessen();
-    expect(await vorbereitet).toBe('fertig'); // erledigt (Fehler ist protokolliert), kein Hängen bis zum Zeitlimit
+    // nicht gesichert: Rückfrage statt still schließen – und kein Hängen bis zum Zeitlimit
+    expect(await vorbereitet).toBe('fehler');
+    expect(puts).toHaveLength(1);
 
-    useEditor.getState().update((p) => ({ ...p, name: `Danach (${art})` }));
-    const danach = mod.zwischenstandSichern();
+    // „Erneut versuchen“ ohne neue Änderung: schreibt den Stand neu
+    const erneut = rahmen.schliessenVorbereiten(5000);
     await alleAbschliessen();
-    await danach;
+    expect(await erneut).toBe('fertig');
     expect(puts).toHaveLength(2);
-    expect((puts[1] as { project: { name: string } }).project.name).toBe(`Danach (${art})`);
+    expect((puts[1] as { project: { name: string } }).project.name).toBe(`Scheitert (${art})`);
+
+    // Gegenprobe: jetzt gesichert – ein weiterer Aufruf schreibt nicht noch einmal
+    expect(await mod.zwischenstandSichern()).toBe(true);
+    expect(puts).toHaveLength(2);
+  });
+
+  it('Schreiben scheitert, währenddessen kommt eine Änderung: das neue Schreiben gelingt – „fertig“, Fehler zurückgesetzt', async () => {
+    const { useEditor } = mod;
+    puts.length = 0;
+    ausgang = 'fehler';
+    useEditor.getState().update((p) => ({ ...p, name: 'Alt (scheitert)' }));
+    const erstes = mod.zwischenstandSichern();
+    await takt();
+    await takt();
+    expect(puts).toHaveLength(1); // läuft noch, wird scheitern
+
+    useEditor.getState().update((p) => ({ ...p, name: 'Neu (gelingt)' }));
+    const vorbereitet = rahmen.schliessenVorbereiten(5000);
+    await alleAbschliessen();
+    expect(await erstes).toBe(false);
+    expect(await vorbereitet).toBe('fertig');
+    expect(puts).toHaveLength(2);
+    expect((puts[1] as { project: { name: string } }).project.name).toBe('Neu (gelingt)');
+
+    // gesichert: kein weiteres Schreiben
+    expect(await mod.zwischenstandSichern()).toBe(true);
+    expect(puts).toHaveLength(2);
   });
 });
