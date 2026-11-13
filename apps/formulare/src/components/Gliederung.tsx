@@ -150,7 +150,7 @@ export function Gliederung({ offen }: { offen: OffenesFormular }) {
           <MerkmalWahl offen={offen} namen={fehlend} />
           {offen.projekt && (
             <button className="small" onClick={umfangZeigen}>
-              Alle Antragsmerkmale …
+              Alle Antragsmerkmale
             </button>
           )}
         </div>

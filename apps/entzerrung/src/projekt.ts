@@ -25,7 +25,7 @@ export async function verwerfenOk(): Promise<boolean> {
 
 export async function neu() {
   if (!(await verwerfenOk())) return;
-  useEntz.getState().laden({ fotos: [] }, {}, null);
+  dokumentLaden({ fotos: [] }, {}, null);
   log.info('Neues Projekt');
 }
 
@@ -47,7 +47,7 @@ export async function oeffnen(datei?: File) {
     // überschreiben. Der Stand wird nach dem Lesen geholt; der Dateidialog liest selbst, ein Stand davor ist nicht zu bekommen.
     const stand = gewaehlt.pfad ? await dateiStandLesen(gewaehlt.pfad) : undefined;
     if (gewaehlt.pfad && stand === undefined) log.warn('Stand der Datei unbekannt – beim Speichern keine Prüfung auf Änderungen von außen', gewaehlt.pfad);
-    useEntz.getState().laden(doc, fotos, gewaehlt.pfad ?? gewaehlt.name, false, stand);
+    dokumentLaden(doc, fotos, gewaehlt.pfad ?? gewaehlt.name, false, stand);
     for (const [id, d] of Object.entries(fotos)) await fotoSchreiben(id, d);
     log.info(`Geöffnet: ${gewaehlt.pfad ?? gewaehlt.name}`, { fotos: doc.fotos.length });
   } catch (e) {
@@ -60,6 +60,16 @@ export async function oeffnen(datei?: File) {
 let speichertGerade: Promise<boolean> | null = null;
 /** das letzte Speichern der .entz ist an einem Fehler gescheitert (nicht abgebrochen) */
 let speichernGescheitert = false;
+
+/** zählt die Dokumentwechsel: ein Speichern, das erst nach einem Wechsel fertig wird, betrifft das neue Dokument nicht */
+let dokumentNr = 0;
+
+/** anderes Dokument (neu, geöffnet, Foto aus dem Projekt): ein gescheitertes Speichern des vorigen zählt nicht mehr */
+function dokumentLaden(...args: Parameters<ReturnType<typeof useEntz.getState>['laden']>) {
+  dokumentNr++;
+  speichernGescheitert = false;
+  useEntz.getState().laden(...args);
+}
 
 /**
  * true, wenn gespeichert wurde. Ein zweiter Aufruf während des Speicherns wartet auf den ersten. Ändert sich das
@@ -84,6 +94,10 @@ const ordnerTeil = (pfad: string) => {
 
 async function speichernJetzt(unterNeuemNamen: boolean): Promise<boolean> {
   const s = useEntz.getState();
+  const nr = dokumentNr;
+  // inzwischen ein anderes Dokument (z. B. „Neu“ mit „Nicht speichern“ während des Schreibens): Dateiname, Stand und
+  // Fehler des alten nicht auf das neue übertragen – sonst schriebe „Speichern“ das neue ohne Dialog in die alte Datei
+  const gewechselt = () => nr !== dokumentNr;
   if (!s.doc.fotos.length) return false;
   // ohne Dialog direkt in die geöffnete Datei (z. B. neben dem Foto im Projekt) – nur, wenn sie noch den gemerkten Stand hat
   const direkt = !unterNeuemNamen && !!s.dateiname && istPfad(s.dateiname);
@@ -102,14 +116,26 @@ async function speichernJetzt(unterNeuemNamen: boolean): Promise<boolean> {
       ...(direkt && s.dateiStand !== undefined ? { stand: s.dateiStand } : {}),
       build: () => packen(s.doc, s.bilder),
     });
+    if (name && gewechselt()) {
+      log.info(`Gespeichert: ${name} (inzwischen ein anderes Dokument geöffnet)`);
+      return true;
+    }
     if (name) {
       const stand = istPfad(name) ? await dateiStandLesen(name) : undefined;
       if (istPfad(name) && stand === undefined) log.warn('Stand nach dem Speichern unbekannt – beim nächsten Speichern keine Prüfung', name);
+      if (gewechselt()) {
+        log.info(`Gespeichert: ${name} (inzwischen ein anderes Dokument geöffnet)`);
+        return true;
+      }
       useEntz.getState().gespeichert(name, s.doc, stand);
       log.info(`Gespeichert: ${name}`);
     }
     return !!name;
   } catch (e) {
+    if (gewechselt()) {
+      log.warn('Speichern des vorigen Dokuments fehlgeschlagen', e instanceof Error ? e.message : String(e));
+      return false;
+    }
     if (e instanceof DateiVonAussenGeaendert) {
       log.warn('Speichern abgelehnt: Datei von außen geändert', s.dateiname);
       // „Ordner öffnen“ zeigt den Ordner der Datei (Desktop), danach kommt die Rückfrage wieder – entschieden wird erst dann
@@ -197,7 +223,7 @@ export async function fotoImProjektOeffnen(fs: ProjektordnerZugriff, root: strin
     const vorhanden = await fs.liesMitStand(root, entz);
     if (vorhanden) {
       const { doc, fotos } = entpacken(vorhanden.daten);
-      useEntz.getState().laden(doc, fotos, ziel, false, vorhanden.stand);
+      dokumentLaden(doc, fotos, ziel, false, vorhanden.stand);
       for (const [id, d] of Object.entries(fotos)) await fotoSchreiben(id, d);
       log.info(`Geöffnet: ${ziel}`, { fotos: doc.fotos.length });
       return;
@@ -207,7 +233,7 @@ export async function fotoImProjektOeffnen(fs: ProjektordnerZugriff, root: strin
     const b = await fotoEinlesen(new File([daten as BlobPart], name));
     const id = neueId();
     // die .entz gibt es noch nicht (Stand null): legt sie inzwischen jemand anders an, wird sie nicht überschrieben
-    useEntz.getState().laden({ fotos: [neuesFoto(id, b.name, b.mime, b.breite, b.hoehe)] }, { [id]: b.daten }, ziel, false, null);
+    dokumentLaden({ fotos: [neuesFoto(id, b.name, b.mime, b.breite, b.hoehe)] }, { [id]: b.daten }, ziel, false, null);
     await fotoSchreiben(id, b.daten);
     log.info(`Foto geöffnet: ${verbinde(root, pfad)}`, { breite: b.breite, hoehe: b.hoehe });
   } catch (e) {

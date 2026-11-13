@@ -54,7 +54,7 @@ export function Schnellwahl({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <Modal titel="Schnellwahl" onClose={onClose} breit className="fo-schnellwahl">
+    <Modal titel="Schnellwahl" kopf onClose={onClose} breit className="fo-schnellwahl">
       {/* kein autoFocus: den Startfokus setzt dialoge.ts (erstes Bedienelement) – so merkt es sich vorher die Stelle für die Rückkehr */}
       <input
         type="search"

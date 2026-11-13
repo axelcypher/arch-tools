@@ -66,6 +66,8 @@ vi.mock('@core/ui/Rueckfrage', async (original) => ({
   meldung: async (titel: string, text: string) => {
     datei.meldungen.push(`${titel}|${text}`);
   },
+  // vor Neu/Öffnen mit ungespeicherten Änderungen: „Nicht speichern“
+  aenderungenSpeichern: async () => true,
 }));
 
 /** kleine IndexedDB-Attrappe: zwei Speicher, Ergebnisse asynchron wie im Browser */
@@ -111,7 +113,7 @@ function attrappe() {
 }
 const idb = attrappe();
 
-const { speichern, verwendeteFotos, oeffnen, fotoImProjektOeffnen, fotosHinzufuegen, zwischenspeicherStarten } = await import('./projekt');
+const { speichern, verwendeteFotos, oeffnen, fotoImProjektOeffnen, fotosHinzufuegen, zwischenspeicherStarten, neu } = await import('./projekt');
 const { schliessenVorbereiten } = await import('@core/platform/rahmen');
 const { SpeicherProjektordner } = await import('@core/platform/projektordner');
 const { DateiVonAussenGeaendert } = await import('@core/platform/files');
@@ -496,6 +498,66 @@ describe('vor dem Schließen: gescheitertes Schreiben meldet false („nicht ges
     datei.speichern = async (o) => (o.build(), '/Projekt/Süd.entz');
     expect(await speichern()).toBe(true);
     expect(await vorbereiten()).toBe(true);
+  });
+
+  it('.entz gescheitert, danach ein anderes Dokument: true; Gegenprobe gleiches Dokument weiter bearbeitet: false', async () => {
+    const scheitert = async () => {
+      useEntz.getState().fotoHinzufuegen('f1', 'Süd', 'image/jpeg', 100, 80, bytes(5, 6));
+      datei.speichern = async (o) => {
+        o.build();
+        throw new Error('Datenträger voll');
+      };
+      expect(await speichern()).toBe(false);
+      expect(await vorbereiten()).toBe(false);
+    };
+    await scheitert();
+    useEntz.getState().fotoHinzufuegen('f2', 'Nord', 'image/jpeg', 100, 80, bytes(5, 7));
+    expect(useEntz.getState().dirty).toBe(true);
+    expect(await vorbereiten()).toBe(false);
+    // „Neu“: das gescheiterte Speichern betraf das vorige Dokument
+    await neu();
+    useEntz.getState().fotoHinzufuegen('f3', 'Ost', 'image/jpeg', 100, 80, bytes(5, 8));
+    expect(useEntz.getState().dirty).toBe(true);
+    expect(await vorbereiten()).toBe(true);
+    // ebenso nach dem Öffnen einer anderen .entz
+    await scheitert();
+    const west = packen({ fotos: [{ id: 'w1', name: 'West', mime: 'image/png', breite: 10, hoehe: 8, linse: { k1: 0, k2: 0 }, hilfslinien: [], ebenen: [] }] }, { w1: bytes(4) });
+    datei.oeffnen = async () => ({ name: 'West.entz', pfad: '/Projekt/West.entz', bytes: west });
+    await oeffnen();
+    expect(useEntz.getState().dateiname).toBe('/Projekt/West.entz');
+    useEntz.getState().fotoHinzufuegen('f4', 'Süd', 'image/jpeg', 100, 80, bytes(5, 6));
+    expect(await vorbereiten()).toBe(true);
+  });
+
+  it('Speichern endet erst nach „Neu“: weder Fehler noch Dateiname gehen auf das neue Dokument über', async () => {
+    const haengt = () => {
+      let ende: { ja: (n: string) => void; nein: (e: Error) => void } = { ja: () => undefined, nein: () => undefined };
+      datei.speichern = (o) => {
+        o.build();
+        return new Promise((ja, nein) => (ende = { ja, nein }));
+      };
+      return () => ende;
+    };
+    // scheitert erst nach dem Wechsel
+    useEntz.getState().fotoHinzufuegen('f1', 'Süd', 'image/jpeg', 100, 80, bytes(5, 6));
+    let ende = haengt();
+    let lauf = speichern();
+    await neu();
+    useEntz.getState().fotoHinzufuegen('f2', 'Nord', 'image/jpeg', 100, 80, bytes(5, 7));
+    ende().nein(new Error('Datenträger voll'));
+    expect(await lauf).toBe(false);
+    expect(datei.meldungen).toEqual([]);
+    expect(await vorbereiten()).toBe(true);
+    // gelingt erst nach dem Wechsel: das neue Dokument bleibt ohne Dateiname und ungespeichert
+    ende = haengt();
+    lauf = speichern();
+    await neu();
+    useEntz.getState().fotoHinzufuegen('f3', 'Ost', 'image/jpeg', 100, 80, bytes(5, 8));
+    datei.staende.set('/Projekt/Nord.entz', { groesse: 1, geaendert: 1 });
+    ende().ja('/Projekt/Nord.entz');
+    expect(await lauf).toBe(true);
+    expect(useEntz.getState().dateiname).toBeNull();
+    expect(useEntz.getState().dirty).toBe(true);
   });
 
   it('Gegenprobe: abgebrochenes Speichern der .entz ist kein Fehler', async () => {

@@ -367,7 +367,7 @@ function EigeneNavEintrag({ aktiv, onClick }: { aktiv: boolean; onClick: () => v
         <span className="pk-nav-name">
           <Symbol name="liste" /> Eigene Ansicht
         </span>
-        <span className="pk-nav-kurz">{n ? `${n} ${n === 1 ? 'Eintrag' : 'Einträge'} auf einer Seite` : 'zusammenstellen …'}</span>
+        <span className="pk-nav-kurz">{n ? `${n} ${n === 1 ? 'Eintrag' : 'Einträge'} auf einer Seite` : 'noch leer – zusammenstellen'}</span>
       </button>
     </div>
   );
@@ -581,7 +581,7 @@ function GruppenEditor({
                   ))}
                 </optgroup>
               )}
-              <option value="mehr">{adressbuch ? 'Adressbuch öffnen …' : 'Adressbuch einlesen …'}</option>
+              <option value="mehr">Adressbuch öffnen …</option>
               {stamm.length > 0 && (
                 <optgroup label="Früher in der App gemerkt">
                   {stamm.map((s) => (
@@ -990,7 +990,7 @@ function ProjektdatenAbgleich({ karte }: { karte: OffeneKarte }) {
               </button>
             </>
           )}
-          <button onClick={() => void oapLaden()}>Neu lesen</button>
+          <button onClick={() => void oapLaden()}>Neu einlesen</button>
         </div>
       </header>
       <p className="muted pk-text">
