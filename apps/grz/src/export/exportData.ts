@@ -9,7 +9,7 @@ import { baunvoLabel, bauoLabel, istAufenthaltsraum, massNachweis, sachlicheHinw
 import { ANRECHNUNG, AUFENTHALT, flaechenVergleich, GELAENDE_QUELLE, GF_ART, GRUNDSTUECK_QUELLE, HAFTUNG, kennzahlStellenVon, roemisch, STATUS } from '../texte';
 import { bebauungsplanText, GEBIETSARTEN } from '@core/model';
 import { datumText } from '@core/ui/DruckKopf';
-import { rechenweg, teilName } from '../rechenweg';
+import { flaechenNummern, rechenweg, teilName } from '../rechenweg';
 
 /**
  * Datengrundlage für Excel-Export und Vorlagen des GRZ-Nachweises (Syntax siehe docs/excel-vorlagen.md).
@@ -34,14 +34,14 @@ const FILTERS: Record<string, (r: Row) => boolean> = {
   eigen: (r) => r.nachbar !== 'ja',
   nachbar: (r) => r.nachbar === 'ja',
   zaehlt: (r) => r._anrechnung === 'hauptanlage',
-  'zählt': (r) => r._anrechnung === 'hauptanlage',
+  zählt: (r) => r._anrechnung === 'hauptanlage',
   grz2: (r) => r._anrechnung === 'grz2',
   pruefen: (r) => r._anrechnung === 'pruefen',
-  'prüfen': (r) => r._anrechnung === 'pruefen',
+  prüfen: (r) => r._anrechnung === 'pruefen',
   voll: (r) => r._versiegelung === 'voll',
   teil: (r) => r._versiegelung === 'teil',
   gruen: (r) => r._versiegelung === 'gruen',
-  'grün': (r) => r._versiegelung === 'gruen',
+  grün: (r) => r._versiegelung === 'gruen',
   aufenthalt: (r) => r._aufenthalt === 'ja' || r._aufenthalt === 'treppe',
   gf: (r) => r._gf === 'ja',
 };
@@ -100,14 +100,14 @@ export function buildGrzContext(project: Project, date = new Date(), n: Nachweis
     'bauo.fassung': bauoLabel(n.recht.bauo),
     'recht.hinweise': n.recht.hinweise.join(' '),
     // offene Spanne („prüfen“): zur GRZ II (1990) bzw. zur GRZ
-    'grz.offen.bezeichnung': (n.grz2 ?? n.grz).mitOffenen !== undefined ? `${n.grz2 ? 'GRZ II' : 'GRZ'} bei Anrechnung offener Flächen` : '',
+    'grz.offen.bezeichnung': (n.grz2 ?? n.grz).mitOffenen !== undefined ? `${n.grz2 ? 'GRZ II' : 'GRZ'} mit ungeklärten Flächen („prüfen“)` : '',
     'grundstueck.flaeche_nachweis': opt(G, r4),
     'grundstueck.quelle': GRUNDSTUECK_QUELLE[n.grundstueck.quelle],
     gelaende: r2(n.gelaende.hoehe),
     'gelaende.quelle': GELAENDE_QUELLE[n.gelaende.quelle],
     'grz.bezeichnung': n.recht.baunvo === '1990' ? 'GRZ I' : 'GRZ',
     'grz.ii.bezeichnung': n.grz2 ? 'GRZ II (§ 19 Abs. 4)' : '',
-    'aufenthalt.titel': n.recht.baunvo === '1990' ? '' : 'Aufenthaltsräume in Nicht-Vollgeschossen',
+    'aufenthalt.titel': n.aufenthaltZaehlt ? 'Aufenthaltsräume in Nicht-Vollgeschossen' : '',
     hauptanlage: r4(n.hauptanlage),
     ...kennzahlWerte('grz', n.grz, n.recht.baunvo === '1990' ? 'GR I' : 'GR'),
     ...kennzahlWerte('grz.ii', n.grz2, 'GR II'),
@@ -123,7 +123,10 @@ export function buildGrzContext(project: Project, date = new Date(), n: Nachweis
     'vollgeschosse.roemisch': roemisch(n.vollgeschosse.anzahl),
     'vollgeschosse.zulaessig': n.vollgeschosse.zulaessig ?? '',
     'vollgeschosse.status': STATUS[n.vollgeschosse.status].label,
-    'vollgeschosse.namen': n.geschosse.filter((g) => g.vollgeschoss).map((g) => g.name).join(', '),
+    'vollgeschosse.namen': n.geschosse
+      .filter((g) => g.vollgeschoss)
+      .map((g) => g.name)
+      .join(', '),
     'bilanz.gebaeude': r2(n.bilanz.gebaeude),
     'bilanz.vollversiegelt': r2(n.bilanz.voll),
     'bilanz.teilversiegelt': r2(n.bilanz.teil),
@@ -159,12 +162,14 @@ export function buildGrzContext(project: Project, date = new Date(), n: Nachweis
     };
   });
 
-  const lageplan: Row[] = n.lageplan.map((l, i) => {
+  // dieselben Nummern wie im Rechenweg (teil.flaeche_nr) und im Druck; Nachbarflächen ohne Nummer
+  const nummern = flaechenNummern(n);
+  const lageplan: Row[] = n.lageplan.map((l) => {
     const f = project.lageplan?.flaechen.find((x) => x.id === l.id);
     return {
       _anrechnung: l.anrechnung,
       _versiegelung: l.versiegelung,
-      nr: i + 1,
+      nr: nummern.get(l.id) ?? '',
       name: l.name,
       nutzung: nutzungLabel(l.nutzung),
       versiegelung: versiegelungInfo(l.versiegelung).label,
@@ -181,7 +186,6 @@ export function buildGrzContext(project: Project, date = new Date(), n: Nachweis
   });
 
   const vg = new Map(n.geschosse.map((g) => [g.storeyId, g.vollgeschoss]));
-  const vor1990 = n.recht.baunvo !== '1990';
   let nr = 0;
   const raum: Row[] = project.storeys
     .filter((s) => vg.has(s.id))
@@ -195,8 +199,8 @@ export function buildGrzContext(project: Project, date = new Date(), n: Nachweis
           return {
             _geschossId: s.id,
             _aufenthalt: a,
-            // vor 1990 zählen Aufenthaltsräume in Nicht-Vollgeschossen zur Geschossfläche
-            _gf: vor1990 && !vg.get(s.id) ? 'ja' : '',
+            // vor 1990 (1990 bei Festsetzung nach § 20 Abs. 3 S. 2) zählen Aufenthaltsräume in Nicht-Vollgeschossen zur Geschossfläche
+            _gf: n.aufenthaltZaehlt && !vg.get(s.id) ? 'ja' : '',
             nr: ++nr,
             geschoss: s.name,
             vollgeschoss: vg.get(s.id) ? 'ja' : '',
@@ -213,12 +217,32 @@ export function buildGrzContext(project: Project, date = new Date(), n: Nachweis
 
   // nur sachliche Hinweise (Bedienhinweise bleiben in der App)
   // Rechenweg: Formelzeilen und Teilflächen (Länge × Breite × Faktor; ohne Zerlegung die Fläche aus Koordinaten × 1 × 1)
-  const rw = rechenweg(n, new Map(n.lageplan.filter((l) => !l.nachbar).map((l, i) => [l.id, i + 1])));
+  const rw = rechenweg(n, nummern);
   const formel: Row[] = rw.formeln.map((text, i) => ({ nr: i + 1, text }));
   const teil: Row[] = rw.flaechen.flatMap((f) =>
     f.zerlegung.zerlegt
-      ? f.zerlegung.teile.map((t, i) => ({ flaeche_nr: f.nr, flaeche_name: f.name, name: teilName(f.nr, i, t), art: t.art === 'rechteck' ? 'Rechteck' : 'Dreieck', laenge: r4(t.laenge), breite: r4(t.breite), faktor: t.faktor, flaeche: r4(t.flaeche) }))
-      : [{ flaeche_nr: f.nr, flaeche_name: f.name, name: `${f.nr} Fläche aus Koordinaten`, art: 'Koordinaten', laenge: r4(f.zerlegung.flaeche), breite: 1, faktor: 1, flaeche: r4(f.zerlegung.flaeche) }],
+      ? f.zerlegung.teile.map((t, i) => ({
+          flaeche_nr: f.nr,
+          flaeche_name: f.name,
+          name: teilName(f.nr, i, t),
+          art: t.art === 'rechteck' ? 'Rechteck' : 'Dreieck',
+          laenge: r4(t.laenge),
+          breite: r4(t.breite),
+          faktor: t.faktor,
+          flaeche: r4(t.flaeche),
+        }))
+      : [
+          {
+            flaeche_nr: f.nr,
+            flaeche_name: f.name,
+            name: `${f.nr} Fläche aus Koordinaten`,
+            art: 'Koordinaten',
+            laenge: r4(f.zerlegung.flaeche),
+            breite: 1,
+            faktor: 1,
+            flaeche: r4(f.zerlegung.flaeche),
+          },
+        ],
   );
 
   const hinweis: Row[] = [...n.recht.hinweise, ...sachlicheHinweise(n)].map((text, i) => ({ nr: i + 1, text }));
@@ -238,13 +262,16 @@ export const GRZ_PLACEHOLDER_DOCS: PlaceholderDocs = [
     group: 'Blöcke, Filter, Modifikatoren',
     keys: [
       ['#geschoss … /geschoss', 'Zeilenblock je Geschoss; raum-Zeilen darin nur für dieses Geschoss'],
-      ['#wenn … /wenn', 'Abschnitt einmal ausgeben, wenn die Bedingung zutrifft: {{#wenn lageplan[nachbar]}} (Datensätze vorhanden), {{#wenn grz.ii}} (Wert nicht 0/leer), {{#wenn grz.reserve<0}} (Vergleich), {{#wenn !…}} umgekehrt; im Block je Datensatz'],
+      [
+        '#wenn … /wenn',
+        'Abschnitt einmal ausgeben, wenn die Bedingung zutrifft: {{#wenn lageplan[nachbar]}} (Datensätze vorhanden), {{#wenn grz.ii}} (Wert nicht 0/leer), {{#wenn grz.reserve<0}} (Vergleich), {{#wenn !…}} umgekehrt; im Block je Datensatz',
+      ],
       ['geschoss[vollgeschoss] / geschoss[!vollgeschoss] / [oberirdisch]', 'Filter: Vollgeschosse, Nicht-Vollgeschosse, oberirdische Geschosse'],
       ['lageplan[eigen] / lageplan[nachbar]', 'Filter: Flächen des eigenen Grundstücks bzw. der Nachbarn'],
       ['lageplan[zaehlt] / [grz2] / [pruefen]', 'Filter nach Anrechnung auf die Grundfläche'],
       ['lageplan[voll] / [teil] / [gruen]', 'Filter nach Versiegelung'],
       ['raum[aufenthalt]', 'Filter: Aufenthalts- und Treppenräume'],
-      ['raum[gf]', 'Filter: Räume der Nicht-Vollgeschosse, deren Aufenthaltsräume vor 1990 zur Geschossfläche zählen'],
+      ['raum[gf]', 'Filter: Räume der Nicht-Vollgeschosse, deren Aufenthaltsräume zur Geschossfläche zählen (vor 1990, 1990 nur bei Festsetzung nach § 20 Abs. 3 S. 2)'],
       ['[feld=wert] [feld>wert] [!filter]', 'weitere Filter, mehrere mit Komma: raum[aufenthalt,vollgeschoss!=ja]; Vergleiche = != > < >= <= (leere Felder = 0)'],
       ['…|einmal', 'Wert nur in der ersten Zeile der Wiederholung'],
     ],
@@ -268,16 +295,19 @@ export const GRZ_PLACEHOLDER_DOCS: PlaceholderDocs = [
     group: 'Kennzahlen',
     keys: [
       ['grz.bezeichnung, grz.ii.bezeichnung', '„GRZ“ (vor 1990) bzw. „GRZ I“; „GRZ II (§ 19 Abs. 4)“ oder leer'],
-      ['aufenthalt.titel', '„Aufenthaltsräume in Nicht-Vollgeschossen“ vor 1990, sonst leer'],
+      ['aufenthalt.titel', '„Aufenthaltsräume in Nicht-Vollgeschossen“, wenn sie zur Geschossfläche zählen (vor 1990, 1990 bei Festsetzung nach § 20 Abs. 3 S. 2), sonst leer'],
       ['grz, grz.zulaessig, grz.flaeche, grz.reserve, grz.status', 'GRZ (auf die Stellen der App gerundet), zulässig, angerechnete Grundfläche [m²], Reserve [m²], Ergebnis'],
       ['grz.stellen', 'Nachkommastellen der Kennzahl (mindestens 3, nahe am Grenzwert mehr)'],
       ['grz.zulaessig_flaeche, grz.vergleich', 'zulässige Grundfläche [m²]; Begründung in m², z. B. „GR 135,00 m² < 245,00 m² zulässig“'],
-      ['grz.mit_offenen, grz.flaeche_mit_offenen', 'GRZ bzw. Grundfläche einschließlich der noch nicht eingestuften Flächen („prüfen“)'],
-      ['grz.offen.bezeichnung, grz.offen.flaeche', '„GRZ II bei Anrechnung offener Flächen“ (bzw. GRZ) und die Fläche dazu – leer ohne offene Flächen'],
+      ['grz.mit_offenen, grz.flaeche_mit_offenen', 'GRZ bzw. Grundfläche einschließlich der ungeklärten Flächen („prüfen“)'],
+      ['grz.offen.bezeichnung, grz.offen.flaeche', '„GRZ II mit ungeklärten Flächen („prüfen“)“ (bzw. GRZ) und die Fläche dazu – leer ohne ungeklärte Flächen'],
       ['unterirdisch.flaeche, unterirdisch.angerechnet', 'Kellergeschoss außerhalb der Hauptanlage [m²] und davon angerechnet'],
       ['grz.ii, grz.ii.zulaessig, grz.ii.flaeche, grz.ii.reserve, grz.ii.status, grz.ii.mit_offenen', 'GRZ II nach § 19 Abs. 4 BauNVO 1990 (sonst leer)'],
       ['garagen.frei', 'anrechnungsfreie Garagenfläche nach § 21a Abs. 3 (1968/1977) [m²]'],
-      ['gr_absolut, gr_absolut.zulaessig, gr_absolut.status, gr_absolut.bezeichnung', 'absolute Festsetzung der Grundfläche: vorhanden, zulässig [m²], Ergebnis (leer ohne Festsetzung); ebenso gf_absolut'],
+      [
+        'gr_absolut, gr_absolut.zulaessig, gr_absolut.status, gr_absolut.bezeichnung',
+        'absolute Festsetzung der Grundfläche: vorhanden, zulässig [m²], Ergebnis (leer ohne Festsetzung); ebenso gf_absolut',
+      ],
       ['bmz, bmz.zulaessig, bmz.status, bmz.baumasse', 'Baumassenzahl (§ 21) und Baumasse [m³], vereinfacht aus Grundfläche × Geschosshöhe der Vollgeschosse'],
       ['vollgeschosse.mindestens, vollgeschosse.zwingend', 'Mindestzahl der Vollgeschosse; „ja“, wenn die Zahl zwingend ist'],
       ['gf, gf.aufenthalt', 'Geschossfläche [m²]; davon Aufenthaltsräume in Nicht-Vollgeschossen'],

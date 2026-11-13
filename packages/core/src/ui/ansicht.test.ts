@@ -9,6 +9,7 @@ import {
   feldOptionen,
   feldOptionenSetzen,
   feldVerschieben,
+  abschnittEntfernen,
   verknuepfen,
   verknuepfteFelder,
   verknuepfungLoesen,
@@ -64,7 +65,7 @@ describe('eigene Ansichten', () => {
     expect([5, 7, 10, 11, 99, 1, 6].map(breite)).toEqual([4, 6, 9, 12, 12, 3, 6]);
   });
 
-  it('Verknüpfungen: Gruppen verschmelzen, lösen, entfallen mit dem Feld; nur Felder der Ansicht', () => {
+  it('Verknüpfungen: Gruppen verschmelzen, lösen, entfallen mit dem Feld; auch Felder außerhalb, eins muss in der Ansicht stehen', () => {
     let b = verknuepfen(a, '201:40', '301:10');
     b = verknuepfen(b, '201:30', '201:40');
     expect(b.verknuepfungen).toEqual([['201:30', '201:40', '301:10']]);
@@ -75,11 +76,26 @@ describe('eigene Ansichten', () => {
       ansichtAus({
         ...b,
         verknuepfungen: [
-          ['201:40', 'gibts-nicht'],
+          ['201:40', 'ausserhalb'],
           ['201:30', '301:10', '201:30'],
+          ['nur-aussen-1', 'nur-aussen-2'],
         ],
       })!.verknuepfungen,
-    ).toEqual([['201:30', '301:10']]);
+    ).toEqual([
+      ['201:40', 'ausserhalb'],
+      ['201:30', '301:10'],
+    ]);
+    // mit einem Feld außerhalb verknüpft: bleibt, solange das eigene in der Ansicht steht
+    const c = verknuepfen(a, '201:40', 'ausserhalb');
+    expect(c.verknuepfungen).toEqual([['201:40', 'ausserhalb']]);
+    expect(feldEntfernen(c, '201:40').verknuepfungen).toBeUndefined();
+    // die Gruppe hängt am einzigen Feld der Ansicht: Abschnitt entfernt bzw. es gelöst – sie entfällt
+    const d = verknuepfen(verknuepfen(a, '201:40', 'aussen-1'), '201:40', 'aussen-2');
+    expect(d.verknuepfungen).toEqual([['201:40', 'aussen-1', 'aussen-2']]);
+    expect(abschnittEntfernen(d, d.abschnitte.find((x) => x.felder.includes('201:40'))!.id).verknuepfungen).toBeUndefined();
+    expect(verknuepfungLoesen(d, '201:40').verknuepfungen).toBeUndefined();
+    // ein Feld außerhalb gelöst: die übrigen bleiben verknüpft
+    expect(verknuepfungLoesen(d, 'aussen-1').verknuepfungen).toEqual([['201:40', 'aussen-2']]);
   });
 
   it('Einfügestelle nach den Mitten der Zeilen, ohne die gezogene', () => {
