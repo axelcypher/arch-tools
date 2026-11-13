@@ -193,9 +193,11 @@ export function Report() {
             </div>
           </details>
           <span className="bericht-knoepfe">
-            <button onClick={() => druckenAls({ datei: useEditor.getState().datei, projektName: project.name, zusatz: 'WoFl+BGF+BRI' })}>Drucken / PDF</button>
-            <button className="primary" ref={schliessenRef} onClick={() => setOpen(false)}>
+            <button ref={schliessenRef} onClick={() => setOpen(false)}>
               Schließen
+            </button>
+            <button className="primary" onClick={() => druckenAls({ datei: useEditor.getState().datei, projektName: project.name, zusatz: 'WoFl+BGF+BRI' })}>
+              Drucken / PDF
             </button>
           </span>
         </div>

@@ -50,7 +50,7 @@ describe('IFC-Import (Dialog)', () => {
   it('ist ein Dialog mit Namen; der Hauptknopf „IFC-Datei wählen …“ hat den Fokus, nicht „Abbrechen“', () => {
     const host = oeffnen();
     const dlg = host.querySelector('[role="dialog"]');
-    expect(dlg?.getAttribute('aria-label')).toBe('IFC-Import');
+    expect(document.getElementById(dlg!.getAttribute('aria-labelledby')!)?.textContent).toBe('IFC-Import');
     expect(document.activeElement?.textContent).toContain('IFC-Datei wählen');
   });
 

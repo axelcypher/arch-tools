@@ -91,7 +91,7 @@ function KopieDialog({ frage }: { frage: Frage }) {
       ...(g ? { name: name.trim() || g.vorschlag(lage), lage } : {}),
     });
   return (
-    <Modal titel={frage.titel} onClose={abbrechen}>
+    <Modal titel={frage.titel} kopf onClose={abbrechen}>
       {/* Formular: Enter übernimmt (wie in den übrigen Dialogen) */}
       <form
         onSubmit={(e) => {
@@ -99,7 +99,6 @@ function KopieDialog({ frage }: { frage: Frage }) {
           ok();
         }}
       >
-        <h3>{frage.titel}</h3>
         {g && (
           <>
             <label className="field">

@@ -53,8 +53,7 @@ export function RaumTabelle({ onClose }: { onClose: () => void }) {
   const gesamt = geschosse.reduce((a, g) => a + g.raeume.reduce((b, r) => b + flaeche(r), 0), 0);
   const upd = (storeyId: string, id: string, fn: (r: RoomShape) => Shape) => useEditor.getState().update((p) => mapShape(p, storeyId, id, (s) => (s.kind === 'room' ? fn(s) : s)));
   return (
-    <Modal titel="Raumtabelle" onClose={onClose} breit className="raumtabelle-dialog">
-      <h3>Raumtabelle</h3>
+    <Modal titel="Raumtabelle" kopf tabelle onClose={onClose} className="raumtabelle-dialog">
       <p className="muted small-text">Enter bzw. ↓ in Nr., Bezeichnung und Wohnung: weiter zur nächsten Zeile; Umschalt+Enter bzw. ↑: zurück.</p>
       <div className="raumtabelle-rahmen">
         <table className="raumtabelle">

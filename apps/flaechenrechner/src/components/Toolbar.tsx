@@ -142,7 +142,7 @@ export function Toolbar() {
           Neu
         </button>
         <button onClick={() => void onOpen()} title="Projekt öffnen (Strg+O)">
-          Öffnen
+          Öffnen …
         </button>
         {/* ungespeicherte Änderungen als Punkt in der Ecke – ändert die Breite der Leiste nicht */}
         <button
@@ -158,7 +158,7 @@ export function Toolbar() {
           </button>
         )}
         <button onClick={() => setIfcOpen(true)} title="Gebäudemodell aus Archicad, Revit & Co. importieren">
-          IFC-Import
+          IFC-Import …
         </button>
       </div>
       {ifcOpen && <IfcImportDialog onClose={() => setIfcOpen(false)} />}
@@ -191,25 +191,27 @@ export function Toolbar() {
           </button>
         ))}
       </div>
-      <div className="tb-group" title="Art der neu gezeichneten Fläche">
-        <span className="tb-label">als</span>
-        <button className={drawKind === 'outline' ? 'active kind-outline' : ''} aria-pressed={drawKind === 'outline'} onClick={() => st.setDrawKind('outline')} title="BGF-Umriss (B)">
+      <div className="tb-group">
+        {/* Art der neu gezeichneten Fläche: Umschalter wie im Designsystem */}
+        <div className="segment" role="group" aria-label="Neue Flächen zeichnen als" title="Neue Flächen zeichnen als BGF-Umriss oder Raum">
+        <button className={drawKind === 'outline' ? 'active kind-outline' : ''} aria-pressed={drawKind === 'outline'} onClick={() => st.setDrawKind('outline')} title="Neue Flächen als BGF-Umriss (B)">
           BGF-Umriss
         </button>
-        <button className={drawKind === 'room' ? 'active kind-room' : ''} aria-pressed={drawKind === 'room'} onClick={() => st.setDrawKind('room')} title="Raum / NRF (N)">
+        <button className={drawKind === 'room' ? 'active kind-room' : ''} aria-pressed={drawKind === 'room'} onClick={() => st.setDrawKind('room')} title="Neue Flächen als Raum / NRF (N)">
           Raum
         </button>
+        </div>
       </div>
       <div className="tb-spacer" />
       <div className="tb-group">
         <button onClick={onCsv} title="Flächenaufstellung als CSV exportieren">
-          CSV
+          CSV …
         </button>
         <button onClick={() => st.setExcelOpen(true)} title="Excel-Export (Standardlayout oder eigene Vorlage)">
-          Excel
+          Excel …
         </button>
         <button className="primary" onClick={() => st.setReportOpen(true)}>
-          Flächenaufstellung
+          Flächenaufstellung …
         </button>
       </div>
     </div>

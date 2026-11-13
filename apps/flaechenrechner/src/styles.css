@@ -173,19 +173,6 @@
   min-width: 0;
 }
 
-/* Meldungen auf der Zeichenfläche: Erfolg grün, Hinweis neutral (Warnung gelb wie im Designsystem) */
-.canvas-wrap .canvas-message.ok {
-  background: var(--ok-bg);
-  border-color: var(--ok-border);
-  color: var(--ok-text);
-}
-
-.canvas-wrap .canvas-message.info {
-  background: var(--chip-bg);
-  border-color: var(--border);
-  color: var(--text);
-}
-
 /* leere Zeichenfläche: Einstieg mittig */
 .canvas-leer {
   position: absolute;
@@ -278,7 +265,7 @@
   }
 
   .toolbar button {
-    padding: 4px 6px;
+    padding: 4px 5px;
   }
 }
 
@@ -505,21 +492,7 @@
   top: 8px;
   left: 8px;
   z-index: 5;
-  display: flex;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-}
-
-.view-switch button {
-  border-radius: 0;
-}
-
-.view-switch button:first-child {
-  border-radius: 4px 0 0 4px;
-}
-
-.view-switch button:last-child {
-  border-radius: 0 4px 4px 0;
-  margin-left: -1px;
 }
 
 .view-loading {
@@ -913,11 +886,6 @@
 }
 
 /* Raumtabelle (F-21) */
-.modal.raumtabelle-dialog {
-  width: min(1200px, 96vw);
-  max-width: 96vw;
-}
-
 .raumtabelle td.raumtabelle-nutzung select {
   min-width: 76px;
 }

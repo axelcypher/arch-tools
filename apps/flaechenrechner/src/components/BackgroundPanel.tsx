@@ -295,14 +295,13 @@ function PdfImportDialog({
   const [known, setKnown] = useState(true);
   const [massstab, setMassstab] = useState<number | undefined>(100);
   return (
-    <Modal titel="PDF importieren" onClose={onCancel}>
+    <Modal titel="PDF importieren" kopf onClose={onCancel}>
       <form
         onSubmit={(e) => {
           e.preventDefault();
           onImport(page, known && massstab ? massstab : null);
         }}
       >
-        <h3>PDF importieren</h3>
         <p className="small-text">{name}</p>
         <Field label={`Seite (1–${doc.numPages})`}>
           <input type="number" min={1} max={doc.numPages} value={page} onChange={(e) => setPage(Math.min(doc.numPages, Math.max(1, Number(e.target.value) || 1)))} />

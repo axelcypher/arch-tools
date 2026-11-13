@@ -63,11 +63,11 @@ export function App() {
       <div className="workspace">
         <Sidebar />
         <main className="main">
-          <div className="view-switch" role="group" aria-label="Ansicht">
-            <button className={mainView === '2d' ? 'active' : ''} aria-pressed={mainView === '2d'} onClick={() => setMainView('2d')}>
+          <div className="segment view-switch" role="group" aria-label="Ansicht">
+            <button aria-pressed={mainView === '2d'} onClick={() => setMainView('2d')}>
               Grundriss
             </button>
-            <button className={mainView === '3d' ? 'active' : ''} aria-pressed={mainView === '3d'} onClick={() => setMainView('3d')}>
+            <button aria-pressed={mainView === '3d'} onClick={() => setMainView('3d')}>
               3D
             </button>
           </div>

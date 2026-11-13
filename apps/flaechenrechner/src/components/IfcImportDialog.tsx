@@ -128,8 +128,7 @@ export function IfcImportDialog({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <Modal titel="IFC-Import" breit klickDaneben={false} onClose={step.kind === 'loading' ? undefined : onClose}>
-        <h3>IFC-Import</h3>
+    <Modal titel="IFC-Import" kopf breit klickDaneben={false} onClose={step.kind === 'loading' ? undefined : onClose}>
         {error && (
           <p className="warning" role="alert">
             {error}

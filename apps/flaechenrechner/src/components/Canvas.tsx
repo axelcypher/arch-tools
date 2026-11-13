@@ -1443,8 +1443,7 @@ const KUERZEL: [string, string][] = [
 
 function KuerzelDialog({ onClose }: { onClose: () => void }) {
   return (
-    <Modal titel="Tastenkürzel" onClose={onClose} breit>
-      <h3>Tastenkürzel der Zeichenfläche</h3>
+    <Modal titel="Tastenkürzel der Zeichenfläche" kopf onClose={onClose} breit>
       <table className="kuerzel-tabelle">
         <tbody>
           {KUERZEL.map(([k, w]) => (
@@ -1482,14 +1481,14 @@ function CalibrationDialog({ measured, onApply, onCancel, kontrolle = false }: {
   const titel = kontrolle ? 'Kontrollmaß' : 'Plan kalibrieren';
   // gemeinsamer Dialog: Esc und Klick daneben brechen ab, der Fokus bleibt im Dialog, Kürzel der Zeichenfläche ruhen
   return (
-    <Modal titel={titel} onClose={onCancel} className="kalibrier-dialog">
+    <Modal titel={titel} kopf onClose={onCancel} className="kalibrier-dialog">
       <form
         onSubmit={(e) => {
           e.preventDefault();
           if (v && v > 0) onApply(v);
         }}
       >
-        <h3>{titel}</h3>
+        
         <p>
           Gemessene Strecke im aktuellen Maßstab: <strong>{fmt2(measured)} m</strong>
         </p>

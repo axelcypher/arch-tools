@@ -124,7 +124,7 @@ describe('QUADRIO: Flächenaufstellung am Bildschirm', () => {
     useEditor.getState().loadProject(createProject('Haus'), null, 'Haus.oap');
     const host = render();
     act(() => [...host.querySelectorAll<HTMLButtonElement>('.pw-einstieg button')].find((x) => x.textContent === 'Schließen')?.click());
-    const oeffnen = [...host.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent === 'Flächenaufstellung')!;
+    const oeffnen = [...host.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent === 'Flächenaufstellung …')!;
     act(() => {
       oeffnen.focus();
       oeffnen.click();
