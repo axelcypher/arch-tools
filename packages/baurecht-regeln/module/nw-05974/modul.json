@@ -291,10 +291,27 @@
       "kurz": "Heilquellenschutzgebiet Bad Sassendorf",
       "gruppe": "schutz",
       "typ": "janein",
-      "hilfe": "Zone III reicht in den Osten der Stadt Soest; Karten 1:5000 bei der Bezirksregierung Arnsberg, Übersicht im WSG-Dienst NRW",
+      "hilfe": "Nur in Bad Sassendorf und Soest (§ 1 der Verordnung: Teile der Gemarkungen Garbrechten, Heppen, Lohne, Opmünden, Sassendorf, Soest, Thöningsen, Weslarn, Beusingsen, Enkesen im Klei, Neuengeseke und Bettinghausen) – in den übrigen Gemeinden folgt „nein“ aus dem Gemeindeschlüssel. Zone III reicht in den Osten der Stadt Soest; Karten 1:5000 bei der Bezirksregierung Arnsberg, Übersicht im WSG-Dienst NRW",
       "wenn": {
         "f": "schutz.wsg",
         "ist": true
+      },
+      "nach": {
+        "fakt": "lage.ags",
+        "tabelle": {
+          "05974004": false,
+          "05974012": false,
+          "05974016": false,
+          "05974020": false,
+          "05974024": false,
+          "05974028": false,
+          "05974032": false,
+          "05974036": false,
+          "05974044": false,
+          "05974048": false,
+          "05974052": false,
+          "05974056": false
+        }
       }
     },
     "kreis_soest.hsg_qualitativ": {

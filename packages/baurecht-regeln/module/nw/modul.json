@@ -529,20 +529,37 @@
       }
     },
     "vorhaben.zu_abfahrtsverkehr": {
-      "titel": "Bei der Anlage (kein Gebäude) ist Zu- oder Abfahrtsverkehr mit Kraftfahrzeugen bzw. Fahrrädern zu erwarten",
+      "titel": "Zu- oder Abfahrtsverkehr mit Kraftfahrzeugen bzw. Fahrrädern zu erwarten (Anlage, die kein Gebäude ist, bzw. Gebäude ohne Aufenthaltsräume)",
       "kurz": "Zu-/Abfahrtsverkehr zu erwarten",
       "gruppe": "vorhaben",
       "typ": "janein",
-      "hilfe": "§ 48 Abs. 1 BauO NRW: Stellplätze sind auch für Anlagen, die keine Gebäude sind, herzustellen, wenn Zu- oder Abfahrtsverkehr zu erwarten ist (z. B. Sportanlage, Stellplatzanlage, Lagerplatz) – nicht bei Mauer, Wärmepumpe oder Werbeanlage.",
+      "hilfe": "§ 48 Abs. 1 BauO NRW: Stellplätze und Fahrradabstellplätze sind bei Anlagen herzustellen, bei denen Zu- oder Abfahrtsverkehr zu erwarten ist – bei Wohngebäuden und Gebäuden mit Aufenthaltsräumen stets; sonst z. B. Sportanlage, Stellplatzanlage, Lagerplatz, Lagerhalle mit Anlieferung – nicht bei Mauer, Wärmepumpe, Werbeanlage, Gartenhaus oder Geräteschuppen.",
       "wenn": {
         "und": [
           {
             "$": "vorhaben_29"
           },
           {
-            "m": "Gebäudeart",
-            "in": [
-              "kein Gebäude"
+            "oder": [
+              {
+                "m": "Gebäudeart",
+                "in": [
+                  "kein Gebäude"
+                ]
+              },
+              {
+                "und": [
+                  {
+                    "nicht": {
+                      "$": "wohngebaeude"
+                    }
+                  },
+                  {
+                    "f": "gebaeude.aufenthaltsraeume",
+                    "ist": false
+                  }
+                ]
+              }
             ]
           }
         ]
@@ -997,6 +1014,17 @@
               "ist": true
             }
           ]
+        },
+        {
+          "und": [
+            {
+              "$": "nw_beseitigung_frei_art"
+            },
+            {
+              "f": "nw.altbau_verfahrensfrei",
+              "ist": true
+            }
+          ]
         }
       ]
     },
@@ -1070,6 +1098,68 @@
             },
             {
               "$": "nw_beseitigung_genehmigt"
+            }
+          ]
+        }
+      ]
+    },
+    "nw_stellplatzanlass": {
+      "und": [
+        {
+          "$": "vorhaben_29"
+        },
+        {
+          "oder": [
+            {
+              "$": "wohngebaeude"
+            },
+            {
+              "und": [
+                {
+                  "$": "gebaeude"
+                },
+                {
+                  "f": "gebaeude.aufenthaltsraeume",
+                  "ist": true
+                }
+              ]
+            },
+            {
+              "f": "vorhaben.zu_abfahrtsverkehr",
+              "ist": true
+            }
+          ]
+        }
+      ]
+    },
+    "nw_beseitigung_verfahren": {
+      "oder": [
+        {
+          "$": "nw_beseitigung_anzeige"
+        },
+        {
+          "$": "nw_beseitigung_genehmigt"
+        },
+        {
+          "und": [
+            {
+              "$": "beseitigung"
+            },
+            {
+              "$": "nw_genehmigungsbeduerftig"
+            },
+            {
+              "oder": [
+                {
+                  "nicht": {
+                    "$": "ersatzbau"
+                  }
+                },
+                {
+                  "f": "nw.beseitigung_mit_beantragt",
+                  "ist": true
+                }
+              ]
             }
           ]
         }

@@ -5,10 +5,18 @@
   "fassung": "1987-09-21",
   "version": 1,
   "geltung": {
-    "f": "kreis_soest.hsg",
-    "ist": true
+    "und": [
+      {
+        "f": "schutz.wsg",
+        "ist": true
+      },
+      {
+        "f": "kreis_soest.hsg",
+        "ist": true
+      }
+    ]
   },
-  "geltungGrund": "nur im Heilquellenschutzgebiet Bad Sassendorf (Teile von Bad Sassendorf und Soest)",
+  "geltungGrund": "nur im Heilquellenschutzgebiet Bad Sassendorf, das Teile von Bad Sassendorf und Soest umfasst – ein Wasser- oder Heilquellenschutzgebiet am Grundstück vorausgesetzt",
   "paragrafen": {
     "1": {
       "gilt": {

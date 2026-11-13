@@ -184,8 +184,7 @@
                 "$": "bplan"
               },
               {
-                "f": "planung.planreife",
-                "ist": true
+                "$": "planreif"
               }
             ]
           }

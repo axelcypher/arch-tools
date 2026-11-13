@@ -5,10 +5,18 @@
   "fassung": "2004-12-17",
   "version": 1,
   "geltung": {
-    "f": "kreis_soest.vsg_hellweg",
-    "ist": true
+    "und": [
+      {
+        "f": "schutz.vsg",
+        "ist": true
+      },
+      {
+        "f": "kreis_soest.vsg_hellweg",
+        "ist": true
+      }
+    ]
   },
-  "geltungGrund": "nur im Vogelschutzgebiet Hellwegbörde",
+  "geltungGrund": "nur im Vogelschutzgebiet Hellwegbörde – ein Vogelschutzgebiet am Grundstück vorausgesetzt",
   "paragrafen": {
     "Schutzzweck": {
       "titel": "Schutzzweck und Verträglichkeit",

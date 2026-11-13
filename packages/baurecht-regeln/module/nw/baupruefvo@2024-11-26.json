@@ -99,10 +99,7 @@
             ]
           },
           {
-            "$": "nw_beseitigung_anzeige"
-          },
-          {
-            "$": "nw_beseitigung_genehmigt"
+            "$": "nw_beseitigung_verfahren"
           },
           {
             "und": [
@@ -536,14 +533,7 @@
     },
     "15": {
       "gilt": {
-        "oder": [
-          {
-            "$": "nw_beseitigung_anzeige"
-          },
-          {
-            "$": "nw_beseitigung_genehmigt"
-          }
-        ]
+        "$": "nw_beseitigung_verfahren"
       },
       "grund": "Bauvorlagen für die Beseitigung von Anlagen.",
       "fundstellen": [
