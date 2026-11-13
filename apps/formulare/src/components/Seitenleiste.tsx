@@ -14,9 +14,9 @@ import { ausUmfangEntfernen, FassungsWahl, formularePunkte, StatusPunkt, umfangZ
 import { nachReihenfolge, passt, STATUS_TEXT } from '../antrag';
 import { useExportDialog } from './ExportDialog';
 import { useHinzufuegenDialog } from './FormularHinzufuegen';
-import type { MenuePunkt } from './Menue';
-import { zeigeMenue, zeigeMenueAn } from './Menue';
-import { Symbol } from './Symbol';
+import type { MenuePunkt } from '@core/ui/Menue';
+import { zeigeMenue, zeigeMenueAn } from '@core/ui/Menue';
+import { Symbol } from '@core/ui/Symbol';
 import { zeitKurz, zeitLang } from '../zeit';
 
 /** Aufklappbarer Abschnitt der Navigation; der Zustand bleibt je Abschnitt erhalten */

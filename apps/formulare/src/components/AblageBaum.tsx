@@ -9,10 +9,10 @@ import { oeffnePfad, verbinde } from '../dateisystem';
 import { dateiArtVon, dateiSchluessel, useFormulare } from '../store';
 import { aktiveFassung, antragsOrdner, antragSperre, useAntrag, wechselLaeuft } from '../antragStore';
 import { duplizieren, einfuegen, loeschen, ordnerNeu, umbenennen, useDateiAktionen, verknuepfen } from '../dateiAktionen';
-import type { MenuePunkt } from './Menue';
-import { zeigeMenue } from './Menue';
-import type { SymbolName } from './Symbol';
-import { Symbol } from './Symbol';
+import type { MenuePunkt } from '@core/ui/Menue';
+import { zeigeMenue } from '@core/ui/Menue';
+import type { SymbolName } from '@core/ui/Symbol';
+import { Symbol } from '@core/ui/Symbol';
 import { zeitKurz, zeitLang } from '../zeit';
 
 export const SYMBOL: Record<ReturnType<typeof dateiArt>, SymbolName> = {

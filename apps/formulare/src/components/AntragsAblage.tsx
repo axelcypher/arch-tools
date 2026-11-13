@@ -23,9 +23,9 @@ import { dateiMenue, SYMBOL } from './AblageBaum';
 import { StatusPunkt } from './Antrag';
 import { PLAN_ZUSTAND_KURZ, PLAN_ZUSTAND_TEXT } from '../plansatz';
 import { zeitKurz, zeitLang } from '../zeit';
-import type { MenuePunkt } from './Menue';
-import { zeigeMenue, zeigeMenueAn } from './Menue';
-import { Symbol } from './Symbol';
+import type { MenuePunkt } from '@core/ui/Menue';
+import { zeigeMenue, zeigeMenueAn } from '@core/ui/Menue';
+import { Symbol } from '@core/ui/Symbol';
 import { useEffect, useState } from 'react';
 import { UnterlagenVorschau } from './UnterlagenVorschau';
 

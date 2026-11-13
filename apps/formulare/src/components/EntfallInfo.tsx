@@ -10,7 +10,7 @@ import { formularKontext, leeresProfil, profilSchluessel } from '../profil';
 import type { OffenesFormular } from '../store';
 import { useProfil, wertVon } from '../store';
 import { useGesetz } from './GesetzModal';
-import { Symbol } from './Symbol';
+import { Symbol } from '@core/ui/Symbol';
 
 export interface Entfallen {
   /** entfallende Felder mit ihren Gründen (Schlüssel → Gründe) */

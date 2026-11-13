@@ -8,9 +8,9 @@ import { oeffnePfad, verbinde } from '../dateisystem';
 import type { Projekt } from '../projekte';
 import { projektSchluessel } from '../projekte';
 import { ablageVon, projektHatEntwuerfe, useFormulare } from '../store';
-import type { MenuePunkt } from './Menue';
-import { zeigeMenue } from './Menue';
-import { Symbol } from './Symbol';
+import type { MenuePunkt } from '@core/ui/Menue';
+import { zeigeMenue } from '@core/ui/Menue';
+import { Symbol } from '@core/ui/Symbol';
 
 export { useAufgeklappt } from '@core/ui/ProjektUebersicht';
 

@@ -17,11 +17,11 @@ import { PLAN_ZUSTAND_KURZ, PLAN_ZUSTAND_TEXT, plansatzKurz } from '../plansatz'
 import { oeffnePfad, verbinde } from '../dateisystem';
 import { ablageVon, formularDatei, useFormulare } from '../store';
 import { useExportDialog } from './ExportDialog';
-import type { MenuePunkt } from './Menue';
-import { MenueKnopf, zeigeMenue } from './Menue';
+import type { MenuePunkt } from '@core/ui/Menue';
+import { MenueKnopf, zeigeMenue } from '@core/ui/Menue';
 import { bestaetigen } from '@core/ui/Rueckfrage';
 import { Griff, useSortieren } from './Sortieren';
-import { Symbol } from './Symbol';
+import { Symbol } from '@core/ui/Symbol';
 
 /** Farbpunkt für den Status eines Dokuments */
 export function StatusPunkt({ status, titel, neben = false }: { status: Status; titel?: string; /** blasser: das Formular steht nicht im Antragsumfang des aktiven Antrags (zählt nicht mit) */ neben?: boolean }) {
