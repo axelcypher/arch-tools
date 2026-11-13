@@ -21,6 +21,8 @@ export interface Befund {
   text?: string;
   /** betroffene Pfade im Projektordner */
   pfade?: string[];
+  /** passende Aktion der Oberfläche direkt am Befund */
+  aktion?: 'ordnerAnlegen' | 'mailsBenennen';
 }
 
 export interface Pruefergebnis {
@@ -36,6 +38,19 @@ export interface Pruefergebnis {
 const SYSTEMDATEI = /^(thumbs\.db|desktop\.ini|\.ds_store|~\$.*|\..*)$/i;
 /** längere Pfade machen unter Windows Schwierigkeiten (Grenze 260 Zeichen einschließlich Laufwerk und Stammordner) */
 const PFAD_LANG = 200;
+
+/** Platzhalter für ein unbekanntes Jahr beim Vergleich (wird zum Muster für vier bzw. zwei Ziffern) */
+const JAHR_MARKE = 'qqjahrqq';
+const JAHR_KURZ_MARKE = 'qqjkqq';
+const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/** Werte ohne bekanntes Jahr? (Projekt ohne Anlagedatum – {JAHR}/{JAHR_KURZ} lassen sich dann nicht auflösen) */
+const ohneJahr = (werte: Record<string, string | number>) => !Object.entries(werte).some(([k, v]) => /^(jahr|jj|jahr_kurz)$/i.test(k) && String(v) !== '');
+
+/** braucht der Name das Jahr, das die Werte nicht kennen? */
+export function brauchtJahr(schema: string, werte: Record<string, string | number>): boolean {
+  return ohneJahr(werte) && nameAus(schema, werte) !== nameAus(schema, { ...werte, jahr: 2000 });
+}
 
 /** Woher die Angaben zum Projekt stammen */
 export interface ProjektQuelle {
@@ -55,19 +70,27 @@ export interface ProjektQuelle {
  * nicht in der Struktur stehen, und lose Dateien im Stamm (außer Projektdatei, Notizen, Verknüpfungen, alter projekt.json).
  */
 export function ausserhalbDerStruktur(struktur: Struktur, eintraege: Pick<Eintrag, 'pfad' | 'ordner'>[], werte: Record<string, string | number> = {}): { fremd: string[]; lose: string[] } {
+  // ohne bekanntes Jahr steht für {JAHR}/{JAHR_KURZ} eine Marke, die beim Vergleich auf beliebige Ziffern passt
+  const w = ohneJahr(werte) ? { ...Object.fromEntries(Object.entries(werte).filter(([k]) => !/^(jahr|jj|jahr_kurz)$/i.test(k))), JAHR: JAHR_MARKE, JAHR_KURZ: JAHR_KURZ_MARKE } : werte;
   const ziel = (p: string) =>
     normPfad(p)
       .split('/')
-      .map((t) => sichererName(nameAus(t, werte)))
+      .map((t) => sichererName(nameAus(t, w)))
       .filter(Boolean)
       .join('/');
   const bekannt = new Set<string>();
   const vorgegebeneEltern = new Set<string>(['']);
+  const bekanntMuster: RegExp[] = [];
+  const elternMuster: RegExp[] = [];
+  const merken = (pfad: string, set: Set<string>, muster: RegExp[]) => {
+    if (!pfad.includes(JAHR_MARKE) && !pfad.includes(JAHR_KURZ_MARKE)) return void set.add(pfad);
+    muster.push(new RegExp(`^${escapeRe(pfad).replaceAll(JAHR_MARKE, '\\d{4}').replaceAll(JAHR_KURZ_MARKE, '\\d{2}')}$`));
+  };
   for (const r of struktur.ordner) {
     const teile = ziel(r.pfad).toLowerCase().split('/');
     for (let i = 1; i <= teile.length; i++) {
-      bekannt.add(teile.slice(0, i).join('/'));
-      if (i < teile.length) vorgegebeneEltern.add(teile.slice(0, i).join('/'));
+      merken(teile.slice(0, i).join('/'), bekannt, bekanntMuster);
+      if (i < teile.length) merken(teile.slice(0, i).join('/'), vorgegebeneEltern, elternMuster);
     }
   }
   const fremd = eintraege
@@ -76,7 +99,7 @@ export function ausserhalbDerStruktur(struktur: Struktur, eintraege: Pick<Eintra
     .filter((p) => {
       const k = p.toLowerCase();
       const eltern = k.split('/').slice(0, -1).join('/');
-      return vorgegebeneEltern.has(eltern) && !bekannt.has(k);
+      return (vorgegebeneEltern.has(eltern) || elternMuster.some((m) => m.test(eltern))) && !bekannt.has(k) && !bekanntMuster.some((m) => m.test(k));
     });
   const erlaubtImStamm = /\.(oap|md|lnk|url)$/i;
   // die alte projekt.json (bis 0.2) darf liegen bleiben – gelöscht wird nichts
@@ -112,27 +135,42 @@ export function pruefe(ordnerName: string, eintraege: Eintrag[], struktur: Struk
       text: `Im Ordner liegt eine ${PROJEKT_DATEI} (Stammdaten bis Version 0.2), die sich nicht lesen lässt: ${quelle.alteProjektJsonDefekt}. Die Datei bleibt unverändert liegen.`,
       pfade: [PROJEKT_DATEI],
     });
+  // Jahr nur aus einem gültigen Anlagedatum – sonst bleibt es unbekannt und Namen mit {JAHR} sind nicht beurteilbar
+  const jahr = /^\d{4}/.test(projekt?.angelegt ?? '') ? projekt!.angelegt.slice(0, 4) : '';
+  const werte: Record<string, string> = { nummer: projekt?.nummer ?? '', kurzname: projekt?.kurzname ?? '', ...(jahr ? { jahr } : {}) };
+  const ohneAnlagedatum = 'Die Projektdatei nennt kein Anlagedatum, das Jahr für {JAHR} bzw. {JAHR_KURZ} ist deshalb unbekannt.';
   if (projekt) {
-    const soll = sichererName(nameAus(struktur.ordnername, { nummer: projekt.nummer, kurzname: projekt.kurzname, jahr: projekt.angelegt.slice(0, 4) }));
+    const soll = sichererName(nameAus(struktur.ordnername, werte));
     // ohne Kurzname (etwa eine Projektdatei aus PERMIO, der Formulare-App) lässt sich der Name nicht beurteilen
     const vollstaendig = projekt.nummer && (projekt.kurzname || !/kurzname/i.test(struktur.ordnername));
-    if (soll && vollstaendig && soll.toLowerCase() !== ordnerName.toLowerCase())
+    if (vollstaendig && brauchtJahr(struktur.ordnername, werte)) befunde.push({ art: 'hinweis', titel: 'Ordnername nicht beurteilbar', text: ohneAnlagedatum });
+    else if (soll && vollstaendig && soll.toLowerCase() !== ordnerName.toLowerCase())
       befunde.push({ art: 'warnung', titel: 'Der Ordnername weicht vom Schema ab', text: `Der Ordner heißt „${ordnerName}“, nach dem Schema „${struktur.ordnername}“ und den Stammdaten wäre es „${soll}“.` });
   }
 
   /* Ordner der Struktur */
   const lph = projekt?.leistungsphasen ?? [];
-  const werte = { nummer: projekt?.nummer ?? '', kurzname: projekt?.kurzname ?? '', jahr: projekt?.angelegt.slice(0, 4) ?? '' };
   const ziel = (p: string) =>
     normPfad(p)
       .split('/')
       .map((t) => sichererName(nameAus(t, werte)))
       .filter(Boolean)
       .join('/');
-  const regeln = struktur.ordner.filter((r) => ordnerGilt(struktur.ordner, r.pfad, lph)).map((r) => ({ ...r, pfad: ziel(r.pfad) }));
+  const gueltig = struktur.ordner.filter((r) => ordnerGilt(struktur.ordner, r.pfad, lph));
+  // Ordner, deren Name (oder der eines Elternordners) das unbekannte Jahr braucht, werden weder gemeldet noch angelegt
+  const nichtBeurteilbar = gueltig.filter((r) => brauchtJahr(r.pfad, werte)).map((r) => normPfad(r.pfad));
+  const regeln = gueltig.filter((r) => !brauchtJahr(r.pfad, werte)).map((r) => ({ ...r, pfad: ziel(r.pfad) }));
   const fehlendeOrdner = regeln.map((r) => r.pfad).filter((p) => p && !da.has(p.toLowerCase()));
-  if (fehlendeOrdner.length) befunde.push({ art: 'warnung', titel: `${fehlendeOrdner.length} Ordner der Struktur ${fehlendeOrdner.length === 1 ? 'fehlt' : 'fehlen'}`, pfade: fehlendeOrdner });
+  if (fehlendeOrdner.length)
+    befunde.push({ art: 'warnung', titel: `${fehlendeOrdner.length} Ordner der Struktur ${fehlendeOrdner.length === 1 ? 'fehlt' : 'fehlen'}`, pfade: fehlendeOrdner, aktion: 'ordnerAnlegen' });
   else if (regeln.length) befunde.push({ art: 'ok', titel: `Alle ${regeln.length} Ordner der Struktur sind vorhanden` });
+  if (nichtBeurteilbar.length)
+    befunde.push({
+      art: 'hinweis',
+      titel: `${nichtBeurteilbar.length} ${nichtBeurteilbar.length === 1 ? 'Ordner der Struktur ist' : 'Ordner der Struktur sind'} nicht beurteilbar`,
+      text: `${ohneAnlagedatum} Diese Ordner werden weder geprüft noch angelegt.`,
+      pfade: nichtBeurteilbar,
+    });
 
   // Ordner außerhalb der Struktur und lose Dateien im Stamm
   const { fremd, lose } = ausserhalbDerStruktur(struktur, eintraege, werte);
@@ -150,6 +188,7 @@ export function pruefe(ordnerName: string, eintraege: Eintrag[], struktur: Struk
       titel: `${falscheMails.length} von ${mails.length} ${mails.length === 1 ? 'Mail heißt' : 'Mails heißen'} nicht nach dem Schema`,
       text: `Schema: ${MAIL_SCHEMA} (Projektcode ${projekt!.nummer}). „Mails benennen …“ schlägt die richtigen Namen aus den Mails vor.`,
       pfade: falscheMails,
+      aktion: 'mailsBenennen',
     });
   else if (mails.length && projekt?.nummer) befunde.push({ art: 'ok', titel: `Alle ${mails.length} Mails heißen nach dem Schema` });
 

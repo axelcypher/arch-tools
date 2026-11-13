@@ -17,13 +17,16 @@ import { ladeProjektordner } from './AssistentView';
 
 const log = logger('pruefen');
 
-const GRUPPEN: { art: BefundArt; titel: string }[] = [
-  { art: 'fehler', titel: 'Fehler' },
-  { art: 'warnung', titel: 'Abweichungen' },
-  { art: 'hinweis', titel: 'Hinweise' },
-  { art: 'ok', titel: 'In Ordnung' },
+/** Zählung in der Kopfzeile des Berichts, Fehler zuerst */
+const ZAEHLUNG: { art: BefundArt; eins: string; mehr: string }[] = [
+  { art: 'fehler', eins: 'Fehler', mehr: 'Fehler' },
+  { art: 'warnung', eins: 'Abweichung', mehr: 'Abweichungen' },
+  { art: 'hinweis', eins: 'Hinweis', mehr: 'Hinweise' },
 ];
 const MAX_PFADE = 40;
+/** längere Pfadlisten sind eingeklappt */
+const PFADE_OFFEN = 5;
+const CSV_KNOPF = 'Als CSV speichern …';
 
 interface Geprueft extends GeladenerOrdner {
   ergebnis: Pruefergebnis;
@@ -51,7 +54,9 @@ export function PruefView({ onErgaenzen, onMails, fs: fsVorgabe, start }: { onEr
   useEffect(() => {
     if (!fs || !roots.length) return setProjekte([]);
     let aktuell = true;
-    void projekteAuflisten(fs, roots).then((r) => aktuell && setProjekte(r.projekte));
+    void projekteAuflisten(fs, roots)
+      .then((r) => aktuell && setProjekte(r.projekte))
+      .catch((e) => aktuell && setFehler(`Die Stammordner lassen sich nicht lesen: ${e instanceof Error ? e.message : String(e)}`));
     return () => {
       aktuell = false;
     };
@@ -112,13 +117,20 @@ export function PruefView({ onErgaenzen, onMails, fs: fsVorgabe, start }: { onEr
   const fehlendeAnlegen = async () => {
     if (!g?.pfad || !fs) return;
     setLaeuft('Ordner werden angelegt …');
+    let angelegt = 0;
     try {
-      for (const p of g.ergebnis.fehlendeOrdner) await fs.ordnerAnlegen(g.pfad, p);
+      for (const p of g.ergebnis.fehlendeOrdner) {
+        await fs.ordnerAnlegen(g.pfad, p);
+        angelegt++;
+      }
       log.info(`Fehlende Ordner angelegt: ${g.name}`, g.ergebnis.fehlendeOrdner);
       await pruefenPfad(g.pfad);
     } catch (e) {
-      setFehler(e instanceof Error ? e.message : String(e));
-      setLaeuft(null);
+      // Teilstand: neu prüfen, damit der Bericht zeigt, was schon angelegt ist – dann den Fehler nennen
+      const text = `${angelegt} von ${g.ergebnis.fehlendeOrdner.length} Ordnern angelegt, dann Fehler: ${e instanceof Error ? e.message : String(e)}`;
+      log.warn(`Fehlende Ordner nur teilweise angelegt: ${g.name}`, text);
+      await pruefenPfad(g.pfad);
+      setFehler(text);
     }
   };
 
@@ -127,7 +139,13 @@ export function PruefView({ onErgaenzen, onMails, fs: fsVorgabe, start }: { onEr
       setFehler(e instanceof Error ? e.message : String(e)),
     );
 
-  const offen = g?.ergebnis.befunde.filter((b) => b.art !== 'ok').length ?? 0;
+  const zaehlung = g
+    ? ZAEHLUNG.map(({ art, eins, mehr }) => [g.ergebnis.befunde.filter((b) => b.art === art).length, eins, mehr] as const)
+        .filter(([n]) => n)
+        .map(([n, eins, mehr]) => `${n} ${n === 1 ? eins : mehr}`)
+        .join(' · ')
+    : '';
+  const zurueck = alle ? '← Zur Übersicht' : '← Zur Projektliste';
   const gefiltert = suche.trim() ? projekte.filter((p) => `${p.gruppe ?? ''} ${p.name}`.toLowerCase().includes(suche.trim().toLowerCase())) : projekte;
 
   return (
@@ -215,72 +233,81 @@ export function PruefView({ onErgaenzen, onMails, fs: fsVorgabe, start }: { onEr
               </table>
             </div>
             <div className="button-row">
-              <button onClick={() => csvSpeichern(`Prüfung aller Projekte ${new Date().toISOString().slice(0, 10)}`, sammelCsv(alle))}>Als CSV speichern …</button>
-              <button onClick={() => setAlle(null)}>Zur Projektliste</button>
+              <button onClick={() => csvSpeichern(`Prüfung aller Projekte ${new Date().toISOString().slice(0, 10)}`, sammelCsv(alle))}>{CSV_KNOPF}</button>
+              <button onClick={() => setAlle(null)}>← Zur Projektliste</button>
             </div>
           </>
         )}
 
         {g && (
           <>
-            <h3>
-              {g.name}
-              <span className="muted small-text">
-                {' '}
-                – {g.ergebnis.ordner} Ordner, {g.ergebnis.dateien} Dateien · {offen ? `${offen} ${offen === 1 ? 'Abweichung' : 'Abweichungen'}` : 'keine Abweichungen'}
-              </span>
-            </h3>
-            {g.pfad && <code className="po-pfad">{g.pfad}</code>}
-            {GRUPPEN.map(({ art, titel }) => {
-              const befunde = g.ergebnis.befunde.filter((b) => b.art === art);
-              if (!befunde.length) return null;
-              return (
-                <div key={art} className="po-befundgruppe">
-                  <h4>
-                    {titel} ({befunde.length})
-                  </h4>
-                  <ul className="po-befunde">
-                    {befunde.map((b, i) => (
-                      <li key={i} className={b.art}>
-                        <span className="po-befund-art">{BEFUND_ART[b.art]}</span>
-                        <div>
-                          <strong>{b.titel}</strong>
-                          {b.text && <div className="small-text">{b.text}</div>}
-                          {b.pfade && (
-                            <ul className="po-pfade">
-                              {b.pfade.slice(0, MAX_PFADE).map((p) => (
-                                <li key={p}>{p}</li>
-                              ))}
-                              {b.pfade.length > MAX_PFADE && <li className="muted">… und {b.pfade.length - MAX_PFADE} weitere (vollständig im Bericht)</li>}
-                            </ul>
-                          )}
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              );
-            })}
-            <div className="button-row">
-              {fs && g.pfad && g.ergebnis.fehlendeOrdner.length > 0 && (
-                <button disabled={!!laeuft} onClick={() => void fehlendeAnlegen()} title="Legt nur die fehlenden Ordner der Struktur an – sonst wird nichts verändert">
-                  {g.ergebnis.fehlendeOrdner.length} fehlende Ordner anlegen
+            <div className="po-bericht-kopf">
+              <h3>
+                {g.name}
+                <span className="muted small-text">
+                  {' '}
+                  – {g.ergebnis.ordner} Ordner, {g.ergebnis.dateien} Dateien · {zaehlung || 'keine Abweichungen'}
+                </span>
+              </h3>
+              {(projekte.length > 0 || alle) && (
+                <button className="small" onClick={() => setG(null)}>
+                  {zurueck}
                 </button>
               )}
+            </div>
+            {g.pfad && <code className="po-pfad">{g.pfad}</code>}
+            <ul className="po-befunde">
+              {g.ergebnis.befunde.map((b, i) => (
+                <li key={i} className={b.art}>
+                  <span className="po-befund-art">{BEFUND_ART[b.art]}</span>
+                  <div className="po-befund-inhalt">
+                    <strong>{b.titel}</strong>
+                    {b.text && <div className="small-text">{b.text}</div>}
+                    {b.pfade && b.pfade.length > PFADE_OFFEN ? (
+                      <details className="po-pfade-klapp">
+                        <summary>
+                          {b.pfade.length} {b.pfade.every((p) => !/\.[^/.]+$/.test(p)) ? 'Ordner' : 'Pfade'} anzeigen
+                        </summary>
+                        <Pfade pfade={b.pfade} />
+                      </details>
+                    ) : (
+                      b.pfade && <Pfade pfade={b.pfade} />
+                    )}
+                    {b.aktion === 'ordnerAnlegen' && fs && g.pfad && g.ergebnis.fehlendeOrdner.length > 0 && (
+                      <button className="small po-befund-aktion" disabled={!!laeuft} onClick={() => void fehlendeAnlegen()} title="Legt nur die fehlenden Ordner der Struktur an – sonst wird nichts verändert">
+                        {g.ergebnis.fehlendeOrdner.length === 1 ? 'Fehlenden Ordner anlegen' : `${g.ergebnis.fehlendeOrdner.length} fehlende Ordner anlegen`}
+                      </button>
+                    )}
+                    {b.aktion === 'mailsBenennen' && onMails && g.pfad && g.ergebnis.falscheMails.length > 0 && (
+                      <button className="small po-befund-aktion" onClick={() => onMails(g.pfad)} title="Die Mails lesen und nach dem Schema benennen">
+                        {g.ergebnis.falscheMails.length} {g.ergebnis.falscheMails.length === 1 ? 'Mail' : 'Mails'} benennen …
+                      </button>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <div className="button-row">
+              <button onClick={() => csvSpeichern(`Prüfbericht ${g.name}`, berichtCsv(g.ergebnis))}>{CSV_KNOPF}</button>
               <button onClick={() => onErgaenzen(g)} title="Im Assistenten fehlende Ordner, Vorlagen und die Projektdatei ergänzen – vorhandene Dateien bleiben unverändert">
                 Projekt ergänzen …
               </button>
-              {onMails && g.pfad && g.ergebnis.falscheMails.length > 0 && (
-                <button onClick={() => onMails(g.pfad)} title="Die Mails lesen und nach dem Schema benennen">
-                  {g.ergebnis.falscheMails.length} {g.ergebnis.falscheMails.length === 1 ? 'Mail' : 'Mails'} benennen …
-                </button>
-              )}
-              <button onClick={() => csvSpeichern(`Prüfbericht ${g.name}`, berichtCsv(g.ergebnis))}>Bericht als CSV …</button>
-              {(projekte.length > 0 || alle) && <button onClick={() => setG(null)}>{alle ? 'Zur Übersicht' : 'Zur Projektliste'}</button>}
             </div>
           </>
         )}
       </section>
     </div>
+  );
+}
+
+/** Pfadliste eines Befunds – sehr lange Listen gekürzt (vollständig in der CSV) */
+function Pfade({ pfade }: { pfade: string[] }) {
+  return (
+    <ul className="po-pfade">
+      {pfade.slice(0, MAX_PFADE).map((p) => (
+        <li key={p}>{p}</li>
+      ))}
+      {pfade.length > MAX_PFADE && <li className="muted">… und {pfade.length - MAX_PFADE} weitere (vollständig in der CSV)</li>}
+    </ul>
   );
 }

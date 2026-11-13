@@ -32,4 +32,19 @@ describe('Messen (F-19)', () => {
     expect(m.flaeche).toBe(12);
     expect(messText(m)).toMatch(/Umfang: 14,000 m\nFläche: 12,00 m²$/);
   });
+
+  it('waagerecht nach rechts: 0°, nicht „−0°“ (Gegenprobe: nach oben 90°)', () => {
+    const m = messung([
+      { x: 0, y: 2 },
+      { x: 3, y: 2 },
+    ]);
+    expect(Object.is(m.abschnitte[0].winkel, -0)).toBe(false);
+    expect(m.abschnitte[0].winkel.toLocaleString('de-DE')).toBe('0');
+    expect(
+      messung([
+        { x: 0, y: 2 },
+        { x: 0, y: 0 },
+      ]).abschnitte[0].winkel,
+    ).toBe(90);
+  });
 });
