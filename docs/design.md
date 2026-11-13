@@ -141,7 +141,8 @@ und `ZEICHENFLAECHE_GRUND` in `planFarbe.ts` müssen zu `--canvas-filter` und `-
 - Optionen, die nur zu einer Wahl gehören, erst bei dieser Wahl zeigen (Beispiel: Vorlagen-Knöpfe im Excel-Dialog nur
   bei „Eigene Vorlage“).
 - In Rückfragen mit Gefahr-Knopf (`art: 'danger'`, z. B. „Löschen“, „Verwerfen“) liegen Erstfokus und Enter nie auf
-  ihm, sondern auf dem Hauptknopf bzw. „Abbrechen“. Gibt es nur Gefahr-Knöpfe, tut Enter nichts.
+  ihm, sondern auf dem Hauptknopf bzw. „Abbrechen“ (ohne beide: auf dem letzten ungefährlichen Knopf). Gibt es nur
+  Gefahr-Knöpfe, tut Enter nichts, und Esc oder ein Klick daneben schließen wie „Abbrechen“.
 
 ## Druckvorschau
 

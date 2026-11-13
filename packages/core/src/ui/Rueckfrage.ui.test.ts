@@ -127,7 +127,41 @@ describe('Rückfrage mit Gefahr-Knopf', () => {
     await act(async () => host.querySelector('.modal.rf form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
     expect(antwort).toBeUndefined();
     expect(host.querySelector('.modal.rf')).not.toBeNull();
+    // Esc schließt wie „Abbrechen“ – nie mit der Gefahr-Aktion
     esc();
+    await act(async () => {});
+    expect(antwort).toBeNull();
+  });
+
+  it('nur ein Gefahr-Knopf: Klick neben den Dialog löst die Aktion nicht aus', async () => {
+    const host = render(createElement(RueckfrageHost));
+    let antwort: string | null | undefined;
+    void fragen({ titel: 'Alles verwerfen?', knoepfe: [{ id: 'weg', label: 'Verwerfen', art: 'danger' }] }).then((v) => (antwort = v));
+    await act(async () => {});
+    const hintergrund = host.querySelector('.modal-backdrop')!;
+    await act(async () => {
+      hintergrund.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    });
+    // geschlossen wie „Abbrechen“
+    expect(host.querySelector('.modal.rf')).toBeNull();
+    expect(antwort).toBeNull();
+  });
+
+  it('ohne Hauptknopf liegt der Standard auf „Abbrechen“, auch wenn weitere ungefährliche Knöpfe folgen', async () => {
+    const host = render(createElement(RueckfrageHost));
+    let antwort: string | null | undefined;
+    void fragen({
+      titel: 'Dateien vorhanden',
+      knoepfe: [
+        { id: 'abbrechen', label: 'Abbrechen' },
+        { id: 'ueberspringen', label: 'Vorhandene überspringen' },
+        { id: 'ersetzen', label: 'Ersetzen', art: 'danger' },
+      ],
+    }).then((v) => (antwort = v));
+    await act(async () => {});
+    expect(document.activeElement?.textContent).toBe('Abbrechen');
+    await act(async () => host.querySelector('.modal.rf form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
+    expect(antwort).toBe('abbrechen');
   });
 });
 
