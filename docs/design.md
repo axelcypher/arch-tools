@@ -120,14 +120,13 @@ Helligkeitskontrast. Unter der Linie in `--sel-foto` liegt ein Doppelsaum, auße
 
 ## Felder
 
-- `NumberField` zeigt Zahlen mit Nachkommastellen mit Tausenderpunkten (45.000,00). Beim Fokussieren bleibt der Text
+- `NumberField` zeigt Zahlen mit Nachkommastellen gruppiert (45.000,00). Beim Fokussieren bleibt der Text
   unverändert (Cursor und Auswahl stimmen); Punkte vor dem Komma werden beim Lesen immer als Tausendertrenner
   verstanden, auch wenn nach dem Bearbeiten die Dreiergruppen nicht mehr stimmen. Ganze Zahlen (`digits={0}`) stehen
   ohne Punkte, weil „45.00“ dort mehrdeutig wäre.
-- **Enter** übernimmt die Eingabe und verlässt das Feld; danach gehören Strg+Z (Rückgängig der App), Entf und die
-  Werkzeugtasten wieder der Arbeitsfläche. Bewusst so, obwohl ein Review „Fokus bleibt im Feld“ wünschte: sonst ginge
-  Strg+Z nach Enter ins leere Rückgängig des Browsers. Weiter zum nächsten Feld mit Tab. **Esc** verwirft eine Eingabe;
-  ohne Eingabe schließt Esc den Dialog.
+- **Enter** übernimmt die Eingabe und verlässt das Feld, damit Strg+Z (Rückgängig der App), Entf und die
+  Werkzeugtasten wieder der Arbeitsfläche gehören und nicht ins leere Rückgängig des Browsers gehen. Weiter zum nächsten
+  Feld mit Tab. **Esc** verwirft eine Eingabe; ohne Eingabe schließt Esc den Dialog.
 - In `.toolbar` und `.report-actions` füllen Felder nicht die Zeile: Auswahllisten sind so breit wie ihr Inhalt,
   Textfelder haben die Standardbreite des Browsers (etwa 20 Zeichen; kürzer mit dem Attribut `size`), Regler 120px.
   Sonst füllen Felder ihre Spalte.
