@@ -175,7 +175,6 @@ describe('QUADRIO: Zeichenfläche (Einstieg, Rückgängig im Entwurf)', () => {
     expect(umriss().points).not.toEqual(vorher);
     expect(umriss().pruefen).toBeFalsy();
   });
-
 });
 
 describe('QUADRIO: Kontextmenü der Zeichenfläche und Werkzeugleiste (gemeinsames Menü und Symbole)', () => {
