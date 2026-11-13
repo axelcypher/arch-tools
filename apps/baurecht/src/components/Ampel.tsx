@@ -43,5 +43,7 @@ export function AmpelMarke({ ampel, klein = false, ohneText = false, vonHand = f
 }
 
 const datumZahl = (iso: string) => iso.split('-').reverse().join('.');
+/** „a, b und c“ */
+export const aufzaehlen = (t: string[]) => (t.length > 1 ? `${t.slice(0, -1).join(', ')} und ${t[t.length - 1]}` : (t[0] ?? ''));
 export const datum = (iso: string | undefined | null) => (iso ? datumZahl(iso.slice(0, 10)) : '');
 export const uhrzeit = (iso: string) => new Date(iso).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });

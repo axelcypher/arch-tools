@@ -42,4 +42,15 @@ describe('Dialoge', () => {
     expect(document.activeElement?.id).toBe('x');
     hinter.remove();
   });
+
+  it('Startfokus nicht auf einer Aufklappzeile – sie bleibt aber im Tab-Zyklus', async () => {
+    dialogVerhaltenEinrichten();
+    const hinter = document.createElement('div');
+    hinter.className = 'modal-backdrop';
+    hinter.innerHTML = '<div class="modal"><details><summary id="s">Stuft 3 herab – Liste anzeigen</summary><p>…</p></details><input id="haken" type="checkbox"><button id="ok">OK</button></div>';
+    document.body.appendChild(hinter);
+    await warten();
+    expect(document.activeElement?.id).toBe('haken');
+    hinter.remove();
+  });
 });

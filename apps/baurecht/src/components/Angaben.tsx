@@ -1,7 +1,7 @@
 import type { KeyboardEvent } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { FAKT_GRUPPEN, faktName, ortsgebunden, wertAnzeige, zaehlEinheit } from '@core/baurecht/typen';
-import { aktuelleLage, auswertungMit, OHNE_LAGEBEZUG, planungsrechtWirkung } from '../pruefung';
+import { aktuelleLage, OHNE_LAGEBEZUG, usePlanungsrechtWirkung } from '../pruefung';
 import { textPasst } from '../suche';
 import { ortVon } from '@core/baurecht/ort';
 import type { FaktDef, FaktWert } from '@core/baurecht/typen';
@@ -14,7 +14,7 @@ import { heute, offeneBestaetigungen, PLANUNGSRECHT, useBaurecht } from '../stor
 import { benutzer } from '../benutzer';
 import { faktBestaetigenOeffnen, faktSetzenOeffnen } from './Dialoge';
 import { Klaeren } from './Kopf';
-import { inBereichZeigen, nb } from './Ampel';
+import { datum, inBereichZeigen, nb } from './Ampel';
 
 /**
  * Segmentgruppe mit einem Tabstopp: ←/→ (bzw. ↑/↓) bewegt den Fokus, Leertaste/Eingabe wählt. Tabstopp ist der
@@ -70,6 +70,10 @@ const merkmalPasst = (m: { name: string; werte: string[] }, suche: string) => te
 /** Rückfragen zu einem Antragsmerkmal: stehen direkt unter dem Merkmal (nicht tief in ihrer Gruppe) */
 // Umfang der Beseitigung, beim Ersatzbau die Angaben zum Altbau (Verfahren für den Abbruch)
 export const RUECKFRAGEN: Record<string, string[]> = { Vorhaben: ['vorhaben.beseitigung_umfang', 'nw.altbau_verfahrensfrei', 'nw.beseitigung_mit_beantragt'] };
+const RUECKFRAGEN_ALLE = new Set(Object.values(RUECKFRAGEN).flat());
+
+/** offen ist eine Rückfrage ohne Wert oder mit einem Wert, der nur Hinweis ist (z. B. aus einer älteren Angabe) */
+const rueckfrageOffen = (w: FaktWert | undefined) => w?.wert == null || (w.sicherheit === 'hinweis' && !w.bestaetigt);
 
 /** eine Rückfrage wird gestellt, wenn es die Angabe gibt und ihre Bedingung („wenn“) zutrifft */
 function rueckfrageSichtbar(id: string, stand: Pruefstand, merkmale: Record<string, string>): boolean {
@@ -84,14 +88,12 @@ function rueckfrageSichtbar(id: string, stand: Pruefstand, merkmale: Record<stri
  * Planungsrecht für diesen Ort bestätigen – danach Fokus auf das Merkmal (der Knopf verschwindet) und eine Ansage. Ist
  * das Merkmal nicht zu sehen (Suche), geht der Fokus nach `ersatz` (Suchfeld) und das Fokusziel verfällt.
  */
-function planungsrechtGiltHier(ersatz?: () => void) {
+function planungsrechtGiltHier(klaert: number, ersatz?: () => void) {
   const st = useBaurecht.getState();
-  // die Wirkung ansagen: wie viele Vorschriften dadurch entfallen bzw. gelten (bestätigt wird beim Speichern noch einmal)
-  const vorher = auswertungMit(st.pruefung.fakten).zaehler;
   st.planungsrechtBestaetigen();
-  const nachher = auswertungMit(useBaurecht.getState().pruefung.fakten).zaehler;
-  const wirkung = [nachher.gruen > vorher.gruen ? `${nachher.gruen - vorher.gruen} Vorschriften entfallen jetzt` : '', nachher.rot > vorher.rot ? `${nachher.rot - vorher.rot} gelten jetzt` : ''].filter(Boolean).join(', ');
-  st.ansagen(`Planungsrecht für diesen Ort bestätigt${wirkung ? ` – ${wirkung}` : ''}; beim Speichern noch einmal bestätigen`);
+  // die Wirkung ansagen – die Zahl steht schon vorher da („klärt N“: Paragrafen, die nur am Vorbehalt hingen und jetzt
+  // entfallen); bestätigt wird beim Speichern noch einmal
+  st.ansagen(`Planungsrecht für diesen Ort bestätigt${klaert ? ` – ${klaert === 1 ? 'eine Vorschrift entfällt' : `${klaert} Vorschriften entfallen`} jetzt` : ''}; beim Speichern noch einmal bestätigen`);
   st.fokusSetzen('merkmal:Planungsrecht');
   setTimeout(() => {
     if (useBaurecht.getState().fokus !== 'merkmal:Planungsrecht') return;
@@ -105,6 +107,7 @@ function Merkmale({ klaerung, suche = '', planungsrechtOffen, planungsrechtKlaer
   const merkmale = useBaurecht((s) => s.merkmale);
   const geaendert = useBaurecht((s) => s.merkmaleDatei);
   const planungsrechtEntwurf = useBaurecht((s) => offeneBestaetigungen(s).includes(PLANUNGSRECHT));
+  const planungsrechtOrt = useBaurecht((s) => s.pruefung.planungsrechtOrt);
   const fokus = useBaurecht((s) => s.fokus);
   const ref = useRef<HTMLElement>(null);
   // ein Wert außerhalb der Werteliste (eigener Wert aus Formulare) zählt als offen – die Auswertung wertet ihn nicht
@@ -122,6 +125,9 @@ function Merkmale({ klaerung, suche = '', planungsrechtOffen, planungsrechtKlaer
   }, [fehlen]);
   useEffect(() => {
     if (fokus?.startsWith('merkmal:')) setAuf(true);
+    // Fokus auf eine Rückfrage (z. B. „bestätigen klärt“), die eingeklappt keine eigene Zeile hat: aufklappen
+    const rid = fokus?.replace(/:bestaetigen$/, '');
+    if (rid && RUECKFRAGEN_ALLE.has(rid) && !ref.current?.querySelector(`[data-fakt="${CSS.escape(rid)}"]`)) setAuf(true);
   }, [fokus]);
   // Fokus erst setzen, wenn die Gruppe offen ist (sonst gibt es das Merkmal noch nicht – der Fokus fiele auf die Seite)
   useEffect(() => {
@@ -140,7 +146,7 @@ function Merkmale({ klaerung, suche = '', planungsrechtOffen, planungsrechtKlaer
   // offene Rückfragen (z. B. Umfang der Beseitigung) zählen im Kopf mit – sonst stünde dort „alle festgelegt“
   const rueckfragenOffen = Object.values(RUECKFRAGEN)
     .flat()
-    .filter((rid) => rueckfrageSichtbar(rid, stand, merkmale) && stand.auswertung.fakten[rid]?.wert == null).length;
+    .filter((rid) => rueckfrageSichtbar(rid, stand, merkmale) && rueckfrageOffen(stand.auswertung.fakten[rid])).length;
   const standText = fehlen ? `${fehlen} offen` : rueckfragenOffen ? `${rueckfragenOffen === 1 ? 'eine Rückfrage' : `${rueckfragenOffen} Rückfragen`} offen` : 'alle festgelegt';
   const setzen = (name: string, w: string) => useBaurecht.getState().merkmalSetzen(name, w);
   // eine Rückfrage erscheint (nach einem Merkmal oder einer Antwort, z. B. „Abbruch mit Ersatzbau“ → Altbau): Ansage
@@ -166,7 +172,7 @@ function Merkmale({ klaerung, suche = '', planungsrechtOffen, planungsrechtKlaer
   }, [rfSchluessel]);
   // eingeklappt beantwortete Rückfragen bleiben bis zum Aufklappen kompakt stehen (die Antwort bleibt zu sehen); der
   // Fokus geht auf die nächste offene Rückfrage bzw. den Gruppenknopf – nicht auf die Seite
-  const offeneRF = sichtbareRF.filter((rid) => stand.auswertung.fakten[rid]?.wert == null);
+  const offeneRF = sichtbareRF.filter((rid) => rueckfrageOffen(stand.auswertung.fakten[rid]));
   const offenSchluessel = offeneRF.join('|');
   const [erledigt, setErledigt] = useState<string[]>([]);
   const vorherOffen = useRef<string[]>(offeneRF);
@@ -179,7 +185,7 @@ function Merkmale({ klaerung, suche = '', planungsrechtOffen, planungsrechtKlaer
     if (auf) return setErledigt([]);
     // beantwortet heißt: noch gestellt und jetzt mit Wert (nicht: weggefallen, weil sich das Merkmal geändert hat)
     const gestellt = rfSchluessel.split('|');
-    const beantwortet = vorher.filter((r) => !jetzt.includes(r) && gestellt.includes(r) && faktenRef.current[r]?.wert != null);
+    const beantwortet = vorher.filter((r) => !jetzt.includes(r) && gestellt.includes(r) && !rueckfrageOffen(faktenRef.current[r]));
     if (!beantwortet.length) return;
     setErledigt((e) => [...new Set([...e, ...beantwortet])]);
     // neue Rückfragen sagt die Ansage oben an („Rückfrage: …“); sonst hier der Stand
@@ -207,7 +213,7 @@ function Merkmale({ klaerung, suche = '', planungsrechtOffen, planungsrechtKlaer
       {!auf &&
         Object.entries(RUECKFRAGEN).map(([name, ids]) => {
           const gestellt = ids.filter((rid) => rueckfrageSichtbar(rid, stand, merkmale));
-          const offen = gestellt.filter((rid) => stand.auswertung.fakten[rid]?.wert == null);
+          const offen = gestellt.filter((rid) => rueckfrageOffen(stand.auswertung.fakten[rid]));
           if (!offen.length && !gestellt.some((rid) => erledigt.includes(rid))) return null;
           return (
             <div key={name} className="br-rueckfrage" role="group" aria-label={`Rückfrage zu ${MERKMAL_TITEL[name] ?? name}`}>
@@ -217,7 +223,8 @@ function Merkmale({ klaerung, suche = '', planungsrechtOffen, planungsrechtKlaer
               {gestellt.map((rid) => {
                 const def = stand.auswertung.faktDefs[rid];
                 const w = stand.auswertung.fakten[rid];
-                if (w?.wert == null) return <FaktZeile key={rid} id={rid} def={def} wert={w} klaert={klaerung.get(rid) ?? 0} eigen={!!eigene[rid]} alsKnoepfe />;
+                // offen oder nur Hinweis (z. B. aus einer älteren Angabe – mit „Bestätigen …“): ganz, sonst kompakt
+                if (rueckfrageOffen(w)) return <FaktZeile key={rid} id={rid} def={def} wert={w} klaert={klaerung.get(rid) ?? 0} eigen={!!eigene[rid]} alsKnoepfe />;
                 return (
                   <p key={rid} className="br-rueckfrage-erledigt">
                     {faktName(def, rid)}: <strong>{wertAnzeige(w.wert, def)}</strong>{' '}
@@ -255,9 +262,15 @@ function Merkmale({ klaerung, suche = '', planungsrechtOffen, planungsrechtKlaer
               {(geaendert[m.name] ?? '') !== wert && <span className="br-marke" title="noch nicht gespeichert">geändert</span>}
             </div>
             {/* Stand der Bestätigung des Planungsrechts in einer eigenen Zeile unter dem Titel (die Frage behält die volle Breite) */}
-            {m.name === 'Planungsrecht' && wert && !fremd && (planungsrechtOffen || planungsrechtEntwurf) && (
+            {m.name === 'Planungsrecht' && wert && !fremd && (planungsrechtOffen || planungsrechtEntwurf || planungsrechtOrt?.von) && (
               <div className="br-merkmal-marken">
-                {planungsrechtOffen ? (
+                {/* gespeichert und für diesen Ort bestätigt: wer und wann */}
+                {!planungsrechtOffen && !planungsrechtEntwurf ? (
+                  <span className="br-leise">
+                    für diesen Ort bestätigt ({planungsrechtOrt?.von}
+                    {planungsrechtOrt?.am ? `, ${datum(planungsrechtOrt.am)}` : ''})
+                  </span>
+                ) : planungsrechtOffen ? (
                   <span className="br-info-marke" title={planungsrechtOffen}>
                     nicht für diesen Ort bestätigt
                   </span>
@@ -270,8 +283,8 @@ function Merkmale({ klaerung, suche = '', planungsrechtOffen, planungsrechtKlaer
                     <button
                       type="button"
                       className="small br-link"
-                      aria-label="Bestätigung des Planungsrechts zurücknehmen"
-                      title="Auf den gespeicherten Stand zurück"
+                      aria-label="Bestätigung des Planungsrechts für diesen Ort zurücknehmen"
+                      title="Nur die Bestätigung für diesen Ort zurücknehmen – der gewählte Wert bleibt (dann „nicht für diesen Ort bestätigt“)"
                       onClick={() => {
                         useBaurecht.getState().aufDateistand([], [PLANUNGSRECHT]);
                         useBaurecht.getState().ansagen('Bestätigung des Planungsrechts zurückgenommen');
@@ -322,7 +335,7 @@ function Merkmale({ klaerung, suche = '', planungsrechtOffen, planungsrechtKlaer
                 </span>
                 {m.name === 'Planungsrecht' && planungsrechtOffen && !fremd && (
                   <span className="br-bestaetigen-zeile">
-                    <button type="button" className="small" data-bestaetigen onClick={() => planungsrechtGiltHier()} title={planungsrechtOffen}>
+                    <button type="button" className="small" data-bestaetigen onClick={() => planungsrechtGiltHier(planungsrechtKlaert)} title={planungsrechtOffen}>
                       Für diesen Ort bestätigen
                     </button>
                     {planungsrechtKlaert > 0 && (
@@ -573,8 +586,9 @@ function FaktZeile({ id, def, wert, klaert, eigen, alsKnoepfe = false }: { id: s
       )}
       {def.hilfe &&
         (alsKnoepfe && wert?.wert == null ? (
-          // bei einer offenen Rückfrage sichtbar (dort steht die Abgrenzung, z. B. angebaute Garage = vollständiger Abbruch),
-          // aber gekürzt – ganz stünde sie in einer schmalen Leiste über Bildschirmhöhe
+          // bei einer offenen Rückfrage sichtbar, aber auf die ersten Sätze gekürzt (ganz stünde sie in einer schmalen
+          // Leiste über Bildschirmhöhe); der Rest – z. B. die Abgrenzung „angebaute Garage = vollständiger Abbruch“ –
+          // hinter „mehr“
           <ErlaeuterungGekuerzt text={def.hilfe} name={name} />
         ) : hilfeLang || wert?.wert != null ? (
           <details className="br-erklaerung">
@@ -590,19 +604,25 @@ function FaktZeile({ id, def, wert, klaert, eigen, alsKnoepfe = false }: { id: s
   );
 }
 
-/** Text bis zum letzten Satzende vor `max` Zeichen (nicht nach „z. B.“ o. ä.), sonst bis zum letzten Wort */
+/** Abkürzungen, nach denen kein Satz endet („z. B.“, „bzw.“, „Abs.“ …) */
+const ABKUERZUNG = /(?:^|[\s(])(?:bzw|usw|ca|vgl|ggf|etc|evtl|inkl|max|min|Nr|Abs|Art|Buchst|Ziff|lit|Anm|sog|[A-Za-zÄÖÜäöü])\.$/;
+
+/** Text bis zum letzten Satzende vor `max` Zeichen (nicht nach Abkürzungen oder Ordnungszahlen), sonst bis zum letzten Wort */
 export function kuerzen(t: string, max: number): string {
   if (t.length <= max) return t;
-  const vorn = t.slice(0, max + 1);
-  const satz = /^[\s\S]*[a-zäöüß)\d]{2}[.!?](?=\s+[A-ZÄÖÜ„])/.exec(vorn)?.[0];
-  if (satz && satz.length >= max / 2) return satz;
+  let ende = -1;
+  for (const m of t.slice(0, max + 1).matchAll(/[.!?](?=\s+[A-ZÄÖÜ„(§])/g)) {
+    const vorn = t.slice(0, m.index + 1);
+    if (!ABKUERZUNG.test(vorn) && !/\d\.$/.test(vorn)) ende = m.index + 1;
+  }
+  if (ende >= max / 2) return t.slice(0, ende);
   return t.slice(0, max).replace(/\s+\S*$/, '');
 }
 
 /** Erläuterung einer offenen Rückfrage: sichtbar, lang aber gekürzt mit „mehr“ */
 function ErlaeuterungGekuerzt({ text, name }: { text: string; name: string }) {
   const [ganz, setGanz] = useState(false);
-  const kurz = kuerzen(text, 160);
+  const kurz = kuerzen(text, 240);
   return (
     <div className="br-leise br-erklaerung">
       {nb(ganz || kurz === text ? text : `${kurz} …`)}
@@ -629,17 +649,34 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
   useEffect(() => {
     if (useBaurecht.getState().fokus) useBaurecht.getState().fokusSetzen(null);
   }, [suche]);
+  // ein Fokusziel ohne Zeile (Angabe, an der gerade keine Regel hängt): „alle Angaben“ zeigen; gibt es die Angabe auch
+  // dann nicht (anderes Regelpaket, Suche), verfällt das Ziel – es bleibt nicht im Store hängen
+  const fokus = useBaurecht((s) => s.fokus);
+  useEffect(() => {
+    if (!fokus || fokus.startsWith('merkmal:')) return;
+    const id = fokus.replace(/:bestaetigen$/, '');
+    const t = setTimeout(() => {
+      if (useBaurecht.getState().fokus !== fokus || document.querySelector(`.br-angaben [data-fakt="${CSS.escape(id)}"]`)) return;
+      if (!alle) setAlle(true);
+      else useBaurecht.getState().fokusSetzen(null);
+    }, 60);
+    return () => clearTimeout(t);
+  }, [fokus, alle]);
   const { auswertung } = stand;
   const klaerung = useMemo(() => new Map(auswertung.klaerung.map((k) => [k.id, k.anzahl])), [auswertung.klaerung]);
   const relevant = useMemo(() => {
     const s = new Set<string>(['lage.ags']);
     for (const p of auswertung.paragrafen) for (const v of [...p.verwendet, ...p.offen]) if (!v.startsWith('merkmal:') && !v.startsWith('paragraf:')) s.add(v);
+    // Ziele von „bestätigen klärt“ (z. B. der Bezug einer Tabelle) – an ihnen hängt keine Regel unmittelbar, der Chip
+    // führte sonst ins Leere
+    for (const k of auswertung.bestaetigen ?? []) s.add(k.id);
     return s;
-  }, [auswertung.paragrafen]);
+  }, [auswertung.paragrafen, auswertung.bestaetigen]);
   const merkmale = useBaurecht((s) => s.merkmale);
   const ansage = useBaurecht((s) => s.ansage);
   // so viele Paragrafen ändert die Bestätigung des Planungsrechts für diesen Ort – vorher genannt, nicht erst danach
-  const planungsrechtKlaert = useMemo(() => (stand.planungsrechtFrueher ? planungsrechtWirkung(stand.auswertung) : 0), [stand]);
+  // (entprellt: eine zweite Auswertung erst, wenn die Eingabe ruht)
+  const planungsrechtKlaert = usePlanungsrechtWirkung(stand);
   const ortAnzeige = ortVon(useBaurecht((s) => s.project))?.anzeige;
   // Ansagen nach kurzer Zeit leeren – derselbe Text wird dann beim nächsten Mal wieder vorgelesen
   useEffect(() => {
@@ -699,8 +736,12 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
       <div className="br-suche">
         <input ref={suchfeld} type="search" placeholder="Angabe suchen …" value={suche} onChange={(e) => setSuche(e.target.value)} aria-label="Angaben durchsuchen" />
       </div>
+      {/* Suche: die Trefferzahl ansagen (der Leerzustand sagt sich selbst an) */}
+      <div className="br-unsichtbar" role="status">
+        {suche && (gruppen.length || merkmaleSichtbar) ? `${gruppen.reduce((n, g) => n + g.ids.length, 0) + VORGABE_MERKMALE.filter((m) => merkmalPasst(m, suche)).length} Angaben zu „${suche}“` : ''}
+      </div>
       <div className="br-angaben-liste">
-        {!suche && <Klaeren stand={stand} planungsrecht={planungsrechtKlaert} />}
+        {!suche && <Klaeren stand={stand} />}
         {stand.widersprueche
           .filter((w) => w !== stand.planungsrechtHinweis)
           .map((w) => (
@@ -713,7 +754,7 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
           <div className="br-meldung br-meldung-info br-planungsrecht-hinweis" role="status" title={stand.planungsrechtHinweis}>
             <span>{/noch nicht bestätigt$/.test(stand.planungsrechtFrueher ?? '') ? 'Planungsrecht für diesen Ort noch nicht bestätigt.' : `${stand.planungsrechtHinweis}.`}</span>{' '}
             <span className="br-bestaetigen-zeile">
-              <button type="button" className="small" onClick={() => planungsrechtGiltHier(() => suchfeld.current?.focus())} aria-label={`Planungsrecht „${useBaurecht.getState().merkmale['Planungsrecht'] ?? ''}“ für ${ortAnzeige ?? 'diesen Ort'} bestätigen`} title="Das Planungsrecht gilt so für dieses Grundstück – bis dahin zählt es nicht als gesichert">
+              <button type="button" className="small" onClick={() => planungsrechtGiltHier(planungsrechtKlaert, () => suchfeld.current?.focus())} aria-label={`Für diesen Ort bestätigen: Planungsrecht „${useBaurecht.getState().merkmale['Planungsrecht'] ?? ''}“, ${ortAnzeige ?? 'dieser Ort'}`} title="Das Planungsrecht gilt so für dieses Grundstück – bis dahin zählt es nicht als gesichert">
                 Für diesen Ort bestätigen
               </button>
               {planungsrechtKlaert > 0 && (

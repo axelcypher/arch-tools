@@ -535,11 +535,14 @@ describe('Runde 14: Planungsrecht als Entwurf, eingeklappte Rückfragen', () => 
     act(() => root?.unmount());
     document.body.innerHTML = '';
   });
-  const warten = () => act(async () => void (await new Promise((r) => setTimeout(r, 20))));
+  const warten = (ms = 20) => act(async () => void (await new Promise((r) => setTimeout(r, ms))));
 
   it('der Hinweis nennt vorher, was die Bestätigung klärt – die Zahl stimmt; danach „Entwurf“ mit „zurücknehmen“', async () => {
     const { auswertungMit } = await import('./pruefung');
     const host = render();
+    // die Zahl kommt entprellt (zweite Auswertung erst, wenn die Eingabe ruht)
+    await warten(400);
+    await warten();
     const hinweis = host.querySelector<HTMLElement>('.br-planungsrecht-hinweis')!;
     const n = Number(/klärt (\d+)/.exec(hinweis.textContent ?? '')?.[1]);
     expect(n).toBeGreaterThan(0);
@@ -554,7 +557,7 @@ describe('Runde 14: Planungsrecht als Entwurf, eingeklappte Rückfragen', () => 
     act(() => knopf(host, 'Prüfprotokoll')!.click());
     const d = document.querySelector<HTMLElement>('.br-protokoll')!;
     expect(d.textContent).toMatch(/Planungsrecht: .+ \(Entwurf – für diesen Ort bestätigt: /);
-    expect(d.textContent).toContain(`${n} Paragrafen nur durch die noch nicht gespeicherte Bestätigung des Planungsrechts`);
+    expect(d.textContent).toContain(`${n} Paragrafen hängen an der noch nicht gespeicherten Bestätigung des Planungsrechts`);
     expect(d.textContent).toMatch(/Die Bestätigung des Planungsrechts ist noch nicht gespeichert/);
     act(() => knopf(d, 'Schließen')!.click());
     act(() => knopf(host.querySelector('[data-merkmal="Planungsrecht"]')!, 'zurücknehmen')!.click());
@@ -562,15 +565,14 @@ describe('Runde 14: Planungsrecht als Entwurf, eingeklappte Rückfragen', () => 
     expect(host.querySelector('[data-merkmal="Planungsrecht"] .br-info-marke')?.textContent).toMatch(/nicht für diesen Ort bestätigt/);
   });
 
-  it('der Chip „Planungsrecht bestätigen klärt N“ führt direkt auf „Für diesen Ort bestätigen“', async () => {
+  it('Einzelheiten: „Nicht gesichert: Planungsrecht“ führt zum Bestätigen am Merkmal', async () => {
+    const { auswertungMit } = await import('./pruefung');
     const host = render();
-    const chip = [...host.querySelectorAll<HTMLButtonElement>('.br-klaeren .br-chip-knopf')].find((b) => b.textContent?.startsWith('Planungsrecht'));
-    // im Beispiel klärt die Bestätigung mehr als die meisten Angaben – der Chip steht unter den ersten vier
-    expect(chip).toBeTruthy();
-    if (!chip) return;
-    expect(chip.textContent).toMatch(/Planungsrecht bestätigen klärt \d+/);
-    act(() => chip.click());
-    await warten();
+    const p = auswertungMit(useBaurecht.getState().pruefung.fakten).paragrafen.find((x) => x.gruende.some((g) => g.startsWith('Nicht gesichert: Planungsrecht')))!;
+    expect(p).toBeTruthy();
+    act(() => useBaurecht.getState().waehlen(p.id));
+    act(() => knopf(host.querySelector('.br-detail')!, 'Zum Bestätigen')!.click());
+    await warten(150);
     expect(document.activeElement?.textContent).toBe('Für diesen Ort bestätigen');
   });
 
@@ -609,3 +611,124 @@ describe('Runde 14: Planungsrecht als Entwurf, eingeklappte Rückfragen', () => 
     expect(host.querySelector('#br-merkmale .br-gruppe-knopf')!.getAttribute('aria-expanded')).toBe('true');
   });
 });
+
+describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () => {
+  beforeEach(() => {
+    geschrieben = null;
+    const bytes = beispielOap();
+    useBaurecht.getState().projektSetzen({ art: 'datei', name: 'EFH.oap', bytes }, readProjectFile(bytes), projektdateiRoh(bytes));
+  });
+  afterEach(() => {
+    act(() => root?.unmount());
+    document.body.innerHTML = '';
+  });
+  const warten = (ms = 20) => act(async () => void (await new Promise((r) => setTimeout(r, ms))));
+
+  it('ein Fokusziel ohne Zeile schaltet „alle Angaben“ ein und verfällt, wenn es die Angabe nicht gibt', async () => {
+    const host = render();
+    act(() => useBaurecht.getState().fokusSetzen('gibt.es.nicht:bestaetigen'));
+    // erst „alle Angaben“, dann (auch dort keine Zeile) verfällt das Ziel
+    await warten(150);
+    await warten(150);
+    expect(useBaurecht.getState().fokus).toBeNull();
+    expect(host.querySelector<HTMLInputElement>('.br-angaben .br-leiste-kopf input[type="checkbox"]')!.checked).toBe(true);
+  });
+
+  it('eingeklappt: eine Rückfrage, die nur Hinweis ist, bleibt offen (mit „Bestätigen …“) und zählt im Kopf', async () => {
+    const s = useBaurecht.getState();
+    act(() => {
+      s.merkmalSetzen('Vorhaben', 'Beseitigung');
+      // aus einer älteren Angabe („vollständiger Abbruch: ja“) – nur Hinweis
+      s.faktSetzen('vorhaben.beseitigung_vollstaendig', true, 'TP');
+      useBaurecht.setState({ merkmaleAuf: false });
+    });
+    const host = render();
+    const gruppe = host.querySelector<HTMLElement>('#br-merkmale')!.closest('section')!;
+    expect(gruppe.querySelector('.br-gruppe-knopf')!.textContent).toMatch(/eine Rückfrage offen/);
+    const zeile = gruppe.querySelector<HTMLElement>('.br-rueckfrage [data-fakt="vorhaben.beseitigung_umfang"]')!;
+    expect(zeile).toBeTruthy();
+    expect(zeile.querySelector('button[data-bestaetigen]')).not.toBeNull();
+    act(() => useBaurecht.getState().fokusSetzen('vorhaben.beseitigung_umfang:bestaetigen'));
+    await warten(50);
+    expect(document.activeElement?.hasAttribute('data-bestaetigen')).toBe(true);
+  });
+
+  it('Protokoll: nur gestellte Rückfragen; fremder Merkmalwert gekennzeichnet und nicht für den Ort bestätigbar', async () => {
+    const { planungsrechtVerschoben } = await import('./pruefung');
+    const s = useBaurecht.getState();
+    act(() => {
+      s.merkmalSetzen('Vorhaben', 'Beseitigung');
+      s.faktSetzen('vorhaben.beseitigung_umfang', 'Teilabbruch', 'TP');
+      s.merkmalSetzen('Vorhaben', 'Errichtung');
+      useBaurecht.setState({ merkmale: { ...useBaurecht.getState().merkmale, Planungsrecht: 'Gemengelage' }, pruefung: { ...useBaurecht.getState().pruefung, planungsrechtOrt: undefined } });
+    });
+    act(() => useBaurecht.getState().planungsrechtBestaetigen());
+    expect(useBaurecht.getState().pruefung.planungsrechtOrt).toBeUndefined();
+    const st = useBaurecht.getState();
+    expect(planungsrechtVerschoben(st.project, st.merkmale, st.pruefung.planungsrechtOrt)).toBeUndefined();
+    const host = render();
+    act(() => knopf(host, 'Prüfprotokoll')!.click());
+    const d = document.querySelector<HTMLElement>('.br-protokoll')!;
+    const merkmalZeile = [...d.querySelectorAll('tr')].find((tr) => tr.textContent?.startsWith('Antragsmerkmale'))!.textContent!;
+    expect(merkmalZeile).not.toMatch(/Teilabbruch/);
+    expect(merkmalZeile).toContain('Planungsrecht: „Gemengelage“ – passt nicht zur Liste, nicht gewertet');
+  });
+
+  it('Speichern mit zwei Bestätigungen, die dieselben Vorschriften entscheiden: je Punkt allein, Überschneidung, zusammen', async () => {
+    const { auswertungMit, folgenBeimSpeichern } = await import('./pruefung');
+    const { offeneBestaetigungen, PLANUNGSRECHT } = await import('./store');
+    const s = useBaurecht.getState();
+    const ags = auswertungMit(s.pruefung.fakten).fakten['lage.ags'];
+    expect(ags?.sicherheit).toBe('hinweis');
+    act(() => {
+      s.faktBestaetigen('lage.ags', ags, 'TP', 'Auskunft der Gemeinde vom 12.11.2026');
+      useBaurecht.getState().planungsrechtBestaetigen();
+    });
+    const ids = offeneBestaetigungen(useBaurecht.getState());
+    expect(ids).toEqual(expect.arrayContaining(['lage.ags', PLANUNGSRECHT]));
+    const jetzt = auswertungMit(useBaurecht.getState().pruefung.fakten);
+    const fb = folgenBeimSpeichern(ids, jetzt);
+    const zusammen = new Set(fb.zusammen.map((h) => h.id));
+    // nichts geht verloren: was ein Punkt allein bewirkt, steht auch unter „zusammen“ …
+    for (const id of ids) for (const h of fb.je[id].herab) expect(zusammen.has(h.id)).toBe(true);
+    // … und Überschneidungen sind vermerkt
+    expect(ids.some((id) => (fb.je[id].auch?.anzahl ?? 0) > 0)).toBe(true);
+    expect(fb.zusammen.length).toBeGreaterThanOrEqual(Math.max(...ids.map((id) => fb.je[id].herab.length)));
+    // der Dialog zeigt die Zeile „Zusammen“
+    render();
+    let fertig: Promise<boolean> | null = null;
+    await act(async () => {
+      fertig = speichern();
+    });
+    const best = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find((d) => d.textContent?.includes('Vor dem Speichern bestätigen'))!;
+    expect(best.querySelector('.br-folgen-zusammen')?.textContent).toContain(`Stuft ${fb.zusammen.length} Vorschriften herab`);
+    expect(best.getAttribute('aria-describedby')).toBe('br-bestaetigen-einleitung');
+    // Startfokus: das Häkchen, nicht die Aufklappzeile
+    await warten(50);
+    expect((document.activeElement as HTMLInputElement | null)?.type).toBe('checkbox');
+    await act(async () => {
+      knopf(best, 'Abbrechen')!.click();
+      await fertig;
+    });
+  });
+
+  it('Sammelaktion „ohne Ortsangabe“: die Meldung gilt nur für den Filterstand, den sie gesetzt hat', async () => {
+    const host = render();
+    const id = festlegen(host, 'Begehung am 03.11.2026 ohne Befund', 'rot');
+    // wie aus einer älteren Datei: ohne Ort, bestätigt
+    act(() => {
+      const p = structuredClone(useBaurecht.getState().pruefung);
+      delete p.festlegungen[id].ort;
+      p.festlegungen[id].bestaetigt = '2026-11-12T10:00:00Z';
+      useBaurecht.setState({ pruefung: p, pruefungDatei: structuredClone(p) });
+    });
+    act(() => knopf(host, 'Für diesen Ort übernehmen')!.click());
+    const zeile = () => host.querySelector('.br-treffer')!.textContent ?? '';
+    expect(zeile()).toMatch(/dem jetzigen Ort zugeordnet/);
+    // ein anderer Filter (Ampel aus) – die Meldung verschwindet
+    act(() => host.querySelector<HTMLButtonElement>('.br-bilanz button')!.click());
+    await warten();
+    expect(zeile()).not.toMatch(/dem jetzigen Ort zugeordnet/);
+  });
+});
+

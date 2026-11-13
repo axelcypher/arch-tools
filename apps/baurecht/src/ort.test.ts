@@ -295,3 +295,27 @@ describe('Runde 14: Zitatsuche, Kürzen', () => {
     expect(kuerzen('ein langer Text ohne Satzende der nur aus Wörtern besteht und weiter geht', 30)).toBe('ein langer Text ohne Satzende');
   });
 });
+
+describe('Runde 15: Suche – Volltext mit Bindestrich, Einheiten, „f.“, lange Listen', () => {
+  const para = (paragraf: string, titel: string, gruende: string[] = []) => ({ paragraf, titel, gruende }) as unknown as ParagrafErgebnis;
+  const norm = (kurz: string, titel: string, paragrafen: ParagrafErgebnis[]) => ({ def: { kurz, titel }, paragrafen }) as unknown as NormErgebnis;
+  const normen = [
+    norm('GEG', 'Gebäudeenergiegesetz', [para('14', 'Sommerlicher Wärmeschutz', ['Nachweis nach DIN 4108-2, Stand 2013-02']), para('15', 'Gesamtenergiebedarf')]),
+    norm('BauGB', 'Baugesetzbuch', [para('30', 'B-Plan'), para('31', 'Ausnahmen'), para('34', 'Innenbereich')]),
+    norm('LP I', 'Landschaftsplan I', [para('C.1', 'NSG'), para('C.3', 'LSG')]),
+  ];
+  const treffer = (q: string) => normen.flatMap((n) => n.paragrafen.filter((p) => suchTreffer(q, normen)(p, n)).map((p) => `${n.def.kurz} ${p.paragraf}`));
+  it('Bindestrich im Volltext bleibt Teil des Worts („DIN 4108-2“), im Zitat heißt er „bis“', () => {
+    expect(treffer('DIN 4108-2')).toEqual(['GEG 14']);
+    expect(treffer('2013-02')).toEqual(['GEG 14']);
+    expect(treffer('§§ 30-31 BauGB')).toEqual(['BauGB 30', 'BauGB 31']);
+  });
+  it('benannte Einheiten („C.3“) und „f.“', () => {
+    expect(treffer('C.3')).toEqual(['LP I C.3']);
+    expect(treffer('§ 30 f. BauGB')).toEqual(['BauGB 30', 'BauGB 31']);
+  });
+  it('lange Listen nicht erfasster §§ werden zusammengefasst', () => {
+    expect(suchTreffer('§§ 1–35 BauGB', normen).hinweis).toBe('32 der 35 §§ sind nicht erfasst');
+    expect(suchTreffer('§§ 200–210 BauGB', normen).hinweis).toBe('alle 11 §§ BauGB sind nicht erfasst – gezeigt: BauGB');
+  });
+});

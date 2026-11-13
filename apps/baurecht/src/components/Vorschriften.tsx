@@ -185,6 +185,16 @@ function NormKarte({
   );
 }
 
+/** Kennung des Filterstands (Suche, Kästchen, Ampeln) – eine Meldung gilt nur für den Stand, den sie gesetzt hat */
+const filterKennung = (suche: string, nurHand: boolean, nurGeaendert: boolean, ampeln: readonly string[]) => `${suche}|${nurHand}|${nurGeaendert}|${ampeln.join(',')}`;
+
+/** „§§ 248, 249 BauGB sind nicht erfasst“ – lange Listen zusammengefasst („29 der 35 §§ sind nicht erfasst“) */
+export function nichtErfasst(fehlen: string[], gesucht: number, norm?: string): string {
+  const n = norm ? ` ${norm}` : '';
+  if (fehlen.length > 5) return `${fehlen.length === gesucht ? `alle ${gesucht}` : `${fehlen.length} der ${gesucht}`} §§${n} sind nicht erfasst`;
+  return `${fehlen.length > 1 ? '§§' : '§'} ${fehlen.join(', ')}${n} ${fehlen.length > 1 ? 'sind' : 'ist'} nicht erfasst`;
+}
+
 /**
  * Suche: „§ 34 BauGB“, „§34“, „34 BauGB“, „GEG 80“ finden genau den Paragrafen (Nummer + Norm in beliebiger
  * Reihenfolge; die Norm zuerst genau nach ihrer Kurzform, erst dann im Titel). Findet die Paragrafensuche nichts
@@ -196,10 +206,11 @@ export function suchTreffer(sucheRoh: string, normen: NormErgebnis[] = []): ((p:
   // benannte Einheiten wie „C.3“ (Landschaftsplan) genau – sonst läse die Suche „3“ als Paragrafennummer
   const einheit = sucheRoh.trim().toLowerCase();
   if (/^[a-z]+\.\d+[a-z]?$/.test(einheit) && normen.some((n) => n.paragrafen.some((p) => p.paragraf.toLowerCase() === einheit))) return (p) => p.paragraf.toLowerCase() === einheit;
-  // Bindestrich bzw. Gedankenstrich zwischen Nummern heißt „bis“ („§§ 30–35“)
-  const suche = sucheRoh.replace(/(\d[a-z]?)\s*[–-]\s*(\d)/gi, '$1 bis $2');
-  // Volltext (Kürzel am Wortanfang, Zahlen als ganzes Wort, Synonyme – dieselbe Suche wie in den Angaben)
-  const volltext = (p: ParagrafErgebnis, n: NormErgebnis) => textPasst(`${paragrafName(p.paragraf)} ${p.titel} ${n.def.kurz} ${n.def.titel} ${p.gruende.join(' ')}`, suche);
+  // Bindestrich bzw. Gedankenstrich zwischen Nummern heißt „bis“ – nur im Zitat („§§ 30–35“), nicht im Volltext
+  // („DIN 4108-2“, „2016-01“)
+  const suche = sucheRoh.includes('§') ? sucheRoh.replace(/(\d[a-z]?)\s*[–-]\s*(\d)/gi, '$1 bis $2') : sucheRoh;
+  // Volltext (Kürzel am Wortanfang, Zahlen als ganzes Wort, Synonyme – dieselbe Suche wie in den Angaben) mit dem Rohtext
+  const volltext = (p: ParagrafErgebnis, n: NormErgebnis) => textPasst(`${paragrafName(p.paragraf)} ${p.titel} ${n.def.kurz} ${n.def.titel} ${p.gruende.join(' ')}`, sucheRoh);
   // Zitat zerlegen: Satzzeichen weg; „Abs./Satz/Nr./Ziff. n (a)“ und römische Absatzziffern gehören nicht zur Nummer;
   // mit „§“ bzw. „§§“ sind die Zahlen direkt danach die Nummern („§§ 30, 34 BauGB“), sonst die erste freie Zahl
   const q = norm(suche.replace(/[.,;:]/g, ' '))
@@ -248,14 +259,14 @@ export function suchTreffer(sucheRoh: string, normen: NormErgebnis[] = []): ((p:
     if (!normen.length || normen.some((n) => n.paragrafen.some((p) => passt(p, n)))) {
       // teilweise nicht erfasst („§§ 1 bis 3 BauNVO“ ohne § 1): das sagt die Trefferzeile
       const fehlen = ab ? [] : nrs.filter((nr) => !normen.some((n) => st(n) && n.paragrafen.some((p) => p.paragraf.toLowerCase() === nr)));
-      return fehlen.length ? Object.assign(passt, { hinweis: `${fehlen.length > 1 ? '§§' : '§'} ${fehlen.join(', ')} ${fehlen.length > 1 ? 'sind' : 'ist'} nicht erfasst` }) : passt;
+      return fehlen.length ? Object.assign(passt, { hinweis: nichtErfasst(fehlen, nrs.length) }) : passt;
     }
   }
   // keinen dieser Paragrafen gibt es in den Regeln – dann die Norm selbst, wenn sie genannt ist („§ 1 BauNVO“ → BauNVO)
   if (rest)
     for (const st of stufen.slice(0, 2)) {
       const n0 = normen.find(st);
-      if (n0) return Object.assign((_p: ParagrafErgebnis, n: NormErgebnis) => st(n), { hinweis: `${nrs.length > 1 ? '§§' : '§'} ${nrs.join(', ')} ${n0.def.kurz} ${nrs.length > 1 ? 'sind' : 'ist'} nicht erfasst – gezeigt: ${n0.def.kurz}` });
+      if (n0) return Object.assign((_p: ParagrafErgebnis, n: NormErgebnis) => st(n), { hinweis: `${nichtErfasst(nrs, nrs.length, n0.def.kurz)} – gezeigt: ${n0.def.kurz}` });
     }
   // ausdrücklich nach einem Paragrafen gefragt, ohne Norm und ohne Treffer: nichts (der Leerzustand sagt das)
   if (suche.includes('§')) return () => false;
@@ -307,6 +318,8 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
   const zaehler = auswertung.zaehler;
   const summe = zaehler.rot + zaehler.gelb + zaehler.gruen || 1;
   const filterAktiv = !!suche || nurHand || nurGeaendert || w.ampeln.length < 3;
+  // nur gesucht (kein Kästchen, alle Ampeln): „Suche leeren“ statt „Filter zurücksetzen“
+  const nurSuche = !!suche && !nurHand && !nurGeaendert && w.ampeln.length === 3;
   const suchfeld = useRef<HTMLInputElement>(null);
   // Meldung der Sammelaktion – gilt nur für den Filterstand, den die Aktion gesetzt hat (jede Filteränderung löscht sie)
   const [ortMeldung, setOrtMeldung] = useState<{ text: string; filter: string } | null>(null);
@@ -361,7 +374,7 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
   }, [w.gruppierung]);
   // Suche oder Filter geändert (auch geleert bzw. zurückgesetzt): die gewählte Zeile mittig einblenden, sobald sie
   // wieder in der Liste steht
-  const filterSchluessel = `${suche}|${nurHand}|${nurGeaendert}|${w.ampeln.join(',')}`;
+  const filterSchluessel = filterKennung(suche, nurHand, nurGeaendert, w.ampeln);
   const ersterFilter = useRef(true);
   useEffect(() => {
     if (ersterFilter.current) {
@@ -523,7 +536,7 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
               // ins Suchfeld statt auf die Seite
               setNurGeaendert(false);
               setNurHand(true);
-              setOrtMeldung({ text: `${n === 1 ? 'Eine Festlegung' : `${n} Festlegungen`} dem jetzigen Ort zugeordnet – als Entwurf, beim Speichern bestätigen`, filter: `${suche}|true|false|${w.ampeln.join(',')}` });
+              setOrtMeldung({ text: `${n === 1 ? 'Eine Festlegung' : `${n} Festlegungen`} dem jetzigen Ort zugeordnet – als Entwurf, beim Speichern bestätigen`, filter: filterKennung(suche, true, false, w.ampeln) });
               setTimeout(() => suchfeld.current?.focus(), 0);
             }}
             title="Dem jetzigen Ort zuordnen – als Entwurf; beim Speichern wird jede noch einmal bestätigt"
@@ -532,16 +545,24 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
           </button>
         </div>
       )}
-      <div className="br-treffer" aria-live="polite">
-        {filterAktiv ? (
+      {/* die Live-Region liest nur den Stand vor, nicht den Knopf; ohne Treffer steht „zurücksetzen“ nur im Leerzustand */}
+      <div className="br-treffer">
+        <span aria-live="polite">
+          {filterAktiv ? (
+            <>
+              {ortMeldung && ortMeldung.filter === filterSchluessel ? `${ortMeldung.text} · ` : ''}
+              {treffer} von {auswertung.paragrafen.length} Paragrafen{passt.hinweis ? ` – ${passt.hinweis}` : ''}
+            </>
+          ) : null}
+        </span>
+        {filterAktiv && treffer > 0 && (
           <>
-            {ortMeldung && ortMeldung.filter === filterSchluessel ? `${ortMeldung.text} · ` : ''}
-            {treffer} von {auswertung.paragrafen.length} Paragrafen{passt.hinweis ? ` – ${passt.hinweis}` : ''}{' '}
+            {' '}
             <button type="button" className="small br-link" onClick={zuruecksetzen}>
-              Filter zurücksetzen
+              {nurSuche ? 'Suche leeren' : 'Filter zurücksetzen'}
             </button>
           </>
-        ) : null}
+        )}
       </div>
       <div className="br-vorschriften-liste" ref={liste} onKeyDown={taste}>
         {ansicht.map((g) => (
@@ -575,11 +596,9 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
         ))}
         {!ansicht.length && gruppen.length > 0 && (
           <div className="br-leer-zustand">
-            <p>
-              Keine Paragrafen{suche ? ` zu „${suche}“` : ''} in diesem Filter.
-            </p>
+            <p>{nurSuche ? `Keine Paragrafen zu „${suche}“.` : `Keine Paragrafen${suche ? ` zu „${suche}“` : ''} in diesem Filter.`}</p>
             <button type="button" onClick={zuruecksetzen}>
-              Filter zurücksetzen
+              {nurSuche ? 'Suche leeren' : 'Filter zurücksetzen'}
             </button>
           </div>
         )}

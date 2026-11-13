@@ -9,9 +9,9 @@ import { DruckKopf } from '@core/ui/DruckKopf';
 import { useEscSchliessen } from '@core/ui/Dialog';
 import { benutzer } from '../benutzer';
 import type { Pruefstand } from '../pruefung';
-import { aktuelleLage, auswertungMit, OHNE_LAGEBEZUG, verwendeteFassungen } from '../pruefung';
+import { aktuelleLage, anUngespeichertem, OHNE_LAGEBEZUG, verwendeteFassungen } from '../pruefung';
 import { istGeaendert, offeneBestaetigungen, offeneFestlegungen, PLANUNGSRECHT, useBaurecht } from '../store';
-import { AMPEL_TEXT, datum, nb } from './Ampel';
+import { AMPEL_TEXT, aufzaehlen, datum, nb } from './Ampel';
 
 
 
@@ -61,8 +61,10 @@ function nachNorm(ps: ParagrafErgebnis[], normen: { id: string; def: { kurz: str
     .join(' · ');
 }
 
-/** Entwurfsvermerk als Kopfzeile jeder Druckseite (im reservierten oberen Seitenrand, überdruckt keinen Text) */
-const ENTWURF_DRUCK = `@media print { @page { margin-top: 20mm; @top-center { content: 'ENTWURF – enthält nicht gespeicherte bzw. nicht bestätigte Festlegungen oder gesicherte Angaben'; font: 700 14pt 'Segoe UI', system-ui, sans-serif; color: #8a5300; } } }`;
+/** Entwurfsvermerk als Kopfzeile jeder Druckseite (im reservierten oberen Seitenrand, überdruckt keinen Text) – genau
+ *  wie auf dem Bildschirm („ENTWURF – die Bestätigung des Planungsrechts ist noch nicht gespeichert“) */
+const entwurfDruck = (text: string, eins: boolean) =>
+  `@media print { @page { margin-top: 20mm; @top-center { content: '${`ENTWURF – ${text} ${eins ? 'ist' : 'sind'} noch nicht gespeichert und bestätigt`.replace(/['\\]/g, '')}'; font: 700 12pt 'Segoe UI', system-ui, sans-serif; color: #8a5300; } } }`;
 /** Modulstände sind Daten (JJJJ-MM-TT) – im Protokoll wie alle Daten als TT.MM.JJJJ */
 const stand = (v: string) => (/^\d{4}-\d\d-\d\d$/.test(v) ? datum(v) : v);
 
@@ -90,13 +92,9 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
   const offeneB = useBaurecht((s) => offeneBestaetigungen(s).join('|'));
   const eigeneFakten = useBaurecht((s) => s.pruefung.fakten);
   const planungsrechtOrt = useBaurecht((s) => s.pruefung.planungsrechtOrt);
-  // so viele Paragrafen hängen an der noch nicht gespeicherten Bestätigung des Planungsrechts (Vergleich mit dem Stand der Datei)
-  const prGeaendert = useMemo(() => {
-    if (!offeneB.split('|').includes(PLANUNGSRECHT)) return 0;
-    const datei = auswertungMit(eigeneFakten, { planungsrechtOrt: useBaurecht.getState().pruefungDatei.planungsrechtOrt });
-    const dort = new Map(datei.paragrafen.map((p) => [p.id, p.ampel]));
-    return pruefstand.auswertung.paragrafen.filter((p) => dort.has(p.id) && dort.get(p.id) !== p.ampel).length;
-  }, [offeneB, eigeneFakten, pruefstand]);
+  // so viele Paragrafen hängen an noch nicht gespeicherten Bestätigungen (Angaben, Planungsrecht) – gegenüber dem Stand
+  // der Datei, alle zusammen (zwei Bestätigungen, die dieselbe Vorschrift entscheiden, zählen sie einmal)
+  const anOffenem = useMemo(() => anUngespeichertem(offeneB ? offeneB.split('|') : [], pruefstand.auswertung), [offeneB, eigeneFakten, pruefstand]);
   // an den Antragsmerkmalen: Bestätigung des Planungsrechts (wer, wann) bzw. Vorbehalt; Umfang der Beseitigung und
   // Angaben zum Altbau beim Merkmal „Art des Vorhabens“ (wie in der App unter dem Merkmal)
   const merkmalVermerk = (name: string): string => {
@@ -181,7 +179,7 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
   const entwuerfe = nF + ungespeichert.size + (prEntwurf ? 1 : 0);
   // getrennt benannt: Festlegungen von Hand, gesicherte Angaben und das Planungsrecht
   const entwurfTeile = [nF ? (nF === 1 ? 'eine Festlegung von Hand' : `${nF} Festlegungen von Hand`) : '', ungespeichert.size ? (ungespeichert.size === 1 ? 'eine gesicherte Angabe' : `${ungespeichert.size} gesicherte Angaben`) : '', prEntwurf ? 'die Bestätigung des Planungsrechts' : ''].filter(Boolean);
-  const entwurfText = entwurfTeile.length > 1 ? `${entwurfTeile.slice(0, -1).join(', ')} und ${entwurfTeile[entwurfTeile.length - 1]}` : (entwurfTeile[0] ?? '');
+  const entwurfText = aufzaehlen(entwurfTeile);
   const offen = a.paragrafen.filter((p) => p.ampel === 'gelb');
   const vonHand = a.paragrafen.filter((p) => p.festlegung);
   const ausEntwurf = vonHand.filter((p) => !p.festlegung!.bestaetigt);
@@ -248,7 +246,7 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
   return (
     <div className="report-backdrop br-protokoll-hintergrund">
       <div className="report br-protokoll" role="dialog" aria-modal="true" aria-label={titel} ref={fenster}>
-        {entwuerfe > 0 && <style>{ENTWURF_DRUCK}</style>}
+        {entwuerfe > 0 && <style>{entwurfDruck(entwurfText, entwuerfe === 1)}</style>}
         <div className="report-actions no-print br-protokoll-aktionen">
           <label className="toggle">
             <input type="checkbox" checked={nurRelevant} onChange={(e) => setNurRelevant(e.target.checked)} /> ohne „entfällt“
@@ -307,7 +305,7 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
               {/* Reihenfolge und Namen wie in der Leiste */}
               <td>
                 {VORGABE_MERKMALE.filter((m) => merkmale[m.name])
-                  .map((m) => `${MERKMAL_TITEL[m.name] ?? m.name}: ${merkmale[m.name]}${m.werte.includes(merkmale[m.name]) ? merkmalVermerk(m.name) : ' (passt nicht zur Liste – nicht gewertet)'}`)
+                  .map((m) => (m.werte.includes(merkmale[m.name]) ? `${MERKMAL_TITEL[m.name] ?? m.name}: ${merkmale[m.name]}${merkmalVermerk(m.name)}` : `${MERKMAL_TITEL[m.name] ?? m.name}: „${merkmale[m.name]}“ – passt nicht zur Liste, nicht gewertet`))
                   .join(' · ') || '–'}
               </td>
             </tr>
@@ -316,10 +314,10 @@ export function Protokoll({ stand: pruefstand, onClose }: { stand: Pruefstand; o
               <td className="strong">
                 {a.zaehler.rot} gilt · {a.zaehler.gelb} prüfen · {a.zaehler.gruen} entfällt
                 {ausEntwurf.length > 0 && <span className="br-entwurf-text"> – davon {ausEntwurf.length} aus Entwürfen von Hand</span>}
-                {prGeaendert > 0 && (
+                {anOffenem > 0 && (
                   <span className="br-entwurf-text">
                     {' '}
-                    – {prGeaendert === 1 ? 'ein Paragraf' : `${prGeaendert} Paragrafen`} nur durch die noch nicht gespeicherte Bestätigung des Planungsrechts
+                    – {anOffenem === 1 ? 'ein Paragraf hängt' : `${anOffenem} Paragrafen hängen`} an {offeneB === PLANUNGSRECHT ? 'der noch nicht gespeicherten Bestätigung des Planungsrechts' : 'noch nicht gespeicherten Bestätigungen'}
                   </span>
                 )}
               </td>

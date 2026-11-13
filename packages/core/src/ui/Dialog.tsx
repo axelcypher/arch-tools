@@ -32,6 +32,7 @@ export function Modal({
   className = '',
   breit = false,
   klickDaneben = true,
+  beschreibung,
   children,
 }: {
   /** Name des Dialogs für Screenreader (aria-label) */
@@ -42,12 +43,14 @@ export function Modal({
   breit?: boolean;
   /** Klick neben den Dialog schließt ihn */
   klickDaneben?: boolean;
+  /** id des Einleitungssatzes (aria-describedby) – wird beim Öffnen mit vorgelesen */
+  beschreibung?: string;
   children: ReactNode;
 }) {
   useEscSchliessen(onClose);
   return (
     <div className="modal-backdrop" onPointerDown={(e) => e.target === e.currentTarget && klickDaneben && onClose?.()}>
-      <div className={`modal${breit ? ' modal-wide' : ''}${className ? ` ${className}` : ''}`} role="dialog" aria-modal="true" aria-label={titel}>
+      <div className={`modal${breit ? ' modal-wide' : ''}${className ? ` ${className}` : ''}`} role="dialog" aria-modal="true" aria-label={titel} aria-describedby={beschreibung}>
         {children}
       </div>
     </div>

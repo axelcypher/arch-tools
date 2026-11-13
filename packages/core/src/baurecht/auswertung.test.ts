@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { VORGABE_MERKMALE } from '../bedingung';
 import type { Fassung } from '../recht/typen';
 import type { AuswertungsEingabe } from './auswertung';
-import { auswerten, gueltigeFakten, gueltigeMerkmale, modulFakten } from './auswertung';
+import { auswerten, gueltigeFakten, gueltigeMerkmale, modulFakten, modulZiel } from './auswertung';
 import type { TextStand } from './auswertung';
 import { kurzText, werten } from './kurz';
 import { agsVorschlag, aktiveModule, fehlendeEbenen, paketAusDateien, paketPruefen, regeldateiFuer, signaturPruefen } from './paket';
@@ -618,5 +618,43 @@ describe('Runde 12: nur zulässige Werte zählen (kein falsches Grün)', () => {
     expect(m['soest.zone']).toBeUndefined();
     // derselbe Schlüssel: die Bestätigung gilt weiter
     expect(modulFakten(aktiveModule(paket.module, '05974040'), { 'lage.ags': sicher('05974040'), 'soest.zone': alt })['soest.zone']?.bestaetigt).toBeDefined();
+  });
+});
+
+describe('Runde 15: Ziel von „bestätigen klärt“ bei Modulwerten', () => {
+  const defs = {
+    'schutz.denkmalbereich': { titel: 'Denkmalbereich', gruppe: 'schutz', typ: 'janein', nach: { fakt: 'soest.denkmalbereich', tabelle: { true: true, false: false } } },
+    'soest.denkmalbereich': { titel: 'Denkmalbereich Altstadt (Dienst)', gruppe: 'schutz', typ: 'janein' },
+    'soest.fest': { titel: 'Fester Wert', gruppe: 'lage', typ: 'janein', wert: true },
+    'lp.nach_lage': { titel: 'LP nach Lage', gruppe: 'lage', typ: 'wahl', nach: { fakt: 'lage.ags', tabelle: { '05974040': 'kein' }, hinweis: true } },
+  } as unknown as Record<string, import('./typen').FaktDef>;
+  const agsSicher = { 'lage.ags': sicher('05974040') };
+  const agsHinweis = { 'lage.ags': { ...hinweis('05974040'), herkunft: 'abgeleitet' as const } };
+  it('genau eine unsichere Quelle: dort bestätigen', () => {
+    // Gemeindeschlüssel unsicher, Bezug sicher → Gemeindeschlüssel
+    expect(modulZiel('schutz.denkmalbereich', { ...agsHinweis, 'soest.denkmalbereich': sicher(false) }, defs)).toBe('lage.ags');
+    // Gemeindeschlüssel sicher, Bezug nur Hinweis → der Bezug
+    expect(modulZiel('schutz.denkmalbereich', { ...agsSicher, 'soest.denkmalbereich': hinweis(false) }, defs)).toBe('soest.denkmalbereich');
+    // fester Wert eines Gebietsmoduls: der Gemeindeschlüssel
+    expect(modulZiel('soest.fest', agsHinweis, defs)).toBe('lage.ags');
+    // Tabelle nach Lage: der Wert selbst
+    expect(modulZiel('lp.nach_lage', agsSicher, defs)).toBe('lp.nach_lage');
+  });
+  it('mehrere unsichere Quellen: keine allein entscheidet – der Tabellenwert selbst', () => {
+    expect(modulZiel('schutz.denkmalbereich', { ...agsHinweis, 'soest.denkmalbereich': hinweis(false) }, defs)).toBe('schutz.denkmalbereich');
+    expect(modulZiel('lp.nach_lage', agsHinweis, defs)).toBe('lp.nach_lage');
+  });
+});
+
+describe('Runde 15: Texte', () => {
+  it('„hängt an … – dort offen“ ohne zweite Klammer', () => {
+    // § 6 offen (Merkmale fehlen): § 2 hängt an ihm
+    const a = auswerten(eingabe({ merkmale: {} }));
+    const g = a.paragrafen.flatMap((x) => x.gruende).filter((t) => /hängt an/.test(t));
+    expect(g.length).toBeGreaterThan(0);
+    for (const t of g) {
+      expect(t).toMatch(/ – dort offen/);
+      expect(t).not.toMatch(/\(dort offen\)/);
+    }
   });
 });

@@ -250,7 +250,18 @@ export function Detail({ stand }: { stand: Pruefstand }) {
           )}
           <ul className="br-gruende">
             {gruende.map((g, i) => (
-              <li key={i}>{nb(g)}</li>
+              <li key={i}>
+                {nb(g)}
+                {/* der Vorbehalt am Planungsrecht mit Ausweg: zum Bestätigen am Merkmal */}
+                {/^Nicht gesichert: Planungsrecht/.test(g) && (
+                  <>
+                    {' '}
+                    <button type="button" className="small br-link" onClick={() => useBaurecht.getState().fokusSetzen('merkmal:Planungsrecht:bestaetigen')}>
+                      Zum Bestätigen
+                    </button>
+                  </>
+                )}
+              </li>
             ))}
           </ul>
           {p.hinweise.length > 0 && (

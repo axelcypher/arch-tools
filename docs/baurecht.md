@@ -40,13 +40,15 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   keine negativen Werte. Schwellen „über x“ (im Regelschema „x,01“) gelten als echtes „größer als x“ – 22,005 m sind
   über 22 m. Das **Planungsrecht** zählt erst als gesichert, wenn es für genau diesen Ort und Wert bestätigt ist: in
   Baurecht gesetzt oder mit „Für diesen Ort bestätigen“ (im Hinweis oben und am Merkmal) bestätigt. Vorher steht dort,
-  wie viel die Bestätigung klärt („klärt 30“), und „Planungsrecht bestätigen klärt N“ ordnet sich unter „Klärt am
-  meisten“ ein. Ein Wert aus Formulare oder einer älteren Datei, ein seither
+  wie viel die Bestätigung klärt („klärt 30“ – gerechnet wie danach, gedrosselt höchstens alle 250 ms); die
+  Einzelheiten führen bei „Nicht gesichert: Planungsrecht …“ mit „Zum Bestätigen“ dorthin. Gespeichert und bestätigt
+  steht am Merkmal „für diesen Ort bestätigt (Name, Datum)“. Ein Wert aus Formulare oder einer älteren Datei, ein seither
   geänderter Wert und ein Umzug (Anschrift, Grundstück, Koordinaten) zeigen oben einen Hinweis; was daran hängt, kann
   bis dahin nicht sicher entfallen (in den Begründungen und im Protokoll „Nicht gesichert: Planungsrecht …“). Die
   Bestätigung sagt ihre Wirkung an („30 Vorschriften entfallen jetzt“), wird beim Speichern mit ihren Folgen noch einmal
   abgefragt (bis dahin „Entwurf – beim Speichern bestätigen“ am Merkmal, mit „zurücknehmen“; im Protokoll „Entwurf – für
-  diesen Ort bestätigt …“ und beim Ergebnis, wie viele Paragrafen nur daran hängen) und steht mit Name und Datum im
+  diesen Ort bestätigt …“ und beim Ergebnis, wie viele Paragrafen an noch nicht Gespeichertem hängen) und steht mit
+  Name und Datum im
   Protokoll. „Speichern, diese als Entwurf behalten“ lässt sie Entwurf. Ein Wert außerhalb der Liste
   lässt sich nicht für den Ort bestätigen – er zählt ohnehin nicht. Angaben
   von Hand aus älteren Dateien werden wie bei der Eingabe geprüft: negative Werte und halbe Anzahlen sind nur Hinweis,
@@ -59,7 +61,7 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
 - **Rückfrage zum Antragsmerkmal:** Bei „Beseitigung“ steht der **Umfang der Beseitigung** (vollständiger Abbruch
   ohne Ersatzbau, Teilabbruch, Abbruch mit Ersatzbau) direkt unter „Art des Vorhabens“ (als Knöpfe, unter der Erklärung des Werts);
   Teilabbruch wird wie eine Änderung geprüft, Ersatzbau wie Errichtung und Beseitigung; beim Ersatzbau folgen dort die
-  Angaben zum Altbau (verfahrensfrei zu beseitigen, Abbruch im Bauantrag mitbeantragt). Offene Rückfragen stehen auch bei
+  Angaben zum Altbau (verfahrensfrei zu beseitigen, Abbruch im Bauantrag mitbeantragt). Offene Rückfragen (auch solche, deren Wert nur Hinweis ist, mit „Bestätigen …“) stehen auch bei
   eingeklappten Merkmalen da („eine Rückfrage offen“), mit ihrer Erläuterung (gekürzt, „mehr“); eine neue Rückfrage wird
   angesagt. Eingeklappt Beantwortetes bleibt bis zum Aufklappen kompakt stehen („Umfang der Beseitigung: Abbruch mit
   Ersatzbau – ändern“), der Fokus geht auf die nächste offene Rückfrage bzw. den Gruppenknopf („Rückfragen
@@ -67,8 +69,12 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   sich die Angaben neu. „Klärt am meisten“ zählt eine Angabe bei einem Paragrafen nur, wenn ihre Antwort dort etwas
   ändert (führen alle Antworten zum selben Ergebnis, zählt sie nicht).
   Hinweise, deren Bestätigung allein einen Paragrafen entschiede, stehen dort als „bestätigen klärt N“ (Werte eines
-  Gebietsmoduls dort, woher die Unsicherheit kommt: beim Gemeindeschlüssel, solange er nicht gesichert ist, sonst beim
-  Bezug der Tabelle). Gespeicherte Modulwerte gelten nur, solange ein aktives Modul sie für den jetzigen Bezug liefert. Nur zulässige Werte zählen: Ein Merkmalwert außerhalb der Werteliste
+  Gebietsmoduls dort, woher die Unsicherheit kommt: beim Gemeindeschlüssel, solange er nicht gesichert ist, beim Bezug
+  der Tabelle, wenn er nur Hinweis ist, beim Wert selbst, wenn die Tabelle von der Lage abhängt; sind es mehrere
+  Quellen, beim Wert selbst – eine einzelne der anderen Bestätigungen entschiede nicht). Ziele, an denen keine Regel
+  unmittelbar hängt (der Bezug einer Tabelle), stehen dafür in der Liste; ein Sprungziel ohne Zeile schaltet „alle
+  Angaben“ ein. Gespeicherte Modulwerte gelten nur, solange ein aktives Modul sie für den jetzigen Bezug liefert; beim
+  Speichern fallen die übrigen aus der Datei. Nur zulässige Werte zählen: Ein Merkmalwert außerhalb der Werteliste
   (eigener Wert aus Formulare) und eine Angabe mit falschem Typ oder einem Wert außerhalb ihrer Auswahl (ältere Datei,
   umbenannter Auswahlwert) gelten als offen und sind so gekennzeichnet; Zahlen, die als Text gespeichert sind, werden
   wie im Eingabefeld gelesen.
@@ -108,7 +114,9 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   Absätzen der Fundstellen hervorgehoben (mit Legende); nach einer Änderung **alt/neu** untereinander mit
   gestrichenen bzw. unterstrichenen Wörtern – verglichen mit der Fassung, an der die Regel geprüft ist. Die Spalte lässt
   sich am linken Rand in der Breite ziehen (auch mit ←/→, Pos1/Ende). Beide Leisten schrumpfen bei schmalen Fenstern,
-  die Mitte behält mindestens 420 px; Ziehen und Tastatur gehen nie über den verfügbaren Platz hinaus.
+  die Mitte behält mindestens 420 px; Ziehen und Tastatur gehen nie über den verfügbaren Platz hinaus. Unter 1000
+  CSS-px (Web-Version, Browser-Zoom; der Desktop hat eine Mindestbreite) behält die Arbeitsfläche 1000 px und die Seite
+  scrollt waagerecht – keine Spalte wird abgeschnitten.
 
 ## Von Hand festlegen
 
@@ -152,7 +160,10 @@ dem Modell), lassen sich mit „Bestätigen …“ als gesichert übernehmen –
 (z. B. Auskunft der Behörde mit Datum). Der Dialog zeigt vorher, wie viele Vorschriften dadurch herabgestuft werden –
 mit genau der Rechnung, die danach gilt. Widerspricht ein Dienst der Angabe, bleibt der Widerspruch auch nach der
 Bestätigung bestehen; der Dialog sagt das. Auch Bestätigungen werden beim Speichern noch einmal bestätigt und stehen
-im Prüfprotokoll. Eine bestätigte Angabe aus dem Modell bzw. aus einer Tabelle des Regelmoduls gilt nur für genau
+im Prüfprotokoll. Der Dialog beim Speichern nennt, was genau neu ist (neue, geänderte, aufgehobene Festlegungen, neu
+gesicherte Angaben, das Planungsrecht), mit Name und Datum; die Folgen je Punkt allein gegenüber der Datei, mit Vermerk,
+was eine andere Bestätigung ebenso bewirkt, und bei mehreren Punkten „Zusammen gegenüber der gespeicherten Datei“ – so
+fehlt keine Herabstufung, auch wenn zwei Bestätigungen dieselbe Vorschrift entscheiden. Der Fokus beginnt am Häkchen. Eine bestätigte Angabe aus dem Modell bzw. aus einer Tabelle des Regelmoduls gilt nur für genau
 diesen Wert – ändert sich das Modell bzw. die Tabelle, ist sie wieder Hinweis.
 
 **Schutzgebiete und Geodaten von Hand** (ja/nein, Auswahl) gibt es nur mit Beleg – wie eine Bestätigung. Widerspricht
@@ -190,9 +201,12 @@ mit Tab verlässt; ihre Einträge sind keine eigenen Tabstopps; ↓/↑ auf dem 
 Die Suche in den Vorschriften findet Zitate genau (Norm nach Kurzform): „§ 6 BauO NRW“, „§ 62 Abs. 1 Satz 1 Nr. 1a BauO
 NRW“, „§§ 30, 34 BauGB“, Bereiche „§§ 30 bis 35“, „§§ 30–35“, „§§ 30-35“, „§§ 30 ff.“ und „§ 30 f.“, benannte Einheiten
 wie „C.3“. Ein „§“, den die Regeln nicht kennen, zeigt die genannte Norm mit dem Hinweis „§ 248 BauGB ist nicht erfasst
-– gezeigt: BauGB“ (bei Bereichen „§ 29 ist nicht erfasst“ in der Trefferzeile); ohne Norm ergibt er keinen Treffer.
-Ohne „§“ und ohne Paragrafentreffer sucht sie im Text (Zahlen als ganzes Wort, Kürzel bis drei Zeichen wie „GK“, „GRZ“
-nur am Wortanfang und auch ausgeschrieben, gängige Synonyme wie Abriss/Rückbau, Einfriedung/Einfriedigung). Nach Suche, Filter und
+– gezeigt: BauGB“ (bei Bereichen „§ 29 ist nicht erfasst“ in der Trefferzeile, lange Listen zusammengefasst: „32 der 35
+§§ sind nicht erfasst“); ohne Norm ergibt er keinen Treffer. Ohne „§“ und ohne Paragrafentreffer sucht sie im Text
+(Zahlen als ganzes Wort, ein Bindestrich bleibt Teil des Worts – „DIN 4108-2“; Kürzel bis drei Zeichen wie „GK“, „GRZ“
+nur am Wortanfang und auch ausgeschrieben, gängige Synonyme wie Abriss/Rückbau, Einfriedung/Einfriedigung). Die
+Trefferzahl wird angesagt (Angaben wie Vorschriften); wer nur sucht, bekommt „Suche leeren“ statt „Filter
+zurücksetzen“. Nach Suche, Filter und
 „Filter zurücksetzen“ bleibt die gewählte Zeile im Blick, der Fokus geht ins Suchfeld. Die Sammelmarke der Warnungen öffnet und schließt „Mehr“, Esc gibt
 den Fokus an den Öffner zurück. Nach „Bestätigen“, „zurücknehmen“ und der Wahl des Farbschemas bleibt der Fokus an der
 Angabe bzw. am Knopf.

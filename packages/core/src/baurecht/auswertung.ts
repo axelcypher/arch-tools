@@ -193,6 +193,25 @@ const zaehlerLeer = (): Record<Ampel, number> => ({ rot: 0, gelb: 0, gruen: 0 })
 /** Strenge einer Ampel: gilt > prüfen > entfällt */
 const RANG: Record<Ampel, number> = { gruen: 0, gelb: 1, rot: 2 };
 const datumText = (iso: string) => iso.slice(0, 10).split('-').reverse().join('.');
+/**
+ * Wo ein unsicherer Modulwert zu bestätigen ist, damit er gesichert wird – genau eine Quelle der Unsicherheit:
+ *  - der Gemeindeschlüssel, solange er nicht gesichert ist (Werte eines Gebietsmoduls gelten erst mit ihm),
+ *  - der Bezug der Tabelle (`nach.fakt`), wenn er selbst nur Hinweis ist,
+ *  - der Wert selbst, wenn die Tabelle von der Lage abhängt (`nach.hinweis`).
+ * Sind es mehrere, entscheidet keine dieser Bestätigungen allein – dann der Wert selbst (ein Tabellenwert lässt sich mit
+ * Beleg bestätigen); ein fester Wert (`wert`) hat keine solche Möglichkeit: `undefined`.
+ */
+export function modulZiel(id: string, fakten: Record<string, FaktWert>, defs: Record<string, FaktDef>): string | undefined {
+  const unsicher = (f: FaktWert | undefined) => !f || f.wert == null || (f.sicherheit === 'hinweis' && !f.bestaetigt) || !!f.widerspruch;
+  const d = defs[id];
+  const quellen = new Set<string>();
+  if (unsicher(fakten['lage.ags'])) quellen.add('lage.ags');
+  if (d?.nach && unsicher(fakten[d.nach.fakt])) quellen.add(d.nach.fakt);
+  if (d?.nach?.hinweis) quellen.add(id);
+  if (quellen.size === 1) return [...quellen][0];
+  return d?.nach ? id : quellen.size ? undefined : 'lage.ags';
+}
+
 /** ganze Tage von einem Zeitpunkt (ISO) bis zu einem Tag (JJJJ-MM-TT) */
 const tageSeit = (iso: string, heute: string) => Math.floor((Date.parse(`${heute}T12:00:00`) - Date.parse(iso)) / 86400000);
 const undW = (a: Wahrheit, b: Wahrheit): Wahrheit => (a === 'nein' || b === 'nein' ? 'nein' : a === 'offen' || b === 'offen' ? 'offen' : 'ja');
@@ -587,13 +606,16 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
   const klaerung = [...zahl.entries()].map(([id, anzahl]) => ({ id, titel: offenText(id, text), anzahl })).sort((a, b) => b.anzahl - a.anzahl || a.titel.localeCompare(b.titel, 'de'));
   // gelb nur wegen eines Hinweises (nichts fehlt): bestätigen klärt – Angaben, keine Merkmale
   // nur Paragrafen, die allein wegen genau dieses Hinweises gelb sind. Ein Modulwert ist dort zu bestätigen, woher seine
-  // Unsicherheit kommt: beim Gemeindeschlüssel, solange der nicht gesichert ist, sonst beim Bezug der Tabelle
-  const agsW = fakten['lage.ags'];
-  const agsOffen = !agsW || (agsW.sicherheit === 'hinweis' && !agsW.bestaetigt) || !!agsW.widerspruch;
+  // Unsicherheit kommt (Ziel: modulZiel)
   const zahlB = new Map<string, number>();
   for (const p of paragrafen) {
     if (!p.bestaetigend || p.bestaetigend.includes(':') || !offenAuto(p)) continue;
-    const ziel = fakten[p.bestaetigend]?.herkunft === 'modul' ? (agsOffen ? 'lage.ags' : (faktDefs[p.bestaetigend]?.nach?.fakt ?? 'lage.ags')) : p.bestaetigend;
+    const ziel = fakten[p.bestaetigend]?.herkunft === 'modul' ? modulZiel(p.bestaetigend, fakten, faktDefs) : p.bestaetigend;
+    // keine einzelne Bestätigung entscheidet (fester Modulwert mit mehreren unsicheren Quellen): nicht „bestätigen klärt“
+    if (!ziel) {
+      delete p.bestaetigend;
+      continue;
+    }
     p.bestaetigend = ziel;
     zahlB.set(ziel, (zahlB.get(ziel) ?? 0) + 1);
   }

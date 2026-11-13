@@ -1855,3 +1855,26 @@ h2.br-detail-name {
   min-height: 0;
   font-size: 12px;
 }
+/* Protokoll: die Beschriftungsspalte bricht nicht mitten im Wort („Antragsmerkmal|e“) */
+.br-protokoll .report-table.narrow td:first-child {
+  white-space: nowrap;
+}
+/* Druck: eine Gruppenzeile bleibt bei ihrer ersten Zeile (nicht allein am Seitenfuß) */
+@media print {
+  .br-protokoll-zwischen,
+  .br-protokoll-zwischen th {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+}
+/* schmale Fenster bzw. Browser-Zoom (Web; der Desktop hat eine Mindestbreite): unter 1000 CSS-px behält die
+   Arbeitsfläche 1000 px und die Seite scrollt waagerecht – keine Spalte wird abgeschnitten, „Speichern“ bleibt erreichbar */
+@media screen and (max-width: 999px) {
+  #root:has(> .br-app) {
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+  .br-app {
+    min-width: 1000px;
+  }
+}

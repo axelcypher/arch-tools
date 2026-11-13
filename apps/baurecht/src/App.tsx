@@ -18,7 +18,7 @@ import { Protokoll } from './components/Protokoll';
 import { Vorschriften } from './components/Vorschriften';
 import { lageAbfragen } from './lage';
 import { ausProjektwahl, dateiOeffnen, speichernJetzt } from './projekt';
-import { auswertungMit, herabstufungen, texteLaden, usePruefstand } from './pruefung';
+import { auswertungMit, folgenBeimSpeichern, herabstufungen, texteLaden, usePruefstand } from './pruefung';
 import { abgelegtesPaket, paketNachladen } from './regelpaket';
 import { istGeaendert, offeneBestaetigungen, offeneFestlegungen, PLANUNGSRECHT, useBaurecht } from './store';
 import type { BaurechtPruefung } from '@core/baurecht/projekt';
@@ -44,8 +44,10 @@ export async function speichern(): Promise<boolean> {
 }
 
 async function speichernLauf(): Promise<boolean> {
+  if (!useBaurecht.getState().quelle) return false;
+  // Modulwerte, die nicht mehr gelten, nicht wieder in die Datei schreiben (eine Auswertung nur, wenn es welche gibt)
+  if (Object.values(useBaurecht.getState().pruefung.fakten).some((f) => f.herkunft === 'modul')) useBaurecht.getState().veralteteModulwerteEntfernen(auswertungMit(useBaurecht.getState().pruefung.fakten).fakten);
   const s = useBaurecht.getState();
-  if (!s.quelle) return false;
   const festlegungen = offeneFestlegungen(s);
   const fakten = offeneBestaetigungen(s);
   let entwurf: { festlegungen: Record<string, Festlegung | null>; fakten: Record<string, FaktWert | null>; planungsrechtOrt?: BaurechtPruefung['planungsrechtOrt'] | null } | null = null;
@@ -269,19 +271,8 @@ export function App() {
   // … und beim Speichern (jetzt gegenüber dem Stand der Datei)
   // stabil je Auswertung: der Speicherdialog rechnet die Folgen nur neu, wenn sich der Stand wirklich ändert
   const auswertungJetzt = stand.auswertung;
-  const folgenSeitDatei = useCallback(
-    (id: string) => {
-      const s = useBaurecht.getState();
-      // Planungsrecht für den Ort bestätigt: Folgen gegenüber dem Stand der Datei (ohne diese Bestätigung)
-      if (id === PLANUNGSRECHT) return { herab: herabstufungen(auswertungMit(s.pruefung.fakten, { planungsrechtOrt: s.pruefungDatei.planungsrechtOrt }), auswertungJetzt) };
-      const eigene = { ...s.pruefung.fakten };
-      const alt = s.pruefungDatei.fakten[id];
-      if (alt) eigene[id] = alt;
-      else delete eigene[id];
-      return { herab: herabstufungen(auswertungMit(eigene), auswertungJetzt) };
-    },
-    [auswertungJetzt],
-  );
+  // je Punkt allein gegenüber der Datei und alle zusammen (Überschneidungen gehen nicht verloren)
+  const folgenSeitDatei = useCallback((ids: string[]) => folgenBeimSpeichern(ids, auswertungJetzt), [auswertungJetzt]);
 
   return (
     <div className="app br-app">

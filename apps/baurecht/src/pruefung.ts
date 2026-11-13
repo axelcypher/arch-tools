@@ -3,7 +3,7 @@
  * Hand), Gemeindeschlüssel bestimmen, Ampel je Paragraf berechnen, Texte der aktiven Normen holen.
  */
 
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Auswertung } from '@core/baurecht/auswertung';
 import { auswerten, faktDefinitionen, gueltigeFakten, modulFakten } from '@core/baurecht/auswertung';
 import { FAKTEN } from '@core/baurecht/fakten';
@@ -23,7 +23,7 @@ import { parseNum } from '@core/format';
 import { logger } from '@core/platform/log';
 import { Rechtsstand } from '@core/recht/rechtsstand';
 import { ablage } from './ablage';
-import { heute, useBaurecht } from './store';
+import { heute, PLANUNGSRECHT, useBaurecht } from './store';
 
 const log = logger('rechtsstand');
 
@@ -213,7 +213,9 @@ export function auswertungMit(eigene: Record<string, FaktWert>, mit?: { planungs
 
 /**
  * Wie viele Paragrafen die Bestätigung des Planungsrechts für den jetzigen Ort ändern würde („klärt N“) – dieselbe
- * Rechnung wie danach in der Ansicht (Ort und Wert wie beim Bestätigen)
+ * Rechnung wie danach in der Ansicht. Eine volle zweite Auswertung: Paragrafen, die wegen eines anderen Hinweises gelb
+ * sind, können trotzdem am Planungsrecht hängen (z. B. Landschaftsplan nur im Außenbereich) – deshalb verzögert
+ * aufrufen (usePlanungsrechtWirkung), nicht bei jeder Eingabe.
  */
 export function planungsrechtWirkung(jetzt: Auswertung): number {
   const s = useBaurecht.getState();
@@ -223,6 +225,93 @@ export function planungsrechtWirkung(jetzt: Auswertung): number {
   const dann = auswertungMit(s.pruefung.fakten, { planungsrechtOrt: { ...o, wert } });
   const vorher = new Map(jetzt.paragrafen.map((p) => [p.id, p.ampel]));
   return dann.paragrafen.filter((p) => vorher.has(p.id) && vorher.get(p.id) !== p.ampel).length;
+}
+
+/**
+ * „klärt N“ der Bestätigung des Planungsrechts – gedrosselt: höchstens alle 250 ms eine zweite Auswertung, mit dem dann
+ * neuesten Stand (eintreffende Gesetzestexte oder Eingaben lösen nicht je eine aus, die Zahl kommt trotzdem bald)
+ */
+export function usePlanungsrechtWirkung(stand: Pruefstand): number {
+  const [n, setN] = useState(0);
+  const neuester = useRef(stand);
+  neuester.current = stand;
+  const geplant = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (!stand.planungsrechtFrueher) return setN(0);
+    if (geplant.current) return;
+    geplant.current = setTimeout(() => {
+      geplant.current = null;
+      const s = neuester.current;
+      setN(s.planungsrechtFrueher ? planungsrechtWirkung(s.auswertung) : 0);
+    }, 250);
+  }, [stand]);
+  useEffect(
+    () => () => {
+      if (geplant.current) clearTimeout(geplant.current);
+    },
+    [],
+  );
+  return n;
+}
+
+export type Herabstufung = ReturnType<typeof herabstufungen>[number];
+
+/** eigene Angaben und Ort des Planungsrechts mit dem Stand der Datei für diese offenen Bestätigungen */
+function dateistand(ids: string[]): { datei: Record<string, FaktWert>; prDatei: Ort | undefined } {
+  const s = useBaurecht.getState();
+  const datei: Record<string, FaktWert> = { ...s.pruefung.fakten };
+  for (const id of ids) {
+    if (id === PLANUNGSRECHT) continue;
+    const alt = s.pruefungDatei.fakten[id];
+    if (alt) datei[id] = alt;
+    else delete datei[id];
+  }
+  return { datei, prDatei: ids.includes(PLANUNGSRECHT) ? s.pruefungDatei.planungsrechtOrt : s.pruefung.planungsrechtOrt };
+}
+export interface FolgeBeimSpeichern {
+  herab: Herabstufung[];
+  /** so viele dieser Herabstufungen bewirkt auch eine andere offene Bestätigung (`mit`) */
+  auch?: { anzahl: number; mit: string[] };
+}
+
+/**
+ * Folgen der noch nicht gespeicherten Bestätigungen (Angaben bzw. PLANUNGSRECHT) gegenüber dem Stand der Datei: je Punkt
+ * allein (Datei + nur dieser Punkt) – mit Vermerk, was ein anderer Punkt ebenso bewirkt – und alle zusammen. So fehlt
+ * nichts, wenn zwei Bestätigungen dieselbe Vorschrift entscheiden (z. B. Gemeindeschlüssel und Planungsrecht).
+ */
+export function folgenBeimSpeichern(ids: string[], jetzt: Auswertung): { je: Record<string, FolgeBeimSpeichern>; zusammen: Herabstufung[] } {
+  const s = useBaurecht.getState();
+  const { datei, prDatei } = dateistand(ids);
+  const basis = auswertungMit(datei, { planungsrechtOrt: prDatei });
+  const je: Record<string, FolgeBeimSpeichern> = {};
+  for (const id of ids) {
+    let mit: Auswertung;
+    // nur ein Punkt offen: „Datei + dieser Punkt“ ist der jetzige Stand
+    if (ids.length === 1) mit = jetzt;
+    else if (id === PLANUNGSRECHT) mit = auswertungMit(datei, { planungsrechtOrt: s.pruefung.planungsrechtOrt });
+    else {
+      const e = { ...datei };
+      if (s.pruefung.fakten[id]) e[id] = s.pruefung.fakten[id];
+      else delete e[id];
+      mit = auswertungMit(e, { planungsrechtOrt: prDatei });
+    }
+    je[id] = { herab: herabstufungen(basis, mit) };
+  }
+  for (const id of ids) {
+    const andere = ids.filter((x) => x !== id && je[x].herab.length);
+    const auch = je[id].herab.filter((h) => andere.some((x) => je[x].herab.some((k) => k.id === h.id)));
+    if (auch.length) je[id].auch = { anzahl: auch.length, mit: andere.filter((x) => je[x].herab.some((k) => auch.some((a) => a.id === k.id))) };
+  }
+  return { je, zusammen: herabstufungen(basis, jetzt) };
+}
+
+/** Paragrafen, deren Ampel an noch nicht gespeicherten Bestätigungen hängt (Vergleich mit dem Stand der Datei) */
+export function anUngespeichertem(ids: string[], jetzt: Auswertung): number {
+  if (!ids.length) return 0;
+  const { datei, prDatei } = dateistand(ids);
+  const basis = auswertungMit(datei, { planungsrechtOrt: prDatei });
+  const dort = new Map(basis.paragrafen.map((p) => [p.id, p.ampel]));
+  return jetzt.paragrafen.filter((p) => dort.has(p.id) && dort.get(p.id) !== p.ampel).length;
 }
 
 /* ---------- Rechtsstand ---------- */

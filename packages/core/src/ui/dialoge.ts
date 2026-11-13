@@ -9,8 +9,8 @@
  */
 
 // „details > summary“: die Aufklappzeile (z. B. „Liste anzeigen“ im Bestätigen-Dialog) gehört in den Fokuszyklus
-const FOKUSSIERBAR =
-  'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href], details > summary, [tabindex]:not([tabindex="-1"])';
+const START = 'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])';
+const FOKUSSIERBAR = `${START}, details > summary`;
 
 let eingerichtet = false;
 const vorher = new WeakMap<Element, HTMLElement | null>();
@@ -28,7 +28,8 @@ function geoeffnet(d: HTMLElement) {
   // nach dem Rendern: Dialoge, die selbst fokussieren (z. B. ein Suchfeld), haben Vorrang
   requestAnimationFrame(() => {
     if (!d.isConnected || d.contains(document.activeElement)) return;
-    (d.querySelector<HTMLElement>('[autofocus]') ?? d.querySelector<HTMLElement>(FOKUSSIERBAR))?.focus();
+    // Startfokus nicht auf eine Aufklappzeile (z. B. „Liste anzeigen“ vor dem Häkchen) – sie bleibt im Tab-Zyklus
+    (d.querySelector<HTMLElement>('[autofocus]') ?? d.querySelector<HTMLElement>(START))?.focus();
   });
 }
 

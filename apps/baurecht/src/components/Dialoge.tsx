@@ -7,12 +7,10 @@ import { angabeVonHand, hinweisBestaetigen } from '@core/baurecht/angaben';
 import { isTauri } from '@core/platform/files';
 import { Modal } from '@core/ui/Dialog';
 import { benutzer, benutzerMerken } from '../benutzer';
+import type { FolgeBeimSpeichern, Herabstufung } from '../pruefung';
 import { aktuelleLage } from '../pruefung';
 import { heute, PLANUNGSRECHT, useBaurecht } from '../store';
-import { AMPEL_ERKLAERUNG, AMPEL_TEXT, AmpelMarke, datum } from './Ampel';
-
-/** „a, b und c“ */
-const aufzaehlen = (t: string[]) => (t.length > 1 ? `${t.slice(0, -1).join(', ')} und ${t[t.length - 1]}` : (t[0] ?? ''));
+import { AMPEL_ERKLAERUNG, AMPEL_TEXT, AmpelMarke, aufzaehlen, datum } from './Ampel';
 
 const RANG: Record<Ampel, number> = { rot: 2, gelb: 1, gruen: 0 };
 
@@ -213,8 +211,8 @@ export type FaktDefVon = (id: string) => FaktDef | undefined;
 /** Folgen einer Angabe: wie viele Paragrafen dadurch auf „entfällt“ (bzw. schwächer) gehen – für die Dialoge */
 export type FolgenRechner = (id: string, wert: FaktWert | null) => { herab: { id: string; titel: string; von: Ampel; nach: Ampel }[]; nachher?: FaktWert };
 
-function Folgen({ folgen }: { folgen: ReturnType<FolgenRechner> }) {
-  if (!folgen.herab.length) return <p className="br-leise">Keine Vorschrift ändert dadurch ihre Ampel.</p>;
+function Folgen({ folgen, allein }: { folgen: { herab: Herabstufung[] }; allein?: boolean }) {
+  if (!folgen.herab.length) return <p className="br-leise">{allein ? 'Allein ändert dadurch keine Vorschrift ihre Ampel.' : 'Keine Vorschrift ändert dadurch ihre Ampel.'}</p>;
   const gruen = folgen.herab.filter((h) => h.nach === 'gruen').length;
   return (
     <details className="br-folgen">
@@ -411,7 +409,7 @@ export function bestaetigenFragen(offen: Offen): Promise<BestaetigenAntwort> {
 }
 
 export function BestaetigenDialog({ titel, faktTitel, folgen, faktDef = () => undefined }: {
-  faktDef?: FaktDefVon; titel: (id: string) => { titel: string; automatisch?: Ampel; ampel?: Ampel; ueberholt?: string; unwirksam?: string }; faktTitel: (id: string) => string; folgen: (id: string) => ReturnType<FolgenRechner> }) {
+  faktDef?: FaktDefVon; titel: (id: string) => { titel: string; automatisch?: Ampel; ampel?: Ampel; ueberholt?: string; unwirksam?: string }; faktTitel: (id: string) => string; folgen: (ids: string[]) => { je: Record<string, FolgeBeimSpeichern>; zusammen: Herabstufung[] } }) {
   const offen = useBestaetigen((s) => s.offen);
   const antwort = useBestaetigen((s) => s.antwort);
   const festlegungen = useBaurecht((s) => s.pruefung.festlegungen);
@@ -420,9 +418,21 @@ export function BestaetigenDialog({ titel, faktTitel, folgen, faktDef = () => un
   const planungsrechtOrt = useBaurecht((s) => s.pruefung.planungsrechtOrt);
   const [geprueft, setGeprueft] = useState(false);
   useEffect(() => setGeprueft(false), [offen]);
-  // Folgen je Angabe einmal je Öffnen (volle Auswertung je Angabe – nicht bei jedem Haken neu)
-  // je Öffnen und je Stand der Auswertung (folgen ist je Auswertung stabil) – nicht bei jedem Haken neu
-  const folgenJe = useMemo(() => (offen ? Object.fromEntries(offen.fakten.map((id) => [id, folgen(id)])) : {}), [offen, folgen]);
+  // Folgen gegenüber der Datei – je Punkt allein und zusammen; einmal je Öffnen und Stand (nicht bei jedem Haken neu)
+  const fb = useMemo(() => (offen?.fakten.length ? folgen(offen.fakten) : null), [offen, folgen]);
+  // nur Punkte mit eigener Zeile (eine zurückgenommene Bestätigung hat keine)
+  const ids = (offen?.fakten ?? []).filter((id) => id === PLANUNGSRECHT || !!fakten[id]?.bestaetigt);
+  const folgenJe = fb?.je ?? {};
+  const name = (id: string) => (id === PLANUNGSRECHT ? 'das Planungsrecht' : `„${faktTitel(id)}“`);
+  const auch = (id: string) => {
+    const a = folgenJe[id]?.auch;
+    if (!a) return null;
+    return (
+      <p className="br-leise">
+        {a.anzahl === folgenJe[id].herab.length ? (a.anzahl === 1 ? 'Diese' : 'Alle') : `${a.anzahl} davon`} auch durch {aufzaehlen(a.mit.map(name))} – siehe „Zusammen“ unten.
+      </p>
+    );
+  };
   if (!offen || !antwort) return null;
   // überholte Festlegungen lassen sich so nicht bestätigen – erst erneut festlegen oder aufheben
   const ueberholte = offen.festlegungen.filter((id) => festlegungen[id] && titel(id).ueberholt);
@@ -431,13 +441,24 @@ export function BestaetigenDialog({ titel, faktTitel, folgen, faktDef = () => un
   const nf = offen.festlegungen.length;
   const pr = offen.fakten.includes(PLANUNGSRECHT);
   const na = offen.fakten.length - (pr ? 1 : 0);
-  const teile = [nf ? (nf === 1 ? 'eine Festlegung von Hand' : `${nf} Festlegungen von Hand`) : '', na ? (na === 1 ? 'eine gesicherte Angabe' : `${na} gesicherte Angaben`) : '', pr ? 'die Bestätigung des Planungsrechts für diesen Ort' : ''].filter(Boolean);
+  // was genau: neue, geänderte und aufgehobene Festlegungen, neu gesicherte Angaben, das Planungsrecht
+  const zahl = (n: number, eins: string, viele: string) => (n === 1 ? eins : `${n} ${viele}`);
+  const fNeu = offen.festlegungen.filter((id) => festlegungen[id] && !inDatei[id]).length;
+  const fGeaendert = offen.festlegungen.filter((id) => festlegungen[id] && inDatei[id]).length;
+  const fAuf = offen.festlegungen.filter((id) => !festlegungen[id] && inDatei[id]).length;
+  const teile = [
+    fNeu ? zahl(fNeu, 'eine neue Festlegung von Hand', 'neue Festlegungen von Hand') : '',
+    fGeaendert ? zahl(fGeaendert, 'eine geänderte Festlegung', 'geänderte Festlegungen') : '',
+    fAuf ? zahl(fAuf, 'eine aufgehobene Festlegung', 'aufgehobene Festlegungen') : '',
+    na ? zahl(na, 'eine neu gesicherte Angabe', 'neu gesicherte Angaben') : '',
+    pr ? 'die Bestätigung des Planungsrechts für diesen Ort' : '',
+  ].filter(Boolean);
   const geprueftTeile = [nf ? (nf === 1 ? 'diese Festlegung' : 'diese Festlegungen') : '', na ? (na === 1 ? 'diese Angabe' : 'diese Angaben') : '', pr ? 'das Planungsrecht für diesen Ort' : ''].filter(Boolean);
   return (
-    <Modal titel="Vor dem Speichern bestätigen" onClose={() => antwort('abbrechen')} breit klickDaneben={false}>
+    <Modal titel="Vor dem Speichern bestätigen" onClose={() => antwort('abbrechen')} breit klickDaneben={false} beschreibung="br-bestaetigen-einleitung">
       <h3>Vor dem Speichern bestätigen</h3>
-      <p>
-        Seit dem letzten Speichern {teile.length === 1 && nf + na <= 1 ? 'ist' : 'sind'} {aufzaehlen(teile)} neu, geändert oder aufgehoben. Bitte noch einmal prüfen – alles steht mit Begründung und Namen im Prüfprotokoll.
+      <p id="br-bestaetigen-einleitung">
+        Seit dem letzten Speichern: {aufzaehlen(teile)}. Bitte noch einmal prüfen – alles steht mit Begründung, Namen und Datum im Prüfprotokoll.
       </p>
       <ul className="br-bestaetigen-liste">
         {offen.festlegungen.map((id) => {
@@ -461,7 +482,8 @@ export function BestaetigenDialog({ titel, faktTitel, folgen, faktDef = () => un
                   )}
                 </div>
                 <div className="br-leise-stark">
-                  {f.von}: {f.grund}
+                  {f.von}
+                  {f.am ? `, ${datum(f.am)}` : ''}: {f.grund}
                 </div>
                 {herab && <div className="br-warn-text">Herabstufung</div>}
                 {f.ampel === f.automatisch && <div className="br-leise">Wie automatisch – die Festlegung bleibt, solange sich die beteiligten Angaben nicht ändern.</div>}
@@ -509,7 +531,8 @@ export function BestaetigenDialog({ titel, faktTitel, folgen, faktDef = () => un
                 <div className="br-leise-stark">
                   {po?.von ? `${po.von}${po.am ? `, ${datum(po.am)}` : ''}: ` : ''}gilt für {po?.anzeige ?? 'diesen Ort'}
                 </div>
-                <Folgen folgen={fo} />
+                <Folgen folgen={fo} allein={ids.length > 1} />
+                {auch(id)}
               </li>
             );
           }
@@ -525,13 +548,22 @@ export function BestaetigenDialog({ titel, faktTitel, folgen, faktDef = () => un
                 </span>
               </div>
               <div className="br-leise-stark">
-                {f.bestaetigt.von}: {f.bestaetigt.grund ?? '–'}
+                {f.bestaetigt.von}
+                {f.bestaetigt.am ? `, ${datum(f.bestaetigt.am)}` : ''}: {f.bestaetigt.grund ?? '–'}
               </div>
-              <Folgen folgen={fo} />
+              <Folgen folgen={fo} allein={ids.length > 1} />
+              {auch(id)}
             </li>
           );
         })}
       </ul>
+      {/* mehrere Bestätigungen: was sie zusammen gegenüber der Datei bewirken (auch, was jede allein schon entschiede) */}
+      {fb && ids.length > 1 && (
+        <div className="br-folgen-zusammen">
+          <strong>Zusammen gegenüber der gespeicherten Datei:</strong>
+          <Folgen folgen={{ herab: fb.zusammen }} />
+        </div>
+      )}
       {ueberholte.length > 0 && (
         <div className="br-meldung br-meldung-fehler" role="alert">
           {ueberholte.length === 1 ? 'Eine Festlegung ist überholt' : `${ueberholte.length} Festlegungen sind überholt`} – „Bestätigen und speichern“ geht erst, wenn {ueberholte.length === 1 ? 'sie erneut festgelegt oder aufgehoben ist' : 'sie erneut festgelegt oder aufgehoben sind'}. „Speichern, diese als Entwurf behalten“ geht.

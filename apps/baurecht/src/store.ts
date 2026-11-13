@@ -89,6 +89,12 @@ export interface Zustand {
   /** „Rückgängig“ nach dem Aufheben: die vorige Festlegung unverändert zurück */
   festlegungWiederherstellen: (id: string, f: Festlegung) => void;
   festlegungenBestaetigen: (ids: string[]) => void;
+  /**
+   * gespeicherte Modulwerte (nur wegen einer Bestätigung in der Datei), die kein aktives Modul mehr ableitet (anderer
+   * Gemeindeschlüssel, Bezug weg), entfernen – sie gelten nicht mehr und kämen sonst unsichtbar wieder in die Datei.
+   * `abgeleitet`: die Angaben der aktuellen Auswertung
+   */
+  veralteteModulwerteEntfernen: (abgeleitet: Record<string, FaktWert>) => void;
   /** offene Festlegungen und Bestätigungen auf den Stand der Datei zurücksetzen („ohne diese speichern“) */
   aufDateistand: (festlegungen: string[], fakten: string[]) => void;
   protokollAnhaengen: (p: BaurechtPruefung['protokolle'][number]) => void;
@@ -284,6 +290,13 @@ export const useBaurecht = create<Zustand>((set, get) => ({
     const p = kopie(get().pruefung);
     const jetzt = new Date().toISOString();
     for (const id of ids) if (p.festlegungen[id]) p.festlegungen[id].bestaetigt = jetzt;
+    set({ pruefung: p });
+  },
+  veralteteModulwerteEntfernen: (abgeleitet) => {
+    const weg = Object.entries(get().pruefung.fakten).filter(([id, f]) => f.herkunft === 'modul' && abgeleitet[id]?.herkunft !== 'modul');
+    if (!weg.length) return;
+    const p = kopie(get().pruefung);
+    for (const [id] of weg) delete p.fakten[id];
     set({ pruefung: p });
   },
   aufDateistand: (festlegungen, fakten) => {
