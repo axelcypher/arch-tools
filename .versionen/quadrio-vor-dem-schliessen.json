@@ -1,0 +1,6 @@
+{
+  "flaechenrechner": {
+    "stufe": "patch",
+    "notiz": "Vor dem Schließen, Andocken oder Update in Arkly sichert QUADRIO den Zwischenstand der letzten Änderung, statt ihn zu verlieren; Hinzufügen-Knöpfe „Geschoss …“ und „Gaube“ mit Plus-Symbol."
+  }
+}

@@ -150,7 +150,7 @@ function KopieDialog({ frage }: { frage: Frage }) {
                   {w}
                 </option>
               ))}
-              <option value="*neu">neue Wohnung …</option>
+              <option value="*neu">Wohnung hinzufügen …</option>
             </select>
           </label>
         )}
