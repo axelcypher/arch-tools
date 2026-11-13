@@ -31,8 +31,8 @@ export type MenuePunkt =
 
 interface MenueZustand {
   /** `ausloeser`: Element, das das Menü geöffnet hat – bekommt den Fokus nach Esc, Tab oder einer Auswahl zurück */
-  offen: { x: number; y: number; punkte: MenuePunkt[]; ausloeser: HTMLElement | null; name?: string } | null;
-  zeigen: (x: number, y: number, punkte: MenuePunkt[], ausloeser?: HTMLElement | null, name?: string) => void;
+  offen: { x: number; y: number; punkte: MenuePunkt[]; ausloeser: HTMLElement | SVGElement | null; name?: string } | null;
+  zeigen: (x: number, y: number, punkte: MenuePunkt[], ausloeser?: HTMLElement | SVGElement | null, name?: string) => void;
   /** `fokusZurueck`: den Fokus an den Auslöser geben (nicht bei einem Klick daneben – dann gilt, was angeklickt wurde) */
   schliessen: (fokusZurueck?: boolean) => void;
 }
@@ -53,11 +53,14 @@ const FOKUSSIERBAR = 'button, input, select, textarea, a[href], [tabindex]';
 export function zeigeMenue(e: ReactMouseEvent | MouseEvent, punkte: MenuePunkt[], name?: string) {
   e.preventDefault();
   e.stopPropagation();
-  const ziel = e.currentTarget instanceof HTMLElement && e.currentTarget.matches(FOKUSSIERBAR) ? e.currentTarget : document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  // auch SVG-Auslöser (z. B. eine fokussierbare Zeichenfläche): Fokus kehrt nach Esc bzw. Auswahl dorthin zurück
+  const aktuell = e.currentTarget instanceof HTMLElement || e.currentTarget instanceof SVGElement ? e.currentTarget : null;
+  const aktiv = document.activeElement instanceof HTMLElement || document.activeElement instanceof SVGElement ? document.activeElement : null;
+  const ziel = aktuell?.matches(FOKUSSIERBAR) ? aktuell : aktiv;
   // Kontextmenütaste (Umschalt+F10): ohne Mausposition – das Menü erscheint dann am Auslöser
   let { clientX: x, clientY: y } = e;
-  if (x === 0 && y === 0 && e.currentTarget instanceof HTMLElement) {
-    const r = e.currentTarget.getBoundingClientRect();
+  if (x === 0 && y === 0 && aktuell) {
+    const r = aktuell.getBoundingClientRect();
     x = r.left + 8;
     y = r.top + Math.min(r.height, 24);
   }
