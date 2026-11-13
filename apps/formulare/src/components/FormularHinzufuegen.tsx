@@ -49,8 +49,7 @@ export function FormularHinzufuegenDialog({ onClose }: { onClose: () => void }) 
   };
 
   return (
-    <Modal titel="Formular hinzufügen" onClose={onClose} breit className="fh">
-      <h3>Formular hinzufügen</h3>
+    <Modal titel="Formular hinzufügen" kopf onClose={onClose} breit className="fh">
       <p className="muted small-text">
         Aus {vorlagenordner ? 'dem Vorlagenordner und ' : ''}den Formularen der anderen Projekte – je Formular der neueste Stand. Angelegt wird eine Kopie mit geleerten
         Eingaben.{!vorlagenordner && ' Leere Vorlagen lassen sich unter Einstellungen › Antrag & Export als Vorlagenordner angeben.'}
