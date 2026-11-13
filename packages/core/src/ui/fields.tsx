@@ -138,7 +138,7 @@ export function NumberField({
    * markiert und `aria-invalid`; die gemeinsame Meldung steht einmal neben den Feldern, ihre id in `fehlerId`.
    */
   ungueltig?: boolean;
-  /** id der gemeinsamen Fehlermeldung (aria-describedby) */
+  /** id der gemeinsamen Fehlermeldung (aria-describedby); die Meldung steht nur da, solange der Fehler besteht */
   fehlerId?: string;
 }) {
   const meldungId = useId();
@@ -193,7 +193,7 @@ export function NumberField({
         value={text}
         onFocus={pending.onFocus}
         placeholder={placeholder}
-        title={fehler ?? (ungueltig ? siehMeldung(title) : title)}
+        title={fehler ?? (ungueltig ? sieheMeldung(title) : title)}
         inputMode="decimal"
         aria-label={label}
         aria-invalid={fehler || ungueltig ? true : undefined}
@@ -230,7 +230,7 @@ export function NumberField({
 }
 
 /** Tooltip bei einem Fehler von außen: vorhandene Erklärung behalten, Verweis auf die gemeinsame Meldung anhängen */
-const siehMeldung = (title?: string): string => (title ? `${title} – siehe Meldung zu diesen Feldern` : 'Siehe Meldung zu diesen Feldern');
+const sieheMeldung = (title?: string): string => (title ? `${title} – siehe Meldung zu diesen Feldern` : 'Siehe Meldung zu diesen Feldern');
 
 /** ids für aria-describedby (eigene Meldung, gemeinsame Meldung); keine = undefined */
 const beschrieben = (...ids: (string | undefined)[]): string | undefined => ids.filter(Boolean).join(' ') || undefined;
@@ -272,7 +272,7 @@ export function TextField({
    * markiert und `aria-invalid`; die gemeinsame Meldung steht einmal neben den Feldern, ihre id in `fehlerId`.
    */
   ungueltig?: boolean;
-  /** id der gemeinsamen Fehlermeldung (aria-describedby) */
+  /** id der gemeinsamen Fehlermeldung (aria-describedby); die Meldung steht nur da, solange der Fehler besteht */
   fehlerId?: string;
 }) {
   const meldungId = useId();
@@ -296,7 +296,7 @@ export function TextField({
         value={text}
         placeholder={placeholder}
         list={list}
-        title={meldung ?? (ungueltig ? siehMeldung(title) : title)}
+        title={meldung ?? (ungueltig ? sieheMeldung(title) : title)}
         className={meldung || ungueltig ? 'feld-fehler' : undefined}
         aria-label={label}
         aria-invalid={meldung || ungueltig ? true : undefined}

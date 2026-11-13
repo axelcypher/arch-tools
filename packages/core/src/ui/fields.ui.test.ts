@@ -245,7 +245,6 @@ describe('Prüfregeln', () => {
     expect(ids).toContain('summe');
     expect(document.getElementById(ids.find((i) => i !== 'summe')!)?.textContent).toContain('keine Zahl');
     // TextField mit eigener Prüfung: eigene Meldung und gemeinsame Meldung
-    act(() => b.blur());
     const host2 = render(createElement(TextField, { value: '12', onChange: () => {}, pruefen: plz, zeigen: true, ungueltig: true, fehlerId: 'summe', label: 'PLZ' }));
     const plzFeld = host2.querySelector('input')!;
     const plzIds = plzFeld.getAttribute('aria-describedby')!.split(' ');
