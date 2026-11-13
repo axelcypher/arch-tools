@@ -96,6 +96,21 @@ const WERTE: Record<string, (string | undefined)[]> = {
   Verfahren: ['verfahrensfrei', 'Genehmigungsfreistellung', 'vereinfachtes Verfahren', undefined],
 };
 
+/**
+ * Volle Matrizen (mehrere Minuten Rechenzeit, ohne Netz) nur in der CI (GitHub Actions setzt CI=true) oder mit VOLL=1.
+ * Sonst – lokal, in Cloud-Sitzungen – eine feste Stichprobe, damit „npm test“ in wenigen Sekunden durch ist statt
+ * minutenlang ohne Ausgabe zu laufen. Volle Prüfung lokal: VOLL=1 npx vitest run --project regeln
+ */
+const VOLL = !!process.env.CI || !!process.env.VOLL;
+/** Zeitgrenze der großen Matrizen: voll großzügig (Windows-Runner), mit Stichprobe knapp – nichts läuft still minutenlang */
+const MATRIX_ZEIT = VOLL ? 600000 : 60000;
+/** feste Stichprobe (jedes k-te Element, höchstens etwa `n`) – mit VOLL die ganze Liste */
+function stichprobe<T>(liste: T[], n: number): T[] {
+  if (VOLL || liste.length <= n) return liste;
+  const k = Math.ceil(liste.length / n);
+  return liste.filter((_, i) => i % k === 0);
+}
+
 function* kombinationen(werte: Record<string, (string | undefined)[]>): Generator<Record<string, string>> {
   const namen = Object.keys(werte);
   const lauf = function* (i: number, acc: Record<string, string>): Generator<Record<string, string>> {
@@ -199,11 +214,11 @@ describe('neue Merkmalwerte (Erweiterung, Wohn- und Geschäftshaus)', () => {
   ];
   const ampeln = (m: Record<string, string>, f: Record<string, FaktWert>, t: Map<string, TextStand>) => new Map(auswerten(eingabe(m, f, t)).paragrafen.map((p) => [p.id, p.automatisch]));
 
-  it('Erweiterung nie milder als Änderung – je Paragraf mindestens dieselbe Ampel', { timeout: 600000 }, () => {
+  it('Erweiterung nie milder als Änderung – je Paragraf mindestens dieselbe Ampel', { timeout: MATRIX_ZEIT }, () => {
     const fehler: string[] = [];
     for (const [name, f, t] of FAKTEN)
       for (const art of ['Einfamilienhaus', 'Mehrfamilienhaus', 'Wohn- und Geschäftshaus', 'Nichtwohngebäude', 'kein Gebäude'])
-        for (const m of kombinationen(MATRIX)) {
+        for (const m of stichprobe([...kombinationen(MATRIX)], 6)) {
           const basis = { ...m, Gebäudeart: art };
           const aend = ampeln({ ...basis, Vorhaben: 'Änderung' }, f, t);
           for (const [id, a] of ampeln({ ...basis, Vorhaben: 'Erweiterung' }, f, t)) if (RANG[a] < RANG[aend.get(id) ?? 'gruen'] && fehler.length < 30) fehler.push(`${id}: Erweiterung ${a}, Änderung ${aend.get(id)} (${name}, ${JSON.stringify(basis)})`);
@@ -211,11 +226,11 @@ describe('neue Merkmalwerte (Erweiterung, Wohn- und Geschäftshaus)', () => {
     expect(fehler).toEqual([]);
   });
 
-  it('Wohn- und Geschäftshaus nie milder als Mehrfamilienhaus bzw. Nichtwohngebäude', { timeout: 600000 }, () => {
+  it('Wohn- und Geschäftshaus nie milder als Mehrfamilienhaus bzw. Nichtwohngebäude', { timeout: MATRIX_ZEIT }, () => {
     const fehler: string[] = [];
     for (const [name, f, t] of FAKTEN)
       for (const vorhaben of ['Errichtung', 'Änderung', 'Nutzungsänderung', 'Beseitigung'])
-        for (const m of kombinationen(MATRIX)) {
+        for (const m of stichprobe([...kombinationen(MATRIX)], 6)) {
           const basis = { ...m, Vorhaben: vorhaben };
           const mfh = ampeln({ ...basis, Gebäudeart: 'Mehrfamilienhaus' }, f, t);
           const nwg = ampeln({ ...basis, Gebäudeart: 'Nichtwohngebäude' }, f, t);
@@ -281,7 +296,9 @@ describe('neue Merkmalwerte (Erweiterung, Wohn- und Geschäftshaus)', () => {
 });
 
 describe('Fallmatrix', () => {
-  it('kein falsches Grün: Ergänzen, Herabstufen, Text, Begründung', { timeout: 600000 }, () => {
+  // nur voll sinnvoll: „Herabstufen“ und „Text“ prüfen je Paragraf den ersten grünen Fall – eine Stichprobe prüfte andere
+  // Fälle als die CI und deckte nicht dasselbe ab
+  it.runIf(VOLL)('kein falsches Grün: Ergänzen, Herabstufen, Text, Begründung', { timeout: MATRIX_ZEIT }, () => {
     const fehler: string[] = [];
     const melde = (t: string) => {
       if (fehler.length < 40) fehler.push(t);
@@ -467,12 +484,12 @@ describe('Fragen und Regeln', () => {
     expect(gesichert.paragrafen.find((x) => x.id === 'nw/bauo-nrw/34')!.hinweise.join(' ')).not.toMatch(/aber nicht gesichert/);
   });
 
-  it('eine Angabe, deren Frage nicht gestellt wird, ändert keinen Paragrafen und steht nicht unter „klärt am meisten“', { timeout: 600000 }, () => {
+  it('eine Angabe, deren Frage nicht gestellt wird, ändert keinen Paragrafen und steht nicht unter „klärt am meisten“', { timeout: MATRIX_ZEIT }, () => {
     const fehler = new Set<string>();
     const melde = (t: string) => {
       if (fehler.size < 60) fehler.add(t);
     };
-    for (const fall of faelle) {
+    for (const fall of stichprobe(faelle, 150)) {
       const defs = faktDefinitionen(aktiveModule(paket.module, fall.ags));
       const basis = lauf(fall.ags, fall.m, fall.f);
       // Angaben mit nicht gestellter Frage entfernen – bis sich nichts mehr ändert (eine Antwort kann eine Frage verbergen)
@@ -498,7 +515,7 @@ describe('Fragen und Regeln', () => {
     expect(faelle.length).toBeGreaterThan(500);
   });
 
-  it('je gestellte Angabe einzeln offen: keine nicht gestellte Frage unter „es fehlt“, in `klaerend` oder „klärt am meisten“', { timeout: 900000 }, () => {
+  it('je gestellte Angabe einzeln offen: keine nicht gestellte Frage unter „es fehlt“, in `klaerend` oder „klärt am meisten“', { timeout: VOLL ? 900000 : 60000 }, () => {
     const fehler = new Set<string>();
     const melde = (t: string) => {
       if (fehler.size < 60) fehler.add(t);
@@ -516,7 +533,7 @@ describe('Fragen und Regeln', () => {
         auswahl.push({ ...fall, name: `${fall.name} Umfang offen`, f: ohneUmfang });
       }
     }
-    for (const fall of auswahl) {
+    for (const fall of stichprobe(auswahl, 4)) {
       const defs = faktDefinitionen(aktiveModule(paket.module, fall.ags));
       // Angaben mit nicht gestellter Frage entfernen (wie im Fall oben)
       const f = { ...fall.f };
@@ -581,10 +598,10 @@ describe('Fragen und Regeln', () => {
     expect(r.paragrafen.find((p) => p.id === 'bund/bnatschg/15')!.hinweise.join(' ')).toMatch(/Ausnahme möglich über § 14 BNatSchG/);
   });
 
-  it('Antworten auf nicht gestellte Fragen ändern nichts – weder „ja“ noch „nein“ (auch nicht über Tabellen der Module)', { timeout: 600000 }, () => {
+  it('Antworten auf nicht gestellte Fragen ändern nichts – weder „ja“ noch „nein“ (auch nicht über Tabellen der Module)', { timeout: MATRIX_ZEIT }, () => {
     const fehler = new Set<string>();
     const auswahl = faelle.filter((f) => ['05974008', '05974052'].includes(f.ags) && f.name.includes(' ohne ') && f.m.Planungsrecht === 'Innenbereich' && f.m.Verfahren === 'vereinfachtes Verfahren');
-    for (const fall of auswahl) {
+    for (const fall of stichprobe(auswahl, 12)) {
       const defs = faktDefinitionen(aktiveModule(paket.module, fall.ags));
       const f = { ...fall.f };
       let r = lauf(fall.ags, fall.m, f);
