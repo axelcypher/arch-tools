@@ -39,6 +39,10 @@ const PFADE = {
   plus: 'M12 5v14M5 12h14',
   neuLaden: 'M20 11a8 8 0 0 0-14.6-4.5L4 8M4 3v5h5M4 13a8 8 0 0 0 14.6 4.5L20 16M20 21v-5h-5',
   haken: 'M5 12l5 5L20 7',
+  /** offen bzw. unbekannt (Zustand neben haken = trifft zu, schliessen = trifft nicht zu) */
+  frage: 'M8.5 8.5a3.5 3.5 0 1 1 5 3.16c-.9.42-1.5 1.3-1.5 2.3V15M12 19.5h.01',
+  /** gewählter Punkt einer Einfachauswahl im Menü (menuitemradio) */
+  punkt: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM12 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2z',
   tabelle: 'M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5zM8 12h8M8 16h8M12 12v8',
   bild: 'M4 5h16v14H4zM8.5 11a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM20 15l-5-5L5 19',
   info: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 16v-4M12 8h.01',

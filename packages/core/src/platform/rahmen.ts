@@ -9,6 +9,10 @@
  *   null      eigenständige App (eigener Installer) oder Browser
  */
 
+import { logger } from './log';
+
+const log = logger('rahmen');
+
 export type RahmenModus = 'tab' | 'fenster' | null;
 
 /** Nachricht eines Tabs bzw. herausgelösten Fensters an den Rahmen */
@@ -319,36 +323,41 @@ export const VORBEREITEN_MS = 5000;
 const VORBEREITEN = 'arch-tools:vorbereiten';
 const VORBEREITET = 'arch-tools:vorbereitet';
 
-const vorbereitungen = new Set<() => Promise<void> | void>();
+/** Ergebnis des Abwartens: fertig, Zeitlimit überschritten oder gescheitert (z. B. Netzlaufwerk weg) */
+export type Vorbereitet = 'fertig' | 'zeitlimit' | 'fehler';
+
+const vorbereitungen = new Set<() => Promise<void | boolean> | void | boolean>();
 
 /**
  * App: etwas, das vor dem Ende dieses Fensters bzw. Tabs noch fertig werden muss – etwa ein verzögertes Schreiben
  * (sofort ausführen und abwarten). Läuft vor dem Schließen (× und System), Andocken, Herauslösen, Schließen des Tabs und
  * dem Update-Neustart, auch wenn keine ungespeicherten Änderungen gemeldet sind. Sie kann mehrfach aufgerufen werden
- * (etwa nach „Weiter warten“) und soll dann nicht doppelt schreiben, sondern das laufende Schreiben abwarten. Liefert
- * die Abmeldung.
+ * (etwa nach „Weiter warten“ bzw. „Erneut versuchen“): Läuft noch ein Schreiben, soll sie es abwarten statt doppelt zu
+ * schreiben; ist das letzte gescheitert, muss sie neu schreiben bzw. weiter `false` liefern, solange nichts gespeichert
+ * ist. Liefert sie `false` oder scheitert sie (Promise abgelehnt), gilt das als „nicht gespeichert“ – die App fragt dann
+ * nach, statt zu schließen. Liefert die Abmeldung.
  */
-export function vorDemSchliessen(f: () => Promise<void> | void): () => void {
+export function vorDemSchliessen(f: () => Promise<void | boolean> | void | boolean): () => void {
   vorbereitungen.add(f);
   return () => vorbereitungen.delete(f);
 }
 
-/** mit Zeitlimit warten; true = rechtzeitig fertig (ein Fehler zählt als fertig – er ist dann protokolliert) */
-function mitZeitlimit(arbeit: Promise<unknown>, ms: number): Promise<boolean> {
+/** dieses Fenster bzw. dieser Tab: alle Vorbereitungen ausführen und abwarten (höchstens `ms`) */
+export function schliessenVorbereiten(ms = VORBEREITEN_MS): Promise<Vorbereitet> {
+  if (!vorbereitungen.size) return Promise.resolve('fertig');
+  const alle = Promise.allSettled([...vorbereitungen].map((f) => Promise.resolve().then(f)));
   return new Promise((fertig) => {
-    const uhr = setTimeout(() => fertig(false), ms);
-    void arbeit.then(
-      () => (clearTimeout(uhr), fertig(true)),
-      () => (clearTimeout(uhr), fertig(true)),
-    );
+    const uhr = setTimeout(() => fertig('zeitlimit'), ms);
+    // jede Vorbereitung einzeln abwarten (eine, die sofort scheitert, schneidet die anderen nicht ab), Gründe protokollieren
+    void alle.then((ergebnisse) => {
+      clearTimeout(uhr);
+      for (const e of ergebnisse) if (e.status === 'rejected') log.warn('Vorbereitung vor dem Schließen gescheitert', e.reason);
+      fertig(ergebnisse.some((e) => e.status === 'rejected' || e.value === false) ? 'fehler' : 'fertig');
+    });
   });
 }
 
-/** dieses Fenster bzw. dieser Tab: alle Vorbereitungen ausführen und abwarten; false = Zeitlimit überschritten */
-export function schliessenVorbereiten(ms = VORBEREITEN_MS): Promise<boolean> {
-  if (!vorbereitungen.size) return Promise.resolve(true);
-  return mitZeitlimit(Promise.all([...vorbereitungen].map((f) => Promise.resolve().then(f))), ms);
-}
+const alsVorbereitet = (x: unknown): Vorbereitet => (x === 'fertig' || x === 'zeitlimit' || x === 'fehler' ? x : 'fehler');
 
 /** Rahmen: hat der Tab etwas vorzubereiten? (sonst schließt er ohne Warten) */
 export function tabBrauchtVorbereitung(frame: HTMLIFrameElement | undefined): boolean {
@@ -359,35 +368,38 @@ export function tabBrauchtVorbereitung(frame: HTMLIFrameElement | undefined): bo
   }
 }
 
-/** Rahmen: einen Tab vorbereiten lassen (gleicher Ursprung – direkter Aufruf); false = Zeitlimit überschritten */
-export function vorbereitenImTab(frame: HTMLIFrameElement, ms = VORBEREITEN_MS): Promise<boolean> {
+/** Rahmen: einen Tab vorbereiten lassen (gleicher Ursprung – direkter Aufruf) */
+export function vorbereitenImTab(frame: HTMLIFrameElement, ms = VORBEREITEN_MS): Promise<Vorbereitet> {
   try {
-    const f = (frame.contentWindow as (Window & { __archToolsVorbereiten?: (ms: number) => Promise<boolean> }) | null)?.__archToolsVorbereiten;
-    if (!f) return Promise.resolve(true);
+    const f = (frame.contentWindow as (Window & { __archToolsVorbereiten?: (ms: number) => Promise<Vorbereitet> }) | null)?.__archToolsVorbereiten;
+    if (!f) return Promise.resolve('fertig');
     // der Tab hält sein eigenes Zeitlimit; hängt er ganz, greift dieses
     return new Promise((fertig) => {
-      const uhr = setTimeout(() => fertig(false), ms + 500);
+      const uhr = setTimeout(() => fertig('zeitlimit'), ms + 500);
       f(ms).then(
-        (ok) => (clearTimeout(uhr), fertig(ok)),
-        () => (clearTimeout(uhr), fertig(true)),
+        (e) => (clearTimeout(uhr), fertig(alsVorbereitet(e))),
+        () => (clearTimeout(uhr), fertig('fehler')),
       );
     });
   } catch {
-    return Promise.resolve(true);
+    return Promise.resolve('fehler');
   }
 }
 
-/** Rahmen: ein herausgelöstes Fenster (Kennung) vorbereiten lassen; false = Zeitlimit überschritten oder keine Antwort */
-export async function vorbereitenImFenster(kennung: string, ms = VORBEREITEN_MS): Promise<boolean> {
+/** Rahmen: ein herausgelöstes Fenster (Kennung) vorbereiten lassen; ohne Antwort wie Zeitlimit */
+export async function vorbereitenImFenster(kennung: string, ms = VORBEREITEN_MS): Promise<Vorbereitet> {
   const { emit, listen } = await import('@tauri-apps/api/event');
   const anfrage = Math.random().toString(36).slice(2);
-  let fertig: (ok: boolean) => void = () => {};
-  const antwort = new Promise<boolean>((f) => (fertig = f));
-  const aus = await listen<{ typ?: string; anfrage?: string; ok?: boolean }>(AN_RAHMEN, (e) => e.payload?.typ === VORBEREITET && e.payload.anfrage === anfrage && fertig(!!e.payload.ok));
+  let fertig: (e: Vorbereitet) => void = () => {};
+  const antwort = new Promise<Vorbereitet>((f) => (fertig = f));
+  const aus = await listen<{ typ?: string; anfrage?: string; ergebnis?: string; ok?: boolean }>(
+    AN_RAHMEN,
+    (e) => e.payload?.typ === VORBEREITET && e.payload.anfrage === anfrage && fertig(alsVorbereitet(e.payload.ergebnis ?? (e.payload.ok ? 'fertig' : 'zeitlimit'))),
+  );
   try {
     await emit(AN_APP, { typ: VORBEREITEN, anfrage, an: kennung });
     // ohne Antwort (Fenster hängt, alte Fassung): wie Zeitablauf
-    return await Promise.race([antwort, new Promise<boolean>((f) => setTimeout(() => f(false), ms + 1000))]);
+    return await Promise.race([antwort, new Promise<Vorbereitet>((f) => setTimeout(() => f('zeitlimit'), ms + 1000))]);
   } finally {
     aus();
   }
@@ -397,7 +409,7 @@ export async function vorbereitenImFenster(kennung: string, ms = VORBEREITEN_MS)
 export function vorbereitenAnfragenBeantworten(): () => void {
   const modus = rahmenModus();
   if (modus === 'tab') {
-    const w = window as Window & { __archToolsVorbereiten?: (ms: number) => Promise<boolean>; __archToolsVorbereitenNoetig?: () => boolean };
+    const w = window as Window & { __archToolsVorbereiten?: (ms: number) => Promise<Vorbereitet>; __archToolsVorbereitenNoetig?: () => boolean };
     w.__archToolsVorbereiten = (ms) => schliessenVorbereiten(ms);
     w.__archToolsVorbereitenNoetig = () => vorbereitungen.size > 0;
     return () => {
@@ -412,7 +424,7 @@ export function vorbereitenAnfragenBeantworten(): () => void {
   void import('@tauri-apps/api/event').then(async ({ emit, listen }) => {
     const u = await listen<RahmenNachricht & { anfrage?: string }>(AN_APP, (e) => {
       if (e.payload?.typ !== VORBEREITEN || e.payload.an !== app) return;
-      void schliessenVorbereiten().then((ok) => emit(AN_RAHMEN, { typ: VORBEREITET, anfrage: e.payload.anfrage, ok, app }));
+      void schliessenVorbereiten().then((ergebnis) => emit(AN_RAHMEN, { typ: VORBEREITET, anfrage: e.payload.anfrage, ergebnis, app }));
     });
     if (lebt) aus = u;
     else u();

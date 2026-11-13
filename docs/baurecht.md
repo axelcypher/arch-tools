@@ -355,6 +355,11 @@ befestigte Fläche wie Lagerplatz oder Hof –, neue Dach- oder befestigte Fläc
 `soest.befestigte_flaeche`, wenn keine neue Entwässerung angegeben ist). Einzelfalltexte im Paket tragen kein „im
 Einzelfall prüfen“ – das setzt die Auswertung davor.
 
+Die großen Matrizen (Fallmatrix, „neue Merkmalwerte“, „Fragen und Regeln“) rechnen voll über zehn Minuten (ohne Netz).
+Voll laufen sie in der CI (GitHub Actions setzt `CI=true`) und mit `VOLL=1 npx vitest run --project regeln`; sonst –
+lokal, in Cloud-Sitzungen – prüft eine feste, über alle Merkmalswerte gestreute Stichprobe in unter einer Minute (Zeitgrenze
+60 s), die Fallmatrix nur voll.
+
 Auslieferung und Wächter: `.github/workflows/regeln.yml` – Prüfen und Bauen in einem Job ohne Schreibrechte und ohne
 Schlüssel, Signieren (OpenSSL, Ed25519) und Hochladen in das Release „regeln“ in einem eigenen Job ohne npm; der Wächter
 gleicht wöchentlich mit den geltenden Fassungen ab und legt bei Abweichungen ein Issue an. Signiert wird nur von `main`

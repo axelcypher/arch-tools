@@ -55,7 +55,7 @@ const knopf = (host: HTMLElement, text: string) => [...host.querySelectorAll('bu
 describe('Bautagebuch', () => {
   it('zwei schnelle Änderungen hintereinander gehen nicht verloren (Tätigkeit verlassen, sofort weitere Firma)', async () => {
     const host = await zeigen(Bautagebuch);
-    await act(async () => knopf(host, '+ Tagesbericht').click());
+    await act(async () => knopf(host, 'Tagesbericht').click());
     await warten(() => useAva.getState().projekt!.ava.bautagebuch.length === 1);
     // neuer Bericht: Fokus steht in „Ausgeführte Leistungen“, Liste per Tastatur erreichbar
     expect(document.activeElement?.getAttribute('aria-label') ?? (document.activeElement as HTMLElement).closest('label')?.textContent).toContain('Ausgeführte Leistungen');
@@ -84,7 +84,7 @@ describe('Mängel', () => {
   it('erledigt gesetzte Mängel bleiben abgeblendet stehen, bis der Filter wechselt', async () => {
     const host = await zeigen(Maengel);
     expect(host.textContent).toContain('Noch keine Mängel');
-    await act(async () => knopf(host, '+ Mangel').click());
+    await act(async () => knopf(host, 'Mangel').click());
     await warten(() => useAva.getState().projekt!.ava.maengel.length === 1);
     await warten(() => !!host.querySelector('textarea[aria-label="Beschreibung Mangel 1"]'));
     expect(document.activeElement).toBe(host.querySelector('textarea[aria-label="Beschreibung Mangel 1"]'));
@@ -104,7 +104,7 @@ describe('Mängel', () => {
 
   it('„angezeigt“ von Hand gesetzt vermerkt das Datum der Anzeige', async () => {
     const host = await zeigen(Maengel);
-    await act(async () => knopf(host, '+ Mangel').click());
+    await act(async () => knopf(host, 'Mangel').click());
     await warten(() => !!host.querySelector('select[aria-label="Status Mangel 1"]'));
     waehlen(host.querySelector<HTMLSelectElement>('select[aria-label="Status Mangel 1"]')!, 'angezeigt');
     await warten(() => useAva.getState().projekt!.ava.maengel[0].status === 'angezeigt');
@@ -115,17 +115,17 @@ describe('Mängel', () => {
 describe('Protokolle', () => {
   it('neuer Punkt bekommt den Fokus, zwei schnelle Änderungen an Punkten gehen nicht verloren, Abnahmebegehung zeigt Vorbehalte', async () => {
     const host = await zeigen(Protokolle);
-    await act(async () => knopf(host, '+ Protokoll').click());
+    await act(async () => knopf(host, 'Protokoll').click());
     await warten(() => useAva.getState().projekt!.ava.protokolle.length === 1);
-    await warten(() => !!knopf(host, '+ Punkt'));
+    await warten(() => !!knopf(host, 'Punkt'));
     expect(host.textContent).toContain('Noch keine Teilnehmer');
-    await act(async () => knopf(host, '+ Punkt').click());
+    await act(async () => knopf(host, 'Punkt').click());
     await warten(() => !!host.querySelector('input[aria-label="Thema TOP 1."]'));
     const thema = host.querySelector<HTMLInputElement>('input[aria-label="Thema TOP 1."]')!;
     expect(document.activeElement).toBe(thema);
     tippen(thema, 'Fensteranschluss');
     act(() => thema.blur());
-    await act(async () => knopf(host, '+ Punkt').click());
+    await act(async () => knopf(host, 'Punkt').click());
     await warten(() => useAva.getState().projekt!.ava.protokolle[0].tops.length === 2);
     await warten();
     const tops = useAva.getState().projekt!.ava.protokolle[0].tops;

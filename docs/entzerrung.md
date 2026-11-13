@@ -132,6 +132,10 @@ unveränderten Originalfotos unter `fotos/`. Entzerrt wird bei jedem Öffnen neu
 Anwendung laufend im Browser-Speicher zwischen (IndexedDB) und stellt den Stand nach einem Neustart wieder her;
 beim Schließen wird der letzte Stand sofort geschrieben. In Arkly warten Schließen, Andocken, Herauslösen und
 Update-Neustart außerdem höchstens 5 s, bis laufendes Schreiben (`.entz`, Zwischenstand, Fotos) fertig ist.
+Scheitert dabei ein Schreiben, meldet RECTIO das an Arkly (der Grund steht im Protokoll); Arkly fragt dann nach,
+statt das Fenster zu schließen, und „Erneut versuchen“ schreibt den Zwischenstand noch einmal. Ein gescheitertes
+Speichern der `.entz` zählt, bis wieder gespeichert oder ein anderes Projekt geöffnet bzw. neu angelegt ist. Endet
+ein Speichern erst nach einem solchen Wechsel, bleibt das neue Projekt unberührt; ein Fehler steht dann nur im Protokoll.
 Fotos, die Rückgängig/Wiederholen noch braucht, bleiben dort erhalten. Beim Öffnen prüft die Anwendung die Datei: Ungültige Zahlen, Punkte und Messungen werden
 verworfen, fehlende Teile ergänzt; bei fehlender Bildgröße oder doppelten Kennungen gilt die Datei als beschädigt.
 

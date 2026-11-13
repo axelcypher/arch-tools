@@ -52,8 +52,8 @@ export function dateiMenue(basis: string, pfad: string): MenuePunkt[] {
             ...(antragSperre(st, projekt) ? { hinweis: 'Antrag eingereicht' } : wechselLaeuft(st, projekt) ? { hinweis: 'Antrag wird geöffnet' } : {}),
             unter: umfang.map((u) => ({
               text: u.titel,
-              symbol: (u.dateien?.[aktiveFassung(st, projekt)]?.toLowerCase() === name.toLowerCase() && imAntrag ? 'haken' : undefined) as 'haken' | undefined,
-              ...(u.dateien?.[aktiveFassung(st, projekt)]?.toLowerCase() === name.toLowerCase() && imAntrag ? { hinweis: 'verknüpft' } : {}),
+              // Einfachauswahl: das Dokument, mit dem diese Datei schon verknüpft ist
+              gewaehlt: imAntrag && u.dateien?.[aktiveFassung(st, projekt)]?.toLowerCase() === name.toLowerCase(),
               // die Fassung des Menütexts („In BAUA 2 …“) – verknüpft wird nur für sie
               aktion: () => void verknuepfen(basis, pfad, u.id, { fassung: aktiveFassung(st, projekt), titel: u.titel }),
             })),

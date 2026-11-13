@@ -8,6 +8,7 @@ import { App } from './App';
 import { VORGABE_EXPORT, einstellungenAus, jjmmtt, tagVon } from './antrag';
 import { VORGABE_MERKMALE } from './bedingung';
 import { aktiveFassung, exportVorschlag, istArchiv, useAntrag, wechselLaeuft, type SchreibInfo } from './antragStore';
+import { ausstehendAbwarten, laufendeSchreibvorgaenge } from './ausstehend';
 import { SpeicherDateisystem } from './dateisystem';
 import { cp1252Schreiben } from './forma/cp1252';
 import { felderDerSeite } from './forma/felder';
@@ -262,6 +263,12 @@ describe('Antragsfassung und Export', () => {
   it('neue Antragsfassung anlegen: Ordner entsteht, sie wird aktiv und in der Projektdatei vermerkt', async () => {
     const host = await projektBS9();
     await klick(host.querySelector<HTMLButtonElement>('.an-fassung-knopf')!);
+    // die Fassungen sind eine Einfachauswahl: die aktive ist gewählt (menuitemradio), die anderen nicht
+    const fassung = (name: string) => [...document.querySelectorAll<HTMLElement>('.menue-punkt')].find((b) => b.querySelector('.menue-text')?.textContent === name)!;
+    expect(fassung('BAUA 2').getAttribute('role')).toBe('menuitemradio');
+    expect(fassung('BAUA 2').getAttribute('aria-checked')).toBe('true');
+    expect(fassung('BAUA').getAttribute('aria-checked')).toBe('false');
+    expect(fassung('BAUA 2').textContent).not.toContain('aktiv');
     await klick(menuePunkt('Neue Fassung „BAUA 3“'));
     expect(ds.ordner.has(`${PROJEKT}/TÖB/BAUA 3`)).toBe(true);
     expect(abschnitt()).toMatchObject({ aktiveFassung: 'BAUA 3' });
@@ -566,7 +573,7 @@ describe('Bedingungen: Antragsmerkmale und Felder', () => {
     const info = host.querySelector<HTMLButtonElement>('.fo-papier .fo-entfall-info.offen')!;
     expect(info.getAttribute('aria-label')).toMatch(/^Ungeklärt – hängt ab von: Gebäudeklasse \(nicht festgelegt\)/);
 
-    // „Alle Antragsmerkmale …“ führt zu den Antragsmerkmalen im Antragsumfang
+    // „Alle Antragsmerkmale“ führt zu den Antragsmerkmalen im Antragsumfang
     await klick(knopf(gl(host) as HTMLElement, 'Alle Antragsmerkmale'));
     await warte();
     const gk = host.querySelector<HTMLSelectElement>('select[aria-label="Gebäudeklasse"]')!;
@@ -718,7 +725,7 @@ describe('Bedingungen: Antragsmerkmale und Felder', () => {
     await klick(info()!);
     for (let i = 0; i < 20 && !document.querySelector('.fo-gesetz-zeile'); i++) await warte();
     const modal = document.querySelector('.fo-gesetz')!;
-    expect(modal.querySelector('h3')!.textContent).toContain('§ 68 BauO NRW 2018');
+    expect(modal.querySelector('p.fo-gesetz-para')!.textContent).toContain('§ 68 BauO NRW 2018');
     expect(modal.querySelector('.fo-gesetz-zeile.markiert')!.textContent).toMatch(/^\(2\)/);
     // Esc (Tastendruck im Dokument) schließt das Fenster über den gemeinsamen Dialog-Stapel
     act(() => document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
@@ -1662,6 +1669,10 @@ describe('Antragsunterlagen ansehen und alle Formulare exportieren', () => {
     await klick(knopf(host.querySelector('.fo-antrag-ablage')!, 'Alle Formulare exportieren'));
     const dialog = host.querySelector('.modal.rf')!;
     expect(dialog.textContent).toContain('2 Dateien gibt es schon');
+    // Hauptknopf (Enter) rechts außen ist „Vorhandene überspringen“ – nie „Vorhandene ersetzen“
+    expect([...dialog.querySelectorAll('button')].map((b) => b.textContent?.trim()).slice(-3)).toEqual(['Abbrechen', 'Vorhandene ersetzen', 'Vorhandene überspringen']);
+    expect(knopf(dialog, 'Vorhandene überspringen').classList.contains('primary')).toBe(true);
+    expect(knopf(dialog, 'Vorhandene ersetzen').classList.contains('primary')).toBe(false);
     await klick(knopf(dialog, 'Vorhandene überspringen'));
     expect(useFormulare.getState().meldung?.text).toContain('0 von 2 Formularen');
     expect(useFormulare.getState().meldung?.text).toContain('2 vorhandene übersprungen');
@@ -3843,6 +3854,26 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     expect(ds.dateien.has(`${PROJEKT}/TÖB/BAUA 2/BS9 Lageplan B1.pdf`)).toBe(false);
   });
 
+  it('Ablage: „Mit Antragsdokument verknüpfen“ ist eine Einfachauswahl – gewählt ist das verknüpfte Dokument, nur im Ordner der aktiven Fassung', async () => {
+    ds.dateien.set(`${PROJEKT}/TÖB/BAUA 2/BS9 Lageplan B2.pdf`, new Uint8Array([1]));
+    ds.dateien.set(`${PROJEKT}/TÖB/BAUA/BS9 Lageplan B2.pdf`, new Uint8Array([1]));
+    await mitUmfangInBeiden();
+    type Punkt = { text?: string; unter?: { text: string; gewaehlt?: boolean; aktion: () => void }[] };
+    const unter = (pfad: string, text: string) => (dateiMenue(PROJEKT, pfad) as Punkt[]).find((x) => x.text === text)!.unter!;
+    // noch nicht verknüpft: alle Einträge Einfachauswahl, keiner gewählt
+    const vorher = unter('TÖB/BAUA 2/BS9 Lageplan B2.pdf', 'Mit Antragsdokument verknüpfen');
+    expect(vorher.every((u) => u.gewaehlt === false)).toBe(true);
+    await act(async () => void vorher.find((u) => u.text === 'Lageplan')!.aktion());
+    await warte();
+    // verknüpft: der Lageplan ist gewählt, die anderen nicht
+    const nachher = unter('TÖB/BAUA 2/BS9 Lageplan B2.pdf', 'Mit Antragsdokument verknüpfen');
+    expect(nachher.find((u) => u.text === 'Lageplan')!.gewaehlt).toBe(true);
+    expect(nachher.filter((u) => u.gewaehlt)).toHaveLength(1);
+    // Gegenprobe: gleicher Name im Ordner einer anderen Fassung – dort ist nichts gewählt
+    const anderswo = unter('TÖB/BAUA/BS9 Lageplan B2.pdf', 'In BAUA 2 kopieren und verknüpfen');
+    expect(anderswo.some((u) => u.gewaehlt)).toBe(false);
+  });
+
   it('BAUA eingereicht, Ablage-Menü „In BAUA 2 kopieren“ offen, dann zeigt das Projekt BAUA: Fassungswechsel gemeldet, nicht die Sperre von BAUA', async () => {
     await mitUmfangInBeiden();
     await act(() => useAntrag.getState().fassungWaehlen('BAUA'));
@@ -5822,6 +5853,75 @@ describe('Reihenfolge der Formulare in der Navigation', () => {
     expect(namen(host)).toEqual(['001-Muster', '002-Anderes']);
     expect(zeile(host, '001-Muster').title).not.toContain('Reihenfolge');
     expect(zeile(host, '001-Muster').hasAttribute('aria-keyshortcuts')).toBe(false);
+  });
+
+  it('vor dem Schließen: ein laufendes Schreiben der Projektdatei wird abgewartet (Arkly wartet darauf)', async () => {
+    ds.dateien.set('C:/FORMA/BS9/002-Anderes.frmsjf', MUSTER);
+    await projektBS9();
+    const ersetzen = ds.projektordner.projektdateiErsetzen.bind(ds.projektordner);
+    let los!: () => void;
+    let einmal = true;
+    ds.projektordner.projektdateiErsetzen = async (...a: Parameters<typeof ersetzen>) => {
+      if (einmal) {
+        einmal = false;
+        await new Promise<void>((r) => (los = r));
+      }
+      return ersetzen(...a);
+    };
+    let laeuft!: Promise<SchreibInfo>;
+    act(() => {
+      laeuft = useAntrag.getState().reihenfolgeSetzen(['002-Anderes.frmsjf', '001-Muster.frmsjf']);
+    });
+    for (let i = 0; i < 20 && !los; i++) await warte();
+    expect(laufendeSchreibvorgaenge()).toBeGreaterThan(0);
+    let fertig = false;
+    const warten = ausstehendAbwarten().then(() => (fertig = true));
+    await warte();
+    expect(fertig).toBe(false);
+    expect(gemerkt()).toBeUndefined();
+    los();
+    await act(() => warten);
+    // erst nach dem Schreiben fertig – die Datei hat die neue Folge
+    expect(gemerkt()).toEqual(['002-Anderes.frmsjf', '001-Muster.frmsjf']);
+    await act(() => laeuft);
+  });
+
+  it('vor dem Schließen: ein laufendes Umbenennen wird ganz abgewartet – danach stimmt auch die Projektdatei', async () => {
+    ds.dateien.set('C:/FORMA/BS9/002-Anderes.frmsjf', MUSTER);
+    const host = await projektBS9();
+    // gemerkte Reihenfolge – das Umbenennen schreibt sie in der Projektdatei mit um
+    act(() => void zeile(host, '001-Muster').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', altKey: true, bubbles: true })));
+    await warte();
+    expect(gemerkt()).toEqual(['002-Anderes.frmsjf', '001-Muster.frmsjf']);
+    // das Schreiben der Projektdatei hängt einmal
+    const ersetzen = ds.projektordner.projektdateiErsetzen.bind(ds.projektordner);
+    let los!: () => void;
+    let einmal = true;
+    ds.projektordner.projektdateiErsetzen = async (...a: Parameters<typeof ersetzen>) => {
+      if (einmal) {
+        einmal = false;
+        await new Promise<void>((r) => (los = r));
+      }
+      return ersetzen(...a);
+    };
+    await rechtsklick(knopf(host, '001-Muster'));
+    await klick(menuePunkt('Umbenennen'));
+    eingabe(document.querySelector<HTMLInputElement>('.rf input')!, '000-Erstes');
+    await klick(knopf(document.querySelector('.rf')!, 'Umbenennen'));
+    for (let i = 0; i < 20 && !los; i++) await warte();
+    expect(los).toBeTruthy();
+    // die Datei ist schon umbenannt, die Projektdatei noch nicht: vor dem Schließen wird gewartet
+    expect(ds.dateien.has('C:/FORMA/BS9/000-Erstes.frmsjf')).toBe(true);
+    let fertig = false;
+    const warten = ausstehendAbwarten().then(() => (fertig = true));
+    await warte();
+    expect(fertig).toBe(false);
+    los();
+    await act(() => warten);
+    expect(gemerkt()).toEqual(['002-Anderes.frmsjf', '000-Erstes.frmsjf']);
+    // die eigene Sperre am neuen Namen ist wieder weg
+    expect(ds.dateien.has('C:/FORMA/BS9/000-Erstes.frmtmp')).toBe(false);
+    for (let i = 0; i < 3; i++) await warte();
   });
 
   it('Kontextmenü aus dem gemeinsamen Menü: genau eines, Esc schließt es, der Fokus geht an die Zeile zurück', async () => {

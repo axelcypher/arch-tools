@@ -36,7 +36,12 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
   schließen (nicht während einer laufenden Aktion), der Fokus springt beim Öffnen hinein, bleibt mit Tab im Dialog
   und kehrt danach an die Stelle davor zurück. Das gilt auch für die Schnellwahl (<kbd>Strg</kbd>+<kbd>K</kbd>; der
   Fokus bleibt im Suchfeld, ↑/↓ markieren einen Treffer, der im Bild bleibt) und die Vorschau der Antragsunterlagen
-  (Startfokus auf „Schließen“).
+  (Startfokus auf „Schließen“). Der Titel steht als Kopf des Dialogs (`kopf`) und benennt ihn zugleich für
+  Screenreader; Ausnahmen sind die Einstellungen und die Vorschau der Antragsunterlagen, die als Vollfläche eine
+  eigene Kopfleiste haben.
+- **Befehle** enden auf „ …“, wenn sie einen Dialog, eine Rückfrage oder die Dateiauswahl öffnen („Formular
+  öffnen …“, „Ordner hinzufügen …“), nicht aber, wenn sie nur zu einer Ansicht führen („Antragsdaten“, „Alle
+  Antragsmerkmale“, „Zum Adressbuch“). Hinzufügen-Knöpfe tragen das Symbol Plus.
 - **Begriffe:** Die Ansicht der Projektkarte heißt in der Oberfläche durchgehend **„Projektdaten“** (Navigation, Titel,
   „Projektdaten speichern“, Suche, Dialoge); „Projektkarte“ erscheint nur noch erklärend in Tooltips. **„ungeklärt“**
   heißt: hängt an einem noch nicht festgelegten Antragsmerkmal; **„offen“** steht nur für fehlende Pflichtangaben.
@@ -213,7 +218,7 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
   bietet je fehlendem Merkmal Segmentknöpfe mit Kurzerklärung und Fundstelle (z. B. „Gebäudeklasse (§ 2 Abs. 3 BauO
   NRW 2018)“, die Erklärung je Wert beim Zeigen; „§“ öffnet den Gesetzestext). Dieselbe Auswahl öffnet das
   Info-Symbol an einem offenen Feld („Gebäudeart festlegen“ im Gesetzes-Fenster). Die Wahl wirkt sofort. Mit Projekt
-  steht sie im aktiven Antrag der Projektdatei (gilt für alle Formulare; „Alle Antragsmerkmale …“ führt zum
+  steht sie im aktiven Antrag der Projektdatei (gilt für alle Formulare; „Alle Antragsmerkmale“ führt zum
   Antragsumfang), ohne Projekt (Web-Version) gilt sie für die Datei und liegt im lokalen Speicher
   (`formulare:merkmale-datei`, `merkmalWerte.ts`). Bedingungen aus früheren Versionen (eine Liste, alle
   Teile müssen zutreffen) werden als Und-Gruppe übernommen.
@@ -296,12 +301,12 @@ Anschrift, wie sie in Formularen steht.
   aus den Bürostammdaten – in einem Schritt, der sich rückgängig machen lässt. „Leeren“ entfernt alle Angaben.
 - **Adressbuch** (Einstellungen): alle Adressen aus den Projektkarten aller Projekte – Bauherren,
   Entwurfsverfasser, Behörden, Fachplaner –, gleiche Adressen einmal mit allen Verwendungen („BS5 ·
-  Bauaufsichtsbehörde“), dazu die **eigenen**: „Neue Adresse“ legt eine an, „Bearbeiten“ ändert eine (bei einer
+  Bauaufsichtsbehörde“), dazu die **eigenen**: „Adresse hinzufügen“ legt eine an, „Bearbeiten“ ändert eine (bei einer
   Adresse aus den Projektkarten entsteht eine eigene Fassung, Marke „geändert“, „Änderungen verwerfen“ nimmt sie
   zurück), „Löschen“ bzw. „Ausblenden“ nimmt sie aus dem Adressbuch (ausgeblendete unten wieder einblendbar). Die
   eigenen Adressen stehen im gemeinsamen Konfigurationsordner (Bereich `formulare`, Eintrag `adressen`) und gelten für
-  alle im Büro; die Projektkarten selbst ändert das Adressbuch nicht. „Aus den Projektdaten einlesen“ liest alle
-  Projektkarten neu. So funktioniert das Adressbuch auch ohne Projektkarten.
+  alle im Büro; die Projektkarten selbst ändert das Adressbuch nicht. „Aus den Projektdaten einlesen“ (danach „Neu einlesen“)
+  liest alle Projektkarten neu. So funktioniert das Adressbuch auch ohne Projektkarten.
 - **Eigene Ansicht der Projektkarte:** oben in der Leiste der Projektkarte – die Einträge, die das Büro nutzt, aus
   allen Gruppen auf einer Seite, in eigenen Abschnitten und eigener Reihenfolge.
   „Ansicht bearbeiten …“ öffnet den **Ansicht-Editor** (gemeinsam in `packages/core/src/ui/AnsichtEditor.tsx`): rechts
@@ -397,9 +402,10 @@ Anschrift, wie sie in Formularen steht.
   Bilder ebenso, andere Dateien öffnet „Mit Programm öffnen“. „Als bereit markieren“ geht auch hier. Esc schließt.
 - **Alle Formulare exportieren:** Knopf in der Ansicht „Antrag“ bzw. ⇪ im Kopf des Abschnitts „FORMA“: alle
   Formulare des FORMA-Projekts als PDF, Name und Ziel wie beim einzelnen Export (Namensvorlage, aktive Fassung).
-  Formulare in `_archiv` bzw. `archiv` bleiben außen vor. Gibt es Dateien schon, fragt die App einmal: „Ersetzen“,
-  „Vorhandene überspringen“ oder „Abbrechen“. Exportierte PDFs im Antragsordner werden mit den Dokumenten des
-  Antragsumfangs verknüpft; am Ende steht, wie viele exportiert, übersprungen oder fehlgeschlagen sind.
+  Formulare in `_archiv` bzw. `archiv` bleiben außen vor. Gibt es Dateien schon, fragt die App einmal: „Vorhandene
+  überspringen“ (Hauptknopf, Enter), „Vorhandene ersetzen“ oder „Abbrechen“. Exportierte PDFs im Antragsordner werden
+  mit den Dokumenten des Antragsumfangs verknüpft; am Ende steht, wie viele exportiert, übersprungen oder
+  fehlgeschlagen sind.
 - **Quellordner mit Schreibweisen der Büros:** Quellen im Antragsumfang (z. B. `Planung/Berechnungen`,
   `Planung/Genehmigungsplanung/pdf`, `Fachplanung/G27*`) werden auch gefunden, wenn der Ordner anders geschrieben ist:
   Nummern, Unterstriche und Punkte vorn („00 Berechnungen“, „__Berechnungen“, „03 Genehmigungsplanung“), gleichwertige
@@ -474,8 +480,8 @@ schon als PDF vorliegen, welche Berechnungen es gibt), als Ziel des PDF-Exports 
   kopieren und – abgesetzt am Ende – **Löschen …** (nach Bestätigung, mit Sicherungskopie im App-Ordner). Rechtsklick
   auf einen Ordner: Einfügen, Neuer Ordner …, Ordner öffnen. Überschrieben wird nie; Dateien von FORMA (`.frmsjf`,
   `.frmtmp`, `.sdb`, `.ini`) lassen sich hier nicht umbenennen – Formulare benennt man in der Navigation um (siehe
-  unten). In Auswahllisten im Menü (aktive Fassung, Zuordnung, Verknüpfung) steht beim gewählten Eintrag ein Haken
-  und rechts „aktiv“, „zugeordnet“ bzw. „verknüpft“.
+  unten). In Auswahllisten im Menü (aktive Fassung, Zuordnung, Verknüpfung) ist der gewählte Eintrag mit
+  einem Punkt markiert und wird als „ausgewählt“ vorgelesen (Einfachauswahl).
 - **Formulare umbenennen** (Rechtsklick auf ein Formular › Umbenennen …): nur im selben Ordner und nie über ein
   vorhandenes. Mit dem Namen ändern sich auch alle Verweise darauf: die Zuordnung im Antragsumfang (bestand sie nur
   über den Namen und passte der neue nicht mehr, wird sie festgeschrieben) und die Werte aus der Projektkarte in
@@ -748,7 +754,7 @@ Einstellungen und des Namensschemas – `packages/core/src/fassung.ts`, auch in 
   Projektkarte („BAUA 2 · eingereicht 03.11.2026“ bzw. „BAUA 2 in Arbeit“); die Startseite von PERMIO zeigt ihn
   auch dann, wenn nicht alle Formulare lesbar sind.
 - **Eingereicht = gesperrt:** Ist der aktive Antrag eingereicht, lassen sich die Formulare nur ansehen (Hinweis über
-  dem Formular, „Antragsdaten …“), Antragsmerkmale, Antragsumfang, Export, „bereit“ und „Daten aktualisieren“ bleiben,
+  dem Formular, „Antragsdaten“), Antragsmerkmale, Antragsumfang, Export, „bereit“ und „Daten aktualisieren“ bleiben,
   wie eingereicht. **Nachgereicht** wird im laufenden Verfahren im selben Antrag: den Status vorübergehend auf „in
   Arbeit“ setzen (Tag und Stand bleiben), Formulare berichtigen bzw. Unterlagen ablegen, dann wieder „eingereicht“ –
   die Nachreichung erscheint als „neu“ bzw. „geändert seit der Einreichung“ (für nachgereichte oder ausgetauschte
@@ -958,6 +964,14 @@ Programm öffnen“). Bearbeitet wird so, dass alles, was nicht geändert wurde,
   Abbrechen“.
 - Vor jedem Speichern legt die App eine **Sicherungskopie** der bisherigen Fassung im App-Ordner an
   (`%LOCALAPPDATA%\de.pendzialek.formulare\Sicherungen`, die letzten 200).
+- **Laufendes Schreiben beim Schließen:** Schreibt die App gerade, wartet Arkly vor dem Schließen, Andocken,
+  Herauslösen, Beenden oder einem Update-Neustart darauf, bis zu wenigen Sekunden (`vorDemSchliessen` aus
+  `@core/platform/rahmen`; danach fragt Arkly). Abgewartet wird jeder Schreibbefehl an Dateien und Projektdatei
+  (Formular, Sperrdatei, Projektkarte, Dokumente, Anlegen, Kopieren, Umbenennen, Löschen) und, als ein Vorgang, was nur
+  zusammen stimmt: Speichern samt Warteschlange, Formular umbenennen mit der Projektdatei, Formular anlegen und
+  aufnehmen, PDF-Export mit Verknüpfung. Offene Rückfragen und Lesen gelten nicht als Schreiben; es wird nur gewartet,
+  nichts zusätzlich geschrieben. Ist ein abgewartetes Schreiben gescheitert, meldet die App das (Grund im Protokoll),
+  und Arkly fragt, statt still zu schließen.
 
 ### Sperren
 

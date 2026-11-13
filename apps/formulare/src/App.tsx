@@ -408,7 +408,7 @@ export function App() {
               {offen.sperre.art !== 'fremd' && antragGesperrt && (
                 <span className="fo-meldung-knoepfe">
                   <button className="fo-klein" title="Status des Antrags ansehen oder zum Nachreichen ändern, Nachtrag anlegen" onClick={() => useFormulare.getState().setHaupt('antrag')}>
-                    Antragsdaten …
+                    Antragsdaten
                   </button>
                 </span>
               )}

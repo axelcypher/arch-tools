@@ -43,6 +43,15 @@ Gewerk – in Ordnern, Blattnamen und der Rechnungsliste.
 - **Projektwahl** wie in allen Apps (Projektübersicht aus den Stammordnern, zuletzt geöffnet). Gelesen werden
   nur die Ordnerliste, die Kostenkontrolle und die Projektdatei; LV-Dateien erst beim Öffnen. „Neu einlesen“ in der
   Navigation – und automatisch, wenn das Fenster wieder in den Vordergrund kommt.
+- **Schließen in Arkly** (Fenster, Tab, Andocken, Herauslösen, Update-Neustart): FABRIO übernimmt vorher die gerade
+  laufende Eingabe und wartet auf laufendes Speichern: Projektdatei (auch Stammdaten), Kostenkontrolle, LV (auch neu
+  angelegt), Rechnungsablauf, PDF-Ablage und Mailentwürfe der Bauleitung, Vorlagetexte (`vorDemSchliessen`, höchstens
+  5 s; `schreibend` und `ausstehendesSchreibenAbwarten` in `schreiben.ts`). Es wird dabei nichts doppelt geschrieben.
+  Scheitert dabei ein Speichern oder hat das offene LV danach noch ungespeicherte Änderungen (etwa nach einem
+  gescheiterten Speichern), meldet FABRIO „nicht gespeichert“ (Grund im Protokoll) und Arkly fragt nach, statt still
+  zu schließen – auch nach „Erneut versuchen“, bis das LV gespeichert oder verworfen ist. Ein früher gescheitertes
+  Speichern von Projektdatei, Kostenkontrolle oder Vorlagen, das FABRIO schon gemeldet hat, hält das Schließen nicht
+  auf: Dort übernimmt FABRIO eine Änderung erst nach erfolgreichem Schreiben.
 - **Navigation** (links, Breite ziehbar): Kostenübersicht, Rechnungen, Rechnungseingang; die **Gewerke** aus
   Ordnern, Kostenkontrolle und Prüfungen (Zahl der LV-Dateien, wenn es mehr als eine gibt); **Bauleitung**
   (Objektüberwachung nach HOAI Leistungsphase 8); Einstellungen (Strg+,). Die Einträge sind Knöpfe: mit Tab
@@ -74,9 +83,9 @@ Hinweis „wird in LV-Dateien (.aslv) nicht gespeichert – im eigenen Format (.
 - Tabelle der Gliederung: Abschnitte (mit Summe des Kostenansatzes), Positionen, Hinweise und Vorbemerkungen;
   volle OZ nach der OZ-Maske („02.0010“). Menge und Einheitspreis des Kostenansatzes lassen sich direkt in der
   Tabelle ändern (deutsche Schreibweise, ungültige Eingaben bleiben rot stehen).
-- Werkzeugleiste in einer Zeile: + Position (im gewählten Abschnitt bzw. hinter der gewählten Position),
-  + Abschnitt, „Einfügen ▾“ (Hinweis, Vorbemerkung, „Aus Vorlage …“); Duplizieren (Strg+D, ein Abschnitt
-  bekommt die nächste freie OZ), Nach oben/Nach unten, Ausrücken/Einrücken (aus dem Abschnitt heraus bzw. in den Abschnitt davor; alle mit Symbol), Entfernen (Entf);
+- Werkzeugleiste in einer Zeile: Position (im gewählten Abschnitt bzw. hinter der gewählten Position),
+  Abschnitt, „Hinzufügen ▾“ (Hinweis, Vorbemerkung, „Aus Vorlage …“) – Hinzufügen-Knöpfe mit Plus-Symbol; Duplizieren (Strg+D, ein Abschnitt
+  bekommt die nächste freie OZ), Nach oben/Nach unten, Ausrücken/Einrücken (aus dem Abschnitt heraus bzw. in den Abschnitt davor; mit Symbol), Entfernen (Entf);
   Rückgängig/Wiederholen (Strg+Z/Y); rechts die Suche nach OZ und Kurztext (Treffer mit ihren Abschnitten; ohne
   Treffer eine Meldung mit „Suche leeren“, Esc leert). Tastatur in der Tabelle (Fokus sichtbar): ↑/↓ wählen, Enter
   springt in den Kurztext des Seitenpanels, Esc dort zurück, Einfg neue Position. Bei schmalem Fenster (unter

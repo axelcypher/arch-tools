@@ -6,6 +6,7 @@ import { createProject, createStorey, leereMeta, newId } from '@core/model';
 import { parseProject, parseProjectData } from '@core/serialize';
 import { gleich } from '@core/zusammenfuehren';
 import { logger } from '@core/platform/log';
+import { vorDemSchliessen } from '@core/platform/rahmen';
 import { zwischenstandErsetzt, zwischenstandLadenErlaubt, zwischenstandWirdGeladen } from '@core/platform/startschutz';
 import type { KopieOptionen, Lage } from '../core/geschosse';
 import { geschossNameVorschlag, kopieAnpassen, naechsteRaumnummer, neueKote, raumNummernPraefix } from '../core/geschosse';
@@ -362,7 +363,7 @@ export function duplicateStorey(
   delete copy.ifcStand;
   delete copy.nummernPraefix;
   delete copy.elevation;
-  // darunter: Fußbodenhöhe aus der Höhe der Kopie (wie „+ Neu“ unter einem Geschoss)
+  // darunter: Fußbodenhöhe aus der Höhe der Kopie (wie „Geschoss …“ unter einem Geschoss)
   if (lage === 'darunter') copy.elevation = neueKote(p, src, lage, copy.hoehe);
   copy.shapes = copy.shapes.map((s) => {
     const { ifcId: _id, ifcStand: _stand, ...rest } = s;
@@ -453,6 +454,8 @@ async function idbSet(key: string, value: unknown): Promise<void> {
     tx.objectStore(STORE).put(value, key);
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
+    // z. B. Speicherplatz voll beim Abschluss: ohne onabort bliebe das Schreiben (und alles danach) für immer offen
+    tx.onabort = () => reject(tx.error ?? new DOMException('Transaktion abgebrochen', 'AbortError'));
   });
 }
 
@@ -503,27 +506,89 @@ if (typeof indexedDB !== 'undefined' && zwischenstandLadenErlaubt(APP)) {
     });
 }
 
+/** Verzögerung des Zwischenspeicherns nach einer Änderung */
+const AUTOSAVE_MS = 600;
+/** so lange darf ein einzelnes Schreiben dauern, bevor es als gescheitert gilt – ein hängendes blockiert sonst die Kette */
+const SCHREIBEN_MAX_MS = 10_000;
+
+/** Wird eine Transaktion nach dem Zeitlimit doch noch fertig, bleibt die Reihenfolge richtig: IndexedDB führt
+ *  readwrite-Transaktionen auf denselben Store in der Reihenfolge ihres Anlegens aus. */
+function mitZeitlimit<T>(arbeit: Promise<T>, ms: number): Promise<T> {
+  return new Promise<T>((ok, fehler) => {
+    const uhr = setTimeout(() => fehler(new Error(`Zwischenspeichern dauerte länger als ${ms} ms`)), ms);
+    arbeit.then(
+      (w) => (clearTimeout(uhr), ok(w)),
+      (e) => (clearTimeout(uhr), fehler(e)),
+    );
+  });
+}
 let autosaveTimer: ReturnType<typeof setTimeout> | undefined;
+/** laufendes Schreiben des Zwischenstands (bis es fertig ist) */
+let laufend: Promise<boolean> | null = null;
+/** ist das letzte Schreiben gescheitert? Dann ist der aktuelle Stand nicht gesichert. Setzt sich nicht von selbst zurück:
+ *  neu geschrieben wird mit der nächsten Änderung oder beim nächsten Aufruf vor dem Schließen. */
+let letztesGescheitert = false;
+
+/**
+ * aktuellen Stand in IndexedDB schreiben – hinter ein laufendes Schreiben gehängt, damit die Reihenfolge stimmt.
+ * Liefert, ob es geklappt hat (ein Fehler wird protokolliert, nicht geworfen).
+ */
+function zwischenstandSchreiben(): Promise<boolean> {
+  const davor = laufend ?? Promise.resolve(true);
+  const p: Promise<boolean> = davor
+    .then(() => {
+      const { project, basis, datei } = useEditor.getState();
+      return mitZeitlimit(idbSet(AUTOSAVE_KEY, { project, basis, datei }), SCHREIBEN_MAX_MS);
+    })
+    .then(() => {
+      zwischenstandErsetzt(APP);
+      try {
+        localStorage.removeItem(AUTOSAVE_KEY);
+      } catch {
+        // ignorieren
+      }
+      letztesGescheitert = false;
+      return true;
+    })
+    .catch((e) => {
+      log.warn('Zwischenspeichern fehlgeschlagen', e);
+      letztesGescheitert = true;
+      return false;
+    })
+    .finally(() => {
+      if (laufend === p) laufend = null;
+    });
+  laufend = p;
+  return p;
+}
+
+/**
+ * Vor dem Schließen (Arkly, `vorDemSchliessen`): ausstehendes Zwischenspeichern sofort ausführen und abwarten.
+ * `false`, wenn der Stand nicht gesichert ist – Arkly fragt dann „… konnte nicht speichern“, statt still zu schließen.
+ * Mehrfach aufrufbar: Ein laufendes Schreiben wird abgewartet statt doppelt geschrieben; ist das letzte gescheitert,
+ * wird neu geschrieben (etwa nach „Erneut versuchen“).
+ */
+export function zwischenstandSichern(): Promise<boolean> {
+  if (autosaveTimer !== undefined) {
+    clearTimeout(autosaveTimer);
+    autosaveTimer = undefined;
+    return zwischenstandSchreiben();
+  }
+  if (laufend) return laufend;
+  return letztesGescheitert ? zwischenstandSchreiben() : Promise.resolve(true);
+}
+
 useEditor.subscribe((s, prev) => {
   if (s.project === prev.project && s.basis === prev.basis && s.datei === prev.datei) return;
   clearTimeout(autosaveTimer);
   autosaveTimer = setTimeout(() => {
-    const { project, basis, datei } = useEditor.getState();
-    idbSet(AUTOSAVE_KEY, { project, basis, datei })
-      .then(() => {
-        zwischenstandErsetzt(APP);
-        try {
-          localStorage.removeItem(AUTOSAVE_KEY);
-        } catch {
-          // ignorieren
-        }
-      })
-      .catch((e) => {
-        // Autosave ist nur ein Komfortmerkmal
-        log.warn('Zwischenspeichern fehlgeschlagen', e);
-      });
-  }, 600);
+    autosaveTimer = undefined;
+    void zwischenstandSchreiben();
+  }, AUTOSAVE_MS);
 });
+const abmelden = vorDemSchliessen(zwischenstandSichern);
+// Entwicklung (Vite-HMR): die alte Fassung abmelden, sonst bleibt sie angemeldet
+import.meta.hot?.dispose(abmelden);
 
 /* ---------- Kopieren, Einfügen, Duplizieren, mit Pfeiltasten verschieben ---------- */
 

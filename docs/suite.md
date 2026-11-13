@@ -86,21 +86,27 @@ Konfigurationsordner) und Projektdateien sind dieselben.
   Rechte: Hauptfenster `capabilities/default.json`, herausgelöste Fenster `capabilities/fenster.json` (ohne Updates,
   Neustart und neue Fenster).
 - **Ausstehendes Schreiben vor dem Schließen** (`vorDemSchliessen` in `rahmen.ts`): Schreibt eine App verzögert
-  (ATLAS etwa 400 ms nach einer Änderung – die Anmeldung dort steht noch aus), meldet sie mit
-  `vorDemSchliessen(async () => …)` an, was vor dem Ende
-  noch fertig werden muss – die Funktion soll das Schreiben sofort ausführen und abwarten. Das gilt auch, wenn keine
+  (etwa QUADRIO und TERRIO 600 ms nach einer Änderung in IndexedDB, ATLAS etwa 400 ms), meldet sie mit
+  `vorDemSchliessen(async () => …)` an, was vor dem Ende noch fertig werden muss – die Funktion soll das Schreiben
+  sofort ausführen und abwarten. Liefert sie `false` oder scheitert sie (Promise abgelehnt, z. B. Netzlaufwerk weg),
+  gilt das als „nicht gespeichert“. Wird sie erneut aufgerufen („Weiter warten“, „Erneut versuchen“), wartet sie ein
+  laufendes Schreiben ab; ist das letzte gescheitert, schreibt sie neu bzw. liefert weiter `false`, solange nichts
+  gespeichert ist. Das gilt auch, wenn keine
   ungespeicherten Änderungen gemeldet sind. Abgewartet wird vor dem Schließen des Fensters (× und System), dem
   Andocken, dem Herauslösen, dem Schließen eines Tabs, dem Beenden von Arkly (alle Tabs und Fenster) und dem
-  Update-Neustart, höchstens 5 s (`VORBEREITEN_MS`). Danach fragt die App „… speichert noch“: *Weiter warten*
-  (Hauptknopf, Enter – wartet erneut), *Trotzdem schließen* bzw. *andocken*, *herauslösen*, *beenden*, *neu starten*
-  (Gefahr – die letzte Änderung kann fehlen) oder *Abbrechen* (Esc; Fenster bzw. Tab bleibt offen; `ui/vorbereiten.ts`). Tabs ruft der Rahmen direkt auf (gleicher Ursprung), herausgelöste Fenster
-  über `arch-tools:vorbereiten`/`arch-tools:vorbereitet` (nur Fenster, die schon hören); die Titelleiste richtet die
-  Antwort ein. Während des Wartens sind Schließen, Andocken und „Jetzt installieren“ gegen ein zweites Auslösen
-  gesperrt. Grenzen: Im Browser (Tab schließen, neu laden) und beim Neuladen eines Tabs oder des Rahmens gibt es keinen
-  Hook; nach *Trotzdem …* endet das Fenster auch mitten im Schreiben.
-  Die gemeinsamen Einstellungen (`konfig.ts`, alle Schreibvorgänge nacheinander) melden ihre laufenden Schreibvorgänge
-  selbst an – dafür muss keine App etwas tun. Damit nimmt praktisch jeder Tab den Warteweg (meist sofort fertig). Die
-  lokale Kopie für den Notbetrieb wird bewusst nicht abgewartet (sie wird atomar ersetzt; bleibt höchstens älter).
+  Update-Neustart, höchstens 5 s (`VORBEREITEN_MS`). Danach fragt die App (`ui/vorbereiten.ts`) bei Zeitablauf
+  „… speichert noch“ mit *Weiter warten*, bei Scheitern „… konnte nicht speichern“ mit *Erneut versuchen* – jeweils
+  Hauptknopf (Enter) –, dazu *Trotzdem schließen* bzw. *andocken*, *herauslösen*, *beenden*, *neu starten* (Gefahr – die
+  letzte Änderung kann fehlen) und *Abbrechen* (Esc; Fenster bzw. Tab bleibt offen). Tabs ruft der Rahmen direkt auf
+  (gleicher Ursprung), herausgelöste Fenster über `arch-tools:vorbereiten`/`arch-tools:vorbereitet` (Ergebnis `fertig`,
+  `zeitlimit` oder `fehler`; nur Fenster, die schon hören); die Titelleiste richtet die Antwort ein. Während des
+  Wartens sind Schließen, Andocken und „Jetzt installieren“ gegen ein zweites Auslösen gesperrt. Grenzen: Im Browser
+  (Tab schließen, neu laden) und beim Neuladen eines Tabs oder des Rahmens gibt es keinen Hook; nach *Trotzdem …* endet
+  das Fenster auch mitten im Schreiben. Die gemeinsamen Einstellungen (`konfig.ts`, alle Schreibvorgänge nacheinander)
+  melden ihre laufenden Schreibvorgänge selbst an – dafür muss keine App etwas tun; Fehler beim Schreiben der
+  Einstellungen meldet der Schreibvorgang selbst, sie lösen keine Rückfrage beim Schließen aus. Damit nimmt praktisch jeder Tab den
+  Warteweg (meist sofort fertig). Die lokale Kopie für den Notbetrieb wird bewusst nicht abgewartet (sie wird atomar
+  ersetzt; bleibt höchstens älter).
 - **Speichern auf Anfrage** (`speichernImTab`, `speichernImFenster`, `speichernAnfragenBeantworten`): Der Rahmen
   schickt `arch-tools:speichern`, die App bestätigt sofort (`arch-tools:speichert`) und meldet danach das Ergebnis
   (`arch-tools:gespeichert`). Kommt binnen 3 s keine Bestätigung (App lädt, hängt, ist abgestürzt), gilt „nicht
@@ -161,11 +167,14 @@ am Tab bzw. in der Titelleiste ● erscheint.
 8. **App reagiert nicht:** Schwer nachzustellen; erwartet ist, dass *Speichern* bei einer hängenden App nach etwa
    3 Sekunden aufgibt und Arkly offen bleibt.
 9. **Neustart:** Eine App herauslösen, Arkly beenden und neu starten. Erwartet: Die App ist wieder als Tab da.
-10. **Verzögertes Schreiben** (ATLAS meldet `vorDemSchliessen` an): In ATLAS etwas ändern und sofort (innerhalb einer halben Sekunde) den Tab schließen
-    bzw. Arkly beenden. Erwartet: Die Änderung ist nach dem Neustart da. Mit getrenntem Netzlaufwerk erscheint nach
-    etwa 5 s „ATLAS speichert noch“: Enter bzw. „Weiter warten“ wartet erneut, Esc bzw. „Abbrechen“ lässt Tab bzw.
-    Fenster offen, „Trotzdem schließen“ schließt. Scheitert das Schreiben dagegen sofort mit einem Fehler, schließt das Fenster
-    derzeit ohne Rückfrage; ATLAS protokolliert den Fehler (die Rückfrage dazu baut Arkly/core).
+10. **Verzögertes Schreiben** (ATLAS, QUADRIO und TERRIO melden `vorDemSchliessen` an): In ATLAS etwas ändern bzw. in
+    QUADRIO oder im Lageplan von TERRIO eine Fläche zeichnen oder verschieben und sofort (innerhalb einer halben
+    Sekunde) den Tab schließen bzw. Arkly beenden. Erwartet: Die Änderung ist nach dem Neustart da. Hängt das
+    Netzlaufwerk, erscheint nach etwa 5 s „ATLAS speichert noch“; scheitert das Schreiben sofort und die App meldet das (`false` bzw. Fehler), „ATLAS konnte nicht
+    speichern“. Enter bzw. „Weiter warten“ wartet erneut, „Erneut versuchen“ speichert noch einmal (bleibt das
+    Laufwerk getrennt, erscheint die Rückfrage wieder), Esc bzw. „Abbrechen“ lässt Tab bzw. Fenster offen, „Trotzdem
+    schließen“ schließt. Bei QUADRIO und TERRIO (lokale IndexedDB) erscheinen die Rückfragen praktisch
+    nie.
 
 ## Entwicklung
 

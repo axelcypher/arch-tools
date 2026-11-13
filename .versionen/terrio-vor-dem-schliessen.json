@@ -1,6 +1,0 @@
-{
-  "grz": {
-    "stufe": "patch",
-    "notiz": "Der Zwischenstand wird vor dem Schließen, Andocken, Herauslösen und dem Update-Neustart sofort geschrieben, damit die letzte Änderung nicht verloren geht."
-  }
-}
