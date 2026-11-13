@@ -37,7 +37,9 @@ Bis Version 0.12.0 hieß die App „Entzerrung“. Einstellungen und Daten bleib
    setzen, die in Wirklichkeit gerade sind, im Foto aber gebogen erscheinen (Traufe, Sockel, Gebäudekante;
    am besten nahe am Bildrand, je mindestens drei Punkte, Abschluss mit Enter, Doppel- oder Rechtsklick).
    „Verzeichnung schätzen“ berechnet die Korrektur. Sie gilt für alle Ebenen des Fotos. Die Werte k1 und k2
-   stehen unter „Feinwerte“; Werte, die das Bild zum Rand hin falten, wendet die Anwendung nicht an und meldet sie. Die Anzeige
+   stehen unter „Feinwerte“; Werte, die das Bild zum Rand hin falten, wendet die Anwendung nicht an und meldet sie.
+   Eine reine Tonne (nur k1) lässt sich bis etwa k1 = −0,13 bis in die Bildecken zurückrechnen; bei stärkeren
+   Weitwinkeln mindestens drei Hilfslinien setzen, damit auch k2 geschätzt wird. Die Anzeige
    „Abweichung der Hilfslinien von der Geraden: 4,4 px → 0,1 px“ zeigt, wie gut das gelungen ist.
 4. **Entzerrt ansehen** und **messen**: Strecke, Linienzug und Fläche. Mit gedrückter Umschalttaste bleibt der
    nächste Punkt waagerecht oder senkrecht zum vorigen. Vorhandene Messpunkte werden gefangen. Längen und

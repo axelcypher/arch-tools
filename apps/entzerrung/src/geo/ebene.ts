@@ -40,7 +40,11 @@ export function zuFoto(e: Entzerrung, ebenenPunkt: Pt): Pt & { w: number } {
 /** Entzerrung der Ebene oder eine verständliche Meldung, was noch fehlt bzw. nicht stimmt */
 export function entzerrung(foto: Foto, ebene: Ebene): Ergebnis {
   if (!linseGueltig(foto.linse)) {
-    return { ok: false, fehler: 'Die Werte der Verzeichnung (k1, k2) falten das Bild zum Rand hin – k1 und k2 prüfen, neu schätzen oder zurücksetzen.' };
+    return {
+      ok: false,
+      fehler:
+        'Die Werte der Verzeichnung (k1, k2) falten das Bild zum Rand hin – k1 und k2 prüfen, neu schätzen oder zurücksetzen. Bei starker Tonne mindestens drei Hilfslinien setzen, dann wird auch k2 geschätzt.',
+    };
   }
   const kam = kamera(foto.breite, foto.hoehe, foto.linse);
   try {

@@ -21,7 +21,7 @@ uniform mat3 m;          // gl_FragCoord → idealer Fotopunkt (px), homogen
 uniform vec2 groesse;    // Fotogröße in px
 uniform vec4 linse;      // cx, cy, 1/R², k1
 uniform float k2;
-uniform float grenze2;   // größter eindeutiger idealer Radius² (in 1/R²-Einheiten); darüber faltet sich das Bild
+uniform float grenze2;   // größter eindeutiger idealer Radius² (in halben Bilddiagonalen, wie r2); darüber faltet sich das Bild
 uniform vec4 leer;       // Farbe außerhalb des Fotos
 out vec4 farbe;
 void main() {
@@ -86,6 +86,8 @@ export class Renderer {
     gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
   }
 
+  /** zuletzt berechneter Grenzradius der Verzeichnung (je k1/k2) */
+  private grenze = { schluessel: '', wert: Infinity };
   /** zählt Ladevorgänge; nur der jüngste darf die Textur setzen */
   private generation = 0;
 
@@ -158,7 +160,9 @@ export class Renderer {
     gl.uniform2f(this.uni.groesse, this.fotoGroesse[0], this.fotoGroesse[1]);
     gl.uniform4f(this.uni.linse, z.kamera.cx, z.kamera.cy, 1 / (z.kamera.r * z.kamera.r), z.kamera.k1);
     gl.uniform1f(this.uni.k2, z.kamera.k2);
-    const g = grenzRadius(z.kamera);
+    const schluessel = `${z.kamera.k1}|${z.kamera.k2}`;
+    if (this.grenze.schluessel !== schluessel) this.grenze = { schluessel, wert: grenzRadius(z.kamera) };
+    const g = this.grenze.wert;
     gl.uniform1f(this.uni.grenze2, Number.isFinite(g) ? g * g : 1e30);
     gl.uniform4fv(this.uni.leer, z.leer ?? [0, 0, 0, 0]);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
