@@ -67,7 +67,12 @@ export function Sidebar() {
           <summary>
             Berechnungsgrundlagen
             <span className="muted"> ({grundlagen.join(' · ')})</span>
-            {fehlend.length > 0 && <span className="fehlt-text"> – {fehlend.join(', ')} fehlt</span>}
+            {fehlend.length > 0 && (
+              <span className="fehlt-text">
+                {' '}
+                – {fehlend.join(', ')} {fehlend.length > 1 ? 'fehlen' : 'fehlt'}
+              </span>
+            )}
           </summary>
           <div className="field-row projekt-settings">
             <Field label="Raster [m]">
