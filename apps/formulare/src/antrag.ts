@@ -786,14 +786,14 @@ export function projektDateiAus(roh: unknown): ProjektDatei {
       return id;
     };
     out.umfang = roh.map((e, i) => {
-        const u: UmfangEintrag = { id: kennung(e, i), titel: String(e.titel), art: dokArtAus(e.art) };
-        for (const k of ['formular', 'quelle', 'muster', 'nr', 'formularDatei'] as const) if (typeof e[k] === 'string' && e[k]) u[k] = e[k] as string;
-        if (e.dateien && typeof e.dateien === 'object')
-          u.dateien = Object.fromEntries(Object.entries(e.dateien as Record<string, unknown>).filter((x): x is [string, string] => typeof x[1] === 'string'));
-        const b = nurMerkmale(bedingungAus(e.bedingung));
-        if (b) u.bedingung = b;
-        return u;
-      });
+      const u: UmfangEintrag = { id: kennung(e, i), titel: String(e.titel), art: dokArtAus(e.art) };
+      for (const k of ['formular', 'quelle', 'muster', 'nr', 'formularDatei'] as const) if (typeof e[k] === 'string' && e[k]) u[k] = e[k] as string;
+      if (e.dateien && typeof e.dateien === 'object')
+        u.dateien = Object.fromEntries(Object.entries(e.dateien as Record<string, unknown>).filter((x): x is [string, string] => typeof x[1] === 'string'));
+      const b = nurMerkmale(bedingungAus(e.bedingung));
+      if (b) u.bedingung = b;
+      return u;
+    });
   }
   if (o.merkmale && typeof o.merkmale === 'object') {
     const m = Object.fromEntries(Object.entries(o.merkmale as Record<string, unknown>).filter((x): x is [string, string] => typeof x[1] === 'string' && !!x[1]));
@@ -959,8 +959,9 @@ const FELD_JE_SCHLUESSEL = new Set(['dateien']);
  */
 export function umfangAnwenden(frisch: UmfangEintrag[] | undefined, alt: UmfangEintrag[] | undefined, neu: UmfangEintrag[] | undefined, bewegt?: string): UmfangEintrag[] | undefined {
   if (!neu) return undefined;
-  // festgelegt (vorher keiner): ganz; inzwischen woanders aufgehoben: bleibt aufgehoben
-  if (!alt) return neu;
+  // festgelegt (vorher keiner): ganz – außer woanders ist inzwischen schon einer festgelegt (der bleibt); inzwischen
+  // woanders aufgehoben: bleibt aufgehoben
+  if (!alt) return frisch ?? neu;
   if (!frisch) return undefined;
   const altM = new Map(alt.map((u) => [u.id, u]));
   const neuM = new Map(neu.map((u) => [u.id, u]));
@@ -983,59 +984,76 @@ export function umfangAnwenden(frisch: UmfangEintrag[] | undefined, alt: UmfangE
     }
     return e as unknown as UmfangEintrag;
   });
-  // an die Stelle wie in `neu`: hinter den nächsten Vorgänger, den es noch gibt, bzw. vor den nächsten Nachfolger –
-  // nach oben gezogen zuerst vor den Nachfolger (an dem er vorbeizog), sonst zuerst hinter den Vorgänger; als Erster in
-  // `neu` an den Anfang, sonst ohne Nachbarn ans Ende
-  const einsetzen = (e: UmfangEintrag, i: number, hoch = false) => {
-    const vor = () => {
-      for (let k = i - 1; k >= 0; k--) {
-        const j = z.findIndex((u) => u.id === neu[k].id);
-        if (j >= 0) return z.splice(j + 1, 0, e), true;
-      }
-      return false;
-    };
-    const nach = () => {
-      for (let k = i + 1; k < neu.length; k++) {
-        const j = z.findIndex((u) => u.id === neu[k].id);
-        if (j >= 0) return z.splice(j, 0, e), true;
-      }
-      return false;
-    };
-    if (i === 0) return void z.unshift(e);
-    if (hoch ? nach() || vor() : vor() || nach()) return;
-    z.push(e);
-  };
-  // hinzugefügt
-  neu.forEach((n, i) => {
-    if (!altM.has(n.id) && !z.some((u) => u.id === n.id)) einsetzen(n, i);
-  });
-  // verschoben: nur die Einträge, die nicht in der längsten gemeinsamen Teilfolge von `alt` und `neu` stehen – so
-  // bleibt eine Umstellung von anderswo (bzw. aus dem eigenen vorigen Speichern) bei den übrigen erhalten
+  // verschoben: welche Einträge umziehen – die der Aufrufer nennt (`bewegt`), sonst die außerhalb der längsten
+  // gemeinsamen Teilfolge von `alt` und `neu`; die übrigen behalten ihre Folge (auch eine Umstellung von anderswo)
   const a = alt.filter((u) => neuM.has(u.id)).map((u) => u.id);
   const n = neu.filter((u) => altM.has(u.id)).map((u) => u.id);
-  const l: number[][] = Array.from({ length: a.length + 1 }, () => new Array<number>(n.length + 1).fill(0));
-  for (let i = a.length - 1; i >= 0; i--) for (let j = n.length - 1; j >= 0; j--) l[i][j] = a[i] === n[j] ? l[i + 1][j + 1] + 1 : Math.max(l[i + 1][j], l[i][j + 1]);
   const bleibt = new Set<string>();
-  for (let i = 0, j = 0; i < a.length && j < n.length; ) {
-    if (a[i] === n[j]) {
-      bleibt.add(a[i]);
-      i++;
-      j++;
-    } else if (l[i + 1][j] > l[i][j + 1]) i++;
-    // gleich lang: der in `neu` frühere gilt als verschoben (nach oben gezogen)
-    else j++;
-  }
-  // der Aufrufer weiß, welchen er verschoben hat: dann nur der (zwei getauschte Nachbarn sind sonst mehrdeutig)
   if (bewegt && altM.has(bewegt) && neuM.has(bewegt) && a.join('\u0000') !== n.join('\u0000')) {
-    bleibt.clear();
     for (const id of a) if (id !== bewegt) bleibt.add(id);
+  } else {
+    const l: number[][] = Array.from({ length: a.length + 1 }, () => new Array<number>(n.length + 1).fill(0));
+    for (let i = a.length - 1; i >= 0; i--) for (let j = n.length - 1; j >= 0; j--) l[i][j] = a[i] === n[j] ? l[i + 1][j + 1] + 1 : Math.max(l[i + 1][j], l[i][j + 1]);
+    for (let i = 0, j = 0; i < a.length && j < n.length; ) {
+      if (a[i] === n[j]) {
+        bleibt.add(a[i]);
+        i++;
+        j++;
+      } else if (l[i + 1][j] > l[i][j + 1]) i++;
+      // gleich lang: der in `neu` frühere gilt als verschoben (nach oben gezogen)
+      else j++;
+    }
   }
+  const verschoben = new Set(n.filter((id) => !bleibt.has(id) && z.some((u) => u.id === id)));
+  // erst alle verschobenen herausnehmen, dann in der Folge von `neu` einsetzen – zusammen mit den hinzugefügten; als
+  // Anker dienen nur Einträge, die bleiben oder schon eingesetzt sind
+  const beiseite = new Map(z.filter((u) => verschoben.has(u.id)).map((u) => [u.id, u]));
+  z = z.filter((u) => !verschoben.has(u.id));
+  const an = (id: string) => z.findIndex((u) => u.id === id);
+  const hinterVorgaenger = (e: UmfangEintrag, i: number) => {
+    for (let k = i - 1; k >= 0; k--) {
+      const j = an(neu[k].id);
+      if (j >= 0) return z.splice(j + 1, 0, e), true;
+    }
+    return false;
+  };
+  const vorNachfolger = (e: UmfangEintrag, i: number) => {
+    for (let k = i + 1; k < neu.length; k++) {
+      const j = an(neu[k].id);
+      if (j >= 0) return z.splice(j, 0, e), true;
+    }
+    return false;
+  };
+  // ein einzeln verschobener Eintrag richtet sich nach den Einträgen, an denen er vorbeizog: nach unten hinter den
+  // letzten, nach oben vor den ersten, der noch da ist – so bleibt die Richtung, auch wenn anderswo umgestellt wurde;
+  // ganz nach oben bzw. unten gezogen bleibt ganz oben bzw. unten
+  const einzeln = verschoben.size === 1;
+  const vorbei = (id: string) => {
+    const ia = a.indexOf(id);
+    const ib = n.indexOf(id);
+    const runter = ib > ia ? a.slice(ia + 1).filter((x) => n.indexOf(x) < ib) : [];
+    const hoch = ib < ia ? a.slice(0, ia).filter((x) => n.indexOf(x) > ib) : [];
+    return { runter, hoch };
+  };
+  // in diesem Schritt schon eingesetzt (hinzugefügt bzw. verschoben) – nach unten zählen sie als Anker mit
+  const eingesetzt = new Set<string>();
   neu.forEach((e, i) => {
-    if (!altM.has(e.id) || bleibt.has(e.id)) return;
-    const k = z.findIndex((u) => u.id === e.id);
-    if (k < 0) return;
-    const [x] = z.splice(k, 1);
-    einsetzen(x, i, n.indexOf(e.id) < a.indexOf(e.id));
+    const war = beiseite.get(e.id);
+    const dazu = !altM.has(e.id) && an(e.id) < 0;
+    if (!war && !dazu) return;
+    const x = war ?? e;
+    eingesetzt.add(x.id);
+    // ganz nach oben bzw. unten gezogen: dorthin
+    if (war && einzeln && i === neu.length - 1) return void z.push(x);
+    if (war && einzeln && i > 0) {
+      const { runter, hoch } = vorbei(e.id);
+      const anker = runter.length ? [...runter, ...neu.slice(0, i).map((u) => u.id).filter((id) => eingesetzt.has(id))] : hoch;
+      const plaetze = anker.map(an).filter((j) => j >= 0);
+      if (plaetze.length) return void z.splice(runter.length ? Math.max(...plaetze) + 1 : Math.min(...plaetze), 0, x);
+    }
+    if (i === 0) return void z.unshift(x);
+    if (hinterVorgaenger(x, i) || vorNachfolger(x, i)) return;
+    z.push(x);
   });
   return z;
 }

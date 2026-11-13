@@ -912,6 +912,9 @@ export const useFormulare = create<FormulareState>()((set, get) => {
   /** nach dem Anlegen der Projektdatei weitermachen (z. B. den Antragsumfang speichern) */
   let nachAnlegen: (() => Promise<void>) | null = null;
   let beiAbbruch: ((art: DialogArt) => void) | null = null;
+  /** Laufende Nummer des letzten `oapLaden` und sein Ende – ein älteres Ergebnis gilt nicht mehr */
+  let oapLadeNr = 0;
+  let oapLadung: Promise<void> = Promise.resolve();
 
   /** Projektordner zugeordnet: Projektdatei suchen; fehlt sie, die Stammdaten erfassen (die wartende Aktion bleibt) */
   const nachZuordnen = async (projekt: Projekt) => {
@@ -1540,9 +1543,16 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       const ablage = ablageVon(get(), projekt);
       if (!ds || !projekt || !ablage) return;
       const root = verbinde(ablage.root, ablage.pfad);
+      // Reihenfolge: ein späteres Laden gilt – kommt dieses danach zurück, setzt es nicht seinen älteren Stand, sondern
+      // wartet, bis das spätere fertig ist (so liest der Aufrufer danach den neuesten)
+      const nr = ++oapLadeNr;
+      let fertig!: () => void;
+      const lauf = new Promise<void>((r) => (fertig = r));
+      oapLadung = lauf;
       try {
         const g = await projektdateiLaden(ds.projektordner, root, { gewaehlt: get().oapWahl[projekt.ordner] });
         if (get().projekt !== projekt) return;
+        if (nr !== oapLadeNr) return void (await oapLadung);
         if (!g) {
           set({ oap: 'fehlt' });
           return;
@@ -1559,8 +1569,11 @@ export const useFormulare = create<FormulareState>()((set, get) => {
           if (eintraege.some((e, i) => e !== k.karte.eintraege[i])) set({ karte: { ...k, karte: { ...k.karte, eintraege } } });
         }
       } catch (e) {
+        if (nr !== oapLadeNr) return void (await oapLadung);
         log.warn(`Projektdatei von ${projekt.ordner} nicht lesbar: ${fehlertext(e)}`);
         if (get().projekt === projekt) set({ oap: 'fehlt', meldung: { art: 'fehler', text: `Projektdatei von ${projekt.ordner} nicht lesbar: ${fehlertext(e)}` } });
+      } finally {
+        fertig();
       }
     },
     oapAendern: async (aendern) => {

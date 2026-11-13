@@ -1356,10 +1356,18 @@ export const useAntrag = create<AntragState>((set, get) => {
         return Object.assign(info, g, g.vorab === 'fassung' ? { erneut: true } : {});
       }
       try {
-        const neu: ProjektDatei = { ...(get().projektdatei ?? {}) };
+        const vorher = get().projektdatei;
+        const neu: ProjektDatei = { ...(vorher ?? {}) };
         if (umfang) neu.umfang = umfang;
         else delete neu.umfang;
         await projektdateiSchreiben(neu, undefined, { info, bewegt: o.bewegt });
+        // festgelegt, während woanders inzwischen schon einer festgelegt war: der bleibt (er ist jetzt geladen)
+        const jetzt = get().projektdatei;
+        if (info.geschrieben && umfang && !vorher?.umfang && jetzt?.ansicht === vorher?.ansicht && jetzt?.umfang && stabil(jetzt.umfang) !== stabil(umfang)) {
+          delete info.geschrieben;
+          info.grund = 'inzwischen ist schon einer festgelegt';
+          meldung('info', 'Antragsumfang nicht festgelegt – inzwischen ist schon einer festgelegt; er ist jetzt geladen.');
+        }
         await get().aktualisieren();
       } catch (e) {
         info.grund = e instanceof Error ? e.message : String(e);
@@ -1389,6 +1397,9 @@ export const useAntrag = create<AntragState>((set, get) => {
 
     umfangAendern: async (aendern, o = {}) => {
       const pd = get().projektdatei;
+      // die Prüfung nach dem Schreiben gilt nur für dasselbe Projekt und dieselbe Projektdatei
+      const projektVorher = useFormulare.getState().projekt;
+      const oapVorher = oapSchluessel();
       // erst feststellen, ob es noch geht – dann der Grund daraus: nicht, während ein Antrag geöffnet wird; sonst nur in
       // der festgehaltenen Fassung (die dann angezeigt und aktiv ist) und nur, wenn es den Eintrag noch gibt
       const umfang = pd?.umfang;
@@ -1418,7 +1429,7 @@ export const useAntrag = create<AntragState>((set, get) => {
       // inzwischen woanders entfernt bzw. aufgehoben (beim Schreiben gelesen): die Änderung kam nicht hinein, er kommt
       // auch nicht zurück – das sagen; für die Aufrufer gilt es als nicht gespeichert
       const st = get().projektdatei;
-      if (info.geschrieben && neu && st?.ansicht === pd?.ansicht) {
+      if (info.geschrieben && neu && st?.ansicht === pd?.ansicht && useFormulare.getState().projekt === projektVorher && oapSchluessel() === oapVorher) {
         const weg = !st?.umfang ? 'umfang' : o.eintrag && neu.some((x) => x.id === o.eintrag) && !st.umfang.some((x) => x.id === o.eintrag) ? 'eintrag' : null;
         if (weg) {
           const grund = weg === 'umfang' ? 'inzwischen gibt es keinen Antragsumfang mehr' : `der Eintrag ${o.titel ? `„${o.titel}“ ` : ''}ist inzwischen nicht mehr im Antragsumfang`;

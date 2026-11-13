@@ -893,6 +893,42 @@ describe('Antragsumfang je Eintrag zusammenführen (umfangAnwenden)', () => {
     // unverändert gelassen: eine Umstellung von anderswo bleibt
     expect(ids(umfangAnwenden([e('b'), e('a')], [e('a'), e('b')], [e('a', { nr: '1' }), e('b')]))).toEqual(['b', 'a']);
   });
+  it('ohne gleichzeitige Änderung (frisch = alt) ergibt sich genau `neu` – erschöpfend: Umstellen, Entfernen, Hinzufügen in einem Schritt', () => {
+    const alle = (l: string[]): string[][] => (l.length <= 1 ? [l] : l.flatMap((x, i) => alle([...l.slice(0, i), ...l.slice(i + 1)]).map((r) => [x, ...r])));
+    const alt = ['A', 'B', 'C', 'D'].map((id) => e(id));
+    let faelle = 0;
+    for (let maske = 0; maske < 16; maske++) {
+      const rest = alt.filter((_, i) => maske & (1 << i)).map((u) => u.id);
+      for (const folge of alle(rest))
+        for (let p = 0; p <= folge.length; p++)
+          for (const dazu of [false, true]) {
+            const neuIds = dazu ? [...folge.slice(0, p), 'X'] .concat(folge.slice(p)) : folge;
+            if (!dazu && p > 0) continue;
+            const z = umfangAnwenden(alt, alt, neuIds.map((id) => e(id)));
+            expect(ids(z), `${ids(alt)} → ${neuIds}`).toEqual(neuIds);
+            faelle++;
+          }
+    }
+    expect(faelle).toBeGreaterThan(100);
+  });
+  it('jede Einzelverschiebung mit Angabe des Eintrags (frisch = alt) ergibt genau `neu`', () => {
+    const alt = ['A', 'B', 'C', 'D', 'E'];
+    for (const id of alt)
+      for (let p = 0; p < alt.length; p++) {
+        const ohne = alt.filter((x) => x !== id);
+        const neuIds = [...ohne.slice(0, p), id, ...ohne.slice(p)];
+        expect(ids(umfangAnwenden(alt.map((x) => e(x)), alt.map((x) => e(x)), neuIds.map((x) => e(x)), id)), `${id} → ${p}`).toEqual(neuIds);
+      }
+  });
+  it('ein einzeln verschobener Eintrag behält seine Richtung, auch wenn anderswo umgestellt wurde', () => {
+    // A von Platz 3 hinter E gezogen; woanders wurde E ganz nach oben gestellt: A bleibt hinter D (an dem es vorbeizog)
+    const alt = ['B', 'C', 'A', 'D', 'E', 'F'].map((id) => e(id));
+    const neu = ['B', 'C', 'D', 'E', 'A', 'F'].map((id) => e(id));
+    const frisch = ['E', 'B', 'C', 'A', 'D', 'F'].map((id) => e(id));
+    expect(ids(umfangAnwenden(frisch, alt, neu, 'A'))).toEqual(['E', 'B', 'C', 'D', 'A', 'F']);
+    // ganz nach unten gezogen, woanders kam unten „X“ dazu: ganz unten
+    expect(ids(umfangAnwenden([e('A'), e('B'), e('C'), e('X')], [e('A'), e('B'), e('C')], [e('B'), e('C'), e('A')], 'A'))).toEqual(['B', 'C', 'X', 'A']);
+  });
   it('woanders aufgehoben bleibt aufgehoben; angehängt, obwohl die Vorgänger woanders entfernt sind: hinten', () => {
     expect(umfangAnwenden(undefined, [e('a')], [e('a', { nr: '1' })])).toBeUndefined();
     expect(ids(umfangAnwenden([e('x'), e('y')], [e('a'), e('b'), e('x')], [e('a'), e('b'), e('x'), e('neu')]))).toEqual(['x', 'neu', 'y']);
@@ -901,7 +937,9 @@ describe('Antragsumfang je Eintrag zusammenführen (umfangAnwenden)', () => {
   it('verknüpfte Dateien je Fassung; festlegen bzw. aufheben ganz', () => {
     const z = umfangAnwenden([e('lp', { dateien: { BAUA: 'a.pdf' } })], [e('lp')], [e('lp', { dateien: { 'BAUA 2': 'b.pdf' } })])!;
     expect(z[0].dateien).toEqual({ BAUA: 'a.pdf', 'BAUA 2': 'b.pdf' });
-    expect(umfangAnwenden([e('x')], undefined, [e('a')])).toEqual([e('a')]);
+    expect(umfangAnwenden(undefined, undefined, [e('a')])).toEqual([e('a')]);
+    // festgelegt, während woanders inzwischen schon einer festgelegt war: der bleibt
+    expect(umfangAnwenden([e('x')], undefined, [e('a')])).toEqual([e('x')]);
     expect(umfangAnwenden([e('x')], [e('x')], undefined)).toBeUndefined();
   });
 });
