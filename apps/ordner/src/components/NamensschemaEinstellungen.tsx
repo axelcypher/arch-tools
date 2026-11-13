@@ -3,6 +3,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import type { Kuerzel, Namensschema, NamensTeil } from '@core/namensschema';
 import { alleKuerzel, dateinameZerlegen, KUERZEL_MUSTER, NAMENS_TEILE, namensschemaAus, VORGABE_NAMENSSCHEMA } from '@core/namensschema';
 import { bestaetigen } from '@core/ui/Rueckfrage';
+import { Symbol } from '@core/ui/Symbol';
 import { useOrdner } from '../store';
 
 /** Schreibweisen aus der Eingabe: groß, ohne Doppelte und ohne das Kürzel selbst */
@@ -269,7 +270,7 @@ function KuerzelListe({
         </tbody>
       </table>
       <button className="small" disabled={neu} title={neu ? 'Erst das neue Kürzel eintragen' : undefined} onClick={() => setNeu(true)}>
-        + Kürzel
+        <Symbol name="plus" /> Kürzel
       </button>
     </div>
   );
@@ -428,7 +429,7 @@ function KuerzelZeile({
         </td>
         <td>
           <button className="icon" title={neu ? 'Verwerfen (Esc)' : 'Entfernen (mit Rückfrage)'} aria-label={neu ? 'Neues Kürzel verwerfen' : `${k.kuerzel} entfernen`} onClick={onEntfernen}>
-            ×
+            <Symbol name={neu ? 'schliessen' : 'muell'} />
           </button>
         </td>
       </tr>

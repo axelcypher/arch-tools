@@ -94,8 +94,9 @@ auch beim Ergänzen.
    Vorlage mit Preset, Projektdatei) und dem Vermerk „vorhanden“, „wird ergänzt“ (Projektdatei, mit den geänderten
    Angaben als Hinweis), „abgewählt“ bzw. – beim Ergänzen – „neu“. Beim Ergänzen zeigt er nur, was sich ändert
    (umschaltbar). Einzelne Einträge lassen sich abwählen (beim Ergänzen auch „Alle neuen Einträge abwählen“ und
-   danach einzelne wieder wählen); mit einem Ordner entfällt alles darin. Pfade, die mit Stammordner 260 Zeichen
-   oder länger würden, meldet der Trockenlauf vorab (Windows-Explorer und Office öffnen sie nicht). Der Knopf
+   danach einzelne wieder wählen); mit einem Ordner entfällt alles darin. Zu lange Pfade meldet der Trockenlauf vorab:
+   Ordner ab 248 Zeichen (mit Stammordner) legt Windows gar nicht an, Dateien ab 260 Zeichen öffnen Explorer und
+   Office nicht. Der Knopf
    **„Projektordner anlegen“** bzw. „Projekt ergänzen“ steht wie „Weiter“ rechts unten in der Navigation, die beim
    Blättern sichtbar bleibt; ist er gesperrt, steht der Grund daneben (etwa „Erst den Stammordner für Projekte
    wählen.“). Unmittelbar vor dem Anlegen sieht der Assistent im Stammordner nach, ob es den Projektordner
@@ -107,6 +108,26 @@ auch beim Ergänzen.
    Nach dem erfolgreichen Anlegen zeigt der Assistent eine **Abschlussseite** (ohne Zurück-Navigation) mit dem Ordnernamen, „Ordner öffnen“
    und „Nächstes Projekt“ (kam der Auftrag aus einer anderen App, außerdem „In … öffnen“, siehe unten); das Formular ist dann schon für das nächste Projekt geleert – „Rückgängig“ (zehn Sekunden)
    holt den Entwurf zurück. Schlägt ein Schritt fehl, bleibt der Entwurf stehen.
+   „Projekte“ in der Titelleiste (ebenso ein „Neues Projekt“-Auftrag aus einer anderen App und „Ergänzen“ aus „Ordner
+   prüfen“) beginnt den Assistenten neu. Gibt es dabei noch nicht Angelegtes, das verloren ginge – geänderte
+   Stammdaten beim Ergänzen, im Trockenlauf abgewählte Einträge –, fragt ATLAS vorher („Verwerfen“ / „Abbrechen“).
+   Der Entwurf eines neuen Projekts geht nicht verloren; er bleibt bis zum Anlegen gespeichert.
+
+**Ungespeicherte Änderungen beim Beenden:** Was beim Beenden verloren ginge, meldet ATLAS als ungespeichert (● in
+der Titelleiste bzw. am Tab der Rahmen-App Arkly): offene Eingaben im Assistenten wie oben, den nicht übernommenen
+Text der Ordnerliste (Struktur, Textansicht) und Änderungen an der Struktur, die wegen eines Konflikts mit einem
+anderen Rechner oder eines gescheiterten Schreibens („Einstellungen nicht gespeichert“, etwa bei getrenntem
+Netzlaufwerk) nicht gespeichert sind; ein gescheitertes Schreiben der allgemeinen Einstellungen zählt nicht dazu (es
+bleibt bei der Meldung unter „Einstellungen“). Beim Beenden, vor einem Update und in Arkly beim Schließen des Tabs,
+Herauslösen und Andocken kommt dann „Änderungen speichern?“. *Speichern* übernimmt nur, was ohne weitere
+Entscheidung geht: Es schreibt die Struktur erneut (ist das Laufwerk wieder da, ist sie danach gespeichert) und übernimmt
+den Text der Ordnerliste wie mit „Übernehmen“ (vorher gesichert, mit „Rückgängig“), wenn er
+gültig ist und vom aktuellen Stand ausgeht. Im Assistenten hieße Speichern, den Projektordner anzulegen bzw. die
+Projektdatei zu schreiben, ein Konflikt verlangt „Neu laden“ oder „Meine Fassung trotzdem speichern“ – das
+geschieht nicht still: Es gilt „nicht gespeichert“, die Aktion unterbleibt, und ATLAS meldet, was noch offen ist.
+*Nicht speichern* verwirft. Nicht gemeldet werden von Hand geänderte, noch nicht umbenannte Mailnamen und
+hineingezogene, noch nicht abgelegte Mails unter „Mails“ (die Mails selbst bleiben im Projektordner bzw. in Outlook;
+schon ein Wechsel der Ansicht verwirft diese Eingaben) und alles, was ATLAS sofort speichert.
 
 ### Neues Projekt aus jeder App
 
@@ -141,7 +162,9 @@ Angelegt bzw. ergänzt werden
    alle globalen Platzhalter, siehe [platzhalter.md](platzhalter.md); `{DATUM}` ist JJMMTT): neu als
    leere Flächenberechnung mit Stammdaten, Anlagedatum, Struktur und Presets – QUADRIO, TERRIO, NUMIO und PERMIO
    öffnen sie –, beim Ergänzen nur mit den geänderten Stammdaten (gegenüber dem
-   Stand beim Einlesen; was eine andere App inzwischen eingetragen hat, bleibt) und den Presets. Hat jemand die
+   Stand beim Einlesen; was eine andere App inzwischen eingetragen hat, bleibt) und den Presets. Leerzeichen am
+   Rand gespeicherter Werte gelten dabei nicht als Änderung; Unterfelder, die diese Fassung nicht kennt (etwa beim
+   Bauherrn, von einer neueren App angelegt), bleiben auch in einem geänderten Teil erhalten. Hat jemand die
    Datei zwischen Einlesen und Ergänzen geändert, wird nicht geschrieben – dann neu einlesen.
 
 `{JAHR}` in Namen ist beim Ergänzen das Jahr, in dem das Projekt angelegt wurde. Enthält der Name einer Vorlage
@@ -171,7 +194,8 @@ liegen die Einstellungen im Speicher des Browsers.
 `projektordner.json` wird kurz nach der letzten Änderung geschrieben (nicht bei jedem Tastendruck) und nur, wenn
 die Datei seit dem Lesen unverändert ist. Hat ein anderer Rechner sie inzwischen geändert, überschreibt das Tool
 sie nicht, sondern meldet „Die Struktur wurde inzwischen von einem anderen Rechner geändert – neu laden?“ mit
-„Neu laden“ (die eigene Fassung bleibt über „Rückgängig“ erreichbar) und „Meine Fassung trotzdem speichern“. Beim
+„Neu laden“ (die eigene Fassung bleibt über „Rückgängig“ erreichbar) und „Meine Fassung trotzdem speichern“ – dabei
+kommt die Fassung des anderen Rechners vorher in die Sicherungen (siehe unten), mit Eintrag im Protokoll. Beim
 Wechsel in „Struktur“, „Einstellungen“ und „Vorlagen“ liest die App die Datei frisch.
 
 ### Namensschema
@@ -197,7 +221,7 @@ Plannummern“) – gemeinsam für alle Apps (`allgemein.json`, Eintrag `namenss
   Meldung sagt warum (beim Lesen werden solche Einträge ebenso verworfen); in einer neuen Zeile bleibt die Eingabe
   dagegen markiert zum Korrigieren stehen. Leistungsphasen sind ganze Zahlen von 0 bis
   9 (die HOAI kennt 1 bis 9; 0 heißt „von Anfang an“) – eine andere Eingabe bleibt mit Meldung stehen, leer = keine.
-  Ein neues Kürzel („+ Kürzel“) wird erst gespeichert, wenn man die Zeile mit einem gültigen Kürzel verlässt (Esc
+  Ein neues Kürzel (Knopf „Kürzel“ mit Plus) wird erst gespeichert, wenn man die Zeile mit einem gültigen Kürzel verlässt (Esc
   verwirft es) – vorher gilt es in keiner App. Entfernen fragt nach. Die Stellen tauschen beim Umstellen die Plätze;
   das Beispiel zeigt die Zerlegung mit den Kürzeln des Schemas. „Vorgabe wiederherstellen“ (mit Rückfrage) setzt die
   eingebaute Vorgabe, auch in allen Feldern.
@@ -233,11 +257,19 @@ im Konfigurationsordner, je Sicherung mit Namen `projektordner.json.bak-JJJJ-MM-
 „Sicherungen“ klappt die Liste zum Wiederherstellen auf. Auch „Ordnerliste übernehmen“ (Textansicht) sichert vorher.
 Nach dem Ersetzen nimmt „Rückgängig“ die Änderung zurück, solange nichts anderes geändert wurde.
 
-Lässt sich die Struktur in `projektordner.json` nicht lesen (etwa das Format einer neueren ATLAS-Fassung), zeigt
-ATLAS vorläufig die Vorgabe mit einer Warnung, **schreibt aber nichts** – weder die Struktur noch das Ordnerschema für
-die anderen Apps. Erst wenn die Struktur bewusst ersetzt wird („Struktur laden …“, eine Sicherung oder „Vorgabe
-wiederherstellen …“), wird gespeichert; der unlesbare Inhalt kommt vorher in die Sicherungen. Felder, die diese
-Fassung nicht kennt, bleiben beim Speichern erhalten.
+Lässt sich die Struktur in `projektordner.json` nicht lesen (etwa das Format einer neueren ATLAS-Fassung), zeigt ATLAS
+vorläufig die Vorgabe mit einer Warnung, **schreibt aber nichts** – weder die Struktur noch das Ordnerschema für die
+anderen Apps. Solange **sperrt** ATLAS das Bearbeiten in „Struktur“ (Name, Schemata, Ordnerliste) und „Vorlagen“
+(Presets, Dateinamen, Vorlagenordner – auch im Assistenten) – Eingaben gingen sonst beim nächsten Laden verloren. Alles
+bleibt **lesbar**: Felder und Knöpfe sind gesperrt (der Tooltip nennt den Grund „Die Bürostruktur ist nicht lesbar – erst
+übernehmen“), Menüpunkte bleiben sichtbar und tragen „Struktur nicht lesbar“ als Hinweis. Der Ordnerbaum lässt sich
+weiter scrollen, mit den Pfeiltasten durchgehen, auswählen, kopieren und in der LPh-Vorschau ansehen; Anlegen,
+Umbenennen (F2, Doppelklick), Ziehen, Einfügen, Löschen, Bausteine und Rückgängig sind gesperrt – F2, Entf und
+Doppelklick nennen den Grund. Die Textansicht zeigt die Liste schreibgeschützt. Erst wenn die Struktur bewusst ersetzt wird
+(„Angezeigte Struktur übernehmen …“ unter der Warnung, „Struktur laden …“, eine Sicherung oder „Vorgabe
+wiederherstellen …“), wird gespeichert und die Sperre aufgehoben; der unlesbare Inhalt kommt vorher in die
+Sicherungen. Das gilt auch für „Rückgängig“ nach „Neu laden“ einer für diese Fassung unlesbaren Struktur eines anderen
+Rechners. Felder, die diese Fassung nicht kennt, bleiben beim Speichern erhalten.
 
 Die **Namensschemata** stehen im Kopf der Struktur (sie gelten für alle Ordner, nicht für den gewählten):
 
@@ -256,8 +288,8 @@ Die **Ordnerliste** wird mit der Maus bearbeitet – ein Baum wie im Explorer, r
 - **Auswählen:** Klick; Strg+Klick und Umschalt+Klick wählen mehrere. Rechts dann Name, **Leistungsphasen** (Knöpfe
   1–9, „immer“ und Schnellwahl 1–4, 5–8, 6–7, 8) und „Dateinamen prüfen“ – bei mehreren Ordnern für alle auf einmal
   (teilweise gesetzte Phasen gestrichelt).
-- **Anlegen:** „+ Unterordner“ (Strg+N), „Ordner daneben“ (Strg+Umschalt+N, im Menü), „+ Ordner“ im
-  Stamm. Der neue Ordner steht gleich zum Benennen bereit (Enter übernimmt, Esc behält den Vorschlag).
+- **Anlegen:** „Unterordner“ (Knopf mit Plus, Strg+N), „Ordner daneben“ (Strg+Umschalt+N, im Menü), „Ordner“ (mit
+  Plus) im Stamm. Der neue Ordner steht gleich zum Benennen bereit (Enter übernimmt, Esc behält den Vorschlag).
 - **Mehrere anlegen …:** eine Zeile je Ordner, eingerückte Zeilen (Tab oder Leerzeichen) werden Unterordner, „/“
   trennt ebenfalls, Zusätze wie in der Textansicht (`| LPh 6-7`, `| Dateischema`); mit Vorschau als Baum. Strg+Enter
   legt an. Ohne Auswahl entstehen die Ordner im Stamm; sind mehrere Ordner markiert, entsteht die Liste in **jedem**
@@ -279,14 +311,15 @@ Die **Ordnerliste** wird mit der Maus bearbeitet – ein Baum wie im Explorer, r
   gibt einen Ausgangspunkt. Bausteine stehen in der Struktur (`bausteine`), werden mit ihr gespeichert, geladen und
   gesichert.
 - **Löschen:** Entf bzw. Rechtsklick → Löschen; mit Unterordnern oder mehreren erst nach Rückfrage.
-- **Rückgängig/Wiederholen** (↶ ↷, Strg+Z/Strg+Y) für jeden Schritt des Editors.
+- **Rückgängig/Wiederholen** (Strg+Z/Strg+Y) für jeden Schritt des Editors.
 - **LPh-Vorschau:** eigener Modus (Knopf in der Werkzeugleiste, „Vorschau beenden“) – die Leistungsphasen eines
   Beispielprojekts wählen; Ordner, die dann nicht entstehen, sind blass und durchgestrichen („12 von 44 Ordnern
   entstehen“). Die Vorschau ändert nichts an der Struktur.
-- **Menüs:** Rechtsklick, „⋯“ an der Zeile oder Umschalt+F10 bzw. die Menütaste (für die Zeile mit der Schreibmarke)
-  zeigen alle Aktionen mit ihren Tastenkürzeln. Das Menü ist ganz per Tastatur bedienbar: Pfeil auf/ab, Pos1/Ende,
-  Enter; Esc oder Tab schließt, der Fokus kehrt in den Baum zurück. Kopieren, Einfügen, Duplizieren sowie Alle
-  aufklappen/zuklappen stehen außerdem im Menü „Weitere“ der Werkzeugleiste. Pfeiltasten, Pos1/Ende bewegen die
+- **Menüs:** Rechtsklick, der Knopf „Aktionen“ am Ende der Zeile (Listensymbol) oder Umschalt+F10 bzw. die Menütaste (für die Zeile mit der
+  Schreibmarke) zeigen alle Aktionen mit ihren Tastenkürzeln – im gemeinsamen Menü aller Apps. Es ist ganz per Tastatur
+  bedienbar: Pfeil auf/ab, Pos1/Ende, Enter; Esc oder Tab schließt, der Fokus kehrt in den Baum zurück (Tab geht von
+  dort weiter). Kopieren, Einfügen, Duplizieren sowie Alle aufklappen/zuklappen stehen außerdem im Menü „Weitere“ der
+  Werkzeugleiste; was gerade nicht geht, bleibt dort blass erreichbar und nennt den Grund im Tooltip. Pfeiltasten, Pos1/Ende bewegen die
   Auswahl.
 - **Meldungen** erscheinen am unteren Rand des Baums (Fehler als Warnung) und verschwinden nach einigen Sekunden.
 
@@ -320,7 +353,9 @@ Zeile 1 – nur die erste gilt“). Übernommen wird der Text nur mit „Ordnerl
 „Rückgängig“); „Verwerfen“ zeigt wieder die geltende Liste. Wer mit nicht übernommenen Änderungen zum „Baum“
 wechselt, wird gefragt (Übernehmen, Verwerfen, Abbrechen; Enter übernimmt). Der nicht übernommene Text bleibt
 auch beim Wechsel in eine andere Ansicht (etwa „Vorlagen“ oder „Projekte“) erhalten, bis zum Schließen der App.
-Kommt die Struktur inzwischen neu herein (anderer Rechner), bleibt der eigene Text mit Hinweis stehen. Der Ort der Projektdatei stand bis Version 0.1
+Kommt die Struktur inzwischen neu herein (anderer Rechner), bleibt der eigene Text mit Hinweis stehen; entspricht sie
+dem Text, ist der Entwurf erledigt. Eine leere Liste übernimmt die Textansicht nicht (Schutz vor versehentlichem
+Leeren) – alle Ordner zu löschen geht im Baum. Der Ort der Projektdatei stand bis Version 0.1
 in der Struktur („Leere Flächenrechner-Datei“); er ist jetzt eine gemeinsame Einstellung und wird übernommen.
 
 ## Vorlagen
@@ -475,10 +510,12 @@ und meldet ein abweichendes Datum („Datum 261103 – die Mail ist vom 261102 (
 Projektcode kommt aus der Projektdatei und lässt sich oben ändern.
 
 Umbenannt wird erst auf Klick – einzeln oder alle markierten (Auswahl und „Umbenennen“ stehen nur da, wenn es
-abweichende Mails gibt) –, im selben Ordner, die Endung bleibt, und **nie
-überschreibend**: Gibt es den Namen schon, bleibt alles, wie es war. Ist die Mail in Outlook geöffnet, sagt die App
-das. (Befehl `projekt_datei_umbenennen` in `packages/core/tauri/umbenennen.rs`, nur in den Hüllen von ATLAS und
-Rahmen-App.)
+abweichende Mails gibt) –, im selben Ordner, die Endung bleibt, und **nie überschreibend**: Gibt es den Namen schon,
+bleibt alles, wie es war. Mehrere auf einmal benennt die App erst nach einer Rückfrage um („6 Mails umbenennen?“ mit
+den ersten vier Namen alt → neu und „… und 2 weitere“), denn ein Rückgängig gibt es nicht. Würde der vollständige Pfad
+260 Zeichen oder länger, steht „Pfad zu lang (… Zeichen, Windows erlaubt höchstens 259) – Thema oder Name kürzen“ an
+der Mail, und Umbenennen bzw. Ablegen bleibt gesperrt. Ist die Mail in Outlook geöffnet, sagt die App das. (Befehl
+`projekt_datei_umbenennen` in `packages/core/tauri/umbenennen.rs`, nur in den Hüllen von ATLAS und Rahmen-App.)
 
 **Mails aus Outlook ablegen.** Mails aus dem **klassischen Outlook** lassen sich direkt auf die Fläche „Mails aus Outlook
 hierher ziehen“ ziehen (oder gespeicherte .msg-Dateien wählen). Die App bildet den Namen wie oben, schlägt als Ordner

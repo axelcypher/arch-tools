@@ -7,11 +7,12 @@ import { OAP_VARIABLEN, projektdateiPfad } from '@core/projektdatei';
 import { hatDateisystem, waehleOrdner } from '../dateisystem';
 import { dateimuster, nameAus, nummerAus, PLATZHALTER_NUMMER, PLATZHALTER_PLAN, PLATZHALTER_PROJEKT } from '../nummer';
 import { SchemaFeld } from './SchemaFeld';
-import { Symbol } from './Symbol';
+import { SPERRGRUND, StrukturSperre } from './StrukturSperre';
 import type { Sicherung } from '../sicherung';
 import { strukturUnterschied, unterschiedText } from '../sicherung';
 import { useOrdner } from '../store';
 import { SpeicherortZeile } from '@core/ui/Speicherort';
+import { Symbol } from '@core/ui/Symbol';
 import { OrdnerEditor } from './OrdnerEditor';
 import { NamensschemaEinstellungen } from './NamensschemaEinstellungen';
 import type { Struktur } from '../struktur';
@@ -42,6 +43,9 @@ export function StrukturView() {
   const setStruktur = useOrdner((s) => s.setStruktur);
   const strukturErsetzen = useOrdner((s) => s.strukturErsetzen);
   const strukturFehler = useOrdner((s) => s.strukturFehler);
+  /** unlesbare Struktur: Name, Schemata und Ordnerliste nur lesen (siehe StrukturSperre) – echt gesperrt, nicht verborgen */
+  const gesperrt = !!strukturFehler;
+  const grund = gesperrt ? SPERRGRUND : undefined;
   const rueckgaengig = useOrdner((s) => s.rueckgaengig);
   const strukturRueckgaengig = useOrdner((s) => s.strukturRueckgaengig);
   const sicherungenLesen = useOrdner((s) => s.sicherungenLesen);
@@ -51,6 +55,7 @@ export function StrukturView() {
   const setOrdnerAnsicht = useOrdner((s) => s.setOrdnerAnsicht);
   const entwurf = useOrdner((s) => s.ordnerEntwurf);
   const setEntwurf = useOrdner((s) => s.setOrdnerEntwurf);
+  const ordnerEntwurfUebernehmen = useOrdner((s) => s.ordnerEntwurfUebernehmen);
   const stand = ordnerAlsText(struktur.ordner);
   // ohne Entwurf folgt der Text dem Stand; ein Entwurf merkt sich den Stand, von dem er ausgeht – kommt die Struktur
   // neu herein, bleibt ungespeicherter Text stehen
@@ -68,16 +73,11 @@ export function StrukturView() {
   const textVerwerfen = () => setEntwurf(null);
   /** Ordnerliste aus der Textansicht übernehmen – wie jedes Ersetzen der Struktur vorher gesichert, mit „Rückgängig“ */
   const ordnerUebernehmen = async (): Promise<boolean> => {
-    const { ordner } = gelesen;
-    if (!ordner.length) {
-      setMeldung({ art: 'fehler', text: 'Die Liste enthält keinen Ordner – die bisherige Struktur bleibt bestehen.' });
-      return false;
-    }
     try {
-      await strukturErsetzen({ ...struktur, ordner }, 'Ordnerliste übernommen.');
-      setEntwurf(null);
-      setMeldung(null);
-      return true;
+      // leere Liste: der Grund steht als Meldung da, die bisherige Struktur bleibt
+      const grund = await ordnerEntwurfUebernehmen();
+      setMeldung(grund ? { art: 'fehler', text: grund } : null);
+      return !grund;
     } catch (e) {
       setMeldung({ art: 'fehler', text: e instanceof Error ? e.message : String(e) });
       return false;
@@ -185,11 +185,7 @@ export function StrukturView() {
         <button aria-pressed={ordnerAnsicht === 'baum'} onClick={() => void zumBaum()}>
           Baum
         </button>
-        <button
-          aria-pressed={ordnerAnsicht === 'text'}
-          title="Die Ordnerliste als Text mit eigener Schreibweise bearbeiten"
-          onClick={() => setOrdnerAnsicht('text')}
-        >
+        <button aria-pressed={ordnerAnsicht === 'text'} title="Die Ordnerliste als Text mit eigener Schreibweise bearbeiten" onClick={() => setOrdnerAnsicht('text')}>
           Text (Experte)
         </button>
       </div>
@@ -242,9 +238,12 @@ export function StrukturView() {
       <section className="po-col po-struktur-kopf">
         <div className="po-struktur-titel">
           <h2>Struktur</h2>
-          <Field label="Name der Struktur">
-            <TextField value={struktur.name} onChange={(v) => set({ name: v.trim() || struktur.name })} />
-          </Field>
+          {/* unlesbare Struktur: Feld gesperrt (Erklärung und „Angezeigte Struktur übernehmen …“ darunter) */}
+          <fieldset className="po-sperre" disabled={gesperrt} title={grund}>
+            <Field label="Name der Struktur">
+              <TextField value={struktur.name} onChange={(v) => set({ name: v.trim() || struktur.name })} />
+            </Field>
+          </fieldset>
           <div className="button-row">
             <button onClick={() => void laden()}>Struktur laden …</button>
             <button onClick={() => void speichern()}>Struktur speichern …</button>
@@ -275,20 +274,16 @@ export function StrukturView() {
           Ordnerbaum, Bausteine und Namensschemata gehören dem Büro, nicht dem Tool: Die Struktur gilt für alle, die diesen Konfigurationsordner nutzen, und lässt sich als Datei speichern, weitergeben
           und auf einem anderen Rechner laden – samt den Vorlagen-Presets (unter „Vorlagen“).
         </p>
-        {strukturFehler && (
-          <p className="warning po-struktur-fehler" role="alert">
-            {strukturFehler}
-          </p>
-        )}
+        <StrukturSperre />
         {meldung && (
-          <p className={meldung.art === 'fehler' ? 'warning' : 'po-meldung'} role={meldung.art === 'fehler' ? 'alert' : 'status'}>
+          <p className={`meldung ${meldung.art}`} role={meldung.art === 'fehler' ? 'alert' : 'status'}>
             {meldung.text}
           </p>
         )}
         {rueckgaengig && (
-          <p className="po-meldung po-rueckgaengig">
+          <p className="meldung ok po-rueckgaengig">
             {rueckgaengig.text}{' '}
-            <button className="small" onClick={strukturRueckgaengig}>
+            <button className="small" onClick={() => void strukturRueckgaengig().catch((e: unknown) => setMeldung({ art: 'fehler', text: e instanceof Error ? e.message : String(e) }))}>
               Rückgängig
             </button>
           </p>
@@ -311,9 +306,12 @@ export function StrukturView() {
             </ul>
           </div>
         )}
-        {schemata}
+        <fieldset className="po-sperre" disabled={gesperrt} title={grund}>
+          {schemata}
+        </fieldset>
       </section>
 
+      {/* Ordnerliste: bei unlesbarer Struktur nur lesen – Baum (scrollen, Pfeiltasten, Auswahl) bzw. Text bleiben zugänglich */}
       {ordnerAnsicht === 'baum' ? (
         <OrdnerEditor
           ordner={struktur.ordner}
@@ -324,6 +322,7 @@ export function StrukturView() {
             setStruktur(b.length ? { ...rest, bausteine: b } : rest);
           }}
           kopf={ordnerKopf}
+          gesperrt={gesperrt}
         />
       ) : (
         <div className="po-editor po-editor-text">
@@ -333,7 +332,7 @@ export function StrukturView() {
               Eine Zeile je Ordner, Unterordner mit „/“. Zusätze nach „|“: <code>LPh 5</code> oder <code>LPh 6-7</code> – der Ordner entsteht nur, wenn eine dieser Leistungsphasen beauftragt ist
               (Unterordner erben sie); <code>Dateischema</code> – Dateien darin werden im Prüfmodus gegen das Dateinamenschema geprüft. Änderungen gelten erst mit „Ordnerliste übernehmen“.
             </p>
-            <textarea className="po-ordnertext" aria-label="Ordnerliste" value={text} spellCheck={false} onChange={(e) => setText(e.target.value)} />
+            <textarea className="po-ordnertext" aria-label="Ordnerliste" value={text} readOnly={gesperrt} title={grund} spellCheck={false} onChange={(e) => setText(e.target.value)} />
             {veraltet && (
               <p className="warning po-text-veraltet" role="status">
                 Die Ordnerliste wurde inzwischen geändert (z. B. auf einem anderen Rechner). Der Text oben geht noch vom alten Stand aus: „Ordnerliste übernehmen“ ersetzt den neuen Stand durch ihn,
@@ -351,10 +350,10 @@ export function StrukturView() {
               </div>
             )}
             <div className="button-row">
-              <button className="primary" disabled={!geaendert} onClick={() => void ordnerUebernehmen()}>
+              <button className="primary" disabled={!geaendert || gesperrt} title={grund} onClick={() => void ordnerUebernehmen()}>
                 Ordnerliste übernehmen
               </button>
-              <button disabled={!geaendert} onClick={textVerwerfen}>
+              <button disabled={!geaendert || gesperrt} title={grund} onClick={textVerwerfen}>
                 Verwerfen
               </button>
               {geaendert && <span className="muted small-text">noch nicht übernommen</span>}
@@ -404,7 +403,11 @@ function GemeinsameEinstellungen() {
       <h2>Gemeinsame Einstellungen</h2>
       <p className="muted small-text">Gelten für alle Apps. Bei einer Netzwerkinstallation liegen sie auf dem Netzlaufwerk und gelten für das ganze Büro.</p>
       <SpeicherortZeile />
-      {konfigFehler && <p className="warning">{konfigFehler}</p>}
+      {konfigFehler && (
+        <p className="meldung fehler" role="alert">
+          {konfigFehler}
+        </p>
+      )}
 
       <h3 className="po-abschnitt">Stammordner der Projekte</h3>
       <p className="muted small-text">
@@ -476,13 +479,15 @@ function GemeinsameEinstellungen() {
           </li>
         ))}
         {!allgemein.projekte.length && (
-          <li className="muted">{desktop ? 'Noch kein Stammordner – mit „+ Stammordner“ hinzufügen.' : 'Noch kein Stammordner – hinzufügen lässt er sich nur in der Desktop-App.'}</li>
+          <li className="muted">
+            {desktop ? 'Noch kein Stammordner – mit dem Knopf „Stammordner“ (mit Plus) hinzufügen.' : 'Noch kein Stammordner – hinzufügen lässt er sich nur in der Desktop-App.'}
+          </li>
         )}
       </ul>
       {desktop && (
         <div className="button-row">
           <button className="small" onClick={() => void stammordnerHinzufuegen()}>
-            + Stammordner
+            <Symbol name="plus" /> Stammordner
           </button>
         </div>
       )}
