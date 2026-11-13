@@ -389,8 +389,9 @@ export function App() {
       {(meldung || (formularSichtbar && grund)) && (
         <>
           {meldung && (
-            // Fehler werden sofort angesagt (alert), Hinweise höflich (status)
-            <div className={`fo-meldung ${meldung.art === 'fehler' ? 'fehler' : 'info'}`} role={meldung.art === 'fehler' ? 'alert' : 'status'}>
+            // Fehler werden sofort angesagt (alert), Hinweise höflich (status) – je Meldung ein eigenes Element, denn ein
+            // Rollenwechsel am selben Element wird nicht zuverlässig angesagt
+            <div key={`${meldung.art}|${meldung.text}`} className={`fo-meldung ${meldung.art === 'fehler' ? 'fehler' : 'info'}`} role={meldung.art === 'fehler' ? 'alert' : 'status'}>
               <span>{meldung.text}</span>
               <button className="icon" title="Meldung schließen" aria-label="Meldung schließen" onClick={() => setMeldung(null)}>
                 <Symbol name="schliessen" />
