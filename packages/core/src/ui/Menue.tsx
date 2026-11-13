@@ -26,6 +26,8 @@ export type MenuePunkt =
       tasten?: string;
       /** Umschalter mit Haken: `true`/`false` macht den Punkt zu einem Kästchen (menuitemcheckbox), angehakt bei `true` */
       haken?: boolean;
+      /** Einfachauswahl: `true`/`false` macht den Punkt zu einer Wahl unter mehreren (menuitemradio), gewählt bei `true` */
+      gewaehlt?: boolean;
       /** Tooltip – z. B. der volle Text, wenn er gekürzt werden kann */
       titel?: string;
       aktion?: () => void;
@@ -357,8 +359,8 @@ function Liste({
         ) : (
           <button
             key={i}
-            role={p.haken === undefined ? 'menuitem' : 'menuitemcheckbox'}
-            aria-checked={p.haken === undefined ? undefined : p.haken}
+            role={p.gewaehlt !== undefined ? 'menuitemradio' : p.haken !== undefined ? 'menuitemcheckbox' : 'menuitem'}
+            aria-checked={p.gewaehlt ?? p.haken}
             aria-keyshortcuts={p.tasten ? tastenAria(p.tasten) : undefined}
             className={`menue-punkt${p.gefahr ? ' gefahr' : ''}${unter?.index === i ? ' offen' : ''}`}
             data-index={i}
@@ -383,7 +385,15 @@ function Liste({
             }}
           >
             <span className="menue-symbol">
-              {p.haken !== undefined ? p.haken && <Symbol name="haken" /> : p.bild ? <img src={p.bild} alt="" width={16} height={16} /> : p.symbol && <Symbol name={p.symbol} />}
+              {p.gewaehlt !== undefined ? (
+                p.gewaehlt && <Symbol name="punkt" />
+              ) : p.haken !== undefined ? (
+                p.haken && <Symbol name="haken" />
+              ) : p.bild ? (
+                <img src={p.bild} alt="" width={16} height={16} />
+              ) : (
+                p.symbol && <Symbol name={p.symbol} />
+              )}
             </span>
             <span className="menue-text">{p.text}</span>
             {p.hinweis && <span className="menue-hinweis">{p.hinweis}</span>}

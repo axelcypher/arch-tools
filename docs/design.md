@@ -86,11 +86,11 @@ Zahlen in Tabellen und Feldern stehen rechtsbündig in Tabellenziffern (`.num`, 
 | Variable                           | Bedeutung                                                                                                       |
 | ---------------------------------- | --------------------------------------------------------------------------------------------------------------- |
 | `--bg`, `--panel`                  | Fensterhintergrund, Flächen (Leisten, Dialoge)                                                                  |
-| `--text`, `--muted`                | Text, Nebentext                                                                                                 |
+| `--text`, `--muted`                | Text, Nebentext (`--muted` hält auch auf Tönungen und `--bg` mindestens 4,5 : 1)                                |
 | `--border`, `--line-soft`          | Linien, feine Trennlinien in Tabellen                                                                           |
 | `--accent`, `--accent-soft`        | Akzent (aktive Werkzeuge, primärer Knopf, Links), Tönung                                                        |
 | `--accent-text`                    | Akzent als Schrift auf getönten Flächen (aktive Knöpfe, Chips) – mindestens 4,5:1                               |
-| `--ok-*`, `--warn-*`, `--fehler-*` | Status: eingehalten, prüfen, überschritten/Fehler                                                               |
+| `--ok-*`, `--warn-*`, `--fehler-*` | Status: eingehalten, prüfen, überschritten/Fehler; `--ok-punkt` usw. für Statuspunkte (Ampel)                   |
 | `--sel`                            | Auswahl auf Plänen (Orange); auch ungespeicherte Änderungen (Punkt in Titelleiste und an „Speichern“)           |
 | `--sel-foto`                       | Auswahl auf Fotos (Magenta, in beiden Schemata gleich) – Orange kollidiert dort mit Mess- und Markierungsfarben |
 | `--danger`                         | zerstörende Aktionen (Löschen)                                                                                  |
@@ -183,6 +183,10 @@ Als Registerleiste (Bereiche wechseln, der Inhalt darunter tauscht sich) mit `ro
 Registern, Pos1/Ende springen zum ersten bzw. letzten; der Wechsel wirkt sofort (automatische Aktivierung). Nur das
 gewählte Register liegt in der Tab-Reihenfolge (`tabIndex` 0, die übrigen -1).
 
+Lange oder viele Werte (z. B. Antworten im Regelbaum von LEXIO) mit `.segment.senkrecht`: die Knöpfe untereinander,
+linksbündig, Text darf umbrechen. Eine umbrechende Variante gibt es bewusst nicht – umbrechende Segmente lesen sich
+treppenartig, und welcher Knopf zu welcher Zeile gehört, ist nicht mehr klar.
+
 ```html
 <div class="segment" role="group" aria-label="Ansicht">
   <button aria-pressed="true">Grundriss</button>
@@ -211,7 +215,8 @@ Gemeinsamer Satz in `ui/Symbol.tsx` (Raster 24, Linie 2, runde Enden, Farbe des 
   `grenze` (Grundstücksgrenze mit Grenzpunkten), `ausrichten` (Unterlage auf einen Punkt schieben).
 - Befehle: `speichern`, `drucken`, `export`, `kopie`, `einfuegen`, `muell`, `rueckgaengig`, `wiederholen`, `plus`,
   `suche`, `stift`.
-- Zustand: `haken`, `warnung`, `info`, `schliessen`, `auge`, `augeZu`, `stern`.
+- Zustand: `haken` (trifft zu), `schliessen` (trifft nicht zu), `frage` (offen, unbekannt), `warnung`, `info`, `auge`,
+  `augeZu`, `stern`; `punkt` (gewählte Einfachauswahl im Menü).
 - Navigation: `pfeilRechts`, `pfeilLinks`, `pfeilUnten`, `ordner`, `ordnerOffen`, `datei`.
 - Listen: `einruecken`, `ausruecken` (Gliederungsebene), `nachOben`, `nachUnten` zum Umsortieren (statt ↑/↓ als Schriftzeichen); `mehr` (drei Punkte, Knopf mit `aria-label="Aktionen"` und `title`) für
   Zeilenknöpfe „Aktionen“, die ein Menü öffnen – `pfeilUnten` bleibt dem Aufklapp-Pfeil an Knöpfen mit Text vorbehalten.
@@ -223,7 +228,7 @@ Neue Symbole kommen in diesen Satz, nicht in die App. Keine Emoji (📏 ✂ 🗑
 `ui/Menue.tsx`: Kontextmenü mit `zeigeMenue(e, punkte, name)` im `onContextMenu`, Aufklappmenü mit `<MenueKnopf>`.
 `name` benennt das Menü für Screenreader (z. B. „Projekt 2019-003“); der Aufklappknopf nimmt seinen eigenen Namen. Punkte
 mit `text`, optional `symbol`, `hinweis` (rechts, z. B. der Grund einer Sperre), `tasten` (Tastenkürzel, siehe unten),
-`haken` (Umschalter), `bild` (Bild statt Symbol, 16px, z. B. das Symbol einer App), `titel`, `gefahr`, `deaktiviert`, `unter` (Untermenü), Trenner mit `{ trenner: true }`.
+`haken` (Umschalter), `gewaehlt` (Einfachauswahl), `bild` (Bild statt Symbol, 16px, z. B. das Symbol einer App), `titel`, `gefahr`, `deaktiviert`, `unter` (Untermenü), Trenner mit `{ trenner: true }`.
 
 - Tastatur: der erste Punkt hat den Fokus, ↑/↓ und Pos1/Ende wandern, → bzw. Enter öffnet ein Untermenü, ← führt
   zurück. Esc schließt nur das Menü (ein Dialog darunter bleibt offen), Tab schließt und gibt den Fokus an den
@@ -244,6 +249,8 @@ mit `text`, optional `symbol`, `hinweis` (rechts, z. B. der Grund einer Sperre),
   (`menuitemcheckbox`, `aria-checked`) und zeigt den Haken anstelle des Symbols. Das Menü schließt nach dem Umschalten
   wie bei jedem Befehl. Mehrere Schalter, die man oft nacheinander umlegt (Ebenen, Spalten), gehören nicht ins Menü,
   sondern in eine Seitenleiste oder ein `.segment`.
+- Einfachauswahl im Menü (eine Fassung, eine Zuordnung aus mehreren) mit `gewaehlt: true | false`: `menuitemradio`
+  mit `aria-checked`, der gewählte Punkt zeigt `punkt` anstelle des Symbols. Haken nur für An/Aus.
 - Eigene Öffner ohne `MenueKnopf` (z. B. Zeilenknopf „⋯“ mit `zeigeMenueAn`) tragen `aria-haspopup="menu"`; dann
   setzt das Menü `aria-expanded` am Öffner selbst. Wer den Zustand im Render braucht, nimmt `useMenueOffen(ref)`.
 - Ein zweiter Klick auf den Öffner eines offenen Menüs schließt es (Knopf wie Zeilenknopf).
@@ -281,6 +288,10 @@ Doppelklick setzt die Vorgabe. Keine eigenen Leisten-Komponenten je App.
 `.meldung` (neutral, leicht im Akzent getönt, damit sie sich von Eingabefeldern abhebt) mit `.ok`, `.warnung` oder
 `.fehler` für Meldungen in Dialogen und Seitenleisten; `role="status"`
 für Rückmeldungen, `role="alert"` für Fehler. `.warning` bleibt als Hinweis in Warnfarben.
+
+**Statuspunkt (Ampel):** `<span class="statuspunkt ok"></span> gilt` (bzw. `.warnung`, `.fehler`) – ein Punkt in
+`--ok-punkt`, `--warn-punkt` oder `--fehler-punkt` mit dunklem Saum, immer neben dem Wort, nie allein (Gelb hat auf
+hellem Grund nur 2,2 : 1). Der Text daneben in `--ok-text` usw. bzw. `--text`.
 
 ## Meldungen auf der Zeichenfläche
 
@@ -320,6 +331,6 @@ Namen in der Titelleiste (`TitleBar`, Feld `dirty`) bleibt davon unberührt.
 ## Was die Apps nachziehen
 
 Je App eine Datei in [`docs/nachziehen/`](nachziehen/) (`quadrio.md`, `terrio.md`, `numio.md`, `atlas.md`,
-`rectio.md`, `permio.md`, `fabrio.md`, `arkly.md`). Neue Punkte trägt das Designsystem dort ein, die App löscht erledigte
+`rectio.md`, `permio.md`, `fabrio.md`, `lexio.md`, `arkly.md`). Neue Punkte trägt das Designsystem dort ein, die App löscht erledigte
 Punkte in ihrem eigenen PR (löschen, nicht abhaken). Diese Richtlinie ändert sich dafür nicht – so kommen sich
 App-PRs und Designsystem nicht in die Quere.
