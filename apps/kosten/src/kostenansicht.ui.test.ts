@@ -99,10 +99,10 @@ describe('Kostenansicht: Bedienung', () => {
     expect(host.textContent).not.toContain('Doppelt erfasst');
   });
 
-  it('„+ Position“ legt eine leere Zeile an und setzt den Fokus in die Kostengruppe', async () => {
+  it('„Position“ (hinzufügen) legt eine leere Zeile an und setzt den Fokus in die Kostengruppe', async () => {
     useKosten.getState().load(projektMitKosten());
     const host = ansicht();
-    act(() => knopf(host, '+ Position').click());
+    act(() => knopf(host, 'Position').click());
     await act(async () => new Promise((r) => setTimeout(r, 0)));
     const neu = kosten().positionen.find((p) => p.kg === '')!;
     expect(neu).toBeDefined();
@@ -146,7 +146,7 @@ describe('Kostenansicht: Bedienung', () => {
   it('Kostenrisiko: eigene Gruppe, gesondert vor „Gesamt netto“', () => {
     useKosten.getState().load(projektMitKosten());
     const host = ansicht();
-    act(() => knopf(host, '+ Kostenrisiko').click());
+    act(() => knopf(host, 'Kostenrisiko').click());
     const r = kosten().positionen.find((p) => p.kg === KG_RISIKO)!;
     expect(r).toMatchObject({ bezug: 'prozent', basis: ['300', '400'], bezeichnung: 'Kostenrisiken' });
     eingabe(host.querySelector(`tr[data-pos="${r.id}"] input[aria-label="Mittel, Kostenrisiko"]`) as HTMLInputElement, '5');

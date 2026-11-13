@@ -153,7 +153,7 @@ Jede Position gehört zu einer Kostengruppe (dreistellig, 1. bis 3. Ebene) und h
 - **pauschal** – ein Betrag
 - **% von KG** – Prozentsatz auf die Summe anderer Kostengruppen (z. B. Baunebenkosten auf KG 300 + 400)
 
-**+ Position** legt eine leere Zeile an und setzt den Cursor in die Kostengruppe; Bezeichnung und Bezugsgröße
+**Position** (hinzufügen) legt eine leere Zeile an und setzt den Cursor in die Kostengruppe; Bezeichnung und Bezugsgröße
 folgen aus der eingetragenen Kostengruppe. Eine ungültige Kostengruppe und eine Doppelerfassung stehen direkt an
 der Zeile. „Gliederung 1./2. Ebene“ legt nur die Kostengruppen an, die noch fehlen, und ist gesperrt, wenn alle
 vorhanden sind. Unter der Stufe nennt NUMIO die geforderte Gliederungstiefe.
@@ -187,7 +187,7 @@ auf unplausible Eingaben.
 ## Kostenrisiken
 
 DIN 276:2018-12 sieht vor, Kostenrisiken zu benennen und in der Kostenermittlung gesondert auszuweisen. Dafür gibt es
-Positionen mit der Kennung **Kostenrisiken** statt einer Kostengruppe (intern `risiko`, Knopf **+ Kostenrisiko**). Vorbelegt ist
+Positionen mit der Kennung **Kostenrisiken** statt einer Kostengruppe (intern `risiko`, Knopf **Kostenrisiko**). Vorbelegt ist
 **% von KG 300 + 400** – eine Voreinstellung, die je Projekt zu prüfen ist (Risiken etwa auch in KG 200 oder 500); möglich sind auch
 pauschal oder eine Menge als Bezug. Mehrere
 Risiko-Positionen werden addiert.
