@@ -723,10 +723,10 @@ describe('Bedingungen: Antragsmerkmale und Felder', () => {
     expect(document.querySelector('.fo-tipp')?.textContent).toContain('Nur bei Sonderbauten.');
     // Klick: Gesetzestext, der zitierte Absatz hervorgehoben
     await klick(info()!);
-    for (let i = 0; i < 20 && !document.querySelector('.fo-gesetz-zeile'); i++) await warte();
+    // der Gesetzestext lädt nachträglich – auf den hervorgehobenen Absatz warten, nicht auf eine feste Zahl von Takten
+    await vi.waitFor(() => expect(document.querySelector('.fo-gesetz .fo-gesetz-zeile.markiert')?.textContent).toMatch(/^\(2\)/), { timeout: 5000 });
     const modal = document.querySelector('.fo-gesetz')!;
     expect(modal.querySelector('p.fo-gesetz-para')!.textContent).toContain('§ 68 BauO NRW 2018');
-    expect(modal.querySelector('.fo-gesetz-zeile.markiert')!.textContent).toMatch(/^\(2\)/);
     // Esc (Tastendruck im Dokument) schließt das Fenster über den gemeinsamen Dialog-Stapel
     act(() => document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
     expect(document.querySelector('.fo-gesetz')).toBeNull();
@@ -1064,7 +1064,8 @@ describe('Plansatz', () => {
     await warte();
     const hinweise = host.querySelector<HTMLElement>('#plaene-plaene .pu-plan-hinweise')!;
     expect(hinweise.textContent).toContain('kein Schnitt erkannt');
-    expect(document.activeElement).toBe(hinweise);
+    // den Fokus setzt hinweiseZeigen nach setTimeout – abwarten statt fester Takte
+    await vi.waitFor(() => expect(document.activeElement).toBe(hinweise), { timeout: 5000 });
     // ein zweiter Klick schließt die Liste nicht
     await klick(knopf(zeile, '2 Hinweise'));
     await warte();
@@ -1647,13 +1648,14 @@ describe('Antragsunterlagen ansehen und alle Formulare exportieren', () => {
     // Klasse „modal“: Startfokus, Fokusfang und Fokusrückgabe aus dialoge.ts
     expect(ebene()!.classList.contains('modal')).toBe(true);
     // den Startfokus setzt dialoge.ts nach dem nächsten Bild (requestAnimationFrame) – auf ihn warten, nicht auf eine feste Zeit
-    await vi.waitFor(() => expect(document.activeElement?.textContent).toBe('Schließen'));
+    await vi.waitFor(() => expect(document.activeElement?.textContent).toBe('Schließen'), { timeout: 5000 });
     expect(ebene()!.contains(document.activeElement)).toBe(true);
     expect(ebene()!.textContent).toContain('Mit Programm öffnen');
     act(() => document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
     await warte();
     expect(ebene()).toBeNull();
-    expect(document.activeElement).toBe(ansehen);
+    // die Rückgabe läuft über den MutationObserver in dialoge.ts – ebenfalls abwarten
+    await vi.waitFor(() => expect(document.activeElement).toBe(ansehen), { timeout: 5000 });
   });
 
   it('alle Formulare auf einmal als PDF – Archiv ausgenommen; vorhandene ersetzen oder überspringen', async () => {
