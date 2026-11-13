@@ -138,25 +138,27 @@ body,
   width: auto !important;
 }
 .leiste-griff {
-  /* 10 px Greiffläche, die Linie in der Mitte */
+  /* 10 px Greiffläche, fast ganz neben der Leiste: der Rollbalken am Rand der Leiste bleibt greifbar (nur 2 px
+     überlappen, sein durchsichtiger Rand); die Linie liegt in beiden Lagen 2 px vom Anfang, genau auf dem Rand */
   position: absolute;
   top: 0;
-  right: -5px;
+  right: -8px;
   width: 10px;
   height: 100%;
   cursor: col-resize;
   z-index: 3;
 }
+/* Griff links (Leiste am rechten Fensterrand): in die Leiste hinein – links davor liegt der Rollbalken der Mitte */
 .leiste-griff-links {
   right: auto;
-  left: -5px;
+  left: -2px;
 }
 .leiste-griff:hover {
-  background: linear-gradient(to right, transparent 3px, var(--accent-soft) 3px, var(--accent-soft) 7px, transparent 7px);
+  background: linear-gradient(to right, var(--accent-soft) 4px, transparent 4px);
 }
 /* Tastaturfokus: Linie in voller Fokusfarbe statt Rahmen (die Greiffläche ist schmal) */
 .leiste-griff:focus-visible {
-  background: linear-gradient(to right, transparent 3px, var(--fokus) 3px, var(--fokus) 7px, transparent 7px);
+  background: linear-gradient(to right, var(--fokus) 4px, transparent 4px);
   outline: none;
 }
 /* andere Browser (Web-Version): Standard-Eigenschaften */
@@ -272,6 +274,10 @@ button.icon {
   user-select: none;
   margin-right: 6px;
 }
+/* Kästchen nie stauchen, auch bei langem Text daneben */
+.toggle > input:is([type='checkbox'], [type='radio']) {
+  flex: none;
+}
 
 /* ---------- Layout ---------- */
 
@@ -377,6 +383,14 @@ input[type='checkbox'] {
   width: auto;
 }
 
+/* in Werkzeugleisten so breit wie der Inhalt (Filter, Suche), nicht über die ganze Zeile */
+.toolbar :where(input, select) {
+  width: auto;
+}
+.toolbar input[type='range'] {
+  width: 120px;
+}
+
 input[type='range'] {
   padding: 0;
 }
@@ -423,6 +437,11 @@ textarea:focus {
 }
 :where(.toolbar, .button-row, .dialog-buttons, .section-head) :where(button.small, button.icon) {
   min-height: var(--ctl-h-s);
+}
+/* kleine Knöpfe auch außerhalb der Leisten mindestens 24px hoch (z. B. „×“ in Tabellen) */
+:where(button.small) {
+  min-height: var(--ctl-h-s);
+  min-width: var(--ctl-h-s);
 }
 
 .button-row {
@@ -589,8 +608,11 @@ textarea:focus {
 }
 
 .modal {
+  /* Innenabstand als Variable: die sticky Knopfzeile leitet ihre Versätze daraus ab */
+  --modal-pad-y: 18px;
+  --modal-pad-x: 22px;
   background: var(--panel);
-  padding: 18px 22px;
+  padding: var(--modal-pad-y) var(--modal-pad-x);
   border-radius: 6px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
   width: 380px;
@@ -602,13 +624,20 @@ textarea:focus {
   width: 620px;
 }
 
-.modal h3,
-.modal h2.br-dialog-titel {
-  margin: 0 0 10px;
+/* für Tabellen (Vorschau, Zuordnung): so breit wie möglich */
+.modal-tabelle {
+  width: min(1200px, 96vw);
 }
-/* Dialogüberschrift als h2 (Ebene unter dem Dialog), aussehend wie bisher */
-.modal h2.br-dialog-titel {
-  font-size: 1.17em;
+
+/* sichtbarer Kopf des Modal (Prop `kopf`): Titel und zugleich Name des Dialogs */
+.modal > .modal-kopf {
+  margin: 0 0 var(--s3);
+  font-size: var(--fs-l);
+  font-weight: 600;
+}
+
+.modal h3 {
+  margin: 0 0 10px;
 }
 
 .modal h4 {
@@ -636,8 +665,20 @@ textarea:focus {
 .dialog-buttons {
   display: flex;
   justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 6px;
-  margin-top: 12px;
+  margin-top: var(--s3);
+}
+/* in langen Dialogen bleiben die Knöpfe unten sichtbar */
+.modal > .dialog-buttons:last-child,
+.modal > form:last-child > .dialog-buttons:last-child {
+  position: sticky;
+  bottom: calc(-1 * var(--modal-pad-y));
+  margin: var(--s3) calc(-1 * var(--modal-pad-x)) calc(-1 * var(--modal-pad-y));
+  padding: var(--s3) var(--modal-pad-x) var(--modal-pad-y);
+  background: var(--panel);
+  border-top: 1px solid var(--line-soft);
+  z-index: 1;
 }
 
 .placeholder-help {
@@ -721,6 +762,16 @@ code {
 .canvas-message[title] {
   cursor: pointer;
 }
+.canvas-message.ok {
+  background: var(--ok-bg);
+  border-color: var(--ok-border);
+  color: var(--ok-text);
+}
+.canvas-message.info {
+  background: var(--panel);
+  border-color: var(--border);
+  color: var(--text);
+}
 /* Leerzustand („Foto hinzufügen …“): neutral statt Warnfarbe, mittig auf der Fläche */
 .canvas-message.leer {
   top: 50%;
@@ -761,11 +812,15 @@ code {
 /* ---------- Bericht ---------- */
 
 .report-backdrop {
+  /* Innenabstände als Variablen: die sticky Aktionszeile leitet ihre Versätze daraus ab */
+  --report-rand: 24px;
+  --report-pad-y: 28px;
+  --report-pad-x: 36px;
   position: fixed;
   inset: 0;
   background: var(--backdrop);
   overflow: auto;
-  padding: 24px;
+  padding: var(--report-rand);
   z-index: 10;
 }
 
@@ -773,17 +828,33 @@ code {
   background: #fff;
   max-width: 1100px;
   margin: 0 auto;
-  padding: 28px 36px;
+  padding: var(--report-pad-y, 28px) var(--report-pad-x, 36px);
   border-radius: 6px;
   position: relative;
 }
 
 .report-actions {
-  position: absolute;
-  top: 16px;
-  right: 16px;
+  /* eigene Zeile über dem Blatt, bleibt beim Blättern oben (überdeckt die Überschrift nicht mehr) */
+  position: sticky;
+  top: calc(-1 * var(--report-rand, 24px));
+  z-index: 2;
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 6px;
+  margin: calc(-1 * var(--report-pad-y, 28px)) calc(-1 * var(--report-pad-x, 36px)) var(--s4);
+  padding: var(--s2) var(--report-pad-x, 36px);
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  border-radius: 6px 6px 0 0;
+}
+
+.report-actions :where(input, select) {
+  width: auto;
+}
+/* Optionen links, Knöpfe rechts */
+.report-actions > button:first-of-type {
+  margin-left: auto;
 }
 
 .report-header {
@@ -966,6 +1037,10 @@ code {
   .report {
     max-width: none;
     padding: 0;
+  }
+  /* Bedienzeile der Druckvorschau nie mitdrucken, auch ohne .no-print */
+  .report-actions {
+    display: none;
   }
 
   .no-print {
@@ -1489,6 +1564,7 @@ code {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  position: relative;
   width: 18px;
   height: 18px;
   min-height: 0;
@@ -1504,6 +1580,11 @@ code {
   vertical-align: middle;
 }
 
+.hilfe-knopf::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+}
 .hilfe-knopf:hover:not(:disabled) {
   background: var(--accent-soft);
 }
@@ -1904,4 +1985,46 @@ button.ph-lokal {
   color: var(--text);
   border-radius: 4px;
   font-size: 12px;
+}
+
+/* ---------- Stammdaten-Knopf in Seitenleisten ---------- */
+
+.sd-knopf {
+  margin-bottom: var(--s2);
+}
+
+/* ---------- Umschalter (Segmente): eine Wahl aus wenigen, z. B. Ansicht oder Modus ---------- */
+
+.segment {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-s);
+  background: var(--input-bg);
+}
+.segment > button {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+}
+/* außerhalb der Leisten 24px; in .toolbar gilt deren 28px (beide mit Spezifität null, die Leiste steht vorher) */
+:where(.segment) > :where(button) {
+  min-height: var(--ctl-h-s);
+}
+:where(.toolbar) :where(.segment) > :where(button) {
+  min-height: var(--ctl-h);
+}
+.segment > button + button {
+  border-left: 1px solid var(--border);
+}
+.segment > button:first-child {
+  border-radius: var(--radius-s) 0 0 var(--radius-s);
+}
+.segment > button:last-child {
+  border-radius: 0 var(--radius-s) var(--radius-s) 0;
+}
+.segment > button[aria-pressed='true'],
+.segment > button.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
 }

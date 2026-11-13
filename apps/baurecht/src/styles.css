@@ -255,7 +255,7 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
 .br-menue-liste > button:hover:not(:disabled),
 .br-menue-liste > button:focus-visible {
   background: var(--accent-soft);
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--fokus);
   outline-offset: -2px;
 }
 .br-menue-info {
@@ -1209,6 +1209,11 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
 }
 
 /* Dialoge */
+/* Dialogüberschrift als h2 (Ebene unter dem Dialog), Größe aus der Skala */
+.modal h2.br-dialog-titel {
+  margin: 0 0 var(--s2);
+  font-size: var(--fs-l);
+}
 .br-wahl {
   border: none;
   padding: 0;
@@ -1600,12 +1605,12 @@ h2.br-detail-name {
 /* Startfokus in Dialogen sichtbar, auch wenn der Dialog über Strg+S kam (dann greift :focus-visible nicht) */
 .modal input[type='checkbox']:focus,
 .modal input[type='radio']:focus {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--fokus);
   outline-offset: 2px;
 }
 /* Einzelheiten ohne Auswahl (F6): Fokusrahmen im Stil der App */
 .br-detail:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--fokus);
   outline-offset: -2px;
 }
 
@@ -1974,7 +1979,7 @@ h2.br-detail-name {
 }
 /* Speichern-Dialog: der Scrollbereich ist ein Tabstopp (Pfeiltasten scrollen) – sichtbarer Fokus */
 .br-bestaetigen-inhalt:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--fokus);
   outline-offset: 2px;
 }
 /* Knöpfe brechen um; schmal untereinander in voller Breite */
