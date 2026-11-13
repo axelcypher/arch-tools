@@ -65,16 +65,16 @@ describe('Projektdatei im Projektordner', () => {
 
   it('laden, ändern und anlegen über den Ordnerzugriff; nie überschreiben, was jemand inzwischen geändert hat', async () => {
     const fs = new SpeicherProjektordner();
-    const root = 'P:\\Projekte\\BS5 Birkenstraße';
+    const root = 'P:\\Projekte\\BS5 Buchenstraße';
     expect(await projektdateiLaden(fs, root)).toBeNull();
-    const p = createProject('Birkenstraße');
+    const p = createProject('Buchenstraße');
     p.meta.projektcode = 'BS5';
     expect(await projektdateiAnlegen(fs, root, 'Planung/Berechnungen/BS5.oap', p, 'Test')).toBe(true);
     // eine vorhandene Datei bleibt beim Anlegen unverändert
     expect(await projektdateiAnlegen(fs, root, 'Planung/Berechnungen/BS5.oap', createProject('anders'), 'Test')).toBe(false);
     const geladen = (await projektdateiLaden(fs, root))!;
     expect(geladen).toMatchObject({ pfad: 'Planung/Berechnungen/BS5.oap', kandidaten: ['Planung/Berechnungen/BS5.oap'] });
-    expect(geladen.projekt.name).toBe('Birkenstraße');
+    expect(geladen.projekt.name).toBe('Buchenstraße');
 
     expect(await projektdateiSchreiben(fs, root, geladen.pfad, (r) => ({ ...r, projektordner: { struktur: 'Büro' } }))).toBe(true);
     expect(await projektdateiSchreiben(fs, root, geladen.pfad, (r) => r)).toBe(false);

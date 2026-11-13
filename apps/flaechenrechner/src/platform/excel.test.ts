@@ -8,7 +8,7 @@ import { buildSampleTemplate, exportDefault, exportWithTemplate } from './excel'
 
 function project() {
   const p = createProject('Sanierung EFH Sander');
-  p.meta.adresse = { strasse: 'Deiringser Weg 7a', plz: '59494', ort: 'Soest' };
+  p.meta.adresse = { strasse: 'Lindenweg 7a', plz: '59494', ort: 'Soest' };
   const kg = p.storeys[0];
   kg.name = 'KG';
   const eg = createStorey('EG', 2.8);
@@ -48,7 +48,7 @@ describe('Excel-Export mit Vorlage', () => {
     const ws = wb.getWorksheet('Wohnflächen')!;
     // Kopf unverändert, Platzhalter ersetzt, Zellverbund erhalten
     expect(val(ws, 'A3')).toBe('Sanierung EFH Sander');
-    expect(val(ws, 'A4')).toBe('Deiringser Weg 7a, 59494 Soest');
+    expect(val(ws, 'A4')).toBe('Lindenweg 7a, 59494 Soest');
     expect(val(ws, 'A8')).toBe('Entwurfsplanung');
     expect(ws.getCell('D8').isMerged).toBe(true);
     // Block EG (Steuerzeile entfällt → erste Raumzeile in Zeile 11)

@@ -6,10 +6,10 @@ const leer = { ordner: [], dateien: [] };
 describe('Projektordner in den Stammordnern finden – auch in Gruppen-, Akquise- und Archivordnern', () => {
   it('Sammelordner am Namen oder am Inhalt, Projekte an Projektdatei bzw. nummerierten Unterordnern', () => {
     for (const n of ['Archiv', '_Archiv', '99 Abgeschlossen', 'Archiv 2024', '00_Akquise', 'Akquise']) expect(istSammelordner(n, leer), n).toBe(true);
-    for (const n of ['2026-014 Stadtarchiv', '2026-020 Archiv Stadt', 'SIS Sanierung']) expect(istSammelordner(n, leer), n).toBe(false);
+    for (const n of ['2026-014 Stadtarchiv', '2026-020 Archiv Stadt', 'BSP Sanierung']) expect(istSammelordner(n, leer), n).toBe(false);
     // Gruppenordner: darin Ordner mit Projektnamen
     expect(istSammelordner('Wohnungsbau', { ordner: ['2026-014 EFH Musterweg', '2026-015 MFH Bahnhof'], dateien: [] })).toBe(true);
-    expect(istSammelordner('Gewerbe', { ordner: ['SIS Sanierung ESG'], dateien: [] })).toBe(true);
+    expect(istSammelordner('Gewerbe', { ordner: ['BSP Sanierung Musterschule'], dateien: [] })).toBe(true);
     // Projekt: nummerierte Unterordner bzw. Projektdatei – auch wenn darin Ordner mit Ziffern stehen
     expect(istSammelordner('2026-014 EFH', { ordner: ['00 Projekt', '01 Grundlagen', '02 Pläne'], dateien: [] })).toBe(false);
     expect(istSammelordner('Altbau', { ordner: ['Pläne 2019 neu'], dateien: ['Altbau.oap'] })).toBe(false);
@@ -26,7 +26,7 @@ describe('Projektordner in den Stammordnern finden – auch in Gruppen-, Akquise
     for (const p of [
       '2026-014 EFH Musterweg/00 Projekt',
       '2026-014 EFH Musterweg/01 Grundlagen',
-      'SIS Sanierung ESG/04 Schriftverkehr',
+      'BSP Sanierung Musterschule/04 Schriftverkehr',
       'Akquise/2026-099 Kita Anfrage/00 Projekt',
       'Archiv/2024/2024-003 Altbau/00 Projekt',
       'Archiv/2024/2024-003 Altbau/01 Grundlagen',
@@ -43,7 +43,7 @@ describe('Projektordner in den Stammordnern finden – auch in Gruppen-, Akquise
       ['Akquise', '2026-099 Kita Anfrage'],
       ['Archiv', '2023-010 Halle'],
       ['Archiv/2024', '2024-003 Altbau'],
-      ['', 'SIS Sanierung ESG'],
+      ['', 'BSP Sanierung Musterschule'],
       ['Wohnungsbau', '2025-007 MFH Bahnhof'],
       ['Wohnungsbau', '2025-008 Reihenhäuser'],
     ]);

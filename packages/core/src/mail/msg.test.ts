@@ -8,39 +8,39 @@ describe('Outlook-Nachrichten (.msg) lesen', () => {
   it('Betreff, Absender, Empfänger mit Art, Sende- und Empfangszeit, Anhänge, Text – Unicode und ANSI, kleine und große Ströme', () => {
     for (const ansi of [false, true]) {
       const bytes = testMsg({
-        betreff: 'WG: Grundriss Sanierung ESG.docx',
-        vonName: 'Nicole Aring | AKH Architektur GmbH',
-        vonMail: 'n.aring@akh-architektur.de',
+        betreff: 'WG: Grundriss Sanierung Musterschule.docx',
+        vonName: 'Erika Beispiel | Beispiel Architekten GmbH',
+        vonMail: 'e.beispiel@architekten-beispiel.example',
         an: [
-          { name: 'Tobias Pendzialek', mail: 't.pendzialek@akh-architektur.de' },
-          { name: 'Peitz, Rüdiger', mail: 'ruediger.peitz@shs-soest.de', art: 'cc' },
+          { name: 'Tom Planer', mail: 't.planer@architekten-beispiel.example' },
+          { name: 'Muster, Max', mail: 'max.muster@statik-muster.example', art: 'cc' },
         ],
         gesendet: new Date('2026-11-10T08:07:17Z'),
         empfangen: new Date('2026-11-10T08:07:20Z'),
-        text: `Zur Info\n\nVon: Peitz, Rüdiger <Ruediger.Peitz@shs-soest.de>\nGesendet: Montag, 9. November 2026 10:10\n${lang}`,
-        anhaenge: ['Grundriss Sanierung ESG.docx'],
+        text: `Zur Info\n\nVon: Muster, Max <Max.Muster@statik-muster.example>\nGesendet: Montag, 9. November 2026 10:10\n${lang}`,
+        anhaenge: ['Grundriss Sanierung Musterschule.docx'],
         ansi,
       });
       const k = msgKopf(bytes, { mitText: true });
       expect(k).toMatchObject({
         klasse: 'IPM.Note',
-        betreff: 'WG: Grundriss Sanierung ESG.docx',
-        thema: 'Grundriss Sanierung ESG.docx',
-        vonName: 'Nicole Aring | AKH Architektur GmbH',
-        vonMail: 'n.aring@akh-architektur.de',
+        betreff: 'WG: Grundriss Sanierung Musterschule.docx',
+        thema: 'Grundriss Sanierung Musterschule.docx',
+        vonName: 'Erika Beispiel | Beispiel Architekten GmbH',
+        vonMail: 'e.beispiel@architekten-beispiel.example',
         empfaenger: [
-          { name: 'Tobias Pendzialek', mail: 't.pendzialek@akh-architektur.de', art: 'an' },
-          { name: 'Peitz, Rüdiger', mail: 'ruediger.peitz@shs-soest.de', art: 'cc' },
+          { name: 'Tom Planer', mail: 't.planer@architekten-beispiel.example', art: 'an' },
+          { name: 'Muster, Max', mail: 'max.muster@statik-muster.example', art: 'cc' },
         ],
-        anText: 'Tobias Pendzialek',
-        ccText: 'Peitz, Rüdiger',
-        anhaenge: ['Grundriss Sanierung ESG.docx'],
+        anText: 'Tom Planer',
+        ccText: 'Muster, Max',
+        anhaenge: ['Grundriss Sanierung Musterschule.docx'],
         flags: 1,
       });
       expect(k.gesendet?.toISOString()).toBe('2026-11-10T08:07:17.000Z');
       expect(k.empfangen?.toISOString()).toBe('2026-11-10T08:07:20.000Z');
       // der Text ist größer als die Grenze des Mini-Stroms (4096 Bytes)
-      expect(k.text).toContain('Von: Peitz, Rüdiger <Ruediger.Peitz@shs-soest.de>');
+      expect(k.text).toContain('Von: Muster, Max <Max.Muster@statik-muster.example>');
       expect(k.text!.length).toBeGreaterThan(4096);
     }
     expect(msgKopf(testMsg({ betreff: 'x', vonName: 'a', vonMail: 'a@b.de', an: [] }))).not.toHaveProperty('text');
