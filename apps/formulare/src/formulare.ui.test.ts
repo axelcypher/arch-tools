@@ -919,6 +919,7 @@ describe('Formulare', () => {
     await warte();
     await warte();
     expect(host.querySelector('.fo-schnellwahl')).toBeNull();
+    require('node:fs').writeFileSync('/tmp/claude-0/-home-user-arch-tools/5266d1f7-fd7d-5c54-ac2e-a8bbc1444fa5/scratchpad/debug.txt', [document.querySelectorAll('.modal').length, suchen.isConnected, suchen.outerHTML.slice(0,200), document.activeElement?.outerHTML.slice(0, 200)].join('\n'));
     expect(document.activeElement).toBe(suchen);
   });
 
