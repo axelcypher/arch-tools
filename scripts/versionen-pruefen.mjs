@@ -3,8 +3,9 @@
 // von Changesets) nur noch der Release-Lauf (scripts/versionen-setzen.mjs); ein PR legt stattdessen eine Notiz mit
 // eindeutigem Namen an (.versionen/<zweig>.json, Format in .versionen/LIESMICH.md). Fehlschlag, wenn
 //   1. der PR eine App-Version ändert (das macht der Release-Lauf; zurücknehmen und eine Notiz anlegen),
-//   2. Dateien einer App (apps/<app>/…) bzw. des gemeinsamen Kerns (packages/core/…, betrifft alle Apps außer Arkly)
-//      geändert sind, die App aber in keiner Notiz des PRs steht – Doku (*.md) und Tests zählen nicht,
+//   2. Dateien einer App (apps/<app>/…) bzw. des gemeinsamen Kerns (packages/core/…: die Apps außer Arkly, die die Datei
+//      einbinden – scripts/kern-nutzer.mjs, im Zweifel alle) geändert sind, die App aber in keiner Notiz des PRs
+//      steht – Doku (*.md) und Tests zählen nicht,
 //   3. eine Notiz des PRs ungültig ist (unbekannte App, Stufe nicht patch/minor/major, Satz fehlt),
 //   4. der PR eine Notiz löscht oder umbenennt (etwa durch eine falsche Konfliktauflösung – ihr Satz ginge verloren).
 // „Geändert“ heißt: im PR-Kopf anders als an der Abzweigung vom Ziel-Branch (Merge-Base). Arkly bekommt ihre Version im
@@ -15,6 +16,7 @@
 
 import { execFileSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
+import { kernNutzer as kernNutzerAus } from './kern-nutzer.mjs';
 
 export const APPS = ['flaechenrechner', 'grz', 'kosten', 'ordner', 'entzerrung', 'formulare', 'ava', 'suite'];
 export const SUITE = 'suite';
@@ -44,13 +46,17 @@ export function vergleich(a, b) {
 const ausgeliefert = (pfad) => !/\.md$/i.test(pfad) && !/\.test\.[cm]?[jt]sx?$/.test(pfad) && !pfad.includes('/__fixtures__/');
 
 /**
- * Apps, deren ausgelieferter Code sich laut Dateiliste ändert. packages/core betrifft alle außer Arkly: Arkly bekommt
- * ihre Version automatisch im Release-Lauf, sobald eine der anderen Apps eine neue hat.
+ * Apps, deren ausgelieferter Code sich laut Dateiliste ändert. Eine Datei in packages/core betrifft die Apps außer
+ * Arkly, die sie einbinden (`kernNutzer`: Datei → Apps; Vorgabe aus dem Arbeitsbaum, scripts/kern-nutzer.mjs). Arkly
+ * bekommt ihre Version automatisch im Release-Lauf, sobald eine der anderen Apps eine neue hat.
  */
-export function betroffeneApps(dateien) {
+export function betroffeneApps(dateien, kernNutzer) {
   const apps = new Set();
   for (const pfad of dateien.filter(ausgeliefert)) {
-    if (pfad.startsWith('packages/core/')) APPS.filter((a) => a !== SUITE).forEach((a) => apps.add(a));
+    if (pfad.startsWith('packages/core/')) {
+      kernNutzer ??= kernNutzerAus('.', APPS.filter((a) => a !== SUITE));
+      kernNutzer(pfad).forEach((a) => apps.add(a));
+    }
     const m = /^apps\/([^/]+)\//.exec(pfad);
     if (m && APPS.includes(m[1])) apps.add(m[1]);
   }
@@ -95,9 +101,10 @@ const vorlage = (apps) => JSON.stringify(Object.fromEntries(apps.map((a) => [a, 
 /**
  * Die eigentliche Prüfung (ohne Git, für Tests). `kopf`, `basis`: Version je App im PR-Kopf und an der Abzweigung vom
  * Ziel-Branch; `dateien`: geänderte Dateien zwischen Abzweigung und PR-Kopf; `notizen`: die Notizen des PRs als
- * [{ name, inhalt }]; `entfernt`: im PR gelöschte Notizdateien. Liefert die Fehlermeldungen (leer = in Ordnung).
+ * [{ name, inhalt }]; `entfernt`: im PR gelöschte Notizdateien; `kernNutzer`: siehe betroffeneApps. Liefert die
+ * Fehlermeldungen (leer = in Ordnung).
  */
-export function pruefen({ kopf, basis, dateien = [], notizen = [], entfernt = [] }) {
+export function pruefen({ kopf, basis, dateien = [], notizen = [], entfernt = [], kernNutzer }) {
   const fehler = [];
   for (const n of entfernt) fehler.push(`${n}: Versionsnotiz im PR gelöscht oder umbenannt – Notizen anderer PRs nie anfassen (main erneut mergen); die eigene unter neuem Namen neu anlegen.`);
   for (const app of APPS.filter((a) => kopf[a] && basis[a] && kopf[a] !== basis[a])) {
@@ -109,7 +116,7 @@ export function pruefen({ kopf, basis, dateien = [], notizen = [], entfernt = []
     fehler.push(...r.fehler);
     eintraege.push(...r.eintraege);
   }
-  const fehlend = betroffeneApps(dateien).filter((a) => kopf[a] && !eintraege.some((e) => e.app === a));
+  const fehlend = betroffeneApps(dateien, kernNutzer).filter((a) => kopf[a] && !eintraege.some((e) => e.app === a));
   if (fehlend.length) {
     fehler.push(
       `Geänderte Apps ohne Versionsnotiz: ${fehlend.join(', ')}. Bitte eine Datei ${NOTIZEN}/<zweig>.json anlegen, z. B. ${vorlage(fehlend)} – Stufe patch (Fehlerkorrektur), minor (neue Funktion) oder major, dazu ein Satz für die Release-Notiz.`,
