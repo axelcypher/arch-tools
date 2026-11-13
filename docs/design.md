@@ -138,12 +138,17 @@ Helligkeitskontrast. Unter der Linie in `--sel-foto` liegt ein Doppelsaum, auße
 - In `.toolbar` und `.report-actions` füllen Felder nicht die Zeile: Auswahllisten sind so breit wie ihr Inhalt,
   Textfelder haben die Standardbreite des Browsers (etwa 20 Zeichen; kürzer mit dem Attribut `size`), Regler 120px.
   Sonst füllen Felder ihre Spalte.
+- **Fehler über mehrere Felder** (z. B. „Summe der Teilflächen > Grundstücksfläche“): die Meldung einmal neben die
+  Felder (`.meldung.fehler` oder `.feld-meldung` mit `id`), an jedem betroffenen `NumberField`/`TextField`
+  `ungueltig` und `fehlerId` setzen – das Feld wird rot markiert, `aria-invalid` und von der Meldung beschrieben. Die
+  gemeinsame Meldung trägt `role="alert"` und erscheint erst, wenn der Fehler besteht.
 - `.toggle` (Kästchen oder Optionsfeld mit Text): das Kästchen wird nie gestaucht.
 
 ## Umschalter
 
 `.segment` für eine Wahl aus wenigen (Ansicht, Modus): Knöpfe direkt nebeneinander in einem Rahmen, der gewählte mit
-`aria-pressed="true"` in Akzent-Tönung. Höhe 24px, in `.toolbar` 28px wie die übrigen Knöpfe dort. Statt eigener
+`aria-pressed="true"` in Akzent-Tönung. Höhe 24px, in `.toolbar` 28px wie die übrigen Knöpfe dort; der Rahmen des
+Segments zählt mit (die Höhe kommt aus `min-height`, nicht aus dem Innenabstand). Statt eigener
 Varianten je App (`.mv-umschalter`, `.ava-tabs`, `.view-switch`).
 
 Als Registerleiste (Bereiche wechseln, der Inhalt darunter tauscht sich) mit `role="tablist"`, Knöpfen mit
@@ -172,7 +177,7 @@ Gemeinsamer Satz in `ui/Symbol.tsx` (Raster 24, Linie 2, runde Enden, Farbe des 
 `<Symbol name="lineal" />`. Ohne `titel` ist das Symbol dekorativ, dann trägt der Knopf den Namen (Text oder
 `aria-label`); mit `titel` ist es ein benanntes Bild.
 
-- Werkzeuge: `auswahl`, `polygon`, `rechteck`, `lineal` (Messen), `kalibrieren`, `einpassen`, `raster`.
+- Werkzeuge: `auswahl`, `polygon`, `rechteck`, `erkennen` (Fläche aus dem Plan), `lineal` (Messen), `kalibrieren`, `einpassen`, `raster`.
 - Befehle: `speichern`, `drucken`, `export`, `kopie`, `einfuegen`, `muell`, `rueckgaengig`, `wiederholen`, `plus`,
   `suche`, `stift`.
 - Zustand: `haken`, `warnung`, `info`, `schliessen`, `auge`, `augeZu`, `stern`.
@@ -235,20 +240,21 @@ Symbol: Text in `<span className="titlebar-text">`, der Name bleibt über `aria-
 
 ## Was die Apps nachziehen
 
-| App                     | Datei und Aufgabe                                                                                                                                                                                                               |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| RECTIO                  | `apps/entzerrung/src/components/Arbeitsflaeche.tsx:364`: Leerzustand „Foto hinzufügen …“ mit `className="canvas-message leer"`; Auswahl auf dem Foto mit `--sel-foto` und Saum statt eigener Farbe                              |
-| TERRIO, NUMIO           | Spalten-Überschriften (`h2` ohne Regel, sonst 22px) auf die Skala setzen: `--fs-l`, halbfett                                                                                                                                    |
-| FABRIO                  | erledigt (FABRIO 0.9.1): Versalien entfernt, `outline: none` geprüft; Druckvorschau, `.segment`, `Modal` mit `kopf`, „ …“ nachgezogen                                                                                           |
-| PERMIO                  | erledigt (PERMIO 0.48.1): Versalien entfernt, Überschriften auf `--fs-*`, `outline: none` geprüft (Menüpunkte mit Fokusrahmen)                                                                                                  |
-| core                    | erledigt: Versalien in `.pa-abschnitt-titel`, `.av-abschnitt-titel`, `.av-ed-gruppe-titel` entfernt; `.modal h3`/`h4` aus der Skala                                                                                             |
-| ATLAS                   | `outline: none` prüfen: `apps/ordner/src/styles.css:415`                                                                                                                                                                        |
-| QUADRIO, TERRIO, NUMIO  | Druckvorschau: „Drucken / PDF …“ als Hauptknopf (`.primary`), „Schließen“ normal (`Report.tsx`, `NachweisDruck.tsx`, `KostenDruck.tsx`)                                                                                         |
-| NUMIO, QUADRIO          | eigene Umschalter (`.mv-umschalter`, `.view-switch`) auf `.segment` umstellen                                                                                                                                                   |
-| PERMIO                  | erledigt: eigenes Menü und eigene Symbole samt CSS durch `@core/ui/Menue` und `@core/ui/Symbol` ersetzt; keine Symbole fehlten                                                                                                  |
-| RECTIO                  | eigene `RechteLeiste` durch `BreitenLeiste seite="rechts"` ersetzen                                                                                                                                                             |
-| QUADRIO, TERRIO, RECTIO | Werkzeugleisten mit `Symbol` statt Emoji und Schriftzeichen (📏, ⇔, ⊡, ▭, ↶/↷)                                                                                                                                                  |
-| alle                    | eigene Kontextmenüs auf `zeigeMenue` umstellen (QUADRIO Canvas, TERRIO Lageplan, RECTIO Arbeitsfläche, ATLAS Ordner-Editor)                                                                                                     |
-| alle                    | eigene `div.modal` auf `Modal` umstellen; Titel mit `kopf` statt `h3` im Inhalt; Werkzeugleisten-Befehle nach „Begriffe“ benennen (z. B. TERRIO „Öffnen“ → „Öffnen …“)                                                          |
+| App            | Datei und Aufgabe                                                                                                                                                                                                               |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| RECTIO         | `apps/entzerrung/src/components/Arbeitsflaeche.tsx:364`: Leerzustand „Foto hinzufügen …“ mit `className="canvas-message leer"`; Auswahl auf dem Foto mit `--sel-foto` und Saum statt eigener Farbe                              |
+| TERRIO, NUMIO  | Spalten-Überschriften (`h2` ohne Regel, sonst 22px) auf die Skala setzen: `--fs-l`, halbfett                                                                                                                                    |
+| FABRIO         | erledigt (FABRIO 0.9.1): Versalien entfernt, `outline: none` geprüft; Druckvorschau, `.segment`, `Modal` mit `kopf`, „ …“ nachgezogen                                                                                           |
+| PERMIO         | erledigt (PERMIO 0.48.1): Versalien entfernt, Überschriften auf `--fs-*`, `outline: none` geprüft (Menüpunkte mit Fokusrahmen)                                                                                                  |
+| core           | erledigt: Versalien in `.pa-abschnitt-titel`, `.av-abschnitt-titel`, `.av-ed-gruppe-titel` entfernt; `.modal h3`/`h4` aus der Skala                                                                                             |
+| ATLAS          | `outline: none` prüfen: `apps/ordner/src/styles.css:415`                                                                                                                                                                        |
+| QUADRIO        | erledigt (Werkzeugleisten-PR): Druckvorschau „Drucken / PDF …“, Umschalter `.segment`, Werkzeugleiste mit `Symbol` (neu: `erkennen`), Kontextmenüs der Zeichenfläche über `zeigeMenue`, Meldungen `.meldung`                    |
+| TERRIO, NUMIO  | Druckvorschau: „Drucken / PDF …“ als Hauptknopf (`.primary`), „Schließen“ normal (`NachweisDruck.tsx`, `KostenDruck.tsx`)                                                                                                       |
+| NUMIO          | eigene Umschalter (`.mv-umschalter`) auf `.segment` umstellen                                                                                                                                                                   |
+| PERMIO         | erledigt: eigenes Menü und eigene Symbole samt CSS durch `@core/ui/Menue` und `@core/ui/Symbol` ersetzt; keine Symbole fehlten                                                                                                  |
+| RECTIO         | eigene `RechteLeiste` durch `BreitenLeiste seite="rechts"` ersetzen                                                                                                                                                             |
+| TERRIO, RECTIO | Werkzeugleisten mit `Symbol` statt Emoji und Schriftzeichen (📏, ⇔, ⊡, ▭, ↶/↷)                                                                                                                                                  |
+| alle           | eigene Kontextmenüs auf `zeigeMenue` umstellen (TERRIO Lageplan, RECTIO Arbeitsfläche, ATLAS Ordner-Editor)                                                                                                                     |
+| alle           | eigene `div.modal` auf `Modal` umstellen; Titel mit `kopf` statt `h3` im Inhalt; Werkzeugleisten-Befehle nach „Begriffe“ benennen (z. B. TERRIO „Öffnen“ → „Öffnen …“)                                                          |
 
 Zeilennummern beziehen sich auf den Stand dieser Richtlinie.
