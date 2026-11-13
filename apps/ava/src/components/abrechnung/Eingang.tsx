@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { bestaetigen, frageText, meldung } from '@core/ui/Rueckfrage';
+import { bestaetigen, fehlerText, frageText, meldung } from '@core/ui/Rueckfrage';
 import { ordnerWaehlen } from '@core/platform/projektordner';
 import type { OrdnerEintrag } from '@core/projektdatei';
 import { ablageNachtragen, mailEntwurf, rechnungsDateiname, scanAblegen, auftragsordner, TeilweiseAbgelegt } from '../../abrechnung/ablauf';
@@ -153,7 +153,7 @@ export function Eingang() {
             className="primary"
             onClick={async () => {
               const o = await ordnerWaehlen('Scanordner wählen');
-              if (o) await useAva.getState().einstellungenSetzen({ ...e, scan: { ...e.scan, ordner: o } });
+              if (o) await useAva.getState().einstellungenSetzen({ ...e, scan: { ...e.scan, ordner: o } }).catch((x) => meldung('Scanordner nicht gespeichert', fehlerText(x)));
             }}
           >
             Scanordner wählen …

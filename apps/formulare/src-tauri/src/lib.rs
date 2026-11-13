@@ -2,7 +2,7 @@
 //! packages/core/tauri/commands.rs; hier kommen die Dateisystem-Befehle für die FORMA-Projektordner dazu.
 //!
 //! Grundsatz: Ersetzt werden nur vorhandene Formulare (`.frmsjf`), neue Formulare nur angelegt (nie
-//! überschrieben), angelegt und gelöscht nur Sperrdateien (`.frmtmp`) – und gelöscht nur, solange sie noch genau
+//! überschrieben), umbenannt nur im selben Ordner und nur ohne Sperrdatei daneben, angelegt und gelöscht nur Sperrdateien (`.frmtmp`) – und gelöscht nur, solange sie noch genau
 //! den Inhalt haben, den diese App geschrieben hat. In der Projektkarte (`sj_prokarte.sdb`) werden nur vorhandene
 //! Einträge geändert, und nur wenn sie noch den Wert haben, von dem die Änderung ausgeht. Die eigenen Angaben der
 //! App zum Projekt (Projektumfang, aktive Antragsfassung) stehen in `formulare.json` im FORMA-Projekt. Dokumente
@@ -29,6 +29,9 @@ pub fn run() {
             qgis_suchen,
             qgis_ausfuehren,
             konfig_basis,
+            konfig_dateien,
+            konfig_schreiben_wenn,
+            ordner_erreichbar,
             ordner_waehlen,
             ordner_zeigen,
             projekt_liste,
@@ -59,6 +62,7 @@ pub fn run() {
             form_create,
             doc_copy,
             doc_rename,
+            form_rename,
             doc_delete,
             process_info,
             prokarte_read,
@@ -240,6 +244,49 @@ mod tests {
         std::fs::write(ordner.join("~$ubeschreibung.docx"), b"x").unwrap();
         std::fs::write(ordner.join("~$BS5.xlsx"), b"x").unwrap();
         assert!(office_offen(&lang) && office_offen(&kurz));
+        std::fs::remove_dir_all(&ordner).unwrap();
+    }
+
+    #[test]
+    fn formular_umbenennen_nur_ohne_sperre_und_ohne_ueberschreiben() {
+        let ordner = std::env::temp_dir().join(format!("formulare-test-umbenennen-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&ordner);
+        std::fs::create_dir_all(&ordner).unwrap();
+        let alt = ordner.join("001-Bauantrag.frmsjf");
+        let neu = ordner.join("002-Bauantrag.frmsjf");
+        std::fs::write(&alt, b"Formular").unwrap();
+        // gesperrt (in FORMA geöffnet): nicht umbenannt, die fremde Sperre bleibt
+        std::fs::write(alt.with_extension("frmtmp"), b"fremd").unwrap();
+        assert!(formular_umbenennen(&alt, &neu, b"eigen").unwrap_err().contains("Sperrdatei"));
+        assert_eq!(std::fs::read(alt.with_extension("frmtmp")).unwrap(), b"fremd");
+        std::fs::remove_file(alt.with_extension("frmtmp")).unwrap();
+        // das Ziel gibt es schon: nicht überschrieben
+        std::fs::write(&neu, b"anderes").unwrap();
+        assert!(formular_umbenennen(&alt, &neu, b"eigen").unwrap_err().contains("gibt es schon"));
+        assert_eq!(std::fs::read(&neu).unwrap(), b"anderes");
+        std::fs::remove_file(&neu).unwrap();
+        // nur Formulare, nur im selben Ordner
+        assert!(formular_umbenennen(&alt, &ordner.join("x.pdf"), b"eigen").is_err());
+        assert!(formular_umbenennen(&alt, &ordner.join("unter").join("x.frmsjf"), b"eigen").is_err());
+        // umbenannt, und die hier angelegte Sperre ist wieder weg
+        formular_umbenennen(&alt, &neu, b"eigen").unwrap();
+        assert!(!alt.exists() && std::fs::read(&neu).unwrap() == b"Formular");
+        assert!(!alt.with_extension("frmtmp").exists() && !neu.with_extension("frmtmp").exists());
+        // die App hat den neuen Namen schon selbst gesperrt (gleicher Inhalt): erlaubt, ihre Sperre bleibt ihr
+        let dritt = ordner.join("003-Bauantrag.frmsjf");
+        std::fs::write(dritt.with_extension("frmtmp"), b"eigen").unwrap();
+        formular_umbenennen(&neu, &dritt, b"eigen").unwrap();
+        assert_eq!(std::fs::read(dritt.with_extension("frmtmp")).unwrap(), b"eigen");
+        // zurück: am alten Namen (jetzt Quelle) liegt die eigene Sperre – wird anerkannt und nicht entfernt
+        formular_umbenennen(&dritt, &neu, b"eigen").unwrap();
+        assert!(neu.is_file() && dritt.with_extension("frmtmp").exists());
+        // eine fremde Sperre am neuen Namen: nicht umbenannt
+        assert!(formular_umbenennen(&neu, &dritt, b"anders").unwrap_err().contains("gibt es schon"));
+        std::fs::remove_file(dritt.with_extension("frmtmp")).unwrap();
+        // nur die Groß-/Kleinschreibung geändert
+        let klein = ordner.join("002-bauantrag.frmsjf");
+        formular_umbenennen(&neu, &klein, b"eigen").unwrap();
+        assert!(std::fs::read_dir(&ordner).unwrap().flatten().any(|e| e.file_name() == "002-bauantrag.frmsjf"));
         std::fs::remove_dir_all(&ordner).unwrap();
     }
 

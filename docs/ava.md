@@ -322,7 +322,8 @@ Sicherheit für Mängelansprüche bei Schlussrechnungen, Nachlass, Skonto), Deck
 Mailvorlagen und Leistungsverzeichnisse (Format neuer LV-Dateien, Dateiname). Gespeichert im gemeinsamen
 Konfigurationsordner (`ava.json`), also für das ganze Büro; „Vorgabe“ setzt nach Rückfrage alles zurück. Esc,
 „Abbrechen“ fragen bei ungespeicherten Änderungen nach; ein Klick neben den Dialog schließt ihn nicht. Die Ebenen
-lassen sich mit ↑/↓ wechseln.
+lassen sich mit ↑/↓ wechseln. Hat ein anderer Rechner die Einstellungen inzwischen gespeichert, überschreibt FABRIO
+sie nicht, sondern meldet es und lädt den neuen Stand.
 
 ## Dateiformate
 
@@ -421,7 +422,8 @@ Schlüssel, die diese Version nicht kennt (etwa aus einer neueren Version eines 
 
 Gemeinsam mit den anderen Apps (`packages/core`): die Excel-Bausteine `dokumente/xml.ts`, `zip.ts`, `xlsx.ts` (von
 PERMIO, der Formular-App, hierher verschoben, mit Zellen mit Typ und dem Nachrechnen `xlsxRechnen.ts`), Projektwahl, Stammdaten,
-Projektdatei, Konfigurationsordner.
+Projektdatei, Konfigurationsordner. Abgeschnittene XML-Dateien (auch GAEB, Excel, Word) führen zum Fehler „XML: unvollständig“
+statt die App einfrieren zu lassen.
 
 Die Tauri-Hülle (`src-tauri/src/befehle.rs`, auch in Arkly eingebunden) ersetzt nur vorhandene Dateien
 der App (`.aslv`, `.asproj`, `.oalv`, `.xlsx`, `.xlsm`, `.pdf`, `.json`) – atomar, nach einer Sicherungskopie
