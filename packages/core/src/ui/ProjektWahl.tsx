@@ -177,7 +177,8 @@ export function ProjektWahl({
     return (
       <div className="pw-ebene">
         <ProjektEinstieg
-          text="Die Projektübersicht mit den Projektordnern und „zuletzt geöffnet“ gibt es in der Desktop-App. Hier lässt sich eine Projektdatei direkt öffnen oder ein neues Projekt beginnen."
+          text="Projektdatei öffnen oder ein neues Projekt beginnen."
+          fussnote="Die Projektübersicht mit den Projektordnern und „zuletzt geöffnet“ gibt es in der Desktop-App."
           onDateiOeffnen={onDateiOeffnen}
           dateiHinweis={dateiHinweis}
           onNeu={onNeu}
@@ -282,10 +283,13 @@ export function ProjektEinstieg({
   dateiHinweis,
   onNeu,
   onSchliessen,
+  fussnote,
   children,
 }: {
   titel?: string;
   text: React.ReactNode;
+  /** Nebensache unter den Knöpfen (z. B. was es nur in der Desktop-App gibt) */
+  fussnote?: React.ReactNode;
   /** Projektübersicht öffnen (Desktop: Projektordner, zuletzt geöffnet) */
   onProjekte?: () => void;
   onStammordner?: () => void;
@@ -324,6 +328,7 @@ export function ProjektEinstieg({
         {onSchliessen && <button onClick={onSchliessen}>Schließen</button>}
       </div>
       {children}
+      {fussnote && <p className="muted small-text pw-fussnote">{fussnote}</p>}
     </div>
   );
 }

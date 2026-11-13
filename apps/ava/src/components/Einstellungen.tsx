@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Modal } from '@core/ui/Dialog';
-import { meldung } from '@core/ui/Rueckfrage';
+import { bestaetigen, meldung } from '@core/ui/Rueckfrage';
 import { ordnerWaehlen } from '@core/platform/projektordner';
 import { openFileWithPath } from '@core/platform/files';
 import { bueroName, KonfigNichtErreichbar, konfigNeuLesen } from '@core/platform/konfig';
@@ -13,6 +13,7 @@ import { EinstellungenKonflikt, VORGABE } from '../einstellungen';
 import { neueId } from '../lv/modell';
 import { useAva } from '../store';
 import { Feld, TextEingabe, ZahlEingabe } from './eingaben';
+import { listenTaste } from './tastatur';
 
 type Ebene = 'ablage' | 'rechnungen' | 'pruefung' | 'deckblatt' | 'scan' | 'mail' | 'lv';
 
@@ -37,7 +38,7 @@ export function EinstellungenModal() {
   const gespeichert = useAva((s) => s.einstellungen);
   const [e, setE] = useState<AvaEinstellungen>(gespeichert);
   const [ebene, setEbene] = useState<Ebene>('ablage');
-  const [probe, setProbe] = useState('K62 R021 Witthaut 251024 AB1.pdf');
+  const [probe, setProbe] = useState('K62 R021 Musterbau 251024 AB1.pdf');
   const schliessen = () => useAva.getState().setEinstellungenOffen(false);
   // Speicherort gewechselt (z. B. in einem anderen Fenster) bzw. Netzlaufwerk weg oder wieder da: der Entwurf stammt vom
   // alten Stand – nicht darüber speichern
@@ -62,18 +63,32 @@ export function EinstellungenModal() {
     }
   };
 
+  /** Abbrechen, Esc: ungespeicherte Änderungen nicht ohne Rückfrage verwerfen */
+  const abbrechen = async () => {
+    if (e !== gespeichert && !(await bestaetigen('Änderungen verwerfen?', 'Die geänderten Einstellungen sind noch nicht gespeichert.', 'Verwerfen', true))) return;
+    schliessen();
+  };
+
   const erkannt = nameErkennen(probe, e.rechnungen.muster, e.rechnungen.arten);
 
   return (
-    <Modal titel="Einstellungen" onClose={schliessen} breit className="ava-einstellungen">
+    <Modal titel="Einstellungen" onClose={() => void abbrechen()} breit klickDaneben={false} className="ava-einstellungen">
       <div className="ava-einst-kopf">
         <h2>Einstellungen</h2>
         <span className="muted small-text">gelten für das ganze Büro (gemeinsamer Konfigurationsordner)</span>
       </div>
       <div className="ava-einst-koerper">
-        <ul className="list ava-einst-ebenen">
-          {EBENEN.map((x) => (
-            <li key={x.id} className={x.id === ebene ? 'active' : ''} onClick={() => setEbene(x.id)}>
+        <ul className="list ava-einst-ebenen" role="tablist" aria-orientation="vertical" aria-label="Bereiche der Einstellungen">
+          {EBENEN.map((x, i) => (
+            <li
+              key={x.id}
+              role="tab"
+              tabIndex={x.id === ebene ? 0 : -1}
+              aria-selected={x.id === ebene}
+              className={x.id === ebene ? 'active' : ''}
+              onClick={() => setEbene(x.id)}
+              onKeyDown={(k) => listenTaste(k, EBENEN, i, (y) => setEbene(y.id))}
+            >
               {x.text}
             </li>
           ))}
@@ -125,7 +140,7 @@ export function EinstellungenModal() {
                 <span className="ava-feld-hinweis">Ein Klick hängt den Platzhalter an das erste Muster an.</span>
               </div>
               <Feld label="Beispiel für neue Dateien" breit>
-                <code>{nameBilden(e.rechnungen.muster[0] ?? '', { kuerzel: 'K62', nr: 53, firma: 'Witthaut', datum: '2026-11-12', art: 'SR', lfd: 4, gewerk: 'G08' })}.pdf</code>
+                <code>{nameBilden(e.rechnungen.muster[0] ?? '', { kuerzel: 'K62', nr: 53, firma: 'Musterbau', datum: '2026-11-12', art: 'SR', lfd: 4, gewerk: 'G08' })}.pdf</code>
               </Feld>
               <Feld label="Erkennen ausprobieren" breit>
                 <input value={probe} onChange={(x) => setProbe(x.target.value)} />
@@ -171,6 +186,9 @@ export function EinstellungenModal() {
               <Feld label="Sicherheitseinbehalt % (Abschläge)">
                 <ZahlEingabe wert={e.pruefung.einbehaltProzent} onChange={(n) => setze('pruefung', { einbehaltProzent: n ?? 0 })} />
               </Feld>
+              <Feld label="Sicherheit für Mängelansprüche % (Schlussrechnung)" hinweis="§ 17 VOB/B; leer = je Rechnung nachfragen (Vorrang hat der Wert im LV)">
+                <ZahlEingabe wert={e.pruefung.sicherheitMaengelProzent} onChange={(n) => setze('pruefung', { sicherheitMaengelProzent: n ?? undefined })} />
+              </Feld>
               <Feld label="Nachlass %">
                 <ZahlEingabe wert={e.pruefung.nachlassProzent} onChange={(n) => setze('pruefung', { nachlassProzent: n ?? 0 })} />
               </Feld>
@@ -203,7 +221,7 @@ export function EinstellungenModal() {
               <Feld label="Schlusstext" breit>
                 <TextEingabe mehrzeilig zeilen={3} wert={e.deckblatt.schlusstext} onChange={(schlusstext) => setze('deckblatt', { schlusstext })} />
               </Feld>
-              <Feld label="Fußzeile ohne Briefbogen" hinweis="Spalten durch Tabulator (|| wird zu Tab), Zeilen durch Zeilenumbruch" breit>
+              <Feld label="Fußzeile ohne Briefbogen" hinweis="Spalten mit || trennen, Zeilen mit Zeilenumbruch" breit>
                 <TextEingabe mehrzeilig zeilen={4} wert={e.deckblatt.fusszeile.replace(/\t/g, ' || ')} onChange={(s) => setze('deckblatt', { fusszeile: s.replace(/\s*\|\|\s*/g, '\t') })} />
               </Feld>
             </div>
@@ -254,11 +272,16 @@ export function EinstellungenModal() {
         </div>
       </div>
       <div className="dialog-buttons">
-        <button onClick={() => setE(VORGABE)} title="Alle Einstellungen auf die Vorgabe zurücksetzen (erst mit „Speichern“ wirksam)">
+        <button
+          onClick={async () => {
+            if (await bestaetigen('Alles auf die Vorgabe?', 'Alle Bereiche der Einstellungen werden auf die Vorgabe zurückgesetzt. Wirksam erst mit „Speichern“.', 'Zurücksetzen', true)) setE(VORGABE);
+          }}
+          title="Alle Einstellungen auf die Vorgabe zurücksetzen (erst mit „Speichern“ wirksam)"
+        >
           Vorgabe
         </button>
         <span className="tb-spacer" />
-        <button onClick={schliessen}>Abbrechen</button>
+        <button onClick={() => void abbrechen()}>Abbrechen</button>
         <button className="primary" onClick={() => void speichern()}>
           Speichern
         </button>
@@ -298,7 +321,18 @@ function MailVorlagen({ vorlagen, onChange }: { vorlagen: MailVorlage[]; onChang
         >
           + Vorlage
         </button>
-        {v && !['rechnung', 'auftrag', 'protokoll'].includes(v.id) && <button onClick={() => (onChange(vorlagen.filter((x) => x.id !== id)), setId(vorlagen[0]?.id ?? ''))}>Entfernen</button>}
+        {v && !['rechnung', 'auftrag', 'protokoll'].includes(v.id) && (
+          <button
+            className="danger"
+            onClick={async () => {
+              if (!(await bestaetigen('Vorlage entfernen?', `Die Mailvorlage „${v.name}“ wird entfernt (wirksam mit „Speichern“).`, 'Entfernen', true))) return;
+              onChange(vorlagen.filter((x) => x.id !== id));
+              setId(vorlagen[0]?.id ?? '');
+            }}
+          >
+            Entfernen
+          </button>
+        )}
       </div>
       {v && (
         <div className="ava-formular">

@@ -216,7 +216,7 @@ export function statusAusGruppe(gruppe: string | undefined): 'akquise' | 'abgesc
   return undefined;
 }
 
-/** Ordnername, der nach einem Projekt aussieht: Kürzel mit Ziffer bzw. in Großbuchstaben, dann ein Name („2026-014 EFH …“, „SIS Sanierung“) */
+/** Ordnername, der nach einem Projekt aussieht: Kürzel mit Ziffer bzw. in Großbuchstaben, dann ein Name („2026-014 EFH …“, „BSP Sanierung“) */
 const PROJEKTNAME = /^(?:\S*\d\S*|[A-ZÄÖÜ][A-ZÄÖÜ0-9]{1,7})[\s_-]+\S/;
 /** Unterordner, wie sie in Projekten stehen: nummeriert („00 Projekt“, „01_Grundlagen“) */
 const NUMMERIERT = /^\d{1,3}(?:[ _.-]|$)/;

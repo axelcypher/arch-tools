@@ -3,7 +3,7 @@ import { sichererName } from '../struktur';
 
 /**
  * Mails im Projektordner richtig benennen: `<Projektcode> von|an <Name> <JJMMTT> <Thema>.msg`, z. B.
- * „SIS von Peitz 261110 Raumaufteilung.msg“. Hier stehen die reinen Regeln – Name prüfen, aus der Nachricht einen
+ * „BSP von Muster 261110 Raumaufteilung.msg“. Hier stehen die reinen Regeln – Name prüfen, aus der Nachricht einen
  * Vorschlag bilden, Name zusammensetzen. Das Datum ist das Empfangs- bzw. Sendedatum aus der Nachricht (nicht das
  * Datum der Datei, das beim Kopieren wechselt).
  */
@@ -55,7 +55,7 @@ export function themaAus(betreff: string, max = 80): string {
 
 const gross = (s: string) => s.replace(/(^|[-\s])(\p{L})/gu, (_, a: string, b: string) => a + b.toUpperCase());
 
-/** Nachname bzw. kurzer Name aus Anzeigename und Adresse: „Peitz, Rüdiger“, „Rüdiger Peitz | Firma“, „ruediger.peitz@…“ → „Peitz“ */
+/** Nachname bzw. kurzer Name aus Anzeigename und Adresse: „Muster, Max“, „Max Muster | Firma“, „max.muster@…“ → „Muster“ */
 export function nachname(anzeige: string, mail = ''): string {
   let n = anzeige
     .split('|')[0]
@@ -86,7 +86,7 @@ export function nachname(anzeige: string, mail = ''): string {
 /** Domain einer Adresse (klein) */
 export const domainVon = (mail: string) => (/@([^@\s>]+)/.exec(mail)?.[1] ?? '').toLowerCase();
 
-/** Gehört die Adresse zum eigenen Büro? `eigene`: Domains („akh-architektur.de“) oder ganze Adressen */
+/** Gehört die Adresse zum eigenen Büro? `eigene`: Domains („architekten-beispiel.example“) oder ganze Adressen */
 export function istEigene(mail: string, eigene: string[]): boolean {
   const m = mail.trim().toLowerCase();
   if (!m || !eigene.length) return false;
@@ -96,7 +96,7 @@ export function istEigene(mail: string, eigene: string[]): boolean {
   });
 }
 
-/** Kopf der weitergeleiteten bzw. zitierten Nachricht im Text: „Von: Peitz, Rüdiger <ruediger.peitz@…>“ */
+/** Kopf der weitergeleiteten bzw. zitierten Nachricht im Text: „Von: Muster, Max <max.muster@…>“ */
 export function weitergeleitetVon(text: string): { name: string; mail: string } | null {
   const m = /^[ \t>*]*(?:Von|From|De)\s*:\s*(.+?)\s*$/im.exec(text);
   if (!m) return null;

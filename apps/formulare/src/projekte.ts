@@ -16,7 +16,7 @@ export interface Projekt {
   root: string;
   /** Name des Projekt-Unterordners, z. B. „BS5“ */
   ordner: string;
-  /** Projekttitel aus sj_office.ini, z. B. „Birkenstraße 5 Welver“ */
+  /** Projekttitel aus sj_office.ini, z. B. „Buchenstraße 5 Welver“ */
   titel: string;
   /** beim Suchen ermittelt (für die Projektübersicht) */
   info?: ProjektInfo;

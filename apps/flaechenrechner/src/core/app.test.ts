@@ -28,25 +28,25 @@ describe('CSV-Export', () => {
 
 describe('Projektdaten in Excel-Vorlagen', () => {
   it('stellt Projektdaten als Platzhalter bereit', () => {
-    const p = createProject('Sanierung EFH Sander');
-    p.meta.adresse = { strasse: 'Deiringser Weg 7a', plz: '59494', ort: 'Soest' };
+    const p = createProject('Sanierung EFH Beispiel');
+    p.meta.adresse = { strasse: 'Lindenweg 7a', plz: '59494', ort: 'Soest' };
     p.meta.grundstueck = { gemarkung: 'Soest', flur: '12', flurstueck: '345/6', flaeche: 612.5 };
     p.meta.bauherr = {
-      name: 'Familie Sander',
+      name: 'Familie Beispiel',
       adresse: { strasse: 'Musterweg 1', plz: '59494', ort: 'Soest' },
       kontakte: [
-        { art: 'email', wert: 'sander@example.org' },
+        { art: 'email', wert: 'beispiel@example.org' },
         { art: 'telefon', wert: '02921 1234' },
         { art: 'telefon', wert: '0170 555' },
       ],
     };
     const s = buildExportContext(p, computeProject(p)).scalars;
-    expect(s['projekt.adresse']).toBe('Deiringser Weg 7a, 59494 Soest');
+    expect(s['projekt.adresse']).toBe('Lindenweg 7a, 59494 Soest');
     expect(s['projekt.plz_ort']).toBe('59494 Soest');
     expect(s['grundstueck.flurtext']).toBe('Gemarkung Soest, Flur 12, Flurstück 345/6');
     expect(s['grundstueck.flaeche']).toBe(612.5);
     expect(s['bauherr.adresse']).toBe('Musterweg 1, 59494 Soest');
-    expect(s['bauherr.email']).toBe('sander@example.org');
+    expect(s['bauherr.email']).toBe('beispiel@example.org');
     expect(s['bauherr.telefon']).toBe('02921 1234, 0170 555');
     // Roundtrip
     expect(parseProject(serializeProject(p)).meta).toEqual(p.meta);

@@ -3,7 +3,7 @@
  * Nachsehen (welche Formulare schon als PDF vorliegen, welche Berechnungen es gibt). Hier wird nichts geschrieben.
  *
  * Zuordnung über das Kürzel: Der FORMA-Projektordner heißt wie das Kürzel („BS5“), der echte Ordner beginnt
- * damit („BS5 Birkenstraße 5“), manchmal mit einem Wort davor („JJ H24 …“). Gesucht wird zwei Ebenen tief,
+ * damit („BS5 Buchenstraße 5“), manchmal mit einem Wort davor („JJ H24 …“). Gesucht wird zwei Ebenen tief,
  * damit auch Projekte in Unterordnern wie der Akquise gefunden werden.
  *
  * Welche Teile eines Projektordners links erscheinen, bestimmt eine Liste von Pfaden („Organisation“,

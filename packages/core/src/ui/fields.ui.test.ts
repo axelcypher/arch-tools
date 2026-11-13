@@ -2,7 +2,7 @@
 import { act, createElement, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, describe, expect, it } from 'vitest';
-import { Field, NumberField, TextField } from './fields';
+import { Field, NumberField, TextField, zahlLesen } from './fields';
 import { Modal } from './Dialog';
 import { email, ordnername, plz } from './pruefen';
 
@@ -144,9 +144,9 @@ describe('Prüfregeln', () => {
     expect(plz('4814')).toBe('PLZ mit fünf Ziffern, z. B. 48143.');
     expect(plz('48143')).toBeNull();
     expect(plz('')).toBeNull();
-    expect(email('anna@mueller.de, kein-mail')).toBe('Keine gültige E-Mail-Adresse: kein-mail');
-    expect(email('anna@mueller, a@b.de')).toBe('Keine gültige E-Mail-Adresse: anna@mueller');
-    expect(email('a@b.de; c@d.org')).toBeNull();
+    expect(email('anna@mueller.example, kein-mail')).toBe('Keine gültige E-Mail-Adresse: kein-mail');
+    expect(email('anna@mueller, a@b.example')).toBe('Keine gültige E-Mail-Adresse: anna@mueller');
+    expect(email('a@b.example; c@d.example')).toBeNull();
     expect(ordnername('EFH Müller/Weg: 3?')).toBe('/ : ? werden im Ordnernamen entfernt.');
     expect(ordnername('EFH Müller')).toBeNull();
   });
@@ -177,5 +177,42 @@ describe('Prüfregeln', () => {
     esc(zahl);
     expect(zu).toBe(2);
     expect(zahl.value).toBe('1,00');
+  });
+
+  it('Zahlenfeld: Tausenderpunkte in der Anzeige, Fokus ändert den Text nicht (Auswahl bleibt), Punkte nach dem Bearbeiten werden gelesen', () => {
+    const aufrufe: (number | undefined)[] = [];
+    const host = render(createElement(NumberField, { value: 45000, onChange: (v: number | undefined) => aufrufe.push(v) }));
+    const input = host.querySelector('input')!;
+    expect(input.value).toBe('45.000,00');
+    act(() => {
+      input.focus();
+      input.select();
+    });
+    expect(input.value).toBe('45.000,00');
+    expect([input.selectionStart, input.selectionEnd]).toEqual([0, input.value.length]);
+    act(() => input.blur());
+    expect(aufrufe).toEqual([]);
+    // eine Ziffer gelöscht: Dreiergruppen stimmen nicht mehr, gemeint ist trotzdem 4.500,00
+    tippen(input, '4.500,00');
+    act(() => input.blur());
+    tippen(input, '4.50,00');
+    act(() => input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })));
+    expect(aufrufe).toEqual([4500, 450]);
+    // Enter verlässt das Feld (Strg+Z und Werkzeugtasten gehören danach wieder der Arbeitsfläche)
+    expect(document.activeElement).not.toBe(input);
+  });
+
+  it('Zahlenfeld ohne Nachkommastellen bleibt ohne Tausenderpunkte (eindeutig beim Bearbeiten)', () => {
+    const host = render(createElement(NumberField, { value: 45000, digits: 0, onChange: () => {} }));
+    expect(host.querySelector('input')!.value).toBe('45000');
+  });
+
+  it('zahlLesen: Punkte vor dem Komma sind Tausendertrenner, auch nach dem Bearbeiten; Einheit und Minus wie parseNum', () => {
+    expect(zahlLesen('1.234,50')).toBe(1234.5);
+    expect(zahlLesen('4.50,00 m²')).toBe(450);
+    expect(zahlLesen('-1.2,5')).toBe(-12.5);
+    expect(zahlLesen('1,2,3')).toBeNull();
+    // ohne Komma gilt parseNum: „45.00“ ist 45 (sichtbar, weil das Feld danach „45,00“ zeigt)
+    expect(zahlLesen('45.00')).toBe(45);
   });
 });

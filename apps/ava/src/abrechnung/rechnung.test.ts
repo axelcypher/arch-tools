@@ -11,21 +11,21 @@ import { neuePruefung, pruefen, VORGABE_PRUEFUNG } from './pruefung';
 
 describe('Benennung der Rechnungen', () => {
   it('erkennt beide Schreibweisen des Büros', () => {
-    expect(nameErkennen('K62 R021 Witthaut 251024 AB1.pdf', VORGABE_MUSTER)).toMatchObject({ kuerzel: 'K62', nr: 21, firma: 'Witthaut', datum: '2025-10-24', art: 'AB', lfd: 1 });
-    expect(nameErkennen('K62_R029_Witthaut_251024_SR1.pdf', VORGABE_MUSTER)).toMatchObject({ nr: 29, art: 'SR', lfd: 1 });
+    expect(nameErkennen('K62 R021 Musterbau 251024 AB1.pdf', VORGABE_MUSTER)).toMatchObject({ kuerzel: 'K62', nr: 21, firma: 'Musterbau', datum: '2025-10-24', art: 'AB', lfd: 1 });
+    expect(nameErkennen('K62_R029_Musterbau_251024_SR1.pdf', VORGABE_MUSTER)).toMatchObject({ nr: 29, art: 'SR', lfd: 1 });
     expect(nameErkennen('HVO 261111 1.AB Fa. Tischer.pdf', VORGABE_MUSTER)).toMatchObject({ kuerzel: 'HVO', datum: '2026-11-11', lfd: 1, art: 'AB', firma: 'Tischer' });
     expect(nameErkennen('Angebot Fenster.pdf', VORGABE_MUSTER)).toBeNull();
   });
 
   it('bildet Dateinamen nach dem Muster und ohne unzulässige Zeichen', () => {
-    const w = { kuerzel: 'K62', nr: 53, firma: 'Witthaut', datum: '2026-11-12', art: 'SR', lfd: 4 };
-    expect(nameBilden(VORGABE_MUSTER[0], w)).toBe('K62 R053 Witthaut 261112 SR4');
+    const w = { kuerzel: 'K62', nr: 53, firma: 'Musterbau', datum: '2026-11-12', art: 'SR', lfd: 4 };
+    expect(nameBilden(VORGABE_MUSTER[0], w)).toBe('K62 R053 Musterbau 261112 SR4');
     expect(nameBilden('{Kürzel} {Datum} {Lfd}.{Art} Fa. {Firma}', { ...w, firma: 'Müller/Söhne' })).toBe('HVO'.length && 'K62 261112 4.SR Fa. Müller Söhne');
     expect(nameLesen(`${nameBilden(VORGABE_MUSTER[0], w)}.pdf`, VORGABE_MUSTER[0])).toMatchObject(w);
     // alte Muster ({Kürzel}, {Datum}) bilden und erkennen dasselbe wie die neuen (Gegenprobe)
     const alt = '{Kürzel} R{Nr:3} {Firma} {Datum} {Art}{Lfd}';
     expect(nameBilden(alt, w)).toBe(nameBilden(VORGABE_MUSTER[0], w));
-    expect(nameLesen('K62 R053 Witthaut 261112 SR4.pdf', alt)).toEqual(nameLesen('K62 R053 Witthaut 261112 SR4.pdf', VORGABE_MUSTER[0]));
+    expect(nameLesen('K62 R053 Musterbau 261112 SR4.pdf', alt)).toEqual(nameLesen('K62 R053 Musterbau 261112 SR4.pdf', VORGABE_MUSTER[0]));
     // weitere globale Variablen: Wert aus der Projektdatei, beim Erkennen beliebiger Text
     expect(nameBilden('{PROJEKT_KUERZEL} {PROJEKT_KURZNAME} {Rechnungsdatum:JJJJ-MM-TT}', w, { PROJEKT_KURZNAME: 'Kita' })).toBe('K62 Kita 2026-11-12');
     expect(nameLesen('K62 Kita 261112 SR4.pdf', '{PROJEKT_KUERZEL} {PROJEKT_KURZNAME} {Rechnungsdatum} {Art}{Lfd}')).toMatchObject({ kuerzel: 'K62', datum: '2026-11-12', art: 'SR', lfd: 4 });
@@ -37,7 +37,7 @@ describe('Rechnungsprüfung', () => {
   it('rechnet wie das Deckblatt des Büros (Abschlag mit Einbehalt, Schluss mit Abzug der Abschläge)', () => {
     const ab = pruefen({ ...neuePruefung(VORGABE_PRUEFUNG), forderungNetto: 26110.22, freigabeNetto: 26110.22 });
     expect(ab).toMatchObject({ zwischen1: 26110.22, mwst: 4960.94, brutto: 31071.16, umlage: 155.36, zwischen2: 30915.8, einbehalt: 3091.58, zwischen3: 27824.22, endsumme: 27824.22, zahlung: 27824.22 });
-    const sr = pruefen({ ...neuePruefung(VORGABE_PRUEFUNG, { schluss: true }), freigabeNetto: 26110.22, bereits: [{ text: 'AB 1', datum: '2025-10-24', betrag: 27824.22 }] });
+    const sr = pruefen({ ...neuePruefung(VORGABE_PRUEFUNG), einbehaltProzent: 0, freigabeNetto: 26110.22, bereits: [{ text: 'AB 1', datum: '2025-10-24', betrag: 27824.22 }] });
     expect(sr).toMatchObject({ einbehalt: 0, endsumme: 30915.8, bereits: 27824.22, zahlung: 3091.58 });
   });
 });
@@ -87,8 +87,8 @@ describe('Mailentwurf', () => {
   });
 
   it('füllt Vorlagen', () => {
-    const w = { PROJEKT_KUERZEL: 'K62', PROJEKT_VORHABEN: 'Neubau', Nr: '53', Firma: 'Witthaut', FirmaMail: 'a@b.de', Rechnungsdatum: '12.11.2026', BEARBEITER: 'TP' };
-    expect(vorlageFuellen('{PROJEKT_KUERZEL} – Rechnung {Nr} {Firma}', w)).toBe('K62 – Rechnung 53 Witthaut');
+    const w = { PROJEKT_KUERZEL: 'K62', PROJEKT_VORHABEN: 'Neubau', Nr: '53', Firma: 'Musterbau', FirmaMail: 'a@b.example', Rechnungsdatum: '12.11.2026', BEARBEITER: 'TP' };
+    expect(vorlageFuellen('{PROJEKT_KUERZEL} – Rechnung {Nr} {Firma}', w)).toBe('K62 – Rechnung 53 Musterbau');
     // gespeicherte Vorlagen mit alten Namen ergeben dasselbe (Gegenprobe)
     expect(vorlageFuellen('{Kürzel} {Projekt} – {Firma-Mail} {Datum} {Bearbeiter}', w)).toBe(vorlageFuellen('{PROJEKT_KUERZEL} {PROJEKT_VORHABEN} – {FirmaMail} {Rechnungsdatum} {BEARBEITER}', w));
     expect(vorlageFuellen('{Kürzel} {Datum}', w)).toBe('K62 12.11.2026');
