@@ -22,6 +22,8 @@ import { achsBeschraenkt, achsRechteck, achsRichtungen, eckpunktHilfslinien, geb
 import type { OutlineShape, Shape, Storey } from '@core/model';
 import { createOutline, createRoom, shapeArea } from '@core/model';
 import { nutzungInfo, raumNutzung } from '@core/norms';
+import { planFuellungDunkel } from '@core/planFarbe';
+import { useZeichenflaecheGefiltert } from '@core/platform/theme';
 import { bgScale, bgWorldBounds, ohneKontrollmass, scaleAround, vectorSegmentGrid } from '../core/background';
 import { detectOutline, detectRegion } from '@core/detect';
 import { SegmentGrid } from '@core/spatial';
@@ -80,6 +82,8 @@ type Drag =
 
 const VERTEX_SNAP_PX = 10;
 const HINWEIS_KEY = 'arch-flaechen-tool:hinweise-zu';
+/** Deckung der Raumfüllung (Nutzungsfarbe) auf der Zeichenfläche */
+const RAUM_DECKUNG = 0.45;
 const EDGE_SNAP_PX = 7;
 const GUIDE_SNAP_PX = 8;
 /** Mausweg in px, ab dem ein Klick als Ziehen gilt: Flächen verschieben erst ab 6 px (kein Verrutschen beim Wählen) */
@@ -1019,6 +1023,18 @@ export function Canvas() {
     return m;
   }, [storey.shapes, view.showRooms]);
 
+  // dunkle Zeichenfläche (Filter): Raumfüllung vorgerechnet, damit sie im Ton der Farbmarke in der Liste erscheint
+  const gefiltert = useZeichenflaecheGefiltert();
+  const raumFuellung = useMemo(() => {
+    const cache = new Map<string, { farbe: string; deckung: number }>();
+    return (farbe: string) => {
+      if (!gefiltert) return { farbe, deckung: RAUM_DECKUNG };
+      let f = cache.get(farbe);
+      if (!f) cache.set(farbe, (f = planFuellungDunkel(farbe, RAUM_DECKUNG)));
+      return f;
+    };
+  }, [gefiltert]);
+
   const shapeStyle = (s: Shape): React.SVGProps<SVGPathElement> => {
     const isSel = selectedIds.includes(s.id);
     if (s.subtract) {
@@ -1033,10 +1049,10 @@ export function Canvas() {
         strokeDasharray: s.pruefen && !isSel ? '7 4' : undefined,
       };
     }
-    const c = nutzungInfo(raumNutzung(s)).color;
+    const f = raumFuellung(nutzungInfo(raumNutzung(s)).color);
     return {
-      fill: c,
-      fillOpacity: 0.45,
+      fill: f.farbe,
+      fillOpacity: f.deckung,
       stroke: isSel ? 'var(--sel)' : '#444',
       strokeWidth: isSel ? 2.5 : 1,
       strokeDasharray: s.umschliessung === 'S' ? '5 3' : undefined,

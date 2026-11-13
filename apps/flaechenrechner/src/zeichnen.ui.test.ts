@@ -2,10 +2,13 @@
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { createOutline, createProject } from '@core/model';
+import { createOutline, createProject, createRoom } from '@core/model';
 import { rectPoints } from '@core/geometry';
 import { ablageLeeren, flaechenLoeschen, rueckgaengig, useEditor } from './store/store';
 import { App } from './App';
+import { nutzungInfo } from '@core/norms';
+import { planFuellungDunkel } from '@core/planFarbe';
+import { useTheme } from '@core/platform/theme';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -286,5 +289,28 @@ describe('QUADRIO: Kontextmenü der Zeichenfläche und Werkzeugleiste (gemeinsam
     expect(leiste.textContent).not.toMatch(/[⬉⬠▭⊡↔⇔↶↷📏]/);
     expect(leiste.querySelectorAll('svg.symbol').length).toBeGreaterThanOrEqual(12);
     for (const name of ['Rückgängig', 'Wiederholen', 'Neu', 'Öffnen …', 'Speichern']) expect(leiste.querySelector(`button[aria-label="${name}"]`)).not.toBeNull();
+  });
+});
+
+describe('QUADRIO: Raumfüllung auf der dunklen Zeichenfläche', () => {
+  afterEach(() => act(() => useTheme.setState({ theme: 'hell', canvasDunkel: true })));
+
+  it('gefiltert (dunkles Schema, Zeichenfläche abgedunkelt): Füllung vorgerechnet; hell bzw. ohne Filter die Nutzungsfarbe', () => {
+    const p = createProject('Haus');
+    p.storeys[0].shapes.push(createRoom(rectPoints({ x: 0, y: 0 }, { x: 4, y: 4 }), '0.01', 'Wohnen'));
+    useEditor.getState().loadProject(p, p, 'Haus.oap');
+    const marke = nutzungInfo('NUF1').color;
+    const host = render();
+    const raum = () => host.querySelector<SVGPathElement>('svg.canvas path[fill-rule="evenodd"]')!;
+    expect(raum().getAttribute('fill')).toBe(marke);
+    expect(raum().getAttribute('fill-opacity')).toBe('0.45');
+    act(() => useTheme.setState({ theme: 'dunkel', canvasDunkel: true }));
+    const dunkel = planFuellungDunkel(marke, 0.45);
+    expect(raum().getAttribute('fill')).toBe(dunkel.farbe);
+    expect(raum().getAttribute('fill-opacity')).toBe(String(dunkel.deckung));
+    expect(dunkel.farbe).not.toBe(marke);
+    // Gegenprobe: dunkles Schema, aber Zeichenfläche hell gelassen – kein Filter, also die Nutzungsfarbe
+    act(() => useTheme.setState({ theme: 'dunkel', canvasDunkel: false }));
+    expect(raum().getAttribute('fill')).toBe(marke);
   });
 });
