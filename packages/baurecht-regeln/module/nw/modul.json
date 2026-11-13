@@ -1235,9 +1235,6 @@
           "$": "nutzungsaenderung"
         },
         {
-          "$": "gebaeude"
-        },
-        {
           "oder": [
             {
               "$": "wohngebaeude"

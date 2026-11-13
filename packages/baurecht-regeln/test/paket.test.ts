@@ -345,6 +345,28 @@ describe('Fragen und Regeln', () => {
     for (const id of ['nw/bauo-nrw/34', 'nw/bauo-nrw/36']) expect(mitWohnung.paragrafen.find((x) => x.id === id)!.ampel, id).toBe('gruen');
   });
 
+  it('Runde 17: § 47 Abs. 6 – Gebäudeart offen mit Wohnung und Umnutzung „ja“ (Fall X10): kein gelb ohne Wirkung; Wohnungen nur als Hinweis (X15)', () => {
+    const { Gebäudeart: _weg, ...ohneArt } = { Vorhaben: 'Nutzungsänderung', Gebäudeart: '', Gebäudeklasse: '3', Planungsrecht: 'Innenbereich', Verfahren: 'vereinfachtes Verfahren', Sonderbau: 'nein' };
+    void _weg;
+    const x10 = lauf(SOEST, ohneArt, { ...grund(), 'gebaeude.wohnungen': 2, 'gebaeude.nutzungseinheiten': 3, 'nw.umnutzung_wohnraum': true });
+    for (const id of ['nw/bauo-nrw/29', 'nw/bauo-nrw/34', 'nw/bauo-nrw/36']) {
+      const p = x10.paragrafen.find((x) => x.id === id)!;
+      expect(p.ampel, id).toBe('gruen');
+      expect(p.offen, id).not.toContain('merkmal:Gebäudeart');
+    }
+    // X15: Nichtwohngebäude, „keine Wohnung“ nur als Hinweis – die Ausnahme ist nicht gesichert ausgeschlossen
+    const m = { Vorhaben: 'Nutzungsänderung', Gebäudeart: 'Nichtwohngebäude', Gebäudeklasse: '3', Planungsrecht: 'Innenbereich', Verfahren: 'vereinfachtes Verfahren', Sonderbau: 'nein' };
+    // (die Umnutzung unbeantwortet – „nein“ schlösse die Ausnahme gesichert aus)
+    const ohneUmnutzung = Object.fromEntries(Object.entries(grund()).filter(([k]) => k !== 'nw.umnutzung_wohnraum').map(([k, v]) => [k, sicher(v as FaktWert['wert'])]));
+    const x15 = auswerten(eingabe(m, { ...ohneUmnutzung, 'gebaeude.wohnungen': { wert: 0, herkunft: 'flaechen', sicherheit: 'hinweis' }, 'gebaeude.nutzungseinheiten': sicher(3) }, TEXTE));
+    const p34 = x15.paragrafen.find((x) => x.id === 'nw/bauo-nrw/34')!;
+    expect(p34.ampel).toBe('rot');
+    expect(p34.hinweise.join(' ')).toMatch(/Ausnahme nicht gesichert ausgeschlossen – nur Hinweis: .*Wohnungen/);
+    // gesichert keine Wohnung: kein solcher Hinweis
+    const gesichert = auswerten(eingabe(m, { ...ohneUmnutzung, 'gebaeude.wohnungen': sicher(0), 'gebaeude.nutzungseinheiten': sicher(3) }, TEXTE));
+    expect(gesichert.paragrafen.find((x) => x.id === 'nw/bauo-nrw/34')!.hinweise.join(' ')).not.toMatch(/Ausnahme nicht gesichert/);
+  });
+
   it('eine Angabe, deren Frage nicht gestellt wird, ändert keinen Paragrafen und steht nicht unter „klärt am meisten“', { timeout: 600000 }, () => {
     const fehler = new Set<string>();
     const melde = (t: string) => {

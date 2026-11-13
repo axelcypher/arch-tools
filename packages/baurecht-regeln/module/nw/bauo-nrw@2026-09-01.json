@@ -30,7 +30,7 @@
         "4/2": "fa82acd5"
       },
       "pruefen": {
-        "grund": "Nutzungsänderung: Zufahrt, Erreichbarkeit für die Feuerwehr und Löschwasser müssen für die neue Nutzung gesichert sein (§ 60 Abs. 1); die Bauaufsicht prüft § 4 auch im vereinfachten Verfahren (§ 64 Abs. 1 Nr. 1 b).",
+        "grund": "Nutzungsänderung: Zufahrt, Erreichbarkeit für die Feuerwehr und Löschwasser müssen für die neue Nutzung gesichert sein – auch bei verfahrensfreier oder freigestellter Nutzungsänderung (§ 60 Abs. 2); die Bauaufsicht prüft § 4 auch im vereinfachten Verfahren (§ 64 Abs. 1 Nr. 1 b).",
         "wenn": {
           "und": [
             {
@@ -65,7 +65,7 @@
         "5/2": "719ce238"
       },
       "pruefen": {
-        "grund": "Bei Nutzungsänderung gelten die Anforderungen für die neue Nutzung (die Nutzungsänderung ist nach § 60 Abs. 1 genehmigungsbedürftig, der Bestandsschutz deckt sie nicht).",
+        "grund": "Bei Nutzungsänderung gelten die Anforderungen für die neue Nutzung – der Bestandsschutz deckt nur die bisherige Nutzung, auch bei verfahrensfreier oder freigestellter Nutzungsänderung (§ 60 Abs. 2).",
         "wenn": {
           "$": "nutzungsaenderung"
         }
@@ -144,7 +144,7 @@
         "8/3": "0ce27438"
       },
       "pruefen": {
-        "grund": "Bei Anlagen, die keine Gebäude sind (z. B. Stellplatzanlage, Mast): Abs. 1 gilt für bebaute Grundstücke, auch mit vergleichbaren baulichen Anlagen; Veränderungen der Geländeoberfläche nur ohne Nachteile für Nachbarn und Ortsbild (Abs. 3). Bei Nutzungsänderung gelten die Anforderungen für die neue Nutzung (die Nutzungsänderung ist nach § 60 Abs. 1 genehmigungsbedürftig, der Bestandsschutz deckt sie nicht).",
+        "grund": "Bei Anlagen, die keine Gebäude sind (z. B. Stellplatzanlage, Mast): Abs. 1 gilt für bebaute Grundstücke, auch mit vergleichbaren baulichen Anlagen; Veränderungen der Geländeoberfläche nur ohne Nachteile für Nachbarn und Ortsbild (Abs. 3). Bei Nutzungsänderung gelten die Anforderungen für die neue Nutzung – der Bestandsschutz deckt nur die bisherige Nutzung, auch bei verfahrensfreier oder freigestellter Nutzungsänderung (§ 60 Abs. 2).",
         "wenn": {
           "oder": [
             {
@@ -333,7 +333,7 @@
         "Nachweise über Wärme- und Schallschutz (§ 68 BauO NRW, § 12 BauPrüfVO) – im vereinfachten Verfahren nicht geprüft, aber einzuhalten"
       ],
       "pruefen": {
-        "grund": "Bei Anlagen, die keine Gebäude sind: Geräusche und Erschütterungen ortsfester Einrichtungen in baulichen Anlagen oder auf Baugrundstücken sind zu dämmen (Abs. 2 Satz 2, Abs. 3). Bei Nutzungsänderung gelten die Anforderungen für die neue Nutzung (die Nutzungsänderung ist nach § 60 Abs. 1 genehmigungsbedürftig, der Bestandsschutz deckt sie nicht). Bei der Umnutzung oder Änderung von Nutzungseinheiten mit Aufenthaltsräumen in bestehenden Gebäuden zu Wohnraum gilt § 15 nicht für bestehende Bauteile (§ 47 Abs. 6 Satz 1).",
+        "grund": "Bei Anlagen, die keine Gebäude sind: Geräusche und Erschütterungen ortsfester Einrichtungen in baulichen Anlagen oder auf Baugrundstücken sind zu dämmen (Abs. 2 Satz 2, Abs. 3). Bei Nutzungsänderung gelten die Anforderungen für die neue Nutzung – der Bestandsschutz deckt nur die bisherige Nutzung, auch bei verfahrensfreier oder freigestellter Nutzungsänderung (§ 60 Abs. 2). Bei der Umnutzung oder Änderung von Nutzungseinheiten mit Aufenthaltsräumen in bestehenden Gebäuden zu Wohnraum gilt § 15 nicht für bestehende Bauteile (§ 47 Abs. 6 Satz 1).",
         "wenn": {
           "oder": [
             {
@@ -371,7 +371,7 @@
         "26/2": "1de64c20"
       },
       "pruefen": {
-        "grund": "Bei Anlagen, die keine Gebäude sind: Die Anforderungen an das Brandverhalten der Baustoffe gelten für alle baulichen Anlagen (Abs. 1). Bei Nutzungsänderung gelten die Anforderungen für die neue Nutzung (die Nutzungsänderung ist nach § 60 Abs. 1 genehmigungsbedürftig, der Bestandsschutz deckt sie nicht).",
+        "grund": "Bei Anlagen, die keine Gebäude sind: Die Anforderungen an das Brandverhalten der Baustoffe gelten für alle baulichen Anlagen (Abs. 1). Bei Nutzungsänderung gelten die Anforderungen für die neue Nutzung – der Bestandsschutz deckt nur die bisherige Nutzung, auch bei verfahrensfreier oder freigestellter Nutzungsänderung (§ 60 Abs. 2).",
         "wenn": {
           "oder": [
             {
@@ -390,7 +390,7 @@
         "$": "nw_vorhaben_gebaeude"
       },
       "pruefen": {
-        "grund": "Bei Nutzungsänderung gelten die Anforderungen für die neue Nutzung (die Nutzungsänderung ist nach § 60 Abs. 1 genehmigungsbedürftig, der Bestandsschutz deckt sie nicht). Bei der Umnutzung oder Änderung von Nutzungseinheiten mit Aufenthaltsräumen in bestehenden Gebäuden zu Wohnraum gilt § 27 nicht für bestehende Bauteile (§ 47 Abs. 6 Satz 1).",
+        "grund": "Bei Nutzungsänderung gelten die Anforderungen für die neue Nutzung – der Bestandsschutz deckt nur die bisherige Nutzung, auch bei verfahrensfreier oder freigestellter Nutzungsänderung (§ 60 Abs. 2). Bei der Umnutzung oder Änderung von Nutzungseinheiten mit Aufenthaltsräumen in bestehenden Gebäuden zu Wohnraum gilt § 27 nicht für bestehende Bauteile (§ 47 Abs. 6 Satz 1).",
         "wenn": {
           "und": [
             {
@@ -435,7 +435,7 @@
         "28/5": "7f52f70d"
       },
       "pruefen": {
-        "grund": "Bei Nutzungsänderung gelten die Anforderungen für die neue Nutzung (die Nutzungsänderung ist nach § 60 Abs. 1 genehmigungsbedürftig, der Bestandsschutz deckt sie nicht). Bei der Umnutzung oder Änderung von Nutzungseinheiten mit Aufenthaltsräumen in bestehenden Gebäuden zu Wohnraum gilt § 28 nicht für bestehende Bauteile (§ 47 Abs. 6 Satz 1).",
+        "grund": "Bei Nutzungsänderung gelten die Anforderungen für die neue Nutzung – der Bestandsschutz deckt nur die bisherige Nutzung, auch bei verfahrensfreier oder freigestellter Nutzungsänderung (§ 60 Abs. 2). Bei der Umnutzung oder Änderung von Nutzungseinheiten mit Aufenthaltsräumen in bestehenden Gebäuden zu Wohnraum gilt § 28 nicht für bestehende Bauteile (§ 47 Abs. 6 Satz 1).",
         "wenn": {
           "und": [
             {
@@ -569,7 +569,7 @@
         ]
       },
       "pruefen": {
-        "grund": "Innere Brandwände bei ausgedehnten Gebäuden (höchstens 40 m Abstand), bei aneinandergereihten Gebäuden auf demselben Grundstück und bei landwirtschaftlich genutzten Gebäuden (Abs. 2 Nr. 2–4). Bei Nutzungsänderung gelten die Anforderungen für die neue Nutzung (die Nutzungsänderung ist nach § 60 Abs. 1 genehmigungsbedürftig, der Bestandsschutz deckt sie nicht). Bei der Umnutzung oder Änderung von Nutzungseinheiten mit Aufenthaltsräumen in bestehenden Gebäuden zu Wohnraum gilt § 30 nicht für bestehende Bauteile (§ 47 Abs. 6 Satz 1).",
+        "grund": "Innere Brandwände bei ausgedehnten Gebäuden (höchstens 40 m Abstand), bei aneinandergereihten Gebäuden auf demselben Grundstück und bei landwirtschaftlich genutzten Gebäuden (Abs. 2 Nr. 2–4). Bei Nutzungsänderung gelten die Anforderungen für die neue Nutzung – der Bestandsschutz deckt nur die bisherige Nutzung, auch bei verfahrensfreier oder freigestellter Nutzungsänderung (§ 60 Abs. 2). Bei der Umnutzung oder Änderung von Nutzungseinheiten mit Aufenthaltsräumen in bestehenden Gebäuden zu Wohnraum gilt § 30 nicht für bestehende Bauteile (§ 47 Abs. 6 Satz 1).",
         "wenn": {
           "und": [
             {
@@ -631,7 +631,7 @@
         "$": "nw_vorhaben_gebaeude"
       },
       "pruefen": {
-        "grund": "Bei Nutzungsänderung gelten die Anforderungen für die neue Nutzung (die Nutzungsänderung ist nach § 60 Abs. 1 genehmigungsbedürftig, der Bestandsschutz deckt sie nicht). Bei der Umnutzung oder Änderung von Nutzungseinheiten mit Aufenthaltsräumen in bestehenden Gebäuden zu Wohnraum gilt § 31 nicht für bestehende Bauteile (§ 47 Abs. 6 Satz 1).",
+        "grund": "Bei Nutzungsänderung gelten die Anforderungen für die neue Nutzung – der Bestandsschutz deckt nur die bisherige Nutzung, auch bei verfahrensfreier oder freigestellter Nutzungsänderung (§ 60 Abs. 2). Bei der Umnutzung oder Änderung von Nutzungseinheiten mit Aufenthaltsräumen in bestehenden Gebäuden zu Wohnraum gilt § 31 nicht für bestehende Bauteile (§ 47 Abs. 6 Satz 1).",
         "wenn": {
           "und": [
             {
@@ -677,7 +677,7 @@
         "32/2": "b9b4ab76"
       },
       "pruefen": {
-        "grund": "Bei Nutzungsänderung gelten die Anforderungen für die neue Nutzung (die Nutzungsänderung ist nach § 60 Abs. 1 genehmigungsbedürftig, der Bestandsschutz deckt sie nicht). Bei der Umnutzung oder Änderung von Nutzungseinheiten mit Aufenthaltsräumen in bestehenden Gebäuden zu Wohnraum gilt § 32 nicht für bestehende Bauteile (§ 47 Abs. 6 Satz 1).",
+        "grund": "Bei Nutzungsänderung gelten die Anforderungen für die neue Nutzung – der Bestandsschutz deckt nur die bisherige Nutzung, auch bei verfahrensfreier oder freigestellter Nutzungsänderung (§ 60 Abs. 2). Bei der Umnutzung oder Änderung von Nutzungseinheiten mit Aufenthaltsräumen in bestehenden Gebäuden zu Wohnraum gilt § 32 nicht für bestehende Bauteile (§ 47 Abs. 6 Satz 1).",
         "wenn": {
           "und": [
             {
@@ -744,7 +744,7 @@
         "34/3": "8db43907"
       },
       "pruefen": {
-        "grund": "Bei Nutzungsänderung gelten die Anforderungen für die neue Nutzung (die Nutzungsänderung ist nach § 60 Abs. 1 genehmigungsbedürftig, der Bestandsschutz deckt sie nicht). Werden Nutzungseinheiten mit Aufenthaltsräumen in bestehenden Gebäuden zu Wohnraum umgenutzt, ist § 34 nicht anzuwenden (§ 47 Abs. 6 Satz 2).",
+        "grund": "Bei Nutzungsänderung gelten die Anforderungen für die neue Nutzung – der Bestandsschutz deckt nur die bisherige Nutzung, auch bei verfahrensfreier oder freigestellter Nutzungsänderung (§ 60 Abs. 2). Werden Nutzungseinheiten mit Aufenthaltsräumen in bestehenden Gebäuden zu Wohnraum umgenutzt, ist § 34 nicht anzuwenden (§ 47 Abs. 6 Satz 2).",
         "wenn": {
           "und": [
             {
@@ -777,7 +777,7 @@
       "entfaellt": {
         "$": "gk_1_2"
       },
-      "grund": "Notwendige Treppen liegen in einem eigenen, durchgehenden Treppenraum (ab Gebäudeklasse 3).",
+      "grund": "Notwendige Treppen liegen in einem eigenen, durchgehenden Treppenraum (Abs. 1, ab Gebäudeklasse 3); von jeder Stelle eines Aufenthaltsraums ist ein notwendiger Treppenraum oder ein Ausgang ins Freie in höchstens 35 m erreichbar (Abs. 2).",
       "fundstellen": [
         "35/1"
       ],
@@ -788,7 +788,7 @@
         "35/1": "5ae5000b"
       },
       "pruefen": {
-        "grund": "Bei Nutzungsänderung gelten die Anforderungen für die neue Nutzung (die Nutzungsänderung ist nach § 60 Abs. 1 genehmigungsbedürftig, der Bestandsschutz deckt sie nicht). Bei der Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen in bestehenden Gebäuden zu Wohnraum sind Abs. 1 und 3 bis 8 nicht anzuwenden (§ 47 Abs. 6 Satz 2) – es bleibt Abs. 2 (Ausgang in einen notwendigen Treppenraum oder ins Freie in höchstens 35 m).",
+        "grund": "Bei Nutzungsänderung gelten die Anforderungen für die neue Nutzung – der Bestandsschutz deckt nur die bisherige Nutzung, auch bei verfahrensfreier oder freigestellter Nutzungsänderung (§ 60 Abs. 2). Bei der Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen in bestehenden Gebäuden zu Wohnraum sind Abs. 1 und 3 bis 8 nicht anzuwenden (§ 47 Abs. 6 Satz 2) – es bleibt Abs. 2 (Ausgang in einen notwendigen Treppenraum oder ins Freie in höchstens 35 m).",
         "wenn": {
           "und": [
             {
@@ -842,7 +842,7 @@
         "36/2": "e58d63fe"
       },
       "pruefen": {
-        "grund": "Bei Nutzungsänderung gelten die Anforderungen für die neue Nutzung (die Nutzungsänderung ist nach § 60 Abs. 1 genehmigungsbedürftig, der Bestandsschutz deckt sie nicht); werden Nutzungseinheiten mit Aufenthaltsräumen in bestehenden Gebäuden zu Wohnraum umgenutzt, ist § 36 nicht anzuwenden (§ 47 Abs. 6 Satz 2). Bei sonstigen Gebäuden der Gebäudeklassen 1 und 2 (auch gemischt genutzten) sind notwendige Flure nur in Kellergeschossen erforderlich (Abs. 1 Satz 2 Nr. 2).",
+        "grund": "Bei Nutzungsänderung gelten die Anforderungen für die neue Nutzung – der Bestandsschutz deckt nur die bisherige Nutzung, auch bei verfahrensfreier oder freigestellter Nutzungsänderung (§ 60 Abs. 2); werden Nutzungseinheiten mit Aufenthaltsräumen in bestehenden Gebäuden zu Wohnraum umgenutzt, ist § 36 nicht anzuwenden (§ 47 Abs. 6 Satz 2). Bei sonstigen Gebäuden der Gebäudeklassen 1 und 2 (auch gemischt genutzten) sind notwendige Flure nur in Kellergeschossen erforderlich (Abs. 1 Satz 2 Nr. 2).",
         "wenn": {
           "und": [
             {
@@ -930,7 +930,7 @@
         "37/5": "21c9ba67"
       },
       "pruefen": {
-        "grund": "Bei Nutzungsänderung gelten die Anforderungen für die neue Nutzung (die Nutzungsänderung ist nach § 60 Abs. 1 genehmigungsbedürftig, der Bestandsschutz deckt sie nicht).",
+        "grund": "Bei Nutzungsänderung gelten die Anforderungen für die neue Nutzung – der Bestandsschutz deckt nur die bisherige Nutzung, auch bei verfahrensfreier oder freigestellter Nutzungsänderung (§ 60 Abs. 2).",
         "wenn": {
           "und": [
             {
@@ -959,7 +959,7 @@
         "38/1": "96b40213"
       },
       "pruefen": {
-        "grund": "Bei Anlagen, die keine Gebäude sind (z. B. Tribüne, Stützmauer, Rampe): begehbare Flächen an tiefer liegenden Flächen sind zu umwehren. Bei Nutzungsänderung gelten die Anforderungen für die neue Nutzung (die Nutzungsänderung ist nach § 60 Abs. 1 genehmigungsbedürftig, der Bestandsschutz deckt sie nicht).",
+        "grund": "Bei Anlagen, die keine Gebäude sind (z. B. Tribüne, Stützmauer, Rampe): begehbare Flächen an tiefer liegenden Flächen sind zu umwehren. Bei Nutzungsänderung gelten die Anforderungen für die neue Nutzung – der Bestandsschutz deckt nur die bisherige Nutzung, auch bei verfahrensfreier oder freigestellter Nutzungsänderung (§ 60 Abs. 2).",
         "wenn": {
           "oder": [
             {
@@ -1081,7 +1081,7 @@
         "$": "nw_prueft_brandschutz"
       },
       "pruefen": {
-        "grund": "Bei Nutzungsänderung gelten die Anforderungen für die neue Nutzung (die Nutzungsänderung ist nach § 60 Abs. 1 genehmigungsbedürftig, der Bestandsschutz deckt sie nicht).",
+        "grund": "Bei Nutzungsänderung gelten die Anforderungen für die neue Nutzung – der Bestandsschutz deckt nur die bisherige Nutzung, auch bei verfahrensfreier oder freigestellter Nutzungsänderung (§ 60 Abs. 2).",
         "wenn": {
           "und": [
             {

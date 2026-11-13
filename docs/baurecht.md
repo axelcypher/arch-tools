@@ -79,6 +79,8 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   Wirkung)“). Hängt ein Paragraf an einem anderen, der nur „gilt, Ausnahme möglich“ ist, und entfiele er mit dessen Ausnahme, nennt er sie („Ausnahme möglich über § 14 BNatSchG – es
   fehlt dort: …“); die Ampel bleibt „gilt“. Unter „Ausnahme möglich – es fehlt“ stehen nur Fragen, die gerade gestellt
   werden (ohne Ausweichen auf nicht gestellte: eine Ausnahme, deren Fragen nicht gestellt sind, wird nicht angeboten).
+  Ist die Ausnahme nur über Hinweise bzw. widersprüchliche Angaben ausgeschlossen, steht „Ausnahme nicht gesichert
+  ausgeschlossen – nur Hinweis: …“ dabei (die Ampel bleibt „gilt“).
   Einzelfall einer Regel (`pruefen.wenn`): liegt er vor, wird Grün zu „Einzelfall: …“; ist offen, ob er vorliegt,
   heißt es „Einzelfall möglich – es fehlt: …“ (die Angaben stehen unter „es fehlt“ und zählen für „klärt am meisten“ –
   als eigenes Ergebnis neben rot/grün, eine Angabe, deren Antwort am Einzelfall nichts ändert, klärt nichts); beruht
@@ -327,8 +329,10 @@ gestellt waren (eine weggelassene Antwort führt nur zu „offen“); Antworten 
 Bauaufsicht ist („Gemeinde ist selbst Bauaufsicht“: im Kreis Soest Lippstadt, Soest, Warstein, Werl; in NRW die
 kreisfreien Städte und Aachen nach Gemeindeschlüssel; sonst offen – „gilt, Ausnahme möglich“). § 47 Abs. 6 BauO NRW
 (Fassung ab 01.09.2026): Bei einer Nutzungsänderung zu Wohnraum wird gefragt, ob Nutzungseinheiten mit Aufenthaltsräumen
-in einem bestehenden Gebäude umgenutzt werden (Baustein `nw_umnutzung_wohnraum`: Nutzungsänderung an einem Gebäude,
-das Wohngebäude ist oder mindestens eine Wohnung hat – bei einem Nichtwohngebäude ohne Wohnung wird nicht gefragt); dann entfallen §§ 29, 34 und 36, § 35 gilt nur noch mit Abs. 2 (Hinweis),
+in einem bestehenden Gebäude umgenutzt werden (gefragt bei einer Nutzungsänderung an einem Gebäude, das Wohngebäude
+ist oder mindestens eine Wohnung hat – bei einem Nichtwohngebäude ohne Wohnung nicht; der Baustein
+`nw_umnutzung_wohnraum` verlangt nur Nutzungsänderung, Wohngebäude bzw. Wohnung und „ja“, so bleibt eine offene
+Gebäudeart ohne Wirkung); dann entfallen §§ 29, 34 und 36, § 35 gilt nur noch mit Abs. 2 (Hinweis),
 §§ 6, 15, 27, 28, 30 bis 32 gelten mit dem Hinweis „nicht für bestehende Bauteile“. Die Entwässerungssatzung Soest § 9
 bleibt ohne neue Entwässerung ein Einzelfall, wo Niederschlagswasser anfällt (Dach eines Gebäudes ohne Aufenthaltsräume,
 befestigte Fläche einer Anlage ohne Gebäude – Stellplätze bzw. Garagen auf dem Grundstück oder sonst eine neue
