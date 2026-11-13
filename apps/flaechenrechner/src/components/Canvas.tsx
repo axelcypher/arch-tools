@@ -1,3 +1,4 @@
+import { Symbol } from '@core/ui/Symbol';
 import { zeichenKuerzelErlaubt } from '@core/platform/eingabe';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { Point } from '@core/geometry';
@@ -1402,7 +1403,7 @@ export function Canvas() {
         {numBuf && <span className="hud-input">Eingabe: {numBuf}▏</span>}
         <div className="hud-zeile">
           {hinweisZu || !hint ? (
-            <button className="hud-hint-knopf" onClick={() => (hint ? hinweisUmschalten(false) : setKuerzelOffen(true))} title={hint ? 'Bedienhinweise einblenden' : 'Tastenkürzel anzeigen (?)'}>
+            <button className="hud-hint-knopf" onClick={() => (hint ? hinweisUmschalten(false) : setKuerzelOffen(true))} title={hint ? 'Bedienhinweise einblenden' : 'Tastenkürzel anzeigen … (?)'}>
               {hint ? '? Hinweise' : '? Tastenkürzel …'}
             </button>
           ) : (
@@ -1412,7 +1413,7 @@ export function Canvas() {
                 ?
               </button>
               <button className="hud-hint-knopf" onClick={() => hinweisUmschalten(true)} title="Bedienhinweise ausblenden (bleibt so)" aria-label="Bedienhinweise ausblenden">
-                ×
+                <Symbol name="schliessen" />
               </button>
             </span>
           )}

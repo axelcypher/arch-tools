@@ -155,3 +155,33 @@ describe('QUADRIO: ungespeicherte Änderungen am Knopf „Speichern“ (Designsy
     expect(host.querySelector('.tb-dirty')).toBeNull();
   });
 });
+
+describe('QUADRIO: Befehle, die einen Dialog öffnen, enden auf „ …“ (Begriffe)', () => {
+  const knopf = (host: HTMLElement, text: string) => [...host.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent?.trim() === text);
+
+  it('„Duplizieren …“ und „+ Neu …“ beim Geschoss öffnen einen Dialog; „Tastenkürzel …“ öffnet die Kürzelübersicht', async () => {
+    const { rectPoints } = await import('@core/geometry');
+    const { createOutline } = await import('@core/model');
+    const p = createProject('Haus');
+    p.storeys[0].shapes.push(createOutline(rectPoints({ x: 0, y: 0 }, { x: 5, y: 4 })));
+    useEditor.getState().loadProject(p, p, 'Haus.oap');
+    const host = render();
+    // Gegenprobe: der alte Text ohne „ …“ ist weg
+    expect(knopf(host, 'Duplizieren')).toBeUndefined();
+    act(() => knopf(host, 'Duplizieren …')!.click());
+    expect(document.querySelector('.modal')?.textContent).toMatch(/Geschoss „EG“ duplizieren/);
+    act(() => void document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })));
+    expect(document.querySelector('.modal')).toBeNull();
+    expect(useEditor.getState().project.storeys).toHaveLength(1); // abgebrochen: nichts dupliziert
+    expect(knopf(host, '+ Neu')).toBeUndefined();
+    act(() => knopf(host, '+ Neu …')!.click());
+    expect(document.querySelector('.modal')?.textContent).toMatch(/Neues Geschoss/);
+    act(() => void document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })));
+    expect(useEditor.getState().project.storeys).toHaveLength(1);
+
+    const kuerzel = [...host.querySelectorAll<HTMLButtonElement>('.hud-hint-knopf')].find((b) => /Tastenkürzel …/.test(b.textContent ?? '') || b.getAttribute('aria-label') === 'Alle Tastenkürzel …')!;
+    expect(kuerzel).toBeDefined();
+    act(() => kuerzel.click());
+    expect(document.querySelector('.modal')?.textContent).toMatch(/Tastenkürzel der Zeichenfläche/);
+  });
+});

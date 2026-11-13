@@ -1,3 +1,4 @@
+import { Symbol } from '@core/ui/Symbol';
 import { useMemo, useRef, useState } from 'react';
 import type { MouseEvent } from 'react';
 import { nachNummer } from '../core/geschosse';
@@ -147,9 +148,9 @@ export function Sidebar() {
           <button
             className="small"
             onClick={() => void neuesGeschoss(storey.id, storey.name)}
-            title="Geschoss über oder unter dem aktiven einfügen"
+            title="Geschoss über oder unter dem aktiven einfügen …"
           >
-            + Neu
+            + Neu …
           </button>
         </div>
         <ul className="list">
@@ -161,15 +162,15 @@ export function Sidebar() {
           <button
             className="small"
             onClick={() => void geschossDuplizierenAktion(storey.id)}
-            title="Aktives Geschoss inkl. aller Flächen kopieren"
+            title="Aktives Geschoss inkl. aller Flächen kopieren … (Name, Lage und Räume im Dialog)"
           >
-            Duplizieren
+            Duplizieren …
           </button>
           <button className="small icon" disabled={obenAmEnde} onClick={() => st.update((p) => moveStorey(p, storey.id, 1))} title="Geschoss in der Liste nach oben" aria-label="Geschoss nach oben">
-            ▲
+            <Symbol name="nachOben" />
           </button>
           <button className="small icon" disabled={untenAmEnde} onClick={() => st.update((p) => moveStorey(p, storey.id, -1))} title="Geschoss in der Liste nach unten" aria-label="Geschoss nach unten">
-            ▼
+            <Symbol name="nachUnten" />
           </button>
           <button
             className="small danger"
