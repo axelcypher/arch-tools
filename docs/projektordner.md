@@ -77,8 +77,9 @@ auch beim Ergänzen.
    der Bauaufsicht. (Der Bebauungsplan ging bis 0.13 im Assistenten verloren – er wird jetzt gespeichert.)
 4. **Bauherr:** Name bzw. Firma, Vorname, Anschrift, beliebig viele E-Mail-Adressen und Telefonnummern.
 5. **Umfang:** beauftragte Leistungsphasen (mit Namen, Schnellwahl „1–4 bis Bauantrag“, „5–8“, „1–9 alle“,
-   „keine“) und Bearbeitung (Kürzel; Vorschläge aus den Mitarbeitern unter „Einstellungen“). An Leistungsphasen
-   gebundene Ordner und Vorlagen entstehen nur, wenn eine davon beauftragt ist (keine Auswahl = alle Ordner).
+   „ohne Einschränkung“) und Bearbeitung (Kürzel; Vorschläge aus den Mitarbeitern unter „Einstellungen“). An
+   Leistungsphasen gebundene Ordner und Vorlagen entstehen nur, wenn eine davon beauftragt ist (keine Auswahl = alle
+   Ordner).
 6. **Beteiligte:** die schon bekannten Fachplaner, Gutachter und Behörden. Rolle mit Vorschlägen typischer
    Beteiligter (Tragwerksplanung, Prüfingenieur/-in, Brandschutz, Vermessung ÖbVI, TGA, Energieberatung/GEG,
    Bodengutachten, Bauaufsicht …) oder frei – die typischen stehen außerdem als Knöpfe „+ Tragwerksplanung“ … darunter

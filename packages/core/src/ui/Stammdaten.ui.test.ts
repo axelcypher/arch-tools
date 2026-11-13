@@ -100,7 +100,7 @@ describe('Stammdaten-Dialog', () => {
     expect(meta.leistungsphasen).toEqual([5, 6, 7, 8]);
     act(() => knopf(host, '1–9 alle').click());
     expect(meta.leistungsphasen).toHaveLength(9);
-    act(() => knopf(host, 'keine').click());
+    act(() => knopf(host, 'ohne Einschränkung').click());
     expect(meta.leistungsphasen).toBeUndefined();
     // Bearbeitung: Hinweis und Vorschläge der Mitarbeiter
     expect(feld(host, 'Bearbeitung').closest('label')!.textContent).toContain('Kürzel, z. B. TP');
