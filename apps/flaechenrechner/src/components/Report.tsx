@@ -162,7 +162,7 @@ export function Report() {
                       />
                       <span>
                         {a.label}
-                        {gesperrt && <span className="muted"> (Pflicht im Bauantrag)</span>}
+                        {gesperrt && <span className="muted"> (im Bauantrag immer enthalten)</span>}
                       </span>
                     </label>
                   );
@@ -206,12 +206,8 @@ export function Report() {
               <br />
               Messverfahren: {massText ?? 'nicht angegeben'}
               {mitPutz ? ' · Putzabzug je Raum' : ''}
-              {unterlagen && (
-                <>
-                  <br />
-                  Planungsunterlagen: {unterlagen}
-                </>
-              )}
+              <br />
+              Planungsunterlagen: {unterlagen || 'nicht angegeben'}
               {kontrollZeilen.map((z) => (
                 <span key={z} className="druck-kopf-kontrolle">
                   <br />
@@ -221,7 +217,13 @@ export function Report() {
             </p>
           }
         />
+        {/* fachliche Mängel auch im Druck; fehlende Angaben mit Bedienhinweis nur am Bildschirm */}
         {plan.warnungen.map((w) => (
+          <p key={w} className="warning">
+            {w}
+          </p>
+        ))}
+        {plan.bildschirm.map((w) => (
           <p key={w} className="warning no-print">
             {w}
           </p>

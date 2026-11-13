@@ -556,7 +556,7 @@ function StoreyProperties() {
   // Bodenplatte gehört zum untersten Geschoss; sonst nur, wenn schon ein Wert gesetzt ist (z. B. nicht unterkellerter Anbau)
   const sohleOben = istUnterstes || !!storey.sohle;
   const sohleFeld = (
-    <Field label="Bodenplatte inkl. Dämmung [m]" hint={istUnterstes ? undefined : 'nur, wo unter diesem Geschoss kein anderes liegt'}>
+    <Field label="Bodenplatte inkl. Dämmung: UK bis Fußboden [m]" hint={istUnterstes ? undefined : 'nur, wo unter diesem Geschoss kein anderes liegt'}>
       <NumberField
         value={storey.sohle}
         allowEmpty
@@ -616,12 +616,12 @@ function StoreyProperties() {
       <RaumNummern />
       {(istDachgeschoss(storey) || storey.shapes.some((s) => s.kind === 'outline' && !!s.dach && s.dach.typ !== 'flach')) && (
         <div className="field-row">
-          <Field label="Dachaufbau [m]">
+          <Field label="Dachaufbau ⊥ Dachfläche [m]" hint="bis Innenbekleidung, senkrecht zur Dachfläche gemessen">
             <NumberField
               title="Dachaufbau bis Innenbekleidung, senkrecht zur Dachfläche gemessen; für die Höhenlinien (lichte Höhe unter Schrägen)"
               value={storey.dachaufbau} allowEmpty min={0} max={2} digits={3} placeholder="0,000" onChange={(v) => upd((s) => ({ ...s, dachaufbau: v || undefined }))} />
           </Field>
-          <Field label="Fußbodenaufbau [m]">
+          <Field label="Fußbodenaufbau [m]" hint="nur, wenn die Geschosskote auf dem Rohfußboden liegt">
             <NumberField
               title="Nur, wenn die Geschosskote auf dem Rohfußboden liegt"
               value={storey.fussbodenaufbau} allowEmpty min={0} max={1} digits={3} placeholder="0,000" onChange={(v) => upd((s) => ({ ...s, fussbodenaufbau: v || undefined }))} />

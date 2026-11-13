@@ -59,8 +59,10 @@ export interface BerichtPlan {
   gesperrt: Abschnitt[];
   /** Spalten für den Sonderfall S zeigen (sonst sind alle Flächen R) */
   sSpalten: boolean;
-  /** Mängel, die im Bericht als Warnung erscheinen statt still zu fehlen */
+  /** fachliche Mängel des Ergebnisses – erscheinen als Warnung, auch im Druck */
   warnungen: string[];
+  /** fehlende Angaben mit Bedienhinweis – nur am Bildschirm; im Druck steht im Kopf „nicht angegeben“ */
+  bildschirm: string[];
 }
 
 const nah0 = (v: number) => Math.abs(v) < 0.005;
@@ -104,11 +106,13 @@ export function berichtPlan(e: BerichtEinstellung, result: ProjectResult, projec
   const verdreht = (project?.storeys ?? []).flatMap((s) =>
     s.shapes.filter((x) => isSelfIntersecting(x.points)).map((x) => `${s.name}: ${x.kind === 'room' ? [x.nummer, x.name].filter(Boolean).join(' ') || 'Raum' : `BGF-Umriss „${x.name}“`}`),
   );
-  if (project && !messverfahren(project)) warnungen.push('Messverfahren nicht angegeben (DIN 277:2021-08, 5.1) – links unter „Projekt“ die Maßgrundlage wählen.');
-  if (project && !planungsunterlagen(project)) warnungen.push('Planungsunterlagen nicht angegeben (DIN 277:2021-08, 5.1) – links unter „Projekt“ eintragen, z. B. „Grundrisse 1:100, Stand …“.');
+  const bildschirm: string[] = [];
+  if (project && !messverfahren(project)) bildschirm.push('Messverfahren nicht angegeben (DIN 277:2021-08, 5.1) – links unter „Projekt“ → „Berechnungsgrundlagen“ wählen.');
+  if (project && !planungsunterlagen(project))
+    bildschirm.push('Planungsunterlagen nicht angegeben (DIN 277:2021-08, 5.1) – links unter „Projekt“ → „Berechnungsgrundlagen“ eintragen, z. B. „Grundrisse 1:100, Stand …“.');
   if (verdreht.length) warnungen.push(`Selbstüberschneidende Flächen – ihre Fläche ist so nicht korrekt, Eckpunkte prüfen: ${verdreht.join('; ')}.`);
   const sSpalten = [t.bgf.S, t.bri.S, t.nrf.S, t.kgf.S].some((v) => !nah0(v));
-  return { abschnitte, gesperrt, sSpalten, warnungen };
+  return { abschnitte, gesperrt, sSpalten, warnungen, bildschirm };
 }
 
 /* ---------- Hochbaustatistik (FR-20) ---------- */

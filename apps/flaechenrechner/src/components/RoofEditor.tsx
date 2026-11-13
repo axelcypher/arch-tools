@@ -114,7 +114,7 @@ export function RoofEditor({
       {d && d.typ !== 'modell' && (
         <>
           <div className="field-row">
-            <Field label="Traufhöhe [m]">
+            <Field label="Traufhöhe [m]" hint="OK Dachhaut an der Außenwand über UK Körper">
               <NumberField value={d.traufhoehe} min={0} title="OK Dachhaut an der Außenwand über der Unterkante des Körpers" onChange={(v) => v !== undefined && set({ traufhoehe: v })} />
             </Field>
             {d.typ !== 'flach' && d.typ !== 'tonne' && d.typ !== 'shed' && (

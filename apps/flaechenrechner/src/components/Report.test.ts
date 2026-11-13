@@ -106,4 +106,15 @@ describe('Bericht (F-17)', () => {
     expect(document.querySelector('tr.rechenweg')).not.toBeNull();
     localStorage.clear();
   });
+
+  it('fachliche Mängel (kein BRI) bleiben im Druck; fehlende Planungsunterlagen stehen im Druck als „nicht angegeben“ im Kopf', () => {
+    const p = createProject('Haus');
+    p.storeys[0].shapes.push(createRoom(rectPoints({ x: 0.3, y: 0.3 }, { x: 9.7, y: 7.7 }), '0.01', 'Wohnen'));
+    useEditor.getState().loadProject(p);
+    const html = bericht();
+    const bri = [...document.querySelectorAll('.report .warning')].find((e) => e.textContent?.startsWith('Kein Brutto-Rauminhalt'));
+    expect(bri).toBeDefined();
+    expect(bri!.classList.contains('no-print')).toBe(false);
+    expect(html).toContain('Planungsunterlagen: nicht angegeben');
+  });
 });
