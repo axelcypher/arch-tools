@@ -1,15 +1,15 @@
 import { useMemo, useState } from 'react';
 import { bestaetigen, meldung } from '@core/ui/Rueckfrage';
 import type { Protokoll, Top } from '../../avaDaten';
-import { protokollPdf } from '../../bauleitung/berichte';
+import { ABNAHME_HINWEIS, istAbnahme, protokollPdf, type ProtokollMitAbnahme } from '../../bauleitung/berichte';
 import { vorlageFuellen } from '../../abrechnung/mail';
 import { globaleAva, MAIL_PROTOKOLL_VARIABLEN } from '../../platzhalter';
 import { heuteIso, neueId } from '../../lv/modell';
 import { useAva } from '../../store';
-import { datumKurz, DatumEingabe, Feld, TextEingabe } from '../eingaben';
-import { berichtAblegen, berichtKopf, mitPdfMailen, pdfZeigen, speichern } from './gemeinsam';
+import { datumKurz, DatumEingabe, Feld, TextEingabe, ZahlEingabe } from '../eingaben';
+import { berichtAblegen, berichtKopf, listenTaste, mitPdfMailen, pdfZeigen, speichern } from './gemeinsam';
 
-const ARTEN = ['Baubesprechung', 'Jour fixe', 'Baustellenbegehung', 'Abnahme', 'Planungsbesprechung'];
+const ARTEN = ['Baubesprechung', 'Jour fixe', 'Baustellenbegehung', 'Abnahmebegehung', 'Planungsbesprechung'];
 
 /** Protokolle der Besprechungen: Teilnehmer, Tagesordnungspunkte mit Zuständigkeit und Frist, offene Punkte übernehmen */
 export function Protokolle() {
@@ -23,18 +23,24 @@ export function Protokolle() {
     const offen = vorher ? vorher.tops.filter((t) => !t.erledigt) : [];
     const uebernehmen = offen.length > 0 && (await bestaetigen('Offene Punkte übernehmen?', `${offen.length} offene(r) Punkt(e) aus Protokoll Nr. ${vorher!.nr} übernehmen?`, 'Übernehmen'));
     const teilnehmer = vorher ? vorher.teilnehmer.map((t) => ({ ...t, anwesend: true })) : projekt.ava.beteiligte.map((b) => ({ name: b.name || b.firma || '', firma: b.firma, email: b.email, anwesend: true }));
-    const n: Protokoll = {
-      id: neueId('p'),
-      nr: Math.max(0, ...liste.map((x) => x.nr)) + 1,
-      art: vorher?.art ?? ARTEN[0],
-      datum: heuteIso(),
-      ort: vorher?.ort ?? 'Baustelle',
-      teilnehmer,
-      tops: uebernehmen ? offen.map((t, i) => ({ ...t, id: neueId('t'), nr: `${i + 1}.`, aus: t.aus ?? vorher!.nr })) : [],
-      verfasser: useAva.getState().einstellungen.deckblatt.bearbeiter || projekt.meta.bearbeiter,
-    };
-    await speichern((a) => ({ ...a, protokolle: [...a.protokolle, n] }));
-    setId(n.id);
+    const neuId = neueId('p');
+    const art = vorher?.art && !istAbnahme(vorher.art) ? vorher.art : ARTEN[0];
+    const verfasser = useAva.getState().einstellungen.deckblatt.bearbeiter || projekt.meta.bearbeiter;
+    // die Nummer auf dem frischen Stand der Projektdatei vergeben
+    await speichern((a) => {
+      const n: Protokoll = {
+        id: neuId,
+        nr: Math.max(0, ...a.protokolle.map((x) => x.nr)) + 1,
+        art,
+        datum: heuteIso(),
+        ort: vorher?.ort ?? 'Baustelle',
+        teilnehmer,
+        tops: uebernehmen ? offen.map((t, i) => ({ ...t, id: neueId('t'), nr: `${i + 1}.`, aus: t.aus ?? vorher!.nr })) : [],
+        verfasser,
+      };
+      return { ...a, protokolle: [...a.protokolle, n] };
+    });
+    setId(neuId);
   };
 
   return (
@@ -46,9 +52,24 @@ export function Protokolle() {
             + Protokoll
           </button>
         </div>
-        <ul className="list">
+        <ul className="list" role="listbox" aria-label="Protokolle">
           {liste.map((x) => (
-            <li key={x.id} className={x.id === p?.id ? 'active' : ''} onClick={() => setId(x.id)}>
+            <li
+              key={x.id}
+              role="option"
+              aria-selected={x.id === p?.id}
+              tabIndex={x.id === (p?.id ?? liste[0]?.id) ? 0 : -1}
+              className={x.id === p?.id ? 'active' : ''}
+              onClick={() => setId(x.id)}
+              onKeyDown={(e) =>
+                listenTaste(
+                  e,
+                  liste.map((y) => y.id),
+                  p?.id ?? null,
+                  setId,
+                )
+              }
+            >
               <div>
                 <strong>Nr. {x.nr}</strong> {x.art}
               </div>
@@ -65,11 +86,18 @@ export function Protokolle() {
   );
 }
 
-function ProtokollEditor({ p }: { p: Protokoll }) {
+type Teilnehmer = Protokoll['teilnehmer'][number];
+
+function ProtokollEditor({ p }: { p: ProtokollMitAbnahme }) {
   const projekt = useAva((s) => s.projekt)!;
   const e = useAva((s) => s.einstellungen);
-  const setze = (patch: Partial<Protokoll>) => void speichern((a) => ({ ...a, protokolle: a.protokolle.map((x) => (x.id === p.id ? { ...x, ...patch } : x)) }));
-  const top = (i: number, patch: Partial<Top>) => setze({ tops: p.tops.map((t, j) => (j === i ? { ...t, ...patch } : t)) });
+  const [neuerTop, setNeuerTop] = useState<string | null>(null);
+  /** Änderung auf dem frischen Stand des Protokolls (zwei schnelle Eingaben überschreiben sich nicht) */
+  const setze = (patch: Partial<ProtokollMitAbnahme> | ((x: ProtokollMitAbnahme) => Partial<ProtokollMitAbnahme>)) =>
+    void speichern((a) => ({ ...a, protokolle: a.protokolle.map((x) => (x.id === p.id ? { ...x, ...(typeof patch === 'function' ? patch(x) : patch) } : x)) }));
+  const top = (id: string, patch: Partial<Top>) => setze((x) => ({ tops: x.tops.map((t) => (t.id === id ? { ...t, ...patch } : t)) }));
+  const teilnehmer = (i: number, patch: Partial<Teilnehmer>) => setze((x) => ({ teilnehmer: x.teilnehmer.map((t, j) => (j === i ? { ...t, ...patch } : t)) }));
+  const offeneMaengel = projekt.ava.maengel.filter((m) => m.status === 'offen' || m.status === 'angezeigt');
   const name = `${projekt.meta.projektcode} ${p.datum.replace(/-/g, '').slice(2)} Protokoll ${String(p.nr).padStart(2, '0')}`;
 
   const pdf = async (ziel: 'zeigen' | 'ablegen' | 'mail') => {
@@ -107,7 +135,7 @@ function ProtokollEditor({ p }: { p: Protokoll }) {
           </datalist>
         </Feld>
         <Feld label="Nr.">
-          <input type="number" value={p.nr} onChange={(x) => setze({ nr: Number(x.target.value) || p.nr })} />
+          <ZahlEingabe wert={p.nr} leerErlaubt={false} stellen={0} onChange={(n) => n && n > 0 && setze({ nr: Math.round(n) })} />
         </Feld>
         <Feld label="Datum">
           <DatumEingabe wert={p.datum} onChange={(d) => d && setze({ datum: d })} />
@@ -128,6 +156,31 @@ function ProtokollEditor({ p }: { p: Protokoll }) {
           <TextEingabe wert={p.naechsterTermin} onChange={(naechsterTermin) => setze({ naechsterTermin })} />
         </Feld>
       </div>
+      {istAbnahme(p.art) && (
+        <div className="ava-abnahme">
+          <p className="small-text">{ABNAHME_HINWEIS}</p>
+          <Feld label="Vorbehalt bekannter Mängel" breit>
+            <TextEingabe mehrzeilig zeilen={3} wert={p.vorbehaltMaengel} onChange={(vorbehaltMaengel) => setze({ vorbehaltMaengel })} placeholder="Mängel, die bei der Abnahme vorbehalten werden" />
+          </Feld>
+          <div className="button-row">
+            <button
+              className="small"
+              disabled={!offeneMaengel.length}
+              title={offeneMaengel.length ? 'Offene und angezeigte Mängel aus der Mängelliste anhängen' : 'Keine offenen Mängel in der Mängelliste'}
+              onClick={() =>
+                setze((x) => ({
+                  vorbehaltMaengel: [x.vorbehaltMaengel?.trim(), ...offeneMaengel.map((m) => `Nr. ${m.nr}${m.ort ? ` (${m.ort})` : ''}: ${m.beschreibung}`)].filter(Boolean).join('\n'),
+                }))
+              }
+            >
+              Aus der Mängelliste übernehmen ({offeneMaengel.length})
+            </button>
+            <label className="ava-check">
+              <input type="checkbox" checked={!!p.vertragsstrafeVorbehalten} onChange={(x) => setze({ vertragsstrafeVorbehalten: x.target.checked })} /> Vertragsstrafe vorbehalten
+            </label>
+          </div>
+        </div>
+      )}
       <h3>Teilnehmer</h3>
       <table className="ava-tabelle">
         <thead>
@@ -140,39 +193,50 @@ function ProtokollEditor({ p }: { p: Protokoll }) {
           </tr>
         </thead>
         <tbody>
-          {p.teilnehmer.map((t, i) => (
-            <tr key={i}>
-              <td>
-                <TextEingabe wert={t.name} onChange={(name) => setze({ teilnehmer: p.teilnehmer.map((x, j) => (j === i ? { ...x, name } : x)) })} />
-              </td>
-              <td>
-                <TextEingabe wert={t.firma} onChange={(firma) => setze({ teilnehmer: p.teilnehmer.map((x, j) => (j === i ? { ...x, firma } : x)) })} />
-              </td>
-              <td>
-                <TextEingabe wert={t.email} onChange={(email) => setze({ teilnehmer: p.teilnehmer.map((x, j) => (j === i ? { ...x, email } : x)) })} />
-              </td>
-              <td>
-                <input type="checkbox" checked={t.anwesend} onChange={(x) => setze({ teilnehmer: p.teilnehmer.map((y, j) => (j === i ? { ...y, anwesend: x.target.checked } : y)) })} />
-              </td>
-              <td>
-                <button className="small" onClick={() => setze({ teilnehmer: p.teilnehmer.filter((_, j) => j !== i) })}>
-                  ×
-                </button>
+          {p.teilnehmer.map((t, i) => {
+            const wer = t.name || `Teilnehmer ${i + 1}`;
+            return (
+              <tr key={i}>
+                <td>
+                  <TextEingabe wert={t.name} onChange={(name) => teilnehmer(i, { name })} label={`Name Teilnehmer ${i + 1}`} />
+                </td>
+                <td>
+                  <TextEingabe wert={t.firma} onChange={(firma) => teilnehmer(i, { firma })} label={`Firma oder Funktion ${wer}`} />
+                </td>
+                <td>
+                  <TextEingabe wert={t.email} onChange={(email) => teilnehmer(i, { email })} label={`E-Mail ${wer}`} />
+                </td>
+                <td>
+                  <input type="checkbox" checked={t.anwesend} aria-label={`${wer} anwesend`} onChange={(x) => teilnehmer(i, { anwesend: x.target.checked })} />
+                </td>
+                <td>
+                  <button className="small icon" title="Teilnehmer entfernen" aria-label={`${wer} entfernen`} onClick={() => setze((x) => ({ teilnehmer: x.teilnehmer.filter((_, j) => j !== i) }))}>
+                    ×
+                  </button>
+                </td>
+              </tr>
+            );
+          })}
+          {!p.teilnehmer.length && (
+            <tr>
+              <td colSpan={5} className="muted">
+                Noch keine Teilnehmer – „+ Teilnehmer“ oder aus den Beteiligten wählen.
               </td>
             </tr>
-          ))}
+          )}
         </tbody>
       </table>
       <div className="button-row">
-        <button className="small" onClick={() => setze({ teilnehmer: [...p.teilnehmer, { name: '', anwesend: true }] })}>
+        <button className="small" onClick={() => setze((x) => ({ teilnehmer: [...x.teilnehmer, { name: '', anwesend: true }] }))}>
           + Teilnehmer
         </button>
         {projekt.ava.beteiligte.length > 0 && (
           <select
             value=""
+            aria-label="Teilnehmer aus den Beteiligten hinzufügen"
             onChange={(x) => {
               const b = projekt.ava.beteiligte.find((y) => y.id === x.target.value);
-              if (b) setze({ teilnehmer: [...p.teilnehmer, { name: b.name || b.firma || '', firma: b.firma ?? b.rolle, email: b.email, anwesend: true }] });
+              if (b) setze((y) => ({ teilnehmer: [...y.teilnehmer, { name: b.name || b.firma || '', firma: b.firma ?? b.rolle, email: b.email, anwesend: true }] }));
             }}
           >
             <option value="">aus den Beteiligten …</option>
@@ -186,21 +250,23 @@ function ProtokollEditor({ p }: { p: Protokoll }) {
       </div>
       <h3>Besprechungspunkte</h3>
       <div className="ava-tops">
-        {p.tops.map((t, i) => (
+        {p.tops.map((t) => (
           <div key={t.id} className={`ava-top${t.erledigt ? ' ava-top-erledigt' : ''}`}>
-            <div className="ava-reihe">
-              <input className="ava-top-nr" value={t.nr} onChange={(x) => top(i, { nr: x.target.value })} />
-              <TextEingabe wert={t.titel} onChange={(titel) => top(i, { titel })} placeholder="Thema" className="ava-top-titel" />
-              <TextEingabe wert={t.zustaendig} onChange={(zustaendig) => top(i, { zustaendig })} placeholder="zuständig" liste="ava-zustaendig" />
-              <DatumEingabe wert={t.frist} onChange={(frist) => top(i, { frist })} title="Frist" />
-              <label className="ava-check" title="erledigt">
-                <input type="checkbox" checked={!!t.erledigt} onChange={(x) => top(i, { erledigt: x.target.checked })} /> erl.
-              </label>
-              <button className="small" onClick={() => setze({ tops: p.tops.filter((_, j) => j !== i) })}>
-                ×
-              </button>
+            <div className="ava-top-zeile">
+              <TextEingabe className="ava-top-nr" wert={t.nr} onChange={(nr) => top(t.id, { nr })} label={`Nummer TOP ${t.nr}`} />
+              <TextEingabe wert={t.titel} onChange={(titel) => top(t.id, { titel })} placeholder="Thema" className="ava-top-titel" label={`Thema TOP ${t.nr}`} autoFocus={t.id === neuerTop} />
+              <span className="ava-top-angaben">
+                <TextEingabe className="ava-top-zustaendig" wert={t.zustaendig} onChange={(zustaendig) => top(t.id, { zustaendig })} placeholder="zuständig" liste="ava-zustaendig" label={`Zuständig TOP ${t.nr}`} />
+                <DatumEingabe wert={t.frist} onChange={(frist) => top(t.id, { frist })} title="Frist" label={`Frist TOP ${t.nr}`} />
+                <label className="ava-check">
+                  <input type="checkbox" checked={!!t.erledigt} onChange={(x) => top(t.id, { erledigt: x.target.checked })} /> erledigt
+                </label>
+                <button className="small icon" title="Punkt entfernen" aria-label={`TOP ${t.nr} entfernen`} onClick={() => setze((x) => ({ tops: x.tops.filter((y) => y.id !== t.id) }))}>
+                  ×
+                </button>
+              </span>
             </div>
-            <TextEingabe mehrzeilig zeilen={2} wert={t.text} onChange={(text) => top(i, { text })} placeholder="Besprochen, vereinbart …" />
+            <TextEingabe mehrzeilig zeilen={2} wert={t.text} onChange={(text) => top(t.id, { text })} placeholder="Besprochen, vereinbart …" label={`Text TOP ${t.nr}`} />
             {t.aus && <span className="muted small-text">aus Protokoll Nr. {t.aus}</span>}
           </div>
         ))}
@@ -211,17 +277,28 @@ function ProtokollEditor({ p }: { p: Protokoll }) {
         </datalist>
       </div>
       <div className="button-row">
-        <button onClick={() => setze({ tops: [...p.tops, { id: neueId('t'), nr: `${p.tops.length + 1}.`, titel: '', text: '' }] })}>+ Punkt</button>
+        <button
+          onClick={() => {
+            const id = neueId('t');
+            setNeuerTop(id);
+            setze((x) => ({ tops: [...x.tops, { id, nr: `${x.tops.length + 1}.`, titel: '', text: '' }] }));
+          }}
+        >
+          + Punkt
+        </button>
       </div>
       <Feld label="Verteiler" breit>
         <TextEingabe wert={p.verteiler} onChange={(verteiler) => setze({ verteiler })} />
       </Feld>
       <div className="button-row">
         <button onClick={() => void pdf('zeigen')}>PDF ansehen / drucken</button>
-        <button onClick={() => void pdf('ablegen')}>PDF im Projekt ablegen</button>
-        <button className="primary" onClick={() => void pdf('mail')} title="Mailentwurf an alle Teilnehmer mit E-Mail, Protokoll als PDF im Anhang">
+        <button className="primary" onClick={() => void pdf('ablegen')}>
+          PDF im Projekt ablegen
+        </button>
+        <button onClick={() => void pdf('mail')} title="Mailentwurf an alle Teilnehmer mit E-Mail, Protokoll als PDF im Anhang">
           An die Teilnehmer mailen …
         </button>
+        <span className="tb-spacer" />
         <button
           className="danger"
           onClick={async () => {

@@ -33,14 +33,34 @@ export async function pdfZeigen(name: string, pdf: Uint8Array) {
   }
 }
 
-/** Mailentwurf mit PDF im Anhang */
-export async function mitPdfMailen(o: { an: string[]; betreff: string; text: string; name: string; pdf: Uint8Array }) {
+/** Mailentwurf mit PDF im Anhang; liefert, ob der Entwurf entstanden ist (Fehler werden gemeldet) */
+export async function mitPdfMailen(o: { an: string[]; betreff: string; text: string; name: string; pdf: Uint8Array }): Promise<boolean> {
   try {
     const eml = emlBauen({ an: o.an, betreff: o.betreff, text: o.text, anhaenge: [{ name: o.name.endsWith('.pdf') ? o.name : `${o.name}.pdf`, daten: o.pdf }] });
     await useAva.getState().fs.mailEntwurf(o.name.replace(/\.pdf$/i, ''), eml);
+    return true;
   } catch (e) {
     await meldung('Mailentwurf nicht erstellt', String(e instanceof Error ? e.message : e), e);
+    return false;
   }
+}
+
+/**
+ * Tastatur in einer Auswahlliste (role="listbox"): ↑/↓ wählen den Nachbarn und setzen den Fokus dorthin,
+ * Pos1/Ende den ersten bzw. letzten Eintrag. Die Einträge sind die Kinder des Listenelements.
+ */
+export function listenTaste(e: { key: string; currentTarget: HTMLElement; preventDefault: () => void }, ids: string[], aktuell: string | null, waehlen: (id: string) => void) {
+  const i = aktuell ? ids.indexOf(aktuell) : -1;
+  let j = -1;
+  if (e.key === 'ArrowDown') j = Math.min(ids.length - 1, i + 1);
+  else if (e.key === 'ArrowUp') j = Math.max(0, i - 1);
+  else if (e.key === 'Home') j = 0;
+  else if (e.key === 'End') j = ids.length - 1;
+  if (j < 0 || !ids.length) return;
+  e.preventDefault();
+  waehlen(ids[j]);
+  const liste = e.currentTarget.closest('[role="listbox"]') ?? e.currentTarget;
+  (liste.querySelectorAll<HTMLElement>('[role="option"]')[j] as HTMLElement | undefined)?.focus();
 }
 
 /** Abschnitt „ava“ ändern, Fehler als Meldung */

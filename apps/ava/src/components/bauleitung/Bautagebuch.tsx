@@ -9,30 +9,37 @@ import { heuteIso, neueId } from '../../lv/modell';
 import { vollerPfad } from '../../dateien';
 import { useAva } from '../../store';
 import { datumKurz, DatumEingabe, Feld, TextEingabe, ZahlEingabe } from '../eingaben';
-import { berichtAblegen, berichtKopf, pdfZeigen, speichern } from './gemeinsam';
+import { berichtAblegen, berichtKopf, listenTaste, pdfZeigen, speichern } from './gemeinsam';
 
 /** Bautagebuch: ein Tagesbericht je Tag mit Wetter, Firmen, Leistungen, Behinderungen, Anordnungen, Fotos */
 export function Bautagebuch() {
   const projekt = useAva((s) => s.projekt)!;
   const liste = useMemo(() => [...projekt.ava.bautagebuch].sort((a, b) => b.datum.localeCompare(a.datum)), [projekt.ava.bautagebuch]);
   const [id, setId] = useState<string | null>(liste[0]?.id ?? null);
+  const [neuerBericht, setNeuerBericht] = useState<string | null>(null);
   const t = liste.find((x) => x.id === id) ?? null;
 
   const neu = async () => {
     const heute = heuteIso();
     if (liste.some((x) => x.datum === heute) && !(await bestaetigen('Weiterer Bericht?', 'Für heute gibt es schon einen Tagesbericht. Trotzdem einen weiteren anlegen?', 'Anlegen'))) return;
-    const vorher = liste[0];
-    const n: Tagesbericht = {
-      id: neueId('t'),
-      datum: heute,
-      nr: Math.max(0, ...liste.map((x) => x.nr ?? 0)) + 1,
-      firmen: vorher ? vorher.firmen.map((f) => ({ ...f, taetigkeit: '' })) : [],
-      leistungen: '',
-      fotos: [],
-      verfasser: useAva.getState().einstellungen.deckblatt.bearbeiter || projekt.meta.bearbeiter,
-    };
-    await speichern((a) => ({ ...a, bautagebuch: [...a.bautagebuch, n] }));
-    setId(n.id);
+    const neuId = neueId('t');
+    const verfasser = useAva.getState().einstellungen.deckblatt.bearbeiter || projekt.meta.bearbeiter;
+    // Nummer und Firmen auf dem frischen Stand der Projektdatei (ein Kollege kann gerade einen Bericht angelegt haben)
+    await speichern((a) => {
+      const vorher = [...a.bautagebuch].sort((x, y) => y.datum.localeCompare(x.datum))[0];
+      const n: Tagesbericht = {
+        id: neuId,
+        datum: heute,
+        nr: Math.max(0, ...a.bautagebuch.map((x) => x.nr ?? 0)) + 1,
+        firmen: vorher ? vorher.firmen.map((f) => ({ ...f, taetigkeit: '' })) : [],
+        leistungen: '',
+        fotos: [],
+        verfasser,
+      };
+      return { ...a, bautagebuch: [...a.bautagebuch, n] };
+    });
+    setId(neuId);
+    setNeuerBericht(neuId);
   };
 
   return (
@@ -44,9 +51,24 @@ export function Bautagebuch() {
             + Tagesbericht
           </button>
         </div>
-        <ul className="list">
+        <ul className="list" role="listbox" aria-label="Tagesberichte">
           {liste.map((x) => (
-            <li key={x.id} className={x.id === t?.id ? 'active' : ''} onClick={() => setId(x.id)}>
+            <li
+              key={x.id}
+              role="option"
+              aria-selected={x.id === t?.id}
+              tabIndex={x.id === (t?.id ?? liste[0]?.id) ? 0 : -1}
+              className={x.id === t?.id ? 'active' : ''}
+              onClick={() => setId(x.id)}
+              onKeyDown={(e) =>
+                listenTaste(
+                  e,
+                  liste.map((y) => y.id),
+                  t?.id ?? null,
+                  setId,
+                )
+              }
+            >
               <div>
                 <strong>{datumKurz(x.datum)}</strong> {x.nr ? <span className="muted">Nr. {x.nr}</span> : null}
               </div>
@@ -56,16 +78,18 @@ export function Bautagebuch() {
           {!liste.length && <li className="muted">Noch keine Tagesberichte.</li>}
         </ul>
       </div>
-      <div className="ava-editor-spalte">{t ? <Bericht key={t.id} t={t} /> : <p className="muted">Mit „+ Tagesbericht“ beginnen.</p>}</div>
+      <div className="ava-editor-spalte">{t ? <Bericht key={t.id} t={t} neu={t.id === neuerBericht} /> : <p className="muted">Mit „+ Tagesbericht“ beginnen.</p>}</div>
     </div>
   );
 }
 
-function Bericht({ t }: { t: Tagesbericht }) {
+function Bericht({ t, neu }: { t: Tagesbericht; neu: boolean }) {
   const projekt = useAva((s) => s.projekt)!;
   const [fotos, setFotos] = useState<{ pfad: string; name: string }[]>([]);
-  const setze = (patch: Partial<Tagesbericht>) => void speichern((a) => ({ ...a, bautagebuch: a.bautagebuch.map((x) => (x.id === t.id ? { ...x, ...patch } : x)) }));
-  const firma = (i: number, patch: Partial<Firmeneinsatz>) => setze({ firmen: t.firmen.map((f, j) => (j === i ? { ...f, ...patch } : f)) });
+  /** Änderung auf dem frischen Stand des Berichts (zwei schnelle Eingaben überschreiben sich nicht) */
+  const setze = (patch: Partial<Tagesbericht> | ((x: Tagesbericht) => Partial<Tagesbericht>)) =>
+    void speichern((a) => ({ ...a, bautagebuch: a.bautagebuch.map((x) => (x.id === t.id ? { ...x, ...(typeof patch === 'function' ? patch(x) : patch) } : x)) }));
+  const firma = (i: number, patch: Partial<Firmeneinsatz>) => setze((x) => ({ firmen: x.firmen.map((f, j) => (j === i ? { ...f, ...patch } : f)) }));
   const firmenVorschlag = useMemo(() => {
     const kk = projekt.kk?.kk;
     const out: Firmeneinsatz[] = [];
@@ -84,7 +108,7 @@ function Bericht({ t }: { t: Tagesbericht }) {
         const liste = await useAva.getState().fs.liste(`${projekt.ordner.replace(/[\\/]+$/, '')}/${ordner}`, 3);
         const tag = t.datum;
         const passend = liste
-          .filter((e) => !e.ordner && /\.(jpe?g|png|heic)$/i.test(e.pfad) && e.geaendert && new Date(e.geaendert).toISOString().slice(0, 10) === tag)
+          .filter((e) => !e.ordner && /\.(jpe?g|png|heic)$/i.test(e.pfad) && e.geaendert && heuteIso(new Date(e.geaendert)) === tag)
           .map((e) => ({ pfad: `${ordner}/${e.pfad}`, name: e.pfad.split('/').pop()! }));
         if (aktuell) setFotos(passend);
       } catch {
@@ -162,22 +186,29 @@ function Bericht({ t }: { t: Tagesbericht }) {
           {t.firmen.map((f, i) => (
             <tr key={i}>
               <td>
-                <TextEingabe wert={f.firma} onChange={(x) => firma(i, { firma: x })} liste="ava-firmen" />
+                <TextEingabe wert={f.firma} onChange={(x) => firma(i, { firma: x })} liste="ava-firmen" label={`Firma ${i + 1}`} />
               </td>
               <td>{f.gewerk ? gewerkZweistellig(f.gewerk) : ''}</td>
-              <td className="num ava-zelle-eingabe">
-                <ZahlEingabe wert={f.personen ?? null} onChange={(n) => firma(i, { personen: n ?? undefined })} />
+              <td className="num">
+                <ZahlEingabe className="ava-personen" wert={f.personen ?? null} onChange={(n) => firma(i, { personen: n ?? undefined })} label={`Personen ${f.firma || `Firma ${i + 1}`}`} />
               </td>
               <td>
-                <TextEingabe wert={f.taetigkeit} onChange={(x) => firma(i, { taetigkeit: x })} />
+                <TextEingabe wert={f.taetigkeit} onChange={(x) => firma(i, { taetigkeit: x })} label={`Tätigkeit ${f.firma || `Firma ${i + 1}`}`} />
               </td>
               <td>
-                <button className="small" onClick={() => setze({ firmen: t.firmen.filter((_, j) => j !== i) })}>
+                <button className="small icon" title="Firma entfernen" aria-label={`${f.firma || `Firma ${i + 1}`} entfernen`} onClick={() => setze((x) => ({ firmen: x.firmen.filter((_, j) => j !== i) }))}>
                   ×
                 </button>
               </td>
             </tr>
           ))}
+          {!t.firmen.length && (
+            <tr>
+              <td colSpan={5} className="muted">
+                Noch keine Firmen – unten „+ Firma …“ wählen.
+              </td>
+            </tr>
+          )}
         </tbody>
       </table>
       <datalist id="ava-firmen">
@@ -188,9 +219,10 @@ function Bericht({ t }: { t: Tagesbericht }) {
       <div className="button-row">
         <select
           value=""
+          aria-label="Firma hinzufügen"
           onChange={(e) => {
             const f = firmenVorschlag.find((x) => x.firma === e.target.value);
-            setze({ firmen: [...t.firmen, f ? { ...f } : { firma: '' }] });
+            setze((x) => ({ firmen: [...x.firmen, f ? { ...f } : { firma: '' }] }));
           }}
         >
           <option value="">+ Firma …</option>
@@ -204,9 +236,9 @@ function Bericht({ t }: { t: Tagesbericht }) {
         </select>
       </div>
       <Feld label="Ausgeführte Leistungen" breit>
-        <TextEingabe mehrzeilig zeilen={5} wert={t.leistungen} onChange={(leistungen) => setze({ leistungen })} />
+        <TextEingabe mehrzeilig zeilen={5} wert={t.leistungen} onChange={(leistungen) => setze({ leistungen })} autoFocus={neu} />
       </Feld>
-      <Feld label="Behinderungen, Erschwernisse, Mängel" breit>
+      <Feld label="Behinderungen, Erschwernisse, Mängel" breit hinweis="Ein Eintrag hier ersetzt nicht die schriftliche Behinderungsanzeige des Auftragnehmers (§ 6 Abs. 1 VOB/B).">
         <TextEingabe mehrzeilig zeilen={3} wert={t.behinderungen} onChange={(behinderungen) => setze({ behinderungen })} />
       </Feld>
       <Feld label="Anordnungen und Vereinbarungen" breit>
@@ -221,7 +253,7 @@ function Bericht({ t }: { t: Tagesbericht }) {
         {[...new Set([...t.fotos, ...fotos.map((f) => f.pfad)])].map((p) => (
           <li key={p}>
             <label className="ava-check">
-              <input type="checkbox" checked={t.fotos.includes(p)} onChange={(e) => setze({ fotos: e.target.checked ? [...t.fotos, p] : t.fotos.filter((x) => x !== p) })} /> {p.split('/').pop()}
+              <input type="checkbox" checked={t.fotos.includes(p)} onChange={(e) => { const an = e.target.checked; setze((x) => ({ fotos: an ? [...x.fotos.filter((y) => y !== p), p] : x.fotos.filter((y) => y !== p) })); }} /> {p.split('/').pop()}
             </label>
             <button className="small ava-link" onClick={() => void useAva.getState().fs.oeffnen(vollerPfad(projekt.ordner, p))}>
               ansehen
@@ -234,6 +266,7 @@ function Bericht({ t }: { t: Tagesbericht }) {
         <button className="primary" onClick={() => void pdf(true)}>
           PDF im Projekt ablegen
         </button>
+        <span className="tb-spacer" />
         <button
           className="danger"
           onClick={async () => {
