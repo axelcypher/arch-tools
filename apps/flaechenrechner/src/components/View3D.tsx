@@ -1,3 +1,4 @@
+import { Symbol } from '@core/ui/Symbol';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
@@ -306,7 +307,7 @@ export default function View3D() {
           <div className="view3d-legend-kopf">
             <strong>Brutto-Rauminhalt</strong>
             <button className="icon hud-hint-knopf" onClick={() => setLegendeZu(!legendeZu)} aria-expanded={!legendeZu} title={legendeZu ? 'Legende aufklappen' : 'Legende einklappen'} aria-label={legendeZu ? 'Legende aufklappen' : 'Legende einklappen'}>
-              {legendeZu ? '▸' : '▾'}
+              <Symbol name={legendeZu ? 'pfeilRechts' : 'pfeilUnten'} />
             </button>
           </div>
           {legendeZu ? (
