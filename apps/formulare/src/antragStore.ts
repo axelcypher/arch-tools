@@ -906,10 +906,11 @@ export const useAntrag = create<AntragState>((set, get) => {
           titel: `${vorhanden.length === 1 ? 'Eine Datei gibt' : `${vorhanden.length} Dateien gibt`} es schon`,
           text: `${vorhanden.slice(0, 8).join('\n')}${vorhanden.length > 8 ? `\n… und ${vorhanden.length - 8} weitere` : ''}`,
           knoepfe: [
+            // Reihenfolge wie in allen Rückfragen: Abbrechen, Gefahr, Hauptknopf rechts außen
             { id: 'abbrechen', label: 'Abbrechen' },
+            { id: 'ersetzen', label: 'Vorhandene ersetzen', art: 'danger' },
             // der übliche Weg (Enter): nichts überschreiben, nur die fehlenden exportieren
             { id: 'ueberspringen', label: 'Vorhandene überspringen', art: 'primary' },
-            { id: 'ersetzen', label: 'Ersetzen', art: 'danger' },
           ],
         });
         if (a !== 'ueberspringen' && a !== 'ersetzen') return 0;

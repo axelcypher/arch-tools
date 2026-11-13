@@ -1663,9 +1663,10 @@ describe('Antragsunterlagen ansehen und alle Formulare exportieren', () => {
     await klick(knopf(host.querySelector('.fo-antrag-ablage')!, 'Alle Formulare exportieren'));
     const dialog = host.querySelector('.modal.rf')!;
     expect(dialog.textContent).toContain('2 Dateien gibt es schon');
-    // Hauptknopf (Enter) ist „Vorhandene überspringen“ – nie „Ersetzen“
+    // Hauptknopf (Enter) rechts außen ist „Vorhandene überspringen“ – nie „Vorhandene ersetzen“
+    expect([...dialog.querySelectorAll('button')].map((b) => b.textContent?.trim()).slice(-3)).toEqual(['Abbrechen', 'Vorhandene ersetzen', 'Vorhandene überspringen']);
     expect(knopf(dialog, 'Vorhandene überspringen').classList.contains('primary')).toBe(true);
-    expect(knopf(dialog, 'Ersetzen').classList.contains('primary')).toBe(false);
+    expect(knopf(dialog, 'Vorhandene ersetzen').classList.contains('primary')).toBe(false);
     await klick(knopf(dialog, 'Vorhandene überspringen'));
     expect(useFormulare.getState().meldung?.text).toContain('0 von 2 Formularen');
     expect(useFormulare.getState().meldung?.text).toContain('2 vorhandene übersprungen');
