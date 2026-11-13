@@ -1,0 +1,30 @@
+{
+  "flaechenrechner": {
+    "stufe": "patch",
+    "notiz": "Nachschlagewerk: Stufen der Kostenermittlung mit Leistungsphasen und Gliederungstiefe nach DIN 276:2018-12 und HOAI § 2; IFC-Bericht mit richtiger Einzahl."
+  },
+  "grz": {
+    "stufe": "patch",
+    "notiz": "Nachschlagewerk: Stufen der Kostenermittlung mit Leistungsphasen und Gliederungstiefe nach DIN 276:2018-12 und HOAI § 2; IFC-Bericht mit richtiger Einzahl."
+  },
+  "ordner": {
+    "stufe": "patch",
+    "notiz": "Nachschlagewerk: Stufen der Kostenermittlung mit Leistungsphasen und Gliederungstiefe nach DIN 276:2018-12 und HOAI § 2; IFC-Bericht mit richtiger Einzahl."
+  },
+  "entzerrung": {
+    "stufe": "patch",
+    "notiz": "Nachschlagewerk: Stufen der Kostenermittlung mit Leistungsphasen und Gliederungstiefe nach DIN 276:2018-12 und HOAI § 2; IFC-Bericht mit richtiger Einzahl."
+  },
+  "formulare": {
+    "stufe": "patch",
+    "notiz": "Nachschlagewerk: Stufen der Kostenermittlung mit Leistungsphasen und Gliederungstiefe nach DIN 276:2018-12 und HOAI § 2; IFC-Bericht mit richtiger Einzahl."
+  },
+  "ava": {
+    "stufe": "patch",
+    "notiz": "Nachschlagewerk: Stufen der Kostenermittlung mit Leistungsphasen und Gliederungstiefe nach DIN 276:2018-12 und HOAI § 2; IFC-Bericht mit richtiger Einzahl."
+  },
+  "kosten": {
+    "stufe": "patch",
+    "notiz": "Leistungsphasen der Kostenstufen aus dem gemeinsamen Kern (Kostenrahmen LPh 1/Bedarfsplanung, Kostenvoranschlag LPh 6); Nachschlagewerk mit HOAI § 2; IFC-Bericht mit richtiger Einzahl."
+  }
+}
