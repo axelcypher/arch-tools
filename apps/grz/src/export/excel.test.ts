@@ -143,7 +143,7 @@ describe('GRZ-Excel', () => {
     expect(e.getCell('A4').value).toBe('Zufahrt');
   });
 
-  it('Vorlage des GRZ-Nachweises liegt getrennt von der des Flächenrechners im Archiv', () => {
+  it('Vorlage von TERRIO liegt getrennt von der Vorlage in QUADRIO im Archiv', () => {
     let p = projekt();
     p = addDatei(p, 'Flächen.xlsx', 'vorlage', new Uint8Array([80, 75, 1])).project;
     p = addDatei(p, 'GRZ.xlsx', 'vorlage-grz', new Uint8Array([80, 75, 2])).project;

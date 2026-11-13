@@ -140,7 +140,7 @@ describe('IFC erneut importieren', () => {
   });
 
   it('ohne Option „Wohnfläche“ bleibt die Wohnfläche unberührt, auch wenn sie aus einem früheren Import stammt', () => {
-    // erster Import mit Wohnfläche (Flächenrechner)
+    // erster Import mit Wohnfläche (QUADRIO)
     const erst = importErgebnis();
     for (const sh of erst.storeys[0].shapes) {
       if (sh.kind !== 'room') continue;
@@ -148,7 +148,7 @@ describe('IFC erneut importieren', () => {
       sh.ifcStand = ifcStandVon(sh, RAUM_FELDER);
     }
     const p = projektAusIfc('Haus', structuredClone(erst));
-    // erneuter Import ohne Wohnfläche (GRZ-Nachweis): Räume tragen keine Wohnfläche
+    // erneuter Import ohne Wohnfläche (TERRIO): Räume tragen keine Wohnfläche
     const r = ifcAbgleichen(p, importErgebnis({ wohnenBreite: 6.5 }), { ...alle, wohnflaeche: false });
     const w = raum(r.project, 'R-WOHNEN')!;
     expect(w.wofl).toEqual({ kategorie: 'voll', wohnung: 'Erdgeschoss' });
@@ -219,7 +219,7 @@ describe('IFC erneut importieren: von Hand Gezeichnetes', () => {
 });
 
 describe('IFC erneut importieren: Wohnfläche nur, wo sie abgeleitet wurde', () => {
-  it('Import ohne Wohnfläche, Abgleich mit Wohnfläche (Kostenermittlung): Räume bekommen keine geratene Wohnfläche', () => {
+  it('Import ohne Wohnfläche, Abgleich mit Wohnfläche (NUMIO): Räume bekommen keine geratene Wohnfläche', () => {
     const erst = importErgebnis();
     for (const sh of erst.storeys[0].shapes) if (sh.kind === 'room') delete sh.ifcStand!.wofl; // wie buildFromIfc ohne Option
     const p = projektAusIfc('Haus', structuredClone(erst));

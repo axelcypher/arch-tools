@@ -57,7 +57,7 @@ describe('Platzhalter der Suite', () => {
     expect(ersetzen('{{nummer}}', VARS, WERTE)).toBe('BS9');
   });
 
-  it('Alias mit eigener Angabe: im Projektordner war {datum} JJJJ-MM-TT – {DATUM} bleibt JJMMTT', () => {
+  it('Alias mit eigener Angabe: in ATLAS war {datum} JJJJ-MM-TT – {DATUM} bleibt JJMMTT', () => {
     const ordner = [mitAliasen('DATUM', [{ name: 'datum', angabe: 'JJJJ-MM-TT' }], true)];
     expect(ersetzen('{datum}', ordner, { DATUM: TAG })).toBe('2026-11-03');
     expect(ersetzen('{Datum}', ordner, { DATUM: TAG })).toBe('2026-11-03');
@@ -96,7 +96,7 @@ describe('Platzhalter der Suite', () => {
       { alt: '{jj}', neu: '{JAHR_KURZ}' },
     ]);
     expect(modernisieren('{Kürzel} {datum} {Name} {Bauherr}', VARS)).toBe('{PROJEKT_KUERZEL} {DATUM} {Name} {Bauherr}');
-    // die Bedeutung bleibt: {datum} im Projektordner (JJJJ-MM-TT) wird zu {DATUM:JJJJ-MM-TT}
+    // die Bedeutung bleibt: {datum} in ATLAS (JJJJ-MM-TT) wird zu {DATUM:JJJJ-MM-TT}
     const ordner = [mitAliasen('DATUM', [{ name: 'datum', angabe: 'JJJJ-MM-TT' }], true)];
     expect(modernisieren('{datum}_{datum:JJMMTT}', ordner)).toBe('{DATUM:JJJJ-MM-TT}_{DATUM}');
     expect(ersetzen(modernisieren('{datum}', ordner), ordner, { DATUM: TAG })).toBe(ersetzen('{datum}', ordner, { DATUM: TAG }));

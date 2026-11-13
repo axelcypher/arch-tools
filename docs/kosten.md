@@ -1,8 +1,9 @@
-# Massen- und Kostenermittlung (DIN 276)
+# NUMIO (Kostenermittlung)
 
-Die **Kostenermittlung** (`apps/kosten`, eigene App mit eigenem Installer) leitet aus den Flächen und
+**NUMIO** (`apps/kosten`, eigene App mit eigenem Installer) leitet aus den Flächen und
 Rauminhalten des Projekts Mengen ab und rechnet daraus mit Kennwerten die Kosten nach DIN 276 – als
-Bandbreite (von / Mittel / bis), nachvollziehbar je Position.
+Bandbreite (von / Mittel / bis), nachvollziehbar je Position. Bis Version 0.19.0 hieß die App „Kostenermittlung“;
+Einstellungen und Daten bleiben beim Update erhalten.
 
 Die Kennwerte sind Eingaben des Büros (eigene Projekte, Kennwertsammlungen, Literatur). Das Tool liefert
 keine Preise; es rechnet transparent mit den hinterlegten Werten und dokumentiert Preisstand, Baupreisindex
@@ -10,16 +11,16 @@ und Regionalfaktor.
 
 ## Arbeitsweise
 
-- **Öffnen:** ein Projekt des Flächenrechners (`.oap`, auch ältere `.json`) oder direkt ein IFC-Modell
-  (derselbe Import wie im Flächenrechner). Ohne Gebäudemodell lassen sich die Mengen von Hand eintragen.
+- **Öffnen:** ein Projekt aus QUADRIO (Flächenrechner; `.oap`, auch ältere `.json`) oder direkt ein IFC-Modell
+  (derselbe Import wie in QUADRIO). Ohne Gebäudemodell lassen sich die Mengen von Hand eintragen.
 - **Pflegen:** Stufe und Preisstand, Faktoren, Mengen, Positionen mit Kennwerten, Kostenstände.
-- **Speichern:** in dieselbe Projektdatei. Flächenrechner und GRZ-Nachweis zeigen die Kostenermittlung nicht
-  an, bewahren sie aber beim Speichern (ab Flächenrechner 0.9.4 und GRZ-Nachweis 0.2.3); umgekehrt bewahrt
-  die Kostenermittlung alles, was die anderen Apps pflegen. Ändern sich dort Flächen, ändern sich die Kosten
+- **Speichern:** in dieselbe Projektdatei. QUADRIO und TERRIO (GRZ-Nachweis) zeigen die Kostenermittlung nicht
+  an, bewahren sie aber beim Speichern (ab QUADRIO 0.9.4 und TERRIO 0.2.3); umgekehrt bewahrt
+  NUMIO alles, was die anderen Apps pflegen. Ändern sich dort Flächen, ändern sich die Kosten
   beim nächsten Öffnen mit. Beim Speichern
   liest jede App die Zieldatei neu und übernimmt, was eine andere App dort inzwischen gespeichert hat, statt es
-  mit ihrem eigenen, älteren Stand zu überschreiben (ab Flächenrechner 0.11.0, GRZ-Nachweis 0.4.0,
-  Kostenermittlung 0.4.0). „Speichern“ (Strg+S) schreibt in die geöffnete Datei, „Speichern unter …“
+  mit ihrem eigenen, älteren Stand zu überschreiben (ab QUADRIO 0.11.0, TERRIO 0.4.0,
+  NUMIO 0.4.0). „Speichern“ (Strg+S) schreibt in die geöffnete Datei, „Speichern unter …“
   (Strg+Shift+S) fragt nach einem neuen Namen.
 - **IFC aktualisieren …:** ein neuer Export desselben Modells wird über die IFC-GlobalIds in das bestehende Projekt
   eingelesen; Positionen, Kennwerte und von Hand geänderte Werte bleiben erhalten, die Mengen rechnen sich neu.
@@ -32,7 +33,7 @@ geleertes Feld schaltet zurück.
 
 | Kürzel | Menge | Ermittlung |
 |---|---|---|
-| BGF, BRI, NUF, NRF, TF, VF | Grundflächen und Rauminhalt | DIN 277, wie im Flächenrechner |
+| BGF, BRI, NUF, NRF, TF, VF | Grundflächen und Rauminhalt | DIN 277, wie in QUADRIO |
 | WoFl | Wohnfläche | WoFlV |
 | GRF | Gründungsfläche | BGF des untersten Geschosses |
 | BGI | Baugrubeninhalt | grob: Gründungsfläche × Tiefe des untersten Fußbodens unter ±0,00 |
@@ -51,8 +52,8 @@ Bauteilschichten). Für die Kostenberechnung auf Elementebene eigene Mengen eint
 ### Innenwände aus dem IFC-Modell
 
 Räume können ohne Wand aneinandergrenzen (offene Küche, Flur ohne Tür), deshalb taugen die Raumumrisse nicht
-für die Innenwandfläche. Enthält das Projekt ein IFC-Modell (direkt geöffnet oder im Flächenrechner importiert
-und mitgespeichert), liest die Kostenermittlung beim Öffnen dessen Wände (`IfcWall`, `IfcWallStandardCase`) und
+für die Innenwandfläche. Enthält das Projekt ein IFC-Modell (direkt geöffnet oder in QUADRIO importiert
+und mitgespeichert), liest NUMIO beim Öffnen dessen Wände (`IfcWall`, `IfcWallStandardCase`) und
 vermisst jede einzeln: Länge entlang der Achse, Dicke, Ansichtsfläche vom Wandfuß bis zur Oberkante. Türen und
 Fenster werden übermessen, raumhohe Durchgänge überbrückt, Giebel und Dachschrägen in wahrer Größe gerechnet.
 
@@ -94,7 +95,7 @@ Gründung, Decken und Außenanlagen öffnen in den Grundrissen, Rauminhalt, Auß
 Ist eine Menge von Hand festgelegt, weist die Ansicht darauf hin – das Bild zeigt immer die abgeleitete Menge.
 
 Die Ansicht zeigt auch Schwächen des Modells: Reicht etwa ein Körper des Rauminhalts weiter nach oben als
-erwartet, liegt das an den Umrissen bzw. der Dachzuordnung im Flächenrechner („Dach aus Modell“ ohne
+erwartet, liegt das an den Umrissen bzw. der Dachzuordnung in QUADRIO („Dach aus Modell“ ohne
 Begrenzung auf die Geschosshöhe) und sollte dort korrigiert werden.
 
 ## Positionen
@@ -174,7 +175,7 @@ Mengen. So wird sichtbar, was eine Planänderung kostet.
   „Musterhaus Kosten Kostenberechnung“, im Ordner der Projektdatei.
 - **Excel …**: Standardlayout (Blatt „Kosten“ mit Summenformeln) oder eigene Vorlage mit Platzhaltern wie
   `{{gesamt.brutto}}`, `{{kg300}}` und den Sammlungen `kg`, `kg2`, `position`, `menge`, `stand`, `hinweis` –
-  siehe [Excel-Vorlagen](excel-vorlagen.md#kostenermittlung). Die Vorlage wird im Projekt mitgespeichert,
+  siehe [Excel-Vorlagen](excel-vorlagen.md#numio-kostenermittlung). Die Vorlage wird im Projekt mitgespeichert,
   getrennt von denen der anderen Apps.
 
 ## Grenzen

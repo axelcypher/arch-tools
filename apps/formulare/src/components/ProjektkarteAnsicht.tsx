@@ -946,7 +946,7 @@ function Kreuze({ karte, eintraege, titelText, unter }: { karte: OffeneKarte; ei
 
 /**
  * Abgleich mit der Projektdatei (.oap) im Projektordner – der gemeinsamen Quelle der Projektstammdaten von
- * Flächenrechner, GRZ-Nachweis, Kostenermittlung und Projektordner: je Angabe der Wert dort und in der
+ * QUADRIO (Flächenrechner), TERRIO (GRZ-Nachweis), NUMIO (Kostenermittlung) und ATLAS (Projekt): je Angabe der Wert dort und in der
  * Projektkarte, Übernehmen in die eine oder andere Richtung. Beim Speichern der Projektkarte trägt die App
  * geänderte Angaben selbst in die Projektdatei ein. Eine alte Projektdaten.xlsx lässt sich noch übernehmen.
  */
@@ -997,8 +997,8 @@ function ProjektdatenAbgleich({ karte }: { karte: OffeneKarte }) {
         </div>
       </header>
       <p className="muted pk-text">
-        Die Projektdatei ist das gemeinsame Projektarchiv von Flächenrechner, GRZ-Nachweis, Kostenermittlung und Projektordner; darin stehen auch die Projektstammdaten.
-        Beim Speichern der Projektdaten werden geänderte Angaben dort mitgeführt – nur diese, alles andere in der Datei bleibt.
+        Die Projektdatei ist das gemeinsame Projektarchiv von QUADRIO (Flächenrechner), TERRIO (GRZ-Nachweis), NUMIO (Kostenermittlung) und ATLAS (Projekt); darin stehen auch die
+        Projektstammdaten. Beim Speichern der Projektdaten werden geänderte Angaben dort mitgeführt – nur diese, alles andere in der Datei bleibt.
       </p>
       {oap === 'fehlt' && (
         <p className="pk-text">

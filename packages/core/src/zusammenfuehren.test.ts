@@ -31,14 +31,14 @@ function projekt(): Project {
 const ausDatei = (p: Project) => readProjectFile(writeArchive(p));
 
 describe('Zusammenführen beim Speichern', () => {
-  it('Flächenrechner speichert nach dem GRZ-Nachweis: Festsetzungen und Lageplan bleiben', () => {
+  it('QUADRIO speichert nach TERRIO: Festsetzungen und Lageplan bleiben', () => {
     const basis = ausDatei(projekt());
-    // Flächenrechner: Raum umbenannt, Geschosshöhe geändert
+    // QUADRIO: Raum umbenannt, Geschosshöhe geändert
     const flaechen: Project = {
       ...basis,
       storeys: basis.storeys.map((s) => ({ ...s, hoehe: 2.9, shapes: s.shapes.map((x) => (x.kind === 'room' ? { ...x, name: 'Wohnen/Essen' } : x)) })),
     };
-    // GRZ-Nachweis hat inzwischen gespeichert: Festsetzungen, Vollgeschoss, Lageplan
+    // TERRIO hat inzwischen gespeichert: Festsetzungen, Vollgeschoss, Lageplan
     const grz = ausDatei({
       ...basis,
       massNutzung: { grz: 0.4, gfz: 0.8 },

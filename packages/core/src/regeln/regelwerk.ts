@@ -74,7 +74,7 @@ export const REGELN: Regel[] = [
     text: [
       'Die **Brutto-Grundfläche (BGF)** ist die Summe der Grundflächen aller Grundrissebenen eines Bauwerks. Sie gliedert sich in die **Konstruktions-Grundfläche (KGF)** – Wände, Stützen, Schächte – und die **Netto-Raumfläche (NRF)**.',
       'Die NRF gliedert sich in **Nutzungsfläche (NUF)**, **Technikfläche (TF)** und **Verkehrsfläche (VF)**.',
-      'Im Flächenrechner wird die KGF nicht gezeichnet, sondern als BGF − NRF errechnet. Wird sie negativ, sind Räume größer gezeichnet als der BGF-Umriss – das zeigt die Auswertung als Warnung.',
+      'In QUADRIO (Flächenrechner) wird die KGF nicht gezeichnet, sondern als BGF − NRF errechnet. Wird sie negativ, sind Räume größer gezeichnet als der BGF-Umriss – das zeigt die Auswertung als Warnung.',
     ],
     quellen: [DIN277],
     stichworte: ['Brutto-Grundfläche', 'Konstruktions-Grundfläche', 'Netto-Raumfläche', 'Nutzungsfläche', 'Technikfläche', 'Verkehrsfläche', 'KGF', 'NRF'],
@@ -91,8 +91,8 @@ export const REGELN: Regel[] = [
       'DIN 277 unterscheidet nach der Raumumschließung:',
       '- **Regelfall (R):** Bereiche, die bei allen Begrenzungsflächen vollständig umschlossen sind – auch wenn sie über Öffnungen mit dem Außenklima verbunden sind (z. B. Garage mit Rollgitter)',
       '- **Sonderfall (S):** Bereiche, die mit dem Bauwerk konstruktiv fest verbunden, aber nicht allseitig umschlossen sind, z. B. Loggien, Balkone, Dachterrassen, unterbaute Eingangsbereiche und Terrassen, Außentreppen',
-      '**Nicht zur BGF** gehören u. a. Terrassen, Treppen und Rampen, die an das Bauwerk anschließen, aber nicht konstruktiv fest mit ihm verbunden (nicht unterbaut) sind, sowie Lufträume, Deckenöffnungen und Treppenaugen mit mehr als 1,0 m² lichtem Querschnitt. Eine ebenerdige Terrasse zählt trotzdem zur Wohnfläche (§ 2 Abs. 2 Nr. 2 WoFlV) – im Flächenrechner als Raum „außerhalb der BGF – nur Wohnfläche“.',
-      'Im Flächenrechner trägt jeder BGF-Umriss (und jeder Raum) die Kennzeichnung R oder S; Summen werden getrennt ausgewiesen. Abzugsflächen (Innenhof, Luftraum oder Deckenöffnung über 1,0 m²) werden negativ gerechnet.',
+      '**Nicht zur BGF** gehören u. a. Terrassen, Treppen und Rampen, die an das Bauwerk anschließen, aber nicht konstruktiv fest mit ihm verbunden (nicht unterbaut) sind, sowie Lufträume, Deckenöffnungen und Treppenaugen mit mehr als 1,0 m² lichtem Querschnitt. Eine ebenerdige Terrasse zählt trotzdem zur Wohnfläche (§ 2 Abs. 2 Nr. 2 WoFlV) – in QUADRIO (Flächenrechner) als Raum „außerhalb der BGF – nur Wohnfläche“.',
+      'In QUADRIO trägt jeder BGF-Umriss (und jeder Raum) die Kennzeichnung R oder S; Summen werden getrennt ausgewiesen. Abzugsflächen (Innenhof, Luftraum oder Deckenöffnung über 1,0 m²) werden negativ gerechnet.',
     ],
     quellen: [DIN277],
     stichworte: ['BGF', 'Regelfall', 'Sonderfall', 'Raumumschließung', 'Balkon', 'Loggia', 'Außenmaße', 'Luftraum'],
@@ -106,10 +106,10 @@ export const REGELN: Regel[] = [
     kurz: 'Vom Bauwerk umschlossener Rauminhalt: unten ab Unterkante Boden- bzw. Fundamentplatte einschließlich Dämmung darunter, oben bis zur Dachhaut.',
     text: [
       'Der **Brutto-Rauminhalt** wird von den äußeren Begrenzungsflächen des Bauwerks umschlossen (Gründungsflächen, Außenwände, Dächer). Im untersten Geschoss zählt die Höhe ab der **Unterkante der Boden- bzw. Fundamentplatte einschließlich darunter liegender Dämmschichten**. Nicht dazu gehören u. a. Einzel- und Streifenfundamente sowie Tiefgründungen, Eingangsüberdachungen, Dachüberstände (soweit sie keine S-Bereiche überdecken) und Dachaufbauten bis 1,0 m³. Wie die BGF wird er nach Regelfall (R) und Sonderfall (S) getrennt.',
-      'Im Flächenrechner:',
+      'In QUADRIO (Flächenrechner):',
       '- je BGF-Umriss Fläche × Geschosshöhe (Fußboden bis Fußboden darüber – gleiche Bezugsebene wie die Geschosskoten, i. d. R. OK Fertigfußboden) bzw. bis zur **Dachhaut** (Dachform, Gauben oder Dach aus dem IFC-Modell)',
       '- im untersten Geschoss zusätzlich die **Bodenplatte**: Fläche × Abstand Unterkante Platte (einschließlich Dämmung darunter) bis zu dieser Bezugsebene – überall dort, wo kein anderes Geschoss darunter liegt; unter nicht umschlossenen Bereichen (S, z. B. Balkon) nur auf ausdrücklichen Wunsch',
-      '- **Sonderfall S** (Balkon, Loggia, Dachterrasse): Die obere Begrenzung ist eigens anzugeben – **überdeckt** bis Oberkante der Überdeckung (Decke, Dach; bei übereinanderliegenden Balkonen und Loggien i. d. R. die Geschosshöhe: „überdeckt“ bestätigen), **nicht überdeckt** bis Oberkante der umschließenden Brüstung, Attika bzw. des Geländers (Körperhöhe); ohne Umwehrung ergibt sich kein Rauminhalt (Körperhöhe 0). Ohne Angabe rechnet der Flächenrechner mit der Geschosshöhe und warnt',
+      '- **Sonderfall S** (Balkon, Loggia, Dachterrasse): Die obere Begrenzung ist eigens anzugeben – **überdeckt** bis Oberkante der Überdeckung (Decke, Dach; bei übereinanderliegenden Balkonen und Loggien i. d. R. die Geschosshöhe: „überdeckt“ bestätigen), **nicht überdeckt** bis Oberkante der umschließenden Brüstung, Attika bzw. des Geländers (Körperhöhe); ohne Umwehrung ergibt sich kein Rauminhalt (Körperhöhe 0). Ohne Angabe rechnet QUADRIO mit der Geschosshöhe und warnt',
       '- **Split-Level**: tiefer liegende Räume oder Umrisse vergrößern den Körper nach unten',
       'Der Rechenweg (Bericht, Excel-Vorlage) weist jeden Teilkörper einzeln aus; seine Summe ist exakt der BRI.',
     ],
@@ -133,7 +133,7 @@ export const REGELN: Regel[] = [
       '- **NUF 7** Sonstige Nutzungen (u. a. Sanitärräume, Garderoben, Abstellräume, Fahrzeugabstellflächen)',
       '- **TF 8** Technikflächen (Haustechnik, Hausanschluss, Heizung …)',
       '- **VF 9** Verkehrsflächen (Flure, Treppen, Aufzugsschächte, Rampen)',
-      'Beim IFC-Import schlägt der Flächenrechner die Gruppe nach dem Raumnamen vor (z. B. „Flur“ → VF, „Heizung“ → TF, „Bad“ → NUF 7). Bitte prüfen.',
+      'Beim IFC-Import schlägt QUADRIO (Flächenrechner) die Gruppe nach dem Raumnamen vor (z. B. „Flur“ → VF, „Heizung“ → TF, „Bad“ → NUF 7). Bitte prüfen.',
     ],
     quellen: [DIN277],
     stichworte: ['Nutzungsgruppe', 'NUF', 'TF', 'VF', 'Hauptnutzfläche', 'Nebennutzfläche', 'Verkehrsfläche', 'Technikfläche'],
@@ -148,7 +148,7 @@ export const REGELN: Regel[] = [
     kurz: 'Bauvorlage: nachprüfbare BRI-Berechnung (§ 6 Nr. 1 BauPrüfVO nennt DIN 277-1:2016-01); Gebührentarif: DIN 277:2021-08.',
     text: [
       'Die **Bauprüfverordnung NRW** verlangt für Bauanträge eine nachprüfbare Berechnung des Brutto-Rauminhalts nach DIN 277-1:2016-01 (§ 6 Nr. 1 BauPrüfVO). Der **Allgemeine Gebührentarif NRW** (Tarifstelle 3.1.1.2) bemisst die Baugenehmigungsgebühr nach dem Rauminhalt und verweist auf DIN 277:2021-08.',
-      'Der Flächenrechner rechnet nach DIN 277:2021-08 und nennt im Bericht beide Fassungen: „DIN 277:2021-08 (Gebührentarif NRW, Tarifstelle 3.1.1.2; § 6 Nr. 1 BauPrüfVO NRW nennt DIN 277-1:2016-01)“. Die Fassung 2021-08 regelt u. a. die Dämmschicht unter der Bodenplatte, Dachaufbauten bis 1,0 m³ und Lufträume über 1,0 m² ausdrücklich – Abweichungen zur Fassung 2016 im Einzelfall prüfen. Die Trennung nach Regelfall R und Sonderfall S und der Rechenweg je Teilkörper gehören zur Nachprüfbarkeit.',
+      'QUADRIO rechnet nach DIN 277:2021-08 und nennt im Bericht beide Fassungen: „DIN 277:2021-08 (Gebührentarif NRW, Tarifstelle 3.1.1.2; § 6 Nr. 1 BauPrüfVO NRW nennt DIN 277-1:2016-01)“. Die Fassung 2021-08 regelt u. a. die Dämmschicht unter der Bodenplatte, Dachaufbauten bis 1,0 m³ und Lufträume über 1,0 m² ausdrücklich – Abweichungen zur Fassung 2016 im Einzelfall prüfen. Die Trennung nach Regelfall R und Sonderfall S und der Rechenweg je Teilkörper gehören zur Nachprüfbarkeit.',
     ],
     quellen: [
       { titel: 'Verordnung über bautechnische Prüfungen (BauPrüfVO NRW)', fundstelle: '§ 6 Nr. 1 BauPrüfVO' },
@@ -169,7 +169,7 @@ export const REGELN: Regel[] = [
     text: [
       'Zur Wohnfläche gehören die Grundflächen der Räume, die ausschließlich zur Wohnung gehören, einschließlich Wintergärten, Schwimmbädern und ähnlicher geschlossener Räume sowie Balkonen, Loggien, Dachgärten und Terrassen.',
       'Nicht dazu gehören insbesondere Keller-, Abstell- (außerhalb der Wohnung), Bodenräume, Waschküchen, Trockenräume, Heizungsräume, Garagen sowie Räume, die nicht den Anforderungen des Bauordnungsrechts genügen.',
-      'Der Flächenrechner schlägt beim IFC-Import und mit „automatisch nach Raumname“ „keine Wohnfläche“ für Keller-, Technik-, Treppenhaus-, Garagen- und Dachbodenräume vor sowie für alle Räume eines Kellergeschosses (Geschossart; eine Souterrainwohnung liegt in einem Normalgeschoss). Ein Raum mit Treppe, der kein eigener Treppenraum ist (z. B. „Diele/Treppe“), zählt – nur die Treppenfläche entfällt (§ 3 Abs. 3 WoFlV, als Abzugsfläche „nur Wohnfläche“ erfassen). Hauswirtschaftsräume in der Wohnung zählen, Waschküchen nicht. Der Vorschlag ist zu prüfen; die Einstufung lässt sich je Raum oder für ein ganzes Geschoss ändern.',
+      'QUADRIO (Flächenrechner) schlägt beim IFC-Import und mit „automatisch nach Raumname“ „keine Wohnfläche“ für Keller-, Technik-, Treppenhaus-, Garagen- und Dachbodenräume vor sowie für alle Räume eines Kellergeschosses (Geschossart; eine Souterrainwohnung liegt in einem Normalgeschoss). Ein Raum mit Treppe, der kein eigener Treppenraum ist (z. B. „Diele/Treppe“), zählt – nur die Treppenfläche entfällt (§ 3 Abs. 3 WoFlV, als Abzugsfläche „nur Wohnfläche“ erfassen). Hauswirtschaftsräume in der Wohnung zählen, Waschküchen nicht. Der Vorschlag ist zu prüfen; die Einstufung lässt sich je Raum oder für ein ganzes Geschoss ändern.',
     ],
     zitate: [
       {
@@ -208,7 +208,7 @@ export const REGELN: Regel[] = [
     titel: 'Anrechnung nach lichter Höhe (§ 4 WoFlV)',
     kurz: '≥ 2 m voll, 1–2 m zur Hälfte, < 1 m nicht; Wintergärten ½, Balkone ¼ bis ½.',
     text: [
-      'Im Flächenrechner trägt jeder Raum eine Anrechnung (voll, halb, nicht, Wintergarten, Freisitz, individueller Faktor). Beim IFC-Import wird der Faktor eines Raums unter Dachschrägen aus den tatsächlichen lichten Höhen des Raumkörpers errechnet (Anteil ≥ 2 m + ½ × Anteil 1–2 m).',
+      'In QUADRIO (Flächenrechner) trägt jeder Raum eine Anrechnung (voll, halb, nicht, Wintergarten, Freisitz, individueller Faktor). Beim IFC-Import wird der Faktor eines Raums unter Dachschrägen aus den tatsächlichen lichten Höhen des Raumkörpers errechnet (Anteil ≥ 2 m + ½ × Anteil 1–2 m).',
       'Der Faktor für Balkone, Loggien, Dachgärten und Terrassen gilt projektweit (Standard ¼, höchstens ½) und lässt sich je Raum abweichend festlegen.',
     ],
     zitate: [
@@ -229,7 +229,7 @@ export const REGELN: Regel[] = [
     kurz: 'Kein Teil der WoFlV; frühere Regel der II. BV für Flächen aus Rohbaumaßen, in der Praxis (z. B. Archicad-Zonen) üblich.',
     text: [
       'Die bis 31.12.2003 geltenden §§ 42–44 der Zweiten Berechnungsverordnung (II. BV; § 43 Abs. 3 a. F.) ließen Grundflächen, die aus Rohbaumaßen einer Bauzeichnung ermittelt wurden, pauschal um 3 % kürzen (die II. BV gilt im Übrigen fort; §§ 43 und 44 sind weggefallen). Die WoFlV enthält diese Regel nicht mehr; sie verlangt lichte Maße ab Vorderkante der Bekleidung (§ 3).',
-      'Viele Büros und Programme (z. B. Archicad-Zonen mit Rohbaumaßen) rechnen den Abzug weiter. Der Flächenrechner übernimmt ihn je Raum aus der IFC (Verhältnis Nettofläche zu Zonenfläche) oder als Eingabe. In Excel-Vorlagen stehen Werte mit (raum.flaeche, raum.wofl) und ohne Abzug (…_roh) bereit, damit nicht doppelt abgezogen wird.',
+      'Viele Büros und Programme (z. B. Archicad-Zonen mit Rohbaumaßen) rechnen den Abzug weiter. QUADRIO übernimmt ihn je Raum aus der IFC (Verhältnis Nettofläche zu Zonenfläche) oder als Eingabe. In Excel-Vorlagen stehen Werte mit (raum.flaeche, raum.wofl) und ohne Abzug (…_roh) bereit, damit nicht doppelt abgezogen wird.',
     ],
     quellen: [WOFLV('3'), { titel: 'Zweite Berechnungsverordnung (II. BV)', fundstelle: '§ 43 Abs. 3 II. BV a. F. (bis 31.12.2003)' }],
     stichworte: ['Putzabzug', '3 %', 'Rohbaumaße', 'II. BV', 'Archicad', 'Zone'],
@@ -244,7 +244,7 @@ export const REGELN: Regel[] = [
     titel: 'Welche BauNVO gilt? (Fassung nach dem Bebauungsplan)',
     kurz: 'Maßgebend ist die Fassung, die beim Inkrafttreten des Bebauungsplans galt; ohne Plan das aktuelle Recht.',
     text: [
-      'Bebauungspläne verweisen statisch auf die BauNVO in der Fassung, die bei ihrem Inkrafttreten (bzw. der öffentlichen Auslegung) galt. Der GRZ-Nachweis wählt die Fassung aus dem Plandatum; sie lässt sich übersteuern:',
+      'Bebauungspläne verweisen statisch auf die BauNVO in der Fassung, die bei ihrem Inkrafttreten (bzw. der öffentlichen Auslegung) galt. TERRIO wählt die Fassung aus dem Plandatum; sie lässt sich übersteuern:',
       '- **BauNVO 1962**: 01.08.1962 – 31.12.1968',
       '- **BauNVO 1968/1977**: 01.01.1969 – 26.01.1990 (Neufassungen 1968 und 1977 mit gleicher Systematik für GRZ/GF)',
       '- **BauNVO 1990 ff.**: ab 27.01.1990 (später mehrfach geändert, u. a. 2013, 2017, 2021, 2023)',
@@ -268,9 +268,9 @@ export const REGELN: Regel[] = [
     titel: 'Grundflächenzahl GRZ und GRZ II (§ 19 BauNVO)',
     kurz: 'Überdeckte Fläche je m² Grundstück; Garagen, Stellplätze mit Zufahrten, Nebenanlagen und Unterbauungen bis +50 %, höchstens 0,8.',
     text: [
-      'Die **Grundfläche** ist der Teil des Baugrundstücks, der von baulichen Anlagen überdeckt wird – eine Überdeckung, keine Summe: Was sich überlagert, zählt nur einmal. Der GRZ-Nachweis bildet deshalb die Vereinigung aller Flächen (Gebäude und Lageplan-Flächen).',
+      'Die **Grundfläche** ist der Teil des Baugrundstücks, der von baulichen Anlagen überdeckt wird – eine Überdeckung, keine Summe: Was sich überlagert, zählt nur einmal. TERRIO bildet deshalb die Vereinigung aller Flächen (Gebäude und Lageplan-Flächen).',
       'Nach § 19 Abs. 4 (ab 1990) werden Garagen und Stellplätze mit Zufahrten, Nebenanlagen und unterirdische Anlagen mitgerechnet (**GRZ II**); die zulässige Grundfläche darf durch sie um bis zu 50 % überschritten werden, höchstens bis 0,8.',
-      '**Terrassen, Wege, sonstige befestigte Flächen:** § 19 BauNVO 1990 nennt sie nicht ausdrücklich. In der Praxis rechnen viele Bauaufsichten eine angebaute, ebenerdige Terrasse der Hauptanlage zu (GRZ I); andere werten sie als Nebenanlage nach § 14 (GRZ II) oder lassen nicht überdeckte, ebenerdige Flächen außer Betracht. Der GRZ-Nachweis zeigt deshalb „prüfen“ und rechnet ohne und mit ihnen; die Einstufung wird mit der Bauaufsicht geklärt und unter „Einstufung offener Fälle“ festgelegt.',
+      '**Terrassen, Wege, sonstige befestigte Flächen:** § 19 BauNVO 1990 nennt sie nicht ausdrücklich. In der Praxis rechnen viele Bauaufsichten eine angebaute, ebenerdige Terrasse der Hauptanlage zu (GRZ I); andere werten sie als Nebenanlage nach § 14 (GRZ II) oder lassen nicht überdeckte, ebenerdige Flächen außer Betracht. TERRIO zeigt deshalb „prüfen“ und rechnet ohne und mit ihnen; die Einstufung wird mit der Bauaufsicht geklärt und unter „Einstufung offener Fälle“ festgelegt.',
       'Nach BauNVO 1968/1977 bleiben Balkone, Loggien, Terrassen und Nebenanlagen nach § 19 Abs. 4 unberücksichtigt; nach BauNVO 1962 werden Garagen in Kern-, Gewerbe- und Industriegebieten nicht angerechnet (§ 19 Abs. 5).',
     ],
     zitate: [
@@ -290,8 +290,8 @@ export const REGELN: Regel[] = [
     titel: 'Vollgeschosse und Geschossflächenzahl GFZ (§ 20 BauNVO)',
     kurz: 'Vollgeschoss nach Landesrecht; Geschossfläche nach Außenmaßen aller Vollgeschosse, ohne Balkone, Loggien, Terrassen.',
     text: [
-      'Was ein Vollgeschoss ist, regelt die Landesbauordnung (siehe BauO NRW). Die **Geschossfläche** ist nach Außenmaßen in allen Vollgeschossen zu ermitteln; Balkone, Loggien und Terrassen bleiben unberücksichtigt – der GRZ-Nachweis rechnet deshalb nur Umrisse mit Raumumschließung R.',
-      'Vor 1990 (BauNVO 1962, 1968/1977) sind zusätzlich die Flächen von Aufenthaltsräumen in anderen Geschossen samt zugehöriger Treppenräume und Umfassungswände mitzurechnen. Der GRZ-Nachweis erweitert diese Räume um den Wandzuschlag (Standard 0,25 m) und begrenzt sie auf den Geschossgrundriss.',
+      'Was ein Vollgeschoss ist, regelt die Landesbauordnung (siehe BauO NRW). Die **Geschossfläche** ist nach Außenmaßen in allen Vollgeschossen zu ermitteln; Balkone, Loggien und Terrassen bleiben unberücksichtigt – TERRIO rechnet deshalb nur Umrisse mit Raumumschließung R.',
+      'Vor 1990 (BauNVO 1962, 1968/1977) sind zusätzlich die Flächen von Aufenthaltsräumen in anderen Geschossen samt zugehöriger Treppenräume und Umfassungswände mitzurechnen. TERRIO erweitert diese Räume um den Wandzuschlag (Standard 0,25 m) und begrenzt sie auf den Geschossgrundriss.',
     ],
     zitate: [
       { text: '(1) Als Vollgeschosse gelten Geschosse, die nach landesrechtlichen Vorschriften Vollgeschosse sind oder auf ihre Zahl angerechnet werden.', quelle: '§ 20 Abs. 1 BauNVO' },
@@ -312,7 +312,7 @@ export const REGELN: Regel[] = [
     titel: 'Garagen und Stellplätze (§ 21a BauNVO)',
     kurz: 'Überdachte Stellplätze und Garagen dürfen die zulässige Grundfläche um bis zu 0,1 der Grundstücksfläche überschreiten (soweit § 19 Abs. 4 nicht entgegensteht).',
     text: [
-      'Der GRZ-Nachweis rechnet nach BauNVO 1968/1977 Garagen bis 0,1 der Grundstücksfläche anrechnungsfrei („bis 0,1 frei“); darüber hinaus zählen sie zur Grundfläche. Ab 1990 gehen Garagen in die GRZ II ein.',
+      'TERRIO rechnet nach BauNVO 1968/1977 Garagen bis 0,1 der Grundstücksfläche anrechnungsfrei („bis 0,1 frei“); darüber hinaus zählen sie zur Grundfläche. Ab 1990 gehen Garagen in die GRZ II ein.',
     ],
     zitate: [
       {
@@ -333,7 +333,7 @@ export const REGELN: Regel[] = [
     titel: 'Vollgeschoss nach BauO NRW 2018 (ab 01.01.2019)',
     kurz: 'Oberirdisch (Decke im Mittel > 1,60 m über Gelände) und lichte Höhe ≥ 2,30 m über mehr als ¾ der Grundfläche des Geschosses darunter.',
     text: [
-      'Der GRZ-Nachweis prüft je Geschoss:',
+      'TERRIO prüft je Geschoss:',
       '- **oberirdisch?** Deckenoberkante im Mittel über der Geländeoberfläche – das Gelände wird entlang der Außenwände *dieses* Geschosses ermittelt (Geländemodell der IFC bzw. Lageplan-Flächen mit Höhe), am Hang also für jedes Geschoss getrennt',
       '- **lichte Höhe** ≥ 2,30 m (Höhe bis Dachhaut bzw. Decke abzüglich Dachaufbau) über mehr als drei Viertel der Grundfläche des darunterliegenden Geschosses; Split-Level-Räume mit tieferem Fußboden zählen mit ihrer größeren Höhe',
     ],
@@ -373,7 +373,7 @@ export const REGELN: Regel[] = [
     titel: 'Vollgeschoss nach BauO NW 1962/1970 (01.10.1962 – 31.12.1984)',
     kurz: 'Vollständig über der festgelegten Geländeoberfläche, über mindestens ⅔ der Grundfläche die für Aufenthaltsräume erforderliche lichte Höhe; Kellergeschosse > 1,40 m im Mittel werden angerechnet.',
     text: [
-      '„Vollständig über der Geländeoberfläche“ prüft der GRZ-Nachweis am **höchsten Punkt** des Geländes entlang der Außenwände des Geschosses. Erforderliche lichte Höhe für Aufenthaltsräume nach § 59: 2,50 m, in Einfamilienhäusern und im Dachraum 2,30 m.',
+      '„Vollständig über der Geländeoberfläche“ prüft TERRIO am **höchsten Punkt** des Geländes entlang der Außenwände des Geschosses. Erforderliche lichte Höhe für Aufenthaltsräume nach § 59: 2,50 m, in Einfamilienhäusern und im Dachraum 2,30 m.',
       'Geschosse mit mehr als 1,80 m lichter Höhe unterhalb der Traufenoberkante und Garagengeschosse werden nicht automatisch angerechnet – sie lassen sich je Geschoss festlegen.',
     ],
     zitate: [
@@ -393,7 +393,7 @@ export const REGELN: Regel[] = [
     titel: 'Aufenthaltsräume: Begriff und lichte Höhe',
     kurz: 'Räume zum nicht nur vorübergehenden Aufenthalt; NRW 2018: lichte Raumhöhe 2,40 m, im Dachraum/Keller 2,20 m über mindestens die Hälfte.',
     text: [
-      'Für die Geschossfläche vor 1990 prüft der GRZ-Nachweis Räume in Nicht-Vollgeschossen zweifach: nach der **Nutzung** (Raumname, Nutzungsgruppe) und nach der **lichten Höhe**, die die maßgebende Bauordnung für Aufenthaltsräume verlangt. Erfüllt ein Wohnraum die Höhe nicht, wird er nicht als Aufenthaltsraum vorgeschlagen; jede Einstufung lässt sich festlegen.',
+      'Für die Geschossfläche vor 1990 prüft TERRIO (GRZ-Nachweis) Räume in Nicht-Vollgeschossen zweifach: nach der **Nutzung** (Raumname, Nutzungsgruppe) und nach der **lichten Höhe**, die die maßgebende Bauordnung für Aufenthaltsräume verlangt. Erfüllt ein Wohnraum die Höhe nicht, wird er nicht als Aufenthaltsraum vorgeschlagen; jede Einstufung lässt sich festlegen.',
       '- BauO NW 1962/1970 (§ 59): 2,50 m, in Einfamilienhäusern und im Dachraum 2,30 m',
       '- BauO NRW 2018 (§ 46): 2,40 m; im Dachraum und Kellergeschoss 2,20 m über mindestens die Hälfte der Netto-Raumfläche, Raumteile bis 1,50 m bleiben außer Betracht; Wohngebäude der Gebäudeklassen 1 und 2: 2,30 m kann gestattet werden',
       '- BauO NW 1984/1995, BauO NRW 2000: das Tool rechnet mit denselben Werten wie 2018 – im Einzelfall anhand der damaligen Fassung prüfen',
@@ -475,7 +475,7 @@ export const REGELN: Regel[] = [
       'Jeder BGF-Umriss hat einen **Höhenversatz des Körpers**, jeder Raum eine **Höhenlage des Fußbodens** – beide gegenüber dem Geschoss (negativ = tiefer).',
       '- **Höhenversatz Körper (Umriss):** Der ganze Körper samt Dach wird verschoben, seine Höhe (**Körperhöhe** bzw. Geschosshöhe) bleibt – der BRI ändert sich dadurch nicht. Soll die Oberkante bleiben, die Körperhöhe um den Versatz vergrößern (z. B. −0,60 m Versatz und Geschosshöhe + 0,60 m). Überschneidungen mit anderen Geschossen werden nicht abgezogen.',
       '- **Raum tiefer als sein Umriss:** BRI + Raumfläche (Polygon, ohne Putzabzug) × Absenkung. Exakt ist ein eigener Umriss für den abgesenkten Bereich; die Raumfläche ist eine Näherung ohne die Wände darunter.',
-      'Beim IFC-Import wird der Fußboden jeder Zone mit dem üblichen Fußboden ihres Geschosses verglichen; Abweichungen ab 5 cm werden als Höhenlage übernommen und im Bericht genannt. Im GRZ-Nachweis gehen tiefer liegende Räume mit ihrer größeren lichten Höhe ein.',
+      'Beim IFC-Import wird der Fußboden jeder Zone mit dem üblichen Fußboden ihres Geschosses verglichen; Abweichungen ab 5 cm werden als Höhenlage übernommen und im Bericht genannt. In TERRIO (GRZ-Nachweis) gehen tiefer liegende Räume mit ihrer größeren lichten Höhe ein.',
     ],
     quellen: [DIN277],
     stichworte: ['Split-Level', 'Höhenlage', 'Höhenversatz', 'Versatz', 'Körperhöhe', 'abgesenkt', 'tiefer', 'Absenkung', 'Halbgeschoss'],
@@ -534,7 +534,7 @@ export const REGELN: Regel[] = [
     kurz: 'Grundfläche, Bilanz und Summen über Vereinigung; jede Stelle gehört der am stärksten angerechneten Fläche.',
     text: [
       'GRZ, GRZ II, Flächenbilanz und Grundstücksfläche werden aus der **Vereinigung** der Flächen gebildet. In der Flächenliste wird jede Stelle genau einer Fläche zugeordnet – in der Reihenfolge Hauptanlage, GRZ II, Garagen 0,1, „prüfen“, „zählt nicht“, bei gleichem Rang nach der Listenfolge. Die Spalte „m²“ zeigt diesen eindeutigen Anteil außerhalb des Gebäudes; ihre Summe ist überlagerungsfrei. Überlagerungen werden als Hinweis genannt.',
-      'Auch im Flächenrechner überlagern sich BGF-Umrisse eines Geschosses in GRZ und Bodenplatte nie doppelt (Vereinigung); die BGF selbst ist die Summe der gezeichneten Umrisse – überlappend gezeichnete Umrisse zeigt die Auswertung als zu hohe BGF.',
+      'Auch in QUADRIO (Flächenrechner) überlagern sich BGF-Umrisse eines Geschosses in GRZ und Bodenplatte nie doppelt (Vereinigung); die BGF selbst ist die Summe der gezeichneten Umrisse – überlappend gezeichnete Umrisse zeigt die Auswertung als zu hohe BGF.',
     ],
     quellen: [BAUNVO('19')],
     stichworte: ['Überlagerung', 'überlappend', 'doppelt', 'Vereinigung', 'eindeutig', 'Flächenbilanz'],
@@ -549,7 +549,7 @@ export const REGELN: Regel[] = [
     text: [
       'Beim ersten Import merkt sich jedes übernommene Element (Geschoss, Raum, BGF-Umriss, Lageplan-Fläche) die IFC-GlobalId und die Werte aus der IFC. Beim **Aktualisieren** gilt je Wert: seit dem Import nicht geändert → neuer Wert aus der IFC; von Hand geändert → bleibt (hat sich auch die IFC geändert, steht das im Bericht).',
       'Neue Zonen kommen hinzu, entfernte entfallen – außer sie wurden von Hand geändert. Von Hand gezeichnete Flächen bleiben unberührt. BGF-Umrisse (aus Wänden erzeugt, ohne eigene Id) werden über die größte Überdeckung zugeordnet.',
-      'Flächenrechner: IFC-Import → „aktuelles Projekt aktualisieren“. GRZ-Nachweis und Kostenermittlung: „IFC aktualisieren …“.',
+      'QUADRIO (Flächenrechner): IFC-Import → „aktuelles Projekt aktualisieren“. TERRIO (GRZ-Nachweis) und NUMIO (Kostenermittlung): „IFC aktualisieren …“.',
     ],
     quellen: [{ titel: 'buildingSMART: IFC (ISO 16739-1)', url: 'https://technical.buildingsmart.org/standards/ifc/' }],
     stichworte: ['IFC', 'Reimport', 'aktualisieren', 'GlobalId', 'Archicad', 'Abgleich'],
@@ -581,8 +581,8 @@ export interface Treffer {
  * Treffer in Titel und Stichworten wiegen schwerer.
  */
 /**
- * Regelsätze, die nur ihre eigenen Regeln zeigen – auch bei der Suche. Im GRZ-Nachweis führt „Terrasse“ sonst zur
- * WoFlV des Flächenrechners statt zu § 19 BauNVO.
+ * Regelsätze, die nur ihre eigenen Regeln zeigen – auch bei der Suche. In TERRIO führt „Terrasse“ sonst zur
+ * WoFlV von QUADRIO statt zu § 19 BauNVO.
  */
 const NUR_EIGENE_REGELN: RegelApp[] = ['grz'];
 

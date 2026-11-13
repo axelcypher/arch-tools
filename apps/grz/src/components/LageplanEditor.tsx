@@ -32,7 +32,7 @@ const FANG_PX = 10;
 const ZIEH_PX = 3;
 
 /**
- * Werkzeuge und Tasten wie im Flächenrechner. kurz: die zwei, drei wichtigsten Kürzel für die Hilfezeile; alle:
+ * Werkzeuge und Tasten wie in QUADRIO. kurz: die zwei, drei wichtigsten Kürzel für die Hilfezeile; alle:
  * vollständige Übersicht hinter „?“
  */
 const WERKZEUGE: { id: Werkzeug; label: string; taste: string; kurz: string[]; alle: string[]; titel: string }[] = [
@@ -94,7 +94,7 @@ type Ziehen =
   | { art: 'rahmen'; start: Point; cur: Point };
 
 /**
- * Lageplan: Gebäude (Hauptanlage), Grundstück und Lageplan-Flächen. Bedienung wie im Flächenrechner:
+ * Lageplan: Gebäude (Hauptanlage), Grundstück und Lageplan-Flächen. Bedienung wie in QUADRIO:
  * Flächen auswählen und verschieben, Punkte ziehen, über ◇ einfügen und per Rechtsklick löschen,
  * als Polygon oder Rechteck zeichnen; Ecken von Gebäude und Flächen werden gefangen.
  */
@@ -453,7 +453,7 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
     }
   };
 
-  // Tastatur wie im Flächenrechner
+  // Tastatur wie in QUADRIO
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (!zeichenKuerzelErlaubt(e, svgRef.current)) return;

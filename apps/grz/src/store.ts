@@ -8,8 +8,8 @@ import { logger } from '@core/platform/log';
 import { zwischenstandErsetzt, zwischenstandLadenErlaubt, zwischenstandWirdGeladen } from '@core/platform/startschutz';
 
 /**
- * Zustand des GRZ-Nachweises: das Projekt im gemeinsamen Format (.oap) – Gebäude und Geschosse
- * kommen aus dem Flächenrechner bzw. der IFC, Lageplan und Festsetzungen pflegt dieses Tool.
+ * Zustand von TERRIO: das Projekt im gemeinsamen Format (.oap) – Gebäude und Geschosse
+ * kommen aus QUADRIO bzw. der IFC, Lageplan und Festsetzungen pflegt dieses Tool.
  */
 
 const log = logger('projekt');

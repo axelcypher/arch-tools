@@ -41,7 +41,7 @@ export function App() {
   const [bericht, setBericht] = useState<IfcBericht | null>(null);
 
   useEffect(() => {
-    document.title = `${dirty ? '• ' : ''}${name} – GRZ-Nachweis`;
+    document.title = `${dirty ? '• ' : ''}${name} – ${APP_NAMEN.grz.name}`;
   }, [name, dirty]);
 
   /** vor Öffnen/Neu: ungespeicherte Änderungen speichern, verwerfen oder abbrechen */
@@ -227,7 +227,7 @@ export function App() {
           <ProjektEinstieg
             titel="GRZ-Nachweis"
             text={
-              'Projekt oder IFC öffnen: ein Projekt des Flächenrechners (.oap) oder direkt ein IFC-Modell. Gebäudeumrisse, Geschosse und Geschossflächen kommen aus dem Projekt, den Lageplan pflegt dieses Tool; gespeichert wird in dieselbe Projektdatei. „Neues Projekt“ beginnt mit leerem Lageplan.'
+              'Projekt oder IFC öffnen: ein Projekt aus QUADRIO (Flächenrechner, .oap) oder direkt ein IFC-Modell. Gebäudeumrisse, Geschosse und Geschossflächen kommen aus dem Projekt, den Lageplan pflegt dieses Tool; gespeichert wird in dieselbe Projektdatei. „Neues Projekt“ beginnt mit leerem Lageplan.'
             }
             onProjekte={isTauri() ? () => setProjekteOffen(true) : undefined}
             onDateiOeffnen={() => void onOpen()}

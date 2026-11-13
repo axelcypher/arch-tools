@@ -1,7 +1,7 @@
 /**
  * Projektdatei (.oap) im echten Projektordner als Quelle der Projektstammdaten – statt der früheren
- * Projektdaten.xlsx. Die .oap ist das gemeinsame Projektarchiv von Flächenrechner, GRZ-Nachweis,
- * Kostenermittlung und Projektordner (ZIP mit `manifest.json` und `projekt.json`); die Stammdaten stehen in
+ * Projektdaten.xlsx. Die .oap ist das gemeinsame Projektarchiv von QUADRIO (Flächenrechner), TERRIO (GRZ-Nachweis),
+ * NUMIO (Kostenermittlung) und ATLAS (Projekt), ein ZIP mit `manifest.json` und `projekt.json`; die Stammdaten stehen in
  * `projekt.json` unter `meta`: Projektcode, Vorhaben, Aktenzeichen, Adresse des Vorhabens, Grundstück, Bauherr.
  *
  * Gelesen, gezielt geändert und angelegt wird über den gemeinsamen Zugriff in packages/core (projektdatei.ts,
@@ -150,7 +150,7 @@ export interface OapInhalt {
   meta: ProjectMeta;
 }
 
-/** Projektdatei lesen (wie Flächenrechner & Co.: geprüft und vervollständigt) */
+/** Projektdatei lesen (wie QUADRIO & Co.: geprüft und vervollständigt) */
 export function oapLesen(bytes: Uint8Array): OapInhalt {
   const p = readProjectFile(bytes);
   return { name: p.name, meta: p.meta };

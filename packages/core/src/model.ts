@@ -99,7 +99,7 @@ export interface OutlineShape extends ShapeBase {
   /** Dach/oberer Abschluss: BRI dieses Umrisses = Volumen vom Fußboden bis zur Dachhaut */
   dach?: Dach;
   /**
-   * GRZ-Nachweis: Gebäudeteil ist keine Hauptanlage, sondern Garage/Carport bzw. Nebenanlage (angebaut, aus der IFC) –
+   * TERRIO: Gebäudeteil ist keine Hauptanlage, sondern Garage/Carport bzw. Nebenanlage (angebaut, aus der IFC) –
    * gerechnet als Anlage nach § 19 Abs. 4 BauNVO 1990 bzw. § 21a (1962–1977). Ohne Angabe: Hauptanlage.
    */
   anlage?: 'garage' | 'nebenanlage';
@@ -157,7 +157,7 @@ export interface LageplanFlaeche {
   nachbar?: boolean;
   /** mittlere Höhe der Oberfläche über ±0,00 in m (aus dem Modell) – für die Geländeoberfläche */
   hoehe?: number;
-  /** GRZ-Nachweis: Fläche gehört nur zu dieser Variante („B“); ohne Angabe zu allen */
+  /** TERRIO: Fläche gehört nur zu dieser Variante („B“); ohne Angabe zu allen */
   variante?: string;
   /** Herkunft aus der IFC (GlobalId des Bauteils, ggf. mit Teilnummer) – für den erneuten Import */
   ifcId?: string;
@@ -165,7 +165,7 @@ export interface LageplanFlaeche {
 }
 
 /**
- * Lageplan des Grundstücks. Gepflegt vom GRZ/GFZ-Nachweis; der Flächenrechner übernimmt ihn beim
+ * Lageplan des Grundstücks. Gepflegt von TERRIO; QUADRIO übernimmt ihn beim
  * IFC-Import (Geschoss „Lageplan“) und bewahrt ihn beim Speichern.
  */
 export interface Lageplan {
@@ -316,10 +316,10 @@ export interface ProjectSettings {
   zweiteBV?: boolean;
   /** Planungsunterlagen der Ermittlung (DIN 277:2021-08, 5.1), z. B. „Grundrisse 1:100, Stand 01.10.2026“; leer = hinterlegte Pläne */
   planunterlagen?: string;
-  /** Flächenrechner: Vorlage und Abschnitte des Berichts (geprüft in der App) */
+  /** QUADRIO: Vorlage und Abschnitte des Berichts (geprüft in der App) */
   bericht?: { vorlage?: string; abschnitte?: string[] };
   /**
-   * Flächenrechner: Kontrollmaß nach dem Kalibrieren je Geschoss (Geschoss-Kennung → Soll, gemessen, Abweichung und
+   * QUADRIO: Kontrollmaß nach dem Kalibrieren je Geschoss (Geschoss-Kennung → Soll, gemessen, Abweichung und
    * Maßstab des Plans beim Messen – passt er nicht mehr zum Plan, gilt das Kontrollmaß nicht, siehe gueltigesKontrollmass)
    */
   kontrollmasse?: Record<string, Kontrollmass>;
@@ -396,8 +396,8 @@ export interface Beteiligter {
 }
 
 /**
- * Projektstammdaten – gemeinsam für alle Apps (Flächenrechner, GRZ-Nachweis, Kostenermittlung, Projektordner,
- * Formulare, Entzerrung); die Formulare-App gleicht sie mit der Projektkarte von FORMA ab.
+ * Projektstammdaten – gemeinsam für alle Apps (QUADRIO, TERRIO, NUMIO, ATLAS,
+ * PERMIO, RECTIO); PERMIO gleicht sie mit der Projektkarte von FORMA ab.
  */
 /** Kurzfassung eines Antrags für die Projektübersicht */
 export interface AntragKurz {
@@ -440,7 +440,7 @@ export interface ProjectMeta {
    * `antraege`); dieser Eintrag wird nur noch gelesen und beim ersten Speichern dorthin übernommen.
    */
   merkmale?: Record<string, string>;
-  /** Der aktive Antrag (von Formulare gepflegt, wie dort im Projekt angezeigt) – für die Startseiten aller Apps */
+  /** Der aktive Antrag (von PERMIO gepflegt, wie dort im Projekt angezeigt) – für die Startseiten aller Apps */
   antrag?: AntragKurz;
   /** Stand des Projekts: Akquise, aktiv, abgeschlossen – fehlt = aktiv (Filter der Projektübersicht) */
   status?: ProjektStatus;
@@ -466,7 +466,7 @@ export const LEISTUNGSPHASEN: { nr: number; label: string }[] = [
   { nr: 9, label: 'Objektbetreuung' },
 ];
 
-/** Angaben der App „Projekt“ (früher „Projektordner“) zum Projekt – Abschnitt `projektordner` der Projektdatei */
+/** Angaben von ATLAS (früher „Projekt“ bzw. „Projektordner“) zum Projekt – Abschnitt `projektordner` der Projektdatei */
 export interface ProjektordnerAngaben {
   /** Struktur, nach der der Projektordner angelegt bzw. zuletzt ergänzt wurde */
   struktur?: string;
@@ -521,10 +521,10 @@ export function flurText(g: Grundstueck): string {
 }
 
 /** Art einer mitgespeicherten Originaldatei */
-/** `qgis`: QGIS-Projekt als Vorlage der Katasterpläne (Formulare), wird mit dem Projekt aufbewahrt */
+/** `qgis`: QGIS-Projekt als Vorlage der Katasterpläne (ATLAS), wird mit dem Projekt aufbewahrt */
 export type DateiArt = 'ifc' | 'dxf' | 'pdf' | 'vorlage' | 'vorlage-grz' | 'vorlage-kosten' | 'qgis';
 
-/** Excel-Vorlagen: „vorlage“ des Flächenrechners, „vorlage-grz“ des GRZ-Nachweises, „vorlage-kosten“ der Kostenermittlung */
+/** Excel-Vorlagen: „vorlage“ von QUADRIO, „vorlage-grz“ von TERRIO, „vorlage-kosten“ von NUMIO */
 export const istVorlage = (art: DateiArt) => art === 'vorlage' || art === 'vorlage-grz' || art === 'vorlage-kosten';
 
 /** Originaldatei eines Imports bzw. die Excel-Vorlage des Projekts – im Archiv unter quellen/ abgelegt */
@@ -566,9 +566,9 @@ export interface Project {
   massNutzung?: MassNutzung;
   /** Kostenermittlung nach DIN 276 */
   kosten?: Kosten;
-  /** Angaben der App „Projekt“ (Struktur, Vorlagen-Presets) */
+  /** Angaben von ATLAS (Struktur, Vorlagen-Presets) */
   projektordner?: ProjektordnerAngaben;
-  /** Angaben der App „Formulare“ (Projektumfang, aktive Antragsfassung …) – geprüft wird in der App, hier nur durchgereicht */
+  /** Angaben von PERMIO (Projektumfang, aktive Antragsfassung …) – geprüft wird in der App, hier nur durchgereicht */
   formulare?: unknown;
   /** Namensschema des Projekts (Kürzel, Stellen im Dateinamen, Indizes) – siehe namensschema.ts; fehlt = das des Büros */
   namensschema?: Namensschema;

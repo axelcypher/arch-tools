@@ -1,4 +1,5 @@
 import { ARCHIV_ENDUNG, readProjectFile } from '@core/archive';
+import { APP_NAMEN } from '@core/appNamen';
 import { buildFromIfc } from '@core/ifcImport';
 import { projektAusIfc } from '@core/ifcAbgleich';
 import type { Project } from '@core/model';
@@ -23,7 +24,7 @@ export interface Geoeffnet {
 }
 
 /**
- * Projekt öffnen: Projektarchiv des Flächenrechners (.oap), frühere JSON-Projektdateien
+ * Projekt öffnen: Projektarchiv von QUADRIO (.oap), frühere JSON-Projektdateien
  * oder direkt ein IFC-Modell (Geschosse, BGF-Umrisse, Räume mit Wohnflächen, Dach, Lageplan).
  */
 export async function oeffnen(onProgress?: (msg: string) => void, bisher?: string | null): Promise<Geoeffnet | null> {
@@ -51,9 +52,9 @@ export async function oeffnen(onProgress?: (msg: string) => void, bisher?: strin
   return { project: p, datei: f.pfad ?? f.name, basis: p, bericht: [] };
 }
 
-/** Speichert das Projekt als Archiv (.oap) – dieselbe Datei öffnen auch Flächenrechner und GRZ-Nachweis */
+/** Speichert das Projekt als Archiv (.oap) – dieselbe Datei öffnen auch QUADRIO und TERRIO */
 export function speichern(p: Project, datei: string | null, basis: Project | null, unter = false): Promise<ProjektGespeichert | null> {
-  return projektSpeichern({ project: p, basis, datei, unter, app: `Kostenermittlung ${__APP_VERSION__}`, fuerDatei: vorlage.mit });
+  return projektSpeichern({ project: p, basis, datei, unter, app: `${APP_NAMEN.kosten.name} ${__APP_VERSION__}`, fuerDatei: vorlage.mit });
 }
 
 /** Projekt mit einem neuen Export desselben IFC-Modells aktualisieren – Änderungen von Hand bleiben */

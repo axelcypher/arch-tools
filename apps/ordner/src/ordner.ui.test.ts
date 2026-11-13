@@ -74,7 +74,7 @@ const warten = () =>
   });
 const weiter = (host: Element) => act(() => knopf(host, 'Weiter:').click());
 
-describe('Projekt (früher Projektordner)', () => {
+describe('ATLAS (Projekt, früher Projektordner)', () => {
   it('„Projekte“ in der Titelleiste wie in den anderen Apps: führt zur Startseite des Assistenten (Q-5, P-13)', () => {
     const host = render();
     act(() => knopf(host, 'Ordner prüfen').click());
@@ -878,7 +878,7 @@ describe('Auftrag aus einer anderen App (Rahmen-App)', () => {
     (window as unknown as { happyDOM: { setURL: (u: string) => void } }).happyDOM.setURL('http://localhost:3000/');
   });
 
-  it('„Neues Projekt anlegen“ im Flächenrechner: Assistent beginnt mit den Stammdaten, „Zurück zu Flächenrechner“', async () => {
+  it('„Neues Projekt anlegen“ in QUADRIO: Assistent beginnt mit den Stammdaten, „Zurück zu QUADRIO“', async () => {
     const gesendet: unknown[] = [];
     const rahmen = { postMessage: (d: unknown) => gesendet.push(d) } as unknown as Window;
     Object.defineProperty(window, 'parent', { value: rahmen, configurable: true });
@@ -889,13 +889,13 @@ describe('Auftrag aus einer anderen App (Rahmen-App)', () => {
     act(() => knopf(host, 'Struktur').click());
     act(() =>
       window.dispatchEvent(
-        new MessageEvent('message', { data: { typ: 'arch-tools:assistent-neu', von: 'flaechenrechner', vonName: 'Flächenrechner', kannOeffnen: true, an: 'ordner' }, origin: window.location.origin, source: rahmen }),
+        new MessageEvent('message', { data: { typ: 'arch-tools:assistent-neu', von: 'flaechenrechner', vonName: 'QUADRIO', kannOeffnen: true, an: 'ordner' }, origin: window.location.origin, source: rahmen }),
       ),
     );
     expect(knopf(host, 'Assistent').className).toContain('active');
     expect(host.querySelector('h2')?.textContent).toBe('Stammdaten');
-    expect(host.querySelector('.po-kontext')?.textContent).toContain('aus Flächenrechner');
-    act(() => knopf(host, 'Zurück zu Flächenrechner').click());
+    expect(host.querySelector('.po-kontext')?.textContent).toContain('aus QUADRIO');
+    act(() => knopf(host, 'Zurück zu QUADRIO').click());
     expect(gesendet).toContainEqual({ typ: 'arch-tools:zur-app', an: 'flaechenrechner', app: 'ordner' });
   });
 });
@@ -910,7 +910,7 @@ describe('Startseite mit der gemeinsamen Projektübersicht', () => {
     // ein Projekt mit Projektdatei, eines ohne
     await ausfuehren(fs, 'P:/Projekte', planen({ ...leereStammdaten(), nummer: '2026-014', kurzname: 'EFH Musterweg', bezeichnung: 'Neubau EFH', leistungsphasen: [1, 2] }, STANDARD, [], [], new Date(2026, 9, 1)));
     await fs.ordnerAnlegen('P:/Projekte', '2019-003 Altbau/Pläne');
-    await zuletztMerken('P:/Projekte/2019-003 Altbau', 'Formulare', 1000);
+    await zuletztMerken('P:/Projekte/2019-003 Altbau', 'PERMIO', 1000);
     store.setState({ allgemein: { ...VORGABE_ALLGEMEIN, projekte: ['P:/Projekte'] }, struktur: STANDARD });
     const geoeffnet: string[] = [];
     let neu = 0;

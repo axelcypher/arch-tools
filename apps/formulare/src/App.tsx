@@ -131,7 +131,7 @@ export function App() {
 
   useEffect(() => {
     // ungespeichert auch bei Bearbeitungen in Dokumenten (PDF, Excel, Word) – wie die Titelleiste (dirty)
-    document.title = `${geaendert || dokGeaendert ? '● ' : ''}${name} – Formulare`;
+    document.title = `${geaendert || dokGeaendert ? '● ' : ''}${name} – ${APP_NAMEN.formulare.name}`;
   }, [name, geaendert, dokGeaendert]);
 
   useEffect(() => {
@@ -148,7 +148,7 @@ export function App() {
     const zurueck = () => {
       if (!sichtbar()) return;
       void auffrischen(true);
-      // das Namensschema des Büros kann im Projektordner-Tool geändert worden sein
+      // das Namensschema des Büros kann in ATLAS (Projekt) geändert worden sein
       void useFormulare.getState().namensschemaNeuLesen();
     };
     const takt = setInterval(() => sichtbar() && void auffrischen(), 15_000);

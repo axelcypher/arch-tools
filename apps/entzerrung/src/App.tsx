@@ -41,7 +41,7 @@ export function App() {
   const name = dateiname?.replace(/\.entz$/i, '') ?? (doc.fotos[0]?.name || 'Neues Projekt');
 
   useEffect(() => {
-    document.title = `${name} – Entzerrung`;
+    document.title = `${name} – ${APP_NAMEN.entzerrung.name}`;
   }, [name]);
 
   useEffect(() => {

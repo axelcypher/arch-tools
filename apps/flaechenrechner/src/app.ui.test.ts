@@ -25,7 +25,7 @@ afterEach(() => {
   document.body.innerHTML = '';
 });
 
-describe('Flächenrechner (Oberfläche)', () => {
+describe('QUADRIO (Oberfläche)', () => {
   it('Farbschema wechselt sofort (Menü ◐), ohne eigene Kopie in der App', () => {
     const host = render();
     expect(farbschemaWechseln(host, 'Dunkel')).toBe('dunkel');
@@ -48,7 +48,7 @@ describe('Flächenrechner (Oberfläche)', () => {
   });
 });
 
-describe('Flächenrechner: Prüfliste und Raumtabelle (F-10, F-21)', () => {
+describe('QUADRIO: Prüfliste und Raumtabelle (F-10, F-21)', () => {
   it('Ampel „Prüfen“ zeigt Warnungen; Klick wählt die Fläche; Raumtabelle listet die Räume nach Nummer', async () => {
     const { rectPoints } = await import('@core/geometry');
     const { createOutline, createRoom } = await import('@core/model');
@@ -73,7 +73,7 @@ describe('Flächenrechner: Prüfliste und Raumtabelle (F-10, F-21)', () => {
   });
 });
 
-describe('Flächenrechner: Mehrfachauswahl (Eigenschaften)', () => {
+describe('QUADRIO: Mehrfachauswahl (Eigenschaften)', () => {
   it('Nutzungsgruppe für alle: Anzeige und Rechnung gleich (Nutzungsart der alten Gruppe entfällt), Wohnung in vorhandener Schreibweise', async () => {
     const { rectPoints } = await import('@core/geometry');
     const { createOutline, createRoom } = await import('@core/model');
@@ -118,7 +118,7 @@ describe('Flächenrechner: Mehrfachauswahl (Eigenschaften)', () => {
   });
 });
 
-describe('Flächenrechner: Flächenaufstellung am Bildschirm', () => {
+describe('QUADRIO: Flächenaufstellung am Bildschirm', () => {
   it('ist ein Dialog: Fokus auf „Schließen“, Esc schließt und gibt den Fokus zurück', () => {
     useEditor.getState().loadProject(createProject('Haus'), null, 'Haus.oap');
     const host = render();

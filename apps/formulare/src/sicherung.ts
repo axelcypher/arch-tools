@@ -99,7 +99,7 @@ export function sicherungLesen(text: string): Sicherung {
   } catch {
     throw new Error('Die Datei ist kein gültiges JSON.');
   }
-  if (!istObjekt(o) || o.art !== SICHERUNG_ART) throw new Error('Die Datei enthält keine Einstellungen der App „Formulare“.');
+  if (!istObjekt(o) || o.art !== SICHERUNG_ART) throw new Error('Die Datei enthält keine Einstellungen der App PERMIO.');
   if (typeof o.version !== 'number' || o.version > 1) throw new Error('Die Datei stammt aus einer neueren Version der App – bitte zuerst aktualisieren.');
   const daten = istObjekt(o.daten) ? o.daten : {};
   const bekannt = new Set(SICHERUNG_BEREICHE.map((b) => b.schluessel));

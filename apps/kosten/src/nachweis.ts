@@ -110,7 +110,7 @@ const ring = (pts: Point[]): [number, number][] => pts.map((p) => [p.x, p.y]);
 const umrissName = (s: OutlineShape) => `${s.name || 'BGF-Umriss'} (${s.umschliessung})${s.subtract ? ' – Abzug' : ''}`;
 const raumName = (r: RoomShape) => `${[r.nummer, r.name].filter(Boolean).join(' ') || 'Raum'}${r.subtract ? ' – Abzug' : ''}`;
 
-/** Körper des Rauminhalts – dieselbe Geometrie, aus der der Flächenrechner den BRI ermittelt */
+/** Körper des Rauminhalts – dieselbe Geometrie, aus der QUADRIO den BRI ermittelt */
 function koerperVon(project: Project, storey: Storey, s: OutlineShape, floorZ: number): SolidFaces {
   if (s.dach?.typ === 'modell' && project.dachModell) return modellSolidFaces(project, storey, s, floorZ, RASTER);
   return solidFaces(s.points, s.dach, s.hoehe ?? storey.hoehe);
@@ -491,7 +491,7 @@ function berechneNachweis(project: Project, result: ProjectResult, waende: IfcWa
     fbg.hinweis = 'Die Grundstücksfläche fehlt in den Projektdaten.';
     auf.hinweis = 'Ohne Grundstücksfläche in den Projektdaten lässt sich die Außenanlagenfläche nicht ableiten.';
   }
-  fbg.hinweis = fbg.hinweis ?? 'Die Grundstücksfläche stammt aus den Projektdaten (Flächenrechner) – sie hat keine eigene Geometrie.';
+  fbg.hinweis = fbg.hinweis ?? 'Die Grundstücksfläche stammt aus den Projektdaten (Stammdaten) – sie hat keine eigene Geometrie.';
 
   /* ---------- Wohneinheiten ---------- */
   const we = neu('we', 'plan');

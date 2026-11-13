@@ -1,9 +1,9 @@
 /**
- * Katasterpläne in der App „Projekt“: Einstellungen (QGIS-Vorlage, Pläne, Ablage, Dateiname – für alle im Büro im
+ * Katasterpläne in ATLAS (Projekt): Einstellungen (QGIS-Vorlage, Pläne, Ablage, Dateiname – für alle im Büro im
  * gemeinsamen Konfigurationsordner, Bereich „kataster“), der Pfad zu qgis_process (je Rechner) und der Export für ein
  * Projekt: Koordinaten und Kopfangaben aus der Projektdatei (.oap), die QGIS-Vorlage des Projekts ebenfalls dort.
  *
- * Früher Teil von Formulare – dessen Einstellungen (Bereich „formulare“, Eintrag „kataster“) werden beim ersten Laden
+ * Früher Teil von PERMIO (Formulare) – dessen Einstellungen (Bereich „formulare“, Eintrag „kataster“) werden beim ersten Laden
  * übernommen.
  */
 
@@ -27,9 +27,9 @@ const log = logger('kataster');
 export const KATASTER_BEREICH = 'kataster';
 /** Pfad zu qgis_process: je Rechner (nicht gemeinsam – die Installation unterscheidet sich) */
 const PROGRAMM = 'projektordner:qgis-programm';
-/** früher in Formulare */
+/** früher in PERMIO */
 const PROGRAMM_ALT = 'formulare:qgis-programm';
-/** Ordner der Anträge im Projektordner (wie in Formulare vorgegeben) */
+/** Ordner der Anträge im Projektordner (wie in PERMIO vorgegeben) */
 export const ANTRAGSORDNER = 'TÖB';
 
 function programmLesen(): string {
@@ -144,12 +144,12 @@ export const useKataster = create<KatasterState>()((set, get) => {
       try {
         let roh = await konfigLesen(KATASTER_BEREICH);
         if (!roh) {
-          // früher in Formulare: einmalig übernehmen
+          // früher in PERMIO: einmalig übernehmen
           const alt = (((await konfigLesen('formulare')) ?? {}) as Record<string, unknown>).kataster;
           if (alt) {
             roh = alt;
             await konfigAendern(KATASTER_BEREICH, () => alt as Record<string, unknown>);
-            log.info('Einstellungen der Katasterpläne aus Formulare übernommen');
+            log.info('Einstellungen der Katasterpläne aus PERMIO (Formulare) übernommen');
           }
         }
         set({ einstellungen: katasterAus(roh) });

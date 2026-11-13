@@ -5,7 +5,7 @@ import { globaleAva, LV_NAME_VARIABLEN, lvDateiname } from './platzhalter';
 
 const META = { projektcode: 'K62', kurzname: 'Kita', vorhaben: 'Neubau EFH / Garage', bearbeiter: 'TP' };
 
-describe('Platzhalter der AVA', () => {
+describe('Platzhalter von FABRIO', () => {
   it('Name neuer LV-Dateien: neue und alte Namen gleich, „/“ im Wert ergibt keinen Unterordner', () => {
     const w = { ...globaleAva(META, 'Projekt', undefined, new Date(2026, 10, 12)), Gewerk: 'G08' };
     expect(lvDateiname(VORGABE.lv.dateiname, w)).toBe('K62 261112 LV G08');

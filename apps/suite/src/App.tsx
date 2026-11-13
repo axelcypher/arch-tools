@@ -138,7 +138,7 @@ export function App() {
     warteschlange.current.set(id, [...(warteschlange.current.get(id) ?? []), nachricht]);
   };
 
-  /** Neues Projekt: der Assistent der Projekt-App – aus einer App (`von`) oder vom Rahmen selbst */
+  /** Neues Projekt: der Assistent von ATLAS – aus einer App (`von`) oder vom Rahmen selbst */
   const projektAnlegen = (von: string | null, kannOeffnen = false) => {
     setMenue(false);
     const info = von && von !== PROJEKT_APP ? appInfo(von) : undefined;

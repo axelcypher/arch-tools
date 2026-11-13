@@ -1,8 +1,10 @@
-# Formulare
+# PERMIO (Formulare)
 
-Die App **Formulare** (`apps/formulare`, eigene App mit eigenem Installer) füllt Bauantragsformulare aus
+Die App **PERMIO** (`apps/formulare`, eigene App mit eigenem Installer) füllt Bauantragsformulare aus
 **SJ FORMA** (SJ Software GmbH, Aachen; Teil von SJ OFFICE) aus – mit einer aufgeräumten Oberfläche statt der
 Formularmasken des Originals.
+
+Bis Version 0.42.0 hieß die App „Formulare“. Beim Update auf den neuen Namen bleiben Einstellungen und Daten erhalten.
 
 Grundsatz: **Das Originalprogramm muss jede Datei weiter lesen können**, denn im Büro arbeiten alle anderen
 weiter mit FORMA. Geändert wird nur der Inhalt von Feldern und Projektkarten-Einträgen, nie das Layout, und alles
@@ -53,7 +55,7 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
   Rechts der **Inhalt**. Was zum Dokument gehört – Gliederung, Verlauf, Formularfläche –, steht im Grau der
   Formularfläche.
 - **Gemeinsame Einstellungen:** Die Stammordner der Projektordner und der Ort neuer Projektdateien gelten für alle
-  Apps (`allgemein.json` im gemeinsamen Konfigurationsordner, siehe `packages/core/src/platform/konfig.ts`); Formulare
+  Apps (`allgemein.json` im gemeinsamen Konfigurationsordner, siehe `packages/core/src/platform/konfig.ts`); PERMIO
   übernimmt beim ersten Start seine bisherigen Werte dorthin, wenn dort noch keine stehen.
 - **Einstellungen (⚙)** als Modal über der aktuellen Ansicht (die bleibt, wie sie ist; Fertig, × oder Esc schließt)
   mit Ebenen: **Ordner** (Formularprojekte, Projektordner, angezeigte Pfade), **Büro & Stammdaten**, **Adressbuch**,
@@ -466,7 +468,7 @@ mehreren mit laufender Nummer – hinten (`BAUA 2`, `BAUA_2`, `BAUA2`) oder vorn
 nicht mit – nach Leerzeichen, Punkt, „_“ oder „-“ bzw. direkt als Buchstabe (`BAUA 2 Nachtrag`, `BAUA 2-alt`, `BAUA 2a`
 sind Fassung 2); ohne Nummer nur nach einem Leerzeichen (`BAUA Nachtrag` ist Fassung 1, `BAUA_alt` keine).
 Daneben andere Antragsarten wie `BAUVA` (Voranfrage) oder `DENK` (Denkmal). Erkannt wird mit den Antragsarten der
-Einstellungen und des Namensschemas (`packages/core/src/fassung.ts`, auch in der App „Projekt“ genutzt).
+Einstellungen und des Namensschemas – `packages/core/src/fassung.ts`, auch in ATLAS (Projekt) genutzt.
 
 - **Aktive Fassung** (oben links am Projekt, „Antrag“): die gewählte, sonst die neueste der Standardart. Über das Menü
   lässt sich umschalten oder eine **neue Fassung anlegen** – in der Schreibweise der vorhandenen mit der höchsten Nummer
@@ -571,12 +573,12 @@ Einstellungen und des Namensschemas (`packages/core/src/fassung.ts`, auch in der
   Bauaufsichtsbehörde, § 63 Abs. 3 BauO NRW 2018 in der Fassung ab 01.09.2026), DENK, ABGE, ENTW), die Stellen der
   Teile im Dateinamen (Code, Phase bzw. Antragsart, Datum, Nummer; steht die Nummer vor dem Code, gilt ein Projektcode
   wie „BS9“ dort nie als Nummer) und „Index ab Leistungsphase“ kommen aus dem gemeinsamen Namensschema
-  (`packages/core/src/namensschema.ts`): das der Projektdatei, sonst das des Büros (Projektordner › Einstellungen),
+  (`packages/core/src/namensschema.ts`): das der Projektdatei, sonst das des Büros (ATLAS › Einstellungen),
   sonst die Vorgabe. Antragsordner werden an den Antragsarten der Einstellungen und des Namensschemas erkannt;
   gleichwertige Schreibweisen (BVA für BAUVA) zählen als dieselbe Art – für die vorgeschlagene Vorlage und die Nummer
-  des nächsten Nachtrags („BVA 2“). Ändert sich das Namensschema (in der Projektdatei oder im Projektordner-Tool,
-  gelesen beim Zurückkommen ins Fenster), werden Antragsordner und Plansätze sofort neu erkannt. Eine in Formulare
-  angelegte Projektdatei bekommt wie im Projektordner-Tool eine Kopie des Büro-Schemas.
+  des nächsten Nachtrags („BVA 2“). Ändert sich das Namensschema (in der Projektdatei oder in ATLAS,
+  gelesen beim Zurückkommen ins Fenster), werden Antragsordner und Plansätze sofort neu erkannt. Eine in PERMIO
+  angelegte Projektdatei bekommt wie in ATLAS eine Kopie des Büro-Schemas.
 - **Antragsvorlagen** (Einstellungen › Antrag & Export): benannte Zusammenstellungen von Katalogdokumenten je Antragsart
   – Vorgabe „Bauantrag“ (BAUA), „Bauvoranfrage“ (BAUVA), „Denkmalrechtliche Erlaubnis“ (DENK). Welche Dokumente
   dazugehören, wird bei den Antragsdokumenten angekreuzt: über der Liste „Vorlage zusammenstellen“ wählen (oder „n
@@ -707,7 +709,7 @@ Einstellungen und des Namensschemas (`packages/core/src/fassung.ts`, auch in der
   stehen, Esc im Feld stellt den gespeicherten Tag wieder her, schlägt das Speichern fehl, sagt das Feld es (ein
   erneutes Enter versucht es noch einmal). Der **aktive Antrag** – derselbe, den das Projekt zeigt
   – steht zusätzlich in `meta.antrag` der Projektdatei und erscheint auf den Startseiten aller Apps als Marke auf der
-  Projektkarte („BAUA 2 · eingereicht 03.11.2026“ bzw. „BAUA 2 in Arbeit“); die Startseite von Formulare zeigt ihn
+  Projektkarte („BAUA 2 · eingereicht 03.11.2026“ bzw. „BAUA 2 in Arbeit“); die Startseite von PERMIO zeigt ihn
   auch dann, wenn nicht alle Formulare lesbar sind.
 - **Eingereicht = gesperrt:** Ist der aktive Antrag eingereicht, lassen sich die Formulare nur ansehen (Hinweis über
   dem Formular, „Antragsdaten …“), Antragsmerkmale, Antragsumfang, Export, „bereit“ und „Daten aktualisieren“ bleiben,
@@ -753,9 +755,9 @@ Einstellungen und des Namensschemas (`packages/core/src/fassung.ts`, auch in der
 ### Projektdatei (.oap) – die Projektstammdaten
 
 Die Projektstammdaten liegen als JSON in der **Projektdatei (`.oap`)** im Projektordner – dem gemeinsamen
-Projektarchiv von Flächenrechner, GRZ-Nachweis, Kostenermittlung und Projektordner (ZIP mit `manifest.json` und
-`projekt.json`, die Stammdaten in `projekt.json` unter `meta`). Die frühere `Projektdaten.xlsx` wird nicht mehr
-beschrieben.
+Projektarchiv von QUADRIO (Flächenrechner), TERRIO (GRZ-Nachweis), NUMIO (Kostenermittlung) und ATLAS, ein ZIP mit
+`manifest.json` und `projekt.json`; die Stammdaten stehen in `projekt.json` unter `meta`. Die frühere
+`Projektdaten.xlsx` wird nicht mehr beschrieben.
 
 | Projektkarte | Projektdatei (`meta`) |
 |---|---|
@@ -772,7 +774,7 @@ beschrieben.
   Projektkarte lässt sich je Projekt eine andere wählen.
 - **Schreiben:** frisch eingelesen und nur die geänderten Angaben in `meta` ersetzt – alles andere im Archiv
   (Pläne, Modelle, Quelldateien, Manifest) bleibt unverändert; vorher wird eine Sicherungskopie angelegt. Steht
-  schon alles so in der Datei, wird nichts geschrieben. Hat der Flächenrechner das Projekt gerade offen, führt er
+  schon alles so in der Datei, wird nichts geschrieben. Hat QUADRIO das Projekt gerade offen, führt es
   die Änderung beim nächsten Speichern mit seinen eigenen zusammen.
 - **Gemeinsamer Zugriff:** Lesen, gezielt Ändern und Anlegen laufen über `packages/core` (`projektdatei.ts`,
   `platform/projektordner.ts`) – dieselben Regeln in allen Apps. Ersetzt wird atomar, mit Sicherungskopie und nur,
@@ -886,7 +888,7 @@ beschrieben.
 
 ### Katasterpläne
 
-Die Katasterpläne (QGIS) sind ins Projektordner-Tool umgezogen – siehe [projektordner.md](projektordner.md#katasterpläne).
+Die Katasterpläne (QGIS) sind nach ATLAS umgezogen – siehe [projektordner.md](projektordner.md#katasterpläne).
 
 ### Dokumente ansehen und bearbeiten
 
@@ -932,7 +934,7 @@ genauso:
 - Liegt beim Öffnen eine fremde Sperrdatei da, wird das Formular **nur angezeigt**. Die App prüft, ob die Sperre
   noch in Gebrauch ist, und zeigt das Ergebnis mit Benutzer, Rechner und Zeitpunkt:
   - **In Gebrauch:** Ein Programm hält die Datei offen (diese App tut das immer, FORMA womöglich auch) – oder
-    auf diesem Rechner läuft das Programm mit der eingetragenen Prozessnummer noch (FORMA/SJ OFFICE, Formulare).
+    auf diesem Rechner läuft das Programm mit der eingetragenen Prozessnummer noch (FORMA/SJ OFFICE, PERMIO).
   - **Verwaist:** Auf diesem Rechner läuft kein Programm mit der Nummer mehr bzw. die Nummer gehört einem
     anderen Programm – oder die Sperre eines anderen Rechners ist älter als 12 Stunden und nicht offen gehalten.
   - **Nicht prüfbar:** Sperre eines anderen Rechners, jünger als 12 Stunden – ob das Formular dort noch offen ist,

@@ -36,7 +36,7 @@ export function App() {
   useEffect(() => void katalogLaden(), []);
 
   useEffect(() => {
-    document.title = `${dirty ? '• ' : ''}${name} – Flächenrechner`;
+    document.title = `${dirty ? '• ' : ''}${name} – ${APP_NAMEN.flaechenrechner.name}`;
   }, [name, dirty]);
 
   useEffect(() => {

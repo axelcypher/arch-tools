@@ -21,7 +21,7 @@ type AppWindow = import('@tauri-apps/api/window').Window;
  * Im Browser ohne Update- und Fensterknöpfe.
  */
 export interface TitleBarProps {
-  /** Name der Anwendung, z. B. „Flächenrechner“ */
+  /** Name der Anwendung, z. B. „QUADRIO“ */
   app: string;
   /** Name des geöffneten Projekts */
   name: string;

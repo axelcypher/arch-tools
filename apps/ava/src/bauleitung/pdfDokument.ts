@@ -6,6 +6,7 @@
 
 import type { PDFFont, PDFPage } from 'pdf-lib';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+import { APP_NAMEN } from '@core/appNamen';
 
 const A4: [number, number] = [595.28, 841.89];
 const MM = 72 / 25.4;
@@ -53,7 +54,7 @@ export class PdfDokument {
     const d = new PdfDokument(kopf);
     d.doc = await PDFDocument.create();
     d.doc.setTitle(titel);
-    d.doc.setCreator('arch-tools AVA');
+    d.doc.setCreator(APP_NAMEN.ava.name);
     d.font = await d.doc.embedFont(StandardFonts.Helvetica);
     d.fett = await d.doc.embedFont(StandardFonts.HelveticaBold);
     d.neueSeite();

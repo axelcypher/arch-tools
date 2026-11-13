@@ -117,7 +117,7 @@ export function readProjectFile(bytes: Uint8Array): Project {
   }
   const manifest = readJson(zip, MANIFEST) as Partial<Manifest> | null;
   if (!manifest || manifest.format !== ARCHIV_FORMAT)
-    throw new ProjectFormatError(`${KEINE_PROJEKTDATEI} (Das ZIP-Archiv ist kein Projektarchiv der arch-tools.)`, 'manifest.json fehlt oder Format abweichend');
+    throw new ProjectFormatError(`${KEINE_PROJEKTDATEI} (Das ZIP-Archiv ist kein Projektarchiv von Arkly.)`, 'manifest.json fehlt oder Format abweichend');
   if (typeof manifest.version !== 'number' || manifest.version > ARCHIV_VERSION) {
     throw new ProjectFormatError(`Das Archiv stammt aus einer neueren Programmversion (Archivversion ${String(manifest.version)}).`);
   }
@@ -199,7 +199,7 @@ function base64ToBytes(b64: string): Uint8Array {
  * Manifest. Liefert das neue Archiv.
  */
 export function archivDateiSetzen(bytes: Uint8Array, datei: { id: string; name: string; art: DateiArt; datum: string }, daten: Uint8Array): Uint8Array {
-  if (!isZip(bytes)) throw new Error('Die Projektdatei ist kein Archiv (ältere JSON-Fassung) – bitte einmal im Flächenrechner öffnen und speichern.');
+  if (!isZip(bytes)) throw new Error('Die Projektdatei ist kein Archiv (ältere JSON-Fassung) – bitte einmal in QUADRIO (Flächenrechner) öffnen und speichern.');
   const zip = unzipSync(bytes);
   const manifest = readJson(zip, MANIFEST) as Manifest | null;
   const raw = readJson(zip, PROJEKT);

@@ -70,7 +70,7 @@ export function App() {
   }, []);
 
   useEffect(() => {
-    document.title = `${dirty ? '● ' : ''}${name} – AVA`;
+    document.title = `${dirty ? '● ' : ''}${name} – ${APP_NAMEN.ava.name}`;
   }, [name, dirty]);
 
   // von außen geänderte Dateien übernehmen: beim Zurückkommen ins Fenster

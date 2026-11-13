@@ -48,7 +48,7 @@ const waehle = (el: HTMLSelectElement, value: string) =>
 const knopf = (host: Element, text: string) => [...host.querySelectorAll('button')].find((b) => b.textContent?.trim().startsWith(text)) as HTMLButtonElement;
 const kosten = () => useKosten.getState().project.kosten!;
 
-describe('Kostenermittlung', () => {
+describe('NUMIO', () => {
   it('Stammdaten öffnen und ändern, ohne die App zu wechseln', () => {
     useKosten.getState().load(projekt());
     const host = render(App);

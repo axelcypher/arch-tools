@@ -4,7 +4,7 @@ import { PLACEHOLDER_DOCS } from '../core/exportData';
 import { vorlage } from '../platform/vorlage';
 import { useEditor } from '../store/store';
 
-/** Excel-Export des Flächenrechners: Standardlayout oder eigene Vorlage (.xlsx mit Platzhaltern). */
+/** Excel-Export von QUADRIO: Standardlayout oder eigene Vorlage (.xlsx mit Platzhaltern). */
 export function ExcelDialog() {
   const setOpen = useEditor((s) => s.setExcelOpen);
   const project = useEditor((s) => s.project);

@@ -56,7 +56,7 @@ export function App() {
   );
 
   useEffect(() => {
-    document.title = 'Projekt';
+    document.title = APP_NAMEN.ordner.name;
   }, []);
 
   // gemeinsame Einstellungen aus dem Konfigurationsordner

@@ -5,6 +5,7 @@ import { colLetter, excel, fuelleVorlage, NUM, platzhalterBlatt, styleHeader, st
 import type { Project } from '@core/model';
 import { NUF_IDS, nutzungInfo, ZWEITE_BV_KURZ } from '@core/norms';
 import { raumRechenweg } from '../core/raumRechenweg';
+import { APP_NAMEN } from '@core/appNamen';
 
 const round = (v: number, d: number) => Math.round(v * 10 ** d) / 10 ** d;
 
@@ -26,7 +27,7 @@ export async function exportWithTemplate(template: Uint8Array, project: Project,
 export async function exportDefault(project: Project, result: ProjectResult): Promise<Uint8Array> {
   const ExcelJS = await excel();
   const wb = new ExcelJS.Workbook();
-  wb.creator = 'Flächenrechner';
+  wb.creator = APP_NAMEN.flaechenrechner.name;
   wb.created = new Date();
   const ctx = buildExportContext(project, result);
 

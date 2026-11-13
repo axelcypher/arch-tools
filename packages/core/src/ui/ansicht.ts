@@ -45,7 +45,7 @@ export interface Ansicht {
   abschnitte: AnsichtAbschnitt[];
   /**
    * Verknüpfte Felder: je Gruppe Kennungen, die gemeinsam ausgefüllt werden (gleicher Inhalt). Was das heißt, entscheidet
-   * die App (z. B. Formulare: eine Eingabe trägt den Wert in alle Felder der Gruppe ein).
+   * die App (z. B. PERMIO: eine Eingabe trägt den Wert in alle Felder der Gruppe ein).
    */
   verknuepfungen?: string[][];
 }

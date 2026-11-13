@@ -76,7 +76,7 @@ describe('Speichern', () => {
     const vorher = useEditor.getState().project;
     // eigene Änderung während des Speicherns
     useEditor.getState().update((x) => mapShape(x, eg.id, b.id, (s) => ({ ...s, name: 'Wohnen/Essen' })));
-    // gespeichert wurde „vorher“ – zusammengeführt mit einer Änderung des GRZ-Nachweises
+    // gespeichert wurde „vorher“ – zusammengeführt mit einer Änderung aus TERRIO
     const gespeichert = { ...vorher, massNutzung: { grz: 0.4 } };
     useEditor.getState().markSaved(gespeichert, 'C:/Projekte/Haus Neu.oap', vorher, useEditor.getState().dokument);
     const s = useEditor.getState();

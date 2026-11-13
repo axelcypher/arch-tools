@@ -47,7 +47,7 @@ export function App() {
   }, [dateien]);
 
   useEffect(() => {
-    document.title = `${dirty ? '• ' : ''}${name} – Kostenermittlung`;
+    document.title = `${dirty ? '• ' : ''}${name} – ${APP_NAMEN.kosten.name}`;
   }, [name, dirty]);
 
   /** vor Öffnen/Neu: ungespeicherte Änderungen speichern, verwerfen oder abbrechen */
@@ -227,7 +227,7 @@ export function App() {
         {!hatGebaeude && !hatPositionen && !neuBegonnen && (
           <ProjektEinstieg
             titel="Kostenermittlung nach DIN 276"
-            text={'Projekt oder IFC öffnen: ein Projekt des Flächenrechners (.oap) oder direkt ein IFC-Modell. BGF, BRI, Nutzungs- und Wohnflächen sowie grobe Bauteilmengen kommen aus dem Projekt; Kennwerte, Positionen und Kostenstände pflegt dieses Tool. Ohne Gebäudemodell lassen sich die Mengen auch von Hand eintragen („Neues Projekt“).'}
+            text={'Projekt oder IFC öffnen: ein Projekt aus QUADRIO (Flächenrechner, .oap) oder direkt ein IFC-Modell. BGF, BRI, Nutzungs- und Wohnflächen sowie grobe Bauteilmengen kommen aus dem Projekt; Kennwerte, Positionen und Kostenstände pflegt dieses Tool. Ohne Gebäudemodell lassen sich die Mengen auch von Hand eintragen („Neues Projekt“).'}
             onProjekte={isTauri() ? () => setProjekteOffen(true) : undefined}
             onDateiOeffnen={() => void onOpen()}
             dateiHinweis="Projektdatei (.oap) oder IFC-Modell"

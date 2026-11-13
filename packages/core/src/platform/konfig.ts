@@ -24,14 +24,14 @@ export interface AllgemeineEinstellungen {
   projekte: string[];
   /** Ort einer neuen Projektdatei im Projektordner – Platzhalter {nummer}, {kurzname}, {jahr} */
   oapPfad: string;
-  /** Ordner der Fotos im Projektordner (Entzerrung); wird rekursiv durchsucht */
+  /** Ordner der Fotos im Projektordner (RECTIO); wird rekursiv durchsucht */
   fotoordner: string;
   /** Name des Büros für den Kopf der Ausdrucke und Excel-Dateien (leer = ohne) */
   buero?: string;
   /** Kürzel der Mitarbeiter – Vorschläge für „Bearbeitung“ in den Stammdaten (leer = keine) */
   mitarbeiter?: string[];
   /**
-   * Schema der Projektordner-Namen aus der Struktur der App „Projekt“, z. B. „{nummer} {kurzname}“ – damit alle
+   * Schema der Projektordner-Namen aus der Struktur von ATLAS, z. B. „{nummer} {kurzname}“ – damit alle
    * Apps Nummer und Kurzname gleich aus dem Ordnernamen ableiten (fehlt = bis zum ersten Leerzeichen die Nummer)
    */
   ordnerSchema?: string;

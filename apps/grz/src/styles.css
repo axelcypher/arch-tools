@@ -1,4 +1,4 @@
-/* GRZ-Nachweis (Grund-Styles: @core/ui/base.css) */
+/* TERRIO (Grund-Styles: @core/ui/base.css) */
 
 .grz-view {
   display: grid;
@@ -35,7 +35,7 @@
   padding: 4px 6px;
 }
 .grz-skizze {
-  /* Lageplan wie die Zeichenfläche des Flächenrechners: helle Planfarben, im dunklen Schema als Ganzes
+  /* Lageplan wie die Zeichenfläche von QUADRIO: helle Planfarben, im dunklen Schema als Ganzes
      invertiert (Option „Zeichenfläche abdunkeln“); Papier (Druck) bleibt hell */
   --text: #1f2328;
   --muted: #6b7280;
@@ -261,7 +261,7 @@ button.link:hover {
   background: var(--accent-soft);
 }
 
-/* Griffe wie im Flächenrechner; der Lageplan zeichnet in Metern, Strichstärken daher in Bildschirmpixeln */
+/* Griffe wie in QUADRIO; der Lageplan zeichnet in Metern, Strichstärken daher in Bildschirmpixeln */
 .grz-skizze .vertex-handle,
 .grz-skizze .mid-handle {
   vector-effect: non-scaling-stroke;

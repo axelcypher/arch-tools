@@ -48,7 +48,8 @@ export function LogDialog({ onClose }: { onClose: () => void }) {
     const stamp = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}_${String(d.getHours()).padStart(2, '0')}${String(d.getMinutes()).padStart(2, '0')}`;
     await saveTextFile({
       defaultName: `flaechenrechner-protokoll_${stamp}.log`,
-      contents: `Flächenrechner ${__APP_VERSION__} · ${navigator.userAgent}\n\n${logText()}\n`,
+      // Kopfzeile: Fenstertitel (Name der App, ggf. mit Projekt) statt eines festen App-Namens – der Dialog gehört allen Apps
+      contents: `${document.title} ${__APP_VERSION__} · ${navigator.userAgent}\n\n${logText()}\n`,
       filterName: 'Protokoll',
       extension: 'log',
       mime: 'text/plain;charset=utf-8',

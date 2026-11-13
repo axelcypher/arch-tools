@@ -1,15 +1,17 @@
-# Projekt (früher „Projektordner“)
+# ATLAS (Projekt)
 
-Die App **Projekt** (`apps/ordner`, eigene App mit eigenem Installer, in der Rahmen-App der Tab „Projekt“) ist das
-Setup-Tool des Büros: Sie legt Projekte an und schreibt sie fort – mit einem **Assistenten**, der alle Angaben zum
-Projekt abfragt (Stammdaten, Grundstück, Bauherr, Umfang, Beteiligte) und in der Projektdatei (`.oap`) ablegt, den
-Projektordner nach der **Struktur** des Büros anlegt und Vorlagen einsetzt. Dazu prüft sie vorhandene Projektordner
-gegen die Struktur und exportiert Katasterpläne.
+Die App **ATLAS (Projekt)** (`apps/ordner`, eigene App mit eigenem Installer, in der Rahmen-App Arkly der Tab
+„ATLAS“) ist das Setup-Tool des Büros: Sie legt Projekte an und schreibt sie fort – mit einem **Assistenten**, der
+alle Angaben zum Projekt abfragt (Stammdaten, Grundstück, Bauherr, Umfang, Beteiligte) und in der Projektdatei
+(`.oap`) ablegt, den Projektordner nach der **Struktur** des Büros anlegt und Vorlagen einsetzt. Dazu prüft sie
+vorhandene Projektordner gegen die Struktur und exportiert Katasterpläne.
 
-Umbenannt wurde nur, was man sieht (Titel, Tab, Texte). Technisch bleibt alles beim Alten: Ordner `apps/ordner`,
-Kennung `de.pendzialek.projektordner`, Installer- und Programmname „Projektordner“ (damit Updates die vorhandene
-Installation ersetzen und keine zweite danebenlegen), Release-Tags `ordner-v…`, Einstellungsdatei `projektordner.json`
-und der Abschnitt `projektordner` in der Projektdatei.
+Bis Version 0.17.0 hieß die App „Projektordner“ (im Fenstertitel und in der Rahmen-App zuletzt „Projekt“).
+Einstellungen und Daten bleiben beim Update erhalten: Der Installer entfernt eine Installation unter dem alten Namen
+vorher still und legt vorhandene Verknüpfungen im Startmenü bzw. auf dem Desktop unter dem neuen Namen an. Technisch
+bleibt alles beim Alten: Ordner `apps/ordner`, Kennung `de.pendzialek.projektordner` (darunter liegen Einstellungen und
+Sicherungen), Release-Tags `ordner-v…`, Einstellungsdatei `projektordner.json` und der Abschnitt `projektordner` in der
+Projektdatei.
 
 Grundsätze:
 
@@ -92,18 +94,18 @@ abfragt, steht danach in der Projektdatei – für alle Apps.
 
 ### Neues Projekt aus jeder App
 
-In der Rahmen-App „arch-tools“ steht auf der Projektübersicht **jeder** App der Knopf **„Neues Projekt anlegen“**
-(Flächenrechner, GRZ-Nachweis, Kostenermittlung, Entzerrung, Formulare), dazu im „+“-Menü und auf der Startseite des
-Rahmens. Er öffnet den Tab „Projekt“ (bzw. holt dessen herausgelöstes Fenster nach vorn) und startet den Assistenten
-direkt bei den Stammdaten – ein angefangener Entwurf bleibt erhalten („Formular leeren“ beginnt leer). Oben steht,
-aus welcher App der Auftrag kam, mit „Zurück zu …“. Nach dem Anlegen führt **„In Flächenrechner öffnen“** (bzw.
-„Zurück zu Formulare“) zurück: Die Übersicht dort liest die Projekte neu, und Flächenrechner, GRZ-Nachweis,
-Kostenermittlung und Entzerrung öffnen das neue Projekt gleich. In diesen Apps heißt das bisherige „Neues Projekt“
-(leeres Projekt ohne Projektordner) im Rahmen „Leer beginnen“. Die einzeln installierten Apps können die App
-„Projekt“ nicht starten; dort gibt es den Knopf nicht.
+In der Rahmen-App Arkly (früher „arch-tools“) steht auf der Projektübersicht **jeder** App – QUADRIO
+(Flächenrechner), TERRIO (GRZ-Nachweis), NUMIO (Kostenermittlung), RECTIO (Entzerrung), PERMIO (Formulare) – der
+Knopf **„Neues Projekt anlegen“**, dazu im „+“-Menü und auf der Startseite des Rahmens. Er öffnet den Tab „ATLAS“
+(bzw. holt dessen herausgelöstes Fenster nach vorn) und startet den Assistenten direkt bei den Stammdaten – ein
+angefangener Entwurf bleibt erhalten („Formular leeren“ beginnt leer). Oben steht, aus welcher App der Auftrag kam,
+mit „Zurück zu …“. Nach dem Anlegen führt **„In QUADRIO öffnen“** (bzw. „Zurück zu PERMIO“) zurück: Die Übersicht
+dort liest die Projekte neu, und QUADRIO, TERRIO, NUMIO und RECTIO öffnen das neue Projekt gleich. In diesen Apps
+heißt das bisherige „Neues Projekt“ (leeres Projekt ohne Projektordner) im Rahmen „Leer beginnen“. Die einzeln
+installierten Apps können ATLAS nicht starten; dort gibt es den Knopf nicht.
 
 Technik: Nachrichten über den Rahmen (`packages/core/src/platform/rahmen.ts`): `arch-tools:projekt-anlegen` (App →
-Rahmen), `arch-tools:assistent-neu` (Rahmen → Projekt), `arch-tools:zur-app` (Projekt → Rahmen, mit dem neuen
+Rahmen), `arch-tools:assistent-neu` (Rahmen → ATLAS), `arch-tools:zur-app` (ATLAS → Rahmen, mit dem neuen
 Projektordner) und `arch-tools:projekt-angelegt` (Rahmen → App). Tabs per `postMessage` (nur gleicher Ursprung, nur
 vom Rahmen), herausgelöste Fenster per Tauri-Ereignis (`arch-tools:an-rahmen`, `arch-tools:an-app`). Jede App meldet
 sich mit `arch-tools:bereit`, sobald sie hört; was vorher ankommt (etwa beim frisch geöffneten Tab), stellt der
@@ -118,8 +120,8 @@ Angelegt bzw. ergänzt werden
 2. die **Vorlagen** der gewählten Presets, umbenannt nach dem Schema des Büros und mit ersetzten Platzhaltern,
 3. die **Projektdatei** am eingestellten Ort (Vorgabe `03 Berechnungen/Flächen/{PROJEKT_KUERZEL} {PROJEKT_KURZNAME}.oap`;
    alle globalen Platzhalter, siehe [platzhalter.md](platzhalter.md); `{DATUM}` ist JJMMTT): neu als
-   leere Flächenberechnung mit Stammdaten, Anlagedatum, Struktur und Presets – Flächenrechner, GRZ-Nachweis,
-   Kostenermittlung und Formulare öffnen sie –, beim Ergänzen nur mit den geänderten Stammdaten (gegenüber dem
+   leere Flächenberechnung mit Stammdaten, Anlagedatum, Struktur und Presets – QUADRIO, TERRIO, NUMIO und PERMIO
+   öffnen sie –, beim Ergänzen nur mit den geänderten Stammdaten (gegenüber dem
    Stand beim Einlesen; was eine andere App inzwischen eingetragen hat, bleibt) und den Presets. Hat jemand die
    Datei zwischen Einlesen und Ergänzen geändert, wird nicht geschrieben – dann neu einlesen.
 
@@ -137,7 +139,7 @@ mit; was dort schon liegt, gilt und bleibt unverändert.
 
 | Datei | Inhalt |
 |---|---|
-| `allgemein.json` | Stammordner der Projekte (mehrere möglich, Reihenfolge per Ziehen; im ersten entstehen neue Projekte; Projekte in Gruppen-, Akquise- und Archivordnern darin zählen mit), Ort der Projektdatei in neuen Projekten, Fotoordner im Projekt (für die Entzerrung), Name des Büros für den Kopf der Ausdrucke und Excel-Dateien, Kürzel der Mitarbeiter (Vorschläge für „Bearbeitung“) |
+| `allgemein.json` | Stammordner der Projekte (mehrere möglich, Reihenfolge per Ziehen; im ersten entstehen neue Projekte; Projekte in Gruppen-, Akquise- und Archivordnern darin zählen mit), Ort der Projektdatei in neuen Projekten, Fotoordner im Projekt (für RECTIO), Name des Büros für den Kopf der Ausdrucke und Excel-Dateien, Kürzel der Mitarbeiter (Vorschläge für „Bearbeitung“) |
 | `projektordner.json` | Struktur samt Bausteinen und Vorlagen-Presets, Vorlagenordner dieser App |
 
 Welcher Konfigurationsordner gilt, steht je Benutzer in `%APPDATA%\arch-tools\konfig.json` – für alle Apps
@@ -182,15 +184,15 @@ Jede **neue Projektdatei** bekommt eine Kopie (Abschnitt `namensschema`); beim *
 eine fehlende oder abweichende Kopie auf den Stand des Büros gebracht (in der Vorschau als Änderung „Namensschema“
 bzw. „Namensschema (Stand des Büros)“; verglichen wird in gelesener Form – die Reihenfolge der Schlüssel in der Datei
 spielt keine Rolle, eine andere Reihenfolge der Kürzel schon). Alle Apps lesen zuerst die der Projektdatei, sonst die
-des Büros, sonst die Vorgabe. Formulare
+des Büros, sonst die Vorgabe. PERMIO
 erkennt daran Antragsordner und die Pläne eines Plansatzes und prüft und vergibt danach die Dateinamen im
 Antragsordner (Stellen von Projektcode, Antragsart und Datum, „Umbenennen nach Namensformat“, Namensvorlage des
 Exports).
 
 > **Alle Rechner gleichzeitig aktualisieren:** Jede App liest das Namensschema geprüft ein und schreibt es so zurück.
 > Eine ältere Fassung, die eine Projektdatei speichert, kann daher Angaben einer neueren verlieren (z. B. unbekannte
-> Felder des Namensschemas; Formulare bis 0.35 kennt die Dokumentart „Plansatz“ nicht und speichert sie als
-> Formular).
+> Felder des Namensschemas; Formulare (heute PERMIO) bis 0.35 kennt die Dokumentart „Plansatz“ nicht und speichert
+> sie als Formular).
 
 ### Struktur
 
@@ -419,7 +421,7 @@ Projektcode kommt aus der Projektdatei und lässt sich oben ändern.
 
 Umbenannt wird erst auf Klick – einzeln oder alle markierten –, im selben Ordner, die Endung bleibt, und **nie
 überschreibend**: Gibt es den Namen schon, bleibt alles, wie es war. Ist die Mail in Outlook geöffnet, sagt die App
-das. (Befehl `projekt_datei_umbenennen` in `packages/core/tauri/umbenennen.rs`, nur in den Hüllen von Projekt und
+das. (Befehl `projekt_datei_umbenennen` in `packages/core/tauri/umbenennen.rs`, nur in den Hüllen von ATLAS und
 Rahmen-App.)
 
 **Mails aus Outlook ablegen.** Mails aus dem **klassischen Outlook** lassen sich direkt auf die Fläche „Mails aus Outlook
@@ -437,14 +439,14 @@ COM, Makro): [docs/outlook-mails.md](outlook-mails.md).
 Katasterauszüge als PDF und DXF-Pläne kommen aus einem **QGIS-Projekt als Vorlage**, in dem das Büro seine Dienste
 (ALKIS-WMS/WFS), Kartenthemen und Layouts mit Planköpfen pflegt. Exportiert wird je Projekt auf der Startseite
 (Rechtsklick auf das Projekt → „Katasterpläne …“); QGIS läuft dabei unsichtbar im Hintergrund (`qgis_process`, ab
-QGIS 3.28; geprüft mit 3.34 LTR). Früher war das Teil von Formulare; dessen Einstellungen werden beim ersten Öffnen
+QGIS 3.28; geprüft mit 3.34 LTR). Früher war das Teil von PERMIO; dessen Einstellungen werden beim ersten Öffnen
 übernommen.
 
 - **Reiter „Katasterpläne“:** die Vorlage (`.qgz`/`.qgs`, gilt für alle im Büro: gemeinsamer
   Konfigurationsordner, Bereich `kataster`), der Pfad zu `qgis_process` (je Rechner; „Suchen“ findet die
   üblichen Installationen, unter Windows `…\QGIS 3.x\bin\qgis_process-qgis-ltr.bat`), die Ablage (fester Ordner im
   Projektordner, Vorgabe `Kataster`, oder der Ordner des aktiven Antrags `TÖB/<Antrag>` – der Antrag aus der
-  Projektdatei, `meta.antrag`, gepflegt in Formulare) mit Dateinamen
+  Projektdatei, `meta.antrag`, gepflegt in PERMIO) mit Dateinamen
   (`{PROJEKT_KUERZEL} {Art} {DATUM} {Name}` – passt zum Namensformat des Antragsordners; alle globalen Platzhalter,
   lokal `{Art}` und `{Name}` des Plans, im festen Ordner `{Antrag}`; alte Namen wie `{Code}` gelten weiter) und die
   Pläne. Vorgegeben sind
@@ -520,7 +522,7 @@ unter `projektordner`:
 Abschnitte, die eine App nicht kennt (etwa die einer anderen App oder einer neueren Fassung), bleiben beim Lesen
 und Schreiben erhalten. Welche Projektdatei gilt, wenn es mehrere gibt (bis vier Ebenen tief): eine im Ordner der
 Berechnungen (Pfad enthält „Berechnung“), sonst die mit dem kürzesten Pfad, dann die zuletzt geänderte – dieselbe
-Regel wie in der Formulare-App.
+Regel wie in PERMIO.
 
 Bis Version 0.1 standen die Stammdaten in einer eigenen `projekt.json` im Projektordner. Sie wird nur noch gelesen
 (sie füllt Lücken der Projektdatei, etwa Kurzname und Leistungsphasen) und bleibt liegen. Ist sie nicht lesbar
@@ -553,10 +555,8 @@ Presets und Bausteine in der Struktur-Datei:
 
 ## Grenzen
 
-- Der Installer heißt weiter „Projektordner“ (Startmenü, Programmordner): Ein anderer Programmname würde beim Update
-  eine zweite Installation neben die alte legen. In der App, im Fenstertitel und im Rahmen heißt sie „Projekt“.
-- „Neues Projekt anlegen“ aus anderen Apps gibt es nur in der Rahmen-App; die einzeln installierten Apps können die
-  App „Projekt“ nicht starten. Formulare öffnet das neue Projekt nicht selbst (seine Übersicht zeigt FORMA-Projekte),
+- „Neues Projekt anlegen“ aus anderen Apps gibt es nur in der Rahmen-App; die einzeln installierten Apps können
+  ATLAS nicht starten. PERMIO öffnet das neue Projekt nicht selbst (seine Übersicht zeigt FORMA-Projekte),
   sie wird nur neu geladen.
 - Bausteine sind Kopiervorlagen: Ein später geänderter Baustein ändert bereits eingefügte Ordner nicht.
 - Mails: nur Outlook-Nachrichten (.msg), keine .eml. Das Thema schlägt die App aus dem Betreff vor – eine inhaltliche

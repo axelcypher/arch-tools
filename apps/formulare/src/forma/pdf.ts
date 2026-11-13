@@ -569,7 +569,7 @@ export function formularPdf(formular: Formular, felder: Feld[][], wert: (f: Feld
   objekte[0] = '<< /Type /Catalog /Pages 2 0 R >>';
   objekte[1] = `<< /Type /Pages /Kids [${seitenNr.map((n) => `${n} 0 R`).join(' ')}] /Count ${seitenNr.length} >>`;
   const titel = angaben.titel ? ` /Title ${pdfString(winAnsi(angaben.titel))}` : '';
-  objekte[2] = `<< /Producer (Formulare)${titel} /CreationDate (${pdfDatum(angaben.zeit ?? new Date())}) >>`;
+  objekte[2] = `<< /Producer (PERMIO)${titel} /CreationDate (${pdfDatum(angaben.zeit ?? new Date())}) >>`;
   return schreibeDatei(objekte);
 }
 

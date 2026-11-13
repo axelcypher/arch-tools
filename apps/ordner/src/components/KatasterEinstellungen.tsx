@@ -283,7 +283,7 @@ export function KatasterEinstellungen() {
           </label>
           <label className={`ex-ziel${e.ziel === 'antrag' ? ' aktiv' : ''}`}>
             <input type="radio" checked={e.ziel === 'antrag'} onChange={() => void aendern({ ziel: 'antrag' })} />
-            <span>Ordner des aktiven Antrags (z. B. TÖB\BAUA 2 – der Antrag aus der Projektdatei, gepflegt in Formulare)</span>
+            <span>Ordner des aktiven Antrags (z. B. TÖB\BAUA 2) – der Antrag aus der Projektdatei, gepflegt in PERMIO (Formulare)</span>
           </label>
         </div>
         {e.ziel === 'pfad' && (
