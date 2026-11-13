@@ -10,7 +10,7 @@
 import { create } from 'zustand';
 import { artDerFassung } from '@core/fassung';
 import { openFileWithPath } from '@core/platform/files';
-import { konfigAendern, konfigLesen } from '@core/platform/konfig';
+import { konfigAendern, konfigLesen, konfigNeuLesen } from '@core/platform/konfig';
 import { logger } from '@core/platform/log';
 import type { GeladeneProjektdatei, ProjektordnerZugriff } from '@core/platform/projektordner';
 import { projektdateiDateiSetzen, projektdateiLaden, tauriProjektordner, verbinde } from '@core/platform/projektordner';
@@ -392,3 +392,6 @@ export const useKataster = create<KatasterState>()((set, get) => {
     ausgangSchliessen: () => set({ ausgang: null }),
   };
 });
+
+// Speicherort der Einstellungen gewechselt bzw. Netzlaufwerk weg oder wieder da: neu lesen
+konfigNeuLesen(() => void useKataster.getState().laden());

@@ -1581,6 +1581,8 @@ svg[tabindex]:focus:not(:focus-visible) {
 }
 .rf-text {
   white-space: pre-line;
+  /* lange Pfade (\\NAS\Freigabe\…) ohne Leerzeichen umbrechen */
+  overflow-wrap: anywhere;
 }
 .rf input {
   width: 100%;
@@ -1693,4 +1695,93 @@ button.ph-lokal {
   margin-top: 2px;
   font-size: 11px;
   color: var(--warn-text);
+}
+
+/* ---------- Speicherort der Einstellungen (ui/Speicherort.tsx) ---------- */
+
+.titlebar-btn.titlebar-notbetrieb {
+  white-space: nowrap;
+  background: var(--warn-bg);
+  color: var(--warn-text);
+  border: 1px solid var(--warn-border);
+  border-radius: 4px;
+}
+.titlebar-btn.titlebar-notbetrieb:hover:not(:disabled) {
+  background: var(--warn-bg);
+  color: var(--warn-text);
+  border-color: var(--warn-text);
+}
+.titlebar-btn .sp-symbol {
+  width: 12px;
+  height: 12px;
+  margin-right: 2px;
+  vertical-align: -1px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.2;
+  stroke-linecap: round;
+}
+.sp-zeile {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.sp-zeile > div {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.sp-zeile .sp-voll {
+  flex-basis: 100%;
+  margin: 0;
+}
+.sp-aktuell {
+  margin-bottom: 10px;
+}
+.sp-ort {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+.sp-zeile code,
+.sp-ort code {
+  display: block;
+  flex: 1;
+  min-width: 0;
+  padding: 3px 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  user-select: text;
+  -webkit-user-select: text;
+}
+.sp-notbetrieb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+.sp-notbetrieb > span {
+  flex: 1;
+}
+.sp-wahl {
+  border: none;
+  padding: 0;
+  margin: 0 0 6px;
+}
+.sp-wahl .radio-row {
+  margin: 6px 0;
+}
+.sp-meldung {
+  padding: 6px 8px;
+  border: 1px solid var(--ok-border);
+  background: var(--ok-bg);
+  color: var(--text);
+  border-radius: 4px;
+  font-size: 12px;
 }

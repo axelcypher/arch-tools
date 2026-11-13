@@ -10,6 +10,7 @@ import { SchemaFeld } from './SchemaFeld';
 import type { Sicherung } from '../sicherung';
 import { strukturUnterschied, unterschiedText } from '../sicherung';
 import { useOrdner } from '../store';
+import { SpeicherortZeile } from '@core/ui/Speicherort';
 import { OrdnerEditor } from './OrdnerEditor';
 import { NamensschemaEinstellungen } from './NamensschemaEinstellungen';
 import type { Struktur } from '../struktur';
@@ -305,8 +306,7 @@ export function EinstellungenView() {
 /** Gemeinsame Einstellungen aller Apps – im Konfigurationsordner (auf einem Server-Laufwerk für das ganze Büro) */
 function GemeinsameEinstellungen() {
   const desktop = hatDateisystem();
-  const { konfig, konfigFehler, allgemein, setAllgemein, konfigOrdnerSetzen, struktur } = useOrdner();
-  const [meldung, setMeldung] = useState<{ art: 'ok' | 'fehler'; text: string } | null>(null);
+  const { konfigFehler, allgemein, setAllgemein, struktur } = useOrdner();
   const beispiel = musterWerte(nummerAus(struktur.nummernschema, 14));
   /** Stammordner per Ziehen umsortieren: gezogener Eintrag und Ziel */
   const [zieht, setZieht] = useState<number | null>(null);
@@ -319,20 +319,6 @@ function GemeinsameEinstellungen() {
     if (liste.join('|') !== allgemein.projekte.join('|')) setAllgemein({ projekte: liste });
   };
 
-  const konfigWaehlen = async (lokal: boolean) => {
-    setMeldung(null);
-    try {
-      const ziel = lokal ? null : await waehleOrdner('Gemeinsamen Konfigurationsordner wählen');
-      if (!lokal && !ziel) return;
-      const uebernommen = await konfigOrdnerSetzen(ziel);
-      setMeldung({
-        art: 'ok',
-        text: `${lokal ? 'Die Einstellungen liegen wieder auf diesem Rechner.' : `Konfigurationsordner: ${ziel}.`}${uebernommen.length ? ` Übernommen: ${uebernommen.join(', ')}.` : ' Was dort schon lag, gilt jetzt.'}`,
-      });
-    } catch (e) {
-      setMeldung({ art: 'fehler', text: e instanceof Error ? e.message : String(e) });
-    }
-  };
   const stammordnerHinzufuegen = async () => {
     const p = await waehleOrdner('Stammordner mit Projektordnern wählen');
     if (p && !allgemein.projekte.includes(p)) setAllgemein({ projekte: [...allgemein.projekte, p] });
@@ -341,32 +327,9 @@ function GemeinsameEinstellungen() {
   return (
     <>
       <h2>Gemeinsame Einstellungen</h2>
-      <p className="muted small-text">Gelten für alle Apps. Liegt der Konfigurationsordner auf dem Server, gelten sie für das ganze Büro.</p>
-      {desktop ? (
-        <div className="po-ort">
-          <div>
-            <span className="field-label">Konfigurationsordner</span>
-            <code title={konfig?.ordner}>{konfig ? `${konfig.ordner}${konfig.gewaehlt ? '' : ' (auf diesem Rechner)'}` : 'wird gelesen …'}</code>
-          </div>
-          <button
-            className="small"
-            onClick={() => void konfigWaehlen(false)}
-            title="Gemeinsamen Ordner wählen, z. B. auf dem Server – fehlende Einstellungen werden dorthin übernommen, vorhandene gelten"
-          >
-            Wählen …
-          </button>
-          {konfig?.gewaehlt && (
-            <button className="small" onClick={() => void konfigWaehlen(true)}>
-              Lokal
-            </button>
-          )}
-        </div>
-      ) : (
-        <p className="muted small-text">Im Browser liegen die Einstellungen im Speicher dieses Browsers.</p>
-      )}
+      <p className="muted small-text">Gelten für alle Apps. Bei einer Netzwerkinstallation liegen sie auf dem Netzlaufwerk und gelten für das ganze Büro.</p>
+      <SpeicherortZeile />
       {konfigFehler && <p className="warning">{konfigFehler}</p>}
-      {meldung && <p className={meldung.art === 'fehler' ? 'warning' : 'po-meldung'}>{meldung.text}</p>}
-
       <span className="field-label">Stammordner der Projekte</span>
       <p className="muted small-text">
         Reihenfolge wie in der Projektübersicht aller Apps – zum Umsortieren ziehen (oder ↑ ↓; auch die Abschnitte der Projektübersicht lassen sich ziehen). Im ersten entstehen neue Projekte. Projekte

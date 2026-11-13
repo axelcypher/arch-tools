@@ -16,6 +16,7 @@ import type { AntragsVorlage, ExportEinstellungen, ExportUeberschreibung, Fassun
 import {
   anzeigeName,
   dateiImAntrag,
+  pdfOhneZuordnung,
   formularSchluessel,
   hauptArt,
   dateiname,
@@ -167,6 +168,11 @@ interface AntragState {
   quellen: Record<string, Eintrag[]>;
   formularInfo: Record<string, FormularInfo>;
   dokumente: DokZustand[];
+  /**
+   * Sammelprojekt: Ampel der Formulare auf der obersten Ebene (sie gehören allen Anträgen), die im Antragsumfang des
+   * aktiven Antrags nicht zugeordnet sind – aus Füllstand und PDF im Ordner der aktiven Fassung; je Pfad
+   */
+  stammStatus: Record<string, Status>;
   /** Fassung, deren Ordner zuletzt gelesen und berechnet wurde (Zeilen der Antragsdaten, Ablage „Antrag“); null vor dem ersten Lesen */
   dokumenteFuer: string | null;
   laedt: boolean;
@@ -989,6 +995,7 @@ export const useAntrag = create<AntragState>((set, get) => {
     dateienOrdner: null,
     quellen: {},
     formularInfo: {},
+    stammStatus: {},
     dokumente: [],
     dokumenteFuer: null,
     laedt: false,
@@ -1130,7 +1137,7 @@ export const useAntrag = create<AntragState>((set, get) => {
     laden: async () => {
       const { ds, projekt, basis } = ctx();
       if (!ds || !projekt) {
-        set({ projektdatei: null, fassungen: [], dateien: [], dateienLesefehler: false, dateienOrdner: null, quellen: {}, formularInfo: {}, dokumente: [], dokumenteFuer: null });
+        set({ projektdatei: null, fassungen: [], dateien: [], dateienLesefehler: false, dateienOrdner: null, quellen: {}, formularInfo: {}, stammStatus: {}, dokumente: [], dokumenteFuer: null });
         quelleMerken(null);
         return;
       }
@@ -1338,7 +1345,19 @@ export const useAntrag = create<AntragState>((set, get) => {
         const quelle = quelleVon(u, st.quellen[quelleVonEintrag(u, e)] ?? [], codes);
         return { eintrag: u, status: externStatus(quelle, datei, codes), formular: null, datei, quelle };
       });
-      set({ formularInfo, dokumente });
+      // Sammelprojekt: Formulare der obersten Ebene ohne Zuordnung im aktiven Antrag bekommen trotzdem eine Ampel – die
+      // PDF sucht sich nach dem Namen ohne Nummer und Jahr („003-Baubeschreibung (2026)“ → „Baubeschreibung“), wie der Export ihn vergibt
+      // (zugeordnet auch, wenn der Eintrag entfällt – dann kein Punkt; PDFs, die schon einem Dokument gehören, zählen nicht)
+      const zugeordnet = new Set(dokumente.flatMap((d) => (d.formular ? [d.formular.pfad] : [])));
+      const vergeben = new Set(dokumente.flatMap((d) => (d.datei ? [d.datei.pfad.toLowerCase()] : [])));
+      const stammStatus: Record<string, Status> = {};
+      if (s.sammel)
+        for (const f of s.formulare) {
+          const info = formularInfo[f.pfad];
+          if (f.unterordner || zugeordnet.has(f.pfad) || !info) continue;
+          stammStatus[f.pfad] = formularStatus(info.fuellstand, info.letzteAenderung, pdfOhneZuordnung(f.name, st.dateien, vergeben, codes), codes);
+        }
+      set({ formularInfo, dokumente, stammStatus });
       // für die Projektübersicht merken – mit gelesenen Angaben zum Antrag; der Stand der Dokumente nur, wenn alle
       // Formulare zerlegt sind (sonst bleibt der letzte), der Antrag (eingereicht?) immer – wie im Projekt angezeigt
       if (st.projektdatei) {
@@ -1916,7 +1935,7 @@ useFormulare.subscribe((s, vorher) => {
     if (s.projekt !== vorher.projekt) {
       // die Sicherung gilt je Projekt neu
       heilung = null;
-      useAntrag.setState({ projektdatei: null, fassungen: [], dateien: [], dateienLesefehler: false, dateienOrdner: null, quellen: {}, formularInfo: {}, dokumente: [], dokumenteFuer: null });
+      useAntrag.setState({ projektdatei: null, fassungen: [], dateien: [], dateienLesefehler: false, dateienOrdner: null, quellen: {}, formularInfo: {}, stammStatus: {}, dokumente: [], dokumenteFuer: null });
       quelleMerken(null);
     }
     void useAntrag.getState().laden();
