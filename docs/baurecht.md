@@ -70,9 +70,11 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   ändert (führen alle Antworten zum selben Ergebnis, zählt sie nicht). Eine Angabe, deren Frage gerade nicht gestellt
   wird, fehlt nicht: Sie steht nicht unter „es fehlt“ und nicht unter „klärt am meisten“ – nur wenn sonst kein Grund für
   Gelb bliebe, wird sie genannt. „Gestellt“ heißt für Kern, App und Protokoll dasselbe (`frageGestellt`): ohne Bedingung
-  immer, sonst solange das `wenn` nicht „nein“ ergibt; eine Rückfrage (Umfang, Angaben zum Altbau) erst, wenn es sicher
-  „ja“ ergibt. Eine gespeicherte Antwort auf eine Frage, die gerade nicht gestellt wird (z. B. nach einem Ortswechsel),
-  leitet keinen Modulwert ab; das Protokoll führt solche Antworten gesondert („Nicht gestellt – ohne Wirkung“). Hängt ein
+  immer, sonst solange das `wenn` nicht sicher „nein“ ergibt (ein „nein“ nur aus Hinweisen verbirgt keine Frage); eine
+  Rückfrage (Umfang, Angaben zum Altbau) erst, wenn es „ja“ ergibt. Eine gespeicherte Antwort auf eine Frage, die gerade
+  nicht gestellt wird (nach einem Ortswechsel, einem zurückgesetzten Auslöser wie dem Umfang der Beseitigung), zählt
+  nicht – weder in den Regeln noch für Ableitungen (bis zum Fixpunkt: eine weggelassene Antwort kann weitere Fragen
+  verbergen); das Protokoll führt solche Antworten gesondert („Nicht gestellt – ohne Wirkung“). Hängt ein
   Paragraf an einem anderen, der nur „gilt,
   Ausnahme möglich“ ist, und entfiele er mit dessen Ausnahme, nennt er sie („Ausnahme möglich über § 14 BNatSchG – es
   fehlt dort: …“); die Ampel bleibt „gilt“.

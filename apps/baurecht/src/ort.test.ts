@@ -324,3 +324,30 @@ describe('Runde 15: Suche – Volltext mit Bindestrich, Einheiten, „f.“, lan
     expect(suchTreffer('§§ 200–210 BauGB', normen).hinweis).toBe('alle 11 §§ BauGB sind nicht erfasst – gezeigt: BauGB');
   });
 });
+
+describe('Runde 18: gespeicherte Antworten auf nicht gestellte Rückfragen wirken nicht', () => {
+  beforeEach(() => {
+    const bytes = beispielOap();
+    useBaurecht.getState().projektSetzen({ art: 'datei', name: 'EFH.oap', bytes }, readProjectFile(bytes), projektdateiRoh(bytes));
+  });
+  const m = (wert: FaktWert['wert']): FaktWert => ({ wert, herkunft: 'manuell', sicherheit: 'sicher' });
+  const ampeln = (f: Record<string, FaktWert>) => new Map(auswertungMit(f).paragrafen.map((p) => [p.id, p.ampel]));
+  it('Umfang zurückgesetzt, „Altbau verfahrensfrei: ja“ gespeichert: dieselben Ampeln wie ohne die Antwort', () => {
+    useBaurecht.getState().merkmalSetzen('Vorhaben', 'Beseitigung');
+    const basis = { ...useBaurecht.getState().pruefung.fakten };
+    for (const alt of [true, false]) {
+      const mit = ampeln({ ...basis, 'nw.altbau_verfahrensfrei': m(alt) });
+      const ohne = ampeln(basis);
+      expect([...mit].filter(([id, a]) => ohne.get(id) !== a)).toEqual([]);
+    }
+  });
+  it('Altbau zurückgesetzt, „mitbeantragt“ gespeichert: ohne Wirkung', () => {
+    useBaurecht.getState().merkmalSetzen('Vorhaben', 'Beseitigung');
+    const basis = { ...useBaurecht.getState().pruefung.fakten, 'vorhaben.beseitigung_umfang': m('Abbruch mit Ersatzbau') };
+    for (const mb of [true, false]) {
+      const mit = ampeln({ ...basis, 'nw.beseitigung_mit_beantragt': m(mb) });
+      const ohne = ampeln(basis);
+      expect([...mit].filter(([id, a]) => ohne.get(id) !== a)).toEqual([]);
+    }
+  });
+});

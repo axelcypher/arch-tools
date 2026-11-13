@@ -1989,14 +1989,19 @@ describe('Fälle aus dem Fachreview', () => {
     for (const id of ['nw/bauo-nrw/74', 'nw/baupruefvo/1', 'nw/baupruefvo/2', 'nw/baupruefvo/15']) {
       const je = UMF.map((u) => a(m, { ...f, ...umfang(u) })(id));
       expect(new Set(je).size, `${id}: ${je.join(', ')}`).toBe(1);
-      expect(offen(id), id).toBe(je[0]);
+      // bei offenem Umfang ist die Frage zum Altbau nicht gestellt – ihre gespeicherte Antwort zählt nicht (Fachprüfung
+      // Runde 15): kein Grün aus ihr, sondern „es fehlt: Umfang“
+      if (je[0] === 'gruen') expect(offen(id), id).toBe('gelb');
+      else expect(offen(id), id).toBe(je[0]);
     }
     // Fall E1Bjj: Ersatzbau im vereinfachten Verfahren, Abbruch mitbeantragt – Angabe zum Altbau offen: § 15 gilt so oder so
     const e = M4({ Vorhaben: 'Beseitigung', Gebäudeklasse: '3' });
     const g = { ...umfang('Abbruch mit Ersatzbau'), ...ja('nw.beseitigung_mit_beantragt', 'gebaeude.freistehend') };
     expect(a(e, { ...g, ...ja('nw.altbau_verfahrensfrei') })('nw/baupruefvo/15')).toBe('rot');
     expect(a(e, { ...g, ...nein('nw.altbau_verfahrensfrei') })('nw/baupruefvo/15')).toBe('rot');
-    expect(a(e, g)('nw/baupruefvo/15')).toBe('rot');
+    // Angabe zum Altbau offen: „mitbeantragt“ ist dann nicht gestellt, seine gespeicherte Antwort zählt nicht (Fachprüfung
+    // Runde 15) – gelb mit „es fehlt: Altbau“, nicht rot aus einer verborgenen Antwort
+    expect(a(e, g)('nw/baupruefvo/15')).toBe('gelb');
     // Gegenprobe: Altbau verfahrensfrei und nicht mitbeantragt → § 15 gilt nicht; offen → nicht grün
     const h = { ...umfang('Abbruch mit Ersatzbau'), ...ja('gebaeude.freistehend') };
     expect(a(e, { ...h, ...ja('nw.altbau_verfahrensfrei'), ...nein('nw.beseitigung_mit_beantragt') })('nw/baupruefvo/15')).toBe('gruen');

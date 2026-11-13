@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { VORGABE_MERKMALE } from '../bedingung';
 import type { Fassung } from '../recht/typen';
 import type { AuswertungsEingabe } from './auswertung';
-import { auswerten, bundGelieferte, gueltigeFakten, gueltigeMerkmale, modulFakten, modulZiel } from './auswertung';
+import { auswerten, bundGelieferte, gestellteAntworten, gueltigeFakten, gueltigeMerkmale, modulFakten, modulZiel } from './auswertung';
 import type { TextStand } from './auswertung';
 import { kurzText, werten } from './kurz';
 import { agsVorschlag, aktiveModule, fehlendeEbenen, paketAusDateien, paketPruefen, regeldateiFuer, signaturPruefen } from './paket';
@@ -731,3 +731,20 @@ describe('Runde 17: wer einen Modulwert liefert', () => {
   });
 });
 
+
+describe('Runde 18: nur gestellte Antworten zählen', () => {
+  it('bis zum Fixpunkt: eine weggelassene Antwort verbirgt die Folgefrage', () => {
+    const defs = {
+      a: { titel: 'A', gruppe: 'x', typ: 'janein' },
+      b: { titel: 'B', gruppe: 'x', typ: 'janein', wenn: { f: 'a', ist: true } },
+      c: { titel: 'C', gruppe: 'x', typ: 'janein', wenn: { f: 'b', ist: true } },
+    } as unknown as Record<string, import('./typen').FaktDef>;
+    const rest = { merkmale: {}, einreichung: '2026-12-01', heute: '2026-11-13', bausteine: {} };
+    // a = nein: b ist nicht gestellt und fällt weg; damit ist die Bedingung von c offen – bei einer gewöhnlichen Frage
+    // heißt das „gestellt“ (erst ein sicheres „nein“ verbirgt sie)
+    expect(Object.keys(gestellteAntworten({ a: sicher(false), b: sicher(true), c: sicher(true) }, (f) => f, defs, rest)).sort()).toEqual(['a', 'c']);
+    // ein „nein“ nur aus einem Hinweis verbirgt keine Frage
+    expect(Object.keys(gestellteAntworten({ a: hinweis(false), b: sicher(true) }, (f) => f, defs, rest)).sort()).toEqual(['a', 'b']);
+    expect(Object.keys(gestellteAntworten({ a: sicher(true), b: sicher(true), c: sicher(true) }, (f) => f, defs, rest)).sort()).toEqual(['a', 'b', 'c']);
+  });
+});

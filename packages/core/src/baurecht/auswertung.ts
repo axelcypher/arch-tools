@@ -238,6 +238,22 @@ function modulQuellen(id: string, fakten: Record<string, FaktWert>, defs: Record
   return q;
 }
 
+/**
+ * Die Antworten, deren Frage gestellt wird (frageGestellt) – ausgewertet mit den abgeleiteten Werten (`ableiten`), bis
+ * sich nichts mehr ändert (höchstens einige Runden; eine weggelassene Antwort kann weitere Fragen verbergen)
+ */
+export function gestellteAntworten(eingabe: Record<string, FaktWert>, ableiten: (f: Record<string, FaktWert>) => Record<string, FaktWert>, defs: Record<string, FaktDef>, rest: Omit<KurzKontext, 'fakten'>): Record<string, FaktWert> {
+  let gestellt = eingabe;
+  for (let runde = 0; runde < 8; runde++) {
+    const ctx: KurzKontext = { ...rest, fakten: ableiten(gestellt) };
+    const naechste = Object.fromEntries(Object.entries(eingabe).filter(([id]) => frageGestellt(id, defs[id], ctx)));
+    const gleich = Object.keys(naechste).length === Object.keys(gestellt).length && Object.keys(naechste).every((id) => id in gestellt);
+    gestellt = naechste;
+    if (gleich) break;
+  }
+  return gestellt;
+}
+
 /** ganze Tage von einem Zeitpunkt (ISO) bis zu einem Tag (JJJJ-MM-TT) */
 const tageSeit = (iso: string, heute: string) => Math.floor((Date.parse(`${heute}T12:00:00`) - Date.parse(iso)) / 86400000);
 const undW = (a: Wahrheit, b: Wahrheit): Wahrheit => (a === 'nein' || b === 'nein' ? 'nein' : a === 'offen' || b === 'offen' ? 'offen' : 'ja');
@@ -254,12 +270,10 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
   // vor UND nach der Ableitung: ein ungültiger Bezug (z. B. „false“ als Text) darf keinen gesicherten Wert ableiten
   const merkmale = gueltigeMerkmale(e.merkmale);
   const eingabe = gueltigeFakten(e.fakten, faktDefs);
-  // eine gespeicherte Antwort auf eine Frage, die gerade nicht gestellt wird (z. B. nach einem Ortswechsel), leitet keinen
-  // Modulwert ab und zählt nicht (Naturdenkmal der Kreisverordnung außerhalb ihres Gebiets) – nur Bezüge von Tabellen
-  const bezuege = new Set(e.module.flatMap((m) => Object.values(m.fakten ?? {}).flatMap((d) => (d.nach ? [d.nach.fakt] : []))));
-  const vorab: KurzKontext = { merkmale, fakten: eingabe, einreichung: e.einreichung, heute: e.heute, bausteine };
-  const zurAbleitung = Object.fromEntries(Object.entries(eingabe).filter(([id]) => !bezuege.has(id) || frageGestellt(id, faktDefs[id], vorab)));
-  const fakten = gueltigeFakten(modulFakten(e.module, zurAbleitung), faktDefs);
+  // eine gespeicherte Antwort auf eine Frage, die gerade nicht gestellt wird (nach einem Ortswechsel, einem zurückgesetzten
+  // Auslöser – z. B. „Altbau verfahrensfrei“ nach zurückgesetztem Umfang), zählt nicht: weder in den Regeln noch für
+  // Ableitungen. Bis zum Fixpunkt, denn eine weggelassene Antwort kann weitere Fragen verbergen (oder wieder stellen)
+  const fakten = gueltigeFakten(modulFakten(e.module, gestellteAntworten(eingabe, (f) => gueltigeFakten(modulFakten(e.module, f), faktDefs), faktDefs, { merkmale, einreichung: e.einreichung, heute: e.heute, bausteine })), faktDefs);
   const titelCache = new Map<string, string>();
   const text: TextKontext = { fakt: (id) => faktDefs[id], bausteine, paragraf: (id) => titelCache.get(id) };
 
