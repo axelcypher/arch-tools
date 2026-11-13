@@ -71,6 +71,12 @@ media?.addEventListener('change', () => {
   if (s.wahl === 'system') useTheme.setState({ theme: resolve('system') });
 });
 
+/**
+ * Ist die Zeichenfläche gerade gefiltert (`--canvas-filter`: dunkles Schema und „Zeichenfläche abdunkeln“)? Nur dann
+ * werden Planfüllungen mit `planFuellungDunkel` vorgerechnet. Als Hook, damit die Zeichnung bei jedem Wechsel neu entsteht.
+ */
+export const useZeichenflaecheGefiltert = (): boolean => useTheme((s) => s.theme === 'dunkel' && s.canvasDunkel);
+
 /** Schema am <html>-Element setzen (CSS: [data-theme="dunkel"]) */
 export function applyTheme(t: Theme, canvasDunkel: boolean) {
   if (typeof document === 'undefined') return;

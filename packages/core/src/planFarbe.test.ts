@@ -15,11 +15,15 @@ const tonAbstand = (a: number, b: number) => Math.min(Math.abs(a - b), 360 - Mat
 const FARBEN = [...NUTZUNGSGRUPPEN.map((n) => ({ name: n.kurz, color: n.color })), ...VERSIEGELUNGEN.map((v) => ({ name: v.label, color: v.color }))];
 
 describe('Planfarben auf der dunklen Zeichenfläche', () => {
-  it('ohne Vorrechnung verschiebt der Filter den Farbton (Ausgangsbefund: Gelb wird Oliv bzw. Braun)', () => {
-    const nuf1 = hexZuRgb('#f4c95d');
+  it('ohne Vorrechnung erscheint die Füllung viel dunkler (Ausgangsbefund „Gelb wird Oliv“), vorgerechnet deutlich heller', () => {
+    // relative Helligkeit (Rec. 709 auf sRGB-Werten) – genügt für den Vergleich vorher/nachher
+    const hell = (c: number[]) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
     const roh = sichtbar('#f4c95d', 0.45);
-    // gleicher Ton, aber deutlich dunkler und matter als die Marke – im Plan „oliv“
-    expect(buntheit(roh)).toBeLessThan(buntheit(nuf1) * 0.5);
+    const f = planFuellungDunkel('#f4c95d', 0.45);
+    const vor = sichtbar(f.farbe, f.deckung);
+    expect(hell(roh)).toBeLessThan(0.2);
+    expect(hell(vor)).toBeGreaterThan(hell(roh) * 1.5);
+    expect(buntheit(vor)).toBeGreaterThan(buntheit(roh));
   });
 
   it.each(FARBEN)('$name ($color): nach dem Filter derselbe Farbton wie die Marke, sichtbar wie Marke mit 45 % über dunklem Grund', ({ color }) => {

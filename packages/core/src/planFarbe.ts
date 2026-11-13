@@ -73,6 +73,9 @@ const darstellbar = (c: Rgb) => c.every((v) => v >= -1e-6 && v <= 1 + 1e-6);
  * Füllung für die dunkle Zeichenfläche: Farbe und Deckung, mit denen die Fläche *vor* dem Filter gezeichnet wird, damit
  * sie danach wie `farbe` mit `deckung` über dem dunklen Planhintergrund aussieht – im selben Farbton wie die Farbmarke
  * in der Liste. Die zurückgegebene Deckung ist mindestens `deckung` (höher nur, wenn es anders nicht darstellbar ist).
+ * Achtung: Sie ist das Mischverhältnis *vor* dem Filter, mit dem gezeichnet wird – sichtbar bleibt die gewünschte
+ * `deckung`. Bedingung für den Aufruf: `useZeichenflaecheGefiltert()` (platform/theme.ts).
+ * Die Konstanten oben müssen zu `--canvas-filter` und `--canvas` in base.css passen.
  *
  * @param farbe Nutzungs- bzw. Planfarbe als Hex (z. B. aus `nutzungInfo(...).color`)
  * @param deckung gewünschte sichtbare Deckung (0–1), wie im hellen Schema, z. B. 0,45
