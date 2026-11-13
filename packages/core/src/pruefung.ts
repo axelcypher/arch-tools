@@ -3,7 +3,7 @@ import { isSelfIntersecting, polygonArea } from './geometry';
 import { computeStorey, effektiveWofl, raumUmAbzug, raumUmschliessung } from './calc';
 import type { OutlineShape, Project, RoomShape, Storey } from './model';
 import { istDachgeschoss, istKellergeschoss } from './model';
-import { raumNutzung } from './norms';
+import { raumNutzung, woflArt } from './norms';
 import type { MultiPolygon } from './polygon';
 import { areaMP, diffMP, intersectMP, oeffnen, polygoneOf, unionAll } from './polygon';
 
@@ -156,16 +156,25 @@ export function pruefeGeschoss(storey: Storey, project: Project, o: PruefOptione
 
   // WoFlV: ohne Wohnung, „keine“ im Wohngeschoss, „voll“ im Dachgeschoss
   const wohngeschoss = !istKellergeschoss(storey) && echteRaeume.some((r) => effektiveWofl(r, storey).kategorie !== 'keine');
+  const ohneWofl: RoomShape[] = [];
   for (const r of echteRaeume) {
     const w = effektiveWofl(r, storey);
     if (w.kategorie !== 'keine' && !w.wohnung.trim()) add('hinweis', 'ohne-wohnung', [r.id], `${raumText(r)} zählt zur Wohnfläche, ist aber keiner Wohnung zugeordnet.`);
-    if (w.kategorie === 'keine' && wohngeschoss && raumNutzung(r) !== 'TF')
-      add('hinweis', 'keine-wofl', [r.id], `${raumText(r)} zählt nicht zur Wohnfläche – richtig z. B. bei Treppenraum, Heizung, Abstellraum außerhalb der Wohnung.`);
+    if (w.kategorie === 'keine' && wohngeschoss && raumNutzung(r) !== 'TF') ohneWofl.push(r);
     if (w.kategorie === 'voll' && istDachgeschoss(storey))
       add('hinweis', 'dachschraege', [r.id], `${raumText(r)}: im Dachgeschoss voll angerechnet – lichte Höhe prüfen (Raumteile unter 2 m nach § 4 WoFlV).`);
     if (o.katalog?.length && !r.katalog && !o.katalog.includes(r.name.trim()))
       add('hinweis', 'ohne-katalog', [r.id], `${raumText(r)}: Bezeichnung nicht im Raumkatalog – Nutzung und Anrechnung prüfen.`);
   }
+
+  // „keine Wohnfläche“ im Wohngeschoss: eine Meldung je Geschoss statt einer je Raum (§ 2 Abs. 3 WoFlV)
+  if (ohneWofl.length)
+    add(
+      'hinweis',
+      'keine-wofl',
+      ohneWofl.map((r) => r.id),
+      keineWoflText(ohneWofl),
+    );
 
   // Abzugsfläche mit eigener Anrechnung: mindert sonst die Wohnfläche einer anderen Wohnung bzw. mit anderem Faktor
   for (const a of raeume) {
@@ -192,9 +201,49 @@ export function pruefeGeschoss(storey: Storey, project: Project, o: PruefOptione
   return out;
 }
 
-/** Prüft alle Geschosse */
+/** Text der Sammelmeldung „keine Wohnfläche“: bis zu fünf Räume namentlich, danach „und k weitere“ */
+export function keineWoflText(raeume: readonly RoomShape[]): string {
+  const namen = raeume.slice(0, 5).map(raumText).join(', ');
+  const rest = raeume.length > 5 ? ` und ${raeume.length - 5} weitere` : '';
+  const kopf = raeume.length === 1 ? '1 Raum zählt' : `${raeume.length} Räume zählen`;
+  return `${kopf} nicht zur Wohnfläche: ${namen}${rest} – richtig, wenn es sich um Räume außerhalb der Wohnung, Zubehör- oder Geschäftsräume handelt (§ 2 Abs. 3 WoFlV), z. B. Treppenhaus, Heizungsraum, Keller- oder Abstellraum außerhalb der Wohnung.`;
+}
+
+/** Namen typischer Wohnräume (mehrdeutige wie „Raum“, „Büro“, „Praxis“, „Arbeiten“ bewusst nicht) … */
+const WOHNRAUM_NAME = /wohn|schlaf|kinderzimmer|^kind\b|eltern|küche|kueche|essen|esszimmer|essplatz|gäste|gaeste/i;
+/** … außer Räumen aus Praxis, Büro, Schule, Gastronomie und Kita mit ähnlichem Namen */
+const KEIN_WOHNRAUM_NAME =
+  /warte|behandl|besprech|lehrer|teeküche|teekueche|gastr|gastraum|gruppe|kita|kindergarten|kindertages|personal|pause|büro|buero|praxis|verkauf|großküche|grossküche|kantine|speise|restaurant|gaststätte/i;
+
+/**
+ * Kein einziger Raum zählt zur Wohnfläche, obwohl Räume nach Name typisch Wohnräume sind (z. B. Wohnen, Schlafen,
+ * Kind): neue Räume starten mit „keine Wohnfläche“ (bei Büro- und Gewerbebauten richtig), die Wohnfläche bliebe sonst
+ * still 0. Räume wie „Büro“ oder „Raum“ lösen den Hinweis nicht aus – Geschäftsräume zählen nicht zur Wohnfläche
+ * (§ 2 Abs. 3 Nr. 3 WoFlV).
+ */
+function keineWohnflaecheImProjekt(project: Project): PruefEintrag | null {
+  const alle = project.storeys.flatMap((st) => st.shapes.filter((s): s is RoomShape => s.kind === 'room' && !s.subtract && s.points.length >= 3).map((r) => ({ r, st })));
+  if (!alle.length || alle.some(({ r, st }) => effektiveWofl(r, st).kategorie !== 'keine')) return null;
+  const wohnraeume = alle.filter(
+    ({ r, st }) => raumNutzung(r) === 'NUF1' && !istKellergeschoss(st) && WOHNRAUM_NAME.test(r.name) && !KEIN_WOHNRAUM_NAME.test(r.name) && woflArt(r.name, st, raumNutzung(r)) === 'wohnen',
+  );
+  if (!wohnraeume.length) return null;
+  // ein Hinweis für das Projekt; ein Klick führt ins erste betroffene Geschoss und wählt dort die Räume
+  const geschosse = new Set(wohnraeume.map((x) => x.st.id)).size;
+  const wo = geschosse > 1 ? ` (Wohnräume in ${geschosse} Geschossen)` : '';
+  return {
+    art: 'hinweis',
+    regel: 'keine-wohnflaeche',
+    storeyId: wohnraeume[0].st.id,
+    shapeIds: wohnraeume.filter((x) => x.st.id === wohnraeume[0].st.id).map((x) => x.r.id),
+    text: `Keine Wohnfläche erfasst${wo} – alle Räume stehen auf „keine Wohnfläche“. Bei Wohnungen die Anrechnung wählen (z. B. „voll“) und die Wohnung zuordnen oder Räume über den Raumkatalog benennen.`,
+  };
+}
+
+/** Prüft alle Geschosse und das Projekt als Ganzes */
 export function pruefeProjekt(project: Project, o: PruefOptionen = {}): PruefEintrag[] {
-  return project.storeys.flatMap((s) => pruefeGeschoss(s, project, o));
+  const projekt = keineWohnflaecheImProjekt(project);
+  return [...(projekt ? [projekt] : []), ...project.storeys.flatMap((s) => pruefeGeschoss(s, project, o))];
 }
 
 /** Raum auf die BGF-Fläche seiner Raumumschließung beschneiden: größtes Teilstück, oder null, wenn nichts übrig bleibt */
