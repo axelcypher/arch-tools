@@ -275,4 +275,30 @@ describe('Prüfregeln', () => {
     await enter(host.querySelector('input')!);
     expect(gesendet).toEqual(['b|Übernehmen']);
   });
+
+  it('Enter: der Hauptknopf wird erst nach dem Übernehmen geprüft – ein Wert, der ihn freigibt, sendet sofort ab', async () => {
+    const gesendet: (number | undefined)[] = [];
+    function Formular() {
+      const [wert, setWert] = useState<number | undefined>(undefined);
+      return createElement(
+        'form',
+        {
+          onSubmit: (e: React.FormEvent) => {
+            e.preventDefault();
+            gesendet.push(wert);
+          },
+        },
+        createElement(NumberField, { value: wert, onChange: setWert, allowEmpty: true }),
+        createElement('button', { type: 'submit', className: 'primary', disabled: wert === undefined }, 'Übernehmen'),
+      );
+    }
+    const host = render(createElement(Formular));
+    const input = host.querySelector('input')!;
+    tippen(input, '3,5');
+    await act(async () => {
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    expect(gesendet).toEqual([3.5]);
+  });
 });
