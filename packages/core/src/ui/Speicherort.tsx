@@ -40,7 +40,10 @@ export function useKonfigOrt(): KonfigOrtAnzeige {
     // das erste Ergebnis nur, solange noch keine neuere Meldung kam
     void konfigOrt().then(
       (o) => aktiv && !gemeldet && setOrt(o),
-      () => aktiv && !gemeldet && setOrt('fehler'),
+      (e) => {
+        log.error('Speicherort der Einstellungen nicht lesbar', e);
+        if (aktiv && !gemeldet) setOrt('fehler');
+      },
     );
     return () => {
       aktiv = false;
@@ -147,9 +150,14 @@ export function SpeicherortDialog({ onClose }: { onClose: () => void }) {
 
   const erneut = async () => {
     setLaeuft('pruefen');
-    const o = await konfigOrtNeuPruefen().catch(() => null);
+    const war = anzeige;
+    const o = await konfigOrtNeuPruefen().catch((e: unknown) => {
+      log.error('Speicherort der Einstellungen nicht lesbar', e);
+      return null;
+    });
     setLaeuft(null);
-    setMeldung(o && !o.notbetrieb ? { art: 'ok', text: 'Das Netzlaufwerk ist wieder erreichbar.' } : { art: 'fehler', text: 'Das Netzlaufwerk ist weiterhin nicht erreichbar.' });
+    if (war === 'fehler') setMeldung(o ? { art: 'ok', text: 'Der Speicherort ist wieder lesbar.' } : { art: 'fehler', text: 'Der Speicherort ist weiterhin nicht lesbar.' });
+    else setMeldung(o && !o.notbetrieb ? { art: 'ok', text: 'Das Netzlaufwerk ist wieder erreichbar.' } : { art: 'fehler', text: 'Das Netzlaufwerk ist weiterhin nicht erreichbar.' });
   };
 
   const wechseln = async () => {
@@ -204,7 +212,14 @@ export function SpeicherortDialog({ onClose }: { onClose: () => void }) {
     <Modal titel="Speicherort der Einstellungen" onClose={laeuft ? undefined : onClose} breit klickDaneben={!laeuft}>
       <h3>Speicherort der Einstellungen</h3>
       <p className="small-text muted">Gilt für alle Apps – für dieses Benutzerkonto auf diesem Rechner.</p>
-      {anzeige === 'fehler' && <p className="warning">Der Speicherort ist nicht lesbar – Einzelheiten im Protokoll.</p>}
+      {anzeige === 'fehler' && (
+        <div className="warning sp-notbetrieb" role="status">
+          <span>Der Speicherort ist nicht lesbar – Einzelheiten im Protokoll.</span>
+          <button className="small" disabled={!!laeuft} onClick={() => void erneut()}>
+            {laeuft === 'pruefen' ? 'Wird geprüft …' : 'Erneut versuchen'}
+          </button>
+        </div>
+      )}
       {ort && (
         <div className="sp-aktuell">
           <span className="field-label">Aktuell</span>

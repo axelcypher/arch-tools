@@ -145,6 +145,8 @@ function fensterBinden() {
   window.addEventListener('storage', (e) => {
     if (e.key !== SIGNAL) return;
     ort = null;
+    gespiegelt.clear();
+    herkunft = null;
     void konfigOrt().catch(() => undefined);
   });
 }
@@ -235,7 +237,10 @@ function spiegeln(o: KonfigOrt, bereich: string, b64: string): Promise<void> {
     await invoke<void>('write_binary_file', { path: datei(kopie, bereich), contentsBase64: b64 });
     gespiegelt.set(bereich, b64);
     if (!herkunft.bereiche.includes(bereich)) {
-      herkunft.bereiche.push(bereich);
+      // frisch lesen und vereinigen: ein anderes Fenster kann inzwischen eigene Bereiche eingetragen haben
+      const aufPlatte = await herkunftLesen(o.basis);
+      const dazu = aufPlatte && gleicherPfad(aufPlatte.ordner, o.ordner) ? aufPlatte.bereiche : [];
+      herkunft = { ordner: o.ordner, bereiche: [...new Set([...herkunft.bereiche, ...dazu, bereich])] };
       await invoke<void>('write_binary_file', { path: datei(kopie, HERKUNFT), contentsBase64: kodiert(herkunft) });
     }
   });

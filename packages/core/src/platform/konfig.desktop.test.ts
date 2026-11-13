@@ -259,6 +259,22 @@ describe('Notbetrieb: Grenzfälle', () => {
     expect((await k.allgemeinLaden()).buero).toBe('Büro');
   });
 
+  it('Herkunftsliste: ein anderes Fenster eingetragene Bereiche gehen nicht verloren', async () => {
+    legeAn(`${BASIS}/konfig.json`, { modus: 'netzwerk', ordner: NAS });
+    legeAn(`${NAS}/allgemein.json`, { buero: 'Büro' });
+    legeAn(`${NAS}/kataster.json`, { zielpfad: 'Lagepläne' });
+    const k = await laden();
+    await k.allgemeinLaden();
+    await vi.waitFor(() => expect((lies(`${KOPIE}/.herkunft.json`) as { bereiche: string[] }).bereiche).toContain('allgemein'));
+    // ein anderes Fenster spiegelt inzwischen „ava“
+    const h = lies(`${KOPIE}/.herkunft.json`) as { ordner: string; bereiche: string[] };
+    legeAn(`${KOPIE}/.herkunft.json`, { ordner: NAS, bereiche: [...h.bereiche, 'ava'] });
+    legeAn(`${KOPIE}/ava.json`, { a: 1 });
+    legeAn(`${NAS}/raumkatalog.json`, [{ name: 'Büro' }]);
+    await k.konfigLesen('raumkatalog');
+    await vi.waitFor(() => expect((lies(`${KOPIE}/.herkunft.json`) as { bereiche: string[] }).bereiche).toEqual(expect.arrayContaining(['allgemein', 'ava', 'raumkatalog'])));
+  });
+
   it('Neu lesen: genau einmal je Änderung, nicht beim ersten Lesen des Orts', async () => {
     legeAn(`${BASIS}/konfig.json`, { modus: 'netzwerk', ordner: NAS });
     legeAn(`${NAS}/allgemein.json`, { buero: 'Büro' });

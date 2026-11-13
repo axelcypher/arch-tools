@@ -257,7 +257,9 @@ async fn konfig_dateien(ordner: String) -> Result<Vec<String>, String> {
 /// ist (abgebrochenes Schreiben), misst die eigene, monotone Uhr: Bleibt dieselbe Sperre (gleiches Zeichen) 10 s lang
 /// liegen, wird sie entfernt – die Uhrzeit des Netzlaufwerks spielt keine Rolle, sie kann von der des Rechners abweichen.
 /// Unmittelbar vor dem Entfernen wird das Zeichen noch einmal verglichen, damit nicht die frische Sperre eines anderen
-/// Rechners verschwindet (ein winziges Zeitfenster zwischen Vergleich und Entfernen bleibt).
+/// Rechners verschwindet (ein winziges Zeitfenster zwischen Vergleich und Entfernen bleibt). Bekannte Grenze: Hängt
+/// ein Schreibvorgang länger als 10 s (hängende Freigabe), kann ein anderer Rechner dessen Sperre für verwaist halten;
+/// der erneute Vergleich unter der Sperre verhindert dann trotzdem, dass eine fremde Änderung still überschrieben wird.
 fn konfig_sperre(pfad: &std::path::Path) -> Result<(std::path::PathBuf, String), String> {
     use std::io::Write;
     let name = pfad.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();

@@ -35,7 +35,7 @@ interface MailState extends MailEinstellungen {
   setEigene: (eigene: string[]) => Promise<void>;
 }
 
-export const useMails = create<MailState>()((set) => ({
+export const useMails = create<MailState>()((set, get) => ({
   eigene: [],
   geladen: false,
   fehler: null,
@@ -47,10 +47,19 @@ export const useMails = create<MailState>()((set) => ({
     }
   },
   setEigene: async (eigene) => {
+    // als Änderung gegenüber dem bisherigen Stand auf den frisch gelesenen anwenden – so bleiben Einträge erhalten, die
+    // ein anderer Rechner inzwischen ergänzt hat
+    const vorher = get().eigene;
     const neu = aus({ eigene });
+    const dazu = neu.eigene.filter((x) => !vorher.includes(x));
+    const weg = vorher.filter((x) => !neu.eigene.includes(x));
     set(neu);
     try {
-      await konfigAendern(BEREICH_MAILS, (roh) => ({ ...((roh && typeof roh === 'object' ? roh : {}) as object), eigene: neu.eigene }));
+      const ergebnis = await konfigAendern(BEREICH_MAILS, (roh) => {
+        const o = (roh && typeof roh === 'object' ? roh : {}) as Record<string, unknown>;
+        return { ...o, eigene: [...aus(o).eigene.filter((x) => !weg.includes(x)), ...dazu.filter((x) => !aus(o).eigene.includes(x))] };
+      });
+      set({ eigene: ergebnis.eigene });
     } catch (e) {
       set({ fehler: `Einstellungen nicht gespeichert: ${e instanceof Error ? e.message : String(e)}` });
     }
