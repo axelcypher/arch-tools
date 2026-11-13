@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Modal } from '@core/ui/Dialog';
+import { Symbol } from '@core/ui/Symbol';
 import { oeffneOrdner, verbinde } from '../dateisystem';
 import { planFehler } from '../kataster/kataster';
 import { useKataster } from '../kataster/katasterStore';
-import { Symbol } from './Symbol';
 
 /** Meldung über Fehlendes – mit dem Ort, an dem es sich beheben lässt */
 interface Fehlt {
@@ -118,10 +118,12 @@ export function KatasterDialog({ basis, name, onClose, onEinstellungen, onStammd
                       title="Ordner im Explorer zeigen"
                       onClick={() => a.datei && void oeffneOrdner(verbinde(basis, a.datei.split('/').slice(0, -1).join('/') || '.')).catch(() => undefined)}
                     >
-                      ✓ {a.datei}
+                      <Symbol name="haken" /> {a.datei}
                     </button>
                   ) : (
-                    `✗ ${a.fehler}`
+                    <>
+                      <Symbol name="warnung" /> {a.fehler}
+                    </>
                   )}
                 </span>
               )}
@@ -151,7 +153,11 @@ export function KatasterDialog({ basis, name, onClose, onEinstellungen, onStammd
             {pv ? 'Vorlage aktualisieren' : 'Vorlage übernehmen'}
           </button>
         )}
-        {aktualisiert && <span className="ka-ok small-text">✓ übernommen</span>}
+        {aktualisiert && (
+          <span className="ka-ok small-text">
+            <Symbol name="haken" /> übernommen
+          </span>
+        )}
       </div>
       {ausgang?.meldung && <pre className="ka-meldung warning small-text">{ausgang.meldung}</pre>}
 

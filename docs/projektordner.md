@@ -295,10 +295,11 @@ Die **Ordnerliste** wird mit der Maus bearbeitet – ein Baum wie im Explorer, r
 - **LPh-Vorschau:** eigener Modus (Knopf in der Werkzeugleiste, „Vorschau beenden“) – die Leistungsphasen eines
   Beispielprojekts wählen; Ordner, die dann nicht entstehen, sind blass und durchgestrichen („12 von 44 Ordnern
   entstehen“). Die Vorschau ändert nichts an der Struktur.
-- **Menüs:** Rechtsklick, „⋯“ an der Zeile oder Umschalt+F10 bzw. die Menütaste (für die Zeile mit der Schreibmarke)
-  zeigen alle Aktionen mit ihren Tastenkürzeln. Das Menü ist ganz per Tastatur bedienbar: Pfeil auf/ab, Pos1/Ende,
-  Enter; Esc oder Tab schließt, der Fokus kehrt in den Baum zurück. Kopieren, Einfügen, Duplizieren sowie Alle
-  aufklappen/zuklappen stehen außerdem im Menü „Weitere“ der Werkzeugleiste. Pfeiltasten, Pos1/Ende bewegen die
+- **Menüs:** Rechtsklick, der Pfeilknopf am Ende der Zeile oder Umschalt+F10 bzw. die Menütaste (für die Zeile mit der
+  Schreibmarke) zeigen alle Aktionen mit ihren Tastenkürzeln – im gemeinsamen Menü aller Apps. Es ist ganz per Tastatur
+  bedienbar: Pfeil auf/ab, Pos1/Ende, Enter; Esc oder Tab schließt, der Fokus kehrt in den Baum zurück (Tab geht von
+  dort weiter). Kopieren, Einfügen, Duplizieren sowie Alle aufklappen/zuklappen stehen außerdem im Menü „Weitere“ der
+  Werkzeugleiste; was gerade nicht geht, bleibt dort blass erreichbar und nennt den Grund im Tooltip. Pfeiltasten, Pos1/Ende bewegen die
   Auswahl.
 - **Meldungen** erscheinen am unteren Rand des Baums (Fehler als Warnung) und verschwinden nach einigen Sekunden.
 

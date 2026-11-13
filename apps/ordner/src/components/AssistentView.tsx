@@ -9,6 +9,7 @@ import { saveBinaryFile } from '@core/platform/files';
 import { logger } from '@core/platform/log';
 import { anRahmen, ZUR_APP } from '@core/platform/rahmen';
 import { StammdatenFelder } from '@core/ui/Stammdaten';
+import { Symbol } from '@core/ui/Symbol';
 import type { Dateisystem } from '../dateisystem';
 import { hatDateisystem, SpeicherDateisystem, tauriDateisystem, verbinde, waehleOrdner, waehleOrdnerImBrowser } from '../dateisystem';
 import { ausOrdnername, naechsteNummer, nummerPasst } from '../nummer';
@@ -517,7 +518,7 @@ export function AssistentView({
   if (schritt === 'start' && desktop && allgemein.projekte.length > 0) {
     return (
       <div className="po-start-seite">
-        {(fehler || laeuft) && <p className={fehler ? 'warning' : 'busy'}>{fehler ?? laeuft}</p>}
+        {(fehler || laeuft) && <p className={fehler ? 'meldung fehler' : 'busy'} role={fehler ? 'alert' : undefined}>{fehler ?? laeuft}</p>}
         <ProjektStart
           fs={tauriDateisystem}
           sichtbar={sichtbar}
@@ -553,7 +554,7 @@ export function AssistentView({
               <li key={s.id} className={`${aktiv ? 'aktiv' : ''}${erledigt ? ' erledigt' : ''}`} aria-current={aktiv ? 'step' : undefined} title={gesperrt ? gesperrtGrund : undefined}>
                 <button disabled={gesperrt} onClick={() => geheZu(s.id)} aria-label={erledigt ? `${label} (erledigt)` : undefined}>
                   <span className="po-schritt-nr" aria-hidden>
-                    {erledigt ? '✓' : i + 1}
+                    {erledigt ? <Symbol name="haken" /> : i + 1}
                   </span>
                   {label}
                 </button>
@@ -591,7 +592,7 @@ export function AssistentView({
             )}
           </p>
         )}
-        {fehler && <p className="warning">{fehler}</p>}
+        {fehler && <p className="meldung fehler" role="alert">{fehler}</p>}
 
         {schritt === 'start' && (
           <div className="po-start">
@@ -661,7 +662,7 @@ export function AssistentView({
           <>
             <h2 tabIndex={-1}>Stammdaten</h2>
             {ohneProjektdatei && (
-              <p className="po-hinweis">
+              <p className="meldung">
                 In diesem Ordner liegt noch keine Projektdatei (.oap).{' '}
                 {geladen?.quelle.alteProjektJson
                   ? 'Die Stammdaten stammen aus der alten projekt.json, die liegen bleibt.'
@@ -699,7 +700,7 @@ export function AssistentView({
             />
             <StatusWahl status={stamm.status} onChange={(status) => aendereStamm({ status })} />
             {modus === 'neu' && gibtEsSchon && (
-              <p className="po-hinweis">
+              <p className="meldung">
                 Den Ordner „{neuerName}“ gibt es im Stammordner schon.{' '}
                 <button className="small" onClick={() => void ordnerLaden(verbinde(stammordner, neuerName))}>
                   Dieses Projekt ergänzen
@@ -789,7 +790,7 @@ export function AssistentView({
               </button>
             </ErgebnisAnzeige>
             {abschluss.rueckgaengig && (
-              <p className="po-meldung po-rueckgaengig">
+              <p className="meldung ok po-rueckgaengig">
                 Das Formular ist für das nächste Projekt geleert.{' '}
                 <button
                   className="small"
@@ -838,7 +839,7 @@ export function AssistentView({
                   </span>
                 </h3>
                 {modus === 'ergaenzen' && !stamm?.leistungsphasen.length && (
-                  <p className="po-hinweis">
+                  <p className="meldung">
                     Keine Leistungsphasen gewählt – alle Ordner werden vorgeschlagen, auch die für Ausschreibung und Bauleitung.{' '}
                     <button className="small" onClick={() => setSchritt('umfang')}>
                       Leistungsphasen wählen
@@ -872,7 +873,7 @@ export function AssistentView({
                   <p className="muted small-text">Die vorhandene Projektdatei lässt sich nur in der Desktop-App ergänzen; die ZIP-Datei enthält nur Neues.</p>
                 )}
                 {modus === 'neu' && gibtEsSchon && (
-                  <p className="po-hinweis">
+                  <p className="meldung">
                     Den Ordner „{neuerName}“ gibt es im Stammordner schon – hier entsteht kein zweites Projekt darin.{' '}
                     <button className="small" onClick={() => void ordnerLaden(verbinde(stammordner, neuerName))}>
                       Dieses Projekt ergänzen
@@ -906,7 +907,11 @@ export function AssistentView({
         {/* nach dem Anlegen (Abschlussseite) keine Navigation mehr – sie führte in den schon geleerten Entwurf */}
         {schritt !== 'start' && !abschluss && (
           <div className="button-row po-navigation">
-            {voriger && <button onClick={() => geheZu(voriger.id)}>← {voriger.id === 'start' ? 'Anderes Projekt' : voriger.label}</button>}
+            {voriger && (
+              <button onClick={() => geheZu(voriger.id)}>
+                <Symbol name="pfeilLinks" /> {voriger.id === 'start' ? 'Anderes Projekt' : voriger.label}
+              </button>
+            )}
             {/* Grund, warum es nicht weitergeht – dauerhaft im DOM, damit Hilfsmittel die Meldung ansagen */}
             <span className="po-weiter-grund" role="status">
               {versucht && !kannWeiter(schritt) && (
@@ -935,7 +940,7 @@ export function AssistentView({
                 aria-keyshortcuts="Control+Enter"
                 onClick={weiterGehen}
               >
-                Weiter: {naechster.id === 'ausfuehren' && modus === 'ergaenzen' ? 'Ergänzen' : naechster.label} →
+                Weiter: {naechster.id === 'ausfuehren' && modus === 'ergaenzen' ? 'Ergänzen' : naechster.label} <Symbol name="pfeilRechts" />
               </button>
             )}
             {/* letzter Schritt: die Hauptaktion steht wie „Weiter“ rechts in der Navigation, mit dem Grund, falls gesperrt */}

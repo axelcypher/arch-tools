@@ -5,10 +5,10 @@ import type { DxfStil, KatasterPlan, VorlageInfo } from '../kataster/kataster';
 import { ausschnitt, KATASTER_VARIABLEN, KATASTER_ZIEL_VARIABLEN, karteVon, planDateiname, planFehler, VORGABE_BESCHRIFTUNG } from '../kataster/kataster';
 import { PlatzhalterChips, PlatzhalterHinweise, platzhalterEinfuegen } from '@core/ui/Platzhalter';
 import { bestaetigen } from '@core/ui/Rueckfrage';
+import { Symbol } from '@core/ui/Symbol';
 import { useKataster } from '../kataster/katasterStore';
 import { tauriQgis } from '../kataster/qgis';
 import { hatDateisystem } from '../dateisystem';
-import { Symbol } from './Symbol';
 
 function Karte({ titel, text, children, kopf }: { titel: string; text?: ReactNode; children: ReactNode; kopf?: ReactNode }) {
   return (

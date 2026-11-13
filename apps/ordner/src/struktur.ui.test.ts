@@ -57,6 +57,8 @@ beforeEach(() => {
 });
 afterEach(async () => {
   await act(() => useOrdner.getState().speichernJetzt());
+  // ein offenes gemeinsames Menü (globaler Zustand) nicht in den nächsten Test tragen
+  if (document.querySelector('.menue')) act(() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
   act(() => root?.unmount());
   root = null;
   document.body.innerHTML = '';
@@ -87,8 +89,11 @@ const strukturAnsicht = (ordner = [{ pfad: '05 Protokolle' }, { pfad: '07 Aussch
   const taste = (ziel: Element, key: string, mod: KeyboardEventInit = {}) => act(() => ziel.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...mod })));
   return { host, baum, z, klick, taste };
 };
-const menue = (host: Element) => host.querySelector<HTMLElement>('.po-menue');
-const eintraege = (host: Element) => [...menue(host)!.querySelectorAll<HTMLButtonElement>('[role="menuitem"]')];
+/** das gemeinsame Menü (`@core/ui/Menue`, in der Titelleiste eingehängt) */
+const menue = (host: Element) => host.querySelector<HTMLElement>('.menue[role="menu"]');
+const eintraege = (host: Element) => [...menue(host)!.querySelectorAll<HTMLButtonElement>(':scope > [role="menuitem"]')];
+/** Text eines Menüpunkts ohne sein Kürzel */
+const name = (b: Element) => b.querySelector('.menue-text')?.textContent;
 
 describe('Reservierte Windows-Namen', () => {
   it('sichererName hängt „_“ an CON, PRN, AUX, NUL, COM1–9, LPT1–9 an – auch mit Endung, ohne Unterschied der Schreibung', () => {
@@ -151,7 +156,9 @@ describe('Store: projektordner.json', () => {
     await warten();
     expect(host.querySelector('.po-sicherungen')?.textContent).toContain('„Neuere Fassung“');
     act(() => knopf(host, 'Wiederherstellen').click());
-    expect(host.querySelector('.po-struktur-kopf .warning')?.textContent).toContain('lässt sich nicht lesen');
+    const meldung = host.querySelector('.po-struktur-kopf .meldung.fehler');
+    expect(meldung?.textContent).toContain('lässt sich nicht lesen');
+    expect(meldung?.getAttribute('role')).toBe('alert');
     expect(useOrdner.getState().struktur.ordner).toEqual(STANDARD.ordner);
   });
 
@@ -195,19 +202,22 @@ describe('Struktur-Editor', () => {
     expect(menue(host)?.getAttribute('aria-label')).toBe('Aktionen für 07 Ausschreibung');
     const liste = eintraege(host);
     expect(document.activeElement).toBe(liste[0]);
-    expect(liste[0].getAttribute('aria-label')).toBe('Unterordner anlegen');
-    // Kürzel stehen sichtbar im Eintrag (und für Hilfsmittel in aria-keyshortcuts)
-    const dupl = liste.find((b) => b.getAttribute('aria-label') === 'Duplizieren')!;
-    expect(dupl.querySelector('.po-menue-kuerzel')?.textContent).toBe('Strg+D');
-    expect(dupl.getAttribute('aria-keyshortcuts')).toBe('Control+D');
-    expect(liste.find((b) => b.getAttribute('aria-label') === 'Nach oben')?.textContent).toContain('Alt+↑');
+    expect(name(liste[0])).toBe('Unterordner anlegen');
+    // Kürzel stehen sichtbar rechts im Eintrag – und als Teil seines Textes auch für Hilfsmittel
+    const dupl = liste.find((b) => name(b) === 'Duplizieren')!;
+    expect(dupl.querySelector('.menue-hinweis')?.textContent).toBe('Strg+D');
+    expect(dupl.textContent).toBe('DuplizierenStrg+D');
+    expect(liste.find((b) => name(b) === 'Nach oben')?.querySelector('.menue-hinweis')?.textContent).toBe('Alt+↑');
+    expect(liste.find((b) => name(b) === 'Umbenennen')?.querySelector('.menue-hinweis')?.textContent).toBe('F2');
     // Pfeil ab/auf (umlaufend), Ende, Pos1 – der Baum dahinter bleibt, wo er war
     taste(document.activeElement!, 'ArrowDown');
     expect(document.activeElement).toBe(liste[1]);
     taste(document.activeElement!, 'ArrowUp');
     taste(document.activeElement!, 'ArrowUp');
     expect(document.activeElement).toBe(liste[liste.length - 1]);
-    expect(liste[liste.length - 1].getAttribute('aria-label')).toBe('Löschen …');
+    expect(name(liste[liste.length - 1])).toBe('Löschen …');
+    // Löschen als Gefahr-Eintrag; „ …“, weil der Ordner Unterordner hat und deshalb erst eine Rückfrage kommt
+    expect(liste[liste.length - 1].className).toContain('gefahr');
     taste(document.activeElement!, 'Home');
     expect(document.activeElement).toBe(liste[0]);
     taste(document.activeElement!, 'End');
@@ -220,7 +230,7 @@ describe('Struktur-Editor', () => {
     // die Menütaste wirkt ebenso; Enter führt den Eintrag aus
     taste(baum, 'ContextMenu');
     expect(menue(host)?.getAttribute('aria-label')).toBe('Aktionen für 07 Ausschreibung');
-    const umbenennen = eintraege(host).find((b) => b.getAttribute('aria-label') === 'Umbenennen')!;
+    const umbenennen = eintraege(host).find((b) => name(b) === 'Umbenennen')!;
     act(() => umbenennen.click());
     expect(menue(host)).toBeNull();
     expect(host.querySelector('input[aria-label="Neuer Name"]')).not.toBeNull();
@@ -239,7 +249,7 @@ describe('Struktur-Editor', () => {
     act(() => baum.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, button: 2, clientX: 40, clientY: 300 })));
     expect(menue(host)?.getAttribute('aria-label')).toBe('Aktionen');
     expect([...menue(host)!.children].map((c) => c.tagName)).toEqual(['BUTTON', 'BUTTON']);
-    expect(eintraege(host).map((b) => b.getAttribute('aria-label'))).toEqual(['Ordner anlegen', 'Mehrere Ordner anlegen …']);
+    expect(eintraege(host).map(name)).toEqual(['Ordner anlegen', 'Mehrere Ordner anlegen …']);
   });
 
   it('Trenner nur zwischen Gruppen – nie am Anfang, am Ende oder doppelt', () => {
@@ -247,32 +257,39 @@ describe('Struktur-Editor', () => {
     klick('05 Protokolle');
     act(() => z('05 Protokolle').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, button: 2, clientX: 5, clientY: 5 })));
     const kinder = [...menue(host)!.children];
+    const trenner = (c: Element | undefined) => c?.getAttribute('role') === 'separator';
     expect(kinder[0].tagName).toBe('BUTTON');
     expect(kinder[kinder.length - 1].tagName).toBe('BUTTON');
-    expect(kinder.some((c, i) => c.tagName === 'HR' && kinder[i + 1]?.tagName === 'HR')).toBe(false);
-    expect(kinder.filter((c) => c.tagName === 'HR').length).toBeGreaterThan(0);
+    expect(kinder.some((c, i) => trenner(c) && trenner(kinder[i + 1]))).toBe(false);
+    expect(kinder.filter((c) => trenner(c)).length).toBeGreaterThan(0);
+    // ohne Unterordner sofort gelöscht: „Löschen“ ohne „ …“
+    expect(name(kinder[kinder.length - 1])).toBe('Löschen');
   });
 
-  it('Meldungen: Fehler als Warnung (role=alert), Erfolg als Meldung – über dem Baum, ohne ihn zu verschieben', () => {
+  it('Meldungen: Fehler als .meldung.fehler (role=alert), Erfolg als .meldung.ok – über dem Baum, ohne ihn zu verschieben', () => {
     const { host, z, klick, taste, baum } = strukturAnsicht();
     // Fehler: in sich selbst verschieben
     act(() => z('07 Ausschreibung').dispatchEvent(new Event('dragstart', { bubbles: true })));
     act(() => z('07 Ausschreibung/Dach').dispatchEvent(new Event('drop', { bubbles: true, cancelable: true })));
     const fehler = host.querySelector('.po-editor-meldung')!;
-    expect(fehler.className).toContain('warning');
+    expect(fehler.classList.contains('meldung')).toBe(true);
+    expect(fehler.classList.contains('fehler')).toBe(true);
     expect(fehler.getAttribute('role')).toBe('alert');
     expect(fehler.textContent).toContain('nicht in sich selbst');
     // die Meldung liegt im Rahmen des Baums (absolut), nicht davor im Fluss
     expect(fehler.parentElement?.className).toBe('po-k-rahmen');
     expect(fehler.previousElementSibling).toBe(baum);
-    act(() => knopf(fehler, '×').click());
+    const zu = fehler.querySelector<HTMLButtonElement>('button[aria-label="Meldung schließen"]')!;
+    expect(zu.querySelector('svg.symbol')).not.toBeNull();
+    act(() => zu.click());
     expect(host.querySelector('.po-editor-meldung')).toBeNull();
     // Erfolg
     klick('09 Fotos');
     taste(baum, 'c', { ctrlKey: true });
     const ok = host.querySelector('.po-editor-meldung')!;
-    expect(ok.className).toContain('po-meldung');
-    expect(ok.className).not.toContain('warning');
+    expect(ok.classList.contains('meldung')).toBe(true);
+    expect(ok.classList.contains('ok')).toBe(true);
+    expect(ok.classList.contains('fehler')).toBe(false);
     expect(ok.getAttribute('role')).toBe('status');
   });
 
@@ -297,15 +314,19 @@ describe('Struktur-Editor', () => {
   it('Werkzeugleiste kurz, „Weitere“ als Menü mit fester Beschriftung „Einfügen“; Seitenleiste ohne doppelte Knopfreihen; kein Kursiv', () => {
     const { host, klick, taste, baum, z } = strukturAnsicht();
     const leiste = host.querySelector('.po-werkzeuge')!;
-    expect([...leiste.querySelectorAll('button')].map((b) => b.getAttribute('aria-label') ?? b.textContent)).toEqual([
+    expect([...leiste.querySelectorAll('button')].map((b) => b.getAttribute('aria-label') ?? b.textContent?.trim())).toEqual([
       '+ Ordner',
       '+ Unterordner',
       'Mehrere anlegen …',
       'Rückgängig',
       'Wiederholen',
       'LPh-Vorschau',
-      'Weitere ▾',
+      'Weitere',
     ]);
+    // Symbole statt Schriftzeichen (↶ ↷ ▾): gezeichnet, der Name steht im aria-label bzw. im Text
+    for (const n of ['Rückgängig', 'Wiederholen']) expect(leiste.querySelector(`button[aria-label="${n}"] svg.symbol`)).not.toBeNull();
+    expect(knopf(leiste, 'Weitere').querySelector('svg.symbol')).not.toBeNull();
+    expect(leiste.textContent).not.toMatch(/[↶↷▾]/);
     expect(leiste.querySelector('.po-werkzeuge-trenner')).toBeNull();
     klick('09 Fotos');
     act(() => z('05 Protokolle').dispatchEvent(new MouseEvent('click', { bubbles: true, ctrlKey: true })));
@@ -314,8 +335,9 @@ describe('Struktur-Editor', () => {
     expect(weitere.getAttribute('aria-haspopup')).toBe('menu');
     act(() => weitere.click());
     expect(weitere.getAttribute('aria-expanded')).toBe('true');
-    const einfuegen = eintraege(host).find((b) => b.getAttribute('aria-label') === 'Einfügen')!;
-    expect(einfuegen.querySelector('.po-menue-label')?.textContent).toBe('Einfügen');
+    expect(menue(host)?.getAttribute('aria-label')).toBe('Weitere Aktionen');
+    const einfuegen = eintraege(host).find((b) => name(b) === 'Einfügen')!;
+    expect(einfuegen.querySelector('.menue-hinweis')?.textContent).toBe('Strg+V');
     expect(einfuegen.title).toContain('2 kopierte Ordner');
     expect(document.activeElement).toBe(eintraege(host)[0]);
     // Esc schließt, der Fokus kehrt zum Knopf zurück
@@ -596,15 +618,19 @@ describe('Runde 3: Entwurf, Rückfrage, Sicherung, Ziehen, Menüs', () => {
     expect(host.querySelector('.po-editor-meldung')).toBeNull();
   });
 
-  it('„⋯“ an der Zeile ist als Menüknopf ausgezeichnet; „Mehrere Ordner anlegen …“ ohne Auswahl; Strg+Enter sichtbar', () => {
+  it('Aktionen-Knopf an der Zeile ist als Menüknopf ausgezeichnet; „Mehrere Ordner anlegen …“ ohne Auswahl; Strg+Enter sichtbar', () => {
     const { host, z, klick, baum, taste } = strukturAnsicht();
     const punkte = () => z('09 Fotos').querySelector<HTMLButtonElement>('.po-k-aktionen button')!;
     expect(punkte().getAttribute('aria-haspopup')).toBe('menu');
-    expect(punkte().getAttribute('aria-expanded')).toBe('false');
+    expect(punkte().getAttribute('aria-label')).toBe('Aktionen für 09 Fotos');
+    expect(punkte().querySelector('svg.symbol')).not.toBeNull();
     act(() => punkte().click());
-    expect(menue(host)).not.toBeNull();
-    expect(punkte().getAttribute('aria-expanded')).toBe('true');
+    expect(menue(host)?.getAttribute('aria-label')).toBe('Aktionen für 09 Fotos');
+    expect(document.activeElement).toBe(eintraege(host)[0]);
+    // Esc schließt nur das Menü; der Fokus kehrt in den Baum zurück
     taste(menue(host)!, 'Escape');
+    expect(menue(host)).toBeNull();
+    expect(document.activeElement).toBe(baum);
     // ohne Auswahl: „Mehrere Ordner anlegen …“ (im Stamm)
     act(() => baum.dispatchEvent(new MouseEvent('click', { bubbles: true })));
     act(() => baum.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, button: 2, clientX: 5, clientY: 5 })));

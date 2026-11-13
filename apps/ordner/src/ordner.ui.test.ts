@@ -53,6 +53,8 @@ beforeEach(() => {
 afterEach(async () => {
   // anstehendes (entprelltes) Schreiben nicht in den nächsten Test tragen
   await act(() => useOrdner.getState().speichernJetzt());
+  // ein offenes gemeinsames Menü (globaler Zustand) nicht in den nächsten Test tragen
+  if (document.querySelector('.menue')) act(() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
   act(() => root?.unmount());
   root = null;
   document.body.innerHTML = '';
@@ -189,8 +191,13 @@ describe('ATLAS (Projektordner)', () => {
     expect(host.textContent).toContain('ZIP-Datei zum Herunterladen');
 
     // zurück zu den Stammdaten über die Schrittleiste (besucht und vollständig: Häkchen), dann „Leer beginnen“ auf der Startseite
-    act(() => knopf(host, '✓Stammdaten').click());
-    act(() => knopf(host, '← Anderes Projekt').click());
+    const stammdaten = knopf(host, 'Stammdaten');
+    expect(stammdaten.getAttribute('aria-label')).toBe('Stammdaten (erledigt)');
+    expect(stammdaten.querySelector('.po-schritt-nr svg.symbol')).not.toBeNull();
+    act(() => stammdaten.click());
+    const zurueck = knopf(host, 'Anderes Projekt');
+    expect(zurueck.querySelector('svg.symbol')).not.toBeNull();
+    act(() => zurueck.click());
     expect(knopf(host, 'Leer beginnen').title).toContain('Entwurf verwerfen');
     act(() => knopf(host, 'Leer beginnen').click());
     expect(useOrdner.getState().stamm).toMatchObject({ nummer: '', beteiligte: [], bearbeiter: 'TP' });
@@ -295,7 +302,7 @@ describe('ATLAS (Projektordner)', () => {
     // Unterordner von Rohbau als Baustein speichern … (Kontextmenü)
     klick('07 Ausschreibung/Rohbau');
     act(() => z('07 Ausschreibung/Rohbau').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, button: 2, clientX: 10, clientY: 10 })));
-    act(() => knopf(host.querySelector('.po-menue')!, 'Unterordner als Baustein').click());
+    act(() => knopf(host.querySelector('.menue[role="menu"]')!, 'Unterordner als Baustein').click());
     await warten();
     eingabe(host.querySelector<HTMLInputElement>('.modal.rf input')!, 'Gewerk');
     act(() => knopf(host.querySelector('.modal.rf')!, 'Speichern').click());
@@ -360,7 +367,7 @@ describe('ATLAS (Projektordner)', () => {
     taste('Delete');
     expect(pfade()).not.toContain('11 Videos');
     act(() => z('05 Protokolle').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true })));
-    expect([...host.querySelectorAll('.po-menue button')].map((b) => b.getAttribute('aria-label'))).toEqual(
+    expect([...host.querySelectorAll('.menue [role="menuitem"] .menue-text')].map((b) => b.textContent)).toEqual(
       expect.arrayContaining(['Unterordner anlegen', 'Baustein „Gewerk“ einfügen', 'Umbenennen', 'Duplizieren', 'Kopieren', 'Einfügen', 'Unterordner als Baustein speichern …', 'Löschen …']),
     );
     // Vorschau für Leistungsphasen (eigener Modus): Ordner, die bei LPh 1–4 nicht entstehen, sind blass
@@ -886,7 +893,7 @@ describe('ATLAS (Projektordner)', () => {
     const arten = [...host.querySelectorAll('.po-befunde .po-befund-art')].map((h) => h.textContent);
     expect(arten[0]).toBe('Abweichung');
     expect(arten.indexOf('Hinweis')).toBeGreaterThan(0);
-    act(() => knopf(host, '← Zur Projektliste').click());
+    act(() => knopf(host, 'Zur Projektliste').click());
     await act(async () => knopf(host, 'Alle Projekte prüfen').click());
     await warten();
     const zeilen = [...host.querySelectorAll('.po-sammel tbody tr')].map((z) => [...z.querySelectorAll('td')].map((t) => t.textContent));

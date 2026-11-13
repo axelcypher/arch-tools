@@ -8,11 +8,11 @@ import { hatDateisystem, waehleOrdner } from '../dateisystem';
 import { dateimuster, nameAus, nummerAus, PLATZHALTER_NUMMER, PLATZHALTER_PLAN, PLATZHALTER_PROJEKT } from '../nummer';
 import { SchemaFeld } from './SchemaFeld';
 import { StrukturSperre } from './StrukturSperre';
-import { Symbol } from './Symbol';
 import type { Sicherung } from '../sicherung';
 import { strukturUnterschied, unterschiedText } from '../sicherung';
 import { useOrdner } from '../store';
 import { SpeicherortZeile } from '@core/ui/Speicherort';
+import { Symbol } from '@core/ui/Symbol';
 import { OrdnerEditor } from './OrdnerEditor';
 import { NamensschemaEinstellungen } from './NamensschemaEinstellungen';
 import type { Struktur } from '../struktur';
@@ -287,12 +287,12 @@ export function StrukturView() {
         </p>
         <StrukturSperre />
         {meldung && (
-          <p className={meldung.art === 'fehler' ? 'warning' : 'po-meldung'} role={meldung.art === 'fehler' ? 'alert' : 'status'}>
+          <p className={`meldung ${meldung.art}`} role={meldung.art === 'fehler' ? 'alert' : 'status'}>
             {meldung.text}
           </p>
         )}
         {rueckgaengig && (
-          <p className="po-meldung po-rueckgaengig">
+          <p className="meldung ok po-rueckgaengig">
             {rueckgaengig.text}{' '}
             <button className="small" onClick={() => void strukturRueckgaengig().catch((e: unknown) => setMeldung({ art: 'fehler', text: e instanceof Error ? e.message : String(e) }))}>
               Rückgängig
@@ -415,7 +415,7 @@ function GemeinsameEinstellungen() {
       <h2>Gemeinsame Einstellungen</h2>
       <p className="muted small-text">Gelten für alle Apps. Bei einer Netzwerkinstallation liegen sie auf dem Netzlaufwerk und gelten für das ganze Büro.</p>
       <SpeicherortZeile />
-      {konfigFehler && <p className="warning">{konfigFehler}</p>}
+      {konfigFehler && <p className="meldung fehler" role="alert">{konfigFehler}</p>}
 
       <h3 className="po-abschnitt">Stammordner der Projekte</h3>
       <p className="muted small-text">

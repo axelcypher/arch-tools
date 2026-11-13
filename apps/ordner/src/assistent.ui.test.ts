@@ -80,7 +80,8 @@ const warten = () =>
   act(async () => {
     await new Promise((r) => setTimeout(r, 0));
   });
-const schrittNr = (host: Element) => [...host.querySelectorAll('.po-schritte .po-schritt-nr')].map((s) => s.textContent);
+/** Nummer des Schritts bzw. „✓“ für das gezeichnete Häkchen (Symbol statt Schriftzeichen) */
+const schrittNr = (host: Element) => [...host.querySelectorAll('.po-schritte .po-schritt-nr')].map((s) => (s.querySelector('svg.symbol') ? '✓' : s.textContent));
 const assistent = (host: Element) => host.querySelector('.po-assistent-huelle') as HTMLElement;
 
 /** Desktop mit Stammordner (ohne gemeinsame Projektübersicht, also mit der Projektliste des Assistenten) */
@@ -236,7 +237,9 @@ describe('Assistent: Anlegen', () => {
     const vorher = [...mock.fs.eintraege.keys()].sort();
     await act(async () => knopf(host, 'Projektordner anlegen').click());
     await warten();
-    expect(host.querySelector('.warning')?.textContent).toContain('Den Ordner „2026-014 EFH“ gibt es inzwischen im Stammordner');
+    const fehler = host.querySelector('.meldung.fehler');
+    expect(fehler?.textContent).toContain('Den Ordner „2026-014 EFH“ gibt es inzwischen im Stammordner');
+    expect(fehler?.getAttribute('role')).toBe('alert');
     expect([...mock.fs.eintraege.keys()].sort()).toEqual(vorher);
     // gesperrt mit Grund, Weg zum Ergänzen
     expect(knopf(host, 'Projektordner anlegen').disabled).toBe(true);

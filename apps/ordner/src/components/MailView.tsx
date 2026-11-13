@@ -5,6 +5,7 @@ import type { ProjektordnerEintrag } from '@core/platform/projektordner';
 import { projekteAuflisten } from '@core/platform/projektordner';
 import { logger } from '@core/platform/log';
 import { bestaetigen } from '@core/ui/Rueckfrage';
+import { Symbol } from '@core/ui/Symbol';
 import type { Dateisystem } from '../dateisystem';
 import { hatDateisystem, oeffneOrdner, tauriDateisystem, verbinde, waehleOrdner, waehleOrdnerImBrowser } from '../dateisystem';
 import type { MailTeile, MailVorschlag, NamensBefund, Richtung } from '../mail/mailname';
@@ -599,18 +600,26 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
           />
         </div>
         {vorschlagDomain && (
-          <p className="po-hinweis small-text">
+          <p className="meldung">
             Erkannt aus den Mails: <strong>{vorschlagDomain}</strong>{' '}
             <button className="small" onClick={() => void eigeneSetzen([vorschlagDomain])}>
               Übernehmen
             </button>
           </p>
         )}
-        {einstellungenFehler && <p className="warning small-text">{einstellungenFehler}</p>}
+        {einstellungenFehler && (
+          <p className="meldung fehler" role="alert">
+            {einstellungenFehler}
+          </p>
+        )}
       </section>
 
       <section className="po-col po-mails">
-        {fehler && <p className="warning">{fehler}</p>}
+        {fehler && (
+          <p className="meldung fehler" role="alert">
+            {fehler}
+          </p>
+        )}
         {laeuft && <p className="busy">{laeuft}</p>}
         {!projekt && !laeuft && <p className="muted">Ein Projekt wählen – die Mails darin werden geprüft.</p>}
         {projekt && (
@@ -734,7 +743,7 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
                             aria-label={`${m.herkunft} verwerfen`}
                             onClick={() => setNeue((alt) => alt.filter((x) => x.id !== m.id))}
                           >
-                            ×
+                            <Symbol name="schliessen" />
                           </button>
                         </div>
                         {m.lesefehler && (
@@ -742,8 +751,8 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
                             {LESEFEHLER}
                           </p>
                         )}
-                        {m.schonDa && <p className="po-hinweis small-text">Diese Mail liegt schon im Projekt: {m.schonDa}</p>}
-                        {m.doppelt && <p className="po-hinweis small-text">Diese Mail ist in dieser Ablage doppelt – schon dabei als {m.doppelt}</p>}
+                        {m.schonDa && <p className="meldung">Diese Mail liegt schon im Projekt: {m.schonDa}</p>}
+                        {m.doppelt && <p className="meldung">Diese Mail ist in dieser Ablage doppelt – schon dabei als {m.doppelt}</p>}
                         {m.teile && (
                           <>
                             <div className="po-mail-teile" role="group" aria-label={`Name für ${m.herkunft}`}>
@@ -769,17 +778,15 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
                             </p>
                           </>
                         )}
-                        {m.status && <p className={m.status.art === 'ok' ? 'po-meldung small-text' : 'warning small-text'}>{m.status.text}</p>}
+                        {m.status && <p className={m.status.art === 'ok' ? 'meldung ok' : 'meldung fehler'}>{m.status.text}</p>}
                       </li>
                     );
                   })}
                 </ul>
               </div>
             )}
-            {ohneDomain && (
-              <p className="po-hinweis small-text">Ohne eigene Domain gilt die Richtung (von/an) aus dem bisherigen Namen – links unter „Eigene Domains“ eintragen, dann erkennt die App sie selbst.</p>
-            )}
-            {!sichtbar.length && <p className="po-meldung">{zeilen.length ? 'Alle Mails sind nach dem Schema benannt.' : 'In diesem Projektordner gibt es keine Mails (.msg).'}</p>}
+            {ohneDomain && <p className="meldung">Ohne eigene Domain gilt die Richtung (von/an) aus dem bisherigen Namen – links unter „Eigene Domains“ eintragen, dann erkennt die App sie selbst.</p>}
+            {!sichtbar.length && <p className="meldung ok">{zeilen.length ? 'Alle Mails sind nach dem Schema benannt.' : 'In diesem Projektordner gibt es keine Mails (.msg).'}</p>}
             <ul className="po-mailliste">
               {sichtbar.map((z) => {
                 const t = ziel(z);
@@ -844,7 +851,7 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
                         </p>
                       </>
                     )}
-                    {z.status && <p className={z.status.art === 'ok' ? 'po-meldung small-text' : 'warning small-text'}>{z.status.text}</p>}
+                    {z.status && <p className={z.status.art === 'ok' ? 'meldung ok' : 'meldung fehler'}>{z.status.text}</p>}
                     {mail && (
                       <details className="po-mail-vorschau" open={z.offen} onToggle={(e) => umschalten(z.pfad, { offen: (e.target as HTMLDetailsElement).open })}>
                         <summary>Mail ansehen</summary>

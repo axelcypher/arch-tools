@@ -109,7 +109,7 @@ describe('Mails prüfen und benennen', () => {
     expect(zeile().textContent).toContain('Name ist eine E-Mail-Adresse – nur der Nachname');
     expect(zeile().querySelector('.po-mail-ordner')!.textContent).toBe('04 Schriftverkehr/Bauherr');
     // ohne eigene Domain: Richtung aus dem bisherigen Namen, Absender der Nachricht – und der Vorschlag der Domain
-    expect(host.querySelector('.po-hinweis')!.textContent).toContain('architekten-beispiel.example');
+    expect(host.querySelector('.meldung:not(.ok):not(.warnung):not(.fehler)')!.textContent).toContain('architekten-beispiel.example');
     act(() => knopf(host, 'Übernehmen').click());
     await warten();
     expect(useMails.getState().eigene).toEqual(['architekten-beispiel.example']);
@@ -209,7 +209,9 @@ describe('Mails prüfen und benennen', () => {
       ordner.dispatchEvent(new Event('change', { bubbles: true }));
     });
     expect(zeile('AW Raumaufteilung').querySelector('.po-mail-problem')!.textContent).toContain('diesen Namen gibt es in dem Ordner schon');
-    act(() => knopf(zeile('AW Raumaufteilung'), '×').click());
+    const verwerfen = zeile('AW Raumaufteilung').querySelector<HTMLButtonElement>('button[aria-label$=" verwerfen"]')!;
+    expect(verwerfen.querySelector('svg.symbol')).not.toBeNull();
+    act(() => verwerfen.click());
     await act(async () => knopf(host, 'Alle ablegen').click());
     await warten();
     expect([...fs.eintraege.keys()]).toContain('/p/BSP Sanierung/04 Schriftverkehr/Bauherr/BSP von Muster 261112 Türen Flurseite.msg');
@@ -342,8 +344,8 @@ describe('Mails: Bedienung per Tastatur', () => {
     act(() => knopf(host.querySelector('.po-ablage')!, 'wählen …').click());
     expect(geoeffnet).toBe(1);
     // der Hinweis auf „Eigene Domains“ steht einmal über der Liste, nicht in jeder Zeile
-    expect(host.querySelectorAll('.po-mails .po-hinweis').length).toBe(1);
-    expect(host.querySelector('.po-mails .po-hinweis')!.textContent).toContain('links unter „Eigene Domains“ eintragen');
+    expect(host.querySelectorAll('.po-mails .meldung:not(.ok):not(.warnung):not(.fehler)').length).toBe(1);
+    expect(host.querySelector('.po-mails .meldung:not(.ok):not(.warnung):not(.fehler)')!.textContent).toContain('links unter „Eigene Domains“ eintragen');
     expect(host.textContent).not.toContain('in den Einstellungen festlegen');
   });
 });

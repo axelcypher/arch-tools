@@ -94,7 +94,9 @@ describe('Katasterpläne exportieren', () => {
     expect(auftrag.plaene.map((p) => p.ausgabe)).toEqual(namen.map((n) => `${ORDNER}/${n}`));
     for (const n of namen) expect(fs.eintraege.has(`${ORDNER}/${n}`)).toBe(true);
     expect(host.querySelectorAll('.ka-ergebnis.ok')).toHaveLength(4);
-    expect(host.textContent).toContain(`✓ Kataster/MUS ${d} Schwarzplan.dxf`);
+    // erledigt mit gezeichnetem Häkchen (Symbol statt „✓“)
+    expect([...host.querySelectorAll('.ka-ergebnis.ok')].map((e) => e.textContent?.trim())).toContain(`Kataster/MUS ${d} Schwarzplan.dxf`);
+    expect(host.querySelectorAll('.ka-ergebnis.ok svg.symbol')).toHaveLength(4);
 
     // noch einmal: vorhandene Dateien – überspringen heißt hier: nichts zu tun
     await klick(knopf(host, '4 Pläne exportieren'));
@@ -119,7 +121,8 @@ describe('Katasterpläne exportieren', () => {
     await klick(knopf(host, 'Vorlage aktualisieren'));
     expect(plaeneInOap()).toHaveLength(1);
     expect(vorlageLesen(plaeneInOap()[0].daten).layouts.map((l) => l.name)).toContain('Lageplan A2');
-    expect(host.textContent).toContain('✓ übernommen');
+    expect(host.querySelector('.ka-ok')?.textContent?.trim()).toBe('übernommen');
+    expect(host.querySelector('.ka-ok svg.symbol')).not.toBeNull();
   });
 
   it('Fehler je Plan aus QGIS; ohne Koordinaten kein Export', async () => {
@@ -135,7 +138,9 @@ describe('Katasterpläne exportieren', () => {
     const host = await zeige(createElement(KatasterDialog, { basis: ORDNER, name: 'BS9 Musterstraße 9', onClose: () => undefined }));
     await klick(knopf(host, '4 Pläne exportieren'));
     expect(host.querySelectorAll('.ka-ergebnis.ok')).toHaveLength(1);
-    expect(host.textContent).toContain('✗ schwarzplan: Layer nicht erreichbar');
+    const fehler = [...host.querySelectorAll('.ka-ergebnis.fehler')];
+    expect(fehler.map((e) => e.textContent?.trim())).toContain('schwarzplan: Layer nicht erreichbar');
+    expect(fehler.every((e) => e.querySelector('svg.symbol'))).toBe(true);
 
     // QGIS bricht ohne Ergebnis ab: Auszug der Fehlerausgabe
     qgis.lauf = () => ({ code: 1, ausgabe: '', fehler: 'Traceback …\nModuleNotFoundError: No module named qgis' });

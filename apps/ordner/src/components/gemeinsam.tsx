@@ -155,7 +155,7 @@ export function VorlagenordnerZeile({ leerText = 'keiner – es entstehen nur Or
           </button>
         )}
       </div>
-      {vorlagenFehler && <p className="warning">{vorlagenFehler}</p>}
+      {vorlagenFehler && <p className="meldung fehler" role="alert">{vorlagenFehler}</p>}
     </>
   );
 }
@@ -194,7 +194,7 @@ export function PresetAuswahl({
         </span>
       ))}
       {[...nichtAutomatisch].map(([name, a]) => (
-        <p key={name} className="po-hinweis po-nicht-automatisch">
+        <p key={name} className="meldung po-nicht-automatisch">
           „{name}“ ist nicht vorausgewählt: {abweichungText(a)} – der Vorlagenordner ist anders gegliedert als die Struktur. Unter „Vorlagen“ lassen sich seine Ordner gezielt
           zuordnen.
         </p>
@@ -217,7 +217,7 @@ export function abweichungText(a: PresetAbweichung, konjunktiv = true): string {
 export function PresetAbweichungen({ a }: { a: PresetAbweichung }) {
   if (!a.fremd.length && !a.lose.length) return null;
   return (
-    <div className="po-hinweis po-abweichung">
+    <div className="meldung po-abweichung">
       {a.fremd.length > 0 && (
         <details>
           <summary>
@@ -255,7 +255,7 @@ export function ErgebnisAnzeige({ ordner, liste, children }: { ordner: string; l
   const unveraendert = liste.filter((x) => x.status === 'vorhanden').length;
   const fehlgeschlagen = liste.filter((x) => x.status === 'fehler');
   return (
-    <div className={`po-ergebnis${fehlgeschlagen.length ? ' fehler' : ''}`}>
+    <div className={`meldung ${fehlgeschlagen.length ? 'warnung' : 'ok'} po-ergebnis`}>
       <strong>
         {angelegt} {angelegt === 1 ? 'Eintrag' : 'Ordner und Dateien'} angelegt{ergaenzt ? ', Projektdatei ergänzt' : ''}
         {unveraendert ? `, ${unveraendert} schon vorhanden` : ''}
@@ -271,7 +271,7 @@ export function ErgebnisAnzeige({ ordner, liste, children }: { ordner: string; l
           ))}
         </ul>
       )}
-      {fehler && <p className="warning">{fehler}</p>}
+      {fehler && <p className="meldung fehler" role="alert">{fehler}</p>}
       <div className="button-row">
         {ordner && (
           <button className="small" onClick={() => void oeffneOrdner(ordner).catch((e) => setFehler(String(e)))}>

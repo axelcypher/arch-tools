@@ -4,6 +4,7 @@ import { saveBinaryFile } from '@core/platform/files';
 import { logger } from '@core/platform/log';
 import { Field, TextField } from '@core/ui/fields';
 import { bestaetigen } from '@core/ui/Rueckfrage';
+import { Symbol } from '@core/ui/Symbol';
 import { hatDateisystem, SpeicherDateisystem, tauriDateisystem, waehleOrdner } from '../dateisystem';
 import { nummerAus, PLATZHALTER_VORLAGE } from '../nummer';
 import { SchemaFeld } from './SchemaFeld';
@@ -224,7 +225,7 @@ export function VorlagenView() {
           </button>
         </div>
         {meldung && (
-          <p className={meldung.art === 'fehler' ? 'warning' : 'po-meldung'} role={meldung.art === 'fehler' ? 'alert' : 'status'}>
+          <p className={`meldung ${meldung.art}`} role={meldung.art === 'fehler' ? 'alert' : 'status'}>
             {meldung.text}
           </p>
         )}
@@ -232,7 +233,7 @@ export function VorlagenView() {
         <h3>Vorlagenordner und Dateinamen</h3>
         <VorlagenordnerZeile leerText="noch nicht gewählt" />
         {[...nichtAutomatisch].map(([name, a]) => (
-          <p key={name} className="po-hinweis">
+          <p key={name} className="meldung">
             Der Vorlagenordner ist anders gegliedert als die Struktur: Mit „{name}“ {abweichungText(a)}. Das Preset wird deshalb bei neuen Projekten nicht vorausgewählt – besser seine Ordner gezielt
             einem Zielordner der Struktur zuordnen.
           </p>
@@ -308,7 +309,7 @@ export function VorlagenView() {
               ))}
             </datalist>
             {entfernt && entferntHier && (
-              <p className="po-meldung po-rueckgaengig" role="status">
+              <p className="meldung ok po-rueckgaengig" role="status">
                 Zuordnung „{entfernt.eintrag.quelle || 'ganzer Vorlagenordner'}“ entfernt.{' '}
                 <button className="small" onClick={entferntZurueck}>
                   Rückgängig
@@ -351,7 +352,7 @@ export function VorlagenView() {
                         aria-label={`Zuordnung ${k + 1} entfernen`}
                         onClick={() => zuordnungEntfernen(k)}
                       >
-                        ×
+                        <Symbol name="muell" />
                       </button>
                     </div>
                     <div className="field-row">
