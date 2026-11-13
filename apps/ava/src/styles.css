@@ -667,7 +667,9 @@ input.ava-fehler {
 
 .ava-feld textarea,
 .ava-bericht textarea,
-.ava-notiz-neu textarea {
+.ava-notiz-neu textarea,
+.ava-notiz-text textarea,
+.ava-maengel-tabelle textarea {
   font: inherit;
   padding: 4px 6px;
   border: 1px solid var(--border);
@@ -994,14 +996,40 @@ input.ava-fehler {
   opacity: 0.6;
 }
 
-.ava-top-nr {
-  width: 44px !important;
-  flex: 0 0 44px !important;
+.ava-top-zeile {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
 }
 
-.ava-top-titel {
-  flex: 3 !important;
+.ava-top-zeile .ava-top-nr {
+  width: 48px;
+  flex: 0 0 48px;
+}
+
+.ava-top-zeile .ava-top-titel {
+  flex: 1 1 260px;
+  min-width: 200px;
+  width: auto;
   font-weight: 600;
+}
+
+.ava-top-angaben {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-left: auto;
+}
+
+.ava-top-angaben .ava-top-zustaendig {
+  width: 170px;
+  min-width: 140px;
+}
+
+.ava-top-angaben input[type='date'] {
+  width: 150px;
 }
 
 .ava-fotos {
@@ -1341,4 +1369,599 @@ input.ava-fehler {
   .ava-lvd-tabelle thead {
     display: table-header-group;
   }
+}
+
+/* Gesamt-Review: Rahmen und LV */
+
+.ava-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* Navigation: Einträge sind Knöpfe (Tastatur, aria-current) */
+.ava-nav-liste li {
+  padding: 0;
+  border-left: none;
+  cursor: default;
+}
+
+.ava-nav-liste li:hover,
+.ava-nav-liste li.active {
+  background: none;
+}
+
+.ava-nav-liste li.muted {
+  padding: 5px 8px;
+}
+
+.ava-nav-knopf {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 5px 8px;
+  border: none;
+  border-left: 3px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ava-nav-knopf:hover {
+  background: var(--hover);
+}
+
+.ava-nav-liste li.active .ava-nav-knopf {
+  background: var(--panel);
+  border-left-color: var(--accent);
+  font-weight: 600;
+}
+
+.ava-nav-knopf:focus-visible,
+.ava-tabs button:focus-visible,
+.ava-klickbar:focus-visible,
+.ava-kennung-knopf:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+/* Übersicht */
+.ava-kennung-knopf {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--accent);
+  min-width: 44px;
+}
+
+.ava-tabelle-rahmen {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.ava-tabelle .num,
+.ava-tabelle td.num {
+  white-space: nowrap;
+}
+
+.ava-tabelle td {
+  vertical-align: middle;
+}
+
+/* Gewerk: Kopf, Tabs */
+.ava-gewerk-kopf > div:first-child {
+  min-width: 0;
+}
+
+.ava-lv-wahl {
+  flex-wrap: nowrap;
+  flex-shrink: 0;
+}
+
+.ava-lv-wahl select {
+  max-width: 300px;
+  min-width: 140px;
+  width: auto;
+}
+
+.ava-tabs {
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.ava-tabs button {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.ava-tab-kurz {
+  display: none;
+}
+
+@media (max-width: 1250px) {
+  .ava-tab-lang {
+    display: none;
+  }
+
+  .ava-tab-kurz {
+    display: inline;
+  }
+
+  .ava-lv-wahl select {
+    max-width: 200px;
+  }
+}
+
+/* Menüknopf (LV ▾, Neues LV ▾, Weitere ▾) */
+.ava-menue {
+  position: relative;
+  display: inline-flex;
+}
+
+.ava-menue-liste {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  z-index: 30;
+  min-width: 220px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+.ava-menue-rechts {
+  left: auto;
+  right: 0;
+}
+
+.ava-menue-liste button {
+  text-align: left;
+  border-color: transparent;
+  background: transparent;
+  white-space: nowrap;
+}
+
+.ava-menue-liste button:hover:not(:disabled),
+.ava-menue-liste button:focus-visible {
+  background: var(--accent-soft);
+  outline: none;
+}
+
+/* LV-Editor: eine Werkzeugzeile, Suche rechts, sichtbarer Fokus */
+.ava-lv-leiste {
+  flex-wrap: wrap;
+  row-gap: 4px;
+}
+
+.ava-lv-leiste .icon {
+  min-width: 28px;
+}
+
+.ava-lv-leiste .ava-suche {
+  margin-left: auto;
+  min-width: 140px;
+  width: auto;
+  flex: 0 1 240px;
+}
+
+.ava-lv-tabelle:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+.ava-lv-zeilen th.ava-oz,
+.ava-lv-zeilen td.ava-oz {
+  position: sticky;
+  left: 0;
+  background: var(--panel);
+}
+
+.ava-lv-zeilen th.ava-oz {
+  z-index: 2;
+}
+
+.ava-lv-zeilen tr.active td.ava-oz {
+  background: var(--accent-soft);
+}
+
+.ava-z-abschnitt td.ava-oz {
+  background: color-mix(in srgb, var(--chip-bg) 70%, var(--panel));
+}
+
+.ava-lv-zeilen td.ava-kurztext {
+  min-width: 180px;
+}
+
+.ava-panel {
+  width: clamp(300px, 30vw, 430px);
+}
+
+/* schmales Fenster: Panel unter die Tabelle, damit OZ, Kurztext und Preise sichtbar bleiben */
+@media (max-width: 1150px) {
+  .ava-lv-koerper {
+    flex-direction: column;
+  }
+
+  .ava-lv-tabelle {
+    min-height: 180px;
+  }
+
+  .ava-panel {
+    width: auto;
+    max-height: 45%;
+    border-left: none;
+    border-top: 1px solid var(--border);
+  }
+}
+
+.ava-zelle-eingabe input {
+  padding-block: 1px;
+}
+
+/* Angebote und Preisspiegel */
+.ava-angebote > * {
+  flex-shrink: 0;
+}
+
+.ava-angebote-spiegel .ava-bieter-liste tr {
+  cursor: default;
+}
+
+.ava-umschalter button.active {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+.ava-chip-warn {
+  background: var(--warn-bg);
+  color: var(--warn-text);
+}
+
+.ava-prozent {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  justify-content: flex-end;
+}
+
+.ava-tabelle td .ava-prozent input {
+  width: 56px !important;
+  min-width: 0 !important;
+  text-align: right;
+}
+
+.ava-erfassen-wahl {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ava-erfassen-wahl select {
+  width: auto;
+  min-width: 200px;
+}
+
+.ava-legende {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  align-items: center;
+  padding: 6px 0;
+}
+
+.ava-legende > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.ava-legende-feld {
+  display: inline-block;
+  width: 14px;
+  height: 12px;
+  border-radius: 2px;
+  border: 1px solid var(--border);
+}
+
+.ava-legende-feld.ava-max {
+  background: var(--fehler-text);
+}
+
+/* Dateilisten mit festen Spalten */
+.ava-dateien {
+  table-layout: fixed;
+}
+
+.ava-dateien .ava-dateien-ort {
+  width: 22%;
+}
+
+.ava-dateien .ava-dateien-groesse {
+  width: 80px;
+}
+
+.ava-dateien .ava-dateien-datum {
+  width: 95px;
+}
+
+.ava-dateien .ava-dateien-aktion {
+  width: 80px;
+}
+
+.ava-datei-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ava-datei-aktion {
+  width: 80px;
+  text-align: right;
+}
+
+/* Vorlagetexte: Suchfeld breit, Gruppe fest */
+.ava-bib-filter {
+  align-items: center;
+}
+
+.ava-bib-filter input {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+}
+
+.ava-bib-filter select {
+  flex: 0 0 200px;
+  width: auto;
+}
+
+.ava-bib-filter button {
+  flex-shrink: 0;
+}
+
+/* Gesamt-Review: Bauleitung */
+
+/* Auswahlfelder und Suche in Werkzeugleisten und Kopfzeilen nur so breit wie nötig (base.css setzt 100 %) */
+.ava-seite .toolbar select,
+.ava-seite .toolbar input:not([type='checkbox']),
+.ava-seite-kopf select,
+.ava-bericht .button-row > select {
+  width: auto;
+  max-width: 320px;
+}
+
+.ava-mails .ava-suche {
+  width: 100%;
+}
+
+/* Mängel: Tabelle rollt bei schmalem Fenster in sich, Status und Entfernen bleiben erreichbar */
+.ava-rollen {
+  overflow-x: auto;
+}
+
+.ava-maengel-tabelle td {
+  vertical-align: top;
+}
+
+.ava-maengel-tabelle .ava-breit-zelle {
+  min-width: 180px;
+}
+
+.ava-maengel-tabelle .ava-zelle-gestapelt {
+  min-width: 130px;
+}
+
+.ava-maengel-tabelle .ava-zelle-gestapelt > * {
+  display: block;
+}
+
+.ava-maengel-tabelle .ava-zelle-gestapelt > * + * {
+  margin-top: 4px;
+}
+
+.ava-maengel-tabelle input[type='date'] {
+  width: 130px;
+}
+
+.ava-maengel-tabelle td:nth-child(2) select {
+  width: auto;
+}
+
+.ava-maengel-tabelle textarea {
+  resize: vertical;
+}
+
+.ava-abgeblendet td {
+  opacity: 0.5;
+}
+
+/* Bautagebuch: Personen als normales Eingabefeld */
+.ava-tabelle td input.ava-personen:not([type='checkbox']):not([type='radio']) {
+  width: 70px;
+}
+
+/* Notizen */
+.ava-notiz-neu .ava-reihe > select {
+  flex: 0 0 auto;
+  width: auto;
+}
+
+.ava-notiz-frist {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ava-notiz-frist input[type='date'] {
+  width: auto;
+}
+
+.ava-ueberfaellig-text {
+  color: var(--fehler-text);
+  font-weight: 600;
+}
+
+/* Protokoll: Abnahmebegehung */
+.ava-abnahme {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin: 6px 0;
+}
+
+.ava-abnahme p {
+  margin: 0 0 6px;
+}
+
+.ava-bericht .button-row {
+  align-items: center;
+}
+
+/* Tastatur: sichtbarer Fokus in Listen und der Mailtabelle */
+.ava-liste-spalte .list li:focus-visible,
+.ava-mail-tabelle tr:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.ava-druck:focus {
+  outline: none;
+}
+
+/* Gesamt-Review: Abrechnung */
+
+/* Felder in Werkzeugleisten nicht auf volle Breite (base.css setzt input/select auf 100 %) */
+.ava-seite .toolbar select,
+.ava-seite .toolbar input:not([type='checkbox']):not([type='radio']) {
+  width: auto;
+}
+
+.ava-seite .toolbar .ava-suche {
+  width: 260px;
+  flex: 0 1 260px;
+  min-width: 140px;
+}
+
+/* Quellen einer Rechnung: vorhanden = grün, fehlt = gestrichelt (ohne Transparenz, lesbar in Hell/Dunkel) */
+.ava-quellen {
+  white-space: nowrap;
+}
+
+.ava-quellen span {
+  width: auto;
+  padding: 0 4px;
+  opacity: 1;
+  background: transparent;
+  border: 1px dashed var(--border);
+  color: var(--muted);
+}
+
+.ava-quellen span.an {
+  border: 1px solid transparent;
+}
+
+.ava-chip-info {
+  background: var(--accent-soft);
+  color: var(--text);
+}
+
+.ava-rechnungen .ava-chip {
+  margin-left: 0;
+}
+
+.ava-rechnungen tbody tr {
+  cursor: default;
+}
+
+/* kurze Rückmeldung nach einer Aktion */
+.ava-ok {
+  color: var(--ok-text);
+  background: var(--ok-bg);
+  border-radius: 4px;
+  padding: 3px 8px;
+}
+
+/* Grund für ein gesperrtes „Erfassen“ links neben den Knöpfen */
+.ava-fehlt {
+  margin-right: auto;
+  align-self: center;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.ava-fehlt.fehler {
+  color: var(--fehler-text);
+}
+
+.ava-pruefen .warning-text {
+  margin: 0;
+}
+
+/* Rechnungseingang: Listen per Tastatur, Hinweis zur Zuordnung, schmale Fenster */
+.ava-eingang .list li:focus-visible,
+.ava-einst-ebenen li:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.ava-eingang-hinweis {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+@media (max-width: 1280px) {
+  .ava-eingang {
+    grid-template-columns: 200px minmax(0, 1fr) 260px;
+  }
+}
+
+@media (max-width: 1100px) {
+  .ava-eingang {
+    grid-template-columns: 210px minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
+  }
+
+  .ava-eingang-liste {
+    grid-row: 1 / span 2;
+  }
+
+  .ava-eingang-ziel {
+    grid-column: 2;
+    grid-row: 2;
+    border-left: 0;
+    border-top: 1px solid var(--border);
+    max-height: 45vh;
+  }
+}
+
+.ava-tabelle td input.ava-bieter-name {
+  min-width: 150px !important;
+}
+
+/* breite Tabellen rollen seitlich, statt aus dem Bild zu laufen */
+.ava-tabelle-rolle {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.ava-rechnungen .ava-hinweis-zelle {
+  min-width: 160px;
+}
+
+.ava-rechnungen td.num,
+.ava-rechnungen th.num {
+  white-space: nowrap;
 }

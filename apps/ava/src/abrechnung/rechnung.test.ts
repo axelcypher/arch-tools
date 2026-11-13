@@ -37,7 +37,7 @@ describe('Rechnungsprüfung', () => {
   it('rechnet wie das Deckblatt des Büros (Abschlag mit Einbehalt, Schluss mit Abzug der Abschläge)', () => {
     const ab = pruefen({ ...neuePruefung(VORGABE_PRUEFUNG), forderungNetto: 26110.22, freigabeNetto: 26110.22 });
     expect(ab).toMatchObject({ zwischen1: 26110.22, mwst: 4960.94, brutto: 31071.16, umlage: 155.36, zwischen2: 30915.8, einbehalt: 3091.58, zwischen3: 27824.22, endsumme: 27824.22, zahlung: 27824.22 });
-    const sr = pruefen({ ...neuePruefung(VORGABE_PRUEFUNG, { schluss: true }), freigabeNetto: 26110.22, bereits: [{ text: 'AB 1', datum: '2025-10-24', betrag: 27824.22 }] });
+    const sr = pruefen({ ...neuePruefung(VORGABE_PRUEFUNG), einbehaltProzent: 0, freigabeNetto: 26110.22, bereits: [{ text: 'AB 1', datum: '2025-10-24', betrag: 27824.22 }] });
     expect(sr).toMatchObject({ einbehalt: 0, endsumme: 30915.8, bereits: 27824.22, zahlung: 3091.58 });
   });
 });

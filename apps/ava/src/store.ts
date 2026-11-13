@@ -186,11 +186,12 @@ export const useAva = create<AvaZustand>((set, get) => ({
     if (!projekt?.kk) throw new Error('Keine Kostenkontrolle im Projekt.');
     const frisch = await kkLaden(fs, projekt.ordner, projekt.kk.pfad);
     if (await fs.inOffice(projekt.ordner, frisch.pfad)) throw new Error('Die Kostenkontrolle ist gerade in Excel geöffnet – bitte dort schließen, dann erneut versuchen.');
-    const neu = xlsxAendern(frisch.bytes, f(frisch), { ergebnisseAuffrischen: true });
+    const neu = xlsxAendern(frisch.bytes, f(frisch), { ergebnisseAuffrischen: true, heute: new Date() });
     await fs.ersetzen(projekt.ordner, frisch.pfad, neu, frisch.stand);
     const kk = await kkLaden(fs, projekt.ordner, frisch.pfad);
+    // inzwischen ein anderes Projekt geöffnet: nicht in dessen Zustand schreiben
     const p = get().projekt;
-    if (p) set({ projekt: { ...p, kk, kkFehler: null } });
+    if (p?.ordner === projekt.ordner) set({ projekt: { ...p, kk, kkFehler: null } });
   },
 
   async avaAendern(f) {
@@ -198,7 +199,7 @@ export const useAva = create<AvaZustand>((set, get) => ({
     if (!projekt) return;
     const ava = await avaAendern(fs.projektordner, projekt.ordner, projekt.oap, f);
     const p = get().projekt;
-    if (p) set({ projekt: { ...p, ava } });
+    if (p?.ordner === projekt.ordner) set({ projekt: { ...p, ava } });
   },
 
   setMeta(meta, name) {
