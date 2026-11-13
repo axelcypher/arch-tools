@@ -386,8 +386,8 @@ Anschrift, wie sie in Formularen steht.
     Antragsdaten ändern. Eingereicht bzw. während ein Antrag geöffnet wird, ist beides gesperrt (mit Grund); ist beim
     Klick inzwischen eine andere Fassung angezeigt, wird nichts aufgenommen („… – inzwischen ist Antrag … angezeigt.“).
     In einer schmalen Navigation entfällt mit der Zeitspalte auch der freigehaltene Platz.
-- **Antragsunterlagen ansehen:** „Ansehen“ in der Ansicht „Antrag“ (oder Rechtsklick auf eine Datei → „In der
-  Vorschau durchblättern“) zeigt alle Unterlagen der aktiven Fassung im ganzen Fenster – zuerst die Dokumente des
+- **Antragsunterlagen ansehen:** „Ansehen …“ in der Ansicht „Antrag“ (oder Rechtsklick auf eine Datei → „In der
+  Vorschau durchblättern …“) zeigt alle Unterlagen der aktiven Fassung im ganzen Fenster – zuerst die Dokumente des
   Antragsumfangs in ihrer Reihenfolge, dann die übrigen. Blättern mit ‹ ›, ← → oder Bild↑/Bild↓ bzw. über die Liste
   links; Zoom mit − + (Tasten − + 0) oder der Auswahl (Seitenbreite, 50–300 %). PDFs erscheinen mit allen Seiten,
   Bilder ebenso, andere Dateien öffnet „Mit Programm öffnen“. „Als bereit markieren“ geht auch hier. Esc schließt.
@@ -906,7 +906,7 @@ Projektarchiv von QUADRIO (Flächenrechner), TERRIO (GRZ-Nachweis), NUMIO (Koste
     findet es über den Namen“.
   - **Eingereicht:** Ändernde Menüpunkte sind ausgegraut, mit dem Hinweis „Antrag eingereicht“ (Navigation,
     Zeilenmenü der Antragsdaten, Ablage, „Als bereit markieren“); ändernde Knöpfe sind ausgegraut mit dem Grund im
-    Tooltip („Formular anlegen“, „Zuordnen“, „PDF“, Nr., „bereit“) bzw. ausgeblendet (Bearbeiten, Datei verknüpfen,
+    Tooltip („Formular anlegen“, „Zuordnen“, „PDF …“, Nr., „bereit“) bzw. ausgeblendet (Bearbeiten, Datei verknüpfen,
     Ziehen, „Dokument hinzufügen“, „Antragsumfang aufheben …“).
   - **Verknüpfen in der Ablage** prüft zuerst, ob noch die Fassung des Menüs angezeigt ist (sonst „Nicht kopiert – …“
     bzw. „Nicht verknüpft – inzwischen ist Antrag BAUA angezeigt.“, je nach Menüpunkt) oder gerade ein Antrag

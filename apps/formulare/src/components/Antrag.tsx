@@ -942,9 +942,10 @@ export function AntragsdatenAnsicht() {
                           className="small"
                           disabled={!basis || gesperrt}
                           title={gesperrt ? GESPERRT_TITEL : !basis ? 'Ohne Projektordner kein PDF-Export – erst einen Projektordner zuordnen' : 'Das Formular als PDF exportieren'}
+                          aria-label="Als PDF exportieren …"
                           onClick={() => useExportDialog.getState().oeffnen(d.formular!.pfad)}
                         >
-                              <Symbol name="export" /> PDF
+                              <Symbol name="export" /> PDF …
                             </button>
                           </>
                         )}
