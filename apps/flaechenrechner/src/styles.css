@@ -972,6 +972,15 @@
   cursor: pointer;
 }
 
+/* Ein-/Ausklappen der 3D-Legende: Zielgröße 24px (docs/design.md, Zielgrößen) */
+.view3d-legend-kopf .hud-hint-knopf {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--ctl-h-s);
+  min-height: var(--ctl-h-s);
+}
+
 .hud-hint .hud-hint-knopf {
   border: none;
   background: none;
