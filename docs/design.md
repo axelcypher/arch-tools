@@ -119,13 +119,13 @@ Das Farbschema-Menü zeigt ein gezeichnetes Symbol und den Namen der Wahl („Au
 
 ## Was die Apps nachziehen
 
-| App           | Datei und Aufgabe                                                                                                                                                                                  |
-| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| RECTIO        | `apps/entzerrung/src/components/Arbeitsflaeche.tsx:364`: Leerzustand „Foto hinzufügen …“ mit `className="canvas-message leer"`; Auswahl auf dem Foto mit `--sel-foto` und Saum statt eigener Farbe |
-| TERRIO, NUMIO | Spalten-Überschriften (`h2` ohne Regel, sonst 22px) auf die Skala setzen: `--fs-l`, halbfett                                                                                                       |
-| FABRIO        | Versalien entfernen: `.ava-nav-titel` (`apps/ava/src/styles.css:77`); `outline: none` prüfen: `apps/ava/src/styles.css:492`, `:628`                                                                |
-| PERMIO        | erledigt (PERMIO 0.47.2): Versalien entfernt, Überschriften auf `--fs-*`, `outline: none` geprüft (Menüpunkte mit Fokusrahmen)                                                                     |
-| core          | Versalien entfernen: `.pa-abschnitt-titel` (`packages/core/src/ui/projektuebersicht.css:60`) – Projektübersicht in PERMIO und ATLAS                                                                |
-| ATLAS         | `outline: none` prüfen: `apps/ordner/src/styles.css:415`                                                                                                                                           |
+| App           | Datei und Aufgabe                                                                                                                                                                                            |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| RECTIO        | `apps/entzerrung/src/components/Arbeitsflaeche.tsx:364`: Leerzustand „Foto hinzufügen …“ mit `className="canvas-message leer"`; Auswahl auf dem Foto mit `--sel-foto` und Saum statt eigener Farbe           |
+| TERRIO, NUMIO | Spalten-Überschriften (`h2` ohne Regel, sonst 22px) auf die Skala setzen: `--fs-l`, halbfett                                                                                                                 |
+| FABRIO        | Versalien entfernen: `.ava-nav-titel` (`apps/ava/src/styles.css:77`); `outline: none` prüfen: `apps/ava/src/styles.css:492`, `:628`                                                                          |
+| PERMIO        | erledigt (PERMIO 0.47.2): Versalien entfernt, Überschriften auf `--fs-*`, `outline: none` geprüft (Menüpunkte mit Fokusrahmen)                                                                               |
+| core          | Versalien entfernen: `.pa-abschnitt-titel` (`packages/core/src/ui/projektuebersicht.css:60`, PERMIO und ATLAS), `.av-abschnitt-titel` und `.av-ed-gruppe-titel` (`packages/core/src/ui/ansicht.css`, PERMIO) |
+| ATLAS         | `outline: none` prüfen: `apps/ordner/src/styles.css:415`                                                                                                                                                     |
 
 Zeilennummern beziehen sich auf den Stand dieser Richtlinie.

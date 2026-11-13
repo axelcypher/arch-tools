@@ -22,9 +22,10 @@ html.zieht * {
 }
 .av-abschnitt-titel {
   margin: 0 0 10px;
-  /* Satzschreibung statt Versalien (docs/design.md, Überschriften) */
-  font-size: var(--fs-s);
+  font-size: 12px;
   font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   color: var(--muted);
 }
 .av-raster,
@@ -260,8 +261,10 @@ html.zieht * {
   top: -10px;
   padding: 4px 2px;
   background: var(--bg);
-  font-size: var(--fs-s);
+  font-size: 11.5px;
   font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
   color: var(--muted);
 }
 .av-ed-kat-feld {
