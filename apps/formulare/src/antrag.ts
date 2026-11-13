@@ -451,6 +451,8 @@ export interface ProjektDatei {
   bereit?: Record<string, BereitEintrag[]>;
   /** alle Anträge des Projekts je Fassung (Ordnername) */
   antraege?: Record<string, AntragDaten>;
+  /** Reihenfolge der Formulare in der Navigation (Schlüssel nach formularSchluessel) – für das ganze Projekt */
+  reihenfolge?: string[];
 }
 
 /** Angaben eines Antrags (einer Antragsfassung) – unabhängig von den anderen Anträgen und den Vorgaben */
@@ -810,6 +812,8 @@ export function antragKurzVon(antraege: Record<string, AntragDaten>, name: strin
 /** Gespeicherter Abschnitt „formulare“: aktive Fassung und die Anträge; `alt` = Angaben aus der Zeit vor den Anträgen */
 export interface Abschnitt {
   aktiveFassung?: string;
+  /** Reihenfolge der Formulare in der Navigation (Schlüssel nach formularSchluessel) – für das ganze Projekt */
+  reihenfolge?: string[];
   antraege: Record<string, AntragDaten>;
   /** früher projektweit (Antragsumfang, Merkmale, Autofill) – wird in die vorhandenen Anträge übernommen */
   alt?: AntragDaten;
@@ -904,6 +908,8 @@ export function abschnittAus(roh: unknown, metaMerkmale?: Record<string, string>
   const legacy = projektDateiAus(o);
   const a: Abschnitt = { antraege: {} };
   if (legacy.aktiveFassung) a.aktiveFassung = legacy.aktiveFassung;
+  const reihenfolge = reihenfolgeAus(o.reihenfolge);
+  if (reihenfolge) a.reihenfolge = reihenfolge;
   if (o.antraege && typeof o.antraege === 'object' && !Array.isArray(o.antraege))
     for (const [name, daten] of Object.entries(o.antraege as Record<string, unknown>)) if (name.trim()) a.antraege[name] = antragDatenAus(daten);
   const alt: AntragDaten = {};
@@ -919,6 +925,36 @@ export function abschnittAus(roh: unknown, metaMerkmale?: Record<string, string>
     } else a.antraege[fassung] = { ...structuredClone(alt), bereit: liste };
   }
   return a;
+}
+
+/** Reihenfolge der Formulare: Texte, jeder (ohne Groß-/Kleinschreibung) nur einmal; leer = keine */
+export function reihenfolgeAus(roh: unknown): string[] | undefined {
+  if (!Array.isArray(roh)) return undefined;
+  const gesehen = new Set<string>();
+  const out = roh.filter((x): x is string => typeof x === 'string' && !!x.trim() && !gesehen.has(x.toLowerCase()) && !!gesehen.add(x.toLowerCase()));
+  return out.length ? out : undefined;
+}
+
+/**
+ * Formulare in der gemerkten Reihenfolge (Schlüssel nach formularSchluessel): die gemerkten zuerst, wie gemerkt, die
+ * übrigen danach in ihrer bisherigen Folge (alphabetisch)
+ */
+export function nachReihenfolge<T extends { pfad: string }>(formulare: T[], reihenfolge: string[] | undefined): T[] {
+  if (!reihenfolge?.length) return formulare;
+  const rang = new Map(reihenfolge.map((k, i) => [k.toLowerCase(), i]));
+  const r = (f: T) => rang.get(formularSchluessel(f.pfad).toLowerCase()) ?? Number.MAX_SAFE_INTEGER;
+  return formulare.map((f, i) => ({ f, i })).sort((a, b) => r(a.f) - r(b.f) || a.i - b.i).map((x) => x.f);
+}
+
+/**
+ * Neue Reihenfolge nach dem Verschieben in einer angezeigten Liste (`liste`, Schlüssel in der angezeigten Folge, schon
+ * verschoben): die Einträge der Liste stehen danach in dieser Folge, gemerkte anderer Listen (andere Gruppe, anderer
+ * Unterordner) bleiben an ihrem Platz
+ */
+export function reihenfolgeMit(alt: string[] | undefined, liste: string[]): string[] {
+  const inListe = new Set(liste.map((k) => k.toLowerCase()));
+  const uebrige = (alt ?? []).filter((k) => !inListe.has(k.toLowerCase()));
+  return [...liste, ...uebrige];
 }
 
 /** Neuer Antrag: die Vorgabewerte der Antragsmerkmale (globales Preset), sonst leer */
@@ -944,6 +980,7 @@ export function ansichtVon(a: Abschnitt, fassung: string, neu: () => AntragDaten
     ...(d.felder && Object.keys(d.felder).length ? { felder: d.felder } : {}),
     ...(Object.keys(bereit).length ? { bereit } : {}),
     antraege,
+    ...(a.reihenfolge?.length ? { reihenfolge: a.reihenfolge } : {}),
   };
   return { pd, neu: fehlt };
 }
@@ -1134,7 +1171,7 @@ export function bereitAnwenden(frisch: BereitEintrag[] | undefined, alt: BereitE
 /** Abschnitt als Angaben ohne Ansicht – „bereit“ wie beim Schreiben als Feld der Ansicht (antraegeVon holt es von dort) */
 export function alsAngaben(a: Abschnitt): ProjektDatei {
   const bereit = Object.fromEntries(Object.entries(a.antraege).flatMap(([n, x]) => (x.bereit?.length ? [[n, x.bereit]] : [])));
-  return { ...(a.aktiveFassung ? { aktiveFassung: a.aktiveFassung } : {}), antraege: a.antraege, ...(Object.keys(bereit).length ? { bereit } : {}) };
+  return { ...(a.aktiveFassung ? { aktiveFassung: a.aktiveFassung } : {}), antraege: a.antraege, ...(Object.keys(bereit).length ? { bereit } : {}), ...(a.reihenfolge?.length ? { reihenfolge: a.reihenfolge } : {}) };
 }
 
 /**
@@ -1151,7 +1188,7 @@ export function aenderungAnwenden(
   frisch: Abschnitt,
   vorher: ProjektDatei | null,
   nachher: ProjektDatei,
-  o: { bewegt?: string; kennzeichen?: { umfangBehalten?: boolean } } = {},
+  o: { bewegt?: string; kennzeichen?: { umfangBehalten?: boolean }; liste?: string[] | null } = {},
 ): Abschnitt {
   const alt = vorher ? antraegeVon(vorher) : {};
   const neu = antraegeVon(nachher);
@@ -1204,13 +1241,21 @@ export function aenderungAnwenden(
     if (nachher.aktiveFassung) out.aktiveFassung = nachher.aktiveFassung;
     else delete out.aktiveFassung;
   }
+  // Reihenfolge der Formulare: verschoben in einer Liste (`o.liste`) – nur deren Einträge umsetzen, die anderer
+  // Listen bleiben, wie sie in der Datei stehen (zwei Arbeitsplätze ordnen verschiedene Gruppen); zurückgesetzt
+  // (`o.liste` null) – entfällt; sonst geändert als Ganzes
+  if (stabil(vorher?.reihenfolge) !== stabil(nachher.reihenfolge)) {
+    const r = o.liste ? reihenfolgeMit(frisch.reihenfolge, o.liste) : o.liste === null ? [] : (nachher.reihenfolge ?? []);
+    if (r.length) out.reihenfolge = r;
+    else delete out.reihenfolge;
+  }
   return out;
 }
 
 /** Zu speichernder Abschnitt „formulare“ */
 export function abschnittVon(pd: ProjektDatei): Record<string, unknown> {
   const antraege = antraegeVon(pd);
-  return { ...(pd.aktiveFassung ? { aktiveFassung: pd.aktiveFassung } : {}), ...(Object.keys(antraege).length ? { antraege } : {}) };
+  return { ...(pd.aktiveFassung ? { aktiveFassung: pd.aktiveFassung } : {}), ...(Object.keys(antraege).length ? { antraege } : {}), ...(pd.reihenfolge?.length ? { reihenfolge: pd.reihenfolge } : {}) };
 }
 
 /**
@@ -1631,8 +1676,8 @@ export function formularSchluessel(pfad: string): string {
  * Unterordner gehört (`gehoertZu`), auch eine ältere Zuordnung nur mit dem Dateinamen. Einträge ohne `formularDatei`,
  * die das Formular nur über Name bzw. Titel finden und unter dem neuen Namen nicht mehr fänden (`festschreiben`, je
  * Antrag – null: die früher projektweiten Angaben),
- * bekommen den neuen Schlüssel fest. Liefert eine Kopie und die Zahl der umgeschriebenen Verweise; sonst bleibt alles,
- * wie es ist.
+ * bekommen den neuen Schlüssel fest; auch der Platz in `reihenfolge` wandert mit. Liefert eine Kopie, die Zahl der
+ * umgeschriebenen Zuordnungen (ohne die Reihenfolge) und ob die Reihenfolge betroffen war; sonst bleibt alles, wie es ist.
  */
 export function formularVerweiseUmbenennen(
   abschnitt: unknown,
@@ -1640,8 +1685,8 @@ export function formularVerweiseUmbenennen(
   neu: string,
   gehoertZu: (fassung: string) => boolean = () => false,
   festschreiben: (u: UmfangEintrag, fassung: string | null) => boolean = () => false,
-): { abschnitt: unknown; anzahl: number } {
-  if (!abschnitt || typeof abschnitt !== 'object') return { abschnitt, anzahl: 0 };
+): { abschnitt: unknown; anzahl: number; reihenfolge: boolean } {
+  if (!abschnitt || typeof abschnitt !== 'object') return { abschnitt, anzahl: 0, reihenfolge: false };
   const kopie = structuredClone(abschnitt) as Record<string, unknown>;
   const altKlein = alt.toLowerCase();
   const nameKlein = alt.includes('/') ? nurName(alt).toLowerCase() : null;
@@ -1675,9 +1720,18 @@ export function formularVerweiseUmbenennen(
     }
   };
   umschreiben(kopie, false, null);
+  // der Platz in der Reihenfolge der Navigation – keine Zuordnung, eigens gemeldet
+  let reihenfolge = false;
+  if (Array.isArray(kopie.reihenfolge)) {
+    const i = (kopie.reihenfolge as unknown[]).findIndex((k) => typeof k === 'string' && k.toLowerCase() === altKlein);
+    if (i >= 0) {
+      (kopie.reihenfolge as unknown[])[i] = neu;
+      reihenfolge = true;
+    }
+  }
   if (kopie.antraege && typeof kopie.antraege === 'object' && !Array.isArray(kopie.antraege))
     for (const [fassung, d] of Object.entries(kopie.antraege as Record<string, unknown>)) umschreiben(d, gehoertZu(fassung), fassung);
-  return { abschnitt: anzahl ? kopie : abschnitt, anzahl };
+  return { abschnitt: anzahl || reihenfolge ? kopie : abschnitt, anzahl, reihenfolge };
 }
 
 /** Das Formular eines internen Dokuments im Formularprojekt: zugeordnet, sonst nach Name oder Kennung */

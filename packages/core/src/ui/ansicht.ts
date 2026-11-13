@@ -45,7 +45,8 @@ export interface Ansicht {
   abschnitte: AnsichtAbschnitt[];
   /**
    * Verknüpfte Felder: je Gruppe Kennungen, die gemeinsam ausgefüllt werden (gleicher Inhalt). Was das heißt, entscheidet
-   * die App (z. B. PERMIO: eine Eingabe trägt den Wert in alle Felder der Gruppe ein).
+   * die App (z. B. PERMIO: eine Eingabe trägt den Wert in alle Felder der Gruppe ein). Eine Gruppe darf Felder außerhalb
+   * der Ansicht enthalten, mindestens eins muss in ihr stehen.
    */
   verknuepfungen?: string[][];
 }
@@ -102,9 +103,10 @@ export function ansichtAus(roh: unknown): Ansicht | null {
   const alle = new Set(abschnitte.flatMap((x) => x.felder));
   const verknuepft = new Set<string>();
   const verknuepfungen = (Array.isArray((roh as { verknuepfungen?: unknown }).verknuepfungen) ? ((roh as { verknuepfungen: unknown[] }).verknuepfungen as unknown[]) : [])
-    .map((g) => (Array.isArray(g) ? [...new Set(g.filter((f): f is string => typeof f === 'string' && alle.has(f) && !verknuepft.has(f)))] : []))
+    .map((g) => (Array.isArray(g) ? [...new Set(g.filter((f): f is string => typeof f === 'string' && !!f && !verknuepft.has(f)))] : []))
+    // auch Felder außerhalb der Ansicht – solange mindestens eins der Gruppe in ihr steht (sonst sähe man sie nirgends)
     .filter((g) => {
-      if (g.length < 2) return false;
+      if (g.length < 2 || !g.some((f) => alle.has(f))) return false;
       g.forEach((f) => verknuepft.add(f));
       return true;
     });
@@ -181,8 +183,10 @@ export function abschnittEntfernen(a: Ansicht, id: string): Ansicht {
 
 /* ---------- Verknüpfungen ---------- */
 
+/** Verknüpfungen setzen: nur Gruppen mit mindestens zwei Feldern, von denen eins in der Ansicht steht */
 const mitVerknuepfungen = (a: Ansicht, gruppen: string[][]): Ansicht => {
-  const sauber = gruppen.filter((g) => g.length > 1);
+  const drin = new Set(felderDerAnsicht(a));
+  const sauber = gruppen.filter((g) => g.length > 1 && g.some((f) => drin.has(f)));
   const { verknuepfungen: _, ...rest } = a;
   return sauber.length ? { ...rest, verknuepfungen: sauber } : rest;
 };
