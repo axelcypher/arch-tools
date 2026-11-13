@@ -13,6 +13,7 @@ Platzhalter-Übersicht.
 | Schreibweise | Wirkung |
 |---|---|
 | `{{projekt.name}}`, `{{projekt.code}}`, `{{datum}}`, `{{summe.bgf}}` | Einzelwert |
+| `{{PROJEKT_KUERZEL}}`, `{{DATUM}}`, `{{DATUM:TT.MM.JJJJ}}` | globale Variablen der Suite – dieselben wie in Datei- und Ordnernamen ([platzhalter.md](platzhalter.md)) |
 | `{{geschoss:EG.bri}}`, `{{wohnung:WE 01.wofl}}` | Wert eines bestimmten Geschosses / einer Wohnung |
 | `{{raum.name}}` in einer Zeile | **Zeile** wird je Raum wiederholt (ebenso `geschoss`, `bgf`, `wohnung`, `nutzung`, `bri`, `koerper`) |
 | `{{#geschoss}}` … `{{/geschoss}}` | **Zeilenblock** wird je Geschoss wiederholt; Blöcke lassen sich verschachteln |
@@ -309,7 +310,8 @@ Schlüssel); ein Projekt kann also beide Vorlagen enthalten. Das Standardlayout 
 Im Standardlayout sind GRZ und GFZ Formeln aus den Zellen (Fläche / Grundstücksfläche), ebenso zulässige
 Fläche und Ergebnis; der Haftungssatz steht dort nicht mehr (Platzhalter `{{haftung}}` bleibt für eigene Vorlagen).
 
-Projektangaben (`projekt.*`, `grundstueck.*`, `bauherr.*`, `datum`) sind in allen Apps gleich.
+Projektangaben (`projekt.*`, `grundstueck.*`, `bauherr.*`, `datum`) und die globalen Variablen (`PROJEKT_KUERZEL`,
+`PROJEKT_KURZNAME`, `PROJEKT_VORHABEN`, `BEARBEITER`, `DATUM`, `JAHR`, `JAHR_KURZ`) sind in allen Apps gleich.
 
 ## Kostenermittlung
 
