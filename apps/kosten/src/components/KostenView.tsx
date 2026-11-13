@@ -47,7 +47,7 @@ export function KostenView({ onKatalog, onMenge }: { onKatalog: () => void; onMe
       const liste = [...new Set(ueber.map((p) => p.kg))].join(', ');
       const ok = await bestaetigen(
         `KG ${liste} ausschalten?`,
-        `Die neue Gliederung erfasst dieselben Kosten feiner. KG ${liste} wird ausgeschaltet, damit nichts doppelt zählt; die Kennwerte bleiben als Alternative sichtbar.`,
+        `Die neue Gliederung erfasst dieselben Kosten feiner. KG ${liste} ${ueber.length > 1 && liste.includes(',') ? 'werden' : 'wird'} ausgeschaltet, damit nichts doppelt zählt; die Kennwerte bleiben als Alternative sichtbar.`,
         'Ausschalten und anlegen',
       );
       if (!ok) return;
@@ -411,7 +411,7 @@ function PositionZeile({ x, e }: { x: PositionErgebnis; e: Ergebnis }) {
         </td>
       ))}
       <td className="num">
-        <strong>{euro(x.kosten[1])}</strong>
+        {x.aktiv ? <strong>{euro(x.kosten[1])}</strong> : <span className="muted ko-nicht-gerechnet" title="wird nicht gerechnet">{euro(x.kosten[1])}</span>}
         {x.kosten[0] !== x.kosten[2] && <div className="muted small-text">{euroSpanne(x.kosten)}</div>}
         {hinweis && <div className="warning small-text">{hinweis}</div>}
       </td>

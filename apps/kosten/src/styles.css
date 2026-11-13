@@ -754,3 +754,7 @@ button.link:hover {
   margin-right: auto;
   align-self: center;
 }
+/* Betrag einer Position, die nicht gerechnet wird (ausgeschaltet oder ohne gültige Kostengruppe) */
+.ko-nicht-gerechnet {
+  text-decoration: line-through;
+}
