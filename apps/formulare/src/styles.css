@@ -4346,6 +4346,11 @@ tr[data-ziehen='danach'] > td {
 .fo-bereit-zeile.name .fo-bereit-unter {
   color: var(--fehler-text);
 }
+/* Quick-Add hinter einer Datei ohne Dokument im Antragsumfang */
+.fo-bereit-zeile > .fo-aufnehmen {
+  flex: 0 0 auto;
+  color: var(--accent);
+}
 /* Antragsstand bei der Einreichung: Zeile darüber, Kennzeichen an neuen bzw. geänderten Dateien */
 .fo-stand {
   display: flex;

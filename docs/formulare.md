@@ -316,11 +316,17 @@ Anschrift, wie sie in Formularen steht.
   500“, „OG2“) bleiben, wo sie sind. Ein Kürzel in Kleinbuchstaben zählt nur an der Stelle der Antragsart (oder
   verrutscht ganz vorn) und mit einem weiteren Kopfteil daneben (Projektcode davor, Datum oder Projektcode danach),
   sonst ist es ein Wort der Bezeichnung („Entw Grundriss“, „Ab 2027 …“). Unter „Fehlt im Antragsordner“ stehen die
-  Dokumente
-  des Antragsumfangs ohne Datei.
+  Dokumente des Antragsumfangs ohne Datei.
   Die Namensvorlage für exportierte PDFs ist deshalb `{Kürzel} {Art} {Datum} {Nr} {Name}` (`{Art}` = Antragsart der
   aktiven Fassung, an dieser Stelle immer – siehe „Dateiname“; `{Phase}` gibt es weiter an anderer Stelle). In der
   Unterlagen-Vorschau stehen die Pläne eines Plansatzes an seiner Stelle im Antragsumfang.
+  - **Quick-Add:** Gibt es einen Antragsumfang, steht unter einer Datei, die zu keinem seiner Dokumente gehört, „nicht
+    im Antragsumfang“ und dahinter ein **+**. Es bietet (ebenso oben im Rechtsklick-Menü der Zeile) „Als neues Dokument
+    „…“ aufnehmen“ – ein eigenes Dokument (Art extern), verknüpft mit der Datei für die angezeigte Fassung; Titel ist
+    die Bezeichnung nach dem Namensformat („HVO BAUA 261110 07 Brandschutzkonzept.pdf“ → „Brandschutzkonzept“, Nr.
+    07; eine Plannummer wird keine Nr.), sonst der Name ohne Endung – und „Fehlendem Dokument zuordnen“ mit den
+    Dokumenten ohne Datei (kein Plansatz – der sammelt seine Pläne selbst). Titel und Nr. lassen sich danach in den
+    Antragsdaten ändern. Eingereicht bzw. während ein Antrag geöffnet wird, ist beides gesperrt (mit Grund).
 - **Antragsunterlagen ansehen:** „Ansehen“ in der Ansicht „Antrag“ (oder Rechtsklick auf eine Datei → „In der
   Vorschau durchblättern“) zeigt alle Unterlagen der aktiven Fassung im ganzen Fenster – zuerst die Dokumente des
   Antragsumfangs in ihrer Reihenfolge, dann die übrigen. Blättern mit ‹ ›, ← → oder Bild↑/Bild↓ bzw. über die Liste

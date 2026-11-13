@@ -1254,6 +1254,21 @@ export function antragsNameFehler(name: string, o: { codes: string[]; art: strin
 }
 
 /**
+ * Titel und Nummer für eine Datei, die neu in den Antragsumfang kommt (Quick-Add im Antragsordner): im Namensformat
+ * die Bezeichnung nach Projektcode, Antragsart, Datum und Nummer („HVO BAUA 261110 05 Brandschutzkonzept.pdf“ →
+ * „Brandschutzkonzept“, Nr. 05), sonst der Name ohne Endung. Eine Plannummer („GP-04“) wird keine Nr. – die ist eine
+ * Dokumentnummer im Antrag.
+ */
+export function aufnahmeVorschlag(name: string, o: { codes: string[]; reihenfolge?: NamensTeil[] }): { titel: string; nr?: string } {
+  const reihenfolge = o.reihenfolge ?? VORGABE_NAMENSSCHEMA.reihenfolge;
+  const codes = [...new Set(o.codes.map((c) => c.trim()).filter(Boolean))];
+  const { teile, code, woerter } = dateinameZerlegenMitStellen(name, { reihenfolge }, codes);
+  const ohneEndung = woerter.join(' ');
+  if (!code || !/^\d{6}$/.test(teile.datum ?? '') || !teile.rest) return { titel: ohneEndung || name };
+  return { titel: teile.rest, ...(teile.nummer && /^\d{1,3}[a-z]?$/.test(teile.nummer) ? { nr: teile.nummer } : {}) };
+}
+
+/**
  * Vorschlag „Umbenennen nach Namensformat“: Projektcode, Antragsart, Datum und Nummer nach dem Namensschema vor die
  * Bezeichnung. Was davon am Anfang des Namens schon steht – auch verrutscht –, wird übernommen statt verdoppelt: der
  * Projektcode, ein gültiges JJMMTT, eine Plan- oder Dokumentnummer und ein bekanntes Kürzel (Phase oder andere

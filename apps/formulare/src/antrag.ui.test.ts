@@ -1131,6 +1131,96 @@ describe('Projektordner, Ansicht „Antrag“: Dokumente im Antragsordner mit Vo
   });
 });
 
+describe('Projektordner, Ansicht „Antrag“: Quick-Add für Dateien ohne Dokument im Antragsumfang', () => {
+  const BSK = 'BS9 BAUA 261110 07 Brandschutzkonzept.pdf';
+  const zeileIn = (host: HTMLElement, name: string) => [...host.querySelectorAll<HTMLElement>('.fo-antrag-ablage .fo-bereit-zeile')].find((z) => z.textContent?.includes(name))!;
+  const punktGenau = (text: string) => [...document.querySelectorAll<HTMLButtonElement>('.menue-punkt')].find((b) => b.querySelector('.menue-text')?.textContent === text)!;
+  const umfangVon = (fassung: string) => (antragIn(fassung)?.umfang ?? []) as { id: string; titel: string; art: string; nr?: string; dateien?: Record<string, string> }[];
+  const mitUmfang = async () => {
+    ds.dateien.set(`${PROJEKT}/TÖB/BAUA 2/${BSK}`, new Uint8Array([1]));
+    ds.dateien.set(`${PROJEKT}/TÖB/BAUA 2/Statik Teil 1.pdf`, new Uint8Array([1]));
+    const host = await projektBS9();
+    await klick(antragsdaten(host));
+    await klick(knopf(host, 'Antragsumfang festlegen'));
+    await warte();
+    await klick(knopfGenau(host, 'Antrag'));
+    return host;
+  };
+
+  it('ohne Antragsumfang kein Quick-Add und kein „nicht im Antragsumfang“', async () => {
+    ds.dateien.set(`${PROJEKT}/TÖB/BAUA 2/${BSK}`, new Uint8Array([1]));
+    const host = await projektBS9();
+    await klick(knopfGenau(host, 'Antrag'));
+    expect(zeileIn(host, 'Brandschutzkonzept').querySelector('.fo-aufnehmen')).toBeNull();
+    expect(zeileIn(host, 'Brandschutzkonzept').textContent).not.toContain('nicht im Antragsumfang');
+  });
+
+  it('als neues Dokument aufnehmen: Titel und Nr. aus dem Namen, verknüpft für die Fassung, mit Meldung', async () => {
+    const host = await mitUmfang();
+    const zeile = () => zeileIn(host, 'Brandschutzkonzept');
+    expect(zeile().querySelector('.fo-bereit-unter')!.textContent).toBe('nicht im Antragsumfang');
+    const plus = zeile().querySelector<HTMLButtonElement>('.fo-aufnehmen')!;
+    expect(plus.getAttribute('aria-label')).toBe(`${BSK} in den Antragsumfang aufnehmen`);
+    expect(plus.getAttribute('aria-haspopup')).toBe('menu');
+    await klick(plus);
+    await klick(punktGenau('Als neues Dokument „Brandschutzkonzept“ aufnehmen'));
+    for (let i = 0; i < 4; i++) await warte();
+    expect(umfangVon('BAUA 2').filter((u) => u.titel === 'Brandschutzkonzept')).toEqual([expect.objectContaining({ art: 'extern', nr: '07', dateien: { 'BAUA 2': BSK } })]);
+    expect(useFormulare.getState().meldung).toEqual({ art: 'info', text: `„Brandschutzkonzept“ in den Antragsumfang von BAUA 2 aufgenommen – verknüpft mit „${BSK}“.` });
+    // jetzt zugeordnet: der Titel steht unter dem Namen, kein Quick-Add mehr – in den Antragsdaten steht er auch
+    expect(zeile().querySelector('.fo-bereit-unter')!.textContent).toBe('Brandschutzkonzept');
+    expect(zeile().querySelector('.fo-aufnehmen')).toBeNull();
+    expect(useAntrag.getState().dokumente.find((d) => d.eintrag.titel === 'Brandschutzkonzept')?.datei?.pfad).toBe(BSK);
+  });
+
+  it('einem fehlenden Dokument zuordnen – auch aus dem Kontextmenü der Zeile', async () => {
+    const host = await mitUmfang();
+    // zuordnen lassen sich nur Dokumente ohne Datei, kein Plansatz
+    const ohneDatei = useAntrag.getState().dokumente.filter((d) => d.status !== 'entfaellt' && !d.plansatz && !d.datei);
+    expect(ohneDatei.length).toBeGreaterThan(0);
+    const ziel = ohneDatei[0].eintrag;
+    await rechtsklick(zeileIn(host, 'Statik Teil 1.pdf').querySelector('.fo-baum-zeile')!);
+    expect(punktGenau('Als neues Dokument „Statik Teil 1“ aufnehmen')).toBeTruthy();
+    await klick(punktGenau('Fehlendem Dokument zuordnen'));
+    const angeboten = [...document.querySelectorAll('.menue-punkt .menue-text')].map((t) => t.textContent);
+    for (const d of ohneDatei) expect(angeboten).toContain(d.eintrag.titel);
+    expect(useAntrag.getState().dokumente.filter((d) => d.plansatz).every((d) => !angeboten.includes(d.eintrag.titel))).toBe(true);
+    await klick(punktGenau(ziel.titel));
+    for (let i = 0; i < 4; i++) await warte();
+    expect(umfangVon('BAUA 2').find((u) => u.id === ziel.id)!.dateien).toEqual({ 'BAUA 2': 'Statik Teil 1.pdf' });
+    expect(zeileIn(host, 'Statik Teil 1.pdf').querySelector('.fo-aufnehmen')).toBeNull();
+    // der Name passt nicht zum Format (das steht unter dem Namen) – die Zuordnung nennt der Tooltip
+    expect(zeileIn(host, 'Statik Teil 1.pdf').querySelector<HTMLElement>('.fo-baum-zeile')!.title).toContain(`Statik Teil 1.pdf – ${ziel.titel}`);
+  });
+
+  it('eingereicht: Quick-Add gesperrt, mit Grund – Knopf und Kontextmenü', async () => {
+    const host = await mitUmfang();
+    await act(() => useAntrag.getState().statusSetzen({ eingereicht: true, datum: '2026-11-12' }));
+    await warte();
+    const plus = zeileIn(host, 'Brandschutzkonzept').querySelector<HTMLButtonElement>('.fo-aufnehmen')!;
+    expect(plus.disabled).toBe(true);
+    expect(plus.title).toBe('Der Antrag ist eingereicht und gesperrt – der Antragsumfang bleibt, wie er ist');
+    await rechtsklick(zeileIn(host, 'Brandschutzkonzept').querySelector('.fo-baum-zeile')!);
+    const punkt = punktGenau('Als neues Dokument „Brandschutzkonzept“ aufnehmen');
+    expect(punkt.disabled).toBe(true);
+    expect(punkt.textContent).toContain('Antrag eingereicht');
+    // auch direkt im Store nichts aufgenommen (Sperre)
+    const vorher = umfangVon('BAUA 2').length;
+    await act(async () => void (await useAntrag.getState().dateiAufnehmen(BSK, { titel: 'Brandschutzkonzept', ansicht: 'BAUA 2' })));
+    expect(umfangVon('BAUA 2').length).toBe(vorher);
+  });
+
+  it('inzwischen schon verknüpft (z. B. aus einem anderen Fenster): kein zweiter Eintrag, keine Erfolgsmeldung', async () => {
+    await mitUmfang();
+    const erster = await act(() => useAntrag.getState().dateiAufnehmen(BSK, { titel: 'Brandschutzkonzept', ansicht: 'BAUA 2' }));
+    expect(erster.geschrieben).toBe(true);
+    act(() => useFormulare.getState().setMeldung(null));
+    await act(() => useAntrag.getState().dateiAufnehmen(BSK, { titel: 'Brandschutz', ansicht: 'BAUA 2' }));
+    expect(umfangVon('BAUA 2').filter((u) => u.dateien?.['BAUA 2'] === BSK).map((u) => u.titel)).toEqual(['Brandschutzkonzept']);
+    expect(useFormulare.getState().meldung).toBeNull();
+  });
+});
+
 describe('Antragsunterlagen ansehen und alle Formulare exportieren', () => {
   it('Archivordner werden beim Sammel-Export ausgelassen', () => {
     expect(istArchiv('BS9/_archiv/003-Alt.frmsjf')).toBe(true);

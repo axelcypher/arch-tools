@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { dateinameZerlegen, planNummerAus, VORGABE_NAMENSSCHEMA } from '@core/namensschema';
 import type { UmfangEintrag } from './antrag';
-import { abschnittAus, abschnittVon, aktuellsterAntrag, ansichtVon, eingereichtAus, neuerAntrag } from './antrag';
+import { abschnittAus, abschnittVon, aktuellsterAntrag, ansichtVon, aufnahmeVorschlag, eingereichtAus, neuerAntrag } from './antrag';
 import { merkmalVorgaben } from './bedingung';
 import { aenderungAnwenden, alsAngaben, bereitAnwenden, klein, stabil, umfangAnwenden, VORGABE_EXPORT, einstellungenAus, entferntSeitEinreichung, imStand, nachEinreichungErwartet, nameNachFormat, seitEinreichung, standAus, vorlageMitAntragsart, datumAusName, standVergleich, antragsNameFehler, artDerFassung, bereitschaft, ordnerPasst, anzeigeName, dateiImAntrag, dateiname, einstellungenFuer, externStatus, fassungenAus, formularStatus, formularVon, naechsteFassung, passt, projektDateiAus, quelleVon, standardFassung, projektStatusAus, projektStatusLesen, schlimmsterStatus, statusGesamt, verschieben, vorlagenAus, vorlageFuer, umfangAusKatalog, VORGABE_KATALOG } from './antrag';
 
@@ -623,6 +623,28 @@ describe('Antragsstand bei der Einreichung', () => {
     expect(nachEinreichungErwartet('Bescheid über die Verlängerung der Geltungsdauer der Baugenehmigung.pdf', o)).toBe(true);
     expect(nachEinreichungErwartet('Verlängerung der Geltungsdauer.pdf', o)).toBe(false);
     expect(nachEinreichungErwartet('zur Baugenehmigung vom 20.11.2026.pdf', o)).toBe(false);
+  });
+});
+
+describe('Quick-Add: Titel und Nummer aus dem Dateinamen', () => {
+  const codes = ['HVO', 'BS 9'];
+  it('im Namensformat: die Bezeichnung als Titel, eine Dokumentnummer als Nr.', () => {
+    expect(aufnahmeVorschlag('HVO BAUA 261110 05 Brandschutzkonzept.pdf', { codes })).toEqual({ titel: 'Brandschutzkonzept', nr: '05' });
+    expect(aufnahmeVorschlag('HVO BAUA 261110 Baubeschreibung Teil 2.pdf', { codes })).toEqual({ titel: 'Baubeschreibung Teil 2' });
+    // mehrteiliger Projektcode; Index klein
+    expect(aufnahmeVorschlag('BS 9 BAUA 261110 03a Statik.pdf', { codes })).toEqual({ titel: 'Statik', nr: '03a' });
+  });
+  it('eine Plannummer wird keine Nr.', () => {
+    expect(aufnahmeVorschlag('HVO BAUA 261110 GP-04 Grundriss OG.pdf', { codes })).toEqual({ titel: 'Grundriss OG' });
+  });
+  it('ohne Namensformat (kein Projektcode, kein Datum, keine Bezeichnung): der Name ohne Endung', () => {
+    expect(aufnahmeVorschlag('Lageplan vom Vermesser.pdf', { codes })).toEqual({ titel: 'Lageplan vom Vermesser' });
+    expect(aufnahmeVorschlag('HVO Statik.pdf', { codes })).toEqual({ titel: 'HVO Statik' });
+    expect(aufnahmeVorschlag('HVO BAUA 261110.pdf', { codes })).toEqual({ titel: 'HVO BAUA 261110' });
+    expect(aufnahmeVorschlag('HVO BAUA 261110 05 Brandschutz.pdf', { codes: [] })).toEqual({ titel: 'HVO BAUA 261110 05 Brandschutz' });
+  });
+  it('nach der Reihenfolge des Namensschemas', () => {
+    expect(aufnahmeVorschlag('HVO 261110 BAUA 05 Brandschutzkonzept.pdf', { codes, reihenfolge: ['code', 'datum', 'art', 'nummer'] })).toEqual({ titel: 'Brandschutzkonzept', nr: '05' });
   });
 });
 

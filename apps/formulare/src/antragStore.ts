@@ -210,6 +210,11 @@ interface AntragState {
   /** Datei im Ordner der aktiven Fassung mit einem Dokument verknüpfen; null = Verknüpfung lösen */
   /** Datei verknüpfen: mit `ansicht` nur, wenn noch diese Fassung angezeigt (und aktiv) ist – für sie wird verknüpft */
   verknuepfen: (umfangId: string, dateiname: string | null, o?: Omit<UmfangAenderung, 'eintrag'>) => Promise<SchreibInfo>;
+  /**
+   * Datei im Antragsordner als neues Dokument (extern) in den Antragsumfang aufnehmen und mit ihr verknüpfen (Quick-Add) –
+   * mit `ansicht` nur, wenn noch diese Fassung angezeigt ist; für sie wird verknüpft
+   */
+  dateiAufnehmen: (dateiname: string, o: { titel: string; nr?: string; ansicht?: string }) => Promise<SchreibInfo>;
   exportieren: (formularPfad: string, ziel: ExportZiel, ersetzen: boolean) => Promise<string | null>;
   speichernUnter: (formularPfad: string) => Promise<boolean>;
   /** Formular für einen Eintrag anlegen – mit `ansicht` (aus einem Menü) nur, wenn noch diese Fassung angezeigt ist */
@@ -1418,6 +1423,22 @@ export const useAntrag = create<AntragState>((set, get) => {
           }),
         { was: 'Nicht verknüpft', ...o, eintrag: umfangId },
       );
+    },
+
+    dateiAufnehmen: async (name, o) => {
+      const projekt = useFormulare.getState().projekt;
+      if (!projekt) return { grund: 'Kein Projekt offen' };
+      const fassung = o.ansicht ?? aktiveFassung(get(), projekt);
+      const id = `u${Date.now().toString(36)}`;
+      const eintrag: UmfangEintrag = { id, titel: o.titel, art: 'extern', ...(o.nr ? { nr: o.nr } : {}), dateien: { [fassung]: name } };
+      // inzwischen schon mit einem Dokument verknüpft (z. B. im anderen Fenster): kein zweites dazu
+      const schonDa = (umfang: UmfangEintrag[]) => umfang.some((u) => u.dateien?.[fassung]?.toLowerCase() === name.toLowerCase());
+      const info = await get().umfangAendern((umfang) => (schonDa(umfang) ? umfang : [...umfang, eintrag]), { was: 'Nicht aufgenommen', ansicht: o.ansicht, titel: o.titel });
+      // gesagt wird es nur, wenn er jetzt im Antragsumfang steht – in diesem Projekt und dieser Fassung
+      const st = get().projektdatei;
+      if (info.geschrieben && useFormulare.getState().projekt === projekt && st?.ansicht === fassung && st.umfang?.some((u) => u.id === id))
+        meldung('info', `„${o.titel}“ in den Antragsumfang von ${fassung} aufgenommen – verknüpft mit „${name}“.`);
+      return info;
     },
 
     umfangAendern: async (aendern, o = {}) => {
