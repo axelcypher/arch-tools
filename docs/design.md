@@ -153,6 +153,37 @@ Varianten je App (`.mv-umschalter`, `.ava-tabs`, `.view-switch`).
   fehlt); „Neu“ bzw. „Neues Projekt“.
 - Texte sagen, was zu tun ist, nicht was fehlt; was es nur in der Desktop-App gibt, steht als Fußnote darunter.
 
+## Symbole
+
+Gemeinsamer Satz in `ui/Symbol.tsx` (Raster 24, Linie 2, runde Enden, Farbe des Textes, Größe 1em):
+`<Symbol name="lineal" />`. Ohne `titel` ist das Symbol dekorativ, dann trägt der Knopf den Namen (Text oder
+`aria-label`); mit `titel` ist es ein benanntes Bild.
+
+- Werkzeuge: `auswahl`, `polygon`, `rechteck`, `lineal` (Messen), `kalibrieren`, `einpassen`, `raster`.
+- Befehle: `speichern`, `drucken`, `export`, `kopie`, `einfuegen`, `muell`, `rueckgaengig`, `wiederholen`, `plus`,
+  `suche`, `stift`.
+- Zustand: `haken`, `warnung`, `info`, `schliessen`, `auge`, `augeZu`, `stern`.
+- Navigation: `pfeilRechts`, `pfeilLinks`, `pfeilUnten`, `ordner`, `ordnerOffen`, `datei`.
+
+Neue Symbole kommen in diesen Satz, nicht in die App. Keine Emoji (📏 ✂ 🗑) und keine Schriftzeichen als Symbol.
+
+## Menüs
+
+`ui/Menue.tsx`: Kontextmenü mit `zeigeMenue(e, punkte)` im `onContextMenu`, Aufklappmenü mit `<MenueKnopf>`. Punkte
+mit `text`, optional `symbol`, `hinweis` (rechts, z. B. Tastenkürzel), `titel`, `gefahr`, `deaktiviert`, `unter`
+(Untermenü), Trenner mit `{ trenner: true }`.
+
+- Tastatur: der erste Punkt hat den Fokus, ↑/↓ und Pos1/Ende wandern, → bzw. Enter öffnet ein Untermenü, ← führt
+  zurück. Esc schließt nur das Menü (ein Dialog darunter bleibt offen), Tab schließt und gibt den Fokus an den
+  Auslöser zurück.
+- `MenueHost` steckt schon in der Titelleiste jeder App und in der Rahmen-App; nicht selbst einhängen.
+- Deaktivierte Punkte mit Grund im `hinweis` („Antrag eingereicht“), statt sie wegzulassen.
+
+## Meldungen im Inhalt
+
+`.meldung` (neutral) mit `.ok`, `.warnung` oder `.fehler` für Meldungen in Dialogen und Seitenleisten; `role="status"`
+für Rückmeldungen, `role="alert"` für Fehler. `.warning` bleibt als Hinweis in Warnfarben.
+
 ## Meldungen auf der Zeichenfläche
 
 - `.canvas-message` ist eine Warnung oben mittig (Warnfarben).
@@ -163,7 +194,8 @@ Varianten je App (`.mv-umschalter`, `.ava-tabs`, `.view-switch`).
 ## Titelleiste
 
 Das Farbschema-Menü zeigt ein gezeichnetes Symbol und den Namen der Wahl („Auto“, „Hell“, „Dunkel“), wie „§ Regeln“ und
-„≡ Protokoll“ mit Text.
+„≡ Protokoll“ mit Text. Unter 960px Fensterbreite zeigen Knöpfe mit Symbol (Farbschema, Speicherort) nur noch das
+Symbol: Text in `<span className="titlebar-text">`, der Name bleibt über `aria-label`.
 
 ## Richtig und falsch
 
@@ -180,15 +212,18 @@ Das Farbschema-Menü zeigt ein gezeichnetes Symbol und den Namen der Wahl („Au
 
 ## Was die Apps nachziehen
 
-| App                            | Datei und Aufgabe                                                                                                                                                                                  |
-| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| RECTIO                         | `apps/entzerrung/src/components/Arbeitsflaeche.tsx:364`: Leerzustand „Foto hinzufügen …“ mit `className="canvas-message leer"`; Auswahl auf dem Foto mit `--sel-foto` und Saum statt eigener Farbe |
-| TERRIO, NUMIO                  | Spalten-Überschriften (`h2` ohne Regel, sonst 22px) auf die Skala setzen: `--fs-l`, halbfett                                                                                                       |
-| FABRIO                         | Versalien entfernen: `.ava-nav-titel` (`apps/ava/src/styles.css:77`); `outline: none` prüfen: `apps/ava/src/styles.css:492`, `:628`                                                                |
-| PERMIO                         | Versalien entfernen: `apps/formulare/src/styles.css:160`, `.pk-nav-titel` (:1142), `.pk-abschnitt h3` (:1353), `.fo-ein-teil h4` (:4235); `outline: none` prüfen: :1797, :2612, :2652              |
-| ATLAS                          | `outline: none` prüfen: `apps/ordner/src/styles.css:415`                                                                                                                                           |
-| QUADRIO, TERRIO, NUMIO, FABRIO | Druckvorschau: „Drucken / PDF“ als Hauptknopf (`.primary`), „Schließen“ normal (`Report.tsx`, `NachweisDruck.tsx`, `KostenDruck.tsx`, `Druck.tsx`)                                                 |
-| NUMIO, FABRIO, QUADRIO         | eigene Umschalter (`.mv-umschalter`, `.ava-tabs`, `.view-switch`) auf `.segment` umstellen                                                                                                         |
-| alle                           | eigene `div.modal` auf `Modal` umstellen; Titel mit `kopf` statt `h3` im Inhalt; Werkzeugleisten-Befehle nach „Begriffe“ benennen (z. B. TERRIO „Öffnen“ → „Öffnen …“)                             |
+| App                            | Datei und Aufgabe                                                                                                                                                                                                               |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| RECTIO                         | `apps/entzerrung/src/components/Arbeitsflaeche.tsx:364`: Leerzustand „Foto hinzufügen …“ mit `className="canvas-message leer"`; Auswahl auf dem Foto mit `--sel-foto` und Saum statt eigener Farbe                              |
+| TERRIO, NUMIO                  | Spalten-Überschriften (`h2` ohne Regel, sonst 22px) auf die Skala setzen: `--fs-l`, halbfett                                                                                                                                    |
+| FABRIO                         | Versalien entfernen: `.ava-nav-titel` (`apps/ava/src/styles.css:77`); `outline: none` prüfen: `apps/ava/src/styles.css:492`, `:628`                                                                                             |
+| PERMIO                         | Versalien entfernen: `apps/formulare/src/styles.css:160`, `.pk-nav-titel` (:1142), `.pk-abschnitt h3` (:1353), `.fo-ein-teil h4` (:4235); `outline: none` prüfen: :1797, :2612, :2652                                           |
+| ATLAS                          | `outline: none` prüfen: `apps/ordner/src/styles.css:415`                                                                                                                                                                        |
+| QUADRIO, TERRIO, NUMIO, FABRIO | Druckvorschau: „Drucken / PDF“ als Hauptknopf (`.primary`), „Schließen“ normal (`Report.tsx`, `NachweisDruck.tsx`, `KostenDruck.tsx`, `Druck.tsx`)                                                                              |
+| NUMIO, FABRIO, QUADRIO         | eigene Umschalter (`.mv-umschalter`, `.ava-tabs`, `.view-switch`) auf `.segment` umstellen                                                                                                                                      |
+| PERMIO                         | eigenes Menü und eigene Symbole (`components/Menue.tsx`, `components/Symbol.tsx`, `.menue`- und `.symbol`-Regeln in `styles.css`) durch `@core/ui/Menue` und `@core/ui/Symbol` ersetzen; fehlende Symbole im core-Satz ergänzen |
+| QUADRIO, TERRIO, RECTIO        | Werkzeugleisten mit `Symbol` statt Emoji und Schriftzeichen (📏, ⇔, ⊡, ▭, ↶/↷)                                                                                                                                                  |
+| alle                           | eigene Kontextmenüs auf `zeigeMenue` umstellen (QUADRIO Canvas, TERRIO Lageplan, RECTIO Arbeitsfläche, ATLAS Ordner-Editor)                                                                                                     |
+| alle                           | eigene `div.modal` auf `Modal` umstellen; Titel mit `kopf` statt `h3` im Inhalt; Werkzeugleisten-Befehle nach „Begriffe“ benennen (z. B. TERRIO „Öffnen“ → „Öffnen …“)                                                          |
 
 Zeilennummern beziehen sich auf den Stand dieser Richtlinie.

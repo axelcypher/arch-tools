@@ -62,11 +62,9 @@
   align-items: center;
   gap: 6px;
   margin: 0 0 10px;
-  font-size: 12px;
+  font-size: var(--fs-m);
   font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--muted);
+  color: var(--text);
 }
 .pa-raster {
   display: grid;

@@ -13,6 +13,7 @@ import type { AntragKurz, ProjektStatus } from '../model';
 import { PROJEKT_STATUS } from '../model';
 import { PROJEKT_ANGELEGT, projektAnlegenMoeglich, projektAnlegenStarten, vomRahmen } from '../platform/rahmen';
 import { appMitWas } from '../appNamen';
+import { zeigeMenue } from './Menue';
 import './projektuebersicht.css';
 
 /** Stufen des Status vom besten zum schlimmsten – Farben wie in der Vollständigkeitsprüfung */
@@ -254,7 +255,6 @@ export function ProjektUebersicht(props: ProjektUebersichtProps) {
     SORTIERUNGEN.map((s) => s.id),
   );
   const [filter, setFilter] = gemerkt<StatusFilter>('arch-tools:uebersicht:status', 'offen', ['offen', 'akquise', 'aktiv', 'abgeschlossen', 'alle']);
-  const [menue, setMenue] = useState<{ p: UebersichtProjekt; x: number; y: number } | null>(null);
   /** Gruppe, die gerade gezogen wird, und wohin (Schlüssel `ordnen`) */
   const [zieht, setZieht] = useState<string | null>(null);
   const [ziel, setZiel] = useState<{ schluessel: string; davor: boolean } | null>(null);
@@ -281,28 +281,9 @@ export function ProjektUebersicht(props: ProjektUebersichtProps) {
     });
   }, [projektAnlegen]);
 
-  // Kontextmenü: Klick daneben oder Esc schließt es
-  useEffect(() => {
-    if (!menue) return;
-    const zu = () => setMenue(null);
-    const taste = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.stopPropagation();
-        setMenue(null);
-      }
-    };
-    window.addEventListener('click', zu);
-    window.addEventListener('keydown', taste, true);
-    return () => {
-      window.removeEventListener('click', zu);
-      window.removeEventListener('keydown', taste, true);
-    };
-  }, [menue]);
-  const kontext: ProjektUebersichtProps['onKontext'] = props.kontextMenue
-    ? (p, e) => {
-        e.preventDefault();
-        setMenue({ p, x: e.clientX, y: e.clientY });
-      }
+  const kontextMenue = props.kontextMenue;
+  const kontext: ProjektUebersichtProps['onKontext'] = kontextMenue
+    ? (p, e) => zeigeMenue(e, kontextMenue(p).map((k) => ({ text: k.label, titel: k.titel, aktion: k.aktion, gefahr: k.gefahr })))
     : props.onKontext;
 
   const nachSchluessel = useMemo(() => new Map(projekte.map((p) => [p.schluessel, p])), [projekte]);
@@ -507,24 +488,6 @@ export function ProjektUebersicht(props: ProjektUebersichtProps) {
         })}
         {q && !treffer.length && <p className="pa-nichts muted">Kein Projekt passt zu „{suche.trim()}“.</p>}
       </div>
-      {menue && props.kontextMenue && (
-        <div className="pa-menue" role="menu" aria-label={`Projekt ${menue.p.kuerzel}`} style={{ left: menue.x, top: menue.y }} onClick={(e) => e.stopPropagation()}>
-          {props.kontextMenue(menue.p).map((k) => (
-            <button
-              key={k.label}
-              role="menuitem"
-              className={k.gefahr ? 'danger' : undefined}
-              title={k.titel}
-              onClick={() => {
-                setMenue(null);
-                k.aktion();
-              }}
-            >
-              {k.label}
-            </button>
-          ))}
-        </div>
-      )}
     </div>
   );
 }

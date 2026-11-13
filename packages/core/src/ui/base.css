@@ -613,6 +613,8 @@ textarea:focus {
 
 .modal h3 {
   margin: 0 0 10px;
+  font-size: var(--fs-l);
+  font-weight: 600;
 }
 
 .modal h4 {
@@ -1942,13 +1944,37 @@ button.ph-lokal {
 .sp-wahl .radio-row {
   margin: 6px 0;
 }
-.sp-meldung {
+/* ---------- Meldungen im Inhalt (Dialoge, Seitenleisten) – eine Familie, Art über die zweite Klasse ---------- */
+
+.meldung {
   padding: 6px 8px;
-  border: 1px solid var(--ok-border);
-  background: var(--ok-bg);
+  border: 1px solid var(--border);
+  background: var(--panel);
   color: var(--text);
-  border-radius: 4px;
-  font-size: 12px;
+  border-radius: var(--radius-s);
+  font-size: var(--fs-s);
+}
+.meldung.ok {
+  border-color: var(--ok-border);
+  background: var(--ok-bg);
+}
+.meldung.warnung {
+  border-color: var(--warn-border);
+  background: var(--warn-bg);
+  color: var(--warn-text);
+}
+.meldung.fehler {
+  border-color: var(--fehler-border);
+  background: var(--fehler-bg);
+  color: var(--fehler-text);
+}
+
+/* Titelleiste in schmalen Fenstern (und im Tab der Rahmen-App): Knöpfe mit Symbol nur noch als Symbol;
+   der Name bleibt über aria-label und title erhalten */
+@media (max-width: 960px) {
+  .titlebar-text {
+    display: none;
+  }
 }
 
 /* ---------- Stammdaten-Knopf in Seitenleisten ---------- */
@@ -1991,4 +2017,93 @@ button.ph-lokal {
   background: var(--accent-soft);
   color: var(--accent);
   font-weight: 600;
+}
+
+/* ---------- Symbole (ui/Symbol.tsx) ---------- */
+
+.symbol {
+  flex-shrink: 0;
+  vertical-align: -0.15em;
+}
+
+/* ---------- Menü und Kontextmenü (ui/Menue.tsx) ---------- */
+
+.menue {
+  position: fixed;
+  z-index: 40;
+  min-width: 200px;
+  max-width: 360px;
+  padding: 4px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow:
+    0 6px 24px rgba(0, 0, 0, 0.18),
+    0 1px 3px rgba(0, 0, 0, 0.12);
+  display: flex;
+  flex-direction: column;
+  font-size: var(--fs-m);
+}
+.menue-punkt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 5px 8px;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  color: var(--text);
+  text-align: left;
+}
+.menue-punkt:hover:not(:disabled),
+.menue-punkt:focus-visible,
+.menue-punkt.offen {
+  background: var(--accent-soft);
+  outline: none;
+}
+/* Tastaturfokus zusätzlich mit Rahmen innen: die Tönung allein ist im dunklen Schema zu schwach */
+.menue-punkt:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--fokus);
+}
+.menue-punkt:disabled {
+  color: var(--muted);
+}
+/* ausgegraut: Text und Symbol blass – der Hinweis (der Grund, z. B. „Antrag eingereicht“) bleibt lesbar */
+.menue-punkt:disabled .menue-text,
+.menue-punkt:disabled .menue-symbol {
+  opacity: 0.6;
+}
+.menue-punkt.gefahr {
+  color: var(--danger);
+}
+/* ausgegraut wirkt auch ein Gefahr-Punkt nicht bedienbar */
+.menue-punkt.gefahr:disabled,
+.menue-punkt.gefahr:disabled .menue-symbol {
+  color: var(--muted);
+}
+.menue-symbol {
+  width: 16px;
+  display: inline-flex;
+  justify-content: center;
+  color: var(--muted);
+}
+.menue-punkt.gefahr .menue-symbol {
+  color: var(--danger);
+}
+.menue-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.menue-hinweis {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+.menue-trenner {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--border);
 }

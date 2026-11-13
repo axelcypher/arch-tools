@@ -88,8 +88,14 @@ export function SpeicherortKnopf() {
     );
   }
   return (
-    <button className="titlebar-btn" title={`Speicherort der Einstellungen: ${ortText(ort)}${ort.modus === 'einzelplatz' ? ` (${ort.ordner})` : ''}`} onClick={oeffnen}>
-      <AblageSymbol /> {ort.modus === 'netzwerk' ? 'Netzwerk' : 'Einzelplatz'}
+    <button
+      className="titlebar-btn"
+      title={`Speicherort der Einstellungen: ${ortText(ort)}${ort.modus === 'einzelplatz' ? ` (${ort.ordner})` : ''}`}
+      aria-label={`Speicherort der Einstellungen: ${ort.modus === 'netzwerk' ? 'Netzwerk' : 'Einzelplatz'}`}
+      onClick={oeffnen}
+    >
+      {/* in schmalen Fenstern nur das Symbol (base.css, .titlebar-text) */}
+      <AblageSymbol /> <span className="titlebar-text">{ort.modus === 'netzwerk' ? 'Netzwerk' : 'Einzelplatz'}</span>
     </button>
   );
 }
@@ -182,10 +188,10 @@ export function SpeicherortDialog({ onClose }: { onClose: () => void }) {
           text:
             `Im Ordner ${pruefung.ordner} liegen bereits:\n${pruefung.vorhanden.map((b) => `• ${bereichName(b)}`).join('\n')}\n\n` +
             '„Vorhandene übernehmen“: Diese gelten, nur Fehlendes kommt von hier dazu (z. B. beim Anschluss eines weiteren Rechners).\n' +
-            '„Mit meinen ersetzen“: Die Einstellungen von diesem Rechner überschreiben sie; die bisherigen bleiben als Sicherung im Ordner.',
+            '„Mit diesem Rechner überschreiben“: Die Einstellungen von diesem Rechner ersetzen die dort liegenden; die bisherigen bleiben als Sicherung im Ordner.',
           knoepfe: [
             { id: 'abbrechen', label: 'Abbrechen' },
-            { id: 'ersetzen', label: 'Mit meinen ersetzen', art: 'danger' },
+            { id: 'ersetzen', label: 'Mit diesem Rechner überschreiben', art: 'danger' },
             { id: 'uebernehmen', label: 'Vorhandene übernehmen', art: 'primary' },
           ],
         });
@@ -278,7 +284,7 @@ export function SpeicherortDialog({ onClose }: { onClose: () => void }) {
       <p className="small-text muted">Immer nur auf diesem Rechner bleiben: zuletzt geöffnete und angeheftete Projekte, Fenster, Farbschema und Leistenbreiten.</p>
 
       {meldung && (
-        <p className={meldung.art === 'fehler' ? 'warning' : 'sp-meldung'} role={meldung.art === 'fehler' ? 'alert' : 'status'}>
+        <p className={meldung.art === 'fehler' ? 'warning' : 'meldung ok'} role={meldung.art === 'fehler' ? 'alert' : 'status'}>
           {meldung.text}
         </p>
       )}
