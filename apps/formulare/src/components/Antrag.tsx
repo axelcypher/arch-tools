@@ -832,7 +832,7 @@ export function AntragsdatenAnsicht() {
                         { text: 'Nach unten', deaktiviert: i === dokumente.length - 1, aktion: () => void eintragVerschieben(u.id, 1, ansichtJetzt, u.titel), ...aus },
                         { trenner: true },
                         { text: 'Aus dem Antragsumfang nehmen', symbol: 'muell', gefahr: true, aktion: () => void ausUmfangEntfernen(u.id, ansichtJetzt, u.titel), ...aus },
-                      ]);
+                      ], u.titel);
                     }}
                   >
                     <div className="pu-haupt">
@@ -950,7 +950,7 @@ export function AntragsdatenAnsicht() {
                           </>
                         )}
                         {basis && !gesperrt && u.art !== 'plansatz' && (
-                          <MenueKnopf className="small" title={`Datei in ${ordner} verknüpfen`} punkte={() => dateiMenue(d)}>
+                          <MenueKnopf className="small" title={`Datei in ${ordner} verknüpfen`} ariaLabel={`${u.titel}: Datei in ${ordner} verknüpfen`} punkte={() => dateiMenue(d)}>
                             <Symbol name="link" />
                           </MenueKnopf>
                         )}

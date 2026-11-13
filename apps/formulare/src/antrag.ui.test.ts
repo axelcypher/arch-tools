@@ -1289,7 +1289,7 @@ describe('Projektordner, Ansicht „Antrag“: Quick-Add für Dateien ohne Dokum
     expect(gesperrt(punkt)).toBe(true);
     expect(punkt.textContent).toContain('Antrag eingereicht');
     expect(gesperrt(punktGenau('Mit fehlendem Dokument verknüpfen'))).toBe(true);
-    // ein deaktivierter Punkt klappt sein Untermenü auch beim Überfahren nicht auf (React meldet dort kein mouseenter)
+    // gesperrt (aria-disabled): das gemeinsame Menü klappt sein Untermenü auch beim Überfahren nicht auf
     act(() => void punktGenau('Mit fehlendem Dokument verknüpfen').dispatchEvent(new MouseEvent('mouseover', { bubbles: true })));
     expect(document.querySelector('.menue .menue')).toBeNull();
     // auch direkt im Store nichts aufgenommen (Sperre)
@@ -5819,6 +5819,8 @@ describe('Reihenfolge der Formulare in der Navigation', () => {
     act(() => z.focus());
     await rechtsklick(z);
     expect(document.querySelectorAll('.menue[role="menu"]')).toHaveLength(1);
+    // benannt nach dem Formular (Screenreader: „001-Muster, Menü“)
+    expect(document.querySelector('.menue')!.getAttribute('aria-label')).toBe('001-Muster');
     expect(document.activeElement?.classList.contains('menue-punkt')).toBe(true);
     act(() => void document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
     expect(document.querySelector('.menue')).toBeNull();

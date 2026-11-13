@@ -321,7 +321,7 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
               title={`${d.pfad}${dok ? ` – ${dok.eintrag.titel}` : umfangDa ? ' – nicht im Antragsumfang' : ''}${fehler ? `\n${fehler}` : ''}\n${zeitLang(d.geaendert)}`}
               onClick={() => dateiArtVon(d.pfad) && void useFormulare.getState().dateiAnsehen(basis, `${ordner}/${d.pfad}`)}
               onDoubleClick={() => void oeffnePfad(verbinde(basis, `${ordner}/${d.pfad}`)).catch(() => undefined)}
-              onContextMenu={(e) => zeigeMenue(e, menue(d.pfad, zustand, fehler, d.geaendert, umfangDa && !dok))}
+              onContextMenu={(e) => zeigeMenue(e, menue(d.pfad, zustand, fehler, d.geaendert, umfangDa && !dok), d.pfad)}
             >
               <span className={`fo-baum-symbol ${dateiArt(d.pfad)}`}>
                 <Symbol name={SYMBOL[dateiArt(d.pfad)]} />

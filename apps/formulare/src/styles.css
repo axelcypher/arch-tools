@@ -4317,8 +4317,8 @@ li.es-dok[data-ziehen='danach'] {
   margin: 3px 0;
 }
 .fo-menue-knopf {
-  padding-left: 4px;
-  padding-right: 4px;
+  padding-left: var(--s1);
+  padding-right: var(--s1);
 }
 
 /* ---------- Entfallende Felder: Hinweis warum, Gesetzestext ---------- */

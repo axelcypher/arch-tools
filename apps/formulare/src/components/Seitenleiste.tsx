@@ -129,7 +129,7 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
       { text: 'Öffnen', symbol: 'formular', aktion: () => void formularOeffnen(f) },
       // im geöffneten Formular mit Vorschau (Dialog), sonst wirkt es sofort
       { text: offen?.projekt === projekt && offen?.pfad === f.pfad ? 'Daten aktualisieren …' : 'Daten aktualisieren', symbol: 'neuLaden', aktion: () => void formularAktualisieren(f) },
-      { text: 'Als PDF exportieren …', symbol: 'export', deaktiviert: !ablage, aktion: () => useExportDialog.getState().oeffnen(f.pfad) },
+      { text: 'Als PDF exportieren …', symbol: 'export', deaktiviert: !ablage, ...(ablage ? {} : { hinweis: 'kein Projektordner' }), aktion: () => useExportDialog.getState().oeffnen(f.pfad) },
       { text: 'Speichern unter …', symbol: 'datei', aktion: () => void useAntrag.getState().speichernUnter(f.pfad) },
       { trenner: true },
       ...(umfang
@@ -233,7 +233,7 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
           onKeyDown={sortierbar ? taste(liste, f.pfad) : undefined}
           title={`${doc ? `${f.name} – ${doc.eintrag.titel}` : stamm ? `${f.name}\n${stammText}` : f.name}\n${zeitLang(formularInfo[f.pfad]?.letzteAenderung)}${sortierbar ? '\nZiehen oder Alt+↑/↓ ändert die Reihenfolge' : ''}`}
           onClick={() => (aktiv ? setHaupt('formular') : void formularOeffnen(f))}
-          onContextMenu={(e) => zeigeMenue(e, formularMenue(f))}
+          onContextMenu={(e) => zeigeMenue(e, formularMenue(f), f.name)}
         >
           <span className="nav-symbol">
             <Symbol name="formular" />
@@ -287,10 +287,10 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
           // das Menü am Eintrag öffnen (auch mit Enter/Leertaste, ohne Mauszeiger); gesperrt bzw. beim Öffnen: nur die Meldung
           onClick={(e) =>
             doppelt && !gesperrt && !wechsel
-              ? zeigeMenueAn(e.currentTarget, menue())
+              ? zeigeMenueAn(e.currentTarget, menue(), d.eintrag.titel)
               : void useAntrag.getState().formularAnlegen(d.eintrag.id, { ansicht: zeilenFassung(useAntrag.getState(), projekt) })
           }
-          onContextMenu={(e) => zeigeMenue(e, menue())}
+          onContextMenu={(e) => zeigeMenue(e, menue(), d.eintrag.titel)}
         >
           <span className="nav-symbol">
             <Symbol name="formular" />

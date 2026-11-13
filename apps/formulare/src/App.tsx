@@ -289,11 +289,12 @@ export function App() {
               ariaLabel="Weitere Befehle zum Aktualisieren"
               className="fo-menue-knopf"
               punkte={() => [
-                { text: 'Daten aktualisieren …', symbol: 'neuLaden', deaktiviert: !!grund, aktion: () => useAktualisieren.getState().dialogOeffnen() },
+                { text: 'Daten aktualisieren …', symbol: 'neuLaden', deaktiviert: !!grund, ...(grund ? { hinweis: 'nur ansehen', titel: grund } : {}), aktion: () => useAktualisieren.getState().dialogOeffnen() },
                 {
                   text: 'Manuelle Überschreibungen ignorieren',
                   symbol: offen && ignoriert(offen.pfad) ? 'haken' : undefined,
                   deaktiviert: !!grund,
+                  ...(grund ? { hinweis: 'nur ansehen', titel: grund } : {}),
                   aktion: () => offen && ignorierenSetzen(!ignoriert(offen.pfad)),
                 },
               ]}
