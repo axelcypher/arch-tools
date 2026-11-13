@@ -1217,5 +1217,4 @@ describe('Vor dem Schließen (Rahmen): verzögertes Schreiben nicht verlieren', 
     expect(gespeichert().struktur.name).toBe('Laufwerk weg');
     expect(useOrdner.getState().strukturNichtGeschrieben).toBeNull();
   });
-
 });
