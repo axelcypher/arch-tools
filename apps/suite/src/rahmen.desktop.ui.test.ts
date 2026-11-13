@@ -125,7 +125,7 @@ const fensterSpeichertMit = (kennung: string, ok: boolean) => {
   void listen<{ typ: string; anfrage: string; an: string }>('arch-tools:an-app', (e) => {
     const d = e.payload;
     // ausstehendes Schreiben: sofort fertig (wie vorbereitenAnfragenBeantworten ohne Vorbereitungen)
-    if (d.typ === 'arch-tools:vorbereiten' && d.an === kennung) void emit('arch-tools:an-rahmen', { typ: 'arch-tools:vorbereitet', anfrage: d.anfrage, ok: true, app: kennung });
+    if (d.typ === 'arch-tools:vorbereiten' && d.an === kennung) void emit('arch-tools:an-rahmen', { typ: 'arch-tools:vorbereitet', anfrage: d.anfrage, ergebnis: 'fertig', app: kennung });
     if (d.typ !== 'arch-tools:speichern' || d.an !== kennung) return;
     anfragen.push(d.anfrage);
     void emit('arch-tools:an-rahmen', { typ: 'arch-tools:speichert', anfrage: d.anfrage, app: kennung }).then(() =>
@@ -250,7 +250,7 @@ describe('Rahmen-App auf dem Desktop', () => {
     act(() => useRahmen.getState().oeffnen('ordner'));
     const f = frame(host, 'ordner');
     let schreiben: (() => void) | undefined;
-    const vorbereiten = vi.fn((ms: number) => new Promise<boolean>((fertig) => (schreiben = () => fertig(true))).then((ok) => ok || ms < 0));
+    const vorbereiten = vi.fn((ms: number) => new Promise<string>((fertig) => (schreiben = () => fertig(ms > 0 ? 'fertig' : 'fehler'))));
     Object.assign(f.contentWindow!, { __archToolsVorbereiten: vorbereiten, __archToolsVorbereitenNoetig: () => true });
     await act(async () => (tab(host, 'ATLAS').querySelector('button[title="Schließen (Entf)"]') as HTMLButtonElement).click());
     // wartet: der Tab ist noch da, bis das Schreiben fertig ist
@@ -262,7 +262,7 @@ describe('Rahmen-App auf dem Desktop', () => {
     // hängt es (Zeitlimit): Rückfrage, Abbrechen lässt den Tab offen
     act(() => useRahmen.getState().oeffnen('ordner'));
     const g = frame(host, 'ordner');
-    Object.assign(g.contentWindow!, { __archToolsVorbereiten: async () => false, __archToolsVorbereitenNoetig: () => true });
+    Object.assign(g.contentWindow!, { __archToolsVorbereiten: async () => 'zeitlimit', __archToolsVorbereitenNoetig: () => true });
     await act(async () => (tab(host, 'ATLAS').querySelector('button[title="Schließen (Entf)"]') as HTMLButtonElement).click());
     await act(async () => {});
     expect(dialog(host)?.textContent).toContain('ATLAS speichert noch');
@@ -279,22 +279,40 @@ describe('Rahmen-App auf dem Desktop', () => {
     expect(useRahmen.getState().tabs).toEqual([]);
   });
 
+  it('Speichern im Tab gescheitert (Netzlaufwerk weg): Rückfrage „konnte nicht speichern“ mit Erneut versuchen', async () => {
+    const host = await render();
+    act(() => useRahmen.getState().oeffnen('ordner'));
+    const f = frame(host, 'ordner');
+    const ergebnisse = ['fehler', 'fertig'];
+    const vorbereiten = vi.fn(async () => ergebnisse.shift());
+    Object.assign(f.contentWindow!, { __archToolsVorbereiten: vorbereiten, __archToolsVorbereitenNoetig: () => true });
+    await act(async () => (tab(host, 'ATLAS').querySelector('button[title="Schließen (Entf)"]') as HTMLButtonElement).click());
+    await act(async () => {});
+    expect(dialog(host)?.textContent).toContain('ATLAS konnte nicht speichern');
+    expect([...dialog(host)!.querySelectorAll('button')].map((b) => b.textContent)).toEqual(['Abbrechen', 'Trotzdem schließen', 'Erneut versuchen']);
+    expect(dialog(host)!.querySelector('button[type="submit"]')?.textContent).toBe('Erneut versuchen');
+    // erneut versuchen: diesmal gelingt es, der Tab schließt
+    await antwort(host, 'Erneut versuchen');
+    expect(vorbereiten).toHaveBeenCalledTimes(2);
+    expect(useRahmen.getState().tabs).toEqual([]);
+  });
+
   it('Beenden mit herausgelöstem Fenster: wartet auf dessen Schreiben; meldet es „nicht fertig“, Rückfrage – Abbrechen beendet nicht', async () => {
     const host = await render();
     act(() => useRahmen.getState().oeffnen('kosten'));
     await herausloesen(host, 'NUMIO');
     // das Fenster hört (bereit) und antwortet auf „vorbereiten“ erst, wenn es soll
     await senden('arch-tools:an-rahmen', { typ: 'arch-tools:bereit', app: 'kosten' });
-    let antworten: ((ok: boolean) => void) | undefined;
+    let antworten: ((ergebnis: string) => void) | undefined;
     void listen<{ typ: string; anfrage: string; an: string }>('arch-tools:an-app', (e) => {
       const d = e.payload;
-      if (d.typ === 'arch-tools:vorbereiten' && d.an === 'kosten') antworten = (ok) => void emit('arch-tools:an-rahmen', { typ: 'arch-tools:vorbereitet', anfrage: d.anfrage, ok, app: 'kosten' });
+      if (d.typ === 'arch-tools:vorbereiten' && d.an === 'kosten') antworten = (ergebnis) => void emit('arch-tools:an-rahmen', { typ: 'arch-tools:vorbereitet', anfrage: d.anfrage, ergebnis, app: 'kosten' });
     });
     await act(async () => fenster.haupt!.schliessenAngefragt!({ preventDefault: () => {} }));
     await senden('x', null);
     expect(antworten).toBeDefined();
     expect(fenster.haupt!.destroy).not.toHaveBeenCalled();
-    await act(async () => antworten!(false));
+    await act(async () => antworten!('zeitlimit'));
     await senden('x', null);
     expect(dialog(host)?.textContent).toContain('NUMIO speichert noch');
     expect(dialog(host)?.textContent).toContain('Trotzdem beenden');
@@ -303,7 +321,7 @@ describe('Rahmen-App auf dem Desktop', () => {
     // erneut: diesmal fertig – alles schließt
     await act(async () => fenster.haupt!.schliessenAngefragt!({ preventDefault: () => {} }));
     await senden('x', null);
-    await act(async () => antworten!(true));
+    await act(async () => antworten!('fertig'));
     await senden('x', null);
     expect(fenster.haupt!.destroy).toHaveBeenCalled();
   });

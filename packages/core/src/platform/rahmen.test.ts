@@ -101,18 +101,25 @@ describe('Rahmen-App: Speichern auf Anfrage', () => {
 describe('Rahmen-App: vor dem Schließen ausstehendes Schreiben abwarten', () => {
   afterEach(() => vi.useRealTimers());
 
-  it('ohne Vorbereitungen sofort; sonst alle abwarten; ein Fehler zählt als fertig; danach abgemeldet', async () => {
-    await expect(schliessenVorbereiten()).resolves.toBe(true);
+  it('ohne Vorbereitungen sofort; sonst alle abwarten; Scheitern (Fehler oder false) heißt „fehler“; danach abgemeldet', async () => {
+    await expect(schliessenVorbereiten()).resolves.toBe('fertig');
     const reihenfolge: string[] = [];
     const aus1 = vorDemSchliessen(async () => void reihenfolge.push('a'));
     const aus2 = vorDemSchliessen(() => {
       reihenfolge.push('b');
       throw new Error('Netzlaufwerk weg');
     });
-    await expect(schliessenVorbereiten()).resolves.toBe(true);
+    await expect(schliessenVorbereiten()).resolves.toBe('fehler');
     expect(reihenfolge.sort()).toEqual(['a', 'b']);
-    aus1();
     aus2();
+    // `false` heißt ebenfalls „nicht gespeichert“, `true` bzw. nichts „fertig“
+    const aus3 = vorDemSchliessen(() => false);
+    await expect(schliessenVorbereiten()).resolves.toBe('fehler');
+    aus3();
+    const aus4 = vorDemSchliessen(async () => true);
+    await expect(schliessenVorbereiten()).resolves.toBe('fertig');
+    aus4();
+    aus1();
     reihenfolge.length = 0;
     await schliessenVorbereiten();
     expect(reihenfolge).toEqual([]);
@@ -123,19 +130,24 @@ describe('Rahmen-App: vor dem Schließen ausstehendes Schreiben abwarten', () =>
     const aus = vorDemSchliessen(() => new Promise<void>(() => {}));
     const ergebnis = schliessenVorbereiten();
     vi.advanceTimersByTime(VORBEREITEN_MS + 1);
-    await expect(ergebnis).resolves.toBe(false);
+    await expect(ergebnis).resolves.toBe('zeitlimit');
     aus();
   });
 
   it('Tab ohne Antwort: nach dem Zeitlimit „nicht fertig“; ohne Vorbereitung im Tab sofort', async () => {
     vi.useFakeTimers();
-    const haengt = { contentWindow: { __archToolsVorbereiten: () => new Promise<boolean>(() => {}), __archToolsVorbereitenNoetig: () => true } } as unknown as HTMLIFrameElement;
+    const haengt = { contentWindow: { __archToolsVorbereiten: () => new Promise<string>(() => {}), __archToolsVorbereitenNoetig: () => true } } as unknown as HTMLIFrameElement;
     expect(tabBrauchtVorbereitung(haengt)).toBe(true);
     const ergebnis = vorbereitenImTab(haengt, 1000);
     vi.advanceTimersByTime(1600);
-    await expect(ergebnis).resolves.toBe(false);
+    await expect(ergebnis).resolves.toBe('zeitlimit');
     const leer = { contentWindow: {} } as unknown as HTMLIFrameElement;
     expect(tabBrauchtVorbereitung(leer)).toBe(false);
-    await expect(vorbereitenImTab(leer)).resolves.toBe(true);
+    await expect(vorbereitenImTab(leer)).resolves.toBe('fertig');
+    // der Tab meldet „fehler“ bzw. scheitert: „fehler“
+    const scheitert = { contentWindow: { __archToolsVorbereiten: async () => 'fehler' } } as unknown as HTMLIFrameElement;
+    await expect(vorbereitenImTab(scheitert)).resolves.toBe('fehler');
+    const wirft = { contentWindow: { __archToolsVorbereiten: () => Promise.reject(new Error('weg')) } } as unknown as HTMLIFrameElement;
+    await expect(vorbereitenImTab(wirft)).resolves.toBe('fehler');
   });
 });
