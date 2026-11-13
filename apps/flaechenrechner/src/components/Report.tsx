@@ -71,6 +71,9 @@ export function Report() {
   const einstellung = berichtEinstellung(project.settings.bericht);
   const plan = berichtPlan(einstellung, r, project);
   const zeigt = (a: Abschnitt) => plan.abschnitte.includes(a);
+  // gewählt, aber ohne Inhalt (z. B. Wohnflächen ohne Wohnfläche) – steht im Ausklapper statt still zu fehlen
+  const gewaehlt = ABSCHNITTE.filter((a) => plan.gesperrt.includes(a.id) || einstellung.abschnitte.includes(a.id)).map((a) => a.id);
+  const entfallen = gewaehlt.filter((a) => !zeigt(a));
   const setEinstellung = (e: BerichtEinstellung) => useEditor.getState().update((p) => ({ ...p, settings: { ...p.settings, bericht: e } }));
   const stat = useMemo(() => statistik(r), [r]);
   // Nutzungsgruppen-Tabelle nur mit Spalten, die Fläche haben (sonst überwiegend Nullen); mindestens NUF 1
@@ -147,7 +150,7 @@ export function Report() {
           {einstellung.vorlage !== 'vollstaendig' && (
             <details className="bericht-ausklapper">
               <summary>
-                Abschnitte ({plan.abschnitte.length} von {ABSCHNITTE.length})
+                Abschnitte ({gewaehlt.length} von {ABSCHNITTE.length}){entfallen.length ? ` · ${entfallen.length} entfällt` : ''}
               </summary>
               <div className="bericht-ausklapper-inhalt">
                 {ABSCHNITTE.map((a) => {
@@ -163,6 +166,7 @@ export function Report() {
                       <span>
                         {a.label}
                         {gesperrt && <span className="muted"> (im Bauantrag immer enthalten)</span>}
+                        {entfallen.includes(a.id) && <span className="muted"> (entfällt – {a.id === 'wofl' ? 'keine Wohnfläche erfasst' : 'keine Räume erfasst'})</span>}
                       </span>
                     </label>
                   );

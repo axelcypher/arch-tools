@@ -185,7 +185,15 @@ export default function View3D() {
             transparent: true,
             opacity: sel ? 0.95 : 0.85,
           });
+          if (sel) {
+            // gewählter Raum über dem durchscheinenden Körper, mit kräftigem Rand – nicht mit „Abzug“ (rot) zu verwechseln
+            mat.depthTest = false;
+            const rand = new THREE.LineSegments(new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({ color: 0xb35900, depthTest: false }));
+            rand.renderOrder = 4;
+            t.content.add(rand);
+          }
           const mesh = new THREE.Mesh(geo, mat);
+          if (sel) mesh.renderOrder = 3;
           // Raumflächen sind anwählbar wie die Körper
           mesh.userData = { shapeId: s.id, storeyId: storey.id, raum: true };
           t.content.add(mesh);

@@ -117,4 +117,19 @@ describe('Bericht (F-17)', () => {
     expect(bri!.classList.contains('no-print')).toBe(false);
     expect(html).toContain('Planungsunterlagen: nicht angegeben');
   });
+
+  it('Abschnitte: gewählte, aber leere Abschnitte sind als „entfällt“ gekennzeichnet statt still zu fehlen', () => {
+    const p = createProject('Haus');
+    p.storeys[0].shapes.push(createOutline(rectPoints({ x: 0, y: 0 }, { x: 10, y: 8 })));
+    p.storeys[0].shapes.push(createRoom(rectPoints({ x: 0.3, y: 0.3 }, { x: 9.7, y: 7.7 }), '0.01', 'Lager'));
+    p.settings.bericht = { vorlage: 'bauantrag', abschnitte: ['raeume', 'nutzung', 'wofl', 'statistik'] };
+    useEditor.getState().loadProject(p);
+    bericht();
+    const ausklapper = document.querySelector('.bericht-ausklapper')!;
+    expect(ausklapper.querySelector('summary')?.textContent).toBe('Abschnitte (6 von 6) · 1 entfällt');
+    const wofl = [...ausklapper.querySelectorAll('label')].find((l) => l.textContent?.startsWith('Wohnflächen'))!;
+    expect(wofl.textContent).toContain('entfällt – keine Wohnfläche erfasst');
+    const raeume = [...ausklapper.querySelectorAll('label')].find((l) => l.textContent?.startsWith('Raumlisten'))!;
+    expect(raeume.textContent).not.toContain('entfällt'); // Gegenprobe: Abschnitt mit Inhalt
+  });
 });
