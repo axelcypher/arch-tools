@@ -780,7 +780,8 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
           ))}
         {stand.planungsrechtHinweis && (
           // knapp (eine Zeile): der häufige Fall „noch nicht bestätigt“ kurz, die Anschrift im Titel und im Namen des Knopfs
-          <div className="br-meldung br-meldung-info br-planungsrecht-hinweis" role="status" title={stand.planungsrechtHinweis}>
+          // role="note": ein stehender Hinweis – als Live-Region läse er bei jeder Änderung von „klärt N“ alles neu vor
+          <div className="br-meldung br-meldung-info br-planungsrecht-hinweis" role="note" title={stand.planungsrechtHinweis}>
             <span>{/noch nicht bestätigt$/.test(stand.planungsrechtFrueher ?? '') ? 'Planungsrecht für diesen Ort noch nicht bestätigt.' : `${stand.planungsrechtHinweis}.`}</span>{' '}
             <span className="br-bestaetigen-zeile">
               <button type="button" className="small" onClick={() => planungsrechtGiltHier(planungsrechtKlaert, suche && !VORGABE_MERKMALE.some((m) => m.name === 'Planungsrecht' && merkmalPasst(m, suche)) ? () => suchfeld.current?.focus() : undefined)} aria-label={`Für diesen Ort bestätigen: Planungsrecht „${useBaurecht.getState().merkmale['Planungsrecht'] ?? ''}“, ${ortAnzeige ?? 'dieser Ort'}`} title="Das Planungsrecht gilt so für dieses Grundstück – bis dahin zählt es nicht als gesichert">

@@ -738,7 +738,7 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
       useBaurecht.setState({ pruefung: p, pruefungDatei: structuredClone(p) });
     });
     act(() => knopf(host, 'Für diesen Ort übernehmen')!.click());
-    const zeile = () => host.querySelector('.br-treffer')!.textContent ?? '';
+    const zeile = () => host.querySelector('.br-treffer > span')!.textContent ?? '';
     expect(zeile()).toMatch(/dem jetzigen Ort zugeordnet/);
     // ein anderer Filter (Ampel aus) – die Meldung verschwindet
     act(() => host.querySelector<HTMLButtonElement>('.br-bilanz button')!.click());
@@ -800,7 +800,8 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
     expect(m.getAttribute('role')).toBe('status');
     expect(m.textContent).toMatch(/Prüfung vom \d\d\.\d\d\.\d{4} abgelegt \(\d+ gilt · \d+ prüfen · \d+ entfällt\)/);
     expect(document.activeElement?.textContent).toBe('Jetzt speichern');
-    expect(d.querySelector('.br-sperre')?.textContent).toBe('Abgelegt – zum Übernehmen speichern');
+    // der Grund steht in der Meldung – kein doppelter Sperrtext
+    expect(d.querySelector('.br-sperre')).toBeNull();
   });
 
   it('nach dem Speichern: „Gespeichert“ im Kopf (Live-Region)', async () => {
@@ -890,6 +891,48 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
     expect(m.textContent).toMatch(/^Gespeichert – die abgeschlossene Prüfung steht in der Projektdatei/);
     expect(d.contains(document.activeElement)).toBe(true);
     expect(knopf(d, 'Jetzt speichern')).toBeUndefined();
+  });
+
+  it('Protokoll: stehende Live-Region für „abgelegt“, kein doppelter Sperrtext, gleicher Stand nicht zweimal; Druckvermerk beim Filter', async () => {
+    const host = render();
+    await speichernOhneDialog();
+    act(() => knopf(host, 'Prüfprotokoll')!.click());
+    const d = document.querySelector<HTMLElement>('.br-protokoll')!;
+    // die Region steht schon vor der Meldung da
+    const region = d.querySelector<HTMLElement>('.br-protokoll-aktionen ~ [role="status"]')!;
+    expect(region).not.toBeNull();
+    expect(region.textContent).toBe('');
+    for (let i = 0; i < 20 && knopf(d, 'Prüfung abschließen')!.disabled; i++) await warten(100);
+    act(() => knopf(d, 'Prüfung abschließen')!.click());
+    await warten();
+    expect(region.textContent).toMatch(/abgelegt/);
+    expect(knopf(d, 'Jetzt speichern')!.getAttribute('aria-describedby')).toBe('br-abgelegt-text');
+    expect(d.querySelector('.br-sperre')).toBeNull();
+    await act(async () => {
+      knopf(d, 'Jetzt speichern')!.click();
+      await new Promise((r) => setTimeout(r, 100));
+    });
+    await warten();
+    // derselbe Stand: kein zweites Abschließen
+    expect(knopf(d, 'Prüfung abschließen')!.disabled).toBe(true);
+    expect(d.querySelector('.br-sperre')?.textContent).toBe('Dieser Stand ist schon abgeschlossen');
+    expect(d.textContent).toMatch(/\d\d\.\d\d\.\d{4}, \d\d:\d\d \(/);
+    // Filter „ohne „entfällt““: der Ausdruck sagt, was fehlt
+    act(() => d.querySelector<HTMLInputElement>('.br-protokoll-aktionen input[type="checkbox"]')!.click());
+    const gruen = useBaurecht.getState() && Number(/(\d+) entfällt/.exec(d.textContent ?? '')?.[1] ?? 0);
+    if (gruen > 0) expect(d.textContent).toContain(`Vorschriften mit „entfällt“ (${gruen}) sind in diesem Ausdruck nicht aufgeführt`);
+  });
+
+  it('Vorschriften-Suche: Ansage entprellt, die sichtbare Zeile sofort', async () => {
+    const host = render();
+    const feld = host.querySelector<HTMLInputElement>('.br-vorschriften input[type="search"], main input[type="search"]')!;
+    tippen(feld, 'Stellplatz');
+    const sichtbar = host.querySelector('.br-treffer > span')!.textContent ?? '';
+    const live = () => host.querySelector('.br-treffer [aria-live]')!.textContent ?? '';
+    expect(sichtbar).toMatch(/von \d+ Paragrafen/);
+    expect(live()).toBe('');
+    await warten(400);
+    expect(live()).toBe(sichtbar);
   });
 });
 

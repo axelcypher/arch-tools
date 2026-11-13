@@ -62,7 +62,7 @@ export function LogDialog({ onClose }: { onClose: () => void }) {
           <h3>Fehlerprotokoll</h3>
           <div className="button-row">
             {FILTER.map((f) => (
-              <button key={f.id} className={min === f.id ? 'active' : ''} onClick={() => setMin(f.id)}>
+              <button key={f.id} type="button" className={min === f.id ? 'active' : ''} aria-pressed={min === f.id} onClick={() => setMin(f.id)}>
                 {f.label}
               </button>
             ))}

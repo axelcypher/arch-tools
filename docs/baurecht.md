@@ -72,6 +72,9 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   nur wenn sonst kein Grund für Gelb bliebe, wird sie genannt. Hängt ein Paragraf an einem anderen, der nur „gilt,
   Ausnahme möglich“ ist, und entfiele er mit dessen Ausnahme, nennt er sie („Ausnahme möglich über § 14 BNatSchG – es
   fehlt dort: …“); die Ampel bleibt „gilt“.
+  Wann eine Frage gestellt wird, entscheidet ein Kriterium für Kern, Leiste und Protokoll (`frageGestellt`): ohne
+  Bedingung immer, sonst solange sie nicht „nein“ ergibt – Rückfragen erst, wenn ihre Bedingung sicher zutrifft. Nicht
+  gestellte Angaben stehen nie unter „es fehlt“ oder „Klärt am meisten“.
   Hinweise, deren Bestätigung allein einen Paragrafen entschiede, stehen dort als „bestätigen klärt N“ (Werte eines
   Gebietsmoduls dort, woher die Unsicherheit kommt: beim Gemeindeschlüssel, solange er nicht gesichert ist, beim Bezug
   der Tabelle, wenn er nur Hinweis ist – ist der Bezug selbst ein Modulwert, zählen dessen Quellen –, beim Wert selbst,
@@ -249,7 +252,10 @@ neben dem Knopf. „Drucken / PDF …“ schlägt den
 Dateinamen `<Projektdatei> Baurecht <Antrag>.pdf` vor. **„Prüfung abschließen“** legt den Stand (Fassungen, Ampeln,
 Zähler, Regelpaket) in der Projektdatei ab – erst, wenn nichts mehr Entwurf, alles gespeichert und jeder Text geladen
 ist. Danach steht oben eine Meldung („Prüfung vom … abgelegt (… gilt · … prüfen · … entfällt) – zum Übernehmen in die
-Datei speichern“, Live-Region) mit „Jetzt speichern“, der Fokus geht dorthin. Nach jedem Speichern steht im Kopf kurz
+Datei speichern“, stehende Live-Region) mit „Jetzt speichern“, der Fokus geht dorthin; danach (auch nach Strg+S)
+„Gespeichert – …“ bzw. „Nicht gespeichert – …“ im Dialog. Derselbe Stand (gleiche Ampeln, Regelpaket, Stichtag) wird
+nicht zweimal abgeschlossen; abgeschlossene Prüfungen stehen mit Datum und Uhrzeit. Mit „ohne „entfällt““ vermerkt
+das Ergebnis, dass diese Vorschriften im Ausdruck fehlen. Nach jedem Speichern steht im Kopf kurz
 „Gespeichert“ (bzw. „– keine Änderungen“, „– N Entwürfe bleiben offen“), auch angesagt. Im Speichern-Dialog nennt eine
 geänderte Festlegung den bisherigen Stand der Datei („bisher: gilt (Name, Datum: Grund)“).
 

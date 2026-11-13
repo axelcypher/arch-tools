@@ -1793,8 +1793,9 @@ h2.br-detail-name {
   .br-klaeren .br-chip-name {
     min-width: 0;
     overflow: hidden;
-    /* bis zu zwei Zeilen, dann Auslassung – die Zahl bleibt stehen */
+    /* bis zu zwei Zeilen (lange Wörter getrennt: „Gemeinde-schlüssel“), dann Auslassung – die Zahl bleibt stehen */
     white-space: normal;
+    hyphens: auto;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
@@ -1892,4 +1893,10 @@ h2.br-detail-name {
   font-size: 12px;
   color: var(--br-leise-stark);
   white-space: nowrap;
+}
+/* Speichern-Dialog: Kopf und Fuß bleiben stehen, nur die Liste scrollt (bei 1000×680 sonst Titel außer Sicht) */
+.modal .br-bestaetigen-liste {
+  max-height: calc(100vh - 330px);
+  min-height: 80px;
+  overflow: auto;
 }

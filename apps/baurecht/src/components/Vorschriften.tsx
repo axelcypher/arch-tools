@@ -342,6 +342,12 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
     }))
     .filter((g) => g.normen.length);
   const treffer = new Set(ansicht.flatMap((g) => g.normen.flatMap((x) => x.sichtbar.map((p) => p.id)))).size;
+  const trefferText = filterAktiv ? `${ortMeldung && ortMeldung.filter === filterKennung(suche, nurHand, nurGeaendert, w.ampeln) ? `${ortMeldung.text} · ` : ''}${treffer} von ${auswertung.paragrafen.length} Paragrafen${passt.hinweis ? ` – ${passt.hinweis}` : ''}` : '';
+  const [trefferAnsage, setTrefferAnsage] = useState('');
+  useEffect(() => {
+    const t = setTimeout(() => setTrefferAnsage(trefferText), 300);
+    return () => clearTimeout(t);
+  }, [trefferText]);
 
   // ein Tabstopp für die ganze Liste (roving tabindex): die gewählte Zeile, sonst die zuletzt fokussierte, sonst die erste
   const schluessel = ansicht.flatMap((g) => g.normen.flatMap((x) => [`n:${g.id}|${x.n.id}`, ...(zu.has(`${g.id}|${x.n.id}`) ? [] : x.sichtbar.map((p) => `p:${p.id}`))]));
@@ -547,13 +553,10 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
       )}
       {/* die Live-Region liest nur den Stand vor, nicht den Knopf; ohne Treffer steht „zurücksetzen“ nur im Leerzustand */}
       <div className="br-treffer">
-        <span aria-live="polite">
-          {filterAktiv ? (
-            <>
-              {ortMeldung && ortMeldung.filter === filterSchluessel ? `${ortMeldung.text} · ` : ''}
-              {treffer} von {auswertung.paragrafen.length} Paragrafen{passt.hinweis ? ` – ${passt.hinweis}` : ''}
-            </>
-          ) : null}
+        <span>{trefferText}</span>
+        {/* angesagt wird entprellt (nicht bei jedem Tastendruck) – wie in den Angaben */}
+        <span className="br-unsichtbar" aria-live="polite">
+          {trefferAnsage}
         </span>
         {filterAktiv && treffer > 0 && (
           <>

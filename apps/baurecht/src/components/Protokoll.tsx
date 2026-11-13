@@ -11,7 +11,7 @@ import { benutzer } from '../benutzer';
 import type { Pruefstand } from '../pruefung';
 import { aktuelleLage, anUngespeichertem, OHNE_LAGEBEZUG, verwendeteFassungen } from '../pruefung';
 import { istGeaendert, offeneBestaetigungen, offeneFestlegungen, PLANUNGSRECHT, useBaurecht } from '../store';
-import { AMPEL_TEXT, aufzaehlen, datum, nb } from './Ampel';
+import { AMPEL_TEXT, aufzaehlen, datum, nb, uhrzeit } from './Ampel';
 import { rueckfrageOffen } from './Angaben';
 import { frageGestellt, RUECKFRAGEN } from '@core/baurecht/fragen';
 
@@ -206,7 +206,10 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
   const vonHandOhneBeleg = Object.entries(a.fakten).filter(([id, f]) => id in eigeneFakten && !!a.faktDefs[id] && id !== 'antrag.einreichung' && f.herkunft === 'manuell' && !f.bestaetigt && f.wert != null);
   // abgeschlossen wird nur ein gespeicherter, zweimal bestätigter und vollständig geladener Stand
   // knapp (die Einzelheiten stehen im Hinweis darunter); nach dem Abschließen neutral: die Ablage will gespeichert werden
-  const sperre = entwuerfe ? 'Erst speichern – Entwürfe brauchen die zweite Bestätigung' : ungespeichertGesamt ? (abgelegt?.speichern ? 'Abgelegt – zum Übernehmen speichern' : 'Erst speichern: Es gibt ungespeicherte Änderungen') : laedt ? 'Die Gesetzestexte werden noch geholt – bitte warten' : '';
+  // derselbe Stand ist schon abgeschlossen (gleiche Ampeln, Regelpaket, Stichtag): keine zweite, gleiche Ablage
+  const zuletzt = protokolle[protokolle.length - 1];
+  const schonAbgeschlossen = !!zuletzt && zuletzt.paket === paket.version && zuletzt.einreichung === pruefstand.einreichung && a.paragrafen.every((p) => zuletzt.ampeln[p.id] === p.ampel) && Object.keys(zuletzt.ampeln).length === a.paragrafen.length;
+  const sperre = entwuerfe ? 'Erst speichern – Entwürfe brauchen die zweite Bestätigung' : ungespeichertGesamt ? (abgelegt?.speichern ? 'Abgelegt – zum Übernehmen speichern' : 'Erst speichern: Es gibt ungespeicherte Änderungen') : laedt ? 'Die Gesetzestexte werden noch geholt – bitte warten' : schonAbgeschlossen ? 'Dieser Stand ist schon abgeschlossen' : '';
   // offene Punkte nach der fehlenden Angabe gruppiert („Baugebiet – 20 Paragrafen“), der Rest nach dem Grund
   const ohneRegel = a.normen.filter((n) => n.ohneRegel);
   // fehlende Angaben genau wie „Klärt am meisten“ gezählt (ein Paragraf kann unter mehreren Angaben stehen)
@@ -272,7 +275,8 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
             <input type="checkbox" checked={nurRelevant} onChange={(e) => setNurRelevant(e.target.checked)} /> ohne „entfällt“
           </label>
           <span className="tb-spacer" />
-          {sperre && (
+          {/* steht die Meldung „abgelegt“ darunter, sagt sie den Grund – der Sperrtext nicht noch einmal */}
+          {sperre && !abgelegt?.speichern && (
             <span className="br-sperre" id="br-sperre-grund">
               {sperre}
             </span>
@@ -285,7 +289,7 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
             className="primary"
             onClick={abschliessen}
             disabled={!!sperre}
-            aria-describedby={sperre ? 'br-sperre-grund' : undefined}
+            aria-describedby={abgelegt?.speichern ? 'br-abgelegt-text' : sperre ? 'br-sperre-grund' : undefined}
             title={sperre || 'Diesen Stand mit Fassungen und Ampeln in der Projektdatei ablegen (danach speichern)'}
           >
             Prüfung abschließen
@@ -294,13 +298,16 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
             Schließen
           </button>
         </div>
-        {abgelegt && (
-          <div ref={meldung} tabIndex={-1} className="br-meldung br-meldung-info no-print br-abgelegt" role="status">
-            {abgelegt.text}{' '}
+        {/* stehende Live-Region (wird verlässlich vorgelesen); „Jetzt speichern“ beschreibt sich mit dem Text */}
+        <div ref={meldung} tabIndex={-1} className={abgelegt ? 'br-meldung br-meldung-info no-print br-abgelegt' : 'no-print'} role="status">
+          {abgelegt && (
+            <>
+            <span id="br-abgelegt-text">{abgelegt.text}</span>{' '}
             {onSpeichern && abgelegt.speichern && (
               <button
                 type="button"
                 className="small"
+                aria-describedby="br-abgelegt-text"
                 onClick={async () => {
                   const ok = await onSpeichern();
                   setAbgelegt(ok ? { text: 'Gespeichert – die abgeschlossene Prüfung steht in der Projektdatei.', speichern: false } : { text: 'Nicht gespeichert – die Prüfung ist abgelegt, steht aber noch nicht in der Datei.', speichern: true });
@@ -309,8 +316,9 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
                 Jetzt speichern
               </button>
             )}
-          </div>
-        )}
+            </>
+          )}
+        </div>
         {entwuerfe > 0 && (
           <p className="br-meldung br-meldung-warn br-entwurf-hinweis no-print" role="status">
             Entwurf: {entwurfText.charAt(0).toUpperCase() + entwurfText.slice(1)} {entwuerfe === 1 ? 'ist' : 'sind'} noch nicht gespeichert und bestätigt – unten als „Entwurf“ bzw. „noch nicht gespeichert“ gekennzeichnet. Abschließen lässt sich die Prüfung erst nach dem Speichern.
@@ -351,6 +359,12 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
               <td className="strong">
                 {a.zaehler.rot} gilt · {a.zaehler.gelb} prüfen · {a.zaehler.gruen} entfällt
                 {ausEntwurf.length > 0 && <span className="br-entwurf-text"> – davon {ausEntwurf.length} aus Entwürfen von Hand</span>}
+                {nurRelevant && a.zaehler.gruen > 0 && (
+                  <span className="br-leise">
+                    {' '}
+                    – Vorschriften mit „entfällt“ ({a.zaehler.gruen}) sind in diesem Ausdruck nicht aufgeführt
+                  </span>
+                )}
                 {anOffenem > 0 && (
                   <span className="br-entwurf-text">
                     {' '}
@@ -568,7 +582,7 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
                             <td className="strong">{ampelText(p)}</td>
                             <td>
                               {p.festlegung ? `${p.festlegung.grund} (${p.festlegung.von}, ${datum(p.festlegung.am)}; automatisch: ${AMPEL_TEXT[p.automatisch]})` : p.gruende.join(' ')}
-                              {(p.ueberholt || p.unwirksam) && <div className="report-meta">{p.ueberholt ? `Festlegung überholt: ${p.ueberholt}` : `Festlegung noch nicht wirksam: ${p.unwirksam}`}</div>}
+                              {(p.ueberholt || p.unwirksam) && <div className="report-meta">{p.ueberholt ? `Grund: ${p.ueberholt}` : `Grund: ${p.unwirksam}`}</div>}
                             </td>
                           </tr>
                           );
@@ -616,7 +630,7 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
             <ul>
               {protokolle.map((p) => (
                 <li key={p.am}>
-                  {datum(p.am)} ({p.von}): {p.zaehler.rot} gilt · {p.zaehler.gelb} prüfen · {p.zaehler.gruen} entfällt – Regelpaket {p.paket}, Einreichung {datum(p.einreichung)}
+                  {datum(p.am)}, {uhrzeit(p.am)} ({p.von}): {p.zaehler.rot} gilt · {p.zaehler.gelb} prüfen · {p.zaehler.gruen} entfällt – Regelpaket {p.paket}, Einreichung {datum(p.einreichung)}
                 </li>
               ))}
             </ul>
