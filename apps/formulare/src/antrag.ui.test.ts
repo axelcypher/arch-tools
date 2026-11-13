@@ -725,7 +725,7 @@ describe('Bedingungen: Antragsmerkmale und Felder', () => {
     await klick(info()!);
     for (let i = 0; i < 20 && !document.querySelector('.fo-gesetz-zeile'); i++) await warte();
     const modal = document.querySelector('.fo-gesetz')!;
-    expect(modal.querySelector('h4.fo-gesetz-para')!.textContent).toContain('§ 68 BauO NRW 2018');
+    expect(modal.querySelector('p.fo-gesetz-para')!.textContent).toContain('§ 68 BauO NRW 2018');
     expect(modal.querySelector('.fo-gesetz-zeile.markiert')!.textContent).toMatch(/^\(2\)/);
     // Esc (Tastendruck im Dokument) schließt das Fenster über den gemeinsamen Dialog-Stapel
     act(() => document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));

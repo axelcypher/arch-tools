@@ -78,10 +78,11 @@ export function GesetzModal() {
   const mitAbsatz = !!q?.absatz && !!bereich && (bereich.von > 0 || bereich.bis < (p?.text.length ?? 0));
 
   return (
-    <Modal titel={q ? 'Gesetzestext' : 'Antragsmerkmale festlegen'} kopf onClose={schliessen} breit className="fo-gesetz">
+    // ohne Quelle nennt schon der Kopf die Merkmale – die Zeile darüber steht dann nicht noch einmal da
+    <Modal titel={q ? 'Gesetzestext' : merkmale.length ? `${merkmale.join(', ')} festlegen` : 'Antragsmerkmale festlegen'} kopf onClose={schliessen} breit className="fo-gesetz">
       {offen && merkmale.length > 0 && (
         <div className="fo-gesetz-merkmale">
-          <strong>{merkmale.join(', ')} festlegen</strong>
+          {q && <strong>{merkmale.join(', ')} festlegen</strong>}
           <MerkmalWahl offen={offen} namen={merkmale} />
         </div>
       )}
@@ -95,10 +96,10 @@ export function GesetzModal() {
         </div>
       )}
       {q && (
-        <h4 className="fo-gesetz-para">
+        <p className="fo-gesetz-para">
           § {q.paragraf} {gesetz?.kurz ?? ''}
           {p && <span className="fo-gesetz-titel"> – {p.titel}</span>}
-        </h4>
+        </p>
       )}
       {q && gesetz && (
         <p className="muted small-text">

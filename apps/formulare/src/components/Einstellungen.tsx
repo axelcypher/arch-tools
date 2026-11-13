@@ -345,7 +345,7 @@ function Adressbuch() {
               <Symbol name="plus" /> Adresse hinzufügen
             </button>
             <button disabled={!!laeuft || !projekte} onClick={() => void adressbuchLaden()} title="Die Projektdaten (Projektkarten) aller Projekte neu lesen">
-              {laeuft ? `Liest … ${laeuft.fertig} von ${laeuft.gesamt}` : 'Neu einlesen'}
+              {laeuft ? `Liest … ${laeuft.fertig} von ${laeuft.gesamt}` : adressbuch?.stand ? 'Neu einlesen' : 'Aus den Projektdaten einlesen'}
             </button>
           </>
         )}

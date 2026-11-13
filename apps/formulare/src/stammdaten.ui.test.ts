@@ -396,9 +396,10 @@ describe('Einstellungen', () => {
     expect(knoepfe(host, 'Aus den Projektdaten einlesen')).toHaveLength(1);
     await klick(knopf(host, 'Adresse hinzufügen'));
     expect(host.querySelector('form[aria-label="Neue Adresse"]')).not.toBeNull();
-    // mit dem Formular verschwindet die Leerseite, die Titelzeile zeigt ihre Knöpfe
+    // mit dem Formular verschwindet die Leerseite, die Titelzeile zeigt ihre Knöpfe – noch nie eingelesen, also nicht „Neu einlesen“
     expect(knoepfe(host, 'Adresse hinzufügen')).toHaveLength(1);
-    expect(knoepfe(host, 'Neu einlesen')).toHaveLength(1);
+    expect(knoepfe(host, 'Aus den Projektdaten einlesen')).toHaveLength(1);
+    expect(knoepfe(host, 'Neu einlesen')).toHaveLength(0);
   });
 
   it('Adressbuch bearbeiten: neue Adresse anlegen, eine aus den Projektkarten ändern und ausblenden – gespeichert im Konfigurationsordner', async () => {

@@ -218,7 +218,7 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
   bietet je fehlendem Merkmal Segmentknöpfe mit Kurzerklärung und Fundstelle (z. B. „Gebäudeklasse (§ 2 Abs. 3 BauO
   NRW 2018)“, die Erklärung je Wert beim Zeigen; „§“ öffnet den Gesetzestext). Dieselbe Auswahl öffnet das
   Info-Symbol an einem offenen Feld („Gebäudeart festlegen“ im Gesetzes-Fenster). Die Wahl wirkt sofort. Mit Projekt
-  steht sie im aktiven Antrag der Projektdatei (gilt für alle Formulare; „Alle Antragsmerkmale …“ führt zum
+  steht sie im aktiven Antrag der Projektdatei (gilt für alle Formulare; „Alle Antragsmerkmale“ führt zum
   Antragsumfang), ohne Projekt (Web-Version) gilt sie für die Datei und liegt im lokalen Speicher
   (`formulare:merkmale-datei`, `merkmalWerte.ts`). Bedingungen aus früheren Versionen (eine Liste, alle
   Teile müssen zutreffen) werden als Und-Gruppe übernommen.
