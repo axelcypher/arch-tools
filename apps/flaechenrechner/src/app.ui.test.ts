@@ -139,3 +139,19 @@ describe('QUADRIO: Flächenaufstellung am Bildschirm', () => {
     expect(document.activeElement).toBe(oeffnen);
   });
 });
+
+describe('QUADRIO: ungespeicherte Änderungen am Knopf „Speichern“ (Designsystem)', () => {
+  it('Klasse ungespeichert und aria-label erst nach einer Änderung; nach dem Laden ohne', () => {
+    const p = createProject('Haus');
+    useEditor.getState().loadProject(p, p, 'Haus.oap');
+    const host = render();
+    const speichern = () => [...host.querySelectorAll<HTMLButtonElement>('.toolbar button')].find((b) => b.getAttribute('aria-label')?.startsWith('Speichern'))!;
+    // Gegenprobe: frisch geladen – kein Punkt
+    expect(speichern().classList.contains('ungespeichert')).toBe(false);
+    expect(speichern().getAttribute('aria-label')).toBe('Speichern');
+    act(() => useEditor.getState().update((q) => ({ ...q, name: 'Haus 2' })));
+    expect(speichern().classList.contains('ungespeichert')).toBe(true);
+    expect(speichern().getAttribute('aria-label')).toBe('Speichern – ungespeicherte Änderungen');
+    expect(host.querySelector('.tb-dirty')).toBeNull();
+  });
+});

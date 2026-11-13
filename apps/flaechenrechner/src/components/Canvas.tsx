@@ -1403,12 +1403,12 @@ export function Canvas() {
         <div className="hud-zeile">
           {hinweisZu || !hint ? (
             <button className="hud-hint-knopf" onClick={() => (hint ? hinweisUmschalten(false) : setKuerzelOffen(true))} title={hint ? 'Bedienhinweise einblenden' : 'Tastenkürzel anzeigen (?)'}>
-              {hint ? '? Hinweise' : '? Tastenkürzel'}
+              {hint ? '? Hinweise' : '? Tastenkürzel …'}
             </button>
           ) : (
             <span className="hud-hint" title={hint}>
               <span className="hud-hint-text">{hint}</span>
-              <button className="hud-hint-knopf" onClick={() => setKuerzelOffen(true)} title="Alle Tastenkürzel (?)" aria-label="Alle Tastenkürzel">
+              <button className="hud-hint-knopf" onClick={() => setKuerzelOffen(true)} title="Alle Tastenkürzel … (?)" aria-label="Alle Tastenkürzel …">
                 ?
               </button>
               <button className="hud-hint-knopf" onClick={() => hinweisUmschalten(true)} title="Bedienhinweise ausblenden (bleibt so)" aria-label="Bedienhinweise ausblenden">

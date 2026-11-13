@@ -1,0 +1,6 @@
+{
+  "flaechenrechner": {
+    "stufe": "patch",
+    "notiz": "Der Punkt für ungespeicherte Änderungen am Knopf „Speichern“ kommt aus dem gemeinsamen Designsystem; „Tastenkürzel …“ kennzeichnet den Dialog."
+  }
+}
