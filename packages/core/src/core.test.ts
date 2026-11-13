@@ -192,10 +192,10 @@ describe('Projektdaten', () => {
   it('übernimmt die Adresse früherer Versionen (Freitext) als Straße, PLZ, Ort', () => {
     const alt = (adresse: string) =>
       parseProject(JSON.stringify({ format: 'arch-flaechen-tool', version: 1, meta: { projektcode: 'HSA', adresse, bearbeiter: 'TP' }, storeys: [] })).meta;
-    expect(alt('Deiringser Weg 7a, 59494 Soest').adresse).toEqual({ strasse: 'Deiringser Weg 7a', plz: '59494', ort: 'Soest' });
+    expect(alt('Lindenweg 7a, 59494 Soest').adresse).toEqual({ strasse: 'Lindenweg 7a', plz: '59494', ort: 'Soest' });
     expect(alt('59494 Soest').adresse).toEqual({ strasse: '', plz: '59494', ort: 'Soest' });
     expect(alt('Hauptstraße 1').adresse).toEqual({ strasse: 'Hauptstraße 1', plz: '', ort: '' });
-    const m = alt('Deiringser Weg 7a, 59494 Soest');
+    const m = alt('Lindenweg 7a, 59494 Soest');
     expect(m).toMatchObject({ projektcode: 'HSA', bearbeiter: 'TP', grundstueck: { gemarkung: '', flur: '', flurstueck: '' }, bauherr: { name: '', kontakte: [] } });
   });
   it('Vorhaben, Aktenzeichen und Vorname des Bauherrn bleiben erhalten (für PERMIO); fehlen sie, bleibt es wie bisher', () => {

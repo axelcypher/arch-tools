@@ -7,7 +7,7 @@ import type { CellValue, TemplateRow } from '@core/excel/template';
 import { expandTemplate } from '@core/excel/template';
 
 function project() {
-  const p = createProject('EFH Sander');
+  const p = createProject('EFH Beispiel');
   const kg = p.storeys[0];
   kg.name = 'KG';
   const eg = createStorey('EG', 2.8);
@@ -47,7 +47,7 @@ describe('Vorlagen-Engine', () => {
     q.meta.projektcode = '2417';
     const c = buildExportContext(q, computeProject(q));
     const out = expandTemplate(rowsOf([['{{projekt.code}} – {{projekt.name}}', '{{projekt.projektcode}}']]), c);
-    expect(out[0].cells.get(1)).toBe('2417 – EFH Sander');
+    expect(out[0].cells.get(1)).toBe('2417 – EFH Beispiel');
   });
 
   it('Geschossblöcke mit Räumen, Zwischensummen, Filtern und Gesamtsummen', () => {
@@ -362,8 +362,8 @@ describe('Bedingungsblock {{#wenn …}}', () => {
     expect(zeilen([['{{#wenn[wofl>20,!gibtsnicht]}}a{{/wenn}}'], ['{{#wenn[gibtsnicht]}}b{{/wenn}}']])).toEqual(['a']);
     // Vergleiche: Wert, Anzahl der Datensätze, mindestens ein Datensatz, Text
     const ja = (bed: string) => zeilen([[`{{#wenn ${bed}}}ja{{/wenn}}`]]).length === 1;
-    expect(['summe.nebenflaeche>20', 'summe.nebenflaeche >= 22', 'summe.wofl<=27', 'raum[wofl]=3', 'raum.flaeche>19', 'projekt.name=efh sander', 'geschoss:OG.wofl=6'].filter((b) => !ja(b))).toEqual([]);
-    expect(['summe.nebenflaeche>22', 'raum[wofl]>3', 'raum.flaeche>20', 'projekt.name!=EFH Sander', '!summe.wofl>0'].filter(ja)).toEqual([]);
+    expect(['summe.nebenflaeche>20', 'summe.nebenflaeche >= 22', 'summe.wofl<=27', 'raum[wofl]=3', 'raum.flaeche>19', 'projekt.name=efh beispiel', 'geschoss:OG.wofl=6'].filter((b) => !ja(b))).toEqual([]);
+    expect(['summe.nebenflaeche>22', 'raum[wofl]>3', 'raum.flaeche>20', 'projekt.name!=EFH Beispiel', '!summe.wofl>0'].filter(ja)).toEqual([]);
     // ein {{/wenn}} ohne Anfang (Bedingung vergessen) schließt nicht den Geschossblock
     expect(zeilen([['{{#geschoss}}{{geschoss.name}}'], ['{{#wenn}}', 'x'], ['{{/wenn}}'], ['{{raum[wofl].name}}'], ['{{/geschoss}}']])).toEqual(['EG', '{{#wenn}}', 'Flur', 'Küche', 'OG', '{{#wenn}}', 'Bad']);
   });

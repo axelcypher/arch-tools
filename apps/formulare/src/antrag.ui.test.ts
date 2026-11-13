@@ -64,7 +64,7 @@ beforeEach(() => {
   ds.dateien.set('C:/FORMA/BS9/sj_office.ini', cp1252Schreiben('[Allgemeines]\r\nText=Musterstraße 9\r\n\r\n'));
   // ein anderes Projekt hat das Formular „Bauantrag“ (Vorlage für das Anlegen)
   ds.dateien.set('C:/FORMA/H24/003-Bauantrag (2026).frmsjf', MUSTER);
-  ds.dateien.set('C:/FORMA/H24/sj_office.ini', cp1252Schreiben('[Allgemeines]\r\nText=Höggenstraße\r\n\r\n'));
+  ds.dateien.set('C:/FORMA/H24/sj_office.ini', cp1252Schreiben('[Allgemeines]\r\nText=Hofstraße\r\n\r\n'));
   ds.dateien.set(`${PROJEKT}/TÖB/BAUA/BS9 GP 260101 Bauantrag.pdf`, new Uint8Array([1]));
   ds.ordner.add(`${PROJEKT}/TÖB/BAUA 2`);
   ds.dateien.set(`${PROJEKT}/Planung/BS9 Lageplan.pdf`, new Uint8Array([1]));
@@ -2202,10 +2202,10 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     expect(useFormulare.getState().meldung?.text).toContain('Stand neu festhalten abgebrochen');
   });
 
-  /** zweites Projekt mit eigener Projektdatei: H24 (FORMA) mit Projektordner „Z:/Projekte/H24 Höggenstraße“ */
-  const H24_OAP = 'Z:/Projekte/H24 Höggenstraße/Planung/Berechnungen/H24.oap';
+  /** zweites Projekt mit eigener Projektdatei: H24 (FORMA) mit Projektordner „Z:/Projekte/H24 Hofstraße“ */
+  const H24_OAP = 'Z:/Projekte/H24 Hofstraße/Planung/Berechnungen/H24.oap';
   const h24Vorbereiten = () => {
-    const p = createProject('Höggenstraße');
+    const p = createProject('Hofstraße');
     p.meta = { ...leereMeta(), projektcode: 'H24' };
     ds.dateien.set(H24_OAP, writeArchive(p));
   };
@@ -5019,8 +5019,8 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
   });
 
   it('Projektwechsel während des Schreibens (das andere Projekt hat dieselbe Fassung ohne Antragsumfang): keine falsche Meldung, gespeichert ist gespeichert', async () => {
-    ds.ordner.add('Z:/Projekte/H24 Höggenstraße/TÖB/BAUA 2');
-    ds.dateien.set('Z:/Projekte/H24 Höggenstraße/TÖB/BAUA 2/x.pdf', new Uint8Array([1]));
+    ds.ordner.add('Z:/Projekte/H24 Hofstraße/TÖB/BAUA 2');
+    ds.dateien.set('Z:/Projekte/H24 Hofstraße/TÖB/BAUA 2/x.pdf', new Uint8Array([1]));
     const host = await mitUmfangInBeiden();
     const po = ds.projektordner as unknown as { projektdateiErsetzen: (...a: unknown[]) => Promise<unknown> };
     const echt = po.projektdateiErsetzen.bind(po);
@@ -5067,10 +5067,10 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
   });
 
   it('„Antragsumfang festlegen“ in BS9, das Schreiben hängt, inzwischen ist H24 offen (dort mit Antragsumfang): BS9 festgelegt, keine Meldung in H24', async () => {
-    const H24 = 'Z:/Projekte/H24 Höggenstraße';
+    const H24 = 'Z:/Projekte/H24 Hofstraße';
     ds.ordner.add(`${H24}/TÖB/BAUA 2`);
     ds.dateien.set(`${H24}/TÖB/BAUA 2/x.pdf`, new Uint8Array([1]));
-    const p = createProject('Höggenstraße');
+    const p = createProject('Hofstraße');
     p.meta = { ...leereMeta(), projektcode: 'H24' };
     ds.dateien.set(
       `${H24}/Planung/Berechnungen/H24.oap`,
@@ -5111,8 +5111,8 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
   });
 
   it('„Antragsumfang festlegen“ in BS9 (dort woanders schon festgelegt), das Neuladen danach hängt, inzwischen ist H24 offen: der in BS9 bleibt, die Meldung nennt BS9', async () => {
-    ds.ordner.add('Z:/Projekte/H24 Höggenstraße/TÖB/BAUA 2');
-    ds.dateien.set('Z:/Projekte/H24 Höggenstraße/TÖB/BAUA 2/x.pdf', new Uint8Array([1]));
+    ds.ordner.add('Z:/Projekte/H24 Hofstraße/TÖB/BAUA 2');
+    ds.dateien.set('Z:/Projekte/H24 Hofstraße/TÖB/BAUA 2/x.pdf', new Uint8Array([1]));
     const host = await projektBS9();
     await klick(antragsdaten(host));
     ds.dateien.set(OAP, oapMit(ds.dateien.get(OAP)!, (f) => void ((f.antraege as Record<string, Record<string, unknown>>)['BAUA 2'].umfang = [{ id: 'ueigen', titel: 'Brandschutzkonzept', art: 'extern' }])));
@@ -5325,8 +5325,8 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
   });
 
   it('Laden von BS9 hängt, H24 geöffnet (dessen Laden hängt auch), BS9 scheitert: der Aufrufer kommt gleich zurück, keine Meldung zu BS9', async () => {
-    ds.ordner.add('Z:/Projekte/H24 Höggenstraße/TÖB/BAUA 2');
-    ds.dateien.set('Z:/Projekte/H24 Höggenstraße/TÖB/BAUA 2/x.pdf', new Uint8Array([1]));
+    ds.ordner.add('Z:/Projekte/H24 Hofstraße/TÖB/BAUA 2');
+    ds.dateien.set('Z:/Projekte/H24 Hofstraße/TÖB/BAUA 2/x.pdf', new Uint8Array([1]));
     await projektBS9();
     await warte();
     const po = ds.projektordner as unknown as { liesMitStand: (r: string, p: string) => Promise<unknown> };

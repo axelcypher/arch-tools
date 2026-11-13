@@ -11,10 +11,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # volle Historie: die Versionsprüfung braucht die Abzweigung des PRs vom Ziel-Branch (Merge-Base); als Text,
+          # denn die Zahl 0 gilt in Ausdrücken als falsch und ergäbe 1
+          fetch-depth: ${{ github.event_name == 'pull_request' && '0' || '1' }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
+      # Im PR: App-Versionen gegen main und vorhandene Tags prüfen – sonst überspringt der Release eine schon vergebene
+      # Version und die Änderung fehlt im ausgelieferten Stand (scripts/versionen-pruefen.mjs)
+      - name: Versionen prüfen
+        if: github.event_name == 'pull_request'
+        env:
+          ZIEL: ${{ github.base_ref }}
+          KOPF: ${{ github.event.pull_request.head.sha }}
+        run: |
+          node --test scripts/versionen-pruefen.test.mjs
+          node scripts/versionen-pruefen.mjs "$ZIEL" "$KOPF"
       - run: npm ci
       - run: npm run typecheck
       - run: npm test

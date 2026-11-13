@@ -1032,22 +1032,9 @@
   outline-offset: -2px;
 }
 
-/* Flächenaufstellung am Bildschirm: Bedienleiste als eigene Zeile über dem Papier, bleibt beim Blättern oben und
-   bricht um, statt Überschrift und Kopf zu überdecken; Bedienelemente in hellen Farben wie das Papier */
+/* Flächenaufstellung: Bedienelemente in hellen Farben wie das Papier (die Bedienzeile selbst kommt aus base.css) */
 .report {
   color-scheme: light;
-}
-
-.report .report-actions {
-  position: sticky;
-  top: -24px;
-  z-index: 1;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  margin: -12px 0 14px;
-  padding: 8px 0;
-  background: var(--panel);
-  border-bottom: 1px solid var(--border);
 }
 
 /* Rechte Seitenleiste: Eigenschaften scrollen für sich, die Auswertung bleibt unten sichtbar */
