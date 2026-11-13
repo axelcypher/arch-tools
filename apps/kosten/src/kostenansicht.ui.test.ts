@@ -73,6 +73,32 @@ describe('Kostenansicht: Bedienung', () => {
     expect(kosten().positionen.map((p) => p.kg)).toEqual(['300', '400', '500', '700']);
   });
 
+  it('Gliederung 2. Ebene neben erfasster 1. Ebene: Rückfrage, dann KG 300/400 ausgeschaltet, keine Doppelerfassung', async () => {
+    useKosten.getState().load(projektMitKosten());
+    const host = render(App); // mit App: die Rückfrage braucht deren Dialogwurzel
+    // 500 ist über 530/540 schon erfasst, 300/400/700 selbst: die 1. Ebene ist vollständig
+    expect(knopf(host, 'Gliederung 1. Ebene').disabled).toBe(true);
+    const rueckfrage = async () => {
+      for (let i = 0; i < 10 && !document.querySelector('.modal.rf'); i++) await act(async () => new Promise((r) => setTimeout(r, 0)));
+      return document.querySelector('.modal.rf')!;
+    };
+    await act(async () => knopf(host, 'Gliederung 2. Ebene').click());
+    const dialog = await rueckfrage();
+    expect(dialog.textContent).toContain('KG 300, 400 ausschalten?');
+    // Gegenprobe: Abbrechen ändert nichts
+    await act(async () => knopf(dialog, 'Abbrechen').click());
+    for (let i = 0; i < 5; i++) await act(async () => new Promise((r) => setTimeout(r, 0)));
+    expect(kosten().positionen).toHaveLength(5);
+    await act(async () => knopf(host, 'Gliederung 2. Ebene').click());
+    await act(async () => knopf(await rueckfrage(), 'Ausschalten und anlegen').click());
+    for (let i = 0; i < 5; i++) await act(async () => new Promise((r) => setTimeout(r, 0)));
+    const pos = kosten().positionen;
+    expect(pos.filter((p) => p.aus).map((p) => p.kg)).toEqual(['300', '400']);
+    expect(pos.map((p) => p.kg)).toContain('310');
+    expect(pos.filter((p) => p.kg === '500')).toHaveLength(0);
+    expect(host.textContent).not.toContain('Doppelt erfasst');
+  });
+
   it('„+ Position“ legt eine leere Zeile an und setzt den Fokus in die Kostengruppe', async () => {
     useKosten.getState().load(projektMitKosten());
     const host = ansicht();
@@ -95,7 +121,8 @@ describe('Kostenansicht: Bedienung', () => {
     const zeile = (id: string) => host.querySelector(`tr[data-pos="${id}"]`)!;
     expect(zeile('p330').textContent).toContain('Doppelt erfasst mit KG 300');
     expect(zeile('p300').textContent).toContain('Doppelt erfasst mit KG 330');
-    expect(zeile('px').textContent).toContain('Keine gültige Kostengruppe');
+    expect(zeile('px').textContent).toContain('dreistellig, 100–899');
+    expect(zeile('px').textContent).toContain('Wird nicht gerechnet');
     expect(zeile('px').querySelector('input[aria-label="Kostengruppe"]')!.className).toContain('feld-fehler');
     // Gegenprobe: ausgeschaltet keine Doppelerfassung
     act(() => (zeile('p330').querySelector('input[type="checkbox"]') as HTMLInputElement).click());

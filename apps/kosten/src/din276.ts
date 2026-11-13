@@ -103,7 +103,7 @@ export function kgUnter(kind: string, vorfahr: string): boolean {
 export const kgInBasis = (kg: string, basis: string[]) => basis.some((b) => kg === b || kgUnter(kg, b));
 
 /**
- * Kostenrisiken: DIN 276:2018-12 verlangt, Risiken in der Kostenermittlung gesondert auszuweisen. Eine Position mit
+ * Kostenrisiken: DIN 276:2018-12 sieht vor, Risiken zu benennen und gesondert auszuweisen. Eine Position mit
  * dieser reservierten Kennung statt einer Kostengruppe zählt nicht in die Summen der Kostengruppen, sondern als
  * eigener Betrag zu den Gesamtkosten.
  */

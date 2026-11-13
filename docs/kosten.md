@@ -72,7 +72,9 @@ zweimal: in GRF mit dem freien, in DEF mit dem überbauten Teil (Rechenansatz �
 darunter“). Beide Teile lassen sich getrennt an- und abwählen. Streifen schmaler als 25 cm (etwas größer
 gezeichnete Geschosse, unterschiedliche Wandstärken) zählen als überbaut. Geschosse, deren Fußboden mehr als
 1,00 m über dem untersten Geschoss bzw. über ±0,00 liegt, stehen nicht auf dem Gelände und zählen ganz als
-Decke – auch auskragende Teile. Die Baugrube (BGI) bleibt auf das unterste Geschoss beschränkt.
+Decke – auch auskragende Teile. Die Baugrube (BGI) bleibt auf das unterste Geschoss beschränkt. Die Regel ist eine
+Näherung: Bei Split-Level oder Hanglage (Halbgeschosse auf dem Gelände) und bei überdeckten Terrassen (S-Umrisse,
+oft KG 500) GRF und DEF prüfen und ggf. von Hand festlegen.
 
 ### Innenwände aus dem IFC-Modell
 
@@ -111,18 +113,30 @@ Keine Menge ist nur eine Zahl: Jede ist die Summe einzelner Teile – Umrisse, R
 und genau diese Teile zeigt die Ansicht **Mengen prüfen** (Werkzeugleiste, oder Klick auf das Kürzel einer
 Menge in der Kostenansicht):
 
-- **links** alle Mengen mit ihrem abgeleiteten Wert,
+- **links** alle Mengen mit dem Wert, mit dem die Kosten rechnen. Ist eine Menge von Hand festgelegt, steht sie
+  mit dem Kennzeichen „festgelegt“ und dem abgeleiteten Wert klein darunter („abgeleitet 245,00“); geänderte
+  Teilauswahl ist mit „Auswahl geändert“ gekennzeichnet. Die Liste ist auch mit der Tastatur bedienbar (Tab
+  zur gewählten Menge, ↑/↓ bzw. Pos1/Ende wählen die nächste). Bei Fensterbreiten bis 1400 px zeigt sie nur
+  Kürzel und Wert (der Name steht im Tooltip), damit Bild und Rechenweg nebeneinander Platz haben,
 - **in der Mitte** die gewählte Menge im Bild: **Grundrisse** aller Geschosse im selben Ausschnitt (oberstes
-  zuerst) oder das **3D-Modell**. Was zählt, ist blau gefüllt und beschriftet, Abzüge sind rot schraffiert,
-  der Rest des Projekts steht nur als dünne Linie bzw. blasser Körper da. Geschosse, die zur Menge nichts
-  beitragen, sind mit „zählt nicht“ gekennzeichnet,
-- **rechts** der Rechenweg: je Teil Geschoss, Bezeichnung, Rechenansatz und Wert; die Summe ist die Menge.
+  zuerst) oder das **3D-Modell**. Was zählt, ist blau gefüllt und beschriftet, Abzüge sind rot schraffiert
+  (Geschosssumme dann als „Abzug 155,00 m²“), der Rest des Projekts steht nur als dünne Linie bzw. blasser
+  Körper da. Geschosse, die zur Menge nichts beitragen, sind mit „zählt nicht“ gekennzeichnet. Die Legende
+  nennt nur, was im Bild vorkommt. Die Grundrisse sind Zeichenfläche wie in QUADRIO: hell wie Papier, im
+  dunklen Farbschema folgen sie der Einstellung „Zeichenfläche dunkel“ (Menü ◐),
+- **rechts** der Rechenweg: je Teil Geschoss, Bezeichnung, Rechenansatz und Wert (Abzüge mit Minus); die Summe
+  ist die Menge.
 
-Ein Teil unter dem Mauszeiger wird in Bild und Tabelle gemeinsam hervorgehoben, ein Klick darauf wählt es an
-oder ab (siehe oben). Grundflächen, Räume,
+Ein Teil unter dem Mauszeiger wird in Bild und Tabelle gemeinsam hervorgehoben, die Zeile im Rechenweg wird
+dabei eingeblendet; ein Klick darauf wählt es an oder ab (siehe oben). Im 3D-Modell steht über dem Bild
+Bezeichnung und Wert des Teils unter dem Mauszeiger; „⤢ Alles“ zeigt das ganze Modell, nach dem
+Auseinanderziehen der Geschosse passt sich der Ausschnitt von selbst an. Grundflächen, Räume,
 Gründung, Decken und Außenanlagen öffnen in den Grundrissen, Rauminhalt, Außenwand und Dach im 3D-Modell
 (drehen, zoomen, Geschosse auseinanderziehen); beide Darstellungen lassen sich für jede Menge umschalten.
-Ist eine Menge von Hand festgelegt, weist die Ansicht darauf hin – das Bild zeigt immer die abgeleitete Menge.
+Hinweise, die eine Schwäche der Menge beschreiben (etwa die grobe Innenwandfläche ohne IFC-Modell oder die
+fehlende Grundstücksfläche), sind als Warnung hervorgehoben. Ist eine Menge von Hand festgelegt, weist die
+Ansicht darauf hin – das Bild zeigt immer die abgeleitete Menge –, und „Handwert entfernen“ kehrt zur
+abgeleiteten Menge zurück.
 
 Die Ansicht zeigt auch Schwächen des Modells: Reicht etwa ein Körper des Rauminhalts weiter nach oben als
 erwartet, liegt das an den Umrissen bzw. der Dachzuordnung in QUADRIO („Dach aus Modell“ ohne
@@ -170,9 +184,10 @@ auf unplausible Eingaben.
 
 ## Kostenrisiken
 
-DIN 276:2018-12 verlangt, Kostenrisiken in der Kostenermittlung gesondert auszuweisen. Dafür gibt es
-Positionen mit der Kennung **Kostenrisiken** statt einer Kostengruppe (intern `risiko`, Knopf **+ Kostenrisiko**). Sie werden üblich
-als **% von KG 300 + 400** angesetzt, können aber auch pauschal oder auf eine Menge bezogen sein; mehrere
+DIN 276:2018-12 sieht vor, Kostenrisiken zu benennen und in der Kostenermittlung gesondert auszuweisen. Dafür gibt es
+Positionen mit der Kennung **Kostenrisiken** statt einer Kostengruppe (intern `risiko`, Knopf **+ Kostenrisiko**). Vorbelegt ist
+**% von KG 300 + 400** – eine Voreinstellung, die je Projekt zu prüfen ist (Risiken etwa auch in KG 200 oder 500); möglich sind auch
+pauschal oder eine Menge als Bezug. Mehrere
 Risiko-Positionen werden addiert.
 
 - Kostenrisiken zählen **nicht** in die Summen der Kostengruppen, sondern als eigener Betrag zu den
@@ -228,7 +243,9 @@ KG;Bezeichnung;Bezug;Grundlage;von;Mittel;bis;Bemerkung
 Spalte **Bezug**: Kürzel einer Menge (`BGF`, `BRI`, `AWF`, `DAF` …), `psch` für pauschal, `%` für Prozent
 (mit den Kostengruppen in **Grundlage**); alles andere gilt als Einheit einer eigenen Menge (`Stk`, `m`).
 Ohne Angabe gilt die übliche Bezugsgröße der Kostengruppe. Die Zahlen im Beispiel sind Platzhalter, keine
-Kennwerte. Eine CSV mit Komma als Trennzeichen wird mit Punkt als Dezimalzeichen gelesen (`1500.5`); eine
+Kennwerte. Zahlen werden je Zelle erkannt: Stehen Punkt und Komma darin, ist das letzte das Dezimalzeichen (`1.800,50`,
+`1,800.50`); steht nur eines darin, ist es das Dezimalzeichen, außer es trennt genau Dreiergruppen (`1.800`; in einer
+CSV mit Komma als Trennzeichen auch `1,800`) – dann ist es der Tausendertrenner. Eine
 JSON-Datei, die sich nicht lesen lässt, meldet „Die Datei ist kein gültiger Kennwertkatalog (JSON)“.
 
 ## Festgehaltene Stände

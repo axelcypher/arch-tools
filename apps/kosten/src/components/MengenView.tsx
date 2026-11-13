@@ -21,10 +21,10 @@ function schwach(bezug: MengenBezug, menge: MengeNachweis, project: Project): bo
   if (bezug === 'fbg' || bezug === 'auf') {
     if (!((project.meta.grundstueck.flaeche ?? 0) > 0)) return true;
     // überbaute Fläche größer als das Grundstück
-    return bezug === 'auf' && menge.teile.reduce((a, t) => a + (t.zaehlt ? t.wert : 0), 0) < 0;
+    if (bezug === 'auf' && menge.teile.reduce((a, t) => a + (t.zaehlt ? t.wert : 0), 0) < 0) return true;
   }
-  // Näherungen und fehlende Angaben, die der Rechenkern im Hinweis nennt
-  return /Näherung|fehlt|bitte .*prüfen/.test(menge.hinweis ?? '');
+  // fehlende Angaben, die der Rechenkern im Hinweis nennt (Näherungen wie bei AUF sind gewollt, kein Warnfall)
+  return /fehlt|bitte .*prüfen/.test(menge.hinweis ?? '');
 }
 
 /**

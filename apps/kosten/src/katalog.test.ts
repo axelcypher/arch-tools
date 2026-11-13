@@ -62,6 +62,15 @@ describe('Kennwertkatalog', () => {
     expect(leseKatalog('KG;Bezeichnung;Bezug;Grundlage;von;Mittel;bis\n300;Bauwerk;BGF;;1.500;1.800,25;2.100', 's.csv').eintraege[0]).toMatchObject({ von: 1500, mittel: 1800.25, bis: 2100 });
   });
 
+  it('CSV mit Komma als Trennzeichen: Dezimalkomma in Anführungszeichen bleibt richtig (je Zelle erkannt)', () => {
+    const k = leseKatalog(['KG,Bezeichnung,Bezug,Grundlage,von,Mittel,bis', '300,Bauwerk,BGF,,"1800,5","1.800,50","1,800.50"', '700,Nebenkosten,%,300+400,,"12,5",1800.5'].join('\n'), 'lo.csv');
+    expect(k.eintraege[0]).toMatchObject({ von: 1800.5, mittel: 1800.5, bis: 1800.5 });
+    expect(k.eintraege[1]).toMatchObject({ mittel: 12.5, bis: 1800.5 });
+    // Dreiergruppen allein: in der Komma-CSV Tausender, in der Semikolon-CSV ebenfalls (Punkt)
+    expect(leseKatalog('KG,Bezeichnung,Bezug,Grundlage,von,Mittel,bis\n300,B,BGF,,"1,800",,', 'k.csv').eintraege[0].von).toBe(1800);
+    expect(leseKatalog('KG;Bezeichnung;Bezug;Grundlage;von;Mittel;bis\n300;B;BGF;;1,800;1.23;', 's.csv').eintraege[0]).toMatchObject({ von: 1.8, mittel: 1.23 });
+  });
+
   it('Kostenrisiken lassen sich aus dem Katalog übernehmen', () => {
     const k = leseKatalog('KG;Bezeichnung;Bezug;Grundlage;von;Mittel;bis\nrisiko;Kostenrisiken;%;300+400;5;10;15', 'r.csv');
     expect(k.eintraege[0]).toMatchObject({ kg: 'risiko', bezug: 'prozent', basis: ['300', '400'], mittel: 10 });

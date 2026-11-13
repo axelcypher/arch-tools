@@ -35,6 +35,16 @@ export const GLIEDERUNGSTIEFE: Record<KostenStufe, string> = {
   feststellung: 'DIN 276:2018-12: 3. Ebene bzw. Vergabeeinheiten',
 };
 
+/** Kurzform für die Anzeige unter der Stufe (Fundstellen im Tooltip) */
+export const GLIEDERUNG_KURZ: Record<KostenStufe, string> = {
+  rahmen: '1. Ebene, Bauwerkskosten gesondert',
+  schaetzung: 'mindestens 2. Ebene',
+  berechnung: 'mindestens 3. Ebene, z. B. 331, 332',
+  voranschlag: '3. Ebene bzw. Vergabeeinheiten',
+  anschlag: '3. Ebene bzw. Vergabeeinheiten',
+  feststellung: '3. Ebene bzw. Vergabeeinheiten',
+};
+
 /**
  * Kostenvoranschlag, -anschlag und -feststellung beruhen nach DIN 276 auf bepreisten Leistungsverzeichnissen,
  * Aufträgen bzw. abgerechneten Kosten. NUMIO rechnet mit Kennwerten und Pauschalen – Druck und Excel weisen darauf hin.

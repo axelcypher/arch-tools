@@ -1,7 +1,7 @@
 import type { ProjectResult } from '@core/calc';
 import { computeProject } from '@core/calc';
 import type { Kosten, KostenPosition, KostenStand, KostenStufe, Project, Spanne } from '@core/model';
-import { KOSTEN_STUFEN, newId } from '@core/model';
+import { newId } from '@core/model';
 import { istKg, istRisiko, KG_RISIKO, kg1, kg2, kgInBasis, kgName, kgUnter } from './din276';
 import type { Mengen, MengenBezug } from './mengen';
 import type { IfcWand } from './waende';
@@ -300,7 +300,8 @@ export const HAFTUNG =
 
 /* ---------- Kostenstände ---------- */
 
-export const stufeLabel = (s: KostenStufe | undefined) => KOSTEN_STUFEN.find((x) => x.id === s)?.label ?? 'Kostenermittlung';
+/** Bezeichnung der Stufe – wie in der Oberfläche, ohne Angabe die Vorbelegung (siehe stufen.ts) */
+export { stufeLabel } from './stufen';
 
 export function standAus(e: Ergebnis, stufe: KostenStufe, bemerkung: string, datum = new Date().toISOString().slice(0, 10)): KostenStand {
   return {

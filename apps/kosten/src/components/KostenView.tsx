@@ -10,9 +10,10 @@ import { berechne, euro, euroSpanne, standAus, vergleiche } from '../kosten';
 import type { MengenBezug } from '../mengen';
 import { MENGEN_BEZUEGE, MENGEN_INFO } from '../mengen';
 import { addPositionen, mapPosition, removePosition, setKosten, useKosten } from '../store';
-import { GLIEDERUNGSTIEFE, STUFEN, stufeLabel, stufeVon } from '../stufen';
+import { GLIEDERUNG_KURZ, GLIEDERUNGSTIEFE, STUFEN, stufeLabel, stufeVon } from '../stufen';
 import { useBauteile } from '../bauteile';
 import { HilfeKnopf } from '@core/ui/Nachschlagewerk';
+import { bestaetigen } from '@core/ui/Rueckfrage';
 import { StammdatenKnopf } from '@core/ui/Stammdaten';
 
 const zahl = (v: number, d = 2) => v.toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
@@ -36,8 +37,24 @@ export function KostenView({ onKatalog, onMenge }: { onKatalog: () => void; onMe
   const st = useKosten.getState();
   const setK = (patch: Partial<Kosten>) => st.update((p) => setKosten(p, patch));
   const stufe = stufeVon(k.stufe);
-  const vorhanden = new Set(k.positionen.map((p) => p.kg));
-  const fehlend = (art: 'grob' | 'fein') => gliederung(art).filter((p) => !vorhanden.has(p.kg));
+  // eine Kostengruppe gilt als vorhanden, wenn sie selbst oder eine darunterliegende erfasst ist (330 deckt 331 ab);
+  // übergeordnete (KG 300 neben 330) werden beim Anlegen der feineren Gliederung zum Ausschalten angeboten
+  const fehlend = (art: 'grob' | 'fein') => gliederung(art).filter((g) => !k.positionen.some((p) => p.kg === g.kg || kgUnter(p.kg, g.kg)));
+  const gliederungAnlegen = async (art: 'grob' | 'fein') => {
+    const neu = fehlend(art);
+    const ueber = k.positionen.filter((p) => !p.aus && istKg(p.kg) && neu.some((g) => kgUnter(g.kg, p.kg)));
+    if (ueber.length) {
+      const liste = [...new Set(ueber.map((p) => p.kg))].join(', ');
+      const ok = await bestaetigen(
+        `KG ${liste} ausschalten?`,
+        `Die neue Gliederung erfasst dieselben Kosten feiner. KG ${liste} wird ausgeschaltet, damit nichts doppelt zählt; die Kennwerte bleiben als Alternative sichtbar.`,
+        'Ausschalten und anlegen',
+      );
+      if (!ok) return;
+    }
+    const ids = new Set(ueber.map((p) => p.id));
+    st.update((p) => addPositionen(setKosten(p, { positionen: (p.kosten?.positionen ?? []).map((x) => (ids.has(x.id) ? { ...x, aus: true } : x)) }), neu));
+  };
   const neu = (pos: KostenPosition) => {
     st.update((p) => addPositionen(p, [pos]));
     fokussieren(pos.id);
@@ -64,7 +81,9 @@ export function KostenView({ onKatalog, onMenge }: { onKatalog: () => void; onMe
               ))}
             </select>
           </Field>
-          <p className="muted small-text ko-hint">Gliederung: {GLIEDERUNGSTIEFE[stufe]} – maßgeblich ist die im Vertrag vereinbarte Fassung.</p>
+          <p className="muted small-text ko-hint" title={`${GLIEDERUNGSTIEFE[stufe]} – maßgeblich ist die im Vertrag vereinbarte Fassung.`}>
+            Gliederung: {GLIEDERUNG_KURZ[stufe]}
+          </p>
           <Field label="Kostenstand (Preisstand)">
             <input type="date" value={k.datum ?? ''} onChange={(ev) => setK({ datum: ev.target.value || undefined })} />
           </Field>
@@ -144,8 +163,8 @@ export function KostenView({ onKatalog, onMenge }: { onKatalog: () => void; onMe
             <button
               className="small"
               disabled={!fehlend('grob').length}
-              title={fehlend('grob').length ? 'Fehlende Positionen der 1. Ebene (KG 300, 400, 500, 700) mit üblicher Bezugsgröße anlegen' : 'Alle Kostengruppen dieser Gliederung sind schon vorhanden'}
-              onClick={() => st.update((p) => addPositionen(p, fehlend('grob')))}
+              title={fehlend('grob').length ? 'Fehlende Positionen der 1. Ebene (KG 300, 400, 500, 700) mit üblicher Bezugsgröße anlegen' : 'Alle Kostengruppen dieser Gliederung sind schon erfasst'}
+              onClick={() => void gliederungAnlegen('grob')}
             >
               Gliederung 1. Ebene
             </button>
@@ -156,10 +175,10 @@ export function KostenView({ onKatalog, onMenge }: { onKatalog: () => void; onMe
                 fehlend('fein').length
                   ? `Fehlende Positionen der 2. Ebene mit Bauteilmengen anlegen (KG ${gliederung('fein')
                       .map((p) => p.kg)
-                      .join(', ')})`
-                  : 'Alle Kostengruppen dieser Gliederung sind schon vorhanden'
+                      .join(', ')}); erfasste Gruppen der 1. Ebene werden zum Ausschalten angeboten`
+                  : 'Alle Kostengruppen dieser Gliederung sind schon erfasst'
               }
-              onClick={() => st.update((p) => addPositionen(p, fehlend('fein')))}
+              onClick={() => void gliederungAnlegen('fein')}
             >
               Gliederung 2. Ebene
             </button>
@@ -307,7 +326,7 @@ function zeilenProblem(x: PositionErgebnis, e: Ergebnis): string | undefined {
   const kg = x.pos.kg;
   if (istRisiko(kg)) return undefined;
   if (!kg.trim()) return 'Kostengruppe eintragen (dreistellig, z. B. 331)';
-  if (!istKg(kg)) return 'Keine gültige Kostengruppe (dreistellig, 100–899) – wird nicht gerechnet';
+  if (!istKg(kg)) return 'Wird nicht gerechnet';
   if (!x.aktiv) return undefined;
   const andere = e.positionen.filter((y) => y.aktiv && y !== x && istKg(y.pos.kg) && (kgUnter(kg, y.pos.kg) || kgUnter(y.pos.kg, kg))).map((y) => y.pos.kg);
   return andere.length ? `Doppelt erfasst mit KG ${[...new Set(andere)].join(', ')} – eine Position ausschalten` : undefined;
@@ -428,7 +447,7 @@ function Uebersicht({ e, k }: { e: Ergebnis; k: Kosten }) {
       <table className="ko-table ko-summen">
         <thead>
           <tr>
-            <th>KG</th>
+            <th colSpan={2}>Kostengruppe</th>
             <th className="num">von</th>
             <th className="num">Mittel</th>
             <th className="num">bis</th>
@@ -437,9 +456,8 @@ function Uebersicht({ e, k }: { e: Ergebnis; k: Kosten }) {
         <tbody>
           {e.summen.map((s) => (
             <tr key={s.kg} className={s.ebene === 1 ? 'ko-kg1' : 'ko-kg2'}>
-              <td>
-                {s.kg} {s.name}
-              </td>
+              <td className="ko-kgnr">{s.kg}</td>
+              <td className="ko-kgname">{s.name}</td>
               <td className="num">{euro(s.summe[0])}</td>
               <td className="num">{euro(s.summe[1])}</td>
               <td className="num">{euro(s.summe[2])}</td>
@@ -447,26 +465,26 @@ function Uebersicht({ e, k }: { e: Ergebnis; k: Kosten }) {
           ))}
           {risiko && (
             <tr className="ko-kg1">
-              <td>Kostenrisiken</td>
+              <td colSpan={2}>Kostenrisiken</td>
               <td className="num">{euro(e.risiko[0])}</td>
               <td className="num">{euro(e.risiko[1])}</td>
               <td className="num">{euro(e.risiko[2])}</td>
             </tr>
           )}
           <tr className="sum">
-            <td>Gesamt netto</td>
+            <td colSpan={2}>Gesamt netto</td>
             <td className="num">{euro(e.gesamtNetto[0])}</td>
             <td className="num">{euro(e.gesamtNetto[1])}</td>
             <td className="num">{euro(e.gesamtNetto[2])}</td>
           </tr>
           <tr>
-            <td>+ {e.mwst} % USt.</td>
+            <td colSpan={2}>+ {e.mwst} % USt.</td>
             <td className="num">{euro(e.gesamtBrutto[0] - e.gesamtNetto[0])}</td>
             <td className="num">{euro(e.gesamtBrutto[1] - e.gesamtNetto[1])}</td>
             <td className="num">{euro(e.gesamtBrutto[2] - e.gesamtNetto[2])}</td>
           </tr>
           <tr className="sum">
-            <td>Gesamt brutto</td>
+            <td colSpan={2}>Gesamt brutto</td>
             <td className="num">{euro(e.gesamtBrutto[0])}</td>
             <td className="num">{euro(e.gesamtBrutto[1])}</td>
             <td className="num">{euro(e.gesamtBrutto[2])}</td>
@@ -576,7 +594,7 @@ function Uebersicht({ e, k }: { e: Ergebnis; k: Kosten }) {
           <table className="ko-table ko-summen">
             <thead>
               <tr>
-                <th>KG</th>
+                <th colSpan={2}>Kostengruppe</th>
                 <th className="num">vorher</th>
                 <th className="num">jetzt</th>
                 <th className="num">Differenz</th>
@@ -585,7 +603,14 @@ function Uebersicht({ e, k }: { e: Ergebnis; k: Kosten }) {
             <tbody>
               {[...v.zeilen, v.gesamt].map((z) => (
                 <tr key={z.kg || 'gesamt'} className={z.kg ? '' : 'sum'}>
-                  <td>{z.kg && !istRisiko(z.kg) ? `${z.kg} ${z.name}` : z.name}</td>
+                  {z.kg && !istRisiko(z.kg) ? (
+                    <>
+                      <td className="ko-kgnr">{z.kg}</td>
+                      <td className="ko-kgname">{z.name}</td>
+                    </>
+                  ) : (
+                    <td colSpan={2}>{z.name}</td>
+                  )}
                   <td className="num">{euro(z.vorher)}</td>
                   <td className="num">{euro(z.jetzt)}</td>
                   <td className={`num ${z.differenz > 0.5 ? 'mehr' : z.differenz < -0.5 ? 'weniger' : ''}`}>

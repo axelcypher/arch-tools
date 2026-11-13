@@ -162,8 +162,8 @@ describe('Kosten-Excel', () => {
     expect(ctx.collections.kg.reduce((a, r) => a + Number(r.mittel), 0)).toBe(ctx.scalars['gesamt.netto']);
     expect(ctx.scalars.risiko).toBe(64800);
     const pos = ctx.collections.position.find((r) => r.kg_name === 'Kostenrisiken')!;
-    expect(ctx.belongsTo!('position', pos, 'kg', ctx.collections.kg[ctx.collections.kg.length - 1])).toBe(true);
-    expect(ctx.belongsTo!('position', pos, 'kg', ctx.collections.kg[0])).toBe(false);
+    expect(ctx.belongsTo!('position', pos, 'kg', ctx.collections.kg[ctx.collections.kg.length - 1], ctx)).toBe(true);
+    expect(ctx.belongsTo!('position', pos, 'kg', ctx.collections.kg[0], ctx)).toBe(false);
     expect(ctx.scalars['stufe.hinweis']).toBe('');
     // Kostenfeststellung: von = bis = Wert, Hinweis auf die Grundlage
     const f = buildKostenContext(setKosten(p, { stufe: 'feststellung' }));
