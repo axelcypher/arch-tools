@@ -154,16 +154,24 @@
             "ist": false
           },
           {
-            "nicht": {
-              "und": [
-                {
-                  "$": "errichtung"
-                },
-                {
-                  "$": "gebaeude"
+            "oder": [
+              {
+                "nicht": {
+                  "und": [
+                    {
+                      "$": "errichtung"
+                    },
+                    {
+                      "$": "gebaeude"
+                    }
+                  ]
                 }
-              ]
-            }
+              },
+              {
+                "f": "gebaeude.aufenthaltsraeume",
+                "ist": false
+              }
+            ]
           }
         ]
       },
@@ -186,18 +194,42 @@
       },
       "titel": "Zustimmungsverfahren",
       "pruefen": {
-        "grund": "Abbruch eines Gebäudes: Hat es einen Anschlusskanal, ist der Abbruch zwei Wochen vor der Außerbetriebnahme der SES mitzuteilen (Abs. 4) – im Einzelfall prüfen.",
+        "grund": "Abbruch eines Gebäudes: Hat es einen Anschlusskanal, ist der Abbruch zwei Wochen vor der Außerbetriebnahme der SES mitzuteilen (Abs. 4) – im Einzelfall prüfen. Neubau eines Gebäudes mit Aufenthaltsräumen, aber ohne neue Entwässerung angegeben: nur wenn wirklich kein Anschluss hergestellt oder geändert wird und keine Leitung entsteht (z. B. vorhandener Anschluss unverändert genutzt), entfällt die Vorschrift – im Einzelfall prüfen.",
         "wenn": {
-          "und": [
+          "oder": [
             {
-              "$": "nur_beseitigung"
+              "und": [
+                {
+                  "$": "nur_beseitigung"
+                },
+                {
+                  "$": "gebaeude"
+                },
+                {
+                  "f": "vorhaben.entwaesserung",
+                  "ist": false
+                }
+              ]
             },
             {
-              "$": "gebaeude"
-            },
-            {
-              "f": "vorhaben.entwaesserung",
-              "ist": false
+              "und": [
+                {
+                  "$": "errichtung"
+                },
+                {
+                  "$": "gebaeude"
+                },
+                {
+                  "f": "vorhaben.entwaesserung",
+                  "ist": false
+                },
+                {
+                  "nicht": {
+                    "f": "gebaeude.aufenthaltsraeume",
+                    "ist": false
+                  }
+                }
+              ]
             }
           ]
         }
@@ -240,16 +272,24 @@
                 "ist": false
               },
               {
-                "nicht": {
-                  "und": [
-                    {
-                      "$": "errichtung"
-                    },
-                    {
-                      "$": "gebaeude"
+                "oder": [
+                  {
+                    "nicht": {
+                      "und": [
+                        {
+                          "$": "errichtung"
+                        },
+                        {
+                          "$": "gebaeude"
+                        }
+                      ]
                     }
-                  ]
-                }
+                  },
+                  {
+                    "f": "gebaeude.aufenthaltsraeume",
+                    "ist": false
+                  }
+                ]
               }
             ]
           },
@@ -272,7 +312,30 @@
         "15/4": "a6ffb074",
         "15/6": "5d411332"
       },
-      "titel": "Zustands- und Funktionsprüfung bei privaten Abwasserleitungen"
+      "titel": "Zustands- und Funktionsprüfung bei privaten Abwasserleitungen",
+      "pruefen": {
+        "grund": "Neubau eines Gebäudes mit Aufenthaltsräumen, aber ohne neue Entwässerung angegeben: nur wenn wirklich kein Anschluss hergestellt oder geändert wird und keine Leitung entsteht (z. B. vorhandener Anschluss unverändert genutzt), entfällt die Vorschrift – im Einzelfall prüfen.",
+        "wenn": {
+          "und": [
+            {
+              "$": "errichtung"
+            },
+            {
+              "$": "gebaeude"
+            },
+            {
+              "f": "vorhaben.entwaesserung",
+              "ist": false
+            },
+            {
+              "nicht": {
+                "f": "gebaeude.aufenthaltsraeume",
+                "ist": false
+              }
+            }
+          ]
+        }
+      }
     }
   }
 }

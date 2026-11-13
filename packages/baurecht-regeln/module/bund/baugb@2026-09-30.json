@@ -457,6 +457,23 @@
                 "ampel": [
                   "rot"
                 ]
+              },
+              {
+                "und": [
+                  {
+                    "$": "vorhaben_29"
+                  },
+                  {
+                    "oder": [
+                      {
+                        "$": "bplan_einfach"
+                      },
+                      {
+                        "$": "satzung_baugb"
+                      }
+                    ]
+                  }
+                ]
               }
             ]
           },

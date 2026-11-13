@@ -352,6 +352,88 @@ describe('Fragen und Regeln', () => {
     expect(faelle.length).toBeGreaterThan(500);
   });
 
+  it('je gestellte Angabe einzeln offen: keine nicht gestellte Frage unter „es fehlt“, in `klaerend` oder „klärt am meisten“', { timeout: 900000 }, () => {
+    const fehler = new Set<string>();
+    const melde = (t: string) => {
+      if (fehler.size < 60) fehler.add(t);
+    };
+    // Auswahl der Grundfälle (Soest, ohne Schutzgebiete, Innenbereich; jedes Vorhaben, Gebäudearten ohne das
+    // Mehrfamilienhaus) – dazu bei der
+    // Beseitigung der Altbau „nein“ und der Umfang offen (die Grundfälle oben setzen den Altbau immer auf „ja“)
+    const auswahl: typeof faelle = [];
+    for (const fall of faelle) {
+      if (fall.ags !== SOEST || !fall.name.includes(' ohne ') || fall.m.Planungsrecht !== 'Innenbereich' || fall.m.Verfahren !== 'vereinfachtes Verfahren' || fall.m.Gebäudeart === 'Mehrfamilienhaus') continue;
+      auswahl.push(fall);
+      if (fall.m.Vorhaben === 'Beseitigung') {
+        auswahl.push({ ...fall, name: `${fall.name} Altbau nein`, f: { ...fall.f, 'nw.altbau_verfahrensfrei': false } });
+        const { 'vorhaben.beseitigung_umfang': _u, ...ohneUmfang } = fall.f;
+        auswahl.push({ ...fall, name: `${fall.name} Umfang offen`, f: ohneUmfang });
+      }
+    }
+    for (const fall of auswahl) {
+      const defs = faktDefinitionen(aktiveModule(paket.module, fall.ags));
+      // Angaben mit nicht gestellter Frage entfernen (wie im Fall oben)
+      const f = { ...fall.f };
+      let r = lauf(fall.ags, fall.m, f);
+      for (let runde = 0; runde < 6; runde++) {
+        const weg = Object.keys(f).filter((id) => defs[id]?.wenn && werten(defs[id].wenn!, r.kontext).w === 'nein');
+        if (!weg.length) break;
+        for (const id of weg) delete f[id];
+        r = lauf(fall.ags, fall.m, f);
+      }
+      // nur Angaben, an denen eine Regel hängt
+      const verwendet = new Set(r.paragrafen.flatMap((p) => p.verwendet));
+      for (const id of Object.keys(f).filter((x) => verwendet.has(x))) {
+        const { [id]: _w, ...ohne } = f;
+        const r2 = lauf(fall.ags, fall.m, ohne);
+        const verborgen = (x: string) => !!defs[x]?.wenn && werten(defs[x].wenn!, r2.kontext).w === 'nein';
+        for (const p of r2.paragrafen) {
+          const v = [...p.offen, ...(p.klaerend ?? [])].filter(verborgen);
+          if (v.length) melde(`${p.id}: nicht gestellte Frage ${[...new Set(v)].join(', ')} offen, wenn ${id} fehlt (${fall.name})`);
+        }
+        const k = r2.klaerung.filter((x) => verborgen(x.id));
+        if (k.length) melde(`„Klärt am meisten“ nennt nicht gestellte Fragen ${k.map((x) => x.id).join(', ')}, wenn ${id} fehlt (${fall.name})`);
+      }
+    }
+    expect([...fehler]).toEqual([]);
+    expect(auswahl.length).toBeGreaterThan(30);
+  });
+
+  it('Fachprüfung Runde 13: gelb nur, wenn eine Antwort etwas ändert; Ersatzbau als Neubau; Entwässerung ohne Anschluss', () => {
+    const EFH = { Gebäudeart: 'Einfamilienhaus', Gebäudeklasse: '1', Sonderbau: 'nein', Verfahren: 'vereinfachtes Verfahren' };
+    const ampel = (m: Record<string, string>, f: Record<string, FaktWert['wert']>, id: string) => lauf(SOEST, m, f).paragrafen.find((p) => p.id === id)!.automatisch;
+    const ohne = (f: Record<string, FaktWert['wert']>, ...ids: string[]) => Object.fromEntries(Object.entries(f).filter(([k]) => !ids.includes(k)));
+    const g = grund();
+    // „Im Zusammenhang bebauter Ortsteil“ offen (einfacher B-Plan, Satzung): § 18 BNatSchG und § 36 BauGB gelten so oder so
+    for (const p of ['einfacher Bebauungsplan', 'Satzung nach BauGB']) {
+      expect(ampel({ ...EFH, Vorhaben: 'Errichtung', Planungsrecht: p }, ohne(g, 'planung.innen'), 'bund/bnatschg/18')).toBe('rot');
+      expect(ampel({ ...EFH, Vorhaben: 'Errichtung', Planungsrecht: p }, ohne(g, 'planung.innen'), 'bund/baugb/36')).toBe('rot');
+    }
+    // Umfang der Beseitigung offen: Altstadt § 12 (und § 1) bei jeder Beseitigung eines Gebäudes, § 74 bei Freistellung
+    const alt = { ...ohne(g, 'vorhaben.beseitigung_umfang'), 'soest.altstadt': true, 'soest.einfriedungspflicht': true, 'nw.altbau_verfahrensfrei': true };
+    expect(ampel({ ...EFH, Vorhaben: 'Beseitigung', Planungsrecht: 'Innenbereich' }, alt, 'nw-05974040/altstadtsatzung/12')).toBe('rot');
+    expect(ampel({ ...EFH, Vorhaben: 'Beseitigung', Planungsrecht: 'Innenbereich' }, alt, 'nw-05974040/altstadtsatzung/1')).toBe('rot');
+    const mfh = { Gebäudeart: 'Mehrfamilienhaus', Gebäudeklasse: '4', Sonderbau: 'nein', Verfahren: 'Genehmigungsfreistellung', Vorhaben: 'Beseitigung', Planungsrecht: 'Bebauungsplan' };
+    expect(ampel(mfh, { ...g, 'gebaeude.wohnungen': 8, 'gebaeude.hoehe': 11, 'nw.geschosse_oberirdisch': 4, 'nw.altbau_verfahrensfrei': false }, 'nw/bauo-nrw/74')).toBe('rot');
+    // Gartenhaus ohne Aufenthaltsräume und ohne Entwässerung: §§ 14, 15 der Entwässerungssatzung entfallen; ein Gebäude mit
+    // Aufenthaltsräumen und „ohne Entwässerung“: gilt, mit Einzelfallhinweis; ohne Angabe: gilt
+    const gh = { Gebäudeart: 'Nichtwohngebäude', Gebäudeklasse: '1', Sonderbau: 'nein', Verfahren: 'verfahrensfrei', Vorhaben: 'Errichtung', Planungsrecht: 'Innenbereich' };
+    for (const nr of ['14', '15']) {
+      const id = `nw-05974040/entwaesserungssatzung/${nr}`;
+      expect(ampel(gh, { ...g, 'gebaeude.aufenthaltsraeume': false, 'vorhaben.entwaesserung': false }, id)).toBe('gruen');
+      const mitAR = lauf(SOEST, { ...EFH, Vorhaben: 'Errichtung', Planungsrecht: 'Innenbereich' }, { ...g, 'vorhaben.entwaesserung': false }).paragrafen.find((p) => p.id === id)!;
+      expect(mitAR.automatisch).toBe('rot');
+      expect(mitAR.hinweise.join(' ')).toMatch(/Im Einzelfall prüfen: .*ohne neue Entwässerung/);
+      expect(ampel({ ...EFH, Vorhaben: 'Errichtung', Planungsrecht: 'Innenbereich' }, ohne(g, 'vorhaben.entwaesserung'), id)).toBe('rot');
+    }
+    // Nutzungsänderung einer Anlage, die kein Gebäude ist: keine Gebäudevorschriften als Einzelfall
+    const kg = { Gebäudeart: 'kein Gebäude', Sonderbau: 'nein', Verfahren: 'vereinfachtes Verfahren', Vorhaben: 'Nutzungsänderung', Planungsrecht: 'Innenbereich' };
+    for (const nr of ['27', '28', '31', '32', '34', '37', '40']) expect(ampel(kg, { ...g, 'gebaeude.aufenthaltsraeume': false, 'gebaeude.wohnungen': 0 }, `nw/bauo-nrw/${nr}`), nr).toBe('gruen');
+    // Verweis auf „rot, Ausnahme möglich“: der Hinweis geht mit
+    const r = lauf(SOEST, { ...EFH, Vorhaben: 'Errichtung', Planungsrecht: 'einfacher Bebauungsplan' }, ohne(g, 'planung.innen'));
+    expect(r.paragrafen.find((p) => p.id === 'bund/bnatschg/15')!.hinweise.join(' ')).toMatch(/Ausnahme möglich über § 14 BNatSchG/);
+  });
+
   it('Begründungen ohne doppelte Klammern: der Anwendungsbereich endet nicht mit einer Klammer, da ihm die tragende Angabe in Klammern folgt', () => {
     const probleme: string[] = [];
     for (const [key, l] of paket.regeln)
@@ -1785,7 +1867,8 @@ describe('Fälle aus dem Fachreview', () => {
 
   it('Runde 12: Altstadt § 12 – beim Teilabbruch und bei neuen Stellplätzen zählt nur die Fläche, die durch das Vorhaben entsteht', () => {
     const defs = faktDefinitionen(aktiveModule(paket.module, SOEST));
-    expect(defs['soest.einfriedungspflicht'].frage).toMatch(/Abbruch, Teilabbruch oder neue Stellplätze: Entsteht eine solche Fläche erst durch das Vorhaben\?/);
+    // Runde 13: der Ersatzbau gehört zum Neubau („liegt oder entsteht“), „entsteht erst“ nur ohne Ersatzbau
+    expect(defs['soest.einfriedungspflicht'].frage).toMatch(/^Neubau, auch Abbruch mit Ersatzbau: Liegt oder entsteht .*Abbruch ohne Ersatzbau, Teilabbruch oder neue Stellplätze: Entsteht eine solche Fläche erst durch das Vorhaben\?/);
     expect(defs['soest.einfriedungspflicht'].hilfe).toMatch(/vorhandener Vorgarten, an dem nichts geändert wird, muss nicht angepasst werden/);
     // Fall H7: Abbruch eines hinteren Anbaus, Vorgarten vorhanden, nichts entsteht neu → § 12 und § 1 nicht rot
     const p1 = M4({ Vorhaben: 'Beseitigung', Gebäudeklasse: '2' });

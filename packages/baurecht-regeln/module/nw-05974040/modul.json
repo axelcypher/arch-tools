@@ -392,12 +392,12 @@
       }
     },
     "soest.einfriedungspflicht": {
-      "titel": "Zur öffentlichen Verkehrsfläche hin ein Vorgarten, eine Fläche zwischen Gebäuden oder ein Garten, Lagerplatz bzw. eine Stellplatzanlage mit mehr als 3 Stellplätzen – beim Neubau vorhanden oder geplant, beim Abbruch, Teilabbruch bzw. neuen Stellplätzen erst durch das Vorhaben entstehend",
+      "titel": "Zur öffentlichen Verkehrsfläche hin ein Vorgarten, eine Fläche zwischen Gebäuden oder ein Garten, Lagerplatz bzw. eine Stellplatzanlage mit mehr als 3 Stellplätzen – beim Neubau (auch Abbruch mit Ersatzbau) vorhanden oder geplant, beim Abbruch ohne Ersatzbau, Teilabbruch bzw. neuen Stellplätzen erst durch das Vorhaben entstehend",
       "kurz": "Einfriedigungspflicht zur Straße",
       "gruppe": "grundstueck",
       "typ": "janein",
-      "frage": "Neubau: Liegt oder entsteht zur öffentlichen Verkehrsfläche hin ein Vorgarten, eine Lücke zwischen Gebäuden, ein Garten, Lagerplatz oder eine Stellplatzanlage mit mehr als 3 Stellplätzen? Abbruch, Teilabbruch oder neue Stellplätze: Entsteht eine solche Fläche erst durch das Vorhaben?",
-      "hilfe": "§ 12 Abs. 1 Altstadtsatzung (gilt für Einfriedigungen zu öffentlichen Verkehrsflächen): Vorgärten und Flächen zwischen Gebäuden sind mit Gitter auf Grünsandsteinsockel oder Bruchsteinmauer einzufriedigen (Nr. 1), Gärten, Lagerplätze und Stellplatzanlagen mit mehr als 3 Stellplätzen mit Grünsandsteinmauer (Nr. 2). Rückwärtige Gärten ohne Grenze zur Verkehrsfläche zählen nicht. Beim Abbruch eines freistehenden Gebäudes an der Straße entsteht eine solche Fläche; ein Hinterhaus ohne Grenze zur Verkehrsfläche zählt nicht. Beim Teilabbruch und bei neuen Stellplätzen zählt nur, was durch das Vorhaben neu entsteht – ein vorhandener Vorgarten, an dem nichts geändert wird, muss nicht angepasst werden (Maßstab ist die Baumaßnahme, § 19).",
+      "frage": "Neubau, auch Abbruch mit Ersatzbau: Liegt oder entsteht zur öffentlichen Verkehrsfläche hin ein Vorgarten, eine Lücke zwischen Gebäuden, ein Garten, Lagerplatz oder eine Stellplatzanlage mit mehr als 3 Stellplätzen? Abbruch ohne Ersatzbau, Teilabbruch oder neue Stellplätze: Entsteht eine solche Fläche erst durch das Vorhaben?",
+      "hilfe": "§ 12 Abs. 1 Altstadtsatzung (gilt für Einfriedigungen zu öffentlichen Verkehrsflächen): Vorgärten und Flächen zwischen Gebäuden sind mit Gitter auf Grünsandsteinsockel oder Bruchsteinmauer einzufriedigen (Nr. 1), Gärten, Lagerplätze und Stellplatzanlagen mit mehr als 3 Stellplätzen mit Grünsandsteinmauer (Nr. 2). Rückwärtige Gärten ohne Grenze zur Verkehrsfläche zählen nicht. Beim Neubau – auch beim Abbruch mit Ersatzbau, der wie ein Neubau geprüft wird – zählt jede solche Fläche, auch ein vorhandener Vorgarten. Beim Abbruch eines freistehenden Gebäudes an der Straße (ohne Ersatzbau) entsteht eine solche Fläche; ein Hinterhaus ohne Grenze zur Verkehrsfläche zählt nicht. Beim Teilabbruch und bei neuen Stellplätzen zählt nur, was durch das Vorhaben neu entsteht – ein vorhandener Vorgarten, an dem nichts geändert wird, muss nicht angepasst werden (Maßstab ist die Baumaßnahme, § 19).",
       "wenn": {
         "und": [
           {
@@ -604,6 +604,16 @@
                   "$": "teilbeseitigung"
                 }
               ]
+            },
+            {
+              "$": "gebaeude"
+            }
+          ]
+        },
+        {
+          "und": [
+            {
+              "$": "beseitigung_art"
             },
             {
               "$": "gebaeude"

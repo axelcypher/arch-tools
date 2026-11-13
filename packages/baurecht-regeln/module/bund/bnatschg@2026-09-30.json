@@ -93,6 +93,23 @@
                     "$": "errichtung"
                   }
                 ]
+              },
+              {
+                "und": [
+                  {
+                    "$": "errichtung"
+                  },
+                  {
+                    "oder": [
+                      {
+                        "$": "bplan_einfach"
+                      },
+                      {
+                        "$": "satzung_baugb"
+                      }
+                    ]
+                  }
+                ]
               }
             ]
           }

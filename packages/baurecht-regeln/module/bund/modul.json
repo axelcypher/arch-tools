@@ -776,6 +776,12 @@
           },
           {
             "$": "geg_heizungsanlage"
+          },
+          {
+            "nicht": {
+              "f": "gebaeude.beheizt",
+              "ist": false
+            }
           }
         ]
       }
@@ -793,6 +799,12 @@
           },
           {
             "$": "geg_heizungsanlage"
+          },
+          {
+            "nicht": {
+              "f": "gebaeude.beheizt",
+              "ist": false
+            }
           }
         ]
       }
@@ -810,6 +822,12 @@
           },
           {
             "$": "geg_heizungsanlage"
+          },
+          {
+            "nicht": {
+              "f": "gebaeude.beheizt",
+              "ist": false
+            }
           }
         ]
       }
