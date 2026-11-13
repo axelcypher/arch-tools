@@ -10,7 +10,9 @@ import { entzerrung, zuEbene, zuFoto } from '../geo/ebene';
 import type { Entzerrung, Ergebnis } from '../geo/ebene';
 import { mul } from '../geo/mat';
 import type { Pt } from '../geo/mat';
-import { bereichVon, flaecheVon, pixelGroesse } from '../geo/messen';
+import { bereichVon, flaecheVon, inEbene, pixelGroesse } from '../geo/messen';
+import { fotosHinzufuegen } from '../projekt';
+import { kuerzelErlaubt } from '../tastatur';
 import { ECKEN, ECKEN_KURZ } from '../model';
 import type { Ebene, Foto } from '../model';
 import { Renderer } from '../render/gl';
@@ -47,6 +49,7 @@ export function Arbeitsflaeche() {
   const svg = useRef<SVGSVGElement>(null);
   const renderer = useRef<Renderer | null>(null);
   const [glFehler, setGlFehler] = useState<string | null>(null);
+  const [fotoFehler, setFotoFehler] = useState<{ id: string; text: string } | null>(null);
   const [geladen, setGeladen] = useState<string | null>(null);
   const [groesse, setGroesse] = useState({ w: 0, h: 0 });
   const [maus, setMaus] = useState<Pt | null>(null);
@@ -70,6 +73,7 @@ export function Arbeitsflaeche() {
     }
     return () => {
       ro.disconnect();
+      // den Kontext nicht aufgeben: unter StrictMode baut React die Fläche sofort neu auf und braucht ihn wieder
       renderer.current?.freigeben();
       renderer.current = null;
     };
@@ -81,13 +85,17 @@ export function Arbeitsflaeche() {
     if (!r || !foto || !bilder[foto.id]) return;
     let aktiv = true;
     setGeladen(null);
+    setFotoFehler(null);
     bitmap(foto.id, bilder[foto.id], foto.mime)
       .then(async (b) => {
         if (!aktiv) return;
-        await r.setzeFoto(b, foto.breite, foto.hoehe);
-        if (aktiv) setGeladen(foto.id);
+        // setzeFoto prüft vor dem Hochladen erneut, ob dieses Foto noch gefragt ist
+        if ((await r.setzeFoto(b, foto.breite, foto.hoehe, () => aktiv)) && aktiv) setGeladen(foto.id);
       })
-      .catch((e) => log.error(`Foto „${foto.name}“ konnte nicht geladen werden`, e));
+      .catch((e) => {
+        log.error(`Foto „${foto.name}“ konnte nicht geladen werden`, e);
+        if (aktiv) setFotoFehler({ id: foto.id, text: `Das Foto „${foto.name}“ ließ sich nicht darstellen (Bilddaten beschädigt oder Format nicht lesbar).` });
+      });
     return () => {
       aktiv = false;
     };
@@ -183,7 +191,8 @@ export function Arbeitsflaeche() {
   useEffect(() => {
     const runter = (e: KeyboardEvent) => {
       if (e.key === 'Shift') setShift(true);
-      if (e.key === ' ' && !(e.target instanceof HTMLInputElement) && !(e.target instanceof HTMLTextAreaElement)) {
+      // Leertaste nur auf der Zeichenfläche abfangen – auf Knöpfen und Feldern gehört sie dem Element
+      if (e.key === ' ' && kuerzelErlaubt(e)) {
         leertaste.current = true;
         e.preventDefault();
       }
@@ -192,11 +201,19 @@ export function Arbeitsflaeche() {
       if (e.key === 'Shift') setShift(false);
       if (e.key === ' ') leertaste.current = false;
     };
+    // nach Alt+Tab o. Ä. kommt kein keyup – nichts hängen lassen
+    const weg = () => {
+      setShift(false);
+      leertaste.current = false;
+      ziehen.current = null;
+    };
     window.addEventListener('keydown', runter);
     window.addEventListener('keyup', hoch);
+    window.addEventListener('blur', weg);
     return () => {
       window.removeEventListener('keydown', runter);
       window.removeEventListener('keyup', hoch);
+      window.removeEventListener('blur', weg);
     };
   }, []);
 
@@ -250,6 +267,7 @@ export function Arbeitsflaeche() {
 
   const zeigerRunter = (e: RPointerEvent<SVGSVGElement>) => {
     if (!sicht) return;
+    svg.current!.focus({ preventScroll: true });
     svg.current!.setPointerCapture(e.pointerId);
     const p = lokal(e);
     const pan = e.button === 1 || (e.button === 0 && leertaste.current);
@@ -311,8 +329,10 @@ export function Arbeitsflaeche() {
   // ---------- Overlay ----------
   const elemente: ReactNode[] = [];
   if (abb && foto) {
-    if (ansicht === 'foto') fotoOverlay(elemente, abb, foto, ebene, ergebnis, auswahl, griffRunter);
-    else if (ebene && entz) ebenenOverlay(elemente, abb, ebene, auswahl, griffRunter, (m) => entzMesswerte(entz, m));
+    if (ansicht === 'foto') {
+      fotoOverlay(elemente, abb, foto, ebene, ergebnis, auswahl, griffRunter);
+      if (werkzeug === 'ecken' && ebene) eckenVorschau(elemente, abb, ebene.rechteck.ecken, maus && !ziehen.current ? abb.vonSchirm(maus) : null);
+    } else if (ebene && entz) ebenenOverlay(elemente, abb, ebene, auswahl, griffRunter, (m) => entzMesswerte(entz, m));
     entwurfOverlay(elemente, abb, entwurf, maus && !ziehen.current ? punktAus(maus, entwurf[entwurf.length - 1] ?? null) : null, werkzeug, ansicht === 'entzerrt' && entz ? (p) => zuEbene(entz, p) : null);
   }
 
@@ -323,7 +343,7 @@ export function Arbeitsflaeche() {
       const q = abb.schirmZuEbene(maus);
       const p = abb.vonSchirm(maus);
       const px = p ? pixelGroesse(entz, p) : NaN;
-      status = `x ${fmt3(q.x)} m   y ${fmt3(q.y)} m${Number.isFinite(px) ? `   ·   ein Fotopixel ≈ ${fmt2(px * 1000)} mm` : ''}`;
+      status = `x ${fmt3(q.x)} m   y ${fmt3(q.y)} m${Number.isFinite(px) ? `   ·   Fotopixel ≈ ${fmt2(px * 1000)} mm` : ''}`;
     } else {
       const p = abb.vonSchirm(maus);
       if (p) status = `${Math.round(p.x)} × ${Math.round(p.y)} px`;
@@ -337,9 +357,14 @@ export function Arbeitsflaeche() {
       <svg
         ref={svg}
         className={`ef-overlay wz-${werkzeug}`}
+        tabIndex={foto ? 0 : -1}
+        role="img"
+        aria-label={foto ? `${ansicht === 'entzerrt' ? 'Entzerrte Ebene' : 'Foto'} ${foto.name} – Mausrad zoomt, Ziehen verschiebt, Pos1 zeigt alles` : 'Zeichenfläche'}
         onPointerDown={zeigerRunter}
         onPointerMove={zeigerBewegt}
         onPointerUp={zeigerHoch}
+        onPointerCancel={() => (ziehen.current = null)}
+        onLostPointerCapture={() => (ziehen.current = null)}
         onPointerLeave={() => !ziehen.current && setMaus(null)}
         onDoubleClick={() => abschliessen()}
         onContextMenu={(e) => {
@@ -361,11 +386,27 @@ export function Arbeitsflaeche() {
           </g>
         )}
       </svg>
-      {!foto && <div className="canvas-message">Foto hinzufügen (Schaltfläche oben oder Datei hierher ziehen).</div>}
+      {!foto && (
+        <div className="canvas-message leer ef-leer">
+          <p>
+            <strong>Noch kein Foto</strong>
+            <br />
+            Ein Foto einer ebenen Fläche (Fassade, Wand, Boden) hinzufügen oder ins Fenster ziehen.
+          </p>
+          <button className="primary" onClick={() => void fotosHinzufuegen()}>
+            Foto hinzufügen …
+          </button>
+        </div>
+      )}
       {glFehler && <div className="canvas-message">Darstellung nicht möglich: {glFehler}</div>}
+      {fotoFehler && fotoFehler.id === foto?.id && <div className="canvas-message">{fotoFehler.text}</div>}
       {foto && (status || hinweis) && (
         <div className="ef-status">
-          {hinweis && <span>{hinweis}</span>}
+          {hinweis && (
+            <span className="ef-hinweis-text" title={hinweis}>
+              {hinweis}
+            </span>
+          )}
           {status && <span className="ef-koord">{status}</span>}
         </div>
       )}
@@ -374,7 +415,7 @@ export function Arbeitsflaeche() {
 }
 
 function entzMesswerte(e: Entzerrung, m: Pt[]) {
-  return m.map((p) => zuEbene(e, p));
+  return m.map((p) => inEbene(e, p));
 }
 
 function werkzeugHinweis(w: string, ebene: Ebene | null, n: number, shift: boolean): string {
@@ -426,7 +467,7 @@ function pfad(punkte: (Pt | null)[], zu = false): string {
 function griff(key: string, p: Pt | null, a: Auswahl, auswahl: Auswahl | null, runter: GriffRunter, klasse = '') {
   if (!p) return null;
   const sel = auswahl?.art === a.art && auswahl.id === a.id && (auswahl.index === undefined || auswahl.index === a.index);
-  return <circle key={key} className={`ef-griff ${klasse} ${sel ? 'sel' : ''}`} cx={p.x} cy={p.y} r={5} onPointerDown={(e) => runter(e, a)} />;
+  return <circle key={key} className={`ef-griff ${klasse} ${sel ? 'sel' : ''}`} cx={p.x} cy={p.y} r={sel ? 7 : 5} onPointerDown={(e) => runter(e, a)} />;
 }
 
 function beschriftung(key: string, p: Pt | null, text: string, klasse = '', dy = -8) {
@@ -488,7 +529,7 @@ function fotoOverlay(el: ReactNode[], abb: Abbildung, foto: Foto, ebene: Ebene |
   }
 }
 
-function ebenenOverlay(el: ReactNode[], abb: Abbildung, ebene: Ebene, auswahl: Auswahl | null, runter: GriffRunter, inEbene: (p: Pt[]) => Pt[]) {
+function ebenenOverlay(el: ReactNode[], abb: Abbildung, ebene: Ebene, auswahl: Auswahl | null, runter: GriffRunter, inEbene: (p: Pt[]) => (Pt | null)[]) {
   const S = abb.zuSchirm;
   const E = abb.ebeneZuSchirm!;
   // Bezug blass zur Orientierung
@@ -516,13 +557,15 @@ function ebenenOverlay(el: ReactNode[], abb: Abbildung, ebene: Ebene, auswahl: A
     for (let i = 0; i < n; i++) {
       const a = pts[i];
       const b = pts[(i + 1) % pts.length];
-      if (!a || !b) continue;
-      const l = Math.hypot(ep[(i + 1) % ep.length].x - ep[i].x, ep[(i + 1) % ep.length].y - ep[i].y);
-      el.push(segmentText(`m${m.id}s${i}`, a, b, `${fmt2(l)}`, m.art === 'flaeche' ? 'klein' : ''));
+      const pa = ep[i];
+      const pb = ep[(i + 1) % ep.length];
+      if (!a || !b || !pa || !pb) continue;
+      const l = Math.hypot(pb.x - pa.x, pb.y - pa.y);
+      el.push(segmentText(`m${m.id}s${i}`, a, b, `${fmt2(l)} m`, m.art === 'flaeche' ? 'klein' : ''));
     }
-    if (zu && pts.length > 2 && pts.every(Boolean)) {
+    if (zu && pts.length > 2 && pts.every(Boolean) && ep.every(Boolean)) {
       const c = { x: pts.reduce((s, p) => s + p!.x, 0) / pts.length, y: pts.reduce((s, p) => s + p!.y, 0) / pts.length };
-      el.push(beschriftung(`m${m.id}f`, c, `${fmt2(flaecheVon(ep))} m²`, 'flaeche', 4));
+      el.push(beschriftung(`m${m.id}f`, c, `${fmt2(flaecheVon(ep as Pt[]))} m²`, 'flaeche', 4));
     }
     pts.forEach((p, i) => el.push(griff(`m${m.id}-${i}`, p, { art: 'messung', id: m.id, index: i }, auswahl, runter, 'klein')));
   }
@@ -562,7 +605,16 @@ function entwurfOverlay(el: ReactNode[], abb: Abbildung, entwurf: Pt[], cursor: 
     const b = s[s.length - 1];
     const ea = inEbene(pts[pts.length - 2]);
     const eb = inEbene(pts[pts.length - 1]);
-    if (a && b) el.push(segmentText('ewl', a, b, fmt2(Math.hypot(eb.x - ea.x, eb.y - ea.y))));
+    if (a && b) el.push(segmentText('ewl', a, b, `${fmt2(Math.hypot(eb.x - ea.x, eb.y - ea.y))} m`));
     if (werkzeug === 'flaeche' && pts.length > 2 && b) el.push(beschriftung('ewf', b, `${fmt2(flaecheVon(pts.map(inEbene)))} m²`, 'flaeche', 22));
   }
+}
+
+/** Ecken setzen: Gummiband von der letzten Ecke zum Zeiger (beim vierten Punkt geschlossen), am Zeiger der Name der nächsten Ecke */
+function eckenVorschau(el: ReactNode[], abb: Abbildung, ecken: Pt[], zeiger: Pt | null) {
+  if (!zeiger || ecken.length >= 4) return;
+  const pts = [...ecken, zeiger].map(abb.zuSchirm);
+  if (ecken.length) el.push(<path key="ev" className="ef-entwurf ef-ref-entwurf" d={pfad(pts, pts.length === 4)} />);
+  const z = pts[pts.length - 1];
+  if (z) el.push(beschriftung('evt', { x: z.x + 14, y: z.y }, `${ECKEN_KURZ[ecken.length]} · ${ECKEN[ecken.length]}`, 'ref ef-zeiger-text', 22));
 }
