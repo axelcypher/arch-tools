@@ -402,7 +402,10 @@ aktualisieren sich nicht selbst.
   vergeben, prüft die CI im PR (`scripts/versionen-pruefen.mjs`, Schritt „Versionen prüfen“): Eine geänderte
   App-Version darf noch nicht als Tag existieren und muss größer sein als auf dem aktuellen main; wer eine App-Version
   ändert, setzt auch die Rahmen-App (Arkly) hoch. Schlägt der Schritt fehl: main mergen und die genannte Version über
-  den angegebenen Stand setzen.
+  den angegebenen Stand setzen. Der grüne Haken gilt für den Stand von main beim letzten Push in den PR – unmittelbar
+  vor dem Merge deshalb `git fetch origin main && node scripts/versionen-pruefen.mjs main HEAD` (volle Historie nötig).
+  Empfohlen in den Einstellungen des Repositorys: „Require branches to be up to date before merging“ mit „Tests &
+  Web-Build“ als Pflichtprüfung. Eine neue App gehört in beide Listen (`release.yml` und das Skript).
 - Für einen lokalen `tauri:build` müssen dieselben beiden Variablen gesetzt sein, sonst scheitert das
   Signieren der Update-Dateien. `tauri:dev` braucht sie nicht.
 - Versionen ohne Updater (Flächenrechner bis 0.9.4, GRZ-Nachweis bis 0.2.3, Kostenermittlung 0.1.0) müssen
