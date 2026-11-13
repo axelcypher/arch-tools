@@ -160,7 +160,7 @@ export function Uebersicht() {
                     </div>
                   )}
                 </td>
-                <td>{hinweise ? <span className="ava-warn-marke" title={`${hinweise} Hinweis(e)`} aria-label={`${hinweise} Hinweis(e)`}>
+                <td>{hinweise ? <span className="ava-warn-marke" role="img" title={`${hinweise} Hinweis(e)`} aria-label={`${hinweise} Hinweis(e)`}>
                       <Symbol name="warnung" /> {hinweise}
                     </span> : null}</td>
               </tr>
