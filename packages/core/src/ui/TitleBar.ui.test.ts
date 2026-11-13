@@ -134,7 +134,7 @@ describe('Titelleiste auf dem Desktop', () => {
 
   it('herausgelöstes Fenster: Vorbereitungs-Anfrage des Rahmens wird nach dem Schreiben beantwortet', async () => {
     window.history.replaceState(null, '', '/?rahmen=fenster&app=ordner');
-    const antworten: { typ: string; anfrage?: string; ok?: boolean }[] = [];
+    const antworten: { typ: string; anfrage?: string; ergebnis?: string }[] = [];
     await listen<(typeof antworten)[number]>('arch-tools:an-rahmen', (e) => void antworten.push(e.payload));
     let schreiben: (() => void) | undefined;
     const aus = vorDemSchliessen(() => new Promise<void>((fertig) => (schreiben = fertig)));
@@ -145,7 +145,7 @@ describe('Titelleiste auf dem Desktop', () => {
     expect(antworten.some((a) => a.typ === 'arch-tools:vorbereitet')).toBe(false);
     await act(async () => schreiben!());
     await warten();
-    expect(antworten.find((a) => a.typ === 'arch-tools:vorbereitet')).toMatchObject({ anfrage: 'v1', ok: true });
+    expect(antworten.find((a) => a.typ === 'arch-tools:vorbereitet')).toMatchObject({ anfrage: 'v1', ergebnis: 'fertig' });
     aus();
   });
 
@@ -165,6 +165,21 @@ describe('Titelleiste auf dem Desktop', () => {
     await warten();
     expect(andocken).toEqual([{ app: 'kosten' }]);
     expect(fenster.destroy).toHaveBeenCalledTimes(1);
+    aus();
+  });
+
+  it('scheitert das letzte Schreiben (Funktion liefert false), schließt das Fenster nicht ohne Rückfrage', async () => {
+    let gelingt = false;
+    const aus = vorDemSchliessen(async () => gelingt);
+    const host = await render({ dirty: false });
+    await act(async () => fenster.schliessenAngefragt!({ preventDefault: () => {} }));
+    await warten();
+    expect(fenster.destroy).not.toHaveBeenCalled();
+    expect(host.querySelector('.modal.rf')?.textContent).toContain('ATLAS konnte nicht speichern');
+    gelingt = true;
+    await act(async () => [...host.querySelector('.modal.rf')!.querySelectorAll('button')].find((b) => b.textContent === 'Erneut versuchen')!.click());
+    await warten();
+    expect(fenster.destroy).toHaveBeenCalled();
     aus();
   });
 });

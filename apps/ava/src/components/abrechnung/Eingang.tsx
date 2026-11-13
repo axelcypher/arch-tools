@@ -7,7 +7,7 @@ import { dateinameSicher } from '../../abrechnung/benennung';
 import { gewerkZweistellig } from '../../abrechnung/gewerk';
 import { euro } from '../../abrechnung/pruefung';
 import type { AvaProjekt, RechnungsDatensatz } from '../../avaDaten';
-import { gewerkOrdner, useAva } from '../../store';
+import { gewerkOrdner, useAva, schreibend } from '../../store';
 import { datumKurz } from '../eingaben';
 import { PdfVorschau } from '../PdfVorschau';
 import { RechnungPruefen } from './RechnungPruefen';
@@ -104,7 +104,7 @@ export function Eingang() {
     const name = /\.pdf$/i.test(sicher) || !/\.pdf$/i.test(scan) ? sicher : `${sicher}.pdf`;
     setLaeuft(true);
     try {
-      const r = await scanAblegen(k, d, g, { ordner, datei: scan }, { deckblatt, name });
+      const r = await schreibend(scanAblegen(k, d, g, { ordner, datei: scan }, { deckblatt, name }));
       avaSetzen(r.ava);
       setGewaehlt(null);
       setDatensatz(null);
@@ -116,7 +116,7 @@ export function Eingang() {
       if (x instanceof TeilweiseAbgelegt) {
         if (await bestaetigen('Projektdatei nicht gespeichert', `${x.message}\n\nDie Ablage jetzt erneut in der Projektdatei eintragen?`, 'Erneut eintragen')) {
           try {
-            avaSetzen(await ablageNachtragen(k, d.id, x.pfad));
+            avaSetzen(await schreibend(ablageNachtragen(k, d.id, x.pfad)));
           } catch (y) {
             await meldung('Projektdatei nicht gespeichert', y instanceof Error ? y.message : String(y), y);
           }
@@ -135,7 +135,7 @@ export function Eingang() {
       return;
     }
     try {
-      const ava = await mailEntwurf(k, r, useAva.getState().projekt!.ava, vorlage);
+      const ava = await schreibend(mailEntwurf(k, r, useAva.getState().projekt!.ava, vorlage));
       avaSetzen(ava);
       setHinweis(`Mailentwurf für Nr. ${String(r.nr)} geöffnet – bitte im Mailprogramm prüfen und senden.`);
     } catch (x) {

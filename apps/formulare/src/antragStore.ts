@@ -9,6 +9,7 @@
  */
 
 import { create } from 'zustand';
+import { klammer } from './ausstehend';
 import { saveBinaryFile } from '@core/platform/files';
 import { logger } from '@core/platform/log';
 import type { Abschnitt, AntragDaten, AntragStatusManuell } from './antrag';
@@ -905,9 +906,11 @@ export const useAntrag = create<AntragState>((set, get) => {
           titel: `${vorhanden.length === 1 ? 'Eine Datei gibt' : `${vorhanden.length} Dateien gibt`} es schon`,
           text: `${vorhanden.slice(0, 8).join('\n')}${vorhanden.length > 8 ? `\n… und ${vorhanden.length - 8} weitere` : ''}`,
           knoepfe: [
+            // Reihenfolge wie in allen Rückfragen: Abbrechen, Gefahr, Hauptknopf rechts außen
             { id: 'abbrechen', label: 'Abbrechen' },
-            { id: 'ueberspringen', label: 'Vorhandene überspringen' },
-            { id: 'ersetzen', label: 'Ersetzen', art: 'danger' },
+            { id: 'ersetzen', label: 'Vorhandene ersetzen', art: 'danger' },
+            // der übliche Weg (Enter): nichts überschreiben, nur die fehlenden exportieren
+            { id: 'ueberspringen', label: 'Vorhandene überspringen', art: 'primary' },
           ],
         });
         if (a !== 'ueberspringen' && a !== 'ersetzen') return 0;
@@ -917,6 +920,8 @@ export const useAntrag = create<AntragState>((set, get) => {
       const fehlgeschlagen: string[] = [];
       let uebersprungen = 0;
       set({ sammelExport: { fertig: 0, gesamt: ziele.length } });
+      // Export samt Verknüpfung im Antragsumfang: vor dem Schließen abgewartet
+      const schreibenFertig = klammer();
       try {
         for (const [i, { f, ziel }] of ziele.entries()) {
           const pfad = pfadVon(ziel);
@@ -950,6 +955,7 @@ export const useAntrag = create<AntragState>((set, get) => {
           await get().umfangSetzen(neu);
         } else await get().aktualisieren();
       } finally {
+        schreibenFertig();
         set({ sammelExport: null });
       }
       const ordner = [...new Set(ziele.map((z) => z.ziel.ordner || 'Projektordner'))].join(', ');
@@ -1594,6 +1600,8 @@ export const useAntrag = create<AntragState>((set, get) => {
     exportieren: async (formularPfad, ziel, ersetzen) => {
       const { ds, projekt, basis } = ctx();
       if (!ds || !projekt || !basis || gesperrt(false)) return null;
+      // PDF anlegen bzw. ersetzen samt Verknüpfung im Antragsumfang: vor dem Schließen abgewartet
+      const schreibenFertig = klammer();
       try {
         const pdf = await pdfVon(projekt, formularPfad);
         const pfad = `${ziel.ordner ? `${ziel.ordner}/` : ''}${ziel.name}`;
@@ -1617,6 +1625,8 @@ export const useAntrag = create<AntragState>((set, get) => {
       } catch (e) {
         fehler('PDF-Export', e);
         return null;
+      } finally {
+        schreibenFertig();
       }
     },
 
@@ -1669,6 +1679,7 @@ export const useAntrag = create<AntragState>((set, get) => {
       const s = useFormulare.getState();
       const { ds, projekt } = ctx();
       if (!ds || !projekt || gesperrt(true, 'Formular nicht hinzugefügt')) return null;
+      let schreibenFertig = (): void => undefined;
       try {
         const bytes = await ds.lies(v.root, v.pfad);
         if (!bytes) throw new Error(`${v.datei} nicht gefunden`);
@@ -1682,6 +1693,8 @@ export const useAntrag = create<AntragState>((set, get) => {
         if (nichtAngelegt(v.name, projekt)) return null;
         // noch im eigenen Projekt: aufnehmen nur, wenn es einen Antragsumfang gibt – in den der angezeigten Fassung
         const aufnehmen = inUmfang && !!get().projektdatei?.umfang;
+        // Anlegen und Aufnehmen gehören zusammen: vor dem Schließen abgewartet
+        schreibenFertig = klammer();
         await ds.formularAnlegen(projekt.root, pfad, neu.bytes);
         log.info(`Formular angelegt: ${pfad} (Vorlage: ${v.herkunft}, ${v.pfad})`);
         if (angelegtImAnderen(name, projekt, aufnehmen ? ', aber nicht in den Antragsumfang aufgenommen und nicht geöffnet' : ', aber nicht geöffnet')) return null;
@@ -1691,6 +1704,7 @@ export const useAntrag = create<AntragState>((set, get) => {
           aufnehmen && !anderesProjekt(projekt)
             ? await get().umfangAendern((umfang) => [...umfang, { id: `u${Date.now().toString(36)}`, titel: v.name, art: 'intern', formular: v.name, formularDatei: schluessel }], { ansicht: fassung, still: true })
             : {};
+        schreibenFertig();
         await useFormulare.getState().formulareNeuLesen();
         const was = !aufnehmen ? ', aber nicht geöffnet' : info.geschrieben ? ' und in den Antragsumfang aufgenommen, aber nicht geöffnet' : ', aber nicht in den Antragsumfang aufgenommen und nicht geöffnet';
         if (angelegtImAnderen(name, projekt, was)) return null;
@@ -1709,6 +1723,8 @@ export const useAntrag = create<AntragState>((set, get) => {
       } catch (e) {
         fehler(`Formular „${v.name}“ hinzufügen`, e);
         return null;
+      } finally {
+        schreibenFertig();
       }
     },
 
@@ -1762,6 +1778,7 @@ export const useAntrag = create<AntragState>((set, get) => {
       const fassung = get().projektdatei?.ansicht;
       // die Suche kann bei vielen Projekten dauern – sofort sagen, was passiert
       meldung('info', `Suche eine Vorlage für „${u.titel}“ …`);
+      let schreibenFertig = (): void => undefined;
       try {
         const vorlage = await vorlageSuchen(u);
         if (!vorlage) throw new Error(`Keine Vorlage für „${u.titel}“ gefunden – bitte in den Einstellungen einen Vorlagenordner mit leeren Formularen angeben`);
@@ -1773,6 +1790,8 @@ export const useAntrag = create<AntragState>((set, get) => {
         const schluessel = formularSchluessel(pfad);
         const neu = await mitAutofill(geleert(vorlage.bytes), projekt);
         if (nichtAngelegt(u.titel, projekt)) return null;
+        // Anlegen und Zuordnen gehören zusammen: vor dem Schließen abgewartet
+        schreibenFertig = klammer();
         await ds.formularAnlegen(projekt.root, pfad, neu.bytes);
         log.info(`Formular angelegt: ${pfad} (Vorlage: ${vorlage.herkunft})`);
         if (angelegtImAnderen(name, projekt, ', aber nicht zugeordnet und nicht geöffnet')) return null;
@@ -1781,6 +1800,7 @@ export const useAntrag = create<AntragState>((set, get) => {
         const info: SchreibInfo = !anderesProjekt(projekt)
           ? await get().umfangAendern((umfang) => umfang.map((x) => (x.id === u.id ? { ...x, formularDatei: schluessel } : x)), { ansicht: fassung, eintrag: u.id, still: true })
           : {};
+        schreibenFertig();
         await useFormulare.getState().formulareNeuLesen();
         if (angelegtImAnderen(name, projekt, info.geschrieben ? ` und „${u.titel}“ zugeordnet, aber nicht geöffnet` : ', aber nicht zugeordnet und nicht geöffnet')) return null;
         const eintrag = await angelegtesFormular(pfad);
@@ -1814,6 +1834,7 @@ export const useAntrag = create<AntragState>((set, get) => {
         fehler(`Formular für „${u.titel}“ anlegen`, e);
         return null;
       } finally {
+        schreibenFertig();
         anlegenLaeuft.delete(umfangId);
       }
     },

@@ -9,6 +9,7 @@ import type { Formattext } from '../format/rtf';
 import { alsText } from '../format/rtf';
 import type { Lv, Position } from './modell';
 import { neueId, positionen } from './modell';
+import { schreibend } from '../schreiben';
 
 export interface Vorlagetext {
   id: string;
@@ -44,7 +45,7 @@ export async function vorlagenLaden(): Promise<Vorlagetext[]> {
 }
 
 export function vorlagenAendern(f: (v: Vorlagetext[]) => Vorlagetext[]): Promise<Vorlagetext[]> {
-  return konfigAendern(BEREICH, (roh) => f(Array.isArray(roh) ? (roh as Vorlagetext[]) : []));
+  return schreibend(konfigAendern(BEREICH, (roh) => f(Array.isArray(roh) ? (roh as Vorlagetext[]) : [])));
 }
 
 export function vorlageAusPosition(p: Position, gruppe: string): Vorlagetext {

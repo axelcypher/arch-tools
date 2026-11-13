@@ -16,7 +16,7 @@ import { bestaetigen, fragen } from '@core/ui/Rueckfrage';
 import { geschossDuplizierenAktion } from './KopieDialog';
 import { UmrissUebernehmen } from './Properties';
 
-/** „+ Neu“: Geschoss über oder unter dem aktiven einfügen, Name und Fußbodenhöhe nach der Lage (F-03) */
+/** „Geschoss …“: Geschoss über oder unter dem aktiven einfügen, Name und Fußbodenhöhe nach der Lage (F-03) */
 async function neuesGeschoss(bezugId: string, bezugName: string) {
   const lage = await fragen({
     titel: 'Neues Geschoss',
@@ -148,9 +148,9 @@ export function Sidebar() {
           <button
             className="small"
             onClick={() => void neuesGeschoss(storey.id, storey.name)}
-            title="Geschoss über oder unter dem aktiven einfügen …"
+            title="Geschoss über oder unter dem aktiven hinzufügen …"
           >
-            + Neu …
+            <Symbol name="plus" /> Geschoss …
           </button>
         </div>
         <ul className="list">

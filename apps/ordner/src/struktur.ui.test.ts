@@ -1187,7 +1187,7 @@ describe('Vor dem Schließen (Rahmen): verzögertes Schreiben nicht verlieren', 
     expect(gespeichert().struktur.name).not.toBe('Vor dem Schließen');
     // zweimal (etwa nach „Weiter warten“), ohne die Wartezeit abzuwarten
     const [a, b] = await Promise.all([schliessenVorbereiten(), schliessenVorbereiten()]);
-    expect([a, b]).toEqual([true, true]);
+    expect([a, b]).toEqual(['fertig', 'fertig']);
     expect(gespeichert().struktur.name).toBe('Vor dem Schließen');
     expect(sicherungen_.schreiben).toBe(1);
   });
@@ -1198,7 +1198,7 @@ describe('Vor dem Schließen (Rahmen): verzögertes Schreiben nicht verlieren', 
     act(() => useOrdner.setState({ konflikt: { roh: { struktur: { name: 'Fremd', ordner: [] } } } }));
     sicherungen_.schreiben = 0;
     act(() => useOrdner.getState().setStruktur({ ...useOrdner.getState().struktur, name: 'Trotz Konflikt' }));
-    expect(await schliessenVorbereiten()).toBe(true);
+    expect(await schliessenVorbereiten()).toBe('fertig');
     expect(sicherungen_.schreiben).toBe(0);
     expect(gespeichert().struktur.name).not.toBe('Trotz Konflikt');
   });

@@ -19,6 +19,7 @@ import {
   verknuepfungLoesen,
 } from './ansicht';
 import { Modal } from './Dialog';
+import { Symbol } from './Symbol';
 import { einfuegeStelle, zeigerZiehen } from './ziehen';
 import './ansicht.css';
 
@@ -235,8 +236,8 @@ export function AnsichtEditor({
               </section>
             );
           })}
-          <button type="button" className="small av-ed-neu" onClick={abschnittNeu}>
-            + Abschnitt
+          <button type="button" className="small av-ed-neu" title="Abschnitt hinzufügen" onClick={abschnittNeu}>
+            <Symbol name="plus" /> Abschnitt
           </button>
           {/* die Vorschau des gewählten Abschnitts an fester Stelle unter dem Aufbau – beim Wechsel des Abschnitts
               verschiebt sich darüber nichts (ein Klick trifft, was er treffen soll) */}
