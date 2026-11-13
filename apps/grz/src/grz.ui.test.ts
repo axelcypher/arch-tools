@@ -159,6 +159,9 @@ describe('TERRIO', () => {
     expect(host.querySelector('.grz-report')).not.toBeNull();
     act(() => btn('Schließen').click());
     act(() => btn('Excel').click());
+    // Vorlagen-Knöpfe erst bei „Eigene Vorlage“
+    expect(host.textContent).not.toContain('Muster-Vorlage herunterladen');
+    act(() => host.querySelectorAll<HTMLInputElement>('.modal input[type="radio"]')[1].click());
     expect(host.textContent).toContain('Muster-Vorlage herunterladen');
   });
 
@@ -851,5 +854,22 @@ describe('Gesamt-Review: Bedienung der Oberfläche', () => {
     act(() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', bubbles: true })));
     expect(useGrz.getState().project.lageplan!.grenze).toHaveLength(1);
     expect(useGrz.getState().project.lageplan!.flaechen).toHaveLength(1);
+  });
+
+  it('Baurecht: Auslegungsdatum wählt die BauNVO-Fassung, Inkrafttreten den Vollgeschossbegriff; Kästchen § 21a Abs. 4 Nr. 3 ab 1968', () => {
+    const p = projekt();
+    p.massNutzung = { ...p.massNutzung, planDatum: '1990-06-01' };
+    useGrz.getState().load(p);
+    const host = render(GrzGfzView);
+    const kopf = () => host.querySelector('.grz-nachweis .muted')!.textContent!;
+    expect(kopf()).toContain('BauNVO 1990');
+    change(host.querySelector('input[aria-label="Öffentliche Auslegung des Planentwurfs"]') as HTMLInputElement, '1989-10-01');
+    expect(useGrz.getState().project.massNutzung?.auslegungDatum).toBe('1989-10-01');
+    expect(kopf()).toContain('BauNVO 1968/1977');
+    expect([...host.querySelectorAll('label.toggle')].some((l) => l.textContent?.includes('§ 21a Abs. 4 Nr. 3'))).toBe(true);
+    // Gegenprobe: 1962 ohne das Kästchen; Feld heißt „Grundstücksfläche im Bauland“
+    act(() => useGrz.getState().update((x) => ({ ...x, massNutzung: { ...x.massNutzung, planDatum: '1965-01-01', auslegungDatum: undefined } }), undefined, 'Datum'));
+    expect([...host.querySelectorAll('label.toggle')].some((l) => l.textContent?.includes('§ 21a Abs. 4 Nr. 3'))).toBe(false);
+    expect(host.querySelector('#grz-grundstueck')!.textContent).toContain('Grundstücksfläche im Bauland');
   });
 });

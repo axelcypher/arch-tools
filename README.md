@@ -136,11 +136,13 @@ nur Balkone, Loggien, Dachgärten und Terrassen zählen standardmäßig zur Häl
 (§ 44 Abs. 1 Nr. 2, Abs. 2, Abs. 3) sind nicht nachgebildet – so steht es auch im Bericht. **Messverfahren**
 (Maßgrundlage: Planmaß Rohbau, Planmaß Fertigmaß, Aufmaß) und **Planungsunterlagen** (Eingabe, sonst die
 hinterlegten Pläne) werden beim Projekt festgehalten und stehen im Kopf von Bericht und Excel (DIN 277:2021-08, 5.1);
-fehlen sie, warnt der Bericht.
+fehlen sie, warnt der Bericht am Bildschirm, und im Druck steht im Kopf „nicht angegeben“. Fachliche Mängel
+(kein BRI, selbstüberschneidende Flächen) stehen als Warnung auch im Druck.
 
 ### Funktionen
 
-- **IFC-Import** (Archicad, Revit, …): Geschosse, Zonen → Räume (inkl. Putzabzug und WoFlV-Faktor aus den
+- **IFC-Import** (Archicad, Revit, …; zuerst die Art des Imports, dann was übernommen wird; unlesbare Dateien mit
+  Klartext-Meldung): Geschosse, Zonen → Räume (inkl. Putzabzug und WoFlV-Faktor aus den
   Raumhöhen), BGF-Umrisse aus den Bauteilen und Dachhaut für den BRI – siehe [docs/archicad-ifc.md](docs/archicad-ifc.md)
 - **Dachformen** je BGF-Umriss für den BRI: Flach-, Pult-, Sattel-, Walm-, Krüppelwalm-, Zelt-, Mansard-,
   Mansardwalm-, Tonnen- und Sheddach mit Traufhöhe, Neigungen und Firstrichtung (exakte Volumenberechnung)
@@ -149,7 +151,9 @@ fehlen sie, warnt der Bericht.
 - **Dachform- und Gaubenerkennung aus IFC**: Dachform, Neigung, Traufhöhe und Gauben werden aus der
   Dachhaut abgeleitet und nur übernommen, wenn sie den Rauminhalt des Modells treffen – siehe
   [docs/dach-und-gauben.md](docs/dach-und-gauben.md)
-- **3D-Ansicht** der Rauminhalte (Geschosse auseinanderziehbar, Vergleich mit dem IFC-Modell)
+- **3D-Ansicht** der Rauminhalte (Geschosse auseinanderziehbar, Vergleich mit dem IFC-Modell); ein Klick wählt Umriss
+  oder Raum, die Legende (einklappbar) erklärt Regelfall/Sonderfall und die Nutzungsgruppen; ohne BGF-Umriss ein Hinweis
+  mit „Zum Grundriss“
 - Zeichnen von **Polygonen** und **Rechtecken** als BGF-Umriss oder Raum
 - **Raum erkennen per Klick** (Werkzeug „Erkennen“): Klick in einen umschlossenen Bereich eines DXF-/PDF-/Bildplans
   oder zwischen bereits gezeichneten Flächen erzeugt die Fläche automatisch
@@ -187,7 +191,12 @@ fehlen sie, warnt der Bericht.
   geänderte Werte bleiben erhalten, Konflikte werden gemeldet
 - **Nachschlagewerk** der Berechnungsregeln (`F1` bzw. „§ Regeln“, `?` an den Abschnitten) mit Zitaten,
   Quellenangaben, Links und Suche – zentral und je Funktion gefiltert
-- **Numerische Eingabe** beim Zeichnen: Länge tippen + Enter (in Mausrichtung), `dx;dy` relativ, Rechteck `4,5x3,2`
+- **Numerische Eingabe** beim Zeichnen: Länge tippen + Enter (in Mausrichtung), `dx;dy` relativ (wie im Plan nach
+  rechts und oben positiv, ebenso die Koordinatenanzeige, die Eckpunkt-Tabelle und das Messen), Rechteck `4,5x3,2`
+- **Einstieg**: Die leere Zeichenfläche bietet „Grundriss laden“, „IFC-Modell importieren“ und Zeichnen an; „Plan
+  laden …“ und „Kalibrieren“ stehen auch in der Werkzeugleiste. Kantenfang rastet bei aktivem Rasterfang entlang der
+  Kante auf das Raster; beim Kalibrieren fängt das Raster nicht. Erkannte BGF-Umrisse tragen „prüfen“, bis ein
+  Eckpunkt bearbeitet wurde
 - Eckpunkte ziehen, auf Kantenmitte ziehen = Punkt einfügen, Rechtsklick = Punkt löschen, Koordinaten-Tabelle
 - **Abzugsflächen**: am BGF-Umriss z. B. Innenhof, Luftraum über einer Galerie oder Deckenöffnung über 1,0 m², im
   Raum z. B. Schornstein, Pfeiler, Schacht im Raum. Wird ein Raum zur Abzugsfläche, erbt er Anrechnung und Wohnung
@@ -203,8 +212,12 @@ fehlen sie, warnt der Bericht.
 - **Beschriftung**: BGF-Beschriftung am Rand des Umrisses (außen oben links) statt auf den Räumen; Raumstempel lassen
   sich am Griff unter der Beschriftung verschieben (gespeichert, auch im Grundriss des Berichts; „Beschriftung
   zurücksetzen“ in den Eigenschaften)
-- **Raumliste** nach Nummer sortiert (natürliche Sortierung); **Raumtabelle** aller Räume des Projekts mit direkt
-  bearbeitbaren Spalten (Nr., Bezeichnung, R/S, Nutzung, WoFlV-Anrechnung, Faktor, Wohnung, Abzug, Putzabzug)
+- **Raumliste** nach Nummer sortiert (natürliche Sortierung); Strg+Klick wählt einzelne Räume dazu, Umschalt+Klick
+  einen Bereich; „Gewählte Räume fortlaufend nummerieren …“. **Raumtabelle** aller Räume des Projekts (oberstes
+  Geschoss oben, Summe je Geschoss) mit direkt bearbeitbaren Spalten (Nr., Bezeichnung, R/S, Nutzung,
+  WoFlV-Anrechnung, Faktor, Wohnung, Abzug, Putzabzug); Enter bzw. ↓ springt in Nr. und Bezeichnung zur nächsten Zeile
+- **Auswertung** rechts unten: Kurzfassung (BGF · NRF · WoFl je Geschoss) oder alle Kennzahlen, der Zustand bleibt;
+  Geschoss umbenennen per Doppelklick oder F2 in der Geschossliste
 - **Neues Geschoss**: das darunterliegende wird eingeblendet; „BGF-Umriss aus [Geschoss darunter] übernehmen“
   kopiert nur die Geometrie (ohne Dach, Körperhöhe, Höhenversatz, Umschließung) und markiert den Umriss zum Prüfen
 - IFC-Import: das IFC-Modul lädt schon beim Öffnen des Dialogs, das Lesen einer Datei lässt sich abbrechen;
@@ -221,7 +234,8 @@ fehlen sie, warnt der Bericht.
   „Raum an Höhenlinien teilen“ setzt die Anrechnung „Raumteile nach lichter Höhe“ mit den Teilflächen ≥ 2 m /
   1–2 m / < 1 m – eine Nummer, eine NRF, nur die Wohnfläche ändert sich. Bericht und Excel (`raum.teil_h2` …) weisen
   die Teilflächen in m² aus. Gauben und Kehlbalkendecken werden dabei nicht berücksichtigt (Teilflächen prüfen)
-- **Bericht für die Bauvorlage**: Vorlagen „Vollständige Flächenaufstellung“, „Bauantrag NRW (BRI + WoFl)“ und
+- **Bericht für die Bauvorlage**: Umfang (Auswahl oben links, Abschnitte im Ausklapper; „Anzeige“ mit Grundrissen,
+  Hintergrundplan und Rechenweg wird auf dem Rechner gemerkt) „Vollständige Flächenaufstellung“, „Bauantrag NRW (BRI + WoFl)“ und
   freie Auswahl der Abschnitte (Grundflächen und Rauminhalte, BRI-Rechenweg, Nutzungsgruppen, Raumlisten,
   Wohnflächen, Hochbaustatistik). In „Bauantrag NRW“ sind die Tabelle nach DIN 277 mit R/S-Trennung und der
   BRI-Rechenweg nicht abwählbar (§ 6 Nr. 1 BauPrüfVO NRW, Gebührentarif 3.1.1.2). Kopf aus den Stammdaten mit
@@ -289,11 +303,12 @@ fehlen sie, warnt der Bericht.
 
 | Taste | Funktion |
 |---|---|
-| `V` / `P` / `R` / `E` / `M` | Auswählen / Polygon / Rechteck / Erkennen / Messen |
+| `V` / `P` / `R` / `E` / `M` / `K` | Auswählen / Polygon / Rechteck / Erkennen / Messen / Kalibrieren |
+| `?` | alle Tastenkürzel der Zeichenfläche |
 | `B` / `N` | neue Flächen als BGF-Umriss / Raum zeichnen |
 | `Enter` | Polygon schließen bzw. Zahleneingabe übernehmen |
 | `Backspace` | letzten Punkt bzw. letzte Ziffer entfernen |
-| `Esc` | Abbrechen / Auswahl aufheben |
+| `Esc` | Eingabe, Entwurf, Messung bzw. Werkzeug verwerfen, zuletzt Auswahl aufheben |
 | `Entf` (oder `Backspace` ohne laufende Eingabe) | ausgewählte Fläche(n) löschen |
 | `Shift`+Klick / `Shift`+Ziehen | Mehrfachauswahl / Auswahlrahmen |
 | `Strg+A` | alle Flächen des Geschosses wählen |
@@ -303,7 +318,7 @@ fehlen sie, warnt der Bericht.
 | `Strg+S` / `Strg+Shift+S` / `Strg+O` | Speichern / Speichern unter / Öffnen |
 | `F1` | Nachschlagewerk der Berechnungsregeln |
 | `F` | alles zeigen |
-| `Strg+Z` / `Strg+Y` | Rückgängig / Wiederholen |
+| `Strg+Z` / `Strg+Y` | Rückgängig (beim Zeichnen zuerst der letzte Punkt) / Wiederholen |
 | Mausrad / mittlere Maustaste / `Leertaste`+Ziehen | Zoomen / Verschieben |
 
 ## Aufbau des Repositorys
@@ -379,7 +394,8 @@ GitHub-Release (mit Web-Version als ZIP), sobald die Version der App auf `main` 
 QUADRIO als `v<version>`, TERRIO als `grz-v<version>`, NUMIO als `kosten-v<version>`,
 ATLAS als `ordner-v<version>`, RECTIO als `entzerrung-v<version>`, PERMIO als `formulare-v<version>`,
 FABRIO als `ava-v<version>`,
-die Rahmen-App Arkly als `suite-v<version>`. Das Release trägt den Produktnamen, das Tag die Kennung.
+die Rahmen-App Arkly als `suite-v<version>` (ihre Version setzt der Lauf selbst, siehe unten). Das Release trägt den
+Produktnamen, das Tag die Kennung.
 Die Version steht je App in
 `package.json`, `src-tauri/tauri.conf.json` und `src-tauri/Cargo.toml` und muss dort überall gleich sein.
 Manuell gestartet wird die gewählte App in ihrer aktuellen Version (neu) gebaut. Die CI prüft zusätzlich
@@ -398,6 +414,19 @@ aktualisieren sich nicht selbst.
   `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`); der öffentliche Schlüssel steht je App in
   `src-tauri/tauri.conf.json` (`plugins.updater.pubkey`). Der Workflow bricht ab, wenn er vom Secret
   `TAURI_UPDATER_PUBKEY` abweicht.
+- Ein Release entsteht nur für eine Version, deren Tag es noch nicht gibt. Damit parallele PRs keine Version doppelt
+  vergeben, prüft die CI im PR (`scripts/versionen-pruefen.mjs`, Schritt „Versionen prüfen“): Eine geänderte
+  App-Version darf noch nicht als Tag existieren und muss größer sein als auf dem aktuellen main; jede Änderung am
+  Code einer App bzw. an `packages/core` (dann alle Apps) verlangt eine neue Version (Doku und Tests nicht; Dateien
+  im Wurzelverzeichnis wie `package.json`, `package-lock.json` oder `tsconfig*` prüft sie nicht – dort selbst
+  entscheiden). Die Rahmen-App Arkly hebt ein PR nur bei Änderungen an `apps/suite` selbst: Hat eine andere App eine
+  neue Version, setzt der Release-Lauf Arkly automatisch auf die nächste freie Nummer (Minor, wenn eine App Minor
+  oder Major erhöht, sonst Patch; `scripts/suite-version.mjs`), committet sie nach main und baut Arkly mit. Schlägt der Schritt fehl: main
+  mergen und die genannte Version über den angegebenen Stand setzen. Der grüne Haken gilt für den Stand von main beim
+  letzten Push in den PR – unmittelbar vor dem Merge deshalb
+  `git fetch origin main && node scripts/versionen-pruefen.mjs main HEAD` (volle Historie nötig). Empfohlen in den
+  Einstellungen des Repositorys: „Require branches to be up to date before merging“ mit „Tests & Web-Build“ als
+  Pflichtprüfung. Eine neue App gehört in beide Listen (`release.yml` und das Skript).
 - Für einen lokalen `tauri:build` müssen dieselben beiden Variablen gesetzt sein, sonst scheitert das
   Signieren der Update-Dateien. `tauri:dev` braucht sie nicht.
 - Versionen ohne Updater (Flächenrechner bis 0.9.4, GRZ-Nachweis bis 0.2.3, Kostenermittlung 0.1.0) müssen

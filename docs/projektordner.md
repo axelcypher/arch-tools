@@ -25,8 +25,11 @@ Grundsätze:
 
 ## Projekt (Assistent)
 
-Acht Schritte; die Schrittleiste oben springt zu jedem Schritt, sobald die davor taugen. Alles, was der Assistent
-abfragt, steht danach in der Projektdatei – für alle Apps.
+Acht Schritte; die Schrittleiste oben springt zu jedem Schritt, sobald die davor taugen (ein gesperrter Schritt nennt
+im Tooltip, was fehlt). Ein Häkchen bekommen nur Schritte, die schon besucht und vollständig sind. Alles, was der
+Assistent abfragt, steht danach in der Projektdatei – für alle Apps. Wer zwischendurch zu „Struktur“, „Vorlagen“ oder
+einer anderen Ansicht wechselt, findet den Assistenten beim Zurückkommen im selben Schritt mit allen Eingaben vor –
+auch beim Ergänzen.
 
 1. **Projekt:** die **Projektübersicht** – dieselbe Startseite wie in den anderen Apps: vorne „Zuletzt geöffnet“
    (je Benutzer, über alle Apps), darunter die Projektordner je Stammordner als Karten mit Nummer, Bezeichnung und
@@ -58,38 +61,50 @@ abfragt, steht danach in der Projektdatei – für alle Apps.
      plus eins. Passt eine Nummer nicht zum Schema („26-14“ bei `{JAHR}-{Nr:3}`), steht am Feld ein Hinweis
      („erwartet z. B. 2026-015“); er hält nicht auf. Projektnummer und Kurzname sind Pflicht (Stern); der
      Ordnername, der sich daraus ergibt, steht direkt darunter, Zeichen wie `/ : ?` meldet das Feld schon beim
-     Tippen. Meldungen erscheinen am Feld erst nach dem Verlassen bzw. nach „Weiter“; „Weiter“ nennt dann sichtbar,
-     was noch fehlt. Gibt es den Ordner schon, bietet der Assistent an, dieses Projekt zu ergänzen. Das angefangene
-     Formular bleibt bis zum nächsten Start erhalten.
+     Tippen. Meldungen erscheinen am Feld erst nach dem Verlassen bzw. nach „Weiter“; „Weiter“ nennt dann neben dem
+     Knopf, was noch fehlt („Noch offen: Projektnummer, Kurzname“ – ein Klick führt zum Feld), und setzt den Fokus in
+     das erste offene Feld. Gibt es den Ordner schon, bietet der Assistent an, dieses Projekt zu ergänzen; ein zweites
+     Projekt entsteht darin nicht. Das angefangene Formular bleibt bis zum nächsten Start erhalten; „Leer beginnen“ auf
+     der Startseite verwirft es.
    - Bestehendes Projekt: Die Stammdaten kommen aus der Projektdatei. **Fehlt sie, ist das kein Fehler:** Der
      Assistent erfasst die Stammdaten (Nummer und Kurzname aus dem Ordnernamen vorgeschlagen, bei Ordnern aus
      Version 0.1 aus der alten `projekt.json`) und legt die Projektdatei damit an. Der Ordner wird beim Ergänzen
-     nicht umbenannt.
+     nicht umbenannt. **Liegt eine Projektdatei im Ordner, die sich nicht lesen lässt** (beschädigt), bleibt sie
+     unverändert: Der Assistent sagt dann deutlich, dass die Stammdaten nicht gespeichert werden – sie dienen nur den
+     Namen neuer Ordner und Vorlagen. Kennt die Projektdatei kein Anlagedatum, gilt für `{JAHR}` in neuen Namen das
+     laufende Jahr; der Trockenlauf weist darauf hin.
 3. **Grundstück:** Gemarkung, Flur, Flurstück, Grundstücksfläche, Bebauungsplan (Nummer, Name) und Aktenzeichen
    der Bauaufsicht. (Der Bebauungsplan ging bis 0.13 im Assistenten verloren – er wird jetzt gespeichert.)
 4. **Bauherr:** Name bzw. Firma, Vorname, Anschrift, beliebig viele E-Mail-Adressen und Telefonnummern.
 5. **Umfang:** beauftragte Leistungsphasen (mit Namen, Schnellwahl „1–4 bis Bauantrag“, „5–8“, „1–9 alle“,
-   „keine“) und Bearbeitung (Kürzel; Vorschläge aus den Mitarbeitern unter „Einstellungen“). An Leistungsphasen
-   gebundene Ordner und Vorlagen entstehen nur, wenn eine davon beauftragt ist (ohne Angabe alle).
+   „ohne Einschränkung“) und Bearbeitung (Kürzel; Vorschläge aus den Mitarbeitern unter „Einstellungen“). An
+   Leistungsphasen gebundene Ordner und Vorlagen entstehen nur, wenn eine davon beauftragt ist (keine Auswahl = alle
+   Ordner).
 6. **Beteiligte:** die schon bekannten Fachplaner, Gutachter und Behörden. Rolle mit Vorschlägen typischer
    Beteiligter (Tragwerksplanung, Prüfingenieur/-in, Brandschutz, Vermessung ÖbVI, TGA, Energieberatung/GEG,
    Bodengutachten, Prüfsachverständige für Brandschutz und Standsicherheit, Sachverständige für Schall- und
    Wärmeschutz, SiGeKo, Bauaufsicht …) oder frei – die typischen stehen außerdem als Knöpfe „+ Tragwerksplanung“ …
    darunter und legen mit einem Klick eine Zeile an. Name mit Vorschlägen aus den Projektdateien der Stammordner; Rolle und
    Kontakt werden dann ergänzt.
-7. **Vorlagen:** Vorlagenordner und Vorlagen-Presets (siehe [Vorlagen](#vorlagen)). Vorausgewählt sind bei neuen
+7. **Vorlagen:** Vorlagenordner und „Welche Vorlagen?“ – die Presets (siehe [Vorlagen](#vorlagen)). Vorausgewählt sind bei neuen
    Projekten die Presets mit „Standard“, bei bestehenden die in der Projektdatei vermerkten.
 8. **Anlegen bzw. Ergänzen:** oben die **Zusammenfassung** – so steht es in der Projektdatei (Projekt, Grundstück,
    Bauherr, Umfang, Beteiligte, Vorlagen), je Abschnitt mit „ändern“, das zum Schritt springt. Darunter der
    Trockenlauf als Baum – jeder Ordner und jede Datei mit Herkunft (Struktur,
-   Vorlage mit Preset, Projektdatei) und dem Vermerk „neu“, „vorhanden“ oder „wird ergänzt“ (Projektdatei, mit
-   den geänderten Angaben als Hinweis). Beim Ergänzen zeigt er nur, was sich ändert (umschaltbar). Einzelne
-   Einträge lassen sich abwählen („Alle neuen Einträge abwählen“ und danach einzelne wieder wählen); mit einem
-   Ordner entfällt alles darin. Ergänzen ohne Leistungsphasen: Der Trockenlauf weist darauf hin, dass alle Ordner
+   Vorlage mit Preset, Projektdatei) und dem Vermerk „vorhanden“, „wird ergänzt“ (Projektdatei, mit den geänderten
+   Angaben als Hinweis), „abgewählt“ bzw. – beim Ergänzen – „neu“. Beim Ergänzen zeigt er nur, was sich ändert
+   (umschaltbar). Einzelne Einträge lassen sich abwählen (beim Ergänzen auch „Alle neuen Einträge abwählen“ und
+   danach einzelne wieder wählen); mit einem Ordner entfällt alles darin. Pfade, die mit Stammordner 260 Zeichen
+   oder länger würden, meldet der Trockenlauf vorab (Windows-Explorer und Office öffnen sie nicht). Der Knopf
+   **„Projektordner anlegen“** bzw. „Projekt ergänzen“ steht wie „Weiter“ rechts unten in der Navigation, die beim
+   Blättern sichtbar bleibt; ist er gesperrt, steht der Grund daneben (etwa „Erst den Stammordner für Projekte
+   wählen.“). Unmittelbar vor dem Anlegen sieht der Assistent im Stammordner nach, ob es den Projektordner
+   inzwischen gibt (ein Kollege hat dieselbe Nummer vergeben) – dann legt er nichts an und bietet an, das vorhandene
+   Projekt zu ergänzen. Ergänzen ohne Leistungsphasen: Der Trockenlauf weist darauf hin, dass alle Ordner
    vorgeschlagen werden, und springt mit „Leistungsphasen wählen“ zum Umfang. Danach meldet das Tool, was angelegt
    bzw. ergänzt wurde, was schon da war und was fehlgeschlagen ist – ein Fehler hält die übrigen Schritte nicht auf.
    Im Browser entsteht der Projektordner als ZIP-Datei zum Herunterladen (statt im Stammordner).
-   Nach dem erfolgreichen Anlegen zeigt der Assistent eine **Abschlussseite** mit dem Ordnernamen, „Ordner öffnen“
+   Nach dem erfolgreichen Anlegen zeigt der Assistent eine **Abschlussseite** (ohne Zurück-Navigation) mit dem Ordnernamen, „Ordner öffnen“
    und „Nächstes Projekt“ (kam der Auftrag aus einer anderen App, außerdem „In … öffnen“, siehe unten); das Formular ist dann schon für das nächste Projekt geleert – „Rückgängig“ (zehn Sekunden)
    holt den Entwurf zurück. Schlägt ein Schritt fehl, bleibt der Entwurf stehen.
 
@@ -99,7 +114,7 @@ In der Rahmen-App Arkly (früher „arch-tools“) steht auf der Projektübersic
 (Flächenrechner), TERRIO (GRZ-Nachweis), NUMIO (Kostenermittlung), RECTIO (Entzerrung), PERMIO (Formulare) – der
 Knopf **„Neues Projekt anlegen“**, dazu im „+“-Menü und auf der Startseite des Rahmens. Er öffnet den Tab „ATLAS“
 (bzw. holt dessen herausgelöstes Fenster nach vorn) und startet den Assistenten direkt bei den Stammdaten – ein
-angefangener Entwurf bleibt erhalten („Formular leeren“ beginnt leer). Oben steht, aus welcher App der Auftrag kam,
+angefangener Entwurf bleibt erhalten („Leer beginnen“ auf der Startseite verwirft ihn). Oben steht, aus welcher App der Auftrag kam,
 mit „Zurück zu …“. Nach dem Anlegen führt **„In QUADRIO öffnen“** (bzw. „Zurück zu PERMIO“) zurück: Die Übersicht
 dort liest die Projekte neu, und QUADRIO, TERRIO, NUMIO und RECTIO öffnen das neue Projekt gleich. In diesen Apps
 heißt das bisherige „Neues Projekt“ (leeres Projekt ohne Projektordner) im Rahmen „Leer beginnen“. Die einzeln
@@ -112,8 +127,11 @@ vom Rahmen), herausgelöste Fenster per Tauri-Ereignis (`arch-tools:an-rahmen`, 
 sich mit `arch-tools:bereit`, sobald sie hört; was vorher ankommt (etwa beim frisch geöffneten Tab), stellt der
 Rahmen danach zu.
 
-**Tastatur:** Strg+Enter geht zum nächsten Schritt; der aktive Schritt ist für Bildschirmleser gekennzeichnet, die
-Felder der Beteiligten sind je Zeile beschriftet („Rolle 2“, „Beteiligten 2 entfernen“).
+**Tastatur:** Strg+Enter geht zum nächsten Schritt; nach jedem Schrittwechsel steht der Fokus auf der Überschrift
+(in den Stammdaten im ersten Feld), der aktive Schritt ist für Bildschirmleser gekennzeichnet, die Felder der
+Beteiligten sind je Zeile beschriftet („Rolle 2“, „Beteiligten 2 entfernen“), die Kontrollkästchen im Trockenlauf
+heißen wie ihr Eintrag („Baugrund anlegen“). Die Projektliste zum Ergänzen ist per Tab erreichbar; Enter im
+Suchfeld öffnet den ersten Treffer.
 
 Angelegt bzw. ergänzt werden
 
@@ -165,8 +183,8 @@ Plannummern“) – gemeinsam für alle Apps (`allgemein.json`, Eintrag `namenss
 - **Aufbau des Dateinamens:** welche Stelle Projektcode, Phase bzw. Antragsart, Datum (JJMMTT) und Plannummer haben –
   Vorgabe „HVO GP 261111 GP-04 Grundriss OG.pdf“ (im Antragsordner steht die Antragsart statt der Phase, die
   Plannummer bleibt).
-- **Planphasen** mit Kürzel, Bedeutung und Leistungsphase: BP Grundlagenermittlung (LPH 1), EP Entwurfsplanung (LPH
-  3), GP Genehmigungsplanung (LPH 4), AP Ausführungsplanung (LPH 5), AB Abgeschlossenheitsbescheinigung (Sonderfall;
+- **Planphasen** mit Kürzel, Bedeutung und Leistungsphase: BP Grundlagenermittlung (LPh 1), EP Entwurfsplanung (LPh
+  3), GP Genehmigungsplanung (LPh 4), AP Ausführungsplanung (LPh 5), AB Abgeschlossenheitsbescheinigung (Sonderfall;
   Aufteilungspläne nach § 7 Abs. 4 WEG).
 - **Antrags- und Verfahrensarten** mit gleichwertigen Schreibweisen: BAUA Bauantrag, BAUVA Bauvoranfrage (Antrag auf
   Vorbescheid, § 77 BauO NRW 2018; auch BVA), BAUF Genehmigungsfreistellung (kein Antrag, sondern Vorlage bei der
@@ -176,7 +194,8 @@ Plannummern“) – gemeinsam für alle Apps (`allgemein.json`, Eintrag `namenss
   (Schreibweisen bereinigt: groß, ohne Doppelte). Kürzel und Schreibweisen bestehen aus Großbuchstaben und Ziffern
   (höchstens 8 Zeichen) und sind über beide Listen eindeutig – eine Antragsart darf nicht wie eine Phase heißen, eine
   Schreibweise nicht schon bei einer anderen Art stehen; sonst zeigt das Feld wieder den gespeicherten Stand und eine
-  Meldung sagt warum (beim Lesen werden solche Einträge ebenso verworfen). Leistungsphasen sind ganze Zahlen von 0 bis
+  Meldung sagt warum (beim Lesen werden solche Einträge ebenso verworfen); in einer neuen Zeile bleibt die Eingabe
+  dagegen markiert zum Korrigieren stehen. Leistungsphasen sind ganze Zahlen von 0 bis
   9 (die HOAI kennt 1 bis 9; 0 heißt „von Anfang an“) – eine andere Eingabe bleibt mit Meldung stehen, leer = keine.
   Ein neues Kürzel („+ Kürzel“) wird erst gespeichert, wenn man die Zeile mit einem gültigen Kürzel verlässt (Esc
   verwirft es) – vorher gilt es in keiner App. Entfernen fragt nach. Die Stellen tauschen beim Umstellen die Plätze;
@@ -204,14 +223,23 @@ Eigener Reiter **„Struktur“** (bis 0.13 Teil der Einstellungen). Ordnerbaum,
 Büro, nicht dem Tool. Die Struktur lässt sich zusätzlich als JSON-Datei
 speichern, weitergeben und laden – samt den Vorlagen-Presets und dem Dateinamenschema für Vorlagen; die eingebaute
 Vorgabe ist neutral (nach Dokumentart: Projekt, Grundlagen, Pläne, Berechnungen, Schriftverkehr, Protokolle,
-Genehmigung, Ausschreibung, Bauleitung, Fotos). „Standard“ setzt Ordner und Schemata zurück; die Presets bleiben.
+Genehmigung, Ausschreibung, Bauleitung, Fotos). „Vorgabe wiederherstellen …“ setzt Ordner und Schemata zurück; die
+Presets bleiben.
 
-Die Bürostruktur gilt für alle, die den Konfigurationsordner nutzen. „Standard“ und „Struktur laden …“ fragen
+Die Bürostruktur gilt für alle, die den Konfigurationsordner nutzen. „Vorgabe wiederherstellen …“ und „Struktur laden …“ fragen
 deshalb vorher nach und zeigen, was sich ändert („6 Ordner entfallen, 2 neu, 3 Schemata ändern sich“), mit
 „Ersetzen / Abbrechen“. Vor dem Ersetzen wird der bisherige Stand gesichert – in `projektordner-sicherungen.json`
 im Konfigurationsordner, je Sicherung mit Namen `projektordner.json.bak-JJJJ-MM-TT-hhmm`; die letzten zehn bleiben.
-„Sicherungen …“ listet sie zum Wiederherstellen. Nach dem Ersetzen (und nach „Ordnerliste übernehmen“) nimmt
-„Rückgängig“ die Änderung zurück, solange nichts anderes geändert wurde.
+„Sicherungen“ klappt die Liste zum Wiederherstellen auf. Auch „Ordnerliste übernehmen“ (Textansicht) sichert vorher.
+Nach dem Ersetzen nimmt „Rückgängig“ die Änderung zurück, solange nichts anderes geändert wurde.
+
+Lässt sich die Struktur in `projektordner.json` nicht lesen (etwa das Format einer neueren ATLAS-Fassung), zeigt
+ATLAS vorläufig die Vorgabe mit einer Warnung, **schreibt aber nichts** – weder die Struktur noch das Ordnerschema für
+die anderen Apps. Erst wenn die Struktur bewusst ersetzt wird („Struktur laden …“, eine Sicherung oder „Vorgabe
+wiederherstellen …“), wird gespeichert; der unlesbare Inhalt kommt vorher in die Sicherungen. Felder, die diese
+Fassung nicht kennt, bleiben beim Speichern erhalten.
+
+Die **Namensschemata** stehen im Kopf der Struktur (sie gelten für alle Ordner, nicht für den gewählten):
 
 | Einstellung | Vorgabe | Platzhalter |
 |---|---|---|
@@ -219,7 +247,7 @@ im Konfigurationsordner, je Sicherung mit Namen `projektordner.json.bak-JJJJ-MM-
 | Name des Projektordners | `{PROJEKT_KUERZEL} {PROJEKT_KURZNAME}` | alle globalen |
 | Dateinamenschema für Pläne | `{PROJEKT_KUERZEL}_{Plannummer}_{Index}_{Titel}` | alle globalen, dazu `{Plannummer}`, `{Index}`, `{Titel}` |
 
-Unter jedem Schemafeld stehen die Platzhalter als Chips – globale und lokale unterscheidbar, wie in allen Apps
+Solange ein Schemafeld den Fokus hat, stehen darunter die Platzhalter als Chips – globale und lokale unterscheidbar, wie in allen Apps
 ([platzhalter.md](platzhalter.md)). Gespeicherte Schemata mit alten Namen (`{jahr}-{nr:3}`, `{nummer} {kurzname}`)
 gelten weiter; „Auf neue Namen umstellen“ am Feld stellt sie auf die neuen Namen um.
 
@@ -228,21 +256,23 @@ Die **Ordnerliste** wird mit der Maus bearbeitet – ein Baum wie im Explorer, r
 - **Auswählen:** Klick; Strg+Klick und Umschalt+Klick wählen mehrere. Rechts dann Name, **Leistungsphasen** (Knöpfe
   1–9, „immer“ und Schnellwahl 1–4, 5–8, 6–7, 8) und „Dateinamen prüfen“ – bei mehreren Ordnern für alle auf einmal
   (teilweise gesetzte Phasen gestrichelt).
-- **Anlegen:** „+“ an der Zeile bzw. „+ Unterordner“ (Strg+N), „Ordner daneben“ (Strg+Umschalt+N), „+ Ordner“ im
+- **Anlegen:** „+ Unterordner“ (Strg+N), „Ordner daneben“ (Strg+Umschalt+N, im Menü), „+ Ordner“ im
   Stamm. Der neue Ordner steht gleich zum Benennen bereit (Enter übernimmt, Esc behält den Vorschlag).
 - **Mehrere anlegen …:** eine Zeile je Ordner, eingerückte Zeilen (Tab oder Leerzeichen) werden Unterordner, „/“
-  trennt ebenfalls, Zusätze wie in der Textansicht (`| LPh 6-7`, `| Dateischema`); mit Vorschau als Baum. Sind
-  mehrere Ordner markiert, entsteht die Liste in **jedem** davon.
+  trennt ebenfalls, Zusätze wie in der Textansicht (`| LPh 6-7`, `| Dateischema`); mit Vorschau als Baum. Strg+Enter
+  legt an. Ohne Auswahl entstehen die Ordner im Stamm; sind mehrere Ordner markiert, entsteht die Liste in **jedem**
+  davon.
 - **Umbenennen:** Doppelklick oder F2 (bzw. das Feld rechts); Unterordner wandern mit.
 - **Verschieben:** ziehen und ablegen – auf einen Ordner: hinein, an den oberen bzw. unteren Rand: davor bzw.
-  dahinter, ganz unten: in den Stamm; auch mehrere auf einmal. Tastatur: Alt+↑/↓ unter Geschwistern, Alt+→ wird
-  Unterordner des Ordners darüber, Alt+← eine Ebene höher. Nicht möglich (mit Meldung): in sich selbst, oder im Ziel
-  gibt es schon einen Ordner gleichen Namens.
+  dahinter, auf die Fläche am unteren Rand des Baums (beim Ziehen immer sichtbar): in den Stamm; auch mehrere auf
+  einmal. Tastatur: Alt+↑/↓ unter Geschwistern, Alt+→ wird Unterordner des Ordners darüber, Alt+← eine Ebene höher.
+  Nicht möglich: in sich selbst, oder im Ziel gibt es schon einen Ordner gleichen Namens – solche Ziele werden beim
+  Ziehen nicht hervorgehoben, der Mauszeiger zeigt „nicht erlaubt“.
 - **Kopieren und Einfügen:** Strg+C kopiert die markierten Ordner samt Unterordnern, Strg+V fügt sie in **alle**
   markierten Ordner ein. Gleichnamige Ordner werden zusammengeführt – mehrfaches Einfügen ändert nichts mehr.
   **Duplizieren** (Strg+D) legt eine Kopie direkt dahinter an („Rohbau 2“).
 - **Bausteine** (rechts): wiederkehrende Unterordner, z. B. der Aufbau eines Gewerkeordners. Rechtsklick auf einen
-  Ordner → „Unterordner als Baustein speichern …“ (oder „Als Baustein …“ rechts) speichert seine Unterordner unter
+  Ordner → „Unterordner als Baustein speichern …“ speichert seine Unterordner unter
   einem Namen; „Einfügen“ setzt sie in alle markierten Ordner ein. Beispiel: 15 Gewerkeordner mit „Mehrere anlegen“
   in „07 Ausschreibung“ anlegen, alle markieren (Klick, Umschalt+Klick), Baustein „Gewerk“ einfügen – fertig.
   Eingefügt wird eine Kopie; spätere Änderungen am Baustein ändern die Struktur nicht. „Beispiel „Gewerk“ anlegen“
@@ -250,16 +280,23 @@ Die **Ordnerliste** wird mit der Maus bearbeitet – ein Baum wie im Explorer, r
   gesichert.
 - **Löschen:** Entf bzw. Rechtsklick → Löschen; mit Unterordnern oder mehreren erst nach Rückfrage.
 - **Rückgängig/Wiederholen** (↶ ↷, Strg+Z/Strg+Y) für jeden Schritt des Editors.
-- **Vorschau für LPh:** die Leistungsphasen eines Beispielprojekts wählen – Ordner, die dann nicht entstehen, sind
-  blass und durchgestrichen („12 von 44 Ordnern entstehen“).
-- Rechtsklick zeigt alle Aktionen; Aufklappen/Zuklappen, Pfeiltasten, Pos1/Ende bewegen die Auswahl.
+- **LPh-Vorschau:** eigener Modus (Knopf in der Werkzeugleiste, „Vorschau beenden“) – die Leistungsphasen eines
+  Beispielprojekts wählen; Ordner, die dann nicht entstehen, sind blass und durchgestrichen („12 von 44 Ordnern
+  entstehen“). Die Vorschau ändert nichts an der Struktur.
+- **Menüs:** Rechtsklick, „⋯“ an der Zeile oder Umschalt+F10 bzw. die Menütaste (für die Zeile mit der Schreibmarke)
+  zeigen alle Aktionen mit ihren Tastenkürzeln. Das Menü ist ganz per Tastatur bedienbar: Pfeil auf/ab, Pos1/Ende,
+  Enter; Esc oder Tab schließt, der Fokus kehrt in den Baum zurück. Kopieren, Einfügen, Duplizieren sowie Alle
+  aufklappen/zuklappen stehen außerdem im Menü „Weitere“ der Werkzeugleiste. Pfeiltasten, Pos1/Ende bewegen die
+  Auswahl.
+- **Meldungen** erscheinen am unteren Rand des Baums (Fehler als Warnung) und verschwinden nach einigen Sekunden.
 
 **Leistungsphasen werden vererbt:** Ein Unterordner entsteht nur, wenn auch sein übergeordneter Ordner entsteht –
 „07 Ausschreibung | LPh 6-7“ gilt für alle Gewerkeordner darin, ohne dass jeder die Phasen braucht. Im Baum steht
 die geerbte Angabe gestrichelt, rechts der Hinweis „Entsteht nur, wenn auch … entsteht“. Das gilt beim Anlegen, im
 Trockenlauf und in „Ordner prüfen“ (bis 0.13 entstand ein Unterordner ohne eigene Leistungsphasen immer und zog
-seinen übergeordneten Ordner mit). Übergeordnete Ordner, die nur als Teil eines Pfads vorkommen, stehen kursiv; eine
-Leistungsphase oder „Dateinamen prüfen“ gibt ihnen eine eigene Regel.
+seinen übergeordneten Ordner mit). Übergeordnete Ordner, die nur als Teil eines Pfads vorkommen, haben keine eigene
+Regel (Tooltip und Seitenleiste sagen es: „entsteht über seine Unterordner“); eine Leistungsphase oder „Dateinamen
+prüfen“ gibt ihnen eine.
 
 Für Geübte gibt es die Ordnerliste auch als **Text (Experte)** – dieselbe Liste, eine Zeile je Ordner, Unterordner
 mit `/`. Zusätze nach `|`:
@@ -275,11 +312,15 @@ mit `/`. Zusätze nach `|`:
   (Unterordner erben das: „07 Ausschreibung/Rohbau/Angebote“ oben entsteht nur mit LPh 6 oder 7).
 - `Dateischema` – Dateien in diesem Ordner werden im Prüfmodus gegen das Dateinamenschema geprüft.
 
-Unzulässige Zeichen in Namen (`\ / : * ? " < > |`) werden entfernt. Was beim Lesen der Liste entfällt oder
-bereinigt wird – doppelte Zeilen (nur die erste gilt), Leistungsphasen außerhalb 1 bis 9, entfernte Zeichen,
-unbekannte Zusätze nach `|` –, meldet das Tool zeilenweise unter dem Feld („Zeile 4 doppelt zu Zeile 1 – nur die
-erste gilt“). Eine Liste mit Meldungen wird nicht schon beim Verlassen des Felds übernommen, sondern erst mit
-„Ordnerliste übernehmen“. Der Ort der Projektdatei stand bis Version 0.1
+Unzulässige Zeichen in Namen (`\ / : * ? " < > |`) werden entfernt; unter Windows reservierte Namen (CON, PRN, AUX,
+NUL, COM1–9, LPT1–9, auch mit Endung, auch mit Leerzeichen davor wie „AUX .txt“) bekommen ein „_“ angehängt („CON“ → „CON_“). Was beim Lesen der Liste entfällt
+oder bereinigt wird – doppelte Zeilen (nur die erste gilt), Leistungsphasen außerhalb 1 bis 9, entfernte Zeichen,
+reservierte Namen, unbekannte Zusätze nach `|` –, meldet das Tool zeilenweise unter dem Feld („Zeile 4 doppelt zu
+Zeile 1 – nur die erste gilt“). Übernommen wird der Text nur mit „Ordnerliste übernehmen“ (vorher gesichert, mit
+„Rückgängig“); „Verwerfen“ zeigt wieder die geltende Liste. Wer mit nicht übernommenen Änderungen zum „Baum“
+wechselt, wird gefragt (Übernehmen, Verwerfen, Abbrechen; Enter übernimmt). Der nicht übernommene Text bleibt
+auch beim Wechsel in eine andere Ansicht (etwa „Vorlagen“ oder „Projekte“) erhalten, bis zum Schließen der App.
+Kommt die Struktur inzwischen neu herein (anderer Rechner), bleibt der eigene Text mit Hinweis stehen. Der Ort der Projektdatei stand bis Version 0.1
 in der Struktur („Leere Flächenrechner-Datei“); er ist jetzt eine gemeinsame Einstellung und wird übernommen.
 
 ## Vorlagen
@@ -306,6 +347,9 @@ wo jede Datei landet und wie sie heißt (mehr als vier Dateien je Zuordnung: auf
 Vorlagenordner nicht gibt, sind markiert. Dazu prüft sie das Preset nach den Regeln von „Ordner prüfen“ und fasst
 zusammen, was danach als Abweichung gälte: „3 Ordner liegen außerhalb der Struktur“, „2 Dateien liegen lose im
 Projektstamm“ (aufklappbar mit Liste). Die Anleitung `LIESMICH.txt` im Stamm des Vorlagenordners zählt nicht mit.
+Die Preset-Liste steht oben in der linken Spalte (per Tab und Enter wählbar); „Löschen …“ fragt wie bei Bausteinen
+nach. Eine entfernte Zuordnung („×“) holt „Rückgängig“ zurück. Die Platzhalter-Übersicht für Vorlagen ist
+eingeklappt („Platzhalter in Vorlagen anzeigen“).
 
 Presets mit **„Standard“** sind bei neuen Projekten vorausgewählt; welche ein Projekt bekommen hat, steht in seiner
 Projektdatei. Die eingebaute Struktur bringt das Preset
@@ -371,7 +415,9 @@ Stammordner (mit Suche; ein Klick prüft) oder über „Ordner wählen …“. G
 - die **Projektdatei**: vorhanden (mit Nummer, Kurzname, Anlagedatum, Struktur), fehlt (dann gilt die vollständige
   Struktur; stehen Stammdaten noch in einer alten `projekt.json`, gelten deren Leistungsphasen) oder nicht lesbar,
 - der **Ordnername**, wenn er nicht dem Schema und den Stammdaten entspricht,
-- **fehlende Ordner** der Struktur,
+- **fehlende Ordner** der Struktur – „Fehlende Ordner anlegen“ steht direkt am Befund. Nennt die Projektdatei kein
+  Anlagedatum, ist das Jahr für `{JAHR}`/`{JAHR_KURZ}` unbekannt: Ordnername und Ordner, die es brauchen, gelten dann
+  als **nicht beurteilbar** (Hinweis) und werden weder als fehlend gemeldet noch angelegt,
 - **zusätzliche Ordner** auf Ebenen, die die Struktur vorgibt (Stamm und Ordner mit vorgegebenen Unterordnern),
 - **lose Dateien** im Projektordner (die alte `projekt.json` darf liegen bleiben),
 - Dateien in den Planordnern, die nicht dem **Dateinamenschema** folgen (mit der Projektnummer aus den
@@ -381,8 +427,12 @@ Stammordner (mit Suche; ein Klick prüft) oder über „Ordner wählen …“. G
 - **Mails** (.msg), die nicht nach dem Schema `<Projektcode> von|an <Name> <JJMMTT> <Thema>.msg` heißen – nur am
   Namen; „N Mails benennen …“ führt zu [Mails](#mails).
 
-Die Befunde stehen nach Schwere gruppiert: Fehler, Abweichungen, Hinweise, in Ordnung. „Bericht als CSV …“ speichert
-sie mit allen betroffenen Pfaden (für Excel: Semikolon, UTF-8 mit BOM).
+Die Befunde stehen nach Schwere: Fehler, Abweichungen, Hinweise, in Ordnung; die Kopfzeile zählt sie getrennt („2
+Abweichungen · 1 Hinweis“). Lange Pfadlisten (mehr als fünf) sind eingeklappt; Aktionen wie „Fehlende Ordner anlegen“
+und „N Mails benennen …“ stehen am Befund, „← Zur Projektliste“ oben am Bericht. „Als CSV speichern …“ speichert ihn
+mit allen betroffenen Pfaden (für Excel: Semikolon, UTF-8 mit BOM; Text, der mit `=`, `+`, `-` oder `@` beginnt,
+bekommt ein Apostroph vorangestellt, damit Excel ihn nicht als Formel ausführt). Scheitert das Anlegen mittendrin,
+wird neu geprüft und gemeldet, wie viele Ordner schon angelegt sind.
 
 **Alle Projekte prüfen** prüft jeden Projektordner der Stammordner – nur lesend – und zeigt eine Übersicht: Projekt,
 Zahl der Abweichungen (davon Fehler), Projektdatei ja/nein, längster Pfad; Projekte mit Fehlern und den meisten
@@ -419,11 +469,13 @@ Punkt/Unterstrich im Namen, ungültiges Datum, „AW“/„WG“ am Anfang des T
 
 Woran „aus dem Büro“ erkannt wird, stellen die **eigenen Domains** ein (gilt fürs Büro, Konfigurationsordner, Bereich
 `mails`); ohne Einstellung schlägt die App die Domain vor, die in den meisten Mails des Projekts vorkommt, und nimmt bis
-dahin die Richtung aus dem bisherigen Namen. **„Auch korrekt benannte prüfen“** liest auch die richtig benannten Mails
+dahin die Richtung aus dem bisherigen Namen (eigene Domains, die während des Einlesens gespeichert werden, gelten auch
+für die danach gelesenen Mails). **„Auch korrekt benannte prüfen“** liest auch die richtig benannten Mails
 und meldet ein abweichendes Datum („Datum 261103 – die Mail ist vom 261102 (Versand)“) bzw. eine falsche Richtung. Der
 Projektcode kommt aus der Projektdatei und lässt sich oben ändern.
 
-Umbenannt wird erst auf Klick – einzeln oder alle markierten –, im selben Ordner, die Endung bleibt, und **nie
+Umbenannt wird erst auf Klick – einzeln oder alle markierten (Auswahl und „Umbenennen“ stehen nur da, wenn es
+abweichende Mails gibt) –, im selben Ordner, die Endung bleibt, und **nie
 überschreibend**: Gibt es den Namen schon, bleibt alles, wie es war. Ist die Mail in Outlook geöffnet, sagt die App
 das. (Befehl `projekt_datei_umbenennen` in `packages/core/tauri/umbenennen.rs`, nur in den Hüllen von ATLAS und
 Rahmen-App.)
@@ -432,7 +484,11 @@ Rahmen-App.)
 hierher ziehen“ ziehen (oder gespeicherte .msg-Dateien wählen). Die App bildet den Namen wie oben, schlägt als Ordner
 den vor, in dem im Projekt die meisten Mails liegen, und legt sie mit „Ablegen“ dort ab – **kopiert** (in Outlook
 bleiben sie; die App meldet beim Ziehen „kopieren“, nie „verschieben“) und nie überschreibend. Liegt dieselbe Mail
-(gleicher Betreff und Versand) schon im Projekt, steht das dabei. Dafür gibt das Fenster das Ziehen & Ablegen an die
+(gleicher Betreff und Versandzeit) schon im Projekt, steht das dabei – verglichen mit allen Mails im Projekt (noch
+ungelesene, deren Name nicht passt oder deren Datum um den Tag der neuen Mail liegt, werden dafür gelesen); ebenso,
+wenn dieselbe Mail in einer Ablage zweimal dabei ist. Entwürfe ohne Versandzeit gelten nie als doppelt. Eine Datei,
+die keine lesbare Outlook-Mail ist, wird so genannt und lässt sich mit „×“ verwerfen; „Verwerfen“ für alle fragt ab
+zwei Mails nach. Damit das Ziehen klappt, gibt das Fenster das Ziehen & Ablegen an die
 Oberfläche weiter (`dragDropEnabled: false`, wie in der Rahmen-App) – Outlook liefert die Mails dabei als virtuelle
 Dateien, die Chromium/WebView2 als .msg übergibt. Auf einem Büro-PC noch zu bestätigen; das neue Outlook liefert so
 nichts (dort: auf den Desktop ziehen bzw. „Speichern unter“ und dann wählen). Hintergrund und Alternativen (Graph,
@@ -440,7 +496,7 @@ COM, Makro): [docs/outlook-mails.md](outlook-mails.md).
 
 ## Katasterpläne
 
-Katasterauszüge als PDF und DXF-Pläne kommen aus einem **QGIS-Projekt als Vorlage**, in dem das Büro seine Dienste
+Katasterpläne als PDF und DXF kommen aus einem **QGIS-Projekt als Vorlage**, in dem das Büro seine Dienste
 (ALKIS-WMS/WFS), Kartenthemen und Layouts mit Planköpfen pflegt. Exportiert wird je Projekt auf der Startseite
 (Rechtsklick auf das Projekt → „Katasterpläne …“); QGIS läuft dabei unsichtbar im Hintergrund (`qgis_process`, ab
 QGIS 3.28; geprüft mit 3.34 LTR). Früher war das Teil von PERMIO; dessen Einstellungen werden beim ersten Öffnen
@@ -454,7 +510,7 @@ QGIS 3.28; geprüft mit 3.34 LTR). Früher war das Teil von PERMIO; dessen Einst
   (`{PROJEKT_KUERZEL} {Art} {DATUM} {Name}` – passt zum Namensformat des Antragsordners; alle globalen Platzhalter,
   lokal `{Art}` und `{Name}` des Plans, im festen Ordner `{Antrag}`; alte Namen wie `{Code}` gelten weiter) und die
   Pläne. Vorgegeben sind
-  *Katasterauszug A4* (Layout „Katasterauszug A4“, 1:1000), *Katasterauszug A3* (Layout „Katasterauszug A3“, 1:500),
+  *Katasterplan A4* (Layout „Katasterauszug A4“, 1:1000), *Katasterplan A3* (Layout „Katasterauszug A3“, 1:500),
   *Schwarzplan* (DXF, Kartenthema „Schwarzplan“, 300 × 300 m) und *Katasterplan* (DXF, Kartenthema „Katasterplan“,
   150 × 150 m, je Objekt mit Beschriftungen). Layouts, Kartenobjekte und Kartenthemen stehen zur Auswahl, sobald die
   Vorlage eingelesen ist; was nicht zur Vorlage passt, wird am Plan gemeldet.
@@ -465,15 +521,30 @@ QGIS 3.28; geprüft mit 3.34 LTR). Früher war das Teil von PERMIO; dessen Einst
   entfallen), Symbolik je Symbolebene, je Objekt oder ohne, Symbolmaßstab = Maßstab des Plans, Beschriftungen wahlweise.
 - **Planköpfe:** Projektvariablen `@project_title` (Vorhaben, sonst Name der Projektdatei), `@project_identifier`
   (Projektcode), `@project_street`, `@project_city`, `@project_zip_code` aus der Projektdatei; je Plan außerdem
-  `@plan_name`, `@plan_massstab` („1:1000“), `@plan_datum` und `@plan_beschriftung` (Text aus den Einstellungen).
+  `@plan_name`, `@plan_massstab` („1:1000“), `@plan_datum` und `@plan_beschriftung` (Text aus den Einstellungen,
+  Platzhalter wie im Dateinamen; Vorgabe „Kartengrundlage: Liegenschaftskarte (ALKIS), Geobasis NRW, Stand
+  {DATUM:TT.MM.JJJJ} – kein amtlicher Auszug“).
   `project_title` und `project_identifier` sind in QGIS eingebaute Variablen – gesetzt werden dafür Projekttitel und
   Kennung in den Projekt-Metadaten.
 - **Vorlage in der Projektdatei:** beim ersten Export wird die globale Vorlage in die `.oap` übernommen
   (`dateien`, Art `qgis`) und danach von dort verwendet – spätere Änderungen an der Bürovorlage ändern alte Projekte
   nicht. „Vorlage aktualisieren“ im Export-Dialog ersetzt sie durch die aktuelle Fassung.
 - Voraussetzung sind **Koordinaten** in der Projektdatei (beim Speichern der Projektadresse abgefragt, EPSG:25832).
+  Der Ausschnitt wird auf die geokodierte Adresse zentriert, nicht auf das Flurstück – bei Eckgrundstücken und
+  Hinterliegern den Ausschnitt prüfen.
   Im Projektordner wird nichts überschrieben: Gibt es einen Plan schon, wird er übersprungen oder mit neuem Namen
-  („… (2).pdf“) abgelegt. `{Art}` im Dateinamen ist die Antragsart des aktiven Antrags (ohne Antrag leer).
+  („… (2).pdf“) abgelegt; bekämen zwei Pläne denselben Namen (etwa ohne `{Name}` im Dateinamen), meldet der Export das
+  vorher. Der feste Ablageordner bleibt immer im Projektordner (unzulässige Zeichen, „.“ und „..“ fallen weg).
+  `{Art}` im Dateinamen ist die Antragsart des aktiven Antrags (ohne Antrag leer). Schlägt ein Plan fehl, wird keine
+  leere oder halbe Datei abgelegt; Kartenthema, Ausschnitt und abgeschaltete Beschriftungen eines Plans gelten nur für
+  ihn. „Plan entfernen“ und „Vorgaben“ fragen vorher nach – die Pläne gelten für das ganze Büro.
+- **Kein amtlicher Auszug:** Der Export ist eine Arbeits- und Planungsgrundlage. Für den Bauantrag bleibt der
+  amtlich beglaubigte Auszug aus der Flurkarte (§ 2 BauPrüfVO NRW) bzw. der amtliche Lageplan (§ 3 Abs. 3 BauPrüfVO
+  NRW) nötig. Gespeicherte Einstellungen mit den alten Vorgaben werden beim Einlesen umgestellt: die Beschriftung
+  „Auszug aus der Liegenschaftskarte“ auf die heutige Vorgabe, die Namen „Katasterauszug A4/A3“ der beiden PDF-Pläne
+  auf „Katasterplan A4/A3“ – nur, wenn der Text genau der alten Vorgabe entspricht; selbst angepasste Texte bleiben.
+  Steht `{Name}` im Dateinamen, heißen neue Exporte danach anders; ein schon abgelegter Plan mit altem Namen gilt dann
+  nicht als vorhanden.
 
 Umsetzung (`apps/ordner`): `src/kataster/kataster.ts` (Einstellungen, Auslesen der Vorlage, Auftrag), `katasterStore.ts`
 (Ablauf), `qgis.ts` (Befehle der Hülle bzw. Ersatz für die Tests), `components/KatasterDialog.tsx` und

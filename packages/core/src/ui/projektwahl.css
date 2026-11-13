@@ -37,3 +37,8 @@ main .pw-einstieg,
   border: 1px solid var(--border);
   border-radius: 6px;
 }
+
+/* Nebensache unter den Knöpfen des Einstiegs */
+.pw-fussnote {
+  margin-top: var(--s4);
+}

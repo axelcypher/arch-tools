@@ -242,14 +242,14 @@ export const REGELN: Regel[] = [
     id: 'baunvo-fassungen',
     bereich: 'baunvo',
     titel: 'Welche BauNVO gilt? (Fassung nach dem Bebauungsplan)',
-    kurz: 'Maßgebend ist die Fassung, die beim Inkrafttreten des Bebauungsplans galt; ohne Plan das aktuelle Recht.',
+    kurz: 'Maßgebend ist die Fassung, die bei der öffentlichen Auslegung des Planentwurfs galt; ohne Plan das aktuelle Recht.',
     text: [
-      'Bebauungspläne verweisen statisch auf die BauNVO in der Fassung, die bei ihrem Inkrafttreten (bzw. der öffentlichen Auslegung) galt. TERRIO wählt die Fassung aus dem Plandatum; sie lässt sich übersteuern:',
+      'Bebauungspläne verweisen statisch auf die BauNVO. Nach den Überleitungsvorschriften (§ 25c Abs. 1 BauNVO 1990, § 25a BauNVO 1977, § 25 BauNVO 1968) gilt für Pläne, deren Entwurf vor dem Inkrafttreten einer neuen Fassung nach § 3 Abs. 2 BauGB (bzw. § 2 Abs. 6 BBauG) öffentlich ausgelegt war, noch die alte Fassung. TERRIO wählt die Fassung deshalb nach dem **Auslegungsdatum**, ohne dieses nach dem Datum des Inkrafttretens (mit Hinweis, wenn es weniger als zwei Jahre nach einem Fassungswechsel liegt); sie lässt sich übersteuern:',
       '- **BauNVO 1962**: 01.08.1962 – 31.12.1968',
       '- **BauNVO 1968/1977**: 01.01.1969 – 26.01.1990 (Neufassungen 1968 und 1977 mit gleicher Systematik für GRZ/GF)',
       '- **BauNVO 1990 ff.**: ab 27.01.1990 (später mehrfach geändert, u. a. 2013, 2017, 2021, 2023)',
-      'Ohne Plandatum (Vorhaben im Innen- oder Außenbereich nach §§ 34, 35 BauGB) rechnet das Tool nach aktuellem Recht.',
-      'Unterschiede, die das Tool berücksichtigt: Vor 1990 zählen zur Geschossfläche auch Aufenthaltsräume in Nicht-Vollgeschossen samt Treppenräumen und Umfassungswänden; GRZ II (Garagen, Stellplätze, Zufahrten, Nebenanlagen) gibt es erst ab 1990; 1968/77 bleiben Garagen bis 0,1 der Grundstücksfläche anrechnungsfrei.',
+      'Der Vollgeschossbegriff (Bauordnung NRW) richtet sich dagegen nach dem Inkrafttreten des Plans. Ohne Plandatum (Vorhaben im Innen- oder Außenbereich nach §§ 34, 35 BauGB) rechnet das Tool nach aktuellem Recht.',
+      'Unterschiede, die das Tool berücksichtigt: Vor 1990 zählen zur Geschossfläche auch Aufenthaltsräume in Nicht-Vollgeschossen samt zugehöriger Treppenräume und Umfassungswände; GRZ II (Garagen, Stellplätze, Zufahrten, Nebenanlagen) gibt es erst ab 1990; 1962 (außerhalb von MK, GE, GI) und 1968/77 bleiben Garagen bis 0,1 der Grundstücksfläche anrechnungsfrei.',
     ],
     quellen: [
       { titel: 'BauNVO 1962', fundstelle: 'BGBl. I 1962 S. 429', url: BGBL('62', '0429') },
@@ -258,7 +258,7 @@ export const REGELN: Regel[] = [
       { titel: 'BauNVO 1990', fundstelle: 'BGBl. I 1990 S. 132', url: BGBL('90', '0132') },
       { titel: 'BauNVO, geltende Fassung', url: GII('baunvo/') },
     ],
-    stichworte: ['Fassung', 'Plandatum', 'Bebauungsplan', 'statische Verweisung', '1962', '1968', '1977', '1990', '§ 34', '§ 35'],
+    stichworte: ['Fassung', 'Plandatum', 'Auslegung', '§ 25c', 'Überleitung', 'Bebauungsplan', 'statische Verweisung', '1962', '1968', '1977', '1990', '§ 34', '§ 35'],
     apps: ['grz'],
     themen: ['baunvo', 'grz', 'gfz'],
   },
@@ -271,7 +271,7 @@ export const REGELN: Regel[] = [
       'Die **Grundfläche** ist der Teil des Baugrundstücks, der von baulichen Anlagen überdeckt wird – eine Überdeckung, keine Summe: Was sich überlagert, zählt nur einmal. TERRIO bildet deshalb die Vereinigung aller Flächen (Gebäude und Lageplan-Flächen).',
       'Nach § 19 Abs. 4 (ab 1990) werden Garagen und Stellplätze mit Zufahrten, Nebenanlagen und unterirdische Anlagen mitgerechnet (**GRZ II**); die zulässige Grundfläche darf durch sie um bis zu 50 % überschritten werden, höchstens bis 0,8.',
       '**Terrassen, Wege, sonstige befestigte Flächen:** § 19 BauNVO 1990 nennt sie nicht ausdrücklich. In der Praxis rechnen viele Bauaufsichten eine angebaute, ebenerdige Terrasse der Hauptanlage zu (GRZ I); andere werten sie als Nebenanlage nach § 14 (GRZ II) oder lassen nicht überdeckte, ebenerdige Flächen außer Betracht. TERRIO zeigt deshalb „prüfen“ und rechnet ohne und mit ihnen; die Einstufung wird mit der Bauaufsicht geklärt und unter „Einstufung offener Fälle“ festgelegt.',
-      'Nach BauNVO 1968/1977 bleiben Balkone, Loggien, Terrassen und Nebenanlagen nach § 19 Abs. 4 unberücksichtigt; nach BauNVO 1962 werden Garagen in Kern-, Gewerbe- und Industriegebieten nicht angerechnet (§ 19 Abs. 5).',
+      'Nach BauNVO 1968/1977 bleiben Balkone, Loggien, Terrassen und Nebenanlagen nach § 19 Abs. 4 unberücksichtigt. Nach BauNVO 1962 (§ 19 Abs. 5) werden eingeschossige Garagen und überdachte Stellplätze außerhalb von Kern-, Gewerbe- und Industriegebieten bis 0,1 der Grundstücksfläche nicht angerechnet; in MK, GE und GI können sie ohne Anrechnung zugelassen werden – TERRIO zeigt dort „prüfen“, bis die Zulassung geklärt ist (siehe § 21a).',
     ],
     zitate: [
       {
@@ -291,7 +291,8 @@ export const REGELN: Regel[] = [
     kurz: 'Vollgeschoss nach Landesrecht; Geschossfläche nach Außenmaßen aller Vollgeschosse, ohne Balkone, Loggien, Terrassen.',
     text: [
       'Was ein Vollgeschoss ist, regelt die Landesbauordnung (siehe BauO NRW). Die **Geschossfläche** ist nach Außenmaßen in allen Vollgeschossen zu ermitteln; Balkone, Loggien und Terrassen bleiben unberücksichtigt – TERRIO rechnet deshalb nur Umrisse mit Raumumschließung R.',
-      'Vor 1990 (BauNVO 1962, 1968/1977) sind zusätzlich die Flächen von Aufenthaltsräumen in anderen Geschossen samt zugehöriger Treppenräume und Umfassungswände mitzurechnen. TERRIO erweitert diese Räume um den Wandzuschlag (Standard 0,25 m) und begrenzt sie auf den Geschossgrundriss.',
+      'Vor 1990 (BauNVO 1962, 1968/1977) sind zusätzlich die Flächen von Aufenthaltsräumen in anderen Geschossen samt der zu ihnen gehörenden Treppenräume und Umfassungswände mitzurechnen (§ 20 Abs. 2). TERRIO erweitert diese Räume um den Wandzuschlag (Standard 0,25 m) und begrenzt sie auf den Geschossgrundriss; ein Treppenraum zählt nur, wenn im selben Geschoss ein Aufenthaltsraum liegt.',
+      'Nebenanlagen nach § 14 bleiben bei der Geschossfläche unberücksichtigt (§ 20 Abs. 4 BauNVO 1990, § 20 Abs. 3 der früheren Fassungen): Gebäudeteile, die als „Nebenanlage“ gekennzeichnet sind, zählen nicht zur GF. Garagen als Gebäudeteile: nach BauNVO 1962 und 1968/1977 nicht, soweit sie nicht auf die Grundfläche angerechnet werden (§ 21a Abs. 4 Nr. 2 BauNVO 1968/1977); nach 1968/1977 und 1990 ganz nicht, wenn der Bebauungsplan es nach § 21a Abs. 4 Nr. 3 festsetzt.',
     ],
     zitate: [
       { text: '(1) Als Vollgeschosse gelten Geschosse, die nach landesrechtlichen Vorschriften Vollgeschosse sind oder auf ihre Zahl angerechnet werden.', quelle: '§ 20 Abs. 1 BauNVO' },
@@ -309,21 +310,39 @@ export const REGELN: Regel[] = [
   {
     id: 'baunvo-21a',
     bereich: 'baunvo',
-    titel: 'Garagen und Stellplätze (§ 21a BauNVO)',
-    kurz: 'Überdachte Stellplätze und Garagen dürfen die zulässige Grundfläche um bis zu 0,1 der Grundstücksfläche überschreiten (soweit § 19 Abs. 4 nicht entgegensteht).',
+    titel: 'Garagen und Stellplätze (§ 21a BauNVO, § 19 Abs. 5 BauNVO 1962)',
+    kurz: 'Vor 1990: überdachte Stellplätze und Garagen bis 0,1 der Grundstücksfläche nicht auf die zulässige Grundfläche angerechnet; ab 1990 GRZ II.',
     text: [
-      'TERRIO rechnet nach BauNVO 1968/1977 Garagen bis 0,1 der Grundstücksfläche anrechnungsfrei („bis 0,1 frei“); darüber hinaus zählen sie zur Grundfläche. Ab 1990 gehen Garagen in die GRZ II ein.',
+      'TERRIO rechnet nach BauNVO 1968/1977 (§ 21a Abs. 3) und nach BauNVO 1962 außerhalb von Kern-, Gewerbe- und Industriegebieten (§ 19 Abs. 5 Satz 2) Garagen bis 0,1 der Grundstücksfläche anrechnungsfrei („bis 0,1 frei“); darüber hinaus zählen sie zur Grundfläche. In MK, GE und GI nach BauNVO 1962 ist die Garage „prüfen“: anrechnungsfrei nur, wenn sie ohne Anrechnung zugelassen wurde, und nur eingeschossig (§ 19 Abs. 5 Satz 1). Ab 1990 gehen Garagen in die GRZ II ein.',
+      'Geschossfläche: Nach § 21a Abs. 4 Nr. 2 BauNVO 1968/1977 bleiben Garagen, die nach Abs. 3 nicht angerechnet werden, auch bei der Geschossfläche unberücksichtigt; Garagen in Vollgeschossen nur, wenn der Bebauungsplan es festsetzt oder als Ausnahme vorsieht (Abs. 4 Nr. 3, ebenso BauNVO 1990).',
     ],
     zitate: [
       {
+        text: '(5) In Kerngebieten, Gewerbegebieten und Industriegebieten können eingeschossige Garagen und überdachte Stellplätze ohne Anrechnung ihrer Grundflächen auf die zulässige Grundfläche zugelassen werden. In den übrigen Baugebieten werden solche Anlagen auf die zulässige Grundfläche nicht angerechnet, soweit sie 0,1 der Fläche des Baugrundstücks nicht überschreiten.',
+        quelle: '§ 19 Abs. 5 BauNVO 1962',
+      },
+      {
+        text: '(3) Auf die zulässige Grundfläche (§ 19 Abs. 2) sind überdachte Stellplätze und Garagen nicht anzurechnen, soweit sie 0,1 der Fläche des Baugrundstücks nicht überschreiten. Darüber hinaus können sie ohne Anrechnung ihrer Grundfläche auf die zulässige Grundfläche zugelassen werden 1. in Kerngebieten, Gewerbegebieten und Industriegebieten, 2. in anderen Baugebieten, soweit solche Anlagen nach § 9 Abs. 1 Nr. 4 des Bundesbaugesetzes im Bebauungsplan festgesetzt sind. § 19 Abs. 4 findet keine Anwendung.',
+        quelle: '§ 21a Abs. 3 BauNVO 1977 (BauNVO 1968 gleichlautend, in Nr. 2 mit Verweis auf § 9 Abs. 1 Nr. 1 Buchstabe e BBauG)',
+      },
+      {
+        text: '(4) Bei der Ermittlung der Geschoßfläche (§ 20) oder der Baumasse (§ 21) bleiben unberücksichtigt die Flächen oder Baumassen von 1. Garagengeschossen, die nach Absatz 1 nicht angerechnet werden, 2. Stellplätzen und Garagen, deren Grundflächen nach Absatz 3 nicht angerechnet werden, 3. Stellplätzen und Garagen in Vollgeschossen, wenn der Bebauungsplan dies festsetzt oder als Ausnahme vorsieht.',
+        quelle: '§ 21a Abs. 4 BauNVO 1977',
+      },
+      {
         text: '(3) Soweit § 19 Absatz 4 nicht entgegensteht, ist eine Überschreitung der zulässigen Grundfläche durch überdachte Stellplätze und Garagen bis zu 0,1 der Fläche des Baugrundstücks zulässig; …',
-        quelle: '§ 21a Abs. 3 BauNVO',
+        quelle: '§ 21a Abs. 3 BauNVO 1990 (von TERRIO nicht angewandt – ab 1990 gilt die GRZ II)',
       },
     ],
-    quellen: [BAUNVO('21a')],
-    stichworte: ['Garage', 'Carport', 'überdachter Stellplatz', '0,1', 'Garagengeschoss'],
+    quellen: [
+      { titel: 'BauNVO 1962', fundstelle: 'BGBl. I 1962 S. 429', url: BGBL('62', '0429') },
+      { titel: 'BauNVO 1968', fundstelle: 'BGBl. I 1968 S. 1237', url: BGBL('68', '1237') },
+      { titel: 'BauNVO 1977', fundstelle: 'BGBl. I 1977 S. 1763', url: BGBL('77', '1763') },
+      BAUNVO('21a'),
+    ],
+    stichworte: ['Garage', 'Carport', 'überdachter Stellplatz', '0,1', 'Garagengeschoss', '§ 19 Abs. 5', '1962', 'Geschossfläche', '§ 21a Abs. 4'],
     apps: ['grz'],
-    themen: ['grz', 'lageplan'],
+    themen: ['grz', 'gfz', 'lageplan'],
   },
 
   /* ---------- BauO NRW ---------- */
@@ -336,6 +355,7 @@ export const REGELN: Regel[] = [
       'TERRIO prüft je Geschoss:',
       '- **oberirdisch?** Deckenoberkante im Mittel über der Geländeoberfläche – das Gelände wird entlang der Außenwände *dieses* Geschosses ermittelt (Geländemodell der IFC bzw. Lageplan-Flächen mit Höhe), am Hang also für jedes Geschoss getrennt',
       '- **lichte Höhe** ≥ 2,30 m (Höhe bis Dachhaut bzw. Decke abzüglich Dachaufbau) über mehr als drei Viertel der Grundfläche des darunterliegenden Geschosses; Split-Level-Räume mit tieferem Fußboden zählen mit ihrer größeren Höhe',
+      'Grundflächen nach Außenmaßen ohne Balkone, Loggien und Terrassen (nur Umrisse R). Fällt ein Geschoss nur deshalb durch, weil das Geschoss darunter größer ist (z. B. EG über einer Tiefgarage), weist der Nachweis darauf hin.',
     ],
     zitate: [
       { text: '(4) Geländeoberfläche ist die Fläche, die sich aus der Baugenehmigung oder den Festsetzungen des Bebauungsplans ergibt, im Übrigen die natürliche Geländeoberfläche.', quelle: '§ 2 Abs. 4 BauO NRW 2018' },
@@ -355,7 +375,10 @@ export const REGELN: Regel[] = [
     bereich: 'bauo',
     titel: 'Vollgeschoss nach BauO NW 1984/1995 und BauO NRW 2000 (01.01.1985 – 31.12.2018)',
     kurz: 'Decke im Mittel > 1,60 m über Gelände, Höhe ≥ 2,30 m; Staffelgeschoss > ⅔, geneigte Dächer > ¾; Höhe bis OK Fußboden darüber bzw. OK Dachhaut.',
-    text: ['Gemessen wird nicht die lichte Höhe, sondern von Oberkante Fußboden bis Oberkante Fußboden darüber, unter Dachflächen bis Oberkante Dachhaut.'],
+    text: [
+      'Gemessen wird nicht die lichte Höhe, sondern von Oberkante Fußboden bis Oberkante Fußboden darüber, unter Dachflächen bis Oberkante Dachhaut.',
+      'Die Staffelregel (Bezug auf die Grundfläche darunter) wendet TERRIO nur auf das **oberste** Geschoss an, das gegenüber einem oberirdischen Geschoss darunter zurückgesetzt ist; jedes andere Geschoss braucht die Höhe auf der ganzen eigenen Grundfläche (Satz 1) bzw. unter Dachflächen auf drei Vierteln (Satz 3). Ein EG über einem größeren Keller oder einer Tiefgarage wird so nicht zum Nicht-Vollgeschoss. Grundflächen nach Außenmaßen ohne Balkone, Loggien und Terrassen (nur Umrisse R).',
+    ],
     zitate: [
       {
         text: '(5) Vollgeschosse sind Geschosse, deren Deckenoberkante im Mittel mehr als 1,60 m über die Geländeoberfläche hinausragt und die eine Höhe von mind. 2,30 m haben. Ein gegenüber den Außenwänden des Gebäudes zurückgesetztes oberstes Geschoss (Staffelgeschoss) ist nur dann ein Vollgeschoss, wenn es diese Höhe über mehr als zwei Drittel der Grundfläche des darunter liegenden Geschosses hat. Ein Geschoss mit geneigten Dachflächen ist ein Vollgeschoss, wenn es diese Höhe über mehr als drei Viertel seiner Grundfläche hat. Die Höhe der Geschosse wird von Oberkante Fußboden bis Oberkante Fußboden der darüber liegenden Decke, bei Geschossen mit Dachflächen bis Oberkante Dachhaut gemessen.',

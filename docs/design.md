@@ -4,7 +4,8 @@ Gemeinsame Regeln für die Oberfläche aller Apps der Suite Arkly. Grundlage ist
 App-eigenes steht in `apps/<app>/src/styles.css`. An dieser Richtlinie messen sich die App-Sitzungen und der
 Review-Agent `review-design`.
 
-> Stand: Grundlagen (Skalen, Fokus, Zielgrößen, Überschriften, Meldungen). Die Gestaltungsrichtung (Farben, Knopfstufen,
+> Stand: Grundlagen (Skalen, Fokus, Zielgrößen, Überschriften, Meldungen) und gemeinsame Komponenten (Dialoge,
+> Druckvorschau, Felder, Umschalter). Die Gestaltungsrichtung (Farben, Knopfstufen,
 > Werkzeugleiste, Tabellen) folgt nach der Wahl des Nutzers und wird hier ergänzt.
 
 ## Grundsätze
@@ -93,9 +94,69 @@ Zahlen in Tabellen und Feldern stehen rechtsbündig in Tabellenziffern (`.num`, 
 **Auswahl auf Fotos** immer mit Saum zeichnen: Magenta allein hat auf mittleren Fototönen (Putz, Ziegel, Himmel) kaum
 Helligkeitskontrast. Unter der Linie in `--sel-foto` liegt ein Doppelsaum, außen 1px weiß, innen 1px `rgba(0, 0, 0, 0.5)`.
 
+## Dialoge
+
+- Immer `Modal` aus `ui/Dialog.tsx` statt eines eigenen `div.modal`: Esc, Klick daneben, Rolle, Name und Fokusfalle
+  kommen dann mit.
+- **Titel:** `kopf` zeigt ihn sichtbar als Kopf und benennt damit den Dialog. Nicht zusätzlich als `h3` im Inhalt
+  wiederholen. Ohne `kopf` ist `titel` nur der Name für Screenreader.
+- **Breite:** Standard 380px, `breit` 620px (Formulare), `tabelle` bis 1200px (Vorschauen, Zuordnungen).
+- **Erstfokus** (automatisch, `ui/dialoge.ts`): `autoFocus`, sonst das erste Textfeld, sonst der Hauptknopf
+  (`.primary`). Nie „Abbrechen“ – Enter darf nichts verwerfen.
+- **Knöpfe** in `.dialog-buttons` als letztes Kind des Dialogs (oder seines `<form>`, das dann selbst letztes Kind ist): rechtsbündig, Hauptknopf
+  rechts außen, „Abbrechen“ links davon. In langen Dialogen bleiben sie unten stehen (sticky).
+- **Enter** löst den Hauptknopf aus: Inhalt in `<form onSubmit>`, Hauptknopf `type="submit"`, alle anderen
+  `type="button"`.
+- Optionen, die nur zu einer Wahl gehören, erst bei dieser Wahl zeigen (Beispiel: Vorlagen-Knöpfe im Excel-Dialog nur
+  bei „Eigene Vorlage“).
+
+## Druckvorschau
+
+- `.report-backdrop > .report` gilt als Dialog (Rolle, Name aus der ersten Überschrift, Fokus hinein, Tab bleibt
+  drin).
+- `.report-actions` ist eine eigene Zeile über dem Blatt und bleibt beim Blättern oben: Optionen links, Knöpfe rechts.
+  Sie wird nie mitgedruckt. Hauptknopf (`.primary`) ist **„Drucken / PDF“**, „Schließen“ ein normaler Knopf links
+  davon.
+
+## Felder
+
+- `NumberField` zeigt Zahlen mit Nachkommastellen gruppiert (45.000,00). Beim Fokussieren bleibt der Text
+  unverändert (Cursor und Auswahl stimmen); Punkte vor dem Komma werden beim Lesen immer als Tausendertrenner
+  verstanden, auch wenn nach dem Bearbeiten die Dreiergruppen nicht mehr stimmen. Ganze Zahlen (`digits={0}`) stehen
+  ohne Punkte, weil „45.00“ dort mehrdeutig wäre.
+- **Enter** übernimmt die Eingabe und verlässt das Feld, damit Strg+Z (Rückgängig der App), Entf und die
+  Werkzeugtasten wieder der Arbeitsfläche gehören und nicht ins leere Rückgängig des Browsers gehen. Weiter zum nächsten
+  Feld mit Tab. **Esc** verwirft eine Eingabe; ohne Eingabe schließt Esc den Dialog.
+- In `.toolbar` und `.report-actions` füllen Felder nicht die Zeile: Auswahllisten sind so breit wie ihr Inhalt,
+  Textfelder haben die Standardbreite des Browsers (etwa 20 Zeichen; kürzer mit dem Attribut `size`), Regler 120px.
+  Sonst füllen Felder ihre Spalte.
+- `.toggle` (Kästchen oder Optionsfeld mit Text): das Kästchen wird nie gestaucht.
+
+## Umschalter
+
+`.segment` für eine Wahl aus wenigen (Ansicht, Modus): Knöpfe direkt nebeneinander in einem Rahmen, der gewählte mit
+`aria-pressed="true"` in Akzent-Tönung. Höhe 24px, in `.toolbar` 28px wie die übrigen Knöpfe dort. Statt eigener
+Varianten je App (`.mv-umschalter`, `.ava-tabs`, `.view-switch`).
+
+```html
+<div class="segment" role="group" aria-label="Ansicht">
+  <button aria-pressed="true">Grundriss</button>
+  <button aria-pressed="false">3D</button>
+</div>
+```
+
+## Begriffe
+
+- Befehle, die einen Dialog öffnen, enden auf „ …“ („Öffnen …“, „Excel …“); Befehle, die sofort wirken, nicht
+  („Speichern“, „Neu“).
+- Gleiches Verb überall: Werkzeugleiste „Öffnen …“, Einstieg „Datei öffnen …“ (mit Objekt, weil der Zusammenhang
+  fehlt); „Neu“ bzw. „Neues Projekt“.
+- Texte sagen, was zu tun ist, nicht was fehlt; was es nur in der Desktop-App gibt, steht als Fußnote darunter.
+
 ## Meldungen auf der Zeichenfläche
 
 - `.canvas-message` ist eine Warnung oben mittig (Warnfarben).
+- `.canvas-message.ok` (Erfolg) und `.canvas-message.info` (neutral, Text in `--text`) als weitere Varianten.
 - `.canvas-message.leer` ist ein Leerzustand mittig auf der Fläche, neutral („Foto hinzufügen …“).
 - Die Hand als Mauszeiger nur, wenn die Meldung per Klick schließt: `.canvas-message.klickbar` oder mit `title`.
 
@@ -106,25 +167,29 @@ Das Farbschema-Menü zeigt ein gezeichnetes Symbol und den Namen der Wahl („Au
 
 ## Richtig und falsch
 
-| Richtig                                                                          | Falsch                                                         |
-| -------------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| Abstände und Schriftgrade aus der Skala (`var(--s2)`, `var(--fs-s)`)             | freie Werte wie `margin: 7px`, `font-size: 12.5px`             |
-| Farben über Variablen (`var(--muted)`, `var(--warn-bg)`)                         | feste Farben (`#888`, `orange`) in App-CSS                     |
-| `:focus-visible` mit sichtbarem Rahmen                                           | `outline: none` ohne Ersatz                                    |
-| Überschriften in Satzschreibung                                                  | Versalien mit Sperrung (`text-transform: uppercase`)           |
-| Symbole als SVG, mit `aria-label` am Knopf                                       | Schriftzeichen wie ◐ ◂ 📏 als einziges Erkennungsmerkmal       |
-| gemeinsame Klassen (`.field`, `.toolbar`, `.canvas-message`)                     | App-eigene Kopien mit leicht anderen Abständen                 |
-| `--sel-foto` mit hellem und dunklem Saum                                         | Magenta-Linie allein auf dem Foto                              |
-| Enter übernimmt; Esc verwirft eine Eingabe, ohne Eingabe schließt Esc den Dialog | Esc muss zweimal gedrückt werden, um einen Dialog zu schließen |
+| Richtig                                                                                                | Falsch                                                         |
+| ------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------- |
+| Abstände und Schriftgrade aus der Skala (`var(--s2)`, `var(--fs-s)`)                                   | freie Werte wie `margin: 7px`, `font-size: 12.5px`             |
+| Farben über Variablen (`var(--muted)`, `var(--warn-bg)`)                                               | feste Farben (`#888`, `orange`) in App-CSS                     |
+| `:focus-visible` mit sichtbarem Rahmen                                                                 | `outline: none` ohne Ersatz                                    |
+| Überschriften in Satzschreibung                                                                        | Versalien mit Sperrung (`text-transform: uppercase`)           |
+| Symbole als SVG, mit `aria-label` am Knopf                                                             | Schriftzeichen wie ◐ ◂ 📏 als einziges Erkennungsmerkmal       |
+| gemeinsame Klassen (`.field`, `.toolbar`, `.canvas-message`)                                           | App-eigene Kopien mit leicht anderen Abständen                 |
+| `--sel-foto` mit hellem und dunklem Saum                                                               | Magenta-Linie allein auf dem Foto                              |
+| Enter übernimmt und verlässt das Feld; Esc verwirft eine Eingabe, ohne Eingabe schließt Esc den Dialog | Esc muss zweimal gedrückt werden, um einen Dialog zu schließen |
 
 ## Was die Apps nachziehen
 
-| App           | Datei und Aufgabe                                                                                                                                                                                  |
-| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| RECTIO        | `apps/entzerrung/src/components/Arbeitsflaeche.tsx:364`: Leerzustand „Foto hinzufügen …“ mit `className="canvas-message leer"`; Auswahl auf dem Foto mit `--sel-foto` und Saum statt eigener Farbe |
-| TERRIO, NUMIO | Spalten-Überschriften (`h2` ohne Regel, sonst 22px) auf die Skala setzen: `--fs-l`, halbfett                                                                                                       |
-| FABRIO        | Versalien entfernen: `.ava-nav-titel` (`apps/ava/src/styles.css:77`); `outline: none` prüfen: `apps/ava/src/styles.css:492`, `:628`                                                                |
-| PERMIO        | Versalien entfernen: `apps/formulare/src/styles.css:160`, `.pk-nav-titel` (:1142), `.pk-abschnitt h3` (:1353), `.fo-ein-teil h4` (:4235); `outline: none` prüfen: :1797, :2612, :2652              |
-| ATLAS         | `outline: none` prüfen: `apps/ordner/src/styles.css:415`                                                                                                                                           |
+| App                            | Datei und Aufgabe                                                                                                                                                                                            |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| RECTIO                         | `apps/entzerrung/src/components/Arbeitsflaeche.tsx:364`: Leerzustand „Foto hinzufügen …“ mit `className="canvas-message leer"`; Auswahl auf dem Foto mit `--sel-foto` und Saum statt eigener Farbe           |
+| TERRIO, NUMIO                  | Spalten-Überschriften (`h2` ohne Regel, sonst 22px) auf die Skala setzen: `--fs-l`, halbfett                                                                                                                 |
+| FABRIO                         | Versalien entfernen: `.ava-nav-titel` (`apps/ava/src/styles.css:77`); `outline: none` prüfen: `apps/ava/src/styles.css:492`, `:628`                                                                          |
+| PERMIO                         | erledigt (PERMIO 0.48.1): Versalien entfernt, Überschriften auf `--fs-*`, `outline: none` geprüft (Menüpunkte mit Fokusrahmen)                                                                               |
+| core                           | Versalien entfernen: `.pa-abschnitt-titel` (`packages/core/src/ui/projektuebersicht.css:60`, PERMIO und ATLAS), `.av-abschnitt-titel` und `.av-ed-gruppe-titel` (`packages/core/src/ui/ansicht.css`, PERMIO) |
+| ATLAS                          | `outline: none` prüfen: `apps/ordner/src/styles.css:415`                                                                                                                                                     |
+| QUADRIO, TERRIO, NUMIO, FABRIO | Druckvorschau: „Drucken / PDF“ als Hauptknopf (`.primary`), „Schließen“ normal (`Report.tsx`, `NachweisDruck.tsx`, `KostenDruck.tsx`, `Druck.tsx`)                                                           |
+| NUMIO, FABRIO, QUADRIO         | eigene Umschalter (`.mv-umschalter`, `.ava-tabs`, `.view-switch`) auf `.segment` umstellen                                                                                                                   |
+| alle                           | eigene `div.modal` auf `Modal` umstellen; Titel mit `kopf` statt `h3` im Inhalt; Werkzeugleisten-Befehle nach „Begriffe“ benennen (z. B. TERRIO „Öffnen“ → „Öffnen …“)                                       |
 
 Zeilennummern beziehen sich auf den Stand dieser Richtlinie.

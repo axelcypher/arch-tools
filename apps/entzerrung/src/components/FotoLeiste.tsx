@@ -17,8 +17,8 @@ export function FotoLeiste() {
       <section>
         <div className="section-head">
           <h2>Fotos</h2>
-          <button className="small" onClick={() => void fotosHinzufuegen()} title="Foto hinzufügen (JPEG, PNG, WebP)">
-            + Foto
+          <button className="small" onClick={() => void fotosHinzufuegen()} title="Fotos hinzufügen (JPEG, PNG, WebP)">
+            + Foto …
           </button>
         </div>
         {!fotos.length && <p className="muted small-text">Noch kein Foto. Fotos lassen sich auch einfach ins Fenster ziehen.</p>}
@@ -50,7 +50,20 @@ function FotoEintrag({ foto, aktiv }: { foto: Foto; aktiv: boolean }) {
     if (s.fotoId === foto.id) s.waehleFoto(rest[0]?.id ?? null);
   };
   return (
-    <li className={aktiv ? 'active' : ''} onClick={() => !aktiv && useEntz.getState().waehleFoto(foto.id)} title={`${foto.name} (${foto.breite} × ${foto.hoehe} px)`}>
+    <li
+      className={aktiv ? 'active' : ''}
+      tabIndex={0}
+      aria-current={aktiv ? 'true' : undefined}
+      onClick={() => !aktiv && useEntz.getState().waehleFoto(foto.id)}
+      onKeyDown={(e) => {
+        if (e.target !== e.currentTarget) return;
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          if (!aktiv) useEntz.getState().waehleFoto(foto.id);
+        } else if (e.key === 'Delete') void loeschen();
+      }}
+      title={`${foto.name} (${foto.breite} × ${foto.hoehe} px)`}
+    >
       {url ? <img className="ef-vorschau" src={url} alt="" /> : <span className="ef-vorschau" />}
       <span className="grow-text">
         {foto.name}
@@ -60,8 +73,9 @@ function FotoEintrag({ foto, aktiv }: { foto: Foto; aktiv: boolean }) {
         </span>
       </span>
       <button
-        className="icon small danger"
-        title="Foto entfernen"
+        className="icon small danger ef-entfernen"
+        title={`Foto „${foto.name}“ entfernen`}
+        aria-label={`Foto ${foto.name} entfernen`}
         onClick={(e) => {
           e.stopPropagation();
           void loeschen();
@@ -95,12 +109,35 @@ function EbenenListe({ foto }: { foto: Foto }) {
       </div>
       <ul className="list">
         {foto.ebenen.map((e) => (
-          <li key={e.id} className={e.id === ebeneId ? 'active' : ''} onClick={() => useEntz.getState().waehleEbene(e.id)} onDoubleClick={() => setUmbenennen(e.id)}>
-            <span className={`ef-status-punkt ${status.get(e.id) ? 'ok' : ''}`} title={status.get(e.id) ? 'entzerrbar' : 'Referenz unvollständig'} />
+          <li
+            key={e.id}
+            className={e.id === ebeneId ? 'active' : ''}
+            tabIndex={0}
+            aria-current={e.id === ebeneId ? 'true' : undefined}
+            onClick={() => useEntz.getState().waehleEbene(e.id)}
+            onDoubleClick={() => setUmbenennen(e.id)}
+            onKeyDown={(x) => {
+              if (x.target !== x.currentTarget) return;
+              if (x.key === 'Enter' || x.key === ' ') {
+                x.preventDefault();
+                useEntz.getState().waehleEbene(e.id);
+              } else if (x.key === 'F2') {
+                x.preventDefault();
+                setUmbenennen(e.id);
+              } else if (x.key === 'Delete' && foto.ebenen.length > 1) void loeschen(e.id, e.name);
+            }}
+          >
+            <span
+              className={`ef-status-punkt ${status.get(e.id) ? 'ok' : ''}`}
+              role="img"
+              aria-label={status.get(e.id) ? 'entzerrbar' : 'Referenz unvollständig'}
+              title={status.get(e.id) ? 'entzerrbar' : 'Referenz unvollständig'}
+            />
             {umbenennen === e.id ? (
               <span className="grow-text" onClick={(x) => x.stopPropagation()}>
                 <input
                   autoFocus
+                  aria-label="Name der Ebene"
                   defaultValue={e.name}
                   onBlur={(x) => {
                     setUmbenennen(null);
@@ -117,15 +154,34 @@ function EbenenListe({ foto }: { foto: Foto }) {
                 />
               </span>
             ) : (
-              <span className="grow-text" title="Doppelklick zum Umbenennen">
+              <span className="grow-text" title="Doppelklick oder F2 zum Umbenennen">
                 {e.name}
-                {e.messungen.length > 0 && <span className="muted small-text"> · {e.messungen.length} Messungen</span>}
+                {e.messungen.length > 0 && (
+                  <span className="muted small-text">
+                    {' '}
+                    · {e.messungen.length} {e.messungen.length === 1 ? 'Messung' : 'Messungen'}
+                  </span>
+                )}
               </span>
+            )}
+            {umbenennen !== e.id && (
+              <button
+                className="icon small ef-entfernen"
+                title={`Ebene „${e.name}“ umbenennen (F2)`}
+                aria-label={`Ebene ${e.name} umbenennen`}
+                onClick={(x) => {
+                  x.stopPropagation();
+                  setUmbenennen(e.id);
+                }}
+              >
+                ✎
+              </button>
             )}
             {foto.ebenen.length > 1 && (
               <button
-                className="icon small danger"
-                title="Ebene entfernen"
+                className="icon small danger ef-entfernen"
+                title={`Ebene „${e.name}“ entfernen`}
+                aria-label={`Ebene ${e.name} entfernen`}
                 onClick={(x) => {
                   x.stopPropagation();
                   void loeschen(e.id, e.name);

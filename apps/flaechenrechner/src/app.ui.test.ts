@@ -57,6 +57,7 @@ describe('QUADRIO: Prüfliste und Raumtabelle (F-10, F-21)', () => {
     const a = createRoom(rectPoints({ x: 0.3, y: 0.3 }, { x: 4.8, y: 7.7 }), '0.02', 'Küche');
     const b = createRoom(rectPoints({ x: 5, y: 0.3 }, { x: 11, y: 7.7 }), '0.01', 'Wohnen'); // ragt über den Umriss
     p.storeys[0].shapes.push(a, b);
+    p.settings = { ...p.settings, massgrundlage: 'fertig', planunterlagen: 'Grundrisse 1:100' };
     useEditor.getState().loadProject(p, p, 'Haus.oap');
     const host = render();
     act(() => [...host.querySelectorAll<HTMLButtonElement>('.pw-einstieg button')].find((x) => x.textContent === 'Schließen')?.click());
@@ -67,8 +68,8 @@ describe('QUADRIO: Prüfliste und Raumtabelle (F-10, F-21)', () => {
     act(() => eintrag.click());
     expect(useEditor.getState().selectedIds).toEqual([b.id]);
     act(() => useEditor.getState().select(null));
-    act(() => [...host.querySelectorAll<HTMLButtonElement>('button')].find((x) => x.textContent === 'Tabelle …')!.click());
-    const zeilen = [...document.querySelectorAll('.raumtabelle tbody tr')].map((tr) => (tr.querySelectorAll('input')[0] as HTMLInputElement).value);
+    act(() => [...host.querySelectorAll<HTMLButtonElement>('button')].find((x) => x.textContent === 'Raumtabelle …')!.click());
+    const zeilen = [...document.querySelectorAll('.raumtabelle tbody tr:not(.raumtabelle-geschoss)')].map((tr) => (tr.querySelectorAll('input')[0] as HTMLInputElement).value);
     expect(zeilen).toEqual(['0.01', '0.02']);
   });
 });
@@ -123,7 +124,7 @@ describe('QUADRIO: Flächenaufstellung am Bildschirm', () => {
     useEditor.getState().loadProject(createProject('Haus'), null, 'Haus.oap');
     const host = render();
     act(() => [...host.querySelectorAll<HTMLButtonElement>('.pw-einstieg button')].find((x) => x.textContent === 'Schließen')?.click());
-    const oeffnen = [...host.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent === 'Flächenaufstellung')!;
+    const oeffnen = [...host.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent === 'Flächenaufstellung …')!;
     act(() => {
       oeffnen.focus();
       oeffnen.click();

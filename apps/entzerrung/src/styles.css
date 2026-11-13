@@ -1,5 +1,13 @@
 /* RECTIO (Entzerrung; Grund-Styles: @core/ui/base.css) */
 
+/*
+ * Auswahl auf dem Foto: --sel-foto (Magenta, gemeinsam, docs/design.md) mit Doppelsaum – innen dunkel, außen weiß –,
+ * damit sie auf jedem Fototon und neben den orangen Messungen sichtbar bleibt.
+ */
+:root {
+  --ef-saum: drop-shadow(0 0 0.6px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 1px #fff);
+}
+
 .ef-flaeche {
   position: absolute;
   inset: 0;
@@ -56,8 +64,10 @@
   fill: #ffe7b3;
 }
 .ef-griff.sel {
-  fill: var(--sel);
+  fill: var(--sel-foto);
   stroke: #fff;
+  stroke-width: 2;
+  filter: var(--ef-saum);
 }
 .ef-overlay:not(.wz-auswahl) .ef-griff {
   cursor: crosshair;
@@ -128,8 +138,17 @@
 .ef-linie.sel,
 .ef-hilfslinie.sel,
 .ef-messung.sel {
-  stroke: var(--sel);
+  stroke: var(--sel-foto);
   stroke-width: 3;
+  stroke-dasharray: none;
+  filter: var(--ef-saum);
+}
+.ef-ref-entwurf {
+  stroke: #1c3faa;
+  fill: rgba(28, 63, 170, 0.06);
+}
+.ef-text.ef-zeiger-text {
+  font-size: 11px;
 }
 .ef-hilfslinie {
   fill: none;
@@ -206,11 +225,57 @@
   padding: 3px 8px;
   border-radius: 4px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ef-hinweis-text {
+  flex: 0 1 auto;
 }
 .ef-koord {
+  flex: 0 0 auto;
   font-variant-numeric: tabular-nums;
   margin-left: auto;
   white-space: pre;
+}
+/* schmale Fläche: Koordinaten über dem Hinweis statt daneben */
+@container (max-width: 560px) {
+  .ef-status {
+    flex-direction: column-reverse;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  .ef-koord {
+    margin-left: 0;
+  }
+  .ef-status span {
+    max-width: 100%;
+  }
+}
+.ef-flaeche {
+  container-type: size;
+}
+.ef-overlay:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+/* Leerzustand ohne Foto: gemeinsame .canvas-message.leer, darin Text und Knopf */
+.ef-leer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  line-height: 1.5;
+}
+.ef-leer p {
+  margin: 0;
+  max-width: 340px;
+}
+.ef-leer strong {
+  color: var(--text);
 }
 
 .ef-ablegen {
@@ -218,7 +283,7 @@
   inset: 12px;
   border: 3px dashed var(--accent);
   border-radius: 8px;
-  background: rgba(42, 91, 215, 0.12);
+  background: color-mix(in srgb, var(--accent-soft) 45%, transparent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -249,11 +314,10 @@
   flex: none;
 }
 .ef-status-punkt.ok {
-  background: #2b8a3e;
+  background: var(--ok-text);
 }
 .ef-methoden {
   display: flex;
-  gap: 3px;
   margin-bottom: 6px;
 }
 .ef-methoden button {
@@ -286,9 +350,9 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  background: rgba(43, 138, 62, 0.12);
-  border: 1px solid rgba(43, 138, 62, 0.45);
-  color: var(--text);
+  background: var(--ok-bg);
+  border: 1px solid var(--ok-border);
+  color: var(--ok-text);
   border-radius: 4px;
   padding: 6px 8px;
   font-size: 12px;
@@ -376,4 +440,95 @@
   border-radius: 999px;
   color: var(--accent);
   background: var(--accent-soft);
+}
+
+/* Leisten */
+.leiste-griff.ef-griff-links {
+  left: -3px;
+  right: auto;
+}
+.ef-zaehler {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.75;
+}
+.ef-schritte {
+  margin: 4px 0 0;
+  padding-left: 18px;
+  line-height: 1.5;
+}
+.ef-schritte li + li {
+  margin-top: 6px;
+}
+/* noch fehlende Angaben der Referenz: Hinweis, keine Warnung */
+.ef-fehlt {
+  background: var(--panel);
+  border: 1px dashed var(--warn-border);
+  color: var(--text);
+  border-radius: 4px;
+  padding: 6px 8px;
+  font-size: 12px;
+}
+.ef-tabelle tr.fehlt td:nth-child(2) input,
+.ef-tabelle tr.fehlt td:nth-child(3) input {
+  border-color: var(--warn-border);
+}
+.ef-ungueltig {
+  color: var(--warn-text);
+  font-size: 12px;
+}
+.ef-feinwerte {
+  margin: 6px 0;
+  font-size: 12px;
+}
+.ef-feinwerte summary {
+  cursor: pointer;
+  color: var(--muted);
+}
+/* Entfernen/Umbenennen: größere Trefferfläche, erst bei Zeigen oder Fokus deutlich */
+.ef-entfernen {
+  min-width: 24px;
+  min-height: 24px;
+  opacity: 0.35;
+}
+.list li:hover .ef-entfernen,
+.list li:focus-within .ef-entfernen,
+.list li.active .ef-entfernen,
+.ef-entfernen:focus-visible {
+  opacity: 1;
+}
+.list li:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+/* Vorschaubilder in den Fotos des Projekts */
+.fw-foto {
+  justify-content: flex-start;
+}
+.fw-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+.fw-datum {
+  font-size: 11px;
+  color: var(--muted);
+}
+.fw-vorschau {
+  flex: none;
+  width: 48px;
+  height: 36px;
+  border-radius: 3px;
+  background: var(--line-soft);
+  overflow: hidden;
+}
+.fw-vorschau img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.ef-hinweis-ref {
+  margin-bottom: 6px;
 }

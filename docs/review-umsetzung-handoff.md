@@ -23,8 +23,17 @@ Kommunikation, Oberfläche, Commit-Texte und Doku sind auf **Deutsch**.
   nachziehen). Crate-Namen im Cargo.lock: `arch-flaechen-tool` (QUADRIO, Name bleibt absichtlich so),
   `grz-nachweis`, `kostenermittlung`, `projektordner`, `entzerrung`, `formulare`, `ava` und `arch-tools` (Rahmen-App
   Arkly, siehe `docs/suite.md`).
+  - Unmittelbar vor dem Merge `git fetch origin main && node scripts/versionen-pruefen.mjs main HEAD` (gegen das aktuelle
+    main; volle Historie nötig). Die CI prüft es im PR ebenfalls (Schritt „Versionen prüfen“: Tag noch frei, größer als
+    auf main, und jede Änderung am Code einer App bzw. an `packages/core` hat eine neue Version), aber nur zum Stand
+    von main beim letzten Push. Ist eine Nummer vergeben: main
+    mergen, neu hochsetzen, CI abwarten, dann mergen. Eine neue App in `release.yml` und im Skript eintragen.
   - Änderungen an `packages/core` betreffen **alle** Apps, die den Code nutzen: QUADRIO, TERRIO, NUMIO, ATLAS,
-    RECTIO, PERMIO, FABRIO und die Rahmen-App Arkly. Alle betroffenen Apps bumpen.
+    RECTIO, PERMIO und FABRIO. Alle betroffenen Apps bumpen.
+  - Die Rahmen-App Arkly (`apps/suite`) **nicht** mit hochsetzen: Hat eine andere App eine neue Version, setzt der
+    Release-Lauf Arkly automatisch auf die nächste freie Nummer (`scripts/suite-version.mjs`) und committet sie nach
+    main – deshalb nach dem Merge `main` frisch holen. Nur Änderungen an `apps/suite` selbst verlangen eine Arkly-Version
+    im PR. Von Hand setzen (alle fünf Stellen): `node scripts/suite-version.mjs setzen x.y.z`.
   - Ein Push auf `main` mit geänderter Version startet sofort den Release-Workflow (Installer und GitHub-Release).
 - **Rust nur über die CI:** Änderungen an `apps/*/src-tauri` (Rust, capabilities, tauri.conf.json außer der
   Versionsnummer) erst als Branch mit PR einreichen, den CI-Job „Tauri-Hülle prüfen“ abwarten und dann per

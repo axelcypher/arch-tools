@@ -45,6 +45,8 @@ beforeEach(() => {
     konfigStandEigen: null,
     konflikt: null,
     rueckgaengig: null,
+    ordnerAnsicht: 'baum',
+    ordnerEntwurf: null,
   });
 });
 afterEach(async () => {
@@ -105,7 +107,7 @@ describe('ATLAS (Projektordner)', () => {
     expect([...host.querySelectorAll('.po-schritte li[aria-current="step"]')].map((l) => l.textContent)).toEqual(['2Stammdaten']);
     // „Weiter“ ohne Nummer und Kurzname: bleibt stehen und nennt den Grund sichtbar, Meldungen an den Feldern
     weiter(host);
-    expect(host.querySelector('.po-weiter-grund')?.textContent).toBe('Noch offen: Die Projektnummer fehlt, Der Kurzname fehlt');
+    expect(host.querySelector('.po-weiter-grund')?.textContent).toBe('Noch offen: Projektnummer, Kurzname');
     expect(feld(host, 'Projektnummer').closest('label')!.querySelector('.feld-meldung')!.textContent).toBe('Angabe fehlt.');
     expect(host.querySelector('h2')?.textContent).toBe('Stammdaten');
     // Kurzname: Hinweis zu unzulässigen Zeichen schon beim Tippen, Ordnername direkt darunter
@@ -140,7 +142,7 @@ describe('ATLAS (Projektordner)', () => {
     expect(host.querySelector('.sd-lph')?.textContent).toContain('4 Genehmigungsplanung');
     act(() => knopf(host, '1–4 bis Bauantrag').click());
     expect(useOrdner.getState().stamm.leistungsphasen).toEqual([1, 2, 3, 4]);
-    act(() => knopf(host, 'keine').click());
+    act(() => knopf(host, 'ohne Einschränkung').click());
     expect(useOrdner.getState().stamm.leistungsphasen).toEqual([]);
     for (const nr of [1, 2, 3]) act(() => ([...host.querySelectorAll('.sd-lph input')][nr - 1] as HTMLInputElement).click());
     expect(useOrdner.getState().stamm.leistungsphasen).toEqual([1, 2, 3]);
@@ -185,9 +187,11 @@ describe('ATLAS (Projektordner)', () => {
     expect(host.textContent).not.toContain('Stammordner für Projekte');
     expect(host.textContent).toContain('ZIP-Datei zum Herunterladen');
 
-    // zurück zu den Stammdaten über die Schrittleiste, Formular leeren
-    act(() => knopf(host, '2Stammdaten').click());
-    act(() => knopf(host, 'Formular leeren').click());
+    // zurück zu den Stammdaten über die Schrittleiste (besucht und vollständig: Häkchen), dann „Leer beginnen“ auf der Startseite
+    act(() => knopf(host, '✓Stammdaten').click());
+    act(() => knopf(host, '← Anderes Projekt').click());
+    expect(knopf(host, 'Leer beginnen').title).toContain('Entwurf verwerfen');
+    act(() => knopf(host, 'Leer beginnen').click());
     expect(useOrdner.getState().stamm).toMatchObject({ nummer: '', beteiligte: [], bearbeiter: 'TP' });
     // ohne Stammdaten sind die späteren Schritte gesperrt
     expect(knopf(host, '8Anlegen').disabled).toBe(true);
@@ -287,9 +291,10 @@ describe('ATLAS (Projektordner)', () => {
       '10 Fotos',
     ]);
 
-    // Unterordner von Rohbau als Baustein speichern …
+    // Unterordner von Rohbau als Baustein speichern … (Kontextmenü)
     klick('07 Ausschreibung/Rohbau');
-    act(() => knopf(host, 'Als Baustein').click());
+    act(() => z('07 Ausschreibung/Rohbau').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, button: 2, clientX: 10, clientY: 10 })));
+    act(() => knopf(host.querySelector('.po-menue')!, 'Unterordner als Baustein').click());
     await warten();
     eingabe(host.querySelector<HTMLInputElement>('.modal.rf input')!, 'Gewerk');
     act(() => knopf(host.querySelector('.modal.rf')!, 'Speichern').click());
@@ -354,12 +359,13 @@ describe('ATLAS (Projektordner)', () => {
     taste('Delete');
     expect(pfade()).not.toContain('11 Videos');
     act(() => z('05 Protokolle').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true })));
-    expect([...host.querySelectorAll('.po-menue button')].map((b) => b.textContent)).toEqual(
-      expect.arrayContaining(['Unterordner anlegen', 'Baustein „Gewerk“ einfügen', 'Umbenennen', 'Duplizieren', 'Kopieren', 'Einfügen', 'Unterordner als Baustein speichern …', 'Löschen']),
+    expect([...host.querySelectorAll('.po-menue button')].map((b) => b.getAttribute('aria-label'))).toEqual(
+      expect.arrayContaining(['Unterordner anlegen', 'Baustein „Gewerk“ einfügen', 'Umbenennen', 'Duplizieren', 'Kopieren', 'Einfügen', 'Unterordner als Baustein speichern …', 'Löschen …']),
     );
-    // Vorschau für Leistungsphasen: Ordner, die bei LPh 1–4 nicht entstehen, sind blass
+    // Vorschau für Leistungsphasen (eigener Modus): Ordner, die bei LPh 1–4 nicht entstehen, sind blass
     act(() => knopf(host, 'Unterordner anlegen').click());
     neuerName('Intern');
+    act(() => knopf(host, 'LPh-Vorschau').click());
     act(() => host.querySelector<HTMLButtonElement>('button[aria-label="Vorschau LPh 4"]')!.click());
     expect(z('07 Ausschreibung/Dach/Angebote').className).toContain('entfaellt');
     expect(z('05 Protokolle/Intern').className).not.toContain('entfaellt');
@@ -404,53 +410,69 @@ describe('ATLAS (Projektordner)', () => {
     expect(text.value).toContain('05 Protokolle | Dateischema');
     expect(text.value).toContain('10 Fotos | LPh 9');
     expect(text.value.split('\n')).toHaveLength(STANDARD.ordner.length);
+    // übernommen wird nur über den Knopf (ein Modell, kein stilles Übernehmen beim Verlassen) – vorher gesichert
+    const uebernehmen = async () => {
+      act(() => knopf(host, 'Ordnerliste übernehmen').click());
+      await warten();
+    };
     eingabe(text, 'A\nB/C | LPh 5-6 | Dateischema');
+    expect(useOrdner.getState().struktur.ordner).toHaveLength(STANDARD.ordner.length);
+    await uebernehmen();
     expect(useOrdner.getState().struktur.ordner).toEqual([{ pfad: 'A' }, { pfad: 'B/C', lph: [5, 6], dateischema: true }]);
-    // fehlerhafte Liste (PB-03): Meldungen mit Zeilennummer, beim Verlassen nicht übernommen – erst über den Knopf
+    // fehlerhafte Liste (PB-03): Meldungen mit Zeilennummer, übernommen erst über den Knopf
     eingabe(text, 'A\nB/C | LPh 5-6 | Dateischema\nX | LPh 10\na\nTest<>Ordner');
     expect(useOrdner.getState().struktur.ordner).toEqual([{ pfad: 'A' }, { pfad: 'B/C', lph: [5, 6], dateischema: true }]);
     const meldungen = host.querySelector('.po-ordnermeldungen')!.textContent;
     expect(meldungen).toContain('Zeile 3: LPh 10 gibt es nicht');
     expect(meldungen).toContain('Zeile 4 doppelt zu Zeile 1');
     expect(meldungen).toContain('Zeile 5: Zeichen < > werden entfernt');
-    act(() => knopf(host, 'Ordnerliste übernehmen').click());
+    await uebernehmen();
     expect(useOrdner.getState().struktur.ordner.map((o) => o.pfad)).toEqual(['A', 'B/C', 'X', 'Test Ordner']);
     expect(host.querySelector('.po-ordnermeldungen')).toBeNull();
     eingabe(text, 'A\nB/C | LPh 5-6 | Dateischema');
+    await uebernehmen();
     expect(useOrdner.getState().struktur.ordner).toHaveLength(2);
     // leere Liste wird nicht übernommen
     eingabe(text, '# nichts');
+    await uebernehmen();
     expect(useOrdner.getState().struktur.ordner).toHaveLength(2);
     expect(host.textContent).toContain('Die Liste enthält keinen Ordner');
-    // Standard: erst Rückfrage mit Vorschau, Abbrechen ändert nichts (P-01)
-    act(() => knopf(host, 'Standard').click());
+    act(() => knopf(host, 'Verwerfen').click());
+    expect(text.value).toBe('A\nB/C | LPh 5-6 | Dateischema');
+    // Vorgabe wiederherstellen: erst Rückfrage mit Vorschau, Abbrechen ändert nichts (P-01)
+    act(() => knopf(host, 'Vorgabe wiederherstellen').click());
     await warten();
-    expect(host.querySelector('.modal')?.textContent).toContain('Standardstruktur wiederherstellen?');
+    expect(host.querySelector('.modal')?.textContent).toContain('Vorgabe wiederherstellen?');
     expect(host.querySelector('.modal')?.textContent).toMatch(/2 Ordner entfallen, \d+ neu/);
     act(() => knopf(host, 'Abbrechen').click());
     await warten();
     expect(useOrdner.getState().struktur.ordner).toHaveLength(2);
-    // Bestätigen ersetzt – vorher gesichert
-    act(() => knopf(host, 'Standard').click());
+    // Bestätigen ersetzt – vorher gesichert (wie jedes Übernehmen der Ordnerliste)
+    act(() => knopf(host, 'Vorgabe wiederherstellen').click());
     await warten();
     act(() => knopf(host, 'Ersetzen').click());
     await warten();
     expect(useOrdner.getState().struktur).toEqual(STANDARD);
     const sicherungen = JSON.parse(localStorage.getItem('arch-tools:konfig:projektordner-sicherungen')!).sicherungen;
-    expect(sicherungen).toHaveLength(1);
+    expect(sicherungen).toHaveLength(4);
     expect(sicherungen[0].name).toMatch(/^projektordner\.json\.bak-\d{4}-\d{2}-\d{2}-\d{4}$/);
     expect(sicherungen[0].inhalt.struktur.ordner).toEqual([{ pfad: 'A' }, { pfad: 'B/C', lph: [5, 6], dateischema: true }]);
+    expect(sicherungen[3].grund).toBe('vor: Ordnerliste übernommen.');
     // „Rückgängig“ stellt wieder her
     act(() => knopf(host, 'Rückgängig').click());
     expect(useOrdner.getState().struktur.ordner).toHaveLength(2);
-    // Sicherung wiederherstellen: die Liste zeigt sie, gleicher Stand = keine Änderung
-    act(() => knopf(host, 'Sicherungen').click());
+    // Sicherung wiederherstellen: die Liste zeigt sie (aufgeklappt, ohne „…“), gleicher Stand = keine Änderung
+    const sicherungenKnopf = knopf(host, 'Sicherungen');
+    expect(sicherungenKnopf.textContent).toBe('Sicherungen');
+    expect(sicherungenKnopf.getAttribute('aria-expanded')).toBe('false');
+    act(() => sicherungenKnopf.click());
     await warten();
-    expect(host.querySelector('.po-sicherungen')?.textContent).toContain('vor: Neutrale Standardstruktur wiederhergestellt');
+    expect(sicherungenKnopf.getAttribute('aria-expanded')).toBe('true');
+    expect(host.querySelector('.po-sicherungen')?.textContent).toContain('vor: Neutrale Vorgabe wiederhergestellt');
     act(() => knopf(host, 'Wiederherstellen').click());
     await warten();
     expect(host.textContent).toContain('Keine Änderung');
-    act(() => knopf(host, 'Standard').click());
+    act(() => knopf(host, 'Vorgabe wiederherstellen').click());
     await warten();
     act(() => knopf(host, 'Ersetzen').click());
     await warten();
@@ -719,10 +741,13 @@ describe('ATLAS (Projektordner)', () => {
 
     // Preset löschen: erst nach Bestätigung
     act(() => knopf(host, 'Vorlagen').click());
-    act(() => [...host.querySelectorAll('.po-presets li')][1].dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    act(() => host.querySelectorAll<HTMLButtonElement>('.po-presets li button')[1].click());
     act(() => knopf(host, 'Löschen').click());
+    await warten();
     expect(useOrdner.getState().struktur.presets).toHaveLength(2);
-    act(() => knopf(host, '„Jedes Projekt“ wirklich löschen').click());
+    expect(host.querySelector('.modal.rf')?.textContent).toContain('Preset „Jedes Projekt“ löschen?');
+    act(() => knopf(host.querySelector('.modal.rf')!, 'Löschen').click());
+    await warten();
     expect(useOrdner.getState().struktur.presets.map((p) => p.name)).toEqual(['Alle Vorlagen']);
   });
 
@@ -736,7 +761,8 @@ describe('ATLAS (Projektordner)', () => {
     const ordner = { pfad: '', name: '2025-007 Kita', eintraege: await fs.liste(basis, 12), lies: (p: string) => fs.lies(basis, p) };
     const host = render(createElement(AssistentView, { start: ordner }));
     await warten();
-    expect(host.querySelector('.po-kontext')?.textContent).toContain('Projektdatei 03 Berechnungen/Flächen/2025-007 Kita.oap');
+    expect(host.querySelector('.po-kontext')?.textContent).toContain('Projektdatei vorhanden');
+    expect(host.querySelector('.po-kontext span')?.getAttribute('title')).toBe('03 Berechnungen/Flächen/2025-007 Kita.oap');
     expect(feld(host, 'Projektnummer').value).toBe('2025-007');
     expect(feld(host, 'Kurzname').value).toBe('Kita');
     // beim Ergänzen wird der Ordner nicht umbenannt (PB-05)
@@ -850,11 +876,11 @@ describe('ATLAS (Projektordner)', () => {
     await act(async () => projekt('2019-003 Altbau').click());
     await warten();
     expect(host.querySelector('h3')?.textContent).toContain('2019-003 Altbau');
-    // gruppiert nach Schwere: Abweichungen vor Hinweisen
-    const gruppen = [...host.querySelectorAll('.po-befundgruppe h4')].map((h) => h.textContent);
-    expect(gruppen[0]).toMatch(/^Abweichungen/);
-    expect(gruppen.indexOf(gruppen.find((x) => x?.startsWith('Hinweise'))!)).toBeGreaterThan(0);
-    act(() => knopf(host, 'Zur Projektliste').click());
+    // nach Schwere: Abweichungen vor Hinweisen
+    const arten = [...host.querySelectorAll('.po-befunde .po-befund-art')].map((h) => h.textContent);
+    expect(arten[0]).toBe('Abweichung');
+    expect(arten.indexOf('Hinweis')).toBeGreaterThan(0);
+    act(() => knopf(host, '← Zur Projektliste').click());
     await act(async () => knopf(host, 'Alle Projekte prüfen').click());
     await warten();
     const zeilen = [...host.querySelectorAll('.po-sammel tbody tr')].map((z) => [...z.querySelectorAll('td')].map((t) => t.textContent));

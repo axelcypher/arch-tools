@@ -82,6 +82,7 @@ export function buildGrzContext(project: Project, date = new Date(), n: Nachweis
   const scalars: Record<string, Value> = {
     ...projektWerte(project, date),
     'bplan.datum': m.planDatum ? datumText(m.planDatum) : '',
+    'bplan.auslegung': m.auslegungDatum ? datumText(m.auslegungDatum) : '',
     'bplan.angabe': [bebauungsplanText(project.meta.bebauungsplan), m.planDatum ? `vom ${datumText(m.planDatum)}` : 'ohne Datum (aktuelles Recht)'].filter(Boolean).join(' '),
     gebietsart: m.gebietsart ?? '',
     'gebietsart.bezeichnung': m.gebietsart ? 'Baugebiet' : '',
@@ -281,6 +282,7 @@ export const GRZ_PLACEHOLDER_DOCS: PlaceholderDocs = [
     group: 'Grundlagen',
     keys: [
       ['bplan.datum', 'Datum des Bebauungsplans (TT.MM.JJJJ)'],
+      ['bplan.auslegung', 'öffentliche Auslegung des Planentwurfs (TT.MM.JJJJ), maßgebend für die BauNVO-Fassung – leer, wenn nicht eingetragen'],
       ['bplan.angabe', 'Nr., Name und Datum in einer Zeile: „Nr. 112 „Am Hang“ vom 14.03.1967“'],
       ['gebietsart, gebietsart.text', 'Baugebiet: Kürzel (WA, MI …) bzw. mit Bezeichnung'],
       ['stand, stand.text', 'Stand des Nachweises (im Druckdialog eingetragen) bzw. „Stand TT.MM.JJJJ“ – leer, wenn nicht eingetragen'],

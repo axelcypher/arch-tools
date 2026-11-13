@@ -44,7 +44,8 @@ const LPH_SCHNELL: { label: string; title: string; lph: number[] }[] = [
   { label: '1–4 bis Bauantrag', title: 'Grundlagenermittlung bis Genehmigungsplanung', lph: [1, 2, 3, 4] },
   { label: '5–8', title: 'Ausführungsplanung bis Objektüberwachung', lph: [5, 6, 7, 8] },
   { label: '1–9 alle', title: 'alle Leistungsphasen', lph: [1, 2, 3, 4, 5, 6, 7, 8, 9] },
-  { label: 'keine', title: 'keine Auswahl – Ordner und Vorlagen aller Leistungsphasen', lph: [] },
+  // leer heißt „alles“ (nicht „keine“): so benannt, damit die aktive Markierung nicht „keine Leistungsphase“ behauptet
+  { label: 'ohne Einschränkung', title: 'keine Auswahl – es entstehen Ordner und Vorlagen aller Leistungsphasen', lph: [] },
 ];
 
 const ALLE: StammdatenBereich[] = ['projekt', 'grundstueck', 'bauherr', 'umfang'];
