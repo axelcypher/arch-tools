@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { act, createElement } from 'react';
+import { act, createElement, Fragment } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, describe, expect, it } from 'vitest';
 import { createLageplanFlaeche, createProject } from '@core/model';
@@ -10,9 +10,13 @@ import { innenflaeche, weltpunkt } from './components/LageplanEditor';
 import { massNachweis } from './massNutzung';
 import { GrzGfzView, kanteSetzen } from './components/GrzGfzView';
 import { NachweisDruck } from './components/NachweisDruck';
-import { useGrz } from './store';
+import { ablageLeeren, useGrz } from './store';
 import { projekt } from './testdaten';
 import { einstiegsAktionen, farbschemaWechseln, stammdatenAendern } from '@core/ui/rauchtest';
+import { MenueHost, tastenAria } from '@core/ui/Menue';
+import { useTheme } from '@core/platform/theme';
+import { planFuellungDunkel } from '@core/planFarbe';
+import { versiegelungInfo } from '@core/lageplan';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -31,6 +35,13 @@ afterEach(() => {
   root = null;
   document.body.innerHTML = '';
 });
+
+/** Lageplan mit dem Menü-Host der Titelleiste (dort hängt er in der App) */
+const MitMenue = () => createElement(Fragment, null, createElement(GrzGfzView), createElement(MenueHost));
+/** offener Menüpunkt nach seinem Text (ohne Tastenhinweis) */
+const menuePunkt = (host: ParentNode, text: string) =>
+  [...host.querySelectorAll<HTMLButtonElement>('.menue [role="menuitem"]')].find((b) => b.querySelector('.menue-text')?.textContent === text) as HTMLButtonElement;
+const menueTexte = (host: ParentNode) => [...host.querySelectorAll('.menue [role="menuitem"] .menue-text')].map((t) => t.textContent);
 
 const change = (el: HTMLSelectElement | HTMLInputElement, value: string) =>
   act(() => {
@@ -154,7 +165,7 @@ describe('TERRIO', () => {
   it('öffnet Druck und Excel über die Werkzeugleiste', () => {
     useGrz.getState().load(projekt());
     const host = render(App);
-    const btn = (t: string) => [...host.querySelectorAll('button')].find((b) => b.textContent?.startsWith(t)) as HTMLButtonElement;
+    const btn = (t: string) => [...host.querySelectorAll('button')].find((b) => b.textContent?.trim().startsWith(t)) as HTMLButtonElement;
     act(() => btn('Nachweis drucken').click());
     expect(host.querySelector('.grz-report')).not.toBeNull();
     act(() => btn('Schließen').click());
@@ -165,9 +176,9 @@ describe('TERRIO', () => {
     expect(host.textContent).toContain('Muster-Vorlage herunterladen');
   });
 
-  it('Punkte wie in QUADRIO: ziehen, über ◇ einfügen, per Rechtsklick löschen; Fläche verschieben', () => {
+  it('Punkte wie in QUADRIO: ziehen, über ◇ einfügen, per Kontextmenü löschen; Fläche verschieben', () => {
     useGrz.getState().load(projekt());
-    const host = render(GrzGfzView);
+    const host = render(MitMenue);
     const id = useGrz.getState().project.lageplan!.flaechen[0].id;
     act(() => useGrz.getState().select(id));
     const svg = host.querySelector('svg.grz-skizze') as SVGSVGElement;
@@ -191,13 +202,25 @@ describe('TERRIO', () => {
     act(() => svg.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: 5, clientY: 5 })));
     expect(punkte()).toHaveLength(5);
     expect(punkte()[1]).toEqual({ x: (vorher[0].x + vorher[1].x) / 2, y: (vorher[0].y + vorher[1].y) / 2 });
-    // Rechtsklick löscht einen Punkt, aber nie unter drei
-    const rechts = () => act(() => host.querySelectorAll('.vertex-handle')[1].dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true })));
-    rechts();
+    // Rechtsklick öffnet das gemeinsame Menü; „Punkt 2 löschen“ löscht, aber nie unter drei
+    const loeschen = () => {
+      const ev = new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 30, clientY: 30 });
+      act(() => host.querySelectorAll('.vertex-handle')[1].dispatchEvent(ev));
+      expect(ev.defaultPrevented).toBe(true);
+      const punkt = menuePunkt(host, 'Punkt 2 löschen');
+      act(() => punkt.click());
+      return punkt;
+    };
+    loeschen();
     expect(punkte()).toHaveLength(4);
-    rechts();
-    rechts();
+    loeschen();
     expect(punkte()).toHaveLength(3);
+    // bei drei Punkten gesperrt, mit sichtbarem Grund; ein Klick ändert nichts
+    const gesperrt = loeschen();
+    expect(gesperrt.getAttribute('aria-disabled') === 'true' || gesperrt.hasAttribute('disabled')).toBe(true);
+    expect(gesperrt.textContent).toContain('Nur noch 3 Punkte');
+    expect(punkte()).toHaveLength(3);
+    act(() => document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
     // Mausrad zoomt, ohne dass die Seite scrollt
     const rad = new WheelEvent('wheel', { bubbles: true, cancelable: true, deltaY: 100 });
     act(() => svg.dispatchEvent(rad));
@@ -212,7 +235,7 @@ describe('Fehlerkorrekturen (Phase 1)', () => {
     useGrz.getState().wiederherstellen(geaendert, 'Haus.oap', datei, new Date(2026, 10, 11, 9, 5).getTime());
     expect(useGrz.getState().dirty).toBe(true);
     const host = render(App);
-    const leiste = host.querySelector('.grz-wiederhergestellt')!;
+    const leiste = [...host.querySelectorAll('.grz-bericht')].find((e) => e.textContent?.includes('wiederhergestellt'))!;
     expect(leiste.textContent).toContain('Ungespeicherter Stand vom 11.11.2026 09:05 wiederhergestellt');
     expect(document.title.startsWith('• ')).toBe(true);
     // gleicher Inhalt (andere Objekte): gespeichert
@@ -288,7 +311,7 @@ function bildpunkt(svg: Element, q: { x: number; y: number }) {
 }
 
 describe('Zeichnen (G-21, G-23)', () => {
-  const knopf = (host: HTMLElement, t: string) => [...host.querySelectorAll('button')].find((b) => b.textContent === t) as HTMLButtonElement;
+  const knopf = (host: HTMLElement, t: string) => [...host.querySelectorAll('button')].find((b) => b.textContent?.trim() === t) as HTMLButtonElement;
   const klick = (svg: Element, q: { x: number; y: number }) => act(() => svg.dispatchEvent(new MouseEvent('click', { bubbles: true, button: 0, ...bildpunkt(svg, q) })));
   const bewege = (svg: Element, q: { x: number; y: number }) => act(() => svg.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, ...bildpunkt(svg, q) })));
   /** Werkzeug wählen, dann die Nutzung neuer Flächen (Auswahlliste neben den Werkzeugen) */
@@ -446,7 +469,7 @@ describe('Plan und Einstieg (G-22, G-24, G-27)', () => {
     useGrz.getState().load(p);
     const host = render(GrzGfzView);
     expect(host.querySelector('.lp-legende')!.textContent).toContain('Umriss der erfassten Flächen');
-    act(() => [...host.querySelectorAll('button')].find((b) => b.textContent === 'Grenze')!.click());
+    act(() => [...host.querySelectorAll('button')].find((b) => b.textContent?.trim() === 'Grenze')!.click());
     const svg = host.querySelector('svg.grz-skizze')!;
     const klick = (x: number, y: number) => act(() => svg.dispatchEvent(new MouseEvent('click', { bubbles: true, button: 0, ...bildpunkt(svg, { x, y }) })));
     klick(-5, -4);
@@ -477,7 +500,7 @@ describe('Plan und Einstieg (G-22, G-24, G-27)', () => {
     act(() => useGrz.getState().load(projekt()));
     act(() => useGrz.getState().update((p) => ({ ...p, name: 'geändert' })));
     expect(host.querySelector('.grz-view')).not.toBeNull();
-    await act(async () => [...host.querySelectorAll('button')].find((b) => b.textContent === 'Neu')!.click());
+    await act(async () => [...host.querySelectorAll('button')].find((b) => b.textContent?.trim() === 'Neu')!.click());
     for (let i = 0; i < 10 && !host.querySelector('.modal.rf'); i++) await act(async () => new Promise((r) => setTimeout(r, 0)));
     const nicht = [...host.querySelectorAll('.modal.rf button')].find((b) => b.textContent === 'Nicht speichern') as HTMLButtonElement;
     await act(async () => nicht.click());
@@ -546,16 +569,16 @@ describe('Nachweis-Spalte, Regeln, Rückgängig (G-28, G-29, G-32)', () => {
     act(() => useGrz.getState().select(id));
     const nutzung = [...host.querySelectorAll('.lp-eigenschaften select')][0] as HTMLSelectElement;
     change(nutzung, 'stellplatz');
-    const undo = [...host.querySelectorAll('button')].find((b) => b.textContent === '↶')!;
+    const undo = host.querySelector<HTMLButtonElement>('.toolbar button[aria-label="Rückgängig"]')!;
     expect(undo.title).toBe('Rückgängig: Nutzung ändern (Strg+Z)');
     act(() => useGrz.getState().undo());
-    const redo = [...host.querySelectorAll('button')].find((b) => b.textContent === '↷')!;
+    const redo = host.querySelector<HTMLButtonElement>('.toolbar button[aria-label="Wiederholen"]')!;
     expect(redo.title).toBe('Wiederholen: Nutzung ändern (Strg+Y)');
   });
 });
 
 describe('Gesamt-Review: Tastatur, Ausschnitt, Zeichnen, Unterlage, Speichern', () => {
-  const knopf = (host: HTMLElement, t: string) => [...host.querySelectorAll('button')].find((b) => b.textContent === t) as HTMLButtonElement;
+  const knopf = (host: HTMLElement, t: string) => [...host.querySelectorAll('button')].find((b) => b.textContent?.trim() === t) as HTMLButtonElement;
   const klick = (svg: Element, q: { x: number; y: number }, detail = 1) => act(() => svg.dispatchEvent(new MouseEvent('click', { bubbles: true, button: 0, detail, ...bildpunkt(svg, q) })));
   const taste = (key: string, ziel: EventTarget = window, extra: KeyboardEventInit = {}) => {
     const e = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...extra });
@@ -713,7 +736,7 @@ describe('Gesamt-Review: Tastatur, Ausschnitt, Zeichnen, Unterlage, Speichern', 
 });
 
 describe('Gesamt-Review: Bedienung der Oberfläche', () => {
-  const knopf = (host: ParentNode, t: string) => [...host.querySelectorAll('button')].find((b) => b.textContent === t) as HTMLButtonElement;
+  const knopf = (host: ParentNode, t: string) => [...host.querySelectorAll('button')].find((b) => b.textContent?.trim() === t) as HTMLButtonElement;
   const zeiger = (svg: Element, typ: string, q: { x: number; y: number }, extra: PointerEventInit = {}) =>
     act(() => svg.dispatchEvent(new PointerEvent(typ, { bubbles: true, button: 0, pointerId: 1, ...bildpunkt(svg, q), ...extra })));
   const feldMit = (host: HTMLElement, label: string) =>
@@ -893,7 +916,7 @@ describe('Folgerunde: Undo, Einstieg, Gesten, Unterlage', () => {
   it('„Speichern“ ist auf der Einstiegsseite gesperrt, nach „Neues Projekt“ frei', async () => {
     useGrz.getState().load(createProject());
     const host = render(App);
-    const speichern = () => [...host.querySelectorAll('.toolbar button')].find((b) => b.textContent?.startsWith('Speichern')) as HTMLButtonElement;
+    const speichern = () => [...host.querySelectorAll('.toolbar button')].find((b) => b.textContent?.trim().startsWith('Speichern')) as HTMLButtonElement;
     expect(speichern().disabled).toBe(true);
     await act(async () => ([...host.querySelectorAll('button')].find((b) => b.textContent === 'Neues Projekt') as HTMLButtonElement).click());
     expect(speichern().disabled).toBe(false);
@@ -923,5 +946,202 @@ describe('Folgerunde: Undo, Einstieg, Gesten, Unterlage', () => {
     const gross = { name: 'plan.png', type: 'image/png', size: 60 * 1024 * 1024 } as File;
     await expect(unterlageLesen(gross, { x: 0, y: 0, w: 10, h: 10 })).rejects.toBeInstanceOf(UnterlageZuGross);
     await expect(unterlageLesen(gross, { x: 0, y: 0, w: 10, h: 10 })).rejects.toThrow(/höchstens 40 MB/);
+  });
+});
+
+describe('Designsystem: Kontextmenü, Symbole, Druckvorschau, Feldfehler', () => {
+  const kontext = (el: Element, q?: { x: number; y: number }) => {
+    const svg = el.closest('svg') ?? el;
+    const ev = new MouseEvent('contextmenu', { bubbles: true, cancelable: true, ...(q ? bildpunkt(svg, q) : { clientX: 0, clientY: 0 }) });
+    act(() => el.dispatchEvent(ev));
+    return ev;
+  };
+  const schwerpunkt = (pts: { x: number; y: number }[]) => ({ x: pts.reduce((s, p) => s + p.x, 0) / pts.length, y: pts.reduce((s, p) => s + p.y, 0) / pts.length });
+  const esc = () => act(() => document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+
+  it('Rechtsklick auf eine Fläche wählt sie und bietet kopieren, duplizieren, Einfügen, löschen – wie die Tastenkürzel', () => {
+    useGrz.getState().load(projekt());
+    const host = render(MitMenue);
+    const svg = host.querySelector('svg.grz-skizze')!;
+    const flaechen = () => useGrz.getState().project.lageplan!.flaechen;
+    const oben = flaechen().at(-1)!;
+    const zahl = flaechen().length;
+    expect(kontext(svg, schwerpunkt(oben.points)).defaultPrevented).toBe(true);
+    expect(useGrz.getState().selectedIds).toEqual([oben.id]);
+    expect(host.querySelector('.menue')!.getAttribute('aria-label')).toBe(oben.name);
+    expect(menueTexte(host)).toEqual(['Fläche kopieren', 'Fläche duplizieren', 'Einfügen', 'Fläche löschen']);
+    // Tastenkürzel als tasten (rechts, aria-keyshortcuts), nicht im Namen
+    expect(menuePunkt(host, 'Fläche kopieren').getAttribute('aria-keyshortcuts')).toBe(tastenAria('Strg+C'));
+    expect(menuePunkt(host, 'Fläche löschen').getAttribute('aria-keyshortcuts')).toBe(tastenAria('Entf / Rücktaste'));
+    // duplizieren: eine Fläche mehr, die Kopie ist gewählt
+    act(() => menuePunkt(host, 'Fläche duplizieren').click());
+    expect(flaechen()).toHaveLength(zahl + 1);
+    expect(host.querySelector('.menue')).toBeNull();
+    // kopieren, dann ist „Einfügen“ frei und fügt ein
+    kontext(svg, schwerpunkt(oben.points));
+    act(() => menuePunkt(host, 'Fläche kopieren').click());
+    kontext(svg, schwerpunkt(oben.points));
+    expect(menuePunkt(host, 'Einfügen').getAttribute('aria-disabled')).toBeNull();
+    act(() => menuePunkt(host, 'Einfügen').click());
+    expect(flaechen()).toHaveLength(zahl + 2);
+    // löschen: ein Rückgängig-Schritt mit Namen
+    const gewaehlt = useGrz.getState().selectedIds[0];
+    kontext(svg, schwerpunkt(flaechen().find((f) => f.id === gewaehlt)!.points));
+    act(() => menuePunkt(host, 'Fläche löschen').click());
+    expect(flaechen().some((f) => f.id === gewaehlt)).toBe(false);
+    expect(useGrz.getState().pastAktionen.at(-1)).toBe('Fläche löschen');
+  });
+
+  it('Rechtsklick im Leeren: Einfügen (gesperrt mit Grund, solange nichts kopiert ist) und Einpassen; Flurstück-Kante: Flurstück löschen', () => {
+    const p = projekt();
+    p.lageplan!.grenze = [{ id: 'gr1', name: 'Flurstück 1', points: rectPoints({ x: -5, y: -4 }, { x: 18, y: 16 }) }];
+    // Ablage ist modulweit: definiert leer beginnen
+    ablageLeeren();
+    useGrz.getState().load(p);
+    const host = render(MitMenue);
+    const svg = host.querySelector('svg.grz-skizze')!;
+    // weit außerhalb von Flächen und Grenze (Ausschnitt reicht über die Grenze hinaus)
+    const [x, y] = svg.getAttribute('viewBox')!.split(' ').map(Number);
+    kontext(svg, { x: x + 0.5, y: y + 0.5 });
+    expect(host.querySelector('.menue')!.getAttribute('aria-label')).toBe('Lageplan');
+    expect(menueTexte(host)).toEqual(['Einfügen', 'Einpassen']);
+    const einfuegen = menuePunkt(host, 'Einfügen');
+    expect(einfuegen.getAttribute('aria-disabled')).toBe('true');
+    expect(einfuegen.textContent).toContain('Nichts kopiert');
+    expect(einfuegen.title).toBe('Zuerst Flächen kopieren (Strg+C)');
+    esc();
+    // Kante des Flurstücks: wählt es und bietet „Flurstück löschen“
+    kontext(svg, { x: -5, y: 6 });
+    expect(host.querySelector('.lp-chip.active')!.textContent).toContain('Flurstück 1');
+    expect(menueTexte(host)).toEqual(['Flurstück löschen']);
+    act(() => menuePunkt(host, 'Flurstück löschen').click());
+    expect(useGrz.getState().project.lageplan!.grenze).toBeUndefined();
+    expect(useGrz.getState().pastAktionen.at(-1)).toBe('Flurstück löschen');
+  });
+
+  it('Kontextmenütaste (ohne Mausposition) öffnet das Menü der Auswahl; beim Zeichnen gibt es kein Menü', () => {
+    useGrz.getState().load(projekt());
+    const host = render(MitMenue);
+    const svg = host.querySelector('svg.grz-skizze')!;
+    const f = useGrz.getState().project.lageplan!.flaechen;
+    act(() => useGrz.getState().selectMany([f[0].id, f[1].id]));
+    kontext(svg);
+    expect(host.querySelector('.menue')!.getAttribute('aria-label')).toBe('2 Flächen');
+    expect(menueTexte(host)).toEqual(['2 Flächen kopieren', '2 Flächen duplizieren', 'Einfügen', '2 Flächen löschen']);
+    esc();
+    // Gegenprobe: im Werkzeug Polygon kein Menü, aber auch kein Browsermenü
+    act(() => useGrz.getState().setWerkzeug('polygon'));
+    const ev = kontext(svg, schwerpunkt(f[0].points));
+    expect(ev.defaultPrevented).toBe(true);
+    expect(host.querySelector('.menue')).toBeNull();
+  });
+
+  it('Werkzeugleisten mit Symbolen statt Schriftzeichen; Druckvorschau: „Schließen“ links, „Drucken / PDF …“ als Hauptknopf', () => {
+    useGrz.getState().load(projekt());
+    const host = render(App);
+    const undo = host.querySelector('.toolbar button[aria-label="Rückgängig"]')!;
+    expect(undo.querySelector('svg.symbol')).not.toBeNull();
+    expect(undo.textContent).toBe('');
+    // Werkzeuge im Lageplan: Symbol vor dem Namen
+    const werkzeuge = [...host.querySelectorAll('.lp-gruppe[aria-label="Werkzeug"] button')];
+    expect(werkzeuge.map((b) => b.textContent?.trim())).toEqual(['Auswahl', 'Polygon', 'Rechteck', 'Grenze']);
+    // „Grenze“ ohne Symbol, bis der core-Satz ein eigenes hat (kein irreführender Ersatz)
+    expect(werkzeuge.map((b) => !!b.querySelector('svg.symbol[aria-hidden="true"]'))).toEqual([true, true, true, false]);
+    // bekannte Befehle tragen ihren Namen im aria-label (in schmalen Fenstern nur das Symbol)
+    expect(host.querySelector('.toolbar button[aria-label="Neu"] .tb-text')!.textContent).toBe('Neu');
+    expect(host.querySelector('.toolbar button[aria-label="Speichern"]')!.classList.contains('tb-dirty')).toBe(false);
+    expect(host.querySelector('.toolbar')!.textContent).not.toMatch(/[↶↷×?]/);
+    // Tastenübersicht im Lageplan: Symbol statt „?“, Name über aria-label
+    const tasten = host.querySelector('.lp-tasten-knopf')!;
+    expect(tasten.querySelector('svg.symbol')).not.toBeNull();
+    expect(tasten.textContent).toBe('');
+    expect(tasten.getAttribute('aria-label')).toBe('Tastenübersicht');
+    act(() => [...host.querySelectorAll('button')].find((b) => b.textContent?.includes('Nachweis drucken'))!.click());
+    const knoepfe = [...host.querySelectorAll('.report-actions > button')];
+    expect(knoepfe.map((b) => b.textContent)).toEqual(['Schließen', 'Drucken / PDF …']);
+    expect(knoepfe[1].classList.contains('primary')).toBe(true);
+    expect(knoepfe[0].classList.contains('primary')).toBe(false);
+  });
+
+  it('Meldungen über dem Inhalt nutzen .meldung: neutral beim fehlenden Gebäude, Warnung beim wiederhergestellten Stand', () => {
+    const p = projekt();
+    p.storeys = [];
+    useGrz.getState().load(p);
+    const host = render(App);
+    const hinweis = [...host.querySelectorAll('.grz-bericht')].find((e) => e.textContent?.includes('noch keinen Gebäudeumriss'))!;
+    expect(hinweis.className).toBe('meldung grz-bericht');
+    expect(hinweis.getAttribute('role')).toBe('status');
+    act(() => root?.unmount());
+    const datei = projekt();
+    useGrz.getState().wiederherstellen({ ...datei, name: 'Umbenannt' }, 'Haus.oap', datei, Date.now());
+    const host2 = render(App);
+    const leiste = [...host2.querySelectorAll('.grz-bericht')].find((e) => e.textContent?.includes('wiederhergestellt'))!;
+    expect(leiste.className).toBe('meldung warnung grz-bericht');
+    // ungespeichert: Punkt an „Speichern“ statt Zeichen im Text, Zustand im Namen des Knopfs
+    const speichern = host2.querySelector('.toolbar button.tb-dirty')!;
+    expect(speichern.getAttribute('aria-label')).toBe('Speichern – ungespeicherte Änderungen');
+    expect(speichern.textContent?.trim()).toBe('Speichern');
+    // Gegenprobe: kein Hinweis auf fehlendes Gebäude, wenn eins da ist
+    expect(host2.textContent).not.toContain('noch keinen Gebäudeumriss');
+  });
+
+  it('Fehler über zwei Felder (mindestens > höchstens, GRZ II < GRZ): beide Felder rot und von der einen Meldung beschrieben', () => {
+    const p = projekt();
+    p.massNutzung = { ...p.massNutzung, vollgeschosseZwingend: undefined, vollgeschosseMin: 3, vollgeschosseMax: 2, grz: 0.4, grzIIMax: 0.3, planDatum: '2020-05-01' };
+    useGrz.getState().load(p);
+    const host = render(GrzGfzView);
+    const vg = host.querySelector('#grz-vg-fehler')!;
+    expect(vg.getAttribute('role')).toBe('alert');
+    const vgFelder = [...host.querySelectorAll('input[aria-describedby~="grz-vg-fehler"]')];
+    expect(vgFelder).toHaveLength(2);
+    expect(vgFelder.every((i) => i.getAttribute('aria-invalid') === 'true' && i.classList.contains('feld-fehler'))).toBe(true);
+    const grzFelder = [...host.querySelectorAll('input[aria-describedby~="grz-grz2-fehler"]')];
+    expect(grzFelder).toHaveLength(2);
+    expect(host.querySelector('#grz-grz2-fehler')!.textContent).toContain('Kleiner als die GRZ');
+    // Gegenprobe: stimmig → keine Meldung, keine Markierung
+    act(() => useGrz.getState().update((q) => ({ ...q, massNutzung: { ...q.massNutzung, vollgeschosseMin: 1, grzIIMax: 0.6 } })));
+    expect(host.querySelector('#grz-vg-fehler')).toBeNull();
+    expect(host.querySelector('#grz-grz2-fehler')).toBeNull();
+    expect(host.querySelectorAll('input[aria-invalid="true"]')).toHaveLength(0);
+  });
+
+  it('Lageplan im dunklen Schema mit abgedunkelter Zeichenfläche: Füllungen vorgerechnet (planFuellungDunkel), Legende in Originalfarbe', () => {
+    const ausgang = useTheme.getState();
+    try {
+      useGrz.getState().load(projekt());
+      act(() => useTheme.setState({ theme: 'hell', canvasDunkel: true }));
+      const host = render(GrzGfzView);
+      const f = useGrz.getState().project.lageplan!.flaechen.find((x) => !x.nachbar && !x.variante)!;
+      const pfad = () => [...host.querySelectorAll('svg.grz-skizze path')].find((e) => e.querySelector('title')?.textContent?.startsWith(f.name))!;
+      const farbe = versiegelungInfo(f.versiegelung).color;
+      // hell: Originalfarbe mit Deckung 0,55
+      expect(pfad().getAttribute('fill')).toBe(farbe);
+      expect(pfad().getAttribute('fill-opacity')).toBe('0.55');
+      act(() => useTheme.setState({ theme: 'dunkel', canvasDunkel: true }));
+      const dunkel = planFuellungDunkel(farbe, 0.55);
+      expect(pfad().getAttribute('fill')).toBe(dunkel.farbe);
+      expect(Number(pfad().getAttribute('fill-opacity'))).toBeCloseTo(dunkel.deckung, 6);
+      expect(dunkel.farbe).not.toBe(farbe);
+      // Legende bleibt in der Originalfarbe, ohne Filter
+      const marke = [...host.querySelectorAll<HTMLElement>('.grz-table .swatch')].find((m) => m.parentElement?.textContent?.includes(versiegelungInfo(f.versiegelung).label))!;
+      expect(marke.style.background).not.toBe('');
+      expect(marke.style.filter).toBe('');
+      // Gegenprobe: dunkles Schema ohne Abdunkeln der Zeichenfläche → wieder die Originalfarbe
+      act(() => useTheme.setState({ theme: 'dunkel', canvasDunkel: false }));
+      expect(pfad().getAttribute('fill')).toBe(farbe);
+    } finally {
+      useTheme.setState({ theme: ausgang.theme, canvasDunkel: ausgang.canvasDunkel });
+    }
+  });
+
+  it('GRZ II < GRZ markiert nur bei BauNVO 1990 (Gegenprobe 1968/1977: altes grzIIMax macht die GRZ nicht ungültig)', () => {
+    const p = projekt();
+    p.massNutzung = { ...p.massNutzung, grz: 0.4, grzIIMax: 0.3, baunvo: '1968' };
+    useGrz.getState().load(p);
+    const host = render(GrzGfzView);
+    expect(host.querySelector('#grz-grz2-fehler')).toBeNull();
+    expect(host.querySelectorAll('input[aria-invalid="true"]')).toHaveLength(0);
+    act(() => useGrz.getState().update((q) => ({ ...q, massNutzung: { ...q.massNutzung, baunvo: '1990' } })));
+    expect(host.querySelectorAll('input[aria-describedby~="grz-grz2-fehler"][aria-invalid="true"]')).toHaveLength(2);
   });
 });

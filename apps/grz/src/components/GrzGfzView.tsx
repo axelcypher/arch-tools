@@ -123,7 +123,8 @@ export function GrzGfzView() {
   const vgFehler =
     !m.vollgeschosseZwingend && m.vollgeschosseMin !== undefined && m.vollgeschosseMax !== undefined && m.vollgeschosseMin > m.vollgeschosseMax ? 'Mindestens ist größer als höchstens.' : undefined;
   const vonHand = n.geschosse.filter((g) => !g.automatisch).length;
-  const grz2Fehler = m.grzIIMax !== undefined && m.grz !== undefined && m.grzIIMax < m.grz ? 'Kleiner als die GRZ – die GRZ II umfasst die Hauptanlage mit.' : undefined;
+  // nur bei BauNVO 1990 (dort steht das Feld und die Meldung); ein alter Wert aus 1990 macht andere Fassungen nicht ungültig
+  const grz2Fehler = n.recht.baunvo === '1990' && m.grzIIMax !== undefined && m.grz !== undefined && m.grzIIMax < m.grz ? 'Kleiner als die GRZ – die GRZ II umfasst die Hauptanlage mit.' : undefined;
   return (
     <div className="grz-view">
       <div className="grz-ergebnis-leiste" role="region" aria-label="Ergebnis">
@@ -216,7 +217,7 @@ export function GrzGfzView() {
         <h3>Maß der baulichen Nutzung</h3>
         <div className="field-row">
           <Field label={n.recht.baunvo === '1990' ? 'GRZ (I)' : 'GRZ'}>
-            <NumberField value={m.grz} allowEmpty min={0} max={1} onChange={(v) => setM({ grz: v })} />
+            <NumberField value={m.grz} allowEmpty min={0} max={1} ungueltig={!!grz2Fehler} fehlerId="grz-grz2-fehler" onChange={(v) => setM({ grz: v })} />
           </Field>
           <Field label="GFZ">
             <NumberField value={m.gfz} allowEmpty min={0} max={10} onChange={(v) => setM({ gfz: v })} />
@@ -224,9 +225,9 @@ export function GrzGfzView() {
         </div>
         {n.recht.baunvo === '1990' && (
           <Field label="GRZ II höchstens" hint="leer = 1,5 × GRZ, höchstens 0,8 (§ 19 Abs. 4 S. 2)">
-            <NumberField value={m.grzIIMax} allowEmpty min={0} max={1} onChange={(v) => setM({ grzIIMax: v })} />
+            <NumberField value={m.grzIIMax} allowEmpty min={0} max={1} ungueltig={!!grz2Fehler} fehlerId="grz-grz2-fehler" onChange={(v) => setM({ grzIIMax: v })} />
             {grz2Fehler && (
-              <span className="feld-meldung" role="alert">
+              <span id="grz-grz2-fehler" className="feld-meldung" role="alert">
                 {grz2Fehler}
               </span>
             )}
@@ -261,15 +262,33 @@ export function GrzGfzView() {
         ) : (
           <div className="field-row">
             <Field label="mindestens">
-              <NumberField value={m.vollgeschosseMin} allowEmpty min={0} max={40} digits={0} onChange={(v) => setM({ vollgeschosseMin: v === undefined ? undefined : Math.round(v) })} />
+              <NumberField
+                value={m.vollgeschosseMin}
+                allowEmpty
+                min={0}
+                max={40}
+                digits={0}
+                ungueltig={!!vgFehler}
+                fehlerId="grz-vg-fehler"
+                onChange={(v) => setM({ vollgeschosseMin: v === undefined ? undefined : Math.round(v) })}
+              />
             </Field>
             <Field label="höchstens">
-              <NumberField value={m.vollgeschosseMax} allowEmpty min={0} max={40} digits={0} onChange={(v) => setM({ vollgeschosseMax: v === undefined ? undefined : Math.round(v) })} />
+              <NumberField
+                value={m.vollgeschosseMax}
+                allowEmpty
+                min={0}
+                max={40}
+                digits={0}
+                ungueltig={!!vgFehler}
+                fehlerId="grz-vg-fehler"
+                onChange={(v) => setM({ vollgeschosseMax: v === undefined ? undefined : Math.round(v) })}
+              />
             </Field>
           </div>
         )}
         {vgFehler && (
-          <p className="feld-meldung" role="alert">
+          <p id="grz-vg-fehler" className="feld-meldung" role="alert">
             {vgFehler}
           </p>
         )}
@@ -824,6 +843,7 @@ export function GrzGfzView() {
                 {VERSIEGELUNGEN.map((v) => (
                   <tr key={v.id}>
                     <td>
+                      {/* Farbmarke in der Originalfarbe; der Plan rechnet seine Füllung auf der dunklen Zeichenfläche passend vor (planFuellungDunkel) */}
                       <span className="swatch" style={{ background: v.color }} /> {v.label}
                     </td>
                     <td className="num">{fmt2(n.bilanz[v.id])} m²</td>
