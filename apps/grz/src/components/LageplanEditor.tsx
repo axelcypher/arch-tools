@@ -39,7 +39,7 @@ const ZIEH_PX = 3;
  * Werkzeuge und Tasten wie in QUADRIO. kurz: die zwei, drei wichtigsten Kürzel für die Hilfezeile; alle:
  * vollständige Übersicht hinter „?“
  */
-const WERKZEUGE: { id: Werkzeug; label: string; symbol: SymbolName; taste: string; kurz: string[]; alle: string[]; titel: string }[] = [
+const WERKZEUGE: { id: Werkzeug; label: string; symbol?: SymbolName; taste: string; kurz: string[]; alle: string[]; titel: string }[] = [
   {
     id: 'auswahl',
     label: 'Auswahl',
@@ -80,8 +80,7 @@ const WERKZEUGE: { id: Werkzeug; label: string; symbol: SymbolName; taste: strin
   {
     id: 'grenze',
     label: 'Grenze',
-    // eigenes Symbol für die Grundstücksgrenze fehlt im core-Satz – bis dahin die Flurkarte
-    symbol: 'karte',
+    // ohne Symbol, bis der core-Satz ein eigenes für die Grundstücksgrenze hat (kein irreführender Ersatz)
     taste: 'G',
     titel: 'Grundstücksgrenze (Flurstück) als Polygon zeichnen',
     kurz: ['Klicken: Punkt', 'Enter: schließen', 'Esc: abbrechen'],
@@ -419,7 +418,8 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
   // Kontextmenü am Eckpunkt (gemeinsames Menü: Tastatur, Esc, gesperrte Punkte mit Grund)
   const onPunktKontext = (e: React.MouseEvent, id: string, index: number) => {
     const f = flaechen.find((x) => x.id === id) ?? grenzen.find((g) => g.id === id);
-    if (!f) return void e.preventDefault();
+    // ohne Fläche (gerade gelöscht): kein Menü, und auch nicht das Menü des Plans darunter
+    if (!f) return zeigeMenue(e, []);
     const zuWenig = f.points.length <= 3;
     const art = istGrenze(id) ? 'Ein Flurstück' : 'Eine Fläche';
     zeigeMenue(
@@ -430,14 +430,16 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
           symbol: 'muell',
           gefahr: true,
           deaktiviert: zuWenig,
-          hinweis: zuWenig ? 'Mind. 3 Punkte' : undefined,
+          hinweis: zuWenig ? 'Nur noch 3 Punkte' : undefined,
           titel: zuWenig ? `${art} braucht mindestens drei Punkte` : undefined,
           // aus dem aktuellen Stand rechnen: bei offenem Menü kann sich die Fläche geändert haben (z. B. Rückgängig)
           aktion: () =>
             st.update(
               (p) => {
                 const aktuell = (p.lageplan?.flaechen ?? []).find((x) => x.id === id) ?? (p.lageplan?.grenze ?? []).find((g) => g.id === id);
-                if (!aktuell || aktuell.points.length <= 3 || index >= aktuell.points.length) return p;
+                const q = f.points[index];
+                // Fläche bei offenem Menü geändert (z. B. Rückgängig): nur löschen, wenn der Punkt noch derselbe ist
+                if (!aktuell || aktuell.points.length <= 3 || aktuell.points[index]?.x !== q.x || aktuell.points[index]?.y !== q.y) return p;
                 return punkteSetzen(
                   p,
                   id,
@@ -746,12 +748,12 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
         case 'Backspace':
           if (draft.length) setDraft(draft.slice(0, -1));
           else if (grenzeSel && werkzeug === 'auswahl') grenzeLoeschen(grenzeSel);
-          else if (sel.length) st.update((p) => removeFlaeche(p, sel), undefined, 'Fläche löschen');
+          else if (sel.length) st.update((p) => removeFlaeche(p, sel), undefined, sel.length > 1 ? 'Flächen löschen' : 'Fläche löschen');
           e.preventDefault();
           break;
         case 'Delete':
           if (grenzeSel && werkzeug === 'auswahl') grenzeLoeschen(grenzeSel);
-          else if (sel.length) st.update((p) => removeFlaeche(p, sel), undefined, 'Fläche löschen');
+          else if (sel.length) st.update((p) => removeFlaeche(p, sel), undefined, sel.length > 1 ? 'Flächen löschen' : 'Fläche löschen');
           break;
         case 'f':
         case 'F':
@@ -823,7 +825,7 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
         <div className="lp-gruppe" role="group" aria-label="Werkzeug">
           {WERKZEUGE.map((w) => (
             <button key={w.id} className={werkzeug === w.id ? 'small active' : 'small'} aria-pressed={werkzeug === w.id} title={`${w.titel} (${w.taste})`} onClick={() => st.setWerkzeug(w.id)}>
-              <Symbol name={w.symbol} /> {w.label}
+              {w.symbol && <Symbol name={w.symbol} />} {w.label}
             </button>
           ))}
         </div>

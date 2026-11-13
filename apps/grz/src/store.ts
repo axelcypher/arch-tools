@@ -356,6 +356,11 @@ export function ablageLeer(): boolean {
   return ablage.length === 0;
 }
 
+/** Ablage leeren (für Tests: definierter Ausgangszustand) */
+export function ablageLeeren(): void {
+  ablage = [];
+}
+
 /** Strg+V: um 0,50 m versetzt (mehrfaches Einfügen staffelt weiter) */
 export function flaechenEinfuegen(): number {
   if (!ablage.length) return 0;

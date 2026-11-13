@@ -153,18 +153,22 @@ export function App() {
       <TitleBar app={APP_NAMEN.grz.name} name={name} dirty={dirty} onOpenLog={() => setLogOpen(true)} regeln="grz" onProjekte={() => setProjekteOffen(true)} onSpeichern={() => onSave()} />
       <div className="toolbar">
         <div className="tb-group">
-          <button onClick={() => void onNeu()} title="Neues, leeres Projekt (fragt bei ungespeicherten Änderungen nach)">
-            <Symbol name="datei" /> Neu
+          <button onClick={() => void onNeu()} title="Neues, leeres Projekt (fragt bei ungespeicherten Änderungen nach)" aria-label="Neu">
+            {/* bekannte Befehle: in schmalen Fenstern nur das Symbol (Name über aria-label und title) */}
+            <Symbol name="datei" /> <span className="tb-text">Neu</span>
           </button>
-          <button onClick={onOpen} title="Projekt (.oap) oder IFC-Modell öffnen (Strg+O)">
-            <Symbol name="ordnerOffen" /> Öffnen …
+          <button onClick={onOpen} title="Projekt (.oap) oder IFC-Modell öffnen (Strg+O)" aria-label="Öffnen …">
+            <Symbol name="ordnerOffen" /> <span className="tb-text">Öffnen …</span>
           </button>
+          {/* ungespeicherte Änderungen als Punkt in der Ecke – ändert die Breite der Leiste nicht */}
           <button
+            className={dirty ? 'tb-dirty' : undefined}
+            aria-label={dirty ? 'Speichern – ungespeicherte Änderungen' : 'Speichern'}
             onClick={() => void onSave()}
             disabled={einstieg && !dirty}
             title={einstieg && !dirty ? 'Erst ein Projekt öffnen oder neu beginnen' : isTauri() ? 'Projekt speichern – in die geöffnete Datei (Strg+S)' : 'Projekt als Datei herunterladen (Strg+S)'}
           >
-            <Symbol name="speichern" /> Speichern{dirty ? ' •' : ''}
+            <Symbol name="speichern" /> <span className="tb-text">Speichern</span>
           </button>
           {isTauri() && (
             <button onClick={() => void onSave(true)} title="Projekt unter neuem Namen oder an anderem Ort speichern (Strg+Umschalt+S)">
@@ -211,7 +215,7 @@ export function App() {
       </div>
       <main className="grz-main">
         {wiederhergestellt !== null && dirty && (
-          <div className="meldung warnung grz-bericht grz-wiederhergestellt" role="status">
+          <div className="meldung warnung grz-bericht" role="status">
             Ungespeicherter Stand vom {datumText(new Date(wiederhergestellt))} {new Date(wiederhergestellt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} wiederhergestellt –{' '}
             <button className="small" onClick={() => void onSave()}>
               Speichern

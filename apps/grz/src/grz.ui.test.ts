@@ -10,7 +10,7 @@ import { innenflaeche, weltpunkt } from './components/LageplanEditor';
 import { massNachweis } from './massNutzung';
 import { GrzGfzView, kanteSetzen } from './components/GrzGfzView';
 import { NachweisDruck } from './components/NachweisDruck';
-import { useGrz } from './store';
+import { ablageLeeren, useGrz } from './store';
 import { projekt } from './testdaten';
 import { einstiegsAktionen, farbschemaWechseln, stammdatenAendern } from '@core/ui/rauchtest';
 import { MenueHost } from '@core/ui/Menue';
@@ -215,7 +215,7 @@ describe('TERRIO', () => {
     // bei drei Punkten gesperrt, mit sichtbarem Grund; ein Klick ändert nichts
     const gesperrt = loeschen();
     expect(gesperrt.getAttribute('aria-disabled') === 'true' || gesperrt.hasAttribute('disabled')).toBe(true);
-    expect(gesperrt.textContent).toContain('Mind. 3 Punkte');
+    expect(gesperrt.textContent).toContain('Nur noch 3 Punkte');
     expect(punkte()).toHaveLength(3);
     act(() => document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
     // Mausrad zoomt, ohne dass die Seite scrollt
@@ -232,7 +232,7 @@ describe('Fehlerkorrekturen (Phase 1)', () => {
     useGrz.getState().wiederherstellen(geaendert, 'Haus.oap', datei, new Date(2026, 10, 11, 9, 5).getTime());
     expect(useGrz.getState().dirty).toBe(true);
     const host = render(App);
-    const leiste = host.querySelector('.grz-wiederhergestellt')!;
+    const leiste = [...host.querySelectorAll('.grz-bericht')].find((e) => e.textContent?.includes('wiederhergestellt'))!;
     expect(leiste.textContent).toContain('Ungespeicherter Stand vom 11.11.2026 09:05 wiederhergestellt');
     expect(document.title.startsWith('• ')).toBe(true);
     // gleicher Inhalt (andere Objekte): gespeichert
@@ -989,6 +989,8 @@ describe('Designsystem: Kontextmenü, Symbole, Druckvorschau, Feldfehler', () =>
   it('Rechtsklick im Leeren: Einfügen (gesperrt mit Grund, solange nichts kopiert ist) und Einpassen; Flurstück-Kante: Flurstück löschen', () => {
     const p = projekt();
     p.lageplan!.grenze = [{ id: 'gr1', name: 'Flurstück 1', points: rectPoints({ x: -5, y: -4 }, { x: 18, y: 16 }) }];
+    // Ablage ist modulweit: definiert leer beginnen
+    ablageLeeren();
     useGrz.getState().load(p);
     const host = render(MitMenue);
     const svg = host.querySelector('svg.grz-skizze')!;
@@ -997,9 +999,10 @@ describe('Designsystem: Kontextmenü, Symbole, Druckvorschau, Feldfehler', () =>
     kontext(svg, { x: x + 0.5, y: y + 0.5 });
     expect(host.querySelector('.menue')!.getAttribute('aria-label')).toBe('Lageplan');
     expect(menueTexte(host)).toEqual(['Einfügen', 'Einpassen']);
-    // die Ablage ist modulweit; sie kann aus einem früheren Test belegt sein – dann ist „Einfügen“ frei
     const einfuegen = menuePunkt(host, 'Einfügen');
-    if (einfuegen.getAttribute('aria-disabled') === 'true') expect(einfuegen.textContent).toContain('Nichts kopiert');
+    expect(einfuegen.getAttribute('aria-disabled')).toBe('true');
+    expect(einfuegen.textContent).toContain('Nichts kopiert');
+    expect(einfuegen.title).toBe('Zuerst Flächen kopieren (Strg+C)');
     esc();
     // Kante des Flurstücks: wählt es und bietet „Flurstück löschen“
     kontext(svg, { x: -5, y: 6 });
@@ -1033,11 +1036,20 @@ describe('Designsystem: Kontextmenü, Symbole, Druckvorschau, Feldfehler', () =>
     const undo = host.querySelector('.toolbar button[aria-label="Rückgängig"]')!;
     expect(undo.querySelector('svg.symbol')).not.toBeNull();
     expect(undo.textContent).toBe('');
-    // Werkzeuge im Lageplan: je ein Symbol vor dem Namen
+    // Werkzeuge im Lageplan: Symbol vor dem Namen
     const werkzeuge = [...host.querySelectorAll('.lp-gruppe[aria-label="Werkzeug"] button')];
     expect(werkzeuge.map((b) => b.textContent?.trim())).toEqual(['Auswahl', 'Polygon', 'Rechteck', 'Grenze']);
-    expect(werkzeuge.every((b) => b.querySelector('svg.symbol[aria-hidden="true"]'))).toBe(true);
+    // „Grenze“ ohne Symbol, bis der core-Satz ein eigenes hat (kein irreführender Ersatz)
+    expect(werkzeuge.map((b) => !!b.querySelector('svg.symbol[aria-hidden="true"]'))).toEqual([true, true, true, false]);
+    // bekannte Befehle tragen ihren Namen im aria-label (in schmalen Fenstern nur das Symbol)
+    expect(host.querySelector('.toolbar button[aria-label="Neu"] .tb-text')!.textContent).toBe('Neu');
+    expect(host.querySelector('.toolbar button[aria-label="Speichern"]')!.classList.contains('tb-dirty')).toBe(false);
     expect(host.querySelector('.toolbar')!.textContent).not.toMatch(/[↶↷×?]/);
+    // Tastenübersicht im Lageplan: Symbol statt „?“, Name über aria-label
+    const tasten = host.querySelector('.lp-tasten-knopf')!;
+    expect(tasten.querySelector('svg.symbol')).not.toBeNull();
+    expect(tasten.textContent).toBe('');
+    expect(tasten.getAttribute('aria-label')).toBe('Tastenübersicht');
     act(() => [...host.querySelectorAll('button')].find((b) => b.textContent?.includes('Nachweis drucken'))!.click());
     const knoepfe = [...host.querySelectorAll('.report-actions > button')];
     expect(knoepfe.map((b) => b.textContent)).toEqual(['Schließen', 'Drucken / PDF …']);
@@ -1045,7 +1057,7 @@ describe('Designsystem: Kontextmenü, Symbole, Druckvorschau, Feldfehler', () =>
     expect(knoepfe[0].classList.contains('primary')).toBe(false);
   });
 
-  it('Meldungen über dem Inhalt nutzen .meldung: Warnung bei Bericht mit Zeilen, neutral beim fehlenden Gebäude', () => {
+  it('Meldungen über dem Inhalt nutzen .meldung: neutral beim fehlenden Gebäude, Warnung beim wiederhergestellten Stand', () => {
     const p = projekt();
     p.storeys = [];
     useGrz.getState().load(p);
@@ -1053,6 +1065,18 @@ describe('Designsystem: Kontextmenü, Symbole, Druckvorschau, Feldfehler', () =>
     const hinweis = [...host.querySelectorAll('.grz-bericht')].find((e) => e.textContent?.includes('noch keinen Gebäudeumriss'))!;
     expect(hinweis.className).toBe('meldung grz-bericht');
     expect(hinweis.getAttribute('role')).toBe('status');
+    act(() => root?.unmount());
+    const datei = projekt();
+    useGrz.getState().wiederherstellen({ ...datei, name: 'Umbenannt' }, 'Haus.oap', datei, Date.now());
+    const host2 = render(App);
+    const leiste = [...host2.querySelectorAll('.grz-bericht')].find((e) => e.textContent?.includes('wiederhergestellt'))!;
+    expect(leiste.className).toBe('meldung warnung grz-bericht');
+    // ungespeichert: Punkt an „Speichern“ statt Zeichen im Text, Zustand im Namen des Knopfs
+    const speichern = host2.querySelector('.toolbar button.tb-dirty')!;
+    expect(speichern.getAttribute('aria-label')).toBe('Speichern – ungespeicherte Änderungen');
+    expect(speichern.textContent?.trim()).toBe('Speichern');
+    // Gegenprobe: kein Hinweis auf fehlendes Gebäude, wenn eins da ist
+    expect(host2.textContent).not.toContain('noch keinen Gebäudeumriss');
   });
 
   it('Fehler über zwei Felder (mindestens > höchstens, GRZ II < GRZ): beide Felder rot und von der einen Meldung beschrieben', () => {
@@ -1073,5 +1097,16 @@ describe('Designsystem: Kontextmenü, Symbole, Druckvorschau, Feldfehler', () =>
     expect(host.querySelector('#grz-vg-fehler')).toBeNull();
     expect(host.querySelector('#grz-grz2-fehler')).toBeNull();
     expect(host.querySelectorAll('input[aria-invalid="true"]')).toHaveLength(0);
+  });
+
+  it('GRZ II < GRZ markiert nur bei BauNVO 1990 (Gegenprobe 1968/1977: altes grzIIMax macht die GRZ nicht ungültig)', () => {
+    const p = projekt();
+    p.massNutzung = { ...p.massNutzung, grz: 0.4, grzIIMax: 0.3, baunvo: '1968' };
+    useGrz.getState().load(p);
+    const host = render(GrzGfzView);
+    expect(host.querySelector('#grz-grz2-fehler')).toBeNull();
+    expect(host.querySelectorAll('input[aria-invalid="true"]')).toHaveLength(0);
+    act(() => useGrz.getState().update((q) => ({ ...q, massNutzung: { ...q.massNutzung, baunvo: '1990' } })));
+    expect(host.querySelectorAll('input[aria-describedby~="grz-grz2-fehler"][aria-invalid="true"]')).toHaveLength(2);
   });
 });

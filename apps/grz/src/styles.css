@@ -345,6 +345,36 @@ button.link:hover {
   overflow: auto;
   background: var(--bg);
 }
+/* Legende der Flächenbilanz: Farbfeld wie die Planfüllung, im dunklen Schema mit der Zeichenfläche invertiert */
+.grz-table .swatch {
+  display: inline-block;
+  vertical-align: middle;
+  filter: var(--canvas-filter);
+}
+
+/* ungespeicherte Änderungen: Punkt außen an der oberen rechten Ecke von „Speichern“ (wie QUADRIO) */
+.toolbar button.tb-dirty {
+  position: relative;
+}
+.toolbar button.tb-dirty::after {
+  content: '';
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 7px;
+  height: 7px;
+  border: 1px solid var(--panel);
+  border-radius: 50%;
+  background: var(--sel);
+}
+
+/* schmale Fenster: bekannte Befehle (Neu, Öffnen, Speichern) nur als Symbol – Name über aria-label und title */
+@media (max-width: 1100px) {
+  .toolbar .tb-text {
+    display: none;
+  }
+}
+
 /* Meldungen über dem Inhalt: Gestalt und Farben aus .meldung (base.css), hier nur Lage und Liste */
 .grz-bericht {
   margin: var(--s3) var(--s3) 0;
@@ -353,7 +383,7 @@ button.link:hover {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--s2);
 }
 .grz-bericht ul {
   margin: var(--s1) 0 var(--s2);

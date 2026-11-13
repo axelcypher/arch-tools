@@ -123,7 +123,8 @@ export function GrzGfzView() {
   const vgFehler =
     !m.vollgeschosseZwingend && m.vollgeschosseMin !== undefined && m.vollgeschosseMax !== undefined && m.vollgeschosseMin > m.vollgeschosseMax ? 'Mindestens ist größer als höchstens.' : undefined;
   const vonHand = n.geschosse.filter((g) => !g.automatisch).length;
-  const grz2Fehler = m.grzIIMax !== undefined && m.grz !== undefined && m.grzIIMax < m.grz ? 'Kleiner als die GRZ – die GRZ II umfasst die Hauptanlage mit.' : undefined;
+  // nur bei BauNVO 1990 (dort steht das Feld und die Meldung); ein alter Wert aus 1990 macht andere Fassungen nicht ungültig
+  const grz2Fehler = n.recht.baunvo === '1990' && m.grzIIMax !== undefined && m.grz !== undefined && m.grzIIMax < m.grz ? 'Kleiner als die GRZ – die GRZ II umfasst die Hauptanlage mit.' : undefined;
   return (
     <div className="grz-view">
       <div className="grz-ergebnis-leiste" role="region" aria-label="Ergebnis">
@@ -842,7 +843,8 @@ export function GrzGfzView() {
                 {VERSIEGELUNGEN.map((v) => (
                   <tr key={v.id}>
                     <td>
-                      <span className="swatch" style={{ background: v.color }} /> {v.label}
+                      {/* wie die Füllung im Plan: Farbe zu 55 % auf hellem Grund, im dunklen Schema mit der Zeichenfläche invertiert */}
+                      <span className="swatch" style={{ background: `color-mix(in srgb, ${v.color} 55%, #fff)` }} /> {v.label}
                     </td>
                     <td className="num">{fmt2(n.bilanz[v.id])} m²</td>
                   </tr>
