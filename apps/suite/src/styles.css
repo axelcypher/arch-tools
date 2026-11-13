@@ -6,12 +6,17 @@
 .rahmen-leiste {
   gap: var(--s1);
 }
+/* auch bei vielen Tabs bleibt Fläche zum Ziehen des Fensters */
+.rahmen-leiste .titlebar-drag {
+  flex: 1 0 auto;
+  min-width: calc(2 * var(--s6));
+}
 
 /* Tableiste: Tabs schrumpfen statt aus dem Bild zu rollen; „+“ steht fest daneben */
 .rahmen-tabs {
   display: flex;
   align-items: stretch;
-  gap: 2px;
+  gap: var(--s1);
   min-width: 0;
   height: 100%;
   overflow: hidden;
@@ -20,7 +25,7 @@
   display: flex;
   flex: 0 1 auto;
   align-items: center;
-  gap: 2px;
+  gap: var(--s1);
   min-width: 0;
   max-width: 260px;
   padding: 0 var(--s1) 0 0;
@@ -43,7 +48,7 @@
   display: flex;
   flex: 1 1 auto;
   align-items: center;
-  gap: 6px;
+  gap: var(--s2);
   min-width: 0;
   height: 100%;
   padding: 0 var(--s1) 0 var(--s3);
@@ -55,7 +60,8 @@
   cursor: default;
 }
 .rahmen-tab-wahl:focus-visible {
-  outline: 2px solid var(--accent);
+  /* innen statt außen: die Leiste schneidet ab (overflow: hidden) – Ausnahme in docs/design.md */
+  outline: 2px solid var(--fokus);
   outline-offset: -2px;
   border-radius: var(--radius-s);
 }
@@ -65,6 +71,9 @@
   flex: 0 0 auto;
 }
 .rahmen-tab-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
   font-weight: 600;
 }
 .rahmen-tab-projekt {
@@ -73,7 +82,8 @@
   min-width: 0;
   font-size: var(--fs-xs);
 }
-/* wenig Platz (Mindestbreite des Fensters 1000px): nur Symbol und Name, das Projekt steht im Tooltip */
+/* wenig Platz (Mindestbreite des Fensters 1000px; Umbruchpunkt in docs/design.md, Titelleiste): nur Symbol und Name,
+   das Projekt steht im Tooltip */
 @media (max-width: 1100px) {
   .rahmen-tab-projekt {
     display: none;
@@ -98,9 +108,9 @@
   background: var(--hover);
   color: var(--text);
 }
-/* „In eigenem Fenster öffnen“ nur am gewählten bzw. überfahrenen Tab – weniger Knöpfe, kein Danebengreifen */
+/* „In eigenem Fenster öffnen“ nur am gewählten bzw. überfahrenen Tab sichtbar (Platz bleibt, nichts springt) */
 .rahmen-tab:not(.aktiv):not(:hover) .rahmen-tab-extern {
-  display: none;
+  visibility: hidden;
 }
 .rahmen-plus {
   flex: 0 0 auto;
@@ -169,7 +179,7 @@
 .rahmen-karte > span {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--s1);
 }
 .rahmen-karte,
 .rahmen-karte > span {

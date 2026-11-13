@@ -360,7 +360,7 @@ export function App() {
       [
         ...(desktop ? [{ text: 'In eigenem Fenster öffnen', symbol: 'extern' as const, aktion: () => void herausloesen(id) }] : []),
         { text: 'Schließen', symbol: 'schliessen' as const, hinweis: 'Entf', aktion: () => void tabSchliessen(id) },
-        { text: 'Andere schließen', deaktiviert: tabs.length < 2, aktion: () => void andereSchliessen(id) },
+        { text: 'Andere schließen', deaktiviert: tabs.length < 2, hinweis: tabs.length < 2 ? 'nur ein Tab offen' : undefined, aktion: () => void andereSchliessen(id) },
       ],
       `${appInfo(id)?.name}`,
     );
@@ -399,7 +399,7 @@ export function App() {
     <div className="app rahmen">
       <header className="titlebar rahmen-leiste" data-tauri-drag-region>
         <img className="titlebar-icon" src="./favicon.svg" alt="" data-tauri-drag-region />
-        <div className="rahmen-tabs" role="tablist" aria-label="Geöffnete Apps">
+        <div className="rahmen-tabs" role="tablist" aria-label="Geöffnete Apps" data-tauri-drag-region>
           {tabs.map((id) => {
             const info = appInfo(id)!;
             const s = status[id];
