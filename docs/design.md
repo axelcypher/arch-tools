@@ -267,10 +267,10 @@ mit `text`, optional `symbol`, `hinweis` (rechts, z. B. der Grund einer Sperre),
   „Begriffe“), ebenfalls mit Symbol `plus` („Neues Projekt anlegen …“).
 - Leiste heißt in diesem Abschnitt nur: `.toolbar` und die Kopfzeile eines Abschnitts (`.section-head`) – auch wenn
   der Hinzufügen-Knopf dort der Hauptknopf (`.primary`) ist. Dort knapp nur der Gegenstand mit `title` der vollen
-  Aktion, z. B. „Mangel“ bzw. „Position“ mit `title` „Mangel hinzufügen“. App-eigene Kopfzeilen gelten nur als Leiste,
+  Aktion, z. B. „Mangel“ mit `title` „Mangel hinzufügen“. App-eigene Kopfzeilen gelten nur als Leiste,
   wenn sie `.toolbar` bzw. `.section-head` tragen.
-- Keine Leisten sind `.button-row`, `.dialog-buttons`, Seitenleisten und Tabellenzeilen: dort gleich mit Verb
-  („Beteiligten hinzufügen“).
+- Keine Leisten sind `.button-row`, `.dialog-buttons`, Seitenleisten und Tabellenzeilen – dort fehlt der Zusammenhang
+  einer Werkzeugleiste, der den knappen Text erklärt: dort gleich mit Verb („Beteiligten hinzufügen“).
 - Ein `aria-label` enthält den sichtbaren Text wörtlich (sonst trifft Sprachsteuerung den Knopf nicht); geht das nur
   mit Beugung, nur `title` setzen.
 - Öffnet der Knopf einen Dialog oder eine Rückfrage, endet er auf „ …“ („Geschoss …“).
