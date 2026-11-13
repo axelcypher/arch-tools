@@ -107,7 +107,14 @@ describe('Zwischenstand: verzögertes Schreiben und Sichern vor dem Schließen',
 /** gefälschte IndexedDB-Verbindung: die Transaktion endet, wie der Test es vorgibt */
 function falscheDb(ende: 'complete' | 'error' | 'abbruch' | 'werfen') {
   const geschrieben: unknown[] = [];
-  const tx = { error: null as DOMException | null, objectStore: () => ({ put: (w: unknown) => geschrieben.push(w) }) } as unknown as IDBTransaction & Record<string, () => void>;
+  // eigene Form statt IDBTransaction: dort sind die Handler nullbar und erwarten ein Ereignis
+  const tx: { error: DOMException | null; objectStore: () => { put: (w: unknown) => void }; oncomplete: () => void; onerror: () => void; onabort: () => void } = {
+    error: null,
+    objectStore: () => ({ put: (w: unknown) => void geschrieben.push(w) }),
+    oncomplete: () => undefined,
+    onerror: () => undefined,
+    onabort: () => undefined,
+  };
   const d = {
     close: vi.fn(),
     transaction: () => {
@@ -117,7 +124,7 @@ function falscheDb(ende: 'complete' | 'error' | 'abbruch' | 'werfen') {
         else if (ende === 'abbruch')
           tx.onabort(); // Abbruch ohne Fehler (tx.error bleibt null)
         else {
-          (tx as { error: DOMException | null }).error = new DOMException('voll', 'QuotaExceededError');
+          tx.error = new DOMException('voll', 'QuotaExceededError');
           tx.onerror(); // bei einem Fehler feuern beide
           tx.onabort();
         }
