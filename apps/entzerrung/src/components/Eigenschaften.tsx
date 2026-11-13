@@ -142,9 +142,9 @@ function ReferenzPanel({ foto, ebene, ergebnis }: { foto: Foto; ebene: Ebene; er
   return (
     <section>
       <h2>Referenz · {ebene.name}</h2>
-      <div className="ef-methoden" role="group" aria-label="Art der Referenz">
+      <div className="ef-methoden segment" role="group" aria-label="Art der Referenz">
         {METHODEN.map((m) => (
-          <button key={m.id} className={ebene.methode === m.id ? 'active' : ''} aria-pressed={ebene.methode === m.id} title={m.text} onClick={() => aendern((e) => ({ ...e, methode: m.id }))}>
+          <button key={m.id} aria-pressed={ebene.methode === m.id} title={m.text} onClick={() => aendern((e) => ({ ...e, methode: m.id }))}>
             {m.name}
           </button>
         ))}
