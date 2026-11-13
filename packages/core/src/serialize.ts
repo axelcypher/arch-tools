@@ -197,7 +197,8 @@ function normalizeMeta(v: unknown): ProjectMeta {
   const g = isObj(m.grundstueck) ? m.grundstueck : {};
   const b = isObj(m.bauherr) ? m.bauherr : {};
   const grundstueck: Grundstueck = { gemarkung: str(g.gemarkung, ''), flur: str(g.flur, ''), flurstueck: str(g.flurstueck, '') };
-  if (typeof g.flaeche === 'number' && Number.isFinite(g.flaeche)) grundstueck.flaeche = g.flaeche;
+  // 0 oder negativ ist keine Grundstücksfläche (z. B. aus einer fremden Datei): wie „nicht angegeben“
+  if (typeof g.flaeche === 'number' && Number.isFinite(g.flaeche) && g.flaeche > 0) grundstueck.flaeche = g.flaeche;
   const bauherr: Bauherr = {
     name: str(b.name, ''),
     adresse: normalizeAnschrift(b.adresse),

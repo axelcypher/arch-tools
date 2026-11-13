@@ -398,3 +398,17 @@ describe('Nutzungsart als zweite Ebene (F-14)', () => {
     expect(r.rooms[0].nutzung).toBe('NUF7');
   });
 });
+
+describe('Einlesen: Grundstücksfläche', () => {
+  it('verwirft 0 und negative Werte (Gegenprobe: positive Fläche bleibt)', () => {
+    const mit = (flaeche: unknown) => {
+      const p = createProject('T');
+      const roh = JSON.parse(serializeProject(p));
+      roh.meta.grundstueck.flaeche = flaeche;
+      return parseProject(JSON.stringify(roh)).meta.grundstueck.flaeche;
+    };
+    expect(mit(0)).toBeUndefined();
+    expect(mit(-100)).toBeUndefined();
+    expect(mit(612.5)).toBe(612.5);
+  });
+});
