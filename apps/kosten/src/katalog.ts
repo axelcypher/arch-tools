@@ -57,7 +57,7 @@ export function katalogSpeichern(k: Katalog | null): boolean {
 /**
  * Zahl aus einer Zelle, je Zelle erkannt: Stehen Punkt und Komma darin, ist das zuletzt stehende das Dezimalzeichen
  * („1.800,50“, „1,800.50“). Steht nur eines darin, ist es das Dezimalzeichen – außer es trennt genau Dreiergruppen
- * („1.800“, „1,800“); dann entscheidet die Datei: in einer CSV mit Komma als Trennzeichen (dezimalpunkt) gilt das
+ * nach einer Ziffer 1–9 („1.800“, „1,800“; „0.125“ bleibt 0,125); dann entscheidet die Datei: in einer CSV mit Komma als Trennzeichen (dezimalpunkt) gilt das
  * Komma als Tausendertrenner, sonst der Punkt.
  */
 const zahl = (v: unknown, dezimalpunkt = false): number | undefined => {
@@ -67,8 +67,8 @@ const zahl = (v: unknown, dezimalpunkt = false): number | undefined => {
   const punkt = t.lastIndexOf('.');
   const komma = t.lastIndexOf(',');
   if (punkt >= 0 && komma >= 0) t = punkt > komma ? t.replace(/,/g, '') : t.replace(/\./g, '').replace(',', '.');
-  else if (komma >= 0) t = dezimalpunkt && /^-?\d{1,3}(,\d{3})+$/.test(t) ? t.replace(/,/g, '') : t.replace(',', '.');
-  else if (punkt >= 0 && !dezimalpunkt && /^-?\d{1,3}(\.\d{3})+$/.test(t)) t = t.replace(/\./g, '');
+  else if (komma >= 0) t = dezimalpunkt && /^-?[1-9]\d{0,2}(,\d{3})+$/.test(t) ? t.replace(/,/g, '') : t.replace(',', '.');
+  else if (punkt >= 0 && !dezimalpunkt && /^-?[1-9]\d{0,2}(\.\d{3})+$/.test(t)) t = t.replace(/\./g, '');
   const n = Number(t);
   return Number.isFinite(n) ? n : undefined;
 };

@@ -69,6 +69,8 @@ describe('Kennwertkatalog', () => {
     // Dreiergruppen allein: in der Komma-CSV Tausender, in der Semikolon-CSV ebenfalls (Punkt)
     expect(leseKatalog('KG,Bezeichnung,Bezug,Grundlage,von,Mittel,bis\n300,B,BGF,,"1,800",,', 'k.csv').eintraege[0].von).toBe(1800);
     expect(leseKatalog('KG;Bezeichnung;Bezug;Grundlage;von;Mittel;bis\n300;B;BGF;;1,800;1.23;', 's.csv').eintraege[0]).toMatchObject({ von: 1.8, mittel: 1.23 });
+    // führende 0 ist nie ein Tausendertrenner
+    expect(leseKatalog('KG;Bezeichnung;Bezug;Grundlage;von;Mittel;bis\n300;B;BGF;;0.125;1.250;', 'n.csv').eintraege[0]).toMatchObject({ von: 0.125, mittel: 1250 });
   });
 
   it('Kostenrisiken lassen sich aus dem Katalog übernehmen', () => {
