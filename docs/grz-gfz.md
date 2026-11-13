@@ -9,6 +9,9 @@ erhalten.
 
 - **Einstieg:** Ohne Gebäude und Lageplan-Flächen zeigt die App nur die Einstiegskarte (Projekt wählen, Datei öffnen –
   auch IFC –, Neues Projekt = mit leerem Lageplan beginnen); Festsetzungen, Plan und Nachweis erscheinen danach.
+  Nach jedem Öffnen erscheint die Ansicht, auch bei einem Projekt ohne Gebäude; dann sagt ein Hinweis oben, dass
+  der Gebäudeumriss aus QUADRIO oder einem IFC-Modell kommt. Der IFC-Bericht ist nur dann gelb, wenn er etwas
+  meldet, und schließt mit „×“ oder Esc.
   „Neu“ in der Werkzeugleiste beginnt ein leeres Projekt (mit Rückfrage bei ungespeicherten Änderungen) und
   verwirft damit auch den Zwischenstand. Gesperrte Knöpfe nennen im Tooltip den Grund. Der Hinweis
   „Grundstücksfläche fehlt“ springt mit „zum Feld“ in das Feld „Grundstücksfläche [m²]“.
@@ -40,6 +43,15 @@ erhalten.
   QUADRIO betreffen (BRI, Bodenplatte, Putzabzug, Wohnfläche, Dachform), entfallen.
 
 ## Projekt und Bebauungsplan
+
+Die linke Spalte ist in drei Abschnitte gegliedert: **Projekt und Grundstück** (Stammdaten, Grundstücksfläche,
+Bebauungsplan), **Festsetzungen** (Baugebiet, Fassungen, Maß der baulichen Nutzung, Vollgeschosse, Höhen) und
+**Annahmen für die Berechnung** (Geländeoberfläche, Decken-/Dachaufbau, Wandzuschlag, Einfamilienhaus). Felder
+einer Zeile stehen unten bündig. Widersprüche melden sich am Feld, ohne die Eingabe zu sperren: „Mindestens ist
+größer als höchstens“ (Vollgeschosse) und eine GRZ II unter der GRZ. Ist „zwingend“ angehakt, bleibt ein Feld
+„Anzahl (zwingend)“. Das Baugebiet wird mit Klartext gewählt („WA – allgemeines Wohngebiet“). Die
+Grundstücksfläche nennt, was maßgebend ist: der eingetragene Wert (Kataster), die gezeichnete Grenze nur zum
+Vergleich; ist das Feld leer, steht dort, woraus ersatzweise gerechnet wird.
 
 Oben in der linken Spalte stehen die gemeinsamen **Stammdaten** des Projekts (Knopf „Stammdaten …“: Bauvorhaben,
 Adresse, Gemarkung/Flur/Flurstück, Bauherr, Bearbeitung – dieselben wie in den anderen Apps, gespeichert in der
@@ -98,12 +110,20 @@ Flächen von **Nachbargrundstücken** (zur Darstellung, oft größer als ihr Flu
 zählen nirgends mit.
 
 Bedienung im Lageplan – wie in QUADRIO: Werkzeug „Polygon“ (P; Punkte setzen, Startpunkt, Doppelklick
-oder Enter schließt, Rück löscht den letzten Punkt, Esc bricht ab) oder „Rechteck“ (R; zwei Ecken); Ecken von
+oder Enter schließt, Rücktaste löscht den letzten Punkt, Esc bricht ab) oder „Rechteck“ (R; zwei Ecken); Ecken von
 Gebäude und Flächen werden gefangen. „Auswahl“ (V): Klicken wählt eine Fläche, Ziehen verschiebt sie, Punkte
 ziehen ändert sie, ◇ in der Kantenmitte ziehen fügt einen Punkt ein, Rechtsklick auf einen Punkt löscht ihn
 (mindestens drei bleiben), Entf/Rück löscht die Fläche. Mausrad zoomt (nur den Plan), mittlere Maustaste,
 Leertaste + Ziehen oder Ziehen auf freier Fläche verschiebt die Ansicht, „Einpassen“ (F) zeigt alles. Punkte
-werden auf die Innenfläche des Plans umgerechnet (ohne Rahmen), Abweichung unter 1 mm bei jedem Zoom.
+werden auf die Innenfläche des Plans umgerechnet (ohne Rahmen), Abweichung unter 1 mm bei jedem Zoom. Der
+Ausschnitt (Zoom, Verschiebung) bleibt bei allen Änderungen stehen und wird nur beim Öffnen eines anderen Projekts
+neu eingepasst. Leertaste und Enter auf einem fokussierten Knopf oder Kästchen bedienen diesen, nicht den Plan; der
+Fokusrahmen des Plans erscheint nur bei Bedienung mit der Tastatur. Die Leiste über dem Plan hat Werkzeuge |
+Nutzung; „Einpassen“, „Beschriftung“, „Raster“ und „?“ (Tastenübersicht, schließt mit Esc oder Klick daneben) stehen
+als Bedienfeld oben links im Plan. Eingabezeile und Flurstück-Leiste stehen fest, damit der Plan beim
+Werkzeugwechsel nicht springt. Ohne
+Flächen bietet der Plan „Rechteck zeichnen“, „Polygon zeichnen“ und „Unterlage laden …“ an. Die Flächentabelle
+unter dem Plan beginnt mit der Nummer wie im Plan und im Druck.
 
 - **Mehrfachauswahl:** Shift+Klick nimmt Flächen hinzu bzw. heraus, Shift+Ziehen auf freier Fläche zieht einen
   Auswahlrahmen auf, Strg+A wählt alle. Mehrere Flächen werden gemeinsam verschoben, gelöscht und in Nutzung,
@@ -114,23 +134,29 @@ werden auf die Innenfläche des Plans umgerechnet (ohne Rahmen), Abweichung unte
   wie im Druck), abschaltbar über „Beschriftung“. Maßstabsleiste und Nordpfeil (Planoberkante = Projektnorden) stehen
   immer im Plan, ein Raster lässt sich zuschalten. Die Hilfezeile nennt nur die wichtigsten Kürzel des Werkzeugs;
   alle Kürzel stehen in der Übersicht hinter „?“.
-- **Unterlage:** „Bild/PDF …“ legt einen amtlichen Lageplan (PNG, JPG oder die erste Seite eines PDF) unter den Plan;
+- **Unterlage:** „Bild/PDF laden …“ legt einen amtlichen Lageplan (PNG, JPG oder die erste Seite eines PDF) unter den Plan;
   er wird mit dem Projekt gespeichert, lässt sich ein- und ausblenden und in der Deckkraft einstellen. „Kalibrieren“:
   zwei Punkte einer bekannten Strecke klicken und die wahre Länge in Metern eintragen – der erste Punkt bleibt an
-  seiner Stelle. „Ausrichten“: einen Punkt der Unterlage und dann den Zielpunkt im Plan klicken.
+  seiner Stelle; die Messlinie bleibt sichtbar, bis die Länge eingetragen ist. „Ausrichten“: einen Punkt der
+  Unterlage und dann den Zielpunkt im Plan klicken (Pfeil zeigt die Verschiebung). Ein Zug am Regler „Deckkraft“ ist
+  ein Rückgängig-Schritt; „Unterlage entfernen“ nimmt sie heraus.
 - **Grundstücksgrenze:** Das Werkzeug „Grenze“ (G) zeichnet das Flurstück als Polygon (mehrere nacheinander möglich,
-  „Grenze löschen“ entfernt sie). Die strichpunktierte Linie in Plan und Druck ist dann die gezeichnete Grenze;
+  der Entwurf erscheint strichpunktiert ohne Füllung). Im Werkzeug „Auswahl“ wählt ein Klick auf die Kante ein
+  Flurstück; seine Punkte lassen sich ziehen, über ◇ einfügen und per Rechtsklick löschen, Entf löscht das
+  Flurstück. Die Leiste „Grenze“ (im Werkzeug Grenze bzw. bei gewähltem Flurstück) listet die Flurstücke mit Fläche
+  und löscht sie einzeln. Die strichpunktierte Linie in Plan und Druck ist dann die gezeichnete Grenze;
   ohne Grenze ist sie als „Umriss der erfassten Flächen“ beschriftet. Die Fläche der Grenze wird mit der
   eingetragenen Grundstücksfläche abgeglichen: Bei Abweichung nennt der Nachweis beide Werte, maßgebend bleibt die
   Katasterangabe (§ 19 Abs. 3 BauNVO). Ohne eingetragene Grundstücksfläche gilt die Fläche der Grenze.
-- **Nutzung beim Zeichnen:** Die Leiste „Neue Fläche“ unter den Werkzeugen wählt die Nutzung neuer Flächen
-  (Zufahrt, Stellplatz, Garage, Terrasse, Weg, Nebenanlage, unterirdische Anlage, Garten, sonstige). Die
+- **Nutzung beim Zeichnen:** Die Auswahl „Nutzung“ neben den Werkzeugen (aktiv bei Polygon und Rechteck) wählt die
+  Nutzung neuer Flächen mit denselben Bezeichnungen wie in der Tabelle. Die
   Versiegelung wird passend vorbelegt (z. B. Zufahrt vollversiegelt, Garten Grünfläche), der Name zählt je Nutzung
-  („Zufahrt 1“, „Terrasse 2“). Ein Klick auf eine Nutzung wählt, falls nötig, das Rechteck-Werkzeug. „sonstige“
+  („Zufahrt 1“, „Terrasse 2“). Die Wahl wechselt das Werkzeug nicht. „sonstige“
   (Anrechnung „prüfen“) gibt es nur noch auf ausdrückliche Wahl. Der Auswahlbereich unter dem Plan bietet für eine
   gewählte Fläche Bezeichnung, Nutzung, Versiegelung, Nachbargrundstück, Höhe, die Kantenlängen und die Teilflächen
   des Rechenwegs.
-- **Genaue Eingabe:** Nach dem ersten Punkt erscheint unter der Leiste die Eingabe – beim Polygon Länge [m] und
+- **Genaue Eingabe:** Solange Polygon, Rechteck oder Grenze aktiv ist, steht unter der Leiste die Eingabe (bis zum
+  ersten Punkt gesperrt, der Plan springt nicht) – beim Polygon Länge [m] und
   Winkel [°] (gegen die Gebäudeachse, gegen den Uhrzeigersinn; leer: in Richtung des Mauszeigers), beim Rechteck
   Breite × Tiefe [m] entlang der Gebäudeachse in Richtung des Mauszeigers. Eine Zifferntaste springt in das erste
   Feld, Tab wechselt das Feld, Enter setzt den Punkt bzw. das Rechteck, Enter im leeren Feld schließt das Polygon.
@@ -171,7 +197,8 @@ werden auf die Innenfläche des Plans umgerechnet (ohne Rahmen), Abweichung unte
 ### Grundstück und Gelände
 
 - **Grundstücksfläche:** aus den Projektdaten (Kataster); fehlt sie, aus der gezeichneten Grundstücksgrenze, sonst aus den eigenen Lageplan-Flächen zusammen mit dem
-  Gebäude. Weichen beide voneinander ab, weist der Nachweis darauf hin.
+  Gebäude. Weichen beide voneinander ab, weist der Nachweis darauf hin. Eine Grundstücksfläche von 0 oder darunter (etwa aus einer
+  fremden Datei) zählt wie „nicht angegeben“; dann springen Grenze bzw. Lageplan ein.
 - **Geländeoberfläche:** eingetragener Wert (vor 1985: die festgelegte Geländeoberfläche). Sonst wird das Gelände
   **je Geschoss** entlang seiner eigenen Außenwände abgetastet (alle 0,4 m, 0,5 m vor der Wand) – aus dem
   Geländemodell des IFC, ersatzweise aus den Höhen der Lageplan-Flächen. Bei Hanglage hat damit jedes Geschoss
@@ -216,9 +243,17 @@ werden auf die Innenfläche des Plans umgerechnet (ohne Rahmen), Abweichung unte
 
 ## Ausgabe
 
-- Kennzahlen mit Ampel und Reserve, Vollgeschossprüfung mit Begründung (aufklappbar unter jeder Zeile, Festlegung
-  „auto/ja/nein“), Geschossfläche je Geschoss, Flächenbilanz (Gebäude, voll-/teilversiegelt, grün) und Hinweise.
-  Zahl und Einheit stehen nie getrennt; bis 1280 px Fensterbreite steht der Nachweis unter Festsetzungen und Plan.
+- Kennzahlen mit Ampel und Reserve (Karte: Fläche, „zulässig … · Reserve …“ bzw. „Überschreitung …“, bei ungeklärten
+  Flächen eine eigene Zeile „mit ungeklärten Flächen bis …“; der Flächenvergleich steht im Tooltip und im
+  Rechenweg), Vollgeschossprüfung (Begründungen über „Begründungen zeigen“), Geschossfläche je Geschoss,
+  Flächenbilanz (Gebäude, voll-/teilversiegelt, grün; der Rest als „nicht gezeichnet (Rest des Grundstücks)“,
+  Überlappungen warnend) und Hinweise. Zahl und Einheit stehen nie getrennt; die Tabellen laufen nicht über. Bis
+  1280 px Fensterbreite steht der Nachweis unter Festsetzungen und Plan, eine Ergebnisleiste oben (GRZ, GFZ,
+  Vollgeschosse mit Ampel, „zum Nachweis“) bleibt beim Scrollen stehen.
+- **Einstufung automatisch oder von Hand:** Vollgeschosse und Räume haben dasselbe Muster – eine Auswahl
+  „automatisch: Vollgeschoss“ (mit dem Ergebnis der Prüfung) bzw. „… (von Hand)“. Eine Festlegung von Hand ist
+  farbig und kursiv hervorgehoben; die Karte „Vollgeschosse“ nennt „davon … von Hand festgelegt“, der Druck
+  „(von Hand festgelegt)“.
 - **Stellen der Kennzahlen:** GRZ und GFZ stehen mit mindestens drei Nachkommastellen; liegt der Wert näher als
   0,005 am zulässigen Wert, mit vier (0,5017 statt 0,50) – und mit so vielen mehr, dass „überschritten“ nie neben
   gleich aussehenden Zahlen steht. Die Ampel ist zusätzlich in m² begründet („GF 307,28 m² > 306,25 m² zulässig“).
@@ -243,7 +278,9 @@ werden auf die Innenfläche des Plans umgerechnet (ohne Rahmen), Abweichung unte
 - **Nachweis drucken** (Strg+P): Nachweis auf A4 hoch – Kopf mit den Stammdaten, Grundlagen und Festsetzungen
   (Datum TT.MM.JJJJ), Ergebnis-Tabelle, Lageplan, Grundfläche je Fläche, Vollgeschossprüfung mit Begründung,
   Geschossfläche, vor 1990 die Aufenthaltsräume in Nicht-Vollgeschossen, Flächenbilanz, sachliche Hinweise und
-  Unterschriftszeile. Über den Druckdialog auch als PDF; der vorgeschlagene Dateiname ist `<Projektdatei> GRZ+GFZ`.
+  Unterschriftszeile. Versiegelungen sind in Plan und Legende auch schwarz-weiß unterscheidbar (voll: Schraffur,
+  teil: Punkte, Grün: Fläche), „überschritten“/„unterschritten“ steht fett, kleine Tabellen werden nicht getrennt;
+  „Drucken / PDF“ ist der Hauptknopf der Leiste. Über den Druckdialog auch als PDF; der vorgeschlagene Dateiname ist `<Projektdatei> GRZ+GFZ`.
   - Tabelle „Grundfläche“: Spalte „eindeutig“ (Überlagerungen nur einmal gezählt) und „angerechnet auf GR II“
     (BauNVO 1990) bzw. „auf GR“ – 0 bei „zählt nicht“, anteilig bei Garagen bis 0,1 der Grundstücksfläche, bei
     „prüfen“ als Spanne; Kellergeschosse außerhalb der Hauptanlage als eigene Zeile. Die Summenzeilen GR I und

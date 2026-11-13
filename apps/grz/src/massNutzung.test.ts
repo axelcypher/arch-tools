@@ -3,6 +3,7 @@ import { rectPoints } from '@core/geometry';
 import type { LageplanFlaeche, Project, Storey } from '@core/model';
 import { createLageplanFlaeche, createOutline, createProject, createRoom, createStorey } from '@core/model';
 import { anrechnung, massNachweis, recht } from './massNutzung';
+import { flaechenNummern, rechenweg } from './rechenweg';
 
 /** Haus wie HSA: UG (Keller), EG, OG je 11,25 × 12 m, DG unter Walmdach 45° ab Fußboden; Grundstück 612,50 m² */
 function haus(planDatum?: string): Project {
@@ -31,7 +32,10 @@ function lageplan(p: Project, ...f: LageplanFlaeche[]) {
   p.lageplan = { flaechen: [...(p.lageplan?.flaechen ?? []), ...f] };
 }
 
-const flaeche = (x0: number, y0: number, x1: number, y1: number, patch: Partial<LageplanFlaeche>): LageplanFlaeche => ({ ...createLageplanFlaeche(rectPoints({ x: x0, y: y0 }, { x: x1, y: y1 })), ...patch });
+const flaeche = (x0: number, y0: number, x1: number, y1: number, patch: Partial<LageplanFlaeche>): LageplanFlaeche => ({
+  ...createLageplanFlaeche(rectPoints({ x: x0, y: y0 }, { x: x1, y: y1 })),
+  ...patch,
+});
 
 describe('Maß der baulichen Nutzung: anzuwendendes Recht', () => {
   it('wählt BauNVO und Bauordnung nach dem Plandatum', () => {
@@ -259,13 +263,7 @@ describe('Überlagerungen, Gelände am Hang, Split-Level', () => {
     const p = haus('1967-03-14');
     delete p.massNutzung!.gelaende;
     // Gelände rundum −0,2, nur bergseitig +0,3 über dem EG-Fußboden
-    lageplan(
-      p,
-      flaeche(-5, -5, 17, 0, { hoehe: -0.2 }),
-      flaeche(-5, 11.25, 17, 16, { hoehe: 0.3 }),
-      flaeche(-5, 0, 0, 11.25, { hoehe: -0.2 }),
-      flaeche(12, 0, 17, 11.25, { hoehe: -0.2 }),
-    );
+    lageplan(p, flaeche(-5, -5, 17, 0, { hoehe: -0.2 }), flaeche(-5, 11.25, 17, 16, { hoehe: 0.3 }), flaeche(-5, 0, 0, 11.25, { hoehe: -0.2 }), flaeche(12, 0, 17, 11.25, { hoehe: -0.2 }));
     const eg = massNachweis(p).geschosse.find((g) => g.name === 'EG')!;
     // nicht vollständig über dem Gelände → wie ein Kellergeschoss: zählt, weil es im Mittel mehr als 1,40 m herausragt
     expect(eg.oberirdisch).toBe(false);
@@ -304,8 +302,7 @@ describe('Gelände aus dem 3D-Modell', () => {
     // Gelände fällt in y-Richtung von 0,0 (y = 11,25) auf −3,0 (y = 0) und weiter
     const z = (y: number) => -3 + (3 * y) / 11.25;
     const tri: number[] = [];
-    for (let x = -10; x < 22; x += 2)
-      for (let y = -10; y < 22; y += 2) tri.push(x, y, z(y), x + 2, y, z(y), x + 2, y + 2, z(y + 2), x, y, z(y), x + 2, y + 2, z(y + 2), x, y + 2, z(y + 2));
+    for (let x = -10; x < 22; x += 2) for (let y = -10; y < 22; y += 2) tri.push(x, y, z(y), x + 2, y, z(y), x + 2, y + 2, z(y + 2), x, y, z(y), x + 2, y + 2, z(y + 2), x, y + 2, z(y + 2));
     p.gelaendeModell = { name: 'IFC-Gelände', triangles: tri };
     const n = massNachweis(p);
     const ug = n.geschosse.find((g) => g.name === 'UG')!;
@@ -547,3 +544,59 @@ describe('Varianten, 3D-Stufen, IFC-Bericht (G-30 bis G-32)', () => {
   });
 });
 
+describe('Gesamt-Review: Rechenweg, Grundstücksfläche, Nummern', () => {
+  it('Rechenweg 1990 mit Einstufung „GRZ I“: jede Formelzeile ergibt die Kennzahl (Gegenprobe ohne Einstufung)', () => {
+    const p = haus('2020-05-01');
+    lageplan(p, flaeche(-3, 0, 0, 5, { name: 'Terrasse', nutzung: 'terrasse' }), flaeche(12, 0, 15, 10, { name: 'Zufahrt', nutzung: 'zufahrt' }));
+    p.massNutzung = { ...p.massNutzung, einstufung: { terrasse: 'grz1' } };
+    const n = massNachweis(p);
+    const f = rechenweg(n).formeln;
+    expect(f[0]).toBe('GR I = Hauptanlage 135,00 m² + der Hauptanlage zugerechnete Flächen 15,00 m² = 150,00 m²');
+    expect(f.find((x) => x.startsWith('GR II ='))).toBe(`GR II = GR I 150,00 m² + Anlagen nach § 19 Abs. 4 BauNVO 30,00 m² = 180,00 m²`);
+    p.massNutzung = { ...p.massNutzung, einstufung: { terrasse: 'ja' } };
+    const g = rechenweg(massNachweis(p)).formeln;
+    expect(g[0]).toBe('GR I = Hauptanlage 135,00 m²');
+    expect(g.find((x) => x.startsWith('GR II ='))).toBe(`GR II = GR I 135,00 m² + Anlagen nach § 19 Abs. 4 BauNVO 45,00 m² = 180,00 m²`);
+  });
+
+  it('Grundstücksfläche 0 oder negativ gilt als fehlend; eine gezeichnete Grenze springt ein (Gegenprobe: positive Angabe gilt)', () => {
+    for (const wert of [0, -100]) {
+      const p = haus('2020-05-01');
+      p.meta.grundstueck.flaeche = wert;
+      const n = massNachweis(p);
+      expect(n.grundstueck.flaeche).toBeUndefined();
+      expect(n.grz.status).toBe('fehlt');
+      expect(n.grz.wert).toBeUndefined();
+      expect(n.hinweise.some((h) => h.feld === 'grundstueck')).toBe(true);
+      p.lageplan = { flaechen: [], grenze: [{ id: 'g', name: 'Flurstück', points: rectPoints({ x: -5, y: -5 }, { x: 20, y: 20 }) }] };
+      const m = massNachweis(p);
+      expect(m.grundstueck.quelle).toBe('grenze');
+      expect(m.grundstueck.flaeche).toBeCloseTo(625, 6);
+      expect(m.hinweise.some((h) => h.feld === 'grundstueck')).toBe(false);
+    }
+    const p = haus('2020-05-01');
+    p.lageplan = { flaechen: [], grenze: [{ id: 'g', name: 'Flurstück', points: rectPoints({ x: -5, y: -5 }, { x: 20, y: 20 }) }] };
+    expect(massNachweis(p).grundstueck.quelle).toBe('projektdaten');
+  });
+
+  it('BauNVO 1968 ohne Grundstücksfläche: Garagen nicht pauschal anrechnungsfrei (Gegenprobe mit Fläche: bis 0,1 frei)', () => {
+    const p = haus('1970-05-01');
+    lageplan(p, flaeche(12, 0, 15, 6, { name: 'Garage', nutzung: 'garage' }));
+    const mit = massNachweis(p);
+    expect(mit.garagenFrei).toBeCloseTo(18, 6);
+    p.meta.grundstueck.flaeche = undefined;
+    p.lageplan = { flaechen: [], ...p.lageplan, grenze: [] };
+    const ohne = massNachweis({ ...p, lageplan: { flaechen: p.lageplan!.flaechen.map((f) => ({ ...f, nachbar: true })) } });
+    expect(ohne.garagenFrei ?? 0).toBe(0);
+  });
+
+  it('Flächennummern zählen nur eigene Flächen (Nachbarfläche ohne Nummer)', () => {
+    const p = haus('2020-05-01');
+    lageplan(p, flaeche(20, 0, 25, 5, { name: 'Nachbar', nachbar: true }), flaeche(12, 0, 15, 10, { name: 'Zufahrt', nutzung: 'zufahrt' }));
+    const n = massNachweis(p);
+    const nr = flaechenNummern(n);
+    expect(nr.get(p.lageplan!.flaechen[1].id)).toBe(1);
+    expect(nr.has(p.lageplan!.flaechen[0].id)).toBe(false);
+    expect(rechenweg(n).flaechen.find((f) => f.id === p.lageplan!.flaechen[1].id)?.nr).toBe('1');
+  });
+});

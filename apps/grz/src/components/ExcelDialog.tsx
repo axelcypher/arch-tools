@@ -16,10 +16,9 @@ export function ExcelDialog({ onClose }: { onClose: () => void }) {
       standardText="Blatt „GRZ GFZ“: Grundlagen, Kennzahlen, Vollgeschosse, Geschossfläche, Flächenbilanz, Lageplan-Flächen und Hinweise – mit Summenformeln."
       hilfe={
         <>
-          Vorlagen sind normale .xlsx-Dateien mit Platzhaltern in doppelten geschweiften Klammern, z. B. <code>{'{{grz}}'}</code> oder <code>{'{{geschoss:EG.gf}}'}</code>.
-          Enthält eine Zeile <code>{'{{geschoss.…}}'}</code>, <code>{'{{lageplan.…}}'}</code>, <code>{'{{raum.…}}'}</code> oder <code>{'{{hinweis.…}}'}</code>, wird sie je
-          Eintrag wiederholt. Formatierung bleibt erhalten, Formeln wie <code>=SUMME(C5:C5)</code> werden auf alle eingefügten Zeilen erweitert. Die Vorlage ist
-          unabhängig von der in QUADRIO (Flächenrechner).
+          Vorlagen sind normale .xlsx-Dateien mit Platzhaltern in doppelten geschweiften Klammern, z. B. <code>{'{{grz}}'}</code> oder <code>{'{{geschoss:EG.gf}}'}</code>. Enthält eine Zeile{' '}
+          <code>{'{{geschoss.…}}'}</code>, <code>{'{{lageplan.…}}'}</code>, <code>{'{{raum.…}}'}</code> oder <code>{'{{hinweis.…}}'}</code>, wird sie je Eintrag wiederholt. Formatierung bleibt
+          erhalten, Formeln wie <code>=SUMME(C5:C5)</code> werden auf alle eingefügten Zeilen erweitert. Die Vorlage ist unabhängig von der in QUADRIO (Flächenrechner).
         </>
       }
       docs={GRZ_PLACEHOLDER_DOCS}
