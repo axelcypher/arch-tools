@@ -257,7 +257,7 @@ button.icon {
   margin-right: 6px;
 }
 /* Kästchen nie stauchen, auch bei langem Text daneben */
-.toggle > input {
+.toggle > input:is([type='checkbox'], [type='radio']) {
   flex: none;
 }
 
@@ -583,8 +583,11 @@ textarea:focus {
 }
 
 .modal {
+  /* Innenabstand als Variable: die sticky Knopfzeile leitet ihre Versätze daraus ab */
+  --modal-pad-y: 18px;
+  --modal-pad-x: 22px;
   background: var(--panel);
-  padding: 18px 22px;
+  padding: var(--modal-pad-y) var(--modal-pad-x);
   border-radius: 6px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
   width: 380px;
@@ -602,7 +605,7 @@ textarea:focus {
 }
 
 /* sichtbarer Kopf des Modal (Prop `kopf`): Titel und zugleich Name des Dialogs */
-.modal-kopf {
+.modal > .modal-kopf {
   margin: 0 0 var(--s3);
   font-size: var(--fs-l);
   font-weight: 600;
@@ -645,9 +648,9 @@ textarea:focus {
 .modal > .dialog-buttons,
 .modal > form > .dialog-buttons {
   position: sticky;
-  bottom: -18px;
-  margin: 12px -22px -18px;
-  padding: 10px 22px 18px;
+  bottom: calc(-1 * var(--modal-pad-y));
+  margin: 12px calc(-1 * var(--modal-pad-x)) calc(-1 * var(--modal-pad-y));
+  padding: 10px var(--modal-pad-x) var(--modal-pad-y);
   background: var(--panel);
   border-top: 1px solid var(--line-soft);
   z-index: 1;
@@ -734,7 +737,6 @@ code {
 .canvas-message[title] {
   cursor: pointer;
 }
-/* Leerzustand („Foto hinzufügen …“): neutral statt Warnfarbe, mittig auf der Fläche */
 .canvas-message.ok {
   background: var(--ok-bg);
   border-color: var(--ok-border);
@@ -745,6 +747,7 @@ code {
   border-color: var(--border);
   color: var(--text);
 }
+/* Leerzustand („Foto hinzufügen …“): neutral statt Warnfarbe, mittig auf der Fläche */
 .canvas-message.leer {
   top: 50%;
   transform: translate(-50%, -50%);
@@ -784,11 +787,15 @@ code {
 /* ---------- Bericht ---------- */
 
 .report-backdrop {
+  /* Innenabstände als Variablen: die sticky Aktionszeile leitet ihre Versätze daraus ab */
+  --report-rand: 24px;
+  --report-pad-y: 28px;
+  --report-pad-x: 36px;
   position: fixed;
   inset: 0;
   background: var(--backdrop);
   overflow: auto;
-  padding: 24px;
+  padding: var(--report-rand);
   z-index: 10;
 }
 
@@ -796,7 +803,7 @@ code {
   background: #fff;
   max-width: 1100px;
   margin: 0 auto;
-  padding: 28px 36px;
+  padding: var(--report-pad-y, 28px) var(--report-pad-x, 36px);
   border-radius: 6px;
   position: relative;
 }
@@ -804,17 +811,25 @@ code {
 .report-actions {
   /* eigene Zeile über dem Blatt, bleibt beim Blättern oben (überdeckt die Überschrift nicht mehr) */
   position: sticky;
-  top: -24px;
+  top: calc(-1 * var(--report-rand, 24px));
   z-index: 2;
   display: flex;
   flex-wrap: wrap;
-  justify-content: flex-end;
+  align-items: center;
   gap: 6px;
-  margin: -28px -36px 20px;
-  padding: 10px 36px;
+  margin: calc(-1 * var(--report-pad-y, 28px)) calc(-1 * var(--report-pad-x, 36px)) 20px;
+  padding: 10px var(--report-pad-x, 36px);
   background: var(--panel);
   border-bottom: 1px solid var(--border);
   border-radius: 6px 6px 0 0;
+}
+
+.report-actions :where(input, select) {
+  width: auto;
+}
+/* Optionen links, Knöpfe rechts */
+.report-actions > button:first-of-type {
+  margin-left: auto;
 }
 
 .report-header {
@@ -997,6 +1012,10 @@ code {
   .report {
     max-width: none;
     padding: 0;
+  }
+  /* Bedienzeile der Druckvorschau nie mitdrucken, auch ohne .no-print */
+  .report-actions {
+    display: none;
   }
 
   .no-print {
@@ -1950,7 +1969,13 @@ button.ph-lokal {
   border: none;
   border-radius: 0;
   background: transparent;
+}
+/* außerhalb der Leisten 24px; in .toolbar gilt deren 28px (beide mit Spezifität null, die Leiste steht vorher) */
+:where(.segment) > :where(button) {
   min-height: var(--ctl-h-s);
+}
+:where(.toolbar) :where(.segment) > :where(button) {
+  min-height: var(--ctl-h);
 }
 .segment > button + button {
   border-left: 1px solid var(--border);

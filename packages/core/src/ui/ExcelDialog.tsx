@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { useMemo, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 import type { PlaceholderDocs } from '../excel/context';
 import type { VorlagenSpeicher } from '../excel/vorlage';
 import { vorlagePruefen } from '../excel/vorlage';
@@ -49,6 +49,7 @@ export function ExcelDialog(props: ExcelDialogProps) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hinweis, setHinweis] = useState<string | null>(null);
+  const keineVorlageId = useId();
   const [showHelp, setShowHelp] = useState(false);
 
   const chooseTemplate = async () => {
@@ -165,7 +166,9 @@ export function ExcelDialog(props: ExcelDialogProps) {
                 </span>
               </span>
             ) : (
-              <span className="muted small-text">Noch keine Vorlage hinterlegt – „Vorlage wählen …“.</span>
+              <span className="muted small-text" id={keineVorlageId}>
+                Noch keine Vorlage hinterlegt – „Vorlage wählen …“.
+              </span>
             )}
           </span>
         </label>
@@ -204,7 +207,7 @@ export function ExcelDialog(props: ExcelDialogProps) {
           <button type="button" onClick={onClose}>
             Abbrechen
           </button>
-          <button type="submit" className="primary" disabled={busy || ohneVorlage} title={ohneVorlage ? 'Erst eine Vorlage wählen' : undefined}>
+          <button type="submit" className="primary" disabled={busy || ohneVorlage} aria-describedby={ohneVorlage ? keineVorlageId : undefined}>
             {busy ? 'Exportiere …' : 'Exportieren'}
           </button>
         </div>

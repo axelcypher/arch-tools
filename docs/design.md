@@ -114,22 +114,24 @@ Helligkeitskontrast. Unter der Linie in `--sel-foto` liegt ein Doppelsaum, auße
 
 - `.report-backdrop > .report` gilt als Dialog (Rolle, Name aus der ersten Überschrift, Fokus hinein, Tab bleibt
   drin).
-- `.report-actions` ist eine eigene Zeile über dem Blatt und bleibt beim Blättern oben. Hauptknopf (`.primary`) ist
-  **„Drucken / PDF“**, „Schließen“ ein normaler Knopf links davon.
+- `.report-actions` ist eine eigene Zeile über dem Blatt und bleibt beim Blättern oben: Optionen links, Knöpfe rechts.
+  Sie wird nie mitgedruckt. Hauptknopf (`.primary`) ist **„Drucken / PDF“**, „Schließen“ ein normaler Knopf links
+  davon.
 
 ## Felder
 
 - `NumberField` zeigt Zahlen mit Tausenderpunkten (45.000,00) und nimmt sie beim Bearbeiten ohne (45000,00).
 - **Enter** übernimmt die Eingabe, der Fokus bleibt im Feld. **Esc** verwirft eine Eingabe; ohne Eingabe schließt Esc
   den Dialog.
-- In `.toolbar` sind Felder und Auswahllisten so breit wie ihr Inhalt, Regler 120px. Sonst füllen Felder ihre
-  Spalte.
-- `.toggle` (Kästchen mit Text): das Kästchen wird nie gestaucht.
+- In `.toolbar` und `.report-actions` füllen Felder nicht die Zeile: Auswahllisten sind so breit wie ihr Inhalt,
+  Textfelder haben die Standardbreite des Browsers (etwa 20 Zeichen; kürzer mit dem Attribut `size`), Regler 120px.
+  Sonst füllen Felder ihre Spalte.
+- `.toggle` (Kästchen oder Optionsfeld mit Text): das Kästchen wird nie gestaucht.
 
 ## Umschalter
 
 `.segment` für eine Wahl aus wenigen (Ansicht, Modus): Knöpfe direkt nebeneinander in einem Rahmen, der gewählte mit
-`aria-pressed="true"` in Akzent-Tönung. Statt eigener Varianten je App (`.mv-umschalter`, `.ava-tabs`,
+`aria-pressed="true"` in Akzent-Tönung. Höhe 24px, in `.toolbar` 28px wie die übrigen Knöpfe dort. Statt eigener Varianten je App (`.mv-umschalter`, `.ava-tabs`,
 `.view-switch`).
 
 ```html
@@ -174,16 +176,15 @@ Das Farbschema-Menü zeigt ein gezeichnetes Symbol und den Namen der Wahl („Au
 
 ## Was die Apps nachziehen
 
-| App           | Datei und Aufgabe                                                                                                                                                                                  |
-| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| RECTIO        | `apps/entzerrung/src/components/Arbeitsflaeche.tsx:364`: Leerzustand „Foto hinzufügen …“ mit `className="canvas-message leer"`; Auswahl auf dem Foto mit `--sel-foto` und Saum statt eigener Farbe |
-| TERRIO, NUMIO | Spalten-Überschriften (`h2` ohne Regel, sonst 22px) auf die Skala setzen: `--fs-l`, halbfett                                                                                                       |
-| FABRIO        | Versalien entfernen: `.ava-nav-titel` (`apps/ava/src/styles.css:77`); `outline: none` prüfen: `apps/ava/src/styles.css:492`, `:628`                                                                |
-| PERMIO        | Versalien entfernen: `apps/formulare/src/styles.css:160`, `.pk-nav-titel` (:1142), `.pk-abschnitt h3` (:1353), `.fo-ein-teil h4` (:4235); `outline: none` prüfen: :1797, :2612, :2652              |
-| ATLAS         | `outline: none` prüfen: `apps/ordner/src/styles.css:415`                                                                                                                                           |
-
-| QUADRIO, TERRIO, NUMIO, FABRIO | Druckvorschau: „Drucken / PDF“ als Hauptknopf (`.primary`), „Schließen“ normal (`Report.tsx`, `NachweisDruck.tsx`, `KostenDruck.tsx`, `Druck.tsx`) |
-| NUMIO, FABRIO, QUADRIO | eigene Umschalter (`.mv-umschalter`, `.ava-tabs`, `.view-switch`) auf `.segment` umstellen |
-| alle | eigene `div.modal` auf `Modal` umstellen; Titel mit `kopf` statt `h3` im Inhalt; Werkzeugleisten-Befehle nach „Begriffe“ benennen (z. B. TERRIO „Öffnen“ → „Öffnen …“) |
+| App                            | Datei und Aufgabe                                                                                                                                                                                  |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| RECTIO                         | `apps/entzerrung/src/components/Arbeitsflaeche.tsx:364`: Leerzustand „Foto hinzufügen …“ mit `className="canvas-message leer"`; Auswahl auf dem Foto mit `--sel-foto` und Saum statt eigener Farbe |
+| TERRIO, NUMIO                  | Spalten-Überschriften (`h2` ohne Regel, sonst 22px) auf die Skala setzen: `--fs-l`, halbfett                                                                                                       |
+| FABRIO                         | Versalien entfernen: `.ava-nav-titel` (`apps/ava/src/styles.css:77`); `outline: none` prüfen: `apps/ava/src/styles.css:492`, `:628`                                                                |
+| PERMIO                         | Versalien entfernen: `apps/formulare/src/styles.css:160`, `.pk-nav-titel` (:1142), `.pk-abschnitt h3` (:1353), `.fo-ein-teil h4` (:4235); `outline: none` prüfen: :1797, :2612, :2652              |
+| ATLAS                          | `outline: none` prüfen: `apps/ordner/src/styles.css:415`                                                                                                                                           |
+| QUADRIO, TERRIO, NUMIO, FABRIO | Druckvorschau: „Drucken / PDF“ als Hauptknopf (`.primary`), „Schließen“ normal (`Report.tsx`, `NachweisDruck.tsx`, `KostenDruck.tsx`, `Druck.tsx`)                                                 |
+| NUMIO, FABRIO, QUADRIO         | eigene Umschalter (`.mv-umschalter`, `.ava-tabs`, `.view-switch`) auf `.segment` umstellen                                                                                                         |
+| alle                           | eigene `div.modal` auf `Modal` umstellen; Titel mit `kopf` statt `h3` im Inhalt; Werkzeugleisten-Befehle nach „Begriffe“ benennen (z. B. TERRIO „Öffnen“ → „Öffnen …“)                             |
 
 Zeilennummern beziehen sich auf den Stand dieser Richtlinie.

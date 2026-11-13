@@ -2,7 +2,7 @@
  * Einheitliches Verhalten aller modalen Dialoge (Elemente mit Klasse „modal“ und die Druckvorschau `.report` in
  * `.report-backdrop`), einmal je App eingerichtet:
  *  - role="dialog" und aria-modal="true", falls nicht gesetzt; ohne Namen benennt die erste Überschrift den Dialog
- *  - Erstfokus: `autofocus`, sonst das erste Textfeld (nur Dialoge, nicht die Druckvorschau), sonst der Hauptknopf (`.primary`) – nicht „Abbrechen“
+ *  - Erstfokus: `autofocus`, sonst das erste Textfeld (nur Dialoge, nicht die Druckvorschau), sonst der Hauptknopf (`.primary`) – nicht „Abbrechen“ –, sonst das gewählte Optionsfeld
  *    oder eine Auswahlliste –, sonst das erste fokussierbare Element
  *  - Fokus beim Öffnen in den Dialog (sofern er nicht schon darin liegt), beim Schließen zurück an die
  *    Stelle davor (z. B. der Knopf, der ihn geöffnet hat)
@@ -48,6 +48,7 @@ function geoeffnet(d: HTMLElement) {
       d.querySelector<HTMLElement>('[autofocus]') ??
       (d.classList.contains('modal') ? d.querySelector<HTMLElement>(TEXTFELD) : null) ??
       d.querySelector<HTMLElement>('button.primary:not([disabled])') ??
+      d.querySelector<HTMLElement>('input[type="radio"]:checked:not([disabled])') ??
       d.querySelector<HTMLElement>(FOKUSSIERBAR)
     )?.focus();
   });
