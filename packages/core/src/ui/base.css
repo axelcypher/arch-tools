@@ -1581,6 +1581,8 @@ svg[tabindex]:focus:not(:focus-visible) {
 }
 .rf-text {
   white-space: pre-line;
+  /* lange Pfade (\\NAS\Freigabe\…) ohne Leerzeichen umbrechen */
+  overflow-wrap: anywhere;
 }
 .rf input {
   width: 100%;
@@ -1698,6 +1700,7 @@ button.ph-lokal {
 /* ---------- Speicherort der Einstellungen (ui/Speicherort.tsx) ---------- */
 
 .titlebar-btn.titlebar-notbetrieb {
+  white-space: nowrap;
   background: var(--warn-bg);
   color: var(--warn-text);
   border: 1px solid var(--warn-border);
@@ -1707,6 +1710,16 @@ button.ph-lokal {
   background: var(--warn-bg);
   color: var(--warn-text);
   border-color: var(--warn-text);
+}
+.titlebar-btn .sp-symbol {
+  width: 12px;
+  height: 12px;
+  margin-right: 2px;
+  vertical-align: -1px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.2;
+  stroke-linecap: round;
 }
 .sp-zeile {
   display: flex;

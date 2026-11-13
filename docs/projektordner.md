@@ -133,7 +133,7 @@ Angelegt bzw. ergänzt werden
 ### Gemeinsame Einstellungen
 
 Alle Apps lesen ihre übergreifenden Einstellungen aus einem **Konfigurationsordner**. Oben unter „Gemeinsame
-Einstellungen“ (und über ⚙ in der Titelleiste jeder App) steht, wo er liegt; „Ändern …“ wählt zwischen
+Einstellungen“ (und über den Knopf „Einzelplatz“ bzw. „Netzwerk“ in der Titelleiste jeder App) steht, wo er liegt; „Ändern …“ wählt zwischen
 **Einzelplatz** (ein Ordner auf diesem Rechner, `%APPDATA%\arch-tools`) und **Netzwerkinstallation** (ein Ordner auf
 dem Netzlaufwerk – dann gilt er für das ganze Büro). Beim Wechsel ziehen alle gemeinsamen Einstellungen mit; liegen
 dort schon welche, fragt die App, ob sie gelten („Vorhandene übernehmen“, Fehlendes kommt dazu) oder ersetzt werden

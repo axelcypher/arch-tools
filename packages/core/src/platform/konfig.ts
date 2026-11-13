@@ -113,7 +113,17 @@ const istLokal = (bereich: string, o: KonfigOptionen) => !!o.lokal || LOKALE_BER
 let ort: Promise<KonfigOrt | null> | null = null;
 let zustand: KonfigOrt | null = null;
 const beobachter = new Set<(o: KonfigOrt | null) => void>();
-const melden = () => beobachter.forEach((f) => f(zustand));
+const nachWechsel = new Set<() => void>();
+/** zuletzt gemeldeter Zustand – jede Änderung wird genau einmal gemeldet */
+let gemeldet: string | undefined;
+function melden() {
+  const jetzt = JSON.stringify(zustand);
+  if (jetzt === gemeldet) return;
+  const erstes = gemeldet === undefined;
+  gemeldet = jetzt;
+  beobachter.forEach((f) => f(zustand));
+  if (!erstes) nachWechsel.forEach((f) => f());
+}
 
 /** Zeiger aus Rohdaten; ältere Fassungen kennen nur `ordner` (gesetzt = Netzwerkinstallation) */
 export function zeigerAus(roh: unknown): { modus: KonfigModus; ordner: string; netzordner: string } {
@@ -135,7 +145,7 @@ function fensterBinden() {
   window.addEventListener('storage', (e) => {
     if (e.key !== SIGNAL) return;
     ort = null;
-    void konfigOrt().finally(melden);
+    void konfigOrt().catch(() => undefined);
   });
 }
 
@@ -149,10 +159,9 @@ export function konfigOrt(): Promise<KonfigOrt | null> {
     const netz = z.modus === 'netzwerk';
     const notbetrieb = netz && !(await erreichbar(z.ordner));
     const o: KonfigOrt = { ordner: netz ? z.ordner : basis, basis, modus: z.modus, notbetrieb, netzordner: z.netzordner, gewaehlt: netz };
-    const vorher = zustand;
     zustand = o;
     if (netz && !notbetrieb) void kopieAuffrischen(o);
-    if (JSON.stringify(vorher) !== JSON.stringify(o)) melden();
+    melden();
     return o;
   })();
   ort.catch(() => {
@@ -167,17 +176,24 @@ export function konfigOrtBeobachten(f: (o: KonfigOrt | null) => void): () => voi
   return () => beobachter.delete(f);
 }
 
+/**
+ * Nach einem Wechsel des Orts (auch in einem anderen Fenster), beim Wegfall des Netzlaufwerks und wenn es wieder
+ * erreichbar ist: zwischengespeicherte Einstellungen neu lesen. Nicht beim ersten Lesen des Orts. Liefert das Abmelden.
+ */
+export function konfigNeuLesen(f: () => void): () => void {
+  nachWechsel.add(f);
+  return () => nachWechsel.delete(f);
+}
+
 /** Netzlaufwerk erneut prüfen (nach „Erneut versuchen“) */
 export async function konfigOrtNeuPruefen(): Promise<KonfigOrt | null> {
   ort = null;
-  const o = await konfigOrt();
-  melden();
-  return o;
+  return konfigOrt();
 }
 
-/** Netzlaufwerk während der Arbeit weggefallen: auf die lokale Kopie umschalten */
+/** Netzlaufwerk während der Arbeit weggefallen: auf die lokale Kopie umschalten (nur, wenn `o` noch gilt) */
 function inNotbetrieb(o: KonfigOrt) {
-  if (zustand?.notbetrieb) return;
+  if (!zustand || zustand.notbetrieb || zustand.modus !== o.modus || !gleicherPfad(zustand.ordner, o.ordner)) return;
   zustand = { ...o, notbetrieb: true };
   ort = Promise.resolve(zustand);
   melden();
@@ -185,16 +201,54 @@ function inNotbetrieb(o: KonfigOrt) {
 
 /* ---------- Lokale Kopie einer Netzwerkinstallation ---------- */
 
-const gespiegelt = new Map<string, string>();
+/**
+ * Herkunft der Kopie (`netz-kopie/.herkunft.json`): aus welchem Netzordner sie stammt und welche Bereiche darin von
+ * dort sind. Nach einem Wechsel des Netzordners gilt eine Kopie anderer Herkunft im Notbetrieb nicht – sonst läsen die
+ * Apps fremde, veraltete Einstellungen. Gelöscht wird dafür nichts.
+ */
+interface Herkunft {
+  ordner: string;
+  bereiche: string[];
+}
+const HERKUNFT = '.herkunft';
 
-async function spiegeln(o: KonfigOrt, bereich: string, b64: string): Promise<void> {
-  if (o.modus !== 'netzwerk' || gespiegelt.get(bereich) === b64) return;
-  try {
-    await invoke<void>('write_binary_file', { path: datei(verbinde(o.basis, KOPIE), bereich), contentsBase64: b64 });
+const gespiegelt = new Map<string, string>();
+let herkunft: Herkunft | null = null;
+let spiegelKette: Promise<unknown> = Promise.resolve();
+
+async function herkunftLesen(basis: string): Promise<Herkunft | null> {
+  const roh = (await rohLesen(datei(verbinde(basis, KOPIE), HERKUNFT)).catch(() => null))?.wert as Partial<Herkunft> | undefined;
+  return roh && typeof roh.ordner === 'string' && Array.isArray(roh.bereiche) ? { ordner: roh.ordner, bereiche: roh.bereiche.filter((b): b is string => typeof b === 'string') } : null;
+}
+
+/** einen gelesenen Bereich lokal spiegeln (nacheinander, damit die Herkunft stimmt) */
+function spiegeln(o: KonfigOrt, bereich: string, b64: string): Promise<void> {
+  if (o.modus !== 'netzwerk' || gespiegelt.get(bereich) === b64) return Promise.resolve();
+  const p = spiegelKette.then(async () => {
+    const kopie = verbinde(o.basis, KOPIE);
+    herkunft ??= await herkunftLesen(o.basis);
+    if (!herkunft || !gleicherPfad(herkunft.ordner, o.ordner)) {
+      // neue Herkunft: erst vermerken, dann gelten die alten Dateien nicht mehr
+      herkunft = { ordner: o.ordner, bereiche: [] };
+      await invoke<void>('write_binary_file', { path: datei(kopie, HERKUNFT), contentsBase64: kodiert(herkunft) });
+    }
+    await invoke<void>('write_binary_file', { path: datei(kopie, bereich), contentsBase64: b64 });
     gespiegelt.set(bereich, b64);
-  } catch {
-    // die Kopie ist nur für den Notbetrieb; fehlt sie, bleibt der vorige Stand
-  }
+    if (!herkunft.bereiche.includes(bereich)) {
+      herkunft.bereiche.push(bereich);
+      await invoke<void>('write_binary_file', { path: datei(kopie, HERKUNFT), contentsBase64: kodiert(herkunft) });
+    }
+  });
+  // die Kopie ist nur für den Notbetrieb; misslingt sie, bleibt der vorige Stand
+  spiegelKette = p.catch(() => undefined);
+  return p.catch(() => undefined);
+}
+
+/** Bereich aus der lokalen Kopie (Notbetrieb) – nur, wenn er vom gewählten Netzordner stammt */
+async function kopieLesen(o: KonfigOrt, bereich: string): Promise<Roh | null> {
+  const h = herkunft ?? (await herkunftLesen(o.basis));
+  if (!h || !gleicherPfad(h.ordner, o.ordner) || !h.bereiche.includes(bereich)) return null;
+  return rohLesen(datei(verbinde(o.basis, KOPIE), bereich));
 }
 
 /** alle gemeinsamen Bereiche des Netzlaufwerks lokal spiegeln (einmal je Sitzung im Hintergrund) */
@@ -232,16 +286,25 @@ function browserLesen(bereich: string, optionen: KonfigOptionen): unknown {
 /** Rohinhalt eines Bereichs mit Ort (Desktop) */
 async function lesenMitOrt(o: KonfigOrt, bereich: string, optionen: KonfigOptionen): Promise<Roh | null> {
   if (istLokal(bereich, optionen)) return rohLesen(datei(o.basis, bereich));
-  if (o.notbetrieb) return rohLesen(datei(verbinde(o.basis, KOPIE), bereich));
+  if (o.notbetrieb) return kopieLesen(o, bereich);
+  let r: Roh | null;
   try {
-    const r = await rohLesen(datei(o.ordner, bereich));
-    if (r) void spiegeln(o, bereich, r.b64);
-    return r;
+    r = await rohLesen(datei(o.ordner, bereich));
   } catch (e) {
     if (o.modus !== 'netzwerk' || (await erreichbar(o.ordner))) throw e;
     inNotbetrieb(o);
-    return rohLesen(datei(verbinde(o.basis, KOPIE), bereich));
+    return kopieLesen(o, bereich);
   }
+  if (r) {
+    void spiegeln(o, bereich, r.b64);
+    return r;
+  }
+  // „gibt es nicht“ kann bei einem getrennten Laufwerk auch „Pfad nicht gefunden“ heißen – dann nicht die Vorgaben
+  if (o.modus === 'netzwerk' && !(await erreichbar(o.ordner))) {
+    inNotbetrieb(o);
+    return kopieLesen(o, bereich);
+  }
+  return null;
 }
 
 /** Ziel einer Schreibung (Desktop); im Notbetrieb nicht für gemeinsame Bereiche */
@@ -293,14 +356,12 @@ async function schreibenJetzt(bereich: string, wert: unknown, optionen: KonfigOp
     }
     return;
   }
-  const pfad = schreibziel(o, bereich, optionen);
-  const b64 = kodiert(wert);
-  try {
-    await invoke<void>('write_binary_file', { path: pfad, contentsBase64: b64 });
-  } catch (e) {
-    await schreibfehler(o, bereich, optionen, e);
+  // auch das Ersetzen unter der Sperre: Es darf eine laufende Änderung eines anderen Rechners nicht überholen
+  for (let i = 0; i < VERSUCHE; i++) {
+    schreibziel(o, bereich, optionen);
+    if (await schreibenWenn(o, bereich, optionen, await lesenMitOrt(o, bereich, optionen), wert)) return;
   }
-  if (!istLokal(bereich, optionen)) void spiegeln(o, bereich, b64);
+  throw new Error(`Einstellungen „${bereich}“ werden gerade von mehreren Rechnern zugleich geändert – bitte erneut versuchen.`);
 }
 
 /** Schreiben, wenn die Datei noch `erwartet` enthält (Desktop); false, wenn ein anderer Rechner dazwischen schrieb */
@@ -390,7 +451,8 @@ export interface KonfigZielPruefung {
 
 const bereicheIn = async (ordner: string) => (await invoke<string[]>('konfig_dateien', { ordner })).map((n) => n.replace(/\.json$/, '')).filter((b) => !LOKALE_BEREICHE.includes(b));
 
-const gleicherPfad = (a: string, b: string) => a.replace(/[\\/]+$/, '').toLowerCase() === b.replace(/[\\/]+$/, '').toLowerCase();
+/** derselbe Ordner? (Windows: ohne Rücksicht auf Groß-/Kleinschreibung und Schrägstrich am Ende) */
+export const gleicherPfad = (a: string, b: string) => a.replace(/[\\/]+$/, '').toLowerCase() === b.replace(/[\\/]+$/, '').toLowerCase();
 
 function zielOrdner(o: KonfigOrt, ziel: KonfigZiel): string {
   if (ziel.modus === 'einzelplatz') return o.basis;
@@ -416,7 +478,7 @@ export type KonfigUmzug = 'uebernehmen' | 'ersetzen';
 export interface KonfigWechselErgebnis {
   /** Bereiche, die mitgenommen wurden */
   kopiert: string[];
-  /** Bereiche am Ziel, die vor dem Ersetzen gesichert wurden (`<bereich>.json.vor-umzug-JJJJ-MM-TT-hhmm`) */
+  /** Bereiche am Ziel, die vor dem Ersetzen gesichert wurden (`<bereich>.json.vor-umzug-JJJJ-MM-TT-hhmmss`) */
   gesichert: string[];
 }
 
@@ -428,7 +490,8 @@ export function konfigVorWechsel(f: () => Promise<void> | void): () => void {
 }
 
 const zweistellig = (n: number) => String(n).padStart(2, '0');
-const zeitstempel = (d: Date) => `${d.getFullYear()}-${zweistellig(d.getMonth() + 1)}-${zweistellig(d.getDate())}-${zweistellig(d.getHours())}${zweistellig(d.getMinutes())}`;
+const zeitstempel = (d: Date) =>
+  `${d.getFullYear()}-${zweistellig(d.getMonth() + 1)}-${zweistellig(d.getDate())}-${zweistellig(d.getHours())}${zweistellig(d.getMinutes())}${zweistellig(d.getSeconds())}`;
 
 /**
  * Zwischen Einzelplatz und Netzwerkinstallation wechseln bzw. einen anderen Netzordner wählen. Die gemeinsamen
@@ -448,7 +511,10 @@ export async function konfigOrtWechseln(ziel: KonfigZiel, umzug: KonfigUmzug): P
       const von = o.notbetrieb ? verbinde(o.basis, KOPIE) : o.ordner;
       const dort = new Set(await bereicheIn(nach));
       const stempel = zeitstempel(new Date());
-      for (const b of await bereicheIn(von)) {
+      // im Notbetrieb nur, was in der Kopie wirklich vom gewählten Netzordner stammt
+      const h = o.notbetrieb ? await herkunftLesen(o.basis) : null;
+      const quelle = o.notbetrieb ? (h && gleicherPfad(h.ordner, o.ordner) ? h.bereiche.filter((b) => !LOKALE_BEREICHE.includes(b)) : []) : await bereicheIn(von);
+      for (const b of quelle) {
         if (dort.has(b) && umzug === 'uebernehmen') continue;
         const inhalt = await invoke<string | null>('read_binary_file', { path: datei(von, b) });
         if (inhalt == null) continue;
@@ -456,7 +522,10 @@ export async function konfigOrtWechseln(ziel: KonfigZiel, umzug: KonfigUmzug): P
           const alt = await invoke<string | null>('read_binary_file', { path: datei(nach, b) });
           if (alt === inhalt) continue;
           if (alt != null) {
-            await invoke<void>('write_binary_file', { path: verbinde(nach, `${b}.json.vor-umzug-${stempel}`), contentsBase64: alt });
+            // nie eine frühere Sicherung überschreiben (zweites Ersetzen in derselben Sekunde: mit Zähler)
+            let sicherung = verbinde(nach, `${b}.json.vor-umzug-${stempel}`);
+            for (let n = 2; (await invoke<string | null>('read_binary_file', { path: sicherung })) != null; n++) sicherung = verbinde(nach, `${b}.json.vor-umzug-${stempel}-${n}`);
+            await invoke<void>('write_binary_file', { path: sicherung, contentsBase64: alt });
             ergebnis.gesichert.push(b);
           }
         }
@@ -467,9 +536,9 @@ export async function konfigOrtWechseln(ziel: KonfigZiel, umzug: KonfigUmzug): P
     const zeiger = ziel.modus === 'netzwerk' ? { modus: 'netzwerk', ordner: nach } : { modus: 'einzelplatz', ordner: '', netzordner: o.modus === 'netzwerk' ? o.ordner : o.netzordner };
     await invoke<void>('write_binary_file', { path: datei(o.basis, ZEIGER), contentsBase64: kodiert(zeiger) });
     gespiegelt.clear();
+    herkunft = null;
     ort = null;
     await konfigOrt();
-    melden();
     try {
       localStorage.setItem(SIGNAL, String(Date.now()));
     } catch {

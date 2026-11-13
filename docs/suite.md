@@ -33,11 +33,13 @@ Werkzeuge in **einem Programm und einem Fenster**. Sie kann nichts weiter, als z
   bleiben. Einzelheiten in der README unter „Neue Namen“. Hook: `apps/suite/src-tauri/windows/umbenennung.nsh`; die Namen aller
   Apps stehen in der README unter [Neue Namen](../README.md#neue-namen).
 
-- **Speicherort der Einstellungen** (⚙ in der Titelleiste des Rahmens und jeder App, dazu auf der Startseite):
+- **Speicherort der Einstellungen** (Knopf „Einzelplatz“ bzw. „Netzwerk“ in der Titelleiste des Rahmens und jeder App, dazu auf der Startseite):
   Einzelplatz oder Netzwerkinstallation, für alle Apps auf einmal – Einzelheiten in der README unter
   [Gemeinsame Bedienung](../README.md#gemeinsame-bedienung-aller-apps). Nach einem Wechsel gilt der neue Ort sofort in
-  allen Tabs und Fenstern; ATLAS liest seine Einstellungen dann neu. Ist das Netzlaufwerk nicht erreichbar, zeigt
-  die Titelleiste „⚠ Einstellungen nur lesbar“ (Notbetrieb mit der lokalen Kopie).
+  allen Tabs und Fenstern: Was die Apps zwischengespeichert haben (ATLAS: Struktur, Mails, Kataster; FABRIO:
+  Einstellungen; QUADRIO: Raumkatalog; Büroname im Kopf der Ausdrucke), lesen sie neu (`konfigNeuLesen`) – ebenso, wenn
+  das Netzlaufwerk wegfällt oder wieder da ist. Im Tab steht der Knopf nur in der Kopfleiste des Rahmens. Ist das
+  Netzlaufwerk nicht erreichbar, zeigt sie „⚠ Einstellungen nur lesbar“ (Notbetrieb mit der lokalen Kopie).
 
 Die einzelnen Apps mit eigenem Installer bleiben unverändert nutzbar; Einstellungen (gemeinsamer
 Konfigurationsordner) und Projektdateien sind dieselben.
@@ -75,8 +77,14 @@ Konfigurationsordner) und Projektdateien sind dieselben.
   mit nur `ordner` gelten als Netzwerkinstallation und lesen auch den neuen Zeiger). Rust-Befehle in
   `packages/core/tauri/commands.rs`: `ordner_erreichbar` (mit Zeitlimit 4 s, ein getrenntes Laufwerk hält die App nicht
   auf), `konfig_dateien` (Einstellungsdateien eines Ordners für den Umzug), `konfig_schreiben_wenn` (Vergleich und
-  atomares Ersetzen unter einer Sperrdatei; eine Sperre älter als 15 s gilt als verwaist). Lokale Kopie der
-  Netzwerkinstallation: `%APPDATA%\arch-tools\netz-kopie\`.
+  atomares Ersetzen unter einer Sperrdatei mit eigenem Zeichen; verwaist ist eine Sperre, die nach der eigenen Uhr 10 s
+  unverändert liegt – die Uhr des Netzlaufwerks zählt nicht). Auch das ganze Ersetzen eines Bereichs läuft darüber.
+  Lokale Kopie der Netzwerkinstallation: `%APPDATA%\arch-tools\netz-kopie\` mit `.herkunft.json` (Netzordner und
+  gespiegelte Bereiche; eine Kopie anderer Herkunft gilt im Notbetrieb nicht). Meldet ein getrenntes Laufwerk eine
+  Datei als „nicht vorhanden“, prüft die App die Erreichbarkeit, bevor sie Vorgaben annimmt.
+- **Grenzen:** Alle Rechner einer Netzwerkinstallation sollten auf dem aktuellen Stand sein – ältere Fassungen
+  schreiben ohne Sperre und ohne Vergleich. Hängt eine Netzfreigabe beim Lesen einer einzelnen Datei (statt
+  getrennt zu sein), wartet die App bis zum Zeitlimit des Betriebssystems.
 - Dateien per Ziehen & Ablegen: Die Fenster des Rahmens haben `dragDropEnabled: false`, damit die Apps in den Tabs
   die Dateien selbst bekommen.
 

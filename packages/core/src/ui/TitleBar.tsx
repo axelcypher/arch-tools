@@ -130,7 +130,8 @@ export function TitleBar({ app, name, dirty, onOpenLog, regeln, onProjekte, zeic
         </span>
         <span className="titlebar-drag" {...ziehen} />
         {desktop && !rahmen && <UpdateKnopf app={app} dirty={dirty} />}
-        <SpeicherortKnopf />
+        {/* im Tab zeigt ihn der Rahmen in seiner Kopfleiste – einmal genügt */}
+        {rahmen !== 'tab' && <SpeicherortKnopf />}
         <ThemeMenu zeichenflaeche={zeichenflaeche} />
         {regeln && (
           <button className="titlebar-btn" title="Berechnungsregeln nachschlagen – mit Quellen und Suche (F1)" onClick={() => useHilfe.getState().oeffnen()}>

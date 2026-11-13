@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { konfigAendern, konfigLesen } from '@core/platform/konfig';
+import { konfigAendern, konfigLesen, konfigNeuLesen } from '@core/platform/konfig';
 
 /**
  * Einstellungen für „Mails“ im gemeinsamen Konfigurationsordner (Bereich `mails`, gilt fürs Büro): die eigenen
@@ -68,3 +68,8 @@ export function eigeneDomainRaten(mails: { domains: string[] }[]): string | null
   const [d, n] = [...zahl].sort((a, b) => b[1] - a[1])[0] ?? [];
   return d && n * 2 > mails.length ? d : null;
 }
+
+// Speicherort der Einstellungen gewechselt bzw. Netzlaufwerk weg oder wieder da: neu lesen (gelesen wird erst bei Bedarf)
+konfigNeuLesen(() => {
+  if (useMails.getState().geladen) void useMails.getState().laden();
+});

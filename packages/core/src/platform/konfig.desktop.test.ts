@@ -8,6 +8,8 @@ import { attrappe, BASIS, installieren, KOPIE, legeAn, lies, NAS } from '../__fi
  */
 
 const fs = attrappe.dateien;
+/** lokale Kopie stammt aus `ordner` und enthält `bereiche` */
+const kopieVon = (ordner: string, ...bereiche: string[]) => legeAn(`${KOPIE}/.herkunft.json`, { ordner, bereiche });
 
 const laden = () => import('./konfig');
 
@@ -95,7 +97,7 @@ describe('Wechsel zur Netzwerkinstallation', () => {
     expect(await k.konfigOrtWechseln({ modus: 'netzwerk', ordner: NAS }, 'ersetzen')).toEqual({ kopiert: ['allgemein'], gesichert: ['allgemein'] });
     expect(lies(`${NAS}/allgemein.json`)).toEqual({ buero: 'Hier' });
     const sicherung = [...fs.keys()].find((p) => p.startsWith(`${NAS}/allgemein.json.vor-umzug-`));
-    expect(sicherung).toMatch(/vor-umzug-\d{4}-\d\d-\d\d-\d{4}$/);
+    expect(sicherung).toMatch(/vor-umzug-\d{4}-\d\d-\d\d-\d{6}$/);
     expect(lies(sicherung!)).toEqual({ buero: 'Büro' });
     expect(lies(`${NAS}/raumkatalog.json`)).toEqual([{ name: 'Büro' }]);
     // Sicherungen zählen nicht als Bereich
@@ -144,6 +146,7 @@ describe('Notbetrieb ohne Netzlaufwerk', () => {
   it('beim Start nicht erreichbar: lokale Kopie lesen, gemeinsame Bereiche nicht speichern, lokale schon', async () => {
     legeAn(`${BASIS}/konfig.json`, { modus: 'netzwerk', ordner: NAS });
     legeAn(`${KOPIE}/allgemein.json`, { buero: 'Büro', projekte: ['/p'] });
+    kopieVon(NAS, 'allgemein');
     attrappe.nasErreichbar = false;
     const k = await laden();
     expect(await k.konfigOrt()).toMatchObject({ modus: 'netzwerk', ordner: NAS, notbetrieb: true });
@@ -200,12 +203,80 @@ describe('Notbetrieb ohne Netzlaufwerk', () => {
   it('Wechsel zum Einzelplatz im Notbetrieb nimmt die lokale Kopie mit', async () => {
     legeAn(`${BASIS}/konfig.json`, { modus: 'netzwerk', ordner: NAS });
     legeAn(`${KOPIE}/allgemein.json`, { buero: 'Büro' });
+    kopieVon(NAS, 'allgemein');
     attrappe.nasErreichbar = false;
     const k = await laden();
     expect(await k.konfigOrtWechseln({ modus: 'einzelplatz' }, 'uebernehmen')).toEqual({ kopiert: ['allgemein'], gesichert: [] });
     expect(await k.konfigOrt()).toMatchObject({ modus: 'einzelplatz', notbetrieb: false });
     await k.allgemeinAendern({ fotoordner: 'Fotos' });
     expect(lies(`${BASIS}/allgemein.json`)).toMatchObject({ buero: 'Büro', fotoordner: 'Fotos' });
+  });
+});
+
+describe('Notbetrieb: Grenzfälle', () => {
+  it('getrenntes Laufwerk meldet „gibt es nicht“: trotzdem Notbetrieb, nicht die Vorgaben', async () => {
+    legeAn(`${BASIS}/konfig.json`, { modus: 'netzwerk', ordner: NAS });
+    legeAn(`${NAS}/allgemein.json`, { buero: 'Büro' });
+    const k = await laden();
+    expect((await k.allgemeinLaden()).buero).toBe('Büro');
+    await vi.waitFor(() => expect(lies(`${KOPIE}/allgemein.json`)).toEqual({ buero: 'Büro' }));
+    attrappe.nasErreichbar = false;
+    attrappe.nasWegAlsFehlt = true;
+    expect((await k.allgemeinLaden()).buero).toBe('Büro');
+    expect((await k.konfigOrt())?.notbetrieb).toBe(true);
+  });
+
+  it('Gegenprobe: erreichbares Netzlaufwerk ohne die Datei liefert null und bleibt im Normalbetrieb', async () => {
+    legeAn(`${BASIS}/konfig.json`, { modus: 'netzwerk', ordner: NAS });
+    fs.set(`${NAS}/.platzhalter`, '');
+    const k = await laden();
+    expect(await k.konfigLesen('raumkatalog')).toBeNull();
+    expect((await k.konfigOrt())?.notbetrieb).toBe(false);
+  });
+
+  it('Kopie aus einem anderen Netzordner gilt im Notbetrieb nicht – auch nicht beim Wechsel zum Einzelplatz', async () => {
+    legeAn(`${BASIS}/konfig.json`, { modus: 'netzwerk', ordner: NAS });
+    legeAn(`${KOPIE}/allgemein.json`, { buero: 'Anderes Büro' });
+    kopieVon('/nas/alt', 'allgemein');
+    attrappe.nasErreichbar = false;
+    const k = await laden();
+    expect((await k.allgemeinLaden()).buero).toBeUndefined();
+    expect(await k.konfigOrtWechseln({ modus: 'einzelplatz' }, 'uebernehmen')).toEqual({ kopiert: [], gesichert: [] });
+    expect(fs.has(`${BASIS}/allgemein.json`)).toBe(false);
+  });
+
+  it('nur gespiegelte Bereiche der Herkunft gelten; neuer Netzordner beginnt eine neue Kopie', async () => {
+    legeAn(`${BASIS}/konfig.json`, { modus: 'netzwerk', ordner: NAS });
+    legeAn(`${KOPIE}/kataster.json`, { alt: true });
+    kopieVon('/nas/alt', 'kataster');
+    legeAn(`${NAS}/allgemein.json`, { buero: 'Büro' });
+    const k = await laden();
+    await k.allgemeinLaden();
+    await vi.waitFor(() => expect(lies(`${KOPIE}/.herkunft.json`)).toEqual({ ordner: NAS, bereiche: ['allgemein'] }));
+    attrappe.nasErreichbar = false;
+    expect(await k.konfigOrtNeuPruefen()).toMatchObject({ notbetrieb: true });
+    expect(await k.konfigLesen('kataster')).toBeNull();
+    expect((await k.allgemeinLaden()).buero).toBe('Büro');
+  });
+
+  it('Neu lesen: genau einmal je Änderung, nicht beim ersten Lesen des Orts', async () => {
+    legeAn(`${BASIS}/konfig.json`, { modus: 'netzwerk', ordner: NAS });
+    legeAn(`${NAS}/allgemein.json`, { buero: 'Büro' });
+    const k = await laden();
+    const neu = vi.fn();
+    k.konfigNeuLesen(neu);
+    await k.konfigOrt();
+    expect(neu).not.toHaveBeenCalled();
+    attrappe.nasErreichbar = false;
+    await k.allgemeinLaden();
+    await k.allgemeinLaden();
+    expect(neu).toHaveBeenCalledTimes(1);
+    attrappe.nasErreichbar = true;
+    await k.konfigOrtNeuPruefen();
+    await k.konfigOrtNeuPruefen();
+    expect(neu).toHaveBeenCalledTimes(2);
+    await k.konfigOrtWechseln({ modus: 'einzelplatz' }, 'uebernehmen');
+    expect(neu).toHaveBeenCalledTimes(3);
   });
 });
 
@@ -254,6 +325,42 @@ describe('Mehrere Rechner schreiben gleichzeitig', () => {
     attrappe.dazwischen = null;
     expect((await k.konfigSchreibenWennUnveraendert('projektordner', { struktur: { name: 'C' } }, k.konfigStand({ struktur: { name: 'B' } }))).ok).toBe(true);
     expect(lies(`${NAS}/projektordner.json`)).toEqual({ struktur: { name: 'C' } });
+  });
+});
+
+describe('Ersetzen und Sicherungen', () => {
+  it('Ganz ersetzen (konfigSchreiben) läuft unter der Sperre und überholt keine fremde Änderung', async () => {
+    legeAn(`${BASIS}/konfig.json`, { modus: 'netzwerk', ordner: NAS });
+    legeAn(`${NAS}/ava.json`, { a: 1 });
+    const k = await laden();
+    let einmal = true;
+    attrappe.dazwischen = (pfad) => {
+      if (einmal) legeAn(pfad, { a: 2 });
+      einmal = false;
+    };
+    await k.konfigSchreiben('ava', { a: 3 });
+    expect(lies(`${NAS}/ava.json`)).toEqual({ a: 3 });
+    expect(attrappe.aufrufe.filter((a) => a === 'konfig_schreiben_wenn')).toHaveLength(2);
+  });
+
+  it('zweimal ersetzen in derselben Sekunde: keine Sicherung geht verloren', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 10, 13, 14, 5, 9));
+    try {
+      legeAn(`${BASIS}/allgemein.json`, { buero: 'Hier' });
+      legeAn(`${NAS}/allgemein.json`, { buero: 'Ursprung' });
+      const k = await laden();
+      await k.konfigOrtWechseln({ modus: 'netzwerk', ordner: NAS }, 'ersetzen');
+      legeAn(`${BASIS}/allgemein.json`, { buero: 'Zweiter' });
+      await k.konfigOrtWechseln({ modus: 'einzelplatz' }, 'uebernehmen');
+      legeAn(`${NAS}/allgemein.json`, { buero: 'Zwischenstand' });
+      legeAn(`${BASIS}/allgemein.json`, { buero: 'Dritter' });
+      await k.konfigOrtWechseln({ modus: 'netzwerk', ordner: NAS }, 'ersetzen');
+      expect(lies(`${NAS}/allgemein.json.vor-umzug-2026-11-13-140509`)).toEqual({ buero: 'Ursprung' });
+      expect(lies(`${NAS}/allgemein.json.vor-umzug-2026-11-13-140509-2`)).toEqual({ buero: 'Zwischenstand' });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 

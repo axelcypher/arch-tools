@@ -3,13 +3,13 @@ import { Modal } from '@core/ui/Dialog';
 import { meldung } from '@core/ui/Rueckfrage';
 import { ordnerWaehlen } from '@core/platform/projektordner';
 import { openFileWithPath } from '@core/platform/files';
-import { bueroName } from '@core/platform/konfig';
+import { bueroName, KonfigNichtErreichbar } from '@core/platform/konfig';
 import { modernisieren } from '@core/platzhalter';
 import { PlatzhalterChips, PlatzhalterHinweise, platzhalterEinfuegen } from '@core/ui/Platzhalter';
 import { nameBilden, nameErkennen } from '../abrechnung/benennung';
 import { LV_NAME_VARIABLEN, mailVariablen, RECHNUNG_NAME_VARIABLEN } from '../platzhalter';
 import type { AvaEinstellungen, MailVorlage } from '../einstellungen';
-import { VORGABE } from '../einstellungen';
+import { EinstellungenKonflikt, VORGABE } from '../einstellungen';
 import { neueId } from '../lv/modell';
 import { useAva } from '../store';
 import { Feld, TextEingabe, ZahlEingabe } from './eingaben';
@@ -46,7 +46,9 @@ export function EinstellungenModal() {
       await useAva.getState().einstellungenSetzen(e);
       schliessen();
     } catch (x) {
-      await meldung('Einstellungen nicht gespeichert', 'Der gemeinsame Konfigurationsordner ließ sich nicht schreiben.', x);
+      // anderer Rechner oder Netzlaufwerk weg: die Meldung erklärt es selbst
+      const klar = x instanceof EinstellungenKonflikt || x instanceof KonfigNichtErreichbar;
+      await meldung('Einstellungen nicht gespeichert', klar ? x.message : 'Der gemeinsame Konfigurationsordner ließ sich nicht schreiben.', klar ? undefined : x);
     }
   };
 
