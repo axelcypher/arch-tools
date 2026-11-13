@@ -92,6 +92,22 @@ describe('laufende Schreibvorgänge vor dem Schließen', () => {
     }
   });
 
+  it('beim Rahmen angemeldet: ein gescheitertes Schreiben ergibt „fehler“ (Arkly fragt „… konnte nicht speichern“)', async () => {
+    const abmelden = vorDemSchliessenAnmelden();
+    try {
+      const a = offen();
+      void verfolgen(a.p).catch(() => undefined);
+      const vorbereiten = schliessenVorbereiten(2000);
+      await tick();
+      a.fehler(new Error('Netzlaufwerk weg'));
+      expect(await vorbereiten).toBe('fehler');
+      // Gegenprobe: danach ist nichts mehr offen – fertig
+      expect(await schliessenVorbereiten(2000)).toBe('fertig');
+    } finally {
+      abmelden();
+    }
+  });
+
   it('Ergebnis: true, wenn alles geschrieben ist; false, wenn ein abgewartetes Schreiben gescheitert ist', async () => {
     expect(await ausstehendAbwarten()).toBe(true);
     void verfolgen(Promise.resolve());

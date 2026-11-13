@@ -62,8 +62,8 @@ export async function ausstehendAbwarten(): Promise<boolean> {
 }
 
 /** beim Rahmen anmelden; liefert die Abmeldung */
-// (bis Arkly/core #93 das Ergebnis `false` = „nicht gespeichert“ im Typ führt, hier umgewandelt; geliefert wird es schon)
-export const vorDemSchliessenAnmelden = () => vorDemSchliessen(ausstehendAbwarten as unknown as () => Promise<void>);
+// `false` (ein Schreiben ist gescheitert) zeigt Arkly als „… konnte nicht speichern“
+export const vorDemSchliessenAnmelden = () => vorDemSchliessen(ausstehendAbwarten);
 
 /**
  * Einteilung aller Befehle – vom Typsystem erzwungen: ein neuer Befehl im Dateisystem bzw. Projektordner muss hier
