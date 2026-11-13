@@ -15,6 +15,7 @@ const datei = vi.hoisted(() => ({
   /** Antwort auf die Rückfrage nach abgelehntem Speichern */
   antwort: null as string | null,
   fragen: [] as string[],
+  meldungen: [] as string[],
 }));
 vi.mock('@core/platform/files', async (original) => ({
   ...(await original<typeof import('@core/platform/files')>()),
@@ -27,6 +28,9 @@ vi.mock('@core/ui/Rueckfrage', async (original) => ({
   fragen: async (f: { titel: string }) => {
     datei.fragen.push(f.titel);
     return datei.antwort;
+  },
+  meldung: async (titel: string, text: string) => {
+    datei.meldungen.push(`${titel}|${text}`);
   },
 }));
 
@@ -68,7 +72,7 @@ function attrappe() {
 }
 const idb = attrappe();
 
-const { speichern, verwendeteFotos, oeffnen, fotoImProjektOeffnen } = await import('./projekt');
+const { speichern, verwendeteFotos, oeffnen, fotoImProjektOeffnen, fotosHinzufuegen } = await import('./projekt');
 const { SpeicherProjektordner } = await import('@core/platform/projektordner');
 const { DateiVonAussenGeaendert } = await import('@core/platform/files');
 const { standSchreiben } = await import('./speicher');
@@ -81,6 +85,7 @@ beforeEach(() => {
   useEntz.getState().laden({ fotos: [] }, {}, null);
   datei.staende.clear();
   datei.fragen = [];
+  datei.meldungen = [];
   datei.antwort = null;
   idb.stand.clear();
   idb.fotos.clear();
@@ -171,7 +176,7 @@ describe('Datei von außen geändert', () => {
     };
     // Abbrechen: nicht gespeichert, weiter ungespeichert
     expect(await speichern()).toBe(false);
-    expect(datei.fragen).toEqual(['Nicht gespeichert – Datei wurde außen geändert']);
+    expect(datei.fragen).toEqual(['Datei wurde inzwischen geändert']);
     expect(useEntz.getState().dirty).toBe(true);
     expect(useEntz.getState().dateiname).toBe('C:\\Projekt\\Hof.entz');
     // Unter neuem Namen: Dialog (kein Pfad, keine Prüfung), Vorschlag mit „(Kopie)“
@@ -211,6 +216,22 @@ describe('Datei von außen geändert', () => {
     await speichern();
     expect(o0!.stand).toBeUndefined();
     expect(o0!.vorhandenLesen).toBe(false);
+  });
+});
+
+describe('Fotos hinzufügen', () => {
+  it('mehrere nicht lesbare Dateien: eine gemeinsame Meldung statt einer je Datei', async () => {
+    await fotosHinzufuegen([new File(['x'], 'a.heic'), new File(['y'], 'b.jpg'), new File(['z'], 'c.png')]);
+    expect(datei.meldungen).toHaveLength(1);
+    const [titel, text] = datei.meldungen[0].split('|');
+    expect(titel).toBe('3 von 3 Fotos ließen sich nicht hinzufügen');
+    expect(text.split('\n')).toHaveLength(3);
+    expect(text).toContain('a.heic');
+    expect(useEntz.getState().doc.fotos).toHaveLength(0);
+    // Gegenprobe: eine Datei – Einzahl
+    datei.meldungen = [];
+    await fotosHinzufuegen([new File(['x'], 'd.heic')]);
+    expect(datei.meldungen[0].split('|')[0]).toBe('Foto ließ sich nicht hinzufügen');
   });
 });
 

@@ -9,7 +9,8 @@ Bis Version 0.12.0 hieß die App „Entzerrung“. Einstellungen und Daten bleib
 
 ## Ablauf
 
-1. **Foto hinzufügen**: über „+ Foto …“ (auch mehrere auf einmal), den Knopf in der leeren Fläche oder per Ziehen ins
+1. **Foto hinzufügen**: über „+ Foto …“ (auch mehrere auf einmal; danach ist das erste gewählt, nicht lesbare
+   Dateien nennt eine gemeinsame Meldung), den Knopf in der leeren Fläche oder per Ziehen ins
    Fenster (JPEG, PNG, WebP). Die Ausrichtung vom
    Handy (Hochformat) wird übernommen. HEIC-Fotos vom iPhone lassen sich nicht lesen; dann am iPhone unter
    Einstellungen › Kamera › Formate „Maximale Kompatibilität“ wählen.
@@ -116,9 +117,9 @@ Desktop den Pfad: „Speichern“ schreibt danach ohne Rückfrage in dieselbe Da
 Speicherns weiter, bleibt das Projekt als ungespeichert markiert.
 
 Wurde die geöffnete `.entz` inzwischen außerhalb von RECTIO geändert oder angelegt (z. B. von einem anderen
-Rechner im Büro), überschreibt „Speichern“ sie nicht. Es erscheint die Meldung „Nicht gespeichert – Datei wurde
-außen geändert“. Die Änderungen bleiben in der App, und „Unter neuem Namen speichern …“ legt eine Kopie an
-(Vorschlag „… (Kopie).entz“). Das gilt auch für eine neue Entzerrung neben dem Foto: Hat jemand die `.entz`
+Rechner im Büro), überschreibt „Speichern“ sie nicht. Es erscheint die Meldung „Datei wurde inzwischen
+geändert“. Die Änderungen bleiben in der App, und „Unter neuem Namen speichern …“ legt eine Kopie an (Vorschlag
+„… (Kopie).entz“); danach lassen sich beide Fassungen vergleichen. Das gilt auch für eine neue Entzerrung neben dem Foto: Hat jemand die `.entz`
 inzwischen angelegt, wird sie nicht überschrieben. Beim Speichern liest RECTIO die bisherige Datei nicht mehr ein,
 das spart bei großen Projekten Zeit.
 

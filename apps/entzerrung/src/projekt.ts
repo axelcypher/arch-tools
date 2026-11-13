@@ -42,8 +42,10 @@ export async function oeffnen(datei?: File) {
     if (!gewaehlt) return;
     name = gewaehlt.name;
     const { doc, fotos } = entpacken(gewaehlt.bytes);
-    // Stand merken: „Speichern“ schreibt später ohne Dialog hierher und darf eine inzwischen außen geänderte Datei nicht überschreiben
+    // Stand merken: „Speichern“ schreibt später ohne Dialog hierher und darf eine inzwischen außen geänderte Datei nicht
+    // überschreiben. Der Stand wird nach dem Lesen geholt; der Dateidialog liest selbst, ein Stand davor ist nicht zu bekommen.
     const stand = gewaehlt.pfad ? await dateiStandLesen(gewaehlt.pfad) : undefined;
+    if (gewaehlt.pfad && stand === undefined) log.warn('Stand der Datei unbekannt – beim Speichern keine Prüfung auf Änderungen von außen', gewaehlt.pfad);
     useEntz.getState().laden(doc, fotos, gewaehlt.pfad ?? gewaehlt.name, false, stand);
     for (const [id, d] of Object.entries(fotos)) await fotoSchreiben(id, d);
     log.info(`Geöffnet: ${gewaehlt.pfad ?? gewaehlt.name}`, { fotos: doc.fotos.length });
@@ -92,7 +94,9 @@ async function speichernJetzt(unterNeuemNamen: boolean): Promise<boolean> {
       build: () => packen(s.doc, s.bilder),
     });
     if (name) {
-      useEntz.getState().gespeichert(name, s.doc, istPfad(name) ? await dateiStandLesen(name) : undefined);
+      const stand = istPfad(name) ? await dateiStandLesen(name) : undefined;
+      if (istPfad(name) && stand === undefined) log.warn('Stand nach dem Speichern unbekannt – beim nächsten Speichern keine Prüfung', name);
+      useEntz.getState().gespeichert(name, s.doc, stand);
       log.info(`Gespeichert: ${name}`);
     }
     return !!name;
@@ -100,8 +104,12 @@ async function speichernJetzt(unterNeuemNamen: boolean): Promise<boolean> {
     if (e instanceof DateiVonAussenGeaendert) {
       log.warn('Speichern abgelehnt: Datei von außen geändert', s.dateiname);
       const wahl = await fragen({
-        titel: 'Nicht gespeichert – Datei wurde außen geändert',
-        text: `„${dateiTeil(s.dateiname ?? '')}“ wurde nach dem Öffnen außerhalb von RECTIO geändert oder angelegt (z. B. auf einem anderen Rechner im Büro). Damit dort nichts verloren geht, wurde sie nicht überschrieben. Die Änderungen bleiben in der App erhalten.`,
+        titel: 'Datei wurde inzwischen geändert',
+        text: `${
+          s.dateiStand === null
+            ? `„${dateiTeil(s.dateiname ?? '')}“ wurde inzwischen außerhalb von RECTIO angelegt, z. B. auf einem anderen Rechner im Büro.`
+            : `„${dateiTeil(s.dateiname ?? '')}“ wurde nach dem Öffnen außerhalb von RECTIO geändert, z. B. auf einem anderen Rechner im Büro.`
+        } Sie wurde deshalb nicht überschrieben; Ihre Änderungen sind noch in RECTIO. Unter neuem Namen speichern und danach beide Fassungen vergleichen.`,
         knoepfe: [
           { id: 'abbrechen', label: 'Abbrechen' },
           { id: 'neu', label: 'Unter neuem Namen speichern …', art: 'primary' },
@@ -121,19 +129,29 @@ export async function fotosHinzufuegen(dateien?: File[]) {
   if (!liste) {
     liste = await pickFile('image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp', { mehrere: true });
   }
+  let erstes: string | null = null;
+  const fehler: string[] = [];
   for (const d of liste) {
     try {
       const b = await fotoEinlesen(d);
       const id = neueId();
       // erst ins Dokument, dann in den Zwischenspeicher (so räumt ein laufendes Zwischenspeichern es nicht weg)
       useEntz.getState().fotoHinzufuegen(id, b.name, b.mime, b.breite, b.hoehe, b.daten);
+      erstes ??= id;
       await fotoSchreiben(id, b.daten);
       log.info(`Foto hinzugefügt: ${d.name}`, { breite: b.breite, hoehe: b.hoehe });
     } catch (e) {
       const text = e instanceof Error ? e.message : String(e);
       log.error('Foto konnte nicht hinzugefügt werden', text);
-      await meldung('Foto ließ sich nicht hinzufügen', `${d.name}: ${text}`, e);
+      fehler.push(text.startsWith(d.name) ? text : `${d.name}: ${text}`);
     }
+  }
+  // bei mehreren: das erste der Auswahl zeigen, nicht das zuletzt gelesene
+  if (erstes) useEntz.getState().waehleFoto(erstes);
+  // eine Meldung für alle Fehler statt einer je Datei
+  if (fehler.length) {
+    const titel = liste.length === 1 ? 'Foto ließ sich nicht hinzufügen' : `${fehler.length} von ${liste.length} Fotos ließen sich nicht hinzufügen`;
+    await meldung(titel, fehler.join('\n'));
   }
 }
 
