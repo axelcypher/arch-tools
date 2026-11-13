@@ -5,6 +5,7 @@ import { Field, NumberField, TextField } from './fields';
 import type { Pruefung } from './pruefen';
 import { alle, email, ordnername, plz } from './pruefen';
 import { useEscSchliessen } from './Dialog';
+import { Symbol } from './Symbol';
 import { abfragbar, adresseSchluessel, geokodierungMoeglich, koordinatenFuerQgis, koordinatenVeraltet, mitKoordinaten, QUELLE } from '../platform/geokodierung';
 
 /**
@@ -371,13 +372,13 @@ export function StammdatenFelder({
           )}
           <div className="button-row sd-beteiligte-knoepfe">
             <button className="small" onClick={() => onChange({ ...meta, beteiligte: [...beteiligte, { rolle: '', name: '', kontakt: '' }] })}>
-              + Beteiligter
+              <Symbol name="plus" /> Beteiligten hinzufügen
             </button>
             {rollenSchnell && (
               <span className="sd-rollen-schnell" role="group" aria-label="Beteiligte nach Rolle hinzufügen">
                 {ROLLEN_SCHNELL.filter((r) => !beteiligte.some((b) => b.rolle.trim().toLowerCase() === r.toLowerCase())).map((r) => (
-                  <button key={r} className="small" title={`Zeile für „${r}“ anlegen`} onClick={() => onChange({ ...meta, beteiligte: [...beteiligte, { rolle: r, name: '', kontakt: '' }] })}>
-                    + {r}
+                  <button key={r} className="small" title={`${r} hinzufügen`} onClick={() => onChange({ ...meta, beteiligte: [...beteiligte, { rolle: r, name: '', kontakt: '' }] })}>
+                    <Symbol name="plus" /> {r}
                   </button>
                 ))}
               </span>
