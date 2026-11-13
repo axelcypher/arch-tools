@@ -201,7 +201,7 @@ export function Maengel() {
           {!liste.length && (
             <tr>
               <td colSpan={7} className="muted">
-                {filter === 'offen' && projekt.ava.maengel.length ? 'Keine offenen Mängel – Filter „alle“ zeigt auch erledigte.' : 'Noch keine Mängel – Mit „Mangel“ beginnen.'}
+                {filter === 'offen' && projekt.ava.maengel.length ? 'Keine offenen Mängel – Filter „alle“ zeigt auch erledigte.' : 'Noch keine Mängel – mit „Mangel“ beginnen.'}
               </td>
             </tr>
           )}
