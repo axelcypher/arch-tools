@@ -95,6 +95,9 @@
 }
 .ko-col h2 {
   margin-top: 0;
+  /* Spaltenüberschrift nach docs/design.md: --fs-l, halbfett */
+  font-size: var(--fs-l);
+  font-weight: 600;
 }
 .ko-col h2:not(:first-child) {
   margin-top: 18px;
@@ -564,6 +567,7 @@ button.link:hover {
   cursor: pointer;
 }
 .mp-teil:focus {
+  /* Ersatz für den Fokusrahmen: das fokussierte Teil wird wie beim Zeigen hervorgehoben (.aktiv) */
   outline: none;
 }
 .mp-teil.aus path {
