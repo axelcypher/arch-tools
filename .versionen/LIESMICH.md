@@ -27,3 +27,27 @@ Die CI prüft im PR, dass jede betroffene App in einer Notiz steht, dass die Not
 Version ändert (`scripts/versionen-pruefen.mjs`). Der Release-Lauf sammelt alle Notizen auf `main`, hebt je App die
 größte verlangte Stufe an allen fünf Stellen, löscht die Notizen und committet das als github-actions nach `main`
 (`scripts/versionen-setzen.mjs`). Nach dem Merge deshalb `main` frisch holen.
+
+## Neue App aufnehmen
+
+Eine neue App (Kennung = Ordner unter `apps/`, z. B. `baurecht`) muss an diesen Stellen eingetragen werden, sonst
+prüft die CI sie nicht oder der Release-Lauf baut sie nicht:
+
+- `scripts/versionen-pruefen.mjs`: `APPS` (Kennung). Das Tag-Schema `<kennung>-v<version>` ergibt sich von selbst aus
+  `tagVon`.
+- `scripts/versionen-setzen.mjs`: `NAMEN` (Produktname, wie in `packages/core/src/appNamen.ts`).
+- `.github/workflows/release.yml`: Kopfkommentar, Auswahl `options` beim Start von Hand, die Schleife `for d in …` und
+  der `case` mit Tag, Release-Name und Name des Web-Zips (`<produkt>-web.zip`, klein geschrieben).
+- `.github/workflows/ci.yml`: Pfad unter `web-dist` und ein Eintrag in der Matrix „Tauri-Hülle prüfen“ (`app`, `pkg`
+  = Name in `package.json`).
+- Wurzel-`package.json`: Skripte `build`, `dev:<kennung>`, `tauri:dev:<kennung>`.
+- Wenn die App in Arkly erscheinen soll: `apps/suite/src/apps.ts`, `apps/suite/scripts/alle-bauen.mjs` und
+  `apps-einbauen.mjs`. Dazu gehört eine Arkly-Notiz (`suite`, Stufe `minor`).
+- Symbol: `design/icons/erzeugen.mjs`.
+
+**Erstversion:** Die Version, die beim Anlegen in den fünf Stellen steht (üblich `0.1.0`), wird unverändert die erste
+veröffentlichte. Für eine App ohne Tag hebt der Release-Lauf nichts, er übernimmt die Version und baut sie. Der PR,
+der die App anlegt, braucht trotzdem eine Notiz für sie, etwa `{"baurecht": {"stufe": "minor", "notiz": "Erste
+Fassung."}}`. Die Stufe hat dabei keine Wirkung, Arkly hebt für eine neue App immer Minor. Erst ab dem zweiten
+Release zählt die Stufe für die App selbst. Der öffentliche Updater-Schlüssel in `tauri.conf.json` muss derselbe
+sein wie bei den anderen Apps, sonst bricht der Release-Lauf ab.

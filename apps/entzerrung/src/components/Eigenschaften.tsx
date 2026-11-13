@@ -12,6 +12,7 @@ import type { Ebene, Foto, Methode } from '../model';
 import { aktuell, mitEbene, mitFoto, useEntz } from '../store';
 import type { Werkzeug } from '../store';
 import { ExportDialog } from './ExportDialog';
+import { Symbol } from '@core/ui/Symbol';
 
 const log = logger('eigenschaften');
 
@@ -217,7 +218,7 @@ function ReferenzPanel({ foto, ebene, ergebnis }: { foto: Foto; ebene: Ebene; er
                     <td className="num muted">{restText(p.id)}</td>
                     <td>
                       <button className="icon small danger" title={`Passpunkt P${i + 1} entfernen`} aria-label={`Passpunkt P${i + 1} entfernen`} onClick={() => aendern((e) => ({ ...e, passpunkte: e.passpunkte.filter((q) => q.id !== p.id) }))}>
-                        ×
+                        <Symbol name="muell" />
                       </button>
                     </td>
                   </tr>
@@ -273,7 +274,7 @@ function ReferenzPanel({ foto, ebene, ergebnis }: { foto: Foto; ebene: Ebene; er
                         aria-label={`Maß M${i + 1} entfernen`}
                         onClick={() => aendern((e) => ({ ...e, fluchtlinien: { ...e.fluchtlinien, masse: e.fluchtlinien.masse.filter((q) => q.id !== m.id) } }))}
                       >
-                        ×
+                        <Symbol name="muell" />
                       </button>
                     </td>
                   </tr>
@@ -299,20 +300,20 @@ function ReferenzPanel({ foto, ebene, ergebnis }: { foto: Foto; ebene: Ebene; er
 
       {ergebnis.ok &&
         ergebnis.e.hinweise.map((h) => (
-          <div key={h} className="warning ef-hinweis-ref">
+          <div key={h} className="meldung warnung ef-hinweis-ref" role="status">
             {h}
           </div>
         ))}
       {ergebnis.ok ? (
-        <div className="ef-ok">
+        <div className="meldung ok ef-ok" role="status">
           <span>Ebene ist entzerrbar.</span>
           <button className="primary" onClick={() => s().setze({ ansicht: 'entzerrt', werkzeug: 'auswahl', entwurf: [], auswahl: null })}>
             Entzerrt ansehen
           </button>
         </div>
       ) : (
-        <div className="ef-fehlt" role="status">
-          {ergebnis.fehler}
+        <div className="meldung ef-fehlt" role="status">
+          <Symbol name="info" /> {ergebnis.fehler}
         </div>
       )}
     </section>
@@ -361,8 +362,12 @@ function ObjektivPanel({ foto }: { foto: Foto }) {
           Abweichung der Hilfslinien von der Geraden: {fmt2(foto.linse.vorher)} px → <strong>{fmt2(foto.linse.nachher)} px</strong>
         </p>
       )}
-      {!gueltig && <div className="warning">Diese Werte falten das Bild zum Rand hin und werden nicht angewendet – neu schätzen oder zurücksetzen.</div>}
-      {fehler && <div className="warning">{fehler}</div>}
+      {!gueltig && <div className="meldung fehler" role="alert">Diese Werte falten das Bild zum Rand hin und werden nicht angewendet – neu schätzen oder zurücksetzen.</div>}
+      {fehler && (
+        <div className="meldung fehler" role="alert">
+          {fehler}
+        </div>
+      )}
       <details className="ef-feinwerte">
         <summary>Feinwerte{hat ? ` (k1 ${fmt3(foto.linse.k1)}, k2 ${fmt3(foto.linse.k2)})` : ''}</summary>
         <div className="field-row">
@@ -430,9 +435,9 @@ function MessPanel({ foto, ebene, e }: { foto: Foto; ebene: Ebene; e: Entzerrung
         )}
       </div>
       {kopiert && (
-        <p className="small-text muted" role="status">
+        <div className={`meldung ${kopiert.startsWith('Kopieren nicht') ? 'fehler' : 'ok'}`} role={kopiert.startsWith('Kopieren nicht') ? 'alert' : 'status'}>
           {kopiert}
-        </p>
+        </div>
       )}
       <div className="button-row">
         <WerkzeugKnopf w="strecke" />
@@ -473,7 +478,7 @@ function MessPanel({ foto, ebene, e }: { foto: Foto; ebene: Ebene; e: Entzerrung
                   s().aendern(mitEbene(foto.id, ebene.id, (y) => ({ ...y, messungen: y.messungen.filter((z) => z.id !== m.id) })));
                 }}
               >
-                ×
+                <Symbol name="muell" />
               </button>
             </li>
           );
@@ -499,7 +504,9 @@ function BildPanel({ foto, ebene, e }: { foto: Foto; ebene: Ebene; e: Entzerrung
     return (
       <section>
         <h2>Bild</h2>
-        <div className="warning">{err instanceof Error ? err.message : String(err)}</div>
+        <div className="meldung fehler" role="alert">
+          {err instanceof Error ? err.message : String(err)}
+        </div>
         {ebene.ausschnitt && <button onClick={() => aendern((x) => ({ ...x, ausschnitt: undefined }))}>Automatisch</button>}
       </section>
     );

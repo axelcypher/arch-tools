@@ -2,7 +2,7 @@ import { useEffect, useId, useRef, useState, useSyncExternalStore } from 'react'
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { appNameSetzen } from './appName';
 import { isTauri } from '../platform/files';
-import { andocken, anRahmenMelden, rahmenModus, speichernAnfragenBeantworten } from '../platform/rahmen';
+import { andocken, anRahmenMelden, rahmenApp, rahmenModus, speichernAnfragenBeantworten } from '../platform/rahmen';
 import { getEntries, logger, logVersion, subscribe } from '../platform/log';
 import { useTheme } from '../platform/theme';
 import type { ThemeWahl } from '../platform/theme';
@@ -15,6 +15,7 @@ import { aenderungenSpeichern, bestaetigen, RueckfrageHost } from './Rueckfrage'
 import { MenueHost } from './Menue';
 import { useBuero } from './DruckKopf';
 import { SpeicherortHost, SpeicherortKnopf } from './Speicherort';
+import { umzugBestaetigen } from './umzug';
 
 const log = logger('fenster');
 
@@ -101,15 +102,47 @@ export function TitleBar({ app, name, dirty, onOpenLog, regeln, onProjekte, zeic
   const errors = getEntries().filter((e) => e.level === 'error' && e.id > seen).length;
   void version;
 
+  // Schließen mit Rückfrage – über × und ebenso über das System (Alt+F4, Taskleiste): `destroy` danach löst kein
+  // weiteres Schließen-Ereignis aus; `schliesst` verhindert eine zweite Rückfrage, solange die erste offen ist
+  const schliesst = useRef(false);
   const close = async () => {
-    if (dirty) {
-      const weiter = onSpeichern
-        ? await aenderungenSpeichern(name, onSpeichern, 'Vor dem Beenden speichern?')
-        : await bestaetigen('Ungespeicherte Änderungen verwerfen?', 'Die Änderungen gehen beim Beenden verloren.', 'Verwerfen und beenden', true);
-      if (!weiter) return;
+    if (schliesst.current) return;
+    schliesst.current = true;
+    try {
+      if (dirty) {
+        const weiter = onSpeichern
+          ? await aenderungenSpeichern(name, onSpeichern, 'Vor dem Beenden speichern?')
+          : await bestaetigen('Ungespeicherte Änderungen verwerfen?', 'Die Änderungen gehen beim Beenden verloren.', 'Verwerfen und beenden', true);
+        if (!weiter) return;
+      }
+      log.info('Fenster wird geschlossen');
+      await win?.destroy();
+    } finally {
+      schliesst.current = false;
     }
-    log.info('Fenster wird geschlossen');
-    await win?.close();
+  };
+  const closeRef = useRef(close);
+  closeRef.current = close;
+  useEffect(() => {
+    if (!win) return;
+    let aus: (() => void) | undefined;
+    let lebt = true;
+    void win
+      .onCloseRequested((e) => {
+        e.preventDefault();
+        void closeRef.current();
+      })
+      .then((u) => (lebt ? (aus = u) : u()));
+    return () => {
+      lebt = false;
+      aus?.();
+    };
+  }, [win]);
+
+  // Andocken startet die App als Tab neu – bei ungespeicherten Änderungen vorher fragen (wie beim Herauslösen)
+  const andockenFragen = async () => {
+    if (dirty && !(await umzugBestaetigen(rahmenApp(), app, name, 'andocken', onSpeichern))) return;
+    await andocken();
   };
 
   return (
@@ -159,7 +192,7 @@ export function TitleBar({ app, name, dirty, onOpenLog, regeln, onProjekte, zeic
           {errors > 0 && <span className="titlebar-badge">{errors}</span>}
         </button>
         {rahmen === 'fenster' && isTauri() && (
-          <button className="titlebar-btn" title="Wieder als Tab in das Hauptfenster" onClick={() => void andocken().catch((e) => log.error('Andocken fehlgeschlagen', e))}>
+          <button className="titlebar-btn" title="Wieder als Tab in das Hauptfenster" onClick={() => void andockenFragen().catch((e) => log.error('Andocken fehlgeschlagen', e))}>
             Andocken
           </button>
         )}
@@ -170,7 +203,7 @@ export function TitleBar({ app, name, dirty, onOpenLog, regeln, onProjekte, zeic
                 <path d="M0 5.5h10" />
               </svg>
             </button>
-            <button className="wc-btn" title={maximized ? 'Verkleinern' : 'Maximieren'} aria-label="Maximieren" onClick={() => void win.toggleMaximize()}>
+            <button className="wc-btn" title={maximized ? 'Wiederherstellen' : 'Maximieren'} aria-label={maximized ? 'Wiederherstellen' : 'Maximieren'} onClick={() => void win.toggleMaximize()}>
               {maximized ? (
                 <svg viewBox="0 0 10 10" aria-hidden>
                   <path d="M2.5 0.5h7v7M0.5 2.5h7v7h-7z" />

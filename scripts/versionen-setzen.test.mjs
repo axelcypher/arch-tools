@@ -85,6 +85,16 @@ test('von Hand gehobene App ohne Notiz, schon in der veröffentlichten Arkly (ge
   assert.equal(neueVersionen({ versionen, tags, eintraege: [e('grz', 'patch')], inArkly: { ...stand, grz: '0.29.0' } }).suite.neu, '0.31.0');
 });
 
+test('neue App ohne Tag: Erstversion bleibt, wird gebaut; Arkly Minor', () => {
+  // FABRIO noch nie veröffentlicht (keine ava-Tags), Erstversion 0.1.0 mit Notiz
+  const ohneAva = tags.filter((t) => !t.startsWith('ava-'));
+  const r = neueVersionen({ versionen: { ...stand, ava: '0.1.0' }, tags: ohneAva, eintraege: [e('ava', 'patch', 'Erste Fassung.')], inArkly: { ...stand, ava: undefined } });
+  assert.deepEqual(Object.keys(r).sort(), ['ava', 'suite']);
+  assert.equal(r.ava.neu, '0.1.0');
+  assert.equal(r.suite.neu, '0.31.0');
+  assert.deepEqual(r.suite.notizen, ['FABRIO: Erste Fassung.']);
+});
+
 test('Major-Sprung einer App: Arkly Minor; App ohne package.json wird übergangen', () => {
   const r = neueVersionen({ versionen: stand, tags, eintraege: [e('grz', 'major')] });
   assert.equal(r.grz.neu, '1.0.0');
