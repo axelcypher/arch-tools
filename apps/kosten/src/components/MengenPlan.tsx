@@ -2,6 +2,8 @@ import { fmt2 } from '@core/format';
 import type { Point } from '@core/geometry';
 import { bounds, labelPoint } from '@core/geometry';
 import { versiegelungInfo } from '@core/lageplan';
+import { planFuellungDunkel } from '@core/planFarbe';
+import { useZeichenflaecheGefiltert } from '@core/platform/theme';
 import type { Project, Storey } from '@core/model';
 import type { CSSProperties, KeyboardEvent } from 'react';
 import type { MengeNachweis, PlanFlaeche, Teil } from '../nachweis';
@@ -35,6 +37,9 @@ export function MengenPlan({
   /** Klick auf ein Teil: an- bzw. abwählen */
   onUmschalten?: (id: string) => void;
 }) {
+  // gefilterte dunkle Zeichenfläche: Füllungen vorrechnen, damit sie im Ton der Farbmarke erscheinen (docs/design.md)
+  const gefiltert = useZeichenflaecheGefiltert();
+  const fuellung = (farbe: string, deckung: number) => (gefiltert ? planFuellungDunkel(farbe, deckung) : { farbe, deckung });
   const lageplan = menge.lageplan ? (project.lageplan?.flaechen ?? []).filter((f) => !f.nachbar && f.points.length >= 3) : [];
   const geschosse = project.storeys.filter((s) => s.shapes.some((x) => x.points.length >= 3));
   const alle = [...geschosse.flatMap((s) => s.shapes.flatMap((x) => x.points)), ...lageplan.flatMap((f) => f.points)];
@@ -74,7 +79,7 @@ export function MengenPlan({
                   </pattern>
                 </defs>
                 {lageplan.map((f) => (
-                  <path key={f.id} d={pfad(f.points)} className="mp-lageplan" fill={versiegelungInfo(f.versiegelung).color} fillOpacity={0.3} vectorEffect="non-scaling-stroke" />
+                  <path key={f.id} d={pfad(f.points)} className="mp-lageplan" fill={fuellung(versiegelungInfo(f.versiegelung).color, 0.3).farbe} fillOpacity={fuellung(versiegelungInfo(f.versiegelung).color, 0.3).deckung} vectorEffect="non-scaling-stroke" />
                 ))}
                 {/* Bezug: alles, was im Geschoss gezeichnet ist */}
                 {s.shapes
