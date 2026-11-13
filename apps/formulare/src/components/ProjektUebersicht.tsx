@@ -95,7 +95,7 @@ export function ProjektUebersicht({ onEinstellungen }: { onEinstellungen: () => 
         text: 'Projektordner im Explorer öffnen',
         symbol: 'ordner',
         deaktiviert: !a,
-        ...(a ? {} : { hinweis: 'nicht zugeordnet' }),
+        ...(a ? {} : { hinweis: 'kein Projektordner' }),
         aktion: () => a && void oeffnePfad(verbinde(a.root, a.pfad)).catch(() => undefined),
       },
       { text: 'Pfad kopieren', symbol: 'kopie', aktion: () => void navigator.clipboard?.writeText(verbinde(p.root, p.ordner)) },
