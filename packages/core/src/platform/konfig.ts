@@ -4,6 +4,7 @@ import { VORGABE_OAP_PFAD } from '../projektdatei';
 import { base64ToBytes, bytesToBase64, isTauri } from './files';
 import { verbinde } from './projektordner';
 import { APP_NAMEN } from '../appNamen';
+import { vorDemSchliessen } from './rahmen';
 
 /**
  * Gemeinsame Einstellungen aller Apps in einem Konfigurationsordner, je Bereich eine JSON-Datei:
@@ -345,6 +346,17 @@ function nacheinander<T>(f: () => Promise<T>): Promise<T> {
   kette = p.catch(() => undefined);
   return p;
 }
+
+/** laufende Schreibvorgänge der Einstellungen vor Schließen, Andocken und Update-Neustart abwarten (für alle Apps) */
+export async function konfigSchreibenAbwarten(): Promise<void> {
+  // so lange, bis keine neuen Schreibvorgänge mehr dazukommen (etwa aus der Vorbereitung einer App)
+  let k: Promise<unknown>;
+  do {
+    k = kette;
+    await k;
+  } while (k !== kette);
+}
+vorDemSchliessen(konfigSchreibenAbwarten);
 
 /** Bereich schreiben (ganz ersetzen) */
 export function konfigSchreiben(bereich: string, wert: unknown, optionen: KonfigOptionen = {}): Promise<void> {

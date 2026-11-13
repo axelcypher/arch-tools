@@ -1,0 +1,34 @@
+{
+  "flaechenrechner": {
+    "stufe": "patch",
+    "notiz": "Rückfragen mit Lösch-Knopf: Enter und Erstfokus liegen auf „Abbrechen“; „Beteiligten hinzufügen“, Rollen-Schnellknöpfe und „Neues Projekt anlegen …“ mit Plus-Symbol statt „+“; Symbole zum Ein- und Ausrücken."
+  },
+  "grz": {
+    "stufe": "patch",
+    "notiz": "Rückfragen mit Lösch-Knopf: Enter und Erstfokus liegen auf „Abbrechen“; „Beteiligten hinzufügen“, Rollen-Schnellknöpfe und „Neues Projekt anlegen …“ mit Plus-Symbol statt „+“; Symbole zum Ein- und Ausrücken."
+  },
+  "kosten": {
+    "stufe": "patch",
+    "notiz": "Rückfragen mit Lösch-Knopf: Enter und Erstfokus liegen auf „Abbrechen“; „Beteiligten hinzufügen“, Rollen-Schnellknöpfe und „Neues Projekt anlegen …“ mit Plus-Symbol statt „+“; Symbole zum Ein- und Ausrücken."
+  },
+  "ordner": {
+    "stufe": "patch",
+    "notiz": "Rückfragen mit Lösch-Knopf: Enter und Erstfokus liegen auf „Abbrechen“; „Beteiligten hinzufügen“, Rollen-Schnellknöpfe und „Neues Projekt anlegen …“ mit Plus-Symbol statt „+“; Symbole zum Ein- und Ausrücken."
+  },
+  "entzerrung": {
+    "stufe": "patch",
+    "notiz": "Rückfragen mit Lösch-Knopf: Enter und Erstfokus liegen auf „Abbrechen“; „Beteiligten hinzufügen“, Rollen-Schnellknöpfe und „Neues Projekt anlegen …“ mit Plus-Symbol statt „+“; Symbole zum Ein- und Ausrücken."
+  },
+  "formulare": {
+    "stufe": "patch",
+    "notiz": "Rückfragen mit Lösch-Knopf: Enter und Erstfokus liegen auf „Abbrechen“; „Beteiligten hinzufügen“, Rollen-Schnellknöpfe und „Neues Projekt anlegen …“ mit Plus-Symbol statt „+“; Symbole zum Ein- und Ausrücken. Beim Sammelexport mit vorhandenen Dateien bricht Enter jetzt ab, statt mit „Vorhandene überspringen“ zu starten."
+  },
+  "ava": {
+    "stufe": "patch",
+    "notiz": "Rückfragen mit Lösch-Knopf: Enter und Erstfokus liegen auf „Abbrechen“; „Beteiligten hinzufügen“, Rollen-Schnellknöpfe und „Neues Projekt anlegen …“ mit Plus-Symbol statt „+“; Symbole zum Ein- und Ausrücken."
+  },
+  "baurecht": {
+    "stufe": "patch",
+    "notiz": "Rückfragen mit Lösch-Knopf: Enter und Erstfokus liegen auf „Abbrechen“; „Beteiligten hinzufügen“, Rollen-Schnellknöpfe und „Neues Projekt anlegen …“ mit Plus-Symbol statt „+“; Symbole zum Ein- und Ausrücken."
+  }
+}
