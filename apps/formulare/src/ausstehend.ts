@@ -50,23 +50,48 @@ export async function ausstehendAbwarten(): Promise<void> {
 /** beim Rahmen anmelden; liefert die Abmeldung */
 export const vorDemSchliessenAnmelden = () => vorDemSchliessen(ausstehendAbwarten);
 
-const DS_SCHREIBEN = new Set<keyof Dateisystem>([
-  'ersetze',
-  'sperreSetzen',
-  'sperreLoesen',
-  'dokumentErsetzen',
-  'dokumentAnlegen',
-  'ordnerAnlegen',
-  'formularAnlegen',
-  'kopieren',
-  'umbenennen',
-  'formularUmbenennen',
-  'loeschen',
-  'projektkarteSchreiben',
-]);
-const PO_SCHREIBEN = new Set<keyof ProjektordnerZugriff>(['ordnerAnlegen', 'dateiAnlegen', 'projektdateiErsetzen', 'umbenennen']);
+/**
+ * Einteilung aller Befehle – vom Typsystem erzwungen: ein neuer Befehl im Dateisystem bzw. Projektordner muss hier
+ * eingetragen werden (sonst bliebe ein neuer Schreibbefehl stillschweigend unverfolgt)
+ */
+const DS_ART = {
+  projektordner: 'sonst',
+  liste: 'lesen',
+  lies: 'lesen',
+  ersetze: 'schreiben',
+  sperreSetzen: 'schreiben',
+  sperreLoesen: 'schreiben',
+  sperrePruefen: 'lesen',
+  prozess: 'lesen',
+  dokumentErsetzen: 'schreiben',
+  inOffice: 'lesen',
+  dokumentAnlegen: 'schreiben',
+  ordnerAnlegen: 'schreiben',
+  formularAnlegen: 'schreiben',
+  kopieren: 'schreiben',
+  umbenennen: 'schreiben',
+  formularUmbenennen: 'schreiben',
+  loeschen: 'schreiben',
+  projektkarteLesen: 'lesen',
+  projektkarteSchreiben: 'schreiben',
+  rechner: 'lesen',
+} satisfies Record<keyof Dateisystem, 'schreiben' | 'lesen' | 'sonst'>;
+const PO_ART = {
+  liste: 'lesen',
+  lies: 'lesen',
+  liesMitStand: 'lesen',
+  ordnerAnlegen: 'schreiben',
+  dateiAnlegen: 'schreiben',
+  projektdateiErsetzen: 'schreiben',
+  dateienSuchen: 'lesen',
+  zipEintrag: 'lesen',
+  umbenennen: 'schreiben',
+} satisfies Record<keyof ProjektordnerZugriff, 'schreiben' | 'lesen'>;
+const schreibend = (art: Record<string, string>) => new Set<PropertyKey>(Object.keys(art).filter((k) => art[k] === 'schreiben'));
+const DS_SCHREIBEN = schreibend(DS_ART);
+const PO_SCHREIBEN = schreibend(PO_ART);
 
-/** Hülle um ein Objekt: die genannten Methoden liefern verfolgte Promises */
+/** Hülle um ein Objekt: die genannten Methoden liefern verfolgte Promises (jeder Zugriff liefert eine neu gebundene Funktion) */
 function umhuellt<T extends object>(ziel: T, schreiben: Set<PropertyKey>, weitere: (k: PropertyKey, wert: unknown) => unknown = (_k, w) => w): T {
   return new Proxy(ziel, {
     get(t, k) {
@@ -81,9 +106,9 @@ function umhuellt<T extends object>(ziel: T, schreiben: Set<PropertyKey>, weiter
 /** Dateisystem, dessen Schreibbefehle (auch die der Projektordner) verfolgt werden */
 export function mitVerfolgung(ds: Dateisystem): Dateisystem {
   let po: ProjektordnerZugriff | null = null;
-  return umhuellt(ds, DS_SCHREIBEN as Set<PropertyKey>, (k, wert) => {
+  return umhuellt(ds, DS_SCHREIBEN, (k, wert) => {
     if (k !== 'projektordner') return wert;
-    po ??= umhuellt(wert as ProjektordnerZugriff, PO_SCHREIBEN as Set<PropertyKey>);
+    po ??= umhuellt(wert as ProjektordnerZugriff, PO_SCHREIBEN);
     return po;
   });
 }
