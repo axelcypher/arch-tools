@@ -2,14 +2,18 @@ import { useCallback, useEffect, useState } from 'react';
 import { bestaetigen, fehlerText, frageText, meldung } from '@core/ui/Rueckfrage';
 import { ordnerWaehlen } from '@core/platform/projektordner';
 import type { OrdnerEintrag } from '@core/projektdatei';
-import { mailEntwurf, rechnungsDateiname, scanAblegen, auftragsordner } from '../../abrechnung/ablauf';
+import { ablageNachtragen, mailEntwurf, rechnungsDateiname, scanAblegen, auftragsordner, TeilweiseAbgelegt } from '../../abrechnung/ablauf';
+import { dateinameSicher } from '../../abrechnung/benennung';
 import { gewerkZweistellig } from '../../abrechnung/gewerk';
 import { euro } from '../../abrechnung/pruefung';
-import type { RechnungsDatensatz } from '../../avaDaten';
+import type { AvaProjekt, RechnungsDatensatz } from '../../avaDaten';
 import { gewerkOrdner, useAva } from '../../store';
 import { datumKurz } from '../eingaben';
 import { PdfVorschau } from '../PdfVorschau';
 import { RechnungPruefen } from './RechnungPruefen';
+import { listenTaste } from '../tastatur';
+
+const regexText = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const zeit = (ms: number) => (ms ? new Date(ms).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '');
 
@@ -26,20 +30,29 @@ export function Eingang() {
   const [fehler, setFehler] = useState<string | null>(null);
   const [gewaehlt, setGewaehlt] = useState<string | null>(null);
   const [vorschau, setVorschau] = useState<Uint8Array | null>(null);
+  const [vorschauLaedt, setVorschauLaedt] = useState(false);
   const [datensatz, setDatensatz] = useState<string | null>(null);
   const [deckblatt, setDeckblatt] = useState(e.rechnungen.deckblattVoranstellen);
   const [pruefen, setPruefen] = useState(false);
   const [laeuft, setLaeuft] = useState(false);
+  /** kurze Rückmeldung (z. B. „Mailentwurf geöffnet“) */
+  const [hinweis, setHinweis] = useState<string | null>(null);
+  useEffect(() => {
+    if (!hinweis) return;
+    const t = setTimeout(() => setHinweis(null), 8000);
+    return () => clearTimeout(t);
+  }, [hinweis]);
   const ordner = e.scan.ordner.trim();
   const offene = projekt.ava.rechnungen.filter((r) => r.status === 'erfasst' && !r.datei);
   const abgelegte = projekt.ava.rechnungen.filter((r) => r.status === 'abgelegt' && r.datei);
-  const d = projekt.ava.rechnungen.find((r) => r.id === datensatz) ?? offene[offene.length - 1];
+  // keine stille Vorauswahl: nur bei genau einer offenen Rechnung ist sie gewählt, sonst ausdrücklich wählen
+  const d = offene.find((r) => r.id === datensatz) ?? (offene.length === 1 ? offene[0] : undefined);
 
   const laden = useCallback(async () => {
     if (!ordner) return;
     try {
       const liste = await fs.liste(ordner, 1);
-      const endungen = new RegExp(`\\.(${e.scan.endungen.join('|')})$`, 'i');
+      const endungen = new RegExp(`\\.(${e.scan.endungen.map((x) => regexText(x.trim().replace(/^\./, ''))).filter(Boolean).join('|')})$`, 'i');
       setScans(liste.filter((x) => !x.ordner && endungen.test(x.pfad)).sort((a, b) => (b.geaendert ?? 0) - (a.geaendert ?? 0)));
       setFehler(null);
     } catch (x) {
@@ -61,7 +74,14 @@ export function Eingang() {
       return;
     }
     let aktuell = true;
-    void fs.lies(ordner, name).then((r) => aktuell && setVorschau(r?.daten ?? null), () => aktuell && setVorschau(null));
+    setVorschauLaedt(true);
+    void fs
+      .lies(ordner, name)
+      .then(
+        (r) => aktuell && setVorschau(r?.daten ?? null),
+        () => aktuell && setVorschau(null),
+      )
+      .finally(() => aktuell && setVorschauLaedt(false));
     return () => {
       aktuell = false;
     };
@@ -70,25 +90,39 @@ export function Eingang() {
   const scan = gewaehlt ?? scans?.[0]?.pfad ?? null;
   const k = useAva.getState().kontext()!;
 
+  /** neuen Stand der Projektdatei übernehmen, wenn noch dasselbe Projekt offen ist */
+  const avaSetzen = (ava: AvaProjekt) => useAva.setState((s) => (s.projekt?.ordner === projekt.ordner ? { projekt: { ...s.projekt, ava } } : {}));
+
   const ablegen = async () => {
     if (!scan || !d) return;
     const g = gewerkOrdner(projekt, d.gewerk);
-    let name = rechnungsDateiname(k, d);
-    const ziel = `${auftragsordner(k, g, d.gewerk)}/${name}`;
-    const anders = await frageText('Scan ablegen', name, 'Ablegen', `„${scan}“ wird umbenannt und verschoben nach\n${auftragsordner(k, g, d.gewerk)}${deckblatt ? '\n– mit dem Deckblatt als erster Seite' : ''}`);
+    const zielOrdner = auftragsordner(k, g, d.gewerk);
+    const anders = await frageText('Scan ablegen', rechnungsDateiname(k, d), 'Ablegen', `„${scan}“ wird umbenannt und verschoben nach\n${zielOrdner}${deckblatt ? '\n– mit dem Deckblatt als erster Seite' : ''}`);
     if (!anders) return;
-    name = /\.pdf$/i.test(anders) || !/\.pdf$/i.test(scan) ? anders : `${anders}.pdf`;
+    // unzulässige Zeichen (/ \ : * ? …) fallen weg – kein Unterordner, kein Windows-Fehler
+    const sicher = dateinameSicher(anders);
+    const name = /\.pdf$/i.test(sicher) || !/\.pdf$/i.test(scan) ? sicher : `${sicher}.pdf`;
     setLaeuft(true);
     try {
       const r = await scanAblegen(k, d, g, { ordner, datei: scan }, { deckblatt, name });
-      useAva.setState((s) => (s.projekt ? { projekt: { ...s.projekt, ava: r.ava } } : {}));
+      avaSetzen(r.ava);
       setGewaehlt(null);
+      setDatensatz(null);
       await laden();
       await useAva.getState().neuLaden();
       const abgelegt = r.ava.rechnungen.find((x) => x.id === d.id)!;
-      if (await bestaetigen('Abgelegt', `${r.pfad}\n\nMailentwurf an den Zahler öffnen?`, 'Mail öffnen')) await mail(abgelegt);
+      if (await bestaetigen('Abgelegt', `${r.pfad}${r.warnung ? `\n\nHinweis: ${r.warnung}` : ''}\n\nMailentwurf an den Zahler öffnen?`, 'Mail öffnen')) await mail(abgelegt);
     } catch (x) {
-      await meldung('Scan nicht abgelegt', `${ziel}: ${x instanceof Error ? x.message : String(x)}`, x);
+      if (x instanceof TeilweiseAbgelegt) {
+        if (await bestaetigen('Projektdatei nicht gespeichert', `${x.message}\n\nDie Ablage jetzt erneut in der Projektdatei eintragen?`, 'Erneut eintragen')) {
+          try {
+            avaSetzen(await ablageNachtragen(k, d.id, x.pfad));
+          } catch (y) {
+            await meldung('Projektdatei nicht gespeichert', y instanceof Error ? y.message : String(y), y);
+          }
+        }
+        await laden();
+      } else await meldung('Scan nicht abgelegt', `${zielOrdner}/${name}: ${x instanceof Error ? x.message : String(x)}`, x);
     } finally {
       setLaeuft(false);
     }
@@ -96,10 +130,14 @@ export function Eingang() {
 
   const mail = async (r: RechnungsDatensatz) => {
     const vorlage = e.mail.vorlagen.find((v) => v.id === 'rechnung') ?? e.mail.vorlagen[0];
-    if (!vorlage) return;
+    if (!vorlage) {
+      await meldung('Keine Mailvorlage', 'Es gibt keine Mailvorlage „Rechnung“ – bitte unter ⚙ Einstellungen › Mailvorlagen anlegen.');
+      return;
+    }
     try {
       const ava = await mailEntwurf(k, r, useAva.getState().projekt!.ava, vorlage);
-      useAva.setState((s) => (s.projekt ? { projekt: { ...s.projekt, ava } } : {}));
+      avaSetzen(ava);
+      setHinweis(`Mailentwurf für Nr. ${String(r.nr)} geöffnet – bitte im Mailprogramm prüfen und senden.`);
     } catch (x) {
       await meldung('Mailentwurf nicht erstellt', x instanceof Error ? x.message : String(x), x);
     }
@@ -140,9 +178,18 @@ export function Eingang() {
           {ordner}
         </div>
         {fehler && <div className="warning">{fehler}</div>}
-        <ul className="list">
-          {scans?.map((s) => (
-            <li key={s.pfad} className={s.pfad === scan ? 'active' : ''} onClick={() => setGewaehlt(s.pfad)} onDoubleClick={() => void fs.oeffnen(`${ordner.replace(/[\\/]+$/, '')}${ordner.includes('\\') ? '\\' : '/'}${s.pfad}`)}>
+        <ul className="list" role="listbox" aria-label="Scans">
+          {scans?.map((s, i) => (
+            <li
+              key={s.pfad}
+              role="option"
+              tabIndex={0}
+              aria-selected={s.pfad === scan}
+              className={s.pfad === scan ? 'active' : ''}
+              onClick={() => setGewaehlt(s.pfad)}
+              onKeyDown={(x) => listenTaste(x, scans, i, (y) => setGewaehlt(y.pfad))}
+              title="Doppelklick öffnet den Scan"
+              onDoubleClick={() => void fs.oeffnen(`${ordner.replace(/[\\/]+$/, '')}${ordner.includes('\\') ? '\\' : '/'}${s.pfad}`)}>
               <div>{s.pfad}</div>
               <span className="muted small-text">
                 {zeit(s.geaendert ?? 0)} · {Math.round(s.groesse / 1024)} KB
@@ -152,17 +199,30 @@ export function Eingang() {
           {scans && !scans.length && <li className="muted">Keine Scans im Scanordner.</li>}
         </ul>
       </div>
-      <div className="ava-eingang-vorschau">{scan ? <PdfVorschau daten={vorschau} name={scan} /> : <div className="muted">Kein Scan gewählt.</div>}</div>
+      <div className="ava-eingang-vorschau">{scan ? <PdfVorschau daten={vorschau} name={scan} laedt={vorschauLaedt} /> : <div className="muted">Kein Scan gewählt.</div>}</div>
       <div className="ava-eingang-ziel">
         <div className="button-row">
-          <button className="primary" onClick={() => setPruefen(true)} title="Erfassen, Korrektur rechnen, Nummer vergeben, in die Kostenkontrolle eintragen">
+          <button onClick={() => setPruefen(true)} title="Erfassen, Korrektur rechnen, Nummer vergeben, in die Kostenkontrolle eintragen">
             Neue Rechnung prüfen …
           </button>
         </div>
+        {hinweis && (
+          <div className="ava-ok small-text" role="status">
+            {hinweis}
+          </div>
+        )}
         <h2>Erfasst, noch ohne Scan</h2>
-        <ul className="list">
-          {offene.map((r) => (
-            <li key={r.id} className={r.id === d?.id ? 'active' : ''} onClick={() => setDatensatz(r.id)}>
+        <ul className="list" role="listbox" aria-label="Erfasste Rechnungen ohne Scan">
+          {offene.map((r, i) => (
+            <li
+              key={r.id}
+              role="option"
+              tabIndex={0}
+              aria-selected={r.id === d?.id}
+              className={r.id === d?.id ? 'active' : ''}
+              onClick={() => setDatensatz(r.id)}
+              onKeyDown={(x) => listenTaste(x, offene, i, (y) => setDatensatz(y.id))}
+            >
               <div>
                 <strong>Nr. {String(r.nr)}</strong> {gewerkZweistellig(r.gewerk)} {r.firma} {r.art} {r.lfd ?? ''}
               </div>
@@ -173,6 +233,11 @@ export function Eingang() {
           ))}
           {!offene.length && <li className="muted">Keine – erst „Neue Rechnung prüfen“.</li>}
         </ul>
+        {(!d || !scan) && offene.length > 0 && (
+          <div className="ava-karte ava-eingang-hinweis">
+            {!scan ? 'Links einen Scan wählen' : 'Oben die Rechnung wählen, zu der der Scan gehört'}, dann „Zuordnen & ablegen“.
+          </div>
+        )}
         {d && scan && (
           <div className="ava-karte">
             <div className="small-text">Ablage als</div>

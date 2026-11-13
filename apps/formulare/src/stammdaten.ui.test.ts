@@ -62,7 +62,7 @@ beforeEach(() => {
   ds = new SpeicherDateisystem({ benutzer: 't.test', computer: 'HELEN', prozess: 4242 });
   for (const [k, titel, pk] of [
     ['BS9', 'Musterstraße 9', karte('Mustermann', 'Kreis Soest')],
-    ['H24', 'Höggenstraße 24', karte('Beispiel', 'Kreis Soest')],
+    ['H24', 'Hofstraße 24', karte('Beispiel', 'Kreis Soest')],
   ] as const) {
     ds.dateien.set(`C:/FORMA/${k}/001-Muster.frmsjf`, MUSTER);
     ds.dateien.set(`C:/FORMA/${k}/sj_office.ini`, cp1252Schreiben(`[Allgemeines]\r\nText=${titel}\r\n\r\n`));

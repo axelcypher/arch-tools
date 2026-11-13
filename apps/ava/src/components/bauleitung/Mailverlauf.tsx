@@ -55,9 +55,17 @@ export function MailListe({ dateien, gewerkVon }: { dateien: Datei[]; gewerkVon?
   const oeffnen = (d: Datei) => void useAva.getState().fs.oeffnen(vollerPfad(projekt.ordner, d.pfad));
   return (
     <div className="ava-mails">
-      <input className="ava-suche" placeholder="Suchen in Betreff, Absender, Text …" value={suche} onChange={(e) => setSuche(e.target.value)} />
+      <input
+        className="ava-suche"
+        type="search"
+        aria-label="Mails durchsuchen"
+        placeholder="Suchen in Betreff, Absender, Text …"
+        value={suche}
+        onChange={(e) => setSuche(e.target.value)}
+        onKeyDown={(e) => e.key === 'Escape' && suche && (e.stopPropagation(), setSuche(''))}
+      />
       <div className="ava-mails-koerper">
-        <table className="ava-tabelle ava-mail-tabelle">
+        <table className="ava-tabelle ava-mail-tabelle" role="grid" aria-label="Mails">
           <thead>
             <tr>
               <th>Datum</th>
@@ -67,8 +75,25 @@ export function MailListe({ dateien, gewerkVon }: { dateien: Datei[]; gewerkVon?
             </tr>
           </thead>
           <tbody>
-            {zeilen.map(({ d, m }) => (
-              <tr key={d.pfad} className={`ava-klickbar${aktiv?.d.pfad === d.pfad ? ' active' : ''}`} onClick={() => setGewaehlt(d.pfad)} onDoubleClick={() => oeffnen(d)} title="Doppelklick öffnet im Mailprogramm">
+            {zeilen.map(({ d, m }, i) => (
+              <tr
+                key={d.pfad}
+                className={`ava-klickbar${aktiv?.d.pfad === d.pfad ? ' active' : ''}`}
+                tabIndex={d.pfad === (aktiv?.d.pfad ?? zeilen[0]?.d.pfad) ? 0 : -1}
+                aria-selected={aktiv?.d.pfad === d.pfad}
+                onClick={() => setGewaehlt(d.pfad)}
+                onFocus={() => setGewaehlt(d.pfad)}
+                onDoubleClick={() => oeffnen(d)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') oeffnen(d);
+                  else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    const ziel = (e.key === 'ArrowDown' ? e.currentTarget.nextElementSibling : e.currentTarget.previousElementSibling) as HTMLElement | null;
+                    if (ziel?.tabIndex !== undefined && zeilen[i + (e.key === 'ArrowDown' ? 1 : -1)]) ziel.focus();
+                  }
+                }}
+                title="Pfeiltasten wählen, Enter oder Doppelklick öffnet im Mailprogramm"
+              >
                 <td>{m && !(m instanceof Error) ? zeit(m.datum) : '…'}</td>
                 {gewerkVon && <td>{gewerkVon(d) ? gewerkZweistellig(gewerkVon(d)!) : ''}</td>}
                 <td className="ava-kurztext">{m && !(m instanceof Error) ? m.von : ''}</td>
@@ -78,7 +103,7 @@ export function MailListe({ dateien, gewerkVon }: { dateien: Datei[]; gewerkVon?
             {!zeilen.length && (
               <tr>
                 <td colSpan={gewerkVon ? 4 : 3} className="muted">
-                  Keine Mails.
+                  {suche ? `Keine Treffer für „${suche}“.` : 'Keine Mails.'}
                 </td>
               </tr>
             )}
@@ -133,7 +158,7 @@ export function Mailverlauf() {
     <div className="ava-seite ava-mailverlauf">
       <div className="ava-seite-kopf">
         <h1>Mailverlauf</h1>
-        <select value={gewerk} onChange={(e) => setGewerk(e.target.value)}>
+        <select value={gewerk} onChange={(e) => setGewerk(e.target.value)} aria-label="Gewerk">
           <option value="">alle Gewerke und das Projekt</option>
           {projekt.struktur?.gewerke
             .filter((g) => g.korrespondenz.length)

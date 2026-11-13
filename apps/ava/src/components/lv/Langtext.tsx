@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Absatz, Formattext, Lauf } from '../../format/rtf';
 import { gleicherText } from '../../format/rtf';
 
@@ -104,24 +104,39 @@ export function Langtext({ wert, onChange, nurLesen = false }: { wert: Formattex
       onChange(neu);
     }
   };
+  const [zustand, setZustand] = useState<Record<string, boolean>>({});
+  /** Zustand der Formatknöpfe (aria-pressed) an der Schreibmarke */
+  const zustandLesen = () => {
+    if (typeof document.queryCommandState !== 'function') return;
+    const z: Record<string, boolean> = {};
+    for (const b of ['bold', 'italic', 'underline', 'insertUnorderedList']) {
+      try {
+        z[b] = document.queryCommandState(b);
+      } catch {
+        z[b] = false;
+      }
+    }
+    setZustand(z);
+  };
   const befehl = (b: string) => {
     ref.current?.focus();
     document.execCommand(b);
+    zustandLesen();
   };
   return (
     <div className="ava-langtext">
       {!nurLesen && (
-        <div className="ava-langtext-leiste">
-          <button className="small" onMouseDown={(e) => e.preventDefault()} onClick={() => befehl('bold')} title="Fett (Strg+B)">
+        <div className="ava-langtext-leiste" role="toolbar" aria-label="Format">
+          <button className="small" onMouseDown={(e) => e.preventDefault()} onClick={() => befehl('bold')} title="Fett (Strg+B)" aria-label="Fett" aria-pressed={!!zustand.bold}>
             <b>F</b>
           </button>
-          <button className="small" onMouseDown={(e) => e.preventDefault()} onClick={() => befehl('italic')} title="Kursiv (Strg+I)">
+          <button className="small" onMouseDown={(e) => e.preventDefault()} onClick={() => befehl('italic')} title="Kursiv (Strg+I)" aria-label="Kursiv" aria-pressed={!!zustand.italic}>
             <i>K</i>
           </button>
-          <button className="small" onMouseDown={(e) => e.preventDefault()} onClick={() => befehl('underline')} title="Unterstrichen (Strg+U)">
+          <button className="small" onMouseDown={(e) => e.preventDefault()} onClick={() => befehl('underline')} title="Unterstrichen (Strg+U)" aria-label="Unterstrichen" aria-pressed={!!zustand.underline}>
             <u>U</u>
           </button>
-          <button className="small" onMouseDown={(e) => e.preventDefault()} onClick={() => befehl('insertUnorderedList')} title="Aufzählung">
+          <button className="small" onMouseDown={(e) => e.preventDefault()} onClick={() => befehl('insertUnorderedList')} title="Aufzählung" aria-label="Aufzählung" aria-pressed={!!zustand.insertUnorderedList}>
             • Liste
           </button>
         </div>
@@ -129,6 +144,12 @@ export function Langtext({ wert, onChange, nurLesen = false }: { wert: Formattex
       <div
         ref={ref}
         className="ava-langtext-flaeche"
+        role="textbox"
+        aria-multiline="true"
+        aria-label="Langtext"
+        aria-readonly={nurLesen || undefined}
+        onKeyUp={zustandLesen}
+        onMouseUp={zustandLesen}
         contentEditable={!nurLesen}
         suppressContentEditableWarning
         spellCheck

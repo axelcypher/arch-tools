@@ -290,10 +290,12 @@ function laufRtf(l: Lauf): string {
  */
 export function rtfSchreiben(f: Formattext, vorher?: string): string {
   const kopf = rtfKopf(vorher);
+  let nr = 0;
   const zeilen = f.map((a) => {
     const inhalt = a.laeufe.map(laufRtf).join('');
+    nr = a.liste === 'nummer' && inhalt ? nr + 1 : 0;
     if (!inhalt) return '\\pard\\plain\\plain\\fs20\\par\n';
-    const punkt = a.liste === 'punkt' ? '{\\listtext\\bullet\\tab}' : a.liste === 'nummer' ? '{\\listtext 1.\\tab}' : '';
+    const punkt = a.liste === 'punkt' ? '{\\listtext\\bullet\\tab}' : a.liste === 'nummer' ? `{\\listtext ${nr}.\\tab}` : '';
     return `\\plain\\fs20 ${punkt}${inhalt}\\par\n`;
   });
   return `${kopf}{${zeilen.join('')}}}`;

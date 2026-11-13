@@ -50,7 +50,7 @@ describe('Stammdaten-Dialog', () => {
     eingabe(feld(host, 'E-Mail'), 'anna@mueller, kein-mail');
     expect(feld(host, 'E-Mail').closest('label')!.querySelector('.feld-meldung')!.textContent).toBe('Keine gültige E-Mail-Adresse: anna@mueller, kein-mail');
     eingabe(feld(host, 'Projektnummer'), ' BS5 ');
-    eingabe(feld(host, 'Kurzname'), 'Birkenstraße');
+    eingabe(feld(host, 'Kurzname'), 'Buchenstraße');
     eingabe(feld(host, 'Name bzw. Firma'), 'Mustermann');
     eingabe(feld(host, 'E-Mail'), 'a@example.org, b@example.org');
     act(() => ([...host.querySelectorAll('.sd-lph input')][3] as HTMLInputElement).click());
@@ -60,7 +60,7 @@ describe('Stammdaten-Dialog', () => {
     expect(gespeichert).toHaveBeenCalledTimes(1);
     expect(gespeichert.mock.calls[0][0]).toMatchObject({
       projektcode: 'BS5',
-      kurzname: 'Birkenstraße',
+      kurzname: 'Buchenstraße',
       leistungsphasen: [4],
       beteiligte: [{ rolle: 'Tragwerk', name: '', kontakt: '' }],
       bauherr: { name: 'Mustermann', kontakte: [{ art: 'email', wert: 'a@example.org' }, { art: 'email', wert: 'b@example.org' }] },

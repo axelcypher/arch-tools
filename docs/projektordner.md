@@ -397,7 +397,7 @@ Reiter **„Mails“** (auch Rechtsklick auf ein Projekt → „Mails prüfen �
 ablegen und benennen. Das Schema:
 
 ```
-<Projektcode> von|an <Name> <JJMMTT> <Thema>.msg        z. B.  SIS von Peitz 261110 Raumaufteilung.msg
+<Projektcode> von|an <Name> <JJMMTT> <Thema>.msg        z. B.  BSP von Muster 261110 Raumaufteilung.msg
 ```
 
 **Prüfen und umbenennen.** Die App sucht im gewählten Projektordner mit allen Unterordnern nach Outlook-Mails (.msg)
@@ -408,12 +408,12 @@ Punkt/Unterstrich im Namen, ungültiges Datum, „AW“/„WG“ am Anfang des T
 
 - **von / an und Name:** Absender von außen → „von <Nachname des Absenders>“; Absender aus dem Büro → „an <erster
   Empfänger von außen>“; eine **Weiterleitung aus dem Büro** (WG/FW) einer Mail von außen → „von <ursprünglicher
-  Absender>“ aus dem Kopf der weitergeleiteten Mail im Text. Der Nachname kommt aus dem Anzeigenamen („Peitz, Rüdiger“,
-  „Rüdiger Peitz | Firma“) oder der Adresse („ruediger.peitz@…“ → Peitz; Sammelpostfächer wie info@ → Name aus der
+  Absender>“ aus dem Kopf der weitergeleiteten Mail im Text. Der Nachname kommt aus dem Anzeigenamen („Muster, Max“,
+  „Max Muster | Firma“) oder der Adresse („max.muster@…“ → Muster; Sammelpostfächer wie info@ → Name aus der
   Domain).
 - **Datum:** Empfang (von außen) bzw. Versand (an außen) – nicht das Dateidatum, das sich beim Kopieren ändert.
 - **Thema:** der Betreff ohne „AW:“/„WG:“, ohne Dateiendung, Unterstriche als Leerzeichen. Inhaltlich besser („Raum-
-  aufteilung“ statt „Grundriss Sanierung ESG“) lässt es sich im Feld ändern; Themen, die im Projekt schon vorkommen,
+  aufteilung“ statt „Grundriss Sanierung Musterschule“) lässt es sich im Feld ändern; Themen, die im Projekt schon vorkommen,
   stehen als Vorschläge darin. „Mail ansehen“ zeigt Betreff, Von, An, Cc, Gesendet, Empfangen, Anhänge und den Text.
 
 Woran „aus dem Büro“ erkannt wird, stellen die **eigenen Domains** ein (gilt fürs Büro, Konfigurationsordner, Bereich
