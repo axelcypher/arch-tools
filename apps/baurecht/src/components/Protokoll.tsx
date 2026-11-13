@@ -8,6 +8,7 @@ import { EBENEN, einheitName, FAKT_GRUPPEN, faktName, normVoll, wertAnzeige } fr
 import { druckenAls } from '@core/platform/projektDatei';
 import { DruckKopf } from '@core/ui/DruckKopf';
 import { useEscSchliessen } from '@core/ui/Dialog';
+import { FOKUSSIERBAR } from '@core/ui/dialoge';
 import { benutzer } from '../benutzer';
 import type { Pruefstand } from '../pruefung';
 import { aktuelleLage, anUngespeichertem, OHNE_LAGEBEZUG, verwendeteFassungen } from '../pruefung';
@@ -15,8 +16,6 @@ import { istGeaendert, offeneBestaetigungen, offeneFestlegungen, PLANUNGSRECHT, 
 import { AMPEL_TEXT, aufzaehlen, datum, nb, uhrzeit } from './Ampel';
 import { rueckfrageOffen } from './Angaben';
 import { frageGestellt, RUECKFRAGEN } from '@core/baurecht/fragen';
-
-
 
 /** Herkunft einer gesicherten Angabe in Worten – ohne die Hinweistexte der App („bitte bestätigen …“) */
 function herkunftText(f: FaktWert): string {
@@ -166,7 +165,13 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
     // war eine Ablage offen und ist jetzt gespeichert: die genaue Meldung (nicht nur „Gespeichert.“)
     // gespeichert und nichts sperrt mehr: dazusagen, dass jetzt abgeschlossen werden kann
     const abschliessbar = gespeichertMeldung.text === 'Gespeichert' && !sperreJetzt.current;
-    setAbgelegt((vorher) => (vorher?.speichern && !istGeaendert(useBaurecht.getState()) ? { text: 'Gespeichert – die abgeschlossene Prüfung steht in der Projektdatei.', speichern: false } : vorher?.speichern ? vorher : { text: abschliessbar ? 'Gespeichert – die Prüfung lässt sich jetzt abschließen.' : `${gespeichertMeldung.text}.`, speichern: false }));
+    setAbgelegt((vorher) =>
+      vorher?.speichern && !istGeaendert(useBaurecht.getState())
+        ? { text: 'Gespeichert – die abgeschlossene Prüfung steht in der Projektdatei.', speichern: false }
+        : vorher?.speichern
+          ? vorher
+          : { text: abschliessbar ? 'Gespeichert – die Prüfung lässt sich jetzt abschließen.' : `${gespeichertMeldung.text}.`, speichern: false },
+    );
     // verschwand der fokussierte Knopf („Jetzt speichern“), bleibt der Fokus im Protokoll
     setTimeout(() => {
       const a = document.activeElement;
@@ -187,34 +192,24 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
     return () => ro.disconnect();
   }, []);
   useEscSchliessen(onClose);
-  // Fokus: beim Öffnen hinein, Tab bleibt im Protokoll, beim Schließen zurück an die Stelle davor
+  // Fokus: Tab-Falle und Rückgabe beim Schließen führt der gemeinsame Unterbau (ui/dialoge.ts – die Druckvorschau
+  // `.report-backdrop > .report` zählt dort als Dialog); hier nur der Startfokus auf der Aktionsleiste und der Fall,
+  // den der Unterbau nicht kennt: Fokus auf einem Element außerhalb der Tab-Folge (z. B. der Meldung)
   useEffect(() => {
-    const vorher = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const d = fenster.current;
     d?.querySelector<HTMLElement>('.br-protokoll-aktionen button:not([disabled])')?.focus();
     const taste = (e: KeyboardEvent) => {
       // liegt ein Dialog über dem Protokoll (z. B. Bestätigen beim Speichern), führt der den Fokus
       if (e.key !== 'Tab' || !d || document.querySelector('.modal')) return;
-      const ziele = [...d.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled]), [tabindex="0"]')];
-      if (!ziele.length) return;
-      const [erstes, letztes] = [ziele[0], ziele[ziele.length - 1]];
       const aktiv = document.activeElement as HTMLElement | null;
-      if (!d.contains(aktiv)) {
-        e.preventDefault();
-        erstes.focus();
-      } else if (aktiv && !ziele.includes(aktiv)) {
-        // Fokus auf einem Element außerhalb der Tab-Folge (z. B. der Meldung): im Dialog weiter, nicht hinaus
-        e.preventDefault();
-        const danach = ziele.find((z) => aktiv.compareDocumentPosition(z) & Node.DOCUMENT_POSITION_FOLLOWING);
-        const davor = [...ziele].reverse().find((z) => aktiv.compareDocumentPosition(z) & Node.DOCUMENT_POSITION_PRECEDING);
-        (e.shiftKey ? (davor ?? letztes) : (danach ?? erstes)).focus();
-      } else if (e.shiftKey && document.activeElement === erstes) {
-        e.preventDefault();
-        letztes.focus();
-      } else if (!e.shiftKey && document.activeElement === letztes) {
-        e.preventDefault();
-        erstes.focus();
-      }
+      if (!aktiv || !d.contains(aktiv) || aktiv.matches(FOKUSSIERBAR)) return;
+      // im Protokoll weiter, nicht hinaus: zum nächsten bzw. vorigen Ziel der Tab-Folge (dieselben wie im Unterbau)
+      const ziele = [...d.querySelectorAll<HTMLElement>(FOKUSSIERBAR)].filter((el) => el.offsetParent !== null);
+      if (!ziele.length) return;
+      e.preventDefault();
+      const danach = ziele.find((z) => aktiv.compareDocumentPosition(z) & Node.DOCUMENT_POSITION_FOLLOWING);
+      const davor = [...ziele].reverse().find((z) => aktiv.compareDocumentPosition(z) & Node.DOCUMENT_POSITION_PRECEDING);
+      (e.shiftKey ? (davor ?? ziele[ziele.length - 1]) : (danach ?? ziele[0])).focus();
     };
     document.addEventListener('keydown', taste, true);
     // der Hintergrund ist nicht bedienbar (auch nicht die Sprungmarken über dem Overlay); später geöffnete Dialoge
@@ -225,7 +220,6 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
     return () => {
       for (const k of geschwister) k.inert = false;
       document.removeEventListener('keydown', taste, true);
-      if (vorher?.isConnected) vorher.focus();
     };
   }, []);
   if (!project) return null;
@@ -236,7 +230,11 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
   const nF = offeneF ? offeneF.split('|').length : 0;
   const entwuerfe = nF + ungespeichert.size + (prEntwurf ? 1 : 0);
   // getrennt benannt: Festlegungen von Hand, gesicherte Angaben und das Planungsrecht
-  const entwurfTeile = [nF ? (nF === 1 ? 'eine Festlegung von Hand' : `${nF} Festlegungen von Hand`) : '', ungespeichert.size ? (ungespeichert.size === 1 ? 'eine gesicherte Angabe' : `${ungespeichert.size} gesicherte Angaben`) : '', prEntwurf ? 'die Bestätigung des Planungsrechts' : ''].filter(Boolean);
+  const entwurfTeile = [
+    nF ? (nF === 1 ? 'eine Festlegung von Hand' : `${nF} Festlegungen von Hand`) : '',
+    ungespeichert.size ? (ungespeichert.size === 1 ? 'eine gesicherte Angabe' : `${ungespeichert.size} gesicherte Angaben`) : '',
+    prEntwurf ? 'die Bestätigung des Planungsrechts' : '',
+  ].filter(Boolean);
   const entwurfText = aufzaehlen(entwurfTeile);
   const offen = a.paragrafen.filter((p) => p.ampel === 'gelb');
   const vonHand = a.paragrafen.filter((p) => p.festlegung);
@@ -250,7 +248,9 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
   const nichtGestellt = Object.entries(eigeneFakten).filter(([id, f]) => !!a.faktDefs[id] && f.wert != null && !gestellt(id));
   // Angaben von Hand ohne Beleg: auch sie tragen Ampeln (z. B. „Kampfmittelverdacht: nein“) – mit wer und wann
   // nur Angaben, die das Regelpaket kennt (eine Angabe einer früheren Fassung stünde sonst mit ihrer rohen Kennung da)
-  const vonHandOhneBeleg = Object.entries(a.fakten).filter(([id, f]) => id in eigeneFakten && !!a.faktDefs[id] && id !== 'antrag.einreichung' && f.herkunft === 'manuell' && !f.bestaetigt && f.wert != null && gestellt(id));
+  const vonHandOhneBeleg = Object.entries(a.fakten).filter(
+    ([id, f]) => id in eigeneFakten && !!a.faktDefs[id] && id !== 'antrag.einreichung' && f.herkunft === 'manuell' && !f.bestaetigt && f.wert != null && gestellt(id),
+  );
   // abgeschlossen wird nur ein gespeicherter, zweimal bestätigter und vollständig geladener Stand
   // knapp (die Einzelheiten stehen im Hinweis darunter); nach dem Abschließen neutral: die Ablage will gespeichert werden
   // derselbe Stand ist schon abgeschlossen (gleiche Ampeln, Regelpaket, Stichtag): keine zweite, gleiche Ablage
@@ -258,20 +258,44 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
   // … und dieselben Fassungen (eine neue Fassung bei gleichen Ampeln ist ein neuer Stand)
   const fassungenJetzt = verwendeteFassungen(a);
   const gleicheFassungen = !!zuletzt && Object.keys(fassungenJetzt).length === Object.keys(zuletzt.fassungen).length && Object.entries(fassungenJetzt).every(([k, v]) => zuletzt.fassungen[k] === v);
-  const schonAbgeschlossen = !!zuletzt && gleicheFassungen && zuletzt.paket === paket.version && zuletzt.einreichung === pruefstand.einreichung && a.paragrafen.every((p) => zuletzt.ampeln[p.id] === p.ampel) && Object.keys(zuletzt.ampeln).length === a.paragrafen.length;
+  const schonAbgeschlossen =
+    !!zuletzt &&
+    gleicheFassungen &&
+    zuletzt.paket === paket.version &&
+    zuletzt.einreichung === pruefstand.einreichung &&
+    a.paragrafen.every((p) => zuletzt.ampeln[p.id] === p.ampel) &&
+    Object.keys(zuletzt.ampeln).length === a.paragrafen.length;
   // abgelegt, aber noch nicht in der Datei (auch nach dem Wiederöffnen des Protokolls erkennbar)
   const protokolleDatei = useBaurecht.getState().pruefungDatei.protokolle;
   const ungespeichertAbgelegt = new Set(protokolle.filter((p) => !protokolleDatei.some((b) => b.am === p.am)).map((p) => p.am));
-  const sperre = entwuerfe ? 'Erst speichern – Entwürfe brauchen die zweite Bestätigung' : ungespeichertGesamt ? (abgelegt?.speichern || ungespeichertAbgelegt.size ? 'Abgelegt – zum Übernehmen speichern' : 'Erst speichern: Es gibt ungespeicherte Änderungen') : laedt ? 'Die Gesetzestexte werden noch geholt – bitte warten' : schonAbgeschlossen ? 'Dieser Stand ist schon abgeschlossen' : '';
+  const sperre = entwuerfe
+    ? 'Erst speichern – Entwürfe brauchen die zweite Bestätigung'
+    : ungespeichertGesamt
+      ? abgelegt?.speichern || ungespeichertAbgelegt.size
+        ? 'Abgelegt – zum Übernehmen speichern'
+        : 'Erst speichern: Es gibt ungespeicherte Änderungen'
+      : laedt
+        ? 'Die Gesetzestexte werden noch geholt – bitte warten'
+        : schonAbgeschlossen
+          ? 'Dieser Stand ist schon abgeschlossen'
+          : '';
   sperreJetzt.current = sperre;
   // offene Punkte nach der fehlenden Angabe gruppiert („Baugebiet – 20 Paragrafen“), der Rest nach dem Grund
   const ohneRegel = a.normen.filter((n) => n.ohneRegel);
   // fehlende Angaben genau wie „Klärt am meisten“ gezählt (ein Paragraf kann unter mehreren Angaben stehen)
   const gruppen = new Map<string, ParagrafErgebnis[]>();
   // dieselben Paare (Paragraf, klärende Angabe) wie „Klärt am meisten“ – aus der Auswertung, nicht neu gezählt
-  for (const k of a.klaerung) gruppen.set(`Es fehlt: ${k.titel}`, a.paragrafen.filter((p) => p.klaerend?.includes(k.id)));
+  for (const k of a.klaerung)
+    gruppen.set(
+      `Es fehlt: ${k.titel}`,
+      a.paragrafen.filter((p) => p.klaerend?.includes(k.id)),
+    );
   // Hinweise, deren Bestätigung entscheidet – dieselben Paare wie „bestätigen klärt“
-  for (const k of a.bestaetigen ?? []) gruppen.set(`Bestätigen: ${k.titel}`, a.paragrafen.filter((p) => p.bestaetigend === k.id));
+  for (const k of a.bestaetigen ?? [])
+    gruppen.set(
+      `Bestätigen: ${k.titel}`,
+      a.paragrafen.filter((p) => p.bestaetigend === k.id),
+    );
   for (const p of [...offen, ...ueberholt]) {
     const sonder = gruppeVon(p);
     if (!sonder && ((p.klaerend?.length ?? 0) > 0 || p.bestaetigend)) continue; // steht schon unter seinen klärenden Angaben
@@ -281,7 +305,16 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
     // können selbst „Abs. 6“ enthalten); sonst bis vor die erste Klammer
     const g0 = p.gruende[0];
     const einzelfallFehlt = /^Einzelfall möglich – /.test(g0) ? p.offen.filter((x) => !x.startsWith('paragraf:')).map((x) => offenText(x, a.text)) : [];
-    const k = sonder || (o?.startsWith('paragraf:') ? `Hängt an ${offenText(o, a.text)} – dort offen` : einzelfallFehlt.length ? `Einzelfall möglich – es fehlt: ${einzelfallFehlt.join(' · ')}` : g0.replace(/\s*\(.*$/, '').replace(/^Offen – /, '').replace(/\.$/, ''));
+    const k =
+      sonder ||
+      (o?.startsWith('paragraf:')
+        ? `Hängt an ${offenText(o, a.text)} – dort offen`
+        : einzelfallFehlt.length
+          ? `Einzelfall möglich – es fehlt: ${einzelfallFehlt.join(' · ')}`
+          : g0
+              .replace(/\s*\(.*$/, '')
+              .replace(/^Offen – /, '')
+              .replace(/\.$/, ''));
     gruppen.set(k, [...(gruppen.get(k) ?? []), p]);
   }
   // Gruppen mit nur einem Paragrafen kommen zusammen in eine Zeile „Weitere“
@@ -291,7 +324,9 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
   // Stand einer Festlegung von Hand: bestätigt/Entwurf und wirksam/überholt/nicht wirksam – getrennt von der Begründung
   // mehrteilig: Entwurf/bestätigt und – falls – überholt bzw. noch nicht wirksam
   const festlegungStand = (q: ParagrafErgebnis) =>
-    [q.festlegung!.bestaetigt ? 'bestätigt' : 'Entwurf – zweite Bestätigung fehlt', q.ueberholt ? `überholt: ${q.ueberholt}` : q.unwirksam ? `noch nicht wirksam: ${q.unwirksam}` : ''].filter(Boolean).join(' · ');
+    [q.festlegung!.bestaetigt ? 'bestätigt' : 'Entwurf – zweite Bestätigung fehlt', q.ueberholt ? `überholt: ${q.ueberholt}` : q.unwirksam ? `noch nicht wirksam: ${q.unwirksam}` : '']
+      .filter(Boolean)
+      .join(' · ');
   // Zeilen der offenen Punkte, fehlende Angaben nach ihrer Gruppe (Lage, Gebäude …) – ab 15 Zeilen mit Zwischenzeilen
   const gruppeDerAngabe = new Map<string, string>([
     ...a.klaerung.map((k): [string, string] => [`Es fehlt: ${k.titel}`, FAKT_GRUPPEN.find((g) => g.id === a.faktDefs[k.id]?.gruppe)?.titel ?? 'Weitere Angaben']),
@@ -318,13 +353,33 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
     if (sperre) return;
     const ampeln: Record<string, Ampel> = Object.fromEntries(a.paragrafen.map((p) => [p.id, p.ampel]));
     const am = new Date().toISOString();
-    useBaurecht.getState().protokollAnhaengen({ am, von: benutzer(), paket: paket.version, einreichung: pruefstand.einreichung, fassungen: verwendeteFassungen(a), zaehler: a.zaehler, ampeln, offen: offen.length + ueberholt.length + ohneRegel.length });
+    useBaurecht
+      .getState()
+      .protokollAnhaengen({
+        am,
+        von: benutzer(),
+        paket: paket.version,
+        einreichung: pruefstand.einreichung,
+        fassungen: verwendeteFassungen(a),
+        zaehler: a.zaehler,
+        ampeln,
+        offen: offen.length + ueberholt.length + ohneRegel.length,
+      });
     // sichtbar und angesagt, Fokus auf die Meldung (der Knopf ist danach gesperrt – sonst fiele der Fokus auf die Seite)
     fokusNachMeldung.current = true;
-    setAbgelegt({ text: `Prüfung vom ${datum(am)} abgelegt (${a.zaehler.rot} gilt · ${a.zaehler.gelb} prüfen · ${a.zaehler.gruen} entfällt) – zum Übernehmen in die Datei speichern.`, speichern: true });
+    setAbgelegt({
+      text: `Prüfung vom ${datum(am)} abgelegt (${a.zaehler.rot} gilt · ${a.zaehler.gelb} prüfen · ${a.zaehler.gruen} entfällt) – zum Übernehmen in die Datei speichern.`,
+      speichern: true,
+    });
   };
   const datei = quelle?.art === 'ordner' ? quelle.datei : quelle?.art === 'datei' ? quelle.name : null;
-  const geo = [...new Set(Object.values(a.fakten).filter((f) => f.herkunft === 'geodienst' && f.quelle).map((f) => `${f.quelle}${f.stand ? `, abgefragt ${datum(f.stand)}` : ''}`))];
+  const geo = [
+    ...new Set(
+      Object.values(a.fakten)
+        .filter((f) => f.herkunft === 'geodienst' && f.quelle)
+        .map((f) => `${f.quelle}${f.stand ? `, abgefragt ${datum(f.stand)}` : ''}`),
+    ),
+  ];
   return (
     <div className="report-backdrop br-protokoll-hintergrund">
       <div className="report br-protokoll" role="dialog" aria-modal="true" aria-label={titel} ref={fenster} tabIndex={-1}>
@@ -397,7 +452,11 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
                   setSpeichertJetzt(false);
                   fokusNachMeldung.current = true;
                   if (!ok) setTimeout(() => (fokusNachMeldung.current = false), 0);
-                  setAbgelegt(ok ? { text: 'Gespeichert – die abgeschlossene Prüfung steht in der Projektdatei.', speichern: false } : { text: 'Nicht gespeichert – die Prüfung ist abgelegt, steht aber noch nicht in der Datei.', speichern: true });
+                  setAbgelegt(
+                    ok
+                      ? { text: 'Gespeichert – die abgeschlossene Prüfung steht in der Projektdatei.', speichern: false }
+                      : { text: 'Nicht gespeichert – die Prüfung ist abgelegt, steht aber noch nicht in der Datei.', speichern: true },
+                  );
                 }}
               >
                 Jetzt speichern
@@ -407,7 +466,8 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
         </div>
         {entwuerfe > 0 && (
           <p className="br-meldung br-meldung-warn br-entwurf-hinweis no-print" role="status">
-            Entwurf: {entwurfText.charAt(0).toUpperCase() + entwurfText.slice(1)} {entwuerfe === 1 ? 'ist' : 'sind'} noch nicht gespeichert und bestätigt – unten als „Entwurf“ bzw. „noch nicht gespeichert“ gekennzeichnet. Abschließen lässt sich die Prüfung erst nach dem Speichern.
+            Entwurf: {entwurfText.charAt(0).toUpperCase() + entwurfText.slice(1)} {entwuerfe === 1 ? 'ist' : 'sind'} noch nicht gespeichert und bestätigt – unten als „Entwurf“ bzw. „noch nicht
+            gespeichert“ gekennzeichnet. Abschließen lässt sich die Prüfung erst nach dem Speichern.
           </p>
         )}
         <DruckKopf titel={titel} project={project} stand={new Date()} />
@@ -422,7 +482,11 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
               <td>Regelmodule</td>
               <td>
                 {/* Gemeinde zuerst – wie im Kopf */}
-                {[...pruefstand.module].reverse().map((m) => `${m.name} (Stand ${stand(m.version)})`).join(' · ')} – Regelpaket {paket.version}
+                {[...pruefstand.module]
+                  .reverse()
+                  .map((m) => `${m.name} (Stand ${stand(m.version)})`)
+                  .join(' · ')}{' '}
+                – Regelpaket {paket.version}
               </td>
             </tr>
             {pruefstand.fehlend.length > 0 && (
@@ -436,7 +500,11 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
               {/* Reihenfolge und Namen wie in der Leiste */}
               <td>
                 {VORGABE_MERKMALE.filter((m) => merkmale[m.name])
-                  .map((m) => (m.werte.includes(merkmale[m.name]) ? `${MERKMAL_TITEL[m.name] ?? m.name}: ${merkmale[m.name]}${merkmalVermerk(m.name)}` : `${MERKMAL_TITEL[m.name] ?? m.name}: „${merkmale[m.name]}“ – passt nicht zur Liste, nicht gewertet`))
+                  .map((m) =>
+                    m.werte.includes(merkmale[m.name])
+                      ? `${MERKMAL_TITEL[m.name] ?? m.name}: ${merkmale[m.name]}${merkmalVermerk(m.name)}`
+                      : `${MERKMAL_TITEL[m.name] ?? m.name}: „${merkmale[m.name]}“ – passt nicht zur Liste, nicht gewertet`,
+                  )
                   .join(' · ') || '–'}
               </td>
             </tr>
@@ -445,16 +513,12 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
               <td className="strong">
                 {a.zaehler.rot} gilt · {a.zaehler.gelb} prüfen · {a.zaehler.gruen} entfällt
                 {ausEntwurf.length > 0 && <span className="br-entwurf-text"> – davon {ausEntwurf.length} aus Entwürfen von Hand</span>}
-                {nurRelevant && a.zaehler.gruen > 0 && (
-                  <span className="br-leise">
-                    {' '}
-                    – Vorschriften mit „entfällt“ ({a.zaehler.gruen}) sind in diesem Ausdruck nicht aufgeführt
-                  </span>
-                )}
+                {nurRelevant && a.zaehler.gruen > 0 && <span className="br-leise"> – Vorschriften mit „entfällt“ ({a.zaehler.gruen}) sind in diesem Ausdruck nicht aufgeführt</span>}
                 {anOffenem > 0 && (
                   <span className="br-entwurf-text">
                     {' '}
-                    – {anOffenem === 1 ? 'ein Paragraf hängt' : `${anOffenem} Paragrafen hängen`} an {offeneB === PLANUNGSRECHT ? 'der noch nicht gespeicherten Bestätigung des Planungsrechts' : 'noch nicht gespeicherten Bestätigungen'}
+                    – {anOffenem === 1 ? 'ein Paragraf hängt' : `${anOffenem} Paragrafen hängen`} an{' '}
+                    {offeneB === PLANUNGSRECHT ? 'der noch nicht gespeicherten Bestätigung des Planungsrechts' : 'noch nicht gespeicherten Bestätigungen'}
                   </span>
                 )}
               </td>
@@ -569,71 +633,71 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
         <h2>Offene Punkte ({offen.length + ueberholt.length + ohneRegel.length})</h2>
         {offen.length + ueberholt.length + ohneRegel.length ? (
           <>
-          <table className="report-table br-protokoll-offen">
-            <thead>
-              <tr>
-                <th style={{ width: '32%' }}>Was fehlt bzw. zu klären ist</th>
-                <th style={{ width: '9%' }}>Anzahl</th>
-                <th>Paragrafen</th>
-              </tr>
-            </thead>
-            <tbody>
-              {ohneRegel.length > 0 && (
+            <table className="report-table br-protokoll-offen">
+              <thead>
                 <tr>
-                  <td className="strong">Keine Regeldatei – von Hand beurteilen</td>
-                  <td>{ohneRegel.length}</td>
-                  <td>{nb(ohneRegel.map((n) => normVoll(n.def)).join(' · '))}</td>
+                  <th style={{ width: '32%' }}>Was fehlt bzw. zu klären ist</th>
+                  <th style={{ width: '9%' }}>Anzahl</th>
+                  <th>Paragrafen</th>
                 </tr>
-              )}
-              {zeilen.map(({ k, ps, gruppe }, i) => (
-                <Fragment key={k}>
-                  {mitZwischen && gruppe !== zeilen[i - 1]?.gruppe && (
-                    <tr className="br-protokoll-zwischen">
-                      <th colSpan={3}>{gruppe}</th>
-                    </tr>
-                  )}
+              </thead>
+              <tbody>
+                {ohneRegel.length > 0 && (
                   <tr>
-                    {/* die Spalte heißt schon „Was fehlt“ – ohne den Vorsatz je Zeile */}
-                    <td className="strong">{nb(k.replace(/^Es fehlt: /, ''))}</td>
-                    <td>{ps.length}</td>
-                    <td>{nachNorm(ps, a.normen)}</td>
+                    <td className="strong">Keine Regeldatei – von Hand beurteilen</td>
+                    <td>{ohneRegel.length}</td>
+                    <td>{nb(ohneRegel.map((n) => normVoll(n.def)).join(' · '))}</td>
                   </tr>
-                </Fragment>
-              ))}
-              {weitereZeilen.length > 0 && (
-                <tr>
-                  <td className="strong">Weitere (je ein Paragraf)</td>
-                  <td>{weitereZeilen.length}</td>
-                  <td>siehe Tabelle „Weitere offene Punkte“</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-          <p className="report-note">Ein Paragraf kann unter mehreren fehlenden Angaben stehen – gezählt wie unter „Klärt am meisten“.</p>
-          {weitereZeilen.length > 0 && (
-            <>
-              <h3>Weitere offene Punkte (je ein Paragraf)</h3>
-              <table className="report-table br-protokoll-weitere">
-                <thead>
-                  <tr>
-                    <th style={{ width: '16%' }}>Norm</th>
-                    <th style={{ width: '24%' }}>Paragraf</th>
-                    <th>Was fehlt bzw. zu klären ist</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {weitereZeilen.map((z) => (
-                    <tr key={`${z.sort}|${z.nr}`}>
-                      <td>{z.norm}</td>
-                      {/* kurze Nummern („§ 248“, „Art. 14“) bleiben zusammen, Titel brechen um */}
-                      <td className={z.nr.length <= 8 ? 'br-nr-kurz' : undefined}>{nb(z.nr)}</td>
-                      <td>{nb(z.gruende.join(' · '))}</td>
+                )}
+                {zeilen.map(({ k, ps, gruppe }, i) => (
+                  <Fragment key={k}>
+                    {mitZwischen && gruppe !== zeilen[i - 1]?.gruppe && (
+                      <tr className="br-protokoll-zwischen">
+                        <th colSpan={3}>{gruppe}</th>
+                      </tr>
+                    )}
+                    <tr>
+                      {/* die Spalte heißt schon „Was fehlt“ – ohne den Vorsatz je Zeile */}
+                      <td className="strong">{nb(k.replace(/^Es fehlt: /, ''))}</td>
+                      <td>{ps.length}</td>
+                      <td>{nachNorm(ps, a.normen)}</td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </>
-          )}
+                  </Fragment>
+                ))}
+                {weitereZeilen.length > 0 && (
+                  <tr>
+                    <td className="strong">Weitere (je ein Paragraf)</td>
+                    <td>{weitereZeilen.length}</td>
+                    <td>siehe Tabelle „Weitere offene Punkte“</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+            <p className="report-note">Ein Paragraf kann unter mehreren fehlenden Angaben stehen – gezählt wie unter „Klärt am meisten“.</p>
+            {weitereZeilen.length > 0 && (
+              <>
+                <h3>Weitere offene Punkte (je ein Paragraf)</h3>
+                <table className="report-table br-protokoll-weitere">
+                  <thead>
+                    <tr>
+                      <th style={{ width: '16%' }}>Norm</th>
+                      <th style={{ width: '24%' }}>Paragraf</th>
+                      <th>Was fehlt bzw. zu klären ist</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {weitereZeilen.map((z) => (
+                      <tr key={`${z.sort}|${z.nr}`}>
+                        <td>{z.norm}</td>
+                        {/* kurze Nummern („§ 248“, „Art. 14“) bleiben zusammen, Titel brechen um */}
+                        <td className={z.nr.length <= 8 ? 'br-nr-kurz' : undefined}>{nb(z.nr)}</td>
+                        <td>{nb(z.gruende.join(' · '))}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </>
+            )}
           </>
         ) : (
           <p>Keine – alle Vorschriften sind eingeordnet.</p>
@@ -669,15 +733,15 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
                         {ps.map((p) => {
                           const e = einheitName(p.paragraf, p.titel);
                           return (
-                          <tr key={p.id} className={`br-zeile-${p.ampel}`}>
-                            <td>{e.nr}</td>
-                            <td>{e.titel}</td>
-                            <td className="strong">{ampelText(p)}</td>
-                            <td>
-                              {p.festlegung ? `${p.festlegung.grund} (${p.festlegung.von}, ${datum(p.festlegung.am)}; automatisch: ${AMPEL_TEXT[p.automatisch]})` : p.gruende.join(' ')}
-                              {(p.ueberholt || p.unwirksam) && <div className="report-meta">{p.ueberholt ? `überholt, weil ${p.ueberholt}` : `noch nicht wirksam, weil ${p.unwirksam}`}</div>}
-                            </td>
-                          </tr>
+                            <tr key={p.id} className={`br-zeile-${p.ampel}`}>
+                              <td>{e.nr}</td>
+                              <td>{e.titel}</td>
+                              <td className="strong">{ampelText(p)}</td>
+                              <td>
+                                {p.festlegung ? `${p.festlegung.grund} (${p.festlegung.von}, ${datum(p.festlegung.am)}; automatisch: ${AMPEL_TEXT[p.automatisch]})` : p.gruende.join(' ')}
+                                {(p.ueberholt || p.unwirksam) && <div className="report-meta">{p.ueberholt ? `überholt, weil ${p.ueberholt}` : `noch nicht wirksam, weil ${p.unwirksam}`}</div>}
+                              </td>
+                            </tr>
                           );
                         })}
                         {n.ohneRegel && (
@@ -723,14 +787,16 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
             <ul>
               {protokolle.map((p) => (
                 <li key={p.am}>
-                  {datum(p.am)}, {uhrzeit(p.am)} ({p.von}){ungespeichertAbgelegt.has(p.am) ? ' – noch nicht in der Datei gespeichert' : ''}: {p.zaehler.rot} gilt · {p.zaehler.gelb} prüfen · {p.zaehler.gruen} entfällt – Regelpaket {p.paket}, Einreichung {datum(p.einreichung)}
+                  {datum(p.am)}, {uhrzeit(p.am)} ({p.von}){ungespeichertAbgelegt.has(p.am) ? ' – noch nicht in der Datei gespeichert' : ''}: {p.zaehler.rot} gilt · {p.zaehler.gelb} prüfen ·{' '}
+                  {p.zaehler.gruen} entfällt – Regelpaket {p.paket}, Einreichung {datum(p.einreichung)}
                 </li>
               ))}
             </ul>
           </>
         )}
         <p className="report-note">
-          Arbeitshilfe – ersetzt keine fachliche Prüfung. Die rechtliche Einordnung bleibt bei den Entwurfsverfassenden (§ 54 BauO NRW). Gesetzestexte aus den amtlichen Quellen zum Abrufdatum; Geodaten sind nicht rechtsverbindlich.
+          Arbeitshilfe – ersetzt keine fachliche Prüfung. Die rechtliche Einordnung bleibt bei den Entwurfsverfassenden (§ 54 BauO NRW). Gesetzestexte aus den amtlichen Quellen zum Abrufdatum;
+          Geodaten sind nicht rechtsverbindlich.
         </p>
       </div>
     </div>

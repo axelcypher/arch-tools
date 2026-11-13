@@ -102,8 +102,10 @@ Helligkeitskontrast. Unter der Linie in `--sel-foto` liegt ein Doppelsaum, auße
 - **Titel:** `kopf` zeigt ihn sichtbar als Kopf und benennt damit den Dialog. Nicht zusätzlich als `h3` im Inhalt
   wiederholen. Ohne `kopf` ist `titel` nur der Name für Screenreader.
 - **Breite:** Standard 380px, `breit` 620px (Formulare), `tabelle` bis 1200px (Vorschauen, Zuordnungen).
-- **Erstfokus** (automatisch, `ui/dialoge.ts`): `autoFocus`, sonst das erste Textfeld, sonst der Hauptknopf
-  (`.primary`). Nie „Abbrechen“ – Enter darf nichts verwerfen.
+- **Erstfokus** (automatisch, `ui/dialoge.ts`): `autoFocus` bzw. `data-startfokus` (der Dialog bestimmt selbst, z. B.
+  ein Häkchen), sonst das erste Textfeld, sonst der Hauptknopf (`.primary`), sonst das gewählte Optionsfeld – nie eine
+  Aufklappzeile (`summary`), nie „Abbrechen“: Enter darf nichts verwerfen. Schließt ein Dialog über einem anderen,
+  geht der Fokus an die Stelle im äußeren zurück.
 - **Knöpfe** in `.dialog-buttons` als letztes Kind des Dialogs (oder seines `<form>`, das dann selbst letztes Kind ist): rechtsbündig, Hauptknopf
   rechts außen, „Abbrechen“ links davon. In langen Dialogen bleiben sie unten stehen (sticky).
 - **Enter** löst den Hauptknopf aus: Inhalt in `<form onSubmit>`, Hauptknopf `type="submit"`, alle anderen

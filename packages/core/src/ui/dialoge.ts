@@ -13,7 +13,7 @@
 
 // „details > summary“: die Aufklappzeile (z. B. „Liste anzeigen“ im Bestätigen-Dialog) gehört in den Fokuszyklus
 const START = 'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])';
-const FOKUSSIERBAR = `${START}, details > summary`;
+export const FOKUSSIERBAR = `${START}, details > summary`;
 
 /** Textfelder, in die man beim Öffnen gleich schreiben will (keine Kästchen, Auswahllisten, Regler) */
 const KEIN_TEXT = ['checkbox', 'radio', 'range', 'file', 'color', 'hidden', 'submit', 'button', 'reset', 'image'];
@@ -60,7 +60,10 @@ function geoeffnet(d: HTMLElement) {
 
 function geschlossen(d: Element) {
   const v = vorher.get(d);
-  if (v?.isConnected && !obersterDialog()) v.focus();
+  // zurück an die Stelle davor – auch in einen äußeren Dialog, der offen bleibt (z. B. Rückfrage über der
+  // Druckvorschau), nur nicht in einen Hintergrund, über dem noch ein anderer Dialog liegt
+  const oben = obersterDialog();
+  if (v?.isConnected && (!oben || oben.contains(v))) v.focus();
 }
 
 export function dialogVerhaltenEinrichten(): void {

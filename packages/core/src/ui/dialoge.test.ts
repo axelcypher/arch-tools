@@ -24,6 +24,54 @@ describe('Dialoge', () => {
     expect(document.activeElement).toBe(knopf);
   });
 
+  it('verschachtelt: schließt der innere, geht der Fokus zurück an die Stelle im äußeren (Dialog bzw. Druckvorschau)', async () => {
+    dialogVerhaltenEinrichten();
+    for (const aussen of [
+      '<div class="modal"><button id="start">Start</button><input id="haken" type="checkbox"></div>',
+      '<div class="report"><button id="start">Start</button><input id="haken" type="checkbox"></div>',
+    ]) {
+      const hinten = document.createElement('div');
+      hinten.className = aussen.includes('report') ? 'report-backdrop' : 'modal-backdrop';
+      hinten.innerHTML = aussen;
+      document.body.appendChild(hinten);
+      await warten();
+      const haken = hinten.querySelector<HTMLElement>('#haken')!;
+      haken.focus();
+      const vorn = document.createElement('div');
+      vorn.className = 'modal-backdrop';
+      vorn.innerHTML = '<div class="modal"><button id="ok">OK</button></div>';
+      document.body.appendChild(vorn);
+      await warten();
+      expect(document.activeElement?.id).toBe('ok');
+      vorn.remove();
+      await warten();
+      expect(document.activeElement).toBe(haken);
+      hinten.remove();
+      await warten();
+    }
+  });
+
+  it('kein Fokus in einen Hintergrund, über dem noch ein anderer Dialog liegt', async () => {
+    dialogVerhaltenEinrichten();
+    const knopf = document.body.appendChild(document.createElement('button'));
+    knopf.focus();
+    const erster = document.body.appendChild(document.createElement('div'));
+    erster.className = 'modal-backdrop';
+    erster.innerHTML = '<div class="modal"><button id="eins">Eins</button></div>';
+    await warten();
+    const zweiter = document.body.appendChild(document.createElement('div'));
+    zweiter.className = 'modal-backdrop';
+    zweiter.innerHTML = '<div class="modal"><button id="zwei">Zwei</button></div>';
+    await warten();
+    // der erste schließt, während der zweite offen bleibt: der Fokus bleibt im zweiten, nicht auf dem Knopf dahinter
+    erster.remove();
+    await warten();
+    expect(document.activeElement?.id).toBe('zwei');
+    zweiter.remove();
+    knopf.remove();
+    await warten();
+  });
+
   it('nehmen die Aufklappzeile (summary) in den Tab-Zyklus auf', async () => {
     dialogVerhaltenEinrichten();
     const hinter = document.createElement('div');
@@ -65,4 +113,3 @@ describe('Dialoge', () => {
     hinter.remove();
   });
 });
-

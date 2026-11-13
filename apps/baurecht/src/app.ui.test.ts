@@ -1014,11 +1014,15 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
     act(() => knopf(d, 'Prüfung abschließen')!.click());
     await warten();
     // Fokus auf die Meldung (außerhalb der Tab-Folge), dann Tab: bleibt im Dialog
-    act(() => d.querySelector<HTMLElement>('.br-abgelegt')!.focus());
-    act(() => {
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }));
-    });
+    const meldung = d.querySelector<HTMLElement>('.br-abgelegt')!;
+    act(() => meldung.focus());
+    const tabTaste = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true });
+    act(() => void document.dispatchEvent(tabTaste));
+    // weiter zum nächsten Ziel der Tab-Folge im Protokoll (nicht hinaus, nicht stehen bleiben)
+    expect(tabTaste.defaultPrevented).toBe(true);
+    expect(document.activeElement).not.toBe(meldung);
     expect(d.contains(document.activeElement)).toBe(true);
+    expect(document.activeElement!.matches('button, input, [tabindex="0"]')).toBe(true);
     // schließen und wieder öffnen: der Eintrag ist als nicht gespeichert gekennzeichnet, die Sperre sagt warum
     act(() => knopf(d, 'Schließen')!.click());
     expect(host.querySelector<HTMLElement>('.br-sprung')!.inert).toBe(false);
