@@ -15,6 +15,9 @@ import { useAntrag } from './antragStore';
 import { useFormulare } from './store';
 import { VORGABE_NAMENSSCHEMA } from '@core/namensschema';
 
+/** Dialog nach seinem sichtbaren Titel (gemeinsames Modal mit Kopf: Name über aria-labelledby) */
+const dialogMitTitel = (titel: string) => [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find((d) => d.querySelector(':scope > .modal-kopf')?.textContent === titel) ?? null;
+
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 const MUSTER = new Uint8Array(readFileSync(path.resolve(__dirname, '__fixtures__/muster.frmsjf')));
@@ -520,13 +523,13 @@ describe('Projektdatei (.oap) als Quelle der Projektstammdaten', () => {
     await klick(knopf(host, 'Projektdaten speichern'));
     await warte();
     // gespeichert ist die Projektkarte; statt eines Fehlers fragt der Dialog die Stammdaten ab
-    const dialog = document.querySelector('[role="dialog"][aria-label="Projektdatei für BS9 anlegen"]')!;
+    const dialog = dialogMitTitel('Projektdatei für BS9 anlegen')!;
     expect(dialog).not.toBeNull();
     expect(useFormulare.getState().stammdatenDialog?.meta).toMatchObject({ projektcode: 'BS9', bauherr: { name: 'Neue Bauherrin' } });
     expect([...ds.dateien.keys()].some((k) => k.endsWith('.oap'))).toBe(false);
     await klick(knopf(dialog as HTMLElement, 'Projektdatei anlegen'));
     await warte();
-    expect(document.querySelector('[role="dialog"][aria-label="Projektdatei für BS9 anlegen"]')).toBeNull();
+    expect(dialogMitTitel('Projektdatei für BS9 anlegen')).toBeNull();
     expect(ds.schreibvorgaenge).toContain('neu Planung/Berechnungen/BS9.oap');
     const p = readProjectFile(ds.dateien.get(`${ORDNER}/Planung/Berechnungen/BS9.oap`)!);
     expect(p.meta).toMatchObject({ projektcode: 'BS9', bauherr: { name: 'Neue Bauherrin' } });
@@ -546,7 +549,7 @@ describe('Projektdatei (.oap) als Quelle der Projektstammdaten', () => {
     await warte();
     await klick(knopf(host, 'Projektdaten speichern'));
     await warte();
-    const dialog = document.querySelector('[role="dialog"][aria-label="Projektdatei für BS9 anlegen"]') as HTMLElement;
+    const dialog = dialogMitTitel('Projektdatei für BS9 anlegen') as HTMLElement;
     expect(useFormulare.getState().stammdatenDialog?.meta.vorhaben).toBe('Neubau EFH');
     await klick(knopf(dialog, 'Projektdatei anlegen'));
     await warte();
