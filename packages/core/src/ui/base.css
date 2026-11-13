@@ -1722,6 +1722,14 @@ code {
 .nw-fuss > p {
   margin: 0;
 }
+.nw-fuss > button {
+  flex-shrink: 0;
+}
+/* Flex-Dialoge: Rand über der Fußzeile zählt zum gap – angleichen wie beim Kopf */
+.modal-log > .dialog-buttons,
+.nachschlagewerk > .dialog-buttons {
+  margin-top: var(--s1);
+}
 
 /* fokussierbare Zeichenflächen (Tab wählt Flächen): kein Fokusrahmen bei Mausbedienung */
 svg[tabindex]:focus:not(:focus-visible) {
