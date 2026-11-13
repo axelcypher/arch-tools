@@ -77,7 +77,9 @@ sich übersteuern, maßgebend ist die Planurkunde. Ohne Datum gilt das aktuelle 
   dem 27.01.1990 → alte Fassung; ebenso § 25a BauNVO 1977 und § 25 BauNVO 1968). Ohne Auslegungsdatum nimmt das Tool
   das Plandatum an; liegt es weniger als zwei Jahre nach einem Fassungswechsel (01.08.1962, 01.01.1969, 27.01.1990),
   steht ein Hinweis im Nachweis.
-- **Vollgeschossbegriff (BauO):** nach dem Inkrafttreten des Plans (Plandatum).
+- **Vollgeschossbegriff (BauO):** nach dem Inkrafttreten des Plans (Plandatum). Fehlt es, aber die Auslegung ist
+  eingetragen, gilt ersatzweise das Auslegungsdatum, mit Hinweis („maßgebend ist das Inkrafttreten“). Ohne beide Daten
+  gilt das aktuelle Recht; der Hinweis sagt dann, dass die Kennzahlen bei § 34 BauGB nur der Orientierung dienen.
 
 **BauNVO** (Bundesrecht, gilt in allen Ländern gleich):
 
@@ -252,8 +254,8 @@ unter dem Plan beginnt mit der Nummer wie im Plan und im Druck.
   § 19 Abs. 5 1962) und erscheinen in der Tabelle „Grundfläche“; die Vollgeschossprüfung bleibt unverändert.
   **Geschossfläche:** Nebenanlagen zählen nicht (§ 20 Abs. 4 BauNVO 1990, § 20 Abs. 3 der früheren Fassungen).
   Garagen zählen nach BauNVO 1962 und 1968/1977 nicht, soweit sie nicht auf die Grundfläche angerechnet werden
-  (§ 21a Abs. 4 Nr. 2 BauNVO 1968/1977); nach 1968/1977 und 1990 ganz nicht, wenn der Bebauungsplan das nach § 21a
-  Abs. 4 Nr. 3 festsetzt (Kästchen „Garagen in Vollgeschossen nicht zur Geschossfläche“ unter „Vollgeschosse“ in den
+  (§ 20 Abs. 3 i. V. m. § 19 Abs. 5 BauNVO 1962, § 21a Abs. 4 Nr. 2 BauNVO 1968/1977); nach 1968/1977 und 1990 ganz nicht, wenn der Bebauungsplan das nach § 21a
+  Abs. 4 Nr. 3 festsetzt (Kästchen „Garagen in Vollgeschossen zählen laut Plan nicht zur Geschossfläche“ unter „Maß der baulichen Nutzung“ in den
   Festsetzungen, ab BauNVO 1968).
 - **BauNVO 1962, § 19 Abs. 5:** Außerhalb von Kern-, Gewerbe- und Industriegebieten werden eingeschossige Garagen und
   überdachte Stellplätze bis 0,1 der Grundstücksfläche nicht angerechnet („bis 0,1 frei“, wie 1968/1977). Im Kern-,

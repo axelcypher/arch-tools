@@ -792,4 +792,16 @@ describe('Fachliche Pflichtbefunde Baurecht (P2–P10)', () => {
     p.massNutzung = { ...p.massNutzung, planDatum: '1970-08-01' };
     expect(vg(p, 'UG').vollgeschoss).toBe(false);
   });
+
+  it('P2: nur Auslegung, kein Inkrafttreten – Vollgeschossbegriff nach der Auslegung mit Hinweis, kein § 34/35-Hinweis (Gegenprobe ohne Daten)', () => {
+    const r = recht({ auslegungDatum: '1975-03-01' });
+    expect(r.baunvo).toBe('1968');
+    expect(r.bauo).toBe('nw1962');
+    expect(r.hinweise.some((h) => h.startsWith('Inkrafttreten fehlt'))).toBe(true);
+    expect(r.hinweise.some((h) => h.includes('§ 34'))).toBe(false);
+    const leer = recht({});
+    expect(leer.bauo).toBe('nrw2019');
+    expect(leer.hinweise.some((h) => h.includes('§ 34'))).toBe(true);
+    expect(leer.hinweise.some((h) => h.startsWith('Inkrafttreten fehlt'))).toBe(false);
+  });
 });

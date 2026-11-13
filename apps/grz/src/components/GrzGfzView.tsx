@@ -114,7 +114,7 @@ export function GrzGfzView() {
   const grundstueckHinweis = gEingetragen
     ? n.grundstueck.grenze !== undefined
       ? `maßgebend: eingetragener Wert; gezeichnete Grenze ${fmt2(n.grundstueck.grenze)} m²`
-      : 'nur die Fläche im Bauland hinter der Straßenbegrenzungslinie (§ 19 Abs. 3 BauNVO) – Katasterfläche ggf. mindern'
+      : 'Nur Bauland hinter der Straßenbegrenzungslinie (§ 19 Abs. 3 BauNVO); bei Bedarf weniger als die Katasterfläche.'
     : n.grundstueck.grenze !== undefined
       ? `leer: gezeichnete Grenze ${fmt2(n.grundstueck.grenze)} m²`
       : n.grundstueck.ausLageplan !== undefined
@@ -160,15 +160,19 @@ export function GrzGfzView() {
         </div>
         <div className="field-row">
           <Field label="Inkrafttreten">
-            <input type="date" aria-label="Inkrafttreten des Bebauungsplans" value={m.planDatum ?? ''} onChange={(e) => setM({ planDatum: e.target.value || undefined })} />
+            <input
+              type="date"
+              aria-label="Inkrafttreten des Bebauungsplans"
+              title="bestimmt den Vollgeschossbegriff der Bauordnung"
+              value={m.planDatum ?? ''}
+              onChange={(e) => setM({ planDatum: e.target.value || undefined })}
+            />
           </Field>
           <Field label="Öffentliche Auslegung">
             <input type="date" aria-label="Öffentliche Auslegung des Planentwurfs" value={m.auslegungDatum ?? ''} onChange={(e) => setM({ auslegungDatum: e.target.value || undefined })} />
           </Field>
         </div>
-        <p className="field-hint grz-hinweis-zeile">
-          Inkrafttreten: Vollgeschossbegriff; leer = kein Bebauungsplan (§ 34/35 BauGB). Auslegung: BauNVO-Fassung (§ 25c BauNVO); leer = wie Inkrafttreten.
-        </p>
+        <p className="field-hint grz-hinweis-zeile">Ohne Inkrafttreten gilt § 34/35 BauGB. Die Auslegung bestimmt die BauNVO-Fassung (§ 25c); leer = wie Inkrafttreten.</p>
 
         <h2>
           Festsetzungen
@@ -232,6 +236,12 @@ export function GrzGfzView() {
           </Field>
         </div>
         <p className="field-hint grz-hinweis-zeile">Grund- und Geschossfläche als Höchstmaß in m² (§ 16 Abs. 2) – nur, wenn der Plan sie statt GRZ/GFZ festsetzt.</p>
+        {n.recht.baunvo !== '1962' && (
+          <label className="toggle block" title="nur, wenn der Bebauungsplan es festsetzt">
+            <input type="checkbox" checked={!!m.garagenGfFrei} onChange={(e) => setM({ garagenGfFrei: e.target.checked || undefined })} />
+            Garagen in Vollgeschossen zählen laut Plan nicht zur Geschossfläche (§ 21a Abs. 4 Nr. 3)
+          </label>
+        )}
         <div className="field-row">
           <Field label="BMZ" hint="Baumassenzahl (§ 21)">
             <NumberField value={m.bmz} allowEmpty min={0} max={20} onChange={(v) => setM({ bmz: v })} />
@@ -262,12 +272,6 @@ export function GrzGfzView() {
           <input type="checkbox" checked={!!m.vollgeschosseZwingend} onChange={(e) => setM({ vollgeschosseZwingend: e.target.checked || undefined })} />
           zwingend (genau diese Zahl)
         </label>
-        {n.recht.baunvo !== '1962' && (
-          <label className="toggle block" title="nur, wenn der Bebauungsplan es festsetzt">
-            <input type="checkbox" checked={!!m.garagenGfFrei} onChange={(e) => setM({ garagenGfFrei: e.target.checked || undefined })} />
-            Garagen in Vollgeschossen nicht zur Geschossfläche (§ 21a Abs. 4 Nr. 3 BauNVO, festgesetzt)
-          </label>
-        )}
         {n.recht.baunvo === '1990' && (
           <label className="toggle block" title="nur, wenn der Bebauungsplan es festsetzt">
             <input type="checkbox" checked={!!m.aufenthaltNichtVollgeschoss} onChange={(e) => setM({ aufenthaltNichtVollgeschoss: e.target.checked || undefined })} />

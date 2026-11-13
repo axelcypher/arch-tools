@@ -41,6 +41,8 @@ export interface Recht {
   bauo: BauOFassung;
   /** aus Plan- bzw. Auslegungsdatum abgeleitet (sonst übersteuert oder aktuelles Recht) */
   ausDatum: boolean;
+  /** Datum für den Vollgeschossbegriff: Inkrafttreten, ersatzweise Auslegung (geprüftes Format) */
+  bauoDatum?: string;
   hinweise: string[];
 }
 
@@ -70,16 +72,22 @@ export function recht(m: MassNutzung | undefined): Recht {
     baunvo = dNvo < '1969-01-01' ? '1962' : dNvo < '1990-01-27' ? '1968' : '1990';
     if (dNvo < '1962-08-01') hinweise.push('Plan vor Inkrafttreten der BauNVO 1962: Maßfestsetzungen nach damaligem Recht prüfen.');
   }
-  if (d) {
-    bauo = d < '1985-01-01' ? 'nw1962' : d < '2019-01-01' ? 'nw1985' : 'nrw2019';
-    if (d < '1962-10-01') hinweise.push('Plan vor der BauO NW 1962: Vollgeschossbegriff nach damaligem Recht prüfen.');
+  // Vollgeschossbegriff nach dem Inkrafttreten; fehlt es, ersatzweise nach der Auslegung
+  const dBauo = d ?? a;
+  if (dBauo) {
+    bauo = dBauo < '1985-01-01' ? 'nw1962' : dBauo < '2019-01-01' ? 'nw1985' : 'nrw2019';
+    if (dBauo < '1962-10-01') hinweise.push('Plan vor der BauO NW 1962: Vollgeschossbegriff nach damaligem Recht prüfen.');
+    if (!d && !m?.bauo) hinweise.push('Inkrafttreten fehlt – Vollgeschossbegriff nach dem Auslegungsdatum angenommen; maßgebend ist das Inkrafttreten.');
     // kurz nach einem Fassungswechsel kann die Auslegung noch unter die alte Fassung fallen
-    if (!a && !m?.baunvo && naheAmWechsel(d))
+    if (d && !a && !m?.baunvo && naheAmWechsel(d))
       hinweise.push('Für die BauNVO-Fassung zählt die öffentliche Auslegung des Planentwurfs (§ 25c BauNVO 1990 bzw. § 25a/§ 25 der früheren Fassungen); angenommen: Datum des Inkrafttretens.');
-  } else hinweise.push('Ohne Plandatum gilt das aktuelle Recht (z. B. Vorhaben nach § 34 oder § 35 BauGB).');
+  } else
+    hinweise.push(
+      'Ohne Plandatum gilt das aktuelle Recht (z. B. Vorhaben nach § 34 oder § 35 BauGB). Im Innenbereich gibt es keine festgesetzten Maße; die Kennzahlen dienen nur der Orientierung beim Einfügen (§ 34 Abs. 1 BauGB).',
+    );
   if (m?.baunvo) baunvo = m.baunvo;
   if (m?.bauo) bauo = m.bauo;
-  return { baunvo, bauo, ausDatum: !!dNvo && !m?.baunvo && !m?.bauo, hinweise };
+  return { baunvo, bauo, ausDatum: !!dNvo && !m?.baunvo && !m?.bauo, bauoDatum: dBauo, hinweise };
 }
 
 /* ---------- Anrechnung der Lageplan-Flächen auf die Grundfläche ---------- */
@@ -634,7 +642,7 @@ export function massNachweis(project: Project): Nachweis {
   // Vollgeschossprüfung
   const pruefungen: VollgeschossPruefung[] = [];
   // BauO NW 1970 (in Kraft ab 01.07.1970): Kellergeschosse „im Lichten“ gemessen; ohne Datum (Fassung von Hand) ebenso
-  const kellerImLichten = !m.planDatum || m.planDatum >= '1970-07-01';
+  const kellerImLichten = !re.bauoDatum || re.bauoDatum >= '1970-07-01';
   // Baumasse (§ 21 Abs. 2): Außenmaße vom Fußboden des untersten bis zur Decke des obersten Vollgeschosses – vereinfacht
   // als Grundfläche × Geschosshöhe je Vollgeschoss
   let baumasse = 0;
@@ -1002,7 +1010,7 @@ export function massNachweis(project: Project): Nachweis {
     const teile = [
       gfOhneNeben > 0.005 && `Nebenanlagen ${fmtA(gfOhneNeben)} (${re.baunvo === '1990' ? '§ 20 Abs. 4 BauNVO 1990' : `§ 20 Abs. 3 ${baunvoLabel(re.baunvo)}`})`,
       gfOhneGarage > 0.005 &&
-        `Garagen ${fmtA(gfOhneGarage)} (${m.garagenGfFrei && re.baunvo !== '1962' ? '§ 21a Abs. 4 Nr. 3 BauNVO, festgesetzt' : re.baunvo === '1962' ? 'nicht auf die Grundfläche angerechnet, § 19 Abs. 5 BauNVO 1962' : 'nicht auf die Grundfläche angerechnet, § 21a Abs. 4 Nr. 2 BauNVO 1968/1977'})`,
+        `Garagen ${fmtA(gfOhneGarage)} (${m.garagenGfFrei && re.baunvo !== '1962' ? '§ 21a Abs. 4 Nr. 3 BauNVO, festgesetzt' : re.baunvo === '1962' ? 'nicht auf die Grundfläche angerechnet, § 20 Abs. 3 i. V. m. § 19 Abs. 5 BauNVO 1962' : 'nicht auf die Grundfläche angerechnet, § 21a Abs. 4 Nr. 2 BauNVO 1968/1977'})`,
     ].filter(Boolean);
     hinweise.push({ text: `Nicht zur Geschossfläche gerechnet (Gebäudeteile in Vollgeschossen): ${teile.join('; ')}.`, art: 'sachlich' });
   }
