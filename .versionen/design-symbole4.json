@@ -26,5 +26,9 @@
   "ava": {
     "stufe": "patch",
     "notiz": "Rückfragen mit Lösch-Knopf: Enter und Erstfokus liegen auf „Abbrechen“; „Beteiligten hinzufügen“, Rollen-Schnellknöpfe und „Neues Projekt anlegen …“ mit Plus-Symbol statt „+“; Symbole zum Ein- und Ausrücken."
+  },
+  "baurecht": {
+    "stufe": "patch",
+    "notiz": "Rückfragen mit Lösch-Knopf: Enter und Erstfokus liegen auf „Abbrechen“; „Beteiligten hinzufügen“, Rollen-Schnellknöpfe und „Neues Projekt anlegen …“ mit Plus-Symbol statt „+“; Symbole zum Ein- und Ausrücken."
   }
 }
