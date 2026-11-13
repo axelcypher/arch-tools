@@ -21,11 +21,29 @@ export function Dateiliste({ gewerk }: { gewerk: string }) {
     return (
       <section className="ava-karte">
         <h2>{titel}</h2>
-        <table className="ava-tabelle">
+        <table className="ava-tabelle ava-dateien">
+          <colgroup>
+            <col />
+            <col className="ava-dateien-ort" />
+            <col className="ava-dateien-groesse" />
+            <col className="ava-dateien-datum" />
+            <col className="ava-dateien-aktion" />
+          </colgroup>
+          <thead>
+            <tr>
+              <th>Datei</th>
+              <th>Unterordner</th>
+              <th className="num">Größe</th>
+              <th>geändert</th>
+              <th>
+                <span className="ava-sr-only">Öffnen</span>
+              </th>
+            </tr>
+          </thead>
           <tbody>
             {sichtbar.map((d) => (
               <tr key={d.pfad} className="ava-klickbar" onDoubleClick={() => oeffnen(d)} title={`${d.pfad} – Doppelklick öffnet`}>
-                <td>
+                <td className="ava-datei-name">
                   {d.name}
                   {d.archiv && <span className="ava-chip">Archiv</span>}
                 </td>
@@ -33,7 +51,7 @@ export function Dateiliste({ gewerk }: { gewerk: string }) {
                 <td className="num muted small-text">{groesse(d.groesse)}</td>
                 <td className="muted small-text">{zeit(d.geaendert)}</td>
                 <td>
-                  <button className="small" onClick={() => oeffnen(d)}>
+                  <button className="small" onClick={() => oeffnen(d)} aria-label={`${d.name} öffnen`}>
                     Öffnen
                   </button>
                 </td>
@@ -44,8 +62,18 @@ export function Dateiliste({ gewerk }: { gewerk: string }) {
       </section>
     );
   };
+  const leer = ![g.auftrag, g.rechnungen, g.lvs, g.korrespondenz, g.sonstige].some((l) => l.some((d) => archiv || !d.archiv));
+  const imArchiv = [g.auftrag, g.rechnungen, g.lvs, g.korrespondenz, g.sonstige].some((l) => l.some((d) => d.archiv));
   return (
     <div className="ava-seite">
+      {leer && (
+        <div className="ava-leer-hinweis">
+          Im Gewerkeordner liegen noch keine Dateien{imArchiv && !archiv ? ' (nur im Archiv)' : ''}.
+          <div className="button-row">
+            <button onClick={() => void useAva.getState().fs.oeffnen(vollerPfad(projekt.ordner, g.pfad)).catch((e) => meldung('Ordner ließ sich nicht öffnen', g.pfad, e))}>Ordner öffnen</button>
+          </div>
+        </div>
+      )}
       <label className="ava-check">
         <input type="checkbox" checked={archiv} onChange={(e) => setArchiv(e.target.checked)} /> Archiv zeigen
       </label>

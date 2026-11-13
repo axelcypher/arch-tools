@@ -13,11 +13,12 @@
 
 import { APP_NAMEN } from '@core/appNamen';
 import type { XmlElement } from '@core/dokumente/xml';
-import { alleKinder, xmlLesen } from '@core/dokumente/xml';
+import { alleKinder, entschluesseln, xmlLesen } from '@core/dokumente/xml';
 import type { Absatz, Formattext, Lauf } from './rtf';
 import { ersteZeile } from './rtf';
 import type { Abschnitt, Bieter, Hinweis, Lv, LvElement, Position, PositionsArt } from '../lv/modell';
-import { leeresLv, neueId, ozFormat } from '../lv/modell';
+import { heuteIso, leeresLv, neueId, ozDubletten, ozFormat, positionen } from '../lv/modell';
+import { gesamtbetrag } from '../lv/rechnen';
 
 export type GaebPhase = 81 | 83 | 84 | 86;
 
@@ -45,7 +46,14 @@ function laufXml(l: Lauf): string {
 
 function textXml(f: Formattext): string {
   if (!f.length) return '<p><span></span></p>';
-  return f.map((a) => `<p>${a.liste === 'punkt' ? '<span>• </span>' : ''}${a.laeufe.map(laufXml).join('') || '<span></span>'}</p>`).join('');
+  let nr = 0;
+  return f
+    .map((a) => {
+      nr = a.liste === 'nummer' ? nr + 1 : 0;
+      const marke = a.liste === 'punkt' ? '<span>• </span>' : a.liste === 'nummer' ? `<span>${nr}. </span>` : '';
+      return `<p>${marke}${a.laeufe.map(laufXml).join('') || '<span></span>'}</p>`;
+    })
+    .join('');
 }
 
 const kurzXml = (s: string) => `<p><span>${esc(s)}</span></p>`;
@@ -65,53 +73,131 @@ export interface GaebExport {
   jetzt?: Date;
 }
 
+/** Kennungen, an denen der Import eigene Exporte wiedererkennt (gültige XML-IDs, für andere Programme bedeutungslos) */
+const ID_VORBEMERKUNGEN = 'VB_';
+/** Langtext des Abschnitts auf Tiefe n: „LT<n>_…“ */
+const ID_LANGTEXT = /^LT(\d+)_/;
+
+/**
+ * Was beim GAEB-Export nicht sauber abbildbar ist: Positionen neben Abschnitten (GAEB kennt in einem Körper nur
+ * entweder Abschnitte oder eine Positionsliste – sie landen in einem eigenen Abschnitt am Ende) und doppelte OZ.
+ * Leere Liste = alles in Ordnung. Vor dem Export anzeigen.
+ */
+export function gaebPruefen(lv: Lv): string[] {
+  const out: string[] = [];
+  const lose: string[] = [];
+  const rek = (liste: LvElement[], pfad: string[]) => {
+    const mitAbschnitten = liste.some((e) => e.art === 'abschnitt');
+    for (const e of liste) {
+      if (e.art === 'abschnitt') rek(e.kinder, [...pfad, e.oz]);
+      else if (e.art === 'position' && mitAbschnitten) lose.push([...pfad, e.oz].join('.'));
+    }
+  };
+  rek(lv.elemente, []);
+  if (lose.length) out.push(`Positionen neben Abschnitten (${lose.slice(0, 5).join(', ')}${lose.length > 5 ? ' …' : ''}) – GAEB verlangt einen Abschnitt; sie werden in einen eigenen Abschnitt „Positionen ohne Abschnitt“ geschrieben. Besser vorher in einen Abschnitt verschieben.`);
+  const d = ozDubletten(lv);
+  if (d.length) out.push(`Doppelte Ordnungszahlen: ${d.map((x) => x.oz).slice(0, 5).join(', ')}${d.length > 5 ? ' …' : ''} – Preise der Bieter lassen sich dann nicht eindeutig zuordnen.`);
+  return out;
+}
+
+/** Einheitspreis mit seinen Nachkommastellen (mindestens 2, höchstens 6) */
+const epText = (ep: number) => {
+  const nk = (String(Number(ep.toFixed(6))).split('.')[1] ?? '').length;
+  return ep.toFixed(Math.max(2, Math.min(6, nk)));
+};
+
 export function gaebSchreiben(lv: Lv, o: GaebExport): Uint8Array {
   const jetzt = o.jetzt ?? new Date();
   const mitPreisen = o.dp === 84 || o.dp === 86;
   const bieter = mitPreisen ? lv.bieter.find((b) => b.id === (o.bieterId ?? lv.auftrag?.bieterId ?? 0)) : undefined;
   let zaehler = 0;
-  const id = () => `ID_${(++zaehler).toString(36).toUpperCase().padStart(6, '0')}`;
+  const id = (praefix = 'ID_') => `${praefix}${(++zaehler).toString(36).toUpperCase().padStart(6, '0')}`;
   const ebenen = lv.ozMaske.ebenen.filter((e) => e.aktiv);
   const z = (n: number) => String(n).padStart(2, '0');
   const datum = `${jetzt.getFullYear()}-${z(jetzt.getMonth() + 1)}-${z(jetzt.getDate())}`;
   const zeit = `${z(jetzt.getHours())}:${z(jetzt.getMinutes())}:${z(jetzt.getSeconds())}`;
 
+  // Grund- und Wahlpositionen: Gruppen fortlaufend; eine Wahlposition gehört zu ihrer Grundposition (bezug)
+  // oder, ohne Bezug, zur letzten Grundposition davor
+  const gruppe = new Map<string, { nr: number; ser: number }>();
+  {
+    const grundNr = new Map<string, number>();
+    const wahlZahl = new Map<number, number>();
+    let n = 0;
+    let letzteGrund: number | null = null;
+    const alle = positionen(lv).map((x) => x.pos);
+    for (const p of alle) if (p.positionsart === 'grund') grundNr.set(p.id, ++n);
+    for (const p of alle) {
+      if (p.positionsart === 'grund') {
+        letzteGrund = grundNr.get(p.id)!;
+        gruppe.set(p.id, { nr: letzteGrund, ser: 0 });
+      } else if (p.positionsart === 'wahl') {
+        const nr = (p.bezug && grundNr.get(p.bezug)) || letzteGrund || ++n;
+        const ser = (wahlZahl.get(nr) ?? 0) + 1;
+        wahlZahl.set(nr, ser);
+        gruppe.set(p.id, { nr, ser });
+      }
+    }
+  }
+
   const position = (p: Position): string => {
     const teile: string[] = [];
     teile.push(`<Qty>${zahl(p.menge ?? 0, 3)}</Qty>`, `<QU>${esc(p.einheit || 'psch')}</QU>`);
     if (p.positionsart === 'bedarf') teile.push('<Provis>WithoutTotal</Provis>');
-    if (p.positionsart === 'grund' || p.positionsart === 'wahl') {
-      const gruppe = p.positionsart === 'grund' ? p.id : (p.bezug ?? p.id);
-      teile.push(`<ALNGroupNo>${(Math.abs([...gruppe].reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 0)) % 99) + 1}</ALNGroupNo>`, `<ALNSerNo>${p.positionsart === 'grund' ? 0 : 1}</ALNSerNo>`);
-    }
+    const g = gruppe.get(p.id);
+    if (g) teile.push(`<ALNGroupNo>${g.nr}</ALNGroupNo>`, `<ALNSerNo>${g.ser}</ALNSerNo>`);
     if (p.stundenlohn) teile.push('<HourIt>Yes</HourIt>');
     if (/^psch$/i.test(p.einheit.trim())) teile.push('<LumpSumItem>Yes</LumpSumItem>');
     if (mitPreisen && bieter) {
       const ep = p.preise[String(bieter.id)]?.ep;
-      if (ep !== null && ep !== undefined) {
-        const it = Math.round((p.preise[String(bieter.id)]?.pauschal ?? (p.preise[String(bieter.id)]?.menge ?? p.menge ?? 0) * ep) * 100) / 100;
-        teile.push(`<UP>${zahl(ep, 2)}</UP>`, `<IT>${zahl(it, 2)}</IT>`);
-      }
+      const it = gesamtbetrag(p, bieter.id);
+      if (ep !== null && ep !== undefined && it !== null) teile.push(`<UP>${epText(ep)}</UP>`, `<IT>${zahl(it, 2)}</IT>`);
     }
     teile.push(beschreibung(p.kurztext, p.langtext));
     return `<Item ID="${id()}" RNoPart="${esc(ozFormat(p.oz, lv.ozMaske.position.stellen))}">${teile.join('')}</Item>`;
   };
-  const hinweis = (h: Hinweis) => `<Remark ID="${id()}">${beschreibung(h.kurztext, h.langtext)}</Remark>`;
+  const hinweis = (h: Hinweis, praefix?: string) => `<Remark ID="${id(praefix)}">${beschreibung(h.kurztext, h.langtext)}</Remark>`;
+  const stellen = (tiefe: number) => ebenen[tiefe]?.stellen ?? 2;
 
-  const koerper = (liste: LvElement[], tiefe: number): string => {
+  /**
+   * Körper einer Ebene. GAEB: ein Körper enthält entweder Abschnitte oder eine Positionsliste (Itemlist); Hinweise
+   * stehen nur in einer Itemlist. Hinweise zwischen Abschnitten wandern deshalb an den Anfang der Positionsliste des
+   * folgenden Abschnitts (am Ende: des vorigen), Positionen neben Abschnitten in einen eigenen Abschnitt am Ende.
+   */
+  const koerper = (liste: LvElement[], tiefe: number, vorne: string[] = [], hinten: string[] = []): string => {
     const abschnitte = liste.filter((e): e is Abschnitt => e.art === 'abschnitt');
-    if (abschnitte.length) {
-      // GAEB: ein Körper enthält entweder Abschnitte oder eine Positionsliste; Hinweise stehen dann am Anfang des Abschnitts
-      return `<BoQBody>${liste
-        .map((e) => {
-          if (e.art === 'abschnitt') return `<BoQCtgy ID="${id()}" RNoPart="${esc(ozFormat(e.oz, ebenen[tiefe]?.stellen ?? 2))}"><LblTx>${kurzXml(e.kurztext)}</LblTx>${e.langtext.length ? `<Remark ID="${id()}">${beschreibung(e.kurztext, e.langtext)}</Remark>` : ''}${koerper(e.kinder, tiefe + 1)}</BoQCtgy>`;
-          if (e.art === 'hinweis') return hinweis(e);
-          // Position zwischen Abschnitten: in einen eigenen Abschnitt
-          return `<BoQCtgy ID="${id()}" RNoPart="99"><LblTx>${kurzXml('Positionen')}</LblTx><BoQBody><Itemlist>${position(e)}</Itemlist></BoQBody></BoQCtgy>`;
-        })
-        .join('')}</BoQBody>`;
+    if (!abschnitte.length) return `<BoQBody><Itemlist>${vorne.join('')}${liste.map((e) => (e.art === 'position' ? position(e) : e.art === 'hinweis' ? hinweis(e) : '')).join('')}${hinten.join('')}</Itemlist></BoQBody>`;
+    const teile: { a: Abschnitt; vorne: string[]; hinten: string[] }[] = [];
+    const lose: Position[] = [];
+    let offen: string[] = [...vorne];
+    for (const e of liste) {
+      if (e.art === 'hinweis') offen.push(hinweis(e));
+      else if (e.art === 'position') lose.push(e);
+      else {
+        teile.push({ a: e, vorne: offen, hinten: [] });
+        offen = [];
+      }
     }
-    return `<BoQBody><Itemlist>${liste.map((e) => (e.art === 'position' ? position(e) : e.art === 'hinweis' ? hinweis(e) : '')).join('')}</Itemlist></BoQBody>`;
+    if (lose.length) {
+      const nr = Math.max(0, ...abschnitte.map((a) => Number(a.oz)).filter(Number.isFinite)) + 1;
+      teile.push({ a: { id: 'lose', art: 'abschnitt', oz: String(nr), kurztext: 'Positionen ohne Abschnitt', langtext: [], kinder: lose }, vorne: [], hinten: [] });
+    }
+    teile[teile.length - 1].hinten.push(...offen, ...hinten);
+    return `<BoQBody>${teile.map((t) => abschnitt(t.a, tiefe, t.vorne, t.hinten)).join('')}</BoQBody>`;
+  };
+  const abschnitt = (a: Abschnitt, tiefe: number, vorne: string[], hinten: string[]): string => {
+    // Langtext des Abschnitts: als erster Hinweis seiner Positionsliste, an der Kennung wiederzuerkennen
+    const lt = a.langtext.length ? [hinweis({ id: '', art: 'hinweis', kurztext: a.kurztext, langtext: a.langtext }, `LT${tiefe}_`)] : [];
+    return `<BoQCtgy ID="${id()}" RNoPart="${esc(ozFormat(a.oz, stellen(tiefe)))}"><LblTx>${kurzXml(a.kurztext)}</LblTx>${koerper(a.kinder, tiefe + 1, [...vorne, ...lt], hinten)}</BoQCtgy>`;
+  };
+  const oben = (): string => {
+    // Vorbemerkungen vor einer Gliederung mit Abschnitten: eigener Abschnitt „0“ (wird beim Import zurückgeführt)
+    const vb: Hinweis[] = [];
+    let i = 0;
+    while (i < lv.elemente.length && lv.elemente[i].art === 'hinweis' && lv.elemente.some((e) => e.art === 'abschnitt')) vb.push(lv.elemente[i++] as Hinweis);
+    if (!vb.length) return koerper(lv.elemente, 0);
+    const vbKat = `<BoQCtgy ID="${id(ID_VORBEMERKUNGEN)}" RNoPart="${'0'.repeat(stellen(0))}"><LblTx>${kurzXml('Vorbemerkungen')}</LblTx><BoQBody><Itemlist>${vb.map((h) => hinweis(h)).join('')}</Itemlist></BoQBody></BoQCtgy>`;
+    return koerper(lv.elemente.slice(i), 0).replace(/^<BoQBody>/, `<BoQBody>${vbKat}`);
   };
 
   const bkdn = [
@@ -135,7 +221,7 @@ export function gaebSchreiben(lv: Lv, o: GaebExport): Uint8Array {
     adresse +
     ctr +
     `<BoQ ID="${id()}"><BoQInfo><Name>${esc(lv.kopf.nummer ?? '1')}</Name><LblTx>${kurzXml(lv.kopf.bezeichnung)}</LblTx>${lv.kopf.datum ? `<Date>${lv.kopf.datum}</Date>` : ''}${bkdn}${nachlass}</BoQInfo>` +
-    koerper(lv.elemente, 0) +
+    oben() +
     `</BoQ></Award></GAEB>\n`;
   return new TextEncoder().encode(xml);
 }
@@ -147,12 +233,41 @@ const k = (el: XmlElement | undefined, name: string) => el?.kinder.find((x) => o
 const alle = (el: XmlElement | undefined, name: string) => el?.kinder.filter((x) => ohnePraefix(x.name) === name) ?? [];
 const text = (el: XmlElement | undefined): string => (el ? el.text + el.kinder.map(text).join('') : '');
 
-/** <p>/<span>/<br> in Absätze mit Auszeichnung */
-export function gaebText(el: XmlElement | undefined): Formattext {
+/** Platzhalter für Leerraum mit Zeilenumbruch (Einrückung im XML): wird zu einem Leerzeichen, am Absatzrand entfernt */
+const UMBRUCH = '\u0000';
+
+/** Text eines Abschnitts im Quelltext: Kommentare weg, CDATA wörtlich, Entitäten aufgelöst, Einrückung markiert */
+function rohText(roh: string): string {
+  return roh
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .split(/(<!\[CDATA\[[\s\S]*?\]\]>)/)
+    .map((t) => (t.startsWith('<![CDATA[') ? t.slice(9, -3) : entschluesseln(t.replace(/[ \t]*[\r\n][ \t\r\n]*/g, UMBRUCH))))
+    .join('');
+}
+
+/** Inhalt eines Elements in Dokumentreihenfolge: Textstücke und Kindelemente (gemischter Inhalt) */
+function inhalt(e: XmlElement, quelle: string | undefined): (string | XmlElement)[] {
+  if (quelle === undefined) return [...(e.text ? [e.text] : []), ...e.kinder];
+  const out: (string | XmlElement)[] = [];
+  let pos = e.innenStart;
+  for (const c of e.kinder) {
+    if (c.start > pos) out.push(rohText(quelle.slice(pos, c.start)));
+    out.push(c);
+    pos = c.ende;
+  }
+  if (e.innenEnde > pos) out.push(rohText(quelle.slice(pos, e.innenEnde)));
+  return out.filter((x) => x !== '');
+}
+
+/**
+ * <p>/<span>/<br> in Absätze mit Auszeichnung. Mit `quelle` (dem gelesenen XML) wird gemischter Inhalt in
+ * Dokumentreihenfolge gelesen („Vorher <span>fett</span> nachher“, „Zeile1<br/>Zeile2“); Einrückung im XML zählt
+ * als Leerzeichen.
+ */
+export function gaebText(el: XmlElement | undefined, quelle?: string): Formattext {
   if (!el) return [];
   const absaetze: Absatz[] = [];
   const laeufe = (e: XmlElement, art: { fett?: boolean; kursiv?: boolean; unterstrichen?: boolean }, out: Lauf[]) => {
-    // Text vor und zwischen den Kindern: der Leser sammelt ihn gesamt in `text` – bei Spans ohne Kinder genügt das
     const style = e.attr.style ?? '';
     const neu = {
       fett: art.fett || /font-weight\s*:\s*(bold|[6-9]00)/i.test(style) || ohnePraefix(e.name) === 'b',
@@ -163,8 +278,10 @@ export function gaebText(el: XmlElement | undefined): Formattext {
       out.push({ text: '\n' });
       return;
     }
-    if (e.text) out.push({ text: e.text, ...(neu.fett ? { fett: true } : {}), ...(neu.kursiv ? { kursiv: true } : {}), ...(neu.unterstrichen ? { unterstrichen: true } : {}) });
-    for (const c of e.kinder) laeufe(c, neu, out);
+    for (const c of inhalt(e, quelle)) {
+      if (typeof c === 'string') out.push({ text: c, ...(neu.fett ? { fett: true } : {}), ...(neu.kursiv ? { kursiv: true } : {}), ...(neu.unterstrichen ? { unterstrichen: true } : {}) });
+      else laeufe(c, neu, out);
+    }
   };
   const ps = alleKinder(el, 'p').length ? alleKinder(el, 'p') : el.kinder.filter((x) => ohnePraefix(x.name) === 'p');
   for (const p of ps.length ? ps : [el]) {
@@ -176,21 +293,29 @@ export function gaebText(el: XmlElement | undefined): Formattext {
       if (v && !!v.fett === !!l.fett && !!v.kursiv === !!l.kursiv && !!v.unterstrichen === !!l.unterstrichen) v.text += l.text;
       else zusammen.push({ ...l });
     }
-    const t = zusammen.map((l) => l.text).join('');
-    if (t.startsWith('• ') && zusammen[0]) {
-      zusammen[0] = { ...zusammen[0], text: zusammen[0].text.replace(/^• /, '') };
-      absaetze.push({ laeufe: zusammen, liste: 'punkt' });
-    } else absaetze.push({ laeufe: zusammen });
+    // Einrückung: am Absatzrand und an Zeilenumbrüchen weg, sonst ein Leerzeichen
+    if (zusammen.length) {
+      zusammen[0].text = zusammen[0].text.replace(new RegExp(`^${UMBRUCH}+`), '');
+      const l = zusammen[zusammen.length - 1];
+      l.text = l.text.replace(new RegExp(`${UMBRUCH}+$`), '');
+    }
+    for (const l of zusammen) l.text = l.text.replace(new RegExp(`${UMBRUCH}*\\n${UMBRUCH}*`, 'g'), '\n').replace(new RegExp(`${UMBRUCH}+`, 'g'), ' ');
+    const sauber = zusammen.filter((l) => l.text !== '');
+    const t = sauber.map((l) => l.text).join('');
+    if (t.startsWith('• ') && sauber[0]) {
+      sauber[0] = { ...sauber[0], text: sauber[0].text.replace(/^• /, '') };
+      absaetze.push({ laeufe: sauber.filter((l) => l.text !== ''), liste: 'punkt' });
+    } else absaetze.push({ laeufe: sauber });
   }
   while (absaetze.length && !absaetze[absaetze.length - 1].laeufe.some((l) => l.text.trim())) absaetze.pop();
   return absaetze;
 }
 
-function texteAus(desc: XmlElement | undefined): { kurz: string; lang: Formattext } {
+function texteAus(desc: XmlElement | undefined, quelle?: string): { kurz: string; lang: Formattext } {
   const ct = k(desc, 'CompleteText');
-  const lang = gaebText(k(k(ct, 'DetailTxt'), 'Text'));
+  const lang = gaebText(k(k(ct, 'DetailTxt'), 'Text'), quelle);
   const kurzEl = k(k(k(ct, 'OutlineText'), 'OutlTxt'), 'TextOutlTxt');
-  const kurz = kurzEl ? ersteZeile(gaebText(kurzEl)) : ersteZeile(lang);
+  const kurz = kurzEl ? ersteZeile(gaebText(kurzEl, quelle)) : ersteZeile(lang);
   return { kurz, lang };
 }
 
@@ -209,10 +334,25 @@ const ZAHL = (s: string | undefined) => {
   return Number.isFinite(n) ? n : null;
 };
 
+/** Zeichensatz: laut XML-Deklaration (auch in einfachen Anführungszeichen), sonst UTF-8 – und wenn das nicht passt, Windows-1252 */
+export function gaebDekodieren(bytes: Uint8Array): string {
+  const kopf = new TextDecoder('latin1').decode(bytes.slice(0, 200));
+  if (/encoding\s*=\s*["'](iso-8859-1|iso-8859-15|latin-?1|windows-1252|cp1252)["']/i.test(kopf)) return new TextDecoder('windows-1252').decode(bytes);
+  try {
+    return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+  } catch {
+    return new TextDecoder('windows-1252').decode(bytes);
+  }
+}
+
 export function gaebLesen(bytes: Uint8Array): GaebGelesen {
-  let quelle = new TextDecoder('utf-8').decode(bytes);
-  if (/encoding="(iso-8859-1|windows-1252)"/i.test(quelle.slice(0, 200))) quelle = new TextDecoder('windows-1252').decode(bytes);
-  const doc = xmlLesen(quelle);
+  const quelle = gaebDekodieren(bytes);
+  let doc: XmlElement;
+  try {
+    doc = xmlLesen(quelle);
+  } catch (e) {
+    throw new Error(`Die GAEB-Datei ist beschädigt oder unvollständig (vermutlich abgeschnitten – bitte neu anfordern): ${e instanceof Error ? e.message : String(e)}`);
+  }
   const gaeb = doc.kinder.find((x) => ohnePraefix(x.name) === 'GAEB');
   if (!gaeb) throw new Error('Keine GAEB-XML-Datei (Wurzel „GAEB“ fehlt). GAEB 90/2000 (D8x/P8x) bitte als XML exportieren lassen.');
   const award = k(gaeb, 'Award');
@@ -241,6 +381,11 @@ export function gaebLesen(bytes: Uint8Array): GaebGelesen {
     };
   }
   const preise = new Map<string, number>();
+  /** Langtexte von Abschnitten (eigene Exporte): Hinweis → Tiefe des Abschnitts */
+  const langtextVon = new Map<Hinweis, number>();
+  /** Gruppen der Grund- und Wahlpositionen: Gruppennummer → Grundposition bzw. Wahlpositionen */
+  const grund = new Map<string, Position>();
+  const wahl: [string, Position][] = [];
   const rek = (body: XmlElement | undefined, pfad: string[]): LvElement[] => {
     const out: LvElement[] = [];
     if (!body) return out;
@@ -249,32 +394,51 @@ export function gaebLesen(bytes: Uint8Array): GaebGelesen {
       if (n === 'BoQCtgy') {
         const oz = c.attr.RNoPart ?? '';
         const kinder = rek(k(c, 'BoQBody'), [...pfad, oz]);
-        // Hinweis, der den Langtext des Abschnitts trägt, steht vorne
-        const a: Abschnitt = { id: neueId(), art: 'abschnitt', oz, kurztext: ersteZeile(gaebText(k(c, 'LblTx'))), langtext: [], kinder };
-        for (const r of alle(c, 'Remark')) a.kinder.unshift(hinweisAus(r));
+        // eigener Export: Abschnitt der Vorbemerkungen → Vorbemerkungen oben
+        if (!pfad.length && c.attr.ID?.startsWith(ID_VORBEMERKUNGEN) && kinder.every((x) => x.art === 'hinweis')) {
+          out.push(...kinder.map((x) => ({ ...x, vorbemerkung: true }) as Hinweis));
+          continue;
+        }
+        const a: Abschnitt = { id: neueId(), art: 'abschnitt', oz, kurztext: ersteZeile(gaebText(k(c, 'LblTx'), quelle)), langtext: [], kinder };
+        // Hinweise direkt im Abschnitt (ältere Exporte, andere Programme) stehen vorne, in ihrer Reihenfolge; einer
+        // mit der Bezeichnung des Abschnitts als Kurztext ist dessen Langtext
+        const direkt = alle(c, 'Remark').map((r) => hinweisAus(r));
+        const lt = direkt.findIndex((h) => h.kurztext === a.kurztext && h.langtext.length);
+        if (lt >= 0) a.langtext = direkt.splice(lt, 1)[0].langtext;
+        a.kinder.unshift(...direkt);
         out.push(a);
       } else if (n === 'Itemlist') out.push(...rek(c, pfad));
       else if (n === 'Item') out.push(positionAus(c, pfad));
-      else if (n === 'Remark') out.push(hinweisAus(c, pfad.length === 0));
+      else if (n === 'Remark') {
+        const h = hinweisAus(c, pfad.length === 0);
+        const m = ID_LANGTEXT.exec(c.attr.ID ?? '');
+        if (m) langtextVon.set(h, Number(m[1]));
+        out.push(h);
+      }
     }
     return out;
   };
   const hinweisAus = (r: XmlElement, vorbemerkung = false): Hinweis => {
-    const t = texteAus(k(r, 'Description'));
+    const t = texteAus(k(r, 'Description'), quelle);
     return { id: neueId(), art: 'hinweis', kurztext: t.kurz || 'Hinweis', langtext: t.lang, ...(vorbemerkung ? { vorbemerkung: true } : {}) };
   };
   const positionAus = (it: XmlElement, pfad: string[]): Position => {
-    const t = texteAus(k(it, 'Description'));
+    const t = texteAus(k(it, 'Description'), quelle);
     const provis = text(k(it, 'Provis')).trim();
     const aln = ZAHL(text(k(it, 'ALNSerNo')));
+    const alnGruppe = text(k(it, 'ALNGroupNo')).trim();
     let art: PositionsArt = 'normal';
     if (provis === 'WithoutTotal' || provis === 'WithTotal') art = 'bedarf';
     else if (aln !== null) art = aln === 0 ? 'grund' : 'wahl';
     const oz = it.attr.RNoPart ?? '';
     const ep = ZAHL(text(k(it, 'UP')));
-    if (ep !== null) preise.set([...pfad, oz].join('.'), ep);
+    const voll = [...pfad, oz].join('.');
+    if (ep !== null) {
+      if (preise.has(voll)) hinweise.push(`Ordnungszahl ${voll} kommt mehrfach vor – der Preis ist nicht eindeutig zuzuordnen.`);
+      preise.set(voll, ep);
+    }
     const einheit = text(k(it, 'QU')).trim();
-    return {
+    const p: Position = {
       id: neueId(),
       art: 'position',
       oz,
@@ -284,10 +448,33 @@ export function gaebLesen(bytes: Uint8Array): GaebGelesen {
       menge: ZAHL(text(k(it, 'Qty'))),
       positionsart: art,
       preise: {},
-      ...(text(k(it, 'HourIt')).trim() === 'Yes' || /^(h|std)/i.test(einheit) ? { stundenlohn: true } : {}),
+      ...(text(k(it, 'HourIt')).trim() === 'Yes' || /^(h|std\.?|stunden?)$/i.test(einheit) ? { stundenlohn: true } : {}),
     };
+    if (art === 'grund' && alnGruppe) grund.set(alnGruppe, p);
+    else if (art === 'wahl' && alnGruppe) wahl.push([alnGruppe, p]);
+    return p;
   };
   lv.elemente = rek(k(boq, 'BoQBody'), []);
+  for (const [g, p] of wahl) {
+    const gp = grund.get(g);
+    if (gp) p.bezug = gp.id;
+  }
+  // Langtexte der Abschnitte (eigener Export) zurück an ihren Abschnitt
+  if (langtextVon.size) {
+    const zurueck = (liste: LvElement[], ahnen: Abschnitt[]): LvElement[] =>
+      liste
+        .filter((e) => {
+          const t = e.art === 'hinweis' ? langtextVon.get(e) : undefined;
+          if (t === undefined || !ahnen[t]) return true;
+          ahnen[t].langtext = (e as Hinweis).langtext;
+          return false;
+        })
+        .map((e) => {
+          if (e.art === 'abschnitt') e.kinder = zurueck(e.kinder, [...ahnen, e]);
+          return e;
+        });
+    lv.elemente = zurueck(lv.elemente, []);
+  }
   const ctr = k(k(award, 'CTR'), 'Address');
   const discount = ZAHL(text(k(k(info, 'Totals'), 'DiscountPcnt')));
   const bieter = ctr || discount !== null ? { name: text(k(ctr, 'Name1')).trim() || 'Bieter (GAEB)', ...(discount ? { nachlass: -Math.abs(discount) } : {}) } : undefined;
@@ -312,27 +499,46 @@ export interface AngebotUebernahme {
   ohneZuordnung: string[];
 }
 
+/** Bieter im LV mit demselben Namen wie in der Angebotsdatei (zum Nachfragen „ersetzen oder neu anlegen?“) */
+export function gleicherBieter(lv: Lv, g: GaebGelesen): Bieter | undefined {
+  const n = (s: string) => s.trim().toLowerCase().replace(/\s+/g, ' ');
+  const name = g.bieter?.name;
+  return name ? lv.bieter.find((b) => b.id !== 0 && n(b.name) === n(name)) : undefined;
+}
+
 /**
  * Einheitspreise einer Angebotsdatei (X84) als Preise eines Bieters ins LV: Zuordnung über die vollständige OZ.
- * Ohne `bieterId` wird ein neuer Bieter angelegt.
+ * Ohne `bieterId` wird ein neuer Bieter angelegt; mit `bieterId` werden dessen Preise ersetzt (Positionen, die in
+ * der Datei keinen Preis haben, verlieren ihren alten).
  */
 export function angebotUebernehmen(lv: Lv, g: GaebGelesen, bieterId?: number): AngebotUebernahme {
   const id = bieterId ?? Math.max(9, ...lv.bieter.map((b) => b.id)) + 1;
-  const bieter: Bieter[] = bieterId === undefined ? [...lv.bieter, { id, name: g.bieter?.name ?? 'Bieter (GAEB)', ...(g.bieter?.nachlass ? { nachlass: g.bieter.nachlass } : {}), angebotsdatum: new Date().toISOString().slice(0, 10) }] : lv.bieter.map((b) => (b.id === id && g.bieter?.nachlass ? { ...b, nachlass: g.bieter.nachlass } : b));
+  const bieter: Bieter[] = bieterId === undefined ? [...lv.bieter, { id, name: g.bieter?.name ?? 'Bieter (GAEB)', ...(g.bieter?.nachlass ? { nachlass: g.bieter.nachlass } : {}), angebotsdatum: heuteIso() }] : lv.bieter.map((b) => (b.id === id && g.bieter?.nachlass ? { ...b, nachlass: g.bieter.nachlass } : b));
   const preise = new Map([...g.preise].map(([oz, ep]) => [ozSchluessel(oz), ep]));
   const benutzt = new Set<string>();
   let zugeordnet = 0;
-  const rek = (liste: LvElement[], pfad: string[]): LvElement[] =>
-    liste.map((e) => {
+  const rek = (liste: LvElement[], pfad: string[]): LvElement[] => {
+    // Positionen neben Abschnitten stehen im GAEB-Export in einem eigenen Abschnitt am Ende (siehe gaebSchreiben)
+    const abschnitte = liste.filter((e) => e.art === 'abschnitt');
+    const loseNr = abschnitte.length ? String(Math.max(0, ...abschnitte.map((a) => Number(a.oz)).filter(Number.isFinite)) + 1) : null;
+    return liste.map((e) => {
       if (e.art === 'abschnitt') return { ...e, kinder: rek(e.kinder, [...pfad, e.oz]) };
       if (e.art !== 'position') return e;
-      const s = ozSchluessel([...pfad, e.oz].join('.'));
+      let s = ozSchluessel([...pfad, e.oz].join('.'));
+      if (!preise.has(s) && loseNr) s = ozSchluessel([...pfad, loseNr, e.oz].join('.'));
       const ep = preise.get(s);
-      if (ep === undefined) return e;
+      if (ep === undefined) {
+        // vorhandener Bieter: Preise, die in der neuen Datei fehlen, nicht stehen lassen
+        if (bieterId === undefined || !e.preise[String(id)] || (e.nachtrag ?? 0) > 0) return e; // Nachtragspreise stehen nie im Hauptangebot
+        const rest = { ...e.preise };
+        delete rest[String(id)];
+        return { ...e, preise: rest };
+      }
       benutzt.add(s);
       zugeordnet++;
       return { ...e, preise: { ...e.preise, [String(id)]: { ...e.preise[String(id)], ep } } };
     });
+  };
   const elemente = rek(lv.elemente, []);
   return { lv: { ...lv, bieter, elemente }, bieterId: id, zugeordnet, ohneZuordnung: [...preise.keys()].filter((oz) => !benutzt.has(oz)) };
 }

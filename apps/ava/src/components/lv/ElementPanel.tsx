@@ -13,7 +13,7 @@ import { Textbibliothek } from './Textbibliothek';
 export const EINHEITEN = ['m', 'm²', 'm³', 'Stck', 'psch', 'h', 'kg', 't', 'lfm', 'St', 'Satz', 'Wo', 'Tag'];
 
 /** Eigenschaften des gewählten LV-Elements: Texte, Menge, Einheit, Art, Kostengruppe */
-export function ElementPanel() {
+export function ElementPanel({ onZurueck }: { onZurueck?: () => void } = {}) {
   const offen = useAva((s) => s.lv)!;
   const auswahl = useAva((s) => s.auswahl);
   const [bibliothek, setBibliothek] = useState(false);
@@ -26,18 +26,23 @@ export function ElementPanel() {
   };
   const nurAslv = offen.format === 'aslv';
 
+  // Esc im Panel führt zurück in die Tabelle (die Felder setzen ihren Wert dabei selbst zurück)
+  const tasten = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape' && !e.defaultPrevented && onZurueck) onZurueck();
+  };
+
   if (!el) {
     return (
-      <aside className="ava-panel">
+      <aside className="ava-panel" aria-label="Eigenschaften">
         <p className="muted">Ein Element in der Tabelle wählen, um Kurz- und Langtext, Menge, Einheit und Art zu bearbeiten.</p>
-        <p className="muted small-text">Tastatur: ↑/↓ wählen, Einfg neue Position, Strg+D duplizieren, Entf entfernen, Strg+Z rückgängig, Strg+S speichern.</p>
+        <p className="muted small-text">Tastatur in der Tabelle: ↑/↓ wählen, Enter bearbeiten (Esc zurück), Einfg neue Position, Strg+D duplizieren, Entf entfernen, Strg+Z rückgängig, Strg+S speichern.</p>
       </aside>
     );
   }
   const pfadText = f!.pfad.map((a) => `${a.oz} ${a.kurztext}`).join(' › ');
 
   return (
-    <aside className="ava-panel">
+    <aside className="ava-panel" aria-label="Eigenschaften des gewählten Elements" onKeyDown={tasten}>
       <div className="ava-panel-kopf">
         <span className="ava-chip">{el.art === 'position' ? 'Position' : el.art === 'abschnitt' ? 'Abschnitt' : (el as Hinweis).vorbemerkung ? 'Vorbemerkung' : 'Hinweis'}</span>
         {pfadText && <span className="muted small-text">{pfadText}</span>}
@@ -48,7 +53,7 @@ export function ElementPanel() {
         </Feld>
       )}
       <Feld label={el.art === 'position' ? 'Kurztext' : el.art === 'abschnitt' ? 'Bezeichnung' : 'Überschrift'}>
-        <TextEingabe wert={el.kurztext} onChange={(kurztext) => setze({ kurztext })} />
+        <TextEingabe wert={el.kurztext} onChange={(kurztext) => setze({ kurztext })} feld="kurztext" />
       </Feld>
       {el.art === 'position' && <PositionFelder pos={el} setze={setze} nurAslv={nurAslv} />}
       {el.art === 'hinweis' && (

@@ -14,7 +14,7 @@ function pdfjs(): Promise<PdfJs> {
 }
 
 /** Vorschau einer PDF (alle Seiten, an die Breite angepasst) bzw. eines Bilds */
-export function PdfVorschau({ daten, name }: { daten: Uint8Array | null; name: string }) {
+export function PdfVorschau({ daten, name, laedt = false }: { daten: Uint8Array | null; name: string; laedt?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   const [fehler, setFehler] = useState<string | null>(null);
   const [bild, setBild] = useState<string | null>(null);
@@ -38,7 +38,7 @@ export function PdfVorschau({ daten, name }: { daten: Uint8Array | null; name: s
       try {
         const lib = await pdfjs();
         doc = await lib.getDocument({ data: daten.slice() }).promise;
-        const breite = Math.max(300, el.clientWidth - 24);
+        const breite = Math.max(160, el.clientWidth - 24);
         for (let n = 1; n <= Math.min(doc.numPages, 30) && !aus; n++) {
           const seite = await doc.getPage(n);
           const v1 = seite.getViewport({ scale: 1 });
@@ -63,7 +63,7 @@ export function PdfVorschau({ daten, name }: { daten: Uint8Array | null; name: s
     };
   }, [daten, istBild]);
 
-  if (!daten) return <div className="ava-pdf muted">Keine Vorschau.</div>;
+  if (!daten) return <div className="ava-pdf muted">{laedt ? 'Vorschau wird geladen …' : 'Keine Vorschau.'}</div>;
   if (istBild) return <div className="ava-pdf">{bild && <img src={bild} alt={name} className="ava-pdf-seite" />}</div>;
   return (
     <div className="ava-pdf">
