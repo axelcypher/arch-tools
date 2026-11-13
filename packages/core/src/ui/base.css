@@ -1955,10 +1955,11 @@ button.ph-lokal {
 }
 /* ---------- Meldungen im Inhalt (Dialoge, Seitenleisten) – eine Familie, Art über die zweite Klasse ---------- */
 
+/* neutral leicht im Akzent getönt: sonst sieht die Meldung in Seitenleisten wie ein Eingabefeld aus */
 .meldung {
   padding: 6px 8px;
-  border: 1px solid var(--border);
-  background: var(--panel);
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
+  background: color-mix(in srgb, var(--accent) 12%, var(--panel));
   color: var(--text);
   border-radius: var(--radius-s);
   font-size: var(--fs-s);

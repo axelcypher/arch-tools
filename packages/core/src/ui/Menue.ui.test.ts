@@ -381,6 +381,61 @@ describe('gemeinsames Menü', () => {
     expect(host.querySelector('.menue')).toBeNull();
   });
 
+  it('Erstfokus nie auf einem Gefahr-Punkt: Rechtsklick plus Enter löscht nichts', () => {
+    const loeschen = vi.fn();
+    const umbenennen = vi.fn();
+    const host = render(
+      createElement(
+        Fragment,
+        null,
+        createElement(
+          'button',
+          {
+            key: 'z',
+            onContextMenu: (e: React.MouseEvent) =>
+              zeigeMenue(e, [
+                { text: 'Löschen', gefahr: true, aktion: loeschen },
+                { text: 'Öffnen', deaktiviert: true },
+                { text: 'Umbenennen', aktion: umbenennen },
+              ]),
+          },
+          'Karte',
+        ),
+        createElement(MenueHost, { key: 'h' }),
+      ),
+    );
+    act(() => host.querySelector('button')!.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 5, clientY: 5 })));
+    expect(document.activeElement?.textContent).toBe('Umbenennen');
+    act(() => (document.activeElement as HTMLButtonElement).click());
+    expect(loeschen).not.toHaveBeenCalled();
+    expect(umbenennen).toHaveBeenCalledTimes(1);
+  });
+
+  it('nur Gefahr-Punkte (bzw. sonst nur gesperrte): Fokus trotzdem im Menü, Gefahr nur als letzter Ausweg', () => {
+    const host = render(
+      createElement(
+        Fragment,
+        null,
+        createElement(
+          'button',
+          {
+            key: 'z',
+            onContextMenu: (e: React.MouseEvent) =>
+              zeigeMenue(e, [
+                { text: 'Löschen', gefahr: true },
+                { text: 'Öffnen', deaktiviert: true },
+              ]),
+          },
+          'Karte',
+        ),
+        createElement(MenueHost, { key: 'h' }),
+      ),
+    );
+    act(() => host.querySelector('button')!.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 5, clientY: 5 })));
+    // gesperrter, ungefährlicher Punkt geht vor (führt nichts aus)
+    expect(document.activeElement?.textContent).toBe('Öffnen');
+  });
+
   it('Symbole: dekorativ ohne Titel, mit Titel als Bild benannt; jeder Name hat einen Pfad', () => {
     const host = render(createElement(Fragment, null, createElement(Symbol, { key: 'a', name: 'auswahl' }), createElement(Symbol, { key: 'b', name: 'lineal', titel: 'Messen' })));
     const [a, b] = [...host.querySelectorAll('svg.symbol')];

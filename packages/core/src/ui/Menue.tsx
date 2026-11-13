@@ -298,7 +298,14 @@ function Liste({
   }, [x, y]);
 
   useEffect(() => {
-    if (wurzel || fokus) (ref.current?.querySelector<HTMLButtonElement>(':scope > button:not([aria-disabled="true"])') ?? ref.current?.querySelector<HTMLButtonElement>(':scope > button'))?.focus();
+    if (!(wurzel || fokus)) return;
+    // Erstfokus nie auf einem Gefahr-Punkt (sonst löscht Rechtsklick plus Enter): erster bedienbarer, ungefährlicher Punkt
+    const el = ref.current;
+    (
+      el?.querySelector<HTMLButtonElement>(':scope > button:not([aria-disabled="true"]):not(.gefahr)') ??
+      el?.querySelector<HTMLButtonElement>(':scope > button:not(.gefahr)') ??
+      el?.querySelector<HTMLButtonElement>(':scope > button')
+    )?.focus();
   }, [wurzel, fokus]);
 
   const oeffnen = (index: number, el: HTMLElement, tastatur: boolean) => {

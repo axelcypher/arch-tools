@@ -201,6 +201,8 @@ mit `text`, optional `symbol`, `hinweis` (rechts, z. B. der Grund einer Sperre),
 - Gesperrte Punkte (`deaktiviert`) mit Grund im `hinweis` („Antrag eingereicht“), statt sie wegzulassen. Sie bleiben
   per Tastatur erreichbar (`aria-disabled`), damit der Grund vorgelesen wird, und führen nichts aus.
 - Ohne Mausposition (Kontextmenütaste) erscheint das Menü am Auslöser.
+- Gefahr-Punkte (Löschen) ans Ende, abgesetzt durch einen Trenner. Der Erstfokus liegt nie auf einem Gefahr-Punkt,
+  sondern auf dem ersten bedienbaren anderen – Rechtsklick plus Enter löscht so nichts.
 - Menüs liegen über Dialogen und Rückfragen; Schatten schwebender Flächen über `--schatten-schwebend`.
 - Tastenkürzel in `tasten` in der Schreibweise deutscher Windows-Menüs: Strg, Umschalt, Alt, Entf, Einfg, Pos1, Ende,
   Bild↑/Bild↓, Pfeile als ↑ ↓ ← →, Buchstaben groß, verbunden mit „+“ ohne Leerzeichen („Strg+Umschalt+Z“),
@@ -222,7 +224,8 @@ Doppelklick setzt die Vorgabe. Keine eigenen Leisten-Komponenten je App.
 
 ## Meldungen im Inhalt
 
-`.meldung` (neutral) mit `.ok`, `.warnung` oder `.fehler` für Meldungen in Dialogen und Seitenleisten; `role="status"`
+`.meldung` (neutral, leicht im Akzent getönt, damit sie sich von Eingabefeldern abhebt) mit `.ok`, `.warnung` oder
+`.fehler` für Meldungen in Dialogen und Seitenleisten; `role="status"`
 für Rückmeldungen, `role="alert"` für Fehler. `.warning` bleibt als Hinweis in Warnfarben.
 
 ## Meldungen auf der Zeichenfläche
