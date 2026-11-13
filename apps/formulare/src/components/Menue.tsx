@@ -23,28 +23,37 @@ export type MenuePunkt =
     };
 
 interface MenueZustand {
-  offen: { x: number; y: number; punkte: MenuePunkt[] } | null;
-  zeigen: (x: number, y: number, punkte: MenuePunkt[]) => void;
-  schliessen: () => void;
+  /** `ausloeser`: Element, das das Menü geöffnet hat – bekommt den Fokus nach Esc, Tab oder einer Auswahl zurück */
+  offen: { x: number; y: number; punkte: MenuePunkt[]; ausloeser: HTMLElement | null } | null;
+  zeigen: (x: number, y: number, punkte: MenuePunkt[], ausloeser?: HTMLElement | null) => void;
+  /** `fokusZurueck`: den Fokus an den Auslöser geben (nicht bei einem Klick daneben – dann gilt, was angeklickt wurde) */
+  schliessen: (fokusZurueck?: boolean) => void;
 }
 
-const useMenue = create<MenueZustand>((set) => ({
+const useMenue = create<MenueZustand>((set, get) => ({
   offen: null,
-  zeigen: (x, y, punkte) => set({ offen: { x, y, punkte } }),
-  schliessen: () => set({ offen: null }),
+  zeigen: (x, y, punkte, ausloeser = null) => set({ offen: { x, y, punkte, ausloeser } }),
+  schliessen: (fokusZurueck = false) => {
+    const ausloeser = get().offen?.ausloeser;
+    set({ offen: null });
+    if (fokusZurueck && ausloeser?.isConnected) ausloeser.focus();
+  },
 }));
 
-/** Kontextmenü an der Mausposition zeigen (Rechtsklick) */
+const FOKUSSIERBAR = 'button, input, select, textarea, a[href], [tabindex]';
+
+/** Kontextmenü an der Mausposition zeigen (Rechtsklick bzw. Kontextmenütaste) */
 export function zeigeMenue(e: ReactMouseEvent | MouseEvent, punkte: MenuePunkt[]) {
   e.preventDefault();
   e.stopPropagation();
-  if (punkte.length) useMenue.getState().zeigen(e.clientX, e.clientY, punkte);
+  const ziel = e.currentTarget instanceof HTMLElement && e.currentTarget.matches(FOKUSSIERBAR) ? e.currentTarget : document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  if (punkte.length) useMenue.getState().zeigen(e.clientX, e.clientY, punkte, ziel);
 }
 
 /** Menü unter einem Element zeigen (Knopf mit Pfeil) */
 export function zeigeMenueAn(el: HTMLElement, punkte: MenuePunkt[]) {
   const r = el.getBoundingClientRect();
-  useMenue.getState().zeigen(r.left, r.bottom + 2, punkte);
+  useMenue.getState().zeigen(r.left, r.bottom + 2, punkte, el);
 }
 
 /** Knopf, der ein Menü aufklappt */
@@ -52,17 +61,31 @@ export function MenueKnopf({
   punkte,
   children,
   title,
+  ariaLabel,
   className,
   disabled = false,
 }: {
   punkte: () => MenuePunkt[];
   children: ReactNode;
   title?: string;
+  /** Name für Screenreader, wenn der Knopf keinen (vollständigen) Text hat */
+  ariaLabel?: string;
   className?: string;
   disabled?: boolean;
 }) {
+  const ref = useRef<HTMLButtonElement>(null);
+  const offen = useMenue((s) => !!s.offen && !!ref.current && s.offen.ausloeser === ref.current);
   return (
-    <button className={className} title={title} aria-haspopup="menu" disabled={disabled} onClick={(e) => zeigeMenueAn(e.currentTarget, punkte())}>
+    <button
+      ref={ref}
+      className={className}
+      title={title}
+      aria-label={ariaLabel}
+      aria-haspopup="menu"
+      aria-expanded={offen}
+      disabled={disabled}
+      onClick={(e) => zeigeMenueAn(e.currentTarget, punkte())}
+    >
       {children} <Symbol name="pfeilUnten" />
     </button>
   );
@@ -75,7 +98,11 @@ export function MenueHost() {
   useEffect(() => {
     if (!offen) return;
     const weg = (e: Event) => {
-      if (e instanceof KeyboardEvent && e.key !== 'Escape') return;
+      if (e instanceof KeyboardEvent) {
+        // Esc und Tab schließen; der Fokus geht an den Auslöser zurück (Tab wandert von dort weiter)
+        if (e.key === 'Escape' || e.key === 'Tab') schliessen(true);
+        return;
+      }
       if (e.type === 'pointerdown' && (e.target as Element | null)?.closest?.('.menue')) return;
       schliessen();
     };
@@ -91,13 +118,13 @@ export function MenueHost() {
     };
   }, [offen, schliessen]);
   if (!offen) return null;
-  return <Liste punkte={offen.punkte} x={offen.x} y={offen.y} schliessen={schliessen} wurzel />;
+  return <Liste punkte={offen.punkte} x={offen.x} y={offen.y} schliessen={() => schliessen(true)} wurzel />;
 }
 
 /**
  * Eine Menüliste. Tastatur: ↑/↓ wandern, Enter bzw. → öffnet ein Untermenü und setzt den Fokus hinein, ← bzw. Esc führt
- * aus dem Untermenü zurück zu seinem Punkt (Esc im Hauptmenü schließt). Tasten eines Untermenüs gehen nicht an das
- * Menü darüber.
+ * aus dem Untermenü zurück zu seinem Punkt; Esc und Tab im Hauptmenü schließen es, der Fokus geht an den Auslöser zurück.
+ * Tasten eines Untermenüs gehen nicht an das Menü darüber.
  */
 function Liste({
   punkte,

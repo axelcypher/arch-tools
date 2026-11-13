@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { Ziehgriff } from '@core/ui/Leiste';
 import { formularAktualisieren } from '../aktualisieren';
 import { useId, useMemo, useState } from 'react';
 import { oeffnePfad, verbinde } from '../dateisystem';
@@ -140,24 +141,11 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
           ]
         : []),
       // der Ordner des Formulars (im Sammelprojekt ggf. der Unterordner des Antrags)
-      { text: 'Im Explorer zeigen', symbol: 'extern', aktion: () => void oeffnePfad(verbinde(projekt!.root, f.pfad.slice(0, f.pfad.lastIndexOf('/')))).catch(() => undefined) },
+      { text: 'Im Explorer öffnen', symbol: 'ordner', aktion: () => void oeffnePfad(verbinde(projekt!.root, f.pfad.slice(0, f.pfad.lastIndexOf('/')))).catch(() => undefined) },
       { text: 'Pfad kopieren', symbol: 'kopie', aktion: () => void navigator.clipboard?.writeText(verbinde(projekt!.root, f.pfad)) },
       { trenner: true },
       { text: 'Löschen …', symbol: 'muell', aktion: () => void formularLoeschen(f) },
     ];
-  };
-
-  // Breite mit der Maus ziehen
-  const ziehen = (e: React.PointerEvent) => {
-    const start = e.clientX;
-    const b0 = breite;
-    const bewegen = (ev: PointerEvent) => setLeisteBreite(b0 + ev.clientX - start);
-    const ende = () => {
-      window.removeEventListener('pointermove', bewegen);
-      window.removeEventListener('pointerup', ende);
-    };
-    window.addEventListener('pointermove', bewegen);
-    window.addEventListener('pointerup', ende);
   };
 
   // Sammelprojekt: Formulare im Unterordner des aktiven Antrags bzw. auf der obersten Ebene; wo neue entstehen (mit
@@ -172,33 +160,33 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
     const gezeigt = aktiv && haupt === 'formular';
     const doc = umfangDa ? statusVon.get(f.pfad) : undefined;
     return (
-      <button
-        key={f.pfad}
-        role="listitem"
-        className={`nav-eintrag${gezeigt ? ' aktiv' : ''}`}
-        aria-current={gezeigt ? 'page' : undefined}
-        title={`${doc ? `${f.name} – ${doc.eintrag.titel}` : f.name}\n${zeitLang(formularInfo[f.pfad]?.letzteAenderung)}`}
-        onClick={() => (aktiv ? setHaupt('formular') : void formularOeffnen(f))}
-        onContextMenu={(e) => zeigeMenue(e, formularMenue(f))}
-      >
-        <span className="nav-symbol">
-          <Symbol name="formular" />
-          {doc && <StatusPunkt status={doc.status} />}
-        </span>
-        <span className="nav-text">{f.name}</span>
-        {fremd && (
-          <span className="nav-schloss" title="Anderswo geöffnet (Sperrdatei vorhanden)" aria-label="gesperrt">
-            <Symbol name="schloss" />
+      <div key={f.pfad} role="listitem">
+        <button
+          className={`nav-eintrag${gezeigt ? ' aktiv' : ''}`}
+          aria-current={gezeigt ? 'page' : undefined}
+          title={`${doc ? `${f.name} – ${doc.eintrag.titel}` : f.name}\n${zeitLang(formularInfo[f.pfad]?.letzteAenderung)}`}
+          onClick={() => (aktiv ? setHaupt('formular') : void formularOeffnen(f))}
+          onContextMenu={(e) => zeigeMenue(e, formularMenue(f))}
+        >
+          <span className="nav-symbol">
+            <Symbol name="formular" />
+            {doc && <StatusPunkt status={doc.status} />}
           </span>
-        )}
-        {ungespeichert && (
-          <span className="fo-ungespeichert" title="Nicht gespeicherte Eingaben">
-            ●
-          </span>
-        )}
-        {/* die Zeit immer als letztes, rechtsbündig – Markierungen davor */}
-        {formularInfo[f.pfad]?.letzteAenderung ? <span className="nav-zeit">{zeitKurz(formularInfo[f.pfad].letzteAenderung)}</span> : null}
-      </button>
+          <span className="nav-text">{f.name}</span>
+          {fremd && (
+            <span className="nav-schloss" title="Anderswo geöffnet (Sperrdatei vorhanden)" role="img" aria-label="gesperrt">
+              <Symbol name="schloss" />
+            </span>
+          )}
+          {ungespeichert && (
+            <span className="fo-ungespeichert" title="Nicht gespeicherte Eingaben">
+              ●
+            </span>
+          )}
+          {/* die Zeit immer als letztes, rechtsbündig – Markierungen davor */}
+          {formularInfo[f.pfad]?.letzteAenderung ? <span className="nav-zeit">{zeitKurz(formularInfo[f.pfad].letzteAenderung)}</span> : null}
+        </button>
+      </div>
     );
   };
   const fehlendeZeile = (d: (typeof fehlende)[number]) => {
@@ -215,35 +203,35 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
       ];
     };
     return (
-      <button
-        key={d.eintrag.id}
-        role="listitem"
-        className={`nav-eintrag fehlt${gesperrt || wechsel ? ' gesperrt' : ''}`}
-        title={
-          gesperrt
-            ? `${d.eintrag.titel} fehlt – der Antrag ist eingereicht und gesperrt; zum Nachreichen den Status in den Antragsdaten vorübergehend auf „in Arbeit“ setzen`
-            : wechsel
-              ? `${d.eintrag.titel} fehlt – der Antrag wird gerade geöffnet, gleich wieder möglich`
-              : doppelt
-              ? `${d.eintrag.titel}: „${doppelt.name}“ ist schon „${statusVon.get(doppelt.pfad)!.eintrag.titel}“ zugeordnet – doppelter Eintrag? Klicken: zuordnen oder aus dem Antragsumfang nehmen`
-              : `${d.eintrag.titel} fehlt im Projekt – klicken, um das Formular ${zielText ?? ''}anzulegen`
-        }
-        aria-haspopup={doppelt && !gesperrt && !wechsel ? 'menu' : undefined}
-        // das Menü am Eintrag öffnen (auch mit Enter/Leertaste, ohne Mauszeiger); gesperrt bzw. beim Öffnen: nur die Meldung
-        onClick={(e) =>
-          doppelt && !gesperrt && !wechsel
-            ? zeigeMenueAn(e.currentTarget, menue())
-            : void useAntrag.getState().formularAnlegen(d.eintrag.id, { ansicht: zeilenFassung(useAntrag.getState(), projekt) })
-        }
-        onContextMenu={(e) => zeigeMenue(e, menue())}
-      >
-        <span className="nav-symbol">
-          <Symbol name="formular" />
-          <StatusPunkt status="fehlt" />
-        </span>
-        <span className="nav-text">{d.eintrag.titel}</span>
-        {!gesperrt && !wechsel && <span className={`nav-unter${doppelt ? ' nav-doppelt' : ''}`}>{doppelt ? 'doppelt?' : 'anlegen'}</span>}
-      </button>
+      <div key={d.eintrag.id} role="listitem">
+        <button
+          className={`nav-eintrag fehlt${gesperrt || wechsel ? ' gesperrt' : ''}`}
+          title={
+            gesperrt
+              ? `${d.eintrag.titel} fehlt – der Antrag ist eingereicht und gesperrt; zum Nachreichen den Status in den Antragsdaten vorübergehend auf „in Arbeit“ setzen`
+              : wechsel
+                ? `${d.eintrag.titel} fehlt – der Antrag wird gerade geöffnet, gleich wieder möglich`
+                : doppelt
+                ? `${d.eintrag.titel}: „${doppelt.name}“ ist schon „${statusVon.get(doppelt.pfad)!.eintrag.titel}“ zugeordnet – doppelter Eintrag? Klicken: zuordnen oder aus dem Antragsumfang nehmen`
+                : `${d.eintrag.titel} fehlt im Projekt – klicken, um das Formular ${zielText ?? ''}anzulegen`
+          }
+          aria-haspopup={doppelt && !gesperrt && !wechsel ? 'menu' : undefined}
+          // das Menü am Eintrag öffnen (auch mit Enter/Leertaste, ohne Mauszeiger); gesperrt bzw. beim Öffnen: nur die Meldung
+          onClick={(e) =>
+            doppelt && !gesperrt && !wechsel
+              ? zeigeMenueAn(e.currentTarget, menue())
+              : void useAntrag.getState().formularAnlegen(d.eintrag.id, { ansicht: zeilenFassung(useAntrag.getState(), projekt) })
+          }
+          onContextMenu={(e) => zeigeMenue(e, menue())}
+        >
+          <span className="nav-symbol">
+            <Symbol name="formular" />
+            <StatusPunkt status="fehlt" />
+          </span>
+          <span className="nav-text">{d.eintrag.titel}</span>
+          {!gesperrt && !wechsel && <span className={`nav-unter${doppelt ? ' nav-doppelt' : ''}`}>{doppelt ? 'doppelt?' : 'anlegen'}</span>}
+        </button>
+      </div>
     );
   };
 
@@ -293,7 +281,7 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
               className={`nav-eintrag fo-eintrag-karte${haupt === 'projektkarte' ? ' aktiv' : ''}`}
               aria-current={haupt === 'projektkarte' ? 'page' : undefined}
               onClick={() => setHaupt('projektkarte')}
-              title="Projektdaten – gelten für das ganze Projekt: Vorhaben, Beteiligte, Grundstück (Projektkarte); daraus werden die Formulare ausgefüllt"
+              title="Projektdaten – gelten für das ganze Projekt: Vorhaben, Beteiligte, Grundstück (aus der Projektkarte); daraus werden die Formulare ausgefüllt"
             >
               <Symbol name="karte" />
               <span className="fo-eintrag-karte-text">
@@ -341,8 +329,8 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
                   <button className="icon" title="Sperren in diesem Projekt prüfen und aufheben" aria-label="Sperren" onClick={onSperren}>
                     <Symbol name="schloss" />
                   </button>
-                  <button className="icon" title="Formularordner des Projekts im Explorer zeigen" aria-label="Formularordner zeigen" onClick={() => void oeffnePfad(verbinde(projekt.root, projekt.ordner)).catch(() => undefined)}>
-                    <Symbol name="extern" />
+                  <button className="icon" title="Formularordner des Projekts im Explorer öffnen" aria-label="Formularordner im Explorer öffnen" onClick={() => void oeffnePfad(verbinde(projekt.root, projekt.ordner)).catch(() => undefined)}>
+                    <Symbol name="ordner" />
                   </button>
                 </>
               }
@@ -419,8 +407,8 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
                       </button>
                     )}
                     {ablage && (
-                      <button className="icon" title="Im Explorer zeigen" aria-label="Projektordner zeigen" onClick={() => void oeffnePfad(verbinde(ablage.root, ablage.pfad)).catch(() => undefined)}>
-                        <Symbol name="extern" />
+                      <button className="icon" title="Projektordner im Explorer öffnen" aria-label="Projektordner im Explorer öffnen" onClick={() => void oeffnePfad(verbinde(ablage.root, ablage.pfad)).catch(() => undefined)}>
+                        <Symbol name="ordner" />
                       </button>
                     )}
                   </>
@@ -456,7 +444,8 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
           </>
         )}
       </div>
-      <div className="nav-griff" onPointerDown={ziehen} title="Breite ändern" role="separator" aria-orientation="vertical" />
+      {/* Breite ziehen, mit ←/→ (Tastatur) oder per Doppelklick auf die Vorgabe zurück – gemerkt in den Einstellungen der App */}
+      <Ziehgriff breite={breite} setBreite={setLeisteBreite} vorgabe={300} titel="Breite der Navigation ändern" />
     </aside>
   );
 }

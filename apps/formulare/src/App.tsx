@@ -52,6 +52,9 @@ function sperrgrund(o: OffenesFormular): string | null {
   return `Nur ansehen: Das Formular ist bei ${wer(s)} geöffnet${s.angemeldet ? ` (seit ${s.angemeldet})` : ''}. ${o.sperre.bewertung.grund}`;
 }
 
+/** „1 Feld“, „3 Felder“ */
+const anzahl = (n: number, eins: string, mehr: string) => `${n} ${n === 1 ? eins : mehr}`;
+
 const uhrzeit = (ms: number) => new Date(ms).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
 
 /** Formular drucken (auch als PDF): immer die Formularansicht, in Originalgröße */
@@ -82,6 +85,9 @@ export function App() {
   const verlaufOffen = useFormulare((s) => s.verlaufOffen);
   const gliederungOffen = useFormulare((s) => s.gliederungOffen);
   const einrichten = useEinrichten((s) => s.aktiv);
+  // im Einrichten-Modus zeigt die Gliederung den Aufbau als Baum – einklappbar, damit bei knapper Breite das Papier Platz hat
+  const einrichtenBaum = useEinrichten((s) => s.baumOffen);
+  const gliederungSichtbar = einrichten ? einrichtenBaum : gliederungOffen;
   const karte = useFormulare((s) => s.karte);
   const datei = useFormulare((s) => s.datei);
   const meldung = useFormulare((s) => s.meldung);
@@ -228,7 +234,12 @@ export function App() {
       <div className="toolbar">
         {formularSichtbar && (
           <div className="tb-group">
-            <button className={gliederungOffen ? 'active' : ''} title="Gliederung des Formulars ein- oder ausblenden" onClick={() => setGliederungOffen(!gliederungOffen)}>
+            <button
+              className={gliederungSichtbar ? 'active' : ''}
+              title={einrichten ? 'Aufbau des Formulars als Baum ein- oder ausblenden' : 'Gliederung des Formulars ein- oder ausblenden'}
+              aria-pressed={gliederungSichtbar}
+              onClick={() => (einrichten ? useEinrichten.getState().setBaumOffen(!einrichtenBaum) : setGliederungOffen(!gliederungOffen))}
+            >
               <Symbol name="liste" /> Gliederung
             </button>
             <button
@@ -270,11 +281,12 @@ export function App() {
         )}
         {formularSichtbar && ds && projekt && zugeordnet > 0 && (
           <div className="tb-group">
-            <button disabled={!!grund} title={`${zugeordnet} Felder dieses Formulars kommen aus der Projektkarte`} onClick={() => useAktualisieren.getState().dialogOeffnen()}>
+            <button disabled={!!grund} title={`${zugeordnet} Felder dieses Formulars kommen aus den Projektdaten (Projektkarte)`} onClick={() => useAktualisieren.getState().dialogOeffnen()}>
               <Symbol name="neuLaden" /> Daten aktualisieren …
             </button>
             <MenueKnopf
-              title="Formular"
+              title="Weitere Befehle zum Aktualisieren"
+              ariaLabel="Weitere Befehle zum Aktualisieren"
               className="fo-menue-knopf"
               punkte={() => [
                 { text: 'Daten aktualisieren …', symbol: 'neuLaden', deaktiviert: !!grund, aktion: () => useAktualisieren.getState().dialogOeffnen() },
@@ -337,8 +349,8 @@ export function App() {
             <button disabled={!kannWiederholen(karte.verlauf)} title="Wiederholen (Strg+Y)" aria-label="Wiederholen" onClick={() => zeigeKarte(karteWiederholen())}>
               <Symbol name="wiederholen" />
             </button>
-            <button className="primary" disabled={!geaendert} title="In die Projektkarte des Projekts speichern (Strg+S)" onClick={() => void karteSpeichern()}>
-              Projektkarte speichern
+            <button className="primary" disabled={!geaendert} title="Projektdaten in die Projektkarte des Projekts speichern (Strg+S)" onClick={() => void karteSpeichern()}>
+              Projektdaten speichern
             </button>
             <button disabled={!geaendert} title="Alle ungespeicherten Änderungen zurücknehmen (Strg+Z holt sie zurück)" onClick={karteVerwerfen}>
               Verwerfen
@@ -353,14 +365,14 @@ export function App() {
         <span className="tb-spacer" />
         {kartenansicht && karte && (
           <span className="muted small-text fo-status">
-            {geaendert ? `${Object.keys(karte.aenderungen).length} Eintrag/Einträge geändert` : 'Alles gespeichert'}
+            {geaendert ? `${anzahl(Object.keys(karte.aenderungen).length, 'Eintrag', 'Einträge')} geändert` : 'Alles gespeichert'}
             {geaendert && karte.gesichert && ` · lokal gesichert ${uhrzeit(karte.gesichert)}`}
           </span>
         )}
         {formularSichtbar && (
           <span className="muted small-text fo-status">
             {[kennung(offen.formular), stand(offen.formular) && `Stand ${stand(offen.formular)}`].filter(Boolean).join(' · ')}
-            {geaendert && ` · ${Object.keys(offen.aenderungen).length} Feld(er) geändert`}
+            {geaendert && ` · ${anzahl(Object.keys(offen.aenderungen).length, 'Feld', 'Felder')} geändert`}
             {geaendert && offen.gesichert && ` · lokal gesichert ${uhrzeit(offen.gesichert)}`}
           </span>
         )}
@@ -380,8 +392,8 @@ export function App() {
           {meldung && (
             <div className={`fo-meldung ${meldung.art === 'fehler' ? 'fehler' : 'info'}`} role="status">
               <span>{meldung.text}</span>
-              <button className="fo-klein" title="Schließen" onClick={() => setMeldung(null)}>
-                ×
+              <button className="icon" title="Meldung schließen" aria-label="Meldung schließen" onClick={() => setMeldung(null)}>
+                <Symbol name="schliessen" />
               </button>
             </div>
           )}
@@ -415,7 +427,7 @@ export function App() {
       )}
       <main className="fo-main">
         {ds && projekt && haupt !== 'projekte' && <Seitenleiste onProjekte={() => useFormulare.getState().setHaupt('projekte')} onSperren={() => setDialog('sperren')} />}
-        {formularSichtbar && (gliederungOffen || einrichten) && (
+        {formularSichtbar && gliederungSichtbar && (
           <BreitenLeiste schluessel="formulare:breite:gliederung" vorgabe={260}>
             <Gliederung offen={offen} />
           </BreitenLeiste>
@@ -497,7 +509,7 @@ function Leer({ desktop, onEinstellungen }: { desktop: boolean; onEinstellungen:
           Wähle links ein Projekt – oder suche mit <kbd>Strg</kbd>+<kbd>K</kbd> nach Kürzel oder Titel.
         </p>
       )}
-      {desktop && projekt && <p>Wähle links ein Formular oder die Projektkarte.</p>}
+      {desktop && projekt && <p>Wähle links ein Formular oder die Projektdaten.</p>}
       <p className="muted small-text">
         Jede Eingabe wird sofort lokal gesichert, mit Verlauf (<kbd>Strg</kbd>+<kbd>Z</kbd> / <kbd>Strg</kbd>+<kbd>Y</kbd>). In die Formulardatei kommt sie mit „Speichern“ (
         <kbd>Strg</kbd>+<kbd>S</kbd>) – geändert wird nur der Inhalt der Felder, Layout und alles andere bleiben Byte für Byte erhalten. Ist ein Formular in einem anderen Programm geöffnet, lässt
