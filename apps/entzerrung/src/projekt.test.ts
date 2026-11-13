@@ -24,6 +24,10 @@ const datei = vi.hoisted(() => ({
   gezeigt: [] as string[],
   /** so oft scheitert ordnerZeigen noch */
   zeigenFehler: 0,
+  /** IndexedDB-Attrappe: Schreiben scheitert (Transaktion meldet einen Fehler) */
+  idbFehler: false,
+  /** zuletzt bei vorDemSchliessen angemeldete Funktion (ihr Ergebnis prüft core erst mit #93) */
+  vorbereitung: null as null | (() => Promise<unknown>),
 }));
 vi.mock('@core/platform/files', async (original) => ({
   ...(await original<typeof import('@core/platform/files')>()),
@@ -41,6 +45,16 @@ vi.mock('@core/platform/projektordner', async (original) => ({
     datei.gezeigt.push(p);
   },
 }));
+vi.mock('@core/platform/rahmen', async (original) => {
+  const o = await original<typeof import('@core/platform/rahmen')>();
+  return {
+    ...o,
+    vorDemSchliessen: (f: () => Promise<void>) => {
+      datei.vorbereitung = f;
+      return o.vorDemSchliessen(f);
+    },
+  };
+});
 vi.mock('./dateistand', () => ({ dateiStandLesen: async (p: string) => (datei.staende.has(p) ? datei.staende.get(p) : undefined) }));
 vi.mock('@core/ui/Rueckfrage', async (original) => ({
   ...(await original<typeof import('@core/ui/Rueckfrage')>()),
@@ -66,7 +80,7 @@ function attrappe() {
     createObjectStore: () => undefined,
     transaction: (store: string) => {
       const m = daten[store];
-      const t: { oncomplete?: () => void; onerror?: () => void; objectStore: () => unknown } = {
+      const t: { oncomplete?: () => void; onerror?: () => void; error?: Error; objectStore: () => unknown } = {
         objectStore: () => ({
           put: (v: unknown, k: string) => anfrage(() => m.set(k, v)),
           get: (k: string) => anfrage(() => m.get(k)),
@@ -74,7 +88,12 @@ function attrappe() {
           delete: (k: string) => anfrage(() => m.delete(k)),
         }),
       };
-      setTimeout(() => t.oncomplete?.(), 0);
+      setTimeout(() => {
+        if (datei.idbFehler) {
+          t.error = new Error('Speicher voll');
+          t.onerror?.();
+        } else t.oncomplete?.();
+      }, 0);
       return t;
     },
   };
@@ -110,6 +129,7 @@ beforeEach(() => {
   datei.antworten = [];
   datei.knoepfe = [];
   datei.tauri = false;
+  datei.idbFehler = false;
   datei.gezeigt = [];
   datei.zeigenFehler = 0;
   datei.antwort = null;
@@ -392,6 +412,57 @@ describe('Zwischenspeicher', () => {
       expect(await vorbereitet).toBe(true);
       // im Zwischenstand steht der gespeicherte Stand, nicht der davor (sonst später falsche Rückfrage „von außen geändert“)
       expect(idb.stand.get('stand')).toMatchObject({ dirty: false, dateiname: '/Projekt/Süd.entz', dateiStand: { groesse: 42, geaendert: 7 } });
+      ende();
+    } finally {
+      g.window = vorher;
+    }
+  });
+
+  it('vor dem Schließen: scheitert ein Schreiben (Zwischenstand, Foto, .entz), meldet die Funktion false; erneut versucht und gelungen: true', async () => {
+    const g = globalThis as { window?: unknown };
+    const vorher = g.window;
+    g.window = new EventTarget();
+    try {
+      idb.stand.clear();
+      const ende = await zwischenspeicherStarten();
+      const vorbereiten = datei.vorbereitung!;
+      // Zwischenstand scheitert: false (statt still zu schließen)
+      useEntz.getState().fotoHinzufuegen('f1', 'Süd', 'image/jpeg', 100, 80, bytes(5, 6));
+      datei.idbFehler = true;
+      expect(await vorbereiten()).toBe(false);
+      expect(idb.stand.has('stand')).toBe(false);
+      // „Erneut versuchen“: schreibt noch einmal, jetzt gelingt es
+      datei.idbFehler = false;
+      expect(await vorbereiten()).toBe(true);
+      expect((idb.stand.get('stand') as { doc: { fotos: { id: string }[] } }).doc.fotos.map((f) => f.id)).toEqual(['f1']);
+      // Gegenprobe: nichts mehr ausstehend und nichts gescheitert – true, ohne zu schreiben
+      const geschrieben = vi.spyOn(idb.stand, 'set');
+      expect(await vorbereiten()).toBe(true);
+      expect(geschrieben).not.toHaveBeenCalled();
+      geschrieben.mockRestore();
+      // ein Foto scheitert: false; danach trägt der neu geschriebene Stand die Bilddaten nach
+      idb.fotos.delete('f1');
+      datei.idbFehler = true;
+      expect(await fotoSchreiben('f1', bytes(5, 6))).toBe(false);
+      expect(await vorbereiten()).toBe(false);
+      datei.idbFehler = false;
+      expect(await vorbereiten()).toBe(true);
+      expect(idb.fotos.get('f1')).toEqual(bytes(5, 6));
+      // .entz scheitert während des Wartens: false; Gegenprobe abgebrochenes Speichern (kein Fehler): true
+      let scheitern: (e: Error) => void = () => undefined;
+      datei.speichern = (o) => {
+        o.build();
+        return new Promise((_, nein) => (scheitern = nein));
+      };
+      const lauf = speichern();
+      const ergebnis = vorbereiten();
+      scheitern(new Error('Datenträger voll'));
+      expect(await lauf).toBe(false);
+      expect(await ergebnis).toBe(false);
+      datei.speichern = async (o) => (o.build(), null);
+      const abgebrochen = speichern();
+      expect(await vorbereiten()).toBe(true);
+      expect(await abgebrochen).toBe(false);
       ende();
     } finally {
       g.window = vorher;

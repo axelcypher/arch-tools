@@ -7,7 +7,7 @@ import { ordnerZeigen, verbinde } from '@core/platform/projektordner';
 import { fotoEinlesen } from './bilder';
 import { ENDUNG, entpacken, packen } from './datei';
 import { neueId, neuesFoto } from './model';
-import { fotoSchreiben, schreibenAbgeschlossen, standLesen, standSchreiben } from './speicher';
+import { fotoSchreiben, schreibenAbgeschlossen, schreibenGescheitert, standLesen, standSchreiben } from './speicher';
 import { useEntz } from './store';
 import { aenderungenSpeichern, fragen, meldung, oeffnenFehlgeschlagen } from '@core/ui/Rueckfrage';
 import { dateiStandLesen } from './dateistand';
@@ -58,6 +58,8 @@ export async function oeffnen(datei?: File) {
 }
 
 let speichertGerade: Promise<boolean> | null = null;
+/** das letzte Speichern der .entz ist an einem Fehler gescheitert (nicht abgebrochen) */
+let speichernGescheitert = false;
 
 /**
  * true, wenn gespeichert wurde. Ein zweiter Aufruf während des Speicherns wartet auf den ersten. Ändert sich das
@@ -67,6 +69,7 @@ export function speichern(unterNeuemNamen = false): Promise<boolean> {
   if (speichertGerade) return speichertGerade;
   // ein gerade bearbeitetes Feld zuerst übernehmen (Strg+S ohne Verlassen des Felds)
   if (typeof document !== 'undefined' && document.activeElement instanceof HTMLInputElement) document.activeElement.blur();
+  speichernGescheitert = false;
   speichertGerade = speichernJetzt(unterNeuemNamen).finally(() => (speichertGerade = null));
   return speichertGerade;
 }
@@ -136,6 +139,7 @@ async function speichernJetzt(unterNeuemNamen: boolean): Promise<boolean> {
     }
     const text = e instanceof Error ? e.message : String(e);
     log.error('Speichern fehlgeschlagen', text);
+    speichernGescheitert = true;
     await meldung('Speichern fehlgeschlagen', 'Die Entzerrung ließ sich nicht speichern. Die Änderungen bleiben in der App erhalten.', e);
     return false;
   }
@@ -243,25 +247,38 @@ export async function zwischenspeicherStarten(): Promise<() => void> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   /** das zuletzt angestoßene Schreiben samt Startschutz-Vermerk */
   let zuletzt: Promise<void> = Promise.resolve();
+  let standLaeuft = false;
   const schreiben = () => {
     timer = undefined;
     const a = useEntz.getState();
+    standLaeuft = true;
     zuletzt = standSchreiben({ doc: a.doc, dateiname: a.dateiname, dateiStand: a.dateiStand, dirty: a.dirty }, a.bilder, () => verwendeteFotos(useEntz.getState()))
       .then(() => zwischenstandErsetzt(APP))
-      .catch((e) => log.warn('Startschutz-Vermerk fehlgeschlagen', e));
+      .catch((e) => log.warn('Startschutz-Vermerk fehlgeschlagen', e))
+      .finally(() => (standLaeuft = false));
   };
   // beim Schließen den ausstehenden Stand sofort schreiben
   const sofort = () => timer !== undefined && (clearTimeout(timer), schreiben());
   window.addEventListener('pagehide', sofort);
   window.addEventListener('beforeunload', sofort);
-  // vor dem Schließen, Andocken, Herauslösen und Update-Neustart in Arkly: ausstehenden Stand sofort schreiben, dann
-  // alles laufende Schreiben (.entz, Stand, Fotos) abwarten; ein zweiter Aufruf wartet nur noch, statt erneut zu schreiben
-  const abmelden = vorDemSchliessen(async () => {
-    // ein laufendes Speichern der .entz zuerst: es ändert danach noch den Stand (gespeichert, Dateistand)
-    await Promise.allSettled([speichertGerade]);
-    sofort();
-    await Promise.allSettled([zuletzt, schreibenAbgeschlossen()]);
-  });
+  // vor dem Schließen, Andocken, Herauslösen und Update-Neustart in Arkly: erst ein laufendes Speichern der .entz abwarten
+  // (es ändert danach noch den Stand), dann den ausstehenden – oder zuletzt gescheiterten – Zwischenstand sofort schreiben
+  // und alles laufende Schreiben abwarten. Ein zweiter Aufruf wartet nur, statt erneut zu schreiben; nach einem Fehler
+  // („Erneut versuchen“) schreibt er noch einmal. false, wenn ein Schreiben gescheitert ist (der Grund steht im Protokoll):
+  // dann fragt Arkly nach, statt das Fenster zu schließen.
+  const vorbereiten = async (): Promise<boolean> => {
+    const lief = speichertGerade;
+    await Promise.allSettled([lief]);
+    if (timer !== undefined || (schreibenGescheitert() && !standLaeuft)) {
+      clearTimeout(timer);
+      schreiben();
+    }
+    await Promise.allSettled([zuletzt]);
+    const ok = await schreibenAbgeschlossen();
+    return ok && !(lief && speichernGescheitert);
+  };
+  // Umwandlung entfällt mit core #93 (vorDemSchliessen nimmt dann `false` als „nicht gespeichert“ an)
+  const abmelden = vorDemSchliessen(vorbereiten as unknown as () => Promise<void>);
   const ende = useEntz.subscribe((s, vorher) => {
     if (s.doc === vorher.doc && s.dateiname === vorher.dateiname && s.dateiStand === vorher.dateiStand && s.dirty === vorher.dirty) return;
     clearTimeout(timer);

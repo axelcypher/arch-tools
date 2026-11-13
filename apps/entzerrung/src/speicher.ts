@@ -40,13 +40,18 @@ function merken<T>(arbeit: Promise<T>): Promise<T> {
   return arbeit;
 }
 
+/** seit dem letzten gelungenen Stand ist ein Schreiben gescheitert (ein gelungener Stand trägt fehlende Fotos nach) */
+let gescheitert = false;
+export const schreibenGescheitert = () => gescheitert;
+
 /**
  * wartet, bis kein Schreiben mehr läuft – auch auf solche, die vor dem Ende des letzten laufenden Vorgangs starten.
  * Nacheinander gestartete Fotos (etwa beim Öffnen) können danach noch folgen; deren Bilddaten trägt der nächste Stand
- * ohnehin aus `bilder` nach.
+ * ohnehin aus `bilder` nach. false, wenn seit dem letzten gelungenen Stand ein Schreiben gescheitert ist.
  */
-export async function schreibenAbgeschlossen(): Promise<void> {
+export async function schreibenAbgeschlossen(): Promise<boolean> {
   while (laufend.size) await Promise.allSettled([...laufend]);
+  return !gescheitert;
 }
 
 function anfrage<T>(store: string, modus: IDBTransactionMode, f: (s: IDBObjectStore) => IDBRequest<T>): Promise<T> {
@@ -66,11 +71,12 @@ function anfrage<T>(store: string, modus: IDBTransactionMode, f: (s: IDBObjectSt
  * gelöscht werden nur Fotos, die weder dieses Dokument noch `behalten()` (Dokument und Rückgängig-Verlauf zum
  * Zeitpunkt des Löschens) braucht.
  */
-export function standSchreiben(s: Stand, bilder: Record<string, Uint8Array> = {}, behalten: () => Set<string> = () => new Set(s.doc.fotos.map((f) => f.id))): Promise<void> {
+export function standSchreiben(s: Stand, bilder: Record<string, Uint8Array> = {}, behalten: () => Set<string> = () => new Set(s.doc.fotos.map((f) => f.id))): Promise<boolean> {
   return merken(standSchreibenJetzt(s, bilder, behalten));
 }
 
-async function standSchreibenJetzt(s: Stand, bilder: Record<string, Uint8Array>, behalten: () => Set<string>) {
+/** true, wenn geschrieben; ein Fehler wird protokolliert und als false gemeldet */
+async function standSchreibenJetzt(s: Stand, bilder: Record<string, Uint8Array>, behalten: () => Set<string>): Promise<boolean> {
   try {
     const vorhanden = new Set((await anfrage('fotos', 'readonly', (o) => o.getAllKeys())).map(String));
     for (const f of s.doc.fotos) if (!vorhanden.has(f.id) && bilder[f.id]) await anfrage('fotos', 'readwrite', (o) => o.put(bilder[f.id], f.id));
@@ -78,16 +84,25 @@ async function standSchreibenJetzt(s: Stand, bilder: Record<string, Uint8Array>,
     // erst jetzt fragen, was gebraucht wird: inzwischen hinzugefügte Fotos bleiben
     const brauchen = behalten();
     for (const k of vorhanden) if (!brauchen.has(k) && !s.doc.fotos.some((f) => f.id === k)) await anfrage('fotos', 'readwrite', (o) => o.delete(k));
+    gescheitert = false;
+    return true;
   } catch (e) {
     log.warn('Zwischenspeichern fehlgeschlagen', e);
+    gescheitert = true;
+    return false;
   }
 }
 
-export function fotoSchreiben(id: string, daten: Uint8Array): Promise<void> {
+/** true, wenn geschrieben; ein Fehler wird protokolliert und als false gemeldet */
+export function fotoSchreiben(id: string, daten: Uint8Array): Promise<boolean> {
   return merken(
     anfrage('fotos', 'readwrite', (o) => o.put(daten, id)).then(
-      () => undefined,
-      (e) => log.warn('Foto konnte nicht zwischengespeichert werden', e),
+      () => true,
+      (e) => {
+        log.warn('Foto konnte nicht zwischengespeichert werden', e);
+        gescheitert = true;
+        return false;
+      },
     ),
   );
 }

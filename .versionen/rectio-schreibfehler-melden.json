@@ -1,0 +1,3 @@
+{
+  "entzerrung": { "stufe": "patch", "notiz": "Scheitert vor dem Schließen in Arkly das Schreiben von Zwischenstand, Foto oder Projektdatei, meldet RECTIO das, statt das Fenster still zu schließen." }
+}
