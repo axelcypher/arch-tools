@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { appNameSetzen } from './appName';
 import { isTauri } from '../platform/files';
 import { andocken, anRahmenMelden, rahmenModus, speichernAnfragenBeantworten } from '../platform/rahmen';
 import { getEntries, logger, logVersion, subscribe } from '../platform/log';
@@ -45,6 +46,7 @@ export function TitleBar({ app, name, dirty, onOpenLog, regeln, onProjekte, zeic
   const ziehen = rahmen === 'tab' ? {} : { 'data-tauri-drag-region': true };
 
   // im Tab: Name und ungespeicherte Änderungen an den Rahmen melden (Tab-Beschriftung, Rückfrage beim Schließen)
+  appNameSetzen(app);
   useEffect(() => anRahmenMelden(app, name, dirty), [app, name, dirty]);
   // im Tab: „Speichern“ aus der Rückfrage des Rahmens beim Schließen
   const speichernRef = useRef(onSpeichern);

@@ -33,10 +33,15 @@ Speicher-Schlüssel, Bundle-Kennungen und die Release-Tags (`grz-v…` usw.).
 | **FABRIO** | AVA | 0.4.0 |
 | **LEXIO** | Baurecht – folgt mit seiner App | – |
 
-Beim ersten Update unter dem neuen Namen entfernt der Installer die Installation unter dem alten Namen still;
-Startmenü- und Desktop-Verknüpfung werden unter dem neuen Namen angelegt, wenn es sie vorher gab. Einstellungen und
-Daten bleiben erhalten, weil sie an der App-Kennung hängen, nicht am Namen. Ein MSI-Paket ersetzt das alte, weil der
-Upgrade-Code gleich bleibt. Details zum Installer-Hook: `apps/<app>/src-tauri/windows/umbenennung.nsh`.
+Beim ersten Update unter dem neuen Namen entfernt der Installer die Installation unter dem alten Namen – aber nur,
+wenn sie sicher von uns stammt (gleicher Herausgeber, gleiche Programmdatei). Läuft die alte App noch, fragt er wie
+sonst auch nach (beim automatischen Update wird sie beendet). Startmenü- und Desktop-Verknüpfung werden unter dem neuen
+Namen angelegt, wenn es sie vorher gab; Anheftungen an die Taskleiste löst die alte Deinstallation, sie sind neu
+anzuheften. Schlägt die alte Deinstallation fehl, bleibt sie vollständig bestehen, und das nächste Update versucht es
+erneut. Einstellungen und Daten bleiben erhalten, weil sie an der App-Kennung hängen, nicht am Namen. Ein MSI-Paket
+ersetzt das alte, weil der Upgrade-Code gleich bleibt; Verknüpfungen mit dem alten Namen können dabei stehen bleiben
+und sind dann von Hand zu löschen. Details zum Installer-Hook: `apps/<app>/src-tauri/windows/umbenennung.nsh`
+(geprüft mit `scripts/nsis-hooks-pruefen.sh` in der CI).
 
 Die Namen stehen an einer Stelle: `packages/core/src/appNamen.ts` (Name und `was` – wofür die App da ist). Regel für
 Texte: Ein Verweis auf eine andere App nennt beim ersten Vorkommen in einem Text, Dialog oder einer Regelkarte den

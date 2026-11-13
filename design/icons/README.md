@@ -18,7 +18,7 @@ Ausgerollt in allen Apps: `src-tauri/icon.svg`, `public/favicon.svg` und die dar
 | <img src="ava.svg" width="40">             | **FABRIO** (AVA)             | Klemmbrett der Bauleitung      | Klammer                                                        | `#853a77` |
 | <img src="baurecht.svg" width="40">        | **LEXIO** (Baurecht)         | Paragraf mit Ampel             | gelbes Licht – „prüfen“                                        | `#33607e` |
 
-LEXIO (Baurecht) liegt noch auf dem Branch `claude/nice-fermi-702pde`; sein Icon kommt mit der App.
+LEXIO (Baurecht) ist noch nicht auf main; sein Icon kommt mit der App.
 
 ## Regeln
 

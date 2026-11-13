@@ -27,9 +27,10 @@ Werkzeuge in **einem Programm und einem Fenster**. Sie kann nichts weiter, als z
 - **Updates** macht der Rahmen für alle Apps zusammen (Knopf in der Titelleiste, Manifest `suite.json`); die
   Update-Knöpfe der einzelnen Apps sind im Rahmen ausgeblendet.
 - **Umbenennung:** Bis 0.18.0 hieß die Rahmen-App „arch-tools“. Beim ersten Update auf den neuen Namen entfernt der
-  Installer die Installation unter dem alten Namen still und legt vorhandene Startmenü- und Desktop-Verknüpfungen als
-  „Arkly“ an; Einstellungen und Daten bleiben, weil sie an der App-Kennung hängen. Ein MSI-Paket
-  ersetzt das alte (gleicher Upgrade-Code). Hook: `apps/suite/src-tauri/windows/umbenennung.nsh`; die Namen aller
+  Installer die Installation unter dem alten Namen (nur mit gleichem Herausgeber und gleicher Programmdatei) und legt
+  vorhandene Startmenü- und Desktop-Verknüpfungen als „Arkly“ an; Einstellungen und Daten bleiben, weil sie an der
+  App-Kennung hängen. Ein MSI-Paket ersetzt das alte (gleicher Upgrade-Code), alte Verknüpfungen können dabei stehen
+  bleiben. Einzelheiten in der README unter „Neue Namen“. Hook: `apps/suite/src-tauri/windows/umbenennung.nsh`; die Namen aller
   Apps stehen in der README unter [Neue Namen](../README.md#neue-namen).
 
 Die einzelnen Apps mit eigenem Installer bleiben unverändert nutzbar; Einstellungen (gemeinsamer
