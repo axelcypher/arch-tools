@@ -162,11 +162,11 @@ export function RoofEditor({
           {d.typ !== 'flach' && (
             <div className="button-row">
               <button className="small" onClick={() => set({ firstrichtung: (roofStats(d, shape.points).frame.angle + 90) % 180 })}>
-                ⟳ Firstrichtung drehen
+                Firstrichtung drehen
               </button>
               {d.typ === 'pult' && (
                 <button className="small" onClick={() => set({ umkehren: !d.umkehren })}>
-                  ⇅ Hohe Seite wechseln
+                  Hohe Seite wechseln
                 </button>
               )}
               {d.firstrichtung !== undefined && (
