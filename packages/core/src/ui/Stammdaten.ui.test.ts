@@ -83,6 +83,7 @@ describe('Stammdaten-Dialog', () => {
             },
             bearbeiterVorschlaege: ['TP', 'AK'],
             beteiligtVorschlaege: [{ rolle: 'Tragwerksplanung', name: 'Büro Statik', kontakt: '0251 1234' }],
+            rollenSchnell: true,
           }),
         ),
       );
@@ -110,6 +111,14 @@ describe('Stammdaten-Dialog', () => {
     const rolle = host.querySelector<HTMLInputElement>('input[aria-label="Rolle 1"]')!;
     expect(liste(rolle)).toContain('Prüfingenieur/-in für Standsicherheit');
     expect(liste(rolle)).toContain('Vermessung (ÖbVI)');
+    // NRW: Prüfsachverständige für Brandschutz (§ 68 Abs. 2) und Standsicherheit (§ 68 Abs. 3), Schall- und Wärmeschutz (§ 68 Abs. 4), SiGeKo – nur als Vorschlag
+    expect(liste(rolle)).toEqual(
+      expect.arrayContaining(['Prüfsachverständige/-r für Brandschutz', 'Prüfsachverständige/-r für Standsicherheit', 'Staatlich anerkannte/-r Sachverständige/-r für Schall- und Wärmeschutz', 'SiGeKo (BaustellV)']),
+    );
+    // Gegenprobe: die Schnellwahl-Knöpfe bleiben die bisherigen acht – Bodengutachten ja, die neuen Rollen nicht
+    const schnell = [...host.querySelectorAll('[aria-label="Beteiligte nach Rolle hinzufügen"] button')].map((b) => b.textContent?.trim() ?? '');
+    expect(schnell).toContain('+ Bodengutachten');
+    expect(schnell.some((t) => t.includes('Prüfsachverständige') || t.includes('SiGeKo') || t.includes('Schall'))).toBe(false);
     expect(host.querySelector('button[aria-label="Beteiligten 1 entfernen"]')).not.toBeNull();
     eingabe(rolle, 'Lichtplanung');
     expect(meta.beteiligte![0].rolle).toBe('Lichtplanung');
