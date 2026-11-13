@@ -5552,6 +5552,33 @@ describe('Formulare umbenennen', () => {
     expect((antragIn('BAUA 2')?.umfang as { id: string; formularDatei?: string }[]).find((u) => u.id === 'bauantrag')?.formularDatei).toBeUndefined();
   });
 
+  it('Sammelprojekt: festgeschrieben wird nur im aktiven Antrag bzw. in den Anträgen des Unterordners – fremde bleiben', async () => {
+    ds.dateien.set('C:/FORMA/BS9/2. BAUA/002-Bauantrag (2026).frmsjf', MUSTER);
+    ds.dateien.set('C:/FORMA/BS9/BAUA/005-Bauantrag.frmsjf', MUSTER);
+    const host = await projektBS9();
+    await klick(antragsdaten(host));
+    await klick(knopf(host, 'Antragsumfang festlegen'));
+    // im Antrag BAUA dieselben Einträge, nur über den Namen (dort gilt der eigene Unterordner BAUA)
+    await act(() =>
+      useFormulare.getState().oapAendern((roh) => {
+        const f = roh.formulare as { antraege: Record<string, Record<string, unknown>> };
+        f.antraege.BAUA = { ...f.antraege.BAUA, umfang: [{ id: 'muster', titel: 'Musterformular', art: 'intern', formular: 'Muster' }, { id: 'bauantrag', titel: 'Bauantrag', art: 'intern', formular: 'Bauantrag' }] };
+        return roh;
+      }),
+    );
+    await act(() => useAntrag.getState().laden());
+    for (let i = 0; i < 3; i++) await warte();
+    const eintrag = (antrag: string, id: string) => (antragIn(antrag)?.umfang as { id: string; formularDatei?: string }[]).find((u) => u.id === id);
+    await umbenennen(host, '002-Bauantrag (2026)', '003-Vordruck');
+    await umbenennen(host, '001-Muster', '010-Vordruck');
+    // im aktiven Antrag BAUA 2 festgeschrieben
+    expect(eintrag('BAUA 2', 'bauantrag')?.formularDatei).toBe('2. BAUA/003-Vordruck.frmsjf');
+    expect(eintrag('BAUA 2', 'muster')?.formularDatei).toBe('010-Vordruck.frmsjf');
+    // Gegenprobe: im Antrag BAUA bleibt alles, wie es war
+    expect(eintrag('BAUA', 'bauantrag')?.formularDatei).toBeUndefined();
+    expect(eintrag('BAUA', 'muster')?.formularDatei).toBeUndefined();
+  });
+
   it('nicht geöffnet: Entwurf und Verlauf ziehen mit; ohne Kennung werden die eigenen Einstellungen kopiert', async () => {
     // dasselbe Muster ohne Kennung – die eigenen Einstellungen hängen dann am Namen
     const ohneKennung = new Uint8Array(Buffer.from(Buffer.from(MUSTER).toString('latin1').replace('nw019999', ''), 'latin1'));
@@ -5648,8 +5675,29 @@ describe('Formulare umbenennen', () => {
     };
     await umbenennen(host, '001-Muster', '010-Muster neu');
     expect(ds.dateien.has(NEU)).toBe(true);
-    expect(useFormulare.getState().meldung).toMatchObject({ art: 'fehler', text: expect.stringContaining('bitte die Zuordnung in den Antragsdaten prüfen') });
+    expect(useFormulare.getState().meldung).toMatchObject({ art: 'fehler', text: expect.stringContaining('bitte die Zuordnung in den Antragsdaten von BS9 prüfen') });
     expect(ds.dateien.has('C:/FORMA/BS9/010-Muster neu.frmtmp')).toBe(false);
+  });
+
+  it('Speicher voll: umbenannt, aber die Meldung sagt, dass nicht gespeicherte Eingaben am alten Namen bleiben', async () => {
+    const host = await projektBS9();
+    await klick(knopf(host, '001-Muster'));
+    const feld = useFormulare.getState().offen!.felder.flat().find((f) => f.art === 'text' && !f.berechnet)!;
+    act(() => useFormulare.getState().wertSetzen(feld, 'Entwurf'));
+    await act(() => useFormulare.getState().schliessen());
+    const setItem = localStorage.setItem.bind(localStorage);
+    const spion = vi.spyOn(localStorage, 'setItem').mockImplementation((k: string, v: string) => {
+      if (k.startsWith('formulare:entwuerfe') || k.startsWith('formulare:verlauf')) if (`${k}${v}`.includes('010-Muster neu')) throw new Error('QuotaExceededError');
+      setItem(k, v);
+    });
+    try {
+      await umbenennen(host, '001-Muster', '010-Muster neu');
+    } finally {
+      spion.mockRestore();
+    }
+    expect(ds.dateien.has(NEU)).toBe(true);
+    expect(useFormulare.getState().meldung).toMatchObject({ art: 'fehler', text: expect.stringContaining('Nicht gespeicherte Eingaben ließen sich nicht mitnehmen') });
+    expect(hatEntwurf(useFormulare.getState().projekt!, 'BS9/001-Muster.frmsjf')).toBe(true);
   });
 
   it('Speicher voll beim Umziehen des Verlaufs: der alte bleibt stehen', () => {

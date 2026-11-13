@@ -1629,7 +1629,8 @@ export function formularSchluessel(pfad: string): string {
  * (`formularDatei`) und den Autofill-Zustand (`felder`, je Formular). `alt`/`neu` sind Schlüssel nach
  * formularSchluessel. Liegt das Formular im Unterordner eines Sammelprojekts, gilt in den Anträgen, zu denen der
  * Unterordner gehört (`gehoertZu`), auch eine ältere Zuordnung nur mit dem Dateinamen. Einträge ohne `formularDatei`,
- * die das Formular nur über Name bzw. Titel finden und unter dem neuen Namen nicht mehr fänden (`festschreiben`),
+ * die das Formular nur über Name bzw. Titel finden und unter dem neuen Namen nicht mehr fänden (`festschreiben`, je
+ * Antrag – null: die früher projektweiten Angaben),
  * bekommen den neuen Schlüssel fest. Liefert eine Kopie und die Zahl der umgeschriebenen Verweise; sonst bleibt alles,
  * wie es ist.
  */
@@ -1638,14 +1639,14 @@ export function formularVerweiseUmbenennen(
   alt: string,
   neu: string,
   gehoertZu: (fassung: string) => boolean = () => false,
-  festschreiben: (u: UmfangEintrag) => boolean = () => false,
+  festschreiben: (u: UmfangEintrag, fassung: string | null) => boolean = () => false,
 ): { abschnitt: unknown; anzahl: number } {
   if (!abschnitt || typeof abschnitt !== 'object') return { abschnitt, anzahl: 0 };
   const kopie = structuredClone(abschnitt) as Record<string, unknown>;
   const altKlein = alt.toLowerCase();
   const nameKlein = alt.includes('/') ? nurName(alt).toLowerCase() : null;
   let anzahl = 0;
-  const umschreiben = (d: unknown, auchName: boolean) => {
+  const umschreiben = (d: unknown, auchName: boolean, fassung: string | null) => {
     if (!d || typeof d !== 'object') return;
     const o = d as Record<string, unknown>;
     const passt = (v: string) => v.toLowerCase() === altKlein || (auchName && nameKlein !== null && v.toLowerCase() === nameKlein);
@@ -1655,7 +1656,7 @@ export function formularVerweiseUmbenennen(
         if (e && typeof e.formularDatei === 'string' && passt(e.formularDatei)) {
           e.formularDatei = neu;
           anzahl++;
-        } else if (e && e.formularDatei === undefined && e.art === 'intern' && festschreiben(e as unknown as UmfangEintrag)) {
+        } else if (e && e.formularDatei === undefined && e.art === 'intern' && festschreiben(e as unknown as UmfangEintrag, fassung)) {
           // bisher nur über Name bzw. Titel gefunden – unter dem neuen Namen passte das nicht mehr: festschreiben
           e.formularDatei = neu;
           anzahl++;
@@ -1673,9 +1674,9 @@ export function formularVerweiseUmbenennen(
       }
     }
   };
-  umschreiben(kopie, false);
+  umschreiben(kopie, false, null);
   if (kopie.antraege && typeof kopie.antraege === 'object' && !Array.isArray(kopie.antraege))
-    for (const [fassung, d] of Object.entries(kopie.antraege as Record<string, unknown>)) umschreiben(d, gehoertZu(fassung));
+    for (const [fassung, d] of Object.entries(kopie.antraege as Record<string, unknown>)) umschreiben(d, gehoertZu(fassung), fassung);
   return { abschnitt: anzahl ? kopie : abschnitt, anzahl };
 }
 

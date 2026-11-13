@@ -272,7 +272,7 @@ function oapMitUmbenanntem(
   alt: string,
   neu: string,
   gehoertZu: (fassung: string) => boolean,
-  festschreiben: (u: UmfangEintrag) => boolean,
+  festschreiben: (u: UmfangEintrag, fassung: string | null) => boolean,
 ): { roh: Record<string, unknown>; anzahl: number } {
   if (roh.formulare !== undefined) {
     const r = formularVerweiseUmbenennen(roh.formulare, alt, neu, gehoertZu, festschreiben);
@@ -360,7 +360,13 @@ export async function formularUmbenennen(f: FormularEintrag) {
   const info = useAntrag.getState().formularInfo;
   const vorher = useFormulare.getState().formulare.map((x) => ({ pfad: x.pfad, name: x.name, kennung: info[x.pfad]?.kennung ?? null }));
   const nachher = vorher.map((x) => (x.pfad === f.pfad ? { ...x, pfad: ziel, name } : x));
-  const festschreiben = (u: UmfangEintrag) => formularVon(u, vorher)?.pfad === f.pfad && formularVon(u, nachher)?.pfad !== ziel;
+  // die Formularliste gilt nur für den aktiven Antrag: im Sammelprojekt ein Formular im Unterordner nur in den
+  // Anträgen dieses Unterordners, eines der obersten Ebene nur im aktiven Antrag (in den anderen fände der Eintrag womöglich
+  // ein gleichnamiges im eigenen Unterordner); im gewöhnlichen Projekt überall
+  const sammel = !!useFormulare.getState().sammel;
+  const aktiv = useAntrag.getState().projektdatei?.ansicht ?? null;
+  const giltListe = (fassung: string | null) => (!sammel ? true : fassung === null ? false : f.unterordner ? gehoertZu(fassung) : fassung === aktiv);
+  const festschreiben = (u: UmfangEintrag, fassung: string | null) => giltListe(fassung) && formularVon(u, vorher)?.pfad === f.pfad && formularVon(u, nachher)?.pfad !== ziel;
 
   // hier geöffnet: schließen – wartet auf ein laufendes Speichern, die eigene Sperre fällt; ungespeicherte Eingaben
   // bleiben als Entwurf und ziehen unten mit um
@@ -421,7 +427,8 @@ export async function formularUmbenennen(f: FormularEintrag) {
     await neuLesen();
     return wiederOeffnen(f.pfad);
   }
-  formularLokalVerschieben(projekt, f.pfad, ziel);
+  // bei vollem Speicher bleiben Entwurf bzw. Verlauf am alten Namen – das wird gemeldet
+  const lokalOk = formularLokalVerschieben(projekt, f.pfad, ziel);
   log.info(`Formular umbenannt: ${f.pfad} → ${ziel}`);
   let verweise = 0;
   let fehlgeschlagen = false;
@@ -453,11 +460,18 @@ export async function formularUmbenennen(f: FormularEintrag) {
   }
   await zielFrei();
   if (profil && profil[0] !== profil[1]) useFormulare.getState().profilKopieren(profil[0], profil[1]);
-  if (useFormulare.getState().projekt !== projekt) return;
+  const zuordnungPruefen = new Error(`„${name}“ umbenannt, aber die Projektdatei (.oap) ließ sich nicht schreiben – bitte die Zuordnung in den Antragsdaten von ${projekt.ordner} prüfen`);
+  // inzwischen ein anderes Projekt: die Fehlermeldung trotzdem zeigen, die Erfolgsmeldung entfällt
+  if (useFormulare.getState().projekt !== projekt) return void (fehlgeschlagen && fehler('Umbenennen', zuordnungPruefen));
   if (oapZiel) await useFormulare.getState().oapLaden();
   await neuLesen();
   await useAntrag.getState().laden();
   await wiederOeffnen(ziel);
-  if (fehlgeschlagen) fehler('Umbenennen', new Error(`„${name}“ umbenannt, aber die Projektdatei (.oap) ließ sich nicht schreiben – bitte die Zuordnung in den Antragsdaten prüfen`));
-  else useFormulare.getState().setMeldung({ art: 'info', text: `„${f.name}“ in „${name}“ umbenannt${verweise ? ' – die Zuordnung im Antragsumfang ist erhalten geblieben' : ''}.` });
+  const ohneEingaben = lokalOk ? '' : ' Nicht gespeicherte Eingaben ließen sich nicht mitnehmen (Speicher voll) – sie gelten weiter für den alten Namen.';
+  if (fehlgeschlagen) fehler('Umbenennen', zuordnungPruefen);
+  else
+    useFormulare.getState().setMeldung({
+      art: lokalOk ? 'info' : 'fehler',
+      text: `„${f.name}“ in „${name}“ umbenannt${verweise ? ' – die Zuordnung im Antragsumfang ist erhalten geblieben' : ''}.${ohneEingaben}`,
+    });
 }

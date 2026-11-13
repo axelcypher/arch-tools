@@ -1191,6 +1191,22 @@ describe('formularVerweiseUmbenennen', () => {
     expect(abschnitt).toEqual({ antraege: { 'BAUA 2': { umfang: [{ id: 'a', formularDatei: '2. BAUA/003-Bauantrag.frmsjf' }] }, BAUA: { umfang: [{ id: 'a', formularDatei: '002-Bauantrag.frmsjf' }] } } });
   });
 
+  it('festschreiben: nur Einträge ohne formularDatei, je Antrag mit dessen Fassung (null: frühere projektweite Angaben)', () => {
+    const roh = {
+      umfang: [{ id: 'a', art: 'intern', titel: 'Muster' }],
+      antraege: { BAUA: { umfang: [{ id: 'a', art: 'intern', titel: 'Muster' }, { id: 'x', art: 'extern', titel: 'Muster' }] }, 'BAUA 2': { umfang: [{ id: 'a', art: 'intern', titel: 'Muster' }] } },
+    };
+    const gefragt: (string | null)[] = [];
+    const { abschnitt, anzahl } = formularVerweiseUmbenennen(roh, 'm.frmsjf', 'n.frmsjf', undefined, (_u, fassung) => {
+      gefragt.push(fassung);
+      return fassung === 'BAUA 2';
+    });
+    expect(gefragt).toEqual([null, 'BAUA', 'BAUA 2']);
+    expect(anzahl).toBe(1);
+    expect(abschnitt).toMatchObject({ umfang: [{ id: 'a' }], antraege: { BAUA: { umfang: [{ id: 'a' }, { id: 'x' }] }, 'BAUA 2': { umfang: [{ id: 'a', formularDatei: 'n.frmsjf' }] } } });
+    expect((abschnitt as typeof roh).antraege.BAUA.umfang[0]).not.toHaveProperty('formularDatei');
+  });
+
   it('nichts zugeordnet: dasselbe Objekt zurück, kein Verweis gezählt', () => {
     const roh = { antraege: { BAUA: { umfang: [{ id: 'a', formularDatei: 'x.frmsjf' }] } } };
     expect(formularVerweiseUmbenennen(roh, 'y.frmsjf', 'z.frmsjf')).toEqual({ abschnitt: roh, anzahl: 0 });
