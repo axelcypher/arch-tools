@@ -38,6 +38,9 @@ pub fn run() {
             projekt_datei_umbenennen,
             // gemeinsam
             konfig_basis,
+            konfig_dateien,
+            konfig_schreiben_wenn,
+            ordner_erreichbar,
             ordner_waehlen,
             ordner_zeigen,
             projekt_liste,
@@ -69,6 +72,7 @@ pub fn run() {
             form_create,
             doc_copy,
             doc_rename,
+            form_rename,
             doc_delete,
             process_info,
             prokarte_read,

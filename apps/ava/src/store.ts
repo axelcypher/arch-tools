@@ -17,6 +17,7 @@ import type { AvaDateien, DateiStand } from './dateien';
 import { tauriDateien } from './dateien';
 import type { AvaEinstellungen } from './einstellungen';
 import { einstellungenLaden, einstellungenSpeichern, VORGABE } from './einstellungen';
+import { konfigNeuLesen } from '@core/platform/konfig';
 import { aslvLesen, aslvNeu, aslvSchreiben } from './format/aslv';
 import { eigenLesen, eigenSchreiben } from './format/eigen';
 import type { Lv } from './lv/modell';
@@ -126,8 +127,14 @@ export const useAva = create<AvaZustand>((set, get) => ({
     }
   },
   async einstellungenSetzen(e) {
+    try {
+      await einstellungenSpeichern(e);
+    } catch (x) {
+      // nicht gespeichert (anderer Rechner, Netzlaufwerk weg): den gültigen Stand zeigen
+      await get().einstellungenLaden();
+      throw x;
+    }
     set({ einstellungen: e });
-    await einstellungenSpeichern(e);
     await get().neuLaden();
   },
   setAnsicht: (ansicht) => set({ ansicht }),
@@ -289,3 +296,7 @@ export const useAva = create<AvaZustand>((set, get) => ({
 
 /** Gewerkordner zu einer Kennung */
 export const gewerkOrdner = (p: OffenesProjekt | null, kennung: string) => p?.struktur?.gewerke.find((g) => g.kennung === kennung) ?? null;
+
+// Speicherort der Einstellungen gewechselt (auch in einem anderen Fenster) bzw. Netzlaufwerk weg oder wieder da: neu
+// lesen – sonst schriebe das nächste Speichern den alten Stand über die Einstellungen am neuen Ort
+konfigNeuLesen(() => void useAva.getState().einstellungenLaden());

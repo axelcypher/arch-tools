@@ -15,6 +15,9 @@ pub fn run() {
         .plugin(tauri_plugin_process::init())
         .invoke_handler(tauri::generate_handler![
             konfig_basis,
+            konfig_dateien,
+            konfig_schreiben_wenn,
+            ordner_erreichbar,
             ordner_waehlen,
             ordner_zeigen,
             projekt_liste,

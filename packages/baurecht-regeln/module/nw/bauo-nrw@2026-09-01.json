@@ -2207,7 +2207,7 @@
       "pruefen": {
         "grund": "Die Pflicht entfällt, soweit sie anderen öffentlich-rechtlichen Pflichten widerspricht, technisch unmöglich oder wirtschaftlich nicht vertretbar ist (Abs. 5, § 5 SAN-VO); Erfüllung auch durch Solarthermie oder PV an anderen Außenflächen (Abs. 6); Befreiung auf Antrag (Abs. 7)."
       },
-      "grund": "Photovoltaik-Pflicht auf geeigneten Dachflächen bei Errichtung (Bauantrag nach dem 01.01.2024 für Nichtwohngebäude, nach dem 01.01.2025 für Wohngebäude) und bei vollständiger Erneuerung der Dachhaut ab 01.01.2026.",
+      "grund": "Photovoltaik-Pflicht auf geeigneten Dachflächen bei Errichtung (Bauantrag nach dem 01.01.2024 für Nichtwohngebäude, nach dem 01.01.2025 für Wohngebäude) – gleichgestellt Anbau und Ausbau mit neuer PV-geeigneter Dachfläche (§ 2 Abs. 7 SAN-VO) – und bei vollständiger Erneuerung der Dachhaut ab 01.01.2026.",
       "fundstellen": [
         "42a/1",
         "42a/3",
@@ -2220,7 +2220,7 @@
       "nachweis": [
         "Nachweis auf Verlangen mit dem Formular des Ministeriums (§ 8 SAN-VO NRW)"
       ],
-      "hinweis": "Örtliche Bauvorschriften oder Bebauungsplan sind maßgeblich, wenn sie Festlegungen treffen (Abs. 1 Satz 3). Mindestgröße 30 % der Bruttodachfläche (§ 4 SAN-VO). Für die Genehmigungsfreistellung zählt der Baubeginn statt der Antragstellung (Abs. 1 Satz 2). Bei vollständiger Erneuerung der Dachhaut kommt es auf den Beginn der Arbeiten an (ab 01.01.2026), nicht auf die Einreichung; für Gebäude im Eigentum von Kommunen gilt die Pflicht schon ab 01.07.2024 (Abs. 3 Satz 2).",
+      "hinweis": "Örtliche Bauvorschriften oder Bebauungsplan sind maßgeblich, wenn sie Festlegungen treffen (Abs. 1 Satz 3). Mindestgröße 30 % der Bruttodachfläche (§ 4 SAN-VO), bei Anbau bzw. Ausbau nur der neuen Dachfläche. Für die Genehmigungsfreistellung zählt der Baubeginn statt der Antragstellung (Abs. 1 Satz 2). Bei vollständiger Erneuerung der Dachhaut kommt es auf den Beginn der Arbeiten an (ab 01.01.2026), nicht auf die Einreichung; für Gebäude im Eigentum von Kommunen gilt die Pflicht schon ab 01.07.2024 (Abs. 3 Satz 2).",
       "verweise": [
         "nw/san-vo/1",
         "nw/san-vo/4",

@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import type { Nutzungsgruppe, Project, RoomShape, Storey, WoflKategorie } from '@core/model';
 import { istKellergeschoss } from '@core/model';
 import { gruppeAusNutzungsart, NUTZUNGSGRUPPEN, WOFL_KATEGORIEN } from '@core/norms';
-import { konfigLesen } from '@core/platform/konfig';
+import { konfigLesen, konfigNeuLesen } from '@core/platform/konfig';
 import { logger } from '@core/platform/log';
 
 /**
@@ -184,3 +184,6 @@ export async function katalogLaden(): Promise<void> {
     log.warn('Raumkatalog nicht lesbar – Vorgabe gilt', e);
   }
 }
+
+// Speicherort der Einstellungen gewechselt bzw. Netzlaufwerk weg oder wieder da: Katalog des Büros neu lesen
+konfigNeuLesen(() => void katalogLaden());

@@ -717,7 +717,7 @@
       }
     },
     "nw.neue_dachflaeche": {
-      "titel": "Durch den Anbau bzw. Ausbau entsteht eine neue, für Photovoltaik geeignete Dachfläche",
+      "titel": "Durch Anbau, Aufstockung oder Ausbau entsteht eine neue, für Photovoltaik geeignete Dachfläche",
       "kurz": "Neue PV-geeignete Dachfläche",
       "gruppe": "vorhaben",
       "typ": "janein",

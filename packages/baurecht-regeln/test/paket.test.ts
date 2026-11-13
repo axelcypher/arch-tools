@@ -220,9 +220,12 @@ describe('neue Merkmalwerte (Erweiterung, Wohn- und Geschäftshaus)', () => {
           const mfh = ampeln({ ...basis, Gebäudeart: 'Mehrfamilienhaus' }, f, t);
           const nwg = ampeln({ ...basis, Gebäudeart: 'Nichtwohngebäude' }, f, t);
           for (const [id, a] of ampeln({ ...basis, Gebäudeart: 'Wohn- und Geschäftshaus' }, f, t)) {
-            // GEIG: nach der überwiegenden Nutzung (§ 11 GEIG) – eigener Test unten
-            if (id.startsWith('bund/geig/')) continue;
             const soll = Math.max(RANG[mfh.get(id) ?? 'gruen'], RANG[nwg.get(id) ?? 'gruen']);
+            // GEIG: nach der überwiegenden Nutzung (§ 11 GEIG, eigener Test unten) – ist sie offen, nie grün, wo eine Seite gilt
+            if (id.startsWith('bund/geig/')) {
+              if (!f['gebaeude.ueberwiegend_wohnen'] && a === 'gruen' && soll > 0 && fehler.length < 30) fehler.push(`${id}: W+G grün bei offener überwiegender Nutzung (${name}, ${JSON.stringify(basis)})`);
+              continue;
+            }
             if (RANG[a] < soll && fehler.length < 30) fehler.push(`${id}: W+G ${a}, MFH ${mfh.get(id)}, NWG ${nwg.get(id)} (${name}, ${JSON.stringify(basis)})`);
           }
         }
@@ -261,8 +264,7 @@ describe('neue Merkmalwerte (Erweiterung, Wohn- und Geschäftshaus)', () => {
       expect(ohne.get(id), `${id} ohne neue Dachfläche`).not.toBe('rot');
     }
     // offen: nicht grün
-    const { 'nw.neue_dachflaeche': _weg, ...ohneAngabe } = { ...f, 'nw.neue_dachflaeche': sicher(true) };
-    void _weg;
+    const ohneAngabe = Object.fromEntries(Object.entries(f).filter(([k]) => k !== 'nw.neue_dachflaeche'));
     expect(ampeln(m, ohneAngabe, TEXTE).get('nw/san-vo/1')).not.toBe('gruen');
     // § 44 BNatSchG: auch ohne Dach/Fassade und Baumfällung
     expect(ohne.get('bund/bnatschg/44')).toBe('rot');

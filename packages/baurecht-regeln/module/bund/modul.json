@@ -828,7 +828,7 @@
       }
     },
     "gebaeude.ueberwiegend_wohnen": {
-      "titel": "Gemischt genutztes Gebäude dient überwiegend dem Wohnen",
+      "titel": "Wohn- und Geschäftshaus dient überwiegend dem Wohnen",
       "kurz": "Überwiegend Wohnnutzung",
       "gruppe": "gebaeude",
       "typ": "janein",
