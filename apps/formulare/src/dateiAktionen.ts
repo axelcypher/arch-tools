@@ -6,6 +6,7 @@
  */
 
 import { create } from 'zustand';
+import { verfolgen } from './ausstehend';
 import { gleicheFassung } from '@core/fassung';
 import { logger } from '@core/platform/log';
 import { projektdateiSchreiben } from '@core/platform/projektordner';
@@ -435,11 +436,11 @@ export async function formularUmbenennen(f: FormularEintrag) {
   if (oapZiel) {
     try {
       // frisch gelesen gezählt und umgeschrieben; ohne Verweise wird nichts geschrieben
-      await projektdateiSchreiben(ds.projektordner, oapZiel.root, oapZiel.pfad, (roh) => {
+      await verfolgen(projektdateiSchreiben(ds.projektordner, oapZiel.root, oapZiel.pfad, (roh) => {
         const x = oapMitUmbenanntem(roh, alt, neu, gehoertZu, festschreiben);
         verweise = x.anzahl;
         return x.roh;
-      });
+      }));
     } catch (e) {
       log.warn(`Projektdatei beim Umbenennen von ${f.pfad} nicht geschrieben: ${e instanceof Error ? e.message : String(e)}`);
       fehlgeschlagen = true;

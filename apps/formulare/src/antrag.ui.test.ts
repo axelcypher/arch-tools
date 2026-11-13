@@ -8,6 +8,7 @@ import { App } from './App';
 import { VORGABE_EXPORT, einstellungenAus, jjmmtt, tagVon } from './antrag';
 import { VORGABE_MERKMALE } from './bedingung';
 import { aktiveFassung, exportVorschlag, istArchiv, useAntrag, wechselLaeuft, type SchreibInfo } from './antragStore';
+import { ausstehendAbwarten, laufendeSchreibvorgaenge } from './ausstehend';
 import { SpeicherDateisystem } from './dateisystem';
 import { cp1252Schreiben } from './forma/cp1252';
 import { felderDerSeite } from './forma/felder';
@@ -5822,6 +5823,37 @@ describe('Reihenfolge der Formulare in der Navigation', () => {
     expect(namen(host)).toEqual(['001-Muster', '002-Anderes']);
     expect(zeile(host, '001-Muster').title).not.toContain('Reihenfolge');
     expect(zeile(host, '001-Muster').hasAttribute('aria-keyshortcuts')).toBe(false);
+  });
+
+  it('vor dem Schließen: ein laufendes Schreiben der Projektdatei wird abgewartet (Arkly wartet darauf)', async () => {
+    ds.dateien.set('C:/FORMA/BS9/002-Anderes.frmsjf', MUSTER);
+    await projektBS9();
+    const ersetzen = ds.projektordner.projektdateiErsetzen.bind(ds.projektordner);
+    let los!: () => void;
+    let einmal = true;
+    ds.projektordner.projektdateiErsetzen = async (...a: Parameters<typeof ersetzen>) => {
+      if (einmal) {
+        einmal = false;
+        await new Promise<void>((r) => (los = r));
+      }
+      return ersetzen(...a);
+    };
+    let laeuft!: Promise<SchreibInfo>;
+    act(() => {
+      laeuft = useAntrag.getState().reihenfolgeSetzen(['002-Anderes.frmsjf', '001-Muster.frmsjf']);
+    });
+    for (let i = 0; i < 20 && !los; i++) await warte();
+    expect(laufendeSchreibvorgaenge()).toBeGreaterThan(0);
+    let fertig = false;
+    const warten = ausstehendAbwarten().then(() => (fertig = true));
+    await warte();
+    expect(fertig).toBe(false);
+    expect(gemerkt()).toBeUndefined();
+    los();
+    await act(() => warten);
+    // erst nach dem Schreiben fertig – die Datei hat die neue Folge
+    expect(gemerkt()).toEqual(['002-Anderes.frmsjf', '001-Muster.frmsjf']);
+    await act(() => laeuft);
   });
 
   it('Kontextmenü aus dem gemeinsamen Menü: genau eines, Esc schließt es, der Fokus geht an die Zeile zurück', async () => {

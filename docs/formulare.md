@@ -958,6 +958,9 @@ Programm öffnen“). Bearbeitet wird so, dass alles, was nicht geändert wurde,
   Abbrechen“.
 - Vor jedem Speichern legt die App eine **Sicherungskopie** der bisherigen Fassung im App-Ordner an
   (`%LOCALAPPDATA%\de.pendzialek.formulare\Sicherungen`, die letzten 200).
+- **Laufendes Schreiben beim Schließen:** Schreibt die App gerade (Formular, Projektkarte, Projektdatei, Dokument),
+  wartet Arkly vor dem Schließen, Andocken, Herauslösen, Beenden oder einem Update-Neustart darauf, bis zu wenigen
+  Sekunden (`vorDemSchliessen` aus `@core/platform/rahmen`). Dabei wird nur gewartet, nichts zusätzlich geschrieben.
 
 ### Sperren
 

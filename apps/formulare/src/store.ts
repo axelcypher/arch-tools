@@ -50,6 +50,7 @@ import type { FeldAenderung, Verlauf } from './verlauf';
 import { abgleichen, eintragen, eintragenMehrere, kannRueckgaengig, kannWiederholen, leererVerlauf, springe, verlaufAus } from './verlauf';
 import { GRUNDSTUECK, PLZ_GRUNDSTUECK, istZusatz, mitZusatz } from './zusatz';
 import { adresseSchluessel, koordinatenVeraltet, mitKoordinaten } from '@core/platform/geokodierung';
+import { verfolgen } from './ausstehend';
 
 /**
  * Zustand der App: Einstellungen, die gefundenen Projekte, das geöffnete Formular und die Projektkarte.
@@ -1619,7 +1620,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       // läuft schon ein Speichern (Strg+S doppelt, Speichern beim Beenden): abwarten, dann den Rest speichern – was
       // während des Schreibens eingegeben wurde; parallel verglichen beide mit demselben alten Stand
       while (laufendFormular) await laufendFormular;
-      const lauf = formularSpeichern();
+      const lauf = verfolgen(formularSpeichern());
       laufendFormular = lauf;
       try {
         await lauf;
@@ -1782,7 +1783,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
           set({ meldung: { art: 'fehler', text: `${d.name} wurde seit dem Öffnen außerhalb geändert und ist nicht gespeichert. ${rat}` } });
           return false;
         }
-        await ds.dokumentErsetzen(d.root, d.pfad, neu);
+        await verfolgen(ds.dokumentErsetzen(d.root, d.pfad, neu));
         // während des Schreibens weiter bearbeitet: dieser Entwurf bleibt; ein anderes Dokument geöffnet: es bleibt offen
         const entwuerfe = { ...get().dateiEntwuerfe };
         if (entwuerfe[k] === entwurfVorher) delete entwuerfe[k];
@@ -1894,7 +1895,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       const o = get().oap;
       if (!ds || !o || o === 'fehlt') return false;
       // liest frisch und versucht es erneut, wenn eine andere App die Datei zwischen Lesen und Schreiben geändert hat
-      const geschrieben = await projektdateiSchreiben(ds.projektordner, o.root, o.pfad, aendern);
+      const geschrieben = await verfolgen(projektdateiSchreiben(ds.projektordner, o.root, o.pfad, aendern));
       if (geschrieben) await get().oapLaden();
       return geschrieben;
     },
@@ -2158,7 +2159,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
     karteSpeichern: async () => {
       // läuft schon ein Speichern: abwarten, dann den Rest – parallel schickten beide dieselben Änderungen mit veraltetem „alt“
       while (laufendKarte) await laufendKarte;
-      const lauf = karteSchreiben();
+      const lauf = verfolgen(karteSchreiben());
       laufendKarte = lauf;
       try {
         await lauf;
