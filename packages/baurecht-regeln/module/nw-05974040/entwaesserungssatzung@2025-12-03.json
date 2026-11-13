@@ -88,22 +88,47 @@
       },
       "titel": "Anschluss- und Benutzungszwang",
       "pruefen": {
-        "grund": "Neubau eines Gebäudes ohne Aufenthaltsräume und ohne neue Entwässerung (z. B. Gartenhaus, Garage): Der Anschluss- und Benutzungszwang erfasst auch das Niederschlagswasser vom Dach – entfällt nur, wenn es auf dem Grundstück versickert oder genutzt werden darf (Freistellung) – im Einzelfall prüfen.",
+        "grund": "Ohne neue Entwässerung – beim Neubau eines Gebäudes ohne Aufenthaltsräume (z. B. Gartenhaus, Garage) das Niederschlagswasser vom Dach, bei einer Anlage ohne Gebäude mit befestigter Fläche (z. B. Stellplatzanlage) das Niederschlagswasser dieser Fläche (Abs. 5, § 2 Abs. 3): Der Anschluss- und Benutzungszwang entfällt nur, wenn es auf dem Grundstück versickert oder genutzt werden darf (Freistellung).",
         "wenn": {
-          "und": [
+          "oder": [
             {
-              "$": "errichtung"
+              "und": [
+                {
+                  "$": "errichtung"
+                },
+                {
+                  "$": "gebaeude"
+                },
+                {
+                  "f": "vorhaben.entwaesserung",
+                  "ist": false
+                },
+                {
+                  "f": "gebaeude.aufenthaltsraeume",
+                  "ist": false
+                }
+              ]
             },
             {
-              "$": "gebaeude"
-            },
-            {
-              "f": "vorhaben.entwaesserung",
-              "ist": false
-            },
-            {
-              "f": "gebaeude.aufenthaltsraeume",
-              "ist": false
+              "und": [
+                {
+                  "$": "errichtung"
+                },
+                {
+                  "m": "Gebäudeart",
+                  "in": [
+                    "kein Gebäude"
+                  ]
+                },
+                {
+                  "f": "vorhaben.entwaesserung",
+                  "ist": false
+                },
+                {
+                  "f": "vorhaben.stellplaetze_grundstueck",
+                  "ist": true
+                }
+              ]
             }
           ]
         }

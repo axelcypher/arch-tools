@@ -31,7 +31,7 @@
         ]
       },
       "pruefen": {
-        "grund": "Keine Prüfung der Standsicherheit auch bei freistehenden landwirtschaftlichen Betriebsgebäuden bis zwei Geschosse und eingeschossigen Gebäuden bis 200 m² (§ 68 Abs. 3 Satz 5 BauO NRW). Nutzungsänderung: ob die Anforderung für die neue Nutzung greift, im Einzelfall prüfen.",
+        "grund": "Keine Prüfung der Standsicherheit auch bei freistehenden landwirtschaftlichen Betriebsgebäuden bis zwei Geschosse und eingeschossigen Gebäuden bis 200 m² (§ 68 Abs. 3 Satz 5 BauO NRW). Nutzungsänderung: ob die Anforderung für die neue Nutzung greift.",
         "wenn": {
           "und": [
             {
@@ -220,7 +220,7 @@
         "23/2": "a7f01888"
       },
       "pruefen": {
-        "grund": "Nutzungsänderung: ob die Anforderung für die neue Nutzung greift, im Einzelfall prüfen.",
+        "grund": "Nutzungsänderung: ob die Anforderung für die neue Nutzung greift.",
         "wenn": {
           "und": [
             {

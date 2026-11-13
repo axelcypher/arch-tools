@@ -40,7 +40,7 @@
         "nw/bauo-nrw/48"
       ],
       "pruefen": {
-        "grund": "Dachgeschossausbau in vor dem 01.01.1993 fertiggestellten Gebäuden der Zonen 1 und 2: Stellplätze müssen nicht hergestellt werden, soweit das auf dem Grundstück nicht oder nur unter großen Schwierigkeiten möglich ist (Abs. 1 Nr. 1) – im Einzelfall prüfen.",
+        "grund": "Dachgeschossausbau in vor dem 01.01.1993 fertiggestellten Gebäuden der Zonen 1 und 2: Stellplätze müssen nicht hergestellt werden, soweit das auf dem Grundstück nicht oder nur unter großen Schwierigkeiten möglich ist (Abs. 1 Nr. 1).",
         "wenn": {
           "und": [
             {

@@ -730,7 +730,7 @@
         "92/2": "96dc21b4"
       },
       "pruefen": {
-        "grund": "Bei Änderung nach § 36 Satz 1 ist eine Erfüllungserklärung abzugeben, wenn für das ganze Gebäude nach § 38 gerechnet wird (Abs. 2 Satz 1) – im Einzelfall prüfen.",
+        "grund": "Bei Änderung nach § 36 Satz 1 ist eine Erfüllungserklärung abzugeben, wenn für das ganze Gebäude nach § 38 gerechnet wird (Abs. 2 Satz 1).",
         "wenn": {
           "n": "bund/geg/36",
           "ampel": [

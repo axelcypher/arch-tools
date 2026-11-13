@@ -58,7 +58,7 @@
       },
       "titel": "Gewässerrandstreifen",
       "pruefen": {
-        "grund": "Im Einzelfall prüfen – bei Nutzungsänderung im Gewässerrandstreifen: Verbote des § 38 Abs. 4 WHG (u. a. Umgang mit wassergefährdenden Stoffen, Ablagerungen) können die neue Nutzung berühren.",
+        "grund": "Bei Nutzungsänderung im Gewässerrandstreifen: Verbote des § 38 Abs. 4 WHG (u. a. Umgang mit wassergefährdenden Stoffen, Ablagerungen) können die neue Nutzung berühren.",
         "wenn": {
           "und": [
             {

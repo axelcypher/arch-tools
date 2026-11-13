@@ -112,7 +112,7 @@
         "Genehmigung der unteren Wasserbehörde des Kreises Soest (§ 9), soweit nicht eine andere Zulassung mit Einvernehmen der unteren Wasserbehörde genügt (§ 9 Abs. 6)"
       ],
       "pruefen": {
-        "grund": "Im Einzelfall prüfen – bei Anlagen, die keine Gebäude sind, und gewerblich genutzten Teilen: § 3 Abs. 1 nennt für Zone III u. a. gewerbliche Lagerplätze, Silos, Campingplätze und Fischteiche. Bei Einreichung nach dem 16.10.2027 (Geltungsdauer nach § 14): ob eine neue Verordnung gilt.",
+        "grund": "Bei Anlagen, die keine Gebäude sind, und gewerblich genutzten Teilen: § 3 Abs. 1 nennt für Zone III u. a. gewerbliche Lagerplätze, Silos, Campingplätze und Fischteiche. Bei Einreichung nach dem 16.10.2027 (Geltungsdauer nach § 14): ob eine neue Verordnung gilt.",
         "wenn": {
           "oder": [
             {
@@ -391,7 +391,7 @@
         "9/6": "5c6fe3ba"
       },
       "pruefen": {
-        "grund": "Im Einzelfall prüfen – bei Anlagen, die keine Gebäude sind, und gewerblich genutzten Teilen: § 3 Abs. 1 nennt für Zone III u. a. gewerbliche Lagerplätze, Silos, Campingplätze und Fischteiche.",
+        "grund": "Bei Anlagen, die keine Gebäude sind, und gewerblich genutzten Teilen: § 3 Abs. 1 nennt für Zone III u. a. gewerbliche Lagerplätze, Silos, Campingplätze und Fischteiche.",
         "wenn": {
           "und": [
             {

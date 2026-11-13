@@ -291,7 +291,7 @@
         "8/4": "69fc028a"
       },
       "pruefen": {
-        "grund": "Im Einzelfall prüfen: bei einer Nutzungsänderung, ob die Anforderung für die neue Nutzung greift; bei der Beseitigung eines nicht freistehenden Gebäudes den Nachweis der Standsicherheit der angrenzenden Gebäude durch eine berechtigte Person (§ 15 Abs. 1 Nr. 2).",
+        "grund": "Bei einer Nutzungsänderung, ob die Anforderung für die neue Nutzung greift; bei der Beseitigung eines nicht freistehenden Gebäudes den Nachweis der Standsicherheit der angrenzenden Gebäude durch eine berechtigte Person (§ 15 Abs. 1 Nr. 2).",
         "wenn": {
           "oder": [
             {
@@ -455,7 +455,7 @@
         ]
       },
       "pruefen": {
-        "grund": "Sonderbauten wie Krankenhäuser, Pflege- und Betreuungseinrichtungen oder Schulen brauchen weitere Angaben und Bauvorlagen (z. B. Bettenzahl, Räume mit ionisierender Strahlung, Abs. 6) – im Einzelfall prüfen.",
+        "grund": "Sonderbauten wie Krankenhäuser, Pflege- und Betreuungseinrichtungen oder Schulen brauchen weitere Angaben und Bauvorlagen (z. B. Bettenzahl, Räume mit ionisierender Strahlung, Abs. 6).",
         "wenn": {
           "und": [
             {
@@ -562,7 +562,7 @@
         }
       },
       "pruefen": {
-        "grund": "Teilabbruch an einem angebauten Gebäude: Ist ein eigenständiges angebautes Gebäude betroffen, ist es eine Beseitigung nach § 62 Abs. 3 BauO NRW – mit Bauvorlagen nach Abs. 1 (Flurkarte, Standsicherheitsnachweis für das Gebäude, an das angebaut ist); im Einzelfall prüfen.",
+        "grund": "Teilabbruch an einem angebauten Gebäude: Ist ein eigenständiges angebautes Gebäude betroffen, ist es eine Beseitigung nach § 62 Abs. 3 BauO NRW – mit Bauvorlagen nach Abs. 1 (Flurkarte, Standsicherheitsnachweis für das Gebäude, an das angebaut ist); prüfen.",
         "wenn": {
           "und": [
             {

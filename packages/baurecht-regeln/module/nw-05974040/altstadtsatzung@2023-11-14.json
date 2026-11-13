@@ -138,7 +138,7 @@
         "$": "nw_prueft_kern"
       },
       "pruefen": {
-        "grund": "Im Einzelfall prüfen – bei Anlagen, die keine Gebäude sind, aber wie Gebäude wirken (z. B. Mauern über 2 m): auch sie brauchen Abstandsflächen. Bei einer Nutzungsänderung gelten die gestalterischen Anforderungen nur, soweit das äußere Erscheinungsbild geändert wird.",
+        "grund": "Bei Anlagen, die keine Gebäude sind, aber wie Gebäude wirken (z. B. Mauern über 2 m): auch sie brauchen Abstandsflächen. Bei einer Nutzungsänderung gelten die gestalterischen Anforderungen nur, soweit das äußere Erscheinungsbild geändert wird.",
         "wenn": {
           "oder": [
             {
@@ -189,7 +189,7 @@
         "$": "nw_prueft_kern"
       },
       "pruefen": {
-        "grund": "Bei einer Nutzungsänderung gelten die gestalterischen Anforderungen nur, soweit das äußere Erscheinungsbild geändert wird – im Einzelfall prüfen.",
+        "grund": "Bei einer Nutzungsänderung gelten die gestalterischen Anforderungen nur, soweit das äußere Erscheinungsbild geändert wird.",
         "wenn": {
           "und": [
             {
@@ -272,7 +272,7 @@
         "$": "nw_prueft_kern"
       },
       "pruefen": {
-        "grund": "Bei einer Nutzungsänderung gelten die gestalterischen Anforderungen nur, soweit das äußere Erscheinungsbild geändert wird – im Einzelfall prüfen.",
+        "grund": "Bei einer Nutzungsänderung gelten die gestalterischen Anforderungen nur, soweit das äußere Erscheinungsbild geändert wird.",
         "wenn": {
           "und": [
             {
@@ -309,7 +309,7 @@
         "$": "nw_prueft_kern"
       },
       "pruefen": {
-        "grund": "Bei einer Nutzungsänderung gelten die gestalterischen Anforderungen nur, soweit das äußere Erscheinungsbild geändert wird – im Einzelfall prüfen.",
+        "grund": "Bei einer Nutzungsänderung gelten die gestalterischen Anforderungen nur, soweit das äußere Erscheinungsbild geändert wird.",
         "wenn": {
           "und": [
             {
@@ -360,7 +360,7 @@
         "ist": false
       },
       "pruefen": {
-        "grund": "Bei einer Nutzungsänderung gelten die gestalterischen Anforderungen nur, soweit das äußere Erscheinungsbild geändert wird – im Einzelfall prüfen.",
+        "grund": "Bei einer Nutzungsänderung gelten die gestalterischen Anforderungen nur, soweit das äußere Erscheinungsbild geändert wird.",
         "wenn": {
           "und": [
             {
@@ -410,7 +410,7 @@
         "ist": false
       },
       "pruefen": {
-        "grund": "Bei einer Nutzungsänderung gelten die gestalterischen Anforderungen nur, soweit das äußere Erscheinungsbild geändert wird – im Einzelfall prüfen.",
+        "grund": "Bei einer Nutzungsänderung gelten die gestalterischen Anforderungen nur, soweit das äußere Erscheinungsbild geändert wird.",
         "wenn": {
           "und": [
             {
@@ -450,7 +450,7 @@
         "$": "nw_prueft_kern"
       },
       "pruefen": {
-        "grund": "Bei einer Nutzungsänderung gelten die gestalterischen Anforderungen nur, soweit das äußere Erscheinungsbild geändert wird – im Einzelfall prüfen.",
+        "grund": "Bei einer Nutzungsänderung gelten die gestalterischen Anforderungen nur, soweit das äußere Erscheinungsbild geändert wird.",
         "wenn": {
           "und": [
             {
@@ -489,7 +489,7 @@
         "$": "nw_prueft_kern"
       },
       "pruefen": {
-        "grund": "Bei einer Nutzungsänderung gelten die gestalterischen Anforderungen nur, soweit das äußere Erscheinungsbild geändert wird – im Einzelfall prüfen.",
+        "grund": "Bei einer Nutzungsänderung gelten die gestalterischen Anforderungen nur, soweit das äußere Erscheinungsbild geändert wird.",
         "wenn": {
           "und": [
             {
@@ -547,7 +547,7 @@
         "$": "nw_prueft_kern"
       },
       "pruefen": {
-        "grund": "Bei einer Nutzungsänderung gelten die gestalterischen Anforderungen nur, soweit das äußere Erscheinungsbild geändert wird – im Einzelfall prüfen.",
+        "grund": "Bei einer Nutzungsänderung gelten die gestalterischen Anforderungen nur, soweit das äußere Erscheinungsbild geändert wird.",
         "wenn": {
           "und": [
             {
@@ -649,7 +649,7 @@
         "$": "nw_prueft_kern"
       },
       "pruefen": {
-        "grund": "Bei einer Nutzungsänderung gelten die gestalterischen Anforderungen nur, soweit das äußere Erscheinungsbild geändert wird – im Einzelfall prüfen.",
+        "grund": "Bei einer Nutzungsänderung gelten die gestalterischen Anforderungen nur, soweit das äußere Erscheinungsbild geändert wird.",
         "wenn": {
           "und": [
             {
@@ -760,7 +760,7 @@
         "$": "nw_prueft_kern"
       },
       "pruefen": {
-        "grund": "Im Einzelfall prüfen – bei Anlagen, die keine Gebäude sind (z. B. Antennen- oder Mobilfunkanlage, freistehendes Klimagerät): Abs. 2 nennt technische Anlagen ausdrücklich. Bei einer Nutzungsänderung gelten die gestalterischen Anforderungen nur, soweit das äußere Erscheinungsbild geändert wird.",
+        "grund": "Bei Anlagen, die keine Gebäude sind (z. B. Antennen- oder Mobilfunkanlage, freistehendes Klimagerät): Abs. 2 nennt technische Anlagen ausdrücklich. Bei einer Nutzungsänderung gelten die gestalterischen Anforderungen nur, soweit das äußere Erscheinungsbild geändert wird.",
         "wenn": {
           "oder": [
             {
@@ -871,7 +871,7 @@
         ]
       },
       "pruefen": {
-        "grund": "Bei einer Nutzungsänderung gelten die gestalterischen Anforderungen nur, soweit das äußere Erscheinungsbild geändert wird – im Einzelfall prüfen.",
+        "grund": "Bei einer Nutzungsänderung gelten die gestalterischen Anforderungen nur, soweit das äußere Erscheinungsbild geändert wird.",
         "wenn": {
           "und": [
             {
@@ -1050,7 +1050,7 @@
         "$": "nw_prueft_kern"
       },
       "pruefen": {
-        "grund": "Bei anderen Vorhaben mit Wirkung nach außen wird der Beirat nur auf Verlangen der Bauherrschaft, des Ausschusses oder der Verwaltung beteiligt – im Einzelfall prüfen.",
+        "grund": "Bei anderen Vorhaben mit Wirkung nach außen wird der Beirat nur auf Verlangen der Bauherrschaft, des Ausschusses oder der Verwaltung beteiligt.",
         "wenn": {
           "und": [
             {
