@@ -161,9 +161,9 @@ export function ProjektWahl({
   const kontextMenue = (p: UebersichtProjekt): KontextEintrag[] => {
     const dran = angeheftet.some((a) => a.toLowerCase() === p.schluessel.toLowerCase());
     return [
-      { label: 'Öffnen', aktion: () => void oeffnen(p.schluessel) },
-      { label: 'Im Explorer öffnen', aktion: () => void ordnerZeigen(p.schluessel).catch((e) => setFehler(e instanceof Error ? e.message : String(e))) },
-      { label: dran ? 'Lösen' : 'Anheften', titel: 'Angeheftete Projekte stehen vorne – in allen Apps', aktion: () => void anheftenUmschalten(p.schluessel).then(setAngeheftet) },
+      { label: 'Öffnen', symbol: 'ordnerOffen', aktion: () => void oeffnen(p.schluessel) },
+      { label: 'Im Explorer öffnen', symbol: 'ordner', aktion: () => void ordnerZeigen(p.schluessel).catch((e) => setFehler(e instanceof Error ? e.message : String(e))) },
+      { label: dran ? 'Lösen' : 'Anheften', symbol: 'stern', titel: 'Angeheftete Projekte stehen vorne – in allen Apps', aktion: () => void anheftenUmschalten(p.schluessel).then(setAngeheftet) },
     ];
   };
 
