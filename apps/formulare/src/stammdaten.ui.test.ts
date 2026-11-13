@@ -144,6 +144,9 @@ async function projektOeffnen(host: HTMLElement, kuerzel: string) {
   await klick(karte()!);
 }
 
+/** Dialog nach seinem zugänglichen Namen (aria-label bzw. sichtbarer Kopf über aria-labelledby) */
+const dialogMit = (name: string) =>
+  [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find((d) => (d.getAttribute('aria-label') ?? document.getElementById(d.getAttribute('aria-labelledby') ?? '')?.textContent) === name) ?? null;
 describe('Formular einrichten', () => {
   const gl = (host: Element) => host.querySelector('nav[aria-label="Inhalt des Formulars"]')!;
   const panel = (host: Element) => host.querySelector<HTMLElement>('aside[aria-label="Einstellungen der Auswahl"]')!;
@@ -358,7 +361,7 @@ describe('Formular einrichten', () => {
 describe('Einstellungen', () => {
   it('Adressbuch aus allen Projektkarten, Stammdaten als Vorgabe je Rolle', async () => {
     const host = await render();
-    await klick(knopfMit(host, 'Einstellungen'));
+    await klick(knopfMit(host, 'Einstellungen …'));
     expect(host.querySelector('.es-nav')).not.toBeNull();
     await klick(knopf(host, 'Adressbuch'));
     await klick(knopf(host, 'Aus den Projektdaten einlesen'));
@@ -381,7 +384,7 @@ describe('Einstellungen', () => {
 
   it('leeres Adressbuch: „Adresse anlegen …“ öffnet das Formular für eine neue Adresse; unter „Büro & Stammdaten“ führt der Knopf ins Adressbuch', async () => {
     const host = await render();
-    await klick(knopfMit(host, 'Einstellungen'));
+    await klick(knopfMit(host, 'Einstellungen …'));
     await klick(knopf(host, 'Büro & Stammdaten'));
     expect(knopf(host, 'Adresse anlegen')).toBeUndefined();
     await klick(knopf(host, 'Zum Adressbuch'));
@@ -392,7 +395,7 @@ describe('Einstellungen', () => {
 
   it('Adressbuch bearbeiten: neue Adresse anlegen, eine aus den Projektkarten ändern und ausblenden – gespeichert im Konfigurationsordner', async () => {
     const host = await render();
-    await klick(knopfMit(host, 'Einstellungen'));
+    await klick(knopfMit(host, 'Einstellungen …'));
     await klick(knopf(host, 'Adressbuch'));
     await klick(knopf(host, 'Aus den Projektdaten einlesen'));
     await warte();
@@ -600,8 +603,8 @@ describe('Autofill mit Zustand (Auto-Wert und manuelle Überschreibung)', () => 
     await warte();
     await warte();
   };
-  const dialog = (host: Element) => host.querySelector<HTMLElement>('.modal[aria-label="Daten aktualisieren"]');
-  const rueckfrage = () => document.querySelector<HTMLElement>('[role="dialog"][aria-label="Unterlagen aktualisieren"]');
+  const dialog = (_host: Element) => dialogMit('Daten aktualisieren');
+  const rueckfrage = () => dialogMit('Projektdaten geändert – Unterlagen aktualisieren?');
 
   it('übernehmen, leeren → Auto-Wert, Leerzeichen, Überschreibung fixiert, ignorieren, Rückfrage nach geänderten Projektdaten', async () => {
     const p = createProject('EFH');

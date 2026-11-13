@@ -209,7 +209,7 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
           },
         ]
       : []),
-    { text: 'In der Vorschau durchblättern', symbol: 'auge', aktion: () => setVorschau(pfad) },
+    { text: 'In der Vorschau durchblättern …', symbol: 'auge', aktion: () => setVorschau(pfad) },
     { trenner: true },
     ...dateiMenue(basis, `${ordner}/${pfad}`),
   ];
@@ -287,7 +287,7 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
       )}
       <div className="fo-bereit-knoepfe">
         <button className="small" disabled={!liste.length} title="Alle Antragsunterlagen groß ansehen und durchblättern (mit Zoom)" onClick={() => setVorschau(null)}>
-          <Symbol name="auge" /> Ansehen
+          <Symbol name="auge" /> Ansehen …
         </button>
         <SammelExportKnopf mitText />
       </div>

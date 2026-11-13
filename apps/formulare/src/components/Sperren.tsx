@@ -38,8 +38,7 @@ export function SperreAufhebenDialog({
   const [laeuft, setLaeuft] = useState(false);
   return (
     // während des Aufhebens nicht schließbar
-    <Modal titel="Sperre aufheben" onClose={laeuft ? undefined : onClose} breit>
-      <h3>Sperre aufheben?</h3>
+    <Modal titel="Sperre aufheben?" kopf onClose={laeuft ? undefined : onClose} breit>
       <dl className="fo-sperr-daten">
         <dt>Formular</dt>
         <dd>{name}</dd>
@@ -95,8 +94,7 @@ export function SperrenDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <>
-      <Modal titel="Sperren" onClose={onClose} breit className="fo-sperren">
-        <h3>Sperren in {projekt?.ordner}</h3>
+      <Modal titel={projekt ? `Sperren in ${projekt.ordner}` : 'Sperren'} kopf onClose={onClose} breit className="fo-sperren">
         <p className="muted small-text">
           Eine Sperrdatei (<code>.frmtmp</code>) zeigt, dass ein Formular geöffnet ist. Nach einem Absturz bleibt sie liegen und sperrt das Formular für alle – hier lässt sie sich
           aufheben.

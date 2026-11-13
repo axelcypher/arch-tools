@@ -220,7 +220,7 @@ export function DokumenteEinstellungen() {
           </button>
           {JSON.stringify(vorlagen) !== JSON.stringify(vorlagenAus(null, katalog)) && JSON.stringify(vorlagen) !== JSON.stringify(VORGABE_VORLAGEN) && (
             <button id={`${id}-vorlagen-vorgabe`} onClick={() => void vorlagenVorgabe()}>
-              Vorgabe wiederherstellen
+              Vorgabe wiederherstellen …
             </button>
           )}
         </div>
@@ -409,7 +409,7 @@ export function DokumenteEinstellungen() {
           </button>
           {JSON.stringify(katalog) !== JSON.stringify(VORGABE_KATALOG) && (
             <button id={`${id}-katalog-vorgabe`} onClick={() => void katalogVorgabe()}>
-              Vorgabe wiederherstellen
+              Vorgabe wiederherstellen …
             </button>
           )}
         </div>

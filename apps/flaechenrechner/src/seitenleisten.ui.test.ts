@@ -8,6 +8,7 @@ import { createOutline, createProject, createRoom } from '@core/model';
 import { duplicateStorey, useEditor } from './store/store';
 import { nummernAb } from './core/geschosse';
 import { pruefZeilen } from './components/Pruefliste';
+import { pruefeProjekt } from '@core/pruefung';
 import { App } from './App';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -138,8 +139,24 @@ describe('QUADRIO: Prüfliste (B8)', () => {
     ]);
     expect(zeilen.map((z) => z.text)).toEqual(['NRF größer', '3 Räume zählen zur Wohnfläche, aber ohne Wohnung – alle wählen und Wohnung eintragen.']);
     expect(zeilen[1].shapeIds).toEqual(ids);
-    // Gegenprobe: eine einzelne Meldung bleibt im Wortlaut
+    // Gegenprobe: eine einzelne Meldung bleibt im Wortlaut (auch die schon in core zusammengefasste „keine-wofl“)
     expect(pruefZeilen(p, [{ art: 'hinweis', regel: 'ohne-wohnung', storeyId: p.storeys[0].id, shapeIds: [ids[0]], text: 'Raum 1 ohne Wohnung' }])[0].text).toBe('Raum 1 ohne Wohnung');
+  });
+
+  it('„keine Wohnfläche“ kommt als eine Zeile mit allen Räumen an; der Projekt-Hinweis erscheint bei Wohnräumen ohne Anrechnung', () => {
+    const p = createProject('Haus');
+    p.storeys[0].shapes.push(createRoom(rectPoints({ x: 0, y: 0 }, { x: 4, y: 4 }), '0.01', 'Wohnen'), createRoom(rectPoints({ x: 5, y: 0 }, { x: 9, y: 4 }), '0.02', 'Schlafen'));
+    const zeilen = pruefZeilen(p, pruefeProjekt(p));
+    const projekt = zeilen.filter((z) => z.text.startsWith('Keine Wohnfläche erfasst'));
+    expect(projekt).toHaveLength(1);
+    expect(projekt[0].shapeIds).toHaveLength(2);
+    // ein Raum zählt: kein Projekt-Hinweis mehr, der andere steht in der Geschossmeldung
+    p.storeys[0].shapes[0] = { ...(p.storeys[0].shapes[0] as ReturnType<typeof createRoom>), wofl: { kategorie: 'voll', wohnung: 'WE 01' } };
+    const z2 = pruefZeilen(p, pruefeProjekt(p));
+    expect(z2.some((z) => z.text.startsWith('Keine Wohnfläche erfasst'))).toBe(false);
+    const geschoss = z2.filter((z) => z.text.includes('nicht zur Wohnfläche'));
+    expect(geschoss).toHaveLength(1);
+    expect(geschoss[0].text).toMatch(/^1 Raum zählt nicht zur Wohnfläche: 0\.02 Schlafen/);
   });
 });
 
