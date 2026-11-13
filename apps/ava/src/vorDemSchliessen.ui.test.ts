@@ -121,19 +121,19 @@ describe('Vor dem Schließen: laufendes Schreiben abwarten (Arkly vorDemSchliess
     });
     let fertig!: () => void;
     void schreibend(new Promise<void>((r) => (fertig = r)));
-    let ok: boolean | null = null;
+    let ok: string | null = null;
     const vorbereitet = schliessenVorbereiten(1000).then((x) => (ok = x));
     await act(takt);
     expect(ok).toBeNull();
     fertig();
     await act(async () => void (await vorbereitet));
-    expect(ok).toBe(true);
+    expect(ok).toBe('fertig');
     // Gegenprobe: nach dem Abbau ist FABRIO abgemeldet – Arkly wartet nicht mehr auf FABRIO
     act(() => root?.unmount());
     root = null;
     let haengt!: () => void;
     void schreibend(new Promise<void>((r) => (haengt = r)));
-    await expect(schliessenVorbereiten(50)).resolves.toBe(true);
+    await expect(schliessenVorbereiten(50)).resolves.toBe('fertig');
     haengt();
   });
 });
