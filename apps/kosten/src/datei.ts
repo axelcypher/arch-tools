@@ -58,8 +58,10 @@ export function speichern(p: Project, datei: string | null, basis: Project | nul
   return projektSpeichern({ project: p, basis, datei, unter, app: `${APP_NAMEN.kosten.name} ${__APP_VERSION__}`, fuerDatei: vorlage.mit });
 }
 
-/** Projekt mit einem neuen Export desselben IFC-Modells aktualisieren – Änderungen von Hand bleiben */
-/** Die Wände des neuen Modells übernimmt erst der Aufrufer (bauteileAusModell), wenn er das Ergebnis übernimmt. */
+/**
+ * Projekt mit einem neuen Export desselben IFC-Modells aktualisieren – Änderungen von Hand bleiben. Die Wände des
+ * neuen Modells übernimmt erst der Aufrufer (bauteileAusModell), wenn er das Ergebnis übernimmt.
+ */
 export async function ifcAktualisierenWaehlen(p: Project, datei: string | null, onProgress?: (msg: string) => void): Promise<{ project: Project; bericht: string[]; extract: IfcExtract } | null> {
   const r = await ifcAktualisieren(p, { optionen: { rooms: true, outlines: true, roof: true, wohnflaeche: true, dachform: true }, datei, onProgress });
   if (!r) return null;
