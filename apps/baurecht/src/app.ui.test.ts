@@ -978,7 +978,7 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
     const d = document.querySelector<HTMLElement>('.br-protokoll')!;
     const tabelle = [...d.querySelectorAll('h2')].find((h) => h.textContent?.startsWith('Angaben von Hand ohne Beleg'))!.nextElementSibling!;
     expect(tabelle.textContent).not.toMatch(/Umfang der Beseitigung/);
-    expect(d.textContent).toMatch(/Nicht gestellt – ohne Wirkung: [^·]*Umfang der Beseitigung: Teilabbruch/);
+    expect(d.textContent).toMatch(/Antworten auf derzeit nicht gestellte Fragen \(ohne Wirkung\): [^·]*Umfang der Beseitigung: Teilabbruch/);
   });
 
   it('Doppelklick auf Speichern: ein Lauf, beide bekommen sein Ergebnis', async () => {
@@ -1050,10 +1050,45 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
     act(() => knopf(host, 'Prüfprotokoll')!.click());
     const d = document.querySelector<HTMLElement>('.br-protokoll')!;
     const tabelle = [...d.querySelectorAll('h2')].find((h) => h.textContent?.startsWith('Angaben von Hand ohne Beleg'))!.nextElementSibling!.textContent ?? '';
-    const ohneWirkung = /Nicht gestellt – ohne Wirkung:[^\n]*Im Zusammenhang bebauter Ortsteil/.test(d.textContent ?? '');
+    const ohneWirkung = /Antworten auf derzeit nicht gestellte Fragen \(ohne Wirkung\):[^\n]*Im Zusammenhang bebauter Ortsteil/.test(d.textContent ?? '');
     // die Antwort steht im Protokoll – je nachdem in der Tabelle oder unter „ohne Wirkung“, nie gar nicht
     expect(/Im Zusammenhang bebauter Ortsteil/.test(tabelle) || ohneWirkung).toBe(true);
     expect(ohneWirkung).toBe(!gestellt);
+  });
+
+  it('Protokoll: „Jetzt speichern“ neben „Erst speichern …“, Rückmeldung in der Live-Region; Festlegung wird angesagt', async () => {
+    const host = render();
+    festlegen(host, 'Begehung am 03.11.2026 ohne Befund', 'rot');
+    expect(useBaurecht.getState().ansage).toMatch(/von Hand „gilt“ festgelegt – Entwurf/);
+    await speichernMit('Bestätigen und speichern');
+    act(() => useBaurecht.getState().merkmalSetzen('Gebäudeart', 'Doppelhaushälfte'));
+    act(() => knopf(host, 'Prüfprotokoll')!.click());
+    const d = document.querySelector<HTMLElement>('.br-protokoll')!;
+    expect(d.querySelector('.br-sperre')?.textContent).toMatch(/Erst speichern/);
+    await act(async () => {
+      knopf(d, 'Jetzt speichern')!.click();
+      await new Promise((r) => setTimeout(r, 100));
+    });
+    await warten();
+    expect(d.querySelector('#br-abgelegt-text')?.textContent).toBe('Gespeichert.');
+    expect(d.contains(document.activeElement)).toBe(true);
+  });
+
+  it('Speichern-Dialog: Häkchen und Knöpfe im festen Fuß, Inhalt in einem Scrollbereich', async () => {
+    const host = render();
+    festlegen(host, 'Begehung am 03.11.2026 ohne Befund', 'rot');
+    let fertig: Promise<boolean> | null = null;
+    await act(async () => {
+      fertig = speichern();
+    });
+    const best = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find((d) => d.textContent?.includes('Vor dem Speichern bestätigen'))!;
+    expect(best.querySelector('.br-bestaetigen-fuss input[type="checkbox"]')).not.toBeNull();
+    expect(best.querySelector('.br-bestaetigen-fuss .dialog-buttons')).not.toBeNull();
+    expect(best.querySelector('.br-bestaetigen-inhalt .br-bestaetigen-liste')).not.toBeNull();
+    await act(async () => {
+      knopf(best, 'Abbrechen')!.click();
+      await fertig;
+    });
   });
 });
 

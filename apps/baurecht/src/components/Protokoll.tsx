@@ -314,7 +314,7 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
   const geo = [...new Set(Object.values(a.fakten).filter((f) => f.herkunft === 'geodienst' && f.quelle).map((f) => `${f.quelle}${f.stand ? `, abgefragt ${datum(f.stand)}` : ''}`))];
   return (
     <div className="report-backdrop br-protokoll-hintergrund">
-      <div className="report br-protokoll" role="dialog" aria-modal="true" aria-label={titel} ref={fenster}>
+      <div className="report br-protokoll" role="dialog" aria-modal="true" aria-label={titel} ref={fenster} tabIndex={-1}>
         {entwuerfe > 0 && <style>{entwurfDruck(entwurfText, entwuerfe === 1)}</style>}
         <div className="report-actions no-print br-protokoll-aktionen">
           <label className="toggle">
@@ -326,6 +326,22 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
             <span className="br-sperre" id="br-sperre-grund">
               {sperre}
             </span>
+          )}
+          {/* wo „Erst speichern …“ steht, auch der Weg dorthin (die Rückmeldung kommt in der Live-Region darunter) */}
+          {onSpeichern && ungespeichertGesamt && !abgelegt?.speichern && (
+            <button
+              type="button"
+              className="small"
+              disabled={speichertJetzt}
+              onClick={async () => {
+                setSpeichertJetzt(true);
+                fokusNachMeldung.current = true;
+                await onSpeichern();
+                setSpeichertJetzt(false);
+              }}
+            >
+              Jetzt speichern
+            </button>
           )}
           <button type="button" className="br-drucken" onClick={() => druckenAls({ datei, projektName: project.name, zusatz: `Baurecht ${antrag}` })}>
             Drucken / PDF …
@@ -527,7 +543,7 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
         {/* gespeicherte Antworten auf Fragen, die gerade nicht gestellt werden (z. B. nach einem Ortswechsel) */}
         {nichtGestellt.length > 0 && (
           <p className="br-leise">
-            Nicht gestellt – ohne Wirkung: {nichtGestellt.map(([id, f]) => `${faktName(a.faktDefs[id], id)}: ${wertAnzeige(f.wert, a.faktDefs[id])}`).join(' · ')}
+            Antworten auf derzeit nicht gestellte Fragen (ohne Wirkung): {nichtGestellt.map(([id, f]) => `${faktName(a.faktDefs[id], id)}: ${wertAnzeige(f.wert, a.faktDefs[id])}`).join(' · ')}
           </p>
         )}
 

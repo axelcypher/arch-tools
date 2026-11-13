@@ -1894,16 +1894,21 @@ h2.br-detail-name {
   color: var(--br-leise-stark);
   white-space: nowrap;
 }
-/* Speichern-Dialog: Kopf und Fuß bleiben stehen, nur die Liste scrollt (bei 1000×680 sonst Titel außer Sicht) */
-.modal .br-bestaetigen-liste {
-  max-height: calc(100vh - 330px);
-  min-height: 80px;
+/* Speichern-Dialog: Kopf und Fuß (Häkchen, Knöpfe) stehen fest, dazwischen ein einziger Scrollbereich */
+.modal.br-bestaetigen {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.br-bestaetigen-inhalt {
+  flex: 1 1 auto;
+  min-height: 60px;
   overflow: auto;
 }
-/* „Zusammen“ im Speichern-Dialog: aufgeklappt scrollt nur die Liste, nicht der ganze Dialog */
-.br-folgen-zusammen .br-folgen ul {
-  max-height: 30vh;
-  overflow: auto;
+.br-bestaetigen-fuss {
+  flex: 0 0 auto;
+  border-top: 1px solid var(--line-soft);
+  padding-top: 6px;
 }
 /* Prüfprotokoll in schmalen Fenstern (Zoom): die Aktionsleiste bricht um, nichts wird angeschnitten */
 .br-protokoll-aktionen {
@@ -1912,4 +1917,45 @@ h2.br-detail-name {
 /* „nur Hinweis“ mit Abstand zum Wert davor */
 .br-hinweis-marke {
   margin-left: 4px;
+}
+/* Prüfprotokoll in schmalen Fenstern (Zoom): Kopf zweispaltig, ganz schmal einspaltig; Tabellen brechen um statt über
+   den Rand zu laufen; schmaler Rand */
+@media screen and (max-width: 600px) {
+  .report-backdrop {
+    padding: 4px;
+  }
+  .br-protokoll.report {
+    padding: 12px 8px;
+  }
+  .br-protokoll .druck-kopf-zeilen {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .br-protokoll .report-table {
+    table-layout: fixed;
+  }
+  .br-protokoll .report-table td,
+  .br-protokoll .report-table th {
+    overflow-wrap: anywhere;
+    hyphens: auto;
+  }
+}
+@media screen and (max-width: 400px) {
+  .br-protokoll .druck-kopf-zeilen > div {
+    flex-direction: column;
+    gap: 0;
+  }
+  .br-protokoll .druck-kopf-zeilen dt {
+    flex: none;
+  }
+}
+/* Kontrastmodus: die gewählte Zeile sichtbar, die Ampelpunkte behalten ihre Farbe */
+@media (forced-colors: active) {
+  .br-paragraf.br-gewaehlt {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+  }
+  .br-ampel-punkt,
+  .br-ampel::before {
+    forced-color-adjust: none;
+  }
 }

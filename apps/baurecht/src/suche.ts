@@ -33,6 +33,7 @@ const SYNONYME: Record<string, string[]> = {
 
 // Satzzeichen zählen nicht („Abstandsflächen.“, „Stellplätze,“)
 export const suchNorm = (s: string) => s.toLowerCase().replace(/§/g, ' ').replace(/[.,;:!?()„“"]/g, ' ').replace(/\s+/g, ' ').trim();
+const falten = (s: string) => s.replace(/ä/g, 'a').replace(/ö/g, 'o').replace(/ü/g, 'u').replace(/ß/g, 'ss');
 const esc = (w: string) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 function wortPasst(text: string, x: string): boolean {
@@ -49,5 +50,7 @@ export function textPasst(text: string, suche: string): boolean {
   if (!q) return true;
   const t = suchNorm(text);
   // Synonyme nur am Wortanfang („Umbau“ → „Änderung“, nicht „Veränderungssperre“)
-  return q.split(' ').every((x) => wortPasst(t, x) || (SYNONYME[x] ?? []).some((s) => new RegExp(`(^|[^a-zäöüß0-9])${esc(s)}`).test(t)));
+  // auch ohne Umlaute („Stellpla“ trifft „Stellplätze“)
+  const tf = falten(t);
+  return q.split(' ').every((x) => wortPasst(t, x) || wortPasst(tf, falten(x)) || (SYNONYME[x] ?? []).some((s) => new RegExp(`(^|[^a-zäöüß0-9])${esc(s)}`).test(t)));
 }

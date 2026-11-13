@@ -132,7 +132,8 @@ function NormKarte({
   const id = `br-norm-${gruppe}-${n.id.replace(/[^\w-]/g, '_')}`;
   const kopf = `n:${gruppe}|${n.id}`;
   return (
-    <section className={`br-norm${n.geltung === 'nein' ? ' br-norm-entfaellt' : ''}`} aria-labelledby={id}>
+    // eine Gruppe, keine Landmarke (sonst gäbe es dieselbe Norm als Landmarke unter „prüfen“ und „gilt“)
+    <div role="group" className={`br-norm${n.geltung === 'nein' ? ' br-norm-entfaellt' : ''}`} aria-labelledby={id}>
       <h4 className="br-norm-h">
       <button type="button" className="br-norm-kopf" aria-expanded={offen} onClick={umschalten} tabIndex={tabStop === kopf ? 0 : -1} data-roving={kopf} onFocus={() => setFokus(kopf)}>
         <span className="br-norm-pfeil" aria-hidden="true">
@@ -181,7 +182,7 @@ function NormKarte({
           )}
         </div>
       )}
-    </section>
+    </div>
   );
 }
 

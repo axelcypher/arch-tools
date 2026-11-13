@@ -75,7 +75,7 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   Rückfrage (Umfang, Angaben zum Altbau) erst, wenn es „ja“ ergibt. Eine gespeicherte Antwort auf eine Frage, die gerade
   nicht gestellt wird (nach einem Ortswechsel, einem zurückgesetzten Auslöser wie dem Umfang der Beseitigung), zählt
   nicht – weder in den Regeln noch für Ableitungen (bis zum Fixpunkt: eine weggelassene Antwort kann weitere Fragen
-  verbergen); das Protokoll führt solche Antworten gesondert („Nicht gestellt – ohne Wirkung“). Hängt ein
+  verbergen); das Protokoll führt solche Antworten gesondert („Antworten auf derzeit nicht gestellte Fragen (ohne Wirkung)“). Hängt ein
   Paragraf an einem anderen, der nur „gilt,
   Ausnahme möglich“ ist, und entfiele er mit dessen Ausnahme, nennt er sie („Ausnahme möglich über § 14 BNatSchG – es
   fehlt dort: …“); die Ampel bleibt „gilt“.

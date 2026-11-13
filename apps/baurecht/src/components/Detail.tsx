@@ -235,7 +235,7 @@ export function Detail({ stand }: { stand: Pruefstand }) {
         )}
         {!p.ueberholt && p.unwirksam && (
           <div className="br-meldung br-meldung-info" role="status">
-            <strong>Festlegung „entfällt“ noch nicht wirksam:</strong> {nb(p.unwirksam)}. Bis dahin gilt „{AMPEL_TEXT[p.ampel]}“.{' '}
+            <strong>Festlegung „entfällt“ noch nicht wirksam:</strong> {nb(p.unwirksam)}. Bis dahin bleibt es bei „{AMPEL_TEXT[p.ampel]}“.{' '}
             {isTauri() ? 'Mit „Rechtsstand prüfen“ den Text an der Quelle holen; liegt er geprüft vor, zählt die Festlegung – wurde sie ohne Text getroffen, dann am Text erneut festlegen.' : 'Die Gesetzestexte gibt es nur in der Desktop-App – dort prüfen und festlegen.'}
           </div>
         )}

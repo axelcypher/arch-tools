@@ -77,6 +77,8 @@ export function FestlegenDialog({ fakten, widerspruchMerkmale = [] }: { fakten: 
     }
     benutzerMerken(von);
     useBaurecht.getState().festlegen(p, ampel, grund, von.trim(), summen, werte, sicherheit);
+    // angesagt (der Dialog verschwindet): was jetzt gilt – Entwurf bis zum Speichern
+    useBaurecht.getState().ansagen(`${verweisName(p.paragraf, p.titel, useBaurecht.getState().paket.module.find((m) => m.id === p.modul)?.normen[p.norm]?.kurz ?? p.norm)}: von Hand „${AMPEL_TEXT[ampel]}“ festgelegt – Entwurf, beim Speichern noch einmal bestätigen`);
     schliessen();
   };
   // Überschrift mit Norm, benannte Einheiten ohne Doppelung („§ 1 ND-VO – Schutzobjekte“)
@@ -467,11 +469,15 @@ export function BestaetigenDialog({ titel, faktTitel, folgen, faktDef = () => un
   ].filter(Boolean);
   const geprueftTeile = [nf ? (nf === 1 ? 'diese Festlegung' : 'diese Festlegungen') : '', na ? (na === 1 ? 'diese Angabe' : 'diese Angaben') : '', pr ? 'das Planungsrecht für diesen Ort' : ''].filter(Boolean);
   return (
-    <Modal titel="Vor dem Speichern bestätigen" onClose={() => antwort('abbrechen')} breit klickDaneben={false} beschreibung="br-bestaetigen-einleitung">
-      <h3>Vor dem Speichern bestätigen</h3>
-      <p id="br-bestaetigen-einleitung">
-        Seit dem letzten Speichern: {aufzaehlen(teile)}. Bitte noch einmal prüfen – alles steht mit Begründung, Namen und Datum im Prüfprotokoll.
-      </p>
+    <Modal titel="Vor dem Speichern bestätigen" onClose={() => antwort('abbrechen')} breit klickDaneben={false} beschreibung="br-bestaetigen-einleitung" className="br-bestaetigen">
+      {/* Kopf und Fuß (Häkchen, Knöpfe) stehen fest, dazwischen ein einziger Scrollbereich */}
+      <div className="br-bestaetigen-kopf-fest">
+        <h3>Vor dem Speichern bestätigen</h3>
+        <p id="br-bestaetigen-einleitung">
+          Seit dem letzten Speichern: {aufzaehlen(teile)}. Bitte noch einmal prüfen – alles steht mit Begründung, Namen und Datum im Prüfprotokoll.
+        </p>
+      </div>
+      <div className="br-bestaetigen-inhalt">
       <ul className="br-bestaetigen-liste">
         {offen.festlegungen.map((id) => {
           const f = festlegungen[id];
@@ -591,6 +597,8 @@ export function BestaetigenDialog({ titel, faktTitel, folgen, faktDef = () => un
           {ueberholte.length === 1 ? 'Eine Festlegung ist überholt' : `${ueberholte.length} Festlegungen sind überholt`} – „Bestätigen und speichern“ geht erst, wenn {ueberholte.length === 1 ? 'sie erneut festgelegt oder aufgehoben ist' : 'sie erneut festgelegt oder aufgehoben sind'}. „Speichern, diese als Entwurf behalten“ geht.
         </div>
       )}
+      </div>
+      <div className="br-bestaetigen-fuss">
       <label className="toggle br-geprueft">
         <input type="checkbox" checked={geprueft} disabled={ueberholte.length > 0} onChange={(e) => setGeprueft(e.target.checked)} /> Ich habe {aufzaehlen(geprueftTeile)} geprüft.
       </label>
@@ -604,6 +612,7 @@ export function BestaetigenDialog({ titel, faktTitel, folgen, faktDef = () => un
         <button type="button" className="primary" disabled={!geprueft || ueberholte.length > 0} onClick={() => antwort('bestaetigen')}>
           Bestätigen und speichern
         </button>
+      </div>
       </div>
     </Modal>
   );

@@ -3,6 +3,7 @@ import { isTauri } from '@core/platform/files';
 import type { Pruefstand } from '../pruefung';
 import { aktuelleLage } from '../pruefung';
 import { heute, useBaurecht } from '../store';
+import { datum } from './Ampel';
 
 const EBENE_TEXT = { land: 'Land', kreis: 'Kreis', gemeinde: 'Gemeinde' } as const;
 const MODUL_TEXT = { land: 'Landesmodul', kreis: 'Kreismodul', gemeinde: 'Gemeindemodul' } as const;
@@ -169,7 +170,7 @@ export function Kopf({ stand, onRechtsstand, onLage, onProtokoll, onSpeichern, o
         <input type="date" value={einreichung ?? heute()} min="2018-01-01" aria-label="Geplante Einreichung (Stichtag)" onChange={(e) => useBaurecht.getState().einreichungSetzen(e.target.value === heute() ? '' : e.target.value)} />
       </label>
       {/* Module kürzen sich zuerst; Warnungen sind eigene Marken und werden nie gekürzt */}
-      <span className="br-module-text" title={`Regelmodule: ${stand.module.map((m) => `${m.name} (Stand ${m.version})`).join(', ')}`}>
+      <span className="br-module-text" title={`Regelmodule: ${[...stand.module].reverse().map((m) => `${m.name} (Stand ${datum(m.version)})`).join(', ')}`}>
         {moduleText}
       </span>
       <span className="br-kopf-marken">

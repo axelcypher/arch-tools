@@ -351,3 +351,12 @@ describe('Runde 18: gespeicherte Antworten auf nicht gestellte Rückfragen wirke
     }
   });
 });
+
+describe('Runde 18: Suche ohne Umlaute', () => {
+  it('„Stellpla“ trifft „Stellplätze“, „rueckbau“ nicht nötig – Synonyme mit Umlaut bleiben', () => {
+    expect(textPasst('Notwendige Stellplätze', 'Stellpla')).toBe(true);
+    expect(textPasst('Notwendige Stellplätze', 'Stellplatze')).toBe(true);
+    expect(textPasst('Beseitigung von Anlagen', 'Rückbau')).toBe(true);
+  });
+});
+
