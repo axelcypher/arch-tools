@@ -216,7 +216,7 @@ export function GrzGfzView() {
         <h3>Maß der baulichen Nutzung</h3>
         <div className="field-row">
           <Field label={n.recht.baunvo === '1990' ? 'GRZ (I)' : 'GRZ'}>
-            <NumberField value={m.grz} allowEmpty min={0} max={1} onChange={(v) => setM({ grz: v })} />
+            <NumberField value={m.grz} allowEmpty min={0} max={1} ungueltig={!!grz2Fehler} fehlerId="grz-grz2-fehler" onChange={(v) => setM({ grz: v })} />
           </Field>
           <Field label="GFZ">
             <NumberField value={m.gfz} allowEmpty min={0} max={10} onChange={(v) => setM({ gfz: v })} />
@@ -224,9 +224,9 @@ export function GrzGfzView() {
         </div>
         {n.recht.baunvo === '1990' && (
           <Field label="GRZ II höchstens" hint="leer = 1,5 × GRZ, höchstens 0,8 (§ 19 Abs. 4 S. 2)">
-            <NumberField value={m.grzIIMax} allowEmpty min={0} max={1} onChange={(v) => setM({ grzIIMax: v })} />
+            <NumberField value={m.grzIIMax} allowEmpty min={0} max={1} ungueltig={!!grz2Fehler} fehlerId="grz-grz2-fehler" onChange={(v) => setM({ grzIIMax: v })} />
             {grz2Fehler && (
-              <span className="feld-meldung" role="alert">
+              <span id="grz-grz2-fehler" className="feld-meldung" role="alert">
                 {grz2Fehler}
               </span>
             )}
@@ -261,15 +261,33 @@ export function GrzGfzView() {
         ) : (
           <div className="field-row">
             <Field label="mindestens">
-              <NumberField value={m.vollgeschosseMin} allowEmpty min={0} max={40} digits={0} onChange={(v) => setM({ vollgeschosseMin: v === undefined ? undefined : Math.round(v) })} />
+              <NumberField
+                value={m.vollgeschosseMin}
+                allowEmpty
+                min={0}
+                max={40}
+                digits={0}
+                ungueltig={!!vgFehler}
+                fehlerId="grz-vg-fehler"
+                onChange={(v) => setM({ vollgeschosseMin: v === undefined ? undefined : Math.round(v) })}
+              />
             </Field>
             <Field label="höchstens">
-              <NumberField value={m.vollgeschosseMax} allowEmpty min={0} max={40} digits={0} onChange={(v) => setM({ vollgeschosseMax: v === undefined ? undefined : Math.round(v) })} />
+              <NumberField
+                value={m.vollgeschosseMax}
+                allowEmpty
+                min={0}
+                max={40}
+                digits={0}
+                ungueltig={!!vgFehler}
+                fehlerId="grz-vg-fehler"
+                onChange={(v) => setM({ vollgeschosseMax: v === undefined ? undefined : Math.round(v) })}
+              />
             </Field>
           </div>
         )}
         {vgFehler && (
-          <p className="feld-meldung" role="alert">
+          <p id="grz-vg-fehler" className="feld-meldung" role="alert">
             {vgFehler}
           </p>
         )}

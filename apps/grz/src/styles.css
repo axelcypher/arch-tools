@@ -345,17 +345,9 @@ button.link:hover {
   overflow: auto;
   background: var(--bg);
 }
+/* Meldungen über dem Inhalt: Gestalt und Farben aus .meldung (base.css), hier nur Lage und Liste */
 .grz-bericht {
-  margin: 12px 12px 0;
-  padding: 10px 14px;
-  background: var(--warn-bg);
-  border: 1px solid var(--warn-border);
-  border-radius: 6px;
-  font-size: 12px;
-}
-.grz-bericht-neutral {
-  background: var(--panel);
-  border-color: var(--border);
+  margin: var(--s3) var(--s3) 0;
 }
 .grz-bericht-kopf {
   display: flex;
@@ -364,7 +356,7 @@ button.link:hover {
   gap: 8px;
 }
 .grz-bericht ul {
-  margin: 4px 0 8px;
+  margin: var(--s1) 0 var(--s2);
   padding-left: 18px;
 }
 .lp-editor .grz-skizze {
@@ -595,9 +587,10 @@ button.link:hover {
   border-radius: 999px;
   width: 24px;
   height: 24px;
-  line-height: 22px;
-  text-align: center;
-  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--fs-m);
   background: var(--panel);
 }
 .lp-tasten summary::-webkit-details-marker {
