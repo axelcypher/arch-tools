@@ -1897,7 +1897,8 @@ describe('Fälle aus dem Fachreview', () => {
     // Fälle E5, K1, F2: Mauer, Mobilfunkmast, Freiflächen-PV ohne Entwässerung → grün
     const mauer = M4({ Gebäudeart: 'kein Gebäude', Verfahren: 'verfahrensfrei' });
     delete (mauer as Record<string, string>).Gebäudeklasse;
-    const ohne = a(mauer, nein('vorhaben.entwaesserung', 'vorhaben.versickerung'));
+    // (ohne Stellplätze auf dem Grundstück – sonst bliebe § 9 Einzelfall für das Niederschlagswasser, Fall W9)
+    const ohne = a(mauer, nein('vorhaben.entwaesserung', 'vorhaben.versickerung', 'vorhaben.stellplaetze_grundstueck'));
     for (const id of ids) expect(ohne(id), id).toBe('gruen');
     // Gegenproben: mit Entwässerung (Stellplatzanlage) rot; Neubau eines Gebäudes rot auch ohne Angabe
     const mit = a(mauer, { ...ja('vorhaben.entwaesserung'), ...nein('vorhaben.versickerung') });
@@ -2023,6 +2024,53 @@ describe('Fälle aus dem Fachreview', () => {
     // Mehrfamilienhaus: mehrere Nutzungseinheiten auch ohne Angabe; Wohngebäude GK 1/2 entfällt (Abs. 6)
     expect(a(M4({ Gebäudeart: 'Mehrfamilienhaus', Gebäudeklasse: '4' }))('nw/bauo-nrw/29')).toBe('rot');
     expect(a(M4(), nein('gebaeude.gemischt'))('nw/bauo-nrw/29')).toBe('gruen');
+  });
+
+  it('Runde 15: § 47 Abs. 6 BauO NRW – Umnutzung von Nutzungseinheiten mit Aufenthaltsräumen zu Wohnraum (Fall T29)', () => {
+    // Fall T29: Büro → vier Wohnungen im bestehenden Gebäude (GK 3)
+    const t29 = M4({ Vorhaben: 'Nutzungsänderung', Gebäudeart: 'Mehrfamilienhaus', Gebäudeklasse: '3' });
+    const f = zahl('gebaeude.wohnungen', 4);
+    const r = (x: Record<string, FaktWert>) => auswerten(eingabe(t29, { ...f, ...x }, TEXTE));
+    const umgenutzt = r(ja('nw.umnutzung_wohnraum'));
+    const p = (id: string, a0 = umgenutzt) => a0.paragrafen.find((x) => x.id === `nw/bauo-nrw/${id}`)!;
+    // Satz 2: §§ 29, 34, 36 nicht anzuwenden
+    for (const nr of ['29', '34', '36']) expect(p(nr).ampel, `§ ${nr}`).toBe('gruen');
+    // § 35: Abs. 1 und 3 bis 8 nicht – Abs. 2 bleibt (gilt, mit Hinweis)
+    expect(p('35').ampel).toBe('rot');
+    expect(p('35').hinweise.join(' ')).toMatch(/Abs\. 2/);
+    // Satz 1: §§ 27, 28, 31, 32 gelten – nicht für bestehende Bauteile (Hinweis)
+    for (const nr of ['27', '28', '31', '32']) {
+      expect(p(nr).ampel, `§ ${nr}`).toBe('rot');
+      expect(p(nr).hinweise.join(' '), `§ ${nr}`).toMatch(/bestehende Bauteile \(§ 47 Abs\. 6 Satz 1\)/);
+    }
+    // keine Umnutzung zu Wohnraum aus Aufenthaltsräumen (z. B. Scheune ohne Aufenthaltsräume): §§ 29, 34, 36 gelten
+    const nicht = r(nein('nw.umnutzung_wohnraum'));
+    for (const nr of ['29', '34', '36']) expect(p(nr, nicht).ampel, `§ ${nr}`).not.toBe('gruen');
+    // offen: nicht grün, die Angabe klärt
+    const offen = r({});
+    for (const nr of ['29', '34', '36']) {
+      expect(p(nr, offen).ampel, `§ ${nr}`).not.toBe('gruen');
+      expect(p(nr, offen).klaerend ?? [], `§ ${nr}`).toContain('nw.umnutzung_wohnraum');
+    }
+    // bei einer Errichtung nicht gestellt – eine gespeicherte Antwort wirkt nicht
+    const neubau = M4({ Gebäudeart: 'Mehrfamilienhaus', Gebäudeklasse: '3' });
+    const mitAntwort = auswerten(eingabe(neubau, { ...f, ...ja('nw.umnutzung_wohnraum') }, TEXTE));
+    const ohneAntwort = auswerten(eingabe(neubau, f, TEXTE));
+    for (const nr of ['29', '34', '36']) expect(p(nr, mitAntwort).ampel, `§ ${nr}`).toBe(p(nr, ohneAntwort).ampel);
+    // in § 47 Abs. 6 nicht genannte Paragrafen verweisen nicht darauf
+    for (const nr of ['5', '8', '26', '37', '38', '40']) expect(p(nr).hinweise.join(' ') + p(nr).gruende.join(' '), `§ ${nr}`).not.toMatch(/47 Abs\. 6/);
+  });
+
+  it('Runde 15: Entwässerungssatzung § 9 – Anlage ohne Gebäude mit befestigter Fläche: Einzelfall Niederschlagswasser (Fall W9)', () => {
+    const id = 'nw-05974040/entwaesserungssatzung/9';
+    const anlage = M4({ Gebäudeart: 'kein Gebäude', Verfahren: 'Baugenehmigungsverfahren' });
+    // Stellplatzanlage ohne neue Entwässerung: nicht grün – das Niederschlagswasser der befestigten Fläche
+    const w9 = auswerten(eingabe(anlage, { ...nein('vorhaben.entwaesserung'), ...ja('vorhaben.stellplaetze_grundstueck') }, TEXTE)).paragrafen.find((x) => x.id === id)!;
+    expect(w9.ampel).toBe('gelb');
+    expect(w9.gruende.join(' ')).toMatch(/befestigter Fläche/);
+    // ohne befestigte Fläche (z. B. Mast): entfällt; Angabe offen: nicht grün
+    expect(a(anlage, nein('vorhaben.entwaesserung', 'vorhaben.stellplaetze_grundstueck'))(id)).toBe('gruen');
+    expect(a(anlage, nein('vorhaben.entwaesserung'))(id)).not.toBe('gruen');
   });
 });
 

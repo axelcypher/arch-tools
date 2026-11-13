@@ -72,7 +72,7 @@
       },
       "titel": "Verbotene Handlungen",
       "pruefen": {
-        "grund": "Beseitigung: Verdichten, Abgraben und Lagern im Wurzelbereich geschützter Bäume ist verboten (§ 4) – Schutz während des Abbruchs im Einzelfall prüfen.",
+        "grund": "Beseitigung: Verdichten, Abgraben und Lagern im Wurzelbereich geschützter Bäume ist verboten (§ 4) – Schutz während des Abbruchs prüfen.",
         "wenn": {
           "und": [
             {

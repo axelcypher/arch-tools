@@ -30,7 +30,7 @@
         "6": "6a76865c"
       },
       "pruefen": {
-        "grund": "Gemischt genutztes Gebäude: Wohn- und Nichtwohnteil getrennt betrachten (Stellplätze je Teil, § 106 GEG entsprechend) – im Einzelfall prüfen.",
+        "grund": "Gemischt genutztes Gebäude: Wohn- und Nichtwohnteil getrennt betrachten (Stellplätze je Teil, § 106 GEG entsprechend).",
         "wenn": {
           "und": [
             {
@@ -80,7 +80,7 @@
         "7": "b973443e"
       },
       "pruefen": {
-        "grund": "Gemischt genutztes Gebäude: Wohn- und Nichtwohnteil getrennt betrachten (Stellplätze je Teil, § 106 GEG entsprechend) – im Einzelfall prüfen.",
+        "grund": "Gemischt genutztes Gebäude: Wohn- und Nichtwohnteil getrennt betrachten (Stellplätze je Teil, § 106 GEG entsprechend).",
         "wenn": {
           "und": [
             {
@@ -159,7 +159,7 @@
         "8/2": "2252aa93"
       },
       "pruefen": {
-        "grund": "Gemischt genutztes Gebäude: Wohn- und Nichtwohnteil getrennt betrachten (Stellplätze je Teil, § 106 GEG entsprechend) – im Einzelfall prüfen.",
+        "grund": "Gemischt genutztes Gebäude: Wohn- und Nichtwohnteil getrennt betrachten (Stellplätze je Teil, § 106 GEG entsprechend).",
         "wenn": {
           "und": [
             {
@@ -259,7 +259,7 @@
         "9/2": "07a6ce23"
       },
       "pruefen": {
-        "grund": "Gemischt genutztes Gebäude: Wohn- und Nichtwohnteil getrennt betrachten (Stellplätze je Teil, § 106 GEG entsprechend) – im Einzelfall prüfen.",
+        "grund": "Gemischt genutztes Gebäude: Wohn- und Nichtwohnteil getrennt betrachten (Stellplätze je Teil, § 106 GEG entsprechend).",
         "wenn": {
           "und": [
             {
@@ -336,7 +336,7 @@
         "10/1": "59f32712"
       },
       "pruefen": {
-        "grund": "Gemischt genutztes Gebäude: Wohn- und Nichtwohnteil getrennt betrachten (Stellplätze je Teil, § 106 GEG entsprechend) – im Einzelfall prüfen.",
+        "grund": "Gemischt genutztes Gebäude: Wohn- und Nichtwohnteil getrennt betrachten (Stellplätze je Teil, § 106 GEG entsprechend).",
         "wenn": {
           "und": [
             {

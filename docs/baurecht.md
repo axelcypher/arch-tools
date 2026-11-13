@@ -297,7 +297,13 @@ Wasser- oder Heilquellenschutzgebiet, außerhalb von Bad Sassendorf und Soest �
 nicht gestellt, prüft das Paket mit demselben `frageGestellt` wie die App; Antworten auf nicht gestellte Fragen dürfen
 weder als „ja“ noch als „nein“ etwas ändern. § 36 BauGB (Einvernehmen) entfällt, wo die Gemeinde selbst untere
 Bauaufsicht ist („Gemeinde ist selbst Bauaufsicht“: im Kreis Soest Lippstadt, Soest, Warstein, Werl; in NRW die
-kreisfreien Städte und Aachen nach Gemeindeschlüssel; sonst offen – „gilt, Ausnahme möglich“).
+kreisfreien Städte und Aachen nach Gemeindeschlüssel; sonst offen – „gilt, Ausnahme möglich“). § 47 Abs. 6 BauO NRW
+(Fassung ab 01.09.2026): Bei einer Nutzungsänderung zu Wohnraum wird gefragt, ob Nutzungseinheiten mit Aufenthaltsräumen
+in einem bestehenden Gebäude umgenutzt werden; dann entfallen §§ 29, 34 und 36, § 35 gilt nur noch mit Abs. 2 (Hinweis),
+§§ 6, 15, 27, 28, 30 bis 32 gelten mit dem Hinweis „nicht für bestehende Bauteile“. Die Entwässerungssatzung Soest § 9
+bleibt ohne neue Entwässerung ein Einzelfall, wo Niederschlagswasser anfällt (Dach eines Gebäudes ohne Aufenthaltsräume,
+befestigte Fläche einer Anlage ohne Gebäude, d. h. Stellplätze oder Garagen auf dem Grundstück). Einzelfalltexte im Paket tragen kein „im Einzelfall prüfen“ – das setzt die
+Auswertung davor.
 
 Auslieferung und Wächter: `.github/workflows/regeln.yml` – Prüfen und Bauen in einem Job ohne Schreibrechte und ohne
 Schlüssel, Signieren (OpenSSL, Ed25519) und Hochladen in das Release „regeln“ in einem eigenen Job ohne npm; der

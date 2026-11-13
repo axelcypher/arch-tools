@@ -664,6 +664,35 @@
           "05916000": true
         }
       }
+    },
+    "nw.umnutzung_wohnraum": {
+      "titel": "Nutzungseinheiten mit Aufenthaltsräumen in einem bestehenden Gebäude werden zu Wohnraum umgenutzt (§ 47 Abs. 6 BauO NRW)",
+      "kurz": "Umnutzung zu Wohnraum (§ 47 Abs. 6)",
+      "gruppe": "vorhaben",
+      "typ": "janein",
+      "frage": "Werden Nutzungseinheiten mit Aufenthaltsräumen (z. B. Büro, Praxis, Laden) in einem bestehenden Gebäude zu Wohnraum umgenutzt?",
+      "hilfe": "Dann sind §§ 29, 34, 35 Abs. 1 und 3 bis 8 sowie § 36 BauO NRW nicht anzuwenden, §§ 6, 15, 27, 28, 30 bis 32 gelten nicht für bestehende Bauteile (§ 47 Abs. 6). Nicht gemeint: Umnutzung von Räumen ohne Aufenthaltsräume (Lager, Scheune ohne Aufenthaltsräume) oder ein Neubau.",
+      "wenn": {
+        "und": [
+          {
+            "$": "nutzungsaenderung"
+          },
+          {
+            "$": "gebaeude"
+          },
+          {
+            "oder": [
+              {
+                "$": "wohngebaeude"
+              },
+              {
+                "f": "gebaeude.wohnungen",
+                "min": 1
+              }
+            ]
+          }
+        ]
+      }
     }
   },
   "bausteine": {

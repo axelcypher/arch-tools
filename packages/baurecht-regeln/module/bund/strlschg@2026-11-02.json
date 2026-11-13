@@ -71,7 +71,7 @@
         "123/4": "758e00e4"
       },
       "pruefen": {
-        "grund": "Bauliche Veränderung, die den Luftwechsel erheblich vermindert (z. B. Fenstertausch, Dämmung): Maßnahmen zum Schutz vor Radon sollen in Betracht gezogen werden (Abs. 4) – im Einzelfall prüfen.",
+        "grund": "Bauliche Veränderung, die den Luftwechsel erheblich vermindert (z. B. Fenstertausch, Dämmung): Maßnahmen zum Schutz vor Radon sollen in Betracht gezogen werden (Abs. 4).",
         "wenn": {
           "und": [
             {

@@ -31,7 +31,7 @@
         "3/6": "4657400a"
       },
       "pruefen": {
-        "grund": "Bei einer Nutzungsänderung gelten die Anforderungen, soweit das äußere Erscheinungsbild oder die Freiflächen (Lager- und Einstellplätze) geändert werden – im Einzelfall prüfen.",
+        "grund": "Bei einer Nutzungsänderung gelten die Anforderungen, soweit das äußere Erscheinungsbild oder die Freiflächen (Lager- und Einstellplätze) geändert werden.",
         "wenn": {
           "$": "nutzungsaenderung"
         }
@@ -54,7 +54,7 @@
         "$": "nw_prueft_kern"
       },
       "pruefen": {
-        "grund": "Im Einzelfall prüfen – bei Anlagen, die keine Gebäude sind (z. B. Mauern, Einfriedungen, technische Anlagen): die Anpassungspflicht gilt für alle baulichen Anlagen. Bei einer Nutzungsänderung gelten die gestalterischen Anforderungen nur, soweit das äußere Erscheinungsbild geändert wird.",
+        "grund": "Bei Anlagen, die keine Gebäude sind (z. B. Mauern, Einfriedungen, technische Anlagen): die Anpassungspflicht gilt für alle baulichen Anlagen. Bei einer Nutzungsänderung gelten die gestalterischen Anforderungen nur, soweit das äußere Erscheinungsbild geändert wird.",
         "wenn": {
           "oder": [
             {
@@ -112,7 +112,7 @@
       },
       "titel": "Erhaltung des historisch gewachsenen Stadtbildes und Grundrisses",
       "pruefen": {
-        "grund": "Nutzungsänderung: Erhaltung des historisch gewachsenen Stadtbildes – ob die neue Nutzung das Ortsbild prägende Anlagen verändert, im Einzelfall prüfen.",
+        "grund": "Nutzungsänderung: Erhaltung des historisch gewachsenen Stadtbildes – ob die neue Nutzung das Ortsbild prägende Anlagen verändert.",
         "wenn": {
           "$": "nutzungsaenderung"
         }
@@ -164,7 +164,7 @@
         "$": "nw_prueft_kern"
       },
       "pruefen": {
-        "grund": "Nutzungsänderung eines Bürgerbaus (Anlage A II): ob die besonderen Anforderungen berührt sind, im Einzelfall prüfen.",
+        "grund": "Nutzungsänderung eines Bürgerbaus (Anlage A II): ob die besonderen Anforderungen berührt sind.",
         "wenn": {
           "$": "nutzungsaenderung"
         }
@@ -187,7 +187,7 @@
         "$": "nw_prueft_kern"
       },
       "pruefen": {
-        "grund": "Im Einzelfall prüfen: bei einer Nutzungsänderung eines Baudenkmals (Anlage A III) und bei baulichen Anlagen, die keine Gebäude sind (z. B. Mauern, technische Anlagen) an oder bei einem Baudenkmal.",
+        "grund": "Bei einer Nutzungsänderung eines Baudenkmals (Anlage A III) und bei baulichen Anlagen, die keine Gebäude sind (z. B. Mauern, technische Anlagen) an oder bei einem Baudenkmal.",
         "wenn": {
           "oder": [
             {

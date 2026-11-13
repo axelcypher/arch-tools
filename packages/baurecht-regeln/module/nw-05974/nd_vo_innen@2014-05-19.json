@@ -78,7 +78,7 @@
       },
       "titel": "Verbote",
       "pruefen": {
-        "grund": "Nutzungsänderung: Bodenverdichtung, Lagern und Versiegeln im Bereich des Schutzobjekts sind verboten (§ 2) – im Einzelfall prüfen.",
+        "grund": "Nutzungsänderung: Bodenverdichtung, Lagern und Versiegeln im Bereich des Schutzobjekts sind verboten (§ 2).",
         "wenn": {
           "und": [
             {
@@ -122,7 +122,7 @@
       },
       "titel": "Befreiung und Ausnahmen",
       "pruefen": {
-        "grund": "Nutzungsänderung: Bodenverdichtung, Lagern und Versiegeln im Bereich des Schutzobjekts sind verboten (§ 2) – im Einzelfall prüfen.",
+        "grund": "Nutzungsänderung: Bodenverdichtung, Lagern und Versiegeln im Bereich des Schutzobjekts sind verboten (§ 2).",
         "wenn": {
           "und": [
             {
