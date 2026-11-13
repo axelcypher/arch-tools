@@ -2,7 +2,7 @@ import type { KeyboardEvent, ReactNode } from 'react';
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { PkEintrag, PkGruppe, PkWert } from '../forma/projektkarte';
 import { pkArt, pkEintrag, pkMoeglichkeiten, pkSchluessel, pkTitel, pkWertVon } from '../forma/projektkarte';
-import { anschrift, aufbau, einheit, feldTitel, gruppenReihen, istAdresse, pruefung, zusammenfassung } from '../projektkarteAufbau';
+import { anschrift, aufbau, einheit, feldTitel, gruppenReihen, istAdresse, istAnzahl, nutzungsarten, pruefung, zusammenfassung } from '../projektkarteAufbau';
 import type { Adresse } from '../adressbuch';
 import { adressName, adressOrt, adressSchluessel, adressenAusKarte, inRolle } from '../adressbuch';
 import type { Angabe } from '../projektdaten';
@@ -17,7 +17,7 @@ import { felderDerAnsicht, useAnsicht } from '@core/ui/ansicht';
 import { AnsichtAnzeige, AnsichtEditor } from '@core/ui/AnsichtEditor';
 import { BreitenLeiste } from '@core/ui/Leiste';
 import type { KartenWert, OffeneKarte } from '../store';
-import { karteMitAenderungen, karteText, karteWert, useFormulare } from '../store';
+import { KARTEN_ANSICHT, kartenVerknuepfbar, karteMitAenderungen, karteText, karteWert, useFormulare } from '../store';
 
 /** zuletzt gewählte Gruppe je Projekt (bleibt beim Wechsel zwischen Formular und Projektkarte) */
 const gewaehlt = new Map<string, number>();
@@ -121,8 +121,7 @@ const PROJEKTDATEN = -1;
 /** Kennung der eigenen Ansicht in der Navigation */
 const EIGENE = -3;
 
-/** Schlüssel der eigenen Ansicht der Projektkarte (je Benutzer, für alle Projekte) */
-export const KARTEN_ANSICHT = 'formulare:ansicht:projektkarte';
+export { KARTEN_ANSICHT };
 
 /** Katalog der Projektkarte für den Ansicht-Editor: jeder Eintrag jeder Gruppe (Kennung „Gruppe:Eintrag“) */
 function kartenKatalog(karte: OffeneKarte): FeldDef[] {
@@ -141,15 +140,34 @@ function EigeneAnsicht({ karte }: { karte: OffeneKarte }) {
   const [ansicht, setAnsicht] = useAnsicht(KARTEN_ANSICHT);
   const [editor, setEditor] = useState(false);
   const katalog = useMemo(() => kartenKatalog(karte), [karte.karte]); // eslint-disable-line react-hooks/exhaustive-deps
-  const feld = (f: FeldDef) => {
+  const feld = (f: FeldDef, o: { label: string; verknuepft: string[] }) => {
     const [g, id] = f.id.split(':').map(Number);
     const gruppe = karte.karte.gruppen.find((x) => x.id === g);
     const eintrag = karte.karte.eintraege.find((e) => e.gruppe === g && e.id === id);
     if (!gruppe || !eintrag) return null;
+    const mit = o.verknuepft.map((v) => katalog.find((k) => k.id === v)).filter((k): k is FeldDef => !!k);
+    const unter = (
+      <>
+        {gruppe.text}
+        {mit.length > 0 && (
+          <span className="pk-eigen-link" title={`Verknüpft – wird gemeinsam ausgefüllt mit: ${mit.map((k) => `${k.titel} (${k.gruppe})`).join(', ')}`}>
+            {' '}
+            · {/* dasselbe Zeichen wie im Ansicht-Editor (nicht das Symbol für „Datei verknüpfen“) */}
+            <span role="img" aria-label="verknüpft mit">
+              {'⛓\uFE0E'}
+            </span>{' '}
+            {mit.map((k) => k.gruppe).join(', ')}
+          </span>
+        )}
+      </>
+    );
     return (
       <div className="pk-eigen-feld">
-        <span className="pk-eigen-gruppe">{gruppe.text}</span>
-        {pkArt(eintrag) === 'kreuz' ? <Kreuze karte={karte} eintraege={[eintrag]} /> : <Eintrag karte={karte} gruppe={gruppe} eintrag={eintrag} breite={12} land={karteText(karte, g, 120)} />}
+        {pkArt(eintrag) === 'kreuz' ? (
+          <Kreuze karte={karte} eintraege={[eintrag]} titelText={o.label} unter={unter} />
+        ) : (
+          <Eintrag karte={karte} gruppe={gruppe} eintrag={eintrag} breite={12} land={karteText(karte, g, 120)} titelText={o.label} unter={unter} />
+        )}
       </div>
     );
   };
@@ -183,16 +201,23 @@ function EigeneAnsicht({ karte }: { karte: OffeneKarte }) {
       {editor && (
         <AnsichtEditor
           titel="Projektkarte: eigene Ansicht"
-          text="Rechts Einträge der Projektkarte anhaken – sie kommen in den gewählten Abschnitt. Links ordnen: am Griff ziehen (auch in einen anderen Abschnitt) oder Griff wählen und ↑/↓."
+          text="Rechts Einträge der Projektkarte anhaken, links am Griff ordnen (oder Griff wählen und ↑/↓, Entf entfernt)."
           katalog={katalog}
           ansicht={ansicht}
           onChange={setAnsicht}
           onSchliessen={() => setEditor(false)}
+          verknuepfbar={(a, b) => kartenVerknuepfbar(eintragVon(karte, a.id), eintragVon(karte, b.id))}
         />
       )}
     </section>
   );
 }
+
+/** Eintrag der Projektkarte zu einer Kennung „Gruppe:Eintrag“ */
+const eintragVon = (karte: OffeneKarte, kennung: string) => {
+  const [g, id] = kennung.split(':').map(Number);
+  return karte.karte.eintraege.find((e) => e.gruppe === g && e.id === id);
+};
 
 /** Leere Adressgruppen mit den Vorgaben der Stammdaten füllen */
 function vorgabenFuer(karte: OffeneKarte, adressen: Adresse[], vorgaben: Record<string, string>): KartenWert[] {
@@ -504,6 +529,8 @@ function GruppenEditor({
     karteMehrere(
       eintraege.map((e) => ({ gruppe: gruppe.id, id: e.id, wert: leer(e) })),
       `${gruppe.text} geleert`,
+      // nur diese Gruppe – verknüpfte Felder anderer Gruppen bleiben
+      { ohneVerknuepfungen: true },
     );
     setMeldung({ art: 'info', text: `${gruppe.text} geleert – Strg+Z nimmt es zurück.` });
   };
@@ -670,9 +697,12 @@ function Zelle({
   children,
   htmlFor,
   ids,
+  unter,
 }: {
   breite: number;
   titel: string;
+  /** dezent unter dem Eingabefeld (eigene Ansicht: aus welcher Gruppe der Eintrag stammt) */
+  unter?: ReactNode;
   geaendert: boolean;
   hinweis?: string;
   warnung?: string | null;
@@ -687,7 +717,7 @@ function Zelle({
   return (
     <div className={`pk-feld${geaendert ? ' geaendert' : ''}${warnung ? ' warnung' : ''}${ausgeblendet ? ' ausgeblendet' : ''}`} style={{ gridColumn: `span ${breite}` }}>
       <div className="pk-feld-kopf">
-        <label className="pk-feld-titel" htmlFor={htmlFor}>
+        <label className="pk-feld-titel" htmlFor={htmlFor} title={titel}>
           {titel}
           {hinweis && <span className="pk-einheit"> [{hinweis}]</span>}
         </label>
@@ -709,12 +739,36 @@ function Zelle({
         ) : null}
       </div>
       {children}
-      {warnung && <div className="pk-warnung">{warnung}</div>}
+      {/* die Warnung gehört direkt unter das Feld, die Herkunft danach */}
+      {warnung && (
+        // die Kennung verbindet die Warnung mit dem Eingabefeld (aria-describedby)
+        <div className="pk-warnung" id={htmlFor ? `${htmlFor}-warnung` : undefined}>
+          {warnung}
+        </div>
+      )}
+      {unter && <div className="pk-feld-unter">{unter}</div>}
     </div>
   );
 }
 
-function Eintrag({ karte, gruppe, eintrag, breite, land }: { karte: OffeneKarte; gruppe: PkGruppe; eintrag: PkEintrag; breite: number; land: string }) {
+function Eintrag({
+  karte,
+  gruppe,
+  eintrag,
+  breite,
+  land,
+  titelText,
+  unter,
+}: {
+  karte: OffeneKarte;
+  gruppe: PkGruppe;
+  eintrag: PkEintrag;
+  breite: number;
+  land: string;
+  /** eigene Beschriftung (eigene Ansicht) */
+  titelText?: string;
+  unter?: ReactNode;
+}) {
   const karteSetzen = useFormulare((s) => s.karteSetzen);
   const s = pkSchluessel(eintrag.gruppe, eintrag.id);
   const id = `pk-${eintrag.gruppe}-${eintrag.id}`;
@@ -722,7 +776,7 @@ function Eintrag({ karte, gruppe, eintrag, breite, land }: { karte: OffeneKarte;
   const geaendert = s in karte.aenderungen;
   const setzen = (w: PkWert) => karteSetzen(eintrag.gruppe, eintrag.id, w);
   const zurueck = () => setzen(pkWertVon(eintrag));
-  const titel = feldTitel(eintrag.titel);
+  const titel = titelText || feldTitel(eintrag.titel);
   const art = pkArt(eintrag);
 
   if (art === 'auswahl' || art === 'optionen') {
@@ -730,16 +784,18 @@ function Eintrag({ karte, gruppe, eintrag, breite, land }: { karte: OffeneKarte;
     // Auswahllisten: erste (leere) Möglichkeit = „keine Angabe“; Optionen: erneuter Klick hebt die Wahl auf
     if (art === 'auswahl' || moeglich.length > 4) {
       return (
-        <Zelle ids={[eintrag.id]} breite={breite} titel={titel} geaendert={geaendert} onZurueck={zurueck} htmlFor={id}>
+        <Zelle ids={[eintrag.id]} unter={unter} breite={breite} titel={titel} geaendert={geaendert} onZurueck={zurueck} htmlFor={id}>
           <select id={id} data-pk={s} value={typeof wert === 'number' ? wert : ''} onChange={(e) => setzen(e.target.value === '' ? null : Number(e.target.value))}>
             <option value="">– keine Angabe –</option>
-            {moeglich.map((m, i) => (m ? <option key={i} value={i}>{m}</option> : null))}
+            {/* gespeicherte Nummer außerhalb der Liste (z. B. aus einer älteren Version gewählt): sichtbar statt stumm leer */}
+            {typeof wert === 'number' && !moeglich[wert]?.trim() && <option value={wert}>(Auswahl nicht in der Liste – bitte neu wählen)</option>}
+            {moeglich.map((m, i) => (m.trim() ? <option key={i} value={i}>{m}</option> : null))}
           </select>
         </Zelle>
       );
     }
     return (
-      <Zelle ids={[eintrag.id]} breite={breite} titel={titel} geaendert={geaendert} onZurueck={zurueck}>
+      <Zelle ids={[eintrag.id]} unter={unter} breite={breite} titel={titel} geaendert={geaendert} onZurueck={zurueck}>
         <div className="pk-optionen" role="radiogroup" aria-label={titel}>
           {moeglich.map((m, i) => (
             <button key={i} role="radio" aria-checked={wert === i} data-pk={i === 0 ? s : undefined} className={wert === i ? 'active' : ''} onClick={() => setzen(wert === i ? null : i)}>
@@ -752,35 +808,129 @@ function Eintrag({ karte, gruppe, eintrag, breite, land }: { karte: OffeneKarte;
   }
 
   const textWert = typeof wert === 'string' ? wert : '';
-  const warnung = pruefung(gruppe, eintrag, textWert, land);
+  const kernTitel = feldTitel(eintrag.titel);
+  // Anzahl: ein vorhandener Wert, der keine ganze Zahl ist, bleibt stehen und wird gemeldet
+  const keineZahl = istAnzahl(kernTitel) && textWert.trim() !== '' && !/^\d+$/.test(textWert.trim());
+  const warnung = keineZahl ? `„${textWert.trim()}“ ist keine ganze Zahl – bitte als Zahl eintragen` : pruefung(gruppe, eintrag, textWert, land);
   const e = einheit(eintrag.titel);
   if (art === 'mehrzeilig') {
     return (
-      <Zelle ids={[eintrag.id]} breite={breite} titel={titel} hinweis={e} geaendert={geaendert} onZurueck={zurueck} warnung={warnung} htmlFor={id}>
-        <textarea id={id} data-pk={s} rows={Math.max(2, Math.min(10, textWert.split('\n').length + 1))} value={textWert} onChange={(ev) => setzen(ev.target.value)} />
+      <Zelle ids={[eintrag.id]} unter={unter} breite={breite} titel={titel} hinweis={e} geaendert={geaendert} onZurueck={zurueck} warnung={warnung} htmlFor={id}>
+        <textarea
+          id={id}
+          data-pk={s}
+          rows={Math.max(2, Math.min(10, textWert.split('\n').length + 1))}
+          value={textWert}
+          aria-describedby={warnung ? `${id}-warnung` : undefined}
+          onChange={(ev) => setzen(ev.target.value)}
+        />
       </Zelle>
     );
   }
+  const vorschlaege = nutzungsarten(kernTitel);
   return (
-    <Zelle ids={[eintrag.id]} breite={breite} titel={titel} hinweis={e} geaendert={geaendert} onZurueck={zurueck} warnung={warnung} htmlFor={id}>
-      <input
-        id={id}
-        data-pk={s}
-        type="text"
-        value={textWert}
-        spellCheck={false}
-        className={e === 'm²' ? 'pk-zahl' : undefined}
-        onChange={(ev) => setzen(ev.target.value)}
-      />
+    <Zelle ids={[eintrag.id]} unter={unter} breite={breite} titel={titel} hinweis={e} geaendert={geaendert} onZurueck={zurueck} warnung={warnung} htmlFor={id}>
+      {istAnzahl(kernTitel) ? (
+        // Anzahl: nur ganze Zahlen (gespeichert als Text, wie in der Projektkarte). Ein Textfeld mit Zifferntastatur
+        // statt eines Zahlenfelds: ein ungültiger Wert („ca. 3“, eingefügt „1.5“) bleibt sichtbar stehen, wird gemeldet
+        // und lässt sich korrigieren oder leeren; das Mausrad ändert nichts. Andere Zeichen als Ziffern lassen sich
+        // nicht tippen – nichts wird stillschweigend verändert
+        <input
+          id={id}
+          data-pk={s}
+          type="text"
+          inputMode="numeric"
+          spellCheck={false}
+          className="pk-zahl"
+          aria-invalid={keineZahl || undefined}
+          aria-describedby={warnung ? `${id}-warnung` : undefined}
+          title="Nur ganze Zahlen – andere Zeichen lassen sich nicht tippen"
+          value={textWert}
+          onKeyDown={(ev) => ev.key.length === 1 && !/\d/.test(ev.key) && !ev.ctrlKey && !ev.metaKey && !ev.altKey && ev.preventDefault()}
+          onChange={(ev) => setzen(ev.target.value)}
+        />
+      ) : vorschlaege ? (
+        <AuswahlMitText id={id} schluessel={s} wert={textWert} vorschlaege={vorschlaege} onChange={setzen} />
+      ) : (
+        <input
+          id={id}
+          data-pk={s}
+          type="text"
+          value={textWert}
+          spellCheck={false}
+          className={e === 'm²' ? 'pk-zahl' : undefined}
+          aria-describedby={warnung ? `${id}-warnung` : undefined}
+          onChange={(ev) => setzen(ev.target.value)}
+        />
+      )}
     </Zelle>
   );
 }
 
-function Kreuze({ karte, eintraege }: { karte: OffeneKarte; eintraege: PkEintrag[] }) {
+/**
+ * Auswahl aus gängigen Werten (z. B. Art der Nutzung) – gespeichert wird der Text. Ein eigener Text bleibt erhalten: Er
+ * steht als „(eigene Angabe)“ in der Auswahl; „andere …“ öffnet die Eingabe, der Pfeil führt zur Liste zurück, ohne
+ * etwas zu löschen.
+ */
+function AuswahlMitText({ id, schluessel, wert, vorschlaege, onChange }: { id: string; schluessel: string; wert: string; vorschlaege: string[]; onChange: (w: string) => void }) {
+  const [frei, setFrei] = useState(false);
+  const liste = useRef<HTMLSelectElement>(null);
+  const zurueck = useRef(false);
+  const eigen = wert.trim() !== '' && !vorschlaege.includes(wert);
+  // zurück zur Liste (Pfeil oder Esc): der Fokus bleibt an diesem Eintrag
+  useEffect(() => {
+    if (!frei && zurueck.current) liste.current?.focus();
+    zurueck.current = false;
+  }, [frei]);
+  const zurListe = () => {
+    zurueck.current = true;
+    setFrei(false);
+  };
+  if (frei)
+    return (
+      <span className="pk-auswahl-frei">
+        <input
+          id={id}
+          data-pk={schluessel}
+          type="text"
+          value={wert}
+          spellCheck={false}
+          autoFocus
+          onChange={(ev) => onChange(ev.target.value)}
+          onKeyDown={(ev) => {
+            if (ev.key !== 'Escape') return;
+            ev.preventDefault();
+            ev.stopPropagation();
+            zurListe();
+          }}
+        />
+        <button type="button" className="icon" title="Aus der Liste wählen (Esc) – die eigene Angabe bleibt erhalten" aria-label="Aus der Liste wählen" onClick={zurListe}>
+          <Symbol name="pfeilUnten" />
+        </button>
+      </span>
+    );
+  return (
+    <select ref={liste} id={id} data-pk={schluessel} value={wert} title={wert || undefined} onChange={(ev) => (ev.target.value === FREI ? setFrei(true) : onChange(ev.target.value))}>
+      <option value="">– keine Angabe –</option>
+      {eigen && <option value={wert}>{wert} (eigene Angabe)</option>}
+      {vorschlaege.map((v) => (
+        <option key={v} value={v}>
+          {v}
+        </option>
+      ))}
+      <option value={FREI}>{eigen ? 'eigene Angabe ändern …' : 'andere …'}</option>
+    </select>
+  );
+}
+
+/** Wert der Auswahl für „eigene Angabe eingeben“ (kein möglicher Text der Projektkarte) */
+const FREI = '\u0000frei';
+
+function Kreuze({ karte, eintraege, titelText, unter }: { karte: OffeneKarte; eintraege: PkEintrag[]; titelText?: string; unter?: ReactNode }) {
   const karteSetzen = useFormulare((s) => s.karteSetzen);
   const geaendert = eintraege.some((e) => pkSchluessel(e.gruppe, e.id) in karte.aenderungen);
   return (
-    <Zelle breite={12} titel={feldTitel(eintraege[0].titel)} geaendert={geaendert} ids={eintraege.map((e) => e.id)}>
+    <Zelle breite={12} titel={titelText || feldTitel(eintraege[0].titel)} geaendert={geaendert} ids={eintraege.map((e) => e.id)} unter={unter}>
       <div className="pk-kreuze">
         {eintraege.map((e) => (
           <label key={e.id} className="pk-kreuz">

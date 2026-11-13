@@ -1,3 +1,5 @@
+import type { Namensschema } from '@core/namensschema';
+import { namensschemaAus, VORGABE_NAMENSSCHEMA } from '@core/namensschema';
 import { projektWerte } from '@core/excel/projekt';
 import type { ExportContext, Row, Value } from '@core/excel/context';
 import type { Anschrift, Bauherr, Bebauungsplan, Beteiligter, Grundstueck, Kontakt, Project, ProjectMeta, ProjektordnerAngaben, ProjektStatus, Koordinaten } from '@core/model';
@@ -156,7 +158,7 @@ export function angabenAusProjekt(p: Project): ProjektAngaben {
  * Neue Projektdatei: leere Flächenberechnung mit den Stammdaten, dem Anlagedatum und den Angaben dieses Tools
  * (Struktur, Dateischema, gewählte Presets). Flächenrechner, GRZ-Nachweis, Kostenermittlung und Formulare öffnen sie.
  */
-export function alsProject(stamm: Stammdaten, o: { struktur?: { name: string; dateischema: string }; presets?: string[]; date?: Date } = {}): Project {
+export function alsProject(stamm: Stammdaten, o: { struktur?: { name: string; dateischema: string }; presets?: string[]; date?: Date; namensschema?: Namensschema } = {}): Project {
   const s = bereinigt(stamm);
   const p = createProject(s.bezeichnung || s.kurzname || s.nummer || 'Neues Projekt');
   p.meta = { ...metaAus(s), angelegt: isoDatum(o.date ?? new Date()) };
@@ -166,6 +168,8 @@ export function alsProject(stamm: Stammdaten, o: { struktur?: { name: string; da
       ...(o.presets ? { presets: [...o.presets] } : {}),
     };
   }
+  // Namensschema des Büros: jede Projektdatei trägt ihre Kopie (Kürzel, Stellen, Indizes) – für alle Apps
+  p.namensschema = structuredClone(o.namensschema ?? VORGABE_NAMENSSCHEMA);
   return p;
 }
 
@@ -201,13 +205,26 @@ export interface ProjektdateiAenderung {
  * erhalten bleiben), und die Angaben dieses Tools (Struktur, Dateischema, Presets). Gelöscht wird nichts außer
  * dem, was im Assistenten geleert wurde.
  */
-export function projektdateiAenderung(basis: { meta: ProjectMeta; projektordner?: ProjektordnerAngaben }, stamm: Stammdaten, ziel: { struktur: { name: string; dateischema: string }; presets: string[] }): ProjektdateiAenderung {
+export function projektdateiAenderung(
+  basis: { meta: ProjectMeta; projektordner?: ProjektordnerAngaben; namensschema?: Namensschema },
+  stamm: Stammdaten,
+  ziel: { struktur: { name: string; dateischema: string }; presets: string[]; namensschema?: Namensschema },
+): ProjektdateiAenderung {
   const neu = metaAus(stamm);
   const geaendert = META_TEILE.filter(([k]) => !gleich(wert(basis.meta[k]), wert(neu[k])));
   const po: ProjektordnerAngaben = { struktur: ziel.struktur.name, ...(ziel.struktur.dateischema ? { dateischema: ziel.struktur.dateischema } : {}), presets: [...ziel.presets] };
   const alt = basis.projektordner ?? {};
   const poGeaendert = (['struktur', 'dateischema', 'presets'] as const).filter((k) => !gleich(wert(alt[k]), wert(po[k])));
-  const teile = [...geaendert.map(([, t]) => t), ...(poGeaendert.includes('presets') ? ['Vorlagen-Presets'] : []), ...(poGeaendert.some((k) => k !== 'presets') ? ['Struktur'] : [])];
+  // Namensschema: fehlt es in der Projektdatei oder weicht es vom Büro ab, wird das des Büros übernommen (beim Ergänzen sichtbar)
+  // verglichen in gelesener Form (namensschemaAus) – die Reihenfolge der Schlüssel macht keinen Unterschied
+  const schema = namensschemaAus(ziel.namensschema) ?? structuredClone(VORGABE_NAMENSSCHEMA);
+  const schemaNeu = JSON.stringify(namensschemaAus(basis.namensschema)) !== JSON.stringify(schema);
+  const teile = [
+    ...geaendert.map(([, t]) => t),
+    ...(poGeaendert.includes('presets') ? ['Vorlagen-Presets'] : []),
+    ...(poGeaendert.some((k) => k !== 'presets') ? ['Struktur'] : []),
+    ...(schemaNeu ? [basis.namensschema ? 'Namensschema (Stand des Büros)' : 'Namensschema'] : []),
+  ];
   return {
     teile,
     aendern: (roh) => {
@@ -222,7 +239,7 @@ export function projektdateiAenderung(basis: { meta: ProjectMeta; projektordner?
         if (po[k] === undefined) delete projektordner[k];
         else projektordner[k] = structuredClone(po[k]);
       }
-      return { ...roh, meta, ...(poGeaendert.length ? { projektordner } : {}) };
+      return { ...roh, meta, ...(poGeaendert.length ? { projektordner } : {}), ...(schemaNeu ? { namensschema: structuredClone(schema) } : {}) };
     },
   };
 }

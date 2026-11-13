@@ -253,7 +253,8 @@ Ein Repository mit npm-Workspaces, sieben Apps und einem gemeinsamen Unterbau:
 ```
 packages/core/       gemeinsamer Unterbau (TypeScript-Quelltext, in den Apps als @core/… eingebunden)
   src/               Geometrie, Projektformat (.oap), IFC-Import, Dachformen und Gauben, DIN-277-
-                     Berechnung, Lageplan-Flächen
+                     Berechnung, Lageplan-Flächen, Namensschema des Büros (namensschema.ts: Kürzel, Stellen im
+                     Dateinamen, Plannummern, Indizes – für alle Apps, je Projektdatei mit Kopie)
   src/excel/         Excel-Vorlagen-Engine (Platzhalter, Blöcke, Formeln), Vorlagenspeicher
   src/dokumente/     Office-Dateien verlustfrei lesen und zellgenau ändern (XML mit Lage im Quelltext, ZIP, Excel),
                      Formeln einer Mappe nachrechnen (auch blattübergreifend)

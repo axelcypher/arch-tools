@@ -1,3 +1,4 @@
+import { VORGABE_NAMENSSCHEMA } from '@core/namensschema';
 import ExcelJS from 'exceljs';
 import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
 import { describe, expect, it } from 'vitest';
@@ -299,7 +300,8 @@ describe('Stammdaten', () => {
     // „aktiv“ steht nicht in der Datei, leerer Bebauungsplan entfällt
     expect(metaAus(stamm({ bebauungsplan: { nummer: ' ', name: '' }, status: 'aktiv' }))).not.toHaveProperty('status');
     expect(metaAus(stamm({ bebauungsplan: { nummer: ' ', name: '' } }))).not.toHaveProperty('bebauungsplan');
-    const basis = { meta: metaAus(stamm()) };
+    // mit der Kopie des Namensschemas (Vorgabe), sonst käme „Namensschema“ als Änderung dazu
+    const basis = { meta: metaAus(stamm()), namensschema: structuredClone(VORGABE_NAMENSSCHEMA) };
     expect(projektdateiAenderung(basis, stamm({ status: 'akquise', bebauungsplan: { nummer: '5' } }), { struktur: KLEIN, presets: [] }).teile).toEqual(['Bebauungsplan', 'Status', 'Struktur']);
   });
 
@@ -313,6 +315,34 @@ describe('Stammdaten', () => {
     expect(a.bauherr.kontakte).toEqual([{ art: 'email', wert: 'b@example.org' }]);
     expect(a.beteiligte).toEqual([{ rolle: 'Tragwerk', name: 'Büro Statik', kontakt: '0251 1234' }]);
     expect(stammAusMeta(p.meta).bezeichnung).toBe('Neubau eines Einfamilienhauses');
+    // Namensschema: die Vorgabe bzw. das des Büros kommt in die Projektdatei und bleibt erhalten
+    expect(readProjectFile(writeArchive(p)).namensschema?.phasen.map((x) => x.kuerzel)).toEqual(['BP', 'EP', 'GP', 'AP', 'AB']);
+    const eigen = alsProject(stamm(), { namensschema: { ...structuredClone(VORGABE_NAMENSSCHEMA), indexAbLph: 4 } });
+    expect(readProjectFile(writeArchive(eigen)).namensschema?.indexAbLph).toBe(4);
+  });
+
+  it('Ergänzen: ein fehlendes oder abweichendes Namensschema der Projektdatei wird auf den Stand des Büros gebracht', () => {
+    const s = stamm();
+    const struktur = { name: 'Klein', dateischema: '' };
+    const p = alsProject(s, { struktur, presets: [] });
+    const buero = { ...structuredClone(VORGABE_NAMENSSCHEMA), indexAbLph: 4 };
+    // alte Projektdatei ohne Namensschema: „Namensschema“ kommt dazu, sonst bleibt alles
+    const ohne = projektdateiAenderung({ meta: p.meta, projektordner: p.projektordner }, s, { struktur, presets: [], namensschema: buero });
+    expect(ohne.teile).toEqual(['Namensschema']);
+    expect(ohne.aendern({ meta: p.meta, fremd: 1 })).toMatchObject({ fremd: 1, namensschema: buero });
+    // abweichendes Schema: auf den Stand des Büros
+    const anders = projektdateiAenderung({ meta: p.meta, projektordner: p.projektordner, namensschema: structuredClone(VORGABE_NAMENSSCHEMA) }, s, { struktur, presets: [], namensschema: buero });
+    expect(anders.teile).toEqual(['Namensschema (Stand des Büros)']);
+    expect(anders.aendern({ meta: p.meta }).namensschema).toEqual(buero);
+    // gleich: keine Änderung, der Abschnitt bleibt unberührt
+    const gleich = projektdateiAenderung({ meta: p.meta, projektordner: p.projektordner, namensschema: buero }, s, { struktur, presets: [], namensschema: buero });
+    expect(gleich.teile).toEqual([]);
+    expect(gleich.aendern({ meta: p.meta })).not.toHaveProperty('namensschema');
+    // andere Reihenfolge der Schlüssel ist keine Änderung
+    const umgestellt = { indexAbLph: buero.indexAbLph, reihenfolge: buero.reihenfolge, antragsarten: buero.antragsarten, phasen: buero.phasen.map((k) => ({ lph: k.lph, name: k.name, kuerzel: k.kuerzel })) };
+    expect(projektdateiAenderung({ meta: p.meta, projektordner: p.projektordner, namensschema: umgestellt as typeof buero }, s, { struktur, presets: [], namensschema: buero }).teile).toEqual([]);
+    // ohne Büro-Schema gilt die Vorgabe
+    expect(projektdateiAenderung({ meta: p.meta, projektordner: p.projektordner, namensschema: structuredClone(VORGABE_NAMENSSCHEMA) }, s, { struktur, presets: [] }).teile).toEqual([]);
   });
 
   it('alte projekt.json (bis 0.2) wird noch gelesen und füllt Lücken der Projektdatei', () => {

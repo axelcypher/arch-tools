@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import type { PDFDocumentProxy } from 'pdfjs-dist/types/src/display/api';
 import { useEscSchliessen } from '@core/ui/Dialog';
 import type { AblageOrdner } from '../ablage';
 import { dateiArt } from '../ablage';
-import { antragsNameFehler, artDerFassung, BEREIT_TEXT, bereitschaft } from '../antrag';
-import { aktiveFassung, antragsOrdner, projektCodes, useAntrag } from '../antragStore';
+import { antragsNameFehler, artDerFassung, BEREIT_TEXT, bereitschaft, istHilfsdatei } from '../antrag';
+import { aktiveFassung, antragSperre, antragsOrdner, dateienVon, dokumentZu, namensschemaVon, projektCodes, useAntrag, wechselLaeuft, zeilenFassung } from '../antragStore';
 import type { Eintrag } from '../dateisystem';
 import { oeffnePfad, verbinde } from '../dateisystem';
 import { pdfOeffnen, pdfSchliessen } from '../dokumente/pdf';
@@ -16,7 +17,7 @@ export const VORSCHAU_ZOOM = [0, 0.5, 0.75, 1, 1.25, 1.5, 2, 3];
 
 /** Reihenfolge der Antragsunterlagen: zuerst die Dokumente des Antragsumfangs in ihrer Reihenfolge, dann der Rest */
 export function unterlagenReihenfolge(dateien: Eintrag[], umfangDateien: string[]): Eintrag[] {
-  const nurDateien = dateien.filter((d) => !d.ordner && !/^(~\$|\.~lock\.)/.test(d.pfad) && !/^(thumbs\.db|desktop\.ini)$/i.test(d.pfad));
+  const nurDateien = dateien.filter((d) => !d.ordner && !istHilfsdatei(d.pfad));
   const rang = (d: Eintrag) => {
     const i = umfangDateien.findIndex((n) => n.toLowerCase() === d.pfad.toLowerCase());
     return i < 0 ? umfangDateien.length : i;
@@ -38,8 +39,13 @@ export function UnterlagenVorschau({ ablage, start, onClose }: { ablage: AblageO
   const fassung = useAntrag((s) => aktiveFassung(s, projekt));
   const ordner = useAntrag((s) => antragsOrdner(s, projekt));
   const bereitJeFassung = useAntrag((s) => s.projektdatei?.bereit);
+  const gesperrt = useAntrag((s) => !!antragSperre(s, projekt));
+  const wechsel = useAntrag((s) => !!wechselLaeuft(s, projekt));
+  // Fassung der gezeigten Liste – „bereit“ gilt nur für sie
+  const listeFassung = useAntrag((s) => zeilenFassung(s, projekt));
   const basis = verbinde(ablage.root, ablage.pfad);
-  const liste = useMemo(() => unterlagenReihenfolge(roh, dateien.map((d) => d.datei?.pfad ?? '').filter(Boolean)), [roh, dateien]);
+  // Reihenfolge des Antragsumfangs – die Pläne eines Plansatzes an seiner Stelle
+  const liste = useMemo(() => unterlagenReihenfolge(roh, dateien.flatMap(dateienVon)), [roh, dateien]);
   const [index, setIndex] = useState(() => Math.max(0, start ? liste.findIndex((d) => d.pfad === start) : 0));
   const [zoom, setZoom] = useState(0);
   const [bytes, setBytes] = useState<{ pfad: string; daten: Uint8Array } | null>(null);
@@ -48,7 +54,8 @@ export function UnterlagenVorschau({ ablage, start, onClose }: { ablage: AblageO
 
   const aktuell = liste[Math.min(index, liste.length - 1)];
   const art = aktuell ? dateiArt(aktuell.pfad) : 'sonst';
-  const fehlerName = aktuell ? antragsNameFehler(aktuell.pfad, { codes: projektCodes(projekt), art: artDerFassung(fassung) }) : null;
+  const schema = useFormulare(namensschemaVon);
+  const fehlerName = aktuell ? antragsNameFehler(aktuell.pfad, { codes: projektCodes(projekt), art: artDerFassung(fassung), reihenfolge: schema.reihenfolge, schema }) : null;
   const zustand = aktuell
     ? bereitschaft(
         aktuell,
@@ -56,7 +63,7 @@ export function UnterlagenVorschau({ ablage, start, onClose }: { ablage: AblageO
         fehlerName,
       )
     : 'offen';
-  const dok = aktuell ? dateien.find((d) => d.datei?.pfad === aktuell.pfad) : undefined;
+  const dok = aktuell ? dokumentZu(dateien, aktuell.pfad) : undefined;
 
   // Datei lesen (nur PDFs und Bilder werden gezeigt)
   useEffect(() => {
@@ -88,7 +95,9 @@ export function UnterlagenVorschau({ ablage, start, onClose }: { ablage: AblageO
     return () => window.removeEventListener('keydown', taste);
   });
 
-  return (
+  // per Portal an <body>: die Navigation, in der die Ansicht „Antrag“ steht, ist ein Container (Containerabfrage) –
+  // in manchen Browsern wäre position: fixed sonst auf sie beschränkt
+  return createPortal(
     <div className="vs-ebene" role="dialog" aria-modal="true" aria-label="Antragsunterlagen ansehen">
       <header className="vs-leiste">
         <strong className="vs-titel">
@@ -126,9 +135,17 @@ export function UnterlagenVorschau({ ablage, start, onClose }: { ablage: AblageO
             <button
               className={`vs-bereit ${zustand}`}
               aria-pressed={zustand === 'bereit'}
-              disabled={!!fehlerName}
-              title={fehlerName ? `${BEREIT_TEXT.name}: ${fehlerName}` : BEREIT_TEXT[zustand]}
-              onClick={() => void useAntrag.getState().bereitUmschalten(aktuell.pfad)}
+              disabled={!!fehlerName || gesperrt || wechsel}
+              title={
+                gesperrt
+                  ? 'Der Antrag ist eingereicht und gesperrt – „bereit“ bleibt, wie es ist'
+                  : wechsel
+                    ? 'Der Antrag wird gerade geöffnet – gleich wieder möglich'
+                    : fehlerName
+                      ? `${BEREIT_TEXT.name}: ${fehlerName}`
+                      : BEREIT_TEXT[zustand]
+              }
+              onClick={() => void useAntrag.getState().bereitUmschalten(aktuell.pfad, { fassung: listeFassung })}
             >
               {zustand === 'bereit' ? '✓ Bereit' : 'Als bereit markieren'}
             </button>
@@ -163,7 +180,8 @@ export function UnterlagenVorschau({ ablage, start, onClose }: { ablage: AblageO
           {aktuell && art !== 'pdf' && art !== 'bild' && <p className="vs-hinweis">Für diese Datei gibt es hier keine Vorschau – „Extern öffnen“ zeigt sie im zugehörigen Programm.</p>}
         </main>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

@@ -455,6 +455,151 @@ describe('Projekt (früher Projektordner)', () => {
     expect(JSON.parse(localStorage.getItem('arch-tools:konfig:projektordner')!).struktur.ordnername).toBe(STANDARD.ordnername);
   });
 
+  it('Einstellungen: Kürzel und Plannummern – Stellen tauschen, Kürzel ändern, ungültige Kürzel melden, Vorgabe wiederherstellen', async () => {
+    const host = render();
+    act(() => knopf(host, 'Einstellungen').click());
+    const bereich = host.querySelector<HTMLElement>('.po-namensschema')!;
+    const schema = () => useOrdner.getState().allgemein.namensschema!;
+    const beispiel = () => bereich.querySelector('code')!.textContent;
+    const eingabeMit = (label: string) => bereich.querySelector<HTMLInputElement>(`input[aria-label="${label}"]`)!;
+    expect(beispiel()).toBe('HVO GP 261111 GP-04 Grundriss OG.pdf');
+    // noch keine eigene Fassung: es gilt die Vorgabe, „Vorgabe wiederherstellen“ ist aus
+    expect(knopf(bereich, 'Vorgabe wiederherstellen').disabled).toBe(true);
+
+    // Stelle 2 auf Plannummer: die beiden Teile tauschen die Plätze, das Beispiel folgt
+    const stelle = (n: number) => [...bereich.querySelectorAll('.po-stellen label')].find((l) => l.textContent?.startsWith(`Stelle ${n}`))!.querySelector('select')!;
+    act(() => {
+      stelle(2).value = 'nummer';
+      stelle(2).dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    expect(schema().reihenfolge).toEqual(['code', 'nummer', 'datum', 'art']);
+    expect(beispiel()).toBe('HVO GP-04 261111 GP Grundriss OG.pdf');
+    expect(bereich.textContent).toContain('Phase GP, Datum 261111, Plannummer GP-04');
+    expect(bereich.querySelectorAll('code')[1].textContent).toBe('HVO GP-04 261111 BAUA …');
+
+    // Index ab Leistungsphase: beim Verlassen übernommen; außerhalb des Bereichs nicht gekappt, sondern gemeldet
+    const index = bereich.querySelector<HTMLInputElement>('.po-index input')!;
+    eingabe(index, '4');
+    expect(schema().indexAbLph).toBe(4);
+    eingabe(index, '12');
+    expect(schema().indexAbLph).toBe(4);
+    expect(index.value).toBe('12');
+    expect(index.className).toContain('feld-fehler');
+    expect(bereich.querySelector('.po-index .feld-meldung')!.textContent).toBe('„12“: Leistungsphase 0 bis 9 (ganze Zahl).');
+    eingabe(index, '');
+    expect(bereich.querySelector('.po-index .feld-meldung')!.textContent).toBe('Bitte eine Leistungsphase von 0 bis 9 eintragen.');
+    eingabe(index, '5');
+    expect(schema().indexAbLph).toBe(5);
+    expect(bereich.querySelector('.po-index .feld-meldung')).toBeNull();
+
+    // Kürzel ändern: klein getippt, groß übernommen
+    const kuerzel = (liste: string, k: string) => eingabeMit(`${liste}: Kürzel ${k}`);
+    eingabe(kuerzel('Planphasen', 'BP'), 'bp');
+    expect(schema().phasen[0].kuerzel).toBe('BP');
+    // umbenennen und mit Tab weiter zur Bedeutung: die Zeile bleibt, der Fokus auch
+    const feldBp = kuerzel('Planphasen', 'BP');
+    const bedeutung = eingabeMit('Planphasen: Bedeutung von BP');
+    act(() => {
+      feldBp.focus();
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(feldBp, 'bs');
+      feldBp.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    act(() => bedeutung.focus());
+    expect(schema().phasen.map((k) => k.kuerzel)).toEqual(['BS', 'EP', 'GP', 'AP', 'AB']);
+    expect(bedeutung.isConnected).toBe(true);
+    expect(document.activeElement).toBe(bedeutung);
+    act(() => bedeutung.blur());
+    // ungültig oder doppelt: das Feld zeigt wieder das alte Kürzel, die Meldung sagt warum
+    eingabe(kuerzel('Planphasen', 'EP'), 'E-P');
+    expect(schema().phasen[1].kuerzel).toBe('EP');
+    expect(kuerzel('Planphasen', 'EP').value).toBe('EP');
+    // die zuletzt erschienene Meldung
+    const meldung = () => [...bereich.querySelectorAll<HTMLElement>('.feld-meldung[role="alert"]')].at(-1)!;
+    expect(meldung().textContent).toBe('„E-P“: nur Großbuchstaben und Ziffern, höchstens 8 Zeichen – es bleibt EP.');
+    expect(kuerzel('Planphasen', 'EP').getAttribute('aria-describedby')).toBe(meldung().id);
+    eingabe(kuerzel('Planphasen', 'EP'), 'gp');
+    expect(meldung().textContent).toBe('„gp“: gibt es schon – es bleibt EP.');
+    expect(schema().phasen[1].kuerzel).toBe('EP');
+
+    // Bedeutung, Schreibweisen (bereinigt angezeigt) und Leistungsphase (begrenzt, leer = keine)
+    eingabe(eingabeMit('Antrags- und Verfahrensarten: Bedeutung von ENTW'), ' Entwässerungsgesuch ');
+    expect(schema().antragsarten.find((k) => k.kuerzel === 'ENTW')!.name).toBe('Entwässerungsgesuch');
+    expect(eingabeMit('Antrags- und Verfahrensarten: Bedeutung von ENTW').value).toBe('Entwässerungsgesuch');
+    eingabe(eingabeMit('Antrags- und Verfahrensarten: Schreibweisen von BAUA'), 'ba, BA,  baua');
+    expect(schema().antragsarten.find((k) => k.kuerzel === 'BAUA')!.synonyme).toEqual(['BA']);
+    expect(eingabeMit('Antrags- und Verfahrensarten: Schreibweisen von BAUA').value).toBe('BA');
+    // eine Schreibweise, die schon vergeben ist (Kürzel einer Phase, Schreibweise einer anderen Art), wird nicht gespeichert
+    eingabe(eingabeMit('Antrags- und Verfahrensarten: Schreibweisen von BAUA'), 'BA, GP');
+    expect(meldung().textContent).toBe('„GP“: gibt es schon – es bleibt „BA“.');
+    expect(eingabeMit('Antrags- und Verfahrensarten: Schreibweisen von BAUA').value).toBe('BA');
+    eingabe(eingabeMit('Antrags- und Verfahrensarten: Schreibweisen von DENK'), 'bva');
+    expect(meldung().textContent).toBe('„BVA“: gibt es schon – es bleibt keine Schreibweise.');
+    expect(schema().antragsarten.find((k) => k.kuerzel === 'DENK')!.synonyme).toBeUndefined();
+    // Leistungsphase: ungültig gemeldet, leer = keine
+    eingabe(eingabeMit('Planphasen: Leistungsphase von AB'), '15');
+    expect(schema().phasen.find((k) => k.kuerzel === 'AB')!.lph).toBeUndefined();
+    expect(eingabeMit('Planphasen: Leistungsphase von AB').getAttribute('aria-invalid')).toBe('true');
+    // die Meldung steht in der Meldungszeile der Tabelle, nicht in der schmalen LPH-Spalte
+    const lphMeldung = eingabeMit('Planphasen: Leistungsphase von AB').closest('tr')!.nextElementSibling!.querySelector<HTMLElement>('.feld-meldung')!;
+    expect(lphMeldung.textContent).toBe('„15“: Leistungsphase 0 bis 9 (ganze Zahl).');
+    expect(lphMeldung.closest('td')!.getAttribute('colspan')).toBe('4');
+    expect(eingabeMit('Planphasen: Leistungsphase von AB').getAttribute('aria-describedby')).toBe(lphMeldung.id);
+    eingabe(eingabeMit('Planphasen: Leistungsphase von AB'), '6');
+    expect(schema().phasen.find((k) => k.kuerzel === 'AB')!.lph).toBe(6);
+    eingabe(eingabeMit('Planphasen: Leistungsphase von AB'), '');
+    expect(schema().phasen.find((k) => k.kuerzel === 'AB')!.lph).toBeUndefined();
+
+    // neues Kürzel: erst gespeichert, wenn die Zeile mit einem gültigen Kürzel verlassen wird
+    const antragsarten = bereich.querySelectorAll<HTMLElement>('.po-kuerzel')[1];
+    act(() => knopf(antragsarten, '+ Kürzel').click());
+    expect(knopf(antragsarten, '+ Kürzel').disabled).toBe(true);
+    expect(schema().antragsarten.map((k) => k.kuerzel)).not.toContain('');
+    eingabe(eingabeMit('Antrags- und Verfahrensarten: Bedeutung von neues Kürzel'), 'Wohnungseigentum');
+    expect(schema().antragsarten).toHaveLength(6);
+    eingabe(eingabeMit('Antrags- und Verfahrensarten: Kürzel neues Kürzel'), 'baua');
+    expect(meldung().textContent).toBe('„baua“: gibt es schon – noch nicht gespeichert.');
+    expect(schema().antragsarten).toHaveLength(6);
+    eingabe(eingabeMit('Antrags- und Verfahrensarten: Kürzel neues Kürzel'), 'weg');
+    expect(schema().antragsarten.at(-1)).toEqual({ kuerzel: 'WEG', name: 'Wohnungseigentum' });
+    expect(knopf(antragsarten, '+ Kürzel').disabled).toBe(false);
+    // verwerfen (× oder Esc) speichert nichts
+    act(() => knopf(antragsarten, '+ Kürzel').click());
+    act(() => bereich.querySelector<HTMLButtonElement>('button[aria-label="Neues Kürzel verwerfen"]')!.click());
+    expect(schema().antragsarten).toHaveLength(7);
+    act(() => knopf(antragsarten, '+ Kürzel').click());
+    act(() => void eingabeMit('Antrags- und Verfahrensarten: Kürzel neues Kürzel').dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+    expect(bereich.querySelector('button[aria-label="Neues Kürzel verwerfen"]')).toBeNull();
+    expect(schema().antragsarten).toHaveLength(7);
+    // entfernen: mit Rückfrage
+    act(() => bereich.querySelector<HTMLButtonElement>('button[aria-label="WEG entfernen"]')!.click());
+    await warten();
+    expect(host.querySelector('.modal')?.textContent).toContain('WEG entfernen?');
+    act(() => knopf(host.querySelector('.modal')!, 'Abbrechen').click());
+    await warten();
+    expect(schema().antragsarten.map((k) => k.kuerzel)).toContain('WEG');
+    act(() => bereich.querySelector<HTMLButtonElement>('button[aria-label="WEG entfernen"]')!.click());
+    await warten();
+    act(() => knopf(host.querySelector('.modal')!, 'Entfernen').click());
+    await warten();
+    expect(schema().antragsarten.map((k) => k.kuerzel)).not.toContain('WEG');
+
+    // Vorgabe wiederherstellen: mit Rückfrage, danach gilt wieder die eingebaute Vorgabe – auch in den Feldern
+    act(() => knopf(bereich, 'Vorgabe wiederherstellen').click());
+    await warten();
+    expect(host.querySelector('.modal')?.textContent).toContain('Vorgabe wiederherstellen?');
+    act(() => knopf(host.querySelector('.modal')!, 'Wiederherstellen').click());
+    await warten();
+    expect(schema().reihenfolge).toEqual(['code', 'art', 'datum', 'nummer']);
+    expect(schema().phasen[0].kuerzel).toBe('BP');
+    expect(beispiel()).toBe('HVO GP 261111 GP-04 Grundriss OG.pdf');
+    expect(eingabeMit('Antrags- und Verfahrensarten: Bedeutung von ENTW').value).toBe('Entwässerungsantrag');
+    expect(eingabeMit('Antrags- und Verfahrensarten: Schreibweisen von BAUA').value).toBe('');
+    expect(eingabeMit('Planphasen: Leistungsphase von AB').value).toBe('');
+    expect(index.value).toBe('5');
+    // wieder die Vorgabe: nichts mehr wiederherzustellen
+    expect(knopf(bereich, 'Vorgabe wiederherstellen').disabled).toBe(true);
+  });
+
   it('Struktur von einem anderen Rechner geändert: Meldung statt Überschreiben, neu laden oder eigene Fassung speichern (P-02)', async () => {
     useOrdner.setState({ konfigLaden: echtesKonfigLaden });
     await act(() => useOrdner.getState().konfigLaden());

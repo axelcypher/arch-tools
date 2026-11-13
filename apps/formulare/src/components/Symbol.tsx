@@ -33,6 +33,8 @@ const PFADE = {
   tabelle: 'M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5zM8 12h8M8 16h8M12 12v8',
   bild: 'M4 5h16v14H4zM8.5 11a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM20 15l-5-5L5 19',
   info: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 16v-4M12 8h.01',
+  // Warndreieck – für Hinweise in Warnfarbe (Plansatz)
+  warnung: 'M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0zM12 9v4M12 17h.01',
   /** Klammer um mehrere Zeilen: Felder, die zusammen eine Angabe sind */
   gruppe: 'M7 4H5v16h2M17 4h2v16h-2M9 8h6M9 12h6M9 16h6',
   strich: 'M6 12h12',

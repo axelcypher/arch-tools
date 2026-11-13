@@ -12,9 +12,15 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
 
 - **Aufbau der Oberfläche:** Links die **Navigation** (Projekt, Projektdaten | Antragsdaten, Formulare und – durch
   eine Linie getrennt – Projektordner) auf eigenem, dunklerem Grund wie die Titelleiste; der gewählte Eintrag ist hell
-  hinterlegt und links markiert. Über den Formularen steht hervorgehoben ein Knopf in zwei Hälften: **Projektdaten**
-  (die Projektkarte – gilt für das ganze Projekt; aus ihr werden die Formulare ausgefüllt) und **Antragsdaten** (nur
-  für den aktiven Antrag: Status, Antragsmerkmale, Antragsumfang – siehe unten). Aufbau: Dokument › Antrag › Projekt.
+  hinterlegt und links markiert. Der **Kopf der Navigation steht fest** (rollt nicht mit): Projekt, Antrag und darunter
+  ein Knopf in zwei Hälften – **Projektdaten** (die Projektkarte – gilt für das ganze Projekt; aus ihr werden die
+  Formulare ausgefüllt) und **Antragsdaten** (nur für den aktiven Antrag: Status, Antragsmerkmale, Antragsumfang –
+  siehe unten); darunter rollt der Rest ab „Formulare“. Aufbau: Dokument › Antrag › Projekt.
+- **Zuletzt bearbeitet:** Rechts an jedem Formular der Navigation und an jeder Datei im Projektordner (Ordner und
+  Ansicht „Antrag“) steht kurz, wann zuletzt geändert wurde („heute 14:30“, „gestern 09:05“, „03.03.“) – beim Formular
+  auch nicht gespeicherte Eingaben; der volle Zeitpunkt steht im Tooltip (`zeit.ts`). In einer schmalen Navigation
+  (unter 260 px – schmaler als die Vorgabe von 300 px) entfällt die Angabe, damit die Namen lesbar bleiben – der
+  Tooltip zeigt sie weiter.
 - **Ohne Produktnamen:** Die Oberfläche nennt kein anderes Programm. Die App liest und schreibt das Dateiformat der
   Formularprojekte (siehe „Dateiformat“) und soll künftig auch ganz ohne das Originalprogramm auskommen.
 - **Seitenleisten** behalten ihre Breite, auch wenn eine Ansicht einen Rollbalken braucht (Platz dafür ist immer
@@ -251,11 +257,34 @@ Anschrift, wie sie in Formularen steht.
   alle im Büro; die Projektkarten selbst ändert das Adressbuch nicht. „Aus den Projektkarten einlesen“ liest alle
   Projektkarten neu. So funktioniert das Adressbuch auch ohne Projektkarten.
 - **Eigene Ansicht der Projektkarte:** oben in der Leiste der Projektkarte – die Einträge, die das Büro nutzt, aus
-  allen Gruppen auf einer Seite, in eigenen Abschnitten und eigener Reihenfolge (über jedem Feld steht die Gruppe).
+  allen Gruppen auf einer Seite, in eigenen Abschnitten und eigener Reihenfolge.
   „Ansicht bearbeiten …“ öffnet den **Ansicht-Editor** (gemeinsam in `packages/core/src/ui/AnsichtEditor.tsx`): rechts
   der Katalog aller Einträge mit Suche (Haken nimmt in den gewählten Abschnitt auf), links die Abschnitte – Felder am
-  Griff ziehen (auch in einen anderen Abschnitt) oder Griff wählen und ↑/↓, Entf entfernt. Gilt je Benutzer für alle
-  Projekte (`formulare:ansicht:projektkarte`).
+  Griff ziehen (auch in einen anderen Abschnitt) oder Griff wählen und ↑/↓, Entf entfernt. Je Feld: **eigene
+  Beschriftung**, **Breite** (¼, ⅓, ½, ⅔, ¾, ganz) und **„neue Zeile“** – so legt man fest, welche Felder in einer Zeile
+  stehen (die Vorschau unter dem gewählten Abschnitt zeigt die Zeilen; in schmalen Abschnitten werden die Felder
+  breiter, in
+  schmalen Fenstern steht der Katalog unter dem Aufbau). Ein Feld, das es nicht mehr gibt, steht durchgestrichen da
+  und lässt sich nur entfernen. **Verknüpfen (⛓):** Der Knopf öffnet eine kleine Liste „Gemeinsam ausfüllen mit …“
+  mit Kästchen (gewählt wird bewusst per Klick bzw. Leertaste, nicht schon mit den Pfeiltasten; Esc schließt die
+  Liste). Felder mit demselben Inhalt (z. B.
+  Ort des Bauherrn und Ort des Eigentümers) werden gemeinsam ausgefüllt – eine Eingabe trägt den Wert in alle
+  verknüpften Einträge der Projektkarte ein – überall in der Projektkarte, auch beim Übernehmen aus einer anderen
+  Gruppe; zusammenhängendes Tippen ist ein Schritt im Verlauf. Angeboten werden nur Felder, die zusammenpassen: Text
+  in Text (ins einzeilige Feld ohne Zeilenumbrüche), Auswahl in Auswahl über den Text der Wahl (fehlt er im Ziel,
+  bleibt es unverändert), Kästchen in Kästchen; ohne passendes Feld gibt es keinen Knopf. „Verwerfen“ und „Leeren“
+  einer Gruppe wirken nur auf die eigenen Einträge, nicht über Verknüpfungen. Auf der Seite steht unter jedem Feld
+  (unter einer etwaigen Warnung) dezent, aus welcher Gruppe es stammt und womit es verknüpft ist (Kettensymbol). Gilt
+  je Benutzer für alle Projekte (`formulare:ansicht:projektkarte`).
+- **Eingaben mit fester Form:** „Art der Nutzung“ ist eine Auswahl gängiger Nutzungen (Wohnen, Büro und Verwaltung,
+  Handel …; „andere …“ erlaubt einen eigenen Text, ein vorhandener eigener Text bleibt als „(eigene Angabe)“
+  erhalten; Esc oder der Pfeil führt zur Liste zurück), „Art der baulichen Nutzung“ eine Auswahl der Baugebiete nach
+  BauNVO (§§ 2–11, Sondergebiete nach § 10 und § 11 getrennt) samt Fläche für den Gemeinbedarf (§ 9 Abs. 1 Nr. 5
+  BauGB), vorhabenbezogenem Bebauungsplan (§ 12 BauGB), Innenbereich ohne Baugebiet (§ 34 Abs. 1 – im faktischen
+  Baugebiet nach § 34 Abs. 2 wählt man das Baugebiet) und Außenbereich (§ 35); Einträge „Anzahl …“ nehmen nur ganze
+  Zahlen an – ein Textfeld mit Zifferntastatur, in das sich nur Ziffern tippen lassen; ein alter oder eingefügter
+  Text wie „ca. 3“ oder „1.5“ bleibt unverändert sichtbar, wird gemeldet und lässt sich korrigieren oder leeren.
+  Gespeichert wird weiter als Text der Projektkarte.
 - **Büro & Stammdaten** (Einstellungen): je Rolle (Entwurfsverfasser, Bauvorlageberechtigter,
   Bauaufsichtsbehörde, Gemeinde …) eine Vorgabe aus dem Adressbuch – die bisher in dieser Rolle verwendeten
   Adressen zuerst. In der Projektkarte: „Als Vorgabe festlegen“ bei einer Adresse, **„Vorgaben eintragen“** füllt
@@ -272,10 +301,26 @@ Anschrift, wie sie in Formularen steht.
   Projektdatei (.oap) und gilt für alle im Büro. Wird die Datei danach geändert, gilt sie nicht mehr als bereit.
   Bereit sein können nur Dateien im **Namensformat `<Projektcode> <Antragsart> <JJMMTT> …`**, z. B.
   „MUS BAUA 261110 01 Bauantrag.pdf“ (Projektcode = Kürzel des FORMA-Projekts oder Projektcode der Projektdatei,
-  Antragsart = die der Fassung: BAUA, BAUVA, DENK …). Rechtsklick → „Umbenennen nach Namensformat …“ schlägt den
-  Namen vor (Datum der Datei). Unter „Fehlt im Antragsordner“ stehen die Dokumente des Antragsumfangs ohne Datei.
+  Antragsart = die der Fassung: BAUA, BAUVA, DENK …; gleichwertige Schreibweisen des Namensschemas gelten, im Ordner
+  „BVA“ also auch „HVO BAUVA …“) – die Stellen nach dem Namensschema (Vorgabe: Code, Art, Datum).
+  Fehlt das Datum, heißt die Meldung „Datum JJMMTT fehlt …“, fehlt die Bezeichnung danach, „Bezeichnung fehlt“;
+  „Anlage1“ oder „Ansicht2“ sind Bezeichnungen, keine Nummern (Plankürzel stehen in Großbuchstaben). Rechtsklick →
+  „Umbenennen nach Namensformat …“ schlägt den Namen vor (der Punkt erscheint nur, wenn der Vorschlag etwas ändert):
+  Projektcode, Antragsart, Datum und Nummer nach dem Namensschema vor die Bezeichnung. Was davon am Anfang schon steht,
+  auch verrutscht, wird übernommen statt verdoppelt – der Projektcode, ein gültiges JJMMTT, eine Plan- oder
+  Dokumentnummer und ein bekanntes Kürzel (Phase eines verschobenen Plans, andere Antragsart), das durch die Antragsart
+  ersetzt wird: „HVO GP 261111 GP-04 Grundriss.pdf“ → „HVO BAUA 261111 GP-04 Grundriss.pdf“, „HVO 261111
+  Bauantrag.pdf“ → „HVO BAUA 261111 Bauantrag.pdf“. Fehlt das Datum, kommt das der Datei hinein. Eine Plannummer mit
+  Phasenkürzel („GP-04“) kommt auch von weiter hinten an ihre Stelle, damit der Plan im Plansatz bleibt – nur, wenn es
+  genau eine ist („Lageplan zu GP-02 und GP-03“ bleibt); Zahlen in der Bezeichnung („Statik Teil 2“, „Lageplan M 1
+  500“, „OG2“) bleiben, wo sie sind. Ein Kürzel in Kleinbuchstaben zählt nur an der Stelle der Antragsart (oder
+  verrutscht ganz vorn) und mit einem weiteren Kopfteil daneben (Projektcode davor, Datum oder Projektcode danach),
+  sonst ist es ein Wort der Bezeichnung („Entw Grundriss“, „Ab 2027 …“). Unter „Fehlt im Antragsordner“ stehen die
+  Dokumente
+  des Antragsumfangs ohne Datei.
   Die Namensvorlage für exportierte PDFs ist deshalb `{Kürzel} {Art} {Datum} {Nr} {Name}` (`{Art}` = Antragsart der
-  aktiven Fassung; `{Phase}` gibt es weiter).
+  aktiven Fassung, an dieser Stelle immer – siehe „Dateiname“; `{Phase}` gibt es weiter an anderer Stelle). In der
+  Unterlagen-Vorschau stehen die Pläne eines Plansatzes an seiner Stelle im Antragsumfang.
 - **Antragsunterlagen ansehen:** „Ansehen“ in der Ansicht „Antrag“ (oder Rechtsklick auf eine Datei → „In der
   Vorschau durchblättern“) zeigt alle Unterlagen der aktiven Fassung im ganzen Fenster – zuerst die Dokumente des
   Antragsumfangs in ihrer Reihenfolge, dann die übrigen. Blättern mit ‹ ›, ← → oder Bild↑/Bild↓ bzw. über die Liste
@@ -368,83 +413,251 @@ schon als PDF vorliegen, welche Berechnungen es gibt), als Ziel des PDF-Exports 
 Die Anträge liegen im Projektordner unter `TÖB` (einstellbar), darin je **Antragsfassung** ein Ordner: `BAUA`, bei
 mehreren `BAUA 2` oder `BAUA2` …, daneben andere Antragsarten wie `BAUVA` (Voranfrage) oder `DENK` (Denkmal).
 
-- **Aktive Fassung** (oben links am Projekt, „Antrag“): die gewählte, sonst die neueste der Standardart. Über das
-  Menü lässt sich umschalten oder eine **neue Fassung anlegen** („BAUA 3“ – der Ordner entsteht sofort). Die aktive
-  Fassung ist das voreingestellte Ziel des Exports und der Maßstab der Vollständigkeitsprüfung.
-- **Dateiname** nach der Namensvorlage, Vorgabe `{Kürzel} {Phase} {Datum} {Nr} {Name}` → „BS9 GP 261110 03
-  Baubeschreibung.pdf“ (Datum als JJMMTT, eine leere Nummer entfällt). Weitere Platzhalter: `{Antrag}`,
-  `{Formular}`, `{Kennung}`, `{Stand}`. `{Name}` ist der Titel im Antragsumfang, sonst der Formularname ohne
-  laufende Nummer und Jahr.
-- **Einstellungen › Antrag & Export:** Antragsordner, Antragsarten (die erste ist der Standard), Namensvorlage und
-  Phase, Ziel (aktive Antragsfassung oder fester Ordner, z. B. `TÖB/{Antrag}/Formulare`), Ordner der
-  Berechnungen, Vorlagenordner für neue Formulare und der **Katalog der Antragsdokumente**. Je Projekt lassen sich
-  Antragsordner, Namensvorlage, Phase und Ziel abweichend einstellen (Antragsdaten › „Export für …“,
-  „Vorgabe verwenden“ setzt zurück) – wie die angezeigten Pfade im Projektordner.
+- **Aktive Fassung** (oben links am Projekt, „Antrag“): die gewählte, sonst die neueste der Standardart. Über das Menü
+  lässt sich umschalten oder eine **neue Fassung anlegen** („BAUA 3“ – der Ordner entsteht sofort). Die aktive Fassung
+  ist das voreingestellte Ziel des Exports und der Maßstab der Vollständigkeitsprüfung.
+- **Dateiname** nach der Namensvorlage, Vorgabe `{Kürzel} {Art} {Datum} {Nr} {Name}` → „BS9 BAUA 261110 03
+  Baubeschreibung.pdf“ (Datum als JJMMTT, eine leere Nummer entfällt). Die **Antragsart kommt immer aus dem Antrag**
+  (Ordner der aktiven Fassung, „BAUA 2“ → BAUA), nie aus einer Einstellung: Steht in einer Vorlage nach dem Kürzel
+  (bzw. an der Stelle der Antragsart nach dem Namensschema) noch `{Phase}` – die Vorgabe früherer Fassungen, dort
+  stand dann der Wert der Einstellung „Phase“, z. B. BVA im Bauantrag – oder ein festes Kürzel (mindestens ein
+  Buchstabe; „2026“ zählt nicht), setzt der Export dort `{Art}` ein (`vorlageMitAntragsart`, in
+  `wirksameEinstellungen`). Gespeichert bleibt die Vorlage, wie sie ist; die Einstellungen (global und je Projekt)
+  zeigen dann einen Hinweis mit „Vorlage anpassen“. Weitere Platzhalter: `{Antrag}`, `{Phase}` (Feld „Phase (nur für
+  {Phase})“), `{Formular}`, `{Kennung}`, `{Stand}`. `{Name}` ist der Titel im Antragsumfang, sonst der Formularname
+  ohne laufende Nummer und Jahr.
+- **Einstellungen › Antrag & Export:** Antragsordner, Antragsarten (die erste ist der Standard; dazu die des
+  Namensschemas), Namensvorlage und Phase (nur für `{Phase}`), Ziel (aktive Antragsfassung oder fester Ordner, z. B.
+  `TÖB/{Antrag}/Formulare`), Ordner der Berechnungen, Vorlagenordner für neue Formulare und der **Katalog der
+  Antragsdokumente**. Je Projekt lassen sich Antragsordner, Namensvorlage, Phase (nur für `{Phase}`) und Ziel
+  abweichend einstellen (Antragsdaten › „Export für …“, „Vorgabe verwenden“ setzt zurück) – wie die angezeigten Pfade
+  im Projektordner.
 - **Antragsdaten** (Navigation, rechte Hälfte neben „Projektdaten“): alles, was nur für den aktiven Antrag gilt –
   **Status** (siehe „Eingereicht“), **Antragsmerkmale** und **Antragsumfang**, dazu „Export für …“ (gilt für alle
   Anträge des Projekts). Die Projektdaten (Projektkarte) gelten dagegen für das ganze Projekt.
-- **Antragsumfang** (in den Antragsdaten): welche Dokumente zum
-  Antrag gehören. „Antragsumfang festlegen“ übernimmt die Dokumente der gewählten Antragsvorlage, „Dokument hinzufügen“ weitere aus dem
-  Katalog oder eigene. Je Dokument: **Nummer** – sie steht im Dateinamen des PDF-Exports an der Stelle `{Nr}` (z. B.
-  „BS9 BAUA 261110 01 Bauantrag.pdf“) und sortiert so die Unterlagen im Antragsordner –, Titel, **intern** (Formular des Projekts – Teil des Namens
-  oder Kennung) oder **extern** (Datei – Berechnung, Plan, fremde PDF; Ordner der Quelle und Muster mit `*`, `?`,
-  mehrere mit `;`). Die Datei im Antragsordner wird nach Muster bzw. Titel gefunden oder ausdrücklich verknüpft (🔗,
-  auch per Rechtsklick im Projektordner); ein Export in die aktive Fassung verknüpft automatisch. Der Antragsumfang
-  und die aktive Fassung stehen im Abschnitt `formulare` der Projektdatei (`.oap`) im Projektordner und gelten damit
-  für alle im Büro (siehe unten).
+- **Antragsumfang** (in den Antragsdaten): welche Dokumente zum Antrag gehören. „Antragsumfang festlegen“ übernimmt
+  die Dokumente der gewählten Antragsvorlage, „Dokument hinzufügen“ weitere aus dem Katalog oder eigene. Je Dokument:
+  **Nummer** – sie steht im Dateinamen des PDF-Exports an der Stelle `{Nr}` (z. B. „BS9 BAUA 261110 01 Bauantrag.pdf“)
+  und sortiert so die Unterlagen im Antragsordner –, Titel, **intern** (Formular des Projekts – Teil des Namens oder
+  Kennung) oder **extern** (Datei – Berechnung, Plan, fremde PDF; Ordner der Quelle und Muster mit `*`, `?`, mehrere
+  mit `;`). Die Textfelder werden beim Verlassen des Felds bzw. mit Enter übernommen, Esc verwirft. Die Datei im
+  Antragsordner wird nach Muster bzw. Titel gefunden oder ausdrücklich verknüpft (🔗, auch per Rechtsklick im
+  Projektordner); ein Export in die aktive Fassung verknüpft automatisch. Der Antragsumfang und die
+  aktive Fassung stehen im Abschnitt `formulare` der Projektdatei (`.oap`) im Projektordner und gelten damit für alle
+  im Büro (siehe unten).
+- **Plansatz** (Art eines Dokuments, Vorgabe für „Bauzeichnungen“): ein Eintrag für **alle Pläne**, statt je Grundriss
+  einen anzulegen (`plansatz.ts`). Pläne erkennt die App an der **Plannummer mit Plankürzel** an der Stelle „Nummer“
+  des Namensschemas – „HVO BAUA 261111 GP-04 Grundriss OG.pdf“; „GP01-07“ ist ein zusammengefasster Satz (Pläne 01 bis
+  07); eine reine Zahl („01 Bauantrag“) ist eine Dokumentnummer der Formulare und zählt nicht. Gesucht wird direkt im
+  Ordner der aktiven Fassung und direkt in der Quelle (Vorgabe `Planung/Genehmigungsplanung/pdf`, aus der die Pläne in
+  den Antragsordner verschoben werden – eine leere Quelle ist in Ordnung). Unterordner wie `_Archiv` oder `alt` zählen
+  nicht (zurückgezogene oder umnummerierte Pläne ergäben sonst Scheinnummern und -lücken); liegt ein Plan auch als DWG
+  neben dem PDF, zählt das PDF. Ein Projektcode aus mehreren Wörtern („BS 9“) wird erkannt (dieselbe Zerlegung wie
+  beim Namensformat, `dateinameZerlegenMitStellen` in core; die Nummer ist optional). Zugeordnet wird über die
+  Plannummer (ob an Stelle 2 GP oder BAUA steht, spielt keine Rolle). Je Plankürzel getrennt:
+  - **Lücke:** zwischen der kleinsten und der größten vorhandenen Nummer fehlt eine – nach der Bürovorgabe
+    (fortlaufende Nummern) fehlt dann ein Plan (rot, Zustand „Lücke“; in der Zeile „GP-07 fehlt“). Die Reihe muss
+    nicht bei 01 beginnen, die Reihenfolge der Planarten wird nicht geprüft. Fehlen mehr als zehn Nummern am Stück,
+    ist das eher ein Tippfehler (GP-41 statt GP-04): dann ein Hinweis statt Dutzender fehlender Pläne;
+  - **noch nicht verschoben:** die Nummer liegt nur in der Quelle (gelb);
+  - **veraltet:** die Quelle hat eine neuere Fassung – Datum im Namen, bei gleichem Datum der Index (AP-03a nach
+    AP-03) (gelb); liegt eine Nummer mehrfach im Antragsordner, zählt die neueste;
+  - **Hinweise** (nie sperrend): ältere Fassungen derselben Nummer („alte Fassung?“), ein Satz neben Einzelplänen
+    daraus, eine Datei mit Plannummer, die nicht an ihrer Stelle im Namensschema steht (etwa ohne Projektcode: „GP-02
+    Schnitt.pdf (Quelle): Plannummer GP-02 erkannt, … – zählt nicht zum Plansatz; Datei umbenennen (Rechtsklick ›
+    Umbenennen)“, mit dem Ort Antragsordner bzw. Quelle, bei Sätzen „GP-01 bis GP-07“, mit Index „AP-03a“; sonst fiele
+    sie still heraus, und weil die Reihe nicht bei 01 beginnen muss, auch ohne Lücke), ein Index, wo ihn das
+    Namensschema des Büros nicht vorsieht (Bürovorgabe: erst ab LPH 5; daraus folgt: eine Phase ohne LPH wie AB trägt
+    keinen), „kein Schnitt erkannt“ bzw. „keine Ansicht erkannt“ (Bauzeichnungen umfassen Grundrisse, Schnitte und
+    Ansichten, § 4 Abs. 1, 3, 4 BauPrüfVO NRW – nur ein Hinweis, weil die Behörde auf Bauvorlagen verzichten kann und
+    ein Vorbescheid nur die zur Beurteilung seiner Fragen erforderlichen Bauvorlagen braucht, § 16 BauPrüfVO;
+    außerhalb von DENK und ABGE nicht bei Plänen ohne Leistungsphase wie den Aufteilungsplänen nach § 7 Abs. 4 WEG und
+    nie beim Entwässerungsantrag (ENTW), für den in der Regel die Entwässerungssatzung der Gemeinde und nicht die
+    BauPrüfVO die Grundlage ist; bei der denkmalrechtlichen Erlaubnis (DENK, § 9 DSchG NRW) und der
+    Abgeschlossenheitsbescheinigung (ABGE, Aufteilungspläne nach § 7 Abs. 4 WEG – auch AB-Pläne) ohne Paragraphen der
+    BauPrüfVO, beim Vorbescheid mit dem Zusatz „nur, soweit für die Fragen erforderlich (§ 16 BauPrüfVO)“;
+    „Ausschnitt“ zählt nicht als Schnitt), und – nur wenn die Projektdatei Geschosse kennt – „4 Geschosse, 3
+    Grundrisse erkannt“ (Grundrisse für alle Geschosse, § 4 Abs. 2 BauPrüfVO NRW, beim Vorbescheid mit dem Zusatz zu §
+    16; nicht beim Entwässerungsantrag, der nur die Geschosse mit Entwässerungsanlagen braucht; der einzige Weg, auch
+    einen fehlenden letzten Grundriss zu bemerken).
+  Die Zeile zeigt „8 Pläne · GP-01 bis GP-08 · GP-07 fehlt“, darunter „Pläne zeigen“ (die Liste je Nummer),
+  „n Hinweise“ (öffnet die Liste und führt zu den Hinweisen) und die Quelle; ohne Pläne gibt es nichts aufzuklappen. In
+  der Projektordner-Ansicht „Antrag“ stehen fehlende und noch nicht verschobene Pläne einzeln unter „Fehlt im
+  Antragsordner“. Ein optionales Muster grenzt die Pläne ein.
+- **Namensschema:** Kürzel (Planphasen BP, EP, GP, AP, AB; Antrags- und Verfahrensarten BAUA, BAUVA/BVA (Antrag auf
+  Vorbescheid, § 77 BauO NRW 2018), BAUF (Genehmigungsfreistellung – kein Antrag, sondern Vorlage bei der
+  Bauaufsichtsbehörde, § 63 Abs. 3 BauO NRW 2018 in der Fassung ab 01.09.2026), DENK, ABGE, ENTW), die Stellen der
+  Teile im Dateinamen (Code, Phase bzw. Antragsart, Datum, Nummer; steht die Nummer vor dem Code, gilt ein Projektcode
+  wie „BS9“ dort nie als Nummer) und „Index ab Leistungsphase“ kommen aus dem gemeinsamen Namensschema
+  (`packages/core/src/namensschema.ts`): das der Projektdatei, sonst das des Büros (Projektordner › Einstellungen),
+  sonst die Vorgabe. Antragsordner werden an den Antragsarten der Einstellungen und des Namensschemas erkannt;
+  gleichwertige Schreibweisen (BVA für BAUVA) zählen als dieselbe Art – für die vorgeschlagene Vorlage und die Nummer
+  des nächsten Nachtrags („BVA 2“). Ändert sich das Namensschema (in der Projektdatei oder im Projektordner-Tool,
+  gelesen beim Zurückkommen ins Fenster), werden Antragsordner und Plansätze sofort neu erkannt. Eine in Formulare
+  angelegte Projektdatei bekommt wie im Projektordner-Tool eine Kopie des Büro-Schemas.
 - **Antragsvorlagen** (Einstellungen › Antrag & Export): benannte Zusammenstellungen von Katalogdokumenten je
   Antragsart – Vorgabe „Bauantrag“ (BAUA), „Bauvoranfrage“ (BAUVA), „Denkmalrechtliche Erlaubnis“ (DENK). Im Katalog
   hat jede Vorlage eine Spalte zum Ankreuzen; die Reihenfolge ist die des Katalogs. Beim Festlegen des Antragsumfangs
-  wird die Vorlage zur Antragsart der aktiven Fassung vorgeschlagen („BAUA 2“ → Bauantrag), eine andere lässt sich
-  wählen; „Dokument hinzufügen › Aus Vorlage ergänzen“ nimmt die fehlenden Dokumente einer weiteren Vorlage dazu.
-  Die früheren „Vorgewählt“-Häkchen werden beim ersten Start zur Vorlage „Bauantrag“.
+  wird die Vorlage zur Antragsart der aktiven Fassung vorgeschlagen („BAUA 2“ → Bauantrag, „BVA“ → Bauvoranfrage).
+  Gibt es zur Art keine Vorlage (BAUF, ABGE, ENTW …), wird nichts vorgewählt – der Bauantrag passt dort nicht –, die
+  Auswahl bittet um eine Wahl, „Antragsumfang festlegen“ ist bis dahin aus. „Dokument hinzufügen › Aus Vorlage
+  ergänzen“ nimmt die fehlenden Dokumente einer weiteren Vorlage dazu. Die früheren „Vorgewählt“-Häkchen werden beim
+  ersten Start zur Vorlage „Bauantrag“.
 - **Reihenfolge ändern:** am Griff ⠿ ziehen – oder den Griff wählen und mit ↑/↓ verschieben – im Katalog, bei den
   Antragsvorlagen und Antragsmerkmalen und im Antragsumfang eines Projekts (dort auch per Rechtsklick „Nach oben“ /
   „Nach unten“).
-- **Antragsmerkmale** (in den Antragsdaten): Gebäudeklasse, Sonderbau, Verfahren … – **je Antrag** gewählt,
-  gelten sie für alle Formulare (Bedingungen in der Gliederung) und für den Antragsumfang des Antrags. Welche Merkmale
-  es gibt, ihre Werte und die **Vorgabe für neue Anträge** (globales Preset) stehen in Einstellungen › Antrag &
-  Export. Ein neuer Antrag übernimmt die Vorgaben einmalig; danach ist er unabhängig – spätere Änderungen am Preset
-  oder an anderen Anträgen ändern ihn nicht. „Ansicht …“ stellt mit dem Ansicht-Editor eine eigene Ansicht zusammen
-  (welche Merkmale in welcher Reihenfolge, in Abschnitten; die übrigen unter „weitere Merkmale – zeigen“).
+- **Antragsmerkmale** (in den Antragsdaten): Gebäudeklasse, Sonderbau, Verfahren … – **je Antrag** gewählt, gelten sie
+  für alle Formulare (Bedingungen in der Gliederung) und für den Antragsumfang des Antrags. Welche Merkmale es gibt,
+  ihre Werte und die **Vorgabe für neue Anträge** (globales Preset) stehen in Einstellungen › Antrag & Export. Ein
+  neuer Antrag übernimmt die Vorgaben einmalig; danach ist er unabhängig – spätere Änderungen am Preset oder an
+  anderen Anträgen ändern ihn nicht. „Ansicht …“ stellt mit dem Ansicht-Editor eine eigene Ansicht zusammen (welche
+  Merkmale in welcher Reihenfolge, in Abschnitten; die übrigen unter „weitere Merkmale – zeigen“).
 - **Jeder Antrag hat seinen eigenen Satz:** Antragsmerkmale, Antragsumfang (mit Verknüpfungen), die manuellen
-  Überschreibungen des Autofills und die „bereit“-Markierungen gehören zum Antrag (zur Antragsfassung, z. B. `BAUA 2`).
-  Mit der aktiven Fassung wechselt die App auch diese Angaben. Jeder Ordner einer Antragsfassung ist ein Antrag; beim
-  ersten Öffnen werden fehlende angelegt (Angelegt-Datum aus dem Ordner). Angaben aus älteren Fassungen der App, die
-  für das ganze Projekt galten, werden dabei einmalig in jeden vorhandenen Antrag übernommen.
+  Überschreibungen des Autofills und die „bereit“-Markierungen gehören zum Antrag (zur Antragsfassung, z. B. `BAUA
+  2`). Mit der aktiven Fassung wechselt die App auch diese Angaben. Jeder Ordner einer Antragsfassung ist ein Antrag;
+  beim ersten Öffnen werden fehlende angelegt (Angelegt-Datum aus dem Ordner). Angaben aus älteren Fassungen der App,
+  die für das ganze Projekt galten, werden dabei einmalig in jeden vorhandenen Antrag übernommen.
+- **Antragsstand bei der Einreichung:** Sobald ein Antrag als eingereicht gilt (erkannt oder von Hand), hält die App
+  einmal fest, welche Dateien im Ordner des Antrags liegen – nur Name, Größe und Änderungszeit, **keine Kopie**
+  (`stand` im Antrag der Projektdatei; ohne Archiv, Office-Sperrdateien, Thumbs.db und desktop.ini). Die festgehaltene
+  Liste wird danach **nie verworfen, nie neu gebaut und nie gekürzt** – außer von Hand mit „Stand neu festhalten …“
+  (siehe unten) –, so geht sie weder durch die Reihenfolge von Dateiaktionen noch durch einen Statuswechsel verloren.
+  Gilt der Antrag als in Arbeit (Status von Hand, Nachweis verschoben), ist der Stand nur unsichtbar und gilt wieder,
+  sobald der Antrag eingereicht ist. Ändert sich der Tag der Einreichung (von Hand berichtigt, ein älterer Nachweis
+  taucht auf, der erste verschwindet), wird der Stand nur neu beschriftet – Status, Stand und Startseite zeigen so
+  immer denselben Tag. Was nach dem Tag der Einreichung geändert wurde (etwa wenn die Einreichung erst später erkannt
+  wird), zählt erst **beim Vergleich** nicht zur Einreichung und gilt dann als „neu“; das ist umkehrbar, wenn der Tag
+  später wieder berichtigt wird.
+  „Stand neu festhalten …“ in den Antragsdaten (mit Rückfrage, Gefahr-Knopf) ersetzt den Stand nach einem
+  versehentlich gesetzten oder falsch erkannten Status – nicht nach einer Nachreichung – durch die Dateien, die jetzt
+  im Ordner liegen: Erst wird der Ordner gelesen, dann wird in einem Schritt aus der aktuellen Projektdatei
+  geschrieben; ist er gerade nicht erreichbar, ist der Knopf gesperrt bzw. bleibt der bisherige Stand (Fehlermeldung),
+  und ändern sich während des Lesens Projekt, Antrag oder Status, wird abgebrochen. Ein so festgehaltener Stand gilt
+  vollständig (auch was nach dem Tag der Einreichung, aber vor dem Festhalten neu dazukam oder geändert wurde); danach
+  erscheint „Stand von … neu festgehalten – n Dateien“. Beide Tage stehen dann da – im Status „eingereicht am
+  03.11.2026 … · Stand neu festgehalten am 20.11.2026 (n Dateien)“, in der Ablage „Eingereicht am 03.11.2026 – Stand
+  neu festgehalten am 20.11.2026“ –, Abweichungen heißen „… seit dem Festhalten“. Angezeigt wird der echte Tag des
+  Festhaltens, auch wenn eine Datei eine Änderungszeit in der Zukunft trägt (Uhr des Netzlaufwerks).
+  **Vergleich:** In der Ansicht „Antrag“ steht „Eingereicht am … – Stand festgehalten“ (im Status „Stand vom …
+  festgehalten (n Dateien)“). Jede **eingereichte** Datei auf oberster Ebene des Antragsordners wird mit dem Stand
+  verglichen und ist gekennzeichnet, wenn sie danach **geändert** wurde („geändert seit der Einreichung“, gelb, mit
+  Summe oben); verschwundene (gelöscht oder verschoben) zählen als **entfernt** (in der Summe, darunter bis zu drei
+  Namen – bei mehr zwei und „n weitere – zeigen“ –, alle auch im Tooltip der Summe). Verglichen wird nur die oberste
+  Ebene des Antragsordners: Nachreichungen gehören dorthin, nicht in Unterordner. Nach dem Neu-Festhalten lauten Summe,
+  Etiketten und Tooltips durchgängig „… seit dem Festhalten“. Ausgenommen ist der **Nachweis der Einreichung** selbst
+  (Antragsprotokoll, Eingangs- bzw. Empfangsbestätigung): Steht er im Stand oder trägt er im Namen keinen späteren Tag
+  als den der Einreichung (Protokoll vom 03.11., erst am 04.11. gespeichert), ist er nie „neu“ oder „geändert“; ein
+  späteres oder undatiertes Protokoll ist „neu“ – es ist kein Schreiben der Behörde und kann einen weiteren Antrag
+  belegen. Was im laufenden Verfahren nachgereicht oder ausgetauscht wird, bleibt im selben Antrag und erscheint als
+  „neu“ bzw. „geändert“ (§ 70 Abs. 2 Satz 4, § 71 Abs. 1 Sätze 6 und 7 BauO NRW 2018, § 7 BauPrüfVO NRW); eine neue
+  Antragsfassung (Nachtrag) ist es erst nach Rücknahme bzw. Rücknahmefiktion (§ 71 Abs. 1 Satz 8), Ablehnung,
+  Rückgabe der Unterlagen (§ 63 Abs. 4 Satz 3) oder bei einer Änderung nach der Entscheidung. Im Fall von § 63 Abs. 4
+  Satz 4 werden die vorgelegten Unterlagen als Bauantrag im vereinfachten Verfahren (§ 64) behandelt – kein Nachtrag;
+  das Büro führt den Vorgang als Antragsart BAUA weiter (Bürovorgabe), die Bauvorlagen dafür gehören schon in die
+  Vorlage (§ 13 Abs. 2 Sätze 2 und 3 BauPrüfVO NRW, dort noch § 63 Abs. 6 Satz 4 alter Zählung).
+- **Neue Dateien nach der Einreichung** sind „neu seit der Einreichung“ – außer sie kommen erwartungsgemäß
+  (`nachEinreichungErwartet`, nur für neue Dateien). Grundsatz: **im Zweifel „neu“**, damit nachgereichte Bauvorlagen
+  auffallen (§ 70 Abs. 2 Satz 4 und § 71 Abs. 1 Sätze 6 und 7 BauO NRW 2018, § 7 BauPrüfVO NRW). Deshalb gilt eine
+  **Positivliste**: Erwartet ist eine Datei nur, wenn ihr Name ausschließlich aus einem Schreiben der Behörde besteht
+  – einem Kernwort und sonst nur Zusätzen und Füllwörtern. Alles Weitere (eine Bauvorlage, ein Begleitwort des Büros,
+  „Anlagen“, „Mängelbeseitigung“, „Behebung der Mängel“ oder eine Bescheinigung zu einem Schreiben, eine Präposition
+  vor dem Kernwort wie „zur Genehmigung“ oder „gem. Nachforderung“, ein Bestand, ein Ortsname, eine Dokumentnummer,
+  ein weiteres Antragsprotokoll – siehe oben) macht sie zu etwas Nachgereichtem.
+  - **Kernwörter** (ganze Wörter, abschließend) – nach der Bürovorgabe die Genehmigung selbst (Baugenehmigung, Teil-,
+    Nachtrags-, Änderungs-, Entwässerungsgenehmigung, auch die Fiktionsbescheinigung bzw. „Bescheinigung über den
+    Eintritt der Genehmigungsfiktion“, § 74 Abs. 3 Satz 1 Nr. 4 BauO NRW 2018 i. V. m. § 42a Abs. 3 VwVfG NRW), die
+    Empfangsbestätigung und Nachforderungen der Behörde (§ 71 Abs. 1 Satz 7; auch „Nachforderungen“,
+    „Aufforderung(sschreiben)“). Über die Bürovorgabe hinaus ergänzt: Eingangsbestätigung (§ 71 Abs. 1 Satz 1), die
+    Unterrichtung bzw. Mitteilung, Bestätigung oder Bescheinigung über die Vollständigkeit (§ 71 Abs. 1 Satz 9 BauO
+    NRW 2018 in der Fassung ab 01.09.2026), Bescheide (Vor-, Bauvor-, Gebühren-, Ablehnungs-, Kosten(festsetzungs)-,
+    Teil-, Änderungs-, Abweichungs-, Befreiungs-, Verlängerungsbescheid, „Bescheid über die Verlängerung (des
+    Vorbescheids)“, „Bescheid über die Verlängerung der Geltungsdauer (der Baugenehmigung)“, § 75 Abs. 2), Ablehnung,
+    Versagung, Anhörung(sschreiben), Gebühr(en), Gebührenrechnung bzw. -festsetzung,
+    Kostenfestsetzung, (denkmalrechtliche) Erlaubnis, Abgeschlossenheitsbescheinigung, Rückgabe der Unterlagen (§ 63
+    Abs. 4 Satz 3) sowie Mitteilung bzw. Erklärung der Gemeinde (Stadt) bei der Genehmigungsfreistellung (§ 63 Abs. 3
+    Satz 5; § 63 Abs. 2 Satz 1 Nr. 4 i. V. m. Abs. 4 Satz 1). „Bescheinigung“ allein, „Verlängerung“ ohne Bescheid
+    (auch „Vorbescheid Verlängerung“ – das kann der Antrag nach § 77 Abs. 1 Satz 3 sein) und Zusammensetzungen wie
+    „Gebührenberechnung“ oder „Vollständigkeitserklärung“ zählen nicht.
+  - **Füllwörter** – die Behörde (Kreis, Stadt, Gemeinde, Bauamt, Bauaufsicht, Denkmalbehörde …, ohne Ortsnamen),
+    Verbindungswörter (eine Präposition aber nur hinter einem Kernwort, auch mit Datum, Aktenzeichen, Antragsart oder
+    anderen Füllwörtern dazwischen: „Anhörung vor Ablehnung“, „Gebührenbescheid vom 20.11.2026 zur Baugenehmigung“), Projektcode (auch
+    mit Bindestrich oder Unterstrich: „2025-014“, „2025_014“, „BS-9“) und Antragsart, ein Aktenzeichen („Az
+    63-1234-26“), ein Datum ab dem Tag der Einreichung – so genau verglichen, wie es angegeben ist: Tag („12.11.2026“,
+    „12-11-2026“, „12.11.26“, „261112“, „20261112“), Monat („11-2026“) oder Jahr; ein älteres meint einen beigefügten
+    Bestand, eines mehr als ein Jahr in der Zukunft zählt nicht. Im Aktenzeichen entscheidet ab drei Zahlengruppen
+    oder mit „Az“/„Nr.“ eine Jahresangabe am Ende („63-1234-72“: zweistellig, 2072 liegt in der Zukunft – Bestand;
+    „63-1934-2026“: laufende Nummer 1934; „Az 1950-26“: Nummer 1950 aus 2026), sonst jede vierstellige Jahreszahl („Nr.
+    1972“, „1972-26“). Dazu der Bezug „zum Bauantrag“ bzw. „Genehmigung (des)
+    Bauantrags“ (nur das ganze Wort „Bauantrag“ – „Baugenehmigung Antrag“ ist der Antrag), feste Wendungen wie „von
+    Unterlagen“, „an den Bauherrn“ und – nur hinter dem Schreiben der Behörde – „Aufforderung zur Behebung der Mängel“
+    bzw. „zur Mängelbeseitigung“ und „Baugenehmigung mit Anlagen“, Zusätze wie „Nebenbestimmungen“ und „vereinfachtes
+    Verfahren“. Trennzeichen (_ - ( ) , ;) zählen wie Leerzeichen, zerlegte Umlaute (macOS) werden zusammengeführt.
+  - **Genehmigte Bauvorlagen** (§ 74 Abs. 4 Satz 5 BauO NRW 2018): Mit „genehmigt…“, „Genehmigungsvermerk“ oder
+    „Grünstempel“ dürfen auch Planart, Geschoss (EG, OG, 1OG …), Richtung, Plannummer, Bau- bzw. Betriebsbeschreibung
+    und – bei einem Schnitt – seine Bezeichnung („Schnitt A-A“) im Namen stehen („GP-03 Grundriss OG genehmigt“,
+    „Baubeschreibung genehmigt“). Standsicherheitsnachweise erhalten keinen Genehmigungsvermerk – sie werden, soweit
+    erforderlich (Ausnahmen § 68 Abs. 3 Satz 5), von Prüfsachverständigen bescheinigt und spätestens mit der
+    Baubeginnanzeige eingereicht (§ 68 Abs. 3 Sätze 2, 3 und 6), „genehmigt Statik“ ist deshalb nachgereicht. Aufteilungspläne mit „gesiegelt“, „gestempelt“ oder „beglaubigt“.
+    Verneint („ohne Grünstempel“, „nicht genehmigt“) oder mit weiteren Wörtern („Nachtrag zur genehmigten Planung“)
+    ist es nachgereicht.
+- **Ordner nicht erreichbar:** Ist der Ordner einmal nicht lesbar (Netz nach dem Aufwachen), bleiben „eingereicht“ und
+  der Stand unverändert. Die Ablage warnt oben („Ordner gerade nicht erreichbar …“ mit „Erneut versuchen“, das während
+  des Versuchs „Wird versucht …“ zeigt und danach „Letzter Versuch 14:32:05 – ohne Erfolg“), zeigt die zuletzt
+  gelesene Liste und in der Summe „beim letzten Lesen: 1 neu, 1 entfernt seit der Einreichung (Ordner gerade nicht
+  erreichbar)“ bzw.
+  „Vergleich mit dem Ordner gerade nicht möglich“ statt „seitdem unverändert“ – ohne Liste von vorher zählt sie nichts
+  und meldet nichts als fehlend. „Stand neu festhalten …“ ist dann gesperrt.
 - **Eingereicht:** liegt im Ordner eines Antrags – auch in Unterordnern, Archivordner (`archiv`, `_archiv`)
-  ausgenommen – ein Dokument, dessen Name `Antragsprotokoll` oder `Eingangsbestätigung` (auch
-  `Eingangsbestaetigung`) enthält, gilt der Antrag als **eingereicht** – mit dem Datum im Dateinamen, sonst dem der
-  Datei (bei mehreren der neuesten). Das zeigt die App am Antrag (oben links), in der Navigation und im Menü der
-  Fassungen; verschwindet die Datei, ist er es nicht mehr. Der Status lässt sich in den Antragsdaten **von Hand
-  setzen**: „automatisch“ (die Erkennung), „in Arbeit“ oder „eingereicht“ mit Datum (`status` im Antrag). Der **aktive
-  Antrag** – derselbe, den das Projekt zeigt – steht zusätzlich in `meta.antrag` der Projektdatei und erscheint auf
-  den Startseiten aller Apps als Marke auf der Projektkarte („BAUA 2 · eingereicht 03.11.2026“ bzw. „BAUA 2 in
-  Arbeit“); die Startseite von Formulare zeigt ihn auch dann, wenn nicht alle Formulare lesbar sind.
+  ausgenommen – ein Dokument, dessen Name `Antragsprotokoll`, `Eingangsbestätigung` oder `Empfangsbestätigung` (auch
+  mit „ae“) enthält, gilt der Antrag als **eingereicht** – mit dem Datum im Dateinamen, sonst dem der Datei. Bei
+  mehreren zählt der **erste Nachweis**: Maßgeblich ist der Eingang (§ 71 Abs. 1 Sätze 1 und 2 BauO NRW 2018), eine
+  spätere Eingangsbestätigung bestätigt nur diesen Eingang – Status, Stand und Startseite zeigen denselben Tag.
+  Angezeigt wird das Datum des Nachweises; den Tag des Eingangs laut Bestätigung im Zweifel prüfen. Das zeigt die App
+  am Antrag (oben links), in der Navigation und im Menü der Fassungen; verschwindet die Datei, ist er es nicht mehr.
+  Der Status lässt sich in den Antragsdaten **von Hand setzen**: „automatisch“ (die Erkennung), „in Arbeit“ oder
+  „eingereicht“ mit Datum (`status` im Antrag; „in Arbeit“ behält das Datum, zurück auf „eingereicht“ gilt derselbe
+  Tag). Das Datum wird erst beim Verlassen des Felds bzw. mit Enter übernommen – nur Tage ab 2000 und nicht in der
+  Zukunft, Zwischenstände beim Tippen des Jahres zählen nicht; ein ungültiger Wert bleibt rot markiert mit Meldung
+  stehen, Esc im Feld stellt den gespeicherten Tag wieder her, schlägt das Speichern fehl, sagt das Feld es (ein
+  erneutes Enter versucht es noch einmal). Der **aktive Antrag** – derselbe, den das Projekt zeigt
+  – steht zusätzlich in `meta.antrag` der Projektdatei und erscheint auf den Startseiten aller Apps als Marke auf der
+  Projektkarte („BAUA 2 · eingereicht 03.11.2026“ bzw. „BAUA 2 in Arbeit“); die Startseite von Formulare zeigt ihn
+  auch dann, wenn nicht alle Formulare lesbar sind.
 - **Eingereicht = gesperrt:** Ist der aktive Antrag eingereicht, lassen sich die Formulare nur ansehen (Hinweis über
   dem Formular, „Antragsdaten …“), Antragsmerkmale, Antragsumfang, Export, „bereit“ und „Daten aktualisieren“ bleiben,
-  wie eingereicht. Geändert wird mit einem **Nachtrag**: „Nachtrag „BAUA 3“ anlegen“ in den Antragsdaten legt die
-  nächste Fassung an und macht sie aktiv – oder der Status wird von Hand zurückgesetzt.
-- **Dokumente mit Bedingung:** im Antragsumfang (Bearbeiten) und im Katalog („Nur wenn“; Antragsmerkmale mit
-  und/oder wie oben) – etwa ein Nachweis nur
-  bei Gebäudeklasse 3–5. Trifft sie nicht zu, ist das Dokument „nicht erforderlich“: kein Farbpunkt, kein grauer
-  „Anlegen“-Eintrag, es zählt nicht mit.
+  wie eingereicht. **Nachgereicht** wird im laufenden Verfahren im selben Antrag: den Status vorübergehend auf „in
+  Arbeit“ setzen (Tag und Stand bleiben), Formulare berichtigen bzw. Unterlagen ablegen, dann wieder „eingereicht“ –
+  die Nachreichung erscheint als „neu“ bzw. „geändert seit der Einreichung“ (für nachgereichte oder ausgetauschte
+  Bauvorlagen ist die Übereinstimmungserklärung nach § 7 BauPrüfVO NRW nötig). Ein **Nachtrag** („Nachtrag „BAUA 3“
+  anlegen“ in den Antragsdaten: nächste Fassung, wird aktiv) erst nach Rücknahme bzw. Rücknahmefiktion, Ablehnung,
+  Rückgabe der Unterlagen oder für eine Änderung nach der Entscheidung (siehe „Vergleich“ oben).
+- **Dokumente mit Bedingung:** im Antragsumfang (Bearbeiten) und im Katalog („Nur wenn“; Antragsmerkmale mit und/oder
+  wie oben) – etwa ein Nachweis nur bei Gebäudeklasse 3–5. Trifft sie nicht zu, ist das Dokument „nicht erforderlich“:
+  kein Farbpunkt, kein grauer „Anlegen“-Eintrag, es zählt nicht mit.
 - **Status** – immer gegen die aktive Fassung:
   - **grau – fehlt:** kein Formular im Projekt bzw. weder Quelle noch Datei;
   - **rot – nicht vollständig:** das Formular hat noch offene Angaben (Füllstand wie in der Gliederung);
-  - **gelb – nicht (aktuell) exportiert:** ausgefüllt, aber keine PDF im Antragsordner oder die PDF ist älter als
-    die letzte Änderung (Datei oder ungespeicherte Eingaben); bei externen: die Quelle ist neuer als die Datei.
-    **Maßstab ist das Datum im Dateinamen** (`JJMMTT` wie „BS9 BAUA 261110 …“, auch `261110_1430`, `20261110`,
-    `2026-11-10`, `10.11.2026`; ein Projektcode am Anfang zählt nicht): Haben Quelle und Datei eines, entscheidet es –
-    gleiches Datum heißt gleicher Stand, auch wenn die Excel-Datei danach noch einmal gespeichert wurde. Hat nur eine
-    Seite eines, wird es mit dem Tag der Änderungszeit der anderen verglichen (am selben Tag zählt die Änderungszeit);
-    ohne Datum im Namen gilt wie bisher die Änderungszeit. Ebenso wählt die App bei mehreren passenden Dateien die
-    neueste (`datumAusName`, `standVergleich` in `antrag.ts`);
+  - **gelb – nicht (aktuell) exportiert:** ausgefüllt, aber keine PDF im Antragsordner oder die PDF ist älter als die
+    letzte Änderung (Datei oder ungespeicherte Eingaben); bei externen: die Quelle ist neuer als die Datei. **Maßstab
+    ist das Datum im Dateinamen** (`JJMMTT` wie „BS9 BAUA 261110 …“, auch `261110_1430`, `20261110`, `2026-11-10`,
+    `10.11.2026`; ein Projektcode am Anfang zählt nicht): Haben Quelle und Datei eines, entscheidet es – gleiches
+    Datum heißt gleicher Stand, auch wenn die Excel-Datei danach noch einmal gespeichert wurde. Hat nur eine Seite
+    eines, wird es mit dem Tag der Änderungszeit der anderen verglichen (am selben Tag zählt die Änderungszeit); ohne
+    Datum im Namen gilt wie bisher die Änderungszeit. Ebenso wählt die App bei mehreren passenden Dateien die neueste
+    (`datumAusName`, `standVergleich` in `antrag.ts`);
   - **grün – aktuell:** die PDF liegt im Ordner der aktiven Fassung und ist nach der letzten Änderung entstanden.
 - In der **Navigation** trägt jedes Formular des Antragsumfangs einen Farbpunkt; fehlende Formulare stehen grau
   hinterlegt darunter – ein **Klick legt das Formular an** (aus dem Vorlagenordner, sonst als Kopie des neuesten
-  passenden Formulars aus einem anderen Projekt, jeweils mit geleerten Eingaben; schreibgeschützte Textfelder
-  bleiben) und öffnet es – leere Felder mit Angaben aus der Projektkarte sind gleich befüllt.
+  passenden Formulars aus einem anderen Projekt, jeweils mit geleerten Eingaben; schreibgeschützte Textfelder bleiben)
+  und öffnet es – leere Felder mit Angaben aus der Projektkarte sind gleich befüllt. Die Suche meldet sich sofort
+  („Suche eine Vorlage …“); in anderen Projekten sucht sie nur nach dem Namen (im Vorlagenordner auch nach der
+  Kennung) und meldet, wenn sie nichts findet. Ein zweiter Klick legt kein zweites Formular an. Liegt das Formular
+  schon im Projekt, nur anders benannt: Rechtsklick › „Vorhandenes Formular zuordnen“ (in den Antragsdaten der Knopf
+  „Zuordnen“). **Doppelter Eintrag?** Passt der Titel eines fehlenden Eintrags zu einem Formular, das
+  schon einem anderen Eintrag zugeordnet ist (z. B. „Baustatistik“ neben „Statistischer Erhebungsbogen“), steht dort
+  „doppelt?“ – ein Klick legt dann nichts an, sondern öffnet am Eintrag ein Menü mit Zuordnen oder „Aus dem
+  Antragsumfang nehmen“. Bei einem eingereichten Antrag sind Anlegen, Zuordnen und Entfernen ausgegraut (mit dem
+  Hinweis „Antrag eingereicht“); der Tooltip sagt warum.
 - Die **PDF** entsteht in der App aus dem Formular selbst – so, wie die Formularansicht es zeigt: A4-Blätter, Rahmen,
   Linien, Beschriftungen (auch gedreht), Feldinhalte und Kreuze, Bilder. Echter Text in den PDF-Standardschriften:
   Helvetica hat die Breiten von Arial, Courier die von Courier New – die Zeilen brechen an denselben Stellen um.
@@ -494,8 +707,89 @@ beschrieben.
 - **Angaben zum Antrag** stehen im Abschnitt `formulare` von `projekt.json`: `aktiveFassung` und `antraege` – je
   Fassung `angelegt`, `merkmale`, `umfang`, `felder` (Autofill), `bereit` und `eingereicht`; der zuletzt angelegte
   Antrag zusätzlich als Kurzfassung in `meta.antrag` (für die anderen Apps). Ein früheres `meta.merkmale` bzw.
-  projektweite Angaben im Abschnitt werden gelesen und in die Anträge übernommen. Eine alte `formulare.json` im FORMA-Projekt wird noch gelesen und einmalig in die
-  Projektdatei übernommen – sie selbst bleibt liegen und wird nicht mehr geschrieben.
+  projektweite Angaben im Abschnitt werden gelesen und in die Anträge übernommen. Eine alte `formulare.json` im
+  FORMA-Projekt wird noch gelesen und einmalig in die Projektdatei übernommen – sie selbst bleibt liegen und wird nicht
+  mehr geschrieben.
+- **Schreiben als Änderung:** Jeder Schreibvorgang liest die Projektdatei frisch und trägt nur ein, was er selbst
+  geändert hat – je Antrag und Feld, Antragsmerkmale und Autofill je Eintrag, „bereit“ je Datei, den Antragsumfang je
+  Eintrag und Feld (`aenderungAnwenden`, `bereitAnwenden`, `umfangAnwenden`): hinzugefügte Einträge hinter ihren
+  Vorgänger, entfernte, geänderte Felder; beim Verschieben zieht nur der verschobene Eintrag um – nach oben gezogen vor
+  den Eintrag, an dem er vorbeizog, nach unten dahinter. Was inzwischen anderswo gespeichert wurde (ein anderer
+  Arbeitsplatz, ein gleichzeitiges Laden, das eigene vorige Speichern), bleibt, ebenso ein Antrag, den der Schreibende
+  nicht kannte; ein woanders entfernter Eintrag bzw. ein woanders aufgehobener Antragsumfang kommt durch eine Änderung
+  nicht zurück („Nicht geändert – der Eintrag „Lageplan“ ist inzwischen nicht mehr im Antragsumfang.“ bzw. „… –
+  inzwischen gibt es keinen Antragsumfang mehr.“), und „Antragsumfang festlegen“ ersetzt keinen, der woanders
+  inzwischen festgelegt wurde („Antragsumfang nicht festgelegt – inzwischen ist schon einer festgelegt; er ist jetzt
+  geladen.“). „Antragsumfang aufheben …“ hebt ihn ganz auf – auch Einträge, die woanders inzwischen dazukamen. Ganz
+  nach oben bzw. unten gezogen bleibt ganz oben bzw. unten. Kennungen im Antragsumfang werden beim Lesen eindeutig
+  gemacht. Ein späteres Laden der Projektdatei gilt vor einem früheren, das erst danach zurückkommt. Das Laden ergänzt
+  so nur fehlende Anträge, nie ersetzt es Vorhandenes.
+  - **Bindung:** Geschrieben wird nur in die Projektdatei, aus der die Angaben stammen, und nur für das Projekt, in dem
+    die Änderung begonnen hat. Wird währenddessen ein anderes Projekt geöffnet, bricht die Änderung mit Meldung ab
+    (Formular anlegen bzw. hinzufügen sagen, was schon geschehen ist: „angelegt, aber nicht zugeordnet …“); wird eine
+    andere `.oap` gewählt (auch umbenannt oder neu angelegt nach „nicht lesbar“), lädt die App neu und bindet sich an
+    sie. Ist die Datei gerade nicht lesbar (Netz nach dem Aufwachen), liest die App sie beim Speichern erneut und
+    meldet sonst „… nicht gespeichert: Die Projektdatei ist gerade nicht lesbar“; ist sie wieder lesbar, verschwindet
+    die Fehlermeldung. Fehlt sie, obwohl ihr Ordner lesbar ist (gelöscht, verschoben), löst die App die Bindung – dann
+    gilt eine andere `.oap` bzw. der Stammdaten-Dialog bietet das Anlegen an; ein nicht erreichbares Netzlaufwerk
+    zählt nicht als gelöscht. Eine eigene Meldung „… nicht gespeichert“ verschwindet, sobald der nächste Versuch
+    gespeichert hat.
+  - **Projektordner zuordnen, Projektdatei anlegen:** Nach dem Zuordnen eines Projektordners werden vorhandene Angaben
+    zum Antrag geladen statt überschrieben; zeigt das Projekt danach eine andere Antragsfassung (aus dem
+    Projektordner) als die, für die die Änderung gedacht war, wird sie nicht dorthin geschrieben, sondern gemeldet.
+    Nach dem Anlegen einer Projektdatei über den Stammdaten-Dialog kommt die Änderung samt der Fassung, für die sie
+    gedacht war (als aktive), in die neue Datei („Projektdatei angelegt – Antrag BAUA 2 ist das Ziel des Exports.“).
+    Wird ein Dialog abgebrochen (auch nacheinander), heißt es „Projektordner nicht zugeordnet – die Änderung ist
+    nicht gespeichert.“ bzw. „Projektdatei nicht angelegt – …“; nach „Neue Fassung „BAUA 3“ anlegen“ bzw. „Nachtrag
+    „BAUA 3“ anlegen“ sagt die Meldung, dass der Ordner schon angelegt ist („Ordner BAUA 3 angelegt, aber nicht als
+    aktive Antragsfassung gespeichert – keine Projektdatei angelegt.“; ohne Projektordner entsteht kein Ordner).
+  - **Ein Antrag wird geöffnet:** Während ein Fassungswechsel lädt (auch von außen) – bis Umfang, Zeilen und Dateien
+    der neuen Fassung da sind –, sind die Antragsdaten nicht bedienbar; dauert es länger als einen Moment, sind sie
+    abgeblendet, und neben der Fassungswahl steht „Antrag BAUA wird geöffnet …“. Auch „Als bereit markieren“, die
+    Menüs der fehlenden Formulare und „Antragsdokument“ in der Navigation sowie Verknüpfen in der Ablage sind so lange
+    ausgegraut („Antrag wird geöffnet“). Änderungen am Antrag werden abgewiesen („Nicht entfernt – Antrag BAUA wird
+    gerade geöffnet; bitte gleich noch einmal versuchen.“, „Nicht als bereit markiert – …“), ein PDF-Export verknüpft
+    dann nicht; Autofill-Zustände kommen in den Antrag, der geöffnet wird. Ein Neu-Prüfen der bisherigen Fassung gilt
+    danach nicht mehr. Macht ein anderer Arbeitsplatz eine andere Fassung aktiv, folgt die Ansicht beim nächsten
+    Speichern bzw. Lesen; passen Ansicht und aktive Fassung einmal nicht zusammen, lädt die App den Antrag neu (die
+    Sperre bleibt nicht hängen). Innerhalb derselben Fassung werden die Zeilen nach jedem Speichern sofort neu
+    berechnet (die gelesenen Dateien gelten weiter) – Ziehen und ↑/↓ gehen so immer von der angezeigten Reihenfolge
+    aus.
+  - **Festgehaltene Fassung:** Änderungen am Antragsumfang aus Zeilen und Menüs – Zeilenmenü, „Formular anlegen“,
+    „Zuordnen“, Datei verknüpfen bzw. „Verknüpfung lösen“, Bearbeiten (Felder und „Aus dem Antragsumfang nehmen“),
+    Ziehen der Zeilen und ↑/↓, „Dokument hinzufügen“, die Menüs in der Navigation – lesen den Umfang erst beim
+    Speichern (`umfangAendern`), und nur, wenn noch die Fassung der Zeile bzw. des Menüs angezeigt ist und es den
+    Eintrag noch gibt; verschoben wird nach Kennung. Sonst ändert sich nichts, und die Meldung sagt warum („Nicht
+    entfernt – inzwischen ist Antrag BAUA angezeigt.“, „Nicht verschoben – der Eintrag „Lageplan“ ist inzwischen nicht
+    mehr im Antragsumfang.“, „Nicht hinzugefügt – inzwischen gibt es keinen Antragsumfang mehr.“); ist ein Eintrag
+    beim Entfernen schon weg, heißt es „„Lageplan“ ist schon nicht mehr im Antragsumfang.“. „Als bereit markieren“
+    gilt ebenso nur für die Fassung der Liste bzw. des Menüs. „Antragsumfang aufheben …“ fragt nach und hebt nur auf,
+    wenn danach noch der Antrag der Rückfrage angezeigt ist (sonst „Antragsumfang nicht aufgehoben – inzwischen ist
+    Antrag BAUA angezeigt.“). Die Textfelder (Nr., Titel, Formular, Ordner der Quelle, Muster) speichern beim Verlassen
+    bzw. mit Enter, Esc verwirft – ein Schreiben statt eines je Taste; bis das Speichern zurück ist, bleibt das
+    Getippte stehen, eine Korrektur währenddessen wird danach gespeichert (das zuletzt Bestätigte gilt). Sie gelten für
+    die Fassung, in der getippt wurde – zeigt das Projekt inzwischen eine andere, sagt das Feld es gleich („Getippt für
+    Antrag BAUA 2 – inzwischen ist Antrag BAUA angezeigt; Esc verwirft.“), gespeichert wird dann nicht. Verschwindet die
+    Zeile mit ungespeicherter Eingabe, sagt eine Meldung es. Scheitert das Speichern (Schreibfehler, Antrag wird gerade geöffnet), bleibt das Getippte rot markiert
+    stehen („Nicht gespeichert – Enter im Feld versucht es erneut, Esc verwirft.“); ein leerer Titel wird nicht
+    gespeichert („Der Titel darf nicht leer sein – Esc stellt „Lageplan“ wieder her.“). Esc während eines laufenden
+    Speicherns verwirft nur die Eingabe im Feld – das Speichern läuft zu Ende, danach zeigt das Feld den gespeicherten
+    Wert.
+  - **Nachholen:** Beim Anlegen bzw. Hinzufügen eines Formulars nennt die Meldung den Weg, wenn das Zuordnen nicht
+    ging („Bitte später in den Antragsdaten von BAUA 2 über „Zuordnen“ nachholen.“, bei einem schon vorhandenen
+    Formular „Bitte später zu Antrag BAUA 2 wechseln und per Rechtsklick auf „…“ in der Navigation ›
+    „Antragsdokument“ › „Bauantrag“ zuordnen.“); findet die Zeile das Formular ohnehin über den Namen, heißt es „…
+    findet es über den Namen“.
+  - **Eingereicht:** Ändernde Menüpunkte sind ausgegraut, mit dem Hinweis „Antrag eingereicht“ (Navigation,
+    Zeilenmenü der Antragsdaten, Ablage, „Als bereit markieren“); ändernde Knöpfe sind ausgegraut mit dem Grund im
+    Tooltip („Formular anlegen“, „Zuordnen“, „PDF“, Nr., „bereit“) bzw. ausgeblendet (Bearbeiten, Datei verknüpfen,
+    Ziehen, „Dokument hinzufügen“, „Antragsumfang aufheben …“).
+  - **Verknüpfen in der Ablage** prüft zuerst, ob noch die Fassung des Menüs angezeigt ist (sonst „Nicht kopiert – …“
+    bzw. „Nicht verknüpft – inzwischen ist Antrag BAUA angezeigt.“, je nach Menüpunkt) oder gerade ein Antrag
+    geöffnet wird, dann die Sperre; erst danach wird kopiert. Gemeldet wird nach dem Speichern, ob verknüpft wurde
+    (sonst: „kopiert, aber nicht verknüpft … Bitte später die Kopie in BAUA 2 über „Mit Antragsdokument verknüpfen“
+    verknüpfen, nicht noch einmal kopieren.“); die Zusage „verknüpft wird nach dem Anlegen der Projektdatei“ steht
+    nur, solange der Dialog offen ist, und wird beim Abbrechen zurückgenommen.
 - **Alte `Projektdaten.xlsx`:** wird noch gelesen (`Organisation\<Kürzel> Projektdaten.xlsx`); weichen ihre
   Angaben von der Projektkarte ab, übernimmt „In die Projektkarte übernehmen“ sie – beim Speichern landen sie dann
   in der Projektdatei.
@@ -651,13 +945,16 @@ Adressgruppen (Typ 1) haben dieselben Einträge: 10 Branche, 20 Titel, 30 Vornam
 | `InhalteTyp` | Art | `Texte` | `Ganzzahl` |
 |---|---|---|---|
 | 1 / 2 | Text, einzeilig / mehrzeilig (CR LF) | der Text | – |
-| 4 | Auswahlliste | die Möglichkeiten zeilenweise, **erste Zeile leer** | Nummer der Wahl, die leere Zeile zählt mit (`NULL`/−1 = keine) |
+| 4 | Auswahlliste | die Möglichkeiten zeilenweise, **erste Zeile leer** | Nummer der Wahl ab 0 **ohne** die leere Zeile (`NULL`/−1 = keine) |
 | 8 | Optionen | die Möglichkeiten zeilenweise | Nummer der Wahl ab 0 (−1 = keine) |
 | 16 | Kästchen | Beschriftung (z. B. „Wärmeschutz“) | 1 = angekreuzt |
 
 Bei Auswahl, Optionen und Kästchen schreibt die App nur `Ganzzahl`; die Möglichkeiten in `Texte` bleiben unverändert.
-Die Zählweise der Auswahlliste folgt aus den Daten (Delphi: `Items` = Texte, `ItemIndex` = Ganzzahl): Nummer 2 ergibt
-bei einem Ansprechpartner „Sehr geehrter Herr“ und als Kontakt „Telefon“.
+Die leere erste Zeile der Auswahlliste steht für „keine Angabe“ (−1); `Ganzzahl` 0 ist die erste Möglichkeit danach.
+So liest SJ Office die Projektkarte: Bei „Land“ ist 0 „NRW“ und 1 „RLP“, bei der Anrede 1 „Sehr geehrter Herr“. Bis
+Formulare 0.35 zählte die App die leere Zeile mit – dort gewählte Auswahlen erscheinen jetzt (wie in SJ Office) um
+eine Möglichkeit versetzt und sind einmal neu zu wählen (vor „Daten aktualisieren“ in angefangenen Formularen); eine
+dadurch außerhalb der Liste liegende Nummer zeigt die Auswahl als „(Auswahl nicht in der Liste – bitte neu wählen)“.
 
 Jede Formularseite enthält eine versteckte Liste **`lstbxProkarte`**, die Textfeldern Einträge zuordnet:
 

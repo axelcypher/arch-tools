@@ -63,10 +63,28 @@ export function eintragen(v: Verlauf, feld: string, vorher: Wert, nachher: Wert,
   return anhaengen(v, { zeit, aenderungen: [{ feld, vorher, nachher }] });
 }
 
-/** Mehrere Felder in einem Schritt (z. B. Ausfüllen aus der Projektkarte) */
-export function eintragenMehrere(v: Verlauf, aenderungen: FeldAenderung[], titel: string, zeit: number): Verlauf {
+/**
+ * Mehrere Felder in einem Schritt (z. B. Ausfüllen aus der Projektkarte). Mit `zusammenfassen` (Tippen in verknüpften
+ * Feldern) wird ein unmittelbar vorangehender Schritt mit demselben Titel und denselben Feldern fortgeführt, solange
+ * die Eingaben schnell aufeinander folgen – wie beim Tippen in einem Feld.
+ */
+export function eintragenMehrere(v: Verlauf, aenderungen: FeldAenderung[], titel: string, zeit: number, zusammenfassen = false): Verlauf {
   const echte = aenderungen.filter((a) => a.vorher !== a.nachher);
-  return echte.length ? anhaengen(v, { zeit, aenderungen: echte, titel }) : v;
+  if (!echte.length) return v;
+  const letzter = v.position === v.schritte.length ? v.schritte[v.position - 1] : undefined;
+  const felder = (s: FeldAenderung[]) =>
+    s
+      .map((a) => a.feld)
+      .sort()
+      .join('\n');
+  if (zusammenfassen && letzter && letzter.titel === titel && zeit - letzter.zeit < ZUSAMMENFASSEN_MS && felder(letzter.aenderungen) === felder(echte)) {
+    const vorher = new Map(letzter.aenderungen.map((a) => [a.feld, a.vorher]));
+    // „has“ statt „??“: null („keine Angabe“) ist ein gültiger alter Wert
+    const zusammen = echte.map((a) => ({ feld: a.feld, vorher: vorher.has(a.feld) ? vorher.get(a.feld)! : a.vorher, nachher: a.nachher })).filter((a) => a.vorher !== a.nachher);
+    const ohne = { ...v, schritte: v.schritte.slice(0, -1), position: v.position - 1 };
+    return anhaengen(ohne, zusammen.length ? { zeit, aenderungen: zusammen, titel } : null);
+  }
+  return anhaengen(v, { zeit, aenderungen: echte, titel });
 }
 
 /**

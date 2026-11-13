@@ -3,9 +3,10 @@ import { Fragment, useState } from 'react';
 import type { AntragsVorlage, KatalogEintrag } from '../antrag';
 import { VORGABE_MERKMALE, bedingungText, hatBedingung, istVorgabeMerkmal } from '../bedingung';
 import { BedingungEditor } from './BedingungEditor';
-import { PLATZHALTER, VORGABE_EXPORT, VORGABE_VORLAGEN, dateiname, verschieben, vorlagenAus } from '../antrag';
+import { ART_HINWEIS, vorlageArtWarnung, PLATZHALTER, VORGABE_EXPORT, VORGABE_VORLAGEN, dateiname, verschieben, vorlagenAus, vorlageMitAntragsart, PLANSATZ_QUELLE } from '../antrag';
 import { Griff, useSortieren } from './Sortieren';
-import { useAntrag } from '../antragStore';
+import { namensschemaVon, useAntrag } from '../antragStore';
+import { useFormulare } from '../store';
 import { waehleOrdner } from '../dateisystem';
 import { Symbol } from './Symbol';
 
@@ -38,7 +39,11 @@ export function AntragEinstellungen() {
   const vorlageSetzen = (id: string, teil: Partial<AntragsVorlage>) => setVorlagen(vorlagen.map((v) => (v.id === id ? { ...v, ...teil } : v)));
   const inVorlage = (v: AntragsVorlage, kid: string, an: boolean) => vorlageSetzen(v.id, { dokumente: an ? [...v.dokumente.filter((d) => d !== kid), kid] : v.dokumente.filter((d) => d !== kid) });
   const [bedingungOffen, setBedingungOffen] = useState<string | null>(null);
-  const beispiel = dateiname(e.namensvorlage, { kuerzel: 'BS9', phase: e.phase, datum: new Date(), nr: '01', name: 'Bauantrag', antrag: `${e.arten[0]} 2`, art: e.arten[0], kennung: 'nw010005', stand: '2026A' });
+  // beim Export steht an der Stelle der Antragsart immer {Art} (nach dem Namensschema)
+  const reihenfolge = useFormulare((s) => namensschemaVon(s).reihenfolge);
+  const wirksameVorlage = vorlageMitAntragsart(e.namensvorlage, reihenfolge);
+  const artWarnung = vorlageArtWarnung(e.namensvorlage, reihenfolge);
+  const beispiel = dateiname(wirksameVorlage, { kuerzel: 'BS9', phase: e.phase, datum: new Date(), nr: '01', name: 'Bauantrag', antrag: `${e.arten[0]} 2`, art: e.arten[0], kennung: 'nw010005', stand: '2026A' });
 
   const zeileSetzen = (i: number, teil: Partial<KatalogEintrag>) => setKatalog(katalog.map((k, n) => (n === i ? { ...k, ...teil } : k)));
 
@@ -63,27 +68,54 @@ export function AntragEinstellungen() {
               defaultValue={e.arten.join(', ')}
               key={e.arten.join(',')}
               aria-label="Antragsarten"
+              aria-describedby="es-arten-hinweis"
               placeholder="BAUA, BAUVA, DENK"
               onBlur={(x) => setEinstellungen({ arten: x.target.value.split(/[,;\s]+/).filter(Boolean).map((a) => a.toUpperCase()) })}
             />
+            <span className="field-hint" id="es-arten-hinweis">
+              Dazu kommen die Antragsarten aus Projektordner › Einstellungen › Namensschema: Kürzel und Plannummern.
+            </span>
           </label>
         </div>
       </Karte>
 
       <Karte titel="Dateiname exportierter PDFs" text={<>Beispiel: <strong>{beispiel}.pdf</strong></>}>
         <div className="es-raster">
-          <label className="es-breit">
-            <span className="field-label">Namensvorlage</span>
-            <input value={e.namensvorlage} onChange={(x) => setEinstellungen({ namensvorlage: x.target.value })} aria-label="Namensvorlage" spellCheck={false} />
-          </label>
+          {/* wie im Export des Projekts: Feld, darunter Hinweis und ggf. Warnung */}
+          <div className="es-breit es-feldblock">
+            <label>
+              <span className="field-label">Namensvorlage</span>
+              <input
+                value={e.namensvorlage}
+                onChange={(x) => setEinstellungen({ namensvorlage: x.target.value })}
+                aria-label="Namensvorlage"
+                aria-describedby={artWarnung ? 'es-art-hinweis es-art-warnung' : 'es-art-hinweis'}
+                spellCheck={false}
+              />
+            </label>
+            <p className="field-hint" id="es-art-hinweis">
+              {ART_HINWEIS}
+            </p>
+            {artWarnung && (
+              <p className="warning small-text">
+                <span id="es-art-warnung">{artWarnung}</span>{' '}
+                <button className="small" onClick={() => setEinstellungen({ namensvorlage: wirksameVorlage })}>
+                  Vorlage anpassen
+                </button>
+              </p>
+            )}
+          </div>
           <label>
             <span className="field-label">Phase</span>
-            <input value={e.phase} list="es-phasen" onChange={(x) => setEinstellungen({ phase: x.target.value })} aria-label="Phase" />
+            <input value={e.phase} list="es-phasen" onChange={(x) => setEinstellungen({ phase: x.target.value })} aria-label="Phase" aria-describedby="es-phase-hinweis" />
             <datalist id="es-phasen">
               {['BP', 'EP', 'GP', 'AP'].map((p) => (
                 <option key={p} value={p} />
               ))}
             </datalist>
+            <span className="field-hint" id="es-phase-hinweis">
+              wird für den Platzhalter {'{Phase}'} eingesetzt
+            </span>
           </label>
         </div>
         <div className="es-platzhalter">
@@ -311,17 +343,18 @@ export function AntragEinstellungen() {
                     <select value={k.art} onChange={(x) => zeileSetzen(i, { art: x.target.value as KatalogEintrag['art'] })} aria-label="Art">
                       <option value="intern">intern (Formular)</option>
                       <option value="extern">extern (Datei)</option>
+                      <option value="plansatz">Plansatz (Pläne GP-01 …)</option>
                     </select>
                   </td>
                   <td>
                     {k.art === 'intern' ? (
                       <input value={k.formular ?? ''} placeholder={k.titel} onChange={(x) => zeileSetzen(i, { formular: x.target.value })} aria-label="Formular" />
                     ) : (
-                      <input value={k.quelle ?? ''} placeholder={e.berechnungsordner} onChange={(x) => zeileSetzen(i, { quelle: x.target.value })} aria-label="Quelle" />
+                      <input value={k.quelle ?? ''} placeholder={k.art === 'plansatz' ? PLANSATZ_QUELLE : e.berechnungsordner} onChange={(x) => zeileSetzen(i, { quelle: x.target.value })} aria-label="Quelle" />
                     )}
                   </td>
                   <td>
-                    <input value={k.muster ?? ''} placeholder={`*${k.titel}*`} onChange={(x) => zeileSetzen(i, { muster: x.target.value })} aria-label="Muster" />
+                    <input value={k.muster ?? ''} placeholder={k.art === 'plansatz' ? 'alle Pläne mit Plannummer' : `*${k.titel}*`} onChange={(x) => zeileSetzen(i, { muster: x.target.value })} aria-label="Muster" />
                   </td>
                   {vorlagen.map((v) => (
                     <td key={v.id} className="es-mitte">

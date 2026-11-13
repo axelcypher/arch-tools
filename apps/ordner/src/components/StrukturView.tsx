@@ -11,6 +11,7 @@ import type { Sicherung } from '../sicherung';
 import { strukturUnterschied, unterschiedText } from '../sicherung';
 import { useOrdner } from '../store';
 import { OrdnerEditor } from './OrdnerEditor';
+import { NamensschemaEinstellungen } from './NamensschemaEinstellungen';
 import type { Struktur } from '../struktur';
 import { ordnerAlsText, ordnerAusTextMitMeldungen, sichererName, STANDARD, strukturAlsJson, strukturAusJson } from '../struktur';
 
@@ -298,6 +299,7 @@ export function EinstellungenView() {
     <div className="po-view einspaltig">
       <section className="po-col">
         <GemeinsameEinstellungen />
+        <NamensschemaEinstellungen />
       </section>
     </div>
   );

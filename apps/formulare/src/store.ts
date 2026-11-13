@@ -1,3 +1,4 @@
+import { ansichtLesen, verknuepfteFelder } from '@core/ui/ansicht';
 import { create } from 'zustand';
 import { pickFile, saveBinaryFile } from '@core/platform/files';
 import { logger } from '@core/platform/log';
@@ -9,8 +10,8 @@ import type { Feld } from './forma/felder';
 import { felderDerSeite } from './forma/felder';
 import type { Formular } from './forma/formular';
 import { formularBytes, istAngekreuzt, memoText, parseFormular, setzeAngekreuzt, setzeMemoText } from './forma/formular';
-import type { PkWert, Projektkarte } from './forma/projektkarte';
-import { istWahl, pkAnzeige, pkEintrag, pkSchluessel, pkWert, pkWertPasst, pkWertVon } from './forma/projektkarte';
+import type { PkEintrag as PkEintragTyp, PkWert, Projektkarte } from './forma/projektkarte';
+import { istWahl, pkAnzeige, pkArt, pkEintrag, pkMoeglichkeiten, pkSchluessel, pkTitel, pkWert, pkWertPasst, pkWertVon, pkZahlAus } from './forma/projektkarte';
 import type { Sperre, SperrBewertung, SperrProbe } from './forma/sperre';
 import { bewerten, sperreLesen, sperreSchreiben, sperrPfad, zeitstempel } from './forma/sperre';
 import { istEigeneSperre, sperreVergessen, sperreVermerken, verwaisteEigeneSperrenAufraeumen } from './eigeneSperren';
@@ -26,6 +27,7 @@ import type { OapInhalt } from './oap';
 import { OAP_ANGABEN, angabenAus, metaMit } from './oap';
 import type { Project, ProjectMeta } from '@core/model';
 import { createProject, leereMeta } from '@core/model';
+import { wirksamesNamensschema } from '@core/namensschema';
 import { parseProjectData } from '@core/serialize';
 import { VORGABE_OAP_PFAD, projektdateiPfad } from '@core/projektdatei';
 import type { DateiStand } from '@core/platform/projektordner';
@@ -195,6 +197,9 @@ export interface Meldung {
   text: string;
 }
 
+/** Dialog mit wartender Aktion: Projektordner zuordnen bzw. Projektdatei (Stammdaten) anlegen */
+export type DialogArt = 'ordner' | 'oap';
+
 interface FormulareState extends Gespeichert {
   ds: Dateisystem | null;
   projekte: Projekt[];
@@ -219,6 +224,8 @@ interface FormulareState extends Gespeichert {
   adressbuchKarten: { adressen: Adresse[]; stand: number } | null;
   /** eigene Adressen der App (gemeinsamer Konfigurationsordner) */
   eigeneAdressen: EigeneAdresse[];
+  /** Namensschema des Büros (gemeinsame Einstellungen, roh) – es gilt das der Projektdatei, sonst dieses */
+  namensschemaBuero: unknown;
   /** Einlesen läuft: so weit */
   adressbuchLaeuft: { fertig: number; gesamt: number } | null;
   /** Projektdaten.xlsx des gewählten Projekts (nur noch zum Übernehmen alter Angaben); 'fehlt' = keine, null = nicht gesucht */
@@ -293,8 +300,12 @@ interface FormulareState extends Gespeichert {
   sperrdateiAufheben: (pfad: string, daten: Uint8Array) => Promise<boolean>;
   karteLaden: () => Promise<void>;
   karteSetzen: (gruppe: number, id: number, wert: PkWert) => void;
-  /** mehrere Einträge in einem Schritt (Übernehmen, Leeren) */
-  karteMehrere: (werte: KartenWert[], titel: string) => void;
+  /**
+   * Mehrere Einträge in einem Schritt (Übernehmen, Leeren, Verwerfen). Verknüpfte Einträge (eigene Ansicht) werden
+   * mitgefüllt – außer bei `ohneVerknuepfungen` (Verwerfen, Gruppe leeren: nur die genannten Einträge);
+   * `zusammenfassen` führt einen gleichen Schritt beim Tippen fort
+   */
+  karteMehrere: (werte: KartenWert[], titel: string, o?: { zusammenfassen?: boolean; ohneVerknuepfungen?: boolean }) => void;
   /** liefert den Schlüssel des betroffenen Eintrags (zum Hinspringen) */
   karteRueckgaengig: () => string | null;
   karteWiederholen: () => string | null;
@@ -330,15 +341,19 @@ interface FormulareState extends Gespeichert {
   oapWaehlen: (pfad: string | null) => Promise<void>;
   /** gemeinsame Einstellungen (allgemein.json) übernehmen: Stammordner der Projekte, Ort neuer Projektdateien */
   gemeinsamLaden: () => Promise<void>;
+  /** Namensschema des Büros neu lesen (beim Zurückkommen ins Fenster) – gesetzt nur, wenn es sich geändert hat */
+  namensschemaNeuLesen: () => Promise<void>;
   /** Projektdatei gezielt ändern (frisch lesen, nur `projekt.json`); legt sie nicht an – dann false */
   oapAendern: (aendern: (roh: Record<string, unknown>) => Record<string, unknown>) => Promise<boolean>;
   /** Stammdaten-Dialog öffnen, um die fehlende Projektdatei anzulegen; `danach` läuft nach dem Anlegen */
-  stammdatenErfassen: (grund: string, danach?: () => Promise<void>) => Promise<void>;
+  /** Stammdaten-Dialog öffnen; `danach` läuft nach dem Anlegen, `abgebrochen` beim Abbrechen (z. B. eine Zusage zurücknehmen) */
+  stammdatenErfassen: (grund: string, danach?: () => Promise<void>, abgebrochen?: (art: DialogArt) => void) => Promise<void>;
   /** Projektdatei mit diesen Stammdaten anlegen (aus dem Dialog) */
   projektdateiAnlegen: (meta: ProjectMeta) => Promise<void>;
   stammdatenAbbrechen: () => void;
   /** Dialog öffnen, um dem gewählten Projekt einen Projektordner zuzuordnen; `danach` läuft, sobald es eine Projektdatei gibt */
-  projektordnerZuordnen: (grund: string, danach?: () => Promise<void>) => void;
+  /** Projektordner zuordnen lassen; `danach` läuft nach dem Zuordnen (bzw. Anlegen der Projektdatei), `abgebrochen` beim Abbrechen */
+  projektordnerZuordnen: (grund: string, danach?: () => Promise<void>, abgebrochen?: (art: DialogArt) => void) => void;
   /** vorhandenen Ordner zuordnen */
   projektordnerWaehlen: (pfad: string) => Promise<void>;
   /** neuen Projektordner im Stammordner anlegen und zuordnen */
@@ -751,7 +766,7 @@ export function karteMitAenderungen(k: OffeneKarte): Projektkarte {
       const s = pkSchluessel(e.gruppe, e.id);
       if (!(s in k.aenderungen)) return e;
       const w = k.aenderungen[s];
-      return istWahl(e) ? { ...e, zahl: typeof w === 'number' ? w : null } : { ...e, text: typeof w === 'string' ? w : '' };
+      return istWahl(e) ? { ...e, zahl: pkZahlAus(e, typeof w === 'number' ? w : null) } : { ...e, text: typeof w === 'string' ? w : '' };
     }),
   };
 }
@@ -771,7 +786,7 @@ function karteMitWerten(k: OffeneKarte, werte: Map<string, unknown>): Record<str
   return aenderungen;
 }
 
-/** Änderungen für die Hülle: Texte mit CR LF wie bei FORMA, Auswahl als Nummer */
+/** Änderungen für die Hülle: Texte mit CR LF wie bei FORMA, Auswahl als Ganzzahl der Datei (pkZahlAus) */
 function kartenAenderungen(k: OffeneKarte): PkAenderung[] {
   return Object.entries(k.aenderungen).flatMap(([s, w]): PkAenderung[] => {
     const [gruppe, id] = s.split(':').map(Number);
@@ -779,7 +794,7 @@ function kartenAenderungen(k: OffeneKarte): PkAenderung[] {
     if (!e) return [];
     if (istWahl(e)) {
       // „keine Wahl“: was vorher stand (leer oder −1) bleibt so, wenn es schon nichts war
-      const neu = typeof w === 'number' ? w : e.zahl === null ? null : -1;
+      const neu = typeof w === 'number' ? pkZahlAus(e, w) : e.zahl === null ? null : -1;
       return neu === e.zahl ? [] : [{ gruppe, id, typ: e.typ, spalte: 'ganzzahl', alt: e.zahl, neu }];
     }
     return [{ gruppe, id, typ: e.typ, spalte: 'texte', alt: e.text, neu: (typeof w === 'string' ? w : '').replace(/\n/g, '\r\n') }];
@@ -896,13 +911,18 @@ export const useFormulare = create<FormulareState>()((set, get) => {
   };
   /** nach dem Anlegen der Projektdatei weitermachen (z. B. den Antragsumfang speichern) */
   let nachAnlegen: (() => Promise<void>) | null = null;
+  let beiAbbruch: ((art: DialogArt) => void) | null = null;
+  /** Laufende Nummer des letzten `oapLaden` und sein Ende – ein älteres Ergebnis gilt nicht mehr */
+  let oapLadeNr = 0;
+  let oapLadung: Promise<void> = Promise.resolve();
 
   /** Projektordner zugeordnet: Projektdatei suchen; fehlt sie, die Stammdaten erfassen (die wartende Aktion bleibt) */
   const nachZuordnen = async (projekt: Projekt) => {
     await get().oapLaden();
     if (get().projekt !== projekt) return;
     const weiter = nachAnlegen;
-    if (get().oap === 'fehlt') await get().stammdatenErfassen('Im Projektordner gibt es noch keine Projektdatei (.oap). Mit diesen Stammdaten wird sie angelegt.', weiter ?? undefined);
+    // der Abbruch-Rückruf gilt weiter (Projektordner zugeordnet, dann den Stammdaten-Dialog abgebrochen)
+    if (get().oap === 'fehlt') await get().stammdatenErfassen('Im Projektordner gibt es noch keine Projektdatei (.oap). Mit diesen Stammdaten wird sie angelegt.', weiter ?? undefined, beiAbbruch ?? undefined);
     else {
       nachAnlegen = null;
       if (weiter) await weiter();
@@ -933,6 +953,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
     adressbuchKarten: lesen<{ adressen: Adresse[]; stand: number } | null>(ADRESSBUCH, null),
     adressbuch: wirksamesAdressbuch(lesen<{ adressen: Adresse[]; stand: number } | null>(ADRESSBUCH, null), []),
     eigeneAdressen: [],
+    namensschemaBuero: null,
     adressbuchLaeuft: null,
     projektdaten: null,
     oap: null,
@@ -1032,6 +1053,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
     projektWaehlen: async (projekt) => {
       await get().schliessen();
       nachAnlegen = null;
+      beiAbbruch = null;
       set({ projekt, formulare: [], karte: null, datei: null, projektdaten: null, oap: null, stammdatenDialog: null, ordnerDialog: null, haupt: 'formular' });
       const ds = get().ds;
       if (!projekt || !ds) return;
@@ -1360,19 +1382,38 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       const s = pkSchluessel(gruppe, id);
       const vorher = karteWert(k, gruppe, id);
       if (vorher === wert) return;
+      // verknüpfte Einträge (eigene Ansicht der Projektkarte) bekommen denselben Inhalt – beim Tippen ein Schritt im Verlauf
+      if (verknuepfteWerte(k, gruppe, id, wert).length) {
+        const e = pkEintrag(k.karte, gruppe, id);
+        get().karteMehrere([{ gruppe, id, wert }], `${e ? pkTitel(e.titel).replace(/:$/, '') : s} (verknüpft)`, { zusammenfassen: true });
+        return;
+      }
       const verlauf = eintragen(k.verlauf, s, vorher, wert, Date.now());
       karteAktualisieren({ ...k, verlauf, aenderungen: karteMitWerten(k, new Map([[s, wert]])) });
     },
 
-    karteMehrere: (werte, titel) => {
+    karteMehrere: (werte, titel, o = {}) => {
       const k = get().karte;
       if (!k) return;
-      const liste = werte.filter((w) => {
+      const { zusammenfassen = false, ohneVerknuepfungen = false } = o;
+      // verknüpfte Einträge mitfüllen (sofern nicht ausdrücklich mitgegeben)
+      const schon = new Set(werte.map((w) => pkSchluessel(w.gruppe, w.id)));
+      const alle = [...werte];
+      if (!ohneVerknuepfungen)
+        for (const w of werte)
+          for (const v of verknuepfteWerte(k, w.gruppe, w.id, w.wert)) {
+            const sv = pkSchluessel(v.gruppe, v.id);
+            if (!schon.has(sv)) {
+              schon.add(sv);
+              alle.push(v);
+            }
+          }
+      const liste = alle.filter((w) => {
         const e = pkEintrag(k.karte, w.gruppe, w.id);
         return !!e && pkWertPasst(e, w.wert);
       });
       const aenderungen: FeldAenderung[] = liste.map((w) => ({ feld: pkSchluessel(w.gruppe, w.id), vorher: karteWert(k, w.gruppe, w.id), nachher: w.wert }));
-      const verlauf = eintragenMehrere(k.verlauf, aenderungen, titel, Date.now());
+      const verlauf = eintragenMehrere(k.verlauf, aenderungen, titel, Date.now(), zusammenfassen);
       if (verlauf === k.verlauf) return;
       karteAktualisieren({ ...k, verlauf, aenderungen: karteMitWerten(k, new Map(aenderungen.map((a) => [a.feld, a.nachher]))) });
     },
@@ -1402,7 +1443,8 @@ export const useFormulare = create<FormulareState>()((set, get) => {
         const [gruppe, id] = s.split(':').map(Number);
         return { gruppe, id, wert: pkWertVon(pkEintrag(k.karte, gruppe, id)!) };
       });
-      get().karteMehrere(zurueck, 'Änderungen verworfen');
+      // nur die geänderten Einträge zurück – nicht über Verknüpfungen auf andere übertragen
+      get().karteMehrere(zurueck, 'Änderungen verworfen', { ohneVerknuepfungen: true });
       set({ meldung: { art: 'info', text: 'Ungespeicherte Änderungen der Projektkarte verworfen – Strg+Z holt sie zurück.' } });
     },
 
@@ -1501,14 +1543,24 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       const ablage = ablageVon(get(), projekt);
       if (!ds || !projekt || !ablage) return;
       const root = verbinde(ablage.root, ablage.pfad);
+      // Reihenfolge: ein späteres Laden gilt – kommt dieses danach zurück, setzt es nicht seinen älteren Stand, sondern
+      // wartet, bis das spätere fertig ist (so liest der Aufrufer danach den neuesten)
+      const nr = ++oapLadeNr;
+      let fertig!: () => void;
+      const lauf = new Promise<void>((r) => (fertig = r));
+      oapLadung = lauf;
       try {
         const g = await projektdateiLaden(ds.projektordner, root, { gewaehlt: get().oapWahl[projekt.ordner] });
         if (get().projekt !== projekt) return;
+        if (nr !== oapLadeNr) return void (await oapLadung);
         if (!g) {
           set({ oap: 'fehlt' });
           return;
         }
         set({ oap: { root, pfad: g.pfad, stand: g.stand, projekt: g.projekt, inhalt: { name: g.projekt.name, meta: g.projekt.meta }, kandidaten: g.kandidaten } });
+        // wieder lesbar: die eigene Fehlermeldung von vorhin gilt nicht mehr
+        const m = get().meldung;
+        if (m?.art === 'fehler' && m.text.startsWith(`Projektdatei von ${projekt.ordner} nicht lesbar`)) set({ meldung: null });
         // Ergänzungen der Projektkarte, die noch leer sind (z. B. PLZ des Grundstücks), aus der Projektdatei
         const k = get().karte;
         if (k && k.projekt === projekt) {
@@ -1517,8 +1569,13 @@ export const useFormulare = create<FormulareState>()((set, get) => {
           if (eintraege.some((e, i) => e !== k.karte.eintraege[i])) set({ karte: { ...k, karte: { ...k.karte, eintraege } } });
         }
       } catch (e) {
+        // inzwischen ein anderes Projekt: nichts melden, nicht auf dessen Laden warten
+        if (get().projekt !== projekt) return;
+        if (nr !== oapLadeNr) return void (await oapLadung);
         log.warn(`Projektdatei von ${projekt.ordner} nicht lesbar: ${fehlertext(e)}`);
-        if (get().projekt === projekt) set({ oap: 'fehlt', meldung: { art: 'fehler', text: `Projektdatei von ${projekt.ordner} nicht lesbar: ${fehlertext(e)}` } });
+        set({ oap: 'fehlt', meldung: { art: 'fehler', text: `Projektdatei von ${projekt.ordner} nicht lesbar: ${fehlertext(e)}` } });
+      } finally {
+        fertig();
       }
     },
     oapAendern: async (aendern) => {
@@ -1530,17 +1587,21 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       if (geschrieben) await get().oapLaden();
       return geschrieben;
     },
-    stammdatenErfassen: async (grund, danach) => {
+    stammdatenErfassen: async (grund, danach, abgebrochen) => {
       const projekt = get().projekt;
       if (!projekt) return;
       if (!get().karte) await get().karteLaden();
       if (get().projekt !== projekt) return;
       nachAnlegen = danach ?? null;
+      beiAbbruch = abgebrochen ?? null;
       set({ stammdatenDialog: { grund, meta: metaAusKarte(projekt, get().karte) } });
     },
     stammdatenAbbrechen: () => {
+      const abbruch = nachAnlegen ? beiAbbruch : null;
       nachAnlegen = null;
+      beiAbbruch = null;
       set({ stammdatenDialog: null });
+      abbruch?.('oap');
     },
     projektdateiAnlegen: async (meta) => {
       const { ds, projekt } = get();
@@ -1551,6 +1612,8 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       if (!pfad) throw new Error('Kein Ort für neue Projektdateien eingestellt.');
       const p = createProject(meta.kurzname || meta.vorhaben || projekt.titel || projekt.ordner);
       p.meta = meta;
+      // wie im Projektordner-Tool: jede neue Projektdatei trägt eine Kopie des Namensschemas des Büros
+      p.namensschema = wirksamesNamensschema(undefined, get().namensschemaBuero);
       if (!(await projektdateiAnlegen(ds.projektordner, root, pfad, p, 'Formulare'))) throw new Error(`${pfad}: Dort liegt schon eine Datei – bitte in der Projektkarte auswählen.`);
       log.info(`Projektdatei angelegt: ${pfad}`);
       set({ stammdatenDialog: null, meldung: { art: 'info', text: `Projektdatei angelegt: ${pfad}` } });
@@ -1558,11 +1621,13 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       await get().oapLaden();
       const weiter = nachAnlegen;
       nachAnlegen = null;
+      beiAbbruch = null;
       if (weiter) await weiter();
     },
-    projektordnerZuordnen: (grund, danach) => {
+    projektordnerZuordnen: (grund, danach, abgebrochen) => {
       if (!get().projekt) return;
       nachAnlegen = danach ?? null;
+      beiAbbruch = abgebrochen ?? null;
       set({ ordnerDialog: { grund } });
     },
     ordnerNeuLesen: () => set((s) => ({ ordnerStand: s.ordnerStand + 1 })),
@@ -1580,8 +1645,11 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       }
     },
     ordnerDialogSchliessen: () => {
+      const abbruch = nachAnlegen ? beiAbbruch : null;
       nachAnlegen = null;
+      beiAbbruch = null;
       set({ ordnerDialog: null });
+      abbruch?.('ordner');
     },
     projektordnerWaehlen: async (pfad) => {
       const projekt = get().projekt;
@@ -1603,6 +1671,14 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       get().ordnerNeuLesen();
       await get().projektordnerWaehlen(verbinde(stammordner, sauber));
     },
+    namensschemaNeuLesen: async () => {
+      try {
+        const roh = ((await konfigLesen('allgemein')) ?? {}) as Record<string, unknown>;
+        if (JSON.stringify(roh.namensschema ?? null) !== JSON.stringify(get().namensschemaBuero)) set({ namensschemaBuero: roh.namensschema ?? null });
+      } catch {
+        // gemeinsame Einstellungen nicht lesbar: der bisherige Stand gilt weiter
+      }
+    },
     gemeinsamLaden: async () => {
       try {
         const app = ((await konfigLesen('formulare')) ?? {}) as Record<string, unknown>;
@@ -1610,6 +1686,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
         set({ eigeneAdressen, adressbuch: wirksamesAdressbuch(get().adressbuchKarten, eigeneAdressen) });
         if (app.ordnerWahl && typeof app.ordnerWahl === 'object') set({ ordnerWahl: Object.fromEntries(Object.entries(app.ordnerWahl as Record<string, unknown>).filter((e): e is [string, string] => typeof e[1] === 'string')) });
         const roh = ((await konfigLesen('allgemein')) ?? {}) as Record<string, unknown>;
+        if (JSON.stringify(roh.namensschema ?? null) !== JSON.stringify(get().namensschemaBuero)) set({ namensschemaBuero: roh.namensschema ?? null });
         const projekte = Array.isArray(roh.projekte) ? roh.projekte.filter((x): x is string => typeof x === 'string' && !!x.trim()) : [];
         // Stammordner: gemeinsam; gibt es dort noch keine, die bisherigen dieser App übernehmen
         if (projekte.length) {
@@ -1824,6 +1901,44 @@ async function formulareKonfigAendern(patch: Record<string, unknown>) {
   } catch (e) {
     log.warn(`Einstellungen von Formulare nicht geschrieben: ${fehlertext(e)}`);
   }
+}
+
+/** Schlüssel der eigenen Ansicht der Projektkarte (je Benutzer, für alle Projekte) */
+export const KARTEN_ANSICHT = 'formulare:ansicht:projektkarte';
+
+const TEXTARTEN = new Set(['text', 'mehrzeilig']);
+const WAHLARTEN = new Set(['auswahl', 'optionen']);
+
+/** Lassen sich zwei Einträge der Projektkarte verknüpfen? Text mit Text, Auswahl mit Auswahl, Kästchen mit Kästchen */
+export function kartenVerknuepfbar(a: Pick<PkEintragTyp, 'typ' | 'text' | 'titel'> | undefined, b: Pick<PkEintragTyp, 'typ' | 'text' | 'titel'> | undefined): boolean {
+  if (!a || !b) return false;
+  const [x, y] = [pkArt(a as PkEintragTyp), pkArt(b as PkEintragTyp)];
+  return (TEXTARTEN.has(x) && TEXTARTEN.has(y)) || (WAHLARTEN.has(x) && WAHLARTEN.has(y)) || (x === 'kreuz' && y === 'kreuz');
+}
+
+/**
+ * Werte für die mit einem Eintrag verknüpften Einträge (Verknüpfungen der eigenen Ansicht): Text in Text (einzeilig ohne
+ * Zeilenumbrüche); Auswahl und Optionen über den Text der Möglichkeit (fehlt er im Ziel, bleibt es unverändert);
+ * Kästchen in Kästchen.
+ */
+function verknuepfteWerte(k: OffeneKarte, gruppe: number, id: number, wert: PkWert): KartenWert[] {
+  const quelle = pkEintrag(k.karte, gruppe, id);
+  if (!quelle) return [];
+  const qArt = pkArt(quelle);
+  return verknuepfteFelder(ansichtLesen(KARTEN_ANSICHT), pkSchluessel(gruppe, id)).flatMap((v) => {
+    const [g, i] = v.split(':').map(Number);
+    const ziel = pkEintrag(k.karte, g, i);
+    if (!ziel) return [];
+    const zArt = pkArt(ziel);
+    if (TEXTARTEN.has(qArt) && TEXTARTEN.has(zArt)) return [{ gruppe: g, id: i, wert: zArt === 'text' && typeof wert === 'string' ? wert.replace(/\s*\r?\n\s*/g, ' ') : wert }];
+    if (WAHLARTEN.has(qArt) && WAHLARTEN.has(zArt)) {
+      if (wert === null) return [{ gruppe: g, id: i, wert: null }];
+      const text = typeof wert === 'number' ? pkMoeglichkeiten(quelle)[wert] : undefined;
+      const n = text ? pkMoeglichkeiten(ziel).indexOf(text) : -1;
+      return n >= 0 ? [{ gruppe: g, id: i, wert: n }] : [];
+    }
+    return qArt === zArt ? [{ gruppe: g, id: i, wert }] : [];
+  });
 }
 
 /** Angezeigte Pfade im echten Projektordner eines Projekts */

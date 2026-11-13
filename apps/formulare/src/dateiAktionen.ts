@@ -6,7 +6,9 @@
  */
 
 import { create } from 'zustand';
-import { aktiveFassung, antragsOrdner, useAntrag } from './antragStore';
+import { aktiveFassung, antragsOrdner, antragSperre, useAntrag, wechselLaeuft } from './antragStore';
+import type { SchreibInfo } from './antragStore';
+import { klein } from './antrag';
 import { bestaetigen, frageText } from './components/Rueckfrage';
 import { nurFormaLoescht, verbinde } from './dateisystem';
 import type { FormularEintrag } from './projekte';
@@ -189,21 +191,58 @@ export async function ordnerNeu(basis: string, ordner: string) {
  * Datei mit einem Dokument des Antragsumfangs verknüpfen. Liegt sie nicht im Ordner der aktiven Fassung, wird sie
  * dorthin kopiert (ohne zu überschreiben) und die Kopie verknüpft.
  */
-export async function verknuepfen(basis: string, pfad: string, umfangId: string) {
+export async function verknuepfen(basis: string, pfad: string, umfangId: string, o: { fassung?: string; titel?: string } = {}) {
   const ds = useFormulare.getState().ds;
   const projekt = useFormulare.getState().projekt;
   if (!ds || !projekt) return;
   const st = useAntrag.getState();
-  const ziel = antragsOrdner(st, projekt);
+  const melde = (art: 'info' | 'fehler', text: string) => useFormulare.getState().setMeldung({ art, text });
+  // die Fassung des Menüs (sonst die aktive) und ihr Ordner: liegt die Datei schon dort, wird nur verknüpft
+  const aktiv = aktiveFassung(st, projekt);
+  const fassung = o.fassung ?? aktiv;
+  const ordnerAktiv = antragsOrdner(st, projekt);
+  const ziel = `${ordnerAktiv.slice(0, ordnerAktiv.length - aktiv.length)}${fassung}`;
+  const kopiert = ordnerVon(pfad).toLowerCase() !== ziel.toLowerCase();
+  const was = kopiert ? 'Nicht kopiert' : 'Nicht verknüpft';
+  // erst: noch dieselbe Fassung angezeigt und aktiv? – sonst nichts kopieren (auch keine Sperre einer anderen melden)
+  if (aktiv !== fassung) return melde('info', `${was} – inzwischen ist Antrag ${aktiv} angezeigt.`);
+  if (st.projektdatei?.ansicht !== fassung || wechselLaeuft(st, projekt)) return melde('info', `${was} – Antrag ${aktiv} wird gerade geöffnet; bitte gleich noch einmal versuchen.`);
+  // dann: eingereicht und gesperrt – nichts kopieren
+  const sperre = antragSperre(st, projekt);
+  if (sperre) return melde('info', sperre);
   try {
     let name = nameVon(pfad);
-    if (ordnerVon(pfad).toLowerCase() !== ziel.toLowerCase()) {
+    if (kopiert) {
       name = freierName(await namenIn(basis, ziel), name);
       await ds.kopieren(basis, pfad, zusammen(ziel, name));
-      useFormulare.getState().setMeldung({ art: 'info', text: `In ${aktiveFassung(st, projekt)} kopiert und verknüpft: ${name}` });
+      // inzwischen ein anderes Projekt: kopiert ist im bisherigen, verknüpft wird nicht (sonst im falschen Projekt)
+      if (useFormulare.getState().projekt !== projekt) {
+        melde('info', `„${name}“ in ${fassung} von ${projekt.ordner} kopiert, aber nicht verknüpft – inzwischen ist ein anderes Projekt offen.`);
+        return;
+      }
     }
-    await useAntrag.getState().verknuepfen(umfangId, name);
+    const nachholen = `Bitte später die Kopie in ${fassung} über „Mit Antragsdokument verknüpfen“ verknüpfen, nicht noch einmal kopieren.`;
+    // wird ein Dialog (Projektordner, Projektdatei) abgebrochen, gilt eine Zusage nicht – schon vor dem Schreiben festgelegt
+    const info: SchreibInfo = kopiert
+      ? {
+          beiAbbruch: (art) =>
+            melde('info', `„${name}“ in ${fassung} kopiert, aber nicht verknüpft – ${art === 'oap' ? 'keine Projektdatei angelegt' : 'kein Projektordner zugeordnet'}. ${nachholen}`),
+        }
+      : {};
+    await useAntrag.getState().verknuepfen(umfangId, name, { ansicht: fassung, still: kopiert, titel: o.titel, info });
     useDateiAktionen.getState().neu();
+    if (!kopiert) return;
+    // die Kopie ist angelegt – gemeldet wird nach dem Speichern, was daraus wurde (nicht noch einmal kopieren)
+    const f = useFormulare.getState();
+    const verknuepft = useAntrag.getState().projektdatei?.umfang?.find((u) => u.id === umfangId)?.dateien?.[fassung] === name;
+    if (info.geschrieben || verknuepft) melde('info', `„${name}“ in ${fassung} kopiert und verknüpft.`);
+    else if (info.dialog) {
+      // die Zusage nur, solange der Dialog noch offen ist (abgebrochen: die Rücknahme ist schon gemeldet)
+      if (f.stammdatenDialog || f.ordnerDialog) melde('info', `„${name}“ in ${fassung} kopiert – verknüpft wird nach dem Anlegen der Projektdatei.`);
+    } else if (info.vorab === 'eintrag' || info.vorab === 'umfang') melde('info', `„${name}“ in ${fassung} kopiert, aber nicht verknüpft – ${klein(info.grund!)}.`);
+    // inzwischen eingereicht: der Sperrtext ist ein eigener Satz (mit dem Weg zum Entsperren)
+    else if (info.vorab === 'sperre') melde('info', `„${name}“ in ${fassung} kopiert, aber nicht verknüpft. ${info.grund}. Danach die Kopie verknüpfen, nicht noch einmal kopieren.`);
+    else melde('fehler', `„${name}“ in ${fassung} kopiert, aber nicht verknüpft – ${klein(info.grund ?? 'nicht gespeichert')}. ${nachholen}`);
   } catch (e) {
     fehler('Verknüpfen', e);
   }

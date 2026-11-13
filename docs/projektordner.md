@@ -150,6 +150,48 @@ sie nicht, sondern meldet „Die Struktur wurde inzwischen von einem anderen Rec
 „Neu laden“ (die eigene Fassung bleibt über „Rückgängig“ erreichbar) und „Meine Fassung trotzdem speichern“. Beim
 Wechsel in „Struktur“, „Einstellungen“ und „Vorlagen“ liest die App die Datei frisch.
 
+### Namensschema
+
+Unter „Gemeinsame Einstellungen“ steht das **Namensschema** des Büros (Abschnitt „Namensschema: Kürzel und
+Plannummern“) – gemeinsam für alle Apps (`allgemein.json`, Eintrag `namensschema`;
+`packages/core/src/namensschema.ts`):
+
+- **Aufbau des Dateinamens:** welche Stelle Projektcode, Phase bzw. Antragsart, Datum (JJMMTT) und Plannummer haben –
+  Vorgabe „HVO GP 261111 GP-04 Grundriss OG.pdf“ (im Antragsordner steht die Antragsart statt der Phase, die
+  Plannummer bleibt).
+- **Planphasen** mit Kürzel, Bedeutung und Leistungsphase: BP Grundlagenermittlung (LPH 1), EP Entwurfsplanung (LPH
+  3), GP Genehmigungsplanung (LPH 4), AP Ausführungsplanung (LPH 5), AB Abgeschlossenheitsbescheinigung (Sonderfall;
+  Aufteilungspläne nach § 7 Abs. 4 WEG).
+- **Antrags- und Verfahrensarten** mit gleichwertigen Schreibweisen: BAUA Bauantrag, BAUVA Bauvoranfrage (Antrag auf
+  Vorbescheid, § 77 BauO NRW 2018; auch BVA), BAUF Genehmigungsfreistellung (kein Antrag, sondern Vorlage bei der
+  Bauaufsichtsbehörde, § 63 Abs. 3 BauO NRW 2018 in der Fassung ab 01.09.2026), DENK Denkmalrechtliche Erlaubnis, ABGE
+  Abgeschlossenheitsbescheinigung, ENTW Entwässerungsantrag.
+- **Bearbeiten:** Kürzel, Bedeutung, Schreibweisen und Leistungsphasen werden beim Verlassen des Felds übernommen
+  (Schreibweisen bereinigt: groß, ohne Doppelte). Kürzel und Schreibweisen bestehen aus Großbuchstaben und Ziffern
+  (höchstens 8 Zeichen) und sind über beide Listen eindeutig – eine Antragsart darf nicht wie eine Phase heißen, eine
+  Schreibweise nicht schon bei einer anderen Art stehen; sonst zeigt das Feld wieder den gespeicherten Stand und eine
+  Meldung sagt warum (beim Lesen werden solche Einträge ebenso verworfen). Leistungsphasen sind ganze Zahlen von 0 bis
+  9 (die HOAI kennt 1 bis 9; 0 heißt „von Anfang an“) – eine andere Eingabe bleibt mit Meldung stehen, leer = keine.
+  Ein neues Kürzel („+ Kürzel“) wird erst gespeichert, wenn man die Zeile mit einem gültigen Kürzel verlässt (Esc
+  verwirft es) – vorher gilt es in keiner App. Entfernen fragt nach. Die Stellen tauschen beim Umstellen die Plätze;
+  das Beispiel zeigt die Zerlegung mit den Kürzeln des Schemas. „Vorgabe wiederherstellen“ (mit Rückfrage) setzt die
+  eingebaute Vorgabe, auch in allen Feldern.
+- **Index ab Leistungsphase** (Vorgabe 5, Bürovorgabe): erst ab dann tragen Pläne einen Index (AP-03a).
+
+Jede **neue Projektdatei** bekommt eine Kopie (Abschnitt `namensschema`); beim **Ergänzen** eines Projekts wird
+eine fehlende oder abweichende Kopie auf den Stand des Büros gebracht (in der Vorschau als Änderung „Namensschema“
+bzw. „Namensschema (Stand des Büros)“; verglichen wird in gelesener Form – die Reihenfolge der Schlüssel in der Datei
+spielt keine Rolle, eine andere Reihenfolge der Kürzel schon). Alle Apps lesen zuerst die der Projektdatei, sonst die
+des Büros, sonst die Vorgabe. Formulare
+erkennt daran Antragsordner und die Pläne eines Plansatzes und prüft und vergibt danach die Dateinamen im
+Antragsordner (Stellen von Projektcode, Antragsart und Datum, „Umbenennen nach Namensformat“, Namensvorlage des
+Exports).
+
+> **Alle Rechner gleichzeitig aktualisieren:** Jede App liest das Namensschema geprüft ein und schreibt es so zurück.
+> Eine ältere Fassung, die eine Projektdatei speichert, kann daher Angaben einer neueren verlieren (z. B. unbekannte
+> Felder des Namensschemas; Formulare bis 0.35 kennt die Dokumentart „Plansatz“ nicht und speichert sie als
+> Formular).
+
 ### Struktur
 
 Eigener Reiter **„Struktur“** (bis 0.13 Teil der Einstellungen). Ordnerbaum, Bausteine und Namensschemata gehören dem

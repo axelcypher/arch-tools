@@ -1,3 +1,4 @@
+import { namensschemaAus } from './namensschema';
 import type {
   AntragKurz,
   Anschrift,
@@ -61,6 +62,7 @@ const BEKANNTE_ABSCHNITTE = new Set([
   'kosten',
   'projektordner',
   'formulare',
+  'namensschema',
   'erweiterungen',
 ]);
 
@@ -164,6 +166,8 @@ export function parseProjectData(raw: unknown): Project {
   }
   // Abschnitt der Formulare-App: unverändert durchgereicht (die App prüft ihn selbst)
   if (raw.formulare !== undefined && raw.formulare !== null) project.formulare = raw.formulare;
+  const schema = namensschemaAus(raw.namensschema);
+  if (schema) project.namensschema = schema;
   // was diese Fassung nicht kennt, bleibt erhalten (neuere Fassungen, andere Apps)
   const fremd = Object.entries(raw).filter(([k, v]) => !BEKANNTE_ABSCHNITTE.has(k) && v !== undefined);
   if (fremd.length) project.erweiterungen = Object.fromEntries(fremd);

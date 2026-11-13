@@ -1443,3 +1443,87 @@
   padding: 2px 6px;
   font-size: 12px;
 }
+
+/* Namensschema (gemeinsame Einstellungen): Tabelle passt in die Spalte, nur „Bedeutung“ wächst */
+.po-namensschema {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 18px;
+}
+.po-namensschema h3 {
+  margin: 8px 0 0;
+  font-size: 13px;
+}
+.po-namensschema p {
+  margin: 0;
+}
+/* zwei Spalten nur, wenn beide breit genug für „Plannummer bzw. Dokumentnummer“ sind – sonst untereinander */
+.po-stellen {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 8px;
+}
+.po-stellen label,
+.po-index {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.po-index input {
+  width: 80px;
+}
+.po-kuerzel p {
+  margin: 2px 0 6px;
+}
+.po-kuerzel-tabelle {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  margin-bottom: 6px;
+}
+.po-kuerzel-spalte {
+  width: 76px;
+}
+/* Schreibweisen: Platz für „BVA, BAUVORANF“ */
+.po-kuerzel-zusatz {
+  width: 140px;
+}
+.po-kuerzel-lph {
+  width: 72px;
+}
+.po-kuerzel-weg {
+  width: 32px;
+}
+.po-kuerzel-tabelle th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  padding: 2px 4px;
+}
+.po-kuerzel-tabelle td {
+  padding: 2px 4px;
+}
+.po-kuerzel-tabelle input {
+  width: 100%;
+  min-width: 0;
+}
+.po-kuerzel-tabelle td:first-child input {
+  text-transform: uppercase;
+}
+.po-kuerzel-tabelle td:first-child input::placeholder {
+  text-transform: none;
+}
+/* nur für Screenreader (Spaltentitel der Entfernen-Knöpfe) */
+.po-unsichtbar {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.po-kuerzel-neu input {
+  border-style: dashed;
+}

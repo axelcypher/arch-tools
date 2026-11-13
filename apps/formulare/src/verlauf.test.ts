@@ -9,6 +9,30 @@ function anwenden(werte: Record<string, Wert>, v: Verlauf, ziel: number) {
 }
 
 describe('Verlauf', () => {
+  it('mehrere Felder zusammenfassen (verknüpfte Felder): auch „keine Angabe“ (null) bleibt der alte Wert', () => {
+    const t = 1_000_000;
+    const schritt = (vorher: Wert, nachher: Wert) => [
+      { feld: 'a', vorher, nachher },
+      { feld: 'b', vorher, nachher },
+    ];
+    // Auswahl: erst keine Angabe → 1, schnell danach 1 → 2: ein Schritt null → 2
+    let v = eintragenMehrere(leererVerlauf(), schritt(null, 1), 'Anrede (verknüpft)', t, true);
+    v = eintragenMehrere(v, schritt(1, 2), 'Anrede (verknüpft)', t + 300, true);
+    expect(v.schritte).toHaveLength(1);
+    expect(v.schritte[0].aenderungen).toEqual([
+      { feld: 'a', vorher: null, nachher: 2 },
+      { feld: 'b', vorher: null, nachher: 2 },
+    ]);
+    // Rückgängig führt zu „keine Angabe“ zurück
+    expect(anwenden({ a: 2, b: 2 }, v, 0).werte).toEqual({ a: null, b: null });
+    // zurück auf den alten Wert: der Schritt entfällt
+    expect(eintragenMehrere(v, schritt(2, null), 'Anrede (verknüpft)', t + 600, true).schritte).toHaveLength(0);
+    // ohne „zusammenfassen“, mit anderem Titel oder nach der Pause: eigener Schritt
+    expect(eintragenMehrere(v, schritt(2, 3), 'Anrede (verknüpft)', t + 600).schritte).toHaveLength(2);
+    expect(eintragenMehrere(v, schritt(2, 3), 'Anderes', t + 600, true).schritte).toHaveLength(2);
+    expect(eintragenMehrere(v, schritt(2, 3), 'Anrede (verknüpft)', t + 300 + ZUSAMMENFASSEN_MS, true).schritte).toHaveLength(2);
+  });
+
   it('fasst Weitertippen im selben Feld zu einem Schritt zusammen', () => {
     let v = leererVerlauf();
     v = eintragen(v, '0:Memo1', '', 'M', 1000);
