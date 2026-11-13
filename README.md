@@ -400,7 +400,7 @@ GitHub-Release (mit Web-Version als ZIP), sobald die Version der App auf `main` 
 QUADRIO als `v<version>`, TERRIO als `grz-v<version>`, NUMIO als `kosten-v<version>`,
 ATLAS als `ordner-v<version>`, RECTIO als `entzerrung-v<version>`, PERMIO als `formulare-v<version>`,
 FABRIO als `ava-v<version>`, LEXIO als `baurecht-v<version>`,
-die Rahmen-App Arkly als `suite-v<version>` (ihre Version setzt der Lauf selbst, siehe unten). Das Release trägt den
+die Rahmen-App Arkly als `suite-v<version>` (die Versionen setzt der Lauf selbst, siehe unten). Das Release trägt den
 Produktnamen, das Tag die Kennung.
 Die Version steht je App in
 `package.json`, `src-tauri/tauri.conf.json` und `src-tauri/Cargo.toml` und muss dort überall gleich sein.
@@ -420,19 +420,19 @@ aktualisieren sich nicht selbst.
   `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`); der öffentliche Schlüssel steht je App in
   `src-tauri/tauri.conf.json` (`plugins.updater.pubkey`). Der Workflow bricht ab, wenn er vom Secret
   `TAURI_UPDATER_PUBKEY` abweicht.
-- Ein Release entsteht nur für eine Version, deren Tag es noch nicht gibt. Damit parallele PRs keine Version doppelt
-  vergeben, prüft die CI im PR (`scripts/versionen-pruefen.mjs`, Schritt „Versionen prüfen“): Eine geänderte
-  App-Version darf noch nicht als Tag existieren und muss größer sein als auf dem aktuellen main; jede Änderung am
-  Code einer App bzw. an `packages/core` (dann alle Apps) verlangt eine neue Version (Doku und Tests nicht; Dateien
-  im Wurzelverzeichnis wie `package.json`, `package-lock.json` oder `tsconfig*` prüft sie nicht – dort selbst
-  entscheiden). Die Rahmen-App Arkly hebt ein PR nur bei Änderungen an `apps/suite` selbst: Hat eine andere App eine
-  neue Version, setzt der Release-Lauf Arkly automatisch auf die nächste freie Nummer (Minor, wenn eine App Minor
-  oder Major erhöht, sonst Patch; `scripts/suite-version.mjs`), committet sie nach main und baut Arkly mit. Schlägt der Schritt fehl: main
-  mergen und die genannte Version über den angegebenen Stand setzen. Der grüne Haken gilt für den Stand von main beim
-  letzten Push in den PR – unmittelbar vor dem Merge deshalb
-  `git fetch origin main && node scripts/versionen-pruefen.mjs main HEAD` (volle Historie nötig). Empfohlen in den
-  Einstellungen des Repositorys: „Require branches to be up to date before merging“ mit „Tests & Web-Build“ als
-  Pflichtprüfung. Eine neue App gehört in beide Listen (`release.yml` und das Skript).
+- **Versionen setzt der Release-Lauf** (nach dem Muster von Changesets): Ein PR ändert keine Version, sondern legt
+  eine Notiz `.versionen/<zweig>.json` an – je App die Stufe (`patch`, `minor`, `major`) und ein Satz für die
+  Release-Notiz (`.versionen/LIESMICH.md`). Die CI prüft im PR (Schritt „Versionen prüfen“,
+  `scripts/versionen-pruefen.mjs`), dass jede geänderte App (Code unter `apps/<app>/` bzw. `packages/core`, dann alle
+  Apps außer Arkly; Doku und Tests nicht) in einer gültigen Notiz steht und keine Version geändert ist. Nach dem Merge
+  sammelt der Release-Lauf alle Notizen, hebt je App die größte Stufe über die höchste veröffentlichte Version, setzt
+  Arkly (Minor, wenn eine App Minor oder Major erhöht, sonst Patch), löscht die Notizen, committet das als
+  github-actions nach main und baut daraus; die Sätze stehen in der Release-Notiz (`scripts/versionen-setzen.mjs`).
+  Dateien mit verschiedenen Namen kollidieren nie – parallele PRs streiten nicht mehr um Nummern. Dateien im
+  Wurzelverzeichnis (`package.json`, `package-lock.json`, `tsconfig*`) prüft die CI nicht: Ändert sich dort
+  Ausgeliefertes (etwa eine Abhängigkeit), die betroffenen Apps selbst in die Notiz schreiben. Liegengebliebene Notizen
+  arbeitet „Build & Release“ beim nächsten Lauf oder von Hand gestartet ab. Eine neue App gehört
+  in beide Listen (`release.yml` und `scripts/versionen-pruefen.mjs`).
 - Für einen lokalen `tauri:build` müssen dieselben beiden Variablen gesetzt sein, sonst scheitert das
   Signieren der Update-Dateien. `tauri:dev` braucht sie nicht.
 - Versionen ohne Updater (Flächenrechner bis 0.9.4, GRZ-Nachweis bis 0.2.3, Kostenermittlung 0.1.0) müssen

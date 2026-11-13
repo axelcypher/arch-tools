@@ -14,9 +14,10 @@ name: Build & Release
 #   LEXIO     apps/baurecht          Tag baurecht-v<version>    (Baurecht)
 #   Arkly     apps/suite             Tag suite-v<version>       (Rahmen-App: alle Apps in einem Fenster)
 #
-# Arkly enthält alle Apps. Ihre Version hebt der Lauf selbst: Hat eine andere App eine neue Version und ist die
-# Arkly-Version schon veröffentlicht, setzt „Arkly-Version setzen“ die nächste freie Nummer (scripts/suite-version.mjs),
-# committet sie mit GITHUB_TOKEN nach main (das startet keine weiteren Läufe) und baut Arkly aus diesem Commit mit.
+# Versionen setzt der Lauf selbst (nach dem Muster von Changesets): Jeder PR legt eine Notiz .versionen/<zweig>.json an
+# (je App Stufe patch/minor/major und ein Satz). „Versionen setzen“ sammelt alle Notizen, hebt je App die größte Stufe,
+# setzt Arkly (enthält alle Apps), löscht die Notizen, committet mit GITHUB_TOKEN nach main (das startet keine weiteren
+# Läufe) und baut aus diesem Commit; die Sätze kommen in die Release-Notiz (scripts/versionen-setzen.mjs).
 #
 # Automatische Updates: Die Installer werden signiert (Secrets TAURI_SIGNING_PRIVATE_KEY und
 # TAURI_SIGNING_PRIVATE_KEY_PASSWORD). Das Update-Manifest jeder App liegt als <app>.json im Release
@@ -25,6 +26,7 @@ on:
   push:
     branches: [main]
     paths:
+      - .versionen/**
       - apps/*/package.json
       - apps/*/src-tauri/tauri.conf.json
       - apps/*/src-tauri/Cargo.toml
@@ -50,44 +52,57 @@ jobs:
     outputs:
       matrix: ${{ steps.v.outputs.matrix }}
       any: ${{ steps.v.outputs.any }}
-      # der gebaute Stand: mit automatisch gesetzter Arkly-Version der neue Commit, sonst der auslösende
+      # der gebaute Stand: mit automatisch gesetzten Versionen der neue Commit, sonst der auslösende
       sha: ${{ steps.v.outputs.sha }}
     steps:
       - uses: actions/checkout@v4
         with:
           # volle Historie, damit der Versions-Commit auf ein inzwischen weitergeführtes main aufsetzen kann
           fetch-depth: 0
-      - name: Arkly-Version setzen
-        if: github.event_name == 'push'
+      # auch beim manuellen Start mit „alle“: so lassen sich liegengebliebene Notizen jederzeit abarbeiten (mit einer
+      # einzelnen App nicht – sonst bekämen andere Apps neue Versionen, die dieser Lauf nicht baut)
+      - name: Versionen setzen
+        if: github.event_name == 'push' || inputs.app == 'alle'
+        env:
+          NOTIZEN_AUS: ${{ runner.temp }}/notizen.json
         run: |
-          # ein Fehler hier darf die Releases der anderen Apps nie blockieren: dann nur Warnung, Arkly diesmal nicht
-          if ! out=$(node scripts/suite-version.mjs automatisch); then
-            echo "::warning::Arkly-Version nicht automatisch gesetzt (Fehler im Skript, siehe oben) – Arkly wird diesmal nicht gebaut."
-            git reset -q --hard "$GITHUB_SHA"
+          # immer auf dem neuesten main rechnen, nicht auf dem auslösenden Commit: Hat ein früherer Lauf inzwischen
+          # Versionen gesetzt und Notizen gelöscht, zählte dieser Lauf sonst dieselben Notizen ein zweites Mal
+          git fetch -q origin main
+          git reset -q --hard origin/main
+          start=$(git rev-parse HEAD)
+          # ein Fehler hier darf die Releases nie blockieren: dann nur Warnung, gebaut wird, was schon eine neue Version hat
+          if ! out=$(node scripts/versionen-setzen.mjs automatisch); then
+            echo "::warning::Versionen nicht automatisch gesetzt (Fehler im Skript, siehe oben) – die Notizen bleiben liegen; „Build & Release“ von Hand starten, sobald behoben."
+            git reset -q --hard "$start"
+            rm -f "$NOTIZEN_AUS"
             exit 0
           fi
           echo "$out"
-          neu=$(printf '%s\n' "$out" | sed -n 's/^neu=//p')
-          [ -n "$neu" ] || exit 0
+          was=$(printf '%s\n' "$out" | sed -n 's/^zusammenfassung=//p')
+          [ -n "$was" ] || exit 0
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -q -a -m "Arkly $neu: neue Fassungen der Apps (automatisch im Release-Lauf)"
+          git add -A apps package-lock.json .versionen
+          git commit -q -m "Versionen: $was (automatisch im Release-Lauf)"
           for i in 1 2 3; do
             if git push -q origin HEAD:main; then
-              echo "Arkly $neu nach main geschrieben ($(git rev-parse --short HEAD))."
+              echo "Versionen nach main geschrieben ($(git rev-parse --short HEAD))."
               exit 0
             fi
-            # main inzwischen weiter: darauf aufsetzen und erneut versuchen
+            # main inzwischen weiter (z. B. ein neuer PR mit Notiz – die nimmt der nächste Lauf): darauf aufsetzen
             if ! git pull -q --rebase origin main; then
               git rebase --abort 2>/dev/null || true
               break
             fi
           done
-          echo "::warning::Arkly $neu ließ sich nicht nach main schreiben (Schutzregel, Netz oder Konflikt – etwa weil ein PR Arkly inzwischen selbst gehoben hat; dann baut dessen Lauf Arkly). Arkly wird diesmal nicht gebaut. Bitte die Arkly-Version auf main prüfen und ggf. über der aktuellen setzen: node scripts/suite-version.mjs setzen x.y.z"
-          git reset -q --hard "$GITHUB_SHA"
+          echo "::warning::Versionen ließen sich nicht nach main schreiben (Schutzregel, Netz oder Konflikt). Die Notizen bleiben liegen; der nächste Lauf (oder „Build & Release“ von Hand) arbeitet sie ab."
+          git reset -q --hard "$start"
+          rm -f "$NOTIZEN_AUS"
       - id: v
         env:
           EVENT: ${{ github.event_name }}
+          NOTIZEN: ${{ runner.temp }}/notizen.json
           WAHL: ${{ inputs.app }}
           PUBKEY: ${{ secrets.TAURI_UPDATER_PUBKEY }}
         run: |
@@ -125,7 +140,9 @@ jobs:
               echo "$d: Tag $tag existiert bereits – kein neues Release."
               continue
             fi
-            apps=$(echo "$apps" | jq -c --arg d "$d" --arg v "$v" --arg tag "$tag" --arg name "$name" --arg web "$web" '. + [{app: $d, version: $v, tag: $tag, name: $name, web: $web}]')
+            # Sätze aus den Versionsnotizen für die Release-Notiz (falls dieser Lauf die Version gesetzt hat)
+            notiz=$( [ -f "$NOTIZEN" ] && jq -r --arg d "$d" '.[$d] // ""' "$NOTIZEN" || true)
+            apps=$(echo "$apps" | jq -c --arg d "$d" --arg v "$v" --arg tag "$tag" --arg name "$name" --arg web "$web" --arg notiz "$notiz" '. + [{app: $d, version: $v, tag: $tag, name: $name, web: $web, notiz: $notiz}]')
           done
           echo "matrix={\"include\":$apps}" >> "$GITHUB_OUTPUT"
           echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
@@ -171,10 +188,13 @@ jobs:
           projectPath: apps/${{ matrix.app }}
           tauriScript: npx tauri
           tagName: ${{ matrix.tag }}
-          # Tag am gebauten Stand (mit automatisch gesetzter Arkly-Version), nicht am auslösenden Commit
+          # Tag am gebauten Stand (mit den automatisch gesetzten Versionen), nicht am auslösenden Commit
           releaseCommitish: ${{ needs.version.outputs.sha }}
           releaseName: ${{ matrix.name }} v${{ matrix.version }}
-          releaseBody: Windows-Installer (.exe / .msi) und Web-Version (${{ matrix.web }}).
+          releaseBody: |
+            ${{ matrix.notiz }}
+
+            Windows-Installer (.exe / .msi) und Web-Version (${{ matrix.web }}).
           releaseDraft: false
           prerelease: false
           # latest.json mit Signaturen; installierte Apps aktualisieren sich über den NSIS-Installer

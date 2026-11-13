@@ -149,7 +149,7 @@ export function TitleBar({ app, name, dirty, onOpenLog, regeln, onProjekte, zeic
         {regeln && <Nachschlagewerk app={regeln} />}
         <button
           className="titlebar-btn"
-          title="Protokoll (Fehlersuche)"
+          title="Fehlerprotokoll – Meldungen der App für die Fehlersuche"
           onClick={() => {
             setSeen(getEntries().at(-1)?.id ?? 0);
             onOpenLog();
