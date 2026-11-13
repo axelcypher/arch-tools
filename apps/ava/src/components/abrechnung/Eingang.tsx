@@ -131,7 +131,7 @@ export function Eingang() {
   const mail = async (r: RechnungsDatensatz) => {
     const vorlage = e.mail.vorlagen.find((v) => v.id === 'rechnung') ?? e.mail.vorlagen[0];
     if (!vorlage) {
-      await meldung('Keine Mailvorlage', 'Es gibt keine Mailvorlage „Rechnung“ – bitte unter ⚙ Einstellungen › Mailvorlagen anlegen.');
+      await meldung('Keine Mailvorlage', 'Es gibt keine Mailvorlage „Rechnung“ – bitte unter Einstellungen › Mailvorlagen anlegen.');
       return;
     }
     try {
@@ -177,7 +177,7 @@ export function Eingang() {
         <div className="muted small-text" title={ordner}>
           {ordner}
         </div>
-        {fehler && <div className="warning">{fehler}</div>}
+        {fehler && <div className="meldung fehler" role="alert">{fehler}</div>}
         <ul className="list" role="listbox" aria-label="Scans">
           {scans?.map((s, i) => (
             <li

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { bestaetigen, meldung } from '@core/ui/Rueckfrage';
+import { Symbol } from '@core/ui/Symbol';
 import type { Beteiligter } from '../../avaDaten';
 import { gewerkZweistellig } from '../../abrechnung/gewerk';
 import { neueId } from '../../lv/modell';
@@ -95,7 +96,7 @@ export function Beteiligte() {
                     if (await bestaetigen('Beteiligten entfernen?', [b.rolle, b.firma, b.name].filter(Boolean).join(' – '), 'Entfernen', true)) await speichern((a) => ({ ...a, beteiligte: a.beteiligte.filter((x) => x.id !== b.id) }));
                   }}
                 >
-                  ×
+                  <Symbol name="schliessen" />
                 </button>
               </td>
             </tr>
