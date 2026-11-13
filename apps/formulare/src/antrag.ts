@@ -100,6 +100,23 @@ export function einstellungenFuer(global: ExportEinstellungen, ueber: ExportUebe
   return out;
 }
 
+/**
+ * gelesene Abweichungen je Projekt prüfen: nur, was je Projekt abweichen darf (`UEBERSCHREIBBAR`), ohne leere Werte;
+ * Projekte ohne Abweichung entfallen – auch solche, die nur die entfallene Einstellung „Phase“ hatten
+ */
+export function ueberschreibungenAus(roh: unknown): Record<string, ExportUeberschreibung> {
+  const out: Record<string, ExportUeberschreibung> = {};
+  if (!roh || typeof roh !== 'object' || Array.isArray(roh)) return out;
+  for (const [projekt, u] of Object.entries(roh as Record<string, unknown>)) {
+    if (!u || typeof u !== 'object') continue;
+    const o = u as Record<string, unknown>;
+    const sauber = Object.fromEntries(UEBERSCHREIBBAR.filter((k) => typeof o[k] === 'string' && o[k] !== '').map((k) => [k, o[k]])) as ExportUeberschreibung;
+    if (sauber.ziel !== undefined && sauber.ziel !== 'aktiv' && sauber.ziel !== 'pfad') delete sauber.ziel;
+    if (Object.keys(sauber).length) out[projekt] = sauber;
+  }
+  return out;
+}
+
 /** gelesene Einstellungen prüfen und mit der Vorgabe ergänzen */
 export function einstellungenAus(roh: unknown): ExportEinstellungen {
   const o = (roh && typeof roh === 'object' ? roh : {}) as Partial<Record<keyof ExportEinstellungen, unknown>>;

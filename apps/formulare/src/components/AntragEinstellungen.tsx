@@ -1,24 +1,12 @@
-import type { ReactNode } from 'react';
 import { VORGABE_MERKMALE, istVorgabeMerkmal } from '../bedingung';
 import { ART_HINWEIS, vorlageArtWarnung, PLATZHALTER, VORGABE_EXPORT, dateiname, verschieben, vorlageMitAntragsart } from '../antrag';
 import { DokumenteEinstellungen } from './DokumenteEinstellungen';
+import { Karte } from './EinstellungsKarte';
 import { Griff, useSortieren } from './Sortieren';
 import { namensschemaVon, useAntrag } from '../antragStore';
 import { useFormulare } from '../store';
 import { waehleOrdner } from '../dateisystem';
 import { Symbol } from './Symbol';
-
-function Karte({ titel, text, children }: { titel: string; text?: ReactNode; children: ReactNode }) {
-  return (
-    <section className="es-karte">
-      <div className="es-karte-kopf">
-        <h3>{titel}</h3>
-      </div>
-      {text && <p className="muted small-text">{text}</p>}
-      {children}
-    </section>
-  );
-}
 
 /**
  * Einstellungen für Antrag und Export: wo die Anträge im Projektordner liegen, welche Antragsarten es gibt, wie
@@ -160,7 +148,7 @@ export function AntragEinstellungen() {
 
       <Karte
         titel="Antragsmerkmale"
-        text="Merkmale eines Antrags, von denen Formularteile und Dokumente abhängen können (z. B. Gebäudeklasse). Jeder Antrag hat seine eigenen Werte (im Antragsumfang gewählt); ein neuer Antrag übernimmt einmalig die Vorgabe – spätere Änderungen hier ändern bestehende Anträge nicht. Bedingungen stellst du in der Gliederung (Anpassen) und im Katalog ein."
+        text="Merkmale eines Antrags, von denen Formularteile und Dokumente abhängen können (z. B. Gebäudeklasse). Jeder Antrag hat seine eigenen Werte (im Antragsumfang gewählt); ein neuer Antrag übernimmt einmalig die Vorgabe – spätere Änderungen hier ändern bestehende Anträge nicht. Bedingungen stellst du in der Gliederung (Anpassen) und bei den Antragsdokumenten ein."
       >
         <table className="es-tabelle es-katalog" data-sortier-liste="">
           <thead>

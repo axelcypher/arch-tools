@@ -3,7 +3,7 @@ import { dateinameZerlegen, planNummerAus, VORGABE_NAMENSSCHEMA } from '@core/na
 import type { UmfangEintrag } from './antrag';
 import { abschnittAus, abschnittVon, aktuellsterAntrag, ansichtVon, aufnahmeVorschlag, eingereichtAus, formularSchluessel, neuerAntrag } from './antrag';
 import { merkmalVorgaben } from './bedingung';
-import { aenderungAnwenden, alsAngaben, bereitAnwenden, klein, stabil, umfangAnwenden, VORGABE_EXPORT, einstellungenAus, entferntSeitEinreichung, imStand, nachEinreichungErwartet, nameNachFormat, seitEinreichung, standAus, vorlageMitAntragsart, datumAusName, standVergleich, antragsNameFehler, artDerFassung, bereitschaft, ordnerPasst, anzeigeName, dateiImAntrag, dateiname, einstellungenFuer, externStatus, fassungenAus, formularStatus, formularVon, naechsteFassung, passt, projektDateiAus, quelleVon, standardFassung, projektStatusAus, projektStatusLesen, schlimmsterStatus, statusGesamt, verschieben, vorlagenAus, vorlageFuer, umfangAusKatalog, VORGABE_KATALOG } from './antrag';
+import { ueberschreibungenAus, aenderungAnwenden, alsAngaben, bereitAnwenden, klein, stabil, umfangAnwenden, VORGABE_EXPORT, einstellungenAus, entferntSeitEinreichung, imStand, nachEinreichungErwartet, nameNachFormat, seitEinreichung, standAus, vorlageMitAntragsart, datumAusName, standVergleich, antragsNameFehler, artDerFassung, bereitschaft, ordnerPasst, anzeigeName, dateiImAntrag, dateiname, einstellungenFuer, externStatus, fassungenAus, formularStatus, formularVon, naechsteFassung, passt, projektDateiAus, quelleVon, standardFassung, projektStatusAus, projektStatusLesen, schlimmsterStatus, statusGesamt, verschieben, vorlagenAus, vorlageFuer, umfangAusKatalog, VORGABE_KATALOG } from './antrag';
 
 describe('Dateinamen aus der Vorlage', () => {
   const datum = new Date(2026, 10, 10);
@@ -23,6 +23,15 @@ describe('Dateinamen aus der Vorlage', () => {
   it('Name des Formulars ohne Nummer und Jahr', () => {
     expect(anzeigeName('005-Bauantrag (2026)')).toBe('Bauantrag');
     expect(anzeigeName('Baubeschreibung')).toBe('Baubeschreibung');
+  });
+
+  it('Abweichungen je Projekt: nur Erlaubtes, leere entfallen – auch nur „Phase“ (entfallene Einstellung)', () => {
+    expect(ueberschreibungenAus({ BS9: { phase: 'EP' }, HVO: { phase: 'EP', zielpfad: 'TÖB/Formulare', namensvorlage: '' }, X: null, Y: { ziel: 'woanders' } })).toEqual({
+      HVO: { zielpfad: 'TÖB/Formulare' },
+    });
+    expect(ueberschreibungenAus({ A: { ziel: 'pfad', antragsordner: 'Anträge' } })).toEqual({ A: { ziel: 'pfad', antragsordner: 'Anträge' } });
+    expect(ueberschreibungenAus(null)).toEqual({});
+    expect(ueberschreibungenAus(['x'])).toEqual({});
   });
 
   it('Einstellungen je Projekt überschreiben nur, was gesetzt ist', () => {

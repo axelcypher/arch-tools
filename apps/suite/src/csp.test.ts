@@ -21,9 +21,8 @@ describe('CSP der Rahmen-App', () => {
     expect(richtlinie('connect-src')).toEqual(expect.arrayContaining(['ipc:', 'http://ipc.localhost']));
   });
 
-  it('kein useHttpsScheme – sonst gingen die Befehle an https://ipc.localhost, das connect-src nicht erlaubt', () => {
+  it('mit useHttpsScheme gehen die Befehle an https://ipc.localhost – dann muss connect-src auch das erlauben', () => {
     const https = (conf.app.windows ?? []).some((w) => w.useHttpsScheme);
-    if (https) expect(richtlinie('connect-src')).toContain('https://ipc.localhost');
-    else expect(https).toBe(false);
+    expect(!https || richtlinie('connect-src').includes('https://ipc.localhost')).toBe(true);
   });
 });

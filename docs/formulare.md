@@ -458,18 +458,21 @@ Einstellungen und des Namensschemas (`packages/core/src/fassung.ts`, auch in der
   Buchstabe; „2026“ zählt nicht), setzt der Export dort `{Art}` ein (`vorlageMitAntragsart`, in
   `wirksameEinstellungen`). Gespeichert bleibt die Vorlage, wie sie ist; die Einstellungen (global und je Projekt)
   zeigen dann einen Hinweis mit „Vorlage anpassen“. `{Phase}` steht auch an
-  anderer Stelle für die Antragsart; die Einstellung „Phase“ gibt es nicht mehr. Weitere Platzhalter: `{Antrag}`,
+  anderer Stelle für die Antragsart; die Einstellung „Phase“ gibt es nicht mehr (alte Abweichungen je Projekt, die
+  nur sie enthielten, entfallen beim Lesen). Weitere Platzhalter: `{Antrag}`,
   `{Formular}`, `{Kennung}`, `{Stand}`. `{Name}` ist der Titel im Antragsumfang, sonst der Formularname
   ohne laufende Nummer und Jahr.
 - **Einstellungen › Antrag & Export:** Antragsordner, Antragsarten (die erste ist der Standard; dazu die des
   Namensschemas), Namensvorlage, Ziel (aktive Antragsfassung oder fester Ordner, z. B.
   `TÖB/{Antrag}/Formulare`), Ordner der Berechnungen, Vorlagenordner für neue Formulare, Antragsvorlagen und die
-  **Antragsdokumente** (der Katalog): eine Liste mit Kurzbeschreibung je Dokument („Formular „Bauantrag““, „Datei aus
-  Planung/Berechnungen · *Flächen*“) und den Vorlagen, zu denen es gehört; ein Klick öffnet die Angaben als
-  beschriftetes Formular – Bezeichnung, Art (Formular des Projekts, Datei aus dem Projektordner, Plansatz – je mit
-  Erklärung), Formular bzw. Ordner der Quelle und Muster des Dateinamens (mit Vorgabe als Platzhalter und Hinweis),
-  „Gehört zu den Vorlagen“, „Erforderlich“ (immer bzw. mit Bedingung) und „Dokument entfernen …“ (mit Rückfrage; in
-  Projekten bleibt es im Antragsumfang). Je Projekt lassen sich Antragsordner, Namensvorlage und Ziel abweichend
+  **Antragsdokumente** (der Katalog): eine Liste mit Kurzbeschreibung je Dokument („Formular des Projekts“, „Formular
+  mit „Statisti“ im Namen“, „Datei aus Planung/Berechnungen · *Flächen*“) und den Vorlagen, zu denen es gehört (lange
+  Titel und Vorlagen werden gekürzt); ein Klick öffnet die Angaben als beschriftetes Formular – Bezeichnung, Art
+  (Formular des Projekts, Datei aus dem Projektordner, Plansatz – je mit Erklärung), Formular bzw. Ordner der Quelle
+  und Muster des Dateinamens (mit Vorgabe als Platzhalter und Hinweis), „Gehört zu den Vorlagen“, „Erforderlich“
+  (immer bzw. mit Bedingung) und „Dokument entfernen …“ (mit Rückfrage; in Projekten bleibt es im Antragsumfang).
+  „Schließen“ oder Esc schließt nur die Angaben, der Fokus geht zurück auf die Zeile; nach dem Entfernen steht er auf
+  dem nächsten Dokument. Ohne Dokumente steht ein Hinweis statt der Liste. Je Projekt lassen sich Antragsordner, Namensvorlage und Ziel abweichend
   einstellen (Antragsdaten › „Export für …“, „Vorgabe verwenden“ setzt zurück) – wie die angezeigten
   Pfade im Projektordner.
 - **Antragsdaten** (Navigation, rechte Hälfte neben „Projektdaten“): alles, was nur für den aktiven Antrag gilt –
@@ -537,9 +540,11 @@ Einstellungen und des Namensschemas (`packages/core/src/fassung.ts`, auch in der
   angelegte Projektdatei bekommt wie im Projektordner-Tool eine Kopie des Büro-Schemas.
 - **Antragsvorlagen** (Einstellungen › Antrag & Export): benannte Zusammenstellungen von Katalogdokumenten je Antragsart
   – Vorgabe „Bauantrag“ (BAUA), „Bauvoranfrage“ (BAUVA), „Denkmalrechtliche Erlaubnis“ (DENK). Welche Dokumente
-  dazugehören, wird bei den Antragsdokumenten angekreuzt: über der Liste die Vorlage wählen (oder „n Dokumente“ in der
-  Vorlagen-Tabelle), dann je Dokument ein Häkchen; ein neues Dokument gehört gleich zur gewählten Vorlage. Die
-  Reihenfolge ist die des Katalogs. „Vorgabe wiederherstellen“ (nur bei Abweichung) fragt nach. Beim Festlegen des
+  dazugehören, wird bei den Antragsdokumenten angekreuzt: über der Liste „Vorlage zusammenstellen“ wählen (oder „n
+  Dokumente“ in der Vorlagen-Tabelle, das auch den Fokus dorthin setzt), dann je Dokument ein Häkchen; ein neues
+  Dokument gehört gleich zur gewählten Vorlage. Die Reihenfolge ist die des Katalogs. Eine Vorlage entfernen und
+  „Vorgabe wiederherstellen“ (nur bei Abweichung) fragen nach; das Zurücksetzen der Antragsdokumente lässt die Vorlagen,
+  wie sie sind (auch solche, die noch aus den früheren „Vorgewählt“-Häkchen abgeleitet sind). Beim Festlegen des
   Antragsumfangs wird die Vorlage zur Antragsart der aktiven Fassung vorgeschlagen („BAUA 2“ → Bauantrag, „BVA“ →
   Bauvoranfrage). Gibt es zur Art keine Vorlage (BAUF, ABGE, ENTW …), wird nichts vorgewählt – der Bauantrag passt dort
   nicht –, die Auswahl bittet um eine Wahl, „Antragsumfang festlegen“ ist bis dahin aus. „Dokument hinzufügen › Aus
