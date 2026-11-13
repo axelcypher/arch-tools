@@ -552,7 +552,9 @@ Umsetzung (`apps/ordner`): `src/kataster/kataster.ts` (Einstellungen, Auslesen d
 `katasterexport.py` (Processing-Skript, wird mitgeliefert und mit `qgis_process run katasterexport.py --
 AUFTRAG=<json>` ausgeführt). Die Hülle (`packages/core/tauri/qgis.rs`) startet nur ein Programm namens
 `qgis_process…`, legt Skript, Auftrag und Vorlage in einen eigenen temporären Ordner, lässt QGIS dort hineinschreiben
-und legt die Pläne danach am Ziel ab – nur neu, nie überschreibend.
+und legt die Pläne danach am Ziel ab – nur neu, nie überschreibend, und nur Pläne, die das Skript als gelungen meldet
+(`ERGEBNIS … "ok": true`). Antwortet QGIS nicht, beendet die Hülle es nach einem Zeitlimit (je Plan 3 Minuten,
+mindestens 5) und meldet das, statt den Dialog zu sperren.
 
 ## Desktop und Browser
 
