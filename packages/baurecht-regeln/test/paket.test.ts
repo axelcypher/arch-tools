@@ -351,7 +351,8 @@ const AUSLOESER: ReadonlySet<string> = (() => {
 describe('Fallmatrix', () => {
   // nur voll sinnvoll: „Herabstufen“ und „Text“ prüfen je Paragraf den ersten grünen Fall – eine Stichprobe prüfte andere
   // Fälle als die CI und deckte nicht dasselbe ab
-  it.runIf(VOLL)('kein falsches Grün: Ergänzen, Herabstufen, Text, Begründung', { timeout: MATRIX_ZEIT }, () => {
+  // voll etwa 10 min (Auslöser je grünem Pfad) – deshalb die lange Zeitgrenze
+  it.runIf(VOLL)('kein falsches Grün: Ergänzen, Herabstufen, Text, Begründung', { timeout: MATRIX_ZEIT_LANG }, () => {
     const fehler: string[] = [];
     const melde = (t: string) => {
       if (fehler.length < 40) fehler.push(t);
