@@ -1,5 +1,5 @@
 import type { KeyboardEvent, ReactNode } from 'react';
-import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { PkEintrag, PkGruppe, PkWert } from '../forma/projektkarte';
 import { pkArt, pkEintrag, pkMoeglichkeiten, pkSchluessel, pkTitel, pkWertVon } from '../forma/projektkarte';
 import { anschrift, aufbau, einheit, feldTitel, gruppenReihen, istAdresse, istAnzahl, nutzungsarten, pruefung, zusammenfassung } from '../projektkarteAufbau';
@@ -140,6 +140,9 @@ function EigeneAnsicht({ karte }: { karte: OffeneKarte }) {
   const [ansicht, setAnsicht] = useAnsicht(KARTEN_ANSICHT);
   const [editor, setEditor] = useState(false);
   const katalog = useMemo(() => kartenKatalog(karte), [karte.karte]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Verknüpfbar? – je Kennung der Eintrag über eine Map (das Auswahlfenster fragt für viele Paare); stabil, solange die Karte gleich bleibt
+  const eintraege = useMemo(() => new Map(karte.karte.eintraege.map((e) => [`${e.gruppe}:${e.id}`, e])), [karte.karte]);
+  const verknuepfbar = useCallback((a: FeldDef, b: FeldDef) => kartenVerknuepfbar(eintraege.get(a.id), eintraege.get(b.id)), [eintraege]);
   const feld = (f: FeldDef, o: { label: string; verknuepft: string[] }) => {
     const [g, id] = f.id.split(':').map(Number);
     const gruppe = karte.karte.gruppen.find((x) => x.id === g);
@@ -206,18 +209,12 @@ function EigeneAnsicht({ karte }: { karte: OffeneKarte }) {
           ansicht={ansicht}
           onChange={setAnsicht}
           onSchliessen={() => setEditor(false)}
-          verknuepfbar={(a, b) => kartenVerknuepfbar(eintragVon(karte, a.id), eintragVon(karte, b.id))}
+          verknuepfbar={verknuepfbar}
         />
       )}
     </section>
   );
 }
-
-/** Eintrag der Projektkarte zu einer Kennung „Gruppe:Eintrag“ */
-const eintragVon = (karte: OffeneKarte, kennung: string) => {
-  const [g, id] = kennung.split(':').map(Number);
-  return karte.karte.eintraege.find((e) => e.gruppe === g && e.id === id);
-};
 
 /** Leere Adressgruppen mit den Vorgaben der Stammdaten füllen */
 function vorgabenFuer(karte: OffeneKarte, adressen: Adresse[], vorgaben: Record<string, string>): KartenWert[] {

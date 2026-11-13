@@ -374,6 +374,10 @@ bricht sonst ab.
   `<Konfigurationsordner>/baurecht`, Verknüpfungen werden aufgelöst. Das schützt vor Fehlbedienung, ist aber keine
   Sicherheitsgrenze gegenüber der Webansicht, solange die gemeinsamen Dateibefehle der Suite (`read_binary_file`,
   `write_binary_file`) beliebige Pfade erlauben; die Sicherheit des Regelpakets beruht auf der Signatur.
+- Ablage und Speicherort der Einstellungen: Bei einer Netzwerkinstallation liegt die Ablage auf dem Netzlaufwerk und
+  gilt für alle Rechner des Büros. Beim Wechsel des Speicherorts zieht sie nicht mit – sie ist nur ein Zwischenspeicher,
+  die Fassungen werden am neuen Ort neu geholt. Im Notbetrieb (Netzlaufwerk nicht erreichbar) ist sie nicht verfügbar;
+  neu geholte Fassungen werden dann nicht abgelegt.
 - Netzfehler: Nur Verbindungsfehler und Zeitüberschreitungen werden wiederholt, nicht „Host nicht freigegeben“ o. Ä.
 - Kern im gemeinsamen Unterbau: `packages/core/src/recht/` (Adapter, Prüfsummen, Rechtsstand),
   `packages/core/src/baurecht/` (Format, Bedingungen, Auswertung, Projektdatei, Geodienste).

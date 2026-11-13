@@ -217,16 +217,22 @@ fn netz_hosts_erweitern(index: String, signatur: String) -> Result<usize, String
 }
 
 /// Wurzel der Ablage: <Konfigurationsordner>/baurecht – der Konfigurationsordner wie im Frontend
-/// (packages/core/src/platform/konfig.ts): der Ordner aus %APPDATA%\arch-tools\konfig.json oder ohne eigene Wahl
-/// dieser lokale Ordner selbst
+/// (zeigerAus in packages/core/src/platform/konfig.ts): bei einer Netzwerkinstallation der Ordner aus
+/// %APPDATA%\arch-tools\konfig.json, als Einzelplatz (`modus: "einzelplatz"` oder ohne Ordner) dieser lokale Ordner
 fn ablage_wurzel(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String> {
     let basis = tauri::Manager::path(app).config_dir().map_err(|e| e.to_string())?.join("arch-tools");
-    let eigen = std::fs::read_to_string(basis.join("konfig.json"))
-        .ok()
-        .and_then(|t| serde_json::from_str::<serde_json::Value>(&t).ok())
-        .and_then(|v| v.get("ordner").and_then(|o| o.as_str()).map(|s| s.trim().to_string()))
-        .filter(|s| !s.is_empty());
-    Ok(eigen.map(std::path::PathBuf::from).unwrap_or(basis).join("baurecht"))
+    let zeiger = std::fs::read_to_string(basis.join("konfig.json")).ok().and_then(|t| serde_json::from_str::<serde_json::Value>(&t).ok());
+    Ok(netz_ordner(zeiger.as_ref()).map(std::path::PathBuf::from).unwrap_or(basis).join("baurecht"))
+}
+
+/// Ordner der Netzwerkinstallation aus dem Zeiger – None als Einzelplatz; wie zeigerAus im Frontend: ältere Zeiger
+/// kennen nur `ordner` (gesetzt = Netzwerkinstallation), `modus: "einzelplatz"` gilt auch mit gesetztem Ordner
+fn netz_ordner(zeiger: Option<&serde_json::Value>) -> Option<String> {
+    let z = zeiger?;
+    if z.get("modus").and_then(|m| m.as_str()) == Some("einzelplatz") {
+        return None;
+    }
+    z.get("ordner").and_then(|o| o.as_str()).map(|s| s.trim().to_string()).filter(|s| !s.is_empty())
 }
 
 /// Pfad der Ablage prüfen: absolut, nur .json/.sig, unterhalb der Wurzel, ohne „..“ – und der schon vorhandene Teil
@@ -350,6 +356,13 @@ mod netz_tests {
         assert!(ablage_pfad(&wurzel, &s(&wurzel.join("..").join("x.json"))).is_err());
         assert!(ablage_pfad(&wurzel, "baurecht/x.json").is_err());
         assert!(ablage_pfad(&wurzel, &s(&wurzel)).is_err());
+        // Wurzel aus dem Zeiger wie zeigerAus im Frontend: Einzelplatz auch mit gesetztem Ordner, ältere Zeiger nur `ordner`
+        let z = |t: &str| serde_json::from_str::<serde_json::Value>(t).unwrap();
+        assert_eq!(netz_ordner(Some(&z(r#"{"modus":"netzwerk","ordner":" N:\\buero "}"#))).as_deref(), Some("N:\\buero"));
+        assert_eq!(netz_ordner(Some(&z(r#"{"ordner":"N:\\buero"}"#))).as_deref(), Some("N:\\buero"));
+        assert_eq!(netz_ordner(Some(&z(r#"{"modus":"einzelplatz","ordner":"N:\\buero"}"#))), None);
+        assert_eq!(netz_ordner(Some(&z(r#"{"modus":"netzwerk","ordner":"  "}"#))), None);
+        assert_eq!(netz_ordner(None), None);
         // Verknüpfung in der Ablage, die hinaus zeigt
         #[cfg(unix)]
         {
