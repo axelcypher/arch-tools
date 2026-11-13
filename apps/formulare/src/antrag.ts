@@ -1600,7 +1600,7 @@ export function formularVon<T extends { pfad: string; name: string; kennung?: st
 /* ---------- Vollständigkeit ---------- */
 
 /**
- * grau: fehlt · rot: unvollständig · gelb: ausgefüllt, aber nicht (aktuell) im Antragsordner · grün: aktuell ·
+ * roter Ring: fehlt · rot: unvollständig · gelb: ausgefüllt, aber nicht (aktuell) im Antragsordner · grün: aktuell ·
  * entfällt: nach den Antragsmerkmalen nicht erforderlich
  */
 export type Status = 'fehlt' | 'unvollstaendig' | 'offen' | 'aktuell' | 'entfaellt';

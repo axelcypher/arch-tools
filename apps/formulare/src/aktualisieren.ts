@@ -130,10 +130,11 @@ export async function planFuer(eintrag: FormularEintrag, pk: Projektkarte, alt?:
 export async function planAusfuehren(p: UnterlagenPlan): Promise<string> {
   const wahl = p.schritte.filter((s) => s.vorgewaehlt);
   const bleiben = p.schritte.length - wahl.length;
-  const rest = bleiben ? `, ${bleiben} von Hand bzw. anders ausgefüllte bleiben` : '';
+  const rest = bleiben ? `, ${bleiben} von Hand bzw. anders ausgefüllte ${bleiben === 1 ? 'bleibt' : 'bleiben'}` : '';
+  const felder = `${wahl.length} ${wahl.length === 1 ? 'Feld' : 'Felder'}`;
   if (p.offen) {
     uebernehmenOffen(wahl, p.auto);
-    return `${p.eintrag.name}: ${wahl.length} Feld(er) eingetragen (noch nicht gespeichert)${rest}`;
+    return `${p.eintrag.name}: ${felder} eingetragen (noch nicht gespeichert)${rest}`;
   }
   const z = nachUebernahme(zustandVon(p.eintrag.pfad), wahl, p.auto, p.wert);
   if (!wahl.length) {
@@ -145,7 +146,7 @@ export async function planAusfuehren(p: UnterlagenPlan): Promise<string> {
   if (ergebnis === 'nurLesen') return `${p.eintrag.name}: lässt sich nicht verlustfrei schreiben – nicht aktualisiert`;
   if (ergebnis === 'eingereicht') return `${p.eintrag.name}: Antrag eingereicht und gesperrt – nicht aktualisiert`;
   await useAntrag.getState().zustaendeSetzen({ [formularDatei(p.eintrag.pfad)]: z });
-  return `${p.eintrag.name}: ${wahl.length} Feld(er) aktualisiert${ergebnis === 'entwurf' ? ' (in den ungespeicherten Eingaben)' : ''}${rest}`;
+  return `${p.eintrag.name}: ${felder} aktualisiert${ergebnis === 'entwurf' ? ' (in den ungespeicherten Eingaben)' : ''}${rest}`;
 }
 
 /** „Daten aktualisieren“ für ein Formular aus dem Kontextmenü: geöffnet → Dialog, sonst gleich ausführen */
@@ -163,7 +164,7 @@ export async function formularAktualisieren(eintrag: FormularEintrag) {
     if (!pk) return;
     const p = await planFuer(eintrag, pk);
     if (!p) return;
-    if (!p.auto.size) return s.setMeldung({ art: 'info', text: `${eintrag.name}: keine Felder aus der Projektkarte.` });
+    if (!p.auto.size) return s.setMeldung({ art: 'info', text: `${eintrag.name}: keine Felder aus den Projektdaten.` });
     const text = await planAusfuehren(p);
     useFormulare.getState().setMeldung({ art: 'info', text: `${text}.` });
     useFormulare.getState().ordnerNeuLesen();

@@ -1165,7 +1165,8 @@ button.icon.fo-gl-zaehlt.an {
 .pk-nav-zeile > .pk-nav-eintrag {
   flex: 1;
   min-width: 0;
-  padding-right: 48px;
+  /* Platz für Favorit und Ausblenden (je 24 px) */
+  padding-right: 56px;
 }
 .pk-nav-aktionen {
   position: absolute;
@@ -1256,7 +1257,8 @@ button.icon.fo-gl-zaehlt.an {
 
 .pk-editor {
   flex: 1;
-  min-width: 0;
+  /* bei knapper Breite schrumpft zuerst die Leiste der Gruppen (bis 180 px), dann erst der Inhalt */
+  min-width: 280px;
   overflow-y: auto;
   padding: 0 28px 48px;
   /* Raster und Vorschau richten sich nach dem Platz neben den Leisten, nicht nach dem Fenster */

@@ -37,6 +37,7 @@ import { useVorbelegung } from './merkmalAbgleich';
 import type { Ansicht, OffenesFormular } from './store';
 import { ZOOMSTUFEN, bearbeitungGesperrt, dokumenteGeaendert, istGeaendert, kannVor, kannZurueck, karteGeaendert, useFormulare } from './store';
 import { kannRueckgaengig, kannWiederholen } from './verlauf';
+import { anzahl } from './text';
 
 const ANSICHTEN: { id: Ansicht; label: string; title: string }[] = [
   { id: 'seite', label: 'Formular', title: 'Die Seiten wie auf Papier – so werden sie gedruckt' },
@@ -53,7 +54,6 @@ function sperrgrund(o: OffenesFormular): string | null {
 }
 
 /** „1 Feld“, „3 Felder“ */
-const anzahl = (n: number, eins: string, mehr: string) => `${n} ${n === 1 ? eins : mehr}`;
 
 const uhrzeit = (ms: number) => new Date(ms).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
 

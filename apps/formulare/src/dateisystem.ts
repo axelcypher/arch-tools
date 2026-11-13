@@ -441,10 +441,10 @@ export class SpeicherDateisystem implements Dateisystem {
       if (a.spalte === 'texte') {
         pkBytes(a.neu);
         if (e.typ !== 1 && e.typ !== 2) throw new Error(`Eintrag ${a.gruppe}/${a.id} ist kein Text`);
-        if (e.text !== a.alt) throw new Error(`Die Projektkarte wurde inzwischen geändert (${e.titel})`);
+        if (e.text !== a.alt) throw new Error(`Die Projektdaten wurden inzwischen geändert (${e.titel})`);
       } else {
         if (![4, 8, 16].includes(e.typ)) throw new Error(`Eintrag ${a.gruppe}/${a.id} ist keine Auswahl`);
-        if (e.zahl !== a.alt) throw new Error(`Die Projektkarte wurde inzwischen geändert (${e.titel})`);
+        if (e.zahl !== a.alt) throw new Error(`Die Projektdaten wurden inzwischen geändert (${e.titel})`);
       }
       return { e, a };
     });

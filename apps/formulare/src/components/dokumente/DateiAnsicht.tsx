@@ -65,7 +65,7 @@ export function DateiKopf({
           Neu laden
         </button>
         <button title="Mit dem zugehörigen Programm öffnen" onClick={() => void oeffnePfad(verbinde(datei.root, datei.pfad)).catch(() => undefined)}>
-          Extern öffnen
+          Mit Programm öffnen
         </button>
       </div>
       {hinweis && <div className="dok-hinweis">{hinweis}</div>}

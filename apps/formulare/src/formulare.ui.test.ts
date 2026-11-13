@@ -10,6 +10,7 @@ import { cp1252Lesen, cp1252Schreiben } from './forma/cp1252';
 import type { Projektkarte } from './forma/projektkarte';
 import { sperreVermerken } from './eigeneSperren';
 import { kartenVerknuepfbar, mitAenderungen, useFormulare } from './store';
+import { useAktualisieren } from './aktualisieren';
 import { einstiegsAktionen, farbschemaWechseln } from '@core/ui/rauchtest';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -251,7 +252,7 @@ describe('Formulare', () => {
     sperreVermerken('C:/FORMA', 'BS9/001-Muster.frmtmp', alt);
     const host = await render();
     expect(ds.dateien.has(SPERRE)).toBe(false);
-    expect(host.textContent).toContain('Nach einem Absturz liegen gebliebene Sperre(n) entfernt: 001-Muster.');
+    expect(host.textContent).toContain('Nach einem Absturz liegen gebliebene Sperre entfernt: 001-Muster.');
     // fremde Sperren mit anderem Inhalt bleiben unberührt
     const fremd = cp1252Schreiben('[Zugriff]\r\nUser=kollegin\r\nComputer=CAD02\r\nAngemeldet=09.11.2026 08:00:00\r\nInGebrauch=1111\r\n\r\n');
     ds.dateien.set(SPERRE, fremd);
@@ -356,7 +357,7 @@ describe('Formulare', () => {
 
     host = await oeffneMuster(await neustart());
     expect(feld(host, 'Bauherrschaft', 1).value).toBe('Musterweg 7');
-    expect(host.textContent).toContain('2 nicht gespeicherte Eingabe(n) vom letzten Mal wiederhergestellt');
+    expect(host.textContent).toContain('2 nicht gespeicherte Eingaben vom letzten Mal wiederhergestellt');
     expect(ds.dateien.get(FORMULAR)).toBe(MUSTER);
 
     // Rückgängig über den Neustart hinweg – erst das Kästchen, dann die Straße
@@ -884,6 +885,8 @@ describe('Formulare', () => {
   });
 
   it('Schnellwahl als gemeinsamer Dialog: Fokus im Suchfeld, ↓ markiert und rollt den Treffer ins Bild, Esc schließt, Fokus zurück', async () => {
+    // keine Rückfrage „Unterlagen aktualisieren“ aus einem früheren Test (sonst bliebe ein Dialog offen)
+    useAktualisieren.setState({ unterlagen: null });
     const host = await render();
     await projektOeffnen(host, 'BS9');
     const suchen = knopf(host, 'Suchen');
@@ -919,8 +922,21 @@ describe('Formulare', () => {
     await warte();
     await warte();
     expect(host.querySelector('.fo-schnellwahl')).toBeNull();
-    require('node:fs').writeFileSync('/tmp/claude-0/-home-user-arch-tools/5266d1f7-fd7d-5c54-ac2e-a8bbc1444fa5/scratchpad/debug.txt', [document.querySelectorAll('.modal').length, suchen.isConnected, suchen.outerHTML.slice(0,200), document.activeElement?.outerHTML.slice(0, 200)].join('\n'));
     expect(document.activeElement).toBe(suchen);
+  });
+
+  it('Breite der Navigation: Griff aus core – per Tastatur (←/→) und Doppelklick (Vorgabe) bedienbar', async () => {
+    const host = await render();
+    await projektOeffnen(host, 'BS9');
+    const griff = host.querySelector<HTMLElement>('.nav .leiste-griff')!;
+    expect(griff.getAttribute('role')).toBe('separator');
+    expect(griff.tabIndex).toBe(0);
+    expect(griff.getAttribute('aria-label')).toBe('Breite der Navigation ändern');
+    const vorher = useFormulare.getState().leisteBreite;
+    taste(griff, 'ArrowRight');
+    expect(useFormulare.getState().leisteBreite).toBe(vorher + 16);
+    act(() => void griff.dispatchEvent(new MouseEvent('dblclick', { bubbles: true })));
+    expect(useFormulare.getState().leisteBreite).toBe(300);
   });
 
   it('Menüknopf: aria-expanded, Esc und Tab schließen das Menü und geben den Fokus an den Knopf zurück', async () => {

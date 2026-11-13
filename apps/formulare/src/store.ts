@@ -25,6 +25,7 @@ import type { Adresse, EigeneAdresse } from './adressbuch';
 import { adressenAusKarte, eigeneAdressenAus, wirksameAdressen, zusammenfuehren } from './adressbuch';
 import { xlsxLesen } from './dokumente/xlsx';
 import { bytesGleich as gleich, lesen, schreiben } from './speicher';
+import { anzahl } from './text';
 import type { Angabe, ProjektdatenEintrag } from './projektdaten';
 import { IN_PROJEKTKARTE, projektdatenLesen } from './projektdaten';
 import type { OapInhalt } from './oap';
@@ -893,7 +894,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       offen,
       haupt: 'formular',
       konflikt: false,
-      meldung: wiederhergestellt ? { art: 'info', text: `${wiederhergestellt} nicht gespeicherte Eingabe(n) vom letzten Mal wiederhergestellt.` } : null,
+      meldung: wiederhergestellt ? { art: 'info', text: `${anzahl(wiederhergestellt, 'nicht gespeicherte Eingabe', 'nicht gespeicherte Eingaben')} vom letzten Mal wiederhergestellt.` } : null,
     });
   };
 
@@ -952,11 +953,11 @@ export const useFormulare = create<FormulareState>()((set, get) => {
     if (!ds || !ablage || !werte.size || get().projekt !== projekt) return null;
     const o = get().oap;
     if (o === 'fehlt') {
-      void get().stammdatenErfassen('Die Projektkarte ist gespeichert. Für die Projektstammdaten fehlt im Projektordner noch die Projektdatei (.oap) – mit diesen Angaben wird sie angelegt.');
+      void get().stammdatenErfassen('Die Projektdaten sind gespeichert. Für die Projektstammdaten fehlt im Projektordner noch die Projektdatei (.oap) – mit diesen Angaben wird sie angelegt.');
       return null;
     }
     if (!o) return null;
-    let anzahl = 0;
+    let geaendertAnzahl = 0;
     // Koordinaten zur geänderten Adresse des Vorhabens vorab abfragen (das Schreiben selbst liest frisch und ist synchron)
     const lage = (await mitKoordinaten(metaMit(o.inhalt.meta, werte))).meta.koordinaten;
     const geschrieben = await get().oapAendern((roh) => {
@@ -964,7 +965,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       // nur, was sich unterscheidet – steht schon alles so darin, bleibt die Datei unberührt
       const vorher = angabenAus(bisher);
       const geaendert = new Map([...werte].filter(([a, w]) => (vorher.get(a) ?? '').trim() !== w.trim()));
-      anzahl = geaendert.size;
+      geaendertAnzahl = geaendert.size;
       if (!geaendert.size) return roh;
       const meta = metaMit(bisher, geaendert);
       if (lage && lage.adresse === adresseSchluessel(meta.adresse)) meta.koordinaten = lage;
@@ -972,8 +973,8 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       return { ...roh, meta };
     });
     if (!geschrieben) return null;
-    log.info(`Projektdatei ${o.pfad}: ${anzahl} Angabe(n)`);
-    return `Projektdatei mitgeführt (${anzahl} Angabe(n))`;
+    log.info(`Projektdatei ${o.pfad}: ${anzahl(geaendertAnzahl, 'Angabe', 'Angaben')}`);
+    return `Projektdatei mitgeführt (${anzahl(geaendertAnzahl, 'Angabe', 'Angaben')})`;
   };
 
   /** Vorbelegung der Stammdaten aus der Projektkarte (alle Angaben mit Gegenstück) */
@@ -1111,7 +1112,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       if (verwaist.length) {
         const namen = verwaist.map((v) => v.split('/').pop()!.replace(/\.frmtmp$/i, '')).join(', ');
         log.info(`Verwaiste eigene Sperren entfernt: ${verwaist.join(', ')}`);
-        set({ meldung: { art: 'info', text: `Nach einem Absturz liegen gebliebene Sperre(n) entfernt: ${namen}.` } });
+        set({ meldung: { art: 'info', text: `Nach einem Absturz liegen gebliebene ${verwaist.length === 1 ? 'Sperre' : 'Sperren'} entfernt: ${namen}.` } });
       }
       set({ sucht: true });
       try {
@@ -1493,7 +1494,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
         const karte = await ds.projektkarteLesen(projekt.root, `${projekt.ordner}/sj_prokarte.sdb`);
         if (get().projekt !== projekt) return;
         if (!karte) {
-          set({ karte: null, meldung: { art: 'info', text: `${projekt.ordner} hat keine Projektkarte.` } });
+          set({ karte: null, meldung: { art: 'info', text: `${projekt.ordner} hat keine Projektdaten (keine Projektkarte im Formularprojekt).` } });
           return;
         }
         const k = karteSchluessel(projekt);
@@ -1511,7 +1512,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
         if (offen.verlauf !== geladen) offen.gesichert = sichernUnter(PK_ENTWUERFE, k, offen.aenderungen, offen.verlauf);
         set({ karte: offen });
       } catch (e) {
-        fehler(`Projektkarte von ${projekt.ordner} nicht lesbar`, e);
+        fehler(`Projektdaten von ${projekt.ordner} nicht lesbar`, e);
       }
     },
 
@@ -1584,7 +1585,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       });
       // nur die geänderten Einträge zurück – nicht über Verknüpfungen auf andere übertragen
       get().karteMehrere(zurueck, 'Änderungen verworfen', { ohneVerknuepfungen: true });
-      set({ meldung: { art: 'info', text: 'Ungespeicherte Änderungen der Projektkarte verworfen – Strg+Z holt sie zurück.' } });
+      set({ meldung: { art: 'info', text: 'Ungespeicherte Änderungen der Projektdaten verworfen – Strg+Z holt sie zurück.' } });
     },
 
     dateiAnsehen: async (root, pfad) => {
@@ -1764,7 +1765,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       p.meta = meta;
       // wie im Projektordner-Tool: jede neue Projektdatei trägt eine Kopie des Namensschemas des Büros
       p.namensschema = wirksamesNamensschema(undefined, get().namensschemaBuero);
-      if (!(await projektdateiAnlegen(ds.projektordner, root, pfad, p, 'Formulare'))) throw new Error(`${pfad}: Dort liegt schon eine Datei – bitte in der Projektkarte auswählen.`);
+      if (!(await projektdateiAnlegen(ds.projektordner, root, pfad, p, 'Formulare'))) throw new Error(`${pfad}: Dort liegt schon eine Datei – bitte in den Projektdaten auswählen.`);
       log.info(`Projektdatei angelegt: ${pfad}`);
       set({ stammdatenDialog: null, meldung: { art: 'info', text: `Projektdatei angelegt: ${pfad}` } });
       get().ordnerNeuLesen();
@@ -2002,7 +2003,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
         if (Object.keys(zusatz).length) zusatzMerken(k.projekt, zusatz);
         if (aenderungen.length) await ds.projektkarteSchreiben(k.projekt.root, pfad, aenderungen);
         const gelesen = await ds.projektkarteLesen(k.projekt.root, pfad);
-        if (!gelesen) throw new Error('Projektkarte nach dem Speichern nicht lesbar');
+        if (!gelesen) throw new Error('Projektdaten nach dem Speichern nicht lesbar');
         const frisch = mitZusatz(gelesen, zusatzWerte(k.projekt, get().oap));
         // Eingaben während des Schreibens bleiben als Änderung gegenüber der neuen Fassung stehen (wie beim Formular);
         // ist inzwischen ein anderes Projekt gewählt, gehört die angezeigte Karte nicht mehr zu diesem Speichern
@@ -2022,7 +2023,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
             sichernUnter(PK_ENTWUERFE, karteSchluessel(k.projekt), karteMitWerten(neu, new Map(Object.entries(gemerkt))), verlaufLaden(karteSchluessel(k.projekt)));
           }
         }
-        set({ meldung: { art: 'info', text: `Projektkarte von ${k.projekt.ordner} gespeichert.` } });
+        set({ meldung: { art: 'info', text: `Projektdaten von ${k.projekt.ordner} gespeichert.` } });
         if (alle.length) autofillAnbindung.karteGespeichert?.(k.karte, frisch);
         // die Projektdatei (.oap) im Projektordner gleich mitführen: geänderte Angaben mit Gegenstück
         const geaendert = new Set(alle.map((a) => pkSchluessel(a.gruppe, a.id)));
@@ -2033,13 +2034,13 @@ export const useFormulare = create<FormulareState>()((set, get) => {
         }
         try {
           const text = await inProjektdatei(k.projekt, werte);
-          if (text) set({ meldung: { art: 'info', text: `Projektkarte gespeichert – ${text}.` } });
+          if (text) set({ meldung: { art: 'info', text: `Projektdaten gespeichert – ${text}.` } });
         } catch (e) {
-          fehler('Projektkarte gespeichert, aber nicht in die Projektdatei übernommen', e);
+          fehler('Projektdaten gespeichert, aber nicht in die Projektdatei übernommen', e);
         }
         log.info(`Projektkarte gespeichert: ${pfad} (${aenderungen.length} Einträge${Object.keys(zusatz).length ? `, ${Object.keys(zusatz).length} Ergänzung(en) der App` : ''})`);
       } catch (e) {
-        fehler('Projektkarte nicht gespeichert', e);
+        fehler('Projektdaten nicht gespeichert', e);
       } finally {
         speichertKarte = false;
       }

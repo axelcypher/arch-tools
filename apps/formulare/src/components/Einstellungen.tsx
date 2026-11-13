@@ -17,6 +17,7 @@ import { VORGABE_OAP_PFAD, useFormulare } from '../store';
 import { OAP_ANGABEN } from '../oap';
 import type { SymbolName } from './Symbol';
 import { Symbol } from './Symbol';
+import { anzahl } from '../text';
 
 const BEREICHE: { id: EinstellungsBereich; titel: string; symbol: SymbolName; text: string }[] = [
   { id: 'ordner', titel: 'Ordner', symbol: 'ordner', text: 'Formularprojekte, Projektordner, angezeigte Pfade' },
@@ -30,7 +31,6 @@ const BEREICHE: { id: EinstellungsBereich; titel: string; symbol: SymbolName; te
 
 /** Einträge einer Adressgruppe in der Projektkarte (für die Anzeige im Adressbuch) */
 /** „1 Formular“, „3 Formulare“ */
-const anzahl = (n: number, eins: string, mehr: string) => `${n} ${n === 1 ? eins : mehr}`;
 
 const ADRESSFELDER: [string, string][] = [
   ['10', 'Branche'],

@@ -84,6 +84,7 @@ import type { DialogArt } from './store';
 import { ablageVon, autofillAnbindung, entwurfVon, formularOrdner, karteMitAenderungen, mitAenderungen, profilFuer as wirksamesProfil, sperrAnbindung, unterordnerAnbindung, useFormulare, wertVon } from './store';
 import { fragen } from '@core/ui/Rueckfrage';
 import { lesen, schreiben } from './speicher';
+import { anzahl } from './text';
 
 const log = logger('formulare');
 
@@ -533,7 +534,7 @@ function abschnittAusOap(): ProjektDatei | null {
  * Neues Formular mit Auto-Werten: leere Felder, die FORMA der Projektkarte zuordnet, werden gleich befüllt; der
  * Zustand (Auto-Wert je Feld) kommt danach in die Projektdatei.
  */
-const befuellt = (z: FormularZustand | null) => (z ? ` und mit ${Object.keys(z.felder).length} Angabe(n) aus der Projektkarte befüllt` : ' (leer)');
+const befuellt = (z: FormularZustand | null) => (z ? ` und mit ${anzahl(Object.keys(z.felder).length, 'Angabe', 'Angaben')} aus den Projektdaten befüllt` : ' (leer)');
 
 async function mitAutofill(bytes: Uint8Array, projekt: Projekt): Promise<{ bytes: Uint8Array; zustand: FormularZustand | null }> {
   const f = useFormulare.getState();

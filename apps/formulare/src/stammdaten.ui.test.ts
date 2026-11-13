@@ -488,7 +488,7 @@ describe('Projektdatei (.oap) als Quelle der Projektstammdaten', () => {
     const p = readProjectFile(ds.dateien.get(OAP)!);
     expect(p.meta).toMatchObject({ projektcode: 'BS9', vorhaben: 'Umbau Wohnhaus', bearbeiter: 'TP', bauherr: { name: 'Musterfrau', adresse: { ort: 'Musterstadt' } } });
     expect(p.name).toBe('EFH Musterstraße');
-    expect(host.textContent).toContain('Projektdatei mitgeführt (1 Angabe(n))');
+    expect(host.textContent).toContain('Projektdatei mitgeführt (1 Angabe)');
     // über den gemeinsamen Zugriff (packages/core): atomar, mit Sicherungskopie, nur wenn seitdem unverändert
     expect(ds.schreibvorgaenge.filter((w) => !w.startsWith('sperre'))).toEqual([
       // beim ersten Öffnen: der Antrag entsteht (Abschnitt „formulare“)
@@ -671,7 +671,7 @@ describe('Autofill mit Zustand (Auto-Wert und manuelle Überschreibung)', () => 
     expect(zustand()).toEqual({ felder: { '0:Memo1': { auto: 'Kreis Hamm, Hoher Weg 1' } } });
   });
 
-  it('ein neues Formular wird gleich mit den Angaben aus der Projektkarte befüllt', async () => {
+  it('ein neues Formular wird gleich mit den Angaben aus den Projektdaten befüllt', async () => {
     const p = createProject('EFH');
     p.meta = { ...leereMeta(), projektcode: 'BS9' };
     ds.dateien.set(OAP, writeArchive(p));
@@ -688,6 +688,6 @@ describe('Autofill mit Zustand (Auto-Wert und manuelle Überschreibung)', () => 
     // Felder ohne Angabe in der Projektkarte bleiben leer
     expect(neu.find((x) => x.name === 'Memo3')!.original).toBe('');
     expect(felderImAntrag()!['002-Muster.frmsjf']).toEqual({ felder: { '0:Memo1': { auto: 'Kreis Soest, Hoher Weg 1' } } });
-    expect(useFormulare.getState().meldung?.text).toContain('mit 1 Angabe(n) aus der Projektkarte befüllt');
+    expect(useFormulare.getState().meldung?.text).toContain('mit 1 Angabe aus den Projektdaten befüllt');
   });
 });

@@ -465,7 +465,13 @@ const Element = memo(function Element({ k, feld, wert, geaendert, markiert, tite
           className={`fo-el fo-check${geaendert ? ' geaendert' : ''}${markiert ? ' markiert' : ''}${entfaellt ? ' entfaellt' : ''}${offen ? ' offen' : ''}${vorbelegt ? ' vorbelegt' : ''}${rechts ? '' : ' links'}`}
           style={{ ...pos, ...schrift(k) }}
           title={
-            vorbelegt ? `${titel} – aus dem Antragsmerkmal vorbelegt, bitte prüfen` : entfaellt ? `${titel} – nicht erforderlich` : offen ? `${titel} – ungeklärt (hängt von Antragsmerkmalen ab)` : titel
+            vorbelegt
+              ? `${titel} – aus dem Antragsmerkmal vorbelegt, bitte prüfen`
+              : entfaellt
+                ? `${titel} – nicht erforderlich`
+                : offen
+                  ? `${titel} – ungeklärt (hängt von Antragsmerkmalen ab)`
+                  : titel
           }
         >
           <input

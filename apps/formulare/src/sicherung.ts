@@ -7,6 +7,7 @@
 import { ueberschreibungenAus } from './antrag';
 import type { Abweichung } from './vorgabe';
 import { abweichungAus, istLeer } from './vorgabe';
+import { anzahl } from './text';
 
 export const SICHERUNG_ART = 'formulare-einstellungen';
 
@@ -22,7 +23,6 @@ export interface SicherungsBereich {
   umfang: (wert: unknown) => string;
 }
 
-const anzahl = (n: number, eins: string, mehr: string) => `${n} ${n === 1 ? eins : mehr}`;
 const istObjekt = (x: unknown): x is Record<string, unknown> => !!x && typeof x === 'object' && !Array.isArray(x);
 const eintraege = (x: unknown) => (istObjekt(x) ? Object.keys(x).length : 0);
 const liste = (x: unknown) => (Array.isArray(x) ? x.length : 0);

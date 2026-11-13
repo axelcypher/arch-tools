@@ -865,8 +865,8 @@ Die Katasterpläne (QGIS) sind ins Projektordner-Tool umgezogen – siehe [proje
 
 ### Dokumente ansehen und bearbeiten
 
-Dokumente aus dem Projektordner erscheinen in der App mit Kopfzeile (Art, Name, Ordner, „Neu laden“, „Extern
-öffnen“). Bearbeitet wird so, dass alles, was nicht geändert wurde, in der Datei bleibt, wie es war:
+Dokumente aus dem Projektordner erscheinen in der App mit Kopfzeile (Art, Name, Ordner, „Neu laden“, „Mit
+Programm öffnen“). Bearbeitet wird so, dass alles, was nicht geändert wurde, in der Datei bleibt, wie es war:
 
 - **PDF:** alle Seiten, Zoom (Seitenbreite oder 50–200 %). Hat die PDF **Formularfelder**, lassen sie sich direkt
   auf der Seite ausfüllen. Mit **Text** und **Kreuz** lässt sich auch in PDFs ohne Formularfelder etwas eintragen:
