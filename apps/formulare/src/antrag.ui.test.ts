@@ -3854,6 +3854,26 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     expect(ds.dateien.has(`${PROJEKT}/TÖB/BAUA 2/BS9 Lageplan B1.pdf`)).toBe(false);
   });
 
+  it('Ablage: „Mit Antragsdokument verknüpfen“ ist eine Einfachauswahl – gewählt ist das verknüpfte Dokument, nur im Ordner der aktiven Fassung', async () => {
+    ds.dateien.set(`${PROJEKT}/TÖB/BAUA 2/BS9 Lageplan B2.pdf`, new Uint8Array([1]));
+    ds.dateien.set(`${PROJEKT}/TÖB/BAUA/BS9 Lageplan B2.pdf`, new Uint8Array([1]));
+    await mitUmfangInBeiden();
+    type Punkt = { text?: string; unter?: { text: string; gewaehlt?: boolean; aktion: () => void }[] };
+    const unter = (pfad: string, text: string) => (dateiMenue(PROJEKT, pfad) as Punkt[]).find((x) => x.text === text)!.unter!;
+    // noch nicht verknüpft: alle Einträge Einfachauswahl, keiner gewählt
+    const vorher = unter('TÖB/BAUA 2/BS9 Lageplan B2.pdf', 'Mit Antragsdokument verknüpfen');
+    expect(vorher.every((u) => u.gewaehlt === false)).toBe(true);
+    await act(async () => void vorher.find((u) => u.text === 'Lageplan')!.aktion());
+    await warte();
+    // verknüpft: der Lageplan ist gewählt, die anderen nicht
+    const nachher = unter('TÖB/BAUA 2/BS9 Lageplan B2.pdf', 'Mit Antragsdokument verknüpfen');
+    expect(nachher.find((u) => u.text === 'Lageplan')!.gewaehlt).toBe(true);
+    expect(nachher.filter((u) => u.gewaehlt)).toHaveLength(1);
+    // Gegenprobe: gleicher Name im Ordner einer anderen Fassung – dort ist nichts gewählt
+    const anderswo = unter('TÖB/BAUA/BS9 Lageplan B2.pdf', 'In BAUA 2 kopieren und verknüpfen');
+    expect(anderswo.some((u) => u.gewaehlt)).toBe(false);
+  });
+
   it('BAUA eingereicht, Ablage-Menü „In BAUA 2 kopieren“ offen, dann zeigt das Projekt BAUA: Fassungswechsel gemeldet, nicht die Sperre von BAUA', async () => {
     await mitUmfangInBeiden();
     await act(() => useAntrag.getState().fassungWaehlen('BAUA'));
