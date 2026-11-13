@@ -44,7 +44,7 @@ describe('Rahmen-App', () => {
 
   it('Apps als Tabs öffnen, wechseln (die anderen bleiben geladen), schließen; offene Tabs bleiben für den nächsten Start', () => {
     const host = render();
-    expect(host.querySelectorAll('.rahmen-karte')).toHaveLength(7);
+    expect(host.querySelectorAll('.rahmen-karte')).toHaveLength(8);
     act(() => karte(host, 'Projekt').click());
     expect(host.querySelector('iframe')?.getAttribute('src')).toBe('apps/ordner/index.html?rahmen=tab&app=ordner');
     // weitere App über „+“
