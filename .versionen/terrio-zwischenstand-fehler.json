@@ -1,6 +1,0 @@
-{
-  "grz": {
-    "stufe": "patch",
-    "notiz": "Scheitert das Sichern des Zwischenstands vor dem Schließen, meldet TERRIO das, und Arkly fragt nach, statt still zu schließen."
-  }
-}
