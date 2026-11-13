@@ -32,6 +32,11 @@ describe('Projektdatei im Projektordner', () => {
     // unbekannte Platzhalter bleiben stehen – die Einstellungen weisen darauf hin
     expect(projektdateiPfad('{Kürzel} {Bauherr}', { nummer: 'BS9' })).toBe('BS9 {Bauherr}.oap');
     expect(unbekanntePlatzhalter('{Kürzel} {Bauherr} {datum} {Ort} {Bauherr}')).toEqual(['{Bauherr}', '{Ort}']);
+    // neue Namen (globale Variablen) ergeben dasselbe wie die alten; Vorgabe mit neuen Namen
+    expect(projektdateiPfad('Organisation/{PROJEKT_KUERZEL} {DATUM} {PROJEKT_VORHABEN}.oap', { nummer: 'BS9', vorhaben: 'Neubau EFH / Garage', datum })).toBe('Organisation/BS9 261110 Neubau EFH Garage.oap');
+    expect(projektdateiPfad('{PROJEKT_KUERZEL}_{BEARBEITER}_{JAHR_KURZ}_{DATUM:JJJJ-MM-TT}', { nummer: 'BS9', bearbeiter: 'TP', datum })).toBe('BS9_TP_26_2026-11-10.oap');
+    expect(projektdateiPfad('', { nummer: 'BS9', kurzname: 'Kita' })).toBe('03 Berechnungen/Flächen/BS9 Kita.oap');
+    expect(unbekanntePlatzhalter('{PROJEKT_KUERZEL} {PROJEKT_KURZNAME} {DATUM:TT.MM.JJJJ} {JAHR}')).toEqual([]);
     // Datum mit Format (P-06), {jj}; ohne Format bleibt es JJMMTT wie bisher
     expect(projektdateiPfad('{nummer} {datum:JJJJ-MM-TT}', { nummer: 'BS9', datum })).toBe('BS9 2026-11-10.oap');
     expect(projektdateiPfad('{nummer} {Datum:jjmmtt} {jj}', { nummer: 'BS9', datum })).toBe('BS9 261110 26.oap');

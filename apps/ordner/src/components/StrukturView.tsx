@@ -3,9 +3,9 @@ import { openTextFile, saveTextFile } from '@core/platform/files';
 import { logger } from '@core/platform/log';
 import { Field, TextField } from '@core/ui/fields';
 import { bestaetigen } from '@core/ui/Rueckfrage';
-import { OAP_PLATZHALTER, projektdateiPfad, unbekanntePlatzhalter } from '@core/projektdatei';
+import { OAP_VARIABLEN, projektdateiPfad } from '@core/projektdatei';
 import { hatDateisystem, waehleOrdner } from '../dateisystem';
-import { dateimuster, nameAus, nummerAus, PLATZHALTER_NUMMER, PLATZHALTER_PLAN, PLATZHALTER_PROJEKT, unbekanntePlatzhalterIn } from '../nummer';
+import { dateimuster, nameAus, nummerAus, PLATZHALTER_NUMMER, PLATZHALTER_PLAN, PLATZHALTER_PROJEKT } from '../nummer';
 import { SchemaFeld } from './SchemaFeld';
 import type { Sicherung } from '../sicherung';
 import { strukturUnterschied, unterschiedText } from '../sicherung';
@@ -117,7 +117,7 @@ export function StrukturView() {
     });
 
   const beispiel = musterWerte(nummerAus(struktur.nummernschema, 14));
-  const dateiBeispiel = (schema: string) => nameAus(schema, { ...beispiel, projekt: beispiel.nummer, plannummer: 'A-101', index: 'b', titel: 'Grundriss EG' });
+  const dateiBeispiel = (schema: string) => nameAus(schema, { ...beispiel, plannummer: 'A-101', index: 'b', titel: 'Grundriss EG' });
   const geaendert = text !== ordnerAlsText(struktur.ordner);
 
   const ordnerKopf = (
@@ -151,7 +151,6 @@ export function StrukturView() {
           value={struktur.nummernschema}
           platzhalter={PLATZHALTER_NUMMER}
           vorschau={(t) => `Beispiel: ${nummerAus(t, 14)}`}
-          unbekannt={(t) => unbekanntePlatzhalterIn(t, PLATZHALTER_NUMMER)}
           onChange={(v) => set({ nummernschema: v.trim() || struktur.nummernschema })}
         />
       </Field>
@@ -161,7 +160,6 @@ export function StrukturView() {
           value={struktur.ordnername}
           platzhalter={PLATZHALTER_PROJEKT}
           vorschau={(t) => `Beispiel: ${sichererName(nameAus(t, beispiel))}`}
-          unbekannt={(t) => unbekanntePlatzhalterIn(t, PLATZHALTER_PROJEKT)}
           onChange={(v) => set({ ordnername: v.trim() || struktur.ordnername })}
         />
       </Field>
@@ -173,7 +171,6 @@ export function StrukturView() {
           vorschau={(t) =>
             `Beispiel: ${dateiBeispiel(t)}.pdf${dateimuster(t, beispiel.nummer).test(dateiBeispiel(t)) ? '' : ' (das Schema erkennt sein eigenes Beispiel nicht – bitte Trennzeichen prüfen)'}`
           }
-          unbekannt={(t) => unbekanntePlatzhalterIn(t, PLATZHALTER_PLAN)}
           onChange={(v) => set({ dateischema: v.trim() })}
         />
       </Field>
@@ -439,13 +436,12 @@ function GemeinsameEinstellungen() {
           </button>
         </div>
       )}
-      <Field label="Projektdatei (.oap) in neuen Projekten" hint="Pfad im Projektordner – {datum} ohne Format hier wie bisher als JJMMTT, mit Format z. B. {datum:JJJJ-MM-TT}">
+      <Field label="Projektdatei (.oap) in neuen Projekten" hint="Pfad im Projektordner – {DATUM} ist JJMMTT, mit Format z. B. {DATUM:JJJJ-MM-TT}">
         <SchemaFeld
           label="Projektdatei (.oap) in neuen Projekten"
           value={allgemein.oapPfad}
-          platzhalter={OAP_PLATZHALTER}
+          platzhalter={OAP_VARIABLEN}
           vorschau={(t) => `Beispiel: ${projektdateiPfad(t, { nummer: beispiel.nummer, kurzname: beispiel.kurzname, vorhaben: beispiel.vorhaben })}`}
-          unbekannt={unbekanntePlatzhalter}
           onChange={(v) => setAllgemein({ oapPfad: v.trim() })}
         />
       </Field>

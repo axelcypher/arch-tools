@@ -2,7 +2,7 @@
 import { strToU8, zipSync } from 'fflate';
 import { vorlageQgs, vorlageQgz } from '../__fixtures__/qgisVorlage';
 import { describe, expect, it } from 'vitest';
-import { auftragBauen, ausschnitt, ergebnisseLesen, fehlerAuszug, karteVon, katasterAus, planDateiname, planFehler, VORGABE_KATASTER, vorlageLesen } from './kataster';
+import { auftragBauen, ausschnitt, ergebnisseLesen, fehlerAuszug, karteVon, katasterAus, katasterZielpfad, planDateiname, planFehler, VORGABE_KATASTER, vorlageLesen } from './kataster';
 
 describe('QGIS-Vorlage auslesen', () => {
   it('liest Layouts mit Kartenobjekten und Kartenthemen – aus .qgz und .qgs', () => {
@@ -55,9 +55,15 @@ describe('Einstellungen', () => {
 
 describe('Auftrag und Ergebnis', () => {
   it('Dateiname nach Vorlage, ohne unzulässige Zeichen', () => {
-    const t = { code: 'MUS', kuerzel: 'BS9', art: 'BAUA', datum: new Date(2026, 10, 3) };
+    const t = { kuerzel: 'MUS', art: 'BAUA', datum: new Date(2026, 10, 3), kurzname: 'EFH' };
+    // alte Namen ({Code}, {Datum}, {Kürzel}) und neue ergeben dasselbe
     expect(planDateiname('{Code} {Art} {Datum} {Name}', { name: 'Katasterauszug A4', art: 'pdf' }, t)).toBe('MUS BAUA 261103 Katasterauszug A4.pdf');
-    expect(planDateiname('{Kürzel}_{Name}', { name: 'Plan 1:500 / neu', art: 'dxf' }, t)).toBe('BS9_Plan 1 500 neu.dxf');
+    expect(planDateiname(VORGABE_KATASTER.dateiname, { name: 'Katasterauszug A4', art: 'pdf' }, t)).toBe('MUS BAUA 261103 Katasterauszug A4.pdf');
+    expect(planDateiname('{PROJEKT_KURZNAME} {DATUM:JJJJ-MM-TT} {Name}', { name: 'Lageplan', art: 'pdf' }, t)).toBe('EFH 2026-11-03 Lageplan.pdf');
+    expect(katasterZielpfad('TÖB\\{Antrag}\\Kataster', 'BAUA 2', t)).toBe('TÖB/BAUA 2/Kataster');
+    expect(katasterZielpfad('TÖB/{antrag}', undefined, t)).toBeNull();
+    expect(katasterZielpfad('Kataster/{PROJEKT_KUERZEL}', undefined, t)).toBe('Kataster/MUS');
+    expect(planDateiname('{Kürzel}_{Name}', { name: 'Plan 1:500 / neu', art: 'dxf' }, t)).toBe('MUS_Plan 1 500 neu.dxf');
     expect(planDateiname('', { name: '', art: 'dxf' }, t)).toBe('Plan.dxf');
   });
 

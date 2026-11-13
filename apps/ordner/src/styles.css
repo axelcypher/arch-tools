@@ -276,10 +276,15 @@
   flex: 1;
   min-width: 0;
 }
-.po-platzhalter {
-  flex: 0 0 auto;
-  max-width: 130px;
-  font-size: 12px;
+.po-schemafeld-block {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+/* in Listen vieler gleicher Felder: Chips nur, solange das Feld den Fokus hat */
+.po-schemafeld-block.kompakt:not(:focus-within) .ph-chips {
+  display: none;
 }
 .po-ordner-kopf {
   display: flex;

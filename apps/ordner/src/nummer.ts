@@ -1,74 +1,52 @@
 /**
- * Projektnummern und Namensschemata. Platzhalter in einfachen geschweiften Klammern:
- *   {jahr} 2026 · {jj} 26 · {nr} bzw. {nr:3} laufende Nummer (mit führenden Nullen)
+ * Projektnummern und Namensschemata. Platzhalter siehe @core/platzhalter (gemeinsam für alle Apps):
+ *   {JAHR} 2026 · {JAHR_KURZ} 26 · {Nr} bzw. {Nr:3} laufende Nummer (mit führenden Nullen)
  * Das Tool schlägt nur vor: die nächste freie Nummer nach den Ordnern im Stammordner. Vergeben wird sie
  * von dem, der das Projekt anlegt – das Feld bleibt frei änderbar.
  */
 
-import { datumNachFormat } from '@core/projektdatei';
+import { GLOBALE_VARIABLEN, ersetzen, mitAliasen, platzhalterIn, unbekanntePlatzhalter, type Fundstelle, type Variable, type Wert } from '@core/platzhalter';
 import { ausOrdnernameNachSchema } from '@core/ui/projektListe';
 
 const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-/** Platzhalter in einfachen Klammern, mit Angabe nach „:“ – {nr:3} (Stellen), {datum:JJMMTT} (Format) */
-const TOKEN = /\{([a-zäöü_]+)(?::([^{}]+))?\}/gi;
+
+/** Variable einer Einstellung (Name ohne Klammern, Erklärung) – siehe @core/platzhalter */
+export type Platzhalter = Variable;
 
 /**
- * Gemeinsamer Platzhalter-Satz für Ordner- und Dateinamen und den Pfad der Projektdatei (P-06): Groß-/Kleinschreibung
- * egal, gleiche Bedeutung überall. {kürzel} und {projektcode} sind andere Namen für {nummer}. {datum} ist JJJJ-MM-TT,
- * mit Format z. B. {datum:JJMMTT} (JJJJ, JJ, MM, TT). Einzige Ausnahme aus Rücksicht auf vorhandene Einstellungen:
- * Im Pfad der Projektdatei bleibt {datum} ohne Format JJMMTT (siehe @core/projektdatei).
+ * Globale Variablen im Projektordner. Alte Namen gelten weiter, mit ihrer bisherigen Bedeutung: {nummer}, {kürzel},
+ * {projektcode}, {projekt} = Projektkürzel; {datum} war hier JJJJ-MM-TT (die neue Variable {DATUM} ist wie überall
+ * JJMMTT, mit Format z. B. {DATUM:JJJJ-MM-TT}).
  */
-export interface Platzhalter {
-  name: string;
-  text: string;
-}
-const ALIAS: Record<string, string> = { kürzel: 'nummer', kuerzel: 'nummer', projektcode: 'nummer' };
-/** zulässige Datumsformate: nur JJJJ, JJ, MM, TT und Trenner */
-const DATUMSFORMAT = /^[JMT.\-_ ]+$/i;
+const GLOBAL: Variable[] = GLOBALE_VARIABLEN.map((v) =>
+  v.name === 'PROJEKT_KUERZEL' ? mitAliasen(v.name, ['projekt']) : v.name === 'DATUM' ? mitAliasen(v.name, [{ name: 'datum', angabe: 'JJJJ-MM-TT' }], true) : v,
+);
+const lokal = (name: string, text: string, alt = name.toLowerCase()): Variable => ({ name, text, aliase: [alt] });
 
-export const PLATZHALTER_PROJEKT: Platzhalter[] = [
-  { name: '{nummer}', text: 'Projektnummer (gleich: {kürzel})' },
-  { name: '{kurzname}', text: 'Kurzname' },
-  { name: '{vorhaben}', text: 'Bezeichnung des Vorhabens' },
-  { name: '{jahr}', text: 'Jahr des Anlegens' },
-  { name: '{jj}', text: 'Jahr des Anlegens, zweistellig' },
-  { name: '{datum}', text: 'Tag des Anlegens, JJJJ-MM-TT' },
-  { name: '{datum:JJMMTT}', text: 'Tag des Anlegens im angegebenen Format (JJJJ, JJ, MM, TT)' },
-  { name: '{bearbeiter}', text: 'Bearbeitung (Kürzel)' },
+/** Ordner- und Dateinamen im Projekt: alle globalen Variablen */
+export const PLATZHALTER_PROJEKT: Variable[] = GLOBAL;
+/** Nummernschema: bildet die Projektnummer selbst – nur Jahr und laufende Nummer */
+export const PLATZHALTER_NUMMER: Variable[] = [
+  GLOBAL.find((v) => v.name === 'JAHR')!,
+  GLOBAL.find((v) => v.name === 'JAHR_KURZ')!,
+  lokal('Nr', 'laufende Nummer; mit Stellen z. B. {Nr:3} (führende Nullen)'),
 ];
-export const PLATZHALTER_NUMMER: Platzhalter[] = [
-  { name: '{jahr}', text: 'Jahr, vierstellig' },
-  { name: '{jj}', text: 'Jahr, zweistellig' },
-  { name: '{nr:3}', text: 'laufende Nummer mit drei Stellen' },
-  { name: '{nr}', text: 'laufende Nummer' },
-];
-export const PLATZHALTER_PLAN: Platzhalter[] = [...PLATZHALTER_PROJEKT, { name: '{plannummer}', text: 'Plannummer' }, { name: '{index}', text: 'Planindex' }, { name: '{titel}', text: 'Plantitel' }];
-export const PLATZHALTER_VORLAGE: Platzhalter[] = [...PLATZHALTER_PROJEKT, { name: '{name}', text: 'Name der Vorlage ohne Endung' }];
-
-/** Schlüssel eines Platzhalters zum Vergleichen: klein, Aliase aufgelöst, Format beim Datum vereinheitlicht */
-function schluessel(name: string, angabe?: string): string {
-  const n = name.toLowerCase();
-  const k = ALIAS[n] ?? n;
-  if (k === 'datum' && angabe) return DATUMSFORMAT.test(angabe.trim()) ? 'datum:' : `datum:${angabe}`;
-  if (k === 'nr' && angabe) return /^\d+$/.test(angabe.trim()) ? 'nr:' : `nr:${angabe}`;
-  return k;
-}
+export const PLATZHALTER_PLAN: Variable[] = [...GLOBAL, lokal('Plannummer', 'Plannummer'), lokal('Index', 'Planindex'), lokal('Titel', 'Plantitel')];
+export const PLATZHALTER_VORLAGE: Variable[] = [...GLOBAL, lokal('Name', 'Name der Vorlage ohne Endung')];
+/** alle Variablen des Projektordners (zum Ersetzen in beliebigen Namen) */
+const ALLE: Variable[] = [...PLATZHALTER_PLAN, ...PLATZHALTER_VORLAGE.filter((v) => v.name === 'Name')];
 
 /** Platzhalter im Schema, die es unter den erlaubten nicht gibt (bleiben so im Namen stehen) */
-export function unbekanntePlatzhalterIn(schema: string, erlaubt: Platzhalter[]): string[] {
-  const da = new Set(erlaubt.flatMap((p) => [...p.name.matchAll(TOKEN)].map((m) => schluessel(m[1], m[2]))));
-  return [...new Set([...schema.matchAll(TOKEN)].filter((m) => !da.has(schluessel(m[1], m[2]))).map((m) => m[0]))];
+export function unbekanntePlatzhalterIn(schema: string, erlaubt: Variable[]): string[] {
+  return unbekanntePlatzhalter(schema, erlaubt);
 }
+
+/** neuer Name des Platzhalters im Nummernschema (JAHR, JAHR_KURZ, Nr) bzw. null */
+const imNummernschema = (f: Fundstelle) => f.treffer?.variable.name ?? null;
 
 /** Projektnummer nach Schema */
 export function nummerAus(schema: string, nr: number, date = new Date()): string {
-  return schema.replace(TOKEN, (m, name: string, breite?: string) => {
-    const n = name.toLowerCase();
-    if (n === 'jahr') return String(date.getFullYear());
-    if (n === 'jj') return String(date.getFullYear() % 100).padStart(2, '0');
-    if (n === 'nr') return String(nr).padStart(Number(breite ?? 1), '0');
-    return m;
-  });
+  return ersetzen(schema, PLATZHALTER_NUMMER, { JAHR: date, JAHR_KURZ: date, Nr: nr }, { ohneWert: 'stehen' });
 }
 
 /**
@@ -76,17 +54,17 @@ export function nummerAus(schema: string, nr: number, date = new Date()): string
  * das Schema ein Jahr enthält) plus eins.
  */
 export function naechsteNummer(schema: string, vorhandene: string[], date = new Date()): string {
-  if (!/\{nr(?::\d+)?\}/i.test(schema)) return nummerAus(schema, 1, date);
+  const teile = platzhalterIn(schema, PLATZHALTER_NUMMER);
+  if (!teile.some((f) => imNummernschema(f) === 'Nr')) return nummerAus(schema, 1, date);
   let muster = '';
   let pos = 0;
-  for (const m of schema.matchAll(TOKEN)) {
-    muster += escape(schema.slice(pos, m.index));
-    const n = m[1].toLowerCase();
-    if (n === 'jahr') muster += String(date.getFullYear());
-    else if (n === 'jj') muster += String(date.getFullYear() % 100).padStart(2, '0');
-    else if (n === 'nr') muster += '(\\d+)';
-    else muster += escape(m[0]);
-    pos = m.index + m[0].length;
+  for (const f of teile) {
+    muster += escape(schema.slice(pos, f.index));
+    const n = imNummernschema(f);
+    if (n === 'JAHR' || n === 'JAHR_KURZ') muster += escape(ersetzen(f.roh, PLATZHALTER_NUMMER, { [n]: date }));
+    else if (n === 'Nr') muster += '(\\d+)';
+    else muster += escape(f.roh);
+    pos = f.index + f.roh.length;
   }
   muster += escape(schema.slice(pos));
   // der Ordnername beginnt mit der Nummer; danach darf keine weitere Ziffer folgen
@@ -107,35 +85,46 @@ export function naechsteNummer(schema: string, vorhandene: string[], date = new 
 export function nummerPasst(schema: string, nummer: string): boolean {
   let muster = '';
   let pos = 0;
-  for (const m of schema.matchAll(TOKEN)) {
-    muster += escape(schema.slice(pos, m.index));
-    const n = m[1].toLowerCase();
-    if (n === 'jahr') muster += '\\d{4}';
-    else if (n === 'jj') muster += '\\d{2}';
-    else if (n === 'nr') muster += `\\d{${Number(m[2] ?? 1)},}`;
+  for (const f of platzhalterIn(schema, PLATZHALTER_NUMMER)) {
+    muster += escape(schema.slice(pos, f.index));
+    const n = imNummernschema(f);
+    const angabe = f.treffer?.angabe?.toUpperCase();
+    if (n === 'JAHR' || n === 'JAHR_KURZ') muster += angabe === 'JJ' ? '\\d{2}' : angabe === 'JJJJ' ? '\\d{4}' : '.+?';
+    else if (n === 'Nr') muster += `\\d{${/^\d+$/.test(angabe ?? '') ? Number(angabe) : 1},}`;
     else muster += '.+?';
-    pos = m.index + m[0].length;
+    pos = f.index + f.roh.length;
   }
   muster += escape(schema.slice(pos));
   return new RegExp(`^${muster}$`, 'i').test(nummer.trim());
 }
 
+/** alte Schlüssel der Werte (nummer, kurzname, datum JJJJ-MM-TT …) → neue Namen der Variablen */
+const WERT_SCHLUESSEL: Record<string, string> = {
+  nummer: 'PROJEKT_KUERZEL',
+  kürzel: 'PROJEKT_KUERZEL',
+  projekt: 'PROJEKT_KUERZEL',
+  kurzname: 'PROJEKT_KURZNAME',
+  vorhaben: 'PROJEKT_VORHABEN',
+  bearbeiter: 'BEARBEITER',
+  datum: 'DATUM',
+  jahr: 'JAHR',
+  jj: 'JAHR_KURZ',
+  plannummer: 'Plannummer',
+  index: 'Index',
+  titel: 'Titel',
+  name: 'Name',
+};
+
 /**
- * Platzhalter in Datei- und Ordnernamen: {nummer}, {kurzname} … (auch in doppelten Klammern, Groß-/Kleinschreibung
- * egal, {kürzel} = {nummer}); {datum:JJMMTT} formatiert den Wert von `datum` (JJJJ-MM-TT) um.
+ * Platzhalter in Datei- und Ordnernamen ersetzen (alte und neue Namen, siehe {@link PLATZHALTER_PLAN}). `werte` mit den
+ * bisherigen Schlüsseln (nummer, kurzname, datum als JJJJ-MM-TT, jahr …) oder den neuen Namen. Ohne Wert bleibt der
+ * Platzhalter stehen.
  */
 export function nameAus(schema: string, werte: Record<string, string | number>): string {
-  return schema.replace(/\{\{?\s*([a-zäöüß_.]+)(?::([^{}]+?))?\s*\}?\}/gi, (m, key: string, angabe?: string) => {
-    const klein = key.toLowerCase();
-    const v = werte[key] ?? werte[klein] ?? (ALIAS[klein] ? werte[ALIAS[klein]] : undefined);
-    if (v === undefined) return m;
-    if (klein === 'datum' && angabe) {
-      if (!DATUMSFORMAT.test(angabe.trim())) return m;
-      const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(v));
-      return iso ? datumNachFormat(new Date(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3])), angabe.trim().toUpperCase()) : String(v);
-    }
-    return String(v);
-  });
+  const w: Record<string, Wert> = {};
+  for (const [k, v] of Object.entries(werte)) w[WERT_SCHLUESSEL[k.toLowerCase()] ?? k] = v;
+  if (w.JAHR !== undefined && w.JAHR_KURZ === undefined) w.JAHR_KURZ = String(Number(w.JAHR) % 100).padStart(2, '0');
+  return ersetzen(schema, ALLE, w, { ohneWert: 'stehen' });
 }
 
 /**
@@ -145,20 +134,19 @@ export function nameAus(schema: string, werte: Record<string, string | number>):
 export function dateimuster(schema: string, nummer: string): RegExp {
   let muster = '';
   let pos = 0;
-  const tokens = [...schema.matchAll(TOKEN)];
-  tokens.forEach((m, i) => {
-    const davor = schema.slice(pos, m.index);
-    muster += escape(davor);
-    const n = m[1].toLowerCase();
+  const tokens = platzhalterIn(schema, ALLE);
+  tokens.forEach((f, i) => {
+    muster += escape(schema.slice(pos, f.index));
+    const n = f.treffer?.variable.name;
     const letzter = i === tokens.length - 1;
     // Zeichen, das auf diesen Teil folgt – der Teil selbst darf es nicht enthalten
-    const danach = schema.slice(m.index + m[0].length)[0];
+    const danach = schema.slice(f.index + f.roh.length)[0];
     const frei = danach && !letzter ? `[^${escape(danach)}]+` : '.+';
-    if (n === 'nummer' || n === 'projekt' || ALIAS[n] === 'nummer') muster += nummer ? escape(nummer) : frei;
-    else if (n === 'index') muster += '[A-Za-z0-9]{1,3}';
-    else if (n === 'datum') muster += DATUM_MUSTER;
+    if (n === 'PROJEKT_KUERZEL') muster += nummer ? escape(nummer) : frei;
+    else if (n === 'Index') muster += '[A-Za-z0-9]{1,3}';
+    else if (n === 'DATUM') muster += DATUM_MUSTER;
     else muster += frei;
-    pos = m.index + m[0].length;
+    pos = f.index + f.roh.length;
   });
   muster += escape(schema.slice(pos));
   return new RegExp(`^${muster}$`);

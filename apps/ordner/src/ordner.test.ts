@@ -808,7 +808,7 @@ describe('Vorlagen-Presets', () => {
     expect(strukturAusJson(strukturAlsJson(MIT_PRESETS))).toEqual(MIT_PRESETS);
     const alt = strukturAusJson('{"name":"Büro","ordner":["A"]}');
     expect(alt.presets).toEqual([GANZER_VORLAGENORDNER]);
-    expect(alt.vorlagenname).toBe('{name}');
+    expect(alt.vorlagenname).toBe('{Name}');
     const roh = strukturAusJson(
       JSON.stringify({
         presets: [

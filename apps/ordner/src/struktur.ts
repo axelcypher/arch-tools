@@ -29,7 +29,7 @@ export interface VorlagenEintrag {
   quelle: string;
   /** Zielordner im Projekt (Platzhalter erlaubt); leer = Stamm des Projektordners. Unterordner einer Ordner-Quelle bleiben erhalten. */
   ziel: string;
-  /** Dateiname im Projekt, z. B. „{nummer} Kostenschätzung“; leer = Dateinamenschema für Vorlagen. Die Endung kommt von der Vorlage. */
+  /** Dateiname im Projekt, z. B. „{PROJEKT_KUERZEL} Kostenschätzung“; leer = Dateinamenschema für Vorlagen. Die Endung kommt von der Vorlage. */
   name?: string;
   /** nur, wenn eine dieser Leistungsphasen beauftragt ist (leer = immer) */
   lph?: number[];
@@ -56,15 +56,15 @@ export interface VorlagenPreset {
 
 export interface Struktur {
   name: string;
-  /** Projektnummer, z. B. „{jahr}-{nr:3}“ → 2026-014 */
+  /** Projektnummer, z. B. „{JAHR}-{Nr:3}“ → 2026-014 */
   nummernschema: string;
-  /** Name des Projektordners, z. B. „{nummer} {kurzname}“ */
+  /** Name des Projektordners, z. B. „{PROJEKT_KUERZEL} {PROJEKT_KURZNAME}“ */
   ordnername: string;
-  /** Dateinamenschema für Pläne, z. B. „{nummer}_{plannummer}_{index}_{titel}“ */
+  /** Dateinamenschema für Pläne, z. B. „{PROJEKT_KUERZEL}_{Plannummer}_{Index}_{Titel}“ */
   dateischema: string;
   ordner: OrdnerRegel[];
   /**
-   * Dateinamen der Vorlagen im Projekt, z. B. „{nummer} {name}“ ({name} = Name der Vorlage ohne Endung).
+   * Dateinamen der Vorlagen im Projekt, z. B. „{PROJEKT_KUERZEL} {Name}“ ({Name} = Name der Vorlage ohne Endung).
    * Gilt nicht für Vorlagen, deren Name selbst Platzhalter enthält, und nicht, wo eine Zuordnung einen Namen vorgibt.
    */
   vorlagenname: string;
@@ -78,9 +78,9 @@ export const GANZER_VORLAGENORDNER: VorlagenPreset = { name: 'Alle Vorlagen', st
 
 export const STANDARD: Struktur = {
   name: 'Standard',
-  nummernschema: '{jahr}-{nr:3}',
-  ordnername: '{nummer} {kurzname}',
-  dateischema: '{nummer}_{plannummer}_{index}_{titel}',
+  nummernschema: '{JAHR}-{Nr:3}',
+  ordnername: '{PROJEKT_KUERZEL} {PROJEKT_KURZNAME}',
+  dateischema: '{PROJEKT_KUERZEL}_{Plannummer}_{Index}_{Titel}',
   ordner: [
     { pfad: '00 Projekt' },
     { pfad: '01 Grundlagen/Bestand' },
@@ -103,7 +103,7 @@ export const STANDARD: Struktur = {
     { pfad: '08 Bauleitung/Rechnungen', lph: [8] },
     { pfad: '09 Fotos' },
   ],
-  vorlagenname: '{nummer} {name}',
+  vorlagenname: '{PROJEKT_KUERZEL} {Name}',
   presets: [GANZER_VORLAGENORDNER],
 };
 
@@ -311,7 +311,7 @@ export function strukturAusJson(json: string): Struktur {
     ordnername: text(o.ordnername, STANDARD.ordnername),
     dateischema: text(o.dateischema, STANDARD.dateischema),
     ordner: liste ? ordner : STANDARD.ordner,
-    vorlagenname: text(o.vorlagenname, ohnePresets ? '{name}' : STANDARD.vorlagenname),
+    vorlagenname: text(o.vorlagenname, ohnePresets ? '{Name}' : STANDARD.vorlagenname),
     presets: ohnePresets ? [GANZER_VORLAGENORDNER] : presetsAus(o.presets as unknown[]),
     ...(bausteine.length ? { bausteine } : {}),
   };

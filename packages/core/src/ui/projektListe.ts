@@ -5,6 +5,7 @@ import type { ProjektdateiKopf, ProjektordnerEintrag, ProjektordnerZugriff } fro
 import { AKQUISE_NAME, ARCHIV_NAME, projektdateiFinden, projektdateiKopf, projekteAuflisten, statusAusGruppe, verbinde } from '../platform/projektordner';
 import type { UebersichtGruppe, UebersichtMarke, UebersichtProjekt } from './ProjektUebersicht';
 import { quellenName } from './ProjektUebersicht';
+import { GLOBALE_VARIABLEN, platzhalterIn } from '../platzhalter';
 
 /**
  * Daten der Projektübersicht aus den Stammordnern: die Projektordner (direkt darin und in Gruppen-, Akquise- und
@@ -48,21 +49,22 @@ const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /**
  * Nummer und Kurzname aus dem Ordnernamen nach dem Schema der Projektordner („2026-014 EFH Musterweg“ bei
- * „{nummer} {kurzname}“) – dasselbe in allen Apps (Schema aus `allgemein.ordnerSchema`). Leer, wenn er nicht passt.
+ * „{PROJEKT_KUERZEL} {PROJEKT_KURZNAME}“, auch mit alten Namen wie „{nummer} {kurzname}“) – dasselbe in allen Apps (Schema aus `allgemein.ordnerSchema`). Leer, wenn er nicht passt.
  */
 export function ausOrdnernameNachSchema(schema: string, name: string): { nummer?: string; kurzname?: string } {
   const namen: string[] = [];
   let muster = '';
   let pos = 0;
-  for (const m of schema.matchAll(/\{([a-zäöü_]+)(?::[^{}]*)?\}/gi)) {
-    muster += escapeRe(schema.slice(pos, m.index));
-    const n = m[1].toLowerCase();
+  for (const f of platzhalterIn(schema, GLOBALE_VARIABLEN)) {
+    muster += escapeRe(schema.slice(pos, f.index));
+    const v = f.treffer?.variable.name;
+    const n = v === 'PROJEKT_KUERZEL' ? 'nummer' : v === 'PROJEKT_KURZNAME' ? 'kurzname' : '';
     if (n === 'nummer') muster += '(.+?)';
     else if (n === 'kurzname') muster += '(.+)';
-    else if (n === 'jahr') muster += '\\d{4}';
+    else if (v === 'JAHR' && f.treffer?.angabe === 'JJJJ') muster += '\\d{4}';
     else muster += '.*?';
-    if (n === 'nummer' || n === 'kurzname') namen.push(n);
-    pos = m.index + m[0].length;
+    if (n) namen.push(n);
+    pos = f.index + f.roh.length;
   }
   muster += escapeRe(schema.slice(pos));
   const r = new RegExp(`^${muster}$`).exec(name.trim());

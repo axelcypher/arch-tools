@@ -3,6 +3,7 @@ import { anschriftEinzeilig, bebauungsplanText, flurText, plzOrt } from '../mode
 import { bueroName } from '../platform/konfig';
 import { datumText, kopfZeilen } from '../ui/DruckKopf';
 import type { PlaceholderDocs, Value } from './context';
+import { datumNachFormat, GLOBALE_VARIABLEN } from '../platzhalter';
 
 /** alle Kontakte einer Art, mit Komma getrennt */
 function kontakte(project: Project, art: 'email' | 'telefon'): string {
@@ -48,6 +49,16 @@ export function projektWerte(project: Project, date = new Date()): Record<string
     'bauherr.email': kontakte(project, 'email'),
     'bauherr.telefon': kontakte(project, 'telefon'),
     datum: datumText(date),
+    // globale Variablen der Suite (@core/platzhalter) – in Dokumenten mit doppelten Klammern: {{PROJEKT_KUERZEL}}, {{DATUM}}
+    PROJEKT_KUERZEL: project.meta.projektcode,
+    PROJEKT_KURZNAME: project.meta.kurzname ?? '',
+    PROJEKT_VORHABEN: project.meta.vorhaben ?? '',
+    BEARBEITER: project.meta.bearbeiter,
+    DATUM: datumNachFormat(date, 'JJMMTT'),
+    JAHR: datumNachFormat(date, 'JJJJ'),
+    JAHR_KURZ: datumNachFormat(date, 'JJ'),
+    // für {{DATUM:TT.MM.JJJJ}} (Format wie in Datei- und Ordnernamen)
+    'DATUM.iso': datumNachFormat(date, 'JJJJ-MM-TT'),
   };
 }
 
@@ -70,5 +81,6 @@ export const PROJEKT_DOCS: PlaceholderDocs[number] = {
     ['bauherr.adresse, bauherr.strasse, bauherr.plz, bauherr.ort, bauherr.plz_ort', 'Adresse des Bauherrn'],
     ['bauherr.email, bauherr.telefon', 'alle E-Mail-Adressen bzw. Telefonnummern, mit Komma getrennt'],
     ['datum', 'Datum des Exports (TT.MM.JJJJ)'],
+    [GLOBALE_VARIABLEN.map((v) => v.name).join(', '), 'globale Variablen der Suite (gleich in allen Apps); Datum mit Format z. B. DATUM:TT.MM.JJJJ'],
   ],
 };

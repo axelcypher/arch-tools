@@ -113,7 +113,7 @@ describe('Projekt (früher Projektordner)', () => {
     expect(feld(host, 'Kurzname').closest('label')!.querySelector('.feld-meldung')!.textContent).toContain('/ : ? werden im Ordnernamen entfernt');
     // Nummer passt nicht zum Schema: Hinweis am Feld, kein Blocker (P-03)
     eingabe(feld(host, 'Projektnummer'), '26-14');
-    expect(feld(host, 'Projektnummer').closest('label')!.querySelector('.feld-meldung')!.textContent).toContain('Passt nicht zum Schema {jahr}-{nr:3}');
+    expect(feld(host, 'Projektnummer').closest('label')!.querySelector('.feld-meldung')!.textContent).toContain('Passt nicht zum Schema {JAHR}-{Nr:3}');
     expect(host.querySelector('.sd-ordnername')?.textContent).toBe('Ordnername: 26-14 EFH Müller Weg 3');
     eingabe(feld(host, 'Projektnummer'), '2026-014');
     eingabe(feld(host, 'Kurzname'), 'EFH Musterweg');
@@ -370,14 +370,18 @@ describe('Projekt (früher Projektordner)', () => {
     act(() => knopf(host, 'Struktur').click());
     eingabe(feld(host, 'Name des Projektordners'), '{nummer}_{kurzname}');
     expect(useOrdner.getState().struktur.ordnername).toBe('{nummer}_{kurzname}');
-    // Platzhalter einfügen (Menü), Vorschau und unbekannte Platzhalter schon beim Tippen (P-06)
-    const menue = host.querySelector<HTMLSelectElement>('select[aria-label="Platzhalter einfügen: Name des Projektordners"]')!;
-    act(() => {
-      menue.value = '{jahr}';
-      menue.dispatchEvent(new Event('change', { bubbles: true }));
-    });
-    expect(useOrdner.getState().struktur.ordnername).toBe('{nummer}_{kurzname}{jahr}');
+    // Platzhalter einfügen (Chips, global und lokal unterscheidbar), Vorschau und unbekannte Platzhalter schon beim Tippen (P-06)
+    const chips = host.querySelector<HTMLElement>('[role="group"][aria-label="Platzhalter: Name des Projektordners"]')!;
+    expect(chips.querySelectorAll('.ph-global').length).toBeGreaterThan(5);
+    act(() => chips.querySelector<HTMLButtonElement>('button[aria-label^="{JAHR} einfügen"]')!.click());
+    expect(useOrdner.getState().struktur.ordnername).toBe('{nummer}_{kurzname} {JAHR}');
+    // alte Namen funktionieren weiter; „Vorlage anpassen“ stellt erst auf Wunsch um
     const ordnerFeld = feld(host, 'Name des Projektordners');
+    const veraltet = ordnerFeld.closest('label')!.querySelector('.ph-veraltet')!;
+    expect(veraltet.textContent).toContain('{nummer} → {PROJEKT_KUERZEL}');
+    act(() => veraltet.querySelector('button')!.click());
+    expect(useOrdner.getState().struktur.ordnername).toBe('{PROJEKT_KUERZEL}_{PROJEKT_KURZNAME} {JAHR}');
+    expect(ordnerFeld.closest('label')!.querySelector('.ph-veraltet')).toBeNull();
     act(() => {
       Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(ordnerFeld, '{nummer} {Bauherr}');
       ordnerFeld.dispatchEvent(new Event('input', { bubbles: true }));
