@@ -541,6 +541,8 @@ QGIS 3.28; geprüft mit 3.34 LTR). Früher war das Teil von PERMIO; dessen Einst
   NRW) nötig. Gespeicherte Einstellungen mit den alten Vorgaben werden beim Einlesen umgestellt: die Beschriftung
   „Auszug aus der Liegenschaftskarte“ auf die heutige Vorgabe, die Namen „Katasterauszug A4/A3“ der beiden PDF-Pläne
   auf „Katasterplan A4/A3“ – nur, wenn der Text genau der alten Vorgabe entspricht; selbst angepasste Texte bleiben.
+  Steht `{Name}` im Dateinamen, heißen neue Exporte danach anders; ein schon abgelegter Plan mit altem Namen gilt dann
+  nicht als vorhanden.
 
 Umsetzung (`apps/ordner`): `src/kataster/kataster.ts` (Einstellungen, Auslesen der Vorlage, Auftrag), `katasterStore.ts`
 (Ablauf), `qgis.ts` (Befehle der Hülle bzw. Ersatz für die Tests), `components/KatasterDialog.tsx` und

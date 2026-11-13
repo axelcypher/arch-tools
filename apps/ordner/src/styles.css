@@ -221,7 +221,7 @@
   flex: 0 0 92px;
   align-self: flex-start;
   text-align: center;
-  font-size: 10.5px;
+  font-size: var(--fs-xs);
   font-weight: 600;
   padding: 1px 7px;
   border-radius: 999px;
@@ -244,7 +244,7 @@
   margin: 4px 0 0;
   padding-left: 16px;
   font-family: Consolas, 'Cascadia Mono', monospace;
-  font-size: 11.5px;
+  font-size: var(--fs-s);
   color: var(--muted);
   user-select: text;
   -webkit-user-select: text;
@@ -281,7 +281,7 @@
   min-height: 52vh;
   padding: 8px 10px;
   font-family: Consolas, 'Cascadia Mono', monospace;
-  font-size: 12.5px;
+  font-size: var(--fs-m);
   line-height: 1.5;
   color: var(--text);
   background: var(--input-bg);
@@ -428,7 +428,7 @@
 .po-chip {
   min-width: 24px;
   padding: 1px 6px;
-  font-size: 11.5px;
+  font-size: var(--fs-s);
   line-height: 18px;
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -494,7 +494,7 @@
   border: 1px solid var(--border);
   border-radius: 4px;
   background: var(--input-bg);
-  font-size: 12.5px;
+  font-size: var(--fs-m);
   user-select: none;
   -webkit-user-select: none;
 }
@@ -575,13 +575,13 @@
 .po-k-eingabe {
   min-width: 180px;
   padding: 1px 5px;
-  font-size: 12.5px;
+  font-size: var(--fs-m);
 }
 .po-k-marke {
   flex: 0 0 auto;
   padding: 0 6px;
   border-radius: 8px;
-  font-size: 10.5px;
+  font-size: var(--fs-xs);
   line-height: 16px;
   background: var(--chip-bg);
   color: var(--muted);
@@ -686,7 +686,7 @@
 }
 .po-baustein-liste summary {
   cursor: pointer;
-  font-size: 12.5px;
+  font-size: var(--fs-m);
 }
 .po-baustein-knoepfe {
   display: flex;
@@ -702,7 +702,7 @@
   max-height: 220px;
   overflow: auto;
   font-family: Consolas, 'Cascadia Mono', monospace;
-  font-size: 11.5px;
+  font-size: var(--fs-s);
   background: var(--code-bg);
   border-radius: 4px;
 }
@@ -760,7 +760,7 @@
   background: none;
   color: var(--text);
   text-align: left;
-  font-size: 12.5px;
+  font-size: var(--fs-m);
 }
 .po-menue button:hover:not(:disabled) {
   background: var(--hover);
@@ -779,7 +779,7 @@
 .po-menue-kuerzel {
   color: var(--muted);
   font: inherit;
-  font-size: 11.5px;
+  font-size: var(--fs-s);
   white-space: nowrap;
 }
 .po-menue button.danger {
@@ -957,7 +957,7 @@
 }
 .po-z-vorschau {
   font-family: Consolas, 'Cascadia Mono', monospace;
-  font-size: 11.5px;
+  font-size: var(--fs-s);
   user-select: text;
   -webkit-user-select: text;
 }
@@ -1100,7 +1100,7 @@
 }
 .po-projektliste li {
   cursor: pointer;
-  font-size: 12.5px;
+  font-size: var(--fs-m);
 }
 .po-start .po-projekt-knopf {
   flex: 1;
@@ -1539,7 +1539,7 @@ button.po-link:focus-visible {
   border: 1px solid var(--border);
   border-radius: 6px;
   background: var(--bg);
-  font-size: 12.5px;
+  font-size: var(--fs-m);
 }
 .po-steckbrief summary {
   cursor: pointer;
@@ -1637,7 +1637,7 @@ button.po-link:focus-visible {
   min-width: 0;
 }
 .po-mail-name {
-  font-size: 12.5px;
+  font-size: var(--fs-m);
   font-weight: 600;
   overflow-wrap: anywhere;
 }
@@ -1668,7 +1668,7 @@ button.po-link:focus-visible {
 .po-mail-teile select {
   width: auto;
   padding: 2px 6px;
-  font-size: 12.5px;
+  font-size: var(--fs-m);
 }
 .po-mail-teile input.po-mail-gegenueber {
   width: 140px;

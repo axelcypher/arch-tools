@@ -473,9 +473,10 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
   };
   /** alle bereiten Mails verwerfen – ab zwei mit Rückfrage (in Outlook bleiben sie, aber die Namen von Hand wären weg) */
   const alleVerwerfen = async () => {
-    const zahl = neue.length;
-    if (zahl > 1 && !(await bestaetigen(`${zahl} Mails verwerfen?`, 'Sie werden nicht abgelegt; in Outlook bleiben sie. Von Hand geänderte Namen gehen verloren.', 'Verwerfen', true))) return;
-    setNeue([]);
+    // nur die Mails, die beim Klick da waren – was während der Rückfrage dazukommt, bleibt
+    const ids = new Set(neue.map((m) => m.id));
+    if (ids.size > 1 && !(await bestaetigen(`${ids.size} Mails verwerfen?`, 'Sie werden nicht abgelegt; in Outlook bleiben sie. Von Hand geänderte Namen gehen verloren.', 'Verwerfen', true))) return;
+    setNeue((alt) => alt.filter((m) => !ids.has(m.id)));
   };
   const neuAendern = (id: number, patch: Partial<MailTeile> | { ordner: string }) =>
     setNeue((alt) =>

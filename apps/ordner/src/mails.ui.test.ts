@@ -17,10 +17,12 @@ import { STANDARD } from './struktur';
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 let root: ReturnType<typeof createRoot> | null = null;
+// einzelne Tests ersetzen setEigene – vor jedem Test wieder die echte Funktion
+const echtesSetEigene = useMails.getState().setEigene;
 beforeEach(() => {
   localStorage.clear();
   useOrdner.setState({ stamm: leereStammdaten(), struktur: STANDARD, allgemein: { ...VORGABE_ALLGEMEIN, projekte: ['/p'] }, konfigLaden: async () => {} });
-  useMails.setState({ eigene: [], geladen: true, fehler: null });
+  useMails.setState({ eigene: [], geladen: true, fehler: null, setEigene: echtesSetEigene });
 });
 afterEach(() => {
   act(() => root?.unmount());
