@@ -593,6 +593,16 @@ export function flaechenDuplizieren(): number {
   return neu.length;
 }
 
+/** Gewählte Flächen des aktiven Geschosses löschen (Entf, Kontextmenü); liefert die Anzahl */
+export function flaechenLoeschen(): number {
+  const st = useEditor.getState();
+  const ids = st.selectedIds.length ? st.selectedIds : st.selectedShapeId ? [st.selectedShapeId] : [];
+  if (!ids.length) return 0;
+  st.update((p) => mapStorey(p, st.activeStoreyId, (s) => ({ ...s, shapes: s.shapes.filter((x) => !ids.includes(x.id)) })));
+  st.select(null);
+  return ids.length;
+}
+
 /**
  * Gewählte Flächen verschieben (Pfeiltasten) – zusammenhängende Schritte ergeben einen Undo-Schritt. Zusammenhängend
  * heißt: kurz hintereinander und das Projekt ist noch das Ergebnis des letzten Schritts (kein Rückgängig dazwischen).

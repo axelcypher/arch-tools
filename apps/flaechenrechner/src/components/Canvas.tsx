@@ -15,6 +15,8 @@ import {
 import { fmt2, parseNum } from '@core/format';
 import { NumberField } from '@core/ui/fields';
 import { Modal } from '@core/ui/Dialog';
+import type { MenuePunkt } from '@core/ui/Menue';
+import { zeigeMenue } from '@core/ui/Menue';
 import type { Hilfslinie } from '@core/fang';
 import { achsBeschraenkt, achsRechteck, achsRichtungen, eckpunktHilfslinien, gebaeudeAchse, hilfslinienFang, zeichenHilfslinien } from '@core/fang';
 import type { OutlineShape, Shape, Storey } from '@core/model';
@@ -34,8 +36,10 @@ import { clippedPieces } from '@core/roof';
 import {
   auswahlVerschieben,
   entwurfZuruecknehmenAnmelden,
+  ablageStatus,
   flaechenDuplizieren,
   flaechenKopieren,
+  flaechenLoeschen,
   mapShape,
   mapStorey,
   nextRoomNumber,
@@ -543,11 +547,7 @@ export function Canvas() {
       if (e.key === ' ') setSpaceDown(false);
     };
     function deleteSelected() {
-      const st = useEditor.getState();
-      const ids = st.selectedIds.length ? st.selectedIds : st.selectedShapeId ? [st.selectedShapeId] : [];
-      if (!ids.length) return;
-      st.update((p) => mapStorey(p, storey.id, (s) => ({ ...s, shapes: s.shapes.filter((x) => !ids.includes(x.id)) })));
-      st.select(null);
+      flaechenLoeschen();
     }
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('keyup', onKeyUp);
@@ -786,11 +786,52 @@ export function Canvas() {
     svgRef.current!.setPointerCapture(e.pointerId);
   };
 
+  // Kontextmenü am Eckpunkt (gemeinsames Menü: Tastatur, Esc-Stapel, gesperrte Punkte mit Grund)
   const onVertexContextMenu = (e: React.MouseEvent, shape: Shape, index: number) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (shape.points.length <= 3) return;
-    update((p) => setShapePoints(p, storey.id, shape.id, shape.points.filter((_, i) => i !== index)));
+    const zuWenig = shape.points.length <= 3;
+    zeigeMenue(
+      e,
+      [
+        {
+          text: `Punkt ${index + 1} löschen`,
+          symbol: 'muell',
+          gefahr: true,
+          deaktiviert: zuWenig,
+          titel: zuWenig ? 'Eine Fläche braucht mindestens drei Punkte' : undefined,
+          aktion: () => update((p) => setShapePoints(p, storey.id, shape.id, shape.points.filter((_, i) => i !== index))),
+        },
+      ],
+      'Eckpunkt',
+    );
+  };
+
+  // Kontextmenü auf einer Fläche (Auswahlwerkzeug): wählt die Fläche, falls sie noch nicht gewählt ist
+  const onShapeContextMenu = (e: React.MouseEvent, shape: Shape) => {
+    if (tool !== 'select') {
+      e.preventDefault();
+      return;
+    }
+    const st = useEditor.getState();
+    if (!st.selectedIds.includes(shape.id) && st.selectedShapeId !== shape.id) select(shape.id);
+    const n = Math.max(useEditor.getState().selectedIds.length, 1);
+    const flaechen = n > 1 ? `${n} Flächen` : 'Fläche';
+    zeigeMenue(e, flaechenMenue(flaechen), shape.kind === 'room' ? `Raum ${[shape.nummer, shape.name].filter(Boolean).join(' ')}` : `BGF-Umriss ${shape.name}`);
+  };
+
+  // Kontextmenü auf der leeren Zeichenfläche
+  const onCanvasContextMenu = (e: React.MouseEvent) => {
+    if (tool !== 'select' || draft.length) {
+      e.preventDefault();
+      return;
+    }
+    zeigeMenue(
+      e,
+      [
+        { text: 'Einfügen', symbol: 'einfuegen', hinweis: 'Strg+V', deaktiviert: ablageStatus().leer, titel: ablageStatus().leer ? 'Nichts kopiert' : undefined, aktion: () => void einfuegenAktion() },
+        { text: 'Alles zeigen', symbol: 'einpassen', hinweis: 'F', aktion: () => useEditor.getState().requestFit() },
+      ],
+      'Zeichenfläche',
+    );
   };
 
   const onPointerMove = (e: React.PointerEvent<SVGSVGElement>) => {
@@ -1081,7 +1122,7 @@ export function Canvas() {
         selectedIds.length > 1
           ? `${selectedIds.length} Flächen gewählt · Ziehen/Pfeiltasten: verschieben · Strg+D: duplizieren · Entf: löschen · Esc: Auswahl aufheben`
           : selected
-            ? 'Punkt ziehen: ändern · ◇ ziehen: Punkt einfügen · Rechtsklick auf Punkt: löschen · Entf: Fläche löschen'
+            ? 'Punkt ziehen: ändern · ◇ ziehen: Punkt einfügen · Rechtsklick: Menü (Punkt löschen, kopieren …) · Entf: Fläche löschen'
             : leer
               ? ''
               : 'Klicken: wählen · Ziehen: verschieben · Umschalt+Klick/Rahmen: mehrere';
@@ -1128,7 +1169,7 @@ export function Canvas() {
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerLeave={() => !drag.current && setCursor(null)}
-        onContextMenu={(e) => e.preventDefault()}
+        onContextMenu={onCanvasContextMenu}
       >
         <defs>
           <pattern id="hatch-s" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
@@ -1159,6 +1200,7 @@ export function Canvas() {
               fillRule="evenodd"
               strokeLinejoin="round"
               onPointerDown={(e) => onShapePointerDown(e, s)}
+              onContextMenu={(e) => onShapeContextMenu(e, s)}
               style={{ cursor: tool === 'select' ? 'move' : undefined }}
             />
           ))}
@@ -1438,7 +1480,8 @@ const KUERZEL: [string, string][] = [
   ['Umschalt/Strg+Klick · Umschalt+Rahmen · Strg+A', 'Flächen zur Auswahl hinzufügen · alle wählen'],
   ['Strg+C · Strg+V · Strg+D', 'kopieren · einfügen · duplizieren (Messen: Strg+C kopiert die Messung)'],
   ['Entf · Rücktaste', 'Auswahl löschen · letzten Entwurfspunkt löschen'],
-  ['Punkt ziehen · ◇ ziehen · Rechtsklick auf Punkt', 'Punkt ändern · Punkt einfügen · Punkt löschen'],
+  ['Punkt ziehen · ◇ ziehen', 'Punkt ändern · Punkt einfügen'],
+  ['Rechtsklick (oder Kontextmenütaste)', 'Menü: Punkt löschen, Flächen kopieren, duplizieren, einfügen, löschen'],
 ];
 
 function KuerzelDialog({ onClose }: { onClose: () => void }) {
@@ -1639,4 +1682,16 @@ function MessAnzeige({
         })()}
     </g>
   );
+}
+
+/** Befehle für gewählte Flächen im Kontextmenü – dieselben wie die Tastenkürzel */
+function flaechenMenue(flaechen: string): MenuePunkt[] {
+  const leer = ablageStatus().leer;
+  return [
+    { text: `${flaechen} kopieren`, symbol: 'kopie', hinweis: 'Strg+C', aktion: () => void flaechenKopieren() },
+    { text: `${flaechen} duplizieren`, symbol: 'plus', hinweis: 'Strg+D', aktion: () => void flaechenDuplizieren() },
+    { text: 'Einfügen', symbol: 'einfuegen', hinweis: 'Strg+V', deaktiviert: leer, titel: leer ? 'Nichts kopiert' : undefined, aktion: () => void einfuegenAktion() },
+    { trenner: true },
+    { text: `${flaechen} löschen`, symbol: 'muell', hinweis: 'Entf', gefahr: true, aktion: () => void flaechenLoeschen() },
+  ];
 }

@@ -12,6 +12,8 @@ import type { Tool } from '../store/store';
 import { restoreIfcModel, rueckgaengig, useEditor } from '../store/store';
 import { planLaden } from './BackgroundPanel';
 import { IfcImportDialog } from './IfcImportDialog';
+import type { SymbolName } from '@core/ui/Symbol';
+import { Symbol } from '@core/ui/Symbol';
 import { logger } from '@core/platform/log';
 import { mitDatei } from '@core/platform/dateiFehler';
 import { aenderungenSpeichern, meldung, oeffnenFehlgeschlagen } from '@core/ui/Rueckfrage';
@@ -68,13 +70,13 @@ export async function projektUebernehmen(p: Project, datei: string): Promise<boo
   return true;
 }
 
-// einfarbige Textsymbole (keine farbigen Emoji), Tooltips sagen, was das Werkzeug tut
-const TOOLS: { id: Tool; label: string; icon: string; title: string }[] = [
-  { id: 'select', label: 'Auswählen', icon: '⬉', title: 'Auswählen und bearbeiten (V)' },
-  { id: 'polygon', label: 'Polygon', icon: '⬠', title: 'Polygon zeichnen – Punkt für Punkt, Längen eintippbar (P)' },
-  { id: 'rect', label: 'Rechteck', icon: '▭', title: 'Rechteck zeichnen – zwei Ecken oder Maß, z. B. 4,5x3 (R)' },
-  { id: 'detect', label: 'Erkennen', icon: '⊡', title: 'Fläche per Klick aus dem Plan erkennen (E)' },
-  { id: 'measure', label: 'Messen', icon: '↔', title: 'Strecken und Flächen messen – zählt nicht zur Auswertung (M)' },
+// Symbole aus dem gemeinsamen Satz (SVG statt Emoji/Schriftzeichen); Tooltips sagen, was das Werkzeug tut
+const TOOLS: { id: Tool; label: string; symbol: SymbolName; title: string }[] = [
+  { id: 'select', label: 'Auswählen', symbol: 'auswahl', title: 'Auswählen und bearbeiten (V)' },
+  { id: 'polygon', label: 'Polygon', symbol: 'polygon', title: 'Polygon zeichnen – Punkt für Punkt, Längen eintippbar (P)' },
+  { id: 'rect', label: 'Rechteck', symbol: 'rechteck', title: 'Rechteck zeichnen – zwei Ecken oder Maß, z. B. 4,5x3 (R)' },
+  { id: 'detect', label: 'Erkennen', symbol: 'erkennen', title: 'Fläche per Klick aus dem Plan erkennen (E)' },
+  { id: 'measure', label: 'Messen', symbol: 'lineal', title: 'Strecken und Flächen messen – zählt nicht zur Auswertung (M)' },
 ];
 
 export function Toolbar() {
@@ -138,19 +140,21 @@ export function Toolbar() {
   return (
     <div className="toolbar">
       <div className="tb-group">
-        <button onClick={() => void onNew()} title="Neues Projekt">
-          Neu
+        {/* bekannte Befehle: unter 1600 px nur das Symbol (Name über aria-label und title) */}
+        <button onClick={() => void onNew()} title="Neues Projekt" aria-label="Neu">
+          <Symbol name="plus" /> <span className="tb-text">Neu</span>
         </button>
-        <button onClick={() => void onOpen()} title="Projekt öffnen (Strg+O)">
-          Öffnen …
+        <button onClick={() => void onOpen()} title="Projekt öffnen … (Strg+O)" aria-label="Öffnen …">
+          <Symbol name="ordnerOffen" /> <span className="tb-text">Öffnen …</span>
         </button>
         {/* ungespeicherte Änderungen als Punkt in der Ecke – ändert die Breite der Leiste nicht */}
         <button
           className={dirty ? 'tb-dirty' : undefined}
           onClick={() => void onSave()}
           title={`${isTauri() ? 'Projekt speichern – in die geöffnete Datei (Strg+S)' : 'Projekt als Datei herunterladen (Strg+S)'}${dirty ? ' – ungespeicherte Änderungen' : ''}`}
+          aria-label={dirty ? 'Speichern – ungespeicherte Änderungen' : 'Speichern'}
         >
-          Speichern
+          <Symbol name="speichern" /> <span className="tb-text">Speichern</span>
         </button>
         {isTauri() && (
           <button onClick={() => void onSave(true)} title="Projekt unter neuem Namen oder an anderem Ort speichern (Strg+Umschalt+S)">
@@ -158,21 +162,21 @@ export function Toolbar() {
           </button>
         )}
         <button onClick={() => setIfcOpen(true)} title="Gebäudemodell aus Archicad, Revit & Co. importieren">
-          IFC-Import …
+          <Symbol name="stapel" /> IFC-Import …
         </button>
       </div>
       {ifcOpen && <IfcImportDialog onClose={() => setIfcOpen(false)} />}
       <div className="tb-group">
         <button onClick={rueckgaengig} disabled={!canUndo} title="Rückgängig (Strg+Z) – beim Zeichnen zuerst den letzten Punkt" aria-label="Rückgängig">
-          ↶
+          <Symbol name="rueckgaengig" />
         </button>
         <button onClick={st.redo} disabled={!canRedo} title="Wiederholen (Strg+Y)" aria-label="Wiederholen">
-          ↷
+          <Symbol name="wiederholen" />
         </button>
       </div>
       <div className="tb-group" role="group" aria-label="Plan">
         <button onClick={() => void planLaden(aktivesGeschoss())} title={hatPlan ? 'Plan des Geschosses durch einen anderen ersetzen (PDF, DXF, Bild)' : 'Grundriss als PDF, DXF oder Bild laden – zum Nachzeichnen und Erkennen'}>
-          {hatPlan ? 'Plan …' : 'Plan laden …'}
+          <Symbol name="bild" /> {hatPlan ? 'Plan …' : 'Plan laden …'}
         </button>
         <button
           className={tool === 'calibrate' || tool === 'kontrolle' ? 'active' : ''}
@@ -181,13 +185,13 @@ export function Toolbar() {
           onClick={() => st.setTool('calibrate')}
           title={hatPlan ? 'Plan kalibrieren – zwei Punkte mit bekanntem Abstand (K)' : 'Zuerst einen Plan laden (Plan laden …)'}
         >
-          <span className="tb-icon">⇔</span> Kalibrieren
+          <Symbol name="kalibrieren" /> Kalibrieren
         </button>
       </div>
       <div className="tb-group" role="group" aria-label="Werkzeuge">
         {TOOLS.map((t) => (
           <button key={t.id} className={tool === t.id ? 'active' : ''} aria-pressed={tool === t.id} onClick={() => st.setTool(t.id)} title={t.title}>
-            <span className="tb-icon">{t.icon}</span> {t.label}
+            <Symbol name={t.symbol} /> {t.label}
           </button>
         ))}
       </div>
@@ -205,13 +209,13 @@ export function Toolbar() {
       <div className="tb-spacer" />
       <div className="tb-group">
         <button onClick={onCsv} title="Flächenaufstellung als CSV exportieren">
-          CSV …
+          <Symbol name="export" /> CSV …
         </button>
         <button onClick={() => st.setExcelOpen(true)} title="Excel-Export (Standardlayout oder eigene Vorlage)">
-          Excel …
+          <Symbol name="tabelle" /> Excel …
         </button>
-        <button className="primary" onClick={() => st.setReportOpen(true)}>
-          Flächenaufstellung …
+        <button className="primary" onClick={() => st.setReportOpen(true)} title="Flächenaufstellung zum Prüfen, Drucken und als PDF">
+          <Symbol name="drucken" /> Flächenaufstellung …
         </button>
       </div>
     </div>
