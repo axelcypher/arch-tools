@@ -12,6 +12,7 @@ import { Nachschlagewerk, useHilfe } from './Nachschlagewerk';
 import { dialogVerhaltenEinrichten } from './dialoge';
 import { useEscSchliessen } from './Dialog';
 import { aenderungenSpeichern, bestaetigen, RueckfrageHost } from './Rueckfrage';
+import { MenueHost } from './Menue';
 import { useBuero } from './DruckKopf';
 import { SpeicherortHost, SpeicherortKnopf } from './Speicherort';
 
@@ -190,6 +191,7 @@ export function TitleBar({ app, name, dirty, onOpenLog, regeln, onProjekte, zeic
       </header>
       <SpeicherortHost />
       <RueckfrageHost />
+      <MenueHost />
     </>
   );
 }
@@ -278,7 +280,7 @@ export function ThemeMenu({ zeichenflaeche = true }: { zeichenflaeche?: boolean 
         aria-expanded={open}
         onClick={() => setOpen(!open)}
       >
-        <SchemaSymbol id={wahl} /> {cur.kurz}
+        <SchemaSymbol id={wahl} /> <span className="titlebar-text">{cur.kurz}</span>
       </button>
       {open && (
         <div className="titlebar-dropdown">

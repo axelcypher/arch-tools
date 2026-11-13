@@ -23,7 +23,7 @@ describe('Leisten: Breite an den verfügbaren Platz gebunden', () => {
           { className: 'arbeit' },
           createElement(BreitenLeiste, { schluessel: 't:links', vorgabe: 300, min: 240, max: 520, titel: 'Breite der Angaben', mitteMin: 420, children: createElement('div') }),
           createElement('main'),
-          createElement(BreitenLeiste, { schluessel: 't:rechts', vorgabe: 360, min: 280, max: 680, griffLinks: true, titel: 'Breite der Einzelheiten', mitteMin: 420, children: createElement('div') }),
+          createElement(BreitenLeiste, { schluessel: 't:rechts', vorgabe: 360, min: 280, max: 680, seite: 'rechts', titel: 'Breite der Einzelheiten', mitteMin: 420, children: createElement('div') }),
         ),
       ),
     );

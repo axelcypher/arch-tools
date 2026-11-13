@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import type { ReactElement } from 'react';
-import { act, createElement } from 'react';
+import { act, createElement, Fragment } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { strToU8 } from 'fflate';
@@ -930,6 +930,8 @@ describe('Startseite mit der gemeinsamen Projektübersicht', () => {
   it('Projektordner der Stammordner mit Stammdaten aus der Projektdatei, zuletzt geöffnet, Öffnen und Neues Projekt', async () => {
     // dynamisch geladen: derselbe Modulstand wie die Komponente (ein Test oben setzt die Module zurück)
     const { ProjektStart } = await import('./components/ProjektStart');
+    // das gemeinsame Kontextmenü (in der App steckt es in der Titelleiste) – nach resetModules aus derselben Modulinstanz
+    const { MenueHost } = await import('@core/ui/Menue');
     const { useOrdner: store } = await import('./store');
     const { zuletztMerken } = await import('@core/platform/konfig');
     const fs = new SpeicherDateisystem();
@@ -940,7 +942,14 @@ describe('Startseite mit der gemeinsamen Projektübersicht', () => {
     store.setState({ allgemein: { ...VORGABE_ALLGEMEIN, projekte: ['P:/Projekte'] }, struktur: STANDARD });
     const geoeffnet: string[] = [];
     let neu = 0;
-    const host = render(createElement(ProjektStart, { fs, entwurf: '', onNeu: () => neu++, onLeerNeu: () => {}, onOeffnen: (p: string) => geoeffnet.push(p), onAndererOrdner: () => {} }));
+    const host = render(
+      createElement(
+        Fragment,
+        null,
+        createElement(ProjektStart, { fs, entwurf: '', onNeu: () => neu++, onLeerNeu: () => {}, onOeffnen: (p: string) => geoeffnet.push(p), onAndererOrdner: () => {} }),
+        createElement(MenueHost),
+      ),
+    );
     await warten();
     await warten();
     expect(host.textContent).toContain('Projekte');
@@ -955,8 +964,8 @@ describe('Startseite mit der gemeinsamen Projektübersicht', () => {
     // Kontextmenü (P-09): ergänzen, prüfen, Katasterpläne, Explorer, abschließen (P-15), anheften
     const karteVon = (text: string) => [...host.querySelectorAll('.pa-karte')].find((k) => k.textContent?.includes(text)) as HTMLElement;
     act(() => karteVon('Neubau EFH').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 5, clientY: 5 })));
-    expect([...host.querySelectorAll('.pa-menue [role="menuitem"]')].map((b) => b.textContent)).toEqual(['Ergänzen …', 'Katasterpläne …', 'Im Explorer öffnen', 'Projekt abschließen', 'Als Akquise kennzeichnen', 'Anheften']);
-    await act(async () => ([...host.querySelectorAll('.pa-menue [role="menuitem"]')].find((b) => b.textContent === 'Projekt abschließen') as HTMLButtonElement).click());
+    expect([...host.querySelectorAll('.menue [role="menuitem"]')].map((b) => b.textContent)).toEqual(['Ergänzen …', 'Katasterpläne …', 'Im Explorer öffnen', 'Projekt abschließen', 'Als Akquise kennzeichnen', 'Anheften']);
+    await act(async () => ([...host.querySelectorAll('.menue [role="menuitem"]')].find((b) => b.textContent === 'Projekt abschließen') as HTMLButtonElement).click());
     await warten();
     await warten();
     const { readProjectFile: lesen } = await import('@core/archive');

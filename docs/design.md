@@ -100,14 +100,21 @@ Helligkeitskontrast. Unter der Linie in `--sel-foto` liegt ein Doppelsaum, auße
 - Immer `Modal` aus `ui/Dialog.tsx` statt eines eigenen `div.modal`: Esc, Klick daneben, Rolle, Name und Fokusfalle
   kommen dann mit.
 - **Titel:** `kopf` zeigt ihn sichtbar als Kopf und benennt damit den Dialog. Nicht zusätzlich als `h3` im Inhalt
-  wiederholen. Ohne `kopf` ist `titel` nur der Name für Screenreader.
+  wiederholen. Ohne `kopf` ist `titel` nur der Name für Screenreader. Unterabschnitte im Dialog sind `h4` (`--fs-s`,
+  halbfett).
+- **Ausnahmen mit eigenem Kopf:** Ein Dialog mit Erklärung unter dem Titel (Ansicht-Editor) oder mit Navigation links
+  (Einstellungen) setzt den Titel als `h3` in seinen eigenen Kopf bzw. Navigationskopf und benennt den Dialog darüber
+  (`aria-labelledby` auf diese Überschrift oder `titel`). Vollbild-Ebenen mit eigener Leiste (z. B. die
+  Unterlagen-Vorschau in PERMIO) sind kein `Modal`, tragen aber `role="dialog"`, `aria-modal` und einen Namen und
+  schließen mit Esc über `useEscSchliessen`.
 - **Breite:** Standard 380px, `breit` 620px (Formulare), `tabelle` bis 1200px (Vorschauen, Zuordnungen).
 - **Erstfokus** (automatisch, `ui/dialoge.ts`): `autoFocus` bzw. `data-startfokus` (der Dialog bestimmt selbst, z. B.
   ein Häkchen), sonst das erste Textfeld, sonst der Hauptknopf (`.primary`), sonst das gewählte Optionsfeld – nie eine
   Aufklappzeile (`summary`), nie „Abbrechen“: Enter darf nichts verwerfen. Schließt ein Dialog über einem anderen,
   geht der Fokus an die Stelle im äußeren zurück.
-- **Knöpfe** in `.dialog-buttons` als letztes Kind des Dialogs (oder seines `<form>`, das dann selbst letztes Kind ist): rechtsbündig, Hauptknopf
-  rechts außen, „Abbrechen“ links davon. In langen Dialogen bleiben sie unten stehen (sticky).
+- **Knöpfe** in `.dialog-buttons` als letztes Kind des Dialogs (oder seines `<form>`, das dann selbst letztes Kind
+  ist): rechtsbündig, Hauptknopf rechts außen, „Abbrechen“ links davon. In langen Dialogen bleiben sie unten stehen
+  (sticky).
 - **Enter** löst den Hauptknopf aus: Inhalt in `<form onSubmit>`, Hauptknopf `type="submit"`, alle anderen
   `type="button"`.
 - Optionen, die nur zu einer Wahl gehören, erst bei dieser Wahl zeigen (Beispiel: Vorlagen-Knöpfe im Excel-Dialog nur
@@ -118,8 +125,8 @@ Helligkeitskontrast. Unter der Linie in `--sel-foto` liegt ein Doppelsaum, auße
 - `.report-backdrop > .report` gilt als Dialog (Rolle, Name aus der ersten Überschrift, Fokus hinein, Tab bleibt
   drin).
 - `.report-actions` ist eine eigene Zeile über dem Blatt und bleibt beim Blättern oben: Optionen links, Knöpfe rechts.
-  Sie wird nie mitgedruckt. Hauptknopf (`.primary`) ist **„Drucken / PDF“**, „Schließen“ ein normaler Knopf links
-  davon.
+  Sie wird nie mitgedruckt. Hauptknopf (`.primary`) ist **„Drucken / PDF …“** (mit Auslassungspunkten, weil sich der
+  Druckdialog öffnet), „Schließen“ ein normaler Knopf links davon.
 
 ## Felder
 
@@ -127,9 +134,10 @@ Helligkeitskontrast. Unter der Linie in `--sel-foto` liegt ein Doppelsaum, auße
   unverändert (Cursor und Auswahl stimmen); Punkte vor dem Komma werden beim Lesen immer als Tausendertrenner
   verstanden, auch wenn nach dem Bearbeiten die Dreiergruppen nicht mehr stimmen. Ganze Zahlen (`digits={0}`) stehen
   ohne Punkte, weil „45.00“ dort mehrdeutig wäre.
-- **Enter** übernimmt die Eingabe und verlässt das Feld, damit Strg+Z (Rückgängig der App), Entf und die
-  Werkzeugtasten wieder der Arbeitsfläche gehören und nicht ins leere Rückgängig des Browsers gehen. Weiter zum nächsten
-  Feld mit Tab. **Esc** verwirft eine Eingabe; ohne Eingabe schließt Esc den Dialog.
+- **Enter** übernimmt die Eingabe und verlässt das Feld, damit Strg+Z (Rückgängig der App), Entf und die Werkzeugtasten
+  wieder der Arbeitsfläche gehören und nicht ins leere Rückgängig des Browsers gehen. In einem `<form>` wird danach
+  über den Hauptknopf abgesendet (nicht, wenn er gesperrt ist). Weiter zum nächsten Feld mit Tab. **Esc** verwirft eine
+  Eingabe; ohne Eingabe schließt Esc den Dialog.
 - In `.toolbar` und `.report-actions` füllen Felder nicht die Zeile: Auswahllisten sind so breit wie ihr Inhalt,
   Textfelder haben die Standardbreite des Browsers (etwa 20 Zeichen; kürzer mit dem Attribut `size`), Regler 120px.
   Sonst füllen Felder ihre Spalte.
@@ -140,6 +148,11 @@ Helligkeitskontrast. Unter der Linie in `--sel-foto` liegt ein Doppelsaum, auße
 `.segment` für eine Wahl aus wenigen (Ansicht, Modus): Knöpfe direkt nebeneinander in einem Rahmen, der gewählte mit
 `aria-pressed="true"` in Akzent-Tönung. Höhe 24px, in `.toolbar` 28px wie die übrigen Knöpfe dort. Statt eigener
 Varianten je App (`.mv-umschalter`, `.ava-tabs`, `.view-switch`).
+
+Als Registerleiste (Bereiche wechseln, der Inhalt darunter tauscht sich) mit `role="tablist"`, Knöpfen mit
+`role="tab"` und `aria-selected`; `.segment` färbt `aria-selected="true"` wie `aria-pressed`. ←/→ wechseln zwischen den
+Registern, Pos1/Ende springen zum ersten bzw. letzten; der Wechsel wirkt sofort (automatische Aktivierung). Nur das
+gewählte Register liegt in der Tab-Reihenfolge (`tabIndex` 0, die übrigen -1).
 
 ```html
 <div class="segment" role="group" aria-label="Ansicht">
@@ -156,6 +169,47 @@ Varianten je App (`.mv-umschalter`, `.ava-tabs`, `.view-switch`).
   fehlt); „Neu“ bzw. „Neues Projekt“.
 - Texte sagen, was zu tun ist, nicht was fehlt; was es nur in der Desktop-App gibt, steht als Fußnote darunter.
 
+## Symbole
+
+Gemeinsamer Satz in `ui/Symbol.tsx` (Raster 24, Linie 2, runde Enden, Farbe des Textes, Größe 1em):
+`<Symbol name="lineal" />`. Ohne `titel` ist das Symbol dekorativ, dann trägt der Knopf den Namen (Text oder
+`aria-label`); mit `titel` ist es ein benanntes Bild.
+
+- Werkzeuge: `auswahl`, `polygon`, `rechteck`, `lineal` (Messen), `kalibrieren`, `einpassen`, `raster`.
+- Befehle: `speichern`, `drucken`, `export`, `kopie`, `einfuegen`, `muell`, `rueckgaengig`, `wiederholen`, `plus`,
+  `suche`, `stift`.
+- Zustand: `haken`, `warnung`, `info`, `schliessen`, `auge`, `augeZu`, `stern`.
+- Navigation: `pfeilRechts`, `pfeilLinks`, `pfeilUnten`, `ordner`, `ordnerOffen`, `datei`.
+
+Neue Symbole kommen in diesen Satz, nicht in die App. Keine Emoji (📏 ✂ 🗑) und keine Schriftzeichen als Symbol.
+
+## Menüs
+
+`ui/Menue.tsx`: Kontextmenü mit `zeigeMenue(e, punkte, name)` im `onContextMenu`, Aufklappmenü mit `<MenueKnopf>`.
+`name` benennt das Menü für Screenreader (z. B. „Projekt 2019-003“); der Aufklappknopf nimmt seinen eigenen Namen. Punkte
+mit `text`, optional `symbol`, `hinweis` (rechts, z. B. Tastenkürzel), `titel`, `gefahr`, `deaktiviert`, `unter`
+(Untermenü), Trenner mit `{ trenner: true }`.
+
+- Tastatur: der erste Punkt hat den Fokus, ↑/↓ und Pos1/Ende wandern, → bzw. Enter öffnet ein Untermenü, ← führt
+  zurück. Esc schließt nur das Menü (ein Dialog darunter bleibt offen), Tab schließt und gibt den Fokus an den
+  Auslöser zurück.
+- `MenueHost` steckt schon in der Titelleiste jeder App und in der Rahmen-App; nicht selbst einhängen.
+- Gesperrte Punkte (`deaktiviert`) mit Grund im `hinweis` („Antrag eingereicht“), statt sie wegzulassen. Sie bleiben
+  per Tastatur erreichbar (`aria-disabled`), damit der Grund vorgelesen wird, und führen nichts aus.
+- Ohne Mausposition (Kontextmenütaste) erscheint das Menü am Auslöser.
+- Menüs liegen über Dialogen und Rückfragen; Schatten schwebender Flächen über `--schatten-schwebend`.
+
+## Seitenleisten
+
+`BreitenLeiste` (`ui/Leiste.tsx`) mit gemerkter, ziehbarer Breite. Der Griff sitzt am Rand zur Arbeitsfläche: links
+stehende Leiste (Vorgabe) rechts, rechts stehende Leiste mit `seite="rechts"` links. Tastatur ←/→ bewegen den Griff,
+Doppelklick setzt die Vorgabe. Keine eigenen Leisten-Komponenten je App.
+
+## Meldungen im Inhalt
+
+`.meldung` (neutral) mit `.ok`, `.warnung` oder `.fehler` für Meldungen in Dialogen und Seitenleisten; `role="status"`
+für Rückmeldungen, `role="alert"` für Fehler. `.warning` bleibt als Hinweis in Warnfarben.
+
 ## Meldungen auf der Zeichenfläche
 
 - `.canvas-message` ist eine Warnung oben mittig (Warnfarben).
@@ -166,7 +220,8 @@ Varianten je App (`.mv-umschalter`, `.ava-tabs`, `.view-switch`).
 ## Titelleiste
 
 Das Farbschema-Menü zeigt ein gezeichnetes Symbol und den Namen der Wahl („Auto“, „Hell“, „Dunkel“), wie „§ Regeln“ und
-„≡ Fehlerprotokoll“ mit Text.
+„≡ Fehlerprotokoll“ mit Text. Unter 960px Fensterbreite zeigen Knöpfe mit Symbol (Farbschema, Speicherort) nur noch
+das Symbol: Text in `<span className="titlebar-text">`, der Name bleibt über `aria-label`.
 
 ## Richtig und falsch
 
@@ -183,16 +238,20 @@ Das Farbschema-Menü zeigt ein gezeichnetes Symbol und den Namen der Wahl („Au
 
 ## Was die Apps nachziehen
 
-| App                    | Datei und Aufgabe                                                                                                                                                                                            |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| RECTIO                 | `apps/entzerrung/src/components/Arbeitsflaeche.tsx:364`: Leerzustand „Foto hinzufügen …“ mit `className="canvas-message leer"`; Auswahl auf dem Foto mit `--sel-foto` und Saum statt eigener Farbe           |
-| TERRIO, NUMIO          | Spalten-Überschriften (`h2` ohne Regel, sonst 22px) auf die Skala setzen: `--fs-l`, halbfett                                                                                                                 |
-| FABRIO                 | erledigt (FABRIO 0.9.1): Versalien entfernt, `outline: none` geprüft; Druckvorschau, `.segment`, `Modal` mit `kopf`, „ …“ nachgezogen                                                                        |
-| PERMIO                 | erledigt (PERMIO 0.48.1): Versalien entfernt, Überschriften auf `--fs-*`, `outline: none` geprüft (Menüpunkte mit Fokusrahmen)                                                                               |
-| core                   | Versalien entfernen: `.pa-abschnitt-titel` (`packages/core/src/ui/projektuebersicht.css:60`, PERMIO und ATLAS), `.av-abschnitt-titel` und `.av-ed-gruppe-titel` (`packages/core/src/ui/ansicht.css`, PERMIO) |
-| ATLAS                  | `outline: none` prüfen: `apps/ordner/src/styles.css:415`                                                                                                                                                     |
-| QUADRIO, TERRIO, NUMIO | Druckvorschau: „Drucken / PDF“ als Hauptknopf (`.primary`), „Schließen“ normal (`Report.tsx`, `NachweisDruck.tsx`, `KostenDruck.tsx`)                                                                        |
-| NUMIO, QUADRIO         | eigene Umschalter (`.mv-umschalter`, `.view-switch`) auf `.segment` umstellen                                                                                                                                |
-| alle                   | eigene `div.modal` auf `Modal` umstellen; Titel mit `kopf` statt `h3` im Inhalt; Werkzeugleisten-Befehle nach „Begriffe“ benennen (z. B. TERRIO „Öffnen“ → „Öffnen …“)                                       |
+| App                     | Datei und Aufgabe                                                                                                                                                                                                               |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| RECTIO                  | `apps/entzerrung/src/components/Arbeitsflaeche.tsx:364`: Leerzustand „Foto hinzufügen …“ mit `className="canvas-message leer"`; Auswahl auf dem Foto mit `--sel-foto` und Saum statt eigener Farbe                              |
+| TERRIO, NUMIO           | Spalten-Überschriften (`h2` ohne Regel, sonst 22px) auf die Skala setzen: `--fs-l`, halbfett                                                                                                                                    |
+| FABRIO                  | erledigt (FABRIO 0.9.1): Versalien entfernt, `outline: none` geprüft; Druckvorschau, `.segment`, `Modal` mit `kopf`, „ …“ nachgezogen                                                                                           |
+| PERMIO                  | erledigt (PERMIO 0.48.1): Versalien entfernt, Überschriften auf `--fs-*`, `outline: none` geprüft (Menüpunkte mit Fokusrahmen)                                                                                                  |
+| core                    | erledigt: Versalien in `.pa-abschnitt-titel`, `.av-abschnitt-titel`, `.av-ed-gruppe-titel` entfernt; `.modal h3`/`h4` aus der Skala                                                                                             |
+| ATLAS                   | `outline: none` prüfen: `apps/ordner/src/styles.css:415`                                                                                                                                                                        |
+| QUADRIO, TERRIO, NUMIO  | Druckvorschau: „Drucken / PDF …“ als Hauptknopf (`.primary`), „Schließen“ normal (`Report.tsx`, `NachweisDruck.tsx`, `KostenDruck.tsx`)                                                                                         |
+| NUMIO, QUADRIO          | eigene Umschalter (`.mv-umschalter`, `.view-switch`) auf `.segment` umstellen                                                                                                                                                   |
+| PERMIO                  | eigenes Menü und eigene Symbole (`components/Menue.tsx`, `components/Symbol.tsx`, `.menue`- und `.symbol`-Regeln in `styles.css`) durch `@core/ui/Menue` und `@core/ui/Symbol` ersetzen; fehlende Symbole im core-Satz ergänzen |
+| RECTIO                  | eigene `RechteLeiste` durch `BreitenLeiste seite="rechts"` ersetzen                                                                                                                                                             |
+| QUADRIO, TERRIO, RECTIO | Werkzeugleisten mit `Symbol` statt Emoji und Schriftzeichen (📏, ⇔, ⊡, ▭, ↶/↷)                                                                                                                                                  |
+| alle                    | eigene Kontextmenüs auf `zeigeMenue` umstellen (QUADRIO Canvas, TERRIO Lageplan, RECTIO Arbeitsfläche, ATLAS Ordner-Editor)                                                                                                     |
+| alle                    | eigene `div.modal` auf `Modal` umstellen; Titel mit `kopf` statt `h3` im Inhalt; Werkzeugleisten-Befehle nach „Begriffe“ benennen (z. B. TERRIO „Öffnen“ → „Öffnen …“)                                                          |
 
 Zeilennummern beziehen sich auf den Stand dieser Richtlinie.

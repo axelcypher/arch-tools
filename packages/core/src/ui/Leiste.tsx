@@ -3,8 +3,9 @@ import { useEffect, useRef, useState } from 'react';
 import { zeigerZiehen } from './ziehen';
 
 /**
- * Seitenleisten mit veränderbarer Breite: Breite je Leiste gemerkt (lokal je Benutzer), Ziehgriff am rechten Rand
- * (Doppelklick: Vorgabe), mit der Tastatur ←/→ in 16-px-Schritten.
+ * Seitenleisten mit veränderbarer Breite: Breite je Leiste gemerkt (lokal je Benutzer), Ziehgriff am Rand zur
+ * Arbeitsfläche – rechts bei einer linken Leiste, links bei einer rechten (`seite="rechts"`). Doppelklick: Vorgabe;
+ * Tastatur ←/→ in 16-px-Schritten, die Pfeile bewegen den Griff in ihre Richtung.
  */
 
 const lesen = (schluessel: string, vorgabe: number, min: number, max: number) => {
@@ -34,11 +35,6 @@ export function useLeistenBreite(schluessel: string, vorgabe: number, min = 180,
 }
 
 /**
- * Ziehgriff am Rand einer Leiste (das Elternelement braucht `position: relative`): rechts für Leisten am linken
- * Fensterrand, links für Leisten am rechten Rand (Ziehen nach links macht sie breiter). Tastatur: ←/→ in 16-px-Schritten,
- * Pos1/Ende auf Mindest- bzw. Höchstbreite.
- */
-/**
  * Platz, den eine Leiste höchstens bekommen kann: Breite des Arbeitsbereichs minus die anderen Leisten minus die
  * Mindestbreite der Mitte. Ohne `mitteMin` keine Grenze.
  */
@@ -62,8 +58,37 @@ function angleichen(griff: HTMLElement | null) {
   for (const c of leiste?.parentElement?.children ?? []) if (c !== leiste && c.classList.contains('leiste')) c.dispatchEvent(new CustomEvent(ANGLEICHEN));
 }
 
-export function Ziehgriff({ breite, setBreite, vorgabe, titel = 'Breite ändern', min, max, links = false, ist, mitteMin }: { breite: number; setBreite: (b: number, merken?: boolean) => void; vorgabe?: number; titel?: string; min?: number; max?: number; links?: boolean; ist?: number; mitteMin?: number }) {
-  const richtung = links ? -1 : 1;
+/**
+ * Ziehgriff am Rand einer Leiste (das Elternelement braucht `position: relative`); `seite`: wo die Leiste steht – links
+ * (Griff rechts) oder rechts neben der Arbeitsfläche (Griff links, Ziehen nach links macht sie breiter). Tastatur: ←/→
+ * in 16-px-Schritten, Pos1/Ende auf Mindest- bzw. Höchstbreite.
+ */
+export function Ziehgriff({
+  breite,
+  setBreite,
+  vorgabe,
+  titel = 'Breite ändern',
+  seite = 'links',
+  min,
+  max,
+  ist,
+  mitteMin,
+}: {
+  breite: number;
+  setBreite: (b: number, merken?: boolean) => void;
+  vorgabe?: number;
+  titel?: string;
+  seite?: 'links' | 'rechts';
+  /** Grenzen der Breite (auch für Screenreader) */
+  min?: number;
+  max?: number;
+  /** gezeichnete Breite, wenn die Leiste geschrumpft ist */
+  ist?: number;
+  /** Mindestbreite, die der Mitte bleibt */
+  mitteMin?: number;
+}) {
+  // rechte Leiste: Griff am linken Rand, nach links ziehen macht sie breiter
+  const richtung = seite === 'rechts' ? -1 : 1;
   const griff = useRef<HTMLDivElement>(null);
   // nie breiter als der verfügbare Platz (die Mitte behält ihre Mindestbreite) – sonst entstünde eine tote Zone
   // Wachsen nur bis zum verfügbaren Platz; geht es nicht weiter, bleibt alles, wie es ist (Ende oder → am Maximum
@@ -91,7 +116,7 @@ export function Ziehgriff({ breite, setBreite, vorgabe, titel = 'Breite ändern'
   return (
     <div
       ref={griff}
-      className={`leiste-griff${links ? ' leiste-griff-links' : ''}`}
+      className={`leiste-griff${seite === 'rechts' ? ' leiste-griff-links' : ''}`}
       role="separator"
       aria-orientation="vertical"
       aria-label={titel}
@@ -133,7 +158,7 @@ export function BreitenLeiste({
   min,
   max,
   className = '',
-  griffLinks = false,
+  seite = 'links',
   titel,
   mitteMin,
   children,
@@ -147,8 +172,8 @@ export function BreitenLeiste({
   min?: number;
   max?: number;
   className?: string;
-  /** Leiste am rechten Fensterrand: Griff links */
-  griffLinks?: boolean;
+  /** links (Griff rechts, Vorgabe) oder rechts neben der Arbeitsfläche (Griff links) */
+  seite?: 'links' | 'rechts';
   children: ReactNode;
 }) {
   const [breite, setBreite] = useLeistenBreite(schluessel, vorgabe, min, max);
@@ -185,7 +210,7 @@ export function BreitenLeiste({
   return (
     <div ref={rahmen} className={`leiste ${className}`} style={{ width: breite }}>
       {children}
-      <Ziehgriff breite={breite} setBreite={setBreite} vorgabe={vorgabe} min={min ?? 180} max={max ?? 560} links={griffLinks} ist={ist || undefined} titel={titel} mitteMin={mitteMin} />
+      <Ziehgriff breite={breite} setBreite={setBreite} vorgabe={vorgabe} seite={seite} min={min ?? 180} max={max ?? 560} ist={ist || undefined} titel={titel} mitteMin={mitteMin} />
     </div>
   );
 }

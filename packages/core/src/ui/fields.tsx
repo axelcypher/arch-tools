@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { parseNum } from '../format';
 import type { Pruefung } from './pruefen';
 import { alle, bereichMeldung, pflicht as pflichtRegel } from './pruefen';
@@ -21,6 +22,35 @@ export function zahlLesen(text: string): number | null {
   if (v !== null || !text.includes(',')) return v;
   const [ganz, ...rest] = text.split(',');
   return rest.length === 1 ? parseNum(`${ganz.replace(/\./g, '')},${rest[0]}`) : null;
+}
+
+/**
+ * Enter in einem Feld: übernehmen (Fokus verlassen) und – in einem `<form>` – über seinen Hauptknopf absenden. Das
+ * implizite Absenden des Browsers fällt nach dem Verlassen aus (das Ziel von keypress ist dann `body`) und wird hier
+ * verhindert, damit nie doppelt gesendet wird; abgesendet wird nach dem Übernehmen der Eingabe, damit der Handler den
+ * neuen Wert sieht. Ein gesperrter Hauptknopf sendet nicht.
+ */
+function enterUebernehmen(e: ReactKeyboardEvent<HTMLInputElement>) {
+  e.preventDefault();
+  const el = e.currentTarget;
+  const form = el.form;
+  el.blur();
+  if (!form) return;
+  // erst nach dem Übernehmen suchen und prüfen: der Wert kann den Hauptknopf gerade erst freigeben
+  setTimeout(() => {
+    if (!form.isConnected) return;
+    // Hauptknopf: der als .primary markierte Absendeknopf, sonst der erste (wie der Browser)
+    const absende = 'button[type="submit"], input[type="submit"], button:not([type])';
+    const knopf =
+      form.querySelector<HTMLButtonElement | HTMLInputElement>(
+        absende
+          .split(', ')
+          .map((x) => `${x}.primary`)
+          .join(', '),
+      ) ?? form.querySelector<HTMLButtonElement | HTMLInputElement>(absende);
+    if (knopf?.disabled) return;
+    form.requestSubmit(knopf ?? undefined);
+  }, 0);
 }
 
 /** Zahl in Meldungen: so kurz wie möglich, mindestens eine Nachkommastelle (1,0 · 0,4 · 0,25) */
@@ -166,8 +196,8 @@ export function NumberField({
         onBlur={commit}
         onKeyDown={(e) => {
           // Enter übernimmt und verlässt das Feld: danach gehören Strg+Z (Rückgängig der App), Entf und die Werkzeugtasten
-          // wieder der Arbeitsfläche
-          if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+          // wieder der Arbeitsfläche; im Formular löst Enter danach den Hauptknopf aus
+          if (e.key === 'Enter') enterUebernehmen(e);
           // Esc verwirft eine Eingabe – und schließt dann nicht zugleich den Dialog; ohne Eingabe schließt Esc ihn sofort
           if (e.key === 'Escape' && (bearbeitet.current || fehler)) {
             e.stopPropagation();
@@ -250,8 +280,8 @@ export function TextField({
         onBlur={commit}
         onKeyDown={(e) => {
           // Enter übernimmt und verlässt das Feld: danach gehören Strg+Z (Rückgängig der App), Entf und die Werkzeugtasten
-          // wieder der Arbeitsfläche
-          if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+          // wieder der Arbeitsfläche; im Formular löst Enter danach den Hauptknopf aus
+          if (e.key === 'Enter') enterUebernehmen(e);
           if (e.key === 'Escape' && textRef.current !== value) {
             e.stopPropagation();
             textRef.current = value;

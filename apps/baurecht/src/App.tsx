@@ -323,7 +323,7 @@ export function App() {
               <Angaben stand={stand} />
             </BreitenLeiste>
             <Vorschriften stand={stand} />
-            <BreitenLeiste schluessel="baurecht:leiste-einzelheiten" vorgabe={typeof window !== 'undefined' && window.innerWidth < 1400 ? 360 : 420} min={280} max={680} griffLinks className="br-leiste-rechts" titel="Breite der Einzelheiten" mitteMin={420}>
+            <BreitenLeiste schluessel="baurecht:leiste-einzelheiten" vorgabe={typeof window !== 'undefined' && window.innerWidth < 1400 ? 360 : 420} min={280} max={680} seite="rechts" className="br-leiste-rechts" titel="Breite der Einzelheiten" mitteMin={420}>
               <Detail stand={stand} />
             </BreitenLeiste>
           </div>
