@@ -108,7 +108,7 @@ export interface KatasterState {
   programmSuchen: () => Promise<string[]>;
   vorlageWaehlen: () => Promise<void>;
   vorlageInfoLaden: () => Promise<void>;
-  /** Projekt für den Export wählen: Projektdatei lesen; null schließt */
+  /** Projekt für den Export wählen: Projektdatei lesen; null schließt. Nur der letzte Aufruf zählt – ein spätes Ergebnis eines früheren (nach dem Schließen bzw. einem anderen Projekt) wird verworfen */
   projektWaehlen: (basis: string | null, name?: string) => Promise<void>;
   /** QGIS-Vorlage der Projektdatei (oder null) */
   projektVorlage: () => ProjektVorlage | null;
@@ -129,6 +129,8 @@ export interface KatasterState {
 const infoCache = new WeakMap<Uint8Array, VorlageInfo | null>();
 
 export const useKataster = create<KatasterState>()((set, get) => {
+  /** Laufkennung von projektWaehlen: jeder Aufruf (auch null) macht frühere, noch lesende ungültig */
+  let projektLauf = 0;
   const speichern = async (e: KatasterEinstellungen) => {
     set({ einstellungen: e });
     try {
@@ -342,6 +344,7 @@ export const useKataster = create<KatasterState>()((set, get) => {
     },
 
     projektWaehlen: async (basis, name) => {
+      const kennung = ++projektLauf;
       if (!basis) {
         set({ projekt: null, ausgang: null });
         return;
@@ -352,6 +355,8 @@ export const useKataster = create<KatasterState>()((set, get) => {
       } catch (e) {
         log.warn(`${basis}: Projektdatei nicht lesbar: ${fehlertext(e)}`);
       }
+      // inzwischen geschlossen oder ein anderes Projekt gewählt: dieses Ergebnis ist überholt
+      if (kennung !== projektLauf) return;
       set({ projekt: { basis, name: name ?? basis.split(/[\\/]/).pop() ?? basis, oap }, ausgang: null });
     },
 

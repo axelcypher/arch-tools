@@ -9,6 +9,7 @@ import { lvGeaendert, useAva } from './store';
 import { lvSpeichernMitMeldung } from './App';
 import { Navigation } from './components/Navigation';
 import { GewerkAnsicht } from './components/GewerkAnsicht';
+import { MenueHost } from '@core/ui/Menue';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -136,5 +137,44 @@ describe('LV-Editor', () => {
     expect(host.querySelector('[role="tabpanel"]')?.getAttribute('aria-labelledby')).toBe('ava-tab-lv');
     act(() => tabs.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true })));
     expect(useAva.getState().ansicht).toMatchObject({ art: 'gewerk', tab: 'angebote' });
+  });
+});
+
+describe('LV-Kopf: Speichern und Menü (gemeinsame Bausteine)', () => {
+  it('Speichern trägt ungespeicherte Änderungen als Klasse und im Namen, nach dem Speichern nicht mehr', async () => {
+    await lvOeffnen();
+    const knopf = () => [...host.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent === 'Speichern')!;
+    // unverändert: keine Kennzeichnung, gesperrt
+    expect(knopf().classList.contains('ungespeichert')).toBe(false);
+    expect(knopf().getAttribute('aria-label')).toBeNull();
+    expect(knopf().disabled).toBe(true);
+    const pos = position();
+    act(() => useAva.getState().lvAendern((l) => ({ ...l, elemente: aendereElement(l.elemente, pos.id, (p) => ({ ...(p as Position), kurztext: 'geändert' })) })));
+    await warte(() => knopf().classList.contains('ungespeichert'));
+    expect(knopf().classList.contains('ungespeichert')).toBe(true);
+    expect(knopf().getAttribute('aria-label')).toBe('Speichern – ungespeicherte Änderungen');
+    expect(knopf().disabled).toBe(false);
+    // Gegenprobe: gespeichert → Kennzeichnung weg
+    await act(async () => void (await lvSpeichernMitMeldung()));
+    await warte(() => !knopf().classList.contains('ungespeichert'));
+    expect(knopf().classList.contains('ungespeichert')).toBe(false);
+    expect(knopf().getAttribute('aria-label')).toBeNull();
+  });
+
+  it('Menü „LV“: öffnet mit Namen und vier Punkten, Esc schließt und gibt den Fokus an den Knopf zurück', async () => {
+    await zeige(createElement('div', null, createElement(GewerkAnsicht, { gewerk: 'G8', tab: 'lv' }), createElement(MenueHost)));
+    await warte(() => useAva.getState().lv && host.querySelector('.ava-lv-zeilen'));
+    const knopf = [...host.querySelectorAll<HTMLButtonElement>('button[aria-haspopup="menu"]')].find((b) => b.textContent?.trim() === 'LV')!;
+    expect(knopf.getAttribute('aria-expanded')).toBe('false');
+    await act(async () => knopf.click());
+    await warte(() => document.querySelector('[role="menu"]'));
+    const menue = document.querySelector('[role="menu"]')!;
+    expect(knopf.getAttribute('aria-expanded')).toBe('true');
+    expect(menue.getAttribute('aria-label')).toBe('LV');
+    expect([...menue.querySelectorAll('[role="menuitem"]')].map((p) => p.textContent?.trim())).toEqual(['LV-Eigenschaften …', 'Neu nummerieren …', 'Drucken …', 'GAEB-Export …']);
+    await act(async () => void document.activeElement?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })));
+    await warte(() => !document.querySelector('[role="menu"]'));
+    expect(document.querySelector('[role="menu"]')).toBeNull();
+    expect(document.activeElement).toBe(knopf);
   });
 });

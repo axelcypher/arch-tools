@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { bestaetigen } from '@core/ui/Rueckfrage';
+import { Symbol } from '@core/ui/Symbol';
 import { gewerkZweistellig } from '../../abrechnung/gewerk';
 import { heuteIso, neueId } from '../../lv/modell';
 import { useAva } from '../../store';
@@ -95,7 +96,7 @@ export function Notizen() {
                 if (await bestaetigen('Notiz entfernen?', n.text.slice(0, 120), 'Entfernen', true)) await speichern((a) => ({ ...a, notizen: a.notizen.filter((x) => x.id !== n.id) }));
               }}
             >
-              ×
+              <Symbol name="schliessen" />
             </button>
           </li>
           );

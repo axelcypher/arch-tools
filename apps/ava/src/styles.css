@@ -1479,46 +1479,6 @@ input.ava-fehler {
   }
 }
 
-/* Menüknopf (LV ▾, Neues LV ▾, Weitere ▾) */
-.ava-menue {
-  position: relative;
-  display: inline-flex;
-}
-
-.ava-menue-liste {
-  position: absolute;
-  top: calc(100% + 2px);
-  left: 0;
-  z-index: 30;
-  min-width: 220px;
-  padding: 4px;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-}
-
-.ava-menue-rechts {
-  left: auto;
-  right: 0;
-}
-
-.ava-menue-liste button {
-  text-align: left;
-  border-color: transparent;
-  background: transparent;
-  white-space: nowrap;
-}
-
-.ava-menue-liste button:hover:not(:disabled),
-.ava-menue-liste button:focus-visible {
-  background: var(--accent-soft);
-  outline: none;
-}
-
 /* LV-Editor: eine Werkzeugzeile, Suche rechts, sichtbarer Fokus */
 .ava-lv-leiste {
   flex-wrap: wrap;

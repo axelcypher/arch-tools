@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Modal } from '@core/ui/Dialog';
 import { bestaetigen, meldung } from '@core/ui/Rueckfrage';
 import { logger } from '@core/platform/log';
+import { Symbol } from '@core/ui/Symbol';
 import type { Erfassung, KkStand } from '../../abrechnung/ablauf';
 import { datensatzNachtragen, deckblattErzeugen, rechnungErfassen, rechnungsDateiname, TeilweiseErfasst, zahlbetrag } from '../../abrechnung/ablauf';
 import type { GewerkAbrechnung } from '../../abrechnung/aggregat';
@@ -430,7 +431,7 @@ function BereitsErhalten({ liste, onChange, vorschlag }: { liste: VorigeZahlung[
           <DatumEingabe wert={z.datum} label={`Datum Zahlung ${i + 1}`} onChange={(datum) => onChange(liste.map((y, j) => (j === i ? { ...y, datum } : y)))} />
           <ZahlEingabe wert={z.betrag} stellen={2} label={`Betrag Zahlung ${i + 1}`} onChange={(n) => onChange(liste.map((y, j) => (j === i ? { ...y, betrag: n ?? 0 } : y)))} />
           <button className="small icon" onClick={() => onChange(liste.filter((_, j) => j !== i))} title="Zahlung entfernen" aria-label={`Zahlung ${i + 1} entfernen`}>
-            ×
+            <Symbol name="schliessen" />
           </button>
         </div>
       ))}

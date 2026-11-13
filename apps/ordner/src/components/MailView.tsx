@@ -5,6 +5,7 @@ import type { ProjektordnerEintrag } from '@core/platform/projektordner';
 import { projekteAuflisten } from '@core/platform/projektordner';
 import { logger } from '@core/platform/log';
 import { bestaetigen } from '@core/ui/Rueckfrage';
+import { Symbol } from '@core/ui/Symbol';
 import type { Dateisystem } from '../dateisystem';
 import { hatDateisystem, oeffneOrdner, tauriDateisystem, verbinde, waehleOrdner, waehleOrdnerImBrowser } from '../dateisystem';
 import type { MailTeile, MailVorschlag, NamensBefund, Richtung } from '../mail/mailname';
@@ -13,6 +14,7 @@ import { eigeneDomainRaten, useMails } from '../mail/mailStore';
 import { ausOrdnername } from '../nummer';
 import type { GeladenerOrdner } from '../projekt';
 import { projektEinlesen } from '../projekt';
+import { pfadGrenze, pfadZuLang } from '../plan';
 import { useOrdner } from '../store';
 import { ladeProjektordner } from './AssistentView';
 
@@ -73,6 +75,17 @@ const tageUm = (d?: Date) =>
 /** Klartext statt der technischen Meldung des Lesers (die steht im Tooltip und im Protokoll) */
 const LESEFEHLER = 'Die Datei ist keine lesbare Outlook-Mail.';
 let naechsteId = 1;
+/** so viele Namen zeigt die Rückfrage vor dem Sammel-Umbenennen */
+const VORSCHAU = 4;
+/**
+ * Desktop: Ist der vollständige Zielpfad einer Mail unter Windows zu lang? Dann ein Klartext statt der Fehlermeldung des
+ * Betriebssystems beim Umbenennen bzw. Ablegen (Grenze für Dateien wie im Plan: 260 Zeichen).
+ */
+const zuLangText = (fs: Dateisystem | null, basis: string, pfad: string): string | null => {
+  if (!fs || !basis) return null;
+  const voll = verbinde(basis, pfad);
+  return pfadZuLang(voll) ? `Pfad zu lang (${voll.length} Zeichen, Windows erlaubt höchstens ${pfadGrenze(false) - 1}) – Thema oder Name kürzen` : null;
+};
 const tag = (d?: Date) => (d ? d.toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '–');
 
 /** Teile vergleichen, die aus der Nachricht folgen: Datum, Richtung und – wenn die Richtung stimmt – nichts weiter */
@@ -250,12 +263,32 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
     else if (n === z.datei) problem = 'unverändert';
     else if (liste.some((x) => x !== z && x.pfad.toLowerCase() === pfad.toLowerCase()) || projekt?.eintraege.some((e) => e.pfad.toLowerCase() === pfad.toLowerCase() && e.pfad !== z.pfad))
       problem = 'diesen Namen gibt es in dem Ordner schon';
+    else problem = zuLangText(fs, projekt?.pfad ?? '', pfad);
     return { name: n, pfad, problem };
   };
 
   const umbenennen = async (liste: Zeile[]) => {
     if (!projekt || !fs?.umbenennen) return;
     const kennung = lauf.current;
+    // mehrere auf einmal: vorher fragen – mit Anzahl und den ersten Namen (ein Rückgängig gibt es nicht)
+    const bereit = liste.flatMap((z) => {
+      const t = ziel(z);
+      return t && !t.problem ? [{ alt: z.datei, neu: t.name }] : [];
+    });
+    if (bereit.length > 1) {
+      const vorschau = bereit.slice(0, VORSCHAU).map((b) => `${b.alt}\n   → ${b.neu}`);
+      const rest = bereit.length - vorschau.length;
+      const ausgelassen = liste.length - bereit.length;
+      const text = [
+        ...vorschau,
+        ...(rest > 0 ? [`… und ${rest} weitere`] : []),
+        '',
+        `Umbenannt wird im selben Ordner, nie überschreibend – rückgängig machen lässt es sich nicht.${ausgelassen ? ` ${ausgelassen} gewählte ${ausgelassen === 1 ? 'Mail bleibt' : 'Mails bleiben'} unverändert – der Grund steht in der Zeile.` : ''}`,
+      ].join('\n');
+      if (!(await bestaetigen(`${bereit.length} Mails umbenennen?`, text, 'Umbenennen'))) return;
+      // während der Rückfrage ein anderes Projekt gewählt: nichts tun
+      if (kennung !== lauf.current) return;
+    }
     setFehler(null);
     let i = 0;
     let erfolgreich = 0;
@@ -428,7 +461,7 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
           ? b.gruende[0]
           : projekt.eintraege.some((e) => e.pfad.toLowerCase() === pfad.toLowerCase()) || neue.some((x) => x !== m && x.status?.art !== 'ok' && neuZielName(x) === pfad.toLowerCase())
             ? 'diesen Namen gibt es in dem Ordner schon'
-            : null;
+            : zuLangText(fs, projekt.pfad, pfad);
     return { name: n, pfad, problem };
   };
   const neuZielName = (m: NeueMail) => (m.teile && projekt ? (m.ordner ? `${m.ordner}/` : '') + mailName({ ...m.teile, code: projekt.code }) : '').toLowerCase();
@@ -567,18 +600,26 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
           />
         </div>
         {vorschlagDomain && (
-          <p className="po-hinweis small-text">
+          <p className="meldung">
             Erkannt aus den Mails: <strong>{vorschlagDomain}</strong>{' '}
             <button className="small" onClick={() => void eigeneSetzen([vorschlagDomain])}>
               Übernehmen
             </button>
           </p>
         )}
-        {einstellungenFehler && <p className="warning small-text">{einstellungenFehler}</p>}
+        {einstellungenFehler && (
+          <p className="meldung fehler" role="alert">
+            {einstellungenFehler}
+          </p>
+        )}
       </section>
 
       <section className="po-col po-mails">
-        {fehler && <p className="warning">{fehler}</p>}
+        {fehler && (
+          <p className="meldung fehler" role="alert">
+            {fehler}
+          </p>
+        )}
         {laeuft && <p className="busy">{laeuft}</p>}
         {!projekt && !laeuft && <p className="muted">Ein Projekt wählen – die Mails darin werden geprüft.</p>}
         {projekt && (
@@ -702,7 +743,7 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
                             aria-label={`${m.herkunft} verwerfen`}
                             onClick={() => setNeue((alt) => alt.filter((x) => x.id !== m.id))}
                           >
-                            ×
+                            <Symbol name="schliessen" />
                           </button>
                         </div>
                         {m.lesefehler && (
@@ -710,8 +751,8 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
                             {LESEFEHLER}
                           </p>
                         )}
-                        {m.schonDa && <p className="po-hinweis small-text">Diese Mail liegt schon im Projekt: {m.schonDa}</p>}
-                        {m.doppelt && <p className="po-hinweis small-text">Diese Mail ist in dieser Ablage doppelt – schon dabei als {m.doppelt}</p>}
+                        {m.schonDa && <p className="meldung">Diese Mail liegt schon im Projekt: {m.schonDa}</p>}
+                        {m.doppelt && <p className="meldung">Diese Mail ist in dieser Ablage doppelt – schon dabei als {m.doppelt}</p>}
                         {m.teile && (
                           <>
                             <div className="po-mail-teile" role="group" aria-label={`Name für ${m.herkunft}`}>
@@ -737,17 +778,15 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
                             </p>
                           </>
                         )}
-                        {m.status && <p className={m.status.art === 'ok' ? 'po-meldung small-text' : 'warning small-text'}>{m.status.text}</p>}
+                        {m.status && <p className={m.status.art === 'ok' ? 'meldung ok' : 'meldung fehler'}>{m.status.text}</p>}
                       </li>
                     );
                   })}
                 </ul>
               </div>
             )}
-            {ohneDomain && (
-              <p className="po-hinweis small-text">Ohne eigene Domain gilt die Richtung (von/an) aus dem bisherigen Namen – links unter „Eigene Domains“ eintragen, dann erkennt die App sie selbst.</p>
-            )}
-            {!sichtbar.length && <p className="po-meldung">{zeilen.length ? 'Alle Mails sind nach dem Schema benannt.' : 'In diesem Projektordner gibt es keine Mails (.msg).'}</p>}
+            {ohneDomain && <p className="meldung">Ohne eigene Domain gilt die Richtung (von/an) aus dem bisherigen Namen – links unter „Eigene Domains“ eintragen, dann erkennt die App sie selbst.</p>}
+            {!sichtbar.length && <p className="meldung ok">{zeilen.length ? 'Alle Mails sind nach dem Schema benannt.' : 'In diesem Projektordner gibt es keine Mails (.msg).'}</p>}
             <ul className="po-mailliste">
               {sichtbar.map((z) => {
                 const t = ziel(z);
@@ -812,7 +851,7 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
                         </p>
                       </>
                     )}
-                    {z.status && <p className={z.status.art === 'ok' ? 'po-meldung small-text' : 'warning small-text'}>{z.status.text}</p>}
+                    {z.status && <p className={z.status.art === 'ok' ? 'meldung ok' : 'meldung fehler'}>{z.status.text}</p>}
                     {mail && (
                       <details className="po-mail-vorschau" open={z.offen} onToggle={(e) => umschalten(z.pfad, { offen: (e.target as HTMLDetailsElement).open })}>
                         <summary>Mail ansehen</summary>

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { bestaetigen, meldung } from '@core/ui/Rueckfrage';
+import { Symbol } from '@core/ui/Symbol';
 import type { Mangel, MangelStatus } from '../../avaDaten';
 import { maengelanzeigeText, maengelPdf } from '../../bauleitung/berichte';
 import { alleGewerke } from '../../abrechnung/aggregat';
@@ -192,7 +193,7 @@ export function Maengel() {
                     if (await bestaetigen('Mangel entfernen?', m.beschreibung || `Nr. ${m.nr}`, 'Entfernen', true)) await speichern((a) => ({ ...a, maengel: a.maengel.filter((x) => x.id !== m.id) }));
                   }}
                 >
-                  ×
+                  <Symbol name="schliessen" />
                 </button>
               </td>
             </tr>
