@@ -1,0 +1,157 @@
+{
+  "format": 1,
+  "modul": "nw",
+  "norm": "strwg",
+  "fassung": "2026-07-01",
+  "version": 1,
+  "paragrafen": {
+    "18": {
+      "gilt": {
+        "f": "vorhaben.baustelle_oeffentlich",
+        "ist": true
+      },
+      "entfaellt": {
+        "f": "vorhaben.baustelle_oeffentlich",
+        "ist": false
+      },
+      "grund": "Gerüst, Container oder Baustelleneinrichtung auf öffentlichen Straßen ist Sondernutzung und braucht eine Erlaubnis (in Ortsdurchfahrten der Gemeinde).",
+      "fundstellen": [
+        "18/1",
+        "18/2"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "hinweis": "Gebühren nach der Sondernutzungssatzung der Gemeinde.",
+      "stand": {
+        "18/1": "bf479f29",
+        "18/2": "5d511f8a"
+      },
+      "titel": "Sondernutzungen"
+    },
+    "20": {
+      "gilt": {
+        "und": [
+          {
+            "f": "lage.zufahrt_neu",
+            "ist": true
+          },
+          {
+            "f": "lage.zufahrt_klassifiziert",
+            "ist": true
+          }
+        ]
+      },
+      "entfaellt": {
+        "oder": [
+          {
+            "f": "lage.zufahrt_neu",
+            "ist": false
+          },
+          {
+            "f": "lage.zufahrt_klassifiziert",
+            "ist": false
+          }
+        ]
+      },
+      "grund": "Neue oder wesentlich geänderte Zufahrten zu Landes- oder Kreisstraßen außerhalb von Ortsdurchfahrten gelten als Sondernutzung – entfällt, wenn die Zustimmung nach § 25 erteilt wird.",
+      "fundstellen": [
+        "20/1",
+        "20/3"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "20/1": "0973a466",
+        "20/3": "3169348e"
+      },
+      "titel": "Straßenanlieger, Zufahrten, Zugänge"
+    },
+    "25": {
+      "gilt": {
+        "oder": [
+          {
+            "und": [
+              {
+                "$": "vorhaben_29"
+              },
+              {
+                "f": "lage.strasse_ausserorts",
+                "ist": true
+              }
+            ]
+          },
+          {
+            "und": [
+              {
+                "f": "lage.zufahrt_neu",
+                "ist": true
+              },
+              {
+                "f": "lage.zufahrt_klassifiziert",
+                "ist": true
+              }
+            ]
+          },
+          {
+            "und": [
+              {
+                "$": "vorhaben_29"
+              },
+              {
+                "f": "lage.anschluss_klassifiziert",
+                "ist": true
+              }
+            ]
+          }
+        ]
+      },
+      "entfaellt": {
+        "oder": [
+          {
+            "und": [
+              {
+                "f": "lage.strasse_ausserorts",
+                "ist": false
+              },
+              {
+                "f": "lage.anschluss_klassifiziert",
+                "ist": false
+              },
+              {
+                "oder": [
+                  {
+                    "f": "lage.zufahrt_neu",
+                    "ist": false
+                  },
+                  {
+                    "f": "lage.zufahrt_klassifiziert",
+                    "ist": false
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "$": "nur_beseitigung"
+          }
+        ]
+      },
+      "grund": "Außerhalb von Ortsdurchfahrten braucht die Baugenehmigung die Zustimmung der Straßenbaubehörde, wenn bauliche Anlagen bis 40 m von Landes- oder Kreisstraßen errichtet, erheblich geändert oder anders genutzt werden oder über Zufahrten angeschlossen sind.",
+      "fundstellen": [
+        "25/1",
+        "25/2"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "hinweis": "Die Zustimmung gilt als erteilt, wenn sie nicht innerhalb von zwei Monaten versagt wird (Abs. 2). An Bundesstraßen gilt § 9 FStrG (Anbauverbot bis 20 m, Zustimmung bis 40 m).",
+      "stand": {
+        "25/1": "3dcf8efe",
+        "25/2": "dcc4a223"
+      },
+      "titel": "Bauliche Anlagen an Straßen"
+    }
+  }
+}

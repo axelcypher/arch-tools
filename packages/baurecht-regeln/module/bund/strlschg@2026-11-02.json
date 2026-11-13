@@ -1,0 +1,107 @@
+{
+  "format": 1,
+  "modul": "bund",
+  "norm": "strlschg",
+  "fassung": "2026-11-02",
+  "version": 1,
+  "paragrafen": {
+    "121": {
+      "titel": "Festlegung von Gebieten",
+      "gilt": {
+        "und": [
+          {
+            "$": "errichtung"
+          },
+          {
+            "oder": [
+              {
+                "$": "wohnnutzung"
+              },
+              {
+                "f": "gebaeude.aufenthaltsraeume",
+                "ist": true
+              }
+            ]
+          },
+          {
+            "f": "lage.radon",
+            "ist": true
+          }
+        ]
+      },
+      "grund": "Das Grundstück liegt in einem festgelegten Radonvorsorgegebiet (Abs. 1) – für Neubauten mit Aufenthaltsräumen oder Arbeitsplätzen gelten zusätzliche Maßnahmen nach § 123 Abs. 1 Satz 2 Nr. 2 und der Strahlenschutzverordnung.",
+      "fundstellen": [
+        "121/1"
+      ],
+      "verweise": [
+        "bund/strlschg/123"
+      ],
+      "stand": {
+        "121/1": "761ac44d"
+      }
+    },
+    "123": {
+      "titel": "Maßnahmen an Gebäuden",
+      "gilt": {
+        "und": [
+          {
+            "$": "errichtung"
+          },
+          {
+            "oder": [
+              {
+                "$": "wohnnutzung"
+              },
+              {
+                "f": "gebaeude.aufenthaltsraeume",
+                "ist": true
+              }
+            ]
+          }
+        ]
+      },
+      "grund": "Wer ein Gebäude mit Aufenthaltsräumen oder Arbeitsplätzen errichtet, hat den Zutritt von Radon aus dem Baugrund zu verhindern oder erheblich zu erschweren; das gilt als erfüllt mit dem Feuchteschutz nach den anerkannten Regeln der Technik, im Radonvorsorgegebiet zusätzlich mit den Maßnahmen der Verordnung (Abs. 1).",
+      "fundstellen": [
+        "123/1",
+        "123/4"
+      ],
+      "hinweis": "Bei baulichen Veränderungen, die den Luftwechsel erheblich vermindern (z. B. Fenstertausch, Dämmung), sollen Radonschutzmaßnahmen in Betracht gezogen werden (Abs. 4).",
+      "stand": {
+        "123/1": "f4cdf0cf",
+        "123/4": "758e00e4"
+      },
+      "pruefen": {
+        "grund": "Bauliche Veränderung, die den Luftwechsel erheblich vermindert (z. B. Fenstertausch, Dämmung): Maßnahmen zum Schutz vor Radon sollen in Betracht gezogen werden (Abs. 4).",
+        "wenn": {
+          "und": [
+            {
+              "oder": [
+                {
+                  "$": "aenderung"
+                },
+                {
+                  "$": "nutzungsaenderung"
+                }
+              ]
+            },
+            {
+              "f": "vorhaben.aussenbauteile",
+              "ist": true
+            },
+            {
+              "oder": [
+                {
+                  "$": "wohnnutzung"
+                },
+                {
+                  "f": "gebaeude.aufenthaltsraeume",
+                  "ist": true
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  }
+}

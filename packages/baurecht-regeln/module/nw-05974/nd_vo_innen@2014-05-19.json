@@ -1,0 +1,140 @@
+{
+  "format": 1,
+  "modul": "nw-05974",
+  "norm": "nd_vo_innen",
+  "fassung": "2014-05-19",
+  "version": 1,
+  "geltung": {
+    "und": [
+      {
+        "f": "lage.ags",
+        "in": [
+          "05974040",
+          "05974048",
+          "05974052"
+        ]
+      },
+      {
+        "oder": [
+          {
+            "$": "kreis_soest_innen"
+          },
+          {
+            "f": "kreis_soest.naturdenkmal",
+            "ist": true
+          }
+        ]
+      }
+    ]
+  },
+  "geltungGrund": "im Innenbereich (Bebauungspläne und im Zusammenhang bebaute Ortsteile) der Stadt Soest, der Gemeinde Welver und der Stadt Werl – und für jedes Schutzobjekt der Anlage, auch wo sein Schutzbereich (Kronentraufbereich) über die Grenze reicht",
+  "paragrafen": {
+    "1": {
+      "gilt": {
+        "f": "kreis_soest.naturdenkmal",
+        "ist": true
+      },
+      "entfaellt": {
+        "f": "kreis_soest.naturdenkmal",
+        "ist": false
+      },
+      "grund": "Am Grundstück steht ein Naturdenkmal oder geschützter Landschaftsbestandteil der Anlage zur Verordnung; bei Bäumen ist auch die Fläche unter der Krone (Kronentraufbereich) geschützt.",
+      "fundstellen": [
+        "1/1",
+        "1/2"
+      ],
+      "stand": {
+        "1/1": "ae27b5d9",
+        "1/2": "9d91608b"
+      },
+      "titel": "Schutzobjekte und Schutzzwecke"
+    },
+    "2": {
+      "gilt": {
+        "und": [
+          {
+            "f": "kreis_soest.naturdenkmal",
+            "ist": true
+          },
+          {
+            "$": "kreis_soest_eingriff"
+          }
+        ]
+      },
+      "entfaellt": {
+        "f": "kreis_soest.naturdenkmal",
+        "ist": false
+      },
+      "grund": "Im Bereich des Schutzobjekts verboten: Beschädigung oder Beeinträchtigung, Aufschüttungen, Ausschachtungen und Bodenverdichtung, das Errichten baulicher Anlagen und das Verlegen von Leitungen, Lagern und Versiegeln.",
+      "fundstellen": [
+        "2"
+      ],
+      "nachweis": [
+        "Antrag auf Ausnahme oder Befreiung bei der unteren Naturschutzbehörde des Kreises Soest (§ 4)"
+      ],
+      "hinweis": "Die städtische Baumschutzsatzung findet keine Anwendung, soweit diese Verordnung den Baum regelt (§ 2 Abs. 2 Baumschutzsatzung Soest).",
+      "stand": {
+        "2": "699bd2ed"
+      },
+      "titel": "Verbote",
+      "pruefen": {
+        "grund": "Nutzungsänderung: Bodenverdichtung, Lagern und Versiegeln im Bereich des Schutzobjekts sind verboten (§ 2).",
+        "wenn": {
+          "und": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "f": "kreis_soest.naturdenkmal",
+              "ist": true
+            }
+          ]
+        }
+      }
+    },
+    "4": {
+      "gilt": {
+        "und": [
+          {
+            "f": "kreis_soest.naturdenkmal",
+            "ist": true
+          },
+          {
+            "$": "kreis_soest_eingriff"
+          }
+        ]
+      },
+      "entfaellt": {
+        "f": "kreis_soest.naturdenkmal",
+        "ist": false
+      },
+      "grund": "Befreiung nach § 67 BNatSchG (Abs. 1) oder Ausnahme, wenn die Handlung mit dem Schutzzweck vereinbar ist (Abs. 2) – durch die untere Naturschutzbehörde des Kreises Soest.",
+      "fundstellen": [
+        "4/1",
+        "4/2"
+      ],
+      "verweise": [
+        "bund/bnatschg/67"
+      ],
+      "stand": {
+        "4/1": "7f1d418c",
+        "4/2": "ccc2e069"
+      },
+      "titel": "Befreiung und Ausnahmen",
+      "pruefen": {
+        "grund": "Nutzungsänderung: Bodenverdichtung, Lagern und Versiegeln im Bereich des Schutzobjekts sind verboten (§ 2).",
+        "wenn": {
+          "und": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "f": "kreis_soest.naturdenkmal",
+              "ist": true
+            }
+          ]
+        }
+      }
+    }
+  }
+}

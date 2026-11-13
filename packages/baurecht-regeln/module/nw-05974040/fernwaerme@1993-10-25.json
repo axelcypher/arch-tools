@@ -1,0 +1,72 @@
+{
+  "format": 1,
+  "modul": "nw-05974040",
+  "norm": "fernwaerme",
+  "fassung": "1993-10-25",
+  "version": 1,
+  "geltung": {
+    "f": "soest.fernwaerme",
+    "ist": true
+  },
+  "geltungGrund": "nur im Gebiet der „Britischen Wohnsiedlung“ nach § 2",
+  "paragrafen": {
+    "2": {
+      "gilt": {
+        "$": "vorhaben_29"
+      },
+      "grund": "Das Grundstück liegt im Satzungsgebiet „Britische Wohnsiedlung“ (Arnsberger Straße – Hartweg/Herzog-Adolf-Weg – Hiddingser Weg/Kaiser-Otto-Weg – Konrad-Coler-Weg).",
+      "fundstellen": [
+        "2"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "stand": {
+        "2": "08a60d62"
+      },
+      "titel": "Räumlicher Geltungsbereich"
+    },
+    "3": {
+      "gilt": {
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "oder": [
+              {
+                "$": "errichtung"
+              },
+              {
+                "f": "vorhaben.heizung",
+                "ist": true
+              }
+            ]
+          },
+          {
+            "f": "gebaeude.beheizt",
+            "ist": true
+          }
+        ]
+      },
+      "entfaellt": {
+        "f": "gebaeude.beheizt",
+        "ist": false
+      },
+      "grund": "Alle baulichen Anlagen im Gebiet sind an die Fernwärmeversorgung anzuschließen und dürfen nur mit Fernwärme beheizt werden; ausgenommen sind Anlagen ohne Raumwärmebedarf (Nr. 2).",
+      "fundstellen": [
+        "3"
+      ],
+      "behoerde": {
+        "nie": true
+      },
+      "pruefen": {
+        "grund": "Ausgenommen sind Betreiber von Heizeinrichtungen, die ohne Anschluss immissionsfrei arbeiten (Nr. 3) – z. B. Wärmepumpe; mit den Stadtwerken Soest klären."
+      },
+      "stand": {
+        "3": "4237ac7d"
+      },
+      "titel": "Anschluß- und Benutzungszwang"
+    }
+  }
+}

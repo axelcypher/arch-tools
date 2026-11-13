@@ -158,7 +158,7 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
   mit (amtliche Fassungen, lesbar ohne Netz): BauO NRW 2018 (gültig ab 01.09.2026) und BauPrüfVO (gültig ab
   26.11.2024) vollständig von recht.nrw.de, dazu einzelne Paragrafen aus BauGB, BauNVO, BNatSchG und GEIG von
   gesetze-im-internet.de. Neue Fassungen holt `node apps/formulare/scripts/recht-holen.mjs` (URL im Skript anpassen);
-  die Daten liegen in `src/recht/daten/`. In Vorgaben trägt eine Bedingung Begründung und Fundstellen
+  die Daten liegen im gemeinsamen Unterbau unter `packages/core/src/recht/daten/` (auch für die App Baurecht). In Vorgaben trägt eine Bedingung Begründung und Fundstellen
   (`begruendet(bedingung, 'Grund', q('bauo-nrw', '68', 2, 3))`, gemeinsame in `vorgaben/grundlagen.ts`);
   `vorgaben.test.ts` prüft, dass es jede Fundstelle samt Absatz (und Nummer) im Text gibt, und enthält eine
   **Fallmatrix** (Vordruck × Gebäudeklasse × Gebäudeart × Sonderbau × Vorhaben × Planungsrecht, auch „nicht

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { allgemeinLaden } from '@core/platform/konfig';
 import { bestaetigen, meldung } from '@core/ui/Rueckfrage';
+import { Symbol } from '@core/ui/Symbol';
 import type { Firmeneinsatz, Tagesbericht } from '../../avaDaten';
 import { tagesberichtPdf } from '../../bauleitung/berichte';
 import { wetterAbrufen } from '../../bauleitung/wetter';
@@ -198,7 +199,7 @@ function Bericht({ t, neu }: { t: Tagesbericht; neu: boolean }) {
               </td>
               <td>
                 <button className="small icon" title="Firma entfernen" aria-label={`${f.firma || `Firma ${i + 1}`} entfernen`} onClick={() => setze((x) => ({ firmen: x.firmen.filter((_, j) => j !== i) }))}>
-                  ×
+                  <Symbol name="schliessen" />
                 </button>
               </td>
             </tr>

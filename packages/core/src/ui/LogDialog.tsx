@@ -49,9 +49,9 @@ export function LogDialog({ onClose }: { onClose: () => void }) {
     const stamp = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}_${String(d.getHours()).padStart(2, '0')}${String(d.getMinutes()).padStart(2, '0')}`;
     await saveTextFile({
       // Name der App aus der Titelleiste – der Dialog gehört allen Apps
-      defaultName: `${appName()}-Protokoll_${stamp}.log`,
+      defaultName: `${appName()}-Fehlerprotokoll_${stamp}.log`,
       contents: `${appName()} ${__APP_VERSION__} · ${navigator.userAgent}\n\n${logText()}\n`,
-      filterName: 'Protokoll',
+      filterName: 'Fehlerprotokoll',
       extension: 'log',
       mime: 'text/plain;charset=utf-8',
     });
@@ -59,17 +59,17 @@ export function LogDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="modal-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="modal modal-log" role="dialog" aria-label="Protokoll">
+      <div className="modal modal-log" role="dialog" aria-label="Fehlerprotokoll">
         <div className="log-head">
-          <h3>Protokoll</h3>
+          <h3>Fehlerprotokoll</h3>
           <div className="button-row">
             {FILTER.map((f) => (
-              <button key={f.id} className={min === f.id ? 'active' : ''} onClick={() => setMin(f.id)}>
+              <button key={f.id} type="button" className={min === f.id ? 'active' : ''} aria-pressed={min === f.id} onClick={() => setMin(f.id)}>
                 {f.label}
               </button>
             ))}
           </div>
-          <input className="log-search" placeholder="Suchen …" value={q} onChange={(e) => setQ(e.target.value)} />
+          <input className="log-search" type="search" aria-label="Fehlerprotokoll durchsuchen" placeholder="Suchen …" value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
         <div className="log-list" role="log">
           {list.length === 0 && <p className="muted">Keine Einträge.</p>}

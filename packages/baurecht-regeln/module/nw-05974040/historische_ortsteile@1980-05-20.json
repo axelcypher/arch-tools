@@ -1,0 +1,219 @@
+{
+  "format": 1,
+  "modul": "nw-05974040",
+  "norm": "historische_ortsteile",
+  "fassung": "1980-05-20",
+  "version": 1,
+  "geltung": {
+    "f": "soest.historische_ortsteile",
+    "ist": true
+  },
+  "geltungGrund": "nur in den Schutzzonen (Anlage A I) und für schützenswerte Bürgerbauten und Baudenkmäler der Anlagen A II und A III",
+  "paragrafen": {
+    "3": {
+      "gilt": {
+        "$": "bauen"
+      },
+      "grund": "In den Schutzzonen: Einfriedigungen zum öffentlichen Raum nur in Bruchsteinmauerwerk bis 2,00 m, Tore aus Holz oder Eisen; Lagerplätze nicht sichtbar; Einstellplätze in Pflaster, Rasensteinen oder Spurstreifen; Vorgärten gärtnerisch unterhalten.",
+      "fundstellen": [
+        "3/1",
+        "3/2",
+        "3/4",
+        "3/6"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "stand": {
+        "3/1": "ce57e201",
+        "3/2": "4a3e0138",
+        "3/4": "e05bc466",
+        "3/6": "4657400a"
+      },
+      "pruefen": {
+        "grund": "Bei einer Nutzungsänderung gelten die Anforderungen, soweit das äußere Erscheinungsbild oder die Freiflächen (Lager- und Einstellplätze) geändert werden.",
+        "wenn": {
+          "$": "nutzungsaenderung"
+        }
+      },
+      "titel": "Einfriedigungen, Gärten, Stellplätze und Lagerplätze"
+    },
+    "4": {
+      "gilt": {
+        "$": "soest_aussen_bauen"
+      },
+      "grund": "Bauliche Anlagen haben sich in Form, Maßstab, Gliederung, Werkstoff und Farbe der Umgebung anzupassen: Mauerwerk verputzt oder gestrichen, keine grellen Farben, Dacheindeckung in Ziegeln (oder Schiefer, Blei, Zink, Kupfer), Gauben eingefügt; die Kirchturm-Silhouette darf nicht beeinträchtigt werden.",
+      "fundstellen": [
+        "4/1",
+        "4/2",
+        "4/5",
+        "4/6",
+        "4/7"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "pruefen": {
+        "grund": "Bei Anlagen, die keine Gebäude sind (z. B. Mauern, Einfriedungen, technische Anlagen): die Anpassungspflicht gilt für alle baulichen Anlagen. Bei einer Nutzungsänderung gelten die gestalterischen Anforderungen nur, soweit das äußere Erscheinungsbild geändert wird.",
+        "wenn": {
+          "oder": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "und": [
+                {
+                  "$": "bauen"
+                },
+                {
+                  "m": "Gebäudeart",
+                  "in": [
+                    "kein Gebäude"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "stand": {
+        "4/1": "e1d2ea4a",
+        "4/2": "1339413f",
+        "4/5": "b02f6c10",
+        "4/6": "1bf5ac07",
+        "4/7": "012f67e4"
+      },
+      "titel": "Bauart und Bauform"
+    },
+    "5": {
+      "gilt": {
+        "oder": [
+          {
+            "$": "bauen_oder_beseitigung"
+          }
+        ]
+      },
+      "grund": "Abbruch, Umbau oder Änderung können versagt werden, wenn die Anlage das Ortsbild prägt oder städtebaulich bedeutsam ist (Abs. 1); Abstandsflächen dürfen zur Wahrung der historischen Eigenart um höchstens ein Drittel unterschritten werden (Abs. 2).",
+      "fundstellen": [
+        "5/1",
+        "5/2"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "hinweis": "Abs. 1 stützt sich auf § 39h BBauG (heute Erhaltungssatzung nach § 172 BauGB) und Abs. 2 auf die BauO NW 1970 – Tragweite neben § 6 BauO NRW und der Altstadtsatzung mit der Bauaufsicht klären.",
+      "verweise": [
+        "nw/bauo-nrw/6",
+        "bund/baugb/172"
+      ],
+      "stand": {
+        "5/1": "2a2fce8f",
+        "5/2": "98077b50"
+      },
+      "titel": "Erhaltung des historisch gewachsenen Stadtbildes und Grundrisses",
+      "pruefen": {
+        "grund": "Nutzungsänderung: Erhaltung des historisch gewachsenen Stadtbildes – ob die neue Nutzung das Ortsbild prägende Anlagen verändert.",
+        "wenn": {
+          "$": "nutzungsaenderung"
+        }
+      }
+    },
+    "6": {
+      "gilt": {
+        "und": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "f": "vorhaben.werbeanlage",
+            "ist": true
+          }
+        ]
+      },
+      "entfaellt": {
+        "f": "vorhaben.werbeanlage",
+        "ist": false
+      },
+      "grund": "Werbeanlagen nur an der Stätte der eigenen Leistung; unzulässig u. a. in Vorgärten, an Einfriedigungen, Bäumen, Balkonen, auf Dächern und oberhalb der Traufe; Leuchtschrift nur weißlich oder hellgelb, keine Wechsellichtwerbung.",
+      "fundstellen": [
+        "6/1",
+        "6/2",
+        "6/3",
+        "6/5"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "stand": {
+        "6/1": "9f145a37",
+        "6/2": "9997197b",
+        "6/3": "feb2ea37",
+        "6/5": "7444100c"
+      },
+      "titel": "Werbeanlagen und Warenautomaten"
+    },
+    "7": {
+      "gilt": {
+        "$": "soest_aussen_bauen"
+      },
+      "grund": "Besondere Anforderungen an schützenswerte Bürgerbauten (Anlage A II) nach Abschnitt III.",
+      "fundstellen": [
+        "7/1"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "pruefen": {
+        "grund": "Nutzungsänderung eines Bürgerbaus (Anlage A II): ob die besonderen Anforderungen berührt sind.",
+        "wenn": {
+          "$": "nutzungsaenderung"
+        }
+      },
+      "stand": {
+        "7/1": "710b3be7"
+      },
+      "titel": "Besondere Anforderungen",
+      "hinweis": "Nur, wenn das Gebäude in Anlage A II (schützenswerte Bürgerbauten) aufgeführt ist – bei der Stadt erfragen."
+    },
+    "8": {
+      "gilt": {
+        "$": "soest_aussen_bauen"
+      },
+      "grund": "Besondere Anforderungen an Baudenkmäler (Anlage A III).",
+      "fundstellen": [
+        "8/1"
+      ],
+      "behoerde": {
+        "$": "nw_prueft_kern"
+      },
+      "pruefen": {
+        "grund": "Bei einer Nutzungsänderung eines Baudenkmals (Anlage A III) und bei baulichen Anlagen, die keine Gebäude sind (z. B. Mauern, technische Anlagen) an oder bei einem Baudenkmal.",
+        "wenn": {
+          "oder": [
+            {
+              "$": "nutzungsaenderung"
+            },
+            {
+              "und": [
+                {
+                  "$": "bauen"
+                },
+                {
+                  "m": "Gebäudeart",
+                  "in": [
+                    "kein Gebäude"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "stand": {
+        "8/1": "1219d385"
+      },
+      "titel": "Besondere Anforderungen an bauliche Anlagen",
+      "hinweis": "Nur, wenn das Gebäude in Anlage A III aufgeführt ist; maßgeblich ist heute daneben das DSchG NRW."
+    }
+  }
+}

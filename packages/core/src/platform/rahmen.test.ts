@@ -79,6 +79,7 @@ describe('Rahmen-App: Speichern auf Anfrage', () => {
   it('was beim Umzug aus Änderungen wird: ATLAS und FABRIO verlieren sie, die übrigen nicht', () => {
     expect(beimUmzug('ordner').verliert).toBe(true);
     expect(beimUmzug('ava').verliert).toBe(true);
+    expect(beimUmzug('baurecht').verliert).toBe(true);
     expect(beimUmzug('formulare').verliert).toBe(false);
     expect(beimUmzug('kosten')).toEqual({ text: expect.stringContaining('Zwischenstand'), verliert: false });
     expect(beimUmzug(null).verliert).toBe(false);

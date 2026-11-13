@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { zeigerZiehen } from './ziehen';
 
 /**
@@ -18,11 +18,13 @@ const lesen = (schluessel: string, vorgabe: number, min: number, max: number) =>
 };
 
 /** Gemerkte Breite einer Leiste */
-export function useLeistenBreite(schluessel: string, vorgabe: number, min = 180, max = 560): [number, (b: number) => void] {
+export function useLeistenBreite(schluessel: string, vorgabe: number, min = 180, max = 560): [number, (b: number, merken?: boolean) => void] {
   const [breite, setBreiteRoh] = useState(() => lesen(schluessel, vorgabe, min, max));
-  const setBreite = (b: number) => {
+  /** `merken: false`: nur für diese Sitzung (z. B. eine an ein schmales Fenster angeglichene Breite) */
+  const setBreite = (b: number, merken = true) => {
     const n = Math.round(Math.min(max, Math.max(min, b)));
     setBreiteRoh(n);
+    if (!merken) return;
     try {
       localStorage.setItem(schluessel, String(n));
     } catch {
@@ -32,7 +34,35 @@ export function useLeistenBreite(schluessel: string, vorgabe: number, min = 180,
   return [breite, setBreite];
 }
 
-/** Ziehgriff am Rand einer Leiste (das Elternelement braucht `position: relative`); `seite`: wo die Leiste steht */
+/**
+ * Platz, den eine Leiste höchstens bekommen kann: Breite des Arbeitsbereichs minus die anderen Leisten minus die
+ * Mindestbreite der Mitte. Ohne `mitteMin` keine Grenze.
+ */
+function verfuegbar(griff: HTMLElement | null, mitteMin: number | undefined): number {
+  const leiste = griff?.parentElement;
+  const arbeit = leiste?.parentElement;
+  if (!leiste || !arbeit || mitteMin === undefined) return Infinity;
+  // die anderen Leisten mit ihrer Basisbreite (gesetzte Breite), nicht der geschrumpften – sonst wüchse diese auf
+  // deren Kosten über den Platz hinaus
+  const andere = [...arbeit.children]
+    .filter((c): c is HTMLElement => c !== leiste && c.classList.contains('leiste') && c instanceof HTMLElement)
+    .reduce((s, c) => s + (parseFloat(c.style.width) || c.getBoundingClientRect().width), 0);
+  return Math.floor(arbeit.clientWidth - andere - mitteMin);
+}
+
+const ANGLEICHEN = 'leiste-angleichen';
+
+/** die anderen Leisten im Arbeitsbereich bitten, eine geschrumpfte Breite als gesetzte zu übernehmen */
+function angleichen(griff: HTMLElement | null) {
+  const leiste = griff?.parentElement;
+  for (const c of leiste?.parentElement?.children ?? []) if (c !== leiste && c.classList.contains('leiste')) c.dispatchEvent(new CustomEvent(ANGLEICHEN));
+}
+
+/**
+ * Ziehgriff am Rand einer Leiste (das Elternelement braucht `position: relative`); `seite`: wo die Leiste steht – links
+ * (Griff rechts) oder rechts neben der Arbeitsfläche (Griff links, Ziehen nach links macht sie breiter). Tastatur: ←/→
+ * in 16-px-Schritten, Pos1/Ende auf Mindest- bzw. Höchstbreite.
+ */
 export function Ziehgriff({
   breite,
   setBreite,
@@ -41,40 +71,80 @@ export function Ziehgriff({
   seite = 'links',
   min,
   max,
+  ist,
+  mitteMin,
 }: {
   breite: number;
-  setBreite: (b: number) => void;
+  setBreite: (b: number, merken?: boolean) => void;
   vorgabe?: number;
   titel?: string;
   seite?: 'links' | 'rechts';
-  /** Grenzen der Breite (für Screenreader) */
+  /** Grenzen der Breite (auch für Screenreader) */
   min?: number;
   max?: number;
+  /** gezeichnete Breite, wenn die Leiste geschrumpft ist */
+  ist?: number;
+  /** Mindestbreite, die der Mitte bleibt */
+  mitteMin?: number;
 }) {
   // rechte Leiste: Griff am linken Rand, nach links ziehen macht sie breiter
   const richtung = seite === 'rechts' ? -1 : 1;
+  const griff = useRef<HTMLDivElement>(null);
+  // nie breiter als der verfügbare Platz (die Mitte behält ihre Mindestbreite) – sonst entstünde eine tote Zone
+  // Wachsen nur bis zum verfügbaren Platz; geht es nicht weiter, bleibt alles, wie es ist (Ende oder → am Maximum
+  // verkleinern nichts). Ist die Leiste schon geschrumpft (gezeichnet schmaler als gesetzt), fehlt der Platz ohnehin.
+  // Schrumpfen frei bis min, von der gezeichneten Breite aus.
+  const setzen = (b: number) => {
+    const unten = Math.max(min ?? 0, b);
+    if (b < jetzt) {
+      if (unten >= jetzt) return; // schon am Minimum: nichts ändert sich, auch nicht bei den Nachbarn
+      // geschrumpfte Nachbarleisten für diese Sitzung auf ihre gezeichnete Breite festhalten – sonst holten sie sich den
+      // frei werdenden Platz zurück (← an den Angaben machte die Einzelheiten breiter statt die Mitte)
+      angleichen(griff.current);
+      return setBreite(b);
+    }
+    if (b === jetzt || jetzt < breite - 1) return;
+    const ziel = Math.min(b, Math.max(min ?? 0, verfuegbar(griff.current, mitteMin)));
+    if (ziel > jetzt) {
+      angleichen(griff.current);
+      setBreite(ziel);
+    }
+  };
+  // die tatsächliche Breite (eine Leiste kann bei schmalen Fenstern schrumpfen): für Screenreader und als Ausgangspunkt
+  // beim Ziehen – sonst gäbe es eine tote Zone zwischen gemerkter und sichtbarer Breite
+  const jetzt = ist ?? breite;
   return (
     <div
+      ref={griff}
       className={`leiste-griff${seite === 'rechts' ? ' leiste-griff-links' : ''}`}
       role="separator"
       aria-orientation="vertical"
       aria-label={titel}
-      aria-valuenow={breite}
-      aria-valuemin={min}
-      aria-valuemax={max}
+      aria-valuenow={jetzt}
+      {...(min !== undefined ? { 'aria-valuemin': Math.min(min, jetzt) } : {})}
+      {...(max !== undefined ? { 'aria-valuemax': Math.max(jetzt, Math.min(max, verfuegbar(griff.current, mitteMin))) } : {})}
+      aria-valuetext={`${jetzt} Pixel`}
       tabIndex={0}
       title={`${titel} – ziehen${vorgabe ? ', Doppelklick: Vorgabe' : ''}`}
       onPointerDown={(e) => {
         e.preventDefault();
         const x0 = e.clientX;
-        const b0 = breite;
-        zeigerZiehen(e, { schwelle: 0, bewegen: (ev) => setBreite(b0 + richtung * (ev.clientX - x0)), ende: () => undefined });
+        const b0 = jetzt;
+        zeigerZiehen(e, { schwelle: 0, bewegen: (ev) => setzen(b0 + richtung * (ev.clientX - x0)), ende: () => undefined });
       }}
-      onDoubleClick={() => vorgabe && setBreite(vorgabe)}
+      onDoubleClick={() => vorgabe && setzen(vorgabe)}
       onKeyDown={(e) => {
         if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
           e.preventDefault();
-          setBreite(breite + richtung * (e.key === 'ArrowLeft' ? -16 : 16));
+          setzen(jetzt + richtung * (e.key === 'ArrowLeft' ? -16 : 16));
+        }
+        if (e.key === 'Home' && min !== undefined) {
+          e.preventDefault();
+          setzen(min);
+        }
+        if (e.key === 'End' && max !== undefined) {
+          e.preventDefault();
+          setzen(max);
         }
       }}
     />
@@ -89,8 +159,14 @@ export function BreitenLeiste({
   max,
   className = '',
   seite = 'links',
+  titel,
+  mitteMin,
   children,
 }: {
+  /** Name des Griffs („Breite der Angaben“) – mehrere Leisten sind so unterscheidbar */
+  titel?: string;
+  /** Mindestbreite, die der Mitte bleibt: Ziehen und Tastatur gehen nicht darüber hinaus */
+  mitteMin?: number;
   schluessel: string;
   vorgabe: number;
   min?: number;
@@ -101,10 +177,40 @@ export function BreitenLeiste({
   children: ReactNode;
 }) {
   const [breite, setBreite] = useLeistenBreite(schluessel, vorgabe, min, max);
+  const setBreiteRef = useRef(setBreite);
+  setBreiteRef.current = setBreite;
+  // tatsächliche Breite messen (die Leiste darf per CSS schrumpfen)
+  const rahmen = useRef<HTMLDivElement>(null);
+  const [ist, setIst] = useState<number | undefined>(undefined);
+  // neu messen, wenn sich die Leiste, der Arbeitsbereich oder eine andere Leiste ändert (für aria-valuemax)
+  const [, setTakt] = useState(0);
+  useEffect(() => {
+    const el = rahmen.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => {
+      setIst(Math.round(el.getBoundingClientRect().width));
+      setTakt((t) => t + 1);
+    });
+    ro.observe(el);
+    // Nachbarleiste wird gezogen: eine geschrumpfte Breite festhalten (gesetzt = gezeichnet)
+    const angleichenAuf = () => {
+      const w = Math.round(el.getBoundingClientRect().width);
+      if (w > 0 && w < parseFloat(el.style.width) - 1) setBreiteRef.current(w, false);
+    };
+    el.addEventListener(ANGLEICHEN, angleichenAuf);
+    if (el.parentElement) {
+      ro.observe(el.parentElement);
+      for (const c of el.parentElement.children) if (c !== el && c.classList.contains('leiste')) ro.observe(c);
+    }
+    return () => {
+      ro.disconnect();
+      el.removeEventListener(ANGLEICHEN, angleichenAuf);
+    };
+  }, []);
   return (
-    <div className={`leiste ${className}`} style={{ width: breite }}>
+    <div ref={rahmen} className={`leiste ${className}`} style={{ width: breite }}>
       {children}
-      <Ziehgriff breite={breite} setBreite={setBreite} vorgabe={vorgabe} seite={seite} min={min ?? 180} max={max ?? 560} />
+      <Ziehgriff breite={breite} setBreite={setBreite} vorgabe={vorgabe} seite={seite} min={min ?? 180} max={max ?? 560} ist={ist || undefined} titel={titel} mitteMin={mitteMin} />
     </div>
   );
 }

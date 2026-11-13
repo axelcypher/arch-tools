@@ -4,7 +4,7 @@ import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, write
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { after, test } from 'node:test';
-import { automatisch, erhoehen, hoehere, lockSetzen, neueVersionen, notizenLesen, tagsAus, veroeffentlicht, versionSetzen } from './versionen-setzen.mjs';
+import { automatisch, erhoehen, hoehere, lockSetzen, NAMEN, neueVersionen, notizenLesen, tagsAus, veroeffentlicht, versionSetzen } from './versionen-setzen.mjs';
 import { APPS } from './versionen-pruefen.mjs';
 
 const stand = { flaechenrechner: '0.40.2', grz: '0.28.3', kosten: '0.24.3', ordner: '0.23.3', entzerrung: '0.18.3', formulare: '0.49.4', ava: '0.10.4', suite: '0.30.1' };
@@ -17,6 +17,16 @@ const tempOrdner = (name) => {
   return w;
 };
 after(() => temp.forEach((w) => rmSync(w, { recursive: true, force: true })));
+
+test('Produktnamen für jede App (neue App: auch hier eintragen)', () => {
+  assert.deepEqual(Object.keys(NAMEN).sort(), [...APPS].sort());
+});
+
+test('neue App mit unveröffentlichter Erstversion und Notiz: die Erstversion gilt, Arkly zählt sie mit', () => {
+  const r = neueVersionen({ versionen: { baurecht: '0.9.0', suite: '0.31.0' }, tags: ['suite-v0.31.0'], eintraege: [{ app: 'baurecht', stufe: 'minor', notiz: 'Erste Fassung.' }] });
+  assert.equal(r.baurecht.neu, '0.9.0');
+  assert.equal(r.suite.neu, '0.32.0');
+});
 
 test('Hilfen: Stufen, Erhöhen, Tags', () => {
   assert.equal(hoehere('patch', 'minor'), 'minor');

@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import type { ProjectMeta } from '@core/model';
 import { BreitenLeiste } from '@core/ui/Leiste';
 import { StammdatenKnopf } from '@core/ui/Stammdaten';
+import { Symbol } from '@core/ui/Symbol';
 import { alleGewerke } from '../abrechnung/aggregat';
 import { gewerkZweistellig } from '../abrechnung/gewerk';
 import type { Ansicht } from '../store';
@@ -93,7 +94,7 @@ export function Navigation({ onStammdaten }: { onStammdaten: (meta: ProjectMeta,
         </ul>
         <div className="ava-nav-fuss">
           <button onClick={() => useAva.getState().setEinstellungenOffen(true)} title="Ablage, Benennung, Prüfung, Deckblatt, Scanordner, Mailvorlagen (Strg+,)">
-            ⚙ Einstellungen …
+            <Symbol name="zahnrad" /> Einstellungen …
           </button>
         </div>
       </nav>

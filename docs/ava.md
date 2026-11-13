@@ -24,7 +24,7 @@ Grundsätze:
 
 ## Ablage im Projektordner
 
-Vorgabe (alles unter ⚙ Einstellungen › Ablage änderbar):
+Vorgabe (alles unter Einstellungen › Ablage änderbar):
 
 | Ort | Inhalt |
 |---|---|
@@ -45,7 +45,7 @@ Gewerk – in Ordnern, Blattnamen und der Rechnungsliste.
   Navigation – und automatisch, wenn das Fenster wieder in den Vordergrund kommt.
 - **Navigation** (links, Breite ziehbar): Kostenübersicht, Rechnungen, Rechnungseingang; die **Gewerke** aus
   Ordnern, Kostenkontrolle und Prüfungen (Zahl der LV-Dateien, wenn es mehr als eine gibt); **Bauleitung**
-  (Objektüberwachung nach HOAI Leistungsphase 8); ⚙ Einstellungen (Strg+,). Die Einträge sind Knöpfe: mit Tab
+  (Objektüberwachung nach HOAI Leistungsphase 8); Einstellungen (Strg+,). Die Einträge sind Knöpfe: mit Tab
   erreichbar, Enter öffnet, der aktive Bereich ist für Screenreader markiert.
 - **Kostenübersicht:** je Gewerk Kostenschätzung, Kostenanschlag (Aufträge), Abweichung Kostenanschlag zu
   Kostenschätzung (nur für vergebene Gewerke – ein Gewerk ohne Auftrag erscheint nicht als Einsparung),
@@ -60,7 +60,8 @@ Kopf mit Kennung, Bezeichnung, Auftragnehmer und Ordner. Auf den Tabs Leistungsv
 rechts der **LV-Kopf**: die LV-Dateien des Gewerks (aktuelle zuerst, Archiv gekennzeichnet; Format im Tooltip),
 „Neues LV ▾“ (leer oder aus einer GAEB-Datei X81–X86), „LV ▾“ mit den Befehlen für das ganze LV
 (LV-Eigenschaften, Neu nummerieren, Drucken, GAEB-Export) und „Speichern“ (Strg+S; übernimmt auch die gerade
-laufende Eingabe). Beim Betreten öffnet sich das aktuellste LV. Wer mit ungespeicherten Änderungen das Gewerk
+laufende Eingabe; bei ungespeicherten Änderungen mit Punkt am Knopf und im Namen „Speichern – ungespeicherte
+Änderungen“). Beim Betreten öffnet sich das aktuellste LV. Wer mit ungespeicherten Änderungen das Gewerk
 oder Projekt wechselt, wird gefragt. Die Tabs lassen sich mit ←/→ wechseln; bei schmalem Fenster tragen sie
 kurze Namen (LV, Angebote, Auftrag, Rechnungen, Dateien).
 
@@ -74,8 +75,8 @@ Hinweis „wird in LV-Dateien (.aslv) nicht gespeichert – im eigenen Format (.
   volle OZ nach der OZ-Maske („02.0010“). Menge und Einheitspreis des Kostenansatzes lassen sich direkt in der
   Tabelle ändern (deutsche Schreibweise, ungültige Eingaben bleiben rot stehen).
 - Werkzeugleiste in einer Zeile: + Position (im gewählten Abschnitt bzw. hinter der gewählten Position),
-  + Abschnitt, „Einfügen ▾“ (+ Hinweis, + Vorbemerkung, „Aus Vorlage …“); Duplizieren (Strg+D, ein Abschnitt
-  bekommt die nächste freie OZ), ↑/↓, ⇤/⇥ (aus dem Abschnitt heraus bzw. in den Abschnitt davor), Entfernen (Entf);
+  + Abschnitt, „Einfügen ▾“ (Hinweis, Vorbemerkung, „Aus Vorlage …“); Duplizieren (Strg+D, ein Abschnitt
+  bekommt die nächste freie OZ), Nach oben/Nach unten, Ausrücken/Einrücken (aus dem Abschnitt heraus bzw. in den Abschnitt davor; alle mit Symbol), Entfernen (Entf);
   Rückgängig/Wiederholen (Strg+Z/Y); rechts die Suche nach OZ und Kurztext (Treffer mit ihren Abschnitten; ohne
   Treffer eine Meldung mit „Suche leeren“, Esc leert). Tastatur in der Tabelle (Fokus sichtbar): ↑/↓ wählen, Enter
   springt in den Kurztext des Seitenpanels, Esc dort zurück, Einfg neue Position. Bei schmalem Fenster (unter
