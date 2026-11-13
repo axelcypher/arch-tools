@@ -2140,6 +2140,15 @@ button.ungespeichert::after {
   border-radius: var(--radius-s);
 }
 
+/* Kontrastmodus: Tönung und box-shadow entfallen, die Wahl bleibt als Linie in Highlight sichtbar */
+@media (forced-colors: active) {
+  .segment.senkrecht > button[aria-pressed='true'],
+  .segment.senkrecht > button[aria-selected='true'],
+  .segment.senkrecht > button.active {
+    border-left: 3px solid Highlight;
+  }
+}
+
 /* Statuspunkt (Ampel) neben einem Wort: .statuspunkt.ok | .warnung | .fehler */
 .statuspunkt {
   display: inline-block;
@@ -2160,6 +2169,7 @@ button.ungespeichert::after {
   background: var(--fehler-punkt);
 }
 @media (forced-colors: active) {
+  /* alle drei Zustände gleich – reicht, weil das Wort immer daneben steht */
   .statuspunkt {
     forced-color-adjust: none;
     background: CanvasText;
