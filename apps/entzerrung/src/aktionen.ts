@@ -226,7 +226,7 @@ export function auswahlName(): string | null {
   }
 }
 
-/** Kontextmenü der Zeichenfläche: bezieht sich auf das gewählte (bzw. eben rechts angeklickte) Element, Kürzel als Hinweis */
+/** Kontextmenü der Zeichenfläche: bezieht sich auf das gewählte (bzw. eben rechts angeklickte) Element; Kürzel in `tasten`, Sperrgrund im `hinweis` */
 export function flaechenMenue(): MenuePunkt[] {
   const s = st();
   const { foto, ebene } = aktuell(s);
@@ -235,22 +235,24 @@ export function flaechenMenue(): MenuePunkt[] {
   const name = auswahlName();
   // der Löschpunkt steht am Ende: der erste Punkt hat den Fokus, Enter nach dem Rechtsklick soll nichts löschen
   return [
-    { text: 'Alles zeigen', symbol: 'einpassen', hinweis: 'Pos1', deaktiviert: !foto, aktion: () => window.dispatchEvent(new Event('entz:einpassen')) },
+    { text: 'Alles zeigen', symbol: 'einpassen', tasten: 'Pos1', deaktiviert: !foto, aktion: () => window.dispatchEvent(new Event('entz:einpassen')) },
     {
       text: s.ansicht === 'entzerrt' ? 'Foto zeigen' : 'Entzerrt zeigen',
       symbol: 'auge',
-      hinweis: s.ansicht === 'foto' && !entzerrbar ? 'erst die Referenz vervollständigen' : 'E',
+      hinweis: s.ansicht === 'foto' && !entzerrbar ? 'erst die Referenz vervollständigen' : undefined,
+      tasten: 'E',
       deaktiviert: s.ansicht === 'foto' && !entzerrbar,
       aktion: ansichtUmschalten,
     },
     { trenner: true },
-    { text: 'Rückgängig', symbol: 'rueckgaengig', hinweis: 'Strg+Z', deaktiviert: !s.vergangenheit.length, aktion: s.rueckgaengig },
-    { text: 'Wiederholen', symbol: 'wiederholen', hinweis: 'Strg+Y', deaktiviert: !s.zukunft.length, aktion: s.wiederholen },
+    { text: 'Rückgängig', symbol: 'rueckgaengig', tasten: 'Strg+Z', deaktiviert: !s.vergangenheit.length, aktion: s.rueckgaengig },
+    { text: 'Wiederholen', symbol: 'wiederholen', tasten: 'Strg+Y', deaktiviert: !s.zukunft.length, aktion: s.wiederholen },
     { trenner: true },
     {
       text: name ? `${name} löschen` : 'Löschen',
       symbol: 'muell',
-      hinweis: ecke ? 'Ecken über „Ecken neu setzen“' : name ? 'Entf' : 'nichts ausgewählt',
+      hinweis: ecke ? 'Ecken über „Ecken neu setzen“' : name ? undefined : 'nichts ausgewählt',
+      tasten: 'Entf / Rücktaste',
       deaktiviert: !name || ecke,
       gefahr: true,
       aktion: auswahlLoeschen,

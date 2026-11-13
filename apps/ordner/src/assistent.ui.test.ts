@@ -12,8 +12,8 @@ import { SpeicherDateisystem } from './dateisystem';
 import { PLATZHALTER_PROJEKT } from './nummer';
 import { ausfuehren, planen } from './plan';
 import { leereStammdaten } from './stammdaten';
-import { useOrdner } from './store';
-import { STANDARD } from './struktur';
+import { NICHT_GESPEICHERT, useOrdner } from './store';
+import { ordnerAlsText, STANDARD } from './struktur';
 
 /**
  * Assistent (Runde 1 des Gesamt-Reviews): Ansichtswechsel, Fokusführung, Schrittleiste, Anlegen in der Navigation,
@@ -26,6 +26,27 @@ vi.mock('./dateisystem', async (original) => {
   // jede Methode geht an das Dateisystem des jeweiligen Tests
   const tauriDateisystem = new Proxy({} as typeof echt.tauriDateisystem, { get: (_, k) => (mock.fs as unknown as Record<string | symbol, (...a: unknown[]) => unknown>)[k].bind(mock.fs) });
   return { ...echt, hatDateisystem: () => mock.desktop, tauriDateisystem };
+});
+
+/** Sicherungen der Struktur scheitern lassen (sonst unverändert) */
+const konfigMock = vi.hoisted(() => ({ sicherungScheitert: false, schreibenScheitert: false, allgemeinScheitert: false }));
+vi.mock('@core/platform/konfig', async (original) => {
+  const echt = await original<typeof import('@core/platform/konfig')>();
+  return {
+    ...echt,
+    konfigAendern: async (...a: Parameters<typeof echt.konfigAendern>) => {
+      if (a[0] === 'projektordner-sicherungen' && konfigMock.sicherungScheitert) throw new Error('Laufwerk nicht erreichbar');
+      return echt.konfigAendern(...a);
+    },
+    konfigSchreibenWennUnveraendert: async (...a: Parameters<typeof echt.konfigSchreibenWennUnveraendert>) => {
+      if (konfigMock.schreibenScheitert) throw new Error('Netzlaufwerk getrennt');
+      return echt.konfigSchreibenWennUnveraendert(...a);
+    },
+    allgemeinAendern: async (...a: Parameters<typeof echt.allgemeinAendern>) => {
+      if (konfigMock.allgemeinScheitert) throw new Error('Allgemein nicht schreibbar');
+      return echt.allgemeinAendern(...a);
+    },
+  };
 });
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -80,7 +101,8 @@ const warten = () =>
   act(async () => {
     await new Promise((r) => setTimeout(r, 0));
   });
-const schrittNr = (host: Element) => [...host.querySelectorAll('.po-schritte .po-schritt-nr')].map((s) => s.textContent);
+/** Nummer des Schritts bzw. „✓“ für das gezeichnete Häkchen (Symbol statt Schriftzeichen) */
+const schrittNr = (host: Element) => [...host.querySelectorAll('.po-schritte .po-schritt-nr')].map((s) => (s.querySelector('svg.symbol') ? '✓' : s.textContent));
 const assistent = (host: Element) => host.querySelector('.po-assistent-huelle') as HTMLElement;
 
 /** Desktop mit Stammordner (ohne gemeinsame Projektübersicht, also mit der Projektliste des Assistenten) */
@@ -236,7 +258,9 @@ describe('Assistent: Anlegen', () => {
     const vorher = [...mock.fs.eintraege.keys()].sort();
     await act(async () => knopf(host, 'Projektordner anlegen').click());
     await warten();
-    expect(host.querySelector('.warning')?.textContent).toContain('Den Ordner „2026-014 EFH“ gibt es inzwischen im Stammordner');
+    const fehler = host.querySelector('.meldung.fehler');
+    expect(fehler?.textContent).toContain('Den Ordner „2026-014 EFH“ gibt es inzwischen im Stammordner');
+    expect(fehler?.getAttribute('role')).toBe('alert');
     expect([...mock.fs.eintraege.keys()].sort()).toEqual(vorher);
     // gesperrt mit Grund, Weg zum Ergänzen
     expect(knopf(host, 'Projektordner anlegen').disabled).toBe(true);
@@ -327,5 +351,268 @@ describe('Namensschema-Feld', () => {
     act(() => void el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })));
     expect(werte).toEqual(['{PROJEKT_KUERZEL} x']);
     expect(document.activeElement).toBe(el);
+  });
+});
+
+describe('Folgerunde: Neubeginn des Assistenten fragt bei offenen Eingaben', () => {
+  it('„Projekte“ in der Titelleiste: geänderte Stammdaten beim Ergänzen – erst Rückfrage (Abbrechen behält sie, Verwerfen beginnt neu)', async () => {
+    await desktopMitProjekt();
+    const host = render();
+    await warten();
+    act(() => knopf(host, '2025-007 Kita').click());
+    await warten();
+    await warten();
+    expect(host.querySelector('.po-kontext')?.textContent).toContain('Ergänzen: 2025-007 Kita');
+    const projekte = () => host.querySelector<HTMLButtonElement>('.titlebar-projekte')!;
+    // Gegenprobe zuerst: ohne Änderung keine Rückfrage – wieder öffnen
+    act(() => projekte().click());
+    await warten();
+    expect(document.querySelector('.modal.rf')).toBeNull();
+    expect(host.querySelector('.po-kontext')).toBeNull();
+    act(() => knopf(host, '2025-007 Kita').click());
+    await warten();
+    await warten();
+    eingabe(feld(host, 'Bezeichnung des Vorhabens'), 'Neubau Kita am Park');
+    act(() => projekte().click());
+    await warten();
+    const frage = () => document.querySelector('.modal.rf')!;
+    expect(frage().querySelector('h3')?.textContent).toBe('Eingaben im Assistenten verwerfen?');
+    expect(frage().textContent).toContain('Noch nicht angelegt: die geänderten Stammdaten von „2025-007 Kita“');
+    act(() => knopf(frage(), 'Abbrechen').click());
+    await warten();
+    expect(feld(host, 'Bezeichnung des Vorhabens').value).toBe('Neubau Kita am Park');
+    act(() => projekte().click());
+    await warten();
+    act(() => knopf(frage(), 'Verwerfen').click());
+    await warten();
+    expect(host.querySelector('.po-kontext')).toBeNull();
+    expect(host.textContent).toContain('Bestehendes Projekt ergänzen');
+  });
+
+  it('neues Projekt: der Entwurf übersteht den Neubeginn (liegt im Store) – keine Rückfrage', () => {
+    const host = render();
+    act(() => knopf(host, 'Neues Projekt').click());
+    eingabe(feld(host, 'Projektnummer'), '2026-014');
+    act(() => host.querySelector<HTMLButtonElement>('.titlebar-projekte')!.click());
+    expect(document.querySelector('.modal.rf')).toBeNull();
+    expect(knopf(host, 'Weiter mit 2026-014')).toBeTruthy();
+  });
+});
+
+describe('Folgerunde: Vorlagenordner einlesen', () => {
+  it('„wird gelesen“ endet erst mit dem letzten Ladevorgang, nicht mit einem früheren', async () => {
+    mock.desktop = true;
+    await mock.fs.dateiAnlegen('V:/Vorlagen', 'Brief.txt', strToU8('x'));
+    const tore: (() => void)[] = [];
+    const echt = mock.fs.liste.bind(mock.fs);
+    mock.fs.liste = async (wurzel, tiefe) => {
+      await new Promise<void>((r) => tore.push(r));
+      return echt(wurzel, tiefe);
+    };
+    useOrdner.setState({ vorlagenordner: 'V:/Vorlagen' });
+    const erster = useOrdner.getState().ladeVorlagen();
+    const zweiter = useOrdner.getState().ladeVorlagen();
+    expect(useOrdner.getState().vorlagenLaden).toBe(true);
+    tore[0]();
+    await erster;
+    expect(useOrdner.getState().vorlagenLaden).toBe(true);
+    tore[1]();
+    await zweiter;
+    expect(useOrdner.getState().vorlagenLaden).toBe(false);
+    expect(useOrdner.getState().vorlagen.map((v) => v.pfad)).toEqual(['Brief.txt']);
+  });
+});
+
+describe('Rahmen-App Arkly: ungespeicherte Änderungen melden und auf Anfrage speichern', () => {
+  let gesendet: Record<string, unknown>[] = [];
+  const rahmen = { postMessage: (d: Record<string, unknown>) => gesendet.push(d) } as unknown as Window;
+  const setUrl = (u: string) => (window as unknown as { happyDOM: { setURL: (u: string) => void } }).happyDOM.setURL(u);
+  beforeEach(() => {
+    gesendet = [];
+    konfigMock.sicherungScheitert = false;
+    konfigMock.schreibenScheitert = false;
+    konfigMock.allgemeinScheitert = false;
+    useOrdner.setState({ ordnerEntwurf: null, strukturFehler: null, strukturRoh: null, konfigFehler: null, strukturNichtGeschrieben: null });
+    Object.defineProperty(window, 'parent', { value: rahmen, configurable: true });
+    setUrl('http://localhost:3000/?rahmen=tab&app=ordner');
+  });
+  afterEach(() => {
+    // offene Meldungen (gemeinsame Warteschlange) nicht in den nächsten Test tragen
+    for (let i = 0; i < 5 && document.querySelector('.modal.rf'); i++) act(() => knopf(document.querySelector('.modal.rf')!, 'OK').click());
+    Object.defineProperty(window, 'parent', { value: window, configurable: true });
+    setUrl('http://localhost:3000/');
+  });
+  /** zuletzt an den Rahmen gemeldet: ungespeicherte Änderungen? */
+  const dirty = () => gesendet.filter((d) => d.typ === 'arch-tools:status').at(-1)?.dirty;
+  let nr = 0;
+  /** Speichern-Anfrage des Rahmens; liefert die Antwort „gespeichert“ (ok) */
+  const speichernAnfragen = async () => {
+    const anfrage = `a${++nr}`;
+    act(() => window.dispatchEvent(new MessageEvent('message', { data: { typ: 'arch-tools:speichern', anfrage }, origin: window.location.origin, source: rahmen })));
+    for (let i = 0; i < 20 && !gesendet.some((d) => d.typ === 'arch-tools:gespeichert' && d.anfrage === anfrage); i++) await warten();
+    return gesendet.find((d) => d.typ === 'arch-tools:gespeichert' && d.anfrage === anfrage)?.ok;
+  };
+  const stand = ordnerAlsText(STANDARD.ordner);
+  const meldungText = () => document.querySelector('.modal.rf')?.textContent ?? '';
+
+  it('Text der Ordnerliste: meldet „ungespeichert“; Speichern übernimmt ihn mit Sicherung – Gegenprobe ohne Entwurf', async () => {
+    render();
+    await warten();
+    expect(dirty()).toBe(false);
+    // ohne offene Änderungen: gespeichert, nichts geändert
+    expect(await speichernAnfragen()).toBe(true);
+    expect(useOrdner.getState().struktur).toBe(STANDARD);
+    act(() => useOrdner.setState({ ordnerEntwurf: { text: `${stand}\n99_Neu aus dem Text`, basis: stand } }));
+    expect(dirty()).toBe(true);
+    expect(await speichernAnfragen()).toBe(true);
+    expect(useOrdner.getState().ordnerEntwurf).toBeNull();
+    expect(useOrdner.getState().struktur.ordner.map((o) => o.pfad)).toContain('99_Neu aus dem Text');
+    // wie beim Knopf „Übernehmen“: vorher gesichert, „Rückgängig“ angeboten
+    expect(localStorage.getItem('arch-tools:konfig:projektordner-sicherungen')).toContain('Ordnerliste übernommen.');
+    expect(useOrdner.getState().rueckgaengig?.struktur).toBe(STANDARD);
+    expect(dirty()).toBe(false);
+    expect(document.querySelector('.modal.rf')).toBeNull();
+  });
+
+  it('Text der Ordnerliste von einem älteren Stand bzw. leer: nicht still übernommen – „nicht gespeichert“ mit Meldung', async () => {
+    render();
+    await warten();
+    act(() => useOrdner.setState({ ordnerEntwurf: { text: `${stand}\n99_Neu`, basis: 'A\nB' } }));
+    expect(dirty()).toBe(true);
+    expect(await speichernAnfragen()).toBe(false);
+    expect(useOrdner.getState().struktur).toBe(STANDARD);
+    expect(useOrdner.getState().ordnerEntwurf?.text).toBe(`${stand}\n99_Neu`);
+    expect(meldungText()).toContain('älteren Stand');
+    act(() => knopf(document.querySelector('.modal.rf')!, 'OK').click());
+    await warten();
+    act(() => useOrdner.setState({ ordnerEntwurf: { text: '', basis: stand } }));
+    expect(await speichernAnfragen()).toBe(false);
+    expect(useOrdner.getState().struktur).toBe(STANDARD);
+    expect(meldungText()).toContain('keinen Ordner');
+  });
+
+  const SICHERUNGEN_KEY = 'arch-tools:konfig:projektordner-sicherungen';
+  const KONFIG_KEY = 'arch-tools:konfig:projektordner';
+
+  it('Speichern auf Anfrage schreibt die übernommene Struktur sofort – nicht erst nach der Wartezeit', async () => {
+    render();
+    await warten();
+    act(() => useOrdner.setState({ ordnerEntwurf: { text: `${stand}\n99_Sofort`, basis: stand } }));
+    expect(localStorage.getItem(KONFIG_KEY) ?? '').not.toContain('99_Sofort');
+    expect(await speichernAnfragen()).toBe(true);
+    // ohne auf SPEICHERN_NACH_MS zu warten: schon geschrieben, der Stand nachgeführt
+    expect(localStorage.getItem(KONFIG_KEY)).toContain('99_Sofort');
+    expect(useOrdner.getState().konfigStandEigen).toContain('99_Sofort');
+  });
+
+  it('unlesbare Struktur: der Text der Ordnerliste wird nicht still übernommen (die Sperre bleibt)', async () => {
+    render();
+    await warten();
+    act(() => useOrdner.setState({ strukturFehler: 'kaputt', strukturRoh: { x: 1 }, ordnerEntwurf: { text: `${stand}\n99_Neu`, basis: stand } }));
+    expect(await speichernAnfragen()).toBe(false);
+    expect(useOrdner.getState().struktur).toBe(STANDARD);
+    expect(useOrdner.getState().strukturFehler).toBe('kaputt');
+    expect(useOrdner.getState().ordnerEntwurf).not.toBeNull();
+    expect(localStorage.getItem(SICHERUNGEN_KEY) ?? '').not.toContain('Ordnerliste übernommen.');
+    expect(meldungText()).toContain('nicht lesbar und deshalb gesperrt');
+  });
+
+  it('Konflikt mit Text der Ordnerliste: nicht still übernommen, eine Meldung nennt beides', async () => {
+    render();
+    await warten();
+    act(() => useOrdner.setState({ konflikt: { roh: { struktur: STANDARD } }, ordnerEntwurf: { text: `${stand}\n99_Neu`, basis: stand } }));
+    expect(await speichernAnfragen()).toBe(false);
+    expect(useOrdner.getState().struktur).toBe(STANDARD);
+    expect(useOrdner.getState().konflikt).not.toBeNull();
+    expect(useOrdner.getState().ordnerEntwurf).not.toBeNull();
+    expect(localStorage.getItem(SICHERUNGEN_KEY) ?? '').not.toContain('Ordnerliste übernommen.');
+    expect(meldungText()).toContain('samt dem Text der Ordnerliste');
+    expect(meldungText().match(/Text der Ordnerliste/g)).toHaveLength(1);
+  });
+
+  it('Sicherung scheitert: nicht übernommen, Entwurf und Struktur bleiben, die Meldung nennt den Grund', async () => {
+    konfigMock.sicherungScheitert = true;
+    render();
+    await warten();
+    act(() => useOrdner.setState({ ordnerEntwurf: { text: `${stand}\n99_Neu`, basis: stand } }));
+    expect(await speichernAnfragen()).toBe(false);
+    expect(useOrdner.getState().struktur).toBe(STANDARD);
+    expect(useOrdner.getState().ordnerEntwurf?.text).toBe(`${stand}\n99_Neu`);
+    expect(meldungText()).toContain('Laufwerk nicht erreichbar');
+    expect(dirty()).toBe(true);
+  });
+
+  it('Schreiben der Struktur gescheitert: meldet „ungespeichert“; „Speichern“ versucht es erneut – scheitert es wieder, „nicht gespeichert“', async () => {
+    render();
+    await warten();
+    konfigMock.schreibenScheitert = true;
+    act(() => useOrdner.getState().setStruktur({ ...STANDARD, name: 'Büro neu' }));
+    await act(() => useOrdner.getState().speichernJetzt());
+    expect(useOrdner.getState().strukturNichtGeschrieben).toBe('Netzlaufwerk getrennt');
+    expect(dirty()).toBe(true);
+    // Laufwerk weiter weg: erneuter Versuch scheitert
+    expect(await speichernAnfragen()).toBe(false);
+    expect(meldungText()).toContain('Netzlaufwerk getrennt');
+    act(() => knopf(document.querySelector('.modal.rf')!, 'OK').click());
+    await warten();
+    // Laufwerk wieder da: „Speichern“ schreibt (ohne neue Änderung, also ohne laufende Wartezeit)
+    konfigMock.schreibenScheitert = false;
+    expect(await speichernAnfragen()).toBe(true);
+    expect(localStorage.getItem('arch-tools:konfig:projektordner')).toContain('Büro neu');
+    expect(useOrdner.getState().strukturNichtGeschrieben).toBeNull();
+    expect(useOrdner.getState().konfigFehler).toBeNull();
+    expect(dirty()).toBe(false);
+  });
+
+  it('gescheiterte allgemeine Einstellungen: Meldung wie bisher, aber nicht „ungespeichert“ und keine Struktur-Meldung', async () => {
+    render();
+    await warten();
+    konfigMock.allgemeinScheitert = true;
+    act(() => useOrdner.getState().setAllgemein({ buero: 'Anderes Büro' }));
+    await warten();
+    expect(useOrdner.getState().konfigFehler).toBe(`${NICHT_GESPEICHERT}: Allgemein nicht schreibbar`);
+    expect(useOrdner.getState().strukturNichtGeschrieben).toBeNull();
+    expect(dirty()).toBe(false);
+    expect(await speichernAnfragen()).toBe(true);
+    expect(meldungText()).toBe('');
+  });
+
+  it('Konflikt mit einem anderen Rechner: meldet „ungespeichert“, Speichern entscheidet ihn nicht still', async () => {
+    render();
+    await warten();
+    act(() => useOrdner.setState({ konflikt: { roh: { struktur: STANDARD } } }));
+    expect(dirty()).toBe(true);
+    expect(await speichernAnfragen()).toBe(false);
+    expect(useOrdner.getState().konflikt).not.toBeNull();
+    expect(meldungText()).toContain('Meine Fassung trotzdem speichern');
+    act(() => useOrdner.setState({ konflikt: null }));
+    expect(dirty()).toBe(false);
+  });
+
+  it('Assistent: geänderte Stammdaten beim Ergänzen melden „ungespeichert“, Speichern legt nichts an – der Entwurf eines neuen Projekts nicht', async () => {
+    await desktopMitProjekt();
+    const host = render();
+    await warten();
+    // neues Projekt: der Entwurf liegt im lokalen Speicher (übersteht auch ein Beenden) – keine Meldung
+    act(() => knopf(host, 'Neues Projekt').click());
+    eingabe(feld(host, 'Projektnummer'), '2026-014');
+    expect(JSON.parse(localStorage.getItem('projektordner:zustand')!).stamm.nummer).toBe('2026-014');
+    expect(dirty()).toBe(false);
+    act(() => host.querySelector<HTMLButtonElement>('.titlebar-projekte')!.click());
+    await warten();
+    act(() => knopf(host, '2025-007 Kita').click());
+    await warten();
+    await warten();
+    expect(dirty()).toBe(false);
+    const inhalt = () => JSON.stringify([...mock.fs.eintraege].map(([k, v]) => [k, v ? [...v] : null]));
+    const vorher = inhalt();
+    eingabe(feld(host, 'Bezeichnung des Vorhabens'), 'Neubau Kita am Park');
+    expect(dirty()).toBe(true);
+    expect(await speichernAnfragen()).toBe(false);
+    // nichts angelegt bzw. geschrieben, die Eingabe steht noch da
+    expect(inhalt()).toBe(vorher);
+    expect(feld(host, 'Bezeichnung des Vorhabens').value).toBe('Neubau Kita am Park');
+    expect(meldungText()).toContain('die geänderten Stammdaten von „2025-007 Kita“');
+    expect(meldungText()).toContain('Projektordner anzulegen');
   });
 });
