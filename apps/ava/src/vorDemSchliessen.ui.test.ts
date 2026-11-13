@@ -3,7 +3,8 @@ import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { schliessenVorbereiten } from '@core/platform/rahmen';
-import { TextEingabe } from './components/eingaben';
+import { TextEingabe, useEntwurf } from './components/eingaben';
+import { Langtext } from './components/lv/Langtext';
 import { ausstehendesSchreibenAbwarten, schreibend, useAva } from './store';
 import { berichtAblegen } from './components/bauleitung/gemeinsam';
 import { App } from './App';
@@ -11,11 +12,25 @@ import { App } from './App';
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 let root: ReturnType<typeof createRoot> | null = null;
+/** weitere Wurzeln eines Tests – auch bei gescheiterter Erwartung abgebaut */
+const weitere: ReturnType<typeof createRoot>[] = [];
 afterEach(() => {
   act(() => root?.unmount());
   root = null;
+  act(() => weitere.splice(0).forEach((r) => r.unmount()));
+  useEntwurf.setState({ offen: false });
   document.body.innerHTML = '';
 });
+
+/** Komponente in einer weiteren Wurzel zeigen; liefert den Host */
+function zeigen(el: ReturnType<typeof createElement>): HTMLElement {
+  const host = document.createElement('div');
+  document.body.appendChild(host);
+  const r = createRoot(host);
+  weitere.push(r);
+  act(() => r.render(el));
+  return host;
+}
 
 const takt = () => new Promise((r) => setTimeout(r, 0));
 
@@ -192,12 +207,8 @@ describe('Vor dem Schließen: laufendes Schreiben abwarten (Arkly vorDemSchliess
       // begonnene Eingabe im LV-Feld (Cursor noch im Feld): schon dirty, damit Arkly fragt; Speichern übernimmt sie
       act(() => useAva.setState({ lv: { lv: basis, basis, format: 'x83', datei: { name: 'LV 1.x83' } } as never }));
       expect(status().at(-1)?.dirty).toBe(false);
-      const feldHost = document.createElement('div');
-      document.body.appendChild(feldHost);
-      const feldRoot = createRoot(feldHost);
       const menge = vi.fn(() => useAva.setState({ lv: { ...useAva.getState().lv!, lv: { positionen: [3] } } as never }));
-      act(() => feldRoot.render(createElement(TextEingabe, { wert: '1', onChange: menge })));
-      const feld = feldHost.querySelector('input')!;
+      const feld = zeigen(createElement(TextEingabe, { wert: '1', onChange: menge })).querySelector('input')!;
       act(() => {
         feld.focus();
         Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(feld, '12');
@@ -212,22 +223,36 @@ describe('Vor dem Schließen: laufendes Schreiben abwarten (Arkly vorDemSchliess
       expect(menge).toHaveBeenCalledWith('12');
       expect(lvSpeichern).toHaveBeenCalledTimes(2);
       expect(rahmen.postMessage).toHaveBeenCalledWith({ typ: 'arch-tools:gespeichert', anfrage: 'a2', ok: true }, window.location.origin);
-      act(() => feldRoot.unmount());
+
+      // Langtext (contentEditable) ebenso: Tippen macht dirty, Speichern übernimmt ihn
+      act(() => useAva.setState({ lv: { lv: basis, basis, format: 'x83', datei: { name: 'LV 1.x83' } } as never }));
+      expect(status().at(-1)?.dirty).toBe(false);
+      const langtext = vi.fn(() => useAva.setState({ lv: { ...useAva.getState().lv!, lv: { positionen: [4] } } as never }));
+      const flaeche = zeigen(createElement(Langtext, { wert: [{ laeufe: [{ text: 'Mauerwerk' }] }] as never, onChange: langtext })).querySelector<HTMLElement>('[role="textbox"]')!;
+      act(() => {
+        flaeche.focus();
+        flaeche.innerHTML = '<p>Mauerwerk aus Kalksandstein</p>';
+        flaeche.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+      expect(langtext).not.toHaveBeenCalled();
+      expect(status().at(-1)?.dirty).toBe(true);
+      await act(async () => {
+        window.dispatchEvent(new MessageEvent('message', { data: { typ: 'arch-tools:speichern', anfrage: 'a3' }, origin: window.location.origin, source: rahmen as never }));
+        await takt();
+      });
+      expect(langtext).toHaveBeenCalledTimes(1);
+      expect(lvSpeichern).toHaveBeenCalledTimes(3);
 
       // Gegenprobe: ohne offenes LV macht eine begonnene Eingabe (z. B. Stammdaten, speichern beim Verlassen) nicht dirty
       act(() => useAva.setState({ lv: null }));
-      const zweitHost = document.createElement('div');
-      document.body.appendChild(zweitHost);
-      const zweitRoot = createRoot(zweitHost);
-      act(() => zweitRoot.render(createElement(TextEingabe, { wert: 'a', onChange: () => {} })));
-      const zweit = zweitHost.querySelector('input')!;
+      const zweit = zeigen(createElement(TextEingabe, { wert: 'a', onChange: () => {} })).querySelector('input')!;
       act(() => {
         zweit.focus();
         Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(zweit, 'ab');
         zweit.dispatchEvent(new Event('input', { bubbles: true }));
       });
+      expect(useEntwurf.getState().offen).toBe(true);
       expect(status().at(-1)?.dirty).toBe(false);
-      act(() => zweitRoot.unmount());
     } finally {
       act(() => root?.unmount());
       root = null;

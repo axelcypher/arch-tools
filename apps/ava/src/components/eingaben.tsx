@@ -8,13 +8,13 @@ import { alsZahl } from '@core/dokumente/xlsx';
  * Cursor noch im Feld steht; *Speichern* übernimmt sie dann über `eingabeAbschliessen`.
  */
 export const useEntwurf = create<{ offen: boolean }>(() => ({ offen: false }));
-const entwurf = (offen: boolean) => useEntwurf.getState().offen !== offen && useEntwurf.setState({ offen });
+export const entwurfSetzen = (offen: boolean) => useEntwurf.getState().offen !== offen && useEntwurf.setState({ offen });
 
 /** Entwurf des Felds beim Abbau zurücksetzen (ein Feld mit Fokus verschwindet, ohne den Fokus abzugeben) */
-function useEntwurfAufraeumen(fokus: React.MutableRefObject<boolean>) {
+export function useEntwurfAufraeumen(fokus: React.MutableRefObject<boolean>) {
   useEffect(
     () => () => {
-      if (fokus.current) entwurf(false);
+      if (fokus.current) entwurfSetzen(false);
     },
     [fokus],
   );
@@ -99,7 +99,7 @@ export function ZahlEingabe({
       }}
       onBlur={() => {
         fokus.current = false;
-        entwurf(false);
+        entwurfSetzen(false);
         if (verworfen.current) {
           verworfen.current = false;
           return;
@@ -108,7 +108,7 @@ export function ZahlEingabe({
       }}
       onChange={(e) => {
         setText(e.target.value);
-        entwurf(e.target.value !== zahlDE(wert, stellen));
+        entwurfSetzen(e.target.value !== zahlDE(wert, stellen));
       }}
       onKeyDown={(e) => {
         if (e.key === 'Enter') {
@@ -175,7 +175,7 @@ export function TextEingabe({
     },
     onBlur: () => {
       fokus.current = false;
-      entwurf(false);
+      entwurfSetzen(false);
       if (verworfen.current) {
         verworfen.current = false;
         return;
@@ -184,7 +184,7 @@ export function TextEingabe({
     },
     onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       setText(e.target.value);
-      entwurf(e.target.value !== (wert ?? ''));
+      entwurfSetzen(e.target.value !== (wert ?? ''));
     },
   };
   if (mehrzeilig) return <textarea {...props} rows={zeilen} />;

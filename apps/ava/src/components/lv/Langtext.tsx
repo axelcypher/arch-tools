@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Absatz, Formattext, Lauf } from '../../format/rtf';
 import { gleicherText } from '../../format/rtf';
+import { entwurfSetzen, useEntwurfAufraeumen } from '../eingaben';
 
 /**
  * Langtext bearbeiten: Absätze mit fett, kursiv, unterstrichen und Aufzählungen – das, was die LV-Datei
@@ -89,6 +90,9 @@ export function ausHtml(wurzel: HTMLElement): Formattext {
 export function Langtext({ wert, onChange, nurLesen = false }: { wert: Formattext; onChange: (f: Formattext) => void; nurLesen?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   const zuletzt = useRef<Formattext>(wert);
+  // begonnene Eingabe zählt als ungespeicherte LV-Änderung (●), auch solange die Schreibmarke im Feld steht
+  const fokus = useRef(false);
+  useEntwurfAufraeumen(fokus);
   useEffect(() => {
     const el = ref.current;
     if (!el || document.activeElement === el) return;
@@ -96,6 +100,8 @@ export function Langtext({ wert, onChange, nurLesen = false }: { wert: Formattex
     zuletzt.current = wert;
   }, [wert]);
   const uebernehmen = () => {
+    fokus.current = false;
+    entwurfSetzen(false);
     const el = ref.current;
     if (!el) return;
     const neu = ausHtml(el);
@@ -154,6 +160,8 @@ export function Langtext({ wert, onChange, nurLesen = false }: { wert: Formattex
         suppressContentEditableWarning
         spellCheck
         lang="de"
+        onFocus={() => (fokus.current = true)}
+        onInput={() => ref.current && entwurfSetzen(!gleicherText(ausHtml(ref.current), zuletzt.current))}
         onBlur={uebernehmen}
         onKeyDown={(e) => {
           if (e.key === 'Escape') ref.current?.blur();
