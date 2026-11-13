@@ -45,10 +45,10 @@ auch beim Ergänzen.
    Projekt. Ohne Status in der Projektdatei gelten Projekte im Archivordner als abgeschlossen (in der Standardansicht
    ausgeblendet) und in der Akquise als Akquise; „Wieder aktiv“ schreibt dann „aktiv“ ausdrücklich in die Datei.
    **Reihenfolge der Stammordner:** die Abschnitte der Übersicht ziehen (die Sammelordner wandern mit) oder unter
-   „Einstellungen“ ziehen bzw. ↑ ↓ – gilt für alle Apps; im ersten entstehen neue Projekte.
+   „Einstellungen“ ziehen bzw. mit „Nach oben“/„Nach unten“ – gilt für alle Apps; im ersten entstehen neue Projekte.
    Gibt es genau einen Stammordner, ist er aufgeklappt (ein Archivordner darin nicht). Die Projekte lassen sich sortieren (Ordnername, Nummer –
    neueste zuerst –, zuletzt geändert, Titel) und nach Status filtern (Standard: ohne abgeschlossene; die Wahl gilt
-   je Benutzer). Rechtsklick auf ein Projekt: „Ergänzen …“, „Projekt prüfen“, „Im Explorer öffnen“, **„Projekt
+   je Benutzer). Rechtsklick auf ein Projekt: „Ergänzen …“, „Projekt prüfen“, „Ordner öffnen“, **„Projekt
    abschließen“** bzw. „Wieder aktiv“, „Als Akquise kennzeichnen“ und „Anheften“ – angeheftete Projekte stehen ganz
    vorne, in allen Apps. Der Status steht in der Projektdatei (`meta.status`: Akquise, aktiv, abgeschlossen); gesetzt
    wird nur diese Angabe, alles andere in der Datei bleibt. Nummer und Kurzname leitet jede App gleich aus dem
@@ -315,7 +315,7 @@ Die **Ordnerliste** wird mit der Maus bearbeitet – ein Baum wie im Explorer, r
 - **LPh-Vorschau:** eigener Modus (Knopf in der Werkzeugleiste, „Vorschau beenden“) – die Leistungsphasen eines
   Beispielprojekts wählen; Ordner, die dann nicht entstehen, sind blass und durchgestrichen („12 von 44 Ordnern
   entstehen“). Die Vorschau ändert nichts an der Struktur.
-- **Menüs:** Rechtsklick, der Knopf „Aktionen“ am Ende der Zeile (Listensymbol) oder Umschalt+F10 bzw. die Menütaste (für die Zeile mit der
+- **Menüs:** Rechtsklick, der Knopf „Aktionen“ am Ende der Zeile (Symbol mit drei Punkten) oder Umschalt+F10 bzw. die Menütaste (für die Zeile mit der
   Schreibmarke) zeigen alle Aktionen mit ihren Tastenkürzeln – im gemeinsamen Menü aller Apps. Es ist ganz per Tastatur
   bedienbar: Pfeil auf/ab, Pos1/Ende, Enter; Esc oder Tab schließt, der Fokus kehrt in den Baum zurück (Tab geht von
   dort weiter). Kopieren, Einfügen, Duplizieren sowie Alle aufklappen/zuklappen stehen außerdem im Menü „Weitere“ der
