@@ -143,9 +143,8 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
                 .filter((u) => u.art === 'intern')
                 .map((u) => ({
                   text: u.titel,
-                  symbol: (zugeordnet?.eintrag.id === u.id ? 'haken' : undefined) as 'haken' | undefined,
-                  // Einfachauswahl: der Haken allein wird nicht vorgelesen
-                  ...(zugeordnet?.eintrag.id === u.id ? { hinweis: 'zugeordnet' } : {}),
+                  // Einfachauswahl (menuitemradio): das zugeordnete Formular ist gewählt
+                  gewaehlt: zugeordnet?.eintrag.id === u.id,
                   aktion: () =>
                     void useAntrag.getState().umfangAendern((aktuell) => aktuell.map((x) => (x.id === u.id ? { ...x, formularDatei: formularDatei(f.pfad) } : x)), { ansicht, eintrag: u.id, titel: u.titel, was: 'Nicht zugeordnet' }),
                 })),
