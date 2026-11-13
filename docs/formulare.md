@@ -321,7 +321,7 @@ Anschrift, wie sie in Formularen steht.
   sonst ist es ein Wort der Bezeichnung („Entw Grundriss“, „Ab 2027 …“). Unter „Fehlt im Antragsordner“ stehen die
   Dokumente des Antragsumfangs ohne Datei.
   Die Namensvorlage für exportierte PDFs ist deshalb `{Kürzel} {Art} {Datum} {Nr} {Name}` (`{Art}` = Antragsart der
-  aktiven Fassung, an dieser Stelle immer – siehe „Dateiname“; `{Phase}` gibt es weiter an anderer Stelle). In der
+  aktiven Fassung, an dieser Stelle immer – siehe „Dateiname“; `{Phase}` aus alten Vorlagen gilt überall als `{Art}`). In der
   Unterlagen-Vorschau stehen die Pläne eines Plansatzes an seiner Stelle im Antragsumfang.
   - **Quick-Add:** Gibt es einen Antragsumfang, steht unter einer Datei, die zu keinem seiner Dokumente gehört, „nicht
     im Antragsumfang“ und dahinter ein **+** (Zeilen mit Dokument halten den Platz frei, die Zeitspalte bleibt bündig).
@@ -454,18 +454,27 @@ Einstellungen und des Namensschemas (`packages/core/src/fassung.ts`, auch in der
   Baubeschreibung.pdf“ (Datum als JJMMTT, eine leere Nummer entfällt). Die **Antragsart kommt immer aus dem Antrag**
   (Ordner der aktiven Fassung, „BAUA 2“ → BAUA), nie aus einer Einstellung: Steht in einer Vorlage nach dem Kürzel
   (bzw. an der Stelle der Antragsart nach dem Namensschema) noch `{Phase}` – die Vorgabe früherer Fassungen, dort
-  stand dann der Wert der Einstellung „Phase“, z. B. BVA im Bauantrag – oder ein festes Kürzel (mindestens ein
+  stand dann der Wert der entfallenen Einstellung „Phase“, z. B. BVA im Bauantrag – oder ein festes Kürzel (mindestens ein
   Buchstabe; „2026“ zählt nicht), setzt der Export dort `{Art}` ein (`vorlageMitAntragsart`, in
   `wirksameEinstellungen`). Gespeichert bleibt die Vorlage, wie sie ist; die Einstellungen (global und je Projekt)
-  zeigen dann einen Hinweis mit „Vorlage anpassen“. Weitere Platzhalter: `{Antrag}`, `{Phase}` (Feld „Phase (nur für
-  {Phase})“), `{Formular}`, `{Kennung}`, `{Stand}`. `{Name}` ist der Titel im Antragsumfang, sonst der Formularname
+  zeigen dann einen Hinweis mit „Vorlage anpassen“. `{Phase}` steht auch an
+  anderer Stelle für die Antragsart; die Einstellung „Phase“ gibt es nicht mehr (alte Abweichungen je Projekt, die
+  nur sie enthielten, entfallen beim Lesen). Weitere Platzhalter: `{Antrag}`,
+  `{Formular}`, `{Kennung}`, `{Stand}`. `{Name}` ist der Titel im Antragsumfang, sonst der Formularname
   ohne laufende Nummer und Jahr.
 - **Einstellungen › Antrag & Export:** Antragsordner, Antragsarten (die erste ist der Standard; dazu die des
-  Namensschemas), Namensvorlage und Phase (nur für `{Phase}`), Ziel (aktive Antragsfassung oder fester Ordner, z. B.
-  `TÖB/{Antrag}/Formulare`), Ordner der Berechnungen, Vorlagenordner für neue Formulare und der **Katalog der
-  Antragsdokumente**. Je Projekt lassen sich Antragsordner, Namensvorlage, Phase (nur für `{Phase}`) und Ziel
-  abweichend einstellen (Antragsdaten › „Export für …“, „Vorgabe verwenden“ setzt zurück) – wie die angezeigten Pfade
-  im Projektordner.
+  Namensschemas), Namensvorlage, Ziel (aktive Antragsfassung oder fester Ordner, z. B.
+  `TÖB/{Antrag}/Formulare`), Ordner der Berechnungen, Vorlagenordner für neue Formulare, Antragsvorlagen und die
+  **Antragsdokumente** (der Katalog): eine Liste mit Kurzbeschreibung je Dokument („Formular des Projekts“, „Formular
+  mit „Statisti“ im Namen“, „Datei aus Planung/Berechnungen · *Flächen*“) und den Vorlagen, zu denen es gehört (lange
+  Titel und Vorlagen werden gekürzt); ein Klick öffnet die Angaben als beschriftetes Formular – Bezeichnung, Art
+  (Formular des Projekts, Datei aus dem Projektordner, Plansatz – je mit Erklärung), Formular bzw. Ordner der Quelle
+  und Muster des Dateinamens (mit Vorgabe als Platzhalter und Hinweis), „Gehört zu den Vorlagen“, „Erforderlich“
+  (immer bzw. mit Bedingung) und „Dokument entfernen …“ (mit Rückfrage; in Projekten bleibt es im Antragsumfang).
+  „Schließen“ oder Esc schließt nur die Angaben, der Fokus geht zurück auf die Zeile; nach dem Entfernen steht er auf
+  dem nächsten Dokument. Ohne Dokumente steht ein Hinweis statt der Liste. Je Projekt lassen sich Antragsordner, Namensvorlage und Ziel abweichend
+  einstellen (Antragsdaten › „Export für …“, „Vorgabe verwenden“ setzt zurück) – wie die angezeigten
+  Pfade im Projektordner.
 - **Antragsdaten** (Navigation, rechte Hälfte neben „Projektdaten“): alles, was nur für den aktiven Antrag gilt –
   **Status** (siehe „Eingereicht“), **Antragsmerkmale** und **Antragsumfang**, dazu „Export für …“ (gilt für alle
   Anträge des Projekts). Die Projektdaten (Projektkarte) gelten dagegen für das ganze Projekt.
@@ -529,14 +538,18 @@ Einstellungen und des Namensschemas (`packages/core/src/fassung.ts`, auch in der
   des nächsten Nachtrags („BVA 2“). Ändert sich das Namensschema (in der Projektdatei oder im Projektordner-Tool,
   gelesen beim Zurückkommen ins Fenster), werden Antragsordner und Plansätze sofort neu erkannt. Eine in Formulare
   angelegte Projektdatei bekommt wie im Projektordner-Tool eine Kopie des Büro-Schemas.
-- **Antragsvorlagen** (Einstellungen › Antrag & Export): benannte Zusammenstellungen von Katalogdokumenten je
-  Antragsart – Vorgabe „Bauantrag“ (BAUA), „Bauvoranfrage“ (BAUVA), „Denkmalrechtliche Erlaubnis“ (DENK). Im Katalog
-  hat jede Vorlage eine Spalte zum Ankreuzen; die Reihenfolge ist die des Katalogs. Beim Festlegen des Antragsumfangs
-  wird die Vorlage zur Antragsart der aktiven Fassung vorgeschlagen („BAUA 2“ → Bauantrag, „BVA“ → Bauvoranfrage).
-  Gibt es zur Art keine Vorlage (BAUF, ABGE, ENTW …), wird nichts vorgewählt – der Bauantrag passt dort nicht –, die
-  Auswahl bittet um eine Wahl, „Antragsumfang festlegen“ ist bis dahin aus. „Dokument hinzufügen › Aus Vorlage
-  ergänzen“ nimmt die fehlenden Dokumente einer weiteren Vorlage dazu. Die früheren „Vorgewählt“-Häkchen werden beim
-  ersten Start zur Vorlage „Bauantrag“.
+- **Antragsvorlagen** (Einstellungen › Antrag & Export): benannte Zusammenstellungen von Katalogdokumenten je Antragsart
+  – Vorgabe „Bauantrag“ (BAUA), „Bauvoranfrage“ (BAUVA), „Denkmalrechtliche Erlaubnis“ (DENK). Welche Dokumente
+  dazugehören, wird bei den Antragsdokumenten angekreuzt: über der Liste „Vorlage zusammenstellen“ wählen (oder „n
+  Dokumente“ in der Vorlagen-Tabelle, das auch den Fokus dorthin setzt), dann je Dokument ein Häkchen; ein neues
+  Dokument gehört gleich zur gewählten Vorlage. Die Reihenfolge ist die des Katalogs. Eine Vorlage entfernen und
+  „Vorgabe wiederherstellen“ (nur bei Abweichung) fragen nach; das Zurücksetzen der Antragsdokumente lässt die Vorlagen,
+  wie sie sind (auch solche, die noch aus den früheren „Vorgewählt“-Häkchen abgeleitet sind). Beim Festlegen des
+  Antragsumfangs wird die Vorlage zur Antragsart der aktiven Fassung vorgeschlagen („BAUA 2“ → Bauantrag, „BVA“ →
+  Bauvoranfrage). Gibt es zur Art keine Vorlage (BAUF, ABGE, ENTW …), wird nichts vorgewählt – der Bauantrag passt dort
+  nicht –, die Auswahl bittet um eine Wahl, „Antragsumfang festlegen“ ist bis dahin aus. „Dokument hinzufügen › Aus
+  Vorlage ergänzen“ nimmt die fehlenden Dokumente einer weiteren Vorlage dazu. Die früheren „Vorgewählt“-Häkchen werden
+  beim ersten Start zur Vorlage „Bauantrag“.
 - **Reihenfolge ändern:** am Griff ⠿ ziehen – oder den Griff wählen und mit ↑/↓ verschieben – im Katalog, bei den
   Antragsvorlagen und Antragsmerkmalen und im Antragsumfang eines Projekts (dort auch per Rechtsklick „Nach oben“ /
   „Nach unten“).
@@ -665,9 +678,10 @@ Einstellungen und des Namensschemas (`packages/core/src/fassung.ts`, auch in der
   Bauvorlagen ist die Übereinstimmungserklärung nach § 7 BauPrüfVO NRW nötig). Ein **Nachtrag** („Nachtrag „BAUA 3“
   anlegen“ in den Antragsdaten: nächste Fassung, wird aktiv) erst nach Rücknahme bzw. Rücknahmefiktion, Ablehnung,
   Rückgabe der Unterlagen oder für eine Änderung nach der Entscheidung (siehe „Vergleich“ oben).
-- **Dokumente mit Bedingung:** im Antragsumfang (Bearbeiten) und im Katalog („Nur wenn“; Antragsmerkmale mit und/oder
-  wie oben) – etwa ein Nachweis nur bei Gebäudeklasse 3–5. Trifft sie nicht zu, ist das Dokument „nicht erforderlich“:
-  kein Farbpunkt, kein grauer „Anlegen“-Eintrag, es zählt nicht mit.
+- **Dokumente mit Bedingung:** im Antragsumfang (Bearbeiten) und bei den Antragsdokumenten („Erforderlich“ in den
+  Angaben, in der Zeile „nur wenn …“; Antragsmerkmale mit und/oder wie oben) – etwa ein Nachweis nur bei Gebäudeklasse
+  3–5. Trifft sie nicht zu, ist das Dokument „nicht erforderlich“: kein Farbpunkt, kein grauer „Anlegen“-Eintrag, es
+  zählt nicht mit.
 - **Status** – immer gegen die aktive Fassung:
   - **grau – fehlt:** kein Formular im Projekt bzw. weder Quelle noch Datei;
   - **rot – nicht vollständig:** das Formular hat noch offene Angaben (Füllstand wie in der Gliederung);
@@ -897,7 +911,7 @@ gehören nicht dazu.
 | --- | --- | --- |
 | Gliederung der Formulare (Titel, Gruppen, Bedingungen) | `formulare:profile` | ergänzt – gleiche Formulare ersetzt |
 | Antragsmerkmale | `formulare:merkmale` | ersetzt |
-| Antragsdokumente (Katalog) | `formulare:katalog` | ersetzt |
+| Antragsdokumente | `formulare:katalog` | ersetzt |
 | Antrag & Export | `formulare:export` | ersetzt |
 | Antrag & Export: Abweichungen je Projekt | `formulare:export-projekte` | ergänzt – gleiche Projekte ersetzt |
 | Bürostammdaten | `formulare:stammdaten` | ersetzt |

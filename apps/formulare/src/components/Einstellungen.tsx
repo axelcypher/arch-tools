@@ -11,6 +11,7 @@ import { waehleOrdner } from '../dateisystem';
 import { IN_PROJEKTKARTE } from '../projektdaten';
 import { stammdatenLaden, stammdatenSpeichern } from '../stammdaten';
 import { AntragEinstellungen } from './AntragEinstellungen';
+import { Karte } from './EinstellungsKarte';
 import { SicherungEinstellungen } from './SicherungEinstellungen';
 import type { EinstellungsBereich } from '../store';
 import { VORGABE_OAP_PFAD, useFormulare } from '../store';
@@ -115,19 +116,6 @@ export function EinstellungenAnsicht() {
         {bereich === 'sicherung' && <SicherungEinstellungen />}
       </section>
     </div>
-  );
-}
-
-function Karte({ titel, text, children, kopf }: { titel: string; text?: React.ReactNode; children: React.ReactNode; kopf?: React.ReactNode }) {
-  return (
-    <section className="es-karte">
-      <div className="es-karte-kopf">
-        <h3>{titel}</h3>
-        {kopf}
-      </div>
-      {text && <p className="muted small-text">{text}</p>}
-      {children}
-    </section>
   );
 }
 
