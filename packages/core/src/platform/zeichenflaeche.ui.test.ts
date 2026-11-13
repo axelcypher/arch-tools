@@ -1,10 +1,13 @@
 // @vitest-environment happy-dom
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { useTheme, useZeichenflaecheGefiltert } from './theme';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+
+const ausgang = useTheme.getState();
+afterEach(() => useTheme.setState({ theme: ausgang.theme, canvasDunkel: ausgang.canvasDunkel }));
 
 describe('useZeichenflaecheGefiltert', () => {
   it('nur im dunklen Schema mit „Zeichenfläche abdunkeln“ wahr; folgt jedem Wechsel', () => {

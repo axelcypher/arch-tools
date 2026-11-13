@@ -12,7 +12,10 @@
  * Grundlage: Die Filterfunktionen wirken im sRGB-Raum (Filter Effects, Kurzschreibweisen) und sind je Schritt affin;
  * zwischen den Schritten wird auf [0, 1] begrenzt. invert(a): c' = a + (1 − 2a)·c; hue-rotate(180°) ist eine lineare
  * Abbildung, die ihr eigenes Inverses ist. Damit lässt sich die Zielfarbe zurückrechnen. Ist das Ergebnis mit der
- * gewünschten Deckung nicht darstellbar (Kanal außerhalb von [0, 1]), wird die Deckung so weit erhöht, bis es geht.
+ * gewünschten Deckung nicht darstellbar (Kanal außerhalb von [0, 1]), wird die Deckung so weit erhöht, bis es geht;
+ * ist es auch deckend nicht darstellbar, wird das Ziel entsättigt (Farbton bleibt, Buntheit sinkt).
+ * Über einer Unterlage (PDF, Bild) ist der Grund nicht `ZEICHENFLAECHE_GRUND`: dann `grund` übergeben oder die
+ * Abweichung hinnehmen.
  */
 
 type Rgb = [number, number, number];
@@ -82,28 +85,39 @@ const darstellbar = (c: Rgb) => c.every((v) => v >= -1e-6 && v <= 1 + 1e-6);
  * @param grund helle Grundfarbe der Zeichenfläche vor dem Filter
  */
 export function planFuellungDunkel(farbe: string, deckung: number, grund: string = ZEICHENFLAECHE_GRUND): { farbe: string; deckung: number } {
+  if (!Number.isFinite(deckung)) throw new Error(`Keine Deckung: ${deckung}`);
   const m = hexZuRgb(farbe);
   const g = hexZuRgb(grund);
   const d = begrenzt(deckung);
+  if (d === 0) return { farbe: rgbZuHex(g), deckung: 0 };
+  const grundSichtbar = gefiltert(g);
   // sichtbares Ziel: Farbe mit Deckung über dem gefilterten (dunklen) Grund
-  const ziel = mischen(m, gefiltert(g), d);
-  // Mischung vor dem Filter, die das Ziel ergibt
-  const vorher = ungefiltert(ziel);
-  // Füllfarbe p mit Deckung e: e·p + (1 − e)·g = vorher  →  p = (vorher − (1 − e)·g) / e; kleinste darstellbare e ≥ d
-  for (let e = Math.max(d, 0.01); e <= 1.0001; e += 0.01) {
-    const p = vorher.map((v, i) => (v - (1 - e) * g[i]) / e) as Rgb;
-    if (darstellbar(p)) return { farbe: rgbZuHex(p), deckung: Math.round(Math.min(1, e) * 100) / 100 };
+  let ziel = mischen(m, grundSichtbar, d);
+  let vorher = ungefiltert(ziel);
+  if (!darstellbar(vorher)) {
+    // auch deckend nicht erreichbar: Ziel zur gleich hellen Graustufe hin entsättigen, bis es geht – der Farbton bleibt
+    // (Mischen mit Grau ändert den Ton nicht), nur die Buntheit sinkt
+    const grau = 0.2126 * ziel[0] + 0.7152 * ziel[1] + 0.0722 * ziel[2];
+    const roh = ziel;
+    let lo = 0;
+    let hi = 1;
+    for (let k = 0; k < 30; k++) {
+      const mitte = (lo + hi) / 2;
+      if (darstellbar(ungefiltert(roh.map((v) => mitte * v + (1 - mitte) * grau) as Rgb))) lo = mitte;
+      else hi = mitte;
+    }
+    ziel = roh.map((v) => lo * v + (1 - lo) * grau) as Rgb;
+    vorher = ungefiltert(ziel).map(begrenzt) as Rgb;
   }
-  // nicht exakt erreichbar: deckend und begrenzt (nächstliegende Farbe)
-  return { farbe: rgbZuHex(vorher), deckung: 1 };
-}
-
-/** Farbton (0–360°) einer Farbe; für Tests und Prüfungen */
-export function farbton(c: Rgb): number {
-  const [r, g, b] = c;
-  const max = Math.max(r, g, b);
-  const min = Math.min(r, g, b);
-  if (max - min < 1e-9) return 0;
-  const h = max === r ? ((g - b) / (max - min)) % 6 : max === g ? (b - r) / (max - min) + 2 : (r - g) / (max - min) + 4;
-  return (h * 60 + 360) % 360;
+  // Füllfarbe p mit Deckung e: e·p + (1 − e)·g = vorher. p liegt in [0, 1], wenn je Kanal
+  // e ≥ (g − v) / g (für v < g) und e ≥ (v − g) / (1 − g) (für v > g) – kleinste solche Deckung, mindestens d
+  let e = d;
+  vorher.forEach((v, i) => {
+    if (v < g[i] && g[i] > 0) e = Math.max(e, (g[i] - v) / g[i]);
+    if (v > g[i] && g[i] < 1) e = Math.max(e, (v - g[i]) / (1 - g[i]));
+  });
+  // auf Hundertstel aufrunden und erst dann p rechnen (passt genau zur zurückgegebenen Deckung)
+  e = Math.min(1, Math.ceil(e * 100 - 1e-9) / 100);
+  const p = vorher.map((v, i) => (v - (1 - e) * g[i]) / e) as Rgb;
+  return { farbe: rgbZuHex(p), deckung: e };
 }
