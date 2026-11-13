@@ -1,7 +1,8 @@
 import { standNachSpeichern } from '@core/platform/projektDatei';
 import { create } from 'zustand';
 import type { Kosten, KostenPosition, Project } from '@core/model';
-import { createProject } from '@core/model';
+import { createProject, leereMeta } from '@core/model';
+import { gleich } from '@core/zusammenfuehren';
 import { parseProjectData } from '@core/serialize';
 import { logger } from '@core/platform/log';
 import { zwischenstandErsetzt, zwischenstandLadenErlaubt, zwischenstandWirdGeladen } from '@core/platform/startschutz';
@@ -25,13 +26,21 @@ interface KostenState {
   dokument: number;
   past: Project[];
   future: Project[];
+  /** Zeitpunkt des ungespeicherten Zwischenstands, der beim Start wiederhergestellt wurde (Leiste „Speichern / Verwerfen“) */
+  wiederhergestellt: number | null;
 
   /** basis: Stand der Datei, aus der das Projekt stammt (null bei IFC-Import bzw. neuem Projekt) */
   load: (p: Project, datei?: string | null, basis?: Project | null) => void;
+  /**
+   * Zwischenstand nach dem Neuladen wiederherstellen: ungespeichert, wenn er von der Datei abweicht (bzw. ohne Datei
+   * nicht leer ist) – sonst ginge er beim nächsten Öffnen ohne Rückfrage verloren
+   */
+  wiederherstellen: (p: Project, datei: string | null, basis: Project | null, zeit?: number) => void;
+  /** wiederhergestellten Zwischenstand verwerfen: zurück auf den Stand der Datei bzw. ein leeres Projekt */
+  verwerfen: () => void;
   update: (fn: (p: Project) => Project) => void;
   undo: () => void;
   redo: () => void;
-  /** nach dem Speichern: Dateiname und das gespeicherte (ggf. mit der Datei zusammengeführte) Projekt */
   /** nach dem Speichern: Datei, gespeichertes Projekt und der Stand, der gespeichert wurde */
   markSaved: (datei: string, gespeichert: Project, vorher: Project, dokument: number) => void;
 }
@@ -44,10 +53,22 @@ export const useKosten = create<KostenState>()((set, get) => ({
   past: [],
   dokument: 0,
   future: [],
+  wiederhergestellt: null,
 
   load: (p, datei = null, basis = null) => {
     log.info(`Projekt geladen: ${p.name}`, { geschosse: p.storeys.length, positionen: p.kosten?.positionen.length ?? 0 });
-    set({ project: p, datei, basis, dirty: false, dokument: get().dokument + 1, past: [], future: [] });
+    set({ project: p, datei, basis, dirty: false, dokument: get().dokument + 1, past: [], future: [], wiederhergestellt: null });
+  },
+  wiederherstellen: (p, datei, basis, zeit) => {
+    get().load(p, datei, basis);
+    const dirty = basis ? !gleich(p, basis) : !istLeer(p);
+    if (dirty) log.info('Ungespeicherter Zwischenstand wiederhergestellt', { datei, zeit });
+    set({ dirty, wiederhergestellt: dirty ? (zeit ?? Date.now()) : null });
+  },
+  verwerfen: () => {
+    const { basis, datei } = get();
+    if (basis) get().load(basis, datei, basis);
+    else get().load(createProject());
   },
   update: (fn) => {
     const { project, past } = get();
@@ -74,9 +95,14 @@ export const useKosten = create<KostenState>()((set, get) => ({
     // Änderungen anderer Apps aus der Datei übernommen: neuer Ausgangspunkt, alte Schritte passen nicht mehr
     const n = standNachSpeichern(get().project, vorher, gespeichert);
     if (n.verlaufVerwerfen) set({ past: [], future: [] });
-    set({ project: n.project, dirty: n.dirty, datei, basis: gespeichert });
+    set({ project: n.project, dirty: n.dirty, datei, basis: gespeichert, wiederhergestellt: null });
   },
 }));
+
+/** leeres Projekt (wie „Neues Projekt“) – ein solcher Zwischenstand gilt nicht als ungespeichert */
+export function istLeer(p: Project): boolean {
+  return !p.storeys.some((s) => s.shapes.length) && !p.kosten && !p.dateien?.length && gleich(p.meta, leereMeta()) && p.name === createProject().name;
+}
 
 /* ---------- Änderungen am Projekt ---------- */
 
@@ -131,12 +157,13 @@ if (typeof indexedDB !== 'undefined') {
       )
       .then((raw) => {
         const st = useKosten.getState();
-        if (!raw || st.dirty || st.past.length) return;
-        const r = raw as { project: unknown; datei: string | null; basis?: unknown };
+        // inzwischen schon ein Projekt geöffnet bzw. bearbeitet: den Zwischenstand nicht darüberlegen
+        if (!raw || st.dirty || st.past.length || st.dokument !== 0) return;
+        const r = raw as { project: unknown; datei: string | null; basis?: unknown; zeit?: number };
         const project = parseProjectData(r.project);
         const basis = r.basis ? parseProjectData(r.basis) : null;
         zwischenstandWirdGeladen(DB);
-        st.load(project, r.datei, basis);
+        st.wiederherstellen(project, r.datei, basis, typeof r.zeit === 'number' ? r.zeit : undefined);
       })
       .catch(() => {
         // kein Zwischenstand
@@ -150,7 +177,7 @@ if (typeof indexedDB !== 'undefined') {
       const { project, datei, basis } = useKosten.getState();
       void db()
         .then((d) => {
-          d.transaction(STORE, 'readwrite').objectStore(STORE).put({ project, datei, basis }, KEY);
+          d.transaction(STORE, 'readwrite').objectStore(STORE).put({ project, datei, basis, zeit: Date.now() }, KEY);
           zwischenstandErsetzt(DB);
         })
         .catch(() => undefined);
