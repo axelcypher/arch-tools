@@ -144,8 +144,13 @@ export function Toolbar() {
         <button onClick={() => void onOpen()} title="Projekt öffnen (Strg+O)">
           Öffnen
         </button>
-        <button onClick={() => void onSave()} title={isTauri() ? 'Projekt speichern – in die geöffnete Datei (Strg+S)' : 'Projekt als Datei herunterladen (Strg+S)'}>
-          Speichern{dirty ? ' •' : ''}
+        {/* ungespeicherte Änderungen als Punkt in der Ecke – ändert die Breite der Leiste nicht */}
+        <button
+          className={dirty ? 'tb-dirty' : undefined}
+          onClick={() => void onSave()}
+          title={`${isTauri() ? 'Projekt speichern – in die geöffnete Datei (Strg+S)' : 'Projekt als Datei herunterladen (Strg+S)'}${dirty ? ' – ungespeicherte Änderungen' : ''}`}
+        >
+          Speichern
         </button>
         {isTauri() && (
           <button onClick={() => void onSave(true)} title="Projekt unter neuem Namen oder an anderem Ort speichern (Strg+Umschalt+S)">
@@ -167,7 +172,7 @@ export function Toolbar() {
       </div>
       <div className="tb-group" role="group" aria-label="Plan">
         <button onClick={() => void planLaden(aktivesGeschoss())} title={hatPlan ? 'Plan des Geschosses durch einen anderen ersetzen (PDF, DXF, Bild)' : 'Grundriss als PDF, DXF oder Bild laden – zum Nachzeichnen und Erkennen'}>
-          {hatPlan ? 'Plan ersetzen …' : 'Plan laden …'}
+          {hatPlan ? 'Plan …' : 'Plan laden …'}
         </button>
         <button
           className={tool === 'calibrate' || tool === 'kontrolle' ? 'active' : ''}

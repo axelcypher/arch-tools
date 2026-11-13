@@ -273,18 +273,51 @@
   }
 }
 
-/* schmale Fenster: Optionen der Zeichenfläche einzeilig (seitlich scrollbar) statt gestapelt */
+/* leeres Geschoss: Plan laden bzw. Umriss übernehmen als abgeschlossener Block über den Geschossangaben */
+.plan-einstieg {
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* ungespeicherte Änderungen: Punkt in der Ecke des Knopfs „Speichern“ */
+.toolbar button.tb-dirty {
+  position: relative;
+}
+
+.toolbar button.tb-dirty::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--sel);
+}
+
+/* schmale Fenster: Optionen der Zeichenfläche umbrechen statt abschneiden; Hinweiszeile in voller Breite, Maßstab darüber */
 @media (max-width: 1100px) {
   .canvas-oben .canvas-controls {
-    flex-wrap: nowrap;
-    justify-content: flex-start;
+    flex-wrap: wrap;
+    justify-content: flex-end;
     max-width: 100%;
-    overflow-x: auto;
-    white-space: nowrap;
   }
 
   .canvas-wrap .canvas-message {
     max-width: min(360px, 100%);
+  }
+
+  .nur-breit {
+    display: none;
+  }
+
+  .hud {
+    right: 8px;
+  }
+
+  .scalebar {
+    bottom: 64px;
   }
 }
 
@@ -912,6 +945,8 @@
 
 .mess-info {
   font-weight: 600;
+  /* breiter heller Rand wie ein Hintergrund: lesbar auch über Raumbeschriftungen */
+  stroke-width: 7px;
 }
 
 .stempel-handle {
@@ -1095,4 +1130,13 @@
 
 .leer-hinweis .button-row {
   margin-top: 4px;
+}
+
+/* Kurzfassung der Auswertung: Kennzahl und Wert nie getrennt */
+.summary-kurz .kz {
+  white-space: nowrap;
+}
+
+.nummern-titel {
+  margin: 8px 0 2px;
 }

@@ -600,6 +600,8 @@ export function Canvas() {
   };
 
   const onPointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
+    // eine stehende Warnung verschwindet beim nächsten Klick in die Zeichenfläche
+    if (message?.art === 'warnung') setMessage(null);
     if (e.button === 1 || (e.button === 0 && spaceDown)) {
       e.preventDefault();
       startPan(e);
@@ -721,7 +723,7 @@ export function Canvas() {
         if (aussen.ok) {
           log.debug('BGF-Umriss aus der Außenwand erkannt', { click, punkte: aussen.points.length });
           finishShape(aussen.points, { pruefen: true, bemerkung: 'aus dem Plan erkannt (Außenkante der Wand) – prüfen' });
-          melde('BGF-Umriss aus der Außenwand erkannt – bitte prüfen: Außenmaße einschließlich Putz bzw. WDVS.', 'warnung');
+          melde('BGF-Umriss erkannt – bitte prüfen: Außenmaße einschließlich Putz bzw. WDVS; im Dachgeschoss bis zum Schnitt der Dachhaut mit der Fußbodenebene.', 'info');
           return;
         }
       }
@@ -1028,11 +1030,18 @@ export function Canvas() {
     const n = pts.length;
     const out: React.ReactNode[] = [];
     const count = closed ? n : n - 1;
+    // kleine Räume auf dem Bildschirm: Maße außen, sonst überlagern sie sich mit Griffen und Beschriftung
+    if (innen && n) {
+      const xs = pts.map((p) => p.x);
+      const ys = pts.map((p) => p.y);
+      if (Math.min(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)) * vp.scale < 90) innen = false;
+    }
     for (let i = 0; i < count; i++) {
       const a = pts[i];
       const b = pts[(i + 1) % n];
       const len = distance(a, b);
-      if (len * vp.scale < 28) continue;
+      // nur, wenn die Zahl samt Abstand neben die Kante passt
+      if (len * vp.scale < textBreite(fmt2(len), 11) + 24) continue;
       const sa = toScreen(a);
       const sb = toScreen(b);
       const mx = (sa.x + sb.x) / 2;
@@ -1362,8 +1371,8 @@ export function Canvas() {
             <input type="checkbox" checked={view.snapGuides} onChange={(e) => useEditor.getState().setView({ snapGuides: e.target.checked })} />
             Hilfslinien
           </label>
-          <button className="small" onClick={() => fitRef.current()} title="Alles zeigen (F)">
-            ⤢ Alles
+          <button className="small" onClick={() => fitRef.current()} title="Alles zeigen (F)" aria-label="Alles zeigen (F)">
+            ⤢<span className="nur-breit"> Alles</span>
           </button>
         </div>
         {tool === 'detect' && (
