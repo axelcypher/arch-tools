@@ -39,10 +39,11 @@ Konfigurationsordner) und Projektdateien sind dieselben.
   `rahmen-bruecke.js`: Richtet die Webansicht in einem Tab den Zugang zu den Befehlen nicht selbst ein (macOS,
   Linux), übernimmt die App den des Rahmens (gleicher Ursprung). Unter Windows (WebView2) richtet Tauri ihn auch im
   iframe ein; die Befehle gehen dann über das IPC-Protokoll – deshalb steht `ipc: http://ipc.localhost` in
-  `connect-src` der CSP (`tauri.conf.json`). Ohne das wiche Tauri auf `postMessage` aus, dessen Antwort nur das
-  Hauptdokument erreicht: In den Tabs reagierten dann alle Knöpfe, die einen Befehl brauchen, nicht (Ordner wählen,
-  Import, Speichern, Einstellungen). Tauri-Ereignisse erreichen Tabs aus demselben Grund nicht – Tabs sprechen mit dem
-  Rahmen deshalb per `postMessage`.
+  `connect-src` der CSP (`tauri.conf.json`; ein `useHttpsScheme` hieße `https://ipc.localhost`, der Test
+  `csp.test.ts` sichert beides ab). Ohne das wiche Tauri auf `postMessage`/`eval` aus, und dieser Ausweichweg
+  funktioniert nur im Hauptdokument: In den Tabs reagierten dann alle Knöpfe, die einen Befehl brauchen, nicht (Ordner
+  wählen, Import, Speichern, Einstellungen). Tauri-Ereignisse erreichen Tabs unter Windows aus demselben Grund nicht –
+  Tabs sprechen mit dem Rahmen deshalb überall per `postMessage`.
 - **Tabs** sind iframes mit `?rahmen=tab&app=<app>`, herausgelöste Fenster eigene Tauri-Fenster (`app-<app>`) mit
   `?rahmen=fenster&app=<app>`. `packages/core/src/platform/rahmen.ts` erkennt das; die gemeinsame Titelleiste blendet
   im Tab Fensterknöpfe, Ziehen und Updates aus und meldet Projektname und ungespeicherte Änderungen per

@@ -1,7 +1,7 @@
 // Rahmen-App: Zugang einer App im Tab (iframe) zu den Befehlen der Desktop-App. Unter Windows (WebView2) richtet Tauri
 // ihn auch im iframe selbst ein; Befehle gehen dann über das IPC-Protokoll (http://ipc.localhost) – die CSP muss es in
-// connect-src erlauben, denn der Ausweichweg (postMessage, Antwort per eval) erreicht nur das Hauptdokument, nie einen
-// Tab. Webansichten, die ihn im iframe nicht einrichten (macOS, Linux), übernehmen hier den des Rahmens (gleicher
+// connect-src erlauben, denn der Ausweichweg (postMessage, Antwort per eval) funktioniert nur im Hauptdokument, nie in
+// einem Tab. Webansichten, die ihn im iframe nicht einrichten (macOS, Linux), übernehmen hier den des Rahmens (gleicher
 // Ursprung). Läuft vor den Skripten der App.
 (function () {
   try {

@@ -903,8 +903,13 @@ describe('Antragsvorlagen und Reihenfolge', () => {
     useFormulare.setState({ einstellungenOffen: true, einstellungsBereich: 'antrag' });
     const host = await render();
     const katalogTitel = () => useAntrag.getState().katalog.map((k) => k.id);
-    // Spalten je Vorlage im Katalog
-    const kreuz = (dok: string, vorlage: string) => host.querySelector<HTMLInputElement>(`input[aria-label="${dok} in ${vorlage}"]`)!;
+    // Antragsdokumente: über der Liste die Vorlage wählen, dann je Dokument ankreuzen
+    const wahl = host.querySelector<HTMLSelectElement>('.es-dok-kopf select')!;
+    act(() => {
+      wahl.value = 'bauva';
+      wahl.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    const kreuz = (dok: string, vorlage: string) => host.querySelector<HTMLInputElement>(`input[aria-label="${dok} gehört zu ${vorlage}"]`)!;
     expect(kreuz('Lageplan', 'Bauvoranfrage').checked).toBe(true);
     expect(kreuz('Bauantrag', 'Bauvoranfrage').checked).toBe(false);
     act(() => kreuz('Bauantrag', 'Bauvoranfrage').click());

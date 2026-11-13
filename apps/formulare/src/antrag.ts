@@ -34,8 +34,6 @@ export interface ExportEinstellungen {
   arten: string[];
   /** Vorlage für den Dateinamen (ohne Endung) */
   namensvorlage: string;
-  /** Phasenkürzel für {Phase}: BP, EP, GP, AP … */
-  phase: string;
   /** Ziel des Exports: Ordner der aktiven Antragsfassung oder ein fester Pfad */
   ziel: 'aktiv' | 'pfad';
   /** fester Zielordner relativ zum Projektordner (Platzhalter erlaubt, z. B. „TÖB/{Antrag}/Formulare“) */
@@ -50,7 +48,6 @@ export const VORGABE_EXPORT: ExportEinstellungen = {
   antragsordner: 'TÖB',
   arten: ['BAUA', 'BAUVA', 'DENK'],
   namensvorlage: '{Kürzel} {Art} {Datum} {Nr} {Name}',
-  phase: 'GP',
   ziel: 'aktiv',
   zielpfad: 'TÖB/{Antrag}',
   berechnungsordner: 'Planung/Berechnungen',
@@ -58,9 +55,9 @@ export const VORGABE_EXPORT: ExportEinstellungen = {
 };
 
 /** Was je Projekt abweichen darf (wie die angezeigten Pfade im Projektordner) */
-export type ExportUeberschreibung = Partial<Pick<ExportEinstellungen, 'namensvorlage' | 'phase' | 'ziel' | 'zielpfad' | 'antragsordner'>>;
+export type ExportUeberschreibung = Partial<Pick<ExportEinstellungen, 'namensvorlage' | 'ziel' | 'zielpfad' | 'antragsordner'>>;
 
-export const UEBERSCHREIBBAR: (keyof ExportUeberschreibung)[] = ['antragsordner', 'namensvorlage', 'phase', 'ziel', 'zielpfad'];
+export const UEBERSCHREIBBAR: (keyof ExportUeberschreibung)[] = ['antragsordner', 'namensvorlage', 'ziel', 'zielpfad'];
 
 /** Hinweis an jeder Namensvorlage – überall derselbe Wortlaut */
 export const ART_HINWEIS = 'Die Antragsart ({Art}) kommt immer aus dem aktiven Antrag – „BAUA 2“ → BAUA –, nicht aus einer Einstellung.';
@@ -78,7 +75,7 @@ export function vorlageArtWarnung(vorlage: string, reihenfolge: NamensTeil[] = V
 /**
  * Die Antragsart im Dateinamen kommt immer aus dem Antrag (Ordner der aktiven Antragsfassung, „BAUA 2“ → BAUA), nie
  * aus einer Einstellung: Steht in der Vorlage an der Stelle der Antragsart (nach dem Namensschema; Vorgabe: nach dem
- * Kürzel) {Phase} – die Vorgabe früherer Fassungen, dann stand dort der Wert der Einstellung „Phase“ – oder ein festes
+ * Kürzel) {Phase} – die Vorgabe früherer Fassungen, dann stand dort der Wert der entfallenen Einstellung „Phase“ – oder ein festes
  * Kürzel wie „BVA“ (Großbuchstaben, mindestens ein Buchstabe – „2026“ ist keins), wird daraus {Art}. Das gilt nur, wenn
  * die Vorlage das Kürzel an seiner Stelle hat; sonst bleibt sie, wie sie ist.
  */
@@ -112,7 +109,6 @@ export function einstellungenAus(roh: unknown): ExportEinstellungen {
     antragsordner: text('antragsordner'),
     arten: arten.length ? arten : VORGABE_EXPORT.arten,
     namensvorlage: text('namensvorlage') || VORGABE_EXPORT.namensvorlage,
-    phase: text('phase'),
     ziel: o.ziel === 'pfad' ? 'pfad' : 'aktiv',
     zielpfad: text('zielpfad'),
     berechnungsordner: text('berechnungsordner'),
@@ -124,7 +120,6 @@ export function einstellungenAus(roh: unknown): ExportEinstellungen {
 
 export interface NamensAngaben {
   kuerzel: string;
-  phase: string;
   datum: Date;
   nr?: string;
   /** Name des Dokuments (Titel im Antragsumfang, sonst der Name des Formulars) */
@@ -145,7 +140,6 @@ export const jjmmtt = (d: Date) => `${zweistellig(d.getFullYear() % 100)}${zweis
 /** Platzhalter der Namensvorlage mit Erklärung (für die Einstellungen) */
 export const PLATZHALTER: { name: string; text: string }[] = [
   { name: '{Kürzel}', text: 'Projektkürzel, z. B. BS9' },
-  { name: '{Phase}', text: 'Phasenkürzel (BP, EP, GP, AP)' },
   { name: '{Datum}', text: 'Datum des Exports als JJMMTT' },
   { name: '{Nr}', text: 'Nummer im Antragsumfang (entfällt, wenn leer)' },
   { name: '{Name}', text: 'Titel im Antragsumfang, sonst Name des Formulars' },
@@ -159,20 +153,24 @@ export const PLATZHALTER: { name: string; text: string }[] = [
 /** Name des Formulars ohne laufende Nummer davor und Jahr dahinter („005-Bauantrag (2026)“ → „Bauantrag“) */
 export const anzeigeName = (formularName: string) => formularName.replace(/^\s*\d+\s*[-_ ]\s*/, '').replace(/\s*\(\d{4}\)\s*$/, '').trim() || formularName;
 
-/** Dateiname (ohne Endung) aus der Vorlage; Zeichen, die Windows nicht erlaubt, werden zu „-“ */
+/**
+ * Dateiname (ohne Endung) aus der Vorlage; Zeichen, die Windows nicht erlaubt, werden zu „-“. `{Phase}` aus Vorlagen
+ * früherer Fassungen (dort stand der Wert der entfallenen Einstellung „Phase“) gilt als `{Art}`.
+ */
 export function dateiname(vorlage: string, a: NamensAngaben): string {
+  const art = a.art ?? artDerFassung(a.antrag ?? '');
   const werte: Record<string, string> = {
     kürzel: a.kuerzel,
     kuerzel: a.kuerzel,
     projekt: a.kuerzel,
-    phase: a.phase,
+    phase: art,
     datum: jjmmtt(a.datum),
     jahr: String(a.datum.getFullYear()),
     nr: a.nr ?? '',
     name: a.name,
     formular: a.formular ?? a.name,
     antrag: a.antrag ?? '',
-    art: a.art ?? artDerFassung(a.antrag ?? ''),
+    art,
     kennung: a.kennung ?? '',
     stand: a.stand ?? '',
   };

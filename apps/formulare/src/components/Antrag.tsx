@@ -1099,13 +1099,6 @@ function ExportFuerProjekt() {
             <input value={ueber?.antragsordner ?? ''} placeholder={global.antragsordner} onChange={(e) => setzen({ antragsordner: e.target.value })} />
           </label>
           <label>
-            <span className="field-label">Phase</span>
-            <input value={ueber?.phase ?? ''} placeholder={global.phase} onChange={(e) => setzen({ phase: e.target.value })} aria-label="Phase" aria-describedby="pu-phase-hinweis" />
-            <span className="field-hint" id="pu-phase-hinweis">
-              wird für den Platzhalter {'{Phase}'} eingesetzt
-            </span>
-          </label>
-          <label>
             <span className="field-label">Ziel</span>
             <select value={ueber?.ziel ?? ''} onChange={(e) => setzen({ ziel: (e.target.value || undefined) as ExportUeberschreibung['ziel'] })}>
               <option value="">wie in den Einstellungen ({global.ziel === 'aktiv' ? 'aktive Antragsfassung' : global.zielpfad})</option>

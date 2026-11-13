@@ -1799,7 +1799,6 @@ export function exportVorschlag(formularPfad: string, datum = new Date()): Expor
   const formularName = ohneEndung(nurName(formularPfad));
   const name = dateiname(e.namensvorlage, {
     kuerzel: projekt?.ordner ?? '',
-    phase: e.phase,
     datum,
     nr: doc?.eintrag.nr,
     name: doc?.eintrag.titel ?? anzeigeName(formularName),
