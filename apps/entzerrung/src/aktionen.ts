@@ -1,9 +1,10 @@
 import { entzerrung, zuEbene } from './geo/ebene';
 import type { Pt } from './geo/mat';
-import { MESS_NAMEN, neueId } from './model';
+import { ECKEN_KURZ, MESS_NAMEN, neueId } from './model';
 import type { Dokument, Ebene, MessArt } from './model';
 import { aktuell, mitEbene, mitFoto, useEntz } from './store';
 import type { Auswahl } from './store';
+import type { MenuePunkt } from '@core/ui/Menue';
 
 /**
  * Bearbeitungsschritte der Arbeitsfläche, unabhängig von Maus und Bildschirm: Punkte kommen immer als
@@ -194,4 +195,65 @@ export function ansichtUmschalten() {
   const ziel = s.ansicht === 'foto' ? 'entzerrt' : 'foto';
   if (ziel === 'entzerrt' && !entzerrung(foto, ebene).ok) return;
   s.setze({ ansicht: ziel, werkzeug: 'auswahl', entwurf: [], auswahl: null });
+}
+
+/** Name des gewählten Elements für „… löschen“ – so, wie `auswahlLoeschen` es entfernt (einzelner Punkt oder Ganzes) */
+export function auswahlName(): string | null {
+  const s = st();
+  const a = s.auswahl;
+  const { foto, ebene } = aktuell(s);
+  if (!a || !foto) return null;
+  if (a.art === 'hilfslinie') return 'Hilfslinie';
+  if (!ebene) return null;
+  const nr = <T extends { id: string }>(liste: T[], k: string) => `${k}${liste.findIndex((x) => x.id === a.id) + 1}`;
+  switch (a.art) {
+    case 'ecke':
+      return `Ecke ${ECKEN_KURZ[a.index ?? 0]}`;
+    case 'passpunkt':
+      return `Passpunkt ${nr(ebene.passpunkte, 'P')}`;
+    case 'waagerecht':
+      return `Waagerechte ${nr(ebene.fluchtlinien.waagerecht, 'W')}`;
+    case 'senkrecht':
+      return `Senkrechte ${nr(ebene.fluchtlinien.senkrecht, 'S')}`;
+    case 'mass':
+      return `Maß ${nr(ebene.fluchtlinien.masse, 'M')}`;
+    case 'messung': {
+      const m = ebene.messungen.find((x) => x.id === a.id);
+      if (!m) return null;
+      const min = m.art === 'flaeche' ? 3 : 2;
+      return a.index !== undefined && m.art !== 'strecke' && m.punkte.length > min ? `Punkt von „${m.name}“` : `„${m.name}“`;
+    }
+  }
+}
+
+/** Kontextmenü der Zeichenfläche: bezieht sich auf das gewählte (bzw. eben rechts angeklickte) Element, Kürzel als Hinweis */
+export function flaechenMenue(): MenuePunkt[] {
+  const s = st();
+  const { foto, ebene } = aktuell(s);
+  const entzerrbar = !!foto && !!ebene && entzerrung(foto, ebene).ok;
+  const ecke = s.auswahl?.art === 'ecke';
+  const name = auswahlName();
+  // der Löschpunkt steht am Ende: der erste Punkt hat den Fokus, Enter nach dem Rechtsklick soll nichts löschen
+  return [
+    { text: 'Alles zeigen', symbol: 'einpassen', hinweis: 'Pos1', deaktiviert: !foto, aktion: () => window.dispatchEvent(new Event('entz:einpassen')) },
+    {
+      text: s.ansicht === 'entzerrt' ? 'Foto zeigen' : 'Entzerrt zeigen',
+      symbol: 'auge',
+      hinweis: s.ansicht === 'foto' && !entzerrbar ? 'erst die Referenz vervollständigen' : 'E',
+      deaktiviert: s.ansicht === 'foto' && !entzerrbar,
+      aktion: ansichtUmschalten,
+    },
+    { trenner: true },
+    { text: 'Rückgängig', symbol: 'rueckgaengig', hinweis: 'Strg+Z', deaktiviert: !s.vergangenheit.length, aktion: s.rueckgaengig },
+    { text: 'Wiederholen', symbol: 'wiederholen', hinweis: 'Strg+Y', deaktiviert: !s.zukunft.length, aktion: s.wiederholen },
+    { trenner: true },
+    {
+      text: name ? `${name} löschen` : 'Löschen',
+      symbol: 'muell',
+      hinweis: ecke ? 'Ecken über „Ecken neu setzen“' : name ? 'Entf' : 'nichts ausgewählt',
+      deaktiviert: !name || ecke,
+      gefahr: true,
+      aktion: auswahlLoeschen,
+    },
+  ];
 }

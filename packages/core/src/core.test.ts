@@ -398,3 +398,31 @@ describe('Nutzungsart als zweite Ebene (F-14)', () => {
     expect(r.rooms[0].nutzung).toBe('NUF7');
   });
 });
+
+describe('Einlesen: Grundstücksfläche', () => {
+  it('verwirft 0 und negative Werte (Gegenprobe: positive Fläche bleibt)', () => {
+    const mit = (flaeche: unknown) => {
+      const p = createProject('T');
+      const roh = JSON.parse(serializeProject(p));
+      roh.meta.grundstueck.flaeche = flaeche;
+      return parseProject(JSON.stringify(roh)).meta.grundstueck.flaeche;
+    };
+    expect(mit(0)).toBeUndefined();
+    expect(mit(-100)).toBeUndefined();
+    expect(mit(612.5)).toBe(612.5);
+  });
+});
+
+describe('Einlesen: Anteil an Gemeinschaftsanlagen (§ 21a Abs. 2)', () => {
+  it('übernimmt positive Werte, verwirft 0, negative und Text', () => {
+    const mit = (v: unknown) => {
+      const roh = JSON.parse(serializeProject(createProject('T')));
+      roh.massNutzung = { gemeinschaftsanlagen: v };
+      return parseProject(JSON.stringify(roh)).massNutzung?.gemeinschaftsanlagen;
+    };
+    expect(mit(37.5)).toBe(37.5);
+    expect(mit(0)).toBeUndefined();
+    expect(mit(-3)).toBeUndefined();
+    expect(mit('12')).toBeUndefined();
+  });
+});

@@ -197,7 +197,8 @@ function normalizeMeta(v: unknown): ProjectMeta {
   const g = isObj(m.grundstueck) ? m.grundstueck : {};
   const b = isObj(m.bauherr) ? m.bauherr : {};
   const grundstueck: Grundstueck = { gemarkung: str(g.gemarkung, ''), flur: str(g.flur, ''), flurstueck: str(g.flurstueck, '') };
-  if (typeof g.flaeche === 'number' && Number.isFinite(g.flaeche)) grundstueck.flaeche = g.flaeche;
+  // 0 oder negativ ist keine Grundstücksfläche (z. B. aus einer fremden Datei): wie „nicht angegeben“
+  if (typeof g.flaeche === 'number' && Number.isFinite(g.flaeche) && g.flaeche > 0) grundstueck.flaeche = g.flaeche;
   const bauherr: Bauherr = {
     name: str(b.name, ''),
     adresse: normalizeAnschrift(b.adresse),
@@ -303,6 +304,7 @@ function normalizeMassNutzung(m: Record<string, unknown>): MassNutzung {
   if (m.vollgeschosseZwingend === true) out.vollgeschosseZwingend = true;
   if (m.aufenthaltNichtVollgeschoss === true) out.aufenthaltNichtVollgeschoss = true;
   if (m.garagenGfFrei === true) out.garagenGfFrei = true;
+  if (typeof m.gemeinschaftsanlagen === 'number' && Number.isFinite(m.gemeinschaftsanlagen) && m.gemeinschaftsanlagen > 0) out.gemeinschaftsanlagen = m.gemeinschaftsanlagen;
   if (typeof m.gebietsart === 'string' && GEBIETSARTEN.some((g) => g.id === m.gebietsart)) out.gebietsart = m.gebietsart as Gebietsart;
   if (typeof m.stand === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(m.stand)) out.stand = m.stand;
   if (typeof m.variante === 'string' && m.variante.trim()) out.variante = m.variante.trim();
