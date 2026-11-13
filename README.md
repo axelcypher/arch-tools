@@ -51,6 +51,20 @@ Namen mit Erklärung – „PERMIO (Formulare)“ –, danach den Namen allein; 
 
 - **Farbschema** (◐ in der Titelleiste): Hell, Dunkel oder wie das System – wirkt sofort in allen geöffneten Apps,
   Fenstern und Tabs der Rahmen-App. „Zeichenfläche abdunkeln“ gibt es nur in Apps mit Zeichenfläche bzw. Lageplan.
+- **Speicherort der Einstellungen** (⚙ in der Titelleiste jeder App und des Rahmens, in ATLAS auch unter
+  „Einstellungen“): *Einzelplatz* – die gemeinsamen Einstellungen liegen nur auf diesem Rechner
+  (`%APPDATA%\arch-tools`) – oder *Netzwerkinstallation* – sie liegen in einem Ordner auf dem Netzlaufwerk (NAS,
+  Server), und alle Rechner, die ihn wählen, haben denselben Stand. Die Wahl gilt je Benutzer für alle Apps und steht
+  lokal (`konfig.json`), nie auf dem Netzlaufwerk. Beim Wechsel ziehen die Einstellungen mit; liegen am Ziel schon
+  welche, fragt die App: *Vorhandene übernehmen* (sie gelten, Fehlendes kommt dazu – z. B. für einen weiteren
+  Rechner), *Mit meinen ersetzen* (die bisherigen bleiben als `….json.vor-umzug-JJJJ-MM-TT-hhmm` im Ordner) oder
+  *Abbrechen*. Gelöscht wird nichts. Immer nur auf diesem Rechner bleiben zuletzt geöffnete und angeheftete Projekte,
+  Fenster, Farbschema und Leistenbreiten. **Ohne Netzlaufwerk** (getrennt, VPN aus) arbeiten die Apps mit der lokalen
+  Kopie weiter, die bei jedem Lesen entsteht; gemeinsame Einstellungen sind dann nur lesbar, die Titelleiste zeigt
+  „⚠ Einstellungen nur lesbar“, „Erneut versuchen“ prüft neu. **Mehrere Rechner** schreiben ohne sich zu
+  überschreiben: Jede Änderung liest frisch und ersetzt die Datei nur, wenn sie seitdem unverändert ist (unter einer
+  kurzen Sperrdatei `.<bereich>.json.sperre`); sonst wird die Änderung auf den neuen Stand angewandt. Im Browser
+  liegen die Einstellungen wie bisher im Speicher des Browsers.
 - **Dialoge**: Esc schließt den obersten Dialog (in einem Eingabefeld verwirft Esc zuerst die Eingabe), der Fokus
   bleibt im Dialog und springt danach zurück.
 - **Ungespeicherte Änderungen**: Vor Öffnen, Neu und Beenden fragt die App „Änderungen an ‚…‘ speichern?“ mit
@@ -249,7 +263,7 @@ fehlen sie, warnt der Bericht.
   einem eigenen Vorlagenordner (Datei oder Ordner → Zielordner, Dateiname nach dem Schema des Büros,
   `.dotx`/`.xltx` werden Dokumente), Ordner prüfen – siehe [docs/projektordner.md](docs/projektordner.md)
 - **Gemeinsame Basis aller Apps** (`packages/core`): Konfigurationsordner für übergreifende Einstellungen
-  (`platform/konfig.ts`), die Projektdatei im Projektordner finden, gezielt ergänzen und anlegen
+  (`platform/konfig.ts`, Einzelplatz oder Netzwerkinstallation, Wahl in `ui/Speicherort.tsx`), die Projektdatei im Projektordner finden, gezielt ergänzen und anlegen
   (`projektdatei.ts`, `platform/projektordner.ts`), Stammdaten-Dialog für Projektordner ohne Projektdatei
   (`ui/Stammdaten.tsx`), Projektübersicht als Startseite (`ui/ProjektUebersicht.tsx`) und Projektwahl für
   QUADRIO, TERRIO, NUMIO und RECTIO (`ui/ProjektWahl.tsx`: Projektordner wählen,

@@ -132,10 +132,13 @@ Angelegt bzw. ergänzt werden
 
 ### Gemeinsame Einstellungen
 
-Alle Apps lesen ihre übergreifenden Einstellungen aus einem **Konfigurationsordner**. Er wird einmal gewählt –
-auf einem Server-Laufwerk gilt er für das ganze Büro; ohne Wahl ist es ein Ordner auf diesem Rechner
-(`%APPDATA%\arch-tools`). Wird ein anderer Ordner gewählt, wandern Einstellungen, die es dort noch nicht gibt,
-mit; was dort schon liegt, gilt und bleibt unverändert.
+Alle Apps lesen ihre übergreifenden Einstellungen aus einem **Konfigurationsordner**. Oben unter „Gemeinsame
+Einstellungen“ (und über ⚙ in der Titelleiste jeder App) steht, wo er liegt; „Ändern …“ wählt zwischen
+**Einzelplatz** (ein Ordner auf diesem Rechner, `%APPDATA%\arch-tools`) und **Netzwerkinstallation** (ein Ordner auf
+dem Netzlaufwerk – dann gilt er für das ganze Büro). Beim Wechsel ziehen alle gemeinsamen Einstellungen mit; liegen
+dort schon welche, fragt die App, ob sie gelten („Vorhandene übernehmen“, Fehlendes kommt dazu) oder ersetzt werden
+(„Mit meinen ersetzen“, mit Sicherung). Ist das Netzlaufwerk nicht erreichbar, sind die Einstellungen nur lesbar
+(lokale Kopie); Einzelheiten in der [README](../README.md#gemeinsame-bedienung-aller-apps).
 
 | Datei | Inhalt |
 |---|---|
@@ -143,7 +146,7 @@ mit; was dort schon liegt, gilt und bleibt unverändert.
 | `projektordner.json` | Struktur samt Bausteinen und Vorlagen-Presets, Vorlagenordner dieser App |
 
 Welcher Konfigurationsordner gilt, steht je Benutzer in `%APPDATA%\arch-tools\konfig.json` – für alle Apps
-derselbe Ort. Einstellungen früherer Fassungen (lokal gespeichert) werden beim ersten Start übernommen. Im Browser
+derselbe Ort, nie auf dem Netzlaufwerk. Einstellungen früherer Fassungen (lokal gespeichert) werden beim ersten Start übernommen. Im Browser
 liegen die Einstellungen im Speicher des Browsers.
 
 `projektordner.json` wird kurz nach der letzten Änderung geschrieben (nicht bei jedem Tastendruck) und nur, wenn

@@ -11,6 +11,7 @@ import { Nachschlagewerk, useHilfe } from './Nachschlagewerk';
 import { dialogVerhaltenEinrichten } from './dialoge';
 import { aenderungenSpeichern, bestaetigen, RueckfrageHost } from './Rueckfrage';
 import { useBuero } from './DruckKopf';
+import { SpeicherortHost, SpeicherortKnopf } from './Speicherort';
 
 const log = logger('fenster');
 
@@ -129,6 +130,7 @@ export function TitleBar({ app, name, dirty, onOpenLog, regeln, onProjekte, zeic
         </span>
         <span className="titlebar-drag" {...ziehen} />
         {desktop && !rahmen && <UpdateKnopf app={app} dirty={dirty} />}
+        <SpeicherortKnopf />
         <ThemeMenu zeichenflaeche={zeichenflaeche} />
         {regeln && (
           <button className="titlebar-btn" title="Berechnungsregeln nachschlagen – mit Quellen und Suche (F1)" onClick={() => useHilfe.getState().oeffnen()}>
@@ -178,6 +180,7 @@ export function TitleBar({ app, name, dirty, onOpenLog, regeln, onProjekte, zeic
           </div>
         )}
       </header>
+      <SpeicherortHost />
       <RueckfrageHost />
     </>
   );
