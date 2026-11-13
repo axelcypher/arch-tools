@@ -3,7 +3,7 @@
  * wenn es deshalb entfällt; ein Klick öffnet den Paragrafen.
  */
 
-import { begruendet, ist, istNicht, oder, q, wenn } from './hilfen';
+import { begruendet, ist, istNicht, nichtAngekreuzt, oder, q, und, wenn } from './hilfen';
 
 /**
  * Planungsrecht (R-25): „Bebauungsplan“ ist der qualifizierte oder vorhabenbezogene (§ 30 Abs. 1, 2 BauGB). Im
@@ -12,8 +12,12 @@ import { begruendet, ist, istNicht, oder, q, wenn } from './hilfen';
  * §§ 34, 35 (Auszug aus dem Liegenschaftskataster).
  */
 export const PLANUNGSRECHT_BEBAUUNGSPLAN = ist('Planungsrecht', 'Bebauungsplan', 'einfacher Bebauungsplan', 'Satzung nach BauGB');
-/** Vorhaben nach den §§ 34 und 35 BauGB (auch im einfachen Bebauungsplan) */
-export const PLANUNGSRECHT_34_35 = ist('Planungsrecht', 'Innenbereich', 'Außenbereich', 'einfacher Bebauungsplan');
+/**
+ * Vorhaben nach den §§ 34 und 35 BauGB – auch im einfachen Bebauungsplan und im Bereich einer Satzung nach dem BauGB
+ * (Innenbereichssatzung § 34 Abs. 4, Außenbereichssatzung § 35 Abs. 6: die Zulässigkeit richtet sich weiter nach § 34
+ * bzw. § 35)
+ */
+export const PLANUNGSRECHT_34_35 = ist('Planungsrecht', 'Innenbereich', 'Außenbereich', 'einfacher Bebauungsplan', 'Satzung nach BauGB');
 
 /** Berechnung des Maßes der baulichen Nutzung: nur im Geltungsbereich eines Bebauungsplans */
 export const nurBebauungsplan = begruendet(
@@ -24,7 +28,7 @@ export const nurBebauungsplan = begruendet(
 );
 
 const INNEN_AUSSEN_GRUND =
-  'nur bei Vorhaben nach den §§ 34 und 35 BauGB beizufügen (Innen- oder Außenbereich) oder einfacher Bebauungsplan (§ 30 Abs. 3 BauGB). „Bebauungsplan“ heißt hier qualifizierter oder vorhabenbezogener Bebauungsplan (§ 30 Abs. 1, 2 BauGB).';
+  'nur bei Vorhaben nach den §§ 34 und 35 BauGB beizufügen (Innen- oder Außenbereich, auch im Bereich einer Satzung nach § 34 Abs. 4 oder § 35 Abs. 6 BauGB) oder einfacher Bebauungsplan (§ 30 Abs. 3 BauGB). „Bebauungsplan“ heißt hier qualifizierter oder vorhabenbezogener Bebauungsplan (§ 30 Abs. 1, 2 BauGB).';
 
 /** Auszug aus dem Liegenschaftskataster (Flurkarte): nur bei Vorhaben nach §§ 34, 35 BauGB */
 export const nurInnenAussen = begruendet(
@@ -67,21 +71,38 @@ export const keinEinfamilienhaus = begruendet(
   q('baupruefvo', '10', 1, undefined, 4),
 );
 
+/** Gebäude mit gewerblicher oder öffentlich zugänglicher Nutzung: Nichtwohngebäude und gemischt genutzte Gebäude */
+export const MIT_BETRIEB = ist('Gebäudeart', 'Nichtwohngebäude', 'Wohn- und Geschäftshaus');
+
 /** Betriebsbeschreibung: nur für gewerbliche oder landwirtschaftliche Betriebe */
 export const nurBetrieb = begruendet(
-  wenn(ist('Gebäudeart', 'Nichtwohngebäude')),
-  'Eine Betriebsbeschreibung brauchen nur gewerbliche oder landwirtschaftliche Betriebe (Nichtwohngebäude).',
+  wenn(MIT_BETRIEB),
+  'Eine Betriebsbeschreibung brauchen nur gewerbliche oder landwirtschaftliche Betriebe (Nichtwohngebäude, auch der Betrieb in einem Wohn- und Geschäftshaus). Bei gewerblichen Anlagen ohne Gebäude selbst prüfen.',
   q('baupruefvo', '5', 2),
   q('baupruefvo', '5', 3),
 );
 
 /** Barrierefreiheit: Wohnungen ab Gebäudeklasse 3, öffentlich zugängliche Anlagen */
 export const barrierefrei = begruendet(
-  oder(ist('Gebäudeklasse', '3', '4', '5'), ist('Gebäudeart', 'Nichtwohngebäude')),
-  'Barrierefrei sein müssen die Wohnungen in Gebäuden der Gebäudeklassen 3 bis 5 und öffentlich zugängliche bauliche Anlagen.',
+  oder(ist('Gebäudeklasse', '3', '4', '5'), MIT_BETRIEB),
+  'Barrierefrei sein müssen die Wohnungen in Gebäuden der Gebäudeklassen 3 bis 5 und öffentlich zugängliche bauliche Anlagen (auch Läden, Praxen u. Ä. in einem Wohn- und Geschäftshaus).',
   q('bauo-nrw', '49', 1),
   q('bauo-nrw', '49', 2),
 );
+
+/**
+ * Rauminhalt (DIN 277) bzw. Rohbaukosten genügen nicht bei einer Änderung und bei baulichen Anlagen, die keine Gebäude
+ * sind: Dann ist die Herstellungssumme anzugeben (Hinweis der Vordrucke; Gebührenberechnung). Ob es ein Gebäude ist,
+ * sagt das Kästchen „Sonstige bauliche Anlage“ des Vordrucks (`sonstigeAnlage`) – es wird aus dem Merkmal „Gebäudeart:
+ * kein Gebäude“ vorbelegt (pruefregeln.ts). Am Merkmal selbst hängt es nicht: Eine Anlage ohne Gebäude hat keine
+ * Gebäudeklasse, „nicht festgelegt“ ließe die Angabe sonst nie entfallen.
+ */
+export const ohneHerstellungssumme = (sonstigeAnlage: string) =>
+  begruendet(
+    und(istNicht('Vorhaben', 'Änderung'), nichtAngekreuzt(sonstigeAnlage)),
+    'Bei Änderungen und bei baulichen Anlagen, die keine Gebäude sind, ist die Herstellungssumme anzugeben – der umbaute Raum bzw. die Rohbaukosten genügen dann nicht.',
+    q('baupruefvo', '6'),
+  );
 
 /** Bescheinigung einer Prüfsachverständigen Person zum Brandschutz statt Erklärung der Entwurfsverfassenden */
 export const brandschutzBescheinigung = (b: Parameters<typeof begruendet>[0]) =>

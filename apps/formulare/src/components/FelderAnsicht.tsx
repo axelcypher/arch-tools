@@ -105,7 +105,14 @@ export function FelderAnsicht({ offen, gesperrt }: { offen: OffenesFormular; ges
   return (
     <div className="fo-felder" ref={huelle} onKeyDown={(e) => hinweisPerF1(e) || tasten(e)}>
       <div className="fo-felder-kopf">
-        <input type="search" className="fo-feldsuche" placeholder="Felder durchsuchen (Beschriftung oder Inhalt) …" value={suche} onChange={(e) => setSuche(e.target.value)} />
+        <input
+          type="search"
+          className="fo-feldsuche"
+          placeholder="Felder durchsuchen (Beschriftung oder Inhalt) …"
+          aria-label="Felder durchsuchen"
+          value={suche}
+          onChange={(e) => setSuche(e.target.value)}
+        />
         <div className="tb-group">
           {FILTER.map((f) => (
             <button key={f.id} className={filter === f.id ? 'active' : ''} title={f.title} onClick={() => setFilter(f.id)}>

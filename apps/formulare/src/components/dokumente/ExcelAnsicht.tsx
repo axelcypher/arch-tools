@@ -260,7 +260,7 @@ export function ExcelAnsicht({ datei }: { datei: OffeneDatei }) {
             })}
           </tbody>
         </table>
-        {(blatt.zeilen > MAX_ZEILEN || blatt.spalten > MAX_SPALTEN) && <p className="muted small-text">Das Blatt ist größer als die Vorschau – für alles Weitere „Extern öffnen“.</p>}
+        {(blatt.zeilen > MAX_ZEILEN || blatt.spalten > MAX_SPALTEN) && <p className="muted small-text">Das Blatt ist größer als die Vorschau – für alles Weitere „Mit Programm öffnen“.</p>}
       </div>
       <nav className="xl-blaetter" aria-label="Tabellenblätter">
         {mappe.blaetter.map((b, i) => (

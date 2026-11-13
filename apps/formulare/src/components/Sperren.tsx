@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { Sperre, SperrBewertung } from '../forma/sperre';
 import type { SperrEintrag } from '../store';
 import { useFormulare } from '../store';
-import { useEscSchliessen } from '@core/ui/Dialog';
+import { Modal } from '@core/ui/Dialog';
 
 const ZUSTAND: Record<SperrBewertung['art'], string> = { benutzt: 'In Gebrauch', verwaist: 'Verwaist', unklar: 'Nicht prüfbar' };
 
@@ -36,55 +36,52 @@ export function SperreAufhebenDialog({
   onClose: () => void;
 }) {
   const [laeuft, setLaeuft] = useState(false);
-  useEscSchliessen(laeuft ? undefined : onClose);
   return (
-    <div className="modal-backdrop" onPointerDown={(e) => e.target === e.currentTarget && !laeuft && onClose()}>
-      <div className="modal modal-wide" aria-label="Sperre aufheben">
-        <h3>Sperre aufheben?</h3>
-        <dl className="fo-sperr-daten">
-          <dt>Formular</dt>
-          <dd>{name}</dd>
-          <dt>Geöffnet von</dt>
-          <dd>{wer(sperre)}</dd>
-          <dt>Seit</dt>
-          <dd>{sperre.angemeldet || 'unbekannt'}</dd>
-          <dt>Zustand</dt>
-          <dd>
-            <ZustandMarke art={bewertung.art} /> {bewertung.grund}
-          </dd>
-        </dl>
-        <p className={bewertung.art === 'verwaist' ? 'muted small-text' : 'warning small-text'}>
-          {bewertung.art === 'verwaist'
-            ? 'Die Sperrdatei wird gelöscht. Danach lässt sich das Formular wieder bearbeiten – hier oder in einem anderen Programm.'
-            : `Nur aufheben, wenn sicher ist, dass das Formular bei ${sperre.benutzer || 'der anderen Person'} nicht mehr geöffnet ist. Sonst arbeiten zwei Leute gleichzeitig daran, und wer zuletzt speichert, überschreibt den anderen.`}
-        </p>
-        <div className="dialog-buttons">
-          <button disabled={laeuft} onClick={onClose}>
-            Abbrechen
-          </button>
-          <button
-            className={bewertung.art === 'verwaist' ? 'primary' : 'danger'}
-            disabled={laeuft}
-            onClick={async () => {
-              setLaeuft(true);
-              try {
-                await onAufheben();
-              } finally {
-                onClose();
-              }
-            }}
-          >
-            {oeffnen ? 'Sperre aufheben und bearbeiten' : 'Sperre aufheben'}
-          </button>
-        </div>
+    // während des Aufhebens nicht schließbar
+    <Modal titel="Sperre aufheben" onClose={laeuft ? undefined : onClose} breit>
+      <h3>Sperre aufheben?</h3>
+      <dl className="fo-sperr-daten">
+        <dt>Formular</dt>
+        <dd>{name}</dd>
+        <dt>Geöffnet von</dt>
+        <dd>{wer(sperre)}</dd>
+        <dt>Seit</dt>
+        <dd>{sperre.angemeldet || 'unbekannt'}</dd>
+        <dt>Zustand</dt>
+        <dd>
+          <ZustandMarke art={bewertung.art} /> {bewertung.grund}
+        </dd>
+      </dl>
+      <p className={bewertung.art === 'verwaist' ? 'muted small-text' : 'warning small-text'}>
+        {bewertung.art === 'verwaist'
+          ? 'Die Sperrdatei wird gelöscht. Danach lässt sich das Formular wieder bearbeiten – hier oder in einem anderen Programm.'
+          : `Nur aufheben, wenn sicher ist, dass das Formular bei ${sperre.benutzer || 'der anderen Person'} nicht mehr geöffnet ist. Sonst arbeiten zwei Leute gleichzeitig daran, und wer zuletzt speichert, überschreibt den anderen.`}
+      </p>
+      <div className="dialog-buttons">
+        <button disabled={laeuft} onClick={onClose}>
+          Abbrechen
+        </button>
+        <button
+          className={bewertung.art === 'verwaist' ? 'primary' : 'danger'}
+          disabled={laeuft}
+          onClick={async () => {
+            setLaeuft(true);
+            try {
+              await onAufheben();
+            } finally {
+              onClose();
+            }
+          }}
+        >
+          {oeffnen ? 'Sperre aufheben und bearbeiten' : 'Sperre aufheben'}
+        </button>
       </div>
-    </div>
+    </Modal>
   );
 }
 
 /** Übersicht aller Sperrdateien des Projekts – auch solcher ohne Formular – mit Bewertung und Aufheben */
 export function SperrenDialog({ onClose }: { onClose: () => void }) {
-  useEscSchliessen(onClose);
   const projekt = useFormulare((s) => s.projekt);
   const { sperrenAuflisten, sperrdateiAufheben } = useFormulare.getState();
   const [liste, setListe] = useState<SperrEintrag[] | null>(null);
@@ -97,8 +94,8 @@ export function SperrenDialog({ onClose }: { onClose: () => void }) {
   useEffect(laden, [laden]);
 
   return (
-    <div className="modal-backdrop" onPointerDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="modal modal-wide fo-sperren" aria-label="Sperren">
+    <>
+      <Modal titel="Sperren" onClose={onClose} breit className="fo-sperren">
         <h3>Sperren in {projekt?.ordner}</h3>
         <p className="muted small-text">
           Eine Sperrdatei (<code>.frmtmp</code>) zeigt, dass ein Formular geöffnet ist. Nach einem Absturz bleibt sie liegen und sperrt das Formular für alle – hier lässt sie sich
@@ -133,7 +130,7 @@ export function SperrenDialog({ onClose }: { onClose: () => void }) {
             Fertig
           </button>
         </div>
-      </div>
+      </Modal>
       {aufheben && (
         <SperreAufhebenDialog
           name={aufheben.name}
@@ -147,6 +144,6 @@ export function SperrenDialog({ onClose }: { onClose: () => void }) {
           onClose={() => setAufheben(null)}
         />
       )}
-    </div>
+    </>
   );
 }

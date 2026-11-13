@@ -5,7 +5,7 @@
  *
  * Hängt eine Bedingung an einem nicht festgelegten Antragsmerkmal, entfällt das Feld nicht, sondern ist **offen**
  * (R-01): erforderlich, bis das Merkmal festgelegt ist. Dafür gibt es eigene Gründe (`offenGruende`) und den
- * Hinweis „Offen – hängt ab von: …“ – nie „Entfällt, weil … nicht festgelegt“.
+ * Hinweis „Ungeklärt – hängt ab von: …“ – nie „Entfällt, weil … nicht festgelegt“.
  */
 
 import type { Bedingung, BedingungKontext, Quelle, Wahrheit } from './bedingung';
@@ -55,7 +55,7 @@ export function entfallQuellen(gruende: Entfall[]): Quelle[] {
  *   Entfällt: Baubeschreibung beim Einfamilienhaus nicht nötig.
  *   Nur erforderlich, wenn Gebäudeart nicht Einfamilienhaus.
  *   Rechtsgrundlage: § 5 Absatz 1 BauPrüfVO
- * Bei offenen Gründen (fehlendes Merkmal) beginnt er mit „Offen – hängt ab von: Gebäudeart (nicht festgelegt)“ und
+ * Bei offenen Gründen (fehlendes Merkmal) beginnt er mit „Ungeklärt – hängt ab von: Gebäudeart (nicht festgelegt)“ und
  * „Erforderlich, bis Gebäudeart festgelegt ist.“
  */
 export function entfallText(gruende: Entfall[], felder: Feld[], p: FormularProfil, merkmale: Record<string, string>, art: 'entfaellt' | 'offen' = 'entfaellt'): string {
@@ -74,5 +74,5 @@ export function entfallText(gruende: Entfall[], felder: Feld[], p: FormularProfi
   if (quellen.length) zeilen.push(`Rechtsgrundlage: ${quellen.map(quelleText).join('; ')} – klicken für den Gesetzestext`);
   if (art === 'entfaellt') return [`Entfällt`, ...zeilen].join('\n');
   const fehlt = [...new Set(gruende.flatMap((e) => fehlendeMerkmale(e.bedingung, merkmale)))].join(', ');
-  return [`Offen – hängt ab von: ${fehlt} (nicht festgelegt)`, `Erforderlich, bis ${fehlt} festgelegt ist.`, ...zeilen].join('\n');
+  return [`Ungeklärt – hängt ab von: ${fehlt} (nicht festgelegt)`, `Erforderlich, bis ${fehlt} festgelegt ist.`, ...zeilen].join('\n');
 }

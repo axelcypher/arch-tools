@@ -235,7 +235,7 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
       )}
       {/* ohne lesbare Liste keine Zählung – „0 von 0 bereit · 2 fehlen“ wäre eine falsche Aussage */}
       {!ohneListe && (
-        <div className={`fo-bereit-kopf${vollstaendig ? ' vollstaendig' : ''}`} aria-label="Vollständigkeit des Antragsordners">
+        <div className={`fo-bereit-kopf${vollstaendig ? ' vollstaendig' : ''}`} role="group" aria-label="Vollständigkeit des Antragsordners">
           <span>
             <strong>
               {bereit} von {liste.length}

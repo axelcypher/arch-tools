@@ -50,21 +50,21 @@ export function ProjektkarteAnsicht() {
     if (!karte) void karteLaden().finally(() => setGeladen(true));
   }, [karte, karteLaden]);
 
-  if (!ds) return <div className="fo-leer">Die Projektkarte gibt es nur in der Desktop-App.</div>;
+  if (!ds) return <div className="fo-leer">Die Projektdaten gibt es nur in der Desktop-App.</div>;
   if (!projekt) return null;
   if (!karte)
     return (
       <div className="fo-leer">
         {geladen ? (
           <>
-            <h2>Keine Projektkarte</h2>
-            <p>
-              Im Projekt <strong>{projekt.ordner}</strong> gibt es keine lesbare Projektkarte.
+            <h2>Keine Projektdaten</h2>
+            <p title="Die Projektdaten stehen in der Projektkarte des Formularprojekts">
+              Im Projekt <strong>{projekt.ordner}</strong> gibt es keine lesbaren Projektdaten.
             </p>
             <button onClick={() => void karteLaden()}>Erneut lesen</button>
           </>
         ) : (
-          <p className="muted">Projektkarte wird gelesen …</p>
+          <p className="muted">Projektdaten werden gelesen …</p>
         )}
       </div>
     );
@@ -98,7 +98,7 @@ function Karte({ karte }: { karte: OffeneKarte }) {
     return () => window.removeEventListener('formulare:pk-sprung', beiSprung);
   });
 
-  if (!alle.length) return <div className="fo-leer">Die Projektkarte enthält keine Einträge.</div>;
+  if (!alle.length) return <div className="fo-leer">Die Projektdaten enthalten keine Einträge.</div>;
 
   return (
     <div className="pk">
@@ -152,9 +152,9 @@ function EigeneAnsicht({ karte }: { karte: OffeneKarte }) {
         {mit.length > 0 && (
           <span className="pk-eigen-link" title={`Verknüpft – wird gemeinsam ausgefüllt mit: ${mit.map((k) => `${k.titel} (${k.gruppe})`).join(', ')}`}>
             {' '}
-            · {/* dasselbe Zeichen wie im Ansicht-Editor (nicht das Symbol für „Datei verknüpfen“) */}
+            · {/* Kette wie im Ansicht-Editor (nicht das Symbol für „Datei verknüpfen“) */}
             <span role="img" aria-label="verknüpft mit">
-              {'⛓\uFE0E'}
+              <Symbol name="kette" />
             </span>{' '}
             {mit.map((k) => k.gruppe).join(', ')}
           </span>
@@ -200,8 +200,8 @@ function EigeneAnsicht({ karte }: { karte: OffeneKarte }) {
       </div>
       {editor && (
         <AnsichtEditor
-          titel="Projektkarte: eigene Ansicht"
-          text="Rechts Einträge der Projektkarte anhaken, links am Griff ordnen (oder Griff wählen und ↑/↓, Entf entfernt)."
+          titel="Projektdaten: eigene Ansicht"
+          text="Rechts Einträge der Projektdaten anhaken, links am Griff ordnen (oder Griff wählen und ↑/↓, Entf entfernt)."
           katalog={katalog}
           ansicht={ansicht}
           onChange={setAnsicht}
@@ -291,18 +291,18 @@ function Navigation({
   );
 
   return (
-    <nav className="pk-nav" aria-label="Gruppen der Projektkarte">
-      <div className="pk-nav-kopf">
-        <Symbol name="karte" /> Projektkarte <strong>{karte.projekt.ordner}</strong>
+    <nav className="pk-nav" aria-label="Gruppen der Projektdaten">
+      <div className="pk-nav-kopf" title="Projektdaten aus der Projektkarte des Formularprojekts">
+        <Symbol name="karte" /> Projektdaten <strong>{karte.projekt.ordner}</strong>
       </div>
-      <input type="search" className="pk-suche" placeholder="Projektkarte durchsuchen …" value={suche} onChange={(e) => setSuche(e.target.value)} />
+      <input type="search" className="pk-suche" placeholder="Projektdaten durchsuchen …" aria-label="Projektdaten durchsuchen" value={suche} onChange={(e) => setSuche(e.target.value)} />
       {vorgabeGruppen > 0 && !q && (
         <button
           className="pk-vorgaben"
           title="Leere Gruppen mit den Vorgaben aus „Büro & Stammdaten“ füllen"
           onClick={() => {
             karteMehrere(vorschlag, 'Vorgaben eingetragen');
-            setMeldung({ art: 'info', text: `Vorgaben in ${vorgabeGruppen} Gruppe(n) eingetragen – Strg+Z nimmt es zurück.` });
+            setMeldung({ art: 'info', text: `Vorgaben in ${vorgabeGruppen} ${vorgabeGruppen === 1 ? 'Gruppe' : 'Gruppen'} eingetragen – Strg+Z nimmt es zurück.` });
           }}
         >
           <Symbol name="buero" /> Vorgaben eintragen ({vorgabeGruppen})
@@ -421,7 +421,7 @@ function NavEintrag({
           title={favorit ? 'Favorit entfernen' : 'Als Favorit oben anzeigen (gilt für alle Projekte)'}
           onClick={onFavorit}
         >
-          {favorit ? '★' : '☆'}
+          <Symbol name="stern" />
         </button>
         <button
           className="pk-nav-auge"
@@ -597,7 +597,7 @@ function GruppenEditor({
             </select>
           )}
           {adresse && gefuellt && !istVorgabe && (
-            <button title={`Diese Adresse in neuen Projektkarten als ${gruppe.text} vorschlagen`} onClick={alsVorgabe}>
+            <button title={`Diese Adresse in den Projektdaten neuer Projekte als ${gruppe.text} vorschlagen`} onClick={alsVorgabe}>
               Als Vorgabe festlegen
             </button>
           )}
@@ -643,7 +643,7 @@ function Abschnitt({ titel, einklappbar, children }: { titel: string; einklappba
       <h3>
         {einklappbar ? (
           <button className="pk-abschnitt-knopf" aria-expanded={auf} onClick={() => setAuf(!auf)}>
-            <span aria-hidden>{auf ? '▾' : '▸'}</span> {titel}
+            <Symbol name={auf ? 'pfeilUnten' : 'pfeilRechts'} /> {titel}
           </button>
         ) : (
           titel
@@ -715,7 +715,8 @@ function Zelle({
   const aus = useContext(AusblendenKontext);
   const ausgeblendet = !!(aus && ids?.length && aus.istAus(ids));
   return (
-    <div className={`pk-feld${geaendert ? ' geaendert' : ''}${warnung ? ' warnung' : ''}${ausgeblendet ? ' ausgeblendet' : ''}`} style={{ gridColumn: `span ${breite}` }}>
+    // „halb“: kurze Felder (bis 6 von 12 Spalten) – im schmalen Raster (6 Spalten, Containerabfrage) halb so breit, alle anderen ganz
+    <div className={`pk-feld${breite <= 6 ? ' halb' : ''}${geaendert ? ' geaendert' : ''}${warnung ? ' warnung' : ''}${ausgeblendet ? ' ausgeblendet' : ''}`} style={{ gridColumn: `span ${breite}` }}>
       <div className="pk-feld-kopf">
         <label className="pk-feld-titel" htmlFor={htmlFor} title={titel}>
           {titel}
@@ -723,7 +724,7 @@ function Zelle({
         </label>
         {geaendert && onZurueck && (
           <button className="pk-zurueck" title="Auf den gespeicherten Wert zurücksetzen" aria-label={`${titel} zurücksetzen`} onClick={onZurueck}>
-            ↺
+            <Symbol name="rueckgaengig" />
           </button>
         )}
         {aus && ids?.length ? (
@@ -984,10 +985,10 @@ function ProjektdatenAbgleich({ karte }: { karte: OffeneKarte }) {
         <div className="pk-aktionen">
           {werte && (
             <>
-              <button disabled={!zurKarte.length} title="Werte der Projektdatei in die Projektkarte übernehmen" onClick={() => oapUebernehmen(zurKarte)}>
+              <button disabled={!zurKarte.length} title="Werte der Projektdatei in die Projektdaten übernehmen" onClick={() => oapUebernehmen(zurKarte)}>
                 Abweichende übernehmen ({zurKarte.length})
               </button>
-              <button disabled={!zurDatei.length} title="Werte der Projektkarte in die Projektdatei eintragen" onClick={() => void oapEintragen(zurDatei)}>
+              <button disabled={!zurDatei.length} title="Werte der Projektdaten in die Projektdatei eintragen" onClick={() => void oapEintragen(zurDatei)}>
                 Abweichende eintragen ({zurDatei.length})
               </button>
             </>
@@ -996,12 +997,12 @@ function ProjektdatenAbgleich({ karte }: { karte: OffeneKarte }) {
         </div>
       </header>
       <p className="muted pk-text">
-        Die Projektdatei ist das gemeinsame Projektarchiv von Flächenrechner, GRZ-Nachweis, Kostenermittlung und Projektordner; die Projektstammdaten stehen darin unter
-        „meta“. Beim Speichern der Projektkarte werden geänderte Angaben dort mitgeführt – nur diese, alles andere in der Datei bleibt.
+        Die Projektdatei ist das gemeinsame Projektarchiv von Flächenrechner, GRZ-Nachweis, Kostenermittlung und Projektordner; darin stehen auch die Projektstammdaten.
+        Beim Speichern der Projektdaten werden geänderte Angaben dort mitgeführt – nur diese, alles andere in der Datei bleibt.
       </p>
       {oap === 'fehlt' && (
         <p className="pk-text">
-          Im Projektordner gibt es noch keine Projektdatei. Der Stammdaten-Dialog legt sie an – vorbelegt mit den Angaben der Projektkarte, unter{' '}
+          Im Projektordner gibt es noch keine Projektdatei. Der Stammdaten-Dialog legt sie an – vorbelegt mit den Projektdaten, unter{' '}
           <code>{projektdateiPfad(vorlage, { nummer: projekt.ordner, kurzname: projekt.titel, vorhaben: karteText(karte, IN_PROJEKTKARTE.vorhaben!.gruppe, IN_PROJEKTKARTE.vorhaben!.id).trim() })}</code>.{' '}
           <button className="small primary" onClick={() => void stammdatenErfassen('Für dieses Projekt gibt es im Projektordner noch keine Projektdatei (.oap). Mit diesen Angaben wird sie angelegt.')}>
             Stammdaten erfassen …
@@ -1025,7 +1026,7 @@ function ProjektdatenAbgleich({ karte }: { karte: OffeneKarte }) {
           <tr>
             <th>Angabe</th>
             <th>Projektdatei</th>
-            <th>Projektkarte</th>
+            <th>Projektdaten</th>
             <th />
           </tr>
         </thead>
@@ -1046,7 +1047,7 @@ function ProjektdatenAbgleich({ karte }: { karte: OffeneKarte }) {
                 ) : (
                   <>
                     {werte && z.inDatei.trim() && (
-                      <button className="small" title="In die Projektkarte übernehmen" onClick={() => oapUebernehmen([z.angabe])}>
+                      <button className="small" title="In die Projektdaten übernehmen" onClick={() => oapUebernehmen([z.angabe])}>
                         Übernehmen
                       </button>
                     )}
@@ -1067,12 +1068,12 @@ function ProjektdatenAbgleich({ karte }: { karte: OffeneKarte }) {
           <strong>Projektdaten.xlsx (bisher)</strong>
           <span className="muted small-text">
             {xlsx.pfad} – wird nicht mehr beschrieben.{' '}
-            {alt.length ? `${alt.length} Angabe(n) weichen von der Projektkarte ab.` : 'Alle erkannten Angaben stimmen mit der Projektkarte überein.'}
+            {alt.length ? `${alt.length === 1 ? '1 Angabe weicht' : `${alt.length} Angaben weichen`} von den Projektdaten ab.` : 'Alle erkannten Angaben stimmen mit den Projektdaten überein.'}
           </span>
           <span className="pk-alt-knoepfe">
             {alt.length > 0 && (
-              <button className="small" title="Angaben der alten xlsx in die Projektkarte übernehmen – beim Speichern kommen sie in die Projektdatei" onClick={() => projektdatenUebernehmen(alt.map((e) => e.angabe as Angabe))}>
-                In die Projektkarte übernehmen ({alt.length})
+              <button className="small" title="Angaben der alten xlsx in die Projektdaten übernehmen – beim Speichern kommen sie in die Projektdatei" onClick={() => projektdatenUebernehmen(alt.map((e) => e.angabe as Angabe))}>
+                In die Projektdaten übernehmen ({alt.length})
               </button>
             )}
             <button className="small" onClick={() => void dateiAnsehen(xlsx.root, xlsx.pfad)}>

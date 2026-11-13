@@ -12,6 +12,8 @@ export const ist = (merkmal: string, ...werte: string[]): Teilbedingung => ({ ar
 export const istNicht = (merkmal: string, ...werte: string[]): Teilbedingung => ({ art: 'merkmal', merkmal, werte, nicht: true });
 /** Kästchen angekreuzt bzw. Textfeld ausgefüllt */
 export const angekreuzt = (feld: string): Teilbedingung => ({ art: 'feld', feld, pruefung: 'ausgefuellt' });
+/** Kästchen nicht angekreuzt bzw. Textfeld leer */
+export const nichtAngekreuzt = (feld: string): Teilbedingung => ({ art: 'feld', feld, pruefung: 'leer' });
 
 export const und = (...teile: BedingungTeil[]): Bedingung => gruppe('und', teile);
 export const oder = (...teile: BedingungTeil[]): Bedingung => gruppe('oder', teile);

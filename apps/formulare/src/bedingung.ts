@@ -37,8 +37,8 @@ export const VORGABE_MERKMALE: Merkmal[] = [
   { name: 'Gebäudeklasse', werte: ['1', '2', '3', '4', '5'] },
   { name: 'Sonderbau', werte: ['ja', 'nein'] },
   { name: 'Verfahren', werte: ['Genehmigungsfreistellung', 'vereinfachtes Verfahren', 'Baugenehmigungsverfahren'] },
-  /** Art des Gebäudes (Wohngebäude nach Zahl der Wohnungen) */
-  { name: 'Gebäudeart', werte: ['Einfamilienhaus', 'Zweifamilienhaus', 'Mehrfamilienhaus', 'Nichtwohngebäude', 'kein Gebäude'] },
+  /** Art des Gebäudes (Wohngebäude nach Zahl der Wohnungen, gemischt genutzt, Nichtwohngebäude) */
+  { name: 'Gebäudeart', werte: ['Einfamilienhaus', 'Zweifamilienhaus', 'Mehrfamilienhaus', 'Wohn- und Geschäftshaus', 'Nichtwohngebäude', 'kein Gebäude'] },
   /** Art des Vorhabens (§ 60 BauO NRW 2018; Beseitigung § 62 Absatz 3) */
   { name: 'Vorhaben', werte: ['Errichtung', 'Änderung', 'Nutzungsänderung', 'Beseitigung'] },
   /**
@@ -79,7 +79,14 @@ export const MERKMAL_ERKLAERUNG: Record<string, { text: string; quelle?: Quelle;
       Baugenehmigungsverfahren: '§ 65 BauO NRW 2018 (große Sonderbauten)',
     },
   },
-  Gebäudeart: { text: 'Art des Gebäudes (Wohngebäude nach Zahl der Wohnungen)' },
+  Gebäudeart: {
+    text: 'Art des Gebäudes (Wohngebäude nach Zahl der Wohnungen, gemischt genutzt oder Nichtwohngebäude)',
+    werte: {
+      'Wohn- und Geschäftshaus': 'Wohnungen und gewerbliche oder öffentlich zugängliche Nutzung (z. B. Laden, Praxis, Werkstatt) in einem Gebäude',
+      Nichtwohngebäude: 'Gebäude ohne Wohnungen (Gewerbe, Landwirtschaft, Büro, öffentliche Nutzung)',
+      'kein Gebäude': 'bauliche Anlage, die kein Gebäude ist (z. B. Mast, Werbeanlage, Stützmauer)',
+    },
+  },
   Vorhaben: { text: 'Art des Vorhabens (§ 60 BauO NRW 2018)', quelle: { gesetz: 'bauo-nrw', paragraf: '60' } },
   Planungsrecht: {
     text: 'Planungsrechtliche Lage (§§ 30, 34, 35 BauGB)',

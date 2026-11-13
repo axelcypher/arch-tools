@@ -532,12 +532,12 @@ describe('Bedingungen: Antragsmerkmale und Felder', () => {
     expect(gl(host).querySelector('.fo-gl-zahl')!.textContent).toBe('3/5');
     expect(gl(host).querySelector('.fo-gl-punkt .fo-gl-offen')!.getAttribute('title')).toContain('hängt ab von: Gebäudeklasse (nicht festgelegt)');
     expect(gl(host).querySelector('.fo-gl-fortschritt')!.textContent).toContain('3 von 5');
-    expect(gl(host).querySelector('.fo-gl-fortschritt')!.textContent).toContain('2 offen (hängt von Merkmalen ab)');
+    expect(gl(host).querySelector('.fo-gl-fortschritt')!.textContent).toContain('2 ungeklärt (hängt von Merkmalen ab)');
     expect(gl(host).querySelector('.fo-gl-merkmal')!.textContent).toContain('Gebäudeklasse');
     // am Feld: gelb mit Hinweis „Offen“, nicht „Entfällt“
     expect(host.querySelector('.fo-papier [data-feld="0:Memo2"]')!.classList.contains('offen')).toBe(true);
     const info = host.querySelector<HTMLButtonElement>('.fo-papier .fo-entfall-info.offen')!;
-    expect(info.getAttribute('aria-label')).toMatch(/^Offen – hängt ab von: Gebäudeklasse \(nicht festgelegt\)/);
+    expect(info.getAttribute('aria-label')).toMatch(/^Ungeklärt – hängt ab von: Gebäudeklasse \(nicht festgelegt\)/);
 
     // „Alle Antragsmerkmale …“ führt zu den Antragsmerkmalen im Antragsumfang
     await klick(knopf(gl(host) as HTMLElement, 'Alle Antragsmerkmale'));
@@ -1534,6 +1534,25 @@ describe('Antragsunterlagen ansehen und alle Formulare exportieren', () => {
     expect(zoom()).toBe('0');
     taste('Escape');
     expect(ebene()).toBeNull();
+  });
+
+  it('Vorschau verhält sich wie ein Dialog: Startfokus auf „Schließen“, nach Esc zurück am Knopf „Ansehen“', async () => {
+    ds.dateien.set(`${PROJEKT}/TÖB/BAUA 2/A Notiz.txt`, new Uint8Array([1]));
+    const host = await projektBS9();
+    await klick(knopfGenau(host, 'Antrag'));
+    const ansehen = knopf(host.querySelector('.fo-antrag-ablage')!, 'Ansehen');
+    ansehen.focus();
+    await klick(ansehen);
+    const ebene = () => document.querySelector<HTMLElement>('.vs-ebene');
+    // Klasse „modal“: Startfokus, Fokusfang und Fokusrückgabe aus dialoge.ts
+    expect(ebene()!.classList.contains('modal')).toBe(true);
+    expect(document.activeElement?.textContent).toBe('Schließen');
+    expect(ebene()!.contains(document.activeElement)).toBe(true);
+    expect(ebene()!.textContent).toContain('Mit Programm öffnen');
+    act(() => document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+    await warte();
+    expect(ebene()).toBeNull();
+    expect(document.activeElement).toBe(ansehen);
   });
 
   it('alle Formulare auf einmal als PDF – Archiv ausgenommen; vorhandene ersetzen oder überspringen', async () => {

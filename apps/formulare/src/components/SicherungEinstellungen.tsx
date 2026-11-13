@@ -83,7 +83,7 @@ export function SicherungEinstellungen() {
           <h3>Einstellungen exportieren</h3>
         </div>
         <p className="muted small-text">
-          Speichert die Einstellungen dieser App als JSON-Datei – zum Sichern, für einen anderen Rechner oder für Kolleginnen und Kollegen. Entwürfe, Verlauf und
+          Speichert die Einstellungen dieser App in einer Einstellungsdatei – zum Sichern, für einen anderen Rechner oder für Kolleginnen und Kollegen. Entwürfe, Verlauf und
           Formularinhalte gehören nicht dazu.
         </p>
         <ul className="sg-liste" aria-label="Enthaltene Einstellungen">

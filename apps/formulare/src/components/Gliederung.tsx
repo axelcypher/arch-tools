@@ -71,7 +71,7 @@ export function Gliederung({ offen }: { offen: OffenesFormular }) {
   const sichtbare = seiten.flatMap((s) => s.punkte.filter((p) => p.sichtbar && p.erforderlich));
   const gesamt = sichtbare.reduce((n, p) => n + p.gesamt, 0);
   const gefuellt = sichtbare.reduce((n, p) => n + p.gefuellt, 0);
-  // offene Angaben zählen wie erforderliche – kein voller Balken, solange etwas offen ist
+  // ungeklärte Angaben zählen wie erforderliche – kein voller Balken, solange etwas ungeklärt ist
   const ungeklaert = sichtbare.reduce((n, p) => n + p.offen, 0);
   // Prüfliste: fehlende Pflichtangaben und ungeklärte (hängen an Antragsmerkmalen)
   const liste = useMemo(() => offeneAngaben(offen.felder, profil, k, (f) => wertVon(offen, f)), [offen, profil, k]);
@@ -105,13 +105,18 @@ export function Gliederung({ offen }: { offen: OffenesFormular }) {
             {gefuellt} von {gesamt}
             {ungeklaert > 0 && (
               <span className="fo-gl-offen" title="Diese Angaben hängen an Antragsmerkmalen, die noch nicht festgelegt sind – sie zählen wie erforderliche Angaben.">
-                {ungeklaert} offen (hängt von Merkmalen ab)
+                {ungeklaert} ungeklärt (hängt von Merkmalen ab)
               </span>
             )}
           </span>
         </div>
         <div className="fo-gl-kopf-knoepfe">
-          {!anpassen && (
+          {anpassen ? (
+            // Einrichten: der Baum lässt sich einklappen (Werkzeugleiste „Gliederung“ zeigt ihn wieder) – Platz für das Papier
+            <button className="icon" title="Aufbau ausblenden – „Gliederung“ in der Werkzeugleiste zeigt ihn wieder" aria-label="Aufbau ausblenden" onClick={() => useEinrichten.getState().setBaumOffen(false)}>
+              <Symbol name="schliessen" />
+            </button>
+          ) : (
             <button className="icon" title="Gliederung ausblenden" aria-label="Gliederung ausblenden" onClick={() => setGliederungOffen(false)}>
               <Symbol name="schliessen" />
             </button>
@@ -120,7 +125,7 @@ export function Gliederung({ offen }: { offen: OffenesFormular }) {
       </div>
 
       {!anpassen && (
-        <div className="fo-gl-pruefliste" aria-label="Prüfliste">
+        <div className="fo-gl-pruefliste" role="group" aria-label="Prüfliste">
           {liste.length || hinweise.length ? (
             <button className="fo-gl-pruef-zahl" title="Was fehlt noch? – offene Angaben und Hinweise in der Feldansicht zeigen" onClick={zeigeOffene}>
               {fehlen} offen
@@ -192,17 +197,19 @@ export function Gliederung({ offen }: { offen: OffenesFormular }) {
                           {hinweise.some((h) => h.abschnitt === p.id) && (
                             <span
                               className={`fo-gl-hinweise${hinweise.some((h) => h.abschnitt === p.id && h.art === 'fehler') ? ' fehler' : ''}`}
+                              role="img"
+                              aria-label="Hinweise"
                               title={hinweise
                                 .filter((h) => h.abschnitt === p.id)
                                 .map((h) => h.text)
                                 .join('\n')}
                             >
-                              ⚠
+                              <Symbol name="warnung" />
                             </span>
                           )}
                           {p.offen > 0 && (
-                            <span className="fo-gl-offen" title={`${p.offen} offen – hängt ab von: ${p.fehlend.join(', ')} (nicht festgelegt)`}>
-                              {p.abschnittOffen && p.offen === p.gesamt - p.gefuellt ? 'offen' : `${p.offen} offen`}
+                            <span className="fo-gl-offen" title={`${p.offen} ungeklärt – hängt ab von: ${p.fehlend.join(', ')} (nicht festgelegt)`}>
+                              {p.abschnittOffen && p.offen === p.gesamt - p.gefuellt ? 'ungeklärt' : `${p.offen} ungeklärt`}
                             </span>
                           )}
                         </>
@@ -232,7 +239,7 @@ export function Gliederung({ offen }: { offen: OffenesFormular }) {
                           <button
                             key={e.id}
                             className={`fo-gl-einheit${weg ? ' entfaellt' : ''}${ungeklaert ? ' offen' : ''}`}
-                            title={weg ? `${titel} – entfällt (Bedingung trifft nicht zu)` : ungeklaert ? `${titel} – offen, hängt ab von: ${(e.fehlend ?? p.fehlend).join(', ')}` : titel}
+                            title={weg ? `${titel} – entfällt (Bedingung trifft nicht zu)` : ungeklaert ? `${titel} – ungeklärt, hängt ab von: ${(e.fehlend ?? p.fehlend).join(', ')}` : titel}
                             onClick={() => springeZuFeld(e.felder[0].schluessel)}
                             {...hervor({ felder: schluesselVon(e.felder) })}
                           >
@@ -240,9 +247,9 @@ export function Gliederung({ offen }: { offen: OffenesFormular }) {
                             {weg ? (
                               <span className="fo-gl-entfaellt">entfällt</span>
                             ) : ungeklaert ? (
-                              <span className="fo-gl-offen">offen</span>
+                              <span className="fo-gl-offen">ungeklärt</span>
                             ) : (
-                              <span className={`fo-gl-status${voll ? ' voll' : ''}`} aria-label={voll ? 'ausgefüllt' : 'offen'}>
+                              <span className={`fo-gl-status${voll ? ' voll' : ''}`} role="img" aria-label={voll ? 'ausgefüllt' : 'nicht ausgefüllt'}>
                                 {voll ? '✓' : ''}
                               </span>
                             )}

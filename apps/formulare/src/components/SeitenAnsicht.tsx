@@ -15,6 +15,7 @@ import { formularDatei, useFormulare, useProfil, wertVon } from '../store';
 import type { Entfallen } from './EntfallInfo';
 import { EntfallInfo, grundSignatur, hinweisPerF1, useEntfallen } from './EntfallInfo';
 import { HinweisSymbol, hinweiseJeFeld, usePlausibel } from './Hinweise';
+import { Symbol } from './Symbol';
 import type { Plausi } from '../plausibel';
 import type { Entfall } from '../entfall';
 import { useVorbelegt } from '../merkmalAbgleich';
@@ -345,7 +346,7 @@ function EinrichtenSchicht({
           >
             {bedingt && (
               <span className="fo-ein-bed" aria-hidden>
-                ⑂
+                <Symbol name="bedingung" />
               </span>
             )}
           </button>
@@ -464,7 +465,7 @@ const Element = memo(function Element({ k, feld, wert, geaendert, markiert, tite
           className={`fo-el fo-check${geaendert ? ' geaendert' : ''}${markiert ? ' markiert' : ''}${entfaellt ? ' entfaellt' : ''}${offen ? ' offen' : ''}${vorbelegt ? ' vorbelegt' : ''}${rechts ? '' : ' links'}`}
           style={{ ...pos, ...schrift(k) }}
           title={
-            vorbelegt ? `${titel} – aus dem Antragsmerkmal vorbelegt, bitte prüfen` : entfaellt ? `${titel} – nicht erforderlich` : offen ? `${titel} – offen (hängt von Antragsmerkmalen ab)` : titel
+            vorbelegt ? `${titel} – aus dem Antragsmerkmal vorbelegt, bitte prüfen` : entfaellt ? `${titel} – nicht erforderlich` : offen ? `${titel} – ungeklärt (hängt von Antragsmerkmalen ab)` : titel
           }
         >
           <input

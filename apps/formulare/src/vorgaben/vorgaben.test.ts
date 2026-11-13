@@ -15,6 +15,8 @@ import type { FormularProfil } from '../profil';
 import { abschnittId, bereinigt, feldErforderlich, feldZustand, formularKontext, profilSchluessel } from '../profil';
 import { absatzZeilen, gesetzBekannt, gesetzLaden } from '../recht';
 import { VORGABEN } from './index';
+import { PRUEFREGELN } from './pruefregeln';
+import { plausibilitaet } from '../plausibel';
 
 function sammle(ordner: string, out: string[] = []): string[] {
   let namen: string[];
@@ -240,7 +242,59 @@ const FAELLE: [string, string, string, string | null, Record<string, string>, Re
   ['I/2 Nr. 3 Flurkarte, qualifizierter Bebauungsplan', I2, '1:CheckBox3', '1:Panel1', { Planungsrecht: 'Bebauungsplan' }, BA, 'entfällt'],
   ['I/2 Nr. 2 Maß, Innenbereich', I2, '1:CheckBox2', '1:Panel1', { Planungsrecht: 'Innenbereich' }, BA, 'entfällt'],
   ['I/2 Nr. 2 Maß, Satzung nach BauGB', I2, '1:CheckBox2', '1:Panel1', { Planungsrecht: 'Satzung nach BauGB' }, BA, 'erforderlich'],
-  ['I/2 Nr. 3 Flurkarte, Satzung nach BauGB', I2, '1:CheckBox3', '1:Panel1', { Planungsrecht: 'Satzung nach BauGB' }, BA, 'entfällt'],
+  // Innen- und Außenbereichssatzung (§ 34 Abs. 4, § 35 Abs. 6 BauGB): Vorhaben nach §§ 34, 35 – der Katasterauszug gehört dazu
+  ['I/2 Nr. 3 Flurkarte, Satzung nach BauGB', I2, '1:CheckBox3', '1:Panel1', { Planungsrecht: 'Satzung nach BauGB' }, BA, 'erforderlich'],
+  ['I/2 Nr. 4 Basiskarte, Satzung nach BauGB', I2, '1:CheckBox4', '1:Panel1', { Planungsrecht: 'Satzung nach BauGB' }, BA, 'erforderlich'],
+  ['I/1 Nr. 3 Flurkarte, Satzung nach BauGB', I1, '1:CheckBox3', '1:Panel1', { Planungsrecht: 'Satzung nach BauGB' }, BA, 'erforderlich'],
+  ['I/2.1 Katasterauszug, Satzung nach BauGB', 'nw010004|2026C', '0:CheckBox1', null, { Planungsrecht: 'Satzung nach BauGB' }, {}, 'erforderlich'],
+  ['I/2.1 Katasterauszug, qualifizierter Bebauungsplan', 'nw010004|2026C', '0:CheckBox1', null, { Planungsrecht: 'Bebauungsplan' }, {}, 'entfällt'],
+
+  // Mittelgarage (100–1.000 m²): Bescheinigung nach § 68 Abs. 2 Satz 3 – auch als Sonderbau, die Erklärung genügt nicht
+  ['I/2 Nr. 11.2 Bescheinigung, Mittelgarage als Sonderbau', I2, '2:CheckBox5', '2:Panel3', { Gebäudeklasse: '3', Sonderbau: 'ja' }, { ...BA, '0:CheckBox24': true }, 'erforderlich'],
+  ['I/2 Nr. 11.1 Erklärung, Mittelgarage als Sonderbau', I2, '2:CheckBox4', '2:Panel3', { Gebäudeklasse: '3', Sonderbau: 'ja' }, { ...BA, '0:CheckBox24': true }, 'entfällt'],
+  ['I/2 Nr. 11.2 Bescheinigung, Mittelgarage GK 3 ohne Sonderbau', I2, '2:CheckBox5', '2:Panel3', { Gebäudeklasse: '3', Sonderbau: 'nein' }, { ...BA, '0:CheckBox24': true }, 'erforderlich'],
+  ['I/2 Nr. 11.1 Erklärung, Mittelgarage GK 3 ohne Sonderbau', I2, '2:CheckBox4', '2:Panel3', { Gebäudeklasse: '3', Sonderbau: 'nein' }, { ...BA, '0:CheckBox24': true }, 'entfällt'],
+  ['I/2 Nr. 11.1 Erklärung, GK 3 ohne Sonderbau, keine Mittelgarage', I2, '2:CheckBox4', '2:Panel3', { Gebäudeklasse: '3', Sonderbau: 'nein' }, BA, 'erforderlich'],
+  ['I/2 Nr. 9 Zusätzliche Bauvorlagen, Mittelgarage ohne Sonderbau', I2, '2:CheckBox2', '2:Panel1', { Sonderbau: 'nein' }, { ...BA, '0:CheckBox24': true }, 'erforderlich'],
+  ['I/2 Nr. 11, Sonstige bauliche Anlage angekreuzt', I2, '2:CheckBox4', '2:Panel3', { Sonderbau: 'nein' }, { ...BA, '0:CheckBox22': true }, 'entfällt'],
+  ['I/2 Art des Gebäudes, Sonstige bauliche Anlage angekreuzt', I2, '0:CheckBox27', '0:Panel8', {}, { ...BA, '0:CheckBox22': true }, 'entfällt'],
+  ['I/2 Nr. 12 Baustatistik, Sonstige bauliche Anlage angekreuzt', I2, '2:CheckBox6', '2:Panel4', {}, { ...BA, '0:CheckBox22': true }, 'entfällt'],
+  ['I/2 Nr. 12 Baustatistik, Mehrfamilienhaus', I2, '2:CheckBox6', '2:Panel4', { Gebäudeart: 'Mehrfamilienhaus' }, BA, 'erforderlich'],
+
+  // Kosten: bei Änderung oder baulicher Anlage ohne Gebäude muss es die Herstellungssumme sein
+  ['I/2 Nr. 7.1 Rauminhalt, Änderung', I2, '1:CheckBox7', '1:Panel1', { Vorhaben: 'Änderung' }, BA, 'entfällt'],
+  ['I/2 Nr. 7.2 Rohbaukosten, Sonstige bauliche Anlage angekreuzt', I2, '1:CheckBox8', '1:Panel1', { Vorhaben: 'Errichtung' }, { ...BA, '0:CheckBox22': true }, 'entfällt'],
+  ['I/2 Nr. 7.1 Rauminhalt, Errichtung eines Gebäudes', I2, '1:CheckBox7', '1:Panel1', { Vorhaben: 'Errichtung', Gebäudeart: 'Mehrfamilienhaus' }, BA, 'erforderlich'],
+  ['I/2 Nr. 7.3 Herstellungssumme, Änderung', I2, '1:CheckBox9', '1:Panel1', { Vorhaben: 'Änderung' }, BA, 'erforderlich'],
+  ['I/2 Nr. 7.1 Rauminhalt, Vorhaben nicht festgelegt', I2, '1:CheckBox7', '1:Panel1', {}, BA, 'offen'],
+  ['I/1 Nr. 10.1 Rauminhalt, Änderung', I1, '1:CheckBox34', '1:Panel1', { Vorhaben: 'Änderung' }, BA, 'entfällt'],
+  ['I/2 (2024D) Nr. 7.1 Rauminhalt, Änderung', I2_24, '1:CheckBox7', '1:Panel1', { Vorhaben: 'Änderung' }, BA, 'entfällt'],
+  ['I/3 Nr. 2.5.1 Rauminhalt, Sonstige bauliche Anlagen angekreuzt', I3, '1:CheckBox15', '1:Panel10', { Vorhaben: 'Errichtung' }, { '0:CheckBox1': true, '0:CheckBox22': true }, 'entfällt'],
+
+  // Fassung 2024D nach geltendem § 68 (Brandschutz Abs. 2, Schall/Wärme Abs. 4 Satz 2, Standsicherheit Abs. 3 Satz 5 Nr. 2)
+  ['I/2 (2024D) Nr. 14 Erklärung, GK 4 ohne Sonderbau', I2_24, '1:CheckBox22', '1:Panel1', { Gebäudeklasse: '4', Sonderbau: 'nein' }, BA, 'entfällt'],
+  ['I/2 (2024D) Nr. 14 Erklärung, GK 3 ohne Sonderbau', I2_24, '1:CheckBox22', '1:Panel1', { Gebäudeklasse: '3', Sonderbau: 'nein' }, BA, 'erforderlich'],
+  ['I/2 (2024D) Nr. 10 Bescheinigung, Nichtwohngebäude GK 3', I2_24, '1:CheckBox12', '1:Panel1', { Gebäudeklasse: '3', Sonderbau: 'nein', Gebäudeart: 'Nichtwohngebäude' }, BA, 'entfällt'],
+  ['I/2 (2024D) Nr. 10 Bescheinigung, GK 4 ohne Sonderbau', I2_24, '1:CheckBox12', '1:Panel1', { Gebäudeklasse: '4', Sonderbau: 'nein' }, BA, 'erforderlich'],
+  ['I/2 (2024D) Nr. 10/14, Sonderbau', I2_24, '1:CheckBox12', '1:Panel1', { Gebäudeklasse: '5', Sonderbau: 'ja' }, BA, 'entfällt'],
+  ['I/2 (2024D) Nr. 11 Schallschutz, Einfamilienhaus GK 1', I2_24, '1:CheckBox13', '1:Panel1', { Gebäudeklasse: '1', Gebäudeart: 'Einfamilienhaus' }, BA, 'entfällt'],
+  ['I/2 (2024D) Nr. 11 Wärmeschutz, Mehrfamilienhaus GK 3', I2_24, '1:CheckBox14', '1:Panel1', { Gebäudeklasse: '3', Gebäudeart: 'Mehrfamilienhaus' }, BA, 'erforderlich'],
+  ['I/2 (2024D) Nr. 11 Wärmeschutz, Sonstige bauliche Anlage', I2_24, '1:CheckBox14', '1:Panel1', { Gebäudeklasse: '3' }, { ...BA, '0:CheckBox22': true }, 'entfällt'],
+  ['I/2 (2024D) Nr. 11 Standsicherheit, Zweifamilienhaus GK 2', I2_24, '1:CheckBox15', '1:Panel1', { Gebäudeklasse: '2', Gebäudeart: 'Zweifamilienhaus' }, BA, 'entfällt'],
+  ['I/2 (2024D) Nr. 11 Standsicherheit, nicht festgelegt', I2_24, '1:CheckBox15', '1:Panel1', {}, BA, 'offen'],
+
+  // gemischt genutzte Gebäude: Betriebsbeschreibung und Barrierefreiheit erforderlich, keine Ausnahme als Wohngebäude GK 1/2
+  ['I/2 Nr. 8 Betriebsbeschreibung, Wohn- und Geschäftshaus', I2, '2:CheckBox1', '2:Panel1', { Gebäudeart: 'Wohn- und Geschäftshaus', Sonderbau: 'nein' }, BA, 'erforderlich'],
+  ['I/1 Nr. 9 Betriebsbeschreibung, Wohn- und Geschäftshaus', I1, '1:CheckBox9', '1:Panel1', { Gebäudeart: 'Wohn- und Geschäftshaus' }, BA, 'erforderlich'],
+  ['I/7 Barrierefreiheit, Wohn- und Geschäftshaus GK 2', BB, '0:CheckBox10', null, { Gebäudeart: 'Wohn- und Geschäftshaus', Gebäudeklasse: '2' }, {}, 'erforderlich'],
+  ['I/7 Barrierefreiheit, Zweifamilienhaus GK 2', BB, '0:CheckBox10', null, { Gebäudeart: 'Zweifamilienhaus', Gebäudeklasse: '2' }, {}, 'entfällt'],
+  ['Baubeginn Nr. 1 Schall/Wärme, Wohn- und Geschäftshaus GK 2', BEGINN, '1:CheckBox1', '1:Panel1', { Gebäudeart: 'Wohn- und Geschäftshaus', Gebäudeklasse: '2' }, {}, 'erforderlich'],
+
+  // Genehmigungsfreistellung: Maßberechnung nur im Bebauungsplan; Nr. 6 bei GK 4/5 nicht (Bescheinigung nötig)
+  ['I/3 Nr. 1.2 Maß, Innenbereich', I3, '1:CheckBox2', '1:Panel5', { Planungsrecht: 'Innenbereich' }, { '0:CheckBox2': true }, 'entfällt'],
+  ['I/3 Nr. 2.2 Maß, Bebauungsplan', I3, '1:CheckBox12', '1:Panel10', { Planungsrecht: 'Bebauungsplan' }, { '0:CheckBox1': true }, 'erforderlich'],
+  ['I/3 Nr. 6, „ja“, Gebäudeklasse 4', I3, '1:CheckBox8', '1:Panel6', { Gebäudeklasse: '4' }, { '0:CheckBox1': true }, 'entfällt'],
+  ['I/3 Nr. 6, „ja“, Gebäudeklasse nicht festgelegt', I3, '1:CheckBox8', '1:Panel6', {}, { '0:CheckBox1': true }, 'offen'],
   ['I/1 Nr. 3 Flurkarte, einfacher Bebauungsplan', I1, '1:CheckBox3', '1:Panel1', { Planungsrecht: 'einfacher Bebauungsplan' }, BA, 'erforderlich'],
 ];
 
@@ -248,6 +302,17 @@ describe('Fallmatrix der Pflichtvorlagen', () => {
   it.each(FAELLE)('%s', (_fall, vorgabe, feld, abschnitt, merkmale, werte, soll) => {
     expect(VORGABEN[vorgabe], vorgabe).toBeDefined();
     expect(zustand(vorgabe, feld, abschnitt, merkmale, werte)).toBe(soll);
+  });
+
+  it('„Gebäudeart: kein Gebäude“ kreuzt „Sonstige bauliche Anlage“ vor – daran hängen Kosten, Brandschutz und Baustatistik', () => {
+    for (const k of [I1, I2, I2_24, I3]) expect(PRUEFREGELN[k].merkmalFelder?.Gebäudeart, k).toEqual({ 'kein Gebäude': '0:CheckBox22' });
+  });
+
+  it('Hinweise zu Vordrucken mit geänderter Rechtsgrundlage erscheinen immer (referenzielles Verfahren, Adressat der Anzeige)', () => {
+    const k = { merkmale: {}, wert: () => false };
+    const texte = (v: string) => plausibilitaet([], VORGABEN[v], k, () => false, PRUEFREGELN[v]).map((p) => p.text);
+    expect(texte('nw010003|2022B').join()).toContain('seit 01.01.2024 aufgehoben');
+    expect(texte('nw010004|2026C').join()).toContain('bei der Bauaufsichtsbehörde einzureichen');
   });
 
   it('R-08: Nr. 8 Barrierefrei-Konzept zählt, Nr. 11 (§ 6) bleibt freiwillig', () => {

@@ -737,7 +737,7 @@ export function AntragsdatenAnsicht() {
           </span>
           <FassungsWahl />
           <button className="icon" title="Neu prüfen" aria-label="Neu prüfen" onClick={() => void aktualisieren()}>
-            <Symbol name="verlauf" />
+            <Symbol name="neuLaden" />
           </button>
           {basis && (
             <button className="icon" title="Antragsordner im Explorer zeigen" aria-label="Antragsordner zeigen" onClick={() => void oeffnePfad(verbinde(basis, ordner)).catch(() => undefined)}>
@@ -1032,7 +1032,7 @@ export function AntragsdatenAnsicht() {
                           <button className="small" onClick={() => setBearbeiten(null)}>
                             Fertig
                           </button>
-                          <button className="small gefahr" onClick={() => void ausUmfangEntfernen(u.id, zf, u.titel)}>
+                          <button className="small danger" onClick={() => void ausUmfangEntfernen(u.id, zf, u.titel)}>
                             Aus dem Antragsumfang nehmen
                           </button>
                         </div>

@@ -3534,8 +3534,9 @@ button.icon.fo-gl-bed.gesetzt {
   white-space: nowrap;
 }
 .fo-gl-hinweise.fehler {
-  color: var(--danger);
-  border-color: var(--danger);
+  background: var(--fehler-bg);
+  border-color: var(--fehler-border);
+  color: var(--fehler-text);
 }
 .fo-pruef-zeile.hinweis {
   border-left-color: var(--warn-border);

@@ -36,7 +36,7 @@ export function dateiMenue(basis: string, pfad: string): MenuePunkt[] {
   return [
     ...(dateiArtVon(pfad) ? [{ text: 'Ansehen', symbol: 'datei' as const, aktion: () => void useFormulare.getState().dateiAnsehen(basis, pfad) }] : []),
     { text: 'Mit Programm öffnen', symbol: 'extern', aktion: () => void oeffnePfad(verbinde(basis, pfad)).catch(() => undefined) },
-    { text: 'Im Explorer zeigen', symbol: 'ordner', aktion: () => void oeffnePfad(verbinde(basis, pfad.slice(0, Math.max(0, pfad.lastIndexOf('/'))) || '.')).catch(() => undefined) },
+    { text: 'Im Explorer öffnen', symbol: 'ordner', aktion: () => void oeffnePfad(verbinde(basis, pfad.slice(0, Math.max(0, pfad.lastIndexOf('/'))) || '.')).catch(() => undefined) },
     { trenner: true },
     { text: 'Kopieren', symbol: 'kopie', hinweis: 'zum Einfügen in einen Ordner', aktion: () => useDateiAktionen.getState().merken({ basis, pfad }) },
     { text: 'Duplizieren', symbol: 'kopie', aktion: () => void duplizieren(basis, pfad) },
@@ -78,7 +78,7 @@ function ordnerMenue(basis: string, pfad: string): MenuePunkt[] {
       deaktiviert: !useFormulare.getState().ordnerReihenfolge[ebenenSchluessel(pfad.slice(0, Math.max(0, pfad.lastIndexOf('/'))))],
       aktion: () => useFormulare.getState().ordnerReihenfolgeSetzen(ebenenSchluessel(pfad.slice(0, Math.max(0, pfad.lastIndexOf('/')))), []),
     },
-    { text: 'Im Explorer zeigen', symbol: 'extern', aktion: () => void oeffnePfad(verbinde(basis, pfad)).catch(() => undefined) },
+    { text: 'Im Explorer öffnen', symbol: 'ordner', aktion: () => void oeffnePfad(verbinde(basis, pfad)).catch(() => undefined) },
     { text: 'Pfad kopieren', symbol: 'kopie', aktion: () => void navigator.clipboard?.writeText(verbinde(basis, pfad)) },
   ];
 }
@@ -262,8 +262,8 @@ function OrdnerKnoten({
           </span>
           <span className="fo-baum-name">{name}</span>
         </button>
-        <button className="icon fo-baum-oeffnen" title="Im Explorer zeigen" aria-label={`${name} im Explorer zeigen`} onClick={() => void oeffnePfad(verbinde(basis, pfad)).catch(() => undefined)}>
-          <Symbol name="extern" />
+        <button className="icon fo-baum-oeffnen" title="Im Explorer öffnen" aria-label={`${name} im Explorer öffnen`} onClick={() => void oeffnePfad(verbinde(basis, pfad)).catch(() => undefined)}>
+          <Symbol name="ordner" />
         </button>
       </div>
       {auf && <Ebene basis={basis} rel={pfad} auswahl={auswahl} ganz={ganz} tiefe={tiefe + 1} />}
