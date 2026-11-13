@@ -1,7 +1,7 @@
 // Tests für scripts/versionen-pruefen.mjs – Aufruf: node --test scripts/
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { betroffeneApps, pruefen, tagVon, vergleich, versionAusTag } from './versionen-pruefen.mjs';
+import { APPS, betroffeneApps, pruefen, tagVon, vergleich, versionAusTag } from './versionen-pruefen.mjs';
 
 const stand = { flaechenrechner: '0.35.0', grz: '0.26.0', kosten: '0.21.0', ordner: '0.19.0', entzerrung: '0.14.0', formulare: '0.47.0', ava: '0.6.0', suite: '0.23.0' };
 const tags = ['v0.35.0', 'grz-v0.26.0', 'kosten-v0.21.0', 'ordner-v0.19.0', 'entzerrung-v0.14.0', 'formulare-v0.47.0', 'ava-v0.6.0', 'suite-v0.23.0', 'suite-v0.22.0'];
@@ -80,7 +80,7 @@ test('Version außerhalb von x.y.z wird gemeldet statt still durchgelassen', () 
 
 test('betroffene Apps aus der Dateiliste: App-Ordner, Kern betrifft alle; Doku und Tests nicht', () => {
   assert.deepEqual(betroffeneApps(['apps/grz/src/store.ts', 'apps/grz/README.md', 'docs/grz.md']), ['grz']);
-  assert.deepEqual(betroffeneApps(['packages/core/src/platform/konfig.ts']).length, 8);
+  assert.deepEqual(betroffeneApps(['packages/core/src/platform/konfig.ts']), APPS);
   assert.deepEqual(betroffeneApps(['packages/core/src/platform/konfig.test.ts', 'packages/core/src/__fixtures__/a.ts', 'apps/ava/src/x.ui.test.ts', 'scripts/x.mjs']), []);
 });
 
