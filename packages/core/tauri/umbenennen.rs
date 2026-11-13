@@ -72,7 +72,8 @@ async fn projekt_datei_umbenennen(root: String, alt: String, neu: String) -> Res
 mod umbenennen_tests {
     use super::*;
 
-    #[cfg(unix)]
+    // nur Linux: macOS (APFS) unterscheidet Groß-/Kleinschreibung standardmäßig nicht
+    #[cfg(target_os = "linux")]
     #[test]
     fn gleiche_datei_nur_bei_derselben_datei() {
         let d = std::env::temp_dir().join(format!("umbenennen-test-{}", std::process::id()));

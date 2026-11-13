@@ -64,7 +64,9 @@ fn qgis_beenden(kind: &mut std::process::Child) {
     #[cfg(windows)]
     {
         use std::os::windows::process::CommandExt;
-        let _ = std::process::Command::new("taskkill")
+        // voller Pfad (PATH könnte verändert sein), sonst über PATH
+        let taskkill = std::env::var("SystemRoot").map(|r| format!("{r}\\System32\\taskkill.exe")).unwrap_or_else(|_| "taskkill".into());
+        let _ = std::process::Command::new(taskkill)
             .args(["/PID", &kind.id().to_string(), "/T", "/F"])
             .creation_flags(0x0800_0000)
             .status();
