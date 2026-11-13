@@ -395,7 +395,8 @@ GitHub-Release (mit Web-Version als ZIP), sobald die Version der App auf `main` 
 QUADRIO als `v<version>`, TERRIO als `grz-v<version>`, NUMIO als `kosten-v<version>`,
 ATLAS als `ordner-v<version>`, RECTIO als `entzerrung-v<version>`, PERMIO als `formulare-v<version>`,
 FABRIO als `ava-v<version>`,
-die Rahmen-App Arkly als `suite-v<version>`. Das Release trägt den Produktnamen, das Tag die Kennung.
+die Rahmen-App Arkly als `suite-v<version>` (ihre Version setzt der Lauf selbst, siehe unten). Das Release trägt den
+Produktnamen, das Tag die Kennung.
 Die Version steht je App in
 `package.json`, `src-tauri/tauri.conf.json` und `src-tauri/Cargo.toml` und muss dort überall gleich sein.
 Manuell gestartet wird die gewählte App in ihrer aktuellen Version (neu) gebaut. Die CI prüft zusätzlich
@@ -419,7 +420,9 @@ aktualisieren sich nicht selbst.
   App-Version darf noch nicht als Tag existieren und muss größer sein als auf dem aktuellen main; jede Änderung am
   Code einer App bzw. an `packages/core` (dann alle Apps) verlangt eine neue Version (Doku und Tests nicht; Dateien
   im Wurzelverzeichnis wie `package.json`, `package-lock.json` oder `tsconfig*` prüft sie nicht – dort selbst
-  entscheiden), und wer eine App ändert, setzt auch die Rahmen-App (Arkly) hoch. Schlägt der Schritt fehl: main
+  entscheiden). Die Rahmen-App Arkly hebt ein PR nur bei Änderungen an `apps/suite` selbst: Hat eine andere App eine
+  neue Version, setzt der Release-Lauf Arkly automatisch auf die nächste freie Nummer (Minor, wenn eine App Minor
+  oder Major erhöht, sonst Patch; `scripts/suite-version.mjs`), committet sie nach main und baut Arkly mit. Schlägt der Schritt fehl: main
   mergen und die genannte Version über den angegebenen Stand setzen. Der grüne Haken gilt für den Stand von main beim
   letzten Push in den PR – unmittelbar vor dem Merge deshalb
   `git fetch origin main && node scripts/versionen-pruefen.mjs main HEAD` (volle Historie nötig). Empfohlen in den
