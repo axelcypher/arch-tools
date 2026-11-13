@@ -2837,10 +2837,10 @@ button.icon.ex-baum-pfeil {
 .st-punkt.aktuell {
   background: var(--ok-text);
 }
-/* Formular der obersten Ebene im Sammelprojekt ohne Zuordnung im aktiven Antrag: zurückgenommen – zählt in der
-   Vollständigkeit nicht mit (der Rand zur Navigation bleibt kräftig, damit der Punkt in Hell und Dunkel erkennbar ist) */
+/* Formular der obersten Ebene im Sammelprojekt ohne Zuordnung im aktiven Antrag: blasser – zählt in der
+   Vollständigkeit nicht mit; 0.65 hält die Farben in Hell und Dunkel noch unterscheidbar */
 .st-punkt.neben {
-  opacity: 0.5;
+  opacity: 0.65;
 }
 
 /* Symbol eines Formulars in der Navigation mit Statuspunkt rechts unten */

@@ -471,7 +471,7 @@ schon als PDF vorliegen, welche Berechnungen es gibt), als Ziel des PDF-Exports 
   Ordner.
 - **Formulare löschen** (Rechtsklick auf ein Formular › Löschen …): nach Rückfrage und mit Sicherungskopie im
   App-Ordner. Ist das Formular hier geöffnet, wird es vorher geschlossen (die Rückfrage warnt vor nicht gespeicherten
-  Eingaben); ist es in FORMA oder auf einem anderen Rechner geöffnet (Sperrdatei), wird nicht gelöscht. Sperrdateien,
+  Eingaben); ist es in einem anderen Programm oder auf einem anderen Rechner geöffnet (Sperrdatei), wird nicht gelöscht. Sperrdateien,
   Projektkarte und Projekttitel verwaltet weiterhin nur FORMA. Automatisch löscht die App nie etwas.
 
 ### Antrag, Export und Vollständigkeit

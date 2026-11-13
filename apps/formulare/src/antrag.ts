@@ -1602,6 +1602,7 @@ export function dateiImAntrag(u: UmfangEintrag, dateien: Eintrag[], fassung: str
 export function pdfOhneZuordnung(formularName: string, dateien: Eintrag[], vergeben: Set<string>, codes: string[] = []): Eintrag | null {
   const name = anzeigeName(formularName);
   const frei = dateien.filter((d) => !vergeben.has(d.pfad.toLowerCase()));
+  // ohne Fassung: ein solches Formular hat keine verknüpfte Datei je Fassung; die Dateien stammen schon aus dem Ordner der aktiven
   return dateiImAntrag({ id: `ohne:${formularName}`, titel: name, art: 'intern', formular: name }, frei, '', codes);
 }
 

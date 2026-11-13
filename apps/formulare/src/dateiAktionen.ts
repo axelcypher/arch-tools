@@ -330,8 +330,17 @@ export async function formularUmbenennen(f: FormularEintrag) {
       'Umbenennen',
       new Error(`„${f.name}“ ist im Antragsumfang zugeordnet, aber die Projektdatei (.oap) lässt sich nicht schreiben – nicht umbenannt, sonst ginge die Zuordnung verloren`),
     );
-  const bleibt = zugeordnet ? 'Die Zuordnung im Antragsumfang, Werte aus der Projektkarte und nicht gespeicherte Eingaben bleiben erhalten.' : 'Nicht gespeicherte Eingaben bleiben erhalten.';
-  const eingabe = await frageText('Formular umbenennen', f.name, 'Umbenennen', `${bleibt}${hier() ? ' Das Formular wird dafür kurz geschlossen und danach wieder geöffnet.' : ''}`);
+  // nennt nur, was es gibt: Zuordnung (mit den Werten aus der Projektkarte) und nicht gespeicherte Eingaben
+  const entwurf = hatEntwurf(projekt, f.pfad) || (hier() && Object.keys(s.offen!.aenderungen).length > 0);
+  const erhalten = [...(zugeordnet ? ['Die Zuordnung im Antragsumfang', 'Werte aus der Projektkarte'] : []), ...(entwurf ? ['nicht gespeicherte Eingaben'] : [])];
+  const liste = erhalten.length > 1 ? `${erhalten.slice(0, -1).join(', ')} und ${erhalten.at(-1)}` : (erhalten[0] ?? '');
+  const bleibt = liste ? `${liste[0].toUpperCase()}${liste.slice(1)} bleiben erhalten.` : '';
+  const eingabe = await frageText(
+    'Formular umbenennen',
+    f.name,
+    'Umbenennen',
+    [bleibt, hier() ? 'Das Formular wird dafür kurz geschlossen und danach wieder geöffnet.' : ''].filter(Boolean).join(' ') || undefined,
+  );
   const name = eingabe
     ?.trim()
     .replace(/\.frmsjf$/i, '')
@@ -393,7 +402,7 @@ export async function formularUmbenennen(f: FormularEintrag) {
       return wiederOeffnen(f.pfad);
     }
     if (!zielGesperrt) {
-      fehler('Umbenennen', new Error(`Neben „${name}“ liegt schon eine Sperrdatei – nicht umbenannt`));
+      fehler('Umbenennen', new Error(`„${name}“ ist schon als geöffnet markiert (Sperrdatei) – nicht umbenannt. Bitte einen anderen Namen wählen`));
       return wiederOeffnen(f.pfad);
     }
     sperreVermerken(projekt.root, zielSperre, sperre);
