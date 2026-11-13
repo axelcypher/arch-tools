@@ -12,8 +12,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # volle Historie: die Versionsprüfung braucht die Abzweigung des PRs vom Ziel-Branch (Merge-Base)
-          fetch-depth: ${{ github.event_name == 'pull_request' && 0 || 1 }}
+          # volle Historie: die Versionsprüfung braucht die Abzweigung des PRs vom Ziel-Branch (Merge-Base); als Text,
+          # denn die Zahl 0 gilt in Ausdrücken als falsch und ergäbe 1
+          fetch-depth: ${{ github.event_name == 'pull_request' && '0' || '1' }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
