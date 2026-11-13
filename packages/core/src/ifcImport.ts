@@ -63,6 +63,9 @@ const CURTAIN_PARTS = new Set(['IFCPLATE', 'IFCMEMBER']);
 /** Bauteile, die nach ihrem Namen eine Gaube sind */
 const GAUBE_NAME = /gaube|dormer/i;
 const istGaube = (e: IfcMeshPart) => GAUBE_NAME.test(e.name) || GAUBE_NAME.test(e.predefinedType);
+/** „1 Raum“, „3 Räume“ – Anzahl mit Ein- bzw. Mehrzahl für den Bericht */
+const raeume = (n: number) => `${n} ${n === 1 ? 'Raum' : 'Räume'}`;
+
 /** Dachbauteile; Gauben als Bibliotheksobjekt (z. B. Archicad → IfcBuildingElementProxy „Gaube“) gehören dazu */
 const isRoofPart = (e: IfcMeshPart) =>
   e.type === 'IFCROOF' || (e.type === 'IFCSLAB' && e.predefinedType === 'ROOF') || (e.type === 'IFCCOVERING' && e.predefinedType === 'ROOFING') || istGaube(e);
@@ -230,9 +233,9 @@ export function buildFromIfc(x: IfcExtract, o: IfcImportOptions): IfcImportResul
       st.shapes.push(room);
       n++;
     }
-    report.push(`${n} Räume aus IFC-Zonen übernommen.`);
+    report.push(`${raeume(n)} aus IFC-Zonen übernommen.`);
     if (splitLevel.length) report.push(`Split-Level erkannt (Fußboden gegenüber dem Geschoss): ${splitLevel.join(', ')} – im BRI berücksichtigt.`);
-    if (o.wohnflaeche && keineWofl) report.push(`${keineWofl} Räume nicht als Wohnfläche angerechnet (Keller, Technik, Treppenhaus, Garage, Dachboden …) – Vorschlag nach Raumname, bei Bedarf im Raum ändern.`);
+    if (o.wohnflaeche && keineWofl) report.push(`${raeume(keineWofl)} nicht als Wohnfläche angerechnet (Keller, Technik, Treppenhaus, Garage, Dachboden …) – Vorschlag nach Raumname, bei Bedarf im Raum ändern.`);
     if (imKeller.length)
       report.push(`Vorschlag „keine Wohnfläche“, weil im Kellergeschoss: ${imKeller.join(', ')} – bei einer Souterrainwohnung die Geschossart auf „Normalgeschoss“ setzen.`);
     if (terrassen.length)
@@ -240,9 +243,9 @@ export function buildFromIfc(x: IfcExtract, o: IfcImportOptions): IfcImportResul
         `Terrassen als Sonderfall S übernommen: ${terrassen.join(', ')} – ist eine davon ebenerdig und nicht unterbaut, gehört sie nicht zur BGF (DIN 277, 6.1 a): im Raum „außerhalb der BGF – nur Wohnfläche“ wählen.`,
       );
     if (treppen.length) report.push(`Räume mit Treppe angerechnet: ${treppen.join(', ')} – die Treppenfläche als Abzugsfläche „nur Wohnfläche“ erfassen (§ 3 Abs. 3 Nr. 2 WoFlV).`);
-    if (putz) report.push(`${putz} Räume mit Abzug aus der IFC-Nettofläche übernommen (Nettofläche kleiner als die Zonengeometrie, z. B. 3 % Putzabzug bei Rohbaumaßen).`);
+    if (putz) report.push(`${raeume(putz)} mit Abzug aus der IFC-Nettofläche übernommen (Nettofläche kleiner als die Zonengeometrie, z. B. 3 % Putzabzug bei Rohbaumaßen).`);
     if (abzugAusreisser.length) report.push(`Abzug aus der IFC-Nettofläche deutlich abseits von 3 % – bitte prüfen: ${abzugAusreisser.join(', ')}.`);
-    if (ohneKategorie) report.push(`${ohneKategorie} Räume ohne Zonenkategorie – keiner Wohnung zugeordnet, bitte im Raum ergänzen.`);
+    if (ohneKategorie) report.push(`${raeume(ohneKategorie)} ohne Zonenkategorie – keiner Wohnung zugeordnet, bitte im Raum ergänzen.`);
     if (o.wohnflaeche && o.wohnung === 'geschoss')
       report.push('Hinweis: Wohnungen heißen wie die Geschosse – bei Einfamilienhaus oder Maisonette (eine Wohnung über mehrere Geschosse) ist die Wohnfläche so falsch gegliedert (WoFlV: Wohnfläche je Wohnung).');
   }
@@ -316,7 +319,7 @@ export function buildFromIfc(x: IfcExtract, o: IfcImportOptions): IfcImportResul
           report.push(`${st.name}: ohne BGF-Umriss – der Rauminhalt darüber (z. B. Dachspitze) wird dem Geschoss darunter bis zur Dachhaut zugerechnet.`);
         }
       }
-      report.push(`Dach aus ${roofParts.length} Dachbauteilen übernommen (BRI bis zur Dachhaut).`);
+      report.push(`Dach aus ${roofParts.length} ${roofParts.length === 1 ? 'Dachbauteil' : 'Dachbauteilen'} übernommen (BRI bis zur Dachhaut).`);
     } else report.push('Keine Dachbauteile (IfcRoof, IfcSlab.ROOF) gefunden – Dachform bei Bedarf manuell wählen.');
   }
 

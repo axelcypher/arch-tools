@@ -634,10 +634,10 @@ export interface KostenPosition {
 export type KostenStufe = 'rahmen' | 'schaetzung' | 'berechnung' | 'voranschlag' | 'anschlag' | 'feststellung';
 
 export const KOSTEN_STUFEN: { id: KostenStufe; label: string; lph: string }[] = [
-  { id: 'rahmen', label: 'Kostenrahmen', lph: 'LPh 1' },
+  { id: 'rahmen', label: 'Kostenrahmen', lph: 'LPh 1, Bedarfsplanung' },
   { id: 'schaetzung', label: 'Kostenschätzung', lph: 'LPh 2' },
   { id: 'berechnung', label: 'Kostenberechnung', lph: 'LPh 3' },
-  { id: 'voranschlag', label: 'Kostenvoranschlag', lph: 'LPh 5/6' },
+  { id: 'voranschlag', label: 'Kostenvoranschlag', lph: 'LPh 6' },
   { id: 'anschlag', label: 'Kostenanschlag', lph: 'LPh 7' },
   { id: 'feststellung', label: 'Kostenfeststellung', lph: 'LPh 8' },
 ];
