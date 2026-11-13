@@ -1366,16 +1366,27 @@ export const useAntrag = create<AntragState>((set, get) => {
       }
       try {
         const projekt = useFormulare.getState().projekt;
+        const oap = useFormulare.getState().oap;
         const neu: ProjektDatei = { ...(get().projektdatei ?? {}) };
         if (umfang) neu.umfang = umfang;
         else delete neu.umfang;
         const imStore = await projektdateiSchreiben(neu, undefined, { info, bewegt: o.bewegt });
         // festgelegt, während woanders inzwischen schon einer festgelegt war (so beim Zusammenführen bemerkt): der
         // bleibt – „jetzt geladen“ nur, wenn der Store noch zu dieser Projektdatei gehört (nicht nach einem Wechsel)
+        // und dieselbe Fassung zeigt (nicht, wenn die Ansicht der woanders aktiv gemachten Fassung gefolgt ist)
         if (info.umfangBehalten) {
           delete info.geschrieben;
           info.grund = 'inzwischen ist schon einer festgelegt';
-          if (imStore && useFormulare.getState().projekt === projekt) meldung('info', 'Antragsumfang nicht festgelegt – inzwischen ist schon einer festgelegt; er ist jetzt geladen.');
+          const angezeigt = get().projektdatei?.ansicht;
+          if (!imStore || useFormulare.getState().projekt !== projekt) {
+            // inzwischen anderes Projekt bzw. andere Projektdatei: sagen, welche gemeint ist
+            if (projekt && useFormulare.getState().projekt !== projekt)
+              meldung('info', `Antragsumfang in ${projekt.ordner} nicht festgelegt – dort ist inzwischen schon einer festgelegt (inzwischen ist ein anderes Projekt offen).`);
+            else if (oap && oap !== 'fehlt')
+              meldung('info', `Antragsumfang in ${nurName(oap.pfad)} nicht festgelegt – dort ist inzwischen schon einer festgelegt (inzwischen ist eine andere Projektdatei gewählt).`);
+          } else if (neu.ansicht && angezeigt && angezeigt !== neu.ansicht) {
+            meldung('info', `Antragsumfang für Antrag ${neu.ansicht} nicht festgelegt – dort ist inzwischen schon einer festgelegt. Angezeigt ist jetzt Antrag ${angezeigt}, die inzwischen aktive Fassung.`);
+          } else meldung('info', 'Antragsumfang nicht festgelegt – inzwischen ist schon einer festgelegt; er ist jetzt geladen.');
         }
         await get().aktualisieren();
       } catch (e) {

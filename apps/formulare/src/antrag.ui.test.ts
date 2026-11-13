@@ -4495,6 +4495,32 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     expect(useAntrag.getState().projektdatei?.umfang?.map((u) => u.id)).toEqual(['lageplan', 'ueigen']);
   });
 
+  it('„Antragsumfang festlegen“, während woanders schon einer festgelegt und BAUA aktiv gemacht wurde: die Meldung nennt beide Fassungen, kein „jetzt geladen“', async () => {
+    const host = await projektBS9();
+    await klick(antragsdaten(host));
+    ds.dateien.set(
+      OAP,
+      oapMit(ds.dateien.get(OAP)!, (f) => {
+        f.aktiveFassung = 'BAUA';
+        (f.antraege as Record<string, Record<string, unknown>>)['BAUA 2'].umfang = [{ id: 'ueigen', titel: 'Brandschutzkonzept', art: 'extern' }];
+      }),
+    );
+    const { meldungen, ab } = meldungenSammeln();
+    try {
+      await klick(knopf(host, 'Antragsumfang festlegen'));
+      for (let i = 0; i < 8; i++) await warte();
+    } finally {
+      ab();
+    }
+    expect(umfangIdsIn('BAUA 2')).toEqual(['ueigen']);
+    expect(useAntrag.getState().projektdatei?.ansicht).toBe('BAUA');
+    expect(meldungen.filter((m) => /er ist jetzt geladen/.test(m))).toEqual([]);
+    expect(useFormulare.getState().meldung).toEqual({
+      art: 'info',
+      text: 'Antragsumfang für Antrag BAUA 2 nicht festgelegt – dort ist inzwischen schon einer festgelegt. Angezeigt ist jetzt Antrag BAUA, die inzwischen aktive Fassung.',
+    });
+  });
+
   it('Laden nach „nichts geändert“ hängt, ein zweites Speichern läuft durch: das späte Laden überschreibt den neueren Stand nicht', async () => {
     const host = await mitUmfangInBeiden();
     ds.dateien.set(
@@ -4629,7 +4655,7 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     expect(meldungen.filter((m) => /nicht festgelegt/.test(m))).toEqual([]);
   });
 
-  it('„Antragsumfang festlegen“ in BS9 (dort woanders schon festgelegt), das Neuladen danach hängt, inzwischen ist H24 offen: der in BS9 bleibt, keine Meldung in H24', async () => {
+  it('„Antragsumfang festlegen“ in BS9 (dort woanders schon festgelegt), das Neuladen danach hängt, inzwischen ist H24 offen: der in BS9 bleibt, die Meldung nennt BS9', async () => {
     ds.ordner.add('Z:/Projekte/H24 Höggenstraße/TÖB/BAUA 2');
     ds.dateien.set('Z:/Projekte/H24 Höggenstraße/TÖB/BAUA 2/x.pdf', new Uint8Array([1]));
     const host = await projektBS9();
@@ -4660,7 +4686,7 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
       ab();
     }
     expect(umfangIdsIn('BAUA 2')).toEqual(['ueigen']);
-    expect(meldungen.filter((m) => /nicht festgelegt/.test(m))).toEqual([]);
+    expect(meldungen.filter((m) => /nicht festgelegt/.test(m))).toEqual(['Antragsumfang in BS9 nicht festgelegt – dort ist inzwischen schon einer festgelegt (inzwischen ist ein anderes Projekt offen).']);
   });
 
   it('Projektdatei zweimal geladen: das frühere scheitert spät, das spätere gelingt – kein Fehler, neuer Stand; umgekehrt bleibt der Fehler', async () => {
@@ -4779,6 +4805,8 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     }
     expect(umfangIdsIn('BAUA 2')).toEqual(['ueigen']);
     expect(meldungen.filter((m) => /er ist jetzt geladen/.test(m))).toEqual([]);
+    // gesagt wird es trotzdem – mit der Projektdatei, die gemeint ist
+    expect(meldungen).toContain('Antragsumfang in BS9.oap nicht festgelegt – dort ist inzwischen schon einer festgelegt (inzwischen ist eine andere Projektdatei gewählt).');
   });
 
   it('Festlegen: der erste Versuch sieht einen woanders festgelegten, die Datei ändert sich dabei (dort aufgehoben), der zweite schreibt – keine Meldung', async () => {
