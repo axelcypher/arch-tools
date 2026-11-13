@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { parseNum } from '../format';
 import type { Pruefung } from './pruefen';
@@ -118,6 +118,8 @@ export function NumberField({
   title,
   pflicht = false,
   label,
+  ungueltig = false,
+  fehlerId,
 }: {
   value: number | undefined;
   onChange: (v: number | undefined) => void;
@@ -131,7 +133,15 @@ export function NumberField({
   pflicht?: boolean;
   /** Name des Felds für Screenreader, falls es nicht in einem <label> steht */
   label?: string;
+  /**
+   * Fehler von außen, der mehrere Felder betrifft (z. B. „Summe der Teilflächen > Grundstücksfläche“): Feld rot
+   * markiert und `aria-invalid`; die gemeinsame Meldung steht einmal neben den Feldern, ihre id in `fehlerId`.
+   */
+  ungueltig?: boolean;
+  /** id der gemeinsamen Fehlermeldung (aria-describedby); die Meldung steht nur da, solange der Fehler besteht */
+  fehlerId?: string;
 }) {
+  const meldungId = useId();
   // Tausenderpunkte nur mit Nachkommastellen: dann steht immer ein Komma im Text, und Punkte davor sind eindeutig
   // Tausendertrenner (ohne Komma wäre „45.00“ nach dem Löschen einer Ziffer mehrdeutig)
   const format = (v: number | undefined) => (v === undefined ? '' : feldZahl(v, digits, digits > 0));
@@ -179,14 +189,15 @@ export function NumberField({
     <>
       <input
         ref={pending.ref}
-        className={`num${fehler ? ' feld-fehler' : ''}`}
+        className={`num${fehler || ungueltig ? ' feld-fehler' : ''}`}
         value={text}
         onFocus={pending.onFocus}
         placeholder={placeholder}
-        title={fehler ?? title}
+        title={fehler ?? (ungueltig ? sieheMeldung(title) : title)}
         inputMode="decimal"
         aria-label={label}
-        aria-invalid={fehler ? true : undefined}
+        aria-invalid={fehler || ungueltig ? true : undefined}
+        aria-describedby={beschrieben(fehler ? meldungId : undefined, ungueltig ? fehlerId : undefined)}
         aria-required={pflicht || undefined}
         required={pflicht || undefined}
         onChange={(e) => {
@@ -210,13 +221,19 @@ export function NumberField({
         }}
       />
       {fehler && (
-        <span className="feld-meldung" role="alert">
+        <span className="feld-meldung" role="alert" id={meldungId}>
           {fehler}
         </span>
       )}
     </>
   );
 }
+
+/** Tooltip bei einem Fehler von außen: vorhandene Erklärung behalten, Verweis auf die gemeinsame Meldung anhängen */
+const sieheMeldung = (title?: string): string => (title ? `${title} – siehe Meldung zu diesen Feldern` : 'Siehe Meldung zu diesen Feldern');
+
+/** ids für aria-describedby (eigene Meldung, gemeinsame Meldung); keine = undefined */
+const beschrieben = (...ids: (string | undefined)[]): string | undefined => ids.filter(Boolean).join(' ') || undefined;
 
 /**
  * Texteingabe, die erst bei Enter/Fokusverlust übernimmt. `list`: id einer <datalist> mit Vorschlägen.
@@ -235,6 +252,8 @@ export function TextField({
   zeigen = false,
   live = false,
   label,
+  ungueltig = false,
+  fehlerId,
 }: {
   value: string;
   onChange: (v: string) => void;
@@ -248,7 +267,15 @@ export function TextField({
   /** Hinweis schon beim Tippen */
   live?: boolean;
   label?: string;
+  /**
+   * Fehler von außen, der mehrere Felder betrifft (z. B. „Summe der Teilflächen > Grundstücksfläche“): Feld rot
+   * markiert und `aria-invalid`; die gemeinsame Meldung steht einmal neben den Feldern, ihre id in `fehlerId`.
+   */
+  ungueltig?: boolean;
+  /** id der gemeinsamen Fehlermeldung (aria-describedby); die Meldung steht nur da, solange der Fehler besteht */
+  fehlerId?: string;
 }) {
+  const meldungId = useId();
   const [text, setText] = useState(value);
   const [verlassen, setVerlassen] = useState(false);
   const textRef = useRef(text);
@@ -269,10 +296,11 @@ export function TextField({
         value={text}
         placeholder={placeholder}
         list={list}
-        title={meldung ?? title}
-        className={meldung ? 'feld-fehler' : undefined}
+        title={meldung ?? (ungueltig ? sieheMeldung(title) : title)}
+        className={meldung || ungueltig ? 'feld-fehler' : undefined}
         aria-label={label}
-        aria-invalid={meldung ? true : undefined}
+        aria-invalid={meldung || ungueltig ? true : undefined}
+        aria-describedby={beschrieben(meldung ? meldungId : undefined, ungueltig ? fehlerId : undefined)}
         aria-required={pflicht || undefined}
         required={pflicht || undefined}
         onFocus={pending.onFocus}
@@ -291,7 +319,7 @@ export function TextField({
         }}
       />
       {meldung && (
-        <span className="feld-meldung" role="alert">
+        <span className="feld-meldung" role="alert" id={meldungId}>
           {meldung}
         </span>
       )}
