@@ -95,6 +95,7 @@ export function AssistentView({
   onPruefen,
   onKatasterEinstellungen,
   onMails,
+  onOffen,
 }: {
   /** ausgeblendet (andere Ansicht der App): bleibt eingehängt, damit Schritt und Eingaben erhalten bleiben – setzt aber keinen Fokus */
   sichtbar?: boolean;
@@ -107,6 +108,11 @@ export function AssistentView({
   onKatasterEinstellungen?: () => void;
   /** Mails eines Projekts prüfen und benennen */
   onMails?: (pfad: string) => void;
+  /**
+   * meldet, was im Assistenten noch nicht angelegt ist und bei einem Neustart verloren ginge (z. B. „die geänderten
+   * Stammdaten von ‚X‘“), sonst null – damit „Projekte“ in der Titelleiste vorher fragen kann
+   */
+  onOffen?: (was: string | null) => void;
 }) {
   const desktop = hatDateisystem();
   const { stamm: entwurf, struktur, stammordner, vorlagen, allgemein, setStamm, setStammordner, neuesProjekt } = useOrdner();
@@ -118,6 +124,8 @@ export function AssistentView({
   const [ordner, setOrdner] = useState<GeladenerOrdner | null>(start ?? null);
   const [geladen, setGeladen] = useState<GeladenesProjekt | null>(null);
   const [stammE, setStammE] = useState<Stammdaten | null>(null);
+  /** Stammdaten beim Ergänzen so, wie sie gelesen wurden – zum Erkennen eigener, noch nicht angelegter Änderungen */
+  const [stammEBasis, setStammEBasis] = useState<Stammdaten | null>(null);
   const [projekte, setProjekte] = useState<string[]>([]);
   const [suche, setSuche] = useState('');
   const [abgewaehlt, setAbgewaehlt] = useState<Set<string>>(new Set());
@@ -195,6 +203,7 @@ export function AssistentView({
   useEffect(() => {
     setGeladen(null);
     setStammE(null);
+    setStammEBasis(null);
     setAbgewaehlt(new Set());
     if (!ordner) return;
     let aktuell = true;
@@ -205,9 +214,12 @@ export function AssistentView({
         if (g.angaben) {
           const { angelegt: _a, struktur: _s, dateischema: _d, ...stamm } = g.angaben;
           setStammE(stamm);
+          setStammEBasis(stamm);
         } else {
           // ohne Projektdatei: Nummer und Kurzname aus dem Ordnernamen vorschlagen
-          setStammE({ ...leereStammdaten(), ...ausOrdnername(struktur.ordnername, ordner.name), bearbeiter: entwurf.bearbeiter });
+          const vorschlag = { ...leereStammdaten(), ...ausOrdnername(struktur.ordnername, ordner.name), bearbeiter: entwurf.bearbeiter };
+          setStammE(vorschlag);
+          setStammEBasis(vorschlag);
         }
       },
       (e) => aktuell && setFehler(`Der Projektordner ließ sich nicht lesen: ${e instanceof Error ? e.message : String(e)}`),
@@ -218,6 +230,22 @@ export function AssistentView({
   }, [ordnerSchluessel, lesung]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const stamm = modus === 'ergaenzen' ? stammE : entwurf;
+  // Was ginge bei einem Neustart des Assistenten verloren? Der Entwurf eines neuen Projekts nicht (er liegt im Store),
+  // wohl aber geänderte Stammdaten beim Ergänzen und im Trockenlauf abgewählte Einträge
+  const nichtAngelegt = useMemo(() => {
+    if (!modus || abschluss) return null;
+    const teile: string[] = [];
+    if (modus === 'ergaenzen' && stammE && stammEBasis && JSON.stringify(stammE) !== JSON.stringify(stammEBasis)) teile.push(`die geänderten Stammdaten von „${ordner?.name ?? ''}“`);
+    if (abgewaehlt.size) teile.push(`${abgewaehlt.size} im Trockenlauf ${abgewaehlt.size === 1 ? 'abgewählter Eintrag' : 'abgewählte Einträge'}`);
+    return teile.length ? teile.join(' und ') : null;
+  }, [modus, abschluss, stammE, stammEBasis, abgewaehlt, ordner?.name]);
+  const onOffenRef = useRef(onOffen);
+  onOffenRef.current = onOffen;
+  useEffect(() => {
+    onOffenRef.current?.(nichtAngelegt);
+  }, [nichtAngelegt]);
+  // abgebaut (Neustart über den key): nichts mehr offen
+  useEffect(() => () => onOffenRef.current?.(null), []);
   const aendereStamm = (patch: Partial<Stammdaten>) => {
     if (modus === 'ergaenzen') setStammE((s) => (s ? { ...s, ...patch } : s));
     else setStamm(patch);

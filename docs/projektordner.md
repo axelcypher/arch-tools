@@ -94,8 +94,9 @@ auch beim Ergänzen.
    Vorlage mit Preset, Projektdatei) und dem Vermerk „vorhanden“, „wird ergänzt“ (Projektdatei, mit den geänderten
    Angaben als Hinweis), „abgewählt“ bzw. – beim Ergänzen – „neu“. Beim Ergänzen zeigt er nur, was sich ändert
    (umschaltbar). Einzelne Einträge lassen sich abwählen (beim Ergänzen auch „Alle neuen Einträge abwählen“ und
-   danach einzelne wieder wählen); mit einem Ordner entfällt alles darin. Pfade, die mit Stammordner 260 Zeichen
-   oder länger würden, meldet der Trockenlauf vorab (Windows-Explorer und Office öffnen sie nicht). Der Knopf
+   danach einzelne wieder wählen); mit einem Ordner entfällt alles darin. Zu lange Pfade meldet der Trockenlauf vorab:
+   Ordner ab 248 Zeichen (mit Stammordner) legt Windows gar nicht an, Dateien ab 260 Zeichen öffnen Explorer und
+   Office nicht. Der Knopf
    **„Projektordner anlegen“** bzw. „Projekt ergänzen“ steht wie „Weiter“ rechts unten in der Navigation, die beim
    Blättern sichtbar bleibt; ist er gesperrt, steht der Grund daneben (etwa „Erst den Stammordner für Projekte
    wählen.“). Unmittelbar vor dem Anlegen sieht der Assistent im Stammordner nach, ob es den Projektordner
@@ -107,6 +108,10 @@ auch beim Ergänzen.
    Nach dem erfolgreichen Anlegen zeigt der Assistent eine **Abschlussseite** (ohne Zurück-Navigation) mit dem Ordnernamen, „Ordner öffnen“
    und „Nächstes Projekt“ (kam der Auftrag aus einer anderen App, außerdem „In … öffnen“, siehe unten); das Formular ist dann schon für das nächste Projekt geleert – „Rückgängig“ (zehn Sekunden)
    holt den Entwurf zurück. Schlägt ein Schritt fehl, bleibt der Entwurf stehen.
+   „Projekte“ in der Titelleiste (ebenso ein „Neues Projekt“-Auftrag aus einer anderen App und „Ergänzen“ aus „Ordner
+   prüfen“) beginnt den Assistenten neu. Gibt es dabei noch nicht Angelegtes, das verloren ginge – geänderte
+   Stammdaten beim Ergänzen, im Trockenlauf abgewählte Einträge –, fragt ATLAS vorher („Verwerfen“ / „Abbrechen“).
+   Der Entwurf eines neuen Projekts geht nicht verloren; er bleibt bis zum Anlegen gespeichert.
 
 ### Neues Projekt aus jeder App
 
@@ -141,7 +146,9 @@ Angelegt bzw. ergänzt werden
    alle globalen Platzhalter, siehe [platzhalter.md](platzhalter.md); `{DATUM}` ist JJMMTT): neu als
    leere Flächenberechnung mit Stammdaten, Anlagedatum, Struktur und Presets – QUADRIO, TERRIO, NUMIO und PERMIO
    öffnen sie –, beim Ergänzen nur mit den geänderten Stammdaten (gegenüber dem
-   Stand beim Einlesen; was eine andere App inzwischen eingetragen hat, bleibt) und den Presets. Hat jemand die
+   Stand beim Einlesen; was eine andere App inzwischen eingetragen hat, bleibt) und den Presets. Leerzeichen am
+   Rand gespeicherter Werte gelten dabei nicht als Änderung; Unterfelder, die diese Fassung nicht kennt (etwa beim
+   Bauherrn, von einer neueren App angelegt), bleiben auch in einem geänderten Teil erhalten. Hat jemand die
    Datei zwischen Einlesen und Ergänzen geändert, wird nicht geschrieben – dann neu einlesen.
 
 `{JAHR}` in Namen ist beim Ergänzen das Jahr, in dem das Projekt angelegt wurde. Enthält der Name einer Vorlage
@@ -171,7 +178,8 @@ liegen die Einstellungen im Speicher des Browsers.
 `projektordner.json` wird kurz nach der letzten Änderung geschrieben (nicht bei jedem Tastendruck) und nur, wenn
 die Datei seit dem Lesen unverändert ist. Hat ein anderer Rechner sie inzwischen geändert, überschreibt das Tool
 sie nicht, sondern meldet „Die Struktur wurde inzwischen von einem anderen Rechner geändert – neu laden?“ mit
-„Neu laden“ (die eigene Fassung bleibt über „Rückgängig“ erreichbar) und „Meine Fassung trotzdem speichern“. Beim
+„Neu laden“ (die eigene Fassung bleibt über „Rückgängig“ erreichbar) und „Meine Fassung trotzdem speichern“ – dabei
+kommt die Fassung des anderen Rechners vorher in die Sicherungen (siehe unten), mit Eintrag im Protokoll. Beim
 Wechsel in „Struktur“, „Einstellungen“ und „Vorlagen“ liest die App die Datei frisch.
 
 ### Namensschema
@@ -235,9 +243,13 @@ Nach dem Ersetzen nimmt „Rückgängig“ die Änderung zurück, solange nichts
 
 Lässt sich die Struktur in `projektordner.json` nicht lesen (etwa das Format einer neueren ATLAS-Fassung), zeigt
 ATLAS vorläufig die Vorgabe mit einer Warnung, **schreibt aber nichts** – weder die Struktur noch das Ordnerschema für
-die anderen Apps. Erst wenn die Struktur bewusst ersetzt wird („Struktur laden …“, eine Sicherung oder „Vorgabe
-wiederherstellen …“), wird gespeichert; der unlesbare Inhalt kommt vorher in die Sicherungen. Felder, die diese
-Fassung nicht kennt, bleiben beim Speichern erhalten.
+die anderen Apps. Solange **sperrt** ATLAS das Bearbeiten in „Struktur“ (Name, Schemata, Ordnerliste) und „Vorlagen“
+(Presets, Dateinamen): Die Bereiche bleiben sichtbar, aber abgeschwächt und nicht bedienbar – Eingaben gingen sonst
+beim nächsten Laden verloren. Erst wenn die Struktur bewusst ersetzt wird („Angezeigte Struktur übernehmen …“ unter
+der Warnung, „Struktur laden …“, eine Sicherung oder „Vorgabe wiederherstellen …“), wird gespeichert und die Sperre
+aufgehoben; der unlesbare Inhalt kommt vorher in die Sicherungen. Das gilt auch für „Rückgängig“ nach „Neu laden“
+einer für diese Fassung unlesbaren Struktur eines anderen Rechners. Felder, die diese Fassung nicht kennt, bleiben
+beim Speichern erhalten.
 
 Die **Namensschemata** stehen im Kopf der Struktur (sie gelten für alle Ordner, nicht für den gewählten):
 
@@ -320,7 +332,9 @@ Zeile 1 – nur die erste gilt“). Übernommen wird der Text nur mit „Ordnerl
 „Rückgängig“); „Verwerfen“ zeigt wieder die geltende Liste. Wer mit nicht übernommenen Änderungen zum „Baum“
 wechselt, wird gefragt (Übernehmen, Verwerfen, Abbrechen; Enter übernimmt). Der nicht übernommene Text bleibt
 auch beim Wechsel in eine andere Ansicht (etwa „Vorlagen“ oder „Projekte“) erhalten, bis zum Schließen der App.
-Kommt die Struktur inzwischen neu herein (anderer Rechner), bleibt der eigene Text mit Hinweis stehen. Der Ort der Projektdatei stand bis Version 0.1
+Kommt die Struktur inzwischen neu herein (anderer Rechner), bleibt der eigene Text mit Hinweis stehen; entspricht sie
+dem Text, ist der Entwurf erledigt. Eine leere Liste übernimmt die Textansicht nicht (Schutz vor versehentlichem
+Leeren) – alle Ordner zu löschen geht im Baum. Der Ort der Projektdatei stand bis Version 0.1
 in der Struktur („Leere Flächenrechner-Datei“); er ist jetzt eine gemeinsame Einstellung und wird übernommen.
 
 ## Vorlagen
@@ -476,7 +490,10 @@ Projektcode kommt aus der Projektdatei und lässt sich oben ändern.
 
 Umbenannt wird erst auf Klick – einzeln oder alle markierten (Auswahl und „Umbenennen“ stehen nur da, wenn es
 abweichende Mails gibt) –, im selben Ordner, die Endung bleibt, und **nie
-überschreibend**: Gibt es den Namen schon, bleibt alles, wie es war. Ist die Mail in Outlook geöffnet, sagt die App
+überschreibend**: Gibt es den Namen schon, bleibt alles, wie es war. Mehrere auf einmal benennt die App erst nach
+einer Rückfrage um („6 Mails umbenennen?“ mit den ersten vier Namen alt → neu und „… und 2 weitere“), denn ein
+Rückgängig gibt es nicht. Würde der vollständige Pfad 260 Zeichen oder länger, steht „Pfad zu lang (… Zeichen,
+Windows erlaubt höchstens 259) – Thema oder Name kürzen“ an der Mail, und Umbenennen bzw. Ablegen bleibt gesperrt. Ist die Mail in Outlook geöffnet, sagt die App
 das. (Befehl `projekt_datei_umbenennen` in `packages/core/tauri/umbenennen.rs`, nur in den Hüllen von ATLAS und
 Rahmen-App.)
 

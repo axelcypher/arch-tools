@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { APP_NAMEN } from '@core/appNamen';
 import { LogDialog } from '@core/ui/LogDialog';
+import { bestaetigen, meldung } from '@core/ui/Rueckfrage';
 import { TitleBar } from '@core/ui/TitleBar';
 import { AssistentView } from './components/AssistentView';
 import { PruefView } from './components/PruefView';
@@ -45,15 +46,25 @@ export function App() {
   };
   // „Neues Projekt anlegen“ aus einer anderen App (Rahmen-App): Assistent für ein neues Projekt
   const [auftrag, setAuftrag] = useState<(Auftrag & { nr: number }) | null>(null);
+  /** was im Assistenten noch nicht angelegt ist (meldet AssistentView) – ein Neustart über den key fragt dann vorher */
+  const assistentOffen = useRef<string | null>(null);
+  /** Assistent neu beginnen (`neustart`): ohne offene Eingaben sofort, sonst erst nach Rückfrage (Verwerfen/Abbrechen) */
+  const nachRueckfrage = (neustart: () => void) => {
+    const was = assistentOffen.current;
+    if (!was) return neustart();
+    void bestaetigen('Eingaben im Assistenten verwerfen?', `Noch nicht angelegt: ${was}. Beim Neubeginn gehen sie verloren.`, 'Verwerfen', true).then((ok) => ok && neustart());
+  };
 
   useEffect(
     () =>
       vomRahmen(ASSISTENT_NEU, (n) => {
-        setStart(null);
-        setAuftrag((a) => ({ von: n.von ?? null, ...(n.vonName ? { vonName: n.vonName } : {}), kannOeffnen: !!n.kannOeffnen, nr: (a?.nr ?? 0) + 1 }));
-        setAnsicht('projekt');
+        nachRueckfrage(() => {
+          setStart(null);
+          setAuftrag((a) => ({ von: n.von ?? null, ...(n.vonName ? { vonName: n.vonName } : {}), kannOeffnen: !!n.kannOeffnen, nr: (a?.nr ?? 0) + 1 }));
+          setAnsicht('projekt');
+        });
       }),
-    [],
+    [], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   useEffect(() => {
@@ -91,12 +102,14 @@ export function App() {
         onOpenLog={() => setLogOpen(true)}
         zeichenflaeche={false}
         // wie in den anderen Apps: „Projekte“ führt zur Startseite mit der gemeinsamen Projektübersicht
-        onProjekte={() => {
-          setStart(null);
-          setAuftrag(null);
-          setNeustart((n) => n + 1);
-          setAnsicht('projekt');
-        }}
+        onProjekte={() =>
+          nachRueckfrage(() => {
+            setStart(null);
+            setAuftrag(null);
+            setNeustart((n) => n + 1);
+            setAnsicht('projekt');
+          })
+        }
       />
       <div className="toolbar">
         <div className="tb-group">
@@ -122,7 +135,16 @@ export function App() {
           <button className="small" onClick={() => void useOrdner.getState().konfliktLoesen('neu-laden')}>
             Neu laden
           </button>
-          <button className="small" onClick={() => void useOrdner.getState().konfliktLoesen('meine')}>
+          <button
+            className="small"
+            title="Ihre Fassung speichern – die des anderen Rechners kommt vorher in die Sicherungen (unter „Struktur“)"
+            onClick={() =>
+              void useOrdner
+                .getState()
+                .konfliktLoesen('meine')
+                .catch((e) => meldung('Nicht gespeichert', e instanceof Error ? e.message : String(e)))
+            }
+          >
             Meine Fassung trotzdem speichern
           </button>
         </div>
@@ -142,6 +164,9 @@ export function App() {
             }}
             onKatasterEinstellungen={() => setAnsicht('kataster')}
             onMails={mailsPruefen}
+            onOffen={(was) => {
+              assistentOffen.current = was;
+            }}
           />
         </div>
         {ansicht === 'pruefen' && (
@@ -149,11 +174,13 @@ export function App() {
             key={pruefStart?.nr ?? 0}
             start={pruefStart?.pfad ?? null}
             onMails={mailsPruefen}
-            onErgaenzen={(ordner) => {
-              setAuftrag(null);
-              setStart({ ordner, nr: (start?.nr ?? 0) + 1 });
-              setAnsicht('projekt');
-            }}
+            onErgaenzen={(ordner) =>
+              nachRueckfrage(() => {
+                setAuftrag(null);
+                setStart((s) => ({ ordner, nr: (s?.nr ?? 0) + 1 }));
+                setAnsicht('projekt');
+              })
+            }
           />
         )}
         {ansicht === 'vorlagen' && <VorlagenView />}

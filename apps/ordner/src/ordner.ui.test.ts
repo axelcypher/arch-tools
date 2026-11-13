@@ -5,6 +5,7 @@ import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { strToU8 } from 'fflate';
 import { VORGABE_ALLGEMEIN } from '@core/platform/konfig';
+import { getEntries } from '@core/platform/log';
 import { App } from './App';
 import { AssistentView } from './components/AssistentView';
 import { PruefView } from './components/PruefView';
@@ -657,6 +658,11 @@ describe('ATLAS (Projektordner)', () => {
     await act(async () => knopf(host, 'Meine Fassung trotzdem speichern').click());
     await warten();
     expect(JSON.parse(localStorage.getItem('arch-tools:konfig:projektordner')!).struktur.name).toBe('Meine 2');
+    // die überschriebene Fassung des anderen Rechners liegt in den Sicherungen – und steht im Protokoll
+    const sicherung = JSON.parse(localStorage.getItem('arch-tools:konfig:projektordner-sicherungen')!).sicherungen[0];
+    expect(sicherung.inhalt.struktur.name).toBe('Wieder fremd');
+    expect(sicherung.grund).toBe('vor: Meine Fassung trotzdem gespeichert – gesichert ist die Fassung des anderen Rechners.');
+    expect(getEntries().some((e) => e.message.includes('die des anderen Rechners liegt in den Sicherungen'))).toBe(true);
     // beim Wechsel in die Einstellungen wird frisch gelesen
     fremd('Vom Server');
     act(() => knopf(host, 'Vorlagen').click());

@@ -329,3 +329,72 @@ describe('Namensschema-Feld', () => {
     expect(document.activeElement).toBe(el);
   });
 });
+
+describe('Folgerunde: Neubeginn des Assistenten fragt bei offenen Eingaben', () => {
+  it('„Projekte“ in der Titelleiste: geänderte Stammdaten beim Ergänzen – erst Rückfrage (Abbrechen behält sie, Verwerfen beginnt neu)', async () => {
+    await desktopMitProjekt();
+    const host = render();
+    await warten();
+    act(() => knopf(host, '2025-007 Kita').click());
+    await warten();
+    await warten();
+    expect(host.querySelector('.po-kontext')?.textContent).toContain('Ergänzen: 2025-007 Kita');
+    const projekte = () => host.querySelector<HTMLButtonElement>('.titlebar-projekte')!;
+    // Gegenprobe zuerst: ohne Änderung keine Rückfrage – wieder öffnen
+    act(() => projekte().click());
+    await warten();
+    expect(document.querySelector('.modal.rf')).toBeNull();
+    expect(host.querySelector('.po-kontext')).toBeNull();
+    act(() => knopf(host, '2025-007 Kita').click());
+    await warten();
+    await warten();
+    eingabe(feld(host, 'Bezeichnung des Vorhabens'), 'Neubau Kita am Park');
+    act(() => projekte().click());
+    await warten();
+    const frage = () => document.querySelector('.modal.rf')!;
+    expect(frage().querySelector('h3')?.textContent).toBe('Eingaben im Assistenten verwerfen?');
+    expect(frage().textContent).toContain('Noch nicht angelegt: die geänderten Stammdaten von „2025-007 Kita“');
+    act(() => knopf(frage(), 'Abbrechen').click());
+    await warten();
+    expect(feld(host, 'Bezeichnung des Vorhabens').value).toBe('Neubau Kita am Park');
+    act(() => projekte().click());
+    await warten();
+    act(() => knopf(frage(), 'Verwerfen').click());
+    await warten();
+    expect(host.querySelector('.po-kontext')).toBeNull();
+    expect(host.textContent).toContain('Bestehendes Projekt ergänzen');
+  });
+
+  it('neues Projekt: der Entwurf übersteht den Neubeginn (liegt im Store) – keine Rückfrage', () => {
+    const host = render();
+    act(() => knopf(host, 'Neues Projekt').click());
+    eingabe(feld(host, 'Projektnummer'), '2026-014');
+    act(() => host.querySelector<HTMLButtonElement>('.titlebar-projekte')!.click());
+    expect(document.querySelector('.modal.rf')).toBeNull();
+    expect(knopf(host, 'Weiter mit 2026-014')).toBeTruthy();
+  });
+});
+
+describe('Folgerunde: Vorlagenordner einlesen', () => {
+  it('„wird gelesen“ endet erst mit dem letzten Ladevorgang, nicht mit einem früheren', async () => {
+    mock.desktop = true;
+    await mock.fs.dateiAnlegen('V:/Vorlagen', 'Brief.txt', strToU8('x'));
+    const tore: (() => void)[] = [];
+    const echt = mock.fs.liste.bind(mock.fs);
+    mock.fs.liste = async (wurzel, tiefe) => {
+      await new Promise<void>((r) => tore.push(r));
+      return echt(wurzel, tiefe);
+    };
+    useOrdner.setState({ vorlagenordner: 'V:/Vorlagen' });
+    const erster = useOrdner.getState().ladeVorlagen();
+    const zweiter = useOrdner.getState().ladeVorlagen();
+    expect(useOrdner.getState().vorlagenLaden).toBe(true);
+    tore[0]();
+    await erster;
+    expect(useOrdner.getState().vorlagenLaden).toBe(true);
+    tore[1]();
+    await zweiter;
+    expect(useOrdner.getState().vorlagenLaden).toBe(false);
+    expect(useOrdner.getState().vorlagen.map((v) => v.pfad)).toEqual(['Brief.txt']);
+  });
+});

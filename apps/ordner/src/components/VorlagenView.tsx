@@ -14,6 +14,7 @@ import type { VorlagenEintrag, VorlagenPreset } from '../struktur';
 import { lphAus, lphText, normPfad, zielordnerAus } from '../struktur';
 import { MUSTER_VORLAGEN, PLATZHALTER_DOCS, zielDateiname } from '../vorlagen';
 import { abweichungText, PresetAbweichungen, VorlagenordnerZeile } from './gemeinsam';
+import { StrukturSperre } from './StrukturSperre';
 
 const log = logger('vorlagen');
 
@@ -38,9 +39,13 @@ export function VorlagenView() {
   const [gewaehlt, setGewaehlt] = useState(0);
   const [filter, setFilter] = useState('');
   const [meldung, setMeldung] = useState<{ art: 'ok' | 'fehler'; text: string } | null>(null);
-  /** zuletzt entfernte Zuordnung – „Rückgängig“ setzt sie wieder an ihre Stelle */
-  const [entfernt, setEntfernt] = useState<{ preset: string; k: number; eintrag: VorlagenEintrag } | null>(null);
-  const strukturFehler = useOrdner((s) => s.strukturFehler);
+  /**
+   * zuletzt entfernte Zuordnung – „Rückgängig“ setzt sie wieder an ihre Stelle. Das Preset steht über seine Stelle in der
+   * Liste fest (Namen können doppelt vorkommen); der Name dient nur als Gegenprobe, falls die Liste inzwischen anders ist
+   */
+  const [entfernt, setEntfernt] = useState<{ index: number; preset: string; k: number; eintrag: VorlagenEintrag } | null>(null);
+  /** unlesbare Struktur: Presets und Dateinamen lassen sich nicht bearbeiten (siehe StrukturSperre) */
+  const gesperrt = !!useOrdner((s) => s.strukturFehler);
   /** Zuordnungen, deren Vorschau ganz aufgeklappt ist */
   const [aufgeklappt, setAufgeklappt] = useState<Set<number>>(new Set());
 
@@ -131,11 +136,13 @@ export function VorlagenView() {
   };
   const zuordnungEntfernen = (k: number) => {
     if (!preset) return;
-    setEntfernt({ preset: preset.name, k, eintrag: preset.eintraege[k] });
+    setEntfernt({ index, preset: preset.name, k, eintrag: preset.eintraege[k] });
     setPreset({ eintraege: preset.eintraege.filter((_, i) => i !== k) });
   };
+  /** die entfernte Zuordnung gehört zum gewählten Preset (dieselbe Stelle und derselbe Name) */
+  const entferntHier = !!entfernt && !!preset && entfernt.index === index && entfernt.preset === preset.name;
   const entferntZurueck = () => {
-    if (!entfernt || preset?.name !== entfernt.preset) return;
+    if (!entfernt || !preset || !entferntHier) return;
     const liste = [...preset.eintraege];
     liste.splice(Math.min(entfernt.k, liste.length), 0, entfernt.eintrag);
     setPreset({ eintraege: liste });
@@ -184,11 +191,7 @@ export function VorlagenView() {
           Die Vorlagen des Büros liegen in einem eigenen Ordner, gegliedert, wie es dem Büro passt. Presets legen fest, welche Datei an welche Stelle im Projekt kommt und wie sie dort heißt. Beim
           Anlegen und beim Aktualisieren eines Projekts werden fehlende Dateien ergänzt – vorhandene bleiben unverändert.
         </p>
-        {strukturFehler && (
-          <p className="warning" role="alert">
-            {strukturFehler}
-          </p>
-        )}
+        <StrukturSperre />
 
         <h3>Presets</h3>
         <p className="muted small-text">
@@ -210,13 +213,13 @@ export function VorlagenView() {
           {!presets.length && <li className="muted">Noch keine Presets.</li>}
         </ul>
         <div className="button-row">
-          <button className="small" onClick={neuesPreset}>
+          <button className="small" disabled={gesperrt} onClick={neuesPreset}>
             + Preset
           </button>
-          <button className="small" disabled={!preset} onClick={duplizieren}>
+          <button className="small" disabled={!preset || gesperrt} onClick={duplizieren}>
             Duplizieren
           </button>
-          <button className="small danger" disabled={!preset} onClick={() => void presetLoeschen()}>
+          <button className="small danger" disabled={!preset || gesperrt} onClick={() => void presetLoeschen()}>
             Löschen …
           </button>
         </div>
@@ -234,17 +237,19 @@ export function VorlagenView() {
             einem Zielordner der Struktur zuordnen.
           </p>
         ))}
-        <Field label="Dateinamen im Projekt" hint="{Name} = Name der Vorlage ohne Endung. Vorlagen mit Platzhaltern im eigenen Namen behalten ihn.">
-          <SchemaFeld
-            label="Dateinamen im Projekt"
-            value={struktur.vorlagenname}
-            placeholder="{Name}"
-            platzhalter={PLATZHALTER_VORLAGE}
-            kompakt
-            vorschau={(t) => `Beispiel: Kostenschätzung.xlsx → ${schemaBeispiel(t)}`}
-            onChange={(v) => setStruktur({ ...struktur, vorlagenname: v.trim() || '{Name}' })}
-          />
-        </Field>
+        <div className={gesperrt ? 'po-gesperrt' : undefined} inert={gesperrt}>
+          <Field label="Dateinamen im Projekt" hint="{Name} = Name der Vorlage ohne Endung. Vorlagen mit Platzhaltern im eigenen Namen behalten ihn.">
+            <SchemaFeld
+              label="Dateinamen im Projekt"
+              value={struktur.vorlagenname}
+              placeholder="{Name}"
+              platzhalter={PLATZHALTER_VORLAGE}
+              kompakt
+              vorschau={(t) => `Beispiel: Kostenschätzung.xlsx → ${schemaBeispiel(t)}`}
+              onChange={(v) => setStruktur({ ...struktur, vorlagenname: v.trim() || '{Name}' })}
+            />
+          </Field>
+        </div>
 
         <h3>Muster und Platzhalter</h3>
         <div className="button-row">
@@ -276,7 +281,8 @@ export function VorlagenView() {
         </details>
       </section>
 
-      <section className="po-col">
+      {/* unlesbare Struktur: das gewählte Preset bleibt sichtbar, lässt sich aber nicht ändern */}
+      <section className={`po-col${gesperrt ? ' po-gesperrt-bereich' : ''}`} inert={gesperrt}>
         {!preset && (
           <>
             <h2>Preset</h2>
@@ -301,7 +307,7 @@ export function VorlagenView() {
                 <option key={o} value={o} />
               ))}
             </datalist>
-            {entfernt && entfernt.preset === preset.name && (
+            {entfernt && entferntHier && (
               <p className="po-meldung po-rueckgaengig" role="status">
                 Zuordnung „{entfernt.eintrag.quelle || 'ganzer Vorlagenordner'}“ entfernt.{' '}
                 <button className="small" onClick={entferntZurueck}>

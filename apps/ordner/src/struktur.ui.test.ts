@@ -633,3 +633,165 @@ describe('Runde 3: Entwurf, Rückfrage, Sicherung, Ziehen, Menüs', () => {
     expect(sichererName('AUX Plan.txt')).toBe('AUX Plan.txt');
   });
 });
+
+describe('Folgerunde: unlesbare Struktur sperrt die Bearbeitung', () => {
+  const kaputt = { name: 'Neuere Fassung', ordner: [{ weg: 'A', regeln: { lph: 5 } }] };
+  const unlesbarLaden = async () => {
+    localStorage.setItem(SCHLUESSEL, JSON.stringify({ struktur: kaputt, vorlagenordner: '/v' }));
+    useOrdner.setState({ konfigLaden: echtesKonfigLaden });
+    await act(() => useOrdner.getState().konfigLaden());
+    expect(useOrdner.getState().strukturFehler).not.toBeNull();
+  };
+  const sicherungen = () => JSON.parse(localStorage.getItem('arch-tools:konfig:projektordner-sicherungen') ?? '{"sicherungen":[]}').sicherungen;
+
+  it('Struktur: Name, Schemata und Ordnerliste gesperrt (inert) mit Erklärung; „Angezeigte Struktur übernehmen …“ sichert und hebt die Sperre auf', async () => {
+    await unlesbarLaden();
+    const host = render();
+    act(() => knopf(host, 'Struktur').click());
+    await warten();
+    const sperre = host.querySelector('.po-struktur-fehler')!;
+    expect(sperre.getAttribute('role')).toBe('alert');
+    expect(sperre.textContent).toContain('Bearbeiten ist gesperrt');
+    expect(host.querySelector('.po-struktur-ordner')!.hasAttribute('inert')).toBe(true);
+    expect(host.querySelector('.po-schemata')!.closest('[inert]')).not.toBeNull();
+    expect(host.querySelector('input[aria-label="Name der Struktur"], .po-struktur-titel .field input')!.closest('[inert]')).not.toBeNull();
+    // auch der Store nimmt keine Bearbeitung an
+    act(() => useOrdner.getState().setStruktur({ ...useOrdner.getState().struktur, name: 'Versehentlich' }));
+    expect(useOrdner.getState().struktur.name).toBe(STANDARD.name);
+    // Laden, Sicherungen und Vorgabe bleiben bedienbar
+    expect(knopf(host, 'Struktur laden').closest('[inert]')).toBeNull();
+    // übernehmen: Rückfrage – Abbrechen lässt alles, wie es ist
+    act(() => knopf(sperre, 'Angezeigte Struktur übernehmen').click());
+    await warten();
+    expect(host.querySelector('.modal.rf')!.textContent).toContain('ersetzt die nicht lesbare Struktur');
+    act(() => knopf(host.querySelector('.modal.rf')!, 'Abbrechen').click());
+    await warten();
+    expect(useOrdner.getState().strukturFehler).not.toBeNull();
+    expect(sicherungen()).toHaveLength(0);
+    act(() => knopf(host.querySelector('.po-struktur-fehler')!, 'Angezeigte Struktur übernehmen').click());
+    await warten();
+    act(() => knopf(host.querySelector('.modal.rf')!, 'Übernehmen').click());
+    await warten();
+    await act(() => useOrdner.getState().speichernJetzt());
+    expect(useOrdner.getState().strukturFehler).toBeNull();
+    expect(sicherungen()[0].inhalt).toEqual({ struktur: kaputt, vorlagenordner: '/v' });
+    expect(gespeichert().struktur.ordner).toEqual(STANDARD.ordner);
+    // Gegenprobe: ohne Fehler keine Sperre und kein Angebot
+    expect(host.querySelector('.po-struktur-fehler')).toBeNull();
+    expect(host.querySelector('[inert]')).toBeNull();
+  });
+
+  it('Vorlagen: Presets und Dateinamen gesperrt, das Preset bleibt sichtbar; Gegenprobe ohne Fehler', async () => {
+    await unlesbarLaden();
+    const host = render();
+    act(() => knopf(host, 'Vorlagen').click());
+    await warten();
+    expect(host.querySelector('.po-struktur-fehler')?.textContent).toContain('Angezeigte Struktur übernehmen');
+    expect(knopf(host, '+ Preset').disabled).toBe(true);
+    // rechts das gewählte Preset: sichtbar, aber nicht bedienbar
+    const preset = host.querySelector('section.po-gesperrt-bereich')!;
+    expect(preset.hasAttribute('inert')).toBe(true);
+    expect(preset.querySelector('h2')?.textContent).toContain('Preset');
+    expect(host.querySelector('.po-gesperrt[inert]')?.textContent).toContain('Dateinamen im Projekt');
+    act(() => useOrdner.setState({ strukturFehler: null }));
+    expect(knopf(host, '+ Preset').disabled).toBe(false);
+    expect(host.querySelector('[inert]')).toBeNull();
+  });
+
+  it('„Rückgängig“ nach „Neu laden“ einer unlesbaren fremden Fassung: läuft über strukturErsetzen – sichert sie und hebt die Sperre auf', async () => {
+    useOrdner.setState({ konfigLaden: echtesKonfigLaden });
+    await act(() => useOrdner.getState().konfigLaden());
+    act(() => useOrdner.getState().setStruktur({ ...useOrdner.getState().struktur, name: 'Meine' }));
+    await act(() => useOrdner.getState().speichernJetzt());
+    // ein anderer Rechner schreibt eine Struktur, die diese Fassung nicht lesen kann
+    localStorage.setItem(SCHLUESSEL, JSON.stringify({ struktur: kaputt, vorlagenordner: '' }));
+    act(() => useOrdner.getState().setStruktur({ ...useOrdner.getState().struktur, name: 'Meine 2' }));
+    await act(() => useOrdner.getState().speichernJetzt());
+    expect(useOrdner.getState().konflikt).not.toBeNull();
+    await act(() => useOrdner.getState().konfliktLoesen('neu-laden'));
+    expect(useOrdner.getState().strukturFehler).not.toBeNull();
+    expect(useOrdner.getState().rueckgaengig).not.toBeNull();
+    await act(() => useOrdner.getState().strukturRueckgaengig());
+    await act(() => useOrdner.getState().speichernJetzt());
+    expect(useOrdner.getState().strukturFehler).toBeNull();
+    expect(useOrdner.getState().struktur.name).toBe('Meine 2');
+    expect(gespeichert().struktur.name).toBe('Meine 2');
+    expect(sicherungen()[0].inhalt.struktur).toEqual(kaputt);
+    expect(sicherungen()[0].grund).toContain('Rückgängig');
+  });
+
+  it('„Meine Fassung trotzdem speichern“ sichert auch eine unlesbare fremde Fassung; ist die Datei kein JSON-Objekt, den ganzen Inhalt', async () => {
+    useOrdner.setState({ konfigLaden: echtesKonfigLaden });
+    await act(() => useOrdner.getState().konfigLaden());
+    localStorage.setItem(SCHLUESSEL, JSON.stringify({ struktur: kaputt, vorlagenordner: '/fremd' }));
+    act(() => useOrdner.getState().setStruktur({ ...useOrdner.getState().struktur, name: 'Meine' }));
+    await act(() => useOrdner.getState().speichernJetzt());
+    await act(() => useOrdner.getState().konfliktLoesen('meine'));
+    expect(sicherungen()[0].inhalt).toEqual({ struktur: kaputt, vorlagenordner: '/fremd' });
+    expect(gespeichert().struktur.name).toBe('Meine');
+    // kein JSON-Objekt: der ganze Inhalt
+    localStorage.setItem(SCHLUESSEL, JSON.stringify(['x']));
+    act(() => useOrdner.getState().setStruktur({ ...useOrdner.getState().struktur, name: 'Meine 2' }));
+    await act(() => useOrdner.getState().speichernJetzt());
+    await act(() => useOrdner.getState().konfliktLoesen('meine'));
+    expect(sicherungen()[0].inhalt.struktur).toEqual({ inhalt: ['x'] });
+    expect(gespeichert().struktur.name).toBe('Meine 2');
+  });
+});
+
+describe('Folgerunde: Kleinkram', () => {
+  it('„Einstellungen nicht gespeichert“ entfällt nach dem nächsten gelungenen Speichern; andere Meldungen bleiben', async () => {
+    useOrdner.setState({ konfigFehler: 'Einstellungen nicht gespeichert: Netzlaufwerk weg' });
+    act(() => useOrdner.getState().setStruktur({ ...useOrdner.getState().struktur, name: 'Neu' }));
+    await act(() => useOrdner.getState().speichernJetzt());
+    expect(useOrdner.getState().konfigFehler).toBeNull();
+    // Gegenprobe: eine Lesemeldung bleibt stehen
+    useOrdner.setState({ konfigFehler: 'Einstellungen nicht lesbar: kaputt' });
+    act(() => useOrdner.getState().setStruktur({ ...useOrdner.getState().struktur, name: 'Neu 2' }));
+    await act(() => useOrdner.getState().speichernJetzt());
+    expect(useOrdner.getState().konfigFehler).toBe('Einstellungen nicht lesbar: kaputt');
+  });
+
+  it('Textansicht: ein Entwurf, der inzwischen der Struktur entspricht, ist erledigt (kein Phantom-Entwurf); Gegenprobe', () => {
+    const ordner = [{ pfad: 'A' }, { pfad: 'B' }];
+    useOrdner.setState({ struktur: { ...STANDARD, ordner }, ordnerEntwurf: { text: 'A\nB\nC', basis: 'A\nB' } });
+    // die Struktur ändert sich anderswo, aber nicht zum Entwurf: er bleibt
+    act(() => useOrdner.setState({ struktur: { ...STANDARD, ordner: [{ pfad: 'A' }] } }));
+    expect(useOrdner.getState().ordnerEntwurf?.text).toBe('A\nB\nC');
+    // die Struktur wird (z. B. über einen anderen Rechner) genau zum Entwurf: kein Entwurf mehr
+    act(() => useOrdner.setState({ struktur: { ...STANDARD, ordner: [...ordner, { pfad: 'C' }] } }));
+    expect(useOrdner.getState().ordnerEntwurf).toBeNull();
+  });
+
+  it('Textansicht: leere Liste wird nicht übernommen – die Meldung nennt den Unterschied zum Baum', async () => {
+    const { host } = strukturAnsicht();
+    act(() => knopf(host, 'Text (Experte)').click());
+    eingabe(host.querySelector<HTMLTextAreaElement>('textarea[aria-label="Ordnerliste"]')!, '   ');
+    await act(async () => knopf(host, 'Ordnerliste übernehmen').click());
+    expect(host.textContent).toContain('Eine leere Liste übernimmt die Textansicht nicht; alle Ordner löschen geht im Baum.');
+    expect(useOrdner.getState().struktur.ordner).toHaveLength(4);
+  });
+
+  it('Vorlagen: „Rückgängig“ einer entfernten Zuordnung findet das Preset über seine Stelle, nicht den (doppelten) Namen', () => {
+    const doppelt = [
+      { name: 'Bauantrag', eintraege: [{ quelle: 'Erstes.txt', ziel: '' }] },
+      {
+        name: 'Bauantrag',
+        eintraege: [
+          { quelle: 'Zweites.txt', ziel: '' },
+          { quelle: 'Drittes.txt', ziel: '' },
+        ],
+      },
+    ];
+    useOrdner.setState({ struktur: { ...STANDARD, presets: doppelt } });
+    const host = render();
+    act(() => knopf(host, 'Vorlagen').click());
+    act(() => host.querySelectorAll<HTMLButtonElement>('.po-presets li button')[1].click());
+    act(() => host.querySelector<HTMLButtonElement>('button[aria-label="Zuordnung 1 entfernen"]')!.click());
+    expect(host.querySelector('.po-rueckgaengig')).not.toBeNull();
+    // das zweite Preset verschwindet von außen (anderer Rechner): die Auswahl rückt auf das erste gleichnamige
+    act(() => useOrdner.setState({ struktur: { ...STANDARD, presets: [doppelt[0]] } }));
+    expect(host.querySelector('.po-rueckgaengig')).toBeNull();
+    expect(useOrdner.getState().struktur.presets[0].eintraege.map((e) => e.quelle)).toEqual(['Erstes.txt']);
+  });
+});

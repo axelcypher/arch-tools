@@ -300,3 +300,53 @@ describe('Export: Sperre und Dateinamen', () => {
     );
   });
 });
+
+describe('Projekt wählen: späte Ergebnisse', () => {
+  /** liste() wartet, bis das Tor aufgeht – so ist das Lesen der Projektdatei noch unterwegs */
+  const gebremst = () => {
+    let auf!: () => void;
+    const tor = new Promise<void>((r) => (auf = r));
+    const echt = fs.liste.bind(fs);
+    fs.liste = async (wurzel, tiefe) => {
+      await tor;
+      return echt(wurzel, tiefe);
+    };
+    return () => {
+      fs.liste = echt;
+      auf();
+    };
+  };
+
+  it('ein spätes Ergebnis nach projektWaehlen(null) bzw. nach einem anderen Projekt wird verworfen; Gegenprobe ohne Schließen', async () => {
+    let auf = gebremst();
+    const spaet = useKataster.getState().projektWaehlen(ORDNER, 'BS9');
+    await useKataster.getState().projektWaehlen(null);
+    auf();
+    await spaet;
+    expect(useKataster.getState().projekt).toBeNull();
+    // ein anderes Projekt inzwischen gewählt: das frühere setzt sich nicht darüber
+    auf = gebremst();
+    const frueher = useKataster.getState().projektWaehlen(ORDNER, 'BS9');
+    auf();
+    await useKataster.getState().projektWaehlen('Z:/Projekte/Anderes', 'Anderes');
+    await frueher;
+    expect(useKataster.getState().projekt?.basis).toBe('Z:/Projekte/Anderes');
+    // Gegenprobe: ohne Schließen kommt das Projekt an
+    await useKataster.getState().projektWaehlen(ORDNER, 'BS9');
+    expect(useKataster.getState().projekt?.basis).toBe(ORDNER);
+    expect(useKataster.getState().projekt?.oap).not.toBeNull();
+  });
+
+  it('Dialog geschlossen, bevor die Projektdatei gelesen ist: danach ist kein Projekt gewählt', async () => {
+    const auf = gebremst();
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    root = createRoot(host);
+    act(() => root!.render(createElement(KatasterDialog, { basis: ORDNER, name: 'BS9 Musterstraße 9', onClose: () => undefined })));
+    act(() => root!.unmount());
+    root = null;
+    auf();
+    for (let i = 0; i < 4; i++) await warte();
+    expect(useKataster.getState().projekt).toBeNull();
+  });
+});

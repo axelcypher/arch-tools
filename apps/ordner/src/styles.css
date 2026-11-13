@@ -351,6 +351,22 @@
 .po-struktur-kopf > p {
   margin: 6px 0 0;
 }
+/* unlesbare Struktur (StrukturSperre): Grund, Sperre und „Angezeigte Struktur übernehmen …“ */
+.po-struktur-fehler p {
+  margin: 0 0 6px;
+}
+.po-struktur-fehler .button-row {
+  margin: 0;
+}
+/* gesperrte Bereiche (inert): Hülle ohne eigenes Layout, der Inhalt sichtbar abgeschwächt, aber lesbar */
+.po-struktur-ordner,
+.po-gesperrt {
+  display: contents;
+}
+.po-gesperrt > *,
+.po-gesperrt-bereich {
+  opacity: 0.6;
+}
 .po-editor {
   flex: 1 1 auto;
   display: grid;

@@ -13,6 +13,7 @@ import { eigeneDomainRaten, useMails } from '../mail/mailStore';
 import { ausOrdnername } from '../nummer';
 import type { GeladenerOrdner } from '../projekt';
 import { projektEinlesen } from '../projekt';
+import { pfadGrenze, pfadZuLang } from '../plan';
 import { useOrdner } from '../store';
 import { ladeProjektordner } from './AssistentView';
 
@@ -73,6 +74,17 @@ const tageUm = (d?: Date) =>
 /** Klartext statt der technischen Meldung des Lesers (die steht im Tooltip und im Protokoll) */
 const LESEFEHLER = 'Die Datei ist keine lesbare Outlook-Mail.';
 let naechsteId = 1;
+/** so viele Namen zeigt die Rückfrage vor dem Sammel-Umbenennen */
+const VORSCHAU = 4;
+/**
+ * Desktop: Ist der vollständige Zielpfad einer Mail unter Windows zu lang? Dann ein Klartext statt der Fehlermeldung des
+ * Betriebssystems beim Umbenennen bzw. Ablegen (Grenze für Dateien wie im Plan: 260 Zeichen).
+ */
+const zuLangText = (fs: Dateisystem | null, basis: string, pfad: string): string | null => {
+  if (!fs || !basis) return null;
+  const voll = verbinde(basis, pfad);
+  return pfadZuLang(voll) ? `Pfad zu lang (${voll.length} Zeichen, Windows erlaubt höchstens ${pfadGrenze(false) - 1}) – Thema oder Name kürzen` : null;
+};
 const tag = (d?: Date) => (d ? d.toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '–');
 
 /** Teile vergleichen, die aus der Nachricht folgen: Datum, Richtung und – wenn die Richtung stimmt – nichts weiter */
@@ -250,12 +262,32 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
     else if (n === z.datei) problem = 'unverändert';
     else if (liste.some((x) => x !== z && x.pfad.toLowerCase() === pfad.toLowerCase()) || projekt?.eintraege.some((e) => e.pfad.toLowerCase() === pfad.toLowerCase() && e.pfad !== z.pfad))
       problem = 'diesen Namen gibt es in dem Ordner schon';
+    else problem = zuLangText(fs, projekt?.pfad ?? '', pfad);
     return { name: n, pfad, problem };
   };
 
   const umbenennen = async (liste: Zeile[]) => {
     if (!projekt || !fs?.umbenennen) return;
     const kennung = lauf.current;
+    // mehrere auf einmal: vorher fragen – mit Anzahl und den ersten Namen (ein Rückgängig gibt es nicht)
+    const bereit = liste.flatMap((z) => {
+      const t = ziel(z);
+      return t && !t.problem ? [{ alt: z.datei, neu: t.name }] : [];
+    });
+    if (bereit.length > 1) {
+      const vorschau = bereit.slice(0, VORSCHAU).map((b) => `${b.alt}\n   → ${b.neu}`);
+      const rest = bereit.length - vorschau.length;
+      const ausgelassen = liste.length - bereit.length;
+      const text = [
+        ...vorschau,
+        ...(rest > 0 ? [`… und ${rest} weitere`] : []),
+        '',
+        `Umbenannt wird im selben Ordner, nie überschreibend – rückgängig machen lässt es sich nicht.${ausgelassen ? ` ${ausgelassen} gewählte ${ausgelassen === 1 ? 'Mail bleibt' : 'Mails bleiben'} unverändert – der Grund steht in der Zeile.` : ''}`,
+      ].join('\n');
+      if (!(await bestaetigen(`${bereit.length} Mails umbenennen?`, text, 'Umbenennen'))) return;
+      // während der Rückfrage ein anderes Projekt gewählt: nichts tun
+      if (kennung !== lauf.current) return;
+    }
     setFehler(null);
     let i = 0;
     let erfolgreich = 0;
@@ -428,7 +460,7 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
           ? b.gruende[0]
           : projekt.eintraege.some((e) => e.pfad.toLowerCase() === pfad.toLowerCase()) || neue.some((x) => x !== m && x.status?.art !== 'ok' && neuZielName(x) === pfad.toLowerCase())
             ? 'diesen Namen gibt es in dem Ordner schon'
-            : null;
+            : zuLangText(fs, projekt.pfad, pfad);
     return { name: n, pfad, problem };
   };
   const neuZielName = (m: NeueMail) => (m.teile && projekt ? (m.ordner ? `${m.ordner}/` : '') + mailName({ ...m.teile, code: projekt.code }) : '').toLowerCase();

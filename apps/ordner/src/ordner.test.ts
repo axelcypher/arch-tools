@@ -311,6 +311,37 @@ describe('Stammdaten', () => {
     expect(projektdateiAenderung(basis, stamm({ status: 'akquise', bebauungsplan: { nummer: '5' } }), { struktur: KLEIN, presets: [] }).teile).toEqual(['Bebauungsplan', 'Status', 'Struktur']);
   });
 
+  it('Ergänzen: unbekannte Unterfelder geänderter Teile bleiben erhalten; Leerzeichen am Rand gelten nicht als Änderung', () => {
+    // eine neuere Fassung hat beim Bauherrn und in der Adresse Felder angelegt, die dieses Tool nicht kennt
+    const meta = metaAus(stamm());
+    const zukunft = {
+      ...meta,
+      bauherr: { ...meta.bauherr, firma: 'Beispiel GmbH', adresse: { ...meta.bauherr.adresse, land: 'DE' } },
+      adresse: { ...meta.adresse, zusatz: 'Hinterhaus' },
+    } as typeof meta;
+    const basis = { meta: zukunft, namensschema: structuredClone(VORGABE_NAMENSSCHEMA) };
+    const ziel = { struktur: KLEIN, presets: [] };
+    const geladen = stammAusMeta(zukunft);
+    // nichts geändert: die unbekannten Felder allein sind keine Änderung
+    expect(projektdateiAenderung(basis, geladen, ziel).teile).toEqual(['Struktur']);
+    // Bauherr geändert: zusammengeführt statt ersetzt
+    const a = projektdateiAenderung(basis, { ...geladen, bauherr: { ...geladen.bauherr, name: 'Familie Muster', adresse: { ...geladen.bauherr.adresse, ort: 'Greven' } } }, ziel);
+    expect(a.teile).toEqual(['Bauherr', 'Struktur']);
+    const roh = a.aendern({ meta: structuredClone(zukunft) }) as { meta: typeof zukunft };
+    expect(roh.meta.bauherr).toMatchObject({ name: 'Familie Muster', firma: 'Beispiel GmbH', adresse: { ort: 'Greven', land: 'DE' } });
+    // die nicht geänderte Adresse bleibt, wie sie war
+    expect(roh.meta.adresse).toEqual(zukunft.adresse);
+    // Gegenprobe: ein im Assistenten geleertes bekanntes Unterfeld entfällt wirklich
+    const ohneVorname = projektdateiAenderung({ ...basis, meta: { ...zukunft, bauherr: { ...zukunft.bauherr, vorname: 'Erika' } } }, geladen, ziel);
+    expect(ohneVorname.teile).toContain('Bauherr');
+    const b = (ohneVorname.aendern({ meta: { ...structuredClone(zukunft), bauherr: { ...structuredClone(zukunft.bauherr), vorname: 'Erika' } } }) as { meta: typeof zukunft }).meta.bauherr;
+    expect(b).not.toHaveProperty('vorname');
+    expect(b).toHaveProperty('firma', 'Beispiel GmbH');
+    // Leerzeichen am Rand gespeicherter Werte: keine Änderung
+    const mitLeer = { ...meta, kurzname: ' EFH Musterweg ', bauherr: { ...meta.bauherr, name: 'Familie Beispiel ' } };
+    expect(projektdateiAenderung({ ...basis, meta: mitLeer }, stammAusMeta(mitLeer), ziel).teile).toEqual(['Struktur']);
+  });
+
   it('Projektdatei: Stammdaten, Anlagedatum, Struktur und Presets hin und zurück', () => {
     const p = alsProject(stamm({ kurzname: ' EFH Musterweg ', aktenzeichen: '63/1' }), { struktur: KLEIN, presets: ['Alle Vorlagen'], date: TAG });
     expect(p.name).toBe('Neubau eines Einfamilienhauses');
@@ -960,17 +991,38 @@ describe('Plan: Warnungen vor dem Anlegen (Gesamt-Review)', () => {
     const { WINDOWS_PFAD_GRENZE } = await import('./plan');
     const lang = `P:/${'Sehr langer Stammordner/'.repeat(9)}Projekte`;
     const p = planen(stamm(), KLEIN, [], [], TAG, { ort: lang });
-    const w = p.warnungen.find((x) => x.includes('Zeichen oder länger'));
-    expect(w).toMatch(/^\d+ Pfade wären 260 Zeichen oder länger – Explorer und Office öffnen sie unter Windows nicht\./);
+    const w = p.warnungen.find((x) => x.includes('zu lang für Windows'));
+    expect(w).toMatch(/^\d+ Pfade wären zu lang für Windows \(Ordner ab 248, Dateien ab 260 Zeichen\) – Windows legt solche Ordner nicht an, Explorer und Office öffnen solche Dateien nicht\./);
     const laengster = w!.split('): ').pop()!;
     expect(laengster.startsWith(`${lang}/2026-014 EFH Musterweg/`)).toBe(true);
     expect(laengster.length).toBeGreaterThanOrEqual(WINDOWS_PFAD_GRENZE);
     // Ergänzen: der Projektordner selbst ist der Ort; Vorhandenes zählt nicht
     const vorhanden = p.schritte.map((x) => ({ pfad: x.pfad, ordner: x.art === 'ordner', groesse: 0 }));
-    expect(planen(stamm(), KLEIN, [], vorhanden, TAG, { ordner: '2026-014 EFH Musterweg', ort: `${lang}/2026-014 EFH Musterweg` }).warnungen.join(' ')).not.toContain('Zeichen oder länger');
+    expect(planen(stamm(), KLEIN, [], vorhanden, TAG, { ordner: '2026-014 EFH Musterweg', ort: `${lang}/2026-014 EFH Musterweg` }).warnungen.join(' ')).not.toContain('zu lang für Windows');
     // Gegenprobe: kurzer Stammordner bzw. ohne Ort (Browser)
-    expect(planen(stamm(), KLEIN, [], [], TAG, { ort: 'P:/Projekte' }).warnungen.join(' ')).not.toContain('Zeichen oder länger');
-    expect(planen(stamm(), KLEIN, [], [], TAG).warnungen.join(' ')).not.toContain('Zeichen oder länger');
+    expect(planen(stamm(), KLEIN, [], [], TAG, { ort: 'P:/Projekte' }).warnungen.join(' ')).not.toContain('zu lang für Windows');
+    expect(planen(stamm(), KLEIN, [], [], TAG).warnungen.join(' ')).not.toContain('zu lang für Windows');
+  });
+
+  it('Pfadgrenzen: Ordner ab 248 Zeichen (CreateDirectory), Dateien ab 260; Gegenprobe knapp darunter', async () => {
+    const { pfadZuLang, WINDOWS_ORDNER_GRENZE } = await import('./plan');
+    expect(WINDOWS_ORDNER_GRENZE).toBe(248);
+    expect(pfadZuLang('x'.repeat(247), true)).toBe(false);
+    expect(pfadZuLang('x'.repeat(248), true)).toBe(true);
+    expect(pfadZuLang('x'.repeat(259))).toBe(false);
+    expect(pfadZuLang('x'.repeat(260))).toBe(true);
+    // im Plan: ein tiefer Ordner mit 250 Zeichen ist zu lang, obwohl keine Datei 260 erreicht
+    const s: Struktur = { ...STANDARD, ordner: [{ pfad: 'Tief/Ein sehr langer Unterordnername' }] };
+    const optionen = (ort: string): PlanOptionen => ({ ort, oapPfad: 'P.oap' });
+    const roh = planen(stamm(), s, [], [], TAG, optionen('P:'));
+    const laenge = (ort: string, art: 'ordner' | 'datei') => Math.max(...roh.schritte.filter((x) => x.art === art).map((x) => verbinde(`${ort}/${ordnerName(stamm(), s, TAG)}`, x.pfad).length));
+    const ortFuer = (ziel: number) => `P:/${'x'.repeat(ziel - laenge('P:/', 'ordner'))}`;
+    const zuLang = ortFuer(250);
+    expect(laenge(zuLang, 'ordner')).toBe(250);
+    expect(laenge(zuLang, 'datei')).toBeLessThan(260);
+    expect(planen(stamm(), s, [], [], TAG, optionen(zuLang)).warnungen.join(' ')).toContain('1 Pfad wäre zu lang für Windows');
+    // Gegenprobe: 247 Zeichen
+    expect(planen(stamm(), s, [], [], TAG, optionen(ortFuer(247))).warnungen.join(' ')).not.toContain('zu lang für Windows');
   });
 
   it('vorhandene, aber nicht gelesene Projektdatei: Warnung, dass die Stammdaten nicht ankommen; Gegenprobe gelesen', () => {
