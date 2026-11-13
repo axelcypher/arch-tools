@@ -39,6 +39,8 @@ export interface RechnungsDatensatz {
   /** Rechnungsnummer des Auftragnehmers */
   rechnungsnummer?: string;
   rechnungsdatum?: string;
+  /** Zugang der Rechnung beim Büro */
+  eingang?: string;
   /** Tag der Freigabe (Prüfung) */
   freigabe?: string;
   pruefung?: Pruefung;
@@ -111,6 +113,10 @@ export interface Protokoll {
   verteiler?: string;
   naechsterTermin?: string;
   verfasser?: string;
+  /** Abnahmebegehung: Vorbehalt bekannter Mängel (§ 12 Abs. 4/5 VOB/B, § 640 Abs. 3 BGB) */
+  vorbehaltMaengel?: string;
+  /** Abnahmebegehung: Vertragsstrafe vorbehalten (§ 11 Abs. 4 VOB/B) */
+  vertragsstrafeVorbehalten?: boolean;
 }
 
 export type MangelStatus = 'offen' | 'angezeigt' | 'erledigt' | 'abgenommen';
@@ -127,6 +133,8 @@ export interface Mangel {
   status: MangelStatus;
   fotos: string[];
   erledigtAm?: string;
+  /** Datum, an dem die Mängelanzeige versendet wurde (erst nach Bestätigung) */
+  angezeigtAm?: string;
 }
 
 export interface Notiz {
@@ -157,9 +165,15 @@ export const leeresAvaProjekt = (): AvaProjekt => ({ gewerke: {}, rechnungen: []
 
 const arr = <T>(x: unknown): T[] => (Array.isArray(x) ? (x as T[]) : []);
 
+/**
+ * Abschnitt „ava“ lesen. Unbekannte Schlüssel (z. B. aus einer neueren Version der App eines Kollegen) bleiben
+ * erhalten, damit `avaAendern` sie beim Zurückschreiben nicht löscht.
+ */
 export function avaAus(roh: unknown): AvaProjekt {
-  const r = roh && typeof roh === 'object' ? (roh as Record<string, unknown>) : {};
+  const r = roh && typeof roh === 'object' && !Array.isArray(roh) ? (roh as Record<string, unknown>) : {};
+  const { kostenkontrolle: _k, zahler: _z, ...rest } = r;
   return {
+    ...rest,
     ...(typeof r.kostenkontrolle === 'string' ? { kostenkontrolle: r.kostenkontrolle } : {}),
     ...(typeof r.zahler === 'string' ? { zahler: r.zahler } : {}),
     gewerke: r.gewerke && typeof r.gewerke === 'object' ? (r.gewerke as Record<string, GewerkAngaben>) : {},

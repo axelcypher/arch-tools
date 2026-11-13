@@ -89,13 +89,13 @@ describe('Grafiken der Vorlage', () => {
       '</xdr:txBody></xdr:sp><xdr:clientData/></xdr:twoCellAnchor>';
     files[draw] = strToU8(strFromU8(files[draw]).replace(/<\/xdr:wsDr>\s*$/, `${textfeld}</xdr:wsDr>`));
 
-    const p = createProject('EFH Sander');
+    const p = createProject('EFH Beispiel');
     p.meta.adresse = { strasse: 'Lindenweg 7a', plz: '59494', ort: 'Soest' };
     const out = unzipSync(await exportWithTemplate(zipSync(files), p, computeProject(p)));
     const rels = strFromU8(out['xl/worksheets/_rels/sheet1.xml.rels']);
     const drawPath = `xl/worksheets/${/Type="[^"]*\/drawing" Target="([^"]+)"/.exec(rels)![1]}`.replace('worksheets/../', '');
     const xml = strFromU8(out[drawPath]);
-    expect(xml).toContain('<a:t>EFH Sander</a:t>');
+    expect(xml).toContain('<a:t>EFH Beispiel</a:t>');
     expect(xml).toContain('<a:t>Lindenweg 7a, 59494 Soest</a:t>');
     expect(xml).not.toContain('{{');
   });

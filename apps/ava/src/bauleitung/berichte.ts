@@ -7,12 +7,36 @@ import type { ProjectMeta } from '@core/model';
 import type { Mangel, Protokoll, Tagesbericht } from '../avaDaten';
 import { datumDE } from '../abrechnung/pruefung';
 import { gewerkZweistellig } from '../abrechnung/gewerk';
+import { heuteIso } from '../lv/modell';
 import { PdfDokument } from './pdfDokument';
 
 export interface BerichtKopf {
   meta: ProjectMeta;
   projektName: string;
   buero: string;
+}
+
+/** Abnahmebegehung (auch die frühere Art „Abnahme“) */
+export const istAbnahme = (art: string) => /abnahme/i.test(art);
+
+/** Schlusssatz unter jedem Protokoll – keine Anerkennungsfiktion, nur die Bitte um Einwände */
+export const PROTOKOLL_SCHLUSS =
+  'Einwände bitten wir innerhalb einer Woche nach Zugang mitzuteilen; andernfalls gehen wir davon aus, dass das Protokoll den Besprechungsverlauf zutreffend wiedergibt.';
+
+/** Hinweis bei Abnahmebegehungen: das Büro bereitet vor und empfiehlt, die Abnahme erklärt der Bauherr */
+export const ABNAHME_HINWEIS =
+  'Die rechtsgeschäftliche Abnahme erklärt der Auftraggeber (Bauherr). Bekannte Mängel und eine vereinbarte Vertragsstrafe sind bei der Abnahme vorzubehalten. Ohne Vorbehalt entfallen die Rechte auf Nacherfüllung, Selbstvornahme, Rücktritt und Minderung wegen dieser Mängel (§ 640 Abs. 3 BGB, § 12 Abs. 4 und 5 VOB/B) und der Anspruch auf die Vertragsstrafe (§ 341 Abs. 3 BGB, § 11 Abs. 4 VOB/B).';
+
+/** Text der Mängelanzeige: mit Frist je Mangel, einheitlicher Frist oder einer Lücke zum Ausfüllen */
+export function maengelanzeigeText(liste: Mangel[], bearbeiter: string | undefined): string {
+  const fristen = [...new Set(liste.map((m) => m.frist ?? ''))];
+  const aufforderung =
+    fristen.length === 1 && fristen[0]
+      ? `Wir fordern Sie auf, die Mängel bis spätestens ${datumDE(fristen[0])} zu beseitigen und uns die Beseitigung mitzuteilen.`
+      : fristen.includes('')
+        ? 'Wir fordern Sie auf, die Mängel bis spätestens ……… zu beseitigen und uns die Beseitigung mitzuteilen.'
+        : 'Wir fordern Sie auf, die Mängel bis zu den in der Anlage je Mangel genannten Fristen zu beseitigen und uns die Beseitigung mitzuteilen.';
+  return `Guten Tag,\n\nbei der Begehung wurden die in der Anlage aufgeführten Mängel an Ihrer Leistung festgestellt. ${aufforderung}\n\nMit freundlichen Grüßen\n${bearbeiter ?? ''}`;
 }
 
 const kopfVon = (k: BerichtKopf) => ({ links: k.buero.split('\n')[0] ?? '', rechts: `${k.meta.projektcode} ${k.meta.vorhaben || k.projektName}`.trim() });
@@ -51,12 +75,28 @@ export async function protokollPdf(k: BerichtKopf, p: Protokoll): Promise<Uint8A
       t.frist ? datumDE(t.frist) : '',
     ]),
   );
+  if (istAbnahme(p.art)) {
+    d.ueberschrift('Vorbehalte bei der Abnahme');
+    d.absatz(`Bekannte Mängel: ${p.vorbehaltMaengel?.trim() ? `\n${p.vorbehaltMaengel.trim()}` : 'keine angegeben'}`);
+    d.absatz(`Vertragsstrafe: ${p.vertragsstrafeVorbehalten ? 'wird vorbehalten' : 'nicht vorbehalten'}`);
+    d.abstand(2);
+    d.absatz(ABNAHME_HINWEIS, { groesse: 8.5 });
+    d.abstand(10);
+    d.tabelle(
+      [
+        { titel: 'Auftraggeber (Bauherr)', breite: 1 },
+        { titel: 'Auftragnehmer', breite: 1 },
+        { titel: 'Objektüberwachung', breite: 1 },
+      ],
+      [['\n\n\nDatum, Unterschrift', '\n\n\nDatum, Unterschrift', '\n\n\nDatum, Unterschrift']],
+    );
+  }
   if (p.verteiler) {
     d.ueberschrift('Verteiler');
     d.absatz(p.verteiler);
   }
   d.abstand(4);
-  d.absatz('Einwände gegen dieses Protokoll sind innerhalb einer Woche nach Zugang schriftlich mitzuteilen; danach gilt es als anerkannt.', { groesse: 8.5 });
+  d.absatz(PROTOKOLL_SCHLUSS, { groesse: 8.5 });
   return d.speichern();
 }
 
@@ -97,7 +137,7 @@ export async function tagesberichtPdf(k: BerichtKopf, t: Tagesbericht): Promise<
 
 export async function maengelPdf(k: BerichtKopf, liste: Mangel[], titel = 'Mängelliste'): Promise<Uint8Array> {
   const d = await PdfDokument.neu(kopfVon(k), titel);
-  d.titel(titel, `${k.meta.vorhaben || k.projektName} · Stand ${datumDE(new Date().toISOString().slice(0, 10))}`);
+  d.titel(titel, `${k.meta.vorhaben || k.projektName} · Stand ${datumDE(heuteIso())}`);
   d.tabelle(
     [
       { titel: 'Nr.', breite: 0.8 },

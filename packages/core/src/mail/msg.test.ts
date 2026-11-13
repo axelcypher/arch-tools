@@ -43,10 +43,10 @@ describe('Outlook-Nachrichten (.msg) lesen', () => {
       expect(k.text).toContain('Von: Muster, Max <Max.Muster@statik-muster.example>');
       expect(k.text!.length).toBeGreaterThan(4096);
     }
-    expect(msgKopf(testMsg({ betreff: 'x', vonName: 'a', vonMail: 'a@b.de', an: [] }))).not.toHaveProperty('text');
+    expect(msgKopf(testMsg({ betreff: 'x', vonName: 'a', vonMail: 'a@b.example', an: [] }))).not.toHaveProperty('text');
   });
 
   it('keine Outlook-Nachricht: verständlicher Fehler', () => {
-    expect(() => msgKopf(new TextEncoder().encode('From: a@b.de\n\nHallo'))).toThrow('Keine Outlook-Nachricht (.msg)');
+    expect(() => msgKopf(new TextEncoder().encode('From: a@b.example\n\nHallo'))).toThrow('Keine Outlook-Nachricht (.msg)');
   });
 });

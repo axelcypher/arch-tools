@@ -7,7 +7,7 @@ import { defaultDach } from '@core/roof';
 import { buildSampleTemplate, exportDefault, exportWithTemplate } from './excel';
 
 function project() {
-  const p = createProject('Sanierung EFH Sander');
+  const p = createProject('Sanierung EFH Beispiel');
   p.meta.adresse = { strasse: 'Lindenweg 7a', plz: '59494', ort: 'Soest' };
   const kg = p.storeys[0];
   kg.name = 'KG';
@@ -47,7 +47,7 @@ describe('Excel-Export mit Vorlage', () => {
     const wb = await load(await exportWithTemplate(await buildSampleTemplate(), p, computeProject(p)));
     const ws = wb.getWorksheet('Wohnflächen')!;
     // Kopf unverändert, Platzhalter ersetzt, Zellverbund erhalten
-    expect(val(ws, 'A3')).toBe('Sanierung EFH Sander');
+    expect(val(ws, 'A3')).toBe('Sanierung EFH Beispiel');
     expect(val(ws, 'A4')).toBe('Lindenweg 7a, 59494 Soest');
     expect(val(ws, 'A8')).toBe('Entwurfsplanung');
     expect(ws.getCell('D8').isMerged).toBe(true);
@@ -105,7 +105,7 @@ describe('Excel-Export mit Vorlage', () => {
   });
 
   it('BRI: Normalgeschosse Höhe × BGF, Dachgeschoss mit Dachformel', async () => {
-    const p = createProject('Sanierung EFH Sander');
+    const p = createProject('Sanierung EFH Beispiel');
     const kg = p.storeys[0];
     kg.name = 'Kellergeschoss I';
     kg.hoehe = 2.4;
@@ -134,7 +134,7 @@ describe('Excel-Export mit Vorlage', () => {
   });
 
   it('BRI: Dachgeschoss mit Schleppgaube wie in der Büro-Vorlage', async () => {
-    const p = createProject('Sanierung EFH Sander');
+    const p = createProject('Sanierung EFH Beispiel');
     const dg = p.storeys[0];
     dg.name = 'DG';
     const o = createOutline(rectPoints({ x: 0, y: 0 }, { x: 12, y: 10.75 }));
@@ -183,7 +183,7 @@ describe('Excel-Export mit Vorlage', () => {
     p.meta.projektcode = 'A&B 42';
     const wb = await load(await exportWithTemplate(new Uint8Array(await tpl.xlsx.writeBuffer()), p, computeProject(p), new Date(2026, 8, 28)));
     const hf = wb.getWorksheet('Kopf')!.headerFooter;
-    expect(hf.oddHeader).toBe('&L&"Arial,Fett"Sanierung EFH Sander&RProjekt A&&B 42');
+    expect(hf.oddHeader).toBe('&L&"Arial,Fett"Sanierung EFH Beispiel&RProjekt A&&B 42');
     expect(hf.oddFooter).toMatch(/^&LStand 28\.09\.2026 · BRI [\d.,]+ m³ · \{\{gibtsnicht\}\}&RSeite &P\/&N$/);
   });
 

@@ -97,6 +97,6 @@ describe('Mails benennen: <Projektcode> von|an <Name> <JJMMTT> <Thema>.msg', () 
     expect(mailVorschlag(anAussen, { code: 'BSP', eigene: [], bisher }).teile).toMatchObject({ richtung: 'an', name: 'Beispiel', datum: '261108' });
     expect(mailVorschlag(anAussen, { code: 'BSP', eigene: [] }).herkunft).toBe('Richtung aus dem bisherigen Namen');
     // ohne Betreff
-    expect(mailVorschlag(kopf({ vonMail: 'a@b.de' }), { code: 'BSP', eigene: EIGENE }).teile.thema).toBe('ohne Betreff');
+    expect(mailVorschlag(kopf({ vonMail: 'a@b.example' }), { code: 'BSP', eigene: EIGENE }).teile.thema).toBe('ohne Betreff');
   });
 });

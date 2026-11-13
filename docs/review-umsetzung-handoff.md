@@ -33,7 +33,7 @@ Kommunikation, Oberfläche, Commit-Texte und Doku sind auf **Deutsch**.
 - **Alte Kennungen bleiben:** `arch-flaechen-tool` im Projektformat, in den Speicherschlüsseln und im Crate nicht
   „aufräumen“. Ebenso nach der Umbenennung der Apps: Die Produktnamen (Arkly, ATLAS, PERMIO, QUADRIO, TERRIO, NUMIO,
   RECTIO, FABRIO, LEXIO) stehen in `packages/core/src/appNamen.ts`; Ordner unter `apps/`, `?app=…`, Speicherschlüssel,
-  `arch-tools:…`-Nachrichten, Bundle-Kennungen, Crate-Namen und Release-Tags bleiben. Welche App früher wie hieß:
+  `arch-tools:…`-Nachrichten, Bundle-Kennungen, Crate-Namen und Release-Tags bleiben. Ebenso der Paketname `@akh/core` und die Kennungen `de.pendzialek.*` (Kennungen des Repo-Eigentümers, keine Kundendaten). Testdaten dagegen nur erfunden: Personen, Firmen und Projekte ausgedacht, Mailadressen mit `example.com`/`example.org` bzw. der Endung `.example`. Welche App früher wie hieß:
   README, Abschnitt „Neue Namen“. Die Abschnitte unten nennen die Apps mit den Namen zur Zeit des Reviews.
 - **Vor jedem Push:**
   - `npm run typecheck`, `npx vitest run` und `npm run build` grün.
