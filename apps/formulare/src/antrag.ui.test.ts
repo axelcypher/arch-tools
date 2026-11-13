@@ -4517,7 +4517,7 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     expect(meldungen.filter((m) => /er ist jetzt geladen/.test(m))).toEqual([]);
     expect(useFormulare.getState().meldung).toEqual({
       art: 'info',
-      text: 'Antragsumfang für Antrag BAUA 2 nicht festgelegt – dort ist inzwischen schon einer festgelegt. Angezeigt ist jetzt Antrag BAUA, die inzwischen aktive Fassung.',
+      text: 'Antragsumfang für Antrag BAUA 2 nicht festgelegt – für diesen ist inzwischen schon einer festgelegt. Angezeigt wird jetzt Antrag BAUA, die aktive Antragsfassung.',
     });
   });
 
@@ -4686,7 +4686,7 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
       ab();
     }
     expect(umfangIdsIn('BAUA 2')).toEqual(['ueigen']);
-    expect(meldungen.filter((m) => /nicht festgelegt/.test(m))).toEqual(['Antragsumfang in BS9 nicht festgelegt – dort ist inzwischen schon einer festgelegt (inzwischen ist ein anderes Projekt offen).']);
+    expect(meldungen.filter((m) => /nicht festgelegt/.test(m))).toEqual(['Antragsumfang in BS9 nicht festgelegt – dort ist inzwischen schon einer festgelegt; jetzt ist ein anderes Projekt offen.']);
   });
 
   it('Projektdatei zweimal geladen: das frühere scheitert spät, das spätere gelingt – kein Fehler, neuer Stand; umgekehrt bleibt der Fehler', async () => {
@@ -4806,7 +4806,7 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     expect(umfangIdsIn('BAUA 2')).toEqual(['ueigen']);
     expect(meldungen.filter((m) => /er ist jetzt geladen/.test(m))).toEqual([]);
     // gesagt wird es trotzdem – mit der Projektdatei, die gemeint ist
-    expect(meldungen).toContain('Antragsumfang in BS9.oap nicht festgelegt – dort ist inzwischen schon einer festgelegt (inzwischen ist eine andere Projektdatei gewählt).');
+    expect(meldungen).toContain('Antragsumfang in BS9.oap nicht festgelegt – dort ist inzwischen schon einer festgelegt; jetzt ist eine andere Projektdatei gewählt.');
   });
 
   it('Festlegen: der erste Versuch sieht einen woanders festgelegten, die Datei ändert sich dabei (dort aufgehoben), der zweite schreibt – keine Meldung', async () => {

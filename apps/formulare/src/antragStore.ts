@@ -1381,11 +1381,11 @@ export const useAntrag = create<AntragState>((set, get) => {
           if (!imStore || useFormulare.getState().projekt !== projekt) {
             // inzwischen anderes Projekt bzw. andere Projektdatei: sagen, welche gemeint ist
             if (projekt && useFormulare.getState().projekt !== projekt)
-              meldung('info', `Antragsumfang in ${projekt.ordner} nicht festgelegt – dort ist inzwischen schon einer festgelegt (inzwischen ist ein anderes Projekt offen).`);
+              meldung('info', `Antragsumfang in ${projekt.ordner} nicht festgelegt – dort ist inzwischen schon einer festgelegt; jetzt ist ein anderes Projekt offen.`);
             else if (oap && oap !== 'fehlt')
-              meldung('info', `Antragsumfang in ${nurName(oap.pfad)} nicht festgelegt – dort ist inzwischen schon einer festgelegt (inzwischen ist eine andere Projektdatei gewählt).`);
+              meldung('info', `Antragsumfang in ${nurName(oap.pfad)} nicht festgelegt – dort ist inzwischen schon einer festgelegt; jetzt ist eine andere Projektdatei gewählt.`);
           } else if (neu.ansicht && angezeigt && angezeigt !== neu.ansicht) {
-            meldung('info', `Antragsumfang für Antrag ${neu.ansicht} nicht festgelegt – dort ist inzwischen schon einer festgelegt. Angezeigt ist jetzt Antrag ${angezeigt}, die inzwischen aktive Fassung.`);
+            meldung('info', `Antragsumfang für Antrag ${neu.ansicht} nicht festgelegt – für diesen ist inzwischen schon einer festgelegt. Angezeigt wird jetzt Antrag ${angezeigt}, die aktive Antragsfassung.`);
           } else meldung('info', 'Antragsumfang nicht festgelegt – inzwischen ist schon einer festgelegt; er ist jetzt geladen.');
         }
         await get().aktualisieren();
