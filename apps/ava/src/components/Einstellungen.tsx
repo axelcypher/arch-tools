@@ -1,15 +1,15 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Modal } from '@core/ui/Dialog';
 import { meldung } from '@core/ui/Rueckfrage';
 import { ordnerWaehlen } from '@core/platform/projektordner';
 import { openFileWithPath } from '@core/platform/files';
-import { bueroName } from '@core/platform/konfig';
+import { bueroName, KonfigNichtErreichbar, konfigNeuLesen } from '@core/platform/konfig';
 import { modernisieren } from '@core/platzhalter';
 import { PlatzhalterChips, PlatzhalterHinweise, platzhalterEinfuegen } from '@core/ui/Platzhalter';
 import { nameBilden, nameErkennen } from '../abrechnung/benennung';
 import { LV_NAME_VARIABLEN, mailVariablen, RECHNUNG_NAME_VARIABLEN } from '../platzhalter';
 import type { AvaEinstellungen, MailVorlage } from '../einstellungen';
-import { VORGABE } from '../einstellungen';
+import { EinstellungenKonflikt, VORGABE } from '../einstellungen';
 import { neueId } from '../lv/modell';
 import { useAva } from '../store';
 import { Feld, TextEingabe, ZahlEingabe } from './eingaben';
@@ -39,6 +39,16 @@ export function EinstellungenModal() {
   const [ebene, setEbene] = useState<Ebene>('ablage');
   const [probe, setProbe] = useState('K62 R021 Musterbau 251024 AB1.pdf');
   const schliessen = () => useAva.getState().setEinstellungenOffen(false);
+  // Speicherort gewechselt (z. B. in einem anderen Fenster) bzw. Netzlaufwerk weg oder wieder da: der Entwurf stammt vom
+  // alten Stand – nicht darüber speichern
+  useEffect(
+    () =>
+      konfigNeuLesen(() => {
+        schliessen();
+        void meldung('Einstellungen neu geladen', 'Der Speicherort der Einstellungen wurde gewechselt bzw. das Netzlaufwerk getrennt oder wieder verbunden. Bitte die Einstellungen noch einmal öffnen und die Änderung vornehmen.');
+      }),
+    [],
+  );
   const setze = <K extends keyof AvaEinstellungen>(k: K, patch: Partial<AvaEinstellungen[K]>) => setE((x) => ({ ...x, [k]: { ...x[k], ...patch } }));
 
   const speichern = async () => {
@@ -46,7 +56,9 @@ export function EinstellungenModal() {
       await useAva.getState().einstellungenSetzen(e);
       schliessen();
     } catch (x) {
-      await meldung('Einstellungen nicht gespeichert', 'Der gemeinsame Konfigurationsordner ließ sich nicht schreiben.', x);
+      // anderer Rechner oder Netzlaufwerk weg: die Meldung erklärt es selbst
+      const klar = x instanceof EinstellungenKonflikt || x instanceof KonfigNichtErreichbar;
+      await meldung('Einstellungen nicht gespeichert', klar ? x.message : 'Der gemeinsame Konfigurationsordner ließ sich nicht schreiben.', klar ? undefined : x);
     }
   };
 
