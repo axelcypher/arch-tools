@@ -95,7 +95,7 @@ export default function View3D() {
       const ndc = new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
       const rc = new THREE.Raycaster();
       rc.setFromCamera(ndc, camera);
-      const hit = trefferWaehlen(rc.intersectObjects(three.current!.pickables, false));
+      const hit = trefferWaehlen(rc.intersectObjects(three.current!.pickables, false), useEditor.getState().selectedShapeId);
       const st = useEditor.getState();
       if (hit?.object.userData.shapeId) {
         st.setActiveStorey(hit.object.userData.storeyId);
@@ -140,7 +140,7 @@ export default function View3D() {
           const mat = new THREE.MeshStandardMaterial({
             color: sel ? 0xff7a00 : color,
             transparent: true,
-            opacity: sel ? 0.55 : active ? 0.38 : 0.22,
+            opacity: sel ? 0.4 : active ? 0.38 : 0.22,
             side: THREE.DoubleSide,
             depthWrite: false,
             roughness: 0.8,
@@ -352,7 +352,7 @@ export default function View3D() {
                   ))}
                 </div>
               )}
-              <p className="muted small-text">Klick wählt Umriss oder Raum. Linke Maus: drehen · rechte Maus: verschieben · Rad: zoomen</p>
+              <p className="muted small-text">Klick wählt den Raum, ein zweiter Klick den Umriss. Linke Maus: drehen · rechte Maus: verschieben · Rad: zoomen</p>
             </>
           )}
         </div>

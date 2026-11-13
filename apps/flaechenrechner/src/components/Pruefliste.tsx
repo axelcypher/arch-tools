@@ -23,7 +23,8 @@ export interface PruefZeile {
 /** Sammeltext für mehrere gleichartige Raummeldungen eines Geschosses */
 const SAMMEL: Record<string, (n: number) => string> = {
   'ohne-wohnung': (n) => `${anzahl(n, 'Raum zählt', 'Räume zählen')} zur Wohnfläche, aber ohne Wohnung – alle wählen und Wohnung eintragen.`,
-  'keine-wofl': (n) => `${anzahl(n, 'Raum zählt', 'Räume zählen')} nicht zur Wohnfläche – richtig bei Räumen außerhalb der Wohnung, Zubehör- und Geschäftsräumen (§ 2 Abs. 3 WoFlV), z. B. Treppenhaus, Heizungsraum, Keller- oder Abstellraum außerhalb der Wohnung.`,
+  'keine-wofl': (n) =>
+    `${anzahl(n, 'Raum zählt', 'Räume zählen')} nicht zur Wohnfläche – richtig bei Räumen außerhalb der Wohnung, Zubehör- und Geschäftsräumen (§ 2 Abs. 3 WoFlV), z. B. Treppenhaus, Heizungsraum, Keller- oder Abstellraum außerhalb der Wohnung.`,
   dachschraege: (n) => `${anzahl(n, 'Raum', 'Räume')} im Dachgeschoss voll angerechnet – lichte Höhe prüfen (Raumteile unter 2 m nach § 4 WoFlV).`,
   'ohne-katalog': (n) => `${anzahl(n, 'Raumbezeichnung', 'Raumbezeichnungen')} nicht im Raumkatalog – Nutzung und Anrechnung prüfen.`,
   'umriss-pruefen': (n) => `${anzahl(n, 'BGF-Umriss ist', 'BGF-Umrisse sind')} zum Prüfen markiert (übernommen) – Außenmaße kontrollieren.`,

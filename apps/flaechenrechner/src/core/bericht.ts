@@ -82,15 +82,15 @@ export function messverfahren(project: Project): string {
   return MASSGRUNDLAGEN.find((m) => m.id === project.settings.massgrundlage)?.text ?? '';
 }
 
-/**
- * Welche Abschnitte gedruckt werden: Vorlage, Auswahl, leere Abschnitte entfallen; ein fehlender BRI ist ein Mangel,
- * ebenso (mit Projekt) selbstüberschneidende Flächen, deren Fläche so nicht stimmt.
- */
 /** Pflichtangaben nach DIN 277:2021-08, 5.1, die im Projekt fehlen – für Bericht, Prüfliste und Seitenleiste */
 export function fehlendeAngaben(project: Project): ('Messverfahren' | 'Planungsunterlagen')[] {
   return [...(messverfahren(project) ? [] : (['Messverfahren'] as const)), ...(planungsunterlagen(project) ? [] : (['Planungsunterlagen'] as const))];
 }
 
+/**
+ * Welche Abschnitte gedruckt werden: Vorlage, Auswahl, leere Abschnitte entfallen; ein fehlender BRI ist ein Mangel,
+ * ebenso (mit Projekt) selbstüberschneidende Flächen, deren Fläche so nicht stimmt.
+ */
 export function berichtPlan(e: BerichtEinstellung, result: ProjectResult, project?: Project): BerichtPlan {
   const gewaehlt = new Set<Abschnitt>(e.vorlage === 'vollstaendig' ? ABSCHNITTE.map((a) => a.id) : e.abschnitte);
   const gesperrt = e.vorlage === 'bauantrag' ? [...BAUANTRAG_PFLICHT] : [];

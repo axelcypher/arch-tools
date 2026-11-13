@@ -264,7 +264,7 @@ export function IfcImportDialog({ onClose }: { onClose: () => void }) {
                 Geschossschnitt als Plan hinterlegen (zum Prüfen und Korrigieren im Grundriss)
               </label>
               {!!opts.planSchnitthoehe && (
-                <label className="toggle block indent">
+                <label className="toggle block indent mit-feld">
                   Schnitthöhe über Fußboden
                   <span className="inline-num">
                     <NumberField value={opts.planSchnitthoehe} min={0.1} max={5} onChange={(v) => v && setOpts({ ...opts, planSchnitthoehe: v })} />

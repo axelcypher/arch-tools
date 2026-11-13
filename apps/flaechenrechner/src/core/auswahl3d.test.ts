@@ -12,4 +12,8 @@ describe('Auswahl in der 3D-Ansicht', () => {
     expect(trefferWaehlen([{ object: { userData: {} } }])).toBeUndefined();
     expect(trefferWaehlen([])).toBeUndefined();
   });
+  it('Klick auf den schon gewählten Raum wählt den Körper dahinter', () => {
+    expect(trefferWaehlen([t('bgf'), t('raum', true)], 'raum')?.object.userData.shapeId).toBe('bgf');
+    expect(trefferWaehlen([t('raum', true)], 'raum')?.object.userData.shapeId).toBe('raum'); // ohne Körper bleibt der Raum
+  });
 });

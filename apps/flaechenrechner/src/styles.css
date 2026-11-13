@@ -831,6 +831,13 @@
 }
 
 @media print {
+  /* Kennzahlen und Anmerkungen bei ihrer Tabelle */
+  .bericht-abschnitt .report-table + .report-keyfigures,
+  .bericht-abschnitt .report-table + .report-note,
+  .bericht-abschnitt .report-keyfigures + .report-note {
+    break-before: avoid;
+  }
+
   /* Unterschriften nicht allein auf der letzten Seite */
   .bericht-unterschrift {
     break-before: avoid;
@@ -1159,4 +1166,9 @@
 
 .nummern-titel {
   margin: 8px 0 2px;
+}
+
+/* Zeile mit Zahlenfeld (z. B. Schnitthöhe): Text und Einheit mittig zum Feld */
+.toggle.block.mit-feld {
+  align-items: center;
 }

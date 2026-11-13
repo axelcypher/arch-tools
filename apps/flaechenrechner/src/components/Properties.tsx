@@ -629,7 +629,7 @@ function StoreyProperties() {
           </Field>
           <Field label="Fußbodenaufbau [m]" hint="nur bei Geschosskote auf dem Rohfußboden">
             <NumberField
-              title="Für die Höhenlinien (lichte Höhe unter Schrägen)"
+              title="Mindert die lichte Höhe für die Höhenlinien (Fußboden über der Geschosskote)"
               value={storey.fussbodenaufbau} allowEmpty min={0} max={1} digits={3} placeholder="0,000" onChange={(v) => upd((s) => ({ ...s, fussbodenaufbau: v || undefined }))} />
           </Field>
         </>
