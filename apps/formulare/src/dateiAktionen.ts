@@ -460,14 +460,20 @@ export async function formularUmbenennen(f: FormularEintrag) {
   }
   await zielFrei();
   if (profil && profil[0] !== profil[1]) useFormulare.getState().profilKopieren(profil[0], profil[1]);
-  const zuordnungPruefen = new Error(`„${name}“ umbenannt, aber die Projektdatei (.oap) ließ sich nicht schreiben – bitte die Zuordnung in den Antragsdaten von ${projekt.ordner} prüfen`);
+  const ohneEingaben = lokalOk ? '' : ' Nicht gespeicherte Eingaben ließen sich nicht mitnehmen (Speicher voll) – sie gelten weiter für den alten Namen.';
+  const zuordnungPruefen = new Error(
+    `„${name}“ umbenannt, aber die Projektdatei (.oap) ließ sich nicht schreiben – bitte die Zuordnung in den Antragsdaten von ${projekt.ordner} prüfen.${ohneEingaben}`,
+  );
   // inzwischen ein anderes Projekt: die Fehlermeldung trotzdem zeigen, die Erfolgsmeldung entfällt
-  if (useFormulare.getState().projekt !== projekt) return void (fehlgeschlagen && fehler('Umbenennen', zuordnungPruefen));
+  if (useFormulare.getState().projekt !== projekt) {
+    if (fehlgeschlagen) fehler('Umbenennen', zuordnungPruefen);
+    else if (!lokalOk) fehler('Umbenennen', new Error(`„${name}“ umbenannt.${ohneEingaben}`));
+    return;
+  }
   if (oapZiel) await useFormulare.getState().oapLaden();
   await neuLesen();
   await useAntrag.getState().laden();
   await wiederOeffnen(ziel);
-  const ohneEingaben = lokalOk ? '' : ' Nicht gespeicherte Eingaben ließen sich nicht mitnehmen (Speicher voll) – sie gelten weiter für den alten Namen.';
   if (fehlgeschlagen) fehler('Umbenennen', zuordnungPruefen);
   else
     useFormulare.getState().setMeldung({
