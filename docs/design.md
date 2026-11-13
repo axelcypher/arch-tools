@@ -182,7 +182,7 @@ Gemeinsamer Satz in `ui/Symbol.tsx` (Raster 24, Linie 2, runde Enden, Farbe des 
   `suche`, `stift`.
 - Zustand: `haken`, `warnung`, `info`, `schliessen`, `auge`, `augeZu`, `stern`.
 - Navigation: `pfeilRechts`, `pfeilLinks`, `pfeilUnten`, `ordner`, `ordnerOffen`, `datei`.
-- Listen: `nachOben`, `nachUnten` zum Umsortieren (statt ↑/↓ als Schriftzeichen); `mehr` (drei Punkte) für
+- Listen: `nachOben`, `nachUnten` zum Umsortieren (statt ↑/↓ als Schriftzeichen); `mehr` (drei Punkte, Knopf mit `aria-label="Aktionen"` und `title`) für
   Zeilenknöpfe „Aktionen“, die ein Menü öffnen – `pfeilUnten` bleibt dem Aufklapp-Pfeil an Knöpfen mit Text vorbehalten.
 
 Neue Symbole kommen in diesen Satz, nicht in die App. Keine Emoji (📏 ✂ 🗑) und keine Schriftzeichen als Symbol.
