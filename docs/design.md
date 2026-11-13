@@ -94,6 +94,13 @@ Zahlen in Tabellen und Feldern stehen rechtsbündig in Tabellenziffern (`.num`, 
 **Auswahl auf Fotos** immer mit Saum zeichnen: Magenta allein hat auf mittleren Fototönen (Putz, Ziegel, Himmel) kaum
 Helligkeitskontrast. Unter der Linie in `--sel-foto` liegt ein Doppelsaum, außen 1px weiß, innen 1px `rgba(0, 0, 0, 0.5)`.
 
+**Planfarben auf der dunklen Zeichenfläche:** Die Zeichenfläche wird im dunklen Schema als Ganzes gefiltert
+(`--canvas-filter`). Raumfüllungen in Nutzungsfarbe sähen danach dunkel und im Ton verschoben aus, anders als die
+Farbmarke derselben Nutzung in der Liste. Deshalb Füllungen bei `data-canvas="dunkel"` mit `planFuellungDunkel(farbe,
+deckung)` aus `@core/planFarbe` vorrechnen: Die Funktion liefert Farbe und Deckung, mit denen die Fläche gezeichnet wird,
+damit sie nach dem Filter wie die Farbmarke mit der gewünschten Deckung über dem dunklen Grund aussieht. Die Farbmarken
+in Listen bleiben in der Originalfarbe – nie selbst filtern (der Kontrast fiele unter 3 : 1).
+
 ## Dialoge
 
 - Immer `Modal` aus `ui/Dialog.tsx` statt eines eigenen `div.modal`: Esc, Klick daneben, Rolle, Name und Fokusfalle
