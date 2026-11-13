@@ -102,8 +102,9 @@ wird: `planFuellungDunkel(farbe, deckung)` aus `@core/planFarbe` liefert Farbe u
 sieht danach aus wie die Farbmarke mit der gewünschten Deckung über dem dunklen Grund: gleicher Farbton, dunkler und
 matter (Gelb erscheint als Ocker). Linien, Auswahl und Schraffuren werden nicht vorgerechnet; sie bleiben in den hellen
 Planfarben und laufen durch den Filter. Über einer Unterlage (PDF, Bild) ist der Grund nicht die helle Planfarbe: dort
-`grund` übergeben oder die Abweichung hinnehmen. Die Apps übernehmen das nach und nach (Nachziehliste). Farbmarken in Listen und Legenden bleiben in der Originalfarbe und bekommen nie
-`--canvas-filter` oder einen eigenen Filter (ihr Kontrast zur Seitenleiste fiele unter 3 : 1). `ZEICHENFLAECHE_INVERT`
+`grund` übergeben oder die Abweichung hinnehmen. Die Apps übernehmen das nach und nach (Nachziehliste). Farbmarken in
+Listen und Legenden bleiben in der Originalfarbe und bekommen nie `--canvas-filter` oder einen eigenen Filter (ihr
+Kontrast zur Seitenleiste fiele unter 3 : 1). `ZEICHENFLAECHE_INVERT`
 und `ZEICHENFLAECHE_GRUND` in `planFarbe.ts` müssen zu `--canvas-filter` und `--canvas` in `base.css` passen; wer eines
 ändert, ändert das andere mit.
 

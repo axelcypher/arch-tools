@@ -54,6 +54,7 @@ describe('Planfarben auf der dunklen Zeichenfläche', () => {
     ist.forEach((v, i) => expect(Math.abs(v - soll[i])).toBeLessThan(TOLERANZ));
     const marke = hexZuRgb(color);
     if (buntheit(marke) < 0.02) expect(buntheit(ist)).toBeLessThan(0.02);
+    // bei kaum bunter Fläche (geringe Deckung, matte Farbe) ist der Farbton numerisch kaum bestimmt – dann keine Tonprüfung
     else if (buntheit(ist) > 0.04) expect(tonAbstand(farbton(ist), farbton(marke))).toBeLessThan(4);
   });
 
@@ -64,6 +65,18 @@ describe('Planfarben auf der dunklen Zeichenfläche', () => {
     const marke = hexZuRgb(color);
     if (buntheit(marke) < 0.02) expect(buntheit(ist)).toBeLessThan(0.02);
     else expect(tonAbstand(farbton(ist), farbton(marke))).toBeLessThan(4);
+  });
+
+  it('Rückfall greift schon unter Deckung 1: Gelb bei 0,8 wird deckend, entsättigt, im selben Farbton', () => {
+    const f = planFuellungDunkel('#f4c95d', 0.8);
+    expect(f.deckung).toBe(1);
+    const ist = sichtbar(f.farbe, 1);
+    const soll = ziel('#f4c95d', 0.8);
+    // nicht exakt erreichbar …
+    expect(Math.max(...ist.map((v, i) => Math.abs(v - soll[i])))).toBeGreaterThan(TOLERANZ);
+    // … aber Farbton erhalten, nur matter
+    expect(tonAbstand(farbton(ist), farbton(soll))).toBeLessThan(4);
+    expect(buntheit(ist)).toBeLessThan(buntheit(soll));
   });
 
   it('geringe Deckung bei kräftiger Farbe: Deckung wird echt erhöht, sichtbar bleibt das Ziel', () => {
