@@ -16,6 +16,7 @@ import type { AntragsVorlage, ExportEinstellungen, ExportUeberschreibung, Fassun
 import {
   anzeigeName,
   dateiImAntrag,
+  pdfOhneZuordnung,
   formularSchluessel,
   hauptArt,
   dateiname,
@@ -1346,15 +1347,15 @@ export const useAntrag = create<AntragState>((set, get) => {
       });
       // Sammelprojekt: Formulare der obersten Ebene ohne Zuordnung im aktiven Antrag bekommen trotzdem eine Ampel – die
       // PDF sucht sich nach dem Namen ohne Nummer und Jahr („003-Baubeschreibung (2026)“ → „Baubeschreibung“), wie der Export ihn vergibt
+      // (zugeordnet auch, wenn der Eintrag entfällt – dann kein Punkt; PDFs, die schon einem Dokument gehören, zählen nicht)
       const zugeordnet = new Set(dokumente.flatMap((d) => (d.formular ? [d.formular.pfad] : [])));
+      const vergeben = new Set(dokumente.flatMap((d) => (d.datei ? [d.datei.pfad.toLowerCase()] : [])));
       const stammStatus: Record<string, Status> = {};
       if (s.sammel)
         for (const f of s.formulare) {
           const info = formularInfo[f.pfad];
           if (f.unterordner || zugeordnet.has(f.pfad) || !info) continue;
-          const name = anzeigeName(f.name);
-          const pdf = dateiImAntrag({ id: `stamm:${f.pfad}`, titel: name, art: 'intern', formular: name }, st.dateien, fassung, codes);
-          stammStatus[f.pfad] = formularStatus(info.fuellstand, info.letzteAenderung, pdf, codes);
+          stammStatus[f.pfad] = formularStatus(info.fuellstand, info.letzteAenderung, pdfOhneZuordnung(f.name, st.dateien, vergeben, codes), codes);
         }
       set({ formularInfo, dokumente, stammStatus });
       // für die Projektübersicht merken – mit gelesenen Angaben zum Antrag; der Stand der Dokumente nur, wenn alle

@@ -265,10 +265,25 @@ mod tests {
         // nur Formulare, nur im selben Ordner
         assert!(formular_umbenennen(&alt, &ordner.join("x.pdf"), b"eigen").is_err());
         assert!(formular_umbenennen(&alt, &ordner.join("unter").join("x.frmsjf"), b"eigen").is_err());
-        // umbenannt, und die eigene Sperre ist wieder weg
+        // umbenannt, und die hier angelegte Sperre ist wieder weg
         formular_umbenennen(&alt, &neu, b"eigen").unwrap();
         assert!(!alt.exists() && std::fs::read(&neu).unwrap() == b"Formular");
         assert!(!alt.with_extension("frmtmp").exists() && !neu.with_extension("frmtmp").exists());
+        // die App hat den neuen Namen schon selbst gesperrt (gleicher Inhalt): erlaubt, ihre Sperre bleibt ihr
+        let dritt = ordner.join("003-Bauantrag.frmsjf");
+        std::fs::write(dritt.with_extension("frmtmp"), b"eigen").unwrap();
+        formular_umbenennen(&neu, &dritt, b"eigen").unwrap();
+        assert_eq!(std::fs::read(dritt.with_extension("frmtmp")).unwrap(), b"eigen");
+        // zurück: am alten Namen (jetzt Quelle) liegt die eigene Sperre – wird anerkannt und nicht entfernt
+        formular_umbenennen(&dritt, &neu, b"eigen").unwrap();
+        assert!(neu.is_file() && dritt.with_extension("frmtmp").exists());
+        // eine fremde Sperre am neuen Namen: nicht umbenannt
+        assert!(formular_umbenennen(&neu, &dritt, b"anders").unwrap_err().contains("gibt es schon"));
+        std::fs::remove_file(dritt.with_extension("frmtmp")).unwrap();
+        // nur die Groß-/Kleinschreibung geändert
+        let klein = ordner.join("002-bauantrag.frmsjf");
+        formular_umbenennen(&neu, &klein, b"eigen").unwrap();
+        assert!(std::fs::read_dir(&ordner).unwrap().flatten().any(|e| e.file_name() == "002-bauantrag.frmsjf"));
         std::fs::remove_dir_all(&ordner).unwrap();
     }
 

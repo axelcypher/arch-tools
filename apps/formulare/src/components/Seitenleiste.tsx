@@ -163,7 +163,8 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
     const fremd = f.gesperrt && !(aktiv && offen?.sperre.art === 'eigen');
     const gezeigt = aktiv && haupt === 'formular';
     const doc = umfangDa ? statusVon.get(f.pfad) : undefined;
-    const stamm = !doc && umfangDa ? stammStatus[f.pfad] : undefined;
+    // während ein Antrag geöffnet wird, gehört der Punkt noch zum bisherigen – dann keiner
+    const stamm = !doc && umfangDa && !wechsel ? stammStatus[f.pfad] : undefined;
     // zuerst, dass es nicht zum Antragsumfang gehört – der Status dahinter (nicht verwechselbar mit „Antragsordner“)
     const stammText = stamm ? `nicht im Antragsumfang von ${fassung} · ${STATUS_TEXT[stamm]}` : '';
     return (

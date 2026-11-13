@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { dateinameZerlegen, planNummerAus, VORGABE_NAMENSSCHEMA } from '@core/namensschema';
 import type { UmfangEintrag } from './antrag';
-import { abschnittAus, abschnittVon, aktuellsterAntrag, ansichtVon, aufnahmeVorschlag, eingereichtAus, formularSchluessel, formularVerweiseUmbenennen, neuerAntrag } from './antrag';
+import { abschnittAus, abschnittVon, aktuellsterAntrag, ansichtVon, aufnahmeVorschlag, eingereichtAus, formularSchluessel, formularVerweiseUmbenennen, neuerAntrag, pdfOhneZuordnung } from './antrag';
 import { merkmalVorgaben } from './bedingung';
 import { ueberschreibungenAus, aenderungAnwenden, alsAngaben, bereitAnwenden, klein, stabil, umfangAnwenden, VORGABE_EXPORT, einstellungenAus, entferntSeitEinreichung, imStand, nachEinreichungErwartet, nameNachFormat, seitEinreichung, standAus, vorlageMitAntragsart, zielpfadAus, datumAusName, standVergleich, antragsNameFehler, artDerFassung, bereitschaft, ordnerPasst, anzeigeName, dateiImAntrag, dateiname, einstellungenFuer, externStatus, fassungenAus, formularStatus, formularVon, naechsteFassung, passt, projektDateiAus, quelleVon, standardFassung, projektStatusAus, projektStatusLesen, schlimmsterStatus, statusGesamt, verschieben, vorlagenAus, vorlageFuer, umfangAusKatalog, VORGABE_KATALOG, ueberschreibungAus } from './antrag';
 
@@ -1195,5 +1195,19 @@ describe('formularVerweiseUmbenennen', () => {
     const roh = { antraege: { BAUA: { umfang: [{ id: 'a', formularDatei: 'x.frmsjf' }] } } };
     expect(formularVerweiseUmbenennen(roh, 'y.frmsjf', 'z.frmsjf')).toEqual({ abschnitt: roh, anzahl: 0 });
     expect(formularVerweiseUmbenennen(undefined, 'y.frmsjf', 'z.frmsjf')).toEqual({ abschnitt: undefined, anzahl: 0 });
+  });
+});
+
+describe('pdfOhneZuordnung', () => {
+  const d = (pfad: string, geaendert = 1) => ({ pfad, ordner: false, groesse: 1, geaendert });
+  it('nach dem Namen ohne Nummer und Jahr, PDFs vor anderen Dateien', () => {
+    const dateien = [d('BS9 BAUA 261110 Baubeschreibung.docx'), d('BS9 BAUA 261110 Baubeschreibung.pdf'), d('BS9 BAUA 261110 Lageplan.pdf')];
+    expect(pdfOhneZuordnung('003-Baubeschreibung (2026)', dateien, new Set())?.pfad).toBe('BS9 BAUA 261110 Baubeschreibung.pdf');
+    // Gegenprobe: ohne passende Datei keine
+    expect(pdfOhneZuordnung('003-Baubeschreibung (2026)', [d('BS9 BAUA 261110 Lageplan.pdf')], new Set())).toBeNull();
+  });
+  it('eine PDF, die schon einem Dokument des Antragsumfangs gehört, zählt nicht', () => {
+    const dateien = [d('BS9 BAUA 261110 Baubeschreibung.pdf')];
+    expect(pdfOhneZuordnung('004-Baubeschreibung', dateien, new Set(['bs9 baua 261110 baubeschreibung.pdf']))).toBeNull();
   });
 });

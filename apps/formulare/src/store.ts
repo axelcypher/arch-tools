@@ -585,34 +585,41 @@ function sichernUnter(ablage: string, k: string, aenderungen: Record<string, unk
 }
 
 /**
- * Umbenanntes Formular: ungespeicherte Eingaben und Verlauf ziehen unter den neuen Pfad um (Schlüssel root|pfad) –
- * nichts geht verloren. Liegt unter dem neuen Pfad schon etwas (eine alte Datei gleichen Namens), wird es ersetzt.
+ * Umbenanntes Formular: ungespeicherte Eingaben und Verlauf ziehen unter den neuen Pfad um (Schlüssel root|pfad).
+ * Der alte Eintrag fällt erst weg, wenn der neue geschrieben ist – bei vollem Speicher bleibt er stehen (und die
+ * Funktion liefert false); verloren geht so nichts.
  */
-export function formularLokalVerschieben(projekt: Projekt, von: string, nach: string) {
+export function formularLokalVerschieben(projekt: Projekt, von: string, nach: string): boolean {
   const alt = dokSchluessel({ projekt, pfad: von });
   const neu = dokSchluessel({ projekt, pfad: nach });
-  if (alt === neu) return;
+  if (alt === neu) return true;
+  let ok = true;
   const alle = entwuerfe();
   if (alt in alle) {
-    alle[neu] = alle[alt];
-    delete alle[alt];
-    schreiben(ENTWUERFE, alle);
+    const mit = { ...alle, [neu]: alle[alt] };
+    const ohne = { ...mit };
+    delete ohne[alt];
+    // in einem Schritt umschreiben; klappt das nicht, bleibt die bisherige Fassung (mit dem alten Schlüssel)
+    if (!schreiben(ENTWUERFE, ohne)) ok = false;
   }
-  const verzeichnis = lesen<Record<string, number>>(VERLAEUFE, {});
   const verlauf = lesen<unknown>(verlaufSchluessel(alt), null);
   if (verlauf !== null) {
-    schreiben(verlaufSchluessel(neu), verlauf);
-    try {
-      localStorage.removeItem(verlaufSchluessel(alt));
-    } catch {
-      // ohne Speicher nichts zu löschen
-    }
+    if (schreiben(verlaufSchluessel(neu), verlauf)) {
+      try {
+        localStorage.removeItem(verlaufSchluessel(alt));
+      } catch {
+        // ohne Speicher nichts zu löschen
+      }
+      const verzeichnis = lesen<Record<string, number>>(VERLAEUFE, {});
+      if (alt in verzeichnis) {
+        verzeichnis[neu] = verzeichnis[alt];
+        delete verzeichnis[alt];
+        schreiben(VERLAEUFE, verzeichnis);
+      }
+    } else ok = false;
   }
-  if (alt in verzeichnis) {
-    verzeichnis[neu] = verzeichnis[alt];
-    delete verzeichnis[alt];
-    schreiben(VERLAEUFE, verzeichnis);
-  }
+  if (!ok) log.warn(`Entwurf bzw. Verlauf von ${von} nicht vollständig nach ${nach} umgezogen (Speicher voll?)`);
+  return ok;
 }
 
 /* ---------- Formular ---------- */
@@ -1384,8 +1391,10 @@ export const useFormulare = create<FormulareState>()((set, get) => {
         // (auf dem Netzlaufwerk kann das dauern: das andere hat die Liste womöglich schon gelesen, als die Sperre noch
         // lag – dann stünde hier weiter das Schloss „anderswo geöffnet“; also danach die Liste neu lesen)
         if (ueberholt()) {
+          // nur eine eigene Sperre fällt – nach einer fremden ist nichts neu zu lesen
+          const eigene = gesperrt?.art === 'eigen';
           await sperreLoesen();
-          if (get().projekt === projekt) await get().formulareNeuLesen();
+          if (eigene && get().projekt === projekt) await get().formulareNeuLesen();
           return;
         }
         await oeffnen(projekt, eintrag.pfad, eintrag.name, frisch, sperre);

@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
-import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
 import { VORGABE_EXPORT, einstellungenAus, jjmmtt, tagVon } from './antrag';
 import { VORGABE_MERKMALE } from './bedingung';
@@ -15,7 +15,7 @@ import { parseFormular } from './forma/formular';
 import { formularPdf } from './forma/pdf';
 import { pdfjs } from './dokumente/pdf';
 import { useAufgeklappt } from './components/ProjektUebersicht';
-import { formularOrdner, useFormulare } from './store';
+import { entwurfVon, formularLokalVerschieben, formularOrdner, hatEntwurf, useFormulare } from './store';
 import { verknuepfen as dateiVerknuepfen } from './dateiAktionen';
 import { formularePunkte } from './components/Antrag';
 import { dateiMenue } from './components/AblageBaum';
@@ -1401,6 +1401,31 @@ describe('Sammelprojekt: Formulare aus dem Unterordner des aktiven Antrags und d
     expect(punkt('001-Muster')!.title).not.toContain('nicht im Antragsumfang');
     expect(punkt('001-Muster')!.className).not.toContain('neben');
     expect(punkt('002-Bauantrag (2026)')!.title).not.toContain('nicht im Antragsumfang');
+  });
+
+  it('Ampel der obersten Ebene folgt dem aktiven Antrag: zugeordnet in BAUA – dort ohne Hinweis, in BAUA 2 blass', async () => {
+    sammelprojekt();
+    ds.dateien.set('C:/FORMA/BS9/004-Baubeschreibung (2026).frmsjf', MUSTER);
+    const host = await projektBS9();
+    await klick(antragsdaten(host));
+    await klick(knopf(host, 'Antragsumfang festlegen'));
+    await act(() =>
+      useFormulare.getState().oapAendern((roh) => {
+        const f = roh.formulare as { antraege: Record<string, Record<string, unknown>> };
+        f.antraege.BAUA = { ...f.antraege.BAUA, umfang: [{ id: 'bb', titel: 'Baubeschreibung', art: 'intern', formularDatei: '004-Baubeschreibung (2026).frmsjf' }] };
+        return roh;
+      }),
+    );
+    await act(() => useAntrag.getState().laden());
+    for (let i = 0; i < 3; i++) await warte();
+    const punkt = () => knopf(host, '004-Baubeschreibung').querySelector<HTMLElement>('.nav-symbol .st-punkt')!;
+    expect(punkt().className).toContain('neben');
+    await klick(host.querySelector<HTMLButtonElement>('.an-fassung-knopf')!);
+    await klick(menuePunkt('BAUA'));
+    for (let i = 0; i < 3; i++) await warte();
+    expect(useAntrag.getState().projektdatei?.ansicht).toBe('BAUA');
+    expect(punkt().className).not.toContain('neben');
+    expect(punkt().title).not.toContain('nicht im Antragsumfang');
   });
 
   it('gewöhnliches Projekt: ein nicht zugeordnetes Formular bekommt keine Ampel', async () => {
@@ -5509,6 +5534,138 @@ describe('Formulare umbenennen', () => {
     useFormulare.getState().profilKopieren('name|Alt', 'name|Belegt');
     expect(useFormulare.getState().profile).toEqual({ 'name|Alt': a, 'name|Neu': a, 'name|Belegt': b });
     expect(JSON.parse(localStorage.getItem('formulare:profile')!)).toEqual({ 'name|Alt': a, 'name|Neu': a, 'name|Belegt': b });
+  });
+
+  it('eine Zuordnung nur über den Namen wird festgeschrieben – sonst fände der Antragsumfang das Formular nicht mehr', async () => {
+    const host = await projektBS9();
+    await klick(antragsdaten(host));
+    await klick(knopf(host, 'Antragsumfang festlegen'));
+    for (let i = 0; i < 3; i++) await warte();
+    // „Musterformular“ (Formular „Muster“) findet 001-Muster über den Namen, ohne formularDatei
+    const muster = () => (antragIn('BAUA 2')?.umfang as { id: string; formularDatei?: string }[]).find((u) => u.id === 'muster');
+    expect(muster()?.formularDatei).toBeUndefined();
+    expect(useAntrag.getState().dokumente.find((d) => d.eintrag.id === 'muster')?.formular?.pfad).toBe('BS9/001-Muster.frmsjf');
+    await umbenennen(host, '001-Muster', '010-Vordruck');
+    expect(muster()?.formularDatei).toBe('010-Vordruck.frmsjf');
+    expect(useAntrag.getState().dokumente.find((d) => d.eintrag.id === 'muster')?.formular?.pfad).toBe('BS9/010-Vordruck.frmsjf');
+    // Gegenprobe: der Bauantrag (fehlt) bekam keine Zuordnung
+    expect((antragIn('BAUA 2')?.umfang as { id: string; formularDatei?: string }[]).find((u) => u.id === 'bauantrag')?.formularDatei).toBeUndefined();
+  });
+
+  it('nicht geöffnet: Entwurf und Verlauf ziehen mit; ohne Kennung werden die eigenen Einstellungen kopiert', async () => {
+    // dasselbe Muster ohne Kennung – die eigenen Einstellungen hängen dann am Namen
+    const ohneKennung = new Uint8Array(Buffer.from(Buffer.from(MUSTER).toString('latin1').replace('nw019999', ''), 'latin1'));
+    ds.dateien.set(ALT, ohneKennung);
+    const host = await projektBS9();
+    await klick(knopf(host, '001-Muster'));
+    const feld = useFormulare.getState().offen!.felder.flat().find((f) => f.art === 'text' && !f.berechnet)!;
+    act(() => useFormulare.getState().wertSetzen(feld, 'Entwurf'));
+    const eigene = { abschnitte: {}, zaehlt: { [feld.schluessel]: false } } as unknown as ReturnType<typeof useFormulare.getState>['profile'][string];
+    useFormulare.setState({ profile: { 'name|001-Muster': eigene } });
+    await act(() => useFormulare.getState().schliessen());
+    const projekt = useFormulare.getState().projekt!;
+    expect(hatEntwurf(projekt, 'BS9/001-Muster.frmsjf')).toBe(true);
+
+    await umbenennen(host, '001-Muster', '010-Muster neu');
+    expect(hatEntwurf(projekt, 'BS9/001-Muster.frmsjf')).toBe(false);
+    expect(entwurfVon(projekt, 'BS9/010-Muster neu.frmsjf')?.aenderungen[feld.schluessel]).toBe('Entwurf');
+    expect(localStorage.getItem(`formulare:verlauf:${projekt.root}|BS9/001-Muster.frmsjf`)).toBeNull();
+    expect(localStorage.getItem(`formulare:verlauf:${projekt.root}|BS9/010-Muster neu.frmsjf`)).not.toBeNull();
+    // kopiert, nicht verschoben; nicht geöffnet bleibt es zu
+    expect(useFormulare.getState().profile['name|010-Muster neu']).toEqual(eigene);
+    expect(useFormulare.getState().profile['name|001-Muster']).toEqual(eigene);
+    expect(useFormulare.getState().offen).toBeNull();
+  });
+
+  it('nur die Groß-/Kleinschreibung: umbenannt', async () => {
+    const host = await projektBS9();
+    await umbenennen(host, '001-Muster', '001-muster');
+    expect(ds.dateien.has('C:/FORMA/BS9/001-muster.frmsjf')).toBe(true);
+    expect(ds.dateien.has(ALT)).toBe(false);
+    expect(ds.dateien.has('C:/FORMA/BS9/001-muster.frmtmp')).toBe(false);
+  });
+
+  it('Sammelprojekt: ein Formular im Unterordner – der Pfad ab dem Formularprojekt wandert mit', async () => {
+    ds.dateien.set('C:/FORMA/BS9/2. BAUA/002-Bauantrag (2026).frmsjf', MUSTER);
+    const host = await projektBS9();
+    await klick(antragsdaten(host));
+    await klick(knopf(host, 'Antragsumfang festlegen'));
+    // ausdrücklich zugeordnet, mit dem Pfad ab dem Formularprojekt
+    await act(() =>
+      useFormulare.getState().oapAendern((roh) => {
+        const f = roh.formulare as { antraege: Record<string, { umfang: { id: string; formularDatei?: string }[] }> };
+        f.antraege['BAUA 2'].umfang.find((u) => u.id === 'bauantrag')!.formularDatei = '2. BAUA/002-Bauantrag (2026).frmsjf';
+        return roh;
+      }),
+    );
+    await act(() => useAntrag.getState().laden());
+    for (let i = 0; i < 3; i++) await warte();
+    await umbenennen(host, '002-Bauantrag (2026)', '003-Bauantrag (2026)');
+    expect(ds.dateien.has('C:/FORMA/BS9/2. BAUA/003-Bauantrag (2026).frmsjf')).toBe(true);
+    expect((antragIn('BAUA 2')?.umfang as { id: string; formularDatei?: string }[]).find((u) => u.id === 'bauantrag')?.formularDatei).toBe('2. BAUA/003-Bauantrag (2026).frmsjf');
+  });
+
+  it('inzwischen ein anderes Projekt gewählt: geschrieben wird trotzdem in die Projektdatei des umbenannten Formulars', async () => {
+    const host = await projektBS9();
+    await mitZuordnungen(host);
+    // das Umbenennen auf dem Netzlaufwerk dauert – derweil wird H24 geöffnet
+    const umbenennenDs = ds.formularUmbenennen.bind(ds);
+    let weiter: () => void = () => undefined;
+    const halt = new Promise<void>((r) => (weiter = r));
+    let angekommen: () => void = () => undefined;
+    const da = new Promise<void>((r) => (angekommen = r));
+    ds.formularUmbenennen = async (...a) => {
+      angekommen();
+      await halt;
+      return umbenennenDs(...a);
+    };
+    await rechtsklick(knopf(host, '001-Muster'));
+    await klick(menuePunkt('Umbenennen'));
+    eingabe(document.querySelector<HTMLInputElement>('.rf input')!, '010-Muster neu');
+    act(() => knopf(document.querySelector('.rf')!, 'Umbenennen').click());
+    await da;
+    await act(() => useFormulare.getState().projektWaehlen(useFormulare.getState().projekte.find((p) => p.ordner === 'H24')!));
+    weiter();
+    for (let i = 0; i < 4; i++) await warte();
+    expect(useFormulare.getState().projekt?.ordner).toBe('H24');
+    expect(ds.dateien.has(NEU)).toBe(true);
+    expect(antragIn('BAUA')?.felder).toEqual({ '010-Muster neu.frmsjf': ZUSTAND });
+    // keine Sperre bleibt am neuen Namen liegen
+    expect(ds.dateien.has('C:/FORMA/BS9/010-Muster neu.frmtmp')).toBe(false);
+  });
+
+  it('Projektdatei nicht schreibbar und auch das Zurückbenennen scheitert: Meldung, keine liegen gebliebene Sperre', async () => {
+    const host = await projektBS9();
+    await mitZuordnungen(host);
+    ds.projektordner.projektdateiErsetzen = async () => {
+      throw new Error('Netzlaufwerk weg');
+    };
+    const umbenennenDs = ds.formularUmbenennen.bind(ds);
+    let aufrufe = 0;
+    ds.formularUmbenennen = async (...a) => {
+      if (++aufrufe > 1) throw new Error('Datei in Gebrauch');
+      return umbenennenDs(...a);
+    };
+    await umbenennen(host, '001-Muster', '010-Muster neu');
+    expect(ds.dateien.has(NEU)).toBe(true);
+    expect(useFormulare.getState().meldung).toMatchObject({ art: 'fehler', text: expect.stringContaining('bitte die Zuordnung in den Antragsdaten prüfen') });
+    expect(ds.dateien.has('C:/FORMA/BS9/010-Muster neu.frmtmp')).toBe(false);
+  });
+
+  it('Speicher voll beim Umziehen des Verlaufs: der alte bleibt stehen', () => {
+    const projekt = { root: 'C:/FORMA', ordner: 'BS9', titel: '' };
+    localStorage.setItem('formulare:verlauf:C:/FORMA|BS9/a.frmsjf', JSON.stringify({ schritte: [{ x: 1 }] }));
+    const setItem = localStorage.setItem.bind(localStorage);
+    const spion = vi.spyOn(localStorage, 'setItem').mockImplementation((k: string, v: string) => {
+      if (k.includes('b.frmsjf')) throw new Error('QuotaExceededError');
+      setItem(k, v);
+    });
+    try {
+      expect(formularLokalVerschieben(projekt, 'BS9/a.frmsjf', 'BS9/b.frmsjf')).toBe(false);
+    } finally {
+      spion.mockRestore();
+    }
+    expect(localStorage.getItem('formulare:verlauf:C:/FORMA|BS9/a.frmsjf')).not.toBeNull();
   });
 
   it('in FORMA geöffnet (Sperrdatei): nicht umbenannt', async () => {

@@ -81,8 +81,9 @@ export interface Dateisystem {
   /** Datei umbenennen bzw. verschieben; das Ziel wird nie überschrieben (nicht für Dateien von FORMA) */
   umbenennen(root: string, von: string, nach: string): Promise<void>;
   /**
-   * Formular (.frmsjf) im selben Ordner umbenennen – nur, wenn keine Sperrdatei daneben liegt; währenddessen liegt
-   * `sperre` als eigene Sperrdatei daneben (FORMA öffnet es nicht genau dann). Das Ziel wird nie überschrieben.
+   * Formular (.frmsjf) im selben Ordner umbenennen – nur, wenn daneben keine fremde Sperrdatei liegt; währenddessen
+   * liegt `sperre` als eigene Sperrdatei daneben (FORMA öffnet es nicht genau dann). Eine Sperrdatei mit genau diesem
+   * Inhalt gilt als eigene (am alten wie am neuen Namen). Das Ziel wird nie überschrieben.
    */
   formularUmbenennen(root: string, von: string, nach: string, sperre: Uint8Array): Promise<void>;
   /** Datei löschen – vorher mit Sicherungskopie (Formulare nur, wenn nicht geöffnet; Sperr-, Projektkarten- und INI-Dateien nie) */
@@ -420,15 +421,21 @@ export class SpeicherDateisystem implements Dateisystem {
     this.schreibvorgaenge.push(`umbenennen ${von} → ${nach}`);
   }
 
-  async formularUmbenennen(root: string, von: string, nach: string, _sperre: Uint8Array): Promise<void> {
+  async formularUmbenennen(root: string, von: string, nach: string, sperre: Uint8Array): Promise<void> {
     const ordner = (p: string) => p.slice(0, p.lastIndexOf('/'));
     if (!/\.frmsjf$/i.test(von) || !/\.frmsjf$/i.test(nach)) throw new Error(`${von}: Nur Formulare (.frmsjf) werden hier umbenannt`);
     if (ordner(von) !== ordner(nach)) throw new Error(`${von}: Formulare werden nur im selben Ordner umbenannt`);
     const q = this.dateien.get(this.pfad(root, von));
     if (!q) throw new Error(`${von}: Formular nicht gefunden`);
+    // wie die Hülle: eine Sperrdatei mit genau diesem Inhalt gehört der App
+    const eigen = (p: string) => {
+      const d = this.dateien.get(this.pfad(root, p));
+      return !!d && d.length === sperre.length && d.every((b, i) => b === sperre[i]);
+    };
     const gleich = von.toLowerCase() === nach.toLowerCase();
-    if (!gleich && (this.dateien.has(this.pfad(root, nach)) || this.dateien.has(this.pfad(root, sperrPfad(nach))))) throw new Error(`${nach}: Das Formular gibt es schon`);
-    if (this.dateien.has(this.pfad(root, sperrPfad(von)))) throw new Error(`${von}: Das Formular ist gerade geöffnet (Sperrdatei vorhanden) – bitte erst dort schließen`);
+    if (!gleich && (this.dateien.has(this.pfad(root, nach)) || (this.dateien.has(this.pfad(root, sperrPfad(nach))) && !eigen(sperrPfad(nach)))))
+      throw new Error(`${nach}: Das Formular gibt es schon`);
+    if (this.dateien.has(this.pfad(root, sperrPfad(von))) && !eigen(sperrPfad(von))) throw new Error(`${von}: Das Formular ist gerade geöffnet (Sperrdatei vorhanden) – bitte erst dort schließen`);
     this.dateien.delete(this.pfad(root, von));
     this.dateien.set(this.pfad(root, nach), q);
     this.geaendert.set(this.pfad(root, nach), this.geaendert.get(this.pfad(root, von)) ?? 0);
