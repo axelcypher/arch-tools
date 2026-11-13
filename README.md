@@ -10,7 +10,7 @@ haben neue Namen – siehe [Neue Namen](#neue-namen).
 | **QUADRIO** – Flächenrechner | Flächen- und Rauminhaltsberechnung nach DIN 277 und WoFlV | unten |
 | **TERRIO** – GRZ-Nachweis | GRZ/GFZ-Nachweis nach BauNVO und BauO NRW | [docs/grz-gfz.md](docs/grz-gfz.md) |
 | **NUMIO** – Kostenermittlung | Massen- und Kostenermittlung nach DIN 276 | [docs/kosten.md](docs/kosten.md) |
-| **ATLAS** – Projekt (früher Projektordner) | Das Setup-Tool: Projekte mit einem Assistenten anlegen und fortschreiben – Stammdaten, Grundstück, Bauherr, Umfang, Beteiligte in der Projektdatei, Ordner nach der Bürostruktur (Klick-Editor mit Bausteinen), Vorlagen-Presets; Ordner prüfen; Mails prüfen, benennen und aus Outlook ablegen; Katasterpläne aus einer QGIS-Vorlage | [docs/projektordner.md](docs/projektordner.md) |
+| **ATLAS** – Projektordner | Das Setup-Tool: Projekte mit einem Assistenten anlegen und fortschreiben – Stammdaten, Grundstück, Bauherr, Umfang, Beteiligte in der Projektdatei, Ordner nach der Bürostruktur (Klick-Editor mit Bausteinen), Vorlagen-Presets; Ordner prüfen; Mails prüfen, benennen und aus Outlook ablegen; Katasterpläne aus einer QGIS-Vorlage | [docs/projektordner.md](docs/projektordner.md) |
 | **RECTIO** – Entzerrung | Fotos perspektivisch entzerren und darin messen | [docs/entzerrung.md](docs/entzerrung.md) |
 | **PERMIO** – Formulare | Bauantragsformulare aus SJ FORMA bequem ausfüllen – die Dateien bleiben im Original lesbar | [docs/formulare.md](docs/formulare.md) |
 | **FABRIO** – AVA | Ausschreibung, Vergabe, Abrechnung und Bauleitung: Leistungsverzeichnisse (LV-Dateien des bisherigen LV-Programms oder eigenes Format), Preisspiegel, Aufträge, Rechnungsprüfung mit Deckblatt, Kostenkontrolle (Excel), Bautagebuch, Protokolle, Mängel, Mailverlauf | [docs/ava.md](docs/ava.md) |
@@ -237,7 +237,7 @@ fehlen sie, warnt der Bericht.
 - **NUMIO** (Massen- und Kostenermittlung nach DIN 276) als eigene App (`apps/kosten`): Mengen aus dem Projekt mit
   Nachweis im Grundriss und im 3D-Modell, Kennwerte mit Bandbreite, Kennwertkatalog, Kostenstände – siehe
   [docs/kosten.md](docs/kosten.md)
-- **ATLAS** (Projekt, früher Projektordner) als eigene App (`apps/ordner`): Assistent für neue und bestehende Projekte
+- **ATLAS** (Projektordner) als eigene App (`apps/ordner`): Assistent für neue und bestehende Projekte
   (Stammdaten, Grundstück, Bauherr, Umfang, Beteiligte, Vorlagen, Zusammenfassung und Trockenlauf), alles in der
   Projektdatei (`.oap`) des Projektordners, **Struktur-Editor zum Klicken** (Mehrfachauswahl, Ziehen, Kopieren in
   mehrere Ordner, **Bausteine** für wiederkehrende Unterordner wie Gewerke), **Vorlagen-Presets** aus

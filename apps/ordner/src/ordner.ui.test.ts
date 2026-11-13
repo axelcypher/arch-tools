@@ -74,7 +74,7 @@ const warten = () =>
   });
 const weiter = (host: Element) => act(() => knopf(host, 'Weiter:').click());
 
-describe('ATLAS (Projekt, früher Projektordner)', () => {
+describe('ATLAS (Projektordner)', () => {
   it('„Projekte“ in der Titelleiste wie in den anderen Apps: führt zur Startseite des Assistenten (Q-5, P-13)', () => {
     const host = render();
     act(() => knopf(host, 'Ordner prüfen').click());
