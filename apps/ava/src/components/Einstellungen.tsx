@@ -37,7 +37,7 @@ export function EinstellungenModal() {
   const gespeichert = useAva((s) => s.einstellungen);
   const [e, setE] = useState<AvaEinstellungen>(gespeichert);
   const [ebene, setEbene] = useState<Ebene>('ablage');
-  const [probe, setProbe] = useState('K62 R021 Witthaut 251024 AB1.pdf');
+  const [probe, setProbe] = useState('K62 R021 Musterbau 251024 AB1.pdf');
   const schliessen = () => useAva.getState().setEinstellungenOffen(false);
   const setze = <K extends keyof AvaEinstellungen>(k: K, patch: Partial<AvaEinstellungen[K]>) => setE((x) => ({ ...x, [k]: { ...x[k], ...patch } }));
 
@@ -113,7 +113,7 @@ export function EinstellungenModal() {
                 <span className="ava-feld-hinweis">Ein Klick hängt den Platzhalter an das erste Muster an.</span>
               </div>
               <Feld label="Beispiel für neue Dateien" breit>
-                <code>{nameBilden(e.rechnungen.muster[0] ?? '', { kuerzel: 'K62', nr: 53, firma: 'Witthaut', datum: '2026-11-12', art: 'SR', lfd: 4, gewerk: 'G08' })}.pdf</code>
+                <code>{nameBilden(e.rechnungen.muster[0] ?? '', { kuerzel: 'K62', nr: 53, firma: 'Musterbau', datum: '2026-11-12', art: 'SR', lfd: 4, gewerk: 'G08' })}.pdf</code>
               </Feld>
               <Feld label="Erkennen ausprobieren" breit>
                 <input value={probe} onChange={(x) => setProbe(x.target.value)} />

@@ -8,7 +8,7 @@
  *   {Firma}    Auftragnehmer                     {Gewerk} „G08“
  *
  * Alte Namen gelten weiter ({Kürzel}, {Datum} = Rechnungsdatum, Groß-/Kleinschreibung egal).
- * Beispiele: „{PROJEKT_KUERZEL} R{Nr:3} {Firma} {Rechnungsdatum} {Art}{Lfd}“ → „K62 R021 Witthaut 251024 AB1.pdf“,
+ * Beispiele: „{PROJEKT_KUERZEL} R{Nr:3} {Firma} {Rechnungsdatum} {Art}{Lfd}“ → „K62 R021 Musterbau 251024 AB1.pdf“,
  * „{PROJEKT_KUERZEL} {Rechnungsdatum} {Lfd}.{Art} Fa. {Firma}“ → „HVO 261111 1.AB Fa. Tischer.pdf“. Zum Erkennen
  * vorhandener Dateien gibt es mehrere Muster (die Benennung war nicht immer einheitlich); neue Dateien bekommen das erste.
  */

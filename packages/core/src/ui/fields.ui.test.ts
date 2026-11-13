@@ -143,9 +143,9 @@ describe('Prüfregeln', () => {
     expect(plz('4814')).toBe('PLZ mit fünf Ziffern, z. B. 48143.');
     expect(plz('48143')).toBeNull();
     expect(plz('')).toBeNull();
-    expect(email('anna@mueller.de, kein-mail')).toBe('Keine gültige E-Mail-Adresse: kein-mail');
-    expect(email('anna@mueller, a@b.de')).toBe('Keine gültige E-Mail-Adresse: anna@mueller');
-    expect(email('a@b.de; c@d.org')).toBeNull();
+    expect(email('anna@mueller.example, kein-mail')).toBe('Keine gültige E-Mail-Adresse: kein-mail');
+    expect(email('anna@mueller, a@b.example')).toBe('Keine gültige E-Mail-Adresse: anna@mueller');
+    expect(email('a@b.example; c@d.example')).toBeNull();
     expect(ordnername('EFH Müller/Weg: 3?')).toBe('/ : ? werden im Ordnernamen entfernt.');
     expect(ordnername('EFH Müller')).toBeNull();
   });

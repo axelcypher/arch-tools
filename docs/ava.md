@@ -168,9 +168,9 @@ nicht immer einheitlich. Gespeicherte Muster mit `{Kürzel}` und `{Datum}` (= Re
 
 | Muster | Beispiel |
 |---|---|
-| `{PROJEKT_KUERZEL} R{Nr:3} {Firma} {Rechnungsdatum} {Art}{Lfd}` | `K62 R021 Witthaut 251024 AB1.pdf` |
+| `{PROJEKT_KUERZEL} R{Nr:3} {Firma} {Rechnungsdatum} {Art}{Lfd}` | `K62 R021 Musterbau 251024 AB1.pdf` |
 | `{PROJEKT_KUERZEL} {Rechnungsdatum} {Lfd}.{Art} Fa. {Firma}` | `HVO 261111 1.AB Fa. Tischer.pdf` |
-| `{PROJEKT_KUERZEL} {Rechnungsdatum} {Art}{Lfd} {Firma}` | `K62 251024 SR1 Witthaut.pdf` |
+| `{PROJEKT_KUERZEL} {Rechnungsdatum} {Art}{Lfd} {Firma}` | `K62 251024 SR1 Musterbau.pdf` |
 
 Unterstriche statt Leerzeichen werden erkannt. Die Einstellungen zeigen ein Beispiel und probieren das Erkennen
 an einem Dateinamen aus.
