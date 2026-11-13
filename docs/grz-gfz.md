@@ -195,7 +195,8 @@ unter dem Plan beginnt mit der Nummer wie im Plan und im Druck.
 ### Grundstück und Gelände
 
 - **Grundstücksfläche:** aus den Projektdaten (Kataster); fehlt sie, aus der gezeichneten Grundstücksgrenze, sonst aus den eigenen Lageplan-Flächen zusammen mit dem
-  Gebäude. Weichen beide voneinander ab, weist der Nachweis darauf hin.
+  Gebäude. Weichen beide voneinander ab, weist der Nachweis darauf hin. Eine Grundstücksfläche von 0 oder darunter (etwa aus einer
+  fremden Datei) zählt wie „nicht angegeben“; dann springen Grenze bzw. Lageplan ein.
 - **Geländeoberfläche:** eingetragener Wert (vor 1985: die festgelegte Geländeoberfläche). Sonst wird das Gelände
   **je Geschoss** entlang seiner eigenen Außenwände abgetastet (alle 0,4 m, 0,5 m vor der Wand) – aus dem
   Geländemodell des IFC, ersatzweise aus den Höhen der Lageplan-Flächen. Bei Hanglage hat damit jedes Geschoss

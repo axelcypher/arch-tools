@@ -807,4 +807,16 @@ describe('Gesamt-Review: Bedienung der Oberfläche', () => {
     expect(k2.textContent).toContain('Reserve 110,00 m²');
     expect(k2.getAttribute('title')).toContain('GR 135,00 m² < 245,00 m² zulässig');
   });
+
+  it('Wandzuschlag nur, wenn Aufenthaltsräume zur GF zählen – 1990 erst mit Festsetzung nach § 20 Abs. 3 S. 2', () => {
+    const p = projekt();
+    p.massNutzung = { ...p.massNutzung, planDatum: '2020-01-01' };
+    useGrz.getState().load(p);
+    const host = render(GrzGfzView);
+    const hatFeld = () => [...host.querySelectorAll('.field-label')].some((l) => l.textContent === 'Wandzuschlag [m]');
+    expect(hatFeld()).toBe(false);
+    const schalter = [...host.querySelectorAll('label.toggle')].find((l) => l.textContent?.includes('§ 20 Abs. 3 S. 2'))!.querySelector('input') as HTMLInputElement;
+    act(() => schalter.click());
+    expect(hatFeld()).toBe(true);
+  });
 });

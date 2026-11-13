@@ -284,7 +284,7 @@ export function GrzGfzView() {
           <Field label="Decken-/Dachaufbau [m]" hint="leer = 0,30 m; für die lichte Höhe abgezogen">
             <NumberField value={m.dachaufbau} allowEmpty min={0} max={2} placeholder="0,30" onChange={(v) => setM({ dachaufbau: v })} />
           </Field>
-          {n.recht.baunvo !== '1990' && (
+          {n.aufenthaltZaehlt && (
             <Field label="Wandzuschlag [m]" hint="leer = 0,25 m; Umfassungswände der Aufenthaltsräume">
               <NumberField value={m.wandzuschlag} allowEmpty min={0} max={2} placeholder="0,25" onChange={(v) => setM({ wandzuschlag: v })} />
             </Field>
