@@ -139,3 +139,53 @@ describe('QUADRIO: Flächenaufstellung am Bildschirm', () => {
     expect(document.activeElement).toBe(oeffnen);
   });
 });
+
+describe('QUADRIO: ungespeicherte Änderungen am Knopf „Speichern“ (Designsystem)', () => {
+  it('Klasse ungespeichert und aria-label erst nach einer Änderung; nach dem Laden ohne', () => {
+    const p = createProject('Haus');
+    useEditor.getState().loadProject(p, p, 'Haus.oap');
+    const host = render();
+    const speichern = () => [...host.querySelectorAll<HTMLButtonElement>('.toolbar button')].find((b) => b.getAttribute('aria-label')?.startsWith('Speichern'))!;
+    // Gegenprobe: frisch geladen – kein Punkt
+    expect(speichern().classList.contains('ungespeichert')).toBe(false);
+    expect(speichern().getAttribute('aria-label')).toBe('Speichern');
+    act(() => useEditor.getState().update((q) => ({ ...q, name: 'Haus 2' })));
+    expect(speichern().classList.contains('ungespeichert')).toBe(true);
+    expect(speichern().getAttribute('aria-label')).toBe('Speichern – ungespeicherte Änderungen');
+    expect(host.querySelector('.tb-dirty')).toBeNull();
+  });
+});
+
+describe('QUADRIO: Befehle, die einen Dialog öffnen, enden auf „ …“ (Begriffe)', () => {
+  const knopf = (host: HTMLElement, text: string) => [...host.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent?.trim() === text);
+
+  it('„Duplizieren …“ und „+ Neu …“ beim Geschoss öffnen einen Dialog; „Tastenkürzel …“ öffnet die Kürzelübersicht', async () => {
+    const { rectPoints } = await import('@core/geometry');
+    const { createOutline } = await import('@core/model');
+    const p = createProject('Haus');
+    p.storeys[0].shapes.push(createOutline(rectPoints({ x: 0, y: 0 }, { x: 5, y: 4 })));
+    useEditor.getState().loadProject(p, p, 'Haus.oap');
+    const host = render();
+    // Gegenprobe: der alte Text ohne „ …“ ist weg
+    expect(knopf(host, 'Duplizieren')).toBeUndefined();
+    act(() => knopf(host, 'Duplizieren …')!.click());
+    expect(document.querySelector('.modal')?.textContent).toMatch(/Geschoss „EG“ duplizieren/);
+    act(() => void document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })));
+    expect(document.querySelector('.modal')).toBeNull();
+    expect(useEditor.getState().project.storeys).toHaveLength(1); // abgebrochen: nichts dupliziert
+    expect(knopf(host, '+ Neu')).toBeUndefined();
+    act(() => knopf(host, '+ Neu …')!.click());
+    expect(document.querySelector('.modal')?.textContent).toMatch(/Neues Geschoss/);
+    act(() => void document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })));
+    expect(document.querySelector('.modal')).toBeNull();
+    // Umsortieren mit Symbolen statt ▲/▼
+    expect(host.querySelector('button[aria-label="Geschoss nach oben"] svg')).not.toBeNull();
+    expect(host.querySelector('button[aria-label="Geschoss nach unten"]')?.textContent?.trim()).toBe('');
+    expect(useEditor.getState().project.storeys).toHaveLength(1);
+
+    const kuerzel = [...host.querySelectorAll<HTMLButtonElement>('.hud-hint-knopf')].find((b) => /Tastenkürzel …/.test(b.textContent ?? '') || b.getAttribute('aria-label') === 'Alle Tastenkürzel …')!;
+    expect(kuerzel).toBeDefined();
+    act(() => kuerzel.click());
+    expect(document.querySelector('.modal')?.textContent).toMatch(/Tastenkürzel der Zeichenfläche/);
+  });
+});

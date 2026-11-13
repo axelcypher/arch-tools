@@ -162,7 +162,12 @@ export function TitleBar({ app, name, dirty, onOpenLog, regeln, onProjekte, zeic
         </span>
         <span className="titlebar-project" {...ziehen} title={name}>
           {name}
-          {dirty && <span className="titlebar-dirty" title="Ungespeicherte Änderungen"> ●</span>}
+          {dirty && (
+            <span className="titlebar-dirty" title="Ungespeicherte Änderungen">
+              <span aria-hidden="true"> ●</span>
+              <span className="titlebar-unsichtbar"> – ungespeicherte Änderungen</span>
+            </span>
+          )}
         </span>
         <span className="titlebar-drag" {...ziehen} />
         {desktop && !rahmen && <UpdateKnopf app={app} dirty={dirty} />}
@@ -177,13 +182,13 @@ export function TitleBar({ app, name, dirty, onOpenLog, regeln, onProjekte, zeic
         {regeln && <Nachschlagewerk app={regeln} />}
         <button
           className="titlebar-btn"
-          title="Protokoll (Fehlersuche)"
+          title="Fehlerprotokoll – Meldungen der App für die Fehlersuche"
           onClick={() => {
             setSeen(getEntries().at(-1)?.id ?? 0);
             onOpenLog();
           }}
         >
-          <span aria-hidden>≡</span> Protokoll
+          <span aria-hidden>≡</span> Fehlerprotokoll
           {errors > 0 && <span className="titlebar-badge">{errors}</span>}
         </button>
         {rahmen === 'fenster' && isTauri() && (
@@ -289,7 +294,16 @@ export function ThemeMenu({ zeichenflaeche = true }: { zeichenflaeche?: boolean 
 
   const cur = WAHL.find((w) => w.id === wahl)!;
   return (
-    <div className="titlebar-menu" ref={ref}>
+    <div
+      className="titlebar-menu"
+      ref={ref}
+      onBlur={(e) => {
+        // Tab aus dem Menü hinaus schließt es – nur bei bekanntem Ziel draußen: Safari fokussiert Knöpfe beim Klick nicht
+        // (relatedTarget null), ein Klick auf einen Eintrag käme sonst nicht mehr an; Klicks daneben fängt mousedown ab
+        const nach = e.relatedTarget as Node | null;
+        if (open && nach && !ref.current?.contains(nach)) setOpen(false);
+      }}
+    >
       <button
         ref={knopfRef}
         className="titlebar-btn"

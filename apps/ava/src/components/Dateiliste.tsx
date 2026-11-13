@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { meldung } from '@core/ui/Rueckfrage';
+import { Symbol } from '@core/ui/Symbol';
 import { vollerPfad } from '../dateien';
 import type { Datei } from '../projekt';
 import { gewerkOrdner, useAva } from '../store';
@@ -70,7 +71,7 @@ export function Dateiliste({ gewerk }: { gewerk: string }) {
         <div className="ava-leer-hinweis">
           Im Gewerkeordner liegen noch keine Dateien{imArchiv && !archiv ? ' (nur im Archiv)' : ''}.
           <div className="button-row">
-            <button onClick={() => void useAva.getState().fs.oeffnen(vollerPfad(projekt.ordner, g.pfad)).catch((e) => meldung('Ordner ließ sich nicht öffnen', g.pfad, e))}>Ordner öffnen</button>
+            <button onClick={() => void useAva.getState().fs.oeffnen(vollerPfad(projekt.ordner, g.pfad)).catch((e) => meldung('Ordner ließ sich nicht öffnen', g.pfad, e))}><Symbol name="ordnerOffen" /> Ordner öffnen</button>
           </div>
         </div>
       )}

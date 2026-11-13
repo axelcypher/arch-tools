@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { bestaetigen, meldung } from '@core/ui/Rueckfrage';
+import { Symbol } from '@core/ui/Symbol';
 import type { Protokoll, Top } from '../../avaDaten';
 import { ABNAHME_HINWEIS, istAbnahme, protokollPdf } from '../../bauleitung/berichte';
 import { vorlageFuellen } from '../../abrechnung/mail';
@@ -216,7 +217,7 @@ function ProtokollEditor({ p }: { p: Protokoll }) {
                 </td>
                 <td>
                   <button className="small icon" title="Teilnehmer entfernen" aria-label={`${wer} entfernen`} onClick={() => setze((x) => ({ teilnehmer: x.teilnehmer.filter((_, j) => j !== i) }))}>
-                    ×
+                    <Symbol name="schliessen" />
                   </button>
                 </td>
               </tr>
@@ -267,7 +268,7 @@ function ProtokollEditor({ p }: { p: Protokoll }) {
                   <input type="checkbox" checked={!!t.erledigt} onChange={(x) => top(t.id, { erledigt: x.target.checked })} /> erledigt
                 </label>
                 <button className="small icon" title="Punkt entfernen" aria-label={`TOP ${t.nr} entfernen`} onClick={() => setze((x) => ({ tops: x.tops.filter((y) => y.id !== t.id) }))}>
-                  ×
+                  <Symbol name="schliessen" />
                 </button>
               </span>
             </div>

@@ -11,6 +11,7 @@ name: Build & Release
 #   RECTIO    apps/entzerrung        Tag entzerrung-v<version>  (Entzerrung)
 #   PERMIO    apps/formulare         Tag formulare-v<version>   (Formulare)
 #   FABRIO    apps/ava               Tag ava-v<version>         (Ausschreibung, Vergabe, Abrechnung, Bauleitung)
+#   LEXIO     apps/baurecht          Tag baurecht-v<version>    (Baurecht)
 #   Arkly     apps/suite             Tag suite-v<version>       (Rahmen-App: alle Apps in einem Fenster)
 #
 # Versionen setzt der Lauf selbst (nach dem Muster von Changesets): Jeder PR legt eine Notiz .versionen/<zweig>.json an
@@ -34,7 +35,7 @@ on:
       app:
         description: App
         type: choice
-        options: [alle, flaechenrechner, grz, kosten, ordner, entzerrung, formulare, ava, suite]
+        options: [alle, flaechenrechner, grz, kosten, ordner, entzerrung, formulare, ava, baurecht, suite]
         default: alle
 
 permissions:
@@ -107,7 +108,7 @@ jobs:
         run: |
           apps='[]'
           # dieselbe Liste und dieselben Tag-Schemata in scripts/versionen-pruefen.mjs (Versionsprüfung im PR)
-          for d in flaechenrechner grz kosten ordner entzerrung formulare ava suite; do
+          for d in flaechenrechner grz kosten ordner entzerrung formulare ava baurecht suite; do
             # der öffentliche Schlüssel in der App muss zum Signierschlüssel passen, sonst lehnen die Apps jedes Update ab
             k=$(node -p "require('./apps/$d/src-tauri/tauri.conf.json').plugins.updater.pubkey")
             if [ -n "$PUBKEY" ] && [ "$k" != "$(printf '%s' "$PUBKEY" | tr -d '[:space:]')" ]; then
@@ -130,6 +131,7 @@ jobs:
               entzerrung) tag="$d-v$v"; name="RECTIO"; web="rectio-web.zip" ;;
               formulare) tag="$d-v$v"; name="PERMIO"; web="permio-web.zip" ;;
               ava) tag="$d-v$v"; name="FABRIO"; web="fabrio-web.zip" ;;
+              baurecht) tag="$d-v$v"; name="LEXIO"; web="lexio-web.zip" ;;
               suite) tag="$d-v$v"; name="Arkly"; web="arkly-web.zip" ;;
             esac
             if [ "$EVENT" = "workflow_dispatch" ]; then

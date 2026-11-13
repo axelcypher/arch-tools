@@ -144,6 +144,8 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
                 .map((u) => ({
                   text: u.titel,
                   symbol: (zugeordnet?.eintrag.id === u.id ? 'haken' : undefined) as 'haken' | undefined,
+                  // Einfachauswahl: der Haken allein wird nicht vorgelesen
+                  ...(zugeordnet?.eintrag.id === u.id ? { hinweis: 'zugeordnet' } : {}),
                   aktion: () =>
                     void useAntrag.getState().umfangAendern((aktuell) => aktuell.map((x) => (x.id === u.id ? { ...x, formularDatei: formularDatei(f.pfad) } : x)), { ansicht, eintrag: u.id, titel: u.titel, was: 'Nicht zugeordnet' }),
                 })),
@@ -151,13 +153,14 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
           ]
         : []),
       // der Ordner des Formulars (im Sammelprojekt ggf. der Unterordner des Antrags)
-      { text: 'Im Explorer öffnen', symbol: 'ordner', aktion: () => void oeffnePfad(verbinde(projekt!.root, f.pfad.slice(0, f.pfad.lastIndexOf('/')))).catch(() => undefined) },
+      { text: 'Ordner öffnen', symbol: 'ordnerOffen', aktion: () => void oeffnePfad(verbinde(projekt!.root, f.pfad.slice(0, f.pfad.lastIndexOf('/')))).catch(() => undefined) },
       { text: 'Pfad kopieren', symbol: 'kopie', aktion: () => void navigator.clipboard?.writeText(verbinde(projekt!.root, f.pfad)) },
       { trenner: true },
       { text: 'Reihenfolge zurücksetzen', hinweis: 'alphabetisch', symbol: 'neuLaden', deaktiviert: !reihenfolge?.length, aktion: () => void useAntrag.getState().reihenfolgeSetzen(null) },
       { trenner: true },
       { text: 'Umbenennen …', symbol: 'stift', aktion: () => void formularUmbenennen(f) },
-      { text: 'Löschen …', symbol: 'muell', aktion: () => void formularLoeschen(f) },
+      { trenner: true },
+      { text: 'Löschen …', symbol: 'muell', gefahr: true, aktion: () => void formularLoeschen(f) },
     ];
   };
 
@@ -265,9 +268,10 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
       return [
         { text: 'Formular anlegen', symbol: 'plus', ...aus, aktion: () => void useAntrag.getState().formularAnlegen(d.eintrag.id, { ansicht }) },
         ...(formulare.length ? [{ text: 'Vorhandenes Formular zuordnen', symbol: 'link' as const, unter: formularePunkte(d.eintrag.id), ...aus }] : []),
-        { text: 'Aus dem Antragsumfang nehmen', symbol: 'muell', gefahr: true, ...aus, aktion: () => void ausUmfangEntfernen(d.eintrag.id, ansicht, d.eintrag.titel) },
         { trenner: true },
         { text: 'Antragsumfang zeigen', symbol: 'stapel', aktion: umfangZeigen },
+        { trenner: true },
+        { text: 'Aus dem Antragsumfang nehmen', symbol: 'muell', gefahr: true, ...aus, aktion: () => void ausUmfangEntfernen(d.eintrag.id, ansicht, d.eintrag.titel) },
       ];
     };
     return (
@@ -397,8 +401,8 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
                   <button className="icon" title="Sperren in diesem Projekt prüfen und aufheben" aria-label="Sperren …" onClick={onSperren}>
                     <Symbol name="schloss" />
                   </button>
-                  <button className="icon" title="Formularordner des Projekts im Explorer öffnen" aria-label="Formularordner im Explorer öffnen" onClick={() => void oeffnePfad(verbinde(projekt.root, projekt.ordner)).catch(() => undefined)}>
-                    <Symbol name="ordner" />
+                  <button className="icon" title="Formularordner des Projekts öffnen" aria-label="Formularordner öffnen" onClick={() => void oeffnePfad(verbinde(projekt.root, projekt.ordner)).catch(() => undefined)}>
+                    <Symbol name="ordnerOffen" />
                   </button>
                 </>
               }
@@ -475,8 +479,8 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
                       </button>
                     )}
                     {ablage && (
-                      <button className="icon" title="Projektordner im Explorer öffnen" aria-label="Projektordner im Explorer öffnen" onClick={() => void oeffnePfad(verbinde(ablage.root, ablage.pfad)).catch(() => undefined)}>
-                        <Symbol name="ordner" />
+                      <button className="icon" title="Projektordner öffnen" aria-label="Projektordner öffnen" onClick={() => void oeffnePfad(verbinde(ablage.root, ablage.pfad)).catch(() => undefined)}>
+                        <Symbol name="ordnerOffen" />
                       </button>
                     )}
                   </>

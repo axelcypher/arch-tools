@@ -168,7 +168,7 @@ export function RechnungenAnsicht({ gewerk }: { gewerk?: string }) {
                       onClick={async () => {
                         const v = e.mail.vorlagen.find((x) => x.id === 'rechnung') ?? e.mail.vorlagen[0];
                         if (!v) {
-                          await meldung('Keine Mailvorlage', 'Es gibt keine Mailvorlage „Rechnung“ – bitte unter ⚙ Einstellungen › Mailvorlagen anlegen.');
+                          await meldung('Keine Mailvorlage', 'Es gibt keine Mailvorlage „Rechnung“ – bitte unter Einstellungen › Mailvorlagen anlegen.');
                           return;
                         }
                         try {

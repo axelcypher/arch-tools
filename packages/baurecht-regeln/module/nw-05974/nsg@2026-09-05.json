@@ -1,0 +1,125 @@
+{
+  "format": 1,
+  "modul": "nw-05974",
+  "norm": "nsg",
+  "fassung": "2026-09-05",
+  "version": 1,
+  "geltung": {
+    "f": "schutz.nsg",
+    "ist": true
+  },
+  "geltungGrund": "nur im Naturschutzgebiet, auch wenn es einstweilig sichergestellt ist",
+  "paragrafen": {
+    "SO-060": {
+      "titel": "SO-060 Standortübungsplatz bei Büecke",
+      "gilt": {
+        "f": "kreis_soest.nsg",
+        "ist": "SO-060 Standortübungsplatz bei Büecke"
+      },
+      "grund": "Naturschutzgebiet „Standortübungsplatz bei Büecke“ (Soest, Möhnesee), einstweilig sichergestellt (Verordnung vom 03.09.2024, verlängert durch Verordnung vom 27.07.2026, Amtsblatt Nr. 36/2026): verboten sind alle Handlungen, die zu einer Zerstörung, Beschädigung oder Veränderung des Gebiets führen können, insbesondere das Errichten baulicher Anlagen; Befreiung nur nach § 67 BNatSchG. Es gelten die in der bisherigen Verordnung genannten Verbote fort (§ 3 der Sicherstellungsverordnung).",
+      "fundstellen": [
+        "SO-060"
+      ],
+      "pruefen": {
+        "grund": "Die Sicherstellung läuft 2028 aus – ob dann eine endgültige Schutzverordnung oder ein Landschaftsplan gilt, vor der Einreichung prüfen (LINFOS, Amtsblatt der Bezirksregierung Arnsberg).",
+        "wenn": {
+          "tag": "einreichung",
+          "ab": "2028-01-01"
+        }
+      },
+      "nachweis": [
+        "Antrag auf Befreiung bei der Bezirksregierung Arnsberg bzw. unteren Naturschutzbehörde"
+      ],
+      "verweise": [
+        "bund/bnatschg/67"
+      ]
+    },
+    "SO-075": {
+      "titel": "SO-075 Ehemalige Klärteiche bei Hattrop",
+      "gilt": {
+        "f": "kreis_soest.nsg",
+        "ist": "SO-075 Ehemalige Klärteiche bei Hattrop"
+      },
+      "grund": "Naturschutzgebiet „Ehemalige Klärteiche bei Hattrop“ (Soest, Welver), einstweilig sichergestellt (Verordnung vom 09.05.2023, um zwei Jahre verlängert 2025): verboten sind alle Handlungen, die zu einer Zerstörung, Beschädigung oder Veränderung des Gebiets führen können, insbesondere das Errichten baulicher Anlagen; Befreiung nur nach § 67 BNatSchG.",
+      "fundstellen": [
+        "SO-075"
+      ],
+      "pruefen": {
+        "grund": "Die Sicherstellung läuft 2027 aus – ob dann eine endgültige Schutzverordnung oder ein Landschaftsplan gilt, vor der Einreichung prüfen (LINFOS, Amtsblatt der Bezirksregierung Arnsberg).",
+        "wenn": {
+          "tag": "einreichung",
+          "ab": "2027-01-01"
+        }
+      },
+      "nachweis": [
+        "Antrag auf Befreiung bei der Bezirksregierung Arnsberg bzw. unteren Naturschutzbehörde"
+      ],
+      "verweise": [
+        "bund/bnatschg/67"
+      ]
+    },
+    "SO-076": {
+      "titel": "SO-076 Ehemalige Klärteiche an der Zuckerfabrik Soest",
+      "gilt": {
+        "f": "kreis_soest.nsg",
+        "ist": "SO-076 Ehemalige Klärteiche an der Zuckerfabrik Soest"
+      },
+      "grund": "Naturschutzgebiet „Ehemalige Klärteiche an der Zuckerfabrik Soest“ (Soest), einstweilig sichergestellt (Verlängerung 2025; ursprüngliche Verordnung vom 16.01.2001): verboten sind alle Handlungen, die zu einer Zerstörung, Beschädigung oder Veränderung des Gebiets führen können, insbesondere das Errichten baulicher Anlagen; Befreiung nur nach § 67 BNatSchG.",
+      "fundstellen": [
+        "SO-076"
+      ],
+      "pruefen": {
+        "grund": "Die Sicherstellung läuft 2027 aus – ob dann eine endgültige Schutzverordnung oder ein Landschaftsplan gilt, vor der Einreichung prüfen (LINFOS, Amtsblatt der Bezirksregierung Arnsberg).",
+        "wenn": {
+          "tag": "einreichung",
+          "ab": "2027-01-01"
+        }
+      },
+      "nachweis": [
+        "Antrag auf Befreiung bei der Bezirksregierung Arnsberg bzw. unteren Naturschutzbehörde"
+      ],
+      "verweise": [
+        "bund/bnatschg/67"
+      ]
+    },
+    "SO-079": {
+      "titel": "SO-079 Salzbrink",
+      "gilt": {
+        "f": "kreis_soest.nsg",
+        "ist": "SO-079 Salzbrink"
+      },
+      "grund": "Naturschutzgebiet „Salzbrink“ (Soest, Welver), einstweilig sichergestellt (Verlängerung 2025; ursprüngliche Verordnung vom 31.05.2002): verboten sind alle Handlungen, die zu einer Zerstörung, Beschädigung oder Veränderung des Gebiets führen können, insbesondere das Errichten baulicher Anlagen; Befreiung nur nach § 67 BNatSchG. Der Welveraner Teil ist im Landschaftsplan IV als NSG SO-101 festgesetzt.",
+      "fundstellen": [
+        "SO-079"
+      ],
+      "pruefen": {
+        "grund": "Die Sicherstellung läuft 2027 aus – ob dann eine endgültige Schutzverordnung oder ein Landschaftsplan gilt, vor der Einreichung prüfen (LINFOS, Amtsblatt der Bezirksregierung Arnsberg).",
+        "wenn": {
+          "tag": "einreichung",
+          "ab": "2027-01-01"
+        }
+      },
+      "nachweis": [
+        "Antrag auf Befreiung bei der Bezirksregierung Arnsberg bzw. unteren Naturschutzbehörde"
+      ],
+      "verweise": [
+        "bund/bnatschg/67"
+      ]
+    },
+    "andere": {
+      "titel": "anderes Naturschutzgebiet im Kreis Soest",
+      "gilt": {
+        "f": "kreis_soest.nsg",
+        "ist": "anderes Naturschutzgebiet"
+      },
+      "grund": "Naturschutzgebiet nach Verordnung der Bezirksregierung Arnsberg oder Landschaftsplan: Verbote und Befreiungsmöglichkeiten der jeweiligen Verordnung beachten.",
+      "fundstellen": [
+        "andere"
+      ],
+      "hinweis": "Verordnung über die LINFOS-Kennung ermitteln (Detailseite verlinkt den Text auf legaldocs.naturschutzinformationen.nrw.de).",
+      "verweise": [
+        "bund/bnatschg/67"
+      ]
+    }
+  }
+}

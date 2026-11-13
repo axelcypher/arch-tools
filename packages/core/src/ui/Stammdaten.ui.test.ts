@@ -122,7 +122,8 @@ describe('Stammdaten-Dialog', () => {
     const schnell = [...host.querySelectorAll('[aria-label="Beteiligte nach Rolle hinzufügen"] button')].map((b) => b.textContent?.trim() ?? '');
     expect(schnell).toContain('Bodengutachten');
     // Schnellknöpfe nach der Regel „Listen“: Symbol plus statt „+“, title mit „hinzufügen“
-    const boden = [...host.querySelectorAll<HTMLButtonElement>('[aria-label="Beteiligte nach Rolle hinzufügen"] button')].find((b) => b.textContent?.includes('Bodengutachten'))!;
+    const rollenKnoepfe = [...host.querySelectorAll<HTMLButtonElement>('[aria-label="Beteiligte nach Rolle hinzufügen"] button')];
+    const boden = rollenKnoepfe.find((b) => b.textContent?.includes('Bodengutachten'))!;
     expect(boden.querySelector('svg.symbol')).not.toBeNull();
     expect(boden.textContent).not.toContain('+');
     expect(boden.title).toBe('Bodengutachten hinzufügen');

@@ -1,0 +1,232 @@
+{
+  "quelle": "https://gis02.soest.de/pdf/AS/b049_as.pdf",
+  "sha256": "ec10bad707fc485d880edce489b9469bb5bd3875ca9765d792fa444d21d850bf",
+  "verfahren": "Textebene der ausgefertigten PDF mit falscher Zeichenkodierung (Mac-Roman statt Windows-1252: § als ß, ä als ‰, ß als fl …); Zeichen zurückgeordnet, Wörter mit „fl“ für ß einzeln korrigiert, Überschriften von § 5, § 5a und § 17 aus zwei Zeilen zusammengesetzt; von Hand durchgesehen am 12.11.2026.",
+  "paragrafen": {
+    "1": {
+      "titel": "Geltungsbereich",
+      "url": "https://gis02.soest.de/pdf/AS/b049_as.pdf",
+      "text": [
+        "Diese örtliche Bauvorschrift über Gestaltung gilt für das Gebiet, das von den ringförmig angeordneten Straßen Aldegreverwall, Freiligrathwall, Dasselwall, Brunowall, Immermannwall, Nelmannwall, Walburger-Osthofen-Wallstraße, Brüder-Walburger- Wallstraße und dem Bahnhof begrenzt wird. Der Geltungsbereich ist in dem als Anlage 1 beigefügten Übersichtsplan, der Bestandteil der Satzung ist, gekennzeichnet."
+      ]
+    },
+    "2": {
+      "titel": "(weggefallen)",
+      "url": "https://gis02.soest.de/pdf/AS/b049_as.pdf",
+      "text": [
+        "(weggefallen)"
+      ]
+    },
+    "3": {
+      "titel": "Abstandsflächen",
+      "url": "https://gis02.soest.de/pdf/AS/b049_as.pdf",
+      "text": [
+        "(1) In dem Geltungsbereich dieser Satzung kann zur Wahrung der historischen Bedeutung oder der sonstigen erhaltenswerten Eigenart die Unterschreitung der Abstandsflächen gemäß § 89 Abs. 1 Ziffer 6 Landesbauordnung NRW bis zu max. 0,125 H zugelassen werden.",
+        "(2) Für die Unterschreitung der Abstandflächen muss in jedem Einzelfall die Erforderlichkeit aus dem historischen Stadtgrundriss abgeleitet und begründet werden."
+      ]
+    },
+    "4": {
+      "titel": "Dächer",
+      "url": "https://gis02.soest.de/pdf/AS/b049_as.pdf",
+      "text": [
+        "(1) Dächer müssen eine symmetrische Neigung von 45 - 58 ° haben. Das Krüppelwalmdach als Sonderform des Satteldaches ist nur bei Gebäuden mit mehr als einem Vollgeschoss zulässig.",
+        "(2) An den Traufen darf der Dachüberstand höchstens 0,5 m, am Ortgang darf der Dachüberstand maximal 0,30 m betragen.",
+        "(3) Drempel sind bis zu einer Höhe von 0,50 m zulässig. Die Drempelhöhe ist das Maß zwischen Oberkante Fertigfußboden auf der letzten Geschossdecke und der Unterkante des Dachsparrens, an der Außenfläche des Gebäudes gemessen.",
+        "(4) Dächer dürfen nur mit naturroten, nicht glänzenden Dachpfannen in S-Form gedeckt werden. Hiervon abweichende Dacheindeckungen können zugelassen werden, wenn sie nachweislich dem historischen Bestand des Gebäudes entsprechen.",
+        "(5) Die Absätze (1) und (4) gelten nicht für untergeordnete Anbauten und Nebenanlagen im Sinne des § 14 Baunutzungsverordnung (BauNVO)."
+      ]
+    },
+    "5": {
+      "titel": "Dachaufbauten (Dachgauben, Zwerchhäuser, Dachflächenfenster, Dacheinschnitte und Dachverglasungen)",
+      "url": "https://gis02.soest.de/pdf/AS/b049_as.pdf",
+      "text": [
+        "(1) Dachaufbauten müssen sich hinsichtlich ihrer Gestaltung und ihrer Proportionen harmonisch in die Gesamtarchitektur des Gebäudes sowie in die Umgebung der Dachlandschaft einfügen.",
+        "(2) Fledermausgauben sind unzulässig.",
+        "(3) Dachgauben sind nur als Einzelgauben von maximal 2,00 m Breite zulässig. Der Abstand zwischen den Dachaufbauten muss mindestens 1,50 m betragen.",
+        "(4) Die gesamte Breite aller Dachaufbauten darf ein Drittel der Trauflänge nicht überschreiten. Der Abstand der Gauben und Zwerchhäuser zum Giebel muss mindestens 2,00 m betragen. Bei Walmdächern dürfen die Gauben und die Zwerchhäuser die Falllinie vom Firstendpunkt nicht überschreiten.",
+        "(5) Die Traufe einer Gaube darf nicht höher als 1,80 m über der Dachfläche liegen. Die Traufe wird definiert als der Schnittpunkt der vertikal aufgehenden Gaubenwand mit der Dachhaut der Gaube. Vom Schnittpunkt der aufgehenden Gebäudewand mit der Dachhaut bis zur Vorderkante einer Gaube müssen mindestens 2 Reihen Pfannen liegen.",
+        "(6) Übereinanderliegende, auch seitlich versetzte, Dachaufbauten sind nur zulässig, wenn sie von keiner öffentlichen Fläche aus einsehbar sind.",
+        "(7) Dachflächenfenster sind nur auf der von öffentlichen Verkehrsflächen abgewandten Dachfläche zulässig. Zulässig sind nur senkrecht stehende Formate bis zu einer Fenstergröße von maximal 1,10 m Breite und 1,20 m Höhe im Lichten. Absatz 3 Satz 2, Abs. 4 und Abs. 5 Satz 3 gelten sinngemäß.",
+        "(8) Für Dacheinschnitte gilt Absatz 7 Satz 1, Absatz 4, Satz 1 und 2 sinngemäß.",
+        "(9) Flächenhafte Dachverglasungen, Dachflächenfenster, die das in Abs. 7 genannte Maß überschreiten sind nur zulässig, wenn sie von keiner öffentlichen Fläche aus einsehbar sind."
+      ]
+    },
+    "5a": {
+      "titel": "Photovoltaikanlagen und Solaranlagen zur Warmwasserbereitung oder zur Heizungsunterstützung",
+      "url": "https://gis02.soest.de/pdf/AS/b049_as.pdf",
+      "text": [
+        "(1) Photovoltaik- und Solarthermieanlagen müssen sich hinsichtlich ihrer Gestaltung und ihrer Proportionen harmonisch in die Gesamtarchitektur des Gebäudes sowie in die Umgebung einfügen.",
+        "(2) Es sind nur rote Anlagen mit roten Rahmen und schwarze Anlagen mit schwarzen Rahmen zulässig. Unzulässig sind bläulich glänzende Anlagen, silbrig glänzende Rahmen und silberne Leiterbahnen.",
+        "(3) Indach- und Auf-Dach-Anlagen sind unabhängig von den Dachformen parallel zur Dachfläche als zusammenhängende Fläche anzuordnen. Die geometrische Form der Anlage soll auf einer rechteckigen Fläche basieren, die durch Dachaufbauten, wie z.B. Gauben, Dacheinschnitte, Dachfenster und Kamine unterbrochen werden kann. Eine abgetreppte Anordnung der Module ist nicht zulässig.",
+        "(4) Bei Solarthermieanlagen sind nur schwarze Flachkollektoren zulässig, jedoch keine Röhrenkollektoren.",
+        "(5) Die Anlagen müssen jeweils mind. 0,50 m Abstand von der Traufe, vom First, vom Ortgang und vom Giebel sowie eine Pfannenreihe zu Dachaufbauten (Dachflächenfenster, Gauben, Zwerchhäuser, Dacheinschnitte etc.) aufweisen.",
+        "(6) Bei Walm- und Krüppelwalmdächern dürfen Anlagen die Falllinie vom Firstendpunkt nicht überschreiten.",
+        "(7) Der Abstand zwischen Photovoltaik- und Solarthermieanlagen und Dachfläche darf maximal 0,20 m betragen.",
+        "(8) Es ist zulässig, zwei verschiedene Anlagearten auf einem Dach zu montieren, wenn diese harmonisch aufeinander abgestimmt sind.",
+        "(9) Pro Dachfläche sind alle Module horizontal oder vertikal anzuordnen. Eine Kombination verschiedener Ausrichtungen auf einer Dachfläche ist nicht zulässig.",
+        "(10) Photovoltaik- und Solarthermieanlagen sind an Fassaden, Balkonen und Fenstern unzulässig.",
+        "(11) Freistehende Photovoltaik- und Solarthermieanlagen sind nicht zulässig.",
+        "(12) Indach-PV-Anlagen (in das Dach integrierte, die Dachziegel ersetzende Anlagen) sind zulässig, wenn Sie die o.g. Vorschriften einhalten. Bei davon abweichenden Anlagen erfolgt eine Einzelfallprüfung gem. §16 Abs. 1 Nr. 3 dieser Satzung.",
+        "(13) Photovoltaik- und Solarthermieanlagen, die nicht von öffentlichen Flächen aus einsehbar sind können von den Absätzen 1 bis 11 abweichen."
+      ]
+    },
+    "6": {
+      "titel": "Balkone, Loggien, Dachterrassen",
+      "url": "https://gis02.soest.de/pdf/AS/b049_as.pdf",
+      "text": [
+        "(1) Balkone u. Loggien sind nur an den von öffentlichen Verkehrsflächen abgewandten Gebäudeseiten zulässig.",
+        "(2) Dachterrassen sind nur zulässig, wenn sie von keiner öffentlichen Verkehrsfläche aus einsehbar sind."
+      ]
+    },
+    "7": {
+      "titel": "Fenster",
+      "url": "https://gis02.soest.de/pdf/AS/b049_as.pdf",
+      "text": [
+        "(1) Die nachfolgenden Vorschriften gelten nur für die von den öffentlichen Verkehrsflächen einsehbaren Gebäudeseiten.",
+        "(2) Für Fenster in Fassaden darf nur ein stehendes bis quadratisches Format verwendet werden.",
+        "(3) Die Fensteröffnungen müssen geschossweise aufeinander Bezug nehmen.",
+        "(4) Horizontale Fensterbänder sind unzulässig. Fensterreihungen sind durch Pfeiler von mindestens 0,24 m Breite zu unterbrechen. Als Material für die Pfeiler sind neben Putz auch Grünsandstein sowie unpolierter, nicht glänzender Naturstein zulässig. Bei Dachgauben muss die Pfeilerbreite mindestens 0,12 m betragen. Dies gilt nicht für untergeordnete Anbauten und Nebenanlagen im Sinne § 14 Baunutzungsverordnung (BauNVO).",
+        "(5) Fenster und Türen sind durch einen Pfeiler von mindestens 0,24 m Breite voneinander zu trennen. Als Material für die Pfeiler sind neben Putz auch Grünsandstein sowie unpolierter, nicht glänzender Naturstein zulässig. Bei Fachwerk muss der Abstand zwischen Fenster und Türen mindestens dem Querschnitt eines Stieles (mindestens 0,12 m) entsprechen.",
+        "(6) Bei Gebäuden, die in der Denkmalbereichssatzung der Altstadt Soest als erhaltenswert erfasst sind, sind nur Holzfenster in ihrer historischen Form und Gestalt zulässig.",
+        "(7) Rollladenkästen dürfen in der Fassade nicht sichtbar sein.",
+        "(8) Sprossen im Luftzwischenraum von Glasscheiben sind unzulässig."
+      ]
+    },
+    "8": {
+      "titel": "Schaufenster",
+      "url": "https://gis02.soest.de/pdf/AS/b049_as.pdf",
+      "text": [
+        "(1) Schaufenster sind nur im Erdgeschoss zulässig.",
+        "(2) Schaufenster- und Eingangsöffnungen müssen in der Fassade des jeweiligen Gebäudes Bezug auf die darüber liegenden Fensterachsen nehmen.",
+        "(3) Die Schaufenster- und Eingangsöffnungen sind in stehenden bis quadratischen Formaten auszuführen. Bei mehreren Öffnungen müssen diese durch mindestens 0,24 m breite Architekturelemente (Pfeiler, Stützen, Säulen usw.) getrennt werden. Als Material für die Pfeiler sind neben Putz auch Grünsandstein sowie unpolierter, nicht glänzender Naturstein zulässig.",
+        "(4) Bei Schaufenstern in Fachwerkhäusern sind die tragende Konstruktion, massive Sockel und Schwellen zu erhalten.",
+        "(5) Das Bekleben von Schaufenstern ist bis maximal 30 % der Scheibenfläche zulässig."
+      ]
+    },
+    "9": {
+      "titel": "Kragdächer, Vordächer und Markisen",
+      "url": "https://gis02.soest.de/pdf/AS/b049_as.pdf",
+      "text": [
+        "(1) Vordächer und Markisen sind nur im Erdgeschoss zulässig.",
+        "(2) Kragdächer sind unzulässig. Kombinationen von Kragdächern, Vordächern und Markisen sind unzulässig.",
+        "(3) Markisen dürfen maximal 2 Schaufenster- bzw. Eingangsöffnungen überspannen. Bei Öffnungen, die mehr als 1,00 m voneinander entfernt liegen, sind Einzelmarkisen zu verwenden.",
+        "(4) Vordächer dürfen nicht mehr als 1,50 m auskragen.",
+        "(5) Die senkrechten Ansichtsflächen von Vordächern dürfen nicht höher als 0,20 m sein. Vordächer sind nur in transparenter Form (z.B. Glas, Plexiglas) zulässig.",
+        "(6) Markisen dürfen nur in einer gewebestruktur-ähnlichen Bespannung ausgeführt werden. Sie sind nur als Roll- und Kippgelenkmarkisen zulässig."
+      ]
+    },
+    "10": {
+      "titel": "Material",
+      "url": "https://gis02.soest.de/pdf/AS/b049_as.pdf",
+      "text": [
+        "(1) Die nachfolgenden Vorschriften gelten nur für die von den öffentlichen Flächen einsehbaren Gebäudeseiten.",
+        "(2) Die Fassaden sind nur in Putz auszuführen. Zulässig ist nur glatter Putz oder fein- bis mittelkörniger Kratzputz. Giebeldreiecke können verbrettert werden. Diese Regelungen gelten nicht für Nebenanlagen im Sinne § 14 BauNVO sowie überdachte Stellplätze.",
+        "(3) Die Erdgeschosszone kann in Grünsandstein ausgebildet werden.",
+        "(4) Für den Gebäudesockel und gliedernde Architekturelemente wie Pfeiler, Säulen, Lisenen, Gesimse, Fensterlaibungen ist- neben Putz - auch Grünsandsteinmauerwerk und matter Naturstein zulässig. Als Gebäudesockel gilt der Gebäudeteil des Kellers einschließlich Kellerdecke, der über die ausgebaute Straße hinausragt.",
+        "(5) Für Fenster- und Türrahmen ist Material, das metallisch glänzt oder eine metallisch spiegelnde Oberfläche hat, nicht zulässig.",
+        "(6) Getönte oder reflektierende Fenster- und Schaufensterscheiben sind nicht zulässig.",
+        "(7) Die Verwendung von Glasbausteinen ist unzulässig."
+      ]
+    },
+    "11": {
+      "titel": "Farben",
+      "url": "https://gis02.soest.de/pdf/AS/b049_as.pdf",
+      "text": [
+        "(1) Für den Putz sind helle Farben aus dem Weiß-, Gelb-, Braun-, Grün-, Grau- und Blaubereich zu verwenden. Als hell gilt ein Farbton mit einem Hellbezugswert von 66 oder höher. Eine andere Farbe kann im Einzelfall zugelassen werden, wenn sie sich in die Umgebung historisch einfügt. Leuchtende Farben bzw. Neonfarben dürfen nicht verwendet werden.",
+        "(2) Je Gebäude darf nur ein Hauptton für die Putzflächen verwendet werden. Sockel, Fensterumrahmungen und Simse können farblich einheitlich passend abgesetzt werden. Eine darüber hinausgehende Gestaltung der Putzflächen mit verschiedenen Farben ist nicht zulässig.",
+        "(3) Bei Fachwerkfassaden sind die Holzbauteile mit einem dunkelbraunen und die verputzten Gefache mit einem weißen Anstrich zu versehen. Zierschnitzereien und Fensterumrahmungen an Fachwerkgebäuden können farbig abgesetzt werden. Hierfür dürfen historisch passende Farben wie z.B. Oxidrot (RAL 3009), Tannengrün (RAL 6009), Taubenblau (RAL 5014) oder ähnliche Farben verwendet werden.",
+        "(4) Bei Verwendung von Naturstein sind nur Farben aus dem Gelb- bis Beigebereich (sandfarben) sowie Grün- bis Graubereich zulässig."
+      ]
+    },
+    "12": {
+      "titel": "Einfriedigungen",
+      "url": "https://gis02.soest.de/pdf/AS/b049_as.pdf",
+      "text": [
+        "(1) Zu öffentlichen Verkehrsflächen hin sind",
+        "1. Vorgärten und die zwischen Gebäuden befindlichen Grundstücksflächen sind mit schmiedeeisernen Gittern von mindestens 1,00 m, höchstens 1,30 m Höhe auf Grünsandsteinsockeln von mindestens 0,30 m, höchstens 0,60 m Höhe oder mit Mauern aus Bruchsteinen in der für Soest kennzeichnenden Art und Farbe von mindestens 1,60 m, höchstens 2,00 m Höhe einzufriedigen. Die Mauerkrone ist als Soester Sattel auszubilden. Schmiedeeiserne Gitter dürfen nicht mit Sichtschutzblenden hinterlegt werden. Öffnungen von Einfriedungen sind mit Toranlagen gem. Abs. 2 zu versehen.",
+        "2. Gärten, Lagerplätze und Stellplatzanlagen mit mehr als 3 Stellplätzen sind mit Grünsandsteinmauern in der für Soest kennzeichnenden Art und Farbe von mindestens 1,60 m, höchstens 2,00 m Höhe einzufriedigen. Die Mauerkrone ist als Soester Sattel auszubilden.",
+        "(2) Zugangs- oder Einfahrtstore, die zu Einfriedigungen gehören, müssen aus senkrechten Hölzern oder Schmiedeeisen hergestellt werden. Zugangstore dürfen eine Breite von 1,20 m nicht überschreiten und Einfahrtstore dürfen eine Breite von 3,50 m nicht überschreiten."
+      ]
+    },
+    "13": {
+      "titel": "Außenanlagen",
+      "url": "https://gis02.soest.de/pdf/AS/b049_as.pdf",
+      "text": [
+        "(1) Die zwischen den Straßengrenzen und Gebäuden befindlichen Flächen (Vorgärten) sind zu begrünen.",
+        "(2) Einstellplätze sind so herzustellen, dass das Regenwasser auf diesen Flächen versickern kann. Als Material ist Natursteinpflaster oder rechteckiger oder quadratischer Betonstein mit jeweils großem Fugenanteil zu verwenden.",
+        "(3) Stellplätze für bewegliche Abfallbehälter sind so anzulegen, dass die Abfallbehälter vom öffentlichen Verkehrsraum aus nicht sichtbar sind.",
+        "(4) An öffentlichen Verkehrsflächen gelegene Freitreppen dürfen nicht beseitigt werden. Reparaturen und Erneuerungen dürfen nur in Sandstein oder Betonwerkstein ausgeführt werden. Hierbei muss der Betonwerkstein in seiner Struktur und Farbgebung einem Natursandstein entsprechen."
+      ]
+    },
+    "14": {
+      "titel": "Technische Anlagen",
+      "url": "https://gis02.soest.de/pdf/AS/b049_as.pdf",
+      "text": [
+        "(1) Technische Anlagen müssen so angebracht werden, dass sie von keiner öffentlichen Verkehrsfläche aus einsehbar sind. Die Farbe der technischen Anlagen ist der Farbe des Untergrundes anzupassen.",
+        "(2) Absatz 1 ist insbesondere anzuwenden bei Lüftungsanlagen, Klimaanlagen, Antennen und Mobilfunkanlagen.",
+        "(3) Wärmepumpen sind nur an den Verkehrsflächen abgewandten Gebäudeseiten oder hinter Einfriedungen gem. § 12 zulässig."
+      ]
+    },
+    "15": {
+      "titel": "Garagen und überdachte Stellplätze",
+      "url": "https://gis02.soest.de/pdf/AS/b049_as.pdf",
+      "text": [
+        "(1) Geschlossene und offene Garagen sowie überdachte Stellplätze sind mit einem geneigten Dach oder mit einem zu begrünenden Flachdach (0 bis maximal 3° Dachneigung) zu versehen. Der Aufbau der Substratschicht hat entsprechend Richtlinie für die Planung, Ausführung und Pflege von Dachbegrünungen, „Dachbegrünungsrichtlinie 2008“, zu erfolgen. Bei einem geneigten Dach ist die Dacheindeckung dem Hauptgebäude anzupassen.",
+        "(2) Die sichtbare Oberfläche der Garagentore ist aus senkrecht angeordnetem Holz auszuführen. Es kann auch ein Material gewählt werden, das eine der Verbretterung ähnliche senkrechte Struktur hat.",
+        "(3) Sektionaltore sind zulässig, sofern deren Oberflächen keine zusätzliche Struktur (Kassetten) aufweisen. Sie dürfen putzähnliche Strukturen aufweisen. Für die Farbgebung gelten die Vorschriften des § 11 Absatz 1 entsprechend."
+      ]
+    },
+    "16": {
+      "titel": "Abweichungen von Einzelvorschriften dieser Satzung",
+      "url": "https://gis02.soest.de/pdf/AS/b049_as.pdf",
+      "text": [
+        "(1) Im Einzelfall können von der Gestaltungssatzung Abweichungen zugelassen werden, wenn",
+        "1. die Einhaltung einer Vorschrift im Sinne einer besonderen Härte die Durchführung des Bauvorhabens, das sich ansonsten städtebaulich einfügt, unzumutbar erschweren würde oder",
+        "2. die Einhaltung einer Vorschrift im Einzelfall zu einer gestalterischen Lösung führen würde, die sich nicht einfügt und eine Abweichung sich aus dem städtebaulichen Zusammenhang aufdrängt oder",
+        "3. die Abweichung den Intentionen dieser Satzung nicht widerspricht und sich das Bauvorhaben in den städtebaulichen Zusammenhang einfügt.",
+        "(2) Der Antragsteller hat jede beabsichtigte Abweichung gemäß den unter Ziffer 1. bis 3. dargelegten Voraussetzungen schriftlich und zeichnerisch zu begründen. Eine nicht in diesem Sinne detailliert ausgearbeitete Begründung kann zur Ablehnung der beabsichtigten Abweichungen führen."
+      ]
+    },
+    "17": {
+      "titel": "Abweichungen von gestalterischen Anforderungen dieser Satzung für architektonisch eigenständige Entwurfslösungen zur Einfügung von Neu-, Um- und Anbauten in die Altstadt",
+      "url": "https://gis02.soest.de/pdf/AS/b049_as.pdf",
+      "text": [
+        "(1) Für Neubauten sowie Um- und Anbauten kann unter den nachfolgenden Voraussetzungen auf Antrag im Einzelfall von den einzelnen Vorschriften dieser Satzung abgewichen werden, wenn",
+        "1. dem Vorhaben eine architektonisch harmonische und im Detail durchkomponierte Entwurfskonzeption zugrunde liegt und",
+        "2. seine Gestaltungselemente sich in eigenständiger, der Zeit entsprechender Formensprache auf die Umgebung beziehen und",
+        "3. das Bauvorhaben sich nach Maßstab und Materialwahl städtebaulich einfügt und dabei den in der Denkmalbereichssatzung Altstadt Soest formulierten besonderen Belangen des Denkmalschutzes in der Altstadt gerecht wird.",
+        "(2) Der Antragsteller muss die beabsichtigte Abweichung nach dieser Vorschrift detailliert gemäß der dargelegten Voraussetzungen Nr. 1-3 des Absatzes 1 schriftlich begründen. Eine nicht in diesem Sinne detailliert ausgearbeitete Begründung kann zur Ablehnung der beabsichtigten Abweichungen führen."
+      ]
+    },
+    "18": {
+      "titel": "Beirat für Architektur und Stadtgestaltung (Gestaltungsbeirat)",
+      "url": "https://gis02.soest.de/pdf/AS/b049_as.pdf",
+      "text": [
+        "(1) Der Gestaltungsbeirat der Stadt Soest ist zu beteiligen bei Neubauten innerhalb des Geltungsbereichs dieser Satzung gemäß Anlage Nr. 1 sowie beantragten Abweichungen im Sinne des § 17 dieser Satzung. Bei allen anderen Vorhaben ist auf Verlangen des Bauherrn, des Stadtentwicklungsausschusses oder der Verwaltung der Beirat ebenfalls zu beteiligen. Die Vorschriften der Geschäftsordnung des Gestaltungsbeirats bleiben unberührt.",
+        "(2) Der Gestaltungsbeirat gibt gemäß seiner Geschäftsordnung eine Empfehlung ab.",
+        "(3) Der Gestaltungsbeirat berücksichtigt bei seiner Empfehlung die Ziele dieser Satzung, insbesondere die in der Präambel genannten Ziele."
+      ]
+    },
+    "19": {
+      "titel": "Ordnungswidrigkeiten",
+      "url": "https://gis02.soest.de/pdf/AS/b049_as.pdf",
+      "text": [
+        "Ordnungswidrig handelt nach § 86 Landesbauordnung NRW, wer vorsätzlich oder fahrlässig eine Baumaßnahme durchführt oder durchführen lässt, die nicht den Anforderungen der §§ 2 bis 17 dieser örtlichen Bauvorschrift entspricht."
+      ]
+    },
+    "20": {
+      "titel": "Gültigkeit sonstiger Vorschriften",
+      "url": "https://gis02.soest.de/pdf/AS/b049_as.pdf",
+      "text": [
+        "Die nicht von der Änderung berührten Paragraphen der Örtlichen Bauvorschrift über Gestaltung vom 11. Juli 2013 behalten weiterhin ihre Gültigkeit."
+      ]
+    },
+    "21": {
+      "titel": "Inkrafttreten",
+      "url": "https://gis02.soest.de/pdf/AS/b049_as.pdf",
+      "text": [
+        "Diese Änderung der örtlichen Bauvorschrift über Gestaltung tritt am Tage nach ihrer Bekanntmachung in Kraft."
+      ]
+    }
+  }
+}

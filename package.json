@@ -2,7 +2,7 @@
   "name": "arch-tools",
   "private": true,
   "type": "module",
-  "description": "Werkzeuge für die Flächen- und Nutzungsberechnung: Flächenrechner (DIN 277, WoFlV), GRZ/GFZ-Nachweis, Kostenermittlung (DIN 276), Projekt (Projekte anlegen und fortschreiben), Entzerrung von Fotos, Bauantragsformulare (SJ FORMA) sowie Ausschreibung, Vergabe, Abrechnung und Bauleitung (AVA) – einzeln oder alle in einem Fenster (Rahmen-App)",
+  "description": "Werkzeuge für die Flächen- und Nutzungsberechnung: Flächenrechner (DIN 277, WoFlV), GRZ/GFZ-Nachweis, Kostenermittlung (DIN 276), Projekt (Projekte anlegen und fortschreiben), Entzerrung von Fotos, Bauantragsformulare (SJ FORMA), Ausschreibung, Vergabe, Abrechnung und Bauleitung (AVA) sowie Baurecht (Rechtsprüfung vor dem Bauantrag) – einzeln oder alle in einem Fenster (Rahmen-App)",
   "workspaces": [
     "packages/*",
     "apps/*"
@@ -15,8 +15,9 @@
     "dev:entzerrung": "npm run dev -w entzerrung",
     "dev:formulare": "npm run dev -w formulare",
     "dev:ava": "npm run dev -w ava",
+    "dev:baurecht": "npm run dev -w baurecht",
     "dev:suite": "npm run dev -w arch-tools-suite",
-    "build": "npm run build -w flaechenrechner -w grz-nachweis -w kostenermittlung -w projektordner -w entzerrung -w formulare -w ava && npm run build -w arch-tools-suite",
+    "build": "npm run build -w flaechenrechner -w grz-nachweis -w kostenermittlung -w projektordner -w entzerrung -w formulare -w ava -w baurecht && npm run build -w arch-tools-suite",
     "test": "vitest run",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "tauri:dev": "npm run tauri:dev -w flaechenrechner",
@@ -26,6 +27,7 @@
     "tauri:dev:entzerrung": "npm run tauri:dev -w entzerrung",
     "tauri:dev:formulare": "npm run tauri:dev -w formulare",
     "tauri:dev:ava": "npm run tauri:dev -w ava",
+    "tauri:dev:baurecht": "npm run tauri:dev -w baurecht",
     "tauri:dev:suite": "npm run tauri:dev -w arch-tools-suite"
   },
   "devDependencies": {

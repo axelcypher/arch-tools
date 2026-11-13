@@ -1,3 +1,4 @@
+import { Symbol } from '@core/ui/Symbol';
 import { zeichenKuerzelErlaubt } from '@core/platform/eingabe';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { Point } from '@core/geometry';
@@ -1402,17 +1403,17 @@ export function Canvas() {
         {numBuf && <span className="hud-input">Eingabe: {numBuf}▏</span>}
         <div className="hud-zeile">
           {hinweisZu || !hint ? (
-            <button className="hud-hint-knopf" onClick={() => (hint ? hinweisUmschalten(false) : setKuerzelOffen(true))} title={hint ? 'Bedienhinweise einblenden' : 'Tastenkürzel anzeigen (?)'}>
-              {hint ? '? Hinweise' : '? Tastenkürzel'}
+            <button className="hud-hint-knopf" onClick={() => (hint ? hinweisUmschalten(false) : setKuerzelOffen(true))} title={hint ? 'Bedienhinweise einblenden' : 'Tastenkürzel anzeigen … (?)'}>
+              {hint ? '? Hinweise' : '? Tastenkürzel …'}
             </button>
           ) : (
             <span className="hud-hint" title={hint}>
               <span className="hud-hint-text">{hint}</span>
-              <button className="hud-hint-knopf" onClick={() => setKuerzelOffen(true)} title="Alle Tastenkürzel (?)" aria-label="Alle Tastenkürzel">
+              <button className="hud-hint-knopf" onClick={() => setKuerzelOffen(true)} title="Alle Tastenkürzel … (?)" aria-label="Alle Tastenkürzel …">
                 ?
               </button>
               <button className="hud-hint-knopf" onClick={() => hinweisUmschalten(true)} title="Bedienhinweise ausblenden (bleibt so)" aria-label="Bedienhinweise ausblenden">
-                ×
+                <Symbol name="schliessen" />
               </button>
             </span>
           )}

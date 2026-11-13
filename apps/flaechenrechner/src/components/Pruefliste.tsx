@@ -1,3 +1,4 @@
+import { Symbol } from '@core/ui/Symbol';
 import { useDeferredValue, useMemo, useState } from 'react';
 import { pruefeProjekt } from '@core/pruefung';
 import type { PruefArt, PruefEintrag } from '@core/pruefung';
@@ -89,7 +90,7 @@ export function Pruefliste() {
       <button className={`small pruef-knopf ${warnungen ? 'pruef-warnung' : zeilen.length ? 'pruef-hinweis' : 'pruef-ok'}`} onClick={() => setOffen(!offen)} aria-expanded={offen}>
         <span className="ampel" aria-hidden />
         {zeilen.length ? `Prüfen: ${teile.join(', ')}` : 'Prüfen: keine Auffälligkeiten'}
-        {zeilen.length > 0 && <span aria-hidden>{offen ? ' ▴' : ' ▾'}</span>}
+        {zeilen.length > 0 && <Symbol name={offen ? 'pfeilUnten' : 'pfeilRechts'} />}
       </button>
       {offen && zeilen.length > 0 && (
         <ul className="pruef-liste small-text">

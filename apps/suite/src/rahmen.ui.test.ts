@@ -5,6 +5,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
 import { useRahmen } from './store';
 import { useTheme } from '@core/platform/theme';
+import { existsSync, readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { APPS } from './apps';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -41,9 +44,21 @@ describe('Rahmen-App', () => {
     expect(document.documentElement.dataset.theme).toBe('dunkel');
   });
 
+  it('LEXIO öffnet als Tab; die Einbauliste (scripts/apps-einbauen.mjs) kennt dieselben Apps wie der Rahmen', () => {
+    const host = render();
+    act(() => karte(host, 'LEXIO').click());
+    expect(host.querySelector('iframe')?.getAttribute('src')).toBe('apps/baurecht/index.html?rahmen=tab&app=baurecht');
+    // fehlt eine App in der Einbauliste, bliebe ihr Tab im Installer leer
+    // (happy-dom: import.meta.url ist keine Datei-URL – der Pfad vom Arbeitsverzeichnis, Stamm oder apps/suite)
+    const pfad = ['apps/suite/scripts/apps-einbauen.mjs', 'scripts/apps-einbauen.mjs'].map((x) => resolve(process.cwd(), x)).find(existsSync)!;
+    const skript = readFileSync(pfad, 'utf8');
+    const einbauen = JSON.parse(/export const APPS = (\[[^\]]*\])/.exec(skript)![1].replace(/'/g, '"')) as string[];
+    expect([...einbauen].sort()).toEqual(APPS.map((a) => a.id).sort());
+  });
+
   it('Apps als Tabs öffnen, wechseln (die anderen bleiben geladen), schließen; offene Tabs bleiben für den nächsten Start', () => {
     const host = render();
-    expect(host.querySelectorAll('.rahmen-karte')).toHaveLength(7);
+    expect(host.querySelectorAll('.rahmen-karte')).toHaveLength(8);
     act(() => karte(host, 'ATLAS').click());
     expect(host.querySelector('iframe')?.getAttribute('src')).toBe('apps/ordner/index.html?rahmen=tab&app=ordner');
     // weitere App über „+“
@@ -210,7 +225,8 @@ describe('Rahmen-App', () => {
     const menue = () => document.querySelector('.menue');
     expect(menue()?.getAttribute('role')).toBe('menu');
     expect(document.activeElement?.textContent).toContain('Neues Projekt anlegen …');
-    expect([...menue()!.querySelectorAll('[role="menuitem"]')].map((b) => b.textContent?.trim())).toHaveLength(8);
+    // „Neues Projekt anlegen …“ und je App ein Eintrag
+    expect([...menue()!.querySelectorAll('[role="menuitem"]')].map((b) => b.textContent?.trim())).toHaveLength(APPS.length + 1);
     act(() => document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true })));
     expect(document.activeElement?.textContent).toContain('ATLAS');
     act(() => document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));

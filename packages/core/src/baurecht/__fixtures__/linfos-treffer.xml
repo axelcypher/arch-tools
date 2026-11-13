@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<msGMLOutput 
+	 xmlns:gml="http://www.opengis.net/gml"
+	 xmlns:xlink="http://www.w3.org/1999/xlink"
+	 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+	<Vogelschutzgebiete_layer>
+	<gml:name>Vogelschutzgebiete</gml:name>
+		<Vogelschutzgebiete_feature>
+			<gml:boundedBy>
+				<gml:Box srsName="EPSG:25832">
+					<gml:coordinates>409914.340000,5704231.910000 476275.470000,5729452.920000</gml:coordinates>
+				</gml:Box>
+			</gml:boundedBy>
+			<localid>DE-4415-401</localid>
+			<domainobje>3773074</domainobje>
+			<domainob_1>28</domainob_1>
+			<reportpath>7680015</reportpath>
+			<LINK>https://www.wms.nrw.de/html/7680015/DE-4415-401</LINK>
+		</Vogelschutzgebiete_feature>
+	</Vogelschutzgebiete_layer>
+</msGMLOutput>

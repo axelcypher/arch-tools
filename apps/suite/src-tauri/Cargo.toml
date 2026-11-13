@@ -1,6 +1,6 @@
 [package]
 name = "arch-tools"
-version = "0.39.0"
+version = "0.40.0"
 description = "Rahmen-App: alle arch-tools in einem Fenster"
 authors = ["Tobias Pendzialek"]
 license = "MIT"
@@ -26,6 +26,10 @@ serde_json = "1"
 base64 = "0.22"
 # Projektkarte (sj_prokarte.sdb) – SQLite mitkompiliert, damit nichts installiert sein muss
 rusqlite = { version = "0.37", features = ["bundled"] }
+# Baurecht: Abruf der Gesetzestexte, Satzungen und Geodienste (apps/baurecht/src-tauri/src/netz.rs)
+ureq = "2.12"
+# Signatur des Regelpakets (Ed25519) – ring kommt ohnehin mit rustls
+ring = "0.17"
 
 [profile.release]
 codegen-units = 1

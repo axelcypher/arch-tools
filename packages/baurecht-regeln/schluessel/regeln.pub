@@ -1,0 +1,4 @@
+# Öffentlicher Schlüssel (Ed25519, 32 Byte roh, Base64) für die Signatur des Regelpakets.
+# Leer = Nachladen aus dem Release „regeln“ ist ausgeschaltet; die App nutzt das Regelpaket ihres Builds.
+# Einrichten: npm run schluessel -w @akh/baurecht-regeln (erzeugt das Schlüsselpaar; den privaten Schlüssel als
+# GitHub-Secret BAURECHT_REGELN_SCHLUESSEL hinterlegen, den öffentlichen hier eintragen).

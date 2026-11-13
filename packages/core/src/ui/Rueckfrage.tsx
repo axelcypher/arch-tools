@@ -138,15 +138,18 @@ function RueckfrageDialog({ frage }: { frage: Frage }) {
     useFragen.getState().weg(frage);
     frage.antwort(id, wert);
   };
-  // Standard (Enter, Fokus): der Hauptknopf; ohne ihn der erste hervorgehobene, sonst der letzte – nie ohne Not der gefährliche
-  const standard = frage.knoepfe.find((k) => k.art === 'primary') ?? frage.knoepfe.find((k) => k.art) ?? frage.knoepfe.at(-1)!;
+  // Standard (Enter, Fokus): der Hauptknopf; ohne ihn der letzte ungefährliche (meist „Abbrechen“) – nie der Gefahr-Knopf,
+  // sonst löscht Enter. Gibt es nur Gefahr-Knöpfe, gibt es keinen Standard: Enter tut nichts, der Fokus liegt im Dialog.
+  const standard = frage.knoepfe.find((k) => k.art === 'primary') ?? [...frage.knoepfe].reverse().find((k) => k.art !== 'danger');
   const mitEingabe = frage.wert !== undefined;
   return (
     <Modal titel={frage.titel} onClose={() => ende(frage.knoepfe.length === 1 ? frage.knoepfe[0].id : null)} className="rf" kopf klickDaneben={!mitEingabe}>
       <form
+        tabIndex={-1}
+        data-startfokus={standard ? undefined : ''}
         onSubmit={(e) => {
           e.preventDefault();
-          if (!mitEingabe || wert.trim()) ende(standard.id);
+          if (standard && (!mitEingabe || wert.trim())) ende(standard.id);
         }}
       >
         {frage.text && <p className="small-text rf-text">{frage.text}</p>}

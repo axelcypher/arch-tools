@@ -24,9 +24,9 @@ import { StatusPunkt } from './Antrag';
 import { PLAN_ZUSTAND_KURZ, PLAN_ZUSTAND_TEXT } from '../plansatz';
 import { zeitKurz, zeitLang } from '../zeit';
 import type { MenuePunkt } from '@core/ui/Menue';
-import { zeigeMenue, zeigeMenueAn } from '@core/ui/Menue';
+import { useMenueOffen, zeigeMenue, zeigeMenueAn } from '@core/ui/Menue';
 import { Symbol } from '@core/ui/Symbol';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { UnterlagenVorschau } from './UnterlagenVorschau';
 
 /** Alle Formulare des Projekts (ohne Archivordner) auf einmal als PDF exportieren – mit Fortschritt */
@@ -193,8 +193,8 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
   const menue = (pfad: string, zustand: Bereitschaft, fehler: string | null, geaendert?: number, ohneDokument = false): MenuePunkt[] => [
     ...(ohneDokument ? [...aufnehmenMenue(pfad), { trenner: true as const }] : []),
     {
+      // Befehl mit wechselndem Text, kein Umschalter: ohne Haken (der stünde im Menü für „an“)
       text: zustand === 'bereit' || zustand === 'geaendert' ? 'Nicht mehr bereit' : 'Als bereit markieren',
-      symbol: 'haken',
       deaktiviert: gesperrt || wechsel,
       ...(gesperrt ? { hinweis: 'Antrag eingereicht' } : wechsel ? { hinweis: 'Antrag wird geöffnet' } : fehler ? { hinweis: 'Namensformat passt nicht' } : {}),
       aktion: bereitAktion(pfad),
@@ -339,10 +339,8 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
               {d.geaendert ? <span className="fo-baum-zeit">{zeitKurz(d.geaendert)}</span> : null}
             </button>
             {umfangDa && !dok && (
-              <button
-                className="icon fo-aufnehmen"
-                aria-haspopup="menu"
-                aria-label={`${d.pfad} in den Antragsumfang aufnehmen`}
+              <AufnehmenKnopf
+                name={d.pfad}
                 title={
                   gesperrt
                     ? 'Der Antrag ist eingereicht und gesperrt – der Antragsumfang bleibt, wie er ist'
@@ -351,10 +349,8 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
                       : `Nicht im Antragsumfang – als neues Dokument aufnehmen${ohneDatei.length ? ' oder mit einem fehlenden verknüpfen' : ''}`
                 }
                 disabled={gesperrt || wechsel}
-                onClick={(e) => zeigeMenueAn(e.currentTarget, aufnehmenMenue(d.pfad))}
-              >
-                <Symbol name="plus" />
-              </button>
+                punkte={() => aufnehmenMenue(d.pfad)}
+              />
             )}
             {/* Zeilen mit Dokument halten den Platz frei – so bleibt die Zeitspalte bündig */}
             {umfangDa && dok && <span className="fo-aufnehmen-platz" aria-hidden />}
@@ -385,5 +381,25 @@ export function AntragsAblage({ ablage }: { ablage: AblageOrdner }) {
         </>
       )}
     </div>
+  );
+}
+
+/** Plus-Knopf einer Datei ohne Dokument: klappt das Menü „in den Antragsumfang aufnehmen“ auf und meldet, ob es offen ist */
+function AufnehmenKnopf({ name, title, disabled, punkte }: { name: string; title: string; disabled: boolean; punkte: () => MenuePunkt[] }) {
+  const ref = useRef<HTMLButtonElement>(null);
+  const offen = useMenueOffen(ref);
+  return (
+    <button
+      ref={ref}
+      className="icon fo-aufnehmen"
+      aria-haspopup="menu"
+      aria-expanded={offen}
+      aria-label={`${name} in den Antragsumfang aufnehmen`}
+      title={title}
+      disabled={disabled}
+      onClick={(e) => zeigeMenueAn(e.currentTarget, punkte())}
+    >
+      <Symbol name="plus" />
+    </button>
   );
 }

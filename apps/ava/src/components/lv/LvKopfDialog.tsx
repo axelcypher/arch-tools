@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Modal } from '@core/ui/Dialog';
 import { bestaetigen } from '@core/ui/Rueckfrage';
+import { Symbol } from '@core/ui/Symbol';
 import type { LvKopf, OzMaske } from '../../lv/modell';
 import { useAva } from '../../store';
 import { DatumEingabe, Feld, TextEingabe, ZahlEingabe } from '../eingaben';
@@ -141,7 +142,9 @@ export function LvKopfDialog({ onClose }: { onClose: () => void }) {
             <td className="num">
               <input aria-label="Schritt der Positionen" type="number" min={1} max={100} value={m.position.schritt} onChange={(x) => setM({ ...m, position: { ...m.position, schritt: Number(x.target.value) || 10 } })} />
             </td>
-            <td>✓</td>
+            <td>
+              <Symbol name="haken" titel="immer aktiv" />
+            </td>
           </tr>
         </tbody>
       </table>

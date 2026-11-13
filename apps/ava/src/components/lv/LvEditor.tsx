@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { bestaetigen } from '@core/ui/Rueckfrage';
+import { Symbol } from '@core/ui/Symbol';
 import type { Abschnitt, Hinweis, Lv, LvElement, Position } from '../../lv/modell';
 import { aendereElement, elementKopie, entferneElement, finde, fuegeEin, naechsteOz, neueId, ozFormat, zaehltInSumme } from '../../lv/modell';
 import { summen } from '../../lv/rechnen';
 import { euro } from '../../abrechnung/pruefung';
 import { useAva } from '../../store';
 import { zahlDE, ZahlEingabe } from '../eingaben';
-import { MenueKnopf } from '../Menue';
+import { MenueKnopf } from '@core/ui/Menue';
 import { ElementPanel } from './ElementPanel';
 import { Textbibliothek } from './Textbibliothek';
 
@@ -195,27 +196,28 @@ export function LvEditor() {
             + Abschnitt
           </button>
           <MenueKnopf
-            text="Einfügen"
             title="Hinweis, Vorbemerkung oder Position aus den Vorlagetexten einfügen"
-            punkte={[
-              { text: '+ Hinweis', title: 'Hinweistext im Abschnitt', aktion: () => neu('hinweis') },
-              { text: '+ Vorbemerkung', title: 'Vorbemerkung vor der Gliederung', aktion: () => neu('vorbemerkung') },
-              { text: 'Aus Vorlage …', title: 'Position aus den Vorlagetexten des Büros einfügen', aktion: () => setBibliothek('einfuegen') },
+            punkte={() => [
+              { text: 'Hinweis', symbol: 'plus', titel: 'Hinweistext im Abschnitt', aktion: () => neu('hinweis') },
+              { text: 'Vorbemerkung', symbol: 'plus', titel: 'Vorbemerkung vor der Gliederung', aktion: () => neu('vorbemerkung') },
+              { text: 'Aus Vorlage …', titel: 'Position aus den Vorlagetexten des Büros einfügen', aktion: () => setBibliothek('einfuegen') },
             ]}
-          />
+          >
+            Einfügen
+          </MenueKnopf>
         </div>
         <div className="tb-group">
           <button onClick={duplizieren} disabled={!gewaehlt} title="Duplizieren (Strg+D)">
             Duplizieren
           </button>
           <button className="icon" onClick={() => verschieben(-1)} disabled={!gewaehlt || gewaehlt.index === 0} title="Nach oben" aria-label="Nach oben">
-            ↑
+            <Symbol name="nachOben" />
           </button>
           <button className="icon" onClick={() => verschieben(1)} disabled={!gewaehlt || gewaehlt.index >= gewaehlt.eltern.length - 1} title="Nach unten" aria-label="Nach unten">
-            ↓
+            <Symbol name="nachUnten" />
           </button>
           <button className="icon" onClick={() => einruecken(false)} disabled={!gewaehlt?.pfad.length} title="Ausrücken: aus dem Abschnitt heraus (eine Ebene höher)" aria-label="Ausrücken, eine Ebene höher">
-            ⇤
+            <Symbol name="pfeilLinks" />
           </button>
           <button
             className="icon"
@@ -224,7 +226,7 @@ export function LvEditor() {
             title="Einrücken: in den Abschnitt davor (eine Ebene tiefer)"
             aria-label="Einrücken, in den Abschnitt davor"
           >
-            ⇥
+            <Symbol name="pfeilRechts" />
           </button>
           <button className="danger" onClick={() => void loeschen()} disabled={!gewaehlt} title="Entfernen (Entf)">
             Entfernen
@@ -232,10 +234,10 @@ export function LvEditor() {
         </div>
         <div className="tb-group">
           <button className="icon" onClick={() => useAva.getState().lvRueckgaengig()} disabled={!offen.verlauf.length} title="Rückgängig (Strg+Z)" aria-label="Rückgängig">
-            ↶
+            <Symbol name="rueckgaengig" />
           </button>
           <button className="icon" onClick={() => useAva.getState().lvWiederholen()} disabled={!offen.zukunft.length} title="Wiederholen (Strg+Y)" aria-label="Wiederholen">
-            ↷
+            <Symbol name="wiederholen" />
           </button>
         </div>
         <input

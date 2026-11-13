@@ -654,11 +654,16 @@ describe('Autofill mit Zustand (Auto-Wert und manuelle Überschreibung)', () => 
     // Haken „Manuelle Überschreibungen ignorieren“ im Menü des Formulars: Auto-Wert; wieder weg: die Überschreibung
     const menue = () => host.querySelector<HTMLButtonElement>('.fo-menue-knopf')!;
     await klick(menue());
-    await klick(knopf(document.body, 'Manuelle Überschreibungen ignorieren'));
+    // Umschalter: Kästchen im Menü, aus
+    const schalter = () => knopf(document.body, 'Manuelle Überschreibungen ignorieren');
+    expect(schalter().getAttribute('role')).toBe('menuitemcheckbox');
+    expect(schalter().getAttribute('aria-checked')).toBe('false');
+    await klick(schalter());
     expect(memo1(host).value).toBe('Kreis Unna, Hoher Weg 1');
     expect(zustand()).toMatchObject({ ignorieren: true });
     await klick(menue());
-    await klick(knopf(document.body, 'Manuelle Überschreibungen ignorieren'));
+    expect(schalter().getAttribute('aria-checked')).toBe('true');
+    await klick(schalter());
     expect(memo1(host).value).toBe('Bauaufsicht Soest');
 
     // zurück zum Auto-Wert (leeren), speichern, schließen – dann aktualisiert die Rückfrage auch die Datei

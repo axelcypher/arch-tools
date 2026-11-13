@@ -1045,11 +1045,10 @@ describe('Designsystem: Kontextmenü, Symbole, Druckvorschau, Feldfehler', () =>
     // Werkzeuge im Lageplan: Symbol vor dem Namen
     const werkzeuge = [...host.querySelectorAll('.lp-gruppe[aria-label="Werkzeug"] button')];
     expect(werkzeuge.map((b) => b.textContent?.trim())).toEqual(['Auswahl', 'Polygon', 'Rechteck', 'Grenze']);
-    // „Grenze“ ohne Symbol, bis der core-Satz ein eigenes hat (kein irreführender Ersatz)
-    expect(werkzeuge.map((b) => !!b.querySelector('svg.symbol[aria-hidden="true"]'))).toEqual([true, true, true, false]);
+    expect(werkzeuge.every((b) => b.querySelector('svg.symbol[aria-hidden="true"]'))).toBe(true);
     // bekannte Befehle tragen ihren Namen im aria-label (in schmalen Fenstern nur das Symbol)
     expect(host.querySelector('.toolbar button[aria-label="Neu"] .tb-text')!.textContent).toBe('Neu');
-    expect(host.querySelector('.toolbar button[aria-label="Speichern"]')!.classList.contains('tb-dirty')).toBe(false);
+    expect(host.querySelector('.toolbar button[aria-label="Speichern"]')!.classList.contains('ungespeichert')).toBe(false);
     expect(host.querySelector('.toolbar')!.textContent).not.toMatch(/[↶↷×?]/);
     // Tastenübersicht im Lageplan: Symbol statt „?“, Name über aria-label
     const tasten = host.querySelector('.lp-tasten-knopf')!;
@@ -1078,7 +1077,7 @@ describe('Designsystem: Kontextmenü, Symbole, Druckvorschau, Feldfehler', () =>
     const leiste = [...host2.querySelectorAll('.grz-bericht')].find((e) => e.textContent?.includes('wiederhergestellt'))!;
     expect(leiste.className).toBe('meldung warnung grz-bericht');
     // ungespeichert: Punkt an „Speichern“ statt Zeichen im Text, Zustand im Namen des Knopfs
-    const speichern = host2.querySelector('.toolbar button.tb-dirty')!;
+    const speichern = host2.querySelector('.toolbar button.ungespeichert')!;
     expect(speichern.getAttribute('aria-label')).toBe('Speichern – ungespeicherte Änderungen');
     expect(speichern.textContent?.trim()).toBe('Speichern');
     // Gegenprobe: kein Hinweis auf fehlendes Gebäude, wenn eins da ist

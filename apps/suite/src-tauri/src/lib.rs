@@ -8,6 +8,7 @@ include!("../../../../packages/core/tauri/commands.rs");
 include!("../../../formulare/src-tauri/src/befehle.rs");
 include!("../../../ava/src-tauri/src/befehle.rs");
 include!("../../../../packages/core/tauri/qgis.rs");
+include!("../../../baurecht/src-tauri/src/netz.rs");
 include!("../../../../packages/core/tauri/umbenennen.rs");
 
 /// Die Formulare-App im Tab bzw. Fenster ist zu oder zieht um (Herauslösen, Andocken): ihre Sperrdateien freigeben.
@@ -72,6 +73,7 @@ pub fn run() {
             form_create,
             doc_copy,
             doc_rename,
+            form_rename,
             doc_delete,
             process_info,
             prokarte_read,
@@ -86,6 +88,11 @@ pub fn run() {
             ava_oeffnen,
             ava_mail_entwurf,
             ava_temp_oeffnen,
+            // Baurecht (apps/baurecht/src-tauri/src/netz.rs)
+            netz_holen,
+            netz_hosts_erweitern,
+            baurecht_ablage_lesen,
+            baurecht_ablage_schreiben,
             // Rahmen
             rahmen_formulare_freigeben
         ])

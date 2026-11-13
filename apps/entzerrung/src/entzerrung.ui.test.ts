@@ -251,7 +251,9 @@ describe('RECTIO (Entzerrung)', () => {
     const punkt = (text: string) => flaechenMenue().find((p) => !p.trenner && p.text === text) as Exclude<MenuePunkt, { trenner: true }>;
     expect(punkt('Löschen')).toMatchObject({ deaktiviert: true, hinweis: 'nichts ausgewählt' });
     expect(punkt('Entzerrt zeigen')).toMatchObject({ deaktiviert: true, hinweis: 'erst die Referenz vervollständigen' });
-    expect(punkt('Alles zeigen')).toMatchObject({ deaktiviert: false, hinweis: 'Pos1' });
+    expect(punkt('Alles zeigen')).toMatchObject({ deaktiviert: false, tasten: 'Pos1' });
+    // Kürzel stehen in tasten, nicht im Hinweis (der nennt nur Sperrgründe)
+    expect(flaechenMenue().filter((p) => !p.trenner && /^(Pos1|E|Entf|Strg)/.test((p as { hinweis?: string }).hinweis ?? ''))).toEqual([]);
     // Ecke gewählt: nicht einzeln löschbar, Grund steht dabei
     act(() => useEntz.getState().setze({ auswahl: { art: 'ecke', id: 'x', index: 0 } }));
     expect(punkt('Ecke LU löschen')).toMatchObject({ deaktiviert: true, hinweis: 'Ecken über „Ecken neu setzen“' });
@@ -260,7 +262,7 @@ describe('RECTIO (Entzerrung)', () => {
     const { foto, ebene } = aktuell(s);
     act(() => s.aendern(mitEbene(foto!.id, ebene!.id, (e) => ({ ...e, rechteck: { ecken: ECKEN, breite: 1.26, hoehe: 1.51 }, messungen: [{ id: 'm1', art: 'strecke', name: 'A', punkte: [ECKEN[0], ECKEN[1]] }] }))));
     act(() => useEntz.getState().setze({ auswahl: { art: 'messung', id: 'm1' } }));
-    expect(punkt('„A“ löschen')).toMatchObject({ deaktiviert: false, hinweis: 'Entf' });
+    expect(punkt('„A“ löschen')).toMatchObject({ deaktiviert: false, hinweis: undefined, tasten: 'Entf / Rücktaste' });
     expect(punkt('Entzerrt zeigen').deaktiviert).toBe(false);
     act(() => punkt('„A“ löschen').aktion!());
     expect(aktuell(useEntz.getState()).ebene!.messungen).toHaveLength(0);

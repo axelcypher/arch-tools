@@ -1,0 +1,96 @@
+{
+  "format": 1,
+  "modul": "nw-05974",
+  "norm": "uesg_ahse",
+  "fassung": "2022-03-05",
+  "version": 1,
+  "geltung": {
+    "und": [
+      {
+        "f": "schutz.uesg",
+        "ist": true
+      },
+      {
+        "f": "lage.ags",
+        "in": [
+          "05974040",
+          "05974048",
+          "05974052",
+          "05974024",
+          "05974008",
+          "05974028"
+        ]
+      }
+    ]
+  },
+  "geltungGrund": "nur im festgesetzten Überschwemmungsgebiet der Ahse und ihrer Nebengewässer in Welver, Werl, Lippetal, Soest, Bad Sassendorf und Lippstadt",
+  "paragrafen": {
+    "1": {
+      "gilt": {
+        "immer": true
+      },
+      "grund": "Das Grundstück liegt im festgesetzten Überschwemmungsgebiet (HQ100) eines der Gewässer Ahse, Salzbach, Mühlenbach, Soestbach, Amper Bach, Blögge, Schledde oder Rosenau; maßgeblich sind die Überschwemmungsgebietskarten der Verordnung.",
+      "fundstellen": [
+        "1/1",
+        "1/2"
+      ],
+      "hinweis": "In der Stadt Soest betroffen: Soestbach, Schledde, Blögge, Mühlenbach und Amper Bach. Das Gewässerbett und seine Ufer gehören nicht zum Überschwemmungsgebiet (Abs. 2).",
+      "stand": {
+        "1/1": "6451a84d",
+        "1/2": "957b729f"
+      },
+      "titel": "Räumlicher Geltungsbereich und Darstellung"
+    },
+    "2": {
+      "gilt": {
+        "oder": [
+          {
+            "$": "vorhaben_29"
+          },
+          {
+            "f": "vorhaben.erdarbeiten",
+            "ist": true
+          },
+          {
+            "und": [
+              {
+                "$": "vorhaben_29"
+              },
+              {
+                "f": "technik.brennstofflager",
+                "ist": true
+              }
+            ]
+          }
+        ]
+      },
+      "grund": "Im festgesetzten Überschwemmungsgebiet ist die Errichtung oder Erweiterung baulicher Anlagen untersagt und nur ausnahmsweise genehmigungsfähig (§ 78 Abs. 4 und 5 WHG); die Errichtung neuer Heizölverbraucheranlagen ist verboten, bestehende sind hochwassersicher nachzurüsten (§ 78c Abs. 1 und 2 WHG).",
+      "fundstellen": [
+        "2"
+      ],
+      "nachweis": [
+        "Genehmigung nach § 78 Abs. 5 WHG bei der unteren Wasserbehörde des Kreises Soest (Nachweis Retentionsraumausgleich, keine Verschlechterung des Hochwasserabflusses)"
+      ],
+      "verweise": [
+        "bund/whg/78"
+      ],
+      "stand": {
+        "2": "19a56899"
+      },
+      "titel": "Besondere Schutzvorschriften"
+    },
+    "4": {
+      "gilt": {
+        "immer": true
+      },
+      "grund": "Die Verordnung gilt unbefristet (§ 83 Abs. 2 Satz 2 LWG); sie hat die Verordnung „Ahse“ von 2004 abgelöst.",
+      "fundstellen": [
+        "4"
+      ],
+      "stand": {
+        "4": "cb64718b"
+      },
+      "titel": "Inkrafttreten, Außerkrafttreten"
+    }
+  }
+}

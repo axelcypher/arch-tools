@@ -1,0 +1,49 @@
+{
+  "quelle": "https://www.soest.de/fileadmin/user_upload/Dokumente/Ortsrecht/Denkmalbereichsatzung_13mb.pdf",
+  "sha256": "4f4d97671ab67f160ff40bd432c24bf76f8d77ec04edb4e05d67d1ac4e2fbf2f",
+  "verfahren": "Scan ohne Textebene (271 Seiten); Satzungstext (Seiten 10–14) mit Tesseract 5 (deu) erkannt und von Hand durchgesehen am 12.11.2026. In § 4 ist eine Zeile im Scan nicht lesbar (markiert). Anlage 1 (Beschreibung der Schutzgegenstände) und die Pläne sind nicht erkannt. Maßgeblich ist die Satzungsurkunde.",
+  "paragrafen": {
+    "1": {
+      "titel": "Räumlicher Geltungsbereich",
+      "url": "https://www.soest.de/fileadmin/user_upload/Dokumente/Ortsrecht/Denkmalbereichsatzung_13mb.pdf",
+      "text": [
+        "Die Soester Altstadt wird als Denkmalbereich festgesetzt und unter Schutz gestellt. Der Denkmalbereich ist das Gebiet innerhalb der ringförmig angeordneten Straßen Nelmannwall, Immermannwall, Brunowall, Dasselwall, Freiligrathwall, Aldegreverwall, Brüdertor, Brüder-Walburger-Wallstraße, Bahnhofstraße und Walburger-Osthofen-Wallstraße. Die Grenze des Denkmalbereichs ist im nebenstehenden Übersichtsplan und im Plan 1 der Anlage 2 eingezeichnet. Diese Pläne sind Bestandteile dieser Satzung."
+      ]
+    },
+    "2": {
+      "titel": "Sachlicher Geltungsbereich",
+      "url": "https://www.soest.de/fileadmin/user_upload/Dokumente/Ortsrecht/Denkmalbereichsatzung_13mb.pdf",
+      "text": [
+        "Geschützt ist das historische Erscheinungsbild der Soester Altstadt.",
+        "Die Schutzgegenstände sind der Stadtgrundriß, die Stadträume und räumliche Gliederung, Sichtbeziehungen, das Erscheinungsbild von denkmalwerten, erhaltenswerten und räumlich wichtigen Bauten sowie die Stadtsilhouette.",
+        "Diese Schutzgegenstände sind in der Anlage 1 detailliert beschrieben und in den Plänen Nr. 1 - 4 graphisch dargestellt.",
+        "Die Anlage 1 und die Pläne 1 - 4 sind Bestandteile dieser Satzung."
+      ]
+    },
+    "3": {
+      "titel": "Rechtsfolgen",
+      "url": "https://www.soest.de/fileadmin/user_upload/Dokumente/Ortsrecht/Denkmalbereichsatzung_13mb.pdf",
+      "text": [
+        "In dem im § 1 beschriebenen Geltungsbereich bedarf, unabhängig von baurechtlichen Genehmigungen, der Erlaubnis der Unteren Denkmalbehörde entsprechend § 9 DSchG NW wer",
+        "a) bauliche Anlagen im Denkmalbereich, auch wenn sie keine Denkmäler sind, beseitigen, verändern, an einen anderen Ort verbringen oder die bisherige Nutzung ändern will,",
+        "b) in der engeren Umgebung von baulichen Anlagen im Denkmalbereich, auch wenn sie keine Denkmäler sind, Anlagen errichten, verändern oder beseitigen will,",
+        "c) in den ausgewiesenen Sichtfeldern auf die Stadtsilhouette Veränderungen vornehmen will, welche diese schützenswerten Sichtbeziehungen ganz oder teilweise verdecken oder auf andere Weise beeinträchtigen. Die Sichtfelder sind in der Anlage 1 E beschrieben und im Plan 4 dargestellt.",
+        "Die Erlaubnis kann mit Auflagen und Bedingungen erteilt werden, wenn diese zur Wahrung der denkmalpflegerischen Eigenart erforderlich sind."
+      ]
+    },
+    "4": {
+      "titel": "Ordnungswidrigkeiten",
+      "url": "https://www.soest.de/fileadmin/user_upload/Dokumente/Ortsrecht/Denkmalbereichsatzung_13mb.pdf",
+      "text": [
+        "Ordnungswidrig im Sinne von § 41 Denkmalschutzgesetz NW handelt, wer vorsätzlich oder fahrlässig Maßnahmen, die nach § 3 dieser Satzung der Erlaubnis bedürfen, [eine Zeile im Scan nicht lesbar] gem. § 41 DSchG mit Geldbußen bis zu 500.000,00 DM geahndet werden."
+      ]
+    },
+    "5": {
+      "titel": "Inkrafttreten",
+      "url": "https://www.soest.de/fileadmin/user_upload/Dokumente/Ortsrecht/Denkmalbereichsatzung_13mb.pdf",
+      "text": [
+        "Diese Satzung tritt am Tage nach ihrer Bekanntmachung in Kraft."
+      ]
+    }
+  }
+}

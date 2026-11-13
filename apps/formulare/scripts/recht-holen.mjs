@@ -13,7 +13,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const ZIEL = join(dirname(fileURLToPath(import.meta.url)), '../src/recht/daten');
+const ZIEL = join(dirname(fileURLToPath(import.meta.url)), '../../../packages/core/src/recht/daten');
 
 /** Landesrecht: ganze Fassung */
 const LAND = [

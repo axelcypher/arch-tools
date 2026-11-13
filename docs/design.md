@@ -89,6 +89,7 @@ Zahlen in Tabellen und Feldern stehen rechtsbündig in Tabellenziffern (`.num`, 
 | `--text`, `--muted`                | Text, Nebentext                                                                                                 |
 | `--border`, `--line-soft`          | Linien, feine Trennlinien in Tabellen                                                                           |
 | `--accent`, `--accent-soft`        | Akzent (aktive Werkzeuge, primärer Knopf, Links), Tönung                                                        |
+| `--accent-text`                    | Akzent als Schrift auf getönten Flächen (aktive Knöpfe, Chips) – mindestens 4,5:1                               |
 | `--ok-*`, `--warn-*`, `--fehler-*` | Status: eingehalten, prüfen, überschritten/Fehler                                                               |
 | `--sel`                            | Auswahl auf Plänen (Orange); auch ungespeicherte Änderungen (Punkt in Titelleiste und an „Speichern“)           |
 | `--sel-foto`                       | Auswahl auf Fotos (Magenta, in beiden Schemata gleich) – Orange kollidiert dort mit Mess- und Markierungsfarben |
@@ -128,8 +129,10 @@ und `ZEICHENFLAECHE_GRUND` in `planFarbe.ts` müssen zu `--canvas-filter` und `-
   Unterlagen-Vorschau in PERMIO) sind kein `Modal`, tragen aber `role="dialog"`, `aria-modal` und einen Namen und
   schließen mit Esc über `useEscSchliessen`.
 - **Breite:** Standard 380px, `breit` 620px (Formulare), `tabelle` bis 1200px (Vorschauen, Zuordnungen).
-- **Erstfokus** (automatisch, `ui/dialoge.ts`): `autoFocus`, sonst das erste Textfeld, sonst der Hauptknopf
-  (`.primary`), sonst das gewählte Optionsfeld. Nie „Abbrechen“ – Enter darf nichts verwerfen.
+- **Erstfokus** (automatisch, `ui/dialoge.ts`): `autoFocus` bzw. `data-startfokus` (der Dialog bestimmt selbst, z. B.
+  ein Häkchen), sonst das erste Textfeld, sonst der Hauptknopf (`.primary`), sonst das gewählte Optionsfeld – nie eine
+  Aufklappzeile (`summary`), nie „Abbrechen“: Enter darf nichts verwerfen. Schließt ein Dialog über einem anderen,
+  geht der Fokus an die Stelle im äußeren zurück.
 - **Knöpfe** in `.dialog-buttons` als letztes Kind des Dialogs (oder seines `<form>`, das dann selbst letztes Kind
   ist): rechtsbündig, Hauptknopf rechts außen, „Abbrechen“ links davon. In langen Dialogen bleiben sie unten stehen
   (sticky).
@@ -137,6 +140,8 @@ und `ZEICHENFLAECHE_GRUND` in `planFarbe.ts` müssen zu `--canvas-filter` und `-
   `type="button"`.
 - Optionen, die nur zu einer Wahl gehören, erst bei dieser Wahl zeigen (Beispiel: Vorlagen-Knöpfe im Excel-Dialog nur
   bei „Eigene Vorlage“).
+- In Rückfragen mit Gefahr-Knopf (`art: 'danger'`, z. B. „Löschen“, „Verwerfen“) liegen Erstfokus und Enter nie auf
+  ihm, sondern auf dem Hauptknopf bzw. „Abbrechen“. Gibt es nur Gefahr-Knöpfe, tut Enter nichts.
 
 ## Druckvorschau
 
@@ -244,15 +249,15 @@ mit `text`, optional `symbol`, `hinweis` (rechts, z. B. der Grund einer Sperre),
 
 ## Listen
 
-- Hinzufügen-Knöpfe mit `<Symbol name="plus" />` und dem Gegenstand als Text, ohne „+“ als Schriftzeichen. Für
-  Einträge einer Liste (Positionen, Punkte, Firmen, Merkmale) heißt das Verb „hinzufügen“, nicht „neu“ oder „einfügen“.
+- Hinzufügen-Knöpfe mit `<Symbol name="plus" />` und dem Gegenstand als Text, ohne „+“ als Schriftzeichen.
+  Rechenzeichen in Summenzeilen („+ 19 % USt.“) sind keine Knöpfe und bleiben.
+- Verb: Für Einträge einer Liste (Positionen, Punkte, Firmen, Merkmale) „hinzufügen“, nicht „neu“ oder „einfügen“.
   Eigenständige Gegenstände wie Projekt, Formular, Ordner oder Datei bleiben bei „Neu“ bzw. „anlegen“ (siehe
-  „Begriffe“), ebenfalls mit Symbol `plus` („Neues Projekt anlegen …“). In Leisten knapp nur der Gegenstand
-  („Position“, „Abschnitt“), dann mit `title` und `aria-label` der vollen Aktion („Position hinzufügen“) – das `aria-label`
-  enthält den sichtbaren Text wörtlich (sonst trifft Sprachsteuerung den Knopf nicht); geht das nur mit Beugung, nur
-  `title` setzen; sonst gleich
-  mit Verb („Merkmal hinzufügen“). Öffnet der Knopf einen Dialog oder eine Rückfrage, endet er auf „ …“
-  („Geschoss …“). Rechenzeichen in Summenzeilen („+ 19 % USt.“) sind keine Knöpfe und bleiben.
+  „Begriffe“), ebenfalls mit Symbol `plus` („Neues Projekt anlegen …“).
+- Länge: In Leisten knapp nur der Gegenstand („Position“, „Abschnitt“) mit `title` der vollen Aktion („Position
+  hinzufügen“); sonst gleich mit Verb („Beteiligten hinzufügen“). Ein `aria-label` enthält den sichtbaren Text
+  wörtlich (sonst trifft Sprachsteuerung den Knopf nicht); geht das nur mit Beugung, nur `title` setzen.
+- Öffnet der Knopf einen Dialog oder eine Rückfrage, endet er auf „ …“ („Geschoss …“).
 - In Auswahllisten (`<option>`) geht kein Symbol: dort als Platzhalter „Firma hinzufügen …“ – mit „ …“, weil die
   eigentliche Wahl erst folgt (Ausnahme zu „Begriffe“).
 - Hinweistexte nennen den Knopf so, wie er heißt: „mit ‚Abschnitt‘ beginnen“.
@@ -286,8 +291,8 @@ für Rückmeldungen, `role="alert"` für Fehler. `.warning` bleibt als Hinweis i
 ## Titelleiste
 
 Das Farbschema-Menü zeigt ein gezeichnetes Symbol und den Namen der Wahl („Auto“, „Hell“, „Dunkel“), wie „§ Regeln“ und
-„≡ Protokoll“ mit Text. Unter 960px Fensterbreite zeigen Knöpfe mit Symbol (Farbschema, Speicherort) nur noch das
-Symbol: Text in `<span className="titlebar-text">`, der Name bleibt über `aria-label`. Die Tableiste von Arkly zeigt
+„≡ Fehlerprotokoll“ mit Text. Unter 960px Fensterbreite zeigen Knöpfe mit Symbol (Farbschema, Speicherort) nur noch
+das Symbol: Text in `<span className="titlebar-text">`, der Name bleibt über `aria-label`. Die Tableiste von Arkly zeigt
 unter 1100px am Tab nur Symbol und Namen der App (das Projekt steht im Tooltip); eine Fläche zum Ziehen des Fensters
 bleibt immer frei.
 

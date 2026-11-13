@@ -1,0 +1,167 @@
+name: Regelpaket Baurecht
+
+# Das Regelpaket der App Baurecht (packages/baurecht-regeln) wird getrennt von der App ausgeliefert:
+#
+#  - Auslieferung: Sobald sich das Paket auf main ändert, wird es geprüft und ohne Leerraum gebaut (Job ohne Rechte und
+#    ohne Schlüssel), dann in einem eigenen Job ohne npm mit dem privaten Schlüssel (Secret BAURECHT_REGELN_SCHLUESSEL,
+#    PKCS#8 Base64) per OpenSSL signiert und in das Release „regeln“ hochgeladen.
+#    Die Apps holen index.json + index.json.sig von dort und übernehmen nur gültig signierte Pakete.
+#  - Wächter: Wöchentlich holt der Wächter die geltenden Fassungen aller Normen und prüft, dass die Fundstellen der
+#    Regeln noch im Text stehen und unverändert sind. Weicht etwas ab, legt er ein Issue an (bzw. ergänzt es).
+on:
+  push:
+    branches: [main]
+    paths:
+      - packages/baurecht-regeln/**
+  schedule:
+    # montags 05:17 UTC
+    - cron: '17 5 * * 1'
+  workflow_dispatch:
+    inputs:
+      aufgabe:
+        description: Aufgabe
+        type: choice
+        options: [ausliefern, waechter]
+        default: waechter
+
+# Rechte je Job (unten); global keine
+permissions: {}
+
+jobs:
+  bauen:
+    name: Regelpaket prüfen und bauen
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.aufgabe == 'ausliefern')
+    runs-on: ubuntu-latest
+    # ohne Schreibrechte und ohne Schlüssel: hier laufen die Install-Skripte der Abhängigkeiten (npm ci)
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      # Die Apps übernehmen ein Release nur, wenn seine Version neuer ist als die ihres Builds (gleiche Version: der
+      # Build gewinnt). Geänderte Regeln brauchen deshalb eine neue Version in package.json.
+      - name: Version erhöht?
+        if: github.event_name == 'push' && github.event.before != '0000000000000000000000000000000000000000'
+        run: |
+          vorher="${{ github.event.before }}"
+          if git diff --quiet "$vorher" "$GITHUB_SHA" -- packages/baurecht-regeln/module packages/baurecht-regeln/texte; then exit 0; fi
+          # neues Paket (vorher keine package.json): nichts zu vergleichen
+          alt=$(git show "$vorher:packages/baurecht-regeln/package.json" 2>/dev/null | node -p "JSON.parse(require('fs').readFileSync(0,'utf8')).version" 2>/dev/null || true)
+          if [ -z "$alt" ]; then exit 0; fi
+          neu=$(node -p "require('./packages/baurecht-regeln/package.json').version")
+          if [ "$alt" = "$neu" ]; then
+            echo "::error::Regeln geändert, aber die Version in packages/baurecht-regeln/package.json ist noch $neu – bitte erhöhen (Datum)."
+            exit 1
+          fi
+      - run: npm ci
+      - run: npx vitest run --project regeln
+      - name: Bauen (Index ohne Signatur)
+        run: |
+          v=$(node -p "require('./packages/baurecht-regeln/package.json').version")
+          PAKET="$v-${{ github.run_number }}" npm run index -w @akh/baurecht-regeln
+      - uses: actions/upload-artifact@v4
+        with:
+          name: regelpaket
+          path: packages/baurecht-regeln/ausgabe/
+          retention-days: 7
+
+  ausliefern:
+    name: Regelpaket signieren und ausliefern
+    needs: bauen
+    # signiert wird nur von main – und nur in der Umgebung „regeln“ (in den Einstellungen des Repos mit Branch-Regel
+    # „main“ und Freigabe durch Reviewer anlegen; das Secret BAURECHT_REGELN_SCHLUESSEL gehört in diese Umgebung)
+    if: github.ref == 'refs/heads/main'
+    environment: regeln
+    runs-on: ubuntu-latest
+    # kein npm: nur Node-Bordmittel, OpenSSL und gh – der private Schlüssel kommt mit keinem fremden Code in Berührung
+    permissions:
+      contents: write
+    steps:
+      # Repo nur zum Vergleichen (kein npm, keine Install-Skripte): signiert wird nur, was genau zum Commit passt
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@v4
+        with:
+          name: regelpaket
+          path: ausgabe
+      - name: Paket gegen das Repo prüfen
+        run: node packages/baurecht-regeln/werkzeuge/index-pruefen.mjs ausgabe
+      - name: Signieren (Ed25519)
+        env:
+          BAURECHT_REGELN_SCHLUESSEL: ${{ secrets.BAURECHT_REGELN_SCHLUESSEL }}
+        working-directory: ausgabe
+        run: |
+          if [ -z "$BAURECHT_REGELN_SCHLUESSEL" ]; then
+            echo "::warning::Kein Schlüssel (Secret BAURECHT_REGELN_SCHLUESSEL) – Regelpaket nicht ausgeliefert. Einrichten: npm run schluessel -w @akh/baurecht-regeln"
+            exit 0
+          fi
+          umask 077
+          pem="$RUNNER_TEMP/regeln.pem"
+          { echo "-----BEGIN PRIVATE KEY-----"; echo "$BAURECHT_REGELN_SCHLUESSEL" | tr -d ' \n\r' | fold -w 64; echo; echo "-----END PRIVATE KEY-----"; } > "$pem"
+          openssl pkeyutl -sign -inkey "$pem" -rawin -in index.json -out "$RUNNER_TEMP/sig.bin"
+          base64 -w0 "$RUNNER_TEMP/sig.bin" > index.json.sig
+          rm -f "$pem" "$RUNNER_TEMP/sig.bin"
+      - name: In das Release „regeln“ hochladen
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        working-directory: ausgabe
+        run: |
+          [ -f index.json.sig ] || exit 0
+          gh release view regeln >/dev/null 2>&1 || gh release create regeln --latest=false --target "$GITHUB_SHA" \
+            --title "Regelpaket Baurecht" \
+            --notes "Technisches Release: Regelpaket der App Baurecht (signiert). Die App lädt es selbst nach."
+          # erst die Dateien, zuletzt Index und Signatur – so sieht keine App einen Index, dessen Dateien fehlen
+          gh release upload regeln $(ls | grep -v '^index\.json') --clobber
+          gh release upload regeln index.json index.json.sig --clobber
+
+  waechter:
+    name: Wächter – Regeln gegen die geltenden Fassungen
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.aufgabe == 'waechter')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Issue anlegen oder ergänzen
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Rechtsstand prüfen
+        id: pruefen
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          LIVE=1 npx vitest run --project regeln test/rechtsstand.live.test.ts 2>&1 | tee waechter.log
+      - name: Issue anlegen oder ergänzen
+        if: steps.pruefen.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          titel="Baurecht: Regeln an neue Gesetzesfassungen anpassen"
+          {
+            echo "Der Wächter hat am $(date -u +%d.%m.%Y) Abweichungen zwischen den Regeln und den geltenden Fassungen gefunden."
+            echo
+            echo '```'
+            grep -E "FAIL|Regeln nachziehen|steht nicht|geändert|neue Fassung" waechter.log | head -80
+            echo '```'
+            echo
+            echo "Vorgehen: \`NUR=<modul>/<norm> npm run fassung -w @akh/baurecht-regeln\`, Regeln prüfen, \`npm run stand\`. Bis dahin zeigen die Apps die betroffenen Paragrafen gelb."
+          } > text.md
+          nr=$(gh issue list --state open --search "$titel in:title" --json number -q '.[0].number')
+          if [ -n "$nr" ]; then gh issue comment "$nr" --body-file text.md; else gh issue create --title "$titel" --body-file text.md; fi

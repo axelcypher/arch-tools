@@ -1,0 +1,2081 @@
+/*
+ * App Baurecht – eigene Styles (Grund-Styles und Farbvariablen in packages/core/src/ui/base.css).
+ * Ampelfarben aus den Statusfarben der Grund-Styles: rot = --fehler-*, gelb = --warn-*, grün = --ok-*; damit stimmen
+ * helles und dunkles Schema. Die Ampel steht nie nur als Farbe da, immer auch als Wort.
+ */
+
+.br-app {
+  /* Grautext dunkler als in den Grund-Styles: auf allen Tönungen der App mindestens 4,5:1 */
+  --muted: #5f6673;
+  --br-leise-stark: #4b5563;
+  --br-rot: var(--fehler-text);
+  --br-rot-bg: var(--fehler-bg);
+  --br-rot-rand: var(--fehler-border);
+  --br-gelb: var(--warn-text);
+  --br-gelb-bg: var(--warn-bg);
+  --br-gelb-rand: var(--warn-border);
+  --br-gruen: var(--ok-text);
+  --br-gruen-bg: var(--ok-bg);
+  --br-gruen-rand: var(--ok-border);
+  --br-punkt-rot: #d64534;
+  --br-punkt-gelb: #e0a420;
+  --br-punkt-gruen: #2f9a5b;
+}
+:root[data-theme='dunkel'] .br-app {
+  --muted: #9aa1ad;
+  --br-leise-stark: #b3b9c4;
+  --br-punkt-rot: #f07a6b;
+  --br-punkt-gelb: #f3c35a;
+  --br-punkt-gruen: #5fcf8a;
+}
+
+.br-unsichtbar {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.br-leise {
+  color: var(--muted);
+}
+.br-leise-stark {
+  color: var(--br-leise-stark);
+}
+.br-warn-text {
+  color: var(--warn-text);
+}
+.br-fehler-text {
+  color: var(--fehler-text);
+}
+.br-link {
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--accent-text);
+  text-decoration: underline;
+  cursor: pointer;
+  white-space: normal;
+  text-align: left;
+}
+.br-link:hover:not(:disabled) {
+  background: none;
+  color: var(--accent-hover);
+}
+.br-laedt {
+  color: var(--muted);
+}
+.br-laedt::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  border-right-color: transparent;
+  animation: br-dreh 0.9s linear infinite;
+  vertical-align: -1px;
+}
+@keyframes br-dreh {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .br-laedt::before {
+    animation: none;
+  }
+}
+
+/* ---------- Ampel ---------- */
+
+.br-ampel {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.br-ampel-punkt {
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.18);
+}
+.br-ampel-klein .br-ampel-punkt {
+  width: 9px;
+  height: 9px;
+}
+.br-ampel-klein {
+  font-weight: 500;
+  font-size: 12px;
+}
+.br-ampel-rot {
+  color: var(--br-rot);
+}
+.br-ampel-gelb {
+  color: var(--br-gelb);
+}
+.br-ampel-gruen {
+  color: var(--br-gruen);
+}
+.br-ampel-rot .br-ampel-punkt,
+.br-chip-rot .br-ampel-punkt,
+.br-balken-rot {
+  background: var(--br-punkt-rot);
+}
+.br-ampel-gelb .br-ampel-punkt,
+.br-chip-gelb .br-ampel-punkt,
+.br-balken-gelb {
+  background: var(--br-punkt-gelb);
+}
+.br-ampel-gruen .br-ampel-punkt,
+.br-chip-gruen .br-ampel-punkt,
+.br-balken-gruen {
+  background: var(--br-punkt-gruen);
+}
+
+/* ---------- Kopf und Bilanz ---------- */
+
+.br-kopf {
+  gap: 8px;
+  padding: 6px 10px;
+  /* eine Zeile: Module und Rechtsstand kürzen sich, die Aktionen bleiben rechts */
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+.br-kopf > button,
+.br-kopf-feld {
+  flex-shrink: 0;
+}
+.br-kopf-feld {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.br-kopf-feld select,
+.br-kopf-feld input {
+  font: inherit;
+  padding: 4px 6px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--input-bg);
+  color: var(--text);
+}
+.br-module-text {
+  /* kürzt sich zuerst und nimmt den freien Platz */
+  flex: 1 1 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12px;
+  color: var(--br-leise-stark);
+  min-width: 0;
+}
+.br-kopf-aktionen {
+  display: inline-flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.br-kopf > .br-nur-schmal,
+.br-kopf > .br-nur-breit {
+  flex-shrink: 0;
+}
+button.br-modul-chip {
+  cursor: pointer;
+  min-height: 24px;
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.2;
+}
+button.br-modul-chip.br-modul-fehlt:hover:not(:disabled) {
+  background: var(--warn-bg);
+  text-decoration: underline;
+}
+button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
+  background: var(--fehler-bg);
+  text-decoration: underline;
+}
+/* App-Breite entscheidet (auch in der Rahmen-App) */
+.br-app {
+  container: app / inline-size;
+}
+/* unter 1600 px: Aktionen in „Mehr ▾“, Warnungen als Sammelmarke – die Module behalten ihren Platz */
+@container app (max-width: 1599px) {
+  .br-kopf .br-nur-breit {
+    display: none;
+  }
+  .br-kopf .br-nur-schmal {
+    display: inline-flex;
+  }
+}
+@container app (max-width: 1199px) {
+  /* Beschriftungen von Antrag und Einreichung stehen dann nur noch im Feld (aria-label, Tooltip) */
+  .br-kopf-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+}
+/* Menü „Mehr ▾“ */
+.br-menue {
+  position: relative;
+  display: inline-flex;
+}
+.br-menue-liste {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 4px);
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 220px;
+  padding: 4px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+}
+.br-menue-liste > button {
+  border: none;
+  background: none;
+  text-align: left;
+  padding: 6px 10px;
+  min-height: 30px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+.br-menue-liste > button:hover:not(:disabled),
+.br-menue-liste > button:focus-visible {
+  background: var(--accent-soft);
+  outline: 2px solid var(--fokus);
+  outline-offset: -2px;
+}
+.br-menue-info {
+  margin-top: 4px;
+  padding: 6px 10px 4px;
+  border-top: 1px solid var(--line-soft);
+  font-size: 12px;
+  color: var(--warn-text);
+  white-space: normal;
+}
+/* Warnungen werden nie gekürzt */
+.br-kopf-marken {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.br-kopf-marken > * {
+  white-space: nowrap;
+}
+.br-modul-widerspruch {
+  background: var(--fehler-bg);
+  color: var(--fehler-text);
+  border: 1px solid var(--fehler-border);
+}
+.br-modul-chip {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--chip-bg);
+  color: var(--text);
+  font-size: 12px;
+}
+.br-modul-fehlt {
+  background: var(--warn-bg);
+  color: var(--warn-text);
+  border: 1px dashed var(--warn-border);
+}
+.br-rechtsstand {
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 60px;
+  flex: 0 3 auto;
+}
+.br-rechtsstand:empty {
+  display: none;
+}
+
+.br-chip-rot {
+  background: var(--br-rot-bg);
+  color: var(--br-rot);
+  border-color: var(--br-rot-rand);
+}
+.br-chip-gelb {
+  background: var(--br-gelb-bg);
+  color: var(--br-gelb);
+  border-color: var(--br-gelb-rand);
+}
+.br-chip-gruen {
+  background: var(--br-gruen-bg);
+  color: var(--br-gruen);
+  border-color: var(--br-gruen-rand);
+}
+.br-balken {
+  display: flex;
+  flex: 0 1 260px;
+  min-width: 120px;
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--line-soft);
+}
+.br-balken > span {
+  display: block;
+  height: 100%;
+  transition: width 0.25s;
+}
+.br-klaeren {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-width: 0;
+  margin: 8px 0 4px;
+}
+.br-klaeren-titel {
+  width: 100%;
+  margin: 0;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  font-weight: 600;
+}
+.br-chip-knopf {
+  font-size: 12px;
+  padding: 3px 9px;
+  border-radius: 12px;
+  background: var(--accent-soft);
+  border-color: transparent;
+  color: var(--accent-text);
+  white-space: normal;
+  text-align: left;
+}
+.br-chip-zahl {
+  font-size: 11px;
+  color: var(--br-leise-stark);
+  white-space: nowrap;
+}
+.br-chip-knopf:hover:not(:disabled) {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+.br-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.br-hinweisband {
+  padding: 6px 12px;
+  background: var(--warn-bg);
+  color: var(--warn-text);
+  border-bottom: 1px solid var(--warn-border);
+  font-size: 12px;
+}
+
+/* ---------- Arbeitsbereich ---------- */
+
+.br-arbeit {
+  min-height: 0;
+}
+.br-leiste-links {
+  border-right: 1px solid var(--border);
+  background: var(--panel);
+}
+.br-leiste-rechts {
+  flex-shrink: 0;
+  border-left: 1px solid var(--border);
+  background: var(--panel);
+  display: flex;
+  min-height: 0;
+}
+.br-leiste-kopf {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px 6px;
+}
+.br-leiste-kopf h2,
+.br-detail-leer h2 {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  margin: 0;
+}
+
+/* Angaben */
+.br-angaben {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  width: 100%;
+}
+.br-suche {
+  padding: 0 12px 8px;
+}
+.br-suche input,
+.br-suchfeld {
+  width: 100%;
+  font: inherit;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--input-bg);
+  color: var(--text);
+}
+.br-angaben-liste {
+  overflow-y: auto;
+  flex: 1;
+  padding: 0 12px 16px;
+  scrollbar-gutter: stable;
+}
+.br-angaben-gruppe {
+  margin-top: 10px;
+}
+.br-angaben-gruppe > h3 {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  margin: 6px 0;
+}
+.br-merkmal,
+.br-fakt {
+  padding: 7px 8px;
+  border-radius: 5px;
+  margin-bottom: 4px;
+  border: 1px solid transparent;
+}
+.br-offen {
+  background: color-mix(in srgb, var(--warn-bg) 55%, transparent);
+  border-color: color-mix(in srgb, var(--warn-border) 45%, transparent);
+}
+.br-fokus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+.br-fakt-kopf {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.br-fakt-titel {
+  flex: 1;
+  min-width: 0;
+}
+.br-klaert {
+  font-size: 11px;
+  color: var(--warn-text);
+  white-space: nowrap;
+}
+.br-erklaerung {
+  font-size: 12px;
+  margin-top: 3px;
+}
+.br-segment {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0;
+}
+.br-segment > button {
+  border-radius: 0;
+  margin-left: -1px;
+  font-size: 12px;
+  padding: 3px 9px;
+  min-height: 26px;
+}
+/* lange Werte: senkrechte Auswahlliste statt treppenartig umbrechender Segmente */
+.br-segment-senkrecht {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+.br-segment-senkrecht > button,
+.br-segment-senkrecht > button:first-child,
+.br-segment-senkrecht > button:last-child {
+  margin-left: 0;
+  margin-top: -1px;
+  border-radius: 0;
+  text-align: left;
+  white-space: normal;
+}
+.br-segment-senkrecht > button:first-child {
+  margin-top: 0;
+  border-radius: 4px 4px 0 0;
+}
+.br-segment-senkrecht > button:last-child {
+  border-radius: 0 0 4px 4px;
+}
+.br-merkmal-fuss {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 3px;
+}
+.br-gruppe-knopf {
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+  cursor: pointer;
+}
+.br-gruppe-knopf:hover:not(:disabled) {
+  background: none;
+  color: var(--text);
+}
+.br-gruppe-stand {
+  margin-left: 6px;
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: normal;
+  color: var(--br-leise-stark);
+}
+.br-segment > button:first-child {
+  border-radius: 4px 0 0 4px;
+  margin-left: 0;
+}
+.br-segment > button:last-child {
+  border-radius: 0 4px 4px 0;
+}
+.br-segment > button.active {
+  position: relative;
+  z-index: 1;
+}
+.br-zahl {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.br-zahl input {
+  width: 110px;
+}
+.br-fakt select {
+  font: inherit;
+  padding: 3px 6px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--input-bg);
+  color: var(--text);
+  max-width: 100%;
+}
+.br-fakt-fuss {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  font-size: 11px;
+}
+.br-herkunft {
+  padding: 0 6px;
+  border-radius: 8px;
+  background: var(--chip-bg);
+}
+.br-herkunft-geodienst {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.br-herkunft-manuell {
+  background: var(--room-bg);
+  color: var(--room-text);
+}
+.br-hinweis-marke {
+  padding: 0 6px;
+  border-radius: 8px;
+  background: var(--warn-bg);
+  color: var(--warn-text);
+  border: 1px solid var(--warn-border);
+}
+.br-widerspruch {
+  background: var(--fehler-bg);
+  color: var(--fehler-text);
+  border-color: var(--fehler-border);
+}
+.br-fester-wert {
+  font-size: 12px;
+}
+
+/* Vorschriften */
+.br-vorschriften {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--bg);
+}
+.br-filter {
+  /* zwei Zeilen: Ergebnis, Balken und Ordnung; darunter Suche und Filter. Die Elemente brechen nie treppenartig um */
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 7px 12px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+}
+.br-filter-zeile,
+.br-filter-zeile2 {
+  display: flex;
+  align-items: center;
+  gap: 8px 12px;
+  min-width: 0;
+}
+.br-filter-zeile {
+  flex-wrap: wrap;
+}
+.br-filter .br-segment {
+  flex-wrap: nowrap;
+  flex-shrink: 0;
+}
+.br-filter .br-segment > button {
+  white-space: nowrap;
+}
+.br-filter .br-suchfeld {
+  flex: 1 1 140px;
+  max-width: 260px;
+  min-width: 110px;
+}
+.br-filter-kaesten {
+  display: inline-flex;
+  gap: 12px;
+}
+.br-filter-zeile2 .toggle {
+  white-space: nowrap;
+}
+.br-ordnung-wahl {
+  width: auto;
+  flex: 0 0 auto;
+  font: inherit;
+  font-size: 12px;
+  padding: 3px 6px;
+  min-height: 26px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--input-bg);
+  color: var(--text);
+}
+/* Filter-Menü für schmale Spalten */
+.br-filter-menue {
+  position: relative;
+}
+.br-filter-menue > summary {
+  list-style: none;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 3px 9px;
+  min-height: 26px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--input-bg);
+  white-space: nowrap;
+}
+.br-filter-menue > summary::-webkit-details-marker {
+  display: none;
+}
+.br-filter-menue-inhalt {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 4px);
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+}
+.br-nur-schmal {
+  display: none;
+}
+/* die mittlere Spalte entscheidet, nicht das Fenster */
+.br-vorschriften {
+  container: vorschriften / inline-size;
+}
+@container vorschriften (max-width: 640px) {
+  .br-filter .br-balken {
+    display: none;
+  }
+  .br-filter .br-nur-breit {
+    display: none;
+  }
+  .br-filter .br-nur-schmal {
+    display: inline-flex;
+  }
+  .br-filter .br-ordnung-wahl.br-nur-schmal {
+    display: inline-block;
+  }
+  .br-filter .br-segment > .br-filter-ampel {
+    padding: 3px 7px;
+  }
+  .br-filter-zeile {
+    justify-content: space-between;
+  }
+}
+.br-filter-ampel {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--input-bg);
+  color: var(--muted);
+  border-color: var(--border);
+}
+.br-filter-ampel.active.br-chip-rot {
+  background: var(--br-rot-bg);
+  color: var(--br-rot);
+  border-color: var(--br-rot-rand);
+}
+.br-filter-ampel.active.br-chip-gelb {
+  background: var(--br-gelb-bg);
+  color: var(--br-gelb);
+  border-color: var(--br-gelb-rand);
+}
+.br-filter-ampel.active.br-chip-gruen {
+  background: var(--br-gruen-bg);
+  color: var(--br-gruen);
+  border-color: var(--br-gruen-rand);
+}
+.br-filter-ampel strong {
+  font-variant-numeric: tabular-nums;
+}
+/* an/aus nicht nur über Farbe: Häkchen */
+.br-filter-haken {
+  display: inline-block;
+  width: 1em;
+  text-align: center;
+}
+.br-filter .br-balken {
+  flex: 1 1 60px;
+  min-width: 60px;
+}
+.br-treffer {
+  padding: 5px 14px 0;
+  font-size: 12px;
+  color: var(--br-leise-stark);
+}
+.br-treffer:empty {
+  display: none;
+}
+.br-leer-zustand {
+  padding: 32px 16px;
+  text-align: center;
+  color: var(--br-leise-stark);
+}
+.br-vorschriften-liste {
+  overflow-y: auto;
+  flex: 1;
+  padding: 10px 14px 24px;
+  scrollbar-gutter: stable;
+}
+.br-gruppe > h3 {
+  font-size: 13px;
+  margin: 14px 0 8px;
+}
+.br-gruppe-module {
+  font-weight: normal;
+  color: var(--br-leise-stark);
+}
+.br-gruppe:first-of-type > h3 {
+  margin-top: 2px;
+}
+.br-norm {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+.br-norm-entfaellt .br-norm-kopf {
+  background: color-mix(in srgb, var(--ok-bg) 45%, transparent);
+}
+.br-norm-entfaellt-text {
+  font-size: 12px;
+  color: var(--br-gruen);
+}
+.br-norm-h {
+  margin: 0;
+  font-size: inherit;
+  font-weight: inherit;
+}
+.br-norm-kopf {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  border: none;
+  border-radius: 0;
+  background: none;
+  padding: 8px 12px;
+  text-align: left;
+  white-space: normal;
+}
+.br-norm-kopf:hover:not(:disabled) {
+  background: var(--hover);
+}
+.br-norm-pfeil {
+  color: var(--muted);
+  width: 10px;
+}
+.br-norm-name {
+  flex: 1;
+  min-width: 0;
+}
+.br-zaehler {
+  display: inline-flex;
+  gap: 4px;
+}
+.br-zahl-chip {
+  min-width: 24px;
+  white-space: nowrap;
+  text-align: center;
+  padding: 0 7px;
+  border-radius: 10px;
+  border: 1px solid;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.br-norm-inhalt {
+  border-top: 1px solid var(--line-soft);
+}
+.br-norm-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  padding: 6px 12px 6px 30px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.br-paragrafen {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 4px;
+}
+.br-paragraf {
+  /* breit: Titel gewichtiger als der Grund; schmal (Container): Grund unter dem Titel */
+  display: grid;
+  grid-template-columns: 78px 64px minmax(200px, 1.3fr) minmax(0, 1fr);
+  align-items: baseline;
+  gap: 8px;
+  width: 100%;
+  border: none;
+  border-radius: 0;
+  background: none;
+  padding: 5px 12px 5px 30px;
+  text-align: left;
+  white-space: normal;
+  border-top: 1px solid var(--line-soft);
+}
+.br-paragraf:hover:not(:disabled) {
+  background: var(--hover);
+}
+.br-paragraf.br-gewaehlt {
+  background: var(--accent-soft);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+.br-paragraf-nr {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.br-paragraf-kopf {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.br-paragraf-titel {
+  min-width: 0;
+  hyphens: auto;
+  overflow-wrap: anywhere;
+}
+.br-paragraf-grund {
+  color: var(--muted);
+  font-size: 12px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.br-paragraf-marken {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.br-paragraf-marken:empty {
+  display: none;
+}
+.br-gewaehlt .br-paragraf-grund {
+  color: var(--br-leise-stark);
+}
+.br-marke {
+  font-size: 11px;
+  padding: 0 6px;
+  border-radius: 8px;
+  background: var(--chip-bg);
+  color: var(--text);
+  white-space: nowrap;
+}
+.br-marke-entwurf {
+  border: 1px dashed var(--br-leise-stark);
+  background: transparent;
+}
+.br-marke-warn {
+  background: var(--warn-bg);
+  color: var(--warn-text);
+}
+.br-leer {
+  padding: 8px 30px 12px;
+  color: var(--muted);
+}
+
+/* Einzelheiten */
+.br-detail {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  width: 100%;
+}
+.br-detail-leer {
+  padding: 12px;
+}
+.br-detail-leer p {
+  color: var(--muted);
+}
+.br-detail-kopf {
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid var(--border);
+  border-top: 4px solid var(--border);
+}
+.br-kopf-rot {
+  border-top-color: var(--br-punkt-rot);
+}
+.br-kopf-gelb {
+  border-top-color: var(--br-punkt-gelb);
+}
+.br-kopf-gruen {
+  border-top-color: var(--br-punkt-gruen);
+}
+.br-detail-titel {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.br-detail-nr {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 600;
+}
+.br-detail-name {
+  font-size: 16px;
+  font-weight: 600;
+}
+.br-detail-ampel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+.br-detail-inhalt {
+  overflow-y: auto;
+  flex: 1;
+  padding: 4px 14px 14px;
+  scrollbar-gutter: stable;
+}
+.br-detail-inhalt section {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+.br-detail-inhalt section:last-child {
+  border-bottom: none;
+}
+.br-detail-inhalt h3 {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  margin: 4px 0 6px;
+}
+.br-gruende,
+.br-hinweise {
+  margin: 0;
+  padding-left: 18px;
+}
+.br-gruende li {
+  margin-bottom: 4px;
+  line-height: 1.45;
+}
+.br-gruende li:first-child {
+  font-weight: 500;
+}
+.br-hinweise {
+  margin-top: 6px;
+  color: var(--muted);
+}
+.br-hinweise li {
+  margin-bottom: 3px;
+  line-height: 1.4;
+}
+.br-festlegung-text {
+  background: var(--room-bg);
+  color: var(--room-text);
+  border-radius: 5px;
+  padding: 6px 8px;
+  margin: 0 0 8px;
+}
+.br-fakten-kurz p {
+  margin: 4px 0;
+  line-height: 1.45;
+}
+.br-text {
+  font-size: 13px;
+  line-height: 1.55;
+  max-height: 46vh;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.br-text p {
+  margin: 0 0 6px;
+  padding: 1px 6px;
+  border-left: 3px solid transparent;
+}
+.br-text-hervor {
+  border-left-color: var(--accent) !important;
+  background: color-mix(in srgb, var(--accent-soft) 60%, transparent);
+}
+.br-text-geaendert {
+  border-left-color: var(--warn-border) !important;
+  background: var(--warn-bg);
+}
+/* Fundstelle und geändert zugleich: beides sichtbar */
+.br-text-hervor.br-text-geaendert {
+  box-shadow: inset -3px 0 0 var(--accent);
+}
+.br-text-legende {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--br-leise-stark);
+  margin: 2px 0 6px;
+}
+.br-legende-hervor::before,
+.br-legende-geaendert::before {
+  content: '';
+  display: inline-block;
+  width: 3px;
+  height: 12px;
+  margin-right: 5px;
+  vertical-align: -2px;
+}
+.br-legende-hervor::before {
+  background: var(--accent);
+}
+.br-legende-geaendert::before {
+  background: var(--warn-border);
+}
+.br-vergleich {
+  background: var(--bg);
+  border-radius: 4px;
+  padding: 6px 8px;
+  margin-bottom: 8px;
+}
+.br-vergleich h4 {
+  font-size: 12px;
+  font-weight: 600;
+  margin: 0 0 4px;
+}
+.br-vergleich-text {
+  white-space: pre-wrap;
+  line-height: 1.55;
+  margin: 0;
+}
+.br-vergleich del {
+  background: var(--fehler-bg);
+  color: var(--fehler-text);
+  text-decoration: line-through;
+}
+.br-vergleich ins {
+  background: var(--ok-bg);
+  color: var(--ok-text);
+  text-decoration: underline;
+}
+.br-verweise-kopf {
+  margin: 6px 0 2px;
+}
+.br-verweise {
+  margin: 0 0 6px;
+  padding-left: 18px;
+}
+.br-verweise li {
+  margin-bottom: 3px;
+  line-height: 1.4;
+}
+.br-detail-fuss {
+  display: flex;
+  gap: 8px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+  background: var(--panel);
+}
+.br-legende {
+  margin: 12px 0 0;
+}
+.br-legende > div {
+  display: grid;
+  grid-template-columns: 90px 1fr;
+  gap: 8px;
+  padding: 4px 0;
+}
+.br-legende dt,
+.br-legende dd {
+  margin: 0;
+}
+
+/* Meldungen */
+.br-meldung {
+  border-radius: 5px;
+  padding: 7px 10px;
+  margin: 6px 0;
+  line-height: 1.4;
+}
+.br-meldung-warn {
+  background: var(--warn-bg);
+  color: var(--warn-text);
+  border: 1px solid var(--warn-border);
+}
+.br-meldung-fehler {
+  background: var(--fehler-bg);
+  color: var(--fehler-text);
+  border: 1px solid var(--fehler-border);
+}
+/* Systemstand (kein Fehler der Festlegung): neutral */
+.br-meldung-info {
+  background: var(--accent-soft);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.br-verwerfen {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.br-verwerfen span {
+  margin-right: auto;
+}
+/* Folgen einer Angabe in den Dialogen */
+.br-folgen {
+  margin: 6px 0;
+}
+.br-folgen summary {
+  cursor: pointer;
+}
+.br-folgen ul {
+  list-style: none;
+  margin: 6px 0;
+  padding: 0 0 0 4px;
+}
+.br-folgen li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0;
+  font-size: 12px;
+}
+
+/* Dialoge */
+/* Dialogüberschrift als h2 (Ebene unter dem Dialog), Größe aus der Skala */
+.modal h2.br-dialog-titel {
+  margin: 0 0 var(--s2);
+  font-size: var(--fs-l);
+}
+.br-wahl {
+  border: none;
+  padding: 0;
+  margin: 8px 0;
+}
+.br-wahl legend {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.br-wahl-zeile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  margin-bottom: 4px;
+  cursor: pointer;
+}
+.br-wahl-zeile input {
+  width: auto;
+  margin: 0;
+  flex: none;
+}
+.br-wahl-zeile.br-gewaehlt {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.br-wahl-zeile .br-ampel {
+  width: 80px;
+  flex: none;
+}
+.modal textarea {
+  width: 100%;
+  font: inherit;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--input-bg);
+  color: var(--text);
+  resize: vertical;
+}
+.modal textarea[aria-invalid='true'] {
+  /* Fehlerrand mit 3:1 (Grafik-Kontrast) */
+  border-color: var(--danger);
+}
+.br-bestaetigen-liste {
+  /* nur der Dialog scrollt – keine verschachtelten Scrollbereiche */
+  list-style: none;
+  padding: 0;
+  margin: 8px 0;
+}
+.br-bestaetigen-liste > li {
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 7px 10px;
+  margin-bottom: 6px;
+}
+.br-bestaetigen-liste > li.br-herab {
+  border-color: var(--warn-border);
+  background: var(--warn-bg);
+}
+.br-bestaetigen-kopf {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+.br-bestaetigen-ampeln {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.br-geprueft {
+  margin-top: 6px;
+  font-weight: 600;
+}
+
+/* Start */
+.br-start {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  overflow: auto;
+}
+.br-start-karte {
+  max-width: 560px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 26px 30px;
+}
+.br-start-karte h1 {
+  margin: 0;
+  font-size: 22px;
+}
+/* wofür die App da ist – unter dem Namen (wie Startseite und Tooltips der Rahmen-App) */
+.br-start-karte p.br-start-was {
+  margin: 2px 0 10px;
+  color: var(--muted);
+  font-size: 14px;
+}
+.br-start-karte p {
+  line-height: 1.5;
+}
+.br-start-knoepfe {
+  display: flex;
+  gap: 8px;
+  margin: 18px 0 10px;
+}
+
+/* Protokoll */
+.br-protokoll h3 {
+  font-size: 13px;
+  margin: 14px 0 4px;
+}
+/* Aktionen als eigene Leiste im Fluss (nicht über dem Inhalt) */
+.br-protokoll .report-actions.br-protokoll-aktionen {
+  position: sticky;
+  top: -28px;
+  right: auto;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: -28px -36px 14px;
+  padding: 10px 36px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  border-radius: 6px 6px 0 0;
+}
+.br-protokoll h2,
+.br-protokoll h3 {
+  break-after: avoid;
+}
+.br-protokoll-liste li {
+  margin-bottom: 3px;
+  line-height: 1.4;
+}
+.br-entwurf-text {
+  font-weight: 600;
+  color: var(--warn-text);
+}
+.br-zeile-rot td:nth-child(3) {
+  color: #a3281d;
+}
+.br-zeile-gelb td:nth-child(3) {
+  color: #8a5300;
+}
+.br-zeile-gruen td:nth-child(3) {
+  color: #1f6b3d;
+}
+
+@media print {
+  .br-app > *:not(.br-protokoll-hintergrund) {
+    display: none !important;
+  }
+  .br-protokoll-hintergrund {
+    position: static;
+    padding: 0;
+    background: none;
+    overflow: visible;
+  }
+  .br-protokoll {
+    padding: 0;
+    max-width: none;
+  }
+}
+
+@container vorschriften (max-width: 900px) {
+  .br-paragraf {
+    grid-template-columns: 70px 56px minmax(0, 1fr);
+  }
+  .br-paragraf-grund {
+    grid-column: 3 / 4;
+  }
+}
+/* sehr schmale Mitte (um 420 px): Ampel über der Nummer, damit der Titel Platz hat – Titel neben der Ampel, Grund
+   neben der Nummer (keine Leerzeile bei einzeiligem Titel) */
+@container vorschriften (max-width: 560px) {
+  .br-paragraf {
+    grid-template-columns: 64px minmax(0, 1fr);
+    row-gap: 2px;
+    padding-left: 16px;
+  }
+  .br-paragraf > .br-ampel {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .br-paragraf-nr {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .br-paragraf-kopf {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .br-paragraf-grund {
+    grid-column: 2;
+    grid-row: 2;
+  }
+}
+
+/* Sprungmarken: unsichtbar, bis sie den Fokus haben (auch F6) */
+.br-sprung {
+  position: absolute;
+  top: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  display: flex;
+  gap: 6px;
+}
+.br-sprung button:not(:focus) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  border: 0;
+}
+
+/* Zielgrößen mindestens 24 px */
+.br-gruppe-knopf,
+.br-angaben .small,
+.br-detail .small,
+.br-chip-knopf,
+.br-app .toggle {
+  min-height: 24px;
+}
+.br-app .toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* Einzelheiten: Paragraf als Überschrift, Regel im Einzelnen */
+h2.br-detail-name {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+.br-regel-einzeln {
+  margin-top: 6px;
+}
+.br-regel-einzeln summary {
+  cursor: pointer;
+  color: var(--br-leise-stark);
+}
+
+/* Druck: Überschriften nicht trennen und nicht allein am Seitenende */
+@media print {
+  .br-protokoll h2,
+  .br-protokoll h3 {
+    break-inside: avoid;
+    break-after: avoid;
+  }
+  .br-protokoll-norm {
+    break-inside: auto;
+  }
+}
+/* Grund, warum „Prüfung abschließen“ gesperrt ist – sichtbar, nicht nur im Tooltip */
+.br-sperre {
+  font-size: 12px;
+  color: var(--warn-text);
+  max-width: 420px;
+}
+.br-zaehler-von {
+  font-size: 11px;
+  color: var(--br-leise-stark);
+  white-space: nowrap;
+}
+
+/* kleine Ziele: mindestens 24 px hoch */
+.br-verweise .br-link,
+.br-treffer .br-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+}
+.br-regel-einzeln > summary {
+  padding: 4px 0;
+}
+/* Regel im Einzelnen als eingerückter Baum */
+.br-regel-baum,
+.br-regel-baum ul {
+  list-style: none;
+  margin: 4px 0 0;
+  padding-left: 0;
+}
+.br-regel-baum ul {
+  padding-left: 14px;
+  border-left: 1px solid var(--line-soft);
+  margin-left: 4px;
+}
+.br-regel-baum li {
+  margin: 2px 0;
+}
+.br-regel-baum > li {
+  margin-top: 6px;
+  font-weight: 600;
+  color: var(--text);
+}
+.br-regel-baum > li ul {
+  font-weight: normal;
+  color: var(--br-leise-stark);
+}
+/* hängender Einzug: Folgezeilen beginnen unter dem Text, nicht unter ✓/✗/? */
+.br-regel-baum li.br-haengend {
+  padding-left: 1.2em;
+  text-indent: -1.2em;
+}
+.br-regel-baum li.br-haengend > ul {
+  text-indent: 0;
+  margin-left: calc(4px - 1.2em);
+}
+/* Rückgängig nach „Festlegung aufheben“ */
+.br-aufgehoben {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--br-leise-stark);
+}
+
+/* Protokoll-Tabellen: oben ausrichten (lange Listen von Paragrafen) */
+.br-protokoll .report-table td {
+  vertical-align: top;
+}
+
+/* Stand je Knoten in „Regel im Einzelnen“ – Zeichen und Farbe, Wort für Screenreader */
+.br-stand {
+  display: inline-block;
+  width: 1.2em;
+  font-weight: 700;
+}
+/* Wahrheitswerte neutral (nicht in Ampelfarben – ein grünes ✓ unter „Gilt, wenn“ hieße sonst „gilt“) */
+.br-stand-ja {
+  color: var(--accent-text);
+}
+.br-stand-nein {
+  color: var(--br-leise-stark);
+}
+.br-stand-offen {
+  color: var(--text);
+}
+.br-ist {
+  color: var(--br-leise-stark);
+  font-size: 12px;
+}
+.br-regel-baum details > summary {
+  cursor: pointer;
+  min-height: 24px;
+}
+
+/* lange Antragsnamen kürzen (voller Name im Tooltip) */
+.br-antrag-wahl {
+  max-width: 220px;
+  text-overflow: ellipsis;
+}
+.br-marke-knopf {
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  min-height: 24px;
+}
+.br-marke-knopf:hover:not(:disabled) {
+  background: var(--warn-bg);
+  text-decoration: underline;
+}
+
+.br-fakt-frage {
+  display: block;
+  font-weight: normal;
+  font-size: 12px;
+  color: var(--br-leise-stark);
+  margin-top: 1px;
+}
+
+/* Protokoll: Abstand zwischen Hinweis und Titel */
+.br-entwurf-hinweis {
+  margin-bottom: 14px;
+}
+
+/* Startfokus in Dialogen sichtbar, auch wenn der Dialog über Strg+S kam (dann greift :focus-visible nicht) */
+.modal input[type='checkbox']:focus,
+.modal input[type='radio']:focus {
+  outline: 2px solid var(--fokus);
+  outline-offset: 2px;
+}
+/* Einzelheiten ohne Auswahl (F6): Fokusrahmen im Stil der App */
+.br-detail:focus-visible {
+  outline: 2px solid var(--fokus);
+  outline-offset: -2px;
+}
+
+/* Angaben: Titel halbfett, Frage und Erläuterung zurückgenommen, lange Erläuterungen einklappbar */
+.br-fakt-titel {
+  font-weight: 600;
+}
+.br-erklaerung > summary {
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--br-leise-stark);
+  min-height: 24px;
+}
+
+/* Leisten an die Fensterbreite gebunden: sie schrumpfen (bis 240 px), die Mitte behält mindestens 420 px – auch mit
+   gemerkten Breiten vom großen Bildschirm */
+.br-arbeit > .leiste {
+  flex-shrink: 1;
+  min-width: 240px;
+}
+.br-arbeit > .br-vorschriften {
+  min-width: 420px;
+  flex-shrink: 0;
+}
+
+.br-stand-unsicher {
+  color: var(--br-leise-stark);
+  width: 1.8em;
+}
+
+/* Protokoll: Tabellenkopf bleibt beim Bildlauf stehen – unter der klebenden Aktionsleiste (Höhe gemessen) */
+.br-protokoll .report-table thead th {
+  position: sticky;
+  top: calc(var(--br-aktionen-h, 46px) - 28px);
+  background: var(--panel, #fff);
+  z-index: 1;
+  /* Trennlinie: darunter laufende Zeilen wirken nicht abgeschnitten (box-shadow bleibt beim Kleben sichtbar) */
+  box-shadow: inset 0 -1px 0 var(--border), 0 2px 3px -2px rgba(0, 0, 0, 0.25);
+}
+@media print {
+  .br-protokoll .report-table thead th {
+    position: static;
+    box-shadow: none;
+  }
+}
+.br-protokoll-zwischen th {
+  text-align: left;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--br-leise-stark);
+  padding-top: 10px;
+}
+.br-weitere {
+  margin: 0;
+  padding-left: 16px;
+}
+.br-weitere li {
+  margin: 1px 0;
+}
+/* lange Wörter und Adressen in Begründungen umbrechen statt abschneiden */
+.br-festlegung-text,
+.br-detail-inhalt {
+  overflow-wrap: anywhere;
+}
+/* Protokoll: erst nach Silben trennen, nur notfalls mitten im Wort („Altstadt-satzung“ statt „Altstadtsat|zung“) */
+.br-protokoll td,
+.br-protokoll th {
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+/* Protokoll ist Papier: auch im dunklen Schema helle Farben für die Grautöne der App */
+.br-app .br-protokoll,
+:root[data-theme='dunkel'] .br-app .br-protokoll {
+  --muted: #5f6673;
+  --br-leise-stark: #4b5563;
+}
+
+/* Dialoge: die Knöpfe bleiben unten sichtbar, auch wenn der Inhalt scrollt */
+.br-app .modal .dialog-buttons {
+  position: sticky;
+  bottom: -18px;
+  background: var(--panel);
+  padding: 10px 0 4px;
+  margin-bottom: -4px;
+  border-top: 1px solid var(--line-soft);
+}
+
+/* Schmale Leisten (ab 240 px): lange Wörter trennen statt überlaufen, Stand und Zahl brechen um */
+.br-angaben .br-fakt-titel,
+.br-angaben .br-fakt-frage,
+.br-angaben-gruppe > h3,
+.br-detail-name {
+  hyphens: auto;
+  overflow-wrap: anywhere;
+}
+.br-gruppe-knopf {
+  white-space: normal;
+  text-align: left;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.br-gruppe-knopf .br-gruppe-stand {
+  white-space: nowrap;
+}
+.br-angaben .br-chip-knopf {
+  white-space: normal;
+  text-align: left;
+  max-width: 100%;
+}
+.br-angaben .br-chip-zahl {
+  white-space: nowrap;
+}
+.br-fakt-kopf {
+  flex-wrap: wrap;
+  column-gap: 8px;
+}
+.br-fakt-kopf > .br-fakt-titel {
+  flex: 1 1 8em;
+}
+
+/* Erläuterungen in schmalen Leisten: lange Adressen (URLs) umbrechen statt überlaufen */
+.br-angaben .br-leise,
+.br-angaben .br-erklaerung {
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+/* Kürzel in der Frage nicht trennen („LIN-FOS“) – nur die Namen dürfen Silbentrennung */
+.br-angaben .br-fakt-frage {
+  hyphens: manual;
+}
+
+/* Druck: weißes Papier auch hinter dem letzten Blatt (kein grauer Block unter dem Schlussvermerk) */
+@media print {
+  html,
+  body {
+    background: #fff !important;
+  }
+}
+
+
+/* Festlegungen ohne Ortsangabe (ältere Datei): Sammelaktion über der Liste */
+.br-ohne-ort {
+  margin: 6px 14px 0;
+}
+/* feste Modulwerte, die nur Hinweis sind: Grund sichtbar, mit Ausweg */
+.br-fester-grund {
+  display: block;
+  margin-top: 3px;
+  font-size: 12px;
+}
+/* Rückfrage zu einem Antragsmerkmal (z. B. Umfang der Beseitigung) direkt unter dem Merkmal */
+.br-rueckfrage {
+  margin: 6px 0 2px 10px;
+  padding-left: 8px;
+  border-left: 2px solid var(--accent);
+}
+.br-rueckfrage > .br-fakt {
+  margin: 0;
+}
+.br-rueckfrage-zu {
+  margin: 0 0 4px;
+  font-size: 12px;
+}
+/* Hinweis zum Planungsrecht: knapp, neutral (kein Widerspruch) */
+.br-planungsrecht-hinweis {
+  font-size: 12px;
+  padding: 4px 8px;
+}
+/* fremder Merkmalwert bzw. Wert, der nicht zur Angabe passt */
+.br-merkmal-fremd {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--warn-text);
+}
+/* Fußzeile eines Merkmals: die Erklärung des Werts über die volle Breite, die Knöpfe darunter (nichts wird gequetscht) */
+.br-merkmal-fuss {
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
+.br-merkmal-fuss > .br-erklaerung {
+  flex: 1 1 100%;
+  min-width: 0;
+}
+/* schmale Angaben-Leiste: „Klärt am meisten“ kompakt (drei Chips, je eine Zeile) */
+.br-angaben {
+  container: angaben / inline-size;
+}
+@container angaben (max-width: 300px) {
+  /* je Chip eine Zeile: gekürzt wird nur der Name, die Zahl bleibt stehen */
+  .br-angaben .br-klaeren .br-chip-knopf {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    white-space: nowrap;
+  }
+  .br-klaeren .br-chip-name {
+    min-width: 0;
+    overflow: hidden;
+    /* bis zu zwei Zeilen (lange Wörter getrennt: „Gemeinde-schlüssel“), dann Auslassung – die Zahl bleibt stehen */
+    white-space: normal;
+    hyphens: auto;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+  .br-klaeren .br-chip-zahl {
+    flex-shrink: 0;
+  }
+  .br-angaben .br-klaeren .br-chip-knopf:nth-of-type(n + 4) {
+    display: none;
+  }
+}
+/* schmale Leiste: der Titel einer Angabe über die volle Breite, „klärt N“ und Marken darunter (sonst bliebe für die
+   Frage eine Spalte von wenigen Wörtern) */
+@container angaben (max-width: 340px) {
+  .br-fakt-kopf > .br-fakt-titel {
+    flex-basis: 100%;
+  }
+}
+/* Marke am Planungsrecht im selben Info-Stil wie der Hinweis */
+.br-info-marke {
+  font-size: 11px;
+  color: var(--accent-text);
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  border-radius: 9px;
+  padding: 0 6px;
+  white-space: nowrap;
+}
+/* Stand der Bestätigung des Planungsrechts: eigene Zeile unter dem Titel */
+.br-merkmal-marken {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+  margin: -2px 0 6px;
+}
+/* „leeren“ läuft hinter der Erklärung des Werts mit (im Satz: ohne eigene Zielhöhe) */
+.br-merkmal-fuss .br-leeren,
+.br-erklaerung .br-mehr {
+  padding: 0 2px;
+  min-height: 0;
+  vertical-align: baseline;
+  font-size: 12px;
+}
+.br-bestaetigen-zeile {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+}
+/* eingeklappt beantwortete Rückfrage: kompakt, mit „ändern“ */
+.br-rueckfrage-erledigt {
+  margin: 0 0 4px;
+  font-size: 12px;
+}
+.br-rueckfrage-erledigt .br-link {
+  padding: 0 2px;
+  min-height: 0;
+  font-size: 12px;
+}
+.br-merkmal-marken .br-link {
+  padding: 0 2px;
+  min-height: 0;
+  font-size: 12px;
+}
+/* Protokoll: die Beschriftungsspalte bricht nicht mitten im Wort („Antragsmerkmal|e“) */
+.br-protokoll .report-table.narrow td:first-child {
+  white-space: nowrap;
+}
+/* Druck: eine Gruppenzeile bleibt bei ihrer ersten Zeile (nicht allein am Seitenfuß) */
+@media print {
+  .br-protokoll-zwischen,
+  .br-protokoll-zwischen th {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+}
+/* schmale Fenster bzw. Browser-Zoom (Web; der Desktop hat eine Mindestbreite): unter 1000 CSS-px behält die
+   Arbeitsfläche 1000 px und die Seite scrollt waagerecht – keine Spalte wird abgeschnitten, „Speichern“ bleibt erreichbar */
+@media screen and (max-width: 999px) {
+  #root:has(> .br-app) {
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+  .br-app {
+    min-width: 1000px;
+  }
+}
+/* Überschriften nicht in kurze Silben trennen („ei-nes“, „Gel-tungsbereich“) */
+.br-detail-name,
+.br-paragraf-titel {
+  hyphenate-limit-chars: 10 4 4;
+}
+/* Rückmeldung nach dem Speichern im Kopf */
+.br-gespeichert {
+  font-size: 12px;
+  color: var(--br-leise-stark);
+  white-space: nowrap;
+}
+/* Speichern-Dialog: Kopf und Fuß (Häkchen, Knöpfe) stehen fest, dazwischen ein einziger Scrollbereich */
+.modal.br-bestaetigen {
+  display: flex;
+  flex-direction: column;
+  /* im Grenzfall (sehr niedriges Fenster, hoher Zoom) scrollt der ganze Dialog, statt den Fuß abzuschneiden */
+  overflow: auto;
+}
+.br-bestaetigen-inhalt {
+  flex: 1 1 auto;
+  min-height: 60px;
+  overflow: auto;
+}
+.br-bestaetigen-fuss {
+  flex: 0 0 auto;
+  border-top: 1px solid var(--line-soft);
+  padding-top: 6px;
+}
+/* Prüfprotokoll in schmalen Fenstern (Zoom): die Aktionsleiste bricht um, nichts wird angeschnitten */
+.br-protokoll-aktionen {
+  flex-wrap: wrap;
+}
+/* „nur Hinweis“ mit Abstand zum Wert davor */
+.br-hinweis-marke {
+  margin-left: 4px;
+}
+/* Prüfprotokoll in schmalen Fenstern (Zoom): Kopf zweispaltig, ganz schmal einspaltig; Tabellen brechen um statt über
+   den Rand zu laufen; schmaler Rand */
+@media screen and (max-width: 600px) {
+  .report-backdrop {
+    padding: 4px;
+  }
+  .br-protokoll.report {
+    padding: 12px 8px;
+  }
+  .br-protokoll .druck-kopf-zeilen {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .br-protokoll .report-table {
+    table-layout: fixed;
+  }
+  .br-protokoll .report-table td,
+  .br-protokoll .report-table th {
+    overflow-wrap: break-word;
+    hyphens: auto;
+  }
+}
+@media screen and (max-width: 400px) {
+  .br-protokoll .druck-kopf-zeilen > div {
+    flex-direction: column;
+    gap: 0;
+  }
+  .br-protokoll .druck-kopf-zeilen dt {
+    flex: none;
+  }
+}
+/* Kontrastmodus: die gewählte Zeile sichtbar, die Ampelpunkte behalten ihre Farbe */
+@media (forced-colors: active) {
+  .br-paragraf.br-gewaehlt {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+  }
+  .br-ampel-punkt {
+    forced-color-adjust: none;
+  }
+}
+/* Speichern-Dialog: der Scrollbereich ist ein Tabstopp (Pfeiltasten scrollen) – sichtbarer Fokus */
+.br-bestaetigen-inhalt:focus-visible {
+  outline: 2px solid var(--fokus);
+  outline-offset: 2px;
+}
+/* Knöpfe brechen um; schmal untereinander in voller Breite */
+.br-bestaetigen-fuss .dialog-buttons {
+  flex-wrap: wrap;
+}
+@media screen and (max-width: 660px) {
+  .modal.br-bestaetigen {
+    width: calc(100vw - 16px);
+    padding: 12px;
+  }
+}
+@media screen and (max-width: 600px) {
+  .br-bestaetigen-fuss .dialog-buttons {
+    flex-direction: column;
+  }
+  .br-bestaetigen-fuss .dialog-buttons > button {
+    width: 100%;
+  }
+}
+/* sehr niedrige Fenster: der ganze Dialog scrollt, der Inhalt ohne eigenen Scroller (nichts wird abgeschnitten) */
+@media screen and (max-height: 420px) {
+  .br-bestaetigen-inhalt {
+    flex: none;
+    overflow: visible;
+  }
+}
+/* Prüfprotokoll ≤ 600 px: die klebende Leiste passt zum schmalen Rand; Tabellenköpfe brechen um; erste Spalte der
+   Grundlagen umbrechbar; Einheiten („§ 34“) bleiben zusammen */
+@media screen and (max-width: 600px) {
+  .br-protokoll .report-actions.br-protokoll-aktionen {
+    margin: -12px -8px 10px;
+    padding: 8px;
+    top: -12px;
+  }
+  .br-protokoll .report-table th {
+    white-space: normal;
+    hyphens: auto;
+    overflow-wrap: break-word;
+  }
+  .br-protokoll .report-table.narrow td:first-child {
+    white-space: normal;
+    width: 35%;
+  }
+  .br-protokoll-norm .report-table th:first-child {
+    width: 4.5em !important;
+  }
+  .br-protokoll-norm .report-table td:first-child {
+    white-space: nowrap;
+    overflow-wrap: normal;
+  }
+  /* der klebende Tabellenkopf unter der Leiste (die hier bei −12px klebt, nicht bei −28px) */
+  .br-protokoll .report-table thead th {
+    top: calc(var(--br-aktionen-h, 46px) - 12px);
+  }
+  /* Spalten mit kurzen Wörtern nicht in Bruchstücke zerlegen („A|nz|ah|l“, „BauG|B“) */
+  .br-protokoll-offen th:nth-child(2) {
+    width: 5em !important;
+  }
+  .br-protokoll-offen th:nth-child(2),
+  .br-protokoll-offen td:nth-child(2) {
+    overflow-wrap: normal;
+  }
+  .br-protokoll-weitere th:nth-child(1) {
+    width: 8.5em !important;
+  }
+  .br-protokoll-weitere th:nth-child(2) {
+    width: 5.5em !important;
+  }
+  /* nur reine Nummern („§ 248“, „Art. 14“) zusammenhalten – Titel („Veränderungssperre (§ 14 BauGB)“) brechen um */
+  .br-protokoll-weitere td.br-nr-kurz {
+    white-space: nowrap;
+  }
+}
+/* sehr niedrige Fenster (400 % Zoom): die Aktionsleiste klebt nicht – sonst nähme sie die halbe Höhe; der Tabellenkopf
+   klebt dann am oberen Rand (gegen den Innenabstand des Hintergrunds: 24px, schmal 4px) */
+@media screen and (max-height: 420px) {
+  .br-protokoll .report-actions.br-protokoll-aktionen {
+    position: static;
+  }
+  .br-protokoll .report-table thead th {
+    top: -24px;
+  }
+}
+@media screen and (max-height: 420px) and (max-width: 600px) {
+  .br-protokoll .report-table thead th {
+    top: -4px;
+  }
+}
+/* dunkles Thema: ein gesperrter Primärknopf sichtbar anders als ein aktiver */
+:root[data-theme='dunkel'] .br-app button.primary:disabled {
+  filter: grayscale(1);
+  opacity: 0.5;
+}
+/* Gruppenüberschrift während der Suche: aria-disabled (zuklappen gesperrt), aber lesbar – sie beschriftet die Gruppe */
+.br-gruppe-knopf[aria-disabled='true'] {
+  opacity: 1;
+  cursor: default;
+}
