@@ -1,10 +1,10 @@
 // @vitest-environment happy-dom
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createOutline, createProject } from '@core/model';
 import { rectPoints } from '@core/geometry';
-import { rueckgaengig, useEditor } from './store/store';
+import { ablageLeeren, flaechenLoeschen, rueckgaengig, useEditor } from './store/store';
 import { App } from './App';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -178,6 +178,7 @@ describe('QUADRIO: Zeichenfläche (Einstieg, Rückgängig im Entwurf)', () => {
 });
 
 describe('QUADRIO: Kontextmenü der Zeichenfläche und Werkzeugleiste (gemeinsames Menü und Symbole)', () => {
+  beforeEach(() => ablageLeeren());
   const rechtsklick = (el: Element) => act(() => void el.dispatchEvent(new MouseEvent('contextmenu', { clientX: 120, clientY: 80, bubbles: true, cancelable: true })));
   const menue = () => document.querySelector('.menue[role="menu"]');
   const punkt = (text: RegExp) => [...document.querySelectorAll<HTMLButtonElement>('.menue [role="menuitem"]')].find((b) => text.test(b.textContent ?? ''))!;
@@ -201,7 +202,7 @@ describe('QUADRIO: Kontextmenü der Zeichenfläche und Werkzeugleiste (gemeinsam
     expect(useEditor.getState().project.storeys[0].shapes[0].points).toHaveLength(3);
   });
 
-  it('Rechtsklick auf eine Fläche wählt sie und bietet Kopieren, Duplizieren, Löschen; Einfügen erst nach Kopieren', () => {
+  it('Rechtsklick auf eine Fläche wählt sie: Kopieren, Duplizieren, Löschen; Einfügen erst nach Kopieren', () => {
     const p = createProject('Haus');
     p.storeys[0].shapes.push(createOutline(rectPoints({ x: 0, y: 0 }, { x: 5, y: 4 })));
     useEditor.getState().loadProject(p, p, 'Haus.oap');
@@ -209,12 +210,71 @@ describe('QUADRIO: Kontextmenü der Zeichenfläche und Werkzeugleiste (gemeinsam
     const flaeche = host.querySelector('svg.canvas path[fill-rule="evenodd"]')!;
     rechtsklick(flaeche);
     expect(useEditor.getState().selectedShapeId).toBe(useEditor.getState().project.storeys[0].shapes[0].id);
-    expect(punkt(/Einfügen/).getAttribute('aria-disabled')).toBe('true');
-    act(() => punkt(/Fläche duplizieren/).click());
+    expect(menue()?.getAttribute('aria-label')).toBe('BGF-Umriss');
+    const gesperrt = punkt(/Einfügen/);
+    expect(gesperrt.getAttribute('aria-disabled')).toBe('true');
+    expect(gesperrt.textContent).toMatch(/nichts kopiert/);
+    act(() => punkt(/Fläche kopieren/).click());
+    rechtsklick(flaeche);
+    expect(punkt(/Einfügen/).getAttribute('aria-disabled')).toBeNull();
+    act(() => punkt(/Einfügen/).click());
     expect(flaechen()).toBe(2);
     rechtsklick(flaeche);
+    act(() => punkt(/Fläche duplizieren/).click());
+    expect(flaechen()).toBe(3);
+    rechtsklick(flaeche);
     act(() => punkt(/löschen/).click());
-    expect(flaechen()).toBe(1);
+    expect(flaechen()).toBe(2);
+  });
+
+  it('Kontextmenütaste auf der Zeichenfläche mit Auswahl: Flächenmenü; Esc schließt nur das Menü, Fokus zurück auf die Zeichenfläche', () => {
+    const p = createProject('Haus');
+    p.storeys[0].shapes.push(createOutline(rectPoints({ x: 0, y: 0 }, { x: 5, y: 4 })));
+    useEditor.getState().loadProject(p, p, 'Haus.oap');
+    const host = render();
+    const svg = host.querySelector<SVGSVGElement>('svg.canvas')!;
+    const id = useEditor.getState().project.storeys[0].shapes[0].id;
+    act(() => useEditor.getState().select(id));
+    svg.focus();
+    // Kontextmenütaste: ohne Mausposition
+    act(() => void svg.dispatchEvent(new MouseEvent('contextmenu', { clientX: 0, clientY: 0, bubbles: true, cancelable: true })));
+    expect(punkt(/Fläche kopieren/)).toBeDefined();
+    act(() => void document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })));
+    expect(menue()).toBeNull();
+    expect(useEditor.getState().selectedShapeId).toBe(id); // Auswahl bleibt
+    expect(document.activeElement).toBe(svg);
+    // Gegenprobe: ohne Auswahl das Menü der leeren Zeichenfläche
+    act(() => useEditor.getState().select(null));
+    act(() => void svg.dispatchEvent(new MouseEvent('contextmenu', { clientX: 0, clientY: 0, bubbles: true, cancelable: true })));
+    expect(menue()?.getAttribute('aria-label')).toBe('Zeichenfläche');
+    expect(punkt(/Alles zeigen/)).toBeDefined();
+    act(() => void document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })));
+  });
+
+  it('in einem Zeichenwerkzeug erscheint beim Rechtsklick kein Menü', () => {
+    const p = createProject('Haus');
+    p.storeys[0].shapes.push(createOutline(rectPoints({ x: 0, y: 0 }, { x: 5, y: 4 })));
+    useEditor.getState().loadProject(p, p, 'Haus.oap');
+    const host = render();
+    act(() => useEditor.getState().setTool('polygon'));
+    rechtsklick(host.querySelector('svg.canvas path[fill-rule="evenodd"]')!);
+    rechtsklick(host.querySelector('svg.canvas')!);
+    expect(menue()).toBeNull();
+  });
+
+  it('flaechenLoeschen löscht im aktiven Geschoss, andere Geschosse bleiben', () => {
+    const p = createProject('Haus');
+    const og = { ...createProject('x').storeys[0], id: 'og', name: 'OG', shapes: [createOutline(rectPoints({ x: 0, y: 0 }, { x: 5, y: 4 }))] };
+    p.storeys[0].shapes.push(createOutline(rectPoints({ x: 0, y: 0 }, { x: 5, y: 4 })));
+    p.storeys.push(og);
+    useEditor.getState().loadProject(p, p, 'Haus.oap');
+    act(() => useEditor.getState().setActiveStorey('og'));
+    act(() => useEditor.getState().select(og.shapes[0].id));
+    expect(flaechenLoeschen()).toBe(1);
+    const [eg, og2] = useEditor.getState().project.storeys;
+    expect(og2.shapes).toHaveLength(0);
+    expect(eg.shapes).toHaveLength(1);
+    expect(flaechenLoeschen()).toBe(0); // Gegenprobe: ohne Auswahl kein (leerer) Rückgängig-Schritt
   });
 
   it('Werkzeugleiste mit SVG-Symbolen statt Schriftzeichen; reine Symbolknöpfe haben einen Namen', () => {

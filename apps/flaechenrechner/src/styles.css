@@ -670,7 +670,7 @@
 
 /* Meldungen in den Eigenschaften (gemeinsame Familie .meldung) */
 .sidebar-right .meldung {
-  margin: 6px 0;
+  margin: var(--s2) 0;
 }
 
 /* Prüfliste (F-10) */

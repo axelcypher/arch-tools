@@ -595,12 +595,18 @@ export function flaechenDuplizieren(): number {
 
 /** Gewählte Flächen des aktiven Geschosses löschen (Entf, Kontextmenü); liefert die Anzahl */
 export function flaechenLoeschen(): number {
+  const { storey, shapes } = gewaehlteFlaechen();
+  if (!shapes.length) return 0;
+  const ids = new Set(shapes.map((s) => s.id));
   const st = useEditor.getState();
-  const ids = st.selectedIds.length ? st.selectedIds : st.selectedShapeId ? [st.selectedShapeId] : [];
-  if (!ids.length) return 0;
-  st.update((p) => mapStorey(p, st.activeStoreyId, (s) => ({ ...s, shapes: s.shapes.filter((x) => !ids.includes(x.id)) })));
+  st.update((p) => mapStorey(p, storey.id, (s) => ({ ...s, shapes: s.shapes.filter((x) => !ids.has(x.id)) })));
   st.select(null);
-  return ids.length;
+  return shapes.length;
+}
+
+/** Zwischenablage leeren (Tests, neues Projekt) */
+export function ablageLeeren() {
+  ablage = null;
 }
 
 /**
