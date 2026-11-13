@@ -24,6 +24,7 @@ Review-Agent `review-design`.
 Werte nicht frei wählen, sondern aus der Skala nehmen.
 
 | Variable | Wert | Verwendung                                                                          |
+| -------- | ---- | ----------------------------------------------------------------------------------- |
 | `--s1`   | 4px  | Abstand innerhalb einer Gruppe (Knopf zu Knopf)                                     |
 | `--s2`   | 8px  | Feld zu Feld, Überschrift zu Inhalt                                                 |
 | `--s3`   | 12px | Innenabstand von Abschnitten                                                        |
@@ -32,6 +33,7 @@ Werte nicht frei wählen, sondern aus der Skala nehmen.
 | `--s6`   | 32px | Leerzustände, Abstand zum Fensterrand bei Seiten                                    |
 
 | Variable  | Wert | Verwendung                                             |
+| --------- | ---- | ------------------------------------------------------ |
 | `--fs-xs` | 11px | Feldbeschriftung, Hinweis unter dem Feld, Tabellenkopf |
 | `--fs-s`  | 12px | Nebentext, kleine Knöpfe, dichte Tabellen              |
 | `--fs-m`  | 13px | Grundschrift, Abschnittsüberschrift (`.sidebar h2`)    |
@@ -82,6 +84,7 @@ Zahlen in Tabellen und Feldern stehen rechtsbündig in Tabellenziffern (`.num`, 
 ## Farben
 
 | Variable                           | Bedeutung                                                                                                       |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------------- |
 | `--bg`, `--panel`                  | Fensterhintergrund, Flächen (Leisten, Dialoge)                                                                  |
 | `--text`, `--muted`                | Text, Nebentext                                                                                                 |
 | `--border`, `--line-soft`          | Linien, feine Trennlinien in Tabellen                                                                           |
@@ -137,6 +140,9 @@ und `ZEICHENFLAECHE_GRUND` in `planFarbe.ts` müssen zu `--canvas-filter` und `-
   `type="button"`.
 - Optionen, die nur zu einer Wahl gehören, erst bei dieser Wahl zeigen (Beispiel: Vorlagen-Knöpfe im Excel-Dialog nur
   bei „Eigene Vorlage“).
+- In Rückfragen mit Gefahr-Knopf (`art: 'danger'`, z. B. „Löschen“, „Verwerfen“) liegen Erstfokus und Enter nie auf
+  ihm, sondern auf dem Hauptknopf bzw. „Abbrechen“ (ohne beide: auf dem letzten ungefährlichen Knopf). Gibt es nur
+  Gefahr-Knöpfe, tut Enter nichts, und Esc oder ein Klick daneben schließen wie „Abbrechen“.
 
 ## Druckvorschau
 
@@ -190,6 +196,7 @@ gewählte Register liegt in der Tab-Reihenfolge (`tabIndex` 0, die übrigen -1).
   („Speichern“, „Neu“).
 - Gleiches Verb überall: Werkzeugleiste „Öffnen …“, Einstieg „Datei öffnen …“ (mit Objekt, weil der Zusammenhang
   fehlt); „Neu“ bzw. „Neues Projekt“.
+- Hinzufügen-Knöpfe und Platzhalter in Auswahllisten: siehe „Listen“.
 - Texte sagen, was zu tun ist, nicht was fehlt; was es nur in der Desktop-App gibt, steht als Fußnote darunter.
 - Ordner im Dateimanager zeigen (`ordnerZeigen`): „Ordner öffnen“, Symbol `ordnerOffen` – nicht „Im Explorer öffnen“
   (hängt an Windows). Ist der Gegenstand nicht klar, mit Objekt: „Projektordner öffnen“.
@@ -206,7 +213,7 @@ Gemeinsamer Satz in `ui/Symbol.tsx` (Raster 24, Linie 2, runde Enden, Farbe des 
   `suche`, `stift`.
 - Zustand: `haken`, `warnung`, `info`, `schliessen`, `auge`, `augeZu`, `stern`.
 - Navigation: `pfeilRechts`, `pfeilLinks`, `pfeilUnten`, `ordner`, `ordnerOffen`, `datei`.
-- Listen: `nachOben`, `nachUnten` zum Umsortieren (statt ↑/↓ als Schriftzeichen); `mehr` (drei Punkte, Knopf mit `aria-label="Aktionen"` und `title`) für
+- Listen: `einruecken`, `ausruecken` (Gliederungsebene), `nachOben`, `nachUnten` zum Umsortieren (statt ↑/↓ als Schriftzeichen); `mehr` (drei Punkte, Knopf mit `aria-label="Aktionen"` und `title`) für
   Zeilenknöpfe „Aktionen“, die ein Menü öffnen – `pfeilUnten` bleibt dem Aufklapp-Pfeil an Knöpfen mit Text vorbehalten.
 
 Neue Symbole kommen in diesen Satz, nicht in die App. Keine Emoji (📏 ✂ 🗑) und keine Schriftzeichen als Symbol.
@@ -240,6 +247,28 @@ mit `text`, optional `symbol`, `hinweis` (rechts, z. B. der Grund einer Sperre),
 - Eigene Öffner ohne `MenueKnopf` (z. B. Zeilenknopf „⋯“ mit `zeigeMenueAn`) tragen `aria-haspopup="menu"`; dann
   setzt das Menü `aria-expanded` am Öffner selbst. Wer den Zustand im Render braucht, nimmt `useMenueOffen(ref)`.
 - Ein zweiter Klick auf den Öffner eines offenen Menüs schließt es (Knopf wie Zeilenknopf).
+
+## Listen
+
+- Hinzufügen-Knöpfe mit `<Symbol name="plus" />` und dem Gegenstand als Text, ohne „+“ als Schriftzeichen.
+  Rechenzeichen in Summenzeilen („+ 19 % USt.“) sind keine Knöpfe und bleiben.
+- Verb: Für Einträge einer Liste (Positionen, Punkte, Firmen, Merkmale) „hinzufügen“, nicht „neu“ oder „einfügen“.
+  Eigenständige Gegenstände wie Projekt, Formular, Ordner oder Datei bleiben bei „Neu“ bzw. „anlegen“ (siehe
+  „Begriffe“), ebenfalls mit Symbol `plus` („Neues Projekt anlegen …“).
+- Länge: In Leisten knapp nur der Gegenstand („Position“, „Abschnitt“) mit `title` der vollen Aktion („Position
+  hinzufügen“); sonst gleich mit Verb („Beteiligten hinzufügen“). Ein `aria-label` enthält den sichtbaren Text
+  wörtlich (sonst trifft Sprachsteuerung den Knopf nicht); geht das nur mit Beugung, nur `title` setzen.
+- Öffnet der Knopf einen Dialog oder eine Rückfrage, endet er auf „ …“ („Geschoss …“).
+- In Auswahllisten (`<option>`) geht kein Symbol: dort als Platzhalter „Firma hinzufügen …“ – mit „ …“, weil die
+  eigentliche Wahl erst folgt (Ausnahme zu „Begriffe“).
+- Hinweistexte nennen den Knopf so, wie er heißt: „mit ‚Abschnitt‘ beginnen“.
+- Ein Menüknopf, der verschiedene Einträge hinzufügt, heißt „Hinzufügen“ mit `<Symbol name="plus" />`; seine Punkte
+  tragen nur den Gegenstand („Hinweis“, „Vorbemerkung“, „Aus Vorlage …“), ohne „+“ und ohne eigenes Symbol.
+- Gliederungsebenen (einrücken, ausrücken) mit `einruecken` und `ausruecken` – nicht mit Schriftzeichen wie ⇤/⇥ und
+  nicht mit `pfeilLinks`/`pfeilRechts`, die sich wie Zurück und Weiter lesen. Umsortieren mit `nachOben`/`nachUnten`,
+  Zeilenaktionen mit `mehr`.
+- Symbolknöpfe ohne Text (in Zeilen wie in Leisten) brauchen `aria-label` und `title` mit Gegenstand („Position
+  einrücken“).
 
 ## Seitenleisten
 
@@ -278,6 +307,7 @@ Namen in der Titelleiste (`TitleBar`, Feld `dirty`) bleibt davon unberührt.
 ## Richtig und falsch
 
 | Richtig                                                                                                | Falsch                                                         |
+| ------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------- |
 | Abstände und Schriftgrade aus der Skala (`var(--s2)`, `var(--fs-s)`)                                   | freie Werte wie `margin: 7px`, `font-size: 12.5px`             |
 | Farben über Variablen (`var(--muted)`, `var(--warn-bg)`)                                               | feste Farben (`#888`, `orange`) in App-CSS                     |
 | `:focus-visible` mit sichtbarem Rahmen                                                                 | `outline: none` ohne Ersatz                                    |

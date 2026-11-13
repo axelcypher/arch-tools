@@ -15,6 +15,9 @@ const PFADE = {
   /** Umsortieren: eine Stelle nach oben bzw. unten */
   nachOben: 'M12 19V5M6 11l6-6 6 6',
   nachUnten: 'M12 5v14M6 13l6 6 6-6',
+  /** Gliederungsebene tiefer bzw. höher (Listen, LV): Pfeil von bzw. zur senkrechten Linie am linken Rand */
+  einruecken: 'M4 4v16M9 12h11M16 8l4 4-4 4',
+  ausruecken: 'M4 4v16M20 12H10M14 8l-4 4 4 4',
   /** drei Punkte waagerecht: Zeilenknopf „Aktionen“ (öffnet ein Menü; nicht pfeilUnten, das ist der Aufklapp-Pfeil). Kreise statt `h.01` wie in `liste`: ein Symbol nur aus Punkten bliebe sonst bei 1em kaum sichtbar */
   mehr: 'M5 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM12 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM19 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2z',
   ordner: 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z',

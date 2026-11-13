@@ -221,12 +221,23 @@ describe('Struktur-Editor', () => {
     const liste = eintraege(host);
     expect(document.activeElement).toBe(liste[0]);
     expect(name(liste[0])).toBe('Unterordner anlegen');
-    // Kürzel stehen sichtbar rechts im Eintrag – und als Teil seines Textes auch für Hilfsmittel
+    // Kürzel stehen sichtbar rechts im Eintrag und werden als aria-keyshortcuts vorgelesen
     const dupl = liste.find((b) => name(b) === 'Duplizieren')!;
-    expect(dupl.querySelector('.menue-hinweis')?.textContent).toBe('Strg+D');
-    expect(dupl.textContent).toBe('DuplizierenStrg+D');
-    expect(liste.find((b) => name(b) === 'Nach oben')?.querySelector('.menue-hinweis')?.textContent).toBe('Alt+↑');
-    expect(liste.find((b) => name(b) === 'Umbenennen')?.querySelector('.menue-hinweis')?.textContent).toBe('F2');
+    expect(dupl.querySelector('.menue-tasten')?.textContent).toBe('Strg+D');
+    expect(dupl.getAttribute('aria-keyshortcuts')).toBe('Control+D');
+    const kuerzel = (n: string) => liste.find((b) => name(b) === n)?.getAttribute('aria-keyshortcuts');
+    expect(kuerzel('Nach oben')).toBe('Alt+ArrowUp');
+    expect(kuerzel('Nach unten')).toBe('Alt+ArrowDown');
+    expect(kuerzel('Umbenennen')).toBe('F2');
+    expect(kuerzel('Ordner daneben anlegen')).toBe('Control+Shift+N');
+    expect(kuerzel('Löschen …')).toBe('Delete');
+    // Gegenprobe: ein Eintrag ohne Kürzel hat auch kein aria-keyshortcuts
+    expect(liste.find((b) => name(b) === 'Mehrere Unterordner anlegen …')?.hasAttribute('aria-keyshortcuts')).toBe(false);
+    // Gefahr-Punkt am Ende, durch einen Trenner abgesetzt
+    const kinder = [...menue(host)!.children];
+    expect(kinder.at(-1)?.className).toContain('gefahr');
+    expect(kinder.at(-2)?.getAttribute('role')).toBe('separator');
+    expect(kinder.slice(0, -1).some((k) => k.className.includes('gefahr'))).toBe(false);
     // Pfeil ab/auf (umlaufend), Ende, Pos1 – der Baum dahinter bleibt, wo er war
     taste(document.activeElement!, 'ArrowDown');
     expect(document.activeElement).toBe(liste[1]);
@@ -357,7 +368,10 @@ describe('Struktur-Editor', () => {
     expect(weitere.getAttribute('aria-expanded')).toBe('true');
     expect(menue(host)?.getAttribute('aria-label')).toBe('Weitere Aktionen');
     const einfuegen = eintraege(host).find((b) => name(b) === 'Einfügen')!;
-    expect(einfuegen.querySelector('.menue-hinweis')?.textContent).toBe('Strg+V');
+    expect(einfuegen.querySelector('.menue-tasten')?.textContent).toBe('Strg+V');
+    expect(einfuegen.getAttribute('aria-keyshortcuts')).toBe('Control+V');
+    // „Weitere“ hat keinen Gefahr-Punkt
+    expect(menue(host)!.querySelector('.gefahr')).toBeNull();
     expect(einfuegen.title).toContain('2 kopierte Ordner');
     expect(document.activeElement).toBe(eintraege(host)[0]);
     // Esc schließt, der Fokus kehrt zum Knopf zurück
@@ -705,14 +719,15 @@ describe('Runde 3: Entwurf, Rückfrage, Sicherung, Ziehen, Menüs', () => {
     expect(pfade()).toEqual(['07 Ausschreibung']);
   });
 
-  it('Zeilenknopf „Aktionen“: Symbol „liste“ (nicht der Aufklapp-Pfeil), aria-expanded folgt dem Menü – auch bei Esc und einem anderen Menü', async () => {
+  it('Zeilenknopf „Aktionen“: Symbol „mehr“ (nicht der Aufklapp-Pfeil), aria-haspopup, aria-expanded folgt dem Menü – auch bei Esc und einem anderen Menü', async () => {
     const { host, z, baum, taste } = strukturAnsicht();
     const aktionen = (pfad: string) => z(pfad).querySelector<HTMLButtonElement>('.po-k-aktionen button')!;
     const pfad = (b: Element) => b.querySelector('svg.symbol path')?.getAttribute('d');
     // nicht dasselbe Symbol wie der Pfeil zum Auf-/Zuklappen
     const pfeil = z('07 Ausschreibung').querySelector('.po-k-pfeil')!;
     expect(pfad(aktionen('07 Ausschreibung'))).not.toBe(pfad(pfeil));
-    expect(pfad(aktionen('07 Ausschreibung'))).toMatch(/^M8 6h12/);
+    expect(pfad(aktionen('07 Ausschreibung'))).toMatch(/^M5 13a1/);
+    expect(aktionen('07 Ausschreibung').getAttribute('aria-haspopup')).toBe('menu');
     const nachlaufen = () => act(async () => {});
     expect(aktionen('09 Fotos').getAttribute('aria-expanded')).toBe('false');
     act(() => aktionen('09 Fotos').click());
@@ -725,6 +740,8 @@ describe('Runde 3: Entwurf, Rückfrage, Sicherung, Ziehen, Menüs', () => {
     await nachlaufen();
     expect(menue(host)).toBeNull();
     expect(aktionen('09 Fotos').getAttribute('aria-expanded')).toBe('false');
+    // der Fokus landet über den Knopf wieder im Baum (dort wirken die Pfeiltasten)
+    expect(document.activeElement).toBe(baum);
     // ein anderes Menü (Rechtsklick auf eine andere Zeile) löst das Zeilenmenü ab
     act(() => aktionen('09 Fotos').click());
     await nachlaufen();
