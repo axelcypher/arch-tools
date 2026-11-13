@@ -353,7 +353,8 @@ describe('Zwischenspeicher', () => {
       expect([a, b]).toEqual([true, true]);
       expect((idb.stand.get('stand') as { doc: { fotos: { id: string }[] } }).doc.fotos.map((f) => f.id)).toEqual(['f1']);
       expect(geschrieben).toHaveBeenCalledTimes(1);
-      // der Timer ist erledigt: auch später kein zweites Schreiben desselben Stands
+      // der Timer ist erledigt: auch später kein zweites Schreiben desselben Stands (echte Uhr, weil die
+      // IndexedDB-Attrappe auf setTimeout beruht – vorgetäuschte Zeit würde sie anhalten)
       await new Promise((r) => setTimeout(r, 700));
       expect(geschrieben).toHaveBeenCalledTimes(1);
       // Gegenprobe: nach der Abmeldung schreibt das Schließen nichts mehr
@@ -362,6 +363,36 @@ describe('Zwischenspeicher', () => {
       await schliessenVorbereiten();
       expect(geschrieben).toHaveBeenCalledTimes(1);
       geschrieben.mockRestore();
+    } finally {
+      g.window = vorher;
+    }
+  });
+
+  it('vor dem Schließen während des Speicherns der .entz: wartet darauf und schreibt danach den gespeicherten Stand', async () => {
+    const g = globalThis as { window?: unknown };
+    const vorher = g.window;
+    g.window = new EventTarget();
+    try {
+      idb.stand.clear();
+      const ende = await zwischenspeicherStarten();
+      useEntz.getState().fotoHinzufuegen('f1', 'Süd', 'image/jpeg', 100, 80, bytes(5, 5));
+      datei.staende.set('/Projekt/Süd.entz', { groesse: 42, geaendert: 7 });
+      let weiter: (v: string) => void = () => undefined;
+      datei.speichern = (o) => {
+        o.build();
+        return new Promise((r) => (weiter = r));
+      };
+      const lauf = speichern();
+      let fertig = false;
+      const vorbereitet = schliessenVorbereiten().then((ok) => ((fertig = true), ok));
+      await new Promise((r) => setTimeout(r, 20));
+      expect(fertig).toBe(false);
+      weiter('/Projekt/Süd.entz');
+      expect(await lauf).toBe(true);
+      expect(await vorbereitet).toBe(true);
+      // im Zwischenstand steht der gespeicherte Stand, nicht der davor (sonst später falsche Rückfrage „von außen geändert“)
+      expect(idb.stand.get('stand')).toMatchObject({ dirty: false, dateiname: '/Projekt/Süd.entz', dateiStand: { groesse: 42, geaendert: 7 } });
+      ende();
     } finally {
       g.window = vorher;
     }

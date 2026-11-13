@@ -40,7 +40,11 @@ function merken<T>(arbeit: Promise<T>): Promise<T> {
   return arbeit;
 }
 
-/** wartet, bis kein Schreiben mehr läuft – auch auf solche, die währenddessen dazukommen */
+/**
+ * wartet, bis kein Schreiben mehr läuft – auch auf solche, die vor dem Ende des letzten laufenden Vorgangs starten.
+ * Nacheinander gestartete Fotos (etwa beim Öffnen) können danach noch folgen; deren Bilddaten trägt der nächste Stand
+ * ohnehin aus `bilder` nach.
+ */
 export async function schreibenAbgeschlossen(): Promise<void> {
   while (laufend.size) await Promise.allSettled([...laufend]);
 }

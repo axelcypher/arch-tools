@@ -255,10 +255,12 @@ export async function zwischenspeicherStarten(): Promise<() => void> {
   window.addEventListener('pagehide', sofort);
   window.addEventListener('beforeunload', sofort);
   // vor dem Schließen, Andocken, Herauslösen und Update-Neustart in Arkly: ausstehenden Stand sofort schreiben, dann
-  // alles laufende Schreiben (Stand, Fotos, .entz) abwarten; ein zweiter Aufruf wartet nur noch, statt erneut zu schreiben
+  // alles laufende Schreiben (.entz, Stand, Fotos) abwarten; ein zweiter Aufruf wartet nur noch, statt erneut zu schreiben
   const abmelden = vorDemSchliessen(async () => {
+    // ein laufendes Speichern der .entz zuerst: es ändert danach noch den Stand (gespeichert, Dateistand)
+    await Promise.allSettled([speichertGerade]);
     sofort();
-    await Promise.allSettled([zuletzt, schreibenAbgeschlossen(), speichertGerade]);
+    await Promise.allSettled([zuletzt, schreibenAbgeschlossen()]);
   });
   const ende = useEntz.subscribe((s, vorher) => {
     if (s.doc === vorher.doc && s.dateiname === vorher.dateiname && s.dateiStand === vorher.dateiStand && s.dirty === vorher.dirty) return;
