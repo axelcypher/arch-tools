@@ -55,6 +55,7 @@ export function StrukturView() {
   const setOrdnerAnsicht = useOrdner((s) => s.setOrdnerAnsicht);
   const entwurf = useOrdner((s) => s.ordnerEntwurf);
   const setEntwurf = useOrdner((s) => s.setOrdnerEntwurf);
+  const ordnerEntwurfUebernehmen = useOrdner((s) => s.ordnerEntwurfUebernehmen);
   const stand = ordnerAlsText(struktur.ordner);
   // ohne Entwurf folgt der Text dem Stand; ein Entwurf merkt sich den Stand, von dem er ausgeht – kommt die Struktur
   // neu herein, bleibt ungespeicherter Text stehen
@@ -72,20 +73,11 @@ export function StrukturView() {
   const textVerwerfen = () => setEntwurf(null);
   /** Ordnerliste aus der Textansicht übernehmen – wie jedes Ersetzen der Struktur vorher gesichert, mit „Rückgängig“ */
   const ordnerUebernehmen = async (): Promise<boolean> => {
-    const { ordner } = gelesen;
-    if (!ordner.length) {
-      // Schutz vor versehentlichem Leeren über die Textansicht; im Baum lassen sich alle Ordner einzeln löschen
-      setMeldung({
-        art: 'fehler',
-        text: 'Die Liste enthält keinen Ordner – die bisherige Struktur bleibt bestehen. Eine leere Liste übernimmt die Textansicht nicht; alle Ordner löschen geht im Baum.',
-      });
-      return false;
-    }
     try {
-      await strukturErsetzen({ ...struktur, ordner }, 'Ordnerliste übernommen.');
-      setEntwurf(null);
-      setMeldung(null);
-      return true;
+      // leere Liste: der Grund steht als Meldung da, die bisherige Struktur bleibt
+      const grund = await ordnerEntwurfUebernehmen();
+      setMeldung(grund ? { art: 'fehler', text: grund } : null);
+      return !grund;
     } catch (e) {
       setMeldung({ art: 'fehler', text: e instanceof Error ? e.message : String(e) });
       return false;

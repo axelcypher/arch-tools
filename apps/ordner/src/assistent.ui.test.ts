@@ -13,7 +13,7 @@ import { PLATZHALTER_PROJEKT } from './nummer';
 import { ausfuehren, planen } from './plan';
 import { leereStammdaten } from './stammdaten';
 import { useOrdner } from './store';
-import { STANDARD } from './struktur';
+import { ordnerAlsText, STANDARD } from './struktur';
 
 /**
  * Assistent (Runde 1 des Gesamt-Reviews): Ansichtswechsel, Fokusführung, Schrittleiste, Anlegen in der Navigation,
@@ -399,5 +399,108 @@ describe('Folgerunde: Vorlagenordner einlesen', () => {
     await zweiter;
     expect(useOrdner.getState().vorlagenLaden).toBe(false);
     expect(useOrdner.getState().vorlagen.map((v) => v.pfad)).toEqual(['Brief.txt']);
+  });
+});
+
+describe('Rahmen-App Arkly: ungespeicherte Änderungen melden und auf Anfrage speichern', () => {
+  let gesendet: Record<string, unknown>[] = [];
+  const rahmen = { postMessage: (d: Record<string, unknown>) => gesendet.push(d) } as unknown as Window;
+  const setUrl = (u: string) => (window as unknown as { happyDOM: { setURL: (u: string) => void } }).happyDOM.setURL(u);
+  beforeEach(() => {
+    gesendet = [];
+    useOrdner.setState({ ordnerEntwurf: null, strukturFehler: null, konfigFehler: null });
+    Object.defineProperty(window, 'parent', { value: rahmen, configurable: true });
+    setUrl('http://localhost:3000/?rahmen=tab&app=ordner');
+  });
+  afterEach(() => {
+    Object.defineProperty(window, 'parent', { value: window, configurable: true });
+    setUrl('http://localhost:3000/');
+  });
+  /** zuletzt an den Rahmen gemeldet: ungespeicherte Änderungen? */
+  const dirty = () => gesendet.filter((d) => d.typ === 'arch-tools:status').at(-1)?.dirty;
+  let nr = 0;
+  /** Speichern-Anfrage des Rahmens; liefert die Antwort „gespeichert“ (ok) */
+  const speichernAnfragen = async () => {
+    const anfrage = `a${++nr}`;
+    act(() => window.dispatchEvent(new MessageEvent('message', { data: { typ: 'arch-tools:speichern', anfrage }, origin: window.location.origin, source: rahmen })));
+    for (let i = 0; i < 20 && !gesendet.some((d) => d.typ === 'arch-tools:gespeichert' && d.anfrage === anfrage); i++) await warten();
+    return gesendet.find((d) => d.typ === 'arch-tools:gespeichert' && d.anfrage === anfrage)?.ok;
+  };
+  const stand = ordnerAlsText(STANDARD.ordner);
+  const meldungText = () => document.querySelector('.modal.rf')?.textContent ?? '';
+
+  it('Text der Ordnerliste: meldet „ungespeichert“; Speichern übernimmt ihn mit Sicherung – Gegenprobe ohne Entwurf', async () => {
+    render();
+    await warten();
+    expect(dirty()).toBe(false);
+    // ohne offene Änderungen: gespeichert, nichts geändert
+    expect(await speichernAnfragen()).toBe(true);
+    expect(useOrdner.getState().struktur).toBe(STANDARD);
+    act(() => useOrdner.setState({ ordnerEntwurf: { text: `${stand}\n99_Neu aus dem Text`, basis: stand } }));
+    expect(dirty()).toBe(true);
+    expect(await speichernAnfragen()).toBe(true);
+    expect(useOrdner.getState().ordnerEntwurf).toBeNull();
+    expect(useOrdner.getState().struktur.ordner.map((o) => o.pfad)).toContain('99_Neu aus dem Text');
+    // wie beim Knopf „Übernehmen“: vorher gesichert, „Rückgängig“ angeboten
+    expect(localStorage.getItem('arch-tools:konfig:projektordner-sicherungen')).toContain('Ordnerliste übernommen.');
+    expect(useOrdner.getState().rueckgaengig?.struktur).toBe(STANDARD);
+    expect(dirty()).toBe(false);
+    expect(document.querySelector('.modal.rf')).toBeNull();
+  });
+
+  it('Text der Ordnerliste von einem älteren Stand bzw. leer: nicht still übernommen – „nicht gespeichert“ mit Meldung', async () => {
+    render();
+    await warten();
+    act(() => useOrdner.setState({ ordnerEntwurf: { text: `${stand}\n99_Neu`, basis: 'A\nB' } }));
+    expect(dirty()).toBe(true);
+    expect(await speichernAnfragen()).toBe(false);
+    expect(useOrdner.getState().struktur).toBe(STANDARD);
+    expect(useOrdner.getState().ordnerEntwurf?.text).toBe(`${stand}\n99_Neu`);
+    expect(meldungText()).toContain('älteren Stand');
+    act(() => knopf(document.querySelector('.modal.rf')!, 'OK').click());
+    await warten();
+    act(() => useOrdner.setState({ ordnerEntwurf: { text: '', basis: stand } }));
+    expect(await speichernAnfragen()).toBe(false);
+    expect(useOrdner.getState().struktur).toBe(STANDARD);
+    expect(meldungText()).toContain('keinen Ordner');
+  });
+
+  it('Konflikt mit einem anderen Rechner: meldet „ungespeichert“, Speichern entscheidet ihn nicht still', async () => {
+    render();
+    await warten();
+    act(() => useOrdner.setState({ konflikt: { roh: { struktur: STANDARD } } }));
+    expect(dirty()).toBe(true);
+    expect(await speichernAnfragen()).toBe(false);
+    expect(useOrdner.getState().konflikt).not.toBeNull();
+    expect(meldungText()).toContain('Meine Fassung trotzdem speichern');
+    act(() => useOrdner.setState({ konflikt: null }));
+    expect(dirty()).toBe(false);
+  });
+
+  it('Assistent: geänderte Stammdaten beim Ergänzen melden „ungespeichert“, Speichern legt nichts an – der Entwurf eines neuen Projekts nicht', async () => {
+    await desktopMitProjekt();
+    const host = render();
+    await warten();
+    // neues Projekt: der Entwurf liegt im lokalen Speicher (übersteht auch ein Beenden) – keine Meldung
+    act(() => knopf(host, 'Neues Projekt').click());
+    eingabe(feld(host, 'Projektnummer'), '2026-014');
+    expect(JSON.parse(localStorage.getItem('projektordner:zustand')!).stamm.nummer).toBe('2026-014');
+    expect(dirty()).toBe(false);
+    act(() => host.querySelector<HTMLButtonElement>('.titlebar-projekte')!.click());
+    await warten();
+    act(() => knopf(host, '2025-007 Kita').click());
+    await warten();
+    await warten();
+    expect(dirty()).toBe(false);
+    const inhalt = () => JSON.stringify([...mock.fs.eintraege].map(([k, v]) => [k, v ? [...v] : null]));
+    const vorher = inhalt();
+    eingabe(feld(host, 'Bezeichnung des Vorhabens'), 'Neubau Kita am Park');
+    expect(dirty()).toBe(true);
+    expect(await speichernAnfragen()).toBe(false);
+    // nichts angelegt bzw. geschrieben, die Eingabe steht noch da
+    expect(inhalt()).toBe(vorher);
+    expect(feld(host, 'Bezeichnung des Vorhabens').value).toBe('Neubau Kita am Park');
+    expect(meldungText()).toContain('die geänderten Stammdaten von „2025-007 Kita“');
+    expect(meldungText()).toContain('Projektordner anzulegen');
   });
 });

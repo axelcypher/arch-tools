@@ -12,7 +12,8 @@ import { MailView } from './components/MailView';
 import { ASSISTENT_NEU, vomRahmen } from '@core/platform/rahmen';
 import type { Auftrag } from './components/AssistentView';
 import type { GeladenerOrdner } from './projekt';
-import { useOrdner } from './store';
+import { NICHT_GESPEICHERT, useOrdner } from './store';
+import { ordnerAlsText } from './struktur';
 
 type Ansicht = 'projekt' | 'pruefen' | 'mails' | 'struktur' | 'vorlagen' | 'kataster' | 'einstellungen';
 
@@ -49,11 +50,63 @@ export function App() {
   const [auftrag, setAuftrag] = useState<(Auftrag & { nr: number }) | null>(null);
   /** was im Assistenten noch nicht angelegt ist (meldet AssistentView) – ein Neustart über den key fragt dann vorher */
   const assistentOffen = useRef<string | null>(null);
+  /** dasselbe als Zustand – für die Meldung „ungespeicherte Änderungen“ an Titelleiste und Rahmen */
+  const [assistentOffenText, setAssistentOffenText] = useState<string | null>(null);
   /** Assistent neu beginnen (`neustart`): ohne offene Eingaben sofort, sonst erst nach Rückfrage (Verwerfen/Abbrechen) */
   const nachRueckfrage = (neustart: () => void) => {
     const was = assistentOffen.current;
     if (!was) return neustart();
     void bestaetigen('Eingaben im Assistenten verwerfen?', `Noch nicht angelegt: ${was}. Beim Neubeginn gehen sie verloren.`, 'Verwerfen', true).then((ok) => ok && neustart());
+  };
+
+  /**
+   * Ungespeicherte Änderungen (Titelleiste: Punkt, Rückfrage beim Beenden und vor einem Update; Rahmen-App Arkly:
+   * Rückfrage beim Schließen, Beenden, Herauslösen, Andocken und Update) – nur, was beim Beenden wirklich verloren ginge:
+   * offene Eingaben im Assistenten (nicht der Entwurf eines neuen Projekts: der liegt im lokalen Speicher und übersteht
+   * auch ein Beenden), der nicht übernommene Text der Ordnerliste (Struktur, Textansicht) und eigene Änderungen an der
+   * Struktur, die wegen eines Konflikts mit einem anderen Rechner nicht gespeichert sind. Alles Übrige speichert ATLAS
+   * sofort (Einstellungen, Vorlagen, Kataster) oder es entsteht neu aus dem Projektordner (Prüfen, Mails).
+   */
+  const strukturEntwurf = useOrdner((s) => s.ordnerEntwurf !== null);
+  const strukturKonflikt = useOrdner((s) => s.konflikt !== null);
+  const dirty = !!assistentOffenText || strukturEntwurf || strukturKonflikt;
+
+  /**
+   * Speichern auf Anfrage (Rückfrage der Titelleiste bzw. des Rahmens, Knopf „Speichern“): gespeichert wird nur, was
+   * ohne weitere Entscheidung geht – der Text der Ordnerliste wird übernommen wie mit „Übernehmen“ (vorher gesichert,
+   * mit „Rückgängig“), wenn er gültig ist und vom aktuellen Stand ausgeht. Nicht still ausgeführt wird, was eine
+   * eigene Entscheidung braucht: Im Assistenten hieße „Speichern“, den Projektordner anzulegen bzw. die Projektdatei
+   * zu schreiben; ein Konflikt verlangt „Neu laden“ oder „Meine Fassung trotzdem speichern“; ein Text, der von einem
+   * älteren Stand ausgeht, überschriebe ungesehen die neuere Struktur. Dann liefert es false („nicht gespeichert“):
+   * Beenden, Herauslösen, Andocken bzw. Update unterbleiben, und eine Meldung in ATLAS sagt, was noch offen ist.
+   */
+  const speichernAufAnfrage = async (): Promise<boolean> => {
+    const offen: string[] = [];
+    const s = useOrdner.getState();
+    if (s.ordnerEntwurf) {
+      if (s.konflikt || s.strukturFehler) offen.push('der Text der Ordnerliste (die Struktur ist gerade gesperrt bzw. im Konflikt)');
+      else if (s.ordnerEntwurf.basis !== ordnerAlsText(s.struktur.ordner))
+        offen.push('der Text der Ordnerliste – er geht von einem älteren Stand aus; bitte unter „Struktur“ prüfen und übernehmen oder verwerfen');
+      else {
+        try {
+          const grund = await s.ordnerEntwurfUebernehmen();
+          if (grund) offen.push(`der Text der Ordnerliste: ${grund}`);
+        } catch (e) {
+          offen.push(`der Text der Ordnerliste (${e instanceof Error ? e.message : String(e)})`);
+        }
+      }
+    }
+    // ausstehendes Schreiben der Struktur jetzt, nicht erst nach der Wartezeit – sonst wäre „gespeichert“ nicht wahr
+    await useOrdner.getState().speichernJetzt();
+    const n = useOrdner.getState();
+    if (n.konflikt) offen.push('Ihre Änderungen an der Struktur – ein anderer Rechner hat sie inzwischen geändert; bitte „Neu laden“ oder „Meine Fassung trotzdem speichern“ wählen');
+    else if (n.konfigFehler?.startsWith(NICHT_GESPEICHERT)) offen.push(`die Struktur (${n.konfigFehler})`);
+    if (assistentOffen.current)
+      offen.push(`im Assistenten ${assistentOffen.current} – „Speichern“ hieße, den Projektordner anzulegen bzw. die Projektdatei zu schreiben; das geschieht nur im Assistenten selbst`);
+    if (!offen.length) return true;
+    // nicht abwarten: die Rückfrage, die das Speichern angefordert hat, soll sofort „nicht gespeichert“ erfahren
+    void meldung('Nicht alles gespeichert', `Noch offen: ${offen.join('; ')}. Bitte dort abschließen oder die Änderungen bewusst verwerfen („Nicht speichern“).`);
+    return false;
   };
 
   useEffect(
@@ -99,7 +152,8 @@ export function App() {
       <TitleBar
         app={APP_NAMEN.ordner.name}
         name={start?.ordner.name ?? ''}
-        dirty={false}
+        dirty={dirty}
+        onSpeichern={speichernAufAnfrage}
         onOpenLog={() => setLogOpen(true)}
         zeichenflaeche={false}
         // wie in den anderen Apps: „Projekte“ führt zur Startseite mit der gemeinsamen Projektübersicht
@@ -170,6 +224,7 @@ export function App() {
             onMails={mailsPruefen}
             onOffen={(was) => {
               assistentOffen.current = was;
+              setAssistentOffenText(was);
             }}
           />
         </div>

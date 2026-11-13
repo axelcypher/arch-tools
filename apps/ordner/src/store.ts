@@ -21,7 +21,7 @@ import { SICHERUNGEN, sicherungenAus, sicherungenMit, sicherungsName } from './s
 import type { Stammdaten } from './stammdaten';
 import { leereStammdaten } from './stammdaten';
 import type { Struktur } from './struktur';
-import { alterOapPfad, ordnerAlsText, STANDARD, strukturAusJson } from './struktur';
+import { alterOapPfad, ordnerAlsText, ordnerAusTextMitMeldungen, STANDARD, strukturAusJson } from './struktur';
 
 const log = logger('einstellungen');
 
@@ -93,6 +93,12 @@ interface OrdnerState {
   ordnerEntwurf: { text: string; basis: string } | null;
   setOrdnerAnsicht: (a: 'baum' | 'text') => void;
   setOrdnerEntwurf: (e: { text: string; basis: string } | null) => void;
+  /**
+   * den Entwurf der Textansicht als Ordnerliste übernehmen – wie jedes Ersetzen vorher gesichert, mit „Rückgängig“.
+   * Liefert null, wenn übernommen (oder nichts offen), sonst den Grund, warum nicht (leere Liste); Fehler beim
+   * Sichern bzw. Ersetzen werden geworfen.
+   */
+  ordnerEntwurfUebernehmen: () => Promise<string | null>;
   /** die Struktur vor der letzten Ersetzung („Rückgängig“) – entfällt mit der nächsten Änderung */
   rueckgaengig: { struktur: Struktur; text: string } | null;
   setStamm: (patch: Partial<Stammdaten>) => void;
@@ -161,7 +167,9 @@ const anfang = {
 
 const fehlertext = (e: unknown) => (e instanceof Error ? e.message : String(e));
 /** Anfang der Meldung, wenn Einstellungen nicht gespeichert wurden – nach dem nächsten gelungenen Speichern entfällt sie */
-const NICHT_GESPEICHERT = 'Einstellungen nicht gespeichert';
+export const NICHT_GESPEICHERT = 'Einstellungen nicht gespeichert';
+/** Textansicht: eine leere Ordnerliste übernimmt sie nicht */
+export const LEERE_ORDNERLISTE = 'Die Liste enthält keinen Ordner – die bisherige Struktur bleibt bestehen. Eine leere Liste übernimmt die Textansicht nicht; alle Ordner löschen geht im Baum.';
 
 /** so lange nach der letzten Änderung wird projektordner.json geschrieben */
 export const SPEICHERN_NACH_MS = 400;
@@ -320,6 +328,16 @@ export const useOrdner = create<OrdnerState>()((set, get) => {
     ordnerEntwurf: null,
     setOrdnerAnsicht: (ordnerAnsicht) => set({ ordnerAnsicht }),
     setOrdnerEntwurf: (ordnerEntwurf) => set({ ordnerEntwurf }),
+    ordnerEntwurfUebernehmen: async () => {
+      const entwurf = get().ordnerEntwurf;
+      if (!entwurf) return null;
+      const { ordner } = ordnerAusTextMitMeldungen(entwurf.text);
+      // Schutz vor versehentlichem Leeren über die Textansicht; im Baum lassen sich alle Ordner einzeln löschen
+      if (!ordner.length) return LEERE_ORDNERLISTE;
+      await get().strukturErsetzen({ ...get().struktur, ordner }, 'Ordnerliste übernommen.');
+      set({ ordnerEntwurf: null });
+      return null;
+    },
     rueckgaengig: null,
     setStruktur: (struktur) => {
       // unlesbare Struktur: Bearbeiten ist gesperrt (Struktur- und Vorlagen-Editor) – Eingaben gingen beim nächsten Laden verloren
