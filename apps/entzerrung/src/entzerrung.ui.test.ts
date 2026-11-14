@@ -340,5 +340,16 @@ describe('RECTIO (Entzerrung)', () => {
     expect(speichernKnopf().title).toContain('ungespeicherte Änderungen');
     expect(knopf(leiste, 'Foto')).toBeDefined();
     expect(leiste.querySelector('[aria-label="Rückgängig"]')).not.toBeNull();
+    // mit Foto: „Speichern unter …“ frei, „Alles zeigen“ löst das Einpassen aus
+    act(() => menueKnopf('Datei').click());
+    expect(punkte().find((p) => p.textContent?.startsWith('Speichern unter'))!.getAttribute('aria-disabled')).not.toBe('true');
+    act(() => void document.activeElement?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })));
+    let eingepasst = 0;
+    const zaehlen = () => eingepasst++;
+    window.addEventListener('entz:einpassen', zaehlen);
+    act(() => menueKnopf('Ansicht').click());
+    act(() => punkte().find((p) => p.textContent?.startsWith('Alles zeigen'))!.click());
+    window.removeEventListener('entz:einpassen', zaehlen);
+    expect(eingepasst).toBe(1);
   });
 });
