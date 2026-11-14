@@ -90,9 +90,13 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   gesichert: Umfang der Beseitigung“), „Bestätigen …“ steht am Umfang; erst wenn er bestätigt ist, zählt die Antwort
   wieder voll – auch über eine Kette solcher Fragen. Ebenso bei einer widersprüchlichen Angabe als Auslöser: die Regel
   trägt deren Widerspruch („Widerspruch: Umfang der Beseitigung“) – nicht bei Merkmalen wie Planungsrecht oder
-  Gebäudeklasse, deren Widerspruch bzw. Vorbehalt prüfen die Regeln selbst. Hängt ein Paragraf an einem anderen, der
-  nur „gilt, Ausnahme möglich“ ist, und entfiele er mit dessen Ausnahme, nennt er sie („Ausnahme möglich über § 14
-  BNatSchG – es fehlt dort: …“); die Ampel bleibt „gilt“.
+  Gebäudeklasse, deren Widerspruch bzw. Vorbehalt prüfen die Regeln selbst. Ausgenommen ist eine Antwort mit dem Wert,
+  der auch ohne die Frage gälte (`ohneAusloeser` im Regelmodul, nur wo das zwingend folgt): „Allee betroffen: nein“ gilt
+  auch, wenn „geschützte Bäume betroffen“ nur Hinweis ist – diese Angabe schließt Alleen ein, eine betroffene Allee ist
+  also immer auch ein solcher Fall; ebenso „nicht im Vogelschutzgebiet Hellwegbörde“, „nicht im Heilquellenschutzgebiet
+  Bad Sassendorf“, „keine Planreife“ und „keine Feuerstätte für feste Brennstoffe über 50 kW“. Hängt ein Paragraf an
+  einem anderen, der nur „gilt, Ausnahme möglich“ ist, und entfiele er mit dessen Ausnahme, nennt er sie („Ausnahme
+  möglich über § 14 BNatSchG – es fehlt dort: …“); die Ampel bleibt „gilt“.
   Unter „Ausnahme möglich – es fehlt“ stehen nur Fragen, die gerade gestellt werden (ohne Ausweichen auf nicht
   gestellte: eine Ausnahme, deren Fragen nicht gestellt sind, wird nicht angeboten). Ist die Ausnahme nur über Hinweise
   bzw. widersprüchliche Angaben ausgeschlossen, steht „Ausnahme ausgeschlossen, aber nicht gesichert (beruht auf:

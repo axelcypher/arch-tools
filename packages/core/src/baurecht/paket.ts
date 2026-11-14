@@ -278,6 +278,9 @@ export function paketPruefen(p: Paket, merkmale: { name: string; werte: string[]
       const passt = (w: unknown) => (d.typ === 'janein' ? typeof w === 'boolean' : d.typ === 'zahl' ? typeof w === 'number' : typeof w === 'string' && (d.typ !== 'wahl' || !d.werte || d.werte.includes(w)));
       if (d.wert !== undefined && !passt(d.wert)) fehler.push(`${m.id}: fester Wert von „${id}“ passt nicht zur Art „${d.typ}“`);
       if (d.nach) for (const w of [...Object.values(d.nach.tabelle), ...(d.nach.sonst !== undefined ? [d.nach.sonst] : [])]) if (!passt(w)) fehler.push(`${m.id}: Tabellenwert „${String(w)}“ von „${id}“ passt nicht zur Art „${d.typ}“`);
+      // Wert ohne Auslöser: nur mit einer Bedingung „wenn“ sinnvoll und passend zur Art
+      if (d.ohneAusloeser !== undefined && (!d.wenn || !passt(d.ohneAusloeser)))
+        fehler.push(`${m.id}: „ohneAusloeser“ von „${id}“ ${d.wenn ? `passt nicht zur Art „${d.typ}“` : 'ohne „wenn“'}`);
     }
   const pruefe = (wo: string, m: Modul, k: Kurz | undefined, o: { ohneBekannt?: boolean } = {}) => {
     if (k === undefined) return;
