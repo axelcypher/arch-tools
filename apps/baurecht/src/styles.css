@@ -114,22 +114,8 @@
 .br-kopf {
   gap: var(--s2);
 }
-/* Knöpfe und Felder behalten ihre Breite; nur Module und Rechtsstand kürzen sich, bevor ein Eintrag ins Menü „Mehr“
-   wandert (Werkzeugleiste) */
-.br-kopf > [data-eintrag] {
-  flex: none;
-}
-/* Liste der Module und Rechtsstand kürzen sich bis auf eine Mindestbreite (ganz im Tooltip); die Marken stehen in
-   eigenen Einträgen und werden nie gekürzt */
-.br-kopf > [data-eintrag='module'] {
-  flex: 0 1 auto;
-  min-width: 80px;
-}
-.br-kopf > [data-eintrag='rechtsstand'] {
-  flex: 0 3 auto;
-  min-width: 60px;
-}
-/* ohne Text steht die Live-Region leer im DOM und nimmt keinen Platz */
+/* Liste der Module und Rechtsstand sind `kuerzbar` (Werkzeugleiste); ohne Text steht die Live-Region des Rechtsstands
+   leer im DOM und nimmt keinen Platz */
 .br-kopf > [data-eintrag='rechtsstand']:has(> .br-rechtsstand:empty) {
   min-width: 0;
 }
@@ -152,7 +138,7 @@
   color: var(--text);
 }
 .br-module-text {
-  /* kürzt sich zuerst, die Gemeinde bleibt lesbar */
+  /* kürzt sich mit „…“ (Eintrag `kuerzbar`), die Gemeinde steht vorn */
   flex: 0 1 auto;
   white-space: nowrap;
   overflow: hidden;
@@ -190,8 +176,11 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
   }
 }
 @container app (max-width: 1199px) {
-  /* Beschriftungen von Antrag und Einreichung stehen dann nur noch im Feld (aria-label, Tooltip) */
-  .br-kopf-label {
+  /* Beschriftungen von Antrag und Einreichung stehen dann nur noch im Feld (aria-label, Tooltip); „Speichern“ zeigt nur
+     das Symbol, die Sammelmarke nur „N Warnungen“ – vorgelesen wird weiter der ganze Name. So passen bei 1000 px auch
+     im ungünstigsten Fall (zwei Marken der Module, Warnungen, Rechtsstand) alle Einträge ohne Rang neben „Mehr“ */
+  .br-kopf-label,
+  .br-kopf-zusatz {
     position: absolute;
     width: 1px;
     height: 1px;

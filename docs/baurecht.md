@@ -36,9 +36,9 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   der Lage steht als „Lage wird abgefragt …“ beim Rechtsstand. Ist die App schmaler als
   1600 px, stehen die Warnungen zum Rechtsstand als eine Sammelmarke da („2 Warnungen“, Einzelheiten im Tooltip und
   ihre Zahl als Hinweis an „Rechtsstand prüfen“), die die Befehle aus „Mehr“ (Lage abfragen, Rechtsstand prüfen)
-  öffnet; unter 1200 px stehen „Antrag“ und
-  „Einreichung“ nur noch im Feld. „Fehlerprotokoll …“ im Menü „Einstellungen und Hilfe“ der Titelleiste ist die
-  Fehlersuche der App.
+  öffnet. Unter 1200 px stehen „Antrag“ und „Einreichung“ nur noch im Feld, „Speichern“ zeigt nur das Symbol und die
+  Sammelmarke nur „N Warnungen“ (vorgelesen wird der ganze Name) – so passen bei 1000 px alle Einträge ohne Rang neben
+  „Mehr“. „Fehlerprotokoll …“ im Menü „Einstellungen und Hilfe“ der Titelleiste ist die Fehlersuche der App.
 - **Koordinaten:** Ergebnisse der Geodienste und Bestätigungen zur Lage gelten nur, solange die Koordinaten zur Adresse
   in den Stammdaten passen. Fehlen sie oder wurde die Adresse geändert, sind sie nur noch Hinweis (auch der
   Gemeindeschlüssel aus ALKIS); der Kopf zeigt „Keine Koordinaten“ bzw. „Koordinaten veraltet“, „Bestätigen …“ wird dann

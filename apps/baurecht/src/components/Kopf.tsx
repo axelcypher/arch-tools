@@ -142,7 +142,7 @@ export function Kopf({
             onClick={onSpeichern}
             title={dirty ? 'Ungespeicherte Änderungen – in der Projektdatei speichern (Strg+S)' : 'In der Projektdatei speichern (Strg+S)'}
           >
-            <Symbol name="speichern" /> Speichern
+            <Symbol name="speichern" /> <span className="br-kopf-zusatz">Speichern</span>
           </button>
           <GespeichertMeldung />
         </>
@@ -182,6 +182,7 @@ export function Kopf({
     {
       // Liste der Module: kürzt sich zuerst (ganz im Tooltip)
       id: 'module',
+      kuerzbar: true,
       inhalt: (
         <span
           className="br-module-text"
@@ -259,6 +260,7 @@ export function Kopf({
       // Rechtsstand (und eine laufende Abfrage der Lage): Status, kürzt sich (ganz im Tooltip); eine stehende
       // Live-Region – auch leer im DOM, damit „Texte werden geholt …“ verlässlich angesagt wird
       id: 'rechtsstand',
+      kuerzbar: true,
       inhalt: (
         <span className="br-rechtsstand" aria-live="polite" title={rechtsstandTitel}>
           {lageLaeuft ? (
@@ -299,7 +301,14 @@ export function Kopf({
                     aria-expanded={markeOffen}
                     onClick={(e) => zeigeMenueAn(e.currentTarget, mehrPunkte(), 'Rechtsstand')}
                   >
-                    {warnText.length === 1 ? warnText[0] : `Rechtsstand: ${warnText.length} Warnungen`}
+                    {warnText.length === 1 ? (
+                      warnText[0]
+                    ) : (
+                      <>
+                        <span className="br-kopf-zusatz">Rechtsstand: </span>
+                        {warnText.length} Warnungen
+                      </>
+                    )}
                   </button>
                 </span>
               </>

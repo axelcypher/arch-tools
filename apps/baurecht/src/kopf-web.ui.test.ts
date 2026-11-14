@@ -46,7 +46,7 @@ const eintraege = (host: HTMLElement) => [...host.querySelectorAll<HTMLElement>(
 describe('Kopf (Web-Version)', () => {
   it('„Mehr“ ohne feste Punkte verborgen; keine Knöpfe für Lage und Rechtsstand; der Rechtsstand nennt die Web-Version', () => {
     const host = render();
-    expect(host.querySelector<HTMLElement>('.br-kopf .leiste-mehr')!.hidden).toBe(true);
+    expect(host.querySelector<HTMLElement>('.br-kopf .werkzeugleiste-mehr')!.hidden).toBe(true);
     const texte = [...host.querySelectorAll('button')].map((b) => b.textContent?.trim());
     expect(texte).not.toContain('Lage abfragen');
     expect(texte).not.toContain('Rechtsstand prüfen');

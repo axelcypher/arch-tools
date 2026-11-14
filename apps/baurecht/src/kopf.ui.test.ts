@@ -97,8 +97,8 @@ describe('Kopf (Desktop): Menü „Mehr“ und Sammelmarke', () => {
   it('„Mehr“ (Werkzeugleiste) ist ein Symbolknopf am Ende; ein Punkt führt die Aktion aus', () => {
     const aufrufe: string[] = [];
     const host = render(aufrufe);
-    const mehr = host.querySelector<HTMLButtonElement>('.br-kopf .leiste-mehr button[aria-label="Mehr"]')!;
-    expect(mehr.closest('.leiste-mehr')!.hasAttribute('hidden'), 'feste Punkte: immer sichtbar').toBe(false);
+    const mehr = host.querySelector<HTMLButtonElement>('.br-kopf .werkzeugleiste-mehr button[aria-label="Mehr"]')!;
+    expect(mehr.closest('.werkzeugleiste-mehr')!.hasAttribute('hidden'), 'feste Punkte: immer sichtbar').toBe(false);
     expect(mehr.getAttribute('aria-haspopup')).toBe('menu');
     expect(mehr.title).toBe('Mehr – weitere Befehle');
     expect(mehr.querySelector('svg.symbol')).not.toBeNull();
@@ -125,7 +125,7 @@ describe('Kopf (Desktop): Menü „Mehr“ und Sammelmarke', () => {
   it('gesperrte Punkte: aria-disabled mit Grund im Hinweis, ohne Wirkung, Erstfokus auf dem ersten bedienbaren Punkt', () => {
     const aufrufe: string[] = [];
     const host = render(aufrufe, true);
-    const mehr = () => host.querySelector<HTMLButtonElement>('.br-kopf .leiste-mehr button[aria-label="Mehr"]')!;
+    const mehr = () => host.querySelector<HTMLButtonElement>('.br-kopf .werkzeugleiste-mehr button[aria-label="Mehr"]')!;
     klick(mehr());
     const [lage, rechtsstand] = punkte();
     expect(lage.getAttribute('aria-disabled')).toBe('true');
@@ -149,7 +149,7 @@ describe('Kopf (Desktop): Menü „Mehr“ und Sammelmarke', () => {
   it('Aufbau nach der Leisten-Regel: „Speichern“ links, Hauptknopf „Prüfprotokoll …“ rechts, seltene Befehle nur in „Mehr“', () => {
     const host = render();
     const leiste = host.querySelector<HTMLElement>('.br-kopf')!;
-    expect(leiste.classList.contains('leiste'), 'Werkzeugleiste').toBe(true);
+    expect(leiste.classList.contains('werkzeugleiste'), 'Werkzeugleiste').toBe(true);
     expect(leiste.getAttribute('role')).toBe('group');
     expect(leiste.getAttribute('aria-label')).toBe('Prüfung');
     const eintraege = [...leiste.querySelectorAll<HTMLElement>(':scope > [data-eintrag]')].map((e) => e.dataset.eintrag);
@@ -168,14 +168,14 @@ describe('Kopf (Desktop): Menü „Mehr“ und Sammelmarke', () => {
   it('zu schmal: die Wahl des Antrags wandert als Einfachauswahl ins Menü „Mehr“ (über den festen Punkten); Auswahl wechselt den Antrag', () => {
     const aufrufe: string[] = [];
     // jede Leiste 600 px breit, jeder Eintrag 100 px: Speichern, Antrag, Einreichung, Module, Rechtsstand, Protokoll, Mehr passen nicht
-    const breite = vi.spyOn(leistenMessung, 'breite').mockImplementation((el) => (el.classList.contains('leiste') ? 600 : 100));
+    const breite = vi.spyOn(leistenMessung, 'breite').mockImplementation((el) => (el.classList.contains('werkzeugleiste') ? 600 : 100));
     try {
       const host = render(aufrufe, false, ['BAUA 1', 'BAUA 2']);
       act(() => window.dispatchEvent(new Event('resize')));
       expect(host.querySelector<HTMLElement>('.br-kopf > [data-eintrag="antrag"]')!.hidden).toBe(true);
       // Status bleibt: Einreichung, Module und Speichern haben keinen Rang
       for (const id of ['speichern', 'einreichung', 'module', 'protokoll']) expect(host.querySelector<HTMLElement>(`.br-kopf > [data-eintrag="${id}"]`)!.hidden, id).toBe(false);
-      klick(host.querySelector<HTMLButtonElement>('.br-kopf .leiste-mehr button')!);
+      klick(host.querySelector<HTMLButtonElement>('.br-kopf .werkzeugleiste-mehr button')!);
       const texte = punkte().map((p) => p.textContent ?? '');
       expect(texte[0]).toContain('Antrag: BAUA 1');
       expect(texte.slice(1)).toEqual([expect.stringContaining('Lage abfragen'), expect.stringContaining('Rechtsstand prüfen')]);
