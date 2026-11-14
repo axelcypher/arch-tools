@@ -20,8 +20,7 @@ export async function umzugBestaetigen(
   const verb = richtung === 'herausloesen' ? 'Herauslösen' : 'Andocken';
   const folge = `Beim ${verb} startet die App neu.`;
   if (!umzug.verliert) return bestaetigen(`${app} ${verb.toLowerCase()}?`, `${folge} ${umzug.text}`, verb);
-  const satz = `${folge} ${ungespeichertSatz(ungespeichert) ?? UNGESPEICHERT_ALLGEMEIN}`;
-  if (speichern) return aenderungenSpeichern(`${app}${projekt ? ` – ${projekt}` : ''}`, speichern, satz);
+  if (speichern) return aenderungenSpeichern(`${app}${projekt ? ` – ${projekt}` : ''}`, speichern, `${folge} ${ungespeichertSatz(ungespeichert) ?? UNGESPEICHERT_ALLGEMEIN}`);
   // ohne Speichermöglichkeit wie beim Schließen: Verwerfen als Gefahrknopf, der Verlust steht im Text
-  return bestaetigen('Ungespeicherte Änderungen verwerfen?', `${folge.slice(0, -1)}, die Änderungen gehen verloren.`, `Verwerfen und ${verb.toLowerCase()}`, true);
+  return bestaetigen('Ungespeicherte Änderungen verwerfen?', `Beim ${verb} startet die App neu, die Änderungen gehen verloren.`, `Verwerfen und ${verb.toLowerCase()}`, true);
 }
