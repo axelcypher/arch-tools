@@ -355,7 +355,7 @@ function polygonFlaeche(pts: { x: number; y: number }[]): number {
   return a / 2;
 }
 
-/** Gebäudearten mit Wohnungen (Merkmal „Gebäudeart“) */
+/** Gebäudearten mit Wohnungen (Merkmal „Gebäudeart“) – gleiche Werte wie der Baustein `wohnnutzung` im Bundesmodul */
 const WOHNGEBAEUDE = ['Einfamilienhaus', 'Zweifamilienhaus', 'Mehrfamilienhaus', 'Wohn- und Geschäftshaus'];
 
 /**
@@ -379,12 +379,21 @@ export function widersprueche(merkmale: Record<string, string>, gk: Gebaeudeklas
     out.add('Planungsrecht');
     texte.push(`Planungsrecht „${pr}“ festgelegt, die Geodaten melden aber einen Landschaftsplan bzw. ein Landschaftsschutzgebiet – Grenze Innen-/Außenbereich prüfen`);
   }
-  // Wohngebäude neu (Errichtung oder Ersatzbau) als „verfahrensfrei“: § 62 Abs. 1 nennt keine Wohngebäude – mindestens
-  // Genehmigungsfreistellung (§ 63, mit § 74 Abs. 7–9 über § 63 Abs. 6); „verfahrensfrei“ darf dann kein Grün tragen
+  // Wohngebäude neu (Errichtung oder Ersatzbau) als „verfahrensfrei“: § 62 Abs. 1 nennt keine Wohngebäude. Nötig ist im
+  // qualifizierten oder vorhabenbezogenen Bebauungsplan mindestens die Genehmigungsfreistellung (§ 63 Abs. 2 Nr. 1, mit
+  // § 74 Abs. 7, 8 und 9 Satz 1–2 nach § 63 Abs. 6 Satz 3), sonst mindestens das vereinfachte Verfahren (§ 64);
+  // „verfahrensfrei“ darf dann kein Grün tragen. Der Umfang zählt auch als Hinweis (Warnung, zur sicheren Seite)
   const ersatzbau = merkmale['Vorhaben'] === 'Beseitigung' && fakten['vorhaben.beseitigung_umfang']?.wert === 'Abbruch mit Ersatzbau';
   if (merkmale['Verfahren'] === 'verfahrensfrei' && WOHNGEBAEUDE.includes(merkmale['Gebäudeart'] ?? '') && (merkmale['Vorhaben'] === 'Errichtung' || ersatzbau)) {
     out.add('Verfahren');
-    texte.push(`Verfahren „verfahrensfrei“ festgelegt, ${ersatzbau ? 'der Ersatzbau' : 'die Errichtung'} eines Wohngebäudes (${merkmale['Gebäudeart']}) ist aber nicht verfahrensfrei (§ 62 Abs. 1 BauO NRW) – mindestens Genehmigungsfreistellung (§ 63), bitte klären`);
+    const pr = merkmale['Planungsrecht'];
+    const mindestens =
+      pr === 'Bebauungsplan'
+        ? 'mindestens Genehmigungsfreistellung (§ 63)'
+        : pr
+          ? 'mindestens vereinfachtes Baugenehmigungsverfahren (§ 64)'
+          : 'Genehmigungsfreistellung (§ 63) nur im Bebauungsplan, sonst mindestens vereinfachtes Baugenehmigungsverfahren (§ 64)';
+    texte.push(`Verfahren „verfahrensfrei“ festgelegt, ${ersatzbau ? 'ein Ersatzbau für ein Wohngebäude' : 'ein neues Wohngebäude'} (${merkmale['Gebäudeart']}) ist aber nicht verfahrensfrei (§ 62 Abs. 1 BauO NRW) – ${mindestens}, bitte klären`);
   }
   const m = merkmale['Gebäudeklasse'];
   if (m && gk && !gk.klassen.includes(m)) {

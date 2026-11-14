@@ -132,9 +132,10 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   wird eine Angabe von Hand widersprüchlich, wenn ein Dienst über eine Tabelle etwas anderes ergibt (z. B. „nicht im
   Denkmalbereich“ gegen einen Treffer des Denkmal-Dienstes). Plausibilität der Merkmale: Ein Wohngebäude (Ein-, Zwei-,
   Mehrfamilienhaus, Wohn- und Geschäftshaus) bei Errichtung oder Ersatzbau als „verfahrensfrei“ ist ein Widerspruch am
-  Merkmal „Verfahren“ – § 62 Abs. 1 BauO NRW nennt keine Wohngebäude, nötig ist mindestens die Genehmigungsfreistellung
-  (§ 63, mit § 74 Abs. 7–9 über § 63 Abs. 6). „verfahrensfrei“ trägt dann kein „entfällt“ (etwa §§ 63, 74 BauO NRW, die
-  Bauvorlagen der BauPrüfVO).
+  Merkmal „Verfahren“ – § 62 Abs. 1 BauO NRW nennt keine Wohngebäude. Nötig ist im qualifizierten oder
+  vorhabenbezogenen Bebauungsplan mindestens die Genehmigungsfreistellung (§ 63 Abs. 2, mit § 74 Abs. 7, 8 und 9 Satz
+  1–2 nach § 63 Abs. 6 Satz 3), sonst mindestens § 64; der Satz richtet sich nach dem Planungsrecht. „verfahrensfrei“
+  trägt dann kein „entfällt“ (etwa §§ 63, 74 BauO NRW, die Bauvorlagen der BauPrüfVO).
 - **Vorschriften (Mitte):** **offen zuerst** (Vorgabe: prüfen, gilt, entfällt), nach Ebene oder nach Thema; je Norm
   Fassung und Zähler in Worten, darunter die Paragrafen mit Ampel und Hauptgrund (die Angaben, die das Ergebnis tragen).
   Oben das Ergebnis je Ampel (zugleich Ein-/Ausblenden), Suche und Filter „nur von Hand festgelegte“ bzw. „nur

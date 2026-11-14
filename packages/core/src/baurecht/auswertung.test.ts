@@ -883,12 +883,17 @@ describe('Runde 18: nur gestellte Antworten zählen', () => {
     expect(beide.a).toMatchObject({ ueberHinweis: ['h'], ueberWiderspruch: ['h'] });
   });
 
-  it('frageStand: Widersprüche an Merkmalen (Planungsrecht, Gebäudeklasse) machen keine Antwort widersprüchlich', async () => {
+  it('frageStand: Widersprüche an Merkmalen (Planungsrecht, Gebäudeklasse, Verfahren) machen keine Antwort widersprüchlich', async () => {
     const { frageStand } = await import('./fragen');
     const ctx = { merkmale: { Planungsrecht: 'Bebauungsplan' }, fakten: {}, einreichung: '2026-12-01', heute: '2026-11-13', bausteine: {}, widersprueche: new Set(['Planungsrecht']) };
     const def = { wenn: { m: 'Planungsrecht', in: ['Bebauungsplan'] } } as unknown as import('./typen').FaktDef;
     expect(werten(def.wenn, ctx).widerspruch).toEqual(['merkmal:Planungsrecht']);
     expect(frageStand('x', def, ctx)).toEqual({ gestellt: true, ueberHinweis: [], ueberWiderspruch: [] });
+    // Verfahren (neues Wohngebäude „verfahrensfrei“): ebenso
+    const ctxV = { ...ctx, merkmale: { Verfahren: 'Baugenehmigungsverfahren' }, widersprueche: new Set(['Verfahren']) };
+    const defV = { wenn: { m: 'Verfahren', in: ['Baugenehmigungsverfahren'] } } as unknown as import('./typen').FaktDef;
+    expect(werten(defV.wenn, ctxV).widerspruch).toEqual(['merkmal:Verfahren']);
+    expect(frageStand('x', defV, ctxV)).toEqual({ gestellt: true, ueberHinweis: [], ueberWiderspruch: [] });
   });
 });
 
