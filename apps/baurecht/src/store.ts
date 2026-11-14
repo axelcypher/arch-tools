@@ -101,7 +101,10 @@ export interface Zustand {
   aufDateistand: (festlegungen: string[], fakten: string[]) => void;
   protokollAnhaengen: (p: BaurechtPruefung['protokolle'][number]) => void;
   paketSetzen: (paket: Paket, meldung: string) => void;
+  /** einen Text setzen (nur noch für Tests – texteLaden bündelt über texteSetzen) */
   textSetzen: (key: string, stand: TextStand) => void;
+  /** mehrere Texte und den Ladestand in einem Update (texteLaden bündelt die eintreffenden Texte) */
+  texteSetzen: (neu: Record<string, TextStand>, laedt: string[]) => void;
   laedtSetzen: (keys: string[]) => void;
   rechtsstandGeprueftSetzen: (iso: string) => void;
   waehlen: (id: string | null) => void;
@@ -329,6 +332,7 @@ export const useBaurecht = create<Zustand>((set, get) => ({
   },
   paketSetzen: (paket, paketMeldung) => set({ paket, paketMeldung }),
   textSetzen: (key, stand) => set({ texte: { ...get().texte, [key]: stand } }),
+  texteSetzen: (neu, laedt) => set({ texte: { ...get().texte, ...neu }, laedt }),
   laedtSetzen: (laedt) => set({ laedt }),
   rechtsstandGeprueftSetzen: (iso) => set({ rechtsstandGeprueft: iso }),
   waehlen: (auswahl) => set({ auswahl }),

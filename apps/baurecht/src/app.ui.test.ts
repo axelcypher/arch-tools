@@ -1162,8 +1162,16 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
     const live = () => host.querySelector('.br-treffer [aria-live]')!.textContent ?? '';
     expect(sichtbar).toMatch(/von \d+ Paragrafen/);
     expect(live()).toBe('');
-    await warten(400);
-    expect(live()).toBe(sichtbar);
+    // entprellt (450 ms in Vorschriften.tsx): erst still, dann angesagt – nach Zustand gewartet, nicht nach fester Zeit
+    await warten(200);
+    expect(live()).toBe('');
+    await vi.waitFor(
+      async () => {
+        await warten(50);
+        expect(live()).toBe(sichtbar);
+      },
+      LANGSAME_RUNNER,
+    );
   });
 
   it('Druck mit „ohne „entfällt““: das Ergebnis vermerkt, wie viele Vorschriften fehlen', async () => {
