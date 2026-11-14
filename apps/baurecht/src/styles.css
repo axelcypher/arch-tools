@@ -21,8 +21,10 @@
   position: absolute;
   width: 1px;
   height: 1px;
+  margin: -1px;
   overflow: hidden;
   clip: rect(0 0 0 0);
+  clip-path: inset(50%);
   white-space: nowrap;
 }
 .br-leise {
@@ -1428,8 +1430,9 @@ h2.br-detail-name {
 .br-marke-knopf.br-widerspruch:hover:not(:disabled) {
   background: var(--fehler-bg);
 }
-/* gegen „button:hover“ der Grund-Styles (spezifischer): die Hinweis-Marke bleibt gelb */
-.br-marke-knopf.br-hinweis-marke:hover:not(:disabled):not(.br-widerspruch) {
+/* gegen „button:hover“ der Grund-Styles (spezifischer): Hinweis- und Warnmarken bleiben gelb */
+.br-marke-knopf.br-hinweis-marke:hover:not(:disabled):not(.br-widerspruch),
+.br-marke-knopf.br-marke-warn:hover:not(:disabled) {
   background: var(--warn-bg);
 }
 /* Marke an einer Antwort, die nur über einen Hinweis bzw. Widerspruch gefragt wurde – in voller und kompakter Zeile gleich */

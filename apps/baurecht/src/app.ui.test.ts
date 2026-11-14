@@ -600,7 +600,7 @@ describe('Baurecht – Oberfläche', () => {
     // angezeigt mit geschützten Leerzeichen nach „§“ und „Abs.“ (nb)
     const satz = /Verfahren „verfahrensfrei“ festgelegt, ein neues Wohngebäude \(Einfamilienhaus\) ist aber nicht verfahrensfrei \(§\u00a062 Abs\.\u00a01 BauO NRW\) – mindestens vereinfachtes Baugenehmigungsverfahren \(§\u00a064\)/;
     expect(host.querySelector('.br-angaben-liste')!.textContent).not.toMatch(satz);
-    const regionen = () => [...host.querySelectorAll('.br-angaben-liste > [role="status"]')].map((r) => r.textContent ?? '').join(' ');
+    const regionen = () => [...host.querySelectorAll('.br-angaben > .br-widerspruch-ansage')].map((r) => r.textContent ?? '').join(' ');
     if (!host.querySelector('[data-merkmal="Verfahren"]')) act(() => knopf(host, /Antragsmerkmale/)!.click());
     act(() => knopf(host.querySelector('[data-merkmal="Verfahren"]')!, 'verfahrensfrei')!.click());
     const warnung = [...host.querySelectorAll('.br-angaben-liste .meldung.warnung')].find((w) => satz.test(w.textContent ?? ''));
@@ -610,7 +610,7 @@ describe('Baurecht – Oberfläche', () => {
     await vi.waitFor(
       async () => {
         await act(async () => void (await new Promise((r) => echtesSetTimeout(r, 50))));
-        expect([...host.querySelectorAll('.br-angaben-liste > [role="status"]')].some((r) => satz.test(r.textContent ?? ''))).toBe(true);
+        expect([...host.querySelectorAll('.br-angaben > .br-widerspruch-ansage')].some((r) => satz.test(r.textContent ?? ''))).toBe(true);
       },
       { timeout: 3000, interval: 50 },
     );
@@ -636,13 +636,29 @@ describe('Baurecht – Oberfläche', () => {
     expect(regionen()).not.toMatch(satz);
   });
 
+  it('Zwei Widersprüche zum selben Merkmal: „Zum Merkmal“ nur einmal (am ersten Satz)', () => {
+    const host = render();
+    const geo = { herkunft: 'geodienst' as const, sicherheit: 'sicher' as const, quelle: 'Test' };
+    act(() =>
+      useBaurecht.setState((st) => ({
+        merkmale: { ...st.merkmale, Planungsrecht: 'Innenbereich' },
+        pruefung: { ...st.pruefung, fakten: { ...st.pruefung.fakten, 'planung.bplan_nr': { ...geo, wert: '12' }, 'schutz.lsg': { ...geo, wert: true } } },
+      })),
+    );
+    const warnungen = [...host.querySelectorAll('.br-angaben-liste .meldung.warnung')].filter((w) => /^Planungsrecht „Innenbereich“ festgelegt/.test(w.textContent ?? ''));
+    expect(warnungen).toHaveLength(2);
+    const knoepfe = warnungen.flatMap((w) => [...w.querySelectorAll('button')].filter((b) => b.textContent === 'Zum Merkmal'));
+    expect(knoepfe).toHaveLength(1);
+    expect(warnungen[0].contains(knoepfe[0])).toBe(true);
+  });
+
   it('Live-Region der Widersprüche: beim ersten Zeichnen mit schon vorhandener Warnung keine Ansage', async () => {
     act(() => useBaurecht.getState().merkmalSetzen('Verfahren', 'verfahrensfrei'));
     const host = render();
     const satz = /Verfahren „verfahrensfrei“ festgelegt/;
     expect([...host.querySelectorAll('.br-angaben-liste .meldung.warnung')].some((w) => satz.test(w.textContent ?? '')), 'Warnung steht').toBe(true);
     await act(async () => void (await new Promise((r) => echtesSetTimeout(r, 400))));
-    expect([...host.querySelectorAll('.br-angaben-liste > [role="status"]')].map((r) => r.textContent ?? '').join(' ')).not.toMatch(satz);
+    expect([...host.querySelectorAll('.br-angaben > .br-widerspruch-ansage')].map((r) => r.textContent ?? '').join(' ')).not.toMatch(satz);
   });
 
   it('Merkmal ändern wirkt sofort auf die Ampeln und gilt als ungespeicherte Änderung', () => {

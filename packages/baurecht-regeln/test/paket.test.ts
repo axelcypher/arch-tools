@@ -1066,6 +1066,35 @@ describe('Fälle aus dem Fachreview', () => {
     expect(a(m, nein('planung.planaufstellung', 'planung.fnp_verfahren'))('bund/baugb/15')).toBe('gruen');
   });
 
+  it('Zurückstellung entsprechend § 15 nach § 141 Abs. 4 (vorbereitende Untersuchungen) und § 172 Abs. 2 (Erhaltungssatzung in Aufstellung)', () => {
+    const m = { Vorhaben: 'Änderung', Gebäudeart: 'Mehrfamilienhaus', Gebäudeklasse: '3', Planungsrecht: 'Innenbereich', Verfahren: 'vereinfachtes Verfahren', Sonderbau: 'nein' };
+    const defs = faktDefinitionen(aktiveModule(paket.module, SOEST));
+    // § 141 Abs. 4 Satz 1 Hs. 2: ab der Bekanntmachung des Beschlusses über den Beginn vorbereitender Untersuchungen
+    const vu = (f: Record<string, FaktWert>) => a(m, { ...nein('planung.sanierungsgebiet'), ...f })('bund/baugb/141');
+    expect(vu({ ...ja('planung.vorbereitende_untersuchungen', 'planung.zurueckstellung') })).toBe('rot');
+    // beschlossen, Zurückstellung (noch) nicht beantragt: die Gemeinde kann sie noch beantragen – prüfen, nicht entfällt
+    expect(vu({ ...ja('planung.vorbereitende_untersuchungen'), ...nein('planung.zurueckstellung') })).toBe('gelb');
+    expect(vu(nein('planung.vorbereitende_untersuchungen'))).toBe('gruen');
+    expect(vu({})).not.toBe('gruen');
+    // förmlich festgelegtes Sanierungsgebiet: Zurückstellung unwirksam, es gilt § 144 (§ 141 Abs. 4 Satz 2, § 15 Abs. 2)
+    expect(a(m, { ...ja('planung.sanierungsgebiet') })('bund/baugb/141')).toBe('gruen');
+    // § 172 Abs. 2: Aufstellung einer Erhaltungssatzung beschlossen und bekannt gemacht
+    const erh = (f: Record<string, FaktWert>) => a(m, { ...nein('planung.erhaltungssatzung'), ...f })('bund/baugb/172');
+    expect(erh(ja('planung.erhaltungssatzung_aufstellung', 'planung.zurueckstellung'))).toBe('rot');
+    expect(erh({ ...ja('planung.erhaltungssatzung_aufstellung'), ...nein('planung.zurueckstellung') })).not.toBe('gruen');
+    expect(erh(nein('planung.erhaltungssatzung_aufstellung'))).toBe('gruen');
+    // die Frage nach der Zurückstellung wird auch bei diesen Auslösern gestellt
+    const kontext = (f: Record<string, FaktWert>) => auswerten(eingabe(m, f, TEXTE)).kontext;
+    expect(frageGestellt('planung.zurueckstellung', defs['planung.zurueckstellung'], kontext(ja('planung.vorbereitende_untersuchungen')))).toBe(true);
+    expect(frageGestellt('planung.zurueckstellung', defs['planung.zurueckstellung'], kontext(ja('planung.erhaltungssatzung_aufstellung')))).toBe(true);
+  });
+
+  it('FNP mit Konzentrationszonen: kein Beispiel „Windenergie“ – § 35 Abs. 3 Satz 3 gilt dafür nicht (§ 249 Abs. 1 BauGB)', () => {
+    const d = faktDefinitionen(aktiveModule(paket.module, SOEST))['planung.fnp_verfahren'];
+    expect(`${d.frage} ${d.hilfe}`).not.toMatch(/z\. B\. Windenergie/);
+    expect(`${d.frage} ${d.hilfe}`).toMatch(/§ 249 Abs\. 1 BauGB/);
+  });
+
   it('Runde 3: Landschaftsplan III in Lippetal im qualifizierten Bebauungsplan – nicht „entfällt mit der Norm“, solange offen ist, ob er sich darauf erstreckt', () => {
     const m = { Vorhaben: 'Errichtung', Gebäudeart: 'Einfamilienhaus', Gebäudeklasse: '1', Planungsrecht: 'Bebauungsplan', Verfahren: 'vereinfachtes Verfahren', Sonderbau: 'nein' };
     const lp = { 'kreis_soest.landschaftsplan': sicher('III') };
