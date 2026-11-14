@@ -104,6 +104,7 @@ export function RechnungenAnsicht({ gewerk }: { gewerk?: string }) {
         teile={[
           {
             id: 'suche',
+            kuerzbar: true,
             inhalt: <input className="ava-suche" placeholder="Suchen (Nr., Firma, Gewerk) …" aria-label="Rechnungen durchsuchen" value={suche} onChange={(x) => setSuche(x.target.value)} onKeyDown={(x) => x.key === 'Escape' && setSuche('')} />,
           },
           {

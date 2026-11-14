@@ -273,6 +273,7 @@ export function LvEditor() {
           { abstand: true },
           {
             id: 'suche',
+            kuerzbar: true,
             inhalt: (
               <input
                 className="ava-suche"

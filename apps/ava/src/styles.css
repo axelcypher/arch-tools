@@ -712,11 +712,6 @@ input.ava-fehler {
   overflow: auto;
 }
 
-/* Werkzeugleiste im scrollenden Bereich: nicht in der Höhe stauchen (die Leiste schrumpft sonst mit dem Inhalt) */
-.ava-angebote > .toolbar.leiste {
-  flex-shrink: 0;
-}
-
 .ava-bieter-liste {
   padding: 8px 12px;
 }
@@ -1489,18 +1484,15 @@ input.ava-fehler {
   min-width: 28px;
 }
 
-.ava-lv-leiste .ava-suche {
-  margin-left: 0;
-  min-width: 140px;
-  width: 240px;
+/* Suche in einer Werkzeugleiste (Eintrag „suche“, kuerzbar): 240px breit, im schmalen Fenster kürzer */
+.toolbar.werkzeugleiste > [data-eintrag='suche'] {
+  flex-basis: 240px;
 }
 
-/* schmales Fenster: Suche kürzer, damit Position, Suche und „Mehr“ in eine Zeile passen */
-@media (max-width: 760px) {
-  .ava-lv-leiste .ava-suche {
-    width: 150px;
-    min-width: 0;
-  }
+.toolbar.werkzeugleiste > [data-eintrag='suche'] .ava-suche {
+  width: 100%;
+  min-width: 0;
+  margin-left: 0;
 }
 
 /* Statusmeldung unter der Rechnungsleiste: dauerhafter Live-Bereich (leer ohne Höhe) */

@@ -42,7 +42,7 @@ afterEach(() => {
 });
 
 /** Werkzeugleiste mit Namen */
-const leiste = (name: string) => host.querySelector<HTMLElement>(`.toolbar.leiste[aria-label="${name}"]`)!;
+const leiste = (name: string) => host.querySelector<HTMLElement>(`.toolbar.werkzeugleiste[aria-label="${name}"]`)!;
 /** sichtbare Knöpfe einer Leiste (Text bzw. aria-label) */
 const knoepfe = (l: HTMLElement) => [...l.querySelectorAll<HTMLButtonElement>('button')].filter((b) => !b.closest('[hidden]')).map((b) => b.getAttribute('aria-label') ?? b.textContent?.trim());
 
@@ -82,7 +82,7 @@ const positionWaehlen = () => {
   return z;
 };
 
-const mehr = (l: HTMLElement) => l.querySelector<HTMLButtonElement>('.leiste-mehr button[aria-label="Mehr"]')!;
+const mehr = (l: HTMLElement) => l.querySelector<HTMLButtonElement>('.werkzeugleiste-mehr button[aria-label="Mehr"]')!;
 
 describe('Werkzeugleisten nach design.md „Kopf- und Werkzeugleisten“', () => {
   it('LV-Editor: sichtbar Position, Hinzufügen, Gliederung, Rückgängig, Suche; Abschnitt im Menü „Hinzufügen“, Duplizieren und Entfernen in „Mehr“', async () => {
@@ -111,7 +111,7 @@ describe('Werkzeugleisten nach design.md „Kopf- und Werkzeugleisten“', () =>
 
   it('Angebote: Umschalter, Bieter und Hauptknopf sichtbar; GAEB-Import in „Mehr“', async () => {
     await zeige(createElement(GewerkAnsicht, { gewerk: 'G8', tab: 'angebote' }));
-    await warte(() => host.querySelector('.toolbar.leiste[aria-label="Angebote"]'));
+    await warte(() => host.querySelector('.toolbar.werkzeugleiste[aria-label="Angebote"]'));
     const l = leiste('Angebote');
     expect(knoepfe(l)).toEqual(['Preisspiegel', 'Preise erfassen', 'Bieter …', 'Preisspiegel drucken …', 'Mehr']);
     expect(l.querySelector('button.primary')?.textContent?.trim()).toBe('Preisspiegel drucken …');
@@ -134,7 +134,7 @@ describe('Werkzeugleisten nach design.md „Kopf- und Werkzeugleisten“', () =>
     };
     useAva.setState({ projekt: { ...p, ava: { ...p.ava, rechnungen: [...p.ava.rechnungen, d] } } });
     await zeige(createElement(RechnungenAnsicht));
-    await warte(() => host.querySelector('.toolbar.leiste[aria-label="Rechnungen"]'));
+    await warte(() => host.querySelector('.toolbar.werkzeugleiste[aria-label="Rechnungen"]'));
     const l = leiste('Rechnungen');
     expect(knoepfe(l)).toEqual(['Neue Rechnung prüfen …', 'Mehr']);
     expect(await menue(mehr(l))).toEqual(['Kostenkontrolle öffnen']);
@@ -208,8 +208,8 @@ describe('Werkzeugleisten nach design.md „Kopf- und Werkzeugleisten“', () =>
     let verfuegbar = 1000;
     const alt = leistenMessung.breite;
     leistenMessung.breite = (el: Element) => {
-      if (el.classList.contains('leiste')) return verfuegbar;
-      if (el.classList.contains('leiste-mehr')) return 30;
+      if (el.classList.contains('werkzeugleiste')) return verfuegbar;
+      if (el.classList.contains('werkzeugleiste-mehr')) return 30;
       return breiten[(el as HTMLElement).dataset.eintrag ?? ''] ?? 0;
     };
     try {
