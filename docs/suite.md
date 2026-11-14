@@ -116,7 +116,8 @@ Konfigurationsordner) und Projektdateien sind dieselben.
   (`arch-tools:gespeichert`). Kommt binnen 3 s keine Bestätigung (App lädt, hängt, ist abgestürzt), gilt „nicht
   gespeichert“ mit der Meldung „… antwortet nicht“ – die Rückfrage endet, der Tab bleibt offen. Ebenso, wenn das
   Fenster während des Speicherns zugeht oder der Tab neu lädt; Beenden bleibt danach möglich. Was ein Umzug aus Änderungen macht, steht je App in
-  `BEIM_UMZUG` (`rahmen.ts`), die Rückfrage in `ui/umzug.ts`.
+  `BEIM_UMZUG` (`rahmen.ts`), die Rückfrage in `ui/umzug.ts`: zuerst die Folge („Beim Herauslösen startet die App
+  neu.“), dann ein kurzer Satz – bei Apps, die die Änderungen verlieren, ihr Satz `ungespeichert` mit *Speichern*.
 - Die Apps teilen sich im Rahmen einen Ursprung und damit den Browser-Speicher; ihre Schlüssel und Datenbanken sind
   je App verschieden (`projektordner:…`, `formulare:…`, `arch-flaechen-tool`, `grz-nachweis`, `kostenermittlung`,
   `arch-tools-entzerrung`, `ava:…`, `baurecht:…`). Gemeinsam sind nur das Farbschema und die Nachricht „Speicherort der Einstellungen gewechselt“ (`arch-tools:konfig-ort`) – beides wirkt über das Ereignis `storage` sofort in allen Tabs und Fenstern.
@@ -155,14 +156,15 @@ am Tab bzw. in der Titelleiste ● erscheint.
 3. **Herausgelöstes Fenster beim Beenden:** NUMIO öffnen, ⧉ (in eigenem Fenster), dort ändern. Im Hauptfenster ×.
    Erwartet: „Änderungen an ‚NUMIO – …‘ speichern?“. *Speichern* speichert im NUMIO-Fenster, dann schließen sich beide
    Fenster. Im Task-Manager läuft danach kein Arkly mehr.
-4. **Alt+F4 im herausgelösten Fenster:** TERRIO herauslösen, ändern, im TERRIO-Fenster Alt+F4. Erwartet: „Vor dem
-   Beenden speichern?“ bzw. „Ungespeicherte Änderungen verwerfen?“; *Abbrechen* lässt das Fenster offen.
+4. **Alt+F4 im herausgelösten Fenster:** TERRIO herauslösen, ändern, im TERRIO-Fenster Alt+F4. Erwartet: „Änderungen
+   an ‚…‘ speichern?“ mit „Das Projekt hat ungespeicherte Änderungen.“ bzw. „Ungespeicherte Änderungen verwerfen?“;
+   *Abbrechen* lässt das Fenster offen.
 5. **Andocken mit Änderungen:** FABRIO herauslösen, im LV ändern, „Andocken“. Erwartet: „Änderungen an ‚FABRIO – …‘
-   speichern?“ mit dem Hinweis, dass die App neu startet. *Abbrechen* lässt das Fenster stehen; *Speichern* speichert
-   und holt FABRIO als Tab zurück. Bei QUADRIO kommt stattdessen „QUADRIO andocken?“ (Änderungen bleiben im
-   Zwischenstand).
+   speichern?“ mit „Beim Andocken startet die App neu. Das LV hat ungespeicherte Änderungen.“ *Abbrechen* lässt das
+   Fenster stehen; *Speichern* speichert und holt FABRIO als Tab zurück. Bei QUADRIO kommt stattdessen „QUADRIO
+   andocken?“ mit „… Ungespeicherte Änderungen bleiben als Zwischenstand erhalten.“
    Zusätzlich bei FABRIO: im LV eine Menge bzw. im Langtext etwas eintippen und im Feld bleiben (● erscheint schon beim
-   Tippen), dann Alt+F4 bzw. „Andocken“. Erwartet: bei Alt+F4 die Frage aus Schritt 4 („Vor dem Beenden speichern?“),
+   Tippen), dann Alt+F4 bzw. „Andocken“. Erwartet: bei Alt+F4 die Frage aus Schritt 4 (mit „Das LV hat ungespeicherte Änderungen.“),
    bei „Andocken“ dieselbe Frage wie oben; *Speichern* übernimmt die Eingabe, *Nicht speichern* schließt ohne weitere
    Rückfrage.
 6. **Herauslösen mit Änderungen:** FABRIO als Tab im LV ändern, ⧉. Erwartet: Frage mit *Speichern*; bei RECTIO nur

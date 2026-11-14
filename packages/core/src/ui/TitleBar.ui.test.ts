@@ -79,19 +79,19 @@ describe('Titelleiste auf dem Desktop', () => {
     expect(fenster.destroy).toHaveBeenCalled();
   });
 
-  it('mit Speichern: die Rückfrage nennt den Satz der App (ungespeichert), sonst „Vor dem Beenden speichern?“', async () => {
+  it('mit Speichern: die Rückfrage nennt den Satz der App (ungespeichert), sonst den allgemeinen', async () => {
     const host = await render({ onSpeichern: async () => true, ungespeichert: 'Das LV hat ungespeicherte Änderungen.' });
     await act(async () => fenster.schliessenAngefragt!({ preventDefault: () => {} }));
     expect(dialog(host)?.textContent).toContain('Das LV hat ungespeicherte Änderungen.');
     await antwort(host, 'Abbrechen');
     await act(async () => root!.render(createElement(TitleBar, { app: 'ATLAS', name: 'P1', dirty: true, onOpenLog: () => {}, onSpeichern: async () => true })));
     await act(async () => fenster.schliessenAngefragt!({ preventDefault: () => {} }));
-    expect(dialog(host)?.textContent).toContain('Vor dem Beenden speichern?');
+    expect(dialog(host)?.textContent).toContain('Das Projekt hat ungespeicherte Änderungen.');
     await antwort(host, 'Abbrechen');
     // leerer Satz: ebenso der Rückfall
     await act(async () => root!.render(createElement(TitleBar, { app: 'ATLAS', name: 'P1', dirty: true, onOpenLog: () => {}, onSpeichern: async () => true, ungespeichert: ' ' })));
     await act(async () => fenster.schliessenAngefragt!({ preventDefault: () => {} }));
-    expect(dialog(host)?.textContent).toContain('Vor dem Beenden speichern?');
+    expect(dialog(host)?.textContent).toContain('Das Projekt hat ungespeicherte Änderungen.');
     await antwort(host, 'Abbrechen');
     expect(fenster.destroy).not.toHaveBeenCalled();
   });
@@ -115,7 +115,7 @@ describe('Titelleiste auf dem Desktop', () => {
     expect(anRahmen).toContainEqual({ typ: 'arch-tools:status', app: 'ATLAS', kennung: 'ordner', name: 'P1', dirty: true });
     // Andocken: Rückfrage mit Speichern, Abbrechen lässt alles, wie es ist
     await act(async () => [...host.querySelectorAll('button')].find((b) => b.textContent === 'Andocken')!.click());
-    expect(dialog(host)?.textContent).toContain('Beim Andocken startet die App neu');
+    expect(dialog(host)?.textContent).toContain('Beim Andocken startet die App neu. Das Projekt hat ungespeicherte Änderungen.');
     await antwort(host, 'Abbrechen');
     expect(andocken).toEqual([]);
     await act(async () => [...host.querySelectorAll('button')].find((b) => b.textContent === 'Andocken')!.click());

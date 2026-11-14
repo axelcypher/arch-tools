@@ -93,7 +93,7 @@ describe('Rahmen-App: Speichern auf Anfrage', () => {
     expect(beimUmzug('ava').verliert).toBe(true);
     expect(beimUmzug('baurecht').verliert).toBe(true);
     expect(beimUmzug('formulare').verliert).toBe(false);
-    expect(beimUmzug('kosten')).toEqual({ text: expect.stringContaining('Zwischenstand'), verliert: false });
+    expect(beimUmzug('kosten')).toEqual({ text: 'Ungespeicherte Änderungen bleiben als Zwischenstand erhalten.', verliert: false });
     expect(beimUmzug(null).verliert).toBe(false);
   });
 });
