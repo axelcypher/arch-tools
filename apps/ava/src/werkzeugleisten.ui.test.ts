@@ -2,6 +2,8 @@
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { leistenMessung } from '@core/ui/Werkzeugleiste';
+import { zeilenVon } from './components/lv/LvEditor';
 import { MenueHost } from '@core/ui/Menue';
 import { demoLaden } from './demo';
 import { useAva } from './store';
@@ -56,6 +58,29 @@ async function menue(knopf: HTMLButtonElement): Promise<string[]> {
   await warte(() => !document.querySelector('[role="menu"]'));
   return punkte;
 }
+
+/** Menü öffnen und den Punkt mit dem Text wählen; liefert, ob er gesperrt war (dann bleibt das Menü zu schließen) */
+async function waehle(knopf: HTMLButtonElement, text: string): Promise<{ gesperrt: boolean; hinweis: string | null }> {
+  await act(async () => knopf.click());
+  await warte(() => document.querySelector('[role="menu"]'));
+  const punkt = [...document.querySelectorAll<HTMLButtonElement>('[role="menu"] [role^="menuitem"]')].find((p) => p.querySelector('.menue-text')?.textContent?.trim() === text)!;
+  const gesperrt = punkt.getAttribute('aria-disabled') === 'true';
+  const hinweis = punkt.querySelector('.menue-hinweis:not(.menue-tasten)')?.textContent?.trim() ?? null;
+  if (gesperrt) {
+    await act(async () => void document.activeElement?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })));
+  } else await act(async () => punkt.click());
+  await warte(() => !document.querySelector('[role="menu"]'));
+  return { gesperrt, hinweis };
+}
+
+/** Elemente des offenen LV (alle Ebenen) */
+const elementzahl = () => zeilenVon(useAva.getState().lv!.lv).length;
+/** erste Position im Abschnitt 02 wählen */
+const positionWaehlen = () => {
+  const z = zeilenVon(useAva.getState().lv!.lv).find((x) => x.el.art === 'position')!;
+  act(() => useAva.getState().setAuswahl(z.el.id));
+  return z;
+};
 
 const mehr = (l: HTMLElement) => l.querySelector<HTMLButtonElement>('.leiste-mehr button[aria-label="Mehr"]')!;
 
@@ -143,5 +168,85 @@ describe('Werkzeugleisten nach design.md „Kopf- und Werkzeugleisten“', () =>
     const b = leiste('Beteiligte');
     expect(knoepfe(b)).toEqual(['Beteiligter', 'Mehr']);
     expect(await menue(mehr(b))).toEqual(['Aus Stammdaten und Gewerken übernehmen']);
+  });
+
+  it('„Mehr“ im LV-Editor wirkt: ohne Auswahl gesperrt mit Grund, mit Auswahl dupliziert bzw. entfernt', async () => {
+    await zeige(createElement(GewerkAnsicht, { gewerk: 'G8', tab: 'lv' }));
+    await warte(() => useAva.getState().lv && host.querySelector('.ava-lv-zeilen'));
+    act(() => useAva.getState().setAuswahl(null));
+    const l = leiste('LV bearbeiten');
+    const vorher = elementzahl();
+    expect(await waehle(mehr(l), 'Duplizieren')).toEqual({ gesperrt: true, hinweis: 'Erst wählen' });
+    expect(await waehle(mehr(l), 'Entfernen')).toEqual({ gesperrt: true, hinweis: 'Erst wählen' });
+    expect(elementzahl()).toBe(vorher);
+    positionWaehlen();
+    expect((await waehle(mehr(l), 'Duplizieren')).gesperrt).toBe(false);
+    expect(elementzahl()).toBe(vorher + 1);
+    expect((await waehle(mehr(l), 'Entfernen')).gesperrt).toBe(false);
+    expect(elementzahl()).toBe(vorher);
+  });
+
+  it('Tastenkürzel im LV unverändert: Strg+D dupliziert, Entf entfernt, Einfg fügt eine Position hinzu', async () => {
+    await zeige(createElement(GewerkAnsicht, { gewerk: 'G8', tab: 'lv' }));
+    await warte(() => useAva.getState().lv && host.querySelector('.ava-lv-zeilen'));
+    const tabelle = host.querySelector<HTMLElement>('.ava-lv-tabelle')!;
+    const taste = (key: string, ctrlKey = false) => act(() => void tabelle.dispatchEvent(new KeyboardEvent('keydown', { key, ctrlKey, bubbles: true, cancelable: true })));
+    const vorher = elementzahl();
+    positionWaehlen();
+    await taste('d', true);
+    expect(elementzahl()).toBe(vorher + 1);
+    await taste('Delete');
+    await warte(() => elementzahl() === vorher);
+    expect(elementzahl()).toBe(vorher);
+    positionWaehlen();
+    await taste('Insert');
+    expect(elementzahl()).toBe(vorher + 1);
+  });
+
+  it('Überlauf der LV-Leiste: erst „Hinzufügen“, dann die Gliederung, zuletzt Rückgängig/Wiederholen – mit ihren Punkten in „Mehr“', async () => {
+    const breiten: Record<string, number> = { position: 90, hinzufuegen: 120, gliederung: 130, verlauf: 60, suche: 240 };
+    let verfuegbar = 1000;
+    const alt = leistenMessung.breite;
+    leistenMessung.breite = (el: Element) => {
+      if (el.classList.contains('leiste')) return verfuegbar;
+      if (el.classList.contains('leiste-mehr')) return 30;
+      return breiten[(el as HTMLElement).dataset.eintrag ?? ''] ?? 0;
+    };
+    try {
+      await zeige(createElement(GewerkAnsicht, { gewerk: 'G8', tab: 'lv' }));
+      await warte(() => useAva.getState().lv && host.querySelector('.ava-lv-zeilen'));
+      const l = leiste('LV bearbeiten');
+      const weg = () => [...l.querySelectorAll<HTMLElement>(':scope > [data-eintrag][hidden]')].map((x) => x.dataset.eintrag);
+      const breite = async (b: number) => {
+        verfuegbar = b;
+        await act(async () => void window.dispatchEvent(new Event('resize')));
+      };
+      await breite(1000);
+      expect(weg()).toEqual([]);
+      await breite(600);
+      expect(weg()).toEqual(['hinzufuegen']);
+      await breite(480);
+      expect(weg()).toEqual(['hinzufuegen', 'gliederung']);
+      expect((await menue(mehr(l))).slice(0, 6)).toEqual(['Hinzufügen', '—', 'Position nach oben', 'Position nach unten', 'Position ausrücken', 'Position einrücken']);
+      await breite(380);
+      expect(weg()).toEqual(['hinzufuegen', 'gliederung', 'verlauf']);
+      // Gegenprobe: wieder breit → alles zurück in der Leiste
+      await breite(1000);
+      expect(weg()).toEqual([]);
+    } finally {
+      leistenMessung.breite = alt;
+    }
+  });
+
+  it('Zeilenknopf „Aktionen“: „Mail an den Zahler“ ohne abgelegte Datei gesperrt mit Grund; ohne Nummer neutral benannt', async () => {
+    const p = useAva.getState().projekt!;
+    const d: RechnungsDatensatz = { id: 'r-ohne', gewerk: p.ava.rechnungen[0]?.gewerk ?? 'G8', nr: '', art: 'AR', lfd: 1, firma: 'Ohne GmbH', betrag: 100, status: 'erfasst', erfasst: '2025-01-01' };
+    useAva.setState({ projekt: { ...p, ava: { ...p.ava, rechnungen: [...p.ava.rechnungen, d] } } });
+    await zeige(createElement(RechnungenAnsicht));
+    await warte(() => host.querySelector('button[aria-label="Aktionen"]'));
+    const aktionen = [...host.querySelectorAll<HTMLButtonElement>('button[aria-label="Aktionen"]')].find((b) => b.title.startsWith('Aktionen für die Rechnung'))!;
+    expect(aktionen).toBeTruthy();
+    expect(aktionen.title).not.toContain('Nr.');
+    expect(await waehle(aktionen, 'Mail an den Zahler …')).toEqual({ gesperrt: true, hinweis: 'Erst ablegen' });
   });
 });

@@ -147,7 +147,7 @@ export function Maengel() {
                     </option>
                   ))}
                 </select>
-                <select value={filter} onChange={(e) => filterSetzen(e.target.value as 'offen' | 'alle')} aria-label="Filter">
+                <select value={filter} onChange={(e) => filterSetzen(e.target.value as 'offen' | 'alle')} aria-label="Anzeigen">
                   <option value="offen">offene und angezeigte</option>
                   <option value="alle">alle</option>
                 </select>
@@ -158,7 +158,7 @@ export function Maengel() {
           {
             id: 'anzeige',
             rang: 2,
-            menue: { text: 'Mängelanzeige mailen …', deaktiviert: !offeneListe.length || !gewerk, titel: !gewerk ? 'Erst ein Gewerk wählen' : offeneListe.length ? undefined : 'Keine offenen Mängel', aktion: () => void pdf('mail') },
+            menue: { text: 'Mängelanzeige mailen …', deaktiviert: !offeneListe.length || !gewerk, hinweis: !gewerk ? 'Erst Gewerk wählen' : offeneListe.length ? undefined : 'Keine offenen Mängel', titel: 'Mängelanzeige mit den offenen Mängeln an die Firma des Gewerks (Mailentwurf mit PDF)', aktion: () => void pdf('mail') },
             inhalt: (
               <button onClick={() => void pdf('mail')} disabled={!offeneListe.length || !gewerk} title={!gewerk ? 'Erst ein Gewerk wählen' : offeneListe.length ? 'Mängelanzeige mit den offenen Mängeln an die Firma des Gewerks (Mailentwurf mit PDF)' : 'Keine offenen Mängel'}>
                 Mängelanzeige mailen …
@@ -167,8 +167,8 @@ export function Maengel() {
           },
         ]}
         mehr={() => [
-          { text: 'PDF ansehen / drucken', symbol: 'drucken', deaktiviert: !liste.length, titel: liste.length ? 'Mängelliste als PDF ansehen bzw. drucken' : 'Keine Mängel in der Auswahl', aktion: () => void pdf('zeigen') },
-          { text: 'PDF im Projekt ablegen', deaktiviert: !liste.length, titel: liste.length ? 'Mängelliste als PDF im Projektordner ablegen' : 'Keine Mängel in der Auswahl', aktion: () => void pdf('ablegen') },
+          { text: 'PDF ansehen / drucken', symbol: 'drucken', deaktiviert: !liste.length, hinweis: liste.length ? undefined : 'Keine Mängel', titel: 'Mängelliste als PDF ansehen bzw. drucken', aktion: () => void pdf('zeigen') },
+          { text: 'PDF im Projekt ablegen', deaktiviert: !liste.length, hinweis: liste.length ? undefined : 'Keine Mängel', titel: 'Mängelliste als PDF im Projektordner ablegen', aktion: () => void pdf('ablegen') },
         ]}
       />
       <div className="ava-rollen">

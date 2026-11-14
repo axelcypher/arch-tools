@@ -219,7 +219,7 @@ export function LvEditor() {
             rang: 3,
             inhalt: (
               <MenueKnopf title="Abschnitt, Hinweis, Vorbemerkung oder Position aus den Vorlagetexten hinzufügen" punkte={hinzufuegenPunkte}>
-                Hinzufügen
+                <Symbol name="plus" /> Hinzufügen
               </MenueKnopf>
             ),
             menue: { text: 'Hinzufügen', unter: hinzufuegenPunkte() },
@@ -254,6 +254,11 @@ export function LvEditor() {
           {
             id: 'verlauf',
             gruppe: true,
+            rang: 1,
+            menue: [
+              { text: 'Rückgängig', symbol: 'rueckgaengig', tasten: 'Strg+Z', deaktiviert: !offen.verlauf.length, aktion: () => useAva.getState().lvRueckgaengig() },
+              { text: 'Wiederholen', symbol: 'wiederholen', tasten: 'Strg+Y', deaktiviert: !offen.zukunft.length, aktion: () => useAva.getState().lvWiederholen() },
+            ],
             inhalt: (
               <>
                 <button className="icon" onClick={() => useAva.getState().lvRueckgaengig()} disabled={!offen.verlauf.length} title="Rückgängig (Strg+Z)" aria-label="Rückgängig">
@@ -269,28 +274,28 @@ export function LvEditor() {
           {
             id: 'suche',
             inhalt: (
-            <input
-              className="ava-suche"
-              type="search"
-              placeholder="Suchen (OZ, Kurztext) …"
-              aria-label="LV durchsuchen"
-              value={suche}
-              onChange={(e) => setSuche(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Escape' && suche) {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  sucheLeeren();
-                }
-              }}
-            />
+              <input
+                className="ava-suche"
+                type="search"
+                placeholder="Suchen (OZ, Kurztext) …"
+                aria-label="LV durchsuchen"
+                value={suche}
+                onChange={(e) => setSuche(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape' && suche) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    sucheLeeren();
+                  }
+                }}
+              />
             ),
           },
         ]}
         mehr={() => [
-          { text: 'Duplizieren', tasten: 'Strg+D', deaktiviert: !gewaehlt, aktion: duplizieren },
+          { text: 'Duplizieren', titel: `${gegenstand} duplizieren`, tasten: 'Strg+D', deaktiviert: !gewaehlt, hinweis: gewaehlt ? undefined : 'Erst wählen', aktion: duplizieren },
           { trenner: true },
-          { text: 'Entfernen', tasten: 'Entf', gefahr: true, deaktiviert: !gewaehlt, aktion: () => void loeschen() },
+          { text: 'Entfernen', titel: `${gegenstand} entfernen`, tasten: 'Entf', gefahr: true, deaktiviert: !gewaehlt, hinweis: gewaehlt ? undefined : 'Erst wählen', aktion: () => void loeschen() },
         ]}
       />
       <div className="ava-lv-koerper">

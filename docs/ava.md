@@ -73,7 +73,8 @@ Gewerk – in Ordnern, Blattnamen und der Rechnungsliste.
 Kopf mit Kennung, Bezeichnung, Auftragnehmer und Ordner. Auf den Tabs Leistungsverzeichnis, Angebote und Auftrag
 rechts der **LV-Kopf**: die LV-Dateien des Gewerks (aktuelle zuerst, Archiv gekennzeichnet; Format im Tooltip),
 ein Menü „LV ▾“ (neues leeres LV, neues LV aus einer GAEB-Datei X81–X86; bei offenem LV dahinter die Befehle für
-das ganze LV: LV-Eigenschaften, Neu nummerieren, Drucken, GAEB-Export) und „Speichern“ (Strg+S; übernimmt auch die gerade
+das ganze LV: LV-Eigenschaften, Neu nummerieren, Drucken, GAEB-Export – ein Menü für alles zum LV, auch wenn
+ohne offenes LV nur die zwei Punkte zum Anlegen darin stehen) und „Speichern“ (Strg+S; übernimmt auch die gerade
 laufende Eingabe; bei ungespeicherten Änderungen mit Punkt am Knopf und im Namen „Speichern – ungespeicherte
 Änderungen“). Beim Betreten öffnet sich das aktuellste LV. Wer mit ungespeicherten Änderungen das Gewerk
 oder Projekt wechselt, wird gefragt. Die Tabs lassen sich mit ←/→ wechseln; bei schmalem Fenster tragen sie
@@ -93,7 +94,8 @@ Hinweis „wird in LV-Dateien (.aslv) nicht gespeichert – im eigenen Format (.
   Vorlage …“), Nach oben/Nach unten und Ausrücken/Einrücken (aus dem Abschnitt heraus bzw. in den Abschnitt davor;
   Symbole), Rückgängig/Wiederholen (Strg+Z/Y), rechts die Suche und zuletzt „Mehr“ (Symbol ⋯) mit Duplizieren
   (Strg+D, ein Abschnitt bekommt die nächste freie OZ) und, hinter einem Trenner, Entfernen (Entf). Bei schmalem
-  Fenster wandern erst „Hinzufügen“, dann die Gliederungsknöpfe ins Menü „Mehr“; rechts die Suche nach OZ und Kurztext (Treffer mit ihren Abschnitten; ohne
+  Fenster wandern erst „Hinzufügen“, dann die Gliederungsknöpfe, zuletzt Rückgängig/Wiederholen ins Menü „Mehr“, und
+  die Suche wird kürzer. Die Suche findet OZ und Kurztext (Treffer mit ihren Abschnitten; ohne
   Treffer eine Meldung mit „Suche leeren“, Esc leert). Tastatur in der Tabelle (Fokus sichtbar): ↑/↓ wählen, Enter
   springt in den Kurztext des Seitenpanels, Esc dort zurück, Einfg neue Position. Bei schmalem Fenster (unter
   etwa 1150 px) steht das Seitenpanel unter der Tabelle; die OZ-Spalte bleibt beim seitlichen Rollen stehen.

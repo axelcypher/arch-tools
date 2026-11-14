@@ -32,6 +32,20 @@ export function RechnungenAnsicht({ gewerk }: { gewerk?: string }) {
     return () => clearTimeout(t);
   }, [hinweis]);
   const kk = projekt.kk?.kk ?? null;
+  const abrechnungen = useMemo(() => {
+    const liste = gewerk ? [gewerk] : alleGewerke(kk, projekt.struktur?.gewerke ?? [], projekt.ava.rechnungen);
+    return liste.map((g) => gewerkAbrechnung(g, kk, gewerkOrdner(projekt, g), projekt.ava.rechnungen));
+  }, [gewerk, kk, projekt]);
+  const zeilen = abrechnungen
+    .flatMap((a) => a.rechnungen)
+    .filter((r) => (!nurHinweise || r.hinweise.length) && (!suche || `${r.nr} ${r.text} ${r.gewerk}`.toLowerCase().includes(suche.toLowerCase())))
+    .sort((a, b) => {
+      const n = (x: Rechnung) => (typeof x.nr === 'number' ? x.nr : parseFloat(String(x.nr ?? '')) || 1e9);
+      return n(a) - n(b);
+    });
+  const summe = zeilen.reduce((s, r) => s + (r.betrag ?? 0), 0);
+  const k = useAva.getState().kontext()!;
+  const aktionenName = (nr: Rechnung['nr']) => (nr !== undefined && nr !== null && String(nr) !== '' ? `Aktionen für Rechnung Nr. ${String(nr)}` : 'Aktionen für die Rechnung');
   const deckblattOeffnen = async (d: RechnungsDatensatz) => {
     try {
       const pdf = await deckblattErzeugen(k, d);
@@ -54,19 +68,6 @@ export function RechnungenAnsicht({ gewerk }: { gewerk?: string }) {
       await meldung('Mailentwurf nicht erstellt', String(x instanceof Error ? x.message : x), x);
     }
   };
-  const abrechnungen = useMemo(() => {
-    const liste = gewerk ? [gewerk] : alleGewerke(kk, projekt.struktur?.gewerke ?? [], projekt.ava.rechnungen);
-    return liste.map((g) => gewerkAbrechnung(g, kk, gewerkOrdner(projekt, g), projekt.ava.rechnungen));
-  }, [gewerk, kk, projekt]);
-  const zeilen = abrechnungen
-    .flatMap((a) => a.rechnungen)
-    .filter((r) => (!nurHinweise || r.hinweise.length) && (!suche || `${r.nr} ${r.text} ${r.gewerk}`.toLowerCase().includes(suche.toLowerCase())))
-    .sort((a, b) => {
-      const n = (x: Rechnung) => (typeof x.nr === 'number' ? x.nr : parseFloat(String(x.nr ?? '')) || 1e9);
-      return n(a) - n(b);
-    });
-  const summe = zeilen.reduce((s, r) => s + (r.betrag ?? 0), 0);
-  const k = useAva.getState().kontext()!;
   const a1 = gewerk ? abrechnungen[0] : null;
 
   const oeffnen = (pfad: string) => void useAva.getState().fs.oeffnen(vollerPfad(projekt.ordner, pfad)).catch((x) => meldung('Datei ließ sich nicht öffnen', pfad, x));
@@ -115,18 +116,6 @@ export function RechnungenAnsicht({ gewerk }: { gewerk?: string }) {
             ),
             menue: { text: 'Nur mit Hinweisen', haken: nurHinweise, aktion: () => setNurHinweise(!nurHinweise) },
           },
-          ...(hinweis
-            ? [
-                {
-                  id: 'status',
-                  inhalt: (
-                    <span className="ava-ok small-text" role="status">
-                      {hinweis}
-                    </span>
-                  ),
-                },
-              ]
-            : []),
           { abstand: true },
           {
             id: 'pruefen',
@@ -139,6 +128,9 @@ export function RechnungenAnsicht({ gewerk }: { gewerk?: string }) {
         ]}
         mehr={() => (projekt.kk ? [{ text: 'Kostenkontrolle öffnen', titel: `Öffnet die Excel-Datei der Kostenkontrolle mit dem Standardprogramm (${projekt.kk.pfad})`, aktion: () => oeffnen(projekt.kk!.pfad) }] : [])}
       />
+      <div className="ava-ok small-text ava-leiste-status" role="status" title={hinweis ?? undefined}>
+        {hinweis ?? ''}
+      </div>
       {a1?.hinweise.map((h, i) => (
         <div key={i} className="warning">
           {h}
@@ -198,14 +190,15 @@ export function RechnungenAnsicht({ gewerk }: { gewerk?: string }) {
                       className="small icon"
                       pfeil={false}
                       ariaLabel="Aktionen"
-                      title={`Aktionen für Rechnung Nr. ${String(r.nr ?? '')}: Deckblatt, Mail an den Zahler`}
-                      name={`Aktionen für Rechnung Nr. ${String(r.nr ?? '')}`}
+                      title={`${aktionenName(r.nr)}: Deckblatt, Mail an den Zahler`}
+                      name={aktionenName(r.nr)}
                       punkte={() => [
                         { text: 'Deckblatt öffnen', titel: 'Deckblatt der Prüfung öffnen', aktion: () => void deckblattOeffnen(r.datensatz!) },
                         {
                           text: 'Mail an den Zahler …',
                           titel: r.datensatz!.datei ? 'Mailentwurf mit der Rechnung als Anhang' : 'Erst die Rechnung ablegen (Rechnungseingang)',
                           deaktiviert: !r.datensatz!.datei,
+                          hinweis: r.datensatz!.datei ? undefined : 'Erst ablegen',
                           aktion: () => void mailAnZahler(r.datensatz!, r.nr),
                         },
                       ]}
