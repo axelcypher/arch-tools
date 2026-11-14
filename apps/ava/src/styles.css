@@ -717,13 +717,6 @@ input.ava-fehler {
   flex-shrink: 0;
 }
 
-/* Einträge der Werkzeugleiste in ihrer Breite lassen: was nicht passt, wandert ins Menü „Mehr“. Sonst greift
-   `.leiste > :first-child` (base.css) auch hier, der erste Eintrag schrumpft auf fast nichts, Umschalter und
-   Beschriftungen überlappen, und die Leiste misst die gestauchte Breite – an das Designsystem gemeldet */
-.toolbar.leiste > [data-eintrag] {
-  flex: none;
-}
-
 .ava-bieter-liste {
   padding: 8px 12px;
 }
