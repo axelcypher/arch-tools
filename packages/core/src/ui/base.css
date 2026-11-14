@@ -206,8 +206,8 @@ body,
 /* Werkzeugleiste mit Überlauf (ui/Werkzeugleiste.tsx): eine Zeile; was nicht passt, steht im Menü „Mehr“ */
 .toolbar.werkzeugleiste {
   flex-wrap: nowrap;
-  /* in der Spalte von .app nur in der Breite strecken, nie in die Höhe wachsen */
-  flex: 0 1 auto;
+  /* in einer Spalte (.app, scrollende Bereiche) weder wachsen noch schrumpfen: die Breite kommt über width: 100% */
+  flex: 0 0 auto;
   width: 100%;
   min-width: 0;
   box-sizing: border-box;
@@ -216,13 +216,25 @@ body,
 .werkzeugleiste-eintrag {
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: var(--s1);
 }
 /* Einträge behalten ihre Breite: statt zu schrumpfen wandern sie ins Menü „Mehr“ (kürzbare Einträge setzen
    flex-shrink und eine min-width selbst) */
 .toolbar.werkzeugleiste > .werkzeugleiste-eintrag,
 .toolbar.werkzeugleiste > .tb-group {
   flex: none;
+}
+/* Eintrag mit `kuerzbar`: schrumpft bis auf eine Mindestbreite, Text mit „…“ */
+.toolbar.werkzeugleiste > .werkzeugleiste-kuerzbar {
+  flex: 0 1 auto;
+  min-width: calc(4 * var(--ctl-h));
+  overflow: hidden;
+}
+.toolbar.werkzeugleiste > .werkzeugleiste-kuerzbar > * {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .toolbar.werkzeugleiste > [hidden] {
   display: none;

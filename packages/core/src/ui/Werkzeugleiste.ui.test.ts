@@ -178,6 +178,15 @@ describe('Werkzeugleiste (Komponente)', () => {
     expect(document.activeElement).toBe(haupt);
   });
 
+  it('kuerzbar: Eintrag trägt werkzeugleiste-kuerzbar (darf schrumpfen), ohne das Feld nicht', () => {
+    const host = render([
+      { id: 'status', kuerzbar: true, inhalt: knopf('Rechtsstand 2026-11', 140) },
+      { id: 'haupt', inhalt: knopf('Prüfen', 80) },
+    ]);
+    expect(host.querySelector('[data-eintrag="status"]')!.className).toBe('werkzeugleiste-eintrag werkzeugleiste-kuerzbar');
+    expect(host.querySelector('[data-eintrag="haupt"]')!.className).toBe('werkzeugleiste-eintrag');
+  });
+
   it('neue teile bei jedem Render ohne Änderung am Aufbau: kein Neumessen; geänderter Aufbau rechnet neu', () => {
     const host = render(teile());
     breiteSetzen(480);
@@ -196,6 +205,36 @@ describe('Werkzeugleiste (Komponente)', () => {
     act(() => root!.render(createElement(Fragment, null, createElement(Werkzeugleiste, { teile: mehrTeile, name: 'Plan' }), createElement(MenueHost))));
     expect(gemessen).toBeGreaterThan(0);
     expect(sichtbar(host)).not.toContain('neu');
+  });
+
+  it('wird ein Eintrag breiter (z. B. neuer Text), misst der ResizeObserver neu und ein Eintrag mit Rang wandert ins Menü', () => {
+    const beobachter: { cb: () => void; ziele: Element[] }[] = [];
+    const original = globalThis.ResizeObserver;
+    globalThis.ResizeObserver = class {
+      ziele: Element[] = [];
+      constructor(public cb: () => void) {
+        beobachter.push(this);
+      }
+      observe(el: Element) {
+        this.ziele.push(el);
+      }
+      unobserve() {}
+      disconnect() {}
+    } as unknown as typeof ResizeObserver;
+    try {
+      const host = render(teile());
+      breiteSetzen(520);
+      expect(sichtbar(host)).toEqual(['datei', 'werkzeuge', 'export', 'haupt']);
+      // beobachtet werden die Leiste und jeder Eintrag
+      const ro = beobachter.at(-1)!;
+      expect(ro.ziele).toContain(host.querySelector('[data-eintrag="werkzeuge"]'));
+      // der Werkzeugknopf wird breiter (200 → 260 px) – ohne Render der App, nur über den ResizeObserver
+      host.querySelector('[data-eintrag="werkzeuge"] button')!.setAttribute('data-breite', '260');
+      act(() => ro.cb());
+      expect(sichtbar(host)).toEqual(['werkzeuge', 'export', 'haupt']);
+    } finally {
+      globalThis.ResizeObserver = original;
+    }
   });
 
   it('feste Punkte: „Mehr“ steht immer am Ende, auch wenn alles passt; ausgeblendete Knöpfe sind nicht per Tab erreichbar', () => {

@@ -2,8 +2,9 @@
  * Werkzeugleiste mit Überlauf: Einträge stehen der Reihe nach in der Leiste; reicht die Breite nicht, wandern Einträge
  * mit Rang in das Menü „Mehr“ am Ende – der unwichtigste (höchster Rang) zuerst. Einträge ohne Rang bleiben immer
  * sichtbar (Hauptknopf, Werkzeuge einer Zeichenfläche). Seltene Befehle stehen gleich im Menü „Mehr“ (`mehr`).
- * Die Leiste nimmt die volle Breite ihres Elternelements (`.toolbar.werkzeugleiste`: `width: 100%`, `flex: 0 1 auto` – in
- * der Spalte von `.app` wächst sie nicht in die Höhe) und misst ihre eigene Breite als verfügbaren Platz. Richtlinie: docs/design.md, „Kopf- und Werkzeugleisten“.
+ * Die Leiste nimmt die volle Breite ihres Elternelements (`.toolbar.werkzeugleiste`: `width: 100%`, `flex: 0 0 auto` –
+ * in einer Spalte wächst und schrumpft sie nicht in der Höhe) und misst ihre eigene Breite als verfügbaren Platz.
+ * Richtlinie: docs/design.md, „Kopf- und Werkzeugleisten“.
  */
 import type { ReactNode } from 'react';
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
@@ -18,6 +19,11 @@ export interface LeistenEintrag {
   inhalt: ReactNode;
   /** Gruppe zusammengehöriger Knöpfe: mit Trennstrich zum nächsten Eintrag (`.tb-group`); sonst ohne */
   gruppe?: boolean;
+  /**
+   * Darf sich kürzen (z. B. ein Statustext): schrumpft bis auf eine Mindestbreite, Text mit „…“ abgeschnitten. Sonst
+   * behält ein Eintrag seine Breite und wandert bei Platzmangel ins Menü „Mehr“.
+   */
+  kuerzbar?: boolean;
   /** Gegenstück im Menü „Mehr“, solange der Eintrag nicht in die Leiste passt (Gruppe: mehrere Punkte) */
   menue?: MenuePunkt | MenuePunkt[];
   /**
@@ -159,7 +165,7 @@ export function Werkzeugleiste({
         istAbstand(t) ? (
           <div key={`abstand-${i}`} className="tb-spacer" />
         ) : (
-          <div key={t.id} className={t.gruppe ? 'tb-group' : 'werkzeugleiste-eintrag'} data-eintrag={t.id} hidden={weg.has(t.id)}>
+          <div key={t.id} className={`${t.gruppe ? 'tb-group' : 'werkzeugleiste-eintrag'}${t.kuerzbar ? ' werkzeugleiste-kuerzbar' : ''}`} data-eintrag={t.id} hidden={weg.has(t.id)}>
             {t.inhalt}
           </div>
         ),
