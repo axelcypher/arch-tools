@@ -6,6 +6,7 @@ import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { App } from './App';
+import { imLeistenMenue, leistenMenue, leistenPunkt } from './testLeiste';
 import { SpeicherDateisystem } from './dateisystem';
 import { readProjectFile, writeArchive } from '@core/archive';
 import { createProject, leereMeta } from '@core/model';
@@ -116,13 +117,6 @@ const knopf = (host: Element, text: string) => [...host.querySelectorAll('button
 const knopfGenau = (host: Element, text: string) => [...host.querySelectorAll('button')].find((b) => b.textContent?.trim() === text) as HTMLButtonElement;
 const knoepfe = (host: Element, text: string) => [...host.querySelectorAll('button')].filter((b) => b.textContent?.includes(text));
 const knopfMit = (host: Element, label: string) => host.querySelector<HTMLButtonElement>(`button[aria-label="${label}"]`)!;
-/** Menü der Werkzeugleiste („Mehr“ über sein aria-label, sonst über den Text) öffnen und einen Punkt wählen */
-const leistenMenue = (host: Element, name: string) => [...host.querySelectorAll<HTMLButtonElement>('.toolbar button[aria-haspopup="menu"]')].find((b) => b.getAttribute('aria-label') === name || b.textContent?.trim() === name)!;
-const menuePunkt = (text: string) => [...document.querySelectorAll<HTMLButtonElement>('.menue-punkt')].find((b) => b.textContent?.includes(text))!;
-const imLeistenMenue = async (host: Element, name: string, punkt: string) => {
-  await klick(leistenMenue(host, name));
-  await klick(menuePunkt(punkt));
-};
 const klick = async (el: HTMLElement) => {
   act(() => el.click());
   await warte();
@@ -187,10 +181,10 @@ describe('Formular einrichten', () => {
     expect(panel(host)).not.toBeNull();
     // „Gliederung“ ist ein Schalter im Menü „Ansicht“
     await klick(leistenMenue(host, 'Ansicht'));
-    expect(menuePunkt('Gliederung').getAttribute('aria-checked')).toBe('false');
-    await klick(menuePunkt('Gliederung'));
+    expect(leistenPunkt('Gliederung').getAttribute('aria-checked')).toBe('false');
+    await klick(leistenPunkt('Gliederung'));
     await klick(leistenMenue(host, 'Ansicht'));
-    expect(menuePunkt('Gliederung').getAttribute('aria-checked')).toBe('true');
+    expect(leistenPunkt('Gliederung').getAttribute('aria-checked')).toBe('true');
     act(() => void document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
     expect(gl(host).querySelector('.fo-ein-baum')).not.toBeNull();
     // die Gliederung außerhalb des Einrichtens bleibt unberührt; beim nächsten Einrichten ist der Baum wieder offen

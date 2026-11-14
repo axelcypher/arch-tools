@@ -8,6 +8,7 @@ import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
+import { imLeistenMenue, leistenMenueTexte } from './testLeiste';
 import { useAntrag } from './antragStore';
 import { umfangZeigen } from './components/Antrag';
 import { useDateiMerkmale } from './merkmalWerte';
@@ -74,14 +75,6 @@ const oeffnen = async () => {
   await warte();
 };
 
-/** Menü der Werkzeugleiste („Mehr“ über sein aria-label, sonst über den Text) öffnen und einen Punkt wählen */
-const leistenMenue = (host: Element, name: string) => [...host.querySelectorAll<HTMLButtonElement>('.toolbar button[aria-haspopup="menu"]')].find((b) => b.getAttribute('aria-label') === name || b.textContent?.trim() === name)!;
-const leistenPunkt = (text: string) => [...document.querySelectorAll<HTMLButtonElement>('.menue-punkt')].find((b) => b.textContent?.includes(text))!;
-const imLeistenMenue = async (host: Element, name: string, punkt: string) => {
-  await klick(leistenMenue(host, name));
-  await klick(leistenPunkt(punkt));
-};
-
 describe('Web-Version', () => {
   it('„Festlegen …“ führt nicht in eine Sackgasse: ohne Projekt keine Projektkarte, Werkzeugleiste und Gliederung bleiben (B-03)', async () => {
     useFormulare.getState().profilSetzen('nw019999|2026A', {
@@ -99,6 +92,19 @@ describe('Web-Version', () => {
     expect(useFormulare.getState().haupt).toBe('formular');
     expect(knopfGenau(host, 'Herunterladen')).toBeDefined();
     expect(host.querySelector('nav[aria-label="Inhalt des Formulars"]')).not.toBeNull();
+  });
+
+  it('Werkzeugleiste der Web-Version: erst nur „Formular öffnen …“, mit Formular „Datei“ (Formular öffnen …, Drucken …) und „Herunterladen“', async () => {
+    const host = await render();
+    const leiste = () => host.querySelector<HTMLElement>('.toolbar.leiste')!;
+    const sichtbar = () => [...leiste().querySelectorAll<HTMLElement>(':scope > [data-eintrag]')].filter((e) => !e.hidden).map((e) => e.dataset.eintrag);
+    expect(sichtbar()).toEqual(['oeffnen']);
+    expect(knopfGenau(leiste(), 'Formular öffnen …')).toBeDefined();
+    await oeffnen();
+    expect(sichtbar()).toEqual(['datei', 'speichern', 'umschalter', ...(useFormulare.getState().ansicht === 'seite' ? ['zoom'] : []), 'ansicht', 'status']);
+    expect(await leistenMenueTexte(host, 'Datei')).toEqual(['Formular öffnen …', 'Drucken …']);
+    expect(leiste().querySelector('button.primary')).toBeNull();
+    expect(knopfGenau(leiste(), 'Herunterladen')).toBeDefined();
   });
 
   it('Herunterladen meldet die neue Datei; die Originaldatei wieder geöffnet: Verlauf zeigt die Eingaben als „nicht in dieser Datei“ (B-08)', async () => {

@@ -6,6 +6,7 @@ import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { leistenMessung } from '@core/ui/Werkzeugleiste';
 import { App } from './App';
+import { imLeistenMenue, leistenMenue, leistenMenueTexte } from './testLeiste';
 import { SpeicherDateisystem } from './dateisystem';
 import { cp1252Lesen, cp1252Schreiben } from './forma/cp1252';
 import type { Projektkarte } from './forma/projektkarte';
@@ -173,14 +174,6 @@ async function projektOeffnen(host: HTMLElement, kuerzel: string) {
   await klick(karte()!);
 }
 
-/** Menü der Werkzeugleiste („Mehr“ über sein aria-label, sonst über den Text) öffnen und einen Punkt wählen */
-const leistenMenue = (host: Element, name: string) => [...host.querySelectorAll<HTMLButtonElement>('.toolbar button[aria-haspopup="menu"]')].find((b) => b.getAttribute('aria-label') === name || b.textContent?.trim() === name)!;
-const leistenPunkt = (text: string) => [...document.querySelectorAll<HTMLButtonElement>('.menue-punkt')].find((b) => b.textContent?.includes(text))!;
-const imLeistenMenue = async (host: Element, name: string, punkt: string) => {
-  await klick(leistenMenue(host, name));
-  await klick(leistenPunkt(punkt));
-};
-
 describe('Formulare', () => {
   it('Leerzustand im Browser: einheitlicher Einstieg „Datei öffnen …“ (Q-5)', async () => {
     useFormulare.setState({ ds: null, offen: null, projekt: null });
@@ -233,7 +226,8 @@ describe('Formulare', () => {
     act(() => kreuz(host, 'Sonderbau').click());
     act(() => kreuz(host, 'Wohngebäude').click());
     expect(host.textContent).toContain('3 Felder geändert');
-    expect(host.textContent).toContain('lokal gesichert');
+    // „lokal gesichert“ steht im Tooltip des Status (die Leiste bleibt knapp)
+    expect(host.querySelector('.toolbar .fo-status')!.getAttribute('title')).toContain('lokal gesichert');
     expect(ds.dateien.get(FORMULAR)).toBe(MUSTER);
 
     await klick(knopfGenau(host, 'Speichern'));
@@ -473,6 +467,33 @@ describe('Formulare', () => {
     await klick(knopfGenau(host, 'Projektdaten speichern'));
     expect(host.textContent).toContain('inzwischen geändert');
     expect(pkText(201, 40).text).toBe('von FORMA');
+  });
+
+  it('Werkzeugleiste der Projektdaten: Speichern mit ↶ ↷, „Änderungen verwerfen“ in „Mehr“ hinter dem Trenner – ohne Änderung gesperrt mit Grund', async () => {
+    const host = await render();
+    await projektOeffnen(host, 'BS9');
+    await klick(host.querySelector<HTMLButtonElement>('.fo-eintrag-karte')!);
+    const leiste = host.querySelector<HTMLElement>('.toolbar.leiste')!;
+    expect([...leiste.querySelectorAll<HTMLElement>(':scope > [data-eintrag]')].filter((e) => !e.hidden).map((e) => e.dataset.eintrag)).toEqual(['karte-speichern', 'status', 'suchen']);
+    expect(knopfGenau(leiste, 'Projektdaten speichern').classList.contains('ungespeichert')).toBe(false);
+    // ohne Änderung: gesperrt, mit Grund; der Gefahr-Punkt steht hinter einem Trenner am Ende
+    await klick(leistenMenue(host, 'Mehr'));
+    const menue = document.querySelector('.menue')!;
+    expect(menue.lastElementChild!.textContent).toContain('Änderungen verwerfen');
+    expect(menue.lastElementChild!.classList.contains('gefahr')).toBe(true);
+    expect(menue.lastElementChild!.previousElementSibling!.classList.contains('menue-trenner')).toBe(true);
+    expect(menue.lastElementChild!.getAttribute('aria-disabled')).toBe('true');
+    expect(menue.lastElementChild!.textContent).toContain('nichts geändert');
+    taste(document.activeElement!, 'Escape');
+    await warte();
+    // mit Änderung: Speichern trägt den Punkt, Verwerfen nimmt sie zurück
+    await gruppeWaehlen(host, 'Bauherr');
+    eingabe(kartenFeld(host, 'Name/Firma'), 'Musterfrau');
+    await warte();
+    expect(knopfGenau(leiste, 'Projektdaten speichern').classList.contains('ungespeichert')).toBe(true);
+    await imLeistenMenue(host, 'Mehr', 'Änderungen verwerfen');
+    expect(kartenFeld(host, 'Name/Firma').value).toBe('Mustermann');
+    expect(host.textContent).toContain('Alles gespeichert');
   });
 
   it('Projektkarte: Auswahllisten speichern die Nummer der Wahl, Hinweise auf Tippfehler, Rückgängig', async () => {
@@ -994,16 +1015,9 @@ describe('Formulare', () => {
     // Umschalter Formular | Felder als .segment mit aria-pressed
     expect([...leiste.querySelectorAll('.segment button')].map((b) => `${b.textContent}:${b.getAttribute('aria-pressed')}`)).toEqual(['Formular:true', 'Felder:false']);
     // Menüs: Datei, Ansicht, Mehr – Inhalt und Reihenfolge
-    const punkte = async (name: string) => {
-      await klick(leistenMenue(host, name));
-      const t = [...document.querySelectorAll('.menue .menue-punkt')].map((b) => b.textContent);
-      taste(document.activeElement!, 'Escape');
-      await warte();
-      return t;
-    };
-    expect((await punkte('Datei')).map((t) => t!.replace(/Strg\+\w/, '').trim())).toEqual(['Daten aktualisieren …', 'Speichern unter …', 'Drucken …']);
-    expect(await punkte('Ansicht')).toEqual(['Gliederung', 'Verlauf der Eingaben']);
-    expect(await punkte('Mehr')).toEqual(['Formular einrichten', 'Manuelle Überschreibungen ignorieren', 'Einstellungen …']);
+    expect(await leistenMenueTexte(host, 'Datei')).toEqual(['Daten aktualisieren …', 'Speichern unter …', 'Drucken …']);
+    expect(await leistenMenueTexte(host, 'Ansicht')).toEqual(['Gliederung', 'Verlauf der Eingaben']);
+    expect(await leistenMenueTexte(host, 'Mehr')).toEqual(['Formular einrichten', 'Manuelle Überschreibungen ignorieren', 'Einstellungen …']);
     // eine Eingabe: Speichern trägt den Punkt und sagt es im Namen
     eingabe(feld(host, 'Bauherrschaft', 1), 'Musterweg 7');
     await warte();
@@ -1035,10 +1049,7 @@ describe('Formulare', () => {
       await schmal(620);
       expect(sichtbar()).toEqual(['datei', 'speichern', 'umschalter', 'status', 'pdf']);
       // die übergelaufenen stehen oben im Menü „Mehr“, in ihrer Reihenfolge, vor den festen Punkten
-      await klick(leistenMenue(host, 'Mehr'));
-      expect([...document.querySelectorAll('.menue > .menue-punkt')].map((b) => b.textContent?.replace(/Strg\+\w/, '').trim())).toEqual(['Zoom', 'Ansicht', 'Suchen …', 'Formular einrichten', 'Manuelle Überschreibungen ignorieren', 'Einstellungen …']);
-      taste(document.activeElement!, 'Escape');
-      await warte();
+      expect(await leistenMenueTexte(host, 'Mehr')).toEqual(['Zoom', 'Ansicht', 'Suchen …', 'Formular einrichten', 'Manuelle Überschreibungen ignorieren', 'Einstellungen …']);
     } finally {
       messen.mockRestore();
     }

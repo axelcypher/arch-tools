@@ -223,7 +223,18 @@ export function App() {
   const aktualisierbar = !!(formularSichtbar && ds && projekt && zugeordnet > 0);
   const dateiPunkte = (): MenuePunkt[] => [
     ...(!ds ? [{ text: 'Formular öffnen …', symbol: 'ordnerOffen' as const, aktion: () => void dateiOeffnen() }] : []),
-    ...(aktualisierbar ? [{ text: 'Daten aktualisieren …', symbol: 'neuLaden' as const, deaktiviert: !!grund, ...nurAnsehen, aktion: () => useAktualisieren.getState().dialogOeffnen() }] : []),
+    ...(aktualisierbar
+      ? [
+          {
+            text: 'Daten aktualisieren …',
+            symbol: 'neuLaden' as const,
+            titel: `${zugeordnet} Felder dieses Formulars kommen aus den Projektdaten (Projektkarte)`,
+            deaktiviert: !!grund,
+            ...nurAnsehen,
+            aktion: () => useAktualisieren.getState().dialogOeffnen(),
+          },
+        ]
+      : []),
     ...(formularSichtbar && offen.projekt ? [{ text: 'Speichern unter …', symbol: 'datei' as const, aktion: () => void useAntrag.getState().speichernUnter(offen.pfad) }] : []),
     ...(formularSichtbar ? [{ text: 'Drucken …', symbol: 'drucken' as const, tasten: 'Strg+P', aktion: () => void drucken() }] : []),
   ];
@@ -236,10 +247,42 @@ export function App() {
     ...ZOOMSTUFEN.map((z) => ({ text: `${Math.round(z * 100)} %`, gewaehlt: zoom === z, aktion: () => setZoom(z) })),
   ];
   const mehrPunkte = (): MenuePunkt[] => [
-    ...(formularSichtbar ? [{ text: 'Formular einrichten', symbol: 'stift' as const, haken: einrichten, titel: 'Titel, Füllstand, Gruppen und Bedingungen – Felder im Formular anklicken', aktion: () => useEinrichten.getState().setAktiv(!einrichten) }] : []),
-    ...(aktualisierbar ? [{ text: 'Manuelle Überschreibungen ignorieren', haken: !!offen && ignoriert(offen.pfad), deaktiviert: !!grund, ...nurAnsehen, aktion: () => offen && ignorierenSetzen(!ignoriert(offen.pfad)) }] : []),
+    ...(formularSichtbar
+      ? [
+          {
+            text: 'Formular einrichten',
+            symbol: 'stift' as const,
+            haken: einrichten,
+            titel: 'Titel, Füllstand, Gruppen und Bedingungen – Felder im Formular anklicken',
+            aktion: () => useEinrichten.getState().setAktiv(!einrichten),
+          },
+        ]
+      : []),
+    ...(aktualisierbar
+      ? [
+          {
+            text: 'Manuelle Überschreibungen ignorieren',
+            haken: !!offen && ignoriert(offen.pfad),
+            deaktiviert: !!grund,
+            ...nurAnsehen,
+            aktion: () => offen && ignorierenSetzen(!ignoriert(offen.pfad)),
+          },
+        ]
+      : []),
     ...(ds ? [{ text: 'Einstellungen …', symbol: 'zahnrad' as const, aktion: () => useFormulare.getState().einstellungenOeffnen() }] : []),
-    ...(kartenansicht && karte ? [{ trenner: true } as const, { text: 'Änderungen verwerfen', gefahr: true, deaktiviert: !geaendert, titel: 'Alle ungespeicherten Änderungen der Projektdaten zurücknehmen (Strg+Z holt sie zurück)', aktion: karteVerwerfen }] : []),
+    ...(kartenansicht && karte
+      ? [
+          { trenner: true } as const,
+          {
+            text: 'Änderungen verwerfen',
+            gefahr: true,
+            deaktiviert: !geaendert,
+            ...(geaendert ? {} : { hinweis: 'nichts geändert' }),
+            titel: 'Alle ungespeicherten Änderungen der Projektdaten zurücknehmen (Strg+Z holt sie zurück)',
+            aktion: karteVerwerfen,
+          },
+        ]
+      : []),
   ];
   const speichernTitel = (text: string) => (geaendert ? `${text} – ungespeicherte Änderungen` : text);
   const leistenTeile: LeistenTeil[] = [];
@@ -296,7 +339,7 @@ export function App() {
               rang: 2,
               menue: { text: 'Zoom', unter: zoomPunkte() },
               inhalt: (
-                <div className="fo-zoom">
+                <>
                   <button title="Verkleinern" aria-label="Verkleinern" onClick={() => zoomStufe(-1)}>
                     <Symbol name="strich" />
                   </button>
@@ -311,7 +354,7 @@ export function App() {
                   <button title="Vergrößern" aria-label="Vergrößern" onClick={() => zoomStufe(1)}>
                     <Symbol name="plus" />
                   </button>
-                </div>
+                </>
               ),
             },
           ]
@@ -347,9 +390,16 @@ export function App() {
     leistenTeile.push({
       id: 'status',
       inhalt: (
-        <span className="muted small-text fo-status">
+        <span
+          className="muted small-text fo-status"
+          title={[
+            geaendert ? `${anzahl(Object.keys(karte.aenderungen).length, 'Eintrag', 'Einträge')} geändert` : 'Alles gespeichert',
+            geaendert && karte.gesichert && `lokal gesichert ${uhrzeit(karte.gesichert)}`,
+          ]
+            .filter(Boolean)
+            .join(' · ')}
+        >
           {geaendert ? `${anzahl(Object.keys(karte.aenderungen).length, 'Eintrag', 'Einträge')} geändert` : 'Alles gespeichert'}
-          {geaendert && karte.gesichert && ` · lokal gesichert ${uhrzeit(karte.gesichert)}`}
         </span>
       ),
     });
@@ -357,10 +407,19 @@ export function App() {
     leistenTeile.push({
       id: 'status',
       inhalt: (
-        <span className="muted small-text fo-status">
+        <span
+          className="muted small-text fo-status"
+          title={[
+            kennung(offen.formular),
+            stand(offen.formular) && `Stand ${stand(offen.formular)}`,
+            geaendert && `${anzahl(Object.keys(offen.aenderungen).length, 'Feld', 'Felder')} geändert`,
+            geaendert && offen.gesichert && `lokal gesichert ${uhrzeit(offen.gesichert)}`,
+          ]
+            .filter(Boolean)
+            .join(' · ')}
+        >
           {[kennung(offen.formular), stand(offen.formular) && `Stand ${stand(offen.formular)}`].filter(Boolean).join(' · ')}
           {geaendert && ` · ${anzahl(Object.keys(offen.aenderungen).length, 'Feld', 'Felder')} geändert`}
-          {geaendert && offen.gesichert && ` · lokal gesichert ${uhrzeit(offen.gesichert)}`}
         </span>
       ),
     });
@@ -379,7 +438,12 @@ export function App() {
     leistenTeile.push({
       id: 'pdf',
       inhalt: (
-        <button className="primary" title="Als PDF exportieren – in den Antragsordner oder anderswo ins Projekt (Strg+E)" aria-keyshortcuts="Control+E" onClick={() => useExportDialog.getState().oeffnen(offen.pfad)}>
+        <button
+          className="primary"
+          title="Als PDF exportieren – in den Antragsordner oder anderswo ins Projekt (Strg+E)"
+          aria-keyshortcuts="Control+E"
+          onClick={() => useExportDialog.getState().oeffnen(offen.pfad)}
+        >
           <Symbol name="export" /> Als PDF exportieren …
         </button>
       ),
