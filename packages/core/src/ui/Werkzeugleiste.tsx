@@ -43,34 +43,45 @@ export type LeistenTeil = LeistenEintrag | LeistenAbstand;
 
 const istAbstand = (t: LeistenTeil): t is LeistenAbstand => 'abstand' in t;
 
+/** Maße der Leiste: Breite von „Mehr“, Abstand (`gap`), ob „Mehr“ immer steht, Zahl der Abstandhalter */
+type LeistenMasse = { mehrBreite: number; abstand: number; mehrImmer: boolean; abstandhalter?: number };
+
+/** Platzbedarf der Leiste, wenn die Einträge in `weg` im Menü stehen */
+function bedarf(eintraege: { id: string; breite: number }[], weg: Set<string>, { mehrBreite, abstand, mehrImmer, abstandhalter = 0 }: LeistenMasse): number {
+  const s = eintraege.filter((e) => !weg.has(e.id));
+  const mitMehr = mehrImmer || weg.size > 0;
+  const anzahl = s.length + (mitMehr ? 1 : 0) + abstandhalter;
+  return s.reduce((n, e) => n + e.breite, 0) + (mitMehr ? mehrBreite : 0) + Math.max(0, anzahl - 1) * abstand;
+}
+
 /**
  * Welche Einträge ins Menü wandern: so wenige wie möglich, in der Reihenfolge ihres Rangs (höchster zuerst, bei
  * Gleichstand der weiter rechts stehende). `mehrBreite` zählt mit, sobald das Menü „Mehr“ sichtbar ist – immer, wenn
  * es feste Punkte hat (`mehrImmer`), sonst erst beim ersten Überlauf. `abstandhalter`: Zahl der Abstandhalter – sie
  * haben keine eigene Breite, bekommen als Flex-Kinder aber je einen Abstand (`gap`).
  */
-export function ueberlauf(
-  eintraege: { id: string; breite: number; rang?: number }[],
-  verfuegbar: number,
-  { mehrBreite, abstand, mehrImmer, abstandhalter = 0 }: { mehrBreite: number; abstand: number; mehrImmer: boolean; abstandhalter?: number },
-): Set<string> {
+export function ueberlauf(eintraege: { id: string; breite: number; rang?: number }[], verfuegbar: number, masse: LeistenMasse): Set<string> {
   const weg = new Set<string>();
-  const sichtbar = () => eintraege.filter((e) => !weg.has(e.id));
-  const bedarf = () => {
-    const s = sichtbar();
-    const mitMehr = mehrImmer || weg.size > 0;
-    const anzahl = s.length + (mitMehr ? 1 : 0) + abstandhalter;
-    return s.reduce((n, e) => n + e.breite, 0) + (mitMehr ? mehrBreite : 0) + Math.max(0, anzahl - 1) * abstand;
-  };
   const kandidaten = eintraege
     .map((e, i) => ({ ...e, i }))
     .filter((e) => e.rang !== undefined)
     .sort((a, b) => b.rang! - a.rang! || b.i - a.i);
   for (const k of kandidaten) {
-    if (bedarf() <= verfuegbar) break;
+    if (bedarf(eintraege, weg, masse) <= verfuegbar) break;
     weg.add(k.id);
   }
   return weg;
+}
+
+/**
+ * Überlauf mit Kompaktstufe: Reicht der Platz auch dann nicht, wenn alle Einträge mit Rang im Menü stehen, wird die
+ * Leiste kompakt (Knopftexte in `.tb-text` ausgeblendet, nur Symbole). Gerechnet wird immer mit den vollen Breiten –
+ * so bleibt die Leiste kompakt, bis die volle Fassung wieder passt, und Einträge mit Rang springen nicht zurück, nur weil
+ * die Symbole Platz schaffen.
+ */
+export function leistenStufe(eintraege: { id: string; breite: number; rang?: number }[], verfuegbar: number, masse: LeistenMasse): { weg: Set<string>; kompakt: boolean } {
+  const weg = ueberlauf(eintraege, verfuegbar, masse);
+  return { weg, kompakt: bedarf(eintraege, weg, masse) > verfuegbar };
 }
 
 const alsListe = (m: MenuePunkt | MenuePunkt[] | undefined): MenuePunkt[] => (m === undefined ? [] : Array.isArray(m) ? m : [m]);
@@ -99,9 +110,11 @@ export function Werkzeugleiste({
   className?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  /** volle Breiten der Einträge (auch in der Kompaktstufe ohne sie gemessen) – Grundlage der Rechnung */
   const breiten = useRef(new Map<string, number>());
   const fokusAufMehr = useRef(false);
   const [weg, setWeg] = useState<Set<string>>(() => new Set());
+  const [kompakt, setKompakt] = useState(false);
   const festePunkte = mehr?.() ?? [];
   const mehrImmer = festePunkte.length > 0;
   // `teile` bauen die Apps bei jedem Render neu: die Rechnung liest sie aus dem Ref und hängt nur am Aufbau (ids, Rang,
@@ -114,10 +127,14 @@ export function Werkzeugleiste({
     const el = ref.current;
     if (!el) return;
     const teile = teileRef.current;
-    // sichtbare Einträge neu messen, für ausgeblendete gilt die zuletzt gemessene Breite
+    // sichtbare Einträge neu messen, für ausgeblendete gilt die zuletzt gemessene Breite. Gerechnet wird immer mit den
+    // vollen Breiten: in der Kompaktstufe die Klasse zum Messen kurz abnehmen (im selben Takt, ohne dass gezeichnet wird)
+    const istKompakt = el.classList.contains('kompakt');
+    if (istKompakt) el.classList.remove('kompakt');
     for (const k of el.querySelectorAll<HTMLElement>(':scope > [data-eintrag]')) {
       if (!k.hidden) breiten.current.set(k.dataset.eintrag!, leistenMessung.breite(k));
     }
+    if (istKompakt) el.classList.add('kompakt');
     const stil = getComputedStyle(el);
     const abstand = parseFloat(stil.columnGap || stil.gap) || 0;
     const innen = leistenMessung.breite(el) - (parseFloat(stil.paddingLeft) || 0) - (parseFloat(stil.paddingRight) || 0);
@@ -125,7 +142,8 @@ export function Werkzeugleiste({
     if (mehrEl && !mehrEl.hidden) breiten.current.set('\u0000mehr', leistenMessung.breite(mehrEl));
     const eintraege = teile.filter((t): t is LeistenEintrag => !istAbstand(t)).map((t) => ({ id: t.id, breite: breiten.current.get(t.id) ?? 0, rang: t.menue === undefined ? undefined : t.rang }));
     const abstandhalter = teile.filter(istAbstand).length;
-    const neu = ueberlauf(eintraege, innen, { mehrBreite: breiten.current.get('\u0000mehr') ?? 0, abstand, mehrImmer, abstandhalter });
+    const { weg: neu, kompakt: neuKompakt } = leistenStufe(eintraege, innen, { mehrBreite: breiten.current.get('\u0000mehr') ?? 0, abstand, mehrImmer, abstandhalter });
+    setKompakt(neuKompakt);
     // wandert der Eintrag mit dem Fokus ins Menü, bekommt „Mehr“ den Fokus (sonst fiele er auf die Seite)
     const fokus = document.activeElement?.closest?.('[data-eintrag]') as HTMLElement | null;
     const fokusId = fokus && el.contains(fokus) ? fokus.dataset.eintrag! : null;
@@ -142,7 +160,8 @@ export function Werkzeugleiste({
     const el = ref.current;
     window.addEventListener('resize', berechnen);
     const ro = typeof ResizeObserver !== 'undefined' && el ? new ResizeObserver(() => berechnen()) : null;
-    // die Leiste selbst und jeder Eintrag: ändert sich ein Knopftext, misst die Leiste neu
+    // die Leiste selbst und jeder Eintrag: ändert sich ein Knopftext, misst die Leiste neu (auch in der Kompaktstufe –
+    // gemessen wird dort ohne die Klasse, also die volle Breite)
     if (ro && el) for (const k of [el, ...el.querySelectorAll(':scope > [data-eintrag], :scope > .werkzeugleiste-mehr')]) ro.observe(k);
     return () => {
       window.removeEventListener('resize', berechnen);
@@ -161,7 +180,7 @@ export function Werkzeugleiste({
     ref.current?.querySelector<HTMLButtonElement>(':scope > .werkzeugleiste-mehr > button')?.focus();
   }, [weg]);
   return (
-    <div ref={ref} className={`toolbar werkzeugleiste${className ? ` ${className}` : ''}`} role="group" aria-label={name}>
+    <div ref={ref} className={`toolbar werkzeugleiste${kompakt ? ' kompakt' : ''}${className ? ` ${className}` : ''}`} role="group" aria-label={name}>
       {teile.map((t, i) =>
         istAbstand(t) ? (
           <div key={`abstand-${i}`} className="tb-spacer" />
