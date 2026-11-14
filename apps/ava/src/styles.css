@@ -1479,8 +1479,8 @@ input.ava-fehler {
   }
 }
 
-/* LV-Editor: eine Werkzeugzeile (Werkzeugleiste mit Überlauf), Suche rechts, sichtbarer Fokus */
-/* Suche in einer Werkzeugleiste (Eintrag „suche“, kuerzbar): 240px breit, im schmalen Fenster kürzer */
+/* Suche in einer Werkzeugleiste (LV-Editor, Rechnungen; Eintrag „suche“, kuerzbar): 240px breit, im schmalen
+   Fenster kürzer */
 .toolbar.werkzeugleiste > [data-eintrag='suche'] {
   flex-basis: 240px;
 }
