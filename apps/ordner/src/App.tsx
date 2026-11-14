@@ -3,6 +3,8 @@ import { APP_NAMEN } from '@core/appNamen';
 import { LogDialog } from '@core/ui/LogDialog';
 import { bestaetigen, meldung } from '@core/ui/Rueckfrage';
 import { TitleBar } from '@core/ui/TitleBar';
+import { MenueKnopf, type MenuePunkt } from '@core/ui/Menue';
+import { Werkzeugleiste } from '@core/ui/Werkzeugleiste';
 import { AssistentView } from './components/AssistentView';
 import { PruefView } from './components/PruefView';
 import { EinstellungenView, StrukturView } from './components/StrukturView';
@@ -18,14 +20,19 @@ import { ASSISTENT_ANGABEN, ORDNERSTRUKTUR, satzUngespeichert } from './ungespei
 
 type Ansicht = 'projekt' | 'pruefen' | 'mails' | 'struktur' | 'vorlagen' | 'kataster' | 'einstellungen';
 
-const ANSICHTEN: { id: Ansicht; label: string; title: string }[] = [
+/**
+ * Ansichten der App. Im Arbeitsablauf ständig gebraucht und deshalb sichtbar: Assistent, „Ordner prüfen“ und Mails;
+ * die Einrichtung des Büros (Struktur, Vorlagen, Katasterpläne, Einstellungen) steht im Menü „Einrichtung“
+ * (design.md, „Kopf- und Werkzeugleisten“).
+ */
+const ANSICHTEN: { id: Ansicht; label: string; title: string; einrichtung?: true }[] = [
   { id: 'projekt', label: 'Assistent', title: 'Assistent: neues Projekt anlegen oder ein bestehendes fortschreiben – Stammdaten, Grundstück, Bauherr, Umfang, Beteiligte, Vorlagen, Anlegen' },
   { id: 'pruefen', label: 'Ordner prüfen', title: 'Vorhandenen Projektordner mit der Struktur vergleichen – es wird nichts verschoben' },
   { id: 'mails', label: 'Mails', title: 'Mails (.msg) im Projektordner prüfen und nach dem Schema benennen: Projektcode von|an Name JJMMTT Thema' },
-  { id: 'struktur', label: 'Struktur', title: 'Ordnerbaum des Büros zum Klicken – mit Bausteinen für wiederkehrende Unterordner (z. B. Gewerke) – und Namensschemata' },
-  { id: 'vorlagen', label: 'Vorlagen', title: 'Vorlagenordner, Dateinamen und Presets: welche Vorlage wohin kommt und wie sie dort heißt' },
-  { id: 'kataster', label: 'Katasterpläne', title: 'QGIS-Vorlage, Katasterauszüge und DXF-Pläne einstellen – exportiert wird je Projekt über die Startseite' },
-  { id: 'einstellungen', label: 'Einstellungen', title: 'Gemeinsame Einstellungen aller Apps: Konfigurationsordner, Stammordner, Ort der Projektdatei, Büro, Mitarbeiter' },
+  { id: 'struktur', label: 'Struktur', title: 'Ordnerbaum des Büros zum Klicken – mit Bausteinen für wiederkehrende Unterordner (z. B. Gewerke) – und Namensschemata', einrichtung: true },
+  { id: 'vorlagen', label: 'Vorlagen', title: 'Vorlagenordner, Dateinamen und Presets: welche Vorlage wohin kommt und wie sie dort heißt', einrichtung: true },
+  { id: 'kataster', label: 'Katasterpläne', title: 'QGIS-Vorlage, Katasterauszüge und DXF-Pläne einstellen – exportiert wird je Projekt über die Startseite', einrichtung: true },
+  { id: 'einstellungen', label: 'Einstellungen', title: 'Gemeinsame Einstellungen aller Apps: Konfigurationsordner, Stammordner, Ort der Projektdatei, Büro, Mitarbeiter', einrichtung: true },
 ];
 
 export function App() {
@@ -161,6 +168,17 @@ export function App() {
     void useOrdner.getState().ladeVorlagen();
   }, [ansicht, vorlagenordner]);
 
+  // Menü „Einrichtung“: die aktive Ansicht ist gewählt; „Struktur“ nennt die geladene Struktur des Büros
+  const einrichtungAktiv = ANSICHTEN.find((a) => a.einrichtung && a.id === ansicht);
+  const einrichtungPunkte = (): MenuePunkt[] =>
+    ANSICHTEN.filter((a) => a.einrichtung).map((a) => ({
+      text: a.label,
+      gewaehlt: ansicht === a.id,
+      titel: a.title,
+      ...(a.id === 'struktur' && struktur.name ? { hinweis: struktur.name } : {}),
+      aktion: () => setAnsicht(a.id),
+    }));
+
   return (
     <div className="app">
       <TitleBar
@@ -181,16 +199,36 @@ export function App() {
           })
         }
       />
-      <div className="toolbar">
-        <div className="tb-group">
-          {ANSICHTEN.map((a) => (
-            <button key={a.id} className={ansicht === a.id ? 'active' : ''} aria-pressed={ansicht === a.id} title={a.title} onClick={() => setAnsicht(a.id)}>
-              {a.label}
-            </button>
-          ))}
-        </div>
-        <span className="muted small-text">Struktur: {struktur.name}</span>
-      </div>
+      <Werkzeugleiste
+        name="Ansichten"
+        teile={[
+          {
+            id: 'ansichten',
+            gruppe: true,
+            inhalt: ANSICHTEN.filter((a) => !a.einrichtung).map((a) => (
+              <button key={a.id} className={ansicht === a.id ? 'active' : ''} aria-pressed={ansicht === a.id} title={a.title} onClick={() => setAnsicht(a.id)}>
+                {a.label}
+              </button>
+            )),
+          },
+          {
+            id: 'einrichtung',
+            rang: 1,
+            inhalt: (
+              <MenueKnopf
+                className={einrichtungAktiv ? 'active' : undefined}
+                punkte={einrichtungPunkte}
+                name="Einrichtung"
+                ariaLabel={einrichtungAktiv ? `Einrichtung: ${einrichtungAktiv.label}` : 'Einrichtung'}
+                title={einrichtungAktiv ? `Einrichtung: ${einrichtungAktiv.label}` : 'Einrichtung des Büros: Struktur, Vorlagen, Katasterpläne, Einstellungen'}
+              >
+                {einrichtungAktiv ? `Einrichtung: ${einrichtungAktiv.label}` : 'Einrichtung'}
+              </MenueKnopf>
+            ),
+            menue: { text: 'Einrichtung', unter: einrichtungPunkte() },
+          },
+        ]}
+      />
       {strukturFehler && ansicht !== 'struktur' && ansicht !== 'vorlagen' && (
         <div className="warning po-konflikt" role="alert">
           Die Bürostruktur ist nicht lesbar – bis zur Klärung gilt die Standardstruktur von ATLAS; neue Projekte entstehen nach ihr.

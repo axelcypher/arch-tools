@@ -6,6 +6,11 @@ alle Angaben zum Projekt abfragt (Stammdaten, Grundstück, Bauherr, Umfang, Bete
 (`.oap`) ablegt, den Projektordner nach der **Struktur** des Büros anlegt und Vorlagen einsetzt. Dazu prüft sie
 vorhandene Projektordner gegen die Struktur und exportiert Katasterpläne.
 
+**Werkzeugleiste:** Sichtbar sind die Ansichten, die man im Arbeitsablauf ständig braucht – „Assistent“, „Ordner
+prüfen“ und „Mails“. Die Einrichtung des Büros – „Struktur“ (mit dem Namen der geladenen Struktur), „Vorlagen“,
+„Katasterpläne“ und „Einstellungen“ – steht im Menü **„Einrichtung“**; ist eine davon offen, nennt der Menüknopf sie
+(„Einrichtung: Vorlagen“). In schmalen Fenstern wandert „Einrichtung“ in das Menü „Mehr“.
+
 Bis Version 0.17.0 hieß die App „Projektordner“ (im Fenstertitel und in der Rahmen-App zuletzt „Projekt“).
 Einstellungen und Daten bleiben beim Update erhalten: Der Installer entfernt eine Installation unter dem alten Namen
 vorher still und legt vorhandene Verknüpfungen im Startmenü bzw. auf dem Desktop unter dem neuen Namen an. Technisch
@@ -251,7 +256,7 @@ Exports).
 
 ### Struktur
 
-Eigener Reiter **„Struktur“** (bis 0.13 Teil der Einstellungen). Ordnerbaum, Bausteine und Namensschemata gehören dem
+Eigene Ansicht **„Struktur“** im Menü „Einrichtung“ (bis 0.13 Teil der Einstellungen). Ordnerbaum, Bausteine und Namensschemata gehören dem
 Büro, nicht dem Tool. Die Struktur lässt sich zusätzlich als JSON-Datei
 speichern, weitergeben und laden – samt den Vorlagen-Presets und dem Dateinamenschema für Vorlagen; die eingebaute
 Vorgabe ist neutral (nach Dokumentart: Projekt, Grundlagen, Pläne, Berechnungen, Schriftverkehr, Protokolle,
@@ -547,7 +552,7 @@ Katasterpläne als PDF und DXF kommen aus einem **QGIS-Projekt als Vorlage**, in
 QGIS 3.28; geprüft mit 3.34 LTR). Früher war das Teil von PERMIO; dessen Einstellungen werden beim ersten Öffnen
 übernommen.
 
-- **Reiter „Katasterpläne“:** die Vorlage (`.qgz`/`.qgs`, gilt für alle im Büro: gemeinsamer
+- **„Katasterpläne“ (Menü „Einrichtung“):** die Vorlage (`.qgz`/`.qgs`, gilt für alle im Büro: gemeinsamer
   Konfigurationsordner, Bereich `kataster`), der Pfad zu `qgis_process` (je Rechner; „Suchen“ findet die
   üblichen Installationen, unter Windows `…\QGIS 3.x\bin\qgis_process-qgis-ltr.bat`), die Ablage (fester Ordner im
   Projektordner, Vorgabe `Kataster`, oder der Ordner des aktiven Antrags `TÖB/<Antrag>` – der Antrag aus der

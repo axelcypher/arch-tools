@@ -95,6 +95,14 @@ const eingabe = (el: HTMLInputElement, value: string) => {
   act(() => el.blur());
 };
 const knopf = (host: Element, text: string) => [...host.querySelectorAll('button')].find((b) => b.textContent?.trim().startsWith(text)) as HTMLButtonElement;
+
+/** Ansicht aus dem Menü „Einrichtung“ öffnen (Struktur, Vorlagen, Katasterpläne, Einstellungen) */
+const einrichtung = (host: Element, ansicht: string) => {
+  act(() => knopf(host, 'Einrichtung').click());
+  const punkt = [...document.querySelectorAll<HTMLButtonElement>('[role^="menuitem"]')].find((b) => b.textContent?.trim().startsWith(ansicht));
+  if (!punkt) throw new Error(`Menüpunkt „${ansicht}“ fehlt`);
+  act(() => punkt.click());
+};
 const feld = (host: Element, label: string) =>
   [...host.querySelectorAll('label.field')].find((l) => l.querySelector('.field-label')?.textContent?.replace(/\s*\*$/, '') === label)!.querySelector('input') as HTMLInputElement;
 const warten = () =>
@@ -122,7 +130,7 @@ describe('Assistent: Ansichtswechsel', () => {
     act(() => knopf(host, 'Weiter:').click());
     act(() => knopf(host, 'Weiter:').click());
     expect(host.querySelector('.po-assistent h2')?.textContent).toBe('Bauherr');
-    act(() => knopf(host, 'Struktur').click());
+    einrichtung(host, 'Struktur');
     // ausgeblendet, nicht abgebaut
     expect(assistent(host).hidden).toBe(true);
     act(() => knopf(host, 'Assistent').click());
@@ -146,7 +154,7 @@ describe('Assistent: Ansichtswechsel', () => {
     eingabe(feld(host, 'Bezeichnung des Vorhabens'), 'Neubau Kita am Park');
     const aufrufe = liste.mock.calls.length;
 
-    act(() => knopf(host, 'Vorlagen').click());
+    einrichtung(host, 'Vorlagen');
     await warten();
     // ausgeblendet: der Fokus geht nicht in den versteckten Assistenten
     expect(assistent(host).contains(document.activeElement)).toBe(false);

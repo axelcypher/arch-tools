@@ -71,6 +71,14 @@ const eingabe = (el: HTMLInputElement | HTMLTextAreaElement, value: string) => {
   act(() => el.blur());
 };
 const knopf = (host: Element, text: string) => [...host.querySelectorAll('button')].find((b) => b.textContent?.trim().startsWith(text)) as HTMLButtonElement;
+
+/** Ansicht aus dem Menü „Einrichtung“ öffnen (Struktur, Vorlagen, Katasterpläne, Einstellungen) */
+const einrichtung = (host: Element, ansicht: string) => {
+  act(() => knopf(host, 'Einrichtung').click());
+  const punkt = [...document.querySelectorAll<HTMLButtonElement>('[role^="menuitem"]')].find((b) => b.textContent?.trim().startsWith(ansicht));
+  if (!punkt) throw new Error(`Menüpunkt „${ansicht}“ fehlt`);
+  act(() => punkt.click());
+};
 /** Knopf „+ …“: gezeichnetes Plus-Symbol und genau dieser Text */
 const plusKnopf = (host: Element, text: string) => [...host.querySelectorAll('button')].find((b) => b.textContent?.trim() === text && b.querySelector('svg.symbol')) as HTMLButtonElement;
 const feld = (host: Element, label: string) =>
@@ -90,6 +98,42 @@ describe('ATLAS (Projektordner)', () => {
     expect(projekte.textContent).toBe('Projekte');
     act(() => projekte.click());
     expect(knopf(host, 'Assistent').className).toContain('active');
+  });
+
+  it('Werkzeugleiste: Assistent, „Ordner prüfen“ und Mails sichtbar, die Einrichtung im Menü – mit der aktiven Ansicht im Namen', () => {
+    const host = render();
+    const leiste = host.querySelector('.toolbar.leiste[aria-label="Ansichten"]')!;
+    expect(leiste).not.toBeNull();
+    const sichtbar = [...leiste.querySelectorAll(':scope > [data-eintrag] button')].map((b) => b.textContent?.trim());
+    expect(sichtbar).toEqual(['Assistent', 'Ordner prüfen', 'Mails', 'Einrichtung']);
+    const menueKnopf = () => knopf(host, 'Einrichtung');
+    expect(menueKnopf().className).not.toContain('active');
+    expect(menueKnopf().getAttribute('aria-label')).toBe('Einrichtung');
+    // Menü: die vier Einrichtungsansichten als Einfachauswahl, „Struktur“ nennt die geladene Struktur
+    act(() => menueKnopf().click());
+    const punkte = () => [...document.querySelectorAll<HTMLButtonElement>('[role="menuitemradio"]')];
+    const namen = ['Struktur', 'Vorlagen', 'Katasterpläne', 'Einstellungen'];
+    expect(punkte().map((b) => namen.find((n) => b.textContent?.trim().startsWith(n)))).toEqual(namen);
+    expect(punkte().every((b) => b.getAttribute('aria-checked') === 'false')).toBe(true);
+    expect(punkte()[0].textContent).toContain(useOrdner.getState().struktur.name);
+    act(() => punkte()[1].click());
+    // Vorlagen offen: Menüknopf aktiv und benannt, die sichtbaren Ansichten nicht gedrückt
+    expect(menueKnopf().className).toContain('active');
+    expect(menueKnopf().textContent?.trim()).toBe('Einrichtung: Vorlagen');
+    expect(menueKnopf().getAttribute('aria-label')).toBe('Einrichtung: Vorlagen');
+    expect(menueKnopf().title).toBe('Einrichtung: Vorlagen');
+    expect(knopf(host, 'Assistent').getAttribute('aria-pressed')).toBe('false');
+    act(() => menueKnopf().click());
+    expect(
+      punkte()
+        .find((b) => b.textContent?.startsWith('Vorlagen'))!
+        .getAttribute('aria-checked'),
+    ).toBe('true');
+    act(() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+    // zurück zu einer sichtbaren Ansicht: Menüknopf wieder neutral
+    act(() => knopf(host, 'Mails').click());
+    expect(menueKnopf().className).not.toContain('active');
+    expect(menueKnopf().textContent?.trim()).toBe('Einrichtung');
   });
 
   it('Farbschema wechselt sofort (Menü ◐), ohne Option „Zeichenfläche abdunkeln“', () => {
@@ -210,7 +254,7 @@ describe('ATLAS (Projektordner)', () => {
 
   it('Einstellungen: gemeinsame Einstellungen aller Apps', () => {
     const host = render();
-    act(() => knopf(host, 'Einstellungen').click());
+    einrichtung(host, 'Einstellungen');
     expect(host.textContent).toContain('Gemeinsame Einstellungen');
     eingabe(feld(host, 'Projektdatei (.oap) in neuen Projekten'), 'Planung/Berechnungen/{nummer}');
     expect(useOrdner.getState().allgemein.oapPfad).toBe('Planung/Berechnungen/{nummer}');
@@ -227,7 +271,7 @@ describe('ATLAS (Projektordner)', () => {
   it('Einstellungen: Stammordner per Ziehen bzw. „Nach oben“/„Nach unten“ umsortieren – der erste nimmt neue Projekte auf', () => {
     useOrdner.setState({ allgemein: { ...VORGABE_ALLGEMEIN, projekte: ['/srv/Projekte', '/srv/Akquise', '/srv/Archiv'] }, stammordner: '/srv/Projekte' });
     const host = render();
-    act(() => knopf(host, 'Einstellungen').click());
+    einrichtung(host, 'Einstellungen');
     const eintraege = () => [...host.querySelectorAll('.po-stammordner li')];
     const reihe = () => useOrdner.getState().allgemein.projekte;
     // Archiv ganz nach oben ziehen
@@ -257,7 +301,7 @@ describe('ATLAS (Projektordner)', () => {
   it('Struktur: Klick-Editor – auswählen, umbenennen, anlegen, Leistungsphasen, ziehen, kopieren, Bausteine, rückgängig', async () => {
     useOrdner.setState({ struktur: { ...STANDARD, ordner: [{ pfad: '05 Protokolle' }, { pfad: '07 Ausschreibung', lph: [6, 7] }, { pfad: '09 Fotos' }] } });
     const host = render();
-    act(() => knopf(host, 'Struktur').click());
+    einrichtung(host, 'Struktur');
     const baum = host.querySelector<HTMLElement>('[role="tree"]')!;
     const z = (pfad: string) => host.querySelector<HTMLElement>(`[role="treeitem"][aria-label="${pfad}"]`)!;
     const klick = (pfad: string, mod: MouseEventInit = {}) => act(() => z(pfad).dispatchEvent(new MouseEvent('click', { bubbles: true, ...mod })));
@@ -398,7 +442,7 @@ describe('ATLAS (Projektordner)', () => {
 
   it('Struktur: Schemata, Textansicht, Standard wiederherstellen und Sicherungen', async () => {
     const host = render();
-    act(() => knopf(host, 'Struktur').click());
+    einrichtung(host, 'Struktur');
     eingabe(feld(host, 'Name des Projektordners'), '{nummer}_{kurzname}');
     expect(useOrdner.getState().struktur.ordnername).toBe('{nummer}_{kurzname}');
     // Platzhalter einfügen (Chips, global und lokal unterscheidbar), Vorschau und unbekannte Platzhalter schon beim Tippen (P-06)
@@ -508,7 +552,7 @@ describe('ATLAS (Projektordner)', () => {
 
   it('Einstellungen: Kürzel und Plannummern – Stellen tauschen, Kürzel ändern, ungültige Kürzel melden, Vorgabe wiederherstellen', async () => {
     const host = render();
-    act(() => knopf(host, 'Einstellungen').click());
+    einrichtung(host, 'Einstellungen');
     const bereich = host.querySelector<HTMLElement>('.po-namensschema')!;
     const schema = () => useOrdner.getState().allgemein.namensschema!;
     const beispiel = () => bereich.querySelector('code')!.textContent;
@@ -656,7 +700,7 @@ describe('ATLAS (Projektordner)', () => {
     await act(() => useOrdner.getState().konfigLaden());
     const fremd = (name: string) => localStorage.setItem('arch-tools:konfig:projektordner', JSON.stringify({ struktur: { ...STANDARD, name }, vorlagenordner: '' }));
     const host = render();
-    act(() => knopf(host, 'Struktur').click());
+    einrichtung(host, 'Struktur');
     await warten();
     // das Schema der Ordnernamen steht für alle Apps in den gemeinsamen Einstellungen (P-09)
     expect(JSON.parse(localStorage.getItem('arch-tools:konfig:allgemein')!).ordnerSchema).toBe(STANDARD.ordnername);
@@ -689,7 +733,7 @@ describe('ATLAS (Projektordner)', () => {
     expect(getEntries().some((e) => e.message.includes('die des anderen Rechners liegt in den Sicherungen'))).toBe(true);
     // beim Wechsel in die Einstellungen wird frisch gelesen
     fremd('Vom Server');
-    act(() => knopf(host, 'Vorlagen').click());
+    einrichtung(host, 'Vorlagen');
     await warten();
     expect(useOrdner.getState().struktur.name).toBe('Vom Server');
   });
@@ -704,7 +748,7 @@ describe('ATLAS (Projektordner)', () => {
     };
     useOrdner.setState({ vorlagenName: 'Büro-Vorlagen', vorlagen: Object.entries(dateien).map(([pfad, inhalt]) => ({ pfad, lies: async () => strToU8(inhalt) })) });
     const host = render();
-    act(() => knopf(host, 'Vorlagen').click());
+    einrichtung(host, 'Vorlagen');
     expect(host.textContent).toContain('Büro-Vorlagen');
     // LIESMICH.txt zählt nicht mit (P-05)
     expect(host.textContent).toContain('Vorlagenordner – 8 Dateien');
@@ -771,7 +815,7 @@ describe('ATLAS (Projektordner)', () => {
     expect(zeile.className).toContain('abgewaehlt');
 
     // Preset löschen: erst nach Bestätigung
-    act(() => knopf(host, 'Vorlagen').click());
+    einrichtung(host, 'Vorlagen');
     act(() => host.querySelectorAll<HTMLButtonElement>('.po-presets li button')[1].click());
     act(() => knopf(host, 'Löschen').click());
     await warten();
@@ -946,7 +990,7 @@ describe('Auftrag aus einer anderen App (Rahmen-App)', () => {
     (window as unknown as { happyDOM: { setURL: (u: string) => void } }).happyDOM.setURL('http://localhost:3000/?rahmen=tab&app=ordner');
     const host = render();
     expect(gesendet).toContainEqual({ typ: 'arch-tools:bereit', app: 'ordner' });
-    act(() => knopf(host, 'Struktur').click());
+    einrichtung(host, 'Struktur');
     act(() =>
       window.dispatchEvent(
         new MessageEvent('message', {

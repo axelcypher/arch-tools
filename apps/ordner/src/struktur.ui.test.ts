@@ -94,6 +94,14 @@ const warten = () =>
     await new Promise((r) => setTimeout(r, 0));
   });
 const knopf = (host: Element, text: string) => [...host.querySelectorAll('button')].find((b) => b.textContent?.trim().startsWith(text)) as HTMLButtonElement;
+
+/** Ansicht aus dem Menü „Einrichtung“ öffnen (Struktur, Vorlagen, Katasterpläne, Einstellungen) */
+const einrichtung = (host: Element, ansicht: string) => {
+  act(() => knopf(host, 'Einrichtung').click());
+  const punkt = [...document.querySelectorAll<HTMLButtonElement>('[role^="menuitem"]')].find((b) => b.textContent?.trim().startsWith(ansicht));
+  if (!punkt) throw new Error(`Menüpunkt „${ansicht}“ fehlt`);
+  act(() => punkt.click());
+};
 /** Knopf „+ …“: gezeichnetes Plus-Symbol und genau dieser Text */
 const plusKnopf = (host: Element, text: string) => [...host.querySelectorAll('button')].find((b) => b.textContent?.trim() === text && b.querySelector('svg.symbol')) as HTMLButtonElement;
 const eingabe = (el: HTMLInputElement | HTMLTextAreaElement, value: string, verlassen = true) => {
@@ -109,7 +117,7 @@ const eingabe = (el: HTMLInputElement | HTMLTextAreaElement, value: string, verl
 const strukturAnsicht = (ordner = [{ pfad: '05 Protokolle' }, { pfad: '07 Ausschreibung', lph: [6, 7] }, { pfad: '07 Ausschreibung/Dach' }, { pfad: '09 Fotos' }]) => {
   useOrdner.setState({ struktur: { ...STANDARD, ordner } });
   const host = render();
-  act(() => knopf(host, 'Struktur').click());
+  einrichtung(host, 'Struktur');
   const baum = host.querySelector<HTMLElement>('[role="tree"]')!;
   const z = (pfad: string) => host.querySelector<HTMLElement>(`[role="treeitem"][aria-label="${pfad}"]`)!;
   const klick = (pfad: string) => act(() => z(pfad).dispatchEvent(new MouseEvent('click', { bubbles: true })));
@@ -156,7 +164,7 @@ describe('Store: projektordner.json', () => {
     // angezeigt wird die Vorgabe, aber nichts geschrieben – auch nach Änderungen nicht
     expect(useOrdner.getState().struktur.ordner).toEqual(STANDARD.ordner);
     const host = render();
-    act(() => knopf(host, 'Struktur').click());
+    einrichtung(host, 'Struktur');
     expect(host.querySelector('.po-struktur-fehler')?.textContent).toContain('gespeichert wird nichts');
     act(() => useOrdner.getState().setStruktur({ ...useOrdner.getState().struktur, name: 'Versehentlich' }));
     act(() => useOrdner.getState().setVorlagenordner('/anders'));
@@ -514,7 +522,7 @@ describe('Vorlagen', () => {
       vorlagen: ['Word/Brief.txt', 'Excel/Kosten.csv'].map((pfad) => ({ pfad, lies: async () => strToU8('x') })),
     });
     const host = render();
-    act(() => knopf(host, 'Vorlagen').click());
+    einrichtung(host, 'Vorlagen');
     return host;
   };
 
@@ -569,7 +577,7 @@ describe('Vorlagen', () => {
 describe('Kürzel (Einstellungen)', () => {
   it('ungültiges neues Kürzel bleibt zum Korrigieren stehen – mit Fehlermarke; „LPh“ in der Spalte', () => {
     const host = render();
-    act(() => knopf(host, 'Einstellungen').click());
+    einrichtung(host, 'Einstellungen');
     const bereich = host.querySelector<HTMLElement>('.po-namensschema')!;
     expect([...bereich.querySelectorAll('th')].map((t) => t.textContent)).toContain('LPh');
     expect(bereich.textContent).not.toContain('LPH');
@@ -597,17 +605,17 @@ describe('Runde 3: Entwurf, Rückfrage, Sicherung, Ziehen, Menüs', () => {
     act(() => knopf(host, 'Text (Experte)').click());
     const text = () => host.querySelector<HTMLTextAreaElement>('textarea[aria-label="Ordnerliste"]');
     eingabe(text()!, 'Mein Entwurf\nNoch einer');
-    act(() => knopf(host, 'Vorlagen').click());
+    einrichtung(host, 'Vorlagen');
     expect(text()).toBeNull();
-    act(() => knopf(host, 'Struktur').click());
+    einrichtung(host, 'Struktur');
     // Textansicht und Entwurf sind noch da, weiterhin nicht übernommen
     expect(text()?.value).toBe('Mein Entwurf\nNoch einer');
     expect(host.textContent).toContain('noch nicht übernommen');
     expect(useOrdner.getState().struktur.ordner).toHaveLength(4);
     // Gegenprobe: verworfen – nach dem Wechsel steht wieder der gespeicherte Stand
     act(() => knopf(host, 'Verwerfen').click());
-    act(() => knopf(host, 'Vorlagen').click());
-    act(() => knopf(host, 'Struktur').click());
+    einrichtung(host, 'Vorlagen');
+    einrichtung(host, 'Struktur');
     expect(text()?.value).toBe('05 Protokolle\n07 Ausschreibung | LPh 6-7\n07 Ausschreibung/Dach\n09 Fotos');
     expect(host.textContent).not.toContain('noch nicht übernommen');
   });
@@ -799,7 +807,7 @@ describe('Folgerunde: unlesbare Struktur sperrt die Bearbeitung', () => {
   it('Struktur: nur lesen – Felder und Knöpfe echt gesperrt (kein inert), Baum bleibt bedienbar; „Angezeigte Struktur übernehmen …“ sichert und hebt die Sperre auf', async () => {
     await unlesbarLaden();
     const host = render();
-    act(() => knopf(host, 'Struktur').click());
+    einrichtung(host, 'Struktur');
     await warten();
     const sperre = host.querySelector('.po-struktur-fehler')!;
     expect(sperre.getAttribute('role')).toBe('alert');
@@ -901,7 +909,7 @@ describe('Folgerunde: unlesbare Struktur sperrt die Bearbeitung', () => {
     const echt = useOrdner.getState().strukturErsetzen;
     useOrdner.setState({ strukturErsetzen: async () => Promise.reject(new Error('Kein Schreibrecht im Konfigurationsordner')) });
     const host = render();
-    act(() => knopf(host, 'Struktur').click());
+    einrichtung(host, 'Struktur');
     await warten();
     act(() => knopf(host.querySelector('.po-struktur-fehler')!, 'Angezeigte Struktur übernehmen').click());
     await warten();
@@ -925,7 +933,7 @@ describe('Folgerunde: unlesbare Struktur sperrt die Bearbeitung', () => {
   it('Vorlagen: nur lesen – „Preset“, Dateinamen und das gewählte Preset echt gesperrt (kein inert), das Preset bleibt sichtbar; Gegenprobe ohne Fehler', async () => {
     await unlesbarLaden();
     const host = render();
-    act(() => knopf(host, 'Vorlagen').click());
+    einrichtung(host, 'Vorlagen');
     await warten();
     expect(host.querySelector('.po-struktur-fehler')?.textContent).toContain('Angezeigte Struktur übernehmen');
     expect(host.querySelector('[inert]')).toBeNull();
@@ -1036,7 +1044,7 @@ describe('Folgerunde: Kleinkram', () => {
     ];
     useOrdner.setState({ struktur: { ...STANDARD, presets: doppelt } });
     const host = render();
-    act(() => knopf(host, 'Vorlagen').click());
+    einrichtung(host, 'Vorlagen');
     act(() => host.querySelectorAll<HTMLButtonElement>('.po-presets li button')[1].click());
     act(() => host.querySelector<HTMLButtonElement>('button[aria-label="Zuordnung 1 entfernen"]')!.click());
     expect(host.querySelector('.po-rueckgaengig')).not.toBeNull();
@@ -1148,7 +1156,7 @@ describe('Nachbesserung: Vorlagenordner bei unlesbarer Struktur gesperrt', () =>
     act(() => useOrdner.getState().setVorlagenordner('/anders'));
     expect(useOrdner.getState().vorlagenordner).toBe('/v');
     const host = render();
-    act(() => knopf(host, 'Vorlagen').click());
+    einrichtung(host, 'Vorlagen');
     const zeile = () => host.querySelector('.po-ort')!.parentElement!;
     expect(knopf(zeile(), 'Wählen').disabled).toBe(true);
     expect(host.querySelector('.po-vorlagenordner-gesperrt')?.textContent).toContain('erst wieder ändern, wenn die Bürostruktur lesbar ist');
