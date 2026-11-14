@@ -214,4 +214,38 @@ describe('Kopf (Desktop): Menü „Mehr“ und Sammelmarke', () => {
     expect(marke(host).disabled).toBe(true);
     expect(marke(host).title).toContain('Die Lage wird gerade abgefragt.');
   });
+
+  it('Kompaktstufe: reicht der Platz auch ohne Antrag nicht, zeigt „Speichern“ nur das Symbol (tb-text); der Name bleibt', () => {
+    // Leiste 400 px, jeder Eintrag 100 px: auch ohne Antrag zu breit → kompakt
+    const breite = vi.spyOn(leistenMessung, 'breite').mockImplementation((el) => (el.classList.contains('werkzeugleiste') ? 400 : 100));
+    try {
+      const host = render();
+      act(() => window.dispatchEvent(new Event('resize')));
+      const leiste = host.querySelector<HTMLElement>('.br-kopf')!;
+      expect(leiste.classList.contains('kompakt')).toBe(true);
+      expect(host.querySelector<HTMLElement>('.br-kopf > [data-eintrag="antrag"]')!.hidden, 'zuerst wandert der Antrag').toBe(true);
+      const speichern = host.querySelector<HTMLButtonElement>('.br-kopf > [data-eintrag="speichern"] button')!;
+      // Text in tb-text (blendet die Kompaktstufe aus), Symbol davor, Name in aria-label und title
+      expect(speichern.querySelector(':scope > .tb-text')!.textContent).toBe('Speichern');
+      expect(speichern.querySelector(':scope > svg.symbol')).not.toBeNull();
+      expect(speichern.getAttribute('aria-label')).toBe('Speichern');
+      expect(speichern.title).toContain('Strg+S');
+    } finally {
+      breite.mockRestore();
+    }
+  });
+
+  it('Sammelmarke: sichtbar kurz „N Warnungen“, vorgelesen „Rechtsstand: N Warnungen“ (ohne tb-text – sie hat kein Symbol)', () => {
+    const host = render();
+    const marke = host.querySelector<HTMLButtonElement>('.br-marke-knopf')!;
+    const n = marke.title.split(' · ').length;
+    if (n > 1) {
+      expect(marke.textContent).toBe(`${n} Warnungen`);
+      expect(marke.getAttribute('aria-label')).toBe(`Rechtsstand: ${n} Warnungen`);
+    } else {
+      expect(marke.textContent).toBe(marke.title);
+      expect(marke.hasAttribute('aria-label')).toBe(false);
+    }
+    expect(marke.querySelector('.tb-text')).toBeNull();
+  });
 });
