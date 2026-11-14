@@ -88,13 +88,16 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   Umfang „Abbruch mit Ersatzbau“ nur Hinweis ist), bleibt die Antwort beantwortet; Regeln, die sie verwenden, zählen
   aber den auslösenden Hinweis als nicht gesichert. Der Paragraf steht dann auf „prüfen“ („Nur Hinweis, nicht
   gesichert: Umfang der Beseitigung“), „Bestätigen …“ steht am Umfang; erst wenn er bestätigt ist, zählt die Antwort
-  wieder voll – auch über eine Kette solcher Fragen. Ebenso bei einer widersprüchlichen Angabe als Auslöser: die Regel
+  wieder voll – auch über eine Kette solcher Fragen. An der Antwort steht dann eine Marke („über „Umfang der
+  Beseitigung“ (nur Hinweis)“), die auf „Bestätigen …“ am Auslöser springt; auch beim Festlegen von Hand zählt die
+  Antwort nur als Hinweis (faktStatus). Ebenso bei einer widersprüchlichen Angabe als Auslöser: die Regel
   trägt deren Widerspruch („Widerspruch: Umfang der Beseitigung“) – nicht bei Merkmalen wie Planungsrecht oder
   Gebäudeklasse, deren Widerspruch bzw. Vorbehalt prüfen die Regeln selbst. Ausgenommen ist eine Antwort mit dem Wert,
   der auch ohne die Frage gälte (`ohneAusloeser` im Regelmodul, nur wo das zwingend folgt): „Allee betroffen: nein“ gilt
   auch, wenn „geschützte Bäume betroffen“ nur Hinweis ist – diese Angabe schließt Alleen ein, eine betroffene Allee ist
   also immer auch ein solcher Fall; ebenso „nicht im Vogelschutzgebiet Hellwegbörde“, „nicht im Heilquellenschutzgebiet
-  Bad Sassendorf“, „keine Planreife“ und „keine Feuerstätte für feste Brennstoffe über 50 kW“. Hängt ein Paragraf an
+  Bad Sassendorf“ (bzw. dessen Zonen „außerhalb“), „keine Planreife“, „keine Zurückstellung beantragt“ und „keine
+  Feuerstätte für feste Brennstoffe über 50 kW“. Hängt ein Paragraf an
   einem anderen, der nur „gilt, Ausnahme möglich“ ist, und entfiele er mit dessen Ausnahme, nennt er sie („Ausnahme
   möglich über § 14 BNatSchG – es fehlt dort: …“); die Ampel bleibt „gilt“.
   Unter „Ausnahme möglich – es fehlt“ stehen nur Fragen, die gerade gestellt werden (ohne Ausweichen auf nicht
@@ -139,7 +142,9 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   Merkmal „Verfahren“ – § 62 Abs. 1 BauO NRW nennt keine Wohngebäude. Nötig ist im qualifizierten oder
   vorhabenbezogenen Bebauungsplan mindestens die Genehmigungsfreistellung (§ 63 Abs. 2, mit § 74 Abs. 7, 8 und 9 Satz
   1–2 nach § 63 Abs. 6 Satz 3), sonst mindestens § 64; der Satz richtet sich nach dem Planungsrecht. „verfahrensfrei“
-  trägt dann kein „entfällt“ (etwa §§ 63, 74 BauO NRW, die Bauvorlagen der BauPrüfVO).
+  trägt dann kein „entfällt“ (etwa §§ 63, 74 BauO NRW, die Bauvorlagen der BauPrüfVO). Jede dieser Warnungen hat
+  „Zum Merkmal“ (springt auf den gewählten Wert); angesagt wird ein neuer Satz über eine stehende Live-Region. In den
+  Sätzen steht nach „§“ und „Abs.“ ein geschütztes Leerzeichen.
 - **Vorschriften (Mitte):** **offen zuerst** (Vorgabe: prüfen, gilt, entfällt), nach Ebene oder nach Thema; je Norm
   Fassung und Zähler in Worten, darunter die Paragrafen mit Ampel und Hauptgrund (die Angaben, die das Ergebnis tragen).
   Oben das Ergebnis je Ampel (zugleich Ein-/Ausblenden), Suche und Filter „nur von Hand festgelegte“ bzw. „nur

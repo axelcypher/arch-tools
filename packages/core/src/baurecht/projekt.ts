@@ -355,16 +355,26 @@ function polygonFlaeche(pts: { x: number; y: number }[]): number {
   return a / 2;
 }
 
+/** geschützte Leerzeichen nach „§“ und „Abs.“ – in schmalen Leisten bricht keine Zeile zwischen Zeichen und Nummer */
+export const festeLeerzeichen = (satz: string) => satz.replace(/(§§?|Abs\.) (?=\d)/g, '$1\u00a0');
+
 /** Gebäudearten mit Wohnungen (Merkmal „Gebäudeart“) – gleiche Werte wie der Baustein `wohnnutzung` im Bundesmodul */
 const WOHNGEBAEUDE = ['Einfamilienhaus', 'Zweifamilienhaus', 'Mehrfamilienhaus', 'Wohn- und Geschäftshaus'];
 
 /**
  * Merkmale, deren festgelegter Wert der Ableitung aus dem Modell, den Geodaten oder anderen Merkmalen widerspricht
- * (Plausibilität, z. B. ein neues Wohngebäude als „verfahrensfrei“) – mit dem Satz für die Anzeige
+ * (Plausibilität, z. B. ein neues Wohngebäude als „verfahrensfrei“) – mit dem Satz für die Anzeige und je Satz dem
+ * Merkmal, um das es geht (`zu`, gleiche Reihenfolge – für den Sprung zum Merkmal)
  */
-export function widersprueche(merkmale: Record<string, string>, gk: GebaeudeklasseAbleitung | null, fakten: Record<string, FaktWert> = {}): { merkmale: Set<string>; texte: string[] } {
+export function widersprueche(merkmale: Record<string, string>, gk: GebaeudeklasseAbleitung | null, fakten: Record<string, FaktWert> = {}): { merkmale: Set<string>; texte: string[]; zu: string[] } {
   const out = new Set<string>();
   const texte: string[] = [];
+  const zu: string[] = [];
+  const melde = (merkmal: string, satz: string) => {
+    out.add(merkmal);
+    texte.push(festeLeerzeichen(satz));
+    zu.push(merkmal);
+  };
   // Planungsrecht gegen Geodaten und Stammdaten: die Grenze Innen-/Außenbereich ist die typische Fehleinordnung
   const pr = merkmale['Planungsrecht'];
   // „ja“ auch, wenn nur ein Dienst „ja“ meldet und die Angabe von Hand dagegen steht – der Widerspruch darf den Abgleich
@@ -372,12 +382,10 @@ export function widersprueche(merkmale: Record<string, string>, gk: Gebaeudeklas
   const ja = (id: string) => fakten[id]?.wert === true || fakten[id]?.dienst?.wert === true;
   const bplan = [fakten['planung.bplan_nr']?.wert, fakten['soest.bplan']?.wert].find((w) => (typeof w === 'string' && w.trim()) || typeof w === 'number');
   if ((pr === 'Innenbereich' || pr === 'Außenbereich') && bplan) {
-    out.add('Planungsrecht');
-    texte.push(`Planungsrecht „${pr}“ festgelegt, für das Grundstück ist aber ein Bebauungsplan angegeben (${String(bplan)}) – bitte klären`);
+    melde('Planungsrecht', `Planungsrecht „${pr}“ festgelegt, für das Grundstück ist aber ein Bebauungsplan angegeben (${String(bplan)}) – bitte klären`);
   }
   if ((pr === 'Innenbereich' || pr === 'Bebauungsplan') && (ja('schutz.landschaftsplan') || ja('schutz.lsg'))) {
-    out.add('Planungsrecht');
-    texte.push(`Planungsrecht „${pr}“ festgelegt, die Geodaten melden aber einen Landschaftsplan bzw. ein Landschaftsschutzgebiet – Grenze Innen-/Außenbereich prüfen`);
+    melde('Planungsrecht', `Planungsrecht „${pr}“ festgelegt, die Geodaten melden aber einen Landschaftsplan bzw. ein Landschaftsschutzgebiet – Grenze Innen-/Außenbereich prüfen`);
   }
   // Wohngebäude neu (Errichtung oder Ersatzbau) als „verfahrensfrei“: § 62 Abs. 1 nennt keine Wohngebäude. Nötig ist im
   // qualifizierten oder vorhabenbezogenen Bebauungsplan mindestens die Genehmigungsfreistellung (§ 63 Abs. 2 Nr. 1, mit
@@ -385,7 +393,6 @@ export function widersprueche(merkmale: Record<string, string>, gk: Gebaeudeklas
   // „verfahrensfrei“ darf dann kein Grün tragen. Der Umfang zählt auch als Hinweis (Warnung, zur sicheren Seite)
   const ersatzbau = merkmale['Vorhaben'] === 'Beseitigung' && fakten['vorhaben.beseitigung_umfang']?.wert === 'Abbruch mit Ersatzbau';
   if (merkmale['Verfahren'] === 'verfahrensfrei' && WOHNGEBAEUDE.includes(merkmale['Gebäudeart'] ?? '') && (merkmale['Vorhaben'] === 'Errichtung' || ersatzbau)) {
-    out.add('Verfahren');
     const pr = merkmale['Planungsrecht'];
     const mindestens =
       pr === 'Bebauungsplan'
@@ -393,12 +400,11 @@ export function widersprueche(merkmale: Record<string, string>, gk: Gebaeudeklas
         : pr
           ? 'mindestens vereinfachtes Baugenehmigungsverfahren (§ 64)'
           : 'Genehmigungsfreistellung (§ 63) nur im Bebauungsplan, sonst mindestens vereinfachtes Baugenehmigungsverfahren (§ 64)';
-    texte.push(`Verfahren „verfahrensfrei“ festgelegt, ${ersatzbau ? 'ein Ersatzbau für ein Wohngebäude' : 'ein neues Wohngebäude'} (${merkmale['Gebäudeart']}) ist aber nicht verfahrensfrei (§ 62 Abs. 1 BauO NRW) – ${mindestens}, bitte klären`);
+    melde('Verfahren', `Verfahren „verfahrensfrei“ festgelegt, ${ersatzbau ? 'ein Ersatzbau für ein Wohngebäude' : 'ein neues Wohngebäude'} (${merkmale['Gebäudeart']}) ist aber nicht verfahrensfrei (§ 62 Abs. 1 BauO NRW) – ${mindestens}, bitte klären`);
   }
   const m = merkmale['Gebäudeklasse'];
   if (m && gk && !gk.klassen.includes(m)) {
-    out.add('Gebäudeklasse');
-    texte.push(`Gebäudeklasse ${m} festgelegt, nach dem Modell ${gk.klassen.length > 1 ? `${gk.klassen.slice(0, -1).join(', ')} oder ${gk.klassen.at(-1)}` : gk.klassen[0]} (${gk.gruende.join('; ')})`);
+    melde('Gebäudeklasse', `Gebäudeklasse ${m} festgelegt, nach dem Modell ${gk.klassen.length > 1 ? `${gk.klassen.slice(0, -1).join(', ')} oder ${gk.klassen.at(-1)}` : gk.klassen[0]} (${gk.gruende.join('; ')})`);
   }
-  return { merkmale: out, texte };
+  return { merkmale: out, texte, zu };
 }

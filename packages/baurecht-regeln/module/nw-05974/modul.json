@@ -325,6 +325,7 @@
         "III",
         "außerhalb"
       ],
+      "ohneAusloeser": "außerhalb",
       "wenn": {
         "f": "kreis_soest.hsg",
         "ist": true
@@ -341,6 +342,7 @@
         "C",
         "außerhalb"
       ],
+      "ohneAusloeser": "außerhalb",
       "wenn": {
         "f": "kreis_soest.hsg",
         "ist": true

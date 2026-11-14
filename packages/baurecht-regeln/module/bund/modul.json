@@ -765,6 +765,7 @@
       "gruppe": "planung",
       "typ": "janein",
       "hilfe": "bei der Gemeinde erfragen, solange ein Bebauungsplan oder ein Flächennutzungsplan mit Konzentrationszonen aufgestellt wird – die Gemeinde kann die Zurückstellung auch noch nach Eingang des Bauantrags beantragen",
+      "ohneAusloeser": false,
       "wenn": {
         "oder": [
           {

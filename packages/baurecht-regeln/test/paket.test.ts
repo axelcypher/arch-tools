@@ -27,12 +27,20 @@ describe('Wert ohne Auslöser (ohneAusloeser)', () => {
   const defs = faktDefinitionen(aktiveModule(paket.module, SOEST));
   const mit = Object.entries(defs).filter(([, d]) => d.ohneAusloeser !== undefined);
 
-  it('gesetzt genau dort, wo „nein“ zwingend aus dem fehlenden Auslöser folgt (Fachreview)', () => {
-    expect(mit.map(([id]) => id).sort()).toEqual(['kreis_soest.hsg', 'kreis_soest.vsg_hellweg', 'nw.feste_brennstoffe_50kw', 'planung.planreife', 'schutz.allee']);
-    for (const [id, d] of mit) expect(d.ohneAusloeser, id).toBe(false);
+  it('gesetzt genau dort, wo der Wert zwingend aus dem fehlenden Auslöser folgt (Fachreview)', () => {
+    expect(Object.fromEntries(mit.map(([id, d]) => [id, d.ohneAusloeser]))).toEqual({
+      'kreis_soest.hsg': false,
+      'kreis_soest.hsg_qualitativ': 'außerhalb',
+      'kreis_soest.hsg_quantitativ': 'außerhalb',
+      'kreis_soest.vsg_hellweg': false,
+      'nw.feste_brennstoffe_50kw': false,
+      'planung.planreife': false,
+      'planung.zurueckstellung': false,
+      'schutz.allee': false,
+    });
   });
 
-  it('Auslöser nur Hinweis: „nein“ trägt ihn nicht, „ja“ schon – je Angabe mit den Definitionen des Pakets', () => {
+  it('Auslöser nur Hinweis: der Wert ohne Auslöser trägt ihn nicht, ein anderer schon – je Angabe mit den Definitionen des Pakets', () => {
     const bausteine = Object.assign({}, ...aktiveModule(paket.module, SOEST).map((m) => m.bausteine ?? {}));
     const rest = { merkmale: { Vorhaben: 'Errichtung', Gebäudeart: 'Einfamilienhaus' }, einreichung: '2026-12-01', heute: HEUTE, bausteine };
     for (const [id, d] of mit) {
@@ -40,8 +48,10 @@ describe('Wert ohne Auslöser (ohneAusloeser)', () => {
       const ausloeser = [...JSON.stringify(d.wenn).matchAll(/"f":"([^"]+)"/g)].map((m) => m[1]);
       expect(ausloeser.length, id).toBeGreaterThan(0);
       const hinweise = Object.fromEntries(ausloeser.map((f) => [f, { wert: true, herkunft: 'manuell' as const, sicherheit: 'hinweis' as const, grund: 'Test' }]));
-      expect(gestellteAntworten({ ...hinweise, [id]: sicher(false) }, (f) => f, defs, rest)[id]?.ueberHinweis, `${id}: nein`).toBeUndefined();
-      expect(gestellteAntworten({ ...hinweise, [id]: sicher(true) }, (f) => f, defs, rest)[id]?.ueberHinweis, `${id}: ja`).toBeTruthy();
+      // der Wert ohne Auslöser trägt ihn nicht, jeder andere Wert schon (ja/nein bzw. eine Zone)
+      const anders = d.typ === 'janein' ? !d.ohneAusloeser : d.werte!.find((w) => w !== d.ohneAusloeser)!;
+      expect(gestellteAntworten({ ...hinweise, [id]: sicher(d.ohneAusloeser!) }, (f) => f, defs, rest)[id]?.ueberHinweis, `${id}: ${String(d.ohneAusloeser)}`).toBeUndefined();
+      expect(gestellteAntworten({ ...hinweise, [id]: sicher(anders) }, (f) => f, defs, rest)[id]?.ueberHinweis, `${id}: ${String(anders)}`).toBeTruthy();
     }
   });
 });
