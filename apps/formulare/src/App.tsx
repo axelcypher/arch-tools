@@ -410,16 +410,18 @@ export function App() {
         <span
           className="muted small-text fo-status"
           title={[
-            kennung(offen.formular),
-            stand(offen.formular) && `Stand ${stand(offen.formular)}`,
             geaendert && `${anzahl(Object.keys(offen.aenderungen).length, 'Feld', 'Felder')} geändert`,
             geaendert && offen.gesichert && `lokal gesichert ${uhrzeit(offen.gesichert)}`,
+            kennung(offen.formular),
+            stand(offen.formular) && `Stand ${stand(offen.formular)}`,
           ]
             .filter(Boolean)
             .join(' · ')}
         >
-          {[kennung(offen.formular), stand(offen.formular) && `Stand ${stand(offen.formular)}`].filter(Boolean).join(' · ')}
-          {geaendert && ` · ${anzahl(Object.keys(offen.aenderungen).length, 'Feld', 'Felder')} geändert`}
+          {/* das Wichtigste zuerst: die Änderungen; bei knapper Breite kürzt die Ellipse Kennung und Stand */}
+          {[geaendert && `${anzahl(Object.keys(offen.aenderungen).length, 'Feld', 'Felder')} geändert`, kennung(offen.formular), stand(offen.formular) && `Stand ${stand(offen.formular)}`]
+            .filter(Boolean)
+            .join(' · ')}
         </span>
       ),
     });

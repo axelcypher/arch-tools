@@ -21,7 +21,7 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
 - **Werkzeugleiste** (gemeinsamer Baustein `Werkzeugleiste`, design.md „Kopf- und Werkzeugleisten“): sichtbar bleibt,
   was man ständig braucht – links „Datei ▾“ (Daten aktualisieren …, Speichern unter …, Drucken …; in der Web-Version
   Formular öffnen …), „Speichern“ (mit Punkt bei ungespeicherten Änderungen) mit ↶ ↷, der Umschalter **Formular |
-  Felder**, Zoom und „Ansicht ▾“ (Gliederung, Verlauf der Eingaben als Schalter); rechts Kennung und Stand, „Suchen …“
+  Felder**, Zoom und „Ansicht ▾“ (Gliederung, Verlauf der Eingaben als Schalter); rechts der Status (zuerst „n Felder geändert“, dann Kennung und Stand; gekürzt mit vollem Text im Tooltip), „Suchen …“
   (<kbd>Strg</kbd>+<kbd>K</kbd>) und der Hauptknopf **„Als PDF exportieren …“** (<kbd>Strg</kbd>+<kbd>E</kbd>), zuletzt
   „Mehr“ (⋯) mit „Formular einrichten“, „Manuelle Überschreibungen ignorieren“ und „Einstellungen …“. In schmalen
   Fenstern wandern erst „Suchen …“, dann Zoom, dann „Ansicht“ ins Menü „Mehr“. In den Projektdaten: „Projektdaten
