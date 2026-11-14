@@ -32,7 +32,10 @@ describe('Öffnen einer defekten Projektdatei (Q-6)', () => {
       root = createRoot(host);
       root.render(createElement(App));
     });
-    const knopf = [...host.querySelectorAll('button')].find((b) => b.textContent?.trim().startsWith('Öffnen'))!;
+    // „Öffnen …“ steht im Menü „Datei“ der Werkzeugleiste
+    const datei = [...host.querySelectorAll<HTMLButtonElement>('.toolbar button')].find((b) => b.textContent?.trim() === 'Datei')!;
+    act(() => datei.click());
+    const knopf = [...document.querySelectorAll<HTMLButtonElement>('.menue [role="menuitem"]')].find((b) => b.textContent?.includes('Öffnen …'))!;
     await act(async () => knopf.click());
     for (let i = 0; i < 10 && !host.querySelector('.modal.rf'); i++) await act(async () => new Promise((r) => setTimeout(r, 0)));
     const meldung = host.querySelector('.modal.rf')!;

@@ -209,7 +209,7 @@ export function Sidebar() {
         </div>
         {storey.shapes.length === 0 && (
           <div className="leer-hinweis">
-            <p className="muted">Noch keine Flächen. Plan laden (Werkzeugleiste „Plan laden …“) und Räume erkennen (E) oder mit Rechteck (R) bzw. Polygon (P) zeichnen.</p>
+            <p className="muted">Noch keine Flächen. Plan laden (Datei → Plan laden …) und Räume erkennen (E) oder mit Rechteck (R) bzw. Polygon (P) zeichnen.</p>
             <UmrissUebernehmen />
           </div>
         )}
