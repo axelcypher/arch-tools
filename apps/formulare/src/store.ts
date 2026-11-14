@@ -919,7 +919,31 @@ export const dateiSchluessel = (d: Pick<OffeneDatei, 'root' | 'pfad'>) => `${d.r
 export const pdfGeaendert = (s: Pick<FormulareState, 'datei' | 'dateiEntwuerfe'>) => s.datei?.art === 'pdf' && !!s.dateiEntwuerfe[dateiSchluessel(s.datei)];
 
 /** Ungespeicherte Bearbeitungen in irgendeinem Dokument (PDF, Excel, Word) – sie gelten nur für diese Sitzung */
-export const dokumenteGeaendert = (s: Pick<FormulareState, 'dateiEntwuerfe'>) => Object.keys(s.dateiEntwuerfe).length > 0;
+export const dokumenteGeaendert = (s: Pick<FormulareState, 'dateiEntwuerfe'>) => dokumenteMitBearbeitung(s) > 0;
+
+/** Zahl der Dokumente mit ungespeicherten Bearbeitungen (für den Satz „… ungespeicherte Änderungen.“) */
+export const dokumenteMitBearbeitung = (s: Pick<FormulareState, 'dateiEntwuerfe'>) => Object.keys(s.dateiEntwuerfe).length;
+
+/** Ist das gerade in der Dateiansicht gezeigte Dokument eines mit ungespeicherten Bearbeitungen? („das Dokument“ statt „ein Dokument“) */
+export const gezeigtesDokumentBearbeitet = (s: Pick<FormulareState, 'haupt' | 'datei' | 'dateiEntwuerfe'>) => s.haupt === 'datei' && !!s.datei && dateiSchluessel(s.datei) in s.dateiEntwuerfe;
+
+/**
+ * Satz „… hat ungespeicherte Änderungen.“ (design.md „Ungespeicherte Änderungen“) – an der Titelleiste und in den
+ * eigenen Rückfragen gleich; nichts ungespeichert: undefined. `dokumente`: Zahl der Dokumente mit ungespeicherten
+ * Bearbeitungen; `dokumentSichtbar`: genau dieses eine ist gerade zu sehen („das Dokument“ statt „ein Dokument“)
+ */
+export function ungespeichertText(o: { formular?: boolean; projektdaten?: boolean; dokumente?: number; dokumentSichtbar?: boolean }): string | undefined {
+  const n = o.dokumente ?? 0;
+  const dokumente = n > 1 ? 'die Dokumente' : n === 1 ? (o.dokumentSichtbar ? 'das Dokument' : 'ein Dokument') : null;
+  const teile = [o.formular && 'das Formular', o.projektdaten && 'die Projektdaten', dokumente].filter((t): t is string => !!t);
+  if (!teile.length) return undefined;
+  const gegenstand = teile.length > 1 ? `${teile.slice(0, -1).join(', ')} und ${teile.at(-1)}` : teile[0];
+  const mehrzahl = teile.length > 1 || o.projektdaten || n > 1;
+  return `${gegenstand[0].toUpperCase()}${gegenstand.slice(1)} ${mehrzahl ? 'haben' : 'hat'} ungespeicherte Änderungen.`;
+}
+
+/** Eingaben einer PDF hält nur die Ansicht – die Folge steht als ein Satz vor der Aussage */
+export const PDF_VERLASSEN_SATZ = `Ohne Speichern gehen die Eingaben in der PDF verloren. ${ungespeichertText({ dokumente: 1, dokumentSichtbar: true })}`;
 
 /**
  * Vor dem Verlassen einer bearbeiteten PDF (andere Ansicht, anderes Dokument, Formular, Projekt): „Speichern / Nicht
@@ -929,7 +953,7 @@ export async function dateiVerlassen(): Promise<boolean> {
   const s = useFormulare.getState();
   if (!s.datei || !pdfGeaendert(s)) return true;
   const d = s.datei;
-  const weiter = await aenderungenSpeichern(d.name, () => pdfAnbindung.speichern?.() ?? false, 'Die Eingaben in dieser PDF sind noch nicht gespeichert und gingen sonst verloren.');
+  const weiter = await aenderungenSpeichern(d.name, () => pdfAnbindung.speichern?.() ?? false, PDF_VERLASSEN_SATZ);
   // „Nicht speichern“: die Eingaben verfallen mit der Ansicht – der Hinweis darauf auch
   if (weiter) useFormulare.getState().setDateiEntwurf(null, d);
   return weiter;

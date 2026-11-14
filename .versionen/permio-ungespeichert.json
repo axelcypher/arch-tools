@@ -1,0 +1,6 @@
+{
+  "formulare": {
+    "stufe": "patch",
+    "notiz": "Die Rückfrage vor dem Verlassen bzw. Schließen sagt einheitlich, was ungespeichert ist („Das Formular hat ungespeicherte Änderungen.“, „Die Dokumente haben …“, „Die Projektdaten …“); beim Verlassen einer PDF: „Ohne Speichern gehen die Eingaben in der PDF verloren.“"
+  }
+}
