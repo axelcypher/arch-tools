@@ -25,7 +25,8 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
   geändert“, dann Kennung und Stand; gekürzt, der volle Text samt „lokal gesichert“ im Tooltip), „Suchen …“
   (<kbd>Strg</kbd>+<kbd>K</kbd>) und der Hauptknopf **„Als PDF exportieren …“** (<kbd>Strg</kbd>+<kbd>E</kbd>), zuletzt
   „Mehr“ (⋯) mit „Formular einrichten“, „Manuelle Überschreibungen ignorieren“ und „Einstellungen …“. In schmalen
-  Fenstern wandern erst „Suchen …“, dann Zoom, dann „Ansicht“ ins Menü „Mehr“. In den Projektdaten: „Projektdaten
+  Fenstern kürzt sich zuerst der Status (bis auf eine Mindestbreite), dann wandern „Suchen …“, Zoom und „Ansicht“ ins
+  Menü „Mehr“. In den Projektdaten: „Projektdaten
   speichern“ mit ↶ ↷; „Änderungen verwerfen“ steht in „Mehr“.
 - **Zuletzt bearbeitet:** Rechts an jedem Formular der Navigation und an jeder Datei im Projektordner (Ordner und
   Ansicht „Antrag“) steht kurz, wann zuletzt geändert wurde („heute 14:30“, „gestern 09:05“, „03.03.“) – beim Formular

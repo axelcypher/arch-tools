@@ -473,7 +473,7 @@ describe('Formulare', () => {
     const host = await render();
     await projektOeffnen(host, 'BS9');
     await klick(host.querySelector<HTMLButtonElement>('.fo-eintrag-karte')!);
-    const leiste = host.querySelector<HTMLElement>('.toolbar.leiste')!;
+    const leiste = host.querySelector<HTMLElement>('.toolbar.werkzeugleiste')!;
     expect([...leiste.querySelectorAll<HTMLElement>(':scope > [data-eintrag]')].filter((e) => !e.hidden).map((e) => e.dataset.eintrag)).toEqual(['karte-speichern', 'status', 'suchen']);
     expect(knopfGenau(leiste, 'Projektdaten speichern').classList.contains('ungespeichert')).toBe(false);
     // ohne Änderung: gesperrt, mit Grund; der Gefahr-Punkt steht hinter einem Trenner am Ende
@@ -1005,7 +1005,7 @@ describe('Formulare', () => {
     // Formularansicht (die Wahl Formular | Felder wird gemerkt – ein voriger Test kann „Felder“ hinterlassen)
     act(() => useFormulare.getState().setAnsicht('seite'));
     await warte();
-    const leiste = host.querySelector<HTMLElement>('.toolbar.leiste')!;
+    const leiste = host.querySelector<HTMLElement>('.toolbar.werkzeugleiste')!;
     const eintraege = () => [...leiste.querySelectorAll<HTMLElement>(':scope > [data-eintrag]')].filter((e) => !e.hidden).map((e) => e.dataset.eintrag);
     expect(eintraege()).toEqual(['datei', 'speichern', 'umschalter', 'zoom', 'ansicht', 'status', 'suchen', 'pdf']);
     // Hauptknopf rechts: Als PDF exportieren; Speichern ohne Änderungen ohne Punkt
@@ -1030,7 +1030,7 @@ describe('Formulare', () => {
     // Formularansicht (die Wahl Formular | Felder wird gemerkt – ein voriger Test kann „Felder“ hinterlassen)
     act(() => useFormulare.getState().setAnsicht('seite'));
     await warte();
-    const leiste = host.querySelector<HTMLElement>('.toolbar.leiste')!;
+    const leiste = host.querySelector<HTMLElement>('.toolbar.werkzeugleiste')!;
     let breite = 2000;
     const messen = vi.spyOn(leistenMessung, 'breite').mockImplementation((el) => (el === leiste ? breite : 100));
     try {

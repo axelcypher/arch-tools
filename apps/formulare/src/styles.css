@@ -905,17 +905,11 @@ button.icon.fo-gl-zaehlt.an {
   white-space: nowrap;
   min-width: 0;
 }
-.toolbar.leiste > [data-eintrag='zoom'] select {
+.toolbar.werkzeugleiste > [data-eintrag='zoom'] select {
   width: auto;
 }
-/* Werkzeugleiste mit Überlauf: Einträge behalten ihre Breite – sonst schrumpfen sie, statt ins Menü „Mehr“ zu wandern
-   (die Leiste misst die gezeigte Breite). Vorläufig hier, bis core es in base.css setzt (gemeldet). */
-.toolbar.leiste > [data-eintrag] {
-  flex: none;
-}
-/* Status mit fester Höchstbreite – so misst die Leiste eine feste Breite und die Ränge greifen zuerst; zu lang: Ellipse,
-   der volle Text steht im Tooltip */
-.toolbar.leiste > [data-eintrag='status'] .fo-status {
+/* Status (Eintrag `kuerzbar`): höchstens 32ch breit, bei Platzmangel kürzer mit „…“ – der volle Text steht im Tooltip */
+.toolbar.werkzeugleiste > [data-eintrag='status'] .fo-status {
   display: block;
   max-width: 32ch;
 }

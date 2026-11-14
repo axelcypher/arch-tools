@@ -389,6 +389,7 @@ export function App() {
   if (kartenansicht && karte)
     leistenTeile.push({
       id: 'status',
+      kuerzbar: true,
       inhalt: (
         <span
           className="muted small-text fo-status"
@@ -406,6 +407,7 @@ export function App() {
   if (formularSichtbar)
     leistenTeile.push({
       id: 'status',
+      kuerzbar: true,
       inhalt: (
         <span
           className="muted small-text fo-status"

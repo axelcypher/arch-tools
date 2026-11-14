@@ -96,7 +96,7 @@ describe('Web-Version', () => {
 
   it('Werkzeugleiste der Web-Version: erst nur „Formular öffnen …“, mit Formular „Datei“ (Formular öffnen …, Drucken …) und „Herunterladen“', async () => {
     const host = await render();
-    const leiste = () => host.querySelector<HTMLElement>('.toolbar.leiste')!;
+    const leiste = () => host.querySelector<HTMLElement>('.toolbar.werkzeugleiste')!;
     const sichtbar = () => [...leiste().querySelectorAll<HTMLElement>(':scope > [data-eintrag]')].filter((e) => !e.hidden).map((e) => e.dataset.eintrag);
     expect(sichtbar()).toEqual(['oeffnen']);
     expect(knopfGenau(leiste(), 'Formular öffnen …')).toBeDefined();
