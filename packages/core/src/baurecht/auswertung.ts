@@ -172,6 +172,7 @@ export function modulFakten(module: Modul[], fakten: Record<string, FaktWert>): 
             ...(basis.widerspruch ? { widerspruch: basis.widerspruch } : {}),
             // abgeleitet aus einer Antwort, die nur über Hinweise gestellt ist: deren Auslöser gehen mit
             ...(basis.ueberHinweis?.length ? { ueberHinweis: basis.ueberHinweis } : {}),
+            ...(basis.ueberWiderspruch?.length ? { ueberWiderspruch: basis.ueberWiderspruch } : {}),
             ...(bestaetigt ? { bestaetigt } : {}),
           };
       }
@@ -223,7 +224,7 @@ export function modulZiel(id: string, fakten: Record<string, FaktWert>, defs: Re
   return defs[id]?.nach ? id : 'lage.ags';
 }
 
-const unsicherWert = (f: FaktWert | undefined) => !f || f.wert == null || (f.sicherheit === 'hinweis' && !f.bestaetigt) || !!f.widerspruch || !!f.ueberHinweis?.length;
+const unsicherWert = (f: FaktWert | undefined) => !f || f.wert == null || (f.sicherheit === 'hinweis' && !f.bestaetigt) || !!f.widerspruch || !!f.ueberHinweis?.length || !!f.ueberWiderspruch?.length;
 
 function modulQuellen(id: string, fakten: Record<string, FaktWert>, defs: Record<string, FaktDef>, bund: ReadonlySet<string>, besucht: Set<string>): Set<string> {
   besucht.add(id);
@@ -257,10 +258,13 @@ function ueberHinweisGestellt(eingang: Record<string, FaktWert>, ableiten: (f: R
     const ctx: KurzKontext = { ...rest, fakten: ableiten(out) };
     const naechste: Record<string, FaktWert> = {};
     for (const [id, w] of Object.entries(antworten)) {
-      const hinweise = w.wert === null || w.wert === '' ? [] : [...new Set(frageStand(id, defs[id], ctx).ueberHinweis.filter((h) => h !== id))].sort();
-      naechste[id] = hinweise.length ? { ...w, ueberHinweis: hinweise } : w;
+      const leer = w.wert === null || w.wert === '';
+      const stand = leer ? undefined : frageStand(id, defs[id], ctx);
+      const hinweise = [...new Set((stand?.ueberHinweis ?? []).filter((h) => h !== id))].sort();
+      const widerspruch = [...new Set((stand?.ueberWiderspruch ?? []).filter((h) => h !== id))].sort();
+      naechste[id] = hinweise.length || widerspruch.length ? { ...w, ...(hinweise.length ? { ueberHinweis: hinweise } : {}), ...(widerspruch.length ? { ueberWiderspruch: widerspruch } : {}) } : w;
     }
-    const schluessel = JSON.stringify(Object.entries(naechste).map(([id, w]) => [id, w.ueberHinweis ?? []]));
+    const schluessel = JSON.stringify(Object.entries(naechste).map(([id, w]) => [id, w.ueberHinweis ?? [], w.ueberWiderspruch ?? []]));
     out = naechste;
     if (schluessel === vorher) break;
     vorher = schluessel;
@@ -268,13 +272,13 @@ function ueberHinweisGestellt(eingang: Record<string, FaktWert>, ableiten: (f: R
   return out;
 }
 
-/** `ueberHinweis` entfernen – das Feld entsteht nur in der Auswertung und wird nie gespeichert */
+/** `ueberHinweis` und `ueberWiderspruch` entfernen – die Felder entstehen nur in der Auswertung und werden nie gespeichert */
 export function ohneUeberHinweis(fakten: Record<string, FaktWert>): Record<string, FaktWert> {
   const out: Record<string, FaktWert> = {};
   for (const [id, f] of Object.entries(fakten)) {
-    if (!f.ueberHinweis) out[id] = f;
+    if (!f.ueberHinweis && !f.ueberWiderspruch) out[id] = f;
     else {
-      const { ueberHinweis: _u, ...ohne } = f;
+      const { ueberHinweis: _u, ueberWiderspruch: _w, ...ohne } = f;
       out[id] = ohne;
     }
   }

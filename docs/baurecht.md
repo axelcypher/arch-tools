@@ -86,9 +86,11 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   Umfang „Abbruch mit Ersatzbau“ nur Hinweis ist), bleibt die Antwort beantwortet; Regeln, die sie verwenden, zählen
   aber den auslösenden Hinweis als nicht gesichert. Der Paragraf steht dann auf „prüfen“ („Nur Hinweis, nicht
   gesichert: Umfang der Beseitigung“), „Bestätigen …“ steht am Umfang; erst wenn er bestätigt ist, zählt die Antwort
-  wieder voll – auch über eine Kette solcher Fragen. Hängt ein Paragraf an einem anderen, der nur „gilt, Ausnahme
-  möglich“ ist, und entfiele er mit dessen Ausnahme, nennt er sie („Ausnahme möglich über § 14 BNatSchG – es fehlt
-  dort: …“); die Ampel bleibt „gilt“.
+  wieder voll – auch über eine Kette solcher Fragen. Ebenso bei einer widersprüchlichen Angabe als Auslöser: die Regel
+  trägt deren Widerspruch („Widerspruch: Umfang der Beseitigung“) – nicht bei Merkmalen wie Planungsrecht oder
+  Gebäudeklasse, deren Widerspruch bzw. Vorbehalt prüfen die Regeln selbst. Hängt ein Paragraf an einem anderen, der
+  nur „gilt, Ausnahme möglich“ ist, und entfiele er mit dessen Ausnahme, nennt er sie („Ausnahme möglich über § 14
+  BNatSchG – es fehlt dort: …“); die Ampel bleibt „gilt“.
   Unter „Ausnahme möglich – es fehlt“ stehen nur Fragen, die gerade gestellt werden (ohne Ausweichen auf nicht
   gestellte: eine Ausnahme, deren Fragen nicht gestellt sind, wird nicht angeboten). Ist die Ausnahme nur über Hinweise
   bzw. widersprüchliche Angaben ausgeschlossen, steht „Ausnahme ausgeschlossen, aber nicht gesichert (beruht auf:

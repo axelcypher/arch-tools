@@ -863,6 +863,33 @@ describe('Runde 18: nur gestellte Antworten zählen', () => {
     const alt = gestellteAntworten({ h: sicher(true), a: { ...sicher(true), ueberHinweis: ['h'] } }, (f) => f, defs, rest);
     expect(alt.a.ueberHinweis).toBeUndefined();
   });
+
+  it('ebenso über eine widersprüchliche Angabe: die Antwort trägt den Widerspruch des Auslösers, auch in der Kette', () => {
+    const defs = {
+      h: { titel: 'H', gruppe: 'x', typ: 'janein' },
+      a: { titel: 'A', gruppe: 'x', typ: 'janein', wenn: { f: 'h', ist: true } },
+      b: { titel: 'B', gruppe: 'x', typ: 'janein', wenn: { f: 'a', ist: true } },
+    } as unknown as Record<string, import('./typen').FaktDef>;
+    const rest = { merkmale: {}, einreichung: '2026-12-01', heute: '2026-11-13', bausteine: {} };
+    const r = gestellteAntworten({ h: { ...sicher(true), widerspruch: 'Dienst: nein' }, a: sicher(true), b: sicher(false) }, (f) => f, defs, rest);
+    expect(r.a).toMatchObject({ sicherheit: 'sicher', ueberWiderspruch: ['h'] });
+    expect(r.b).toMatchObject({ sicherheit: 'sicher', ueberWiderspruch: ['h'] });
+    expect(r.a.ueberHinweis).toBeUndefined();
+    // ein mitgegebenes Feld zählt nicht; ist der Widerspruch am Auslöser behoben, fällt es weg
+    expect(gestellteAntworten({ h: sicher(true), a: { ...sicher(true), ueberWiderspruch: ['h'] } }, (f) => f, defs, rest).a.ueberWiderspruch).toBeUndefined();
+    expect(gestellteAntworten({ h: sicher(true), a: sicher(true) }, (f) => f, defs, rest).a.ueberWiderspruch).toBeUndefined();
+    // Hinweis und Widerspruch zugleich am Auslöser: beide Felder
+    const beide = gestellteAntworten({ h: { ...hinweis(true), widerspruch: 'Dienst: nein' }, a: sicher(true) }, (f) => f, defs, rest);
+    expect(beide.a).toMatchObject({ ueberHinweis: ['h'], ueberWiderspruch: ['h'] });
+  });
+
+  it('frageStand: Widersprüche an Merkmalen (Planungsrecht, Gebäudeklasse) machen keine Antwort widersprüchlich', async () => {
+    const { frageStand } = await import('./fragen');
+    const ctx = { merkmale: { Planungsrecht: 'Bebauungsplan' }, fakten: {}, einreichung: '2026-12-01', heute: '2026-11-13', bausteine: {}, widersprueche: new Set(['Planungsrecht']) };
+    const def = { wenn: { m: 'Planungsrecht', in: ['Bebauungsplan'] } } as unknown as import('./typen').FaktDef;
+    expect(werten(def.wenn, ctx).widerspruch).toEqual(['merkmal:Planungsrecht']);
+    expect(frageStand('x', def, ctx)).toEqual({ gestellt: true, ueberHinweis: [], ueberWiderspruch: [] });
+  });
 });
 
 describe('Runde 19: Kriterium „gestellt“ und Paketregeln für Fragen', () => {
