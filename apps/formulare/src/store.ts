@@ -919,7 +919,13 @@ export const dateiSchluessel = (d: Pick<OffeneDatei, 'root' | 'pfad'>) => `${d.r
 export const pdfGeaendert = (s: Pick<FormulareState, 'datei' | 'dateiEntwuerfe'>) => s.datei?.art === 'pdf' && !!s.dateiEntwuerfe[dateiSchluessel(s.datei)];
 
 /** Ungespeicherte Bearbeitungen in irgendeinem Dokument (PDF, Excel, Word) – sie gelten nur für diese Sitzung */
-export const dokumenteGeaendert = (s: Pick<FormulareState, 'dateiEntwuerfe'>) => Object.keys(s.dateiEntwuerfe).length > 0;
+export const dokumenteGeaendert = (s: Pick<FormulareState, 'dateiEntwuerfe'>) => dokumenteMitBearbeitung(s) > 0;
+
+/** Zahl der Dokumente mit ungespeicherten Bearbeitungen (für den Satz „… ungespeicherte Änderungen.“) */
+export const dokumenteMitBearbeitung = (s: Pick<FormulareState, 'dateiEntwuerfe'>) => Object.keys(s.dateiEntwuerfe).length;
+
+/** Ist das gerade in der Dateiansicht gezeigte Dokument eines mit ungespeicherten Bearbeitungen? („das Dokument“ statt „ein Dokument“) */
+export const gezeigtesDokumentBearbeitet = (s: Pick<FormulareState, 'haupt' | 'datei' | 'dateiEntwuerfe'>) => s.haupt === 'datei' && !!s.datei && dateiSchluessel(s.datei) in s.dateiEntwuerfe;
 
 /**
  * Satz „… hat ungespeicherte Änderungen.“ (design.md „Ungespeicherte Änderungen“) – an der Titelleiste und in den

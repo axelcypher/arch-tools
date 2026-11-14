@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SpeicherDateisystem } from './dateisystem';
 import { sperrPfad } from './forma/sperre';
 import type { OffeneDatei } from './store';
-import { PDF_ENTWURF, dateiEntwurfVerschieben, entwurfVon, pdfAnbindung, ungespeichertText, useFormulare } from './store';
+import { PDF_ENTWURF, dateiEntwurfVerschieben, dokumenteMitBearbeitung, entwurfVon, gezeigtesDokumentBearbeitet, pdfAnbindung, ungespeichertText, useFormulare } from './store';
 import { pdfSpeichern } from './dokumente/pdfSpeichern';
 
 /** Rückfrage „Änderungen speichern?“ (Titelleiste) – im Test beantwortet `antwort` */
@@ -350,6 +350,24 @@ describe('Dokumente: Bearbeitungen gehen nicht still verloren', () => {
     expect(ungespeichertText({ projektdaten: true })).toBe('Die Projektdaten haben ungespeicherte Änderungen.');
     expect(ungespeichertText({ formular: true, dokumente: 1 })).toBe('Das Formular und ein Dokument haben ungespeicherte Änderungen.');
     expect(ungespeichertText({ projektdaten: true, dokumente: 2 })).toBe('Die Projektdaten und die Dokumente haben ungespeicherte Änderungen.');
+  });
+
+  it('Grundlage des Satzes an der Titelleiste: Zahl der bearbeiteten Dokumente und ob das gezeigte dazugehört', async () => {
+    const ds = await projekt();
+    const d = pdf(ds);
+    // Excel-Bearbeitung liegt vor, die Projektkarte ist zu sehen: „ein Dokument“
+    useFormulare.setState({ datei: d, haupt: 'projektkarte', dateiEntwuerfe: { [`${ROOT}|BS9/Liste.xlsx`]: 'x' } });
+    let s = useFormulare.getState();
+    expect(dokumenteMitBearbeitung(s)).toBe(1);
+    expect(gezeigtesDokumentBearbeitet(s)).toBe(false);
+    expect(ungespeichertText({ dokumente: dokumenteMitBearbeitung(s), dokumentSichtbar: gezeigtesDokumentBearbeitet(s) })).toBe('Ein Dokument hat ungespeicherte Änderungen.');
+    // die bearbeitete PDF selbst ist zu sehen: „das Dokument“; zwei Bearbeitungen: „die Dokumente“
+    useFormulare.setState({ haupt: 'datei', dateiEntwuerfe: { [`${ROOT}|BS9/Plan.pdf`]: PDF_ENTWURF } });
+    s = useFormulare.getState();
+    expect(gezeigtesDokumentBearbeitet(s)).toBe(true);
+    useFormulare.setState({ dateiEntwuerfe: { [`${ROOT}|BS9/Plan.pdf`]: PDF_ENTWURF, [`${ROOT}|BS9/Liste.xlsx`]: 'x' } });
+    s = useFormulare.getState();
+    expect(ungespeichertText({ dokumente: dokumenteMitBearbeitung(s), dokumentSichtbar: gezeigtesDokumentBearbeitet(s) })).toBe('Die Dokumente haben ungespeicherte Änderungen.');
   });
 
   it('bearbeitete PDF verlassen: erst fragen – Abbrechen bleibt, Nicht speichern wechselt', async () => {

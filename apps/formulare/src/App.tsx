@@ -36,7 +36,7 @@ import { springeZuFeld } from './navigation';
 import { zurNaechstenOffenen } from './pruefen';
 import { useVorbelegung } from './merkmalAbgleich';
 import type { Ansicht, OffenesFormular } from './store';
-import { ZOOMSTUFEN, bearbeitungGesperrt, dateiSchluessel, dokumenteGeaendert, istGeaendert, kannVor, kannZurueck, karteGeaendert, ungespeichertText, useFormulare } from './store';
+import { ZOOMSTUFEN, bearbeitungGesperrt, dokumenteMitBearbeitung, gezeigtesDokumentBearbeitet, istGeaendert, kannVor, kannZurueck, karteGeaendert, ungespeichertText, useFormulare } from './store';
 import { kannRueckgaengig, kannWiederholen } from './verlauf';
 import { anzahl } from './text';
 
@@ -104,10 +104,9 @@ export function App() {
   const geaendert = kartenansicht ? karteGeaendert(karte) : istGeaendert(offen);
   // Bearbeitungen in Dokumenten (PDF, Excel, Word) gelten nur für diese Sitzung – anders als Formular und Projektkarte,
   // deren Eingaben als Entwurf einen Neustart überstehen. Beim Beenden bzw. Update wird deshalb nach ihnen gefragt.
-  const dokGeaendert = useFormulare(dokumenteGeaendert);
-  const dokEntwuerfe = useFormulare((s) => Object.keys(s.dateiEntwuerfe).length);
-  // genau ein Dokument mit Bearbeitungen, und es ist gerade zu sehen: „das Dokument“ statt „ein Dokument“
-  const dokumentSichtbar = useFormulare((s) => s.haupt === 'datei' && !!s.datei && dateiSchluessel(s.datei) in s.dateiEntwuerfe);
+  const dokEntwuerfe = useFormulare(dokumenteMitBearbeitung);
+  const dokGeaendert = dokEntwuerfe > 0;
+  const dokumentSichtbar = useFormulare(gezeigtesDokumentBearbeitet);
   const grund = offen ? sperrgrund(offen) : null;
   const name =
     ds && (!projekt || haupt === 'projekte') ? 'Projekte' : haupt === 'projektkarte' && projekt ? `Projektdaten ${projekt.ordner}` : haupt === 'antrag' && projekt ? `Antragsdaten ${projekt.ordner}` : haupt === 'datei' && datei ? datei.name : (offen?.name ?? (projekt ? projekt.ordner : 'Kein Formular geöffnet'));
@@ -221,7 +220,7 @@ export function App() {
         app={APP_NAMEN.formulare.name}
         name={name}
         dirty={geaendert || dokGeaendert}
-        // derselbe Satz wie in den eigenen Rückfragen: was ungespeichert ist (Formular bzw. Projektdaten, Dokument)
+        // derselbe Satz wie in den eigenen Rückfragen: was ungespeichert ist (Formular bzw. Projektdaten, das gezeigte, ein Dokument bzw. die Dokumente)
         ungespeichert={ungespeichertText({ formular: geaendert && !kartenansicht, projektdaten: geaendert && kartenansicht, dokumente: dokEntwuerfe, dokumentSichtbar })}
         onOpenLog={() => setDialog('log')}
         zeichenflaeche={false}
