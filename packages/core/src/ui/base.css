@@ -203,6 +203,34 @@ body,
   flex: 1;
 }
 
+/* Werkzeugleiste mit Überlauf (ui/Werkzeugleiste.tsx): eine Zeile; was nicht passt, steht im Menü „Mehr“ */
+.toolbar.leiste {
+  flex-wrap: nowrap;
+  /* in der Spalte von .app nur in der Breite strecken, nie in die Höhe wachsen */
+  flex: 0 1 auto;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+/* einzelner Eintrag ohne Trennstrich; Gruppen tragen .tb-group */
+.leiste-eintrag {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.toolbar.leiste > [hidden] {
+  display: none;
+}
+.toolbar.leiste > .tb-group:has(+ .tb-spacer),
+.toolbar.leiste > .tb-group:has(+ .leiste-mehr[hidden]:last-child) {
+  border-right: none;
+}
+.leiste-mehr {
+  display: flex;
+  align-items: center;
+  flex: none;
+}
+
 .tb-label {
   color: var(--muted);
   margin-right: 4px;

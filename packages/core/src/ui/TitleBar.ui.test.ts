@@ -61,6 +61,11 @@ const antwort = async (host: Element, knopf: string) => {
   await act(async () => {});
 };
 const warten = () => act(async () => void (await new Promise((r) => setTimeout(r, 0))));
+/** „Andocken“ steht im Menü der Titelleiste („Einstellungen und Hilfe“) */
+const andockenKlicken = async (host: Element) => {
+  await act(async () => host.querySelector<HTMLButtonElement>('.titlebar-menue')!.click());
+  await act(async () => [...document.querySelectorAll<HTMLButtonElement>('.menue .menue-punkt')].find((b) => b.textContent === 'Andocken')!.click());
+};
 
 describe('Titelleiste auf dem Desktop', () => {
   it('Schließen über das System (Alt+F4) fragt bei ungespeicherten Änderungen wie ×; Abbrechen lässt das Fenster offen', async () => {
@@ -114,11 +119,11 @@ describe('Titelleiste auf dem Desktop', () => {
     // Meldung an den Rahmen mit Kennung (für die Rückfrage beim Beenden)
     expect(anRahmen).toContainEqual({ typ: 'arch-tools:status', app: 'ATLAS', kennung: 'ordner', name: 'P1', dirty: true });
     // Andocken: Rückfrage mit Speichern, Abbrechen lässt alles, wie es ist
-    await act(async () => [...host.querySelectorAll('button')].find((b) => b.textContent === 'Andocken')!.click());
+    await andockenKlicken(host);
     expect(dialog(host)?.textContent).toContain('Beim Andocken startet die App neu. Das Projekt hat ungespeicherte Änderungen.');
     await antwort(host, 'Abbrechen');
     expect(andocken).toEqual([]);
-    await act(async () => [...host.querySelectorAll('button')].find((b) => b.textContent === 'Andocken')!.click());
+    await andockenKlicken(host);
     await antwort(host, 'Speichern');
     await warten();
     expect(speichern).toHaveBeenCalledTimes(1);
@@ -157,15 +162,14 @@ describe('Titelleiste auf dem Desktop', () => {
     const andocken: unknown[] = [];
     await listen('arch-tools:andocken', (e) => void andocken.push(e.payload));
     const host = await render({ app: 'LEXIO' });
-    const knopf = () => [...host.querySelectorAll('button')].find((b) => b.textContent === 'Andocken')!;
-    await act(async () => knopf().click());
+    await andockenKlicken(host);
     expect(dialog(host)?.textContent).toContain('Änderungen an ‚LEXIO – P1‘ verwerfen?');
     expect(dialog(host)?.textContent).toContain('Beim Andocken startet die App neu, die Änderungen gehen verloren.');
     expect([...dialog(host)!.querySelectorAll('button')].map((b) => b.textContent)).toEqual(['Abbrechen', 'Verwerfen und andocken']);
     await antwort(host, 'Abbrechen');
     await warten();
     expect(andocken).toEqual([]);
-    await act(async () => knopf().click());
+    await andockenKlicken(host);
     await antwort(host, 'Verwerfen und andocken');
     await warten();
     expect(andocken).toEqual([{ app: 'baurecht' }]);
@@ -208,9 +212,8 @@ describe('Titelleiste auf dem Desktop', () => {
     let schreiben: (() => void) | undefined;
     const aus = vorDemSchliessen(() => new Promise<void>((fertig) => (schreiben = fertig)));
     const host = await render({ app: 'NUMIO', dirty: false });
-    const knopf = () => [...host.querySelectorAll('button')].find((b) => b.textContent === 'Andocken')!;
-    await act(async () => knopf().click());
-    await act(async () => knopf().click());
+    await andockenKlicken(host);
+    await andockenKlicken(host);
     await warten();
     expect(andocken).toEqual([]);
     await act(async () => schreiben!());

@@ -194,6 +194,7 @@ export function MenueKnopf({
   className,
   disabled = false,
   name,
+  pfeil = true,
 }: {
   punkte: () => MenuePunkt[];
   children: ReactNode;
@@ -204,6 +205,8 @@ export function MenueKnopf({
   disabled?: boolean;
   /** Name des Menüs (Vorgabe: aria-label bzw. Text des Knopfs) */
   name?: string;
+  /** Aufklapp-Pfeil hinter dem Text; ohne bei reinen Symbolknöpfen wie „Mehr“ (Symbol `mehr`) */
+  pfeil?: boolean;
 }) {
   const ref = useRef<HTMLButtonElement>(null);
   const offen = useMenueOffen(ref);
@@ -218,7 +221,13 @@ export function MenueKnopf({
       disabled={disabled}
       onClick={(e) => zeigeMenueAn(e.currentTarget, punkte(), name)}
     >
-      {children} <Symbol name="pfeilUnten" />
+      {children}
+      {pfeil && (
+        <>
+          {' '}
+          <Symbol name="pfeilUnten" />
+        </>
+      )}
     </button>
   );
 }
@@ -271,6 +280,7 @@ function Liste({
   punkte,
   x,
   y,
+  links,
   schliessen,
   wurzel = false,
   fokus = false,
@@ -278,6 +288,8 @@ function Liste({
   name,
 }: {
   punkte: MenuePunkt[];
+  /** Untermenü: linker Rand des Menüs darüber – passt das Untermenü rechts nicht mehr hin, klappt es dorthin nach links auf */
+  links?: number;
   /** Name des Menüs für Screenreader (Untermenü: Text des Punkts darüber) */
   name?: string;
   x: number;
@@ -291,7 +303,7 @@ function Liste({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [lage, setLage] = useState({ x, y });
-  const [unter, setUnter] = useState<{ index: number; x: number; y: number; tastatur: boolean } | null>(null);
+  const [unter, setUnter] = useState<{ index: number; x: number; y: number; links: number; tastatur: boolean } | null>(null);
 
   // im Fenster halten
   useLayoutEffect(() => {
@@ -300,8 +312,10 @@ function Liste({
     const r = el.getBoundingClientRect();
     const b = window.innerWidth || 1000;
     const h = window.innerHeight || 800;
-    setLage({ x: Math.max(4, Math.min(x, b - r.width - 4)), y: Math.max(4, Math.min(y, h - r.height - 4)) });
-  }, [x, y]);
+    // Untermenü am rechten Rand: links neben dem Menü darüber statt über ihm
+    const lx = links !== undefined && x + r.width > b - 4 ? links - r.width + 2 : x;
+    setLage({ x: Math.max(4, Math.min(lx, b - r.width - 4)), y: Math.max(4, Math.min(y, h - r.height - 4)) });
+  }, [x, y, links]);
 
   useEffect(() => {
     if (!(wurzel || fokus)) return;
@@ -313,7 +327,7 @@ function Liste({
 
   const oeffnen = (index: number, el: HTMLElement, tastatur: boolean) => {
     const r = el.getBoundingClientRect();
-    setUnter({ index, x: r.right - 2, y: r.top - 4, tastatur });
+    setUnter({ index, x: r.right - 2, y: r.top - 4, links: ref.current?.getBoundingClientRect().left ?? r.left, tastatur });
   };
   // aus dem Untermenü zurück: es schließt, der Fokus kommt auf seinen Punkt
   const unterZurueck = () => {
@@ -413,6 +427,7 @@ function Liste({
           punkte={(punkte[unter.index] as { unter: MenuePunkt[] }).unter}
           x={unter.x}
           y={unter.y}
+          links={unter.links}
           schliessen={schliessen}
           fokus={unter.tastatur}
           zurueck={unterZurueck}

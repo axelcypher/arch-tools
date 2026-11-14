@@ -12,9 +12,11 @@ import { Nachschlagewerk, useHilfe } from './Nachschlagewerk';
 import { dialogVerhaltenEinrichten } from './dialoge';
 import { useEscSchliessen } from './Dialog';
 import { aenderungenSpeichern, aenderungenVerwerfen, RueckfrageHost } from './Rueckfrage';
-import { MenueHost } from './Menue';
+import { MenueHost, MenueKnopf } from './Menue';
+import type { MenuePunkt } from './Menue';
+import { Symbol } from './Symbol';
 import { useBuero } from './DruckKopf';
-import { SpeicherortHost, SpeicherortKnopf } from './Speicherort';
+import { SpeicherortAnzeige, speicherortPunkt, SpeicherortHost, useKonfigOrt, useSpeicherort } from './Speicherort';
 import { umzugBestaetigen } from './umzug';
 import { schreibenAbwarten } from './vorbereiten';
 
@@ -166,6 +168,31 @@ export function TitleBar({ app, name, dirty, ungespeichert, onOpenLog, regeln, o
     }
   };
 
+  const ort = useKonfigOrt();
+  const speicherortOeffnen = useSpeicherort((s) => s.oeffnen);
+  const protokollOeffnen = () => {
+    setSeen(getEntries().at(-1)?.id ?? 0);
+    onOpenLog();
+  };
+  const neueFehler = errors === 1 ? 'ein neuer Fehler' : `${errors} neue Fehler`;
+  /** Name des Menüknopfs – mit neuen Fehlern im Protokoll */
+  const menueName = errors > 0 ? `Einstellungen und Hilfe – ${neueFehler} im Fehlerprotokoll` : 'Einstellungen und Hilfe';
+  /** Menü der Titelleiste („Einstellungen und Hilfe“): seltene Befehle, in allen Apps gleich (docs/design.md, „Titelleiste“) */
+  const mehrPunkte = (): MenuePunkt[] => {
+    const sp = rahmen === 'tab' ? null : speicherortPunkt(ort, speicherortOeffnen);
+    const wahl = WAHL.find((w) => w.id === useTheme.getState().wahl);
+    return [
+      { text: 'Farbschema', hinweis: wahl?.kurz, unter: farbschemaPunkte(zeichenflaeche) },
+      ...(sp ? [sp] : []),
+      ...(rahmen === 'fenster' && isTauri()
+        ? [{ text: 'Andocken', titel: 'Wieder als Tab in das Hauptfenster', aktion: () => void andockenFragen().catch((e) => log.error('Andocken fehlgeschlagen', e)) }]
+        : []),
+      { trenner: true },
+      ...(regeln ? [{ text: 'Berechnungsregeln …', tasten: 'F1', titel: 'Berechnungsregeln nachschlagen – mit Quellen und Suche', aktion: () => useHilfe.getState().oeffnen() }] : []),
+      { text: 'Fehlerprotokoll …', hinweis: errors > 0 ? (errors === 1 ? '1 neuer' : `${errors} neue`) : undefined, titel: 'Meldungen der App für die Fehlersuche', aktion: protokollOeffnen },
+    ];
+  };
+
   return (
     <>
       <header className={`titlebar${rahmen === 'tab' ? ' titlebar-im-rahmen' : ''}`} {...ziehen}>
@@ -192,31 +219,18 @@ export function TitleBar({ app, name, dirty, ungespeichert, onOpenLog, regeln, o
         </span>
         <span className="titlebar-drag" {...ziehen} />
         {desktop && !rahmen && <UpdateKnopf app={app} dirty={dirty} />}
-        {/* im Tab zeigt ihn der Rahmen in seiner Kopfleiste – einmal genügt */}
-        {rahmen !== 'tab' && <SpeicherortKnopf />}
-        <ThemeMenu zeichenflaeche={zeichenflaeche} />
-        {regeln && (
-          <button className="titlebar-btn" title="Berechnungsregeln nachschlagen – mit Quellen und Suche (F1)" onClick={() => useHilfe.getState().oeffnen()}>
-            <span aria-hidden>§</span> Regeln
-          </button>
-        )}
+        {/* sichtbar nur im Notbetrieb; sonst steht der Speicherort im Menü (im Tab zeigt ihn der Rahmen) */}
+        {rahmen !== 'tab' && <SpeicherortAnzeige ort={ort} nurWarnung />}
         {regeln && <Nachschlagewerk app={regeln} />}
-        <button
-          className="titlebar-btn"
-          title="Fehlerprotokoll – Meldungen der App für die Fehlersuche"
-          onClick={() => {
-            setSeen(getEntries().at(-1)?.id ?? 0);
-            onOpenLog();
-          }}
-        >
-          <span aria-hidden>≡</span> Fehlerprotokoll
-          {errors > 0 && <span className="titlebar-badge">{errors}</span>}
-        </button>
-        {rahmen === 'fenster' && isTauri() && (
-          <button className="titlebar-btn" title="Wieder als Tab in das Hauptfenster" onClick={() => void andockenFragen().catch((e) => log.error('Andocken fehlgeschlagen', e))}>
-            Andocken
-          </button>
-        )}
+        {/* Menü der Titelleiste: neue Fehler zählt die Marke am Knopf, das Protokoll selbst steht im Menü */}
+        <MenueKnopf className="titlebar-btn titlebar-menue" punkte={mehrPunkte} ariaLabel={menueName} title={menueName} name="Einstellungen und Hilfe" pfeil={false}>
+          <Symbol name="menue" />
+          {errors > 0 && (
+            <span className="titlebar-badge" aria-hidden>
+              {errors}
+            </span>
+          )}
+        </MenueKnopf>
         {desktop && win && (
           <div className="window-controls">
             <button className="wc-btn" title="Minimieren" aria-label="Minimieren" onClick={() => void win.minimize()}>
@@ -248,6 +262,18 @@ export function TitleBar({ app, name, dirty, ungespeichert, onOpenLog, regeln, o
       <MenueHost />
     </>
   );
+}
+
+/**
+ * Untermenü „Farbschema“ (Menü „Einstellungen und Hilfe“ der Titelleiste, auch für die Rahmen-App): Einfachauswahl Auto/Hell/Dunkel,
+ * mit Zeichenfläche dazu der Schalter „Zeichenfläche im dunklen Schema abdunkeln“. Liest den Stand beim Öffnen.
+ */
+export function farbschemaPunkte(zeichenflaeche = true): MenuePunkt[] {
+  const { wahl, setWahl, canvasDunkel, setCanvasDunkel } = useTheme.getState();
+  return [
+    ...WAHL.map((w) => ({ text: w.label, gewaehlt: wahl === w.id, aktion: () => setWahl(w.id) })),
+    ...(zeichenflaeche ? [{ trenner: true } as const, { text: 'Zeichenfläche im dunklen Schema abdunkeln', haken: canvasDunkel, aktion: () => setCanvasDunkel(!canvasDunkel) }] : []),
+  ];
 }
 
 const WAHL: { id: ThemeWahl; label: string; kurz: string }[] = [

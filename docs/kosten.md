@@ -36,7 +36,7 @@ und Regionalfaktor.
   (Strg+Shift+S) fragt nach einem neuen Namen.
 - **IFC aktualisieren …:** ein neuer Export desselben Modells wird über die IFC-GlobalIds in das bestehende Projekt
   eingelesen; Positionen, Kennwerte und von Hand geänderte Werte bleiben erhalten, die Mengen rechnen sich neu.
-- **Regeln nachschlagen:** „§ Regeln“ bzw. F1 öffnet das Nachschlagewerk (DIN 276, DIN 277) mit Quellen und Suche.
+- **Regeln nachschlagen:** „Berechnungsregeln …“ (Menü „Einstellungen und Hilfe“ der Titelleiste) bzw. F1 öffnet das Nachschlagewerk (DIN 276, DIN 277) mit Quellen und Suche.
 
 ## Mengen
 

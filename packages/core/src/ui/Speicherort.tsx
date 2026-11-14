@@ -7,6 +7,7 @@ import { ordnerWaehlen, ordnerZeigen } from '../platform/projektordner';
 import { logger } from '../platform/log';
 import { Modal } from './Dialog';
 import { fehlerText, fragen } from './Rueckfrage';
+import type { MenuePunkt } from './Menue';
 
 /**
  * Speicherort der Einstellungen – für alle Apps gleich: Einzelplatz (nur dieser Rechner) oder Netzwerkinstallation
@@ -68,9 +69,25 @@ function AblageSymbol() {
   );
 }
 
-/** Knopf in der Titelleiste: zeigt den Ort kurz an und öffnet den Dialog; im Notbetrieb als Warnung */
-export function SpeicherortKnopf() {
-  const ort = useKonfigOrt();
+/**
+ * Punkt „Speicherort der Einstellungen …“ für das Menü der Titelleiste („Einstellungen und Hilfe“) – im Normalfall; im
+ * Notbetrieb und bei einem Fehler zeigt ihn `SpeicherortAnzeige nurWarnung` sichtbar in der Leiste (dann `null`)
+ */
+export function speicherortPunkt(ort: KonfigOrtAnzeige, oeffnen: () => void): MenuePunkt | null {
+  if (!ort || ort === 'fehler' || ort.notbetrieb) return null;
+  return { text: 'Speicherort der Einstellungen …', hinweis: ort.modus === 'netzwerk' ? 'Netzwerk' : 'Einzelplatz', titel: ortText(ort), aktion: oeffnen };
+}
+
+/** Knopf in der Kopfleiste: zeigt den Ort kurz an und öffnet den Dialog; im Notbetrieb als Warnung */
+export function SpeicherortKnopf({ nurWarnung = false }: { nurWarnung?: boolean } = {}) {
+  return <SpeicherortAnzeige ort={useKonfigOrt()} nurWarnung={nurWarnung} />;
+}
+
+/**
+ * Wie `SpeicherortKnopf`, mit schon gelesenem Ort (die Titelleiste liest ihn einmal für Knopf und Menüpunkt).
+ * `nurWarnung`: nur im Notbetrieb bzw. bei einem Fehler zeigen – sonst steht der Ort im Menü (`speicherortPunkt`).
+ */
+export function SpeicherortAnzeige({ ort, nurWarnung = false }: { ort: KonfigOrtAnzeige; nurWarnung?: boolean }) {
   const oeffnen = useSpeicherort((s) => s.oeffnen);
   if (!ort) return null;
   if (ort === 'fehler') {
@@ -87,6 +104,7 @@ export function SpeicherortKnopf() {
       </button>
     );
   }
+  if (nurWarnung) return null;
   return (
     <button
       className="titlebar-btn"

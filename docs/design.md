@@ -5,8 +5,8 @@ App-eigenes steht in `apps/<app>/src/styles.css`. An dieser Richtlinie messen si
 Review-Agent `review-design`.
 
 > Stand: Grundlagen (Skalen, Fokus, Zielgrößen, Überschriften, Meldungen) und gemeinsame Komponenten (Dialoge,
-> Druckvorschau, Felder, Umschalter). Die Gestaltungsrichtung (Farben, Knopfstufen,
-> Werkzeugleiste, Tabellen) folgt nach der Wahl des Nutzers und wird hier ergänzt.
+> Druckvorschau, Felder, Umschalter), Aufbau der Kopf- und Werkzeugleisten. Die Gestaltungsrichtung (Farben,
+> Knopfstufen, Aussehen der Werkzeugleiste, Tabellen) folgt nach der Wahl des Nutzers und wird hier ergänzt.
 
 ## Grundsätze
 
@@ -229,8 +229,9 @@ Gemeinsamer Satz in `ui/Symbol.tsx` (Raster 24, Linie 2, runde Enden, Farbe des 
   `suche`, `stift`.
 - Zustand: `haken` (trifft zu), `schliessen` (trifft nicht zu), `frage` (offen, unbekannt), `warnung`, `info`, `auge`,
   `augeZu`, `stern`; `punkt` (gewählte Einfachauswahl im Menü).
-- Navigation: `pfeilRechts`, `pfeilLinks`, `pfeilUnten`, `ordner`, `ordnerOffen`, `datei`.
-- Listen: `einruecken`, `ausruecken` (Gliederungsebene), `nachOben`, `nachUnten` zum Umsortieren (statt ↑/↓ als Schriftzeichen); `mehr` (drei Punkte, Knopf mit `aria-label="Aktionen"` und `title`) für
+- Navigation: `pfeilRechts`, `pfeilLinks`, `pfeilUnten`, `ordner`, `ordnerOffen`, `datei`; `menue` (drei Striche) nur für das
+  Menü der Titelleiste („Einstellungen und Hilfe“).
+- Listen: `einruecken`, `ausruecken` (Gliederungsebene), `nachOben`, `nachUnten` zum Umsortieren (statt ↑/↓ als Schriftzeichen); `mehr` (drei Punkte, Knopf mit `aria-label="Aktionen"` und `title`; auch „Mehr“ am Ende einer Werkzeugleiste) für
   Zeilenknöpfe „Aktionen“, die ein Menü öffnen – `pfeilUnten` bleibt dem Aufklapp-Pfeil an Knöpfen mit Text vorbehalten.
 
 Neue Symbole kommen in diesen Satz, nicht in die App. Keine Emoji (📏 ✂ 🗑) und keine Schriftzeichen als Symbol.
@@ -266,6 +267,74 @@ mit `text`, optional `symbol`, `hinweis` (rechts, z. B. der Grund einer Sperre),
 - Eigene Öffner ohne `MenueKnopf` (z. B. Zeilenknopf „⋯“ mit `zeigeMenueAn`) tragen `aria-haspopup="menu"`; dann
   setzt das Menü `aria-expanded` am Öffner selbst. Wer den Zustand im Render braucht, nimmt `useMenueOffen(ref)`.
 - Ein zweiter Klick auf den Öffner eines offenen Menüs schließt es (Knopf wie Zeilenknopf).
+- `MenueKnopf` zeigt hinter dem Text den Aufklapp-Pfeil; reine Symbolknöpfe wie „Mehr“ (Symbol `mehr`) setzen
+  `pfeil={false}` und tragen ihren Namen in `ariaLabel` und `title`. Passt ein Untermenü rechts nicht mehr ins
+  Fenster, klappt es links neben dem Menü auf.
+
+## Kopf- und Werkzeugleisten
+
+Was sichtbar ist und was ins Menü gehört – für die Werkzeugleisten aller Apps; die Titelleiste regelt „Titelleiste“.
+
+**Sichtbar bleibt**, was man im Arbeitsablauf ständig braucht: „Speichern“ (mit dem Punkt für ungespeicherte
+Änderungen), Rückgängig/Wiederholen, die Werkzeuge der Zeichenfläche, der Haupt-Umschalter der App (Kosten | Mengen,
+Foto | Entzerrt, BGF | Raum) und der Hauptknopf (`.primary`, z. B. „Flächenaufstellung …“, „Drucken / PDF …“).
+Richtwert: höchstens sieben, besser fünf Knöpfe bzw. Gruppen je Leiste; „Datei“ und „Speichern“ zählen mit, die
+Werkzeuge als eine Gruppe, „Mehr“ nicht. Status- und Hinweismarken (Warnungen, Module) gehören nicht ins Menü – sie
+bleiben sichtbar, solange sie etwas melden.
+
+**Ins Menü** kommen seltene und einmalige Befehle: Import und Export, Vorlagen, Einstellungen, Protokoll, Hilfe,
+Zurücksetzen, Sonderfunktionen. Feste Namen, in allen Apps gleich:
+
+| Menü          | Inhalt                                                                                                                                                                            |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| „Datei“       | Neu, Öffnen …, Speichern unter …, Import … bzw. Aktualisieren …, Drucken … (wenn es nicht der Hauptknopf ist) – nur bei mindestens zwei Dateibefehlen, sonst stehen sie in „Mehr“ |
+| „Exportieren“ | CSV …, Excel …, weitere Ausgabeformate neben dem Hauptknopf                                                                                                                       |
+| „Ansicht“     | Schalter der Darstellung (`haken`: Raster, Beschriftung) und Einfachauswahl (`gewaehlt`)                                                                                          |
+| „Hinzufügen“  | Varianten eines Eintrags (siehe „Listen“); der häufigste bleibt daneben als eigener Knopf                                                                                         |
+| „Mehr“        | alles Übrige, als letztes Element der Leiste                                                                                                                                      |
+
+- Weitere sprechende Menünamen („Unterlage“, „Einrichtung“, „LV“) nur für eine Gruppe von mindestens drei
+  zusammengehörigen Befehlen. Menüknöpfe zum selben Gegenstand zusammenlegen („Neues LV ▾“ und „LV ▾“ → „LV ▾“).
+  Keine geteilten Knöpfe (Befehl plus Pfeil in einem): Hauptbefehl als Knopf, Varianten im Menü daneben – etwa
+  „Position“ (mit Symbol `plus`) und „Hinzufügen ▾“ mit Kostenrisiko und Gliederung.
+- Menüknöpfe tragen Text und Aufklapp-Pfeil (`MenueKnopf`), „Mehr“ nur das Symbol `mehr` (`className="icon"`,
+  `pfeil={false}`, `ariaLabel="Mehr"`, `title` „Mehr – weitere Befehle“).
+- Schaltet ein Menü zwischen Ansichten um (ATLAS: „Einrichtung“ mit Struktur, Vorlagen, Einstellungen), zeigt der
+  Menüknopf mit `.active`, dass eine seiner Ansichten offen ist, und nennt sie im Namen (`ariaLabel` und `title`
+  „Einrichtung: Vorlagen“); im Menü ist sie `gewaehlt`.
+- Reihenfolge im Menü: Schalter und Einfachauswahl, dann Befehle, Gefahr-Punkte (Zurücksetzen, Entfernen) am Ende
+  hinter einem Trenner. Tastenkürzel in `tasten`, Punkte mit Dialog auf „ …“ (siehe „Menüs“ und „Begriffe“).
+- Doppelte Einstiege vermeiden: Steht ein Befehl schon an naheliegender Stelle (Listenkopf, Seitenleiste), fällt sein
+  Einstieg in der Leiste weg (NUMIO: Kennwertkatalog).
+- **Aufbau:** links „Datei“ und „Speichern“, in der Mitte die Werkzeuge bzw. Hauptschritte, rechts der Hauptknopf,
+  zuletzt „Mehr“.
+- **Zeilen:** Seltene Aktionen einer Tabellen- oder Listenzeile (FABRIO-Rechnung: Deckblatt, Mail an den Zahler)
+  kommen in den Zeilenknopf „Aktionen“ (Symbol `mehr`, siehe „Menüs“ und „Listen“); häufige bleiben als Knopf.
+- **Schmale Fenster:** Einträge mit Rang wandern nach ihrem Rang ins Menü „Mehr“ (Überlauf), statt nur auf Symbole zu
+  schrumpfen. Dafür `Werkzeugleiste` (`ui/Werkzeugleiste.tsx`): `teile` in Leistenreihenfolge, je Eintrag `inhalt`
+  (ein Knopf oder mehrere), `gruppe` (Trennstrich zum nächsten Eintrag), `menue` (dasselbe als Menüpunkt bzw.
+  Punkte) und `rang` (höher = wandert früher); `{ abstand: true }` schiebt den Rest nach rechts; `mehr` liefert die
+  festen Punkte des Menüs „Mehr“, `name` benennt die Leiste. Ohne `rang` oder `menue` bleibt ein Eintrag immer
+  sichtbar – so der Hauptknopf und die Werkzeuge. Übergelaufene Einträge stehen in „Mehr“ oben, in ihrer Reihenfolge,
+  getrennt von den festen Punkten; hatte ein übergelaufener Knopf den Fokus, bekommt ihn „Mehr“. Die Leiste nimmt die
+  volle Breite ihres Elternelements (wächst in der Spalte von `.app` aber nicht in die Höhe) und braucht keine eigene
+  `.toolbar` darum.
+
+```tsx
+<Werkzeugleiste
+  name="Werkzeugleiste"
+  teile={[
+    { id: 'datei', inhalt: <MenueKnopf punkte={dateiPunkte}>Datei</MenueKnopf> },
+    { id: 'speichern', gruppe: true, inhalt: speichernKnopf },
+    { id: 'werkzeuge', gruppe: true, inhalt: werkzeuge },
+    { id: 'export', rang: 2, inhalt: <MenueKnopf punkte={exportPunkte}>Exportieren</MenueKnopf>, menue: { text: 'Exportieren', unter: exportPunkte() } },
+    { id: 'ansicht', rang: 1, inhalt: <MenueKnopf punkte={ansichtPunkte}>Ansicht</MenueKnopf>, menue: { text: 'Ansicht', unter: ansichtPunkte() } },
+    { abstand: true },
+    { id: 'haupt', inhalt: <button className="primary">Flächenaufstellung …</button> },
+  ]}
+  mehr={() => [{ text: 'Einstellungen …', aktion: einstellungen }]}
+/>
+```
 
 ## Listen
 
@@ -320,9 +389,18 @@ hellem Grund nur 2,2 : 1). Der Text daneben in `--ok-text` usw. bzw. `--text`.
 
 ## Titelleiste
 
-Das Farbschema-Menü zeigt ein gezeichnetes Symbol und den Namen der Wahl („Auto“, „Hell“, „Dunkel“), wie „§ Regeln“ und
-„≡ Fehlerprotokoll“ mit Text. Unter 960px Fensterbreite zeigen Knöpfe mit Symbol (Farbschema, Speicherort) nur noch
-das Symbol: Text in `<span className="titlebar-text">`, der Name bleibt über `aria-label`. Die Tableiste von Arkly zeigt
+Links Symbol und Name der App, „Projekte“ und das geöffnete Projekt (mit dem Punkt ● für ungespeicherte Änderungen).
+Rechts nur, was gerade zählt – Version bzw. Update, im Notbetrieb die Warnung zum Speicherort –, dann das Menü der
+Titelleiste und die Fensterknöpfe. Das Menü heißt „Einstellungen und Hilfe“ (Symbol `menue`, drei Striche; Name in
+`ariaLabel` und `title`), damit es sich vom „Mehr“ der Werkzeugleiste darunter unterscheidet. Es enthält, in dieser
+Reihenfolge: „Farbschema“ (aktuelle Wahl als Hinweis; Untermenü mit Auto/Hell/Dunkel als Einfachauswahl und, wenn
+die App eine Zeichenfläche hat, dem Schalter „Zeichenfläche im dunklen Schema abdunkeln“ – `farbschemaPunkte`),
+„Speicherort der Einstellungen …“ (Einzelplatz bzw. Netzwerk als Hinweis – `speicherortPunkt`), im herausgelösten
+Fenster „Andocken“, Trenner, „Berechnungsregeln …“ (F1) und „Fehlerprotokoll …“. Neue Fehler zählt eine Marke am
+Menüknopf, ebenso sein Name („Einstellungen und Hilfe – 2 neue Fehler im Fehlerprotokoll“) und der Hinweis am Punkt
+(„2 neue“). Bis die Rahmen-App nachgezogen hat (`docs/nachziehen/arkly.md`), zeigt ihre Kopfleiste Farbschema und
+Speicherort noch als eigene Knöpfe. Unter 960px Fensterbreite zeigen Knöpfe mit Symbol nur noch das Symbol: Text in
+`<span className="titlebar-text">`, der Name bleibt über `aria-label`. Die Tableiste von Arkly zeigt
 unter 1100px am Tab nur Symbol und Namen der App (das Projekt steht im Tooltip); eine Fläche zum Ziehen des Fensters
 bleibt immer frei.
 
