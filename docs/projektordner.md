@@ -109,8 +109,9 @@ auch beim Ergänzen.
    und „Nächstes Projekt“ (kam der Auftrag aus einer anderen App, außerdem „In … öffnen“, siehe unten); das Formular ist dann schon für das nächste Projekt geleert – „Rückgängig“ (zehn Sekunden)
    holt den Entwurf zurück. Schlägt ein Schritt fehl, bleibt der Entwurf stehen.
    „Projekte“ in der Titelleiste (ebenso ein „Neues Projekt“-Auftrag aus einer anderen App und „Ergänzen“ aus „Ordner
-   prüfen“) beginnt den Assistenten neu. Gibt es dabei noch nicht Angelegtes, das verloren ginge – geänderte
-   Stammdaten beim Ergänzen, im Trockenlauf abgewählte Einträge –, fragt ATLAS vorher („Verwerfen“ / „Abbrechen“).
+   prüfen“) beginnt den Assistenten neu. Gibt es dabei noch nicht Angelegtes, das verloren ginge – geänderte Angaben
+   beim Ergänzen, unter „Anlegen“ bzw. „Ergänzen“ abgewählte Einträge –, fragt ATLAS vorher „Assistent neu beginnen?“
+   mit *Abbrechen* und *Verwerfen und neu beginnen* (Gefahr-Knopf, Enter verwirft nichts).
    Der Entwurf eines neuen Projekts geht nicht verloren; er bleibt bis zum Anlegen gespeichert.
 
 **Ungespeicherte Änderungen beim Beenden:** Was beim Beenden verloren ginge, meldet ATLAS als ungespeichert (● in

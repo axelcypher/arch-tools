@@ -111,7 +111,7 @@ export function AssistentView({
   onMails?: (pfad: string) => void;
   /**
    * meldet, was im Assistenten noch nicht angelegt ist und bei einem Neustart verloren ginge (z. B. „die geänderten
-   * Stammdaten von ‚X‘“), sonst null – damit „Projekte“ in der Titelleiste vorher fragen kann
+   * Angaben zu ‚X‘“), sonst null – damit „Projekte“ in der Titelleiste vorher fragen kann
    */
   onOffen?: (was: string | null) => void;
 }) {
@@ -232,12 +232,14 @@ export function AssistentView({
 
   const stamm = modus === 'ergaenzen' ? stammE : entwurf;
   // Was ginge bei einem Neustart des Assistenten verloren? Der Entwurf eines neuen Projekts nicht (er liegt im Store),
-  // wohl aber geänderte Stammdaten beim Ergänzen und im Trockenlauf abgewählte Einträge
+  // wohl aber geänderte Angaben beim Ergänzen und im letzten Schritt („Anlegen“ bzw. „Ergänzen“) abgewählte Einträge –
+  // benannt wie in der Oberfläche
   const nichtAngelegt = useMemo(() => {
     if (!modus || abschluss) return null;
     const teile: string[] = [];
-    if (modus === 'ergaenzen' && stammE && stammEBasis && JSON.stringify(stammE) !== JSON.stringify(stammEBasis)) teile.push(`die geänderten Stammdaten von „${ordner?.name ?? ''}“`);
-    if (abgewaehlt.size) teile.push(`${abgewaehlt.size} im Trockenlauf ${abgewaehlt.size === 1 ? 'abgewählter Eintrag' : 'abgewählte Einträge'}`);
+    if (modus === 'ergaenzen' && stammE && stammEBasis && JSON.stringify(stammE) !== JSON.stringify(stammEBasis)) teile.push(`die geänderten Angaben zu „${ordner?.name ?? ''}“`);
+    if (abgewaehlt.size)
+      teile.push(`${abgewaehlt.size} unter „${modus === 'ergaenzen' ? 'Ergänzen' : 'Anlegen'}“ ${abgewaehlt.size === 1 ? 'abgewählter Eintrag' : 'abgewählte Einträge'}`);
     return teile.length ? teile.join(' und ') : null;
   }, [modus, abschluss, stammE, stammEBasis, abgewaehlt, ordner?.name]);
   const onOffenRef = useRef(onOffen);

@@ -217,7 +217,8 @@ describe('Assistent: Anlegen', () => {
   it('Hauptknopf rechts in der Navigation mit Grund für die Sperre; Trockenlauf ohne „neu“-Rauschen, Abwählen benannt (Pflicht 2, 3, 11, 12)', async () => {
     mock.desktop = true;
     useOrdner.setState({ stamm: { ...leereStammdaten(), nummer: '2026-014', kurzname: 'EFH' } });
-    const host = render(createElement(AssistentView, { auftrag: { von: null } }));
+    let offen: string | null = null;
+    const host = render(createElement(AssistentView, { auftrag: { von: null }, onOffen: (was: string | null) => (offen = was) }));
     act(() => knopf(host, '8Anlegen').click());
     const anlegen = knopf(host, 'Projektordner anlegen');
     expect(anlegen.closest('.po-navigation')).not.toBeNull();
@@ -243,6 +244,10 @@ describe('Assistent: Anlegen', () => {
     act(() => grundlagen.click());
     expect(grundlagen.closest('tr')!.querySelector('.po-status')?.textContent).toBe('abgewählt');
     expect(knopf(host, 'Alle wieder wählen')).toBeTruthy();
+    // für die Rückfrage vor einem Neubeginn: benannt wie der Schritt in der Oberfläche
+    expect(offen).toBe('1 unter „Anlegen“ abgewählter Eintrag');
+    act(() => knopf(host, 'Alle wieder wählen').click());
+    expect(offen).toBeNull();
   });
 
   it('Gleichzeitigkeit: legt ein Kollege den Ordner inzwischen an, bricht „Anlegen“ ab – nichts landet in seinem Ordner', async () => {
@@ -376,14 +381,17 @@ describe('Folgerunde: Neubeginn des Assistenten fragt bei offenen Eingaben', () 
     act(() => projekte().click());
     await warten();
     const frage = () => document.querySelector('.modal.rf')!;
-    expect(frage().querySelector('h3')?.textContent).toBe('Eingaben im Assistenten verwerfen?');
-    expect(frage().textContent).toContain('Noch nicht angelegt: die geänderten Stammdaten von „2025-007 Kita“');
+    expect(frage().querySelector('h3')?.textContent).toBe('Assistent neu beginnen?');
+    expect(frage().textContent).toContain('Noch nicht übernommen: die geänderten Angaben zu „2025-007 Kita“.');
+    // Gefahr-Knopf: rot, Erstfokus nicht auf ihm (Enter verwirft nichts)
+    expect(knopf(frage(), 'Verwerfen und neu beginnen').className).toContain('danger');
+    expect(document.activeElement?.textContent).toBe('Abbrechen');
     act(() => knopf(frage(), 'Abbrechen').click());
     await warten();
     expect(feld(host, 'Bezeichnung des Vorhabens').value).toBe('Neubau Kita am Park');
     act(() => projekte().click());
     await warten();
-    act(() => knopf(frage(), 'Verwerfen').click());
+    act(() => knopf(frage(), 'Verwerfen und neu beginnen').click());
     await warten();
     expect(host.querySelector('.po-kontext')).toBeNull();
     expect(host.textContent).toContain('Bestehendes Projekt ergänzen');
@@ -626,7 +634,7 @@ describe('Rahmen-App Arkly: ungespeicherte Änderungen melden und auf Anfrage sp
     // nichts angelegt bzw. geschrieben, die Eingabe steht noch da
     expect(inhalt()).toBe(vorher);
     expect(feld(host, 'Bezeichnung des Vorhabens').value).toBe('Neubau Kita am Park');
-    expect(meldungText()).toContain('die geänderten Stammdaten von „2025-007 Kita“');
+    expect(meldungText()).toContain('die geänderten Angaben zu „2025-007 Kita“');
     expect(meldungText()).toContain('Projektordner anzulegen');
   });
 });
