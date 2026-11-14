@@ -26,13 +26,13 @@ afterEach(() => {
   document.body.innerHTML = '';
 });
 
-function render(aufrufe: string[] = [], lageLaeuft = false, antraege?: string[], vorher?: () => void): HTMLElement {
+function render(aufrufe: string[] = [], lageLaeuft = false, antraege?: string[], vorher?: () => void, texte: Parameters<typeof pruefstandBerechnen>[6] = {}): HTMLElement {
   const bytes = beispielOap();
   useBaurecht.getState().projektSetzen({ art: 'datei', name: 'EFH.oap', bytes }, readProjectFile(bytes), projektdateiRoh(bytes));
   const s = useBaurecht.getState();
   if (antraege) useBaurecht.setState({ antraege });
   vorher?.();
-  const stand = pruefstandBerechnen(s.paket, s.project, s.merkmale, s.pruefung.fakten, {}, '2026-12-01', {});
+  const stand = pruefstandBerechnen(s.paket, s.project, s.merkmale, s.pruefung.fakten, {}, '2026-12-01', texte);
   const host = document.createElement('div');
   document.body.appendChild(host);
   act(() => {
@@ -213,5 +213,50 @@ describe('Kopf (Desktop): Menü „Mehr“ und Sammelmarke', () => {
     host = render(aufrufe, true, undefined, ohneKoordinaten);
     expect(marke(host).disabled).toBe(true);
     expect(marke(host).title).toContain('Die Lage wird gerade abgefragt.');
+  });
+
+  it('Kompaktstufe: reicht der Platz auch ohne Antrag nicht, zeigt „Speichern“ nur das Symbol (tb-text); der Name bleibt', () => {
+    // Leiste 400 px, jeder Eintrag 100 px: auch ohne Antrag zu breit → kompakt
+    const breite = vi.spyOn(leistenMessung, 'breite').mockImplementation((el) => (el.classList.contains('werkzeugleiste') ? 400 : 100));
+    try {
+      const host = render();
+      act(() => window.dispatchEvent(new Event('resize')));
+      const leiste = host.querySelector<HTMLElement>('.br-kopf')!;
+      expect(leiste.classList.contains('kompakt')).toBe(true);
+      expect(host.querySelector<HTMLElement>('.br-kopf > [data-eintrag="antrag"]')!.hidden, 'zuerst wandert der Antrag').toBe(true);
+      const speichern = host.querySelector<HTMLButtonElement>('.br-kopf > [data-eintrag="speichern"] button')!;
+      // Text in tb-text (blendet die Kompaktstufe aus), Symbol davor, Name in aria-label und title
+      expect(speichern.querySelector(':scope > .tb-text')!.textContent).toBe('Speichern');
+      expect(speichern.querySelector(':scope > svg.symbol')).not.toBeNull();
+      expect(speichern.getAttribute('aria-label')).toBe('Speichern');
+      expect(speichern.title).toContain('Strg+S');
+    } finally {
+      breite.mockRestore();
+    }
+  });
+
+  it('Sammelmarke: mehrere Warnungen kurz „N Warnungen“, vorgelesen „N Warnungen zum Rechtsstand“; eine Warnung wörtlich (ohne tb-text – kein Symbol)', () => {
+    // fester Rechtsstand: eine Norm geprüft, eine nicht abrufbar, die übrigen nie geprüft → zwei Warnungen
+    const s = useBaurecht.getState();
+    const [geprueft, fehlt] = s.paket.module
+      .filter((m) => m.ebene === 'bund')
+      .flatMap((m) =>
+        Object.entries(m.normen)
+          .filter(([, d]) => d.quelle.art !== 'verweis')
+          .map(([n]) => `${m.id}/${n}`),
+      );
+    const texte = { [geprueft]: { fassung: null, geprueft: '2026-11-14T08:00:00Z' }, [fehlt]: { fassung: null, fehler: 'nicht erreichbar' } };
+    const mehrere = render([], false, undefined, undefined, texte).querySelector<HTMLButtonElement>('.br-marke-knopf')!;
+    expect(mehrere.title.split(' · ')).toEqual([expect.stringMatching(/^\d+ nie geprüft$/), '1 nicht abrufbar']);
+    expect(mehrere.textContent).toBe('2 Warnungen');
+    expect(mehrere.getAttribute('aria-label')).toBe('2 Warnungen zum Rechtsstand');
+    expect(mehrere.querySelector('.tb-text')).toBeNull();
+    act(() => root?.unmount());
+    document.body.innerHTML = '';
+    // ohne Prüfstand: genau eine Warnung, wörtlich und ohne eigenen Namen
+    const eine = render().querySelector<HTMLButtonElement>('.br-marke-knopf')!;
+    expect(eine.title).toBe('Rechtsstand noch nicht geprüft');
+    expect(eine.textContent).toBe('Rechtsstand noch nicht geprüft');
+    expect(eine.hasAttribute('aria-label')).toBe(false);
   });
 });

@@ -190,11 +190,9 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
   }
 }
 @container app (max-width: 1199px) {
-  /* Beschriftungen von Antrag und Einreichung stehen dann nur noch im Feld (aria-label, Tooltip); „Speichern“ zeigt nur
-     das Symbol, die Sammelmarke nur „N Warnungen“ – vorgelesen wird weiter der ganze Name. So passen bei 1000 px auch
-     im ungünstigsten Fall (zwei Marken der Module, Warnungen, Rechtsstand) alle Einträge ohne Rang neben „Mehr“ */
-  .br-kopf-label,
-  .br-kopf-zusatz {
+  /* Beschriftungen von Antrag und Einreichung stehen dann nur noch im Feld (aria-label, Tooltip). „Speichern“ kürzt
+     die Werkzeugleiste selbst (Kompaktstufe, `tb-text`) */
+  .br-kopf-label {
     position: absolute;
     width: 1px;
     height: 1px;
