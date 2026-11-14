@@ -12,7 +12,7 @@ import type { Nachweis } from '../massNutzung';
 import { aktiveVariante } from '../massNutzung';
 import { ablageLeer, addFlaeche, auswahlVerschieben, flaechenDuplizieren, flaechenEinfuegen, flaechenKopieren, mapFlaeche, neueFlaeche, removeFlaeche, useGrz } from '../store';
 import type { MenuePunkt } from '@core/ui/Menue';
-import { zeigeMenue } from '@core/ui/Menue';
+import { MenueKnopf, zeigeMenue } from '@core/ui/Menue';
 import type { SymbolName } from '@core/ui/Symbol';
 import { Symbol } from '@core/ui/Symbol';
 import { beschriftungsPunkt, massstabLaenge } from '../beschriftung';
@@ -826,6 +826,27 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
     return `Segment ${fmt2(Math.hypot(cursor.x - l.x, cursor.y - l.y))} m${entwurf.length >= 3 ? ` · Fläche ${fmt2(polygonArea(entwurf))} m²` : ''}`;
   })();
 
+  const unterlageWerkzeug = werkzeug === 'kalibrieren' ? 'Kalibrieren' : werkzeug === 'ausrichten' ? 'Ausrichten' : null;
+  /** Menü „Unterlage“: Schalter, dann Befehle, Entfernen als Gefahr am Ende */
+  const unterlagePunkte = (): MenuePunkt[] => {
+    const u = useGrz.getState().project.lageplan?.unterlage as RasterBackground | undefined;
+    if (!u) return [];
+    return [
+      { text: 'Anzeigen', haken: u.visible, aktion: () => setUnterlage({ ...u, visible: !u.visible }) },
+      { trenner: true },
+      { text: 'Kalibrieren', symbol: 'kalibrieren', titel: 'Maßstab an einer bekannten Strecke festlegen', aktion: () => st.setWerkzeug('kalibrieren') },
+      { text: 'Ausrichten', symbol: 'ausrichten', titel: 'Unterlage verschieben: Punkt auf der Unterlage → Punkt im Plan', aktion: () => st.setWerkzeug('ausrichten') },
+      { text: 'Ersetzen …', symbol: 'bild', titel: 'Anderen Lageplan als Bild (PNG, JPG) oder PDF laden', aktion: () => dateiRef.current?.click() },
+      { trenner: true },
+      { text: 'Entfernen', symbol: 'muell', gefahr: true, titel: 'Unterlage entfernen (rückgängig mit Strg+Z)', aktion: () => setUnterlage(undefined) },
+    ];
+  };
+  /** Menü „Ansicht“ im Plan: Schalter der Darstellung */
+  const ansichtPunkte = (): MenuePunkt[] => [
+    { text: 'Beschriftung', haken: beschriften, titel: 'Nummer, Nutzung und Fläche im Plan', aktion: () => setBeschriften((b) => !b) },
+    { text: 'Raster', haken: raster, aktion: () => setRaster((r) => !r) },
+  ];
+
   return (
     <div className="lp-editor">
       <div className="lp-tools">
@@ -876,31 +897,17 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
             e.target.value = '';
           }}
         />
-        <button className="small" title="Amtlicher Lageplan als Bild (PNG, JPG) oder PDF zum Nachzeichnen" onClick={() => dateiRef.current?.click()}>
-          <Symbol name="bild" /> {unterlage ? 'Ersetzen …' : 'Bild/PDF laden …'}
-        </button>
-        {unterlage && (
+        {unterlage ? (
           <>
-            <button
-              className={werkzeug === 'kalibrieren' ? 'small active' : 'small'}
-              aria-pressed={werkzeug === 'kalibrieren'}
-              title="Maßstab an einer bekannten Strecke festlegen"
-              onClick={() => st.setWerkzeug('kalibrieren')}
+            {/* seltene Befehle der Unterlage im Menü; der Knopf zeigt, wenn Kalibrieren bzw. Ausrichten läuft */}
+            <MenueKnopf
+              className={unterlageWerkzeug ? 'small active' : 'small'}
+              punkte={unterlagePunkte}
+              ariaLabel={unterlageWerkzeug ? `Unterlage: ${unterlageWerkzeug}` : 'Unterlage'}
+              title={unterlageWerkzeug ? `Unterlage: ${unterlageWerkzeug} läuft (Esc bricht ab)` : 'Unterlage: anzeigen, kalibrieren, ausrichten, ersetzen, entfernen'}
             >
-              <Symbol name="kalibrieren" /> Kalibrieren
-            </button>
-            <button
-              className={werkzeug === 'ausrichten' ? 'small active' : 'small'}
-              aria-pressed={werkzeug === 'ausrichten'}
-              title="Unterlage verschieben: Punkt auf der Unterlage → Punkt im Plan"
-              onClick={() => st.setWerkzeug('ausrichten')}
-            >
-              <Symbol name="ausrichten" /> Ausrichten
-            </button>
-            <label className="toggle small-text">
-              <input type="checkbox" checked={unterlage.visible} onChange={(e) => setUnterlage({ ...(unterlage as RasterBackground), visible: e.target.checked })} />
-              anzeigen
-            </label>
+              <Symbol name="bild" /> Unterlage
+            </MenueKnopf>
             <label className="small-text lp-deckkraft">
               Deckkraft
               <input
@@ -913,10 +920,11 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
                 onChange={(e) => setUnterlage({ ...(unterlage as RasterBackground), opacity: Number(e.target.value) }, 'deckkraft', 'Deckkraft ändern')}
               />
             </label>
-            <button className="small" title="Unterlage entfernen (rückgängig mit Strg+Z)" onClick={() => setUnterlage(undefined)}>
-              <Symbol name="muell" /> Entfernen
-            </button>
           </>
+        ) : (
+          <button className="small" title="Amtlicher Lageplan als Bild (PNG, JPG) oder PDF zum Nachzeichnen" onClick={() => dateiRef.current?.click()}>
+            <Symbol name="bild" /> Bild/PDF laden …
+          </button>
         )}
       </div>
       {/* immer, sobald es Flurstücke gibt – der Plan springt beim Wählen einer Grenze nicht */}
@@ -993,14 +1001,9 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
           <button className="small" title="Ansicht auf Gebäude, Flächen und Grenze einpassen (F)" onClick={() => setVb(passend)}>
             <Symbol name="einpassen" /> Einpassen
           </button>
-          <label className="toggle small-text" title="Nummer, Nutzung und Fläche im Plan">
-            <input type="checkbox" checked={beschriften} onChange={(e) => setBeschriften(e.target.checked)} />
-            Beschriftung
-          </label>
-          <label className="toggle small-text">
-            <input type="checkbox" checked={raster} onChange={(e) => setRaster(e.target.checked)} />
-            Raster
-          </label>
+          <MenueKnopf className="small" punkte={ansichtPunkte} title="Ansicht: Beschriftung und Raster">
+            Ansicht
+          </MenueKnopf>
           <details className="lp-tasten" ref={tastenRef}>
             <summary className="lp-tasten-knopf" title="Tastenübersicht" aria-label="Tastenübersicht">
               <Symbol name="info" />

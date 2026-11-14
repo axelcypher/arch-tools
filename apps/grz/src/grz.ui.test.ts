@@ -40,8 +40,17 @@ afterEach(() => {
 const MitMenue = () => createElement(Fragment, null, createElement(GrzGfzView), createElement(MenueHost));
 /** offener Menüpunkt nach seinem Text (ohne Tastenhinweis) */
 const menuePunkt = (host: ParentNode, text: string) =>
-  [...host.querySelectorAll<HTMLButtonElement>('.menue [role="menuitem"]')].find((b) => b.querySelector('.menue-text')?.textContent === text) as HTMLButtonElement;
-const menueTexte = (host: ParentNode) => [...host.querySelectorAll('.menue [role="menuitem"] .menue-text')].map((t) => t.textContent);
+  [...host.querySelectorAll<HTMLButtonElement>('.menue [role^="menuitem"]')].find((b) => b.querySelector('.menue-text')?.textContent === text) as HTMLButtonElement;
+/** Menüknopf (Text oder aria-label) öffnen und einen Punkt wählen */
+const imMenue = (knopf: string, punkt: string) => {
+  const k = [...document.querySelectorAll<HTMLButtonElement>('button[aria-haspopup="menu"]')].find((b) => b.getAttribute('aria-label') === knopf || b.textContent?.trim() === knopf);
+  if (!k) throw new Error(`Menüknopf „${knopf}“ fehlt`);
+  act(() => k.click());
+  const p = menuePunkt(document.body, punkt);
+  if (!p) throw new Error(`Menüpunkt „${punkt}“ fehlt`);
+  act(() => p.click());
+};
+const menueTexte = (host: ParentNode) => [...host.querySelectorAll('.menue [role^="menuitem"] .menue-text')].map((t) => t.textContent);
 
 const change = (el: HTMLSelectElement | HTMLInputElement, value: string) =>
   act(() => {
@@ -63,7 +72,7 @@ describe('TERRIO', () => {
     expect(host.querySelector('.report-backdrop')).not.toBeNull();
     esc();
     expect(host.querySelector('.report-backdrop')).toBeNull();
-    act(() => [...host.querySelectorAll('button')].find((b) => b.textContent?.includes('Excel'))!.click());
+    imMenue('Mehr', 'Excel-Export …');
     expect(host.querySelector('.modal')).not.toBeNull();
     esc();
     expect(host.querySelector('.modal')).toBeNull();
@@ -169,7 +178,7 @@ describe('TERRIO', () => {
     act(() => btn('Nachweis drucken').click());
     expect(host.querySelector('.grz-report')).not.toBeNull();
     act(() => btn('Schließen').click());
-    act(() => btn('Excel').click());
+    imMenue('Mehr', 'Excel-Export …');
     // Vorlagen-Knöpfe erst bei „Eigene Vorlage“
     expect(host.textContent).not.toContain('Muster-Vorlage herunterladen');
     act(() => host.querySelectorAll<HTMLInputElement>('.modal input[type="radio"]')[1].click());
@@ -450,11 +459,11 @@ describe('Stammdaten und Bebauungsplan (G-25)', () => {
 describe('Plan und Einstieg (G-22, G-24, G-27)', () => {
   it('G-24: Beschriftung „Nr · Nutzung · m²“ im Plan, ausblendbar; Hilfezeile mit höchstens drei Kürzeln; Maßstab und Nordpfeil', () => {
     useGrz.getState().load(projekt());
-    const host = render(GrzGfzView);
+    const host = render(MitMenue);
     const texte = () => [...host.querySelectorAll('.lp-beschriftung')].map((t) => t.textContent);
     expect(texte()).toContain('1 · Zufahrt · 30,00 m²');
-    const schalter = [...host.querySelectorAll('.lp-plan-steuerung label')].find((l) => l.textContent?.includes('Beschriftung'))!.querySelector('input')!;
-    act(() => schalter.click());
+    // Schalter im Menü „Ansicht“ des Plans
+    imMenue('Ansicht', 'Beschriftung');
     expect(texte().some((t) => t?.includes('Zufahrt'))).toBe(false);
     const hilfe = host.querySelector('.lp-hint')!.textContent!;
     expect(hilfe.split(' · ').length).toBeLessThanOrEqual(3);
@@ -500,7 +509,7 @@ describe('Plan und Einstieg (G-22, G-24, G-27)', () => {
     act(() => useGrz.getState().load(projekt()));
     act(() => useGrz.getState().update((p) => ({ ...p, name: 'geändert' })));
     expect(host.querySelector('.grz-view')).not.toBeNull();
-    await act(async () => [...host.querySelectorAll('button')].find((b) => b.textContent?.trim() === 'Neu')!.click());
+    imMenue('Datei', 'Neu');
     for (let i = 0; i < 10 && !host.querySelector('.modal.rf'); i++) await act(async () => new Promise((r) => setTimeout(r, 0)));
     const nicht = [...host.querySelectorAll('.modal.rf button')].find((b) => b.textContent === 'Nicht speichern') as HTMLButtonElement;
     await act(async () => nicht.click());
@@ -657,14 +666,14 @@ describe('Gesamt-Review: Tastatur, Ausschnitt, Zeichnen, Unterlage, Speichern', 
     p.lageplan!.unterlage = unterlage;
     useGrz.getState().load(p);
     const host = render(App);
-    act(() => knopf(host, 'Ausrichten').click());
+    imMenue('Unterlage', 'Ausrichten');
     let svg = host.querySelector('svg.grz-skizze')!;
     klick(svg, { x: 20, y: 20 });
     klick(svg, { x: 23, y: 24 });
     const u = useGrz.getState().project.lageplan!.unterlage as typeof unterlage;
     expect(u.x).toBeCloseTo(3, 1);
     expect(u.y).toBeCloseTo(4, 1);
-    act(() => knopf(host, 'Kalibrieren').click());
+    imMenue('Unterlage', 'Kalibrieren');
     svg = host.querySelector('svg.grz-skizze')!;
     klick(svg, { x: 20, y: 20 });
     klick(svg, { x: 25, y: 20 });
@@ -705,7 +714,7 @@ describe('Gesamt-Review: Tastatur, Ausschnitt, Zeichnen, Unterlage, Speichern', 
     const feld = host.querySelector('.grz-fest input') as HTMLInputElement;
     taste('z', feld, { ctrlKey: true });
     expect(useGrz.getState().project.name).toBe('Geändert');
-    act(() => knopf(host, 'Excel-Export …').click());
+    imMenue('Mehr', 'Excel-Export …');
     taste('z', document.body, { ctrlKey: true });
     expect(useGrz.getState().project.name).toBe('Geändert');
     taste('Escape', document.body);
@@ -1046,8 +1055,17 @@ describe('Designsystem: Kontextmenü, Symbole, Druckvorschau, Feldfehler', () =>
     const werkzeuge = [...host.querySelectorAll('.lp-gruppe[aria-label="Werkzeug"] button')];
     expect(werkzeuge.map((b) => b.textContent?.trim())).toEqual(['Auswahl', 'Polygon', 'Rechteck', 'Grenze']);
     expect(werkzeuge.every((b) => b.querySelector('svg.symbol[aria-hidden="true"]'))).toBe(true);
-    // bekannte Befehle tragen ihren Namen im aria-label (in schmalen Fenstern nur das Symbol)
-    expect(host.querySelector('.toolbar button[aria-label="Neu"] .tb-text')!.textContent).toBe('Neu');
+    // Werkzeugleiste nach der Leisten-Regel: Datei, Speichern, Rückgängig/Wiederholen, Hauptknopf, Mehr
+    const leiste = host.querySelector('.toolbar.leiste')!;
+    expect([...leiste.querySelectorAll(':scope > :not([hidden]) > button, :scope > :not([hidden]) > span > button')].map((b) => b.getAttribute('aria-label') ?? b.textContent?.trim())).toEqual([
+      'Datei',
+      'Speichern',
+      'Rückgängig',
+      'Wiederholen',
+      'Nachweis drucken …',
+      'Mehr',
+    ]);
+    expect(leiste.querySelector('button.primary')!.textContent?.trim()).toBe('Nachweis drucken …');
     expect(host.querySelector('.toolbar button[aria-label="Speichern"]')!.classList.contains('ungespeichert')).toBe(false);
     expect(host.querySelector('.toolbar')!.textContent).not.toMatch(/[↶↷×?]/);
     // Tastenübersicht im Lageplan: Symbol statt „?“, Name über aria-label
@@ -1142,5 +1160,75 @@ describe('Designsystem: Kontextmenü, Symbole, Druckvorschau, Feldfehler', () =>
     expect(host.querySelectorAll('input[aria-invalid="true"]')).toHaveLength(0);
     act(() => useGrz.getState().update((q) => ({ ...q, massNutzung: { ...q.massNutzung, baunvo: '1990' } })));
     expect(host.querySelectorAll('input[aria-describedby~="grz-grz2-fehler"][aria-invalid="true"]')).toHaveLength(2);
+  });
+});
+
+describe('Kopf- und Werkzeugleisten (Leisten-Regel)', () => {
+  const unterlage = { type: 'raster' as const, name: 'Plan', dataUrl: 'data:image/png;base64,', widthPx: 100, heightPx: 100, metersPerPixel: 0.1, x: 0, y: 0, opacity: 0.5, visible: true };
+
+  it('Menü „Datei“: Neu, Öffnen …, IFC aktualisieren (ohne Gebäude gesperrt mit Grund); „Mehr“: Excel-Export …', () => {
+    useGrz.getState().load(createProject());
+    render(App);
+    act(() => [...document.querySelectorAll<HTMLButtonElement>('.toolbar.leiste button[aria-haspopup="menu"]')].find((b) => b.textContent?.trim() === 'Datei')!.click());
+    const texte = menueTexte(document.body);
+    expect(texte.slice(0, 2)).toEqual(['Neu', 'Öffnen …']);
+    expect(texte.at(-1)).toBe('IFC aktualisieren …');
+    const ifc = menuePunkt(document.body, 'IFC aktualisieren …');
+    expect(ifc.getAttribute('aria-disabled')).toBe('true');
+    expect(ifc.textContent).toContain('Kein Gebäude');
+    expect(ifc.title).toContain('Erst ein Gebäude öffnen');
+    act(() => document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+    // Gegenprobe: mit Gebäude frei
+    act(() => useGrz.getState().load(projekt()));
+    imMenue('Mehr', 'Excel-Export …');
+    expect(document.querySelector('.modal')).not.toBeNull();
+  });
+
+  it('schmales Fenster: „Datei“ wandert in „Mehr“, Speichern, Rückgängig und der Hauptknopf bleiben sichtbar', async () => {
+    const { leistenMessung } = await import('@core/ui/Werkzeugleiste');
+    const alt = leistenMessung.breite;
+    // Leiste 300 px, jeder Eintrag 80 px: nicht alles passt
+    leistenMessung.breite = (el: Element) => (el.classList.contains('leiste') ? 300 : 80);
+    try {
+      useGrz.getState().load(projekt());
+      const host = render(App);
+      act(() => window.dispatchEvent(new Event('resize')));
+      const leiste = host.querySelector('.toolbar.leiste')!;
+      expect((leiste.querySelector('[data-eintrag="datei"]') as HTMLElement).hidden).toBe(true);
+      for (const id of ['speichern', 'verlauf', 'drucken']) expect((leiste.querySelector(`[data-eintrag="${id}"]`) as HTMLElement).hidden).toBe(false);
+      // „Datei“ steht jetzt als Untermenü oben in „Mehr“, Excel-Export bleibt darunter
+      act(() => (leiste.querySelector('button[aria-label="Mehr"]') as HTMLButtonElement).click());
+      expect(menueTexte(document.body)).toEqual(['Datei', 'Excel-Export …']);
+    } finally {
+      leistenMessung.breite = alt;
+    }
+  });
+
+  it('Menü „Unterlage“: Anzeigen als Schalter, Kalibrieren und Ausrichten, Entfernen am Ende; der Knopf zeigt das laufende Werkzeug', () => {
+    const p = projekt();
+    p.lageplan!.unterlage = unterlage;
+    useGrz.getState().load(p);
+    const host = render(MitMenue);
+    const knopf = () => [...host.querySelectorAll<HTMLButtonElement>('button[aria-haspopup="menu"]')].find((b) => b.textContent?.trim() === 'Unterlage')!;
+    act(() => knopf().click());
+    expect(menueTexte(document.body)).toEqual(['Anzeigen', 'Kalibrieren', 'Ausrichten', 'Ersetzen …', 'Entfernen']);
+    const anzeigen = menuePunkt(document.body, 'Anzeigen');
+    expect(anzeigen.getAttribute('aria-checked')).toBe('true');
+    act(() => anzeigen.click());
+    expect((useGrz.getState().project.lageplan!.unterlage as typeof unterlage).visible).toBe(false);
+    // Kalibrieren läuft: Knopf aktiv und benannt; Gegenprobe nach Esc wieder neutral
+    imMenue('Unterlage', 'Kalibrieren');
+    expect(knopf().classList.contains('active')).toBe(true);
+    expect(knopf().getAttribute('aria-label')).toBe('Unterlage: Kalibrieren');
+    act(() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+    expect(knopf().classList.contains('active')).toBe(false);
+    // Entfernen: Gefahr-Punkt, ein Rückgängig-Schritt
+    act(() => knopf().click());
+    expect(menuePunkt(document.body, 'Entfernen').classList.contains('gefahr')).toBe(true);
+    act(() => menuePunkt(document.body, 'Entfernen').click());
+    expect(useGrz.getState().project.lageplan!.unterlage).toBeUndefined();
+    // ohne Unterlage nur ein Knopf zum Laden, kein Menü
+    expect(knopf()).toBeUndefined();
+    expect([...host.querySelectorAll('.lp-unterlage button')].map((b) => b.textContent?.trim())).toEqual(['Bild/PDF laden …']);
   });
 });
