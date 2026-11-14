@@ -54,6 +54,16 @@ describe('IFC-Import (Dialog)', () => {
     expect(document.activeElement?.textContent).toContain('IFC-Datei wählen');
   });
 
+  it('Einleitung neutral („aus dem CAD-Programm“); nur die Export-Anleitung nennt ein bestimmtes Programm', () => {
+    const host = oeffnen();
+    const absaetze = [...host.querySelectorAll('[role="dialog"] p')].map((p) => p.textContent ?? '');
+    expect(absaetze[0]).toContain('aus dem CAD-Programm');
+    // Gegenprobe: keine Herstellerliste in der Einleitung
+    expect(absaetze[0]).not.toMatch(/Archicad|Revit|Vectorworks/);
+    // erlaubt: Schritt-für-Schritt-Anleitung zum Export aus einem bestimmten Programm
+    expect(absaetze[1]).toMatch(/^Export aus Archicad: Datei → Speichern unter → IFC/);
+  });
+
   it('unlesbare Datei: Klartext statt Ausnahmetext', async () => {
     lesen.fehler = new TypeError("Cannot read properties of undefined (reading 'arguments')");
     const host = oeffnen();

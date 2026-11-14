@@ -270,7 +270,7 @@ function ShapeProperties({ shape }: { shape: Shape }) {
           <NumberField value={shape.versatz} allowEmpty min={-20} max={20} digits={3} placeholder={shape.kind === 'room' ? 'wie Umriss' : '0,000'} onChange={(v) => upd((s) => ({ ...s, versatz: s.kind === 'room' ? v : v || undefined }))} />
         </Field>
         {shape.kind === 'room' && (
-          <Field label="Putzabzug [%]" hint="z. B. 3 % bei Flächen aus Rohbaumaßen (wie Archicad-Zonen)">
+          <Field label="Putzabzug [%]" hint="z. B. 3 % bei Flächen aus Rohbaumaßen (Raumzonen aus dem CAD-Programm)">
             <NumberField value={shape.putzabzug} allowEmpty min={0} max={20} digits={1} onChange={(v) => upd((s) => (s.kind === 'room' ? { ...s, putzabzug: v || undefined } : s))} />
           </Field>
         )}
