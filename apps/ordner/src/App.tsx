@@ -14,6 +14,7 @@ import type { Auftrag } from './components/AssistentView';
 import type { GeladenerOrdner } from './projekt';
 import { useOrdner } from './store';
 import { ordnerAlsText } from './struktur';
+import { ASSISTENT_ANGABEN, ORDNERSTRUKTUR, satzUngespeichert } from './ungespeichert';
 
 type Ansicht = 'projekt' | 'pruefen' | 'mails' | 'struktur' | 'vorlagen' | 'kataster' | 'einstellungen';
 
@@ -72,7 +73,10 @@ export function App() {
   const strukturKonflikt = useOrdner((s) => s.konflikt !== null);
   // das Schreiben der Struktur ist gescheitert (z. B. Netzlaufwerk weg): bis zum nächsten gelungenen Schreiben offen
   const schreibenGescheitert = useOrdner((s) => s.strukturNichtGeschrieben !== null);
-  const dirty = !!assistentOffenText || strukturEntwurf || strukturKonflikt || schreibenGescheitert;
+  const strukturUngespeichert = strukturEntwurf || strukturKonflikt || schreibenGescheitert;
+  const dirty = !!assistentOffenText || strukturUngespeichert;
+  // Satz für die Rückfragen (Titelleiste, Rahmen): was ungespeichert ist, in Nutzersprache – „Das Projekt …“ träfe nicht zu
+  const ungespeichert = satzUngespeichert([...(strukturUngespeichert ? [ORDNERSTRUKTUR] : []), ...(assistentOffenText ? [ASSISTENT_ANGABEN] : [])]);
 
   /**
    * Speichern auf Anfrage (Rückfrage der Titelleiste bzw. des Rahmens, Knopf „Speichern“): gespeichert wird nur, was
@@ -162,6 +166,7 @@ export function App() {
         app={APP_NAMEN.ordner.name}
         name={start?.ordner.name ?? ''}
         dirty={dirty}
+        ungespeichert={ungespeichert}
         onSpeichern={speichernAufAnfrage}
         onOpenLog={() => setLogOpen(true)}
         zeichenflaeche={false}
