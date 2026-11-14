@@ -66,14 +66,20 @@ function aufloesen(wurzel, von, ziel) {
 function verfolgen(wurzel, quellen, rust = []) {
   const gesehen = new Set();
   let alles = false;
+  /** Dateien, deren Muster UNSICHER angeschlagen hat; globKern: ein Glob zeigt in den Kern */
+  const unsicher = [];
+  let globKern = false;
   const offen = [...quellen];
   while (offen.length) {
     const datei = offen.pop();
     if (gesehen.has(datei)) continue;
     gesehen.add(datei);
     const text = readFileSync(join(wurzel, datei), 'utf8');
-    if (UNSICHER.test(text)) alles = true;
-    for (const m of text.matchAll(GLOB)) if (m[1].startsWith('@core/') || posix(normalize(join(dirname(datei), m[1]))).startsWith('packages/core/')) alles = true;
+    if (UNSICHER.test(text)) {
+      alles = true;
+      unsicher.push(datei);
+    }
+    for (const m of text.matchAll(GLOB)) if (m[1].startsWith('@core/') || posix(normalize(join(dirname(datei), m[1]))).startsWith('packages/core/')) alles = globKern = true;
     for (const m of text.matchAll(IMPORT)) {
       const ziel = aufloesen(wurzel, datei, m[1]);
       if (ziel && !gesehen.has(ziel) && QUELLE.test(ziel)) offen.push(ziel);
@@ -92,7 +98,7 @@ function verfolgen(wurzel, quellen, rust = []) {
       if (existsSync(join(wurzel, ziel)) && ziel.endsWith('.rs')) offenRust.push(ziel);
     }
   }
-  return { gesehen, alles };
+  return { gesehen, alles, unsicher, globKern };
 }
 
 /**
@@ -113,6 +119,49 @@ export function kernDateienJeApp(wurzel, apps) {
 }
 
 /** Kerndateien, die Tests einbinden (Tests der Apps und des Kerns) */
+/**
+ * Alle Dateien (auch Tests), die von den Quelltexten unter `ordner` aus erreichbar sind; null: ein nicht sicher
+ * verfolgbares Muster kam vor (dann gilt der ganze Kern als erreichbar)
+ */
+export function erreichbarAus(wurzel, ordner) {
+  // Vitest-Konfigurationen definieren nur den Alias @core (new URL('../core/src', import.meta.url)) – kein Verweis auf Dateien
+  const quellen = ordner.flatMap((o) => dateienUnter(wurzel, o, (p) => QUELLE.test(p) && !/(^|\/)vitest[^/]*\.config\.[cm]?[jt]s$/.test(p)));
+  const { gesehen, unsicher, globKern } = verfolgen(wurzel, quellen);
+  return globKern || unsicher.some((d) => unsicherFuerKern(d, readFileSync(join(wurzel, d), 'utf8'))) ? null : gesehen;
+}
+
+/**
+ * Genauer als UNSICHER, nur für erreichbarAus: `new URL(…)` ohne import.meta.url ist eine Adresse zur Laufzeit (etwa
+ * eine Seite von recht.nrw.de), kein Verweis auf eine Datei; `new URL('literal', import.meta.url)` und ein Glob als
+ * Liste wörtlicher Muster zählen nur, wenn sie in den Kern zeigen. Template-Import, nicht wörtliche Ziele bzw. Muster
+ * bleiben unsicher.
+ */
+function unsicherFuerKern(datei, text) {
+  const inKern = (ziel) => {
+    const p = ziel.startsWith('@core/') ? 'packages/core/' : posix(normalize(join(dirname(datei), ziel)));
+    return p.startsWith('packages/core') || !p.includes('/');
+  };
+  if (/\bimport\s*\(\s*`/.test(text)) return true;
+  for (const m of text.matchAll(/import\.meta\.glob\s*(?:<[^>]*>)?\s*\(\s*(\[?)/g)) {
+    if (!m[1]) continue; // einzelnes Muster: wertet verfolgen selbst aus (globKern)
+    const liste = /^\[([^\]]*)\]/.exec(text.slice(m.index + m[0].length - 1));
+    const muster =
+      liste &&
+      liste[1]
+        .split(',')
+        .map((x) => x.trim())
+        .filter(Boolean);
+    if (!muster || muster.some((x) => !/^(['"])[^'"`$]*\1$/.test(x) || inKern(x.slice(1, -1)))) return true;
+  }
+  for (const m of text.matchAll(/new\s+URL\s*\(([^)]*)\)/g)) {
+    if (!m[1].includes('import.meta.url')) continue;
+    const wort = /^\s*(['"])([^'"`$]*)\1\s*,\s*import\.meta\.url\s*$/.exec(m[1]);
+    if (!wort) return true;
+    if (inKern(wort[2])) return true;
+  }
+  return false;
+}
+
 function vonTestsGenutzt(wurzel) {
   const istTest = (p) => QUELLE.test(p) && !ausgeliefert(p);
   const tests = [...dateienUnter(wurzel, 'apps', istTest), ...dateienUnter(wurzel, 'packages/core', istTest)];

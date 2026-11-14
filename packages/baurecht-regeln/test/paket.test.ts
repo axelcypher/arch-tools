@@ -99,9 +99,11 @@ const WERTE: Record<string, (string | undefined)[]> = {
 /**
  * Volle Matrizen (mehrere Minuten Rechenzeit, ohne Netz) nur in der CI (GitHub Actions setzt CI=true) oder mit VOLL=1.
  * Sonst – lokal, in Cloud-Sitzungen – eine feste Stichprobe, damit das Projekt in unter einer Minute durch ist statt
- * über zehn Minuten ohne Ausgabe zu laufen. Volle Prüfung lokal: VOLL=1 npx vitest run --project regeln (etwa 15 min)
+ * über zehn Minuten ohne Ausgabe zu laufen. Volle Prüfung lokal: VOLL=1 npx vitest run --project regeln (etwa 15 min).
+ * REGELN_STICHPROBE=1 setzt die PR-CI, wenn der PR die Auswertung von LEXIO sicher nicht berührt
+ * (scripts/regeln-matrix.mjs); auf main, im Release-Lauf und im Regel-Workflow bleibt es voll. VOLL=1 geht immer vor.
  */
-const VOLL = !!process.env.CI || !!process.env.VOLL;
+const VOLL = !!process.env.VOLL || (!!process.env.CI && !process.env.REGELN_STICHPROBE);
 /** Zeitgrenze der großen Matrizen: voll großzügig (Windows-Runner), mit Stichprobe knapp – nichts läuft still minutenlang */
 const MATRIX_ZEIT = VOLL ? 600000 : 60000;
 const MATRIX_ZEIT_LANG = VOLL ? 900000 : 60000;
