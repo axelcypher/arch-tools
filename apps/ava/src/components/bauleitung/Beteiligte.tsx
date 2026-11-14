@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { bestaetigen, meldung } from '@core/ui/Rueckfrage';
 import { Symbol } from '@core/ui/Symbol';
+import { Werkzeugleiste } from '@core/ui/Werkzeugleiste';
 import type { Beteiligter } from '../../avaDaten';
 import { gewerkZweistellig } from '../../abrechnung/gewerk';
 import { neueId } from '../../lv/modell';
@@ -39,22 +40,28 @@ export function Beteiligte() {
       <div className="ava-seite-kopf">
         <h1>Beteiligte</h1>
       </div>
-      <div className="toolbar">
-        <button
-          title="Beteiligten hinzufügen"
-          className="primary"
-          onClick={() => {
-            const id = neueId('b');
-            setNeuerEintrag(id);
-            void speichern((a) => ({ ...a, beteiligte: [...a.beteiligte, { id, rolle: '' }] }));
-          }}
-        >
-          <Symbol name="plus" /> Beteiligter
-        </button>
-        <button onClick={() => void uebernehmen()} title="Bauherr und Beteiligte aus den Stammdaten, Auftragnehmer aus der Kostenkontrolle">
-          Aus Stammdaten und Gewerken übernehmen
-        </button>
-      </div>
+      <Werkzeugleiste
+        name="Beteiligte"
+        teile={[
+          {
+            id: 'beteiligter',
+            inhalt: (
+              <button
+                title="Beteiligten hinzufügen"
+                className="primary"
+                onClick={() => {
+                  const id = neueId('b');
+                  setNeuerEintrag(id);
+                  void speichern((a) => ({ ...a, beteiligte: [...a.beteiligte, { id, rolle: '' }] }));
+                }}
+              >
+                <Symbol name="plus" /> Beteiligter
+              </button>
+            ),
+          },
+        ]}
+        mehr={() => [{ text: 'Aus Stammdaten und Gewerken übernehmen', titel: 'Bauherr und Beteiligte aus den Stammdaten, Auftragnehmer aus der Kostenkontrolle', aktion: () => void uebernehmen() }]}
+      />
       <table className="ava-tabelle">
         <thead>
           <tr>
