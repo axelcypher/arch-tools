@@ -18,6 +18,9 @@ import { aktuell, useEntz } from './store';
 import { dialogOffen, kuerzelErlaubt, verlaufErlaubt } from './tastatur';
 import { BreitenLeiste } from '@core/ui/Leiste';
 import { Symbol } from '@core/ui/Symbol';
+import { MenueKnopf } from '@core/ui/Menue';
+import type { MenuePunkt } from '@core/ui/Menue';
+import { Werkzeugleiste } from '@core/ui/Werkzeugleiste';
 
 export function App() {
   const doc = useEntz((s) => s.doc);
@@ -112,6 +115,21 @@ export function App() {
   const ansichtWechseln = (a: 'foto' | 'entzerrt') => useEntz.getState().setze({ ansicht: a, werkzeug: 'auswahl', entwurf: [], auswahl: null });
   const [linksZu, setLinksZu] = useState(false);
 
+  // Menü „Datei“: Dateibefehle, dann Fotos hinzufügen (auch aus dem Projekt)
+  const dateiPunkte = (): MenuePunkt[] => [
+    { text: 'Neu', aktion: () => void neu() },
+    { text: 'Öffnen …', tasten: 'Strg+O', aktion: () => void oeffnen() },
+    { text: 'Speichern unter …', aktion: () => void speichern(true), deaktiviert: !doc.fotos.length, hinweis: doc.fotos.length ? undefined : 'Erst ein Foto hinzufügen' },
+    { trenner: true },
+    { text: 'Fotos hinzufügen …', aktion: () => void fotosHinzufuegen() },
+    ...(isTauri() ? [{ text: 'Fotos des Projekts …', aktion: () => setWahl(projektordner ? 'fotos' : 'projekt') }] : []),
+  ];
+  // Menü „Ansicht“: Schalter der Darstellung, dann „Alles zeigen“
+  const ansichtPunkte = (): MenuePunkt[] => [
+    { text: 'Leiste mit Fotos und Ebenen', haken: !linksZu, aktion: () => setLinksZu((z) => !z) },
+    { trenner: true },
+    { text: 'Alles zeigen', tasten: 'Pos1', aktion: () => window.dispatchEvent(new Event('entz:einpassen')), deaktiviert: !foto, hinweis: foto ? undefined : 'Erst ein Foto hinzufügen' },
+  ];
   return (
     <div
       className="app"
@@ -129,58 +147,60 @@ export function App() {
       }}
     >
       <TitleBar app={APP_NAMEN.entzerrung.name} name={name} dirty={dirty} onOpenLog={() => setLogOpen(true)} onProjekte={() => setWahl(projektordner ? 'fotos' : 'projekt')} onSpeichern={() => speichern()} />
-      <div className="toolbar">
-        <div className="tb-group">
-          <button onClick={() => void neu()} title="Neues Projekt">
-            Neu
-          </button>
-          <button onClick={() => void oeffnen()} title="Projekt öffnen (Strg+O)">
-            Öffnen …
-          </button>
-          <button onClick={() => void speichern()} disabled={!doc.fotos.length} title="Projekt mit Fotos speichern (Strg+S)">
-            Speichern
-          </button>
-        </div>
-        <div className="tb-group">
-          {isTauri() && (
-            <button onClick={() => setWahl(projektordner ? 'fotos' : 'projekt')} title="Fotos aus dem Fotoordner des Projekts">
-              Fotos des Projekts …
-            </button>
-          )}
-          <button onClick={() => void fotosHinzufuegen()} title="Fotos hinzufügen (JPEG, PNG, WebP)">
-            <Symbol name="plus" /> Foto …
-          </button>
-          <button onClick={() => setLinksZu((z) => !z)} aria-pressed={!linksZu} title={linksZu ? 'Leiste mit Fotos und Ebenen einblenden' : 'Leiste mit Fotos und Ebenen ausblenden (mehr Platz zum Zeichnen)'}>
-            <Symbol name={linksZu ? 'pfeilRechts' : 'pfeilLinks'} /> Fotos
-          </button>
-        </div>
-        <div className="tb-group">
-          <div className="segment" role="group" aria-label="Ansicht">
-            <button disabled={!foto} onClick={() => ansichtWechseln('foto')} title="Foto mit Referenz und Hilfslinien (Taste E wechselt)" aria-pressed={!entzerrt}>
-              Foto
-            </button>
-            <button disabled={!entzerrbar} onClick={() => ansichtWechseln('entzerrt')} title={entzerrbar ? 'Entzerrte Ebene zum Messen (Taste E wechselt)' : 'Erst die Referenz vervollständigen'} aria-pressed={entzerrt}>
-              Entzerrt
-            </button>
-          </div>
-        </div>
-        {foto && (
-          <div className="tb-group">
-            <WerkzeugKnopf w="auswahl" title="Auswählen, Punkte ziehen, Ansicht verschieben (Esc); Werkzeuge stehen rechts" />
-          </div>
-        )}
-        <div className="tb-group">
-          <button onClick={() => useEntz.getState().rueckgaengig()} disabled={!kannZurueck} title="Rückgängig (Strg+Z)" aria-label="Rückgängig">
-            <Symbol name="rueckgaengig" />
-          </button>
-          <button onClick={() => useEntz.getState().wiederholen()} disabled={!kannVor} title="Wiederholen (Strg+Y)" aria-label="Wiederholen">
-            <Symbol name="wiederholen" />
-          </button>
-          <button onClick={() => window.dispatchEvent(new Event('entz:einpassen'))} disabled={!foto} title="Alles zeigen (Pos1)">
-            <Symbol name="einpassen" /> Einpassen
-          </button>
-        </div>
-      </div>
+      <Werkzeugleiste
+        name="Werkzeugleiste"
+        teile={[
+          // links „Datei“ und „Speichern“; Fotos hinzufügen steht zusätzlich im Kopf der Fotoleiste und in der leeren Fläche
+          { id: 'datei', inhalt: <MenueKnopf punkte={dateiPunkte}>Datei</MenueKnopf> },
+          {
+            id: 'speichern',
+            gruppe: true,
+            inhalt: (
+              <button
+                className={dirty ? 'ungespeichert' : undefined}
+                aria-label={dirty ? 'Speichern – ungespeicherte Änderungen' : 'Speichern'}
+                onClick={() => void speichern()}
+                disabled={!doc.fotos.length}
+                title={!doc.fotos.length ? 'Erst ein Foto hinzufügen' : dirty ? 'Projekt mit Fotos speichern (Strg+S) – ungespeicherte Änderungen' : 'Projekt mit Fotos speichern (Strg+S)'}
+              >
+                Speichern
+              </button>
+            ),
+          },
+          // in der Mitte der Haupt-Umschalter und die Werkzeuge der Zeichenfläche
+          {
+            id: 'ansichtWahl',
+            gruppe: true,
+            inhalt: (
+              <div className="segment" role="group" aria-label="Ansicht">
+                <button disabled={!foto} onClick={() => ansichtWechseln('foto')} title="Foto mit Referenz und Hilfslinien (Taste E wechselt)" aria-pressed={!entzerrt}>
+                  Foto
+                </button>
+                <button disabled={!entzerrbar} onClick={() => ansichtWechseln('entzerrt')} title={entzerrbar ? 'Entzerrte Ebene zum Messen (Taste E wechselt)' : 'Erst die Referenz vervollständigen'} aria-pressed={entzerrt}>
+                  Entzerrt
+                </button>
+              </div>
+            ),
+          },
+          ...(foto ? [{ id: 'auswahl', gruppe: true, inhalt: <WerkzeugKnopf w="auswahl" title="Auswählen, Punkte ziehen, Ansicht verschieben (Esc); Werkzeuge stehen rechts" /> }] : []),
+          {
+            id: 'verlauf',
+            gruppe: true,
+            inhalt: (
+              <>
+                <button onClick={() => useEntz.getState().rueckgaengig()} disabled={!kannZurueck} title="Rückgängig (Strg+Z)" aria-label="Rückgängig">
+                  <Symbol name="rueckgaengig" />
+                </button>
+                <button onClick={() => useEntz.getState().wiederholen()} disabled={!kannVor} title="Wiederholen (Strg+Y)" aria-label="Wiederholen">
+                  <Symbol name="wiederholen" />
+                </button>
+              </>
+            ),
+          },
+          // in schmalen Fenstern wandert „Ansicht“ ins Menü „Mehr“
+          { id: 'ansicht', rang: 1, inhalt: <MenueKnopf punkte={ansichtPunkte}>Ansicht</MenueKnopf>, menue: { text: 'Ansicht', unter: ansichtPunkte() } },
+        ]}
+      />
       <div className="workspace">
         {!linksZu && (
           <BreitenLeiste schluessel="entzerrung:breite:links" vorgabe={260} min={190} max={420}>
