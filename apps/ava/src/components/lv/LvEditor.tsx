@@ -7,7 +7,8 @@ import { summen } from '../../lv/rechnen';
 import { euro } from '../../abrechnung/pruefung';
 import { useAva } from '../../store';
 import { zahlDE, ZahlEingabe } from '../eingaben';
-import { MenueKnopf } from '@core/ui/Menue';
+import { MenueKnopf, type MenuePunkt } from '@core/ui/Menue';
+import { Werkzeugleiste } from '@core/ui/Werkzeugleiste';
 import { ElementPanel } from './ElementPanel';
 import { Textbibliothek } from './Textbibliothek';
 
@@ -187,77 +188,117 @@ export function LvEditor() {
   const ka = s.bieter.get(0);
   const positionsZahl = zeilen.filter((z) => z.el.art === 'position').length;
 
+  const kannHoch = !!gewaehlt && gewaehlt.index > 0;
+  const kannRunter = !!gewaehlt && gewaehlt.index < gewaehlt.eltern.length - 1;
+  const kannAus = !!gewaehlt?.pfad.length;
+  const kannEin = !!gewaehlt && gewaehlt.eltern.slice(0, gewaehlt.index).some((e) => e.art === 'abschnitt');
+  const hinzufuegenPunkte = (): MenuePunkt[] => [
+    { text: 'Abschnitt', titel: 'Abschnitt (Los, Titel) hinter dem gewählten bzw. am Ende', aktion: () => neu('abschnitt') },
+    { text: 'Hinweis', titel: 'Hinweistext im Abschnitt', aktion: () => neu('hinweis') },
+    { text: 'Vorbemerkung', titel: 'Vorbemerkung vor der Gliederung', aktion: () => neu('vorbemerkung') },
+    { text: 'Aus Vorlage …', titel: 'Position aus den Vorlagetexten des Büros hinzufügen', aktion: () => setBibliothek('einfuegen') },
+  ];
+
   return (
     <div className="ava-lv">
-      <div className="toolbar ava-lv-leiste">
-        <div className="tb-group">
-          <button onClick={() => neu('position')} title="Position hinzufügen – im gewählten Abschnitt bzw. hinter der gewählten Position (Einfg)">
-            <Symbol name="plus" /> Position
-          </button>
-          <button onClick={() => neu('abschnitt')} title="Abschnitt hinzufügen (Los, Titel) – hinter dem gewählten bzw. am Ende">
-            <Symbol name="plus" /> Abschnitt
-          </button>
-          <MenueKnopf
-            title="Hinweis, Vorbemerkung oder Position aus den Vorlagetexten hinzufügen"
-            punkte={() => [
-              { text: 'Hinweis', titel: 'Hinweistext im Abschnitt', aktion: () => neu('hinweis') },
-              { text: 'Vorbemerkung', titel: 'Vorbemerkung vor der Gliederung', aktion: () => neu('vorbemerkung') },
-              { text: 'Aus Vorlage …', titel: 'Position aus den Vorlagetexten des Büros hinzufügen', aktion: () => setBibliothek('einfuegen') },
-            ]}
-          >
-            <Symbol name="plus" /> Hinzufügen
-          </MenueKnopf>
-        </div>
-        <div className="tb-group">
-          <button onClick={duplizieren} disabled={!gewaehlt} title="Duplizieren (Strg+D)">
-            Duplizieren
-          </button>
-          <button className="icon" onClick={() => verschieben(-1)} disabled={!gewaehlt || gewaehlt.index === 0} title={`${gegenstand} nach oben`} aria-label={`${gegenstand} nach oben`}>
-            <Symbol name="nachOben" />
-          </button>
-          <button className="icon" onClick={() => verschieben(1)} disabled={!gewaehlt || gewaehlt.index >= gewaehlt.eltern.length - 1} title={`${gegenstand} nach unten`} aria-label={`${gegenstand} nach unten`}>
-            <Symbol name="nachUnten" />
-          </button>
-          <button className="icon" onClick={() => einruecken(false)} disabled={!gewaehlt?.pfad.length} title={`${gegenstand} ausrücken: aus dem Abschnitt heraus (eine Ebene höher)`} aria-label={`${gegenstand} ausrücken`}>
-            <Symbol name="ausruecken" />
-          </button>
-          <button
-            className="icon"
-            onClick={() => einruecken(true)}
-            disabled={!gewaehlt || !gewaehlt.eltern.slice(0, gewaehlt.index).some((e) => e.art === 'abschnitt')}
-            title={`${gegenstand} einrücken: in den Abschnitt davor (eine Ebene tiefer)`}
-            aria-label={`${gegenstand} einrücken`}
-          >
-            <Symbol name="einruecken" />
-          </button>
-          <button className="danger" onClick={() => void loeschen()} disabled={!gewaehlt} title="Entfernen (Entf)">
-            Entfernen
-          </button>
-        </div>
-        <div className="tb-group">
-          <button className="icon" onClick={() => useAva.getState().lvRueckgaengig()} disabled={!offen.verlauf.length} title="Rückgängig (Strg+Z)" aria-label="Rückgängig">
-            <Symbol name="rueckgaengig" />
-          </button>
-          <button className="icon" onClick={() => useAva.getState().lvWiederholen()} disabled={!offen.zukunft.length} title="Wiederholen (Strg+Y)" aria-label="Wiederholen">
-            <Symbol name="wiederholen" />
-          </button>
-        </div>
-        <input
-          className="ava-suche"
-          type="search"
-          placeholder="Suchen (OZ, Kurztext) …"
-          aria-label="LV durchsuchen"
-          value={suche}
-          onChange={(e) => setSuche(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Escape' && suche) {
-              e.preventDefault();
-              e.stopPropagation();
-              sucheLeeren();
-            }
-          }}
-        />
-      </div>
+      <Werkzeugleiste
+        name="LV bearbeiten"
+        className="ava-lv-leiste"
+        teile={[
+          {
+            id: 'position',
+            inhalt: (
+              <button onClick={() => neu('position')} title="Position hinzufügen – im gewählten Abschnitt bzw. hinter der gewählten Position (Einfg)">
+                <Symbol name="plus" /> Position
+              </button>
+            ),
+          },
+          {
+            id: 'hinzufuegen',
+            gruppe: true,
+            rang: 3,
+            inhalt: (
+              <MenueKnopf title="Abschnitt, Hinweis, Vorbemerkung oder Position aus den Vorlagetexten hinzufügen" punkte={hinzufuegenPunkte}>
+                <Symbol name="plus" /> Hinzufügen
+              </MenueKnopf>
+            ),
+            menue: { text: 'Hinzufügen', unter: hinzufuegenPunkte() },
+          },
+          {
+            id: 'gliederung',
+            gruppe: true,
+            rang: 2,
+            inhalt: (
+              <>
+                <button className="icon" onClick={() => verschieben(-1)} disabled={!kannHoch} title={`${gegenstand} nach oben`} aria-label={`${gegenstand} nach oben`}>
+                  <Symbol name="nachOben" />
+                </button>
+                <button className="icon" onClick={() => verschieben(1)} disabled={!kannRunter} title={`${gegenstand} nach unten`} aria-label={`${gegenstand} nach unten`}>
+                  <Symbol name="nachUnten" />
+                </button>
+                <button className="icon" onClick={() => einruecken(false)} disabled={!kannAus} title={`${gegenstand} ausrücken: aus dem Abschnitt heraus (eine Ebene höher)`} aria-label={`${gegenstand} ausrücken`}>
+                  <Symbol name="ausruecken" />
+                </button>
+                <button className="icon" onClick={() => einruecken(true)} disabled={!kannEin} title={`${gegenstand} einrücken: in den Abschnitt davor (eine Ebene tiefer)`} aria-label={`${gegenstand} einrücken`}>
+                  <Symbol name="einruecken" />
+                </button>
+              </>
+            ),
+            menue: [
+              { text: `${gegenstand} nach oben`, symbol: 'nachOben', deaktiviert: !kannHoch, aktion: () => verschieben(-1) },
+              { text: `${gegenstand} nach unten`, symbol: 'nachUnten', deaktiviert: !kannRunter, aktion: () => verschieben(1) },
+              { text: `${gegenstand} ausrücken`, symbol: 'ausruecken', deaktiviert: !kannAus, aktion: () => einruecken(false) },
+              { text: `${gegenstand} einrücken`, symbol: 'einruecken', deaktiviert: !kannEin, aktion: () => einruecken(true) },
+            ],
+          },
+          {
+            id: 'verlauf',
+            gruppe: true,
+            rang: 1,
+            menue: [
+              { text: 'Rückgängig', symbol: 'rueckgaengig', tasten: 'Strg+Z', deaktiviert: !offen.verlauf.length, aktion: () => useAva.getState().lvRueckgaengig() },
+              { text: 'Wiederholen', symbol: 'wiederholen', tasten: 'Strg+Y', deaktiviert: !offen.zukunft.length, aktion: () => useAva.getState().lvWiederholen() },
+            ],
+            inhalt: (
+              <>
+                <button className="icon" onClick={() => useAva.getState().lvRueckgaengig()} disabled={!offen.verlauf.length} title="Rückgängig (Strg+Z)" aria-label="Rückgängig">
+                  <Symbol name="rueckgaengig" />
+                </button>
+                <button className="icon" onClick={() => useAva.getState().lvWiederholen()} disabled={!offen.zukunft.length} title="Wiederholen (Strg+Y)" aria-label="Wiederholen">
+                  <Symbol name="wiederholen" />
+                </button>
+              </>
+            ),
+          },
+          { abstand: true },
+          {
+            id: 'suche',
+            kuerzbar: true,
+            inhalt: (
+              <input
+                className="ava-suche"
+                type="search"
+                placeholder="Suchen (OZ, Kurztext) …"
+                aria-label="LV durchsuchen"
+                value={suche}
+                onChange={(e) => setSuche(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape' && suche) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    sucheLeeren();
+                  }
+                }}
+              />
+            ),
+          },
+        ]}
+        mehr={() => [
+          { text: 'Duplizieren', titel: `${gegenstand} duplizieren`, tasten: 'Strg+D', deaktiviert: !gewaehlt, hinweis: gewaehlt ? undefined : 'Erst wählen', aktion: duplizieren },
+          { trenner: true },
+          { text: 'Entfernen', titel: `${gegenstand} entfernen`, tasten: 'Entf', gefahr: true, deaktiviert: !gewaehlt, hinweis: gewaehlt ? undefined : 'Erst wählen', aktion: () => void loeschen() },
+        ]}
+      />
       <div className="ava-lv-koerper">
         <div className="ava-lv-tabelle" ref={tabelle} tabIndex={0} onKeyDown={tasten} aria-label="Leistungsverzeichnis – ↑/↓ wählen, Enter bearbeiten, Einfg neue Position, Entf entfernen">
           <table className="ava-tabelle ava-lv-zeilen">

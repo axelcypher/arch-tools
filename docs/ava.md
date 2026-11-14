@@ -65,14 +65,16 @@ Gewerk – in Ordnern, Blattnamen und der Rechnungsliste.
   **Zahlungsfreigaben** (Summe der geprüften Freigaben, nach Einbehalt, Umlagen und Skonto), offen (rot, wenn mehr
   freigegeben als beauftragt) und ein Balken „freigegeben“; Kennzahlen oben („noch auszuzahlen“), darunter die
   **Hinweise** (siehe Abrechnung). Ein Klick auf die Zeile (oder Enter) führt zu den Rechnungen des Gewerks, der
-  Knopf mit der Kennung öffnet das Gewerk.
+  Knopf mit der Kennung öffnet das Gewerk. „Kostenkontrolle öffnen“ im Kopf öffnet die Excel-Datei mit dem
+  Standardprogramm.
 
 ### Gewerk
 
 Kopf mit Kennung, Bezeichnung, Auftragnehmer und Ordner. Auf den Tabs Leistungsverzeichnis, Angebote und Auftrag
 rechts der **LV-Kopf**: die LV-Dateien des Gewerks (aktuelle zuerst, Archiv gekennzeichnet; Format im Tooltip),
-„Neues LV ▾“ (leer oder aus einer GAEB-Datei X81–X86), „LV ▾“ mit den Befehlen für das ganze LV
-(LV-Eigenschaften, Neu nummerieren, Drucken, GAEB-Export) und „Speichern“ (Strg+S; übernimmt auch die gerade
+ein Menü „LV ▾“ (neues leeres LV, neues LV aus einer GAEB-Datei X81–X86; bei offenem LV dahinter die Befehle für
+das ganze LV: LV-Eigenschaften, Neu nummerieren, Drucken, GAEB-Export – ein Menü für alles zum LV, auch wenn
+ohne offenes LV nur die zwei Punkte zum Anlegen darin stehen) und „Speichern“ (Strg+S; übernimmt auch die gerade
 laufende Eingabe; bei ungespeicherten Änderungen mit Punkt am Knopf und im Namen „Speichern – ungespeicherte
 Änderungen“). Beim Betreten öffnet sich das aktuellste LV. Wer mit ungespeicherten Änderungen das Gewerk
 oder Projekt wechselt, wird gefragt. Die Tabs lassen sich mit ←/→ wechseln; bei schmalem Fenster tragen sie
@@ -87,10 +89,13 @@ Hinweis „wird in LV-Dateien (.aslv) nicht gespeichert – im eigenen Format (.
 - Tabelle der Gliederung: Abschnitte (mit Summe des Kostenansatzes), Positionen, Hinweise und Vorbemerkungen;
   volle OZ nach der OZ-Maske („02.0010“). Menge und Einheitspreis des Kostenansatzes lassen sich direkt in der
   Tabelle ändern (deutsche Schreibweise, ungültige Eingaben bleiben rot stehen).
-- Werkzeugleiste in einer Zeile: Position (im gewählten Abschnitt bzw. hinter der gewählten Position),
-  Abschnitt, „Hinzufügen ▾“ (Hinweis, Vorbemerkung, „Aus Vorlage …“) – Hinzufügen-Knöpfe mit Plus-Symbol; Duplizieren (Strg+D, ein Abschnitt
-  bekommt die nächste freie OZ), Nach oben/Nach unten, Ausrücken/Einrücken (aus dem Abschnitt heraus bzw. in den Abschnitt davor; mit Symbol), Entfernen (Entf);
-  Rückgängig/Wiederholen (Strg+Z/Y); rechts die Suche nach OZ und Kurztext (Treffer mit ihren Abschnitten; ohne
+- Werkzeugleiste in einer Zeile (design.md „Kopf- und Werkzeugleisten“): Position mit Plus-Symbol (im gewählten
+  Abschnitt bzw. hinter der gewählten Position), „Hinzufügen ▾“ (Abschnitt, Hinweis, Vorbemerkung, „Aus
+  Vorlage …“), Nach oben/Nach unten und Ausrücken/Einrücken (aus dem Abschnitt heraus bzw. in den Abschnitt davor;
+  Symbole), Rückgängig/Wiederholen (Strg+Z/Y), rechts die Suche und zuletzt „Mehr“ (Symbol ⋯) mit Duplizieren
+  (Strg+D, ein Abschnitt bekommt die nächste freie OZ) und, hinter einem Trenner, Entfernen (Entf). Bei schmalem
+  Fenster wandern erst „Hinzufügen“, dann die Gliederungsknöpfe, zuletzt Rückgängig/Wiederholen ins Menü „Mehr“, und
+  die Suche wird kürzer. Die Suche findet OZ und Kurztext (Treffer mit ihren Abschnitten; ohne
   Treffer eine Meldung mit „Suche leeren“, Esc leert). Tastatur in der Tabelle (Fokus sichtbar): ↑/↓ wählen, Enter
   springt in den Kurztext des Seitenpanels, Esc dort zurück, Einfg neue Position. Bei schmalem Fenster (unter
   etwa 1150 px) steht das Seitenpanel unter der Tabelle; die OZ-Spalte bleibt beim seitlichen Rollen stehen.
@@ -129,7 +134,8 @@ Hinweis „wird in LV-Dateien (.aslv) nicht gespeichert – im eigenen Format (.
 - **Preisspiegel:** je Position Einheitspreis und Gesamtbetrag aller gewerteten Bieter, Kostenansatz zum
   Vergleich, Mittelwert; günstigster grün, teuerster rot, auffällige (± 30 % vom Mittel bei mindestens drei
   Preisen) umrandet – mit Legende über der Tabelle –, Filter „nur auffällige“; Abschnittssummen, Summe, Nachlass,
-  USt, brutto. Druck A4 quer mit Rangfolge. Ohne Bieter erklärt ein Hinweis, wie Angebote hineinkommen.
+  USt, brutto. Druck A4 quer mit Rangfolge („Preisspiegel drucken …“, Hauptknopf rechts in der Leiste; „Angebot
+  aus GAEB (X84) …“ steht in „Mehr“). Ohne Bieter erklärt ein Hinweis, wie Angebote hineinkommen.
 
 **Auftrag & Nachträge**
 
@@ -164,7 +170,9 @@ Je Gewerk werden die Rechnungen aus allen Quellen zusammengeführt (`abrechnung/
 Die Art (AB, SR, TSR, R) und die laufende Nummer liest die App aus dem Text der Rechnungsliste nur am Ende
 („Rohbau Muster, AB2“) – ein Firmenname wie „Richter“ ist keine Rechnung „R“. In der Liste der Rechnungen stehen
 je Rechnung der **Stand** und die Quellen (grün = vorhanden, gestrichelt = fehlt); ein Doppelklick bzw. „Prüfung“
-zeigt eine geprüfte Rechnung zum Ansehen. Die Beträge der Mappe sind **Zahlungsfreigaben** (nach Einbehalt, Umlage
+zeigt eine geprüfte Rechnung zum Ansehen, „PDF“ öffnet die Datei, der Zeilenknopf „Aktionen“ (⋯) bietet das
+Deckblatt und die Mail an den Zahler. Über der Liste: Suche, „nur mit Hinweisen“, rechts „Neue Rechnung prüfen …“
+und in „Mehr“ „Kostenkontrolle öffnen“ (die Excel-Datei mit dem Standardprogramm). Die Beträge der Mappe sind **Zahlungsfreigaben** (nach Einbehalt, Umlage
 und Skonto), die App nennt sie so; „noch auszuzahlen“ = Kostenanschlag − Zahlungsfreigaben.
 
 Zuordnung: Gewerkblatt über Nummer und Betrag, sonst Betrag, sonst Text; PDFs über die Nummer im Dateinamen,
@@ -314,14 +322,15 @@ Bauaufsicht).
   Vertragsstrafe der Anspruch darauf (§ 341 Abs. 3 BGB, § 11 Abs. 4 VOB/B).
 - **Mängel:** Nummer, Gewerk, Firma (aus dem Gewerk) und Ort, Beschreibung, festgestellt und Frist, Status (offen,
   angezeigt, erledigt, abgenommen); überfällige rot. Wer im Filter „offene und angezeigte“ einen Mangel auf erledigt
-  setzt, sieht ihn abgeblendet stehen, bis der Filter wechselt. Mängelliste als PDF, **Mängelanzeige** an die Firma
+  setzt, sieht ihn abgeblendet stehen, bis der Filter wechselt. Mängelliste als PDF (ansehen bzw. im Projekt ablegen,
+  in „Mehr“), **Mängelanzeige** an die Firma
   eines Gewerks (Mailentwurf mit den offenen Mängeln als PDF). Der Text fordert zur Beseitigung bis zur Frist auf;
   fehlen Fristen, warnt die App vorher (eine angemessene Frist ist nötig, § 4 Abs. 7 bzw. § 13 Abs. 5 VOB/B) und
   lässt im Text eine Lücke. Als **„angezeigt“ mit Datum** gilt ein Mangel erst nach der Bestätigung „versendet“
   (Rückfrage nach dem Entwurf) oder wenn der Status von Hand gesetzt wird.
 - **Notizen & Aufgaben:** zum Projekt oder Gewerk, mit Frist als Aufgabe (abhaken, überfällige rot und mit
   „überfällig“ beschriftet, Filter).
-- **Beteiligte:** Rolle, Firma, Name, E-Mail, Telefon, Gewerk; „Aus Stammdaten und Gewerken übernehmen“ (Bauherr,
+- **Beteiligte:** Rolle, Firma, Name, E-Mail, Telefon, Gewerk; „Aus Stammdaten und Gewerken übernehmen“ (in „Mehr“; Bauherr,
   Beteiligte der Stammdaten, Auftragnehmer); wer die Rechnungen zahlt (Vorgabe für alle Gewerke).
 - **Mailverlauf:** alle Mails (`.eml`, `.msg`) aus den Korrespondenzordnern der Gewerke und den Mailordnern des
   Projekts, nach Datum, mit Gewerk, Suche in Betreff, Absender und Text (Esc leert), Vorschau mit Anhängen;

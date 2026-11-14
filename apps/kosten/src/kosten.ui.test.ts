@@ -8,7 +8,7 @@ import { App } from './App';
 import { KatalogDialog } from './components/KatalogDialog';
 import { KostenDruck } from './components/KostenDruck';
 import { leseKatalog, katalogSpeichern } from './katalog';
-import { useKosten } from './store';
+import { setKosten, useKosten } from './store';
 import { projekt, projektMitAnbau, projektMitKosten } from './testdaten';
 import { einstiegsAktionen, farbschemaWechseln, stammdatenAendern } from '@core/ui/rauchtest';
 
@@ -25,6 +25,8 @@ function render<P extends object>(el: FunctionComponent<P>, props?: P): HTMLElem
   return host;
 }
 afterEach(() => {
+  // ein offenes Menü schließen: sein Zustand ist global und überstünde sonst das Aushängen
+  if (document.querySelector('[role="menu"]')) act(() => void document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
   act(() => root?.unmount());
   root = null;
   document.body.innerHTML = '';
@@ -74,6 +76,44 @@ describe('NUMIO', () => {
     expect(host.textContent).toContain('Projekt oder IFC öffnen');
     expect(knopf(host, 'Kosten drucken').disabled).toBe(true);
     expect(knopf(host, 'Excel').disabled).toBe(true);
+    // nichts zu speichern: „Speichern“ gesperrt, mit Grund
+    const speichern = host.querySelector<HTMLButtonElement>('[data-eintrag="speichern"] button')!;
+    expect(speichern.disabled).toBe(true);
+    expect(speichern.title).toBe('Erst ein Projekt öffnen oder neu beginnen');
+  });
+
+  it('Werkzeugleiste: Datei | Speichern | Verlauf | Ansicht … Excel, Drucken; seltene Dateibefehle im Menü „Datei“', () => {
+    useKosten.getState().load(projektMitKosten());
+    const host = render(App);
+    const leiste = host.querySelector<HTMLElement>('.toolbar.werkzeugleiste')!;
+    expect(leiste.getAttribute('aria-label')).toBe('Werkzeugleiste');
+    const knoepfe = [...leiste.querySelectorAll<HTMLButtonElement>(':scope > [data-eintrag] button')].map((b) => b.getAttribute('aria-label') ?? b.textContent?.trim());
+    expect(knoepfe).toEqual(['Datei', 'Speichern', 'Rückgängig', 'Wiederholen', 'Kosten', 'Mengen prüfen', 'Excel …', 'Kosten drucken …']);
+    // der Kennwertkatalog steht nur noch im Kopf der Positionen (kein doppelter Einstieg)
+    expect(leiste.textContent).not.toContain('Kennwertkatalog');
+    expect(knopf(host, 'Kosten drucken').className).toContain('primary');
+    // ungespeicherte Änderungen: Punkt an „Speichern“, auch im Namen
+    const speichern = leiste.querySelector<HTMLButtonElement>('[data-eintrag="speichern"] button')!;
+    expect(speichern.className).not.toContain('ungespeichert');
+    act(() => useKosten.getState().update((p) => setKosten(p, { mwst: 7 })));
+    expect(speichern.className).toContain('ungespeichert');
+    expect(speichern.getAttribute('aria-label')).toBe('Speichern – ungespeicherte Änderungen');
+    expect(speichern.title).toContain('ungespeicherte Änderungen');
+    // Menü „Datei“: Neu, Öffnen …, Trenner, IFC aktualisieren … (im Browser ohne „Speichern unter …“)
+    act(() => knopf(leiste, 'Datei').click());
+    const punkte = [...document.querySelectorAll<HTMLElement>('[role="menu"] > [role]')].map((p) => (p.getAttribute('role') === 'separator' ? '—' : p.textContent));
+    expect(punkte).toEqual(['Neu', expect.stringContaining('Öffnen …'), '—', expect.stringContaining('IFC aktualisieren …')]);
+    expect(document.querySelector('[role="menu"] [aria-keyshortcuts]')?.getAttribute('aria-keyshortcuts')).toBe('Control+O');
+    // mit Gebäude ist „IFC aktualisieren …“ frei
+    const ifc = () => [...document.querySelectorAll<HTMLElement>('[role="menu"] [role="menuitem"]')].find((p) => p.textContent?.startsWith('IFC aktualisieren'))!;
+    expect(ifc().getAttribute('aria-disabled')).toBeNull();
+    act(() => void document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+    expect(document.querySelector('[role="menu"]')).toBeNull();
+    // Gegenprobe: ohne Gebäude gesperrt, mit Grund
+    act(() => useKosten.getState().load(createProject()));
+    act(() => knopf(host.querySelector('.toolbar.werkzeugleiste')!, 'Datei').click());
+    expect(ifc().getAttribute('aria-disabled')).toBe('true');
+    expect(ifc().textContent).toContain('erst Projekt mit Gebäude oder IFC-Modell öffnen');
   });
 
   it('zeigt Mengen aus dem Projekt, Positionen je Kostengruppe und die Übersicht', () => {
@@ -93,7 +133,10 @@ describe('NUMIO', () => {
   it('Gliederung anlegen, Kennwert eintragen, Menge festlegen, Position ausschalten und löschen', () => {
     useKosten.getState().load(projekt());
     const host = render(App);
-    act(() => knopf(host, 'Gliederung 1. Ebene').click());
+    // seltene Varianten stehen im Menü „Hinzufügen“ neben dem Knopf „Position“
+    act(() => knopf(host, 'Hinzufügen').click());
+    const punkt = [...document.querySelectorAll<HTMLButtonElement>('[role="menu"] [role="menuitem"]')].find((b) => b.textContent?.startsWith('Gliederung 1. Ebene'))!;
+    act(() => punkt.click());
     expect(kosten().positionen.map((p) => p.kg)).toEqual(['300', '400', '500', '700']);
     expect(host.textContent).toContain('Kennwert fehlt');
 
@@ -246,7 +289,7 @@ describe('NUMIO', () => {
     const awf = [...host.querySelectorAll('.ko-table button.link')].find((b) => b.textContent === 'AWF') as HTMLButtonElement;
     await act(async () => awf.click());
     expect(host.querySelector('.mv-bild h2')?.textContent).toBe('AWF – Außenwandfläche: 307,63 m²');
-    expect(host.querySelector('.segment button[aria-pressed="true"]')?.textContent).toBe('3D-Modell');
+    expect(host.querySelector('.mv-kopf .segment button[aria-pressed="true"]')?.textContent).toBe('3D-Modell');
     expect(host.querySelectorAll('.mp-geschoss')).toHaveLength(0);
     expect(host.querySelector('.mv-rechenweg tbody tr')?.textContent).toContain('ohne 1 Abschnitt an anderen Umrissen');
     // im Grundriss: Wände als Kanten

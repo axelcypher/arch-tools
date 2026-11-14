@@ -152,8 +152,13 @@ describe('Zwischenstand, Verlauf und Speichern', () => {
     const p = projektMitKosten();
     useKosten.getState().load(p, 'Haus.oap', p);
     const host = render(App);
-    const knopf = [...host.querySelectorAll('button')].find((b) => b.textContent?.startsWith('IFC aktualisieren'))!;
-    await act(async () => knopf.click());
+    // „IFC aktualisieren …“ steht im Menü „Datei“
+    const ifcAktualisieren = async () => {
+      act(() => [...host.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent?.startsWith('Datei'))!.click());
+      const punkt = [...document.querySelectorAll<HTMLButtonElement>('[role="menu"] [role="menuitem"]')].find((b) => b.textContent?.startsWith('IFC aktualisieren'))!;
+      await act(async () => punkt.click());
+    };
+    await ifcAktualisieren();
     expect(mock.ifc).not.toBeNull();
     act(() => useKosten.getState().update((x) => setKosten(x, { mwst: 7 })));
     await act(async () => mock.ifc!.resolve({ project: { ...p, name: 'Aus IFC' }, bericht: ['neu'], extract: EXTRACT }));
@@ -166,7 +171,7 @@ describe('Zwischenstand, Verlauf und Speichern', () => {
     // Gegenprobe: ohne Änderung wird das Ergebnis übernommen
     act(() => (host.querySelector('.modal.rf button') as HTMLButtonElement).click());
     await warten();
-    await act(async () => knopf.click());
+    await ifcAktualisieren();
     const stand = useKosten.getState().project;
     await act(async () => mock.ifc!.resolve({ project: { ...stand, name: 'Aus IFC' }, bericht: ['neu'], extract: EXTRACT }));
     await warten();

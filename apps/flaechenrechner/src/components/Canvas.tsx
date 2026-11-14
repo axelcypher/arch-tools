@@ -1177,7 +1177,7 @@ export function Canvas() {
       break;
     case 'calibrate':
       hint = !bg
-        ? 'Zuerst einen Plan laden (Plan laden …)'
+        ? 'Zuerst einen Plan laden (Datei → Plan laden …)'
         : bg.type === 'vector'
           ? 'Zwei Punkte mit bekanntem Abstand anklicken (Fang auf Plankanten und Eckpunkte; Alt: ohne Fang)'
           : 'Zwei Punkte mit bekanntem Abstand anklicken – nah heranzoomen (Mausrad) für Genauigkeit';
@@ -1423,9 +1423,9 @@ export function Canvas() {
         <div className="canvas-leer">
           <p className="canvas-leer-titel">Wie soll es losgehen?</p>
           <button className="primary" onClick={() => void planLaden(storey.id)}>
-            Grundriss laden (PDF, DXF, Bild) …
+            Plan laden (PDF, DXF, Bild) …
           </button>
-          <button onClick={() => useEditor.getState().setIfcOpen(true)}>IFC-Modell importieren …</button>
+          <button onClick={() => useEditor.getState().setIfcOpen(true)}>IFC importieren …</button>
           <p className="muted small-text">
             oder direkt zeichnen: <kbd>R</kbd> Rechteck · <kbd>P</kbd> Polygon
           </p>

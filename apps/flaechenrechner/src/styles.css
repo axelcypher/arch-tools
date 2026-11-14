@@ -253,23 +253,24 @@
   white-space: nowrap;
 }
 
-/* Werkzeugleiste bis 1600 px etwas knapper, damit sie bei 1440 px in eine Zeile passt */
-@media (max-width: 1600px) {
-  .toolbar {
-    gap: 2px;
-  }
+/* Werkzeuge der Zeichenfläche: eine Gruppe in der Werkzeugleiste (bleiben immer sichtbar, siehe Toolbar.tsx) */
+.tb-werkzeuge {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
 
-  .toolbar .tb-group {
-    gap: 2px;
-    padding-right: 4px;
-  }
-
-  .toolbar button {
-    padding: 4px 5px;
-  }
-
-  /* bekannte Befehle (Neu, Öffnen, Speichern) nur als Symbol – Name über aria-label und title */
+/* schmalere Fenster (design.md „Schmale Fenster“): zuerst wandert „Exportieren“ ins Menü „Mehr“ (Werkzeugleiste, ab
+   etwa 1275 px), erst danach schrumpfen Knöpfe auf ihr Symbol (Name über aria-label und title) – „Speichern“ unter
+   1198 px, die Werkzeuge unter 1132 px. Gemessen: volle Leiste 1276 px, ohne „Exportieren“ mit „Mehr“ 1198 px,
+   zusätzlich ohne Text an „Speichern“ 1132 px. */
+@media (max-width: 1197px) {
   .toolbar .tb-text {
+    display: none;
+  }
+}
+@media (max-width: 1131px) {
+  .toolbar .tb-werkzeug-text {
     display: none;
   }
 }
