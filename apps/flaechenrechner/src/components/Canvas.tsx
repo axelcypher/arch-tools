@@ -1177,7 +1177,7 @@ export function Canvas() {
       break;
     case 'calibrate':
       hint = !bg
-        ? 'Zuerst einen Plan laden (Plan laden …)'
+        ? 'Zuerst einen Plan laden (Datei → Plan laden …)'
         : bg.type === 'vector'
           ? 'Zwei Punkte mit bekanntem Abstand anklicken (Fang auf Plankanten und Eckpunkte; Alt: ohne Fang)'
           : 'Zwei Punkte mit bekanntem Abstand anklicken – nah heranzoomen (Mausrad) für Genauigkeit';

@@ -9,6 +9,7 @@ import { App } from './App';
 import { nutzungInfo } from '@core/norms';
 import { planFuellungDunkel } from '@core/planFarbe';
 import { useTheme } from '@core/platform/theme';
+import { leistenMessung } from '@core/ui/Werkzeugleiste';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -323,6 +324,36 @@ describe('QUADRIO: Kontextmenü der Zeichenfläche und Werkzeugleiste (gemeinsam
     act(() => knopf('Exportieren')!.click());
     expect(menuePunkte()).toEqual(['CSV …', 'Excel …']);
     act(() => void document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })));
+  });
+
+  it('schmales Fenster: „Exportieren“ wandert mit CSV/Excel ins Menü „Mehr“, Werkzeuge und Hauptknopf bleiben', () => {
+    const original = leistenMessung.breite;
+    // jeder Eintrag 100 px, die Leiste nur 600 px: nur der Eintrag mit Rang („Exportieren“) darf wandern
+    leistenMessung.breite = (el: Element) => (el.classList.contains('leiste') ? 600 : el.classList.contains('leiste-mehr') ? 30 : 100);
+    try {
+      useEditor.getState().loadProject(createProject('Haus'), null, 'Haus.oap');
+      const host = render();
+      act(() => void window.dispatchEvent(new Event('resize')));
+      const leiste = host.querySelector('.toolbar.leiste')!;
+      const versteckt = [...leiste.querySelectorAll<HTMLElement>('[data-eintrag]')].filter((e) => e.hidden).map((e) => e.dataset.eintrag);
+      expect(versteckt).toEqual(['export']);
+      const mehr = leiste.querySelector<HTMLButtonElement>('.leiste-mehr button')!;
+      expect(leiste.querySelector('.leiste-mehr')!.hasAttribute('hidden')).toBe(false);
+      act(() => mehr.click());
+      const punkt = (text: string) => [...document.querySelectorAll<HTMLButtonElement>('.menue [role="menuitem"]')].find((b) => b.textContent?.includes(text));
+      act(() => punkt('Exportieren')!.click());
+      expect(punkt('CSV …')).toBeDefined();
+      act(() => punkt('Excel …')!.click());
+      expect(useEditor.getState().excelOpen).toBe(true);
+      act(() => useEditor.getState().setExcelOpen(false));
+      // Gegenprobe: genug Platz – „Mehr“ verschwindet, „Exportieren“ steht wieder in der Leiste
+      leistenMessung.breite = (el: Element) => (el.classList.contains('leiste') ? 2000 : el.classList.contains('leiste-mehr') ? 30 : 100);
+      act(() => void window.dispatchEvent(new Event('resize')));
+      expect(leiste.querySelector('[data-eintrag="export"]')!.hasAttribute('hidden')).toBe(false);
+      expect(leiste.querySelector('.leiste-mehr')!.hasAttribute('hidden')).toBe(true);
+    } finally {
+      leistenMessung.breite = original;
+    }
   });
 });
 
