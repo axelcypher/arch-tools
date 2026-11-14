@@ -6,3 +6,5 @@ sich auf den Stand beim Eintragen.
 
 Zurzeit nichts offen. Erledigt mit #37: Spaltenüberschriften, Druckvorschau, `.segment`, `Modal` mit `kopf` und „ …“,
 `planFuellungDunkel` im Mengenplan; NUMIO hat keine eigenen Menüs. Hinzufügen-Knöpfe mit Symbol `plus` (Position, Kostenrisiko).
+
+- **Kopf- und Werkzeugleiste nach der neuen Regel ordnen** (design.md „Kopf- und Werkzeugleisten“): Werkzeugleiste in `App.tsx` – sichtbar nur die häufigen Schritte (höchstens fünf bis sieben Knöpfe bzw. Gruppen und der Hauptknopf), Seltenes in „Datei“ und „Mehr“; Aufbau links „Datei“/„Speichern“, Mitte Werkzeuge, rechts Hauptknopf und „Mehr“; mit `Werkzeugleiste` (`ui/Werkzeugleiste.tsx`) und Rang je Eintrag für den Überlauf in schmalen Fenstern. Die Titelleiste ordnet das Designsystem selbst.

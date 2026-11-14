@@ -53,10 +53,10 @@ Namen mit Erklärung – „PERMIO (Formulare)“ –, danach den Namen allein; 
 Die Regeln für Oberfläche und Bedienung (Skalen, Fokus, Knöpfe, Überschriften, Meldungen) stehen in der
 Designrichtlinie [docs/design.md](docs/design.md).
 
-- **Farbschema** (Menü in der Titelleiste, zeigt „Auto“, „Hell“ oder „Dunkel“): Hell, Dunkel oder wie das System
+- **Farbschema** (in der Titelleiste im Menü „Mehr“, im Rahmen noch als eigenes Menü): Hell, Dunkel oder wie das System
   (Auto) – wirkt sofort in allen geöffneten Apps, Fenstern und Tabs der Rahmen-App. „Zeichenfläche abdunkeln“ gibt es
   nur in Apps mit Zeichenfläche bzw. Lageplan.
-- **Speicherort der Einstellungen** (Knopf „Einzelplatz“ bzw. „Netzwerk“ in der Titelleiste jeder App und des Rahmens, in ATLAS auch unter
+- **Speicherort der Einstellungen** (in jeder App „Speicherort der Einstellungen …“ im Menü „Mehr“ der Titelleiste – im Notbetrieb als Warnung sichtbar –, im Rahmen als Knopf „Einzelplatz“ bzw. „Netzwerk“, in ATLAS auch unter
   „Einstellungen“): *Einzelplatz* – die gemeinsamen Einstellungen liegen nur auf diesem Rechner
   (`%APPDATA%\arch-tools`) – oder *Netzwerkinstallation* – sie liegen in einem Ordner auf dem Netzlaufwerk (NAS,
   Server), und alle Rechner, die ihn wählen, haben denselben Stand. Die Wahl gilt je Benutzer für alle Apps und steht
@@ -190,7 +190,7 @@ fehlen sie, warnt der Bericht am Bildschirm, und im Druck steht im Kopf „nicht
   Bodenplatte gehen als eigene Posten in den BRI ein
 - **IFC aktualisieren**: erneuter Import in ein bestehendes Projekt über die stabilen IFC-GlobalIds – von Hand
   geänderte Werte bleiben erhalten, Konflikte werden gemeldet
-- **Nachschlagewerk** der Berechnungsregeln (`F1` bzw. „§ Regeln“, `?` an den Abschnitten) mit Zitaten,
+- **Nachschlagewerk** der Berechnungsregeln (`F1` bzw. „Berechnungsregeln …“ im Menü „Mehr“, `?` an den Abschnitten) mit Zitaten,
   Quellenangaben, Links und Suche – zentral und je Funktion gefiltert
 - **Numerische Eingabe** beim Zeichnen: Länge tippen + Enter (in Mausrichtung), `dx;dy` relativ (wie im Plan nach
   rechts und oben positiv, ebenso die Koordinatenanzeige, die Eckpunkt-Tabelle und das Messen), Rechteck `4,5x3,2`

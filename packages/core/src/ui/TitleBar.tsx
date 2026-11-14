@@ -12,9 +12,11 @@ import { Nachschlagewerk, useHilfe } from './Nachschlagewerk';
 import { dialogVerhaltenEinrichten } from './dialoge';
 import { useEscSchliessen } from './Dialog';
 import { aenderungenSpeichern, aenderungenVerwerfen, RueckfrageHost } from './Rueckfrage';
-import { MenueHost } from './Menue';
+import { MenueHost, MenueKnopf } from './Menue';
+import type { MenuePunkt } from './Menue';
+import { Symbol } from './Symbol';
 import { useBuero } from './DruckKopf';
-import { SpeicherortHost, SpeicherortKnopf } from './Speicherort';
+import { speicherortPunkt, SpeicherortHost, SpeicherortKnopf, useKonfigOrt, useSpeicherort } from './Speicherort';
 import { umzugBestaetigen } from './umzug';
 import { schreibenAbwarten } from './vorbereiten';
 
@@ -166,6 +168,24 @@ export function TitleBar({ app, name, dirty, ungespeichert, onOpenLog, regeln, o
     }
   };
 
+  const ort = useKonfigOrt();
+  const speicherortOeffnen = useSpeicherort((s) => s.oeffnen);
+  const protokollOeffnen = () => {
+    setSeen(getEntries().at(-1)?.id ?? 0);
+    onOpenLog();
+  };
+  /** Menü „Mehr“ der Titelleiste: seltene Befehle, in allen Apps gleich (docs/design.md, „Kopf- und Werkzeugleisten“) */
+  const mehrPunkte = (): MenuePunkt[] => {
+    const sp = rahmen === 'tab' ? null : speicherortPunkt(ort, speicherortOeffnen);
+    return [
+      { text: 'Farbschema', unter: farbschemaPunkte(zeichenflaeche) },
+      ...(sp ? [sp] : []),
+      { trenner: true },
+      ...(regeln ? [{ text: 'Berechnungsregeln …', tasten: 'F1', titel: 'Berechnungsregeln nachschlagen – mit Quellen und Suche', aktion: () => useHilfe.getState().oeffnen() }] : []),
+      { text: 'Fehlerprotokoll …', hinweis: errors > 0 ? `${errors} neu` : undefined, titel: 'Meldungen der App für die Fehlersuche', aktion: protokollOeffnen },
+    ];
+  };
+
   return (
     <>
       <header className={`titlebar${rahmen === 'tab' ? ' titlebar-im-rahmen' : ''}`} {...ziehen}>
@@ -192,31 +212,30 @@ export function TitleBar({ app, name, dirty, ungespeichert, onOpenLog, regeln, o
         </span>
         <span className="titlebar-drag" {...ziehen} />
         {desktop && !rahmen && <UpdateKnopf app={app} dirty={dirty} />}
-        {/* im Tab zeigt ihn der Rahmen in seiner Kopfleiste – einmal genügt */}
-        {rahmen !== 'tab' && <SpeicherortKnopf />}
-        <ThemeMenu zeichenflaeche={zeichenflaeche} />
-        {regeln && (
-          <button className="titlebar-btn" title="Berechnungsregeln nachschlagen – mit Quellen und Suche (F1)" onClick={() => useHilfe.getState().oeffnen()}>
-            <span aria-hidden>§</span> Regeln
-          </button>
-        )}
+        {/* sichtbar nur im Notbetrieb; sonst steht der Speicherort im Menü „Mehr“ (im Tab zeigt ihn der Rahmen) */}
+        {rahmen !== 'tab' && <SpeicherortKnopf nurWarnung />}
         {regeln && <Nachschlagewerk app={regeln} />}
-        <button
-          className="titlebar-btn"
-          title="Fehlerprotokoll – Meldungen der App für die Fehlersuche"
-          onClick={() => {
-            setSeen(getEntries().at(-1)?.id ?? 0);
-            onOpenLog();
-          }}
-        >
-          <span aria-hidden>≡</span> Fehlerprotokoll
-          {errors > 0 && <span className="titlebar-badge">{errors}</span>}
-        </button>
         {rahmen === 'fenster' && isTauri() && (
           <button className="titlebar-btn" title="Wieder als Tab in das Hauptfenster" onClick={() => void andockenFragen().catch((e) => log.error('Andocken fehlgeschlagen', e))}>
             Andocken
           </button>
         )}
+        {/* neue Fehler zählt die Marke am Knopf; das Protokoll selbst steht im Menü */}
+        <MenueKnopf
+          className="titlebar-btn titlebar-mehr"
+          punkte={mehrPunkte}
+          ariaLabel={errors > 0 ? `Mehr – ${errors === 1 ? 'ein neuer Fehler' : `${errors} neue Fehler`} im Fehlerprotokoll` : 'Mehr'}
+          title={`Mehr – Farbschema, Hilfe, Fehlerprotokoll, Einstellungen${errors > 0 ? ` (${errors} neue Fehler)` : ''}`}
+          name="Mehr"
+          pfeil={false}
+        >
+          <Symbol name="mehr" />
+          {errors > 0 && (
+            <span className="titlebar-badge" aria-hidden>
+              {errors}
+            </span>
+          )}
+        </MenueKnopf>
         {desktop && win && (
           <div className="window-controls">
             <button className="wc-btn" title="Minimieren" aria-label="Minimieren" onClick={() => void win.minimize()}>
@@ -248,6 +267,18 @@ export function TitleBar({ app, name, dirty, ungespeichert, onOpenLog, regeln, o
       <MenueHost />
     </>
   );
+}
+
+/**
+ * Untermenü „Farbschema“ (Menü „Mehr“ der Titelleiste, auch für die Rahmen-App): Einfachauswahl Auto/Hell/Dunkel,
+ * mit Zeichenfläche dazu der Schalter „Zeichenfläche im dunklen Schema abdunkeln“. Liest den Stand beim Öffnen.
+ */
+export function farbschemaPunkte(zeichenflaeche = true): MenuePunkt[] {
+  const { wahl, setWahl, canvasDunkel, setCanvasDunkel } = useTheme.getState();
+  return [
+    ...WAHL.map((w) => ({ text: w.label, gewaehlt: wahl === w.id, aktion: () => setWahl(w.id) })),
+    ...(zeichenflaeche ? [{ trenner: true } as const, { text: 'Zeichenfläche im dunklen Schema abdunkeln', haken: canvasDunkel, aktion: () => setCanvasDunkel(!canvasDunkel) }] : []),
+  ];
 }
 
 const WAHL: { id: ThemeWahl; label: string; kurz: string }[] = [

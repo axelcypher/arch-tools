@@ -520,20 +520,26 @@ describe('Baurecht – Oberfläche', () => {
     fremd.remove();
   });
 
-  it('Farbschema-Menü: Fokus hinein, ↑/↓ bewegen, Esc schließt und gibt den Fokus zurück', () => {
+  it('Farbschema im Menü „Mehr“ der Titelleiste: Fokus hinein, → öffnet das Untermenü, ↑/↓ bewegen, Esc schließt stufenweise und gibt den Fokus zurück', () => {
     const host = render();
-    const knopfSchema = host.querySelector<HTMLButtonElement>('.titlebar-menu > button[aria-haspopup="menu"]')!;
-    act(() => knopfSchema.focus());
-    act(() => knopfSchema.click());
+    const mehr = host.querySelector<HTMLButtonElement>('.titlebar .titlebar-mehr')!;
+    act(() => mehr.focus());
+    act(() => mehr.click());
+    expect(document.activeElement?.textContent).toBe('Farbschema');
+    const taste = (key: string) => act(() => void document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true })));
+    taste('ArrowRight');
     const optionen = [...document.querySelectorAll<HTMLElement>('[role="menuitemradio"]')];
-    expect(optionen.length).toBe(3);
+    expect(optionen.map((o) => o.textContent)).toEqual(['Auto (wie System)', 'Hell', 'Dunkel']);
     expect(optionen).toContain(document.activeElement);
     const vorher = document.activeElement;
-    act(() => void document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true })));
+    taste('ArrowDown');
     expect(document.activeElement).not.toBe(vorher);
-    act(() => void document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+    taste('Escape');
     expect(document.querySelector('[role="menuitemradio"]')).toBeNull();
-    expect(document.activeElement).toBe(knopfSchema);
+    expect(document.activeElement?.textContent).toBe('Farbschema');
+    taste('Escape');
+    expect(document.querySelector('.menue')).toBeNull();
+    expect(document.activeElement).toBe(mehr);
   });
 
   it('zweite Bestätigung: eine überholte Festlegung wird angesagt und lässt sich so nicht bestätigen', async () => {

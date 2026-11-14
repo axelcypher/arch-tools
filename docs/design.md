@@ -266,6 +266,47 @@ mit `text`, optional `symbol`, `hinweis` (rechts, z. B. der Grund einer Sperre),
 - Eigene Öffner ohne `MenueKnopf` (z. B. Zeilenknopf „⋯“ mit `zeigeMenueAn`) tragen `aria-haspopup="menu"`; dann
   setzt das Menü `aria-expanded` am Öffner selbst. Wer den Zustand im Render braucht, nimmt `useMenueOffen(ref)`.
 - Ein zweiter Klick auf den Öffner eines offenen Menüs schließt es (Knopf wie Zeilenknopf).
+- `MenueKnopf` zeigt hinter dem Text den Aufklapp-Pfeil; reine Symbolknöpfe wie „Mehr“ (Symbol `mehr`) setzen
+  `pfeil={false}` und tragen ihren Namen in `ariaLabel` und `title`.
+
+## Kopf- und Werkzeugleisten
+
+Was sichtbar ist und was ins Menü gehört – für die Titelleiste und die Werkzeugleisten aller Apps.
+
+- **Sichtbar** sind nur die häufigen Schritte des Arbeitsablaufs der App: höchstens fünf bis sieben Knöpfe bzw.
+  Gruppen je Leiste und ein Hauptknopf (`.primary`). Die Werkzeuge einer Zeichenfläche (Auswahl, Polygon, Messen …)
+  bilden eine eigene Gruppe und zählen als eine. Was zum Kernablauf gehört, wandert nicht ins Menü.
+- **Ins Menü** kommen seltene und einmalige Befehle: Import und Export, Vorlagen, Einstellungen, Protokoll, Hilfe,
+  Zurücksetzen, Sonderfunktionen. Je Thema ein `MenueKnopf`; feste Gruppen heißen in allen Apps gleich:
+  - **„Datei“** (Text mit Aufklapp-Pfeil): Neu, Öffnen …, Speichern unter …, Import …, Export …, Drucken … – mit
+    `tasten`. „Speichern“ selbst bleibt als Knopf sichtbar (mit dem Punkt für ungespeicherte Änderungen).
+  - **„Mehr“** (Symbol `mehr`, `pfeil={false}`, `ariaLabel="Mehr"`) als letztes Element der Leiste: alles Übrige.
+  - Weitere thematische Menüs nur bei echtem Bedarf (z. B. „Plan“ mit Laden, Kalibrieren, Ersetzen).
+- **Im Menü:** Tastenkürzel in `tasten`, Gefahr-Punkte (Zurücksetzen, Löschen) am Ende hinter einem Trenner, Punkte,
+  die einen Dialog öffnen, mit „ …“ (siehe „Menüs“ und „Begriffe“).
+- **Gleicher Aufbau** in allen Apps: links „Datei“ und „Speichern“, in der Mitte Werkzeuge bzw. die Hauptschritte,
+  rechts der Hauptknopf und zuletzt „Mehr“.
+- **Schmale Fenster:** Knöpfe mit Rang wandern nach ihrem Rang ins Menü „Mehr“ (Überlauf), statt nur auf Symbole zu
+  schrumpfen. Dafür `Werkzeugleiste` (`ui/Werkzeugleiste.tsx`): `teile` in Leistenreihenfolge, je Eintrag `inhalt`
+  (Knopf oder Gruppe), `menue` (dasselbe als Menüpunkt bzw. Punkte) und `rang` (höher = wandert früher);
+  `{ abstand: true }` schiebt den Rest nach rechts; `mehr` liefert die festen Punkte des Menüs „Mehr“, `name` benennt
+  die Leiste. Ohne `rang` oder `menue` bleibt ein Eintrag immer sichtbar – so der Hauptknopf und die Werkzeuge.
+  Übergelaufene Einträge stehen in „Mehr“ oben, in ihrer Reihenfolge, getrennt von den festen Punkten.
+
+```tsx
+<Werkzeugleiste
+  name="Werkzeugleiste"
+  teile={[
+    { id: 'datei', inhalt: <MenueKnopf punkte={dateiPunkte}>Datei</MenueKnopf> },
+    { id: 'speichern', inhalt: speichernKnopf },
+    { id: 'werkzeuge', inhalt: werkzeuge },
+    { id: 'ansicht', rang: 2, inhalt: rasterKnopf, menue: { text: 'Raster', haken: raster, aktion: rasterUmschalten } },
+    { abstand: true },
+    { id: 'haupt', inhalt: <button className="primary">Flächenaufstellung …</button> },
+  ]}
+  mehr={() => [{ text: 'Einstellungen …', aktion: einstellungen }]}
+/>
+```
 
 ## Listen
 
@@ -320,9 +361,14 @@ hellem Grund nur 2,2 : 1). Der Text daneben in `--ok-text` usw. bzw. `--text`.
 
 ## Titelleiste
 
-Das Farbschema-Menü zeigt ein gezeichnetes Symbol und den Namen der Wahl („Auto“, „Hell“, „Dunkel“), wie „§ Regeln“ und
-„≡ Fehlerprotokoll“ mit Text. Unter 960px Fensterbreite zeigen Knöpfe mit Symbol (Farbschema, Speicherort) nur noch
-das Symbol: Text in `<span className="titlebar-text">`, der Name bleibt über `aria-label`. Die Tableiste von Arkly zeigt
+Nach „Kopf- und Werkzeugleisten“: links Symbol und Name der App, „Projekte“ und das geöffnete Projekt; rechts nur, was
+gerade zählt – Version bzw. Update, im Notbetrieb die Warnung zum Speicherort, im herausgelösten Fenster „Andocken“ –
+und zuletzt „Mehr“. Im Menü „Mehr“ stehen „Farbschema“ (Untermenü mit Auto/Hell/Dunkel als Einfachauswahl und, wenn die
+App eine Zeichenfläche hat, dem Schalter „Zeichenfläche im dunklen Schema abdunkeln“; `farbschemaPunkte`), „Speicherort
+der Einstellungen …“ (mit Einzelplatz bzw. Netzwerk als Hinweis), „Berechnungsregeln …“ (F1) und „Fehlerprotokoll …“.
+Neue Fehler zählt eine Marke am Knopf „Mehr“ (auch im Namen: „Mehr – 2 neue Fehler im Fehlerprotokoll“) und der
+Hinweis am Punkt. Unter 960px Fensterbreite zeigen Knöpfe mit Symbol nur noch das Symbol: Text in
+`<span className="titlebar-text">`, der Name bleibt über `aria-label`. Die Tableiste von Arkly zeigt
 unter 1100px am Tab nur Symbol und Namen der App (das Projekt steht im Tooltip); eine Fläche zum Ziehen des Fensters
 bleibt immer frei.
 

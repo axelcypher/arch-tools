@@ -534,4 +534,56 @@ describe('gemeinsames Menü', () => {
     expect(new Set(SYMBOLE).size).toBe(SYMBOLE.length);
     expect(SYMBOLE).toEqual(expect.arrayContaining(['nachOben', 'nachUnten', 'mehr', 'grenze', 'ausrichten', 'einruecken', 'ausruecken', 'frage', 'punkt']));
   });
+
+  it('Untermenü am rechten Fensterrand klappt links neben dem Menü auf, nicht über ihm; mit Platz rechts bleibt es rechts', () => {
+    const original = Element.prototype.getBoundingClientRect;
+    const rechteck = (left: number, top: number, width: number, height: number) =>
+      ({ left, right: left + width, top, bottom: top + height, width, height, x: left, y: top, toJSON: () => ({}) }) as DOMRect;
+    // Hauptmenü 100 px breit ab `hauptLinks`, Untermenü 200 px breit; Fenster 1024 px
+    let hauptLinks = 900;
+    Element.prototype.getBoundingClientRect = function (this: Element) {
+      if (this.classList.contains('menue')) return this.getAttribute('aria-label') === 'Farbschema' ? rechteck(0, 0, 200, 80) : rechteck(hauptLinks, 30, 100, 100);
+      if (this.classList.contains('menue-punkt')) return rechteck(hauptLinks + 2, 34, 96, 24);
+      return original.call(this);
+    };
+    try {
+      const oeffnen = () => {
+        const host = render(
+          createElement(
+            Fragment,
+            null,
+            createElement(MenueKnopf, { key: 'k', punkte: () => [{ text: 'Farbschema', unter: [{ text: 'Hell' }, { text: 'Dunkel' }] }], ariaLabel: 'Mehr', pfeil: false }, 'M'),
+            createElement(MenueHost, { key: 'h' }),
+          ),
+        );
+        act(() => host.querySelector('button')!.click());
+        act(() => (document.querySelector('.menue .menue-punkt') as HTMLButtonElement).click());
+        return document.querySelector<HTMLElement>('.menue[aria-label="Farbschema"]')!;
+      };
+      // rechts kein Platz: links neben dem Hauptmenü (900 − 200 + 2)
+      expect(oeffnen().style.left).toBe('702px');
+      act(() => root?.unmount());
+      document.body.innerHTML = '';
+      // Gegenprobe: Hauptmenü weiter links – das Untermenü bleibt rechts daneben (Punkt endet bei 198, minus 2)
+      hauptLinks = 100;
+      expect(oeffnen().style.left).toBe('196px');
+    } finally {
+      Element.prototype.getBoundingClientRect = original;
+    }
+  });
+
+  it('MenueKnopf ohne Pfeil (pfeil={false}): nur der eigene Inhalt, mit Pfeil (Vorgabe) dahinter das Symbol pfeilUnten', () => {
+    const host = render(
+      createElement(
+        Fragment,
+        null,
+        createElement(MenueKnopf, { key: 'a', punkte: () => [], ariaLabel: 'Mehr', pfeil: false }, createElement(Symbol, { name: 'mehr' })),
+        createElement(MenueKnopf, { key: 'b', punkte: () => [] }, 'Datei'),
+      ),
+    );
+    const [mehr, datei] = [...host.querySelectorAll('button')];
+    expect(mehr.querySelectorAll('svg')).toHaveLength(1);
+    expect(datei.querySelectorAll('svg')).toHaveLength(1);
+    expect(datei.textContent?.trim()).toBe('Datei');
+  });
 });
