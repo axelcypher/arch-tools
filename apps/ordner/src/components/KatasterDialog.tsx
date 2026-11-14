@@ -48,12 +48,12 @@ export function KatasterDialog({ basis, name, onClose, onEinstellungen, onStammd
   const fehlt: Fehlt[] = [
     geladen && !oapDa && { text: 'Keine Projektdatei (.oap) im Projektordner.' },
     oapDa && !koordinaten && { text: 'Keine Koordinaten – bitte die Projektadresse in den Stammdaten speichern (die Koordinaten werden dabei abgefragt).', ziel: 'stammdaten' as const },
-    !pv && !e.vorlage && { text: 'Keine QGIS-Vorlage – bitte in den Einstellungen unter „Katasterpläne“ wählen.', ziel: 'einstellungen' as const },
-    !programm && { text: 'Pfad zu qgis_process fehlt – bitte in den Einstellungen unter „Katasterpläne“ wählen.', ziel: 'einstellungen' as const },
+    !pv && !e.vorlage && { text: 'Keine QGIS-Vorlage – bitte unter „Einrichtung“ → „Katasterpläne“ wählen.', ziel: 'einstellungen' as const },
+    !programm && { text: 'Pfad zu qgis_process fehlt – bitte unter „Einrichtung“ → „Katasterpläne“ wählen.', ziel: 'einstellungen' as const },
     geladen &&
       oapDa &&
       ordner === null && {
-        text: 'Kein aktiver Antrag in der Projektdatei – bitte in den Einstellungen unter „Katasterpläne“ einen festen Ordner für die Ablage wählen.',
+        text: 'Kein aktiver Antrag in der Projektdatei – bitte unter „Einrichtung“ → „Katasterpläne“ einen festen Ordner für die Ablage wählen.',
         ziel: 'einstellungen' as const,
       },
   ].filter((x): x is Fehlt => !!x);

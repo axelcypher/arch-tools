@@ -15,6 +15,7 @@ import { leereStammdaten } from './stammdaten';
 import { useOrdner } from './store';
 import { STANDARD } from './struktur';
 import { farbschemaWechseln } from '@core/ui/rauchtest';
+import { leistenMessung } from '@core/ui/Werkzeugleiste';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -134,6 +135,27 @@ describe('ATLAS (Projektordner)', () => {
     act(() => knopf(host, 'Mails').click());
     expect(menueKnopf().className).not.toContain('active');
     expect(menueKnopf().textContent?.trim()).toBe('Einrichtung');
+  });
+
+  it('Werkzeugleiste im schmalen Fenster: „Einrichtung“ wandert in „Mehr“ – mit der offenen Ansicht im Namen und den vier Ansichten als Untermenü', () => {
+    const original = leistenMessung.breite;
+    // Leiste 300px, jeder Eintrag 200px, „Mehr“ 30px: nur die Ansichten passen, „Einrichtung“ (Rang 1) wandert
+    leistenMessung.breite = (el: Element) => (el.classList.contains('werkzeugleiste') ? 300 : el.classList.contains('werkzeugleiste-mehr') ? 30 : 200);
+    try {
+      const host = render();
+      einrichtung(host, 'Vorlagen');
+      act(() => window.dispatchEvent(new Event('resize')));
+      const leiste = host.querySelector('.toolbar.werkzeugleiste')!;
+      expect(leiste.querySelector<HTMLElement>('[data-eintrag="einrichtung"]')!.hidden).toBe(true);
+      expect(leiste.querySelector<HTMLElement>('[data-eintrag="ansichten"]')!.hidden).toBe(false);
+      const mehr = leiste.querySelector<HTMLButtonElement>('.werkzeugleiste-mehr button')!;
+      act(() => mehr.click());
+      const eintrag = [...document.querySelectorAll<HTMLButtonElement>('[role^="menuitem"]')].find((b) => b.textContent?.trim().startsWith('Einrichtung'))!;
+      expect(eintrag.textContent).toContain('Einrichtung: Vorlagen');
+      expect(eintrag.getAttribute('aria-haspopup')).toBe('menu');
+    } finally {
+      leistenMessung.breite = original;
+    }
   });
 
   it('Farbschema wechselt sofort (Menü ◐), ohne Option „Zeichenfläche abdunkeln“', () => {

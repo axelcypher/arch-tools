@@ -103,7 +103,7 @@ export function App() {
     if (s.ordnerEntwurf && !s.konflikt) {
       if (s.strukturFehler) offen.push('der Text der Ordnerliste – die Struktur ist nicht lesbar und deshalb gesperrt');
       else if (s.ordnerEntwurf.basis !== ordnerAlsText(s.struktur.ordner))
-        offen.push('der Text der Ordnerliste – er geht von einem älteren Stand aus; bitte unter „Struktur“ prüfen und übernehmen oder verwerfen');
+        offen.push('der Text der Ordnerliste – er geht von einem älteren Stand aus; bitte unter „Einrichtung“ → „Struktur“ prüfen und übernehmen oder verwerfen');
       else {
         try {
           const grund = await s.ordnerEntwurfUebernehmen();
@@ -225,7 +225,7 @@ export function App() {
                 {einrichtungAktiv ? `Einrichtung: ${einrichtungAktiv.label}` : 'Einrichtung'}
               </MenueKnopf>
             ),
-            menue: { text: 'Einrichtung', unter: einrichtungPunkte() },
+            menue: { text: einrichtungAktiv ? `Einrichtung: ${einrichtungAktiv.label}` : 'Einrichtung', unter: einrichtungPunkte() },
           },
         ]}
       />
@@ -246,7 +246,7 @@ export function App() {
           <button
             className="small"
             disabled={konfliktLaeuft}
-            title="Ihre Fassung speichern – die des anderen Rechners kommt vorher in die Sicherungen (unter „Struktur“)"
+            title="Ihre Fassung speichern – die des anderen Rechners kommt vorher in die Sicherungen (unter „Einrichtung“ → „Struktur“)"
             onClick={() =>
               void useOrdner
                 .getState()

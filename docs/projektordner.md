@@ -256,9 +256,8 @@ Exports).
 
 ### Struktur
 
-Eigene Ansicht **„Struktur“** im Menü „Einrichtung“ (bis 0.13 Teil der Einstellungen). Ordnerbaum, Bausteine und Namensschemata gehören dem
-Büro, nicht dem Tool. Die Struktur lässt sich zusätzlich als JSON-Datei
-speichern, weitergeben und laden – samt den Vorlagen-Presets und dem Dateinamenschema für Vorlagen; die eingebaute
+Eigene Ansicht **„Struktur“** im Menü „Einrichtung“ (bis 0.13 Teil der Einstellungen). Ordnerbaum, Bausteine und
+Namensschemata gehören dem Büro, nicht dem Tool. Die Struktur lässt sich zusätzlich als JSON-Datei speichern, weitergeben und laden – samt den Vorlagen-Presets und dem Dateinamenschema für Vorlagen; die eingebaute
 Vorgabe ist neutral (nach Dokumentart: Projekt, Grundlagen, Pläne, Berechnungen, Schriftverkehr, Protokolle,
 Genehmigung, Ausschreibung, Bauleitung, Fotos). „Vorgabe wiederherstellen …“ setzt Ordner und Schemata zurück; die
 Presets bleiben.
