@@ -260,14 +260,16 @@
   gap: 3px;
 }
 
-/* schmalere Fenster: „Speichern“ und die Werkzeuge nur als Symbol (Name über aria-label und title); „Exportieren“ wandert
-   über die Werkzeugleiste ins Menü „Mehr“ */
-@media (max-width: 1360px) {
+/* schmalere Fenster (design.md „Schmale Fenster“): zuerst wandert „Exportieren“ ins Menü „Mehr“ (Werkzeugleiste, ab
+   etwa 1275 px), erst danach schrumpfen Knöpfe auf ihr Symbol (Name über aria-label und title) – „Speichern“ unter
+   1198 px, die Werkzeuge unter 1132 px. Gemessen: volle Leiste 1276 px, ohne „Exportieren“ mit „Mehr“ 1198 px,
+   zusätzlich ohne Text an „Speichern“ 1132 px. */
+@media (max-width: 1197px) {
   .toolbar .tb-text {
     display: none;
   }
 }
-@media (max-width: 1180px) {
+@media (max-width: 1131px) {
   .toolbar .tb-werkzeug-text {
     display: none;
   }
