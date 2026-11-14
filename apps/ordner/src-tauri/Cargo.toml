@@ -1,6 +1,6 @@
 [package]
 name = "projektordner"
-version = "0.30.6"
+version = "0.30.7"
 description = "Projektordner nach einheitlichem Schema anlegen und prüfen"
 authors = ["Tobias Pendzialek"]
 license = "MIT"
