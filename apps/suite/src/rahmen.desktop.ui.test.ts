@@ -9,7 +9,7 @@ const fenster = vi.hoisted(() => ({
   offen: new Map<string, { label: string; opts: unknown; ereignisse: Map<string, () => void>; destroy: () => Promise<void> }>(),
 }));
 const sperren = vi.hoisted(() => ({ frei: [] as string[] }));
-const update = vi.hoisted(() => ({ vorInstallation: undefined as undefined | (() => Promise<boolean>), dirty: false }));
+const update = vi.hoisted(() => ({ vorInstallation: undefined as undefined | (() => Promise<boolean>), dirty: false, punkt: null as null | { text: string; aktion: () => void } }));
 
 // Ereignisse laufen über den echten Weg (@tauri-apps/api/event) mit nachgebautem IPC (mockIPC); Fenster sind nachgebaut
 vi.mock('@tauri-apps/api/window', () => ({
@@ -56,6 +56,7 @@ vi.mock('@core/ui/UpdateKnopf', () => ({
     update.dirty = p.dirty;
     return null;
   },
+  updatePunkt: () => update.punkt,
 }));
 
 const { App } = await import('./App');
@@ -115,8 +116,10 @@ const senden = (name: string, payload: unknown) =>
     await emit(name, payload);
     await new Promise((r) => setTimeout(r, 0));
   });
+/** Herauslösen über das Kontextmenü am Tab (am Tab selbst gibt es dafür keinen Knopf mehr) */
 const herausloesen = async (host: Element, name: string) => {
-  await act(async () => (tab(host, name).querySelector('button[title="In eigenem Fenster öffnen"]') as HTMLButtonElement).click());
+  act(() => tab(host, name).dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 10, clientY: 10 })));
+  await act(async () => ([...document.querySelectorAll('.menue button')].find((b) => b.textContent?.includes('In eigenem Fenster öffnen')) as HTMLButtonElement).click());
   await act(async () => {});
 };
 /** herausgelöstes Fenster einer App beantwortet Speichern-Anfragen (wie speichernAnfragenBeantworten im Fenster) */
@@ -291,6 +294,23 @@ describe('Rahmen-App auf dem Desktop', () => {
     await act(async () => fenster.haupt!.schliessenAngefragt!({ preventDefault: () => {} }));
     await act(async () => {});
     expect(fenster.haupt!.destroy).toHaveBeenCalled();
+  });
+
+  it('Menü „Einstellungen und Hilfe“: Update-Punkt nur, solange ein Update vorliegt – oben, mit Trenner', async () => {
+    const host = await render();
+    const punkte = () => [...document.querySelectorAll('.menue [role^="menuitem"]')].map((b) => b.textContent?.trim());
+    const knopf = () => host.querySelector<HTMLButtonElement>('button.titlebar-menue')!;
+    act(() => knopf().click());
+    expect(punkte()).not.toContainEqual(expect.stringContaining('Update'));
+    act(() => document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+    const aktion = vi.fn();
+    update.punkt = { text: 'Update auf 9.9.9 …', aktion };
+    act(() => knopf().click());
+    expect(punkte()[0]).toBe('Update auf 9.9.9 …');
+    expect(document.querySelector('.menue [role="separator"]')).not.toBeNull();
+    act(() => ([...document.querySelectorAll('.menue button')].find((b) => b.textContent?.includes('Update auf')) as HTMLButtonElement).click());
+    expect(aktion).toHaveBeenCalled();
+    update.punkt = null;
   });
 
   it('Kontextmenü am Tab: „In eigenem Fenster öffnen“ löst heraus', async () => {
