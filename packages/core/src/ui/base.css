@@ -218,13 +218,13 @@ body,
   align-items: center;
   gap: var(--s1);
 }
-/* Einträge behalten ihre Breite: statt zu schrumpfen wandern sie ins Menü „Mehr“ (kürzbare Einträge setzen
-   flex-shrink und eine min-width selbst) */
+/* Einträge behalten ihre Breite: statt zu schrumpfen wandern sie ins Menü „Mehr“ (kürzbare Einträge tragen
+   `kuerzbar` → .werkzeugleiste-kuerzbar) */
 .toolbar.werkzeugleiste > .werkzeugleiste-eintrag,
 .toolbar.werkzeugleiste > .tb-group {
   flex: none;
 }
-/* Eintrag mit `kuerzbar`: schrumpft bis auf eine Mindestbreite, Text mit „…“ */
+/* Eintrag mit `kuerzbar`: schrumpft bis auf vier Steuerhöhen (Platz für ein kurzes Wort mit „…“), Text mit „…“ */
 .toolbar.werkzeugleiste > .werkzeugleiste-kuerzbar {
   flex: 0 1 auto;
   min-width: calc(4 * var(--ctl-h));

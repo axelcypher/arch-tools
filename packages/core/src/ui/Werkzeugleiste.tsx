@@ -21,7 +21,8 @@ export interface LeistenEintrag {
   gruppe?: boolean;
   /**
    * Darf sich kürzen (z. B. ein Statustext): schrumpft bis auf eine Mindestbreite, Text mit „…“ abgeschnitten. Sonst
-   * behält ein Eintrag seine Breite und wandert bei Platzmangel ins Menü „Mehr“.
+   * behält ein Eintrag seine Breite und wandert bei Platzmangel ins Menü „Mehr“. Ein kürzbarer Eintrag schrumpft zuerst;
+   * Einträge mit Rang wandern erst, wenn er seine Mindestbreite erreicht hat.
    */
   kuerzbar?: boolean;
   /** Gegenstück im Menü „Mehr“, solange der Eintrag nicht in die Leiste passt (Gruppe: mehrere Punkte) */
