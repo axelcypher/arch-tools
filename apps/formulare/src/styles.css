@@ -77,7 +77,8 @@ button.icon {
   color: var(--muted);
 }
 /* Größe der Symbolknöpfe in den Leisten der App (24px); in der Werkzeugleiste gilt die Regel aus core: volle
-   Steuerhöhe, quadratisch (28 × 28) */
+   Steuerhöhe, quadratisch (28 × 28). Das :not() ist nötig, weil diese Regel mit festem height und höherer Spezifität die
+   core-Regel (Spezifität null, :where) sonst schlüge */
 button.icon:not(.werkzeugleiste *) {
   min-width: 24px;
   height: 24px;
