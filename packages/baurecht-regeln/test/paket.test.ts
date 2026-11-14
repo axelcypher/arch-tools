@@ -1076,23 +1076,40 @@ describe('Fälle aus dem Fachreview', () => {
     expect(vu({ ...ja('planung.vorbereitende_untersuchungen'), ...nein('planung.zurueckstellung') })).toBe('gelb');
     expect(vu(nein('planung.vorbereitende_untersuchungen'))).toBe('gruen');
     expect(vu({})).not.toBe('gruen');
-    // förmlich festgelegtes Sanierungsgebiet: Zurückstellung unwirksam, es gilt § 144 (§ 141 Abs. 4 Satz 2, § 15 Abs. 2)
+    // förmlich festgelegtes Sanierungsgebiet: Zurückstellung unwirksam (§ 141 Abs. 4 Satz 2) – dann § 144, soweit nicht
+    // ausgeschlossen (§ 142 Abs. 4)
     expect(a(m, { ...ja('planung.sanierungsgebiet') })('bund/baugb/141')).toBe('gruen');
     // § 172 Abs. 2: Aufstellung einer Erhaltungssatzung beschlossen und bekannt gemacht
     const erh = (f: Record<string, FaktWert>) => a(m, { ...nein('planung.erhaltungssatzung'), ...f })('bund/baugb/172');
     expect(erh(ja('planung.erhaltungssatzung_aufstellung', 'planung.zurueckstellung'))).toBe('rot');
     expect(erh({ ...ja('planung.erhaltungssatzung_aufstellung'), ...nein('planung.zurueckstellung') })).not.toBe('gruen');
     expect(erh(nein('planung.erhaltungssatzung_aufstellung'))).toBe('gruen');
+    // offen, ob eine Erhaltungssatzung aufgestellt wird: nicht grün (die neue Frage hält § 172 offen)
+    expect(erh({})).not.toBe('gruen');
+    // geltende Satzung (gilt): der Prüfhinweis passt zur geltenden Satzung, die Zurückstellung nur für die Aufstellung
+    const sat = auswerten(eingabe(m, { ...ja('planung.erhaltungssatzung') }, TEXTE)).paragrafen.find((p) => p.id === 'bund/baugb/172')!;
+    expect(sat.ampel).toBe('rot');
+    expect(sat.hinweise.join(' ')).toMatch(/Gilt die Satzung: Welcher Erhaltungszweck/);
+    expect(sat.hinweise.join(' ')).toMatch(/Wird sie erst aufgestellt: /);
     // die Frage nach der Zurückstellung wird auch bei diesen Auslösern gestellt
     const kontext = (f: Record<string, FaktWert>) => auswerten(eingabe(m, f, TEXTE)).kontext;
     expect(frageGestellt('planung.zurueckstellung', defs['planung.zurueckstellung'], kontext(ja('planung.vorbereitende_untersuchungen')))).toBe(true);
     expect(frageGestellt('planung.zurueckstellung', defs['planung.zurueckstellung'], kontext(ja('planung.erhaltungssatzung_aufstellung')))).toBe(true);
   });
 
-  it('FNP mit Konzentrationszonen: kein Beispiel „Windenergie“ – § 35 Abs. 3 Satz 3 gilt dafür nicht (§ 249 Abs. 1 BauGB)', () => {
+  it('FNP und Windenergie: § 35 Abs. 3 Satz 3 gilt nicht (§ 249 Abs. 1), § 15 Abs. 3 aber entsprechend beim Flächenbeitragswert (§ 245e Abs. 2)', () => {
     const d = faktDefinitionen(aktiveModule(paket.module, SOEST))['planung.fnp_verfahren'];
-    expect(`${d.frage} ${d.hilfe}`).not.toMatch(/z\. B\. Windenergie/);
-    expect(`${d.frage} ${d.hilfe}`).toMatch(/§ 249 Abs\. 1 BauGB/);
+    const text = `${d.frage} ${d.hilfe}`;
+    // Windenergie bleibt erfasst (sonst „nein“ → § 15 „entfällt“, ein falsches Grün) – mit dem Flächenbeitragswert als Anlass
+    expect(text).not.toMatch(/nicht Windenergie/);
+    expect(d.frage).toMatch(/Windenergie/);
+    expect(d.frage).toMatch(/Flächenbeitragswert/);
+    expect(text).toMatch(/§ 249 Abs\. 1/);
+    expect(text).toMatch(/§ 245e Abs\. 2/);
+    // die Regel zu § 15 nennt § 245e Abs. 2 (in Begründung und Prüfhinweis; Fundstellen nur des eigenen Paragrafen)
+    const r15 = paket.regeln.get('bund/baugb')!.at(-1)!.regel.paragrafen['15'];
+    expect(r15.grund).toMatch(/§ 245e Abs\. 2/);
+    expect(r15.pruefen?.grund).toMatch(/§ 245e Abs\. 2/);
   });
 
   it('Runde 3: Landschaftsplan III in Lippetal im qualifizierten Bebauungsplan – nicht „entfällt mit der Norm“, solange offen ist, ob er sich darauf erstreckt', () => {

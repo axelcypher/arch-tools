@@ -94,7 +94,7 @@
           }
         ]
       },
-      "grund": "Auf Antrag der Gemeinde setzt die Baugenehmigungsbehörde die Entscheidung bis zu zwölf Monate aus (ohne Genehmigungsverfahren: vorläufige Untersagung), wenn das Vorhaben die Planung unmöglich machen oder wesentlich erschweren würde (Abs. 1); für privilegierte Vorhaben im Außenbereich bei einem Flächennutzungsplan mit Konzentrationszonen bis zu einem Jahr (Abs. 3).",
+      "grund": "Auf Antrag der Gemeinde setzt die Baugenehmigungsbehörde die Entscheidung bis zu zwölf Monate aus (ohne Genehmigungsverfahren: vorläufige Untersagung), wenn das Vorhaben die Planung unmöglich machen oder wesentlich erschweren würde (Abs. 1); für privilegierte Vorhaben im Außenbereich bei einem Flächennutzungsplan mit Konzentrationszonen bis zu einem Jahr (Abs. 3), für Windenergie an Land bei einem Flächennutzungsplan zur Erreichung des Flächenbeitragswerts längstens bis zum Stichtag nach dem Windenergieflächenbedarfsgesetz (§ 245e Abs. 2).",
       "fundstellen": [
         "15/1",
         "15/3"
@@ -110,7 +110,7 @@
         "15/3": "a43c9d8a"
       },
       "pruefen": {
-        "grund": "Solange ein Bebauungsplan bzw. ein Flächennutzungsplan mit Konzentrationszonen aufgestellt wird, kann die Gemeinde die Zurückstellung auch noch nach Eingang des Bauantrags beantragen (Abs. 1; Abs. 3: binnen sechs Monaten nach Kenntnis) – bei der Gemeinde erfragen.",
+        "grund": "Solange ein Bebauungsplan bzw. ein Flächennutzungsplan mit Konzentrationszonen (bei Windenergie: zur Erreichung des Flächenbeitragswerts, § 245e Abs. 2) aufgestellt wird, kann die Gemeinde die Zurückstellung auch noch nach Eingang des Bauantrags beantragen (Abs. 1; Abs. 3: binnen sechs Monaten nach Kenntnis) – bei der Gemeinde erfragen.",
         "wenn": {
           "und": [
             {
@@ -698,11 +698,7 @@
                 "ist": true
               },
               {
-                "oder": [
-                  {
-                    "$": "vorhaben_oder_beseitigung"
-                  }
-                ]
+                "$": "vorhaben_oder_beseitigung"
               }
             ]
           },
@@ -731,7 +727,7 @@
         "172/4"
       ],
       "pruefen": {
-        "grund": "Welcher Erhaltungszweck (Gestalt, Zusammensetzung der Wohnbevölkerung, Umstrukturierung) gilt, ergibt sich aus der Satzung – bei der Errichtung nur im Fall der städtebaulichen Gestalt. Solange die Satzung aufgestellt wird, kann die Gemeinde die Zurückstellung auch noch nach Eingang des Bauantrags beantragen (Abs. 2) – bei der Gemeinde erfragen.",
+        "grund": "Gilt die Satzung: Welcher Erhaltungszweck (Gestalt, Zusammensetzung der Wohnbevölkerung, Umstrukturierung) gilt, ergibt sich aus ihr – bei der Errichtung nur im Fall der städtebaulichen Gestalt. Wird sie erst aufgestellt: Die Gemeinde kann die Zurückstellung auch noch nach Eingang des Bauantrags beantragen (Abs. 2) – bei der Gemeinde erfragen.",
         "wenn": {
           "und": [
             {

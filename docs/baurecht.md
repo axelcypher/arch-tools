@@ -99,9 +99,11 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   also immer auch ein solcher Fall; ebenso „nicht im Vogelschutzgebiet Hellwegbörde“, „nicht im Heilquellenschutzgebiet
   Bad Sassendorf“ (bzw. dessen Zonen „außerhalb“), „keine Planreife“, „keine Zurückstellung beantragt“ (§ 15 BauGB,
   entsprechend auch bei vorbereitenden Untersuchungen einer Sanierung, § 141 Abs. 4, und einer Erhaltungssatzung in
-  Aufstellung, § 172 Abs. 2) und „keine
-  Feuerstätte für feste Brennstoffe über 50 kW“. Hängt ein Paragraf an
-  einem anderen, der nur „gilt, Ausnahme möglich“ ist, und entfiele er mit dessen Ausnahme, nennt er sie („Ausnahme
+  Aufstellung, § 172 Abs. 2) und „keine Feuerstätte für feste Brennstoffe über 50 kW“. Die Fragen nach vorbereitenden
+  Untersuchungen und einer Erhaltungssatzung in Aufstellung halten §§ 141, 172 BauGB offen („prüfen“), bis sie
+  beantwortet sind; beim Flächennutzungsplan mit Konzentrationszonen zählt Windenergie an Land mit (§ 15 Abs. 3
+  entsprechend nach § 245e Abs. 2 BauGB, Flächenbeitragswert). Hängt ein Paragraf an einem anderen, der nur „gilt,
+  Ausnahme möglich“ ist, und entfiele er mit dessen Ausnahme, nennt er sie („Ausnahme
   möglich über § 14 BNatSchG – es fehlt dort: …“); die Ampel bleibt „gilt“.
   Unter „Ausnahme möglich – es fehlt“ stehen nur Fragen, die gerade gestellt werden (ohne Ausweichen auf nicht
   gestellte: eine Ausnahme, deren Fragen nicht gestellt sind, wird nicht angeboten). Ist die Ausnahme nur über Hinweise
