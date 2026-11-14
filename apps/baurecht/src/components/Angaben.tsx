@@ -360,10 +360,10 @@ const beschreibung = (def: FaktDef, id: string) => (def.frage || (def.kurz && de
 /**
  * Merkmalwerte senkrecht untereinander statt in einer Reihe (docs/design.md „Umschalter“): bei langen oder vielen Werten
  * – die gemeinsamen Segmente brechen bewusst nicht um und liefen in der schmalen Leiste sonst über. „Viele“ misst die
- * Länge der ganzen Reihe (Zeichen plus etwa drei je Knopf für den Innenabstand), nicht die Zahl: Gebäudeklasse 1–5 passt
+ * Länge der ganzen Reihe (Zeichen plus etwa vier je Knopf für den Innenabstand), nicht die Zahl: Gebäudeklasse 1–5 passt
  * in eine Reihe, acht eigene Werte oder zwei sehr lange nicht
  */
-export const werteSenkrecht = (werte: readonly string[]) => (werte.length >= 3 && werte.some((w) => w.length > 14)) || werte.join('').length + 3 * werte.length > 52;
+export const werteSenkrecht = (werte: readonly string[]) => (werte.length >= 3 && werte.some((w) => w.length > 14)) || werte.join('').length + 4 * werte.length > 52;
 
 function FaktEingabe({ id, def, wert, onWert, alsKnoepfe = false }: { id: string; def: FaktDef; wert: FaktWert | undefined; onWert: (v: FaktWert['wert'] | undefined) => void; alsKnoepfe?: boolean }) {
   const v = wert?.wert ?? null;
