@@ -35,9 +35,9 @@ export interface TitleBarProps {
   /** ungespeicherte Änderungen */
   dirty: boolean;
   /**
-   * Satz für die Rückfragen beim Schließen, wenn `dirty` (Rahmen-App und eigenes Schließen mit Speichern) – genauer als
-   * der allgemeine, z. B. „Das LV hat ungespeicherte Änderungen.“; ein kurzer Satz, höchstens UNGESPEICHERT_MAX Zeichen
-   * (sonst nimmt die Rahmen-App den allgemeinen „Das Projekt hat ungespeicherte Änderungen.“)
+   * Satz für die Rückfragen bei ungespeicherten Änderungen (Rahmen-App, eigenes Schließen, Andocken) – genauer als der
+   * allgemeine, z. B. „Das LV hat ungespeicherte Änderungen.“; ein kurzer Satz, höchstens UNGESPEICHERT_MAX Zeichen
+   * (sonst gilt der allgemeine „Das Projekt hat ungespeicherte Änderungen.“)
    */
   ungespeichert?: string;
   onOpenLog: () => void;
@@ -120,7 +120,7 @@ export function TitleBar({ app, name, dirty, ungespeichert, onOpenLog, regeln, o
     try {
       if (dirty) {
         const weiter = onSpeichern
-          ? await aenderungenSpeichern(name, onSpeichern, ungespeichertSatz(ungespeichert) ?? 'Vor dem Beenden speichern?')
+          ? await aenderungenSpeichern(name, onSpeichern, ungespeichertSatz(ungespeichert))
           : await bestaetigen('Ungespeicherte Änderungen verwerfen?', 'Die Änderungen gehen beim Beenden verloren.', 'Verwerfen und beenden', true);
         if (!weiter) return;
       }
@@ -157,7 +157,7 @@ export function TitleBar({ app, name, dirty, ungespeichert, onOpenLog, regeln, o
     if (dockt.current) return;
     dockt.current = true;
     try {
-      if (dirty && !(await umzugBestaetigen(rahmenApp(), app, name, 'andocken', onSpeichern))) return;
+      if (dirty && !(await umzugBestaetigen(rahmenApp(), app, name, 'andocken', onSpeichern, ungespeichert))) return;
       if (!(await schreibenAbwarten(app, () => schliessenVorbereiten(), 'andocken'))) return;
       await andocken();
     } finally {
