@@ -67,7 +67,7 @@ describe('Projektwahl (QUADRIO, TERRIO, NUMIO)', () => {
     expect(JSON.parse(localStorage.getItem('arch-tools:lokal:zuletzt')!).eintraege.map((e: { pfad: string }) => e.pfad)).toEqual(['/p/2019-003 Altbau', '/p/2025-007 Kita']);
   });
 
-  it('Kontextmenü je Projekt (Öffnen, Im Explorer öffnen, Anheften), Nummer und Kurzname nach dem Schema aus den Einstellungen (P-09)', async () => {
+  it('Kontextmenü je Projekt (Öffnen, Projektordner öffnen, Anheften), Nummer und Kurzname nach dem Schema aus den Einstellungen (P-09)', async () => {
     localStorage.setItem('arch-tools:konfig:allgemein', JSON.stringify({ projekte: ['/p'], ordnerSchema: '{kurzname}_{nummer}' }));
     const fs = new SpeicherProjektordner();
     await fs.ordnerAnlegen('/p', 'Altbau_2019-003');
@@ -82,7 +82,7 @@ describe('Projektwahl (QUADRIO, TERRIO, NUMIO)', () => {
     expect(karte(host, 'Altbau').querySelector('.pa-kuerzel')!.textContent).toBe('2019-003');
     act(() => karte(host, 'Altbau').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 10, clientY: 10 })));
     const eintraege = () => [...host.querySelectorAll('.menue [role="menuitem"]')].map((b) => b.textContent);
-    expect(eintraege()).toEqual(['Öffnen', 'Im Explorer öffnen', 'Anheften']);
+    expect(eintraege()).toEqual(['Öffnen', 'Projektordner öffnen', 'Anheften']);
     await act(async () => (host.querySelector('.menue [role="menuitem"]:nth-of-type(3)') as HTMLButtonElement).click());
     await warten();
     expect(JSON.parse(localStorage.getItem('arch-tools:lokal:angeheftet')!).pfade).toEqual(['/p/Altbau_2019-003']);

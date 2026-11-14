@@ -79,7 +79,7 @@ export function frageText(titel: string, wert: string, ok = 'OK', text?: string)
  */
 export async function aenderungenSpeichern(name: string, speichern: () => Promise<boolean | void> | boolean | void, text?: string): Promise<boolean> {
   const a = await fragen({
-    titel: `Änderungen an „${name || 'Unbenannt'}“ speichern?`,
+    titel: `Änderungen an ‚${name || 'Unbenannt'}‘ speichern?`,
     text: text ?? 'Das Projekt hat ungespeicherte Änderungen.',
     knoepfe: [
       { id: 'abbrechen', label: 'Abbrechen' },

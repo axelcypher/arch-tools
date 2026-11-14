@@ -44,7 +44,7 @@ describe('Rückfrage „Änderungen speichern?“', () => {
     });
     let p: Promise<unknown> = aenderungenSpeichern('EFH Musterweg', speichern).then((ok) => reihenfolge.push(`weiter: ${ok}`));
     await act(async () => {});
-    expect(host.textContent).toContain('Änderungen an „EFH Musterweg“ speichern?');
+    expect(host.textContent).toContain('Änderungen an ‚EFH Musterweg‘ speichern?');
     expect(knoepfe(host)).toEqual(['Abbrechen', 'Nicht speichern', 'Speichern']);
     await klick(host, 'Speichern');
     await p;
