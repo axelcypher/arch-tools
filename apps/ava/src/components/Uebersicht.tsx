@@ -44,8 +44,8 @@ export function Uebersicht() {
           {projekt.kk ? (
             <>
               <span title={projekt.kk.pfad}>Kostenkontrolle: {projekt.kk.pfad.split('/').pop()}</span>
-              <button className="small" onClick={() => void oeffnen(projekt.kk!.pfad)} title="In Excel öffnen">
-                In Excel öffnen
+              <button className="small" onClick={() => void oeffnen(projekt.kk!.pfad)} title="Öffnet die Excel-Datei der Kostenkontrolle mit dem Standardprogramm">
+                Kostenkontrolle öffnen
               </button>
               {(projekt.struktur?.kostenkontrollen.length ?? 0) > 1 && (
                 <select

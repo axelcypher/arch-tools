@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { bestaetigen, frageText } from '@core/ui/Rueckfrage';
 import { Symbol } from '@core/ui/Symbol';
+import { Werkzeugleiste } from '@core/ui/Werkzeugleiste';
 import type { Bieter, Position } from '../../lv/modell';
 import { aendereElement, heuteIso } from '../../lv/modell';
 import { ASLV_NICHT_GESPEICHERT } from '../../format/aslv';
@@ -63,38 +64,66 @@ export function Angebote() {
 
   return (
     <div className={`ava-angebote ava-angebote-${modus}`}>
-      <div className="toolbar">
-        <div className="segment" role="group" aria-label="Ansicht">
-          <button className={modus === 'spiegel' ? 'active' : ''} aria-pressed={modus === 'spiegel'} onClick={() => setModus('spiegel')}>
-            Preisspiegel
-          </button>
-          <button className={modus === 'erfassen' ? 'active' : ''} aria-pressed={modus === 'erfassen'} onClick={() => setModus('erfassen')}>
-            Preise erfassen
-          </button>
-        </div>
-        <div className="tb-group">
-          <button onClick={() => void neuerBieter()} title="Bieter hinzufügen">
-            <Symbol name="plus" /> Bieter …
-          </button>
-          <button
-            onClick={async () => {
-              const id = await angebotEinlesen();
-              if (id !== null) setBieterId(id);
-            }}
-            title="Angebot eines Bieters als GAEB-Datei (X84) einlesen – Preise über die Ordnungszahl"
-          >
-            Angebot aus GAEB (X84) …
-          </button>
-          <button onClick={() => setDruck(true)} disabled={!gewertet.length}>
-            Preisspiegel drucken …
-          </button>
-        </div>
-        {modus === 'spiegel' && (
-          <label className="ava-check">
-            <input type="checkbox" checked={nurAuffaellige} onChange={(e) => setNurAuffaellige(e.target.checked)} /> nur auffällige Preise (±30 % vom Mittel)
-          </label>
-        )}
-      </div>
+      <Werkzeugleiste
+        name="Angebote"
+        teile={[
+          {
+            id: 'ansicht',
+            gruppe: true,
+            inhalt: (
+              <div className="segment" role="group" aria-label="Ansicht">
+                <button className={modus === 'spiegel' ? 'active' : ''} aria-pressed={modus === 'spiegel'} onClick={() => setModus('spiegel')}>
+                  Preisspiegel
+                </button>
+                <button className={modus === 'erfassen' ? 'active' : ''} aria-pressed={modus === 'erfassen'} onClick={() => setModus('erfassen')}>
+                  Preise erfassen
+                </button>
+              </div>
+            ),
+          },
+          {
+            id: 'bieter',
+            inhalt: (
+              <button onClick={() => void neuerBieter()} title="Bieter hinzufügen">
+                <Symbol name="plus" /> Bieter …
+              </button>
+            ),
+          },
+          ...(modus === 'spiegel'
+            ? [
+                {
+                  id: 'auffaellig',
+                  rang: 1,
+                  inhalt: (
+                    <label className="ava-check">
+                      <input type="checkbox" checked={nurAuffaellige} onChange={(e) => setNurAuffaellige(e.target.checked)} /> nur auffällige Preise (±30 % vom Mittel)
+                    </label>
+                  ),
+                  menue: { text: 'Nur auffällige Preise (±30 % vom Mittel)', haken: nurAuffaellige, aktion: () => setNurAuffaellige(!nurAuffaellige) },
+                },
+              ]
+            : []),
+          { abstand: true },
+          {
+            id: 'drucken',
+            inhalt: (
+              <button className="primary" onClick={() => setDruck(true)} disabled={!gewertet.length} title={gewertet.length ? 'Preisspiegel drucken bzw. als PDF' : 'Erst Preise erfassen'}>
+                Preisspiegel drucken …
+              </button>
+            ),
+          },
+        ]}
+        mehr={() => [
+          {
+            text: 'Angebot aus GAEB (X84) …',
+            titel: 'Angebot eines Bieters als GAEB-Datei (X84) einlesen – Preise über die Ordnungszahl',
+            aktion: () =>
+              void angebotEinlesen().then((id) => {
+                if (id !== null) setBieterId(id);
+              }),
+          },
+        ]}
+      />
       <div className="ava-bieter-liste ava-tabelle-rahmen">
         <table className="ava-tabelle">
           <thead>

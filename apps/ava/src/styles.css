@@ -712,6 +712,18 @@ input.ava-fehler {
   overflow: auto;
 }
 
+/* Werkzeugleiste im scrollenden Bereich: nicht in der Höhe stauchen (die Leiste schrumpft sonst mit dem Inhalt) */
+.ava-angebote > .toolbar.leiste {
+  flex-shrink: 0;
+}
+
+/* Einträge der Werkzeugleiste in ihrer Breite lassen: was nicht passt, wandert ins Menü „Mehr“. Sonst greift
+   `.leiste > :first-child` (base.css) auch hier, der erste Eintrag schrumpft auf fast nichts, Umschalter und
+   Beschriftungen überlappen, und die Leiste misst die gestauchte Breite – an das Designsystem gemeldet */
+.toolbar.leiste > [data-eintrag] {
+  flex: none;
+}
+
 .ava-bieter-liste {
   padding: 8px 12px;
 }
@@ -1479,21 +1491,15 @@ input.ava-fehler {
   }
 }
 
-/* LV-Editor: eine Werkzeugzeile, Suche rechts, sichtbarer Fokus */
-.ava-lv-leiste {
-  flex-wrap: wrap;
-  row-gap: 4px;
-}
-
+/* LV-Editor: eine Werkzeugzeile (Werkzeugleiste mit Überlauf), Suche rechts, sichtbarer Fokus */
 .ava-lv-leiste .icon {
   min-width: 28px;
 }
 
 .ava-lv-leiste .ava-suche {
-  margin-left: auto;
+  margin-left: 0;
   min-width: 140px;
-  width: auto;
-  flex: 0 1 240px;
+  width: 240px;
 }
 
 .ava-lv-tabelle:focus-visible {
