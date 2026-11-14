@@ -304,10 +304,10 @@ export function App() {
             >
               <Symbol name="speichern" /> {ds ? 'Speichern' : 'Herunterladen'}
             </button>
-            <button disabled={!kannZurueck(offen) || !!grund} title="Rückgängig (Strg+Z)" aria-label="Rückgängig" onClick={() => zeige(rueckgaengig())}>
+            <button className="icon" disabled={!kannZurueck(offen) || !!grund} title="Rückgängig (Strg+Z)" aria-label="Rückgängig" onClick={() => zeige(rueckgaengig())}>
               <Symbol name="rueckgaengig" />
             </button>
-            <button disabled={!kannVor(offen) || !!grund} title="Wiederholen (Strg+Y)" aria-label="Wiederholen" onClick={() => zeige(wiederholen())}>
+            <button className="icon" disabled={!kannVor(offen) || !!grund} title="Wiederholen (Strg+Y)" aria-label="Wiederholen" onClick={() => zeige(wiederholen())}>
               <Symbol name="wiederholen" />
             </button>
             {konflikt && (
@@ -340,7 +340,7 @@ export function App() {
               menue: { text: 'Zoom', unter: zoomPunkte() },
               inhalt: (
                 <>
-                  <button title="Verkleinern" aria-label="Verkleinern" onClick={() => zoomStufe(-1)}>
+                  <button className="icon" title="Verkleinern" aria-label="Verkleinern" onClick={() => zoomStufe(-1)}>
                     <Symbol name="strich" />
                   </button>
                   <select value={zoom} onChange={(e) => setZoom(Number(e.target.value))} aria-label="Zoom">
@@ -351,7 +351,7 @@ export function App() {
                       </option>
                     ))}
                   </select>
-                  <button title="Vergrößern" aria-label="Vergrößern" onClick={() => zoomStufe(1)}>
+                  <button className="icon" title="Vergrößern" aria-label="Vergrößern" onClick={() => zoomStufe(1)}>
                     <Symbol name="plus" />
                   </button>
                 </>
@@ -376,10 +376,10 @@ export function App() {
           >
             <Symbol name="speichern" /> Projektdaten speichern
           </button>
-          <button disabled={!kannRueckgaengig(karte.verlauf)} title="Rückgängig (Strg+Z)" aria-label="Rückgängig" onClick={() => zeigeKarte(karteRueckgaengig())}>
+          <button className="icon" disabled={!kannRueckgaengig(karte.verlauf)} title="Rückgängig (Strg+Z)" aria-label="Rückgängig" onClick={() => zeigeKarte(karteRueckgaengig())}>
             <Symbol name="rueckgaengig" />
           </button>
-          <button disabled={!kannWiederholen(karte.verlauf)} title="Wiederholen (Strg+Y)" aria-label="Wiederholen" onClick={() => zeigeKarte(karteWiederholen())}>
+          <button className="icon" disabled={!kannWiederholen(karte.verlauf)} title="Wiederholen (Strg+Y)" aria-label="Wiederholen" onClick={() => zeigeKarte(karteWiederholen())}>
             <Symbol name="wiederholen" />
           </button>
         </>
