@@ -1059,7 +1059,7 @@ describe('Designsystem: Kontextmenü, Symbole, Druckvorschau, Feldfehler', () =>
     expect(werkzeuge.map((b) => b.textContent?.trim())).toEqual(['Auswahl', 'Polygon', 'Rechteck', 'Grenze']);
     expect(werkzeuge.every((b) => b.querySelector('svg.symbol[aria-hidden="true"]'))).toBe(true);
     // Werkzeugleiste nach der Leisten-Regel: Datei, Speichern, Rückgängig/Wiederholen, Hauptknopf, Mehr
-    const leiste = host.querySelector('.toolbar.leiste')!;
+    const leiste = host.querySelector('.toolbar.werkzeugleiste')!;
     expect([...leiste.querySelectorAll(':scope > :not([hidden]) > button, :scope > :not([hidden]) > span > button')].map((b) => b.getAttribute('aria-label') ?? b.textContent?.trim())).toEqual([
       'Datei',
       'Speichern',
@@ -1172,7 +1172,7 @@ describe('Kopf- und Werkzeugleisten (Leisten-Regel)', () => {
   it('Menü „Datei“: Neu, Öffnen …, IFC aktualisieren (ohne Gebäude gesperrt mit Grund); „Mehr“: Excel-Export …', () => {
     useGrz.getState().load(createProject());
     render(App);
-    act(() => [...document.querySelectorAll<HTMLButtonElement>('.toolbar.leiste button[aria-haspopup="menu"]')].find((b) => b.textContent?.trim() === 'Datei')!.click());
+    act(() => [...document.querySelectorAll<HTMLButtonElement>('.toolbar.werkzeugleiste button[aria-haspopup="menu"]')].find((b) => b.textContent?.trim() === 'Datei')!.click());
     const texte = menueTexte(document.body);
     expect(texte.slice(0, 2)).toEqual(['Neu', 'Öffnen …']);
     expect(texte.at(-1)).toBe('IFC aktualisieren …');
@@ -1191,12 +1191,12 @@ describe('Kopf- und Werkzeugleisten (Leisten-Regel)', () => {
     const { leistenMessung } = await import('@core/ui/Werkzeugleiste');
     const alt = leistenMessung.breite;
     // Leiste 300 px, jeder Eintrag 80 px: nicht alles passt
-    leistenMessung.breite = (el: Element) => (el.classList.contains('leiste') ? 300 : 80);
+    leistenMessung.breite = (el: Element) => (el.classList.contains('werkzeugleiste') ? 300 : 80);
     try {
       useGrz.getState().load(projekt());
       const host = render(App);
       act(() => window.dispatchEvent(new Event('resize')));
-      const leiste = host.querySelector('.toolbar.leiste')!;
+      const leiste = host.querySelector('.toolbar.werkzeugleiste')!;
       expect((leiste.querySelector('[data-eintrag="datei"]') as HTMLElement).hidden).toBe(true);
       for (const id of ['speichern', 'verlauf', 'drucken']) expect((leiste.querySelector(`[data-eintrag="${id}"]`) as HTMLElement).hidden).toBe(false);
       // „Datei“ steht jetzt als Untermenü oben in „Mehr“, Excel-Export bleibt darunter
@@ -1211,7 +1211,7 @@ describe('Kopf- und Werkzeugleisten (Leisten-Regel)', () => {
       act(() => useGrz.getState().load(projekt()));
       act(() => document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
       // Gegenprobe: wieder breit → „Datei“ zurück in der Leiste, „Mehr“ nur mit dem festen Punkt
-      leistenMessung.breite = (el: Element) => (el.classList.contains('leiste') ? 2000 : 80);
+      leistenMessung.breite = (el: Element) => (el.classList.contains('werkzeugleiste') ? 2000 : 80);
       act(() => window.dispatchEvent(new Event('resize')));
       expect((leiste.querySelector('[data-eintrag="datei"]') as HTMLElement).hidden).toBe(false);
       act(() => (leiste.querySelector('button[aria-label="Mehr"]') as HTMLButtonElement).click());
