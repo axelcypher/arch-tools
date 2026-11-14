@@ -77,6 +77,10 @@ Zahlen in Tabellen und Feldern stehen rechtsbündig in Tabellenziffern (`.num`, 
 
 - Knöpfe in `.toolbar`, `.button-row`, `.dialog-buttons` und `.section-head` sowie Felder und Auswahllisten in
   `.toolbar` und `.field` sind mindestens `--ctl-h` (28px) hoch, `button.small` und `button.icon` dort `--ctl-h-s` (24px).
+  Ausnahme Werkzeugleiste (`Werkzeugleiste`): Dort sind auch `button.icon` (Rückgängig, „Mehr“) und die Symbolknöpfe
+  der Kompaktstufe `--ctl-h` hoch und mindestens so breit – eine Leiste hat nur eine Knopfgröße, weil Symbol- und
+  Textknöpfe dort nebeneinander stehen. App-Regeln mit eigener Größe für `button.icon` nehmen die Werkzeugleiste aus
+  (z. B. `button.icon:not(.werkzeugleiste *)`) – sonst schlägt ihre `min-width` die Regel der Leiste.
 - Die Regel hat die Spezifität null (`:where`): Eine App-Regel mit eigener `min-height` geht vor. Feste `height`
   allein reicht dafür nicht; wer kleinere Knöpfe braucht, setzt `min-height` mit.
 - Kleiner als 24px nur, wo es nicht anders geht (Hilfe-Knopf „?“, Griffe auf der Zeichenfläche).
@@ -298,7 +302,7 @@ Zurücksetzen, Sonderfunktionen. Feste Namen, in allen Apps gleich:
   Keine geteilten Knöpfe (Befehl plus Pfeil in einem): Hauptbefehl als Knopf, Varianten im Menü daneben – etwa
   „Position“ (mit Symbol `plus`) und „Hinzufügen ▾“ mit Kostenrisiko und Gliederung.
 - Menüknöpfe tragen Text und Aufklapp-Pfeil (`MenueKnopf`), „Mehr“ nur das Symbol `mehr` (`className="icon"`,
-  `pfeil={false}`, `ariaLabel="Mehr"`, `title` „Mehr – weitere Befehle“).
+  `pfeil={false}`, `ariaLabel="Mehr"`, `title` „Mehr – weitere Befehle“); Größe siehe „Zielgrößen“.
 - Schaltet ein Menü zwischen Ansichten um (ATLAS: „Einrichtung“ mit Struktur, Vorlagen, Einstellungen), zeigt der
   Menüknopf mit `.active`, dass eine seiner Ansichten offen ist, und nennt sie im Namen (`ariaLabel` und `title`
   „Einrichtung: Vorlagen“); im Menü ist sie `gewaehlt`.

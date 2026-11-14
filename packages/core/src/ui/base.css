@@ -249,6 +249,7 @@ body,
   align-items: center;
   justify-content: center;
   padding: 0 6px;
+  min-width: var(--ctl-h);
 }
 .toolbar.werkzeugleiste > [hidden] {
   display: none;
@@ -503,6 +504,13 @@ textarea:focus {
 }
 :where(.toolbar, .button-row, .dialog-buttons, .section-head) :where(button.small, button.icon) {
   min-height: var(--ctl-h-s);
+}
+/* in der Werkzeugleiste stehen Symbolknöpfe neben Knöpfen mit Text (Datei, Hauptknopf) und neben den Symbolknöpfen
+   der Kompaktstufe: alle in voller Steuerhöhe und quadratisch, damit eine Leiste nur eine Knopfgröße hat (Spezifität
+   null wie oben, steht danach) */
+:where(.toolbar.werkzeugleiste) :where(button.icon) {
+  min-height: var(--ctl-h);
+  min-width: var(--ctl-h);
 }
 /* kleine Knöpfe auch außerhalb der Leisten mindestens 24px hoch (z. B. „×“ in Tabellen) */
 :where(button.small) {
