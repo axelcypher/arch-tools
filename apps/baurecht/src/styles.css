@@ -83,10 +83,6 @@
   font-weight: 600;
   white-space: nowrap;
 }
-.br-ampel-klein .statuspunkt {
-  width: 8px;
-  height: 8px;
-}
 .br-ampel-klein {
   font-weight: 500;
   font-size: var(--fs-s);
@@ -1366,7 +1362,7 @@ h2.br-detail-name {
   font-weight: normal;
   color: var(--muted);
 }
-/* hängender Einzug: Folgezeilen beginnen unter dem Text, nicht unter ✓/✗/? */
+/* hängender Einzug: Folgezeilen beginnen unter dem Text, nicht unter dem Zeichen des Stands */
 .br-regel-baum li.br-haengend {
   padding-left: 1.2em;
   text-indent: -1.2em;

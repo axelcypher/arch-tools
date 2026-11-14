@@ -54,10 +54,11 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   „Speichern, diese als Entwurf behalten“ lässt sie Entwurf. Ein Wert außerhalb der Liste lässt sich nicht für den Ort
   bestätigen – er zählt ohnehin nicht. Angaben von Hand aus älteren Dateien werden wie bei der Eingabe geprüft: negative
   Werte und halbe Anzahlen sind nur Hinweis, Angaben zur Lage ohne Lagebezug ebenso („Für diese Lage übernehmen“).
-- **Filterleiste:** Ampelzähler (blenden ein/aus; Häkchen, Statuspunkt, Zahl und Wort im Umschalter), Balken, Ordnung (offen zuerst, nach Ebene, nach Thema), Suche und die
-  Kästchen „nur von Hand festgelegte“ / „nur geänderte/überholte“. Ist die mittlere Spalte schmaler als 640 px, wird die
-  Ordnung zur Auswahlliste, die Kästchen wandern in **Filter** und der Balken entfällt. Die Zähler an den Normen
-  zählen die sichtbaren Zeilen („11 prüfen von 14“). Beim Wechsel der Ordnung bleibt der gewählte Paragraf im Blick.
+- **Filterleiste:** Ampelzähler (blenden ein/aus; Häkchen, Statuspunkt, Zahl und Wort im Umschalter), Balken, Ordnung
+  (offen zuerst, nach Ebene, nach Thema), Suche und die Kästchen „nur von Hand festgelegte“ / „nur
+  geänderte/überholte“. Ist die mittlere Spalte schmaler als 640 px, wird die Ordnung zur Auswahlliste, die Kästchen
+  wandern in **Filter** und der Balken entfällt. Die Zähler an den Normen zählen die sichtbaren Zeilen („11 prüfen von
+  14“). Beim Wechsel der Ordnung bleibt der gewählte Paragraf im Blick.
 - **Rückfrage zum Antragsmerkmal:** Bei „Beseitigung“ steht der **Umfang der Beseitigung** (vollständiger Abbruch ohne
   Ersatzbau, Teilabbruch, Abbruch mit Ersatzbau) direkt unter „Art des Vorhabens“ (als Knöpfe, unter der Erklärung des
   Werts); Teilabbruch wird wie eine Änderung geprüft, Ersatzbau wie Errichtung und Beseitigung; „Erweiterung“ (Anbau,

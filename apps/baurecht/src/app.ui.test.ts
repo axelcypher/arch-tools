@@ -19,6 +19,7 @@ vi.mock('@core/platform/files', async (original) => ({
 }));
 
 const { App, speichern, speichernVollstaendig } = await import('./App');
+const { werteSenkrecht } = await import('./components/Angaben');
 const { beispielOap } = await import('./beispiel.test');
 const { useBaurecht } = await import('./store');
 
@@ -614,6 +615,44 @@ describe('Baurecht – Oberfläche', () => {
     // abgebrochen: die Projektübersicht öffnet nicht, die Änderung bleibt
     expect(document.querySelector('[role="alertdialog"], [role="dialog"]')).toBeNull();
     expect(host.querySelector('.titlebar-dirty')).not.toBeNull();
+  });
+});
+
+describe('Designsystem: Rahmen-App und Umschalter', () => {
+  let gesendet: Record<string, unknown>[] = [];
+  const rahmen = { postMessage: (d: Record<string, unknown>) => gesendet.push(d) } as unknown as Window;
+  const setUrl = (u: string) => (window as unknown as { happyDOM: { setURL: (u: string) => void } }).happyDOM.setURL(u);
+  beforeEach(() => {
+    gesendet = [];
+    const bytes = beispielOap();
+    useBaurecht.getState().projektSetzen({ art: 'datei', name: 'EFH.oap', bytes }, readProjectFile(bytes), projektdateiRoh(bytes));
+    Object.defineProperty(window, 'parent', { value: rahmen, configurable: true });
+    setUrl('http://localhost:3000/?rahmen=tab&app=baurecht');
+  });
+  afterEach(() => {
+    act(() => root?.unmount());
+    document.body.innerHTML = '';
+    Object.defineProperty(window, 'parent', { value: window, configurable: true });
+    setUrl('http://localhost:3000/');
+  });
+
+  it('meldet Arkly mit den ungespeicherten Änderungen den Satz „Die Baurechtsprüfung hat …“', () => {
+    const host = render();
+    const status = () => gesendet.filter((d) => d.typ === 'arch-tools:status').at(-1);
+    expect(status()?.dirty).toBe(false);
+    if (!host.querySelector('[data-merkmal="Planungsrecht"]')) act(() => knopf(host, /Antragsmerkmale/)!.click());
+    act(() => knopf(host.querySelector('[data-merkmal="Planungsrecht"]')!, 'Außenbereich')!.click());
+    expect(status()?.dirty).toBe(true);
+    expect(status()?.ungespeichert).toBe('Die Baurechtsprüfung hat ungespeicherte Änderungen.');
+  });
+
+  it('Merkmalwerte senkrecht bei langen oder vielen Werten – die gemeinsamen Segmente brechen nicht um', () => {
+    expect(werteSenkrecht(['ja', 'nein'])).toBe(false);
+    expect(werteSenkrecht(['Innenbereich', 'Außenbereich', 'B-Plan'])).toBe(false);
+    expect(werteSenkrecht(['Innenbereich', 'Außenbereich', 'qualifizierter B-Plan'])).toBe(true);
+    expect(werteSenkrecht(['1', '2', '3', '4', '5'])).toBe(false);
+    // viele kurze Werte (eigene Werte aus PERMIO): die Reihe wäre zu lang
+    expect(werteSenkrecht(['Wohnen', 'Gewerbe', 'Handel', 'Büro', 'Praxis', 'Lager', 'Garage', 'Sonstig'])).toBe(true);
   });
 });
 

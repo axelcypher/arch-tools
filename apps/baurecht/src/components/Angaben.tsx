@@ -289,7 +289,7 @@ function Merkmale({ klaerung, suche = '', planungsrechtOffen, planungsrechtKlaer
                 )}
               </div>
             )}
-            <div className={`segment${m.werte.length >= 3 && m.werte.some((w) => w.length > 14) ? ' senkrecht' : ''}`} onKeyDown={segmentTaste}>
+            <div className={`segment${werteSenkrecht(m.werte) ? ' senkrecht' : ''}`} onKeyDown={segmentTaste}>
               {m.werte.map((w, i) => (
                 <button
                   key={w}
@@ -356,6 +356,13 @@ export const wieAngezeigt = (n: number, def: Pick<FaktDef, 'einheit'>): number =
 
 /** id der Unterzeile (Frage bzw. Rest des Titels) als Beschreibung der Eingabe – nur, wenn es sie gibt */
 const beschreibung = (def: FaktDef, id: string) => (def.frage || (def.kurz && def.titel !== def.kurz) ? `br-frage-${id}` : undefined);
+
+/**
+ * Merkmalwerte senkrecht untereinander statt in einer Reihe (docs/design.md „Umschalter“): bei langen oder vielen Werten
+ * – die gemeinsamen Segmente brechen bewusst nicht um und liefen in der schmalen Leiste sonst über. „Viele“ misst die
+ * Länge der ganzen Reihe, nicht die Zahl: Gebäudeklasse 1–5 passt in eine Reihe, acht eigene Werte nicht
+ */
+export const werteSenkrecht = (werte: readonly string[]) => werte.length >= 3 && (werte.some((w) => w.length > 14) || werte.join('').length > 40);
 
 function FaktEingabe({ id, def, wert, onWert, alsKnoepfe = false }: { id: string; def: FaktDef; wert: FaktWert | undefined; onWert: (v: FaktWert['wert'] | undefined) => void; alsKnoepfe?: boolean }) {
   const v = wert?.wert ?? null;
