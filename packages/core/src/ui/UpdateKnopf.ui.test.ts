@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { useUpdate } from '../platform/update';
 import { vorDemSchliessen } from '../platform/rahmen';
 import { RueckfrageHost } from './Rueckfrage';
-import { UpdateKnopf } from './UpdateKnopf';
+import { UpdateKnopf, updatePunkt } from './UpdateKnopf';
 
 vi.mock('../platform/update', async (orig) => ({ ...(await orig<typeof import('../platform/update')>()), starteUpdatePruefung: () => () => {} }));
 
@@ -36,6 +36,24 @@ const oeffnen = async (host: HTMLElement) => {
 };
 
 describe('Update-Dialog', () => {
+  it('updatePunkt: nur solange ein Update vorliegt; öffnet den Dialog des Knopfs', async () => {
+    act(() => useUpdate.setState({ status: 'aktuell', version: undefined }));
+    expect(updatePunkt()).toBeNull();
+    const host = await render();
+    act(() => useUpdate.setState({ status: 'verfuegbar', version: '9.9.9', installieren }));
+    const punkt = updatePunkt()!;
+    expect(punkt.text).toBe('Update auf 9.9.9 …');
+    expect(host.querySelector('.modal')).toBeNull();
+    await act(async () => punkt.aktion!());
+    expect(host.querySelector('.modal')?.textContent).toContain('Version 9.9.9 ist verfügbar');
+    await act(async () => [...host.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent === 'Später')!.click());
+    expect(host.querySelector('.modal')).toBeNull();
+    // lädt bzw. installiert: kein Punkt mehr (den Stand zeigt der Dialog)
+    act(() => useUpdate.setState({ status: 'laedt' }));
+    expect(updatePunkt()).toBeNull();
+    act(() => useUpdate.setState({ status: 'aktuell', version: undefined }));
+  });
+
   it('Abbrechen in den Rückfragen der Rahmen-App verhindert die Installation; während des Wartens gesperrt', async () => {
     installieren.mockClear();
     let antwort: ((ok: boolean) => void) | undefined;
