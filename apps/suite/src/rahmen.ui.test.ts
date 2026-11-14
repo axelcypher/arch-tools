@@ -153,6 +153,11 @@ describe('Rahmen-App', () => {
       ),
     );
     expect(useRahmen.getState().status.baurecht).toEqual({ name: 'B1', dirty: true, kannSpeichern: false });
+    // kann sie wieder speichern (gleicher Name, weiter geändert), zählt auch das
+    const melden = (data: object) => act(() => window.dispatchEvent(new MessageEvent('message', { data, origin: window.location.origin, source: f.contentWindow })));
+    melden({ typ: 'arch-tools:status', app: 'LEXIO', name: 'B1', dirty: true });
+    expect(useRahmen.getState().status.baurecht).toEqual({ name: 'B1', dirty: true });
+    melden({ typ: 'arch-tools:status', app: 'LEXIO', name: 'B1', dirty: true, kannSpeichern: false });
     const dialog = () => host.querySelector('.modal.rf');
     act(() => (tab(host, 'LEXIO').querySelector('button[title="Schließen (Entf)"]') as HTMLButtonElement).click());
     expect(dialog()?.textContent).toContain('Änderungen an ‚LEXIO – B1‘ verwerfen?');

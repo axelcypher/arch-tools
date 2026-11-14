@@ -122,7 +122,8 @@ Konfigurationsordner) und Projektdateien sind dieselben.
   mit „Verwerfen und …“ als Gefahrknopf. Ob eine App speichern kann, meldet die Titelleiste mit dem Status
   (`kannSpeichern: false`, wenn sie keine Speicherfunktion `onSpeichern` hat); dann fragt Arkly auch beim Schließen,
   Beenden und Update „Änderungen an ‚…‘ verwerfen?“ mit „Verwerfen und schließen“ (bzw. „… beenden“, „… neu
-  starten“) statt „… speichern?“ – ebenso die eigene Schließen-Rückfrage der Titelleiste. Die übrigen fragen „<App> herauslösen?“ bzw. „… andocken?“ mit
+  starten“) statt „… speichern?“ – ebenso die eigene Schließen-Rückfrage der Titelleiste. PERMIO meldet das, solange
+  Dokumente bearbeitet werden oder die Dateiansicht offen ist; Formulareingaben bleiben dabei trotzdem als Entwurf. Die übrigen fragen „<App> herauslösen?“ bzw. „… andocken?“ mit
   „Ungespeicherte Änderungen bleiben als Zwischenstand erhalten.“ (PERMIO mit eigenem Text zu Entwurf und Dokumenten).
 - Die Apps teilen sich im Rahmen einen Ursprung und damit den Browser-Speicher; ihre Schlüssel und Datenbanken sind
   je App verschieden (`projektordner:…`, `formulare:…`, `arch-flaechen-tool`, `grz-nachweis`, `kostenermittlung`,
