@@ -1,13 +1,11 @@
 /*
  * App Baurecht – eigene Styles (Grund-Styles und Farbvariablen in packages/core/src/ui/base.css).
  * Ampelfarben aus den Statusfarben der Grund-Styles: rot = --fehler-*, gelb = --warn-*, grün = --ok-*; damit stimmen
- * helles und dunkles Schema. Die Ampel steht nie nur als Farbe da, immer auch als Wort.
+ * helles und dunkles Schema. Die Punkte sind die Statuspunkte der Grund-Styles (.statuspunkt, --ok-punkt …). Die Ampel
+ * steht nie nur als Farbe da, immer auch als Wort.
  */
 
 .br-app {
-  /* Grautext dunkler als in den Grund-Styles: auf allen Tönungen der App mindestens 4,5:1 */
-  --muted: #5f6673;
-  --br-leise-stark: #4b5563;
   --br-rot: var(--fehler-text);
   --br-rot-bg: var(--fehler-bg);
   --br-rot-rand: var(--fehler-border);
@@ -17,16 +15,6 @@
   --br-gruen: var(--ok-text);
   --br-gruen-bg: var(--ok-bg);
   --br-gruen-rand: var(--ok-border);
-  --br-punkt-rot: #d64534;
-  --br-punkt-gelb: #e0a420;
-  --br-punkt-gruen: #2f9a5b;
-}
-:root[data-theme='dunkel'] .br-app {
-  --muted: #9aa1ad;
-  --br-leise-stark: #b3b9c4;
-  --br-punkt-rot: #f07a6b;
-  --br-punkt-gelb: #f3c35a;
-  --br-punkt-gruen: #5fcf8a;
 }
 
 .br-unsichtbar {
@@ -39,9 +27,6 @@
 }
 .br-leise {
   color: var(--muted);
-}
-.br-leise-stark {
-  color: var(--br-leise-stark);
 }
 .br-warn-text {
   color: var(--warn-text);
@@ -98,17 +83,9 @@
   font-weight: 600;
   white-space: nowrap;
 }
-.br-ampel-punkt {
-  display: inline-block;
-  width: 11px;
-  height: 11px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.18);
-}
-.br-ampel-klein .br-ampel-punkt {
-  width: 9px;
-  height: 9px;
+.br-ampel-klein .statuspunkt {
+  width: 8px;
+  height: 8px;
 }
 .br-ampel-klein {
   font-weight: 500;
@@ -123,20 +100,14 @@
 .br-ampel-gruen {
   color: var(--br-gruen);
 }
-.br-ampel-rot .br-ampel-punkt,
-.br-chip-rot .br-ampel-punkt,
 .br-balken-rot {
-  background: var(--br-punkt-rot);
+  background: var(--fehler-punkt);
 }
-.br-ampel-gelb .br-ampel-punkt,
-.br-chip-gelb .br-ampel-punkt,
 .br-balken-gelb {
-  background: var(--br-punkt-gelb);
+  background: var(--warn-punkt);
 }
-.br-ampel-gruen .br-ampel-punkt,
-.br-chip-gruen .br-ampel-punkt,
 .br-balken-gruen {
-  background: var(--br-punkt-gruen);
+  background: var(--ok-punkt);
 }
 
 /* ---------- Kopf und Bilanz ---------- */
@@ -173,7 +144,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: var(--fs-s);
-  color: var(--br-leise-stark);
+  color: var(--muted);
   min-width: 0;
 }
 .br-kopf-aktionen {
@@ -320,7 +291,7 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
 }
 .br-chip-zahl {
   font-size: var(--fs-xs);
-  color: var(--br-leise-stark);
+  color: var(--muted);
   white-space: nowrap;
 }
 .br-chip-knopf:hover:not(:disabled) {
@@ -441,40 +412,6 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
   font-size: var(--fs-s);
   margin-top: 3px;
 }
-.br-segment {
-  display: inline-flex;
-  flex-wrap: wrap;
-  gap: 0;
-}
-.br-segment > button {
-  border-radius: 0;
-  margin-left: -1px;
-  font-size: var(--fs-s);
-  padding: 3px 9px;
-  min-height: 26px;
-}
-/* lange Werte: senkrechte Auswahlliste statt treppenartig umbrechender Segmente */
-.br-segment-senkrecht {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-}
-.br-segment-senkrecht > button,
-.br-segment-senkrecht > button:first-child,
-.br-segment-senkrecht > button:last-child {
-  margin-left: 0;
-  margin-top: -1px;
-  border-radius: 0;
-  text-align: left;
-  white-space: normal;
-}
-.br-segment-senkrecht > button:first-child {
-  margin-top: 0;
-  border-radius: 4px 4px 0 0;
-}
-.br-segment-senkrecht > button:last-child {
-  border-radius: 0 0 4px 4px;
-}
 .br-merkmal-fuss {
   display: flex;
   align-items: baseline;
@@ -501,18 +438,7 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
   text-transform: none;
   letter-spacing: 0;
   font-weight: normal;
-  color: var(--br-leise-stark);
-}
-.br-segment > button:first-child {
-  border-radius: 4px 0 0 4px;
-  margin-left: 0;
-}
-.br-segment > button:last-child {
-  border-radius: 0 4px 4px 0;
-}
-.br-segment > button.active {
-  position: relative;
-  z-index: 1;
+  color: var(--muted);
 }
 .br-zahl {
   display: inline-flex;
@@ -596,11 +522,10 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
 .br-filter-zeile {
   flex-wrap: wrap;
 }
-.br-filter .br-segment {
-  flex-wrap: nowrap;
+.br-filter .segment {
   flex-shrink: 0;
 }
-.br-filter .br-segment > button {
+.br-filter .segment > button {
   white-space: nowrap;
 }
 .br-filter .br-suchfeld {
@@ -682,35 +607,18 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
   .br-filter .br-ordnung-wahl.br-nur-schmal {
     display: inline-block;
   }
-  .br-filter .br-segment > .br-filter-ampel {
+  .br-filter .segment > .br-filter-ampel {
     padding: 3px 7px;
   }
   .br-filter-zeile {
     justify-content: space-between;
   }
 }
+/* Ampel-Filter: Häkchen, Statuspunkt, Zahl und Wort; gewählt wie jedes Segment */
 .br-filter-ampel {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  background: var(--input-bg);
-  color: var(--muted);
-  border-color: var(--border);
-}
-.br-filter-ampel.active.br-chip-rot {
-  background: var(--br-rot-bg);
-  color: var(--br-rot);
-  border-color: var(--br-rot-rand);
-}
-.br-filter-ampel.active.br-chip-gelb {
-  background: var(--br-gelb-bg);
-  color: var(--br-gelb);
-  border-color: var(--br-gelb-rand);
-}
-.br-filter-ampel.active.br-chip-gruen {
-  background: var(--br-gruen-bg);
-  color: var(--br-gruen);
-  border-color: var(--br-gruen-rand);
 }
 .br-filter-ampel strong {
   font-variant-numeric: tabular-nums;
@@ -728,7 +636,7 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
 .br-treffer {
   padding: 5px 14px 0;
   font-size: var(--fs-s);
-  color: var(--br-leise-stark);
+  color: var(--muted);
 }
 .br-treffer:empty {
   display: none;
@@ -736,7 +644,7 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
 .br-leer-zustand {
   padding: 32px 16px;
   text-align: center;
-  color: var(--br-leise-stark);
+  color: var(--muted);
 }
 .br-vorschriften-liste {
   overflow-y: auto;
@@ -750,7 +658,7 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
 }
 .br-gruppe-module {
   font-weight: normal;
-  color: var(--br-leise-stark);
+  color: var(--muted);
 }
 .br-gruppe:first-of-type > h3 {
   margin-top: 2px;
@@ -886,7 +794,7 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
   display: none;
 }
 .br-gewaehlt .br-paragraf-grund {
-  color: var(--br-leise-stark);
+  color: var(--muted);
 }
 .br-marke {
   font-size: var(--fs-xs);
@@ -897,7 +805,7 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
   white-space: nowrap;
 }
 .br-marke-entwurf {
-  border: 1px dashed var(--br-leise-stark);
+  border: 1px dashed var(--muted);
   background: transparent;
 }
 .br-marke-warn {
@@ -928,13 +836,13 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
   border-top: 4px solid var(--border);
 }
 .br-kopf-rot {
-  border-top-color: var(--br-punkt-rot);
+  border-top-color: var(--fehler-punkt);
 }
 .br-kopf-gelb {
-  border-top-color: var(--br-punkt-gelb);
+  border-top-color: var(--warn-punkt);
 }
 .br-kopf-gruen {
-  border-top-color: var(--br-punkt-gruen);
+  border-top-color: var(--ok-punkt);
 }
 .br-detail-titel {
   display: flex;
@@ -1035,7 +943,7 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
   flex-wrap: wrap;
   gap: 12px;
   font-size: var(--fs-xs);
-  color: var(--br-leise-stark);
+  color: var(--muted);
   margin: 2px 0 6px;
 }
 .br-legende-hervor::before,
@@ -1398,7 +1306,7 @@ h2.br-detail-name {
 }
 .br-regel-einzeln summary {
   cursor: pointer;
-  color: var(--br-leise-stark);
+  color: var(--muted);
 }
 
 /* Druck: Überschriften nicht trennen und nicht allein am Seitenende */
@@ -1420,7 +1328,7 @@ h2.br-detail-name {
 }
 .br-zaehler-von {
   font-size: var(--fs-xs);
-  color: var(--br-leise-stark);
+  color: var(--muted);
   white-space: nowrap;
 }
 
@@ -1456,7 +1364,7 @@ h2.br-detail-name {
 }
 .br-regel-baum > li ul {
   font-weight: normal;
-  color: var(--br-leise-stark);
+  color: var(--muted);
 }
 /* hängender Einzug: Folgezeilen beginnen unter dem Text, nicht unter ✓/✗/? */
 .br-regel-baum li.br-haengend {
@@ -1473,7 +1381,7 @@ h2.br-detail-name {
   align-items: center;
   gap: 6px;
   font-size: var(--fs-s);
-  color: var(--br-leise-stark);
+  color: var(--muted);
 }
 
 /* Protokoll-Tabellen: oben ausrichten (lange Listen von Paragrafen) */
@@ -1492,13 +1400,13 @@ h2.br-detail-name {
   color: var(--accent-text);
 }
 .br-stand-nein {
-  color: var(--br-leise-stark);
+  color: var(--muted);
 }
 .br-stand-offen {
   color: var(--text);
 }
 .br-ist {
-  color: var(--br-leise-stark);
+  color: var(--muted);
   font-size: var(--fs-s);
 }
 .br-regel-baum details > summary {
@@ -1526,7 +1434,7 @@ h2.br-detail-name {
   display: block;
   font-weight: normal;
   font-size: var(--fs-s);
-  color: var(--br-leise-stark);
+  color: var(--muted);
   margin-top: 1px;
 }
 
@@ -1554,7 +1462,7 @@ h2.br-detail-name {
 .br-erklaerung > summary {
   cursor: pointer;
   font-size: var(--fs-s);
-  color: var(--br-leise-stark);
+  color: var(--muted);
   min-height: var(--ctl-h-s);
 }
 
@@ -1570,7 +1478,7 @@ h2.br-detail-name {
 }
 
 .br-stand-unsicher {
-  color: var(--br-leise-stark);
+  color: var(--muted);
   width: 1.8em;
 }
 
@@ -1592,7 +1500,7 @@ h2.br-detail-name {
 .br-protokoll-zwischen th {
   text-align: left;
   font-size: var(--fs-s);
-  color: var(--br-leise-stark);
+  color: var(--muted);
   padding-top: 10px;
 }
 .br-weitere {
@@ -1612,13 +1520,6 @@ h2.br-detail-name {
 .br-protokoll th {
   overflow-wrap: break-word;
   hyphens: auto;
-}
-
-/* Protokoll ist Papier: auch im dunklen Schema helle Farben für die Grautöne der App */
-.br-app .br-protokoll,
-:root[data-theme='dunkel'] .br-app .br-protokoll {
-  --muted: #5f6673;
-  --br-leise-stark: #4b5563;
 }
 
 
@@ -1826,7 +1727,7 @@ h2.br-detail-name {
 /* Rückmeldung nach dem Speichern im Kopf */
 .br-gespeichert {
   font-size: var(--fs-s);
-  color: var(--br-leise-stark);
+  color: var(--muted);
   white-space: nowrap;
 }
 /* Speichern-Dialog: Kopf und Fuß (Häkchen, Knöpfe) stehen fest, dazwischen ein einziger Scrollbereich */
@@ -1884,14 +1785,11 @@ h2.br-detail-name {
     flex: none;
   }
 }
-/* Kontrastmodus: die gewählte Zeile sichtbar, die Ampelpunkte behalten ihre Farbe */
+/* Kontrastmodus: die gewählte Zeile sichtbar (die Statuspunkte regeln die Grund-Styles; das Wort steht immer daneben) */
 @media (forced-colors: active) {
   .br-paragraf.br-gewaehlt {
     outline: 2px solid Highlight;
     outline-offset: -2px;
-  }
-  .br-ampel-punkt {
-    forced-color-adjust: none;
   }
 }
 /* Speichern-Dialog: der Scrollbereich ist ein Tabstopp (Pfeiltasten scrollen) – sichtbarer Fokus */

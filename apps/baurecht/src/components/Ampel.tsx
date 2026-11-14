@@ -34,11 +34,14 @@ export const AMPEL_ERKLAERUNG: Record<Ampel, string> = {
   gruen: 'auf jeden Fall nicht einschlägig',
 };
 
+/** Klasse des Statuspunkts (Designsystem) je Ampel */
+export const STATUSPUNKT: Record<Ampel, string> = { rot: 'fehler', gelb: 'warnung', gruen: 'ok' };
+
 /** Ampel als Punkt mit Wort */
 export function AmpelMarke({ ampel, klein = false, ohneText = false, vonHand = false }: { ampel: Ampel; klein?: boolean; ohneText?: boolean; vonHand?: boolean }) {
   return (
     <span className={`br-ampel br-ampel-${ampel}${klein ? ' br-ampel-klein' : ''}`} title={`${AMPEL_LANG[ampel]}${vonHand ? ' (von Hand festgelegt)' : ''}`}>
-      <span className="br-ampel-punkt" aria-hidden="true" />
+      <span className={`statuspunkt ${STATUSPUNKT[ampel]}`} aria-hidden="true" />
       {!ohneText && <span className="br-ampel-text">{AMPEL_TEXT[ampel]}</span>}
       {ohneText && <span className="br-unsichtbar">{AMPEL_TEXT[ampel]}</span>}
     </span>

@@ -139,6 +139,12 @@ describe('Baurecht – Oberfläche', () => {
     const ampeln = [...host.querySelectorAll('.br-paragraf .br-ampel')];
     expect(ampeln.length).toBeGreaterThan(10);
     for (const a of ampeln) expect(a.textContent).toMatch(/gilt|prüfen|entfällt/);
+    // Designsystem: Statuspunkt und Umschalter aus den Grund-Styles, keine eigenen Varianten
+    for (const a of ampeln) expect(a.querySelector('.statuspunkt.ok, .statuspunkt.warnung, .statuspunkt.fehler')).not.toBeNull();
+    const filter = [...host.querySelectorAll('.br-bilanz > button')];
+    expect(filter.map((b) => b.querySelector('.statuspunkt')?.className)).toEqual(['statuspunkt fehler', 'statuspunkt warnung', 'statuspunkt ok']);
+    expect(host.querySelector('.br-bilanz')!.classList.contains('segment')).toBe(true);
+    expect(host.querySelector('.br-segment, .br-segment-senkrecht, .br-ampel-punkt')).toBeNull();
     expect(farbschemaWechseln(host, 'Dunkel')).toBe('dunkel');
     expect(farbschemaWechseln(host, 'Hell')).toBe('hell');
   });
@@ -325,7 +331,7 @@ describe('Baurecht – Oberfläche', () => {
   it('Pfeiltasten in Auswahlgruppen: →/← wandern (mit Umlauf), Pos1/Ende springen', () => {
     const host = render();
     if (!host.querySelector('[data-merkmal="Planungsrecht"]')) act(() => knopf(host, /Antragsmerkmale/)!.click());
-    const gruppe = host.querySelector<HTMLElement>('[data-merkmal="Planungsrecht"] .br-segment')!;
+    const gruppe = host.querySelector<HTMLElement>('[data-merkmal="Planungsrecht"] .segment')!;
     const knoepfe = [...gruppe.querySelectorAll<HTMLButtonElement>(':scope > button')];
     expect(knoepfe.length).toBeGreaterThan(2);
     const taste = (key: string) => act(() => void document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true })));
@@ -592,6 +598,21 @@ describe('Baurecht – Oberfläche', () => {
     if (!host.querySelector('[data-merkmal="Planungsrecht"]')) act(() => knopf(host, /Antragsmerkmale/)!.click());
     act(() => knopf(host.querySelector('[data-merkmal="Planungsrecht"]')!, 'Außenbereich')!.click());
     expect(host.querySelector('.br-bilanz')!.textContent).not.toBe(vorher);
+    expect(host.querySelector('.titlebar-dirty')).not.toBeNull();
+  });
+
+  it('Rückfrage beim Verlassen nennt, was ungespeichert ist: die Baurechtsprüfung, nicht das ganze Projekt', async () => {
+    const host = render();
+    if (!host.querySelector('[data-merkmal="Planungsrecht"]')) act(() => knopf(host, /Antragsmerkmale/)!.click());
+    act(() => knopf(host.querySelector('[data-merkmal="Planungsrecht"]')!, 'Außenbereich')!.click());
+    act(() => host.querySelector<HTMLButtonElement>('.titlebar-projekte')!.click());
+    await act(async () => void (await new Promise((r) => echtesSetTimeout(r, 0))));
+    const dialog = document.querySelector<HTMLElement>('[role="alertdialog"], [role="dialog"]')!;
+    expect(dialog.textContent).toContain('Die Baurechtsprüfung hat ungespeicherte Änderungen.');
+    expect(dialog.textContent).not.toContain('Das Projekt hat ungespeicherte Änderungen.');
+    await act(async () => knopf(dialog, 'Abbrechen')!.click());
+    // abgebrochen: die Projektübersicht öffnet nicht, die Änderung bleibt
+    expect(document.querySelector('[role="alertdialog"], [role="dialog"]')).toBeNull();
     expect(host.querySelector('.titlebar-dirty')).not.toBeNull();
   });
 });

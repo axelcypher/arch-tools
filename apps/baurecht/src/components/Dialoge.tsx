@@ -336,12 +336,12 @@ export function FaktBestaetigenDialog({ folgen, faktDef = () => undefined }: { f
         }}
       >
         {ziel.modus === 'bestaetigen' ? (
-          <p className="br-leise-stark">
+          <p className="br-leise">
             {/* der Grund sagt schon, woher der Wert kommt – die Quelle nur ohne Grund */}
             Bisher nur Hinweis: {ziel.wert.grund ?? (ziel.wert.quelle ? `${ziel.wert.quelle} – nicht gesichert` : 'nicht gesichert')}
           </p>
         ) : (
-          <p className="br-leise-stark">Angaben zu Schutzgebieten und Geodaten gelten von Hand nur mit Beleg. Widerspricht die Angabe einem Treffer eines Dienstes, bleibt der Widerspruch sichtbar – betroffene Vorschriften werden dann nicht „entfällt“.</p>
+          <p className="br-leise">Angaben zu Schutzgebieten und Geodaten gelten von Hand nur mit Beleg. Widerspricht die Angabe einem Treffer eines Dienstes, bleibt der Widerspruch sichtbar – betroffene Vorschriften werden dann nicht „entfällt“.</p>
         )}
         {vorschau && <Folgen folgen={vorschau} />}
         {vorschau?.nachher?.widerspruch && (
@@ -528,7 +528,7 @@ export function BestaetigenDialog({ titel, faktTitel, folgen, faktDef = () => un
                     </span>
                   )}
                 </div>
-                <div className="br-leise-stark">
+                <div className="br-leise">
                   {f.von}
                   {f.am ? `, ${datum(f.am)}` : ''}: {f.grund}
                 </div>
@@ -566,7 +566,7 @@ export function BestaetigenDialog({ titel, faktTitel, folgen, faktDef = () => un
                   <AmpelMarke ampel={alt.ampel} klein /> <Pfeil /> <AmpelMarke ampel={jetzt} klein />
                 </span>
               </div>
-              <div className="br-leise-stark">
+              <div className="br-leise">
                 Festlegung aufgehoben (bisher {AMPEL_TEXT[alt.ampel]}, {alt.von}
                 {alt.am ? `, ${datum(alt.am)}` : ''}: {alt.grund}) – es gilt wieder die automatische Ampel.
               </div>
@@ -585,7 +585,7 @@ export function BestaetigenDialog({ titel, faktTitel, folgen, faktDef = () => un
                   <strong>Planungsrecht</strong>
                   <span className="br-marke">für diesen Ort bestätigt: {po?.wert ?? '–'}</span>
                 </div>
-                <div className="br-leise-stark">
+                <div className="br-leise">
                   {po?.von ? `${po.von}${po.am ? `, ${datum(po.am)}` : ''}: ` : ''}gilt für {po?.anzeige ?? 'diesen Ort'}
                 </div>
                 <Folgen folgen={fo} allein={ids.length > 1} />
@@ -604,7 +604,7 @@ export function BestaetigenDialog({ titel, faktTitel, folgen, faktDef = () => un
                   {f.herkunft === 'manuell' ? 'von Hand' : 'Hinweis bestätigt'}: {wertAnzeige(f.wert, faktDef(id))}
                 </span>
               </div>
-              <div className="br-leise-stark">
+              <div className="br-leise">
                 {f.bestaetigt.von}
                 {f.bestaetigt.am ? `, ${datum(f.bestaetigt.am)}` : ''}: {f.bestaetigt.grund ?? '–'}
               </div>

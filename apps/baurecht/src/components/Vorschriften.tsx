@@ -6,7 +6,7 @@ import { EBENEN, einheitName, normTitel, paragrafName, THEMEN } from '@core/baur
 import type { Pruefstand } from '../pruefung';
 import { useBaurecht } from '../store';
 import { suchNorm, textPasst } from '../suche';
-import { AMPEL_TEXT, AmpelMarke, datum, inBereichZeigen, nb } from './Ampel';
+import { AMPEL_TEXT, AmpelMarke, datum, inBereichZeigen, nb, STATUSPUNKT } from './Ampel';
 
 type Gruppierung = 'offen' | 'ebene' | 'thema';
 
@@ -457,7 +457,7 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
       </h2>
       <div className="br-filter" role="group" aria-label="Ergebnis und Filter">
         <div className="br-filter-zeile">
-        <span className="br-segment br-bilanz" role="group" aria-label="Ergebnis – Ampeln ein- und ausblenden">
+        <span className="segment br-bilanz" role="group" aria-label="Ergebnis – Ampeln ein- und ausblenden">
           {AMPELN.map((a) => {
             const an = w.ampeln.includes(a);
             return (
@@ -466,7 +466,7 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
                 type="button"
                 aria-pressed={an}
                 title={an ? `${AMPEL_TEXT[a]} ausblenden` : `${AMPEL_TEXT[a]} einblenden`}
-                className={`br-filter-ampel br-chip-${a}${an ? ' active' : ''}`}
+                className={`br-filter-ampel${an ? ' active' : ''}`}
                 onClick={() => {
                   if (an && w.ampeln.length === 1) {
                     setAmpelHinweis('Mindestens eine Ampel bleibt eingeblendet.');
@@ -477,6 +477,7 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
                 }}
               >
                 <span className="br-filter-haken">{an && <Symbol name="haken" />}</span>
+                <span className={`statuspunkt ${STATUSPUNKT[a]}`} aria-hidden="true" />
                 <strong>{zaehler[a]}</strong> {AMPEL_TEXT[a]}
               </button>
             );
@@ -488,7 +489,7 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
           ))}
         </span>
         {/* breit: Segmente; schmal (Container unter 640 px): Auswahlliste */}
-        <span className="br-segment br-ordnung br-nur-breit" role="group" aria-label="Ordnung">
+        <span className="segment br-ordnung br-nur-breit" role="group" aria-label="Ordnung">
           {ORDNUNGEN.map(([g, t]) => (
             <button key={g} type="button" className={w.gruppierung === g ? 'active' : ''} aria-pressed={w.gruppierung === g} onClick={() => setze({ ...w, gruppierung: g })}>
               {t}

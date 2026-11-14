@@ -1,0 +1,6 @@
+{
+  "baurecht": {
+    "stufe": "patch",
+    "notiz": "Umschalter, Ampelpunkte und Grautöne aus dem gemeinsamen Designsystem; Regelbaum zeigt „offen“ mit dem Fragezeichen-Symbol; die Rückfrage vor dem Verlassen sagt „Die Baurechtsprüfung hat ungespeicherte Änderungen.“"
+  }
+}
