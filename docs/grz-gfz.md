@@ -12,7 +12,10 @@ erhalten.
   Nach jedem Öffnen erscheint die Ansicht, auch bei einem Projekt ohne Gebäude; dann sagt ein Hinweis oben, dass
   der Gebäudeumriss aus QUADRIO oder einem IFC-Modell kommt. Der IFC-Bericht ist nur dann gelb, wenn er etwas
   meldet, und schließt mit „×“ oder Esc.
-  „Neu“ in der Werkzeugleiste („Öffnen …“, „Nachweis drucken …“ und „Excel-Export …“ öffnen einen Dialog) beginnt ein leeres Projekt (mit Rückfrage bei ungespeicherten Änderungen) und
+  Die Werkzeugleiste folgt der Leisten-Regel der Suite: links das Menü „Datei“ (Neu, Öffnen …, Speichern unter …,
+  IFC aktualisieren …) und „Speichern“, daneben Rückgängig/Wiederholen, rechts der Hauptknopf „Nachweis drucken …“ und
+  zuletzt „Mehr“ (Excel-Export …). In schmalen Fenstern wandert „Datei“ in „Mehr“; Speichern, Rückgängig und der
+  Hauptknopf bleiben sichtbar. „Neu“ beginnt ein leeres Projekt (mit Rückfrage bei ungespeicherten Änderungen) und
   verwirft damit auch den Zwischenstand. Gesperrte Knöpfe nennen im Tooltip den Grund. Der Hinweis
   „Grundstücksfläche fehlt“ springt mit „zum Feld“ in das Feld „Grundstücksfläche [m²]“.
 
@@ -136,9 +139,9 @@ werden auf die Innenfläche des Plans umgerechnet (ohne Rahmen), Abweichung unte
 Ausschnitt (Zoom, Verschiebung) bleibt bei allen Änderungen stehen und wird nur beim Öffnen eines anderen Projekts
 neu eingepasst. Leertaste und Enter auf einem fokussierten Knopf oder Kästchen bedienen diesen, nicht den Plan; der
 Fokusrahmen des Plans erscheint nur bei Bedienung mit der Tastatur. Die Leiste über dem Plan hat Werkzeuge |
-Nutzung; „Einpassen“, „Beschriftung“, „Raster“ und „?“ (Tastenübersicht, schließt mit Esc oder Klick daneben) stehen
-als Bedienfeld oben links im Plan. Eingabezeile und Flurstück-Leiste stehen fest, damit der Plan beim
-Werkzeugwechsel nicht springt. Ohne
+Nutzung; „Einpassen“, das Menü „Ansicht“ (Beschriftung, Raster) und die Tastenübersicht (Symbol „i“, schließt mit Esc
+oder Klick daneben) stehen als Bedienfeld oben links im Plan. Eingabezeile und Flurstück-Leiste stehen fest, damit
+der Plan beim Werkzeugwechsel nicht springt. Ohne
 Flächen bietet der Plan „Rechteck zeichnen“, „Polygon zeichnen“ und „Unterlage laden …“ an. Die Flächentabelle
 unter dem Plan beginnt mit der Nummer wie im Plan und im Druck.
 
@@ -150,13 +153,15 @@ unter dem Plan beginnt mit der Nummer wie im Plan und im Druck.
 - **Beschriftung und Orientierung:** Jede eigene Fläche trägt im Plan „Nr · Nutzung · m²“ (eindeutiger Anteil, Nummern
   wie im Druck), abschaltbar über „Beschriftung“. Maßstabsleiste und Nordpfeil (Planoberkante = Projektnorden) stehen
   immer im Plan, ein Raster lässt sich zuschalten. Die Hilfezeile nennt nur die wichtigsten Kürzel des Werkzeugs;
-  alle Kürzel stehen in der Übersicht hinter „?“.
+  alle Kürzel stehen in der Tastenübersicht.
 - **Unterlage:** „Bild/PDF laden …“ legt einen amtlichen Lageplan (PNG, JPG oder die erste Seite eines PDF) unter den Plan;
-  er wird mit dem Projekt gespeichert, lässt sich ein- und ausblenden und in der Deckkraft einstellen. „Kalibrieren“:
+  er wird mit dem Projekt gespeichert. Danach steht dort das Menü „Unterlage“ (Anzeigen als Schalter, Kalibrieren,
+  Ausrichten, Ersetzen …, zuletzt Entfernen) und daneben der Regler „Deckkraft“; läuft Kalibrieren oder Ausrichten,
+  ist der Menüknopf hervorgehoben und nennt das Werkzeug. „Kalibrieren“:
   zwei Punkte einer bekannten Strecke klicken und die wahre Länge in Metern eintragen – der erste Punkt bleibt an
   seiner Stelle; die Messlinie bleibt sichtbar, bis die Länge eingetragen ist. „Ausrichten“: einen Punkt der
   Unterlage und dann den Zielpunkt im Plan klicken (Pfeil zeigt die Verschiebung). Ein Zug am Regler „Deckkraft“ ist
-  ein Rückgängig-Schritt; „Unterlage entfernen“ nimmt sie heraus.
+  ein Rückgängig-Schritt; „Entfernen“ nimmt sie heraus (rückgängig mit Strg+Z).
 - **Grundstücksgrenze:** Das Werkzeug „Grenze“ (G) zeichnet das Flurstück als Polygon (mehrere nacheinander möglich,
   der Entwurf erscheint strichpunktiert ohne Füllung). Im Werkzeug „Auswahl“ wählt ein Klick auf die Kante ein
   Flurstück; seine Punkte lassen sich ziehen, über ◇ einfügen und per Rechtsklick-Menü löschen, Entf löscht das

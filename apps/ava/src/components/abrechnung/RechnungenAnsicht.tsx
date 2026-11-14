@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Modal } from '@core/ui/Dialog';
+import { MenueKnopf } from '@core/ui/Menue';
+import { Symbol } from '@core/ui/Symbol';
+import { Werkzeugleiste } from '@core/ui/Werkzeugleiste';
 import { meldung } from '@core/ui/Rueckfrage';
 import type { Rechnung } from '../../abrechnung/aggregat';
 import { alleGewerke, gewerkAbrechnung } from '../../abrechnung/aggregat';
@@ -42,6 +45,29 @@ export function RechnungenAnsicht({ gewerk }: { gewerk?: string }) {
     });
   const summe = zeilen.reduce((s, r) => s + (r.betrag ?? 0), 0);
   const k = useAva.getState().kontext()!;
+  const aktionenName = (nr: Rechnung['nr']) => (nr !== undefined && nr !== null && String(nr) !== '' ? `Aktionen für Rechnung Nr. ${String(nr)}` : 'Aktionen für die Rechnung');
+  const deckblattOeffnen = async (d: RechnungsDatensatz) => {
+    try {
+      const pdf = await deckblattErzeugen(k, d);
+      await useAva.getState().fs.tempOeffnen(`${rechnungsDateiname(k, d).replace(/\.pdf$/i, '')} Deckblatt.pdf`, pdf);
+    } catch (x) {
+      await meldung('Deckblatt nicht erzeugt', String(x instanceof Error ? x.message : x), x);
+    }
+  };
+  const mailAnZahler = async (d: RechnungsDatensatz, nr: Rechnung['nr']) => {
+    const v = e.mail.vorlagen.find((x) => x.id === 'rechnung') ?? e.mail.vorlagen[0];
+    if (!v) {
+      await meldung('Keine Mailvorlage', 'Es gibt keine Mailvorlage „Rechnung“ – bitte unter Einstellungen › Mailvorlagen anlegen.');
+      return;
+    }
+    try {
+      const ava = await schreibend(mailEntwurf(k, d, projekt.ava, v));
+      useAva.setState((s) => (s.projekt?.ordner === projekt.ordner ? { projekt: { ...s.projekt, ava } } : {}));
+      setHinweis(`Mailentwurf für Nr. ${String(nr ?? '')} geöffnet – bitte im Mailprogramm prüfen und senden.`);
+    } catch (x) {
+      await meldung('Mailentwurf nicht erstellt', String(x instanceof Error ? x.message : x), x);
+    }
+  };
   const a1 = gewerk ? abrechnungen[0] : null;
 
   const oeffnen = (pfad: string) => void useAva.getState().fs.oeffnen(vollerPfad(projekt.ordner, pfad)).catch((x) => meldung('Datei ließ sich nicht öffnen', pfad, x));
@@ -73,24 +99,38 @@ export function RechnungenAnsicht({ gewerk }: { gewerk?: string }) {
           </div>
         </div>
       )}
-      <div className="toolbar">
-        <button className="primary" onClick={() => setPruefen(true)}>
-          Neue Rechnung prüfen …
-        </button>
-        <input className="ava-suche" placeholder="Suchen (Nr., Firma, Gewerk) …" aria-label="Rechnungen durchsuchen" value={suche} onChange={(x) => setSuche(x.target.value)} onKeyDown={(x) => x.key === 'Escape' && setSuche('')} />
-        <label className="ava-check">
-          <input type="checkbox" checked={nurHinweise} onChange={(x) => setNurHinweise(x.target.checked)} /> nur mit Hinweisen
-        </label>
-        {projekt.kk && (
-          <button className="small" onClick={() => oeffnen(projekt.kk!.pfad)} title={projekt.kk.pfad}>
-            Kostenkontrolle in Excel
-          </button>
-        )}
-        {hinweis && (
-          <span className="ava-ok small-text" role="status">
-            {hinweis}
-          </span>
-        )}
+      <Werkzeugleiste
+        name="Rechnungen"
+        teile={[
+          {
+            id: 'suche',
+            kuerzbar: true,
+            inhalt: <input className="ava-suche" placeholder="Suchen (Nr., Firma, Gewerk) …" aria-label="Rechnungen durchsuchen" value={suche} onChange={(x) => setSuche(x.target.value)} onKeyDown={(x) => x.key === 'Escape' && setSuche('')} />,
+          },
+          {
+            id: 'hinweise',
+            rang: 1,
+            inhalt: (
+              <label className="ava-check">
+                <input type="checkbox" checked={nurHinweise} onChange={(x) => setNurHinweise(x.target.checked)} /> nur mit Hinweisen
+              </label>
+            ),
+            menue: { text: 'Nur mit Hinweisen', haken: nurHinweise, aktion: () => setNurHinweise(!nurHinweise) },
+          },
+          { abstand: true },
+          {
+            id: 'pruefen',
+            inhalt: (
+              <button className="primary" onClick={() => setPruefen(true)}>
+                Neue Rechnung prüfen …
+              </button>
+            ),
+          },
+        ]}
+        mehr={() => (projekt.kk ? [{ text: 'Kostenkontrolle öffnen', titel: `Öffnet die Excel-Datei der Kostenkontrolle mit dem Standardprogramm (${projekt.kk.pfad})`, aktion: () => oeffnen(projekt.kk!.pfad) }] : [])}
+      />
+      <div className="ava-ok small-text ava-leiste-status" role="status" title={hinweis ?? undefined}>
+        {hinweis ?? ''}
       </div>
       {a1?.hinweise.map((h, i) => (
         <div key={i} className="warning">
@@ -147,42 +187,25 @@ export function RechnungenAnsicht({ gewerk }: { gewerk?: string }) {
                     </button>
                   )}
                   {r.datensatz && (
-                    <button
-                      className="small"
-                      onClick={async () => {
-                        try {
-                          const pdf = await deckblattErzeugen(k, r.datensatz!);
-                          await useAva.getState().fs.tempOeffnen(`${rechnungsDateiname(k, r.datensatz!).replace(/\.pdf$/i, '')} Deckblatt.pdf`, pdf);
-                        } catch (x) {
-                          await meldung('Deckblatt nicht erzeugt', String(x instanceof Error ? x.message : x), x);
-                        }
-                      }}
-                      title="Deckblatt der Prüfung öffnen"
+                    <MenueKnopf
+                      className="small icon"
+                      pfeil={false}
+                      ariaLabel="Aktionen"
+                      title={`${aktionenName(r.nr)}: Deckblatt, Mail an den Zahler`}
+                      name={aktionenName(r.nr)}
+                      punkte={() => [
+                        { text: 'Deckblatt öffnen', titel: 'Deckblatt der Prüfung öffnen', aktion: () => void deckblattOeffnen(r.datensatz!) },
+                        {
+                          text: 'Mail an den Zahler …',
+                          titel: r.datensatz!.datei ? 'Mailentwurf mit der Rechnung als Anhang' : 'Erst die Rechnung ablegen (Rechnungseingang)',
+                          deaktiviert: !r.datensatz!.datei,
+                          hinweis: r.datensatz!.datei ? undefined : 'Erst ablegen',
+                          aktion: () => void mailAnZahler(r.datensatz!, r.nr),
+                        },
+                      ]}
                     >
-                      Deckblatt
-                    </button>
-                  )}
-                  {r.datensatz?.datei && (
-                    <button
-                      className="small"
-                      onClick={async () => {
-                        const v = e.mail.vorlagen.find((x) => x.id === 'rechnung') ?? e.mail.vorlagen[0];
-                        if (!v) {
-                          await meldung('Keine Mailvorlage', 'Es gibt keine Mailvorlage „Rechnung“ – bitte unter Einstellungen › Mailvorlagen anlegen.');
-                          return;
-                        }
-                        try {
-                          const ava = await schreibend(mailEntwurf(k, r.datensatz!, projekt.ava, v));
-                          useAva.setState((s) => (s.projekt?.ordner === projekt.ordner ? { projekt: { ...s.projekt, ava } } : {}));
-                          setHinweis(`Mailentwurf für Nr. ${String(r.nr ?? '')} geöffnet – bitte im Mailprogramm prüfen und senden.`);
-                        } catch (x) {
-                          await meldung('Mailentwurf nicht erstellt', String(x instanceof Error ? x.message : x), x);
-                        }
-                      }}
-                      title="Mailentwurf mit der Rechnung als Anhang"
-                    >
-                      Mail
-                    </button>
+                      <Symbol name="mehr" />
+                    </MenueKnopf>
                   )}
                 </td>
               </tr>

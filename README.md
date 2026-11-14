@@ -194,8 +194,11 @@ fehlen sie, warnt der Bericht am Bildschirm, und im Druck steht im Kopf „nicht
   Quellenangaben, Links und Suche – zentral und je Funktion gefiltert
 - **Numerische Eingabe** beim Zeichnen: Länge tippen + Enter (in Mausrichtung), `dx;dy` relativ (wie im Plan nach
   rechts und oben positiv, ebenso die Koordinatenanzeige, die Eckpunkt-Tabelle und das Messen), Rechteck `4,5x3,2`
-- **Einstieg**: Die leere Zeichenfläche bietet „Grundriss laden“, „IFC-Modell importieren“ und Zeichnen an; „Plan
-  laden …“ und „Kalibrieren“ stehen auch in der Werkzeugleiste. Kantenfang rastet bei aktivem Rasterfang entlang der
+- **Einstieg**: Die leere Zeichenfläche bietet „Plan laden …“, „IFC importieren …“ und Zeichnen an; „Plan
+  laden …“ steht auch im Menü „Datei“ der Werkzeugleiste, „Kalibrieren“ bei den Werkzeugen. **Werkzeugleiste**:
+  sichtbar bleiben „Speichern“, Rückgängig/Wiederholen, die Werkzeuge, der Umschalter BGF-Umriss | Raum und
+  „Flächenaufstellung …“; Neu, Öffnen …, Speichern unter …, Plan laden … und IFC importieren … stehen im Menü „Datei“, CSV …
+  und Excel … in „Exportieren“ (wandert in schmalen Fenstern ins Menü „Mehr“). Kantenfang rastet bei aktivem Rasterfang entlang der
   Kante auf das Raster; beim Kalibrieren fängt das Raster nicht. Erkannte BGF-Umrisse tragen „prüfen“, bis ein
   Eckpunkt bearbeitet wurde
 - Eckpunkte ziehen, auf Kantenmitte ziehen = Punkt einfügen, Rechtsklick = Menü (am Punkt: Punkt löschen; auf einer Fläche: kopieren, duplizieren, einfügen, löschen; auch per Tastatur), Koordinaten-Tabelle

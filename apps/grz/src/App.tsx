@@ -6,6 +6,9 @@ import { isTauri } from '@core/platform/files';
 import { logger } from '@core/platform/log';
 import { LogDialog } from '@core/ui/LogDialog';
 import { Symbol } from '@core/ui/Symbol';
+import type { MenuePunkt } from '@core/ui/Menue';
+import { MenueKnopf } from '@core/ui/Menue';
+import { Werkzeugleiste } from '@core/ui/Werkzeugleiste';
 import { TitleBar } from '@core/ui/TitleBar';
 import { ProjektEinstieg, ProjektWahl } from '@core/ui/ProjektWahl';
 import { createProject } from '@core/model';
@@ -148,71 +151,106 @@ export function App() {
     return () => window.removeEventListener('beforeunload', onBeforeUnload);
   }, []);
 
+  /** Menü „Datei“: seltene Dateibefehle (Speichern bleibt als Knopf sichtbar) */
+  const dateiPunkte = (): MenuePunkt[] => [
+    { text: 'Neu', symbol: 'datei', titel: 'Neues, leeres Projekt (fragt bei ungespeicherten Änderungen nach)', aktion: () => void onNeu() },
+    { text: 'Öffnen …', symbol: 'ordnerOffen', tasten: 'Strg+O', titel: 'Projekt (.oap) oder IFC-Modell öffnen', aktion: () => void onOpen() },
+    ...(isTauri()
+      ? [{ text: 'Speichern unter …', symbol: 'speichern', tasten: 'Strg+Umschalt+S', titel: 'Projekt unter neuem Namen oder an anderem Ort speichern', aktion: () => void onSave(true) } as MenuePunkt]
+      : []),
+    { trenner: true },
+    {
+      text: 'IFC aktualisieren …',
+      symbol: 'neuLaden',
+      deaktiviert: !hatGebaeude,
+      hinweis: hatGebaeude ? undefined : 'Kein Gebäude',
+      titel: hatGebaeude ? 'Neuen Export desselben IFC-Modells übernehmen: Räume über die IFC-GlobalId abgleichen, Ihre Änderungen bleiben' : gesperrt,
+      aktion: () => void onIfcAktualisieren(),
+    },
+  ];
+  /** Menü „Mehr“: weitere Ausgabe (ein einzelnes Format – kein eigenes Menü „Exportieren“) */
+  const mehrPunkte = (): MenuePunkt[] => [
+    {
+      text: 'Excel-Export …',
+      symbol: 'tabelle',
+      deaktiviert: !hatGebaeude,
+      hinweis: hatGebaeude ? undefined : 'Kein Gebäude',
+      titel: hatGebaeude ? 'Nachweis als Excel-Datei – Standardlayout oder eigene Vorlage' : gesperrt,
+      aktion: () => setExcelOpen(true),
+    },
+  ];
+
   return (
     <div className="app">
       <TitleBar app={APP_NAMEN.grz.name} name={name} dirty={dirty} onOpenLog={() => setLogOpen(true)} regeln="grz" onProjekte={() => setProjekteOffen(true)} onSpeichern={() => onSave()} />
-      <div className="toolbar">
-        <div className="tb-group">
-          <button onClick={() => void onNeu()} title="Neues, leeres Projekt (fragt bei ungespeicherten Änderungen nach)" aria-label="Neu">
-            {/* bekannte Befehle: in schmalen Fenstern nur das Symbol (Name über aria-label und title) */}
-            <Symbol name="datei" /> <span className="tb-text">Neu</span>
-          </button>
-          <button onClick={onOpen} title="Projekt (.oap) oder IFC-Modell öffnen (Strg+O)" aria-label="Öffnen …">
-            <Symbol name="ordnerOffen" /> <span className="tb-text">Öffnen …</span>
-          </button>
-          {/* ungespeicherte Änderungen als Punkt in der Ecke – ändert die Breite der Leiste nicht */}
-          <button
-            className={dirty ? 'ungespeichert' : undefined}
-            aria-label={dirty ? 'Speichern – ungespeicherte Änderungen' : 'Speichern'}
-            onClick={() => void onSave()}
-            disabled={einstieg && !dirty}
-            title={einstieg && !dirty ? 'Erst ein Projekt öffnen oder neu beginnen' : isTauri() ? 'Projekt speichern – in die geöffnete Datei (Strg+S)' : 'Projekt als Datei herunterladen (Strg+S)'}
-          >
-            <Symbol name="speichern" /> <span className="tb-text">Speichern</span>
-          </button>
-          {isTauri() && (
-            <button onClick={() => void onSave(true)} title="Projekt unter neuem Namen oder an anderem Ort speichern (Strg+Umschalt+S)">
-              <Symbol name="speichern" /> Speichern unter …
-            </button>
-          )}
-          <button
-            onClick={() => void onIfcAktualisieren()}
-            disabled={!hatGebaeude}
-            title={hatGebaeude ? 'Neuen Export desselben IFC-Modells übernehmen: Räume über die IFC-GlobalId abgleichen, Ihre Änderungen bleiben' : gesperrt}
-          >
-            <Symbol name="neuLaden" /> IFC aktualisieren …
-          </button>
-        </div>
-        <div className="tb-group">
-          <button onClick={() => setDruckOpen(true)} disabled={!hatGebaeude} title={hatGebaeude ? 'Druckbarer Nachweis – über den Druckdialog auch als PDF (Strg+P)' : gesperrt}>
-            <Symbol name="drucken" /> Nachweis drucken …
-          </button>
-          <button onClick={() => setExcelOpen(true)} disabled={!hatGebaeude} title={hatGebaeude ? 'Nachweis als Excel-Datei – Standardlayout oder eigene Vorlage' : gesperrt}>
-            <Symbol name="tabelle" /> Excel-Export …
-          </button>
-        </div>
-        <div className="tb-group">
-          <button
-            className="icon"
-            aria-label="Rückgängig"
-            onClick={() => useGrz.getState().undo()}
-            disabled={!canUndo}
-            title={canUndo ? `Rückgängig: ${undoName ?? 'Änderung'} (Strg+Z)` : 'Rückgängig (Strg+Z)'}
-          >
-            <Symbol name="rueckgaengig" />
-          </button>
-          <button
-            className="icon"
-            aria-label="Wiederholen"
-            onClick={() => useGrz.getState().redo()}
-            disabled={!canRedo}
-            title={canRedo ? `Wiederholen: ${redoName ?? 'Änderung'} (Strg+Y)` : 'Wiederholen (Strg+Y)'}
-          >
-            <Symbol name="wiederholen" />
-          </button>
-        </div>
-        {busy && <span className="busy">{busy}</span>}
-      </div>
+      <Werkzeugleiste
+        name="Werkzeugleiste"
+        teile={[
+          // links „Datei“ und „Speichern“, dann Rückgängig/Wiederholen, rechts der Hauptknopf, zuletzt „Mehr“ (docs/design.md, „Kopf- und Werkzeugleisten“)
+          { id: 'datei', rang: 1, inhalt: <MenueKnopf punkte={dateiPunkte}>Datei</MenueKnopf>, menue: { text: 'Datei', unter: dateiPunkte() } },
+          {
+            id: 'speichern',
+            gruppe: true,
+            inhalt: (
+              // ungespeicherte Änderungen als Punkt in der Ecke – ändert die Breite der Leiste nicht
+              <button
+                className={dirty ? 'ungespeichert' : undefined}
+                aria-label={dirty ? 'Speichern – ungespeicherte Änderungen' : 'Speichern'}
+                onClick={() => void onSave()}
+                disabled={einstieg && !dirty}
+                title={
+                  einstieg && !dirty ? 'Erst ein Projekt öffnen oder neu beginnen' : isTauri() ? 'Projekt speichern – in die geöffnete Datei (Strg+S)' : 'Projekt als Datei herunterladen (Strg+S)'
+                }
+              >
+                <Symbol name="speichern" /> Speichern
+              </button>
+            ),
+          },
+          {
+            id: 'verlauf',
+            gruppe: true,
+            inhalt: (
+              <>
+                <button
+                  className="icon"
+                  aria-label="Rückgängig"
+                  onClick={() => useGrz.getState().undo()}
+                  disabled={!canUndo}
+                  title={canUndo ? `Rückgängig: ${undoName ?? 'Änderung'} (Strg+Z)` : 'Rückgängig (Strg+Z)'}
+                >
+                  <Symbol name="rueckgaengig" />
+                </button>
+                <button
+                  className="icon"
+                  aria-label="Wiederholen"
+                  onClick={() => useGrz.getState().redo()}
+                  disabled={!canRedo}
+                  title={canRedo ? `Wiederholen: ${redoName ?? 'Änderung'} (Strg+Y)` : 'Wiederholen (Strg+Y)'}
+                >
+                  <Symbol name="wiederholen" />
+                </button>
+              </>
+            ),
+          },
+          // Statusmarke: bleibt sichtbar, solange sie etwas meldet
+          ...(busy ? [{ id: 'busy', kuerzbar: true, inhalt: <span className="busy" title={busy}>{busy}</span> }] : []),
+          { abstand: true },
+          {
+            id: 'drucken',
+            inhalt: (
+              <button
+                className="primary"
+                onClick={() => setDruckOpen(true)}
+                disabled={!hatGebaeude}
+                title={hatGebaeude ? 'Druckbarer Nachweis – über den Druckdialog auch als PDF (Strg+P)' : gesperrt}
+              >
+                <Symbol name="drucken" /> Nachweis drucken …
+              </button>
+            ),
+          },
+        ]}
+        mehr={mehrPunkte}
+      />
       <main className="grz-main">
         {wiederhergestellt !== null && dirty && (
           <div className="meldung warnung grz-bericht" role="status">

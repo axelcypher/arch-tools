@@ -351,13 +351,6 @@ button.link:hover {
   vertical-align: middle;
 }
 
-/* schmale Fenster: bekannte Befehle (Neu, Öffnen, Speichern) nur als Symbol – Name über aria-label und title */
-@media (max-width: 1100px) {
-  .toolbar .tb-text {
-    display: none;
-  }
-}
-
 /* Meldungen über dem Inhalt: Gestalt und Farben aus .meldung (base.css), hier nur Lage und Liste */
 .grz-bericht {
   margin: var(--s3) var(--s3) 0;

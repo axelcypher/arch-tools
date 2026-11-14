@@ -1479,21 +1479,25 @@ input.ava-fehler {
   }
 }
 
-/* LV-Editor: eine Werkzeugzeile, Suche rechts, sichtbarer Fokus */
-.ava-lv-leiste {
-  flex-wrap: wrap;
-  row-gap: 4px;
-}
-
+/* LV-Editor: eine Werkzeugzeile (Werkzeugleiste mit Überlauf), Suche rechts, sichtbarer Fokus */
 .ava-lv-leiste .icon {
   min-width: 28px;
 }
 
-.ava-lv-leiste .ava-suche {
-  margin-left: auto;
-  min-width: 140px;
-  width: auto;
-  flex: 0 1 240px;
+/* Suche in einer Werkzeugleiste (Eintrag „suche“, kuerzbar): 240px breit, im schmalen Fenster kürzer */
+.toolbar.werkzeugleiste > [data-eintrag='suche'] {
+  flex-basis: 240px;
+}
+
+.toolbar.werkzeugleiste > [data-eintrag='suche'] .ava-suche {
+  width: 100%;
+  min-width: 0;
+  margin-left: 0;
+}
+
+/* Statusmeldung unter der Rechnungsleiste: dauerhafter Live-Bereich (leer ohne Höhe) */
+.ava-leiste-status:not(:empty) {
+  padding: var(--s1) var(--s2);
 }
 
 .ava-lv-tabelle:focus-visible {

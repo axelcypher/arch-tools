@@ -116,6 +116,18 @@ describe('Werkzeugleiste (Komponente)', () => {
   const mehrKnopf = (host: Element) => host.querySelector<HTMLButtonElement>('.werkzeugleiste-mehr button')!;
   const menuePunkte = () => [...document.querySelectorAll('.menue [role="menuitem"]')].map((b) => b.textContent);
 
+  /** Messung für die Kompaktstufe: steht ein Eintrag in `.kompakt`, zählt `data-kompakt` statt `data-breite` */
+  const kompaktMessung = () => {
+    const messung = leistenMessung.breite;
+    leistenMessung.breite = (el) => {
+      if (el.closest('.kompakt') && el.hasAttribute('data-eintrag')) return [...el.querySelectorAll('[data-kompakt]')].reduce((n, k) => n + Number(k.getAttribute('data-kompakt')), 0);
+      return messung(el);
+    };
+  };
+  /** Symbolknopf mit Text (`tb-text`), volle und kompakte Breite */
+  const mitText = (text: string, breite: number, kompakt: number) =>
+    createElement('button', { 'data-breite': breite, 'data-kompakt': kompakt, 'aria-label': text }, 'S', createElement('span', { className: 'tb-text' }, text));
+
   const neu = vi.fn();
   const teile = (): LeistenTeil[] => [
     { id: 'datei', rang: 2, inhalt: knopf('Neu', 100, neu), menue: { text: 'Neu', aktion: neu, tasten: 'Strg+N' } },
@@ -261,13 +273,7 @@ describe('Werkzeugleiste (Komponente)', () => {
 
   it('Kompaktstufe: erst wandern die Einträge mit Rang, dann blendet die Leiste Knopftexte aus – und bleibt so, bis die volle Fassung passt', () => {
     // Messung: in der Kompaktstufe zählt data-kompakt statt data-breite
-    const messung = leistenMessung.breite;
-    leistenMessung.breite = (el) => {
-      if (el.closest('.kompakt') && el.hasAttribute('data-eintrag')) return [...el.querySelectorAll('[data-kompakt]')].reduce((n, k) => n + Number(k.getAttribute('data-kompakt')), 0);
-      return messung(el);
-    };
-    const mitText = (text: string, breite: number, kompakt: number) =>
-      createElement('button', { 'data-breite': breite, 'data-kompakt': kompakt, 'aria-label': text }, 'S', createElement('span', { className: 'tb-text' }, text));
+    kompaktMessung();
     const host = render([
       { id: 'datei', rang: 1, inhalt: knopf('Datei', 100), menue: { text: 'Datei' } },
       { id: 'werkzeuge', inhalt: mitText('Werkzeuge', 300, 100) },
@@ -291,13 +297,7 @@ describe('Werkzeugleiste (Komponente)', () => {
   });
 
   it('neuer Eintrag in der Kompaktstufe: gemessen wird seine volle Breite, nicht die schmale (Gegenprobe über den Austritt)', () => {
-    const messung = leistenMessung.breite;
-    leistenMessung.breite = (el) => {
-      if (el.closest('.kompakt') && el.hasAttribute('data-eintrag')) return [...el.querySelectorAll('[data-kompakt]')].reduce((n, k) => n + Number(k.getAttribute('data-kompakt')), 0);
-      return messung(el);
-    };
-    const mitText = (text: string, breite: number, kompakt: number) =>
-      createElement('button', { 'data-breite': breite, 'data-kompakt': kompakt, 'aria-label': text }, 'S', createElement('span', { className: 'tb-text' }, text));
+    kompaktMessung();
     const teileA: LeistenTeil[] = [
       { id: 'werkzeuge', inhalt: mitText('Werkzeuge', 300, 100) },
       { id: 'haupt', inhalt: mitText('Flächenaufstellung …', 150, 40) },

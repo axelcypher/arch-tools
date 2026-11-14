@@ -9,6 +9,7 @@ import { App } from './App';
 import { nutzungInfo } from '@core/norms';
 import { planFuellungDunkel } from '@core/planFarbe';
 import { useTheme } from '@core/platform/theme';
+import { leistenMessung } from '@core/ui/Werkzeugleiste';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -51,7 +52,7 @@ describe('QUADRIO: Zeichenfläche (Einstieg, Rückgängig im Entwurf)', () => {
     useEditor.getState().loadProject(p, p, 'Leer.oap');
     const host = render();
     const karte = host.querySelector('.canvas-leer');
-    expect(karte?.textContent).toMatch(/Grundriss laden/);
+    expect(karte?.textContent).toMatch(/Plan laden \(PDF, DXF, Bild\) …/);
     act(() => [...karte!.querySelectorAll('button')].find((b) => /IFC/.test(b.textContent ?? ''))!.click());
     expect(useEditor.getState().ifcOpen).toBe(true);
     act(() => useEditor.getState().setIfcOpen(false));
@@ -301,8 +302,58 @@ describe('QUADRIO: Kontextmenü der Zeichenfläche und Werkzeugleiste (gemeinsam
     const host = render();
     const leiste = host.querySelector('.toolbar')!;
     expect(leiste.textContent).not.toMatch(/[⬉⬠▭⊡↔⇔↶↷📏]/);
-    expect(leiste.querySelectorAll('svg.symbol').length).toBeGreaterThanOrEqual(12);
-    for (const name of ['Rückgängig', 'Wiederholen', 'Neu', 'Öffnen …', 'Speichern']) expect(leiste.querySelector(`button[aria-label="${name}"]`)).not.toBeNull();
+    expect(leiste.querySelectorAll('svg.symbol').length).toBeGreaterThanOrEqual(10);
+    for (const name of ['Rückgängig', 'Wiederholen', 'Speichern', 'Auswählen', 'Polygon', 'Rechteck', 'Erkennen', 'Messen', 'Kalibrieren'])
+      expect(leiste.querySelector(`button[aria-label="${name}"]`)).not.toBeNull();
+  });
+
+  it('Werkzeugleiste nach design.md „Kopf- und Werkzeugleisten“: Seltenes in „Datei“ und „Exportieren“, sichtbar bleibt der Arbeitsablauf', () => {
+    useEditor.getState().loadProject(createProject('Haus'), null, 'Haus.oap');
+    const host = render();
+    const leiste = host.querySelector('.toolbar.werkzeugleiste')!;
+    const knopf = (text: string) => [...leiste.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent?.trim() === text);
+    const menuePunkte = () => [...document.querySelectorAll('.menue [role="menuitem"]')].map((b) => b.textContent?.replace(/(Strg\+\S+)$/, '').trim());
+    // Gegenprobe: seltene Befehle stehen nicht mehr als eigene Knöpfe in der Leiste
+    for (const text of ['Neu', 'Öffnen …', 'IFC-Import …', 'IFC importieren …', 'CSV …', 'Excel …', 'Plan laden …']) expect(knopf(text)).toBeUndefined();
+    // sichtbar: Speichern, Rückgängig/Wiederholen, Werkzeuge, Umschalter, Hauptknopf
+    expect(leiste.querySelector('.segment[aria-label="Neue Flächen zeichnen als"]')).not.toBeNull();
+    expect(knopf('Flächenaufstellung …')?.classList.contains('primary')).toBe(true);
+    act(() => knopf('Datei')!.click());
+    expect(menuePunkte()).toEqual(expect.arrayContaining(['Neu', 'Öffnen …', 'Plan laden …', 'IFC importieren …']));
+    act(() => void document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })));
+    act(() => knopf('Exportieren')!.click());
+    expect(menuePunkte()).toEqual(['CSV …', 'Excel …']);
+    act(() => void document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })));
+  });
+
+  it('schmales Fenster: „Exportieren“ wandert mit CSV/Excel ins Menü „Mehr“, Werkzeuge und Hauptknopf bleiben', () => {
+    const original = leistenMessung.breite;
+    // jeder Eintrag 100 px, die Leiste nur 600 px: nur der Eintrag mit Rang („Exportieren“) darf wandern
+    leistenMessung.breite = (el: Element) => (el.classList.contains('werkzeugleiste') ? 600 : el.classList.contains('werkzeugleiste-mehr') ? 30 : 100);
+    try {
+      useEditor.getState().loadProject(createProject('Haus'), null, 'Haus.oap');
+      const host = render();
+      act(() => void window.dispatchEvent(new Event('resize')));
+      const leiste = host.querySelector('.toolbar.werkzeugleiste')!;
+      const versteckt = [...leiste.querySelectorAll<HTMLElement>('[data-eintrag]')].filter((e) => e.hidden).map((e) => e.dataset.eintrag);
+      expect(versteckt).toEqual(['export']);
+      const mehr = leiste.querySelector<HTMLButtonElement>('.werkzeugleiste-mehr button')!;
+      expect(leiste.querySelector('.werkzeugleiste-mehr')!.hasAttribute('hidden')).toBe(false);
+      act(() => mehr.click());
+      const punkt = (text: string) => [...document.querySelectorAll<HTMLButtonElement>('.menue [role="menuitem"]')].find((b) => b.textContent?.includes(text));
+      act(() => punkt('Exportieren')!.click());
+      expect(punkt('CSV …')).toBeDefined();
+      act(() => punkt('Excel …')!.click());
+      expect(useEditor.getState().excelOpen).toBe(true);
+      act(() => useEditor.getState().setExcelOpen(false));
+      // Gegenprobe: genug Platz – „Mehr“ verschwindet, „Exportieren“ steht wieder in der Leiste
+      leistenMessung.breite = (el: Element) => (el.classList.contains('werkzeugleiste') ? 2000 : el.classList.contains('werkzeugleiste-mehr') ? 30 : 100);
+      act(() => void window.dispatchEvent(new Event('resize')));
+      expect(leiste.querySelector('[data-eintrag="export"]')!.hasAttribute('hidden')).toBe(false);
+      expect(leiste.querySelector('.werkzeugleiste-mehr')!.hasAttribute('hidden')).toBe(true);
+    } finally {
+      leistenMessung.breite = original;
+    }
   });
 });
 

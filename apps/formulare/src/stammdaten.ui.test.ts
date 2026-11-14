@@ -6,6 +6,7 @@ import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { App } from './App';
+import { imLeistenMenue, leistenMenue, leistenPunkt } from './testLeiste';
 import { SpeicherDateisystem } from './dateisystem';
 import { readProjectFile, writeArchive } from '@core/archive';
 import { createProject, leereMeta } from '@core/model';
@@ -156,7 +157,8 @@ const dialogMit = (name: string) =>
 describe('Formular einrichten', () => {
   const gl = (host: Element) => host.querySelector('nav[aria-label="Inhalt des Formulars"]')!;
   const panel = (host: Element) => host.querySelector<HTMLElement>('aside[aria-label="Einstellungen der Auswahl"]')!;
-  const einrichten = (host: Element) => [...host.querySelectorAll<HTMLButtonElement>('.toolbar button')].find((b) => b.textContent?.includes('Einrichten'))!;
+  // „Formular einrichten“ steht als Schalter im Menü „Mehr“ der Werkzeugleiste
+  const einrichtenUmschalten = (host: Element) => imLeistenMenue(host, 'Mehr', 'Formular einrichten');
   const imFormular = (host: Element, s: string) => host.querySelector<HTMLButtonElement>(`.fo-ein-feld[data-ein="${s}"]`)!;
   const imBaum = (host: Element, id: string) => host.querySelector<HTMLButtonElement>(`.fo-ein-baum [data-auswahl="${id}"]`)!;
   const strgKlick = async (el: Element) => {
@@ -172,22 +174,25 @@ describe('Formular einrichten', () => {
 
   it('Baum einklappbar (knappe Breite): × im Kopf blendet ihn aus, „Gliederung“ in der Werkzeugleiste zeigt ihn wieder', async () => {
     const host = await oeffnen();
-    await klick(einrichten(host));
+    await einrichtenUmschalten(host);
     expect(gl(host).querySelector('.fo-ein-baum')).not.toBeNull();
     await klick(knopfMit(gl(host), 'Aufbau ausblenden'));
     expect(host.querySelector('nav[aria-label="Inhalt des Formulars"]')).toBeNull();
     expect(panel(host)).not.toBeNull();
-    const gliederung = [...host.querySelectorAll<HTMLButtonElement>('.toolbar button')].find((b) => b.textContent?.includes('Gliederung'))!;
-    expect(gliederung.getAttribute('aria-pressed')).toBe('false');
-    await klick(gliederung);
-    expect(gliederung.getAttribute('aria-pressed')).toBe('true');
+    // „Gliederung“ ist ein Schalter im Menü „Ansicht“
+    await klick(leistenMenue(host, 'Ansicht'));
+    expect(leistenPunkt('Gliederung').getAttribute('aria-checked')).toBe('false');
+    await klick(leistenPunkt('Gliederung'));
+    await klick(leistenMenue(host, 'Ansicht'));
+    expect(leistenPunkt('Gliederung').getAttribute('aria-checked')).toBe('true');
+    act(() => void document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
     expect(gl(host).querySelector('.fo-ein-baum')).not.toBeNull();
     // die Gliederung außerhalb des Einrichtens bleibt unberührt; beim nächsten Einrichten ist der Baum wieder offen
     await klick(knopfMit(gl(host), 'Aufbau ausblenden'));
-    await klick(einrichten(host));
+    await einrichtenUmschalten(host);
     expect(useFormulare.getState().gliederungOffen).toBe(true);
     expect(gl(host).querySelector('.fo-gl-abschnitt')).not.toBeNull();
-    await klick(einrichten(host));
+    await einrichtenUmschalten(host);
     expect(gl(host).querySelector('.fo-ein-baum')).not.toBeNull();
   });
 
@@ -197,7 +202,7 @@ describe('Formular einrichten', () => {
     const vorher = abschnitte();
     expect(vorher[0]).toBe('Bauherrschaft');
 
-    await klick(einrichten(host));
+    await einrichtenUmschalten(host);
     // links der Baum, rechts die Einstellungen, im Formular Flächen zum Anklicken
     expect(gl(host).querySelector('.fo-ein-baum')).not.toBeNull();
     expect(panel(host).textContent).toContain('Feld im Formular anklicken');
@@ -236,7 +241,7 @@ describe('Formular einrichten', () => {
     // Muster: drei Textfelder (zwei gefüllt), zwei Zeilen mit Kästchen (eine angekreuzt)
     expect(zahl()).toBe('3/5');
 
-    await klick(einrichten(host));
+    await einrichtenUmschalten(host);
     await klick(imFormular(host, '0:CheckBox1'));
     for (const s of ['0:CheckBox3', '0:CheckBox2', '0:CheckBox4']) await strgKlick(imFormular(host, s));
     expect(panel(host).textContent).toContain('4 Felder');
@@ -267,7 +272,7 @@ describe('Formular einrichten', () => {
     expect(profil.gruppen).toEqual([{ id: 'g1', titel: 'Gebäudeart', regel: 'eins', felder: ['0:CheckBox1', '0:CheckBox3', '0:CheckBox2', '0:CheckBox4'] }]);
 
     // über ein Feld der Gruppe zur Gruppe; Regel „alle nötig“: zwei der vier Kästchen sind nicht angekreuzt
-    await klick(einrichten(host));
+    await einrichtenUmschalten(host);
     await klick(imFormular(host, '0:CheckBox3'));
     expect(panel(host).textContent).toContain('Zählt über die Gruppe');
     await klick(knopf(panel(host), '„Gebäudeart“'));
@@ -283,7 +288,7 @@ describe('Formular einrichten', () => {
   it('Gruppen verschachteln: Untergruppe aus Feldern einer Gruppe, „Teil von“, zwei Gruppen im Baum gruppieren und wieder auflösen', async () => {
     const host = await oeffnen();
     const gruppen = () => useFormulare.getState().profile['nw019999|2026A']?.gruppen;
-    await klick(einrichten(host));
+    await einrichtenUmschalten(host);
     // eine Gruppe aus den vier Kästchen
     await klick(imFormular(host, '0:CheckBox1'));
     for (const s of ['0:CheckBox3', '0:CheckBox2', '0:CheckBox4']) await strgKlick(imFormular(host, s));
@@ -347,7 +352,7 @@ describe('Formular einrichten', () => {
     expect([...host.querySelectorAll('.fo-papier .markiert input')].map((i) => i.getAttribute('data-feld'))).toEqual(['0:CheckBox2', '0:CheckBox4']);
     weg(auswahl);
 
-    await klick(einrichten(host));
+    await einrichtenUmschalten(host);
     const ab = imBaum(host, 'a:0:Panel1');
     zeigen(ab);
     expect(markiert()).toBe(7);
@@ -367,7 +372,7 @@ describe('Formular einrichten', () => {
 describe('Einstellungen', () => {
   it('Adressbuch aus allen Projektkarten, Stammdaten als Vorgabe je Rolle', async () => {
     const host = await render();
-    await klick(knopfMit(host, 'Einstellungen …'));
+    await imLeistenMenue(host, 'Mehr', 'Einstellungen');
     expect(host.querySelector('.es-nav')).not.toBeNull();
     await klick(knopf(host, 'Adressbuch'));
     await klick(knopf(host, 'Aus den Projektdaten einlesen'));
@@ -390,7 +395,7 @@ describe('Einstellungen', () => {
 
   it('leeres Adressbuch: „Adresse hinzufügen“ öffnet das Formular für eine neue Adresse; unter „Büro & Stammdaten“ führt der Knopf ins Adressbuch', async () => {
     const host = await render();
-    await klick(knopfMit(host, 'Einstellungen …'));
+    await imLeistenMenue(host, 'Mehr', 'Einstellungen');
     await klick(knopf(host, 'Büro & Stammdaten'));
     expect(knopf(host, 'Adresse hinzufügen')).toBeUndefined();
     await klick(knopf(host, 'Zum Adressbuch'));
@@ -417,7 +422,7 @@ describe('Einstellungen', () => {
 
   it('Adressbuch bearbeiten: neue Adresse anlegen, eine aus den Projektkarten ändern und ausblenden – gespeichert im Konfigurationsordner', async () => {
     const host = await render();
-    await klick(knopfMit(host, 'Einstellungen …'));
+    await imLeistenMenue(host, 'Mehr', 'Einstellungen');
     await klick(knopf(host, 'Adressbuch'));
     await klick(knopf(host, 'Aus den Projektdaten einlesen'));
     await warte();
@@ -640,7 +645,7 @@ describe('Autofill mit Zustand (Auto-Wert und manuelle Überschreibung)', () => 
     expect(memo1(host).value).toBe('Mustermann, Max');
 
     // Daten aktualisieren: anderer Inhalt ohne Zustand – nur auf Wunsch
-    await klick(knopf(host, 'Daten aktualisieren'));
+    await imLeistenMenue(host, 'Datei', 'Daten aktualisieren');
     const zeile = dialog(host)!.querySelector<HTMLElement>('.fo-ausfuellen-zeile')!;
     expect(zeile.textContent).toContain('anderer Inhalt (Herkunft unbekannt)');
     expect(zeile.textContent).toContain('Kreis Soest, Hoher Weg 1');
@@ -671,8 +676,8 @@ describe('Autofill mit Zustand (Auto-Wert und manuelle Überschreibung)', () => 
     expect(rueckfrage()).toBeNull();
     expect(memo1(host).value).toBe('Bauaufsicht Soest');
 
-    // Haken „Manuelle Überschreibungen ignorieren“ im Menü des Formulars: Auto-Wert; wieder weg: die Überschreibung
-    const menue = () => host.querySelector<HTMLButtonElement>('.fo-menue-knopf')!;
+    // Haken „Manuelle Überschreibungen ignorieren“ im Menü „Mehr“ der Werkzeugleiste: Auto-Wert; wieder weg: die Überschreibung
+    const menue = () => leistenMenue(host, 'Mehr');
     await klick(menue());
     // Umschalter: Kästchen im Menü, aus
     const schalter = () => knopf(document.body, 'Manuelle Überschreibungen ignorieren');

@@ -184,7 +184,7 @@ describe('LV-Kopf: Speichern und Menü (gemeinsame Bausteine)', () => {
     expect(knopf().getAttribute('aria-label')).toBeNull();
   });
 
-  it('Menü „LV“: öffnet mit Namen und vier Punkten, Esc schließt und gibt den Fokus an den Knopf zurück', async () => {
+  it('Menü „LV“ (mit „Neues LV“ zusammengelegt): öffnet mit Namen und allen LV-Befehlen, Esc schließt und gibt den Fokus an den Knopf zurück', async () => {
     await zeige(createElement('div', null, createElement(GewerkAnsicht, { gewerk: 'G8', tab: 'lv' }), createElement(MenueHost)));
     await warte(() => useAva.getState().lv && host.querySelector('.ava-lv-zeilen'));
     const knopf = [...host.querySelectorAll<HTMLButtonElement>('button[aria-haspopup="menu"]')].find((b) => b.textContent?.trim() === 'LV')!;
@@ -194,7 +194,9 @@ describe('LV-Kopf: Speichern und Menü (gemeinsame Bausteine)', () => {
     const menue = document.querySelector('[role="menu"]')!;
     expect(knopf.getAttribute('aria-expanded')).toBe('true');
     expect(menue.getAttribute('aria-label')).toBe('LV');
-    expect([...menue.querySelectorAll('[role="menuitem"]')].map((p) => p.textContent?.trim())).toEqual(['LV-Eigenschaften …', 'Neu nummerieren …', 'Drucken …', 'GAEB-Export …']);
+    expect([...menue.querySelectorAll('[role="menuitem"]')].map((p) => p.textContent?.trim())).toEqual(['Neues leeres LV …', 'Neues LV aus GAEB-Datei (X81–X86) …', 'LV-Eigenschaften …', 'Neu nummerieren …', 'Drucken …', 'GAEB-Export …']);
+    // nur noch ein Menü zum LV
+    expect([...host.querySelectorAll('button[aria-haspopup="menu"]')].filter((b) => /^Neues LV/.test(b.textContent?.trim() ?? ''))).toHaveLength(0);
     await act(async () => void document.activeElement?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })));
     await warte(() => !document.querySelector('[role="menu"]'));
     expect(document.querySelector('[role="menu"]')).toBeNull();

@@ -32,8 +32,10 @@ describe('Öffnen einer defekten Projektdatei (Q-6)', () => {
       root = createRoot(host);
       root.render(createElement(App));
     });
-    const knopf = [...host.querySelectorAll('button')].find((b) => b.textContent?.trim() === 'Öffnen …')!;
-    await act(async () => knopf.click());
+    // „Öffnen …“ steht im Menü „Datei“
+    act(() => [...host.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent?.trim().startsWith('Datei'))!.click());
+    const punkt = [...document.querySelectorAll<HTMLButtonElement>('[role="menu"] [role="menuitem"]')].find((b) => b.textContent?.startsWith('Öffnen …'))!;
+    await act(async () => punkt.click());
     for (let i = 0; i < 10 && !host.querySelector('.modal.rf'); i++) await act(async () => new Promise((r) => setTimeout(r, 0)));
     const meldung = host.querySelector('.modal.rf')!;
     expect(meldung.textContent).toContain('Die Datei „Haus kaputt.oap“ ließ sich nicht lesen: Keine gültige Projektdatei (.oap)');

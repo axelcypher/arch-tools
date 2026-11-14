@@ -4,6 +4,7 @@ import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, describe, expect, it } from 'vitest';
 import { createProject } from '@core/model';
+import { MenueHost } from '@core/ui/Menue';
 import { App } from './App';
 import { KostenView } from './components/KostenView';
 import { KG_RISIKO } from './din276';
@@ -37,7 +38,25 @@ const eingabe = (el: HTMLInputElement, value: string) => {
   });
   act(() => el.blur());
 };
-const ansicht = () => render(KostenView, { onKatalog: () => undefined });
+/** Kostenansicht mit Menüwurzel (sonst steckt sie in der Titelleiste der App) */
+function KostenMitMenue() {
+  return createElement('div', null, createElement(KostenView, { onKatalog: () => undefined }), createElement(MenueHost));
+}
+const ansicht = () => render(KostenMitMenue);
+/** Punkt eines Menüs: Menüknopf öffnen, Punkt suchen (Menü bleibt offen, bis der Punkt gewählt wird) */
+const menuePunkt = (host: Element, menue: string, punkt: string) => {
+  act(() => knopf(host, menue).click());
+  const p = [...document.querySelectorAll<HTMLButtonElement>('[role="menu"] [role="menuitem"]')].find((b) => b.textContent?.trim().startsWith(punkt));
+  if (!p) throw new Error(`Menüpunkt „${punkt}“ fehlt in „${menue}“`);
+  return p;
+};
+/** Punkt eines Menüs wählen */
+const waehle = async (host: Element, menue: string, punkt: string) => {
+  const p = menuePunkt(host, menue, punkt);
+  await act(async () => p.click());
+};
+/** Menü wieder schließen, ohne etwas zu wählen */
+const menueZu = () => act(() => void document.activeElement?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
 
 describe('Kostenansicht: Bedienung', () => {
   it('Startbildschirm zeigt nur den Einstieg; nach „Neues Projekt“ die Kostenansicht', async () => {
@@ -60,16 +79,18 @@ describe('Kostenansicht: Bedienung', () => {
     expect(host.textContent).toContain('mindestens 2. Ebene');
   });
 
-  it('Gliederung legt nur fehlende Kostengruppen an und ist danach gesperrt', () => {
+  it('Gliederung legt nur fehlende Kostengruppen an und ist danach gesperrt', async () => {
     useKosten.getState().load(projekt());
     const host = ansicht();
-    act(() => knopf(host, 'Gliederung 1. Ebene').click());
+    await waehle(host, 'Hinzufügen', 'Gliederung 1. Ebene');
     expect(kosten().positionen.map((p) => p.kg)).toEqual(['300', '400', '500', '700']);
-    expect(knopf(host, 'Gliederung 1. Ebene').disabled).toBe(true);
+    expect(menuePunkt(host, 'Hinzufügen', 'Gliederung 1. Ebene').getAttribute('aria-disabled')).toBe('true');
+    menueZu();
     // Gegenprobe: eine gelöschte Kostengruppe wird wieder angelegt, die übrigen nicht doppelt
     act(() => useKosten.getState().update((p) => setKosten(p, { positionen: kosten().positionen.filter((x) => x.kg !== '400') })));
-    expect(knopf(host, 'Gliederung 1. Ebene').disabled).toBe(false);
-    act(() => knopf(host, 'Gliederung 1. Ebene').click());
+    const wieder = menuePunkt(host, 'Hinzufügen', 'Gliederung 1. Ebene');
+    expect(wieder.getAttribute('aria-disabled')).toBeNull();
+    act(() => wieder.click());
     expect(kosten().positionen.map((p) => p.kg)).toEqual(['300', '400', '500', '700']);
   });
 
@@ -77,19 +98,20 @@ describe('Kostenansicht: Bedienung', () => {
     useKosten.getState().load(projektMitKosten());
     const host = render(App); // mit App: die Rückfrage braucht deren Dialogwurzel
     // 500 ist über 530/540 schon erfasst, 300/400/700 selbst: die 1. Ebene ist vollständig
-    expect(knopf(host, 'Gliederung 1. Ebene').disabled).toBe(true);
+    expect(menuePunkt(host, 'Hinzufügen', 'Gliederung 1. Ebene').getAttribute('aria-disabled')).toBe('true');
+    menueZu();
     const rueckfrage = async () => {
       for (let i = 0; i < 10 && !document.querySelector('.modal.rf'); i++) await act(async () => new Promise((r) => setTimeout(r, 0)));
       return document.querySelector('.modal.rf')!;
     };
-    await act(async () => knopf(host, 'Gliederung 2. Ebene').click());
+    await waehle(host, 'Hinzufügen', 'Gliederung 2. Ebene');
     const dialog = await rueckfrage();
     expect(dialog.textContent).toContain('KG 300, 400 ausschalten?');
     // Gegenprobe: Abbrechen ändert nichts
     await act(async () => knopf(dialog, 'Abbrechen').click());
     for (let i = 0; i < 5; i++) await act(async () => new Promise((r) => setTimeout(r, 0)));
     expect(kosten().positionen).toHaveLength(5);
-    await act(async () => knopf(host, 'Gliederung 2. Ebene').click());
+    await waehle(host, 'Hinzufügen', 'Gliederung 2. Ebene');
     await act(async () => knopf(await rueckfrage(), 'Ausschalten und anlegen').click());
     for (let i = 0; i < 5; i++) await act(async () => new Promise((r) => setTimeout(r, 0)));
     const pos = kosten().positionen;
@@ -143,10 +165,10 @@ describe('Kostenansicht: Bedienung', () => {
     expect(host.querySelector('.ko-mengen tr.festgelegt')).toBeNull();
   });
 
-  it('Kostenrisiko: eigene Gruppe, gesondert vor „Gesamt netto“', () => {
+  it('Kostenrisiko: eigene Gruppe, gesondert vor „Gesamt netto“', async () => {
     useKosten.getState().load(projektMitKosten());
     const host = ansicht();
-    act(() => knopf(host, 'Kostenrisiko').click());
+    await waehle(host, 'Hinzufügen', 'Kostenrisiko');
     const r = kosten().positionen.find((p) => p.kg === KG_RISIKO)!;
     expect(r).toMatchObject({ bezug: 'prozent', basis: ['300', '400'], bezeichnung: 'Kostenrisiken' });
     eingabe(host.querySelector(`tr[data-pos="${r.id}"] input[aria-label="Mittel, Kostenrisiko"]`) as HTMLInputElement, '5');

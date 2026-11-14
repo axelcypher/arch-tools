@@ -95,7 +95,7 @@ describe('Mängel', () => {
     expect(zeile.className).toContain('ava-abgeblendet');
     expect(useAva.getState().projekt!.ava.maengel[0].erledigtAm).toBeTruthy();
     // Filter wechseln (alle und zurück): jetzt ist der erledigte Mangel ausgeblendet
-    const filter = host.querySelector<HTMLSelectElement>('select[aria-label="Filter"]')!;
+    const filter = host.querySelector<HTMLSelectElement>('select[aria-label="Anzeigen"]')!;
     waehlen(filter, 'alle');
     waehlen(filter, 'offen');
     expect(host.querySelector('select[aria-label="Status Mangel 1"]')).toBeNull();
