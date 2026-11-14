@@ -30,6 +30,8 @@ export interface RahmenStatus {
    * länger als UNGESPEICHERT_MAX Zeichen: der allgemeine
    */
   ungespeichert?: string;
+  /** false: die App kann gerade nicht speichern (keine Speicherfunktion an der TitleBar) – fehlt: sie kann */
+  kannSpeichern?: false;
 }
 
 /** Höchstlänge des Satzes `ungespeichert` (RahmenStatus), den die Rahmen-App übernimmt */
@@ -61,12 +63,12 @@ export function rahmenApp(): string | null {
 
 /**
  * Im Tab bzw. herausgelösten Fenster: Name und ungespeicherte Änderungen an den Rahmen melden; `ungespeichert`: Satz für
- * dessen Rückfrage beim Schließen (siehe RahmenStatus)
+ * dessen Rückfrage beim Schließen, `kannSpeichern`: ob „Speichern“ dort etwas bewirkt (siehe RahmenStatus)
  */
-export function anRahmenMelden(app: string, name: string, dirty: boolean, ungespeichert?: string): void {
+export function anRahmenMelden(app: string, name: string, dirty: boolean, ungespeichert?: string, kannSpeichern = true): void {
   const modus = rahmenModus();
   if (!modus) return;
-  const nachricht: RahmenStatus = { typ: 'arch-tools:status', app, name, dirty, ...(ungespeichert ? { ungespeichert } : {}) };
+  const nachricht: RahmenStatus = { typ: 'arch-tools:status', app, name, dirty, ...(ungespeichert ? { ungespeichert } : {}), ...(kannSpeichern ? {} : { kannSpeichern: false as const }) };
   try {
     if (modus === 'tab') window.parent.postMessage(nachricht, window.location.origin);
     else if (istTauri()) void import('@tauri-apps/api/event').then(({ emit }) => emit(AN_RAHMEN, { ...nachricht, kennung: rahmenApp() }));

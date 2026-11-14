@@ -11,7 +11,7 @@ import type { RegelApp } from '../regeln/regelwerk';
 import { Nachschlagewerk, useHilfe } from './Nachschlagewerk';
 import { dialogVerhaltenEinrichten } from './dialoge';
 import { useEscSchliessen } from './Dialog';
-import { aenderungenSpeichern, bestaetigen, RueckfrageHost } from './Rueckfrage';
+import { aenderungenSpeichern, aenderungenVerwerfen, RueckfrageHost } from './Rueckfrage';
 import { MenueHost } from './Menue';
 import { useBuero } from './DruckKopf';
 import { SpeicherortHost, SpeicherortKnopf } from './Speicherort';
@@ -59,8 +59,9 @@ export function TitleBar({ app, name, dirty, ungespeichert, onOpenLog, regeln, o
 
   // Name der App für Stellen, die allen Apps gehören (z. B. gespeichertes Protokoll)
   appNameSetzen(app);
-  // im Tab: Name und ungespeicherte Änderungen an den Rahmen melden (Tab-Beschriftung, Rückfrage beim Schließen)
-  useEffect(() => anRahmenMelden(app, name, dirty, ungespeichert), [app, name, dirty, ungespeichert]);
+  // im Tab: Name und ungespeicherte Änderungen an den Rahmen melden (Tab-Beschriftung, Rückfrage beim Schließen) – ohne
+  // onSpeichern bietet der Rahmen kein „Speichern“ an, nur Verwerfen
+  useEffect(() => anRahmenMelden(app, name, dirty, ungespeichert, !!onSpeichern), [app, name, dirty, ungespeichert, !!onSpeichern]);
   // im Tab: „Speichern“ aus der Rückfrage des Rahmens beim Schließen
   const speichernRef = useRef(onSpeichern);
   speichernRef.current = onSpeichern;
@@ -121,7 +122,7 @@ export function TitleBar({ app, name, dirty, ungespeichert, onOpenLog, regeln, o
       if (dirty) {
         const weiter = onSpeichern
           ? await aenderungenSpeichern(name, onSpeichern, ungespeichertSatz(ungespeichert))
-          : await bestaetigen('Ungespeicherte Änderungen verwerfen?', 'Die Änderungen gehen beim Beenden verloren.', 'Verwerfen und beenden', true);
+          : await aenderungenVerwerfen(`${app}${name ? ` – ${name}` : ''}`, 'Die Änderungen gehen beim Beenden verloren.', 'beenden');
         if (!weiter) return;
       }
       // ausstehendes Schreiben (vorDemSchliessen) abwarten

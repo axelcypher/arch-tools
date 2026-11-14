@@ -68,7 +68,7 @@ describe('Titelleiste auf dem Desktop', () => {
     const verhindert = vi.fn();
     await act(async () => fenster.schliessenAngefragt!({ preventDefault: verhindert }));
     expect(verhindert).toHaveBeenCalled();
-    expect(dialog(host)?.textContent).toContain('Ungespeicherte Änderungen verwerfen?');
+    expect(dialog(host)?.textContent).toContain('Änderungen an ‚ATLAS – P1‘ verwerfen?');
     // ein zweites Alt+F4, solange die Rückfrage offen ist, fragt nicht noch einmal
     await act(async () => fenster.schliessenAngefragt!({ preventDefault: () => {} }));
     expect(host.querySelectorAll('.modal.rf')).toHaveLength(1);
@@ -136,26 +136,30 @@ describe('Titelleiste auf dem Desktop', () => {
     expect(speichern).toHaveBeenCalledTimes(2);
   });
 
-  it('Meldung an den Rahmen mit dem Satz für dessen Rückfrage (ungespeichert); ohne ihn ohne das Feld', async () => {
+  it('Meldung an den Rahmen mit dem Satz für dessen Rückfrage (ungespeichert); ohne ihn ohne das Feld; ohne onSpeichern kannSpeichern: false', async () => {
     window.history.replaceState(null, '', '/?rahmen=fenster&app=ava');
     const gemeldet: object[] = [];
     await listen<object>('arch-tools:an-rahmen', (e) => void gemeldet.push(e.payload));
-    await render({ app: 'FABRIO', name: 'LV 1', ungespeichert: 'Das LV hat ungespeicherte Änderungen.' });
+    await render({ app: 'FABRIO', name: 'LV 1', ungespeichert: 'Das LV hat ungespeicherte Änderungen.', onSpeichern: async () => true });
     await warten();
     expect(gemeldet.at(-1)).toEqual({ typ: 'arch-tools:status', app: 'FABRIO', kennung: 'ava', name: 'LV 1', dirty: true, ungespeichert: 'Das LV hat ungespeicherte Änderungen.' });
-    await act(async () => root!.render(createElement(TitleBar, { app: 'FABRIO', name: 'LV 1', dirty: true, onOpenLog: () => {} })));
+    await act(async () => root!.render(createElement(TitleBar, { app: 'FABRIO', name: 'LV 1', dirty: true, onOpenLog: () => {}, onSpeichern: async () => true })));
     await warten();
     expect(gemeldet.at(-1)).toEqual({ typ: 'arch-tools:status', app: 'FABRIO', kennung: 'ava', name: 'LV 1', dirty: true });
+    // ohne Speicherfunktion: der Rahmen bietet nur Verwerfen an
+    await act(async () => root!.render(createElement(TitleBar, { app: 'FABRIO', name: 'LV 1', dirty: true, onOpenLog: () => {} })));
+    await warten();
+    expect(gemeldet.at(-1)).toEqual({ typ: 'arch-tools:status', app: 'FABRIO', kennung: 'ava', name: 'LV 1', dirty: true, kannSpeichern: false });
   });
 
-  it('Andocken ohne Speichermöglichkeit (verlierende App): Verwerfen-Rückfrage wie beim Schließen, Abbrechen lässt alles', async () => {
+  it('Andocken ohne Speichermöglichkeit (verlierende App): Verwerfen-Rückfrage, Abbrechen lässt alles', async () => {
     window.history.replaceState(null, '', '/?rahmen=fenster&app=baurecht');
     const andocken: unknown[] = [];
     await listen('arch-tools:andocken', (e) => void andocken.push(e.payload));
     const host = await render({ app: 'LEXIO' });
     const knopf = () => [...host.querySelectorAll('button')].find((b) => b.textContent === 'Andocken')!;
     await act(async () => knopf().click());
-    expect(dialog(host)?.textContent).toContain('Ungespeicherte Änderungen verwerfen?');
+    expect(dialog(host)?.textContent).toContain('Änderungen an ‚LEXIO – P1‘ verwerfen?');
     expect(dialog(host)?.textContent).toContain('Beim Andocken startet die App neu, die Änderungen gehen verloren.');
     expect([...dialog(host)!.querySelectorAll('button')].map((b) => b.textContent)).toEqual(['Abbrechen', 'Verwerfen und andocken']);
     await antwort(host, 'Abbrechen');

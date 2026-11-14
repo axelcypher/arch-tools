@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { Holen, NetzAntwort } from './netz';
 import { fassungZumStichtag, Rechtsstand, speicherImArbeitsspeicher } from './rechtsstand';
 
@@ -92,6 +92,26 @@ describe('Rechtsstand', () => {
     expect(r.ueberholtAb).toBe('2027-05-01');
     // für einen Stichtag vor der neuen Fassung ist nichts überholt
     expect((await rs.fuer(norm, '2026-12-01')).ueberholtAb).toBeUndefined();
+  });
+
+  it('gleiches Gültig-ab, beide Abrufe in derselben Millisekunde: die vorige Fassung wird nach der laufenden Nummer gefunden', async () => {
+    // Zeitstempel „abgerufen“ kommt aus der echten Uhr – auf schnellen Rechnern gleich; vorher fehlte dann die vorige Fassung
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-11-13T09:00:00.000Z'));
+    try {
+      const { h, zustand } = nrw();
+      let uhr = new Date('2026-11-12T08:00:00Z');
+      const rs = new Rechtsstand(speicherImArbeitsspeicher(), h, { jetzt: () => uhr });
+      await rs.fuer(norm, '2026-11-12');
+      zustand.text = '(1) Still geänderter Text';
+      uhr = new Date('2026-11-13T09:00:00Z');
+      const b = await rs.fuer(norm, '2026-11-13');
+      expect(b.fassung?.paragrafen['1'].text[0]).toMatch(/Still geänderter Text/);
+      expect(b.vorige?.paragrafen['1'].text[0]).toMatch(/Erster Text/);
+      expect(b.aenderungen?.geaendert).toEqual(['1/1']);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('geänderter Text bei gleichem Gültig-ab (z. B. dieselbe URL): neue Fassung wird abgelegt und verwendet', async () => {

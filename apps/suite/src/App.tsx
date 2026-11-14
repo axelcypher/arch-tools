@@ -27,7 +27,7 @@ import { MenueHost, MenueKnopf, zeigeMenue } from '@core/ui/Menue';
 import { Symbol } from '@core/ui/Symbol';
 import { ThemeMenu } from '@core/ui/TitleBar';
 import { dialogVerhaltenEinrichten } from '@core/ui/dialoge';
-import { aenderungenSpeichern, meldung, RueckfrageHost } from '@core/ui/Rueckfrage';
+import { aenderungenSpeichern, aenderungenVerwerfen, meldung, RueckfrageHost } from '@core/ui/Rueckfrage';
 import { SpeicherortHost, SpeicherortKnopf, SpeicherortZeile } from '@core/ui/Speicherort';
 import { umzugBestaetigen } from '@core/ui/umzug';
 import { schreibenAbwarten } from '@core/ui/vorbereiten';
@@ -46,6 +46,9 @@ const tafelKennung = (id: string) => `rahmen-tafel-${id}`;
 const PLUS = '+';
 /** Tauri-Ereignisse (nur Desktop, nachgeladen) */
 const ereignisse = () => import('@tauri-apps/api/event');
+/** wonach Änderungen freigegeben werden (Verb im Knopf, Hauptwort im Text der Verwerfen-Rückfrage) */
+type Freigabe = 'schließen' | 'beenden' | 'neu starten';
+const FREIGABE_NOMEN: Record<Freigabe, string> = { schließen: 'Schließen', beenden: 'Beenden', 'neu starten': 'Neustart für das Update' };
 
 /**
  * Meldung eines Tabs bzw. Fensters → Status. Der Satz für die Rückfrage (`ungespeichert`) gilt nur als kurzer Text,
@@ -53,7 +56,7 @@ const ereignisse = () => import('@tauri-apps/api/event');
  */
 const statusAus = (d: Partial<RahmenStatus>) => {
   const satz = ungespeichertSatz(d.ungespeichert);
-  return { name: d.name ?? '', dirty: !!d.dirty, ...(satz ? { ungespeichert: satz } : {}) };
+  return { name: d.name ?? '', dirty: !!d.dirty, ...(satz ? { ungespeichert: satz } : {}), ...(d.kannSpeichern === false ? { kannSpeichern: false as const } : {}) };
 };
 
 /**
@@ -237,7 +240,15 @@ export function App() {
     const frame = rahmen.current.get(id);
     if (
       status[id]?.dirty &&
-      !(await umzugBestaetigen(id, info.name, status[id].name, 'herausloesen', () => (frame ? speichernImTab(frame, { zeitablauf: antwortetNicht(id) }) : false), status[id].ungespeichert))
+      !(await umzugBestaetigen(
+        id,
+        info.name,
+        status[id].name,
+        'herausloesen',
+        // kann die App gerade nicht speichern: nur Verwerfen anbieten
+        status[id].kannSpeichern === false ? undefined : () => (frame ? speichernImTab(frame, { zeitablauf: antwortetNicht(id) }) : false),
+        status[id].ungespeichert,
+      ))
     )
       return;
     if (tabBrauchtVorbereitung(frame)) {
@@ -302,13 +313,18 @@ export function App() {
     void meldung(`${appInfo(id)?.name} antwortet nicht`, 'Die Änderungen wurden nicht gespeichert – die App lädt noch oder reagiert nicht. Sie bleibt geöffnet; bitte dort speichern.');
   };
 
-  /** ungespeicherte Änderungen eines Tabs: speichern (in der App), verwerfen oder abbrechen; true = weiter */
-  const tabFreigeben = async (id: string): Promise<boolean> => {
+  /**
+   * ungespeicherte Änderungen eines Tabs: speichern (in der App), verwerfen oder abbrechen; kann die App gerade nicht
+   * speichern, nur verwerfen oder abbrechen. true = weiter
+   */
+  const tabFreigeben = async (id: string, verb: Freigabe = 'schließen'): Promise<boolean> => {
     // aktueller Stand (auch aus Menüpunkten, die vor einer Meldung gebaut wurden)
     const s = useRahmen.getState().status[id];
     if (!s?.dirty) return true;
+    const name = `${appInfo(id)?.name}${s.name ? ` – ${s.name}` : ''}`;
+    if (s.kannSpeichern === false) return aenderungenVerwerfen(name, `Die Änderungen gehen beim ${FREIGABE_NOMEN[verb]} verloren.`, verb);
     const frame = rahmen.current.get(id);
-    return aenderungenSpeichern(`${appInfo(id)?.name}${s.name ? ` – ${s.name}` : ''}`, () => (frame ? speichernImTab(frame, { zeitablauf: antwortetNicht(id) }) : false), s.ungespeichert);
+    return aenderungenSpeichern(name, () => (frame ? speichernImTab(frame, { zeitablauf: antwortetNicht(id) }) : false), s.ungespeichert);
   };
 
   /**
@@ -336,11 +352,13 @@ export function App() {
   };
 
   /** ungespeicherte Änderungen eines herausgelösten Fensters: Rückfrage hier, Speichern im Fenster; true = weiter */
-  const fensterFreigeben = async (id: string): Promise<boolean> => {
+  const fensterFreigeben = async (id: string, verb: Freigabe): Promise<boolean> => {
     const s = useRahmen.getState().status[id];
     if (!s?.dirty) return true;
+    const name = `${appInfo(id)?.name}${s.name ? ` – ${s.name}` : ''}`;
+    if (s.kannSpeichern === false) return aenderungenVerwerfen(name, `Die Änderungen gehen beim ${FREIGABE_NOMEN[verb]} verloren.`, verb);
     return aenderungenSpeichern(
-      `${appInfo(id)?.name}${s.name ? ` – ${s.name}` : ''}`,
+      name,
       () =>
         speichernImFenster(id, {
           zeitablauf: antwortetNicht(id),
@@ -361,9 +379,9 @@ export function App() {
     for (const id of offen) {
       if (!st[id]?.dirty) continue;
       waehlen(id);
-      if (!(await tabFreigeben(id))) return false;
+      if (!(await tabFreigeben(id, verb))) return false;
     }
-    for (const id of draussen) if (!(await fensterFreigeben(id))) return false;
+    for (const id of draussen) if (!(await fensterFreigeben(id, verb))) return false;
     // danach ausstehendes Schreiben abwarten (vorDemSchliessen), in Tabs und herausgelösten Fenstern
     for (const id of offen) if (tabBrauchtVorbereitung(rahmen.current.get(id)) && !(await tabVorbereiten(id, verb))) return false;
     // nur Fenster, die schon hören (ein ladendes hat nichts Ausstehendes); ohne Vorbereitung antworten sie sofort

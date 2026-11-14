@@ -411,6 +411,16 @@ describe('Fallmatrix', () => {
           const q1 = auswerten(eingabe(m, alsHinweis, lauf.texte)).paragrafen.find((x) => x.id === p.id)!;
           const q2 = auswerten(eingabe(m, ohne, lauf.texte)).paragrafen.find((x) => x.id === p.id)!;
           if (q1.automatisch === 'gruen' && q2.automatisch !== 'gruen') melde(`${lauf.name}: ${p.id} bleibt grün, obwohl „${v}“ nur Hinweis ist und ohne „${v}“ nicht grün wäre (${JSON.stringify(m)})`);
+          // ebenso ein Widerspruch am Auslöser einer Frage, deren Antwort das Grün trägt – nur, wenn das Grün an einer Antwort
+          // auf eine von ihm ausgelöste Frage hängt (ein fester Modulwert, z. B. „§ 144 ausgeschlossen“ der Stadt, trägt es
+          // zu Recht, auch wenn die Frage dazu ohne den Auslöser gestellt und von Hand anders beantwortet wäre)
+          if (abh.length && q2.automatisch !== 'gruen') {
+            const mitWiderspruch = { ...lauf.fakten, [v]: { ...lauf.fakten[v], widerspruch: 'Test' } };
+            const a3 = auswerten(eingabe(m, mitWiderspruch, lauf.texte));
+            const q3 = a3.paragrafen.find((x) => x.id === p.id)!;
+            const traegtAntwort = q3.verwendet.some((x) => AUSLOESER.get(v)?.has(x) && a3.fakten[x]?.herkunft !== 'modul');
+            if (q3.automatisch === 'gruen' && traegtAntwort) melde(`${lauf.name}: ${p.id} bleibt grün, obwohl „${v}“ widersprüchlich ist und ohne „${v}“ nicht grün wäre (${JSON.stringify(m)})`);
+          }
         }
       }
       // 3. Text geändert bzw. fehlt → nicht mehr grün (je Paragraf einmal)
@@ -2406,6 +2416,14 @@ describe('Hinweise tragen kein Grün über gestellte Fragen', () => {
     expect(ampelnBei({ ...f, [v]: { wert: null, herkunft: 'manuell', sicherheit: 'sicher' } })).toEqual(alle('gelb'));
     // der bestätigte Hinweis zählt wieder wie eine gesicherte Angabe
     expect(ampelnBei({ ...f, [v]: { ...f[v], sicherheit: 'hinweis', bestaetigt: { von: 'TP', am: '2026-11-13', grund: 'Abbruchantrag' } } })).toEqual(alle('gruen'));
+  });
+
+  it('Umfang widersprüchlich (z. B. Formular „Teilabbruch“ gegen „Abbruch mit Ersatzbau“): ebenso „prüfen“, mit Widerspruch am Umfang', () => {
+    const f = alleFakten('ja');
+    const wid = { ...f, [v]: { ...f[v], widerspruch: 'Formular: Teilabbruch' } };
+    expect(ampelnBei(wid)).toEqual(Object.fromEntries(IDS.map((id) => [id, 'gelb'])));
+    const a = auswerten(eingabe(m, wid, TEXTE));
+    for (const id of IDS) expect(a.paragrafen.find((x) => x.id === id)!.gruende.join(' '), id).toMatch(/Widerspruch: Umfang der Beseitigung/);
   });
 
   it('die Antwort bleibt gesichert (beantwortet) und trägt den Auslöser; Paragraf nennt und bestätigt den Umfang, nicht die Antwort', () => {

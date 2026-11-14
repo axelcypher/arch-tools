@@ -14,6 +14,8 @@ interface TabStatus {
   dirty: boolean;
   /** Satz der App für die Rückfrage bei ungespeicherten Änderungen (sonst der allgemeine) */
   ungespeichert?: string;
+  /** false: die App kann gerade nicht speichern (dann nur Verwerfen) */
+  kannSpeichern?: false;
 }
 
 interface RahmenState {
@@ -70,7 +72,7 @@ export const useRahmen = create<RahmenState>()((set, get) => ({
     }),
   setStatus: (id, st) => {
     const alt = get().status[id];
-    if (alt && alt.name === st.name && alt.dirty === st.dirty && alt.ungespeichert === st.ungespeichert) return;
+    if (alt && alt.name === st.name && alt.dirty === st.dirty && alt.ungespeichert === st.ungespeichert && alt.kannSpeichern === st.kannSpeichern) return;
     set((s) => ({ status: { ...s.status, [id]: st } }));
   },
   herausgeloest: (id) => {
