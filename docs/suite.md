@@ -19,7 +19,7 @@ Werkzeuge in **einem Programm und einem Fenster**. Sie kann nichts weiter, als z
   herausgelöste Apps kommen dann als Tab zurück.
 - **Kopfleiste** (nach docs/design.md, „Titelleiste“): Tabs (am Tab nur ×), „+“ (App öffnen, Neues Projekt anlegen,
   Startseite), die Version bzw. das Update, im Notbetrieb die Warnung zum Speicherort, das Menü „Einstellungen und
-  Hilfe“ (drei Striche) und die Fensterknöpfe. Im Menü: „Update auf … …“ (nur solange ein Update bereitliegt), „Farbschema“,
+  Hilfe“ (drei Striche) und die Fensterknöpfe. Im Menü: „Update auf ‹Version› …“ (nur solange ein Update bereitliegt), „Farbschema“,
   „Speicherort der Einstellungen …“ und „Fehlerprotokoll …“; neue Fehler zählt eine Marke am Menüknopf.
 - **Herauslösen** (nur Desktop): „In eigenem Fenster öffnen“ im Kontextmenü des Tabs öffnet die App in einem
   **eigenen Fenster** (z. B. auf dem zweiten Bildschirm) – mit eigenen Fensterknöpfen. **„Andocken“** in dessen Titelleiste holt sie als Tab zurück. Die App

@@ -396,8 +396,9 @@ Titelleiste und die Fensterknöpfe. Das Menü heißt „Einstellungen und Hilfe�
 `ariaLabel` und `title`), damit es sich vom „Mehr“ der Werkzeugleiste darunter unterscheidet. Es enthält, in dieser
 Reihenfolge: solange ein Update bereitliegt „Update auf ‹Version› …“ mit Trenner (`updatePunkt`) – zusätzlich zur
 Anzeige rechts in der Titelleiste, damit man es auch dort findet, wo die seltenen Befehle stehen (bewusste Ausnahme von
-„Doppelte Einstiege vermeiden“); dann „Farbschema“ (aktuelle Wahl als Hinweis; Untermenü mit Auto/Hell/Dunkel als Einfachauswahl und, wenn
-die App eine Zeichenfläche hat, dem Schalter „Zeichenfläche im dunklen Schema abdunkeln“ – `farbschemaPunkte`),
+„Doppelte Einstiege vermeiden“); dann „Farbschema“ (aktuelle Wahl als Hinweis; Untermenü mit Auto/Hell/Dunkel als
+Einfachauswahl und, wenn die App eine Zeichenfläche hat, dem Schalter „Zeichenfläche im dunklen Schema abdunkeln“ –
+`farbschemaPunkt`, Untermenü `farbschemaPunkte`),
 „Speicherort der Einstellungen …“ (Einzelplatz bzw. Netzwerk als Hinweis – `speicherortPunkt`), im herausgelösten
 Fenster „Andocken“, Trenner, „Berechnungsregeln …“ (F1) und „Fehlerprotokoll …“. Neue Fehler zählt eine Marke am
 Menüknopf, ebenso sein Name („Einstellungen und Hilfe – 2 neue Fehler im Fehlerprotokoll“) und der Hinweis am Punkt
