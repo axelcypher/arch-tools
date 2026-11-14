@@ -832,13 +832,13 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
     const u = useGrz.getState().project.lageplan?.unterlage as RasterBackground | undefined;
     if (!u) return [];
     return [
-      { text: 'Anzeigen', haken: u.visible, aktion: () => setUnterlage({ ...u, visible: !u.visible }) },
+      { text: 'Anzeigen', haken: u.visible, aktion: () => setUnterlage({ ...u, visible: !u.visible }, undefined, u.visible ? 'Unterlage ausblenden' : 'Unterlage einblenden') },
       { trenner: true },
       { text: 'Kalibrieren', symbol: 'kalibrieren', titel: 'Maßstab an einer bekannten Strecke festlegen', aktion: () => st.setWerkzeug('kalibrieren') },
       { text: 'Ausrichten', symbol: 'ausrichten', titel: 'Unterlage verschieben: Punkt auf der Unterlage → Punkt im Plan', aktion: () => st.setWerkzeug('ausrichten') },
       { text: 'Ersetzen …', symbol: 'bild', titel: 'Anderen Lageplan als Bild (PNG, JPG) oder PDF laden', aktion: () => dateiRef.current?.click() },
       { trenner: true },
-      { text: 'Entfernen', symbol: 'muell', gefahr: true, titel: 'Unterlage entfernen (rückgängig mit Strg+Z)', aktion: () => setUnterlage(undefined) },
+      { text: 'Entfernen', symbol: 'muell', gefahr: true, titel: 'Unterlage entfernen (rückgängig mit Strg+Z)', aktion: () => setUnterlage(undefined, undefined, 'Unterlage entfernen') },
     ];
   };
   /** Menü „Ansicht“ im Plan: Schalter der Darstellung */
@@ -885,7 +885,8 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
         </span>
       </div>
       <div className="lp-tools lp-unterlage">
-        <span className="muted small-text">Unterlage:</span>
+        {/* vor dem Menüknopf „Unterlage“ doppelt – nur vor „Bild/PDF laden …“ */}
+        {!unterlage && <span className="muted small-text">Unterlage:</span>}
         <input
           ref={dateiRef}
           type="file"

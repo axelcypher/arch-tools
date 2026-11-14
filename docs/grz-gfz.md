@@ -140,8 +140,8 @@ Ausschnitt (Zoom, Verschiebung) bleibt bei allen Änderungen stehen und wird nur
 neu eingepasst. Leertaste und Enter auf einem fokussierten Knopf oder Kästchen bedienen diesen, nicht den Plan; der
 Fokusrahmen des Plans erscheint nur bei Bedienung mit der Tastatur. Die Leiste über dem Plan hat Werkzeuge |
 Nutzung; „Einpassen“, das Menü „Ansicht“ (Beschriftung, Raster) und die Tastenübersicht (Symbol „i“, schließt mit Esc
-oder Klick daneben) stehen als Bedienfeld oben links im Plan. Eingabezeile und Flurstück-Leiste stehen fest, damit der Plan beim
-Werkzeugwechsel nicht springt. Ohne
+oder Klick daneben) stehen als Bedienfeld oben links im Plan. Eingabezeile und Flurstück-Leiste stehen fest, damit
+der Plan beim Werkzeugwechsel nicht springt. Ohne
 Flächen bietet der Plan „Rechteck zeichnen“, „Polygon zeichnen“ und „Unterlage laden …“ an. Die Flächentabelle
 unter dem Plan beginnt mit der Nummer wie im Plan und im Druck.
 

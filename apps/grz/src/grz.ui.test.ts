@@ -462,7 +462,10 @@ describe('Plan und Einstieg (G-22, G-24, G-27)', () => {
     const host = render(MitMenue);
     const texte = () => [...host.querySelectorAll('.lp-beschriftung')].map((t) => t.textContent);
     expect(texte()).toContain('1 · Zufahrt · 30,00 m²');
-    // Schalter im Menü „Ansicht“ des Plans
+    // Schalter im Menü „Ansicht“ des Plans; Raster ist aus und lässt sich zuschalten
+    expect(host.querySelector('.lp-raster')).toBeNull();
+    imMenue('Ansicht', 'Raster');
+    expect(host.querySelector('.lp-raster')).not.toBeNull();
     imMenue('Ansicht', 'Beschriftung');
     expect(texte().some((t) => t?.includes('Zufahrt'))).toBe(false);
     const hilfe = host.querySelector('.lp-hint')!.textContent!;
@@ -1199,6 +1202,20 @@ describe('Kopf- und Werkzeugleisten (Leisten-Regel)', () => {
       // „Datei“ steht jetzt als Untermenü oben in „Mehr“, Excel-Export bleibt darunter
       act(() => (leiste.querySelector('button[aria-label="Mehr"]') as HTMLButtonElement).click());
       expect(menueTexte(document.body)).toEqual(['Datei', 'Excel-Export …']);
+      // das Untermenü „Datei“ in „Mehr“ führt seine Befehle aus (Neu ohne Änderungen: sofort ein leeres Projekt)
+      act(() => menuePunkt(document.body, 'Datei').click());
+      expect(menueTexte(document.body)).toContain('Neu');
+      await act(async () => menuePunkt(document.body, 'Neu').click());
+      for (let i = 0; i < 10 && useGrz.getState().project.name !== 'Neues Projekt'; i++) await act(async () => new Promise((r) => setTimeout(r, 0)));
+      expect(useGrz.getState().project.name).toBe('Neues Projekt');
+      act(() => useGrz.getState().load(projekt()));
+      act(() => document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+      // Gegenprobe: wieder breit → „Datei“ zurück in der Leiste, „Mehr“ nur mit dem festen Punkt
+      leistenMessung.breite = (el: Element) => (el.classList.contains('leiste') ? 2000 : 80);
+      act(() => window.dispatchEvent(new Event('resize')));
+      expect((leiste.querySelector('[data-eintrag="datei"]') as HTMLElement).hidden).toBe(false);
+      act(() => (leiste.querySelector('button[aria-label="Mehr"]') as HTMLButtonElement).click());
+      expect(menueTexte(document.body)).toEqual(['Excel-Export …']);
     } finally {
       leistenMessung.breite = alt;
     }
@@ -1227,6 +1244,17 @@ describe('Kopf- und Werkzeugleisten (Leisten-Regel)', () => {
     expect(menuePunkt(document.body, 'Entfernen').classList.contains('gefahr')).toBe(true);
     act(() => menuePunkt(document.body, 'Entfernen').click());
     expect(useGrz.getState().project.lageplan!.unterlage).toBeUndefined();
+    expect(useGrz.getState().pastAktionen.at(-1)).toBe('Unterlage entfernen');
+    // ein Rückgängig-Schritt: die Unterlage ist wieder da
+    act(() => useGrz.getState().undo());
+    expect(useGrz.getState().project.lageplan!.unterlage).toBeDefined();
+    // „Ersetzen …“ öffnet die Dateiauswahl (verborgene Eingabe)
+    const eingabe = host.querySelector('.lp-unterlage input[type="file"]') as HTMLInputElement;
+    let gewaehlt = 0;
+    eingabe.click = () => void gewaehlt++;
+    imMenue('Unterlage', 'Ersetzen …');
+    expect(gewaehlt).toBe(1);
+    imMenue('Unterlage', 'Entfernen');
     // ohne Unterlage nur ein Knopf zum Laden, kein Menü
     expect(knopf()).toBeUndefined();
     expect([...host.querySelectorAll('.lp-unterlage button')].map((b) => b.textContent?.trim())).toEqual(['Bild/PDF laden …']);
