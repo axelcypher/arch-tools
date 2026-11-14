@@ -186,10 +186,10 @@ export function Toolbar() {
             gruppe: true,
             inhalt: (
               <>
-                <button onClick={rueckgaengig} disabled={!canUndo} title="Rückgängig (Strg+Z) – beim Zeichnen zuerst den letzten Punkt" aria-label="Rückgängig">
+                <button className="icon" onClick={rueckgaengig} disabled={!canUndo} title="Rückgängig (Strg+Z) – beim Zeichnen zuerst den letzten Punkt" aria-label="Rückgängig">
                   <Symbol name="rueckgaengig" />
                 </button>
-                <button onClick={st.redo} disabled={!canRedo} title="Wiederholen (Strg+Y)" aria-label="Wiederholen">
+                <button className="icon" onClick={st.redo} disabled={!canRedo} title="Wiederholen (Strg+Y)" aria-label="Wiederholen">
                   <Symbol name="wiederholen" />
                 </button>
               </>
@@ -202,7 +202,7 @@ export function Toolbar() {
               <div className="tb-werkzeuge" role="group" aria-label="Werkzeuge">
                 {TOOLS.map((t) => (
                   <button key={t.id} className={tool === t.id ? 'active' : ''} aria-pressed={tool === t.id} aria-label={t.label} onClick={() => st.setTool(t.id)} title={t.title}>
-                    <Symbol name={t.symbol} /> <span className="tb-werkzeug-text">{t.label}</span>
+                    <Symbol name={t.symbol} /> <span className="tb-text">{t.label}</span>
                   </button>
                 ))}
                 <button
@@ -213,7 +213,7 @@ export function Toolbar() {
                   onClick={() => st.setTool('calibrate')}
                   title={hatPlan ? 'Plan kalibrieren – zwei Punkte mit bekanntem Abstand (K)' : 'Zuerst einen Plan laden (Datei → Plan laden …)'}
                 >
-                  <Symbol name="kalibrieren" /> <span className="tb-werkzeug-text">Kalibrieren</span>
+                  <Symbol name="kalibrieren" /> <span className="tb-text">Kalibrieren</span>
                 </button>
               </div>
             ),

@@ -1,0 +1,6 @@
+{
+  "flaechenrechner": {
+    "stufe": "patch",
+    "notiz": "In schmalen Fenstern wandert „Exportieren“ zuerst ins Menü „Mehr“; erst danach zeigt die Werkzeugleiste nur noch Symbole, ohne dass Einträge zurückspringen."
+  }
+}
