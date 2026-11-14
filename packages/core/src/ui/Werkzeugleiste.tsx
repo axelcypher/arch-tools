@@ -2,8 +2,8 @@
  * Werkzeugleiste mit Überlauf: Einträge stehen der Reihe nach in der Leiste; reicht die Breite nicht, wandern Einträge
  * mit Rang in das Menü „Mehr“ am Ende – der unwichtigste (höchster Rang) zuerst. Einträge ohne Rang bleiben immer
  * sichtbar (Hauptknopf, Werkzeuge einer Zeichenfläche). Seltene Befehle stehen gleich im Menü „Mehr“ (`mehr`).
- * Die Leiste nimmt die volle Breite ihres Elternelements (`.toolbar.leiste`: `width: 100%`, `flex: 0 1 auto` – in der Spalte von `.app` wächst sie nicht in die Höhe) – sie
- * misst ihre eigene Breite als verfügbaren Platz. Richtlinie: docs/design.md, „Kopf- und Werkzeugleisten“.
+ * Die Leiste nimmt die volle Breite ihres Elternelements (`.toolbar.leiste`: `width: 100%`, `flex: 0 1 auto` – in
+ * der Spalte von `.app` wächst sie nicht in die Höhe) und misst ihre eigene Breite als verfügbaren Platz. Richtlinie: docs/design.md, „Kopf- und Werkzeugleisten“.
  */
 import type { ReactNode } from 'react';
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
