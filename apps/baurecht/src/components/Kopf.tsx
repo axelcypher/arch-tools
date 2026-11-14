@@ -300,8 +300,8 @@ export function Kopf({
                     title={warnText.join(' · ')}
                     aria-haspopup="menu"
                     aria-expanded={markeOffen}
-                    // kurz „N Warnungen“ (die Marke steht beim Rechtsstand); vorgelesen wird der ganze Name
-                    aria-label={warnText.length === 1 ? undefined : `Rechtsstand: ${warnText.length} Warnungen`}
+                    // kurz „N Warnungen“ (die Marke steht beim Rechtsstand); der Name beginnt mit dem sichtbaren Text
+                    aria-label={warnText.length === 1 ? undefined : `${warnText.length} Warnungen zum Rechtsstand`}
                     onClick={(e) => zeigeMenueAn(e.currentTarget, mehrPunkte(), 'Rechtsstand')}
                   >
                     {warnText.length === 1 ? warnText[0] : `${warnText.length} Warnungen`}

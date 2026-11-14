@@ -26,13 +26,13 @@ afterEach(() => {
   document.body.innerHTML = '';
 });
 
-function render(aufrufe: string[] = [], lageLaeuft = false, antraege?: string[], vorher?: () => void): HTMLElement {
+function render(aufrufe: string[] = [], lageLaeuft = false, antraege?: string[], vorher?: () => void, texte: Parameters<typeof pruefstandBerechnen>[6] = {}): HTMLElement {
   const bytes = beispielOap();
   useBaurecht.getState().projektSetzen({ art: 'datei', name: 'EFH.oap', bytes }, readProjectFile(bytes), projektdateiRoh(bytes));
   const s = useBaurecht.getState();
   if (antraege) useBaurecht.setState({ antraege });
   vorher?.();
-  const stand = pruefstandBerechnen(s.paket, s.project, s.merkmale, s.pruefung.fakten, {}, '2026-12-01', {});
+  const stand = pruefstandBerechnen(s.paket, s.project, s.merkmale, s.pruefung.fakten, {}, '2026-12-01', texte);
   const host = document.createElement('div');
   document.body.appendChild(host);
   act(() => {
@@ -235,17 +235,28 @@ describe('Kopf (Desktop): Menü „Mehr“ und Sammelmarke', () => {
     }
   });
 
-  it('Sammelmarke: sichtbar kurz „N Warnungen“, vorgelesen „Rechtsstand: N Warnungen“ (ohne tb-text – sie hat kein Symbol)', () => {
-    const host = render();
-    const marke = host.querySelector<HTMLButtonElement>('.br-marke-knopf')!;
-    const n = marke.title.split(' · ').length;
-    if (n > 1) {
-      expect(marke.textContent).toBe(`${n} Warnungen`);
-      expect(marke.getAttribute('aria-label')).toBe(`Rechtsstand: ${n} Warnungen`);
-    } else {
-      expect(marke.textContent).toBe(marke.title);
-      expect(marke.hasAttribute('aria-label')).toBe(false);
-    }
-    expect(marke.querySelector('.tb-text')).toBeNull();
+  it('Sammelmarke: mehrere Warnungen kurz „N Warnungen“, vorgelesen „N Warnungen zum Rechtsstand“; eine Warnung wörtlich (ohne tb-text – kein Symbol)', () => {
+    // fester Rechtsstand: eine Norm geprüft, eine nicht abrufbar, die übrigen nie geprüft → zwei Warnungen
+    const s = useBaurecht.getState();
+    const [geprueft, fehlt] = s.paket.module
+      .filter((m) => m.ebene === 'bund')
+      .flatMap((m) =>
+        Object.entries(m.normen)
+          .filter(([, d]) => d.quelle.art !== 'verweis')
+          .map(([n]) => `${m.id}/${n}`),
+      );
+    const texte = { [geprueft]: { fassung: null, geprueft: '2026-11-14T08:00:00Z' }, [fehlt]: { fassung: null, fehler: 'nicht erreichbar' } };
+    const mehrere = render([], false, undefined, undefined, texte).querySelector<HTMLButtonElement>('.br-marke-knopf')!;
+    expect(mehrere.title.split(' · ')).toEqual([expect.stringMatching(/^\d+ nie geprüft$/), '1 nicht abrufbar']);
+    expect(mehrere.textContent).toBe('2 Warnungen');
+    expect(mehrere.getAttribute('aria-label')).toBe('2 Warnungen zum Rechtsstand');
+    expect(mehrere.querySelector('.tb-text')).toBeNull();
+    act(() => root?.unmount());
+    document.body.innerHTML = '';
+    // ohne Prüfstand: genau eine Warnung, wörtlich und ohne eigenen Namen
+    const eine = render().querySelector<HTMLButtonElement>('.br-marke-knopf')!;
+    expect(eine.title).toBe('Rechtsstand noch nicht geprüft');
+    expect(eine.textContent).toBe('Rechtsstand noch nicht geprüft');
+    expect(eine.hasAttribute('aria-label')).toBe(false);
   });
 });
