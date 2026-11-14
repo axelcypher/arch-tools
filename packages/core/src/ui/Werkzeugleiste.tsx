@@ -2,8 +2,9 @@
  * Werkzeugleiste mit Überlauf: Einträge stehen der Reihe nach in der Leiste; reicht die Breite nicht, wandern Einträge
  * mit Rang in das Menü „Mehr“ am Ende – der unwichtigste (höchster Rang) zuerst. Einträge ohne Rang bleiben immer
  * sichtbar (Hauptknopf, Werkzeuge einer Zeichenfläche). Seltene Befehle stehen gleich im Menü „Mehr“ (`mehr`).
- * Die Leiste nimmt die volle Breite ihres Elternelements (`.toolbar.leiste`: `width: 100%`, `flex: 0 1 auto` – in
- * der Spalte von `.app` wächst sie nicht in die Höhe) und misst ihre eigene Breite als verfügbaren Platz. Richtlinie: docs/design.md, „Kopf- und Werkzeugleisten“.
+ * Die Leiste nimmt die volle Breite ihres Elternelements (`.toolbar.werkzeugleiste`: `width: 100%`, `flex: 0 0 auto` –
+ * in einer Spalte wächst und schrumpft sie nicht in der Höhe) und misst ihre eigene Breite als verfügbaren Platz.
+ * Richtlinie: docs/design.md, „Kopf- und Werkzeugleisten“.
  */
 import type { ReactNode } from 'react';
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
@@ -18,6 +19,12 @@ export interface LeistenEintrag {
   inhalt: ReactNode;
   /** Gruppe zusammengehöriger Knöpfe: mit Trennstrich zum nächsten Eintrag (`.tb-group`); sonst ohne */
   gruppe?: boolean;
+  /**
+   * Darf sich kürzen (z. B. ein Statustext): schrumpft bis auf eine Mindestbreite, Text mit „…“ abgeschnitten. Sonst
+   * behält ein Eintrag seine Breite und wandert bei Platzmangel ins Menü „Mehr“. Ein kürzbarer Eintrag schrumpft zuerst;
+   * Einträge mit Rang wandern erst, wenn er seine Mindestbreite erreicht hat.
+   */
+  kuerzbar?: boolean;
   /** Gegenstück im Menü „Mehr“, solange der Eintrag nicht in die Leiste passt (Gruppe: mehrere Punkte) */
   menue?: MenuePunkt | MenuePunkt[];
   /**
@@ -97,10 +104,16 @@ export function Werkzeugleiste({
   const [weg, setWeg] = useState<Set<string>>(() => new Set());
   const festePunkte = mehr?.() ?? [];
   const mehrImmer = festePunkte.length > 0;
+  // `teile` bauen die Apps bei jedem Render neu: die Rechnung liest sie aus dem Ref und hängt nur am Aufbau (ids, Rang,
+  // Menü, Abstandhalter) – neu gemessen wird bei Größenänderungen (ResizeObserver auf Leiste und Einträgen), nicht je Render
+  const teileRef = useRef(teile);
+  teileRef.current = teile;
+  const aufbau = teile.map((t) => (istAbstand(t) ? '|' : `${t.id}:${t.rang ?? ''}:${t.menue === undefined ? 0 : 1}`)).join(',');
 
   const berechnen = useCallback(() => {
     const el = ref.current;
     if (!el) return;
+    const teile = teileRef.current;
     // sichtbare Einträge neu messen, für ausgeblendete gilt die zuletzt gemessene Breite
     for (const k of el.querySelectorAll<HTMLElement>(':scope > [data-eintrag]')) {
       if (!k.hidden) breiten.current.set(k.dataset.eintrag!, leistenMessung.breite(k));
@@ -108,7 +121,7 @@ export function Werkzeugleiste({
     const stil = getComputedStyle(el);
     const abstand = parseFloat(stil.columnGap || stil.gap) || 0;
     const innen = leistenMessung.breite(el) - (parseFloat(stil.paddingLeft) || 0) - (parseFloat(stil.paddingRight) || 0);
-    const mehrEl = el.querySelector<HTMLElement>(':scope > .leiste-mehr');
+    const mehrEl = el.querySelector<HTMLElement>(':scope > .werkzeugleiste-mehr');
     if (mehrEl && !mehrEl.hidden) breiten.current.set('\u0000mehr', leistenMessung.breite(mehrEl));
     const eintraege = teile.filter((t): t is LeistenEintrag => !istAbstand(t)).map((t) => ({ id: t.id, breite: breiten.current.get(t.id) ?? 0, rang: t.menue === undefined ? undefined : t.rang }));
     const abstandhalter = teile.filter(istAbstand).length;
@@ -122,14 +135,15 @@ export function Werkzeugleiste({
       if (fokusId && neu.has(fokusId) && !alt.has(fokusId)) fokusAufMehr.current = true;
       return neu;
     });
-  }, [teile, mehrImmer]);
+  }, [aufbau, mehrImmer]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useLayoutEffect(() => {
     berechnen();
     const el = ref.current;
     window.addEventListener('resize', berechnen);
     const ro = typeof ResizeObserver !== 'undefined' && el ? new ResizeObserver(() => berechnen()) : null;
-    if (ro && el) ro.observe(el);
+    // die Leiste selbst und jeder Eintrag: ändert sich ein Knopftext, misst die Leiste neu
+    if (ro && el) for (const k of [el, ...el.querySelectorAll(':scope > [data-eintrag], :scope > .werkzeugleiste-mehr')]) ro.observe(k);
     return () => {
       window.removeEventListener('resize', berechnen);
       ro?.disconnect();
@@ -144,20 +158,20 @@ export function Werkzeugleiste({
   useLayoutEffect(() => {
     if (!fokusAufMehr.current) return;
     fokusAufMehr.current = false;
-    ref.current?.querySelector<HTMLButtonElement>(':scope > .leiste-mehr > button')?.focus();
+    ref.current?.querySelector<HTMLButtonElement>(':scope > .werkzeugleiste-mehr > button')?.focus();
   }, [weg]);
   return (
-    <div ref={ref} className={`toolbar leiste${className ? ` ${className}` : ''}`} role="group" aria-label={name}>
+    <div ref={ref} className={`toolbar werkzeugleiste${className ? ` ${className}` : ''}`} role="group" aria-label={name}>
       {teile.map((t, i) =>
         istAbstand(t) ? (
           <div key={`abstand-${i}`} className="tb-spacer" />
         ) : (
-          <div key={t.id} className={t.gruppe ? 'tb-group' : 'leiste-eintrag'} data-eintrag={t.id} hidden={weg.has(t.id)}>
+          <div key={t.id} className={`${t.gruppe ? 'tb-group' : 'werkzeugleiste-eintrag'}${t.kuerzbar ? ' werkzeugleiste-kuerzbar' : ''}`} data-eintrag={t.id} hidden={weg.has(t.id)}>
             {t.inhalt}
           </div>
         ),
       )}
-      <div className="leiste-mehr" hidden={!zeigeMehr}>
+      <div className="werkzeugleiste-mehr" hidden={!zeigeMehr}>
         <MenueKnopf className="icon" punkte={() => mehrPunkte(teile, weg, mehr?.() ?? [])} ariaLabel="Mehr" title="Mehr – weitere Befehle" name="Mehr" pfeil={false}>
           <Symbol name="mehr" />
         </MenueKnopf>

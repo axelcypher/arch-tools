@@ -317,9 +317,13 @@ Zurücksetzen, Sonderfunktionen. Feste Namen, in allen Apps gleich:
   Punkte) und `rang` (höher = wandert früher); `{ abstand: true }` schiebt den Rest nach rechts; `mehr` liefert die
   festen Punkte des Menüs „Mehr“, `name` benennt die Leiste. Ohne `rang` oder `menue` bleibt ein Eintrag immer
   sichtbar – so der Hauptknopf und die Werkzeuge. Übergelaufene Einträge stehen in „Mehr“ oben, in ihrer Reihenfolge,
-  getrennt von den festen Punkten; hatte ein übergelaufener Knopf den Fokus, bekommt ihn „Mehr“. Die Leiste nimmt die
-  volle Breite ihres Elternelements (wächst in der Spalte von `.app` aber nicht in die Höhe) und braucht keine eigene
-  `.toolbar` darum.
+  getrennt von den festen Punkten; hatte ein übergelaufener Knopf den Fokus, bekommt ihn „Mehr“. Einträge
+  behalten ihre Breite (`flex: none`) und wandern ins Menü, statt zu schrumpfen; ein Eintrag, der sich kürzen darf
+  (Statustext), bekommt `kuerzbar` – er schrumpft bis auf eine Mindestbreite, der Text endet auf „…“; erst danach wandern Einträge
+  mit Rang ins Menü. Einträge ohne
+  Rang (Werkzeuge, Hauptknopf) und „Mehr“ müssen bei der Mindestbreite des Fensters zusammen hineinpassen. Die Leiste nimmt die
+  volle Breite ihres Elternelements (wächst oder schrumpft in einer Spalte aber nicht in der Höhe) und braucht keine eigene
+  `.toolbar` darum; sie steht in einer Spalte (über der Arbeitsfläche) oder allein in einer Zeile.
 
 ```tsx
 <Werkzeugleiste

@@ -204,28 +204,46 @@ body,
 }
 
 /* Werkzeugleiste mit Überlauf (ui/Werkzeugleiste.tsx): eine Zeile; was nicht passt, steht im Menü „Mehr“ */
-.toolbar.leiste {
+.toolbar.werkzeugleiste {
   flex-wrap: nowrap;
-  /* in der Spalte von .app nur in der Breite strecken, nie in die Höhe wachsen */
-  flex: 0 1 auto;
+  /* in einer Spalte (.app, scrollende Bereiche) weder wachsen noch schrumpfen: die Breite kommt über width: 100% */
+  flex: 0 0 auto;
   width: 100%;
   min-width: 0;
   box-sizing: border-box;
 }
 /* einzelner Eintrag ohne Trennstrich; Gruppen tragen .tb-group */
-.leiste-eintrag {
+.werkzeugleiste-eintrag {
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: var(--s1);
 }
-.toolbar.leiste > [hidden] {
+/* Einträge behalten ihre Breite: statt zu schrumpfen wandern sie ins Menü „Mehr“ (kürzbare Einträge tragen
+   `kuerzbar` → .werkzeugleiste-kuerzbar) */
+.toolbar.werkzeugleiste > .werkzeugleiste-eintrag,
+.toolbar.werkzeugleiste > .tb-group {
+  flex: none;
+}
+/* Eintrag mit `kuerzbar`: schrumpft bis auf vier Steuerhöhen (Platz für ein kurzes Wort mit „…“), Text mit „…“ */
+.toolbar.werkzeugleiste > .werkzeugleiste-kuerzbar {
+  flex: 0 1 auto;
+  min-width: calc(4 * var(--ctl-h));
+  overflow: hidden;
+}
+.toolbar.werkzeugleiste > .werkzeugleiste-kuerzbar > * {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.toolbar.werkzeugleiste > [hidden] {
   display: none;
 }
-.toolbar.leiste > .tb-group:has(+ .tb-spacer),
-.toolbar.leiste > .tb-group:has(+ .leiste-mehr[hidden]:last-child) {
+.toolbar.werkzeugleiste > .tb-group:has(+ .tb-spacer),
+.toolbar.werkzeugleiste > .tb-group:has(+ .werkzeugleiste-mehr[hidden]:last-child) {
   border-right: none;
 }
-.leiste-mehr {
+.werkzeugleiste-mehr {
   display: flex;
   align-items: center;
   flex: none;

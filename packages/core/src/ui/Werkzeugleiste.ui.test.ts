@@ -64,8 +64,8 @@ describe('Werkzeugleiste (Komponente)', () => {
     leistenBreite = 1000;
     // Breiten aus data-breite der Knöpfe; die Leiste selbst aus leistenBreite, „Mehr“ 30px
     leistenMessung.breite = (el: Element) => {
-      if (el.classList.contains('leiste')) return leistenBreite;
-      if (el.classList.contains('leiste-mehr')) return 30;
+      if (el.classList.contains('werkzeugleiste')) return leistenBreite;
+      if (el.classList.contains('werkzeugleiste-mehr')) return 30;
       return [...el.querySelectorAll('[data-breite]')].reduce((n, k) => n + Number(k.getAttribute('data-breite')), 0);
     };
   });
@@ -91,7 +91,7 @@ describe('Werkzeugleiste (Komponente)', () => {
     act(() => void window.dispatchEvent(new Event('resize')));
   };
   const sichtbar = (host: Element) => [...host.querySelectorAll<HTMLElement>('[data-eintrag]')].filter((g) => !g.hidden).map((g) => g.dataset.eintrag);
-  const mehrKnopf = (host: Element) => host.querySelector<HTMLButtonElement>('.leiste-mehr button')!;
+  const mehrKnopf = (host: Element) => host.querySelector<HTMLButtonElement>('.werkzeugleiste-mehr button')!;
   const menuePunkte = () => [...document.querySelectorAll('.menue [role="menuitem"]')].map((b) => b.textContent);
 
   const neu = vi.fn();
@@ -106,23 +106,27 @@ describe('Werkzeugleiste (Komponente)', () => {
   it('breit genug: alles in der Leiste, ohne feste Punkte kein „Mehr“; Name der Leiste für Screenreader', () => {
     const host = render(teile());
     expect(sichtbar(host)).toEqual(['datei', 'werkzeuge', 'export', 'haupt']);
-    expect(host.querySelector<HTMLElement>('.leiste-mehr')!.hidden).toBe(true);
-    const leiste = host.querySelector('.toolbar.leiste')!;
+    expect(host.querySelector<HTMLElement>('.werkzeugleiste-mehr')!.hidden).toBe(true);
+    const leiste = host.querySelector('.toolbar.werkzeugleiste')!;
     expect(leiste.getAttribute('role')).toBe('group');
     expect(leiste.getAttribute('aria-label')).toBe('Plan');
+    // nicht `.leiste`: das ist die Klasse der Seitenleisten (BreitenLeiste) – ihre Regeln (erstes Kind gestreckt, Breiten
+    // angleichen) dürfen in der Werkzeugleiste nicht greifen
+    expect(leiste.classList.contains('leiste')).toBe(false);
+    expect(host.querySelector('.leiste')).toBeNull();
   });
 
   it('schmaler: Einträge wandern nach Rang ins Menü „Mehr“ und kommen beim Verbreitern zurück', () => {
     const host = render(teile());
     breiteSetzen(480);
     expect(sichtbar(host)).toEqual(['werkzeuge', 'export', 'haupt']);
-    expect(host.querySelector<HTMLElement>('.leiste-mehr')!.hidden).toBe(false);
+    expect(host.querySelector<HTMLElement>('.werkzeugleiste-mehr')!.hidden).toBe(false);
     breiteSetzen(200);
     // Werkzeuge und Hauptknopf haben keinen Rang: sie bleiben, auch wenn es eng wird
     expect(sichtbar(host)).toEqual(['werkzeuge', 'haupt']);
     breiteSetzen(1000);
     expect(sichtbar(host)).toEqual(['datei', 'werkzeuge', 'export', 'haupt']);
-    expect(host.querySelector<HTMLElement>('.leiste-mehr')!.hidden).toBe(true);
+    expect(host.querySelector<HTMLElement>('.werkzeugleiste-mehr')!.hidden).toBe(true);
   });
 
   it('„Mehr“: Symbolknopf mit Namen, ohne Aufklapp-Pfeil; Menü mit den übergelaufenen Befehlen, Tastenkürzel, Fokus zurück', () => {
@@ -158,7 +162,7 @@ describe('Werkzeugleiste (Komponente)', () => {
       { id: 'werkzeuge', gruppe: true, inhalt: knopf('Polygon', 200) },
       { id: 'haupt', inhalt: knopf('Flächenaufstellung …', 120) },
     ]);
-    expect(host.querySelector('[data-eintrag="datei"]')!.className).toBe('leiste-eintrag');
+    expect(host.querySelector('[data-eintrag="datei"]')!.className).toBe('werkzeugleiste-eintrag');
     expect(host.querySelector('[data-eintrag="werkzeuge"]')!.className).toBe('tb-group');
     const neuKnopf = host.querySelector<HTMLButtonElement>('[data-eintrag="datei"] button')!;
     act(() => neuKnopf.focus());
@@ -174,10 +178,69 @@ describe('Werkzeugleiste (Komponente)', () => {
     expect(document.activeElement).toBe(haupt);
   });
 
+  it('kuerzbar: Eintrag trägt werkzeugleiste-kuerzbar (darf schrumpfen), ohne das Feld nicht', () => {
+    const host = render([
+      { id: 'status', kuerzbar: true, inhalt: knopf('Rechtsstand 2026-11', 140) },
+      { id: 'haupt', inhalt: knopf('Prüfen', 80) },
+    ]);
+    expect(host.querySelector('[data-eintrag="status"]')!.className).toBe('werkzeugleiste-eintrag werkzeugleiste-kuerzbar');
+    expect(host.querySelector('[data-eintrag="haupt"]')!.className).toBe('werkzeugleiste-eintrag');
+  });
+
+  it('neue teile bei jedem Render ohne Änderung am Aufbau: kein Neumessen; geänderter Aufbau rechnet neu', () => {
+    const host = render(teile());
+    breiteSetzen(480);
+    expect(sichtbar(host)).toEqual(['werkzeuge', 'export', 'haupt']);
+    const messung = leistenMessung.breite;
+    let gemessen = 0;
+    leistenMessung.breite = (el) => {
+      gemessen++;
+      return messung(el);
+    };
+    // gleicher Aufbau, neues Array (wie beim Render der App): nichts messen
+    act(() => root!.render(createElement(Fragment, null, createElement(Werkzeugleiste, { teile: teile(), name: 'Plan' }), createElement(MenueHost))));
+    expect(gemessen).toBe(0);
+    // Gegenprobe: ein Eintrag mehr – neu gerechnet
+    const mehrTeile = [...teile(), { id: 'neu', rang: 3, inhalt: knopf('Extra', 60), menue: { text: 'Extra' } }];
+    act(() => root!.render(createElement(Fragment, null, createElement(Werkzeugleiste, { teile: mehrTeile, name: 'Plan' }), createElement(MenueHost))));
+    expect(gemessen).toBeGreaterThan(0);
+    expect(sichtbar(host)).not.toContain('neu');
+  });
+
+  it('wird ein Eintrag breiter (z. B. neuer Text), misst der ResizeObserver neu und ein Eintrag mit Rang wandert ins Menü', () => {
+    const beobachter: { cb: () => void; ziele: Element[] }[] = [];
+    const original = globalThis.ResizeObserver;
+    globalThis.ResizeObserver = class {
+      ziele: Element[] = [];
+      constructor(public cb: () => void) {
+        beobachter.push(this);
+      }
+      observe(el: Element) {
+        this.ziele.push(el);
+      }
+      unobserve() {}
+      disconnect() {}
+    } as unknown as typeof ResizeObserver;
+    try {
+      const host = render(teile());
+      breiteSetzen(520);
+      expect(sichtbar(host)).toEqual(['datei', 'werkzeuge', 'export', 'haupt']);
+      // beobachtet werden die Leiste und jeder Eintrag
+      const ro = beobachter.at(-1)!;
+      expect(ro.ziele).toContain(host.querySelector('[data-eintrag="werkzeuge"]'));
+      // der Werkzeugknopf wird breiter (200 → 260 px) – ohne Render der App, nur über den ResizeObserver
+      host.querySelector('[data-eintrag="werkzeuge"] button')!.setAttribute('data-breite', '260');
+      act(() => ro.cb());
+      expect(sichtbar(host)).toEqual(['werkzeuge', 'export', 'haupt']);
+    } finally {
+      globalThis.ResizeObserver = original;
+    }
+  });
+
   it('feste Punkte: „Mehr“ steht immer am Ende, auch wenn alles passt; ausgeblendete Knöpfe sind nicht per Tab erreichbar', () => {
     const host = render(teile(), () => [{ text: 'Protokoll …' }]);
-    expect(host.querySelector<HTMLElement>('.leiste-mehr')!.hidden).toBe(false);
-    expect(host.querySelector('.toolbar.leiste')!.lastElementChild!.classList.contains('leiste-mehr')).toBe(true);
+    expect(host.querySelector<HTMLElement>('.werkzeugleiste-mehr')!.hidden).toBe(false);
+    expect(host.querySelector('.toolbar.werkzeugleiste')!.lastElementChild!.classList.contains('werkzeugleiste-mehr')).toBe(true);
     act(() => mehrKnopf(host).click());
     expect(menuePunkte()).toEqual(['Protokoll …']);
     act(() => void document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
