@@ -3,8 +3,13 @@ import assert from 'node:assert/strict';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { after, test } from 'node:test';
+import { fileURLToPath } from 'node:url';
 import { regelnKern, regelnVoll } from './regeln-matrix.mjs';
+
+const SKRIPT = fileURLToPath(new URL('./regeln-matrix.mjs', import.meta.url));
 
 const wurzel = mkdtempSync(join(tmpdir(), 'regeln-matrix-'));
 after(() => rmSync(wurzel, { recursive: true, force: true }));
@@ -26,7 +31,11 @@ const kern = regelnKern(wurzel);
 const voll = (...d) => regelnVoll(d, kern, (p) => !p.includes('geloescht'));
 
 test('Kern von LEXIO und Regelpaket: auch über Importe im Kern und aus Tests des Regelpakets', () => {
-  assert.deepEqual([...kern].sort(), ['packages/core/src/baurecht/auswertung.ts', 'packages/core/src/baurecht/fragen.ts', 'packages/core/src/baurecht/kurz.ts']);
+  assert.deepEqual([...kern].filter((p) => p.startsWith('packages/core/')).sort(), [
+    'packages/core/src/baurecht/auswertung.ts',
+    'packages/core/src/baurecht/fragen.ts',
+    'packages/core/src/baurecht/kurz.ts',
+  ]);
 });
 
 test('voll: Regelpaket, LEXIO und deren Kern (auch nur über einen Test des Regelpakets erreicht)', () => {
@@ -75,7 +84,7 @@ test('nicht sicher verfolgbare Muster: nur, wenn sie in den Kern zeigen können,
       d('apps/baurecht/src/App.tsx', `import { a } from '@core/a';\n${inhalt}`);
       d('packages/baurecht-regeln/vitest.config.ts', "const kern = new URL('../core/src', import.meta.url);");
       const k = regelnKern(w);
-      return k && [...k].sort();
+      return k && [...k].filter((p) => p.startsWith('packages/core/')).sort();
     } finally {
       rmSync(w, { recursive: true, force: true });
     }
@@ -84,9 +93,79 @@ test('nicht sicher verfolgbare Muster: nur, wenn sie in den Kern zeigen können,
   assert.deepEqual(fall('laufzeit', "const u = new URL(href, 'https://recht.nrw.de');"), ['packages/core/src/a.ts']);
   assert.deepEqual(fall('glob', "const d = import.meta.glob(['../../../packages/baurecht-regeln/module/**/*.json'], { eager: true });"), ['packages/core/src/a.ts']);
   assert.deepEqual(fall('datei', "const u = new URL('./bild.png', import.meta.url);"), ['packages/core/src/a.ts']);
+  assert.deepEqual(fall('selbst', 'if (resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main();'), ['packages/core/src/a.ts']);
   // unsicher: in den Kern, nicht wörtlich, Template-Import
   assert.equal(fall('glob-kern', "const d = import.meta.glob(['../../../packages/core/src/*.ts']);"), null);
   assert.equal(fall('url-kern', "const u = new URL('../../../packages/core/src/b.ts', import.meta.url);"), null);
   assert.equal(fall('url-variabel', 'const u = new URL(name, import.meta.url);'), null);
   assert.equal(fall('template', 'const m = await import(`@core/${name}`);'), null);
+  assert.equal(fall('glob-backtick', 'const d = import.meta.glob(`../../../packages/core/src/*.ts`);'), null);
+  assert.equal(fall('url-ausdruck', "const u = new URL(pfad('../../../packages/core/src/b.ts'), import.meta.url);"), null);
+  assert.equal(fall('url-basis', "const basis = import.meta.url;\nconst u = new URL('../../../packages/core/src/b.ts', basis);"), null);
+});
+
+test('andere App: Stichprobe nur, solange LEXIO und das Regelpaket nichts aus ihr einbinden', () => {
+  const w = mkdtempSync(join(tmpdir(), 'regeln-matrix-app-'));
+  try {
+    const d = (pfad, text = '') => {
+      mkdirSync(dirname(join(w, pfad)), { recursive: true });
+      writeFileSync(join(w, pfad), text);
+    };
+    d('apps/baurecht/src/App.tsx', "import { n } from '../../kosten/src/norm';");
+    d('apps/kosten/src/norm.ts', 'export const n = 1;');
+    d('apps/ava/src/App.tsx', 'export const a = 1;');
+    const k = regelnKern(w);
+    assert.equal(regelnVoll(['apps/kosten/src/anderes.ts'], k), true);
+    assert.equal(regelnVoll(['apps/ava/src/App.tsx'], k), false);
+  } finally {
+    rmSync(w, { recursive: true, force: true });
+  }
+});
+
+/** kleines Repo mit main und einem Zweig; liefert die Ausgabe des Skripts (GITHUB_OUTPUT) */
+function lauf(aendern, ziel = 'main') {
+  const w = mkdtempSync(join(tmpdir(), 'regeln-matrix-git-'));
+  try {
+    const g = (...a) => execFileSync('git', a, { cwd: w, stdio: 'pipe' });
+    const d = (pfad, text = '') => {
+      mkdirSync(dirname(join(w, pfad)), { recursive: true });
+      writeFileSync(join(w, pfad), text);
+    };
+    g('init', '-q', '-b', 'main');
+    g('config', 'user.email', 'test@example.invalid');
+    g('config', 'user.name', 'Test');
+    d('packages/baurecht-regeln/module/a.json', '{"regeln":[]}');
+    d('docs/liesmich.md', '# Doku');
+    g('add', '-A');
+    g('commit', '-qm', 'Anfang');
+    // „origin“ ist das Repo selbst – das Skript holt den Ziel-Zweig von dort
+    g('remote', 'add', 'origin', w);
+    g('checkout', '-qb', 'zweig');
+    aendern(g, d);
+    g('add', '-A');
+    g('commit', '-qm', 'Änderung');
+    const ausgabe = join(w, 'ausgabe.txt');
+    spawnSync(process.execPath, [SKRIPT, ziel, 'HEAD'], { cwd: w, env: { ...process.env, GITHUB_OUTPUT: ausgabe }, encoding: 'utf8' });
+    return readFileSync(ausgabe, 'utf8').trim();
+  } finally {
+    rmSync(w, { recursive: true, force: true });
+  }
+}
+
+test('Aufruf: nur Doku → Stichprobe; ein Regelmodul aus dem Paket hinaus verschoben → voll (Umbenennung zählt beide Pfade)', () => {
+  assert.equal(
+    lauf((g, d) => d('docs/liesmich.md', '# Doku, geändert')),
+    'voll=false',
+  );
+  assert.equal(
+    lauf((g) => g('mv', 'packages/baurecht-regeln/module/a.json', 'docs/a.json')),
+    'voll=true',
+  );
+});
+
+test('Aufruf: jeder Fehler (unbekannter Ziel-Zweig) ergibt voll=true', () => {
+  assert.equal(
+    lauf((g, d) => d('docs/liesmich.md', '# Doku, geändert'), 'gibt-es-nicht'),
+    'voll=true',
+  );
 });

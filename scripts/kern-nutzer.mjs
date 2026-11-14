@@ -11,6 +11,9 @@
 //     Die App gilt als Nutzer des ganzen Kerns.
 //   - Sicherheitsnetz: Eine Kerndatei, die weder eine App noch ein Test einbindet, gilt für alle Apps (die Zuordnung
 //     hat sie dann vermutlich übersehen). Nur von Tests genutzte Dateien brauchen keine Notiz.
+// erreichbarAus (für scripts/regeln-matrix.mjs): alle Dateien (auch Tests), die von Ordnern aus erreichbar sind; dort
+// gelten new URL zur Laufzeit (ohne import.meta.url) und Glob-Listen bzw. new URL mit wörtlichem Ziel außerhalb des
+// Kerns nicht als unsicher – die Versionsprüfung oben bleibt bei der groben Regel.
 // Grundlage ist der Arbeitsbaum (in der CI der ausgecheckte PR-Stand). Lokal deshalb mit sauberem Arbeitsbaum und
 // nach `git merge origin/main` prüfen.
 
@@ -22,7 +25,7 @@ const IMPORT = /(?:\bfrom\s*|\bimport\s*\(?\s*|@import\s+(?:url\()?\s*)['"]([^'"
 const INCLUDE = /include!\s*\(\s*"([^"]+)"\s*\)/g;
 const GLOB = /import\.meta\.glob\s*(?:<[^>]*>)?\s*\(\s*['"]([^'"]+)['"]/g;
 /** nicht sicher verfolgbar: die App nutzt dann den ganzen Kern */
-const UNSICHER = /import\.meta\.glob\s*(?:<[^>]*>)?\s*\(\s*\[|new\s+URL\s*\(|\bimport\s*\(\s*`/;
+const UNSICHER = /import\.meta\.glob\s*(?:<[^>]*>)?\s*\(\s*[[`]|new\s+URL\s*\(|\bimport\s*\(\s*`/;
 const UNSICHER_RUST = /#\[path|include_str!|include_bytes!/;
 const MOD_RUST = /\bmod\s+\w+\s*;/;
 const ENDUNGEN = ['', '.ts', '.tsx', '.js', '.jsx', '.mjs', '.css', '/index.ts', '/index.tsx', '/index.js', '/index.mjs'];
@@ -118,7 +121,6 @@ export function kernDateienJeApp(wurzel, apps) {
   return jeApp;
 }
 
-/** Kerndateien, die Tests einbinden (Tests der Apps und des Kerns) */
 /**
  * Alle Dateien (auch Tests), die von den Quelltexten unter `ordner` aus erreichbar sind; null: ein nicht sicher
  * verfolgbares Muster kam vor (dann gilt der ganze Kern als erreichbar)
@@ -132,8 +134,10 @@ export function erreichbarAus(wurzel, ordner) {
 
 /**
  * Genauer als UNSICHER, nur für erreichbarAus: `new URL(…)` ohne import.meta.url ist eine Adresse zur Laufzeit (etwa
- * eine Seite von recht.nrw.de), kein Verweis auf eine Datei; `new URL('literal', import.meta.url)` und ein Glob als
- * Liste wörtlicher Muster zählen nur, wenn sie in den Kern zeigen. Template-Import, nicht wörtliche Ziele bzw. Muster
+ * eine Seite von recht.nrw.de), kein Verweis auf eine Datei. Harmlos sind außerdem nur `new URL('wörtlich',
+ * import.meta.url)` und ein Glob als Liste wörtlicher Muster, die nicht in den Kern zeigen, sowie der eigene Pfad
+ * (`fileURLToPath(import.meta.url)`, Vergleich mit import.meta.url beim Aufruf als Skript). Jedes andere Vorkommen von
+ * import.meta.url (etwa eine Variable als Basis, ein Ausdruck als Ziel), ein Glob mit Backtick und ein Template-Import
  * bleiben unsicher.
  */
 function unsicherFuerKern(datei, text) {
@@ -141,7 +145,7 @@ function unsicherFuerKern(datei, text) {
     const p = ziel.startsWith('@core/') ? 'packages/core/' : posix(normalize(join(dirname(datei), ziel)));
     return p.startsWith('packages/core') || !p.includes('/');
   };
-  if (/\bimport\s*\(\s*`/.test(text)) return true;
+  if (/\bimport\s*\(\s*`|import\.meta\.glob\s*(?:<[^>]*>)?\s*\(\s*`/.test(text)) return true;
   for (const m of text.matchAll(/import\.meta\.glob\s*(?:<[^>]*>)?\s*\(\s*(\[?)/g)) {
     if (!m[1]) continue; // einzelnes Muster: wertet verfolgen selbst aus (globKern)
     const liste = /^\[([^\]]*)\]/.exec(text.slice(m.index + m[0].length - 1));
@@ -153,15 +157,18 @@ function unsicherFuerKern(datei, text) {
         .filter(Boolean);
     if (!muster || muster.some((x) => !/^(['"])[^'"`$]*\1$/.test(x) || inKern(x.slice(1, -1)))) return true;
   }
-  for (const m of text.matchAll(/new\s+URL\s*\(([^)]*)\)/g)) {
-    if (!m[1].includes('import.meta.url')) continue;
-    const wort = /^\s*(['"])([^'"`$]*)\1\s*,\s*import\.meta\.url\s*$/.exec(m[1]);
-    if (!wort) return true;
-    if (inKern(wort[2])) return true;
+  // jedes import.meta.url muss zu einer harmlosen Form new URL('wörtlich', import.meta.url) gehören
+  let rest = text;
+  for (const m of text.matchAll(/new\s+URL\s*\(\s*(['"])([^'"`$]*)\1\s*,\s*import\.meta\.url\s*\)/g)) {
+    if (inKern(m[2])) return true;
+    rest = rest.replace(m[0], '');
   }
-  return false;
+  // der eigene Pfad (Aufruf als Skript: fileURLToPath(import.meta.url) bzw. Vergleich mit import.meta.url) zeigt nirgends hin
+  rest = rest.replace(/fileURLToPath\s*\(\s*import\.meta\.url\s*\)|===\s*import\.meta\.url\b|\bimport\.meta\.url\s*===/g, '');
+  return rest.includes('import.meta.url');
 }
 
+/** Kerndateien, die Tests einbinden (Tests der Apps und des Kerns) */
 function vonTestsGenutzt(wurzel) {
   const istTest = (p) => QUELLE.test(p) && !ausgeliefert(p);
   const tests = [...dateienUnter(wurzel, 'apps', istTest), ...dateienUnter(wurzel, 'packages/core', istTest)];

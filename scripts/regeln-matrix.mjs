@@ -3,7 +3,8 @@
 // Release-Lauf (LEXIO und Arkly) und im Regel-Workflow bleibt es immer voll; dort wird dieses Skript nicht aufgerufen.
 // Im Zweifel voll: Die Stichprobe gilt nur, wenn JEDE geänderte Datei sicher außerhalb liegt –
 //   - Doku und Notizen: docs/, .versionen/, .claude/, Markdown-Dateien
-//   - andere Apps: apps/<app>/ außer apps/baurecht/ (Arkly bettet LEXIO ein, wertet aber nicht selbst aus)
+//   - andere Apps: apps/<app>/ außer apps/baurecht/ (Arkly bettet LEXIO ein, wertet aber nicht selbst aus), solange
+//     LEXIO und das Regelpaket nichts aus ihnen einbinden
 //   - Kerndateien (packages/core/), die weder LEXIO (auch Tests) noch das Regelpaket (auch Tests und Werkzeuge) über
 //     Importe erreicht (scripts/kern-nutzer.mjs, erreichbarAus); nicht zuordenbare Kerndateien gelten als erreicht
 // Alles andere (Regelpaket, LEXIO, Wurzel-Konfiguration, package-lock, Workflows, Skripte, unbekannte Ordner): voll.
@@ -20,10 +21,9 @@ const LEXIO = 'apps/baurecht/';
 const REGELN = 'packages/baurecht-regeln/';
 const QUELLE = /\.(tsx?|jsx?|mjs|css)$/;
 
-/** Kerndateien, die LEXIO oder das Regelpaket erreichen (null: der ganze Kern) – aus dem Arbeitsbaum */
+/** Dateien, die LEXIO oder das Regelpaket über Importe erreichen (null: nicht sicher verfolgbar) – aus dem Arbeitsbaum */
 export function regelnKern(wurzel) {
-  const g = erreichbarAus(wurzel, [`${LEXIO}src`, REGELN]);
-  return g && new Set([...g].filter((p) => p.startsWith('packages/core/')));
+  return erreichbarAus(wurzel, [`${LEXIO}src`, REGELN]);
 }
 
 /**
@@ -37,7 +37,9 @@ export function regelnVoll(dateien, kern, gibt = () => true) {
 function sicherAusserhalb(p, kern, gibt) {
   if (p.startsWith(LEXIO) || p.startsWith(REGELN)) return false;
   if (/^(docs|\.versionen|\.claude)\//.test(p) || (p.endsWith('.md') && !p.startsWith('packages/core/'))) return true;
-  if (/^apps\/[^/]+\//.test(p)) return true;
+  // andere App: nur, wenn LEXIO und das Regelpaket nichts aus ihr einbinden
+  const app = /^apps\/[^/]+\//.exec(p);
+  if (app) return !!kern && ![...kern].some((k) => k.startsWith(app[0]));
   if (p.startsWith('packages/core/')) return !!kern && QUELLE.test(p) && !p.endsWith('.d.ts') && gibt(p) && !kern.has(p);
   return false;
 }
@@ -51,7 +53,8 @@ function main() {
     const kopf = process.argv[3] || 'HEAD';
     git('fetch', '--quiet', '--no-tags', 'origin', `+refs/heads/${ziel}:refs/remotes/origin/${ziel}`);
     const basis = git('merge-base', `origin/${ziel}`, kopf);
-    const dateien = git('diff', '--name-only', basis, kopf).split('\n').filter(Boolean);
+    // --no-renames: bei einer Umbenennung zählen alter und neuer Pfad (ein Regelmodul, das das Paket verlässt)
+    const dateien = git('diff', '--name-only', '--no-renames', basis, kopf).split('\n').filter(Boolean);
     voll = regelnVoll(dateien, regelnKern('.'), (p) => existsSync(join('.', p)));
     console.log(
       voll
