@@ -74,6 +74,12 @@ async function bisAbschliessbar(d: ParentNode): Promise<void> {
     { timeout: 15000, interval: 50 },
   );
 }
+/**
+ * Grenze für das Warten auf einen Zustand nach einer Auswertung (Ansage, Fokus): die Auswertung läuft in happy-dom
+ * synchron und braucht schon lokal gut 1,5 s bis zur entprellten Ansage – auf den Windows-Runnern des Release-Laufs
+ * reichten 3 s nicht. Zwei Wartezeiten (16 s) lassen unter dem testTimeout von 20 s Raum für die übrigen Schritte.
+ */
+const LANGSAME_RUNNER = { timeout: 8000, interval: 50 };
 const tippen = (el: HTMLTextAreaElement | HTMLInputElement, wert: string) =>
   act(() => {
     Object.getOwnPropertyDescriptor(Object.getPrototypeOf(el), 'value')!.set!.call(el, wert);
@@ -612,7 +618,7 @@ describe('Baurecht – Oberfläche', () => {
         await act(async () => void (await new Promise((r) => echtesSetTimeout(r, 50))));
         expect([...host.querySelectorAll('.br-angaben > .br-widerspruch-ansage')].some((r) => satz.test(r.textContent ?? ''))).toBe(true);
       },
-      { timeout: 3000, interval: 50 },
+      LANGSAME_RUNNER,
     );
     // „Zum Merkmal“ führt auf den gewählten Wert des Merkmals „Verfahren“
     const zum = [...warnung!.querySelectorAll('button')].find((b) => b.textContent === 'Zum Merkmal')!;
@@ -624,7 +630,7 @@ describe('Baurecht – Oberfläche', () => {
         await act(async () => void (await new Promise((r) => echtesSetTimeout(r, 20))));
         expect(document.activeElement?.closest('[data-merkmal="Verfahren"]'), 'Fokus am Merkmal').toBeTruthy();
       },
-      { timeout: 3000, interval: 50 },
+      LANGSAME_RUNNER,
     );
     expect(document.activeElement?.textContent).toBe('verfahrensfrei');
     act(() => knopf(host, /Prüfprotokoll/)!.click());
@@ -1648,7 +1654,7 @@ describe('Rückfrage, die nur über einen Hinweis gestellt wird', () => {
         await act(async () => void (await new Promise((r) => echtesSetTimeout(r, 20))));
         expect(document.activeElement?.closest('[data-fakt="vorhaben.beseitigung_umfang"]'), 'Fokus am Umfang').toBeTruthy();
       },
-      { timeout: 3000, interval: 50 },
+      LANGSAME_RUNNER,
     );
     expect(document.activeElement?.hasAttribute('data-bestaetigen')).toBe(true);
     // ist der Umfang bestätigt, verschwindet die Marke
