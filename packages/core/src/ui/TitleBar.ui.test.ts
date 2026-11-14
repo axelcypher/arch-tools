@@ -101,6 +101,22 @@ describe('Titelleiste auf dem Desktop', () => {
     expect(fenster.destroy).not.toHaveBeenCalled();
   });
 
+  it('Menü „Einstellungen und Hilfe“: „Update auf … …“ oben, nur solange ein Update vorliegt', async () => {
+    const { useUpdate } = await import('../platform/update');
+    act(() => useUpdate.setState({ status: 'aktuell', version: undefined }));
+    const host = await render({ dirty: false });
+    const knopf = () => host.querySelector<HTMLButtonElement>('button.titlebar-menue')!;
+    const punkte = () => [...document.querySelectorAll('.menue [role^="menuitem"]')].map((b) => b.textContent?.trim());
+    act(() => knopf().click());
+    expect(punkte()).not.toContainEqual(expect.stringContaining('Update'));
+    act(() => document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+    act(() => useUpdate.setState({ status: 'verfuegbar', version: '9.9.9' }));
+    act(() => knopf().click());
+    expect(punkte()[0]).toBe('Update auf 9.9.9 …');
+    act(() => document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+    act(() => useUpdate.setState({ status: 'aktuell', version: undefined }));
+  });
+
   it('ohne Änderungen schließt das Fenster ohne Rückfrage', async () => {
     await render({ dirty: false });
     await act(async () => fenster.schliessenAngefragt!({ preventDefault: () => {} }));

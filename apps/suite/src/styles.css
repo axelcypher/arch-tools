@@ -108,10 +108,6 @@
   background: var(--hover);
   color: var(--text);
 }
-/* „In eigenem Fenster öffnen“ nur am gewählten bzw. überfahrenen Tab sichtbar (Platz bleibt, nichts springt) */
-.rahmen-tab:not(.aktiv):not(:hover) .rahmen-tab-extern {
-  visibility: hidden;
-}
 .rahmen-plus {
   flex: 0 0 auto;
 }

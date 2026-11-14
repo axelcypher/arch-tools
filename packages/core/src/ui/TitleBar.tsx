@@ -6,7 +6,7 @@ import { andocken, anRahmenMelden, rahmenApp, rahmenModus, schliessenVorbereiten
 import { getEntries, logger, logVersion, subscribe } from '../platform/log';
 import { useTheme } from '../platform/theme';
 import type { ThemeWahl } from '../platform/theme';
-import { UpdateKnopf } from './UpdateKnopf';
+import { UpdateKnopf, updatePunkt } from './UpdateKnopf';
 import type { RegelApp } from '../regeln/regelwerk';
 import { Nachschlagewerk, useHilfe } from './Nachschlagewerk';
 import { dialogVerhaltenEinrichten } from './dialoge';
@@ -180,9 +180,11 @@ export function TitleBar({ app, name, dirty, ungespeichert, onOpenLog, regeln, o
   /** Menü der Titelleiste („Einstellungen und Hilfe“): seltene Befehle, in allen Apps gleich (docs/design.md, „Titelleiste“) */
   const mehrPunkte = (): MenuePunkt[] => {
     const sp = rahmen === 'tab' ? null : speicherortPunkt(ort, speicherortOeffnen);
-    const wahl = WAHL.find((w) => w.id === useTheme.getState().wahl);
+    // nur wo der UpdateKnopf steht (Desktop, eigenständig) und solange ein Update vorliegt
+    const update = desktop && !rahmen ? updatePunkt() : null;
     return [
-      { text: 'Farbschema', hinweis: wahl?.kurz, unter: farbschemaPunkte(zeichenflaeche) },
+      ...(update ? [update, { trenner: true } as const] : []),
+      farbschemaPunkt(zeichenflaeche),
       ...(sp ? [sp] : []),
       ...(rahmen === 'fenster' && isTauri()
         ? [{ text: 'Andocken', titel: 'Wieder als Tab in das Hauptfenster', aktion: () => void andockenFragen().catch((e) => log.error('Andocken fehlgeschlagen', e)) }]
@@ -274,6 +276,12 @@ export function farbschemaPunkte(zeichenflaeche = true): MenuePunkt[] {
     ...WAHL.map((w) => ({ text: w.label, gewaehlt: wahl === w.id, aktion: () => setWahl(w.id) })),
     ...(zeichenflaeche ? [{ trenner: true } as const, { text: 'Zeichenfläche im dunklen Schema abdunkeln', haken: canvasDunkel, aktion: () => setCanvasDunkel(!canvasDunkel) }] : []),
   ];
+}
+
+/** Punkt „Farbschema“ mit der aktuellen Wahl als Hinweis und dem Untermenü (`farbschemaPunkte`) – Titelleiste und Rahmen-App */
+export function farbschemaPunkt(zeichenflaeche = true): Exclude<MenuePunkt, { trenner: true }> {
+  const wahl = WAHL.find((w) => w.id === useTheme.getState().wahl);
+  return { text: 'Farbschema', hinweis: wahl?.kurz, unter: farbschemaPunkte(zeichenflaeche) };
 }
 
 const WAHL: { id: ThemeWahl; label: string; kurz: string }[] = [
