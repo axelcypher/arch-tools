@@ -513,3 +513,10 @@
 .ef-hinweis-ref {
   margin-bottom: 6px;
 }
+
+/* Werkzeugleiste: Die Regel für Seitenleisten (.leiste > :first-child, base.css) streckt sonst „Datei“ auf die freie
+   Breite bzw. lässt es schrumpfen – in core gemeldet; entfällt, sobald base.css sie auf Seitenleisten begrenzt */
+.toolbar.leiste > :first-child {
+  flex: none;
+  min-width: auto;
+}
