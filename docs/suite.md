@@ -25,10 +25,10 @@ Werkzeuge in **einem Programm und einem Fenster**. Sie kann nichts weiter, als z
   Öffnen des Formulars wieder – nur ungespeicherte Bearbeitungen von PDF-, Excel- und Word-Dokumenten in der
   Dateiansicht gehen verloren. Bei ungespeicherten Änderungen fragt der Rahmen vor dem Herauslösen und das Fenster vor
   dem Andocken, was mit ihnen geschieht; bei ATLAS und FABRIO, die sie verlieren würden, mit *Speichern*. ATLAS meldet
-  als ungespeichert, was beim Beenden verloren ginge: offene Eingaben im Assistenten (geänderte Stammdaten beim
-  Ergänzen, im Trockenlauf abgewählte Einträge – nicht den Entwurf eines neuen Projekts, der gespeichert bleibt), den
-  nicht übernommenen Text der Ordnerliste und Änderungen an der Struktur, die wegen eines Konflikts mit einem anderen
-  Rechner oder eines gescheiterten Schreibens nicht gespeichert sind. *Speichern* schreibt die Struktur erneut und
+  als ungespeichert, was beim Beenden verloren ginge: offene Eingaben im Assistenten (geänderte Angaben beim
+  Ergänzen, unter „Anlegen“ bzw. „Ergänzen“ abgewählte Einträge – nicht den Entwurf eines neuen Projekts, der
+  gespeichert bleibt), den nicht übernommenen Text der Ordnerliste und Änderungen an der Struktur, die wegen eines
+  Konflikts mit einem anderen Rechner oder eines gescheiterten Schreibens nicht gespeichert sind. *Speichern* schreibt die Struktur erneut und
   übernimmt den Text der Ordnerliste (gesichert, mit „Rückgängig“), wenn er gültig ist und vom aktuellen Stand
   ausgeht; den Projektordner anlegen, die Projektdatei
   schreiben oder einen Konflikt entscheiden tut es nicht still – dann gilt „nicht gespeichert“, die Aktion unterbleibt

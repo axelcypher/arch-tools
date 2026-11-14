@@ -382,10 +382,10 @@ describe('Folgerunde: Neubeginn des Assistenten fragt bei offenen Eingaben', () 
     await warten();
     const frage = () => document.querySelector('.modal.rf')!;
     expect(frage().querySelector('h3')?.textContent).toBe('Assistent neu beginnen?');
-    expect(frage().textContent).toContain('Noch nicht angelegt: die geänderten Angaben zu „2025-007 Kita“.');
+    expect(frage().textContent).toContain('Noch nicht übernommen: die geänderten Angaben zu „2025-007 Kita“.');
     // Gefahr-Knopf: rot, Erstfokus nicht auf ihm (Enter verwirft nichts)
     expect(knopf(frage(), 'Verwerfen und neu beginnen').className).toContain('danger');
-    expect(document.activeElement?.textContent).not.toBe('Verwerfen und neu beginnen');
+    expect(document.activeElement?.textContent).toBe('Abbrechen');
     act(() => knopf(frage(), 'Abbrechen').click());
     await warten();
     expect(feld(host, 'Bezeichnung des Vorhabens').value).toBe('Neubau Kita am Park');

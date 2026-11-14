@@ -58,7 +58,7 @@ export function App() {
     const was = assistentOffen.current;
     if (!was) return neustart();
     // design.md: Titel als Frage, darunter eine kurze Aussage; Gefahr-Knopf, Erstfokus und Enter nicht auf ihm
-    void bestaetigen('Assistent neu beginnen?', `Noch nicht angelegt: ${was}.`, 'Verwerfen und neu beginnen', true).then((ok) => ok && neustart());
+    void bestaetigen('Assistent neu beginnen?', `Noch nicht übernommen: ${was}.`, 'Verwerfen und neu beginnen', true).then((ok) => ok && neustart());
   };
 
   /**
