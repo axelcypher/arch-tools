@@ -30,9 +30,9 @@ export function frageStand(id: string, def: Pick<FaktDef, 'wenn'> | undefined, c
   if (!def?.wenn) return { gestellt: true, ueberHinweis: [], ueberWiderspruch: [] };
   try {
     const b = werten(def.wenn, ctx);
-    // widersprüchliche Angaben, auf denen ein „ja“ beruht – ohne Merkmale: Fragen hängen an Merkmalen mit Widerspruch
-    // (Planungsrecht, Gebäudeklasse) dort, wo auch die Geltung der Norm an ihnen hängt; ohne das Merkmal entfiele die
-    // Norm ohnehin (die Vorbehalte am Merkmal selbst bleiben wie bisher)
+    // widersprüchliche Angaben, auf denen ein „ja“ beruht – ohne Merkmale: Nur Planungsrecht und Gebäudeklasse können
+    // widersprüchlich sein; die Regeln, die Antworten auf daran hängende Fragen verwenden, prüfen das Merkmal selbst
+    // (Anwendungsbereich), oder das Ergebnis ist bei jedem Wert gleich (nachgerechnet im Fachreview zu #117)
     const wid = b.widerspruch.filter((w) => !w.startsWith('merkmal:'));
     if (RUECKFRAGE_IDS.has(id)) return b.w === 'ja' ? { gestellt: true, ueberHinweis: b.unsicher, ueberWiderspruch: wid } : { gestellt: false, ueberHinweis: [], ueberWiderspruch: [] };
     // „ja“ nur aus Hinweisen: gestellt, die Antwort trägt die Hinweise mit; „nein“ nur aus Hinweisen verbirgt die Frage
