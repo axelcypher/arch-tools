@@ -64,8 +64,8 @@ describe('Werkzeugleiste (Komponente)', () => {
     leistenBreite = 1000;
     // Breiten aus data-breite der Knöpfe; die Leiste selbst aus leistenBreite, „Mehr“ 30px
     leistenMessung.breite = (el: Element) => {
-      if (el.classList.contains('leiste')) return leistenBreite;
-      if (el.classList.contains('leiste-mehr')) return 30;
+      if (el.classList.contains('werkzeugleiste')) return leistenBreite;
+      if (el.classList.contains('werkzeugleiste-mehr')) return 30;
       return [...el.querySelectorAll('[data-breite]')].reduce((n, k) => n + Number(k.getAttribute('data-breite')), 0);
     };
   });
@@ -91,7 +91,7 @@ describe('Werkzeugleiste (Komponente)', () => {
     act(() => void window.dispatchEvent(new Event('resize')));
   };
   const sichtbar = (host: Element) => [...host.querySelectorAll<HTMLElement>('[data-eintrag]')].filter((g) => !g.hidden).map((g) => g.dataset.eintrag);
-  const mehrKnopf = (host: Element) => host.querySelector<HTMLButtonElement>('.leiste-mehr button')!;
+  const mehrKnopf = (host: Element) => host.querySelector<HTMLButtonElement>('.werkzeugleiste-mehr button')!;
   const menuePunkte = () => [...document.querySelectorAll('.menue [role="menuitem"]')].map((b) => b.textContent);
 
   const neu = vi.fn();
@@ -106,23 +106,27 @@ describe('Werkzeugleiste (Komponente)', () => {
   it('breit genug: alles in der Leiste, ohne feste Punkte kein „Mehr“; Name der Leiste für Screenreader', () => {
     const host = render(teile());
     expect(sichtbar(host)).toEqual(['datei', 'werkzeuge', 'export', 'haupt']);
-    expect(host.querySelector<HTMLElement>('.leiste-mehr')!.hidden).toBe(true);
-    const leiste = host.querySelector('.toolbar.leiste')!;
+    expect(host.querySelector<HTMLElement>('.werkzeugleiste-mehr')!.hidden).toBe(true);
+    const leiste = host.querySelector('.toolbar.werkzeugleiste')!;
     expect(leiste.getAttribute('role')).toBe('group');
     expect(leiste.getAttribute('aria-label')).toBe('Plan');
+    // nicht `.leiste`: das ist die Klasse der Seitenleisten (BreitenLeiste) – ihre Regeln (erstes Kind gestreckt, Breiten
+    // angleichen) dürfen in der Werkzeugleiste nicht greifen
+    expect(leiste.classList.contains('leiste')).toBe(false);
+    expect(host.querySelector('.leiste')).toBeNull();
   });
 
   it('schmaler: Einträge wandern nach Rang ins Menü „Mehr“ und kommen beim Verbreitern zurück', () => {
     const host = render(teile());
     breiteSetzen(480);
     expect(sichtbar(host)).toEqual(['werkzeuge', 'export', 'haupt']);
-    expect(host.querySelector<HTMLElement>('.leiste-mehr')!.hidden).toBe(false);
+    expect(host.querySelector<HTMLElement>('.werkzeugleiste-mehr')!.hidden).toBe(false);
     breiteSetzen(200);
     // Werkzeuge und Hauptknopf haben keinen Rang: sie bleiben, auch wenn es eng wird
     expect(sichtbar(host)).toEqual(['werkzeuge', 'haupt']);
     breiteSetzen(1000);
     expect(sichtbar(host)).toEqual(['datei', 'werkzeuge', 'export', 'haupt']);
-    expect(host.querySelector<HTMLElement>('.leiste-mehr')!.hidden).toBe(true);
+    expect(host.querySelector<HTMLElement>('.werkzeugleiste-mehr')!.hidden).toBe(true);
   });
 
   it('„Mehr“: Symbolknopf mit Namen, ohne Aufklapp-Pfeil; Menü mit den übergelaufenen Befehlen, Tastenkürzel, Fokus zurück', () => {
@@ -158,7 +162,7 @@ describe('Werkzeugleiste (Komponente)', () => {
       { id: 'werkzeuge', gruppe: true, inhalt: knopf('Polygon', 200) },
       { id: 'haupt', inhalt: knopf('Flächenaufstellung …', 120) },
     ]);
-    expect(host.querySelector('[data-eintrag="datei"]')!.className).toBe('leiste-eintrag');
+    expect(host.querySelector('[data-eintrag="datei"]')!.className).toBe('werkzeugleiste-eintrag');
     expect(host.querySelector('[data-eintrag="werkzeuge"]')!.className).toBe('tb-group');
     const neuKnopf = host.querySelector<HTMLButtonElement>('[data-eintrag="datei"] button')!;
     act(() => neuKnopf.focus());
@@ -176,8 +180,8 @@ describe('Werkzeugleiste (Komponente)', () => {
 
   it('feste Punkte: „Mehr“ steht immer am Ende, auch wenn alles passt; ausgeblendete Knöpfe sind nicht per Tab erreichbar', () => {
     const host = render(teile(), () => [{ text: 'Protokoll …' }]);
-    expect(host.querySelector<HTMLElement>('.leiste-mehr')!.hidden).toBe(false);
-    expect(host.querySelector('.toolbar.leiste')!.lastElementChild!.classList.contains('leiste-mehr')).toBe(true);
+    expect(host.querySelector<HTMLElement>('.werkzeugleiste-mehr')!.hidden).toBe(false);
+    expect(host.querySelector('.toolbar.werkzeugleiste')!.lastElementChild!.classList.contains('werkzeugleiste-mehr')).toBe(true);
     act(() => mehrKnopf(host).click());
     expect(menuePunkte()).toEqual(['Protokoll …']);
     act(() => void document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));

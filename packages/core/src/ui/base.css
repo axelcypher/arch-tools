@@ -204,7 +204,7 @@ body,
 }
 
 /* Werkzeugleiste mit Überlauf (ui/Werkzeugleiste.tsx): eine Zeile; was nicht passt, steht im Menü „Mehr“ */
-.toolbar.leiste {
+.toolbar.werkzeugleiste {
   flex-wrap: nowrap;
   /* in der Spalte von .app nur in der Breite strecken, nie in die Höhe wachsen */
   flex: 0 1 auto;
@@ -213,19 +213,19 @@ body,
   box-sizing: border-box;
 }
 /* einzelner Eintrag ohne Trennstrich; Gruppen tragen .tb-group */
-.leiste-eintrag {
+.werkzeugleiste-eintrag {
   display: flex;
   align-items: center;
   gap: 3px;
 }
-.toolbar.leiste > [hidden] {
+.toolbar.werkzeugleiste > [hidden] {
   display: none;
 }
-.toolbar.leiste > .tb-group:has(+ .tb-spacer),
-.toolbar.leiste > .tb-group:has(+ .leiste-mehr[hidden]:last-child) {
+.toolbar.werkzeugleiste > .tb-group:has(+ .tb-spacer),
+.toolbar.werkzeugleiste > .tb-group:has(+ .werkzeugleiste-mehr[hidden]:last-child) {
   border-right: none;
 }
-.leiste-mehr {
+.werkzeugleiste-mehr {
   display: flex;
   align-items: center;
   flex: none;

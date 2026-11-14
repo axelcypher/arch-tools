@@ -1,0 +1,34 @@
+{
+  "flaechenrechner": {
+    "stufe": "patch",
+    "notiz": "Werkzeugleiste: eigene Klasse statt „leiste“ – die Regeln der Seitenleisten greifen dort nicht mehr (erster Eintrag nicht mehr gestreckt)."
+  },
+  "grz": {
+    "stufe": "patch",
+    "notiz": "Werkzeugleiste: eigene Klasse statt „leiste“ – die Regeln der Seitenleisten greifen dort nicht mehr (erster Eintrag nicht mehr gestreckt)."
+  },
+  "kosten": {
+    "stufe": "patch",
+    "notiz": "Werkzeugleiste: eigene Klasse statt „leiste“ – die Regeln der Seitenleisten greifen dort nicht mehr (erster Eintrag nicht mehr gestreckt)."
+  },
+  "ordner": {
+    "stufe": "patch",
+    "notiz": "Werkzeugleiste: eigene Klasse statt „leiste“ – die Regeln der Seitenleisten greifen dort nicht mehr (erster Eintrag nicht mehr gestreckt)."
+  },
+  "entzerrung": {
+    "stufe": "patch",
+    "notiz": "Werkzeugleiste: eigene Klasse statt „leiste“ – die Regeln der Seitenleisten greifen dort nicht mehr (erster Eintrag nicht mehr gestreckt)."
+  },
+  "formulare": {
+    "stufe": "patch",
+    "notiz": "Werkzeugleiste: eigene Klasse statt „leiste“ – die Regeln der Seitenleisten greifen dort nicht mehr (erster Eintrag nicht mehr gestreckt)."
+  },
+  "ava": {
+    "stufe": "patch",
+    "notiz": "Werkzeugleiste: eigene Klasse statt „leiste“ – die Regeln der Seitenleisten greifen dort nicht mehr (erster Eintrag nicht mehr gestreckt)."
+  },
+  "baurecht": {
+    "stufe": "patch",
+    "notiz": "Werkzeugleiste: eigene Klasse statt „leiste“ – die Regeln der Seitenleisten greifen dort nicht mehr (erster Eintrag nicht mehr gestreckt)."
+  }
+}

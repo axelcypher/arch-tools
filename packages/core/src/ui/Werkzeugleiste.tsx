@@ -2,7 +2,7 @@
  * Werkzeugleiste mit Überlauf: Einträge stehen der Reihe nach in der Leiste; reicht die Breite nicht, wandern Einträge
  * mit Rang in das Menü „Mehr“ am Ende – der unwichtigste (höchster Rang) zuerst. Einträge ohne Rang bleiben immer
  * sichtbar (Hauptknopf, Werkzeuge einer Zeichenfläche). Seltene Befehle stehen gleich im Menü „Mehr“ (`mehr`).
- * Die Leiste nimmt die volle Breite ihres Elternelements (`.toolbar.leiste`: `width: 100%`, `flex: 0 1 auto` – in
+ * Die Leiste nimmt die volle Breite ihres Elternelements (`.toolbar.werkzeugleiste`: `width: 100%`, `flex: 0 1 auto` – in
  * der Spalte von `.app` wächst sie nicht in die Höhe) und misst ihre eigene Breite als verfügbaren Platz. Richtlinie: docs/design.md, „Kopf- und Werkzeugleisten“.
  */
 import type { ReactNode } from 'react';
@@ -108,7 +108,7 @@ export function Werkzeugleiste({
     const stil = getComputedStyle(el);
     const abstand = parseFloat(stil.columnGap || stil.gap) || 0;
     const innen = leistenMessung.breite(el) - (parseFloat(stil.paddingLeft) || 0) - (parseFloat(stil.paddingRight) || 0);
-    const mehrEl = el.querySelector<HTMLElement>(':scope > .leiste-mehr');
+    const mehrEl = el.querySelector<HTMLElement>(':scope > .werkzeugleiste-mehr');
     if (mehrEl && !mehrEl.hidden) breiten.current.set('\u0000mehr', leistenMessung.breite(mehrEl));
     const eintraege = teile.filter((t): t is LeistenEintrag => !istAbstand(t)).map((t) => ({ id: t.id, breite: breiten.current.get(t.id) ?? 0, rang: t.menue === undefined ? undefined : t.rang }));
     const abstandhalter = teile.filter(istAbstand).length;
@@ -144,20 +144,20 @@ export function Werkzeugleiste({
   useLayoutEffect(() => {
     if (!fokusAufMehr.current) return;
     fokusAufMehr.current = false;
-    ref.current?.querySelector<HTMLButtonElement>(':scope > .leiste-mehr > button')?.focus();
+    ref.current?.querySelector<HTMLButtonElement>(':scope > .werkzeugleiste-mehr > button')?.focus();
   }, [weg]);
   return (
-    <div ref={ref} className={`toolbar leiste${className ? ` ${className}` : ''}`} role="group" aria-label={name}>
+    <div ref={ref} className={`toolbar werkzeugleiste${className ? ` ${className}` : ''}`} role="group" aria-label={name}>
       {teile.map((t, i) =>
         istAbstand(t) ? (
           <div key={`abstand-${i}`} className="tb-spacer" />
         ) : (
-          <div key={t.id} className={t.gruppe ? 'tb-group' : 'leiste-eintrag'} data-eintrag={t.id} hidden={weg.has(t.id)}>
+          <div key={t.id} className={t.gruppe ? 'tb-group' : 'werkzeugleiste-eintrag'} data-eintrag={t.id} hidden={weg.has(t.id)}>
             {t.inhalt}
           </div>
         ),
       )}
-      <div className="leiste-mehr" hidden={!zeigeMehr}>
+      <div className="werkzeugleiste-mehr" hidden={!zeigeMehr}>
         <MenueKnopf className="icon" punkte={() => mehrPunkte(teile, weg, mehr?.() ?? [])} ariaLabel="Mehr" title="Mehr – weitere Befehle" name="Mehr" pfeil={false}>
           <Symbol name="mehr" />
         </MenueKnopf>
