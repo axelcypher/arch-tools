@@ -19,8 +19,8 @@ Grundsätze:
   aller Apps stehen darin (siehe [Projektdatei](#projektdatei-oap)). Fehlt sie, legt der Assistent sie an.
 - **Automatisch wird nichts gelöscht, verschoben oder überschrieben.** Ordner und Vorlagen werden nur neu
   angelegt; vorhandene Dateien bleiben, wie sie sind. Einzige Ausnahme ist die Projektdatei selbst: Sie wird
-  gezielt ergänzt (nur die geänderten Angaben), vorher gesichert. Vor jedem Lauf zeigt der Trockenlauf, was
-  passiert.
+  gezielt ergänzt (nur die geänderten Angaben), vorher gesichert. Vor jedem Lauf zeigt der letzte Schritt des
+  Assistenten („Anlegen“ bzw. „Ergänzen“), was passiert.
 - **Einstellungen teilen sich alle Apps** im gemeinsamen Konfigurationsordner (siehe [Einstellungen](#einstellungen)).
 
 ## Projekt (Assistent)
@@ -72,7 +72,7 @@ auch beim Ergänzen.
      nicht umbenannt. **Liegt eine Projektdatei im Ordner, die sich nicht lesen lässt** (beschädigt), bleibt sie
      unverändert: Der Assistent sagt dann deutlich, dass die Stammdaten nicht gespeichert werden – sie dienen nur den
      Namen neuer Ordner und Vorlagen. Kennt die Projektdatei kein Anlagedatum, gilt für `{JAHR}` in neuen Namen das
-     laufende Jahr; der Trockenlauf weist darauf hin.
+     laufende Jahr; der Schritt „Ergänzen“ weist darauf hin.
 3. **Grundstück:** Gemarkung, Flur, Flurstück, Grundstücksfläche, Bebauungsplan (Nummer, Name) und Aktenzeichen
    der Bauaufsicht. (Der Bebauungsplan ging bis 0.13 im Assistenten verloren – er wird jetzt gespeichert.)
 4. **Bauherr:** Name bzw. Firma, Vorname, Anschrift, beliebig viele E-Mail-Adressen und Telefonnummern.
@@ -89,19 +89,19 @@ auch beim Ergänzen.
 7. **Vorlagen:** Vorlagenordner und „Welche Vorlagen?“ – die Presets (siehe [Vorlagen](#vorlagen)). Vorausgewählt sind bei neuen
    Projekten die Presets mit „Standard“, bei bestehenden die in der Projektdatei vermerkten.
 8. **Anlegen bzw. Ergänzen:** oben die **Zusammenfassung** – so steht es in der Projektdatei (Projekt, Grundstück,
-   Bauherr, Umfang, Beteiligte, Vorlagen), je Abschnitt mit „ändern“, das zum Schritt springt. Darunter der
-   Trockenlauf als Baum – jeder Ordner und jede Datei mit Herkunft (Struktur,
-   Vorlage mit Preset, Projektdatei) und dem Vermerk „vorhanden“, „wird ergänzt“ (Projektdatei, mit den geänderten
-   Angaben als Hinweis), „abgewählt“ bzw. – beim Ergänzen – „neu“. Beim Ergänzen zeigt er nur, was sich ändert
-   (umschaltbar). Einzelne Einträge lassen sich abwählen (beim Ergänzen auch „Alle neuen Einträge abwählen“ und
-   danach einzelne wieder wählen); mit einem Ordner entfällt alles darin. Zu lange Pfade meldet der Trockenlauf vorab:
-   Ordner ab 248 Zeichen (mit Stammordner) legt Windows gar nicht an, Dateien ab 260 Zeichen öffnen Explorer und
-   Office nicht. Der Knopf
-   **„Projektordner anlegen“** bzw. „Projekt ergänzen“ steht wie „Weiter“ rechts unten in der Navigation, die beim
-   Blättern sichtbar bleibt; ist er gesperrt, steht der Grund daneben (etwa „Erst den Stammordner für Projekte
+   Bauherr, Umfang, Beteiligte, Vorlagen), je Abschnitt mit „ändern“, das zum Schritt springt. Darunter die
+   Vorschau des Projektordners als Baum, mit seinem Namen als Überschrift – jeder Ordner und jede Datei mit Herkunft
+   (Struktur, Vorlage mit Preset, Projektdatei) und dem Vermerk „vorhanden“, „wird ergänzt“ (Projektdatei, mit den
+   geänderten Angaben als Hinweis), „abgewählt“ bzw. – beim Ergänzen – „neu“. Beim Ergänzen zeigt sie nur, was sich
+   ändert (umschaltbar). Einzelne Einträge lassen sich abwählen (beim Ergänzen auch „Alle neuen Einträge abwählen“ und
+   danach einzelne wieder wählen); mit einem Ordner entfällt alles darin. Zu lange Pfade meldet der Schritt vorab
+   (unter der Vorschau):
+   Ordner ab 248 Zeichen (mit Stammordner) legt Windows gar nicht an, Dateien ab 260 Zeichen öffnen der Dateimanager
+   und andere Programme nicht. Der Knopf **„Projektordner anlegen“** bzw. „Projekt ergänzen“ steht wie „Weiter“
+   rechts unten in der Navigation, die beim Blättern sichtbar bleibt; ist er gesperrt, steht der Grund daneben (etwa „Erst den Stammordner für Projekte
    wählen.“). Unmittelbar vor dem Anlegen sieht der Assistent im Stammordner nach, ob es den Projektordner
    inzwischen gibt (ein Kollege hat dieselbe Nummer vergeben) – dann legt er nichts an und bietet an, das vorhandene
-   Projekt zu ergänzen. Ergänzen ohne Leistungsphasen: Der Trockenlauf weist darauf hin, dass alle Ordner
+   Projekt zu ergänzen. Ergänzen ohne Leistungsphasen: Der Schritt „Ergänzen“ weist darauf hin, dass alle Ordner
    vorgeschlagen werden, und springt mit „Leistungsphasen wählen“ zum Umfang. Danach meldet das Tool, was angelegt
    bzw. ergänzt wurde, was schon da war und was fehlgeschlagen ist – ein Fehler hält die übrigen Schritte nicht auf.
    Im Browser entsteht der Projektordner als ZIP-Datei zum Herunterladen (statt im Stammordner).
@@ -158,7 +158,7 @@ Rahmen danach zu.
 
 **Tastatur:** Strg+Enter geht zum nächsten Schritt; nach jedem Schrittwechsel steht der Fokus auf der Überschrift
 (in den Stammdaten im ersten Feld), der aktive Schritt ist für Bildschirmleser gekennzeichnet, die Felder der
-Beteiligten sind je Zeile beschriftet („Rolle 2“, „Beteiligten 2 entfernen“), die Kontrollkästchen im Trockenlauf
+Beteiligten sind je Zeile beschriftet („Rolle 2“, „Beteiligten 2 entfernen“), die Kontrollkästchen der Vorschau
 heißen wie ihr Eintrag („Baugrund anlegen“). Die Projektliste zum Ergänzen ist per Tab erreichbar; Enter im
 Suchfeld öffnet den ersten Treffer.
 
@@ -291,7 +291,7 @@ Solange ein Schemafeld den Fokus hat, stehen darunter die Platzhalter als Chips 
 ([platzhalter.md](platzhalter.md)). Gespeicherte Schemata mit alten Namen (`{jahr}-{nr:3}`, `{nummer} {kurzname}`)
 gelten weiter; „Auf neue Namen umstellen“ am Feld stellt sie auf die neuen Namen um.
 
-Die **Ordnerliste** wird mit der Maus bearbeitet – ein Baum wie im Explorer, rechts die Angaben zur Auswahl:
+Die **Ordnerliste** wird mit der Maus bearbeitet – ein Baum wie im Dateimanager, rechts die Angaben zur Auswahl:
 
 - **Auswählen:** Klick; Strg+Klick und Umschalt+Klick wählen mehrere. Rechts dann Name, **Leistungsphasen** (Knöpfe
   1–9, „immer“ und Schnellwahl 1–4, 5–8, 6–7, 8) und „Dateinamen prüfen“ – bei mehreren Ordnern für alle auf einmal
@@ -333,8 +333,8 @@ Die **Ordnerliste** wird mit der Maus bearbeitet – ein Baum wie im Explorer, r
 
 **Leistungsphasen werden vererbt:** Ein Unterordner entsteht nur, wenn auch sein übergeordneter Ordner entsteht –
 „07 Ausschreibung | LPh 6-7“ gilt für alle Gewerkeordner darin, ohne dass jeder die Phasen braucht. Im Baum steht
-die geerbte Angabe gestrichelt, rechts der Hinweis „Entsteht nur, wenn auch … entsteht“. Das gilt beim Anlegen, im
-Trockenlauf und in „Ordner prüfen“ (bis 0.13 entstand ein Unterordner ohne eigene Leistungsphasen immer und zog
+die geerbte Angabe gestrichelt, rechts der Hinweis „Entsteht nur, wenn auch … entsteht“. Das gilt beim Anlegen, in der
+Vorschau des Assistenten und in „Ordner prüfen“ (bis 0.13 entstand ein Unterordner ohne eigene Leistungsphasen immer und zog
 seinen übergeordneten Ordner mit). Übergeordnete Ordner, die nur als Teil eines Pfads vorkommen, haben keine eigene
 Regel (Tooltip und Seitenleiste sagen es: „entsteht über seine Unterordner“); eine Leistungsphase oder „Dateinamen
 prüfen“ gibt ihnen eine.
@@ -400,7 +400,7 @@ Projektdatei. Die eingebaute Struktur bringt das Preset
 der wie ein Projektordner aufgebaut ist. Ist der Vorlagenordner anders gegliedert (mehr als die Hälfte der Vorlagen
 landete außerhalb der Struktur, etwa bei `Word/`, `Excel/`), wird ein solches Preset bei neuen Projekten nicht
 vorausgewählt; „Vorlagen“ und der Assistent sagen das, und es lässt sich weiterhin ausdrücklich wählen. Projekte merken sich ihre Presets beim Namen (in der Projektdatei); ein
-umbenanntes Preset meldet der Trockenlauf beim Ergänzen als unbekannt.
+umbenanntes Preset meldet der Schritt „Ergänzen“ als unbekannt.
 
 ### Dateinamen
 
@@ -688,7 +688,7 @@ Presets und Bausteine in der Struktur-Datei:
   Prüfbericht als PDF gibt es nicht. Ein von Hand ins Archiv verschobenes Projekt zählt beim Nummernvorschlag mit,
   wenn sein Stammordner eingestellt ist. Keine Obsidian-Projektnotiz.
 - Ob eine Vorlage vorhanden ist, entscheidet ihr Name im Projekt. Wurde eine ergänzte Datei später umbenannt,
-  ergänzt der nächste Lauf sie erneut – der Trockenlauf zeigt es vorher, und sie lässt sich abwählen.
+  ergänzt der nächste Lauf sie erneut – die Vorschau im Schritt „Ergänzen“ zeigt es vorher, und sie lässt sich abwählen.
 - Die Planliste ist eine Vorlage, keine Verwaltung – Revisionen und Verteiler führt das Tool nicht.
 - Die Nummernvergabe ist ein Vorschlag aus den vorhandenen Ordnern. Legen zwei Personen gleichzeitig an,
   erkennt das Tool die Kollision erst am vorhandenen Ordner – und überschreibt auch dann nichts.

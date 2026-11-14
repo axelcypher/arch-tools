@@ -73,7 +73,7 @@
   width: 30px;
 }
 
-/* Trockenlauf */
+/* Vorschau des Projektordners */
 .po-ort {
   display: flex;
   align-items: flex-end;
@@ -770,7 +770,7 @@
   max-height: none;
 }
 
-/* Trockenlauf: abwählen, Warnungen */
+/* Vorschau: abwählen, Warnungen */
 .po-wahl {
   margin: 0 5px 0 0;
   vertical-align: -2px;
@@ -1104,7 +1104,7 @@
 .po-navigation .busy + .primary {
   margin-left: 0;
 }
-/* im Assistenten bleibt die Navigation unten sichtbar – auch bei langem Trockenlauf */
+/* im Assistenten bleibt die Navigation unten sichtbar – auch bei langer Vorschau */
 .po-assistent .po-navigation {
   position: sticky;
   bottom: 0;
