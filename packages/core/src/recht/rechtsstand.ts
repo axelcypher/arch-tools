@@ -85,17 +85,19 @@ const sicher = (s: string) => s.replace(/[^\w.@-]+/g, '_');
  * Fassung zum Stichtag aus einer Liste: jüngstes Gültig-ab, das nicht nach dem Stichtag liegt – und deren Gültig-bis
  * (falls bekannt) nicht vor dem Stichtag endet
  */
+/** Reihenfolge bei gleichem Gültig-ab: die später abgelegte zuerst – nach der laufenden Nummer, erst dann nach der Uhr */
+function spaeterZuerst(a: { nr?: number; abgerufen?: string }, b: { nr?: number; abgerufen?: string }): number {
+  return (b.nr ?? 0) - (a.nr ?? 0) || (b.abgerufen ?? '').localeCompare(a.abgerufen ?? '');
+}
+
 export function fassungZumStichtag<T extends { gueltigAb: string; gueltigBis?: string; abgerufen?: string; nr?: number }>(liste: T[], stichtag: string): T | undefined {
   return [...liste]
     .filter((f) => f.gueltigAb <= stichtag && (!f.gueltigBis || f.gueltigBis >= stichtag))
     // bei gleichem Gültig-ab die zuletzt abgelegte (z. B. Ortsrecht, dessen Datum gleich bleibt, mit geändertem Text) –
     // nach der laufenden Nummer im Verzeichnis, nicht nach der Uhr (die Ablage teilen sich mehrere Rechner)
-    .sort((a, b) => b.gueltigAb.localeCompare(a.gueltigAb) || (b.nr ?? 0) - (a.nr ?? 0) || (b.abgerufen ?? '').localeCompare(a.abgerufen ?? ''))
+    .sort((a, b) => b.gueltigAb.localeCompare(a.gueltigAb) || spaeterZuerst(a, b))
     .find(() => true);
 }
-
-/** Reihenfolge bei gleichem Gültig-ab: die später abgelegte zuerst – nach der laufenden Nummer, erst dann nach der Uhr */
-const spaeterZuerst = (a: { nr?: number; abgerufen?: string }, b: { nr?: number; abgerufen?: string }): number => (b.nr ?? 0) - (a.nr ?? 0) || (b.abgerufen ?? '').localeCompare(a.abgerufen ?? '');
 
 export class Rechtsstand {
   /** Normen, die gerade geholt werden (kein doppelter Abruf) */
@@ -150,7 +152,7 @@ export class Rechtsstand {
 
   private async fuerJetzt(norm: NormQuelle, stichtag: string, o: { aktualisieren?: boolean; offline?: boolean; regelStand?: Record<string, string> }): Promise<StandErgebnis> {
     let v = await this.verzeichnis(norm.id);
-    const juengsteEintrag = () => [...v.fassungen].sort((a, b) => (b.nr ?? 0) - (a.nr ?? 0) || b.abgerufen.localeCompare(a.abgerufen))[0];
+    const juengsteEintrag = () => [...v.fassungen].sort(spaeterZuerst)[0];
     const deckt = fassungZumStichtag(v.fassungen, stichtag);
     // eine schon angekündigte Fassung, die zum Stichtag gilt, aber noch nicht vorliegt: nicht gedeckt
     const vorab = v.fassungen.length ? await this.fassungLesen(juengsteEintrag()) : null;
