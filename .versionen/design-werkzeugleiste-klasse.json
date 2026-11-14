@@ -1,34 +1,34 @@
 {
   "flaechenrechner": {
     "stufe": "patch",
-    "notiz": "Werkzeugleiste: eigene Klasse statt „leiste“ – die Regeln der Seitenleisten greifen dort nicht mehr (erster Eintrag nicht mehr gestreckt)."
+    "notiz": "Werkzeugleiste (gemeinsamer Kern): eigene CSS-Klasse statt „leiste“, damit die Regeln der Seitenleisten dort nicht greifen."
   },
   "grz": {
     "stufe": "patch",
-    "notiz": "Werkzeugleiste: eigene Klasse statt „leiste“ – die Regeln der Seitenleisten greifen dort nicht mehr (erster Eintrag nicht mehr gestreckt)."
+    "notiz": "Werkzeugleiste (gemeinsamer Kern): eigene CSS-Klasse statt „leiste“, damit die Regeln der Seitenleisten dort nicht greifen."
   },
   "kosten": {
     "stufe": "patch",
-    "notiz": "Werkzeugleiste: eigene Klasse statt „leiste“ – die Regeln der Seitenleisten greifen dort nicht mehr (erster Eintrag nicht mehr gestreckt)."
+    "notiz": "Werkzeugleiste (gemeinsamer Kern): eigene CSS-Klasse statt „leiste“, damit die Regeln der Seitenleisten dort nicht greifen."
   },
   "ordner": {
     "stufe": "patch",
-    "notiz": "Werkzeugleiste: eigene Klasse statt „leiste“ – die Regeln der Seitenleisten greifen dort nicht mehr (erster Eintrag nicht mehr gestreckt)."
+    "notiz": "Werkzeugleiste (gemeinsamer Kern): eigene CSS-Klasse statt „leiste“, damit die Regeln der Seitenleisten dort nicht greifen."
   },
   "entzerrung": {
     "stufe": "patch",
-    "notiz": "Werkzeugleiste: eigene Klasse statt „leiste“ – die Regeln der Seitenleisten greifen dort nicht mehr (erster Eintrag nicht mehr gestreckt)."
+    "notiz": "Werkzeugleiste (gemeinsamer Kern): eigene CSS-Klasse statt „leiste“, damit die Regeln der Seitenleisten dort nicht greifen."
   },
   "formulare": {
     "stufe": "patch",
-    "notiz": "Werkzeugleiste: eigene Klasse statt „leiste“ – die Regeln der Seitenleisten greifen dort nicht mehr (erster Eintrag nicht mehr gestreckt)."
+    "notiz": "Werkzeugleiste (gemeinsamer Kern): eigene CSS-Klasse statt „leiste“, damit die Regeln der Seitenleisten dort nicht greifen."
   },
   "ava": {
     "stufe": "patch",
-    "notiz": "Werkzeugleiste: eigene Klasse statt „leiste“ – die Regeln der Seitenleisten greifen dort nicht mehr (erster Eintrag nicht mehr gestreckt)."
+    "notiz": "Werkzeugleiste (gemeinsamer Kern): eigene CSS-Klasse statt „leiste“, damit die Regeln der Seitenleisten dort nicht greifen."
   },
   "baurecht": {
     "stufe": "patch",
-    "notiz": "Werkzeugleiste: eigene Klasse statt „leiste“ – die Regeln der Seitenleisten greifen dort nicht mehr (erster Eintrag nicht mehr gestreckt)."
+    "notiz": "Werkzeugleiste (gemeinsamer Kern): eigene CSS-Klasse statt „leiste“, damit die Regeln der Seitenleisten dort nicht greifen."
   }
 }
