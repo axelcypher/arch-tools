@@ -411,11 +411,15 @@ describe('Fallmatrix', () => {
           const q1 = auswerten(eingabe(m, alsHinweis, lauf.texte)).paragrafen.find((x) => x.id === p.id)!;
           const q2 = auswerten(eingabe(m, ohne, lauf.texte)).paragrafen.find((x) => x.id === p.id)!;
           if (q1.automatisch === 'gruen' && q2.automatisch !== 'gruen') melde(`${lauf.name}: ${p.id} bleibt grün, obwohl „${v}“ nur Hinweis ist und ohne „${v}“ nicht grün wäre (${JSON.stringify(m)})`);
-          // ebenso ein Widerspruch am Auslöser einer Frage, deren Antwort das Grün trägt
+          // ebenso ein Widerspruch am Auslöser einer Frage, deren Antwort das Grün trägt – nur, wenn das Grün an einer Antwort
+          // auf eine von ihm ausgelöste Frage hängt (ein fester Modulwert, z. B. „§ 144 ausgeschlossen“ der Stadt, trägt es
+          // zu Recht, auch wenn die Frage dazu ohne den Auslöser gestellt und von Hand anders beantwortet wäre)
           if (abh.length && q2.automatisch !== 'gruen') {
             const mitWiderspruch = { ...lauf.fakten, [v]: { ...lauf.fakten[v], widerspruch: 'Test' } };
-            const q3 = auswerten(eingabe(m, mitWiderspruch, lauf.texte)).paragrafen.find((x) => x.id === p.id)!;
-            if (q3.automatisch === 'gruen') melde(`${lauf.name}: ${p.id} bleibt grün, obwohl „${v}“ widersprüchlich ist und ohne „${v}“ nicht grün wäre (${JSON.stringify(m)})`);
+            const a3 = auswerten(eingabe(m, mitWiderspruch, lauf.texte));
+            const q3 = a3.paragrafen.find((x) => x.id === p.id)!;
+            const traegtAntwort = q3.verwendet.some((x) => AUSLOESER.get(v)?.has(x) && a3.fakten[x]?.herkunft !== 'modul');
+            if (q3.automatisch === 'gruen' && traegtAntwort) melde(`${lauf.name}: ${p.id} bleibt grün, obwohl „${v}“ widersprüchlich ist und ohne „${v}“ nicht grün wäre (${JSON.stringify(m)})`);
           }
         }
       }

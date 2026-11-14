@@ -24,13 +24,15 @@ export function frageGestellt(id: string, def: Pick<FaktDef, 'wenn'> | undefined
  * wegen eines Hinweises gestellt wird (z. B. „Altbau verfahrensfrei“, weil der Umfang „Abbruch mit Ersatzbau“ nur
  * Hinweis ist), trägt ihre Antwort nicht weiter als dieser Hinweis – die Antwort bekommt in der Auswertung den Auslöser
  * als `ueberHinweis` mit, Regeln zählen dann ihn als nicht gesichert. Ebenso `ueberWiderspruch` für eine widersprüchliche
- * Angabe als Auslöser (die Regel trägt dann deren Widerspruch).
+ * Angabe als Auslöser (die Regel trägt dann deren Widerspruch; Merkmal-Widersprüche ausgenommen, siehe unten).
  */
 export function frageStand(id: string, def: Pick<FaktDef, 'wenn'> | undefined, ctx: KurzKontext): { gestellt: boolean; ueberHinweis: string[]; ueberWiderspruch: string[] } {
   if (!def?.wenn) return { gestellt: true, ueberHinweis: [], ueberWiderspruch: [] };
   try {
     const b = werten(def.wenn, ctx);
-    // widersprüchliche Angaben (nicht Merkmale – deren Vorbehalt gilt in den Regeln schon unmittelbar), auf denen ein „ja“ beruht
+    // widersprüchliche Angaben, auf denen ein „ja“ beruht – ohne Merkmale: Fragen hängen an Merkmalen mit Widerspruch
+    // (Planungsrecht, Gebäudeklasse) dort, wo auch die Geltung der Norm an ihnen hängt; ohne das Merkmal entfiele die
+    // Norm ohnehin (die Vorbehalte am Merkmal selbst bleiben wie bisher)
     const wid = b.widerspruch.filter((w) => !w.startsWith('merkmal:'));
     if (RUECKFRAGE_IDS.has(id)) return b.w === 'ja' ? { gestellt: true, ueberHinweis: b.unsicher, ueberWiderspruch: wid } : { gestellt: false, ueberHinweis: [], ueberWiderspruch: [] };
     // „ja“ nur aus Hinweisen: gestellt, die Antwort trägt die Hinweise mit; „nein“ nur aus Hinweisen verbirgt die Frage

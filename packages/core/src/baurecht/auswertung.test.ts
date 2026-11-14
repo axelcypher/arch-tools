@@ -875,8 +875,20 @@ describe('Runde 18: nur gestellte Antworten zählen', () => {
     expect(r.a).toMatchObject({ sicherheit: 'sicher', ueberWiderspruch: ['h'] });
     expect(r.b).toMatchObject({ sicherheit: 'sicher', ueberWiderspruch: ['h'] });
     expect(r.a.ueberHinweis).toBeUndefined();
-    // ein mitgegebenes Feld zählt nicht
+    // ein mitgegebenes Feld zählt nicht; ist der Widerspruch am Auslöser behoben, fällt es weg
     expect(gestellteAntworten({ h: sicher(true), a: { ...sicher(true), ueberWiderspruch: ['h'] } }, (f) => f, defs, rest).a.ueberWiderspruch).toBeUndefined();
+    expect(gestellteAntworten({ h: sicher(true), a: sicher(true) }, (f) => f, defs, rest).a.ueberWiderspruch).toBeUndefined();
+    // Hinweis und Widerspruch zugleich am Auslöser: beide Felder
+    const beide = gestellteAntworten({ h: { ...hinweis(true), widerspruch: 'Dienst: nein' }, a: sicher(true) }, (f) => f, defs, rest);
+    expect(beide.a).toMatchObject({ ueberHinweis: ['h'], ueberWiderspruch: ['h'] });
+  });
+
+  it('frageStand: Widersprüche an Merkmalen (Planungsrecht, Gebäudeklasse) machen keine Antwort widersprüchlich', async () => {
+    const { frageStand } = await import('./fragen');
+    const ctx = { merkmale: { Planungsrecht: 'Bebauungsplan' }, fakten: {}, einreichung: '2026-12-01', heute: '2026-11-13', bausteine: {}, widersprueche: new Set(['Planungsrecht']) };
+    const def = { wenn: { m: 'Planungsrecht', in: ['Bebauungsplan'] } } as unknown as import('./typen').FaktDef;
+    expect(werten(def.wenn, ctx).widerspruch).toEqual(['merkmal:Planungsrecht']);
+    expect(frageStand('x', def, ctx)).toEqual({ gestellt: true, ueberHinweis: [], ueberWiderspruch: [] });
   });
 });
 

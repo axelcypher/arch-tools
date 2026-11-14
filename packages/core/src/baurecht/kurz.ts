@@ -28,7 +28,7 @@ export interface Bewertung {
   offen: string[];
   /** verwendete Fakten, die nur Hinweis sind */
   unsicher: string[];
-  /** verwendete Merkmale mit Widerspruch */
+  /** verwendete Merkmale und Fakten mit Widerspruch, dazu widersprüchliche Auslöser verwendeter Antworten (`ueberWiderspruch`) */
   widerspruch: string[];
   /** alle verwendeten Fakten (für „überholt“) */
   verwendet: string[];
