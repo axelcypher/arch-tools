@@ -35,6 +35,12 @@ describe('ueberlauf (Berechnung)', () => {
     ];
     expect([...ueberlauf(gleich, 150, { ...opt, mehrBreite: 0 })]).toEqual(['b']);
   });
+  it('Abstandhalter zählen mit ihrem Abstand mit (je ein gap); Gegenprobe ohne Abstandhalter passt es knapp', () => {
+    // 500 + 3 Abstände = 512 passt genau; mit einem Abstandhalter kommt ein Abstand dazu: 516
+    expect(ueberlauf(e, 512, opt).size).toBe(0);
+    expect([...ueberlauf(e, 512, { ...opt, abstandhalter: 1 })]).toEqual(['datei']);
+    expect(ueberlauf(e, 516, { ...opt, abstandhalter: 1 }).size).toBe(0);
+  });
   it('mit festen Punkten zählt „Mehr“ immer mit', () => {
     expect(ueberlauf(e, 512, opt).size).toBe(0);
     expect(ueberlauf(e, 512, { ...opt, mehrImmer: true }).size).toBe(1);
@@ -124,7 +130,8 @@ describe('Werkzeugleiste (Komponente)', () => {
     breiteSetzen(200);
     const m = mehrKnopf(host);
     expect(m.getAttribute('aria-label')).toBe('Mehr');
-    expect(m.getAttribute('title')).toBe('Weitere Befehle');
+    expect(m.getAttribute('title')).toBe('Mehr – weitere Befehle');
+    expect(m.classList.contains('icon')).toBe(true);
     expect(m.getAttribute('aria-haspopup')).toBe('menu');
     expect(m.querySelectorAll('svg')).toHaveLength(1);
     act(() => m.focus());
@@ -143,6 +150,28 @@ describe('Werkzeugleiste (Komponente)', () => {
     act(() => m.click());
     act(() => (document.querySelector('.menue [role="menuitem"]') as HTMLButtonElement).click());
     expect(neu).toHaveBeenCalledTimes(1);
+  });
+
+  it('Einzelne Einträge ohne Trennstrich, Gruppen mit (.tb-group); wandert der fokussierte Knopf ins Menü, bekommt „Mehr“ den Fokus', () => {
+    const host = render([
+      { id: 'datei', rang: 2, inhalt: knopf('Neu', 100), menue: { text: 'Neu' } },
+      { id: 'werkzeuge', gruppe: true, inhalt: knopf('Polygon', 200) },
+      { id: 'haupt', inhalt: knopf('Flächenaufstellung …', 120) },
+    ]);
+    expect(host.querySelector('[data-eintrag="datei"]')!.className).toBe('leiste-eintrag');
+    expect(host.querySelector('[data-eintrag="werkzeuge"]')!.className).toBe('tb-group');
+    const neuKnopf = host.querySelector<HTMLButtonElement>('[data-eintrag="datei"] button')!;
+    act(() => neuKnopf.focus());
+    expect(document.activeElement).toBe(neuKnopf);
+    breiteSetzen(350);
+    expect(sichtbar(host)).toEqual(['werkzeuge', 'haupt']);
+    expect(document.activeElement).toBe(mehrKnopf(host));
+    // Gegenprobe: liegt der Fokus anderswo, bleibt er dort
+    breiteSetzen(1000);
+    const haupt = host.querySelector<HTMLButtonElement>('[data-eintrag="haupt"] button')!;
+    act(() => haupt.focus());
+    breiteSetzen(350);
+    expect(document.activeElement).toBe(haupt);
   });
 
   it('feste Punkte: „Mehr“ steht immer am Ende, auch wenn alles passt; ausgeblendete Knöpfe sind nicht per Tab erreichbar', () => {

@@ -1,24 +1,24 @@
 import { act } from 'react';
 
 /**
- * Rauchtest für die UI-Tests der Apps (nur in Tests verwendet): Farbschema über das Menü „Mehr“ der Titelleiste (Untermenü „Farbschema“) auf
+ * Rauchtest für die UI-Tests der Apps (nur in Tests verwendet): Farbschema über das Menü der Titelleiste („Einstellungen und Hilfe“, Untermenü „Farbschema“) auf
  * „Dunkel“ und zurück auf „Hell“ stellen – das Schema am <html>-Element muss sofort wechseln.
  */
 export function farbschemaWechseln(host: HTMLElement, wahl: 'Hell' | 'Dunkel'): string | undefined {
   const mehr = host.querySelector<HTMLButtonElement>('.titlebar .titlebar-mehr');
-  if (!mehr) throw new Error('Menü „Mehr“ der Titelleiste fehlt');
-  if (mehr.getAttribute('aria-expanded') !== 'false') throw new Error('Menü „Mehr“: aria-expanded vor dem Öffnen nicht „false“');
+  if (!mehr) throw new Error('Menü der Titelleiste („Einstellungen und Hilfe“) fehlt');
+  if (mehr.getAttribute('aria-expanded') !== 'false') throw new Error('Menü der Titelleiste: aria-expanded vor dem Öffnen nicht „false“');
   act(() => mehr.click());
-  if (mehr.getAttribute('aria-expanded') !== 'true') throw new Error('Menü „Mehr“: aria-expanded nach dem Öffnen nicht „true“');
+  if (mehr.getAttribute('aria-expanded') !== 'true') throw new Error('Menü der Titelleiste: aria-expanded nach dem Öffnen nicht „true“');
   const punkt = (text: string) => [...document.querySelectorAll<HTMLButtonElement>('.menue .menue-punkt')].find((b) => b.textContent?.includes(text));
   const schema = punkt('Farbschema');
-  if (!schema) throw new Error('Punkt „Farbschema“ fehlt im Menü „Mehr“');
+  if (!schema) throw new Error('Punkt „Farbschema“ fehlt im Menü der Titelleiste');
   act(() => schema.click());
   const knopf = [...document.querySelectorAll<HTMLButtonElement>('.menue [role="menuitemradio"]')].find((b) => b.textContent?.includes(wahl));
   if (!knopf) throw new Error(`Menüpunkt ${wahl} fehlt`);
   act(() => knopf.click());
   if (document.querySelector('.menue')) throw new Error('Menü bleibt nach der Wahl offen');
-  if (mehr.getAttribute('aria-expanded') !== 'false') throw new Error('Menü „Mehr“: aria-expanded nach der Wahl nicht „false“');
+  if (mehr.getAttribute('aria-expanded') !== 'false') throw new Error('Menü der Titelleiste: aria-expanded nach der Wahl nicht „false“');
   return document.documentElement.dataset.theme;
 }
 

@@ -520,12 +520,12 @@ describe('Baurecht – Oberfläche', () => {
     fremd.remove();
   });
 
-  it('Farbschema im Menü „Mehr“ der Titelleiste: Fokus hinein, → öffnet das Untermenü, ↑/↓ bewegen, Esc schließt stufenweise und gibt den Fokus zurück', () => {
+  it('Farbschema im Menü der Titelleiste („Einstellungen und Hilfe“): Fokus hinein, → öffnet das Untermenü, ↑/↓ bewegen, Esc schließt stufenweise und gibt den Fokus zurück', () => {
     const host = render();
     const mehr = host.querySelector<HTMLButtonElement>('.titlebar .titlebar-mehr')!;
     act(() => mehr.focus());
     act(() => mehr.click());
-    expect(document.activeElement?.textContent).toBe('Farbschema');
+    expect(document.activeElement?.querySelector('.menue-text')?.textContent).toBe('Farbschema');
     const taste = (key: string) => act(() => void document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true })));
     taste('ArrowRight');
     const optionen = [...document.querySelectorAll<HTMLElement>('[role="menuitemradio"]')];
@@ -536,7 +536,7 @@ describe('Baurecht – Oberfläche', () => {
     expect(document.activeElement).not.toBe(vorher);
     taste('Escape');
     expect(document.querySelector('[role="menuitemradio"]')).toBeNull();
-    expect(document.activeElement?.textContent).toBe('Farbschema');
+    expect(document.activeElement?.querySelector('.menue-text')?.textContent).toBe('Farbschema');
     taste('Escape');
     expect(document.querySelector('.menue')).toBeNull();
     expect(document.activeElement).toBe(mehr);

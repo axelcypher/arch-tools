@@ -2,7 +2,8 @@
  * Werkzeugleiste mit Überlauf: Einträge stehen der Reihe nach in der Leiste; reicht die Breite nicht, wandern Einträge
  * mit Rang in das Menü „Mehr“ am Ende – der unwichtigste (höchster Rang) zuerst. Einträge ohne Rang bleiben immer
  * sichtbar (Hauptknopf, Werkzeuge einer Zeichenfläche). Seltene Befehle stehen gleich im Menü „Mehr“ (`mehr`).
- * Richtlinie: docs/design.md, „Kopf- und Werkzeugleisten“.
+ * Die Leiste nimmt die volle Breite ihres Elternelements (`.toolbar.leiste`: `flex: 1 1 auto`, `width: 100%`) – sie
+ * misst ihre eigene Breite als verfügbaren Platz. Richtlinie: docs/design.md, „Kopf- und Werkzeugleisten“.
  */
 import type { ReactNode } from 'react';
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
@@ -15,6 +16,8 @@ export interface LeistenEintrag {
   id: string;
   /** Inhalt in der Leiste */
   inhalt: ReactNode;
+  /** Gruppe zusammengehöriger Knöpfe: mit Trennstrich zum nächsten Eintrag (`.tb-group`); sonst ohne */
+  gruppe?: boolean;
   /** Gegenstück im Menü „Mehr“, solange der Eintrag nicht in die Leiste passt (Gruppe: mehrere Punkte) */
   menue?: MenuePunkt | MenuePunkt[];
   /**
@@ -36,19 +39,20 @@ const istAbstand = (t: LeistenTeil): t is LeistenAbstand => 'abstand' in t;
 /**
  * Welche Einträge ins Menü wandern: so wenige wie möglich, in der Reihenfolge ihres Rangs (höchster zuerst, bei
  * Gleichstand der weiter rechts stehende). `mehrBreite` zählt mit, sobald das Menü „Mehr“ sichtbar ist – immer, wenn
- * es feste Punkte hat (`mehrImmer`), sonst erst beim ersten Überlauf.
+ * es feste Punkte hat (`mehrImmer`), sonst erst beim ersten Überlauf. `abstandhalter`: Zahl der Abstandhalter – sie
+ * haben keine eigene Breite, bekommen als Flex-Kinder aber je einen Abstand (`gap`).
  */
 export function ueberlauf(
   eintraege: { id: string; breite: number; rang?: number }[],
   verfuegbar: number,
-  { mehrBreite, abstand, mehrImmer }: { mehrBreite: number; abstand: number; mehrImmer: boolean },
+  { mehrBreite, abstand, mehrImmer, abstandhalter = 0 }: { mehrBreite: number; abstand: number; mehrImmer: boolean; abstandhalter?: number },
 ): Set<string> {
   const weg = new Set<string>();
   const sichtbar = () => eintraege.filter((e) => !weg.has(e.id));
   const bedarf = () => {
     const s = sichtbar();
     const mitMehr = mehrImmer || weg.size > 0;
-    const anzahl = s.length + (mitMehr ? 1 : 0);
+    const anzahl = s.length + (mitMehr ? 1 : 0) + abstandhalter;
     return s.reduce((n, e) => n + e.breite, 0) + (mitMehr ? mehrBreite : 0) + Math.max(0, anzahl - 1) * abstand;
   };
   const kandidaten = eintraege
@@ -89,6 +93,7 @@ export function Werkzeugleiste({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const breiten = useRef(new Map<string, number>());
+  const fokusAufMehr = useRef(false);
   const [weg, setWeg] = useState<Set<string>>(() => new Set());
   const festePunkte = mehr?.() ?? [];
   const mehrImmer = festePunkte.length > 0;
@@ -106,7 +111,11 @@ export function Werkzeugleiste({
     const mehrEl = el.querySelector<HTMLElement>(':scope > .leiste-mehr');
     if (mehrEl && !mehrEl.hidden) breiten.current.set('\u0000mehr', leistenMessung.breite(mehrEl));
     const eintraege = teile.filter((t): t is LeistenEintrag => !istAbstand(t)).map((t) => ({ id: t.id, breite: breiten.current.get(t.id) ?? 0, rang: t.menue === undefined ? undefined : t.rang }));
-    const neu = ueberlauf(eintraege, innen, { mehrBreite: breiten.current.get('\u0000mehr') ?? 0, abstand, mehrImmer });
+    const abstandhalter = teile.filter(istAbstand).length;
+    const neu = ueberlauf(eintraege, innen, { mehrBreite: breiten.current.get('\u0000mehr') ?? 0, abstand, mehrImmer, abstandhalter });
+    // wandert der Eintrag mit dem Fokus ins Menü, bekommt „Mehr“ den Fokus (sonst fiele er auf die Seite)
+    const fokus = document.activeElement?.closest?.('[data-eintrag]') as HTMLElement | null;
+    if (fokus && el.contains(fokus) && neu.has(fokus.dataset.eintrag!)) fokusAufMehr.current = true;
     setWeg((alt) => (alt.size === neu.size && [...neu].every((id) => alt.has(id)) ? alt : neu));
   }, [teile, mehrImmer]);
 
@@ -127,19 +136,24 @@ export function Werkzeugleiste({
   useLayoutEffect(() => {
     if (zeigeMehr) berechnen();
   }, [zeigeMehr]); // eslint-disable-line react-hooks/exhaustive-deps
+  useLayoutEffect(() => {
+    if (!fokusAufMehr.current) return;
+    fokusAufMehr.current = false;
+    ref.current?.querySelector<HTMLButtonElement>(':scope > .leiste-mehr > button')?.focus();
+  }, [weg]);
   return (
     <div ref={ref} className={`toolbar leiste${className ? ` ${className}` : ''}`} role="group" aria-label={name}>
       {teile.map((t, i) =>
         istAbstand(t) ? (
           <div key={`abstand-${i}`} className="tb-spacer" />
         ) : (
-          <div key={t.id} className="tb-group" data-eintrag={t.id} hidden={weg.has(t.id)}>
+          <div key={t.id} className={t.gruppe ? 'tb-group' : 'leiste-eintrag'} data-eintrag={t.id} hidden={weg.has(t.id)}>
             {t.inhalt}
           </div>
         ),
       )}
       <div className="leiste-mehr" hidden={!zeigeMehr}>
-        <MenueKnopf punkte={() => mehrPunkte(teile, weg, mehr?.() ?? [])} ariaLabel="Mehr" title="Weitere Befehle" name="Mehr" pfeil={false}>
+        <MenueKnopf className="icon" punkte={() => mehrPunkte(teile, weg, mehr?.() ?? [])} ariaLabel="Mehr" title="Mehr – weitere Befehle" name="Mehr" pfeil={false}>
           <Symbol name="mehr" />
         </MenueKnopf>
       </div>

@@ -69,19 +69,25 @@ function AblageSymbol() {
   );
 }
 
-/** Knopf in der Titelleiste: zeigt den Ort kurz an und öffnet den Dialog; im Notbetrieb als Warnung */
 /**
- * Punkt „Speicherort der Einstellungen …“ für das Menü „Mehr“ der Titelleiste – im Normalfall; im Notbetrieb und bei
- * einem Fehler zeigt ihn `SpeicherortKnopf nurWarnung` sichtbar in der Leiste (dann `null`)
+ * Punkt „Speicherort der Einstellungen …“ für das Menü der Titelleiste („Einstellungen und Hilfe“) – im Normalfall; im
+ * Notbetrieb und bei einem Fehler zeigt ihn `SpeicherortAnzeige nurWarnung` sichtbar in der Leiste (dann `null`)
  */
 export function speicherortPunkt(ort: KonfigOrtAnzeige, oeffnen: () => void): MenuePunkt | null {
   if (!ort || ort === 'fehler' || ort.notbetrieb) return null;
   return { text: 'Speicherort der Einstellungen …', hinweis: ort.modus === 'netzwerk' ? 'Netzwerk' : 'Einzelplatz', titel: ortText(ort), aktion: oeffnen };
 }
 
-/** `nurWarnung`: nur im Notbetrieb bzw. bei einem Fehler zeigen – sonst steht der Ort im Menü „Mehr“ (`speicherortPunkt`) */
+/** Knopf in der Kopfleiste: zeigt den Ort kurz an und öffnet den Dialog; im Notbetrieb als Warnung */
 export function SpeicherortKnopf({ nurWarnung = false }: { nurWarnung?: boolean } = {}) {
-  const ort = useKonfigOrt();
+  return <SpeicherortAnzeige ort={useKonfigOrt()} nurWarnung={nurWarnung} />;
+}
+
+/**
+ * Wie `SpeicherortKnopf`, mit schon gelesenem Ort (die Titelleiste liest ihn einmal für Knopf und Menüpunkt).
+ * `nurWarnung`: nur im Notbetrieb bzw. bei einem Fehler zeigen – sonst steht der Ort im Menü (`speicherortPunkt`).
+ */
+export function SpeicherortAnzeige({ ort, nurWarnung = false }: { ort: KonfigOrtAnzeige; nurWarnung?: boolean }) {
   const oeffnen = useSpeicherort((s) => s.oeffnen);
   if (!ort) return null;
   if (ort === 'fehler') {

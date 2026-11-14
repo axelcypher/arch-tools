@@ -18,7 +18,9 @@ const PFADE = {
   /** Gliederungsebene tiefer bzw. höher (Listen, LV): Pfeil von bzw. zur senkrechten Linie am linken Rand */
   einruecken: 'M4 4v16M9 12h11M16 8l4 4-4 4',
   ausruecken: 'M4 4v16M20 12H10M14 8l-4 4 4 4',
-  /** drei Punkte waagerecht: Zeilenknopf „Aktionen“ (öffnet ein Menü; nicht pfeilUnten, das ist der Aufklapp-Pfeil). Kreise statt `h.01` wie in `liste`: ein Symbol nur aus Punkten bliebe sonst bei 1em kaum sichtbar */
+  /** Menü der Titelleiste („Einstellungen und Hilfe“) – drei Striche */
+  menue: 'M4 7h16M4 12h16M4 17h16',
+  /** drei Punkte waagerecht: Zeilenknopf „Aktionen“ und Menü „Mehr“ am Ende einer Werkzeugleiste (öffnet ein Menü; nicht pfeilUnten, das ist der Aufklapp-Pfeil). Kreise statt `h.01` wie in `liste`: ein Symbol nur aus Punkten bliebe sonst bei 1em kaum sichtbar */
   mehr: 'M5 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM12 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM19 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2z',
   ordner: 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z',
   ordnerOffen: 'M3 7a2 2 0 0 1 2-2h4l2 2h7a2 2 0 0 1 2 2v1H7.5a2 2 0 0 0-1.9 1.4L3.4 18M3 7v10a2 2 0 0 0 2 2h12.6a2 2 0 0 0 1.9-1.4l1.9-6A1.5 1.5 0 0 0 20 10',

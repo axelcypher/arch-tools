@@ -32,7 +32,7 @@ erhalten.
   über Nummer/Name bzw. Überdeckung). Felder, die seit dem letzten Import nicht von Hand geändert wurden, übernehmen
   den neuen IFC-Wert; von Hand geänderte bleiben erhalten – hat sich auch das IFC geändert, meldet der Bericht
   einen Konflikt. Festsetzungen, Einstufungen und Nutzungen bleiben unberührt.
-- **Regeln nachschlagen:** „Berechnungsregeln …“ im Menü „Mehr“ der Titelleiste bzw. F1 öffnet das Nachschlagewerk mit den
+- **Regeln nachschlagen:** „Berechnungsregeln …“ im Menü „Einstellungen und Hilfe“ der Titelleiste bzw. F1 öffnet das Nachschlagewerk mit den
   angewandten Vorschriften (Zitat, Fundstelle, Link, Suche); die `?`-Knöpfe an den Abschnitten zeigen nur die
   dort maßgebenden Regeln. In TERRIO zeigt es nur die eigenen Regeln (keine WoFlV); die Suche findet § 19
   BauNVO auch über Terrasse, Carport, Zufahrt, Weg. Die Pillen der Anrechnung („prüfen“, „GRZ II“, „zählt nicht“ …)

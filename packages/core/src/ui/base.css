@@ -206,7 +206,16 @@ body,
 /* Werkzeugleiste mit Überlauf (ui/Werkzeugleiste.tsx): eine Zeile; was nicht passt, steht im Menü „Mehr“ */
 .toolbar.leiste {
   flex-wrap: nowrap;
+  flex: 1 1 auto;
+  width: 100%;
   min-width: 0;
+  box-sizing: border-box;
+}
+/* einzelner Eintrag ohne Trennstrich; Gruppen tragen .tb-group */
+.leiste-eintrag {
+  display: flex;
+  align-items: center;
+  gap: 3px;
 }
 .toolbar.leiste > [hidden] {
   display: none;

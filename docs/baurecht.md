@@ -30,7 +30,7 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   „widersprüchlich“ ist ein Knopf und springt zum Gemeindeschlüssel. Ist die App schmaler als 1600 px, stehen „Lage
   abfragen“ und „Rechtsstand prüfen“ im Menü **Mehr** (das gemeinsame Menü der Suite) und die Warnungen zum Rechtsstand
   als eine Sammelmarke („2 Warnungen“, Einzelheiten im Tooltip und ihre Zahl als Hinweis an „Rechtsstand prüfen“ im Menü); unter 1200 px stehen „Antrag“ und „Einreichung“ nur noch im Feld.
-  Gekürzt wird nur die Liste der Module, Warnungen und „Speichern“ nie. „Fehlerprotokoll …“ im Menü „Mehr“ der Titelleiste ist die
+  Gekürzt wird nur die Liste der Module, Warnungen und „Speichern“ nie. „Fehlerprotokoll …“ im Menü „Einstellungen und Hilfe“ der Titelleiste ist die
   Fehlersuche der App.
 - **Koordinaten:** Ergebnisse der Geodienste und Bestätigungen zur Lage gelten nur, solange die Koordinaten zur Adresse
   in den Stammdaten passen. Fehlen sie oder wurde die Adresse geändert, sind sie nur noch Hinweis (auch der

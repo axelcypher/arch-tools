@@ -16,7 +16,7 @@ import { MenueHost, MenueKnopf } from './Menue';
 import type { MenuePunkt } from './Menue';
 import { Symbol } from './Symbol';
 import { useBuero } from './DruckKopf';
-import { speicherortPunkt, SpeicherortHost, SpeicherortKnopf, useKonfigOrt, useSpeicherort } from './Speicherort';
+import { SpeicherortAnzeige, speicherortPunkt, SpeicherortHost, useKonfigOrt, useSpeicherort } from './Speicherort';
 import { umzugBestaetigen } from './umzug';
 import { schreibenAbwarten } from './vorbereiten';
 
@@ -174,15 +174,22 @@ export function TitleBar({ app, name, dirty, ungespeichert, onOpenLog, regeln, o
     setSeen(getEntries().at(-1)?.id ?? 0);
     onOpenLog();
   };
-  /** Menü „Mehr“ der Titelleiste: seltene Befehle, in allen Apps gleich (docs/design.md, „Kopf- und Werkzeugleisten“) */
+  const neueFehler = errors === 1 ? 'ein neuer Fehler' : `${errors} neue Fehler`;
+  /** Name des Menüknopfs – mit neuen Fehlern im Protokoll */
+  const menueName = errors > 0 ? `Einstellungen und Hilfe – ${neueFehler} im Fehlerprotokoll` : 'Einstellungen und Hilfe';
+  /** Menü der Titelleiste („Einstellungen und Hilfe“): seltene Befehle, in allen Apps gleich (docs/design.md, „Titelleiste“) */
   const mehrPunkte = (): MenuePunkt[] => {
     const sp = rahmen === 'tab' ? null : speicherortPunkt(ort, speicherortOeffnen);
+    const wahl = WAHL.find((w) => w.id === useTheme.getState().wahl);
     return [
-      { text: 'Farbschema', unter: farbschemaPunkte(zeichenflaeche) },
+      { text: 'Farbschema', hinweis: wahl?.kurz, unter: farbschemaPunkte(zeichenflaeche) },
       ...(sp ? [sp] : []),
+      ...(rahmen === 'fenster' && isTauri()
+        ? [{ text: 'Andocken', titel: 'Wieder als Tab in das Hauptfenster', aktion: () => void andockenFragen().catch((e) => log.error('Andocken fehlgeschlagen', e)) }]
+        : []),
       { trenner: true },
       ...(regeln ? [{ text: 'Berechnungsregeln …', tasten: 'F1', titel: 'Berechnungsregeln nachschlagen – mit Quellen und Suche', aktion: () => useHilfe.getState().oeffnen() }] : []),
-      { text: 'Fehlerprotokoll …', hinweis: errors > 0 ? `${errors} neu` : undefined, titel: 'Meldungen der App für die Fehlersuche', aktion: protokollOeffnen },
+      { text: 'Fehlerprotokoll …', hinweis: errors > 0 ? (errors === 1 ? '1 neuer' : `${errors} neue`) : undefined, titel: 'Meldungen der App für die Fehlersuche', aktion: protokollOeffnen },
     ];
   };
 
@@ -212,24 +219,12 @@ export function TitleBar({ app, name, dirty, ungespeichert, onOpenLog, regeln, o
         </span>
         <span className="titlebar-drag" {...ziehen} />
         {desktop && !rahmen && <UpdateKnopf app={app} dirty={dirty} />}
-        {/* sichtbar nur im Notbetrieb; sonst steht der Speicherort im Menü „Mehr“ (im Tab zeigt ihn der Rahmen) */}
-        {rahmen !== 'tab' && <SpeicherortKnopf nurWarnung />}
+        {/* sichtbar nur im Notbetrieb; sonst steht der Speicherort im Menü (im Tab zeigt ihn der Rahmen) */}
+        {rahmen !== 'tab' && <SpeicherortAnzeige ort={ort} nurWarnung />}
         {regeln && <Nachschlagewerk app={regeln} />}
-        {rahmen === 'fenster' && isTauri() && (
-          <button className="titlebar-btn" title="Wieder als Tab in das Hauptfenster" onClick={() => void andockenFragen().catch((e) => log.error('Andocken fehlgeschlagen', e))}>
-            Andocken
-          </button>
-        )}
-        {/* neue Fehler zählt die Marke am Knopf; das Protokoll selbst steht im Menü */}
-        <MenueKnopf
-          className="titlebar-btn titlebar-mehr"
-          punkte={mehrPunkte}
-          ariaLabel={errors > 0 ? `Mehr – ${errors === 1 ? 'ein neuer Fehler' : `${errors} neue Fehler`} im Fehlerprotokoll` : 'Mehr'}
-          title={`Mehr – Farbschema, Hilfe, Fehlerprotokoll, Einstellungen${errors > 0 ? ` (${errors} neue Fehler)` : ''}`}
-          name="Mehr"
-          pfeil={false}
-        >
-          <Symbol name="mehr" />
+        {/* Menü der Titelleiste: neue Fehler zählt die Marke am Knopf, das Protokoll selbst steht im Menü */}
+        <MenueKnopf className="titlebar-btn titlebar-mehr" punkte={mehrPunkte} ariaLabel={menueName} title={menueName} name="Einstellungen und Hilfe" pfeil={false}>
+          <Symbol name="menue" />
           {errors > 0 && (
             <span className="titlebar-badge" aria-hidden>
               {errors}
