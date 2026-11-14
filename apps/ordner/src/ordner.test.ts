@@ -992,7 +992,7 @@ describe('Plan: Warnungen vor dem Anlegen (Gesamt-Review)', () => {
     const lang = `P:/${'Sehr langer Stammordner/'.repeat(9)}Projekte`;
     const p = planen(stamm(), KLEIN, [], [], TAG, { ort: lang });
     const w = p.warnungen.find((x) => x.includes('zu lang für Windows'));
-    expect(w).toMatch(/^\d+ Pfade wären zu lang für Windows \(Ordner ab 248, Dateien ab 260 Zeichen\) – Windows legt solche Ordner nicht an, und solche Dateien öffnen der Dateimanager und andere Programme nicht\./);
+    expect(w).toMatch(/^\d+ Pfade wären zu lang für Windows \(Ordner ab 248, Dateien ab 260 Zeichen\) – Windows legt solche Ordner nicht an, und der Dateimanager und andere Programme öffnen solche Dateien nicht\./);
     const laengster = w!.split('): ').pop()!;
     expect(laengster.startsWith(`${lang}/2026-014 EFH Musterweg/`)).toBe(true);
     expect(laengster.length).toBeGreaterThanOrEqual(WINDOWS_PFAD_GRENZE);

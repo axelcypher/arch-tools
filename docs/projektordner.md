@@ -96,9 +96,8 @@ auch beim Ergänzen.
    (umschaltbar). Einzelne Einträge lassen sich abwählen (beim Ergänzen auch „Alle neuen Einträge abwählen“ und
    danach einzelne wieder wählen); mit einem Ordner entfällt alles darin. Zu lange Pfade meldet der Trockenlauf vorab:
    Ordner ab 248 Zeichen (mit Stammordner) legt Windows gar nicht an, Dateien ab 260 Zeichen öffnen der Dateimanager
-   und andere Programme nicht. Der Knopf
-   **„Projektordner anlegen“** bzw. „Projekt ergänzen“ steht wie „Weiter“ rechts unten in der Navigation, die beim
-   Blättern sichtbar bleibt; ist er gesperrt, steht der Grund daneben (etwa „Erst den Stammordner für Projekte
+   und andere Programme nicht. Der Knopf **„Projektordner anlegen“** bzw. „Projekt ergänzen“ steht wie „Weiter“
+   rechts unten in der Navigation, die beim Blättern sichtbar bleibt; ist er gesperrt, steht der Grund daneben (etwa „Erst den Stammordner für Projekte
    wählen.“). Unmittelbar vor dem Anlegen sieht der Assistent im Stammordner nach, ob es den Projektordner
    inzwischen gibt (ein Kollege hat dieselbe Nummer vergeben) – dann legt er nichts an und bietet an, das vorhandene
    Projekt zu ergänzen. Ergänzen ohne Leistungsphasen: Der Trockenlauf weist darauf hin, dass alle Ordner
