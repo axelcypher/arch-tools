@@ -340,7 +340,7 @@ export function App() {
               menue: { text: 'Zoom', unter: zoomPunkte() },
               inhalt: (
                 <>
-                  <button className="icon" title="Verkleinern" aria-label="Verkleinern" onClick={() => zoomStufe(-1)}>
+                  <button className="icon" title="Ansicht verkleinern" aria-label="Ansicht verkleinern" onClick={() => zoomStufe(-1)}>
                     <Symbol name="strich" />
                   </button>
                   <select value={zoom} onChange={(e) => setZoom(Number(e.target.value))} aria-label="Zoom">
@@ -351,7 +351,7 @@ export function App() {
                       </option>
                     ))}
                   </select>
-                  <button className="icon" title="Vergrößern" aria-label="Vergrößern" onClick={() => zoomStufe(1)}>
+                  <button className="icon" title="Ansicht vergrößern" aria-label="Ansicht vergrößern" onClick={() => zoomStufe(1)}>
                     <Symbol name="plus" />
                   </button>
                 </>
