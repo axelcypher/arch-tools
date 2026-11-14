@@ -309,4 +309,47 @@ describe('RECTIO (Entzerrung)', () => {
       if (h) Object.defineProperty(HTMLElement.prototype, 'clientHeight', h);
     }
   });
+
+  it('Werkzeugleiste nach der Leisten-Regel: Datei, Speichern mit Punkt, Foto | Entzerrt, Rückgängig/Wiederholen, Menü „Ansicht“', () => {
+    const host = render();
+    const leiste = host.querySelector('[role="group"][aria-label="Werkzeugleiste"]')!;
+    expect(leiste).not.toBeNull();
+    // seltene Befehle stehen nicht mehr einzeln in der Leiste
+    for (const t of ['Neu', 'Öffnen …', 'Einpassen', 'Fotos']) expect(knopf(leiste, t)).toBeUndefined();
+    const menueKnopf = (name: string) => [...leiste.querySelectorAll<HTMLButtonElement>('button[aria-haspopup="menu"]')].find((b) => b.textContent?.trim() === name)!;
+    const punkte = () => [...document.querySelectorAll<HTMLElement>('[role="menu"] [role^="menuitem"]')];
+    // „Datei“: Dateibefehle, dann Fotos hinzufügen; ohne Foto ist „Speichern unter …“ gesperrt mit Grund
+    act(() => menueKnopf('Datei').click());
+    expect(punkte().map((p) => p.textContent?.trim().replace(/\s+/g, ' '))).toEqual(['Neu', 'Öffnen …Strg+O', expect.stringMatching(/^Speichern unter …/), 'Fotos hinzufügen …']);
+    expect(punkte()[2].getAttribute('aria-disabled')).toBe('true');
+    act(() => void document.activeElement?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })));
+    // „Ansicht“: die linke Leiste als Haken-Schalter
+    expect(host.querySelector('.sidebar-left')).not.toBeNull();
+    act(() => menueKnopf('Ansicht').click());
+    const leisteSchalter = punkte().find((p) => p.textContent?.includes('Leiste mit Fotos und Ebenen'))!;
+    expect(leisteSchalter.getAttribute('role')).toBe('menuitemcheckbox');
+    expect(leisteSchalter.getAttribute('aria-checked')).toBe('true');
+    act(() => leisteSchalter.click());
+    expect(host.querySelector('.sidebar-left')).toBeNull();
+    // Speichern zeigt ungespeicherte Änderungen als Punkt und im Namen; Gegenprobe ohne Änderungen
+    const speichernKnopf = () => knopf(leiste, 'Speichern')!;
+    expect(speichernKnopf().classList.contains('ungespeichert')).toBe(false);
+    act(() => useEntz.getState().fotoHinzufuegen('f1', 'Süd', 'image/png', 10, 8, new Uint8Array(4)));
+    expect(speichernKnopf().classList.contains('ungespeichert')).toBe(true);
+    expect(speichernKnopf().getAttribute('aria-label')).toBe('Speichern – ungespeicherte Änderungen');
+    expect(speichernKnopf().title).toContain('ungespeicherte Änderungen');
+    expect(knopf(leiste, 'Foto')).toBeDefined();
+    expect(leiste.querySelector('[aria-label="Rückgängig"]')).not.toBeNull();
+    // mit Foto: „Speichern unter …“ frei, „Alles zeigen“ löst das Einpassen aus
+    act(() => menueKnopf('Datei').click());
+    expect(punkte().find((p) => p.textContent?.startsWith('Speichern unter'))!.getAttribute('aria-disabled')).not.toBe('true');
+    act(() => void document.activeElement?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })));
+    let eingepasst = 0;
+    const zaehlen = () => eingepasst++;
+    window.addEventListener('entz:einpassen', zaehlen);
+    act(() => menueKnopf('Ansicht').click());
+    act(() => punkte().find((p) => p.textContent?.startsWith('Alles zeigen'))!.click());
+    window.removeEventListener('entz:einpassen', zaehlen);
+    expect(eingepasst).toBe(1);
+  });
 });
