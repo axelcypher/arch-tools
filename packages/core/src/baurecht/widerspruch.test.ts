@@ -153,3 +153,45 @@ describe('Begründung nennt den tragenden, sicheren Teil', () => {
     expect(tragendeBlaetter(regel, ctx, 'nein')).toEqual([{ m: 'Planungsrecht', in: ['Außenbereich'] }]);
   });
 });
+
+describe('Plausibilität: neues Wohngebäude als „verfahrensfrei“ (§ 62 Abs. 1, § 63 BauO NRW)', () => {
+  const efh = { Gebäudeart: 'Einfamilienhaus', Verfahren: 'verfahrensfrei', Vorhaben: 'Errichtung' };
+  const umfang = (wert: string): Record<string, FaktWert> => ({ 'vorhaben.beseitigung_umfang': { wert, herkunft: 'manuell', sicherheit: 'sicher' } });
+
+  it('Errichtung eines Wohngebäudes: Widerspruch am Merkmal „Verfahren“; der Satz richtet sich nach dem Planungsrecht', () => {
+    const satz = (pr?: string) => {
+      const w = widersprueche(pr ? { ...efh, Planungsrecht: pr } : efh, null);
+      expect([...w.merkmale]).toEqual(['Verfahren']);
+      return w.texte[0];
+    };
+    const anfang = 'Verfahren „verfahrensfrei“ festgelegt, ein neues Wohngebäude (Einfamilienhaus) ist aber nicht verfahrensfrei (§ 62 Abs. 1 BauO NRW) – ';
+    // Freistellung nur im qualifizierten bzw. vorhabenbezogenen Bebauungsplan (§ 63 Abs. 2 Nr. 1), sonst § 64
+    expect(satz('Bebauungsplan')).toBe(`${anfang}mindestens Genehmigungsfreistellung (§ 63), bitte klären`);
+    for (const pr of ['Innenbereich', 'Außenbereich', 'einfacher Bebauungsplan', 'Satzung nach BauGB']) expect(satz(pr)).toBe(`${anfang}mindestens vereinfachtes Baugenehmigungsverfahren (§ 64), bitte klären`);
+    expect(satz()).toBe(`${anfang}Genehmigungsfreistellung (§ 63) nur im Bebauungsplan, sonst mindestens vereinfachtes Baugenehmigungsverfahren (§ 64), bitte klären`);
+    for (const art of ['Zweifamilienhaus', 'Mehrfamilienhaus', 'Wohn- und Geschäftshaus']) expect(widersprueche({ ...efh, Gebäudeart: art }, null).merkmale.has('Verfahren')).toBe(true);
+  });
+
+  it('Ersatzbau (Beseitigung mit Umfang „Abbruch mit Ersatzbau“): ebenso – nicht aber Abbruch ohne Ersatzbau', () => {
+    const b = { ...efh, Vorhaben: 'Beseitigung' };
+    expect(widersprueche(b, null, umfang('Abbruch mit Ersatzbau')).texte[0]).toMatch(/^Verfahren „verfahrensfrei“ festgelegt, ein Ersatzbau für ein Wohngebäude \(Einfamilienhaus\)/);
+    // auch, wenn der Umfang nur Hinweis ist (z. B. aus einer älteren Angabe) – eine Warnung, zur sicheren Seite
+    const nurHinweis: Record<string, FaktWert> = { 'vorhaben.beseitigung_umfang': { wert: 'Abbruch mit Ersatzbau', herkunft: 'abgeleitet', sicherheit: 'hinweis' } };
+    expect(widersprueche(b, null, nurHinweis).merkmale.has('Verfahren')).toBe(true);
+    expect(widersprueche(b, null, umfang('vollständiger Abbruch ohne Ersatzbau')).merkmale.size).toBe(0);
+    expect(widersprueche(b, null).merkmale.size).toBe(0);
+  });
+
+  it('kein Hinweis: anderes Verfahren, Nichtwohngebäude, kein Gebäude, Änderung, Erweiterung (§ 62 Abs. 1 Nr. 1 g, i), Nutzungsänderung, Gebäudeart offen', () => {
+    for (const m of [
+      { ...efh, Verfahren: 'Genehmigungsfreistellung' },
+      { ...efh, Gebäudeart: 'Nichtwohngebäude' },
+      { ...efh, Gebäudeart: 'kein Gebäude' },
+      { ...efh, Vorhaben: 'Änderung' },
+      { ...efh, Vorhaben: 'Erweiterung' },
+      { ...efh, Vorhaben: 'Nutzungsänderung' },
+      { Verfahren: 'verfahrensfrei', Vorhaben: 'Errichtung' },
+    ])
+      expect(widersprueche(m, null).merkmale.size, JSON.stringify(m)).toBe(0);
+  });
+});

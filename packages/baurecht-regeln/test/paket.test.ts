@@ -892,6 +892,34 @@ describe('Fälle aus dem Fachreview', () => {
     expect(w.texte[0]).toMatch(/Landschaftsplan/);
   });
 
+  /** widersprüchlich zählt wie unbekannt: grün bleibt nur, was auch ohne Angabe zum Verfahren grün ist; liefert die Ampeln */
+  const verfahrenWieUnbekannt = (m: Record<string, string>, fakten: Record<string, FaktWert> = {}) => {
+    const w = widersprueche(m, null, fakten);
+    expect([...w.merkmale]).toEqual(['Verfahren']);
+    const ohne = auswerten(eingabe(m, fakten, TEXTE));
+    const mit = auswerten({ ...eingabe(m, fakten, TEXTE), widersprueche: w.merkmale });
+    const { Verfahren: _v, ...ohneVerfahren } = m;
+    const unbekannt = Object.fromEntries(auswerten(eingabe(ohneVerfahren, fakten, TEXTE)).paragrafen.map((p) => [p.id, p.ampel]));
+    const nachher = Object.fromEntries(mit.paragrafen.map((p) => [p.id, p.ampel]));
+    expect(mit.paragrafen.filter((p) => p.ampel === 'gruen' && unbekannt[p.id] !== 'gruen').map((p) => p.id)).toEqual([]);
+    // „verfahrensfrei“ trug vorher ein Grün, das jetzt fehlt
+    expect(ohne.paragrafen.filter((p) => p.ampel === 'gruen' && unbekannt[p.id] !== 'gruen').length, 'ohne Widerspruch trägt „verfahrensfrei“ ein Grün').toBeGreaterThan(0);
+    // gilt bleibt gilt: der Widerspruch stuft nichts herab
+    for (const p of ohne.paragrafen) if (p.ampel === 'rot') expect(nachher[p.id], p.id).toBe('rot');
+    return nachher;
+  };
+
+  it('Plausibilität: neues Einfamilienhaus als „verfahrensfrei“ – kein Grün aus „verfahrensfrei“ (§ 62 Abs. 1, § 63 BauO NRW)', () => {
+    const nachher = verfahrenWieUnbekannt({ Vorhaben: 'Errichtung', Gebäudeart: 'Einfamilienhaus', Gebäudeklasse: '1', Planungsrecht: 'Innenbereich', Verfahren: 'verfahrensfrei', Sonderbau: 'nein' });
+    // gemessen: §§ 63–65, 67, 68, 70, 74 BauO NRW, §§ 1–6, 8–11, 13, 14 BauPrüfVO u. a. „entfällt“ → „prüfen“
+    expect(nachher['nw/bauo-nrw/74']).toBe('gelb');
+  });
+
+  it('Plausibilität: Ersatzbau eines Einfamilienhauses als „verfahrensfrei“ – ebenso (mit den Rückfragen zum Altbau)', () => {
+    const m = { Vorhaben: 'Beseitigung', Gebäudeart: 'Einfamilienhaus', Gebäudeklasse: '1', Planungsrecht: 'Bebauungsplan', Verfahren: 'verfahrensfrei', Sonderbau: 'nein' };
+    verfahrenWieUnbekannt(m, { [UMFANG]: sicher('Abbruch mit Ersatzbau'), 'nw.altbau_verfahrensfrei': sicher(true) });
+  });
+
   it('Runde 2: Krankenhaus (Sonderbau) – zusätzliche Bauvorlagen nicht „entfällt“; Nachbarrecht nie „gilt“', () => {
     const x = a({ Vorhaben: 'Errichtung', Gebäudeart: 'Nichtwohngebäude', Gebäudeklasse: '5', Planungsrecht: 'Bebauungsplan', Verfahren: 'Baugenehmigungsverfahren', Sonderbau: 'ja' }, { 'gebaeude.besucher': sicher(50), 'gebaeude.gastbetten': sicher(0), 'gebaeude.verkaufsflaeche': sicher(0), 'gebaeude.garage_nutzflaeche': sicher(0), ...nein('nw.elt_betriebsraum') });
     expect(x('nw/baupruefvo/12')).not.toBe('gruen');
