@@ -366,10 +366,6 @@ startet die App neu. Ungespeicherte Änderungen bleiben als Zwischenstand erhalt
 „Herauslösen“ bzw. „Andocken“ ist der Hauptknopf (Erstfokus, Enter). PERMIO erklärt dort zusätzlich, was mit Entwurf
 und Dokumenten geschieht.
 
-Stand: `aenderungenVerwerfen` und der feste Wortlaut beim Herauslösen bzw. Andocken ohne Verlust kommen mit Arkly/core
-(Nachziehpunkt in [`nachziehen/arkly.md`](nachziehen/arkly.md)); bis dahin fragen `TitleBar.tsx` und `umzug.ts` mit
-eigenem Wortlaut.
-
 ## Richtig und falsch
 
 | Richtig                                                                                                | Falsch                                                         |
