@@ -1,7 +1,7 @@
 {
   "name": "entzerrung",
   "private": true,
-  "version": "0.28.0",
+  "version": "0.28.2",
   "type": "module",
   "description": "Fotos perspektivisch entzerren und darin messen: Rechteck, Passpunkte oder Fluchtlinien als Referenz, Objektivverzeichnung über Hilfslinien",
   "scripts": {
