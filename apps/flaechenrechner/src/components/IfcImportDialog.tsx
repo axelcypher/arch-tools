@@ -141,7 +141,7 @@ export function IfcImportDialog({ onClose }: { onClose: () => void }) {
               als Räume, die <strong>BGF-Umrisse</strong> aus den Außenbauteilen und die <strong>Dachhaut</strong> für den Brutto-Rauminhalt.
             </p>
             <p className="muted small-text">
-              Archicad: Datei → Speichern unter → IFC, mit einem Übersetzer, der Zonen exportiert. Die Datei wird nur lokal verarbeitet.
+              Export aus Archicad: Datei → Speichern unter → IFC, mit einem Übersetzer, der Zonen exportiert. Die Datei wird nur lokal verarbeitet.
             </p>
             <div className="dialog-buttons">
               <button onClick={onClose}>Abbrechen</button>

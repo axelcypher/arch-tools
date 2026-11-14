@@ -61,7 +61,7 @@ describe('IFC-Import (Dialog)', () => {
     // Gegenprobe: keine Herstellerliste in der Einleitung
     expect(absaetze[0]).not.toMatch(/Archicad|Revit|Vectorworks/);
     // erlaubt: Schritt-für-Schritt-Anleitung zum Export aus einem bestimmten Programm
-    expect(absaetze[1]).toMatch(/^Archicad: Datei → Speichern unter → IFC/);
+    expect(absaetze[1]).toMatch(/^Export aus Archicad: Datei → Speichern unter → IFC/);
   });
 
   it('unlesbare Datei: Klartext statt Ausnahmetext', async () => {
