@@ -326,6 +326,18 @@ Punkt (8px, `--sel` mit Rand in `--text`) außen an der oberen rechten Ecke, der
 Dazu sagt es der Knopf im `aria-label` („Speichern – ungespeicherte Änderungen“) und im `title`. Der Punkt ● hinter dem
 Namen in der Titelleiste (`TitleBar`, Feld `dirty`) bleibt davon unberührt.
 
+Vor einer Aktion, die das Projekt verlässt (Öffnen, Neu, Tab schließen, Beenden, Herauslösen oder Andocken, Neustart
+für ein Update), fragt `aenderungenSpeichern` „Änderungen an ‚`Name`‘ speichern?“ – in den Apps mit dem Projekt- oder
+Dateinamen, im Rahmen Arkly mit „`App – Projekt`“ – und bietet Abbrechen | Nicht speichern | Speichern. „Nicht
+speichern“ ist hier bewusst kein Gefahr-Knopf; Erstfokus und Enter liegen auf „Speichern“. Darunter steht eine Aussage,
+keine zweite Frage, die sagt, was ungespeichert ist: „`Gegenstand` hat (bzw. haben) ungespeicherte Änderungen.“ – ein
+kurzer, ganzer Satz mit Punkt, der Gegenstand in Nutzersprache mit Artikel („Das LV …“, „Das Formular …“, „Die
+Ordnerstruktur …“, „Die Angaben haben …“), ohne weitere Erklärung. Ohne eigenen Satz gilt „Das Projekt hat
+ungespeicherte Änderungen.“ Hat die Aktion eine weitere Folge, darf ein Satz dazu davorstehen (Herauslösen: „Beim
+Herauslösen startet die App neu.“). Meint „ungespeichert“ nur einen Teil des Projekts (FABRIO: nur das LV), setzt die
+App den Satz an der `TitleBar` (Eigenschaft `ungespeichert`) und als dritten Parameter ihrer eigenen Aufrufe von
+`aenderungenSpeichern(name, speichern, satz)`, damit alle ihre Wege gleich lauten.
+
 ## Richtig und falsch
 
 | Richtig                                                                                                | Falsch                                                         |

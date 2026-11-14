@@ -10,3 +10,4 @@ sich auf den Stand beim Eintragen.
   …) und eigene Radien (`5px`, `6px`). Auf `--s1`…`--s6`, `--radius-s`/`--radius` bringen; Höhen der kleinen Knöpfe
   (`min-height: 26px`) auf `--ctl-h-s`.
 - **Stand „offen“ im Regelbaum** (`components/Detail.tsx`, `STAND`): das „?“ als Text durch das neue Symbol `frage` ersetzen.
+- **Satz für ungespeicherte Änderungen prüfen** (design.md „Ungespeicherte Änderungen“): Meint „ungespeichert“ nur einen Teil des Projekts, den Satz in Nutzersprache setzen („Die Angaben haben ungespeicherte Änderungen.“) – an der `TitleBar` (`ungespeichert`) und als dritter Parameter eigener `aenderungenSpeichern`-Aufrufe. Passt der Rückfall „Das Projekt hat ungespeicherte Änderungen.“, den Punkt einfach löschen.
