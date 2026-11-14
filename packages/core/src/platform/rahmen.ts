@@ -77,20 +77,22 @@ export function anRahmenMelden(app: string, name: string, dirty: boolean, ungesp
 
 /**
  * Was beim Herauslösen bzw. Andocken (die App startet dabei neu) aus ungespeicherten Änderungen wird – je Kennung.
- * `verliert`: sie gehen verloren (dann bietet die Rückfrage „Speichern“ an).
+ * `verliert`: sie gehen verloren – dann bietet die Rückfrage „Speichern“ an und nennt den Satz der App (`ungespeichert`);
+ * sonst `text`: ein kurzer Satz, was aus ihnen wird.
  */
-export const BEIM_UMZUG: Record<string, { text: string; verliert: boolean }> = {
-  ordner: { text: 'Ungespeicherte Änderungen gehen verloren – bitte vorher speichern.', verliert: true },
+export type Umzug = { verliert: true } | { verliert: false; text: string };
+export const BEIM_UMZUG: Record<string, Umzug> = {
+  ordner: { verliert: true },
   formulare: {
     text: 'Nicht gespeicherte Eingaben bleiben als Entwurf erhalten und erscheinen beim erneuten Öffnen des Formulars wieder; ungespeicherte Bearbeitungen in PDF-, Excel- und Word-Dokumenten der Dateiansicht gehen verloren.',
     verliert: false,
   },
-  ava: { text: 'Ungespeicherte Änderungen am LV gehen verloren – bitte vorher speichern (alles andere speichert die App sofort).', verliert: true },
-  baurecht: { text: 'Ungespeicherte Angaben und Festlegungen gehen verloren – bitte vorher speichern.', verliert: true },
+  ava: { verliert: true },
+  baurecht: { verliert: true },
 };
-const ZWISCHENSTAND = { text: 'Ungespeicherte Änderungen bleiben im Zwischenstand und werden im neuen Fenster wiederhergestellt.', verliert: false };
-/** Umzug einer App (Kennung): Text und ob Änderungen verloren gehen */
-export const beimUmzug = (kennung: string | null) => (kennung && BEIM_UMZUG[kennung]) || ZWISCHENSTAND;
+const ZWISCHENSTAND: Umzug = { text: 'Ungespeicherte Änderungen bleiben als Zwischenstand erhalten.', verliert: false };
+/** Umzug einer App (Kennung): ob Änderungen verloren gehen, sonst was aus ihnen wird */
+export const beimUmzug = (kennung: string | null): Umzug => (kennung && BEIM_UMZUG[kennung]) || ZWISCHENSTAND;
 
 /**
  * Herausgelöstes Fenster: zurück in den Rahmen (der Rahmen öffnet den Tab, dieses Fenster verschwindet). Die Rückfrage

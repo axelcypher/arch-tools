@@ -235,7 +235,11 @@ export function App() {
   const herausloesen = async (id: string) => {
     const info = appInfo(id)!;
     const frame = rahmen.current.get(id);
-    if (status[id]?.dirty && !(await umzugBestaetigen(id, info.name, status[id].name, 'herausloesen', () => (frame ? speichernImTab(frame, { zeitablauf: antwortetNicht(id) }) : false)))) return;
+    if (
+      status[id]?.dirty &&
+      !(await umzugBestaetigen(id, info.name, status[id].name, 'herausloesen', () => (frame ? speichernImTab(frame, { zeitablauf: antwortetNicht(id) }) : false), status[id].ungespeichert))
+    )
+      return;
     if (tabBrauchtVorbereitung(frame)) {
       // während des Wartens kein zweites Herauslösen bzw. Schließen dieses Tabs
       if (schliesstGerade.current.has(id)) return;

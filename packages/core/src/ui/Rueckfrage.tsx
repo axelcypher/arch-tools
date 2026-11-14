@@ -72,6 +72,9 @@ export function frageText(titel: string, wert: string, ok = 'OK', text?: string)
   );
 }
 
+/** Satz der Rückfrage bei ungespeicherten Änderungen, wenn die App keinen eigenen meldet (docs/design.md) */
+export const UNGESPEICHERT_ALLGEMEIN = 'Das Projekt hat ungespeicherte Änderungen.';
+
 /**
  * Ungespeicherte Änderungen vor einer Aktion (Öffnen, Neu, Beenden): „Speichern“ speichert und erlaubt die Aktion nur,
  * wenn das Speichern gelungen ist; „Nicht speichern“ verwirft; „Abbrechen“ (auch Esc) lässt die Aktion aus.
@@ -80,7 +83,7 @@ export function frageText(titel: string, wert: string, ok = 'OK', text?: string)
 export async function aenderungenSpeichern(name: string, speichern: () => Promise<boolean | void> | boolean | void, text?: string): Promise<boolean> {
   const a = await fragen({
     titel: `Änderungen an ‚${name || 'Unbenannt'}‘ speichern?`,
-    text: text ?? 'Das Projekt hat ungespeicherte Änderungen.',
+    text: text ?? UNGESPEICHERT_ALLGEMEIN,
     knoepfe: [
       { id: 'abbrechen', label: 'Abbrechen' },
       { id: 'verwerfen', label: 'Nicht speichern' },
