@@ -364,7 +364,10 @@ Einzelfall prüfen“ – das setzt die Auswertung davor.
 Die großen Matrizen (Fallmatrix, „neue Merkmalwerte“, „Fragen und Regeln“) rechnen voll über zehn Minuten (ohne Netz).
 Voll laufen sie in der CI (GitHub Actions setzt `CI=true`) und mit `VOLL=1 npx vitest run --project regeln`; sonst –
 lokal, in Cloud-Sitzungen – prüft eine feste, über alle Merkmalswerte gestreute Stichprobe in unter einer Minute (Zeitgrenze
-60 s), die Fallmatrix nur voll.
+60 s), die Fallmatrix nur voll. Im PR rechnet die CI nur voll, wenn der PR die Auswertung erreichen kann
+(`scripts/regeln-matrix.mjs`): Regelpaket, LEXIO, ihr Kern (über Importe, auch aus Tests), Wurzel-Konfiguration,
+Workflows, Skripte und alles nicht sicher Zuordenbare. Nur Doku, Notizen, andere Apps und Kerndateien außerhalb lassen
+die Stichprobe zu (`REGELN_STICHPROBE=1`). Auf `main`, im Release-Lauf und im Regel-Workflow bleibt es immer voll.
 
 Auslieferung und Wächter: `.github/workflows/regeln.yml` – Prüfen und Bauen in einem Job ohne Schreibrechte und ohne
 Schlüssel, Signieren (OpenSSL, Ed25519) und Hochladen in das Release „regeln“ in einem eigenen Job ohne npm; der Wächter
