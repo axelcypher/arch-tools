@@ -97,9 +97,14 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   der auch ohne die Frage gälte (`ohneAusloeser` im Regelmodul, nur wo das zwingend folgt): „Allee betroffen: nein“ gilt
   auch, wenn „geschützte Bäume betroffen“ nur Hinweis ist – diese Angabe schließt Alleen ein, eine betroffene Allee ist
   also immer auch ein solcher Fall; ebenso „nicht im Vogelschutzgebiet Hellwegbörde“, „nicht im Heilquellenschutzgebiet
-  Bad Sassendorf“ (bzw. dessen Zonen „außerhalb“), „keine Planreife“, „keine Zurückstellung beantragt“ und „keine
-  Feuerstätte für feste Brennstoffe über 50 kW“. Hängt ein Paragraf an
-  einem anderen, der nur „gilt, Ausnahme möglich“ ist, und entfiele er mit dessen Ausnahme, nennt er sie („Ausnahme
+  Bad Sassendorf“ (bzw. dessen Zonen „außerhalb“), „keine Planreife“, „keine Zurückstellung beantragt“ (§ 15 BauGB,
+  entsprechend auch bei vorbereitenden Untersuchungen einer Sanierung, § 141 Abs. 4, und einer Erhaltungssatzung in
+  Aufstellung, § 172 Abs. 2) und „keine Feuerstätte für feste Brennstoffe über 50 kW“. Die Fragen nach vorbereitenden
+  Untersuchungen und einer Erhaltungssatzung in Aufstellung halten §§ 141, 172 BauGB offen („prüfen“), bis sie
+  beantwortet sind; beim Flächennutzungsplan mit Konzentrationszonen zählt Windenergie an Land mit (§ 15 Abs. 3
+  entsprechend nach § 245e Abs. 2 BauGB, Flächenbeitragswert; § 245e steht nur im Text der Regel zu § 15, seine Änderung
+  meldet keine Prüfsumme). Hängt ein Paragraf an einem anderen, der nur „gilt,
+  Ausnahme möglich“ ist, und entfiele er mit dessen Ausnahme, nennt er sie („Ausnahme
   möglich über § 14 BNatSchG – es fehlt dort: …“); die Ampel bleibt „gilt“.
   Unter „Ausnahme möglich – es fehlt“ stehen nur Fragen, die gerade gestellt werden (ohne Ausweichen auf nicht
   gestellte: eine Ausnahme, deren Fragen nicht gestellt sind, wird nicht angeboten). Ist die Ausnahme nur über Hinweise
@@ -143,7 +148,7 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   Merkmal „Verfahren“ – § 62 Abs. 1 BauO NRW nennt keine Wohngebäude. Nötig ist im qualifizierten oder
   vorhabenbezogenen Bebauungsplan mindestens die Genehmigungsfreistellung (§ 63 Abs. 2, mit § 74 Abs. 7, 8 und 9 Satz
   1–2 nach § 63 Abs. 6 Satz 3), sonst mindestens § 64; der Satz richtet sich nach dem Planungsrecht. „verfahrensfrei“
-  trägt dann kein „entfällt“ (etwa §§ 63, 74 BauO NRW, die Bauvorlagen der BauPrüfVO). Jede dieser Warnungen hat
+  trägt dann kein „entfällt“ (etwa §§ 63, 74 BauO NRW, die Bauvorlagen der BauPrüfVO). Die erste Warnung je Merkmal hat
   „Zum Merkmal“ (springt auf den gewählten Wert); angesagt wird ein neuer Satz über eine stehende Live-Region. In den
   Sätzen steht bei der Anzeige nach „§“, „Abs.“, „Nr.“ ein geschütztes Leerzeichen.
 - **Vorschriften (Mitte):** **offen zuerst** (Vorgabe: prüfen, gilt, entfällt), nach Ebene oder nach Thema; je Norm

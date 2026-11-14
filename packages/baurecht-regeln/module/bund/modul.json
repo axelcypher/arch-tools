@@ -760,11 +760,11 @@
       }
     },
     "planung.zurueckstellung": {
-      "titel": "Die Gemeinde hat die Zurückstellung des Baugesuchs beantragt (§ 15 Abs. 1 oder 3 BauGB)",
+      "titel": "Die Gemeinde hat die Zurückstellung des Baugesuchs beantragt (§ 15 BauGB, auch nach § 141 Abs. 4 oder § 172 Abs. 2 BauGB)",
       "kurz": "Zurückstellung beantragt (§ 15 BauGB)",
       "gruppe": "planung",
       "typ": "janein",
-      "hilfe": "bei der Gemeinde erfragen, solange ein Bebauungsplan oder ein Flächennutzungsplan mit Konzentrationszonen aufgestellt wird – die Gemeinde kann die Zurückstellung auch noch nach Eingang des Bauantrags beantragen",
+      "hilfe": "bei der Gemeinde erfragen, solange ein Bebauungsplan oder ein Flächennutzungsplan mit Konzentrationszonen aufgestellt wird, vorbereitende Untersuchungen für eine Sanierung laufen oder eine Erhaltungssatzung aufgestellt wird – die Gemeinde kann die Zurückstellung auch noch nach Eingang des Bauantrags beantragen",
       "ohneAusloeser": false,
       "wenn": {
         "oder": [
@@ -775,8 +775,42 @@
           {
             "f": "planung.fnp_verfahren",
             "ist": true
+          },
+          {
+            "f": "planung.vorbereitende_untersuchungen",
+            "ist": true
+          },
+          {
+            "f": "planung.erhaltungssatzung_aufstellung",
+            "ist": true
           }
         ]
+      }
+    },
+    "planung.vorbereitende_untersuchungen": {
+      "titel": "Beginn vorbereitender Untersuchungen für eine Sanierung oder einen städtebaulichen Entwicklungsbereich beschlossen und ortsüblich bekannt gemacht (§ 141 Abs. 3, § 165 Abs. 4 BauGB)",
+      "kurz": "Vorbereitende Untersuchungen (§ 141)",
+      "gruppe": "planung",
+      "typ": "janein",
+      "hilfe": "Ab der Bekanntmachung kann die Gemeinde die Zurückstellung von Vorhaben und Beseitigungen beantragen (§ 141 Abs. 4 Satz 1 BauGB, § 15 entsprechend). Mit der förmlichen Festlegung des Sanierungsgebiets bzw. Entwicklungsbereichs wird sie unwirksam (§ 141 Abs. 4 Satz 2); dann gilt § 144, soweit die Satzung ihn nicht ausschließt (§ 142 Abs. 4) – bei der Gemeinde erfragen",
+      "wenn": {
+        "nicht": {
+          "f": "planung.sanierungsgebiet",
+          "ist": true
+        }
+      }
+    },
+    "planung.erhaltungssatzung_aufstellung": {
+      "titel": "Aufstellung einer Erhaltungssatzung beschlossen und ortsüblich bekannt gemacht (§ 172 Abs. 2 BauGB)",
+      "kurz": "Erhaltungssatzung in Aufstellung",
+      "gruppe": "planung",
+      "typ": "janein",
+      "hilfe": "Ab der Bekanntmachung kann die Gemeinde die Zurückstellung von Vorhaben im Sinne des § 172 Abs. 1 beantragen (§ 15 Abs. 1 entsprechend) – bei der Gemeinde erfragen",
+      "wenn": {
+        "nicht": {
+          "f": "planung.erhaltungssatzung",
+          "ist": true
+        }
       }
     },
     "vorhaben.freiberuflich": {
@@ -924,12 +958,12 @@
       }
     },
     "planung.fnp_verfahren": {
-      "titel": "Flächennutzungsplan mit Konzentrationszonen in Aufstellung (privilegiertes Vorhaben im Außenbereich)",
-      "kurz": "FNP mit Konzentrationszonen in Arbeit",
+      "titel": "Flächennutzungsplan mit Konzentrationszonen bzw. Windenergiegebieten in Aufstellung (privilegiertes Vorhaben im Außenbereich)",
+      "kurz": "FNP-Verfahren nach § 15 Abs. 3 in Arbeit",
       "gruppe": "planung",
       "typ": "janein",
-      "frage": "Ist das Vorhaben nach § 35 Abs. 1 Nr. 2–6 BauGB privilegiert (z. B. Windenergie, Biogas, Tierhaltung) und hat die Gemeinde beschlossen, einen Flächennutzungsplan mit Konzentrationszonen aufzustellen, zu ändern oder zu ergänzen?",
-      "hilfe": "§ 15 Abs. 3 BauGB: dann kann die Gemeinde die Zurückstellung bis zu einem Jahr beantragen – bei der Gemeinde erfragen",
+      "frage": "Ist das Vorhaben nach § 35 Abs. 1 Nr. 2–6 BauGB privilegiert (z. B. Biogas, Tierhaltung, Windenergie) und hat die Gemeinde beschlossen, einen Flächennutzungsplan mit Konzentrationszonen (bei Windenergie an Land: mit Windenergiegebieten, um den Flächenbeitragswert bzw. ein Teilflächenziel zu erreichen) aufzustellen, zu ändern oder zu ergänzen?",
+      "hilfe": "§ 15 Abs. 3 BauGB: dann kann die Gemeinde die Zurückstellung bis zu einem Jahr beantragen. Windenergie an Land: § 35 Abs. 3 Satz 3 gilt nicht (§ 249 Abs. 1), § 15 Abs. 3 aber entsprechend für einen Flächennutzungsplan zur Erreichung des Flächenbeitragswerts (§ 245e Abs. 2), längstens bis zum Stichtag nach der Anlage zum Windenergieflächenbedarfsgesetz – bei der Gemeinde erfragen",
       "wenn": {
         "$": "aussen_planrecht"
       }

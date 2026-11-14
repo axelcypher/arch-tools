@@ -837,17 +837,19 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
       <div className="br-unsichtbar" role="status">
         {suchAnsage}
       </div>
+      {/* stehende Live-Region für neue Widersprüche (eine neu eingefügte Region sagen manche Screenreader nicht an) –
+          außerhalb der scrollenden Liste */}
+      <div className="br-unsichtbar br-widerspruch-ansage" role="status">
+        {widerspruchAnsage}
+      </div>
       <div className="br-angaben-liste">
         {!suche && <Klaeren stand={stand} />}
-        {/* Widersprüche und Plausibilität: stehende Live-Region (eine neu eingefügte Region sagen manche Screenreader nicht
-            an), die Meldungen selbst ohne eigene Rolle – mit Sprung zum Merkmal, um das es geht */}
-        <div className="br-unsichtbar" role="status">
-          {widerspruchAnsage}
-        </div>
-        {meldungen.map(({ text, zu }) => (
+        {/* Widersprüche und Plausibilität: die Meldungen ohne eigene Rolle (die stehende Live-Region steht über der Liste) –
+            je Merkmal einmal mit Sprung dorthin (am ersten Satz zu ihm) */}
+        {meldungen.map(({ text, zu }, i) => (
           <div key={text} className="meldung warnung br-widerspruch-meldung">
             <span>{nb(text)}</span>
-            {zu && (
+            {zu && meldungen.findIndex((m) => m.zu === zu) === i && (
               <button type="button" className="small" onClick={() => useBaurecht.getState().fokusSetzen(`merkmal:${zu}`)} aria-label={`Zum Merkmal „${MERKMAL_TITEL[zu] ?? zu}“`}>
                 Zum Merkmal
               </button>

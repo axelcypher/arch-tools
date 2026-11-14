@@ -3,7 +3,7 @@
   "modul": "bund",
   "norm": "baugb",
   "fassung": "2026-09-30",
-  "version": 1,
+  "version": 2,
   "paragrafen": {
     "14": {
       "titel": "Veränderungssperre",
@@ -94,7 +94,7 @@
           }
         ]
       },
-      "grund": "Auf Antrag der Gemeinde setzt die Baugenehmigungsbehörde die Entscheidung bis zu zwölf Monate aus (ohne Genehmigungsverfahren: vorläufige Untersagung), wenn das Vorhaben die Planung unmöglich machen oder wesentlich erschweren würde (Abs. 1); für privilegierte Vorhaben im Außenbereich bei einem Flächennutzungsplan mit Konzentrationszonen bis zu einem Jahr (Abs. 3).",
+      "grund": "Auf Antrag der Gemeinde setzt die Baugenehmigungsbehörde die Entscheidung bis zu zwölf Monate aus (ohne Genehmigungsverfahren: vorläufige Untersagung), wenn das Vorhaben die Planung unmöglich machen oder wesentlich erschweren würde (Abs. 1); für privilegierte Vorhaben im Außenbereich bei einem Flächennutzungsplan mit Konzentrationszonen bis zu einem Jahr (Abs. 3), für Windenergie an Land bei einem Flächennutzungsplan zur Erreichung des Flächenbeitragswerts längstens bis zum Stichtag nach dem Windenergieflächenbedarfsgesetz (§ 245e Abs. 2).",
       "fundstellen": [
         "15/1",
         "15/3"
@@ -110,7 +110,7 @@
         "15/3": "a43c9d8a"
       },
       "pruefen": {
-        "grund": "Solange ein Bebauungsplan bzw. ein Flächennutzungsplan mit Konzentrationszonen aufgestellt wird, kann die Gemeinde die Zurückstellung auch noch nach Eingang des Bauantrags beantragen (Abs. 1; Abs. 3: binnen sechs Monaten nach Kenntnis) – bei der Gemeinde erfragen.",
+        "grund": "Solange ein Bebauungsplan bzw. ein Flächennutzungsplan mit Konzentrationszonen (bei Windenergie: zur Erreichung des Flächenbeitragswerts, § 245e Abs. 2) aufgestellt wird, kann die Gemeinde die Zurückstellung auch noch nach Eingang des Bauantrags beantragen (Abs. 1; Abs. 3: binnen sechs Monaten nach Kenntnis) – bei der Gemeinde erfragen.",
         "wenn": {
           "und": [
             {
@@ -546,6 +546,78 @@
         "51/3": "472a0557"
       }
     },
+    "141": {
+      "titel": "Vorbereitende Untersuchungen (Sanierung)",
+      "gilt": {
+        "und": [
+          {
+            "$": "vorhaben_oder_beseitigung"
+          },
+          {
+            "f": "planung.vorbereitende_untersuchungen",
+            "ist": true
+          },
+          {
+            "nicht": {
+              "f": "planung.sanierungsgebiet",
+              "ist": true
+            }
+          },
+          {
+            "f": "planung.zurueckstellung",
+            "ist": true
+          }
+        ]
+      },
+      "entfaellt": {
+        "oder": [
+          {
+            "f": "planung.vorbereitende_untersuchungen",
+            "ist": false
+          },
+          {
+            "f": "planung.sanierungsgebiet",
+            "ist": true
+          }
+        ]
+      },
+      "grund": "Ab der ortsüblichen Bekanntmachung des Beschlusses über den Beginn vorbereitender Untersuchungen kann die Gemeinde die Zurückstellung von Vorhaben nach § 29 Abs. 1 und von Beseitigungen beantragen (Abs. 4 Satz 1, § 15 entsprechend); mit der förmlichen Festlegung des Sanierungsgebiets wird die Zurückstellung unwirksam (Abs. 4 Satz 2).",
+      "fundstellen": [
+        "141/3",
+        "141/4"
+      ],
+      "behoerde": {
+        "$": "genehmigung"
+      },
+      "verweise": [
+        "bund/baugb/15",
+        "bund/baugb/144"
+      ],
+      "pruefen": {
+        "grund": "Solange die vorbereitenden Untersuchungen laufen, kann die Gemeinde die Zurückstellung auch noch nach Eingang des Bauantrags beantragen – bei der Gemeinde erfragen.",
+        "wenn": {
+          "und": [
+            {
+              "$": "vorhaben_oder_beseitigung"
+            },
+            {
+              "f": "planung.vorbereitende_untersuchungen",
+              "ist": true
+            },
+            {
+              "nicht": {
+                "f": "planung.sanierungsgebiet",
+                "ist": true
+              }
+            }
+          ]
+        }
+      },
+      "stand": {
+        "141/3": "00f64dd0",
+        "141/4": "12e29e32"
+      }
+    },
     "144": {
       "titel": "Genehmigungspflichtige Vorhaben und Rechtsvorgänge (Sanierungsgebiet)",
       "gilt": {
@@ -618,28 +690,63 @@
     "172": {
       "titel": "Erhaltung baulicher Anlagen und der Eigenart von Gebieten (Erhaltungssatzung)",
       "gilt": {
-        "und": [
+        "oder": [
           {
-            "f": "planung.erhaltungssatzung",
-            "ist": true
-          },
-          {
-            "oder": [
+            "und": [
+              {
+                "f": "planung.erhaltungssatzung",
+                "ist": true
+              },
               {
                 "$": "vorhaben_oder_beseitigung"
+              }
+            ]
+          },
+          {
+            "und": [
+              {
+                "f": "planung.erhaltungssatzung_aufstellung",
+                "ist": true
+              },
+              {
+                "$": "vorhaben_oder_beseitigung"
+              },
+              {
+                "f": "planung.zurueckstellung",
+                "ist": true
               }
             ]
           }
         ]
       },
-      "grund": "Im Gebiet einer Erhaltungssatzung bedürfen Rückbau, Änderung und Nutzungsänderung baulicher Anlagen einer eigenen Genehmigung, bei einer Satzung zur städtebaulichen Gestalt (Abs. 1 Satz 1 Nr. 1) auch die Errichtung.",
+      "grund": "Im Gebiet einer Erhaltungssatzung bedürfen Rückbau, Änderung und Nutzungsänderung baulicher Anlagen einer eigenen Genehmigung, bei einer Satzung zur städtebaulichen Gestalt (Abs. 1 Satz 1 Nr. 1) auch die Errichtung. Ist die Aufstellung einer Erhaltungssatzung beschlossen und bekannt gemacht, kann die Gemeinde die Zurückstellung solcher Vorhaben beantragen (Abs. 2, § 15 Abs. 1 entsprechend).",
       "fundstellen": [
         "172/1",
+        "172/2",
         "172/3",
         "172/4"
       ],
       "pruefen": {
-        "grund": "Welcher Erhaltungszweck (Gestalt, Zusammensetzung der Wohnbevölkerung, Umstrukturierung) gilt, ergibt sich aus der Satzung – bei der Errichtung nur im Fall der städtebaulichen Gestalt."
+        "grund": "Gilt die Satzung: Welcher Erhaltungszweck (Gestalt, Zusammensetzung der Wohnbevölkerung, Umstrukturierung) gilt, ergibt sich aus ihr – bei der Errichtung nur im Fall der städtebaulichen Gestalt. Wird sie erst aufgestellt: Die Gemeinde kann die Zurückstellung auch noch nach Eingang des Bauantrags beantragen (Abs. 2) – bei der Gemeinde erfragen.",
+        "wenn": {
+          "und": [
+            {
+              "$": "vorhaben_oder_beseitigung"
+            },
+            {
+              "oder": [
+                {
+                  "f": "planung.erhaltungssatzung",
+                  "ist": true
+                },
+                {
+                  "f": "planung.erhaltungssatzung_aufstellung",
+                  "ist": true
+                }
+              ]
+            }
+          ]
+        }
       },
       "hinweis": "Die Genehmigung erteilt die Gemeinde; ist eine Baugenehmigung nötig, entscheidet die Bauaufsicht im Einvernehmen mit der Gemeinde.",
       "behoerde": {
@@ -647,8 +754,21 @@
       },
       "stand": {
         "172/1": "b7234457",
+        "172/2": "c7b19dd0",
         "172/3": "a11d2f06",
         "172/4": "02fb9718"
+      },
+      "entfaellt": {
+        "und": [
+          {
+            "f": "planung.erhaltungssatzung",
+            "ist": false
+          },
+          {
+            "f": "planung.erhaltungssatzung_aufstellung",
+            "ist": false
+          }
+        ]
       }
     },
     "246e": {

@@ -640,7 +640,7 @@ wird dort als Regel geschrieben und mit der Fallmatrix getestet.
 
 | Norm | Quelle | Paragrafen (erster Umfang) |
 |---|---|---|
-| BauGB | gii `bbaug` (im RIS noch nicht) – zuletzt geändert durch Art. 8 Abs. 2 G v. 23.7.2026 | §§ 29–38 (Zulässigkeit), § 31 Befreiungen, §§ 14, 17 Veränderungssperre, § 172 Erhaltungssatzung, § 246e (Wohnungsbau) |
+| BauGB | gii `bbaug` (im RIS noch nicht) – zuletzt geändert durch Art. 8 Abs. 2 G v. 23.7.2026 | §§ 29–38 (Zulässigkeit), § 31 Befreiungen, §§ 14, 17 Veränderungssperre, § 15 Zurückstellung (Abs. 3 auch Windenergie nach § 245e Abs. 2), § 141 vorbereitende Untersuchungen (Zurückstellung nach Abs. 4), §§ 144, 145 Sanierungsgebiet, § 172 Erhaltungssatzung (Abs. 2 Zurückstellung bei Aufstellung), § 246e (Wohnungsbau) |
 | BauNVO | RIS `eli/bund/bgbl-1/1962/s429` (Fassung ab 03.07.2023), alte Fassungen 1962/1968/1977/1990 mitgeliefert | §§ 1–15 nach Gebietsart, §§ 16–21a Maß, § 23 überbaubare Fläche |
 | GEG | gii `geg` – **seit dem G v. 23.7.2026 amtlich „GModG“**, §§ 47–55 und 71–73 weggefallen | § 2 Anwendungsbereich (`geltung`), §§ 10 ff. Neubau, § 36 Änderung bestehender Gebäude; die Auswahl wird an der neuen Fassung erst erarbeitet |
 | GEIG | gii `geig` | §§ 6, 7 (Neubau mit Stellplätzen), § 10 |
