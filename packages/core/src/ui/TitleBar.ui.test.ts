@@ -63,7 +63,7 @@ const antwort = async (host: Element, knopf: string) => {
 const warten = () => act(async () => void (await new Promise((r) => setTimeout(r, 0))));
 /** „Andocken“ steht im Menü der Titelleiste („Einstellungen und Hilfe“) */
 const andockenKlicken = async (host: Element) => {
-  await act(async () => host.querySelector<HTMLButtonElement>('.titlebar-mehr')!.click());
+  await act(async () => host.querySelector<HTMLButtonElement>('.titlebar-menue')!.click());
   await act(async () => [...document.querySelectorAll<HTMLButtonElement>('.menue .menue-punkt')].find((b) => b.textContent === 'Andocken')!.click());
 };
 

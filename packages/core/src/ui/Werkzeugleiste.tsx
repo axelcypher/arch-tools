@@ -2,7 +2,7 @@
  * Werkzeugleiste mit Überlauf: Einträge stehen der Reihe nach in der Leiste; reicht die Breite nicht, wandern Einträge
  * mit Rang in das Menü „Mehr“ am Ende – der unwichtigste (höchster Rang) zuerst. Einträge ohne Rang bleiben immer
  * sichtbar (Hauptknopf, Werkzeuge einer Zeichenfläche). Seltene Befehle stehen gleich im Menü „Mehr“ (`mehr`).
- * Die Leiste nimmt die volle Breite ihres Elternelements (`.toolbar.leiste`: `flex: 1 1 auto`, `width: 100%`) – sie
+ * Die Leiste nimmt die volle Breite ihres Elternelements (`.toolbar.leiste`: `width: 100%`, `flex: 0 1 auto` – in der Spalte von `.app` wächst sie nicht in die Höhe) – sie
  * misst ihre eigene Breite als verfügbaren Platz. Richtlinie: docs/design.md, „Kopf- und Werkzeugleisten“.
  */
 import type { ReactNode } from 'react';
@@ -115,8 +115,13 @@ export function Werkzeugleiste({
     const neu = ueberlauf(eintraege, innen, { mehrBreite: breiten.current.get('\u0000mehr') ?? 0, abstand, mehrImmer, abstandhalter });
     // wandert der Eintrag mit dem Fokus ins Menü, bekommt „Mehr“ den Fokus (sonst fiele er auf die Seite)
     const fokus = document.activeElement?.closest?.('[data-eintrag]') as HTMLElement | null;
-    if (fokus && el.contains(fokus) && neu.has(fokus.dataset.eintrag!)) fokusAufMehr.current = true;
-    setWeg((alt) => (alt.size === neu.size && [...neu].every((id) => alt.has(id)) ? alt : neu));
+    const fokusId = fokus && el.contains(fokus) ? fokus.dataset.eintrag! : null;
+    setWeg((alt) => {
+      if (alt.size === neu.size && [...neu].every((id) => alt.has(id))) return alt;
+      // nur bei echter Änderung, und nur wenn gerade der fokussierte Eintrag neu ins Menü wandert
+      if (fokusId && neu.has(fokusId) && !alt.has(fokusId)) fokusAufMehr.current = true;
+      return neu;
+    });
   }, [teile, mehrImmer]);
 
   useLayoutEffect(() => {

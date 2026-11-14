@@ -223,7 +223,7 @@ export function TitleBar({ app, name, dirty, ungespeichert, onOpenLog, regeln, o
         {rahmen !== 'tab' && <SpeicherortAnzeige ort={ort} nurWarnung />}
         {regeln && <Nachschlagewerk app={regeln} />}
         {/* Menü der Titelleiste: neue Fehler zählt die Marke am Knopf, das Protokoll selbst steht im Menü */}
-        <MenueKnopf className="titlebar-btn titlebar-mehr" punkte={mehrPunkte} ariaLabel={menueName} title={menueName} name="Einstellungen und Hilfe" pfeil={false}>
+        <MenueKnopf className="titlebar-btn titlebar-menue" punkte={mehrPunkte} ariaLabel={menueName} title={menueName} name="Einstellungen und Hilfe" pfeil={false}>
           <Symbol name="menue" />
           {errors > 0 && (
             <span className="titlebar-badge" aria-hidden>
@@ -265,7 +265,7 @@ export function TitleBar({ app, name, dirty, ungespeichert, onOpenLog, regeln, o
 }
 
 /**
- * Untermenü „Farbschema“ (Menü „Mehr“ der Titelleiste, auch für die Rahmen-App): Einfachauswahl Auto/Hell/Dunkel,
+ * Untermenü „Farbschema“ (Menü „Einstellungen und Hilfe“ der Titelleiste, auch für die Rahmen-App): Einfachauswahl Auto/Hell/Dunkel,
  * mit Zeichenfläche dazu der Schalter „Zeichenfläche im dunklen Schema abdunkeln“. Liest den Stand beim Öffnen.
  */
 export function farbschemaPunkte(zeichenflaeche = true): MenuePunkt[] {

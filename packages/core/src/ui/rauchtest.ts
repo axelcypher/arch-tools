@@ -5,7 +5,7 @@ import { act } from 'react';
  * „Dunkel“ und zurück auf „Hell“ stellen – das Schema am <html>-Element muss sofort wechseln.
  */
 export function farbschemaWechseln(host: HTMLElement, wahl: 'Hell' | 'Dunkel'): string | undefined {
-  const mehr = host.querySelector<HTMLButtonElement>('.titlebar .titlebar-mehr');
+  const mehr = host.querySelector<HTMLButtonElement>('.titlebar .titlebar-menue');
   if (!mehr) throw new Error('Menü der Titelleiste („Einstellungen und Hilfe“) fehlt');
   if (mehr.getAttribute('aria-expanded') !== 'false') throw new Error('Menü der Titelleiste: aria-expanded vor dem Öffnen nicht „false“');
   act(() => mehr.click());

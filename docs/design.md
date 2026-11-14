@@ -295,7 +295,8 @@ Zurücksetzen, Sonderfunktionen. Feste Namen, in allen Apps gleich:
 
 - Weitere sprechende Menünamen („Unterlage“, „Einrichtung“, „LV“) nur für eine Gruppe von mindestens drei
   zusammengehörigen Befehlen. Menüknöpfe zum selben Gegenstand zusammenlegen („Neues LV ▾“ und „LV ▾“ → „LV ▾“).
-  Keine geteilten Knöpfe (Befehl plus Pfeil in einem): Hauptbefehl als Knopf, Varianten im Menü.
+  Keine geteilten Knöpfe (Befehl plus Pfeil in einem): Hauptbefehl als Knopf, Varianten im Menü daneben – etwa
+  „Position“ (mit Symbol `plus`) und „Hinzufügen ▾“ mit Kostenrisiko und Gliederung.
 - Menüknöpfe tragen Text und Aufklapp-Pfeil (`MenueKnopf`), „Mehr“ nur das Symbol `mehr` (`className="icon"`,
   `pfeil={false}`, `ariaLabel="Mehr"`, `title` „Mehr – weitere Befehle“).
 - Schaltet ein Menü zwischen Ansichten um (ATLAS: „Einrichtung“ mit Struktur, Vorlagen, Einstellungen), zeigt der
@@ -316,7 +317,8 @@ Zurücksetzen, Sonderfunktionen. Feste Namen, in allen Apps gleich:
   festen Punkte des Menüs „Mehr“, `name` benennt die Leiste. Ohne `rang` oder `menue` bleibt ein Eintrag immer
   sichtbar – so der Hauptknopf und die Werkzeuge. Übergelaufene Einträge stehen in „Mehr“ oben, in ihrer Reihenfolge,
   getrennt von den festen Punkten; hatte ein übergelaufener Knopf den Fokus, bekommt ihn „Mehr“. Die Leiste nimmt die
-  volle Breite ihres Elternelements und braucht keine eigene `.toolbar` darum.
+  volle Breite ihres Elternelements (wächst in der Spalte von `.app` aber nicht in die Höhe) und braucht keine eigene
+  `.toolbar` darum.
 
 ```tsx
 <Werkzeugleiste

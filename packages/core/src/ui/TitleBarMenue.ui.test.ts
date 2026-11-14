@@ -28,7 +28,7 @@ afterEach(() => {
   document.body.innerHTML = '';
 });
 
-const mehr = (host: Element) => host.querySelector<HTMLButtonElement>('.titlebar .titlebar-mehr')!;
+const mehr = (host: Element) => host.querySelector<HTMLButtonElement>('.titlebar .titlebar-menue')!;
 const punkte = () => [...document.querySelectorAll<HTMLElement>('.menue[aria-label="Einstellungen und Hilfe"] > .menue-punkt, .menue[aria-label="Einstellungen und Hilfe"] > [role="separator"]')];
 const texte = () => punkte().map((p) => (p.getAttribute('role') === 'separator' ? '—' : (p.querySelector('.menue-text')?.textContent ?? p.textContent)));
 const taste = (key: string) => act(() => void document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true })));
@@ -105,7 +105,7 @@ describe('Titelleiste: Menü „Einstellungen und Hilfe“', () => {
       logger('test').error('Testfehler eins');
       logger('test').error('Testfehler zwei');
     });
-    expect(host.querySelector('.titlebar-mehr .titlebar-badge')?.textContent).toBe('2');
+    expect(host.querySelector('.titlebar-menue .titlebar-badge')?.textContent).toBe('2');
     expect(mehr(host).getAttribute('aria-label')).toBe('Einstellungen und Hilfe – 2 neue Fehler im Fehlerprotokoll');
     expect(mehr(host).getAttribute('title')).toBe('Einstellungen und Hilfe – 2 neue Fehler im Fehlerprotokoll');
     act(() => mehr(host).click());
