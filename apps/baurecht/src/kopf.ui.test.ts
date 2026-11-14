@@ -26,11 +26,12 @@ afterEach(() => {
   document.body.innerHTML = '';
 });
 
-function render(aufrufe: string[] = [], lageLaeuft = false, antraege?: string[]): HTMLElement {
+function render(aufrufe: string[] = [], lageLaeuft = false, antraege?: string[], vorher?: () => void): HTMLElement {
   const bytes = beispielOap();
   useBaurecht.getState().projektSetzen({ art: 'datei', name: 'EFH.oap', bytes }, readProjectFile(bytes), projektdateiRoh(bytes));
   const s = useBaurecht.getState();
   if (antraege) useBaurecht.setState({ antraege });
+  vorher?.();
   const stand = pruefstandBerechnen(s.paket, s.project, s.merkmale, s.pruefung.fakten, {}, '2026-12-01', {});
   const host = document.createElement('div');
   document.body.appendChild(host);
@@ -130,6 +131,8 @@ describe('Kopf (Desktop): Menü „Mehr“ und Sammelmarke', () => {
     const [lage, rechtsstand] = punkte();
     expect(lage.getAttribute('aria-disabled')).toBe('true');
     expect(lage.textContent).toContain('läuft');
+    // die laufende Abfrage steht in der stehenden Live-Region der Leiste
+    expect(host.querySelector('.br-kopf > [data-eintrag="rechtsstand"] .br-rechtsstand')!.textContent).toBe('Lage wird abgefragt …');
     expect(rechtsstand.getAttribute('aria-disabled')).toBeNull();
     expect(document.activeElement).toBe(rechtsstand);
     act(() => lage.click());
@@ -192,5 +195,23 @@ describe('Kopf (Desktop): Menü „Mehr“ und Sammelmarke', () => {
       breite.mockRestore();
       useBaurecht.setState({ antraege: ['BAUA 1'] });
     }
+  });
+
+  it('ohne Koordinaten: Marke „Keine Koordinaten“ fragt die Lage ab, gesperrt, solange die Abfrage läuft; die Live-Region bleibt leer im DOM', () => {
+    const aufrufe: string[] = [];
+    const ohneKoordinaten = () => {
+      const p = useBaurecht.getState().project!;
+      useBaurecht.setState({ project: { ...p, meta: { ...p.meta, koordinaten: undefined } } });
+    };
+    const marke = (host: HTMLElement) => [...host.querySelectorAll<HTMLButtonElement>('.br-kopf button.br-modul-chip')].find((b) => b.textContent === 'Keine Koordinaten')!;
+    let host = render(aufrufe, false, undefined, ohneKoordinaten);
+    expect(marke(host).disabled).toBe(false);
+    act(() => marke(host).click());
+    expect(aufrufe).toEqual(['lage']);
+    act(() => root?.unmount());
+    document.body.innerHTML = '';
+    host = render(aufrufe, true, undefined, ohneKoordinaten);
+    expect(marke(host).disabled).toBe(true);
+    expect(marke(host).title).toContain('Die Lage wird gerade abgefragt.');
   });
 });

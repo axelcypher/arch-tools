@@ -142,7 +142,8 @@ export function Kopf({
             onClick={onSpeichern}
             title={dirty ? 'Ungespeicherte Änderungen – in der Projektdatei speichern (Strg+S)' : 'In der Projektdatei speichern (Strg+S)'}
           >
-            <Symbol name="speichern" /> <span className="br-kopf-zusatz">Speichern</span>
+            <Symbol name="speichern" />
+            <span className="br-kopf-zusatz"> Speichern</span>
           </button>
           <GespeichertMeldung />
         </>

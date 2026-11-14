@@ -31,8 +31,7 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   Befehlen **Lage abfragen** und **Rechtsstand prüfen** (Desktop; die Web-Version hat keine). „Gemeinde unbestätigt“
   bzw. „widersprüchlich“ ist ein Knopf und springt zum Gemeindeschlüssel. Reicht die Breite nicht, kürzen sich die
   Liste der Module und der Rechtsstand (ganz im Tooltip); danach wandert die Wahl des Antrags als Einfachauswahl ins
-  Menü „Mehr“ (zurück kommt sie erst, wenn alle Einträge in voller Breite passen – eine Grenze des gemeinsamen
-  Bausteins). Marken, Einreichung, „Speichern“ und „Prüfprotokoll …“ bleiben immer sichtbar; eine laufende Abfrage
+  Menü „Mehr“. Marken, Einreichung, „Speichern“ und „Prüfprotokoll …“ bleiben immer sichtbar; eine laufende Abfrage
   der Lage steht als „Lage wird abgefragt …“ beim Rechtsstand. Ist die App schmaler als
   1600 px, stehen die Warnungen zum Rechtsstand als eine Sammelmarke da („2 Warnungen“, Einzelheiten im Tooltip und
   ihre Zahl als Hinweis an „Rechtsstand prüfen“), die die Befehle aus „Mehr“ (Lage abfragen, Rechtsstand prüfen)

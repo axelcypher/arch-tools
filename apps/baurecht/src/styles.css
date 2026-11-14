@@ -119,9 +119,23 @@
 .br-kopf > [data-eintrag='rechtsstand']:has(> .br-rechtsstand:empty) {
   min-width: 0;
 }
-/* „Gespeichert“ neben dem Knopf nur, solange es etwas meldet – leer keine Lücke */
+/* „Gespeichert“ unter dem Knopf, außerhalb des Flusses: die Meldung ändert die Breite der Leiste nicht (sonst wanderte
+   beim Speichern die Wahl des Antrags ins Menü „Mehr“) */
+.br-kopf > [data-eintrag='speichern'] {
+  position: relative;
+}
+.br-kopf .br-gespeichert {
+  position: absolute;
+  top: calc(100% + var(--s1));
+  left: 0;
+  z-index: 2;
+}
 .br-kopf .br-gespeichert:not(:empty) {
-  margin-left: var(--s1);
+  padding: 2px var(--s2);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-s);
+  box-shadow: var(--schatten-schwebend);
 }
 .br-kopf-feld {
   display: inline-flex;
@@ -224,9 +238,7 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
   text-overflow: ellipsis;
   min-width: 0;
 }
-.br-rechtsstand:empty {
-  display: none;
-}
+/* leer bleibt die Live-Region im Barrierefreiheitsbaum (kein display: none) – sie hat dann ohnehin keine Breite */
 
 .br-chip-rot {
   background: var(--br-rot-bg);
