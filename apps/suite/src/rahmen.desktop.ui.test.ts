@@ -163,6 +163,22 @@ describe('Rahmen-App auf dem Desktop', () => {
     expect(useRahmen.getState()).toMatchObject({ tabs: ['flaechenrechner'], fenster: ['ordner'] });
     expect(fenster.offen.get('app-ordner')?.opts).toMatchObject({ url: 'apps/ordner/index.html?rahmen=fenster&app=ordner', decorations: false });
     expect(sperren.frei).toEqual(['ordner']);
+    // kann die App gerade nicht speichern (LEXIO ohne Projektdatei): nur Verwerfen
+    act(() => useRahmen.getState().oeffnen('baurecht'));
+    act(() =>
+      window.dispatchEvent(
+        new MessageEvent('message', {
+          data: { typ: 'arch-tools:status', app: 'LEXIO', name: 'B1', dirty: true, kannSpeichern: false },
+          origin: window.location.origin,
+          source: frame(host, 'baurecht').contentWindow,
+        }),
+      ),
+    );
+    await herausloesen(host, 'LEXIO');
+    expect(dialog(host)?.textContent).toContain('Änderungen an „LEXIO – B1“ verwerfen?');
+    expect([...dialog(host)!.querySelectorAll('button')].map((b) => b.textContent)).toEqual(['Abbrechen', 'Verwerfen und herauslösen']);
+    await antwort(host, 'Abbrechen');
+    act(() => useRahmen.getState().schliessen('baurecht'));
     // QUADRIO verliert nichts: nur Bestätigen, kein Speichern
     await herausloesen(host, 'QUADRIO');
     expect(dialog(host)?.textContent).toContain('QUADRIO herauslösen?');

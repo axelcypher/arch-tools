@@ -118,8 +118,10 @@ Konfigurationsordner) und Projektdateien sind dieselben.
   Fenster während des Speicherns zugeht oder der Tab neu lädt; Beenden bleibt danach möglich. Was ein Umzug aus Änderungen macht, steht je App in
   `BEIM_UMZUG` (`rahmen.ts`), die Rückfrage in `ui/umzug.ts`: zuerst die Folge („Beim Herauslösen startet die App
   neu.“), dann ein kurzer Satz. Apps, die die Änderungen verlieren, nennen ihren Satz `ungespeichert` und bieten
-  *Speichern* an; können sie gerade nicht speichern (LEXIO ohne Projektdatei), kommt „Ungespeicherte Änderungen
-  verwerfen?“ mit „Verwerfen und …“ als Gefahrknopf. Die übrigen fragen „<App> herauslösen?“ bzw. „… andocken?“ mit
+  *Speichern* an; können sie gerade nicht speichern (LEXIO ohne Projektdatei), kommt „Änderungen an ‚…‘ verwerfen?“
+  mit „Verwerfen und …“ als Gefahrknopf. Ob eine App speichern kann, meldet die Titelleiste mit dem Status
+  (`kannSpeichern: false`, wenn sie keine Speicherfunktion `onSpeichern` hat); dann fragt Arkly auch beim Schließen,
+  Beenden und Update nur „verwerfen?“ statt „speichern?“. Die übrigen fragen „<App> herauslösen?“ bzw. „… andocken?“ mit
   „Ungespeicherte Änderungen bleiben als Zwischenstand erhalten.“ (PERMIO mit eigenem Text zu Entwurf und Dokumenten).
 - Die Apps teilen sich im Rahmen einen Ursprung und damit den Browser-Speicher; ihre Schlüssel und Datenbanken sind
   je App verschieden (`projektordner:…`, `formulare:…`, `arch-flaechen-tool`, `grz-nachweis`, `kostenermittlung`,
@@ -173,7 +175,7 @@ am Tab bzw. in der Titelleiste ● erscheint.
 6. **Herauslösen mit Änderungen:** FABRIO als Tab im LV ändern, ⧉. Erwartet: Frage mit *Speichern* und „Beim
    Herauslösen startet die App neu. Das LV hat ungespeicherte Änderungen.“; bei RECTIO nur „RECTIO herauslösen?“ mit
    „… Ungespeicherte Änderungen bleiben als Zwischenstand erhalten.“ Gegenprobe ohne Speichermöglichkeit: LEXIO ohne
-   Projektdatei herauslösen, ändern, „Andocken“. Erwartet: „Ungespeicherte Änderungen verwerfen?“ mit „Beim Andocken
+   Projektdatei herauslösen, ändern, „Andocken“. Erwartet: „Änderungen an ‚LEXIO – …‘ verwerfen?“ mit „Beim Andocken
    startet die App neu, die Änderungen gehen verloren.“ und *Verwerfen und andocken* (Gefahr); *Abbrechen* lässt das
    Fenster stehen. Bei ATLAS mit geänderten Stammdaten im Assistenten (Ergänzen): Frage mit *Speichern*;
    *Speichern* legt nichts an, ATLAS bleibt als Tab und meldet „Nicht alles gespeichert“. Mit geändertem Text der

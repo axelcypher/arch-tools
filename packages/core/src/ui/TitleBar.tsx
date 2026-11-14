@@ -59,8 +59,9 @@ export function TitleBar({ app, name, dirty, ungespeichert, onOpenLog, regeln, o
 
   // Name der App für Stellen, die allen Apps gehören (z. B. gespeichertes Protokoll)
   appNameSetzen(app);
-  // im Tab: Name und ungespeicherte Änderungen an den Rahmen melden (Tab-Beschriftung, Rückfrage beim Schließen)
-  useEffect(() => anRahmenMelden(app, name, dirty, ungespeichert), [app, name, dirty, ungespeichert]);
+  // im Tab: Name und ungespeicherte Änderungen an den Rahmen melden (Tab-Beschriftung, Rückfrage beim Schließen) – ohne
+  // onSpeichern bietet der Rahmen kein „Speichern“ an, nur Verwerfen
+  useEffect(() => anRahmenMelden(app, name, dirty, ungespeichert, !!onSpeichern), [app, name, dirty, ungespeichert, !!onSpeichern]);
   // im Tab: „Speichern“ aus der Rückfrage des Rahmens beim Schließen
   const speichernRef = useRef(onSpeichern);
   speichernRef.current = onSpeichern;

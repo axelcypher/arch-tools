@@ -142,6 +142,30 @@ describe('Rahmen-App', () => {
     expect(useRahmen.getState().tabs).toEqual(['ava']);
   });
 
+  it('kann die App gerade nicht speichern (kannSpeichern: false): beim Schließen nur Verwerfen oder Abbrechen', async () => {
+    const host = render();
+    act(() => karte(host, 'LEXIO').click());
+    const f = host.querySelector('iframe')!;
+    Object.defineProperty(f, 'contentWindow', { value: { postMessage: () => {} }, configurable: true });
+    act(() =>
+      window.dispatchEvent(
+        new MessageEvent('message', { data: { typ: 'arch-tools:status', app: 'LEXIO', name: 'B1', dirty: true, kannSpeichern: false }, origin: window.location.origin, source: f.contentWindow }),
+      ),
+    );
+    expect(useRahmen.getState().status.baurecht).toEqual({ name: 'B1', dirty: true, kannSpeichern: false });
+    const dialog = () => host.querySelector('.modal.rf');
+    act(() => (tab(host, 'LEXIO').querySelector('button[title="Schließen (Entf)"]') as HTMLButtonElement).click());
+    expect(dialog()?.textContent).toContain('Änderungen an „LEXIO – B1“ verwerfen?');
+    expect(dialog()?.textContent).toContain('Die Änderungen gehen beim Schließen verloren.');
+    expect([...dialog()!.querySelectorAll('button')].map((b) => b.textContent)).toEqual(['Abbrechen', 'Verwerfen und schließen']);
+    await act(async () => [...dialog()!.querySelectorAll('button')].find((b) => b.textContent === 'Abbrechen')!.click());
+    expect(useRahmen.getState().tabs).toEqual(['baurecht']);
+    act(() => (tab(host, 'LEXIO').querySelector('button[title="Schließen (Entf)"]') as HTMLButtonElement).click());
+    await act(async () => [...dialog()!.querySelectorAll('button')].find((b) => b.textContent === 'Verwerfen und schließen')!.click());
+    await act(async () => {});
+    expect(useRahmen.getState().tabs).toEqual([]);
+  });
+
   it('im Browser kein Herauslösen (dort gäbe es kein Andocken); Andocken holt eine App als Tab zurück', () => {
     const host = render();
     act(() => karte(host, 'RECTIO').click());
