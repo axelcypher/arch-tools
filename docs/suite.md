@@ -28,11 +28,10 @@ Werkzeuge in **einem Programm und einem Fenster**. Sie kann nichts weiter, als z
   als ungespeichert, was beim Beenden verloren ginge: offene Eingaben im Assistenten (geänderte Angaben beim
   Ergänzen, unter „Anlegen“ bzw. „Ergänzen“ abgewählte Einträge – nicht den Entwurf eines neuen Projekts, der
   gespeichert bleibt), den nicht übernommenen Text der Ordnerliste und Änderungen an der Struktur, die wegen eines
-  Konflikts mit einem anderen Rechner oder eines gescheiterten Schreibens nicht gespeichert sind. *Speichern* schreibt die Struktur erneut und
-  übernimmt den Text der Ordnerliste (gesichert, mit „Rückgängig“), wenn er gültig ist und vom aktuellen Stand
-  ausgeht; den Projektordner anlegen, die Projektdatei
-  schreiben oder einen Konflikt entscheiden tut es nicht still – dann gilt „nicht gespeichert“, die Aktion unterbleibt
-  und ATLAS sagt, was noch offen ist. Jede App ist
+  Konflikts mit einem anderen Rechner oder eines gescheiterten Schreibens nicht gespeichert sind. *Speichern* schreibt
+  die Struktur erneut und übernimmt den Text der Ordnerliste (gesichert, mit „Rückgängig“), wenn er gültig ist und vom
+  aktuellen Stand ausgeht; den Projektordner anlegen, die Projektdatei schreiben oder einen Konflikt entscheiden tut es
+  nicht still – dann gilt „nicht gespeichert“, die Aktion unterbleibt und ATLAS sagt, was noch offen ist. Jede App ist
   höchstens einmal offen – ist sie herausgelöst, holt „+“ bzw. die Startseite ihr Fenster nach vorn. Im Browser gibt
   es kein Herauslösen (dort fehlte der Weg zurück).
 - **Neues Projekt anlegen** aus jeder App: Der Knopf auf der Projektübersicht der Apps, „+“ → „Neues Projekt
