@@ -349,7 +349,7 @@ describe('Dokumente: Bearbeitungen gehen nicht still verloren', () => {
     expect(ungespeichertText({ formular: true, dokumente: 3 })).toBe('Das Formular und die Dokumente haben ungespeicherte Änderungen.');
     expect(ungespeichertText({ projektdaten: true })).toBe('Die Projektdaten haben ungespeicherte Änderungen.');
     expect(ungespeichertText({ formular: true, dokumente: 1 })).toBe('Das Formular und ein Dokument haben ungespeicherte Änderungen.');
-    expect(ungespeichertText({ projektdaten: true, dokumente: 1, dokumentSichtbar: true })).toBe('Die Projektdaten und das Dokument haben ungespeicherte Änderungen.');
+    expect(ungespeichertText({ projektdaten: true, dokumente: 2 })).toBe('Die Projektdaten und die Dokumente haben ungespeicherte Änderungen.');
   });
 
   it('bearbeitete PDF verlassen: erst fragen – Abbrechen bleibt, Nicht speichern wechselt', async () => {
