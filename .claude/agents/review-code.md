@@ -24,8 +24,9 @@ Prüfe insbesondere:
 - **Projektregeln** (`docs/review-umsetzung-handoff.md`, Abschnitt „Regeln“): keine echten Kundendaten/Formulare im
   Repo; Versionen nach jeder abgeschlossenen Änderung an allen fünf Stellen gleich (package.json, tauri.conf.json,
   Cargo.toml, Cargo.lock, package-lock.json), bei Änderungen in `packages/core` alle betroffenen Apps; Rust nur über
-  PR mit CI; Doku (`docs/*.md`, README) nachgezogen; keine Produktnamen anderer Hersteller in der Oberfläche von
-  Formulare.
+  PR mit CI; Doku (`docs/*.md`, README) nachgezogen; keine Programmnamen anderer Hersteller in der Oberfläche
+  der Apps (Ausnahmen für Dateiformate wie PDF, Excel, Word, IFC, DWG, Export-Anleitungen und Programme, die die App aufruft
+  oder voraussetzt: `docs/design.md` „Begriffe“).
 - **Sicherheit und Robustheit:** Eingaben aus Dateien prüfen, nichts überschreiben, was laut Projekt nicht
   überschrieben werden darf.
 

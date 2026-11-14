@@ -96,7 +96,7 @@ describe('Rahmen-App', () => {
     window.confirm = confirm;
     act(() => (tab(host, 'QUADRIO').querySelector('button[title="Schließen (Entf)"]') as HTMLButtonElement).click());
     const dialog = () => host.querySelector('.modal.rf');
-    expect(dialog()?.textContent).toContain('Änderungen an „QUADRIO – EFH Musterweg“ speichern?');
+    expect(dialog()?.textContent).toContain('Änderungen an ‚QUADRIO – EFH Musterweg‘ speichern?');
     // ohne eigenen Satz der App der allgemeine
     expect(dialog()?.textContent).toContain('Das Projekt hat ungespeicherte Änderungen.');
     expect([...dialog()!.querySelectorAll('button')].map((b) => b.textContent)).toEqual(['Abbrechen', 'Nicht speichern', 'Speichern']);
@@ -270,7 +270,7 @@ describe('Rahmen-App', () => {
     expect(document.activeElement).toBe(reiter()[1]);
     // Strg+F4 ebenso – bei Änderungen erst die Rückfrage
     await act(async () => void taste('F4', { ctrlKey: true }));
-    expect(host.querySelector('.modal.rf')?.textContent).toContain('Änderungen an „NUMIO – K1“ speichern?');
+    expect(host.querySelector('.modal.rf')?.textContent).toContain('Änderungen an ‚NUMIO – K1‘ speichern?');
     await act(async () => [...host.querySelector('.modal.rf')!.querySelectorAll('button')].find((b) => b.textContent === 'Nicht speichern')!.click());
     await act(async () => {});
     expect(useRahmen.getState().tabs).toEqual(['grz']);

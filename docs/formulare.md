@@ -55,8 +55,9 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
   knapper Breite bis auf ihre Mindestbreite (220/180/220/280 px), das Papier behält mindestens 320 px. Die Projektdaten
   ordnen ihr Raster nach dem Platz neben den Leisten (Containerabfrage): schmal 6 statt 12 Spalten, die Anschrift-Vorschau
   rückt nach oben.
-- **Ohne Produktnamen:** Die Oberfläche nennt kein anderes Programm. Die App liest und schreibt das Dateiformat der
-  Formularprojekte (siehe „Dateiformat“) und soll künftig auch ganz ohne das Originalprogramm auskommen.
+- **Ohne Programmnamen:** Die Oberfläche nennt kein anderes Programm (Dateiformate wie PDF, Excel, Word ausgenommen,
+  siehe [design.md](design.md) „Begriffe“). Die App liest und schreibt das Dateiformat der Formularprojekte (siehe
+  „Dateiformat“) und soll künftig auch ganz ohne das Originalprogramm auskommen.
 - **Seitenleisten** behalten ihre Breite, auch wenn eine Ansicht einen Rollbalken braucht (Platz dafür ist immer
   frei); die Navigation, die Gliederung des Formulars und die Leiste der Projektdaten lassen sich am rechten Rand in der
   Breite ziehen – auch mit der Tastatur (Griff fokussieren, ←/→) – gemerkt je Leiste, Doppelklick: Vorgabe. Rollbalken in den Farben des Schemas (alle Apps).

@@ -158,12 +158,12 @@ export function ProjektWahl({
     await geladen(ordner, pfad, true);
   };
 
-  /** Kontextmenü je Projekt: im Explorer öffnen, anheften bzw. lösen */
+  /** Kontextmenü je Projekt: öffnen, Projektordner im Dateimanager öffnen, anheften bzw. lösen */
   const kontextMenue = (p: UebersichtProjekt): KontextEintrag[] => {
     const dran = angeheftet.some((a) => a.toLowerCase() === p.schluessel.toLowerCase());
     return [
       { label: 'Öffnen', symbol: 'ordnerOffen', aktion: () => void oeffnen(p.schluessel) },
-      { label: 'Im Explorer öffnen', symbol: 'ordner', aktion: () => void ordnerZeigen(p.schluessel).catch((e) => setFehler(e instanceof Error ? e.message : String(e))) },
+      { label: 'Projektordner öffnen', symbol: 'ordnerOffen', aktion: () => void ordnerZeigen(p.schluessel).catch((e) => setFehler(e instanceof Error ? e.message : String(e))) },
       { label: dran ? 'Lösen' : 'Anheften', symbol: 'stern', titel: 'Angeheftete Projekte stehen vorne – in allen Apps', aktion: () => void anheftenUmschalten(p.schluessel).then(setAngeheftet) },
     ];
   };

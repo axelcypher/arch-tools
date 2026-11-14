@@ -196,7 +196,7 @@ describe('Speicherort der Einstellungen', () => {
     expect(document.querySelector('.sp-zeile .warning')?.textContent).toContain('nur lesbar');
     await klick(warn);
     expect(dialog()!.querySelector('.sp-notbetrieb')?.textContent).toContain('nicht erreichbar');
-    expect(knopf('Im Explorer zeigen', dialog()!)?.disabled).toBe(true);
+    expect(knopf('Ordner öffnen', dialog()!)?.disabled).toBe(true);
     await klick(knopf('Erneut versuchen', dialog()!));
     expect(dialog()!.querySelector('[role="alert"]')?.textContent).toContain('weiterhin nicht erreichbar');
     attrappe.nasErreichbar = true;

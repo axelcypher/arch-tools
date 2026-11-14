@@ -143,7 +143,7 @@ describe('Rahmen-App auf dem Desktop', () => {
     statusTab(host, 'ordner', 'P1', true);
     statusTab(host, 'flaechenrechner', 'EFH', true);
     await herausloesen(host, 'ATLAS');
-    expect(dialog(host)?.textContent).toContain('Änderungen an „ATLAS – P1“ speichern?');
+    expect(dialog(host)?.textContent).toContain('Änderungen an ‚ATLAS – P1‘ speichern?');
     expect(dialog(host)?.textContent).toContain('Beim Herauslösen startet die App neu. Das Projekt hat ungespeicherte Änderungen.');
     await antwort(host, 'Abbrechen');
     expect(useRahmen.getState().tabs).toEqual(['ordner', 'flaechenrechner']);
@@ -224,10 +224,10 @@ describe('Rahmen-App auf dem Desktop', () => {
     const verhindert = vi.fn();
     await act(async () => fenster.haupt!.schliessenAngefragt!({ preventDefault: verhindert }));
     expect(verhindert).toHaveBeenCalled();
-    expect(dialog(host)?.textContent).toContain('Änderungen an „NUMIO – Kosten 1“ speichern?');
+    expect(dialog(host)?.textContent).toContain('Änderungen an ‚NUMIO – Kosten 1‘ speichern?');
     expect(dialog(host)?.textContent).toContain('Das Projekt hat ungespeicherte Änderungen.');
     await antwort(host, 'Nicht speichern');
-    expect(dialog(host)?.textContent).toContain('Änderungen an „ATLAS – P1“ speichern?');
+    expect(dialog(host)?.textContent).toContain('Änderungen an ‚ATLAS – P1‘ speichern?');
     expect(dialog(host)?.textContent).toContain('Die Ordnerstruktur hat ungespeicherte Änderungen.');
     // Abbrechen: nichts wird geschlossen
     await antwort(host, 'Abbrechen');
@@ -399,7 +399,7 @@ describe('Rahmen-App auf dem Desktop', () => {
     statusTab(host, 'grz', 'Nachweis', true);
     let weiter: Promise<boolean> | undefined;
     await act(async () => void (weiter = update.vorInstallation!()));
-    expect(dialog(host)?.textContent).toContain('Änderungen an „TERRIO – Nachweis“ speichern?');
+    expect(dialog(host)?.textContent).toContain('Änderungen an ‚TERRIO – Nachweis‘ speichern?');
     await antwort(host, 'Abbrechen');
     expect(await weiter).toBe(false);
     expect(fenster.haupt!.destroy).not.toHaveBeenCalled();

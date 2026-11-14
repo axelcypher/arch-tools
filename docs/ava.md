@@ -17,7 +17,8 @@ Grundsätze:
   ohne die App und sieht aus wie vorher.
 - **Metadaten aus der Projektdatei (`.oap`)**: Stammdaten (Projektnummer, Vorhaben, Bauherr, Bearbeiter) wie in
   allen Apps; die Angaben der App zum Projekt stehen im Abschnitt `ava`.
-- **Ohne Produktnamen:** Die Oberfläche nennt kein anderes Programm („LV-Datei (.aslv)“).
+- **Ohne Programmnamen:** Die Oberfläche nennt kein anderes Programm („LV-Datei (.aslv)“; Dateiformate wie PDF, Excel,
+  Word ausgenommen, siehe [design.md](design.md) „Begriffe“).
 - **Alles einstellbar:** Ablagestruktur, Dateinamen der Rechnungen, Prüfvorgaben, Deckblatt, Scanordner und
   Mailvorlagen gelten für das ganze Büro (gemeinsamer Konfigurationsordner, Bereich `ava`) – die App funktioniert
   nicht nur mit der Struktur eines Büros.

@@ -146,6 +146,7 @@ und `ZEICHENFLAECHE_GRUND` in `planFarbe.ts` müssen zu `--canvas-filter` und `-
 - In Rückfragen mit Gefahr-Knopf (`art: 'danger'`, z. B. „Löschen“, „Verwerfen“) liegen Erstfokus und Enter nie auf
   ihm, sondern auf dem Hauptknopf bzw. „Abbrechen“ (ohne beide: auf dem letzten ungefährlichen Knopf). Gibt es nur
   Gefahr-Knöpfe, tut Enter nichts, und Esc oder ein Klick daneben schließen wie „Abbrechen“.
+  Ungespeicherte Änderungen verwerfen: siehe „Ungespeicherte Änderungen“.
 
 ## Druckvorschau
 
@@ -209,6 +210,12 @@ oder Auswahlgruppe, wechseln ↑/↓ statt ←/→ (`aria-orientation="vertical"
 - Texte sagen, was zu tun ist, nicht was fehlt; was es nur in der Desktop-App gibt, steht als Fußnote darunter.
 - Ordner im Dateimanager zeigen (`ordnerZeigen`): „Ordner öffnen“, Symbol `ordnerOffen` – nicht „Im Explorer öffnen“
   (hängt an Windows). Ist der Gegenstand nicht klar, mit Objekt: „Projektordner öffnen“.
+- Programmnamen anderer Hersteller kommen in der Bedienung nicht vor – auch nicht in Hinweisen und Tooltips („aus dem
+  CAD-Programm“, „im E-Mail-Programm“). Ausnahmen: Dateiformate heißen, wie man sie im Büro nennt und wiedererkennt –
+  „PDF“, „Excel“, „Word“, „IFC“, „DWG“ („PDF-, Excel- und Word-Dokumente“, Befehl „Excel …“); eine Anleitung, die den
+  Export aus einem bestimmten anderen Programm Schritt für Schritt erklärt, darf dieses nennen; ebenso ein Programm, das
+  die App selbst startet oder voraussetzt (ATLAS: QGIS), und die Herkunft von Daten, die nur ein bestimmtes Programm
+  liefert (ATLAS: Mails aus Outlook ziehen).
 
 ## Symbole
 
@@ -326,17 +333,38 @@ Punkt (8px, `--sel` mit Rand in `--text`) außen an der oberen rechten Ecke, der
 Dazu sagt es der Knopf im `aria-label` („Speichern – ungespeicherte Änderungen“) und im `title`. Der Punkt ● hinter dem
 Namen in der Titelleiste (`TitleBar`, Feld `dirty`) bleibt davon unberührt.
 
-Vor einer Aktion, die das Projekt verlässt (Öffnen, Neu, Tab schließen, Beenden, Herauslösen oder Andocken, Neustart
-für ein Update), fragt `aenderungenSpeichern` „Änderungen an ‚`Name`‘ speichern?“ – in den Apps mit dem Projekt- oder
-Dateinamen, im Rahmen Arkly mit „`App – Projekt`“ – und bietet Abbrechen | Nicht speichern | Speichern. „Nicht
-speichern“ ist hier bewusst kein Gefahr-Knopf; Erstfokus und Enter liegen auf „Speichern“. Darunter steht eine Aussage,
-keine zweite Frage, die sagt, was ungespeichert ist: „`Gegenstand` hat (bzw. haben) ungespeicherte Änderungen.“ – ein
-kurzer, ganzer Satz mit Punkt, der Gegenstand in Nutzersprache mit Artikel („Das LV …“, „Das Formular …“, „Die
-Ordnerstruktur …“, „Die Angaben haben …“), ohne weitere Erklärung. Ohne eigenen Satz gilt „Das Projekt hat
-ungespeicherte Änderungen.“ Hat die Aktion eine weitere Folge, darf ein Satz dazu davorstehen (Herauslösen: „Beim
-Herauslösen startet die App neu.“). Meint „ungespeichert“ nur einen Teil des Projekts (FABRIO: nur das LV), setzt die
-App den Satz an der `TitleBar` (Eigenschaft `ungespeichert`) und als dritten Parameter ihrer eigenen Aufrufe von
-`aenderungenSpeichern(name, speichern, satz)`, damit alle ihre Wege gleich lauten.
+Vor einer Aktion, die das Projekt verlässt (Öffnen, Neu, Tab schließen, Beenden, Herauslösen oder Andocken, Neustart für
+ein Update), fragt `aenderungenSpeichern` „Änderungen an ‚`Name`‘ speichern?“ (im Dialog mit einfachen Anführungszeichen
+um den Namen) – in den Apps mit dem Projekt- oder Dateinamen, im Rahmen Arkly mit „`App – Projekt`“ – und bietet
+Abbrechen | Nicht speichern | Speichern. „Nicht speichern“ ist hier bewusst kein Gefahr-Knopf; Erstfokus und Enter
+liegen auf „Speichern“. Darunter steht eine Aussage, keine zweite Frage, die sagt, was ungespeichert ist: „`Gegenstand`
+hat (bzw. haben) ungespeicherte Änderungen.“ – ein kurzer, ganzer Satz mit Punkt, der Gegenstand in Nutzersprache mit
+Artikel („Das LV …“, „Das Formular …“, „Die Ordnerstruktur …“, „Die Angaben haben …“), ohne weitere Erklärung. Ohne
+eigenen Satz gilt „Das Projekt hat ungespeicherte Änderungen.“ Hat die Aktion eine weitere Folge, darf ein Satz dazu
+davorstehen (Herauslösen: „Beim Herauslösen startet die App neu.“). Meint „ungespeichert“ nur einen Teil des Projekts
+(FABRIO: nur das LV), setzt die App den Satz an der `TitleBar` (Eigenschaft `ungespeichert`) und als dritten Parameter
+ihrer eigenen Aufrufe von `aenderungenSpeichern(name, speichern, satz)`, damit alle ihre Wege gleich lauten.
+
+Kann die App gerade nicht speichern (keine Speicherfunktion `onSpeichern` an der `TitleBar`, z. B. LEXIO ohne
+Projektdatei), fragt `aenderungenVerwerfen` „Änderungen an ‚`Name`‘ verwerfen?“ mit Abbrechen | „Verwerfen und
+`Verb`“. „Verwerfen …“ ist ein Gefahr-Knopf, Erstfokus und Enter liegen auf „Abbrechen“. Verb und Satz darunter (der
+Verlust als Aussage) je Aktion:
+
+| Aktion            | Knopf                                                  | Satz darunter                                                          |
+| ----------------- | ------------------------------------------------------ | ---------------------------------------------------------------------- |
+| Tab schließen     | „Verwerfen und schließen“                              | „Die Änderungen gehen beim Schließen verloren.“                        |
+| Beenden           | „Verwerfen und beenden“                                | „Die Änderungen gehen beim Beenden verloren.“                          |
+| Neustart (Update) | „Verwerfen und neu starten“                            | „Die Änderungen gehen beim Neustart für das Update verloren.“          |
+| Herauslösen       | „Verwerfen und herauslösen“                            | „Beim Herauslösen startet die App neu, die Änderungen gehen verloren.“ |
+| Andocken          | „Verwerfen und andocken“                               | „Beim Andocken startet die App neu, die Änderungen gehen verloren.“    |
+| Öffnen, Neu (App) | „Verwerfen und öffnen“ bzw. „Verwerfen und fortfahren“ | „Die Änderungen gehen verloren.“                                       |
+
+Geht beim Herauslösen oder Andocken nichts verloren (die App behält ungespeicherte Änderungen als Zwischenstand), fragt
+sie nicht nach dem Speichern, sondern „`App` herauslösen?“ mit „Beim Herauslösen startet die App neu. Ungespeicherte
+Änderungen bleiben als Zwischenstand erhalten.“ und Abbrechen | Herauslösen bzw. „`App` andocken?“ mit „Beim Andocken
+startet die App neu. Ungespeicherte Änderungen bleiben als Zwischenstand erhalten.“ und Abbrechen | Andocken.
+„Herauslösen“ bzw. „Andocken“ ist der Hauptknopf (Erstfokus, Enter). PERMIO erklärt dort zusätzlich, was mit Entwurf
+und Dokumenten geschieht.
 
 ## Richtig und falsch
 

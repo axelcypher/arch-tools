@@ -236,7 +236,7 @@ export function SpeicherortDialog({ onClose }: { onClose: () => void }) {
               title={ort.notbetrieb ? 'Netzlaufwerk nicht erreichbar' : ort.ordner}
               onClick={() => void ordnerZeigen(ort.ordner).catch((e) => setMeldung({ art: 'fehler', text: fehlerText(e) }))}
             >
-              Im Explorer zeigen
+              Ordner öffnen
             </button>
           </div>
           {ort.notbetrieb && (

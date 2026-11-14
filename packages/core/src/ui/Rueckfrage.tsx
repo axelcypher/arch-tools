@@ -82,7 +82,7 @@ export const UNGESPEICHERT_ALLGEMEIN = 'Das Projekt hat ungespeicherte Änderung
  */
 export async function aenderungenSpeichern(name: string, speichern: () => Promise<boolean | void> | boolean | void, text?: string): Promise<boolean> {
   const a = await fragen({
-    titel: `Änderungen an „${name || 'Unbenannt'}“ speichern?`,
+    titel: `Änderungen an ‚${name || 'Unbenannt'}‘ speichern?`,
     text: text ?? UNGESPEICHERT_ALLGEMEIN,
     knoepfe: [
       { id: 'abbrechen', label: 'Abbrechen' },
