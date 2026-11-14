@@ -14,6 +14,7 @@ import type { Auftrag } from './components/AssistentView';
 import type { GeladenerOrdner } from './projekt';
 import { useOrdner } from './store';
 import { ordnerAlsText } from './struktur';
+import { ORDNERSTRUKTUR, satzUngespeichert, type Gegenstand } from './ungespeichert';
 
 type Ansicht = 'projekt' | 'pruefen' | 'mails' | 'struktur' | 'vorlagen' | 'kataster' | 'einstellungen';
 
@@ -52,6 +53,8 @@ export function App() {
   const assistentOffen = useRef<string | null>(null);
   /** dasselbe als Zustand – für die Meldung „ungespeicherte Änderungen“ an Titelleiste und Rahmen */
   const [assistentOffenText, setAssistentOffenText] = useState<string | null>(null);
+  /** was im Assistenten offen ist, als Gegenstände für den Satz „… hat ungespeicherte Änderungen.“ */
+  const [assistentGegenstaende, setAssistentGegenstaende] = useState<Gegenstand[]>([]);
   /** Assistent neu beginnen (`neustart`): ohne offene Eingaben sofort, sonst erst nach Rückfrage (Verwerfen/Abbrechen) */
   const nachRueckfrage = (neustart: () => void) => {
     const was = assistentOffen.current;
@@ -72,7 +75,10 @@ export function App() {
   const strukturKonflikt = useOrdner((s) => s.konflikt !== null);
   // das Schreiben der Struktur ist gescheitert (z. B. Netzlaufwerk weg): bis zum nächsten gelungenen Schreiben offen
   const schreibenGescheitert = useOrdner((s) => s.strukturNichtGeschrieben !== null);
-  const dirty = !!assistentOffenText || strukturEntwurf || strukturKonflikt || schreibenGescheitert;
+  const strukturUngespeichert = strukturEntwurf || strukturKonflikt || schreibenGescheitert;
+  const dirty = !!assistentOffenText || strukturUngespeichert;
+  // Satz für die Rückfragen (Titelleiste, Rahmen): was ungespeichert ist, in Nutzersprache – „Das Projekt …“ träfe nicht zu
+  const ungespeichert = satzUngespeichert([...(strukturUngespeichert ? [ORDNERSTRUKTUR] : []), ...(assistentOffenText ? assistentGegenstaende : [])]);
 
   /**
    * Speichern auf Anfrage (Rückfrage der Titelleiste bzw. des Rahmens, Knopf „Speichern“): gespeichert wird nur, was
@@ -162,6 +168,7 @@ export function App() {
         app={APP_NAMEN.ordner.name}
         name={start?.ordner.name ?? ''}
         dirty={dirty}
+        ungespeichert={ungespeichert}
         onSpeichern={speichernAufAnfrage}
         onOpenLog={() => setLogOpen(true)}
         zeichenflaeche={false}
@@ -231,9 +238,10 @@ export function App() {
             }}
             onKatasterEinstellungen={() => setAnsicht('kataster')}
             onMails={mailsPruefen}
-            onOffen={(was) => {
+            onOffen={(was, gegenstaende) => {
               assistentOffen.current = was;
               setAssistentOffenText(was);
+              setAssistentGegenstaende(gegenstaende);
             }}
           />
         </div>

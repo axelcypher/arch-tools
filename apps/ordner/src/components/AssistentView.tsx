@@ -23,6 +23,7 @@ import { useOrdner } from '../store';
 import { aktivePresets } from '../struktur';
 import { ErgebnisAnzeige, PlanMeldungen, PlanTabelle, PresetAuswahl, VorlagenordnerZeile } from './gemeinsam';
 import { ProjektStart } from './ProjektStart';
+import { STAMMDATEN, TROCKENLAUF_AUSWAHL, type Gegenstand } from '../ungespeichert';
 
 const log = logger('assistent');
 
@@ -111,9 +112,10 @@ export function AssistentView({
   onMails?: (pfad: string) => void;
   /**
    * meldet, was im Assistenten noch nicht angelegt ist und bei einem Neustart verloren ginge (z. B. „die geänderten
-   * Stammdaten von ‚X‘“), sonst null – damit „Projekte“ in der Titelleiste vorher fragen kann
+   * Stammdaten von ‚X‘“), sonst null – damit „Projekte“ in der Titelleiste vorher fragen kann; dazu die Gegenstände
+   * für den Satz „… hat ungespeicherte Änderungen.“ (Titelleiste, Rahmen)
    */
-  onOffen?: (was: string | null) => void;
+  onOffen?: (was: string | null, gegenstaende: Gegenstand[]) => void;
 }) {
   const desktop = hatDateisystem();
   const { stamm: entwurf, struktur, stammordner, vorlagen, allgemein, setStamm, setStammordner, neuesProjekt } = useOrdner();
@@ -233,20 +235,27 @@ export function AssistentView({
   const stamm = modus === 'ergaenzen' ? stammE : entwurf;
   // Was ginge bei einem Neustart des Assistenten verloren? Der Entwurf eines neuen Projekts nicht (er liegt im Store),
   // wohl aber geänderte Stammdaten beim Ergänzen und im Trockenlauf abgewählte Einträge
-  const nichtAngelegt = useMemo(() => {
+  const nichtAngelegt = useMemo((): { was: string; gegenstaende: Gegenstand[] } | null => {
     if (!modus || abschluss) return null;
     const teile: string[] = [];
-    if (modus === 'ergaenzen' && stammE && stammEBasis && JSON.stringify(stammE) !== JSON.stringify(stammEBasis)) teile.push(`die geänderten Stammdaten von „${ordner?.name ?? ''}“`);
-    if (abgewaehlt.size) teile.push(`${abgewaehlt.size} im Trockenlauf ${abgewaehlt.size === 1 ? 'abgewählter Eintrag' : 'abgewählte Einträge'}`);
-    return teile.length ? teile.join(' und ') : null;
+    const gegenstaende: Gegenstand[] = [];
+    if (modus === 'ergaenzen' && stammE && stammEBasis && JSON.stringify(stammE) !== JSON.stringify(stammEBasis)) {
+      teile.push(`die geänderten Stammdaten von „${ordner?.name ?? ''}“`);
+      gegenstaende.push(STAMMDATEN);
+    }
+    if (abgewaehlt.size) {
+      teile.push(`${abgewaehlt.size} im Trockenlauf ${abgewaehlt.size === 1 ? 'abgewählter Eintrag' : 'abgewählte Einträge'}`);
+      gegenstaende.push(TROCKENLAUF_AUSWAHL);
+    }
+    return teile.length ? { was: teile.join(' und '), gegenstaende } : null;
   }, [modus, abschluss, stammE, stammEBasis, abgewaehlt, ordner?.name]);
   const onOffenRef = useRef(onOffen);
   onOffenRef.current = onOffen;
   useEffect(() => {
-    onOffenRef.current?.(nichtAngelegt);
+    onOffenRef.current?.(nichtAngelegt?.was ?? null, nichtAngelegt?.gegenstaende ?? []);
   }, [nichtAngelegt]);
   // abgebaut (Neustart über den key): nichts mehr offen
-  useEffect(() => () => onOffenRef.current?.(null), []);
+  useEffect(() => () => onOffenRef.current?.(null, []), []);
   const aendereStamm = (patch: Partial<Stammdaten>) => {
     if (modus === 'ergaenzen') setStammE((s) => (s ? { ...s, ...patch } : s));
     else setStamm(patch);

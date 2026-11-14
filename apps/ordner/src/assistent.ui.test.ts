@@ -444,6 +444,8 @@ describe('Rahmen-App Arkly: ungespeicherte Änderungen melden und auf Anfrage sp
   });
   /** zuletzt an den Rahmen gemeldet: ungespeicherte Änderungen? */
   const dirty = () => gesendet.filter((d) => d.typ === 'arch-tools:status').at(-1)?.dirty;
+  /** zuletzt an den Rahmen gemeldet: Satz, was ungespeichert ist (sonst der allgemeine des Rahmens) */
+  const satz = () => gesendet.filter((d) => d.typ === 'arch-tools:status').at(-1)?.ungespeichert;
   let nr = 0;
   /** Speichern-Anfrage des Rahmens; liefert die Antwort „gespeichert“ (ok) */
   const speichernAnfragen = async () => {
@@ -464,6 +466,7 @@ describe('Rahmen-App Arkly: ungespeicherte Änderungen melden und auf Anfrage sp
     expect(useOrdner.getState().struktur).toBe(STANDARD);
     act(() => useOrdner.setState({ ordnerEntwurf: { text: `${stand}\n99_Neu aus dem Text`, basis: stand } }));
     expect(dirty()).toBe(true);
+    expect(satz()).toBe('Die Ordnerstruktur hat ungespeicherte Änderungen.');
     expect(await speichernAnfragen()).toBe(true);
     expect(useOrdner.getState().ordnerEntwurf).toBeNull();
     expect(useOrdner.getState().struktur.ordner.map((o) => o.pfad)).toContain('99_Neu aus dem Text');
@@ -540,6 +543,7 @@ describe('Rahmen-App Arkly: ungespeicherte Änderungen melden und auf Anfrage sp
     expect(useOrdner.getState().ordnerEntwurf?.text).toBe(`${stand}\n99_Neu`);
     expect(meldungText()).toContain('Laufwerk nicht erreichbar');
     expect(dirty()).toBe(true);
+    expect(satz()).toBe('Die Ordnerstruktur hat ungespeicherte Änderungen.');
   });
 
   it('Schreiben der Struktur gescheitert: meldet „ungespeichert“; „Speichern“ versucht es erneut – scheitert es wieder, „nicht gespeichert“', async () => {
@@ -550,6 +554,7 @@ describe('Rahmen-App Arkly: ungespeicherte Änderungen melden und auf Anfrage sp
     await act(() => useOrdner.getState().speichernJetzt());
     expect(useOrdner.getState().strukturNichtGeschrieben).toBe('Netzlaufwerk getrennt');
     expect(dirty()).toBe(true);
+    expect(satz()).toBe('Die Ordnerstruktur hat ungespeicherte Änderungen.');
     // Laufwerk weiter weg: erneuter Versuch scheitert
     expect(await speichernAnfragen()).toBe(false);
     expect(meldungText()).toContain('Netzlaufwerk getrennt');
@@ -562,6 +567,8 @@ describe('Rahmen-App Arkly: ungespeicherte Änderungen melden und auf Anfrage sp
     expect(useOrdner.getState().strukturNichtGeschrieben).toBeNull();
     expect(useOrdner.getState().konfigFehler).toBeNull();
     expect(dirty()).toBe(false);
+    // Gegenprobe: ohne Ungespeichertes kein eigener Satz
+    expect(satz()).toBeUndefined();
   });
 
   it('gescheiterte allgemeine Einstellungen: Meldung wie bisher, aber nicht „ungespeichert“ und keine Struktur-Meldung', async () => {
@@ -582,6 +589,7 @@ describe('Rahmen-App Arkly: ungespeicherte Änderungen melden und auf Anfrage sp
     await warten();
     act(() => useOrdner.setState({ konflikt: { roh: { struktur: STANDARD } } }));
     expect(dirty()).toBe(true);
+    expect(satz()).toBe('Die Ordnerstruktur hat ungespeicherte Änderungen.');
     expect(await speichernAnfragen()).toBe(false);
     expect(useOrdner.getState().konflikt).not.toBeNull();
     expect(meldungText()).toContain('Meine Fassung trotzdem speichern');
@@ -608,6 +616,12 @@ describe('Rahmen-App Arkly: ungespeicherte Änderungen melden und auf Anfrage sp
     const vorher = inhalt();
     eingabe(feld(host, 'Bezeichnung des Vorhabens'), 'Neubau Kita am Park');
     expect(dirty()).toBe(true);
+    expect(satz()).toBe('Die Stammdaten haben ungespeicherte Änderungen.');
+    // dazu noch die Ordnerstruktur: beide Gegenstände in einem Satz
+    act(() => useOrdner.setState({ konflikt: { roh: { struktur: STANDARD } } }));
+    expect(satz()).toBe('Die Ordnerstruktur und die Stammdaten haben ungespeicherte Änderungen.');
+    act(() => useOrdner.setState({ konflikt: null }));
+    expect(satz()).toBe('Die Stammdaten haben ungespeicherte Änderungen.');
     expect(await speichernAnfragen()).toBe(false);
     // nichts angelegt bzw. geschrieben, die Eingabe steht noch da
     expect(inhalt()).toBe(vorher);
