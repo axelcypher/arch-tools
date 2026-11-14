@@ -905,8 +905,18 @@ button.icon.fo-gl-zaehlt.an {
   white-space: nowrap;
   min-width: 0;
 }
+.fo-zoom {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
 .fo-zoom select {
   width: auto;
+}
+/* Werkzeugleiste mit Überlauf: Einträge behalten ihre Breite – sonst schrumpfen sie, statt ins Menü „Mehr“ zu wandern
+   (die Leiste misst die gezeigte Breite) */
+.toolbar.leiste > [data-eintrag] {
+  flex: none;
 }
 .fo-schalter {
   display: inline-flex;

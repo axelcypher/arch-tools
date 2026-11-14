@@ -3,7 +3,8 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { leistenMessung } from '@core/ui/Werkzeugleiste';
 import { App } from './App';
 import { SpeicherDateisystem } from './dateisystem';
 import { cp1252Lesen, cp1252Schreiben } from './forma/cp1252';
@@ -171,6 +172,14 @@ async function projektOeffnen(host: HTMLElement, kuerzel: string) {
   if (!karte()) for (const g of host.querySelectorAll<HTMLButtonElement>('.pa-gruppe-kopf[aria-expanded="false"]')) await klick(g);
   await klick(karte()!);
 }
+
+/** Menü der Werkzeugleiste („Mehr“ über sein aria-label, sonst über den Text) öffnen und einen Punkt wählen */
+const leistenMenue = (host: Element, name: string) => [...host.querySelectorAll<HTMLButtonElement>('.toolbar button[aria-haspopup="menu"]')].find((b) => b.getAttribute('aria-label') === name || b.textContent?.trim() === name)!;
+const leistenPunkt = (text: string) => [...document.querySelectorAll<HTMLButtonElement>('.menue-punkt')].find((b) => b.textContent?.includes(text))!;
+const imLeistenMenue = async (host: Element, name: string, punkt: string) => {
+  await klick(leistenMenue(host, name));
+  await klick(leistenPunkt(punkt));
+};
 
 describe('Formulare', () => {
   it('Leerzustand im Browser: einheitlicher Einstieg „Datei öffnen …“ (Q-5)', async () => {
@@ -386,7 +395,7 @@ describe('Formulare', () => {
     taste(window, 'y', { ctrlKey: true });
     expect(feld(host, 'Bauherrschaft', 1).value).toBe('Musterweg 7');
 
-    await klick(knopfGenau(host, 'Verlauf'));
+    await imLeistenMenue(host, 'Ansicht', 'Verlauf der Eingaben');
     const schritte = host.querySelectorAll('.fo-verlauf-liste .fo-verlauf-schritt');
     expect(schritte).toHaveLength(1);
     expect(schritte[0].textContent).toContain('Bauherrschaft');
@@ -418,7 +427,7 @@ describe('Formulare', () => {
     expect(gl.textContent).toContain('Bauherrschaft');
     await klick(knopfMit(host, 'Gliederung ausblenden'));
     expect(host.querySelector('nav[aria-label="Inhalt des Formulars"]')).toBeNull();
-    await klick(knopfGenau(host, 'Gliederung'));
+    await imLeistenMenue(host, 'Ansicht', 'Gliederung');
     expect(host.querySelector('nav[aria-label="Inhalt des Formulars"]')).not.toBeNull();
   });
 
@@ -865,7 +874,7 @@ describe('Formulare', () => {
     eingabe(kartenFeld(host, 'PLZ Straße'), '12345');
     await klick(knopf(host, '001-Muster'));
 
-    await klick(knopf(host, 'Daten aktualisieren'));
+    await imLeistenMenue(host, 'Datei', 'Daten aktualisieren');
     const zeilen = [...host.querySelectorAll('.fo-ausfuellen-zeile')];
     // Memo2 (leer) → „12345 Musterstadt“; Memo1 („Mustermann, Max“) bekäme den leeren Eintrag der Behörde – nicht angeboten
     expect(zeilen.map((z) => [z.querySelector('strong')!.textContent, z.querySelector('input')!.checked])).toEqual([['Bauherrschaft', true]]);
@@ -970,9 +979,74 @@ describe('Formulare', () => {
     expect(useFormulare.getState().leisteBreite).toBe(300);
   });
 
+  it('Werkzeugleiste nach design.md: sichtbar Datei, Speichern, Umschalter, Zoom, Ansicht, Suchen und PDF; Seltenes in den Menüs', async () => {
+    const host = await oeffneMuster();
+    // Formularansicht (die Wahl Formular | Felder wird gemerkt – ein voriger Test kann „Felder“ hinterlassen)
+    act(() => useFormulare.getState().setAnsicht('seite'));
+    await warte();
+    const leiste = host.querySelector<HTMLElement>('.toolbar.leiste')!;
+    const eintraege = () => [...leiste.querySelectorAll<HTMLElement>(':scope > [data-eintrag]')].filter((e) => !e.hidden).map((e) => e.dataset.eintrag);
+    expect(eintraege()).toEqual(['datei', 'speichern', 'umschalter', 'zoom', 'ansicht', 'status', 'suchen', 'pdf']);
+    // Hauptknopf rechts: Als PDF exportieren; Speichern ohne Änderungen ohne Punkt
+    expect(leiste.querySelector('button.primary')!.textContent).toContain('Als PDF exportieren');
+    const speichern = knopfGenau(leiste, 'Speichern');
+    expect(speichern.classList.contains('ungespeichert')).toBe(false);
+    // Umschalter Formular | Felder als .segment mit aria-pressed
+    expect([...leiste.querySelectorAll('.segment button')].map((b) => `${b.textContent}:${b.getAttribute('aria-pressed')}`)).toEqual(['Formular:true', 'Felder:false']);
+    // Menüs: Datei, Ansicht, Mehr – Inhalt und Reihenfolge
+    const punkte = async (name: string) => {
+      await klick(leistenMenue(host, name));
+      const t = [...document.querySelectorAll('.menue .menue-punkt')].map((b) => b.textContent);
+      taste(document.activeElement!, 'Escape');
+      await warte();
+      return t;
+    };
+    expect((await punkte('Datei')).map((t) => t!.replace(/Strg\+\w/, '').trim())).toEqual(['Daten aktualisieren …', 'Speichern unter …', 'Drucken …']);
+    expect(await punkte('Ansicht')).toEqual(['Gliederung', 'Verlauf der Eingaben']);
+    expect(await punkte('Mehr')).toEqual(['Formular einrichten', 'Manuelle Überschreibungen ignorieren', 'Einstellungen …']);
+    // eine Eingabe: Speichern trägt den Punkt und sagt es im Namen
+    eingabe(feld(host, 'Bauherrschaft', 1), 'Musterweg 7');
+    await warte();
+    expect(speichern.classList.contains('ungespeichert')).toBe(true);
+    expect(speichern.getAttribute('aria-label')).toBe('Speichern – ungespeicherte Änderungen');
+  });
+
+  it('Werkzeugleiste im schmalen Fenster: erst Suchen, dann Zoom, dann Ansicht wandern ins Menü „Mehr“; Speichern und PDF bleiben', async () => {
+    const host = await oeffneMuster();
+    // Formularansicht (die Wahl Formular | Felder wird gemerkt – ein voriger Test kann „Felder“ hinterlassen)
+    act(() => useFormulare.getState().setAnsicht('seite'));
+    await warte();
+    const leiste = host.querySelector<HTMLElement>('.toolbar.leiste')!;
+    let breite = 2000;
+    const messen = vi.spyOn(leistenMessung, 'breite').mockImplementation((el) => (el === leiste ? breite : 100));
+    try {
+      const sichtbar = () => [...leiste.querySelectorAll<HTMLElement>(':scope > [data-eintrag]')].filter((e) => !e.hidden).map((e) => e.dataset.eintrag);
+      const schmal = async (b: number) => {
+        breite = b;
+        act(() => void window.dispatchEvent(new Event('resize')));
+        await warte();
+      };
+      await schmal(2000);
+      expect(sichtbar()).toContain('suchen');
+      // 8 Einträge à 100 + Mehr: bei 800 muss einer weichen – Suchen (höchster Rang)
+      await schmal(800);
+      expect(sichtbar()).not.toContain('suchen');
+      expect(sichtbar()).toContain('zoom');
+      await schmal(620);
+      expect(sichtbar()).toEqual(['datei', 'speichern', 'umschalter', 'status', 'pdf']);
+      // die übergelaufenen stehen oben im Menü „Mehr“, in ihrer Reihenfolge, vor den festen Punkten
+      await klick(leistenMenue(host, 'Mehr'));
+      expect([...document.querySelectorAll('.menue > .menue-punkt')].map((b) => b.textContent?.replace(/Strg\+\w/, '').trim())).toEqual(['Zoom', 'Ansicht', 'Suchen …', 'Formular einrichten', 'Manuelle Überschreibungen ignorieren', 'Einstellungen …']);
+      taste(document.activeElement!, 'Escape');
+      await warte();
+    } finally {
+      messen.mockRestore();
+    }
+  });
+
   it('Menüknopf: aria-expanded, Esc und Tab schließen das Menü und geben den Fokus an den Knopf zurück', async () => {
     const host = await oeffneMuster();
-    const pdf = host.querySelector<HTMLButtonElement>('.toolbar button[aria-haspopup="menu"][title^="Als PDF exportieren"]')!;
+    const pdf = leistenMenue(host, 'Datei');
     expect(pdf.getAttribute('aria-expanded')).toBe('false');
     pdf.focus();
     await klick(pdf);

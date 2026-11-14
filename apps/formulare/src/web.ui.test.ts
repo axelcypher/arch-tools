@@ -74,6 +74,14 @@ const oeffnen = async () => {
   await warte();
 };
 
+/** Menü der Werkzeugleiste („Mehr“ über sein aria-label, sonst über den Text) öffnen und einen Punkt wählen */
+const leistenMenue = (host: Element, name: string) => [...host.querySelectorAll<HTMLButtonElement>('.toolbar button[aria-haspopup="menu"]')].find((b) => b.getAttribute('aria-label') === name || b.textContent?.trim() === name)!;
+const leistenPunkt = (text: string) => [...document.querySelectorAll<HTMLButtonElement>('.menue-punkt')].find((b) => b.textContent?.includes(text))!;
+const imLeistenMenue = async (host: Element, name: string, punkt: string) => {
+  await klick(leistenMenue(host, name));
+  await klick(leistenPunkt(punkt));
+};
+
 describe('Web-Version', () => {
   it('„Festlegen …“ führt nicht in eine Sackgasse: ohne Projekt keine Projektkarte, Werkzeugleiste und Gliederung bleiben (B-03)', async () => {
     useFormulare.getState().profilSetzen('nw019999|2026A', {
@@ -103,7 +111,7 @@ describe('Web-Version', () => {
     expect(meldung).toContain('heruntergeladen als „Bauantrag.frmsjf“ – bitte die neue Datei weiterverwenden');
     expect(meldung).not.toContain('gespeichert');
     // weiter in derselben Sitzung: Verlauf passt zur (heruntergeladenen) Fassung
-    await klick(knopfGenau(host, 'Verlauf')!);
+    await imLeistenMenue(host, 'Ansicht', 'Verlauf der Eingaben');
     expect(host.querySelectorAll('.fo-verlauf-liste .fo-verlauf-schritt')).toHaveLength(1);
     expect(host.querySelector('.fo-verlauf-frueher')).toBeNull();
 

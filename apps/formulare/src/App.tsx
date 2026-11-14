@@ -13,7 +13,10 @@ import { GesetzModal } from './components/GesetzModal';
 import { EinstellungenModal } from './components/Einstellungen';
 import { ExportDialog, useExportDialog } from './components/ExportDialog';
 import { FormularHinzufuegenDialog, useHinzufuegenDialog } from './components/FormularHinzufuegen';
+import type { MenuePunkt } from '@core/ui/Menue';
 import { MenueKnopf } from '@core/ui/Menue';
+import type { LeistenTeil } from '@core/ui/Werkzeugleiste';
+import { Werkzeugleiste } from '@core/ui/Werkzeugleiste';
 import { antragSperre, useAntrag } from './antragStore';
 import { DateiAnsicht } from './components/dokumente/DateiAnsicht';
 import { Symbol } from '@core/ui/Symbol';
@@ -214,6 +217,174 @@ export function App() {
     setZoom(ZOOMSTUFEN[n]);
   };
 
+  // Werkzeugleiste nach design.md „Kopf- und Werkzeugleisten“: sichtbar nur, was man ständig braucht (Datei, Speichern
+  // mit Rückgängig/Wiederholen, Umschalter Formular | Felder, Zoom, Hauptknopf PDF); Seltenes in „Ansicht“ und „Mehr“
+  const nurAnsehen = grund ? { hinweis: 'nur ansehen', titel: grund } : {};
+  const aktualisierbar = !!(formularSichtbar && ds && projekt && zugeordnet > 0);
+  const dateiPunkte = (): MenuePunkt[] => [
+    ...(!ds ? [{ text: 'Formular öffnen …', symbol: 'ordnerOffen' as const, aktion: () => void dateiOeffnen() }] : []),
+    ...(aktualisierbar ? [{ text: 'Daten aktualisieren …', symbol: 'neuLaden' as const, deaktiviert: !!grund, ...nurAnsehen, aktion: () => useAktualisieren.getState().dialogOeffnen() }] : []),
+    ...(formularSichtbar && offen.projekt ? [{ text: 'Speichern unter …', symbol: 'datei' as const, aktion: () => void useAntrag.getState().speichernUnter(offen.pfad) }] : []),
+    ...(formularSichtbar ? [{ text: 'Drucken …', symbol: 'drucken' as const, tasten: 'Strg+P', aktion: () => void drucken() }] : []),
+  ];
+  const ansichtPunkte = (): MenuePunkt[] => [
+    { text: 'Gliederung', haken: gliederungSichtbar, aktion: () => (einrichten ? useEinrichten.getState().setBaumOffen(!einrichtenBaum) : setGliederungOffen(!gliederungOffen)) },
+    { text: 'Verlauf der Eingaben', haken: verlaufOffen, aktion: () => setVerlaufOffen(!verlaufOffen) },
+  ];
+  const zoomPunkte = (): MenuePunkt[] => [
+    { text: 'Seitenbreite', gewaehlt: zoom === 0, aktion: () => setZoom(0) },
+    ...ZOOMSTUFEN.map((z) => ({ text: `${Math.round(z * 100)} %`, gewaehlt: zoom === z, aktion: () => setZoom(z) })),
+  ];
+  const mehrPunkte = (): MenuePunkt[] => [
+    ...(formularSichtbar ? [{ text: 'Formular einrichten', symbol: 'stift' as const, haken: einrichten, titel: 'Titel, Füllstand, Gruppen und Bedingungen – Felder im Formular anklicken', aktion: () => useEinrichten.getState().setAktiv(!einrichten) }] : []),
+    ...(aktualisierbar ? [{ text: 'Manuelle Überschreibungen ignorieren', haken: !!offen && ignoriert(offen.pfad), deaktiviert: !!grund, ...nurAnsehen, aktion: () => offen && ignorierenSetzen(!ignoriert(offen.pfad)) }] : []),
+    ...(ds ? [{ text: 'Einstellungen …', symbol: 'zahnrad' as const, aktion: () => useFormulare.getState().einstellungenOeffnen() }] : []),
+    ...(kartenansicht && karte ? [{ trenner: true } as const, { text: 'Änderungen verwerfen', gefahr: true, deaktiviert: !geaendert, titel: 'Alle ungespeicherten Änderungen der Projektdaten zurücknehmen (Strg+Z holt sie zurück)', aktion: karteVerwerfen }] : []),
+  ];
+  const speichernTitel = (text: string) => (geaendert ? `${text} – ungespeicherte Änderungen` : text);
+  const leistenTeile: LeistenTeil[] = [];
+  if (dateiPunkte().length >= 2) leistenTeile.push({ id: 'datei', inhalt: <MenueKnopf punkte={dateiPunkte}>Datei</MenueKnopf> });
+  else if (!ds) leistenTeile.push({ id: 'oeffnen', inhalt: <button onClick={() => void dateiOeffnen()}>Formular öffnen …</button> });
+  if (formularSichtbar)
+    leistenTeile.push(
+      {
+        id: 'speichern',
+        gruppe: true,
+        inhalt: (
+          <>
+            <button
+              className={geaendert ? 'ungespeichert' : ''}
+              disabled={!geaendert || !!grund || konflikt}
+              title={speichernTitel(ds ? 'In die Formulardatei speichern (Strg+S)' : 'Als Datei herunterladen (Strg+S)')}
+              aria-label={speichernTitel(ds ? 'Speichern' : 'Herunterladen')}
+              onClick={() => void speichern()}
+            >
+              <Symbol name="speichern" /> {ds ? 'Speichern' : 'Herunterladen'}
+            </button>
+            <button disabled={!kannZurueck(offen) || !!grund} title="Rückgängig (Strg+Z)" aria-label="Rückgängig" onClick={() => zeige(rueckgaengig())}>
+              <Symbol name="rueckgaengig" />
+            </button>
+            <button disabled={!kannVor(offen) || !!grund} title="Wiederholen (Strg+Y)" aria-label="Wiederholen" onClick={() => zeige(wiederholen())}>
+              <Symbol name="wiederholen" />
+            </button>
+            {konflikt && (
+              <button title="Datei neu einlesen; deine Eingaben werden wieder eingetragen" onClick={() => void neuLaden()}>
+                Neu laden
+              </button>
+            )}
+          </>
+        ),
+      },
+      {
+        id: 'umschalter',
+        gruppe: true,
+        inhalt: (
+          <div className="segment" role="group" aria-label="Darstellung">
+            {ANSICHTEN.map((a) => (
+              <button key={a.id} aria-pressed={ansicht === a.id} title={a.title} onClick={() => setAnsicht(a.id)}>
+                {a.label}
+              </button>
+            ))}
+          </div>
+        ),
+      },
+      ...(ansicht === 'seite'
+        ? [
+            {
+              id: 'zoom',
+              gruppe: true,
+              rang: 2,
+              menue: { text: 'Zoom', unter: zoomPunkte() },
+              inhalt: (
+                <div className="fo-zoom">
+                  <button title="Verkleinern" aria-label="Verkleinern" onClick={() => zoomStufe(-1)}>
+                    <Symbol name="strich" />
+                  </button>
+                  <select value={zoom} onChange={(e) => setZoom(Number(e.target.value))} aria-label="Zoom">
+                    <option value={0}>Seitenbreite</option>
+                    {ZOOMSTUFEN.map((z) => (
+                      <option key={z} value={z}>
+                        {Math.round(z * 100)} %
+                      </option>
+                    ))}
+                  </select>
+                  <button title="Vergrößern" aria-label="Vergrößern" onClick={() => zoomStufe(1)}>
+                    <Symbol name="plus" />
+                  </button>
+                </div>
+              ),
+            },
+          ]
+        : []),
+      { id: 'ansicht', rang: 1, menue: { text: 'Ansicht', unter: ansichtPunkte() }, inhalt: <MenueKnopf punkte={ansichtPunkte}>Ansicht</MenueKnopf> },
+    );
+  if (kartenansicht && karte)
+    leistenTeile.push({
+      id: 'karte-speichern',
+      gruppe: true,
+      inhalt: (
+        <>
+          <button
+            className={geaendert ? 'ungespeichert' : ''}
+            disabled={!geaendert}
+            title={speichernTitel('Projektdaten in die Projektkarte des Projekts speichern (Strg+S)')}
+            aria-label={speichernTitel('Projektdaten speichern')}
+            onClick={() => void karteSpeichern()}
+          >
+            <Symbol name="speichern" /> Projektdaten speichern
+          </button>
+          <button disabled={!kannRueckgaengig(karte.verlauf)} title="Rückgängig (Strg+Z)" aria-label="Rückgängig" onClick={() => zeigeKarte(karteRueckgaengig())}>
+            <Symbol name="rueckgaengig" />
+          </button>
+          <button disabled={!kannWiederholen(karte.verlauf)} title="Wiederholen (Strg+Y)" aria-label="Wiederholen" onClick={() => zeigeKarte(karteWiederholen())}>
+            <Symbol name="wiederholen" />
+          </button>
+        </>
+      ),
+    });
+  leistenTeile.push({ abstand: true });
+  if (kartenansicht && karte)
+    leistenTeile.push({
+      id: 'status',
+      inhalt: (
+        <span className="muted small-text fo-status">
+          {geaendert ? `${anzahl(Object.keys(karte.aenderungen).length, 'Eintrag', 'Einträge')} geändert` : 'Alles gespeichert'}
+          {geaendert && karte.gesichert && ` · lokal gesichert ${uhrzeit(karte.gesichert)}`}
+        </span>
+      ),
+    });
+  if (formularSichtbar)
+    leistenTeile.push({
+      id: 'status',
+      inhalt: (
+        <span className="muted small-text fo-status">
+          {[kennung(offen.formular), stand(offen.formular) && `Stand ${stand(offen.formular)}`].filter(Boolean).join(' · ')}
+          {geaendert && ` · ${anzahl(Object.keys(offen.aenderungen).length, 'Feld', 'Felder')} geändert`}
+          {geaendert && offen.gesichert && ` · lokal gesichert ${uhrzeit(offen.gesichert)}`}
+        </span>
+      ),
+    });
+  if (ds)
+    leistenTeile.push({
+      id: 'suchen',
+      rang: 3,
+      menue: { text: 'Suchen …', symbol: 'suche', tasten: 'Strg+K', aktion: () => setDialog('schnellwahl') },
+      inhalt: (
+        <button title="Projekt oder Formular suchen (Strg+K)" onClick={() => setDialog('schnellwahl')}>
+          <Symbol name="suche" /> Suchen …
+        </button>
+      ),
+    });
+  if (formularSichtbar && offen.projekt)
+    leistenTeile.push({
+      id: 'pdf',
+      inhalt: (
+        <button className="primary" title="Als PDF exportieren – in den Antragsordner oder anderswo ins Projekt (Strg+E)" aria-keyshortcuts="Control+E" onClick={() => useExportDialog.getState().oeffnen(offen.pfad)}>
+          <Symbol name="export" /> Als PDF exportieren …
+        </button>
+      ),
+    });
+
   return (
     <div className="app">
       <TitleBar
@@ -235,163 +406,7 @@ export function App() {
             : undefined
         }
       />
-      <div className="toolbar">
-        {formularSichtbar && (
-          <div className="tb-group">
-            <button
-              className={gliederungSichtbar ? 'active' : ''}
-              title={einrichten ? 'Aufbau des Formulars als Baum ein- oder ausblenden' : 'Gliederung des Formulars ein- oder ausblenden'}
-              aria-pressed={gliederungSichtbar}
-              onClick={() => (einrichten ? useEinrichten.getState().setBaumOffen(!einrichtenBaum) : setGliederungOffen(!gliederungOffen))}
-            >
-              <Symbol name="liste" /> Gliederung
-            </button>
-            <button
-              className={einrichten ? 'active' : ''}
-              title="Formular einrichten: Titel, Füllstand, Gruppen und Bedingungen – Felder im Formular anklicken"
-              aria-pressed={einrichten}
-              onClick={() => useEinrichten.getState().setAktiv(!einrichten)}
-            >
-              <Symbol name="stift" /> Einrichten
-            </button>
-          </div>
-        )}
-        {formularSichtbar && (
-          <div className="tb-group">
-            {ANSICHTEN.map((a) => (
-              <button key={a.id} className={ansicht === a.id ? 'active' : ''} title={a.title} onClick={() => setAnsicht(a.id)}>
-                {a.label}
-              </button>
-            ))}
-          </div>
-        )}
-        {formularSichtbar && (
-          <div className="tb-group">
-            <button disabled={!kannZurueck(offen) || !!grund} title="Rückgängig (Strg+Z)" aria-label="Rückgängig" onClick={() => zeige(rueckgaengig())}>
-              <Symbol name="rueckgaengig" />
-            </button>
-            <button disabled={!kannVor(offen) || !!grund} title="Wiederholen (Strg+Y)" aria-label="Wiederholen" onClick={() => zeige(wiederholen())}>
-              <Symbol name="wiederholen" />
-            </button>
-            <button className="primary" disabled={!geaendert || !!grund || konflikt} title="In die Formulardatei speichern (Strg+S)" onClick={() => void speichern()}>
-              {ds ? 'Speichern' : 'Herunterladen'}
-            </button>
-            {konflikt && (
-              <button title="Datei neu einlesen; deine Eingaben werden wieder eingetragen" onClick={() => void neuLaden()}>
-                Neu laden
-              </button>
-            )}
-          </div>
-        )}
-        {formularSichtbar && ds && projekt && zugeordnet > 0 && (
-          <div className="tb-group">
-            <button disabled={!!grund} title={`${zugeordnet} Felder dieses Formulars kommen aus den Projektdaten (Projektkarte)`} onClick={() => useAktualisieren.getState().dialogOeffnen()}>
-              <Symbol name="neuLaden" /> Daten aktualisieren …
-            </button>
-            <MenueKnopf
-              title="Weitere Befehle zum Aktualisieren"
-              ariaLabel="Weitere Befehle zum Aktualisieren"
-              className="fo-menue-knopf"
-              punkte={() => [
-                { text: 'Daten aktualisieren …', symbol: 'neuLaden', deaktiviert: !!grund, ...(grund ? { hinweis: 'nur ansehen', titel: grund } : {}), aktion: () => useAktualisieren.getState().dialogOeffnen() },
-                {
-                  text: 'Manuelle Überschreibungen ignorieren',
-                  haken: !!offen && ignoriert(offen.pfad),
-                  deaktiviert: !!grund,
-                  ...(grund ? { hinweis: 'nur ansehen', titel: grund } : {}),
-                  aktion: () => offen && ignorierenSetzen(!ignoriert(offen.pfad)),
-                },
-              ]}
-            >
-              {''}
-            </MenueKnopf>
-          </div>
-        )}
-        {formularSichtbar && ansicht === 'seite' && (
-          <div className="tb-group fo-zoom">
-            <button title="Verkleinern" aria-label="Verkleinern" onClick={() => zoomStufe(-1)}>
-              <Symbol name="strich" />
-            </button>
-            <select value={zoom} onChange={(e) => setZoom(Number(e.target.value))} aria-label="Zoom">
-              <option value={0}>Seitenbreite</option>
-              {ZOOMSTUFEN.map((z) => (
-                <option key={z} value={z}>
-                  {Math.round(z * 100)} %
-                </option>
-              ))}
-            </select>
-            <button title="Vergrößern" aria-label="Vergrößern" onClick={() => zoomStufe(1)}>
-              <Symbol name="plus" />
-            </button>
-          </div>
-        )}
-        {formularSichtbar && (
-          <div className="tb-group">
-            <button title="Drucken (Strg+P)" onClick={() => void drucken()}>
-              <Symbol name="drucken" /> Drucken
-            </button>
-            {offen.projekt && (
-              <MenueKnopf
-                title="Als PDF exportieren – in den Antragsordner, anderswo ins Projekt oder mit „Speichern unter …“"
-                punkte={() => [
-                  { text: 'Als PDF exportieren …', symbol: 'export', tasten: 'Strg+E', aktion: () => useExportDialog.getState().oeffnen(offen.pfad) },
-                  { text: 'Speichern unter …', symbol: 'datei', aktion: () => void useAntrag.getState().speichernUnter(offen.pfad) },
-                ]}
-              >
-                <Symbol name="export" /> PDF
-              </MenueKnopf>
-            )}
-            <button className={verlaufOffen ? 'active' : ''} title="Verlauf der Eingaben" onClick={() => setVerlaufOffen(!verlaufOffen)}>
-              <Symbol name="verlauf" /> Verlauf
-            </button>
-          </div>
-        )}
-        {kartenansicht && karte && (
-          <div className="tb-group">
-            <button disabled={!kannRueckgaengig(karte.verlauf)} title="Rückgängig (Strg+Z)" aria-label="Rückgängig" onClick={() => zeigeKarte(karteRueckgaengig())}>
-              <Symbol name="rueckgaengig" />
-            </button>
-            <button disabled={!kannWiederholen(karte.verlauf)} title="Wiederholen (Strg+Y)" aria-label="Wiederholen" onClick={() => zeigeKarte(karteWiederholen())}>
-              <Symbol name="wiederholen" />
-            </button>
-            <button className="primary" disabled={!geaendert} title="Projektdaten in die Projektkarte des Projekts speichern (Strg+S)" onClick={() => void karteSpeichern()}>
-              Projektdaten speichern
-            </button>
-            <button disabled={!geaendert} title="Alle ungespeicherten Änderungen zurücknehmen (Strg+Z holt sie zurück)" onClick={karteVerwerfen}>
-              Verwerfen
-            </button>
-          </div>
-        )}
-        {!ds && (
-          <div className="tb-group">
-            <button onClick={() => void dateiOeffnen()}>Formular öffnen …</button>
-          </div>
-        )}
-        <span className="tb-spacer" />
-        {kartenansicht && karte && (
-          <span className="muted small-text fo-status">
-            {geaendert ? `${anzahl(Object.keys(karte.aenderungen).length, 'Eintrag', 'Einträge')} geändert` : 'Alles gespeichert'}
-            {geaendert && karte.gesichert && ` · lokal gesichert ${uhrzeit(karte.gesichert)}`}
-          </span>
-        )}
-        {formularSichtbar && (
-          <span className="muted small-text fo-status">
-            {[kennung(offen.formular), stand(offen.formular) && `Stand ${stand(offen.formular)}`].filter(Boolean).join(' · ')}
-            {geaendert && ` · ${anzahl(Object.keys(offen.aenderungen).length, 'Feld', 'Felder')} geändert`}
-            {geaendert && offen.gesichert && ` · lokal gesichert ${uhrzeit(offen.gesichert)}`}
-          </span>
-        )}
-        {ds && (
-          <div className="tb-group">
-            <button title="Projekt oder Formular suchen (Strg+K)" onClick={() => setDialog('schnellwahl')}>
-              <Symbol name="suche" /> Suchen …
-            </button>
-            <button className={einstellungenOffen ? 'active' : ''} title="Einstellungen: Ordner, Stammdaten, Adressbuch, Formulare" aria-label="Einstellungen …" onClick={() => useFormulare.getState().einstellungenOeffnen()}>
-              <Symbol name="zahnrad" />
-            </button>
-          </div>
-        )}
-      </div>
+      <Werkzeugleiste name="Werkzeugleiste" teile={leistenTeile} mehr={mehrPunkte} />
       {(meldung || (formularSichtbar && grund)) && (
         <>
           {meldung && (

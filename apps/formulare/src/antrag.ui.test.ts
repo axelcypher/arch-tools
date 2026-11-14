@@ -173,11 +173,11 @@ describe('Antragsfassung und Export', () => {
     const host = await projektBS9();
     expect(host.querySelector('.an-fassung')?.textContent).toContain('BAUA 2');
     await klick(knopf(host, '001-Muster'));
-    await klick(knopf(host, 'PDF'));
-    // Tastenkürzel rechts, vorgelesen als aria-keyshortcuts – nicht Teil des Namens
-    expect(menuePunkt('Als PDF exportieren').getAttribute('aria-keyshortcuts')).toBe('Control+E');
-    expect(menuePunkt('Als PDF exportieren').querySelector('.menue-tasten')!.textContent).toBe('Strg+E');
-    await klick(menuePunkt('Als PDF exportieren'));
+    // Hauptknopf der Werkzeugleiste; das Tastenkürzel wird als aria-keyshortcuts vorgelesen
+    const pdfKnopf = knopf(host, 'Als PDF exportieren');
+    expect(pdfKnopf.classList.contains('primary')).toBe(true);
+    expect(pdfKnopf.getAttribute('aria-keyshortcuts')).toBe('Control+E');
+    await klick(pdfKnopf);
     const dialog = dialogMit('Als PDF exportieren')!;
     const name = `BS9 BAUA ${jjmmtt(new Date())} Muster.pdf`;
     expect(dialog.querySelector<HTMLInputElement>('input[aria-label="Dateiname"]')!.value).toBe(name);
@@ -188,8 +188,7 @@ describe('Antragsfassung und Export', () => {
     expect(dialogMit('Als PDF exportieren')).toBeNull();
 
     // gibt es die Datei schon, muss Ersetzen bestätigt werden
-    await klick(knopf(host, 'PDF'));
-    await klick(menuePunkt('Als PDF exportieren'));
+    await klick(knopf(host, 'Als PDF exportieren'));
     const zweiter = dialogMit('Als PDF exportieren')!;
     expect(zweiter.textContent).toContain('gibt es dort schon');
     expect(knopf(zweiter, 'Exportieren').disabled).toBe(true);
@@ -229,8 +228,7 @@ describe('Antragsfassung und Export', () => {
     await klick(baum('TÖB')!);
     await klick(baum('BAUA 2')!);
     await klick(knopf(host, '001-Muster'));
-    await klick(knopf(host, 'PDF'));
-    await klick(menuePunkt('Als PDF exportieren'));
+    await klick(knopf(host, 'Als PDF exportieren'));
     await klick(knopf(dialogMit('Als PDF exportieren')!, 'Exportieren'));
     await warte();
     expect(baum(`BS9 BAUA ${jjmmtt(new Date())} Muster.pdf`)).toBeDefined();
@@ -250,8 +248,7 @@ describe('Antragsfassung und Export', () => {
   it('anderer Ordner im Projekt', async () => {
     const host = await projektBS9();
     await klick(knopf(host, '001-Muster'));
-    await klick(knopf(host, 'PDF'));
-    await klick(menuePunkt('Als PDF exportieren'));
+    await klick(knopf(host, 'Als PDF exportieren'));
     const dialog = dialogMit('Als PDF exportieren')!;
     act(() => dialog.querySelectorAll<HTMLInputElement>('input[type="radio"]')[1].click());
     await warte();
@@ -451,8 +448,7 @@ describe('Antragsumfang und Vollständigkeit', () => {
     });
     act(() => useAntrag.getState().neuBerechnen());
     expect(useAntrag.getState().dokumente[0].status).toBe('offen');
-    await klick(knopf(host, 'PDF'));
-    await klick(menuePunkt('Als PDF exportieren'));
+    await klick(knopf(host, 'Als PDF exportieren'));
     await klick(knopf(dialogMit('Als PDF exportieren')!, 'Exportieren'));
     await warte();
     const d = useAntrag.getState().dokumente[0];
@@ -623,8 +619,8 @@ describe('Bedingungen: Antragsmerkmale und Felder', () => {
   it('Bedingung zusammenstellen: Antragsmerkmal UND (Feld per Klick im Formular ODER anderes Merkmal) – in Worten und mit Zustand', async () => {
     const host = await projektBS9();
     await klick(knopf(host, '001-Muster'));
-    const einrichten = [...host.querySelectorAll<HTMLButtonElement>('.toolbar button')].find((b) => b.textContent?.includes('Einrichten'))!;
-    await klick(einrichten);
+    await klick(host.querySelector<HTMLButtonElement>('.toolbar button[aria-label="Mehr"]')!);
+    await klick(menuePunkt('Formular einrichten'));
     const panel = () => host.querySelector<HTMLElement>('aside[aria-label="Einstellungen der Auswahl"]')!;
     const bedingung = () => useFormulare.getState().profile['nw019999|2026A']?.abschnitte['0:Panel1']?.bedingung;
     // Abschnitt im Baum wählen; „immer erforderlich“ → nur bei Gebäudeklasse 4 oder 5
