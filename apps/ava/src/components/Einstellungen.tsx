@@ -303,7 +303,7 @@ function MailVorlagen({ vorlagen, onChange }: { vorlagen: MailVorlage[]; onChang
   const alle = v ? [v.an, v.cc, v.betreff, v.text].join('\n') : '';
   return (
     <div className="ava-mailvorlagen">
-      <p className="muted">Die Mail öffnet sich als Entwurf mit Anhang im Mailprogramm (Outlook: als neue Nachricht) – nur noch „Senden“.</p>
+      <p className="muted">Die Mail öffnet sich mit Anhang im E-Mail-Programm als neue Nachricht – nur noch „Senden“. Manche Programme zeigen sie nur an.</p>
       <div className="ava-reihe">
         <select value={id} onChange={(x) => setId(x.target.value)}>
           {vorlagen.map((x) => (
