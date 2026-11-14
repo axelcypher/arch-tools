@@ -1,4 +1,7 @@
 import { Symbol } from '@core/ui/Symbol';
+import type { MenuePunkt } from '@core/ui/Menue';
+import { MenueKnopf } from '@core/ui/Menue';
+import { Werkzeugleiste } from '@core/ui/Werkzeugleiste';
 import { speichernAbwarten } from '@core/platform/projektDatei';
 import { APP_NAMEN } from '@core/appNamen';
 import { dialogOffen, eingabeAbschliessen, istEingabeZiel } from '@core/platform/eingabe';
@@ -174,75 +177,107 @@ export function App() {
     return () => window.removeEventListener('beforeunload', onBeforeUnload);
   }, []);
 
+  const kostenAktiv = !einstieg && (ansicht === 'kosten' || !hatGebaeude);
+  const mengenAktiv = ansicht === 'mengen' && hatGebaeude;
+  // Menü „Datei“ (docs/design.md, „Kopf- und Werkzeugleisten“): Neu, Öffnen, Speichern unter, IFC aktualisieren
+  const dateiPunkte = (): MenuePunkt[] => [
+    { text: 'Neu', symbol: 'datei', aktion: () => void onNeu(), titel: 'Neues, leeres Projekt (fragt bei ungespeicherten Änderungen nach)' },
+    { text: 'Öffnen …', symbol: 'ordnerOffen', tasten: 'Strg+O', aktion: () => void onOpen(), deaktiviert: !!busy, titel: 'Projekt (.oap) oder IFC-Modell öffnen' },
+    ...(isTauri() ? [{ text: 'Speichern unter …', symbol: 'speichern', tasten: 'Strg+Umschalt+S', aktion: () => void onSave(true), titel: 'Projekt unter neuem Namen oder an anderem Ort speichern' } as MenuePunkt] : []),
+    { trenner: true },
+    {
+      text: 'IFC aktualisieren …',
+      symbol: 'neuLaden',
+      aktion: () => void onIfcAktualisieren(),
+      deaktiviert: !hatGebaeude || !!busy,
+      hinweis: hatGebaeude ? undefined : 'erst Projekt mit Gebäude öffnen',
+      titel: 'Neuen Export desselben IFC-Modells übernehmen: Räume über die IFC-GlobalId abgleichen, Änderungen von Hand bleiben',
+    },
+  ];
+
   return (
     <div className="app">
       <TitleBar app={APP_NAMEN.kosten.name} name={name} dirty={dirty} onOpenLog={() => setLogOpen(true)} regeln="kosten" onProjekte={() => setProjekteOffen(true)} onSpeichern={() => onSave()} />
-      <div className="toolbar">
-        <div className="tb-group">
-          <button onClick={onOpen} disabled={!!busy} title="Projekt (.oap) oder IFC-Modell öffnen (Strg+O)">
-            Öffnen …
-          </button>
-          <button onClick={() => void onSave()} title={isTauri() ? 'Projekt speichern – in die geöffnete Datei (Strg+S)' : 'Projekt als Datei herunterladen (Strg+S)'}>
-            Speichern
-          </button>
-          {isTauri() && (
-            <button onClick={() => void onSave(true)} title="Projekt unter neuem Namen oder an anderem Ort speichern (Strg+Umschalt+S)">
-              Speichern unter …
-            </button>
-          )}
-          <button
-            onClick={() => void onIfcAktualisieren()}
-            disabled={!hatGebaeude || !!busy}
-            title={
-              hatGebaeude
-                ? 'Neuen Export desselben IFC-Modells übernehmen: Räume über die IFC-GlobalId abgleichen, Änderungen von Hand bleiben'
-                : 'Erst ein Projekt mit Gebäude oder ein IFC-Modell öffnen'
-            }
-          >
-            IFC aktualisieren …
-          </button>
-        </div>
-        <div className="tb-group">
-          <button className={!einstieg && (ansicht === 'kosten' || !hatGebaeude) ? 'active' : ''} aria-pressed={!einstieg && (ansicht === 'kosten' || !hatGebaeude)} onClick={() => setAnsicht('kosten')} title="Grundlagen, Positionen und Kostenübersicht">
-            Kosten
-          </button>
-          <button
-            className={ansicht === 'mengen' && hatGebaeude ? 'active' : ''}
-            aria-pressed={ansicht === 'mengen' && hatGebaeude}
-            onClick={() => setAnsicht('mengen')}
-            disabled={!hatGebaeude}
-            title={hatGebaeude ? 'Zeigt im Grundriss und im 3D-Modell, aus welchen Flächen sich jede Menge zusammensetzt' : 'Erst ein Projekt mit Gebäude oder ein IFC-Modell öffnen'}
-          >
-            Mengen prüfen
-          </button>
-        </div>
-        <div className="tb-group">
-          <button onClick={() => setKatalogOpen(true)} title="Kennwertkatalog laden, speichern und Kennwerte als Positionen übernehmen">
-            Kennwertkatalog …
-          </button>
-        </div>
-        <div className="tb-group">
-          <button
-            onClick={() => setDruckOpen(true)}
-            disabled={!hatPositionen}
-            title={hatPositionen ? 'Druckbare Kostenermittlung – über den Druckdialog auch als PDF (Strg+P)' : 'Erst Positionen anlegen'}
-          >
-            Kosten drucken …
-          </button>
-          <button onClick={() => setExcelOpen(true)} disabled={!hatPositionen} title={hatPositionen ? 'Kostenermittlung als Excel-Datei – Standardlayout oder eigene Vorlage' : 'Erst Positionen anlegen'}>
-            Excel …
-          </button>
-        </div>
-        <div className="tb-group">
-          <button onClick={() => useKosten.getState().undo()} disabled={!canUndo} title="Rückgängig (Strg+Z)" aria-label="Rückgängig">
-            <Symbol name="rueckgaengig" />
-          </button>
-          <button onClick={() => useKosten.getState().redo()} disabled={!canRedo} title="Wiederholen (Strg+Y)" aria-label="Wiederholen">
-            <Symbol name="wiederholen" />
-          </button>
-        </div>
-        {busy && <span className="busy">{busy}</span>}
-      </div>
+      <Werkzeugleiste
+        name="Werkzeugleiste"
+        teile={[
+          { id: 'datei', inhalt: <MenueKnopf punkte={dateiPunkte}>Datei</MenueKnopf> },
+          {
+            id: 'speichern',
+            gruppe: true,
+            inhalt: (
+              // ungespeicherte Änderungen als Punkt in der Ecke – ändert die Breite der Leiste nicht
+              <button
+                className={dirty ? 'ungespeichert' : undefined}
+                aria-label={dirty ? 'Speichern – ungespeicherte Änderungen' : 'Speichern'}
+                onClick={() => void onSave()}
+                title={isTauri() ? 'Projekt speichern – in die geöffnete Datei (Strg+S)' : 'Projekt als Datei herunterladen (Strg+S)'}
+              >
+                <Symbol name="speichern" /> Speichern
+              </button>
+            ),
+          },
+          {
+            id: 'verlauf',
+            gruppe: true,
+            inhalt: (
+              <>
+                <button className="icon" onClick={() => useKosten.getState().undo()} disabled={!canUndo} title="Rückgängig (Strg+Z)" aria-label="Rückgängig">
+                  <Symbol name="rueckgaengig" />
+                </button>
+                <button className="icon" onClick={() => useKosten.getState().redo()} disabled={!canRedo} title="Wiederholen (Strg+Y)" aria-label="Wiederholen">
+                  <Symbol name="wiederholen" />
+                </button>
+              </>
+            ),
+          },
+          {
+            // Haupt-Umschalter der App: bleibt immer sichtbar
+            id: 'ansicht',
+            inhalt: (
+              <div className="segment" role="group" aria-label="Ansicht">
+                <button aria-pressed={kostenAktiv} onClick={() => setAnsicht('kosten')} title="Grundlagen, Positionen und Kostenübersicht">
+                  Kosten
+                </button>
+                <button
+                  aria-pressed={mengenAktiv}
+                  onClick={() => setAnsicht('mengen')}
+                  disabled={!hatGebaeude}
+                  title={hatGebaeude ? 'Zeigt im Grundriss und im 3D-Modell, aus welchen Flächen sich jede Menge zusammensetzt' : 'Erst ein Projekt mit Gebäude oder ein IFC-Modell öffnen'}
+                >
+                  Mengen prüfen
+                </button>
+              </div>
+            ),
+          },
+          ...(busy ? [{ id: 'busy', inhalt: <span className="busy">{busy}</span> }] : []),
+          { abstand: true },
+          {
+            id: 'excel',
+            rang: 1,
+            inhalt: (
+              <button onClick={() => setExcelOpen(true)} disabled={!hatPositionen} title={hatPositionen ? 'Kostenermittlung als Excel-Datei – Standardlayout oder eigene Vorlage' : 'Erst Positionen anlegen'}>
+                <Symbol name="tabelle" /> Excel …
+              </button>
+            ),
+            menue: { text: 'Excel …', symbol: 'tabelle', aktion: () => setExcelOpen(true), deaktiviert: !hatPositionen, hinweis: hatPositionen ? undefined : 'erst Positionen anlegen' },
+          },
+          {
+            // Hauptknopf: bleibt immer sichtbar
+            id: 'drucken',
+            inhalt: (
+              <button
+                className="primary"
+                onClick={() => setDruckOpen(true)}
+                disabled={!hatPositionen}
+                title={hatPositionen ? 'Druckbare Kostenermittlung – über den Druckdialog auch als PDF (Strg+P)' : 'Erst Positionen anlegen'}
+              >
+                <Symbol name="drucken" /> Kosten drucken …
+              </button>
+            ),
+          },
+        ]}
+      />
       <main className="ko-main">
         {wiederhergestellt !== null && dirty && (
           <div className="ko-bericht meldung warnung" role="status">

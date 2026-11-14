@@ -1,4 +1,6 @@
 import { Symbol } from '@core/ui/Symbol';
+import type { MenuePunkt } from '@core/ui/Menue';
+import { MenueKnopf } from '@core/ui/Menue';
 import { useMemo, useState } from 'react';
 import { fmt2 } from '@core/format';
 import type { Kosten, KostenBezug, KostenPosition, KostenStufe } from '@core/model';
@@ -59,6 +61,36 @@ export function KostenView({ onKatalog, onMenge }: { onKatalog: () => void; onMe
   const neu = (pos: KostenPosition) => {
     st.update((p) => addPositionen(p, [pos]));
     fokussieren(pos.id);
+  };
+  // Menü „Hinzufügen“: seltene Varianten neben dem Knopf „Position“ (docs/design.md, „Kopf- und Werkzeugleisten“)
+  const hinzufuegenPunkte = (): MenuePunkt[] => {
+    const grob = fehlend('grob').length > 0;
+    const fein = fehlend('fein');
+    return [
+      {
+        text: 'Kostenrisiko',
+        symbol: 'plus',
+        aktion: () => neu(neueRisikoPosition()),
+        titel: 'Nach DIN 276 gesondert ausgewiesen, pauschal oder in % von Kostengruppen; zählt zu keiner Kostengruppe',
+      },
+      { trenner: true },
+      {
+        text: 'Gliederung 1. Ebene',
+        aktion: () => void gliederungAnlegen('grob'),
+        deaktiviert: !grob,
+        hinweis: grob ? undefined : 'schon erfasst',
+        titel: 'Fehlende Positionen der 1. Ebene (KG 300, 400, 500, 700) mit üblicher Bezugsgröße anlegen',
+      },
+      {
+        text: 'Gliederung 2. Ebene',
+        aktion: () => void gliederungAnlegen('fein'),
+        deaktiviert: !fein.length,
+        hinweis: fein.length ? undefined : 'schon erfasst',
+        titel: `Fehlende Positionen der 2. Ebene mit Bauteilmengen anlegen (KG ${gliederung('fein')
+          .map((p) => p.kg)
+          .join(', ')}); erfasste Gruppen der 1. Ebene werden zum Ausschalten angeboten`,
+      },
+    ];
   };
 
   return (
@@ -154,35 +186,9 @@ export function KostenView({ onKatalog, onMenge }: { onKatalog: () => void; onMe
             <button className="small" title="Position hinzufügen – leere Zeile, Kostengruppe eintragen" onClick={() => neu(neuePosition(''))}>
               <Symbol name="plus" /> Position
             </button>
-            <button
-              className="small"
-              title="Kostenrisiko hinzufügen – nach DIN 276 gesondert ausgewiesen, pauschal oder in % von Kostengruppen; zählt zu keiner Kostengruppe"
-              onClick={() => neu(neueRisikoPosition())}
-            >
-              <Symbol name="plus" /> Kostenrisiko
-            </button>
-            <button
-              className="small"
-              disabled={!fehlend('grob').length}
-              title={fehlend('grob').length ? 'Fehlende Positionen der 1. Ebene (KG 300, 400, 500, 700) mit üblicher Bezugsgröße anlegen' : 'Alle Kostengruppen dieser Gliederung sind schon erfasst'}
-              onClick={() => void gliederungAnlegen('grob')}
-            >
-              Gliederung 1. Ebene
-            </button>
-            <button
-              className="small"
-              disabled={!fehlend('fein').length}
-              title={
-                fehlend('fein').length
-                  ? `Fehlende Positionen der 2. Ebene mit Bauteilmengen anlegen (KG ${gliederung('fein')
-                      .map((p) => p.kg)
-                      .join(', ')}); erfasste Gruppen der 1. Ebene werden zum Ausschalten angeboten`
-                  : 'Alle Kostengruppen dieser Gliederung sind schon erfasst'
-              }
-              onClick={() => void gliederungAnlegen('fein')}
-            >
-              Gliederung 2. Ebene
-            </button>
+            <MenueKnopf className="small" punkte={hinzufuegenPunkte} title="Weitere Einträge: Kostenrisiko, Gliederung 1. oder 2. Ebene">
+              Hinzufügen
+            </MenueKnopf>
             <button className="small" onClick={onKatalog} title="Kennwerte aus dem Kennwertkatalog als Positionen übernehmen">
               Kennwertkatalog …
             </button>

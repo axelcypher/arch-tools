@@ -8,7 +8,7 @@ import { App } from './App';
 import { KatalogDialog } from './components/KatalogDialog';
 import { KostenDruck } from './components/KostenDruck';
 import { leseKatalog, katalogSpeichern } from './katalog';
-import { useKosten } from './store';
+import { setKosten, useKosten } from './store';
 import { projekt, projektMitAnbau, projektMitKosten } from './testdaten';
 import { einstiegsAktionen, farbschemaWechseln, stammdatenAendern } from '@core/ui/rauchtest';
 
@@ -76,6 +76,29 @@ describe('NUMIO', () => {
     expect(knopf(host, 'Excel').disabled).toBe(true);
   });
 
+  it('Werkzeugleiste: Datei | Speichern | Verlauf | Ansicht … Excel, Drucken; seltene Dateibefehle im Menü „Datei“', () => {
+    useKosten.getState().load(projektMitKosten());
+    const host = render(App);
+    const leiste = host.querySelector<HTMLElement>('.toolbar.leiste')!;
+    expect(leiste.getAttribute('aria-label')).toBe('Werkzeugleiste');
+    const knoepfe = [...leiste.querySelectorAll<HTMLButtonElement>(':scope > [data-eintrag] button')].map((b) => b.getAttribute('aria-label') ?? b.textContent?.trim());
+    expect(knoepfe).toEqual(['Datei', 'Speichern', 'Rückgängig', 'Wiederholen', 'Kosten', 'Mengen prüfen', 'Excel …', 'Kosten drucken …']);
+    // der Kennwertkatalog steht nur noch im Kopf der Positionen (kein doppelter Einstieg)
+    expect(leiste.textContent).not.toContain('Kennwertkatalog');
+    expect(knopf(host, 'Kosten drucken').className).toContain('primary');
+    // ungespeicherte Änderungen: Punkt an „Speichern“, auch im Namen
+    const speichern = leiste.querySelector<HTMLButtonElement>('[data-eintrag="speichern"] button')!;
+    expect(speichern.className).not.toContain('ungespeichert');
+    act(() => useKosten.getState().update((p) => setKosten(p, { mwst: 7 })));
+    expect(speichern.className).toContain('ungespeichert');
+    expect(speichern.getAttribute('aria-label')).toBe('Speichern – ungespeicherte Änderungen');
+    // Menü „Datei“: Neu, Öffnen …, Trenner, IFC aktualisieren … (im Browser ohne „Speichern unter …“)
+    act(() => knopf(leiste, 'Datei').click());
+    const punkte = [...document.querySelectorAll<HTMLElement>('[role="menu"] > [role]')].map((p) => (p.getAttribute('role') === 'separator' ? '—' : p.textContent));
+    expect(punkte).toEqual(['Neu', expect.stringContaining('Öffnen …'), '—', expect.stringContaining('IFC aktualisieren …')]);
+    expect(document.querySelector('[role="menu"] [aria-keyshortcuts]')?.getAttribute('aria-keyshortcuts')).toBeTruthy();
+  });
+
   it('zeigt Mengen aus dem Projekt, Positionen je Kostengruppe und die Übersicht', () => {
     useKosten.getState().load(projektMitKosten());
     const host = render(App);
@@ -93,7 +116,10 @@ describe('NUMIO', () => {
   it('Gliederung anlegen, Kennwert eintragen, Menge festlegen, Position ausschalten und löschen', () => {
     useKosten.getState().load(projekt());
     const host = render(App);
-    act(() => knopf(host, 'Gliederung 1. Ebene').click());
+    // seltene Varianten stehen im Menü „Hinzufügen“ neben dem Knopf „Position“
+    act(() => knopf(host, 'Hinzufügen').click());
+    const punkt = [...document.querySelectorAll<HTMLButtonElement>('[role="menu"] [role="menuitem"]')].find((b) => b.textContent?.startsWith('Gliederung 1. Ebene'))!;
+    act(() => punkt.click());
     expect(kosten().positionen.map((p) => p.kg)).toEqual(['300', '400', '500', '700']);
     expect(host.textContent).toContain('Kennwert fehlt');
 
@@ -246,7 +272,7 @@ describe('NUMIO', () => {
     const awf = [...host.querySelectorAll('.ko-table button.link')].find((b) => b.textContent === 'AWF') as HTMLButtonElement;
     await act(async () => awf.click());
     expect(host.querySelector('.mv-bild h2')?.textContent).toBe('AWF – Außenwandfläche: 307,63 m²');
-    expect(host.querySelector('.segment button[aria-pressed="true"]')?.textContent).toBe('3D-Modell');
+    expect(host.querySelector('.mv-kopf .segment button[aria-pressed="true"]')?.textContent).toBe('3D-Modell');
     expect(host.querySelectorAll('.mp-geschoss')).toHaveLength(0);
     expect(host.querySelector('.mv-rechenweg tbody tr')?.textContent).toContain('ohne 1 Abschnitt an anderen Umrissen');
     // im Grundriss: Wände als Kanten
