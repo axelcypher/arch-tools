@@ -355,9 +355,6 @@ function polygonFlaeche(pts: { x: number; y: number }[]): number {
   return a / 2;
 }
 
-/** geschützte Leerzeichen nach „§“ und „Abs.“ – in schmalen Leisten bricht keine Zeile zwischen Zeichen und Nummer */
-export const festeLeerzeichen = (satz: string) => satz.replace(/(§§?|Abs\.) (?=\d)/g, '$1\u00a0');
-
 /** Gebäudearten mit Wohnungen (Merkmal „Gebäudeart“) – gleiche Werte wie der Baustein `wohnnutzung` im Bundesmodul */
 const WOHNGEBAEUDE = ['Einfamilienhaus', 'Zweifamilienhaus', 'Mehrfamilienhaus', 'Wohn- und Geschäftshaus'];
 
@@ -372,7 +369,7 @@ export function widersprueche(merkmale: Record<string, string>, gk: Gebaeudeklas
   const zu: string[] = [];
   const melde = (merkmal: string, satz: string) => {
     out.add(merkmal);
-    texte.push(festeLeerzeichen(satz));
+    texte.push(satz);
     zu.push(merkmal);
   };
   // Planungsrecht gegen Geodaten und Stammdaten: die Grenze Innen-/Außenbereich ist die typische Fehleinordnung

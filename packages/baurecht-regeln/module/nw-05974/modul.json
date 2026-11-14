@@ -320,6 +320,7 @@
       "kurz": "Heilquellenschutzzone, qualitativ",
       "gruppe": "schutz",
       "typ": "wahl",
+      "hilfe": "„außerhalb“: in keiner qualitativen Zone des Heilquellenschutzgebiets",
       "werte": [
         "I",
         "III",
@@ -336,6 +337,7 @@
       "kurz": "Heilquellenschutzzone, quantitativ",
       "gruppe": "schutz",
       "typ": "wahl",
+      "hilfe": "„außerhalb“: in keiner quantitativen Zone des Heilquellenschutzgebiets",
       "werte": [
         "A",
         "B",

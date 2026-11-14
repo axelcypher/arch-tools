@@ -89,8 +89,9 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   aber den auslösenden Hinweis als nicht gesichert. Der Paragraf steht dann auf „prüfen“ („Nur Hinweis, nicht
   gesichert: Umfang der Beseitigung“), „Bestätigen …“ steht am Umfang; erst wenn er bestätigt ist, zählt die Antwort
   wieder voll – auch über eine Kette solcher Fragen. An der Antwort steht dann eine Marke („über „Umfang der
-  Beseitigung“ (nur Hinweis)“), die auf „Bestätigen …“ am Auslöser springt; auch beim Festlegen von Hand zählt die
-  Antwort nur als Hinweis (faktStatus). Ebenso bei einer widersprüchlichen Angabe als Auslöser: die Regel
+  Beseitigung“ bzw. kurz „nur Hinweis“, der Auslöser im Tooltip), die auf „Bestätigen …“ am Auslöser springt; auch
+  beim Festlegen von Hand zählt die Antwort nur als Hinweis (faktStatus) – eine ältere Festlegung, die sie noch als
+  gesichert führte, gilt deshalb als überholt („… jetzt nur Hinweis“). Ebenso bei einer widersprüchlichen Angabe als Auslöser: die Regel
   trägt deren Widerspruch („Widerspruch: Umfang der Beseitigung“) – nicht bei Merkmalen wie Planungsrecht oder
   Gebäudeklasse, deren Widerspruch bzw. Vorbehalt prüfen die Regeln selbst. Ausgenommen ist eine Antwort mit dem Wert,
   der auch ohne die Frage gälte (`ohneAusloeser` im Regelmodul, nur wo das zwingend folgt): „Allee betroffen: nein“ gilt
@@ -144,7 +145,7 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   1–2 nach § 63 Abs. 6 Satz 3), sonst mindestens § 64; der Satz richtet sich nach dem Planungsrecht. „verfahrensfrei“
   trägt dann kein „entfällt“ (etwa §§ 63, 74 BauO NRW, die Bauvorlagen der BauPrüfVO). Jede dieser Warnungen hat
   „Zum Merkmal“ (springt auf den gewählten Wert); angesagt wird ein neuer Satz über eine stehende Live-Region. In den
-  Sätzen steht nach „§“ und „Abs.“ ein geschütztes Leerzeichen.
+  Sätzen steht bei der Anzeige nach „§“, „Abs.“, „Nr.“ ein geschütztes Leerzeichen.
 - **Vorschriften (Mitte):** **offen zuerst** (Vorgabe: prüfen, gilt, entfällt), nach Ebene oder nach Thema; je Norm
   Fassung und Zähler in Worten, darunter die Paragrafen mit Ampel und Hauptgrund (die Angaben, die das Ergebnis tragen).
   Oben das Ergebnis je Ampel (zugleich Ein-/Ausblenden), Suche und Filter „nur von Hand festgelegte“ bzw. „nur

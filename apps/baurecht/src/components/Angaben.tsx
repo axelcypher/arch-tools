@@ -186,6 +186,8 @@ function Merkmale({ klaerung, suche = '', planungsrechtOffen, planungsrechtKlaer
     setTimeout(() => {
       const a = document.activeElement;
       if (a && a !== document.body && a.isConnected) return; // der Fokus liegt woanders – nicht wegnehmen
+      // ein Sprung läuft (z. B. von einer Marke zu „Bestätigen …“ am Auslöser) – er führt den Fokus, nicht die nächste Rückfrage
+      if (useBaurecht.getState().fokus) return;
       const naechste = ref.current?.querySelector<HTMLElement>('.br-rueckfrage .br-fakt.br-offen .segment [tabindex="0"]');
       (naechste ?? ref.current?.querySelector<HTMLElement>('.br-gruppe-knopf'))?.focus();
     }, 0);
@@ -420,24 +422,30 @@ function FaktEingabe({ id, def, wert, onWert, alsKnoepfe = false }: { id: string
 
 /**
  * Antwort auf eine Frage, die nur über einen Hinweis bzw. Widerspruch gestellt wird: so gesichert wie ihr Auslöser –
- * je Auslöser eine Marke, die zu ihm springt (bei einem Hinweis direkt auf „Bestätigen …“)
+ * je Auslöser eine Marke („nur Hinweis“ bzw. „Widerspruch“ wie an den Angaben selbst), die zu ihm springt (bei einem
+ * Hinweis direkt auf „Bestätigen …“); der Auslöser steht in Tooltip und Name
  */
 function AusloeserMarken({ name, wert, defs }: { name: string; wert: FaktWert | undefined; defs: Record<string, FaktDef> }) {
-  const marken = [...(wert?.ueberWiderspruch ?? []).map((a) => [a, 'widersprüchlich'] as const), ...(wert?.ueberHinweis ?? []).filter((a) => !wert?.ueberWiderspruch?.includes(a)).map((a) => [a, 'nur Hinweis'] as const)];
+  const widerspruch = (wert?.ueberWiderspruch ?? []).map((a) => [a, 'Widerspruch'] as const);
+  const hinweis = (wert?.ueberHinweis ?? []).filter((a) => !wert?.ueberWiderspruch?.includes(a)).map((a) => [a, 'nur Hinweis'] as const);
   return (
     <>
-      {marken.map(([a, wie]) => (
-        <button
-          key={a}
-          type="button"
-          className={`small br-link br-hinweis-marke${wie === 'widersprüchlich' ? ' br-widerspruch' : ''}`}
-          title={`Gefragt nur, weil „${faktName(defs[a], a)}“ ${wie} ist – die Antwort zählt erst, wenn das geklärt ist`}
-          aria-label={`${name}: gefragt über „${faktName(defs[a], a)}“ (${wie}) – zur Angabe`}
-          onClick={() => useBaurecht.getState().fokusSetzen(wie === 'nur Hinweis' ? `${a}:bestaetigen` : a)}
-        >
-          über „{faktName(defs[a], a)}“ ({wie})
-        </button>
-      ))}
+      {[...widerspruch, ...hinweis].map(([a, wie]) => {
+        const ausloeser = faktName(defs[a], a);
+        const ziel = wie === 'nur Hinweis' ? `zu „${ausloeser}“ bestätigen` : `zu „${ausloeser}“`;
+        return (
+          <button
+            key={a}
+            type="button"
+            className={`br-hinweis-marke br-marke-knopf br-ausloeser-marke${wie === 'Widerspruch' ? ' br-widerspruch' : ''}`}
+            title={`Gefragt nur, weil „${ausloeser}“ ${wie === 'Widerspruch' ? 'widersprüchlich' : 'nur Hinweis'} ist – die Antwort zählt erst, wenn das geklärt ist`}
+            aria-label={`${name}: ${wie} über „${ausloeser}“ – ${ziel}`}
+            onClick={() => useBaurecht.getState().fokusSetzen(wie === 'nur Hinweis' ? `${a}:bestaetigen` : a)}
+          >
+            {wie}
+          </button>
+        );
+      })}
     </>
   );
 }
@@ -723,21 +731,27 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
   const { auswertung } = stand;
   // Widersprüche ohne den Hinweis zum Planungsrecht (der hat eine eigene Zeile mit „Für diesen Ort bestätigen“)
   const meldungen = stand.widersprueche.map((text, i) => ({ text, zu: stand.widerspruchZu[i] })).filter((m) => m.text !== stand.planungsrechtHinweis);
-  // angesagt wird nur ein neuer Satz (nicht bei jeder Auswertung alle), entprellt wie die Suche
-  const [widerspruchAnsage, setWiderspruchAnsage] = useState('');
-  const bisher = useRef(new Set(meldungen.map((m) => m.text)));
+  // angesagt werden nur neue Sätze (nicht bei jeder Auswertung alle, nicht die beim ersten Zeichnen), entprellt wie die
+  // Suche: noch nicht angesagte sammeln sich, bis die Frist abläuft – kein Satz geht verloren; erledigte verschwinden
+  // auch aus der (unsichtbaren) Region
+  const [angesagt, setAngesagt] = useState<string[]>([]);
+  const bekannt = useRef(new Set(meldungen.map((m) => m.text)));
+  const ausstehend = useRef<string[]>([]);
   const meldungsSchluessel = meldungen.map((m) => m.text).join('|');
   useEffect(() => {
-    const neu = meldungen.filter((m) => !bisher.current.has(m.text)).map((m) => m.text);
-    bisher.current = new Set(meldungen.map((m) => m.text));
-    // ist der angesagte Satz erledigt, bleibt er nicht in der (unsichtbaren) Region stehen
-    if (!neu.length) {
-      setWiderspruchAnsage((a) => (a && !meldungen.some((m) => a.includes(m.text)) ? '' : a));
-      return;
-    }
-    const t = setTimeout(() => setWiderspruchAnsage(neu.join(' ')), 300);
-    return () => clearTimeout(t);
+    const jetzt = new Set(meldungen.map((m) => m.text));
+    for (const t of jetzt) if (!bekannt.current.has(t)) ausstehend.current.push(t);
+    bekannt.current = jetzt;
+    ausstehend.current = ausstehend.current.filter((t) => jetzt.has(t));
+    setAngesagt((a) => (a.every((t) => jetzt.has(t)) ? a : a.filter((t) => jetzt.has(t))));
+    if (!ausstehend.current.length) return;
+    const zeit = setTimeout(() => {
+      setAngesagt(ausstehend.current.filter((t) => bekannt.current.has(t)));
+      ausstehend.current = [];
+    }, 300);
+    return () => clearTimeout(zeit);
   }, [meldungsSchluessel]);
+  const widerspruchAnsage = angesagt.map(nb).join(' ');
   const klaerung = useMemo(() => new Map(auswertung.klaerung.map((k) => [k.id, k.anzahl])), [auswertung.klaerung]);
   const relevant = useMemo(() => {
     const s = new Set<string>(['lage.ags']);
@@ -832,7 +846,7 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
         </div>
         {meldungen.map(({ text, zu }) => (
           <div key={text} className="meldung warnung br-widerspruch-meldung">
-            <span>{text}</span>{' '}
+            <span>{nb(text)}</span>
             {zu && (
               <button type="button" className="small" onClick={() => useBaurecht.getState().fokusSetzen(`merkmal:${zu}`)} aria-label={`Zum Merkmal „${MERKMAL_TITEL[zu] ?? zu}“`}>
                 Zum Merkmal

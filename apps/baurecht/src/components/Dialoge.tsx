@@ -437,6 +437,13 @@ interface BestaetigenState {
 
 const useBestaetigen = create<BestaetigenState>(() => ({ offen: null, antwort: null }));
 
+/** alle Dialoge dieser Datei schließen (Stores auf Modulebene überleben das Unmount – für Tests) */
+export function dialogeZuruecksetzen(): void {
+  useFestlegen.setState({ p: null });
+  useFaktBestaetigen.setState({ ziel: null });
+  useBestaetigen.setState({ offen: null, antwort: null });
+}
+
 /** Festlegungen und bestätigte Hinweise vor dem Speichern noch einmal bestätigen lassen; liefert die Antwort */
 export function bestaetigenFragen(offen: Offen): Promise<BestaetigenAntwort> {
   return new Promise((resolve) =>

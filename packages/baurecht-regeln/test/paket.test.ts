@@ -2474,6 +2474,24 @@ describe('Hinweise tragen kein Grün über gestellte Fragen', () => {
     return Object.fromEntries(IDS.map((id) => [id, a.paragrafen.find((p) => p.id === id)!.automatisch]));
   };
 
+  it('Festlegung von Hand: eine über den Hinweis gestellte Antwort zählt als Hinweis (faktStatus) – überholt bzw. nicht', () => {
+    const id = 'nw/bauo-nrw/74';
+    const altbau = 'nw.altbau_verfahrensfrei';
+    const umfangHinweis: Record<string, FaktWert> = { [v]: { wert: 'Abbruch mit Ersatzbau', herkunft: 'manuell', sicherheit: 'hinweis', grund: 'Formular' }, [altbau]: sicher(true) };
+    const umfangSicher: Record<string, FaktWert> = { ...umfangHinweis, [v]: sicher('Abbruch mit Ersatzbau') };
+    const fl = (sicherheit: 'sicher' | 'hinweis') => ({
+      [id]: { ampel: 'gruen' as const, grund: 'Begehung', von: 'TP', am: '2026-11-14', automatisch: 'gelb' as const, fakten: { [altbau]: true }, sicherheit: { [altbau]: sicherheit } },
+    });
+    const ueberholt = (f: Record<string, FaktWert>, s: 'sicher' | 'hinweis') => auswerten({ ...eingabe(m, f, TEXTE), festlegungen: fl(s) }).paragrafen.find((p) => p.id === id)!.ueberholt;
+    // (a) festgelegt, als die Antwort gesichert war (ältere Datei bzw. Umfang später nur Hinweis): jetzt nur Hinweis → überholt
+    expect(ueberholt(umfangHinweis, 'sicher')).toMatch(/Altbau verfahrensfrei.*jetzt nur Hinweis/);
+    // (b) festgelegt, als die Antwort nur über den Hinweis galt, danach der Umfang bestätigt: nicht überholt
+    expect(ueberholt(umfangSicher, 'hinweis')).toBeUndefined();
+    // gleich geblieben: nicht überholt
+    expect(ueberholt(umfangHinweis, 'hinweis')).toBeUndefined();
+    expect(ueberholt(umfangSicher, 'sicher')).toBeUndefined();
+  });
+
   it('Umfang nur als Hinweis: § 74 BauO NRW, §§ 1, 2, 15 BauPrüfVO „prüfen“, nicht „entfällt“; gesichert bleibt es „entfällt“', () => {
     const f = alleFakten('ja');
     expect(f[v]?.wert).toBe('Abbruch mit Ersatzbau');

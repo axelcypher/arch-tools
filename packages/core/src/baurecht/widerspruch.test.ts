@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { angabeVonHand, hinweisBestaetigen } from './angaben';
 import { modulFakten } from './auswertung';
 import { faktenZurLage } from './geodienste';
-import { festeLeerzeichen, widersprueche } from './projekt';
+import { widersprueche } from './projekt';
 import { faktStatus } from './typen';
 import type { FaktWert, Modul } from './typen';
 
@@ -164,9 +164,7 @@ describe('Plausibilität: neues Wohngebäude als „verfahrensfrei“ (§ 62 Abs
       const w = widersprueche(pr ? { ...efh, Planungsrecht: pr } : efh, null);
       expect([...w.merkmale]).toEqual(['Verfahren']);
       expect(w.zu).toEqual(['Verfahren']);
-      // geschützte Leerzeichen nach „§“ und „Abs.“ (zum Vergleich unten wieder normale)
-      expect(w.texte[0]).toContain('§\u00a062 Abs.\u00a01 BauO NRW');
-      return w.texte[0].replace(/\u00a0/g, ' ');
+      return w.texte[0];
     };
     const anfang = 'Verfahren „verfahrensfrei“ festgelegt, ein neues Wohngebäude (Einfamilienhaus) ist aber nicht verfahrensfrei (§ 62 Abs. 1 BauO NRW) – ';
     // Freistellung nur im qualifizierten bzw. vorhabenbezogenen Bebauungsplan (§ 63 Abs. 2 Nr. 1), sonst § 64
@@ -178,7 +176,7 @@ describe('Plausibilität: neues Wohngebäude als „verfahrensfrei“ (§ 62 Abs
 
   it('Ersatzbau (Beseitigung mit Umfang „Abbruch mit Ersatzbau“): ebenso – nicht aber Abbruch ohne Ersatzbau', () => {
     const b = { ...efh, Vorhaben: 'Beseitigung' };
-    expect(widersprueche(b, null, umfang('Abbruch mit Ersatzbau')).texte[0].replace(/\u00a0/g, ' ')).toMatch(/^Verfahren „verfahrensfrei“ festgelegt, ein Ersatzbau für ein Wohngebäude \(Einfamilienhaus\)/);
+    expect(widersprueche(b, null, umfang('Abbruch mit Ersatzbau')).texte[0]).toMatch(/^Verfahren „verfahrensfrei“ festgelegt, ein Ersatzbau für ein Wohngebäude \(Einfamilienhaus\)/);
     // auch, wenn der Umfang nur Hinweis ist (z. B. aus einer älteren Angabe) – eine Warnung, zur sicheren Seite
     const nurHinweis: Record<string, FaktWert> = { 'vorhaben.beseitigung_umfang': { wert: 'Abbruch mit Ersatzbau', herkunft: 'abgeleitet', sicherheit: 'hinweis' } };
     expect(widersprueche(b, null, nurHinweis).merkmale.has('Verfahren')).toBe(true);
@@ -200,7 +198,7 @@ describe('Plausibilität: neues Wohngebäude als „verfahrensfrei“ (§ 62 Abs
   });
 });
 
-describe('Widersprüche: Merkmal je Satz, geschützte Leerzeichen; Status einer über einen Hinweis gestellten Antwort', () => {
+describe('Widersprüche: Merkmal je Satz; Status einer über einen Hinweis gestellten Antwort', () => {
   it('je Satz das Merkmal, um das es geht (gleiche Reihenfolge)', () => {
     const lsg: FaktWert = { wert: true, herkunft: 'geodienst', sicherheit: 'sicher', quelle: 'LINFOS' };
     const w = widersprueche({ Planungsrecht: 'Innenbereich', Gebäudeart: 'Einfamilienhaus', Verfahren: 'verfahrensfrei', Vorhaben: 'Errichtung' }, null, { 'schutz.lsg': lsg });
@@ -208,11 +206,6 @@ describe('Widersprüche: Merkmal je Satz, geschützte Leerzeichen; Status einer 
     expect(w.texte).toHaveLength(2);
     expect(w.texte[0]).toMatch(/^Planungsrecht/);
     expect(w.texte[1]).toMatch(/^Verfahren/);
-  });
-
-  it('festeLeerzeichen: nach „§“, „§§“ und „Abs.“ vor einer Zahl – sonst nichts', () => {
-    expect(festeLeerzeichen('§ 62 Abs. 1 und §§ 63, 64')).toBe('§\u00a062 Abs.\u00a01 und §§\u00a063, 64');
-    expect(festeLeerzeichen('Abs. und § folgen')).toBe('Abs. und § folgen');
   });
 
   it('faktStatus: über einen Hinweis bzw. Widerspruch gestellt → so gesichert wie der Auslöser', () => {
