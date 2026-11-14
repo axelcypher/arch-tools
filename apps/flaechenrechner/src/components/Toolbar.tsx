@@ -152,7 +152,7 @@ export function Toolbar() {
       titel: hatPlan ? 'Plan des Geschosses durch einen anderen ersetzen (PDF, DXF, Bild)' : 'Grundriss als PDF, DXF oder Bild laden – zum Nachzeichnen und Erkennen',
       aktion: () => void planLaden(aktivesGeschoss()),
     },
-    { text: 'IFC-Import …', symbol: 'stapel', titel: 'Gebäudemodell als IFC-Datei aus dem CAD-Programm importieren', aktion: () => setIfcOpen(true) },
+    { text: 'IFC importieren …', symbol: 'stapel', titel: 'Gebäudemodell als IFC-Datei aus dem CAD-Programm importieren', aktion: () => setIfcOpen(true) },
   ];
   const exportPunkte = (): MenuePunkt[] => [
     { text: 'CSV …', symbol: 'export', titel: 'Flächenaufstellung als CSV exportieren', aktion: () => void onCsv() },

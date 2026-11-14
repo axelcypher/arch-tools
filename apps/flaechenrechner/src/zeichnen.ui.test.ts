@@ -52,7 +52,7 @@ describe('QUADRIO: Zeichenfläche (Einstieg, Rückgängig im Entwurf)', () => {
     useEditor.getState().loadProject(p, p, 'Leer.oap');
     const host = render();
     const karte = host.querySelector('.canvas-leer');
-    expect(karte?.textContent).toMatch(/Grundriss laden/);
+    expect(karte?.textContent).toMatch(/Plan laden \(PDF, DXF, Bild\) …/);
     act(() => [...karte!.querySelectorAll('button')].find((b) => /IFC/.test(b.textContent ?? ''))!.click());
     expect(useEditor.getState().ifcOpen).toBe(true);
     act(() => useEditor.getState().setIfcOpen(false));
@@ -314,12 +314,12 @@ describe('QUADRIO: Kontextmenü der Zeichenfläche und Werkzeugleiste (gemeinsam
     const knopf = (text: string) => [...leiste.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent?.trim() === text);
     const menuePunkte = () => [...document.querySelectorAll('.menue [role="menuitem"]')].map((b) => b.textContent?.replace(/(Strg\+\S+)$/, '').trim());
     // Gegenprobe: seltene Befehle stehen nicht mehr als eigene Knöpfe in der Leiste
-    for (const text of ['Neu', 'Öffnen …', 'IFC-Import …', 'CSV …', 'Excel …', 'Plan laden …']) expect(knopf(text)).toBeUndefined();
+    for (const text of ['Neu', 'Öffnen …', 'IFC-Import …', 'IFC importieren …', 'CSV …', 'Excel …', 'Plan laden …']) expect(knopf(text)).toBeUndefined();
     // sichtbar: Speichern, Rückgängig/Wiederholen, Werkzeuge, Umschalter, Hauptknopf
     expect(leiste.querySelector('.segment[aria-label="Neue Flächen zeichnen als"]')).not.toBeNull();
     expect(knopf('Flächenaufstellung …')?.classList.contains('primary')).toBe(true);
     act(() => knopf('Datei')!.click());
-    expect(menuePunkte()).toEqual(expect.arrayContaining(['Neu', 'Öffnen …', 'Plan laden …', 'IFC-Import …']));
+    expect(menuePunkte()).toEqual(expect.arrayContaining(['Neu', 'Öffnen …', 'Plan laden …', 'IFC importieren …']));
     act(() => void document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })));
     act(() => knopf('Exportieren')!.click());
     expect(menuePunkte()).toEqual(['CSV …', 'Excel …']);
