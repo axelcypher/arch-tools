@@ -102,7 +102,7 @@ describe('ATLAS (Projektordner)', () => {
 
   it('Werkzeugleiste: Assistent, „Ordner prüfen“ und Mails sichtbar, die Einrichtung im Menü – mit der aktiven Ansicht im Namen', () => {
     const host = render();
-    const leiste = host.querySelector('.toolbar.leiste[aria-label="Ansichten"]')!;
+    const leiste = host.querySelector('.toolbar.werkzeugleiste[aria-label="Ansichten"]')!;
     expect(leiste).not.toBeNull();
     const sichtbar = [...leiste.querySelectorAll(':scope > [data-eintrag] button')].map((b) => b.textContent?.trim());
     expect(sichtbar).toEqual(['Assistent', 'Ordner prüfen', 'Mails', 'Einrichtung']);
