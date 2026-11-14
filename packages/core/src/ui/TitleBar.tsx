@@ -11,7 +11,7 @@ import type { RegelApp } from '../regeln/regelwerk';
 import { Nachschlagewerk, useHilfe } from './Nachschlagewerk';
 import { dialogVerhaltenEinrichten } from './dialoge';
 import { useEscSchliessen } from './Dialog';
-import { aenderungenSpeichern, bestaetigen, RueckfrageHost } from './Rueckfrage';
+import { aenderungenSpeichern, aenderungenVerwerfen, RueckfrageHost } from './Rueckfrage';
 import { MenueHost } from './Menue';
 import { useBuero } from './DruckKopf';
 import { SpeicherortHost, SpeicherortKnopf } from './Speicherort';
@@ -122,7 +122,7 @@ export function TitleBar({ app, name, dirty, ungespeichert, onOpenLog, regeln, o
       if (dirty) {
         const weiter = onSpeichern
           ? await aenderungenSpeichern(name, onSpeichern, ungespeichertSatz(ungespeichert))
-          : await bestaetigen('Ungespeicherte Änderungen verwerfen?', 'Die Änderungen gehen beim Beenden verloren.', 'Verwerfen und beenden', true);
+          : await aenderungenVerwerfen(name, 'Die Änderungen gehen beim Beenden verloren.', 'beenden');
         if (!weiter) return;
       }
       // ausstehendes Schreiben (vorDemSchliessen) abwarten

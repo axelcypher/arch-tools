@@ -121,7 +121,8 @@ Konfigurationsordner) und Projektdateien sind dieselben.
   *Speichern* an; können sie gerade nicht speichern (LEXIO ohne Projektdatei), kommt „Änderungen an ‚…‘ verwerfen?“
   mit „Verwerfen und …“ als Gefahrknopf. Ob eine App speichern kann, meldet die Titelleiste mit dem Status
   (`kannSpeichern: false`, wenn sie keine Speicherfunktion `onSpeichern` hat); dann fragt Arkly auch beim Schließen,
-  Beenden und Update nur „verwerfen?“ statt „speichern?“. Die übrigen fragen „<App> herauslösen?“ bzw. „… andocken?“ mit
+  Beenden und Update „Änderungen an ‚…‘ verwerfen?“ mit „Verwerfen und schließen“ (bzw. „… beenden“, „… neu
+  starten“) statt „… speichern?“ – ebenso die eigene Schließen-Rückfrage der Titelleiste. Die übrigen fragen „<App> herauslösen?“ bzw. „… andocken?“ mit
   „Ungespeicherte Änderungen bleiben als Zwischenstand erhalten.“ (PERMIO mit eigenem Text zu Entwurf und Dokumenten).
 - Die Apps teilen sich im Rahmen einen Ursprung und damit den Browser-Speicher; ihre Schlüssel und Datenbanken sind
   je App verschieden (`projektordner:…`, `formulare:…`, `arch-flaechen-tool`, `grz-nachweis`, `kostenermittlung`,
@@ -162,7 +163,8 @@ am Tab bzw. in der Titelleiste ● erscheint.
    Erwartet: „Änderungen an ‚NUMIO – …‘ speichern?“. *Speichern* speichert im NUMIO-Fenster, dann schließen sich beide
    Fenster. Im Task-Manager läuft danach kein Arkly mehr.
 4. **Alt+F4 im herausgelösten Fenster:** TERRIO herauslösen, ändern, im TERRIO-Fenster Alt+F4. Erwartet: „Änderungen
-   an ‚…‘ speichern?“ mit „Das Projekt hat ungespeicherte Änderungen.“ bzw. „Ungespeicherte Änderungen verwerfen?“;
+   an ‚…‘ speichern?“ mit „Das Projekt hat ungespeicherte Änderungen.“ bzw. ohne Speichermöglichkeit „Änderungen an
+   ‚…‘ verwerfen?“;
    *Abbrechen* lässt das Fenster offen.
 5. **Andocken mit Änderungen:** FABRIO herauslösen, im LV ändern, „Andocken“. Erwartet: „Änderungen an ‚FABRIO – …‘
    speichern?“ mit „Beim Andocken startet die App neu. Das LV hat ungespeicherte Änderungen.“ *Abbrechen* lässt das
@@ -180,6 +182,9 @@ am Tab bzw. in der Titelleiste ● erscheint.
    Fenster stehen. Bei ATLAS mit geänderten Stammdaten im Assistenten (Ergänzen): Frage mit *Speichern*;
    *Speichern* legt nichts an, ATLAS bleibt als Tab und meldet „Nicht alles gespeichert“. Mit geändertem Text der
    Ordnerliste (Struktur, Textansicht) übernimmt *Speichern* ihn, danach wird herausgelöst.
+   Ohne Speichermöglichkeit im Hauptfenster: LEXIO ohne Projektdatei als Tab öffnen, ändern, Tab ×. Erwartet:
+   „Änderungen an ‚LEXIO – …‘ verwerfen?“ mit „Die Änderungen gehen beim Schließen verloren.“ und *Verwerfen und
+   schließen* (Gefahr); danach LEXIO erneut öffnen, ändern und Alt+F4 im Hauptfenster: *Verwerfen und beenden*.
 7. **Update mit Änderungen:** Liegt ein Update vor, in einem Tab und einem herausgelösten Fenster ändern, Update-Knopf
    → „Jetzt installieren“. Erwartet: erst die Fragen je App, *Abbrechen* bricht das Update ab; erst nach den Fragen
    wird geladen und neu gestartet.

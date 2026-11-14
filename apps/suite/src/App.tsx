@@ -48,7 +48,7 @@ const PLUS = '+';
 const ereignisse = () => import('@tauri-apps/api/event');
 /** wonach Änderungen freigegeben werden (Verb im Knopf, Hauptwort im Text der Verwerfen-Rückfrage) */
 type Freigabe = 'schließen' | 'beenden' | 'neu starten';
-const FREIGABE_NOMEN: Record<Freigabe, string> = { schließen: 'Schließen', beenden: 'Beenden', 'neu starten': 'Neustart' };
+const FREIGABE_NOMEN: Record<Freigabe, string> = { schließen: 'Schließen', beenden: 'Beenden', 'neu starten': 'Neustart für das Update' };
 
 /**
  * Meldung eines Tabs bzw. Fensters → Status. Der Satz für die Rückfrage (`ungespeichert`) gilt nur als kurzer Text,

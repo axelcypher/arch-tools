@@ -68,7 +68,7 @@ describe('Titelleiste auf dem Desktop', () => {
     const verhindert = vi.fn();
     await act(async () => fenster.schliessenAngefragt!({ preventDefault: verhindert }));
     expect(verhindert).toHaveBeenCalled();
-    expect(dialog(host)?.textContent).toContain('Ungespeicherte Änderungen verwerfen?');
+    expect(dialog(host)?.textContent).toContain('Änderungen an „P1“ verwerfen?');
     // ein zweites Alt+F4, solange die Rückfrage offen ist, fragt nicht noch einmal
     await act(async () => fenster.schliessenAngefragt!({ preventDefault: () => {} }));
     expect(host.querySelectorAll('.modal.rf')).toHaveLength(1);
