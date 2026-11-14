@@ -1,0 +1,34 @@
+{
+  "flaechenrechner": {
+    "stufe": "patch",
+    "notiz": "Werkzeugleiste: Kompaktstufe – reicht der Platz nach dem Überlauf nicht, zeigen die Knöpfe nur noch Symbole; Abstände in Werkzeuggruppen aus der Skala."
+  },
+  "grz": {
+    "stufe": "patch",
+    "notiz": "Werkzeugleiste: Kompaktstufe – reicht der Platz nach dem Überlauf nicht, zeigen die Knöpfe nur noch Symbole; Abstände in Werkzeuggruppen aus der Skala."
+  },
+  "kosten": {
+    "stufe": "patch",
+    "notiz": "Werkzeugleiste: Kompaktstufe – reicht der Platz nach dem Überlauf nicht, zeigen die Knöpfe nur noch Symbole; Abstände in Werkzeuggruppen aus der Skala."
+  },
+  "ordner": {
+    "stufe": "patch",
+    "notiz": "Werkzeugleiste: Kompaktstufe – reicht der Platz nach dem Überlauf nicht, zeigen die Knöpfe nur noch Symbole; Abstände in Werkzeuggruppen aus der Skala."
+  },
+  "entzerrung": {
+    "stufe": "patch",
+    "notiz": "Werkzeugleiste: Kompaktstufe – reicht der Platz nach dem Überlauf nicht, zeigen die Knöpfe nur noch Symbole; Abstände in Werkzeuggruppen aus der Skala."
+  },
+  "formulare": {
+    "stufe": "patch",
+    "notiz": "Werkzeugleiste: Kompaktstufe – reicht der Platz nach dem Überlauf nicht, zeigen die Knöpfe nur noch Symbole; Abstände in Werkzeuggruppen aus der Skala."
+  },
+  "ava": {
+    "stufe": "patch",
+    "notiz": "Werkzeugleiste: Kompaktstufe – reicht der Platz nach dem Überlauf nicht, zeigen die Knöpfe nur noch Symbole; Abstände in Werkzeuggruppen aus der Skala."
+  },
+  "baurecht": {
+    "stufe": "patch",
+    "notiz": "Werkzeugleiste: Kompaktstufe – reicht der Platz nach dem Überlauf nicht, zeigen die Knöpfe nur noch Symbole; Abstände in Werkzeuggruppen aus der Skala."
+  }
+}

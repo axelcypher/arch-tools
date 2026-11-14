@@ -5,7 +5,7 @@ import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MenueHost } from './Menue';
 import type { LeistenTeil } from './Werkzeugleiste';
-import { leistenMessung, mehrPunkte, ueberlauf, Werkzeugleiste } from './Werkzeugleiste';
+import { leistenMessung, leistenStufe, mehrPunkte, ueberlauf, Werkzeugleiste } from './Werkzeugleiste';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -44,6 +44,21 @@ describe('ueberlauf (Berechnung)', () => {
   it('mit festen Punkten zählt „Mehr“ immer mit', () => {
     expect(ueberlauf(e, 512, opt).size).toBe(0);
     expect(ueberlauf(e, 512, { ...opt, mehrImmer: true }).size).toBe(1);
+  });
+});
+
+describe('leistenStufe (Kompaktstufe)', () => {
+  const e = [
+    { id: 'datei', breite: 100, rang: 1 },
+    { id: 'werkzeuge', breite: 300 },
+    { id: 'haupt', breite: 150 },
+  ];
+  const opt = { mehrBreite: 30, abstand: 0, mehrImmer: false };
+  it('passt alles: nicht kompakt; reicht der Überlauf: nicht kompakt; reicht auch er nicht: kompakt', () => {
+    expect(leistenStufe(e, 600, opt)).toEqual({ weg: new Set(), kompakt: false });
+    // ohne datei: 300 + 150 + Mehr 30 = 480
+    expect(leistenStufe(e, 500, opt)).toEqual({ weg: new Set(['datei']), kompakt: false });
+    expect(leistenStufe(e, 470, opt)).toEqual({ weg: new Set(['datei']), kompakt: true });
   });
 });
 
@@ -235,6 +250,37 @@ describe('Werkzeugleiste (Komponente)', () => {
     } finally {
       globalThis.ResizeObserver = original;
     }
+  });
+
+  it('Kompaktstufe: erst wandern die Einträge mit Rang, dann blendet die Leiste Knopftexte aus – und bleibt so, bis die volle Fassung passt', () => {
+    // Messung: in der Kompaktstufe zählt data-kompakt statt data-breite
+    const messung = leistenMessung.breite;
+    leistenMessung.breite = (el) => {
+      if (el.closest('.kompakt') && el.hasAttribute('data-eintrag')) return [...el.querySelectorAll('[data-kompakt]')].reduce((n, k) => n + Number(k.getAttribute('data-kompakt')), 0);
+      return messung(el);
+    };
+    const mitText = (text: string, breite: number, kompakt: number) =>
+      createElement('button', { 'data-breite': breite, 'data-kompakt': kompakt, 'aria-label': text }, 'S', createElement('span', { className: 'tb-text' }, text));
+    const host = render([
+      { id: 'datei', rang: 1, inhalt: knopf('Datei', 100), menue: { text: 'Datei' } },
+      { id: 'werkzeuge', inhalt: mitText('Werkzeuge', 300, 100) },
+      { id: 'haupt', inhalt: mitText('Flächenaufstellung …', 150, 40) },
+    ]);
+    const leiste = () => host.querySelector('.toolbar.werkzeugleiste')!;
+    breiteSetzen(500);
+    expect(sichtbar(host)).toEqual(['werkzeuge', 'haupt']);
+    expect(leiste().classList.contains('kompakt')).toBe(false);
+    breiteSetzen(400);
+    expect(leiste().classList.contains('kompakt')).toBe(true);
+    // in der Kompaktstufe schaffen die Symbole Platz – „Datei“ springt trotzdem nicht zurück
+    breiteSetzen(420);
+    expect(sichtbar(host)).toEqual(['werkzeuge', 'haupt']);
+    expect(leiste().classList.contains('kompakt')).toBe(true);
+    // erst wenn die volle Fassung (ohne Datei) passt, wieder mit Text
+    breiteSetzen(480);
+    expect(leiste().classList.contains('kompakt')).toBe(false);
+    breiteSetzen(1000);
+    expect(sichtbar(host)).toEqual(['datei', 'werkzeuge', 'haupt']);
   });
 
   it('feste Punkte: „Mehr“ steht immer am Ende, auch wenn alles passt; ausgeblendete Knöpfe sind nicht per Tab erreichbar', () => {

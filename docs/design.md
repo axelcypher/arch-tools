@@ -320,7 +320,10 @@ Zurücksetzen, Sonderfunktionen. Feste Namen, in allen Apps gleich:
   getrennt von den festen Punkten; hatte ein übergelaufener Knopf den Fokus, bekommt ihn „Mehr“. Einträge
   behalten ihre Breite (`flex: none`) und wandern ins Menü, statt zu schrumpfen; ein Eintrag, der sich kürzen darf
   (Statustext), bekommt `kuerzbar` – er schrumpft bis auf eine Mindestbreite, der Text endet auf „…“; erst danach wandern Einträge
-  mit Rang ins Menü. Einträge ohne
+  mit Rang ins Menü. Reicht der Platz auch dann nicht, wenn alle Einträge mit Rang im Menü stehen, wird die Leiste
+  kompakt (Klasse `.kompakt`): Knopftexte in `<span className="tb-text">` verschwinden, es bleiben die Symbole, der
+  Name steht weiter in `aria-label` und `title`. Sie bleibt kompakt, bis die volle Fassung wieder passt. Eigene
+  Media-Queries für `.tb-text` braucht es dann nicht. Einträge ohne
   Rang (Werkzeuge, Hauptknopf) und „Mehr“ müssen bei der Mindestbreite des Fensters zusammen hineinpassen. Die Leiste nimmt die
   volle Breite ihres Elternelements (wächst oder schrumpft in einer Spalte aber nicht in der Höhe) und braucht keine eigene
   `.toolbar` darum; sie steht in einer Spalte (über der Arbeitsfläche) oder allein in einer Zeile.

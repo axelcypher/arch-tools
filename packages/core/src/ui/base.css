@@ -190,7 +190,7 @@ body,
 .tb-group {
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: var(--s1);
   padding-right: 6px;
   border-right: 1px solid var(--border);
 }
@@ -235,6 +235,11 @@ body,
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+/* Kompaktstufe: alle Einträge mit Rang sind im Menü und es reicht noch nicht – Knopftexte weg, nur Symbole (der Name
+   bleibt über aria-label und title) */
+.toolbar.werkzeugleiste.kompakt .tb-text {
+  display: none;
 }
 .toolbar.werkzeugleiste > [hidden] {
   display: none;
