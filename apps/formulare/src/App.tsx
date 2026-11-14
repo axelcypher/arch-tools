@@ -36,7 +36,7 @@ import { springeZuFeld } from './navigation';
 import { zurNaechstenOffenen } from './pruefen';
 import { useVorbelegung } from './merkmalAbgleich';
 import type { Ansicht, OffenesFormular } from './store';
-import { ZOOMSTUFEN, bearbeitungGesperrt, dokumenteGeaendert, istGeaendert, kannVor, kannZurueck, karteGeaendert, useFormulare } from './store';
+import { ZOOMSTUFEN, bearbeitungGesperrt, dokumenteGeaendert, istGeaendert, kannVor, kannZurueck, karteGeaendert, ungespeichertText, useFormulare } from './store';
 import { kannRueckgaengig, kannWiederholen } from './verlauf';
 import { anzahl } from './text';
 
@@ -218,6 +218,8 @@ export function App() {
         app={APP_NAMEN.formulare.name}
         name={name}
         dirty={geaendert || dokGeaendert}
+        // derselbe Satz wie in den eigenen Rückfragen: was ungespeichert ist (Formular bzw. Projektdaten, Dokument)
+        ungespeichert={ungespeichertText({ formular: geaendert && !kartenansicht, projektdaten: geaendert && kartenansicht, dokument: dokGeaendert })}
         onOpenLog={() => setDialog('log')}
         zeichenflaeche={false}
         onProjekte={ds ? () => useFormulare.getState().setHaupt('projekte') : undefined}

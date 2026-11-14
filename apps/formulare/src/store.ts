@@ -925,11 +925,26 @@ export const dokumenteGeaendert = (s: Pick<FormulareState, 'dateiEntwuerfe'>) =>
  * Vor dem Verlassen einer bearbeiteten PDF (andere Ansicht, anderes Dokument, Formular, Projekt): „Speichern / Nicht
  * speichern / Abbrechen“. Liefert, ob es weitergehen darf; ohne ungespeicherte PDF sofort true.
  */
+/**
+ * Satz „… hat ungespeicherte Änderungen.“ (design.md „Ungespeicherte Änderungen“) – an der Titelleiste und in den
+ * eigenen Rückfragen gleich; nichts ungespeichert: undefined
+ */
+export function ungespeichertText(o: { formular?: boolean; projektdaten?: boolean; dokument?: boolean }): string | undefined {
+  const teile = [o.formular && 'das Formular', o.projektdaten && 'die Projektdaten', o.dokument && 'das Dokument'].filter((t): t is string => !!t);
+  if (!teile.length) return undefined;
+  const gegenstand = teile.length > 1 ? `${teile.slice(0, -1).join(', ')} und ${teile.at(-1)}` : teile[0];
+  const mehrzahl = teile.length > 1 || o.projektdaten;
+  return `${gegenstand[0].toUpperCase()}${gegenstand.slice(1)} ${mehrzahl ? 'haben' : 'hat'} ungespeicherte Änderungen.`;
+}
+
+/** Eingaben einer PDF hält nur die Ansicht – die Folge steht als ein Satz vor der Aussage */
+export const PDF_VERLASSEN_SATZ = `Eingaben in einer PDF bleiben nicht als Entwurf erhalten. ${ungespeichertText({ dokument: true })}`;
+
 export async function dateiVerlassen(): Promise<boolean> {
   const s = useFormulare.getState();
   if (!s.datei || !pdfGeaendert(s)) return true;
   const d = s.datei;
-  const weiter = await aenderungenSpeichern(d.name, () => pdfAnbindung.speichern?.() ?? false, 'Die Eingaben in dieser PDF sind noch nicht gespeichert und gingen sonst verloren.');
+  const weiter = await aenderungenSpeichern(d.name, () => pdfAnbindung.speichern?.() ?? false, PDF_VERLASSEN_SATZ);
   // „Nicht speichern“: die Eingaben verfallen mit der Ansicht – der Hinweis darauf auch
   if (weiter) useFormulare.getState().setDateiEntwurf(null, d);
   return weiter;

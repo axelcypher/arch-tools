@@ -5,15 +5,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SpeicherDateisystem } from './dateisystem';
 import { sperrPfad } from './forma/sperre';
 import type { OffeneDatei } from './store';
-import { PDF_ENTWURF, dateiEntwurfVerschieben, entwurfVon, pdfAnbindung, useFormulare } from './store';
+import { PDF_ENTWURF, dateiEntwurfVerschieben, entwurfVon, pdfAnbindung, ungespeichertText, useFormulare } from './store';
 import { pdfSpeichern } from './dokumente/pdfSpeichern';
 
 /** Rückfrage „Änderungen speichern?“ (Titelleiste) – im Test beantwortet `antwort` */
-const frage = vi.hoisted(() => ({ antwort: 'abbrechen' as 'abbrechen' | 'verwerfen' | 'speichern', gefragt: [] as string[] }));
+const frage = vi.hoisted(() => ({ antwort: 'abbrechen' as 'abbrechen' | 'verwerfen' | 'speichern', gefragt: [] as string[], texte: [] as (string | undefined)[] }));
 vi.mock('@core/ui/Rueckfrage', async (original) => ({
   ...(await original<typeof import('@core/ui/Rueckfrage')>()),
-  aenderungenSpeichern: async (name: string, speichern: () => Promise<boolean | void> | boolean | void) => {
+  aenderungenSpeichern: async (name: string, speichern: () => Promise<boolean | void> | boolean | void, text?: string) => {
     frage.gefragt.push(name);
+    frage.texte.push(text);
     if (frage.antwort === 'abbrechen') return false;
     if (frage.antwort === 'verwerfen') return true;
     return (await speichern()) !== false;
@@ -68,6 +69,7 @@ beforeEach(() => {
   localStorage.clear();
   frage.antwort = 'abbrechen';
   frage.gefragt = [];
+  frage.texte = [];
 });
 
 describe('Speichern des Formulars, während weiter getippt wird', () => {
@@ -337,12 +339,23 @@ describe('Dokumente: Bearbeitungen gehen nicht still verloren', () => {
     return { root: ROOT, pfad: 'BS9/Plan.pdf', name: 'Plan.pdf', art: 'pdf', bytes: new Uint8Array([37, 80, 68, 70]), inOffice: false, stand: 1 };
   };
 
+  it('Satz für ungespeicherte Änderungen: Gegenstand mit Artikel, Einzahl bzw. Mehrzahl, nichts ungespeichert ohne Satz', () => {
+    expect(ungespeichertText({})).toBeUndefined();
+    expect(ungespeichertText({ formular: true })).toBe('Das Formular hat ungespeicherte Änderungen.');
+    expect(ungespeichertText({ dokument: true })).toBe('Das Dokument hat ungespeicherte Änderungen.');
+    expect(ungespeichertText({ projektdaten: true })).toBe('Die Projektdaten haben ungespeicherte Änderungen.');
+    expect(ungespeichertText({ formular: true, dokument: true })).toBe('Das Formular und das Dokument haben ungespeicherte Änderungen.');
+    expect(ungespeichertText({ projektdaten: true, dokument: true })).toBe('Die Projektdaten und das Dokument haben ungespeicherte Änderungen.');
+  });
+
   it('bearbeitete PDF verlassen: erst fragen – Abbrechen bleibt, Nicht speichern wechselt', async () => {
     const ds = await projekt();
     useFormulare.setState({ datei: pdf(ds), haupt: 'datei', dateiEntwuerfe: { [`${ROOT}|BS9/Plan.pdf`]: PDF_ENTWURF } });
     useFormulare.getState().setHaupt('projektkarte');
     await kurz();
     expect(frage.gefragt).toEqual(['Plan.pdf']);
+    // Satz nach design.md „Ungespeicherte Änderungen“: die Folge davor, dann die Aussage
+    expect(frage.texte).toEqual(['Eingaben in einer PDF bleiben nicht als Entwurf erhalten. Das Dokument hat ungespeicherte Änderungen.']);
     expect(useFormulare.getState().haupt).toBe('datei');
     frage.antwort = 'verwerfen';
     useFormulare.getState().setHaupt('projektkarte');
