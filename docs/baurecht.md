@@ -33,11 +33,13 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   Liste der Module und der Rechtsstand (ganz im Tooltip); danach wandert die Wahl des Antrags als Einfachauswahl ins
   Menü „Mehr“. Marken, Einreichung, „Speichern“ und „Prüfprotokoll …“ bleiben immer sichtbar; eine laufende Abfrage
   der Lage steht als „Lage wird abgefragt …“ beim Rechtsstand. Ist die App schmaler als
-  1600 px, stehen die Warnungen zum Rechtsstand als eine Sammelmarke da („2 Warnungen“, Einzelheiten im Tooltip und
-  ihre Zahl als Hinweis an „Rechtsstand prüfen“), die die Befehle aus „Mehr“ (Lage abfragen, Rechtsstand prüfen)
-  öffnet. Unter 1200 px stehen „Antrag“ und „Einreichung“ nur noch im Feld, „Speichern“ zeigt nur das Symbol und die
-  Sammelmarke nur „N Warnungen“ (vorgelesen wird der ganze Name) – so passen bei 1000 px alle Einträge ohne Rang neben
-  „Mehr“. „Fehlerprotokoll …“ im Menü „Einstellungen und Hilfe“ der Titelleiste ist die Fehlersuche der App.
+  1600 px, stehen die Warnungen zum Rechtsstand als eine Sammelmarke da („2 Warnungen“, vorgelesen „2 Warnungen zum
+  Rechtsstand“; Einzelheiten im Tooltip und ihre Zahl als Hinweis an „Rechtsstand prüfen“), die die Befehle aus „Mehr“
+  (Lage abfragen, Rechtsstand prüfen) öffnet. Unter 1200 px stehen „Antrag“ und „Einreichung“ nur noch im Feld. Reicht
+  der Platz auch dann nicht, wenn der Antrag im Menü steht, wird die Leiste kompakt (`tb-text`, Kompaktstufe der
+  Werkzeugleiste): „Speichern“ zeigt nur das Symbol, der Name bleibt in `aria-label` und `title`. So passen auch bei
+  1000 px alle Einträge ohne Rang neben „Mehr“; kompakt wird die Leiste nur im ungünstigsten Fall (viele Marken).
+  „Fehlerprotokoll …“ im Menü „Einstellungen und Hilfe“ der Titelleiste ist die Fehlersuche der App.
 - **Koordinaten:** Ergebnisse der Geodienste und Bestätigungen zur Lage gelten nur, solange die Koordinaten zur Adresse
   in den Stammdaten passen. Fehlen sie oder wurde die Adresse geändert, sind sie nur noch Hinweis (auch der
   Gemeindeschlüssel aus ALKIS); der Kopf zeigt „Keine Koordinaten“ bzw. „Koordinaten veraltet“, „Bestätigen …“ wird dann

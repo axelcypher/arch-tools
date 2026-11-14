@@ -142,8 +142,8 @@ export function Kopf({
             onClick={onSpeichern}
             title={dirty ? 'Ungespeicherte Änderungen – in der Projektdatei speichern (Strg+S)' : 'In der Projektdatei speichern (Strg+S)'}
           >
-            <Symbol name="speichern" />
-            <span className="br-kopf-zusatz"> Speichern</span>
+            {/* Kompaktstufe der Werkzeugleiste: nur das Symbol, der Name steht in aria-label und title */}
+            <Symbol name="speichern" /> <span className="tb-text">Speichern</span>
           </button>
           <GespeichertMeldung />
         </>
@@ -300,16 +300,11 @@ export function Kopf({
                     title={warnText.join(' · ')}
                     aria-haspopup="menu"
                     aria-expanded={markeOffen}
+                    // kurz „N Warnungen“ (die Marke steht beim Rechtsstand); der Name beginnt mit dem sichtbaren Text
+                    aria-label={warnText.length === 1 ? undefined : `${warnText.length} Warnungen zum Rechtsstand`}
                     onClick={(e) => zeigeMenueAn(e.currentTarget, mehrPunkte(), 'Rechtsstand')}
                   >
-                    {warnText.length === 1 ? (
-                      warnText[0]
-                    ) : (
-                      <>
-                        <span className="br-kopf-zusatz">Rechtsstand: </span>
-                        {warnText.length} Warnungen
-                      </>
-                    )}
+                    {warnText.length === 1 ? warnText[0] : `${warnText.length} Warnungen`}
                   </button>
                 </span>
               </>
