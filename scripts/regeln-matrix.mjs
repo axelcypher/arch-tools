@@ -8,6 +8,8 @@
 //   - Kerndateien (packages/core/), die weder LEXIO (auch Tests) noch das Regelpaket (auch Tests und Werkzeuge) über
 //     Importe erreicht (scripts/kern-nutzer.mjs, erreichbarAus); nicht zuordenbare Kerndateien gelten als erreicht
 // Alles andere (Regelpaket, LEXIO, Wurzel-Konfiguration, package-lock, Workflows, Skripte, unbekannte Ordner): voll.
+// Grenze: Dateien, die zur Laufzeit per fs gelesen werden (test/laden.ts: Module und Texte), sieht die Importverfolgung
+// nicht – sie liegen heute alle im Regelpaket, und Änderungen dort ergeben ohnehin voll.
 // Aufruf in der CI: node scripts/regeln-matrix.mjs <ziel-branch> <kopf> – schreibt voll=true|false nach $GITHUB_OUTPUT.
 // Jeder Fehler ergibt voll=true.
 
