@@ -145,7 +145,8 @@ export function App() {
       const k = e.key.toLowerCase();
       if (k === 's') {
         e.preventDefault();
-        void onSave(e.shiftKey);
+        // auf dem Startbildschirm gibt es nichts zu speichern (wie der gesperrte Knopf)
+        if (!einstieg) void onSave(e.shiftKey);
       } else if (k === 'o') {
         e.preventDefault();
         if (!dialogOffen() && !busy) void onOpen();
@@ -182,7 +183,7 @@ export function App() {
   // Menü „Datei“ (docs/design.md, „Kopf- und Werkzeugleisten“): Neu, Öffnen, Speichern unter, IFC aktualisieren
   const dateiPunkte = (): MenuePunkt[] => [
     { text: 'Neu', symbol: 'datei', aktion: () => void onNeu(), titel: 'Neues, leeres Projekt (fragt bei ungespeicherten Änderungen nach)' },
-    { text: 'Öffnen …', symbol: 'ordnerOffen', tasten: 'Strg+O', aktion: () => void onOpen(), deaktiviert: !!busy, titel: 'Projekt (.oap) oder IFC-Modell öffnen' },
+    { text: 'Öffnen …', symbol: 'ordnerOffen', tasten: 'Strg+O', aktion: () => void onOpen(), deaktiviert: !!busy, hinweis: busy ? 'läuft gerade' : undefined, titel: 'Projekt (.oap) oder IFC-Modell öffnen' },
     ...(isTauri() ? [{ text: 'Speichern unter …', symbol: 'speichern', tasten: 'Strg+Umschalt+S', aktion: () => void onSave(true), titel: 'Projekt unter neuem Namen oder an anderem Ort speichern' } as MenuePunkt] : []),
     { trenner: true },
     {
@@ -190,7 +191,7 @@ export function App() {
       symbol: 'neuLaden',
       aktion: () => void onIfcAktualisieren(),
       deaktiviert: !hatGebaeude || !!busy,
-      hinweis: hatGebaeude ? undefined : 'erst Projekt mit Gebäude öffnen',
+      hinweis: !hatGebaeude ? 'erst Projekt mit Gebäude oder IFC-Modell öffnen' : busy ? 'läuft gerade' : undefined,
       titel: 'Neuen Export desselben IFC-Modells übernehmen: Räume über die IFC-GlobalId abgleichen, Änderungen von Hand bleiben',
     },
   ];
@@ -211,7 +212,12 @@ export function App() {
                 className={dirty ? 'ungespeichert' : undefined}
                 aria-label={dirty ? 'Speichern – ungespeicherte Änderungen' : 'Speichern'}
                 onClick={() => void onSave()}
-                title={isTauri() ? 'Projekt speichern – in die geöffnete Datei (Strg+S)' : 'Projekt als Datei herunterladen (Strg+S)'}
+                disabled={einstieg}
+                title={
+                  einstieg
+                    ? 'Erst ein Projekt öffnen oder neu beginnen'
+                    : `${isTauri() ? 'Projekt speichern – in die geöffnete Datei (Strg+S)' : 'Projekt als Datei herunterladen (Strg+S)'}${dirty ? ' – ungespeicherte Änderungen' : ''}`
+                }
               >
                 <Symbol name="speichern" /> Speichern
               </button>

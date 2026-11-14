@@ -74,6 +74,10 @@ describe('NUMIO', () => {
     expect(host.textContent).toContain('Projekt oder IFC öffnen');
     expect(knopf(host, 'Kosten drucken').disabled).toBe(true);
     expect(knopf(host, 'Excel').disabled).toBe(true);
+    // nichts zu speichern: „Speichern“ gesperrt, mit Grund
+    const speichern = host.querySelector<HTMLButtonElement>('[data-eintrag="speichern"] button')!;
+    expect(speichern.disabled).toBe(true);
+    expect(speichern.title).toBe('Erst ein Projekt öffnen oder neu beginnen');
   });
 
   it('Werkzeugleiste: Datei | Speichern | Verlauf | Ansicht … Excel, Drucken; seltene Dateibefehle im Menü „Datei“', () => {
@@ -92,6 +96,7 @@ describe('NUMIO', () => {
     act(() => useKosten.getState().update((p) => setKosten(p, { mwst: 7 })));
     expect(speichern.className).toContain('ungespeichert');
     expect(speichern.getAttribute('aria-label')).toBe('Speichern – ungespeicherte Änderungen');
+    expect(speichern.title).toContain('ungespeicherte Änderungen');
     // Menü „Datei“: Neu, Öffnen …, Trenner, IFC aktualisieren … (im Browser ohne „Speichern unter …“)
     act(() => knopf(leiste, 'Datei').click());
     const punkte = [...document.querySelectorAll<HTMLElement>('[role="menu"] > [role]')].map((p) => (p.getAttribute('role') === 'separator' ? '—' : p.textContent));

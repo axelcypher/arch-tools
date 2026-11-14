@@ -69,7 +69,6 @@ export function KostenView({ onKatalog, onMenge }: { onKatalog: () => void; onMe
     return [
       {
         text: 'Kostenrisiko',
-        symbol: 'plus',
         aktion: () => neu(neueRisikoPosition()),
         titel: 'Nach DIN 276 gesondert ausgewiesen, pauschal oder in % von Kostengruppen; zählt zu keiner Kostengruppe',
       },
@@ -187,7 +186,7 @@ export function KostenView({ onKatalog, onMenge }: { onKatalog: () => void; onMe
               <Symbol name="plus" /> Position
             </button>
             <MenueKnopf className="small" punkte={hinzufuegenPunkte} title="Weitere Einträge: Kostenrisiko, Gliederung 1. oder 2. Ebene">
-              Hinzufügen
+              <Symbol name="plus" /> Hinzufügen
             </MenueKnopf>
             <button className="small" onClick={onKatalog} title="Kennwerte aus dem Kennwertkatalog als Positionen übernehmen">
               Kennwertkatalog …
