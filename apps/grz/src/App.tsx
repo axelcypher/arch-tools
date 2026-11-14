@@ -233,7 +233,7 @@ export function App() {
             ),
           },
           // Statusmarke: bleibt sichtbar, solange sie etwas meldet
-          ...(busy ? [{ id: 'busy', kuerzbar: true, inhalt: <span className="busy">{busy}</span> }] : []),
+          ...(busy ? [{ id: 'busy', kuerzbar: true, inhalt: <span className="busy" title={busy}>{busy}</span> }] : []),
           { abstand: true },
           {
             id: 'drucken',
