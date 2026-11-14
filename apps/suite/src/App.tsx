@@ -25,13 +25,13 @@ import { LogDialog } from '@core/ui/LogDialog';
 import type { MenuePunkt } from '@core/ui/Menue';
 import { MenueHost, MenueKnopf, zeigeMenue } from '@core/ui/Menue';
 import { Symbol } from '@core/ui/Symbol';
-import { ThemeMenu } from '@core/ui/TitleBar';
+import { farbschemaPunkt } from '@core/ui/TitleBar';
 import { dialogVerhaltenEinrichten } from '@core/ui/dialoge';
 import { aenderungenSpeichern, aenderungenVerwerfen, meldung, RueckfrageHost } from '@core/ui/Rueckfrage';
-import { SpeicherortHost, SpeicherortKnopf, SpeicherortZeile } from '@core/ui/Speicherort';
+import { SpeicherortAnzeige, SpeicherortHost, speicherortPunkt, SpeicherortZeile, useKonfigOrt, useSpeicherort } from '@core/ui/Speicherort';
 import { umzugBestaetigen } from '@core/ui/umzug';
 import { schreibenAbwarten } from '@core/ui/vorbereiten';
-import { UpdateKnopf } from '@core/ui/UpdateKnopf';
+import { UpdateKnopf, updatePunkt } from '@core/ui/UpdateKnopf';
 import { APPS, appAdresse, appInfo, fensterLabel } from './apps';
 import { sperrenFreigeben } from './sperren';
 import { useRahmen } from './store';
@@ -484,6 +484,30 @@ export function App() {
   const [gesehen, setGesehen] = useState(0);
   const fehler = getEntries().filter((e) => e.level === 'error' && e.id > gesehen).length;
   void logStand;
+  const ort = useKonfigOrt();
+  const speicherortOeffnen = useSpeicherort((s) => s.oeffnen);
+  /** Name des Menüs der Kopfleiste – mit neuen Fehlern im Protokoll (wie in der Titelleiste der Apps) */
+  const menueName = fehler > 0 ? `Einstellungen und Hilfe – ${fehler === 1 ? 'ein neuer Fehler' : `${fehler} neue Fehler`} im Fehlerprotokoll` : 'Einstellungen und Hilfe';
+  /** Menü „Einstellungen und Hilfe“ (docs/design.md, „Titelleiste“): seltene Befehle der Rahmen-App */
+  const einstellungenPunkte = (): MenuePunkt[] => {
+    const update = desktop ? updatePunkt() : null;
+    const sp = speicherortPunkt(ort, speicherortOeffnen);
+    return [
+      ...(update ? [update, { trenner: true } as const] : []),
+      farbschemaPunkt(false),
+      ...(sp ? [sp] : []),
+      { trenner: true },
+      {
+        text: 'Fehlerprotokoll …',
+        hinweis: fehler > 0 ? (fehler === 1 ? '1 neuer' : `${fehler} neue`) : undefined,
+        titel: 'Meldungen von Arkly für die Fehlersuche',
+        aktion: () => {
+          setGesehen(getEntries().at(-1)?.id ?? 0);
+          setLogOffen(true);
+        },
+      },
+    ];
+  };
 
   return (
     <div className="app rahmen">
@@ -518,11 +542,6 @@ export function App() {
                     </span>
                   )}
                 </button>
-                {desktop && (
-                  <button className="rahmen-tab-knopf rahmen-tab-extern" tabIndex={-1} title="In eigenem Fenster öffnen" aria-label={`${info.name} in eigenem Fenster öffnen`} onClick={() => void herausloesen(id)}>
-                    <Symbol name="extern" />
-                  </button>
-                )}
                 <button className="rahmen-tab-knopf" tabIndex={-1} title="Schließen (Entf)" aria-label={`${info.name} schließen`} onClick={() => void tabSchliessen(id)}>
                   <Symbol name="schliessen" />
                 </button>
@@ -535,24 +554,17 @@ export function App() {
         </MenueKnopf>
         <span className="titlebar-drag" data-tauri-drag-region />
         {desktop && <UpdateKnopf app={APP_NAMEN.suite.name} dirty={[...tabs, ...fenster].some((id) => status[id]?.dirty)} vorInstallation={() => allesFreigeben('neu starten')} />}
-        <SpeicherortKnopf />
-        <ThemeMenu zeichenflaeche={false} />
-        <button
-          className="titlebar-btn"
-          title="Protokoll von Arkly (Fehlersuche)"
-          aria-label={fehler ? `Protokoll, ${fehler} neue Fehler` : 'Protokoll'}
-          onClick={() => {
-            setGesehen(getEntries().at(-1)?.id ?? 0);
-            setLogOffen(true);
-          }}
-        >
-          <span aria-hidden>≡</span> <span className="titlebar-text">Protokoll</span>
+        {/* sichtbar nur im Notbetrieb; sonst steht der Speicherort im Menü */}
+        <SpeicherortAnzeige ort={ort} nurWarnung />
+        {/* Menü der Kopfleiste: neue Fehler zählt die Marke am Knopf, das Protokoll selbst steht im Menü */}
+        <MenueKnopf className="titlebar-btn titlebar-menue" punkte={einstellungenPunkte} ariaLabel={menueName} title={menueName} name="Einstellungen und Hilfe" pfeil={false}>
+          <Symbol name="menue" />
           {fehler > 0 && (
             <span className="titlebar-badge" aria-hidden>
               {fehler}
             </span>
           )}
-        </button>
+        </MenueKnopf>
         {desktop && win && (
           <div className="window-controls">
             <button className="wc-btn" title="Minimieren" aria-label="Minimieren" onClick={() => void win.minimize()}>

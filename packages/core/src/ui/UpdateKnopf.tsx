@@ -1,10 +1,28 @@
 import { useEffect, useState } from 'react';
+import { create } from 'zustand';
 import { RELEASE_SEITE, starteUpdatePruefung, useUpdate } from '../platform/update';
+import type { MenuePunkt } from './Menue';
 import { Modal } from './Dialog';
 import { schliessenVorbereiten } from '../platform/rahmen';
 import { schreibenAbwarten } from './vorbereiten';
 
 const mb = (bytes: number) => (bytes / 1024 / 1024).toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
+/** Dialog „… aktualisieren“ offen – auch aus dem Menü der Titelleiste (`updatePunkt`); gezeigt vom `UpdateKnopf` */
+const useUpdateDialog = create<{ offen: boolean; setOffen: (offen: boolean) => void }>()((set) => ({ offen: false, setOffen: (offen) => set({ offen }) }));
+
+/** Liegt ein Update vor (gefunden, lädt oder ist installiert)? */
+const liegtVor = (status: string) => status === 'verfuegbar' || status === 'laedt' || status === 'installiert';
+
+/**
+ * Punkt „Update auf … installieren …“ für das Menü „Einstellungen und Hilfe“ – nur solange ein Update vorliegt, sonst
+ * null (die Version zeigt dann der `UpdateKnopf`). Öffnet den Dialog des `UpdateKnopf`, der dafür eingebunden sein muss.
+ */
+export function updatePunkt(): Exclude<MenuePunkt, { trenner: true }> | null {
+  const { status, version } = useUpdate.getState();
+  if (!liegtVor(status)) return null;
+  return { text: `Update auf ${version} …`, titel: `Version ${version} ist verfügbar – installiert ist ${__APP_VERSION__}`, aktion: () => useUpdateDialog.getState().setOffen(true) };
+}
 
 /**
  * Knopf in der Titelleiste der Desktop-Apps: zeigt die installierte Version, sucht auf Klick nach Updates
@@ -13,11 +31,12 @@ const mb = (bytes: number) => (bytes / 1024 / 1024).toLocaleString('de-DE', { mi
 export function UpdateKnopf({ app, dirty, vorInstallation }: { app: string; dirty: boolean; vorInstallation?: () => Promise<boolean> }) {
   const status = useUpdate((s) => s.status);
   const version = useUpdate((s) => s.version);
-  const [open, setOpen] = useState(false);
+  const open = useUpdateDialog((s) => s.offen);
+  const setOpen = useUpdateDialog((s) => s.setOffen);
 
   useEffect(() => starteUpdatePruefung(), []);
 
-  const verfuegbar = status === 'verfuegbar' || status === 'laedt' || status === 'installiert';
+  const verfuegbar = liegtVor(status);
   return (
     <>
       <button
