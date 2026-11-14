@@ -788,11 +788,11 @@
       }
     },
     "planung.vorbereitende_untersuchungen": {
-      "titel": "Beginn vorbereitender Untersuchungen für eine Sanierung beschlossen und ortsüblich bekannt gemacht (§ 141 Abs. 3 BauGB)",
-      "kurz": "Vorbereitende Untersuchungen (Sanierung)",
+      "titel": "Beginn vorbereitender Untersuchungen für eine Sanierung oder einen städtebaulichen Entwicklungsbereich beschlossen und ortsüblich bekannt gemacht (§ 141 Abs. 3, § 165 Abs. 4 BauGB)",
+      "kurz": "Vorbereitende Untersuchungen (§ 141)",
       "gruppe": "planung",
       "typ": "janein",
-      "hilfe": "Ab der Bekanntmachung kann die Gemeinde die Zurückstellung von Vorhaben und Beseitigungen beantragen (§ 141 Abs. 4 Satz 1 BauGB, § 15 entsprechend; ebenso vor einem städtebaulichen Entwicklungsbereich, § 165 Abs. 4); mit der förmlichen Festlegung des Sanierungsgebiets wird die Zurückstellung unwirksam (§ 141 Abs. 4 Satz 2) – dann gilt § 144, soweit die Satzung ihn nicht ausschließt (§ 142 Abs. 4); bei der Gemeinde erfragen",
+      "hilfe": "Ab der Bekanntmachung kann die Gemeinde die Zurückstellung von Vorhaben und Beseitigungen beantragen (§ 141 Abs. 4 Satz 1 BauGB, § 15 entsprechend). Mit der förmlichen Festlegung des Sanierungsgebiets bzw. Entwicklungsbereichs wird sie unwirksam (§ 141 Abs. 4 Satz 2); dann gilt § 144, soweit die Satzung ihn nicht ausschließt (§ 142 Abs. 4) – bei der Gemeinde erfragen",
       "wenn": {
         "nicht": {
           "f": "planung.sanierungsgebiet",
@@ -958,11 +958,11 @@
       }
     },
     "planung.fnp_verfahren": {
-      "titel": "Flächennutzungsplan mit Konzentrationszonen in Aufstellung (privilegiertes Vorhaben im Außenbereich)",
-      "kurz": "FNP mit Konzentrationszonen in Arbeit",
+      "titel": "Flächennutzungsplan mit Konzentrationszonen bzw. Windenergiegebieten in Aufstellung (privilegiertes Vorhaben im Außenbereich)",
+      "kurz": "FNP-Verfahren nach § 15 Abs. 3 in Arbeit",
       "gruppe": "planung",
       "typ": "janein",
-      "frage": "Ist das Vorhaben nach § 35 Abs. 1 Nr. 2–6 BauGB privilegiert (z. B. Biogas, Tierhaltung, Windenergie) und hat die Gemeinde beschlossen, einen Flächennutzungsplan mit Konzentrationszonen aufzustellen, zu ändern oder zu ergänzen – bei Windenergie an Land: um den Flächenbeitragswert bzw. ein Teilflächenziel zu erreichen?",
+      "frage": "Ist das Vorhaben nach § 35 Abs. 1 Nr. 2–6 BauGB privilegiert (z. B. Biogas, Tierhaltung, Windenergie) und hat die Gemeinde beschlossen, einen Flächennutzungsplan mit Konzentrationszonen (bei Windenergie an Land: mit Windenergiegebieten, um den Flächenbeitragswert bzw. ein Teilflächenziel zu erreichen) aufzustellen, zu ändern oder zu ergänzen?",
       "hilfe": "§ 15 Abs. 3 BauGB: dann kann die Gemeinde die Zurückstellung bis zu einem Jahr beantragen. Windenergie an Land: § 35 Abs. 3 Satz 3 gilt nicht (§ 249 Abs. 1), § 15 Abs. 3 aber entsprechend für einen Flächennutzungsplan zur Erreichung des Flächenbeitragswerts (§ 245e Abs. 2), längstens bis zum Stichtag nach der Anlage zum Windenergieflächenbedarfsgesetz – bei der Gemeinde erfragen",
       "wenn": {
         "$": "aussen_planrecht"
