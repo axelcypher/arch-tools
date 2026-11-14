@@ -5,7 +5,7 @@
 import { describe, expect, it } from 'vitest';
 import type { AuswertungsEingabe } from '@core/baurecht/auswertung';
 import type { TextStand } from '@core/baurecht/auswertung';
-import { auswerten, faktDefinitionen } from '@core/baurecht/auswertung';
+import { auswerten, faktDefinitionen, gestellteAntworten } from '@core/baurecht/auswertung';
 import { werten } from '@core/baurecht/kurz';
 import { frageGestellt, RUECKFRAGE_IDS } from '@core/baurecht/fragen';
 import { aktiveModule, paketPruefen } from '@core/baurecht/paket';
@@ -22,6 +22,28 @@ import { ohneFassungsdatum, paketLaden, WURZEL } from './laden';
 
 const paket = paketLaden();
 const SOEST = '05974040';
+
+describe('Wert ohne Auslöser (ohneAusloeser)', () => {
+  const defs = faktDefinitionen(aktiveModule(paket.module, SOEST));
+  const mit = Object.entries(defs).filter(([, d]) => d.ohneAusloeser !== undefined);
+
+  it('gesetzt genau dort, wo „nein“ zwingend aus dem fehlenden Auslöser folgt (Fachreview)', () => {
+    expect(mit.map(([id]) => id).sort()).toEqual(['kreis_soest.hsg', 'kreis_soest.vsg_hellweg', 'nw.feste_brennstoffe_50kw', 'planung.planreife', 'schutz.allee']);
+    for (const [id, d] of mit) expect(d.ohneAusloeser, id).toBe(false);
+  });
+
+  it('Auslöser nur Hinweis: „nein“ trägt ihn nicht, „ja“ schon – je Angabe mit den Definitionen des Pakets', () => {
+    const rest = { merkmale: { Vorhaben: 'Errichtung', Gebäudeart: 'Einfamilienhaus' }, einreichung: '2026-12-01', heute: HEUTE, bausteine: Object.assign({}, ...aktiveModule(paket.module, SOEST).map((m) => m.bausteine ?? {})) };
+    for (const [id, d] of mit) {
+      // alle Angaben im „wenn“ als Hinweis „ja“ (Soest: Planaufstellung oder Entwurf eines Bebauungsplans)
+      const ausloeser = [...JSON.stringify(d.wenn).matchAll(/"f":"([^"]+)"/g)].map((m) => m[1]);
+      expect(ausloeser.length, id).toBeGreaterThan(0);
+      const hinweise = Object.fromEntries(ausloeser.map((f) => [f, { wert: true, herkunft: 'manuell' as const, sicherheit: 'hinweis' as const, grund: 'Test' }]));
+      expect(gestellteAntworten({ ...hinweise, [id]: sicher(false) }, (f) => f, defs, rest)[id]?.ueberHinweis, `${id}: nein`).toBeUndefined();
+      expect(gestellteAntworten({ ...hinweise, [id]: sicher(true) }, (f) => f, defs, rest)[id]?.ueberHinweis, `${id}: ja`).toBeTruthy();
+    }
+  });
+});
 
 describe('Rückfragen des Kerns', () => {
   it('jede Kennung in RUECKFRAGEN gibt es im Paket (sonst kippte die Rückfrage still auf „gestellt, solange nicht nein“)', () => {
@@ -1828,8 +1850,9 @@ describe('Fälle aus dem Fachreview', () => {
     expect(a(M4(), ja('schutz.baum'))('nw/lnatschg/41')).toBe('gelb');
     expect(a(M4(), ja('schutz.baum', 'schutz.allee'))('nw/lnatschg/41')).toBe('rot');
     expect(a(M4(), { ...ja('schutz.baum'), ...nein('schutz.allee') })('nw/lnatschg/41')).toBe('gruen');
-    // geschützter Baum nur Hinweis: „keine Allee“ gilt trotzdem (ohne Bäume auch keine Allee – ohneAusloeser), eine Allee
-    // dagegen trägt den Hinweis (Allee nur, wenn es die Bäume gibt); vorher stand bei „nein“ ein unnötiges Gelb
+    // geschützter Baum nur Hinweis: „keine Allee“ gilt trotzdem – „geschützte Bäume betroffen“ schließt Alleen ein, eine
+    // betroffene Allee ist also immer auch ein solcher Fall (ohneAusloeser); „Allee: ja“ trägt den Hinweis dagegen weiter
+    // (vorher stand bei „nein“ ein unnötiges Gelb)
     const baumHinweis = { 'schutz.baum': { wert: true, herkunft: 'manuell' as const, sicherheit: 'hinweis' as const, grund: 'Test' } };
     expect(a(M4(), { ...baumHinweis, ...nein('schutz.allee') })('nw/lnatschg/41')).toBe('gruen');
     expect(a(M4(), { ...baumHinweis, ...ja('schutz.allee') })('nw/lnatschg/41')).not.toBe('gruen');

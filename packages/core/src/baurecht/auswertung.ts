@@ -247,7 +247,8 @@ function modulQuellen(id: string, fakten: Record<string, FaktWert>, defs: Record
  * Hinweis über die Antwort einen Paragrafen auf „entfällt“ (z. B. „Altbau verfahrensfrei: ja“, gestellt nur, weil der
  * Umfang „Abbruch mit Ersatzbau“ nicht gesichert ist). Die Antwort selbst bleibt gesichert (sie ist beantwortet);
  * bestätigt wird der Auslöser. Bis zum Fixpunkt: eine markierte Antwort kann ihrerseits eine Frage nur über Hinweise
- * stellen (Kette).
+ * stellen (Kette). Ausgenommen ist eine Antwort mit dem Wert, der auch ohne die Frage gälte (FaktDef.ohneAusloeser,
+ * strenger Vergleich – eine als Text gespeicherte Zahl zählt nicht): Sie gilt unabhängig vom Auslöser.
  */
 function ueberHinweisGestellt(eingang: Record<string, FaktWert>, ableiten: (f: Record<string, FaktWert>) => Record<string, FaktWert>, defs: Record<string, FaktDef>, rest: Omit<KurzKontext, 'fakten'>): Record<string, FaktWert> {
   // `ueberHinweis` bestimmt allein die Auswertung – ein mitgegebenes (aus einer Datei, einem kopierten Wert) zählt nicht

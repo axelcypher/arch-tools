@@ -176,8 +176,10 @@ describe('Module und Regeldateien', () => {
     const mit = (fakten: Record<string, unknown>) =>
       paketPruefen(paketAusDateien({ 'module/bund/modul.json': { ...bund, fakten: { ...(bund as { fakten?: object }).fakten, ...fakten } }, 'module/bund/bnatschg@2026-09-30.json': bnatschg }, 'x'), VORGABE_MERKMALE);
     expect(mit({ 'x.a': { titel: 'A', gruppe: 'schutz', typ: 'janein', wenn: { f: 'schutz.baum', ist: true }, ohneAusloeser: false } })).toEqual([]);
-    expect(mit({ 'x.b': { titel: 'B', gruppe: 'schutz', typ: 'janein', ohneAusloeser: false } }).join('\n')).toMatch(/„ohneAusloeser“ von „x\.b“ ohne „wenn“/);
-    expect(mit({ 'x.c': { titel: 'C', gruppe: 'schutz', typ: 'janein', wenn: { f: 'schutz.baum', ist: true }, ohneAusloeser: 'nein' } }).join('\n')).toMatch(/„ohneAusloeser“ von „x\.c“ passt nicht zur Art „janein“/);
+    const ohneWenn = { titel: 'B', gruppe: 'schutz', typ: 'janein', ohneAusloeser: false };
+    expect(mit({ 'x.b': ohneWenn }).join('\n')).toMatch(/„ohneAusloeser“ von „x\.b“ ohne „wenn“/);
+    const falscheArt = { titel: 'C', gruppe: 'schutz', typ: 'janein', wenn: { f: 'schutz.baum', ist: true }, ohneAusloeser: 'nein' };
+    expect(mit({ 'x.c': falscheArt }).join('\n')).toMatch(/„ohneAusloeser“ von „x\.c“ passt nicht zur Art „janein“/);
   });
 });
 
@@ -889,6 +891,30 @@ describe('Runde 18: nur gestellte Antworten zählen', () => {
     const w = gestellteAntworten({ h: { ...sicher(true), widerspruch: 'Dienst: nein' }, a: sicher(false), b: sicher(false) }, (f) => f, defs, rest);
     expect(w.a.ueberWiderspruch).toBeUndefined();
     expect(w.b.ueberWiderspruch).toEqual(['h']);
+  });
+
+  it('ohneAusloeser in der Kette und bei Zahl bzw. Auswahl (strenger Vergleich)', () => {
+    const defs = {
+      h: { titel: 'H', gruppe: 'x', typ: 'janein' },
+      a: { titel: 'A', gruppe: 'x', typ: 'janein', wenn: { f: 'h', ist: true }, ohneAusloeser: false },
+      c: { titel: 'C', gruppe: 'x', typ: 'janein', wenn: { f: 'a', ist: false } },
+      z: { titel: 'Z', gruppe: 'x', typ: 'zahl', wenn: { f: 'h', ist: true }, ohneAusloeser: 0 },
+      w: { titel: 'W', gruppe: 'x', typ: 'wahl', werte: ['außerhalb', 'III'], wenn: { f: 'h', ist: true }, ohneAusloeser: 'außerhalb' },
+    } as unknown as Record<string, import('./typen').FaktDef>;
+    const rest = { merkmale: {}, einreichung: '2026-12-01', heute: '2026-11-13', bausteine: {} };
+    const h = { h: hinweis(true) };
+    // A = „nein“ gilt sicher – die Frage C (gestellt, wenn A „nein“) trägt den Hinweis an H also auch nicht
+    const kette = gestellteAntworten({ ...h, a: sicher(false), c: sicher(true) }, (f) => f, defs, rest);
+    expect([kette.a.ueberHinweis, kette.c.ueberHinweis]).toEqual([undefined, undefined]);
+    // A = „ja“ trägt H; C wird dann gar nicht gestellt (A „ja“ ist kein „nein“)
+    const ja = gestellteAntworten({ ...h, a: sicher(true), c: sicher(true) }, (f) => f, defs, rest);
+    expect(ja.a.ueberHinweis).toEqual(['h']);
+    expect(ja.c).toBeUndefined();
+    // Zahl und Auswahl: genau der Wert ohne Auslöser – eine als Text gespeicherte Zahl bzw. ein anderer Wert trägt H
+    const z = gestellteAntworten({ ...h, z: sicher(0), w: sicher('außerhalb') }, (f) => f, defs, rest);
+    expect([z.z.ueberHinweis, z.w.ueberHinweis]).toEqual([undefined, undefined]);
+    const anders = gestellteAntworten({ ...h, z: sicher('0'), w: sicher('III') }, (f) => f, defs, rest);
+    expect([anders.z.ueberHinweis, anders.w.ueberHinweis]).toEqual([['h'], ['h']]);
   });
 
   it('ebenso über eine widersprüchliche Angabe: die Antwort trägt den Widerspruch des Auslösers, auch in der Kette', () => {
