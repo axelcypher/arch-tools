@@ -1,34 +1,34 @@
 {
   "flaechenrechner": {
     "stufe": "patch",
-    "notiz": "Werkzeugleiste: Kompaktstufe – reicht der Platz nach dem Überlauf nicht, zeigen die Knöpfe nur noch Symbole; Abstände in Werkzeuggruppen aus der Skala."
+    "notiz": "Werkzeugleiste: gleichmäßigere Abstände in Knopfgruppen."
   },
   "grz": {
     "stufe": "patch",
-    "notiz": "Werkzeugleiste: Kompaktstufe – reicht der Platz nach dem Überlauf nicht, zeigen die Knöpfe nur noch Symbole; Abstände in Werkzeuggruppen aus der Skala."
+    "notiz": "Werkzeugleiste: gleichmäßigere Abstände in Knopfgruppen."
   },
   "kosten": {
     "stufe": "patch",
-    "notiz": "Werkzeugleiste: Kompaktstufe – reicht der Platz nach dem Überlauf nicht, zeigen die Knöpfe nur noch Symbole; Abstände in Werkzeuggruppen aus der Skala."
+    "notiz": "Werkzeugleiste: gleichmäßigere Abstände in Knopfgruppen."
   },
   "ordner": {
     "stufe": "patch",
-    "notiz": "Werkzeugleiste: Kompaktstufe – reicht der Platz nach dem Überlauf nicht, zeigen die Knöpfe nur noch Symbole; Abstände in Werkzeuggruppen aus der Skala."
+    "notiz": "Werkzeugleiste: gleichmäßigere Abstände in Knopfgruppen."
   },
   "entzerrung": {
     "stufe": "patch",
-    "notiz": "Werkzeugleiste: Kompaktstufe – reicht der Platz nach dem Überlauf nicht, zeigen die Knöpfe nur noch Symbole; Abstände in Werkzeuggruppen aus der Skala."
+    "notiz": "Werkzeugleiste: gleichmäßigere Abstände in Knopfgruppen."
   },
   "formulare": {
     "stufe": "patch",
-    "notiz": "Werkzeugleiste: Kompaktstufe – reicht der Platz nach dem Überlauf nicht, zeigen die Knöpfe nur noch Symbole; Abstände in Werkzeuggruppen aus der Skala."
+    "notiz": "Werkzeugleiste: gleichmäßigere Abstände in Knopfgruppen."
   },
   "ava": {
     "stufe": "patch",
-    "notiz": "Werkzeugleiste: Kompaktstufe – reicht der Platz nach dem Überlauf nicht, zeigen die Knöpfe nur noch Symbole; Abstände in Werkzeuggruppen aus der Skala."
+    "notiz": "Werkzeugleiste: gleichmäßigere Abstände in Knopfgruppen."
   },
   "baurecht": {
     "stufe": "patch",
-    "notiz": "Werkzeugleiste: Kompaktstufe – reicht der Platz nach dem Überlauf nicht, zeigen die Knöpfe nur noch Symbole; Abstände in Werkzeuggruppen aus der Skala."
+    "notiz": "Werkzeugleiste: gleichmäßigere Abstände in Knopfgruppen."
   }
 }

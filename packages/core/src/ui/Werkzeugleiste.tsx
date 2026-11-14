@@ -109,7 +109,7 @@ export function Werkzeugleiste({
   className?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  /** volle Breiten (gemessen, solange die Leiste nicht kompakt ist) – Grundlage der Rechnung */
+  /** volle Breiten der Einträge (auch in der Kompaktstufe ohne sie gemessen) – Grundlage der Rechnung */
   const breiten = useRef(new Map<string, number>());
   const fokusAufMehr = useRef(false);
   const [weg, setWeg] = useState<Set<string>>(() => new Set());
@@ -126,12 +126,14 @@ export function Werkzeugleiste({
     const el = ref.current;
     if (!el) return;
     const teile = teileRef.current;
-    // sichtbare Einträge neu messen, für ausgeblendete gilt die zuletzt gemessene Breite; in der Kompaktstufe nicht
-    // (dann wären es die schmalen Breiten) – es bleibt bei den vollen
+    // sichtbare Einträge neu messen, für ausgeblendete gilt die zuletzt gemessene Breite. Gerechnet wird immer mit den
+    // vollen Breiten: in der Kompaktstufe die Klasse zum Messen kurz abnehmen (im selben Takt, ohne dass gezeichnet wird)
     const istKompakt = el.classList.contains('kompakt');
+    if (istKompakt) el.classList.remove('kompakt');
     for (const k of el.querySelectorAll<HTMLElement>(':scope > [data-eintrag]')) {
-      if (!k.hidden && (!istKompakt || !breiten.current.has(k.dataset.eintrag!))) breiten.current.set(k.dataset.eintrag!, leistenMessung.breite(k));
+      if (!k.hidden) breiten.current.set(k.dataset.eintrag!, leistenMessung.breite(k));
     }
+    if (istKompakt) el.classList.add('kompakt');
     const stil = getComputedStyle(el);
     const abstand = parseFloat(stil.columnGap || stil.gap) || 0;
     const innen = leistenMessung.breite(el) - (parseFloat(stil.paddingLeft) || 0) - (parseFloat(stil.paddingRight) || 0);

@@ -191,6 +191,7 @@ body,
   display: flex;
   align-items: center;
   gap: var(--s1);
+  /* mit dem gap der Leiste (4px) rund 10px Luft um den Trennstrich – bewusst zwischen --s2 und --s3 */
   padding-right: 6px;
   border-right: 1px solid var(--border);
 }
@@ -240,6 +241,14 @@ body,
    bleibt über aria-label und title) */
 .toolbar.werkzeugleiste.kompakt .tb-text {
   display: none;
+}
+/* der Knopf wird zum Symbolknopf wie button.icon: Polsterung wie dort, Symbol mittig (im Flex-Behälter fällt das
+   Leerzeichen vor dem ausgeblendeten Text weg) */
+.toolbar.werkzeugleiste.kompakt button:has(> .tb-text) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6px;
 }
 .toolbar.werkzeugleiste > [hidden] {
   display: none;

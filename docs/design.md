@@ -321,9 +321,11 @@ Zurücksetzen, Sonderfunktionen. Feste Namen, in allen Apps gleich:
   behalten ihre Breite (`flex: none`) und wandern ins Menü, statt zu schrumpfen; ein Eintrag, der sich kürzen darf
   (Statustext), bekommt `kuerzbar` – er schrumpft bis auf eine Mindestbreite, der Text endet auf „…“; erst danach wandern Einträge
   mit Rang ins Menü. Reicht der Platz auch dann nicht, wenn alle Einträge mit Rang im Menü stehen, wird die Leiste
-  kompakt (Klasse `.kompakt`): Knopftexte in `<span className="tb-text">` verschwinden, es bleiben die Symbole, der
-  Name steht weiter in `aria-label` und `title`. Sie bleibt kompakt, bis die volle Fassung wieder passt. Eigene
-  Media-Queries für `.tb-text` braucht es dann nicht. Einträge ohne
+  kompakt (Klasse `.kompakt`): Knopftexte in `<span className="tb-text">` verschwinden, es bleiben die Symbole. `tb-text`
+  nur in Knöpfen mit Symbol, und diese tragen den vollen Namen in `aria-label` und `title` (sonst hätten sie kompakt
+  keinen Namen); reine Textknöpfe wie „Datei“ bekommen kein `tb-text`. Die Leiste bleibt kompakt, bis die volle
+  Fassung wieder passt. Eigene Media-Queries für `.tb-text` braucht es dann nicht – anders als die Titelleiste, die
+  keinen Überlauf hat und deshalb eine feste Grenze nutzt (siehe „Titelleiste“). Einträge ohne
   Rang (Werkzeuge, Hauptknopf) und „Mehr“ müssen bei der Mindestbreite des Fensters zusammen hineinpassen. Die Leiste nimmt die
   volle Breite ihres Elternelements (wächst oder schrumpft in einer Spalte aber nicht in der Höhe) und braucht keine eigene
   `.toolbar` darum; sie steht in einer Spalte (über der Arbeitsfläche) oder allein in einer Zeile.
@@ -410,7 +412,8 @@ Einfachauswahl und, wenn die App eine Zeichenfläche hat, dem Schalter „Zeiche
 Fenster „Andocken“, Trenner, „Berechnungsregeln …“ (F1) und „Fehlerprotokoll …“. Neue Fehler zählt eine Marke am
 Menüknopf, ebenso sein Name („Einstellungen und Hilfe – 2 neue Fehler im Fehlerprotokoll“) und der Hinweis am Punkt
 („2 neue“). Die Kopfleiste von Arkly folgt derselben Regel (Menü mit Update, Farbschema, Speicherort und
-Fehlerprotokoll, ohne „Berechnungsregeln …“). Unter 960px Fensterbreite zeigen Knöpfe mit Symbol nur noch das Symbol: Text in
+Fehlerprotokoll, ohne „Berechnungsregeln …“). Unter 960px Fensterbreite (feste Grenze, weil die Titelleiste keinen Überlauf hat; die Werkzeugleiste regelt das
+selbst, siehe „Kopf- und Werkzeugleisten“) zeigen Knöpfe mit Symbol nur noch das Symbol: Text in
 `<span className="titlebar-text">`, der Name bleibt über `aria-label`. Die Tableiste von Arkly zeigt
 unter 1100px am Tab nur Symbol und Namen der App (das Projekt steht im Tooltip); eine Fläche zum Ziehen des Fensters
 bleibt immer frei.
