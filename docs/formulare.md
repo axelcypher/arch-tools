@@ -964,8 +964,9 @@ Programm öffnen“). Bearbeitet wird so, dass alles, was nicht geändert wurde,
   Abbrechen“.
 - Die Rückfrage „Änderungen an ‚Name‘ speichern?“ sagt darunter, was ungespeichert ist – in der App wie beim Schließen
   des Tabs in Arkly gleich: „Das Formular hat …“, „Die Projektdaten haben …“, „Das Dokument hat ungespeicherte
-  Änderungen.“ (bzw. beides mit „und“). Beim Verlassen einer PDF steht davor: „Eingaben in einer PDF bleiben nicht als
-  Entwurf erhalten.“
+  Änderungen.“ (das gezeigte), „Ein Dokument hat …“ bzw. „Die Dokumente haben …“ (Bearbeitungen in Excel und Word
+  bleiben bis zum Schließen der App), mehreres mit „und“. Beim Verlassen einer PDF steht davor: „Ohne Speichern gehen
+  die Eingaben in der PDF verloren.“
 - Vor jedem Speichern legt die App eine **Sicherungskopie** der bisherigen Fassung im App-Ordner an
   (`%LOCALAPPDATA%\de.pendzialek.formulare\Sicherungen`, die letzten 200).
 - **Laufendes Schreiben beim Schließen:** Schreibt die App gerade, wartet Arkly vor dem Schließen, Andocken,

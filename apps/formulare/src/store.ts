@@ -922,24 +922,27 @@ export const pdfGeaendert = (s: Pick<FormulareState, 'datei' | 'dateiEntwuerfe'>
 export const dokumenteGeaendert = (s: Pick<FormulareState, 'dateiEntwuerfe'>) => Object.keys(s.dateiEntwuerfe).length > 0;
 
 /**
- * Vor dem Verlassen einer bearbeiteten PDF (andere Ansicht, anderes Dokument, Formular, Projekt): „Speichern / Nicht
- * speichern / Abbrechen“. Liefert, ob es weitergehen darf; ohne ungespeicherte PDF sofort true.
- */
-/**
  * Satz „… hat ungespeicherte Änderungen.“ (design.md „Ungespeicherte Änderungen“) – an der Titelleiste und in den
- * eigenen Rückfragen gleich; nichts ungespeichert: undefined
+ * eigenen Rückfragen gleich; nichts ungespeichert: undefined. `dokumente`: Zahl der Dokumente mit ungespeicherten
+ * Bearbeitungen; `dokumentSichtbar`: genau dieses eine ist gerade zu sehen („das Dokument“ statt „ein Dokument“)
  */
-export function ungespeichertText(o: { formular?: boolean; projektdaten?: boolean; dokument?: boolean }): string | undefined {
-  const teile = [o.formular && 'das Formular', o.projektdaten && 'die Projektdaten', o.dokument && 'das Dokument'].filter((t): t is string => !!t);
+export function ungespeichertText(o: { formular?: boolean; projektdaten?: boolean; dokumente?: number; dokumentSichtbar?: boolean }): string | undefined {
+  const n = o.dokumente ?? 0;
+  const dokumente = n > 1 ? 'die Dokumente' : n === 1 ? (o.dokumentSichtbar ? 'das Dokument' : 'ein Dokument') : null;
+  const teile = [o.formular && 'das Formular', o.projektdaten && 'die Projektdaten', dokumente].filter((t): t is string => !!t);
   if (!teile.length) return undefined;
   const gegenstand = teile.length > 1 ? `${teile.slice(0, -1).join(', ')} und ${teile.at(-1)}` : teile[0];
-  const mehrzahl = teile.length > 1 || o.projektdaten;
+  const mehrzahl = teile.length > 1 || o.projektdaten || n > 1;
   return `${gegenstand[0].toUpperCase()}${gegenstand.slice(1)} ${mehrzahl ? 'haben' : 'hat'} ungespeicherte Änderungen.`;
 }
 
 /** Eingaben einer PDF hält nur die Ansicht – die Folge steht als ein Satz vor der Aussage */
-export const PDF_VERLASSEN_SATZ = `Eingaben in einer PDF bleiben nicht als Entwurf erhalten. ${ungespeichertText({ dokument: true })}`;
+export const PDF_VERLASSEN_SATZ = `Ohne Speichern gehen die Eingaben in der PDF verloren. ${ungespeichertText({ dokumente: 1, dokumentSichtbar: true })}`;
 
+/**
+ * Vor dem Verlassen einer bearbeiteten PDF (andere Ansicht, anderes Dokument, Formular, Projekt): „Speichern / Nicht
+ * speichern / Abbrechen“. Liefert, ob es weitergehen darf; ohne ungespeicherte PDF sofort true.
+ */
 export async function dateiVerlassen(): Promise<boolean> {
   const s = useFormulare.getState();
   if (!s.datei || !pdfGeaendert(s)) return true;

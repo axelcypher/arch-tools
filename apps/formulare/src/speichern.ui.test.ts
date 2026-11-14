@@ -342,10 +342,14 @@ describe('Dokumente: Bearbeitungen gehen nicht still verloren', () => {
   it('Satz für ungespeicherte Änderungen: Gegenstand mit Artikel, Einzahl bzw. Mehrzahl, nichts ungespeichert ohne Satz', () => {
     expect(ungespeichertText({})).toBeUndefined();
     expect(ungespeichertText({ formular: true })).toBe('Das Formular hat ungespeicherte Änderungen.');
-    expect(ungespeichertText({ dokument: true })).toBe('Das Dokument hat ungespeicherte Änderungen.');
+    expect(ungespeichertText({ dokumente: 1, dokumentSichtbar: true })).toBe('Das Dokument hat ungespeicherte Änderungen.');
+    // Excel/Word-Bearbeitungen bleiben bis zum Schließen: ein nicht gezeigtes Dokument bzw. mehrere
+    expect(ungespeichertText({ dokumente: 1 })).toBe('Ein Dokument hat ungespeicherte Änderungen.');
+    expect(ungespeichertText({ dokumente: 2 })).toBe('Die Dokumente haben ungespeicherte Änderungen.');
+    expect(ungespeichertText({ formular: true, dokumente: 3 })).toBe('Das Formular und die Dokumente haben ungespeicherte Änderungen.');
     expect(ungespeichertText({ projektdaten: true })).toBe('Die Projektdaten haben ungespeicherte Änderungen.');
-    expect(ungespeichertText({ formular: true, dokument: true })).toBe('Das Formular und das Dokument haben ungespeicherte Änderungen.');
-    expect(ungespeichertText({ projektdaten: true, dokument: true })).toBe('Die Projektdaten und das Dokument haben ungespeicherte Änderungen.');
+    expect(ungespeichertText({ formular: true, dokumente: 1 })).toBe('Das Formular und ein Dokument haben ungespeicherte Änderungen.');
+    expect(ungespeichertText({ projektdaten: true, dokumente: 1, dokumentSichtbar: true })).toBe('Die Projektdaten und das Dokument haben ungespeicherte Änderungen.');
   });
 
   it('bearbeitete PDF verlassen: erst fragen – Abbrechen bleibt, Nicht speichern wechselt', async () => {
@@ -355,7 +359,7 @@ describe('Dokumente: Bearbeitungen gehen nicht still verloren', () => {
     await kurz();
     expect(frage.gefragt).toEqual(['Plan.pdf']);
     // Satz nach design.md „Ungespeicherte Änderungen“: die Folge davor, dann die Aussage
-    expect(frage.texte).toEqual(['Eingaben in einer PDF bleiben nicht als Entwurf erhalten. Das Dokument hat ungespeicherte Änderungen.']);
+    expect(frage.texte).toEqual(['Ohne Speichern gehen die Eingaben in der PDF verloren. Das Dokument hat ungespeicherte Änderungen.']);
     expect(useFormulare.getState().haupt).toBe('datei');
     frage.antwort = 'verwerfen';
     useFormulare.getState().setHaupt('projektkarte');
