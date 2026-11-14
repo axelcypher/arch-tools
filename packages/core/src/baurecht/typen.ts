@@ -173,6 +173,12 @@ export interface FaktDef {
   vorschlag?: string;
   /** nur fragen, wenn … */
   wenn?: Kurz;
+  /**
+   * Wert, der gilt, wenn die Frage nicht gestellt wird (der Auslöser in `wenn` trifft nicht zu) – z. B. „Allee betroffen:
+   * nein“ ohne Bäume. Eine Antwort mit genau diesem Wert gilt unabhängig vom Auslöser und trägt dessen Hinweis bzw.
+   * Widerspruch nicht (ueberHinweis, auswertung.ts). Nur, wenn das fachlich zwingend folgt
+   */
+  ohneAusloeser?: string | number | boolean;
 }
 
 export interface Hinweis {

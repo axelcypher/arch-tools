@@ -259,7 +259,9 @@ function ueberHinweisGestellt(eingang: Record<string, FaktWert>, ableiten: (f: R
     const naechste: Record<string, FaktWert> = {};
     for (const [id, w] of Object.entries(antworten)) {
       const leer = w.wert === null || w.wert === '';
-      const stand = leer ? undefined : frageStand(id, defs[id], ctx);
+      // derselbe Wert wie ohne die Frage (ohneAusloeser): gilt, ob der Auslöser zutrifft oder nicht – trägt ihn nicht
+      const unabhaengig = defs[id]?.ohneAusloeser !== undefined && w.wert === defs[id].ohneAusloeser;
+      const stand = leer || unabhaengig ? undefined : frageStand(id, defs[id], ctx);
       const hinweise = [...new Set((stand?.ueberHinweis ?? []).filter((h) => h !== id))].sort();
       const widerspruch = [...new Set((stand?.ueberWiderspruch ?? []).filter((h) => h !== id))].sort();
       naechste[id] = hinweise.length || widerspruch.length ? { ...w, ...(hinweise.length ? { ueberHinweis: hinweise } : {}), ...(widerspruch.length ? { ueberWiderspruch: widerspruch } : {}) } : w;
@@ -288,7 +290,8 @@ export function ohneUeberHinweis(fakten: Record<string, FaktWert>): Record<strin
 /**
  * Die Antworten, deren Frage gestellt wird (frageGestellt) – ausgewertet mit den abgeleiteten Werten (`ableiten`), bis
  * sich nichts mehr ändert (höchstens einige Runden; eine weggelassene Antwort kann weitere Fragen verbergen). Antworten
- * auf Fragen, die nur über einen Hinweis gestellt werden, tragen ihn mit (ueberHinweisGestellt).
+ * auf Fragen, die nur über einen Hinweis gestellt werden, tragen ihn mit (ueberHinweisGestellt) – außer mit dem Wert, der
+ * auch ohne die Frage gälte (FaktDef.ohneAusloeser).
  */
 export function gestellteAntworten(eingabe: Record<string, FaktWert>, ableiten: (f: Record<string, FaktWert>) => Record<string, FaktWert>, defs: Record<string, FaktDef>, rest: Omit<KurzKontext, 'fakten'>): Record<string, FaktWert> {
   let gestellt = eingabe;

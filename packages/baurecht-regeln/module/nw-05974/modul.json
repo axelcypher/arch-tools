@@ -365,6 +365,7 @@
       "kurz": "Vogelschutzgebiet Hellwegbörde",
       "gruppe": "schutz",
       "typ": "janein",
+      "ohneAusloeser": false,
       "wenn": {
         "f": "schutz.vsg",
         "ist": true

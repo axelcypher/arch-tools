@@ -753,6 +753,7 @@
       "gruppe": "planung",
       "typ": "janein",
       "hilfe": "Ein Aufstellungsbeschluss allein genügt nicht – § 33 Abs. 1 Nr. 1–4 BauGB",
+      "ohneAusloeser": false,
       "wenn": {
         "f": "planung.planaufstellung",
         "ist": true

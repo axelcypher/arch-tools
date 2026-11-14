@@ -1800,6 +1800,11 @@ describe('Fälle aus dem Fachreview', () => {
     expect(a(M4(), ja('schutz.baum'))('nw/lnatschg/41')).toBe('gelb');
     expect(a(M4(), ja('schutz.baum', 'schutz.allee'))('nw/lnatschg/41')).toBe('rot');
     expect(a(M4(), { ...ja('schutz.baum'), ...nein('schutz.allee') })('nw/lnatschg/41')).toBe('gruen');
+    // geschützter Baum nur Hinweis: „keine Allee“ gilt trotzdem (ohne Bäume auch keine Allee – ohneAusloeser), eine Allee
+    // dagegen trägt den Hinweis (Allee nur, wenn es die Bäume gibt); vorher stand bei „nein“ ein unnötiges Gelb
+    const baumHinweis = { 'schutz.baum': { wert: true, herkunft: 'manuell' as const, sicherheit: 'hinweis' as const, grund: 'Test' } };
+    expect(a(M4(), { ...baumHinweis, ...nein('schutz.allee') })('nw/lnatschg/41')).toBe('gruen');
+    expect(a(M4(), { ...baumHinweis, ...ja('schutz.allee') })('nw/lnatschg/41')).not.toBe('gruen');
     // Gegenproben: keine Fällung bzw. keine geschützten Bäume → grün
     expect(a(M4(), nein('vorhaben.baeume_faellen'))('nw/lnatschg/39')).toBe('gruen');
     expect(a(M4(), nein('schutz.baum'))('nw/lnatschg/41')).toBe('gruen');

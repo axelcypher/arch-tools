@@ -256,6 +256,7 @@
       "gruppe": "technik",
       "typ": "janein",
       "hilfe": "§ 6 FeuVO NRW: dann eigener Heizraum",
+      "ohneAusloeser": false,
       "wenn": {
         "f": "technik.feuerstaette",
         "ist": true
@@ -614,6 +615,7 @@
       "gruppe": "schutz",
       "typ": "janein",
       "hilfe": "§ 41 LNatSchG NRW; Alleenkataster des LANUK",
+      "ohneAusloeser": false,
       "wenn": {
         "f": "schutz.baum",
         "ist": true
