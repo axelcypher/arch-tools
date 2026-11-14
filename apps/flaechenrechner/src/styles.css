@@ -253,13 +253,6 @@
   white-space: nowrap;
 }
 
-/* Übergang, bis core es behebt: die Regel der Seitenleisten `.leiste > :first-child { flex: 1 }` (base.css) trifft auch
-   den ersten Eintrag der Werkzeugleiste (`.toolbar.leiste`) und streckt bzw. quetscht „Datei“ – gemeldet */
-.toolbar.leiste > :first-child {
-  flex: 0 1 auto;
-  min-width: auto;
-}
-
 /* Werkzeuge der Zeichenfläche: eine Gruppe in der Werkzeugleiste (bleiben immer sichtbar, siehe Toolbar.tsx) */
 .tb-werkzeuge {
   display: flex;
