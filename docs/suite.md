@@ -19,10 +19,10 @@ Werkzeuge in **einem Programm und einem Fenster**. Sie kann nichts weiter, als z
   herausgelöste Apps kommen dann als Tab zurück.
 - **Kopfleiste** (nach docs/design.md, „Titelleiste“): Tabs (am Tab nur ×), „+“ (App öffnen, Neues Projekt anlegen,
   Startseite), die Version bzw. das Update, im Notbetrieb die Warnung zum Speicherort, das Menü „Einstellungen und
-  Hilfe“ (drei Striche) und die Fensterknöpfe. Im Menü: „Update auf … …“ (nur solange ein Update vorliegt), „Farbschema“,
+  Hilfe“ (drei Striche) und die Fensterknöpfe. Im Menü: „Update auf … …“ (nur solange ein Update bereitliegt), „Farbschema“,
   „Speicherort der Einstellungen …“ und „Fehlerprotokoll …“; neue Fehler zählt eine Marke am Menüknopf.
-- **Herauslösen** (nur Desktop): „In eigenem Fenster öffnen“ im Kontextmenü des Tabs öffnet die App in einem **eigenen Fenster** (z. B. auf dem zweiten
-  Bildschirm) – mit eigenen Fensterknöpfen. **„Andocken“** in dessen Titelleiste holt sie als Tab zurück. Die App
+- **Herauslösen** (nur Desktop): „In eigenem Fenster öffnen“ im Kontextmenü des Tabs öffnet die App in einem
+  **eigenen Fenster** (z. B. auf dem zweiten Bildschirm) – mit eigenen Fensterknöpfen. **„Andocken“** in dessen Titelleiste holt sie als Tab zurück. Die App
   startet dabei neu:
   QUADRIO, TERRIO, NUMIO und RECTIO stellen ungespeicherte Eingaben aus ihrem
   Zwischenstand wieder her; PERMIO behält nicht gespeicherte Eingaben als Entwurf und zeigt sie beim erneuten
@@ -164,9 +164,9 @@ am Tab bzw. in der Titelleiste ● erscheint.
    Änderungen.
 2. **Schließen über die Taskleiste:** Rechtsklick auf Arkly in der Taskleiste → „Fenster schließen“. Erwartet: wie in
    Schritt 1.
-3. **Herausgelöstes Fenster beim Beenden:** NUMIO öffnen, Rechtsklick am Tab → „In eigenem Fenster öffnen“, dort ändern. Im Hauptfenster ×.
-   Erwartet: „Änderungen an ‚NUMIO – …‘ speichern?“. *Speichern* speichert im NUMIO-Fenster, dann schließen sich beide
-   Fenster. Im Task-Manager läuft danach kein Arkly mehr.
+3. **Herausgelöstes Fenster beim Beenden:** NUMIO öffnen, Rechtsklick am Tab → „In eigenem Fenster öffnen“, dort
+   ändern. Im Hauptfenster ×. Erwartet: „Änderungen an ‚NUMIO – …‘ speichern?“. *Speichern* speichert im NUMIO-Fenster,
+   dann schließen sich beide Fenster. Im Task-Manager läuft danach kein Arkly mehr.
 4. **Alt+F4 im herausgelösten Fenster:** TERRIO herauslösen, ändern, im TERRIO-Fenster Alt+F4. Erwartet: „Änderungen
    an ‚…‘ speichern?“ mit „Das Projekt hat ungespeicherte Änderungen.“ bzw. ohne Speichermöglichkeit „Änderungen an
    ‚…‘ verwerfen?“;
@@ -179,8 +179,8 @@ am Tab bzw. in der Titelleiste ● erscheint.
    Tippen), dann Alt+F4 bzw. „Andocken“. Erwartet: bei Alt+F4 die Frage aus Schritt 4 (mit „Das LV hat ungespeicherte Änderungen.“),
    bei „Andocken“ dieselbe Frage wie oben; *Speichern* übernimmt die Eingabe, *Nicht speichern* schließt ohne weitere
    Rückfrage.
-6. **Herauslösen mit Änderungen:** FABRIO als Tab im LV ändern, „In eigenem Fenster öffnen“ (Kontextmenü des Tabs). Erwartet: Frage mit *Speichern* und „Beim
-   Herauslösen startet die App neu. Das LV hat ungespeicherte Änderungen.“; bei RECTIO nur „RECTIO herauslösen?“ mit
+6. **Herauslösen mit Änderungen:** FABRIO als Tab im LV ändern, „In eigenem Fenster öffnen“ (Kontextmenü des Tabs).
+   Erwartet: Frage mit *Speichern* und „Beim Herauslösen startet die App neu. Das LV hat ungespeicherte Änderungen.“; bei RECTIO nur „RECTIO herauslösen?“ mit
    „… Ungespeicherte Änderungen bleiben als Zwischenstand erhalten.“ Gegenprobe ohne Speichermöglichkeit: LEXIO ohne
    Projektdatei herauslösen, ändern, „Andocken“. Erwartet: „Änderungen an ‚LEXIO – …‘ verwerfen?“ mit „Beim Andocken
    startet die App neu, die Änderungen gehen verloren.“ und *Verwerfen und andocken* (Gefahr); *Abbrechen* lässt das

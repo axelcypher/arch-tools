@@ -53,7 +53,7 @@ Namen mit Erklärung – „PERMIO (Formulare)“ –, danach den Namen allein; 
 Die Regeln für Oberfläche und Bedienung (Skalen, Fokus, Knöpfe, Überschriften, Meldungen) stehen in der
 Designrichtlinie [docs/design.md](docs/design.md).
 
-- **Farbschema** (in der Titelleiste im Menü „Einstellungen und Hilfe“, im Rahmen noch als eigenes Menü): Hell, Dunkel oder wie das System
+- **Farbschema** (in der Titelleiste bzw. der Kopfleiste des Rahmens im Menü „Einstellungen und Hilfe“): Hell, Dunkel oder wie das System
   (Auto) – wirkt sofort in allen geöffneten Apps, Fenstern und Tabs der Rahmen-App. „Zeichenfläche abdunkeln“ gibt es
   nur in Apps mit Zeichenfläche bzw. Lageplan.
 - **Speicherort der Einstellungen** (in jeder App „Speicherort der Einstellungen …“ im Menü „Einstellungen und Hilfe“ der Titelleiste – im Notbetrieb als Warnung sichtbar –, im Rahmen ebenso im Menü „Einstellungen und Hilfe“ der Kopfleiste, in ATLAS auch unter

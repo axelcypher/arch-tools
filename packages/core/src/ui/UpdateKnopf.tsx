@@ -15,12 +15,14 @@ const useUpdateDialog = create<{ offen: boolean; setOffen: (offen: boolean) => v
 const liegtVor = (status: string) => status === 'verfuegbar' || status === 'laedt' || status === 'installiert';
 
 /**
- * Punkt „Update auf … installieren …“ für das Menü „Einstellungen und Hilfe“ – nur solange ein Update vorliegt, sonst
- * null (die Version zeigt dann der `UpdateKnopf`). Öffnet den Dialog des `UpdateKnopf`, der dafür eingebunden sein muss.
+ * Punkt „Update auf … …“ für das Menü „Einstellungen und Hilfe“ – nur solange ein Update bereitliegt (gefunden, noch
+ * nicht geladen), sonst null; Laden und Installieren zeigt der Dialog. Zusätzlich zum `UpdateKnopf`, damit das Update
+ * auch im Menü auffindbar ist, wo man die seltenen Befehle sucht (Absprache mit dem Designsystem). Öffnet den Dialog
+ * des `UpdateKnopf`, der dafür eingebunden sein muss.
  */
 export function updatePunkt(): Exclude<MenuePunkt, { trenner: true }> | null {
   const { status, version } = useUpdate.getState();
-  if (!liegtVor(status)) return null;
+  if (status !== 'verfuegbar') return null;
   return { text: `Update auf ${version} …`, titel: `Version ${version} ist verfügbar – installiert ist ${__APP_VERSION__}`, aktion: () => useUpdateDialog.getState().setOffen(true) };
 }
 

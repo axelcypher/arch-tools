@@ -48,6 +48,10 @@ describe('Update-Dialog', () => {
     expect(host.querySelector('.modal')?.textContent).toContain('Version 9.9.9 ist verfügbar');
     await act(async () => [...host.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent === 'Später')!.click());
     expect(host.querySelector('.modal')).toBeNull();
+    // lädt bzw. installiert: kein Punkt mehr (den Stand zeigt der Dialog)
+    act(() => useUpdate.setState({ status: 'laedt' }));
+    expect(updatePunkt()).toBeNull();
+    act(() => useUpdate.setState({ status: 'aktuell', version: undefined }));
   });
 
   it('Abbrechen in den Rückfragen der Rahmen-App verhindert die Installation; während des Wartens gesperrt', async () => {
