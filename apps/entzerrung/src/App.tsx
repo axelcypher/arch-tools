@@ -161,7 +161,7 @@ export function App() {
                 aria-label={dirty ? 'Speichern – ungespeicherte Änderungen' : 'Speichern'}
                 onClick={() => void speichern()}
                 disabled={!doc.fotos.length}
-                title={doc.fotos.length ? 'Projekt mit Fotos speichern (Strg+S)' : 'Erst ein Foto hinzufügen'}
+                title={!doc.fotos.length ? 'Erst ein Foto hinzufügen' : dirty ? 'Projekt mit Fotos speichern (Strg+S) – ungespeicherte Änderungen' : 'Projekt mit Fotos speichern (Strg+S)'}
               >
                 Speichern
               </button>

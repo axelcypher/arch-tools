@@ -337,6 +337,7 @@ describe('RECTIO (Entzerrung)', () => {
     act(() => useEntz.getState().fotoHinzufuegen('f1', 'Süd', 'image/png', 10, 8, new Uint8Array(4)));
     expect(speichernKnopf().classList.contains('ungespeichert')).toBe(true);
     expect(speichernKnopf().getAttribute('aria-label')).toBe('Speichern – ungespeicherte Änderungen');
+    expect(speichernKnopf().title).toContain('ungespeicherte Änderungen');
     expect(knopf(leiste, 'Foto')).toBeDefined();
     expect(leiste.querySelector('[aria-label="Rückgängig"]')).not.toBeNull();
   });
