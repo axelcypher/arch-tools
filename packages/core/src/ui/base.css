@@ -249,6 +249,7 @@ body,
   align-items: center;
   justify-content: center;
   padding: 0 6px;
+  min-width: var(--ctl-h);
 }
 .toolbar.werkzeugleiste > [hidden] {
   display: none;
@@ -261,6 +262,11 @@ body,
   display: flex;
   align-items: center;
   flex: none;
+}
+/* „Mehr“ steht neben Knöpfen mit Text (Hauptknopf): volle Steuerhöhe statt der kleinen von button.icon, quadratisch */
+.werkzeugleiste-mehr > button.icon {
+  min-height: var(--ctl-h);
+  min-width: var(--ctl-h);
 }
 
 .tb-label {

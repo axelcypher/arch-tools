@@ -298,7 +298,8 @@ Zurücksetzen, Sonderfunktionen. Feste Namen, in allen Apps gleich:
   Keine geteilten Knöpfe (Befehl plus Pfeil in einem): Hauptbefehl als Knopf, Varianten im Menü daneben – etwa
   „Position“ (mit Symbol `plus`) und „Hinzufügen ▾“ mit Kostenrisiko und Gliederung.
 - Menüknöpfe tragen Text und Aufklapp-Pfeil (`MenueKnopf`), „Mehr“ nur das Symbol `mehr` (`className="icon"`,
-  `pfeil={false}`, `ariaLabel="Mehr"`, `title` „Mehr – weitere Befehle“).
+  `pfeil={false}`, `ariaLabel="Mehr"`, `title` „Mehr – weitere Befehle“); in der Werkzeugleiste in voller Steuerhöhe und quadratisch,
+  wie die Symbolknöpfe der Kompaktstufe.
 - Schaltet ein Menü zwischen Ansichten um (ATLAS: „Einrichtung“ mit Struktur, Vorlagen, Einstellungen), zeigt der
   Menüknopf mit `.active`, dass eine seiner Ansichten offen ist, und nennt sie im Namen (`ariaLabel` und `title`
   „Einrichtung: Vorlagen“); im Menü ist sie `gewaehlt`.
