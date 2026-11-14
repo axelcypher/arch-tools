@@ -85,7 +85,7 @@ describe('NUMIO', () => {
   it('Werkzeugleiste: Datei | Speichern | Verlauf | Ansicht … Excel, Drucken; seltene Dateibefehle im Menü „Datei“', () => {
     useKosten.getState().load(projektMitKosten());
     const host = render(App);
-    const leiste = host.querySelector<HTMLElement>('.toolbar.leiste')!;
+    const leiste = host.querySelector<HTMLElement>('.toolbar.werkzeugleiste')!;
     expect(leiste.getAttribute('aria-label')).toBe('Werkzeugleiste');
     const knoepfe = [...leiste.querySelectorAll<HTMLButtonElement>(':scope > [data-eintrag] button')].map((b) => b.getAttribute('aria-label') ?? b.textContent?.trim());
     expect(knoepfe).toEqual(['Datei', 'Speichern', 'Rückgängig', 'Wiederholen', 'Kosten', 'Mengen prüfen', 'Excel …', 'Kosten drucken …']);
@@ -111,7 +111,7 @@ describe('NUMIO', () => {
     expect(document.querySelector('[role="menu"]')).toBeNull();
     // Gegenprobe: ohne Gebäude gesperrt, mit Grund
     act(() => useKosten.getState().load(createProject()));
-    act(() => knopf(host.querySelector('.toolbar.leiste')!, 'Datei').click());
+    act(() => knopf(host.querySelector('.toolbar.werkzeugleiste')!, 'Datei').click());
     expect(ifc().getAttribute('aria-disabled')).toBe('true');
     expect(ifc().textContent).toContain('erst Projekt mit Gebäude oder IFC-Modell öffnen');
   });
