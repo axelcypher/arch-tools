@@ -218,6 +218,12 @@ body,
   align-items: center;
   gap: 3px;
 }
+/* Einträge behalten ihre Breite: statt zu schrumpfen wandern sie ins Menü „Mehr“ (kürzbare Einträge setzen
+   flex-shrink und eine min-width selbst) */
+.toolbar.werkzeugleiste > .werkzeugleiste-eintrag,
+.toolbar.werkzeugleiste > .tb-group {
+  flex: none;
+}
 .toolbar.werkzeugleiste > [hidden] {
   display: none;
 }

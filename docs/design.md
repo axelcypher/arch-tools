@@ -316,7 +316,9 @@ Zurücksetzen, Sonderfunktionen. Feste Namen, in allen Apps gleich:
   Punkte) und `rang` (höher = wandert früher); `{ abstand: true }` schiebt den Rest nach rechts; `mehr` liefert die
   festen Punkte des Menüs „Mehr“, `name` benennt die Leiste. Ohne `rang` oder `menue` bleibt ein Eintrag immer
   sichtbar – so der Hauptknopf und die Werkzeuge. Übergelaufene Einträge stehen in „Mehr“ oben, in ihrer Reihenfolge,
-  getrennt von den festen Punkten; hatte ein übergelaufener Knopf den Fokus, bekommt ihn „Mehr“. Die Leiste nimmt die
+  getrennt von den festen Punkten; hatte ein übergelaufener Knopf den Fokus, bekommt ihn „Mehr“. Einträge
+  behalten ihre Breite (`flex: none`) und wandern ins Menü, statt zu schrumpfen; ein Eintrag, der sich kürzen darf
+  (Statustext), setzt `flex-shrink` und eine `min-width` selbst. Die Leiste nimmt die
   volle Breite ihres Elternelements (wächst in der Spalte von `.app` aber nicht in die Höhe) und braucht keine eigene
   `.toolbar` darum.
 
@@ -393,13 +395,14 @@ Links Symbol und Name der App, „Projekte“ und das geöffnete Projekt (mit de
 Rechts nur, was gerade zählt – Version bzw. Update, im Notbetrieb die Warnung zum Speicherort –, dann das Menü der
 Titelleiste und die Fensterknöpfe. Das Menü heißt „Einstellungen und Hilfe“ (Symbol `menue`, drei Striche; Name in
 `ariaLabel` und `title`), damit es sich vom „Mehr“ der Werkzeugleiste darunter unterscheidet. Es enthält, in dieser
-Reihenfolge: „Farbschema“ (aktuelle Wahl als Hinweis; Untermenü mit Auto/Hell/Dunkel als Einfachauswahl und, wenn
+Reihenfolge: solange ein Update bereitliegt „Update auf `Version` …“ mit Trenner (`updatePunkt`) – zusätzlich zur Anzeige
+rechts in der Titelleiste, damit man es auch dort findet, wo die seltenen Befehle stehen (bewusste Ausnahme von „Doppelte
+Einstiege vermeiden“); dann „Farbschema“ (aktuelle Wahl als Hinweis; Untermenü mit Auto/Hell/Dunkel als Einfachauswahl und, wenn
 die App eine Zeichenfläche hat, dem Schalter „Zeichenfläche im dunklen Schema abdunkeln“ – `farbschemaPunkte`),
 „Speicherort der Einstellungen …“ (Einzelplatz bzw. Netzwerk als Hinweis – `speicherortPunkt`), im herausgelösten
 Fenster „Andocken“, Trenner, „Berechnungsregeln …“ (F1) und „Fehlerprotokoll …“. Neue Fehler zählt eine Marke am
 Menüknopf, ebenso sein Name („Einstellungen und Hilfe – 2 neue Fehler im Fehlerprotokoll“) und der Hinweis am Punkt
-(„2 neue“). Bis die Rahmen-App nachgezogen hat (`docs/nachziehen/arkly.md`), zeigt ihre Kopfleiste Farbschema und
-Speicherort noch als eigene Knöpfe. Unter 960px Fensterbreite zeigen Knöpfe mit Symbol nur noch das Symbol: Text in
+(„2 neue“). Unter 960px Fensterbreite zeigen Knöpfe mit Symbol nur noch das Symbol: Text in
 `<span className="titlebar-text">`, der Name bleibt über `aria-label`. Die Tableiste von Arkly zeigt
 unter 1100px am Tab nur Symbol und Namen der App (das Projekt steht im Tooltip); eine Fläche zum Ziehen des Fensters
 bleibt immer frei.

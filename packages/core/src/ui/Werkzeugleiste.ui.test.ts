@@ -178,6 +178,26 @@ describe('Werkzeugleiste (Komponente)', () => {
     expect(document.activeElement).toBe(haupt);
   });
 
+  it('neue teile bei jedem Render ohne Änderung am Aufbau: kein Neumessen; geänderter Aufbau rechnet neu', () => {
+    const host = render(teile());
+    breiteSetzen(480);
+    expect(sichtbar(host)).toEqual(['werkzeuge', 'export', 'haupt']);
+    const messung = leistenMessung.breite;
+    let gemessen = 0;
+    leistenMessung.breite = (el) => {
+      gemessen++;
+      return messung(el);
+    };
+    // gleicher Aufbau, neues Array (wie beim Render der App): nichts messen
+    act(() => root!.render(createElement(Fragment, null, createElement(Werkzeugleiste, { teile: teile(), name: 'Plan' }), createElement(MenueHost))));
+    expect(gemessen).toBe(0);
+    // Gegenprobe: ein Eintrag mehr – neu gerechnet
+    const mehrTeile = [...teile(), { id: 'neu', rang: 3, inhalt: knopf('Extra', 60), menue: { text: 'Extra' } }];
+    act(() => root!.render(createElement(Fragment, null, createElement(Werkzeugleiste, { teile: mehrTeile, name: 'Plan' }), createElement(MenueHost))));
+    expect(gemessen).toBeGreaterThan(0);
+    expect(sichtbar(host)).not.toContain('neu');
+  });
+
   it('feste Punkte: „Mehr“ steht immer am Ende, auch wenn alles passt; ausgeblendete Knöpfe sind nicht per Tab erreichbar', () => {
     const host = render(teile(), () => [{ text: 'Protokoll …' }]);
     expect(host.querySelector<HTMLElement>('.werkzeugleiste-mehr')!.hidden).toBe(false);

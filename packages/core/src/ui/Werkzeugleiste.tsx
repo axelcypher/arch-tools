@@ -97,10 +97,16 @@ export function Werkzeugleiste({
   const [weg, setWeg] = useState<Set<string>>(() => new Set());
   const festePunkte = mehr?.() ?? [];
   const mehrImmer = festePunkte.length > 0;
+  // `teile` bauen die Apps bei jedem Render neu: die Rechnung liest sie aus dem Ref und hängt nur am Aufbau (ids, Rang,
+  // Menü, Abstandhalter) – neu gemessen wird bei Größenänderungen (ResizeObserver auf Leiste und Einträgen), nicht je Render
+  const teileRef = useRef(teile);
+  teileRef.current = teile;
+  const aufbau = teile.map((t) => (istAbstand(t) ? '|' : `${t.id}:${t.rang ?? ''}:${t.menue === undefined ? 0 : 1}`)).join(',');
 
   const berechnen = useCallback(() => {
     const el = ref.current;
     if (!el) return;
+    const teile = teileRef.current;
     // sichtbare Einträge neu messen, für ausgeblendete gilt die zuletzt gemessene Breite
     for (const k of el.querySelectorAll<HTMLElement>(':scope > [data-eintrag]')) {
       if (!k.hidden) breiten.current.set(k.dataset.eintrag!, leistenMessung.breite(k));
@@ -122,14 +128,15 @@ export function Werkzeugleiste({
       if (fokusId && neu.has(fokusId) && !alt.has(fokusId)) fokusAufMehr.current = true;
       return neu;
     });
-  }, [teile, mehrImmer]);
+  }, [aufbau, mehrImmer]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useLayoutEffect(() => {
     berechnen();
     const el = ref.current;
     window.addEventListener('resize', berechnen);
     const ro = typeof ResizeObserver !== 'undefined' && el ? new ResizeObserver(() => berechnen()) : null;
-    if (ro && el) ro.observe(el);
+    // die Leiste selbst und jeder Eintrag: ändert sich ein Knopftext, misst die Leiste neu
+    if (ro && el) for (const k of [el, ...el.querySelectorAll(':scope > [data-eintrag], :scope > .werkzeugleiste-mehr')]) ro.observe(k);
     return () => {
       window.removeEventListener('resize', berechnen);
       ro?.disconnect();

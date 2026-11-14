@@ -1,34 +1,34 @@
 {
   "flaechenrechner": {
     "stufe": "patch",
-    "notiz": "Werkzeugleiste (gemeinsamer Kern): eigene CSS-Klasse statt „leiste“, damit die Regeln der Seitenleisten dort nicht greifen."
+    "notiz": "Werkzeugleiste (gemeinsamer Kern): eigene CSS-Klasse statt „leiste“, Einträge schrumpfen nicht mehr (sie wandern ins Menü „Mehr“), weniger Neumessen beim Arbeiten."
   },
   "grz": {
     "stufe": "patch",
-    "notiz": "Werkzeugleiste (gemeinsamer Kern): eigene CSS-Klasse statt „leiste“, damit die Regeln der Seitenleisten dort nicht greifen."
+    "notiz": "Werkzeugleiste (gemeinsamer Kern): eigene CSS-Klasse statt „leiste“, Einträge schrumpfen nicht mehr (sie wandern ins Menü „Mehr“), weniger Neumessen beim Arbeiten."
   },
   "kosten": {
     "stufe": "patch",
-    "notiz": "Werkzeugleiste (gemeinsamer Kern): eigene CSS-Klasse statt „leiste“, damit die Regeln der Seitenleisten dort nicht greifen."
+    "notiz": "Werkzeugleiste (gemeinsamer Kern): eigene CSS-Klasse statt „leiste“, Einträge schrumpfen nicht mehr (sie wandern ins Menü „Mehr“), weniger Neumessen beim Arbeiten."
   },
   "ordner": {
     "stufe": "patch",
-    "notiz": "Werkzeugleiste (gemeinsamer Kern): eigene CSS-Klasse statt „leiste“, damit die Regeln der Seitenleisten dort nicht greifen."
+    "notiz": "Werkzeugleiste (gemeinsamer Kern): eigene CSS-Klasse statt „leiste“, Einträge schrumpfen nicht mehr (sie wandern ins Menü „Mehr“), weniger Neumessen beim Arbeiten."
   },
   "entzerrung": {
     "stufe": "patch",
-    "notiz": "Werkzeugleiste (gemeinsamer Kern): eigene CSS-Klasse statt „leiste“, damit die Regeln der Seitenleisten dort nicht greifen."
+    "notiz": "Werkzeugleiste (gemeinsamer Kern): eigene CSS-Klasse statt „leiste“, Einträge schrumpfen nicht mehr (sie wandern ins Menü „Mehr“), weniger Neumessen beim Arbeiten."
   },
   "formulare": {
     "stufe": "patch",
-    "notiz": "Werkzeugleiste (gemeinsamer Kern): eigene CSS-Klasse statt „leiste“, damit die Regeln der Seitenleisten dort nicht greifen."
+    "notiz": "Werkzeugleiste (gemeinsamer Kern): eigene CSS-Klasse statt „leiste“, Einträge schrumpfen nicht mehr (sie wandern ins Menü „Mehr“), weniger Neumessen beim Arbeiten."
   },
   "ava": {
     "stufe": "patch",
-    "notiz": "Werkzeugleiste (gemeinsamer Kern): eigene CSS-Klasse statt „leiste“, damit die Regeln der Seitenleisten dort nicht greifen."
+    "notiz": "Werkzeugleiste (gemeinsamer Kern): eigene CSS-Klasse statt „leiste“, Einträge schrumpfen nicht mehr (sie wandern ins Menü „Mehr“), weniger Neumessen beim Arbeiten."
   },
   "baurecht": {
     "stufe": "patch",
-    "notiz": "Werkzeugleiste (gemeinsamer Kern): eigene CSS-Klasse statt „leiste“, damit die Regeln der Seitenleisten dort nicht greifen."
+    "notiz": "Werkzeugleiste (gemeinsamer Kern): eigene CSS-Klasse statt „leiste“, Einträge schrumpfen nicht mehr (sie wandern ins Menü „Mehr“), weniger Neumessen beim Arbeiten."
   }
 }
