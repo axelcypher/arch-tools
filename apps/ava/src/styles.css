@@ -1497,7 +1497,7 @@ input.ava-fehler {
 
 /* Statusmeldung unter der Rechnungsleiste: dauerhafter Live-Bereich (leer ohne Höhe) */
 .ava-leiste-status:not(:empty) {
-  padding: 4px 6px;
+  padding: var(--s1) var(--s2);
 }
 
 .ava-lv-tabelle:focus-visible {

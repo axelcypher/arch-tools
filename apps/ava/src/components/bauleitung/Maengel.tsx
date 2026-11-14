@@ -160,7 +160,7 @@ export function Maengel() {
             rang: 2,
             menue: { text: 'Mängelanzeige mailen …', deaktiviert: !offeneListe.length || !gewerk, hinweis: !gewerk ? 'Erst Gewerk wählen' : offeneListe.length ? undefined : 'Keine offenen Mängel', titel: 'Mängelanzeige mit den offenen Mängeln an die Firma des Gewerks (Mailentwurf mit PDF)', aktion: () => void pdf('mail') },
             inhalt: (
-              <button onClick={() => void pdf('mail')} disabled={!offeneListe.length || !gewerk} title={!gewerk ? 'Erst ein Gewerk wählen' : offeneListe.length ? 'Mängelanzeige mit den offenen Mängeln an die Firma des Gewerks (Mailentwurf mit PDF)' : 'Keine offenen Mängel'}>
+              <button onClick={() => void pdf('mail')} disabled={!offeneListe.length || !gewerk} title={!gewerk ? 'Erst Gewerk wählen' : offeneListe.length ? 'Mängelanzeige mit den offenen Mängeln an die Firma des Gewerks (Mailentwurf mit PDF)' : 'Keine offenen Mängel'}>
                 Mängelanzeige mailen …
               </button>
             ),
