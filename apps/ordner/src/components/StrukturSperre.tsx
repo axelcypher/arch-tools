@@ -24,7 +24,7 @@ export function StrukturSperre() {
     const presets = struktur.presets;
     const ok = await bestaetigen(
       'Angezeigte Struktur übernehmen?',
-      `„${struktur.name}“ (${struktur.ordner.length} Ordner, ${presets.length} ${presets.length === 1 ? 'Preset' : 'Presets'}) ersetzt die nicht lesbare Struktur. Die Bürostruktur gilt für alle, die diesen Konfigurationsordner nutzen. Der bisherige Inhalt wird vorher gesichert (unter „Struktur“ → „Sicherungen“); danach lässt sich wieder bearbeiten.`,
+      `„${struktur.name}“ (${struktur.ordner.length} Ordner, ${presets.length} ${presets.length === 1 ? 'Preset' : 'Presets'}) ersetzt die nicht lesbare Struktur. Die Bürostruktur gilt für alle, die diesen Konfigurationsordner nutzen. Der bisherige Inhalt wird vorher gesichert (unter „Einrichtung“ → „Struktur“ → „Sicherungen“); danach lässt sich wieder bearbeiten.`,
       'Übernehmen',
       true,
     );

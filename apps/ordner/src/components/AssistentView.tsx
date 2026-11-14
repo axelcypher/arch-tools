@@ -655,7 +655,7 @@ export function AssistentView({
                 </button>
                 {laeuft && <span className="busy">{laeuft}</span>}
               </div>
-              {desktop && !stammordner && <p className="muted small-text">Tipp: Unter „Einstellungen“ den Stammordner der Projekte einstellen – dann stehen sie hier zur Auswahl.</p>}
+              {desktop && !stammordner && <p className="muted small-text">Tipp: Unter „Einrichtung“ → „Einstellungen“ den Stammordner der Projekte einstellen – dann stehen sie hier zur Auswahl.</p>}
             </div>
           </div>
         )}
@@ -770,7 +770,7 @@ export function AssistentView({
               <legend>Welche Vorlagen?</legend>
               <PresetAuswahl struktur={struktur} auswahl={stamm.presets} onChange={(presets) => aendereStamm({ presets })} nichtAutomatisch={nichtAutomatisch} />
             </fieldset>
-            <p className="muted small-text">Welche Datei wohin kommt und wie sie heißt, steht unter „Vorlagen“. Die Auswahl wird in der Projektdatei vermerkt.</p>
+            <p className="muted small-text">Welche Datei wohin kommt und wie sie heißt, steht unter „Einrichtung“ → „Vorlagen“. Die Auswahl wird in der Projektdatei vermerkt.</p>
           </>
         )}
 

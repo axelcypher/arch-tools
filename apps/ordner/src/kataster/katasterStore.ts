@@ -154,11 +154,11 @@ export const useKataster = create<KatasterState>()((set, get) => {
     const meta = oap.projekt.meta;
     if (!meta.koordinaten) return fehlschlag('Für das Projekt sind keine Koordinaten gespeichert – bitte die Projektadresse in den Stammdaten speichern (die Koordinaten werden dabei abgefragt).');
     const programm = get().programm;
-    if (!programm) return fehlschlag('Pfad zu qgis_process fehlt – bitte unter „Katasterpläne“ wählen oder suchen lassen.');
+    if (!programm) return fehlschlag('Pfad zu qgis_process fehlt – bitte unter „Einrichtung“ → „Katasterpläne“ wählen oder suchen lassen.');
     const plaene = get().einstellungen.plaene.filter((p) => ids.includes(p.id));
     if (!plaene.length) return fehlschlag('Bitte mindestens einen Plan wählen.');
     const ordner = get().zielOrdner();
-    if (ordner === null) return fehlschlag('In der Projektdatei steht kein aktiver Antrag – bitte unter „Katasterpläne“ einen festen Ordner für die Ablage wählen.');
+    if (ordner === null) return fehlschlag('In der Projektdatei steht kein aktiver Antrag – bitte unter „Einrichtung“ → „Katasterpläne“ einen festen Ordner für die Ablage wählen.');
 
     // Vorlage: die der Projektdatei; beim ersten Export die globale übernehmen
     if (!get().projektVorlage() && !(await get().projektVorlageAktualisieren())) return [];
@@ -385,7 +385,7 @@ export const useKataster = create<KatasterState>()((set, get) => {
         return false;
       }
       if (!pfad) {
-        fehlschlag('Keine QGIS-Vorlage gewählt – bitte unter „Katasterpläne“ festlegen.');
+        fehlschlag('Keine QGIS-Vorlage gewählt – bitte unter „Einrichtung“ → „Katasterpläne“ festlegen.');
         return false;
       }
       try {

@@ -159,7 +159,7 @@ export function VorlagenordnerZeile({ leerText = 'keiner – es entstehen nur Or
           </button>
         )}
       </div>
-      {gesperrt && <p className="muted small-text po-vorlagenordner-gesperrt">Der Vorlagenordner lässt sich erst wieder ändern, wenn die Bürostruktur lesbar ist (siehe „Struktur“).</p>}
+      {gesperrt && <p className="muted small-text po-vorlagenordner-gesperrt">Der Vorlagenordner lässt sich erst wieder ändern, wenn die Bürostruktur lesbar ist (siehe „Einrichtung“ → „Struktur“).</p>}
       {vorlagenFehler && <p className="meldung fehler" role="alert">{vorlagenFehler}</p>}
     </>
   );
@@ -182,7 +182,7 @@ export function PresetAuswahl({
 }) {
   const { presets, unbekannt } = aktivePresets(struktur, auswahl, nichtAutomatisch.keys());
   const gewaehlt = new Set(presets.map((p) => p.name));
-  if (!struktur.presets.length && !unbekannt.length) return <p className="muted small-text">Keine Presets – unter „Vorlagen“ lassen sich welche anlegen.</p>;
+  if (!struktur.presets.length && !unbekannt.length) return <p className="muted small-text">Keine Presets – unter „Einrichtung“ → „Vorlagen“ lassen sich welche anlegen.</p>;
   const umschalten = (name: string) => onChange(gewaehlt.has(name) ? presets.map((p) => p.name).filter((n) => n !== name) : struktur.presets.map((p) => p.name).filter((n) => n === name || gewaehlt.has(n)));
   return (
     <div className="po-presetwahl">
@@ -200,7 +200,7 @@ export function PresetAuswahl({
       ))}
       {[...nichtAutomatisch].map(([name, a]) => (
         <p key={name} className="meldung po-nicht-automatisch">
-          „{name}“ ist nicht vorausgewählt: {abweichungText(a)} – der Vorlagenordner ist anders gegliedert als die Struktur. Unter „Vorlagen“ lassen sich seine Ordner gezielt
+          „{name}“ ist nicht vorausgewählt: {abweichungText(a)} – der Vorlagenordner ist anders gegliedert als die Struktur. Unter „Einrichtung“ → „Vorlagen“ lassen sich seine Ordner gezielt
           zuordnen.
         </p>
       ))}
