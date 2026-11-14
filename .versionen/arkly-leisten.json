@@ -1,35 +1,35 @@
 {
   "flaechenrechner": {
     "stufe": "patch",
-    "notiz": "Liegt ein Update vor, steht es auch oben im Menü „Einstellungen und Hilfe“ der Titelleiste („Update auf … …“)."
+    "notiz": "Steht ein Update bereit, steht es auch oben im Menü „Einstellungen und Hilfe“ der Titelleiste („Update auf … …“)."
   },
   "grz": {
     "stufe": "patch",
-    "notiz": "Liegt ein Update vor, steht es auch oben im Menü „Einstellungen und Hilfe“ der Titelleiste („Update auf … …“)."
+    "notiz": "Steht ein Update bereit, steht es auch oben im Menü „Einstellungen und Hilfe“ der Titelleiste („Update auf … …“)."
   },
   "kosten": {
     "stufe": "patch",
-    "notiz": "Liegt ein Update vor, steht es auch oben im Menü „Einstellungen und Hilfe“ der Titelleiste („Update auf … …“)."
+    "notiz": "Steht ein Update bereit, steht es auch oben im Menü „Einstellungen und Hilfe“ der Titelleiste („Update auf … …“)."
   },
   "ordner": {
     "stufe": "patch",
-    "notiz": "Liegt ein Update vor, steht es auch oben im Menü „Einstellungen und Hilfe“ der Titelleiste („Update auf … …“)."
+    "notiz": "Steht ein Update bereit, steht es auch oben im Menü „Einstellungen und Hilfe“ der Titelleiste („Update auf … …“)."
   },
   "entzerrung": {
     "stufe": "patch",
-    "notiz": "Liegt ein Update vor, steht es auch oben im Menü „Einstellungen und Hilfe“ der Titelleiste („Update auf … …“)."
+    "notiz": "Steht ein Update bereit, steht es auch oben im Menü „Einstellungen und Hilfe“ der Titelleiste („Update auf … …“)."
   },
   "formulare": {
     "stufe": "patch",
-    "notiz": "Liegt ein Update vor, steht es auch oben im Menü „Einstellungen und Hilfe“ der Titelleiste („Update auf … …“)."
+    "notiz": "Steht ein Update bereit, steht es auch oben im Menü „Einstellungen und Hilfe“ der Titelleiste („Update auf … …“)."
   },
   "ava": {
     "stufe": "patch",
-    "notiz": "Liegt ein Update vor, steht es auch oben im Menü „Einstellungen und Hilfe“ der Titelleiste („Update auf … …“)."
+    "notiz": "Steht ein Update bereit, steht es auch oben im Menü „Einstellungen und Hilfe“ der Titelleiste („Update auf … …“)."
   },
   "baurecht": {
     "stufe": "patch",
-    "notiz": "Liegt ein Update vor, steht es auch oben im Menü „Einstellungen und Hilfe“ der Titelleiste („Update auf … …“)."
+    "notiz": "Steht ein Update bereit, steht es auch oben im Menü „Einstellungen und Hilfe“ der Titelleiste („Update auf … …“)."
   },
   "suite": {
     "stufe": "minor",
