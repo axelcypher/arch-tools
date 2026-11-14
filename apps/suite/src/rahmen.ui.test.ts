@@ -8,6 +8,7 @@ import { useTheme } from '@core/platform/theme';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { APPS } from './apps';
+import { logger } from '@core/platform/log';
 import { UNGESPEICHERT_MAX } from '@core/platform/rahmen';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -171,10 +172,36 @@ describe('Rahmen-App', () => {
     expect(useRahmen.getState().tabs).toEqual([]);
   });
 
+  it('Kopfleiste: am Tab nur ×; Farbschema, Speicherort und Fehlerprotokoll im Menü „Einstellungen und Hilfe“, neue Fehler als Marke', async () => {
+    const host = render();
+    act(() => karte(host, 'QUADRIO').click());
+    expect([...tab(host, 'QUADRIO').querySelectorAll('.rahmen-tab-knopf')].map((b) => b.getAttribute('title'))).toEqual(['Schließen (Entf)']);
+    const knopf = () => host.querySelector<HTMLButtonElement>('button.titlebar-menue')!;
+    expect(knopf().getAttribute('aria-label')).toBe('Einstellungen und Hilfe');
+    expect(knopf().getAttribute('aria-haspopup')).toBe('menu');
+    // keine eigenen Knöpfe mehr für Protokoll und Farbschema
+    expect([...host.querySelectorAll('header button')].map((b) => b.getAttribute('aria-label') ?? b.textContent)).not.toContainEqual(expect.stringMatching(/Protokoll|Farbschema/));
+    act(() => knopf().click());
+    const punkte = () => [...document.querySelectorAll('.menue [role^="menuitem"]')].map((b) => b.textContent?.trim());
+    expect(punkte()).toEqual([expect.stringContaining('Farbschema'), expect.stringContaining('Fehlerprotokoll …')]);
+    act(() => document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+    expect(document.activeElement).toBe(knopf());
+    // neuer Fehler: Marke am Knopf und im Namen; „Fehlerprotokoll …“ öffnet das Protokoll und setzt die Marke zurück
+    act(() => logger('test').error('Testfehler'));
+    expect(knopf().getAttribute('aria-label')).toBe('Einstellungen und Hilfe – ein neuer Fehler im Fehlerprotokoll');
+    expect(knopf().querySelector('.titlebar-badge')?.textContent).toBe('1');
+    act(() => knopf().click());
+    act(() => ([...document.querySelectorAll('.menue button')].find((b) => b.textContent?.includes('Fehlerprotokoll')) as HTMLButtonElement).click());
+    expect(knopf().querySelector('.titlebar-badge')).toBeNull();
+    expect(host.querySelector('.modal')).not.toBeNull();
+  });
+
   it('im Browser kein Herauslösen (dort gäbe es kein Andocken); Andocken holt eine App als Tab zurück', () => {
     const host = render();
     act(() => karte(host, 'RECTIO').click());
-    expect(tab(host, 'RECTIO').querySelector('button[title="In eigenem Fenster öffnen"]')).toBeNull();
+    act(() => tab(host, 'RECTIO').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 10, clientY: 10 })));
+    expect([...document.querySelectorAll('.menue button')].map((b) => b.textContent)).not.toContainEqual(expect.stringContaining('In eigenem Fenster öffnen'));
+    act(() => document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
     act(() => useRahmen.getState().herausgeloest('entzerrung'));
     expect(karte(host, 'RECTIO').textContent).toContain('läuft in eigenem Fenster');
     act(() => useRahmen.getState().angedockt('entzerrung'));
