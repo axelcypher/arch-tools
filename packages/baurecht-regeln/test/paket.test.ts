@@ -33,7 +33,8 @@ describe('Wert ohne Auslöser (ohneAusloeser)', () => {
   });
 
   it('Auslöser nur Hinweis: „nein“ trägt ihn nicht, „ja“ schon – je Angabe mit den Definitionen des Pakets', () => {
-    const rest = { merkmale: { Vorhaben: 'Errichtung', Gebäudeart: 'Einfamilienhaus' }, einreichung: '2026-12-01', heute: HEUTE, bausteine: Object.assign({}, ...aktiveModule(paket.module, SOEST).map((m) => m.bausteine ?? {})) };
+    const bausteine = Object.assign({}, ...aktiveModule(paket.module, SOEST).map((m) => m.bausteine ?? {}));
+    const rest = { merkmale: { Vorhaben: 'Errichtung', Gebäudeart: 'Einfamilienhaus' }, einreichung: '2026-12-01', heute: HEUTE, bausteine };
     for (const [id, d] of mit) {
       // alle Angaben im „wenn“ als Hinweis „ja“ (Soest: Planaufstellung oder Entwurf eines Bebauungsplans)
       const ausloeser = [...JSON.stringify(d.wenn).matchAll(/"f":"([^"]+)"/g)].map((m) => m[1]);
