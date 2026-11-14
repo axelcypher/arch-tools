@@ -118,9 +118,14 @@ Konfigurationsordner) und Projektdateien sind dieselben.
   Fenster während des Speicherns zugeht oder der Tab neu lädt; Beenden bleibt danach möglich. Was ein Umzug aus Änderungen macht, steht je App in
   `BEIM_UMZUG` (`rahmen.ts`), die Rückfrage in `ui/umzug.ts`: zuerst die Folge („Beim Herauslösen startet die App
   neu.“), dann ein kurzer Satz. Apps, die die Änderungen verlieren, nennen ihren Satz `ungespeichert` und bieten
-  *Speichern* an; können sie gerade nicht speichern (LEXIO ohne Projektdatei), kommt „Ungespeicherte Änderungen
-  verwerfen?“ mit „Verwerfen und …“ als Gefahrknopf. Die übrigen fragen „<App> herauslösen?“ bzw. „… andocken?“ mit
+  *Speichern* an; können sie gerade nicht speichern (LEXIO ohne Projektdatei), kommt „Änderungen an ‚…‘ verwerfen?“
+  mit „Verwerfen und …“ als Gefahrknopf. Die übrigen fragen „<App> herauslösen?“ bzw. „… andocken?“ mit
   „Ungespeicherte Änderungen bleiben als Zwischenstand erhalten.“ (PERMIO mit eigenem Text zu Entwurf und Dokumenten).
+  Ob eine App speichern kann, meldet die Titelleiste mit dem Status (`kannSpeichern: false`, wenn sie keine
+  Speicherfunktion `onSpeichern` hat); dann fragt Arkly auch beim Schließen, Beenden und Update „Änderungen an ‚…‘
+  verwerfen?“ mit „Verwerfen und schließen“ (bzw. „… beenden“, „… neu starten“) statt „… speichern?“ – ebenso die
+  eigene Schließen-Rückfrage der Titelleiste. PERMIO meldet das, solange Dokumente bearbeitet werden oder die
+  Dateiansicht offen ist; Formulareingaben bleiben dabei trotzdem als Entwurf.
 - Die Apps teilen sich im Rahmen einen Ursprung und damit den Browser-Speicher; ihre Schlüssel und Datenbanken sind
   je App verschieden (`projektordner:…`, `formulare:…`, `arch-flaechen-tool`, `grz-nachweis`, `kostenermittlung`,
   `arch-tools-entzerrung`, `ava:…`, `baurecht:…`). Gemeinsam sind nur das Farbschema und die Nachricht „Speicherort der Einstellungen gewechselt“ (`arch-tools:konfig-ort`) – beides wirkt über das Ereignis `storage` sofort in allen Tabs und Fenstern.
@@ -160,7 +165,8 @@ am Tab bzw. in der Titelleiste ● erscheint.
    Erwartet: „Änderungen an ‚NUMIO – …‘ speichern?“. *Speichern* speichert im NUMIO-Fenster, dann schließen sich beide
    Fenster. Im Task-Manager läuft danach kein Arkly mehr.
 4. **Alt+F4 im herausgelösten Fenster:** TERRIO herauslösen, ändern, im TERRIO-Fenster Alt+F4. Erwartet: „Änderungen
-   an ‚…‘ speichern?“ mit „Das Projekt hat ungespeicherte Änderungen.“ bzw. „Ungespeicherte Änderungen verwerfen?“;
+   an ‚…‘ speichern?“ mit „Das Projekt hat ungespeicherte Änderungen.“ bzw. ohne Speichermöglichkeit „Änderungen an
+   ‚…‘ verwerfen?“;
    *Abbrechen* lässt das Fenster offen.
 5. **Andocken mit Änderungen:** FABRIO herauslösen, im LV ändern, „Andocken“. Erwartet: „Änderungen an ‚FABRIO – …‘
    speichern?“ mit „Beim Andocken startet die App neu. Das LV hat ungespeicherte Änderungen.“ *Abbrechen* lässt das
@@ -173,11 +179,14 @@ am Tab bzw. in der Titelleiste ● erscheint.
 6. **Herauslösen mit Änderungen:** FABRIO als Tab im LV ändern, ⧉. Erwartet: Frage mit *Speichern* und „Beim
    Herauslösen startet die App neu. Das LV hat ungespeicherte Änderungen.“; bei RECTIO nur „RECTIO herauslösen?“ mit
    „… Ungespeicherte Änderungen bleiben als Zwischenstand erhalten.“ Gegenprobe ohne Speichermöglichkeit: LEXIO ohne
-   Projektdatei herauslösen, ändern, „Andocken“. Erwartet: „Ungespeicherte Änderungen verwerfen?“ mit „Beim Andocken
+   Projektdatei herauslösen, ändern, „Andocken“. Erwartet: „Änderungen an ‚LEXIO – …‘ verwerfen?“ mit „Beim Andocken
    startet die App neu, die Änderungen gehen verloren.“ und *Verwerfen und andocken* (Gefahr); *Abbrechen* lässt das
    Fenster stehen. Bei ATLAS mit geänderten Stammdaten im Assistenten (Ergänzen): Frage mit *Speichern*;
    *Speichern* legt nichts an, ATLAS bleibt als Tab und meldet „Nicht alles gespeichert“. Mit geändertem Text der
    Ordnerliste (Struktur, Textansicht) übernimmt *Speichern* ihn, danach wird herausgelöst.
+   Ohne Speichermöglichkeit im Hauptfenster: LEXIO ohne Projektdatei als Tab öffnen, ändern, Tab ×. Erwartet:
+   „Änderungen an ‚LEXIO – …‘ verwerfen?“ mit „Die Änderungen gehen beim Schließen verloren.“ und *Verwerfen und
+   schließen* (Gefahr); danach LEXIO erneut öffnen, ändern und Alt+F4 im Hauptfenster: *Verwerfen und beenden*.
 7. **Update mit Änderungen:** Liegt ein Update vor, in einem Tab und einem herausgelösten Fenster ändern, Update-Knopf
    → „Jetzt installieren“. Erwartet: erst die Fragen je App, *Abbrechen* bricht das Update ab; erst nach den Fragen
    wird geladen und neu gestartet.

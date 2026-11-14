@@ -163,6 +163,22 @@ describe('Rahmen-App auf dem Desktop', () => {
     expect(useRahmen.getState()).toMatchObject({ tabs: ['flaechenrechner'], fenster: ['ordner'] });
     expect(fenster.offen.get('app-ordner')?.opts).toMatchObject({ url: 'apps/ordner/index.html?rahmen=fenster&app=ordner', decorations: false });
     expect(sperren.frei).toEqual(['ordner']);
+    // kann die App gerade nicht speichern (LEXIO ohne Projektdatei): nur Verwerfen
+    act(() => useRahmen.getState().oeffnen('baurecht'));
+    act(() =>
+      window.dispatchEvent(
+        new MessageEvent('message', {
+          data: { typ: 'arch-tools:status', app: 'LEXIO', name: 'B1', dirty: true, kannSpeichern: false },
+          origin: window.location.origin,
+          source: frame(host, 'baurecht').contentWindow,
+        }),
+      ),
+    );
+    await herausloesen(host, 'LEXIO');
+    expect(dialog(host)?.textContent).toContain('Änderungen an ‚LEXIO – B1‘ verwerfen?');
+    expect([...dialog(host)!.querySelectorAll('button')].map((b) => b.textContent)).toEqual(['Abbrechen', 'Verwerfen und herauslösen']);
+    await antwort(host, 'Abbrechen');
+    act(() => useRahmen.getState().schliessen('baurecht'));
     // QUADRIO verliert nichts: nur Bestätigen, kein Speichern
     await herausloesen(host, 'QUADRIO');
     expect(dialog(host)?.textContent).toContain('QUADRIO herauslösen?');
@@ -226,6 +242,33 @@ describe('Rahmen-App auf dem Desktop', () => {
     expect(anfragen).toHaveLength(1);
     expect(fenster.offen.has('app-ordner')).toBe(false);
     expect(fenster.haupt!.destroy).toHaveBeenCalled();
+  });
+
+  it('Beenden ohne Speichermöglichkeit (kannSpeichern: false): Tab und Fenster fragen „verwerfen?“ mit „Verwerfen und beenden“', async () => {
+    const host = await render();
+    act(() => useRahmen.getState().oeffnen('kosten'));
+    act(() => useRahmen.getState().oeffnen('baurecht'));
+    await herausloesen(host, 'NUMIO');
+    await senden('arch-tools:an-rahmen', { typ: 'arch-tools:status', app: 'NUMIO', kennung: 'kosten', name: 'K1', dirty: true, kannSpeichern: false });
+    act(() =>
+      window.dispatchEvent(
+        new MessageEvent('message', {
+          data: { typ: 'arch-tools:status', app: 'LEXIO', name: 'B1', dirty: true, kannSpeichern: false },
+          origin: window.location.origin,
+          source: frame(host, 'baurecht').contentWindow,
+        }),
+      ),
+    );
+    await act(async () => fenster.haupt!.schliessenAngefragt!({ preventDefault: () => {} }));
+    expect(dialog(host)?.textContent).toContain('Änderungen an ‚LEXIO – B1‘ verwerfen?');
+    expect(dialog(host)?.textContent).toContain('Die Änderungen gehen beim Beenden verloren.');
+    expect([...dialog(host)!.querySelectorAll('button')].map((b) => b.textContent)).toEqual(['Abbrechen', 'Verwerfen und beenden']);
+    await antwort(host, 'Verwerfen und beenden');
+    expect(dialog(host)?.textContent).toContain('Änderungen an ‚NUMIO – K1‘ verwerfen?');
+    expect([...dialog(host)!.querySelectorAll('button')].map((b) => b.textContent)).toEqual(['Abbrechen', 'Verwerfen und beenden']);
+    // Abbrechen: nichts wird geschlossen
+    await antwort(host, 'Abbrechen');
+    expect(fenster.haupt!.destroy).not.toHaveBeenCalled();
   });
 
   it('Fenster schließt, während es speichert: die Rückfrage endet, Beenden bleibt möglich', async () => {
