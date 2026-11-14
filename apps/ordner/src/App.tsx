@@ -19,7 +19,7 @@ import { ASSISTENT_ANGABEN, ORDNERSTRUKTUR, satzUngespeichert } from './ungespei
 type Ansicht = 'projekt' | 'pruefen' | 'mails' | 'struktur' | 'vorlagen' | 'kataster' | 'einstellungen';
 
 const ANSICHTEN: { id: Ansicht; label: string; title: string }[] = [
-  { id: 'projekt', label: 'Assistent', title: 'Assistent: neues Projekt anlegen oder ein bestehendes fortschreiben – Stammdaten, Grundstück, Bauherr, Umfang, Beteiligte, Vorlagen, Trockenlauf' },
+  { id: 'projekt', label: 'Assistent', title: 'Assistent: neues Projekt anlegen oder ein bestehendes fortschreiben – Stammdaten, Grundstück, Bauherr, Umfang, Beteiligte, Vorlagen, Anlegen' },
   { id: 'pruefen', label: 'Ordner prüfen', title: 'Vorhandenen Projektordner mit der Struktur vergleichen – es wird nichts verschoben' },
   { id: 'mails', label: 'Mails', title: 'Mails (.msg) im Projektordner prüfen und nach dem Schema benennen: Projektcode von|an Name JJMMTT Thema' },
   { id: 'struktur', label: 'Struktur', title: 'Ordnerbaum des Büros zum Klicken – mit Bausteinen für wiederkehrende Unterordner (z. B. Gewerke) – und Namensschemata' },
@@ -57,7 +57,8 @@ export function App() {
   const nachRueckfrage = (neustart: () => void) => {
     const was = assistentOffen.current;
     if (!was) return neustart();
-    void bestaetigen('Eingaben im Assistenten verwerfen?', `Noch nicht angelegt: ${was}. Beim Neubeginn gehen sie verloren.`, 'Verwerfen', true).then((ok) => ok && neustart());
+    // design.md: Titel als Frage, darunter eine kurze Aussage; Gefahr-Knopf, Erstfokus und Enter nicht auf ihm
+    void bestaetigen('Assistent neu beginnen?', `Noch nicht angelegt: ${was}.`, 'Verwerfen und neu beginnen', true).then((ok) => ok && neustart());
   };
 
   /**
