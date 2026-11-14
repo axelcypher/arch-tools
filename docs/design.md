@@ -79,7 +79,8 @@ Zahlen in Tabellen und Feldern stehen rechtsbündig in Tabellenziffern (`.num`, 
   `.toolbar` und `.field` sind mindestens `--ctl-h` (28px) hoch, `button.small` und `button.icon` dort `--ctl-h-s` (24px).
   Ausnahme Werkzeugleiste (`Werkzeugleiste`): Dort sind auch `button.icon` (Rückgängig, „Mehr“) und die Symbolknöpfe
   der Kompaktstufe `--ctl-h` hoch und mindestens so breit – eine Leiste hat nur eine Knopfgröße, weil Symbol- und
-  Textknöpfe dort nebeneinander stehen.
+  Textknöpfe dort nebeneinander stehen. App-Regeln mit eigener Größe für `button.icon` nehmen die Werkzeugleiste aus
+  (z. B. `:not(.werkzeugleiste *)`) oder setzen nur `min-height`/`min-width`.
 - Die Regel hat die Spezifität null (`:where`): Eine App-Regel mit eigener `min-height` geht vor. Feste `height`
   allein reicht dafür nicht; wer kleinere Knöpfe braucht, setzt `min-height` mit.
 - Kleiner als 24px nur, wo es nicht anders geht (Hilfe-Knopf „?“, Griffe auf der Zeichenfläche).
