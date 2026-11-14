@@ -18,6 +18,16 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
   ein Knopf in zwei Hälften – **Projektdaten** (die Projektkarte – gilt für das ganze Projekt; aus ihr werden die
   Formulare ausgefüllt) und **Antragsdaten** (nur für den aktiven Antrag: Status, Antragsmerkmale, Antragsumfang –
   siehe unten); darunter rollt der Rest ab „Formulare“. Aufbau: Dokument › Antrag › Projekt.
+- **Werkzeugleiste** (gemeinsamer Baustein `Werkzeugleiste`, design.md „Kopf- und Werkzeugleisten“): sichtbar bleibt,
+  was man ständig braucht – links „Datei ▾“ (Daten aktualisieren …, Speichern unter …, Drucken …; in der Web-Version
+  Formular öffnen …), „Speichern“ (mit Punkt bei ungespeicherten Änderungen) mit ↶ ↷, der Umschalter **Formular |
+  Felder**, Zoom und „Ansicht ▾“ (Gliederung, Verlauf der Eingaben als Schalter); rechts der Status (zuerst „n Felder
+  geändert“, dann Kennung und Stand; gekürzt, der volle Text samt „lokal gesichert“ im Tooltip), „Suchen …“
+  (<kbd>Strg</kbd>+<kbd>K</kbd>) und der Hauptknopf **„Als PDF exportieren …“** (<kbd>Strg</kbd>+<kbd>E</kbd>), zuletzt
+  „Mehr“ (⋯) mit „Formular einrichten“, „Manuelle Überschreibungen ignorieren“ und „Einstellungen …“. In schmalen
+  Fenstern kürzt sich zuerst der Status (bis auf eine Mindestbreite), dann wandern „Suchen …“, Zoom und „Ansicht“ ins
+  Menü „Mehr“. In den Projektdaten: „Projektdaten
+  speichern“ mit ↶ ↷; „Änderungen verwerfen“ steht in „Mehr“.
 - **Zuletzt bearbeitet:** Rechts an jedem Formular der Navigation und an jeder Datei im Projektordner (Ordner und
   Ansicht „Antrag“) steht kurz, wann zuletzt geändert wurde („heute 14:30“, „gestern 09:05“, „03.03.“) – beim Formular
   auch nicht gespeicherte Eingaben; der volle Zeitpunkt steht im Tooltip (`zeit.ts`). In einer schmalen Navigation
@@ -117,7 +127,7 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
   von der Navigation links): Seiten und Abschnitte mit Füllstand (z. B. 3/5, ✓ wenn vollständig) und Balken für
   das ganze Formular; ein Klick springt hin. Zeigt man auf einen Eintrag, werden seine Felder im Formular wie mit
   dem Textmarker hervorgehoben. Über den Pfeil rechts klappt ein Abschnitt seine einzelnen Angaben auf (mit ✓ für
-  ausgefüllte), auch sie springen und heben hervor. Ein- und ausblenden über „Gliederung“ in der Werkzeugleiste.
+  ausgefüllte), auch sie springen und heben hervor. Ein- und ausblenden über „Ansicht › Gliederung“ in der Werkzeugleiste.
   Gezählt wird in Einheiten: jedes Textfeld für sich, Kästchen einer Zeile gemeinsam als eine Auswahl, eigene
   Gruppen als eine Angabe. Abschnitte, die nur aus einer Nummer bestehen („2.“), bekommen den Text daneben dazu
   („2. Bauvorlagen, wenn …“).
@@ -184,11 +194,11 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
   bauen darauf auf; sie bleiben deshalb auch in einer eigenen Merkmalliste (fehlende werden ergänzt, auch fehlende
   Werte) und lassen sich weder umbenennen noch entfernen. Eigene Merkmale und Werte kommen dazu.
 - **Felder ohne Rahmen** bilden je Seite einen Abschnitt (Kennung `<Seite>:-`), auch wenn Rahmen dazwischen liegen.
-- **Formular einrichten** („Einrichten“ in der Werkzeugleiste), je Formular und Stand – gilt in allen Projekten.
+- **Formular einrichten** („Mehr › Formular einrichten“ in der Werkzeugleiste), je Formular und Stand – gilt in allen Projekten.
   Das Formular wird zur Fläche zum Auswählen: **Feld anklicken** (mit <kbd>Strg</kbd>/<kbd>Umschalt</kbd> mehrere),
   links zeigt die Gliederung den Aufbau als **Baum** (Abschnitte, Gruppen, Felder – mit Füllstand, Inhalt zum
-  Wiedererkennen und Zeichen für Bedingungen; bei knapper Breite mit × im Kopf einklappbar, „Gliederung“ in der
-  Werkzeugleiste zeigt ihn wieder), rechts stehen **alle Einstellungen der Auswahl**:
+  Wiedererkennen und Zeichen für Bedingungen; bei knapper Breite mit × im Kopf einklappbar, „Ansicht › Gliederung“ in
+  der Werkzeugleiste zeigt ihn wieder), rechts stehen **alle Einstellungen der Auswahl**:
   - **Abschnitt:** Titel in der Gliederung, ein- oder ausblenden, Bedingung;
   - **Feld:** Titel (erscheint in den aufgeklappten Angaben und als Hinweis am Feld), „Zählt für den Füllstand“
     (z. B. Felder, die die Behörde ausfüllt), Bedingung – dazu wo es steht und wie es in FORMA heißt;
@@ -293,8 +303,8 @@ Anschrift, wie sie in Formularen steht.
   Aufbau), sonst für diese Gruppe – jeweils in allen Projekten. „n Einträge ausgeblendet – zeigen“ unter der Gruppe
   zeigt sie gedämpft wieder und lässt sie einblenden. Einträge mit ungespeicherten Änderungen bleiben sichtbar.
   Ausgeblendete Einträge befüllen die Formulare weiter.
-- **Werkzeugleiste:** ↶ ↷ (<kbd>Strg</kbd>+<kbd>Z</kbd> / <kbd>Strg</kbd>+<kbd>Y</kbd>), „Projektdaten speichern“
-  (<kbd>Strg</kbd>+<kbd>S</kbd>) und „Verwerfen“ (lässt sich rückgängig machen). Ungespeicherte Änderungen bleiben
+- **Werkzeugleiste:** „Projektdaten speichern“ (<kbd>Strg</kbd>+<kbd>S</kbd>) mit ↶ ↷ (<kbd>Strg</kbd>+<kbd>Z</kbd> /
+  <kbd>Strg</kbd>+<kbd>Y</kbd>); „Änderungen verwerfen“ steht in „Mehr“ (lässt sich rückgängig machen). Ungespeicherte Änderungen bleiben
   lokal gesichert, auch über Neustarts. Geänderte Einträge sind orange markiert, der Pfeil am Eintrag setzt einen zurück.
 - **Auswahllisten und Optionen** wie in FORMA (Anrede, Land, Bodenklasse, Neigung …), Kästchen gesammelt unter einem
   Titel (Besondere Auflagen). Die Möglichkeiten selbst bleiben, wie FORMA sie angelegt hat.
@@ -441,7 +451,7 @@ Anschrift, wie sie in Formularen steht.
     dunkelorangen (Papierfarben `--p-auto`/`--p-fixiert`, in beiden Farbschemata gleich – das Papier bleibt hell);
   - ein **geleertes Feld** bekommt beim Verlassen wieder den Auto-Wert; **bewusst leer** ist ein Feld mit einem
     Leerzeichen;
-  - **Daten aktualisieren …** (Werkzeugleiste des Formulars, auch im Kontextmenü eines Formulars in der Navigation):
+  - **Daten aktualisieren …** („Datei“ in der Werkzeugleiste des Formulars, auch im Kontextmenü eines Formulars in der Navigation):
     Vorschau aller Felder, die sich ändern würden – vorgewählt sind Felder mit dem bisherigen Auto-Wert und leere;
     überschriebene und Felder mit anderem Inhalt ohne gespeicherten Zustand (z. B. in FORMA geändert) nur auf
     Wunsch. Ausgefülltes wird nie geleert; hat die Projektkarte nichts, bleibt das Feld. Ungespeicherte Änderungen

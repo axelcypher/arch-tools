@@ -905,8 +905,13 @@ button.icon.fo-gl-zaehlt.an {
   white-space: nowrap;
   min-width: 0;
 }
-.fo-zoom select {
+.toolbar.werkzeugleiste > [data-eintrag='zoom'] select {
   width: auto;
+}
+/* Status (Eintrag `kuerzbar`): höchstens 32ch breit, bei Platzmangel kürzer mit „…“ – der volle Text steht im Tooltip */
+.toolbar.werkzeugleiste > [data-eintrag='status'] .fo-status {
+  display: block;
+  max-width: 32ch;
 }
 .fo-schalter {
   display: inline-flex;

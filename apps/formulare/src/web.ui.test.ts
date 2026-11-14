@@ -8,6 +8,7 @@ import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
+import { imLeistenMenue, leistenMenueTexte } from './testLeiste';
 import { useAntrag } from './antragStore';
 import { umfangZeigen } from './components/Antrag';
 import { useDateiMerkmale } from './merkmalWerte';
@@ -93,6 +94,19 @@ describe('Web-Version', () => {
     expect(host.querySelector('nav[aria-label="Inhalt des Formulars"]')).not.toBeNull();
   });
 
+  it('Werkzeugleiste der Web-Version: erst nur „Formular öffnen …“, mit Formular „Datei“ (Formular öffnen …, Drucken …) und „Herunterladen“', async () => {
+    const host = await render();
+    const leiste = () => host.querySelector<HTMLElement>('.toolbar.werkzeugleiste')!;
+    const sichtbar = () => [...leiste().querySelectorAll<HTMLElement>(':scope > [data-eintrag]')].filter((e) => !e.hidden).map((e) => e.dataset.eintrag);
+    expect(sichtbar()).toEqual(['oeffnen']);
+    expect(knopfGenau(leiste(), 'Formular öffnen …')).toBeDefined();
+    await oeffnen();
+    expect(sichtbar()).toEqual(['datei', 'speichern', 'umschalter', ...(useFormulare.getState().ansicht === 'seite' ? ['zoom'] : []), 'ansicht', 'status']);
+    expect(await leistenMenueTexte(host, 'Datei')).toEqual(['Formular öffnen …', 'Drucken …']);
+    expect(leiste().querySelector('button.primary')).toBeNull();
+    expect(knopfGenau(leiste(), 'Herunterladen')).toBeDefined();
+  });
+
   it('Herunterladen meldet die neue Datei; die Originaldatei wieder geöffnet: Verlauf zeigt die Eingaben als „nicht in dieser Datei“ (B-08)', async () => {
     let host = await render();
     await oeffnen();
@@ -103,7 +117,7 @@ describe('Web-Version', () => {
     expect(meldung).toContain('heruntergeladen als „Bauantrag.frmsjf“ – bitte die neue Datei weiterverwenden');
     expect(meldung).not.toContain('gespeichert');
     // weiter in derselben Sitzung: Verlauf passt zur (heruntergeladenen) Fassung
-    await klick(knopfGenau(host, 'Verlauf')!);
+    await imLeistenMenue(host, 'Ansicht', 'Verlauf der Eingaben');
     expect(host.querySelectorAll('.fo-verlauf-liste .fo-verlauf-schritt')).toHaveLength(1);
     expect(host.querySelector('.fo-verlauf-frueher')).toBeNull();
 
