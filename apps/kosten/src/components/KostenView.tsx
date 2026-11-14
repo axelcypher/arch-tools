@@ -65,7 +65,7 @@ export function KostenView({ onKatalog, onMenge }: { onKatalog: () => void; onMe
   // Menü „Hinzufügen“: seltene Varianten neben dem Knopf „Position“ (docs/design.md, „Kopf- und Werkzeugleisten“)
   const hinzufuegenPunkte = (): MenuePunkt[] => {
     const grob = fehlend('grob').length > 0;
-    const fein = fehlend('fein');
+    const fein = fehlend('fein').length > 0;
     return [
       {
         text: 'Kostenrisiko',
@@ -83,8 +83,8 @@ export function KostenView({ onKatalog, onMenge }: { onKatalog: () => void; onMe
       {
         text: 'Gliederung 2. Ebene',
         aktion: () => void gliederungAnlegen('fein'),
-        deaktiviert: !fein.length,
-        hinweis: fein.length ? undefined : 'schon erfasst',
+        deaktiviert: !fein,
+        hinweis: fein ? undefined : 'schon erfasst',
         titel: `Fehlende Positionen der 2. Ebene mit Bauteilmengen anlegen (KG ${gliederung('fein')
           .map((p) => p.kg)
           .join(', ')}); erfasste Gruppen der 1. Ebene werden zum Ausschalten angeboten`,

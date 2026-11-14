@@ -181,17 +181,21 @@ export function App() {
   const kostenAktiv = !einstieg && (ansicht === 'kosten' || !hatGebaeude);
   const mengenAktiv = ansicht === 'mengen' && hatGebaeude;
   // Menü „Datei“ (docs/design.md, „Kopf- und Werkzeugleisten“): Neu, Öffnen, Speichern unter, IFC aktualisieren
+  const laeuft = busy ? 'läuft gerade' : undefined;
+  const speichernUnter: MenuePunkt[] = isTauri()
+    ? [{ text: 'Speichern unter …', symbol: 'speichern', tasten: 'Strg+Umschalt+S', aktion: () => void onSave(true), deaktiviert: einstieg, hinweis: einstieg ? 'erst Projekt öffnen oder neu beginnen' : undefined, titel: 'Projekt unter neuem Namen oder an anderem Ort speichern' }]
+    : [];
   const dateiPunkte = (): MenuePunkt[] => [
-    { text: 'Neu', symbol: 'datei', aktion: () => void onNeu(), titel: 'Neues, leeres Projekt (fragt bei ungespeicherten Änderungen nach)' },
-    { text: 'Öffnen …', symbol: 'ordnerOffen', tasten: 'Strg+O', aktion: () => void onOpen(), deaktiviert: !!busy, hinweis: busy ? 'läuft gerade' : undefined, titel: 'Projekt (.oap) oder IFC-Modell öffnen' },
-    ...(isTauri() ? [{ text: 'Speichern unter …', symbol: 'speichern', tasten: 'Strg+Umschalt+S', aktion: () => void onSave(true), titel: 'Projekt unter neuem Namen oder an anderem Ort speichern' } as MenuePunkt] : []),
+    { text: 'Neu', symbol: 'datei', aktion: () => void onNeu(), deaktiviert: !!busy, hinweis: laeuft, titel: 'Neues, leeres Projekt (fragt bei ungespeicherten Änderungen nach)' },
+    { text: 'Öffnen …', symbol: 'ordnerOffen', tasten: 'Strg+O', aktion: () => void onOpen(), deaktiviert: !!busy, hinweis: laeuft, titel: 'Projekt (.oap) oder IFC-Modell öffnen' },
+    ...speichernUnter,
     { trenner: true },
     {
       text: 'IFC aktualisieren …',
       symbol: 'neuLaden',
       aktion: () => void onIfcAktualisieren(),
       deaktiviert: !hatGebaeude || !!busy,
-      hinweis: !hatGebaeude ? 'erst Projekt mit Gebäude oder IFC-Modell öffnen' : busy ? 'läuft gerade' : undefined,
+      hinweis: !hatGebaeude ? 'erst Projekt mit Gebäude oder IFC-Modell öffnen' : laeuft,
       titel: 'Neuen Export desselben IFC-Modells übernehmen: Räume über die IFC-GlobalId abgleichen, Änderungen von Hand bleiben',
     },
   ];

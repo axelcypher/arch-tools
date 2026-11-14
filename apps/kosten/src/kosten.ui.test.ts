@@ -25,6 +25,8 @@ function render<P extends object>(el: FunctionComponent<P>, props?: P): HTMLElem
   return host;
 }
 afterEach(() => {
+  // ein offenes Menü schließen: sein Zustand ist global und überstünde sonst das Aushängen
+  if (document.querySelector('[role="menu"]')) act(() => void document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
   act(() => root?.unmount());
   root = null;
   document.body.innerHTML = '';
@@ -101,7 +103,17 @@ describe('NUMIO', () => {
     act(() => knopf(leiste, 'Datei').click());
     const punkte = [...document.querySelectorAll<HTMLElement>('[role="menu"] > [role]')].map((p) => (p.getAttribute('role') === 'separator' ? '—' : p.textContent));
     expect(punkte).toEqual(['Neu', expect.stringContaining('Öffnen …'), '—', expect.stringContaining('IFC aktualisieren …')]);
-    expect(document.querySelector('[role="menu"] [aria-keyshortcuts]')?.getAttribute('aria-keyshortcuts')).toBeTruthy();
+    expect(document.querySelector('[role="menu"] [aria-keyshortcuts]')?.getAttribute('aria-keyshortcuts')).toBe('Control+O');
+    // mit Gebäude ist „IFC aktualisieren …“ frei
+    const ifc = () => [...document.querySelectorAll<HTMLElement>('[role="menu"] [role="menuitem"]')].find((p) => p.textContent?.startsWith('IFC aktualisieren'))!;
+    expect(ifc().getAttribute('aria-disabled')).toBeNull();
+    act(() => void document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+    expect(document.querySelector('[role="menu"]')).toBeNull();
+    // Gegenprobe: ohne Gebäude gesperrt, mit Grund
+    act(() => useKosten.getState().load(createProject()));
+    act(() => knopf(host.querySelector('.toolbar.leiste')!, 'Datei').click());
+    expect(ifc().getAttribute('aria-disabled')).toBe('true');
+    expect(ifc().textContent).toContain('erst Projekt mit Gebäude oder IFC-Modell öffnen');
   });
 
   it('zeigt Mengen aus dem Projekt, Positionen je Kostengruppe und die Übersicht', () => {
