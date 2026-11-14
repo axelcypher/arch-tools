@@ -3,6 +3,7 @@ import { angabeVonHand, hinweisBestaetigen } from './angaben';
 import { modulFakten } from './auswertung';
 import { faktenZurLage } from './geodienste';
 import { widersprueche } from './projekt';
+import { faktStatus } from './typen';
 import type { FaktWert, Modul } from './typen';
 
 /** Gemeindemodul mit einem Wert aus einem Dienst, einer Tabelle darüber und einer Tabelle nach Gemeinde */
@@ -162,6 +163,7 @@ describe('Plausibilität: neues Wohngebäude als „verfahrensfrei“ (§ 62 Abs
     const satz = (pr?: string) => {
       const w = widersprueche(pr ? { ...efh, Planungsrecht: pr } : efh, null);
       expect([...w.merkmale]).toEqual(['Verfahren']);
+      expect(w.zu).toEqual(['Verfahren']);
       return w.texte[0];
     };
     const anfang = 'Verfahren „verfahrensfrei“ festgelegt, ein neues Wohngebäude (Einfamilienhaus) ist aber nicht verfahrensfrei (§ 62 Abs. 1 BauO NRW) – ';
@@ -193,5 +195,25 @@ describe('Plausibilität: neues Wohngebäude als „verfahrensfrei“ (§ 62 Abs
       { Verfahren: 'verfahrensfrei', Vorhaben: 'Errichtung' },
     ])
       expect(widersprueche(m, null).merkmale.size, JSON.stringify(m)).toBe(0);
+  });
+});
+
+describe('Widersprüche: Merkmal je Satz; Status einer über einen Hinweis gestellten Antwort', () => {
+  it('je Satz das Merkmal, um das es geht (gleiche Reihenfolge)', () => {
+    const lsg: FaktWert = { wert: true, herkunft: 'geodienst', sicherheit: 'sicher', quelle: 'LINFOS' };
+    const w = widersprueche({ Planungsrecht: 'Innenbereich', Gebäudeart: 'Einfamilienhaus', Verfahren: 'verfahrensfrei', Vorhaben: 'Errichtung' }, null, { 'schutz.lsg': lsg });
+    expect(w.zu).toEqual(['Planungsrecht', 'Verfahren']);
+    expect(w.texte).toHaveLength(2);
+    expect(w.texte[0]).toMatch(/^Planungsrecht/);
+    expect(w.texte[1]).toMatch(/^Verfahren/);
+  });
+
+  it('faktStatus: über einen Hinweis bzw. Widerspruch gestellt → so gesichert wie der Auslöser', () => {
+    const s: FaktWert = { wert: true, herkunft: 'manuell', sicherheit: 'sicher' };
+    expect(faktStatus(s)).toBe('sicher');
+    expect(faktStatus({ ...s, ueberHinweis: ['vorhaben.beseitigung_umfang'] })).toBe('hinweis');
+    expect(faktStatus({ ...s, ueberWiderspruch: ['vorhaben.beseitigung_umfang'] })).toBe('widerspruch');
+    expect(faktStatus({ ...s, ueberHinweis: ['a'], ueberWiderspruch: ['a'] })).toBe('widerspruch');
+    expect(faktStatus({ ...s, ueberHinweis: [] })).toBe('sicher');
   });
 });

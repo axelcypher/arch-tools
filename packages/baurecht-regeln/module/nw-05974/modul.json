@@ -320,11 +320,13 @@
       "kurz": "Heilquellenschutzzone, qualitativ",
       "gruppe": "schutz",
       "typ": "wahl",
+      "hilfe": "„außerhalb“: in keiner qualitativen Zone des Heilquellenschutzgebiets",
       "werte": [
         "I",
         "III",
         "außerhalb"
       ],
+      "ohneAusloeser": "außerhalb",
       "wenn": {
         "f": "kreis_soest.hsg",
         "ist": true
@@ -335,12 +337,14 @@
       "kurz": "Heilquellenschutzzone, quantitativ",
       "gruppe": "schutz",
       "typ": "wahl",
+      "hilfe": "„außerhalb“: in keiner quantitativen Zone des Heilquellenschutzgebiets",
       "werte": [
         "A",
         "B",
         "C",
         "außerhalb"
       ],
+      "ohneAusloeser": "außerhalb",
       "wenn": {
         "f": "kreis_soest.hsg",
         "ist": true

@@ -20,6 +20,7 @@ vi.mock('@core/platform/files', async (original) => ({
 
 const { App, speichern, speichernVollstaendig } = await import('./App');
 const { werteSenkrecht } = await import('./components/Angaben');
+const { dialogeZuruecksetzen } = await import('./components/Dialoge');
 const { beispielOap } = await import('./beispiel.test');
 const { useBaurecht } = await import('./store');
 
@@ -44,6 +45,8 @@ beforeEach(() => {
 afterEach(() => {
   ausblendenAngehalten?.mockRestore();
   ausblendenAngehalten = null;
+  // Dialoge mit eigenem Store blieben sonst für den nächsten Test offen
+  dialogeZuruecksetzen();
 });
 
 let root: ReturnType<typeof createRoot> | null = null;
@@ -592,20 +595,54 @@ describe('Baurecht – Oberfläche', () => {
     expect(w).toBe(6);
   });
 
-  it('Plausibilität: Einfamilienhaus (Errichtung) auf „verfahrensfrei“ gestellt → Warnung über den Angaben und im Protokoll', () => {
+  it('Plausibilität: Einfamilienhaus (Errichtung) auf „verfahrensfrei“ gestellt → Warnung über den Angaben und im Protokoll', async () => {
     const host = render();
-    const satz = /Verfahren „verfahrensfrei“ festgelegt, ein neues Wohngebäude \(Einfamilienhaus\) ist aber nicht verfahrensfrei \(§ 62 Abs\. 1 BauO NRW\) – mindestens vereinfachtes Baugenehmigungsverfahren \(§ 64\)/;
+    // angezeigt mit geschützten Leerzeichen nach „§“ und „Abs.“ (nb)
+    const satz = /Verfahren „verfahrensfrei“ festgelegt, ein neues Wohngebäude \(Einfamilienhaus\) ist aber nicht verfahrensfrei \(§\u00a062 Abs\.\u00a01 BauO NRW\) – mindestens vereinfachtes Baugenehmigungsverfahren \(§\u00a064\)/;
     expect(host.querySelector('.br-angaben-liste')!.textContent).not.toMatch(satz);
+    const regionen = () => [...host.querySelectorAll('.br-angaben-liste > [role="status"]')].map((r) => r.textContent ?? '').join(' ');
     if (!host.querySelector('[data-merkmal="Verfahren"]')) act(() => knopf(host, /Antragsmerkmale/)!.click());
     act(() => knopf(host.querySelector('[data-merkmal="Verfahren"]')!, 'verfahrensfrei')!.click());
     const warnung = [...host.querySelectorAll('.br-angaben-liste .meldung.warnung')].find((w) => satz.test(w.textContent ?? ''));
     expect(warnung, 'Warnung über den Angaben').toBeTruthy();
+    // stehende Live-Region: sagt den neuen Satz an (die Meldung selbst hat keine eigene Rolle)
+    expect(warnung!.getAttribute('role')).toBeNull();
+    await vi.waitFor(
+      async () => {
+        await act(async () => void (await new Promise((r) => echtesSetTimeout(r, 50))));
+        expect([...host.querySelectorAll('.br-angaben-liste > [role="status"]')].some((r) => satz.test(r.textContent ?? ''))).toBe(true);
+      },
+      { timeout: 3000, interval: 50 },
+    );
+    // „Zum Merkmal“ führt auf den gewählten Wert des Merkmals „Verfahren“
+    const zum = [...warnung!.querySelectorAll('button')].find((b) => b.textContent === 'Zum Merkmal')!;
+    expect(zum.getAttribute('aria-label')).toBe('Zum Merkmal „Verfahren“');
+    act(() => (document.activeElement as HTMLElement | null)?.blur());
+    act(() => zum.click());
+    await vi.waitFor(
+      async () => {
+        await act(async () => void (await new Promise((r) => echtesSetTimeout(r, 20))));
+        expect(document.activeElement?.closest('[data-merkmal="Verfahren"]'), 'Fokus am Merkmal').toBeTruthy();
+      },
+      { timeout: 3000, interval: 50 },
+    );
+    expect(document.activeElement?.textContent).toBe('verfahrensfrei');
     act(() => knopf(host, /Prüfprotokoll/)!.click());
     expect(document.querySelector('.br-protokoll')!.textContent).toMatch(satz);
     act(() => knopf(document.querySelector('.br-protokoll')!, 'Schließen')!.click());
-    // zurück auf ein Verfahren mit Prüfung: die Warnung verschwindet
+    // zurück auf ein Verfahren mit Prüfung (Rückweg): die Warnung verschwindet, auch aus der Live-Region
     act(() => knopf(host.querySelector('[data-merkmal="Verfahren"]')!, 'vereinfachtes Verfahren')!.click());
     expect(host.querySelector('.br-angaben-liste')!.textContent).not.toMatch(satz);
+    expect(regionen()).not.toMatch(satz);
+  });
+
+  it('Live-Region der Widersprüche: beim ersten Zeichnen mit schon vorhandener Warnung keine Ansage', async () => {
+    act(() => useBaurecht.getState().merkmalSetzen('Verfahren', 'verfahrensfrei'));
+    const host = render();
+    const satz = /Verfahren „verfahrensfrei“ festgelegt/;
+    expect([...host.querySelectorAll('.br-angaben-liste .meldung.warnung')].some((w) => satz.test(w.textContent ?? '')), 'Warnung steht').toBe(true);
+    await act(async () => void (await new Promise((r) => echtesSetTimeout(r, 400))));
+    expect([...host.querySelectorAll('.br-angaben-liste > [role="status"]')].map((r) => r.textContent ?? '').join(' ')).not.toMatch(satz);
   });
 
   it('Merkmal ändern wirkt sofort auf die Ampeln und gilt als ungespeicherte Änderung', () => {
@@ -1564,7 +1601,7 @@ describe('Rückfrage, die nur über einen Hinweis gestellt wird', () => {
     document.body.innerHTML = '';
   });
 
-  it('Umfang nur Hinweis, „Altbau verfahrensfrei“ beantwortet: die Antwort gilt als beantwortet, „Bestätigen …“ steht am Umfang', () => {
+  it('Umfang nur Hinweis, „Altbau verfahrensfrei“ beantwortet: die Antwort gilt als beantwortet, „Bestätigen …“ steht am Umfang', async () => {
     const host = render();
     act(() => useBaurecht.getState().merkmalSetzen('Vorhaben', 'Beseitigung'));
     act(() =>
@@ -1580,5 +1617,26 @@ describe('Rückfrage, die nur über einen Hinweis gestellt wird', () => {
     expect(host.querySelector('[data-fakt="nw.altbau_verfahrensfrei"] button[data-bestaetigen]')).toBeNull();
     expect(useBaurecht.getState().pruefung.fakten['nw.altbau_verfahrensfrei']).toMatchObject({ wert: true, sicherheit: 'sicher' });
     expect(useBaurecht.getState().pruefung.fakten['nw.altbau_verfahrensfrei'].ueberHinweis).toBeUndefined();
+    // angezeigt nicht als gesichert: Marke „über „Umfang der Beseitigung“ (nur Hinweis)“, sie führt zu „Bestätigen …“ am Umfang
+    const marke = [...host.querySelectorAll<HTMLButtonElement>('.br-angaben .br-ausloeser-marke')].find((b) => /Umfang der Beseitigung/.test(b.getAttribute('aria-label') ?? ''));
+    expect(marke, 'Marke an der Antwort').toBeTruthy();
+    // sichtbar kurz wie an den Angaben selbst, Auslöser und Sprungziel im Namen (der sichtbare Text steht wörtlich darin)
+    expect(marke!.textContent).toBe('nur Hinweis');
+    expect(marke!.getAttribute('aria-label')).toBe('Altbau verfahrensfrei zu beseitigen: nur Hinweis über „Umfang der Beseitigung“ – zu „Umfang der Beseitigung“ bestätigen');
+    // erst, wenn die Oberfläche nach der Antwort zur Ruhe gekommen ist (die nächste offene Rückfrage bekommt den Fokus)
+    await act(async () => void (await new Promise((r) => echtesSetTimeout(r, 300))));
+    act(() => marke!.focus());
+    act(() => marke!.click());
+    await vi.waitFor(
+      async () => {
+        await act(async () => void (await new Promise((r) => echtesSetTimeout(r, 20))));
+        expect(document.activeElement?.closest('[data-fakt="vorhaben.beseitigung_umfang"]'), 'Fokus am Umfang').toBeTruthy();
+      },
+      { timeout: 3000, interval: 50 },
+    );
+    expect(document.activeElement?.hasAttribute('data-bestaetigen')).toBe(true);
+    // ist der Umfang bestätigt, verschwindet die Marke
+    act(() => useBaurecht.getState().faktBestaetigen('vorhaben.beseitigung_umfang', useBaurecht.getState().pruefung.fakten['vorhaben.beseitigung_umfang'], 'TP', 'Formular geprüft'));
+    expect(host.querySelector('.br-angaben .br-ausloeser-marke')).toBeNull();
   });
 });

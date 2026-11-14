@@ -525,7 +525,7 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
         </table>
         {/* echte Widersprüche und der Vorbehalt beim Planungsrecht getrennt – das Planungsrecht widerspricht nichts */}
         {pruefstand.widersprueche.some((w) => w !== pruefstand.planungsrechtHinweis) && (
-          <p className="report-note">Widerspruch: {pruefstand.widersprueche.filter((w) => w !== pruefstand.planungsrechtHinweis).join('; ')}</p>
+          <p className="report-note">Widerspruch: {nb(pruefstand.widersprueche.filter((w) => w !== pruefstand.planungsrechtHinweis).join('; '))}</p>
         )}
         {pruefstand.planungsrechtHinweis && <p className="report-note">Nicht gesichert: {pruefstand.planungsrechtHinweis}.</p>}
 

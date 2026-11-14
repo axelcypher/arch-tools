@@ -1425,6 +1425,29 @@ h2.br-detail-name {
   background: var(--warn-bg);
   text-decoration: underline;
 }
+.br-marke-knopf.br-widerspruch:hover:not(:disabled) {
+  background: var(--fehler-bg);
+}
+/* gegen „button:hover“ der Grund-Styles (spezifischer): die Hinweis-Marke bleibt gelb */
+.br-marke-knopf.br-hinweis-marke:hover:not(:disabled):not(.br-widerspruch) {
+  background: var(--warn-bg);
+}
+/* Marke an einer Antwort, die nur über einen Hinweis bzw. Widerspruch gefragt wurde – in voller und kompakter Zeile gleich */
+.br-ausloeser-marke {
+  white-space: nowrap;
+  padding: 0 var(--s1);
+  border-radius: var(--radius);
+}
+/* Widerspruch bzw. Plausibilität: Satz und „Zum Merkmal“ – der Knopf am Ende, bricht mit Abstand um */
+.br-widerspruch-meldung {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--s1) var(--s2);
+}
+.br-widerspruch-meldung > button {
+  margin-left: auto;
+}
 
 .br-fakt-frage {
   display: block;

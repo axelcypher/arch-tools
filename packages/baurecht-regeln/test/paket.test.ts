@@ -27,12 +27,20 @@ describe('Wert ohne Auslöser (ohneAusloeser)', () => {
   const defs = faktDefinitionen(aktiveModule(paket.module, SOEST));
   const mit = Object.entries(defs).filter(([, d]) => d.ohneAusloeser !== undefined);
 
-  it('gesetzt genau dort, wo „nein“ zwingend aus dem fehlenden Auslöser folgt (Fachreview)', () => {
-    expect(mit.map(([id]) => id).sort()).toEqual(['kreis_soest.hsg', 'kreis_soest.vsg_hellweg', 'nw.feste_brennstoffe_50kw', 'planung.planreife', 'schutz.allee']);
-    for (const [id, d] of mit) expect(d.ohneAusloeser, id).toBe(false);
+  it('gesetzt genau dort, wo der Wert zwingend aus dem fehlenden Auslöser folgt (Fachreview)', () => {
+    expect(Object.fromEntries(mit.map(([id, d]) => [id, d.ohneAusloeser]))).toEqual({
+      'kreis_soest.hsg': false,
+      'kreis_soest.hsg_qualitativ': 'außerhalb',
+      'kreis_soest.hsg_quantitativ': 'außerhalb',
+      'kreis_soest.vsg_hellweg': false,
+      'nw.feste_brennstoffe_50kw': false,
+      'planung.planreife': false,
+      'planung.zurueckstellung': false,
+      'schutz.allee': false,
+    });
   });
 
-  it('Auslöser nur Hinweis: „nein“ trägt ihn nicht, „ja“ schon – je Angabe mit den Definitionen des Pakets', () => {
+  it('Auslöser nur Hinweis: der Wert ohne Auslöser trägt ihn nicht, ein anderer schon – je Angabe mit den Definitionen des Pakets', () => {
     const bausteine = Object.assign({}, ...aktiveModule(paket.module, SOEST).map((m) => m.bausteine ?? {}));
     const rest = { merkmale: { Vorhaben: 'Errichtung', Gebäudeart: 'Einfamilienhaus' }, einreichung: '2026-12-01', heute: HEUTE, bausteine };
     for (const [id, d] of mit) {
@@ -40,8 +48,10 @@ describe('Wert ohne Auslöser (ohneAusloeser)', () => {
       const ausloeser = [...JSON.stringify(d.wenn).matchAll(/"f":"([^"]+)"/g)].map((m) => m[1]);
       expect(ausloeser.length, id).toBeGreaterThan(0);
       const hinweise = Object.fromEntries(ausloeser.map((f) => [f, { wert: true, herkunft: 'manuell' as const, sicherheit: 'hinweis' as const, grund: 'Test' }]));
-      expect(gestellteAntworten({ ...hinweise, [id]: sicher(false) }, (f) => f, defs, rest)[id]?.ueberHinweis, `${id}: nein`).toBeUndefined();
-      expect(gestellteAntworten({ ...hinweise, [id]: sicher(true) }, (f) => f, defs, rest)[id]?.ueberHinweis, `${id}: ja`).toBeTruthy();
+      // der Wert ohne Auslöser trägt ihn nicht, jeder andere Wert schon (ja/nein bzw. eine Zone)
+      const anders = d.typ === 'janein' ? !d.ohneAusloeser : d.werte!.find((w) => w !== d.ohneAusloeser)!;
+      expect(gestellteAntworten({ ...hinweise, [id]: sicher(d.ohneAusloeser!) }, (f) => f, defs, rest)[id]?.ueberHinweis, `${id}: ${String(d.ohneAusloeser)}`).toBeUndefined();
+      expect(gestellteAntworten({ ...hinweise, [id]: sicher(anders) }, (f) => f, defs, rest)[id]?.ueberHinweis, `${id}: ${String(anders)}`).toBeTruthy();
     }
   });
 });
@@ -2463,6 +2473,26 @@ describe('Hinweise tragen kein Grün über gestellte Fragen', () => {
     const a = auswerten(eingabe(m, f, TEXTE));
     return Object.fromEntries(IDS.map((id) => [id, a.paragrafen.find((p) => p.id === id)!.automatisch]));
   };
+
+  it('Festlegung von Hand: eine über den Hinweis gestellte Antwort zählt als Hinweis (faktStatus) – überholt bzw. nicht', () => {
+    const id = 'nw/bauo-nrw/74';
+    const altbau = 'nw.altbau_verfahrensfrei';
+    const umfangHinweis: Record<string, FaktWert> = { [v]: { wert: 'Abbruch mit Ersatzbau', herkunft: 'manuell', sicherheit: 'hinweis', grund: 'Formular' }, [altbau]: sicher(true) };
+    const umfangSicher: Record<string, FaktWert> = { ...umfangHinweis, [v]: sicher('Abbruch mit Ersatzbau') };
+    const fl = (sicherheit: 'sicher' | 'hinweis') => ({
+      [id]: { ampel: 'gruen' as const, grund: 'Begehung', von: 'TP', am: '2026-11-14', automatisch: 'gelb' as const, fakten: { [altbau]: true }, sicherheit: { [altbau]: sicherheit } },
+    });
+    // nur der Grund zur Antwort zählt hier (die Test-Festlegung hat keinen Textstand – das meldet die Prüfung eigens)
+    const grund = (f: Record<string, FaktWert>, s: 'sicher' | 'hinweis') => auswerten({ ...eingabe(m, f, TEXTE), festlegungen: fl(s) }).paragrafen.find((p) => p.id === id)!.ueberholt ?? '';
+    const nurHinweis = /Altbau verfahrensfrei[^;]*jetzt nur Hinweis/;
+    // (a) festgelegt, als die Antwort gesichert war (ältere Datei bzw. Umfang später nur Hinweis): jetzt nur Hinweis → überholt
+    expect(grund(umfangHinweis, 'sicher')).toMatch(nurHinweis);
+    // (b) festgelegt, als die Antwort nur über den Hinweis galt, danach der Umfang bestätigt: deswegen nicht überholt
+    expect(grund(umfangSicher, 'hinweis')).not.toMatch(/Altbau verfahrensfrei/);
+    // gleich geblieben: deswegen nicht überholt
+    expect(grund(umfangHinweis, 'hinweis')).not.toMatch(/Altbau verfahrensfrei/);
+    expect(grund(umfangSicher, 'sicher')).not.toMatch(/Altbau verfahrensfrei/);
+  });
 
   it('Umfang nur als Hinweis: § 74 BauO NRW, §§ 1, 2, 15 BauPrüfVO „prüfen“, nicht „entfällt“; gesichert bleibt es „entfällt“', () => {
     const f = alleFakten('ja');

@@ -186,6 +186,8 @@ function Merkmale({ klaerung, suche = '', planungsrechtOffen, planungsrechtKlaer
     setTimeout(() => {
       const a = document.activeElement;
       if (a && a !== document.body && a.isConnected) return; // der Fokus liegt woanders – nicht wegnehmen
+      // ein Sprung läuft (z. B. von einer Marke zu „Bestätigen …“ am Auslöser) – er führt den Fokus, nicht die nächste Rückfrage
+      if (useBaurecht.getState().fokus) return;
       const naechste = ref.current?.querySelector<HTMLElement>('.br-rueckfrage .br-fakt.br-offen .segment [tabindex="0"]');
       (naechste ?? ref.current?.querySelector<HTMLElement>('.br-gruppe-knopf'))?.focus();
     }, 0);
@@ -216,10 +218,11 @@ function Merkmale({ klaerung, suche = '', planungsrechtOffen, planungsrechtKlaer
                 const def = stand.auswertung.faktDefs[rid];
                 const w = stand.auswertung.fakten[rid];
                 // offen oder nur Hinweis (z. B. aus einer älteren Angabe – mit „Bestätigen …“): ganz, sonst kompakt
-                if (rueckfrageOffen(w)) return <FaktZeile key={rid} id={rid} def={def} wert={w} klaert={klaerung.get(rid) ?? 0} eigen={!!eigene[rid]} alsKnoepfe />;
+                if (rueckfrageOffen(w)) return <FaktZeile key={rid} id={rid} def={def} wert={w} klaert={klaerung.get(rid) ?? 0} eigen={!!eigene[rid]} alsKnoepfe defs={stand.auswertung.faktDefs} />;
                 return (
                   <p key={rid} className="br-rueckfrage-erledigt">
                     {faktName(def, rid)}: <strong>{wertAnzeige(w.wert, def)}</strong>{' '}
+                    <AusloeserMarken name={faktName(def, rid)} wert={w} defs={stand.auswertung.faktDefs} />{' '}
                     <button
                       type="button"
                       className="small br-link"
@@ -341,7 +344,7 @@ function Merkmale({ klaerung, suche = '', planungsrechtOffen, planungsrechtKlaer
               .filter((rid) => rueckfrageSichtbar(rid, stand))
               .map((rid) => (
                 <div key={rid} className="br-rueckfrage">
-                  <FaktZeile id={rid} def={stand.auswertung.faktDefs[rid]} wert={stand.auswertung.fakten[rid]} klaert={klaerung.get(rid) ?? 0} eigen={!!eigene[rid]} alsKnoepfe />
+                  <FaktZeile id={rid} def={stand.auswertung.faktDefs[rid]} wert={stand.auswertung.fakten[rid]} klaert={klaerung.get(rid) ?? 0} eigen={!!eigene[rid]} alsKnoepfe defs={stand.auswertung.faktDefs} />
                 </div>
               ))}
           </div>
@@ -417,7 +420,37 @@ function FaktEingabe({ id, def, wert, onWert, alsKnoepfe = false }: { id: string
   return <TextField value={v === null ? '' : String(v)} onChange={(t) => onWert(t.trim() || undefined)} label={faktName(def, id)} placeholder={id === 'lage.ags' ? '8 Ziffern' : undefined} />;
 }
 
-function FaktZeile({ id, def, wert, klaert, eigen, alsKnoepfe = false }: { id: string; def: FaktDef; wert: FaktWert | undefined; klaert: number; eigen: boolean; alsKnoepfe?: boolean }) {
+/**
+ * Antwort auf eine Frage, die nur über einen Hinweis bzw. Widerspruch gestellt wird: so gesichert wie ihr Auslöser –
+ * je Auslöser eine Marke („nur Hinweis“ bzw. „Widerspruch“ wie an den Angaben selbst), die zu ihm springt (bei einem
+ * Hinweis direkt auf „Bestätigen …“); der Auslöser steht in Tooltip und Name
+ */
+function AusloeserMarken({ name, wert, defs }: { name: string; wert: FaktWert | undefined; defs: Record<string, FaktDef> }) {
+  const widerspruch = (wert?.ueberWiderspruch ?? []).map((a) => [a, 'Widerspruch'] as const);
+  const hinweis = (wert?.ueberHinweis ?? []).filter((a) => !wert?.ueberWiderspruch?.includes(a)).map((a) => [a, 'nur Hinweis'] as const);
+  return (
+    <>
+      {[...widerspruch, ...hinweis].map(([a, wie]) => {
+        const ausloeser = faktName(defs[a], a);
+        const ziel = wie === 'nur Hinweis' ? `zu „${ausloeser}“ bestätigen` : `zu „${ausloeser}“`;
+        return (
+          <button
+            key={a}
+            type="button"
+            className={`br-hinweis-marke br-marke-knopf br-ausloeser-marke${wie === 'Widerspruch' ? ' br-widerspruch' : ''}`}
+            title={`Gefragt nur, weil „${ausloeser}“ ${wie === 'Widerspruch' ? 'widersprüchlich' : 'nur Hinweis'} ist – die Antwort zählt erst, wenn das geklärt ist`}
+            aria-label={`${name}: ${wie} über „${ausloeser}“ – ${ziel}`}
+            onClick={() => useBaurecht.getState().fokusSetzen(wie === 'nur Hinweis' ? `${a}:bestaetigen` : a)}
+          >
+            {wie}
+          </button>
+        );
+      })}
+    </>
+  );
+}
+
+function FaktZeile({ id, def, wert, klaert, eigen, alsKnoepfe = false, defs = {} }: { id: string; def: FaktDef; wert: FaktWert | undefined; klaert: number; eigen: boolean; alsKnoepfe?: boolean; defs?: Record<string, FaktDef> }) {
   const fokus = useBaurecht((s) => s.fokus);
   const entwurf = useBaurecht((s) => offeneBestaetigungen(s).includes(id));
   const ref = useRef<HTMLDivElement>(null);
@@ -569,6 +602,7 @@ function FaktZeile({ id, def, wert, klaert, eigen, alsKnoepfe = false }: { id: s
               Widerspruch
             </span>
           )}
+          <AusloeserMarken name={name} wert={wert} defs={defs} />
           {eigen && wert.herkunft === 'manuell' && !wert.bestaetigt && (
             <button
               type="button"
@@ -695,6 +729,29 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
     return () => clearTimeout(t);
   }, [fokus, alle, suche]);
   const { auswertung } = stand;
+  // Widersprüche ohne den Hinweis zum Planungsrecht (der hat eine eigene Zeile mit „Für diesen Ort bestätigen“)
+  const meldungen = stand.widersprueche.map((text, i) => ({ text, zu: stand.widerspruchZu[i] })).filter((m) => m.text !== stand.planungsrechtHinweis);
+  // angesagt werden nur neue Sätze (nicht bei jeder Auswertung alle, nicht die beim ersten Zeichnen), entprellt wie die
+  // Suche: noch nicht angesagte sammeln sich, bis die Frist abläuft – kein Satz geht verloren; erledigte verschwinden
+  // auch aus der (unsichtbaren) Region
+  const [angesagt, setAngesagt] = useState<string[]>([]);
+  const bekannt = useRef(new Set(meldungen.map((m) => m.text)));
+  const ausstehend = useRef<string[]>([]);
+  const meldungsSchluessel = meldungen.map((m) => m.text).join('|');
+  useEffect(() => {
+    const jetzt = new Set(meldungen.map((m) => m.text));
+    for (const t of jetzt) if (!bekannt.current.has(t)) ausstehend.current.push(t);
+    bekannt.current = jetzt;
+    ausstehend.current = ausstehend.current.filter((t) => jetzt.has(t));
+    setAngesagt((a) => (a.every((t) => jetzt.has(t)) ? a : a.filter((t) => jetzt.has(t))));
+    if (!ausstehend.current.length) return;
+    const zeit = setTimeout(() => {
+      setAngesagt(ausstehend.current.filter((t) => bekannt.current.has(t)));
+      ausstehend.current = [];
+    }, 300);
+    return () => clearTimeout(zeit);
+  }, [meldungsSchluessel]);
+  const widerspruchAnsage = angesagt.map(nb).join(' ');
   const klaerung = useMemo(() => new Map(auswertung.klaerung.map((k) => [k.id, k.anzahl])), [auswertung.klaerung]);
   const relevant = useMemo(() => {
     const s = new Set<string>(['lage.ags']);
@@ -782,13 +839,21 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
       </div>
       <div className="br-angaben-liste">
         {!suche && <Klaeren stand={stand} />}
-        {stand.widersprueche
-          .filter((w) => w !== stand.planungsrechtHinweis)
-          .map((w) => (
-            <div key={w} className="meldung warnung" role="status">
-              {w}
-            </div>
-          ))}
+        {/* Widersprüche und Plausibilität: stehende Live-Region (eine neu eingefügte Region sagen manche Screenreader nicht
+            an), die Meldungen selbst ohne eigene Rolle – mit Sprung zum Merkmal, um das es geht */}
+        <div className="br-unsichtbar" role="status">
+          {widerspruchAnsage}
+        </div>
+        {meldungen.map(({ text, zu }) => (
+          <div key={text} className="meldung warnung br-widerspruch-meldung">
+            <span>{nb(text)}</span>
+            {zu && (
+              <button type="button" className="small" onClick={() => useBaurecht.getState().fokusSetzen(`merkmal:${zu}`)} aria-label={`Zum Merkmal „${MERKMAL_TITEL[zu] ?? zu}“`}>
+                Zum Merkmal
+              </button>
+            )}
+          </div>
+        ))}
         {stand.planungsrechtHinweis && (
           // knapp (eine Zeile): der häufige Fall „noch nicht bestätigt“ kurz, die Anschrift im Titel und im Namen des Knopfs
           // role="note": ein stehender Hinweis – als Live-Region läse er bei jeder Änderung von „klärt N“ alles neu vor
@@ -831,7 +896,7 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
           <section key={g.id} className="br-angaben-gruppe" aria-labelledby={`br-g-${g.id}`}>
             <h3 id={`br-g-${g.id}`}>{g.titel}</h3>
             {g.ids.map((id) => (
-              <FaktZeile key={id} id={id} def={auswertung.faktDefs[id]} wert={auswertung.fakten[id]} klaert={klaerung.get(id) ?? 0} eigen={!!eigene[id]} />
+              <FaktZeile key={id} id={id} def={auswertung.faktDefs[id]} wert={auswertung.fakten[id]} klaert={klaerung.get(id) ?? 0} eigen={!!eigene[id]} defs={auswertung.faktDefs} />
             ))}
           </section>
         ))}

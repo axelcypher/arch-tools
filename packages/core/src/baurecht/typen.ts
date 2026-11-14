@@ -228,11 +228,14 @@ export function faktName(def: Pick<FaktDef, 'titel' | 'kurz'> | undefined, id = 
 /** wie gesichert ein Fakt ist: sicher (auch bestätigt), nur Hinweis, widersprüchlich */
 export type FaktStatus = 'sicher' | 'hinweis' | 'widerspruch';
 
-/** Status eines Fakts für Festlegungen */
+/**
+ * Status eines Fakts für Festlegungen und Anzeige – eine Antwort auf eine nur über einen Hinweis bzw. Widerspruch
+ * gestellte Frage (ueberHinweis, ueberWiderspruch) ist so gesichert wie ihr Auslöser, nicht mehr
+ */
 export function faktStatus(f: FaktWert | undefined): FaktStatus {
   if (!f) return 'hinweis';
-  if (f.widerspruch) return 'widerspruch';
-  return f.sicherheit === 'hinweis' && !f.bestaetigt ? 'hinweis' : 'sicher';
+  if (f.widerspruch || f.ueberWiderspruch?.length) return 'widerspruch';
+  return (f.sicherheit === 'hinweis' && !f.bestaetigt) || !!f.ueberHinweis?.length ? 'hinweis' : 'sicher';
 }
 
 /** Wert eines Fakts im Projekt (Abschnitt 5.1) */

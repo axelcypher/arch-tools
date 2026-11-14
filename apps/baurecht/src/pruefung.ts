@@ -123,6 +123,8 @@ export interface Pruefstand {
   widersprueche: string[];
   /** Merkmale, die den Geodaten bzw. dem Modell widersprechen */
   widerspruchMerkmale: string[];
+  /** je Satz in `widersprueche` das Merkmal, um das es geht (gleiche Reihenfolge – Sprung zum Merkmal) */
+  widerspruchZu: string[];
   /** Planungsrecht ist nicht für diesen Ort bestätigt (Grund) – Hinweis mit „Bestätigen“ */
   planungsrechtFrueher?: string;
   /** derselbe Hinweis als ganzer Satz (steht auch in `widersprueche`, fürs Protokoll) */
@@ -183,10 +185,11 @@ export function pruefstandBerechnen(
     if (!w.merkmale.has('Planungsrecht')) vorbehalte['Planungsrecht'] = text;
     w.merkmale.add('Planungsrecht');
     w.texte.push(text);
+    w.zu.push('Planungsrecht');
   }
   const planungsrechtHinweis = planungsrechtFrueher ? w.texte[w.texte.length - 1] : undefined;
   const auswertung = auswerten({ paket, module, merkmale, fakten, einreichung, heute: heute(), texte: new Map(Object.entries(texte)), festlegungen, widersprueche: w.merkmale, vorbehalte, ort });
-  return { auswertung, module, fehlend: fehlendeEbenen(paket.module, ags), ags, einreichung, gk, widersprueche: w.texte, widerspruchMerkmale: [...w.merkmale], planungsrechtFrueher, planungsrechtHinweis };
+  return { auswertung, module, fehlend: fehlendeEbenen(paket.module, ags), ags, einreichung, gk, widersprueche: w.texte, widerspruchMerkmale: [...w.merkmale], widerspruchZu: w.zu, planungsrechtFrueher, planungsrechtHinweis };
 }
 
 const RANG = { rot: 2, gelb: 1, gruen: 0 } as const;

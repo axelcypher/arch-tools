@@ -245,8 +245,8 @@ function modulQuellen(id: string, fakten: Record<string, FaktWert>, defs: Record
  * Antworten auf Fragen, die nur wegen eines Hinweises gestellt werden (frageStand), bekommen diese Hinweise als
  * `ueberHinweis` mit: Regeln, die die Antwort verwenden, zählen dann den Auslöser als unsicher (kurz.ts) – sonst höbe der
  * Hinweis über die Antwort einen Paragrafen auf „entfällt“ (z. B. „Altbau verfahrensfrei: ja“, gestellt nur, weil der
- * Umfang „Abbruch mit Ersatzbau“ nicht gesichert ist). Die Antwort selbst bleibt gesichert (sie ist beantwortet);
- * bestätigt wird der Auslöser. Bis zum Fixpunkt: eine markierte Antwort kann ihrerseits eine Frage nur über Hinweise
+ * Umfang „Abbruch mit Ersatzbau“ nicht gesichert ist). Die Antwort bleibt beantwortet, zählt beim Festlegen aber als
+ * Hinweis (faktStatus); bestätigt wird der Auslöser. Bis zum Fixpunkt: eine markierte Antwort kann ihrerseits eine Frage nur über Hinweise
  * stellen (Kette). Ausgenommen ist eine Antwort mit dem Wert, der auch ohne die Frage gälte (FaktDef.ohneAusloeser,
  * strenger Vergleich – eine als Text gespeicherte Zahl zählt nicht): Sie gilt unabhängig vom Auslöser.
  */

@@ -760,11 +760,12 @@
       }
     },
     "planung.zurueckstellung": {
-      "titel": "Die Gemeinde hat die Zurückstellung des Baugesuchs beantragt (§ 15 BauGB)",
+      "titel": "Die Gemeinde hat die Zurückstellung des Baugesuchs beantragt (§ 15 Abs. 1 oder 3 BauGB)",
       "kurz": "Zurückstellung beantragt (§ 15 BauGB)",
       "gruppe": "planung",
       "typ": "janein",
       "hilfe": "bei der Gemeinde erfragen, solange ein Bebauungsplan oder ein Flächennutzungsplan mit Konzentrationszonen aufgestellt wird – die Gemeinde kann die Zurückstellung auch noch nach Eingang des Bauantrags beantragen",
+      "ohneAusloeser": false,
       "wenn": {
         "oder": [
           {
