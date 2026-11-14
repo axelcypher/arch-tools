@@ -14,6 +14,9 @@ import { planLaden } from './BackgroundPanel';
 import { IfcImportDialog } from './IfcImportDialog';
 import type { SymbolName } from '@core/ui/Symbol';
 import { Symbol } from '@core/ui/Symbol';
+import type { MenuePunkt } from '@core/ui/Menue';
+import { MenueKnopf } from '@core/ui/Menue';
+import { Werkzeugleiste } from '@core/ui/Werkzeugleiste';
 import { logger } from '@core/platform/log';
 import { mitDatei } from '@core/platform/dateiFehler';
 import { aenderungenSpeichern, meldung, oeffnenFehlgeschlagen } from '@core/ui/Rueckfrage';
@@ -137,88 +140,116 @@ export function Toolbar() {
     }
   };
 
+  // Datei: seltene Dateibefehle und Importe (design.md „Kopf- und Werkzeugleisten“)
+  const dateiPunkte = (): MenuePunkt[] => [
+    { text: 'Neu', symbol: 'datei', aktion: () => void onNew() },
+    { text: 'Öffnen …', symbol: 'ordnerOffen', tasten: 'Strg+O', aktion: () => void onOpen() },
+    ...(isTauri() ? [{ text: 'Speichern unter …', symbol: 'speichern' as const, tasten: 'Strg+Umschalt+S', aktion: () => void onSave(true) }] : []),
+    { trenner: true },
+    {
+      text: hatPlan ? 'Plan ersetzen …' : 'Plan laden …',
+      symbol: 'bild',
+      titel: hatPlan ? 'Plan des Geschosses durch einen anderen ersetzen (PDF, DXF, Bild)' : 'Grundriss als PDF, DXF oder Bild laden – zum Nachzeichnen und Erkennen',
+      aktion: () => void planLaden(aktivesGeschoss()),
+    },
+    { text: 'IFC-Import …', symbol: 'stapel', titel: 'Gebäudemodell als IFC-Datei aus dem CAD-Programm importieren', aktion: () => setIfcOpen(true) },
+  ];
+  const exportPunkte = (): MenuePunkt[] => [
+    { text: 'CSV …', symbol: 'export', titel: 'Flächenaufstellung als CSV exportieren', aktion: () => void onCsv() },
+    { text: 'Excel …', symbol: 'tabelle', titel: 'Excel-Export (Standardlayout oder eigene Vorlage)', aktion: () => st.setExcelOpen(true) },
+  ];
+  const kalibrierenAktiv = tool === 'calibrate' || tool === 'kontrolle';
+
   return (
-    <div className="toolbar">
-      <div className="tb-group">
-        {/* bekannte Befehle: unter 1600 px nur das Symbol (Name über aria-label und title) */}
-        <button onClick={() => void onNew()} title="Neues Projekt" aria-label="Neu">
-          <Symbol name="datei" /> <span className="tb-text">Neu</span>
-        </button>
-        <button onClick={() => void onOpen()} title="Projekt öffnen … (Strg+O)" aria-label="Öffnen …">
-          <Symbol name="ordnerOffen" /> <span className="tb-text">Öffnen …</span>
-        </button>
-        {/* ungespeicherte Änderungen als Punkt in der Ecke – ändert die Breite der Leiste nicht */}
-        <button
-          className={dirty ? 'ungespeichert' : undefined}
-          onClick={() => void onSave()}
-          title={`${isTauri() ? 'Projekt speichern – in die geöffnete Datei (Strg+S)' : 'Projekt als Datei herunterladen (Strg+S)'}${dirty ? ' – ungespeicherte Änderungen' : ''}`}
-          aria-label={dirty ? 'Speichern – ungespeicherte Änderungen' : 'Speichern'}
-        >
-          <Symbol name="speichern" /> <span className="tb-text">Speichern</span>
-        </button>
-        {isTauri() && (
-          <button onClick={() => void onSave(true)} title="Projekt unter neuem Namen oder an anderem Ort speichern (Strg+Umschalt+S)">
-            <Symbol name="speichern" /> Speichern unter …
-          </button>
-        )}
-        <button onClick={() => setIfcOpen(true)} title="Gebäudemodell als IFC-Datei aus dem CAD-Programm importieren">
-          <Symbol name="stapel" /> IFC-Import …
-        </button>
-      </div>
+    <>
+      <Werkzeugleiste
+        name="Werkzeugleiste"
+        teile={[
+          { id: 'datei', inhalt: <MenueKnopf punkte={dateiPunkte}>Datei</MenueKnopf> },
+          {
+            id: 'speichern',
+            gruppe: true,
+            inhalt: (
+              // ungespeicherte Änderungen als Punkt in der Ecke – ändert die Breite der Leiste nicht
+              <button
+                className={dirty ? 'ungespeichert' : undefined}
+                onClick={() => void onSave()}
+                title={`${isTauri() ? 'Projekt speichern – in die geöffnete Datei (Strg+S)' : 'Projekt als Datei herunterladen (Strg+S)'}${dirty ? ' – ungespeicherte Änderungen' : ''}`}
+                aria-label={dirty ? 'Speichern – ungespeicherte Änderungen' : 'Speichern'}
+              >
+                <Symbol name="speichern" /> <span className="tb-text">Speichern</span>
+              </button>
+            ),
+          },
+          {
+            id: 'bearbeiten',
+            gruppe: true,
+            inhalt: (
+              <>
+                <button onClick={rueckgaengig} disabled={!canUndo} title="Rückgängig (Strg+Z) – beim Zeichnen zuerst den letzten Punkt" aria-label="Rückgängig">
+                  <Symbol name="rueckgaengig" />
+                </button>
+                <button onClick={st.redo} disabled={!canRedo} title="Wiederholen (Strg+Y)" aria-label="Wiederholen">
+                  <Symbol name="wiederholen" />
+                </button>
+              </>
+            ),
+          },
+          {
+            id: 'werkzeuge',
+            gruppe: true,
+            inhalt: (
+              <div className="tb-werkzeuge" role="group" aria-label="Werkzeuge">
+                {TOOLS.map((t) => (
+                  <button key={t.id} className={tool === t.id ? 'active' : ''} aria-pressed={tool === t.id} aria-label={t.label} onClick={() => st.setTool(t.id)} title={t.title}>
+                    <Symbol name={t.symbol} /> <span className="tb-werkzeug-text">{t.label}</span>
+                  </button>
+                ))}
+                <button
+                  className={kalibrierenAktiv ? 'active' : ''}
+                  aria-pressed={kalibrierenAktiv}
+                  aria-label="Kalibrieren"
+                  disabled={!hatPlan && tool !== 'calibrate'}
+                  onClick={() => st.setTool('calibrate')}
+                  title={hatPlan ? 'Plan kalibrieren – zwei Punkte mit bekanntem Abstand (K)' : 'Zuerst einen Plan laden (Datei → Plan laden …)'}
+                >
+                  <Symbol name="kalibrieren" /> <span className="tb-werkzeug-text">Kalibrieren</span>
+                </button>
+              </div>
+            ),
+          },
+          {
+            id: 'art',
+            inhalt: (
+              // Haupt-Umschalter: Art der neu gezeichneten Fläche
+              <div className="segment" role="group" aria-label="Neue Flächen zeichnen als" title="Neue Flächen zeichnen als BGF-Umriss oder Raum">
+                <button
+                  className={drawKind === 'outline' ? 'active kind-outline' : ''}
+                  aria-pressed={drawKind === 'outline'}
+                  onClick={() => st.setDrawKind('outline')}
+                  title="Neue Flächen als BGF-Umriss (B)"
+                >
+                  BGF-Umriss
+                </button>
+                <button className={drawKind === 'room' ? 'active kind-room' : ''} aria-pressed={drawKind === 'room'} onClick={() => st.setDrawKind('room')} title="Neue Flächen als Raum / NRF (N)">
+                  Raum
+                </button>
+              </div>
+            ),
+          },
+          { abstand: true },
+          { id: 'export', rang: 1, inhalt: <MenueKnopf punkte={exportPunkte}>Exportieren</MenueKnopf>, menue: { text: 'Exportieren', symbol: 'export', unter: exportPunkte() } },
+          {
+            id: 'haupt',
+            inhalt: (
+              <button className="primary" onClick={() => st.setReportOpen(true)} title="Flächenaufstellung zum Prüfen, Drucken und als PDF">
+                <Symbol name="formular" /> Flächenaufstellung …
+              </button>
+            ),
+          },
+        ]}
+      />
       {ifcOpen && <IfcImportDialog onClose={() => setIfcOpen(false)} />}
-      <div className="tb-group">
-        <button onClick={rueckgaengig} disabled={!canUndo} title="Rückgängig (Strg+Z) – beim Zeichnen zuerst den letzten Punkt" aria-label="Rückgängig">
-          <Symbol name="rueckgaengig" />
-        </button>
-        <button onClick={st.redo} disabled={!canRedo} title="Wiederholen (Strg+Y)" aria-label="Wiederholen">
-          <Symbol name="wiederholen" />
-        </button>
-      </div>
-      <div className="tb-group" role="group" aria-label="Plan">
-        <button onClick={() => void planLaden(aktivesGeschoss())} title={hatPlan ? 'Plan des Geschosses durch einen anderen ersetzen (PDF, DXF, Bild)' : 'Grundriss als PDF, DXF oder Bild laden – zum Nachzeichnen und Erkennen'}>
-          <Symbol name="bild" /> {hatPlan ? 'Plan …' : 'Plan laden …'}
-        </button>
-        <button
-          className={tool === 'calibrate' || tool === 'kontrolle' ? 'active' : ''}
-          aria-pressed={tool === 'calibrate' || tool === 'kontrolle'}
-          disabled={!hatPlan && tool !== 'calibrate'}
-          onClick={() => st.setTool('calibrate')}
-          title={hatPlan ? 'Plan kalibrieren – zwei Punkte mit bekanntem Abstand (K)' : 'Zuerst einen Plan laden (Plan laden …)'}
-        >
-          <Symbol name="kalibrieren" /> Kalibrieren
-        </button>
-      </div>
-      <div className="tb-group" role="group" aria-label="Werkzeuge">
-        {TOOLS.map((t) => (
-          <button key={t.id} className={tool === t.id ? 'active' : ''} aria-pressed={tool === t.id} onClick={() => st.setTool(t.id)} title={t.title}>
-            <Symbol name={t.symbol} /> {t.label}
-          </button>
-        ))}
-      </div>
-      <div className="tb-group">
-        {/* Art der neu gezeichneten Fläche: Umschalter wie im Designsystem */}
-        <div className="segment" role="group" aria-label="Neue Flächen zeichnen als" title="Neue Flächen zeichnen als BGF-Umriss oder Raum">
-        <button className={drawKind === 'outline' ? 'active kind-outline' : ''} aria-pressed={drawKind === 'outline'} onClick={() => st.setDrawKind('outline')} title="Neue Flächen als BGF-Umriss (B)">
-          BGF-Umriss
-        </button>
-        <button className={drawKind === 'room' ? 'active kind-room' : ''} aria-pressed={drawKind === 'room'} onClick={() => st.setDrawKind('room')} title="Neue Flächen als Raum / NRF (N)">
-          Raum
-        </button>
-        </div>
-      </div>
-      <div className="tb-spacer" />
-      <div className="tb-group">
-        <button onClick={onCsv} title="Flächenaufstellung als CSV exportieren">
-          <Symbol name="export" /> CSV …
-        </button>
-        <button onClick={() => st.setExcelOpen(true)} title="Excel-Export (Standardlayout oder eigene Vorlage)">
-          <Symbol name="tabelle" /> Excel …
-        </button>
-        <button className="primary" onClick={() => st.setReportOpen(true)} title="Flächenaufstellung zum Prüfen, Drucken und als PDF">
-          <Symbol name="formular" /> Flächenaufstellung …
-        </button>
-      </div>
-    </div>
+    </>
   );
 }
-

@@ -253,23 +253,29 @@
   white-space: nowrap;
 }
 
-/* Werkzeugleiste bis 1600 px etwas knapper, damit sie bei 1440 px in eine Zeile passt */
-@media (max-width: 1600px) {
-  .toolbar {
-    gap: 2px;
-  }
+/* Übergang, bis core es behebt: die Regel der Seitenleisten `.leiste > :first-child { flex: 1 }` (base.css) trifft auch
+   den ersten Eintrag der Werkzeugleiste (`.toolbar.leiste`) und streckt bzw. quetscht „Datei“ – gemeldet */
+.toolbar.leiste > :first-child {
+  flex: 0 1 auto;
+  min-width: auto;
+}
 
-  .toolbar .tb-group {
-    gap: 2px;
-    padding-right: 4px;
-  }
+/* Werkzeuge der Zeichenfläche: eine Gruppe in der Werkzeugleiste (bleiben immer sichtbar, siehe Toolbar.tsx) */
+.tb-werkzeuge {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
 
-  .toolbar button {
-    padding: 4px 5px;
-  }
-
-  /* bekannte Befehle (Neu, Öffnen, Speichern) nur als Symbol – Name über aria-label und title */
+/* schmalere Fenster: „Speichern“ und die Werkzeuge nur als Symbol (Name über aria-label und title); „Exportieren“ wandert
+   über die Werkzeugleiste ins Menü „Mehr“ */
+@media (max-width: 1360px) {
   .toolbar .tb-text {
+    display: none;
+  }
+}
+@media (max-width: 1180px) {
+  .toolbar .tb-werkzeug-text {
     display: none;
   }
 }

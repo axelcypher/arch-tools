@@ -301,8 +301,28 @@ describe('QUADRIO: Kontextmenü der Zeichenfläche und Werkzeugleiste (gemeinsam
     const host = render();
     const leiste = host.querySelector('.toolbar')!;
     expect(leiste.textContent).not.toMatch(/[⬉⬠▭⊡↔⇔↶↷📏]/);
-    expect(leiste.querySelectorAll('svg.symbol').length).toBeGreaterThanOrEqual(12);
-    for (const name of ['Rückgängig', 'Wiederholen', 'Neu', 'Öffnen …', 'Speichern']) expect(leiste.querySelector(`button[aria-label="${name}"]`)).not.toBeNull();
+    expect(leiste.querySelectorAll('svg.symbol').length).toBeGreaterThanOrEqual(10);
+    for (const name of ['Rückgängig', 'Wiederholen', 'Speichern', 'Auswählen', 'Polygon', 'Rechteck', 'Erkennen', 'Messen', 'Kalibrieren'])
+      expect(leiste.querySelector(`button[aria-label="${name}"]`)).not.toBeNull();
+  });
+
+  it('Werkzeugleiste nach design.md „Kopf- und Werkzeugleisten“: Seltenes in „Datei“ und „Exportieren“, sichtbar bleibt der Arbeitsablauf', () => {
+    useEditor.getState().loadProject(createProject('Haus'), null, 'Haus.oap');
+    const host = render();
+    const leiste = host.querySelector('.toolbar.leiste')!;
+    const knopf = (text: string) => [...leiste.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent?.trim() === text);
+    const menuePunkte = () => [...document.querySelectorAll('.menue [role="menuitem"]')].map((b) => b.textContent?.replace(/(Strg\+\S+)$/, '').trim());
+    // Gegenprobe: seltene Befehle stehen nicht mehr als eigene Knöpfe in der Leiste
+    for (const text of ['Neu', 'Öffnen …', 'IFC-Import …', 'CSV …', 'Excel …', 'Plan laden …']) expect(knopf(text)).toBeUndefined();
+    // sichtbar: Speichern, Rückgängig/Wiederholen, Werkzeuge, Umschalter, Hauptknopf
+    expect(leiste.querySelector('.segment[aria-label="Neue Flächen zeichnen als"]')).not.toBeNull();
+    expect(knopf('Flächenaufstellung …')?.classList.contains('primary')).toBe(true);
+    act(() => knopf('Datei')!.click());
+    expect(menuePunkte()).toEqual(expect.arrayContaining(['Neu', 'Öffnen …', 'Plan laden …', 'IFC-Import …']));
+    act(() => void document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })));
+    act(() => knopf('Exportieren')!.click());
+    expect(menuePunkte()).toEqual(['CSV …', 'Excel …']);
+    act(() => void document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })));
   });
 });
 
