@@ -43,12 +43,7 @@ export type LeistenTeil = LeistenEintrag | LeistenAbstand;
 
 const istAbstand = (t: LeistenTeil): t is LeistenAbstand => 'abstand' in t;
 
-/**
- * Welche Einträge ins Menü wandern: so wenige wie möglich, in der Reihenfolge ihres Rangs (höchster zuerst, bei
- * Gleichstand der weiter rechts stehende). `mehrBreite` zählt mit, sobald das Menü „Mehr“ sichtbar ist – immer, wenn
- * es feste Punkte hat (`mehrImmer`), sonst erst beim ersten Überlauf. `abstandhalter`: Zahl der Abstandhalter – sie
- * haben keine eigene Breite, bekommen als Flex-Kinder aber je einen Abstand (`gap`).
- */
+/** Maße der Leiste: Breite von „Mehr“, Abstand (`gap`), ob „Mehr“ immer steht, Zahl der Abstandhalter */
 type LeistenMasse = { mehrBreite: number; abstand: number; mehrImmer: boolean; abstandhalter?: number };
 
 /** Platzbedarf der Leiste, wenn die Einträge in `weg` im Menü stehen */
@@ -59,6 +54,12 @@ function bedarf(eintraege: { id: string; breite: number }[], weg: Set<string>, {
   return s.reduce((n, e) => n + e.breite, 0) + (mitMehr ? mehrBreite : 0) + Math.max(0, anzahl - 1) * abstand;
 }
 
+/**
+ * Welche Einträge ins Menü wandern: so wenige wie möglich, in der Reihenfolge ihres Rangs (höchster zuerst, bei
+ * Gleichstand der weiter rechts stehende). `mehrBreite` zählt mit, sobald das Menü „Mehr“ sichtbar ist – immer, wenn
+ * es feste Punkte hat (`mehrImmer`), sonst erst beim ersten Überlauf. `abstandhalter`: Zahl der Abstandhalter – sie
+ * haben keine eigene Breite, bekommen als Flex-Kinder aber je einen Abstand (`gap`).
+ */
 export function ueberlauf(eintraege: { id: string; breite: number; rang?: number }[], verfuegbar: number, masse: LeistenMasse): Set<string> {
   const weg = new Set<string>();
   const kandidaten = eintraege
@@ -159,7 +160,8 @@ export function Werkzeugleiste({
     const el = ref.current;
     window.addEventListener('resize', berechnen);
     const ro = typeof ResizeObserver !== 'undefined' && el ? new ResizeObserver(() => berechnen()) : null;
-    // die Leiste selbst und jeder Eintrag: ändert sich ein Knopftext, misst die Leiste neu
+    // die Leiste selbst und jeder Eintrag: ändert sich ein Knopftext, misst die Leiste neu (auch in der Kompaktstufe –
+    // gemessen wird dort ohne die Klasse, also die volle Breite)
     if (ro && el) for (const k of [el, ...el.querySelectorAll(':scope > [data-eintrag], :scope > .werkzeugleiste-mehr')]) ro.observe(k);
     return () => {
       window.removeEventListener('resize', berechnen);

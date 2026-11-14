@@ -1,5 +1,17 @@
 {
+  "ava": {
+    "stufe": "patch",
+    "notiz": "Werkzeugleiste: gleichmäßigere Abstände in Knopfgruppen."
+  },
+  "entzerrung": {
+    "stufe": "patch",
+    "notiz": "Werkzeugleiste: gleichmäßigere Abstände in Knopfgruppen."
+  },
   "flaechenrechner": {
+    "stufe": "patch",
+    "notiz": "Werkzeugleiste: gleichmäßigere Abstände in Knopfgruppen."
+  },
+  "formulare": {
     "stufe": "patch",
     "notiz": "Werkzeugleiste: gleichmäßigere Abstände in Knopfgruppen."
   },
@@ -15,20 +27,8 @@
     "stufe": "patch",
     "notiz": "Werkzeugleiste: gleichmäßigere Abstände in Knopfgruppen."
   },
-  "entzerrung": {
-    "stufe": "patch",
-    "notiz": "Werkzeugleiste: gleichmäßigere Abstände in Knopfgruppen."
-  },
-  "formulare": {
-    "stufe": "patch",
-    "notiz": "Werkzeugleiste: gleichmäßigere Abstände in Knopfgruppen."
-  },
-  "ava": {
-    "stufe": "patch",
-    "notiz": "Werkzeugleiste: gleichmäßigere Abstände in Knopfgruppen."
-  },
   "baurecht": {
     "stufe": "patch",
-    "notiz": "Werkzeugleiste: gleichmäßigere Abstände in Knopfgruppen."
+    "notiz": "Gemeinsame Gestaltung (Kern) aktualisiert."
   }
 }

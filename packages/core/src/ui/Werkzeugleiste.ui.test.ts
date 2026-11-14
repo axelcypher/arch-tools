@@ -60,6 +60,13 @@ describe('leistenStufe (Kompaktstufe)', () => {
     expect(leistenStufe(e, 500, opt)).toEqual({ weg: new Set(['datei']), kompakt: false });
     expect(leistenStufe(e, 470, opt)).toEqual({ weg: new Set(['datei']), kompakt: true });
   });
+  it('Randfälle: genau passend nicht kompakt; ohne Einträge mit Rang kompakt bei leerem weg; „Mehr“ immer zählt mit', () => {
+    expect(leistenStufe(e, 480, opt)).toEqual({ weg: new Set(['datei']), kompakt: false });
+    const ohneRang = e.map(({ id, breite }) => ({ id, breite }));
+    expect(leistenStufe(ohneRang, 500, opt)).toEqual({ weg: new Set(), kompakt: true });
+    expect(leistenStufe(ohneRang, 550, opt)).toEqual({ weg: new Set(), kompakt: false });
+    expect(leistenStufe(ohneRang, 550, { ...opt, mehrImmer: true })).toEqual({ weg: new Set(), kompakt: true });
+  });
 });
 
 describe('mehrPunkte', () => {
@@ -281,6 +288,32 @@ describe('Werkzeugleiste (Komponente)', () => {
     expect(leiste().classList.contains('kompakt')).toBe(false);
     breiteSetzen(1000);
     expect(sichtbar(host)).toEqual(['datei', 'werkzeuge', 'haupt']);
+  });
+
+  it('neuer Eintrag in der Kompaktstufe: gemessen wird seine volle Breite, nicht die schmale (Gegenprobe über den Austritt)', () => {
+    const messung = leistenMessung.breite;
+    leistenMessung.breite = (el) => {
+      if (el.closest('.kompakt') && el.hasAttribute('data-eintrag')) return [...el.querySelectorAll('[data-kompakt]')].reduce((n, k) => n + Number(k.getAttribute('data-kompakt')), 0);
+      return messung(el);
+    };
+    const mitText = (text: string, breite: number, kompakt: number) =>
+      createElement('button', { 'data-breite': breite, 'data-kompakt': kompakt, 'aria-label': text }, 'S', createElement('span', { className: 'tb-text' }, text));
+    const teileA: LeistenTeil[] = [
+      { id: 'werkzeuge', inhalt: mitText('Werkzeuge', 300, 100) },
+      { id: 'haupt', inhalt: mitText('Flächenaufstellung …', 150, 40) },
+    ];
+    const host = render(teileA);
+    breiteSetzen(400);
+    const leiste = () => host.querySelector('.toolbar.werkzeugleiste')!;
+    expect(leiste().classList.contains('kompakt')).toBe(true);
+    // neuer Eintrag ohne Rang (voll 200, kompakt 30) erscheint, während die Leiste kompakt ist
+    const teileB: LeistenTeil[] = [...teileA, { id: 'neu', inhalt: mitText('Neu', 200, 30) }];
+    act(() => root!.render(createElement(Fragment, null, createElement(Werkzeugleiste, { teile: teileB, name: 'Plan' }), createElement(MenueHost))));
+    // 480 px reichten für die schmale Messung (300+150+30), nicht für die volle (300+150+200): bleibt kompakt
+    breiteSetzen(480);
+    expect(leiste().classList.contains('kompakt')).toBe(true);
+    breiteSetzen(650);
+    expect(leiste().classList.contains('kompakt')).toBe(false);
   });
 
   it('feste Punkte: „Mehr“ steht immer am Ende, auch wenn alles passt; ausgeblendete Knöpfe sind nicht per Tab erreichbar', () => {
