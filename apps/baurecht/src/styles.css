@@ -110,16 +110,32 @@
 
 /* ---------- Kopf und Bilanz ---------- */
 
+/* Polster wie jede Werkzeugleiste (base.css); nur der Abstand der Einträge ist größer, weil Felder und Texte darin stehen */
 .br-kopf {
-  gap: 8px;
-  padding: 6px 10px;
-  /* eine Zeile: Module und Rechtsstand kürzen sich, die Aktionen bleiben rechts */
-  flex-wrap: nowrap;
+  gap: var(--s2);
+}
+/* Knöpfe und Felder behalten ihre Breite; nur Module und Rechtsstand kürzen sich, bevor ein Eintrag ins Menü „Mehr“
+   wandert (Werkzeugleiste) */
+.br-kopf > [data-eintrag] {
+  flex: none;
+}
+/* Liste der Module und Rechtsstand kürzen sich bis auf eine Mindestbreite (ganz im Tooltip); die Marken stehen in
+   eigenen Einträgen und werden nie gekürzt */
+.br-kopf > [data-eintrag='module'] {
+  flex: 0 1 auto;
+  min-width: 80px;
+}
+.br-kopf > [data-eintrag='rechtsstand'] {
+  flex: 0 3 auto;
+  min-width: 60px;
+}
+/* ohne Text steht die Live-Region leer im DOM und nimmt keinen Platz */
+.br-kopf > [data-eintrag='rechtsstand']:has(> .br-rechtsstand:empty) {
   min-width: 0;
 }
-.br-kopf > button,
-.br-kopf-feld {
-  flex-shrink: 0;
+/* „Gespeichert“ neben dem Knopf nur, solange es etwas meldet – leer keine Lücke */
+.br-kopf .br-gespeichert:not(:empty) {
+  margin-left: var(--s1);
 }
 .br-kopf-feld {
   display: inline-flex;
@@ -136,23 +152,14 @@
   color: var(--text);
 }
 .br-module-text {
-  /* kürzt sich zuerst und nimmt den freien Platz */
-  flex: 1 1 0;
+  /* kürzt sich zuerst, die Gemeinde bleibt lesbar */
+  flex: 0 1 auto;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: var(--fs-s);
   color: var(--muted);
   min-width: 0;
-}
-.br-kopf-aktionen {
-  display: inline-flex;
-  gap: 8px;
-  flex-shrink: 0;
-}
-.br-kopf > .br-nur-schmal,
-.br-kopf > .br-nur-breit {
-  flex-shrink: 0;
 }
 button.br-modul-chip {
   cursor: pointer;
@@ -173,7 +180,7 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
 .br-app {
   container: app / inline-size;
 }
-/* unter 1600 px: Aktionen in „Mehr ▾“, Warnungen als Sammelmarke – die Module behalten ihren Platz */
+/* unter 1600 px: Warnungen als Sammelmarke (öffnet „Mehr“) – die Module behalten ihren Platz */
 @container app (max-width: 1599px) {
   .br-kopf .br-nur-breit {
     display: none;
@@ -226,8 +233,7 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  min-width: 60px;
-  flex: 0 3 auto;
+  min-width: 0;
 }
 .br-rechtsstand:empty {
   display: none;
