@@ -337,6 +337,15 @@ describe('QUADRIO: Kontextmenü der Zeichenfläche und Werkzeugleiste (gemeinsam
       const leiste = host.querySelector('.toolbar.werkzeugleiste')!;
       const versteckt = [...leiste.querySelectorAll<HTMLElement>('[data-eintrag]')].filter((e) => e.hidden).map((e) => e.dataset.eintrag);
       expect(versteckt).toEqual(['export']);
+      // 600 px reichen auch ohne „Exportieren“ nicht: Kompaktstufe (Knopftexte weg, nur Symbole)
+      expect(leiste.classList.contains('kompakt')).toBe(true);
+      // jede Beschriftung steht direkt in einem Knopf mit Symbol und Namen – sonst greift die Kompaktform nicht
+      for (const t of leiste.querySelectorAll('.tb-text')) {
+        const knopf = t.parentElement!;
+        expect(knopf.tagName).toBe('BUTTON');
+        expect(knopf.getAttribute('aria-label')).toBeTruthy();
+        expect(knopf.querySelector(':scope > svg.symbol')).not.toBeNull();
+      }
       const mehr = leiste.querySelector<HTMLButtonElement>('.werkzeugleiste-mehr button')!;
       expect(leiste.querySelector('.werkzeugleiste-mehr')!.hasAttribute('hidden')).toBe(false);
       act(() => mehr.click());
@@ -351,6 +360,7 @@ describe('QUADRIO: Kontextmenü der Zeichenfläche und Werkzeugleiste (gemeinsam
       act(() => void window.dispatchEvent(new Event('resize')));
       expect(leiste.querySelector('[data-eintrag="export"]')!.hasAttribute('hidden')).toBe(false);
       expect(leiste.querySelector('.werkzeugleiste-mehr')!.hasAttribute('hidden')).toBe(true);
+      expect(leiste.classList.contains('kompakt')).toBe(false);
     } finally {
       leistenMessung.breite = original;
     }
