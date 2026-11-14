@@ -257,7 +257,7 @@
 .tb-werkzeuge {
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: var(--s1);
 }
 
 /* leeres Geschoss: Plan laden bzw. Umriss übernehmen als abgeschlossener Block über den Geschossangaben */

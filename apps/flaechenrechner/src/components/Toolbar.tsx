@@ -186,10 +186,10 @@ export function Toolbar() {
             gruppe: true,
             inhalt: (
               <>
-                <button onClick={rueckgaengig} disabled={!canUndo} title="Rückgängig (Strg+Z) – beim Zeichnen zuerst den letzten Punkt" aria-label="Rückgängig">
+                <button className="icon" onClick={rueckgaengig} disabled={!canUndo} title="Rückgängig (Strg+Z) – beim Zeichnen zuerst den letzten Punkt" aria-label="Rückgängig">
                   <Symbol name="rueckgaengig" />
                 </button>
-                <button onClick={st.redo} disabled={!canRedo} title="Wiederholen (Strg+Y)" aria-label="Wiederholen">
+                <button className="icon" onClick={st.redo} disabled={!canRedo} title="Wiederholen (Strg+Y)" aria-label="Wiederholen">
                   <Symbol name="wiederholen" />
                 </button>
               </>
