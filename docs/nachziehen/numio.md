@@ -5,6 +5,5 @@ Designsystem ein. Erledigte Punkte löscht die App in ihrem eigenen PR (löschen
 sich auf den Stand beim Eintragen.
 
 Zurzeit nichts offen. Erledigt mit #37: Spaltenüberschriften, Druckvorschau, `.segment`, `Modal` mit `kopf` und „ …“,
-`planFuellungDunkel` im Mengenplan; NUMIO hat keine eigenen Menüs. Hinzufügen-Knöpfe mit Symbol `plus` (Position, Kostenrisiko).
-
-- **Kopf- und Werkzeugleiste nach der neuen Regel ordnen** (design.md „Kopf- und Werkzeugleisten“): Werkzeugleiste in `App.tsx` – was sichtbar bleibt, die festen Menüs, die Reihenfolge darin und der Aufbau stehen dort; umsetzen mit `Werkzeugleiste` (`ui/Werkzeugleiste.tsx`) und Rang je Eintrag für den Überlauf in schmalen Fenstern. Die Titelleiste ordnet das Designsystem selbst.
+`planFuellungDunkel` im Mengenplan; Hinzufügen-Knopf „Position“ mit Symbol `plus`. Kopf- und Werkzeugleiste nach der
+Regel „Kopf- und Werkzeugleisten“ (`Werkzeugleiste`; Menüs „Datei“ und „Hinzufügen“, Kostenrisiko im Menü).

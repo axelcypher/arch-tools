@@ -32,10 +32,15 @@ und Regionalfaktor.
   mit ihrem eigenen, älteren Stand zu überschreiben (ab QUADRIO 0.11.0, TERRIO 0.4.0,
   NUMIO 0.4.0). Wird während „IFC aktualisieren …“ weitergearbeitet oder ein anderes Projekt geöffnet,
   verwirft NUMIO das Ergebnis des Imports mit einer Meldung, statt die Eingaben zu überschreiben.
-  „Speichern“ (Strg+S) schreibt in die geöffnete Datei, „Speichern unter …“
-  (Strg+Shift+S) fragt nach einem neuen Namen.
-- **IFC aktualisieren …:** ein neuer Export desselben Modells wird über die IFC-GlobalIds in das bestehende Projekt
+  „Speichern“ (Strg+S) schreibt in die geöffnete Datei, „Speichern unter …“ (Menü „Datei“,
+  Strg+Umschalt+S) fragt nach einem neuen Namen.
+- **IFC aktualisieren …** (Menü „Datei“): ein neuer Export desselben Modells wird über die IFC-GlobalIds in das bestehende Projekt
   eingelesen; Positionen, Kennwerte und von Hand geänderte Werte bleiben erhalten, die Mengen rechnen sich neu.
+- **Werkzeugleiste:** links das Menü **Datei** (Neu, Öffnen … (Strg+O), Speichern unter … (Strg+Umschalt+S, nur
+  Desktop), IFC aktualisieren …), daneben **Speichern** (Punkt in der Ecke bei ungespeicherten Änderungen),
+  Rückgängig/Wiederholen und der Umschalter **Kosten | Mengen prüfen**; rechts **Excel …** und der Hauptknopf
+  **Kosten drucken …**. In schmalen Fenstern wandert „Excel …“ ins Menü „Mehr“. Der Kennwertkatalog steht im Kopf
+  der Positionen.
 - **Regeln nachschlagen:** „Berechnungsregeln …“ (Menü „Einstellungen und Hilfe“ der Titelleiste) bzw. F1 öffnet das Nachschlagewerk (DIN 276, DIN 277) mit Quellen und Suche.
 
 ## Mengen
@@ -168,7 +173,7 @@ hingewiesen. Negative Mengen, Kennwerte, Beträge und Prozentsätze (etwa aus ei
 aber als unplausibel gemeldet. Positionen lassen sich ausschalten – sie bleiben
 sichtbar, werden aber nicht gerechnet (für Alternativen).
 
-„Gliederung 1. Ebene“ legt leere Positionen für KG 300, 400, 500 und 700 an (Kostenrahmen, Kennwerte je m²
+Neben dem Knopf **Position** stehen im Menü **Hinzufügen** das Kostenrisiko und die Gliederungen. „Gliederung 1. Ebene“ legt leere Positionen für KG 300, 400, 500 und 700 an (Kostenrahmen, Kennwerte je m²
 BGF), „Gliederung 2. Ebene“ für KG 310 bis 480 mit Bauteilmengen (ab der Kostenschätzung). DIN 276:2018-12
 verlangt für die Kostenschätzung die 2. und für die Kostenberechnung die 3. Ebene; HOAI § 2 Abs. 10/11 (mit
 Bezug auf DIN 276:2008-12) die 1. bzw. 2. Ebene. Vorgeschlagen wird deshalb die 1. Ebene nur für den
@@ -190,7 +195,7 @@ auf unplausible Eingaben.
 ## Kostenrisiken
 
 DIN 276:2018-12 sieht vor, Kostenrisiken zu benennen und in der Kostenermittlung gesondert auszuweisen. Dafür gibt es
-Positionen mit der Kennung **Kostenrisiken** statt einer Kostengruppe (intern `risiko`, Knopf **Kostenrisiko**). Vorbelegt ist
+Positionen mit der Kennung **Kostenrisiken** statt einer Kostengruppe (intern `risiko`, Menü **Hinzufügen** › **Kostenrisiko**). Vorbelegt ist
 **% von KG 300 + 400** – eine Voreinstellung, die je Projekt zu prüfen ist (Risiken etwa auch in KG 200 oder 500); möglich sind auch
 pauschal oder eine Menge als Bezug. Mehrere
 Risiko-Positionen werden addiert.
