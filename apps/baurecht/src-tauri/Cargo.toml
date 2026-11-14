@@ -1,6 +1,6 @@
 [package]
 name = "baurecht"
-version = "0.12.2"
+version = "0.13.0"
 description = "Rechtsprüfung vor dem Bauantrag: Vorschriften je Paragraf als Ampel"
 authors = ["Tobias Pendzialek"]
 license = "MIT"
