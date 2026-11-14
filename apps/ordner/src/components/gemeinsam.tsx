@@ -12,7 +12,7 @@ import { aktivePresets } from '../struktur';
 const HERKUNFT: Record<Herkunft, string> = { struktur: 'Struktur', vorlage: 'Vorlage', projektdatei: 'Projektdatei mit Stammdaten' };
 
 /**
- * Trockenlauf als Baum: jeder Ordner und jede Datei mit Herkunft und dem Vermerk „neu“ oder „vorhanden“.
+ * Vorschau des Projektordners als Baum: jeder Ordner und jede Datei mit Herkunft und dem Vermerk „neu“ oder „vorhanden“.
  * Mit `abgewaehlt`/`onUmschalten` lassen sich neue Einträge abwählen – mit einem Ordner entfällt alles darin.
  * `neuOhneVermerk` (neues Projekt): „neu“ wäre in jeder Zeile reines Rauschen – dann nur Abweichungen vermerken.
  */

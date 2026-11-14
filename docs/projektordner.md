@@ -90,11 +90,12 @@ auch beim Ergänzen.
    Projekten die Presets mit „Standard“, bei bestehenden die in der Projektdatei vermerkten.
 8. **Anlegen bzw. Ergänzen:** oben die **Zusammenfassung** – so steht es in der Projektdatei (Projekt, Grundstück,
    Bauherr, Umfang, Beteiligte, Vorlagen), je Abschnitt mit „ändern“, das zum Schritt springt. Darunter die
-   Vorschau des Projektordners als Baum (überschrieben mit seinem Namen) – jeder Ordner und jede Datei mit Herkunft (Struktur,
-   Vorlage mit Preset, Projektdatei) und dem Vermerk „vorhanden“, „wird ergänzt“ (Projektdatei, mit den geänderten
-   Angaben als Hinweis), „abgewählt“ bzw. – beim Ergänzen – „neu“. Beim Ergänzen zeigt er nur, was sich ändert
-   (umschaltbar). Einzelne Einträge lassen sich abwählen (beim Ergänzen auch „Alle neuen Einträge abwählen“ und
-   danach einzelne wieder wählen); mit einem Ordner entfällt alles darin. Zu lange Pfade meldet die Vorschau vorab:
+   Vorschau des Projektordners als Baum, mit seinem Namen als Überschrift – jeder Ordner und jede Datei mit Herkunft
+   (Struktur, Vorlage mit Preset, Projektdatei) und dem Vermerk „vorhanden“, „wird ergänzt“ (Projektdatei, mit den
+   geänderten Angaben als Hinweis), „abgewählt“ bzw. – beim Ergänzen – „neu“. Beim Ergänzen zeigt sie nur, was sich
+   ändert (umschaltbar). Einzelne Einträge lassen sich abwählen (beim Ergänzen auch „Alle neuen Einträge abwählen“ und
+   danach einzelne wieder wählen); mit einem Ordner entfällt alles darin. Zu lange Pfade meldet der Schritt vorab
+   (unter der Vorschau):
    Ordner ab 248 Zeichen (mit Stammordner) legt Windows gar nicht an, Dateien ab 260 Zeichen öffnen der Dateimanager
    und andere Programme nicht. Der Knopf **„Projektordner anlegen“** bzw. „Projekt ergänzen“ steht wie „Weiter“
    rechts unten in der Navigation, die beim Blättern sichtbar bleibt; ist er gesperrt, steht der Grund daneben (etwa „Erst den Stammordner für Projekte

@@ -85,7 +85,7 @@ const nurWasEtwasTut = (plan: Plan): Plan => ({ ...plan, schritte: plan.schritte
 
 /**
  * Projekt-Assistent: ein neues Projekt anlegen oder ein bestehendes ergänzen – Schritt für Schritt Stammdaten,
- * Umfang (Leistungsphasen, Beteiligte) und Vorlagen, zum Schluss der Trockenlauf. Alles landet in der
+ * Umfang (Leistungsphasen, Beteiligte) und Vorlagen, zum Schluss die Vorschau („Anlegen“ bzw. „Ergänzen“). Alles landet in der
  * Projektdatei (.oap) des Projektordners; fehlt sie, wird sie angelegt. Gelöscht wird nichts.
  */
 export function AssistentView({
@@ -403,7 +403,7 @@ export function AssistentView({
           log.info(`Projekt ergänzt: ${ordner.name}`, { angelegt: liste.filter((x) => x.status === 'angelegt').length, ergaenzt: liste.some((x) => x.status === 'ergaenzt'), fehler: liste.filter((x) => x.status === 'fehler').length });
           setErgebnis({ ordner: ordner.pfad, liste });
           setAbgewaehlt(new Set());
-          // neu einlesen, damit der Trockenlauf den neuen Stand zeigt
+          // neu einlesen, damit die Vorschau den neuen Stand zeigt
           setOrdner({ ...ordner, eintraege: await tauriDateisystem.liste(ordner.pfad, 12) });
           setLesung((n) => n + 1);
         } else {

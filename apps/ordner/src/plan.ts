@@ -15,7 +15,7 @@ import { ausserhalbDerStruktur } from './pruefung';
 import { alsDokument, fuelleVorlage, zielDateiname } from './vorlagen';
 
 /**
- * Plan für einen Projektordner – neu anzulegen oder zu ergänzen: erst zeigen, was passiert (Trockenlauf), dann
+ * Plan für einen Projektordner – neu anzulegen oder zu ergänzen: erst zeigen, was passiert (Vorschau), dann
  * ausführen. Ordner und Vorlagen werden nur neu angelegt – was es schon gibt, bleibt unverändert und ist im Plan als
  * „vorhanden“ markiert. Die Projektdatei (.oap) wird angelegt, wenn sie fehlt, sonst gezielt ergänzt (geänderte
  * Stammdaten, Presets). Gelöscht wird nichts.
