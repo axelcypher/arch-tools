@@ -72,12 +72,17 @@ button.icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 24px;
-  height: 24px;
-  padding: 0 4px;
   border-color: transparent;
   background: transparent;
   color: var(--muted);
+}
+/* Größe der Symbolknöpfe in den Leisten der App (24px); in der Werkzeugleiste gilt die Regel aus core: volle
+   Steuerhöhe, quadratisch (28 × 28). Das :not() ist nötig, weil diese Regel mit festem height und höherer Spezifität die
+   core-Regel (Spezifität null, :where) sonst schlüge */
+button.icon:not(.werkzeugleiste *) {
+  min-width: 24px;
+  height: 24px;
+  padding: 0 4px;
 }
 button.icon:hover:not(:disabled) {
   background: var(--nav-hover);
