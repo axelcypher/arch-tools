@@ -6,10 +6,11 @@ import { demoLaden } from './demo';
 import { aendereElement, finde } from './lv/modell';
 import type { Position } from './lv/modell';
 import { lvGeaendert, useAva } from './store';
-import { lvSpeichernMitMeldung } from './App';
+import { LV_UNGESPEICHERT, lvSpeichernMitMeldung, lvWeiter } from './App';
 import { Navigation } from './components/Navigation';
 import { GewerkAnsicht } from './components/GewerkAnsicht';
 import { MenueHost } from '@core/ui/Menue';
+import { RueckfrageHost } from '@core/ui/Rueckfrage';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -129,6 +130,28 @@ describe('LV-Editor', () => {
     const lv = useAva.getState().lv!;
     expect((finde(lv.lv.elemente, pos.id)!.el as Position).kurztext).toBe('Neuer Kurztext');
     expect(lvGeaendert(lv)).toBe(false);
+  });
+
+  it('Rückfrage vor dem Wechsel nennt das LV (LV_UNGESPEICHERT), nicht das Projekt; Abbrechen lässt alles', async () => {
+    await zeige(createElement('div', null, createElement(GewerkAnsicht, { gewerk: 'G8', tab: 'lv' }), createElement(RueckfrageHost)));
+    await warte(() => useAva.getState().lv && host.querySelector('.ava-lv-zeilen'));
+    // ohne Änderungen keine Rückfrage
+    expect(await lvWeiter()).toBe(true);
+    const pos = position();
+    act(() => useAva.getState().setAuswahl(pos.id));
+    const kurztext = host.querySelector<HTMLInputElement>('.ava-panel [data-feld="kurztext"]')!;
+    act(() => {
+      kurztext.focus();
+      tippe(kurztext, 'Geändert');
+    });
+    let weiter: boolean | undefined;
+    await act(async () => void lvWeiter().then((w) => (weiter = w)));
+    const dialog = host.querySelector('.modal.rf')!;
+    expect(dialog.textContent).toContain(LV_UNGESPEICHERT);
+    expect(dialog.textContent).not.toContain('Das Projekt hat');
+    await act(async () => [...dialog.querySelectorAll('button')].find((b) => b.textContent === 'Abbrechen')!.click());
+    expect(weiter).toBe(false);
+    expect(lvGeaendert(useAva.getState().lv)).toBe(true);
   });
 
   it('Tabs: Pfeiltaste rechts wechselt zum nächsten Bereich (role="tab", tabpanel)', async () => {

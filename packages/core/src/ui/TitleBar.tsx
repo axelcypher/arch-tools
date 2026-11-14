@@ -2,7 +2,7 @@ import { useEffect, useId, useRef, useState, useSyncExternalStore } from 'react'
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { appNameSetzen } from './appName';
 import { isTauri } from '../platform/files';
-import { andocken, anRahmenMelden, rahmenApp, rahmenModus, schliessenVorbereiten, speichernAnfragenBeantworten, vorbereitenAnfragenBeantworten } from '../platform/rahmen';
+import { andocken, anRahmenMelden, rahmenApp, rahmenModus, schliessenVorbereiten, speichernAnfragenBeantworten, ungespeichertSatz, vorbereitenAnfragenBeantworten } from '../platform/rahmen';
 import { getEntries, logger, logVersion, subscribe } from '../platform/log';
 import { useTheme } from '../platform/theme';
 import type { ThemeWahl } from '../platform/theme';
@@ -34,6 +34,12 @@ export interface TitleBarProps {
   name: string;
   /** ungespeicherte Änderungen */
   dirty: boolean;
+  /**
+   * Satz für die Rückfragen bei ungespeicherten Änderungen (Rahmen-App, eigenes Schließen, Andocken) – genauer als der
+   * allgemeine, z. B. „Das LV hat ungespeicherte Änderungen.“; ein kurzer Satz, höchstens UNGESPEICHERT_MAX Zeichen
+   * (sonst gilt der allgemeine „Das Projekt hat ungespeicherte Änderungen.“)
+   */
+  ungespeichert?: string;
   onOpenLog: () => void;
   /** Nachschlagewerk der Berechnungsregeln dieser App anbieten */
   regeln?: RegelApp;
@@ -45,7 +51,7 @@ export interface TitleBarProps {
   onSpeichern?: () => Promise<boolean | void>;
 }
 
-export function TitleBar({ app, name, dirty, onOpenLog, regeln, onProjekte, zeichenflaeche = true, onSpeichern }: TitleBarProps) {
+export function TitleBar({ app, name, dirty, ungespeichert, onOpenLog, regeln, onProjekte, zeichenflaeche = true, onSpeichern }: TitleBarProps) {
   // in der Rahmen-App: als Tab ohne eigene Fensterknöpfe, herausgelöst mit „Andocken“; Updates macht der Rahmen
   const rahmen = rahmenModus();
   const desktop = isTauri() && rahmen !== 'tab';
@@ -54,7 +60,7 @@ export function TitleBar({ app, name, dirty, onOpenLog, regeln, onProjekte, zeic
   // Name der App für Stellen, die allen Apps gehören (z. B. gespeichertes Protokoll)
   appNameSetzen(app);
   // im Tab: Name und ungespeicherte Änderungen an den Rahmen melden (Tab-Beschriftung, Rückfrage beim Schließen)
-  useEffect(() => anRahmenMelden(app, name, dirty), [app, name, dirty]);
+  useEffect(() => anRahmenMelden(app, name, dirty, ungespeichert), [app, name, dirty, ungespeichert]);
   // im Tab: „Speichern“ aus der Rückfrage des Rahmens beim Schließen
   const speichernRef = useRef(onSpeichern);
   speichernRef.current = onSpeichern;
@@ -114,7 +120,7 @@ export function TitleBar({ app, name, dirty, onOpenLog, regeln, onProjekte, zeic
     try {
       if (dirty) {
         const weiter = onSpeichern
-          ? await aenderungenSpeichern(name, onSpeichern, 'Vor dem Beenden speichern?')
+          ? await aenderungenSpeichern(name, onSpeichern, ungespeichertSatz(ungespeichert))
           : await bestaetigen('Ungespeicherte Änderungen verwerfen?', 'Die Änderungen gehen beim Beenden verloren.', 'Verwerfen und beenden', true);
         if (!weiter) return;
       }
@@ -151,7 +157,7 @@ export function TitleBar({ app, name, dirty, onOpenLog, regeln, onProjekte, zeic
     if (dockt.current) return;
     dockt.current = true;
     try {
-      if (dirty && !(await umzugBestaetigen(rahmenApp(), app, name, 'andocken', onSpeichern))) return;
+      if (dirty && !(await umzugBestaetigen(rahmenApp(), app, name, 'andocken', onSpeichern, ungespeichert))) return;
       if (!(await schreibenAbwarten(app, () => schliessenVorbereiten(), 'andocken'))) return;
       await andocken();
     } finally {

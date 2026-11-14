@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { isTauri } from '@core/platform/files';
 import { getEntries, logger, logVersion, subscribe } from '@core/platform/log';
 import type { RahmenNachricht, RahmenStatus } from '@core/platform/rahmen';
+import { ungespeichertSatz } from '@core/platform/rahmen';
 import {
   AN_APP,
   AN_RAHMEN,
@@ -45,6 +46,15 @@ const tafelKennung = (id: string) => `rahmen-tafel-${id}`;
 const PLUS = '+';
 /** Tauri-Ereignisse (nur Desktop, nachgeladen) */
 const ereignisse = () => import('@tauri-apps/api/event');
+
+/**
+ * Meldung eines Tabs bzw. Fensters → Status. Der Satz für die Rückfrage (`ungespeichert`) gilt nur als kurzer Text,
+ * sonst bleibt der allgemeine.
+ */
+const statusAus = (d: Partial<RahmenStatus>) => {
+  const satz = ungespeichertSatz(d.ungespeichert);
+  return { name: d.name ?? '', dirty: !!d.dirty, ...(satz ? { ungespeichert: satz } : {}) };
+};
 
 /**
  * Rahmen-App: alle Apps in einem Fenster. Jede geöffnete App ist ein Tab (iframe, bleibt beim Wechseln
@@ -113,7 +123,7 @@ export function App() {
       const d = e.data as (Partial<RahmenStatus> & RahmenNachricht) | null;
       if (!d || e.origin !== window.location.origin) return;
       if (d.typ === 'arch-tools:status') {
-        for (const [id, f] of rahmen.current) if (f.contentWindow && f.contentWindow === e.source) setStatus(id, { name: d.name ?? '', dirty: !!d.dirty });
+        for (const [id, f] of rahmen.current) if (f.contentWindow && f.contentWindow === e.source) setStatus(id, statusAus(d));
         return;
       }
       verarbeiten.current(d, e.source as Window | null);
@@ -132,7 +142,7 @@ export function App() {
         const d = e.payload;
         // Meldung eines herausgelösten Fensters: Projekt und ungespeicherte Änderungen (für Rückfragen beim Beenden)
         if (d?.typ === 'arch-tools:status') {
-          if (d.kennung && useRahmen.getState().fenster.includes(d.kennung)) setStatus(d.kennung, { name: d.name ?? '', dirty: !!d.dirty });
+          if (d.kennung && useRahmen.getState().fenster.includes(d.kennung)) setStatus(d.kennung, statusAus(d));
           return;
         }
         verarbeiten.current(d, null);
@@ -225,7 +235,11 @@ export function App() {
   const herausloesen = async (id: string) => {
     const info = appInfo(id)!;
     const frame = rahmen.current.get(id);
-    if (status[id]?.dirty && !(await umzugBestaetigen(id, info.name, status[id].name, 'herausloesen', () => (frame ? speichernImTab(frame, { zeitablauf: antwortetNicht(id) }) : false)))) return;
+    if (
+      status[id]?.dirty &&
+      !(await umzugBestaetigen(id, info.name, status[id].name, 'herausloesen', () => (frame ? speichernImTab(frame, { zeitablauf: antwortetNicht(id) }) : false), status[id].ungespeichert))
+    )
+      return;
     if (tabBrauchtVorbereitung(frame)) {
       // während des Wartens kein zweites Herauslösen bzw. Schließen dieses Tabs
       if (schliesstGerade.current.has(id)) return;
@@ -294,7 +308,7 @@ export function App() {
     const s = useRahmen.getState().status[id];
     if (!s?.dirty) return true;
     const frame = rahmen.current.get(id);
-    return aenderungenSpeichern(`${appInfo(id)?.name}${s.name ? ` – ${s.name}` : ''}`, () => (frame ? speichernImTab(frame, { zeitablauf: antwortetNicht(id) }) : false));
+    return aenderungenSpeichern(`${appInfo(id)?.name}${s.name ? ` – ${s.name}` : ''}`, () => (frame ? speichernImTab(frame, { zeitablauf: antwortetNicht(id) }) : false), s.ungespeichert);
   };
 
   /**
@@ -325,16 +339,19 @@ export function App() {
   const fensterFreigeben = async (id: string): Promise<boolean> => {
     const s = useRahmen.getState().status[id];
     if (!s?.dirty) return true;
-    return aenderungenSpeichern(`${appInfo(id)?.name}${s.name ? ` – ${s.name}` : ''}`, () =>
-      speichernImFenster(id, {
-        zeitablauf: antwortetNicht(id),
-        // schließt jemand das Fenster, während es speichert, wartet die Rückfrage nicht ewig
-        beiEnde: (f) => {
-          const warten = fensterEnde.current.get(id) ?? new Set();
-          fensterEnde.current.set(id, warten.add(f));
-          return () => warten.delete(f);
-        },
-      }),
+    return aenderungenSpeichern(
+      `${appInfo(id)?.name}${s.name ? ` – ${s.name}` : ''}`,
+      () =>
+        speichernImFenster(id, {
+          zeitablauf: antwortetNicht(id),
+          // schließt jemand das Fenster, während es speichert, wartet die Rückfrage nicht ewig
+          beiEnde: (f) => {
+            const warten = fensterEnde.current.get(id) ?? new Set();
+            fensterEnde.current.set(id, warten.add(f));
+            return () => warten.delete(f);
+          },
+        }),
+      s.ungespeichert,
     );
   };
 

@@ -79,6 +79,23 @@ describe('Titelleiste auf dem Desktop', () => {
     expect(fenster.destroy).toHaveBeenCalled();
   });
 
+  it('mit Speichern: die Rückfrage nennt den Satz der App (ungespeichert), sonst den allgemeinen', async () => {
+    const host = await render({ onSpeichern: async () => true, ungespeichert: 'Das LV hat ungespeicherte Änderungen.' });
+    await act(async () => fenster.schliessenAngefragt!({ preventDefault: () => {} }));
+    expect(dialog(host)?.textContent).toContain('Das LV hat ungespeicherte Änderungen.');
+    await antwort(host, 'Abbrechen');
+    await act(async () => root!.render(createElement(TitleBar, { app: 'ATLAS', name: 'P1', dirty: true, onOpenLog: () => {}, onSpeichern: async () => true })));
+    await act(async () => fenster.schliessenAngefragt!({ preventDefault: () => {} }));
+    expect(dialog(host)?.textContent).toContain('Das Projekt hat ungespeicherte Änderungen.');
+    await antwort(host, 'Abbrechen');
+    // leerer Satz: ebenso der Rückfall
+    await act(async () => root!.render(createElement(TitleBar, { app: 'ATLAS', name: 'P1', dirty: true, onOpenLog: () => {}, onSpeichern: async () => true, ungespeichert: ' ' })));
+    await act(async () => fenster.schliessenAngefragt!({ preventDefault: () => {} }));
+    expect(dialog(host)?.textContent).toContain('Das Projekt hat ungespeicherte Änderungen.');
+    await antwort(host, 'Abbrechen');
+    expect(fenster.destroy).not.toHaveBeenCalled();
+  });
+
   it('ohne Änderungen schließt das Fenster ohne Rückfrage', async () => {
     await render({ dirty: false });
     await act(async () => fenster.schliessenAngefragt!({ preventDefault: () => {} }));
@@ -98,7 +115,7 @@ describe('Titelleiste auf dem Desktop', () => {
     expect(anRahmen).toContainEqual({ typ: 'arch-tools:status', app: 'ATLAS', kennung: 'ordner', name: 'P1', dirty: true });
     // Andocken: Rückfrage mit Speichern, Abbrechen lässt alles, wie es ist
     await act(async () => [...host.querySelectorAll('button')].find((b) => b.textContent === 'Andocken')!.click());
-    expect(dialog(host)?.textContent).toContain('Beim Andocken startet die App neu');
+    expect(dialog(host)?.textContent).toContain('Beim Andocken startet die App neu. Das Projekt hat ungespeicherte Änderungen.');
     await antwort(host, 'Abbrechen');
     expect(andocken).toEqual([]);
     await act(async () => [...host.querySelectorAll('button')].find((b) => b.textContent === 'Andocken')!.click());
@@ -117,6 +134,37 @@ describe('Titelleiste auf dem Desktop', () => {
     await act(async () => void (await emit('arch-tools:an-app', { typ: 'arch-tools:speichern', anfrage: 'a2', an: 'kosten' })));
     await warten();
     expect(speichern).toHaveBeenCalledTimes(2);
+  });
+
+  it('Meldung an den Rahmen mit dem Satz für dessen Rückfrage (ungespeichert); ohne ihn ohne das Feld', async () => {
+    window.history.replaceState(null, '', '/?rahmen=fenster&app=ava');
+    const gemeldet: object[] = [];
+    await listen<object>('arch-tools:an-rahmen', (e) => void gemeldet.push(e.payload));
+    await render({ app: 'FABRIO', name: 'LV 1', ungespeichert: 'Das LV hat ungespeicherte Änderungen.' });
+    await warten();
+    expect(gemeldet.at(-1)).toEqual({ typ: 'arch-tools:status', app: 'FABRIO', kennung: 'ava', name: 'LV 1', dirty: true, ungespeichert: 'Das LV hat ungespeicherte Änderungen.' });
+    await act(async () => root!.render(createElement(TitleBar, { app: 'FABRIO', name: 'LV 1', dirty: true, onOpenLog: () => {} })));
+    await warten();
+    expect(gemeldet.at(-1)).toEqual({ typ: 'arch-tools:status', app: 'FABRIO', kennung: 'ava', name: 'LV 1', dirty: true });
+  });
+
+  it('Andocken ohne Speichermöglichkeit (verlierende App): Verwerfen-Rückfrage wie beim Schließen, Abbrechen lässt alles', async () => {
+    window.history.replaceState(null, '', '/?rahmen=fenster&app=baurecht');
+    const andocken: unknown[] = [];
+    await listen('arch-tools:andocken', (e) => void andocken.push(e.payload));
+    const host = await render({ app: 'LEXIO' });
+    const knopf = () => [...host.querySelectorAll('button')].find((b) => b.textContent === 'Andocken')!;
+    await act(async () => knopf().click());
+    expect(dialog(host)?.textContent).toContain('Ungespeicherte Änderungen verwerfen?');
+    expect(dialog(host)?.textContent).toContain('Beim Andocken startet die App neu, die Änderungen gehen verloren.');
+    expect([...dialog(host)!.querySelectorAll('button')].map((b) => b.textContent)).toEqual(['Abbrechen', 'Verwerfen und andocken']);
+    await antwort(host, 'Abbrechen');
+    await warten();
+    expect(andocken).toEqual([]);
+    await act(async () => knopf().click());
+    await antwort(host, 'Verwerfen und andocken');
+    await warten();
+    expect(andocken).toEqual([{ app: 'baurecht' }]);
   });
 
   it('vor dem Schließen wartet das Fenster auf ausstehendes Schreiben (vorDemSchliessen), auch ohne ungespeicherte Änderungen', async () => {

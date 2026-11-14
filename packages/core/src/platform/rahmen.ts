@@ -25,6 +25,19 @@ export interface RahmenStatus {
   /** Name des geöffneten Projekts */
   name: string;
   dirty: boolean;
+  /**
+   * Satz für die Rückfrage bei ungespeicherten Änderungen, z. B. „Das LV hat ungespeicherte Änderungen.“; leer oder
+   * länger als UNGESPEICHERT_MAX Zeichen: der allgemeine
+   */
+  ungespeichert?: string;
+}
+
+/** Höchstlänge des Satzes `ungespeichert` (RahmenStatus), den die Rahmen-App übernimmt */
+export const UNGESPEICHERT_MAX = 200;
+/** Satz `ungespeichert` geprüft: gekürzt, nicht leer, höchstens UNGESPEICHERT_MAX Zeichen – sonst undefined (allgemeiner Satz) */
+export function ungespeichertSatz(satz: unknown): string | undefined {
+  const s = typeof satz === 'string' ? satz.trim() : '';
+  return s && s.length <= UNGESPEICHERT_MAX ? s : undefined;
 }
 
 /** Ereignis eines herausgelösten Fensters an den Rahmen: wieder als Tab andocken */
@@ -46,11 +59,14 @@ export function rahmenApp(): string | null {
   return new URLSearchParams(window.location.search).get('app');
 }
 
-/** Im Tab bzw. herausgelösten Fenster: Name und ungespeicherte Änderungen an den Rahmen melden */
-export function anRahmenMelden(app: string, name: string, dirty: boolean): void {
+/**
+ * Im Tab bzw. herausgelösten Fenster: Name und ungespeicherte Änderungen an den Rahmen melden; `ungespeichert`: Satz für
+ * dessen Rückfrage beim Schließen (siehe RahmenStatus)
+ */
+export function anRahmenMelden(app: string, name: string, dirty: boolean, ungespeichert?: string): void {
   const modus = rahmenModus();
   if (!modus) return;
-  const nachricht: RahmenStatus = { typ: 'arch-tools:status', app, name, dirty };
+  const nachricht: RahmenStatus = { typ: 'arch-tools:status', app, name, dirty, ...(ungespeichert ? { ungespeichert } : {}) };
   try {
     if (modus === 'tab') window.parent.postMessage(nachricht, window.location.origin);
     else if (istTauri()) void import('@tauri-apps/api/event').then(({ emit }) => emit(AN_RAHMEN, { ...nachricht, kennung: rahmenApp() }));
@@ -61,20 +77,22 @@ export function anRahmenMelden(app: string, name: string, dirty: boolean): void 
 
 /**
  * Was beim Herauslösen bzw. Andocken (die App startet dabei neu) aus ungespeicherten Änderungen wird – je Kennung.
- * `verliert`: sie gehen verloren (dann bietet die Rückfrage „Speichern“ an).
+ * `verliert`: sie gehen verloren – dann bietet die Rückfrage „Speichern“ an und nennt den Satz der App (`ungespeichert`);
+ * sonst `text`: ein kurzer Satz, was aus ihnen wird.
  */
-export const BEIM_UMZUG: Record<string, { text: string; verliert: boolean }> = {
-  ordner: { text: 'Ungespeicherte Änderungen gehen verloren – bitte vorher speichern.', verliert: true },
+export type Umzug = { verliert: true } | { verliert: false; text: string };
+export const BEIM_UMZUG: Record<string, Umzug> = {
+  ordner: { verliert: true },
   formulare: {
     text: 'Nicht gespeicherte Eingaben bleiben als Entwurf erhalten und erscheinen beim erneuten Öffnen des Formulars wieder; ungespeicherte Bearbeitungen in PDF-, Excel- und Word-Dokumenten der Dateiansicht gehen verloren.',
     verliert: false,
   },
-  ava: { text: 'Ungespeicherte Änderungen am LV gehen verloren – bitte vorher speichern (alles andere speichert die App sofort).', verliert: true },
-  baurecht: { text: 'Ungespeicherte Angaben und Festlegungen gehen verloren – bitte vorher speichern.', verliert: true },
+  ava: { verliert: true },
+  baurecht: { verliert: true },
 };
-const ZWISCHENSTAND = { text: 'Ungespeicherte Änderungen bleiben im Zwischenstand und werden im neuen Fenster wiederhergestellt.', verliert: false };
-/** Umzug einer App (Kennung): Text und ob Änderungen verloren gehen */
-export const beimUmzug = (kennung: string | null) => (kennung && BEIM_UMZUG[kennung]) || ZWISCHENSTAND;
+const ZWISCHENSTAND: Umzug = { text: 'Ungespeicherte Änderungen bleiben als Zwischenstand erhalten.', verliert: false };
+/** Umzug einer App (Kennung): ob Änderungen verloren gehen, sonst was aus ihnen wird */
+export const beimUmzug = (kennung: string | null): Umzug => (kennung && BEIM_UMZUG[kennung]) || ZWISCHENSTAND;
 
 /**
  * Herausgelöstes Fenster: zurück in den Rahmen (der Rahmen öffnet den Tab, dieses Fenster verschwindet). Die Rückfrage
