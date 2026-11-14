@@ -161,7 +161,7 @@ export function Toolbar() {
             <Symbol name="speichern" /> Speichern unter …
           </button>
         )}
-        <button onClick={() => setIfcOpen(true)} title="Gebäudemodell aus Archicad, Revit & Co. importieren">
+        <button onClick={() => setIfcOpen(true)} title="Gebäudemodell als IFC-Datei aus dem CAD-Programm importieren">
           <Symbol name="stapel" /> IFC-Import …
         </button>
       </div>

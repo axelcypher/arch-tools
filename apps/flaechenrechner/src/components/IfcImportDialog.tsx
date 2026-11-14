@@ -137,7 +137,7 @@ export function IfcImportDialog({ onClose }: { onClose: () => void }) {
         {step.kind === 'start' && (
           <>
             <p className="small-text">
-              Übernimmt aus einem IFC-Modell (z. B. Archicad, Revit, Vectorworks) die <strong>Geschosse</strong>, die <strong>Zonen/Räume</strong> (IfcSpace)
+              Übernimmt aus einer IFC-Datei (Export aus dem CAD-Programm) die <strong>Geschosse</strong>, die <strong>Zonen/Räume</strong> (IfcSpace)
               als Räume, die <strong>BGF-Umrisse</strong> aus den Außenbauteilen und die <strong>Dachhaut</strong> für den Brutto-Rauminhalt.
             </p>
             <p className="muted small-text">
