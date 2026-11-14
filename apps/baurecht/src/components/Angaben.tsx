@@ -186,7 +186,7 @@ function Merkmale({ klaerung, suche = '', planungsrechtOffen, planungsrechtKlaer
     setTimeout(() => {
       const a = document.activeElement;
       if (a && a !== document.body && a.isConnected) return; // der Fokus liegt woanders – nicht wegnehmen
-      const naechste = ref.current?.querySelector<HTMLElement>('.br-rueckfrage .br-fakt.br-offen .br-segment [tabindex="0"]');
+      const naechste = ref.current?.querySelector<HTMLElement>('.br-rueckfrage .br-fakt.br-offen .segment [tabindex="0"]');
       (naechste ?? ref.current?.querySelector<HTMLElement>('.br-gruppe-knopf'))?.focus();
     }, 0);
   }, [offenSchluessel, auf, rfSchluessel]);
@@ -289,7 +289,7 @@ function Merkmale({ klaerung, suche = '', planungsrechtOffen, planungsrechtKlaer
                 )}
               </div>
             )}
-            <div className={`br-segment${m.werte.length >= 3 && m.werte.some((w) => w.length > 14) ? ' br-segment-senkrecht' : ''}`} onKeyDown={segmentTaste}>
+            <div className={`segment${werteSenkrecht(m.werte) ? ' senkrecht' : ''}`} onKeyDown={segmentTaste}>
               {m.werte.map((w, i) => (
                 <button
                   key={w}
@@ -357,6 +357,14 @@ export const wieAngezeigt = (n: number, def: Pick<FaktDef, 'einheit'>): number =
 /** id der Unterzeile (Frage bzw. Rest des Titels) als Beschreibung der Eingabe – nur, wenn es sie gibt */
 const beschreibung = (def: FaktDef, id: string) => (def.frage || (def.kurz && def.titel !== def.kurz) ? `br-frage-${id}` : undefined);
 
+/**
+ * Merkmalwerte senkrecht untereinander statt in einer Reihe (docs/design.md „Umschalter“): bei langen oder vielen Werten
+ * – die gemeinsamen Segmente brechen bewusst nicht um und liefen in der schmalen Leiste sonst über. „Viele“ misst die
+ * Länge der ganzen Reihe (Zeichen plus etwa vier je Knopf für den Innenabstand), nicht die Zahl: Gebäudeklasse 1–5 passt
+ * in eine Reihe, acht eigene Werte oder zwei sehr lange nicht
+ */
+export const werteSenkrecht = (werte: readonly string[]) => (werte.length >= 3 && werte.some((w) => w.length > 14)) || werte.join('').length + 4 * werte.length > 52;
+
 function FaktEingabe({ id, def, wert, onWert, alsKnoepfe = false }: { id: string; def: FaktDef; wert: FaktWert | undefined; onWert: (v: FaktWert['wert'] | undefined) => void; alsKnoepfe?: boolean }) {
   const v = wert?.wert ?? null;
   // eine Angabe von Hand, die nur noch Hinweis ist (z. B. zu einer früheren Lage): derselbe Wert lässt sich erneut setzen
@@ -364,7 +372,7 @@ function FaktEingabe({ id, def, wert, onWert, alsKnoepfe = false }: { id: string
   const neuBinden = wert?.herkunft === 'manuell' && wert.sicherheit === 'hinweis' && !wert.bestaetigt;
   if (def.typ === 'janein')
     return (
-      <div className="br-segment" role="group" aria-label={faktName(def, id)} aria-describedby={beschreibung(def, id)} title={def.kurz ? def.titel : undefined} onKeyDown={segmentTaste}>
+      <div className="segment" role="group" aria-label={faktName(def, id)} aria-describedby={beschreibung(def, id)} title={def.kurz ? def.titel : undefined} onKeyDown={segmentTaste}>
         {[
           [true, 'ja'],
           [false, 'nein'],
@@ -387,7 +395,7 @@ function FaktEingabe({ id, def, wert, onWert, alsKnoepfe = false }: { id: string
   // Rückfragen mit langen Werten als senkrechte Knöpfe – eine Auswahlliste schnitte gerade das Unterscheidende ab
   if (def.typ === 'wahl' && alsKnoepfe)
     return (
-      <div className="br-segment br-segment-senkrecht" role="group" aria-label={faktName(def, id)} aria-describedby={beschreibung(def, id)} onKeyDown={segmentTaste}>
+      <div className="segment senkrecht" role="group" aria-label={faktName(def, id)} aria-describedby={beschreibung(def, id)} onKeyDown={segmentTaste}>
         {(def.werte ?? []).map((w, i) => (
           <button key={w} type="button" tabIndex={tabStopp(v === w, i === 0, v === null)} aria-pressed={v === w} className={v === w ? 'active' : ''} onClick={() => (v !== w || neuBinden) && onWert(w)}>
             {w}
@@ -418,7 +426,7 @@ function FaktZeile({ id, def, wert, klaert, eigen, alsKnoepfe = false }: { id: s
     if ((fokus === id || fokus === `${id}:bestaetigen`) && ref.current) {
       inBereichZeigen(ref.current.closest<HTMLElement>('.br-angaben-liste'), ref.current, 'mitte');
       const ziel = fokus.endsWith(':bestaetigen') ? ref.current.querySelector<HTMLElement>('button[data-bestaetigen]') : null;
-      (ziel ?? ref.current.querySelector<HTMLElement>('[aria-pressed="true"], .br-segment [tabindex="0"]') ?? ref.current.querySelector<HTMLElement>('button, input, select'))?.focus();
+      (ziel ?? ref.current.querySelector<HTMLElement>('[aria-pressed="true"], .segment [tabindex="0"]') ?? ref.current.querySelector<HTMLElement>('button, input, select'))?.focus();
       useBaurecht.getState().fokusSetzen(null);
     }
   }, [fokus, id]);
@@ -432,7 +440,7 @@ function FaktZeile({ id, def, wert, klaert, eigen, alsKnoepfe = false }: { id: s
   const andereLage = !!wert && lagebezug(def, wert) && (!lage || (!!wert.lage && wert.lage !== lage));
   // nach Zurücknehmen/Zurücksetzen verschwindet der Knopf – Fokus auf das erste Bedienelement der Angabe
   // auf den gewählten Wert bzw. den Tabstopp der Gruppe – nicht auf einen beliebigen ersten Knopf
-  const fokusZurZeile = () => setTimeout(() => (ref.current?.querySelector<HTMLElement>('[aria-pressed="true"], .br-segment [tabindex="0"]') ?? ref.current?.querySelector<HTMLElement>('button:not([disabled]), input, select'))?.focus(), 0);
+  const fokusZurZeile = () => setTimeout(() => (ref.current?.querySelector<HTMLElement>('[aria-pressed="true"], .segment [tabindex="0"]') ?? ref.current?.querySelector<HTMLElement>('button:not([disabled]), input, select'))?.focus(), 0);
   const hilfeLang = (def.hilfe?.length ?? 0) > 90;
   // Unterzeile: die Frage, sonst der ausführliche Titel – aber nicht, wenn er nur den kurzen Namen wiederholt
   const rest = def.kurz && def.titel.startsWith(def.kurz) ? def.titel.slice(def.kurz.length).trim() : '';
@@ -465,13 +473,13 @@ function FaktZeile({ id, def, wert, klaert, eigen, alsKnoepfe = false }: { id: s
               {/* der Grund sichtbar, mit Ausweg: feste Werte eines Gebietsmoduls gelten erst mit gesichertem Gemeindeschlüssel */}
               {/Gemeindeschlüssel/.test(wert.grund ?? '') ? (
                 <span className="br-fester-grund">
-                  <span className="br-leise-stark">gilt erst mit bestätigtem Gemeindeschlüssel</span>{' '}
+                  <span className="br-leise">gilt erst mit bestätigtem Gemeindeschlüssel</span>{' '}
                   <button type="button" className="small br-link" aria-label={`${name}: zum Gemeindeschlüssel`} onClick={() => useBaurecht.getState().fokusSetzen('lage.ags:bestaetigen')}>
                     Zum Gemeindeschlüssel
                   </button>
                 </span>
               ) : (
-                wert.grund && <span className="br-leise-stark br-fester-grund">{wert.grund}</span>
+                wert.grund && <span className="br-leise br-fester-grund">{wert.grund}</span>
               )}
             </>
           )}
@@ -504,7 +512,7 @@ function FaktZeile({ id, def, wert, klaert, eigen, alsKnoepfe = false }: { id: s
               </span>
               {andereLage ? (
                 <>
-                  <span className="br-leise-stark" title={wert.grund}>
+                  <span className="br-leise" title={wert.grund}>
                     {!lage ? 'ohne gültige Koordinaten nicht bestätigbar' : wert.lage === OHNE_LAGEBEZUG ? 'Angabe ohne Lagebezug (ältere Datei)' : wert.herkunft === 'manuell' && !wert.bestaetigt ? 'Angabe zu einer früheren Lage' : 'Ergebnis einer früheren Lage – „Lage abfragen“'}
                   </span>
                   {/* Angabe von Hand zu einer früheren Lage: für die aktuelle Lage übernehmen (gleicher Wert, neu gebunden) */}
@@ -535,7 +543,7 @@ function FaktZeile({ id, def, wert, klaert, eigen, alsKnoepfe = false }: { id: s
           )}
           {wert.bestaetigt && (
             <>
-              <span className="br-leise-stark" title={wert.bestaetigt.grund}>
+              <span className="br-leise" title={wert.bestaetigt.grund}>
                 {wert.herkunft === 'manuell' ? 'mit Beleg' : 'bestätigt'} ({wert.bestaetigt.von}
                 {wert.bestaetigt.am ? `, ${datum(wert.bestaetigt.am)}` : ''})
               </span>

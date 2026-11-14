@@ -124,6 +124,12 @@ export async function speichernVollstaendig(): Promise<boolean> {
   return true;
 }
 
+/**
+ * Satz der Rückfragen bei ungespeicherten Änderungen (docs/design.md): ungespeichert ist nur der Teil von LEXIO im
+ * Projekt – Antragsmerkmale, Angaben, Bestätigungen und Festlegungen –, nicht das ganze Projekt
+ */
+export const UNGESPEICHERT = 'Die Baurechtsprüfung hat ungespeicherte Änderungen.';
+
 /** Bereiche für F6 und die Sprungmarken */
 const BEREICHE = [
   { sel: '.br-kopf', titel: 'Kopf' },
@@ -253,12 +259,12 @@ export function App() {
   // anderer Antrag: ungespeicherte Festlegungen, Bestätigungen und Merkmale nicht stillschweigend verwerfen
   const antragWechseln = async (antrag: string) => {
     if (antrag === useBaurecht.getState().antrag) return;
-    if (istGeaendert(useBaurecht.getState()) && !(await aenderungenSpeichern(name, () => speichernVollstaendig()))) return;
+    if (istGeaendert(useBaurecht.getState()) && !(await aenderungenSpeichern(name, () => speichernVollstaendig(), UNGESPEICHERT))) return;
     useBaurecht.getState().antragWaehlen(antrag);
   };
 
   const projekteOeffnen = async () => {
-    if (istGeaendert(useBaurecht.getState()) && !(await aenderungenSpeichern(name, () => speichernVollstaendig()))) return;
+    if (istGeaendert(useBaurecht.getState()) && !(await aenderungenSpeichern(name, () => speichernVollstaendig(), UNGESPEICHERT))) return;
     setWahl(true);
   };
 
@@ -305,7 +311,7 @@ export function App() {
           ))}
         </nav>
       )}
-      <TitleBar app={APP_NAMEN.baurecht.name} name={name} dirty={dirty} zeichenflaeche={false} onOpenLog={() => setLogOffen(true)} onProjekte={() => void projekteOeffnen()} onSpeichern={quelle ? speichernMitMeldung : undefined} />
+      <TitleBar app={APP_NAMEN.baurecht.name} name={name} dirty={dirty} ungespeichert={UNGESPEICHERT} zeichenflaeche={false} onOpenLog={() => setLogOffen(true)} onProjekte={() => void projekteOeffnen()} onSpeichern={quelle ? speichernMitMeldung : undefined} />
       {project ? (
         <>
           <h1 className="br-unsichtbar">

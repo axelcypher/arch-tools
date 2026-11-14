@@ -83,11 +83,11 @@ function Gegenueberstellung({ alt, neu, absatz }: { alt: Paragraf | undefined; n
   );
 }
 
-// Zeichen aus dem Symbolsatz; für „offen“ gibt es dort noch kein Symbol – übergangsweise das Fragezeichen als Text
+// Zeichen aus dem Symbolsatz
 const STAND: Record<'ja' | 'nein' | 'offen', { zeichen: ReactNode; wort: string }> = {
   ja: { zeichen: <Symbol name="haken" />, wort: 'trifft zu' },
   nein: { zeichen: <Symbol name="schliessen" />, wort: 'trifft nicht zu' },
-  offen: { zeichen: '?', wort: 'offen' },
+  offen: { zeichen: <Symbol name="frage" />, wort: 'offen' },
 };
 
 function Stand({ w, unsicher }: { w?: KurzKnoten['w']; unsicher?: boolean }) {
@@ -221,7 +221,7 @@ export function Detail({ stand }: { stand: Pruefstand }) {
         <div className="br-detail-ampel">
           <AmpelMarke ampel={p.ampel} />
           {p.festlegung && (
-            <span className="br-leise-stark">
+            <span className="br-leise">
               {p.ueberholt || p.unwirksam
                 ? `Festlegung „${AMPEL_TEXT[p.festlegung.ampel]}“ ${p.ueberholt ? 'überholt' : 'noch nicht wirksam'}`
                 : p.festlegung.bestaetigt
@@ -249,7 +249,7 @@ export function Detail({ stand }: { stand: Pruefstand }) {
             <p className="br-festlegung-text">
               <strong>Von Hand ({p.festlegung.von}, {datum(p.festlegung.am)}):</strong> {nb(p.festlegung.grund)}
               <br />
-              <span className="br-leise-stark">automatisch wäre: {AMPEL_TEXT[p.automatisch]}</span>
+              <span className="br-leise">automatisch wäre: {AMPEL_TEXT[p.automatisch]}</span>
             </p>
           )}
           <ul className="br-gruende">
@@ -299,7 +299,7 @@ export function Detail({ stand }: { stand: Pruefstand }) {
         {p.offen.some((o) => o.startsWith('paragraf:')) && (
           <section>
             <h3>Hängt an</h3>
-            <p className="br-leise-stark">Diese Paragrafen sind selbst noch offen – ist dort entschieden, entscheidet sich auch dieser.</p>
+            <p className="br-leise">Diese Paragrafen sind selbst noch offen – ist dort entschieden, entscheidet sich auch dieser.</p>
             <div className="br-chips">
               {p.offen
                 .filter((o) => o.startsWith('paragraf:'))

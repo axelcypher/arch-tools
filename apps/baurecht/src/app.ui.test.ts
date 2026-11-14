@@ -19,6 +19,7 @@ vi.mock('@core/platform/files', async (original) => ({
 }));
 
 const { App, speichern, speichernVollstaendig } = await import('./App');
+const { werteSenkrecht } = await import('./components/Angaben');
 const { beispielOap } = await import('./beispiel.test');
 const { useBaurecht } = await import('./store');
 
@@ -139,6 +140,12 @@ describe('Baurecht – Oberfläche', () => {
     const ampeln = [...host.querySelectorAll('.br-paragraf .br-ampel')];
     expect(ampeln.length).toBeGreaterThan(10);
     for (const a of ampeln) expect(a.textContent).toMatch(/gilt|prüfen|entfällt/);
+    // Designsystem: Statuspunkt und Umschalter aus den Grund-Styles, keine eigenen Varianten
+    for (const a of ampeln) expect(a.querySelector('.statuspunkt.ok, .statuspunkt.warnung, .statuspunkt.fehler')).not.toBeNull();
+    const filter = [...host.querySelectorAll('.br-bilanz > button')];
+    expect(filter.map((b) => b.querySelector('.statuspunkt')?.className)).toEqual(['statuspunkt fehler', 'statuspunkt warnung', 'statuspunkt ok']);
+    expect(host.querySelector('.br-bilanz')!.classList.contains('segment')).toBe(true);
+    expect(host.querySelector('.br-segment, .br-segment-senkrecht, .br-ampel-punkt')).toBeNull();
     expect(farbschemaWechseln(host, 'Dunkel')).toBe('dunkel');
     expect(farbschemaWechseln(host, 'Hell')).toBe('hell');
   });
@@ -325,7 +332,7 @@ describe('Baurecht – Oberfläche', () => {
   it('Pfeiltasten in Auswahlgruppen: →/← wandern (mit Umlauf), Pos1/Ende springen', () => {
     const host = render();
     if (!host.querySelector('[data-merkmal="Planungsrecht"]')) act(() => knopf(host, /Antragsmerkmale/)!.click());
-    const gruppe = host.querySelector<HTMLElement>('[data-merkmal="Planungsrecht"] .br-segment')!;
+    const gruppe = host.querySelector<HTMLElement>('[data-merkmal="Planungsrecht"] .segment')!;
     const knoepfe = [...gruppe.querySelectorAll<HTMLButtonElement>(':scope > button')];
     expect(knoepfe.length).toBeGreaterThan(2);
     const taste = (key: string) => act(() => void document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true })));
@@ -593,6 +600,62 @@ describe('Baurecht – Oberfläche', () => {
     act(() => knopf(host.querySelector('[data-merkmal="Planungsrecht"]')!, 'Außenbereich')!.click());
     expect(host.querySelector('.br-bilanz')!.textContent).not.toBe(vorher);
     expect(host.querySelector('.titlebar-dirty')).not.toBeNull();
+  });
+
+  it('Rückfrage beim Verlassen nennt, was ungespeichert ist: die Baurechtsprüfung, nicht das ganze Projekt', async () => {
+    const host = render();
+    if (!host.querySelector('[data-merkmal="Planungsrecht"]')) act(() => knopf(host, /Antragsmerkmale/)!.click());
+    act(() => knopf(host.querySelector('[data-merkmal="Planungsrecht"]')!, 'Außenbereich')!.click());
+    act(() => host.querySelector<HTMLButtonElement>('.titlebar-projekte')!.click());
+    await act(async () => void (await new Promise((r) => echtesSetTimeout(r, 0))));
+    const dialog = document.querySelector<HTMLElement>('[role="alertdialog"], [role="dialog"]')!;
+    expect(dialog.textContent).toContain('Die Baurechtsprüfung hat ungespeicherte Änderungen.');
+    expect(dialog.textContent).not.toContain('Das Projekt hat ungespeicherte Änderungen.');
+    await act(async () => knopf(dialog, 'Abbrechen')!.click());
+    // abgebrochen: die Projektübersicht öffnet nicht, die Änderung bleibt
+    expect(document.querySelector('[role="alertdialog"], [role="dialog"]')).toBeNull();
+    expect(host.querySelector('.titlebar-dirty')).not.toBeNull();
+  });
+});
+
+describe('Designsystem: Rahmen-App und Umschalter', () => {
+  let gesendet: Record<string, unknown>[] = [];
+  const rahmen = { postMessage: (d: Record<string, unknown>) => gesendet.push(d) } as unknown as Window;
+  const setUrl = (u: string) => (window as unknown as { happyDOM: { setURL: (u: string) => void } }).happyDOM.setURL(u);
+  beforeEach(() => {
+    gesendet = [];
+    const bytes = beispielOap();
+    useBaurecht.getState().projektSetzen({ art: 'datei', name: 'EFH.oap', bytes }, readProjectFile(bytes), projektdateiRoh(bytes));
+    Object.defineProperty(window, 'parent', { value: rahmen, configurable: true });
+    setUrl('http://localhost:3000/?rahmen=tab&app=baurecht');
+  });
+  afterEach(() => {
+    act(() => root?.unmount());
+    document.body.innerHTML = '';
+    Object.defineProperty(window, 'parent', { value: window, configurable: true });
+    setUrl('http://localhost:3000/');
+  });
+
+  it('meldet Arkly mit den ungespeicherten Änderungen den Satz „Die Baurechtsprüfung hat …“', () => {
+    const host = render();
+    const status = () => gesendet.filter((d) => d.typ === 'arch-tools:status').at(-1);
+    expect(status()?.dirty).toBe(false);
+    if (!host.querySelector('[data-merkmal="Planungsrecht"]')) act(() => knopf(host, /Antragsmerkmale/)!.click());
+    act(() => knopf(host.querySelector('[data-merkmal="Planungsrecht"]')!, 'Außenbereich')!.click());
+    expect(status()?.dirty).toBe(true);
+    expect(status()?.ungespeichert).toBe('Die Baurechtsprüfung hat ungespeicherte Änderungen.');
+  });
+
+  it('Merkmalwerte senkrecht bei langen oder vielen Werten – die gemeinsamen Segmente brechen nicht um', () => {
+    expect(werteSenkrecht(['ja', 'nein'])).toBe(false);
+    expect(werteSenkrecht(['Innenbereich', 'Außenbereich', 'B-Plan'])).toBe(false);
+    expect(werteSenkrecht(['Innenbereich', 'Außenbereich', 'qualifizierter B-Plan'])).toBe(true);
+    expect(werteSenkrecht(['1', '2', '3', '4', '5'])).toBe(false);
+    // viele kurze Werte (eigene Werte aus PERMIO): die Reihe wäre zu lang
+    expect(werteSenkrecht(['Wohnen', 'Gewerbe', 'Handel', 'Büro', 'Praxis', 'Lager', 'Garage', 'Sonstig'])).toBe(true);
+    // viele einbuchstabige Werte (der Innenabstand je Knopf zählt mit) und zwei sehr lange Werte
+    expect(werteSenkrecht('ABCDEFGHIJKL'.split(''))).toBe(true);
+    expect(werteSenkrecht(['Bebauungsplan der Innenentwicklung', 'vorhabenbezogener Bebauungsplan'])).toBe(true);
   });
 });
 

@@ -25,7 +25,8 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   an, § 90 an das Verfahrensrecht zur Zeit der Antragstellung), die aktiven Regelmodule, der Rechtsstand (Datum des
   ältesten Stands der aktiven Normen), Warnmarken (nie geprüft, nicht abrufbar, geändert, neue Fassung), **Lage
   abfragen**, **Rechtsstand prüfen**, **Prüfprotokoll …**, **Speichern** (Strg+S; ungespeicherte Änderungen zeigt der
-  Punkt an der Ecke des Knopfs, wie in allen Apps). „Gemeinde unbestätigt“ bzw.
+  Punkt an der Ecke des Knopfs, wie in allen Apps; die Rückfrage vor dem Verlassen sagt „Die Baurechtsprüfung hat
+  ungespeicherte Änderungen.“, denn ungespeichert ist nur der Teil von LEXIO im Projekt). „Gemeinde unbestätigt“ bzw.
   „widersprüchlich“ ist ein Knopf und springt zum Gemeindeschlüssel. Ist die App schmaler als 1600 px, stehen „Lage
   abfragen“ und „Rechtsstand prüfen“ im Menü **Mehr** (das gemeinsame Menü der Suite) und die Warnungen zum Rechtsstand
   als eine Sammelmarke („2 Warnungen“, Einzelheiten im Tooltip und ihre Zahl als Hinweis an „Rechtsstand prüfen“ im Menü); unter 1200 px stehen „Antrag“ und „Einreichung“ nur noch im Feld.
@@ -53,10 +54,11 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   „Speichern, diese als Entwurf behalten“ lässt sie Entwurf. Ein Wert außerhalb der Liste lässt sich nicht für den Ort
   bestätigen – er zählt ohnehin nicht. Angaben von Hand aus älteren Dateien werden wie bei der Eingabe geprüft: negative
   Werte und halbe Anzahlen sind nur Hinweis, Angaben zur Lage ohne Lagebezug ebenso („Für diese Lage übernehmen“).
-- **Filterleiste:** Ampelzähler (blenden ein/aus), Balken, Ordnung (offen zuerst, nach Ebene, nach Thema), Suche und die
-  Kästchen „nur von Hand festgelegte“ / „nur geänderte/überholte“. Ist die mittlere Spalte schmaler als 640 px, wird die
-  Ordnung zur Auswahlliste, die Kästchen wandern in **Filter** und der Balken entfällt. Die Zähler an den Normen
-  zählen die sichtbaren Zeilen („11 prüfen von 14“). Beim Wechsel der Ordnung bleibt der gewählte Paragraf im Blick.
+- **Filterleiste:** Ampelzähler (blenden ein/aus; Häkchen, Statuspunkt, Zahl und Wort im Umschalter), Balken, Ordnung
+  (offen zuerst, nach Ebene, nach Thema), Suche und die Kästchen „nur von Hand festgelegte“ / „nur
+  geänderte/überholte“. Ist die mittlere Spalte schmaler als 640 px, wird die Ordnung zur Auswahlliste, die Kästchen
+  wandern in **Filter** und der Balken entfällt. Die Zähler an den Normen zählen die sichtbaren Zeilen („11 prüfen von
+  14“). Beim Wechsel der Ordnung bleibt der gewählte Paragraf im Blick.
 - **Rückfrage zum Antragsmerkmal:** Bei „Beseitigung“ steht der **Umfang der Beseitigung** (vollständiger Abbruch ohne
   Ersatzbau, Teilabbruch, Abbruch mit Ersatzbau) direkt unter „Art des Vorhabens“ (als Knöpfe, unter der Erklärung des
   Werts); Teilabbruch wird wie eine Änderung geprüft, Ersatzbau wie Errichtung und Beseitigung; „Erweiterung“ (Anbau,
