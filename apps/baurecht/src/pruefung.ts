@@ -4,7 +4,7 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { Auswertung } from '@core/baurecht/auswertung';
+import type { Auswertung, TextStand } from '@core/baurecht/auswertung';
 import { auswerten, faktDefinitionen, gueltigeFakten, modulFakten } from '@core/baurecht/auswertung';
 import { FAKTEN } from '@core/baurecht/fakten';
 import type { Paket } from '@core/baurecht/paket';
@@ -159,7 +159,7 @@ export function pruefstandBerechnen(
   eigene: Record<string, FaktWert>,
   festlegungen: Parameters<typeof auswerten>[0]['festlegungen'],
   einreichungRoh: string | undefined,
-  texte: Record<string, import('@core/baurecht/auswertung').TextStand>,
+  texte: Record<string, TextStand>,
   planungsrechtOrt?: Ort,
 ): Pruefstand {
   const vorab = alleFakten(project, eigene, paket.module);
@@ -333,9 +333,14 @@ function rs(paket: Paket): Rechtsstand {
 
 let lauf = 0;
 
+/** höchstens so oft kommen eintreffende Texte in den Store (jedes Update löst eine volle Auswertung aus) */
+export const TEXTE_BUENDELN_MS = 250;
+
 /**
  * Texte aller Normen der aktiven Module zum Stichtag holen (je Norm höchstens einmal am Tag an der Quelle, sonst aus
- * der Ablage). `aktualisieren` prüft sofort an der Quelle. In der Web-Version ohne Netz (CORS).
+ * der Ablage). `aktualisieren` prüft sofort an der Quelle. In der Web-Version ohne Netz (CORS). Die eintreffenden
+ * Texte kommen gebündelt in den Store – höchstens alle TEXTE_BUENDELN_MS ein Zwischenstand, am Ende der Rest –, nicht
+ * je Text: sonst liefe beim Laden je Text eine volle Auswertung.
  */
 export async function texteLaden(module: Modul[], stichtag: string, o: { aktualisieren?: boolean } = {}): Promise<void> {
   const nr = ++lauf;
@@ -345,6 +350,21 @@ export async function texteLaden(module: Modul[], stichtag: string, o: { aktuali
   const offen = new Set(normen.filter((n) => n.norm.quelle.art !== 'verweis').map((n) => n.key));
   st.laedtSetzen([...offen]);
   const schlange = [...normen];
+  // eingetroffen, aber noch nicht im Store; ein überholter Lauf schreibt nichts mehr
+  let neu: Record<string, TextStand> = {};
+  let geplant: ReturnType<typeof setTimeout> | null = null;
+  const uebernehmen = () => {
+    if (geplant) clearTimeout(geplant);
+    geplant = null;
+    if (nr !== lauf || !Object.keys(neu).length) return;
+    useBaurecht.getState().texteSetzen(neu, [...offen]);
+    neu = {};
+  };
+  const eingetroffen = (key: string, stand: TextStand) => {
+    neu[key] = stand;
+    offen.delete(key);
+    geplant ??= setTimeout(uebernehmen, TEXTE_BUENDELN_MS);
+  };
   const arbeiter = async () => {
     for (let n = schlange.shift(); n; n = schlange.shift()) {
       if (nr !== lauf) return;
@@ -356,16 +376,19 @@ export async function texteLaden(module: Modul[], stichtag: string, o: { aktuali
         const regelStand = Object.assign({}, ...Object.values(regeln?.regel.paragrafen ?? {}).map((p) => p.stand ?? {})) as Record<string, string>;
         const r = await rs(st.paket).fuer(n.norm, stichtag, { aktualisieren: o.aktualisieren, offline: !isTauri(), regelStand });
         if (nr !== lauf) return;
-        useBaurecht.getState().textSetzen(n.key, { fassung: r.fassung, ...(r.vorige ? { vorige: r.vorige } : {}), ...(r.fehler ? { fehler: r.fehler } : {}), ...(r.kuenftige ? { kuenftige: r.kuenftige } : {}), ...(r.geprueft ? { geprueft: r.geprueft } : {}), ...(r.ueberholtAb ? { ueberholtAb: r.ueberholtAb } : {}), stichtag });
+        eingetroffen(n.key, { fassung: r.fassung, ...(r.vorige ? { vorige: r.vorige } : {}), ...(r.fehler ? { fehler: r.fehler } : {}), ...(r.kuenftige ? { kuenftige: r.kuenftige } : {}), ...(r.geprueft ? { geprueft: r.geprueft } : {}), ...(r.ueberholtAb ? { ueberholtAb: r.ueberholtAb } : {}), stichtag });
       } catch (e) {
         log.warn('Text nicht geholt', { norm: n.key, fehler: String(e) });
-        useBaurecht.getState().textSetzen(n.key, { fassung: null, fehler: e instanceof Error ? e.message : String(e) });
+        eingetroffen(n.key, { fassung: null, fehler: e instanceof Error ? e.message : String(e) });
       }
-      offen.delete(n.key);
-      useBaurecht.getState().laedtSetzen([...offen]);
     }
   };
-  await Promise.all([arbeiter(), arbeiter(), arbeiter(), arbeiter()]);
+  try {
+    await Promise.all([arbeiter(), arbeiter(), arbeiter(), arbeiter()]);
+  } finally {
+    // der Rest (auch nach einem Fehler) – ein überholter Lauf verwirft ihn
+    uebernehmen();
+  }
   if (nr === lauf && isTauri()) useBaurecht.getState().rechtsstandGeprueftSetzen(new Date().toISOString());
 }
 

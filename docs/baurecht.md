@@ -285,6 +285,8 @@ Enter (außer im mehrzeiligen Begründungsfeld) den Hauptknopf aus; der Titel st
   Fassungen liegen im gemeinsamen Konfigurationsordner unter `baurecht/recht/` – für alle Projekte gleich, nie
   überschrieben; ist eine Quelle nicht erreichbar, arbeitet die App mit dem letzten Stand und sagt es. Ist eine Norm
   seit **14 Tagen** nicht mehr an der Quelle bestätigt (oder nie), wird aus „entfällt“ ein „prüfen“.
+- Die Texte werden zu viert parallel geholt und kommen **gebündelt** in die Ansicht: höchstens alle 250 ms ein
+  Zwischenstand, am Ende der Rest – nicht je Text eine neue Auswertung (`TEXTE_BUENDELN_MS` in `pruefung.ts`).
 - **Stichtag:** Eine Fassung mit bekanntem Ende vor der Einreichung deckt den Stichtag nicht; gilt zum Stichtag laut
   Quelle schon eine angekündigte Fassung, wird sie geholt – liegt ihr Text nicht vor, wird aus „entfällt“ ein „prüfen“.
   Auch „entfällt mit der Norm“ (Anwendungsbereich) braucht den geprüften Text der Norm.
