@@ -125,7 +125,8 @@ Ordnerstruktur hat ungespeicherte Änderungen.“, „Die Angaben im Assistenten
 wieder da, ist sie danach gespeichert) und übernimmt den Text der Ordnerliste wie mit „Übernehmen“ (vorher gesichert,
 mit „Rückgängig“), wenn er gültig ist und vom aktuellen Stand ausgeht. Im Assistenten hieße Speichern, den
 Projektordner anzulegen bzw. die Projektdatei zu schreiben, ein Konflikt verlangt „Neu laden“ oder „Meine Fassung
-trotzdem speichern“ – das geschieht nicht still: Es gilt „nicht gespeichert“, die Aktion unterbleibt, und ATLAS meldet, was noch offen ist.
+trotzdem speichern“ – das geschieht nicht still: Es gilt „nicht gespeichert“, die Aktion unterbleibt, und ATLAS
+meldet, was noch offen ist.
 *Nicht speichern* verwirft. Nicht gemeldet werden von Hand geänderte, noch nicht umbenannte Mailnamen und
 hineingezogene, noch nicht abgelegte Mails unter „Mails“ (die Mails selbst bleiben im Projektordner bzw. in Outlook;
 schon ein Wechsel der Ansicht verwirft diese Eingaben) und alles, was ATLAS sofort speichert.

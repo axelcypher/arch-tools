@@ -1,7 +1,7 @@
 /** ein Gegenstand mit ungespeicherten Änderungen, in Nutzersprache mit Artikel, z. B. „die Ordnerstruktur“ */
 export interface Gegenstand {
   text: string;
-  /** Mehrzahl („die Stammdaten haben …“) */
+  /** Mehrzahl („die Angaben im Assistenten haben …“) */
   mehrzahl?: boolean;
 }
 
