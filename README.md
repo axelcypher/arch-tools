@@ -53,10 +53,10 @@ Namen mit Erklärung – „PERMIO (Formulare)“ –, danach den Namen allein; 
 Die Regeln für Oberfläche und Bedienung (Skalen, Fokus, Knöpfe, Überschriften, Meldungen) stehen in der
 Designrichtlinie [docs/design.md](docs/design.md).
 
-- **Farbschema** (in der Titelleiste im Menü „Einstellungen und Hilfe“, im Rahmen noch als eigenes Menü): Hell, Dunkel oder wie das System
+- **Farbschema** (in der Titelleiste bzw. der Kopfleiste des Rahmens im Menü „Einstellungen und Hilfe“): Hell, Dunkel oder wie das System
   (Auto) – wirkt sofort in allen geöffneten Apps, Fenstern und Tabs der Rahmen-App. „Zeichenfläche abdunkeln“ gibt es
   nur in Apps mit Zeichenfläche bzw. Lageplan.
-- **Speicherort der Einstellungen** (in jeder App „Speicherort der Einstellungen …“ im Menü „Einstellungen und Hilfe“ der Titelleiste – im Notbetrieb als Warnung sichtbar –, im Rahmen als Knopf „Einzelplatz“ bzw. „Netzwerk“, in ATLAS auch unter
+- **Speicherort der Einstellungen** (in jeder App „Speicherort der Einstellungen …“ im Menü „Einstellungen und Hilfe“ der Titelleiste – im Notbetrieb als Warnung sichtbar –, im Rahmen ebenso im Menü „Einstellungen und Hilfe“ der Kopfleiste, in ATLAS auch unter
   „Einstellungen“): *Einzelplatz* – die gemeinsamen Einstellungen liegen nur auf diesem Rechner
   (`%APPDATA%\arch-tools`) – oder *Netzwerkinstallation* – sie liegen in einem Ordner auf dem Netzlaufwerk (NAS,
   Server), und alle Rechner, die ihn wählen, haben denselben Stand. Die Wahl gilt je Benutzer für alle Apps und steht

@@ -305,7 +305,8 @@ Zurücksetzen, Sonderfunktionen. Feste Namen, in allen Apps gleich:
 - Reihenfolge im Menü: Schalter und Einfachauswahl, dann Befehle, Gefahr-Punkte (Zurücksetzen, Entfernen) am Ende
   hinter einem Trenner. Tastenkürzel in `tasten`, Punkte mit Dialog auf „ …“ (siehe „Menüs“ und „Begriffe“).
 - Doppelte Einstiege vermeiden: Steht ein Befehl schon an naheliegender Stelle (Listenkopf, Seitenleiste), fällt sein
-  Einstieg in der Leiste weg (NUMIO: Kennwertkatalog).
+  Einstieg in der Leiste weg (NUMIO: Kennwertkatalog). Bewusste Ausnahme: der Update-Punkt im Menü der Titelleiste
+  (siehe „Titelleiste“).
 - **Aufbau:** links „Datei“ und „Speichern“, in der Mitte die Werkzeuge bzw. Hauptschritte, rechts der Hauptknopf,
   zuletzt „Mehr“.
 - **Zeilen:** Seltene Aktionen einer Tabellen- oder Listenzeile (FABRIO-Rechnung: Deckblatt, Mail an den Zahler)
@@ -397,13 +398,16 @@ Links Symbol und Name der App, „Projekte“ und das geöffnete Projekt (mit de
 Rechts nur, was gerade zählt – Version bzw. Update, im Notbetrieb die Warnung zum Speicherort –, dann das Menü der
 Titelleiste und die Fensterknöpfe. Das Menü heißt „Einstellungen und Hilfe“ (Symbol `menue`, drei Striche; Name in
 `ariaLabel` und `title`), damit es sich vom „Mehr“ der Werkzeugleiste darunter unterscheidet. Es enthält, in dieser
-Reihenfolge: „Farbschema“ (aktuelle Wahl als Hinweis; Untermenü mit Auto/Hell/Dunkel als Einfachauswahl und, wenn
-die App eine Zeichenfläche hat, dem Schalter „Zeichenfläche im dunklen Schema abdunkeln“ – `farbschemaPunkte`),
+Reihenfolge: solange ein Update bereitliegt „Update auf ‹Version› …“ mit Trenner (`updatePunkt`) – zusätzlich zur
+Anzeige rechts in der Titelleiste, damit man es auch dort findet, wo die seltenen Befehle stehen (bewusste Ausnahme von
+„Doppelte Einstiege vermeiden“); dann „Farbschema“ (aktuelle Wahl als Hinweis; Untermenü mit Auto/Hell/Dunkel als
+Einfachauswahl und, wenn die App eine Zeichenfläche hat, dem Schalter „Zeichenfläche im dunklen Schema abdunkeln“ –
+`farbschemaPunkt`, Untermenü `farbschemaPunkte`),
 „Speicherort der Einstellungen …“ (Einzelplatz bzw. Netzwerk als Hinweis – `speicherortPunkt`), im herausgelösten
 Fenster „Andocken“, Trenner, „Berechnungsregeln …“ (F1) und „Fehlerprotokoll …“. Neue Fehler zählt eine Marke am
 Menüknopf, ebenso sein Name („Einstellungen und Hilfe – 2 neue Fehler im Fehlerprotokoll“) und der Hinweis am Punkt
-(„2 neue“). Bis die Rahmen-App nachgezogen hat (`docs/nachziehen/arkly.md`), zeigt ihre Kopfleiste Farbschema und
-Speicherort noch als eigene Knöpfe. Unter 960px Fensterbreite zeigen Knöpfe mit Symbol nur noch das Symbol: Text in
+(„2 neue“). Die Kopfleiste von Arkly folgt derselben Regel (Menü mit Update, Farbschema, Speicherort und
+Fehlerprotokoll, ohne „Berechnungsregeln …“). Unter 960px Fensterbreite zeigen Knöpfe mit Symbol nur noch das Symbol: Text in
 `<span className="titlebar-text">`, der Name bleibt über `aria-label`. Die Tableiste von Arkly zeigt
 unter 1100px am Tab nur Symbol und Namen der App (das Projekt steht im Tooltip); eine Fläche zum Ziehen des Fensters
 bleibt immer frei.
