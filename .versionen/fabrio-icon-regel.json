@@ -1,6 +1,0 @@
-{
-  "ava": {
-    "stufe": "patch",
-    "notiz": "Doppelte Größenregel für Symbolknöpfe im LV-Editor entfernt; die Größe kommt aus dem gemeinsamen Designsystem."
-  }
-}
