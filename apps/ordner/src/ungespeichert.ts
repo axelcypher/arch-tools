@@ -6,12 +6,12 @@ export interface Gegenstand {
 }
 
 export const ORDNERSTRUKTUR: Gegenstand = { text: 'die Ordnerstruktur' };
-export const STAMMDATEN: Gegenstand = { text: 'die Stammdaten', mehrzahl: true };
-export const TROCKENLAUF_AUSWAHL: Gegenstand = { text: 'die Auswahl im Trockenlauf' };
+/** alles, was im Assistenten noch nicht angelegt ist (geänderte Angaben beim Ergänzen, abgewählte Einträge) */
+export const ASSISTENT_ANGABEN: Gegenstand = { text: 'die Angaben im Assistenten', mehrzahl: true };
 
 /**
  * Satz für ungespeicherte Änderungen (design.md „Ungespeicherte Änderungen“) an der Titelleiste bzw. für die Rückfragen
- * des Rahmens: „Die Ordnerstruktur hat ungespeicherte Änderungen.“, „Die Ordnerstruktur und die Stammdaten haben …“.
+ * des Rahmens: „Die Ordnerstruktur hat ungespeicherte Änderungen.“, „Die Ordnerstruktur und die Angaben im Assistenten haben …“.
  * Ohne Gegenstand undefined (dann gilt der allgemeine Satz).
  */
 export function satzUngespeichert(gegenstaende: readonly Gegenstand[]): string | undefined {

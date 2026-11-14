@@ -616,12 +616,12 @@ describe('Rahmen-App Arkly: ungespeicherte Änderungen melden und auf Anfrage sp
     const vorher = inhalt();
     eingabe(feld(host, 'Bezeichnung des Vorhabens'), 'Neubau Kita am Park');
     expect(dirty()).toBe(true);
-    expect(satz()).toBe('Die Stammdaten haben ungespeicherte Änderungen.');
+    expect(satz()).toBe('Die Angaben im Assistenten haben ungespeicherte Änderungen.');
     // dazu noch die Ordnerstruktur: beide Gegenstände in einem Satz
     act(() => useOrdner.setState({ konflikt: { roh: { struktur: STANDARD } } }));
-    expect(satz()).toBe('Die Ordnerstruktur und die Stammdaten haben ungespeicherte Änderungen.');
+    expect(satz()).toBe('Die Ordnerstruktur und die Angaben im Assistenten haben ungespeicherte Änderungen.');
     act(() => useOrdner.setState({ konflikt: null }));
-    expect(satz()).toBe('Die Stammdaten haben ungespeicherte Änderungen.');
+    expect(satz()).toBe('Die Angaben im Assistenten haben ungespeicherte Änderungen.');
     expect(await speichernAnfragen()).toBe(false);
     // nichts angelegt bzw. geschrieben, die Eingabe steht noch da
     expect(inhalt()).toBe(vorher);

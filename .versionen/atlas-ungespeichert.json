@@ -1,6 +1,6 @@
 {
   "ordner": {
     "stufe": "patch",
-    "notiz": "Die Rückfrage vor dem Schließen nennt, was ungespeichert ist – etwa „Die Ordnerstruktur hat ungespeicherte Änderungen.“ – statt allgemein das Projekt."
+    "notiz": "Die Rückfrage vor dem Schließen nennt, was ungespeichert ist – etwa „Die Ordnerstruktur hat ungespeicherte Änderungen.“ oder „Die Angaben im Assistenten haben …“ – statt allgemein das Projekt."
   }
 }
