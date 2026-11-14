@@ -592,6 +592,18 @@ describe('Baurecht – Oberfläche', () => {
     expect(w).toBe(6);
   });
 
+  it('Plausibilität: Einfamilienhaus (Errichtung) auf „verfahrensfrei“ gestellt → Warnung über den Angaben und im Protokoll', () => {
+    const host = render();
+    const satz = /Verfahren „verfahrensfrei“ festgelegt, die Errichtung eines Wohngebäudes \(Einfamilienhaus\) ist aber nicht verfahrensfrei \(§ 62 Abs\. 1 BauO NRW\)/;
+    expect(host.querySelector('.br-angaben-liste')!.textContent).not.toMatch(satz);
+    if (!host.querySelector('[data-merkmal="Verfahren"]')) act(() => knopf(host, /Antragsmerkmale/)!.click());
+    act(() => knopf(host.querySelector('[data-merkmal="Verfahren"]')!, 'verfahrensfrei')!.click());
+    const warnung = [...host.querySelectorAll('.br-angaben-liste .meldung.warnung')].find((w) => satz.test(w.textContent ?? ''));
+    expect(warnung, 'Warnung über den Angaben').toBeTruthy();
+    act(() => knopf(host, /Prüfprotokoll/)!.click());
+    expect(document.querySelector('.br-protokoll')!.textContent).toMatch(satz);
+  });
+
   it('Merkmal ändern wirkt sofort auf die Ampeln und gilt als ungespeicherte Änderung', () => {
     const host = render();
     const vorher = host.querySelector('.br-bilanz')!.textContent;

@@ -892,6 +892,26 @@ describe('Fälle aus dem Fachreview', () => {
     expect(w.texte[0]).toMatch(/Landschaftsplan/);
   });
 
+  it('Plausibilität: neues Einfamilienhaus als „verfahrensfrei“ – kein Grün aus „verfahrensfrei“ (§ 62 Abs. 1, § 63 BauO NRW)', () => {
+    const m = { Vorhaben: 'Errichtung', Gebäudeart: 'Einfamilienhaus', Gebäudeklasse: '1', Planungsrecht: 'Innenbereich', Verfahren: 'verfahrensfrei', Sonderbau: 'nein' };
+    const w = widersprueche(m, null);
+    expect([...w.merkmale]).toEqual(['Verfahren']);
+    const ohne = auswerten(eingabe(m, {}, TEXTE));
+    const mit = auswerten({ ...eingabe(m, {}, TEXTE), widersprueche: w.merkmale });
+    // widersprüchlich zählt wie unbekannt: grün bleibt nur, was auch ohne Angabe zum Verfahren grün ist
+    const { Verfahren: _v, ...ohneVerfahren } = m;
+    const unbekannt = Object.fromEntries(auswerten(eingabe(ohneVerfahren, {}, TEXTE)).paragrafen.map((p) => [p.id, p.ampel]));
+    const nachher = Object.fromEntries(mit.paragrafen.map((p) => [p.id, p.ampel]));
+    expect(mit.paragrafen.filter((p) => p.ampel === 'gruen' && unbekannt[p.id] !== 'gruen').map((p) => p.id)).toEqual([]);
+    // und „verfahrensfrei“ trug vorher ein Grün, das jetzt fehlt (z. B. § 74 BauO NRW bzw. die Bauvorlagen)
+    const getragen = ohne.paragrafen.filter((p) => p.ampel === 'gruen' && unbekannt[p.id] !== 'gruen').map((p) => p.id);
+    expect(getragen.length, 'ohne Widerspruch trägt „verfahrensfrei“ ein Grün').toBeGreaterThan(0);
+    // gemessen: §§ 63–65, 67, 68, 70, 74 BauO NRW, §§ 1–6, 8–11, 13, 14 BauPrüfVO u. a. „entfällt“ → „prüfen“
+    expect(nachher['nw/bauo-nrw/74']).toBe('gelb');
+    // gilt bleibt gilt: der Widerspruch stuft nichts herab
+    for (const p of ohne.paragrafen) if (p.ampel === 'rot') expect(nachher[p.id], p.id).toBe('rot');
+  });
+
   it('Runde 2: Krankenhaus (Sonderbau) – zusätzliche Bauvorlagen nicht „entfällt“; Nachbarrecht nie „gilt“', () => {
     const x = a({ Vorhaben: 'Errichtung', Gebäudeart: 'Nichtwohngebäude', Gebäudeklasse: '5', Planungsrecht: 'Bebauungsplan', Verfahren: 'Baugenehmigungsverfahren', Sonderbau: 'ja' }, { 'gebaeude.besucher': sicher(50), 'gebaeude.gastbetten': sicher(0), 'gebaeude.verkaufsflaeche': sicher(0), 'gebaeude.garage_nutzflaeche': sicher(0), ...nein('nw.elt_betriebsraum') });
     expect(x('nw/baupruefvo/12')).not.toBe('gruen');

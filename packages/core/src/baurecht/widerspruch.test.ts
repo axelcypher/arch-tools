@@ -153,3 +153,34 @@ describe('Begründung nennt den tragenden, sicheren Teil', () => {
     expect(tragendeBlaetter(regel, ctx, 'nein')).toEqual([{ m: 'Planungsrecht', in: ['Außenbereich'] }]);
   });
 });
+
+describe('Plausibilität: neues Wohngebäude als „verfahrensfrei“ (§ 62 Abs. 1, § 63 BauO NRW)', () => {
+  const efh = { Gebäudeart: 'Einfamilienhaus', Verfahren: 'verfahrensfrei', Vorhaben: 'Errichtung' };
+  const umfang = (wert: string): Record<string, FaktWert> => ({ 'vorhaben.beseitigung_umfang': { wert, herkunft: 'manuell', sicherheit: 'sicher' } });
+
+  it('Errichtung eines Wohngebäudes: Widerspruch am Merkmal „Verfahren“ mit Satz und Paragrafen', () => {
+    const w = widersprueche(efh, null);
+    expect([...w.merkmale]).toEqual(['Verfahren']);
+    expect(w.texte).toEqual(['Verfahren „verfahrensfrei“ festgelegt, die Errichtung eines Wohngebäudes (Einfamilienhaus) ist aber nicht verfahrensfrei (§ 62 Abs. 1 BauO NRW) – mindestens Genehmigungsfreistellung (§ 63), bitte klären']);
+    for (const art of ['Zweifamilienhaus', 'Mehrfamilienhaus', 'Wohn- und Geschäftshaus']) expect(widersprueche({ ...efh, Gebäudeart: art }, null).merkmale.has('Verfahren')).toBe(true);
+  });
+
+  it('Ersatzbau (Beseitigung mit Umfang „Abbruch mit Ersatzbau“): ebenso – nicht aber Abbruch ohne Ersatzbau', () => {
+    const b = { ...efh, Vorhaben: 'Beseitigung' };
+    expect(widersprueche(b, null, umfang('Abbruch mit Ersatzbau')).texte[0]).toMatch(/^Verfahren „verfahrensfrei“ festgelegt, der Ersatzbau eines Wohngebäudes/);
+    expect(widersprueche(b, null, umfang('vollständiger Abbruch ohne Ersatzbau')).merkmale.size).toBe(0);
+    expect(widersprueche(b, null).merkmale.size).toBe(0);
+  });
+
+  it('kein Hinweis: anderes Verfahren, Nichtwohngebäude, kein Gebäude, Änderung, Nutzungsänderung, Gebäudeart offen', () => {
+    for (const m of [
+      { ...efh, Verfahren: 'Genehmigungsfreistellung' },
+      { ...efh, Gebäudeart: 'Nichtwohngebäude' },
+      { ...efh, Gebäudeart: 'kein Gebäude' },
+      { ...efh, Vorhaben: 'Änderung' },
+      { ...efh, Vorhaben: 'Nutzungsänderung' },
+      { Verfahren: 'verfahrensfrei', Vorhaben: 'Errichtung' },
+    ])
+      expect(widersprueche(m, null).merkmale.size, JSON.stringify(m)).toBe(0);
+  });
+});

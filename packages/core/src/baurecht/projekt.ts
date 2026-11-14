@@ -355,7 +355,13 @@ function polygonFlaeche(pts: { x: number; y: number }[]): number {
   return a / 2;
 }
 
-/** Merkmale, deren festgelegter Wert der Ableitung aus dem Modell widerspricht */
+/** Gebäudearten mit Wohnungen (Merkmal „Gebäudeart“) */
+const WOHNGEBAEUDE = ['Einfamilienhaus', 'Zweifamilienhaus', 'Mehrfamilienhaus', 'Wohn- und Geschäftshaus'];
+
+/**
+ * Merkmale, deren festgelegter Wert der Ableitung aus dem Modell, den Geodaten oder anderen Merkmalen widerspricht
+ * (Plausibilität, z. B. ein neues Wohngebäude als „verfahrensfrei“) – mit dem Satz für die Anzeige
+ */
 export function widersprueche(merkmale: Record<string, string>, gk: GebaeudeklasseAbleitung | null, fakten: Record<string, FaktWert> = {}): { merkmale: Set<string>; texte: string[] } {
   const out = new Set<string>();
   const texte: string[] = [];
@@ -372,6 +378,13 @@ export function widersprueche(merkmale: Record<string, string>, gk: Gebaeudeklas
   if ((pr === 'Innenbereich' || pr === 'Bebauungsplan') && (ja('schutz.landschaftsplan') || ja('schutz.lsg'))) {
     out.add('Planungsrecht');
     texte.push(`Planungsrecht „${pr}“ festgelegt, die Geodaten melden aber einen Landschaftsplan bzw. ein Landschaftsschutzgebiet – Grenze Innen-/Außenbereich prüfen`);
+  }
+  // Wohngebäude neu (Errichtung oder Ersatzbau) als „verfahrensfrei“: § 62 Abs. 1 nennt keine Wohngebäude – mindestens
+  // Genehmigungsfreistellung (§ 63, mit § 74 Abs. 7–9 über § 63 Abs. 6); „verfahrensfrei“ darf dann kein Grün tragen
+  const ersatzbau = merkmale['Vorhaben'] === 'Beseitigung' && fakten['vorhaben.beseitigung_umfang']?.wert === 'Abbruch mit Ersatzbau';
+  if (merkmale['Verfahren'] === 'verfahrensfrei' && WOHNGEBAEUDE.includes(merkmale['Gebäudeart'] ?? '') && (merkmale['Vorhaben'] === 'Errichtung' || ersatzbau)) {
+    out.add('Verfahren');
+    texte.push(`Verfahren „verfahrensfrei“ festgelegt, ${ersatzbau ? 'der Ersatzbau' : 'die Errichtung'} eines Wohngebäudes (${merkmale['Gebäudeart']}) ist aber nicht verfahrensfrei (§ 62 Abs. 1 BauO NRW) – mindestens Genehmigungsfreistellung (§ 63), bitte klären`);
   }
   const m = merkmale['Gebäudeklasse'];
   if (m && gk && !gk.klassen.includes(m)) {
