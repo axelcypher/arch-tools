@@ -110,16 +110,32 @@
 
 /* ---------- Kopf und Bilanz ---------- */
 
+/* Polster wie jede Werkzeugleiste (base.css); nur der Abstand der Einträge ist größer, weil Felder und Texte darin stehen */
 .br-kopf {
-  gap: 8px;
-  padding: 6px 10px;
-  /* eine Zeile: Module und Rechtsstand kürzen sich, die Aktionen bleiben rechts */
-  flex-wrap: nowrap;
+  gap: var(--s2);
+}
+/* Liste der Module und Rechtsstand sind `kuerzbar` (Werkzeugleiste); ohne Text steht die Live-Region des Rechtsstands
+   leer im DOM und nimmt keinen Platz */
+.br-kopf > [data-eintrag='rechtsstand']:has(> .br-rechtsstand:empty) {
   min-width: 0;
 }
-.br-kopf > button,
-.br-kopf-feld {
-  flex-shrink: 0;
+/* „Gespeichert“ unter dem Knopf, außerhalb des Flusses: die Meldung ändert die Breite der Leiste nicht (sonst wanderte
+   beim Speichern die Wahl des Antrags ins Menü „Mehr“) */
+.br-kopf > [data-eintrag='speichern'] {
+  position: relative;
+}
+.br-kopf .br-gespeichert {
+  position: absolute;
+  top: calc(100% + var(--s1));
+  left: 0;
+  z-index: 2;
+}
+.br-kopf .br-gespeichert:not(:empty) {
+  padding: 2px var(--s2);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-s);
+  box-shadow: var(--schatten-schwebend);
 }
 .br-kopf-feld {
   display: inline-flex;
@@ -136,23 +152,14 @@
   color: var(--text);
 }
 .br-module-text {
-  /* kürzt sich zuerst und nimmt den freien Platz */
-  flex: 1 1 0;
+  /* kürzt sich mit „…“ (Eintrag `kuerzbar`), die Gemeinde steht vorn */
+  flex: 0 1 auto;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: var(--fs-s);
   color: var(--muted);
   min-width: 0;
-}
-.br-kopf-aktionen {
-  display: inline-flex;
-  gap: 8px;
-  flex-shrink: 0;
-}
-.br-kopf > .br-nur-schmal,
-.br-kopf > .br-nur-breit {
-  flex-shrink: 0;
 }
 button.br-modul-chip {
   cursor: pointer;
@@ -173,7 +180,7 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
 .br-app {
   container: app / inline-size;
 }
-/* unter 1600 px: Aktionen in „Mehr ▾“, Warnungen als Sammelmarke – die Module behalten ihren Platz */
+/* unter 1600 px: Warnungen als Sammelmarke (öffnet „Mehr“) – die Module behalten ihren Platz */
 @container app (max-width: 1599px) {
   .br-kopf .br-nur-breit {
     display: none;
@@ -183,8 +190,11 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
   }
 }
 @container app (max-width: 1199px) {
-  /* Beschriftungen von Antrag und Einreichung stehen dann nur noch im Feld (aria-label, Tooltip) */
-  .br-kopf-label {
+  /* Beschriftungen von Antrag und Einreichung stehen dann nur noch im Feld (aria-label, Tooltip); „Speichern“ zeigt nur
+     das Symbol, die Sammelmarke nur „N Warnungen“ – vorgelesen wird weiter der ganze Name. So passen bei 1000 px auch
+     im ungünstigsten Fall (zwei Marken der Module, Warnungen, Rechtsstand) alle Einträge ohne Rang neben „Mehr“ */
+  .br-kopf-label,
+  .br-kopf-zusatz {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -226,12 +236,9 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  min-width: 60px;
-  flex: 0 3 auto;
+  min-width: 0;
 }
-.br-rechtsstand:empty {
-  display: none;
-}
+/* leer bleibt die Live-Region im Barrierefreiheitsbaum (kein display: none) – sie hat dann ohnehin keine Breite */
 
 .br-chip-rot {
   background: var(--br-rot-bg);

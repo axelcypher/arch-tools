@@ -21,17 +21,23 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   Angaben kommen aus der Projektdatei (.oap): Stammdaten, **Antragsmerkmale** des aktiven Antrags – gemeinsam mit PERMIO
   (Formulare), eine Änderung hier gilt dort und umgekehrt –, Festsetzungen aus TERRIO (GRZ-Nachweis), Geschosse, Räume
   und Wohnungen aus QUADRIO (Flächenrechner).
-- **Kopfleiste:** Antrag, **geplante Einreichung** (Stichtag – z. B. § 42a BauO NRW knüpft an das Datum des Bauantrags
-  an, § 90 an das Verfahrensrecht zur Zeit der Antragstellung), die aktiven Regelmodule, der Rechtsstand (Datum des
-  ältesten Stands der aktiven Normen), Warnmarken (nie geprüft, nicht abrufbar, geändert, neue Fassung), **Lage
-  abfragen**, **Rechtsstand prüfen**, **Prüfprotokoll …**, **Speichern** (Strg+S; ungespeicherte Änderungen zeigt der
-  Punkt an der Ecke des Knopfs, wie in allen Apps; die Rückfrage vor dem Verlassen sagt „Die Baurechtsprüfung hat
-  ungespeicherte Änderungen.“, denn ungespeichert ist nur der Teil von LEXIO im Projekt). „Gemeinde unbestätigt“ bzw.
-  „widersprüchlich“ ist ein Knopf und springt zum Gemeindeschlüssel. Ist die App schmaler als 1600 px, stehen „Lage
-  abfragen“ und „Rechtsstand prüfen“ im Menü **Mehr** (das gemeinsame Menü der Suite) und die Warnungen zum Rechtsstand
-  als eine Sammelmarke („2 Warnungen“, Einzelheiten im Tooltip und ihre Zahl als Hinweis an „Rechtsstand prüfen“ im Menü); unter 1200 px stehen „Antrag“ und „Einreichung“ nur noch im Feld.
-  Gekürzt wird nur die Liste der Module, Warnungen und „Speichern“ nie. „Fehlerprotokoll …“ im Menü „Einstellungen und Hilfe“ der Titelleiste ist die
-  Fehlersuche der App.
+- **Kopfleiste** (Werkzeugleiste nach design.md „Kopf- und Werkzeugleisten“): links **Speichern** (Strg+S;
+  ungespeicherte Änderungen zeigt der Punkt an der Ecke des Knopfs, wie in allen Apps; die Rückfrage vor dem Verlassen
+  sagt „Die Baurechtsprüfung hat ungespeicherte Änderungen.“, denn ungespeichert ist nur der Teil von LEXIO im
+  Projekt), dann Antrag, **geplante Einreichung** (Stichtag – z. B. § 42a BauO NRW knüpft an das Datum des Bauantrags
+  an, § 90 an das Verfahrensrecht zur Zeit der Antragstellung), die aktiven Regelmodule mit ihren Marken, der
+  Rechtsstand (Datum des ältesten Stands der aktiven Normen) mit den Warnmarken (nie geprüft, nicht abrufbar,
+  geändert, neue Fassung), rechts der Hauptknopf **Prüfprotokoll …** und zuletzt **Mehr** (Symbol ⋯) mit den seltenen
+  Befehlen **Lage abfragen** und **Rechtsstand prüfen** (Desktop; die Web-Version hat keine). „Gemeinde unbestätigt“
+  bzw. „widersprüchlich“ ist ein Knopf und springt zum Gemeindeschlüssel. Reicht die Breite nicht, kürzen sich die
+  Liste der Module und der Rechtsstand (ganz im Tooltip); danach wandert die Wahl des Antrags als Einfachauswahl ins
+  Menü „Mehr“. Marken, Einreichung, „Speichern“ und „Prüfprotokoll …“ bleiben immer sichtbar; eine laufende Abfrage
+  der Lage steht als „Lage wird abgefragt …“ beim Rechtsstand. Ist die App schmaler als
+  1600 px, stehen die Warnungen zum Rechtsstand als eine Sammelmarke da („2 Warnungen“, Einzelheiten im Tooltip und
+  ihre Zahl als Hinweis an „Rechtsstand prüfen“), die die Befehle aus „Mehr“ (Lage abfragen, Rechtsstand prüfen)
+  öffnet. Unter 1200 px stehen „Antrag“ und „Einreichung“ nur noch im Feld, „Speichern“ zeigt nur das Symbol und die
+  Sammelmarke nur „N Warnungen“ (vorgelesen wird der ganze Name) – so passen bei 1000 px alle Einträge ohne Rang neben
+  „Mehr“. „Fehlerprotokoll …“ im Menü „Einstellungen und Hilfe“ der Titelleiste ist die Fehlersuche der App.
 - **Koordinaten:** Ergebnisse der Geodienste und Bestätigungen zur Lage gelten nur, solange die Koordinaten zur Adresse
   in den Stammdaten passen. Fehlen sie oder wurde die Adresse geändert, sind sie nur noch Hinweis (auch der
   Gemeindeschlüssel aus ALKIS); der Kopf zeigt „Keine Koordinaten“ bzw. „Koordinaten veraltet“, „Bestätigen …“ wird dann
