@@ -310,7 +310,7 @@ describe('QUADRIO: Kontextmenü der Zeichenfläche und Werkzeugleiste (gemeinsam
   it('Werkzeugleiste nach design.md „Kopf- und Werkzeugleisten“: Seltenes in „Datei“ und „Exportieren“, sichtbar bleibt der Arbeitsablauf', () => {
     useEditor.getState().loadProject(createProject('Haus'), null, 'Haus.oap');
     const host = render();
-    const leiste = host.querySelector('.toolbar.leiste')!;
+    const leiste = host.querySelector('.toolbar.werkzeugleiste')!;
     const knopf = (text: string) => [...leiste.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent?.trim() === text);
     const menuePunkte = () => [...document.querySelectorAll('.menue [role="menuitem"]')].map((b) => b.textContent?.replace(/(Strg\+\S+)$/, '').trim());
     // Gegenprobe: seltene Befehle stehen nicht mehr als eigene Knöpfe in der Leiste
@@ -329,16 +329,16 @@ describe('QUADRIO: Kontextmenü der Zeichenfläche und Werkzeugleiste (gemeinsam
   it('schmales Fenster: „Exportieren“ wandert mit CSV/Excel ins Menü „Mehr“, Werkzeuge und Hauptknopf bleiben', () => {
     const original = leistenMessung.breite;
     // jeder Eintrag 100 px, die Leiste nur 600 px: nur der Eintrag mit Rang („Exportieren“) darf wandern
-    leistenMessung.breite = (el: Element) => (el.classList.contains('leiste') ? 600 : el.classList.contains('leiste-mehr') ? 30 : 100);
+    leistenMessung.breite = (el: Element) => (el.classList.contains('werkzeugleiste') ? 600 : el.classList.contains('werkzeugleiste-mehr') ? 30 : 100);
     try {
       useEditor.getState().loadProject(createProject('Haus'), null, 'Haus.oap');
       const host = render();
       act(() => void window.dispatchEvent(new Event('resize')));
-      const leiste = host.querySelector('.toolbar.leiste')!;
+      const leiste = host.querySelector('.toolbar.werkzeugleiste')!;
       const versteckt = [...leiste.querySelectorAll<HTMLElement>('[data-eintrag]')].filter((e) => e.hidden).map((e) => e.dataset.eintrag);
       expect(versteckt).toEqual(['export']);
-      const mehr = leiste.querySelector<HTMLButtonElement>('.leiste-mehr button')!;
-      expect(leiste.querySelector('.leiste-mehr')!.hasAttribute('hidden')).toBe(false);
+      const mehr = leiste.querySelector<HTMLButtonElement>('.werkzeugleiste-mehr button')!;
+      expect(leiste.querySelector('.werkzeugleiste-mehr')!.hasAttribute('hidden')).toBe(false);
       act(() => mehr.click());
       const punkt = (text: string) => [...document.querySelectorAll<HTMLButtonElement>('.menue [role="menuitem"]')].find((b) => b.textContent?.includes(text));
       act(() => punkt('Exportieren')!.click());
@@ -347,10 +347,10 @@ describe('QUADRIO: Kontextmenü der Zeichenfläche und Werkzeugleiste (gemeinsam
       expect(useEditor.getState().excelOpen).toBe(true);
       act(() => useEditor.getState().setExcelOpen(false));
       // Gegenprobe: genug Platz – „Mehr“ verschwindet, „Exportieren“ steht wieder in der Leiste
-      leistenMessung.breite = (el: Element) => (el.classList.contains('leiste') ? 2000 : el.classList.contains('leiste-mehr') ? 30 : 100);
+      leistenMessung.breite = (el: Element) => (el.classList.contains('werkzeugleiste') ? 2000 : el.classList.contains('werkzeugleiste-mehr') ? 30 : 100);
       act(() => void window.dispatchEvent(new Event('resize')));
       expect(leiste.querySelector('[data-eintrag="export"]')!.hasAttribute('hidden')).toBe(false);
-      expect(leiste.querySelector('.leiste-mehr')!.hasAttribute('hidden')).toBe(true);
+      expect(leiste.querySelector('.werkzeugleiste-mehr')!.hasAttribute('hidden')).toBe(true);
     } finally {
       leistenMessung.breite = original;
     }
