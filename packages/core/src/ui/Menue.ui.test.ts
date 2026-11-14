@@ -552,7 +552,7 @@ describe('gemeinsames Menü', () => {
           createElement(
             Fragment,
             null,
-            createElement(MenueKnopf, { key: 'k', punkte: () => [{ text: 'Farbschema', unter: [{ text: 'Hell' }, { text: 'Dunkel' }] }], ariaLabel: 'Mehr', pfeil: false }, 'M'),
+            createElement(MenueKnopf, { key: 'k', punkte: () => [{ text: 'Farbschema', unter: [{ text: 'Hell' }, { text: 'Dunkel' }] }], ariaLabel: 'Mehr', pfeil: false, children: 'M' }),
             createElement(MenueHost, { key: 'h' }),
           ),
         );
@@ -577,8 +577,8 @@ describe('gemeinsames Menü', () => {
       createElement(
         Fragment,
         null,
-        createElement(MenueKnopf, { key: 'a', punkte: () => [], ariaLabel: 'Mehr', pfeil: false }, createElement(Symbol, { name: 'mehr' })),
-        createElement(MenueKnopf, { key: 'b', punkte: () => [] }, 'Datei'),
+        createElement(MenueKnopf, { key: 'a', punkte: () => [], ariaLabel: 'Mehr', pfeil: false, children: createElement(Symbol, { name: 'mehr' }) }),
+        createElement(MenueKnopf, { key: 'b', punkte: () => [], children: 'Datei' }),
       ),
     );
     const [mehr, datei] = [...host.querySelectorAll('button')];
