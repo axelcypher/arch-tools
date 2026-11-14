@@ -5,7 +5,7 @@ import { aenderungenSpeichern, aenderungenVerwerfen, bestaetigen, UNGESPEICHERT_
  * Rückfrage vor dem Herauslösen bzw. Andocken einer App mit ungespeicherten Änderungen: zuerst die Folge („Beim
  * Herauslösen startet die App neu.“), dann ein kurzer Satz. Gehen die Änderungen verloren (ATLAS, FABRIO, LEXIO), ist das
  * der Satz der App (`ungespeichert`, sonst der allgemeine) und die Rückfrage bietet „Speichern“ an – ohne
- * Speichermöglichkeit „Änderungen an „…“ verwerfen?“ mit „Verwerfen und …“ als Gefahrknopf (aenderungenVerwerfen);
+ * Speichermöglichkeit „Änderungen an ‚…‘ verwerfen?“ mit „Verwerfen und …“ als Gefahrknopf (aenderungenVerwerfen);
  * sonst sagt der Satz, was aus den Änderungen wird. true = weiter.
  */
 export async function umzugBestaetigen(

@@ -68,7 +68,7 @@ describe('Titelleiste auf dem Desktop', () => {
     const verhindert = vi.fn();
     await act(async () => fenster.schliessenAngefragt!({ preventDefault: verhindert }));
     expect(verhindert).toHaveBeenCalled();
-    expect(dialog(host)?.textContent).toContain('Änderungen an „P1“ verwerfen?');
+    expect(dialog(host)?.textContent).toContain('Änderungen an ‚ATLAS – P1‘ verwerfen?');
     // ein zweites Alt+F4, solange die Rückfrage offen ist, fragt nicht noch einmal
     await act(async () => fenster.schliessenAngefragt!({ preventDefault: () => {} }));
     expect(host.querySelectorAll('.modal.rf')).toHaveLength(1);
@@ -159,7 +159,7 @@ describe('Titelleiste auf dem Desktop', () => {
     const host = await render({ app: 'LEXIO' });
     const knopf = () => [...host.querySelectorAll('button')].find((b) => b.textContent === 'Andocken')!;
     await act(async () => knopf().click());
-    expect(dialog(host)?.textContent).toContain('Änderungen an „LEXIO – P1“ verwerfen?');
+    expect(dialog(host)?.textContent).toContain('Änderungen an ‚LEXIO – P1‘ verwerfen?');
     expect(dialog(host)?.textContent).toContain('Beim Andocken startet die App neu, die Änderungen gehen verloren.');
     expect([...dialog(host)!.querySelectorAll('button')].map((b) => b.textContent)).toEqual(['Abbrechen', 'Verwerfen und andocken']);
     await antwort(host, 'Abbrechen');

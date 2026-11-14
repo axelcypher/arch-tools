@@ -103,11 +103,11 @@ export async function aenderungenSpeichern(name: string, speichern: () => Promis
 
 /**
  * Ungespeicherte Änderungen, die sich gerade nicht speichern lassen (die App hat keine Speichermöglichkeit, z. B. LEXIO
- * ohne Projektdatei): „Änderungen an „…“ verwerfen?“ mit dem Verlust im Text und „Verwerfen und <verb>“ als Gefahrknopf.
+ * ohne Projektdatei): „Änderungen an ‚…‘ verwerfen?“ mit dem Verlust im Text und „Verwerfen und <verb>“ als Gefahrknopf.
  * true = verwerfen und weiter.
  */
 export function aenderungenVerwerfen(name: string, text: string, verb: string): Promise<boolean> {
-  return bestaetigen(`Änderungen an „${name || 'Unbenannt'}“ verwerfen?`, text, `Verwerfen und ${verb}`, true);
+  return bestaetigen(`Änderungen an ‚${name || 'Unbenannt'}‘ verwerfen?`, text, `Verwerfen und ${verb}`, true);
 }
 
 /** Technischer Text eines Fehlers (für die aufklappbaren Einzelheiten) */

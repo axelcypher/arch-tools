@@ -122,7 +122,7 @@ export function TitleBar({ app, name, dirty, ungespeichert, onOpenLog, regeln, o
       if (dirty) {
         const weiter = onSpeichern
           ? await aenderungenSpeichern(name, onSpeichern, ungespeichertSatz(ungespeichert))
-          : await aenderungenVerwerfen(name, 'Die Änderungen gehen beim Beenden verloren.', 'beenden');
+          : await aenderungenVerwerfen(`${app}${name ? ` – ${name}` : ''}`, 'Die Änderungen gehen beim Beenden verloren.', 'beenden');
         if (!weiter) return;
       }
       // ausstehendes Schreiben (vorDemSchliessen) abwarten

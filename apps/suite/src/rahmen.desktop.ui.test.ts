@@ -175,7 +175,7 @@ describe('Rahmen-App auf dem Desktop', () => {
       ),
     );
     await herausloesen(host, 'LEXIO');
-    expect(dialog(host)?.textContent).toContain('Änderungen an „LEXIO – B1“ verwerfen?');
+    expect(dialog(host)?.textContent).toContain('Änderungen an ‚LEXIO – B1‘ verwerfen?');
     expect([...dialog(host)!.querySelectorAll('button')].map((b) => b.textContent)).toEqual(['Abbrechen', 'Verwerfen und herauslösen']);
     await antwort(host, 'Abbrechen');
     act(() => useRahmen.getState().schliessen('baurecht'));

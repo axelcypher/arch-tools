@@ -155,7 +155,7 @@ describe('Rahmen-App', () => {
     expect(useRahmen.getState().status.baurecht).toEqual({ name: 'B1', dirty: true, kannSpeichern: false });
     const dialog = () => host.querySelector('.modal.rf');
     act(() => (tab(host, 'LEXIO').querySelector('button[title="Schließen (Entf)"]') as HTMLButtonElement).click());
-    expect(dialog()?.textContent).toContain('Änderungen an „LEXIO – B1“ verwerfen?');
+    expect(dialog()?.textContent).toContain('Änderungen an ‚LEXIO – B1‘ verwerfen?');
     expect(dialog()?.textContent).toContain('Die Änderungen gehen beim Schließen verloren.');
     expect([...dialog()!.querySelectorAll('button')].map((b) => b.textContent)).toEqual(['Abbrechen', 'Verwerfen und schließen']);
     await act(async () => [...dialog()!.querySelectorAll('button')].find((b) => b.textContent === 'Abbrechen')!.click());
