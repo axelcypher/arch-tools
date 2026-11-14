@@ -351,12 +351,6 @@ button.link:hover {
   vertical-align: middle;
 }
 
-/* Übergang bis zum Fix in core: base.css „.leiste > :first-child { flex: 1 }“ (Seitenleisten) trifft auch den ersten
-   Eintrag der Werkzeugleiste (.toolbar.leiste) und dehnt „Datei“ – an die Designsystem-Sitzung gemeldet; danach entfernen */
-.toolbar.leiste > :first-child {
-  flex: none;
-}
-
 /* Meldungen über dem Inhalt: Gestalt und Farben aus .meldung (base.css), hier nur Lage und Liste */
 .grz-bericht {
   margin: var(--s3) var(--s3) 0;
