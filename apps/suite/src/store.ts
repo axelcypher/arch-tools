@@ -12,6 +12,8 @@ const KEY = 'arch-tools:rahmen';
 interface TabStatus {
   name: string;
   dirty: boolean;
+  /** Satz der App für die Rückfrage bei ungespeicherten Änderungen (sonst der allgemeine) */
+  ungespeichert?: string;
 }
 
 interface RahmenState {
@@ -68,7 +70,7 @@ export const useRahmen = create<RahmenState>()((set, get) => ({
     }),
   setStatus: (id, st) => {
     const alt = get().status[id];
-    if (alt && alt.name === st.name && alt.dirty === st.dirty) return;
+    if (alt && alt.name === st.name && alt.dirty === st.dirty && alt.ungespeichert === st.ungespeichert) return;
     set((s) => ({ status: { ...s.status, [id]: st } }));
   },
   herausgeloest: (id) => {

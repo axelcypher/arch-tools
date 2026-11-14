@@ -1,0 +1,38 @@
+{
+  "flaechenrechner": {
+    "stufe": "patch",
+    "notiz": "Interne Vorbereitung: die App kann der Rahmen-App einen genaueren Satz für die Rückfrage bei ungespeicherten Änderungen melden."
+  },
+  "grz": {
+    "stufe": "patch",
+    "notiz": "Interne Vorbereitung: die App kann der Rahmen-App einen genaueren Satz für die Rückfrage bei ungespeicherten Änderungen melden."
+  },
+  "kosten": {
+    "stufe": "patch",
+    "notiz": "Interne Vorbereitung: die App kann der Rahmen-App einen genaueren Satz für die Rückfrage bei ungespeicherten Änderungen melden."
+  },
+  "ordner": {
+    "stufe": "patch",
+    "notiz": "Interne Vorbereitung: die App kann der Rahmen-App einen genaueren Satz für die Rückfrage bei ungespeicherten Änderungen melden."
+  },
+  "entzerrung": {
+    "stufe": "patch",
+    "notiz": "Interne Vorbereitung: die App kann der Rahmen-App einen genaueren Satz für die Rückfrage bei ungespeicherten Änderungen melden."
+  },
+  "formulare": {
+    "stufe": "patch",
+    "notiz": "Interne Vorbereitung: die App kann der Rahmen-App einen genaueren Satz für die Rückfrage bei ungespeicherten Änderungen melden."
+  },
+  "ava": {
+    "stufe": "patch",
+    "notiz": "Rückfragen bei ungespeicherten Änderungen nennen das LV statt des Projekts – in FABRIO und beim Schließen in Arkly."
+  },
+  "baurecht": {
+    "stufe": "patch",
+    "notiz": "Interne Vorbereitung: die App kann der Rahmen-App einen genaueren Satz für die Rückfrage bei ungespeicherten Änderungen melden."
+  },
+  "suite": {
+    "stufe": "patch",
+    "notiz": "Die Rückfrage beim Schließen eines Tabs nennt, was ungespeichert ist, wenn die App es meldet (etwa „Das LV hat ungespeicherte Änderungen.“)."
+  }
+}

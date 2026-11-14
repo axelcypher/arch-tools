@@ -25,6 +25,19 @@ export interface RahmenStatus {
   /** Name des geöffneten Projekts */
   name: string;
   dirty: boolean;
+  /**
+   * Satz für die Rückfrage bei ungespeicherten Änderungen, z. B. „Das LV hat ungespeicherte Änderungen.“; leer oder
+   * länger als UNGESPEICHERT_MAX Zeichen: der allgemeine
+   */
+  ungespeichert?: string;
+}
+
+/** Höchstlänge des Satzes `ungespeichert` (RahmenStatus), den die Rahmen-App übernimmt */
+export const UNGESPEICHERT_MAX = 200;
+/** Satz `ungespeichert` geprüft: gekürzt, nicht leer, höchstens UNGESPEICHERT_MAX Zeichen – sonst undefined (allgemeiner Satz) */
+export function ungespeichertSatz(satz: unknown): string | undefined {
+  const s = typeof satz === 'string' ? satz.trim() : '';
+  return s && s.length <= UNGESPEICHERT_MAX ? s : undefined;
 }
 
 /** Ereignis eines herausgelösten Fensters an den Rahmen: wieder als Tab andocken */
@@ -46,11 +59,14 @@ export function rahmenApp(): string | null {
   return new URLSearchParams(window.location.search).get('app');
 }
 
-/** Im Tab bzw. herausgelösten Fenster: Name und ungespeicherte Änderungen an den Rahmen melden */
-export function anRahmenMelden(app: string, name: string, dirty: boolean): void {
+/**
+ * Im Tab bzw. herausgelösten Fenster: Name und ungespeicherte Änderungen an den Rahmen melden; `ungespeichert`: Satz für
+ * dessen Rückfrage beim Schließen (siehe RahmenStatus)
+ */
+export function anRahmenMelden(app: string, name: string, dirty: boolean, ungespeichert?: string): void {
   const modus = rahmenModus();
   if (!modus) return;
-  const nachricht: RahmenStatus = { typ: 'arch-tools:status', app, name, dirty };
+  const nachricht: RahmenStatus = { typ: 'arch-tools:status', app, name, dirty, ...(ungespeichert ? { ungespeichert } : {}) };
   try {
     if (modus === 'tab') window.parent.postMessage(nachricht, window.location.origin);
     else if (istTauri()) void import('@tauri-apps/api/event').then(({ emit }) => emit(AN_RAHMEN, { ...nachricht, kennung: rahmenApp() }));
