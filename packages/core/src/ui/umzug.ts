@@ -5,7 +5,8 @@ import { aenderungenSpeichern, bestaetigen, UNGESPEICHERT_ALLGEMEIN } from './Ru
  * Rückfrage vor dem Herauslösen bzw. Andocken einer App mit ungespeicherten Änderungen: zuerst die Folge („Beim
  * Herauslösen startet die App neu.“), dann ein kurzer Satz. Gehen die Änderungen verloren (ATLAS, FABRIO, LEXIO), ist das
  * der Satz der App (`ungespeichert`, sonst der allgemeine) und die Rückfrage bietet „Speichern“ an – ohne
- * Speichermöglichkeit nur „Verwerfen“ als Gefahrknopf; sonst sagt der Satz, was aus den Änderungen wird. true = weiter.
+ * Speichermöglichkeit „Ungespeicherte Änderungen verwerfen?“ mit „Verwerfen und …“ als Gefahrknopf (wie beim Schließen);
+ * sonst sagt der Satz, was aus den Änderungen wird. true = weiter.
  */
 export async function umzugBestaetigen(
   kennung: string | null,
@@ -21,5 +22,6 @@ export async function umzugBestaetigen(
   if (!umzug.verliert) return bestaetigen(`${app} ${verb.toLowerCase()}?`, `${folge} ${umzug.text}`, verb);
   const satz = `${folge} ${ungespeichertSatz(ungespeichert) ?? UNGESPEICHERT_ALLGEMEIN}`;
   if (speichern) return aenderungenSpeichern(`${app}${projekt ? ` – ${projekt}` : ''}`, speichern, satz);
-  return bestaetigen(`${app} ${verb.toLowerCase()}?`, satz, `Verwerfen und ${verb.toLowerCase()}`, true);
+  // ohne Speichermöglichkeit wie beim Schließen: Verwerfen als Gefahrknopf, der Verlust steht im Text
+  return bestaetigen('Ungespeicherte Änderungen verwerfen?', `${folge.slice(0, -1)}, die Änderungen gehen verloren.`, `Verwerfen und ${verb.toLowerCase()}`, true);
 }

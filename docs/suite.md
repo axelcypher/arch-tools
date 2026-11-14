@@ -117,7 +117,10 @@ Konfigurationsordner) und Projektdateien sind dieselben.
   gespeichert“ mit der Meldung „… antwortet nicht“ – die Rückfrage endet, der Tab bleibt offen. Ebenso, wenn das
   Fenster während des Speicherns zugeht oder der Tab neu lädt; Beenden bleibt danach möglich. Was ein Umzug aus Änderungen macht, steht je App in
   `BEIM_UMZUG` (`rahmen.ts`), die Rückfrage in `ui/umzug.ts`: zuerst die Folge („Beim Herauslösen startet die App
-  neu.“), dann ein kurzer Satz – bei Apps, die die Änderungen verlieren, ihr Satz `ungespeichert` mit *Speichern*.
+  neu.“), dann ein kurzer Satz. Apps, die die Änderungen verlieren, nennen ihren Satz `ungespeichert` und bieten
+  *Speichern* an; können sie gerade nicht speichern (LEXIO ohne Projektdatei), kommt „Ungespeicherte Änderungen
+  verwerfen?“ mit „Verwerfen und …“ als Gefahrknopf. Die übrigen fragen „<App> herauslösen?“ bzw. „… andocken?“ mit
+  „Ungespeicherte Änderungen bleiben als Zwischenstand erhalten.“ (PERMIO mit eigenem Text zu Entwurf und Dokumenten).
 - Die Apps teilen sich im Rahmen einen Ursprung und damit den Browser-Speicher; ihre Schlüssel und Datenbanken sind
   je App verschieden (`projektordner:…`, `formulare:…`, `arch-flaechen-tool`, `grz-nachweis`, `kostenermittlung`,
   `arch-tools-entzerrung`, `ava:…`, `baurecht:…`). Gemeinsam sind nur das Farbschema und die Nachricht „Speicherort der Einstellungen gewechselt“ (`arch-tools:konfig-ort`) – beides wirkt über das Ereignis `storage` sofort in allen Tabs und Fenstern.
@@ -167,8 +170,12 @@ am Tab bzw. in der Titelleiste ● erscheint.
    Tippen), dann Alt+F4 bzw. „Andocken“. Erwartet: bei Alt+F4 die Frage aus Schritt 4 (mit „Das LV hat ungespeicherte Änderungen.“),
    bei „Andocken“ dieselbe Frage wie oben; *Speichern* übernimmt die Eingabe, *Nicht speichern* schließt ohne weitere
    Rückfrage.
-6. **Herauslösen mit Änderungen:** FABRIO als Tab im LV ändern, ⧉. Erwartet: Frage mit *Speichern*; bei RECTIO nur
-   „RECTIO herauslösen?“. Bei ATLAS mit geänderten Stammdaten im Assistenten (Ergänzen): Frage mit *Speichern*;
+6. **Herauslösen mit Änderungen:** FABRIO als Tab im LV ändern, ⧉. Erwartet: Frage mit *Speichern* und „Beim
+   Herauslösen startet die App neu. Das LV hat ungespeicherte Änderungen.“; bei RECTIO nur „RECTIO herauslösen?“ mit
+   „… Ungespeicherte Änderungen bleiben als Zwischenstand erhalten.“ Gegenprobe ohne Speichermöglichkeit: LEXIO ohne
+   Projektdatei herauslösen, ändern, „Andocken“. Erwartet: „Ungespeicherte Änderungen verwerfen?“ mit „Beim Andocken
+   startet die App neu, die Änderungen gehen verloren.“ und *Verwerfen und andocken* (Gefahr); *Abbrechen* lässt das
+   Fenster stehen. Bei ATLAS mit geänderten Stammdaten im Assistenten (Ergänzen): Frage mit *Speichern*;
    *Speichern* legt nichts an, ATLAS bleibt als Tab und meldet „Nicht alles gespeichert“. Mit geändertem Text der
    Ordnerliste (Struktur, Textansicht) übernimmt *Speichern* ihn, danach wird herausgelöst.
 7. **Update mit Änderungen:** Liegt ein Update vor, in einem Tab und einem herausgelösten Fenster ändern, Update-Knopf
