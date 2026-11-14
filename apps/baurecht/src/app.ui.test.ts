@@ -653,6 +653,9 @@ describe('Designsystem: Rahmen-App und Umschalter', () => {
     expect(werteSenkrecht(['1', '2', '3', '4', '5'])).toBe(false);
     // viele kurze Werte (eigene Werte aus PERMIO): die Reihe wäre zu lang
     expect(werteSenkrecht(['Wohnen', 'Gewerbe', 'Handel', 'Büro', 'Praxis', 'Lager', 'Garage', 'Sonstig'])).toBe(true);
+    // viele einbuchstabige Werte (der Innenabstand je Knopf zählt mit) und zwei sehr lange Werte
+    expect(werteSenkrecht('ABCDEFGHIJKL'.split(''))).toBe(true);
+    expect(werteSenkrecht(['Bebauungsplan der Innenentwicklung', 'vorhabenbezogener Bebauungsplan'])).toBe(true);
   });
 });
 
