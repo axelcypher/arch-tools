@@ -601,8 +601,6 @@ describe('Baurecht – Oberfläche', () => {
     const satz = /Verfahren „verfahrensfrei“ festgelegt, ein neues Wohngebäude \(Einfamilienhaus\) ist aber nicht verfahrensfrei \(§\u00a062 Abs\.\u00a01 BauO NRW\) – mindestens vereinfachtes Baugenehmigungsverfahren \(§\u00a064\)/;
     expect(host.querySelector('.br-angaben-liste')!.textContent).not.toMatch(satz);
     const regionen = () => [...host.querySelectorAll('.br-angaben-liste > [role="status"]')].map((r) => r.textContent ?? '').join(' ');
-    // beim ersten Zeichnen wird nichts angesagt
-    expect(regionen()).not.toMatch(/festgelegt/);
     if (!host.querySelector('[data-merkmal="Verfahren"]')) act(() => knopf(host, /Antragsmerkmale/)!.click());
     act(() => knopf(host.querySelector('[data-merkmal="Verfahren"]')!, 'verfahrensfrei')!.click());
     const warnung = [...host.querySelectorAll('.br-angaben-liste .meldung.warnung')].find((w) => satz.test(w.textContent ?? ''));
@@ -636,6 +634,15 @@ describe('Baurecht – Oberfläche', () => {
     act(() => knopf(host.querySelector('[data-merkmal="Verfahren"]')!, 'vereinfachtes Verfahren')!.click());
     expect(host.querySelector('.br-angaben-liste')!.textContent).not.toMatch(satz);
     expect(regionen()).not.toMatch(satz);
+  });
+
+  it('Live-Region der Widersprüche: beim ersten Zeichnen mit schon vorhandener Warnung keine Ansage', async () => {
+    act(() => useBaurecht.getState().merkmalSetzen('Verfahren', 'verfahrensfrei'));
+    const host = render();
+    const satz = /Verfahren „verfahrensfrei“ festgelegt/;
+    expect([...host.querySelectorAll('.br-angaben-liste .meldung.warnung')].some((w) => satz.test(w.textContent ?? '')), 'Warnung steht').toBe(true);
+    await act(async () => void (await new Promise((r) => echtesSetTimeout(r, 400))));
+    expect([...host.querySelectorAll('.br-angaben-liste > [role="status"]')].map((r) => r.textContent ?? '').join(' ')).not.toMatch(satz);
   });
 
   it('Merkmal ändern wirkt sofort auf die Ampeln und gilt als ungespeicherte Änderung', () => {

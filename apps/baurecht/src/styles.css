@@ -1428,6 +1428,10 @@ h2.br-detail-name {
 .br-marke-knopf.br-widerspruch:hover:not(:disabled) {
   background: var(--fehler-bg);
 }
+/* gegen „button:hover“ der Grund-Styles (spezifischer): die Hinweis-Marke bleibt gelb */
+.br-marke-knopf.br-hinweis-marke:hover:not(:disabled):not(.br-widerspruch) {
+  background: var(--warn-bg);
+}
 /* Marke an einer Antwort, die nur über einen Hinweis bzw. Widerspruch gefragt wurde – in voller und kompakter Zeile gleich */
 .br-ausloeser-marke {
   white-space: nowrap;

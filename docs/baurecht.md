@@ -88,8 +88,8 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   Umfang „Abbruch mit Ersatzbau“ nur Hinweis ist), bleibt die Antwort beantwortet; Regeln, die sie verwenden, zählen
   aber den auslösenden Hinweis als nicht gesichert. Der Paragraf steht dann auf „prüfen“ („Nur Hinweis, nicht
   gesichert: Umfang der Beseitigung“), „Bestätigen …“ steht am Umfang; erst wenn er bestätigt ist, zählt die Antwort
-  wieder voll – auch über eine Kette solcher Fragen. An der Antwort steht dann eine Marke („über „Umfang der
-  Beseitigung“ bzw. kurz „nur Hinweis“, der Auslöser im Tooltip), die auf „Bestätigen …“ am Auslöser springt; auch
+  wieder voll – auch über eine Kette solcher Fragen. An der Antwort steht dann eine Marke „nur Hinweis“ (bei einem
+  widersprüchlichen Auslöser „Widerspruch“; der Auslöser im Tooltip), die auf „Bestätigen …“ am Auslöser springt; auch
   beim Festlegen von Hand zählt die Antwort nur als Hinweis (faktStatus) – eine ältere Festlegung, die sie noch als
   gesichert führte, gilt deshalb als überholt („… jetzt nur Hinweis“). Ebenso bei einer widersprüchlichen Angabe als Auslöser: die Regel
   trägt deren Widerspruch („Widerspruch: Umfang der Beseitigung“) – nicht bei Merkmalen wie Planungsrecht oder
