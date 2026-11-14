@@ -84,7 +84,7 @@ export interface PlanOptionen {
   ort?: string;
 }
 
-/** Windows: Pfade ab dieser Länge (einschließlich Laufwerk) öffnen Explorer und Office nicht (MAX_PATH = 260 mit Endzeichen) */
+/** Windows: Pfade ab dieser Länge (einschließlich Laufwerk) öffnen Dateimanager und andere Programme nicht (MAX_PATH = 260 mit Endzeichen) */
 export const WINDOWS_PFAD_GRENZE = 260;
 /** Windows: Ordner ab dieser Länge legt CreateDirectory gar nicht an (Platz für einen 8.3-Dateinamen bleibt frei) */
 export const WINDOWS_ORDNER_GRENZE = 248;
@@ -370,12 +370,12 @@ export function planen(stamm: Stammdaten, struktur: Struktur, vorlagen: Vorlage[
   // Desktop: zu lange Pfade schon vor dem Anlegen melden (die Prüfung fände sie erst hinterher)
   if (optionen.ort) {
     const basis = optionen.ordner === undefined ? verbinde(optionen.ort, ordner) : optionen.ort;
-    // Ordner ab 248 Zeichen legt Windows nicht an, Dateien ab 260 öffnen Explorer und Office nicht
+    // Ordner ab 248 Zeichen legt Windows nicht an, Dateien ab 260 öffnen Dateimanager und andere Programme nicht
     const lang = liste.filter((x) => !x.vorhanden && pfadZuLang(verbinde(basis, x.pfad), x.art === 'ordner')).map((x) => verbinde(basis, x.pfad));
     if (lang.length) {
       const laengster = lang.reduce((a, b) => (b.length > a.length ? b : a));
       warnungen.push(
-        `${lang.length} ${lang.length === 1 ? 'Pfad wäre' : 'Pfade wären'} zu lang für Windows (Ordner ab ${WINDOWS_ORDNER_GRENZE}, Dateien ab ${WINDOWS_PFAD_GRENZE} Zeichen) – Windows legt solche Ordner nicht an, Explorer und Office öffnen solche Dateien nicht. Ein kürzerer Kurzname, Ordnername oder Stammordner hilft. Längster (${laengster.length} Zeichen): ${laengster}`,
+        `${lang.length} ${lang.length === 1 ? 'Pfad wäre' : 'Pfade wären'} zu lang für Windows (Ordner ab ${WINDOWS_ORDNER_GRENZE}, Dateien ab ${WINDOWS_PFAD_GRENZE} Zeichen) – Windows legt solche Ordner nicht an, und solche Dateien öffnen der Dateimanager und andere Programme nicht. Ein kürzerer Kurzname, Ordnername oder Stammordner hilft. Längster (${laengster.length} Zeichen): ${laengster}`,
       );
     }
   }

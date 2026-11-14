@@ -95,8 +95,8 @@ auch beim Ergänzen.
    Angaben als Hinweis), „abgewählt“ bzw. – beim Ergänzen – „neu“. Beim Ergänzen zeigt er nur, was sich ändert
    (umschaltbar). Einzelne Einträge lassen sich abwählen (beim Ergänzen auch „Alle neuen Einträge abwählen“ und
    danach einzelne wieder wählen); mit einem Ordner entfällt alles darin. Zu lange Pfade meldet der Trockenlauf vorab:
-   Ordner ab 248 Zeichen (mit Stammordner) legt Windows gar nicht an, Dateien ab 260 Zeichen öffnen Explorer und
-   Office nicht. Der Knopf
+   Ordner ab 248 Zeichen (mit Stammordner) legt Windows gar nicht an, Dateien ab 260 Zeichen öffnen der Dateimanager
+   und andere Programme nicht. Der Knopf
    **„Projektordner anlegen“** bzw. „Projekt ergänzen“ steht wie „Weiter“ rechts unten in der Navigation, die beim
    Blättern sichtbar bleibt; ist er gesperrt, steht der Grund daneben (etwa „Erst den Stammordner für Projekte
    wählen.“). Unmittelbar vor dem Anlegen sieht der Assistent im Stammordner nach, ob es den Projektordner
@@ -291,7 +291,7 @@ Solange ein Schemafeld den Fokus hat, stehen darunter die Platzhalter als Chips 
 ([platzhalter.md](platzhalter.md)). Gespeicherte Schemata mit alten Namen (`{jahr}-{nr:3}`, `{nummer} {kurzname}`)
 gelten weiter; „Auf neue Namen umstellen“ am Feld stellt sie auf die neuen Namen um.
 
-Die **Ordnerliste** wird mit der Maus bearbeitet – ein Baum wie im Explorer, rechts die Angaben zur Auswahl:
+Die **Ordnerliste** wird mit der Maus bearbeitet – ein Baum wie im Dateimanager, rechts die Angaben zur Auswahl:
 
 - **Auswählen:** Klick; Strg+Klick und Umschalt+Klick wählen mehrere. Rechts dann Name, **Leistungsphasen** (Knöpfe
   1–9, „immer“ und Schnellwahl 1–4, 5–8, 6–7, 8) und „Dateinamen prüfen“ – bei mehreren Ordnern für alle auf einmal

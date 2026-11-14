@@ -101,7 +101,7 @@ function ZeilenKnopf({ pfad, onOeffnen, onFokus }: { pfad: string; onOeffnen: (e
 }
 
 /**
- * Struktur-Editor zum Klicken: der Ordnerbaum wie im Explorer – auswählen (Strg/Umschalt für mehrere), umbenennen
+ * Struktur-Editor zum Klicken: der Ordnerbaum wie im Dateimanager – auswählen (Strg/Umschalt für mehrere), umbenennen
  * (Doppelklick, F2), Unterordner anlegen, ziehen & ablegen, Rechtsklick-Menü, Tastatur. Für wiederkehrende
  * Unterstrukturen (Gewerke …): Kopieren und in beliebig viele markierte Ordner einfügen, Duplizieren, „Mehrere
  * anlegen“ (eingerückte Liste) und **Bausteine** – gespeicherte Unterstrukturen, die sich in alle markierten Ordner
