@@ -94,6 +94,9 @@ export function fassungZumStichtag<T extends { gueltigAb: string; gueltigBis?: s
     .find(() => true);
 }
 
+/** Reihenfolge bei gleichem Gültig-ab: die später abgelegte zuerst – nach der laufenden Nummer, erst dann nach der Uhr */
+const spaeterZuerst = (a: { nr?: number; abgerufen?: string }, b: { nr?: number; abgerufen?: string }): number => (b.nr ?? 0) - (a.nr ?? 0) || (b.abgerufen ?? '').localeCompare(a.abgerufen ?? '');
+
 export class Rechtsstand {
   /** Normen, die gerade geholt werden (kein doppelter Abruf) */
   private laufend = new Map<string, Promise<StandErgebnis>>();
@@ -168,7 +171,7 @@ export class Rechtsstand {
           const gleich = v.fassungen.filter((e) => e.kennung === f.kennung || e.kennung.startsWith(`${f.kennung}#`));
           let neu = !gleich.length;
           if (!neu) {
-            const juengste = [...gleich].sort((a, b) => b.abgerufen.localeCompare(a.abgerufen))[0];
+            const juengste = [...gleich].sort(spaeterZuerst)[0];
             const alt = await this.fassungLesen(juengste);
             neu = JSON.stringify(alt?.summen ?? null) !== JSON.stringify(f.summen);
           }
@@ -193,7 +196,9 @@ export class Rechtsstand {
     const eintrag = fassungZumStichtag(v.fassungen, stichtag);
     const fassung = eintrag ? await this.fassungLesen(eintrag) : null;
     // vorige Fassung: die nächstältere (für die Gegenüberstellung alt/neu)
-    const vorigerEintrag = eintrag ? [...v.fassungen].filter((e) => e !== eintrag && (e.gueltigAb < eintrag.gueltigAb || (e.gueltigAb === eintrag.gueltigAb && e.abgerufen < eintrag.abgerufen))).sort((a, b) => b.gueltigAb.localeCompare(a.gueltigAb) || b.abgerufen.localeCompare(a.abgerufen))[0] : undefined;
+    // bei gleichem Gültig-ab nach der laufenden Nummer (wie fassungZumStichtag) – zwei Abrufe in derselben Millisekunde
+    // haben denselben Zeitstempel, die vorige Fassung fehlte sonst
+    const vorigerEintrag = eintrag ? [...v.fassungen].filter((e) => e !== eintrag && (e.gueltigAb < eintrag.gueltigAb || (e.gueltigAb === eintrag.gueltigAb && spaeterZuerst(e, eintrag) > 0))).sort((a, b) => b.gueltigAb.localeCompare(a.gueltigAb) || spaeterZuerst(a, b))[0] : undefined;
     let vorige = vorigerEintrag ? await this.fassungLesen(vorigerEintrag) : null;
     // für alt/neu: die Fassung, an der die Regeln geprüft sind (die meisten passenden Prüfsummen) – nicht nur die vorige
     if (o.regelStand && Object.keys(o.regelStand).length && eintrag) {
