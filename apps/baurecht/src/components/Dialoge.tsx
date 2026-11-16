@@ -216,7 +216,11 @@ const merken = () => {
 function fokusZurueck(id: string) {
   setTimeout(() => {
     if (oeffner?.isConnected) oeffner.focus();
-    else document.querySelector<HTMLElement>(`[data-fakt="${CSS.escape(id)}"] :is(button:not([disabled]), input, select)`)?.focus();
+    else {
+      // die Zeile wurde neu aufgebaut: auf den gewählten Wert bzw. den Tabstopp der Gruppe, sonst das erste Bedienelement
+      const zeile = document.querySelector<HTMLElement>(`[data-fakt="${CSS.escape(id)}"]`);
+      (zeile?.querySelector<HTMLElement>('[aria-pressed="true"], .segment [tabindex="0"]') ?? zeile?.querySelector<HTMLElement>(':is(button:not([disabled]), input, select)'))?.focus();
+    }
     oeffner = null;
   }, 0);
 }

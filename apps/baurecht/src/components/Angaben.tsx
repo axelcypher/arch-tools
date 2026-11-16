@@ -653,6 +653,7 @@ function FaktZeile({
               type="button"
               className="small br-link"
               aria-label={`${name}: nicht überstimmen`}
+              title="Wieder den Wert nehmen, der sich aus anderen Angaben ergibt"
               onClick={() => {
                 useBaurecht.setState((s) => ({ ueberstimmen: { ...s.ueberstimmen, [id]: false } }));
                 setTimeout(() => document.querySelector<HTMLElement>(`.br-ergibt li[data-fakt="${CSS.escape(id)}"]`)?.closest('details')?.querySelector<HTMLElement>('summary')?.focus(), 0);
