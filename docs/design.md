@@ -159,14 +159,15 @@ und `ZEICHENFLAECHE_GRUND` in `planFarbe.ts` müssen zu `--canvas-filter` und `-
 
 Ein Einstellungsdialog für alle Apps: in jeder App „Datei → Einstellungen …“ (in FABRIO steht „Datei“ im Fuß der
 Navigation), in Arkly im Menü „Einstellungen und Hilfe“, überall auch mit Strg+, ohne offenes Menü. Er zeigt die
-Einstellungen der ganzen Suite, nicht nur der App, aus der er geöffnet wurde. Stand: Den Dialog und das Muster `.einst*`
-gibt es noch nicht; sie kommen als Baustein in `packages/core`, und jede App liefert dann ihre Seite (Felder und
-Prüfung) – wie, legt dieser Baustein fest.
+Einstellungen der ganzen Suite, nicht nur der App, aus der er geöffnet wurde. Den Dialog stellt
+`packages/core/src/ui/Einstellungen.tsx`; Apps hängen ihre Seite mit `einstellungsSeiteAnmelden` an (Felder, Entwurf,
+Sperre im Notbetrieb).
 
 - **Aufbau:** `Modal` mit `tabelle`; der Titel „Einstellungen“ steht als `h3` im Navigationskopf über der
   Seitenliste (Ausnahme mit eigenem Kopf, siehe „Dialoge“), rechts der Inhalt der gewählten Seite. Gemeinsames Muster
-  (künftig in `base.css`, aus dem `.es-*` von PERMIO und ATLAS gehoben): `.einst`, `.einst-nav` (Seitenliste, Einträge `.einst-nav-eintrag` mit
-  Symbol, Titel und kurzem Text), `.einst-inhalt`, `.einst-gruppe`. Unterabschnitte einer Seite sind `h4`.
+  in `base.css`: `.einst-form`, `.einst-nav` (Seitenliste, Einträge `.einst-nav-eintrag` mit Symbol, Titel und
+  kurzem Text), `.einst-inhalt`, `.einst-gruppe`; dazu `.einst-verweis` (`PfadeVerweis`) für den umgekehrten Weg, aus
+  einem Dialog der App auf eine Seite der Einstellungen. Unterabschnitte einer Seite sind `h4`.
 - **Seitenliste:** eine senkrechte Registerleiste wie unter „Umschalter“ (`role="tablist"`,
   `aria-orientation="vertical"`, Einträge `role="tab"` mit `aria-selected`, ↑/↓ wandern, Pos1/Ende, automatische
   Aktivierung, nur der gewählte Eintrag mit `tabIndex` 0); der Inhalt ist `role="tabpanel"` mit `aria-labelledby` auf
@@ -187,6 +188,9 @@ Prüfung) – wie, legt dieser Baustein fest.
   Ergebnisses); Fehler an der Stelle (`.feld-meldung`), nicht als Rückfrage.
 - Was nur ein Werkzeug betrifft (z. B. Vorlagen eines Exports), bleibt in dessen Dialog; der Einstellungsdialog
   verweist darauf, statt es zu kopieren.
+- Datenpflege mit eigenem Speichern je Eintrag (z. B. das Adressbuch von PERMIO) ist keine Einstellung: Sie bleibt ein
+  eigener Dialog der App; die App-Seite verweist mit einem Knopf darauf, und der Dialog liegt dann
+  als eigene Ebene über den Einstellungen (Esc schließt nur ihn).
 
 ## Druckvorschau
 
