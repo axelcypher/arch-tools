@@ -1658,7 +1658,7 @@ button.po-link:focus-visible {
 }
 .po-mail-vorschau dl {
   display: grid;
-  grid-template-columns: 80px 1fr;
+  grid-template-columns: minmax(80px, max-content) 1fr;
   gap: 2px 8px;
   margin: 6px 0;
 }
@@ -1806,4 +1806,44 @@ button.po-link:focus-visible {
 /* Platzhalter des festen Ablageordners (Katasterpläne): eingerückt unter „Ordner im Projektordner“ */
 .ka-ziel-platzhalter {
   margin-top: 4px;
+}
+
+/* ursprünglicher Absender einer intern weitergeleiteten Mail: Auswahl zum Korrigieren, bei Unklarheit als Warnung */
+.po-mail-ursprung {
+  margin: 6px 0 0 24px;
+}
+.po-mail-ursprung.meldung {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+}
+.po-mail-ursprung-text {
+  margin: 0;
+}
+.po-mail-ursprung-wahl {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s1);
+  font-size: var(--fs-s);
+}
+.po-mail-ursprung-wahl .field-label {
+  margin: 0;
+}
+.po-mail-ursprung-wahl select {
+  width: auto;
+  max-width: 100%;
+  padding: 2px 6px;
+  font-size: var(--fs-s);
+}
+.po-mail-ursprung-wahl input.po-mail-ursprung-andere {
+  flex: 1 1 220px;
+  width: auto;
+  min-width: 0;
+  padding: 2px 6px;
+  font-size: var(--fs-s);
+}
+.po-mail-ursprung-knoepfe {
+  display: flex;
+  gap: var(--s1);
 }

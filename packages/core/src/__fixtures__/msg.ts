@@ -163,17 +163,24 @@ export interface TestMail {
   betreff: string;
   vonName: string;
   vonMail: string;
+  /** statt `vonMail`: Exchange-interner Absender – nur X.500-Adresse, Adresstyp „EX“, keine SMTP-Adresse */
+  vonX500?: string;
   an: { name: string; mail: string; art?: 'an' | 'cc' }[];
   gesendet?: Date;
   empfangen?: Date;
   text?: string;
+  /** Text nur als HTML (PR_HTML), ohne PR_BODY */
+  html?: string;
+  nachrichtId?: string;
   anhaenge?: string[];
+  /** angehängte Nachrichten: eingebettet (wie beim Weiterleiten „als Anlage“) oder als .msg- bzw. .eml-Datei */
+  angehaengt?: ({ art: 'eingebettet'; mail: TestMail } | { art: 'msg'; name: string; mail: TestMail } | { art: 'eml'; name: string; inhalt: string })[];
   /** Zeichenketten als ANSI (001E) statt Unicode (001F) – wie ältere Nachrichten */
   ansi?: boolean;
 }
 
-/** Outlook-Nachricht (.msg) mit den gegebenen Angaben */
-export function testMsg(m: TestMail): Uint8Array<ArrayBuffer> {
+/** Speicher einer Nachricht; `kopf` = Länge des Eigenschaftskopfs (32 oben, 24 eingebettet) */
+function nachrichtSpeicher(m: TestMail, kopf: number): Speicher {
   const typ = m.ansi ? '001E' : '001F';
   const str = m.ansi ? ansi : u16;
   const s = (id: string, wert: string) => ({ [`__substg1.0_${id}${typ}`]: str(wert) });
@@ -189,19 +196,39 @@ export function testMsg(m: TestMail): Uint8Array<ArrayBuffer> {
       },
     };
   });
-  (m.anhaenge ?? []).forEach((n, i) => {
-    speicher[`__attach_version1.0_#${String(i).padStart(8, '0')}`] = { stroeme: { ...s('3707', n), '__properties_version1.0': festeEigenschaften(8, []) } };
+  const anhaenge: { n: string; a?: NonNullable<TestMail['angehaengt']>[number] }[] = [
+    ...(m.anhaenge ?? []).map((n) => ({ n })),
+    ...(m.angehaengt ?? []).map((a) => ({ n: a.art === 'eingebettet' ? a.mail.betreff : a.name, a })),
+  ];
+  anhaenge.forEach(({ n, a }, i) => {
+    const name = `__attach_version1.0_#${String(i).padStart(8, '0')}`;
+    if (a?.art === 'eingebettet') {
+      speicher[name] = {
+        stroeme: { ...s('3001', n), '__properties_version1.0': festeEigenschaften(8, [{ tag: 0x37050003, zahl: 5 }]) },
+        speicher: { '__substg1.0_3701000D': nachrichtSpeicher(a.mail, 24) },
+      };
+    } else {
+      const daten = a?.art === 'msg' ? testMsg(a.mail) : a?.art === 'eml' ? new TextEncoder().encode(a.inhalt) : null;
+      speicher[name] = {
+        stroeme: {
+          ...s('3707', n),
+          ...(daten ? { '__substg1.0_37010102': daten } : {}),
+          ...(a?.art === 'eml' ? s('370E', 'message/rfc822') : {}),
+          '__properties_version1.0': festeEigenschaften(8, [{ tag: 0x37050003, zahl: 1 }]),
+        },
+      };
+    }
   });
   const zeiten = [...(m.gesendet ? [{ tag: 0x00390040, zeit: m.gesendet }] : []), ...(m.empfangen ? [{ tag: 0x0e060040, zeit: m.empfangen }] : []), { tag: 0x0e070003, zahl: 1 }];
-  return cfbSchreiben({
+  return {
     stroeme: {
       ...s('001A', 'IPM.Note'),
       ...s('0037', m.betreff),
       ...s('003D', praefix),
       ...s('0E1D', m.betreff.slice(praefix.length)),
       ...s('0C1A', m.vonName),
-      ...s('0C1F', m.vonMail),
-      ...s('5D01', m.vonMail),
+      ...(m.vonX500 ? { ...s('0C1F', m.vonX500), ...s('0C1E', 'EX') } : { ...s('0C1F', m.vonMail), ...s('5D01', m.vonMail) }),
+      ...(m.nachrichtId ? s('1035', m.nachrichtId) : {}),
       ...s(
         '0E04',
         m.an
@@ -217,8 +244,14 @@ export function testMsg(m: TestMail): Uint8Array<ArrayBuffer> {
           .join('; '),
       ),
       ...(m.text ? s('1000', m.text) : {}),
-      '__properties_version1.0': festeEigenschaften(32, zeiten),
+      ...(m.html ? { '__substg1.0_10130102': new TextEncoder().encode(m.html) } : {}),
+      '__properties_version1.0': festeEigenschaften(kopf, zeiten),
     },
     speicher,
-  });
+  };
+}
+
+/** Outlook-Nachricht (.msg) mit den gegebenen Angaben */
+export function testMsg(m: TestMail): Uint8Array<ArrayBuffer> {
+  return cfbSchreiben(nachrichtSpeicher(m, 32));
 }
