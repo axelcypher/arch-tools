@@ -302,9 +302,9 @@ Felder und „Übernehmen“ gesperrt.
 „…/Kosten“, „…/Nachweise“); die Projektdatei liegt per Vorgabe in „03 Berechnungen/Flächen“, dem Ordner von QUADRIO.
 PERMIO sucht externe Antragsdokumente (Berechnungen, Nachweise) in den Berechnungsordnern aller drei Rechen-Apps und in
 den zusätzlich eingestellten Ordnern (Vorgabe wie bisher „Planung/Berechnungen“) – so findet es auch die direkten
-Exporte, sobald es sie gibt. Platzhalter der Suchordner setzt PERMIO mit den Angaben des jeweiligen Projekts ein. Die Einträge unter
-„Export“ (Berechnungsordner, Dateinamen, „PDF mitspeichern“) nutzt der direkte Export von QUADRIO, TERRIO und NUMIO;
-er kommt mit einem eigenen PR (bis dahin wirken sie nur auf die Suche von PERMIO).
+Exporte. Platzhalter der Suchordner setzt PERMIO mit den Angaben des jeweiligen Projekts ein. Die Einträge unter
+„Export“ (Berechnungsordner, Dateinamen, „PDF mitspeichern“) nutzt der direkte Export von QUADRIO, TERRIO und NUMIO
+(Knopf „Exportieren“, siehe „Prüfschritte auf Windows: Direktexport und PDF aus Excel“).
 
 **Ohne Verlust übernommen:** Die Werte bleiben unter ihren bisherigen Schlüsseln, die Apps lesen sie dort weiter
 („Vorgabe wiederherstellen“ schreibt die Vorgabe dort ausdrücklich hinein). Neue Einstellungen liegen in `allgemein.json`
@@ -348,5 +348,5 @@ sortiert); mit `entwurf` (geändert?, Fehler, übernehmen, verwerfen) gilt sie f
 5. Ein Rechner mit eigener alter PERMIO-Namensvorlage, ein zweiter mit einer anderen (Netzwerk): Auf dem zweiten zeigt
    die Seite die Abweichung mit der Wahl; nach der Wahl erscheint der Hinweis nicht mehr.
 6. Berechnungsordner von QUADRIO auf einen Unterordner mit Umlaut und Leerzeichen setzen („03 Berechnungen/Flächen alt“)
-   und dort eine Flächenberechnung ablegen: PERMIO findet sie als externes Antragsdokument (nach dem PR des direkten
-   Exports legt QUADRIO den Ordner beim Export selbst an).
+   und in QUADRIO „Exportieren“: QUADRIO legt den Ordner an und speichert dort; PERMIO findet die Datei als externes
+   Antragsdokument.
