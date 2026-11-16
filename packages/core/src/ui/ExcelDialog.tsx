@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { useId, useMemo, useState } from 'react';
-import type { PlaceholderDocs } from '../excel/context';
+import { createPortal } from 'react-dom';
+import type { VorlagenHinweis } from '../excel/pruefung';
 import type { VorlagenSpeicher } from '../excel/vorlage';
 import { vorlagePruefen } from '../excel/vorlage';
 import type { Project } from '../model';
@@ -23,9 +24,10 @@ export interface ExcelDialogProps {
   speicher: VorlagenSpeicher;
   /** Beschreibung des Standardlayouts */
   standardText: string;
-  /** Hinweis zu den Wiederholungszeilen (Sammlungen der App) */
-  hilfe: ReactNode;
-  docs: PlaceholderDocs;
+  /** Platzhalter-Referenz der App als eigener Dialog (PlatzhalterReferenz aus core/excel) */
+  referenz: (onClose: () => void) => ReactNode;
+  /** Vorlagenprüfung: mögliche Tippfehler der Vorlage (nach dem Export und mit „Vorlage prüfen“) */
+  pruefeVorlage?: (template: Uint8Array, p: Project) => Promise<VorlagenHinweis[]>;
   /** Projektdatei (Pfad bzw. Name) – Grundlage für Dateiname und Ordner des Exports */
   datei: string | null;
   /** Zusatz zum Dateinamen, z. B. „WoFl+BGF+BRI“ → „<Projektdatei> WoFl+BGF+BRI.xlsx“ */
@@ -38,7 +40,8 @@ export interface ExcelDialogProps {
 
 /**
  * Excel-Export: Standardlayout oder eigene Vorlage (.xlsx mit Platzhaltern). Enter exportiert, der Erstfokus liegt auf
- * „Exportieren“; Vorlage wählen, Muster und Platzhalter erscheinen nur bei „Eigene Vorlage“.
+ * „Exportieren“; Vorlage wählen, Muster, Platzhalter-Referenz und Vorlagenprüfung erscheinen nur bei „Eigene Vorlage“.
+ * Meldet die Vorlagenprüfung nach dem Export Hinweise, bleibt der Dialog offen und zeigt sie (mit Blatt und Zelle).
  */
 export function ExcelDialog(props: ExcelDialogProps) {
   const { project, update, onClose, speicher } = props;
@@ -50,7 +53,9 @@ export function ExcelDialog(props: ExcelDialogProps) {
   const [error, setError] = useState<string | null>(null);
   const [hinweis, setHinweis] = useState<string | null>(null);
   const keineVorlageId = useId();
-  const [showHelp, setShowHelp] = useState(false);
+  const [referenzOffen, setReferenzOffen] = useState(false);
+  /** Ergebnis der Vorlagenprüfung; `exportiert`: nach einem Export mit Vorlage */
+  const [pruefung, setPruefung] = useState<{ hinweise: VorlagenHinweis[]; exportiert: boolean } | null>(null);
 
   const chooseTemplate = async () => {
     const f = await pickFile('.xlsx,' + XLSX_MIME);
@@ -71,6 +76,7 @@ export function ExcelDialog(props: ExcelDialogProps) {
     setError(speicher.setGlobale(f.name, daten) ? null : 'Die Vorlage ist zu groß, um sie für weitere Projekte zu hinterlegen – sie wird nur mit diesem Projekt gespeichert.');
     setRev(rev + 1);
     setMode('template');
+    setPruefung(null);
   };
 
   const removeTemplate = () => {
@@ -78,6 +84,19 @@ export function ExcelDialog(props: ExcelDialogProps) {
     speicher.removeGlobale();
     setRev(rev + 1);
     setHinweis(null);
+    setPruefung(null);
+  };
+
+  const pruefen = async (exportiert: boolean): Promise<VorlagenHinweis[]> => {
+    if (!template || !props.pruefeVorlage) return [];
+    try {
+      const hinweise = await props.pruefeVorlage(template.daten, project);
+      setPruefung({ hinweise, exportiert });
+      return hinweise;
+    } catch (e) {
+      log.error('Vorlagenprüfung fehlgeschlagen', e);
+      return [];
+    }
   };
 
   const downloadSample = async () => {
@@ -109,7 +128,9 @@ export function ExcelDialog(props: ExcelDialogProps) {
         extension: 'xlsx',
         mime: XLSX_MIME,
       });
-      if (ok) onClose();
+      // Hinweise der Vorlagenprüfung zeigen, statt den Dialog zu schließen
+      const hinweise = ok && mode === 'template' ? await pruefen(true) : [];
+      if (ok && !hinweise.length) onClose();
     } catch (e) {
       log.error('Excel-Export fehlgeschlagen', e);
       setError(e instanceof Error ? e.message : String(e));
@@ -131,9 +152,14 @@ export function ExcelDialog(props: ExcelDialogProps) {
       <button type="button" className="small" onClick={downloadSample} disabled={busy}>
         Muster-Vorlage herunterladen
       </button>
-      <button type="button" className="small" aria-expanded={showHelp} onClick={() => setShowHelp(!showHelp)}>
-        {showHelp ? 'Platzhalter ausblenden' : 'Platzhalter anzeigen'}
+      <button type="button" className="small" aria-haspopup="dialog" onClick={() => setReferenzOffen(true)}>
+        Platzhalter-Referenz …
       </button>
+      {template && props.pruefeVorlage && (
+        <button type="button" className="small" onClick={() => void pruefen(false)} disabled={busy}>
+          Vorlage prüfen
+        </button>
+      )}
     </div>
   );
 
@@ -174,26 +200,24 @@ export function ExcelDialog(props: ExcelDialogProps) {
         </label>
         {mode === 'template' && vorlageKnoepfe}
 
-        {mode === 'template' && showHelp && (
-          <div className="placeholder-help">
-            <p className="small-text">{props.hilfe}</p>
-            {props.docs.map((g) => (
-              <div key={g.group}>
-                <h4>{g.group}</h4>
-                <table>
-                  <tbody>
-                    {g.keys.map(([k, d]) => (
-                      <tr key={k}>
-                        <td>
-                          <code>{k}</code>
-                        </td>
-                        <td>{d}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ))}
+        {mode === 'template' && pruefung && (
+          <div className={pruefung.hinweise.length ? 'meldung warnung' : 'meldung ok'} role="status">
+            {pruefung.hinweise.length ? (
+              <details>
+                <summary>
+                  {pruefung.exportiert ? 'Exportiert. ' : ''}Vorlage: {pruefung.hinweise.length === 1 ? '1 Hinweis' : `${pruefung.hinweise.length} Hinweise`}
+                </summary>
+                <ul className="small-text">
+                  {pruefung.hinweise.map((h, i) => (
+                    <li key={i}>
+                      {[h.blatt, h.ort].filter(Boolean).join(' · ')}: <code>{h.platzhalter}</code> – {h.text}
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            ) : (
+              'Vorlage geprüft: keine Hinweise.'
+            )}
           </div>
         )}
 
@@ -205,13 +229,15 @@ export function ExcelDialog(props: ExcelDialogProps) {
         )}
         <div className="dialog-buttons">
           <button type="button" onClick={onClose}>
-            Abbrechen
+            {pruefung?.exportiert ? 'Schließen' : 'Abbrechen'}
           </button>
           <button type="submit" className="primary" disabled={busy || ohneVorlage} aria-describedby={ohneVorlage ? keineVorlageId : undefined}>
             {busy ? 'Exportiere …' : 'Exportieren'}
           </button>
         </div>
       </form>
+      {/* eigener Dialog über dem Excel-Dialog – außerhalb, damit dessen Bildlauf ihn nicht beschneidet */}
+      {referenzOffen && createPortal(props.referenz(() => setReferenzOffen(false)), document.body)}
     </Modal>
   );
 }

@@ -51,8 +51,8 @@ export function vergleiche(v: Value | undefined, op: string, soll: string): bool
   return false;
 }
 
-/** Filter wie raum[wofl,geschoss=EG,flaeche>10]; `unbekannt`: Ergebnis für unbekannte benannte Filter */
-export function parseFilters(spec: string | undefined, named: Record<string, (r: Row) => boolean> = {}, unbekannt = true): ((r: Row) => boolean)[] {
+/** Filter wie raum[wofl,geschoss=EG,flaeche>10]; ein unbekannter benannter Filter (Tippfehler) trifft nie zu */
+export function parseFilters(spec: string | undefined, named: Record<string, (r: Row) => boolean> = {}): ((r: Row) => boolean)[] {
   if (!spec) return [];
   return spec
     .split(',')
@@ -66,7 +66,7 @@ export function parseFilters(spec: string | undefined, named: Record<string, (r:
       if (eq) {
         const [, k, op, v] = eq;
         fn = (r) => vergleiche(r[k], op, v);
-      } else fn = named[name.toLowerCase()] ?? (() => unbekannt);
+      } else fn = named[name.toLowerCase()] ?? (() => false);
       return neg ? (r: Row) => !fn(r) : fn;
     });
 }
@@ -88,7 +88,7 @@ export function repeatCollection(texts: string[], ctx: ExportContext): string | 
 
 /** {{sammlung:Name.feld}} */
 export function lookupNamed(key: string, ctx: ExportContext): Value | undefined {
-  const named = /^([a-z]+):(.+)\.([a-z0-9_]+)$/i.exec(key);
+  const named = /^([a-z][a-z0-9]*):(.+)\.([a-z0-9_]+)$/i.exec(key);
   if (!named) return undefined;
   const map = ctx.byName?.[named[1].toLowerCase()];
   if (!map) return undefined;
@@ -96,14 +96,20 @@ export function lookupNamed(key: string, ctx: ExportContext): Value | undefined 
   return row ? (row[named[3]] ?? '') : '';
 }
 
-function lookup(key: string, ctx: ExportContext, item?: { collection: string; row: Row }): Value | undefined {
-  if (key in ctx.scalars) return ctx.scalars[key];
-  // globale Variable mit Format: {{DATUM:TT.MM.JJJJ}}, {{JAHR:JJ}}
+/** Globale Variable mit Format: {{DATUM:TT.MM.JJJJ}}, {{JAHR:JJ}} – sonst undefined */
+export function globalMitFormat(key: string, ctx: ExportContext): Value | undefined {
   const iso = ctx.scalars['DATUM.iso'];
   if (typeof iso === 'string' && /^(DATUM|JAHR|JAHR_KURZ)\s*:/.test(key)) {
     const v = ersetzen(`{${key}}`, GLOBALE_VARIABLEN, { DATUM: iso, JAHR: iso, JAHR_KURZ: iso });
     if (v !== `{${key}}`) return v;
   }
+  return undefined;
+}
+
+function lookup(key: string, ctx: ExportContext, item?: { collection: string; row: Row }): Value | undefined {
+  if (key in ctx.scalars) return ctx.scalars[key];
+  const g = globalMitFormat(key, ctx);
+  if (g !== undefined) return g;
   if (item && key.startsWith(`${item.collection}.`)) return item.row[key.slice(item.collection.length + 1)];
   return lookupNamed(key, ctx);
 }

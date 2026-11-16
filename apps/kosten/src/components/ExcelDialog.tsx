@@ -1,5 +1,6 @@
 import { ExcelDialog as Dialog } from '@core/ui/ExcelDialog';
-import { KOSTEN_PLACEHOLDER_DOCS } from '../export/exportData';
+import { NUMIO_SCHEMA } from '../export/platzhalterSchema';
+import { PlatzhalterReferenz } from '@core/excel/PlatzhalterReferenz';
 import { stufeLabel } from '../stufen';
 import { useKosten } from '../store';
 import { vorlage } from '../vorlage';
@@ -15,15 +16,8 @@ export function ExcelDialog({ onClose }: { onClose: () => void }) {
       onClose={onClose}
       speicher={vorlage}
       standardText="Blatt „Kosten“: Grundlagen, Kostenübersicht nach Kostengruppen mit Bandbreite, Kennwerte des Bauwerks, Positionen, Mengen, Kostenstände und Hinweise – mit Summenformeln."
-      hilfe={
-        <>
-          Vorlagen sind normale .xlsx-Dateien mit Platzhaltern in doppelten geschweiften Klammern, z. B. <code>{'{{gesamt.brutto}}'}</code> oder <code>{'{{kg:300.mittel}}'}</code>.
-          Enthält eine Zeile <code>{'{{kg.…}}'}</code>, <code>{'{{position.…}}'}</code>, <code>{'{{menge.…}}'}</code>, <code>{'{{stand.…}}'}</code> oder{' '}
-          <code>{'{{hinweis.…}}'}</code>, wird sie je Eintrag wiederholt. Formatierung bleibt erhalten, Formeln wie <code>=SUMME(G5:G5)</code> werden auf alle eingefügten Zeilen
-          erweitert. Die Vorlage ist unabhängig von denen in QUADRIO (Flächenrechner) und TERRIO (GRZ-Nachweis).
-        </>
-      }
-      docs={KOSTEN_PLACEHOLDER_DOCS}
+      referenz={(zu) => <PlatzhalterReferenz schema={NUMIO_SCHEMA} onClose={zu} />}
+      pruefeVorlage={async (t, p) => (await import('../export/excel')).pruefeMitVorlage(t, p)}
       datei={datei}
       zusatz={(p) => `Kosten ${stufeLabel(p.kosten?.stufe)}`}
       musterName="Kosten-Vorlage.xlsx"

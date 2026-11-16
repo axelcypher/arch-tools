@@ -1,0 +1,14 @@
+{
+  "flaechenrechner": {
+    "stufe": "minor",
+    "notiz": "Excel-Vorlagen: vollständige Platzhalter-Referenz im Excel-Dialog und in der Doku, Vorlagenprüfung zeigt Tippfehler, unbekannte Filter liefern keine Datensätze mehr; neue fertige Summen nach DIN 277 je Nutzungsgruppe, Regel-/Sonderfall und ohne Putzabzug (z. B. summe.nnf_s_roh, hnf/nnf) und Filter freisitz."
+  },
+  "grz": {
+    "stufe": "minor",
+    "notiz": "Excel-Vorlagen: vollständige Platzhalter-Referenz im Excel-Dialog und in der Doku, Vorlagenprüfung zeigt Tippfehler, unbekannte Filter liefern keine Datensätze mehr; {{lageplan.angerechnet_auf}} und {{DATUM:…}} in Zellen funktionieren wieder."
+  },
+  "kosten": {
+    "stufe": "minor",
+    "notiz": "Excel-Vorlagen: vollständige Platzhalter-Referenz im Excel-Dialog und in der Doku, Vorlagenprüfung zeigt Tippfehler, unbekannte Filter liefern keine Datensätze mehr; {{kg2.…}} und {{#kg2}} funktionieren jetzt."
+  }
+}

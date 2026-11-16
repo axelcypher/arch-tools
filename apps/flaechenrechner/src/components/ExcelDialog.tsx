@@ -1,6 +1,7 @@
 import { computeProject } from '@core/calc';
 import { ExcelDialog as Dialog } from '@core/ui/ExcelDialog';
-import { PLACEHOLDER_DOCS } from '../core/exportData';
+import { QUADRIO_SCHEMA } from '../core/platzhalterSchema';
+import { PlatzhalterReferenz } from '@core/excel/PlatzhalterReferenz';
 import { vorlage } from '../platform/vorlage';
 import { useEditor } from '../store/store';
 
@@ -16,15 +17,8 @@ export function ExcelDialog() {
       onClose={() => setOpen(false)}
       speicher={vorlage}
       standardText="Blätter DIN 277, NRF nach Nutzungsgruppen, Raumliste und Wohnflächen – mit Summenformeln."
-      hilfe={
-        <>
-          Vorlagen sind normale .xlsx-Dateien mit Platzhaltern in doppelten geschweiften Klammern, z. B. <code>{'{{summe.bgf}}'}</code> oder{' '}
-          <code>{'{{geschoss:EG.nrf}}'}</code>. Enthält eine Zeile <code>{'{{raum.…}}'}</code>, <code>{'{{geschoss.…}}'}</code>,{' '}
-          <code>{'{{wohnung.…}}'}</code> oder <code>{'{{nutzung.…}}'}</code>, wird sie je Eintrag wiederholt. Formatierung bleibt erhalten, Formeln wie{' '}
-          <code>=SUMME(C5:C5)</code> werden auf alle eingefügten Zeilen erweitert.
-        </>
-      }
-      docs={PLACEHOLDER_DOCS}
+      referenz={(zu) => <PlatzhalterReferenz schema={QUADRIO_SCHEMA} onClose={zu} />}
+      pruefeVorlage={async (t, p) => (await import('../platform/excel')).pruefeMitVorlage(t, p, computeProject(p))}
       datei={datei}
       zusatz={() => 'WoFl+BGF+BRI'}
       musterName="Flächen-Vorlage.xlsx"

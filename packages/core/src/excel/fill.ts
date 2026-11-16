@@ -1,8 +1,14 @@
 import type { Cell, Style, Workbook, Worksheet } from 'exceljs';
 import type { Project } from '../model';
 import { anschriftEinzeilig } from '../model';
-import type { ExportContext, PlaceholderDocs, Value } from './context';
-import { resolveText } from './context';
+import type { ExportContext, Value } from './context';
+import { strFromU8, unzipSync } from 'fflate';
+import { KERN_THEMEN } from './kern';
+import type { VorlagenHinweis } from './pruefung';
+import { pruefeBlatt, pruefeText } from './pruefung';
+import { nutzbarText } from './referenz';
+import type { PlatzhalterSchema } from './schema';
+import { kopfFusszeileErsetzen, textfeldErsetzen } from './schema';
 import type { EvalValue } from './formulaEval';
 import { evaluateSheet } from './formulaEval';
 import type { CellValue, TemplateRow } from './template';
@@ -42,7 +48,7 @@ export async function fuelleVorlage(template: Uint8Array, ctx: ExportContext): P
   wb.calcProperties = { ...(wb.calcProperties ?? {}), fullCalcOnLoad: true };
   // Logos/Bilder der Vorlage (auch in Kopf-/Fußzeile) unverändert übernehmen
   // Textfelder in Zeichnungen erhalten ebenfalls ersetzte Platzhalter
-  return restoreTemplateGraphics(template, new Uint8Array(await wb.xlsx.writeBuffer()), (t) => String(resolveText(t, ctx)));
+  return restoreTemplateGraphics(template, new Uint8Array(await wb.xlsx.writeBuffer()), (t) => textfeldErsetzen(t, ctx));
 }
 
 const HF_KEYS = ['oddHeader', 'oddFooter', 'evenHeader', 'evenFooter', 'firstHeader', 'firstFooter'] as const;
@@ -54,10 +60,7 @@ function fillHeaderFooter(ws: Worksheet, ctx: ExportContext) {
   for (const k of HF_KEYS) {
     const t = hf[k];
     if (typeof t !== 'string' || !t.includes('{{')) continue;
-    hf[k] = t.replace(/\{\{[^{}]+\}\}/g, (m) => {
-      const v = resolveText(m, ctx);
-      return v === m ? m : (typeof v === 'number' ? v.toLocaleString('de-DE', { maximumFractionDigits: 2 }) : String(v)).replace(/&/g, '&&');
-    });
+    hf[k] = kopfFusszeileErsetzen(t, ctx);
   }
 }
 
@@ -227,28 +230,117 @@ export const colLetter = (n: number) => {
   return s;
 };
 
-/** Blatt „Platzhalter“ der Muster-Vorlagen: Einleitung und alle Platzhalter (ohne Klammern, damit sie nicht ersetzt werden) */
-export function platzhalterBlatt(wb: Workbook, docs: PlaceholderDocs, einleitung: string) {
-  const help = wb.addWorksheet('Platzhalter');
-  help.getCell('A1').value = 'Platzhalter für Excel-Vorlagen';
-  help.getCell('A1').font = { bold: true, size: 14 };
-  help.getCell('A2').value = einleitung;
-  help.getCell('A2').alignment = { wrapText: true, vertical: 'top' };
-  help.mergeCells('A2:B2');
-  help.getRow(2).height = 90;
-  let r = 4;
-  for (const g of docs) {
-    help.getCell(`A${r}`).value = g.group;
-    help.getCell(`A${r}`).font = { bold: true };
+/** Platzhalter ohne Klammern – sonst ersetzt der Export sie, wenn die Muster-Vorlage selbst als Vorlage dient */
+const ohneKlammern = (t: string) => t.replace(/\{\{\s*([^{}]*?)\s*\}\}/g, '$1');
+
+/**
+ * Blatt „Platzhalter“ der Muster-Vorlagen aus dem Schema der App: gemeinsame Syntax, dann alle Einzelwerte und
+ * Sammlungen mit Feldern, Filtern, „Enthält“ und Nutzbarkeit (Platzhalter ohne Klammern, damit sie nicht ersetzt werden).
+ */
+export function platzhalterBlattAusSchema(wb: Workbook, schema: PlatzhalterSchema) {
+  const ws = wb.addWorksheet('Platzhalter');
+  let r = 1;
+  const text = (a: string, opts: { fett?: boolean; gross?: boolean; grau?: boolean } = {}) => {
+    const c = ws.getCell(r, 1);
+    c.value = ohneKlammern(a);
+    c.font = { bold: !!opts.fett, size: opts.gross ? 14 : 11, color: opts.grau ? { argb: 'FF6B7280' } : undefined };
+    c.alignment = { wrapText: true, vertical: 'top' };
+    ws.mergeCells(r, 1, r, 4);
+    if (!opts.gross && !opts.fett) ws.getRow(r).height = Math.max(15, Math.ceil(a.length / 150) * 15);
     r++;
-    for (const [k, d] of g.keys) {
-      help.getCell(`A${r}`).value = k;
-      help.getCell(`B${r}`).value = d;
-      help.getCell(`B${r}`).alignment = { wrapText: true };
-      r++;
+  };
+  const zeile = (werte: string[], fett = false) => {
+    werte.forEach((v, i) => {
+      const c = ws.getCell(r, i + 1);
+      c.value = ohneKlammern(v);
+      c.alignment = { wrapText: true, vertical: 'top' };
+      if (fett) c.font = { bold: true };
+    });
+    r++;
+  };
+  text(`Platzhalter für Excel-Vorlagen (${schema.app})`, { gross: true });
+  text(
+    'Platzhalter stehen in der Vorlage in doppelten geschweiften Klammern, z. B. {{projekt.name}} – hier ohne Klammern, damit dieses Blatt nicht selbst ersetzt wird. Dieses Blatt kann gelöscht werden. Beispiele mit Ergebnis: Excel-Dialog, „Platzhalter-Referenz …“.',
+    { grau: true },
+  );
+  r++;
+  text('Syntax (alle Apps)', { fett: true });
+  for (const t of KERN_THEMEN) {
+    zeile([t.titel], true);
+    for (const a of t.absaetze) text(a);
+    if (t.tabelle) for (const [i, z] of t.tabelle.entries()) zeile(z, i === 0);
+    r++;
+  }
+  for (const a of schema.abschnitte) {
+    if (a.art === 'einzelwerte') {
+      text(`${a.titel} – Einzelwerte`, { fett: true });
+      text(`Nutzbar: ${nutzbarText('einzelwert')}; keine Filter.${a.text ? ` ${a.text}` : ''}`, { grau: true });
+      if (a.tabelle) for (const [i, z] of a.tabelle.entries()) zeile(z, i === 0);
+      zeile(['Platzhalter', 'Bedeutung', 'Einheit'], true);
+      for (const w of a.werte) zeile([w.schluessel, w.text, w.einheit ?? '']);
+    } else {
+      text(`${a.name} – ${a.titel} (Sammlung, Zeile ${a.datensatz})`, { fett: true });
+      text(`${a.text} Nutzbar: ${nutzbarText('sammlung')}; Block #${a.name} … /${a.name}; benannte und allgemeine Filter.`, { grau: true });
+      text(a.enthaelt.length ? `Enthält (im Block #${a.name} eingeschränkt): ${a.enthaelt.map((e) => `${e.sammlung} – ${e.text}`).join('; ')}` : `Enthält: keine Unterpunkte.`, { grau: true });
+      if (a.nichtEingeschraenkt?.length) text(`Nicht eingeschränkt: ${a.nichtEingeschraenkt.map((e) => `${e.sammlung} – ${e.text}`).join('; ')}`, { grau: true });
+      if (a.zugriff) text(`Benannter Einzelzugriff: ${a.name}:NAME.feld – ${a.zugriff.text} Beispiel: ${a.zugriff.beispiel}`, { grau: true });
+      if (a.tabelle) for (const [i, z] of a.tabelle.entries()) zeile(z, i === 0);
+      zeile(['Platzhalter', 'Bedeutung', 'Einheit'], true);
+      for (const f of a.felder) zeile([`${a.name}.${f.name}`, f.text, f.einheit ?? '']);
+      for (const f of a.filter) zeile([`${a.name}[${[f.name, ...(f.aliase ?? [])].join('] / [')}]`, `Filter: ${f.text}`, '']);
+      for (const h of a.hinweise ?? []) text(h, { grau: true });
     }
     r++;
   }
-  help.getColumn(1).width = 40;
-  help.getColumn(2).width = 90;
+  ws.getColumn(1).width = 42;
+  ws.getColumn(2).width = 80;
+  ws.getColumn(3).width = 10;
+  ws.getColumn(4).width = 10;
+}
+
+/** Zellinhalte eines Blatts als Vorlagenzeilen (ohne Formatierung) – für die Vorlagenprüfung */
+function blattZeilen(ws: Worksheet): TemplateRow[] {
+  const rows: TemplateRow[] = [];
+  for (let r = 1; r <= ws.rowCount; r++) {
+    const cells = new Map<number, CellValue>();
+    ws.getRow(r).eachCell({ includeEmpty: false }, (cell, c) => {
+      if (formulaOf(cell) !== null) return;
+      const v = cell.value as CellValue;
+      if (typeof v === 'string' || (v && typeof v === 'object' && 'richText' in v)) cells.set(c, v);
+    });
+    rows.push({ r, cells });
+  }
+  return rows;
+}
+
+/** Texte der Textfelder und Formen (Zeichnungen) einer Vorlage */
+function textfelder(template: Uint8Array): string[] {
+  try {
+    const files = unzipSync(template, { filter: (f) => /^xl\/drawings\/drawing\d+\.xml$/.test(f.name) });
+    return Object.values(files).flatMap((d) => [...strFromU8(d).matchAll(/<xdr:txBody>([\s\S]*?)<\/xdr:txBody>/g)].map((m) => [...m[1].matchAll(/<a:t>([^<]*)<\/a:t>/g)].map((t) => t[1]).join('')));
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Vorlagenprüfung einer .xlsx-Vorlage: mögliche Tippfehler mit Blatt und Zelle (Zellen, Kopf-/Fußzeilen, Textfelder).
+ * Ändert nichts an der Ausgabe. Das Schema der App ergänzt „Filter gehört zu einer anderen Sammlung“.
+ */
+export async function pruefeVorlage(template: Uint8Array, ctx: ExportContext, schema?: PlatzhalterSchema): Promise<VorlagenHinweis[]> {
+  const ExcelJS = await excel();
+  const wb = new ExcelJS.Workbook();
+  await wb.xlsx.load(template.buffer.slice(template.byteOffset, template.byteOffset + template.byteLength) as ArrayBuffer);
+  const hinweise: VorlagenHinweis[] = [];
+  wb.eachSheet((ws) => {
+    // das Hilfeblatt der Muster-Vorlage enthält Platzhalter ohne Klammern – nichts zu prüfen
+    hinweise.push(...pruefeBlatt(blattZeilen(ws), ctx, { blatt: ws.name, schema }));
+    const hf = ws.headerFooter as Record<string, unknown> | undefined;
+    for (const k of HF_KEYS) {
+      const t = hf?.[k];
+      if (typeof t === 'string' && t.includes('{{')) hinweise.push(...pruefeText(t, ctx, { blatt: ws.name, ort: 'Kopf-/Fußzeile' }, schema));
+    }
+  });
+  for (const t of textfelder(template)) if (t.includes('{{')) hinweise.push(...pruefeText(t, ctx, { ort: 'Textfeld' }, schema));
+  return hinweise;
 }

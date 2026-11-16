@@ -1,7 +1,8 @@
 import type { Workbook, Worksheet } from 'exceljs';
 import type { ProjectResult } from '@core/calc';
-import { buildExportContext, PLACEHOLDER_DOCS } from '../core/exportData';
-import { colLetter, excel, fuelleVorlage, NUM, platzhalterBlatt, styleHeader, styleSum, titel as title, toCellValue, writeFormulaResults } from '@core/excel/fill';
+import { buildExportContext } from '../core/exportData';
+import { QUADRIO_SCHEMA } from '../core/platzhalterSchema';
+import { colLetter, excel, fuelleVorlage, NUM, platzhalterBlattAusSchema, pruefeVorlage, styleHeader, styleSum, titel as title, toCellValue, writeFormulaResults } from '@core/excel/fill';
 import type { Project } from '@core/model';
 import { NUF_IDS, nutzungInfo, ZWEITE_BV_KURZ } from '@core/norms';
 import { raumRechenweg } from '../core/raumRechenweg';
@@ -20,6 +21,11 @@ const round = (v: number, d: number) => Math.round(v * 10 ** d) / 10 ** d;
 
 export async function exportWithTemplate(template: Uint8Array, project: Project, result: ProjectResult, date = new Date()): Promise<Uint8Array> {
   return fuelleVorlage(template, buildExportContext(project, result, date));
+}
+
+/** Vorlagenprüfung: mögliche Tippfehler der Vorlage (Blatt, Zelle) */
+export async function pruefeMitVorlage(template: Uint8Array, project: Project, result: ProjectResult) {
+  return pruefeVorlage(template, buildExportContext(project, result), QUADRIO_SCHEMA);
 }
 
 /* ---------- Standardlayout ---------- */
@@ -359,6 +365,35 @@ export async function buildSampleTemplate(): Promise<Uint8Array> {
     ['A', 'B', 'C', 'D'].forEach((c) => (ws.getCell(`${c}14`).border = { top: MEDIUM, bottom: THIN }));
   }
 
+  /* DIN 277 nach Regel- und Sonderfall: fertige Summen (summe.<basis>_r/_s/_roh), keine Raumlisten nötig */
+  {
+    const ws = wb.addWorksheet('DIN 277 R+S');
+    sampleHeader(ws, 'Grundflächen nach DIN 277 – Regelfall (R) und Sonderfall (S)', 'D');
+    ws.getRow(10).values = ['', 'R', 'S', 'gesamt'];
+    ws.getRow(10).font = { bold: true };
+    const zeilen: [string, string][] = [
+      ['NUF 1–6', 'hnf'],
+      ['NUF 7', 'nnf'],
+      ['TF', 'tf'],
+      ['VF', 'vf'],
+      ['NRF', 'nrf'],
+      ['NRF ohne Putzabzug', 'nrf_roh'],
+      ['KGF', 'kgf'],
+      ['KGF (BGF − NRF ohne Putzabzug)', 'kgf_roh'],
+      ['BGF', 'bgf'],
+    ];
+    zeilen.forEach(([titel, k], i) => {
+      const [basis, roh] = k.endsWith('_roh') ? [k.slice(0, -4), '_roh'] : [k, ''];
+      ws.getRow(11 + i).values = [titel, `{{summe.${basis}_r${roh}}}`, `{{summe.${basis}_s${roh}}}`, `{{summe.${k}}}`];
+      ['B', 'C', 'D'].forEach((c) => (ws.getCell(`${c}${11 + i}`).numFmt = M2));
+    });
+    ws.getRow(19).font = { bold: true };
+    ['A', 'B', 'C', 'D'].forEach((c) => (ws.getCell(`${c}19`).border = { top: MEDIUM, bottom: THIN }));
+    ws.getRow(21).values = ['NUF 1–6 entspricht der früheren Hauptnutzfläche (HNF), NUF 7 der früheren Nebennutzfläche (NNF) nach DIN 277-2:2005.'];
+    ws.getRow(21).font = { italic: true, color: { argb: 'FF6B7280' } };
+    ws.getColumn(1).width = 34;
+  }
+
   /*
    * BRI wie in einer Büro-Berechnung: Normalgeschosse als Geschosshöhe × BGF (eine Zeile je Umriss),
    * Dachgeschosse je Körper mit geschlossener Formel (z. B. Walmdach B × H × (3 × L − B) / 6).
@@ -453,11 +488,7 @@ export async function buildSampleTemplate(): Promise<Uint8Array> {
 
   /* Hilfe */
   {
-    platzhalterBlatt(
-      wb,
-      PLACEHOLDER_DOCS,
-      'Platzhalter in doppelten geschweiften Klammern werden beim Export ersetzt. Zeilen mit raum.*, geschoss.*, bgf.*, wohnung.*, nutzung.*, bri.* oder koerper.* werden je Datensatz wiederholt, #geschoss … /geschoss wiederholt ganze Zeilenblöcke; leere Blöcke entfallen; #wenn … /wenn gibt einen Abschnitt nur unter einer Bedingung aus. Formeln (z. B. SUMME über eine Wiederholungszeile) werden automatisch auf die erzeugten Zeilen erweitert. Steht nur ein Platzhalter in der Zelle, wird eine Zahl eingetragen und das Zellformat der Vorlage bleibt erhalten. Dieses Blatt kann gelöscht werden.',
-    );
+    platzhalterBlattAusSchema(wb, QUADRIO_SCHEMA);
   }
 
   return new Uint8Array(await wb.xlsx.writeBuffer());

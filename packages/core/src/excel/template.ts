@@ -1,5 +1,5 @@
 import type { ExportContext, Row, Value } from './context';
-import { belongsTo, isCollection, lookupNamed, parseFilters, vergleiche } from './context';
+import { belongsTo, globalMitFormat, isCollection, lookupNamed, parseFilters, vergleiche } from './context';
 
 type Collection = string;
 
@@ -13,7 +13,8 @@ type Collection = string;
  *    Steht die Markierung allein in einer Zeile, entfällt diese Zeile in der Ausgabe.
  *  - Eine Zeile mit einem Platzhalter einer noch nicht gebundenen Sammlung ({{raum.name}}) wird je
  *    Datensatz wiederholt – innerhalb eines Blocks nur für die zugehörigen Datensätze.
- *  - Filter: {{raum[wofl].name}}; Modifikator |einmal: nur in der ersten Wiederholungszeile.
+ *  - Filter: {{raum[wofl].name}} (unbekannte benannte Filter treffen nie zu; an einer im Block gebundenen Sammlung
+ *    wirkt der Filter als Bedingung auf deren Datensatz); Modifikator |einmal: nur in der ersten Wiederholungszeile.
  *  - {{#wenn raum[nebenflaeche]}} … {{/wenn}} gibt den Block einmal aus, wenn die Bedingung zutrifft (siehe bedingung).
  *  - Leere Blockinstanzen entfallen: Wiederholungszeilen und verschachtelte Blöcke liefern keinen Datensatz,
  *    bzw. – ohne solche – alle Zahlenwerte des Blockdatensatzes sind 0 (laufende Nummern zählen nicht).
@@ -37,8 +38,8 @@ export interface OutputRow {
 /* ---------- Platzhalter ---------- */
 
 const PH = () => /\{\{\s*([^{}]+?)\s*\}\}/g;
-const BLOCK_START = /^#\s*([a-z]+)\s*(?:\[([^\]]*)\])?$/i;
-const BLOCK_END = /^\/\s*([a-z]+)\s*$/i;
+const BLOCK_START = /^#\s*([a-z][a-z0-9]*)\s*(?:\[([^\]]*)\])?$/i;
+const BLOCK_END = /^\/\s*([a-z][a-z0-9]*)\s*$/i;
 const WENN_START = /^#\s*wenn\b\s*(.+)$/i;
 /** Vergleich in einer Bedingung, Operator außerhalb eckiger Klammern: summe.wofl>100, raum[wofl]>=3 */
 const VERGLEICH = /^((?:[^[\]=!<>]|\[[^\]]*\])+?)\s*(!=|>=|<=|=|>|<)\s*(.*)$/;
@@ -60,9 +61,11 @@ function parseKey(raw: string, ctx: ExportContext): KeyInfo {
     mod = key.slice(pipe + 1).trim().toLowerCase();
     key = key.slice(0, pipe).trim();
   }
-  const named = /^([a-z]+):(.+)\.([a-z0-9_]+)$/i.exec(key);
+  // ein vorhandener Einzelwert geht vor – auch wenn sein Präfix wie eine Sammlung heißt ({{lageplan.angerechnet_auf}})
+  if (Object.prototype.hasOwnProperty.call(ctx.scalars, key)) return { scalar: key, mod };
+  const named = /^([a-z][a-z0-9]*):(.+)\.([a-z0-9_]+)$/i.exec(key);
   if (named && ctx.byName?.[named[1].toLowerCase()]) return { named: key, mod };
-  const m = /^([a-z]+)(?:\[([^\]]*)\])?\.([a-z0-9_]+)$/i.exec(key);
+  const m = /^([a-z][a-z0-9]*)(?:\[([^\]]*)\])?\.([a-z0-9_]+)$/i.exec(key);
   if (m && isCollection(ctx, m[1].toLowerCase())) return { coll: m[1].toLowerCase(), filter: m[2], field: m[3], mod };
   return { scalar: key, mod };
 }
@@ -80,9 +83,12 @@ function lookup(k: KeyInfo, ctx: ExportContext, b: Bindings): Value | undefined 
   if (k.coll && k.field) {
     const row = b[k.coll];
     if (!row) return undefined;
-    return k.field.startsWith('_') ? undefined : (row[k.field] ?? '');
+    if (k.field.startsWith('_')) return undefined;
+    // Filter an einer schon gebundenen Sammlung: Bedingung auf den gebundenen Datensatz (sonst leer)
+    if (k.filter && !parseFilters(k.filter, ctx.filters).every((p) => p(row))) return '';
+    return row[k.field] ?? '';
   }
-  if (k.scalar !== undefined && k.scalar in ctx.scalars) return ctx.scalars[k.scalar];
+  if (k.scalar !== undefined) return k.scalar in ctx.scalars ? ctx.scalars[k.scalar] : globalMitFormat(k.scalar, ctx);
   return undefined;
 }
 
@@ -269,12 +275,12 @@ function erfuellt(e: string, ctx: ExportContext, b: Bindings): boolean {
     const r: Row = {};
     for (const [k, v] of Object.entries(ctx.scalars)) if (k.startsWith('summe.')) r[k.slice(6)] = v;
     for (const row of Object.values(b)) if (row) Object.assign(r, row);
-    return parseFilters(bereich[1], ctx.filters, false).every((p) => p(r));
+    return parseFilters(bereich[1], ctx.filters).every((p) => p(r));
   }
   const vgl = VERGLEICH.exec(e);
   const links = vgl ? vgl[1].trim() : e;
   const test = (v: Value | undefined) => (vgl ? vergleiche(v, vgl[2], vgl[3]) : gefuellt(v));
-  const coll = /^([a-z]+)(?:\[([^\]]*)\])?$/i.exec(links);
+  const coll = /^([a-z][a-z0-9]*)(?:\[([^\]]*)\])?$/i.exec(links);
   if (coll && isCollection(ctx, coll[1].toLowerCase())) {
     const n = itemsFor(coll[1].toLowerCase(), coll[2], b, ctx).length;
     return vgl ? vergleiche(n, vgl[2], vgl[3]) : n > 0;

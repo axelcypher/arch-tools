@@ -1,8 +1,9 @@
 import type { Workbook, Worksheet } from 'exceljs';
 import { APP_NAMEN } from '@core/appNamen';
-import { excel, fuelleVorlage, platzhalterBlatt } from '@core/excel/fill';
+import { excel, fuelleVorlage, platzhalterBlattAusSchema, pruefeVorlage } from '@core/excel/fill';
 import type { Project } from '@core/model';
-import { buildKostenContext, KOSTEN_PLACEHOLDER_DOCS } from './exportData';
+import { buildKostenContext } from './exportData';
+import { NUMIO_SCHEMA } from './platzhalterSchema';
 
 /**
  * Excel-Export der Kostenermittlung. Das Standardlayout ist die Muster-Vorlage selbst (ohne Hilfeblatt),
@@ -161,17 +162,17 @@ async function vorlage(mitHilfe: boolean): Promise<Uint8Array> {
   wb.creator = APP_NAMEN.kosten.name;
   wb.created = new Date();
   kostenBlatt(wb);
-  if (mitHilfe)
-    platzhalterBlatt(
-      wb,
-      KOSTEN_PLACEHOLDER_DOCS,
-      'Platzhalter in doppelten geschweiften Klammern werden beim Export ersetzt. Zeilen mit kg.*, kg2.*, position.*, menge.*, stand.* oder hinweis.* werden je Datensatz wiederholt, #kg … /kg wiederholt ganze Zeilenblöcke je Kostengruppe. #wenn … /wenn gibt Zeilen nur aus, wenn es passende Datensätze gibt (#wenn ! … nur, wenn nicht). Formeln (z. B. SUMME über eine Wiederholungszeile) werden automatisch auf die erzeugten Zeilen erweitert. Steht nur ein Platzhalter in der Zelle, wird eine Zahl eingetragen und das Zellformat der Vorlage bleibt erhalten. Dieses Blatt kann gelöscht werden.',
-    );
+  if (mitHilfe) platzhalterBlattAusSchema(wb, NUMIO_SCHEMA);
   return new Uint8Array(await wb.xlsx.writeBuffer());
 }
 
 /** Erzeugt die Muster-Vorlage (Blatt „Kosten“ und Platzhalter-Hilfe) – Ausgangspunkt für eigene Vorlagen. */
 export const buildSampleTemplate = () => vorlage(true);
+
+/** Vorlagenprüfung: mögliche Tippfehler der Vorlage (Blatt, Zelle) */
+export async function pruefeMitVorlage(template: Uint8Array, p: Project) {
+  return pruefeVorlage(template, buildKostenContext(p), NUMIO_SCHEMA);
+}
 
 export async function exportWithTemplate(template: Uint8Array, project: Project, date = new Date()): Promise<Uint8Array> {
   return fuelleVorlage(template, buildKostenContext(project, date));

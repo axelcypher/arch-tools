@@ -1,6 +1,6 @@
 import { raumBodenVersatz } from '@core/calc';
-import type { ExportContext, PlaceholderDocs, Row, Value } from '@core/excel/context';
-import { PROJEKT_DOCS, projektWerte } from '@core/excel/projekt';
+import type { ExportContext, Row, Value } from '@core/excel/context';
+import { projektWerte } from '@core/excel/projekt';
 import { polygonArea } from '@core/geometry';
 import { nutzungLabel, versiegelungInfo } from '@core/lageplan';
 import type { Project, RoomShape } from '@core/model';
@@ -12,7 +12,8 @@ import { datumText } from '@core/ui/DruckKopf';
 import { flaechenNummern, rechenweg, teilName } from '../rechenweg';
 
 /**
- * Datengrundlage für Excel-Export und Vorlagen des GRZ-Nachweises (Syntax siehe docs/excel-vorlagen.md).
+ * Datengrundlage für Excel-Export und Vorlagen des GRZ-Nachweises (Syntax siehe docs/excel-vorlagen.md; jeder
+ * Platzhalter ist in platzhalterSchema.ts beschrieben – der Vollständigkeitstest verlangt das für jeden neuen Schlüssel).
  *
  *   {{grz}}, {{gfz}}, {{vollgeschosse}}   Kennzahlen
  *   {{geschoss.name}}                     Zeile je Geschoss (ebenso lageplan, raum, hinweis)
@@ -258,109 +259,3 @@ export function buildGrzContext(project: Project, date = new Date(), n: Nachweis
     belongsTo: zugehoerig,
   };
 }
-
-/** Beschreibung aller Platzhalter – Grundlage für Hilfe-Tabelle und Musterdatei. */
-export const GRZ_PLACEHOLDER_DOCS: PlaceholderDocs = [
-  {
-    group: 'Blöcke, Filter, Modifikatoren',
-    keys: [
-      ['#geschoss … /geschoss', 'Zeilenblock je Geschoss; raum-Zeilen darin nur für dieses Geschoss'],
-      [
-        '#wenn … /wenn',
-        'Abschnitt einmal ausgeben, wenn die Bedingung zutrifft: {{#wenn lageplan[nachbar]}} (Datensätze vorhanden), {{#wenn grz.ii}} (Wert nicht 0/leer), {{#wenn grz.reserve<0}} (Vergleich), {{#wenn !…}} umgekehrt; im Block je Datensatz',
-      ],
-      ['geschoss[vollgeschoss] / geschoss[!vollgeschoss] / [oberirdisch]', 'Filter: Vollgeschosse, Nicht-Vollgeschosse, oberirdische Geschosse'],
-      ['lageplan[eigen] / lageplan[nachbar]', 'Filter: Flächen des eigenen Grundstücks bzw. der Nachbarn'],
-      ['lageplan[zaehlt] / [grz2] / [pruefen]', 'Filter nach Anrechnung auf die Grundfläche'],
-      ['lageplan[voll] / [teil] / [gruen]', 'Filter nach Versiegelung'],
-      ['raum[aufenthalt]', 'Filter: Aufenthalts- und Treppenräume'],
-      ['raum[gf]', 'Filter: Räume der Nicht-Vollgeschosse, deren Aufenthaltsräume zur Geschossfläche zählen (vor 1990, 1990 nur bei Festsetzung nach § 20 Abs. 3 S. 2)'],
-      ['[feld=wert] [feld>wert] [!filter]', 'weitere Filter, mehrere mit Komma: raum[aufenthalt,vollgeschoss!=ja]; Vergleiche = != > < >= <= (leere Felder = 0)'],
-      ['…|einmal', 'Wert nur in der ersten Zeile der Wiederholung'],
-    ],
-  },
-  PROJEKT_DOCS,
-  {
-    group: 'Grundlagen',
-    keys: [
-      ['bplan.datum', 'Datum des Bebauungsplans (TT.MM.JJJJ)'],
-      ['bplan.auslegung', 'öffentliche Auslegung des Planentwurfs (TT.MM.JJJJ), maßgebend für die BauNVO-Fassung – leer, wenn nicht eingetragen'],
-      ['bplan.angabe', 'Nr., Name und Datum in einer Zeile: „Nr. 112 „Am Hang“ vom 14.03.1967“'],
-      ['gebietsart, gebietsart.text', 'Baugebiet: Kürzel (WA, MI …) bzw. mit Bezeichnung'],
-      ['stand, stand.text', 'Stand des Nachweises (im Druckdialog eingetragen) bzw. „Stand TT.MM.JJJJ“ – leer, wenn nicht eingetragen'],
-      ['baunvo.fassung, bauo.fassung', 'angewandte BauNVO-Fassung und Vollgeschossbegriff'],
-      ['recht.hinweise', 'Hinweise zur Wahl der Fassung'],
-      ['grundstueck.flaeche_nachweis, grundstueck.quelle', 'maßgebende Grundstücksfläche [m²] und Herkunft'],
-      ['gelaende, gelaende.quelle', 'Geländeoberfläche [m] über ±0,00 und Herkunft'],
-      ['hauptanlage', 'Grundfläche der Hauptanlage [m²]'],
-    ],
-  },
-  {
-    group: 'Kennzahlen',
-    keys: [
-      ['grz.bezeichnung, grz.ii.bezeichnung', '„GRZ“ (vor 1990) bzw. „GRZ I“; „GRZ II (§ 19 Abs. 4)“ oder leer'],
-      ['aufenthalt.titel', '„Aufenthaltsräume in Nicht-Vollgeschossen“, wenn sie zur Geschossfläche zählen (vor 1990, 1990 bei Festsetzung nach § 20 Abs. 3 S. 2), sonst leer'],
-      ['grz, grz.zulaessig, grz.flaeche, grz.reserve, grz.status', 'GRZ (auf die Stellen der App gerundet), zulässig, angerechnete Grundfläche [m²], Reserve [m²], Ergebnis'],
-      ['grz.stellen', 'Nachkommastellen der Kennzahl (mindestens 3, nahe am Grenzwert mehr)'],
-      ['grz.zulaessig_flaeche, grz.vergleich', 'zulässige Grundfläche [m²]; Begründung in m², z. B. „GR 135,00 m² < 245,00 m² zulässig“'],
-      ['grz.mit_offenen, grz.flaeche_mit_offenen', 'GRZ bzw. Grundfläche einschließlich der ungeklärten Flächen („prüfen“)'],
-      ['grz.offen.bezeichnung, grz.offen.flaeche', '„GRZ II mit ungeklärten Flächen („prüfen“)“ (bzw. GRZ) und die Fläche dazu – leer ohne ungeklärte Flächen'],
-      ['unterirdisch.flaeche, unterirdisch.angerechnet', 'Kellergeschoss außerhalb der Hauptanlage [m²] und davon angerechnet'],
-      ['grz.ii, grz.ii.zulaessig, grz.ii.flaeche, grz.ii.reserve, grz.ii.status, grz.ii.mit_offenen', 'GRZ II nach § 19 Abs. 4 BauNVO 1990 (sonst leer)'],
-      ['garagen.frei', 'anrechnungsfreie Garagenfläche nach § 21a Abs. 3 (1968/1977) [m²]'],
-      [
-        'gr_absolut, gr_absolut.zulaessig, gr_absolut.status, gr_absolut.bezeichnung',
-        'absolute Festsetzung der Grundfläche: vorhanden, zulässig [m²], Ergebnis (leer ohne Festsetzung); ebenso gf_absolut und gr2_absolut (BauNVO 1990: GR II höchstens 1,5 × GR, höchstens GRZ 0,8)',
-      ],
-      ['grundstueck.gemeinschaftsanlagen', 'hinzugerechneter Anteil an Gemeinschaftsanlagen nach § 21a Abs. 2 BauNVO [m²] (leer ohne)'],
-      ['bmz, bmz.zulaessig, bmz.status, bmz.baumasse', 'Baumassenzahl (§ 21) und Baumasse [m³], vereinfacht aus Grundfläche × Geschosshöhe der Vollgeschosse'],
-      ['vollgeschosse.mindestens, vollgeschosse.zwingend', 'Mindestzahl der Vollgeschosse; „ja“, wenn die Zahl zwingend ist'],
-      ['gf, gf.aufenthalt', 'Geschossfläche [m²]; davon Aufenthaltsräume in Nicht-Vollgeschossen'],
-      ['gfz, gfz.zulaessig, gfz.reserve, gfz.status, gfz.vergleich', 'GFZ, zulässig, Reserve [m²], Ergebnis, Begründung in m²'],
-      ['vollgeschosse, vollgeschosse.roemisch, vollgeschosse.zulaessig, vollgeschosse.status', 'Zahl der Vollgeschosse'],
-      ['vollgeschosse.namen', 'Namen der Vollgeschosse, mit Komma getrennt'],
-      ['bilanz.gebaeude, bilanz.vollversiegelt, bilanz.teilversiegelt, bilanz.gruen, bilanz.summe', 'Flächenbilanz des Grundstücks [m²]'],
-      ['bilanz.differenz', 'Grundstücksfläche − Summe (nicht erfasst bzw. überlappend) [m²]'],
-      ['hinweise, haftung', 'Hinweise für die Bauaufsicht (eine Zelle, ohne Bedienhinweise); Haftungshinweis des Tools'],
-    ],
-  },
-  {
-    group: 'geschoss.* (Zeile je Geschoss) bzw. geschoss:NAME.*',
-    keys: [
-      ['geschoss.nr, geschoss.name', 'laufende Nummer, Bezeichnung'],
-      ['geschoss.ueber_gelaende, geschoss.oberirdisch', 'Deckenoberkante über Gelände im Mittel [m]; „ja“ bei oberirdischen Geschossen'],
-      ['geschoss.gelaende, geschoss.gelaende_min, geschoss.gelaende_max', 'Geländeoberfläche entlang der Außenwände des Geschosses: Mittel, tiefster und höchster Punkt [m]'],
-      ['geschoss.anteil, geschoss.anteil_soll, geschoss.hoehe_soll', 'Anteil mit der geforderten Höhe, geforderter Anteil, geforderte Höhe [m]'],
-      ['geschoss.flaeche_hoch, geschoss.bezugsflaeche', 'Fläche mit der geforderten Höhe, Bezugsfläche [m²]'],
-      ['geschoss.vollgeschoss, geschoss.ergebnis, geschoss.festlegung', '„ja“ bei Vollgeschossen; Ergebnis als Text; automatisch oder festgelegt'],
-      ['geschoss.begruendung', 'Begründung der Vollgeschossprüfung'],
-      ['geschoss.gf, geschoss.gf_art', 'Geschossfläche des Geschosses [m²] und wie sie ermittelt wurde'],
-    ],
-  },
-  {
-    group: 'lageplan.* (Zeile je Lageplan-Fläche)',
-    keys: [
-      ['lageplan.nr, lageplan.name, lageplan.nutzung, lageplan.versiegelung', 'laufende Nummer, Bezeichnung, Nutzung, Versiegelung'],
-      ['lageplan.flaeche, lageplan.flaeche_aussen', 'Fläche und davon außerhalb des Gebäudes [m²]'],
-      ['lageplan.flaeche_eindeutig, lageplan.ueberlagert', 'nur dieser Fläche zugeordnet (Summen zählen Überlagerungen einmal) bzw. von anderen Flächen schon abgedeckt [m²]'],
-      ['lageplan.angerechnet, lageplan.angerechnet_bis', 'tatsächlich auf die Grundfläche angerechnet (GR II bzw. GR) [m²]; bei „prüfen“ bis zu dieser Fläche'],
-      ['lageplan.angerechnet_auf', '„GR II“ (BauNVO 1990) bzw. „GR“ – Einzelwert für die Spaltenüberschrift'],
-      ['lageplan.anrechnung', 'Anrechnung auf die Grundfläche (zählt, GRZ II, bis 0,1 frei, zählt nicht, prüfen, Nachbar)'],
-      ['lageplan.nachbar, lageplan.hoehe', '„ja“ bei Nachbargrundstücken; Höhe der Oberfläche [m]'],
-    ],
-  },
-  {
-    group: 'raum.* (Zeile je Raum) und hinweis.*',
-    keys: [
-      ['raum.nr, raum.geschoss, raum.nummer, raum.name, raum.flaeche', 'Raumangaben, Fläche ohne Putzabzug [m²]'],
-      ['raum.vollgeschoss', '„ja“, wenn der Raum in einem Vollgeschoss liegt'],
-      ['raum.aufenthalt, raum.festlegung', 'Aufenthaltsraum, Treppenraum oder kein Aufenthaltsraum; automatisch oder festgelegt'],
-      ['raum.begruendung', 'Prüfung nach Nutzung und lichter Höhe (vor 1990, Nicht-Vollgeschosse)'],
-      ['raum.hoehenlage', 'Höhenlage des Fußbodens gegenüber dem Geschoss [m] (Split-Level)'],
-      ['hinweis.nr, hinweis.text', 'Zeile je Hinweis für die Bauaufsicht'],
-      ['formel.text', 'Zeile je Formel des Rechenwegs, z. B. „GRZ I = GR I / FGst = 135,00 m² / 612,50 m² = 0,220“'],
-      ['teil.flaeche_nr, teil.flaeche_name, teil.name, teil.art', 'Zeile je Teilfläche (H = Hauptanlage): Nummer und Name der Fläche, „1.2 Rechteck“, Rechteck/Dreieck/Koordinaten'],
-      ['teil.laenge, teil.breite, teil.faktor, teil.flaeche', 'Länge bzw. Grundseite, Breite bzw. Höhe [m], Faktor (1 Rechteck, 0,5 Dreieck), Fläche [m²] – ohne Zerlegung Fläche × 1 × 1'],
-    ],
-  },
-];
