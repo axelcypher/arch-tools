@@ -157,21 +157,28 @@ und `ZEICHENFLAECHE_GRUND` in `planFarbe.ts` müssen zu `--canvas-filter` und `-
 
 ## Einstellungen
 
-Ein Einstellungsdialog für alle Apps (`Datei → Einstellungen …`, Strg+,; in Arkly im Menü „Einstellungen und Hilfe“).
-Er zeigt die Einstellungen der ganzen Suite, nicht nur der App, aus der er geöffnet wurde; diese App öffnet ihn auf
-ihrer eigenen Seite.
+Ein Einstellungsdialog für alle Apps: in jeder App „Datei → Einstellungen …“, in Arkly im Menü „Einstellungen und
+Hilfe“, überall auch mit Strg+, ohne offenes Menü. Er zeigt die Einstellungen der ganzen Suite, nicht nur der App, aus
+der er geöffnet wurde. Stand: Den Dialog als Baustein in `packages/core` baut die Sitzung „Zentrale Einstellungen“;
+jede App liefert dafür ihre Seite (Felder und Prüfung) – wie, legt dieser Baustein fest.
 
-- **Aufbau:** `Modal` mit `tabelle` (breit), Kopf mit Titel „Einstellungen“. Links die Seitenliste, rechts der Inhalt
-  der gewählten Seite – wie im Nachschlagewerk (`.nachschlagewerk`, `.nw-inhalt`, `.nw-liste`, `.nw-eintrag`,
-  `.nw-eintrag.active`), ohne Suche. Die Liste ist eine senkrechte Registerleiste (`role="tablist"`,
-  `aria-orientation="vertical"`, Einträge `role="tab"` mit `aria-selected`, ↑/↓ wandern, Pos1/Ende), der Inhalt
-  `role="tabpanel"` mit `aria-labelledby` auf den Eintrag.
-- **Seiten:** „Allgemein“ (Speicherort der Einstellungen, Büro), „Pfade und Benennung“ (alle Pfadvorgaben und
-  Benennungsschemata auf einer Seite, nach App gegliedert mit `h3`), dann je App eine Seite mit ihrem Namen. Seiten
-  in Satzschreibung, die eigene App zuerst nach „Allgemein“ und „Pfade und Benennung“.
+- **Aufbau:** `Modal` mit `tabelle`; der Titel „Einstellungen“ steht als `h3` im Navigationskopf über der
+  Seitenliste (Ausnahme mit eigenem Kopf, siehe „Dialoge“), rechts der Inhalt der gewählten Seite – wie im
+  Nachschlagewerk (`.nachschlagewerk`, `.nw-inhalt`, `.nw-liste`, `.nw-eintrag`, `.nw-eintrag.active`), ohne Suche.
+  Unterabschnitte einer Seite sind `h4`.
+- **Seitenliste:** eine senkrechte Registerleiste wie unter „Umschalter“ (`role="tablist"`,
+  `aria-orientation="vertical"`, Einträge `role="tab"` mit `aria-selected`, ↑/↓ wandern, Pos1/Ende, automatische
+  Aktivierung, nur der gewählte Eintrag mit `tabIndex` 0); der Inhalt ist `role="tabpanel"` mit `aria-labelledby` auf
+  seinen Eintrag. Die Liste hat eine Mindestbreite, lange Namen brechen um.
+- **Seiten in fester Reihenfolge:** „Allgemein“ (Speicherort der Einstellungen, Büro), „Pfade und Benennung“ (alle
+  Pfadvorgaben und Benennungsschemata auf einer Seite, nach App gegliedert mit `h4`), dann je App eine Seite mit ihrem
+  Namen, so geschrieben wie die App (QUADRIO), in alphabetischer Reihenfolge. Die öffnende App bestimmt nur die
+  Startseite: ihre eigene; Arkly öffnet „Allgemein“, die Warnung zum Notbetrieb ebenfalls „Allgemein“.
+- **Erstfokus:** das erste Feld der Startseite (`data-startfokus`), nicht die Seitenliste.
 - **Übernehmen:** Fußzeile `.dialog-buttons` mit Abbrechen | Übernehmen (Hauptknopf). Änderungen gelten erst mit
-  „Übernehmen“, für alle Seiten zugleich; Esc und „Abbrechen“ fragen bei Änderungen nach (`aenderungenVerwerfen`).
-  Ist der Speicherort nur lesbar (Notbetrieb), stehen die Felder gesperrt mit Hinweis `.meldung.warnung` oben.
+  „Übernehmen“, für alle Seiten zugleich. Schließen mit Änderungen – Esc, „Abbrechen“, Klick daneben – fragt nach
+  (`aenderungenVerwerfen`, siehe „Ungespeicherte Änderungen“). Ist der Speicherort nur lesbar (Notbetrieb), stehen die
+  Felder und „Übernehmen“ gesperrt (Grund im `title`), oben ein Hinweis `.meldung.warnung`.
 - **Felder:** die gemeinsamen Bausteine (`.field`, Pfadwahl mit „Ordner wählen …“, Platzhalter mit Vorschau des
   Ergebnisses); Fehler an der Stelle (`.feld-meldung`), nicht als Rückfrage.
 - Was nur ein Werkzeug betrifft (z. B. Vorlagen eines Exports), bleibt in dessen Dialog; der Einstellungsdialog
@@ -259,7 +266,7 @@ Gemeinsamer Satz in `ui/Symbol.tsx` (Raster 24, Linie 2, runde Enden, Farbe des 
 - Zustand: `haken` (trifft zu), `schliessen` (trifft nicht zu), `frage` (offen, unbekannt), `warnung`, `info`, `auge`,
   `augeZu`, `stern`; `punkt` (gewählte Einfachauswahl im Menü).
 - Navigation: `pfeilRechts`, `pfeilLinks`, `pfeilUnten`, `ordner`, `ordnerOffen`, `datei`; `menue` (drei Striche) nur für das
-  Menü der Titelleiste („Einstellungen und Hilfe“).
+  Menü der Titelleiste (siehe „Titelleiste“).
 - Listen: `einruecken`, `ausruecken` (Gliederungsebene), `nachOben`, `nachUnten` zum Umsortieren (statt ↑/↓ als Schriftzeichen); `mehr` (drei Punkte, Knopf mit `aria-label="Aktionen"` und `title`; auch „Mehr“ am Ende einer Werkzeugleiste) für
   Zeilenknöpfe „Aktionen“, die ein Menü öffnen – `pfeilUnten` bleibt dem Aufklapp-Pfeil an Knöpfen mit Text vorbehalten.
 
@@ -314,23 +321,32 @@ bleiben sichtbar, solange sie etwas melden.
 **Ins Menü** kommen seltene und einmalige Befehle: Import und Export, Vorlagen, Einstellungen, Protokoll, Hilfe,
 Zurücksetzen, Sonderfunktionen. Feste Namen, in allen Apps gleich:
 
-| Menü            | Inhalt                                                                                                                                                                            |
-| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| „Datei“         | in jeder App: Neu, Öffnen …, Speichern unter …, Import … bzw. Aktualisieren …, „Exportieren ▸“, Drucken … (wenn es nicht der Hauptknopf ist), Trenner, „Einstellungen …“ (Strg+,) |
-| „Exportieren ▸“ | Untermenü in „Datei“: Excel …, PDF …, CSV … – je mit Dialog (Vorlage, Ziel); kein eigener Menüknopf in der Leiste mehr                                                            |
-| „Ansicht“       | Schalter der Darstellung (`haken`: Raster, Beschriftung) und Einfachauswahl (`gewaehlt`)                                                                                          |
-| „Hinzufügen“    | Varianten eines Eintrags (siehe „Listen“); der häufigste bleibt daneben als eigener Knopf                                                                                         |
-| „Mehr“          | alles Übrige, als letztes Element der Leiste                                                                                                                                      |
+| Menü          | Inhalt                                                                                                                                                                                                       |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| „Datei“       | in jeder App: Neu, Öffnen …, Speichern unter …, Import … bzw. Aktualisieren …, „Exportieren“ (Untermenü), Drucken … (wenn es nicht der Hauptknopf ist), Trenner, „Einstellungen …“ (Strg+,)                  |
+| „Exportieren“ | Untermenü in „Datei“ (Punkt mit `unter`, den Pfeil zeichnet das Menü – kein „▸“ im Text): Excel …, PDF …, CSV … – je mit Dialog (Ziel, bei Excel und PDF auch Vorlage); kein eigener Menüknopf in der Leiste |
+| „Ansicht“     | Schalter der Darstellung (`haken`: Raster, Beschriftung) und Einfachauswahl (`gewaehlt`)                                                                                                                     |
+| „Hinzufügen“  | Varianten eines Eintrags (siehe „Listen“); der häufigste bleibt daneben als eigener Knopf                                                                                                                    |
+| „Mehr“        | alles Übrige, als letztes Element der Leiste                                                                                                                                                                 |
 
 - **„Einstellungen …“** steht in jeder App als letzter Punkt von „Datei“, hinter einem Trenner, mit `tasten: 'Strg+,'`
-  (in keiner App anders belegt), und öffnet den app-übergreifenden Einstellungsdialog (siehe „Einstellungen“).
+  (in keiner App anders belegt; das Kürzel wirkt auch ohne offenes Menü), und öffnet den app-übergreifenden
+  Einstellungsdialog auf der Seite der App (siehe „Einstellungen“). In Arkly gilt Strg+, einmal: Ist ein App-Tab
+  aktiv, öffnet es den Dialog auf der Seite dieser App, sonst auf „Allgemein“.
 - **Direkter Export:** Wo eine App eine eingestellte Vorlage und einen Zielordner hat (QUADRIO, TERRIO, NUMIO), steht
   in der Leiste der Knopf „Exportieren“ (Symbol `export`, ohne „ …“, weil er sofort wirkt). Er speichert mit der
   eingestellten Vorlage in den Berechnungsordner – als Excel, auf Wunsch zusätzlich als PDF. `title` nennt Ziel und
-  Formate („Als Excel und PDF in ‹Ordner› speichern“). Gibt es die Datei schon, fragt eine Rückfrage „‹Datei›
-  ersetzen?“ (Abbrechen | Ersetzen, „Ersetzen“ als Gefahr-Knopf). Danach meldet ein Hinweis (`zeigeHinweis`, siehe
-  „Meldungen im Inhalt“) den Erfolg mit „Ordner öffnen“; Hinweise der Vorlagenprüfung stehen im selben Hinweis als
-  Warnung und halten den Export nicht auf. Wer Vorlage oder Ziel wählen will, nimmt „Datei → Exportieren ▸ Excel …“.
+  Formate („Als Excel und PDF in ‹Ordner› speichern“); ob zusätzlich PDF entsteht, stellt die Seite der App im
+  Einstellungsdialog ein.
+  - Fehlt etwas (keine Vorlage, kein Berechnungsordner, Projekt noch nie gespeichert), ist der Knopf gesperrt, der
+    Grund steht im `title`; „Datei → Exportieren → Excel …“ bleibt möglich. Während des Exports ist er gesperrt.
+  - Gibt es die Datei schon, fragt eine Rückfrage „‚Name.xlsx‘ ersetzen?“ bzw. „‚Name.xlsx‘ und ‚Name.pdf‘ ersetzen?“
+    mit dem Satz „Die Datei gibt es schon in ‚Ordner‘.“ bzw. „Die Dateien …“ (Abbrechen | Ersetzen; „Ersetzen“ ist ein
+    Gefahr-Knopf, Erstfokus und Enter auf „Abbrechen“, siehe „Dialoge“).
+  - Danach meldet ein Hinweis (`zeigeHinweis`, siehe „Meldungen im Inhalt“) den Erfolg mit „Ordner öffnen“; Hinweise
+    der Vorlagenprüfung stehen im selben Hinweis als Warnung und halten den Export nicht auf. Scheitert das Schreiben
+    (z. B. Datei in Excel geöffnet), meldet ein Hinweis den Fehler.
+  - Wer Vorlage oder Ziel wählen will, nimmt „Datei → Exportieren → Excel …“.
 - Weitere sprechende Menünamen („Unterlage“, „Einrichtung“, „LV“) nur für eine Gruppe von mindestens drei
   zusammengehörigen Befehlen. Menüknöpfe zum selben Gegenstand zusammenlegen („Neues LV ▾“ und „LV ▾“ → „LV ▾“).
   Keine geteilten Knöpfe (Befehl plus Pfeil in einem): Hauptbefehl als Knopf, Varianten im Menü daneben – etwa
@@ -344,8 +360,9 @@ Zurücksetzen, Sonderfunktionen. Feste Namen, in allen Apps gleich:
   hinter einem Trenner. Tastenkürzel in `tasten`, Punkte mit Dialog auf „ …“ (siehe „Menüs“ und „Begriffe“).
 - Doppelte Einstiege vermeiden: Steht ein Befehl schon an naheliegender Stelle (Listenkopf, Seitenleiste), fällt sein
   Einstieg in der Leiste weg (NUMIO: Kennwertkatalog). „Einstellungen …“ steht nur in „Datei“, nicht zusätzlich im
-  Menü der Titelleiste; das Farbschema nur im Menü der Titelleiste, nicht im Einstellungsdialog. Bewusste Ausnahme:
-  der Update-Punkt im Menü der Titelleiste (siehe „Titelleiste“).
+  Menü der Titelleiste; das Farbschema nur im Menü der Titelleiste, nicht im Einstellungsdialog. Bewusste Ausnahmen:
+  der Update-Punkt im Menü der Titelleiste (siehe „Titelleiste“) und in Arkly „Einstellungen …“ im Menü des Rahmens
+  neben „Datei“ der App im Tab (Arkly hat kein eigenes „Datei“; Strg+, gilt einmal, siehe oben).
 - **Aufbau:** links „Datei“ und „Speichern“, in der Mitte die Werkzeuge bzw. Hauptschritte, rechts der Hauptknopf,
   zuletzt „Mehr“.
 - **Zeilen:** Seltene Aktionen einer Tabellen- oder Listenzeile (FABRIO-Rechnung: Deckblatt, Mail an den Zahler)
@@ -425,10 +442,12 @@ Doppelklick setzt die Vorgabe. Keine eigenen Leisten-Komponenten je App.
 für Rückmeldungen, `role="alert"` für Fehler. `.warning` bleibt als Hinweis in Warnfarben.
 
 **Hinweis nach einer Aktion** (`zeigeHinweis`, z. B. nach dem direkten Export): unten rechts im Fenster, `.meldung.ok`
-bzw. `.warnung`, `role="status"`, mit Text, höchstens einer Aktion („Ordner öffnen“) und „Schließen“ (Symbol
-`schliessen`). Er hält nichts auf, nimmt keinen Fokus und verschwindet nach 8 Sekunden – nicht, solange der Zeiger
-darauf liegt oder der Fokus darin ist; mit Warnungen bleibt er, bis man ihn schließt. Ein neuer Hinweis ersetzt den
-alten. Stand: Der Baustein kommt als Nächstes aus dem Designsystem.
+mit `role="status"`, bei Warnungen `.meldung.warnung`, bei einem Fehler `.meldung.fehler` mit `role="alert"`. Darin
+Text, höchstens eine Aktion („Ordner öffnen“) und ein Symbolknopf `schliessen` mit `aria-label`/`title` „Hinweis
+schließen“ (mindestens `--ctl-h-s`). Er hält nichts auf und nimmt keinen Fokus. Ohne Aktion und ohne Warnung
+verschwindet er nach 8 Sekunden (nicht, solange Zeiger oder Fokus darin sind); mit Aktion, Warnung oder Fehler bleibt
+er, bis man ihn schließt oder der nächste Hinweis ihn ersetzt. Per Tastatur erreicht man ihn mit F6 (der Fokus
+springt hinein, Esc gibt ihn zurück). Stand: Der Baustein kommt als Nächstes aus dem Designsystem.
 
 **Statuspunkt (Ampel):** `<span class="statuspunkt ok"></span> gilt` (bzw. `.warnung`, `.fehler`) – ein Punkt (10px,
 Abstand zum Wort per Leerzeichen bzw. `gap: var(--s1)`) in
@@ -446,27 +465,25 @@ hellem Grund nur 2,2 : 1). Der Text daneben in `--ok-text` usw. bzw. `--text`.
 
 Links Symbol und Name der App, „Projekte“ und das geöffnete Projekt (mit dem Punkt ● für ungespeicherte Änderungen).
 Rechts nur, was gerade zählt – Version bzw. Update, im Notbetrieb die Warnung zum Speicherort –, dann das Menü der
-Titelleiste und die Fensterknöpfe. Das Menü heißt in den Apps „Ansicht und Hilfe“ (Symbol `menue`, drei Striche; Name
-in `ariaLabel` und `title`), damit es sich vom „Mehr“ der Werkzeugleiste darunter unterscheidet; „Einstellungen …“
-steht in „Datei“, nicht hier (siehe „Doppelte Einstiege vermeiden“). Es enthält, in dieser
-Reihenfolge: solange ein Update bereitliegt „Update auf ‹Version› …“ mit Trenner (`updatePunkt`) – zusätzlich zur
-Anzeige rechts in der Titelleiste, damit man es auch dort findet, wo die seltenen Befehle stehen (bewusste Ausnahme von
-„Doppelte Einstiege vermeiden“); dann „Farbschema“ (aktuelle Wahl als Hinweis; Untermenü mit Auto/Hell/Dunkel als
-Einfachauswahl und, wenn die App eine Zeichenfläche hat, dem Schalter „Zeichenfläche im dunklen Schema abdunkeln“ –
-`farbschemaPunkt`, Untermenü `farbschemaPunkte`),
-im herausgelösten
-Fenster „Andocken“, Trenner, „Berechnungsregeln …“ (F1) und „Fehlerprotokoll …“. Neue Fehler zählt eine Marke am
-Menüknopf, ebenso sein Name („Ansicht und Hilfe – 2 neue Fehler im Fehlerprotokoll“) und der Hinweis am Punkt
-(„2 neue“). Der Speicherort der Einstellungen steht im Einstellungsdialog (Seite „Allgemein“); sichtbar in der
-Titelleiste bleibt nur die Warnung im Notbetrieb, sie öffnet den Dialog auf dieser Seite. Das Farbschema bleibt nur
-hier (schneller Wechsel, keine Kopie im Dialog). Die Kopfleiste von Arkly hat kein „Datei“: Ihr Menü heißt weiter
-„Einstellungen und Hilfe“ und beginnt nach dem Update-Punkt mit „Einstellungen …“ (Strg+,), dann Farbschema und
+Titelleiste und die Fensterknöpfe. Das Menü heißt in den Apps „Darstellung und Hilfe“ (Symbol `menue`, drei Striche;
+Name in `ariaLabel` und `title`), damit es sich vom „Mehr“ der Werkzeugleiste darunter unterscheidet; „Einstellungen …“
+steht in „Datei“, nicht hier (siehe „Doppelte Einstiege vermeiden“). Es enthält, in dieser Reihenfolge: solange ein
+Update bereitliegt „Update auf ‹Version› …“ mit Trenner (`updatePunkt`) – zusätzlich zur Anzeige rechts in der
+Titelleiste, damit man es auch dort findet, wo die seltenen Befehle stehen (bewusste Ausnahme von „Doppelte Einstiege
+vermeiden“); dann „Farbschema“ (aktuelle Wahl als Hinweis; Untermenü mit Auto/Hell/Dunkel als Einfachauswahl und, wenn
+die App eine Zeichenfläche hat, dem Schalter „Zeichenfläche im dunklen Schema abdunkeln“ – `farbschemaPunkt`, Untermenü
+`farbschemaPunkte`), im herausgelösten Fenster „Andocken“, Trenner, „Berechnungsregeln …“ (F1) und „Fehlerprotokoll …“.
+Neue Fehler zählt eine Marke am Menüknopf, ebenso sein Name („Darstellung und Hilfe – 2 neue Fehler im Fehlerprotokoll“)
+und der Hinweis am Punkt („2 neue“). Der Speicherort der Einstellungen steht im Einstellungsdialog (Seite „Allgemein“);
+sichtbar in der Titelleiste bleibt nur die Warnung im Notbetrieb, sie öffnet den Dialog auf dieser Seite. Das Farbschema
+bleibt nur hier (schneller Wechsel, keine Kopie im Dialog). Die Kopfleiste von Arkly hat kein „Datei“: Ihr Menü heißt
+weiter „Einstellungen und Hilfe“ und beginnt nach dem Update-Punkt mit „Einstellungen …“ (Strg+,), dann Farbschema und
 Fehlerprotokoll, ohne „Berechnungsregeln …“. Stand: Die Titelleiste stellt das Designsystem um, sobald der
-Einstellungsdialog da ist; bis dahin heißt das Menü „Einstellungen und Hilfe“ und enthält den Speicherort. Unter 960px Fensterbreite (feste Grenze, weil die Titelleiste keinen Überlauf hat; die Werkzeugleiste regelt das
-selbst, siehe „Kopf- und Werkzeugleisten“) zeigen Knöpfe mit Symbol nur noch das Symbol: Text in
-`<span className="titlebar-text">`, der Name bleibt über `aria-label`. Die Tableiste von Arkly zeigt
-unter 1100px am Tab nur Symbol und Namen der App (das Projekt steht im Tooltip); eine Fläche zum Ziehen des Fensters
-bleibt immer frei.
+Einstellungsdialog da ist; bis dahin heißt das Menü „Einstellungen und Hilfe“ und enthält den Speicherort. Unter 960px
+Fensterbreite (feste Grenze, weil die Titelleiste keinen Überlauf hat; die Werkzeugleiste regelt das selbst, siehe
+„Kopf- und Werkzeugleisten“) zeigen Knöpfe mit Symbol nur noch das Symbol: Text in `<span className="titlebar-text">`,
+der Name bleibt über `aria-label`. Die Tableiste von Arkly zeigt unter 1100px am Tab nur Symbol und Namen der App (das
+Projekt steht im Tooltip); eine Fläche zum Ziehen des Fensters bleibt immer frei.
 
 ## Ungespeicherte Änderungen
 
@@ -492,14 +509,15 @@ Projektdatei), fragt `aenderungenVerwerfen` „Änderungen an ‚`Name`‘ verwe
 `Verb`“. „Verwerfen …“ ist ein Gefahr-Knopf, Erstfokus und Enter liegen auf „Abbrechen“. Verb und Satz darunter (der
 Verlust als Aussage) je Aktion:
 
-| Aktion            | Knopf                                                  | Satz darunter                                                          |
-| ----------------- | ------------------------------------------------------ | ---------------------------------------------------------------------- |
-| Tab schließen     | „Verwerfen und schließen“                              | „Die Änderungen gehen beim Schließen verloren.“                        |
-| Beenden           | „Verwerfen und beenden“                                | „Die Änderungen gehen beim Beenden verloren.“                          |
-| Neustart (Update) | „Verwerfen und neu starten“                            | „Die Änderungen gehen beim Neustart für das Update verloren.“          |
-| Herauslösen       | „Verwerfen und herauslösen“                            | „Beim Herauslösen startet die App neu, die Änderungen gehen verloren.“ |
-| Andocken          | „Verwerfen und andocken“                               | „Beim Andocken startet die App neu, die Änderungen gehen verloren.“    |
-| Öffnen, Neu (App) | „Verwerfen und öffnen“ bzw. „Verwerfen und fortfahren“ | „Die Änderungen gehen verloren.“                                       |
+| Aktion                                                  | Knopf                                                  | Satz darunter                                                                 |
+| ------------------------------------------------------- | ------------------------------------------------------ | ----------------------------------------------------------------------------- |
+| Tab schließen                                           | „Verwerfen und schließen“                              | „Die Änderungen gehen beim Schließen verloren.“                               |
+| Beenden                                                 | „Verwerfen und beenden“                                | „Die Änderungen gehen beim Beenden verloren.“                                 |
+| Neustart (Update)                                       | „Verwerfen und neu starten“                            | „Die Änderungen gehen beim Neustart für das Update verloren.“                 |
+| Herauslösen                                             | „Verwerfen und herauslösen“                            | „Beim Herauslösen startet die App neu, die Änderungen gehen verloren.“        |
+| Andocken                                                | „Verwerfen und andocken“                               | „Beim Andocken startet die App neu, die Änderungen gehen verloren.“           |
+| Öffnen, Neu (App)                                       | „Verwerfen und öffnen“ bzw. „Verwerfen und fortfahren“ | „Die Änderungen gehen verloren.“                                              |
+| Einstellungen schließen (Esc, Abbrechen, Klick daneben) | „Verwerfen und schließen“                              | „Die Änderungen an den Einstellungen gehen verloren.“ (Name: „Einstellungen“) |
 
 Geht beim Herauslösen oder Andocken nichts verloren (die App behält ungespeicherte Änderungen als Zwischenstand), fragt
 sie nicht nach dem Speichern, sondern „`App` herauslösen?“ mit „Beim Herauslösen startet die App neu. Ungespeicherte
