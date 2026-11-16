@@ -159,12 +159,12 @@ und `ZEICHENFLAECHE_GRUND` in `planFarbe.ts` müssen zu `--canvas-filter` und `-
 
 Ein Einstellungsdialog für alle Apps: in jeder App „Datei → Einstellungen …“, in Arkly im Menü „Einstellungen und
 Hilfe“, überall auch mit Strg+, ohne offenes Menü. Er zeigt die Einstellungen der ganzen Suite, nicht nur der App, aus
-der er geöffnet wurde. Stand: Den Dialog stellt das Designsystem als Baustein in `packages/core`
-bereit; jede App liefert ihre Seite (Felder und Prüfung) – wie, legt dieser Baustein fest.
+der er geöffnet wurde. Stand: Den Dialog und das Muster `.einst*` gibt es noch nicht; sie kommen als
+Baustein in `packages/core`, und jede App liefert dann ihre Seite (Felder und Prüfung) – wie, legt dieser Baustein fest.
 
 - **Aufbau:** `Modal` mit `tabelle`; der Titel „Einstellungen“ steht als `h3` im Navigationskopf über der
   Seitenliste (Ausnahme mit eigenem Kopf, siehe „Dialoge“), rechts der Inhalt der gewählten Seite. Gemeinsames Muster
-  in `base.css` (aus PERMIO `.es-*` gehoben): `.einst`, `.einst-nav` (Seitenliste, Einträge `.einst-nav-eintrag` mit
+  (künftig in `base.css`, aus dem `.es-*` von PERMIO und ATLAS gehoben): `.einst`, `.einst-nav` (Seitenliste, Einträge `.einst-nav-eintrag` mit
   Symbol, Titel und kurzem Text), `.einst-inhalt`, `.einst-gruppe`. Unterabschnitte einer Seite sind `h4`.
 - **Seitenliste:** eine senkrechte Registerleiste wie unter „Umschalter“ (`role="tablist"`,
   `aria-orientation="vertical"`, Einträge `role="tab"` mit `aria-selected`, ↑/↓ wandern, Pos1/Ende, automatische
@@ -394,7 +394,7 @@ Zurücksetzen, Sonderfunktionen. Feste Namen, in allen Apps gleich:
     { id: 'datei', inhalt: <MenueKnopf punkte={dateiPunkte}>Datei</MenueKnopf> },
     { id: 'speichern', gruppe: true, inhalt: speichernKnopf },
     { id: 'werkzeuge', gruppe: true, inhalt: werkzeuge },
-    { id: 'export', rang: 2, inhalt: exportKnopf, menue: { text: 'Exportieren', symbol: 'export', aktion: direktExportieren } },
+    { id: 'export', rang: 2, inhalt: exportKnopf, menue: { text: 'Exportieren', symbol: 'export', aktion: direktExportieren, deaktiviert: !bereit, hinweis: grund } },
     { id: 'ansicht', rang: 1, inhalt: <MenueKnopf punkte={ansichtPunkte}>Ansicht</MenueKnopf>, menue: { text: 'Ansicht', unter: ansichtPunkte() } },
     { abstand: true },
     { id: 'haupt', inhalt: <button className="primary">Flächenaufstellung …</button> },
