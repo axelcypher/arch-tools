@@ -84,7 +84,7 @@ export const MERKMAL_ERKLAERUNG: Record<string, { text: string; quelle?: Quelle;
     },
   },
   Gebäudeart: {
-    text: 'Art des Gebäudes nach dem Vorhaben (bei Nutzungsänderung die künftige Nutzung): Wohngebäude nach Zahl der Wohnungen, gemischt genutzt oder Nichtwohngebäude',
+    text: 'Art des Gebäudes nach dem Vorhaben (bei Nutzungsänderung die künftige Nutzung)',
     werte: {
       Einfamilienhaus: 'reines Wohngebäude mit einer Wohnung (mit Einliegerwohnung: Zweifamilienhaus)',
       Zweifamilienhaus: 'reines Wohngebäude mit zwei Wohnungen',
