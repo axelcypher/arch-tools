@@ -44,18 +44,24 @@ In **Dokumentvorlagen** (Excel, Word, Text – doppelte Klammern, siehe [excel-v
 
 ## Lokale Variablen je App
 
-| App    | Einstellung                                        | lokale Variablen                                                                                                                                      |
-| ------ | -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| PERMIO | Namensvorlage exportierter PDFs, fester Zielordner | `{Art}` Antragsart, `{Nr}` Nummer im Antragsumfang, `{Name}` Titel bzw. Formularname, `{Antrag}` aktive Fassung, `{Formular}`, `{Kennung}`, `{Stand}` |
-| ATLAS  | Nummernschema                                      | nur `{JAHR}`, `{JAHR_KURZ}` und `{Nr}` bzw. `{Nr:3}` – das Schema bildet die Projektnummer selbst                                                     |
-| ATLAS  | Name des Projektordners, Pfad der Projektdatei     | – (alle globalen)                                                                                                                                     |
-| ATLAS  | Dateinamenschema für Pläne                         | `{Plannummer}`, `{Index}`, `{Titel}`                                                                                                                  |
-| ATLAS  | Dateinamen der Vorlagen im Projekt                 | `{Name}` Name der Vorlage ohne Endung                                                                                                                 |
-| ATLAS  | Katasterpläne: Dateiname, Ablageordner             | `{Art}` Antragsart, `{Name}` Name des Plans; im Ordner `{Antrag}`                                                                                     |
-| FABRIO | Muster der Rechnungsdateien                        | `{Nr}`, `{Art}`, `{Lfd}`, `{Firma}`, `{Rechnungsdatum}`, `{Gewerk}`                                                                                   |
-| FABRIO | Name neuer LV-Dateien                              | `{Gewerk}`                                                                                                                                            |
-| FABRIO | Mailvorlagen (Rechnung)                            | `{Gewerk}`, `{Firma}`, `{FirmaMail}`, `{Rechnung}`, `{Nr}`, `{Betrag}`, `{Rechnungsdatum}`, `{Zahler}`                                                |
-| FABRIO | Mailvorlage Protokoll                              | `{Nr}`, `{Protokolldatum}`, `{Teilnehmer}`                                                                                                            |
+| App                    | Einstellung                                        | lokale Variablen                                                                                                                                      |
+| ---------------------- | -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PERMIO                 | Namensvorlage exportierter PDFs, fester Zielordner | `{Art}` Antragsart, `{Nr}` Nummer im Antragsumfang, `{Name}` Titel bzw. Formularname, `{Antrag}` aktive Fassung, `{Formular}`, `{Kennung}`, `{Stand}` |
+| ATLAS                  | Nummernschema                                      | nur `{JAHR}`, `{JAHR_KURZ}` und `{Nr}` bzw. `{Nr:3}` – das Schema bildet die Projektnummer selbst                                                     |
+| ATLAS                  | Name des Projektordners, Pfad der Projektdatei     | – (alle globalen)                                                                                                                                     |
+| ATLAS                  | Dateinamenschema für Pläne                         | `{Plannummer}`, `{Index}`, `{Titel}`                                                                                                                  |
+| ATLAS                  | Dateinamen der Vorlagen im Projekt                 | `{Name}` Name der Vorlage ohne Endung                                                                                                                 |
+| ATLAS                  | Katasterpläne: Dateiname, Ablageordner             | `{Art}` Antragsart, `{Name}` Name des Plans; im Ordner `{Antrag}`                                                                                     |
+| FABRIO                 | Muster der Rechnungsdateien                        | `{Nr}`, `{Art}`, `{Lfd}`, `{Firma}`, `{Rechnungsdatum}`, `{Gewerk}`                                                                                   |
+| FABRIO                 | Name neuer LV-Dateien                              | `{Gewerk}`                                                                                                                                            |
+| FABRIO                 | Mailvorlagen (Rechnung)                            | `{Gewerk}`, `{Firma}`, `{FirmaMail}`, `{Rechnung}`, `{Nr}`, `{Betrag}`, `{Rechnungsdatum}`, `{Zahler}`                                                |
+| FABRIO                 | Mailvorlage Protokoll                              | `{Nr}`, `{Protokolldatum}`, `{Teilnehmer}`                                                                                                            |
+| QUADRIO, TERRIO, NUMIO | Dateiname Excel- und PDF-Export                    | `{Inhalt}` – was exportiert wird, z. B. Flächenaufstellung                                                                                            |
+
+Eingestellt werden alle Datei- und Ordnernamen mit Platzhaltern zentral: **Einstellungen › Pfade und Benennung**
+(„Datei → Einstellungen …“ in jeder App, Strg+,), siehe [suite.md](suite.md#einstellungen-aller-apps). Ausnahmen sind
+die Mailvorlagen von FABRIO und die Zielordner und Dateinamen der Vorlagen-Presets in ATLAS, die zu ihrem Werkzeug
+gehören.
 
 ## Alte Namen gelten weiter
 
@@ -91,6 +97,8 @@ um, mit gleicher Bedeutung (`{datum}` in ATLAS wird zu `{DATUM:JJJJ-MM-TT}`).
 - `platzhalterIn`, `unbekanntePlatzhalter`, `veraltetePlatzhalter`, `modernisieren` – zum Zerlegen, Prüfen und
   Umstellen.
 - Oberfläche: `PlatzhalterChips` und `PlatzhalterHinweise` aus `@core/ui/Platzhalter`.
-- Lokale Variablen gehören zu ihrer App (z. B. `apps/ava/src/platzhalter.ts`, `PLATZHALTER_PLAN` in
-  `apps/ordner/src/nummer.ts`) und folgen derselben Schreibregel. Aliase lokaler Variablen gehen denen der globalen
+- Lokale Variablen gehören zu ihrem Zusammenhang und folgen derselben Schreibregel. Die der zentralen Einstellungen
+  stehen in `packages/core/src/einstellungen/variablen.ts` (damit der Dialog sie in jeder App kennt; die Apps
+  übernehmen sie von dort, z. B. `PLATZHALTER_PLAN` in `apps/ordner/src/nummer.ts`), die übrigen in der App (z. B. die
+  Mailvorlagen in `apps/ava/src/platzhalter.ts`). Aliase lokaler Variablen gehen denen der globalen
   vor (`{Datum}` ist in FABRIO das Rechnungsdatum).

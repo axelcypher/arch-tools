@@ -98,11 +98,12 @@ describe('Web-Version', () => {
     const host = await render();
     const leiste = () => host.querySelector<HTMLElement>('.toolbar.werkzeugleiste')!;
     const sichtbar = () => [...leiste().querySelectorAll<HTMLElement>(':scope > [data-eintrag]')].filter((e) => !e.hidden).map((e) => e.dataset.eintrag);
-    expect(sichtbar()).toEqual(['oeffnen']);
+    // „Formular öffnen …“ sichtbar; „Datei“ trägt nur die zentralen Einstellungen
+    expect(sichtbar()).toEqual(['datei', 'oeffnen']);
     expect(knopfGenau(leiste(), 'Formular öffnen …')).toBeDefined();
     await oeffnen();
     expect(sichtbar()).toEqual(['datei', 'speichern', 'umschalter', ...(useFormulare.getState().ansicht === 'seite' ? ['zoom'] : []), 'ansicht', 'status']);
-    expect(await leistenMenueTexte(host, 'Datei')).toEqual(['Formular öffnen …', 'Drucken …']);
+    expect(await leistenMenueTexte(host, 'Datei')).toEqual(['Formular öffnen …', 'Drucken …', 'Einstellungen …']);
     expect(leiste().querySelector('button.primary')).toBeNull();
     expect(knopfGenau(leiste(), 'Herunterladen')).toBeDefined();
   });

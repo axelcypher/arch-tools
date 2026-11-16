@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { MenuePunkt } from '@core/ui/Menue';
-import { useMenueOffen, zeigeMenueAn } from '@core/ui/Menue';
+import { MenueKnopf, useMenueOffen, zeigeMenueAn } from '@core/ui/Menue';
+import { einstellungenPunkt } from '@core/ui/Einstellungen';
 import { Symbol } from '@core/ui/Symbol';
 import type { LeistenTeil } from '@core/ui/Werkzeugleiste';
 import { Werkzeugleiste } from '@core/ui/Werkzeugleiste';
@@ -129,6 +130,8 @@ export function Kopf({
   const modulMarken = agsWiderspruch || agsVorschlag || !!lageText || stand.fehlend.length > 0;
   const rechtsstandTitel = `${paket.herkunft === 'nachgeladen' ? 'Regelpaket nachgeladen' : 'Regelpaket des Builds'} ${paket.version}${paketMeldung ? ` – ${paketMeldung}` : ''}${zeiten.length ? ` · Normen zuletzt an der Quelle bestätigt zwischen ${datumZeit(zeiten[0])} und ${datumZeit(zeiten[zeiten.length - 1])}` : ''}`;
   const teile: LeistenTeil[] = [
+    // „Datei“ links (docs/design.md, „Kopf- und Werkzeugleisten“): in LEXIO nur „Einstellungen …“
+    { id: 'datei', inhalt: <MenueKnopf punkte={() => [einstellungenPunkt()]}>Datei</MenueKnopf> },
     {
       id: 'speichern',
       gruppe: true,

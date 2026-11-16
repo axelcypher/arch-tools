@@ -562,7 +562,7 @@ describe('Projektdatei (.oap) als Quelle der Projektstammdaten', () => {
     expect(JSON.parse(localStorage.getItem('arch-tools:konfig:allgemein')!)).toMatchObject({ projekte: ['Z:/Projekte'], oapPfad: 'Planung/Berechnungen/{Kürzel}.oap' });
   });
 
-  it('Ort neuer Projektdateien mit {Datum} und {Vorhaben} – Einstellungen zeigen Beispiel und unbekannte Platzhalter', async () => {
+  it('Ort neuer Projektdateien mit {Datum} und {Vorhaben} – Einstellungen zeigen Beispiel und verweisen auf Pfade und Benennung', async () => {
     const d = new Date();
     const heute = [d.getFullYear() % 100, d.getMonth() + 1, d.getDate()].map((n) => String(n).padStart(2, '0')).join('');
     useFormulare.setState({ oapVorlage: 'Organisation/{Kürzel} {Datum} {Vorhaben}.oap' });
@@ -582,17 +582,12 @@ describe('Projektdatei (.oap) als Quelle der Projektstammdaten', () => {
     await warte();
     const beispiel = () => document.querySelector('[aria-label="Beispiel für den Pfad"]')!.textContent;
     expect(beispiel()).toBe(`Beispiel: Organisation/BS9 ${heute} Neubau Einfamilienhaus.oap`);
-    act(() => useFormulare.getState().setOapVorlage('Organisation/{Kürzel} {Bauherr}.oap'));
+    // eingestellt wird der Pfad zentral (Einstellungen aller Apps › Pfade und Benennung): hier Anzeige und Verweis
+    act(() => useFormulare.getState().setOapVorlage('Organisation/{PROJEKT_KUERZEL} {Bauherr} {PROJEKT_KURZNAME}.oap'));
     await warte();
-    expect(document.querySelector('.feld-meldung')!.textContent).toContain('{Bauherr}');
-    await klick(knopf(document.body, '{PROJEKT_KURZNAME}'));
-    expect(useFormulare.getState().oapVorlage).toBe('Organisation/{Kürzel} {Bauherr} {PROJEKT_KURZNAME}.oap');
     expect(beispiel()).toBe('Beispiel: Organisation/BS9 {Bauherr} EFH Musterweg.oap');
-    // alte Namen: Hinweis mit „Vorlage anpassen“, erst der Klick stellt um
-    expect(document.querySelector('.ph-veraltet')!.textContent).toContain('{Kürzel} → {PROJEKT_KUERZEL}');
-    await klick(knopf(document.querySelector('.ph-veraltet') as HTMLElement, 'Auf neue Namen umstellen'));
-    expect(useFormulare.getState().oapVorlage).toBe('Organisation/{PROJEKT_KUERZEL} {Bauherr} {PROJEKT_KURZNAME}.oap');
-    expect(beispiel()).toBe('Beispiel: Organisation/BS9 {Bauherr} EFH Musterweg.oap');
+    expect(knopf(document.body, 'Pfade und Benennung …')).toBeDefined();
+    expect(document.querySelector('.ph-chips')).toBeNull();
   });
 
   it('eine alte Projektdaten.xlsx wird nur gelesen – ihre Angaben lassen sich in die Projektkarte übernehmen', async () => {

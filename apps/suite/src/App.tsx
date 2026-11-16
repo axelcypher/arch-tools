@@ -29,6 +29,7 @@ import { farbschemaPunkt } from '@core/ui/TitleBar';
 import { dialogVerhaltenEinrichten } from '@core/ui/dialoge';
 import { aenderungenSpeichern, aenderungenVerwerfen, meldung, RueckfrageHost } from '@core/ui/Rueckfrage';
 import { SpeicherortAnzeige, SpeicherortHost, speicherortPunkt, SpeicherortZeile, useKonfigOrt, useSpeicherort } from '@core/ui/Speicherort';
+import { EinstellungenHost, einstellungenPunkt } from '@core/ui/Einstellungen';
 import { umzugBestaetigen } from '@core/ui/umzug';
 import { schreibenAbwarten } from '@core/ui/vorbereiten';
 import { UpdateKnopf, updatePunkt } from '@core/ui/UpdateKnopf';
@@ -494,6 +495,7 @@ export function App() {
     const sp = speicherortPunkt(ort, speicherortOeffnen);
     return [
       ...(update ? [update, { trenner: true } as const] : []),
+      einstellungenPunkt('allgemein'),
       farbschemaPunkt(false),
       ...(sp ? [sp] : []),
       { trenner: true },
@@ -638,6 +640,7 @@ export function App() {
       </main>
       {logOffen && <LogDialog onClose={() => setLogOffen(false)} />}
       <SpeicherortHost />
+      <EinstellungenHost />
       <RueckfrageHost />
       <MenueHost />
     </div>

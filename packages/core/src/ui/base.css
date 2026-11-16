@@ -1331,6 +1331,7 @@ code {
   /* Nicht-Text braucht 3:1 gegen die Leiste: das dunklere Warnorange statt der Auswahlfarbe */
   color: var(--warn-text);
 }
+.unsichtbar,
 .titlebar-unsichtbar {
   position: absolute;
   width: 1px;
@@ -2441,4 +2442,245 @@ button.ungespeichert::after {
   height: 1px;
   margin: var(--s1) var(--s2);
   background: var(--border);
+}
+
+/* ---------- Zentraler Einstellungsdialog (ui/Einstellungen.tsx; docs/design.md, „Einstellungen“) ---------- */
+
+.modal.einst {
+  padding: 0;
+  height: min(780px, 90vh);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.einst-form {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.einst-rumpf {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(190px, 250px) minmax(0, 1fr);
+}
+.einst-nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+  padding: var(--s4) var(--s2);
+  overflow-y: auto;
+  background: var(--bg);
+  border-right: 1px solid var(--border);
+}
+.einst-nav-kopf {
+  margin: 0;
+  padding: 0 var(--s2) var(--s2);
+  font-size: var(--fs-l);
+  font-weight: 600;
+}
+.einst-nav-liste {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+}
+.einst-nav-eintrag {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s2);
+  width: 100%;
+  min-height: var(--ctl-h);
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: var(--radius);
+  padding: var(--s2) var(--s2);
+}
+.einst-nav-eintrag > .symbol {
+  flex: none;
+  /* Symbol (1em) auf die erste Textzeile ausrichten – optische Korrektur, kein Abstand der Skala */
+  margin-top: 2px;
+  color: var(--muted);
+}
+.einst-nav-eintrag:hover:not(:disabled) {
+  background: var(--accent-soft);
+}
+.einst-nav-eintrag[aria-selected='true'] {
+  background: var(--panel);
+  border-color: var(--border);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+.einst-nav-eintrag[aria-selected='true'] > .symbol {
+  color: var(--accent-text);
+}
+.einst-nav-titel {
+  display: block;
+  font-weight: 600;
+}
+.einst-nav-text {
+  display: block;
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+.einst-geaendert {
+  /* „geändert“ wie der Punkt ungespeicherter Änderungen in der Titelleiste (mindestens 3 : 1) */
+  color: var(--warn-text);
+}
+.einst-inhalt {
+  overflow-y: auto;
+  padding: var(--s4) var(--s5) var(--s5);
+  min-width: 0;
+}
+.einst-inhalt > h3 {
+  margin: 0 0 var(--s1);
+  font-size: var(--fs-l);
+  font-weight: 600;
+}
+.einst-einleitung {
+  margin: 0 0 var(--s3);
+  max-width: 760px;
+  color: var(--muted);
+}
+.einst-inhalt > .meldung {
+  max-width: 760px;
+}
+.einst-gruppe {
+  max-width: 760px;
+  margin: var(--s4) 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+.einst-gruppe > p {
+  margin: 0;
+}
+.einst-gruppe > h4 {
+  margin: 0;
+  padding-bottom: var(--s1);
+  font-size: var(--fs-s);
+  font-weight: 600;
+  border-bottom: 1px solid var(--border);
+}
+.einst-gruppe-text {
+  margin: 0;
+}
+.einst-filter {
+  max-width: 260px;
+}
+.einst-eintrag {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+  padding: var(--s3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--panel);
+  scroll-margin-top: var(--s4);
+}
+.einst-eintrag.geaendert {
+  /* „geändert“ wie in der Seitenliste: Linie links in --warn-text (nicht --accent, das läse sich wie Fokus oder Auswahl) */
+  box-shadow: inset 3px 0 0 var(--warn-text);
+}
+.einst-eintrag-kopf {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s2);
+  flex-wrap: wrap;
+}
+.einst-eintrag-titel {
+  font-weight: 600;
+}
+.einst-apps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s1);
+}
+.einst-app {
+  font-size: var(--fs-xs);
+  /* Zeilenhöhe der Marke (keine Größe der Abstandsskala) */
+  line-height: 1.6;
+  padding: 0 var(--s2);
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+.einst-erklaerung,
+.einst-projekt,
+.einst-vorschau {
+  margin: 0;
+}
+.einst-projekt-marke {
+  font-weight: 600;
+}
+.einst-feldzeile {
+  display: flex;
+  gap: var(--s2);
+}
+.einst-feldzeile > .einst-feld {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--ctl-h);
+}
+.einst-feldzeile > textarea.einst-feld {
+  resize: vertical;
+}
+/* Platzhalter-Chips nur am Eintrag mit dem Fokus (wie die kompakten Namensfelder): die lange Seite bleibt ruhig */
+.einst-eintrag:not(:focus-within) .ph-chips {
+  display: none;
+}
+.einst-vorschau code {
+  overflow-wrap: anywhere;
+}
+.einst-meldungen {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.einst-eintrag-fuss {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2);
+  flex-wrap: wrap;
+}
+.einst-eintrag-fuss code {
+  overflow-wrap: anywhere;
+}
+.einst-abweichung > p {
+  margin: 0 0 var(--s2);
+}
+.einst-sperrgrund {
+  margin: 0;
+  color: var(--warn-text);
+  align-self: center;
+}
+.einst-fehler {
+  margin: 0 var(--s5);
+}
+.modal.einst > .einst-form:last-child > .dialog-buttons:last-child {
+  position: static;
+  margin: 0;
+  padding: var(--s3) var(--s5);
+  border-top: 1px solid var(--border);
+}
+.einst-verweis {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s1);
+}
+.einst-verweis > p {
+  margin: 0;
+}
+@media (max-width: 760px) {
+  .einst-rumpf {
+    grid-template-columns: 160px minmax(0, 1fr);
+  }
+  .einst-nav-text {
+    display: none;
+  }
 }

@@ -428,11 +428,12 @@ describe('Struktur-Editor', () => {
     expect(z('07 Ausschreibung').className).not.toContain('entfaellt');
   });
 
-  it('Namen im Kopf der Struktur, Platzhalter-Chips nur im Fokus (kompakt); „Vorgabe wiederherstellen …“', () => {
+  it('Namen im Kopf der Struktur (Anzeige mit Verweis auf Pfade und Benennung); „Vorgabe wiederherstellen …“', () => {
     const { host } = strukturAnsicht();
     const kopf = host.querySelector('.po-struktur-kopf')!;
     expect(kopf.querySelector('.po-schemata')?.textContent).toContain('Namen');
-    expect(kopf.querySelectorAll('.po-schemata .po-schemafeld-block.kompakt')).toHaveLength(3);
+    expect(kopf.querySelectorAll('.po-schemata-werte dt')).toHaveLength(3);
+    expect(knopf(kopf, 'Pfade und Benennung …')).toBeDefined();
     expect(host.querySelector('.po-editor-seite .po-schemata')).toBeNull();
     expect(knopf(kopf, 'Vorgabe wiederherstellen').textContent).toBe('Vorgabe wiederherstellen …');
     expect(knopf(kopf, 'Standard')).toBeUndefined();
@@ -545,7 +546,7 @@ describe('Vorlagen', () => {
     const klapp = links.querySelector('details.po-platzhalter-klapp')!;
     expect(klapp.hasAttribute('open')).toBe(false);
     expect(klapp.querySelector('summary')?.textContent).toBe('Platzhalter in Vorlagen anzeigen');
-    expect(links.querySelector('.po-schemafeld-block.kompakt')).not.toBeNull();
+    expect(knopf(links as HTMLElement, 'Pfade und Benennung …')).toBeDefined();
   });
 
   it('Zuordnung entfernen mit „Rückgängig“; Preset löschen mit derselben Rückfrage wie Bausteine', async () => {
@@ -930,7 +931,7 @@ describe('Folgerunde: unlesbare Struktur sperrt die Bearbeitung', () => {
     expect(host.querySelector('.meldung.fehler')).toBeNull();
   });
 
-  it('Vorlagen: nur lesen – „Preset“, Dateinamen und das gewählte Preset echt gesperrt (kein inert), das Preset bleibt sichtbar; Gegenprobe ohne Fehler', async () => {
+  it('Vorlagen: nur lesen – „Preset“ und das gewählte Preset echt gesperrt (kein inert), das Preset bleibt sichtbar; Gegenprobe ohne Fehler', async () => {
     await unlesbarLaden();
     const host = render();
     einrichtung(host, 'Vorlagen');
@@ -940,8 +941,8 @@ describe('Folgerunde: unlesbare Struktur sperrt die Bearbeitung', () => {
     expect(plusKnopf(host, 'Preset').disabled).toBe(true);
     expect(plusKnopf(host, 'Preset').title).toBe(SPERRGRUND);
     expect(knopf(host, 'Duplizieren').disabled).toBe(true);
-    // Dateinamen links
-    expect(istGesperrt(host.querySelector('input[aria-label="Dateinamen im Projekt"]')!)).toBe(true);
+    // Dateinamen links: nur angezeigt (eingestellt in den Einstellungen aller Apps)
+    expect(host.querySelector('input[aria-label="Dateinamen im Projekt"]')).toBeNull();
     // rechts das gewählte Preset: sichtbar, Felder gesperrt
     const preset = host.querySelector('section.po-preset')!;
     expect(preset.querySelector('h2')?.textContent).toContain('Preset');
@@ -954,7 +955,6 @@ describe('Folgerunde: unlesbare Struktur sperrt die Bearbeitung', () => {
     act(() => useOrdner.setState({ strukturFehler: null }));
     expect(plusKnopf(host, 'Preset').disabled).toBe(false);
     expect(host.querySelector('fieldset[disabled]')).toBeNull();
-    expect(istGesperrt(host.querySelector('input[aria-label="Dateinamen im Projekt"]')!)).toBe(false);
   });
 
   it('„Rückgängig“ nach „Neu laden“ einer unlesbaren fremden Fassung: läuft über strukturErsetzen – sichert sie und hebt die Sperre auf', async () => {

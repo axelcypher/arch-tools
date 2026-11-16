@@ -310,7 +310,8 @@ describe('Hinweis bei nicht lesbarer Bürostruktur', () => {
     act(() => useOrdner.setState({ strukturFehler: null }));
     expect(host.textContent).not.toContain('Bürostruktur ist nicht lesbar');
     // die Ansichten in der Werkzeugleiste sind Umschalter: genau einer ist gedrückt
-    const ansichten = [...host.querySelectorAll('.toolbar .tb-group button')];
+    // (ohne Menüknöpfe wie „Datei“)
+    const ansichten = [...host.querySelectorAll('.toolbar .tb-group button:not([aria-haspopup])')];
     expect(ansichten.filter((b) => b.getAttribute('aria-pressed') === 'true')).toHaveLength(1);
     expect(ansichten.every((b) => b.hasAttribute('aria-pressed'))).toBe(true);
   });

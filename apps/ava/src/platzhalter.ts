@@ -7,27 +7,15 @@
  */
 
 import type { ProjectMeta } from '@core/model';
-import { ersetzen, globaleWerte, GLOBALE_VARIABLEN, mitAliasen, type Variable, type Wert } from '@core/platzhalter';
+import { FABRIO_FIRMA, FABRIO_GEWERK, FABRIO_LV, FABRIO_RECHNUNG, GLOBAL_FABRIO } from '@core/einstellungen/variablen';
+import { ersetzen, globaleWerte, type Variable, type Wert } from '@core/platzhalter';
 
-/** globale Variablen mit den alten Namen von FABRIO */
-const GLOBAL: Variable[] = GLOBALE_VARIABLEN.map((v) => (v.name === 'PROJEKT_VORHABEN' ? mitAliasen(v.name, ['Projekt']) : v));
-
-const gewerk: Variable = { name: 'Gewerk', text: 'Gewerk, z. B. G08' };
-const firma: Variable = { name: 'Firma', text: 'Auftragnehmer' };
-
-/** Muster der Rechnungsdateien im Auftragsordner (Bilden und Erkennen) */
-export const RECHNUNG_NAME_VARIABLEN: Variable[] = [
-  ...GLOBAL,
-  { name: 'Nr', text: 'Nummer der Rechnungsliste; mit Stellen z. B. {Nr:3}' },
-  { name: 'Art', text: 'Rechnungsart, z. B. AB, SR, R' },
-  { name: 'Lfd', text: 'laufende Nummer der Art (1 bei AB1)' },
-  firma,
-  { name: 'Rechnungsdatum', text: 'Rechnungsdatum als JJMMTT; mit Format z. B. {Rechnungsdatum:JJJJ-MM-TT}', vorgabe: 'JJMMTT', aliase: ['Datum'] },
-  gewerk,
-];
-
-/** Name neuer LV-Dateien */
-export const LV_NAME_VARIABLEN: Variable[] = [...GLOBAL, gewerk];
+/** globale Variablen mit den alten Namen von FABRIO; Rechnungs- und LV-Namen – eine Quelle in core (zentrale Einstellungen) */
+const GLOBAL: Variable[] = GLOBAL_FABRIO;
+const gewerk = FABRIO_GEWERK;
+const firma = FABRIO_FIRMA;
+export const RECHNUNG_NAME_VARIABLEN: Variable[] = FABRIO_RECHNUNG;
+export const LV_NAME_VARIABLEN: Variable[] = FABRIO_LV;
 
 /** Mailvorlage für geprüfte Rechnungen (und weitere Vorlagen außer dem Protokoll) */
 export const MAIL_RECHNUNG_VARIABLEN: Variable[] = [

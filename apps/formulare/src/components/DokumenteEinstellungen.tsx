@@ -77,7 +77,7 @@ export function DokumenteEinstellungen() {
   const vorlageSetzen = (vid: string, teil: Partial<AntragsVorlage>) => setVorlagen(vorlagen.map((v) => (v.id === vid ? { ...v, ...teil } : v)));
   const inVorlage = (v: AntragsVorlage, kid: string, an: boolean) => vorlageSetzen(v.id, { dokumente: an ? [...v.dokumente.filter((d) => d !== kid), kid] : v.dokumente.filter((d) => d !== kid) });
   const setzen = (kid: string, teil: Partial<KatalogEintrag>) => setKatalog(katalog.map((k) => (k.id === kid ? { ...k, ...teil } : k)));
-  const quelleVorgabe = (k: KatalogEintrag) => (k.art === 'plansatz' ? PLANSATZ_QUELLE : e.berechnungsordner);
+  const quelleVorgabe = (k: KatalogEintrag) => (k.art === 'plansatz' ? PLANSATZ_QUELLE : e.berechnungsordner.split('\n').join(' · '));
   const musterVorgabe = (k: KatalogEintrag) => (k.art === 'plansatz' ? 'alle Pläne mit Plannummer' : `*${k.titel}*`);
   // Kurzbeschreibung in der Zeile: woher das Dokument kommt
   const herkunft = (k: KatalogEintrag) => (k.art === 'intern' ? formularText(k) : `${k.art === 'plansatz' ? 'Pläne' : 'Datei'} aus ${k.quelle || quelleVorgabe(k)}${k.muster ? ` · ${k.muster}` : ''}`);

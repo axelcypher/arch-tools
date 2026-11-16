@@ -5,6 +5,7 @@ import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { strToU8 } from 'fflate';
 import { VORGABE_ALLGEMEIN } from '@core/platform/konfig';
+import { useEinstellungen } from '@core/ui/Einstellungen';
 import { getEntries } from '@core/platform/log';
 import { App } from './App';
 import { AssistentView } from './components/AssistentView';
@@ -106,7 +107,8 @@ describe('ATLAS (Projektordner)', () => {
     const leiste = host.querySelector('.toolbar.werkzeugleiste[aria-label="Ansichten"]')!;
     expect(leiste).not.toBeNull();
     const sichtbar = [...leiste.querySelectorAll(':scope > [data-eintrag] button')].map((b) => b.textContent?.trim());
-    expect(sichtbar).toEqual(['Assistent', 'Ordner prüfen', 'Mails', 'Einrichtung']);
+    // links „Datei“ (nur „Einstellungen …“)
+    expect(sichtbar).toEqual(['Datei', 'Assistent', 'Ordner prüfen', 'Mails', 'Einrichtung']);
     const menueKnopf = () => knopf(host, 'Einrichtung');
     expect(menueKnopf().className).not.toContain('active');
     expect(menueKnopf().getAttribute('aria-label')).toBe('Einrichtung');
@@ -278,14 +280,17 @@ describe('ATLAS (Projektordner)', () => {
     const host = render();
     einrichtung(host, 'Einstellungen');
     expect(host.textContent).toContain('Gemeinsame Einstellungen');
-    eingabe(feld(host, 'Projektdatei (.oap) in neuen Projekten'), 'Planung/Berechnungen/{nummer}');
-    expect(useOrdner.getState().allgemein.oapPfad).toBe('Planung/Berechnungen/{nummer}');
-    expect(host.textContent).toContain('Beispiel: Planung/Berechnungen/');
-    eingabe(feld(host, 'Fotoordner im Projekt'), '10 Fotos');
-    expect(useOrdner.getState().allgemein.fotoordner).toBe('10 Fotos');
-    // Kürzel der Mitarbeiter: Vorschläge für „Bearbeitung“ (P-14)
-    eingabe(feld(host, 'Mitarbeiter (Kürzel)'), 'TP, AK; TP');
-    expect(useOrdner.getState().allgemein.mitarbeiter).toEqual(['TP', 'AK']);
+    // Projektdatei, Fotoordner, Büro und Mitarbeiter: angezeigt, eingestellt in den Einstellungen aller Apps
+    act(() => useOrdner.setState({ allgemein: { ...useOrdner.getState().allgemein, oapPfad: 'Planung/Berechnungen/{nummer}', fotoordner: '10 Fotos' } }));
+    expect(host.textContent).toContain('Planung/Berechnungen/{nummer}');
+    expect(host.textContent).toContain('z. B. Planung/Berechnungen/');
+    expect(host.textContent).toContain('10 Fotos');
+    expect(host.querySelector('label.field input')).toBeNull();
+    act(() => knopf(host, 'Pfade und Benennung …').click());
+    expect(useEinstellungen.getState()).toMatchObject({ offen: true, seite: 'pfade', fokus: 'projekt.oapPfad' });
+    act(() => knopf(host, 'Speicherort und Büro …').click());
+    expect(useEinstellungen.getState()).toMatchObject({ offen: true, seite: 'allgemein' });
+    act(() => useEinstellungen.getState().schliessen());
     // die Struktur steht im eigenen Reiter
     expect(host.querySelector('[role="tree"]')).toBeNull();
   });
@@ -465,27 +470,15 @@ describe('ATLAS (Projektordner)', () => {
   it('Struktur: Schemata, Textansicht, Standard wiederherstellen und Sicherungen', async () => {
     const host = render();
     einrichtung(host, 'Struktur');
-    eingabe(feld(host, 'Name des Projektordners'), '{nummer}_{kurzname}');
-    expect(useOrdner.getState().struktur.ordnername).toBe('{nummer}_{kurzname}');
-    // Platzhalter einfügen (Chips, global und lokal unterscheidbar), Vorschau und unbekannte Platzhalter schon beim Tippen (P-06)
-    const chips = host.querySelector<HTMLElement>('[role="group"][aria-label="Platzhalter: Name des Projektordners"]')!;
-    expect(chips.querySelectorAll('.ph-global').length).toBeGreaterThan(5);
-    act(() => chips.querySelector<HTMLButtonElement>('button[aria-label^="{JAHR} einfügen"]')!.click());
-    expect(useOrdner.getState().struktur.ordnername).toBe('{nummer}_{kurzname} {JAHR}');
-    // alte Namen funktionieren weiter; „Vorlage anpassen“ stellt erst auf Wunsch um
-    const ordnerFeld = feld(host, 'Name des Projektordners');
-    const veraltet = ordnerFeld.closest('label')!.querySelector('.ph-veraltet')!;
-    expect(veraltet.textContent).toContain('{nummer} → {PROJEKT_KUERZEL}');
-    act(() => veraltet.querySelector('button')!.click());
-    expect(useOrdner.getState().struktur.ordnername).toBe('{PROJEKT_KUERZEL}_{PROJEKT_KURZNAME} {JAHR}');
-    expect(ordnerFeld.closest('label')!.querySelector('.ph-veraltet')).toBeNull();
-    act(() => {
-      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(ordnerFeld, '{nummer} {Bauherr}');
-      ordnerFeld.dispatchEvent(new Event('input', { bubbles: true }));
-    });
-    expect(ordnerFeld.closest('label')!.querySelector('.feld-meldung')!.textContent).toContain('{Bauherr}');
-    expect(ordnerFeld.closest('label')!.querySelector('.po-vorschau')!.textContent).toBe('Beispiel: 2026-014 {Bauherr}');
-    eingabe(ordnerFeld, '{nummer}_{kurzname}');
+    // Namen der Struktur: angezeigt mit Beispiel, eingestellt in den Einstellungen aller Apps (Pfade und Benennung)
+    act(() => useOrdner.setState({ struktur: { ...useOrdner.getState().struktur, ordnername: '{nummer}_{kurzname}' } }));
+    const namen = host.querySelector<HTMLElement>('.po-schemata')!;
+    expect(namen.textContent).toContain('{nummer}_{kurzname}');
+    expect(namen.textContent).toContain('z. B. 2026-014_');
+    expect(namen.querySelector('input')).toBeNull();
+    act(() => knopf(namen, 'Pfade und Benennung …').click());
+    expect(useEinstellungen.getState()).toMatchObject({ offen: true, seite: 'pfade', fokus: 'projekt.nummernschema' });
+    act(() => useEinstellungen.getState().schliessen());
     // Ordner im Baum ändern: LPh und Dateischema
     act(() => host.querySelector<HTMLElement>('[role="treeitem"][aria-label="09 Fotos"]')!.dispatchEvent(new MouseEvent('click', { bubbles: true })));
     act(() => host.querySelector<HTMLButtonElement>('.po-auswahl-panel button[aria-label="LPh 9"]')!.click());

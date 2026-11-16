@@ -21,6 +21,7 @@ import { Symbol } from '@core/ui/Symbol';
 import { MenueKnopf } from '@core/ui/Menue';
 import type { MenuePunkt } from '@core/ui/Menue';
 import { Werkzeugleiste } from '@core/ui/Werkzeugleiste';
+import { einstellungenPunkt } from '@core/ui/Einstellungen';
 
 export function App() {
   const doc = useEntz((s) => s.doc);
@@ -123,6 +124,8 @@ export function App() {
     { trenner: true },
     { text: 'Fotos hinzufügen …', aktion: () => void fotosHinzufuegen() },
     ...(isTauri() ? [{ text: 'Fotos des Projekts …', aktion: () => setWahl(projektordner ? 'fotos' : 'projekt') }] : []),
+    { trenner: true },
+    einstellungenPunkt(),
   ];
   // Menü „Ansicht“: Schalter der Darstellung, dann „Alles zeigen“
   const ansichtPunkte = (): MenuePunkt[] => [

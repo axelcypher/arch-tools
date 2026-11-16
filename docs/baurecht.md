@@ -540,3 +540,8 @@ bricht sonst ab.
 
 Die Ergebnisse sind eine Arbeitshilfe und ersetzen keine fachliche Prüfung; die rechtliche Einordnung bleibt bei den
 Entwurfsverfassenden (§ 54 BauO NRW).
+
+## Zentrale Einstellungen
+
+Links in der Kopfleiste steht „Datei“ mit „Einstellungen …“ (Strg+,) für die Einstellungen aller Apps (Speicherort,
+Büro, Pfade und Benennung). Siehe [suite.md](suite.md#einstellungen-aller-apps).

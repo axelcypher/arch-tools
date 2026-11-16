@@ -242,7 +242,7 @@ describe('Einstellungen der Katasterpläne', () => {
     expect(useKataster.getState().einstellungen.plaene.map((p) => p.name)).toEqual(['Katasterplan A4', 'Katasterplan A3', 'Schwarzplan', 'Katasterplan']);
   });
 
-  it('Plankarte: Raster, DXF ohne Beschriftungsfeld, Vorwahl mit Namen, Platzhalter beim festen Ordner', async () => {
+  it('Plankarte: Raster, DXF ohne Beschriftungsfeld, Vorwahl mit Namen, Verweis auf Pfade und Benennung', async () => {
     const host = await zeige(createElement(KatasterEinstellungen));
     const karten = [...host.querySelectorAll('.ka-plan')];
     expect(karten.every((k) => k.querySelector('.es-raster'))).toBe(true);
@@ -250,8 +250,10 @@ describe('Einstellungen der Katasterpläne', () => {
     expect(beschriftung(karten[0])).toBeTruthy();
     expect(beschriftung(karten[2])).toBeNull();
     expect(host.querySelector('input[type="checkbox"][aria-label="Schwarzplan im Export vorwählen"]')).toBeTruthy();
-    // die Platzhalter des festen Ordners gehören zur ersten Option
-    expect(host.querySelector('.ex-ziel')!.querySelector('.ka-ziel-platzhalter')).toBeTruthy();
+    // Ordner und Dateiname: angezeigt, eingestellt in den Einstellungen aller Apps (Pfade und Benennung)
+    expect(host.querySelector('.ex-ziel')!.textContent).toContain('Kataster');
+    expect(host.querySelector('.ka-ziel-platzhalter')).toBeNull();
+    expect(knopf(host, 'Pfade und Benennung …')).toBeTruthy();
     expect(host.textContent).toContain('kein amtlicher Auszug aus dem Liegenschaftskataster');
   });
 

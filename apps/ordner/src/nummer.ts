@@ -5,34 +5,20 @@
  * von dem, der das Projekt anlegt – das Feld bleibt frei änderbar.
  */
 
-import { GLOBALE_VARIABLEN, ersetzen, mitAliasen, platzhalterIn, unbekanntePlatzhalter, type Fundstelle, type Variable, type Wert } from '@core/platzhalter';
+import { ersetzen, platzhalterIn, unbekanntePlatzhalter, type Fundstelle, type Variable, type Wert } from '@core/platzhalter';
 import { ausOrdnernameNachSchema } from '@core/ui/projektListe';
+import { ATLAS_NUMMER, ATLAS_PLAN, ATLAS_PROJEKT, ATLAS_VORLAGE } from '@core/einstellungen/variablen';
 
 const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /** Variable einer Einstellung (Name ohne Klammern, Erklärung) – siehe @core/platzhalter */
 export type Platzhalter = Variable;
 
-/**
- * Globale Variablen im Projektordner. Alte Namen gelten weiter, mit ihrer bisherigen Bedeutung: {nummer}, {kürzel},
- * {projektcode}, {projekt} = Projektkürzel; {datum} war hier JJJJ-MM-TT (die neue Variable {DATUM} ist wie überall
- * JJMMTT, mit Format z. B. {DATUM:JJJJ-MM-TT}).
- */
-const GLOBAL: Variable[] = GLOBALE_VARIABLEN.map((v) =>
-  v.name === 'PROJEKT_KUERZEL' ? mitAliasen(v.name, ['projekt']) : v.name === 'DATUM' ? mitAliasen(v.name, [{ name: 'datum', angabe: 'JJJJ-MM-TT' }], true) : v,
-);
-const lokal = (name: string, text: string, alt = name.toLowerCase()): Variable => ({ name, text, aliase: [alt] });
-
-/** Ordner- und Dateinamen im Projekt: alle globalen Variablen */
-export const PLATZHALTER_PROJEKT: Variable[] = GLOBAL;
-/** Nummernschema: bildet die Projektnummer selbst – nur Jahr und laufende Nummer */
-export const PLATZHALTER_NUMMER: Variable[] = [
-  GLOBAL.find((v) => v.name === 'JAHR')!,
-  GLOBAL.find((v) => v.name === 'JAHR_KURZ')!,
-  lokal('Nr', 'laufende Nummer; mit Stellen z. B. {Nr:3} (führende Nullen)'),
-];
-export const PLATZHALTER_PLAN: Variable[] = [...GLOBAL, lokal('Plannummer', 'Plannummer'), lokal('Index', 'Planindex'), lokal('Titel', 'Plantitel')];
-export const PLATZHALTER_VORLAGE: Variable[] = [...GLOBAL, lokal('Name', 'Name der Vorlage ohne Endung')];
+/** Variablen der Namen im Projektordner – eine Quelle in core (zentrale Einstellungen) */
+export const PLATZHALTER_PROJEKT: Variable[] = ATLAS_PROJEKT;
+export const PLATZHALTER_NUMMER: Variable[] = ATLAS_NUMMER;
+export const PLATZHALTER_PLAN: Variable[] = ATLAS_PLAN;
+export const PLATZHALTER_VORLAGE: Variable[] = ATLAS_VORLAGE;
 /** alle Variablen des Projektordners (zum Ersetzen in beliebigen Namen) */
 const ALLE: Variable[] = [...PLATZHALTER_PLAN, ...PLATZHALTER_VORLAGE.filter((v) => v.name === 'Name')];
 

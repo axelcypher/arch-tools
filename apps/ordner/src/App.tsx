@@ -5,6 +5,7 @@ import { bestaetigen, meldung } from '@core/ui/Rueckfrage';
 import { TitleBar } from '@core/ui/TitleBar';
 import { MenueKnopf, type MenuePunkt } from '@core/ui/Menue';
 import { Werkzeugleiste } from '@core/ui/Werkzeugleiste';
+import { einstellungenPunkt } from '@core/ui/Einstellungen';
 import { AssistentView } from './components/AssistentView';
 import { PruefView } from './components/PruefView';
 import { EinstellungenView, StrukturView } from './components/StrukturView';
@@ -202,6 +203,8 @@ export function App() {
       <Werkzeugleiste
         name="Ansichten"
         teile={[
+          // „Datei“ (docs/design.md, „Kopf- und Werkzeugleisten“): in ATLAS nur „Einstellungen …“
+          { id: 'datei', gruppe: true, inhalt: <MenueKnopf punkte={() => [einstellungenPunkt()]}>Datei</MenueKnopf> },
           {
             id: 'ansichten',
             gruppe: true,

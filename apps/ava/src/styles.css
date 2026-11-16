@@ -668,6 +668,21 @@ input.ava-fehler {
   gap: 8px;
 }
 
+/* Ablage: eingestellt zentral (Einstellungen › Pfade und Benennung), hier nur angezeigt */
+.ava-werte {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--s2) var(--s3);
+  margin: 0;
+}
+.ava-werte dt {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+.ava-werte dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
 .ava-formular {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));

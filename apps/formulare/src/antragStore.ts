@@ -88,6 +88,9 @@ import type { DialogArt } from './store';
 import { ablageVon, autofillAnbindung, entwurfVon, formularOrdner, karteMitAenderungen, mitAenderungen, profilFuer as wirksamesProfil, sperrAnbindung, unterordnerAnbindung, useFormulare, wertVon } from './store';
 import { fragen } from '@core/ui/Rueckfrage';
 import { lesen, schreiben } from './speicher';
+import { berechnungenSuchvorlagen, pfadeAbonnieren, pfadWert, relativerPfad } from '@core/einstellungen/pfade';
+import { pfadeUebernehmen } from '@core/einstellungen/uebernahme';
+import type { PfadWert } from '@core/einstellungen/verzeichnis';
 import { anzahl } from './text';
 
 const log = logger('formulare');
@@ -98,6 +101,25 @@ const VORLAGEN = 'formulare:vorlagen';
 const UEBERSCHREIBUNGEN = 'formulare:export-projekte';
 const MERKMALE = 'formulare:merkmale';
 const PROJEKTSTATUS = 'formulare:projektstatus';
+
+/**
+ * Pfade und Namen des Exports kommen aus den zentralen Einstellungen (Pfade und Benennung, gemeinsamer Speicher) –
+ * bis 0.58 standen sie nur je Rechner unter „formulare:export“; der alte Eintrag bleibt stehen und wird beim Start
+ * übernommen (`pfadeUebernehmen`). Berechnungen sucht PERMIO in den Berechnungsordnern von QUADRIO, TERRIO und NUMIO und
+ * in den zusätzlich eingestellten Ordnern (je Zeile einer).
+ */
+export function mitZentral(e: ExportEinstellungen, w: (id: string) => PfadWert = pfadWert): ExportEinstellungen {
+  const text = (id: string) => String(w(id));
+  return {
+    ...e,
+    antragsordner: text('ablage.permio.antragsordner'),
+    namensvorlage: text('plaene.permio.namensvorlage'),
+    zielpfad: text('plaene.permio.zielpfad'),
+    vorlagenordner: text('vorlagen.permio.vorlagenordner'),
+    // Vorlagen je Zeile; ihre Platzhalter ersetzt erst das Lesen im Projekt (quellenLesen) mit dessen Angaben
+    berechnungsordner: berechnungenSuchvorlagen(w).join('\n'),
+  };
+}
 
 /** Abweichungen je Projekt, bereinigt (`ueberschreibungenAus`); Veraltetes (z. B. nur „Phase“) wird dabei auch aus dem Speicher genommen */
 function ueberschreibungenLesen(): Record<string, ExportUeberschreibung> {
@@ -1003,7 +1025,7 @@ export const useAntrag = create<AntragState>((set, get) => {
       if (await projektdateiSchreiben(naechste)) log.info(`${fassung}: ${datei} ${markiert ? 'nicht mehr bereit' : 'bereit'}`);
     },
 
-    einstellungen: einstellungenAus(lesen<unknown>(EINSTELLUNGEN, null)),
+    einstellungen: mitZentral(einstellungenAus(lesen<unknown>(EINSTELLUNGEN, null))),
     katalog: katalogAus(lesen<unknown>(KATALOG, null)),
     vorlagen: vorlagenAus(lesen<unknown>(VORLAGEN, null), katalogAus(lesen<unknown>(KATALOG, null))),
     merkmalDefinitionen: merkmaleAus(lesen<unknown>(MERKMALE, null)),
@@ -1023,7 +1045,7 @@ export const useAntrag = create<AntragState>((set, get) => {
 
     einstellungenNeuLesen: () => {
       set({
-        einstellungen: einstellungenAus(lesen<unknown>(EINSTELLUNGEN, null)),
+        einstellungen: mitZentral(einstellungenAus(lesen<unknown>(EINSTELLUNGEN, null))),
         katalog: katalogAus(lesen<unknown>(KATALOG, null)),
         vorlagen: vorlagenAus(lesen<unknown>(VORLAGEN, null), katalogAus(lesen<unknown>(KATALOG, null))),
         merkmalDefinitionen: merkmaleAus(lesen<unknown>(MERKMALE, null)),
@@ -1032,8 +1054,10 @@ export const useAntrag = create<AntragState>((set, get) => {
       void get().laden();
     },
     setEinstellungen: (teil) => {
-      const einstellungen = einstellungenAus({ ...get().einstellungen, ...teil });
-      schreiben(EINSTELLUNGEN, einstellungen);
+      const einstellungen = mitZentral(einstellungenAus({ ...get().einstellungen, ...teil }));
+      // die zentral eingestellten Angaben bleiben im alten Eintrag, wie sie waren (nichts geht verloren)
+      const alt = einstellungenAus(lesen<unknown>(EINSTELLUNGEN, null));
+      schreiben(EINSTELLUNGEN, { ...einstellungen, antragsordner: alt.antragsordner, namensvorlage: alt.namensvorlage, zielpfad: alt.zielpfad, vorlagenordner: alt.vorlagenordner, berechnungsordner: alt.berechnungsordner });
       set({ einstellungen });
       void get().laden();
     },
@@ -1247,10 +1271,32 @@ export const useAntrag = create<AntragState>((set, get) => {
           if (dateienLesefehler && get().dateienOrdner === verbinde(basis, antragsOrdner(get(), projekt))) dateien = get().dateien;
         }
         const ordner = new Set((get().projektdatei?.umfang ?? []).filter((u) => u.art !== 'intern').map((u) => quelleVonEintrag(u, e)));
+        // mehrere Suchordner (je Zeile einer, z. B. die Berechnungsordner der Rechen-Apps): Dateien aller zusammen, mit
+        // dem Ordner vor dem Namen; ein fehlender Ordner zählt als leer
+        const meta = oapMeta(projekt);
+        const projektWerte = { projektcode: projekt.ordner, kurzname: meta?.kurzname, vorhaben: meta?.vorhaben, bearbeiter: meta?.bearbeiter };
+        const quellenLesen = async (o: string): Promise<Eintrag[]> => {
+          // Platzhalter der Suchordner mit den Angaben des Projekts ({PROJEKT_KUERZEL} = Name des Projektordners)
+          const teile = o
+            .split('\n')
+            .map((x) => (x.includes('{') ? relativerPfad(x.trim(), projektWerte) : x.trim()))
+            .filter(Boolean);
+          if (teile.length === 1) return ds.liste(verbinde(basis, await ordnerAufloesen(ds, basis, teile[0])), 2);
+          const alle: Eintrag[] = [];
+          for (const t of teile) {
+            try {
+              const ordner = await ordnerAufloesen(ds, basis, t);
+              for (const d of await ds.liste(verbinde(basis, ordner), 2)) alle.push({ ...d, pfad: `${ordner}/${d.pfad}` });
+            } catch {
+              // dieser Suchordner fehlt im Projekt
+            }
+          }
+          return alle;
+        };
         for (const o of ordner) {
           try {
             // Schreibweisen der Büros: „Planung/00 Berechnungen“, „Planung/_Berechnungen“, „…/GP/pdf“ …
-            quellen[o] = o ? await ds.liste(verbinde(basis, await ordnerAufloesen(ds, basis, o)), 2) : [];
+            quellen[o] = o ? await quellenLesen(o) : [];
           } catch {
             quellen[o] = [];
           }
@@ -2039,4 +2085,14 @@ useFormulare.subscribe((s, vorher) => {
     clearTimeout(verzoegert);
     verzoegert = setTimeout(() => useAntrag.getState().neuBerechnen(), 300);
   }
+});
+
+// zentrale Einstellungen: alte Werte dieses Rechners übernehmen; jede Änderung (auch aus einem anderen Fenster) gilt sofort
+void pfadeUebernehmen().catch((e) => log.warn('Übernahme der Export-Einstellungen nicht möglich', e));
+pfadeAbonnieren(() => {
+  const st = useAntrag.getState();
+  const neu = mitZentral(st.einstellungen);
+  if (JSON.stringify(neu) === JSON.stringify(st.einstellungen)) return;
+  useAntrag.setState({ einstellungen: neu });
+  void st.laden();
 });
