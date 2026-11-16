@@ -157,15 +157,14 @@ fn pdf_excel_pid(ordner: &std::path::Path) -> Option<u32> {
 /// Excel nach einem gescheiterten Versuch (Zeitlimit, Fehler) beenden, falls es noch läuft – nur dann, damit keine
 /// inzwischen wiederverwendete Prozessnummer getroffen wird, und nur einmal je Versuch
 fn pdf_excel_beenden(ordner: &std::path::Path) {
+    pdf_excel_beenden_mit(ordner, &mut pid_baum_beenden);
+}
+
+/// wie `pdf_excel_beenden`, das Beenden selbst übergeben (in Tests nachgebildet)
+fn pdf_excel_beenden_mit(ordner: &std::path::Path, beenden: &mut dyn FnMut(u32)) {
     let Some(nr) = pdf_excel_pid(ordner) else { return };
     let _ = std::fs::remove_file(pdf_excel_pid_datei(ordner));
-    #[cfg(windows)]
-    {
-        use std::os::windows::process::CommandExt;
-        let _ = std::process::Command::new("taskkill").args(["/PID", &nr.to_string(), "/T", "/F"]).creation_flags(0x0800_0000).output();
-    }
-    #[cfg(not(windows))]
-    let _ = nr;
+    beenden(nr);
 }
 
 /// Ausführung eines Befehls mit Zeitlimit (in Tests nachgebildet)
@@ -268,8 +267,12 @@ mod pdf_tests {
         assert_eq!(pdf_excel_pid(&o), None);
         std::fs::write(pdf_excel_pid_datei(&o), "\u{feff}4711\r\n").unwrap();
         assert_eq!(pdf_excel_pid(&o), Some(4711));
-        // nach dem Beenden ist die Datei weg – kein zweiter Versuch auf dieselbe Nummer
-        pdf_excel_beenden(&o);
+        // beendet wird genau diese Nummer (nachgebildet – nie einen echten Prozess treffen); danach ist die Datei weg,
+        // kein zweiter Versuch auf dieselbe Nummer
+        let mut beendet = Vec::new();
+        pdf_excel_beenden_mit(&o, &mut |n| beendet.push(n));
+        pdf_excel_beenden_mit(&o, &mut |n| beendet.push(n));
+        assert_eq!(beendet, [4711]);
         assert_eq!(pdf_excel_pid(&o), None);
         std::fs::write(pdf_excel_pid_datei(&o), "0").unwrap();
         assert_eq!(pdf_excel_pid(&o), None);

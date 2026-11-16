@@ -49,6 +49,8 @@ export type DirektExportErgebnis =
       hinweise: VorlagenHinweis[];
       /** PDF gewünscht, aber nicht entstanden (die .xlsx ist gespeichert) */
       pdfFehler?: string;
+      /** … und das vorhandene PDF daneben hat noch den alten Stand */
+      pdfAlt?: boolean;
     }
   /** direkt geht es nicht (der Knopf hätte gesperrt sein müssen, z. B. Einstellungen inzwischen geändert) */
   | { art: 'gesperrt'; grund: string }
@@ -130,7 +132,8 @@ export async function direktExportieren(a: DirektExportAuftrag, u: DirektExportU
       pdfFehler = e instanceof Error ? e.message : String(e);
     }
   }
-  return { art: 'gespeichert', ordner, dateien, vorlage, hinweise, ...(pdfFehler ? { pdfFehler } : {}) };
+  const pdfAlt = !!pdfFehler && !!ziel.pdf && vorhanden.includes(ziel.pdf);
+  return { art: 'gespeichert', ordner, dateien, vorlage, hinweise, ...(pdfFehler ? { pdfFehler } : {}), ...(pdfAlt ? { pdfAlt } : {}) };
 }
 
 /**
@@ -138,14 +141,15 @@ export async function direktExportieren(a: DirektExportAuftrag, u: DirektExportU
  * das Standardlayout der App – dieselbe Wahl, mit der der Export-Dialog startet.
  */
 export function mitEingestellterVorlage<P>(o: {
-  vorlage: { name: string; daten: Uint8Array } | null;
+  /** erst beim Export gelesen (Vorlagen sind groß – nicht bei jedem Rendern für den Tooltip) */
+  vorlage: () => { name: string; daten: Uint8Array } | null;
   projekt: P;
   exportWithTemplate: (t: Uint8Array, p: P) => Promise<Uint8Array>;
   exportDefault: (p: P) => Promise<Uint8Array>;
   pruefeVorlage?: (t: Uint8Array, p: P) => Promise<VorlagenHinweis[]>;
 }): DirektExportAuftrag['erzeugen'] {
   return async () => {
-    const v = o.vorlage;
+    const v = o.vorlage();
     if (!v) return { daten: await o.exportDefault(o.projekt), vorlage: null, hinweise: [] };
     const daten = await o.exportWithTemplate(v.daten, o.projekt);
     const hinweise = o.pruefeVorlage ? await o.pruefeVorlage(v.daten, o.projekt).catch(() => []) : [];

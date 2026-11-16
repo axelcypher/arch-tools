@@ -111,6 +111,16 @@ describe('Direktexport', () => {
     expect(r).toMatchObject({ art: 'gespeichert', dateien: [XLSX], pdfFehler: 'Für das PDF wird Microsoft Excel oder LibreOffice gebraucht.' });
   });
 
+  it('PDF misslingt nach „Ersetzen“: gemeldet, dass das vorhandene PDF den alten Stand hat', async () => {
+    const u = umgebung([PDF], {
+      fragen: vi.fn(async () => 'ersetzen') as DirektExportUmgebung['fragen'],
+      pdf: async () => {
+        throw new Error('kaputt');
+      },
+    });
+    expect(await direktExportieren(auftrag(), u)).toMatchObject({ art: 'gespeichert', dateien: [XLSX], pdfFehler: 'kaputt', pdfAlt: true });
+  });
+
   it('Hinweise der Vorlagenprüfung werden durchgereicht (blockieren nicht)', async () => {
     const hinweise: VorlagenHinweis[] = [{ art: 'feld', blatt: 'Flächen', ort: 'B3', platzhalter: '{{flaeche.wfl}}', text: 'unbekannt' }];
     const r = await direktExportieren(auftrag({ erzeugen: async () => ({ daten: new Uint8Array([1]), vorlage: 'V.xlsx', hinweise }) }), umgebung());

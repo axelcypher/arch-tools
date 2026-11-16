@@ -15,11 +15,8 @@ export function tauriUmgebung(): DirektExportUmgebung {
     desktop: isTauri(),
     existiert: async (pfad) => (await invoke<unknown>('datei_stand', { path: pfad })) != null,
     ordnerAnlegen: async (pfad) => {
-      // projekt_ordner_anlegen braucht eine vorhandene Wurzel: das Laufwerk bzw. „/“ (UNC: \\server\freigabe)
-      const m = /^([a-z]:[\\/]|[\\/]{2}[^\\/]+[\\/][^\\/]+[\\/]?|\/)/i.exec(pfad);
-      if (!m) throw new Error(`Kein vollständiger Pfad: ${pfad}`);
-      const rel = pfad.slice(m[0].length).replace(/^[\\/]+|[\\/]+$/g, '');
-      if (rel) await invoke<boolean>('projekt_ordner_anlegen', { root: m[0], pfad: rel.replace(/\\/g, '/') });
+      const { root, rel } = wurzelUndRest(pfad);
+      if (rel) await invoke<boolean>('projekt_ordner_anlegen', { root, pfad: rel });
     },
     schreiben: async (pfad, daten) => {
       const { bytesToBase64 } = await import('../platform/files');
@@ -27,6 +24,22 @@ export function tauriUmgebung(): DirektExportUmgebung {
     },
     pdf: excelAlsPdf,
     fragen,
+  };
+}
+
+/**
+ * Vollständigen Pfad in eine vorhandene Wurzel und den Rest zerlegen – `projekt_ordner_anlegen` legt nur unterhalb
+ * einer Wurzel an: das Laufwerk („C:\\“), die Freigabe („\\\\server\\freigabe\\“) bzw. „/“. Rest mit „/“.
+ */
+export function wurzelUndRest(pfad: string): { root: string; rel: string } {
+  const m = /^([a-z]:[\\/]|[\\/]{2}[^\\/]+[\\/][^\\/]+[\\/]?|\/)/i.exec(pfad);
+  if (!m) throw new Error(`Kein vollständiger Pfad: ${pfad}`);
+  return {
+    root: m[0],
+    rel: pfad
+      .slice(m[0].length)
+      .replace(/^[\\/]+|[\\/]+$/g, '')
+      .replace(/\\/g, '/'),
   };
 }
 
@@ -45,7 +58,7 @@ export async function direktExportMitMeldung(auftrag: DirektExportAuftrag, hinwe
     if (r.art === 'gesperrt') return void (await meldung('Export nicht möglich', r.grund));
     log.info('Direktexport', { dateien: r.dateien, vorlage: r.vorlage, hinweise: r.hinweise.length });
     const teile = [`Gespeichert in „${r.ordner}“: ${r.dateien.map(name).join(' und ')}${r.vorlage ? ` (Vorlage „${r.vorlage}“)` : ' (Standardlayout)'}.`];
-    if (r.pdfFehler) teile.push(`Das PDF fehlt: ${r.pdfFehler}`);
+    if (r.pdfFehler) teile.push(r.pdfAlt ? `Das PDF daneben hat noch den alten Stand – das neue ließ sich nicht erzeugen: ${r.pdfFehler}` : `Das PDF fehlt: ${r.pdfFehler}`);
     if (r.hinweise.length) teile.push(`Die Vorlagenprüfung meldet ${r.hinweise.length === 1 ? 'einen Hinweis' : `${r.hinweise.length} Hinweise`}.`);
     const wahl = await umgebung.fragen({
       titel: r.pdfFehler ? 'Gespeichert – ohne PDF' : 'Gespeichert',

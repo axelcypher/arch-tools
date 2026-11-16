@@ -18,7 +18,7 @@ export function exportAuftrag(): DirektExportAuftrag {
     werte: werteAusMeta(project.meta),
     inhalt: exportInhalt(project),
     erzeugen: mitEingestellterVorlage({
-      vorlage: vorlage.aktuelle(project),
+      vorlage: () => vorlage.aktuelle(project),
       projekt: project,
       exportWithTemplate: async (t, p) => (await excel()).exportWithTemplate(t, p),
       exportDefault: async (p) => (await excel()).exportDefault(p),
