@@ -70,7 +70,8 @@ function AblageSymbol() {
 }
 
 /**
- * Punkt „Speicherort der Einstellungen …“ für das Menü der Titelleiste („Einstellungen und Hilfe“) – im Normalfall; im
+ * Punkt „Speicherort der Einstellungen …“ für das Menü „Einstellungen und Hilfe“ der Rahmen-App Arkly – im Normalfall
+ * (in den Apps steht der Speicherort im Einstellungsdialog, Seite „Allgemein“); im
  * Notbetrieb und bei einem Fehler zeigt ihn `SpeicherortAnzeige nurWarnung` sichtbar in der Leiste (dann `null`)
  */
 export function speicherortPunkt(ort: KonfigOrtAnzeige, oeffnen: () => void): MenuePunkt | null {
@@ -85,10 +86,12 @@ export function SpeicherortKnopf({ nurWarnung = false }: { nurWarnung?: boolean 
 
 /**
  * Wie `SpeicherortKnopf`, mit schon gelesenem Ort (die Titelleiste liest ihn einmal für Knopf und Menüpunkt).
- * `nurWarnung`: nur im Notbetrieb bzw. bei einem Fehler zeigen – sonst steht der Ort im Menü (`speicherortPunkt`).
+ * `nurWarnung`: nur im Notbetrieb bzw. bei einem Fehler zeigen – sonst steht der Ort im Einstellungsdialog bzw. im Menü.
+ * `onOeffnen`: statt des Speicherort-Dialogs etwas anderes öffnen (Titelleiste der Apps: Einstellungsdialog auf „Allgemein“).
  */
-export function SpeicherortAnzeige({ ort, nurWarnung = false }: { ort: KonfigOrtAnzeige; nurWarnung?: boolean }) {
-  const oeffnen = useSpeicherort((s) => s.oeffnen);
+export function SpeicherortAnzeige({ ort, nurWarnung = false, onOeffnen }: { ort: KonfigOrtAnzeige; nurWarnung?: boolean; onOeffnen?: () => void }) {
+  const dialog = useSpeicherort((s) => s.oeffnen);
+  const oeffnen = onOeffnen ?? dialog;
   if (!ort) return null;
   if (ort === 'fehler') {
     return (

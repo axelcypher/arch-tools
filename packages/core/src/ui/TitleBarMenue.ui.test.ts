@@ -29,20 +29,20 @@ afterEach(() => {
 });
 
 const mehr = (host: Element) => host.querySelector<HTMLButtonElement>('.titlebar .titlebar-menue')!;
-const punkte = () => [...document.querySelectorAll<HTMLElement>('.menue[aria-label="Einstellungen und Hilfe"] > .menue-punkt, .menue[aria-label="Einstellungen und Hilfe"] > [role="separator"]')];
+const punkte = () => [...document.querySelectorAll<HTMLElement>('.menue[aria-label="Darstellung und Hilfe"] > .menue-punkt, .menue[aria-label="Darstellung und Hilfe"] > [role="separator"]')];
 const texte = () => punkte().map((p) => (p.getAttribute('role') === 'separator' ? '—' : (p.querySelector('.menue-text')?.textContent ?? p.textContent)));
 const taste = (key: string) => act(() => void document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true })));
 
-describe('Titelleiste: Menü „Einstellungen und Hilfe“', () => {
+describe('Titelleiste: Menü „Darstellung und Hilfe“', () => {
   it('Leiste ohne Farbschema-, Regeln- und Protokollknopf; Menüknopf mit Symbol „menue“, Name in aria-label und title, ohne Aufklapp-Pfeil', () => {
     const host = render({ regeln: 'flaechen' });
     const knoepfe = [...host.querySelectorAll('.titlebar button')].map((b) => b.getAttribute('aria-label') ?? b.textContent?.trim());
-    expect(knoepfe).toEqual(['Einstellungen und Hilfe']);
+    expect(knoepfe).toEqual(['Darstellung und Hilfe']);
     expect(host.querySelector('.titlebar-menu')).toBeNull();
     const m = mehr(host);
     expect(m.getAttribute('aria-haspopup')).toBe('menu');
     expect(m.getAttribute('aria-expanded')).toBe('false');
-    expect(m.getAttribute('title')).toBe('Einstellungen und Hilfe');
+    expect(m.getAttribute('title')).toBe('Darstellung und Hilfe');
     expect(m.querySelectorAll('svg')).toHaveLength(1);
     expect(m.querySelector('path')?.getAttribute('d')).toBe('M4 7h16M4 12h16M4 17h16');
   });
@@ -106,23 +106,23 @@ describe('Titelleiste: Menü „Einstellungen und Hilfe“', () => {
       logger('test').error('Testfehler zwei');
     });
     expect(host.querySelector('.titlebar-menue .titlebar-badge')?.textContent).toBe('2');
-    expect(mehr(host).getAttribute('aria-label')).toBe('Einstellungen und Hilfe – 2 neue Fehler im Fehlerprotokoll');
-    expect(mehr(host).getAttribute('title')).toBe('Einstellungen und Hilfe – 2 neue Fehler im Fehlerprotokoll');
+    expect(mehr(host).getAttribute('aria-label')).toBe('Darstellung und Hilfe – 2 neue Fehler im Fehlerprotokoll');
+    expect(mehr(host).getAttribute('title')).toBe('Darstellung und Hilfe – 2 neue Fehler im Fehlerprotokoll');
     act(() => mehr(host).click());
     const protokoll = punkte().find((p) => p.textContent?.includes('Fehlerprotokoll'))!;
     expect(protokoll.querySelector('.menue-hinweis')?.textContent).toBe('2 neue');
     act(() => protokoll.click());
     expect(host.querySelector('.titlebar-badge')).toBeNull();
-    expect(mehr(host).getAttribute('aria-label')).toBe('Einstellungen und Hilfe');
+    expect(mehr(host).getAttribute('aria-label')).toBe('Darstellung und Hilfe');
     // ein einzelner Fehler: Einzahl
     act(() => logger('test').error('Testfehler drei'));
-    expect(mehr(host).getAttribute('aria-label')).toBe('Einstellungen und Hilfe – ein neuer Fehler im Fehlerprotokoll');
+    expect(mehr(host).getAttribute('aria-label')).toBe('Darstellung und Hilfe – ein neuer Fehler im Fehlerprotokoll');
   });
 });
 
-describe('Speicherort in der Titelleiste', () => {
+describe('Speicherort: in den Apps nicht im Menü, im Notbetrieb als Warnung', () => {
   const ort = (o: Partial<KonfigOrt>): KonfigOrt => ({ ordner: 'C:/x', basis: 'C:/x', modus: 'einzelplatz', notbetrieb: false, ...o }) as KonfigOrt;
-  it('speicherortPunkt: im Normalfall Punkt mit Einzelplatz bzw. Netzwerk als Hinweis; im Browser, beim Lesen, bei Fehler und im Notbetrieb keiner', () => {
+  it('speicherortPunkt (nur noch für das Menü der Rahmen-App Arkly): im Normalfall Punkt mit Einzelplatz bzw. Netzwerk als Hinweis; im Browser, beim Lesen, bei Fehler und im Notbetrieb keiner', () => {
     const oeffnen = vi.fn();
     const p = speicherortPunkt(ort({}), oeffnen)!;
     expect(p).toMatchObject({ text: 'Speicherort der Einstellungen …', hinweis: 'Einzelplatz' });
@@ -131,7 +131,7 @@ describe('Speicherort in der Titelleiste', () => {
     expect(speicherortPunkt(ort({ modus: 'netzwerk', ordner: '//nas/arch' }), oeffnen)).toMatchObject({ hinweis: 'Netzwerk', titel: expect.stringContaining('//nas/arch') });
     for (const o of [null, undefined, 'fehler' as const, ort({ modus: 'netzwerk', notbetrieb: true })]) expect(speicherortPunkt(o, oeffnen)).toBeNull();
   });
-  it('SpeicherortAnzeige nurWarnung: im Normalfall nichts (der Ort steht im Menü), im Notbetrieb und bei Fehler sichtbar; Gegenprobe ohne nurWarnung', () => {
+  it('SpeicherortAnzeige nurWarnung: im Normalfall nichts (der Ort steht im Einstellungsdialog), im Notbetrieb und bei Fehler sichtbar; Gegenprobe ohne nurWarnung', () => {
     const zeige = (o: Parameters<typeof SpeicherortAnzeige>[0]['ort'], nurWarnung: boolean) => {
       const host = document.createElement('div');
       document.body.appendChild(host);
