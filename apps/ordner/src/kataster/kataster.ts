@@ -3,6 +3,7 @@ import { isZip } from '@core/archive';
 import type { Koordinaten } from '@core/model';
 import { ersetzen, globaleWerte, GLOBALE_VARIABLEN, mitAliasen, platzhalterIn, type Variable } from '@core/platzhalter';
 import { sichererDateiname } from '@core/projektdatei';
+import { KATASTER_VARIABLEN, KATASTER_ZIEL_VARIABLEN } from '@core/einstellungen/variablen';
 
 /**
  * Katasterpläne aus einer QGIS-Vorlage: Einstellungen (gemeinsam im Konfigurationsordner), Auslesen der Vorlage
@@ -286,18 +287,8 @@ export interface Namensteile {
   bearbeiter?: string;
 }
 
-/** globale Variablen; {Code} hieß hier früher das Projektkürzel */
-const GLOBAL_KATASTER: Variable[] = GLOBALE_VARIABLEN.map((v) =>
-  v.name === 'PROJEKT_KUERZEL' ? { ...mitAliasen(v.name, ['Code']), quelle: 'Projektdatei (.oap), Stammdaten „Projektcode“; ohne Projektcode der Name des Projekts' } : v,
-);
-/** Variablen im Dateinamen der Katasterpläne */
-export const KATASTER_VARIABLEN: Variable[] = [
-  ...GLOBAL_KATASTER,
-  { name: 'Art', text: 'Antragsart der aktiven Fassung, z. B. BAUA' },
-  { name: 'Name', text: 'Name des Plans, z. B. Katasterplan A4' },
-];
-/** Variablen im festen Ablageordner */
-export const KATASTER_ZIEL_VARIABLEN: Variable[] = [...GLOBAL_KATASTER, { name: 'Antrag', text: 'aktive Antragsfassung, z. B. BAUA 2' }];
+/** Variablen des Dateinamens und des Ablageordners – eine Quelle in core (zentrale Einstellungen) */
+export { KATASTER_VARIABLEN, KATASTER_ZIEL_VARIABLEN };
 
 const globaleAus = (t: Namensteile) => globaleWerte({ projektcode: t.kuerzel, kurzname: t.kurzname, vorhaben: t.vorhaben, bearbeiter: t.bearbeiter, datum: t.datum });
 

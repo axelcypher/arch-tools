@@ -188,6 +188,54 @@ export function konfigNeuLesen(f: () => void): () => void {
   return () => nachWechsel.delete(f);
 }
 
+/* ---------- Änderungen einzelner Bereiche melden (alle Fenster und Tabs) ---------- */
+
+/** Nachricht an die anderen Fenster und Tabs: Bereiche wurden geändert (Ereignis `storage`) */
+const AENDERUNG = 'arch-tools:konfig-geaendert';
+const bereichBeobachter = new Map<string, Set<() => void>>();
+let aenderungGebunden = false;
+
+function bereicheMelden(bereiche: readonly string[]) {
+  for (const b of new Set(bereiche)) bereichBeobachter.get(b)?.forEach((f) => f());
+}
+
+function aenderungBinden() {
+  if (aenderungGebunden || typeof window === 'undefined') return;
+  aenderungGebunden = true;
+  window.addEventListener('storage', (e) => {
+    if (e.key !== AENDERUNG || !e.newValue) return;
+    try {
+      const b = (JSON.parse(e.newValue) as { bereiche?: unknown }).bereiche;
+      if (Array.isArray(b)) bereicheMelden(b.filter((x): x is string => typeof x === 'string'));
+    } catch {
+      // fremde Nachricht – nichts zu tun
+    }
+  });
+}
+
+/**
+ * Änderungen eines Bereichs verfolgen, die ein anderes Fenster, ein anderer Tab oder ein Dialog dieses Fensters meldet
+ * (`konfigGeaendertMelden`) – z. B. damit eine App ihren Zwischenspeicher neu liest, nachdem die zentralen
+ * Einstellungen einen ihrer Werte geändert haben. Liefert das Abmelden.
+ */
+export function konfigBeobachten(bereich: string, f: () => void): () => void {
+  aenderungBinden();
+  let s = bereichBeobachter.get(bereich);
+  if (!s) bereichBeobachter.set(bereich, (s = new Set()));
+  s.add(f);
+  return () => s.delete(f);
+}
+
+/** Bereiche als geändert melden: in diesem Fenster sofort, in den anderen über den Browser-Speicher */
+export function konfigGeaendertMelden(bereiche: readonly string[]): void {
+  bereicheMelden(bereiche);
+  try {
+    localStorage.setItem(AENDERUNG, JSON.stringify({ bereiche, zeit: Date.now(), zufall: Math.random() }));
+  } catch {
+    // ohne Speicher erfahren es nur die Beobachter dieses Fensters
+  }
+}
+
 /** Netzlaufwerk erneut prüfen (nach „Erneut versuchen“) */
 export async function konfigOrtNeuPruefen(): Promise<KonfigOrt | null> {
   ort = null;
