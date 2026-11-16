@@ -336,6 +336,9 @@ Zurücksetzen, Sonderfunktionen. Feste Namen, in allen Apps gleich:
   (in keiner App anders belegt; das Kürzel wirkt auch ohne offenes Menü), und öffnet den app-übergreifenden
   Einstellungsdialog auf der Seite der App (siehe „Einstellungen“). In Arkly gilt Strg+, einmal: Ist ein App-Tab
   aktiv, öffnet es den Dialog auf der Seite dieser App, sonst auf „Allgemein“.
+  Ausnahme FABRIO: Es hat keine durchgehende Werkzeugleiste (je Ansicht eigene Leisten, links die Navigation); dort
+  steht das Menü „Datei“ im Fuß der Navigation, mit „Einstellungen von FABRIO …“, Trenner, „Einstellungen …“
+  (Strg+,).
 - **Direkter Export:** Wo eine App eine eingestellte Vorlage und einen Zielordner hat (QUADRIO, TERRIO, NUMIO), steht
   in der Leiste der Knopf „Exportieren“ (Symbol `export`, ohne „ …“, weil er sofort wirkt). Er speichert mit der
   eingestellten Vorlage in den Berechnungsordner – als Excel, auf Wunsch zusätzlich als PDF. `title` nennt Ziel und
