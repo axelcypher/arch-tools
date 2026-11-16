@@ -4,7 +4,8 @@ import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { attrappe, BASIS, installieren, KOPIE, legeAn, lies, NAS } from '../__fixtures__/konfigAttrappe';
 
-// Fenster der Titelleiste (Desktop): nur, was die Titelleiste beim Einhängen fragt
+// Fenster der Titelleiste (Desktop): nur, was die Titelleiste beim Einhängen fragt – gebraucht vom Test mit der ganzen
+// Titelleiste (hier, weil die Konfig-Attrappe den Notbetrieb bereitstellt)
 vi.mock('@tauri-apps/api/window', () => ({
   getCurrentWindow: () => ({ isMaximized: async () => false, onResized: async () => () => {}, onCloseRequested: async () => () => {} }),
 }));
@@ -233,6 +234,7 @@ describe('Speicherort der Einstellungen', () => {
     await esc();
     const warn = knopf('⚠ Einstellungen nur lesbar', host);
     expect(warn).toBeTruthy();
+    expect(warn!.title).toContain('Klick öffnet die Einstellungen.');
     await klick(warn);
     // nicht der Speicherort-Dialog, sondern der zentrale Einstellungsdialog auf „Allgemein“
     expect(dialog()).toBeNull();
