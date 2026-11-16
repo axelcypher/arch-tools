@@ -60,7 +60,7 @@ describe('Einstellungen › Sichern & Übertragen', () => {
     await zeigen();
     expect(document.querySelector('[aria-label="Enthaltene Einstellungen"]')!.textContent).toContain('1 Formular');
     await klick(knopf('Exportieren'));
-    expect(useFormulare.getState().meldung?.text).toBe('Einstellungen exportiert.');
+    expect(document.querySelector('.es-ergebnis')!.textContent).toBe('Einstellungen exportiert.');
     const text = datei.gespeichert!;
     expect(JSON.parse(text).daten['formulare:profile']).toEqual({ 'nw019999|2026A': PROFIL });
     act(() => root?.unmount());
@@ -80,11 +80,11 @@ describe('Einstellungen › Sichern & Übertragen', () => {
       ['Antragsmerkmale', true],
       ['Ordner, angezeigte Pfade, Projektdatei, Ansicht', false],
     ]);
-    await klick(knopf('Übernehmen'));
+    await klick(knopf('Importieren'));
     expect(useFormulare.getState().profile).toEqual({ 'nw019999|2026A': PROFIL });
     expect(useAntrag.getState().merkmalDefinitionen.map((m) => m.name).slice(0, 2)).toEqual(['Gebäudeklasse', 'Denkmal']);
     expect(useFormulare.getState().projektordner).toEqual(['D:/FORMA']);
-    expect(useFormulare.getState().meldung?.text).toContain('Einstellungen übernommen: Gliederung der Formulare');
+    expect(document.querySelector('.es-ergebnis')!.textContent).toContain('Importiert: Gliederung der Formulare');
   });
 
   it('eine fremde Datei wird abgelehnt', async () => {

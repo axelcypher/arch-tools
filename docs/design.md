@@ -185,6 +185,12 @@ Prüfung) – wie, legt dieser Baustein fest.
   Felder und „Übernehmen“ gesperrt (Grund im `title`), oben ein Hinweis `.meldung.warnung`.
 - **Felder:** die gemeinsamen Bausteine (`.field`, Pfadwahl mit „Ordner wählen …“, Platzhalter mit Vorschau des
   Ergebnisses); Fehler an der Stelle (`.feld-meldung`), nicht als Rückfrage.
+- **Ordnerliste** (Listen vollständiger Ordner, `zeilen: 'ordner'` – z. B. „Stammordner der Projekte“): Liste statt
+  Textfeld (`.einst-ordnerliste`), der erste Eintrag mit dem Hinweis „neue Projekte“; je Zeile Symbolknöpfe „Nach
+  oben“, „Nach unten“, „Entfernen“ (Symbol `schliessen`: aus der Liste, der Ordner bleibt; `aria-label` „‹Pfad› nach
+  oben“ …), nach dem Verschieben bleibt der Fokus am Ordner. Darunter ein Feld zum Eintragen mit „Ordner hinzufügen“
+  (Symbol `plus`) und in der Desktop-App „Ordner wählen …“; Enter trägt ein (statt zu übernehmen). Keine Vorschau;
+  nicht vollständig oder schon vorhanden als `.feld-meldung` am Feld.
 - Was nur ein Werkzeug betrifft (z. B. Vorlagen eines Exports), bleibt in dessen Dialog; der Einstellungsdialog
   verweist darauf, statt es zu kopieren.
 
@@ -341,7 +347,7 @@ Zurücksetzen, Sonderfunktionen. Feste Namen, in allen Apps gleich:
   das Menü „Datei“ im Fuß der Navigation und enthält von den Punkten der Tabelle nur die, die es in FABRIO gibt.
 - **Befristet: „Einstellungen von <App> …“** – bis die App ihre eigenen Einstellungen als App-Seite in den zentralen
   Dialog umgezogen hat, öffnet dieser Punkt den bisherigen App-Dialog: in FABRIO in „Datei“ direkt vor dem Trenner
-  und „Einstellungen …“, in PERMIO im Menü „Mehr“. Mit der App-Seite entfällt er.
+  und „Einstellungen …“. Mit der App-Seite entfällt er (PERMIO hat seine Seite schon).
 - **Direkter Export:** Wo eine App eine eingestellte Vorlage und einen Zielordner hat (QUADRIO, TERRIO, NUMIO), steht
   in der Leiste der Knopf „Exportieren“ (Symbol `export`, ohne „ …“, weil er sofort wirkt). Er speichert mit der
   eingestellten Vorlage in den Berechnungsordner – als Excel, auf Wunsch zusätzlich als PDF. `title` nennt Ziel und

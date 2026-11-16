@@ -68,17 +68,17 @@ export function BedingungEditor({ wert, onChange, merkmale, felder, ohne, kontex
         </p>
         <div className="bd-knoepfe">
           {merkmale.length > 0 && (
-            <button className="small" onClick={() => anfangen({ art: 'merkmal', merkmal: merkmale[0].name, werte: [] })}>
+            <button type="button" className="small" onClick={() => anfangen({ art: 'merkmal', merkmal: merkmale[0].name, werte: [] })}>
               <Symbol name="plus" /> Nur bei Antragsmerkmal
             </button>
           )}
           {felder && wahl.length > 0 && (
-            <button className="small" onClick={() => anfangen(feldRegel(wahl[0].feld.schluessel))}>
+            <button type="button" className="small" onClick={() => anfangen(feldRegel(wahl[0].feld.schluessel))}>
               <Symbol name="plus" /> Nur wenn Feld
             </button>
           )}
           {felder && imFormularWaehlen && (
-            <button className="small" title="Im Formular auf das Feld klicken, von dem es abhängt" onClick={() => ausFormular((s) => anfangen(feldRegel(s)))}>
+            <button type="button" className="small" title="Im Formular auf das Feld klicken, von dem es abhängt" onClick={() => ausFormular((s) => anfangen(feldRegel(s)))}>
               <Symbol name="ziel" /> Feld im Formular wählen
             </button>
           )}
@@ -111,7 +111,7 @@ export function BedingungEditor({ wert, onChange, merkmale, felder, ohne, kontex
             {jetzt === 'ja' ? 'trifft gerade zu' : jetzt === 'offen' ? 'offen – Antragsmerkmal nicht festgelegt (gilt als erforderlich)' : 'trifft gerade nicht zu'}
           </span>
         )}
-        <button className="small bd-weg" onClick={() => onChange(undefined)}>
+        <button type="button" className="small bd-weg" onClick={() => onChange(undefined)}>
           Bedingung entfernen
         </button>
       </div>
@@ -143,16 +143,16 @@ function GruppeEditor({ g, tiefe, onChange, onEntfernen, merkmale, wahl, felder,
       {(g.teile.length > 1 || tiefe > 0) && (
         <div className="bd-gruppe-kopf">
           <div className="bd-op" role="radiogroup" aria-label="Verknüpfung">
-            <button role="radio" aria-checked={g.op === 'und'} className={g.op === 'und' ? 'an' : ''} onClick={() => onChange({ ...g, op: 'und' })}>
+            <button type="button" role="radio" aria-checked={g.op === 'und'} className={g.op === 'und' ? 'an' : ''} onClick={() => onChange({ ...g, op: 'und' })}>
               Alle
             </button>
-            <button role="radio" aria-checked={g.op === 'oder'} className={g.op === 'oder' ? 'an' : ''} onClick={() => onChange({ ...g, op: 'oder' })}>
+            <button type="button" role="radio" aria-checked={g.op === 'oder'} className={g.op === 'oder' ? 'an' : ''} onClick={() => onChange({ ...g, op: 'oder' })}>
               Mindestens eine
             </button>
           </div>
           <span className="muted small-text">{tiefe ? 'treffen zu' : 'der folgenden treffen zu'}</span>
           {onEntfernen && (
-            <button className="icon bd-gruppe-weg" aria-label="Gruppe entfernen" title="Gruppe entfernen" onClick={onEntfernen}>
+            <button type="button" className="icon bd-gruppe-weg" aria-label="Gruppe entfernen" title="Gruppe entfernen" onClick={onEntfernen}>
               <Symbol name="schliessen" />
             </button>
           )}
@@ -183,16 +183,21 @@ function GruppeEditor({ g, tiefe, onChange, onEntfernen, merkmale, wahl, felder,
         ))}
       </div>
       <div className="bd-knoepfe">
-        <button className="small" onClick={() => anhaengen(neueRegel())} disabled={!merkmale.length && !wahl.length}>
+        <button type="button" className="small" onClick={() => anhaengen(neueRegel())} disabled={!merkmale.length && !wahl.length}>
           <Symbol name="plus" /> Bedingung
         </button>
         {ausFormular && (
-          <button className="small" title="Im Formular auf das Feld klicken" onClick={() => ausFormular((s) => anhaengen(feldRegel(s)))}>
+          <button type="button" className="small" title="Im Formular auf das Feld klicken" onClick={() => ausFormular((s) => anhaengen(feldRegel(s)))}>
             <Symbol name="ziel" /> Feld im Formular wählen
           </button>
         )}
         {tiefe < MAX_TIEFE && (
-          <button className="small" title={`Gruppe, in der ${gegenteil === 'oder' ? 'mindestens eine' : 'alle'} Bedingungen zutreffen müssen`} onClick={() => anhaengen(gruppe(gegenteil))}>
+          <button
+            type="button"
+            className="small"
+            title={`Gruppe, in der ${gegenteil === 'oder' ? 'mindestens eine' : 'alle'} Bedingungen zutreffen müssen`}
+            onClick={() => anhaengen(gruppe(gegenteil))}
+          >
             <Symbol name="gruppe" /> {gegenteil === 'oder' ? 'Oder-Gruppe' : 'Und-Gruppe'}
           </button>
         )}
@@ -256,7 +261,7 @@ function RegelZeile({
           ))}
         </select>
         {t.art === 'feld' && ausFormular && (
-          <button className="icon" aria-label="Feld im Formular wählen" title="Feld im Formular wählen" onClick={() => ausFormular((s) => onChange({ ...t, feld: s }))}>
+          <button type="button" className="icon" aria-label="Feld im Formular wählen" title="Feld im Formular wählen" onClick={() => ausFormular((s) => onChange({ ...t, feld: s }))}>
             <Symbol name="ziel" />
           </button>
         )}
@@ -280,7 +285,7 @@ function RegelZeile({
             {!kreuz && <option value="ungleich">ist ungleich</option>}
           </select>
         )}
-        <button className="icon bd-regel-weg" aria-label="Bedingung entfernen" title="Entfernen" onClick={onEntfernen}>
+        <button type="button" className="icon bd-regel-weg" aria-label="Bedingung entfernen" title="Entfernen" onClick={onEntfernen}>
           <Symbol name="schliessen" />
         </button>
       </div>
