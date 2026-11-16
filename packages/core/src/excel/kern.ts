@@ -357,7 +357,7 @@ export const KERN_THEMEN: Thema[] = [
     titel: 'Formeln',
     absaetze: [
       'Formeln der Vorlage bleiben erhalten und werden auf die erzeugten Zeilen umgeschrieben: ein Bezug auf die eigene Zeile zeigt auf die eigene Ausgabezeile, ein Bezug auf eine Zeile im selben Block auf die Zeile derselben Blockwiederholung. Bereiche über Vorlagenzeilen umfassen alle daraus erzeugten Zeilen – zusammenhängend als C11:C17, sonst als Liste D13,D21,D29, damit eine Gesamtsumme über Zwischensummen keine Einzelwerte derselben Spalte mitzählt. Bezüge auf Zeilen darunter rutschen mit; ein Bezug auf eine Zeile ohne Ausgabe wird 0.',
-      'Die Ergebnisse werden beim Export mitberechnet (Grundrechenarten, SUMME, RUNDEN, AUFRUNDEN, ABRUNDEN, ABS, MIN, MAX, MITTELWERT, ANZAHL, WENN), damit auch Vorschauen und LibreOffice Werte zeigen; Excel rechnet beim Öffnen neu. Bezüge aus anderen Blättern auf ein Blatt mit Wiederholungen werden nicht angepasst – dafür Einzelwerte oder den benannten Einzelzugriff verwenden.',
+      'Die Ergebnisse werden beim Export mitberechnet (Grundrechenarten, SUMME, RUNDEN, AUFRUNDEN, ABRUNDEN, ABS, MIN, MAX, MITTELWERT, ANZAHL, WENN), damit auch Vorschauen und andere Tabellenprogramme Werte zeigen; Excel rechnet beim Öffnen neu. Bezüge aus anderen Blättern auf ein Blatt mit Wiederholungen werden nicht angepasst – dafür Einzelwerte oder den benannten Einzelzugriff verwenden.',
     ],
     beispiele: [
       {

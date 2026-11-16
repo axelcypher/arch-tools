@@ -1,7 +1,8 @@
 import type { ExportContext } from './context';
 import { globalMitFormat, isCollection, zusaetzeLesen } from './context';
 import type { PlatzhalterSchema } from './schema';
-import type { CellValue, TemplateRow } from './template';
+import type { TemplateRow } from './template';
+import { cellText, colLetter, PH, VERGLEICH } from './template';
 
 /**
  * Vorlagenprüfung: meldet mögliche Tippfehler einer Excel-Vorlage mit Blatt und Zelle. Sie ändert nichts an der
@@ -61,8 +62,6 @@ export const HINWEISARTEN: Record<HinweisArt, string> = {
   einzelwert: 'unbekannter Einzelwert',
 };
 
-const PH = () => /\{\{\s*([^{}]+?)\s*\}\}/g;
-const VERGLEICH = /^((?:[^[\]=!<>]|\[[^\]]*\])+?)\s*(!=|>=|<=|=|>|<)\s*(.*)$/;
 const TERM = /^([a-z0-9_]+)\s*(!=|>=|<=|=|>|<)\s*(.*)$/i;
 
 /** benannter Filter → Sammlungen, bei denen er laut Schema sinnvoll ist */
@@ -71,22 +70,6 @@ export function filterSammlungen(schema: PlatzhalterSchema | undefined): Record<
   const m: Record<string, string[]> = {};
   for (const a of schema.abschnitte) if (a.art === 'sammlung') for (const f of a.filter) for (const n of [f.name, ...(f.aliase ?? [])]) (m[n.toLowerCase()] ??= []).push(a.name);
   return m;
-}
-
-const colLetter = (n: number) => {
-  let s = '';
-  while (n > 0) {
-    const m = (n - 1) % 26;
-    s = String.fromCharCode(65 + m) + s;
-    n = Math.floor((n - 1) / 26);
-  }
-  return s;
-};
-
-function cellText(v: CellValue | undefined): string | null {
-  if (typeof v === 'string') return v;
-  if (v && typeof v === 'object' && 'richText' in v) return v.richText.map((r) => r.text).join('');
-  return null;
 }
 
 class Pruefer {

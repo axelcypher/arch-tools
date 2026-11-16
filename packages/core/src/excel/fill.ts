@@ -2,13 +2,13 @@ import type { Cell, Style, Workbook, Worksheet } from 'exceljs';
 import type { Project } from '../model';
 import { anschriftEinzeilig } from '../model';
 import type { ExportContext, Value } from './context';
+import { kopfFusszeileErsetzen, textfeldErsetzen } from './context';
 import { strFromU8, unzipSync } from 'fflate';
 import { KERN_THEMEN } from './kern';
 import type { VorlagenHinweis } from './pruefung';
 import { pruefeBlatt, pruefeText } from './pruefung';
 import { nutzbarText } from './referenz';
 import type { PlatzhalterSchema } from './schema';
-import { kopfFusszeileErsetzen, textfeldErsetzen } from './schema';
 import type { EvalValue } from './formulaEval';
 import { evaluateSheet } from './formulaEval';
 import type { CellValue, TemplateRow } from './template';
@@ -220,15 +220,7 @@ export function titel(ws: Worksheet, text: string, project: Project) {
   ws.getCell('A3').font = { color: { argb: 'FF6B7280' } };
 }
 
-export const colLetter = (n: number) => {
-  let s = '';
-  while (n > 0) {
-    const m = (n - 1) % 26;
-    s = String.fromCharCode(65 + m) + s;
-    n = Math.floor((n - 1) / 26);
-  }
-  return s;
-};
+export { colLetter } from './template';
 
 /** Platzhalter ohne Klammern – sonst ersetzt der Export sie, wenn die Muster-Vorlage selbst als Vorlage dient */
 const ohneKlammern = (t: string) => t.replace(/\{\{\s*([^{}]*?)\s*\}\}/g, '$1');
@@ -333,7 +325,7 @@ export async function pruefeVorlage(template: Uint8Array, ctx: ExportContext, sc
   await wb.xlsx.load(template.buffer.slice(template.byteOffset, template.byteOffset + template.byteLength) as ArrayBuffer);
   const hinweise: VorlagenHinweis[] = [];
   wb.eachSheet((ws) => {
-    // das Hilfeblatt der Muster-Vorlage enthält Platzhalter ohne Klammern – nichts zu prüfen
+    // auch das Hilfeblatt „Platzhalter“ wird geprüft – es schreibt Platzhalter ohne Klammern und ergibt daher keine Hinweise
     hinweise.push(...pruefeBlatt(blattZeilen(ws), ctx, { blatt: ws.name, schema }));
     const hf = ws.headerFooter as Record<string, unknown> | undefined;
     for (const k of HF_KEYS) {

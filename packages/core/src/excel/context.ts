@@ -179,6 +179,17 @@ export function resolveText(text: string, ctx: ExportContext, item?: { collectio
   });
 }
 
+/** Ersetzung in Kopf- und Fußzeilen (wie fuelleVorlage; „&“ ist dort Steuerzeichen und wird verdoppelt) */
+export function kopfFusszeileErsetzen(t: string, ctx: ExportContext): string {
+  return t.replace(/\{\{[^{}]+\}\}/g, (m) => {
+    const v = resolveText(m, ctx);
+    return v === m ? m : (typeof v === 'number' ? v.toLocaleString('de-DE', { maximumFractionDigits: 2 }) : String(v)).replace(/&/g, '&&');
+  });
+}
+
+/** Ersetzung in Textfeldern und Formen (wie fuelleVorlage) */
+export const textfeldErsetzen = (t: string, ctx: ExportContext) => String(resolveText(t, ctx));
+
 export function hasPlaceholder(text: string): boolean {
   return new RegExp(PH_SOURCE).test(text);
 }
@@ -227,6 +238,3 @@ export function shiftRelativeRows(formula: string, delta: number): string {
     }),
   );
 }
-
-/** Platzhalter-Dokumentation (Hilfe-Tabelle und Blatt „Platzhalter“ der Muster-Vorlage) */
-export type PlaceholderDocs = { group: string; keys: [string, string][] }[];

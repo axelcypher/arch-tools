@@ -18,5 +18,17 @@
   "baurecht": {
     "stufe": "patch",
     "notiz": "Gemeinsame Excel-Vorlagen-Engine überarbeitet (keine sichtbare Änderung in LEXIO)."
+  },
+  "entzerrung": {
+    "stufe": "patch",
+    "notiz": "Gemeinsame Stile: Texttabellen mit linksbündigen Spaltenköpfen (keine sichtbare Änderung)."
+  },
+  "formulare": {
+    "stufe": "patch",
+    "notiz": "Gemeinsame Stile: Texttabellen mit linksbündigen Spaltenköpfen (keine sichtbare Änderung)."
+  },
+  "ava": {
+    "stufe": "patch",
+    "notiz": "Gemeinsame Stile: Texttabellen mit linksbündigen Spaltenköpfen (keine sichtbare Änderung)."
   }
 }

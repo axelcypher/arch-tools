@@ -1,5 +1,5 @@
-import type { ExportContext, PlaceholderDocs, Row, Value } from './context';
-import { belongsTo, resolveText } from './context';
+import type { ExportContext, Row, Value } from './context';
+import { belongsTo, kopfFusszeileErsetzen, textfeldErsetzen } from './context';
 import type { CellValue, TemplateRow } from './template';
 import { expandTemplate } from './template';
 
@@ -125,21 +125,6 @@ export const sammlungen = (s: PlatzhalterSchema) => s.abschnitte.filter((a): a i
 export const einzelwertGruppen = (s: PlatzhalterSchema) => s.abschnitte.filter((a): a is EinzelwertGruppe => a.art === 'einzelwerte');
 export const alleFilterNamen = (x: Sammlung) => x.filter.flatMap((f) => [f.name, ...(f.aliase ?? [])]);
 
-/** Kurze Liste aller Platzhalter je Abschnitt – Ersatz für die alte Tabelle (PlaceholderDocs) */
-export function schemaZuDocs(s: PlatzhalterSchema): PlaceholderDocs {
-  return s.abschnitte.map((a) =>
-    a.art === 'einzelwerte'
-      ? { group: a.titel, keys: a.werte.map((w) => [w.schluessel, w.text + (w.einheit ? ` [${w.einheit}]` : '')] as [string, string]) }
-      : {
-          group: `${a.name}.* – ${a.titel} (Zeile ${a.datensatz})`,
-          keys: [
-            ...a.felder.map((f) => [`${a.name}.${f.name}`, f.text + (f.einheit ? ` [${f.einheit}]` : '')] as [string, string]),
-            ...a.filter.map((f) => [`${a.name}[${f.name}]`, `Filter: ${f.text}`] as [string, string]),
-          ],
-        },
-  );
-}
-
 /* ---------- Prüfungen (für die Tests der Apps) ---------- */
 
 export interface Vollstaendigkeit {
@@ -220,17 +205,6 @@ export function beispielAusfuehren(b: Pick<Beispiel, 'vorlage'>, ctx: ExportCont
     }),
   );
 }
-
-/** Ersetzung in Kopf- und Fußzeilen (wie fuelleVorlage; „&“ ist dort Steuerzeichen und wird verdoppelt) */
-export function kopfFusszeileErsetzen(t: string, ctx: ExportContext): string {
-  return t.replace(/\{\{[^{}]+\}\}/g, (m) => {
-    const v = resolveText(m, ctx);
-    return v === m ? m : (typeof v === 'number' ? v.toLocaleString('de-DE', { maximumFractionDigits: 2 }) : String(v)).replace(/&/g, '&&');
-  });
-}
-
-/** Ersetzung in Textfeldern und Formen (wie fuelleVorlage) */
-export const textfeldErsetzen = (t: string, ctx: ExportContext) => String(resolveText(t, ctx));
 
 const leer = (v: unknown) => v === null || v === undefined || v === '';
 

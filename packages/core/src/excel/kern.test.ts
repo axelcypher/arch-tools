@@ -6,7 +6,8 @@ import { kernMarkdown } from './referenz';
 import { dokuTest } from './schemaTest';
 import { KERN_THEMEN } from './kern';
 import type { Art } from './schema';
-import { beispielAusfuehren, ermittleNutzbarkeit, kopfFusszeileErsetzen, NUTZBAR, textfeldErsetzen, vorlagenZeilen } from './schema';
+import { kopfFusszeileErsetzen, textfeldErsetzen } from './context';
+import { beispielAusfuehren, ermittleNutzbarkeit, NUTZBAR, vorlagenZeilen } from './schema';
 
 const ctx = kernBeispielKontext();
 

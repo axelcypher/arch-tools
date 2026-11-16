@@ -38,12 +38,13 @@ export interface OutputRow {
 
 /* ---------- Platzhalter ---------- */
 
-const PH = () => /\{\{\s*([^{}]+?)\s*\}\}/g;
+/** Platzhalter {{…}} (immer neue RegExp: global mit lastIndex-Zustand) – auch für die Vorlagenprüfung */
+export const PH = () => /\{\{\s*([^{}]+?)\s*\}\}/g;
 const BLOCK_START = /^#\s*([a-z][a-z0-9]*)\s*(?:\[([^\]]*)\])?$/i;
 const BLOCK_END = /^\/\s*([a-z][a-z0-9]*)\s*$/i;
 const WENN_START = /^#\s*wenn\b\s*(.+)$/i;
 /** Vergleich in einer Bedingung, Operator außerhalb eckiger Klammern: summe.wofl>100, raum[wofl]>=3 */
-const VERGLEICH = /^((?:[^[\]=!<>]|\[[^\]]*\])+?)\s*(!=|>=|<=|=|>|<)\s*(.*)$/;
+export const VERGLEICH = /^((?:[^[\]=!<>]|\[[^\]]*\])+?)\s*(!=|>=|<=|=|>|<)\s*(.*)$/;
 
 interface KeyInfo {
   coll?: Collection;
@@ -67,7 +68,7 @@ function parseKey(raw: string, ctx: ExportContext): KeyInfo {
   return { scalar: key, z: mod };
 }
 
-function cellText(v: CellValue | undefined): string | null {
+export function cellText(v: CellValue | undefined): string | null {
   if (typeof v === 'string') return v;
   if (v && typeof v === 'object' && 'richText' in v) return v.richText.map((r) => r.text).join('');
   return null;
@@ -112,6 +113,17 @@ function resolveCell(text: string, ctx: ExportContext, b: Bindings, firstOfRepea
   });
   return out === '' ? null : out;
 }
+
+/** Spaltenbuchstabe zu einer Spaltennummer (1 → A) */
+export const colLetter = (n: number) => {
+  let s = '';
+  while (n > 0) {
+    const m = (n - 1) % 26;
+    s = String.fromCharCode(65 + m) + s;
+    n = Math.floor((n - 1) / 26);
+  }
+  return s;
+};
 
 /* ---------- Blockstruktur ---------- */
 

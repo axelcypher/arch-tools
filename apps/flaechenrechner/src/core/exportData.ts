@@ -119,8 +119,8 @@ export function buildExportContext(project: Project, result: ProjectResult, date
   const shapesById = new Map(project.storeys.flatMap((st) => st.shapes.map((sh) => [sh.id, sh] as const)));
   // Geschossart: „ja“ bei Dachgeschossen – für Filter [dg] / [normal] in allen Sammlungen
   const dg = new Map(project.storeys.map((st) => [st.id, istDachgeschoss(st) ? 'ja' : ''] as const));
-  // ungerundete Flächen für die Summen nach Nutzungsgruppe und R/S – NRF wie in der Berechnung: ohne Räume außerhalb der
-  // BGF und ohne Abzugsflächen, die nur die Wohnfläche mindern
+  // je Raum einmal: ungerundete Fläche ohne Putzabzug und Nutzungsgruppe für die Summen nach R/S – NRF wie in der
+  // Berechnung: ohne Räume außerhalb der BGF und ohne Abzugsflächen, die nur die Wohnfläche mindern
   const flaechen: RaumFlaeche[] = result.storeys.flatMap((s) =>
     s.rooms.map((r) => {
       const sh = shapesById.get(r.shapeId);
@@ -133,17 +133,17 @@ export function buildExportContext(project: Project, result: ProjectResult, date
       };
     }),
   );
+  let i = 0;
   let nr = 0;
   const raum: Row[] = result.storeys.flatMap((s) =>
     s.rooms.map((r) => {
       const sh = shapesById.get(r.shapeId);
-      const roh = (sh ? polygonArea(sh.points) : Math.abs(r.area)) * (r.subtract ? -1 : 1);
+      // Räume in derselben Reihenfolge wie flaechen
+      const roh = flaechen[i++].roh;
       const wofl = r.woflKategorie !== 'keine';
       return {
         _geschossId: s.storeyId,
         _wofl: r.woflKategorie,
-        // zählt zur NRF (nicht außerhalb der BGF, keine Abzugsfläche nur der Wohnfläche)
-        _nrf: r.ausserhalbBgf || r.abzugArt === 'wofl' ? '' : 'ja',
         nr: ++nr,
         geschoss: r.storeyName,
         dachgeschoss: dg.get(s.storeyId) ?? '',
