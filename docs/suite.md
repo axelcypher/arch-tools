@@ -205,6 +205,40 @@ am Tab bzw. in der Titelleiste ● erscheint.
     schließen“ schließt. Bei QUADRIO und TERRIO (lokale IndexedDB) erscheinen die Rückfragen praktisch
     nie.
 
+## Prüfschritte auf Windows: Direktexport und PDF aus Excel
+
+Mit einem Projekt, dessen `.oap` im Projektordner liegt (Vorgabe `03 Berechnungen/Flächen/…oap`), Stammdaten mit
+Projektcode.
+
+1. **Direktexport mit Excel:** Auf einem Rechner mit Microsoft Excel in QUADRIO „Exportieren“ (Werkzeugleiste).
+   Tooltip vorher: „Excel und PDF … direkt in den Berechnungsordner …: <Pfad>“. Erwartet: nach wenigen Sekunden
+   „Exportiert“ mit beiden Dateinamen; im Ordner `03 Berechnungen/Flächen` liegen `<Kürzel> <JJMMTT>
+   Flächenaufstellung.xlsx` und `.pdf`. Das PDF hat Seitenformat, Ränder, Kopf- und Fußzeile (Seitenzahlen) der
+   Vorlage; im Task-Manager läuft danach kein `EXCEL.EXE` mehr. „Ordner öffnen“ öffnet den Explorer im Ordner.
+2. **Vorhandene Datei:** Schritt 1 wiederholen. Erwartet: „Datei gibt es schon“, Fokus auf „Neue Fassung“. Enter →
+   Dateien mit „ (2)“. Noch einmal, diesmal „Ersetzen“ → die Dateien ohne Nummer werden überschrieben; „Abbrechen“
+   bzw. Esc schreibt nichts.
+3. **Excel offen mit derselben Datei:** Die erzeugte `.xlsx` in Excel öffnen und „Ersetzen“ wählen. Erwartet: Meldung
+   „Export fehlgeschlagen“ mit dem Grund (Datei gesperrt), nichts halb Geschriebenes.
+4. **Nur LibreOffice:** Auf einem Rechner ohne Excel, mit LibreOffice (Standardpfad unter `Programme\LibreOffice`).
+   Erwartet: PDF entsteht ebenso. Zahlen mit Dezimalkomma prüfen – zeigt LibreOffice Punkte, steht es auf einer
+   englischen Sprache (Extras ▸ Optionen ▸ Spracheinstellungen ▸ Gebietsschema „Deutsch (Deutschland)“).
+5. **Weder Excel noch LibreOffice:** Erwartet: „Exportiert – ohne PDF“ mit „Für das PDF wird Microsoft Excel oder
+   LibreOffice gebraucht – keines davon wurde … gefunden.“; die `.xlsx` ist gespeichert.
+6. **Hängender Wandler:** (schwer nachzustellen, z. B. Excel mit offenem modalen Dialog) Erwartet: nach 2 Minuten
+   „… hat nach 2 Minuten nicht geantwortet und wurde beendet.“, kein übrig gebliebener Excel- bzw. soffice-Prozess.
+7. **Datei ▸ Export ▸ PDF …:** Dialog „PDF-Export“, „Excel-Datei daneben mitspeichern“ anhaken, „PDF speichern“.
+   Erwartet: Speicherdialog für das PDF, die `.xlsx` mit gleichem Namen daneben; gibt es sie schon, Rückfrage
+   „Excel-Datei ersetzen?“ mit Fokus auf „Abbrechen“.
+8. **Ohne Projektdatei bzw. außerhalb des Projektordners:** Neues Projekt (ungespeichert) → „Exportieren“. Erwartet:
+   Export-Dialog mit dem Hinweis „Das Projekt ist noch nicht gespeichert …“. Eine `.oap` auf dem Desktop: Hinweis
+   „… Berechnungsordner unbekannt …“.
+9. **Vorlage mit Tippfehler:** Eigene Vorlage mit `{{flaeche.gibtsnicht}}` hinterlegen, „Exportieren“. Erwartet:
+   Dateien werden gespeichert, die Meldung nennt die Zahl der Hinweise; „Hinweise ansehen …“ öffnet den Dialog mit
+   der Liste (Blatt und Zelle).
+10. Schritte 1, 2 und 7 auch in TERRIO (`03 Berechnungen/Nachweise`, „GRZ-Nachweis“) und NUMIO (`03 Berechnungen/Kosten`,
+    Stufe als Inhalt, z. B. „Kostenschätzung“).
+
 ## Entwicklung
 
 ```bash

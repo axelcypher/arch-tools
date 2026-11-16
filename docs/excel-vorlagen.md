@@ -1,7 +1,7 @@
 # Excel-Vorlagen
 
-Der Excel-Export (Schaltfläche **Excel**) erzeugt entweder das Standardlayout oder füllt eine eigene
-Vorlage. Eine Vorlage ist eine normale `.xlsx`-Datei – mit Logo, Kopf, Schriften, Rahmen, Zahlenformaten
+Der Excel-Export (**Datei ▸ Export ▸ Excel …** bzw. **PDF …**, oder direkt mit **Exportieren** in der Werkzeugleiste)
+erzeugt entweder das Standardlayout oder füllt eine eigene Vorlage. Eine Vorlage ist eine normale `.xlsx`-Datei – mit Logo, Kopf, Schriften, Rahmen, Zahlenformaten
 und eigenen Formeln – in die Platzhalter geschrieben werden. Sie wird im Projekt gespeichert (und im
 Projektarchiv `.oap` mitgenommen) und zusätzlich in der Anwendung als Standard für weitere Projekte
 hinterlegt. QUADRIO, TERRIO und NUMIO nutzen dieselbe Vorlagen-Engine; jede App speichert ihre Vorlage getrennt.
@@ -14,6 +14,24 @@ Im Excel-Dialog unter **Eigene Vorlage**:
 - **Vorlage prüfen** – meldet mögliche Tippfehler mit Blatt und Zelle (siehe „Vorlagenprüfung“). Nach einem Export
   mit Vorlage erscheinen die Hinweise ebenfalls.
 - **Muster-Vorlage herunterladen** – Beispieldatei mit allen Techniken und dem Blatt „Platzhalter“.
+
+## Direktexport und PDF
+
+- **Exportieren** (Werkzeugleiste von QUADRIO, TERRIO, NUMIO) speichert ohne Dialog: mit der eingestellten Vorlage
+  (sonst dem Standardlayout) als `.xlsx` im **Berechnungsordner** des Projekts, mit dem Dateinamen aus den
+  Einstellungen („Pfade und Benennung“, Vorgabe `{PROJEKT_KUERZEL} {DATUM} {Inhalt}`). Ist „PDF mitspeichern“ an,
+  entsteht das PDF daneben. Der Berechnungsordner liegt im Projektordner (Vorgabe QUADRIO `03 Berechnungen/Flächen`,
+  TERRIO `03 Berechnungen/Nachweise`, NUMIO `03 Berechnungen/Kosten`) und wird bei Bedarf angelegt. Der Tooltip nennt
+  Ziel und Formate.
+- Gibt es eine der Dateien schon, fragt die App: **Neue Fassung** (Standard, hängt „ (2)“, „ (3)“ … an), **Ersetzen**
+  oder **Abbrechen** – still überschrieben wird nie.
+- Danach meldet die App Ordner und Dateien mit **Ordner öffnen**; hat die Vorlagenprüfung etwas gefunden, führt
+  **Hinweise ansehen …** in den Export-Dialog. Ohne gespeichertes Projekt, wenn die Projektdatei nicht im
+  Projektordner liegt, oder in der Web-Fassung öffnet sich stattdessen der Dialog mit dem Grund.
+- **PDF** entsteht aus der gefüllten Excel-Datei: über ein installiertes Microsoft Excel (unsichtbar, „Als PDF
+  exportieren“), sonst über LibreOffice ohne Oberfläche. Druckbereich, Kopf- und Fußzeile, Skalierung und Seitenformat
+  der Vorlage bleiben erhalten. Nach 2 Minuten ohne Antwort wird der Vorgang samt Unterprozessen beendet. Ohne Excel
+  und LibreOffice meldet die App, was fehlt, und speichert nur die `.xlsx`. In der Web-Fassung gibt es kein PDF.
 
 Die Abschnitte „Syntax“ und die Platzhalter je App sind **aus dem Schema der Apps erzeugt**
 (`packages/core/src/excel/kern.ts`, `apps/*/…/platzhalterSchema.ts`) – dieselbe Quelle wie Referenz und Muster-Blatt.
