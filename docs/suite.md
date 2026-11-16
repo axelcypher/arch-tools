@@ -211,10 +211,11 @@ Mit einem Projekt, dessen `.oap` im Projektordner liegt (Vorgabe `03 Berechnunge
 Projektcode.
 
 1. **Direktexport mit Excel:** Auf einem Rechner mit Microsoft Excel in QUADRIO „Exportieren“ (Werkzeugleiste).
-   Tooltip vorher: „Als Excel und PDF in ‚<Pfad>‘ speichern …“. Erwartet: nach wenigen Sekunden unten rechts der Hinweis
-   „Gespeichert: …“ mit beiden Dateinamen und dem Ordner (hält nichts auf, F6 springt hinein); im Ordner `03 Berechnungen/Flächen` liegen `<Kürzel> <JJMMTT>
-   Flächenaufstellung.xlsx` und `.pdf`. Das PDF hat Seitenformat, Ränder, Kopf- und Fußzeile (Seitenzahlen) der
-   Vorlage; im Task-Manager läuft danach kein `EXCEL.EXE` mehr. „Ordner öffnen“ öffnet den Explorer im Ordner.
+   Tooltip vorher: „Als Excel und PDF in ‚<Pfad>‘ speichern …“. Erwartet: nach wenigen Sekunden unten rechts der
+   Hinweis „Gespeichert: …“ mit beiden Dateinamen und dem Ordner (hält nichts auf, F6 springt hinein); im Ordner
+   `03 Berechnungen/Flächen` liegen `<Kürzel> <JJMMTT> Flächenaufstellung.xlsx` und `.pdf`. Das PDF hat
+   Seitenformat, Ränder, Kopf- und Fußzeile (Seitenzahlen) der Vorlage; im Task-Manager läuft danach kein `EXCEL.EXE`
+   mehr. „Ordner öffnen“ öffnet den Explorer im Ordner.
 2. **Vorhandene Datei:** Schritt 1 wiederholen. Erwartet: „‚… .xlsx‘ und ‚… .pdf‘ ersetzen?“ mit „Die Dateien gibt es
    schon in ‚<Ordner>‘.“, Fokus auf „Abbrechen“; Enter bzw. Esc schreibt nichts. Noch einmal, diesmal „Ersetzen“ → die
    Dateien werden überschrieben.
@@ -223,8 +224,8 @@ Projektcode.
 4. **Nur LibreOffice:** Auf einem Rechner ohne Excel, mit LibreOffice (Standardpfad unter `Programme\LibreOffice`).
    Erwartet: PDF entsteht ebenso. Zahlen mit Dezimalkomma prüfen – zeigt LibreOffice Punkte, steht es auf einer
    englischen Sprache (Extras ▸ Optionen ▸ Spracheinstellungen ▸ Gebietsschema „Deutsch (Deutschland)“).
-5. **Weder Excel noch LibreOffice:** Erwartet: Hinweis als Warnung mit „Das PDF fehlt: „Für das PDF wird Microsoft Excel oder
-   LibreOffice gebraucht – keines davon wurde … gefunden.“; die `.xlsx` ist gespeichert.
+5. **Weder Excel noch LibreOffice:** Erwartet: Hinweis als Warnung „… Das PDF fehlt: Für das PDF wird
+   Microsoft Excel oder LibreOffice gebraucht – keines davon wurde … gefunden.“; die `.xlsx` ist gespeichert.
 6. **Hängender Wandler:** (schwer nachzustellen, z. B. Excel mit offenem modalen Dialog) Erwartet: nach 2 Minuten
    „… hat nach 2 Minuten nicht geantwortet und wurde beendet.“, kein übrig gebliebener Excel- bzw. soffice-Prozess.
 7. **Datei → Exportieren → PDF …:** Dialog „PDF-Export“, „Excel-Datei daneben mitspeichern“ anhaken, „PDF speichern“.
@@ -234,8 +235,8 @@ Projektcode.
    gesperrt, per Tab erreichbar, Tooltip „Erst das Projekt speichern …“. Eine `.oap` auf dem Desktop: Tooltip „Kein
    Berechnungsordner …“. „Datei → Exportieren → Excel …“ geht in beiden Fällen.
 9. **Vorlage mit Tippfehler:** Eigene Vorlage mit `{{flaeche.gibtsnicht}}` hinterlegen, „Exportieren“. Erwartet:
-   Dateien werden gespeichert, der Hinweis (Warnung) nennt die Zahl der Prüfhinweise; „Prüfhinweise …“ öffnet die Liste (Blatt und
-   Zelle).
+   Dateien werden gespeichert, der Hinweis (Warnung) nennt die Zahl der Prüfhinweise; „Prüfhinweise …“ öffnet die
+   Liste (Blatt und Zelle).
 10. Schritte 1, 2 und 7 auch in TERRIO (`03 Berechnungen/Nachweise`, „GRZ-Nachweis“) und NUMIO (`03 Berechnungen/Kosten`,
     Stufe als Inhalt, z. B. „Kostenschätzung“).
 

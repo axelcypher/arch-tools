@@ -61,7 +61,7 @@ export async function direktExportMitMeldung(
   try {
     const r = await direktExportieren(auftrag, umgebung);
     if (r.art === 'abgebrochen') return;
-    if (r.art === 'gesperrt') return void hinweis({ id: 'export', art: 'fehler', text: `Nicht exportiert: ${r.grund}` });
+    if (r.art === 'gesperrt') return void hinweis({ id: 'export', art: 'fehler', text: `Nicht exportiert – ${r.grund}` });
     log.info('Direktexport', { dateien: r.dateien, vorlage: r.vorlage, hinweise: r.hinweise.length });
     const teile = [`Gespeichert: ${r.dateien.map(name).join(' und ')}${r.vorlage ? ` (Vorlage „${r.vorlage}“)` : ' (Standardlayout)'}.`];
     if (r.pdfFehler) teile.push(r.pdfAlt ? `Das PDF daneben hat noch den alten Stand – das neue ließ sich nicht erzeugen: ${r.pdfFehler}` : `Das PDF fehlt: ${r.pdfFehler}`);

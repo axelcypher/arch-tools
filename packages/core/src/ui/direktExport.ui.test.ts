@@ -86,6 +86,22 @@ describe('Rückmeldung nach dem Direktexport (Hinweis, hält nichts auf)', () =>
     expect(zeigen).toHaveBeenCalledWith([hinweis]);
   });
 
+  it('gesperrt (Projekt nie gespeichert): Fehler-Hinweis mit dem Grund, nichts geschrieben', async () => {
+    const schreiben = vi.fn(async () => {});
+    const d = await lauf(auftrag({ datei: null }), umgebung(null, { schreiben }));
+    expect(d).toMatchObject({ id: 'export', art: 'fehler' });
+    expect(d.text).toMatch(/^Nicht exportiert – Erst das Projekt speichern/);
+    expect(schreiben).not.toHaveBeenCalled();
+  });
+
+  it('„Abbrechen“ bei vorhandener Datei: kein Hinweis, nichts geschrieben', async () => {
+    const h = vi.fn();
+    const schreiben = vi.fn(async () => {});
+    await direktExportMitMeldung(auftrag(), vi.fn(), umgebung(null, { existiert: async () => true, schreiben }), h);
+    expect(h).not.toHaveBeenCalled();
+    expect(schreiben).not.toHaveBeenCalled();
+  });
+
   it('Schreibfehler: Fehler-Hinweis mit demselben Schlüssel und dem Grund', async () => {
     const d = await lauf(
       auftrag(),

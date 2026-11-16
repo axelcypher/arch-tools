@@ -26,9 +26,9 @@ Im Excel-Dialog unter **Eigene Vorlage**:
 - Gibt es eine der Dateien schon, fragt die App „‚Name.xlsx‘ ersetzen?“ mit **Abbrechen** (Standard) und
   **Ersetzen** – still überschrieben wird nie.
 - Danach meldet ein Hinweis unten rechts Ordner und Dateien mit **Ordner öffnen** (er hält nichts auf); hat die
-  Vorlagenprüfung etwas gefunden, ist er eine Warnung und **Prüfhinweise …** öffnet die Liste. Ohne gespeichertes Projekt, wenn die Projektdatei nicht im Projektordner liegt, oder
-  in der Web-Fassung ist der Knopf gesperrt; der Tooltip nennt den Grund. Vorlage und Ziel frei wählen:
-  **Datei → Exportieren → Excel …**.
+  Vorlagenprüfung etwas gefunden, ist er eine Warnung und **Prüfhinweise …** öffnet die Liste.
+- Ohne gespeichertes Projekt, wenn die Projektdatei nicht im Projektordner liegt, oder in der Web-Fassung ist der
+  Knopf gesperrt; der Tooltip nennt den Grund. Vorlage und Ziel frei wählen: **Datei → Exportieren → Excel …**.
 - **PDF** entsteht aus der gefüllten Excel-Datei: über ein installiertes Microsoft Excel (unsichtbar, „Als PDF
   exportieren“), sonst über LibreOffice ohne Oberfläche. Druckbereich, Kopf- und Fußzeile, Skalierung und Seitenformat
   der Vorlage bleiben erhalten. Nach 2 Minuten ohne Antwort wird der Vorgang samt Unterprozessen beendet. Ohne Excel
