@@ -12,6 +12,7 @@
 //! angelegt, nie überschrieben.
 
 include!("../../../../packages/core/tauri/commands.rs");
+include!("../../../../packages/core/tauri/prozess.rs");
 include!("../../../../packages/core/tauri/qgis.rs");
 include!("../../../../packages/core/tauri/umbenennen.rs");
 
