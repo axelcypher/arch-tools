@@ -3,15 +3,14 @@ import { openTextFile, saveTextFile } from '@core/platform/files';
 import { logger } from '@core/platform/log';
 import { Field, TextField } from '@core/ui/fields';
 import { bestaetigen, fragen } from '@core/ui/Rueckfrage';
-import { OAP_VARIABLEN, projektdateiPfad } from '@core/projektdatei';
+import { projektdateiPfad } from '@core/projektdatei';
 import { hatDateisystem, waehleOrdner } from '../dateisystem';
-import { dateimuster, nameAus, nummerAus, PLATZHALTER_NUMMER, PLATZHALTER_PLAN, PLATZHALTER_PROJEKT } from '../nummer';
-import { SchemaFeld } from './SchemaFeld';
+import { nameAus, nummerAus } from '../nummer';
+import { PfadeVerweis } from '@core/ui/Einstellungen';
 import { SPERRGRUND, StrukturSperre } from './StrukturSperre';
 import type { Sicherung } from '../sicherung';
 import { strukturUnterschied, unterschiedText } from '../sicherung';
 import { useOrdner } from '../store';
-import { SpeicherortZeile } from '@core/ui/Speicherort';
 import { Symbol } from '@core/ui/Symbol';
 import { OrdnerEditor } from './OrdnerEditor';
 import { NamensschemaEinstellungen } from './NamensschemaEinstellungen';
@@ -173,7 +172,6 @@ export function StrukturView() {
     });
 
   const beispiel = musterWerte(nummerAus(struktur.nummernschema, 14));
-  const dateiBeispiel = (schema: string) => nameAus(schema, { ...beispiel, plannummer: 'A-101', index: 'b', titel: 'Grundriss EG' });
 
   const ordnerKopf = (
     <div className="po-ordner-kopf">
@@ -192,44 +190,31 @@ export function StrukturView() {
     </div>
   );
 
-  // Namensschemata: gelten für die ganze Struktur, nicht für den gewählten Ordner – daher im Kopf; Platzhalter-Chips nur im Fokus
+  // Namensschemata: gelten für die ganze Struktur – eingestellt zentral (Einstellungen › Pfade und Benennung), hier nur angezeigt
   const schemata = (
     <div className="po-schemata" role="group" aria-labelledby="po-schemata-titel">
       <h3 id="po-schemata-titel">Namen</h3>
-      <div className="po-schemata-felder">
-        <Field label="Projektnummer">
-          <SchemaFeld
-            label="Projektnummer"
-            value={struktur.nummernschema}
-            platzhalter={PLATZHALTER_NUMMER}
-            kompakt
-            vorschau={(t) => `Beispiel: ${nummerAus(t, 14)}`}
-            onChange={(v) => set({ nummernschema: v.trim() || struktur.nummernschema })}
-          />
-        </Field>
-        <Field label="Name des Projektordners">
-          <SchemaFeld
-            label="Name des Projektordners"
-            value={struktur.ordnername}
-            platzhalter={PLATZHALTER_PROJEKT}
-            kompakt
-            vorschau={(t) => `Beispiel: ${sichererName(nameAus(t, beispiel))}`}
-            onChange={(v) => set({ ordnername: v.trim() || struktur.ordnername })}
-          />
-        </Field>
-        <Field label="Dateinamenschema für Pläne">
-          <SchemaFeld
-            label="Dateinamenschema für Pläne"
-            value={struktur.dateischema}
-            platzhalter={PLATZHALTER_PLAN}
-            kompakt
-            vorschau={(t) =>
-              `Beispiel: ${dateiBeispiel(t)}.pdf${dateimuster(t, beispiel.nummer).test(dateiBeispiel(t)) ? '' : ' (das Schema erkennt sein eigenes Beispiel nicht – bitte Trennzeichen prüfen)'}`
-            }
-            onChange={(v) => set({ dateischema: v.trim() })}
-          />
-        </Field>
-      </div>
+      <dl className="po-schemata-werte">
+        <div>
+          <dt>Projektnummer</dt>
+          <dd>
+            <code>{struktur.nummernschema}</code> <span className="muted small-text">z. B. {nummerAus(struktur.nummernschema, 14)}</span>
+          </dd>
+        </div>
+        <div>
+          <dt>Name des Projektordners</dt>
+          <dd>
+            <code>{struktur.ordnername}</code> <span className="muted small-text">z. B. {sichererName(nameAus(struktur.ordnername, beispiel))}</span>
+          </dd>
+        </div>
+        <div>
+          <dt>Dateinamen der Pläne</dt>
+          <dd>
+            <code>{struktur.dateischema}</code>
+          </dd>
+        </div>
+      </dl>
+      <PfadeVerweis fokus="projekt.nummernschema" erklaerung="Eingestellt in den Einstellungen aller Apps, Seite „Pfade und Benennung“." />
     </div>
   );
 
@@ -402,7 +387,11 @@ function GemeinsameEinstellungen() {
     <>
       <h2>Gemeinsame Einstellungen</h2>
       <p className="muted small-text">Gelten für alle Apps. Bei einer Netzwerkinstallation liegen sie auf dem Netzlaufwerk und gelten für das ganze Büro.</p>
-      <SpeicherortZeile />
+      <PfadeVerweis
+        seite="allgemein"
+        text="Speicherort und Büro …"
+        erklaerung="Speicherort der Einstellungen, Name des Büros und Kürzel der Mitarbeiter stehen in den Einstellungen aller Apps, Seite „Allgemein“."
+      />
       {konfigFehler && (
         <p className="meldung fehler" role="alert">
           {konfigFehler}
@@ -491,39 +480,23 @@ function GemeinsameEinstellungen() {
           </button>
         </div>
       )}
-      <Field label="Projektdatei (.oap) in neuen Projekten" hint="Pfad im Projektordner – {DATUM} ist JJMMTT, mit Format z. B. {DATUM:JJJJ-MM-TT}">
-        <SchemaFeld
-          label="Projektdatei (.oap) in neuen Projekten"
-          value={allgemein.oapPfad}
-          platzhalter={OAP_VARIABLEN}
-          vorschau={(t) => `Beispiel: ${projektdateiPfad(t, { nummer: beispiel.nummer, kurzname: beispiel.kurzname, vorhaben: beispiel.vorhaben })}`}
-          onChange={(v) => setAllgemein({ oapPfad: v.trim() })}
-        />
-      </Field>
-      <Field label="Fotoordner im Projekt" hint="Hier sucht RECTIO (Entzerrung) auch in Unterordnern nach Fotos; die .entz-Datei liegt beim Foto.">
-        <TextField value={allgemein.fotoordner} onChange={(v) => setAllgemein({ fotoordner: v.trim() })} />
-      </Field>
-      <Field label="Büro" hint="Name des Büros im Kopf der Ausdrucke und Excel-Dateien aller Apps (leer = ohne)">
-        <TextField value={allgemein.buero ?? ''} placeholder="z. B. Architekturbüro Muster" onChange={(v) => setAllgemein({ buero: v.trim() })} />
-      </Field>
-      <Field label="Mitarbeiter (Kürzel)" hint="mehrere mit Komma – Vorschläge für „Bearbeitung“ in den Stammdaten">
-        <TextField
-          value={(allgemein.mitarbeiter ?? []).join(', ')}
-          placeholder="z. B. TP, AK"
-          onChange={(v) =>
-            setAllgemein({
-              mitarbeiter: [
-                ...new Set(
-                  v
-                    .split(/[,;]+/)
-                    .map((x) => x.trim())
-                    .filter(Boolean),
-                ),
-              ],
-            })
-          }
-        />
-      </Field>
+      <h3 className="po-abschnitt">Projektdatei und Fotoordner</h3>
+      <dl className="po-schemata-werte">
+        <div>
+          <dt>Projektdatei (.oap) in neuen Projekten</dt>
+          <dd>
+            <code>{allgemein.oapPfad}</code>{' '}
+            <span className="muted small-text">z. B. {projektdateiPfad(allgemein.oapPfad, { nummer: beispiel.nummer, kurzname: beispiel.kurzname, vorhaben: beispiel.vorhaben })}</span>
+          </dd>
+        </div>
+        <div>
+          <dt>Fotoordner im Projekt</dt>
+          <dd>
+            <code>{allgemein.fotoordner}</code>
+          </dd>
+        </div>
+      </dl>
+      <PfadeVerweis fokus="projekt.oapPfad" erklaerung="Eingestellt in den Einstellungen aller Apps, Seite „Pfade und Benennung“." />
     </>
   );
 }

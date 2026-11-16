@@ -122,10 +122,8 @@ export function App() {
       } else if (k === 'y' || (k === 'z' && e.shiftKey)) {
         e.preventDefault();
         useAva.getState().lvWiederholen();
-      } else if (k === ',') {
-        e.preventDefault();
-        useAva.getState().setEinstellungenOffen(true);
       }
+      // Strg+, öffnet die zentralen Einstellungen (EinstellungenHost in der Titelleiste)
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);

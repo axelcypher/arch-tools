@@ -44,7 +44,9 @@ export const KATASTER_ZIEL_VARIABLEN: Variable[] = [...GLOBAL_KATASTER, { name: 
 
 /* ---------- PERMIO (Formulare) ---------- */
 
-const GLOBAL_FORMULARE: Variable[] = GLOBALE_VARIABLEN.map((v) => (v.name === 'PROJEKT_KUERZEL' ? { ...mitAliasen(v.name, ['Projekt']), quelle: 'Name des Projektordners (in den Formularen wie bisher)' } : v));
+const GLOBAL_FORMULARE: Variable[] = GLOBALE_VARIABLEN.map((v) =>
+  v.name === 'PROJEKT_KUERZEL' ? { ...mitAliasen(v.name, ['Projekt']), quelle: 'Name des Projektordners (in den Formularen wie bisher)' } : v,
+);
 
 /**
  * Variablen der Namensvorlage exportierter PDFs: die globalen und die lokalen der Formulare. {Phase} aus Vorlagen

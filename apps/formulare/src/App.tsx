@@ -11,6 +11,7 @@ import { auffrischen } from './dateiAktionen';
 import { AktualisierenDialog, UnterlagenDialog } from './components/AktualisierenDialog';
 import { GesetzModal } from './components/GesetzModal';
 import { EinstellungenModal } from './components/Einstellungen';
+import { einstellungenPunkt } from '@core/ui/Einstellungen';
 import { ExportDialog, useExportDialog } from './components/ExportDialog';
 import { FormularHinzufuegenDialog, useHinzufuegenDialog } from './components/FormularHinzufuegen';
 import type { MenuePunkt } from '@core/ui/Menue';
@@ -238,6 +239,13 @@ export function App() {
     ...(formularSichtbar && offen.projekt ? [{ text: 'Speichern unter …', symbol: 'datei' as const, aktion: () => void useAntrag.getState().speichernUnter(offen.pfad) }] : []),
     ...(formularSichtbar ? [{ text: 'Drucken …', symbol: 'drucken' as const, tasten: 'Strg+P', aktion: () => void drucken() }] : []),
   ];
+  // nur „Formular öffnen …“ (Web-Version ohne Formular): als eigener Knopf sichtbar, nicht zusätzlich im Menü
+  const oeffnenKnopf = !ds && dateiPunkte().length < 2;
+  /** Menü „Datei“: die Dateibefehle, als letzter Punkt die zentralen Einstellungen aller Apps (docs/design.md) */
+  const dateiMenue = (): MenuePunkt[] => {
+    const befehle = oeffnenKnopf ? [] : dateiPunkte();
+    return [...befehle, ...(befehle.length ? [{ trenner: true } as const] : []), einstellungenPunkt()];
+  };
   const ansichtPunkte = (): MenuePunkt[] => [
     { text: 'Gliederung', haken: gliederungSichtbar, aktion: () => (einrichten ? useEinrichten.getState().setBaumOffen(!einrichtenBaum) : setGliederungOffen(!gliederungOffen)) },
     { text: 'Verlauf der Eingaben', haken: verlaufOffen, aktion: () => setVerlaufOffen(!verlaufOffen) },
@@ -269,7 +277,7 @@ export function App() {
           },
         ]
       : []),
-    ...(ds ? [{ text: 'Einstellungen …', symbol: 'zahnrad' as const, aktion: () => useFormulare.getState().einstellungenOeffnen() }] : []),
+    ...(ds ? [{ text: 'Einstellungen von PERMIO …', titel: 'Ordner, Stammdaten, Adressbuch, Formulare, Antrag und Export', aktion: () => useFormulare.getState().einstellungenOeffnen() }] : []),
     ...(kartenansicht && karte
       ? [
           { trenner: true } as const,
@@ -286,8 +294,8 @@ export function App() {
   ];
   const speichernTitel = (text: string) => (geaendert ? `${text} – ungespeicherte Änderungen` : text);
   const leistenTeile: LeistenTeil[] = [];
-  if (dateiPunkte().length >= 2) leistenTeile.push({ id: 'datei', inhalt: <MenueKnopf punkte={dateiPunkte}>Datei</MenueKnopf> });
-  else if (!ds) leistenTeile.push({ id: 'oeffnen', inhalt: <button onClick={() => void dateiOeffnen()}>Formular öffnen …</button> });
+  if (oeffnenKnopf) leistenTeile.push({ id: 'oeffnen', inhalt: <button onClick={() => void dateiOeffnen()}>Formular öffnen …</button> });
+  leistenTeile.push({ id: 'datei', inhalt: <MenueKnopf punkte={dateiMenue}>Datei</MenueKnopf> });
   if (formularSichtbar)
     leistenTeile.push(
       {

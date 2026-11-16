@@ -7,8 +7,9 @@ import { bueroName, KonfigNichtErreichbar, konfigNeuLesen } from '@core/platform
 import { modernisieren } from '@core/platzhalter';
 import { PlatzhalterChips, PlatzhalterHinweise, platzhalterEinfuegen } from '@core/ui/Platzhalter';
 import { Symbol } from '@core/ui/Symbol';
-import { nameBilden, nameErkennen } from '../abrechnung/benennung';
-import { LV_NAME_VARIABLEN, mailVariablen, RECHNUNG_NAME_VARIABLEN } from '../platzhalter';
+import { PfadeVerweis } from '@core/ui/Einstellungen';
+import { nameErkennen } from '../abrechnung/benennung';
+import { mailVariablen } from '../platzhalter';
 import type { AvaEinstellungen, MailVorlage } from '../einstellungen';
 import { EinstellungenKonflikt, VORGABE } from '../einstellungen';
 import { neueId } from '../lv/modell';
@@ -55,7 +56,9 @@ export function EinstellungenModal() {
 
   const speichern = async () => {
     try {
-      await useAva.getState().einstellungenSetzen(e);
+      // Ablage, Rechnungsmuster und Name neuer LV-Dateien stellen die zentralen Einstellungen ein: deren aktueller Stand gilt
+      const z = useAva.getState().einstellungen;
+      await useAva.getState().einstellungenSetzen({ ...e, ablage: z.ablage, rechnungen: { ...e.rechnungen, muster: z.rechnungen.muster }, lv: { ...e.lv, dateiname: z.lv.dateiname } });
       schliessen();
     } catch (x) {
       // anderer Rechner oder Netzlaufwerk weg: die Meldung erklärt es selbst
@@ -70,7 +73,7 @@ export function EinstellungenModal() {
     schliessen();
   };
 
-  const erkannt = nameErkennen(probe, e.rechnungen.muster, e.rechnungen.arten);
+  const erkannt = nameErkennen(probe, gespeichert.rechnungen.muster, e.rechnungen.arten);
 
   return (
     <Modal kopf titel="Einstellungen" onClose={() => void abbrechen()} breit klickDaneben={false} className="ava-einstellungen">
@@ -97,51 +100,41 @@ export function EinstellungenModal() {
           {ebene === 'ablage' && (
             <div className="ava-formular">
               <p className="muted ava-feld-breit">Wo im Projektordner was liegt. Gewerkeordner heißen „G08 Fenster“ (Kennung G + Nummer, dann die Bezeichnung).</p>
-              <Feld label="Ordner der Gewerke" hinweis="relativ zum Projektordner">
-                <TextEingabe wert={e.ablage.gewerke} onChange={(gewerke) => setze('ablage', { gewerke })} />
-              </Feld>
-              <Feld label="LV-Dateien im Unterordner" hinweis="leer = direkt im Gewerkeordner">
-                <TextEingabe wert={e.ablage.lv} onChange={(lv) => setze('ablage', { lv })} />
-              </Feld>
-              <Feld label="Aufträge und Rechnungen">
-                <TextEingabe wert={e.ablage.auftrag} onChange={(auftrag) => setze('ablage', { auftrag })} />
-              </Feld>
-              <Feld label="Mailverkehr des Gewerks">
-                <TextEingabe wert={e.ablage.korrespondenz} onChange={(korrespondenz) => setze('ablage', { korrespondenz })} />
-              </Feld>
-              <Feld label="Archivordner" hinweis="durch Komma getrennt; im Gewerk und im Auftragsordner">
-                <TextEingabe wert={e.ablage.archive.join(', ')} onChange={(s) => setze('ablage', { archive: liste(s) })} />
-              </Feld>
-              <Feld label="Kostenkontrolle" hinweis="Teil des Dateinamens; „AKTUELL“ bzw. das jüngste Datum im Namen gewinnt">
-                <TextEingabe wert={e.ablage.kostenkontrolle} onChange={(kostenkontrolle) => setze('ablage', { kostenkontrolle })} />
-              </Feld>
-              <Feld label="Bauleitung (Protokolle, Bautagebuch)">
-                <TextEingabe wert={e.ablage.bauleitung} onChange={(bauleitung) => setze('ablage', { bauleitung })} />
-              </Feld>
-              <Feld label="Weitere Mailordner des Projekts" hinweis="Ordnernamen, durch Komma getrennt">
-                <TextEingabe wert={e.ablage.mailOrdner.join(', ')} onChange={(s) => setze('ablage', { mailOrdner: liste(s) })} />
-              </Feld>
+              <dl className="ava-feld-breit ava-werte">
+                {(
+                  [
+                    ['Ordner der Gewerke', gespeichert.ablage.gewerke],
+                    ['LV-Dateien im Unterordner', gespeichert.ablage.lv || '(direkt im Gewerkeordner)'],
+                    ['Aufträge und Rechnungen', gespeichert.ablage.auftrag],
+                    ['Mailverkehr des Gewerks', gespeichert.ablage.korrespondenz],
+                    ['Archivordner', gespeichert.ablage.archive.join(', ')],
+                    ['Kostenkontrolle', gespeichert.ablage.kostenkontrolle],
+                    ['Bauleitung', gespeichert.ablage.bauleitung],
+                    ['Weitere Mailordner', gespeichert.ablage.mailOrdner.join(', ')],
+                  ] as const
+                ).map(([t, w]) => (
+                  <div key={t}>
+                    <dt>{t}</dt>
+                    <dd>
+                      <code>{w}</code>
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+              <div className="ava-feld-breit">
+                <PfadeVerweis fokus="ablage.fabrio.gewerke" erklaerung="Die Ablage steht in den Einstellungen aller Apps, Seite „Pfade und Benennung“." />
+              </div>
             </div>
           )}
           {ebene === 'rechnungen' && (
             <div className="ava-formular">
-              <p className="muted ava-feld-breit">Muster der Dateinamen im Auftragsordner. Das erste gilt für neue Dateien, alle zum Erkennen vorhandener.</p>
-              <Feld label="Muster (je Zeile eines)" breit>
-                <TextEingabe mehrzeilig zeilen={4} wert={e.rechnungen.muster.join('\n')} onChange={(s) => setze('rechnungen', { muster: s.split('\n').map((x) => x.trim()).filter(Boolean) })} />
-              </Feld>
+              <p className="muted ava-feld-breit">
+                Muster der Dateinamen im Auftragsordner: <code>{gespeichert.rechnungen.muster[0]}</code>
+                {gespeichert.rechnungen.muster.length > 1 && ` und ${gespeichert.rechnungen.muster.length - 1} weitere zum Erkennen`}.
+              </p>
               <div className="ava-feld-breit">
-                <PlatzhalterHinweise vorlage={e.rechnungen.muster.join('\n')} variablen={RECHNUNG_NAME_VARIABLEN} onAnpassen={(s) => setze('rechnungen', { muster: s.split('\n') })} />
-                <PlatzhalterChips
-                  variablen={RECHNUNG_NAME_VARIABLEN}
-                  label="Muster der Rechnungsdateien (an das erste Muster angehängt)"
-                  fokusBehalten={false}
-                  onEinfuegen={(p) => setE((x) => ({ ...x, rechnungen: { ...x.rechnungen, muster: [platzhalterEinfuegen(x.rechnungen.muster[0] ?? '', p).text, ...x.rechnungen.muster.slice(1)] } }))}
-                />
-                <span className="ava-feld-hinweis">Ein Klick hängt den Platzhalter an das erste Muster an.</span>
+                <PfadeVerweis fokus="plaene.fabrio.rechnungen" erklaerung="Die Muster stehen in den Einstellungen aller Apps, Seite „Pfade und Benennung“." />
               </div>
-              <Feld label="Beispiel für neue Dateien" breit>
-                <code>{nameBilden(e.rechnungen.muster[0] ?? '', { kuerzel: 'K62', nr: 53, firma: 'Musterbau', datum: '2026-11-12', art: 'SR', lfd: 4, gewerk: 'G08' })}.pdf</code>
-              </Feld>
               <Feld label="Erkennen ausprobieren" breit>
                 <input value={probe} onChange={(x) => setProbe(x.target.value)} />
                 <span className="ava-feld-hinweis">{erkannt ? `erkannt: Nr. ${erkannt.nr ?? '–'}, ${erkannt.art ?? ''}${erkannt.lfd ?? ''}, ${erkannt.firma ?? ''}, ${erkannt.datum ?? ''} (Muster „${erkannt.muster}“)` : 'passt zu keinem Muster'}</span>
@@ -255,17 +248,11 @@ export function EinstellungenModal() {
                   <option value="oalv">eigenes Format (.oalv) – alle Positionsarten, ohne LV-Programm</option>
                 </select>
               </Feld>
-              <Feld label="Name neuer LV-Dateien" hinweis="dahinter folgt die Bezeichnung">
-                <TextEingabe wert={e.lv.dateiname} onChange={(dateiname) => setze('lv', { dateiname })} />
-              </Feld>
               <div className="ava-feld-breit">
-                <PlatzhalterHinweise vorlage={e.lv.dateiname} variablen={LV_NAME_VARIABLEN} onAnpassen={(dateiname) => setze('lv', { dateiname })} />
-                <PlatzhalterChips
-                  variablen={LV_NAME_VARIABLEN}
-                  label="Name neuer LV-Dateien"
-                  fokusBehalten={false}
-                  onEinfuegen={(p) => setE((x) => ({ ...x, lv: { ...x.lv, dateiname: platzhalterEinfuegen(x.lv.dateiname, p).text } }))}
-                />
+                <p className="muted">
+                  Name neuer LV-Dateien: <code>{gespeichert.lv.dateiname}</code> – dahinter folgt die Bezeichnung.
+                </p>
+                <PfadeVerweis fokus="vorlagen.fabrio.lv" erklaerung="Eingestellt in den Einstellungen aller Apps, Seite „Pfade und Benennung“." />
               </div>
             </div>
           )}
@@ -274,7 +261,7 @@ export function EinstellungenModal() {
       <div className="dialog-buttons">
         <button
           onClick={async () => {
-            if (await bestaetigen('Alles auf die Vorgabe?', 'Alle Bereiche der Einstellungen werden auf die Vorgabe zurückgesetzt. Wirksam erst mit „Speichern“.', 'Zurücksetzen', true)) setE(VORGABE);
+            if (await bestaetigen('Alles auf die Vorgabe?', 'Alle Bereiche dieser Einstellungen werden auf die Vorgabe zurückgesetzt – Ablage und Benennung nicht, sie stehen in den Einstellungen aller Apps. Wirksam erst mit „Speichern“.', 'Zurücksetzen', true)) setE(VORGABE);
           }}
           title="Alle Einstellungen auf die Vorgabe zurücksetzen (erst mit „Speichern“ wirksam)"
         >

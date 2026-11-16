@@ -38,7 +38,7 @@ import { parseProjectData } from '@core/serialize';
 import { VORGABE_OAP_PFAD, projektdateiPfad } from '@core/projektdatei';
 import type { DateiStand } from '@core/platform/projektordner';
 import { projektdateiAnlegen, projektdateiLaden, projektdateiSchreiben } from '@core/platform/projektordner';
-import { allgemeinAendern, konfigAendern, konfigLesen, konfigNeuLesen } from '@core/platform/konfig';
+import { allgemeinAendern, konfigAendern, konfigBeobachten, konfigLesen, konfigNeuLesen } from '@core/platform/konfig';
 import { ordnerName } from '@core/platform/projektordner';
 import { sichererDateiname } from '@core/projektdatei';
 import type { FormularProfil } from './profil';
@@ -2302,3 +2302,14 @@ export const useProfil = (schluessel: string) => useFormulare((s) => profilFuer(
 // Speicherort der Einstellungen gewechselt (auch in einem anderen Fenster) bzw. Netzlaufwerk weg oder wieder da:
 // gemeinsame Einstellungen (Adressbuch, Stammordner, Projektordner-Zuordnung) neu lesen
 konfigNeuLesen(() => void useFormulare.getState().gemeinsamLaden());
+// die zentralen Einstellungen haben gemeinsame Angaben geändert (z. B. den Ort neuer Projektdateien) – übernehmen, ohne
+// eigene Werte zurückzuschreiben (das tut nur der erste Start in gemeinsamLaden)
+konfigBeobachten('allgemein', () => {
+  void konfigLesen('allgemein').then(
+    (roh) => {
+      const o = (roh ?? {}) as Record<string, unknown>;
+      if (typeof o.oapPfad === 'string' && o.oapPfad.trim() && o.oapPfad.trim() !== useFormulare.getState().oapVorlage) useFormulare.setState({ oapVorlage: o.oapPfad.trim() });
+    },
+    () => undefined,
+  );
+});
