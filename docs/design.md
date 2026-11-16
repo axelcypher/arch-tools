@@ -160,8 +160,8 @@ und `ZEICHENFLAECHE_GRUND` in `planFarbe.ts` müssen zu `--canvas-filter` und `-
 Ein Einstellungsdialog für alle Apps: in jeder App „Datei → Einstellungen …“ (in FABRIO steht „Datei“ im Fuß der
 Navigation), in Arkly im Menü „Einstellungen und Hilfe“, überall auch mit Strg+, ohne offenes Menü. Er zeigt die
 Einstellungen der ganzen Suite, nicht nur der App, aus der er geöffnet wurde. Den Dialog stellt
-`packages/core/src/ui/Einstellungen.tsx`; Apps hängen ihre Seite mit `einstellungsSeiteAnmelden` an (Felder, Entwurf,
-Sperre im Notbetrieb).
+`packages/core/src/ui/Einstellungen.tsx`; Apps hängen ihre Seite mit `einstellungsSeiteAnmelden` an (Inhalt, `entwurf`
+mit `einstellungenEntwurfMelden`, Sperre über `useEinstellungenGesperrt`).
 
 - **Aufbau:** `Modal` mit `tabelle` und Klasse `einst`; der Titel „Einstellungen“ steht als `h3` im Navigationskopf
   über der Seitenliste (Ausnahme mit eigenem Kopf, siehe „Dialoge“), rechts der Inhalt der gewählten Seite.
@@ -187,15 +187,16 @@ Sperre im Notbetrieb).
 - **Felder:** die gemeinsamen Bausteine (`.field`, Pfadwahl mit „Ordner wählen …“, Platzhalter mit Vorschau des
   Ergebnisses); Fehler an der Stelle (`.feld-meldung`), nicht als Rückfrage.
 - **Was keine Einstellung ist, bleibt in seinem Dialog:** was nur ein Werkzeug betrifft (z. B. Vorlagen eines Exports)
-  und Datenpflege mit eigenem Speichern je Eintrag (z. B. das Adressbuch von PERMIO). Der Einstellungsdialog kopiert es
-  nicht, sondern verweist darauf: ein kurzer Satz (`muted small-text`) und ein Knopf mit dem Objekt und „ …“
+  und Datenpflege mit eigenem Speichern je Eintrag (z. B. das Adressbuch von PERMIO). Der Einstellungsdialog kopiert
+  es nicht, sondern verweist darauf: ein kurzer Satz (`muted small-text`) und ein Knopf mit dem Objekt und „ …“
   („Adressbuch …“, `type="button"`, damit Enter nicht „Übernehmen“ auslöst). Der Dialog der App liegt dann als eigene
-  Ebene über den Einstellungen; Esc und Klick daneben schließen nur ihn, der Fokus kehrt auf den Knopf zurück. Was dort
-  gespeichert wird, gilt sofort: „Übernehmen“ und „Abbrechen“ der Einstellungen betreffen es nicht, es zählt nicht als
-  ungespeicherte Änderung der Seite, und ein offener Entwurf der Einstellungen bleibt erhalten. Ist der Speicherort nur
-  lesbar, folgt der Dialog der App derselben Sperre (nur lesend, Grund sichtbar). Den eigenen Einstieg in der App (z. B.
-  „Adressbuch …“ in „Mehr“, „Adressbuch öffnen …“ in der Projektkarte) behält die Datenpflege; der Knopf in den
-  Einstellungen ist ein Verweis, kein doppelter Einstieg.
+  Ebene über den Einstellungen (er steht im DOM nach der Titelleiste mit dem `EinstellungenHost`); Esc und Klick
+  daneben schließen nur ihn, der Fokus kehrt auf den Knopf zurück. Was dort gespeichert wird, gilt sofort:
+  „Übernehmen“ und „Abbrechen“ der Einstellungen betreffen es nicht, es zählt nicht als ungespeicherte Änderung der
+  Seite, und ein offener Entwurf der Einstellungen bleibt erhalten. Ist der Speicherort nur lesbar, folgt der Dialog
+  der App derselben Sperre (nur lesend, Grund sichtbar). Den eigenen Einstieg in der App (z. B. „Adressbuch …“ in
+  „Mehr“, „Adressbuch öffnen …“ in der Projektkarte) behält die Datenpflege; der Knopf in den Einstellungen ist ein
+  Verweis, kein doppelter Einstieg.
 
 ## Druckvorschau
 
