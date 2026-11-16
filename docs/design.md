@@ -155,6 +155,28 @@ und `ZEICHENFLAECHE_GRUND` in `planFarbe.ts` müssen zu `--canvas-filter` und `-
   Gefahr-Knöpfe, tut Enter nichts, und Esc oder ein Klick daneben schließen wie „Abbrechen“.
   Ungespeicherte Änderungen verwerfen: siehe „Ungespeicherte Änderungen“.
 
+## Einstellungen
+
+Ein Einstellungsdialog für alle Apps (`Datei → Einstellungen …`, Strg+,; in Arkly im Menü „Einstellungen und Hilfe“).
+Er zeigt die Einstellungen der ganzen Suite, nicht nur der App, aus der er geöffnet wurde; diese App öffnet ihn auf
+ihrer eigenen Seite.
+
+- **Aufbau:** `Modal` mit `tabelle` (breit), Kopf mit Titel „Einstellungen“. Links die Seitenliste, rechts der Inhalt
+  der gewählten Seite – wie im Nachschlagewerk (`.nachschlagewerk`, `.nw-inhalt`, `.nw-liste`, `.nw-eintrag`,
+  `.nw-eintrag.active`), ohne Suche. Die Liste ist eine senkrechte Registerleiste (`role="tablist"`,
+  `aria-orientation="vertical"`, Einträge `role="tab"` mit `aria-selected`, ↑/↓ wandern, Pos1/Ende), der Inhalt
+  `role="tabpanel"` mit `aria-labelledby` auf den Eintrag.
+- **Seiten:** „Allgemein“ (Speicherort der Einstellungen, Büro), „Pfade und Benennung“ (alle Pfadvorgaben und
+  Benennungsschemata auf einer Seite, nach App gegliedert mit `h3`), dann je App eine Seite mit ihrem Namen. Seiten
+  in Satzschreibung, die eigene App zuerst nach „Allgemein“ und „Pfade und Benennung“.
+- **Übernehmen:** Fußzeile `.dialog-buttons` mit Abbrechen | Übernehmen (Hauptknopf). Änderungen gelten erst mit
+  „Übernehmen“, für alle Seiten zugleich; Esc und „Abbrechen“ fragen bei Änderungen nach (`aenderungenVerwerfen`).
+  Ist der Speicherort nur lesbar (Notbetrieb), stehen die Felder gesperrt mit Hinweis `.meldung.warnung` oben.
+- **Felder:** die gemeinsamen Bausteine (`.field`, Pfadwahl mit „Ordner wählen …“, Platzhalter mit Vorschau des
+  Ergebnisses); Fehler an der Stelle (`.feld-meldung`), nicht als Rückfrage.
+- Was nur ein Werkzeug betrifft (z. B. Vorlagen eines Exports), bleibt in dessen Dialog; der Einstellungsdialog
+  verweist darauf, statt es zu kopieren.
+
 ## Druckvorschau
 
 - `.report-backdrop > .report` gilt als Dialog (Rolle, Name aus der ersten Überschrift, Fokus hinein, Tab bleibt
@@ -292,14 +314,23 @@ bleiben sichtbar, solange sie etwas melden.
 **Ins Menü** kommen seltene und einmalige Befehle: Import und Export, Vorlagen, Einstellungen, Protokoll, Hilfe,
 Zurücksetzen, Sonderfunktionen. Feste Namen, in allen Apps gleich:
 
-| Menü          | Inhalt                                                                                                                                                                            |
-| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| „Datei“       | Neu, Öffnen …, Speichern unter …, Import … bzw. Aktualisieren …, Drucken … (wenn es nicht der Hauptknopf ist) – nur bei mindestens zwei Dateibefehlen, sonst stehen sie in „Mehr“ |
-| „Exportieren“ | CSV …, Excel …, weitere Ausgabeformate neben dem Hauptknopf                                                                                                                       |
-| „Ansicht“     | Schalter der Darstellung (`haken`: Raster, Beschriftung) und Einfachauswahl (`gewaehlt`)                                                                                          |
-| „Hinzufügen“  | Varianten eines Eintrags (siehe „Listen“); der häufigste bleibt daneben als eigener Knopf                                                                                         |
-| „Mehr“        | alles Übrige, als letztes Element der Leiste                                                                                                                                      |
+| Menü            | Inhalt                                                                                                                                                                            |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| „Datei“         | in jeder App: Neu, Öffnen …, Speichern unter …, Import … bzw. Aktualisieren …, „Exportieren ▸“, Drucken … (wenn es nicht der Hauptknopf ist), Trenner, „Einstellungen …“ (Strg+,) |
+| „Exportieren ▸“ | Untermenü in „Datei“: Excel …, PDF …, CSV … – je mit Dialog (Vorlage, Ziel); kein eigener Menüknopf in der Leiste mehr                                                            |
+| „Ansicht“       | Schalter der Darstellung (`haken`: Raster, Beschriftung) und Einfachauswahl (`gewaehlt`)                                                                                          |
+| „Hinzufügen“    | Varianten eines Eintrags (siehe „Listen“); der häufigste bleibt daneben als eigener Knopf                                                                                         |
+| „Mehr“          | alles Übrige, als letztes Element der Leiste                                                                                                                                      |
 
+- **„Einstellungen …“** steht in jeder App als letzter Punkt von „Datei“, hinter einem Trenner, mit `tasten: 'Strg+,'`
+  (in keiner App anders belegt), und öffnet den app-übergreifenden Einstellungsdialog (siehe „Einstellungen“).
+- **Direkter Export:** Wo eine App eine eingestellte Vorlage und einen Zielordner hat (QUADRIO, TERRIO, NUMIO), steht
+  in der Leiste der Knopf „Exportieren“ (Symbol `export`, ohne „ …“, weil er sofort wirkt). Er speichert mit der
+  eingestellten Vorlage in den Berechnungsordner – als Excel, auf Wunsch zusätzlich als PDF. `title` nennt Ziel und
+  Formate („Als Excel und PDF in ‹Ordner› speichern“). Gibt es die Datei schon, fragt eine Rückfrage „‹Datei›
+  ersetzen?“ (Abbrechen | Ersetzen, „Ersetzen“ als Gefahr-Knopf). Danach meldet ein Hinweis (`zeigeHinweis`, siehe
+  „Meldungen im Inhalt“) den Erfolg mit „Ordner öffnen“; Hinweise der Vorlagenprüfung stehen im selben Hinweis als
+  Warnung und halten den Export nicht auf. Wer Vorlage oder Ziel wählen will, nimmt „Datei → Exportieren ▸ Excel …“.
 - Weitere sprechende Menünamen („Unterlage“, „Einrichtung“, „LV“) nur für eine Gruppe von mindestens drei
   zusammengehörigen Befehlen. Menüknöpfe zum selben Gegenstand zusammenlegen („Neues LV ▾“ und „LV ▾“ → „LV ▾“).
   Keine geteilten Knöpfe (Befehl plus Pfeil in einem): Hauptbefehl als Knopf, Varianten im Menü daneben – etwa
@@ -312,8 +343,9 @@ Zurücksetzen, Sonderfunktionen. Feste Namen, in allen Apps gleich:
 - Reihenfolge im Menü: Schalter und Einfachauswahl, dann Befehle, Gefahr-Punkte (Zurücksetzen, Entfernen) am Ende
   hinter einem Trenner. Tastenkürzel in `tasten`, Punkte mit Dialog auf „ …“ (siehe „Menüs“ und „Begriffe“).
 - Doppelte Einstiege vermeiden: Steht ein Befehl schon an naheliegender Stelle (Listenkopf, Seitenleiste), fällt sein
-  Einstieg in der Leiste weg (NUMIO: Kennwertkatalog). Bewusste Ausnahme: der Update-Punkt im Menü der Titelleiste
-  (siehe „Titelleiste“).
+  Einstieg in der Leiste weg (NUMIO: Kennwertkatalog). „Einstellungen …“ steht nur in „Datei“, nicht zusätzlich im
+  Menü der Titelleiste; das Farbschema nur im Menü der Titelleiste, nicht im Einstellungsdialog. Bewusste Ausnahme:
+  der Update-Punkt im Menü der Titelleiste (siehe „Titelleiste“).
 - **Aufbau:** links „Datei“ und „Speichern“, in der Mitte die Werkzeuge bzw. Hauptschritte, rechts der Hauptknopf,
   zuletzt „Mehr“.
 - **Zeilen:** Seltene Aktionen einer Tabellen- oder Listenzeile (FABRIO-Rechnung: Deckblatt, Mail an den Zahler)
@@ -344,12 +376,12 @@ Zurücksetzen, Sonderfunktionen. Feste Namen, in allen Apps gleich:
     { id: 'datei', inhalt: <MenueKnopf punkte={dateiPunkte}>Datei</MenueKnopf> },
     { id: 'speichern', gruppe: true, inhalt: speichernKnopf },
     { id: 'werkzeuge', gruppe: true, inhalt: werkzeuge },
-    { id: 'export', rang: 2, inhalt: <MenueKnopf punkte={exportPunkte}>Exportieren</MenueKnopf>, menue: { text: 'Exportieren', unter: exportPunkte() } },
+    { id: 'export', rang: 2, inhalt: exportKnopf, menue: { text: 'Exportieren', symbol: 'export', aktion: direktExportieren } },
     { id: 'ansicht', rang: 1, inhalt: <MenueKnopf punkte={ansichtPunkte}>Ansicht</MenueKnopf>, menue: { text: 'Ansicht', unter: ansichtPunkte() } },
     { abstand: true },
     { id: 'haupt', inhalt: <button className="primary">Flächenaufstellung …</button> },
   ]}
-  mehr={() => [{ text: 'Einstellungen …', aktion: einstellungen }]}
+  mehr={() => [{ text: 'Vorlagen verwalten …', aktion: vorlagen }]}
 />
 ```
 
@@ -392,6 +424,12 @@ Doppelklick setzt die Vorgabe. Keine eigenen Leisten-Komponenten je App.
 `.fehler` für Meldungen in Dialogen und Seitenleisten; `role="status"`
 für Rückmeldungen, `role="alert"` für Fehler. `.warning` bleibt als Hinweis in Warnfarben.
 
+**Hinweis nach einer Aktion** (`zeigeHinweis`, z. B. nach dem direkten Export): unten rechts im Fenster, `.meldung.ok`
+bzw. `.warnung`, `role="status"`, mit Text, höchstens einer Aktion („Ordner öffnen“) und „Schließen“ (Symbol
+`schliessen`). Er hält nichts auf, nimmt keinen Fokus und verschwindet nach 8 Sekunden – nicht, solange der Zeiger
+darauf liegt oder der Fokus darin ist; mit Warnungen bleibt er, bis man ihn schließt. Ein neuer Hinweis ersetzt den
+alten. Stand: Der Baustein kommt als Nächstes aus dem Designsystem.
+
 **Statuspunkt (Ampel):** `<span class="statuspunkt ok"></span> gilt` (bzw. `.warnung`, `.fehler`) – ein Punkt (10px,
 Abstand zum Wort per Leerzeichen bzw. `gap: var(--s1)`) in
 `--ok-punkt`, `--warn-punkt` oder `--fehler-punkt` mit dunklem Saum, immer neben dem Wort, nie allein (Gelb hat auf
@@ -408,18 +446,23 @@ hellem Grund nur 2,2 : 1). Der Text daneben in `--ok-text` usw. bzw. `--text`.
 
 Links Symbol und Name der App, „Projekte“ und das geöffnete Projekt (mit dem Punkt ● für ungespeicherte Änderungen).
 Rechts nur, was gerade zählt – Version bzw. Update, im Notbetrieb die Warnung zum Speicherort –, dann das Menü der
-Titelleiste und die Fensterknöpfe. Das Menü heißt „Einstellungen und Hilfe“ (Symbol `menue`, drei Striche; Name in
-`ariaLabel` und `title`), damit es sich vom „Mehr“ der Werkzeugleiste darunter unterscheidet. Es enthält, in dieser
+Titelleiste und die Fensterknöpfe. Das Menü heißt in den Apps „Ansicht und Hilfe“ (Symbol `menue`, drei Striche; Name
+in `ariaLabel` und `title`), damit es sich vom „Mehr“ der Werkzeugleiste darunter unterscheidet; „Einstellungen …“
+steht in „Datei“, nicht hier (siehe „Doppelte Einstiege vermeiden“). Es enthält, in dieser
 Reihenfolge: solange ein Update bereitliegt „Update auf ‹Version› …“ mit Trenner (`updatePunkt`) – zusätzlich zur
 Anzeige rechts in der Titelleiste, damit man es auch dort findet, wo die seltenen Befehle stehen (bewusste Ausnahme von
 „Doppelte Einstiege vermeiden“); dann „Farbschema“ (aktuelle Wahl als Hinweis; Untermenü mit Auto/Hell/Dunkel als
 Einfachauswahl und, wenn die App eine Zeichenfläche hat, dem Schalter „Zeichenfläche im dunklen Schema abdunkeln“ –
 `farbschemaPunkt`, Untermenü `farbschemaPunkte`),
-„Speicherort der Einstellungen …“ (Einzelplatz bzw. Netzwerk als Hinweis – `speicherortPunkt`), im herausgelösten
+im herausgelösten
 Fenster „Andocken“, Trenner, „Berechnungsregeln …“ (F1) und „Fehlerprotokoll …“. Neue Fehler zählt eine Marke am
-Menüknopf, ebenso sein Name („Einstellungen und Hilfe – 2 neue Fehler im Fehlerprotokoll“) und der Hinweis am Punkt
-(„2 neue“). Die Kopfleiste von Arkly folgt derselben Regel (Menü mit Update, Farbschema, Speicherort und
-Fehlerprotokoll, ohne „Berechnungsregeln …“). Unter 960px Fensterbreite (feste Grenze, weil die Titelleiste keinen Überlauf hat; die Werkzeugleiste regelt das
+Menüknopf, ebenso sein Name („Ansicht und Hilfe – 2 neue Fehler im Fehlerprotokoll“) und der Hinweis am Punkt
+(„2 neue“). Der Speicherort der Einstellungen steht im Einstellungsdialog (Seite „Allgemein“); sichtbar in der
+Titelleiste bleibt nur die Warnung im Notbetrieb, sie öffnet den Dialog auf dieser Seite. Das Farbschema bleibt nur
+hier (schneller Wechsel, keine Kopie im Dialog). Die Kopfleiste von Arkly hat kein „Datei“: Ihr Menü heißt weiter
+„Einstellungen und Hilfe“ und beginnt nach dem Update-Punkt mit „Einstellungen …“ (Strg+,), dann Farbschema und
+Fehlerprotokoll, ohne „Berechnungsregeln …“. Stand: Die Titelleiste stellt das Designsystem um, sobald der
+Einstellungsdialog da ist; bis dahin heißt das Menü „Einstellungen und Hilfe“ und enthält den Speicherort. Unter 960px Fensterbreite (feste Grenze, weil die Titelleiste keinen Überlauf hat; die Werkzeugleiste regelt das
 selbst, siehe „Kopf- und Werkzeugleisten“) zeigen Knöpfe mit Symbol nur noch das Symbol: Text in
 `<span className="titlebar-text">`, der Name bleibt über `aria-label`. Die Tableiste von Arkly zeigt
 unter 1100px am Tab nur Symbol und Namen der App (das Projekt steht im Tooltip); eine Fläche zum Ziehen des Fensters

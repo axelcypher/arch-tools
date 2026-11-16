@@ -7,3 +7,4 @@ sich auf den Stand beim Eintragen.
 - **Abstände aus der Skala:** `styles.css` nutzt viele freie Werte (`padding: 3px 9px`, `7px 10px`, `margin: 6px 0`
   …) und eigene Radien (`5px`, `6px`). Auf `--s1`…`--s6`, `--radius-s`/`--radius` bringen; Höhen der kleinen Knöpfe
   (`min-height: 26px`) auf `--ctl-h-s`.
+- **„Datei“ mit „Einstellungen …“ und „Exportieren ▸“** (design.md „Kopf- und Werkzeugleisten“, „Einstellungen“): „Datei“ gibt es in jeder App; letzter Punkt hinter einem Trenner „Einstellungen …“ (`tasten: 'Strg+,'`, Kurzbefehl auch ohne offenes Menü), er öffnet den zentralen Einstellungsdialog auf der Seite der App, sobald die Sitzung „Zentrale Einstellungen“ ihn bereitstellt. Ausgaben mit Dialog (Excel …, PDF …, CSV …) als Untermenü „Exportieren ▸“ in „Datei“ statt als eigener Menüknopf. App-eigene Einstellungen ziehen auf die Seite der App im Dialog.
