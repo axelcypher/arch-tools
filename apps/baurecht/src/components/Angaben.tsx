@@ -14,7 +14,7 @@ import { NumberField, TextField } from '@core/ui/fields';
 import type { Pruefstand } from '../pruefung';
 import { offeneBestaetigungen, PLANUNGSRECHT, useBaurecht } from '../store';
 import { benutzer } from '../benutzer';
-import { faktBestaetigenOeffnen, faktSetzenOeffnen, vorfragenNeinOeffnen } from './Dialoge';
+import { faktBestaetigenOeffnen, faktSetzenOeffnen, useBelegDialogGeschlossen, vorfragenNeinOeffnen } from './Dialoge';
 import { Klaeren } from './Kopf';
 import { datum, inBereichZeigen, nb } from './Ampel';
 
@@ -470,6 +470,7 @@ function FaktZeile({
   alsKnoepfe = false,
   defs = {},
   unklar,
+  belegPflicht = false,
 }: {
   id: string;
   def: FaktDef;
@@ -479,8 +480,14 @@ function FaktZeile({
   alsKnoepfe?: boolean;
   defs?: Record<string, FaktDef>;
   unklar?: Unklar;
+  /** von Hand nur mit Beleg (z. B. ein Wert, der sich aus anderen ergibt, wird überstimmt) */
+  belegPflicht?: boolean;
 }) {
   const fokus = useBaurecht((s) => s.fokus);
+  // weicht die Angabe von einem Wert ab, der sich aus anderen ergibt, gilt eine Antwort ebenfalls nur mit Beleg
+  const mitBelegPflicht = belegPflicht || !!wert?.gegenFolge;
+  // nach dem Beleg-Dialog neu aufbauen: ein abgebrochener Dialog lässt sonst eine nicht übernommene Zahl im Feld stehen
+  const dialogZu = useBelegDialogGeschlossen();
   const entwurf = useBaurecht((s) => offeneBestaetigungen(s).includes(id));
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -548,6 +555,7 @@ function FaktZeile({
         </div>
       ) : (
         <FaktEingabe
+          key={mitBelegPflicht ? `beleg-${dialogZu}` : 'eingabe'}
           id={id}
           def={def}
           wert={wert}
@@ -555,7 +563,7 @@ function FaktZeile({
           unklar={unklar}
           onWert={(v) => {
             // Schutzgebiete und Geodaten (ja/nein, Auswahl) von Hand nur mit Beleg
-            if (v !== undefined && mitBeleg(def, wert)) faktSetzenOeffnen(id, faktName(def, id), v, lagebezug(def, wert));
+            if (v !== undefined && (mitBeleg(def, wert) || mitBelegPflicht)) faktSetzenOeffnen(id, faktName(def, id), v, lagebezug(def, wert));
             // Angaben zur Lage an die aktuelle Lage binden (ohne gültige Koordinaten: null → nur Hinweis)
             else useBaurecht.getState().faktSetzen(id, v, benutzer(), undefined, lagebezug(def, wert) ? aktuelleLage(useBaurecht.getState().project).lage : undefined);
           }}
@@ -633,6 +641,27 @@ function FaktZeile({
             </span>
           )}
           <AusloeserMarken name={name} wert={wert} defs={defs} />
+          {wert.gegenFolge && wert.herkunft === 'manuell' && !wert.bestaetigt && (
+            // die abweichende Angabe behalten: nur mit Beleg (Sonderfall) – dann ohne Widerspruch
+            <button type="button" className="small" aria-label={`${name}: mit Beleg übernehmen …`} title={`Weicht ab von: ${wert.gegenFolge} – als begründeter Sonderfall mit Beleg übernehmen`} onClick={() => faktSetzenOeffnen(id, name, wert.wert, lagebezug(def, wert))}>
+              Mit Beleg übernehmen …
+            </button>
+          )}
+          {belegPflicht && wert.ausFolge && (
+            // Rückweg aus „Überstimmen …“: die Frage verschwindet wieder, der Fokus geht an die Liste ihrer Gruppe
+            <button
+              type="button"
+              className="small br-link"
+              aria-label={`${name}: nicht überstimmen`}
+              title="Wieder den Wert nehmen, der sich aus anderen Angaben ergibt"
+              onClick={() => {
+                useBaurecht.setState((s) => ({ ueberstimmen: { ...s.ueberstimmen, [id]: false } }));
+                setTimeout(() => document.querySelector<HTMLElement>(`.br-ergibt li[data-fakt="${CSS.escape(id)}"]`)?.closest('details')?.querySelector<HTMLElement>('summary')?.focus(), 0);
+              }}
+            >
+              nicht überstimmen
+            </button>
+          )}
           {eigen && wert.herkunft === 'manuell' && !wert.bestaetigt && (
             <button
               type="button"
@@ -802,6 +831,44 @@ function VorfragenSammel({ gruppe, titel, ids, stand }: { gruppe: string; titel:
   );
 }
 
+/**
+ * Werte, die sich aus anderen Angaben ergeben (FaktDef.folgt): keine Fragen, aufklappbar am Ende ihrer Gruppe genannt –
+ * mit dem Grund. Ändern heißt die Ausgangsangabe ändern; „Überstimmen …“ (Sonderfall) stellt die Frage, eine Antwort
+ * dann nur mit Beleg.
+ */
+function ErgibtSich({ ids, stand, suche }: { ids: string[]; stand: Pruefstand; suche: string }) {
+  const { faktDefs: defs, fakten } = stand.auswertung;
+  return (
+    // während der Suche aufgeklappt (wie Vorfragen und Merkmale) – sonst stünde ein Treffer verborgen da
+    <details className="br-ergibt" open={suche ? true : undefined}>
+      <summary>Ergibt sich aus anderen Angaben ({ids.length})</summary>
+      <p className="br-leise">Zum Ändern die Angabe ändern, aus der der Wert folgt. Überstimmen nur in einem begründeten Sonderfall.</p>
+      <ul>
+        {ids.map((id) => {
+          const name = faktName(defs[id], id);
+          return (
+            <li key={id} data-fakt={id}>
+              {name}: <strong>{wertAnzeige(fakten[id].wert, defs[id])}</strong> <span className="br-leise">– {fakten[id].ausFolge}</span>{' '}
+              <button
+                type="button"
+                className="small br-link"
+                aria-label={`${name} überstimmen …`}
+                title="Nur für einen begründeten Sonderfall – die Antwort braucht dann einen Beleg"
+                onClick={() => {
+                  useBaurecht.setState((s) => ({ ueberstimmen: { ...s.ueberstimmen, [id]: true } }));
+                  useBaurecht.getState().fokusSetzen(id);
+                }}
+              >
+                Überstimmen …
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </details>
+  );
+}
+
 /** Abkürzungen, nach denen kein Satz endet („z. B.“, „bzw.“, „Abs.“ …) */
 const ABKUERZUNG = /(?:^|[\s(])(?:bzw|usw|ca|vgl|ggf|etc|evtl|inkl|max|min|Nr|Abs|Art|Buchst|Ziff|lit|Anm|sog|[A-Za-zÄÖÜäöü])\.$/;
 
@@ -967,13 +1034,20 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
   // Rückfragen nur, wenn sie gestellt sind, und dann unter ihrem Merkmal (in der Gruppe nur, wenn das Merkmal wegen der
   // Suche nicht zu sehen ist)
   const defs = auswertung.faktDefs;
+  const ueberstimmen = useBaurecht((s) => s.ueberstimmen);
   // je Zeichenlauf zwischengespeichert: `oberste` und `kinderVon` fragen dieselben Angaben mehrfach
   const sichtbarCache = new Map<string, boolean>();
   const sichtbar = (id: string) => {
     let s = sichtbarCache.get(id);
     if (s === undefined) {
       const d = defs[id];
-      s = !!d && id !== 'antrag.einreichung' && (alle || relevant.has(id)) && (!RUECKFRAGE_IDS.has(id) || (!(merkmaleSichtbar && alsRueckfrage.has(id)) && rueckfrageSichtbar(id, stand))) && frageGestellt(id, d, ctx);
+      s =
+        !!d &&
+        id !== 'antrag.einreichung' &&
+        (alle || relevant.has(id)) &&
+        (!RUECKFRAGE_IDS.has(id) || (!(merkmaleSichtbar && alsRueckfrage.has(id)) && rueckfrageSichtbar(id, stand))) &&
+        // ein Wert, der sich aus anderen ergibt, steht als Frage nur da, wenn man ihn überstimmen will
+        (frageGestellt(id, d, ctx) || (!!auswertung.fakten[id]?.ausFolge && !!ueberstimmen[id]));
       sichtbarCache.set(id, s);
     }
     return s;
@@ -1010,6 +1084,8 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
     }
     return k;
   };
+  // würde die Frage ohne den abgeleiteten Wert gestellt? (frageStand verbirgt sie sonst schon wegen `ausFolge`)
+  const wuerdeGefragt = (id: string) => frageGestellt(id, { wenn: defs[id].wenn }, { ...ctx, fakten: { ...ctx.fakten, [id]: { ...ctx.fakten[id], ausFolge: undefined } } });
   const gruppen = FAKT_GRUPPEN.map((g) => {
     const ids = Object.entries(defs)
       .filter(([id, d]) => d.gruppe === g.id && sichtbar(id) && !oberste(id) && (passt(id) || kinderVon(id).length > 0))
@@ -1017,10 +1093,13 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
       // die Vorfragen oben in ihrer Gruppe
       .sort((a, b) => Number(karte.has(b)) - Number(karte.has(a)) || (rang.get(a) ?? Infinity) - (rang.get(b) ?? Infinity) || vergleich(a, b));
     const kinder = new Map(ids.filter((id) => karte.has(id)).map((id) => [id, kinderVon(id)]));
-    return { ...g, ids, kinder };
-  }).filter((g) => g.ids.length);
+    // Werte, die sich aus anderen ergeben (FaktDef.folgt): keine Frage, aber in der Gruppe genannt
+    // nur, wo die Frage sonst gestellt würde (ihr „wenn“ trifft zu oder ist offen)
+    const ergibt = Object.keys(defs).filter((id) => defs[id].gruppe === g.id && !!auswertung.fakten[id]?.ausFolge && !ueberstimmen[id] && (alle || relevant.has(id)) && passt(id) && wuerdeGefragt(id));
+    return { ...g, ids, kinder, ergibt };
+  }).filter((g) => g.ids.length || g.ergibt.length);
   const trefferZahl = suche
-    ? gruppen.reduce((n, g) => n + g.ids.length + [...g.kinder.values()].reduce((m, k) => m + k.length, 0), 0) + VORGABE_MERKMALE.filter((m) => merkmalPasst(m, suche)).length + (merkmaleSichtbar ? alsRueckfrage.size : 0)
+    ? gruppen.reduce((n, g) => n + g.ids.length + g.ergibt.length + [...g.kinder.values()].reduce((m, k) => m + k.length, 0), 0) + VORGABE_MERKMALE.filter((m) => merkmalPasst(m, suche)).length + (merkmaleSichtbar ? alsRueckfrage.size : 0)
     : 0;
   const suchText = !suche ? '' : trefferZahl ? `${trefferZahl === 1 ? 'eine Angabe' : `${trefferZahl} Angaben`} zu „${suche}“` : `Keine Angabe zu „${suche}“`;
   const [suchAnsage, setSuchAnsage] = useState('');
@@ -1116,9 +1195,10 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
               g.kinder.has(id) ? (
                 <Vorfrage key={id} id={id} kinder={g.kinder.get(id)!} stand={stand} klaerung={klaerung} eigene={eigene} suche={suche} />
               ) : (
-                <FaktZeile key={id} id={id} def={auswertung.faktDefs[id]} wert={auswertung.fakten[id]} klaert={klaerung.get(id) ?? 0} eigen={!!eigene[id]} defs={auswertung.faktDefs} />
+                <FaktZeile key={id} id={id} def={auswertung.faktDefs[id]} wert={auswertung.fakten[id]} klaert={klaerung.get(id) ?? 0} eigen={!!eigene[id]} defs={auswertung.faktDefs} belegPflicht={!!ueberstimmen[id]} />
               ),
             )}
+            {g.ergibt.length > 0 && <ErgibtSich ids={g.ergibt} stand={stand} suche={suche} />}
           </section>
         ))}
       </div>

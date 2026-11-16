@@ -17,7 +17,7 @@ import type { Bewertung, KurzKontext, TextKontext } from './kurz';
 import { kurzText, offenText, warumText, werten } from './kurz';
 import type { Paket } from './paket';
 import { regeldateiFuer } from './paket';
-import { einzelfragenVon, frageGestellt, frageStand, vorfragenAnwenden, vorfragenKarte } from './fragen';
+import { ableitungenAnwenden, einzelfragenVon, frageGestellt, frageStand, vorfragenKarte } from './fragen';
 import { plusMonate } from '../recht/quellen';
 import { ortGeaendert } from './ort';
 import type { Ampel, FaktDef, FaktWert, Festlegung, Hinweis, Kurz, Modul, NormErgebnis, Ort, ParagrafErgebnis, ParagrafRegel, Wahrheit } from './typen';
@@ -275,13 +275,13 @@ function ueberHinweisGestellt(eingang: Record<string, FaktWert>, ableiten: (f: R
   return out;
 }
 
-/** `ueberHinweis`, `ueberWiderspruch` und `ausVorfrage` entfernen – die Felder entstehen nur in der Auswertung und werden nie gespeichert */
+/** `ueberHinweis`, `ueberWiderspruch`, `ausVorfrage` und `ausFolge` entfernen – die Felder entstehen nur in der Auswertung und werden nie gespeichert */
 export function ohneUeberHinweis(fakten: Record<string, FaktWert>): Record<string, FaktWert> {
   const out: Record<string, FaktWert> = {};
   for (const [id, f] of Object.entries(fakten)) {
-    if (!f.ueberHinweis && !f.ueberWiderspruch && !f.ausVorfrage) out[id] = f;
+    if (!f.ueberHinweis && !f.ueberWiderspruch && !f.ausVorfrage && !f.ausFolge && !f.gegenFolge) out[id] = f;
     else {
-      const { ueberHinweis: _u, ueberWiderspruch: _w, ausVorfrage: _v, ...ohne } = f;
+      const { ueberHinweis: _u, ueberWiderspruch: _w, ausVorfrage: _v, ausFolge: _f, gegenFolge: _g, ...ohne } = f;
       out[id] = ohne;
     }
   }
@@ -334,9 +334,10 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
   // eine gespeicherte Antwort auf eine Frage, die gerade nicht gestellt wird (nach einem Ortswechsel, einem zurückgesetzten
   // Auslöser – z. B. „Altbau verfahrensfrei“ nach zurückgesetztem Umfang), zählt nicht: weder in den Regeln noch für
   // Ableitungen. Bis zum Fixpunkt, denn eine weggelassene Antwort kann weitere Fragen verbergen (oder wieder stellen)
-  // abgeleitet: Werte der Module, dann die Vorfragen (ein „nein“ dort erledigt die Einzelfragen, fragen.ts)
-  const ableiten = (f: Record<string, FaktWert>) => vorfragenAnwenden(gueltigeFakten(modulFakten(e.module, f), faktDefs), faktDefs);
-  const fakten = ableiten(gestellteAntworten(eingabe, ableiten, faktDefs, { merkmale, einreichung: e.einreichung, heute: e.heute, bausteine, widersprueche: e.widersprueche }));
+  // abgeleitet: Werte der Module, dann Vorfragen und Werte, die sich aus anderen ergeben (fragen.ts, ableitungenAnwenden)
+  const rest = { merkmale, einreichung: e.einreichung, heute: e.heute, bausteine, widersprueche: e.widersprueche };
+  const ableiten = (f: Record<string, FaktWert>) => ableitungenAnwenden(gueltigeFakten(modulFakten(e.module, f), faktDefs), faktDefs, rest);
+  const fakten = ableiten(gestellteAntworten(eingabe, ableiten, faktDefs, rest));
   const titelCache = new Map<string, string>();
   const text: TextKontext = { fakt: (id) => faktDefs[id], bausteine, paragraf: (id) => titelCache.get(id) };
 

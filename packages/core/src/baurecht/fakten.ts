@@ -154,7 +154,7 @@ const KATALOG: Record<string, FaktDef> = {
   /* ---------- Vorhaben ---------- */
   'vorhaben.dach_fassade': j('Arbeiten an Dach oder Fassade (Artenschutz: Quartiere von Fledermäusen und Gebäudebrütern)', 'vorhaben'),
   'vorhaben.dachhaut': j('Vollständige Erneuerung der Dachhaut', 'vorhaben', '§ 42a Abs. 3 BauO NRW'),
-  'vorhaben.erdarbeiten': j('Erdarbeiten (Unterkellerung, Gründung, Leitungen)', 'vorhaben'),
+  'vorhaben.erdarbeiten': j('Erdarbeiten (Aushub, Aufschüttung oder Abtrag, Unterkellerung, Gründung, Leitungen)', 'vorhaben'),
   'vorhaben.boden_800': j('Mehr als 800 m³ Bodenmaterial auf- oder eingebracht', 'vorhaben', '§ 2 Abs. 2 LBodSchG'),
   'vorhaben.baeume_faellen': j('Bäume fällen oder Gehölze roden', 'vorhaben'),
   'vorhaben.werbeanlage': j('Werbeanlage', 'vorhaben'),
@@ -219,8 +219,58 @@ const VORFRAGE: Record<string, string> = {
   'lage.strasse_ausserorts': 'vorfrage.strasse',
 };
 
+/** Einzelfragen zu anderen Angaben des Katalogs (Teilmenge: ohne die Arbeiten selbst gibt es auch das Besondere nicht) */
+const VORFRAGE_SONST: Record<string, { fakt: string; sonst: string | number | boolean }> = {
+  // die vollständige Erneuerung der Dachhaut ist eine Arbeit am Dach
+  'vorhaben.dachhaut': { fakt: 'vorhaben.dach_fassade', sonst: false },
+  // Bodenmaterial auf- oder einbringen ist eine Erdarbeit (Aufschüttung)
+  'vorhaben.boden_800': { fakt: 'vorhaben.erdarbeiten', sonst: false },
+};
+
+const WOHNGEBAEUDE = { m: 'Gebäudeart', in: ['Einfamilienhaus', 'Zweifamilienhaus', 'Mehrfamilienhaus'] };
+/** reines Wohngebäude, nicht bei einer Nutzungsänderung (dort könnte ein Teil zu Gästezimmern, Laden o. Ä. werden, ohne dass die Gebäudeart angepasst ist) */
+const WOHNGEBAEUDE_BLEIBT = { und: [WOHNGEBAEUDE, { m: 'Vorhaben', nicht: ['Nutzungsänderung'] }] };
+const KEIN_GEBAEUDE = { m: 'Gebäudeart', in: ['kein Gebäude'] };
+/**
+ * Werte, die sich zwingend aus anderen Angaben ergeben (FaktDef.folgt) – die Frage entfällt, eine abweichende Antwort
+ * wird zum Widerspruch bzw. überstimmt nur mit Beleg. Ein reines Wohngebäude (Ein-, Zwei-, Mehrfamilienhaus) hat keine
+ * andere Nutzung: Läden, Praxen, Gästezimmer, Versammlungsräume machen es zum „Wohn- und Geschäftshaus“ (Merkmal).
+ * Bewusst nicht: Stellplätze nach GEIG und Garagen-Nutzfläche (auch vorhandene, dem Neubau zugeordnete zählen),
+ * Behelfsbau (Wohncontainer können einer sein, § 51 BauO NRW), gemischte Nutzung beim Mehrfamilienhaus (Fachreview Runde 3).
+ */
+const FOLGT: Record<string, NonNullable<FaktDef['folgt']>> = {
+  // nicht bei „kein Gebäude“: Versammlungsstätten im Freien (Freilichtbühne, Stadion) sind bauliche Anlagen ohne Gebäude
+  'gebaeude.besucher': [{ wenn: WOHNGEBAEUDE_BLEIBT, wert: 0, grund: 'reines Wohngebäude – keine Versammlungsstätte' }],
+  'gebaeude.verkaufsflaeche': [{ wenn: WOHNGEBAEUDE_BLEIBT, wert: 0, grund: 'reines Wohngebäude – keine Verkaufsstätte' }],
+  // Ferienwohnungen können im Einzelfall Beherbergung sein (§ 13a Satz 2 BauNVO): nur ohne sie
+  'gebaeude.gastbetten': [{ wenn: { und: [WOHNGEBAEUDE_BLEIBT, { f: 'vorhaben.ferienwohnung', ist: false }] }, wert: 0, grund: 'reines Wohngebäude ohne Ferienwohnungen – keine Beherbergung' }],
+  'gebaeude.wohnungen': [
+    { wenn: { m: 'Gebäudeart', in: ['Einfamilienhaus'] }, wert: 1, grund: 'Einfamilienhaus – eine Wohnung' },
+    { wenn: { m: 'Gebäudeart', in: ['Zweifamilienhaus'] }, wert: 2, grund: 'Zweifamilienhaus – zwei Wohnungen' },
+    { wenn: KEIN_GEBAEUDE, wert: 0, grund: 'kein Gebäude – keine Wohnungen' },
+  ],
+  // eine Wohnung bzw. zwei; Räume für freie Berufe (§ 13 BauNVO) können eine eigene Nutzungseinheit sein – nur ohne sie
+  'gebaeude.nutzungseinheiten': [
+    { wenn: { und: [{ m: 'Gebäudeart', in: ['Einfamilienhaus'] }, { f: 'vorhaben.freiberuflich', ist: false }] }, wert: 1, grund: 'Einfamilienhaus ohne Räume für freie Berufe – eine Nutzungseinheit' },
+    { wenn: { und: [{ m: 'Gebäudeart', in: ['Zweifamilienhaus'] }, { f: 'vorhaben.freiberuflich', ist: false }] }, wert: 2, grund: 'Zweifamilienhaus ohne Räume für freie Berufe – zwei Nutzungseinheiten' },
+  ],
+  // Wohnungen haben Aufenthaltsräume (§ 2 Abs. 5 BauO NRW: Wohn- und Schlafräume)
+  'gebaeude.aufenthaltsraeume': [
+    { wenn: { m: 'Gebäudeart', in: ['Einfamilienhaus', 'Zweifamilienhaus', 'Mehrfamilienhaus', 'Wohn- und Geschäftshaus'] }, wert: true, grund: 'Gebäude mit Wohnungen – Wohnräume sind Aufenthaltsräume' },
+    { wenn: KEIN_GEBAEUDE, wert: false, grund: 'kein Gebäude – keine Aufenthaltsräume' },
+  ],
+  // bauordnungsrechtliche Nutzung (das Betriebsleiter- oder Altenteilerwohnhaus nach § 35 Abs. 1 Nr. 1 BauGB bleibt davon
+  // unberührt); „ja“ wäre milder
+  'gebaeude.landwirtschaft': [{ wenn: WOHNGEBAEUDE, wert: false, grund: 'Wohngebäude – kein land- oder forstwirtschaftlich genutztes Gebäude' }],
+  // das GEG (§ 2 Abs. 1) setzt ein Gebäude voraus
+  'gebaeude.beheizt': [{ wenn: KEIN_GEBAEUDE, wert: false, grund: 'kein Gebäude – das GEG gilt nur für Gebäude' }],
+};
+
 export const FAKTEN: Record<string, FaktDef> = Object.fromEntries(
-  Object.entries(KATALOG).map(([id, d]) => [id, { ...d, ...(KURZ[id] ? { kurz: KURZ[id] } : {}), ...(VORFRAGE[id] ? { vorfrage: { fakt: VORFRAGE[id], sonst: false } } : {}) }]),
+  Object.entries(KATALOG).map(([id, d]) => [
+    id,
+    { ...d, ...(KURZ[id] ? { kurz: KURZ[id] } : {}), ...(VORFRAGE[id] ? { vorfrage: { fakt: VORFRAGE[id], sonst: false } } : VORFRAGE_SONST[id] ? { vorfrage: VORFRAGE_SONST[id] } : {}), ...(FOLGT[id] ? { folgt: FOLGT[id] } : {}) },
+  ]),
 );
 
 /** Merkmale aus Formulare (Antragsmerkmale) – Titel für die Anzeige */

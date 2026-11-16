@@ -186,6 +186,13 @@ export interface FaktDef {
    * Anwendungsbereich der Vorfrage liegt – aus „nein“ in der Vorfrage muss `sonst` zwingend folgen
    */
   vorfrage?: { fakt: string; sonst: string | number | boolean };
+  /**
+   * Wert, der sich zwingend aus anderen Angaben ergibt (fragen.ts, ableitungenAnwenden): Trifft `wenn` gesichert zu, gilt
+   * `wert` (abgeleitet, Quelle `grund`) und die Frage wird nicht gestellt. Die erste zutreffende Zeile gilt. Eine andere
+   * Antwort bleibt stehen und wird zum Widerspruch – außer sie ist mit Beleg angegeben (überstimmt). Nur, wo der Wert
+   * fachlich zwingend folgt
+   */
+  folgt?: { wenn: Kurz; wert: string | number | boolean; grund: string }[];
 }
 
 export interface Hinweis {
@@ -268,6 +275,10 @@ export interface FaktWert {
   ueberWiderspruch?: string[];
   /** nur in der Auswertung: Wert folgt aus dem „nein“ dieser Vorfrage (FaktDef.vorfrage) – die Einzelfrage entfällt */
   ausVorfrage?: string;
+  /** nur in der Auswertung: Wert ergibt sich aus anderen Angaben (FaktDef.folgt, der Grund in Worten) – die Frage entfällt */
+  ausFolge?: string;
+  /** nur in der Auswertung: diese Angabe weicht von dem Wert ab, der sich aus anderen ergibt (FaktDef.folgt) – Widerspruch, überstimmen mit Beleg */
+  gegenFolge?: string;
   /** widersprechende Angabe (z. B. Treffer im Geodienst gegen „nein“ von Hand) – macht Grün gelb */
   widerspruch?: string;
   /** bei Angaben von Hand: das letzte Ergebnis des Dienstes – daraus wird der Widerspruch bei jedem Setzen neu bestimmt */
