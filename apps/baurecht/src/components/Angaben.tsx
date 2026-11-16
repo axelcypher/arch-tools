@@ -726,6 +726,12 @@ function Vorfrage({ id, kinder, stand, klaerung, eigene, suche }: { id: string; 
       ? {
           gewaehlt: unklar,
           waehlen: () => {
+            // ein zweiter Klick auf das gewählte „unklar“ nimmt es zurück (unbeantwortet, eingeklappt)
+            if (unklar) {
+              setUnklar(false);
+              useBaurecht.getState().ansagen(`${name}: unklar aufgehoben`);
+              return;
+            }
             if (eigene[id]) useBaurecht.getState().faktSetzen(id, undefined, '');
             setUnklar(true);
             useBaurecht.getState().ansagen(`${name}: unklar – ${kinder.length ? `${einzelfragen(kinder.length)} darunter, offen` : 'keine Einzelfrage gestellt'}`);

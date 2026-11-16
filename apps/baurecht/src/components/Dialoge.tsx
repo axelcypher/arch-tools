@@ -265,7 +265,7 @@ export function VorfragenNeinDialog({ folgen }: { folgen: FolgenRechner }) {
     setVersucht(false);
     setVeraltet(false);
     setVerwerfen(false);
-    setTimeout(() => form.current?.querySelector<HTMLTextAreaElement>('textarea')?.focus(), 0);
+    // Erstfokus auf das erste Beleg-Feld setzt der gemeinsame Unterbau (ui/dialoge.ts: erstes Textfeld)
   }, [ziel]);
   const vorschau = useMemo(() => {
     if (!ziel) return null;
@@ -361,7 +361,12 @@ export function VorfragenNeinDialog({ folgen }: { folgen: FolgenRechner }) {
           <label className="field-label" htmlFor="br-vn-von">
             Angegeben von <span aria-hidden="true">*</span>
           </label>
-          <input id="br-vn-von" value={von} onChange={(e) => setVon(e.target.value)} aria-required="true" aria-invalid={versucht && !von.trim()} />
+          <input id="br-vn-von" value={von} onChange={(e) => setVon(e.target.value)} aria-required="true" aria-invalid={versucht && !von.trim()} aria-describedby={versucht && !von.trim() ? 'br-vn-von-fehler' : undefined} />
+          {versucht && !von.trim() && (
+            <span id="br-vn-von-fehler" className="field-hint br-fehler-text">
+              Bitte angeben, wer das „nein“ angibt.
+            </span>
+          )}
         </div>
         {verwerfen ? (
           <div className="dialog-buttons br-verwerfen">

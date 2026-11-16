@@ -273,6 +273,10 @@ describe('Baurecht – Oberfläche', () => {
     expect(knopf(vf, 'unklar')!.getAttribute('aria-pressed')).toBe('true');
     expect(knopf(vf, /Einzelfragen ausblenden/)).toBeUndefined();
     expect(useBaurecht.getState().pruefung.fakten['vorfrage.natura2000']).toBeUndefined();
+    // ein zweiter Klick nimmt „unklar“ zurück
+    act(() => knopf(vf, 'unklar')!.click());
+    expect(knopf(vf, 'unklar')!.getAttribute('aria-pressed')).toBe('false');
+    expect(vf.querySelector('[data-fakt="schutz.ffh"]')).toBeNull();
     // alle offenen Vorfragen der Gruppe auf einmal mit „nein“ – je Vorfrage ein Beleg
     const offen = [...gruppe.querySelectorAll<HTMLElement>('[data-vorfrage^="vorfrage."]')].filter((b) => b.querySelector('.br-fakt.br-offen[data-fakt^="vorfrage."]')).map((b) => b.dataset.vorfrage!);
     expect(offen.length).toBeGreaterThanOrEqual(2);
