@@ -281,7 +281,29 @@ export function paketPruefen(p: Paket, merkmale: { name: string; werte: string[]
       // Wert ohne Auslöser: nur mit einer Bedingung „wenn“ sinnvoll und passend zur Art
       if (d.ohneAusloeser !== undefined && (!d.wenn || !passt(d.ohneAusloeser)))
         fehler.push(`${m.id}: „ohneAusloeser“ von „${id}“ ${d.wenn ? `passt nicht zur Art „${d.typ}“` : 'ohne „wenn“'}`);
+      // Vorfrage: sichtbar, ja/nein, nicht die Angabe selbst; der Wert ohne Vorfrage passt zur Art
+      if (d.vorfrage) {
+        const v = sichtbar(m).fakten.get(d.vorfrage.fakt);
+        if (!v || d.vorfrage.fakt === id) fehler.push(`${m.id}: Vorfrage „${d.vorfrage.fakt}“ von „${id}“ ${v ? 'ist die Angabe selbst' : 'ist nicht sichtbar'}`);
+        else if (v.typ !== 'janein') fehler.push(`${m.id}: Vorfrage „${d.vorfrage.fakt}“ von „${id}“ ist keine Ja/Nein-Angabe`);
+        if (!passt(d.vorfrage.sonst)) fehler.push(`${m.id}: Wert ohne Vorfrage von „${id}“ passt nicht zur Art „${d.typ}“`);
+      }
     }
+  // Vorfragen ohne Kreis (eine Einzelfrage darf nicht über andere ihre eigene Vorfrage sein) – je Modul mit dem, was es sieht
+  for (const m of p.module) {
+    const f = sichtbar(m).fakten;
+    for (const id of Object.keys(m.fakten ?? {})) {
+      const weg = [id];
+      for (let v = f.get(id)?.vorfrage?.fakt; v && weg.length <= f.size; v = f.get(v)?.vorfrage?.fakt) {
+        if (weg.includes(v)) {
+          // einmal je Kreis: gemeldet an der Angabe, bei der er beginnt (sonst stünde er für jedes Glied da)
+          if (v === id) fehler.push(`${m.id}: Vorfragen im Kreis: ${[...weg, v].join(' → ')}`);
+          break;
+        }
+        weg.push(v);
+      }
+    }
+  }
   const pruefe = (wo: string, m: Modul, k: Kurz | undefined, o: { ohneBekannt?: boolean } = {}) => {
     if (k === undefined) return;
     const aufbau: string[] = [];

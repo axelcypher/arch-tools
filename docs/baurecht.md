@@ -102,12 +102,12 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   gesichert führte, gilt deshalb als überholt („… jetzt nur Hinweis“). Ebenso bei einer widersprüchlichen Angabe als Auslöser: die Regel
   trägt deren Widerspruch („Widerspruch: Umfang der Beseitigung“) – nicht bei Merkmalen wie Planungsrecht oder
   Gebäudeklasse, deren Widerspruch bzw. Vorbehalt prüfen die Regeln selbst. Ausgenommen ist eine Antwort mit dem Wert,
-  der auch ohne die Frage gälte (`ohneAusloeser` im Regelmodul, nur wo das zwingend folgt): „Allee betroffen: nein“ gilt
-  auch, wenn „geschützte Bäume betroffen“ nur Hinweis ist – diese Angabe schließt Alleen ein, eine betroffene Allee ist
-  also immer auch ein solcher Fall; ebenso „nicht im Vogelschutzgebiet Hellwegbörde“, „nicht im Heilquellenschutzgebiet
-  Bad Sassendorf“ (bzw. dessen Zonen „außerhalb“), „keine Planreife“, „keine Zurückstellung beantragt“ (§ 15 BauGB,
+  der auch ohne die Frage gälte (`ohneAusloeser` im Regelmodul, nur wo das zwingend folgt): „keine Planreife“, „keine
+  Zurückstellung beantragt“ (§ 15 BauGB,
   entsprechend auch bei vorbereitenden Untersuchungen einer Sanierung, § 141 Abs. 4, und einer Erhaltungssatzung in
-  Aufstellung, § 172 Abs. 2) und „keine Feuerstätte für feste Brennstoffe über 50 kW“. Die Fragen nach vorbereitenden
+  Aufstellung, § 172 Abs. 2) und „keine Feuerstätte für feste Brennstoffe über 50 kW“ (Allee, Vogelschutzgebiet
+  Hellwegbörde und Heilquellenschutzgebiet Bad Sassendorf hängen seit Regelpaket 2026.11.16.1 an ihrer Vorfrage, siehe
+  „Vorfragen“). Die Fragen nach vorbereitenden
   Untersuchungen und einer Erhaltungssatzung in Aufstellung halten §§ 141, 172 BauGB offen („prüfen“), bis sie
   beantwortet sind; beim Flächennutzungsplan mit Konzentrationszonen zählt Windenergie an Land mit (§ 15 Abs. 3
   entsprechend nach § 245e Abs. 2 BauGB, Flächenbeitragswert; § 245e steht nur im Text der Regel zu § 15, seine Änderung
@@ -180,6 +180,55 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   schmalen Fenstern, die Mitte behält mindestens 420 px; Ziehen und Tastatur gehen nie über den verfügbaren Platz
   hinaus. Unter 1000 CSS-px (Web-Version, Browser-Zoom; der Desktop hat eine Mindestbreite) behält die Arbeitsfläche
   1000 px und die Seite scrollt waagerecht – keine Spalte wird abgeschnitten.
+
+## Vorfragen
+
+Statt vieler Einzelfragen fragt LEXIO je Gegenstand zuerst eine **Vorfrage**; die Einzelfragen braucht es nur bei „ja“
+oder „unklar“. Die Vorfrage steht oben in ihrer Gruppe, die Einzelfragen darunter (eingerückt, Akzentlinie wie bei den
+Rückfragen; auch Einzelfragen anderer Gruppen, z. B. „Bäume fällen“ unter „Bäume, Sträucher oder Hecken“).
+
+| Vorfrage (Gruppe)                                                              | Einzelfragen                                                                                                           |
+| ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| Natura 2000 am Standort **oder im Einwirkungsbereich** (Schutzgebiete)         | FFH-Gebiet, Vogelschutzgebiet (→ Hellwegbörde), Natura-2000-Gebiet in der Nähe                                         |
+| Schutzgebiet oder -objekt (Naturschutz), am Standort **oder angrenzend**       | Natur-, Landschaftsschutzgebiet, Naturdenkmal/Landschaftsbestandteil (auch der Kreisverordnung Soest), geschütztes Biotop |
+| Wasserschutz- oder Hochwassergebiet                                            | Wasser-/Heilquellenschutzgebiet (→ Bad Sassendorf → Zonen), Überschwemmungsgebiet, Risikogebiet (HQextrem)             |
+| Denkmal am Standort **oder in der Umgebung** (auch Bodendenkmal, vermutet)     | Baudenkmal, Umgebung eines Baudenkmals, Denkmalbereich und seine Umgebung, Gartendenkmal, Bodendenkmal                 |
+| Bäume, Sträucher oder Hecken (auch angrenzend und im Bereich der Bauarbeiten)  | geschützte Bäume (→ Allee), Bäume fällen, Baumschutzsatzung Soest, geschützte Hecke/Ausgleichspflanzung                |
+| Klassifizierte Straße im Umfeld (Grundstück und Umfeld)                        | an Bundesautobahn/Bundesstraße, Straße außerorts (40 m), Zufahrt bzw. Anschluss an Landes- oder Kreisstraße            |
+
+- **„nein“** (gesichert, ohne Widerspruch) erledigt die Einzelfragen: Sie werden nicht gestellt und gelten als „nein“
+  bzw. „außerhalb“, mit der Vorfrage als Quelle (`ausVorfrage`, nur in der Auswertung). Unter der Vorfrage steht
+  „Entfallen wegen ‚nein‘: …“, im Protokoll die Tabelle „Wegen ‚nein‘ in der Vorfrage entfallen“. Ein „nein“, das nur
+  Hinweis ist (z. B. zu einer früheren Lage), erledigt nichts.
+- **„ja“** zeigt die Einzelfragen offen. **„unklar“** (dritter Knopf, keine Antwort) bzw. „Einzelfragen zeigen“ klappt
+  sie auf; sie bleiben offen. Unbeantwortet sind sie eingeklappt („Einzelfragen zeigen (3)“), ein Sprung dorthin (z. B.
+  „klärt am meisten“) klappt auf. Die Vorfrage klärt, was ihre Einzelfragen klären, und steht deshalb vorn unter „klärt
+  am meisten“. Erscheinen bzw. entfallen Einzelfragen, wird das angesagt.
+- **Einzelfrage „ja“** (Treffer der Lage-Abfrage, eine ältere Antwort): Die Vorfrage gilt als „ja“ (so gesichert wie die
+  Einzelfrage, Quelle „aus …“). Steht die Vorfrage auf „nein“, ist das ein **Widerspruch** – die Einzelfragen bleiben
+  gestellt, nichts wird abgeleitet; ebenso bei einer widersprüchlichen Einzelfrage. So entsteht aus einer übersehenen
+  Einzelantwort kein falsches „entfällt“.
+- **Ältere Projekte** ohne Vorfrage: Ist eine Einzelfrage „ja“, gilt die Vorfrage als „ja“; sonst wird sie gefragt, die
+  gespeicherten Einzelantworten bleiben erhalten und zählen weiter.
+- **„Keine davon …“** steht über den Vorfragen einer Gruppe, sobald zwei offen sind: alle offenen Vorfragen auf einmal
+  „nein“ – bei Schutzgebieten mit einem Beleg für alle (der Dialog nennt sie). Die Liste der Vorfragen steht ohnehin
+  oben in der Gruppe; ein eigenes Ankreuzfeld je Gegenstand gibt es nicht, weil es „unklar“, Belege und Treffer der
+  Lage-Abfrage je Gegenstand nicht abbilden könnte.
+- **Lage-Abfrage:** Ein Treffer macht die Vorfrage zu „ja“ (mit Beleg). „Kein Treffer“ belegt sie nicht mit „nein“
+  vor – die Dienste prüfen nur einen Umkreis von 25 m und nicht jede Einzelfrage (z. B. den Einwirkungsbereich nach
+  § 34 BNatSchG, Naturdenkmäler, Bodendenkmäler); an der offenen Vorfrage steht dann ein Hinweis, was die Abfrage
+  ergab und was sie nicht prüft.
+- **Anwendungsbereich:** Jede Vorfrage umfasst den ihrer Einzelfragen ganz, sonst entstünde aus „nein“ ein falsches
+  Grün. Deshalb fragt Natura 2000 auch nach dem Einwirkungsbereich (§ 34 BNatSchG erfasst Vorhaben außerhalb des
+  Gebiets), Denkmal nach der engeren Umgebung (§ 9 DSchG NRW), Naturschutz nach angrenzenden Objekten und Wirkungen von
+  außen, Gehölze nach Bäumen auf dem Nachbargrundstück und im Straßenraum, Straße nach den Abständen von § 9 FStrG und
+  nach mittelbaren Zufahrten. Wasserschutz-, Überschwemmungs- und Risikogebiete wirken nur im Gebiet selbst. Der
+  Landschaftsplan ist keine Einzelfrage (sein Geltungsbereich reicht über die Schutzfestsetzungen hinaus), ebenso
+  wenig das Gewässer am Grundstück.
+- Im Regelmodul: `vorfrage: { fakt, sonst }` an der Einzelfrage (Kern: `fragen.ts`, `vorfragenAnwenden`); eine
+  Einzelfrage kann selbst Vorfrage sein. `paketPruefen` verlangt eine sichtbare Ja/Nein-Vorfrage, einen passenden Wert
+  `sonst` und keinen Kreis. Module, die eine Einzelfrage des Katalogs neu fassen, nennen ihre Vorfrage dort ebenfalls
+  (Test). An einer Vorfrage hängt keine Regel.
 
 ## Von Hand festlegen
 
@@ -257,6 +306,7 @@ nach einem Blick ins Amtsblatt bzw. der Auskunft der Behörde „Bestätigen …
   **Widerspruch** markiert; was nur an ihr hängt, wird „prüfen“, bis sie geändert oder geklärt ist.
 - Ergebnisse und Bestätigungen gelten nur für die **Lage**, an der sie ermittelt wurden. Ändern sich die Koordinaten des
   Vorhabens, werden sie wieder zum Hinweis.
+- Ein Treffer macht die zugehörige **Vorfrage** zu „ja“; „kein Treffer“ belegt sie nicht vor (siehe „Vorfragen“).
 
 Gesendet werden nur die Lage des Grundstücks (Koordinaten bzw. Umring) und welche Gesetze gebraucht werden – keine
 Personendaten.
@@ -311,7 +361,8 @@ Kopf aus den Stammdaten, Grundlagen (Stichtag, Module, Regelpaket, Merkmale, Erg
 (Ampel, automatisch, Begründung, Name, Datum, Entwurf/bestätigt) und **gesicherte Angaben** (Wert, Herkunft, worauf
 gestützt, von wem) als Tabellen, dann die **offenen Punkte** als Tabelle „Was fehlt – Anzahl – Paragrafen“; danach alle
 Paragrafen je Ebene mit Ampel, Begründung und Fassung, Quellen der Geodaten, Hinweise und Auskünfte der Module. Angaben
-von Hand ohne Beleg stehen in einer eigenen Tabelle (mit wer und wann). Die offenen Punkte zählen wie „Klärt am meisten“
+von Hand ohne Beleg stehen in einer eigenen Tabelle (mit wer und wann), ebenso die **wegen „nein“ in der Vorfrage
+entfallenen Einzelfragen** (je Vorfrage mit Antwort, wer, wann und Beleg). Die offenen Punkte zählen wie „Klärt am meisten“
 (ein Paragraf kann unter mehreren Angaben stehen); Punkte mit nur einem Paragrafen stehen gesammelt unter „Weitere“.
 Enthält es Entwürfe, steht „ENTWURF …“ als Kopfzeile im oberen Seitenrand jeder Druckseite (überdruckt keinen Text);
 Überschriften werden nicht von ihrer Tabelle getrennt. Warum „Prüfung abschließen“ gesperrt ist, steht sichtbar neben
@@ -372,7 +423,9 @@ abgeleiteter Werte an ihr selbst hängt) – `paketPruefen` lehnt beides ab, üb
 ohne Gemeindemodul nimmt die des Landes). Der Fixpunkt steht nach höchstens Tiefe + 1 Runden (gerechnet wird mit der
 Zahl der Antworten + 2). Fände die Auswertung dennoch keinen festen Stand, zählen nur Antworten, die in jeder Runde
 gestellt waren (eine weggelassene Antwort führt nur zu „offen“); Antworten auf nicht gestellte Fragen dürfen weder als
-„ja“ noch als „nein“ etwas ändern. § 36 BauGB (Einvernehmen) entfällt, wo die Gemeinde selbst untere Bauaufsicht ist
+„ja“ noch als „nein“ etwas ändern – ausgenommen Einzelfragen unter einer Vorfrage „nein“: Dort ändert „nein“ nichts,
+„ja“ macht die Vorfrage widersprüchlich, stellt die Frage wieder und stuft keinen Paragrafen zu „entfällt“ hin ab
+(je Grundfall geprüft). § 36 BauGB (Einvernehmen) entfällt, wo die Gemeinde selbst untere Bauaufsicht ist
 („Gemeinde ist selbst Bauaufsicht“: im Kreis Soest Lippstadt, Soest, Warstein, Werl; in NRW die kreisfreien Städte und
 Aachen nach Gemeindeschlüssel; sonst offen – „gilt, Ausnahme möglich“). § 47 Abs. 6 BauO NRW (Fassung ab 01.09.2026):
 Bei einer Nutzungsänderung zu Wohnraum wird gefragt, ob Nutzungseinheiten mit Aufenthaltsräumen in einem bestehenden

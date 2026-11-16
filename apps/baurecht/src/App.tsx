@@ -286,8 +286,8 @@ export function App() {
   const faktTitel = (id: string) => faktName(stand.auswertung.faktDefs[id], id);
   const faktDef = (id: string) => stand.auswertung.faktDefs[id];
   // Folgen einer Angabe: Vorschau im Dialog (mit der Angabe gegenüber jetzt) …
-  const folgen: FolgenRechner = (id, wert) => {
-    const eigene = { ...useBaurecht.getState().pruefung.fakten };
+  const folgen: FolgenRechner = (id, wert, weitere) => {
+    const eigene = { ...useBaurecht.getState().pruefung.fakten, ...weitere };
     if (wert) eigene[id] = wert;
     else delete eigene[id];
     const mit = auswertungMit(eigene);

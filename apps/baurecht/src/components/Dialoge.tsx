@@ -202,6 +202,8 @@ interface FaktZiel {
   vorher: string;
   /** die Angabe hängt an der Lage (Geodienst) – gilt nach dem Setzen nur für die aktuelle Lage */
   lagebezug?: boolean;
+  /** „Keine davon“: weitere Vorfragen, die mit demselben Wert und Beleg gesetzt werden (Eintrag beim Öffnen wie `vorher`) */
+  weitere?: { id: string; titel: string; vorher: string }[];
 }
 
 const useFaktBestaetigen = create<{ ziel: FaktZiel | null }>(() => ({ ziel: null }));
@@ -227,11 +229,21 @@ export const faktSetzenOeffnen = (id: string, titel: string, wert: FaktWert['wer
   useFaktBestaetigen.setState({ ziel: { id, titel, modus: 'setzen', wert: { wert, herkunft: 'manuell', sicherheit: 'sicher' }, vorher: eintrag(id), lagebezug } });
 };
 
+/** „Keine davon“: alle offenen Vorfragen einer Gruppe auf einmal mit „nein“ – ein Beleg für alle */
+export const vorfragenNeinOeffnen = (ziele: { id: string; titel: string }[], lagebezug = false) => {
+  const [erste, ...weitere] = ziele;
+  if (!erste) return;
+  merken();
+  useFaktBestaetigen.setState({
+    ziel: { id: erste.id, titel: erste.titel, modus: 'setzen', wert: { wert: false, herkunft: 'manuell', sicherheit: 'sicher' }, vorher: eintrag(erste.id), lagebezug, weitere: weitere.map((w) => ({ ...w, vorher: eintrag(w.id) })) },
+  });
+};
+
 /** Definition einer Angabe (Typ, Einheit) – für die Anzeige der Werte („139,12 m²“, „3“) */
 export type FaktDefVon = (id: string) => FaktDef | undefined;
 
 /** Folgen einer Angabe: wie viele Paragrafen dadurch auf „entfällt“ (bzw. schwächer) gehen – für die Dialoge */
-export type FolgenRechner = (id: string, wert: FaktWert | null) => { herab: { id: string; titel: string; von: Ampel; nach: Ampel }[]; nachher?: FaktWert };
+export type FolgenRechner = (id: string, wert: FaktWert | null, weitere?: Record<string, FaktWert>) => { herab: { id: string; titel: string; von: Ampel; nach: Ampel }[]; nachher?: FaktWert };
 
 /** Pfeil sichtbar, „wird zu“ für Screenreader (ein aria-label an einem span ohne Rolle wird nicht verlässlich vorgelesen) */
 function Pfeil() {
@@ -297,7 +309,8 @@ export function FaktBestaetigenDialog({ folgen, faktDef = () => undefined }: { f
     const lage = ziel.lagebezug ? aktuelleLage(project).lage : undefined;
     const o = { von: 'Vorschau', grund: 'Vorschau', lage, heute: heute(), desktop: isTauri() };
     const neu = ziel.modus === 'setzen' ? angabeVonHand(useBaurecht.getState().pruefung.fakten[ziel.id], ziel.id, ziel.wert.wert, o) : hinweisBestaetigen(ziel.wert, o);
-    return folgen(ziel.id, neu);
+    const weitere = Object.fromEntries((ziel.weitere ?? []).map((w) => [w.id, angabeVonHand(useBaurecht.getState().pruefung.fakten[w.id], w.id, ziel.wert.wert, o)]));
+    return folgen(ziel.id, neu, weitere);
   }, [ziel, folgen, project]);
   if (!ziel) return null;
   const schliessen = () => {
@@ -313,21 +326,23 @@ export function FaktBestaetigenDialog({ folgen, faktDef = () => undefined }: { f
       feld.current?.focus();
       return;
     }
-    if (eintrag(ziel.id) !== ziel.vorher) {
+    if (eintrag(ziel.id) !== ziel.vorher || (ziel.weitere ?? []).some((w) => eintrag(w.id) !== w.vorher)) {
       setVeraltet(true);
       return;
     }
     benutzerMerken(von);
     // Lagebezug (Schutzgebiete, Geodaten): an die aktuelle Lage binden; ohne gültige Koordinaten bleibt es Hinweis (null)
     const lage = ziel.lagebezug ? aktuelleLage(project).lage : undefined;
-    if (ziel.modus === 'setzen') useBaurecht.getState().faktSetzen(ziel.id, ziel.wert.wert, von.trim(), grund, lage);
+    if (ziel.modus === 'setzen') for (const id of [ziel.id, ...(ziel.weitere ?? []).map((w) => w.id)]) useBaurecht.getState().faktSetzen(id, ziel.wert.wert, von.trim(), grund, lage);
     else useBaurecht.getState().faktBestaetigen(ziel.id, ziel.wert, von.trim(), grund, lage);
+    if (ziel.weitere?.length) useBaurecht.getState().ansagen(`${ziel.weitere.length + 1} Vorfragen mit „nein“ beantwortet – ihre Einzelfragen entfallen`);
     schliessen();
   };
   const geo = ziel.wert.herkunft === 'geodienst';
   const fehlerId = 'br-fakt-grund-fehler';
+  const sammel = ziel.weitere?.length ? [ziel.titel, ...ziel.weitere.map((w) => w.titel)] : null;
   return (
-    <Modal titel={`${ziel.titel}: „${wertAnzeige(ziel.wert.wert, faktDef(ziel.id))}“ ${ziel.modus === 'setzen' ? 'von Hand setzen' : 'bestätigen'}`} onClose={zu} breit klickDaneben={false} kopf>
+    <Modal titel={sammel ? `Keine davon: ${sammel.length} Vorfragen mit „nein“ beantworten` : `${ziel.titel}: „${wertAnzeige(ziel.wert.wert, faktDef(ziel.id))}“ ${ziel.modus === 'setzen' ? 'von Hand setzen' : 'bestätigen'}`} onClose={zu} breit klickDaneben={false} kopf>
       <form
         noValidate
         onSubmit={(e) => {
@@ -340,6 +355,15 @@ export function FaktBestaetigenDialog({ folgen, faktDef = () => undefined }: { f
             {/* der Grund sagt schon, woher der Wert kommt – die Quelle nur ohne Grund */}
             Bisher nur Hinweis: {ziel.wert.grund ?? (ziel.wert.quelle ? `${ziel.wert.quelle} – nicht gesichert` : 'nicht gesichert')}
           </p>
+        ) : sammel ? (
+          <>
+            <p className="br-leise">Für jede dieser Vorfragen gilt „nein“ mit demselben Beleg; ihre Einzelfragen entfallen. Bitte nur, was für alle belegt ist – auch das Umfeld, wo die Frage es nennt.</p>
+            <ul className="br-sammel-liste">
+              {sammel.map((t) => (
+                <li key={t}>{t}</li>
+              ))}
+            </ul>
+          </>
         ) : (
           <p className="br-leise">Angaben zu Schutzgebieten und Geodaten gelten von Hand nur mit Beleg. Widerspricht die Angabe einem Treffer eines Dienstes, bleibt der Widerspruch sichtbar – betroffene Vorschriften werden dann nicht „entfällt“.</p>
         )}
@@ -376,7 +400,7 @@ export function FaktBestaetigenDialog({ folgen, faktDef = () => undefined }: { f
             Beispiel:{' '}
             {ziel.id.startsWith('lage.')
               ? 'Auszug aus dem Liegenschaftskataster vom 03.11.2026'
-              : geo || ziel.id.startsWith('schutz.')
+              : geo || ziel.id.startsWith('schutz.') || ziel.id.startsWith('vorfrage.')
                 ? 'Auskunft der Unteren Naturschutzbehörde vom 03.11.2026, Aktenzeichen …'
                 : ziel.wert.herkunft === 'flaechen' || ziel.wert.herkunft === 'grz'
                   ? 'Modell vollständig geprüft am 12.11.2026'

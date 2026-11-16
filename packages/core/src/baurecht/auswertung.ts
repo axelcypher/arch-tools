@@ -17,7 +17,7 @@ import type { Bewertung, KurzKontext, TextKontext } from './kurz';
 import { kurzText, offenText, warumText, werten } from './kurz';
 import type { Paket } from './paket';
 import { regeldateiFuer } from './paket';
-import { frageGestellt, frageStand } from './fragen';
+import { einzelfragenVon, frageGestellt, frageStand, vorfragenAnwenden, vorfragenKarte } from './fragen';
 import { plusMonate } from '../recht/quellen';
 import { ortGeaendert } from './ort';
 import type { Ampel, FaktDef, FaktWert, Festlegung, Hinweis, Kurz, Modul, NormErgebnis, Ort, ParagrafErgebnis, ParagrafRegel, Wahrheit } from './typen';
@@ -275,13 +275,13 @@ function ueberHinweisGestellt(eingang: Record<string, FaktWert>, ableiten: (f: R
   return out;
 }
 
-/** `ueberHinweis` und `ueberWiderspruch` entfernen – die Felder entstehen nur in der Auswertung und werden nie gespeichert */
+/** `ueberHinweis`, `ueberWiderspruch` und `ausVorfrage` entfernen – die Felder entstehen nur in der Auswertung und werden nie gespeichert */
 export function ohneUeberHinweis(fakten: Record<string, FaktWert>): Record<string, FaktWert> {
   const out: Record<string, FaktWert> = {};
   for (const [id, f] of Object.entries(fakten)) {
-    if (!f.ueberHinweis && !f.ueberWiderspruch) out[id] = f;
+    if (!f.ueberHinweis && !f.ueberWiderspruch && !f.ausVorfrage) out[id] = f;
     else {
-      const { ueberHinweis: _u, ueberWiderspruch: _w, ...ohne } = f;
+      const { ueberHinweis: _u, ueberWiderspruch: _w, ausVorfrage: _v, ...ohne } = f;
       out[id] = ohne;
     }
   }
@@ -334,7 +334,9 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
   // eine gespeicherte Antwort auf eine Frage, die gerade nicht gestellt wird (nach einem Ortswechsel, einem zurückgesetzten
   // Auslöser – z. B. „Altbau verfahrensfrei“ nach zurückgesetztem Umfang), zählt nicht: weder in den Regeln noch für
   // Ableitungen. Bis zum Fixpunkt, denn eine weggelassene Antwort kann weitere Fragen verbergen (oder wieder stellen)
-  const fakten = gueltigeFakten(modulFakten(e.module, gestellteAntworten(eingabe, (f) => gueltigeFakten(modulFakten(e.module, f), faktDefs), faktDefs, { merkmale, einreichung: e.einreichung, heute: e.heute, bausteine, widersprueche: e.widersprueche })), faktDefs);
+  // abgeleitet: Werte der Module, dann die Vorfragen (ein „nein“ dort erledigt die Einzelfragen, fragen.ts)
+  const ableiten = (f: Record<string, FaktWert>) => vorfragenAnwenden(gueltigeFakten(modulFakten(e.module, f), faktDefs), faktDefs);
+  const fakten = ableiten(gestellteAntworten(eingabe, ableiten, faktDefs, { merkmale, einreichung: e.einreichung, heute: e.heute, bausteine, widersprueche: e.widersprueche }));
   const titelCache = new Map<string, string>();
   const text: TextKontext = { fakt: (id) => faktDefs[id], bausteine, paragraf: (id) => titelCache.get(id) };
 
@@ -784,10 +786,14 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
     const aus = new Set(werte.map((v) => ausgang(p.id, mit(v))));
     return aus.size > 1 || aus.has('gelb');
   };
+  const karte = vorfragenKarte(faktDefs);
+  const vorfragenOffen = [...karte.keys()].filter((v) => fakten[v]?.wert == null && gestellt(v)).map((v) => [v, new Set(einzelfragenVon(v, karte))] as const);
   for (const p of paragrafen) {
     if (!offenAuto(p)) continue;
     // eine nicht gestellte Frage klärt nichts (sie steht nur da, wenn sonst kein Grund für Gelb bliebe)
     p.klaerend = p.offen.filter((o) => !o.startsWith('paragraf:') && gestellt(o) && klaert(p, o));
+    // eine offene Vorfrage klärt, was ihre Einzelfragen klären – ein „nein“ dort erledigt sie alle auf einmal
+    for (const [v, alle] of vorfragenOffen) if (!p.klaerend.includes(v) && p.klaerend.some((o) => alle.has(o))) p.klaerend.push(v);
     for (const o of p.klaerend) zahl.set(o, (zahl.get(o) ?? 0) + 1);
   }
   const klaerung = [...zahl.entries()].map(([id, anzahl]) => ({ id, titel: offenText(id, text), anzahl })).sort((a, b) => b.anzahl - a.anzahl || a.titel.localeCompare(b.titel, 'de'));

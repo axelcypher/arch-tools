@@ -4,7 +4,7 @@
   "name": "Nordrhein-Westfalen",
   "ebene": "land",
   "schluessel": "05",
-  "version": "2026-11-12",
+  "version": "2026-11-16",
   "hosts": [
     "recht.nrw.de",
     "www.dibt.de",
@@ -286,6 +286,10 @@
         "puffer": 25,
         "quelle": "LINFOS NRW (LANUK)",
         "lizenz": "Datenlizenz Deutschland – Namensnennung 2.0, Quellenvermerk „Land NRW“"
+      },
+      "vorfrage": {
+        "fakt": "vorfrage.naturschutz",
+        "sonst": false
       }
     },
     "schutz.lsg": {
@@ -300,6 +304,10 @@
         "puffer": 25,
         "quelle": "LINFOS NRW (LANUK)",
         "lizenz": "Datenlizenz Deutschland – Namensnennung 2.0, Quellenvermerk „Land NRW“"
+      },
+      "vorfrage": {
+        "fakt": "vorfrage.naturschutz",
+        "sonst": false
       }
     },
     "schutz.ffh": {
@@ -314,6 +322,10 @@
         "puffer": 25,
         "quelle": "LINFOS NRW (LANUK)",
         "lizenz": "Datenlizenz Deutschland – Namensnennung 2.0, Quellenvermerk „Land NRW“"
+      },
+      "vorfrage": {
+        "fakt": "vorfrage.natura2000",
+        "sonst": false
       }
     },
     "schutz.vsg": {
@@ -328,6 +340,10 @@
         "puffer": 25,
         "quelle": "LINFOS NRW (LANUK)",
         "lizenz": "Datenlizenz Deutschland – Namensnennung 2.0, Quellenvermerk „Land NRW“"
+      },
+      "vorfrage": {
+        "fakt": "vorfrage.natura2000",
+        "sonst": false
       }
     },
     "schutz.biotop": {
@@ -343,6 +359,10 @@
         "puffer": 25,
         "quelle": "LINFOS NRW (LANUK), geschützte Biotope (Fläche, Linie, Punkt)",
         "lizenz": "Datenlizenz Deutschland – Namensnennung 2.0, Quellenvermerk „Land NRW“"
+      },
+      "vorfrage": {
+        "fakt": "vorfrage.naturschutz",
+        "sonst": false
       }
     },
     "schutz.uesg": {
@@ -362,13 +382,21 @@
         "puffer": 25,
         "quelle": "WMS Überschwemmungsgebiete NRW (LANUK): festgesetzt (6), vorläufig gesichert (5), ermittelt (3)",
         "lizenz": "Datenlizenz Deutschland – Namensnennung 2.0, Quellenvermerk „Land NRW“"
+      },
+      "vorfrage": {
+        "fakt": "vorfrage.wasser",
+        "sonst": false
       }
     },
     "schutz.wsg": {
       "titel": "Wasser- oder Heilquellenschutzgebiet",
       "gruppe": "schutz",
       "typ": "janein",
-      "hilfe": "Karte: ELWAS-WEB bzw. WMS „Wasserschutzgebiete NRW“ (LANUK). Die automatische Abfrage ist ausgeschaltet: Die Nutzungsbedingungen des Dienstes verlangen für die Nutzung zu Erwerbszwecken eine Genehmigung des Herausgebers – bis sie vorliegt, bitte von Hand eintragen."
+      "hilfe": "Karte: ELWAS-WEB bzw. WMS „Wasserschutzgebiete NRW“ (LANUK). Die automatische Abfrage ist ausgeschaltet: Die Nutzungsbedingungen des Dienstes verlangen für die Nutzung zu Erwerbszwecken eine Genehmigung des Herausgebers – bis sie vorliegt, bitte von Hand eintragen.",
+      "vorfrage": {
+        "fakt": "vorfrage.wasser",
+        "sonst": false
+      }
     },
     "ortsrecht.stellplatz_regelt_zahl": {
       "titel": "Die Stellplatzsatzung bzw. der Bebauungsplan regelt Pflicht und Zahl der notwendigen Stellplätze",
@@ -425,21 +453,33 @@
       "kurz": "Zufahrt zu Landes- oder Kreisstraße",
       "gruppe": "grundstueck",
       "typ": "janein",
-      "hilfe": "Zustimmung der Straßenbaubehörde nach § 25 Abs. 1 Nr. 2 StrWG NRW – unabhängig vom Abstand des Gebäudes"
+      "hilfe": "Zustimmung der Straßenbaubehörde nach § 25 Abs. 1 Nr. 2 StrWG NRW – unabhängig vom Abstand des Gebäudes",
+      "vorfrage": {
+        "fakt": "vorfrage.strasse",
+        "sonst": false
+      }
     },
     "lage.anschluss_klassifiziert": {
       "titel": "Grundstück an eine Landes- oder Kreisstraße außerhalb der Ortsdurchfahrt angeschlossen (auch bestehend, auch mittelbar über eine Zufahrt)",
       "kurz": "Anschluss an Landes- oder Kreisstraße",
       "gruppe": "grundstueck",
       "typ": "janein",
-      "hilfe": "§ 25 Abs. 1 Satz 1 Nr. 2 StrWG NRW: auch bei erheblicher Änderung oder anderer Nutzung des bestehenden Anschlusses"
+      "hilfe": "§ 25 Abs. 1 Satz 1 Nr. 2 StrWG NRW: auch bei erheblicher Änderung oder anderer Nutzung des bestehenden Anschlusses",
+      "vorfrage": {
+        "fakt": "vorfrage.strasse",
+        "sonst": false
+      }
     },
     "schutz.denkmalbereich_umgebung": {
       "titel": "Engere Umgebung eines Denkmalbereichs (z. B. Sichtbezug auf eine geschützte Altstadt)",
       "kurz": "Umgebung eines Denkmalbereichs",
       "gruppe": "schutz",
       "typ": "janein",
-      "hilfe": "§ 5 Abs. 3 DSchG NRW – bei der Unteren Denkmalbehörde erfragen"
+      "hilfe": "§ 5 Abs. 3 DSchG NRW – bei der Unteren Denkmalbehörde erfragen",
+      "vorfrage": {
+        "fakt": "vorfrage.denkmal",
+        "sonst": false
+      }
     },
     "vorhaben.stellplatz_abloesung": {
       "titel": "Notwendige Stellplätze sollen abgelöst werden (Ablösungsbetrag)",
@@ -483,7 +523,11 @@
       "kurz": "Gartendenkmal",
       "gruppe": "schutz",
       "typ": "janein",
-      "hilfe": "§ 13 DSchG NRW (z. B. historische Park- und Gartenanlage) – Denkmalliste der Gemeinde"
+      "hilfe": "§ 13 DSchG NRW (z. B. historische Park- und Gartenanlage) – Denkmalliste der Gemeinde",
+      "vorfrage": {
+        "fakt": "vorfrage.denkmal",
+        "sonst": false
+      }
     },
     "ortsrecht.abweichung": {
       "titel": "Abweichung von einer örtlichen Bauvorschrift beabsichtigt (Gestaltungs-, Werbeanlagen- oder Stellplatzsatzung)",
@@ -607,6 +651,10 @@
       "wenn": {
         "f": "vorhaben.baeume_faellen",
         "ist": true
+      },
+      "vorfrage": {
+        "fakt": "vorfrage.gehoelze",
+        "sonst": false
       }
     },
     "schutz.allee": {
@@ -615,10 +663,9 @@
       "gruppe": "schutz",
       "typ": "janein",
       "hilfe": "§ 41 LNatSchG NRW; Alleenkataster des LANUK",
-      "ohneAusloeser": false,
-      "wenn": {
-        "f": "schutz.baum",
-        "ist": true
+      "vorfrage": {
+        "fakt": "schutz.baum",
+        "sonst": false
       }
     },
     "nw.altbau_verfahrensfrei": {

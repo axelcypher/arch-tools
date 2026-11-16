@@ -3,7 +3,8 @@
  */
 import type { KurzKontext } from './kurz';
 import { werten } from './kurz';
-import type { FaktDef } from './typen';
+import type { FaktDef, FaktWert } from './typen';
+import { faktName, faktStatus, wertAnzeige } from './typen';
 
 /** Rückfragen zu einem Antragsmerkmal: stehen direkt unter dem Merkmal (Umfang der Beseitigung, beim Ersatzbau die Angaben zum Altbau) */
 export const RUECKFRAGEN: Record<string, string[]> = { Vorhaben: ['vorhaben.beseitigung_umfang', 'nw.altbau_verfahrensfrei', 'nw.beseitigung_mit_beantragt'] };
@@ -15,7 +16,7 @@ export const RUECKFRAGE_IDS: ReadonlySet<string> = new Set(Object.values(RUECKFR
  * ein Widerspruch bzw. Vorbehalt – an einem Merkmal oder einer Angabe – öffnet keine; das Urteil hängt so nicht daran). Eine Rückfrage erst, wenn ihre Bedingung „ja“ ergibt – vorher stünde z. B. „Altbau
  * verfahrensfrei“ vor dem Umfang der Beseitigung. Eine fehlerhafte Bedingung: lieber fragen.
  */
-export function frageGestellt(id: string, def: Pick<FaktDef, 'wenn'> | undefined, ctx: KurzKontext): boolean {
+export function frageGestellt(id: string, def: Pick<FaktDef, 'wenn' | 'vorfrage'> | undefined, ctx: KurzKontext): boolean {
   return frageStand(id, def, ctx).gestellt;
 }
 
@@ -26,7 +27,9 @@ export function frageGestellt(id: string, def: Pick<FaktDef, 'wenn'> | undefined
  * als `ueberHinweis` mit, Regeln zählen dann ihn als nicht gesichert. Ebenso `ueberWiderspruch` für eine widersprüchliche
  * Angabe als Auslöser (die Regel trägt dann deren Widerspruch; Merkmal-Widersprüche ausgenommen, siehe unten).
  */
-export function frageStand(id: string, def: Pick<FaktDef, 'wenn'> | undefined, ctx: KurzKontext): { gestellt: boolean; ueberHinweis: string[]; ueberWiderspruch: string[] } {
+export function frageStand(id: string, def: Pick<FaktDef, 'wenn' | 'vorfrage'> | undefined, ctx: KurzKontext): { gestellt: boolean; ueberHinweis: string[]; ueberWiderspruch: string[] } {
+  // Einzelfrage, deren Vorfrage wirksam „nein“ ist: entfällt (der Wert folgt aus der Vorfrage, vorfragenAnwenden)
+  if (def?.vorfrage && vorfrageNein(ctx.fakten[def.vorfrage.fakt])) return { gestellt: false, ueberHinweis: [], ueberWiderspruch: [] };
   if (!def?.wenn) return { gestellt: true, ueberHinweis: [], ueberWiderspruch: [] };
   try {
     const b = werten(def.wenn, ctx);
@@ -44,4 +47,111 @@ export function frageStand(id: string, def: Pick<FaktDef, 'wenn'> | undefined, c
   } catch {
     return { gestellt: true, ueberHinweis: [], ueberWiderspruch: [] };
   }
+}
+
+/* ---------- Vorfragen ---------- */
+
+/**
+ * Vorfragen und ihre Einzelfragen (FaktDef.vorfrage): je Vorfrage die Angaben, die an ihr hängen, in der Reihenfolge der
+ * Definitionen. Eine Einzelfrage kann selbst Vorfrage sein (z. B. Wasserschutzgebiet → Heilquellenschutzgebiet → Zonen).
+ */
+export function vorfragenKarte(defs: Record<string, Pick<FaktDef, 'vorfrage'>>): Map<string, string[]> {
+  const karte = new Map<string, string[]>();
+  for (const [id, d] of Object.entries(defs)) if (d.vorfrage && defs[d.vorfrage.fakt]) karte.set(d.vorfrage.fakt, [...(karte.get(d.vorfrage.fakt) ?? []), id]);
+  return karte;
+}
+
+/** Ist die Vorfrage wirksam „nein“? Nur ein gesichertes „nein“ ohne Widerspruch – ein Hinweis erledigt keine Einzelfrage */
+export function vorfrageNein(v: FaktWert | undefined): boolean {
+  return v?.wert === false && faktStatus(v) === 'sicher';
+}
+
+/** alle Einzelfragen unter einer Vorfrage, auch die der Einzelfragen (Tiefe zuerst, in Definitionsreihenfolge) */
+export function einzelfragenVon(v: string, karte: Map<string, string[]>, besucht = new Set<string>()): string[] {
+  besucht.add(v);
+  return (karte.get(v) ?? []).filter((k) => !besucht.has(k)).flatMap((k) => [k, ...einzelfragenVon(k, karte, besucht)]);
+}
+
+/** die Angaben samt ihren Vorfragen (über alle Stufen) – an einer Vorfrage hängt keine Regel, sie gehört zu ihren Einzelfragen */
+export function mitVorfragen(ids: Iterable<string>, defs: Record<string, Pick<FaktDef, 'vorfrage'>>): Set<string> {
+  const out = new Set<string>();
+  for (const id of ids) {
+    out.add(id);
+    for (let v = defs[id]?.vorfrage?.fakt, n = 0; v && defs[v] && !out.has(v) && n < 20; v = defs[v]?.vorfrage?.fakt, n++) out.add(v);
+  }
+  return out;
+}
+
+/** Spricht eine Einzelfrage für die Vorfrage? Ein anderer Wert als `sonst` – oder ein Widerspruch (z. B. Treffer eines Dienstes gegen „nein“ von Hand) */
+const sprichtDafuer = (f: FaktWert | undefined, sonst: FaktDef['wert']): boolean => !!f && !f.ausVorfrage && ((f.wert != null && f.wert !== '' && f.wert !== sonst) || !!f.widerspruch);
+
+/**
+ * Vorfragen anwenden (nach den Werten der Module, vor den Regeln) – bis zum Fixpunkt, denn eine Einzelfrage kann selbst
+ * Vorfrage sein:
+ *  - Spricht eine Einzelfrage dafür (anderer Wert als `sonst`, z. B. ein Treffer der Lage-Abfrage oder eine ältere Antwort
+ *    „ja“), gilt die Vorfrage als „ja“ – so gesichert wie die Einzelfrage. Steht die Vorfrage auf „nein“, ist das ein
+ *    Widerspruch: Die Einzelfragen bleiben gestellt, nichts wird abgeleitet (kein falsches Grün).
+ *  - Ist die Vorfrage wirksam „nein“ (gesichert, ohne Widerspruch), gilt jede Einzelfrage als `sonst` – mit der Vorfrage
+ *    als Quelle (`ausVorfrage`). Eine eigene gesicherte Antwort gleichen Werts bleibt stehen.
+ *  - „Unklar“ (keine Antwort) bzw. ein „nein“, das nur Hinweis ist, lässt die Einzelfragen offen.
+ */
+export function vorfragenAnwenden(fakten: Record<string, FaktWert>, defs: Record<string, FaktDef>): Record<string, FaktWert> {
+  const karte = vorfragenKarte(defs);
+  if (!karte.size) return fakten;
+  const out = { ...fakten };
+  const name = (id: string) => faktName(defs[id], id);
+  for (let runde = 0; runde <= karte.size + 1; runde++) {
+    let geaendert = false;
+    for (const [v, kinder] of karte) {
+      const vw = out[v];
+      const dafuer = kinder.find((k) => sprichtDafuer(out[k], defs[k].vorfrage!.sonst));
+      if (dafuer) {
+        const f = out[dafuer];
+        const wie = f.widerspruch && (f.wert == null || f.wert === defs[dafuer].vorfrage!.sonst) ? 'widersprüchlich' : `„${wertAnzeige(f.wert, defs[dafuer])}“`;
+        if (vw?.wert === false) {
+          if (!vw.widerspruch) {
+            out[v] = { ...vw, widerspruch: `„${name(dafuer)}“ ist ${wie} – das spricht gegen „nein“` };
+            geaendert = true;
+          }
+        } else if (vw?.wert !== true) {
+          const sicher = faktStatus(f) === 'sicher';
+          out[v] = {
+            wert: true,
+            herkunft: 'abgeleitet',
+            quelle: `aus „${name(dafuer)}“${f.quelle ? ` (${f.quelle})` : ''}`,
+            sicherheit: sicher ? 'sicher' : 'hinweis',
+            ...(sicher ? {} : { grund: `folgt aus „${name(dafuer)}“, das nicht gesichert ist` }),
+            ...(f.lage ? { lage: f.lage } : {}),
+          };
+          geaendert = true;
+        }
+        continue;
+      }
+      if (!vorfrageNein(vw)) continue;
+      for (const k of kinder) {
+        const f = out[k];
+        if (f?.ausVorfrage === v || (f && f.wert != null && faktStatus(f) === 'sicher')) continue;
+        out[k] = { wert: defs[k].vorfrage!.sonst, herkunft: 'abgeleitet', quelle: `Vorfrage „${name(v)}“: nein`, sicherheit: 'sicher', ausVorfrage: v, ...(vw!.stand ? { stand: vw!.stand } : {}) };
+        geaendert = true;
+      }
+    }
+    if (!geaendert) break;
+  }
+  return out;
+}
+
+/**
+ * Hinweis an einer offenen Vorfrage, wenn die Lage-Abfrage für einige Einzelfragen keinen Treffer fand: Das deckt die
+ * Vorfrage nicht ab (andere Einzelfragen, Umfeld bzw. Einwirkungsbereich über den Umkreis der Abfrage hinaus) – deshalb
+ * wird sie nicht vorbelegt. Ohne solche Ergebnisse: nichts.
+ */
+export function vorfrageHinweis(v: string, fakten: Record<string, FaktWert>, defs: Record<string, FaktDef>): string | undefined {
+  if (fakten[v]?.wert != null) return undefined;
+  const kinder = vorfragenKarte(defs).get(v) ?? [];
+  const ohne = kinder.filter((k) => fakten[k]?.herkunft === 'geodienst' && fakten[k].wert === defs[k].vorfrage?.sonst);
+  if (!ohne.length) return undefined;
+  const puffer = Math.max(...ohne.map((k) => defs[k].geodienst?.puffer ?? 25));
+  const rest = kinder.filter((k) => !ohne.includes(k) && fakten[k]?.wert == null);
+  const namen = (ids: string[]) => ids.map((k) => faktName(defs[k], k)).join(', ');
+  return `Lage-Abfrage ohne Treffer im Umkreis von ${puffer} m: ${namen(ohne)}. Das Umfeld darüber hinaus${rest.length ? ` und ${namen(rest)}` : ''} prüft sie nicht – deshalb nicht vorbelegt, bitte selbst prüfen.`;
 }
