@@ -116,7 +116,9 @@ describe('Excel-Dialog', () => {
     await act(async () => host.querySelector('form')!.requestSubmit());
     expect(pruefeVorlage).toHaveBeenCalled();
     expect(onClose).not.toHaveBeenCalled();
-    expect(host.querySelector('[role="status"] summary')?.textContent).toBe('Exportiert. Vorlage: 1 Hinweis');
+    expect(host.querySelector('[role="status"] summary')?.textContent).toBe('Exportiert – die Vorlagenprüfung meldet 1 Hinweis:');
+    expect(host.querySelector<HTMLDetailsElement>('[role="status"] details')!.open).toBe(true);
+    expect(document.activeElement?.tagName).toBe('SUMMARY');
     expect(host.querySelector('[role="status"] li')?.textContent).toContain('Flächen · B12: {{raum[wolf].name}} – Filter [wolf] gibt es nicht');
     expect([...host.querySelectorAll('button')].map((b) => b.textContent)).toContain('Schließen');
   });

@@ -460,7 +460,7 @@ Ergebnis:
 
 In Kopf- und Fußzeilen (Seite einrichten) sowie in Textfeldern und Formen werden Einzelwerte, globale Variablen (auch mit Format) und der benannte Einzelzugriff ersetzt. Sammlungsfelder, Blöcke, Bedingungen und |einmal bleiben dort als Text stehen. „&“ in eingesetzten Werten wird in Kopf-/Fußzeilen verdoppelt, damit Excel es nicht als Steuerzeichen liest.
 
-### Globale Variablen
+### Datum mit Format (globale Variablen)
 
 Die globalen Variablen der Suite (PROJEKT_KUERZEL, PROJEKT_KURZNAME, PROJEKT_VORHABEN, BEARBEITER, DATUM, JAHR, JAHR_KURZ) sind dieselben wie in Datei- und Ordnernamen (docs/platzhalter.md). Datum und Jahr gehen mit Format: `{{DATUM:TT.MM.JJJJ}}`, `{{JAHR:JJ}}` – in Zellen, Kopf-/Fußzeilen und Textfeldern.
 

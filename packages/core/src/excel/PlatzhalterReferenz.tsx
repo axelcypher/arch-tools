@@ -84,46 +84,71 @@ function Kopieren({ text, onKopiert, was = text }: { text: string; onKopiert: (t
 
 function Nutzbar({ art }: { art: Art }) {
   const n = NUTZBAR[art];
+  const orte = ORTE.filter((o) => o.id !== 'wiederholung');
   return (
     <>
       <h4>Wo nutzbar</h4>
-      <table className="summary-table text" aria-label="Wo nutzbar">
-        <tbody>
-          {ORTE.filter((o) => o.id !== 'wiederholung' || art === 'sammlung').map((o) => (
-            <tr key={o.id}>
-              <th scope="row" title={o.text}>
+      {/* knapp als Liste: ja zuerst, dann nein */}
+      <ul className="small-text">
+        <li>
+          <strong>ja:</strong>{' '}
+          {orte
+            .filter((o) => n[o.id])
+            .map((o, i) => (
+              <span key={o.id}>
+                {i > 0 && ', '}
+                <MitCode text={o.id === 'zelle' && art === 'sammlung' ? 'Zelle (die Zeile wird je Datensatz wiederholt)' : o.label} />
+              </span>
+            ))}
+        </li>
+        <li>
+          <strong>nein:</strong>{' '}
+          {orte
+            .filter((o) => !n[o.id])
+            .map((o, i) => (
+              <span key={o.id}>
+                {i > 0 && ', '}
                 <MitCode text={o.label} />
-              </th>
-              <td>{n[o.id] ? (o.id === 'zelle' && art === 'sammlung' ? 'ja – die Zeile wird je Datensatz wiederholt' : 'ja') : 'nein'}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+              </span>
+            ))}
+        </li>
+      </ul>
     </>
   );
 }
 
 /** Tabelle im Stil der Kennzahlen (.summary-table); ohne `kopf` erklären sich die Spalten selbst (`name` benennt sie) */
-function Tabelle({ kopf, zeilen, name }: { kopf?: string[]; zeilen: ReactNode[][]; name?: string }) {
+function Tabelle({ kopf, zeilen, name, zeilenKopf }: { kopf?: string[]; zeilen: ReactNode[][]; name?: string; zeilenKopf?: boolean }) {
   return (
     <table className="summary-table text" aria-label={name}>
       {kopf && (
         <thead>
           <tr>
-            {kopf.map((k, i) => (
-              <th key={i} scope="col">
-                {k}
-              </th>
-            ))}
+            {/* leere Köpfe (Zeilennummer, Kopieren) als td – ein leerer Spaltenkopf sagt Screenreadern nichts */}
+            {kopf.map((k, i) =>
+              k ? (
+                <th key={i} scope="col">
+                  {k}
+                </th>
+              ) : (
+                <td key={i} />
+              ),
+            )}
           </tr>
         </thead>
       )}
       <tbody>
         {zeilen.map((z, i) => (
           <tr key={i}>
-            {z.map((c, j) => (
-              <td key={j}>{c}</td>
-            ))}
+            {z.map((c, j) =>
+              zeilenKopf && j === 0 ? (
+                <th key={j} scope="row">
+                  {c}
+                </th>
+              ) : (
+                <td key={j}>{c}</td>
+              ),
+            )}
           </tr>
         ))}
       </tbody>
@@ -150,7 +175,7 @@ function BeispielAnsicht({ b, onKopiert }: { b: Beispiel; onKopiert: (t: string)
   return (
     <section className="ph-beispiel" aria-label={`Beispiel: ${b.titel}`}>
       <div className="section-head">
-        <h5>{b.titel}</h5>
+        <h4>{b.titel}</h4>
         <Kopieren text={tsv} was={`Vorlage „${b.titel}“`} onKopiert={(t) => onKopiert(t ? `Vorlage „${b.titel}“ (zum Einfügen in Excel ab Zelle A1)` : '')} />
       </div>
       {b.text && (
@@ -160,10 +185,11 @@ function BeispielAnsicht({ b, onKopiert }: { b: Beispiel; onKopiert: (t: string)
       )}
       {!!b.pruefung?.length && <p className="small-text">Die Vorlagenprüfung meldet hier: {b.pruefung.map((a) => HINWEISARTEN[a as HinweisArt] ?? a).join('; ')}.</p>}
       <p className="nw-gruppe-titel">Vorlage</p>
-      <Tabelle name="Vorlage" kopf={kopf} zeilen={b.vorlage.map((z, r) => [String(r + 1), ...Array.from({ length: breite }, (_, i) => zelle(z[i], true))])} />
+      <Tabelle name="Vorlage" zeilenKopf kopf={kopf} zeilen={b.vorlage.map((z, r) => [String(r + 1), ...Array.from({ length: breite }, (_, i) => zelle(z[i], true))])} />
       <p className="nw-gruppe-titel">Ergebnis mit den Beispieldaten</p>
       <Tabelle
         name="Ergebnis"
+        zeilenKopf
         kopf={kopf}
         zeilen={b.ergebnis.length ? b.ergebnis.map((z, r) => [String(r + 1), ...Array.from({ length: breite }, (_, i) => zelle(z[i], false))]) : [['', 'keine Zeile']]}
       />
@@ -192,8 +218,9 @@ function Beispiele({ liste, daten, onKopiert }: { liste?: Beispiel[]; daten: str
   if (!liste?.length) return null;
   return (
     <>
-      <h4>{liste.length === 1 ? 'Beispiel' : 'Beispiele'}</h4>
-      <p className="small-text muted">{daten}</p>
+      <p className="small-text muted">
+        {liste.length === 1 ? 'Beispiel' : 'Beispiele'} – {daten}
+      </p>
       {liste.map((b) => (
         <BeispielAnsicht key={b.titel} b={b} onKopiert={onKopiert} />
       ))}
@@ -407,7 +434,7 @@ export function PlatzhalterReferenz({ schema, onClose }: { schema: PlatzhalterSc
           type="search"
           aria-label="Platzhalter durchsuchen"
           aria-controls="ph-referenz-liste"
-          placeholder="Suchen, z. B. wofl, Filter, Block, Kopfzeile …"
+          placeholder="Suchen, z. B. Filter, Block, Kopfzeile, Summe …"
           value={q}
           onChange={(ev) => setQ(ev.target.value)}
           onKeyDown={(ev) => ev.key === 'ArrowDown' && treffer.length && (ev.preventDefault(), liste.current?.querySelector<HTMLElement>('.nw-eintrag.active, .nw-eintrag')?.focus())}
@@ -415,7 +442,7 @@ export function PlatzhalterReferenz({ schema, onClose }: { schema: PlatzhalterSc
       </div>
       <div className="nw-inhalt">
         <nav className="nw-liste" id="ph-referenz-liste" ref={liste} aria-label="Einträge" onKeyDown={pfeile}>
-          {treffer.length === 0 && <p className="muted small-text">Nichts gefunden.</p>}
+          <p className="muted small-text">{q.trim() ? (treffer.length ? `${treffer.length} Treffer` : 'Nichts gefunden.') : ''}</p>
           {GRUPPEN.map((g) => {
             const l = treffer.filter((e) => e.gruppe === g.id);
             if (!l.length) return null;
@@ -438,13 +465,13 @@ export function PlatzhalterReferenz({ schema, onClose }: { schema: PlatzhalterSc
             );
           })}
         </nav>
-        <div className="nw-text" ref={text} tabIndex={0} aria-label="Eintrag">
-          {aktiv ? <Ansicht e={aktiv} q={q} onKopiert={kopiert} schema={schema} /> : null}
+        <div className="nw-text" ref={text} tabIndex={0} role="region" aria-label={aktiv ? aktiv.titel : 'Eintrag'}>
+          {aktiv ? <Ansicht e={aktiv} q={q} onKopiert={kopiert} schema={schema} /> : <p className="muted">Nichts gefunden – andere Suchbegriffe versuchen.</p>}
         </div>
       </div>
       <div className="dialog-buttons nw-fuss">
         <p className="muted small-text" role="status">
-          {meldung || 'Die Beispiele laufen als Test gegen die Vorlagen-Engine – die Ergebnisse stimmen mit den Beispieldaten überein.'}
+          {meldung || 'Platzhalter mit „Kopieren“ übernehmen und in die Excel-Vorlage einfügen. Die Ergebnisse der Beispiele sind mit den Beispieldaten berechnet.'}
         </p>
         <button type="button" className="primary" onClick={onClose}>
           Schließen

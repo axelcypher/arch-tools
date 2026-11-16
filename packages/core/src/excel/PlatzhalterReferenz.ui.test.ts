@@ -62,7 +62,7 @@ describe('Platzhalter-Referenz', () => {
     act(() => knopf('raum – Räume').click());
     const t = document.querySelector('.nw-text')!.textContent!;
     expect(t).toContain('Sammlung, Zeile je Raum');
-    expect(t).toContain('Kopf-/Fußzeilenein');
+    expect(t).toContain('nein: Kopf-/Fußzeile, Textfeld');
     expect(t).toContain('geschoss (Geschosse)');
     expect(t).toContain('{{raum.flaeche}}');
     expect(t).toContain('[wofl]');

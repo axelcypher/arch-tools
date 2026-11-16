@@ -340,7 +340,7 @@ export const KERN_THEMEN: Thema[] = [
   },
   {
     id: 'global',
-    titel: 'Globale Variablen',
+    titel: 'Datum mit Format (globale Variablen)',
     absaetze: [
       'Die globalen Variablen der Suite (PROJEKT_KUERZEL, PROJEKT_KURZNAME, PROJEKT_VORHABEN, BEARBEITER, DATUM, JAHR, JAHR_KURZ) sind dieselben wie in Datei- und Ordnernamen (docs/platzhalter.md). Datum und Jahr gehen mit Format: {{DATUM:TT.MM.JJJJ}}, {{JAHR:JJ}} – in Zellen, Kopf-/Fußzeilen und Textfeldern.',
     ],

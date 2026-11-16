@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react';
-import { useId, useMemo, useState } from 'react';
+import type { ReactNode, RefObject } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { VorlagenHinweis } from '../excel/pruefung';
 import type { VorlagenSpeicher } from '../excel/vorlage';
@@ -56,6 +56,11 @@ export function ExcelDialog(props: ExcelDialogProps) {
   const [referenzOffen, setReferenzOffen] = useState(false);
   /** Ergebnis der Vorlagenprüfung; `exportiert`: nach einem Export mit Vorlage */
   const [pruefung, setPruefung] = useState<{ hinweise: VorlagenHinweis[]; exportiert: boolean } | null>(null);
+  const meldungRef = useRef<HTMLElement>(null);
+  // Fokus auf das Ergebnis der Prüfung – „Exportieren“ bzw. „Vorlage prüfen“ war während der Arbeit gesperrt
+  useEffect(() => {
+    if (pruefung) meldungRef.current?.focus();
+  }, [pruefung]);
 
   const chooseTemplate = async () => {
     const f = await pickFile('.xlsx,' + XLSX_MIME);
@@ -203,20 +208,24 @@ export function ExcelDialog(props: ExcelDialogProps) {
         {mode === 'template' && pruefung && (
           <div className={pruefung.hinweise.length ? 'meldung warnung' : 'meldung ok'} role="status">
             {pruefung.hinweise.length ? (
-              <details>
-                <summary>
-                  {pruefung.exportiert ? 'Exportiert. ' : ''}Vorlage: {pruefung.hinweise.length === 1 ? '1 Hinweis' : `${pruefung.hinweise.length} Hinweise`}
+              <details open={pruefung.exportiert || pruefung.hinweise.length <= 5}>
+                <summary ref={meldungRef as RefObject<HTMLElement>}>
+                  {pruefung.exportiert ? 'Exportiert – die' : 'Die'} Vorlagenprüfung meldet {pruefung.hinweise.length === 1 ? '1 Hinweis' : `${pruefung.hinweise.length} Hinweise`}:
                 </summary>
                 <ul className="small-text">
                   {pruefung.hinweise.map((h, i) => (
                     <li key={i}>
-                      {[h.blatt, h.ort].filter(Boolean).join(' · ')}: <code>{h.platzhalter}</code> – {h.text}
+                      {[h.blatt, h.ort].filter(Boolean).join(' · ')}
+                      {h.blatt || h.ort ? ': ' : ''}
+                      <code>{h.platzhalter}</code> – {h.text}
                     </li>
                   ))}
                 </ul>
               </details>
             ) : (
-              'Vorlage geprüft: keine Hinweise.'
+              <span tabIndex={-1} ref={meldungRef as RefObject<HTMLSpanElement>}>
+                Vorlage geprüft: keine Hinweise.
+              </span>
             )}
           </div>
         )}
