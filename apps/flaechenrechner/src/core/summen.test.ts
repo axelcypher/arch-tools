@@ -10,7 +10,8 @@ describe('Summen nach R/S und ohne Putzabzug', () => {
   const raeume = ctx.collections.raum;
   const summe = (rows: Row[], feld: 'flaeche' | 'flaeche_roh') => Math.round(rows.reduce((a, r) => a + (r[feld] as number), 0) * 100) / 100;
   const gruppe = (name: string) => SUMMEN_GRUNDGROESSEN.find(([n]) => n === name)![1];
-  // wie die NRF: ohne Räume außerhalb der BGF und ohne Abzugsflächen, die nur die Wohnfläche mindern (aus den Eingaben)
+  // wie die NRF: ohne Räume außerhalb der BGF und ohne Abzugsflächen, die nur die Wohnfläche mindern (aus den Eingaben;
+  // die Raumnummern der Testdaten sind eindeutig)
   const nurWofl = new Set(
     platzhalterProjekt()
       .storeys.flatMap((st) => st.shapes)
