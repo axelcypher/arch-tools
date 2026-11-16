@@ -70,8 +70,8 @@ function AblageSymbol() {
 }
 
 /**
- * Punkt „Speicherort der Einstellungen …“ für das Menü „Einstellungen und Hilfe“ der Rahmen-App Arkly – im Normalfall
- * (in den Apps steht der Speicherort im Einstellungsdialog, Seite „Allgemein“); im
+ * Punkt „Speicherort der Einstellungen …“ für das Menü „Einstellungen und Hilfe“ der Rahmen-App Arkly – übergangsweise, bis
+ * Arkly nachzieht (docs/nachziehen/arkly.md); in den Apps steht der Speicherort im Einstellungsdialog (Seite „Allgemein“). Im Normalfall; im
  * Notbetrieb und bei einem Fehler zeigt ihn `SpeicherortAnzeige nurWarnung` sichtbar in der Leiste (dann `null`)
  */
 export function speicherortPunkt(ort: KonfigOrtAnzeige, oeffnen: () => void): MenuePunkt | null {
@@ -95,14 +95,22 @@ export function SpeicherortAnzeige({ ort, nurWarnung = false, onOeffnen }: { ort
   if (!ort) return null;
   if (ort === 'fehler') {
     return (
-      <button className="titlebar-btn titlebar-notbetrieb" title="Speicherort der Einstellungen nicht lesbar – Einzelheiten im Protokoll" onClick={oeffnen}>
+      <button
+        className="titlebar-btn titlebar-notbetrieb"
+        title={`Speicherort der Einstellungen nicht lesbar – Einzelheiten im Protokoll${onOeffnen ? ' – Einstellungen öffnen' : ''}`}
+        onClick={oeffnen}
+      >
         <span aria-hidden>⚠</span> Einstellungen
       </button>
     );
   }
   if (ort.notbetrieb) {
     return (
-      <button className="titlebar-btn titlebar-notbetrieb" title={`Netzlaufwerk mit den Einstellungen nicht erreichbar (${ort.ordner}) – Einstellungen nur lesbar`} onClick={oeffnen}>
+      <button
+        className="titlebar-btn titlebar-notbetrieb"
+        title={`Netzlaufwerk mit den Einstellungen nicht erreichbar (${ort.ordner}) – Einstellungen nur lesbar${onOeffnen ? ' – Einstellungen öffnen' : ''}`}
+        onClick={oeffnen}
+      >
         <span aria-hidden>⚠</span> Einstellungen nur lesbar
       </button>
     );

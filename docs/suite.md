@@ -53,7 +53,7 @@ Werkzeuge in **einem Programm und einem Fenster**. Sie kann nichts weiter, als z
   bleiben. Einzelheiten in der README unter „Neue Namen“. Hook: `apps/suite/src-tauri/windows/umbenennung.nsh`; die Namen aller
   Apps stehen in der README unter [Neue Namen](../README.md#neue-namen).
 
-- **Speicherort der Einstellungen** (im Menü „Einstellungen und Hilfe“ der Kopfleiste des Rahmens bzw. der Titelleiste jeder App, dazu auf der Startseite):
+- **Speicherort der Einstellungen** (im Menü „Einstellungen und Hilfe“ der Kopfleiste des Rahmens, in den Apps im Einstellungsdialog auf der Seite „Allgemein“, dazu auf der Startseite):
   Einzelplatz oder Netzwerkinstallation, für alle Apps auf einmal – Einzelheiten in der README unter
   [Gemeinsame Bedienung](../README.md#gemeinsame-bedienung-aller-apps). Nach einem Wechsel gilt der neue Ort sofort in
   allen Tabs und Fenstern: Was die Apps zwischengespeichert haben (ATLAS: Struktur, Mails, Kataster; FABRIO:

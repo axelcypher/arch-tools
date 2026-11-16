@@ -41,7 +41,7 @@ und Regionalfaktor.
   Rückgängig/Wiederholen und der Umschalter **Kosten | Mengen prüfen**; rechts **Excel …** und der Hauptknopf
   **Kosten drucken …**. In schmalen Fenstern wandert „Excel …“ ins Menü „Mehr“. Der Kennwertkatalog steht im Kopf
   der Positionen.
-- **Regeln nachschlagen:** „Berechnungsregeln …“ (Menü „Einstellungen und Hilfe“ der Titelleiste) bzw. F1 öffnet das Nachschlagewerk (DIN 276, DIN 277) mit Quellen und Suche.
+- **Regeln nachschlagen:** „Berechnungsregeln …“ (Menü „Darstellung und Hilfe“ der Titelleiste) bzw. F1 öffnet das Nachschlagewerk (DIN 276, DIN 277) mit Quellen und Suche.
 
 ## Mengen
 

@@ -53,11 +53,11 @@ Namen mit Erklärung – „PERMIO (Formulare)“ –, danach den Namen allein; 
 Die Regeln für Oberfläche und Bedienung (Skalen, Fokus, Knöpfe, Überschriften, Meldungen) stehen in der
 Designrichtlinie [docs/design.md](docs/design.md).
 
-- **Farbschema** (in der Titelleiste bzw. der Kopfleiste des Rahmens im Menü „Einstellungen und Hilfe“): Hell, Dunkel oder wie das System
+- **Farbschema** (im Menü „Darstellung und Hilfe“ der Titelleiste bzw. im Menü „Einstellungen und Hilfe“ der Kopfleiste des Rahmens): Hell, Dunkel oder wie das System
   (Auto) – wirkt sofort in allen geöffneten Apps, Fenstern und Tabs der Rahmen-App. „Zeichenfläche abdunkeln“ gibt es
   nur in Apps mit Zeichenfläche bzw. Lageplan.
-- **Speicherort der Einstellungen** (in jeder App „Speicherort der Einstellungen …“ im Menü „Einstellungen und Hilfe“ der Titelleiste – im Notbetrieb als Warnung sichtbar –, im Rahmen ebenso im Menü „Einstellungen und Hilfe“ der Kopfleiste, in ATLAS auch unter
-  „Einstellungen“): *Einzelplatz* – die gemeinsamen Einstellungen liegen nur auf diesem Rechner
+- **Speicherort der Einstellungen** (in jeder App unter „Datei → Einstellungen …“ auf der Seite „Allgemein“ – sind die Einstellungen nur lesbar, zeigt die Titelleiste die
+  Warnung „Einstellungen nur lesbar“, die diese Seite öffnet –, im Rahmen im Menü „Einstellungen und Hilfe“ der Kopfleiste): *Einzelplatz* – die gemeinsamen Einstellungen liegen nur auf diesem Rechner
   (`%APPDATA%\arch-tools`) – oder *Netzwerkinstallation* – sie liegen in einem Ordner auf dem Netzlaufwerk (NAS,
   Server), und alle Rechner, die ihn wählen, haben denselben Stand. Die Wahl gilt je Benutzer für alle Apps und steht
   lokal (`konfig.json`), nie auf dem Netzlaufwerk. Beim Wechsel ziehen die Einstellungen mit; liegen am Ziel schon
@@ -197,7 +197,7 @@ fehlen sie, warnt der Bericht am Bildschirm, und im Druck steht im Kopf „nicht
   Bodenplatte gehen als eigene Posten in den BRI ein
 - **IFC aktualisieren**: erneuter Import in ein bestehendes Projekt über die stabilen IFC-GlobalIds – von Hand
   geänderte Werte bleiben erhalten, Konflikte werden gemeldet
-- **Nachschlagewerk** der Berechnungsregeln (`F1` bzw. „Berechnungsregeln …“ im Menü „Einstellungen und Hilfe“, `?` an den Abschnitten) mit Zitaten,
+- **Nachschlagewerk** der Berechnungsregeln (`F1` bzw. „Berechnungsregeln …“ im Menü „Darstellung und Hilfe“ der Titelleiste, `?` an den Abschnitten) mit Zitaten,
   Quellenangaben, Links und Suche – zentral und je Funktion gefiltert
 - **Numerische Eingabe** beim Zeichnen: Länge tippen + Enter (in Mausrichtung), `dx;dy` relativ (wie im Plan nach
   rechts und oben positiv, ebenso die Koordinatenanzeige, die Eckpunkt-Tabelle und das Messen), Rechteck `4,5x3,2`
