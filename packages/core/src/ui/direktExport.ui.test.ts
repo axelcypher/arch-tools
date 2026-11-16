@@ -6,14 +6,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 vi.mock('../platform/files', async (orig) => ({ ...(await orig<typeof import('../platform/files')>()), isTauri: vi.fn(() => true) }));
 vi.mock('../platform/pdf', async (orig) => ({ ...(await orig<typeof import('../platform/pdf')>()), pdfMoeglich: () => true }));
 vi.mock('../platform/projektordner', async (orig) => ({ ...(await orig<typeof import('../platform/projektordner')>()), ordnerZeigen: vi.fn(async () => {}) }));
-vi.mock('./Rueckfrage', async (orig) => ({ ...(await orig<typeof import('./Rueckfrage')>()), meldung: vi.fn(async () => {}) }));
 
 import type { DirektExportAuftrag, DirektExportUmgebung } from '../excel/direktExport';
 import type { VorlagenHinweis } from '../excel/pruefung';
 import { ordnerZeigen } from '../platform/projektordner';
 import { DirektExportKnopf, useDirektExport } from './DirektExportKnopf';
 import { direktExportMitMeldung, wurzelUndRest } from './direktExport';
-import { meldung } from './Rueckfrage';
+import type { HinweisDaten } from './Hinweis';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -60,51 +59,58 @@ describe('Wurzel für projekt_ordner_anlegen', () => {
   });
 });
 
-describe('Rückmeldung nach dem Direktexport', () => {
-  it('„Gespeichert“ mit Ordner und Dateien; „Ordner öffnen“ öffnet den Berechnungsordner', async () => {
-    const u = umgebung('ordner');
-    await direktExportMitMeldung(auftrag(), vi.fn(), u);
-    const f = vi.mocked(u.fragen).mock.calls[0][0];
-    expect(f.titel).toBe('Gespeichert');
-    expect(f.text).toBe(`Gespeichert in „${ORDNER}“: BS5 261116 Flächenaufstellung.xlsx und BS5 261116 Flächenaufstellung.pdf (Standardlayout).`);
-    expect(f.knoepfe.map((k) => k.label)).toEqual(['Ordner öffnen', 'OK']);
+describe('Rückmeldung nach dem Direktexport (Hinweis, hält nichts auf)', () => {
+  const lauf = async (a: DirektExportAuftrag, u: DirektExportUmgebung, zeigen = vi.fn()) => {
+    const h = vi.fn();
+    await direktExportMitMeldung(a, zeigen, u, h);
+    expect(h).toHaveBeenCalledTimes(1);
+    return h.mock.calls[0][0] as HinweisDaten;
+  };
+
+  it('Erfolg: Hinweis „export“ mit Dateien und Ordner; „Ordner öffnen“ öffnet ihn und schließt den Hinweis', async () => {
+    const d = await lauf(auftrag(), umgebung(null));
+    expect(d).toMatchObject({ id: 'export', art: 'ok', text: 'Gespeichert: BS5 261116 Flächenaufstellung.xlsx und BS5 261116 Flächenaufstellung.pdf (Standardlayout).', pfad: ORDNER });
+    expect(d.aktionen!.map((a) => [a.text, !!a.schliesst])).toEqual([['Ordner öffnen', true]]);
+    await d.aktionen![0].aktion();
     expect(ordnerZeigen).toHaveBeenCalledWith(ORDNER);
   });
 
-  it('mit Prüfhinweisen: „Prüfhinweise …“ öffnet den Dialog mit der Liste', async () => {
+  it('mit Prüfhinweisen: Warnung mit „Prüfhinweise …“ (öffnet die Liste, Hinweis bleibt stehen)', async () => {
     const zeigen = vi.fn();
-    const u = umgebung('hinweise');
-    await direktExportMitMeldung(auftrag({ erzeugen: async () => ({ daten: new Uint8Array([1]), vorlage: 'V.xlsx', hinweise: [hinweis] }) }), zeigen, u);
-    const f = vi.mocked(u.fragen).mock.calls[0][0];
-    expect(f.text).toContain('(Vorlage „V.xlsx“). Die Vorlagenprüfung meldet einen Hinweis.');
-    expect(f.knoepfe.map((k) => k.label)).toEqual(['Prüfhinweise …', 'Ordner öffnen', 'OK']);
+    const d = await lauf(auftrag({ erzeugen: async () => ({ daten: new Uint8Array([1]), vorlage: 'V.xlsx', hinweise: [hinweis] }) }), umgebung(null), zeigen);
+    expect(d.art).toBe('warnung');
+    expect(d.text).toContain('(Vorlage „V.xlsx“). Die Vorlagenprüfung meldet einen Hinweis.');
+    const pruef = d.aktionen!.find((a) => a.text === 'Prüfhinweise …')!;
+    expect(pruef.schliesst).toBeFalsy();
+    await pruef.aktion();
     expect(zeigen).toHaveBeenCalledWith([hinweis]);
   });
 
-  it('Schreibfehler: Meldung „Export fehlgeschlagen“ mit dem Grund', async () => {
-    const u = umgebung('ok', {
-      schreiben: async () => {
-        throw new Error('Datei ist in Excel geöffnet');
-      },
-    });
-    await direktExportMitMeldung(auftrag(), vi.fn(), u);
-    expect(u.fragen).not.toHaveBeenCalled();
-    expect(meldung).toHaveBeenCalledWith('Export fehlgeschlagen', 'Die Datei ließ sich nicht speichern: Datei ist in Excel geöffnet', expect.any(Error));
+  it('Schreibfehler: Fehler-Hinweis mit demselben Schlüssel und dem Grund', async () => {
+    const d = await lauf(
+      auftrag(),
+      umgebung(null, {
+        schreiben: async () => {
+          throw new Error('Datei ist in Excel geöffnet');
+        },
+      }),
+    );
+    expect(d).toEqual({ id: 'export', art: 'fehler', text: 'Export fehlgeschlagen – die Datei ließ sich nicht speichern: Datei ist in Excel geöffnet' });
   });
 
-  it('PDF misslingt nach „Ersetzen“: die Meldung sagt, dass das PDF daneben den alten Stand hat', async () => {
+  it('PDF misslingt nach „Ersetzen“: Warnung, dass das PDF daneben den alten Stand hat', async () => {
     const pdf = `${ORDNER}\\BS5 261116 Flächenaufstellung.pdf`;
-    const u = umgebung('ersetzen', {
-      existiert: async (p) => p === pdf,
-      pdf: async () => {
-        throw new Error('Microsoft Excel ist nicht installiert');
-      },
-    });
-    vi.mocked(u.fragen).mockResolvedValueOnce('ersetzen').mockResolvedValueOnce('ok');
-    await direktExportMitMeldung(auftrag(), vi.fn(), u);
-    const f = vi.mocked(u.fragen).mock.calls[1][0];
-    expect(f.titel).toBe('Gespeichert – ohne PDF');
-    expect(f.text).toContain('Das PDF daneben hat noch den alten Stand – das neue ließ sich nicht erzeugen: Microsoft Excel ist nicht installiert');
+    const d = await lauf(
+      auftrag(),
+      umgebung('ersetzen', {
+        existiert: async (p) => p === pdf,
+        pdf: async () => {
+          throw new Error('Microsoft Excel ist nicht installiert');
+        },
+      }),
+    );
+    expect(d.art).toBe('warnung');
+    expect(d.text).toContain('Das PDF daneben hat noch den alten Stand – das neue ließ sich nicht erzeugen: Microsoft Excel ist nicht installiert');
   });
 });
 

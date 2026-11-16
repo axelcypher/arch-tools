@@ -4,7 +4,8 @@ import { isTauri } from '../platform/files';
 import { logger } from '../platform/log';
 import { excelAlsPdf } from '../platform/pdf';
 import { ordnerZeigen } from '../platform/projektordner';
-import { fehlerText, fragen, meldung } from './Rueckfrage';
+import { zeigeHinweis, type HinweisDaten } from './Hinweis';
+import { fehlerText, fragen } from './Rueckfrage';
 
 const log = logger('excel');
 
@@ -46,33 +47,37 @@ export function wurzelUndRest(pfad: string): { root: string; rel: string } {
 const name = (pfad: string) => pfad.split(/[\\/]/).pop() ?? pfad;
 
 /**
- * Direktexport mit Rückmeldung: danach eine Meldung mit Ordner und Dateien und „Ordner öffnen“; hat die
- * Vorlagenprüfung etwas gefunden, zusätzlich „Prüfhinweise …“ (öffnet den Export-Dialog mit der Liste). Übergang mit
- * `fragen()`, bis der nicht blockierende Hinweis (`zeigeHinweis`, docs/design.md „Hinweis nach einer Aktion“) in core
- * ist. Fehler erscheinen als Meldung; überschrieben wird nur nach „Ersetzen“.
+ * Direktexport mit Rückmeldung als Hinweis nach einer Aktion (`zeigeHinweis`, id „export“, docs/design.md): Erfolg mit
+ * Ordner und „Ordner öffnen“; hat die Vorlagenprüfung etwas gefunden oder fehlt das PDF, derselbe Hinweis als Warnung,
+ * bei Prüfhinweisen mit „Prüfhinweise …“ (öffnet den Export-Dialog mit der Liste). Scheitert das Schreiben, meldet ihn
+ * ein Fehler-Hinweis. Der Hinweis hält nichts auf; überschrieben wird nur nach „Ersetzen“.
  */
-export async function direktExportMitMeldung(auftrag: DirektExportAuftrag, hinweiseZeigen: (hinweise: VorlagenHinweis[]) => void, umgebung: DirektExportUmgebung = tauriUmgebung()): Promise<void> {
+export async function direktExportMitMeldung(
+  auftrag: DirektExportAuftrag,
+  hinweiseZeigen: (hinweise: VorlagenHinweis[]) => void,
+  umgebung: DirektExportUmgebung = tauriUmgebung(),
+  hinweis: (d: HinweisDaten) => unknown = zeigeHinweis,
+): Promise<void> {
   try {
     const r = await direktExportieren(auftrag, umgebung);
     if (r.art === 'abgebrochen') return;
-    if (r.art === 'gesperrt') return void (await meldung('Export nicht möglich', r.grund));
+    if (r.art === 'gesperrt') return void hinweis({ id: 'export', art: 'fehler', text: `Nicht exportiert: ${r.grund}` });
     log.info('Direktexport', { dateien: r.dateien, vorlage: r.vorlage, hinweise: r.hinweise.length });
-    const teile = [`Gespeichert in „${r.ordner}“: ${r.dateien.map(name).join(' und ')}${r.vorlage ? ` (Vorlage „${r.vorlage}“)` : ' (Standardlayout)'}.`];
+    const teile = [`Gespeichert: ${r.dateien.map(name).join(' und ')}${r.vorlage ? ` (Vorlage „${r.vorlage}“)` : ' (Standardlayout)'}.`];
     if (r.pdfFehler) teile.push(r.pdfAlt ? `Das PDF daneben hat noch den alten Stand – das neue ließ sich nicht erzeugen: ${r.pdfFehler}` : `Das PDF fehlt: ${r.pdfFehler}`);
     if (r.hinweise.length) teile.push(`Die Vorlagenprüfung meldet ${r.hinweise.length === 1 ? 'einen Hinweis' : `${r.hinweise.length} Hinweise`}.`);
-    const wahl = await umgebung.fragen({
-      titel: r.pdfFehler ? 'Gespeichert – ohne PDF' : 'Gespeichert',
+    hinweis({
+      id: 'export',
+      art: r.pdfFehler || r.hinweise.length ? 'warnung' : 'ok',
       text: teile.join(' '),
-      knoepfe: [
-        ...(r.hinweise.length ? [{ id: 'hinweise' as const, label: 'Prüfhinweise …' }] : []),
-        { id: 'ordner' as const, label: 'Ordner öffnen' },
-        { id: 'ok' as const, label: 'OK', art: 'primary' as const },
+      pfad: r.ordner,
+      aktionen: [
+        { text: 'Ordner öffnen', aktion: () => ordnerZeigen(r.ordner), schliesst: true },
+        ...(r.hinweise.length ? [{ text: 'Prüfhinweise …', aktion: () => hinweiseZeigen(r.hinweise) }] : []),
       ],
     });
-    if (wahl === 'ordner') await ordnerZeigen(r.ordner).catch((e) => log.warn('Ordner ließ sich nicht öffnen', e));
-    if (wahl === 'hinweise') hinweiseZeigen(r.hinweise);
   } catch (e) {
     log.error('Direktexport fehlgeschlagen', e);
-    await meldung('Export fehlgeschlagen', `Die Datei ließ sich nicht speichern: ${fehlerText(e)}`, e);
+    hinweis({ id: 'export', art: 'fehler', text: `Export fehlgeschlagen – die Datei ließ sich nicht speichern: ${fehlerText(e)}` });
   }
 }

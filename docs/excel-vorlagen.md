@@ -25,8 +25,8 @@ Im Excel-Dialog unter **Eigene Vorlage**:
   Ziel und Formate.
 - Gibt es eine der Dateien schon, fragt die App „‚Name.xlsx‘ ersetzen?“ mit **Abbrechen** (Standard) und
   **Ersetzen** – still überschrieben wird nie.
-- Danach meldet die App Ordner und Dateien mit **Ordner öffnen**; hat die Vorlagenprüfung etwas gefunden, öffnet
-  **Prüfhinweise …** die Liste. Ohne gespeichertes Projekt, wenn die Projektdatei nicht im Projektordner liegt, oder
+- Danach meldet ein Hinweis unten rechts Ordner und Dateien mit **Ordner öffnen** (er hält nichts auf); hat die
+  Vorlagenprüfung etwas gefunden, ist er eine Warnung und **Prüfhinweise …** öffnet die Liste. Ohne gespeichertes Projekt, wenn die Projektdatei nicht im Projektordner liegt, oder
   in der Web-Fassung ist der Knopf gesperrt; der Tooltip nennt den Grund. Vorlage und Ziel frei wählen:
   **Datei → Exportieren → Excel …**.
 - **PDF** entsteht aus der gefüllten Excel-Datei: über ein installiertes Microsoft Excel (unsichtbar, „Als PDF
