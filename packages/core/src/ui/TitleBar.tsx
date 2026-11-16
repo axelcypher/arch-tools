@@ -12,6 +12,7 @@ import { Nachschlagewerk, useHilfe } from './Nachschlagewerk';
 import { dialogVerhaltenEinrichten } from './dialoge';
 import { useEscSchliessen } from './Dialog';
 import { aenderungenSpeichern, aenderungenVerwerfen, RueckfrageHost } from './Rueckfrage';
+import { HinweisHost } from './Hinweis';
 import { MenueHost, MenueKnopf } from './Menue';
 import type { MenuePunkt } from './Menue';
 import { Symbol } from './Symbol';
@@ -262,6 +263,7 @@ export function TitleBar({ app, name, dirty, ungespeichert, onOpenLog, regeln, o
       </header>
       <SpeicherortHost />
       <EinstellungenHost />
+      <HinweisHost />
       <RueckfrageHost />
       <MenueHost />
     </>
