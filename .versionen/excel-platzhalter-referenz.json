@@ -10,5 +10,13 @@
   "kosten": {
     "stufe": "minor",
     "notiz": "Excel-Vorlagen: vollständige Platzhalter-Referenz im Excel-Dialog und in der Doku, Vorlagenprüfung zeigt Tippfehler, unbekannte Filter liefern keine Datensätze mehr; {{kg2.…}} und {{#kg2}} funktionieren jetzt."
+  },
+  "ordner": {
+    "stufe": "minor",
+    "notiz": "Excel-Vorlagen der Projektordner: unbekannte Filter liefern keine Datensätze mehr, {{DATUM:…}} mit Format geht auch in Zellen."
+  },
+  "baurecht": {
+    "stufe": "patch",
+    "notiz": "Gemeinsame Excel-Vorlagen-Engine überarbeitet (keine sichtbare Änderung in LEXIO)."
   }
 }
