@@ -1965,6 +1965,14 @@ h2.br-detail-name {
   margin: var(--s1) 0 var(--s2);
   font-size: var(--fs-s);
 }
+.br-ergibt > summary {
+  cursor: pointer;
+  color: var(--muted);
+  min-height: var(--ctl-h-s);
+}
+.br-ergibt > p {
+  margin: var(--s1) 0 0;
+}
 .br-ergibt ul {
   margin: var(--s1) 0 0;
   padding-left: var(--s4);

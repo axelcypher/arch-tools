@@ -672,7 +672,7 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
                 <tr>
                   <th style={{ width: '30%' }}>Angabe</th>
                   <th style={{ width: '14%' }}>Wert</th>
-                  <th>Grund (die Frage entfällt)</th>
+                  <th>Grund</th>
                 </tr>
               </thead>
               <tbody>

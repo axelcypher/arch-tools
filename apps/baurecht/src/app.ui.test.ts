@@ -328,6 +328,10 @@ describe('Baurecht – Oberfläche', () => {
     const frage = host.querySelector<HTMLElement>('.br-fakt[data-fakt="gebaeude.besucher"]')!;
     expect(frage).toBeTruthy();
     expect(host.querySelector('.br-ergibt li[data-fakt="gebaeude.besucher"]')).toBeNull();
+    // Rückweg: „nicht überstimmen“ – die Frage verschwindet wieder
+    act(() => knopf(frage, 'nicht überstimmen')!.click());
+    expect(host.querySelector('.br-fakt[data-fakt="gebaeude.besucher"]')).toBeNull();
+    expect(host.querySelector('.br-ergibt li[data-fakt="gebaeude.besucher"]')).toBeTruthy();
     // im Protokoll: „Ergibt sich aus anderen Angaben“ mit Grund
     act(() => knopf(host, 'Prüfprotokoll …')!.click());
     const d = document.querySelector<HTMLElement>('.br-protokoll')!;

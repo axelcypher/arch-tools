@@ -636,6 +636,20 @@ function FaktZeile({
             </span>
           )}
           <AusloeserMarken name={name} wert={wert} defs={defs} />
+          {belegPflicht && wert.ausFolge && (
+            // Rückweg aus „Überstimmen …“: die Frage verschwindet wieder, der Fokus geht an die Liste ihrer Gruppe
+            <button
+              type="button"
+              className="small br-link"
+              aria-label={`${name}: nicht überstimmen`}
+              onClick={() => {
+                useBaurecht.setState((s) => ({ ueberstimmen: { ...s.ueberstimmen, [id]: false } }));
+                setTimeout(() => document.querySelector<HTMLElement>(`.br-ergibt li[data-fakt="${CSS.escape(id)}"]`)?.closest('details')?.querySelector<HTMLElement>('summary')?.focus(), 0);
+              }}
+            >
+              nicht überstimmen
+            </button>
+          )}
           {eigen && wert.herkunft === 'manuell' && !wert.bestaetigt && (
             <button
               type="button"
@@ -810,11 +824,13 @@ function VorfragenSammel({ gruppe, titel, ids, stand }: { gruppe: string; titel:
  * mit dem Grund. Ändern heißt die Ausgangsangabe ändern; „Überstimmen …“ (Sonderfall) stellt die Frage, eine Antwort
  * dann nur mit Beleg.
  */
-function ErgibtSich({ ids, stand }: { ids: string[]; stand: Pruefstand }) {
+function ErgibtSich({ ids, stand, suche }: { ids: string[]; stand: Pruefstand; suche: string }) {
   const { faktDefs: defs, fakten } = stand.auswertung;
   return (
-    <details className="br-ergibt">
+    // während der Suche aufgeklappt (wie Vorfragen und Merkmale) – sonst stünde ein Treffer verborgen da
+    <details className="br-ergibt" open={suche ? true : undefined}>
       <summary>Ergibt sich aus anderen Angaben ({ids.length})</summary>
+      <p className="br-leise">Zum Ändern die Angabe ändern, aus der der Wert folgt. Überstimmen nur in einem begründeten Sonderfall.</p>
       <ul>
         {ids.map((id) => {
           const name = faktName(defs[id], id);
@@ -1068,7 +1084,7 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
     return { ...g, ids, kinder, ergibt };
   }).filter((g) => g.ids.length || g.ergibt.length);
   const trefferZahl = suche
-    ? gruppen.reduce((n, g) => n + g.ids.length + [...g.kinder.values()].reduce((m, k) => m + k.length, 0), 0) + VORGABE_MERKMALE.filter((m) => merkmalPasst(m, suche)).length + (merkmaleSichtbar ? alsRueckfrage.size : 0)
+    ? gruppen.reduce((n, g) => n + g.ids.length + g.ergibt.length + [...g.kinder.values()].reduce((m, k) => m + k.length, 0), 0) + VORGABE_MERKMALE.filter((m) => merkmalPasst(m, suche)).length + (merkmaleSichtbar ? alsRueckfrage.size : 0)
     : 0;
   const suchText = !suche ? '' : trefferZahl ? `${trefferZahl === 1 ? 'eine Angabe' : `${trefferZahl} Angaben`} zu „${suche}“` : `Keine Angabe zu „${suche}“`;
   const [suchAnsage, setSuchAnsage] = useState('');
@@ -1167,7 +1183,7 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
                 <FaktZeile key={id} id={id} def={auswertung.faktDefs[id]} wert={auswertung.fakten[id]} klaert={klaerung.get(id) ?? 0} eigen={!!eigene[id]} defs={auswertung.faktDefs} belegPflicht={!!ueberstimmen[id]} />
               ),
             )}
-            {g.ergibt.length > 0 && <ErgibtSich ids={g.ergibt} stand={stand} />}
+            {g.ergibt.length > 0 && <ErgibtSich ids={g.ergibt} stand={stand} suche={suche} />}
           </section>
         ))}
       </div>
