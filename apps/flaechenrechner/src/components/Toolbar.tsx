@@ -17,6 +17,8 @@ import { Symbol } from '@core/ui/Symbol';
 import type { MenuePunkt } from '@core/ui/Menue';
 import { MenueKnopf } from '@core/ui/Menue';
 import { Werkzeugleiste } from '@core/ui/Werkzeugleiste';
+import { DirektExportKnopf, direktExportTitel, exportUntermenue, useDirektExport } from '@core/ui/DirektExportKnopf';
+import { exportAuftrag } from '../platform/direktExport';
 import { logger } from '@core/platform/log';
 import { mitDatei } from '@core/platform/dateiFehler';
 import { aenderungenSpeichern, meldung, oeffnenFehlgeschlagen } from '@core/ui/Rueckfrage';
@@ -88,6 +90,9 @@ export function Toolbar() {
   const canUndo = useEditor((s) => s.past.length > 0 || (s.entwurf && s.mainView === '2d'));
   const canRedo = useEditor((s) => s.future.length > 0);
   const dirty = useEditor((s) => s.dirty);
+  // Tooltip des Direktexports nennt den Berechnungsordner – hängt an Projektdatei und Stammdaten
+  useEditor((s) => s.datei);
+  useEditor((s) => s.project.meta);
   // Kalibrieren braucht einen Plan im aktiven Geschoss
   const hatPlan = useEditor((s) => !!(s.project.storeys.find((x) => x.id === s.activeStoreyId) ?? s.project.storeys[0]).background);
   const st = useEditor.getState();
@@ -153,11 +158,11 @@ export function Toolbar() {
       aktion: () => void planLaden(aktivesGeschoss()),
     },
     { text: 'IFC importieren …', symbol: 'stapel', titel: 'Gebäudemodell als IFC-Datei aus dem CAD-Programm importieren', aktion: () => setIfcOpen(true) },
+    { trenner: true },
+    exportUntermenue({ dialogOeffnen: st.setExcelOpen, csv: () => void onCsv() }),
   ];
-  const exportPunkte = (): MenuePunkt[] => [
-    { text: 'CSV …', symbol: 'export', titel: 'Flächenaufstellung als CSV exportieren', aktion: () => void onCsv() },
-    { text: 'Excel …', symbol: 'tabelle', titel: 'Excel-Export (Standardlayout oder eigene Vorlage)', aktion: () => st.setExcelOpen(true) },
-  ];
+  const direkt = { auftrag: exportAuftrag, dialogOeffnen: st.setExcelOpen };
+  const direktExport = useDirektExport(direkt);
   const kalibrierenAktiv = tool === 'calibrate' || tool === 'kontrolle';
 
   return (
@@ -238,7 +243,12 @@ export function Toolbar() {
             ),
           },
           { abstand: true },
-          { id: 'export', rang: 1, inhalt: <MenueKnopf punkte={exportPunkte}>Exportieren</MenueKnopf>, menue: { text: 'Exportieren', symbol: 'export', unter: exportPunkte() } },
+          {
+            id: 'export',
+            rang: 1,
+            inhalt: <DirektExportKnopf {...direkt} {...direktExport} />,
+            menue: { text: direktExport.laeuft ? 'Exportiere …' : 'Exportieren', symbol: 'export', titel: direktExportTitel(exportAuftrag()), deaktiviert: direktExport.laeuft, aktion: () => void direktExport.ausfuehren() },
+          },
           {
             id: 'haupt',
             inhalt: (

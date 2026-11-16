@@ -1,4 +1,5 @@
 import { standNachSpeichern } from '@core/platform/projektDatei';
+import type { ExportDialogStart } from '@core/excel/direktExport';
 import { create } from 'zustand';
 import type { Point } from '@core/geometry';
 import type { Project, Shape, ShapeKind, Storey } from '@core/model';
@@ -72,7 +73,8 @@ interface EditorState {
   /** Zähler, um der Zeichenfläche "Zoom auf alles" zu signalisieren */
   fitRequest: number;
   reportOpen: boolean;
-  excelOpen: boolean;
+  /** Export-Dialog offen (Excel bzw. PDF, ggf. mit Grund oder Hinweisen vom Direktexport) */
+  excelOpen: ExportDialogStart | null;
   /** IFC-Import-Dialog offen (Werkzeugleiste, Einstieg auf der leeren Zeichenfläche) */
   ifcOpen: boolean;
   /** Zeichenfläche hat einen Entwurf (Punkte, Messung, Kalibrierstrecke): Rückgängig nimmt zuerst dort zurück */
@@ -111,7 +113,7 @@ interface EditorState {
   setView: (v: Partial<ViewOptions>) => void;
   requestFit: () => void;
   setReportOpen: (open: boolean) => void;
-  setExcelOpen: (open: boolean) => void;
+  setExcelOpen: (start: ExportDialogStart | null) => void;
   setIfcOpen: (open: boolean) => void;
   setEntwurf: (aktiv: boolean) => void;
   setMainView: (v: '2d' | '3d') => void;
@@ -149,7 +151,7 @@ export const useEditor = create<EditorState>((set, get) => {
     },
     fitRequest: 1,
     reportOpen: false,
-    excelOpen: false,
+    excelOpen: null,
     ifcOpen: false,
     entwurf: false,
     detect: loadDetectSettings(),
@@ -237,7 +239,7 @@ export const useEditor = create<EditorState>((set, get) => {
     setView: (v) => set({ view: { ...get().view, ...v } }),
     requestFit: () => set({ fitRequest: get().fitRequest + 1 }),
     setReportOpen: (open) => set({ reportOpen: open }),
-    setExcelOpen: (open) => set({ excelOpen: open }),
+    setExcelOpen: (start) => set({ excelOpen: start }),
     setIfcOpen: (open) => set({ ifcOpen: open }),
     setEntwurf: (aktiv) => set({ entwurf: aktiv }),
     setMainView: (v) => set({ mainView: v }),

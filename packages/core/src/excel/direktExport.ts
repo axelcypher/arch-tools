@@ -1,5 +1,5 @@
 import type { VorlagenHinweis } from './pruefung';
-import { berechnungsordnerPfad, exportDateinameAusMuster, exportPfadeLaden, istVollstaendig, projektordnerAusDatei, type ExportApp } from './exportZiel';
+import { berechnungsordnerPfad, exportDateinameAusMuster, exportPfade, exportPfadeLaden, istVollstaendig, projektordnerAusDatei, type ExportApp, type ExportPfade } from './exportZiel';
 import type { GlobaleQuelle } from '../platzhalter';
 import type { Knopf } from '../ui/Rueckfrage';
 
@@ -62,10 +62,18 @@ const verbinde = (ordner: string, name: string) => `${ordner.replace(/[\\/]+$/, 
 /** „A.xlsx“ → „A (2).xlsx“ */
 export const fassungsName = (name: string, n: number) => (n <= 1 ? name : name.replace(/(\.[^.]+)?$/, (endung) => ` (${n})${endung}`));
 
-/** Zielpfade bestimmen, ohne etwas zu schreiben (auch für den Tooltip des Knopfs) */
-export async function direktExportZiel(a: Pick<DirektExportAuftrag, 'app' | 'datei' | 'werte' | 'inhalt'>): Promise<{ ordner: string; xlsx: string; pdf: string | null } | { grund: string }> {
+/** Wie der Export-Dialog startet: Excel oder PDF, mit Grund (Direktexport ging nicht) bzw. Hinweisen der Vorlagenprüfung */
+export interface ExportDialogStart {
+  art: 'excel' | 'pdf';
+  grund?: string;
+  hinweise?: VorlagenHinweis[];
+}
+
+export type DirektExportZiel = { ordner: string; xlsx: string; pdf: string | null } | { grund: string };
+
+/** Zielpfade aus den Einstellungen bestimmen, ohne etwas zu schreiben (auch für den Tooltip des Knopfs) */
+export function direktExportZielAus(pfade: ExportPfade, a: Pick<DirektExportAuftrag, 'datei' | 'werte' | 'inhalt'>): DirektExportZiel {
   if (!a.datei) return { grund: GRUND_UNGESPEICHERT };
-  const pfade = await exportPfadeLaden(a.app);
   const projektordner = projektordnerAusDatei(a.datei);
   const ordner = berechnungsordnerPfad(pfade.berechnungsordner, projektordner, a.werte);
   if (!ordner || !istVollstaendig(ordner)) return { grund: GRUND_KEIN_PROJEKTORDNER };
@@ -73,6 +81,12 @@ export async function direktExportZiel(a: Pick<DirektExportAuftrag, 'app' | 'dat
   const pdf = pfade.pdfMitspeichern ? exportDateinameAusMuster(pfade.dateinamePdf, { werte: a.werte, inhalt: a.inhalt, endung: 'pdf' }) : null;
   return { ordner, xlsx, pdf };
 }
+
+/** Ziel mit den zuletzt gelesenen Einstellungen (synchron, für Tooltips) */
+export const direktExportZielJetzt = (a: Pick<DirektExportAuftrag, 'app' | 'datei' | 'werte' | 'inhalt'>) => direktExportZielAus(exportPfade(a.app), a);
+
+/** Ziel mit frisch gelesenen Einstellungen (vor dem Export) */
+export const direktExportZiel = async (a: Pick<DirektExportAuftrag, 'app' | 'datei' | 'werte' | 'inhalt'>) => direktExportZielAus(await exportPfadeLaden(a.app), a);
 
 export async function direktExportieren(a: DirektExportAuftrag, u: DirektExportUmgebung): Promise<DirektExportErgebnis> {
   if (!u.desktop) return { art: 'dialog', grund: GRUND_WEB };
@@ -123,3 +137,31 @@ export async function direktExportieren(a: DirektExportAuftrag, u: DirektExportU
   }
   return { art: 'gespeichert', ordner, dateien, vorlage, hinweise, ...(pdfFehler ? { pdfFehler } : {}) };
 }
+
+/**
+ * `erzeugen` für den Direktexport: die eingestellte Vorlage (im Projekt bzw. hinterlegt) samt Vorlagenprüfung, sonst
+ * das Standardlayout der App – dieselbe Wahl, mit der der Export-Dialog startet.
+ */
+export function mitEingestellterVorlage<P>(o: {
+  vorlage: { name: string; daten: Uint8Array } | null;
+  projekt: P;
+  exportWithTemplate: (t: Uint8Array, p: P) => Promise<Uint8Array>;
+  exportDefault: (p: P) => Promise<Uint8Array>;
+  pruefeVorlage?: (t: Uint8Array, p: P) => Promise<VorlagenHinweis[]>;
+}): DirektExportAuftrag['erzeugen'] {
+  return async () => {
+    const v = o.vorlage;
+    if (!v) return { daten: await o.exportDefault(o.projekt), vorlage: null, hinweise: [] };
+    const daten = await o.exportWithTemplate(v.daten, o.projekt);
+    const hinweise = o.pruefeVorlage ? await o.pruefeVorlage(v.daten, o.projekt).catch(() => []) : [];
+    return { daten, vorlage: v.name, hinweise };
+  };
+}
+
+/** Werte der globalen Platzhalter aus den Stammdaten des Projekts */
+export const werteAusMeta = (m: { projektcode?: string; kurzname?: string; vorhaben?: string; bearbeiter?: string } | undefined): GlobaleQuelle => ({
+  projektcode: m?.projektcode ?? '',
+  kurzname: m?.kurzname ?? '',
+  vorhaben: m?.vorhaben ?? '',
+  bearbeiter: m?.bearbeiter ?? '',
+});

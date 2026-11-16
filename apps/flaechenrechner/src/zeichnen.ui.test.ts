@@ -10,6 +10,7 @@ import { nutzungInfo } from '@core/norms';
 import { planFuellungDunkel } from '@core/planFarbe';
 import { useTheme } from '@core/platform/theme';
 import { leistenMessung } from '@core/ui/Werkzeugleiste';
+import { GRUND_WEB } from '@core/excel/direktExport';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -319,14 +320,21 @@ describe('QUADRIO: Kontextmenü der Zeichenfläche und Werkzeugleiste (gemeinsam
     expect(leiste.querySelector('.segment[aria-label="Neue Flächen zeichnen als"]')).not.toBeNull();
     expect(knopf('Flächenaufstellung …')?.classList.contains('primary')).toBe(true);
     act(() => knopf('Datei')!.click());
-    expect(menuePunkte()).toEqual(expect.arrayContaining(['Neu', 'Öffnen …', 'Plan laden …', 'IFC importieren …']));
-    act(() => void document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })));
-    act(() => knopf('Exportieren')!.click());
-    expect(menuePunkte()).toEqual(['CSV …', 'Excel …']);
-    act(() => void document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })));
+    expect(menuePunkte()).toEqual(expect.arrayContaining(['Neu', 'Öffnen …', 'Plan laden …', 'IFC importieren …', 'Export']));
+    // Datei ▸ Export ▸ Excel … / PDF … / CSV … – jeweils mit Dialog
+    const export_ = [...document.querySelectorAll<HTMLButtonElement>('.menue [role="menuitem"]')].find((b) => b.textContent?.trim().startsWith('Export'))!;
+    expect(export_.getAttribute('aria-haspopup')).toBe('menu');
+    act(() => export_.click());
+    expect(menuePunkte()).toEqual(expect.arrayContaining(['Excel …', 'PDF …', 'CSV …']));
+    act(() => [...document.querySelectorAll<HTMLButtonElement>('.menue [role="menuitem"]')].find((b) => b.textContent?.trim() === 'PDF …')!.click());
+    expect(useEditor.getState().excelOpen).toEqual({ art: 'pdf' });
+    act(() => useEditor.getState().setExcelOpen(null));
+    // „Exportieren“ in der Leiste ist der Direktexport (kein Menü); der Tooltip sagt, was passiert
+    expect(knopf('Exportieren')!.getAttribute('aria-haspopup')).toBeNull();
+    expect(knopf('Exportieren')!.title).toContain('Export-Dialog');
   });
 
-  it('schmales Fenster: „Exportieren“ wandert mit CSV/Excel ins Menü „Mehr“, Werkzeuge und Hauptknopf bleiben', () => {
+  it('schmales Fenster: „Exportieren“ (Direktexport) wandert ins Menü „Mehr“, Werkzeuge und Hauptknopf bleiben', async () => {
     const original = leistenMessung.breite;
     // jeder Eintrag 100 px, die Leiste nur 600 px: nur der Eintrag mit Rang („Exportieren“) darf wandern
     leistenMessung.breite = (el: Element) => (el.classList.contains('werkzeugleiste') ? 600 : el.classList.contains('werkzeugleiste-mehr') ? 30 : 100);
@@ -350,11 +358,10 @@ describe('QUADRIO: Kontextmenü der Zeichenfläche und Werkzeugleiste (gemeinsam
       expect(leiste.querySelector('.werkzeugleiste-mehr')!.hasAttribute('hidden')).toBe(false);
       act(() => mehr.click());
       const punkt = (text: string) => [...document.querySelectorAll<HTMLButtonElement>('.menue [role="menuitem"]')].find((b) => b.textContent?.includes(text));
-      act(() => punkt('Exportieren')!.click());
-      expect(punkt('CSV …')).toBeDefined();
-      act(() => punkt('Excel …')!.click());
-      expect(useEditor.getState().excelOpen).toBe(true);
-      act(() => useEditor.getState().setExcelOpen(false));
+      // Direktexport ohne Dialog – im Browser geht das nicht, daher öffnet sich der Export-Dialog mit dem Grund
+      await act(async () => punkt('Exportieren')!.click());
+      expect(useEditor.getState().excelOpen).toEqual({ art: 'excel', grund: GRUND_WEB });
+      act(() => useEditor.getState().setExcelOpen(null));
       // Gegenprobe: genug Platz – „Mehr“ verschwindet, „Exportieren“ steht wieder in der Leiste
       leistenMessung.breite = (el: Element) => (el.classList.contains('werkzeugleiste') ? 2000 : el.classList.contains('werkzeugleiste-mehr') ? 30 : 100);
       act(() => void window.dispatchEvent(new Event('resize')));
