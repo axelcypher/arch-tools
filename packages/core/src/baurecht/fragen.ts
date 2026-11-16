@@ -30,7 +30,8 @@ export function frageGestellt(id: string, def: Pick<FaktDef, 'wenn' | 'vorfrage'
 export function frageStand(id: string, def: Pick<FaktDef, 'wenn' | 'vorfrage'> | undefined, ctx: KurzKontext): { gestellt: boolean; ueberHinweis: string[]; ueberWiderspruch: string[] } {
   // Einzelfrage, deren Vorfrage wirksam „nein“ ist, bzw. Angabe, deren Wert sich aus anderen ergibt: entfällt (der Wert
   // folgt daraus, ableitungenAnwenden)
-  if ((def?.vorfrage && vorfrageNein(ctx.fakten[def.vorfrage.fakt])) || ctx.fakten[id]?.ausFolge) return { gestellt: false, ueberHinweis: [], ueberWiderspruch: [] };
+  // (ein abgeleiteter Wert mit Widerspruch, z. B. aus einem Dienst, bleibt gefragt – der Widerspruch will geklärt sein)
+  if ((def?.vorfrage && vorfrageNein(ctx.fakten[def.vorfrage.fakt])) || (ctx.fakten[id]?.ausFolge && !ctx.fakten[id].widerspruch)) return { gestellt: false, ueberHinweis: [], ueberWiderspruch: [] };
   if (!def?.wenn) return { gestellt: true, ueberHinweis: [], ueberWiderspruch: [] };
   try {
     const b = werten(def.wenn, ctx);
@@ -217,8 +218,7 @@ function folgenSchritt(out: Record<string, FaktWert>, eingang: Record<string, Fa
  * Ableitungen zwischen den Angaben (nach den Werten der Module, vor den Regeln): Vorfragen (vorfragenAnwenden) und Werte,
  * die sich aus anderen ergeben (FaktDef.folgt) – abwechselnd bis zum Fixpunkt, denn das eine kann am anderen hängen.
  * `rest`: Merkmale, Bausteine, Widersprüche (für die Bedingungen von `folgt`). Zyklen lehnt paketPruefen ab
- * (fragenZyklen); ohne festen Stand nach einigen Runden bleibt der letzte – höchstens „offen“, nie ein Grün aus einem
- * Wert, der nicht zutrifft (abgeleitet wird nur aus gesicherten Bedingungen).
+ * (fragenZyklen); deshalb steht der Fixpunkt nach wenigen Runden.
  */
 export function ableitungenAnwenden(fakten: Record<string, FaktWert>, defs: Record<string, FaktDef>, rest: Omit<KurzKontext, 'fakten'>): Record<string, FaktWert> {
   const karte = vorfragenKarte(defs);

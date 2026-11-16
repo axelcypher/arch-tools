@@ -84,9 +84,12 @@ export const MERKMAL_ERKLAERUNG: Record<string, { text: string; quelle?: Quelle;
     },
   },
   Gebäudeart: {
-    text: 'Art des Gebäudes (Wohngebäude nach Zahl der Wohnungen, gemischt genutzt oder Nichtwohngebäude)',
+    text: 'Art des Gebäudes nach dem Vorhaben (bei Nutzungsänderung die künftige Nutzung): Wohngebäude nach Zahl der Wohnungen, gemischt genutzt oder Nichtwohngebäude',
     werte: {
-      'Wohn- und Geschäftshaus': 'Wohnungen und gewerbliche oder öffentlich zugängliche Nutzung (z. B. Laden, Praxis, Werkstatt) in einem Gebäude',
+      Einfamilienhaus: 'reines Wohngebäude mit einer Wohnung (mit Einliegerwohnung: Zweifamilienhaus)',
+      Zweifamilienhaus: 'reines Wohngebäude mit zwei Wohnungen',
+      Mehrfamilienhaus: 'reines Wohngebäude mit mehr als zwei Wohnungen',
+      'Wohn- und Geschäftshaus': 'Wohnungen und gewerbliche oder öffentlich zugängliche Nutzung (z. B. Laden, Praxis, Gästezimmer, Pension, Werkstatt) in einem Gebäude',
       Nichtwohngebäude: 'Gebäude ohne Wohnungen (Gewerbe, Landwirtschaft, Büro, öffentliche Nutzung)',
       'kein Gebäude': 'bauliche Anlage, die kein Gebäude ist (z. B. Mast, Werbeanlage, Stützmauer)',
     },

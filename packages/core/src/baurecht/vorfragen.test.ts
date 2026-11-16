@@ -297,6 +297,9 @@ describe('Werte, die sich aus anderen ergeben (FaktDef.folgt)', () => {
     const out = ableitungenAnwenden({ 'x.a': eigen }, defs, { merkmale: { Gebäudeart: 'Einfamilienhaus' }, einreichung: '2026-12-01', heute: '2026-11-16', bausteine: {} });
     expect(out['x.b']).toMatchObject({ wert: 1, ausFolge: 'EFH' });
     expect(out['x.a']).toEqual(eigen);
+    // ebenso eine eigene Antwort gleichen Werts, die zwischendurch durch den abgeleiteten Wert ersetzt war
+    const gleich = sicher(0);
+    expect(ableitungenAnwenden({ 'x.a': gleich }, defs, { merkmale: { Gebäudeart: 'Einfamilienhaus' }, einreichung: '2026-12-01', heute: '2026-11-16', bausteine: {} })['x.a']).toEqual(gleich);
   });
 
   it('die eigene Antwort gleichen Werts bleibt in den Angaben der Prüfung erhalten (nur in der Auswertung zählt der abgeleitete Wert)', () => {
