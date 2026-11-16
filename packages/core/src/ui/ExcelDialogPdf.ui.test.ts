@@ -108,7 +108,7 @@ describe('Export-Dialog im PDF-Modus', () => {
     expect(vi.mocked(saveMergedFile).mock.calls[1][0]).toMatchObject({ pfad: 'C:\\Ablage\\BS5 261116 Flächenaufstellung.xlsx', extension: 'xlsx' });
   });
 
-  it('startet mit den Hinweisen der Vorlagenprüfung aus dem Direktexport (Knopf „Schließen“)', () => {
+  it('startet nach dem Direktexport als „schon exportiert“ (Knopf „Schließen“ statt „Abbrechen“)', () => {
     const { knopf } = zeigen({ hinweise: [{ art: 'feld', blatt: 'Flächen', ort: 'B3', platzhalter: '{{x}}', text: 'unbekannt' }] });
     // die Liste selbst erscheint bei „Eigene Vorlage“; ohne Vorlage startet der Dialog im Standardlayout
     expect(knopf('Schließen')).toBeDefined();

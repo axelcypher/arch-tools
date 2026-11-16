@@ -42,7 +42,13 @@ function umgebung(antwort: string | null, o: Partial<DirektExportUmgebung> = {})
   };
 }
 
-afterEach(() => vi.clearAllMocks());
+let weg: (() => void) | null = null;
+afterEach(() => {
+  weg?.();
+  weg = null;
+  vi.clearAllMocks();
+  delete (window as unknown as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__;
+});
 
 describe('Wurzel für projekt_ordner_anlegen', () => {
   it('Laufwerk, Freigabe und „/“; Rest mit „/“', () => {
@@ -112,7 +118,8 @@ describe('Knopf „Exportieren“', () => {
     document.body.appendChild(host);
     const root = createRoot(host);
     act(() => root.render(createElement(Knopf)));
-    return { knopf: host.querySelector('button')!, weg: () => act(() => root.unmount()) };
+    weg = () => act(() => root.unmount());
+    return { knopf: host.querySelector('button')!, weg: () => (weg?.(), (weg = null)) };
   }
 
   it('bereit: Tooltip nennt Formate und Ziel; ungespeichert gesperrt (aria-disabled) mit Grund', () => {
@@ -141,7 +148,5 @@ describe('Knopf „Exportieren“', () => {
     expect(k.knopf.textContent?.trim()).toBe('Exportiere …');
     expect(k.knopf.getAttribute('aria-disabled')).toBe('true');
     await act(async () => fertig());
-    k.weg();
-    delete (window as unknown as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__;
   });
 });

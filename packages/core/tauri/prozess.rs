@@ -19,23 +19,29 @@ fn dauer_text(d: std::time::Duration) -> String {
 /// qgis_process.exe und Python startet; `kill()` beendete nur cmd.exe – QGIS liefe verwaist weiter, hielte die
 /// Ausgabe-Pipes und den Temp-Ordner offen. Deshalb dort `taskkill /T /F` für den ganzen Baum.
 fn prozessbaum_beenden(kind: &mut std::process::Child) {
-    pid_baum_beenden(kind.id());
+    pid_baum_beenden(kind.id(), None);
     let _ = kind.kill();
     let _ = kind.wait();
 }
 
 /// Prozess mit dieser Nummer samt Kindprozessen beenden (Windows: `taskkill /T /F`; sonst nichts – dort beendet
-/// `kill()` das Kind, und Excel gibt es nur unter Windows)
-fn pid_baum_beenden(nr: u32) {
+/// `kill()` das Kind, und Excel gibt es nur unter Windows). Mit `abbild` nur, wenn die Nummer noch zu diesem Programm
+/// gehört (z. B. „EXCEL.EXE“) – Windows vergibt Nummern schnell neu.
+fn pid_baum_beenden(nr: u32, abbild: Option<&str>) {
     #[cfg(windows)]
     {
         use std::os::windows::process::CommandExt;
         // voller Pfad (PATH könnte verändert sein), sonst über PATH
         let taskkill = std::env::var("SystemRoot").map(|r| format!("{r}\\System32\\taskkill.exe")).unwrap_or_else(|_| "taskkill".into());
-        let _ = std::process::Command::new(taskkill).args(["/PID", &nr.to_string(), "/T", "/F"]).creation_flags(0x0800_0000).status();
+        let mut c = std::process::Command::new(taskkill);
+        c.args(["/PID", &nr.to_string(), "/T", "/F"]);
+        if let Some(a) = abbild {
+            c.args(["/FI", &format!("IMAGENAME eq {a}")]);
+        }
+        let _ = c.creation_flags(0x0800_0000).status();
     }
     #[cfg(not(windows))]
-    let _ = nr;
+    let _ = (nr, abbild);
 }
 
 /// Programm ausführen, Ausgaben sammeln; nach `limit` samt Kindprozessen beenden. Fehlertext bei Zeitüberschreitung.

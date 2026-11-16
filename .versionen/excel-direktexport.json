@@ -5,5 +5,5 @@
   "ordner": { "stufe": "patch", "notiz": "QGIS-Aufrufe nutzen die gemeinsame Zeitbegrenzung, die hängende Programme samt Unterprozessen beendet." },
   "formulare": { "stufe": "patch", "notiz": "Gemeinsame Bausteine für Export und PDF-Wandlung aktualisiert." },
   "baurecht": { "stufe": "patch", "notiz": "Gemeinsame Bausteine für Export und PDF-Wandlung aktualisiert." },
-  "suite": { "stufe": "minor", "notiz": "PDF aus Excel-Vorlagen über Microsoft Excel oder LibreOffice (Tauri-Befehl excel_als_pdf); QGIS-Aufrufe mit gemeinsamer Zeitbegrenzung." }
+  "suite": { "stufe": "minor", "notiz": "Ausgefüllte Excel-Vorlagen lassen sich über Microsoft Excel oder LibreOffice als PDF speichern; hängende QGIS-Aufrufe werden zuverlässig beendet." }
 }

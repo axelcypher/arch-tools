@@ -154,10 +154,11 @@ fn pdf_excel_pid(ordner: &std::path::Path) -> Option<u32> {
     std::fs::read_to_string(pdf_excel_pid_datei(ordner)).ok()?.trim().trim_start_matches('\u{feff}').parse().ok().filter(|n| *n > 0)
 }
 
-/// Excel nach einem gescheiterten Versuch (Zeitlimit, Fehler) beenden, falls es noch läuft – nur dann, damit keine
-/// inzwischen wiederverwendete Prozessnummer getroffen wird, und nur einmal je Versuch
+/// Excel nach einem gescheiterten Versuch (Zeitlimit, Fehler) beenden, falls es noch läuft – nur nach einem Fehler, nur
+/// einmal je Versuch und nur, wenn die Nummer noch zu EXCEL.EXE gehört (Filter in taskkill)
 fn pdf_excel_beenden(ordner: &std::path::Path) {
-    pdf_excel_beenden_mit(ordner, &mut pid_baum_beenden);
+    // nur, wenn die Nummer noch zu Excel gehört (nach $x.Quit() kann sie schon neu vergeben sein)
+    pdf_excel_beenden_mit(ordner, &mut |nr| pid_baum_beenden(nr, Some("EXCEL.EXE")));
 }
 
 /// wie `pdf_excel_beenden`, das Beenden selbst übergeben (in Tests nachgebildet)
