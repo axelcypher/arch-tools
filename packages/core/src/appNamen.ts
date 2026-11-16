@@ -23,6 +23,9 @@ export const APP_NAMEN = {
 
 export type AppKennung = keyof typeof APP_NAMEN;
 
+/** Kennung zu einem Produktnamen („QUADRIO“ → 'flaechenrechner'); unbekannt → undefined */
+export const appKennungZu = (name: string): AppKennung | undefined => (Object.keys(APP_NAMEN) as AppKennung[]).find((k) => APP_NAMEN[k].name === name);
+
 /**
  * Name mit Erklärung, z. B. „PERMIO (Formulare)“. Regel für Texte: Verweist ein Text, Dialog oder eine Regelkarte auf
  * eine andere App, steht beim ersten Vorkommen der Name mit Erklärung (`appMitWas`), danach der Name allein; die

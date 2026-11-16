@@ -40,7 +40,7 @@ Werte nicht frei wählen, sondern aus der Skala nehmen.
 | `--fs-l`  | 15px | Dialogtitel, Titel einer Spalte ohne `.sidebar`        |
 | `--fs-xl` | 18px | Seitentitel (Einstieg, Bericht), Kennzahl              |
 
-Weitere: `--radius-s` 4px (Felder, Knöpfe), `--radius` 6px (Dialoge, Karten), `--ctl-h` 28px und `--ctl-h-s` 24px
+Weitere: `--radius-s` 6px (Felder, Knöpfe), `--radius` 8px (Dialoge, Karten), `--ctl-h` 30px und `--ctl-h-s` 24px
 (Höhe der Bedienelemente).
 
 Zahlen in Tabellen und Feldern stehen rechtsbündig in Tabellenziffern (`.num`, `input.num`).
@@ -79,7 +79,7 @@ Texttabellen: Spaltenköpfe linksbündig (`.summary-table.text`, z. B. Platzhalt
 ## Zielgrößen
 
 - Knöpfe in `.toolbar`, `.button-row`, `.dialog-buttons` und `.section-head` sowie Felder und Auswahllisten in
-  `.toolbar` und `.field` sind mindestens `--ctl-h` (28px) hoch, `button.small` und `button.icon` dort `--ctl-h-s` (24px).
+  `.toolbar` und `.field` sind mindestens `--ctl-h` (30px) hoch, `button.small` und `button.icon` dort `--ctl-h-s` (24px).
   Ausnahme Werkzeugleiste (`Werkzeugleiste`): Dort sind auch `button.icon` (Rückgängig, „Mehr“) und die Symbolknöpfe
   der Kompaktstufe `--ctl-h` hoch und mindestens so breit – eine Leiste hat nur eine Knopfgröße, weil Symbol- und
   Textknöpfe dort nebeneinander stehen. App-Regeln mit eigener Größe für `button.icon` nehmen die Werkzeugleiste aus
@@ -95,12 +95,22 @@ Texttabellen: Spaltenköpfe linksbündig (`.summary-table.text`, z. B. Platzhalt
 | `--bg`, `--panel`                  | Fensterhintergrund, Flächen (Leisten, Dialoge)                                                                  |
 | `--text`, `--muted`                | Text, Nebentext (`--muted` hält auch auf Tönungen und `--bg` mindestens 4,5 : 1)                                |
 | `--border`, `--line-soft`          | Linien, feine Trennlinien in Tabellen                                                                           |
+| `--app`                            | Kachelfarbe der App aus dem Iconset – nur Titelleiste (siehe „App-Farbe“)                                       |
 | `--accent`, `--accent-soft`        | Akzent (aktive Werkzeuge, primärer Knopf, Links), Tönung                                                        |
+| `--ausgabe`, `--on-ausgabe`        | Bernstein für die eine Ausgabe-Aktion (Hauptknopf der Werkzeugleiste), mit dunkler Schrift                      |
 | `--accent-text`                    | Akzent als Schrift auf getönten Flächen (aktive Knöpfe, Chips) – mindestens 4,5:1                               |
 | `--ok-*`, `--warn-*`, `--fehler-*` | Status: eingehalten, prüfen, überschritten/Fehler; `--ok-punkt` usw. für Statuspunkte (Ampel)                   |
 | `--sel`                            | Auswahl auf Plänen (Orange); auch ungespeicherte Änderungen (Punkt in Titelleiste und an „Speichern“)           |
 | `--sel-foto`                       | Auswahl auf Fotos (Magenta, in beiden Schemata gleich) – Orange kollidiert dort mit Mess- und Markierungsfarben |
 | `--danger`                         | zerstörende Aktionen (Löschen)                                                                                  |
+
+**App-Farbe:** Die Titelleiste setzt `data-app` (Kennung aus `APP_NAMEN`) am Wurzelelement; `base.css` hält je App
+die Kachelfarbe `--app`. Sie trägt die Titelleiste (dunkel: mit Schwarz gemischt) – sonst nichts Flächiges. Als Akzent
+dient sie nur, wenn ihr Farbton mindestens 35° von ok, Warnung und Fehler entfernt ist und sie hell wie dunkel 4,5 : 1
+hält: QUADRIO, RECTIO, FABRIO und LEXIO. TERRIO (Grün), NUMIO (Rot), PERMIO (Braun) und ATLAS (Türkis, nah an ok)
+behalten den neutralen Akzent Schiefer-Blaugrau, ebenso Arkly. `appFarben.test.ts` prüft Kontrast und Abstand je App;
+eine neue App bekommt dort ihren Eintrag. **Bernstein** (`--ausgabe`) gibt es nur für die eine Ausgabe je Bildschirm
+(„Flächenaufstellung …“, „Nachweis drucken …“), immer mit dunkler Schrift – nie als Schrift auf Weiß.
 
 **Feste Farben – begründete Ausnahmen:** Zeichenfläche und Papier (siehe Grundsätze) sowie der Schließen-Knopf der
 Titelleiste (`.wc-close:hover` in `#c42b1c` mit weißem Symbol), weil Windows ihn in jedem Schema so zeigt und man ihn
@@ -228,7 +238,7 @@ mit `einstellungenEntwurfMelden`, Sperre über `useEinstellungenGesperrt`).
 ## Umschalter
 
 `.segment` für eine Wahl aus wenigen (Ansicht, Modus): Knöpfe direkt nebeneinander in einem Rahmen, der gewählte mit
-`aria-pressed="true"` in Akzent-Tönung. Höhe 24px, in `.toolbar` 28px wie die übrigen Knöpfe dort; der Rahmen des
+`aria-pressed="true"` in Akzent-Tönung. Höhe 24px, in `.toolbar` 30px wie die übrigen Knöpfe dort; der Rahmen des
 Segments zählt mit (die Höhe kommt aus `min-height`, nicht aus dem Innenabstand). Statt eigener
 Varianten je App (`.mv-umschalter`, `.ava-tabs`, `.view-switch`).
 
@@ -328,6 +338,11 @@ Was sichtbar ist und was ins Menü gehört – für die Werkzeugleisten aller Ap
 **Sichtbar bleibt**, was man im Arbeitsablauf ständig braucht: „Speichern“ (mit dem Punkt für ungespeicherte
 Änderungen), Rückgängig/Wiederholen, die Werkzeuge der Zeichenfläche, der Haupt-Umschalter der App (Kosten | Mengen,
 Foto | Entzerrt, BGF | Raum) und der Hauptknopf (`.primary`, z. B. „Flächenaufstellung …“, „Drucken / PDF …“).
+**Knopfstufen:** In der Werkzeugleiste sind Knöpfe ruhig (ohne Rahmen und Fläche, beim Überfahren getönt); das aktive
+Werkzeug (`.active` bzw. `aria-pressed`) zeigt die Akzent-Tönung mit einem Strich unten. Der Hauptknopf (`.primary`) ist
+dort die Ausgabe der App in Bernstein. Außerhalb der Leiste bleiben Standardknöpfe mit Rahmen, `.primary` in der
+Akzentfarbe (Hauptknopf eines Dialogs) und `.danger` für Gefahr. `.segment` behält seinen Rahmen.
+
 Richtwert: höchstens sieben, besser fünf Knöpfe bzw. Gruppen je Leiste; „Datei“ und „Speichern“ zählen mit, die
 Werkzeuge als eine Gruppe, „Mehr“ nicht. Status- und Hinweismarken (Warnungen, Module) gehören nicht ins Menü – sie
 bleiben sichtbar, solange sie etwas melden.
@@ -512,7 +527,9 @@ hellem Grund nur 2,2 : 1). Der Text daneben in `--ok-text` usw. bzw. `--text`.
 
 ## Titelleiste
 
-Links Symbol und Name der App, „Projekte“ und das geöffnete Projekt (mit dem Punkt ● für ungespeicherte Änderungen).
+Die Titelleiste steht in der Kachelfarbe der App (`--app`, siehe „App-Farbe“) mit heller Schrift; darin sind der
+Fokusrahmen weiß, der Punkt für ungespeicherte Änderungen hellgelb und der Update-Knopf Bernstein. Links Symbol und Name
+der App, „Projekte“ und das geöffnete Projekt (mit dem Punkt ● für ungespeicherte Änderungen).
 Rechts nur, was gerade zählt – Version bzw. Update, im Notbetrieb die Warnung zum Speicherort –, dann das Menü der
 Titelleiste und die Fensterknöpfe. Das Menü heißt in den Apps „Darstellung und Hilfe“ (Symbol `menue`, drei Striche;
 Name in `ariaLabel` und `title`), damit es sich vom „Mehr“ der Werkzeugleiste darunter unterscheidet; „Einstellungen …“
