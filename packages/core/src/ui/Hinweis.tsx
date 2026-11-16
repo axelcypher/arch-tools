@@ -39,7 +39,7 @@ interface Hinweis extends Required<Pick<HinweisDaten, 'id' | 'art' | 'text'>> {
   aktionen: HinweisAktion[];
   /** zählt jede Anzeige hoch – auch beim Ersetzen, damit die Ansage neu kommt */
   nr: number;
-  /** eine Aktion läuft: Knöpfe gesperrt (kein Doppelstart) */
+  /** eine Aktion läuft: Knöpfe gesperrt (aria-disabled, kein Doppelstart) */
   laeuft?: boolean;
 }
 
@@ -246,13 +246,15 @@ function Stapel() {
     const setzen = (laeuft: boolean) => useStapel.setState((s) => ({ liste: s.liste.map((x) => (x.nr === h.nr ? { ...x, laeuft } : x)) }));
     // nur derselbe Hinweis: hat inzwischen ein neuer mit derselben id ihn ersetzt, bleibt der neue stehen
     const nochDa = () => useStapel.getState().liste.some((x) => x.nr === h.nr);
+    // läuft schon: Klick ignorieren (aria-disabled statt disabled, damit der Fokus auf dem Knopf bleibt)
+    if (useStapel.getState().liste.find((x) => x.nr === h.nr)?.laeuft) return;
     setzen(true);
     try {
       await a.aktion();
     } catch (e) {
       log.error(`Aktion „${a.text}“ des Hinweises fehlgeschlagen`, e);
       // sichtbar machen statt still schließen: ersetzt den Hinweis (gleiche id)
-      if (nochDa()) zeigeHinweis({ id: h.id, art: 'fehler', text: `„${a.text}“ hat nicht geklappt.`, pfad: h.pfad });
+      if (nochDa()) zeigeHinweis({ id: h.id, art: 'fehler', text: `„${a.text}“ hat nicht geklappt.`, pfad: h.pfad, aktionen: h.aktionen.filter((x) => x !== a) });
       return;
     }
     if (!nochDa()) return;
@@ -277,7 +279,7 @@ function Stapel() {
             {h.aktionen.length > 0 && (
               <div className="hinweis-aktionen">
                 {h.aktionen.map((a, i) => (
-                  <button key={i} type="button" className="small" disabled={h.laeuft} onClick={() => void ausfuehren(h, a)}>
+                  <button key={i} type="button" className="small" aria-disabled={h.laeuft || undefined} onClick={() => void ausfuehren(h, a)}>
                     {a.text}
                   </button>
                 ))}

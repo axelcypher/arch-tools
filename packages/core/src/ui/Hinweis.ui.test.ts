@@ -132,6 +132,7 @@ describe('Hinweis nach einer Aktion', () => {
     expect(h.className).toBe('hinweis meldung fehler');
     expect(h.querySelector('.hinweis-text')!.textContent).toBe('„Ordner öffnen“ hat nicht geklappt.');
     expect(host.querySelector('[role="alert"]')!.textContent).toContain('hat nicht geklappt');
+    expect(h.querySelector('.hinweis-aktionen')).toBeNull();
   });
 
   it('während eine Aktion läuft, sind die Knöpfe gesperrt (kein Doppelstart)', async () => {
@@ -139,12 +140,16 @@ describe('Hinweis nach einer Aktion', () => {
     let fertig = () => {};
     const aktion = vi.fn(() => new Promise<void>((r) => (fertig = r)));
     zeige({ text: 'Gespeichert', aktionen: [{ text: 'Prüfhinweise …', aktion }] });
+    act(() => knopf(host, 'Prüfhinweise …').focus());
     await act(async () => knopf(host, 'Prüfhinweise …').click());
-    expect(knopf(host, 'Prüfhinweise …').disabled).toBe(true);
+    expect(knopf(host, 'Prüfhinweise …').getAttribute('aria-disabled')).toBe('true');
+    expect(knopf(host, 'Prüfhinweise …').disabled).toBe(false);
+    expect(document.activeElement).toBe(knopf(host, 'Prüfhinweise …'));
     await act(async () => knopf(host, 'Prüfhinweise …').click());
     expect(aktion).toHaveBeenCalledOnce();
     await act(async () => fertig());
-    expect(knopf(host, 'Prüfhinweise …').disabled).toBe(false);
+    expect(knopf(host, 'Prüfhinweise …').hasAttribute('aria-disabled')).toBe(false);
+    expect(document.activeElement).toBe(knopf(host, 'Prüfhinweise …'));
     expect(hinweise(host)).toHaveLength(1);
   });
 
@@ -254,6 +259,18 @@ describe('Hinweis nach einer Aktion', () => {
     expect(host.querySelector('.hinweise')!.classList.contains('ausweichen')).toBe(true);
     act(() => frei.focus());
     expect(host.querySelector('.hinweise')!.classList.contains('ausweichen')).toBe(false);
+  });
+
+  it('„Ordner öffnen“ mit Fokus schließt den Hinweis; der Fokus kehrt an den Ausgangspunkt zurück', async () => {
+    const host = render();
+    const aussen = host.querySelector<HTMLButtonElement>('#aussen')!;
+    act(() => aussen.focus());
+    zeige({ text: 'Gespeichert', aktionen: [{ text: 'Ordner öffnen', aktion: () => Promise.resolve(), schliesst: true }] });
+    taste('F6');
+    expect(document.activeElement).toBe(knopf(host, 'Ordner öffnen'));
+    await act(async () => knopf(host, 'Ordner öffnen').click());
+    expect(hinweise(host)).toHaveLength(0);
+    expect(document.activeElement).toBe(aussen);
   });
 
   it('bei offenem Dialog lässt der Stapel F6 und den Fokus in Ruhe', () => {
