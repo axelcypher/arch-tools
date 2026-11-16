@@ -442,14 +442,16 @@ Doppelklick setzt die Vorgabe. Keine eigenen Leisten-Komponenten je App.
 `.fehler` für Meldungen in Dialogen und Seitenleisten; `role="status"`
 für Rückmeldungen, `role="alert"` für Fehler. `.warning` bleibt als Hinweis in Warnfarben.
 
-**Hinweis nach einer Aktion** (`zeigeHinweis`, z. B. nach dem direkten Export): unten rechts im Fenster, `.meldung.ok`
-mit `role="status"`, bei Warnungen `.meldung.warnung`, bei einem Fehler `.meldung.fehler` mit `role="alert"`. Darin
-Text, höchstens eine Aktion („Ordner öffnen“) und ein Symbolknopf `schliessen` mit `aria-label`/`title` „Hinweis
-schließen“ (mindestens `--ctl-h-s`). Er hält nichts auf und nimmt keinen Fokus. Ohne Aktion und ohne Warnung
-verschwindet er nach 8 Sekunden (nicht, solange Zeiger oder Fokus darin sind); mit Aktion, Warnung oder Fehler bleibt
-er, bis man ihn schließt oder der nächste Hinweis ihn ersetzt. Per Tastatur erreicht man ihn mit F6 (der Fokus
-springt hinein, Esc gibt ihn zurück); hat eine App schon einen F6-Kreis zwischen ihren Bereichen (LEXIO), ist der
-Hinweis darin eine weitere Station am Ende. Stand: Der Baustein kommt als Nächstes aus dem Designsystem.
+**Hinweis nach einer Aktion** (`zeigeHinweis`, z. B. „Gespeichert unter …“ nach dem direkten Export): unten rechts
+im Fenster, `.meldung.ok` mit `role="status"`, bei Warnungen `.meldung.warnung`, bei einem Fehler `.meldung.fehler`
+mit `role="alert"`. Darin der Text (ein Pfad bricht um statt abzuschneiden), höchstens zwei Aktionen („Ordner
+öffnen“, „Hinweise …“) und ein Symbolknopf `schliessen` mit `aria-label`/`title` „Hinweis schließen“ (mindestens
+`--ctl-h-s`). Er hält nichts auf, nimmt keinen Fokus und verschwindet nicht von selbst (WCAG 2.2.1): Er bleibt, bis
+man ihn schließt oder ein neuer Hinweis mit demselben Schlüssel (`id`, z. B. `'export'`) ihn ersetzt. Verschiedene
+Hinweise stapeln sich, der neueste unten; mehr als drei verdrängen den ältesten. Per Tastatur erreicht man ihn mit F6
+(der Fokus springt in den neuesten Hinweis, Esc gibt ihn zurück); hat eine App schon einen F6-Kreis zwischen ihren
+Bereichen (LEXIO), nimmt sie den Hinweis mit `hinweisFokussieren()` als letzte Station auf. Stand: Der Baustein kommt
+als Nächstes aus dem Designsystem.
 
 **Statuspunkt (Ampel):** `<span class="statuspunkt ok"></span> gilt` (bzw. `.warnung`, `.fehler`) – ein Punkt (10px,
 Abstand zum Wort per Leerzeichen bzw. `gap: var(--s1)`) in
