@@ -159,8 +159,8 @@ und `ZEICHENFLAECHE_GRUND` in `planFarbe.ts` müssen zu `--canvas-filter` und `-
 
 Ein Einstellungsdialog für alle Apps: in jeder App „Datei → Einstellungen …“, in Arkly im Menü „Einstellungen und
 Hilfe“, überall auch mit Strg+, ohne offenes Menü. Er zeigt die Einstellungen der ganzen Suite, nicht nur der App, aus
-der er geöffnet wurde. Stand: Den Dialog als Baustein in `packages/core` baut die Sitzung „Zentrale Einstellungen“;
-jede App liefert dafür ihre Seite (Felder und Prüfung) – wie, legt dieser Baustein fest.
+der er geöffnet wurde. Stand: Den Dialog stellt das Designsystem als Baustein in `packages/core`
+bereit; jede App liefert ihre Seite (Felder und Prüfung) – wie, legt dieser Baustein fest.
 
 - **Aufbau:** `Modal` mit `tabelle`; der Titel „Einstellungen“ steht als `h3` im Navigationskopf über der
   Seitenliste (Ausnahme mit eigenem Kopf, siehe „Dialoge“), rechts der Inhalt der gewählten Seite. Gemeinsames Muster
@@ -174,7 +174,8 @@ jede App liefert dafür ihre Seite (Felder und Prüfung) – wie, legt dieser Ba
   Pfadvorgaben und Benennungsschemata auf einer Seite, nach App gegliedert mit `h4`), dann je App eine Seite mit ihrem
   Namen, so geschrieben wie die App (QUADRIO), in alphabetischer Reihenfolge. Die öffnende App bestimmt nur die
   Startseite: ihre eigene; Arkly öffnet „Allgemein“, die Warnung zum Notbetrieb ebenfalls „Allgemein“.
-- **Erstfokus:** das erste Feld der Startseite (`data-startfokus`), nicht die Seitenliste.
+- **Erstfokus:** das erste Feld der Startseite (`data-startfokus`), nicht die Seitenliste; im Notbetrieb (alles
+  gesperrt) der gewählte Eintrag der Seitenliste.
 - **Übernehmen:** Fußzeile `.dialog-buttons` mit Abbrechen | Übernehmen (Hauptknopf). Änderungen gelten erst mit
   „Übernehmen“, für alle Seiten zugleich. Schließen mit Änderungen – Esc, „Abbrechen“, Klick daneben – fragt nach
   (`aenderungenVerwerfen`, siehe „Ungespeicherte Änderungen“). Ist der Speicherort nur lesbar (Notbetrieb), stehen die
@@ -338,8 +339,8 @@ Zurücksetzen, Sonderfunktionen. Feste Namen, in allen Apps gleich:
   eingestellten Vorlage in den Berechnungsordner – als Excel, auf Wunsch zusätzlich als PDF. `title` nennt Ziel und
   Formate („Als Excel und PDF in ‹Ordner› speichern“); ob zusätzlich PDF entsteht, stellt die Seite der App im
   Einstellungsdialog ein.
-  - Fehlt etwas (keine Vorlage, kein Berechnungsordner, Projekt noch nie gespeichert), ist der Knopf gesperrt, der
-    Grund steht im `title`; „Datei → Exportieren → Excel …“ bleibt möglich. Während des Exports ist er gesperrt.
+  - Fehlt etwas (keine Vorlage, kein Berechnungsordner, Projekt noch nie gespeichert), ist der Knopf gesperrt
+    (`aria-disabled`, damit er per Tastatur erreichbar bleibt und den Grund vorliest), der Grund steht im `title`; „Datei → Exportieren → Excel …“ bleibt möglich. Während des Exports ist er gesperrt.
   - Gibt es die Datei schon, fragt eine Rückfrage „‚Name.xlsx‘ ersetzen?“ bzw. „‚Name.xlsx‘ und ‚Name.pdf‘ ersetzen?“
     mit dem Satz „Die Datei gibt es schon in ‚Ordner‘.“ bzw. „Die Dateien …“ (Abbrechen | Ersetzen; „Ersetzen“ ist ein
     Gefahr-Knopf, Erstfokus und Enter auf „Abbrechen“, siehe „Dialoge“).
@@ -447,7 +448,8 @@ Text, höchstens eine Aktion („Ordner öffnen“) und ein Symbolknopf `schlies
 schließen“ (mindestens `--ctl-h-s`). Er hält nichts auf und nimmt keinen Fokus. Ohne Aktion und ohne Warnung
 verschwindet er nach 8 Sekunden (nicht, solange Zeiger oder Fokus darin sind); mit Aktion, Warnung oder Fehler bleibt
 er, bis man ihn schließt oder der nächste Hinweis ihn ersetzt. Per Tastatur erreicht man ihn mit F6 (der Fokus
-springt hinein, Esc gibt ihn zurück). Stand: Der Baustein kommt als Nächstes aus dem Designsystem.
+springt hinein, Esc gibt ihn zurück); hat eine App schon einen F6-Kreis zwischen ihren Bereichen (LEXIO), ist der
+Hinweis darin eine weitere Station am Ende. Stand: Der Baustein kommt als Nächstes aus dem Designsystem.
 
 **Statuspunkt (Ampel):** `<span class="statuspunkt ok"></span> gilt` (bzw. `.warnung`, `.fehler`) – ein Punkt (10px,
 Abstand zum Wort per Leerzeichen bzw. `gap: var(--s1)`) in
