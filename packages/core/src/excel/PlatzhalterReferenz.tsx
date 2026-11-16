@@ -63,13 +63,13 @@ function MitCode({ text }: { text: string }) {
   return <>{teile.map((t, i) => (i % 2 ? <code key={i}>{t}</code> : t))}</>;
 }
 
-function Kopieren({ text, onKopiert }: { text: string; onKopiert: (t: string) => void }) {
+function Kopieren({ text, onKopiert, was = text }: { text: string; onKopiert: (t: string) => void; was?: string }) {
   return (
     <button
       type="button"
       className="small"
-      aria-label={`${text} kopieren`}
-      title={`${text} in die Zwischenablage kopieren`}
+      aria-label={`${was} kopieren`}
+      title={`${was} in die Zwischenablage kopieren`}
       onClick={() => {
         void navigator.clipboard?.writeText(text).then(
           () => onKopiert(text),
@@ -85,35 +85,39 @@ function Kopieren({ text, onKopiert }: { text: string; onKopiert: (t: string) =>
 function Nutzbar({ art }: { art: Art }) {
   const n = NUTZBAR[art];
   return (
-    <table className="summary-table ph-tabelle">
-      <caption className="ph-titel">Wo nutzbar</caption>
-      <tbody>
-        {ORTE.filter((o) => o.id !== 'wiederholung' || art === 'sammlung').map((o) => (
-          <tr key={o.id}>
-            <th scope="row" title={o.text}>
-              <MitCode text={o.label} />
-            </th>
-            <td>{n[o.id] ? (o.id === 'zelle' && art === 'sammlung' ? 'ja – die Zeile wird je Datensatz wiederholt' : 'ja') : 'nein'}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+    <>
+      <h4>Wo nutzbar</h4>
+      <table className="summary-table" aria-label="Wo nutzbar">
+        <tbody>
+          {ORTE.filter((o) => o.id !== 'wiederholung' || art === 'sammlung').map((o) => (
+            <tr key={o.id}>
+              <th scope="row" title={o.text}>
+                <MitCode text={o.label} />
+              </th>
+              <td>{n[o.id] ? (o.id === 'zelle' && art === 'sammlung' ? 'ja – die Zeile wird je Datensatz wiederholt' : 'ja') : 'nein'}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </>
   );
 }
 
-function Tabelle({ kopf, zeilen, titel }: { kopf: string[]; zeilen: ReactNode[][]; titel?: string }) {
+/** Tabelle im Stil der Kennzahlen (.summary-table); ohne `kopf` erklären sich die Spalten selbst (`name` benennt sie) */
+function Tabelle({ kopf, zeilen, name }: { kopf?: string[]; zeilen: ReactNode[][]; name?: string }) {
   return (
-    <table className="summary-table ph-tabelle">
-      {titel && <caption className="ph-titel">{titel}</caption>}
-      <thead>
-        <tr>
-          {kopf.map((k, i) => (
-            <th key={i} scope="col">
-              {k}
-            </th>
-          ))}
-        </tr>
-      </thead>
+    <table className="summary-table" aria-label={name}>
+      {kopf && (
+        <thead>
+          <tr>
+            {kopf.map((k, i) => (
+              <th key={i} scope="col">
+                {k}
+              </th>
+            ))}
+          </tr>
+        </thead>
+      )}
       <tbody>
         {zeilen.map((z, i) => (
           <tr key={i}>
@@ -145,18 +149,21 @@ function BeispielAnsicht({ b, onKopiert }: { b: Beispiel; onKopiert: (t: string)
   const tsv = b.vorlage.map((z) => z.map((v) => v ?? '').join('\t')).join('\n');
   return (
     <section className="ph-beispiel" aria-label={`Beispiel: ${b.titel}`}>
-      <h4>
-        Beispiel: {b.titel} <Kopieren text={tsv} onKopiert={() => onKopiert(`Vorlage „${b.titel}“`)} />
-      </h4>
+      <div className="section-head">
+        <h5>{b.titel}</h5>
+        <Kopieren text={tsv} was={`Vorlage „${b.titel}“`} onKopiert={(t) => onKopiert(t ? `Vorlage „${b.titel}“ (zum Einfügen in Excel ab Zelle A1)` : '')} />
+      </div>
       {b.text && (
         <p className="small-text">
           <MitCode text={b.text} />
         </p>
       )}
       {!!b.pruefung?.length && <p className="small-text">Die Vorlagenprüfung meldet hier: {b.pruefung.map((a) => HINWEISARTEN[a as HinweisArt] ?? a).join('; ')}.</p>}
-      <Tabelle titel="Vorlage" kopf={kopf} zeilen={b.vorlage.map((z, r) => [String(r + 1), ...Array.from({ length: breite }, (_, i) => zelle(z[i], true))])} />
+      <p className="nw-gruppe-titel">Vorlage</p>
+      <Tabelle name="Vorlage" kopf={kopf} zeilen={b.vorlage.map((z, r) => [String(r + 1), ...Array.from({ length: breite }, (_, i) => zelle(z[i], true))])} />
+      <p className="nw-gruppe-titel">Ergebnis mit den Beispieldaten</p>
       <Tabelle
-        titel="Ergebnis mit den Beispieldaten"
+        name="Ergebnis"
         kopf={kopf}
         zeilen={b.ergebnis.length ? b.ergebnis.map((z, r) => [String(r + 1), ...Array.from({ length: breite }, (_, i) => zelle(z[i], false))]) : [['', 'keine Zeile']]}
       />
@@ -167,7 +174,7 @@ function BeispielAnsicht({ b, onKopiert }: { b: Beispiel; onKopiert: (t: string)
 function Werte({ zeilen, onKopiert }: { zeilen: { ph: string; text: string; einheit?: string }[]; onKopiert: (t: string) => void }) {
   return (
     <Tabelle
-      kopf={['Platzhalter', 'Bedeutung', 'Einheit', '']}
+      name="Platzhalter, Bedeutung, Einheit"
       zeilen={zeilen.map((z) => [<code key="c">{z.ph}</code>, <MitCode key="t" text={z.text} />, z.einheit ?? '', <Kopieren key="k" text={z.ph} onKopiert={onKopiert} />])}
     />
   );
@@ -178,6 +185,20 @@ function gefiltert<T>(liste: T[], q: string, text: (x: T) => (string | undefined
   if (!q.trim()) return { liste, teil: false };
   const t = liste.filter((x) => passt(q, ...text(x)));
   return t.length && t.length < liste.length ? { liste: t, teil: true } : { liste, teil: false };
+}
+
+/** Beispiele eines Eintrags mit dem Hinweis auf die Beispieldaten */
+function Beispiele({ liste, daten, onKopiert }: { liste?: Beispiel[]; daten: string; onKopiert: (t: string) => void }) {
+  if (!liste?.length) return null;
+  return (
+    <>
+      <h4>{liste.length === 1 ? 'Beispiel' : 'Beispiele'}</h4>
+      <p className="small-text muted">{daten}</p>
+      {liste.map((b) => (
+        <BeispielAnsicht key={b.titel} b={b} onKopiert={onKopiert} />
+      ))}
+    </>
+  );
 }
 
 function Ansicht({ e, q, onKopiert, schema }: { e: Eintrag; q: string; onKopiert: (t: string) => void; schema: PlatzhalterSchema }) {
@@ -192,9 +213,7 @@ function Ansicht({ e, q, onKopiert, schema }: { e: Eintrag; q: string; onKopiert
           </p>
         ))}
         {t.tabelle && <Tabelle kopf={t.tabelle[0]} zeilen={t.tabelle.slice(1).map((z) => z.map((c, i) => <MitCode key={i} text={c} />))} />}
-        {(t.beispiele ?? []).map((b) => (
-          <BeispielAnsicht key={b.titel} b={b} onKopiert={onKopiert} />
-        ))}
+        <Beispiele liste={t.beispiele} daten={KERN_BEISPIELDATEN} onKopiert={onKopiert} />
       </article>
     );
   }
@@ -216,9 +235,7 @@ function Ansicht({ e, q, onKopiert, schema }: { e: Eintrag; q: string; onKopiert
         {a.tabelle && <Tabelle kopf={a.tabelle[0]} zeilen={a.tabelle.slice(1).map((z) => z.map((c, i) => <MitCode key={i} text={c} />))} />}
         {teil && <p className="small-text muted">{`${liste.length} von ${a.werte.length} Werten passen zur Suche.`}</p>}
         <Werte zeilen={liste.map((w) => ({ ph: `{{${w.schluessel}}}`, text: w.text, einheit: w.einheit }))} onKopiert={onKopiert} />
-        {(a.beispiele ?? []).map((b) => (
-          <BeispielAnsicht key={b.titel} b={b} onKopiert={onKopiert} />
-        ))}
+        <Beispiele liste={a.beispiele} daten={schema.beispieldaten} onKopiert={onKopiert} />
       </article>
     );
   }
@@ -244,6 +261,15 @@ function Ansicht({ e, q, onKopiert, schema }: { e: Eintrag; q: string; onKopiert
       </article>
     );
   }
+  // passt die Suche nur zu einigen Feldern, stehen sie oben
+  const felder = (
+    <>
+      <h4>Felder</h4>
+      {s.tabelle && <Tabelle kopf={s.tabelle[0]} zeilen={s.tabelle.slice(1).map((z) => z.map((c, i) => <MitCode key={i} text={c} />))} />}
+      {teil && <p className="small-text muted">{`${liste.length} von ${s.felder.length} Feldern passen zur Suche.`}</p>}
+      <Werte zeilen={liste.map((f) => ({ ph: `{{${s.name}.${f.name}}}`, text: f.text, einheit: f.einheit }))} onKopiert={onKopiert} />
+    </>
+  );
   return (
     <article>
       <h3>
@@ -252,6 +278,7 @@ function Ansicht({ e, q, onKopiert, schema }: { e: Eintrag; q: string; onKopiert
       <p className="regel-kurz">
         {ARTEN.sammlung.label}, Zeile {s.datensatz}. <MitCode text={s.text} />
       </p>
+      {teil && felder}
       <Nutzbar art="sammlung" />
       <h4>Enthält</h4>
       {s.enthaelt.length ? (
@@ -284,14 +311,11 @@ function Ansicht({ e, q, onKopiert, schema }: { e: Eintrag; q: string; onKopiert
           </ul>
         </>
       )}
-      <h4>Felder</h4>
-      {s.tabelle && <Tabelle kopf={s.tabelle[0]} zeilen={s.tabelle.slice(1).map((z) => z.map((c, i) => <MitCode key={i} text={c} />))} />}
-      {teil && <p className="small-text muted">{`${liste.length} von ${s.felder.length} Feldern passen zur Suche.`}</p>}
-      <Werte zeilen={liste.map((f) => ({ ph: `{{${s.name}.${f.name}}}`, text: f.text, einheit: f.einheit }))} onKopiert={onKopiert} />
+      {!teil && felder}
       <h4>Filter</h4>
       {s.filter.length ? (
         <Tabelle
-          kopf={['Benannter Filter', 'Bedeutung', '']}
+          name="Benannte Filter"
           zeilen={s.filter.map((f) => [
             <span key="n">
               {[f.name, ...(f.aliase ?? [])].map((n, i) => (
@@ -329,9 +353,7 @@ function Ansicht({ e, q, onKopiert, schema }: { e: Eintrag; q: string; onKopiert
           </ul>
         </>
       )}
-      {s.beispiele.map((b) => (
-        <BeispielAnsicht key={b.titel} b={b} onKopiert={onKopiert} />
-      ))}
+      <Beispiele liste={s.beispiele} daten={schema.beispieldaten} onKopiert={onKopiert} />
     </article>
   );
 }
@@ -414,7 +436,7 @@ export function PlatzhalterReferenz({ schema, onClose }: { schema: PlatzhalterSc
       </div>
       <div className="dialog-buttons nw-fuss">
         <p className="muted small-text" role="status">
-          {meldung || (aktiv?.gruppe === 'syntax' ? KERN_BEISPIELDATEN : schema.beispieldaten)}
+          {meldung || 'Die Beispiele laufen als Test gegen die Vorlagen-Engine – die Ergebnisse stimmen mit den Beispieldaten überein.'}
         </p>
         <button type="button" className="primary" onClick={onClose}>
           Schließen

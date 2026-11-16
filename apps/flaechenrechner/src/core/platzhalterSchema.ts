@@ -64,7 +64,7 @@ const RS: Filter[] = [
 export const QUADRIO_SCHEMA: PlatzhalterSchema = {
   app: 'QUADRIO',
   beispieldaten:
-    'Beispieldaten: Projekt „Musterhaus“ (2417). KG: Keller 20 m² (NUF 7), Heizung 4 m² (TF); EG: Flur 3 m² (VF, WE 1), Wohnen 20 m² (NUF 1, WE 1), Loggia 3 m² (S, ohne Wohnflächenanrechnung), Schacht −0,25 m² (Abzug, WE 1); DG (Walmdach mit Schleppgaube): Zimmer 9 m² (WE 2). BGF-Umrisse: Keller, Haus, Loggia (S), Aussparung (Abzug), Dach.',
+    'Beispieldaten: Projekt „Musterhaus“ (2417). KG: Keller 20 m² (NUF 7), Heizung 4 m² (TF). EG: Flur 3 m² (VF), Wohnen 20 m² (NUF 1, Putzabzug 3 %), Loggia 3 m² (S, Freisitz), Schacht −0,25 m² (Abzug), Terrasse 8 m² (außerhalb der BGF, Freisitz), Treppe −2 m² (Abzug nur der Wohnfläche) – alle Wohnung WE 1 –, Abstellraum 2 m² (NUF 7, S, ohne Wohnflächenanrechnung). DG (Walmdach mit Schleppgaube): Zimmer 9 m² (WE 2), Bad 4 m² (Wohnfläche ohne Wohnungszuordnung). BGF-Umrisse: Keller, Haus, Loggia (S), Aussparung (Abzug), Dach.',
   abschnitte: [
     PROJEKT_GRUPPE,
     {
