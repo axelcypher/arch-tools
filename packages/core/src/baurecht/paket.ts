@@ -353,6 +353,17 @@ export function paketPruefen(p: Paket, merkmale: { name: string; werte: string[]
       // ob eine Frage gestellt wird, hängt nur an Angaben und Merkmalen – nicht an der Ampel eines Paragrafen (die
       // Auswertung bestimmt vorher, welche Antworten zählen)
       if (f.wenn && verweistAufParagraf(f.wenn, alleBausteine)) fehler.push(`${m.id} Fakt ${id}: die Bedingung („wenn“) darf nicht auf Paragrafen verweisen`);
+      // Wert, der sich aus anderen Angaben ergibt: Bedingung wie „wenn“ (ohne Paragrafen), passender Wert, Grund in Worten;
+      // nicht zugleich fester Wert oder Tabelle
+      for (const [i, z] of (f.folgt ?? []).entries()) {
+        const wo = `${m.id} Fakt ${id} folgt[${i}]`;
+        pruefe(wo, m, z.wenn);
+        if (verweistAufParagraf(z.wenn, alleBausteine)) fehler.push(`${wo}: die Bedingung darf nicht auf Paragrafen verweisen`);
+        const art = f.typ === 'janein' ? typeof z.wert === 'boolean' : f.typ === 'zahl' ? typeof z.wert === 'number' : typeof z.wert === 'string' && (f.typ !== 'wahl' || !f.werte || f.werte.includes(z.wert));
+        if (!art) fehler.push(`${wo}: Wert „${String(z.wert)}“ passt nicht zur Art „${f.typ}“`);
+        if (!z.grund?.trim()) fehler.push(`${wo}: Grund fehlt`);
+      }
+      if (f.folgt?.length && (f.wert !== undefined || f.nach)) fehler.push(`${m.id} Fakt ${id}: „folgt“ nicht zusammen mit festem Wert oder Tabelle`);
     }
     for (const h of m.hinweise ?? []) pruefe(`${m.id} Hinweis ${h.titel}`, m, h.wenn);
   }

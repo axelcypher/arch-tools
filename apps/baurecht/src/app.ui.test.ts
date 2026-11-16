@@ -314,6 +314,29 @@ describe('Baurecht – Oberfläche', () => {
     act(() => knopf(d, 'Schließen')!.click());
   });
 
+  it('Werte, die sich aus anderen ergeben: keine Frage, am Ende der Gruppe mit Grund; Überstimmen nur mit Beleg; Protokoll nennt sie', () => {
+    const host = render();
+    const gruppe = host.querySelector('#br-g-gebaeude')!.closest('section')!;
+    // Einfamilienhaus: keine Frage nach Besuchern, sondern „ergibt sich“
+    expect(gruppe.querySelector('.br-fakt[data-fakt="gebaeude.besucher"]')).toBeNull();
+    const liste = gruppe.querySelector<HTMLDetailsElement>('.br-ergibt')!;
+    expect(liste.querySelector('summary')!.textContent).toMatch(/^Ergibt sich aus anderen Angaben \(\d+\)$/);
+    const zeile = liste.querySelector<HTMLElement>('li[data-fakt="gebaeude.besucher"]')!;
+    expect(zeile.textContent).toMatch(/Besucher.*: 0 – reines Wohngebäude – keine Versammlungsstätte/);
+    // überstimmen: die Frage steht da, eine Antwort nur mit Beleg
+    act(() => knopf(zeile, 'Überstimmen …')!.click());
+    const frage = host.querySelector<HTMLElement>('.br-fakt[data-fakt="gebaeude.besucher"]')!;
+    expect(frage).toBeTruthy();
+    expect(host.querySelector('.br-ergibt li[data-fakt="gebaeude.besucher"]')).toBeNull();
+    // im Protokoll: „Ergibt sich aus anderen Angaben“ mit Grund
+    act(() => knopf(host, 'Prüfprotokoll …')!.click());
+    const d = document.querySelector<HTMLElement>('.br-protokoll')!;
+    const h = [...d.querySelectorAll('h2')].find((x) => x.textContent?.startsWith('Ergibt sich aus anderen Angaben'))!;
+    expect(h).toBeTruthy();
+    expect((h.nextElementSibling as HTMLElement).textContent).toMatch(/Wohnungen.*1.*Einfamilienhaus – eine Wohnung/);
+    act(() => knopf(d, 'Schließen')!.click());
+  });
+
   it('Schutzgebiet von Hand setzen nur mit Beleg; ändert sich die Angabe währenddessen, wird abgebrochen', async () => {
     // die Einzelfrage steht unter ihrer Vorfrage – aufgeklappt („Einzelfragen zeigen“)
     act(() => useBaurecht.setState({ vorfragenAuf: { 'vorfrage.naturschutz': true } }));

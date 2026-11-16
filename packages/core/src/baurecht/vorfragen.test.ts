@@ -44,15 +44,18 @@ const bnatschg: Regeldatei = {
       grund: 'Verträglichkeit.',
     },
     Zone: { gilt: { f: 'x.zone', in: ['A', 'B'] }, grund: 'Zone.' },
+    Versammlung: { gilt: { f: 'gebaeude.besucher', min: 200.01 }, grund: 'Versammlungsstätte.' },
+    Wohnungen: { gilt: { f: 'gebaeude.wohnungen', min: 3 }, grund: 'Ab drei Wohnungen.' },
   },
 };
 const paket = paketAusDateien({ 'module/bund/modul.json': bund, 'module/bund/bnatschg@2026-09-30.json': bnatschg }, 'test');
 
-function lauf(fakten: Record<string, FaktWert>) {
+function lauf(fakten: Record<string, FaktWert>, merkmale: Record<string, string> = { Vorhaben: 'Errichtung', Gebäudeart: 'Einfamilienhaus' }, widersprueche?: Set<string>) {
   const e: AuswertungsEingabe = {
     paket,
     module: aktiveModule(paket.module, null),
-    merkmale: { Vorhaben: 'Errichtung', Gebäudeart: 'Einfamilienhaus' },
+    merkmale,
+    widersprueche,
     fakten,
     einreichung: '2026-12-01',
     heute: '2026-11-16',
@@ -194,5 +197,79 @@ describe('Prüfung des Pakets: Vorfragen', () => {
     expect(mit({ 'x.a': j({ fakt: 'lage.gemeinde', sonst: false }) }).join('\n')).toMatch(/keine Ja\/Nein-Angabe/);
     expect(mit({ 'x.a': j({ fakt: V, sonst: 'nein' }) }).join('\n')).toMatch(/Wert ohne Vorfrage von „x\.a“ passt nicht/);
     expect(mit({ 'x.a': j({ fakt: 'x.b', sonst: false }), 'x.b': j({ fakt: 'x.a', sonst: false }) }).join('\n')).toMatch(/Vorfragen im Kreis: x\.a → x\.b → x\.a/);
+  });
+});
+
+describe('Werte, die sich aus anderen ergeben (FaktDef.folgt)', () => {
+  const MFH = { Vorhaben: 'Errichtung', Gebäudeart: 'Mehrfamilienhaus' };
+  it('reines Wohngebäude: keine Versammlungsstätte – abgeleitet mit Grund, keine Frage, „entfällt“', () => {
+    const { a, ampel, gestellt } = lauf({}, MFH);
+    expect(a.fakten['gebaeude.besucher']).toMatchObject({ wert: 0, herkunft: 'abgeleitet', sicherheit: 'sicher', ausFolge: 'reines Wohngebäude – keine Versammlungsstätte' });
+    expect(gestellt('gebaeude.besucher')).toBe(false);
+    expect(ampel('Versammlung')).toBe('gruen');
+    expect(a.klaerung.map((k) => k.id)).not.toContain('gebaeude.besucher');
+    // Wohn- und Geschäftshaus: gefragt, offen
+    const wg = lauf({}, { ...MFH, Gebäudeart: 'Wohn- und Geschäftshaus' });
+    expect(wg.a.fakten['gebaeude.besucher']?.wert ?? null).toBeNull();
+    expect(wg.gestellt('gebaeude.besucher')).toBe(true);
+    expect(wg.ampel('Versammlung')).toBe('gelb');
+  });
+
+  it('Einfamilienhaus eine Wohnung, Zweifamilienhaus zwei; ohne Gebäudeart offen', () => {
+    expect(lauf({}).a.fakten['gebaeude.wohnungen']).toMatchObject({ wert: 1, ausFolge: 'Einfamilienhaus – eine Wohnung' });
+    expect(lauf({}, { Vorhaben: 'Errichtung', Gebäudeart: 'Zweifamilienhaus' }).a.fakten['gebaeude.wohnungen'].wert).toBe(2);
+    const ohne = lauf({}, { Vorhaben: 'Errichtung' });
+    expect(ohne.a.fakten['gebaeude.wohnungen']?.wert ?? null).toBeNull();
+    expect(ohne.gestellt('gebaeude.wohnungen')).toBe(true);
+  });
+
+  it('nie still überschrieben: eine abweichende ältere Antwort bleibt als Widerspruch (kein Grün), mit Beleg überstimmt sie', () => {
+    const alt = lauf({ 'gebaeude.besucher': sicher(300) }, MFH);
+    expect(alt.a.fakten['gebaeude.besucher']).toMatchObject({ wert: 300, herkunft: 'manuell' });
+    expect(alt.a.fakten['gebaeude.besucher'].widerspruch).toMatch(/ergibt sich aus anderen Angaben als „0“ \(reines Wohngebäude/);
+    expect(alt.gestellt('gebaeude.besucher')).toBe(true);
+    expect(alt.ampel('Versammlung')).toBe('rot');
+    // auch ein Hinweis aus dem Modell (z. B. drei Wohnungen in einem Einfamilienhaus) wird nicht ersetzt
+    const modell = lauf({ 'gebaeude.wohnungen': { wert: 3, herkunft: 'flaechen', sicherheit: 'hinweis', grund: 'Wohnungen der Räume' } });
+    expect(modell.a.fakten['gebaeude.wohnungen']).toMatchObject({ wert: 3, herkunft: 'flaechen' });
+    expect(modell.a.fakten['gebaeude.wohnungen'].widerspruch).toBeTruthy();
+    expect(modell.ampel('Wohnungen')).not.toBe('gruen');
+    // derselbe Wert: zählt nicht eigens, es gilt der abgeleitete
+    expect(lauf({ 'gebaeude.besucher': sicher(0) }, MFH).a.fakten['gebaeude.besucher'].ausFolge).toBeTruthy();
+    // mit Beleg überstimmt (Sonderfall): kein Widerspruch
+    const beleg = lauf({ 'gebaeude.besucher': { ...sicher(300), bestaetigt: { von: 'TP', am: '2026-11-16', grund: 'Gemeinschaftssaal, Auskunft Bauaufsicht' } } }, MFH);
+    expect(beleg.a.fakten['gebaeude.besucher'].widerspruch).toBeUndefined();
+    expect(beleg.ampel('Versammlung')).toBe('rot');
+  });
+
+  it('nur aus gesicherten Angaben: ein widersprüchliches Merkmal leitet nichts ab', () => {
+    const { a, gestellt } = lauf({}, MFH, new Set(['Gebäudeart']));
+    expect(a.fakten['gebaeude.besucher']?.wert ?? null).toBeNull();
+    expect(gestellt('gebaeude.besucher')).toBe(true);
+  });
+
+  it('Teilmenge als Vorfrage: ohne Arbeiten an Dach oder Fassade keine Erneuerung der Dachhaut', () => {
+    const { a, gestellt } = lauf({ 'vorhaben.dach_fassade': sicher(false) });
+    expect(a.fakten['vorhaben.dachhaut']).toMatchObject({ wert: false, ausVorfrage: 'vorhaben.dach_fassade' });
+    expect(gestellt('vorhaben.dachhaut')).toBe(false);
+    expect(lauf({ 'vorhaben.dachhaut': sicher(true) }).a.fakten['vorhaben.dach_fassade']).toMatchObject({ wert: true, herkunft: 'abgeleitet' });
+  });
+
+  it('Prüfung des Pakets: Wert und Grund von „folgt“', () => {
+    const mit = (f: NonNullable<Modul['fakten']>[string]) =>
+      paketPruefen(
+        paketAusDateien({ 'module/bund/modul.json': { ...bund, fakten: { 'x.f': f } }, 'module/bund/bnatschg@2026-09-30.json': { ...bnatschg, paragrafen: { '34': bnatschg.paragrafen['34'] } } }, 'x'),
+        VORGABE_MERKMALE,
+      );
+    const z = (wert: string | number | boolean, grund = 'Grund') => ({
+      titel: 'F',
+      gruppe: 'gebaeude' as const,
+      typ: 'zahl' as const,
+      folgt: [{ wenn: { m: 'Gebäudeart', in: ['Einfamilienhaus'] }, wert, grund }],
+    });
+    expect(mit(z(0))).toEqual([]);
+    expect(mit(z('null')).join('\n')).toMatch(/folgt\[0\]: Wert „null“ passt nicht zur Art „zahl“/);
+    expect(mit(z(0, ' ')).join('\n')).toMatch(/folgt\[0\]: Grund fehlt/);
+    expect(mit({ ...z(0), wert: 1 }).join('\n')).toMatch(/„folgt“ nicht zusammen mit festem Wert/);
   });
 });

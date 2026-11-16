@@ -206,7 +206,17 @@
             ]
           }
         ]
-      }
+      },
+      "folgt": [
+        {
+          "wenn": {
+            "f": "vorhaben.stellplaetze_grundstueck",
+            "ist": false
+          },
+          "wert": 0,
+          "grund": "keine Stellplätze oder Garagen geplant – keine neue Stellplatzfläche"
+        }
+      ]
     },
     "nw.grenzabstand_unter_2_5": {
       "titel": "Außenwand an der Nachbargrenze oder weniger als 2,50 m davon entfernt (Gebäudeabschlusswand)",
@@ -256,10 +266,9 @@
       "gruppe": "technik",
       "typ": "janein",
       "hilfe": "§ 6 FeuVO NRW: dann eigener Heizraum",
-      "ohneAusloeser": false,
-      "wenn": {
-        "f": "technik.feuerstaette",
-        "ist": true
+      "vorfrage": {
+        "fakt": "technik.feuerstaette",
+        "sonst": false
       }
     },
     "nw.nachbarrecht": {

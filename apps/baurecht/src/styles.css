@@ -1960,3 +1960,15 @@ h2.br-detail-name {
   margin: 0 0 var(--s1);
   font-size: var(--fs-s);
 }
+/* Werte, die sich aus anderen Angaben ergeben – am Ende ihrer Gruppe, aufklappbar */
+.br-ergibt {
+  margin: var(--s1) 0 var(--s2);
+  font-size: var(--fs-s);
+}
+.br-ergibt ul {
+  margin: var(--s1) 0 0;
+  padding-left: var(--s4);
+}
+.br-ergibt li {
+  margin-bottom: var(--s1);
+}

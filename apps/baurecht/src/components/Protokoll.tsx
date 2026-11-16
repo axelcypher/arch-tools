@@ -249,7 +249,9 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
   // darauf stehen dort, nicht unter „nicht gestellt“
   const entfallen = new Map<string, string[]>();
   for (const [id, f] of Object.entries(a.fakten)) if (f.ausVorfrage) entfallen.set(f.ausVorfrage, [...(entfallen.get(f.ausVorfrage) ?? []), id]);
-  const nichtGestellt = Object.entries(eigeneFakten).filter(([id, f]) => !!a.faktDefs[id] && f.wert != null && !gestellt(id) && !a.fakten[id]?.ausVorfrage);
+  // Werte, die sich aus anderen Angaben ergeben (FaktDef.folgt) – mit Grund; eigene Antworten gleichen Werts stehen dort
+  const ergibtSich = Object.entries(a.fakten).filter(([id, f]) => !!f.ausFolge && !!a.faktDefs[id]);
+  const nichtGestellt = Object.entries(eigeneFakten).filter(([id, f]) => !!a.faktDefs[id] && f.wert != null && !gestellt(id) && !a.fakten[id]?.ausVorfrage && !a.fakten[id]?.ausFolge);
   // Angaben von Hand ohne Beleg: auch sie tragen Ampeln (z. B. „Kampfmittelverdacht: nein“) – mit wer und wann
   // nur Angaben, die das Regelpaket kennt (eine Angabe einer früheren Fassung stünde sonst mit ihrer rohen Kennung da)
   const vonHandOhneBeleg = Object.entries(a.fakten).filter(
@@ -658,6 +660,29 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
                     </tr>
                   );
                 })}
+              </tbody>
+            </table>
+          </>
+        )}
+        {ergibtSich.length > 0 && (
+          <>
+            <h2>Ergibt sich aus anderen Angaben ({ergibtSich.length})</h2>
+            <table className="report-table">
+              <thead>
+                <tr>
+                  <th style={{ width: '30%' }}>Angabe</th>
+                  <th style={{ width: '14%' }}>Wert</th>
+                  <th>Grund (die Frage entfällt)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ergibtSich.map(([id, f]) => (
+                  <tr key={id}>
+                    <td className="strong">{faktName(a.faktDefs[id], id)}</td>
+                    <td>{wertAnzeige(f.wert, a.faktDefs[id])}</td>
+                    <td>{f.ausFolge}</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </>

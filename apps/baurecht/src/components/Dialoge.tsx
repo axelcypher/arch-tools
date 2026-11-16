@@ -508,6 +508,8 @@ export function FaktBestaetigenDialog({ folgen, faktDef = () => undefined }: { f
             {/* der Grund sagt schon, woher der Wert kommt – die Quelle nur ohne Grund */}
             Bisher nur Hinweis: {ziel.wert.grund ?? (ziel.wert.quelle ? `${ziel.wert.quelle} – nicht gesichert` : 'nicht gesichert')}
           </p>
+        ) : faktDef(ziel.id)?.folgt?.length ? (
+          <p className="br-leise">Der Wert ergibt sich sonst aus anderen Angaben. Abweichen nur in einem begründeten Sonderfall – mit Beleg, er steht im Prüfprotokoll. Ohne Beleg gälte die Antwort als Widerspruch.</p>
         ) : (
           <p className="br-leise">Angaben zu Schutzgebieten und Geodaten gelten von Hand nur mit Beleg. Widerspricht die Angabe einem Treffer eines Dienstes, bleibt der Widerspruch sichtbar – betroffene Vorschriften werden dann nicht „entfällt“.</p>
         )}

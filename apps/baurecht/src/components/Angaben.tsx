@@ -470,6 +470,7 @@ function FaktZeile({
   alsKnoepfe = false,
   defs = {},
   unklar,
+  belegPflicht = false,
 }: {
   id: string;
   def: FaktDef;
@@ -479,6 +480,8 @@ function FaktZeile({
   alsKnoepfe?: boolean;
   defs?: Record<string, FaktDef>;
   unklar?: Unklar;
+  /** von Hand nur mit Beleg (z. B. ein Wert, der sich aus anderen ergibt, wird überstimmt) */
+  belegPflicht?: boolean;
 }) {
   const fokus = useBaurecht((s) => s.fokus);
   const entwurf = useBaurecht((s) => offeneBestaetigungen(s).includes(id));
@@ -555,7 +558,7 @@ function FaktZeile({
           unklar={unklar}
           onWert={(v) => {
             // Schutzgebiete und Geodaten (ja/nein, Auswahl) von Hand nur mit Beleg
-            if (v !== undefined && mitBeleg(def, wert)) faktSetzenOeffnen(id, faktName(def, id), v, lagebezug(def, wert));
+            if (v !== undefined && (mitBeleg(def, wert) || belegPflicht)) faktSetzenOeffnen(id, faktName(def, id), v, lagebezug(def, wert));
             // Angaben zur Lage an die aktuelle Lage binden (ohne gültige Koordinaten: null → nur Hinweis)
             else useBaurecht.getState().faktSetzen(id, v, benutzer(), undefined, lagebezug(def, wert) ? aktuelleLage(useBaurecht.getState().project).lage : undefined);
           }}
@@ -802,6 +805,42 @@ function VorfragenSammel({ gruppe, titel, ids, stand }: { gruppe: string; titel:
   );
 }
 
+/**
+ * Werte, die sich aus anderen Angaben ergeben (FaktDef.folgt): keine Fragen, aufklappbar am Ende ihrer Gruppe genannt –
+ * mit dem Grund. Ändern heißt die Ausgangsangabe ändern; „Überstimmen …“ (Sonderfall) stellt die Frage, eine Antwort
+ * dann nur mit Beleg.
+ */
+function ErgibtSich({ ids, stand }: { ids: string[]; stand: Pruefstand }) {
+  const { faktDefs: defs, fakten } = stand.auswertung;
+  return (
+    <details className="br-ergibt">
+      <summary>Ergibt sich aus anderen Angaben ({ids.length})</summary>
+      <ul>
+        {ids.map((id) => {
+          const name = faktName(defs[id], id);
+          return (
+            <li key={id} data-fakt={id}>
+              {name}: <strong>{wertAnzeige(fakten[id].wert, defs[id])}</strong> <span className="br-leise">– {fakten[id].ausFolge}</span>{' '}
+              <button
+                type="button"
+                className="small br-link"
+                aria-label={`${name} überstimmen …`}
+                title="Nur für einen begründeten Sonderfall – die Antwort braucht dann einen Beleg"
+                onClick={() => {
+                  useBaurecht.setState((s) => ({ ueberstimmen: { ...s.ueberstimmen, [id]: true } }));
+                  useBaurecht.getState().fokusSetzen(id);
+                }}
+              >
+                Überstimmen …
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </details>
+  );
+}
+
 /** Abkürzungen, nach denen kein Satz endet („z. B.“, „bzw.“, „Abs.“ …) */
 const ABKUERZUNG = /(?:^|[\s(])(?:bzw|usw|ca|vgl|ggf|etc|evtl|inkl|max|min|Nr|Abs|Art|Buchst|Ziff|lit|Anm|sog|[A-Za-zÄÖÜäöü])\.$/;
 
@@ -967,13 +1006,20 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
   // Rückfragen nur, wenn sie gestellt sind, und dann unter ihrem Merkmal (in der Gruppe nur, wenn das Merkmal wegen der
   // Suche nicht zu sehen ist)
   const defs = auswertung.faktDefs;
+  const ueberstimmen = useBaurecht((s) => s.ueberstimmen);
   // je Zeichenlauf zwischengespeichert: `oberste` und `kinderVon` fragen dieselben Angaben mehrfach
   const sichtbarCache = new Map<string, boolean>();
   const sichtbar = (id: string) => {
     let s = sichtbarCache.get(id);
     if (s === undefined) {
       const d = defs[id];
-      s = !!d && id !== 'antrag.einreichung' && (alle || relevant.has(id)) && (!RUECKFRAGE_IDS.has(id) || (!(merkmaleSichtbar && alsRueckfrage.has(id)) && rueckfrageSichtbar(id, stand))) && frageGestellt(id, d, ctx);
+      s =
+        !!d &&
+        id !== 'antrag.einreichung' &&
+        (alle || relevant.has(id)) &&
+        (!RUECKFRAGE_IDS.has(id) || (!(merkmaleSichtbar && alsRueckfrage.has(id)) && rueckfrageSichtbar(id, stand))) &&
+        // ein Wert, der sich aus anderen ergibt, steht als Frage nur da, wenn man ihn überstimmen will
+        (frageGestellt(id, d, ctx) || (!!auswertung.fakten[id]?.ausFolge && !!ueberstimmen[id]));
       sichtbarCache.set(id, s);
     }
     return s;
@@ -1017,8 +1063,10 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
       // die Vorfragen oben in ihrer Gruppe
       .sort((a, b) => Number(karte.has(b)) - Number(karte.has(a)) || (rang.get(a) ?? Infinity) - (rang.get(b) ?? Infinity) || vergleich(a, b));
     const kinder = new Map(ids.filter((id) => karte.has(id)).map((id) => [id, kinderVon(id)]));
-    return { ...g, ids, kinder };
-  }).filter((g) => g.ids.length);
+    // Werte, die sich aus anderen ergeben (FaktDef.folgt): keine Frage, aber in der Gruppe genannt
+    const ergibt = Object.keys(defs).filter((id) => defs[id].gruppe === g.id && !!auswertung.fakten[id]?.ausFolge && !ueberstimmen[id] && (alle || relevant.has(id)) && passt(id));
+    return { ...g, ids, kinder, ergibt };
+  }).filter((g) => g.ids.length || g.ergibt.length);
   const trefferZahl = suche
     ? gruppen.reduce((n, g) => n + g.ids.length + [...g.kinder.values()].reduce((m, k) => m + k.length, 0), 0) + VORGABE_MERKMALE.filter((m) => merkmalPasst(m, suche)).length + (merkmaleSichtbar ? alsRueckfrage.size : 0)
     : 0;
@@ -1116,9 +1164,10 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
               g.kinder.has(id) ? (
                 <Vorfrage key={id} id={id} kinder={g.kinder.get(id)!} stand={stand} klaerung={klaerung} eigene={eigene} suche={suche} />
               ) : (
-                <FaktZeile key={id} id={id} def={auswertung.faktDefs[id]} wert={auswertung.fakten[id]} klaert={klaerung.get(id) ?? 0} eigen={!!eigene[id]} defs={auswertung.faktDefs} />
+                <FaktZeile key={id} id={id} def={auswertung.faktDefs[id]} wert={auswertung.fakten[id]} klaert={klaerung.get(id) ?? 0} eigen={!!eigene[id]} defs={auswertung.faktDefs} belegPflicht={!!ueberstimmen[id]} />
               ),
             )}
+            {g.ergibt.length > 0 && <ErgibtSich ids={g.ergibt} stand={stand} />}
           </section>
         ))}
       </div>

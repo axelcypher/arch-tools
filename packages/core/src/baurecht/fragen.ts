@@ -28,8 +28,9 @@ export function frageGestellt(id: string, def: Pick<FaktDef, 'wenn' | 'vorfrage'
  * Angabe als Auslöser (die Regel trägt dann deren Widerspruch; Merkmal-Widersprüche ausgenommen, siehe unten).
  */
 export function frageStand(id: string, def: Pick<FaktDef, 'wenn' | 'vorfrage'> | undefined, ctx: KurzKontext): { gestellt: boolean; ueberHinweis: string[]; ueberWiderspruch: string[] } {
-  // Einzelfrage, deren Vorfrage wirksam „nein“ ist: entfällt (der Wert folgt aus der Vorfrage, vorfragenAnwenden)
-  if (def?.vorfrage && vorfrageNein(ctx.fakten[def.vorfrage.fakt])) return { gestellt: false, ueberHinweis: [], ueberWiderspruch: [] };
+  // Einzelfrage, deren Vorfrage wirksam „nein“ ist, bzw. Angabe, deren Wert sich aus anderen ergibt: entfällt (der Wert
+  // folgt daraus, ableitungenAnwenden)
+  if ((def?.vorfrage && vorfrageNein(ctx.fakten[def.vorfrage.fakt])) || ctx.fakten[id]?.ausFolge) return { gestellt: false, ueberHinweis: [], ueberWiderspruch: [] };
   if (!def?.wenn) return { gestellt: true, ueberHinweis: [], ueberWiderspruch: [] };
   try {
     const b = werten(def.wenn, ctx);
@@ -101,7 +102,10 @@ const sprichtDafuer = (f: FaktWert | undefined, sonst: FaktDef['wert']): boolean
 export function vorfragenAnwenden(fakten: Record<string, FaktWert>, defs: Record<string, FaktDef>): Record<string, FaktWert> {
   const karte = vorfragenKarte(defs);
   if (!karte.size) return fakten;
-  const out = { ...fakten };
+  return vorfragenSchritte({ ...fakten }, defs, karte);
+}
+
+function vorfragenSchritte(out: Record<string, FaktWert>, defs: Record<string, FaktDef>, karte: Map<string, string[]>): Record<string, FaktWert> {
   const name = (id: string) => faktName(defs[id], id);
   for (let runde = 0; runde <= karte.size + 1; runde++) {
     let geaendert = false;
@@ -144,6 +148,70 @@ export function vorfragenAnwenden(fakten: Record<string, FaktWert>, defs: Record
       }
     }
     if (!geaendert) break;
+  }
+  return out;
+}
+
+/**
+ * Werte, die sich zwingend aus anderen Angaben ergeben (FaktDef.folgt): Trifft eine Zeile gesichert zu (`wenn` „ja“ ohne
+ * Hinweis bzw. Widerspruch, auch über Merkmale), gilt ihr Wert – abgeleitet, Quelle der Grund (`ausFolge`), die Frage
+ * entfällt (eine Angabe gleichen Werts zählt dann nicht eigens, sie bleibt gespeichert). Eine abweichende Angabe mit
+ * Beleg überstimmt (Sonderfall); jede andere abweichende (auch ein Hinweis, z. B. aus dem Modell) bleibt stehen und wird
+ * zum Widerspruch – nie still überschrieben.
+ */
+function folgenSchritt(out: Record<string, FaktWert>, defs: Record<string, FaktDef>, rest: Omit<KurzKontext, 'fakten'>): boolean {
+  let geaendert = false;
+  for (const [id, d] of Object.entries(defs)) {
+    if (!d.folgt?.length) continue;
+    const ctx: KurzKontext = { ...rest, fakten: out };
+    const zeile = d.folgt.find((z) => {
+      try {
+        const b = werten(z.wenn, ctx);
+        return b.w === 'ja' && !b.unsicher.length && !b.widerspruch.length;
+      } catch {
+        return false;
+      }
+    });
+    const f = out[id];
+    if (!zeile) {
+      // trifft nichts (mehr) zu: ein früher abgeleiteter Wert dieses Laufs fällt weg
+      if (f?.ausFolge) {
+        delete out[id];
+        geaendert = true;
+      }
+      continue;
+    }
+    if (f?.ausFolge === zeile.grund && f.wert === zeile.wert) continue;
+    const eigen = f && f.wert != null && f.wert !== '' && !f.ausFolge;
+    if (eigen && f.wert !== zeile.wert) {
+      // abweichende Angabe: mit Beleg überstimmt sie, sonst Widerspruch (sichtbar, die Frage bleibt)
+      if (!f.bestaetigt && !f.widerspruch) {
+        out[id] = { ...f, widerspruch: `ergibt sich aus anderen Angaben als „${wertAnzeige(zeile.wert, d)}“ (${zeile.grund})` };
+        geaendert = true;
+      }
+      continue;
+    }
+    out[id] = { wert: zeile.wert, herkunft: 'abgeleitet', quelle: `ergibt sich: ${zeile.grund}`, sicherheit: 'sicher', ausFolge: zeile.grund };
+    geaendert = true;
+  }
+  return geaendert;
+}
+
+/**
+ * Ableitungen zwischen den Angaben (nach den Werten der Module, vor den Regeln): Vorfragen (vorfragenAnwenden) und Werte,
+ * die sich aus anderen ergeben (FaktDef.folgt) – abwechselnd bis zum Fixpunkt, denn das eine kann am anderen hängen.
+ * `rest`: Merkmale, Bausteine, Widersprüche (für die Bedingungen von `folgt`).
+ */
+export function ableitungenAnwenden(fakten: Record<string, FaktWert>, defs: Record<string, FaktDef>, rest: Omit<KurzKontext, 'fakten'>): Record<string, FaktWert> {
+  const karte = vorfragenKarte(defs);
+  const mitFolge = Object.values(defs).some((d) => d.folgt?.length);
+  if (!karte.size && !mitFolge) return fakten;
+  let out = { ...fakten };
+  for (let runde = 0; runde < 6; runde++) {
+    const vorher = JSON.stringify(out);
+    if (karte.size) out = vorfragenSchritte(out, defs, karte);
+    const neu = mitFolge && folgenSchritt(out, defs, rest);
+    if (!neu && JSON.stringify(out) === vorher) break;
   }
   return out;
 }
