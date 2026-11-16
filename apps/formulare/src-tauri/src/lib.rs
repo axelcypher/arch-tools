@@ -12,6 +12,7 @@
 
 include!("../../../../packages/core/tauri/commands.rs");
 include!("befehle.rs");
+include!("../../../../packages/core/tauri/prozess.rs");
 include!("../../../../packages/core/tauri/qgis.rs");
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
