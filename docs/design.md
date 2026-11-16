@@ -446,20 +446,23 @@ für Rückmeldungen, `role="alert"` für Fehler. `.warning` bleibt als Hinweis i
 **Hinweis nach einer Aktion** (`zeigeHinweis`, z. B. „Gespeichert unter …“ nach dem direkten Export):
 
 - **Aussehen:** unten rechts im Fenster, Abstand `var(--s4)` zum Rand und oberhalb einer Statusleiste, Breite höchstens
-  `min(28rem, 100vw - 2 * var(--s4))`. `.meldung.ok` mit `role="status"`, bei Warnungen `.meldung.warnung`, bei einem
-  Fehler `.meldung.fehler` mit `role="alert"`. Darin der Text (ein Pfad bricht um statt abzuschneiden), höchstens zwei
+  `min(28rem, 100vw - 2 * var(--s4))`; eine App mit Statusleiste hebt ihn über `--hinweis-unten`. `.meldung.ok`, bei
+  Warnungen `.meldung.warnung`, bei einem Fehler `.meldung.fehler`. Darin der Text (ein Pfad bricht um statt abzuschneiden), höchstens zwei
   Aktionen und ein Symbolknopf `schliessen` mit `aria-label`/`title` „Hinweis schließen“ (mindestens `--ctl-h-s`).
 - **Aktionen:** nach dem Inhalt benannt, z. B. „Ordner öffnen“; „Prüfhinweise …“ erscheint nur, wenn es welche gibt,
-  und öffnet die Liste in einem `Modal`. Eine Aktion schließt den Hinweis.
+  und öffnet die Liste in einem `Modal`; der Hinweis bleibt dabei stehen, damit der Dialog den Fokus an den Knopf
+  zurückgeben kann und „Ordner öffnen“ erreichbar bleibt. Abschließende Aktionen wie „Ordner öffnen“ schließen ihn
+  (`schliesst: true`).
 - **Dauer:** Er hält nichts auf, nimmt keinen Fokus und verschwindet nicht von selbst (WCAG 2.2.1). Er bleibt, bis man
   ihn schließt oder ein neuer Hinweis mit demselben Schlüssel (`id`, z. B. `'export'`) ihn ersetzt; der neue Text wird
   wieder angesagt.
 - **Stapel:** Verschiedene Hinweise stapeln sich, der neueste unten. Ab dem vierten fällt der älteste weg, aber nie
   einer, in dem gerade der Fokus steht. Ist das Fenster zu niedrig, wird der Stapel in sich scrollbar; er verdeckt
-  höchstens die untere rechte Ecke, nie das fokussierte Element (WCAG 2.4.11). Der Stapel ist immer im DOM (leer, wenn
-  nichts anliegt), damit neue Hinweise zuverlässig vorgelesen werden, und ist ein Bereich mit Namen (`role="region"`,
-  `aria-label` „Hinweise“).
-- **Tastatur:** F6 springt in den neuesten Hinweis (ohne Hinweis tut F6 nichts); Tab und Umschalt+Tab gehen durch die
+  höchstens die untere rechte Ecke, nie das fokussierte Element (WCAG 2.4.11): Liegt es darunter, wird es per
+  `scrollIntoView` über den Stapel geschoben, und geht das nicht, weicht der Stapel nach links unten aus. Der Stapel ist
+  ein Bereich mit Namen (`role="region"`, `aria-label` „Hinweise“) und immer im DOM; darin sagen zwei stets vorhandene
+  Live-Regionen jeden neuen Hinweis an (`role="status"`, bei einem Fehler `role="alert"`).
+- **Tastatur:** F6 springt in den neuesten Hinweis (ohne Hinweis tut F6 nichts), F6 im Hinweis wieder zurück; Tab und Umschalt+Tab gehen durch die
   Knöpfe aller Hinweise des Stapels. Esc springt nur zurück an das zuvor fokussierte Element (ersatzweise den
   Hauptbereich) und schließt den Hinweis nicht – anders als in Dialogen und Menüs; zum Schließen dient der Knopf.
   Schließt man einen Hinweis mit Fokus, geht der Fokus an den nächsten Hinweis im Stapel, sonst zurück wie bei Esc.
