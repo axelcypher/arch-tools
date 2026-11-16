@@ -248,7 +248,7 @@ Felder und „Übernehmen“ gesperrt.
 | Projekt             | Projektdatei (.oap) in neuen Projekten              | alle mit Projektdatei   | `03 Berechnungen/Flächen/{PROJEKT_KUERZEL} {PROJEKT_KURZNAME}.oap` | allgemein › oapPfad                           |
 | Ablage              | Fotoordner                                          | RECTIO, FABRIO, ATLAS   | `09 Fotos`                                                    | allgemein › fotoordner                             |
 | Ablage              | Antragsordner                                       | PERMIO                  | `TÖB`                                                         | allgemein › pfade                                  |
-| Ablage              | PERMIO sucht Berechnungen außerdem in               | PERMIO                  | (keine – immer die Berechnungsordner der Rechen-Apps)         | allgemein › pfade                                  |
+| Ablage              | PERMIO sucht Berechnungen außerdem in               | PERMIO                  | `Planung/Berechnungen` (dazu immer die Berechnungsordner der Rechen-Apps) | allgemein › pfade                       |
 | Ablage              | Ablageordner der Katasterpläne                      | ATLAS                   | `Kataster`                                                    | kataster › zielpfad                                |
 | Ablage              | Gewerke, LV-Unterordner, Aufträge, Mailverkehr, Archiv, Bauleitung, weitere Mailordner, Kostenkontrolle | FABRIO | wie bisher (`Gewerke`, leer, `Auftrag`, `Korrespondenz`, `Archiv`/`_archiv`, `Bauleitung`, `Korrespondenz`, `Kostenkontrolle`) | ava › ablage.* |
 | Pläne und Dokumente | Dateinamen der Pläne                                | ATLAS                   | `{PROJEKT_KUERZEL}_{Plannummer}_{Index}_{Titel}`              | projektordner › struktur.dateischema               |
@@ -266,7 +266,10 @@ Felder und „Übernehmen“ gesperrt.
 **Berechnungsordner je App:** Die Vorgabestruktur von ATLAS trennt die Berechnungen nach Art („03 Berechnungen/Flächen“,
 „…/Kosten“, „…/Nachweise“); die Projektdatei liegt per Vorgabe in „03 Berechnungen/Flächen“, dem Ordner von QUADRIO.
 PERMIO sucht externe Antragsdokumente (Berechnungen, Nachweise) in den Berechnungsordnern aller drei Rechen-Apps und in
-zusätzlich eingestellten Ordnern – so findet es auch die direkten Exporte.
+den zusätzlich eingestellten Ordnern (Vorgabe wie bisher „Planung/Berechnungen“) – so findet es auch die direkten
+Exporte. Platzhalter der Suchordner setzt PERMIO mit den Angaben des jeweiligen Projekts ein. Die Einträge unter
+„Export“ (Berechnungsordner, Dateinamen, „PDF mitspeichern“) nutzt der direkte Export von QUADRIO, TERRIO und NUMIO;
+er kommt mit einem eigenen PR (bis dahin wirken sie nur auf die Suche von PERMIO).
 
 **Ohne Verlust übernommen:** Die Werte bleiben unter ihren bisherigen Schlüsseln, die Apps lesen sie dort weiter
 („Vorgabe wiederherstellen“ schreibt die Vorgabe dort ausdrücklich hinein). Neue Einstellungen liegen in `allgemein.json`
@@ -274,8 +277,9 @@ unter `pfade`. Die Export-Einstellungen von PERMIO standen bis 0.58 nur je Rechn
 (`formulare:export`): Beim Start von PERMIO bzw. beim Öffnen der Seite werden abweichende Werte übernommen, wenn
 gemeinsam noch keiner steht; der alte Eintrag bleibt unverändert. Steht gemeinsam schon ein anderer Wert (zweiter Rechner
 einer Netzwerkinstallation mit eigenem altem Wert), wird nichts still überschrieben – die Seite zeigt die Abweichung und
-fragt, welcher Wert gelten soll. Der alte Berechnungsordner von PERMIO entfällt, wenn er die Vorgabe war
-(„Planung/Berechnungen“); ein eigener Wert bleibt als zusätzlicher Suchordner. In die Struktur von ATLAS schreibt der
+fragt, welcher Wert gelten soll. Jeder alte Wert wird je Rechner nur einmal übernommen bzw. entschieden – ein späteres
+„Vorgabe wiederherstellen“ bleibt bestehen. Ein eigener alter Berechnungsordner von PERMIO wird zusätzlicher Suchordner.
+In die Struktur von ATLAS schreibt der
 Dialog nur, wenn ATLAS sie angelegt hat und sie lesbar ist.
 
 **In den App-Dialogen** stehen die Werte nur noch zur Ansicht, mit dem Verweis „Pfade und Benennung …“: ATLAS
@@ -308,5 +312,6 @@ sortiert); mit `entwurf` (geändert?, Fehler, übernehmen, verwerfen) gilt sie f
    relativer Wert („Vorlagen“) wird abgelehnt.
 5. Ein Rechner mit eigener alter PERMIO-Namensvorlage, ein zweiter mit einer anderen (Netzwerk): Auf dem zweiten zeigt
    die Seite die Abweichung mit der Wahl; nach der Wahl erscheint der Hinweis nicht mehr.
-6. Berechnungsordner auf einen Unterordner mit Umlaut und Leerzeichen setzen („03 Berechnungen/Flächen alt“): Der direkte
-   Export (QUADRIO) legt ihn an; PERMIO findet die Datei als externes Antragsdokument.
+6. Berechnungsordner von QUADRIO auf einen Unterordner mit Umlaut und Leerzeichen setzen („03 Berechnungen/Flächen alt“)
+   und dort eine Flächenberechnung ablegen: PERMIO findet sie als externes Antragsdokument (nach dem PR des direkten
+   Exports legt QUADRIO den Ordner beim Export selbst an).

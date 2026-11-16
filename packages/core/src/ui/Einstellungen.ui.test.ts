@@ -67,7 +67,7 @@ describe('Einstellungen', () => {
     expect(tabs().map((t) => t.tabIndex)).toEqual([0, -1]);
     const panel = d.querySelector('[role="tabpanel"]')!;
     expect(panel.getAttribute('aria-labelledby')).toBe(tabs()[0].id);
-    expect(panel.querySelector('h2')?.textContent).toBe('Allgemein');
+    expect(panel.querySelector('h3')?.textContent).toBe('Allgemein');
     // Farbschema steht nicht hier (Menü der Titelleiste), Speicherort und Büro schon
     expect(panel.textContent).not.toContain('Farbschema');
     expect(panel.textContent).toContain('Speicherort der Einstellungen');
@@ -75,7 +75,7 @@ describe('Einstellungen', () => {
     await taste(tabs()[0], 'ArrowDown');
     await warten();
     expect(tabs()[1].getAttribute('aria-selected')).toBe('true');
-    expect(d.querySelector('[role="tabpanel"] h2')?.textContent).toBe('Pfade und Benennung');
+    expect(d.querySelector('[role="tabpanel"] h3')?.textContent).toBe('Pfade und Benennung');
     await taste(tabs()[1], 'Home');
     expect(tabs()[0].getAttribute('aria-selected')).toBe('true');
     await taste(tabs()[0], 'End');
@@ -118,6 +118,8 @@ describe('Einstellungen', () => {
     await act(async () => e.einstellungenOeffnen('pfade'));
     await warten();
     const d = dialog()!;
+    // Erstfokus ohne Angabe eines Eintrags: das erste Feld der Seite (Filter „App“)
+    expect(document.activeElement?.tagName).toBe('SELECT');
     const foto = eintrag('ablage.fotoordner');
     expect(feldVon('ablage.fotoordner').value).toBe('10 Fotos');
     expect(foto.textContent).toContain('Eigener Wert');
@@ -126,6 +128,13 @@ describe('Einstellungen', () => {
     expect(feldVon('ablage.fotoordner').getAttribute('aria-invalid')).toBe('true');
     expect(knopf('Übernehmen', d)!.disabled).toBe(true);
     expect(knopf('Übernehmen', d)!.title).toContain('Fotoordner');
+    // der Grund steht sichtbar neben den Knöpfen, „Zum Feld“ springt hin
+    const grund = d.querySelector<HTMLElement>('.einst-sperrgrund')!;
+    expect(grund.textContent).toContain('„Fotoordner“ berichtigen');
+    (document.activeElement as HTMLElement | null)?.blur();
+    await klick(knopf('Zum Feld', grund));
+    await warten();
+    expect(document.activeElement).toBe(feldVon('ablage.fotoordner'));
     await tippen(feldVon('ablage.fotoordner'), '');
     expect(foto.querySelector('.feld-meldung')?.textContent).toMatch(/^Angabe fehlt/);
     await klick(knopf('Vorgabe wiederherstellen', foto));

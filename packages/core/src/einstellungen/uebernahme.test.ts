@@ -21,9 +21,12 @@ describe('Übernahme alter lokaler Werte (PERMIO, „formulare:export“)', () =
     expect(alteWerteAus({ antragsordner: 5, zielpfad: '  ' })).toEqual([]);
   });
 
-  it('gemeinsam noch nichts: der lokale Wert wird übernommen', () => {
+  it('gemeinsam noch nichts: der lokale Wert wird übernommen – je Rechner nur einmal (ein späteres „Vorgabe wiederherstellen“ bleibt)', () => {
     const alt = alteWerteAus({ antragsordner: 'Anträge', berechnungsordner: 'Statik' });
     expect(uebernahmePlanen(alt, {})).toEqual({ uebernehmen: alt, abweichungen: [] });
+    // übernommen und vermerkt, danach im Dialog auf die Vorgabe zurückgesetzt (Eintrag entfällt): nicht erneut übernehmen
+    const vermerkt = new Set(['ablage.permio.antragsordner="Anträge"', 'ablage.permio.berechnungsordner=["Statik"]']);
+    expect(uebernahmePlanen(alt, {}, vermerkt)).toEqual({ uebernehmen: [], abweichungen: [] });
   });
 
   it('gemeinsam gleicher Wert: nichts zu tun', () => {

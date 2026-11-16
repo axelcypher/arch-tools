@@ -578,7 +578,6 @@ function Formulare() {
 /** Beispielwerte für die Vorschau des Pfads neuer Projektdateien */
 const OAP_BEISPIEL = { nummer: 'BS9', kurzname: 'EFH Musterweg', vorhaben: 'Neubau Einfamilienhaus', datum: new Date() };
 
-
 function Projektdaten() {
   const neu = useFormulare((s) => s.oapVorlage);
   return (

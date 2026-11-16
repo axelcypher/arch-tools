@@ -44,13 +44,19 @@ export function pfadWerteAus(roh: Record<string, unknown>): PfadWerte {
 }
 
 /** alle Werte frisch lesen (je Bereich einmal) und den Zwischenspeicher füllen */
+let laeufe = 0;
 export function pfadWerteLaden(): Promise<PfadWerte> {
+  const lauf = ++laeufe;
   const p = (async () => {
     const roh: Record<string, unknown> = {};
     await Promise.all(bereiche().map(async (b) => (roh[b] = await konfigLesen(b).catch(() => null))));
-    zwischen = pfadWerteAus(roh);
-    melden();
-    return zwischen;
+    const werte = pfadWerteAus(roh);
+    // nur das Ergebnis des letzten Laufs gilt – ein älterer überholt keinen neueren und kein Speichern dazwischen
+    if (lauf === laeufe) {
+      zwischen = werte;
+      melden();
+    }
+    return werte;
   })();
   geladen = p;
   p.catch(() => {
@@ -106,6 +112,7 @@ export async function pfadSpeichern(id: string, wert: PfadWert | undefined): Pro
     const { bereich, schluessel } = e.auch;
     await konfigAendern(bereich, (roh) => mitSchluessel(objekt(roh), schluessel, gelesen ?? e.vorgabe));
   }
+  laeufe++; // ein laufendes Lesen von vorher übernimmt seinen älteren Stand nicht mehr
   zwischen = { ...zwischen };
   if (gelesen === undefined) delete zwischen[id];
   else zwischen[id] = gelesen;
@@ -201,15 +208,27 @@ export function exportDateinameAusMuster(muster: string, o: { werte: GlobaleQuel
 /* ---------- PERMIO: wo Berechnungen als Antragsdokumente gesucht werden ---------- */
 
 /**
- * Ordner, in denen PERMIO externe Antragsdokumente (Berechnungen, Nachweise) sucht: die Berechnungsordner von
- * QUADRIO, TERRIO und NUMIO und die zusätzlich eingestellten – relativ zum Projektordner, ohne doppelte, Platzhalter
- * mit den Werten des Projekts ersetzt.
+ * Vorlagen der Ordner, in denen PERMIO externe Antragsdokumente (Berechnungen, Nachweise) sucht: die Berechnungsordner
+ * von QUADRIO, TERRIO und NUMIO und die zusätzlich eingestellten – relativ zum Projektordner, ohne doppelte, Platzhalter
+ * noch nicht ersetzt (das geschieht im Projekt, `relativerPfad` mit dessen Angaben).
  */
-export function berechnungenSuchordner(werte: GlobaleQuelle = {}, w: (id: string) => PfadWert = pfadWert): string[] {
+export function berechnungenSuchvorlagen(w: (id: string) => PfadWert = pfadWert): string[] {
   const extra = w('ablage.permio.berechnungsordner');
   const vorlagen = [...(['flaechenrechner', 'grz', 'kosten'] as const).map((a) => String(w(`export.berechnungsordner.${a}`))), ...(Array.isArray(extra) ? extra : [])];
   const out: string[] = [];
-  for (const v of vorlagen) {
+  const norm = (v: string) =>
+    v
+      .replace(/[\\/]+/g, '/')
+      .replace(/^\/|\/$/g, '')
+      .trim();
+  for (const v of vorlagen.map(norm)) if (v && !out.some((x) => x.toLowerCase() === v.toLowerCase())) out.push(v);
+  return out;
+}
+
+/** die Suchordner eines Projekts: die Vorlagen mit dessen Angaben, ohne doppelte */
+export function berechnungenSuchordner(werte: GlobaleQuelle = {}, w: (id: string) => PfadWert = pfadWert): string[] {
+  const out: string[] = [];
+  for (const v of berechnungenSuchvorlagen(w)) {
     const rel = relativerPfad(v, werte);
     if (rel && !out.some((x) => x.toLowerCase() === rel.toLowerCase())) out.push(rel);
   }

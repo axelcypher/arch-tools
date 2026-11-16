@@ -294,8 +294,9 @@ export function App() {
   ];
   const speichernTitel = (text: string) => (geaendert ? `${text} – ungespeicherte Änderungen` : text);
   const leistenTeile: LeistenTeil[] = [];
-  if (oeffnenKnopf) leistenTeile.push({ id: 'oeffnen', inhalt: <button onClick={() => void dateiOeffnen()}>Formular öffnen …</button> });
+  // „Datei“ links außen (docs/design.md, „Aufbau“), daneben ggf. „Formular öffnen …“
   leistenTeile.push({ id: 'datei', inhalt: <MenueKnopf punkte={dateiMenue}>Datei</MenueKnopf> });
+  if (oeffnenKnopf) leistenTeile.push({ id: 'oeffnen', inhalt: <button onClick={() => void dateiOeffnen()}>Formular öffnen …</button> });
   if (formularSichtbar)
     leistenTeile.push(
       {

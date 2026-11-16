@@ -13,6 +13,7 @@ import { pfadEinstellung, pfadSpeichern, usePfadWerte, type PfadWerte } from '..
 import { abweichungEntschieden, pfadeUebernehmen, type Abweichung } from '../einstellungen/uebernahme';
 import { PFAD_THEMEN, gleicherWert, hatFehler, pfadPruefen, type PfadEinstellung, type PfadWert } from '../einstellungen/verzeichnis';
 import { Modal } from './Dialog';
+import { dialogVerhaltenEinrichten } from './dialoge';
 import type { MenuePunkt } from './Menue';
 import { inFeldEinfuegen, PlatzhalterChips } from './Platzhalter';
 import { aenderungenVerwerfen, fehlerText } from './Rueckfrage';
@@ -151,6 +152,8 @@ export function PfadeVerweis({ fokus, seite = 'pfade', text = 'Pfade und Benennu
 export function EinstellungenHost() {
   const offen = useEinstellungen((s) => s.offen);
   useEffect(() => tastenAnmelden(), []);
+  // Erstfokus, Fokusfalle und Rückkehr des Fokus (auch im Rahmen Arkly, der keine Titelleiste der Apps hat)
+  useEffect(() => dialogVerhaltenEinrichten(), []);
   return offen ? <EinstellungenDialog /> : null;
 }
 
@@ -222,6 +225,16 @@ export function EinstellungenDialog() {
     }
   };
 
+  /** zum ersten fehlerhaften Feld (Seite „Pfade und Benennung“) */
+  const zumFehler = () => {
+    oeffnen('pfade');
+    requestAnimationFrame(() => {
+      const feld = document.querySelector<HTMLElement>('.einst-inhalt [aria-invalid="true"]');
+      feld?.scrollIntoView?.({ block: 'center' });
+      feld?.focus();
+    });
+  };
+
   /** senkrechte Registerleiste: ↑/↓, Pos1/Ende wechseln sofort (docs/design.md, „Umschalter“) */
   const tasten = (e: KeyboardEvent<HTMLDivElement>) => {
     const i = seiten.findIndex((s) => s.id === aktiv.id);
@@ -247,7 +260,7 @@ export function EinstellungenDialog() {
             <h3 className="einst-nav-kopf" id={kopfId}>
               Einstellungen
             </h3>
-            <div ref={navRef} className="einst-nav-liste" role="tablist" aria-orientation="vertical" aria-labelledby={kopfId} onKeyDown={tasten}>
+            <div ref={navRef} className="einst-nav-liste" role="tablist" aria-orientation="vertical" aria-label="Seiten" onKeyDown={tasten}>
               {seiten.map((s) => {
                 const gewaehlt = s.id === aktiv.id;
                 const mitAenderung = !!s.entwurf?.geaendert();
@@ -261,6 +274,8 @@ export function EinstellungenDialog() {
                     aria-selected={gewaehlt}
                     aria-controls={`${basis}-seite`}
                     tabIndex={gewaehlt ? 0 : -1}
+                    // im Notbetrieb sind die Felder gesperrt: der Fokus beginnt auf der gewählten Seite
+                    data-startfokus={gewaehlt && gesperrt ? '' : undefined}
                     className="einst-nav-eintrag"
                     onClick={() => oeffnen(s.id)}
                   >
@@ -271,7 +286,7 @@ export function EinstellungenDialog() {
                         {mitAenderung && (
                           <span className="einst-geaendert" title="Geändert – gilt mit „Übernehmen“">
                             <span aria-hidden> ●</span>
-                            <span className="titlebar-unsichtbar"> – geändert</span>
+                            <span className="unsichtbar"> – geändert</span>
                           </span>
                         )}
                       </span>
@@ -297,6 +312,16 @@ export function EinstellungenDialog() {
           </p>
         )}
         <div className="dialog-buttons">
+          {/* warum „Übernehmen“ gesperrt ist – sichtbar, mit Sprung zum Feld (im Notbetrieb steht es oben) */}
+          {sperrgrund && !gesperrt && (
+            <p className="einst-sperrgrund muted small-text" role="status">
+              {sperrgrund}{' '}
+              <button type="button" className="small" onClick={zumFehler}>
+                Zum Feld
+              </button>
+            </p>
+          )}
+          <span className="tb-spacer" />
           <button type="button" onClick={() => void schliessenFragen()} disabled={laeuft}>
             Abbrechen
           </button>
@@ -354,13 +379,6 @@ function SeiteAllgemein() {
     };
   }, []);
   const wert = entwurf ?? gespeichert;
-  // Erstfokus (docs/design.md): das erste Feld der Seite – es ist erst nach dem Lesen bedienbar
-  const erstesFeld = useRef<HTMLInputElement>(null);
-  const geladen = !!gespeichert;
-  useEffect(() => {
-    const aktiv = document.activeElement;
-    if (geladen && (!aktiv || aktiv === document.body || aktiv.classList.contains('modal'))) erstesFeld.current?.focus();
-  }, [geladen]);
   const setze = (patch: Partial<Buero>) => {
     if (!wert) return;
     bueroStore.setState({ entwurf: { ...wert, ...patch } });
@@ -368,7 +386,7 @@ function SeiteAllgemein() {
   };
   return (
     <>
-      <h2>Allgemein</h2>
+      <h3>Allgemein</h3>
       <p className="einst-einleitung">Gilt für alle Apps und Arkly.</p>
       <section className="einst-gruppe" aria-labelledby="einst-speicherort">
         <h4 id="einst-speicherort">Speicherort der Einstellungen</h4>
@@ -379,12 +397,13 @@ function SeiteAllgemein() {
         <h4 id="einst-buero">Büro</h4>
         <label className="field">
           <span className="field-label">Name des Büros</span>
-          <input ref={erstesFeld} value={wert?.buero ?? ''} disabled={!wert || !!gesperrt} title={gesperrt ?? undefined} onChange={(e) => setze({ buero: e.target.value })} />
+          {/* Erstfokus (docs/design.md): das erste Feld – bis die Einstellungen gelesen sind nur lesbar, nicht gesperrt */}
+          <input value={wert?.buero ?? ''} readOnly={!wert} disabled={!!gesperrt} data-startfokus="" title={gesperrt ?? undefined} onChange={(e) => setze({ buero: e.target.value })} />
           <span className="field-hint">Im Kopf der Ausdrucke und Excel-Dateien; leer = ohne.</span>
         </label>
         <label className="field">
           <span className="field-label">Kürzel der Mitarbeiter</span>
-          <input value={wert?.mitarbeiter ?? ''} disabled={!wert || !!gesperrt} title={gesperrt ?? undefined} onChange={(e) => setze({ mitarbeiter: e.target.value })} />
+          <input value={wert?.mitarbeiter ?? ''} readOnly={!wert} disabled={!!gesperrt} title={gesperrt ?? undefined} onChange={(e) => setze({ mitarbeiter: e.target.value })} />
           <span className="field-hint">Durch Komma getrennt; Vorschläge für „Bearbeitung“ in den Stammdaten.</span>
         </label>
       </section>
@@ -516,7 +535,7 @@ function SeitePfade({ fokus }: { fokus?: string }) {
 
   return (
     <>
-      <h2>Pfade und Benennung</h2>
+      <h3>Pfade und Benennung</h3>
       <p className="einst-einleitung">
         Alle Pfadvorgaben und Benennungsschemata der Apps an einer Stelle. Pfade gelten relativ zum Projektordner. Platzhalter wie <code>{'{PROJEKT_KUERZEL}'}</code> setzen die Angaben des Projekts
         ein; die Vorschau zeigt Beispielwerte.
@@ -543,7 +562,7 @@ function SeitePfade({ fokus }: { fokus?: string }) {
       <div className="einst-filter">
         <label className="field">
           <span className="field-label">App</span>
-          <select value={app} onChange={(e) => setApp(e.target.value as AppKennung | '')}>
+          <select value={app} data-startfokus="" onChange={(e) => setApp(e.target.value as AppKennung | '')}>
             <option value="">Alle Apps</option>
             {appsMitEintrag.map((a) => (
               <option key={a} value={a}>
@@ -639,9 +658,12 @@ function PfadFeld({ e, werte }: { e: PfadEinstellung; werte: PfadWerte }) {
             </>
           )}
         </span>
-        <button type="button" className="small" disabled={istVorgabe || !!gesperrt} onClick={() => setze(null)} title={gesperrt ?? `Vorgabe wiederherstellen: ${vorgabeText}`}>
-          Vorgabe wiederherstellen
-        </button>
+        {/* nur bei eigenem Wert – sonst gibt es nichts wiederherzustellen */}
+        {!istVorgabe && (
+          <button type="button" className="small" disabled={!!gesperrt} onClick={() => setze(null)} title={gesperrt ?? `Vorgabe wiederherstellen: ${vorgabeText}`}>
+            Vorgabe wiederherstellen
+          </button>
+        )}
       </div>
     </div>
   );

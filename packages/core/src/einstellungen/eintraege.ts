@@ -165,8 +165,9 @@ export const PFAD_EINSTELLUNGEN: PfadEinstellung[] = [
     zeilen: 'pfad',
     bezeichnung: 'PERMIO sucht Berechnungen außerdem in',
     erklaerung:
-      'Berechnungen und Nachweise, die als externe Dokumente zum Antrag gehören, sucht PERMIO immer in den Berechnungsordnern von QUADRIO, TERRIO und NUMIO (siehe „Export“). Hier weitere Ordner, je Zeile einer, relativ zum Projektordner.',
-    vorgabe: [],
+      'Berechnungen und Nachweise, die als externe Dokumente zum Antrag gehören, sucht PERMIO immer in den Berechnungsordnern von QUADRIO, TERRIO und NUMIO (siehe „Export“). Hier weitere Ordner, je Zeile einer, relativ zum Projektordner; Platzhalter mit den Angaben des Projekts.',
+    vorgabe: [VORGABE_PERMIO.berechnungsordner],
+    variablen: ORDNER_VARIABLEN,
     speicher: inPfade('ablage.permio.berechnungsordner', 'liste'),
   },
   {

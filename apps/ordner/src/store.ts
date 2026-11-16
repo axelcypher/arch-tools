@@ -513,13 +513,22 @@ vorDemSchliessen(async () => {
   return true;
 });
 // die zentralen Einstellungen (Pfade und Benennung, Büro) haben Namen der Struktur bzw. gemeinsame Angaben geändert – auch
-// in einem anderen Fenster oder Tab: neu lesen, solange hier nichts Eigenes offen ist (Konflikt, nicht Geschriebenes)
-const zentralGeaendert = () => {
+// in einem anderen Fenster oder Tab. Struktur: über `neuLesen` – es schreibt zuerst, was hier noch ansteht, und übernimmt
+// nur, wenn nichts Eigenes offen ist (kein Konflikt, kein laufendes Speichern). Gemeinsame Angaben: nur diese.
+konfigBeobachten(BEREICH, () => {
   const s = useOrdner.getState();
-  if (s.geladen && !s.konflikt && !s.strukturNichtGeschrieben) void s.konfigLaden();
-};
-konfigBeobachten(BEREICH, zentralGeaendert);
-konfigBeobachten('allgemein', zentralGeaendert);
+  if (s.geladen && !s.konflikt && !s.strukturNichtGeschrieben) void s.neuLesen();
+});
+konfigBeobachten('allgemein', () => {
+  if (!useOrdner.getState().geladen) return;
+  void konfigLesen('allgemein').then(
+    (roh) => {
+      const allgemein = allgemeinAus(roh);
+      if (JSON.stringify(allgemein) !== JSON.stringify(useOrdner.getState().allgemein)) useOrdner.setState({ allgemein, stammordner: allgemein.projekte[0] ?? '' });
+    },
+    () => undefined,
+  );
+});
 konfigOrtBeobachten((o) => {
   const s = useOrdner.getState();
   if (!s.geladen || (s.konfig && o && s.konfig.ordner === o.ordner && s.konfig.modus === o.modus && s.konfig.notbetrieb === o.notbetrieb)) return;

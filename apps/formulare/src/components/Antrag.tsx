@@ -867,7 +867,7 @@ export function AntragsdatenAnsicht() {
                                 : 'kein Formular im Projekt'
                               : d.quelle
                                 ? `Quelle: ${d.quelle.pfad}`
-                                : `keine Quelle in ${u.quelle || wirksameEinstellungen(st, projekt).berechnungsordner.split('\n').join(', ') || 'dem Projektordner'}`}
+                                : `keine Quelle in ${u.quelle || wirksameEinstellungen(st, projekt).berechnungsordner.split('\n').join(' · ') || 'dem Projektordner'}`}
                         </span>
                         {u.art === 'plansatz' && d.plansatz ? (
                           // Reihenfolge: was man anklickt zuerst, die lange Quelle zuletzt (sie wird bei Platzmangel gekürzt)
@@ -888,7 +888,7 @@ export function AntragsdatenAnsicht() {
                                 {' · '}
                               </>
                             )}
-                            <span className="muted">Quelle: {quelleVonEintrag(u, wirksameEinstellungen(st, projekt)).split('\n').join(', ')}</span>
+                            <span className="muted">Quelle: {quelleVonEintrag(u, wirksameEinstellungen(st, projekt)).split('\n').join(' · ')}</span>
                             {hatBedingung(u.bedingung) ? <span className="pu-bedingung"> · nur wenn {bedingungText(u.bedingung)}</span> : null}
                           </span>
                         ) : (
@@ -1002,7 +1002,7 @@ export function AntragsdatenAnsicht() {
                               wert={u.quelle ?? ''}
                               bindung={zf}
                               beiVerlust={verloren(u.titel)}
-                              placeholder={u.art === 'plansatz' ? PLANSATZ_QUELLE : wirksameEinstellungen(st, projekt).berechnungsordner.split('\n').join(', ')}
+                              placeholder={u.art === 'plansatz' ? PLANSATZ_QUELLE : wirksameEinstellungen(st, projekt).berechnungsordner.split('\n').join(' · ')}
                               onUebernehmen={(v, b) => setzen(u.id, { quelle: v || undefined }, b)}
                             />
                           </label>
