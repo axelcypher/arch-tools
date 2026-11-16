@@ -299,7 +299,7 @@ export function VorfragenNeinDialog({ folgen }: { folgen: FolgenRechner }) {
     benutzerMerken(von);
     const lage = ziel.lagebezug ? aktuelleLage(project).lage : undefined;
     const st = useBaurecht.getState();
-    useBaurecht.setState({ vorfragenStillBis: Date.now() + 1500 });
+    useBaurecht.setState({ vorfragenStill: ziel.ziele.map((z) => z.id) });
     for (const z of ziel.ziele) st.faktSetzen(z.id, false, von.trim(), belege[z.id], lage);
     st.ansagen(`${ziel.ziele.length} Vorfragen mit „nein“ beantwortet – ihre Einzelfragen entfallen`);
     schliessen(ziel.ziele[0].id);

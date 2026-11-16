@@ -715,7 +715,9 @@ function Vorfrage({ id, kinder, stand, klaerung, eigene, suche }: { id: string; 
   useEffect(() => {
     const v = vorher.current;
     vorher.current = { stufe, projekt };
-    if (v.stufe === stufe || v.projekt !== projekt || Date.now() < useBaurecht.getState().vorfragenStillBis) return;
+    if (v.stufe === stufe || v.projekt !== projekt) return;
+    const still = useBaurecht.getState().vorfragenStill;
+    if (still.includes(id)) return useBaurecht.setState({ vorfragenStill: still.filter((x) => x !== id) });
     if (stufe === 'nein') useBaurecht.getState().ansagen(`${name}: nein – ${entfallen.length ? `${einzelfragen(entfallen.length)} entfallen` : 'keine Einzelfrage offen'}`);
     else if (stufe === 'ja') useBaurecht.getState().ansagen(`${name}: ja – ${einzelfragen(kinder.length)} darunter`);
   }, [stufe, projekt]);
@@ -783,7 +785,7 @@ function VorfragenSammel({ gruppe, titel, ids, stand }: { gruppe: string; titel:
         titel,
       );
     const st = useBaurecht.getState();
-    useBaurecht.setState({ vorfragenStillBis: Date.now() + 1500 });
+    useBaurecht.setState({ vorfragenStill: ids });
     for (const id of ids) st.faktSetzen(id, false, benutzer(), undefined, lagebezug(defs[id], fakten[id]) ? aktuelleLage(st.project).lage : undefined);
     st.ansagen(`${ids.length} Vorfragen mit „nein“ beantwortet – ihre Einzelfragen entfallen`);
     st.fokusSetzen(ids[0]);

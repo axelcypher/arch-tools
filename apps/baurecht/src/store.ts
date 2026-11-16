@@ -61,8 +61,8 @@ export interface Zustand {
   vorfragenAuf: Record<string, boolean>;
   /** Vorfragen, bei denen „unklar“ gewählt ist (eine Antwort, getrennt vom bloßen Aufklappen) – nur für die Sitzung */
   vorfragenUnklar: Record<string, boolean>;
-  /** bis zu diesem Zeitpunkt (ms) keine Einzelansagen der Vorfragen – „Keine davon“ sagt selbst einmal für alle an */
-  vorfragenStillBis: number;
+  /** Vorfragen, deren nächste Einzelansage entfällt – „Keine davon“ sagt selbst einmal für alle an (je Kennung einmal verbraucht) */
+  vorfragenStill: string[];
   /** Rückmeldung nach dem Speichern (Kopf, Live-Region): Zeitpunkt und Text */
   gespeichertMeldung: { am: number; text: string } | null;
 
@@ -147,7 +147,7 @@ export const useBaurecht = create<Zustand>((set, get) => ({
   merkmaleAuf: null,
   vorfragenAuf: {},
   vorfragenUnklar: {},
-  vorfragenStillBis: 0,
+  vorfragenStill: [],
   gespeichertMeldung: null,
   ansage: '',
   // derselbe Text noch einmal: unsichtbar verändert, damit der Screenreader ihn erneut vorliest
@@ -204,7 +204,7 @@ export const useBaurecht = create<Zustand>((set, get) => ({
     if (!roh) return;
     const merkmale = merkmaleAusRoh(roh, antrag);
     const pruefung = baurechtAusRoh(roh).pruefungen[antrag] ?? leerePruefung();
-    set({ antrag, merkmale, merkmaleDatei: { ...merkmale }, pruefung: kopie(pruefung), pruefungDatei: kopie(pruefung), auswahl: null });
+    set({ antrag, merkmale, merkmaleDatei: { ...merkmale }, pruefung: kopie(pruefung), pruefungDatei: kopie(pruefung), auswahl: null, vorfragenAuf: {}, vorfragenUnklar: {} });
   },
   merkmalSetzen: (name, wert) => {
     const m = { ...get().merkmale };
