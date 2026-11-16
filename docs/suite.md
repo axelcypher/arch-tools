@@ -267,7 +267,7 @@ Felder und „Übernehmen“ gesperrt.
 „…/Kosten“, „…/Nachweise“); die Projektdatei liegt per Vorgabe in „03 Berechnungen/Flächen“, dem Ordner von QUADRIO.
 PERMIO sucht externe Antragsdokumente (Berechnungen, Nachweise) in den Berechnungsordnern aller drei Rechen-Apps und in
 den zusätzlich eingestellten Ordnern (Vorgabe wie bisher „Planung/Berechnungen“) – so findet es auch die direkten
-Exporte. Platzhalter der Suchordner setzt PERMIO mit den Angaben des jeweiligen Projekts ein. Die Einträge unter
+Exporte, sobald es sie gibt. Platzhalter der Suchordner setzt PERMIO mit den Angaben des jeweiligen Projekts ein. Die Einträge unter
 „Export“ (Berechnungsordner, Dateinamen, „PDF mitspeichern“) nutzt der direkte Export von QUADRIO, TERRIO und NUMIO;
 er kommt mit einem eigenen PR (bis dahin wirken sie nur auf die Suche von PERMIO).
 
