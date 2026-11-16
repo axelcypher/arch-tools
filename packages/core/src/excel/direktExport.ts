@@ -121,7 +121,11 @@ export async function direktExportieren(a: DirektExportAuftrag, u: DirektExportU
   };
   let n = 1;
   if (await belegt(1)) {
-    const wahl = await vorhandeneDateiFragen(u.fragen, [ziel.xlsx, ziel.pdf].filter((x): x is string => !!x), ordner);
+    const wahl = await vorhandeneDateiFragen(
+      u.fragen,
+      [ziel.xlsx, ziel.pdf].filter((x): x is string => !!x),
+      ordner,
+    );
     if (wahl !== 'neu' && wahl !== 'ersetzen') return { art: 'abgebrochen' };
     if (wahl === 'neu') {
       n = 2;
