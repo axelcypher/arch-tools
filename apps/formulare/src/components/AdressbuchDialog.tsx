@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { create } from 'zustand';
 import { Modal } from '@core/ui/Dialog';
+import { useKonfigOrt } from '@core/ui/Speicherort';
 import { bestaetigen } from '@core/ui/Rueckfrage';
 import { Symbol } from '@core/ui/Symbol';
 import type { Adresse } from '../adressbuch';
@@ -25,11 +26,28 @@ const adressbuchSchliessen = () => useAdressbuchDialog.setState({ offen: false }
 export function AdressbuchDialog() {
   const offen = useAdressbuchDialog((s) => s.offen);
   if (!offen) return null;
+  return <AdressbuchModal />;
+}
+
+/** Notbetrieb (Speicherort nur lesbar): das Adressbuch folgt der Sperre der Einstellungen (docs/design.md) */
+const NUR_LESBAR = 'Das Netzlaufwerk mit den Einstellungen ist nicht erreichbar – das Adressbuch ist nur lesbar.';
+
+function AdressbuchModal() {
+  const ort = useKonfigOrt();
+  const gesperrt = ort && ort !== 'fehler' && ort.notbetrieb ? NUR_LESBAR : null;
   // ans Ende von body: liegt so auch über dem Einstellungsdialog, aus dem er geöffnet werden kann
   return createPortal(
-    <Modal titel="Adressbuch" className="es-adressbuch-dialog" tabelle onClose={adressbuchSchliessen} klickDaneben={false}>
+    <Modal titel="Adressbuch" className="es-adressbuch-dialog" tabelle onClose={adressbuchSchliessen}>
       <div className="es-adressbuch-rumpf">
-        <Adressbuch />
+        {gesperrt && (
+          <p className="meldung warnung" role="status">
+            {gesperrt} Ändern geht wieder, sobald es erreichbar ist.
+          </p>
+        )}
+        <fieldset className="es-seite" disabled={!!gesperrt} title={gesperrt ?? undefined}>
+          <legend className="unsichtbar">Adressbuch</legend>
+          <Adressbuch />
+        </fieldset>
       </div>
       <div className="dialog-buttons">
         <span className="tb-spacer" />
