@@ -163,9 +163,9 @@ der er geöffnet wurde. Stand: Den Dialog als Baustein in `packages/core` baut d
 jede App liefert dafür ihre Seite (Felder und Prüfung) – wie, legt dieser Baustein fest.
 
 - **Aufbau:** `Modal` mit `tabelle`; der Titel „Einstellungen“ steht als `h3` im Navigationskopf über der
-  Seitenliste (Ausnahme mit eigenem Kopf, siehe „Dialoge“), rechts der Inhalt der gewählten Seite – wie im
-  Nachschlagewerk (`.nachschlagewerk`, `.nw-inhalt`, `.nw-liste`, `.nw-eintrag`, `.nw-eintrag.active`), ohne Suche.
-  Unterabschnitte einer Seite sind `h4`.
+  Seitenliste (Ausnahme mit eigenem Kopf, siehe „Dialoge“), rechts der Inhalt der gewählten Seite. Gemeinsames Muster
+  in `base.css` (aus PERMIO `.es-*` gehoben): `.einst`, `.einst-nav` (Seitenliste, Einträge `.einst-nav-eintrag` mit
+  Symbol, Titel und kurzem Text), `.einst-inhalt`, `.einst-gruppe`. Unterabschnitte einer Seite sind `h4`.
 - **Seitenliste:** eine senkrechte Registerleiste wie unter „Umschalter“ (`role="tablist"`,
   `aria-orientation="vertical"`, Einträge `role="tab"` mit `aria-selected`, ↑/↓ wandern, Pos1/Ende, automatische
   Aktivierung, nur der gewählte Eintrag mit `tabIndex` 0); der Inhalt ist `role="tabpanel"` mit `aria-labelledby` auf
