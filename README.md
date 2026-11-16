@@ -198,7 +198,7 @@ fehlen sie, warnt der Bericht am Bildschirm, und im Druck steht im Kopf „nicht
   laden …“ steht auch im Menü „Datei“ der Werkzeugleiste, „Kalibrieren“ bei den Werkzeugen. **Werkzeugleiste**:
   sichtbar bleiben „Speichern“, Rückgängig/Wiederholen, die Werkzeuge, der Umschalter BGF-Umriss | Raum und
   „Flächenaufstellung …“; Neu, Öffnen …, Speichern unter …, Plan laden …, IFC importieren … und
-  Export ▸ Excel …/PDF …/CSV … (mit Dialog) stehen im Menü „Datei“; „Exportieren“ speichert direkt in den
+  Exportieren → Excel …/PDF …/CSV … (mit Dialog) stehen im Menü „Datei“; „Exportieren“ speichert direkt in den
   Berechnungsordner (siehe docs/excel-vorlagen.md, „Direktexport“; wandert in schmalen Fenstern ins Menü „Mehr“). Kantenfang rastet bei aktivem Rasterfang entlang der
   Kante auf das Raster; beim Kalibrieren fängt das Raster nicht. Erkannte BGF-Umrisse tragen „prüfen“, bis ein
   Eckpunkt bearbeitet wurde

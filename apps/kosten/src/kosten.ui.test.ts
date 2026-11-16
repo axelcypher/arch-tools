@@ -75,7 +75,7 @@ describe('NUMIO', () => {
     const host = render(App);
     expect(host.textContent).toContain('Projekt oder IFC öffnen');
     expect(knopf(host, 'Kosten drucken').disabled).toBe(true);
-    expect(knopf(host, 'Exportieren').disabled).toBe(true);
+    expect(knopf(host, 'Exportieren').getAttribute('aria-disabled')).toBe('true');
     expect(knopf(host, 'Exportieren').title).toBe('Erst Positionen anlegen');
     // nichts zu speichern: „Speichern“ gesperrt, mit Grund
     const speichern = host.querySelector<HTMLButtonElement>('[data-eintrag="speichern"] button')!;
@@ -89,7 +89,7 @@ describe('NUMIO', () => {
     const leiste = host.querySelector<HTMLElement>('.toolbar.werkzeugleiste')!;
     expect(leiste.getAttribute('aria-label')).toBe('Werkzeugleiste');
     const knoepfe = [...leiste.querySelectorAll<HTMLButtonElement>(':scope > [data-eintrag] button')].map((b) => b.getAttribute('aria-label') ?? b.textContent?.trim());
-    expect(knoepfe).toEqual(['Datei', 'Speichern', 'Rückgängig', 'Wiederholen', 'Kosten', 'Mengen prüfen', 'Exportieren …', 'Kosten drucken …']);
+    expect(knoepfe).toEqual(['Datei', 'Speichern', 'Rückgängig', 'Wiederholen', 'Kosten', 'Mengen prüfen', 'Exportieren', 'Kosten drucken …']);
     // der Kennwertkatalog steht nur noch im Kopf der Positionen (kein doppelter Einstieg)
     expect(leiste.textContent).not.toContain('Kennwertkatalog');
     expect(knopf(host, 'Kosten drucken').className).toContain('primary');
@@ -103,7 +103,7 @@ describe('NUMIO', () => {
     // Menü „Datei“: Neu, Öffnen …, Trenner, IFC aktualisieren … (im Browser ohne „Speichern unter …“)
     act(() => knopf(leiste, 'Datei').click());
     const punkte = [...document.querySelectorAll<HTMLElement>('[role="menu"] > [role]')].map((p) => (p.getAttribute('role') === 'separator' ? '—' : p.textContent));
-    expect(punkte).toEqual(['Neu', expect.stringContaining('Öffnen …'), '—', expect.stringContaining('IFC aktualisieren …'), '—', expect.stringContaining('Export'), '—', expect.stringContaining('Einstellungen …')]);
+    expect(punkte).toEqual(['Neu', expect.stringContaining('Öffnen …'), '—', expect.stringContaining('IFC aktualisieren …'), '—', expect.stringContaining('Exportieren'), '—', expect.stringContaining('Einstellungen …')]);
     expect(document.querySelector('[role="menu"] [aria-keyshortcuts]')?.getAttribute('aria-keyshortcuts')).toBe('Control+O');
     // mit Gebäude ist „IFC aktualisieren …“ frei
     const ifc = () => [...document.querySelectorAll<HTMLElement>('[role="menu"] [role="menuitem"]')].find((p) => p.textContent?.startsWith('IFC aktualisieren'))!;
@@ -204,7 +204,7 @@ describe('NUMIO', () => {
     expect(text).toContain('Verfasser/in');
   });
 
-  it('öffnet Druck, Export-Dialog (Datei ▸ Export ▸ Excel …) und Kennwertkatalog', () => {
+  it('öffnet Druck, Export-Dialog (Datei ▸ Exportieren ▸ Excel …) und Kennwertkatalog', () => {
     useKosten.getState().load(projektMitKosten());
     const host = render(App);
     act(() => knopf(host, 'Kosten drucken').click());
@@ -212,7 +212,7 @@ describe('NUMIO', () => {
     act(() => knopf(host.querySelector('.ko-report')!, 'Schließen').click());
     act(() => knopf(host, 'Datei').click());
     const punkt = (t: string) => [...document.querySelectorAll<HTMLButtonElement>('.menue [role="menuitem"]')].find((b) => b.textContent?.trim().startsWith(t))!;
-    act(() => punkt('Export').click());
+    act(() => punkt('Exportieren').click());
     act(() => punkt('Excel …').click());
     expect(host.querySelector('.modal-titel, .modal h2')?.textContent ?? host.textContent).toContain('Excel-Export');
     // Vorlagen-Knöpfe erst bei „Eigene Vorlage“

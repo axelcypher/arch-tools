@@ -2,7 +2,7 @@ import { Symbol } from '@core/ui/Symbol';
 import type { MenuePunkt } from '@core/ui/Menue';
 import { MenueKnopf } from '@core/ui/Menue';
 import { Werkzeugleiste } from '@core/ui/Werkzeugleiste';
-import { DirektExportKnopf, direktExportText, direktExportTitel, exportUntermenue, useDirektExport } from '@core/ui/DirektExportKnopf';
+import { DirektExportKnopf, exportUntermenue, useDirektExport } from '@core/ui/DirektExportKnopf';
 import type { ExportDialogStart } from '@core/excel/direktExport';
 import { exportAuftrag } from './export/direktExport';
 import { einstellungenPunkt } from '@core/ui/Einstellungen';
@@ -47,7 +47,7 @@ export function App() {
   // Desktop: beim Start die Projektübersicht (das zuletzt bearbeitete Projekt bleibt über „Zurück zu …“ erreichbar)
   const [projekteOffen, setProjekteOffen] = useState(() => isTauri());
   const [excelOpen, setExcelOpen] = useState<ExportDialogStart | null>(null);
-  const direktExport = useDirektExport({ auftrag: exportAuftrag, dialogOeffnen: setExcelOpen, deaktiviert: !hatPositionen });
+  const direktExport = useDirektExport({ auftrag: exportAuftrag, dialogOeffnen: setExcelOpen, deaktiviert: !hatPositionen, hinweisDeaktiviert: 'Erst Positionen anlegen' });
   // Tooltip des Direktexports nennt den Berechnungsordner – hängt an den Stammdaten
   useKosten((s) => s.project.meta);
   const [druckOpen, setDruckOpen] = useState(false);
@@ -276,15 +276,8 @@ export function App() {
           {
             id: 'export',
             rang: 1,
-            inhalt: <DirektExportKnopf auftrag={exportAuftrag} dialogOeffnen={setExcelOpen} deaktiviert={!hatPositionen} hinweisDeaktiviert="Erst Positionen anlegen" {...direktExport} />,
-            menue: {
-              text: hatPositionen ? direktExportText(exportAuftrag(), direktExport.laeuft) : 'Exportieren',
-              symbol: 'export',
-              titel: hatPositionen ? direktExportTitel(exportAuftrag()) : 'Erst Positionen anlegen',
-              deaktiviert: !hatPositionen || direktExport.laeuft,
-              hinweis: hatPositionen ? undefined : 'erst Positionen anlegen',
-              aktion: () => void direktExport.ausfuehren(),
-            },
+            inhalt: <DirektExportKnopf {...direktExport} />,
+            menue: direktExport.menue,
           },
           {
             // Hauptknopf: bleibt immer sichtbar

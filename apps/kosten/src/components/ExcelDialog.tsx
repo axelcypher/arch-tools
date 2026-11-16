@@ -17,7 +17,6 @@ export function ExcelDialog({ onClose, start }: { onClose: () => void; start: Ex
       update={(fn) => useKosten.getState().update(fn)}
       onClose={onClose}
       art={start.art}
-      grund={start.grund}
       hinweise={start.hinweise}
       benennung={{ app: 'kosten', werte: werteAusMeta(project.meta), inhalt: exportInhalt(project) }}
       speicher={vorlage}

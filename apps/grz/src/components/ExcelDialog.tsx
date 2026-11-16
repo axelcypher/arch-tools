@@ -16,7 +16,6 @@ export function ExcelDialog({ onClose, start }: { onClose: () => void; start: Ex
       update={(fn) => useGrz.getState().update(fn, undefined, 'Excel-Vorlage ändern')}
       onClose={onClose}
       art={start.art}
-      grund={start.grund}
       hinweise={start.hinweise}
       benennung={{ app: 'grz', werte: werteAusMeta(project.meta), inhalt: EXPORT_INHALT }}
       speicher={vorlage}

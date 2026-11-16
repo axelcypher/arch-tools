@@ -1,6 +1,6 @@
 # Excel-Vorlagen
 
-Der Excel-Export (**Datei ▸ Export ▸ Excel …** bzw. **PDF …**, oder direkt mit **Exportieren** in der Werkzeugleiste)
+Der Excel-Export (**Datei → Exportieren → Excel …** bzw. **PDF …**, oder direkt mit **Exportieren** in der Werkzeugleiste)
 erzeugt entweder das Standardlayout oder füllt eine eigene Vorlage. Eine Vorlage ist eine normale `.xlsx`-Datei – mit Logo, Kopf, Schriften, Rahmen, Zahlenformaten
 und eigenen Formeln – in die Platzhalter geschrieben werden. Sie wird im Projekt gespeichert (und im
 Projektarchiv `.oap` mitgenommen) und zusätzlich in der Anwendung als Standard für weitere Projekte
@@ -23,11 +23,12 @@ Im Excel-Dialog unter **Eigene Vorlage**:
   entsteht das PDF daneben. Der Berechnungsordner liegt im Projektordner (Vorgabe QUADRIO `03 Berechnungen/Flächen`,
   TERRIO `03 Berechnungen/Nachweise`, NUMIO `03 Berechnungen/Kosten`) und wird bei Bedarf angelegt. Der Tooltip nennt
   Ziel und Formate.
-- Gibt es eine der Dateien schon, fragt die App: **Neue Fassung** (Standard, hängt „ (2)“, „ (3)“ … an), **Ersetzen**
-  oder **Abbrechen** – still überschrieben wird nie.
-- Danach meldet die App Ordner und Dateien mit **Ordner öffnen**; hat die Vorlagenprüfung etwas gefunden, führt
-  **Hinweise ansehen …** in den Export-Dialog. Ohne gespeichertes Projekt, wenn die Projektdatei nicht im
-  Projektordner liegt, oder in der Web-Fassung öffnet sich stattdessen der Dialog mit dem Grund.
+- Gibt es eine der Dateien schon, fragt die App „‚Name.xlsx‘ ersetzen?“ mit **Abbrechen** (Standard) und
+  **Ersetzen** – still überschrieben wird nie.
+- Danach meldet die App Ordner und Dateien mit **Ordner öffnen**; hat die Vorlagenprüfung etwas gefunden, öffnet
+  **Prüfhinweise …** die Liste. Ohne gespeichertes Projekt, wenn die Projektdatei nicht im Projektordner liegt, oder
+  in der Web-Fassung ist der Knopf gesperrt; der Tooltip nennt den Grund. Vorlage und Ziel frei wählen:
+  **Datei → Exportieren → Excel …**.
 - **PDF** entsteht aus der gefüllten Excel-Datei: über ein installiertes Microsoft Excel (unsichtbar, „Als PDF
   exportieren“), sonst über LibreOffice ohne Oberfläche. Druckbereich, Kopf- und Fußzeile, Skalierung und Seitenformat
   der Vorlage bleiben erhalten. Nach 2 Minuten ohne Antwort wird der Vorgang samt Unterprozessen beendet. Ohne Excel

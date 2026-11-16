@@ -50,9 +50,9 @@ const imMenue = (knopf: string, punkt: string) => {
   if (!p) throw new Error(`Menüpunkt „${punkt}“ fehlt`);
   act(() => p.click());
 };
-/** Datei ▸ Export ▸ Excel … (bzw. PDF …, CSV …) – öffnet den Export-Dialog */
+/** Datei ▸ Exportieren ▸ Excel … (bzw. PDF …, CSV …) – öffnet den Export-Dialog */
 const exportDialog = (punkt = 'Excel …') => {
-  imMenue('Datei', 'Export');
+  imMenue('Datei', 'Exportieren');
   const p = menuePunkt(document.body, punkt);
   if (!p) throw new Error(`Menüpunkt „${punkt}“ fehlt`);
   act(() => p.click());
@@ -1072,7 +1072,7 @@ describe('Designsystem: Kontextmenü, Symbole, Druckvorschau, Feldfehler', () =>
       'Speichern',
       'Rückgängig',
       'Wiederholen',
-      'Exportieren …',
+      'Exportieren',
       'Nachweis drucken …',
     ]);
     expect(leiste.querySelector('button.primary')!.textContent?.trim()).toBe('Nachweis drucken …');
@@ -1176,17 +1176,17 @@ describe('Designsystem: Kontextmenü, Symbole, Druckvorschau, Feldfehler', () =>
 describe('Kopf- und Werkzeugleisten (Leisten-Regel)', () => {
   const unterlage = { type: 'raster' as const, name: 'Plan', dataUrl: 'data:image/png;base64,', widthPx: 100, heightPx: 100, metersPerPixel: 0.1, x: 0, y: 0, opacity: 0.5, visible: true };
 
-  it('Menü „Datei“: Neu, Öffnen …, IFC aktualisieren, Export (ohne Gebäude gesperrt mit Grund); Export ▸ Excel …, PDF …', () => {
+  it('Menü „Datei“: Neu, Öffnen …, IFC aktualisieren, Exportieren (ohne Gebäude gesperrt mit Grund); Exportieren ▸ Excel …, PDF …', () => {
     useGrz.getState().load(createProject());
     render(App);
     act(() => [...document.querySelectorAll<HTMLButtonElement>('.toolbar.werkzeugleiste button[aria-haspopup="menu"]')].find((b) => b.textContent?.trim() === 'Datei')!.click());
     const texte = menueTexte(document.body);
     expect(texte.slice(0, 2)).toEqual(['Neu', 'Öffnen …']);
-    expect(texte.slice(-3)).toEqual(['IFC aktualisieren …', 'Export', 'Einstellungen …']);
-    expect(menuePunkt(document.body, 'Export').getAttribute('aria-disabled')).toBe('true');
+    expect(texte.slice(-3)).toEqual(['IFC aktualisieren …', 'Exportieren', 'Einstellungen …']);
+    expect(menuePunkt(document.body, 'Exportieren').getAttribute('aria-disabled')).toBe('true');
     // ohne Gebäude ist auch der Direktexport gesperrt, mit Grund im Tooltip
     const direkt = document.querySelector<HTMLButtonElement>('[data-eintrag="export"] button')!;
-    expect(direkt.disabled).toBe(true);
+    expect(direkt.getAttribute('aria-disabled')).toBe('true');
     expect(direkt.title).toContain('Erst ein Gebäude öffnen');
     const ifc = menuePunkt(document.body, 'IFC aktualisieren …');
     expect(ifc.getAttribute('aria-disabled')).toBe('true');
@@ -1213,7 +1213,7 @@ describe('Kopf- und Werkzeugleisten (Leisten-Regel)', () => {
       for (const id of ['speichern', 'verlauf', 'drucken']) expect((leiste.querySelector(`[data-eintrag="${id}"]`) as HTMLElement).hidden).toBe(false);
       // „Datei“ und „Exportieren“ (Direktexport) stehen jetzt in „Mehr“
       act(() => (leiste.querySelector('button[aria-label="Mehr"]') as HTMLButtonElement).click());
-      expect(menueTexte(document.body)).toEqual(['Datei', 'Exportieren …']);
+      expect(menueTexte(document.body)).toEqual(['Datei', 'Exportieren']);
       // das Untermenü „Datei“ in „Mehr“ führt seine Befehle aus (Neu ohne Änderungen: sofort ein leeres Projekt)
       act(() => menuePunkt(document.body, 'Datei').click());
       expect(menueTexte(document.body)).toContain('Neu');

@@ -33,36 +33,31 @@ export function tauriUmgebung(): DirektExportUmgebung {
 const name = (pfad: string) => pfad.split(/[\\/]/).pop() ?? pfad;
 
 /**
- * Direktexport mit Rückmeldung: danach eine Meldung mit Ordner und Dateien, „Ordner öffnen“ und – wenn die
- * Vorlagenprüfung etwas gefunden hat – „Hinweise ansehen …“ (öffnet den Export-Dialog mit den Hinweisen). Geht es
- * nicht direkt, öffnet sich der Dialog mit dem Grund. Fehler erscheinen als Meldung; es wird nichts überschrieben.
+ * Direktexport mit Rückmeldung: danach eine Meldung mit Ordner und Dateien und „Ordner öffnen“; hat die
+ * Vorlagenprüfung etwas gefunden, zusätzlich „Prüfhinweise …“ (öffnet den Export-Dialog mit der Liste). Übergang mit
+ * `fragen()`, bis der nicht blockierende Hinweis (`zeigeHinweis`, docs/design.md „Hinweis nach einer Aktion“) in core
+ * ist. Fehler erscheinen als Meldung; überschrieben wird nur nach „Ersetzen“.
  */
-export async function direktExportMitMeldung(
-  auftrag: DirektExportAuftrag,
-  dialogOeffnen: (o: { grund?: string; hinweise?: VorlagenHinweis[] }) => void,
-  umgebung: DirektExportUmgebung = tauriUmgebung(),
-): Promise<void> {
+export async function direktExportMitMeldung(auftrag: DirektExportAuftrag, hinweiseZeigen: (hinweise: VorlagenHinweis[]) => void, umgebung: DirektExportUmgebung = tauriUmgebung()): Promise<void> {
   try {
     const r = await direktExportieren(auftrag, umgebung);
     if (r.art === 'abgebrochen') return;
-    if (r.art === 'dialog') return dialogOeffnen({ grund: r.grund });
+    if (r.art === 'gesperrt') return void (await meldung('Export nicht möglich', r.grund));
     log.info('Direktexport', { dateien: r.dateien, vorlage: r.vorlage, hinweise: r.hinweise.length });
-    const dateien = r.dateien.map(name).join(' und ');
-    const teile = [`Gespeichert im Berechnungsordner: ${dateien}${r.vorlage ? ` (Vorlage „${r.vorlage}“)` : ' (Standardlayout)'}.`];
+    const teile = [`Gespeichert in „${r.ordner}“: ${r.dateien.map(name).join(' und ')}${r.vorlage ? ` (Vorlage „${r.vorlage}“)` : ' (Standardlayout)'}.`];
     if (r.pdfFehler) teile.push(`Das PDF fehlt: ${r.pdfFehler}`);
     if (r.hinweise.length) teile.push(`Die Vorlagenprüfung meldet ${r.hinweise.length === 1 ? 'einen Hinweis' : `${r.hinweise.length} Hinweise`}.`);
     const wahl = await umgebung.fragen({
-      titel: r.pdfFehler ? 'Exportiert – ohne PDF' : 'Exportiert',
+      titel: r.pdfFehler ? 'Gespeichert – ohne PDF' : 'Gespeichert',
       text: teile.join(' '),
-      details: r.dateien.join('\n'),
       knoepfe: [
-        ...(r.hinweise.length ? [{ id: 'hinweise' as const, label: 'Hinweise ansehen …' }] : []),
+        ...(r.hinweise.length ? [{ id: 'hinweise' as const, label: 'Prüfhinweise …' }] : []),
         { id: 'ordner' as const, label: 'Ordner öffnen' },
         { id: 'ok' as const, label: 'OK', art: 'primary' as const },
       ],
     });
     if (wahl === 'ordner') await ordnerZeigen(r.ordner).catch((e) => log.warn('Ordner ließ sich nicht öffnen', e));
-    if (wahl === 'hinweise') dialogOeffnen({ hinweise: r.hinweise });
+    if (wahl === 'hinweise') hinweiseZeigen(r.hinweise);
   } catch (e) {
     log.error('Direktexport fehlgeschlagen', e);
     await meldung('Export fehlgeschlagen', `Die Datei ließ sich nicht speichern: ${fehlerText(e)}`, e);

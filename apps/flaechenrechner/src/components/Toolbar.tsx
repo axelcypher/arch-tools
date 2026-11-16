@@ -17,7 +17,7 @@ import { Symbol } from '@core/ui/Symbol';
 import type { MenuePunkt } from '@core/ui/Menue';
 import { MenueKnopf } from '@core/ui/Menue';
 import { Werkzeugleiste } from '@core/ui/Werkzeugleiste';
-import { DirektExportKnopf, direktExportText, direktExportTitel, exportUntermenue, useDirektExport } from '@core/ui/DirektExportKnopf';
+import { DirektExportKnopf, exportUntermenue, useDirektExport } from '@core/ui/DirektExportKnopf';
 import { exportAuftrag } from '../platform/direktExport';
 import { einstellungenPunkt } from '@core/ui/Einstellungen';
 import { logger } from '@core/platform/log';
@@ -249,8 +249,8 @@ export function Toolbar() {
           {
             id: 'export',
             rang: 1,
-            inhalt: <DirektExportKnopf {...direkt} {...direktExport} />,
-            menue: { text: direktExportText(exportAuftrag(), direktExport.laeuft), symbol: 'export', titel: direktExportTitel(exportAuftrag()), deaktiviert: direktExport.laeuft, aktion: () => void direktExport.ausfuehren() },
+            inhalt: <DirektExportKnopf {...direktExport} />,
+            menue: direktExport.menue,
           },
           {
             id: 'haupt',

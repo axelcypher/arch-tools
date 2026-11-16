@@ -19,7 +19,6 @@ export function ExcelDialog() {
       update={(fn) => useEditor.getState().update(fn)}
       onClose={() => setOpen(null)}
       art={start?.art}
-      grund={start?.grund}
       hinweise={start?.hinweise}
       benennung={{ app: 'flaechenrechner', werte: werteAusMeta(project.meta), inhalt: EXPORT_INHALT }}
       speicher={vorlage}

@@ -5,11 +5,11 @@ import type { GlobaleQuelle } from '../platzhalter';
 import type { Knopf } from '../ui/Rueckfrage';
 
 /**
- * Direktexport aus der Kopfzeile: füllt die eingestellte Vorlage (sonst das Standardlayout) und speichert die .xlsx
- * ohne Dialog im Berechnungsordner des Projekts – mit dem Dateinamen aus den Einstellungen („Pfade und Benennung“),
- * bei „PDF mitspeichern“ auch das PDF daneben. Vorhandene Dateien werden nie still überschrieben: Rückfrage mit
- * „Neue Fassung“ (Hauptknopf, hängt „ (2)“, „ (3)“ … an), „Ersetzen“ und „Abbrechen“. Geht es nicht direkt (Web,
- * Projekt nicht gespeichert, Projektordner unbekannt), meldet der Ablauf den Grund – die App öffnet dann den Dialog.
+ * Direktexport aus der Kopfzeile (docs/design.md, „Direkter Export“): füllt die eingestellte Vorlage (sonst das
+ * Standardlayout) und speichert die .xlsx ohne Dialog im Berechnungsordner des Projekts – mit dem Dateinamen aus den
+ * Einstellungen („Pfade und Benennung“), bei „PDF mitspeichern“ auch das PDF daneben. Gibt es eine der Dateien schon,
+ * fragt „‚Name.xlsx‘ ersetzen?“ (Abbrechen | Ersetzen, Erstfokus auf Abbrechen) – still überschrieben wird nie. Fehlt
+ * etwas (Web, Projekt nie gespeichert, kein Berechnungsordner), ist der Knopf gesperrt; der Grund steht im Tooltip.
  *
  * Alles, was die Plattform betrifft, kommt über {@link DirektExportUmgebung} herein (in Tests nachgebildet).
  */
@@ -50,48 +50,45 @@ export type DirektExportErgebnis =
       /** PDF gewünscht, aber nicht entstanden (die .xlsx ist gespeichert) */
       pdfFehler?: string;
     }
-  /** direkt geht es nicht – die App öffnet den Export-Dialog mit diesem Hinweis */
-  | { art: 'dialog'; grund: string }
+  /** direkt geht es nicht (der Knopf hätte gesperrt sein müssen, z. B. Einstellungen inzwischen geändert) */
+  | { art: 'gesperrt'; grund: string }
   | { art: 'abgebrochen' };
 
-export const GRUND_WEB = 'Direkt in den Berechnungsordner speichern geht nur in der Desktop-App – hier wird die Datei heruntergeladen.';
-export const GRUND_UNGESPEICHERT = 'Das Projekt ist noch nicht gespeichert. Erst mit einer Projektdatei im Projektordner gibt es einen Berechnungsordner – bis dahin hier speichern.';
-export const GRUND_KEIN_PROJEKTORDNER = 'Der Berechnungsordner ist unbekannt, weil die Projektdatei nicht im Projektordner liegt. Bitte hier einen Speicherort wählen.';
+/** Gründe für den gesperrten Knopf (Tooltip bzw. Hinweis im Überlaufmenü) */
+export const GRUND_WEB = 'Direkt in den Berechnungsordner speichern geht nur in der Desktop-App – „Datei → Exportieren → Excel …“ lädt die Datei herunter.';
+export const GRUND_UNGESPEICHERT = 'Erst das Projekt speichern – der Berechnungsordner liegt im Projektordner. Bis dahin „Datei → Exportieren → Excel …“.';
+export const GRUND_KEIN_PROJEKTORDNER = 'Kein Berechnungsordner: Die Projektdatei liegt nicht im Projektordner. „Datei → Exportieren → Excel …“ wählt den Speicherort frei.';
 
 const trenner = (pfad: string) => (pfad.includes('\\') ? '\\' : '/');
 const verbinde = (ordner: string, name: string) => `${ordner.replace(/[\\/]+$/, '')}${trenner(ordner)}${name}`;
-/** „A.xlsx“ → „A (2).xlsx“ */
-export const fassungsName = (name: string, n: number) => (n <= 1 ? name : name.replace(/(\.[^.]+)?$/, (endung) => ` (${n})${endung}`));
 
-/** Wie der Export-Dialog startet: Excel oder PDF, mit Grund (Direktexport ging nicht) bzw. Hinweisen der Vorlagenprüfung */
+/** Wie der Export-Dialog startet: Excel oder PDF, ggf. mit den Hinweisen der Vorlagenprüfung */
 export interface ExportDialogStart {
   art: 'excel' | 'pdf';
-  grund?: string;
   hinweise?: VorlagenHinweis[];
 }
 
 export type DirektExportZiel = { ordner: string; xlsx: string; pdf: string | null } | { grund: string };
 
 /**
- * Gemeinsame Rückfrage, wenn es eine Zieldatei schon gibt (Direktexport und Export-Dialog): „Neue Fassung“ (Hauptknopf),
- * „Ersetzen“ (Gefahr), „Abbrechen“; null = abgebrochen
+ * Gemeinsame Rückfrage, wenn es Zieldateien schon gibt (Direktexport und Export-Dialog): „‚A.xlsx‘ ersetzen?“ bzw.
+ * „‚A.xlsx‘ und ‚A.pdf‘ ersetzen?“ mit Abbrechen | Ersetzen (Gefahr; Erstfokus und Enter auf Abbrechen); true = ersetzen
  */
-export async function vorhandeneDateiFragen(fragen: DirektExportUmgebung['fragen'], namen: string[], ordner: string): Promise<'neu' | 'ersetzen' | null> {
+export async function ersetzenFragen(fragen: DirektExportUmgebung['fragen'], namen: string[], ordner: string): Promise<boolean> {
   const wahl = await fragen({
-    titel: 'Vorhandene Datei ersetzen?',
-    text: `„${namen.join('“ bzw. „')}“ gibt es im Ordner schon. „Neue Fassung“ speichert daneben mit einer Nummer im Namen, „Ersetzen“ überschreibt die vorhandene Datei.`,
-    details: ordner,
+    titel: `${namen.map((n) => `„${n}“`).join(' und ')} ersetzen?`,
+    text: `${namen.length > 1 ? 'Die Dateien gibt' : 'Die Datei gibt'} es schon in „${ordner}“.`,
     knoepfe: [
       { id: 'abbrechen', label: 'Abbrechen' },
       { id: 'ersetzen', label: 'Ersetzen', art: 'danger' },
-      { id: 'neu', label: 'Neue Fassung', art: 'primary' },
     ],
   });
-  return wahl === 'neu' || wahl === 'ersetzen' ? wahl : null;
+  return wahl === 'ersetzen';
 }
 
 /** Zielpfade aus den Einstellungen bestimmen, ohne etwas zu schreiben (auch für den Tooltip des Knopfs) */
-export function direktExportZielAus(pfade: ExportPfade, a: Pick<DirektExportAuftrag, 'datei' | 'werte' | 'inhalt'>): DirektExportZiel {
+export function direktExportZielAus(pfade: ExportPfade, a: Pick<DirektExportAuftrag, 'datei' | 'werte' | 'inhalt'>, desktop = true): DirektExportZiel {
+  if (!desktop) return { grund: GRUND_WEB };
   if (!a.datei) return { grund: GRUND_UNGESPEICHERT };
   const projektordner = projektordnerAusDatei(a.datei);
   const ordner = berechnungsordnerPfad(pfade.berechnungsordner, projektordner, a.werte);
@@ -101,49 +98,34 @@ export function direktExportZielAus(pfade: ExportPfade, a: Pick<DirektExportAuft
   return { ordner, xlsx, pdf };
 }
 
-/** Ziel mit den zuletzt gelesenen Einstellungen (synchron, für Tooltips) */
-export const direktExportZielJetzt = (a: Pick<DirektExportAuftrag, 'app' | 'datei' | 'werte' | 'inhalt'>) => direktExportZielAus(exportPfade(a.app), a);
+/** Ziel mit den zuletzt gelesenen Einstellungen (synchron, für Tooltip und Sperre) */
+export const direktExportZielJetzt = (a: Pick<DirektExportAuftrag, 'app' | 'datei' | 'werte' | 'inhalt'>, desktop = true) => direktExportZielAus(exportPfade(a.app), a, desktop);
 
 /** Ziel mit frisch gelesenen Einstellungen (vor dem Export) */
-export const direktExportZiel = async (a: Pick<DirektExportAuftrag, 'app' | 'datei' | 'werte' | 'inhalt'>) => direktExportZielAus(await exportPfadeLaden(a.app), a);
+export const direktExportZiel = async (a: Pick<DirektExportAuftrag, 'app' | 'datei' | 'werte' | 'inhalt'>, desktop = true) => direktExportZielAus(await exportPfadeLaden(a.app), a, desktop);
 
 export async function direktExportieren(a: DirektExportAuftrag, u: DirektExportUmgebung): Promise<DirektExportErgebnis> {
-  if (!u.desktop) return { art: 'dialog', grund: GRUND_WEB };
-  const ziel = await direktExportZiel(a);
-  if ('grund' in ziel) return { art: 'dialog', grund: ziel.grund };
+  const ziel = await direktExportZiel(a, u.desktop);
+  if ('grund' in ziel) return { art: 'gesperrt', grund: ziel.grund };
   const { ordner } = ziel;
+  const xlsx = verbinde(ordner, ziel.xlsx);
+  const pdfPfad = ziel.pdf ? verbinde(ordner, ziel.pdf) : null;
 
-  // freie Fassung suchen; gibt es schon eine der Dateien, entscheidet der Nutzer
-  const namen = (n: number) => ({ xlsx: fassungsName(ziel.xlsx, n), pdf: ziel.pdf ? fassungsName(ziel.pdf, n) : null });
-  const belegt = async (n: number) => {
-    const z = namen(n);
-    return (await u.existiert(verbinde(ordner, z.xlsx))) || (z.pdf != null && (await u.existiert(verbinde(ordner, z.pdf))));
-  };
-  let n = 1;
-  if (await belegt(1)) {
-    const wahl = await vorhandeneDateiFragen(
-      u.fragen,
-      [ziel.xlsx, ziel.pdf].filter((x): x is string => !!x),
-      ordner,
-    );
-    if (wahl !== 'neu' && wahl !== 'ersetzen') return { art: 'abgebrochen' };
-    if (wahl === 'neu') {
-      n = 2;
-      while (await belegt(n)) n++;
-    }
-  }
+  // gibt es schon eine der Dateien, entscheidet der Nutzer – nie still überschreiben
+  const vorhanden: string[] = [];
+  if (await u.existiert(xlsx)) vorhanden.push(ziel.xlsx);
+  if (pdfPfad && ziel.pdf && (await u.existiert(pdfPfad))) vorhanden.push(ziel.pdf);
+  if (vorhanden.length && !(await ersetzenFragen(u.fragen, vorhanden, ordner))) return { art: 'abgebrochen' };
 
   const { daten, vorlage, hinweise } = await a.erzeugen();
-  const z = namen(n);
   await u.ordnerAnlegen(ordner);
-  const dateien = [verbinde(ordner, z.xlsx)];
-  await u.schreiben(dateien[0], daten);
+  await u.schreiben(xlsx, daten);
+  const dateien = [xlsx];
   let pdfFehler: string | undefined;
-  if (z.pdf) {
+  if (pdfPfad) {
     try {
-      const pdf = await u.pdf(daten);
-      await u.schreiben(verbinde(ordner, z.pdf), pdf);
-      dateien.push(verbinde(ordner, z.pdf));
+      await u.schreiben(pdfPfad, await u.pdf(daten));
+      dateien.push(pdfPfad);
     } catch (e) {
       pdfFehler = e instanceof Error ? e.message : String(e);
     }

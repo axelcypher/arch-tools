@@ -13,7 +13,7 @@ erhalten.
   der Gebäudeumriss aus QUADRIO oder einem IFC-Modell kommt. Der IFC-Bericht ist nur dann gelb, wenn er etwas
   meldet, und schließt mit „×“ oder Esc.
   Die Werkzeugleiste folgt der Leisten-Regel der Suite: links das Menü „Datei“ (Neu, Öffnen …, Speichern unter …,
-  IFC aktualisieren …, Export ▸ Excel …/PDF …) und „Speichern“, daneben Rückgängig/Wiederholen, rechts „Exportieren“
+  IFC aktualisieren …, Exportieren → Excel …/PDF …) und „Speichern“, daneben Rückgängig/Wiederholen, rechts „Exportieren“
   (Direktexport in den Berechnungsordner, siehe docs/excel-vorlagen.md) und der Hauptknopf „Nachweis drucken …“. In
   schmalen Fenstern wandern „Datei“ und „Exportieren“ in „Mehr“; Speichern, Rückgängig und der
   Hauptknopf bleiben sichtbar. „Neu“ beginnt ein leeres Projekt (mit Rückfrage bei ungespeicherten Änderungen) und

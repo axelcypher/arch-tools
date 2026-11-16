@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { direktExportieren, fassungsName, GRUND_KEIN_PROJEKTORDNER, GRUND_UNGESPEICHERT, GRUND_WEB, type DirektExportAuftrag, type DirektExportUmgebung } from './direktExport';
+import { direktExportieren, GRUND_KEIN_PROJEKTORDNER, GRUND_UNGESPEICHERT, GRUND_WEB, type DirektExportAuftrag, type DirektExportUmgebung } from './direktExport';
 import { berechnungsordnerPfad, exportDateinameAusMuster } from '../einstellungen/pfade';
 import { projektordnerAusDatei } from './projektordner';
 import type { VorlagenHinweis } from './pruefung';
@@ -58,12 +58,6 @@ describe('Ziel des Direktexports', () => {
     expect(exportDateinameAusMuster('{PROJEKT_KURZNAME}/{Inhalt}', { werte, inhalt: 'GRZ-Nachweis', endung: 'pdf' })).toBe('EFH Musterweg GRZ-Nachweis.pdf');
     expect(exportDateinameAusMuster('{PROJEKT_VORHABEN}', { werte, inhalt: 'Kosten', endung: 'xlsx' })).toBe('Kosten.xlsx');
   });
-
-  it('Fassungen: Nummer vor der Endung', () => {
-    expect(fassungsName('A.xlsx', 1)).toBe('A.xlsx');
-    expect(fassungsName('A.xlsx', 2)).toBe('A (2).xlsx');
-    expect(fassungsName('A b.pdf', 3)).toBe('A b (3).pdf');
-  });
 });
 
 describe('Direktexport', () => {
@@ -76,30 +70,34 @@ describe('Direktexport', () => {
     expect(u.fragen).not.toHaveBeenCalled();
   });
 
-  it('geht nicht direkt: Web, ungespeichertes Projekt, Projektordner unbekannt → Dialog mit Grund', async () => {
-    expect(await direktExportieren(auftrag(), umgebung([], { desktop: false }))).toEqual({ art: 'dialog', grund: GRUND_WEB });
-    expect(await direktExportieren(auftrag({ datei: null }), umgebung())).toEqual({ art: 'dialog', grund: GRUND_UNGESPEICHERT });
-    expect(await direktExportieren(auftrag({ datei: 'C:\\Ablage\\x.oap' }), umgebung())).toEqual({ art: 'dialog', grund: GRUND_KEIN_PROJEKTORDNER });
+  it('gesperrt mit Grund: Web, ungespeichertes Projekt, Projektordner unbekannt – nichts wird geschrieben', async () => {
+    const u = umgebung([], { desktop: false });
+    expect(await direktExportieren(auftrag(), u)).toEqual({ art: 'gesperrt', grund: GRUND_WEB });
+    expect(await direktExportieren(auftrag({ datei: null }), umgebung())).toEqual({ art: 'gesperrt', grund: GRUND_UNGESPEICHERT });
+    expect(await direktExportieren(auftrag({ datei: 'C:\\Ablage\\x.oap' }), umgebung())).toEqual({ art: 'gesperrt', grund: GRUND_KEIN_PROJEKTORDNER });
+    expect(u.geschrieben.size).toBe(0);
   });
 
-  it('vorhandene Datei: Rückfrage, Hauptknopf „Neue Fassung“ (nie der Gefahrknopf), Abbrechen schreibt nichts', async () => {
+  it('vorhandene Datei: „‚Name‘ ersetzen?“ mit Abbrechen | Ersetzen (kein Hauptknopf, Erstfokus Abbrechen); Abbrechen schreibt nichts', async () => {
     const u = umgebung([PDF]);
     expect(await direktExportieren(auftrag(), u)).toEqual({ art: 'abgebrochen' });
     expect(u.geschrieben.size).toBe(0);
     const frage = vi.mocked(u.fragen).mock.calls[0][0];
-    expect(frage.knoepfe.find((k) => k.art === 'primary')?.id).toBe('neu');
-    expect(frage.knoepfe.find((k) => k.id === 'ersetzen')?.art).toBe('danger');
+    expect(frage.titel).toBe('„BS5 261116 Flächenaufstellung.pdf“ ersetzen?');
+    expect(frage.text).toBe(`Die Datei gibt es schon in „${ORDNER}“.`);
+    expect(frage.knoepfe).toEqual([
+      { id: 'abbrechen', label: 'Abbrechen' },
+      { id: 'ersetzen', label: 'Ersetzen', art: 'danger' },
+    ]);
   });
 
-  it('„Neue Fassung“ nimmt die erste freie Nummer für beide Dateien', async () => {
-    const u = umgebung([XLSX, `${ORDNER}\\BS5 261116 Flächenaufstellung (2).pdf`], { fragen: (async () => 'neu') as DirektExportUmgebung['fragen'] });
+  it('beide Dateien vorhanden: eine Rückfrage für beide; „Ersetzen“ schreibt sie neu', async () => {
+    const u = umgebung([XLSX, PDF], { fragen: vi.fn(async () => 'ersetzen') as DirektExportUmgebung['fragen'] });
     const r = await direktExportieren(auftrag(), u);
-    expect(r.art === 'gespeichert' && r.dateien).toEqual([`${ORDNER}\\BS5 261116 Flächenaufstellung (3).xlsx`, `${ORDNER}\\BS5 261116 Flächenaufstellung (3).pdf`]);
-  });
-
-  it('„Ersetzen“ schreibt über die vorhandene Datei', async () => {
-    const u = umgebung([XLSX], { fragen: (async () => 'ersetzen') as DirektExportUmgebung['fragen'] });
-    const r = await direktExportieren(auftrag(), u);
+    expect(vi.mocked(u.fragen).mock.calls[0][0]).toMatchObject({
+      titel: '„BS5 261116 Flächenaufstellung.xlsx“ und „BS5 261116 Flächenaufstellung.pdf“ ersetzen?',
+      text: `Die Dateien gibt es schon in „${ORDNER}“.`,
+    });
     expect(r.art === 'gespeichert' && r.dateien).toEqual([XLSX, PDF]);
   });
 

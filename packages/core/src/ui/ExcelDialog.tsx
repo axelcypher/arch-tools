@@ -13,7 +13,7 @@ import { excelAlsPdf, PDF_NUR_DESKTOP, pdfMoeglich } from '../platform/pdf';
 import { exportDateiname, exportOrdner } from '../platform/projektDatei';
 import { Modal } from './Dialog';
 import { fragen } from './Rueckfrage';
-import { fassungsName, vorhandeneDateiFragen } from '../excel/direktExport';
+import { ersetzenFragen } from '../excel/direktExport';
 
 const log = logger('excel');
 
@@ -43,8 +43,6 @@ export interface ExcelDialogProps {
   buildSampleTemplate: () => Promise<Uint8Array>;
   /** „excel“ (Vorgabe) speichert die .xlsx, „pdf“ die gefüllte Vorlage als PDF (nur Desktop; .xlsx auf Wunsch daneben) */
   art?: 'excel' | 'pdf';
-  /** Hinweis oben im Dialog, z. B. warum der Direktexport nicht direkt speichern konnte */
-  grund?: string;
   /** Hinweise der Vorlagenprüfung, mit denen der Dialog öffnet (nach dem Direktexport) */
   hinweise?: VorlagenHinweis[];
   /** Dateinamen nach den Einstellungen („Pfade und Benennung“); fehlt = „<Projektdatei> <Zusatz>“ */
@@ -52,8 +50,6 @@ export interface ExcelDialogProps {
 }
 
 const PDF_MIME = 'application/pdf';
-/** „…\\A.xlsx“ → „…\\A (2).xlsx“ */
-const fassungsPfad = (pfad: string, n: number) => pfad.replace(/[^\\/]+$/, (name) => fassungsName(name, n));
 const pfadMitEndung = (pfad: string, endung: string) => pfad.replace(/\.[^.\\/]*$/, '') + '.' + endung;
 
 /**
@@ -154,17 +150,10 @@ export function ExcelDialog(props: ExcelDialogProps) {
     if (excelMit && isTauri()) {
       const { invoke } = await import('@tauri-apps/api/core');
       const da = async (p: string) => (await invoke<unknown>('datei_stand', { path: p })) != null;
-      let ziel = pfadMitEndung(pfad, 'xlsx');
+      const ziel = pfadMitEndung(pfad, 'xlsx');
       const name = (p: string) => p.split(/[\\/]/).pop() ?? p;
-      if (await da(ziel)) {
-        const wahl = await vorhandeneDateiFragen(fragen, [name(ziel)], ziel.slice(0, ziel.length - name(ziel).length));
-        if (!wahl) return true;
-        if (wahl === 'neu') {
-          let n = 2;
-          while (await da(fassungsPfad(ziel, n))) n++;
-          ziel = fassungsPfad(ziel, n);
-        }
-      }
+      // nie still überschreiben: dieselbe Rückfrage wie beim direkten Export
+      if ((await da(ziel)) && !(await ersetzenFragen(fragen, [name(ziel)], ziel.slice(0, ziel.length - name(ziel).length - 1)))) return true;
       await saveMergedFile({ pfad: ziel, defaultName: name(ziel), filterName: 'Excel-Arbeitsmappe', extension: 'xlsx', mime: XLSX_MIME, vorhandenLesen: false, build: () => xlsx });
     }
     return true;
@@ -225,11 +214,6 @@ export function ExcelDialog(props: ExcelDialogProps) {
           void doExport();
         }}
       >
-        {props.grund && (
-          <p className="meldung" role="status">
-            {props.grund}
-          </p>
-        )}
         {pdf && (
           <p className="muted small-text">
             Die Berechnung wird wie beim Excel-Export gefüllt und dann über Microsoft Excel bzw. LibreOffice als PDF gespeichert – mit Druckbereich, Kopf- und Fußzeile und Seitenformat der Vorlage.
