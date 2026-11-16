@@ -540,7 +540,7 @@ BRI, BRI Teilkörper, Räume und Platzhalter.
 
 <!-- erzeugt:quadrio – nicht von Hand ändern, scripts/excel-doku.mjs -->
 
-_Beispieldaten: Projekt „Musterhaus“ (2417). KG: Keller 20 m² (NUF 7), Heizung 4 m² (TF). EG: Flur 3 m² (VF), Wohnen 20 m² (NUF 1, Putzabzug 3 %), Loggia 3 m² (S, Freisitz), Schacht −0,25 m² (Abzug), Terrasse 8 m² (außerhalb der BGF, Freisitz), Treppe −2 m² (Abzug nur der Wohnfläche) – alle Wohnung WE 1 –, Abstellraum 2 m² (NUF 7, S, ohne Wohnflächenanrechnung). DG (Walmdach mit Schleppgaube): Zimmer 9 m² (WE 2), Bad 4 m² (Wohnfläche ohne Wohnungszuordnung). BGF-Umrisse: Keller, Haus, Loggia (S), Aussparung (Abzug), Dach._
+_Beispieldaten: Projekt „Musterhaus“ (2417). KG: Keller 20 m² (NUF 7), Heizung 4 m² (TF). EG: Flur 3 m² (VF), Wohnen 20 m² (NUF 1, Putzabzug 3 %), Loggia 3 m² (S, Freisitz), Schacht −0,25 m² (Abzug), Terrasse 8 m² (außerhalb der BGF, Freisitz), Treppe −2 m² (VF, Abzug nur der Wohnfläche) – alle Wohnung WE 1 –, Abstellraum 2 m² (NUF 7, S, ohne Wohnflächenanrechnung). DG (Walmdach mit Schleppgaube): Zimmer 9 m² (WE 2), Bad 4 m² (Wohnfläche ohne Wohnungszuordnung). BGF-Umrisse: Keller, Haus, Loggia (S), Aussparung (Abzug), Dach._
 
 ### Projektangaben
 
@@ -939,11 +939,10 @@ Ergebnis:
 | 1 | Wohnen | NUF 1 |
 | 2 | Loggia | NUF 1 |
 | 3 | Schacht | NUF 1 |
-| 4 | Treppe | NUF 1 |
-| 5 | Zimmer | NUF 1 |
-| 6 | Bad | NUF 1 |
-| 7 | Keller | NUF 7 |
-| 8 | Abstellraum | NUF 7 |
+| 4 | Zimmer | NUF 1 |
+| 5 | Bad | NUF 1 |
+| 6 | Keller | NUF 7 |
+| 7 | Abstellraum | NUF 7 |
 
 ### `bgf` – BGF-Teilflächen
 
@@ -1328,7 +1327,7 @@ GRZ und GFZ sind dort Formeln aus den Zellen. Der Haftungssatz steht nur als Pla
 
 <!-- erzeugt:terrio – nicht von Hand ändern, scripts/excel-doku.mjs -->
 
-_Beispieldaten: Projekt „Musterhaus“, Grundstück 600 m², Bebauungsplan vom 01.06.1995 (BauNVO 1990) mit GRZ 0,4, GFZ 0,8, II Vollgeschossen und Festsetzung nach § 20 Abs. 3 Satz 2; Gebäude 12 × 10 m mit EG, OG und DG (Walmdach, kein Vollgeschoss); Räume Wohnen (EG), Zimmer und Abstellraum (DG); Lageplan: Zufahrt (GRZ II, teilversiegelt), Terrasse (prüfen), Weg (zählt), Garten (Grünfläche), Nachbarhaus._
+_Beispieldaten: Projekt „Musterhaus“, Grundstück 600 m², Bebauungsplan vom 01.06.1995 (BauNVO 1990 ff.) mit GRZ 0,4, GFZ 0,8, II Vollgeschossen und Festsetzung nach § 20 Abs. 3 Satz 2; Gebäude 12 × 10 m mit EG, OG und DG (Walmdach, kein Vollgeschoss); Räume Wohnen (EG), Zimmer und Abstellraum (DG); Lageplan: Zufahrt (GRZ II, teilversiegelt), Terrasse (prüfen), Weg (von Hand zur GR I eingestuft), Garten (Grünfläche), Nachbarhaus._
 
 ### Projektangaben
 
@@ -1392,11 +1391,11 @@ _Beispieldaten: Projekt „Musterhaus“, Grundstück 600 m², Bebauungsplan vom
 
 ### Grundflächenzahl (§ 19 BauNVO)
 
-**Einzelwerte** – nutzbar: Zelle, Bedingung {{#wenn}}, Kopf-/Fußzeile, Textfeld; nicht: Block {{#…}}; keine Filter. GRZ I bzw. GRZ (vor 1990) und GRZ II nach § 19 Abs. 4 BauNVO 1990 (Überschreitung durch Garagen, Stellplätze mit Zufahrten, Nebenanlagen und unterirdische Anlagen).
+**Einzelwerte** – nutzbar: Zelle, Bedingung {{#wenn}}, Kopf-/Fußzeile, Textfeld; nicht: Block {{#…}}; keine Filter. GRZ I bzw. GRZ (vor 1990) und GRZ II nach § 19 Abs. 4 BauNVO 1990 und späterer Fassungen (Überschreitung durch Garagen, Stellplätze mit Zufahrten, Nebenanlagen und unterirdische Anlagen).
 
 | Platzhalter | Bedeutung | Einheit |
 | --- | --- | --- |
-| `{{grz.bezeichnung}}` | „GRZ I“ (BauNVO 1990) bzw. „GRZ“ (frühere Fassungen) |  |
+| `{{grz.bezeichnung}}` | „GRZ I“ (BauNVO 1990 ff.) bzw. „GRZ“ (frühere Fassungen) |  |
 | `{{grz}}` | GRZ I bzw. GRZ, auf die Stellen der App gerundet (leer ohne Festsetzung bzw. Berechnung) |  |
 | `{{grz.stellen}}` | Nachkommastellen der Kennzahl (mindestens 3, nahe am Grenzwert mehr) |  |
 | `{{grz.zulaessig}}` | zulässige GRZ I bzw. GRZ laut Festsetzung |  |
@@ -1407,7 +1406,7 @@ _Beispieldaten: Projekt „Musterhaus“, Grundstück 600 m², Bebauungsplan vom
 | `{{grz.reserve}}` | zulässige minus angerechnete Grundfläche (GR I bzw. GR) (negativ = überschritten) | m² |
 | `{{grz.status}}` | Ergebnis: „eingehalten“, „überschritten“ … |  |
 | `{{grz.vergleich}}` | Begründung in m², z. B. „GR I 135,00 m² < 240,00 m² zulässig“ |  |
-| `{{grz.ii.bezeichnung}}` | „GRZ II (§ 19 Abs. 4)“ bei BauNVO 1990, sonst leer |  |
+| `{{grz.ii.bezeichnung}}` | „GRZ II (§ 19 Abs. 4)“ bei BauNVO 1990 ff., sonst leer |  |
 | `{{grz.ii}}` | GRZ II, auf die Stellen der App gerundet (leer ohne Festsetzung bzw. Berechnung) |  |
 | `{{grz.ii.stellen}}` | Nachkommastellen der Kennzahl (mindestens 3, nahe am Grenzwert mehr) |  |
 | `{{grz.ii.zulaessig}}` | zulässige GRZ II laut Festsetzung |  |
@@ -1420,7 +1419,7 @@ _Beispieldaten: Projekt „Musterhaus“, Grundstück 600 m², Bebauungsplan vom
 | `{{grz.ii.vergleich}}` | Begründung in m², z. B. „GR I 135,00 m² < 240,00 m² zulässig“ |  |
 | `{{grz.offen.bezeichnung}}` | „GRZ II mit ungeklärten Flächen („prüfen“)“ bzw. „GRZ …“ – leer ohne ungeklärte Flächen |  |
 | `{{grz.offen.flaeche}}` | Grundfläche einschließlich der ungeklärten Flächen (GR II bzw. GR) | m² |
-| `{{lageplan.angerechnet_auf}}` | „GR II“ (BauNVO 1990) bzw. „GR“ – Einzelwert für Spaltenüberschriften, obwohl er wie ein Feld von lageplan aussieht |  |
+| `{{lageplan.angerechnet_auf}}` | „GR II“ (BauNVO 1990 ff.) bzw. „GR“ – Einzelwert für Spaltenüberschriften, obwohl er wie ein Feld von lageplan aussieht |  |
 | `{{unterirdisch.flaeche}}` | Kellergeschoss außerhalb der Hauptanlage (leer ohne) | m² |
 | `{{unterirdisch.angerechnet}}` | davon angerechnet | m² |
 | `{{garagen.frei}}` | anrechnungsfreie Garagenfläche nach § 19 Abs. 5 (1962) bzw. § 21a Abs. 3 (1968/1977) | m² |
@@ -1428,9 +1427,9 @@ _Beispieldaten: Projekt „Musterhaus“, Grundstück 600 m², Bebauungsplan vom
 | `{{gr_absolut}}` | vorhandene GR I | m² |
 | `{{gr_absolut.zulaessig}}` | festgesetzter Höchstwert | m² |
 | `{{gr_absolut.status}}` | Ergebnis |  |
-| `{{gr2_absolut.bezeichnung}}` | Bezeichnung, z. B. „GR II absolut (§ 19 Abs. 4 S. 2)“ (leer ohne Festsetzung) |  |
-| `{{gr2_absolut}}` | vorhandene GR II absolut | m² |
-| `{{gr2_absolut.zulaessig}}` | festgesetzter Höchstwert | m² |
+| `{{gr2_absolut.bezeichnung}}` | Bezeichnung wie im Nachweis, „GR II absolut (§ 19 Abs. 4 S. 2)“ – gemeint ist die GR II bei absolut festgesetzter GR (leer ohne absolute GR) |  |
+| `{{gr2_absolut}}` | vorhandene GR II | m² |
+| `{{gr2_absolut.zulaessig}}` | zulässige GR II, abgeleitet aus der festgesetzten GR: 1,5 × GR, höchstens 0,8 × Grundstücksfläche (§ 19 Abs. 4 Satz 2 BauNVO 1990 ff.) bzw. eine abweichende Bestimmung im Bebauungsplan (Satz 3) – kein festgesetzter Wert | m² |
 | `{{gr2_absolut.status}}` | Ergebnis |  |
 
 **Beispiel: Kennzahlen mit Ergebnis**
@@ -1459,7 +1458,7 @@ Ergebnis:
 | --- | --- | --- |
 | `{{gf}}` | Geschossfläche (GF) | m² |
 | `{{gf.aufenthalt}}` | davon Aufenthaltsräume in Nicht-Vollgeschossen samt Treppenräumen und Umfassungswänden | m² |
-| `{{aufenthalt.titel}}` | „Aufenthaltsräume in Nicht-Vollgeschossen“, wenn sie zur Geschossfläche zählen (vor 1990, bei BauNVO 1990 nur bei Festsetzung nach § 20 Abs. 3 Satz 2), sonst leer |  |
+| `{{aufenthalt.titel}}` | „Aufenthaltsräume in Nicht-Vollgeschossen“, wenn sie zur Geschossfläche zählen (vor 1990, bei BauNVO 1990 ff. nur bei Festsetzung nach § 20 Abs. 3 Satz 2), sonst leer |  |
 | `{{gfz}}` | GFZ, auf die Stellen der App gerundet (leer ohne Festsetzung bzw. Berechnung) |  |
 | `{{gfz.stellen}}` | Nachkommastellen der Kennzahl (mindestens 3, nahe am Grenzwert mehr) |  |
 | `{{gfz.zulaessig}}` | zulässige GFZ laut Festsetzung |  |
@@ -1615,7 +1614,7 @@ Ergebnis:
 | `{{lageplan.flaeche_aussen}}` | davon außerhalb des Gebäudes | m² |
 | `{{lageplan.flaeche_eindeutig}}` | nur dieser Fläche zugeordneter Anteil – Summen zählen Überlagerungen einmal | m² |
 | `{{lageplan.ueberlagert}}` | von anderen Flächen schon abgedeckter Rest | m² |
-| `{{lageplan.angerechnet}}` | tatsächlich auf die Grundfläche angerechnet (GR II bei BauNVO 1990, sonst GR) | m² |
+| `{{lageplan.angerechnet}}` | tatsächlich auf die Grundfläche angerechnet (GR II bei BauNVO 1990 ff., sonst GR) | m² |
 | `{{lageplan.angerechnet_bis}}` | bei „prüfen“: angerechnet bis zu dieser Fläche, sonst leer | m² |
 | `{{lageplan.anrechnung}}` | Anrechnung: „zählt“, „GRZ II“, „bis 0,1 frei“, „zählt nicht“, „prüfen“ oder „Nachbar“ |  |
 | `{{lageplan.nachbar}}` | „ja“ bei Flächen eines Nachbargrundstücks |  |
@@ -1626,7 +1625,7 @@ Ergebnis:
 | `[eigen]` | Flächen des eigenen Grundstücks |
 | `[nachbar]` | Flächen der Nachbargrundstücke |
 | `[zaehlt]`, `[zählt]` | zählen wie die Hauptanlage (GR I bzw. GR) |
-| `[grz2]` | zählen nur zur GRZ II (§ 19 Abs. 4 BauNVO 1990) |
+| `[grz2]` | zählen nur zur GRZ II (§ 19 Abs. 4 BauNVO 1990 ff.) |
 | `[pruefen]`, `[prüfen]` | nach der maßgebenden Fassung nicht eindeutig („prüfen“) |
 | `[voll]` | vollversiegelt |
 | `[teil]` | teilversiegelt |
@@ -1693,7 +1692,7 @@ Ergebnis:
 | Benannter Filter | Bedeutung |
 | --- | --- |
 | `[aufenthalt]` | Aufenthalts- und Treppenräume |
-| `[gf]` | Räume in Nicht-Vollgeschossen, wenn deren Aufenthaltsräume zur Geschossfläche zählen (vor 1990, bei BauNVO 1990 nur bei Festsetzung nach § 20 Abs. 3 Satz 2) – alle Räume dieser Geschosse, mit [gf,aufenthalt] nur die Aufenthaltsräume |
+| `[gf]` | Räume in Nicht-Vollgeschossen, wenn deren Aufenthaltsräume zur Geschossfläche zählen (vor 1990, bei BauNVO 1990 ff. nur bei Festsetzung nach § 20 Abs. 3 Satz 2) – alle Räume dieser Geschosse, mit [gf,aufenthalt] nur die Aufenthaltsräume |
 | `[vollgeschoss]` | Räume in Vollgeschossen |
 
 **Beispiel: Aufenthaltsräume, die zur Geschossfläche zählen**

@@ -36,7 +36,7 @@ function absolut(p: string, name: string): Einzelwert[] {
 export const TERRIO_SCHEMA: PlatzhalterSchema = {
   app: 'TERRIO',
   beispieldaten:
-    'Beispieldaten: Projekt „Musterhaus“, Grundstück 600 m², Bebauungsplan vom 01.06.1995 (BauNVO 1990) mit GRZ 0,4, GFZ 0,8, II Vollgeschossen und Festsetzung nach § 20 Abs. 3 Satz 2; Gebäude 12 × 10 m mit EG, OG und DG (Walmdach, kein Vollgeschoss); Räume Wohnen (EG), Zimmer und Abstellraum (DG); Lageplan: Zufahrt (GRZ II, teilversiegelt), Terrasse (prüfen), Weg (zählt), Garten (Grünfläche), Nachbarhaus.',
+    'Beispieldaten: Projekt „Musterhaus“, Grundstück 600 m², Bebauungsplan vom 01.06.1995 (BauNVO 1990 ff.) mit GRZ 0,4, GFZ 0,8, II Vollgeschossen und Festsetzung nach § 20 Abs. 3 Satz 2; Gebäude 12 × 10 m mit EG, OG und DG (Walmdach, kein Vollgeschoss); Räume Wohnen (EG), Zimmer und Abstellraum (DG); Lageplan: Zufahrt (GRZ II, teilversiegelt), Terrasse (prüfen), Weg (von Hand zur GR I eingestuft), Garten (Grünfläche), Nachbarhaus.',
   abschnitte: [
     PROJEKT_GRUPPE,
     {
@@ -67,20 +67,27 @@ export const TERRIO_SCHEMA: PlatzhalterSchema = {
       art: 'einzelwerte',
       id: 'grz',
       titel: 'Grundflächenzahl (§ 19 BauNVO)',
-      text: 'GRZ I bzw. GRZ (vor 1990) und GRZ II nach § 19 Abs. 4 BauNVO 1990 (Überschreitung durch Garagen, Stellplätze mit Zufahrten, Nebenanlagen und unterirdische Anlagen).',
+      text: 'GRZ I bzw. GRZ (vor 1990) und GRZ II nach § 19 Abs. 4 BauNVO 1990 und späterer Fassungen (Überschreitung durch Garagen, Stellplätze mit Zufahrten, Nebenanlagen und unterirdische Anlagen).',
       werte: [
-        { schluessel: 'grz.bezeichnung', text: '„GRZ I“ (BauNVO 1990) bzw. „GRZ“ (frühere Fassungen)' },
+        { schluessel: 'grz.bezeichnung', text: '„GRZ I“ (BauNVO 1990 ff.) bzw. „GRZ“ (frühere Fassungen)' },
         ...kennzahl('grz', 'GRZ I bzw. GRZ', 'Grundfläche (GR I bzw. GR)', 'm²'),
-        { schluessel: 'grz.ii.bezeichnung', text: '„GRZ II (§ 19 Abs. 4)“ bei BauNVO 1990, sonst leer' },
+        { schluessel: 'grz.ii.bezeichnung', text: '„GRZ II (§ 19 Abs. 4)“ bei BauNVO 1990 ff., sonst leer' },
         ...kennzahl('grz.ii', 'GRZ II', 'Grundfläche GR II', 'm²'),
         { schluessel: 'grz.offen.bezeichnung', text: '„GRZ II mit ungeklärten Flächen („prüfen“)“ bzw. „GRZ …“ – leer ohne ungeklärte Flächen' },
         { schluessel: 'grz.offen.flaeche', text: 'Grundfläche einschließlich der ungeklärten Flächen (GR II bzw. GR)', einheit: 'm²' },
-        { schluessel: 'lageplan.angerechnet_auf', text: '„GR II“ (BauNVO 1990) bzw. „GR“ – Einzelwert für Spaltenüberschriften, obwohl er wie ein Feld von lageplan aussieht' },
+        { schluessel: 'lageplan.angerechnet_auf', text: '„GR II“ (BauNVO 1990 ff.) bzw. „GR“ – Einzelwert für Spaltenüberschriften, obwohl er wie ein Feld von lageplan aussieht' },
         { schluessel: 'unterirdisch.flaeche', text: 'Kellergeschoss außerhalb der Hauptanlage (leer ohne)', einheit: 'm²' },
         { schluessel: 'unterirdisch.angerechnet', text: 'davon angerechnet', einheit: 'm²' },
         { schluessel: 'garagen.frei', text: 'anrechnungsfreie Garagenfläche nach § 19 Abs. 5 (1962) bzw. § 21a Abs. 3 (1968/1977)', einheit: 'm²' },
         ...absolut('gr_absolut', 'GR I (absolut)'),
-        ...absolut('gr2_absolut', 'GR II absolut (§ 19 Abs. 4 S. 2)'),
+        { schluessel: 'gr2_absolut.bezeichnung', text: 'Bezeichnung wie im Nachweis, „GR II absolut (§ 19 Abs. 4 S. 2)“ – gemeint ist die GR II bei absolut festgesetzter GR (leer ohne absolute GR)' },
+        { schluessel: 'gr2_absolut', text: 'vorhandene GR II', einheit: 'm²' },
+        {
+          schluessel: 'gr2_absolut.zulaessig',
+          text: 'zulässige GR II, abgeleitet aus der festgesetzten GR: 1,5 × GR, höchstens 0,8 × Grundstücksfläche (§ 19 Abs. 4 Satz 2 BauNVO 1990 ff.) bzw. eine abweichende Bestimmung im Bebauungsplan (Satz 3) – kein festgesetzter Wert',
+          einheit: 'm²',
+        },
+        { schluessel: 'gr2_absolut.status', text: 'Ergebnis' },
       ],
       beispiele: [
         {
@@ -108,7 +115,7 @@ export const TERRIO_SCHEMA: PlatzhalterSchema = {
         { schluessel: 'gf.aufenthalt', text: 'davon Aufenthaltsräume in Nicht-Vollgeschossen samt Treppenräumen und Umfassungswänden', einheit: 'm²' },
         {
           schluessel: 'aufenthalt.titel',
-          text: '„Aufenthaltsräume in Nicht-Vollgeschossen“, wenn sie zur Geschossfläche zählen (vor 1990, bei BauNVO 1990 nur bei Festsetzung nach § 20 Abs. 3 Satz 2), sonst leer',
+          text: '„Aufenthaltsräume in Nicht-Vollgeschossen“, wenn sie zur Geschossfläche zählen (vor 1990, bei BauNVO 1990 ff. nur bei Festsetzung nach § 20 Abs. 3 Satz 2), sonst leer',
         },
         ...kennzahl('gfz', 'GFZ', 'Geschossfläche', 'm²'),
         ...absolut('gf_absolut', 'GF (absolut)'),
@@ -224,7 +231,7 @@ export const TERRIO_SCHEMA: PlatzhalterSchema = {
         { name: 'flaeche_aussen', text: 'davon außerhalb des Gebäudes', einheit: 'm²' },
         { name: 'flaeche_eindeutig', text: 'nur dieser Fläche zugeordneter Anteil – Summen zählen Überlagerungen einmal', einheit: 'm²' },
         { name: 'ueberlagert', text: 'von anderen Flächen schon abgedeckter Rest', einheit: 'm²' },
-        { name: 'angerechnet', text: 'tatsächlich auf die Grundfläche angerechnet (GR II bei BauNVO 1990, sonst GR)', einheit: 'm²' },
+        { name: 'angerechnet', text: 'tatsächlich auf die Grundfläche angerechnet (GR II bei BauNVO 1990 ff., sonst GR)', einheit: 'm²' },
         { name: 'angerechnet_bis', text: 'bei „prüfen“: angerechnet bis zu dieser Fläche, sonst leer', einheit: 'm²' },
         { name: 'anrechnung', text: 'Anrechnung: „zählt“, „GRZ II“, „bis 0,1 frei“, „zählt nicht“, „prüfen“ oder „Nachbar“' },
         { name: 'nachbar', text: '„ja“ bei Flächen eines Nachbargrundstücks' },
@@ -234,7 +241,7 @@ export const TERRIO_SCHEMA: PlatzhalterSchema = {
         { name: 'eigen', text: 'Flächen des eigenen Grundstücks' },
         { name: 'nachbar', text: 'Flächen der Nachbargrundstücke' },
         { name: 'zaehlt', aliase: ['zählt'], text: 'zählen wie die Hauptanlage (GR I bzw. GR)' },
-        { name: 'grz2', text: 'zählen nur zur GRZ II (§ 19 Abs. 4 BauNVO 1990)' },
+        { name: 'grz2', text: 'zählen nur zur GRZ II (§ 19 Abs. 4 BauNVO 1990 ff.)' },
         { name: 'pruefen', aliase: ['prüfen'], text: 'nach der maßgebenden Fassung nicht eindeutig („prüfen“)' },
         { name: 'voll', text: 'vollversiegelt' },
         { name: 'teil', text: 'teilversiegelt' },
@@ -288,7 +295,7 @@ export const TERRIO_SCHEMA: PlatzhalterSchema = {
         { name: 'aufenthalt', text: 'Aufenthalts- und Treppenräume' },
         {
           name: 'gf',
-          text: 'Räume in Nicht-Vollgeschossen, wenn deren Aufenthaltsräume zur Geschossfläche zählen (vor 1990, bei BauNVO 1990 nur bei Festsetzung nach § 20 Abs. 3 Satz 2) – alle Räume dieser Geschosse, mit [gf,aufenthalt] nur die Aufenthaltsräume',
+          text: 'Räume in Nicht-Vollgeschossen, wenn deren Aufenthaltsräume zur Geschossfläche zählen (vor 1990, bei BauNVO 1990 ff. nur bei Festsetzung nach § 20 Abs. 3 Satz 2) – alle Räume dieser Geschosse, mit [gf,aufenthalt] nur die Aufenthaltsräume',
         },
         { name: 'vollgeschoss', text: 'Räume in Vollgeschossen' },
       ],

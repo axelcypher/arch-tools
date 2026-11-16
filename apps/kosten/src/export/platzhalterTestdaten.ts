@@ -26,7 +26,7 @@ export function platzhalterProjekt(): Project {
     regionalfaktor: 1.1,
   };
   const e = berechne(p);
-  p.kosten.staende = [standAus(e, 'rahmen', 'Vorentwurf', '2026-03-01'), standAus(e, 'schaetzung', 'Entwurf', '2026-07-01')];
+  p.kosten.staende = [standAus(e, 'rahmen', 'Grundlagenermittlung', '2026-03-01'), standAus(e, 'schaetzung', 'Vorplanung', '2026-07-01')];
   return p;
 }
 

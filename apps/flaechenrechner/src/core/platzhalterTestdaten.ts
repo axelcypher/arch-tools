@@ -46,7 +46,7 @@ export function platzhalterProjekt() {
   raum(eg, '1.04', 'Schacht', 0.5, 0.5, { abzug: true, wohnung: 'WE 1' });
   raum(eg, '1.05', 'Terrasse', 4, 2, { draussen: true, freisitz: true, wohnung: 'WE 1' });
   raum(eg, '1.06', 'Abstellraum', 2, 1, { nutzung: 'NUF7', s: true });
-  raum(eg, '1.07', 'Treppe', 1, 2, { abzug: true, nurWofl: true, wohnung: 'WE 1' });
+  raum(eg, '1.07', 'Treppe', 1, 2, { nutzung: 'VF', abzug: true, nurWofl: true, wohnung: 'WE 1' });
   raum(dg, '2.01', 'Zimmer', 3, 3, { wohnung: 'WE 2' });
   raum(dg, '2.02', 'Bad', 2, 2, { wofl: true });
   kg.shapes.push(createOutline(rectPoints({ x: 0, y: 0 }, { x: 10, y: 8 }), 'Keller'));
