@@ -160,3 +160,8 @@ verworfen, fehlende Teile ergänzt; bei fehlender Bildgröße oder doppelten Ken
 - `src/export/pdf.ts`: kleiner eigener PDF-Schreiber (JPEG-Bild, Linien, Helvetica/WinAnsi). `src/export/png.ts`:
   pHYs-Block bzw. JFIF-Dichte für den Maßstab (JFIF nur, wenn auf 0,1 % genau darstellbar). Der Exportbereich
   wird auf ganze Pixel erweitert, damit Bild, Maßstab und eingezeichnete Vektoren genau übereinstimmen.
+
+## Zentrale Einstellungen
+
+„Datei → Einstellungen …“ (Strg+,) öffnet die Einstellungen aller Apps; den Fotoordner stellt man dort auf der Seite
+„Pfade und Benennung“ ein. Siehe [suite.md](suite.md#einstellungen-aller-apps).

@@ -2545,6 +2545,10 @@ button.ungespeichert::after {
 .einst-feldzeile > textarea.einst-feld {
   resize: vertical;
 }
+/* Platzhalter-Chips nur am Eintrag mit dem Fokus (wie die kompakten Namensfelder): die lange Seite bleibt ruhig */
+.einst-eintrag:not(:focus-within) .ph-chips {
+  display: none;
+}
 .einst-vorschau code {
   overflow-wrap: anywhere;
 }

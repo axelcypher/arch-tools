@@ -1245,3 +1245,13 @@ SJFORMA_REF=/pfad/zu/forma-projekten cargo test --manifest-path apps/formulare/s
   Statistikbogens Baugenehmigung, der nicht zählt. Merkmale wie „freistehend“, „Kellergeschoss“ oder „Tierhaltung“
   gibt es nicht; die betroffenen Angaben zählen deshalb nicht bzw. immer.
 - **Beschriftungen in Tabellen** (z. B. „1-fach / 3-fach“-Spalten) sind aus der Lage nur unvollständig ableitbar.
+
+## Zentrale Einstellungen
+
+„Datei → Einstellungen …“ (Strg+,) öffnet die Einstellungen aller Apps; die eigenen Einstellungen von PERMIO heißen im
+Menü „Mehr“ jetzt „Einstellungen von PERMIO …“. Antragsordner, Namensvorlage exportierter PDFs, fester Zielordner,
+Vorlagenordner der leeren Formulare und der Ort neuer Projektdateien stehen auf der Seite „Pfade und Benennung“ – im
+gemeinsamen Speicher statt wie bisher je Rechner; alte Werte werden übernommen (bei abweichenden Werten auf mehreren
+Rechnern fragt die Seite). Berechnungen als externe Antragsdokumente sucht PERMIO in den Berechnungsordnern von
+QUADRIO, TERRIO und NUMIO und in zusätzlich eingestellten Ordnern. Abweichungen je Projekt bleiben im Projekt. Siehe
+[suite.md](suite.md#einstellungen-aller-apps).
