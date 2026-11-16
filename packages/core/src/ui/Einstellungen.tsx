@@ -314,7 +314,7 @@ export function EinstellungenDialog() {
         <div className="dialog-buttons">
           {/* warum „Übernehmen“ gesperrt ist – sichtbar, mit Sprung zum Feld (im Notbetrieb steht es oben) */}
           {sperrgrund && !gesperrt && (
-            <p className="einst-sperrgrund muted small-text" role="status">
+            <p className="einst-sperrgrund small-text" role="status">
               {sperrgrund}{' '}
               <button type="button" className="small" onClick={zumFehler}>
                 Zum Feld
@@ -456,7 +456,7 @@ const pfadEntwurf: SeitenEntwurf = {
   fehler: () => {
     const { entwurf } = pfadStore.getState();
     const falsch = Object.entries(entwurf).find(([id, t]) => typeof t === 'string' && hatFehler(pfadPruefen(pfadEinstellung(id), t)));
-    return falsch ? `Bitte zuerst „${pfadEinstellung(falsch[0]).bezeichnung}“ berichtigen (Seite „Pfade und Benennung“).` : null;
+    return falsch ? `Bitte zuerst „${pfadEinstellung(falsch[0]).bezeichnung}“ berichtigen.` : null;
   },
   uebernehmen: async () => {
     for (const { e, wert } of aenderungen()) await pfadSpeichern(e.id, wert);
