@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import { usePfadWerte } from '../einstellungen/pfade';
 import { direktExportZielJetzt, GRUND_KEIN_PROJEKTORDNER, GRUND_UNGESPEICHERT, GRUND_WEB, type DirektExportAuftrag, type ExportDialogStart } from '../excel/direktExport';
 import { isTauri } from '../platform/files';
 import { pdfMoeglich } from '../platform/pdf';
@@ -34,13 +35,19 @@ export function direktExportZustand(p: Pick<DirektExportProps, 'auftrag' | 'deak
 
 export function useDirektExport(p: DirektExportProps) {
   const [laeuft, setLaeuft] = useState(false);
+  // Sperre ohne Umweg über den Zustand: zwei Auslösungen vor dem nächsten Rendern (Doppelklick) starten nur einen Export
+  const sperre = useRef(false);
+  // Tooltip und Sperre hängen an den Einstellungen („Pfade und Benennung“) – bei Änderungen neu rendern
+  usePfadWerte();
   const zustand = direktExportZustand(p);
   const ausfuehren = async () => {
-    if (laeuft || !direktExportZustand(p).bereit) return;
+    if (sperre.current || !direktExportZustand(p).bereit) return;
+    sperre.current = true;
     setLaeuft(true);
     try {
       await direktExportMitMeldung(p.auftrag(), (hinweise) => p.dialogOeffnen({ art: 'excel', hinweise }));
     } finally {
+      sperre.current = false;
       setLaeuft(false);
     }
   };

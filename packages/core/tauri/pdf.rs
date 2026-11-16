@@ -17,6 +17,8 @@ const PDF_KEIN_PROGRAMM: &str = "Für das PDF wird Microsoft Excel oder LibreOff
 const PDF_EXCEL_FEHLT: i32 = 3;
 
 #[derive(Debug, Clone, PartialEq)]
+// Excel gibt es nur unter Windows (außerhalb der Tests sonst nie erzeugt)
+#[cfg_attr(not(windows), allow(dead_code))]
 enum PdfWandler {
     /// Microsoft Excel über PowerShell und COM
     Excel { powershell: std::path::PathBuf },
@@ -38,18 +40,31 @@ fn ps_text(s: &str) -> String {
     format!("'{}'", s.replace('\'', "''"))
 }
 
-/// PowerShell-Skript: Excel unsichtbar starten, Mappe schreibgeschützt öffnen, als PDF ausgeben (Typ 0 = PDF, Qualität
-/// Standard, Dokumenteigenschaften mit, Druckbereiche beachten), Excel in jedem Fall beenden. Fehlt Excel: Rückgabe 3.
-fn pdf_excel_skript(ein: &std::path::Path, aus: &std::path::Path) -> String {
+/// Datei, in die das Skript die Prozessnummer von EXCEL.EXE schreibt: Excel startet über DCOM und ist kein Kind von
+/// PowerShell – beim Zeitlimit beendet das Beenden des Prozessbaums es deshalb nicht mit
+fn pdf_excel_pid_datei(ordner: &std::path::Path) -> std::path::PathBuf {
+    ordner.join("excel.pid")
+}
+
+/// PowerShell-Skript: Excel unsichtbar starten, seine Prozessnummer ablegen, Mappe schreibgeschützt öffnen, als PDF
+/// ausgeben (Typ 0 = PDF, Qualität Standard, Dokumenteigenschaften mit, Druckbereiche beachten), Excel in jedem Fall
+/// beenden. Fehlt Excel: Rückgabe 3. Fehlermeldungen in UTF-8 (sonst OEM-Zeichensatz).
+fn pdf_excel_skript(ein: &std::path::Path, aus: &std::path::Path, pid: &std::path::Path) -> String {
     format!(
         "$ErrorActionPreference = 'Stop'\n\
+         [Console]::OutputEncoding = [Text.Encoding]::UTF8\n\
          try {{ $x = New-Object -ComObject Excel.Application }} catch {{ exit {PDF_EXCEL_FEHLT} }}\n\
+         try {{\n\
+           Add-Type -Namespace ArchTools -Name Fenster -MemberDefinition '[DllImport(\"user32.dll\")] public static extern uint GetWindowThreadProcessId(IntPtr h, out uint p);'\n\
+           $nr = [uint32]0; [void][ArchTools.Fenster]::GetWindowThreadProcessId([IntPtr]$x.Hwnd, [ref]$nr); Set-Content -LiteralPath {} -Value $nr\n\
+         }} catch {{ }}\n\
          try {{\n\
            $x.Visible = $false; $x.DisplayAlerts = $false; $x.ScreenUpdating = $false\n\
            $wb = $x.Workbooks.Open({}, 0, $true)\n\
            $wb.ExportAsFixedFormat(0, {}, 0, $true, $false)\n\
            $wb.Close($false)\n\
          }} finally {{ $x.Quit(); [void][System.Runtime.InteropServices.Marshal]::ReleaseComObject($x) }}\n",
+        ps_text(&pid.to_string_lossy()),
         ps_text(&ein.to_string_lossy()),
         ps_text(&aus.to_string_lossy())
     )
@@ -70,7 +85,7 @@ fn pdf_befehl(w: &PdfWandler, ein: &std::path::Path, ordner: &std::path::Path) -
     let mut cmd = match w {
         PdfWandler::Excel { powershell } => {
             let mut c = std::process::Command::new(powershell);
-            c.args(["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command"]).arg(pdf_excel_skript(ein, &pdf_ziel(ein, ordner)));
+            c.args(["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command"]).arg(pdf_excel_skript(ein, &pdf_ziel(ein, ordner), &pdf_excel_pid_datei(ordner)));
             c
         }
         PdfWandler::LibreOffice { soffice } => {
@@ -134,6 +149,25 @@ fn pdf_wandler_suchen() -> Vec<PdfWandler> {
     w
 }
 
+/// Prozessnummer von Excel aus der Datei des Skripts (fehlt, wenn Excel nicht gestartet ist)
+fn pdf_excel_pid(ordner: &std::path::Path) -> Option<u32> {
+    std::fs::read_to_string(pdf_excel_pid_datei(ordner)).ok()?.trim().trim_start_matches('\u{feff}').parse().ok().filter(|n| *n > 0)
+}
+
+/// Excel nach einem gescheiterten Versuch (Zeitlimit, Fehler) beenden, falls es noch läuft – nur dann, damit keine
+/// inzwischen wiederverwendete Prozessnummer getroffen wird, und nur einmal je Versuch
+fn pdf_excel_beenden(ordner: &std::path::Path) {
+    let Some(nr) = pdf_excel_pid(ordner) else { return };
+    let _ = std::fs::remove_file(pdf_excel_pid_datei(ordner));
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        let _ = std::process::Command::new("taskkill").args(["/PID", &nr.to_string(), "/T", "/F"]).creation_flags(0x0800_0000).output();
+    }
+    #[cfg(not(windows))]
+    let _ = nr;
+}
+
 /// Ausführung eines Befehls mit Zeitlimit (in Tests nachgebildet)
 type PdfAusfuehren<'a> = &'a mut dyn FnMut(&mut std::process::Command, std::time::Duration, &str) -> Result<std::process::Output, String>;
 
@@ -146,8 +180,14 @@ fn pdf_wandeln_mit(ein: &std::path::Path, ordner: &std::path::Path, wandler: &[P
     let mut fehler: Vec<String> = Vec::new();
     for w in wandler {
         let _ = std::fs::remove_file(&ziel);
+        let _ = std::fs::remove_file(pdf_excel_pid_datei(ordner));
         let mut cmd = pdf_befehl(w, ein, ordner);
-        match ausfuehren(&mut cmd, PDF_ZEITLIMIT, w.name()) {
+        let ergebnis = ausfuehren(&mut cmd, PDF_ZEITLIMIT, w.name());
+        // Excel läuft getrennt von PowerShell: nach einem gescheiterten Versuch eigens beenden
+        if matches!(w, PdfWandler::Excel { .. }) && !matches!(&ergebnis, Ok(o) if o.status.success()) {
+            pdf_excel_beenden(ordner);
+        }
+        match ergebnis {
             Err(e) => fehler.push(e),
             Ok(out) if matches!(w, PdfWandler::Excel { .. }) && out.status.code() == Some(PDF_EXCEL_FEHLT) => fehler.push("Microsoft Excel ist nicht installiert".into()),
             Ok(out) => {
@@ -166,6 +206,11 @@ fn pdf_wandeln_mit(ein: &std::path::Path, ordner: &std::path::Path, wandler: &[P
 /// Excel-Datei (Base64) → PDF (Base64)
 #[tauri::command]
 async fn excel_als_pdf(xlsx_base64: String) -> Result<String, String> {
+    // bis zu zwei Versuche à 2 Minuten – nicht im asynchronen Befehl blockieren
+    tauri::async_runtime::spawn_blocking(move || excel_als_pdf_blockierend(&xlsx_base64)).await.map_err(|e| e.to_string())?
+}
+
+fn excel_als_pdf_blockierend(xlsx_base64: &str) -> Result<String, String> {
     let daten = base64::engine::general_purpose::STANDARD.decode(xlsx_base64.as_bytes()).map_err(|e| e.to_string())?;
     let stempel = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0);
     let ordner = std::env::temp_dir().join(format!("arch-tools-pdf-{}-{stempel}", std::process::id()));
@@ -207,13 +252,31 @@ mod pdf_tests {
 
     #[test]
     fn excel_skript_mit_pfaden_und_anfuehrungszeichen() {
-        let s = pdf_excel_skript(std::path::Path::new("C:\\Temp\\O'Brien\\Berechnung.xlsx"), std::path::Path::new("C:\\Temp\\O'Brien\\Berechnung.pdf"));
+        let s = pdf_excel_skript(std::path::Path::new("C:\\Temp\\O'Brien\\Berechnung.xlsx"), std::path::Path::new("C:\\Temp\\O'Brien\\Berechnung.pdf"), std::path::Path::new("C:\\Temp\\O'Brien\\excel.pid"));
         assert!(s.contains("Workbooks.Open('C:\\Temp\\O''Brien\\Berechnung.xlsx', 0, $true)"));
         assert!(s.contains("ExportAsFixedFormat(0, 'C:\\Temp\\O''Brien\\Berechnung.pdf', 0, $true, $false)"));
         assert!(s.contains("exit 3"));
         assert!(s.contains("$x.Quit()"));
+        // Prozessnummer von Excel abgelegt (Excel ist kein Kind von PowerShell), Meldungen in UTF-8
+        assert!(s.contains("Set-Content -LiteralPath 'C:\\Temp\\O''Brien\\excel.pid'"));
+        assert!(s.contains("OutputEncoding = [Text.Encoding]::UTF8"));
     }
 
+    #[test]
+    fn excel_pid_aus_datei() {
+        let o = ordner("pid");
+        assert_eq!(pdf_excel_pid(&o), None);
+        std::fs::write(pdf_excel_pid_datei(&o), "\u{feff}4711\r\n").unwrap();
+        assert_eq!(pdf_excel_pid(&o), Some(4711));
+        // nach dem Beenden ist die Datei weg – kein zweiter Versuch auf dieselbe Nummer
+        pdf_excel_beenden(&o);
+        assert_eq!(pdf_excel_pid(&o), None);
+        std::fs::write(pdf_excel_pid_datei(&o), "0").unwrap();
+        assert_eq!(pdf_excel_pid(&o), None);
+    }
+
+    // Pfade mit „/“ – unter Windows erzeugt Path::join „\“
+    #[cfg(unix)]
     #[test]
     fn libreoffice_befehl_mit_eigenem_profil() {
         let o = std::path::Path::new("/tmp/arbeit");
