@@ -505,8 +505,8 @@ Punkt/Unterstrich im Namen, ungültiges Datum, „AW“/„WG“ am Anfang des T
 ältere ANSI-Nachrichten):
 
 - **von / an und Name:** Absender von außen → „von <Nachname des Absenders>“; Absender aus dem Büro → „an <erster
-  Empfänger von außen>“; eine **Weiterleitung aus dem Büro** (WG/FW) einer Mail von außen → „von <ursprünglicher
-  Absender>“ aus dem Kopf der weitergeleiteten Mail im Text. Der Nachname kommt aus dem Anzeigenamen („Muster, Max“,
+  Empfänger von außen>“; eine **Weiterleitung aus dem Büro** einer Mail von außen → „von <ursprünglicher Absender>“
+  (siehe [Interne Weiterleitungen](#interne-weiterleitungen)). Der Nachname kommt aus dem Anzeigenamen („Muster, Max“,
   „Max Muster | Firma“) oder der Adresse („max.muster@…“ → Muster; Sammelpostfächer wie info@ → Name aus der
   Domain).
 - **Datum:** Empfang (von außen) bzw. Versand (an außen) – nicht das Dateidatum, das sich beim Kopieren ändert.
@@ -528,6 +528,52 @@ den ersten vier Namen alt → neu und „… und 2 weitere“), denn ein Rückg�
 260 Zeichen oder länger, steht „Pfad zu lang (… Zeichen, Windows erlaubt höchstens 259) – Thema oder Name kürzen“ an
 der Mail, und Umbenennen bzw. Ablegen bleibt gesperrt. Ist die Mail in Outlook geöffnet, sagt die App das. (Befehl
 `projekt_datei_umbenennen` in `packages/core/tauri/umbenennen.rs`, nur in den Hüllen von ATLAS und Rahmen-App.)
+
+### Interne Weiterleitungen
+
+Leitet jemand aus dem Büro eine Mail weiter, ist der direkte Absender die Kollegin – die Quelle ist aber, wer die Mail
+ursprünglich geschrieben hat. ATLAS bestimmt ihn und nutzt ihn für Name, von/an und Anzeige; eine Weiterleitung gilt
+nie versehentlich als Quelle (`apps/ordner/src/mail/ursprung.ts`).
+
+- **Intern** ist ein Absender mit eigener Domain bzw. Adresse („Eigene Domains“) oder einer, der nur eine
+  Exchange-interne Adresse hat (X.500, „/O=…“, Adresstyp „EX“) – Letzteres auch ohne eingestellte Domains. Ohne
+  eigene Domains erkennt ATLAS eine Weiterleitung also nur an einem X.500-Absender, und eine SMTP-Adresse in der Kette
+  lässt sich nicht zuordnen: dann „unklar“ (mit der Adresse als Vorschlag), nicht geraten. Steht im Kopf einer
+  weitergeleiteten Mail nur ein Name, gleicht ATLAS ihn mit den Kontakten ab: Absender und Empfänger der gelesenen
+  Mails des Projekts und, nur lesend, die im Adressbuch von PERMIO selbst angelegten bzw. geänderten Adressen (Name und
+  E-Mail; die Adressen aus den Projektkarten nicht). „Muster, Max“, „Max Muster“ und „Dr. Max Muster“ gelten als
+  derselbe Name.
+- **Weiterleitung** ist eine Mail, deren äußerstes Betreff-Präfix eine Weiterleitung ist (WG:, FW:, Fwd:, TR:, RV:,
+  WTR:, ENC:, VB:, auch mehrfach, nach „[EXTERN]“ und gemischt mit AW:/RE:) – oder, ohne „AW:“/„RE:“ vorn, eine Mail
+  mit angehängter Nachricht bzw. mit einer Trennzeile wie „---------- Forwarded message ---------“ oder
+  „-------- Weitergeleitete Nachricht --------“. Eine Antwort aus dem Büro („AW: …“ mit zitiertem Kopf) ist keine
+  Weiterleitung.
+- **Ursprung:** zuerst eine angehängte Nachricht (eingebettet wie bei „Als Anlage weiterleiten“, als .msg- oder
+  .eml-Datei bzw. message/rfc822) – sie hat die Adresse. Steht im Text aber ein Kopfblock, zählt ein Anhang nur, wenn
+  er vom selben Absender ist wie dieser Kopf; sonst gehört er zur weitergeleiteten Mail selbst (etwa die .msg des
+  Prüfingenieurs in der Mail des Statikers) und ist nicht ihr Ursprung. Dann ein ursprünglicher Absender aus den MAPI-Eigenschaften
+  (Umleitung per Regel); sonst die Kopfblöcke im Text: Outlook deutsch und englisch („Von: … Gesendet: … An: …
+  Betreff: …“, „From: … Sent: … To: … Subject: …“, auch „[mailto:…]“), Gmail und Thunderbird, aus Nur-Text und HTML.
+  Die Kette wird zurückverfolgt, solange sie aus internen Weiterleitungen besteht; der erste externe Absender ist die
+  Quelle – bei mehrfacher interner Weiterleitung also der älteste externe. Leitet ein Externer weiter, ist er die
+  Quelle (nur interne Weiterleitungen werden aufgelöst). Ist auch der Ursprung intern, bleibt es beim direkten
+  Absender.
+- **Unklar** – kein Kopf der weitergeleiteten Mail, ein Name ohne Treffer bzw. mit mehreren, mehrere angehängte Mails
+  verschiedener Absender, eine abbrechende Kette: ATLAS rät nicht. Die Mail zeigt „Intern weitergeleitet – ursprünglicher
+  Absender unklar“ mit dem Grund, der Name bleibt leer (Umbenennen und Ablegen gesperrt), und unter „Ursprünglicher
+  Absender“ wählt man die Person aus der Kette bzw. den Treffern, „keiner von außen – <Weiterleiter> gilt“ oder
+  „andere Person …“ (Name und Adresse eingeben); gespeichert wird erst mit „Übernehmen“ bzw. Enter, „Abbrechen“ bzw.
+  Escape setzt zurück. Die Auswahl gibt es bei jeder internen Weiterleitung, auch um eine
+  erkannte Quelle zu ändern; „automatisch bestimmen“ nimmt die Korrektur zurück. Korrekturen gelten fürs ganze Büro
+  (Konfigurationsordner, Bereich `mails`, Eintrag `korrekturen`, nach der Internet-Kennung der Mail).
+- **Anzeige:** Unter dem Namen steht „weitergeleitet von Erika Beispiel am 10.11.2026“, darunter die Auswahl
+  „Ursprünglicher Absender“ mit der erkannten Person; „Mail ansehen“ zeigt dazu „Ursprünglich“, „Weitergeleitet“ (wer,
+  wann) und bei mehreren Gliedern die zurückverfolgte Kette.
+- **Schon abgelegte Mails** werden nicht still umbenannt. **„Absender neu bestimmen“** liest alle Mails des Projekts
+  und wählt zusätzlich die, deren Name den Weiterleiter nennt („Absender „von Beispiel“ nennt die interne
+  Weiterleitung – ursprünglich von …“) bzw. „an“ lautet; ein von Hand anders, aber richtig benannter Absender bleibt
+  unangetastet. Umbenennen zeigt die neuen Namen und fragt nach – hier auch bei einer einzelnen Mail.
+  Mails mit unklarem Ursprung bleiben, wie sie sind, bis man den Absender wählt.
 
 **Mails aus Outlook ablegen.** Mails aus dem **klassischen Outlook** lassen sich direkt auf die Fläche „Mails aus Outlook
 hierher ziehen“ ziehen (oder gespeicherte .msg-Dateien wählen). Die App bildet den Namen wie oben, schlägt als Ordner
@@ -685,9 +731,14 @@ Presets und Bausteine in der Struktur-Datei:
   ATLAS nicht starten. PERMIO öffnet das neue Projekt nicht selbst (seine Übersicht zeigt FORMA-Projekte),
   sie wird nur neu geladen.
 - Bausteine sind Kopiervorlagen: Ein später geänderter Baustein ändert bereits eingefügte Ordner nicht.
-- Mails: nur Outlook-Nachrichten (.msg), keine .eml. Das Thema schlägt die App aus dem Betreff vor – eine inhaltliche
-  Zusammenfassung („Raumaufteilung“) setzt man von Hand. Nachrichten nur mit RTF-Text (ohne Klartext/HTML) liefern
-  keinen Text für die Erkennung von Weiterleitungen. Verschieben in einen anderen Ordner gibt es noch nicht.
+- Mails: nur Outlook-Nachrichten (.msg) zum Ablegen, keine .eml (eine .eml als Anhang einer Weiterleitung wird
+  gelesen). Das Thema schlägt die App aus dem Betreff vor – eine inhaltliche Zusammenfassung („Raumaufteilung“) setzt
+  man von Hand. Nachrichten nur mit RTF-Text (ohne Klartext/HTML) liefern keinen Text für die Erkennung von
+  Weiterleitungen (angehängte Mails zählen trotzdem). Kopfblöcke in anderen Sprachen als Deutsch, Englisch und den
+  häufigsten romanischen bzw. nordischen Bezeichnungen erkennt die App nicht – dann gilt die Mail als „unklar“. Das
+  Datum im Namen bleibt bei einer Weiterleitung das Empfangsdatum der Weiterleitung. Namen ohne Adresse gleicht ATLAS
+  nur mit den Mails des Projekts und den in PERMIO selbst gepflegten Adressen ab, nicht mit den Adressen aus den
+  Projektkarten. Verschieben in einen anderen Ordner gibt es noch nicht.
 - „Projekt abschließen“ setzt nur den Status; ein Verschieben in einen Archiv-Stammordner (als Kopie) und den
   Prüfbericht als PDF gibt es nicht. Ein von Hand ins Archiv verschobenes Projekt zählt beim Nummernvorschlag mit,
   wenn sein Stammordner eingestellt ist. Keine Obsidian-Projektnotiz.

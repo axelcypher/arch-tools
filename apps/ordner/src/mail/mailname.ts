@@ -1,5 +1,9 @@
 import type { MsgKopf } from '@core/mail/msg';
 import { sichererName } from '../struktur';
+import type { Ursprung, UrsprungOptionen } from './ursprung';
+import { istEigene, personText, ursprungBestimmen } from './ursprung';
+
+export { domainVon, istEigene } from './ursprung';
 
 /**
  * Mails im Projektordner richtig benennen: `<Projektcode> von|an <Name> <JJMMTT> <Thema>.msg`, z. B.
@@ -83,59 +87,56 @@ export function nachname(anzeige: string, mail = ''): string {
   return gross(teile[teile.length - 1] ?? lokal);
 }
 
-/** Domain einer Adresse (klein) */
-export const domainVon = (mail: string) => (/@([^@\s>]+)/.exec(mail)?.[1] ?? '').toLowerCase();
-
-/** Gehört die Adresse zum eigenen Büro? `eigene`: Domains („architekten-beispiel.example“) oder ganze Adressen */
-export function istEigene(mail: string, eigene: string[]): boolean {
-  const m = mail.trim().toLowerCase();
-  if (!m || !eigene.length) return false;
-  return eigene.some((e) => {
-    const x = e.trim().toLowerCase().replace(/^@/, '');
-    return x && (x.includes('@') ? m === x : domainVon(m) === x || domainVon(m).endsWith(`.${x}`));
-  });
-}
-
-/** Kopf der weitergeleiteten bzw. zitierten Nachricht im Text: „Von: Muster, Max <max.muster@…>“ */
-export function weitergeleitetVon(text: string): { name: string; mail: string } | null {
-  const m = /^[ \t>*]*(?:Von|From|De)\s*:\s*(.+?)\s*$/im.exec(text);
-  if (!m) return null;
-  const roh = m[1].replace(/\[mailto:[^\]]*\]/i, '').trim();
-  const mail = /<?([^<>\s@]+@[^<>\s]+?)>?$/.exec(roh)?.[1] ?? '';
-  const name = roh
-    .replace(/<[^>]*>/, '')
-    .replace(mail, '')
-    .trim();
-  return { name: name || mail, mail };
-}
-
-const istWeiterleitung = (betreff: string) => /^\s*(wg|fw|fwd|wtr|tr)\s*:/i.test(betreff);
-
 export interface MailVorschlag {
   teile: MailTeile;
   /** woher Richtung und Name kommen – als Hinweis in der Liste */
   herkunft: string;
+  /** ursprünglicher Absender (bei internen Weiterleitungen) */
+  ursprung: Ursprung;
+}
+
+const tagText = (d?: Date) => (d ? d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '');
+const kurz = (name: string, mail: string) => name.split('|')[0].trim() || mail;
+
+/** „weitergeleitet von Erika Beispiel am 10.11.2026“ – leer ohne Weiterleitung */
+export function weiterleitungText(u: Ursprung): string {
+  const w = u.weiterleiter;
+  return w ? `weitergeleitet von ${kurz(w.name, w.mail)}${w.datum ? ` am ${tagText(w.datum)}` : ''}` : '';
 }
 
 /**
  * Vorschlag für den Namen aus der Nachricht:
- * - Absender von außen → „von <Absender>“, Datum = Empfang
+ * - Absender von außen → „von <Absender>“, Datum = Empfang (auch wenn ein Externer weiterleitet: nur interne
+ *   Weiterleitungen werden aufgelöst)
  * - Absender aus dem Büro → „an <erster Empfänger von außen>“, Datum = Versand
- * - Weiterleitung aus dem Büro (WG:) einer Mail von außen → „von <ursprünglicher Absender>“ (aus dem Text), Datum =
- *   Empfang dieser Nachricht
- * Ohne eigene Domains (`eigene`) gilt die Richtung aus dem bisherigen Dateinamen, sonst „von“.
+ * - interne Weiterleitung einer Mail von außen → „von <ursprünglicher Absender>“ (aus der angehängten Mail bzw. den
+ *   Kopfblöcken im Text, siehe `ursprungBestimmen`), Datum = Empfang dieser Nachricht
+ * - interne Weiterleitung, Ursprung unklar → „von“ ohne Namen: nichts wird geraten, der Absender wird per Auswahl
+ *   korrigiert (die Korrektur bleibt gespeichert)
+ * Ohne eigene Domains (`eigene`) gilt die Richtung aus dem bisherigen Dateinamen, sonst „von“; eine Weiterleitung von
+ * einem Absender mit Exchange-interner Adresse (X.500) wird trotzdem aufgelöst.
  */
-export function mailVorschlag(k: MsgKopf, o: { code: string; eigene: string[]; bisher?: MailTeile | null }): MailVorschlag {
+export function mailVorschlag(k: MsgKopf, o: { code: string; bisher?: MailTeile | null } & UrsprungOptionen): MailVorschlag {
   const thema = themaAus(k.thema || k.betreff) || o.bisher?.thema || 'ohne Betreff';
-  const aussen = k.empfaenger.filter((e) => e.art !== 'bcc' && !istEigene(e.mail, o.eigene));
-  const vonEigen = istEigene(k.vonMail, o.eigene);
+  const intern = (e: { mail: string; x500?: true }) => !!e.x500 || istEigene(e.mail, o.eigene);
+  const aussen = k.empfaenger.filter((e) => e.art !== 'bcc' && !intern(e));
+  const vonEigen = !!k.vonX500 || istEigene(k.vonMail, o.eigene);
   const datumVon = k.empfangen ?? k.gesendet;
   const datumAn = k.gesendet ?? k.empfangen;
+  const ursprung = ursprungBestimmen(k, o);
+  const weiterText = weiterleitungText(ursprung);
   let richtung: Richtung;
   let name: string;
   let herkunft: string;
-  const weiter = istWeiterleitung(k.betreff) && k.text ? weitergeleitetVon(k.text) : null;
-  if (!o.eigene.length) {
+  if (ursprung.art === 'unklar') {
+    richtung = 'von';
+    name = '';
+    herkunft = 'intern weitergeleitet – ursprünglicher Absender unklar';
+  } else if ((ursprung.art === 'weitergeleitet' || ursprung.art === 'korrigiert') && !ursprung.intern) {
+    richtung = 'von';
+    name = nachname(ursprung.quelle.name, ursprung.quelle.mail);
+    herkunft = `ursprünglich von ${personText(ursprung.quelle)}${ursprung.art === 'korrigiert' ? ' (von Hand)' : ''} · ${weiterText}`;
+  } else if (!o.eigene.length) {
     richtung = o.bisher?.richtung ?? 'von';
     const p = richtung === 'an' ? (k.empfaenger.find((e) => e.art === 'an') ?? k.empfaenger[0]) : null;
     name = richtung === 'an' && p ? nachname(p.name, p.mail) : nachname(k.vonName, k.vonMail);
@@ -145,10 +146,6 @@ export function mailVorschlag(k: MsgKopf, o: { code: string; eigene: string[]; b
     richtung = 'von';
     name = nachname(k.vonName, k.vonMail);
     herkunft = `Absender ${k.vonMail || k.vonName}`;
-  } else if (weiter && weiter.mail && !istEigene(weiter.mail, o.eigene)) {
-    richtung = 'von';
-    name = nachname(weiter.name, weiter.mail);
-    herkunft = `weitergeleitet von ${k.vonName.split('|')[0].trim()}, ursprünglich von ${weiter.mail || weiter.name}`;
   } else if (aussen.length) {
     richtung = 'an';
     const p = aussen.find((e) => e.art === 'an') ?? aussen[0];
@@ -159,10 +156,12 @@ export function mailVorschlag(k: MsgKopf, o: { code: string; eigene: string[]; b
     name = nachname(k.vonName, k.vonMail);
     herkunft = 'nur Empfänger aus dem Büro';
   }
+  if (ursprung.art === 'intern' || (ursprung.art === 'korrigiert' && ursprung.intern)) herkunft = `${herkunft} · ${weiterText}, ursprünglich ebenfalls aus dem Büro`;
   const datum = richtung === 'von' ? datumVon : datumAn;
   return {
-    teile: { code: o.code, richtung, name: name || o.bisher?.name || '', datum: datum ? tag(datum) : (o.bisher?.datum ?? ''), thema },
+    teile: { code: o.code, richtung, name: ursprung.art === 'unklar' ? '' : name || o.bisher?.name || '', datum: datum ? tag(datum) : (o.bisher?.datum ?? ''), thema },
     herkunft,
+    ursprung,
   };
 }
 

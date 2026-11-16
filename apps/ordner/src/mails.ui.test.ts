@@ -22,7 +22,7 @@ const echtesSetEigene = useMails.getState().setEigene;
 beforeEach(() => {
   localStorage.clear();
   useOrdner.setState({ stamm: leereStammdaten(), struktur: STANDARD, allgemein: { ...VORGABE_ALLGEMEIN, projekte: ['/p'] }, konfigLaden: async () => {} });
-  useMails.setState({ eigene: [], geladen: true, fehler: null, setEigene: echtesSetEigene });
+  useMails.setState({ eigene: [], korrekturen: {}, adressbuch: [], geladen: true, fehler: null, setEigene: echtesSetEigene });
 });
 afterEach(() => {
   act(() => root?.unmount());
@@ -554,5 +554,165 @@ describe('Mails: Sammel-Umbenennen und Pfadlänge', () => {
     await act(async () => knopf(zeile(), 'Umbenennen').click());
     await warten();
     expect([...fs.eintraege.keys()]).toContain(`${ordner}/Post/BSP von Muster 261101 Tragwerk.msg`);
+  });
+});
+
+describe('interne Weiterleitungen: ursprünglicher Absender', () => {
+  const statik = (o: { betreff?: string; text?: string; nachrichtId?: string }) =>
+    testMsg({
+      betreff: o.betreff ?? 'WG: Statik Dach',
+      vonName: 'Erika Beispiel',
+      vonMail: 'e.beispiel@architekten-beispiel.example',
+      an: [{ name: 'Tom Planer', mail: 't.planer@architekten-beispiel.example' }],
+      gesendet: mittag('2026-11-10'),
+      empfangen: mittag('2026-11-10'),
+      ...(o.nachrichtId ? { nachrichtId: o.nachrichtId } : {}),
+      text: o.text ?? 'Zur Info\n\nVon: Muster, Max <max.muster@statik-muster.example>\nGesendet: Montag, 9. November 2026 10:10\nBetreff: Statik Dach',
+    });
+
+  it('„Absender neu bestimmen“: findet abgelegte Mails mit der Weiterleitung als Absender, benennt erst nach Rückfrage um; Anzeige der Quelle', async () => {
+    const fs = new SpeicherDateisystem();
+    const p = createProject('Haus');
+    p.meta.projektcode = 'BSP';
+    await projektdateiAnlegen(fs, '/p/BSP Haus', 'BSP.oap', p, 'Test');
+    // nach Schema benannt – aber nach der Kollegin, die nur weitergeleitet hat
+    await fs.dateiAnlegen('/p/BSP Haus', 'BSP von Beispiel 261110 Statik Dach.msg', statik({}));
+    await fs.dateiAnlegen('/p/BSP Haus', 'BSP von Muster 261020 Raumaufteilung.msg', raumaufteilung(mittag('2026-10-20')));
+    // dieselbe Art Weiterleitung, von Hand richtig (nur anders) benannt: bleibt unangetastet
+    await fs.dateiAnlegen('/p/BSP Haus', 'BSP von Statikbuero 261110 Statik Dach Nachtrag.msg', statik({ betreff: 'WG: Statik Dach Nachtrag' }));
+    useMails.setState({ eigene: ['architekten-beispiel.example'] });
+    const host = zeigen(fs, '/p/BSP Haus');
+    await warten();
+    expect(host.textContent).toContain('3 Mails, davon 0 nicht nach dem Schema');
+    // nichts wird still umbenannt
+    expect([...fs.eintraege.keys()]).toContain('/p/BSP Haus/BSP von Beispiel 261110 Statik Dach.msg');
+    await act(async () => knopf(host, 'Absender neu bestimmen').click());
+    await warten();
+    expect(host.querySelector('[role="status"] .meldung')!.textContent).toContain('1 Mail nennt eine interne Weiterleitung als Absender – gewählt');
+    const zeile = () => [...host.querySelectorAll('.po-mail')].find((z) => z.textContent?.includes('Statik Dach'))!;
+    expect(zeile().querySelector('.po-mail-gruende')!.textContent).toContain(
+      'Absender „von Beispiel“ nennt die interne Weiterleitung – ursprünglich von Muster, Max <max.muster@statik-muster.example>',
+    );
+    expect(zeile().querySelector('.po-mail-neu')!.textContent).toContain('BSP von Muster 261110 Statik Dach.msg');
+    expect(zeile().querySelector('.po-mail-neu')!.textContent).toContain('weitergeleitet von Erika Beispiel am 10.11.2026');
+    expect((zeile().querySelector('input[type="checkbox"]') as HTMLInputElement).checked).toBe(true);
+    expect([...host.querySelectorAll('.po-mail')].some((z) => z.textContent?.includes('Statikbuero'))).toBe(false);
+    // Vorschau: Quelle und Weiterleitung
+    const vorschau = zeile().querySelector('.po-mail-vorschau dl')!.textContent!;
+    expect(vorschau).toContain('UrsprünglichMuster, Max <max.muster@statik-muster.example>');
+    expect(vorschau).toContain('Weitergeleitetvon Erika Beispiel <e.beispiel@architekten-beispiel.example> am 10.11.2026');
+    // Auswahl zeigt den erkannten Absender
+    expect((zeile().querySelector('.po-mail-ursprung select') as HTMLSelectElement).selectedOptions[0].textContent).toBe('Muster, Max <max.muster@statik-muster.example> (erkannt)');
+    // umbenennen: auch bei einer Mail mit Rückfrage – Abbrechen ändert nichts
+    await act(async () => knopf(host, '1 Mail umbenennen').click());
+    await warten();
+    const dialog = () => document.body.querySelector('.modal');
+    expect(dialog()!.textContent).toContain('Mail umbenennen?');
+    expect(dialog()!.textContent).toContain('→ BSP von Muster 261110 Statik Dach.msg');
+    act(() => knopf(dialog()!, 'Abbrechen').click());
+    await warten();
+    expect([...fs.eintraege.keys()]).toContain('/p/BSP Haus/BSP von Beispiel 261110 Statik Dach.msg');
+    await act(async () => knopf(host, '1 Mail umbenennen').click());
+    await warten();
+    await act(async () => knopf(dialog()!, 'Umbenennen').click());
+    await warten();
+    expect([...fs.eintraege.keys()]).toContain('/p/BSP Haus/BSP von Muster 261110 Statik Dach.msg');
+  });
+
+  it('unklar: Hinweis statt Raten, Korrektur per Auswahl wird gespeichert und gilt beim nächsten Einlesen; „andere Person …“', async () => {
+    const fs = new SpeicherDateisystem();
+    const p = createProject('Haus');
+    p.meta.projektcode = 'BSP';
+    await projektdateiAnlegen(fs, '/p/BSP Haus', 'BSP.oap', p, 'Test');
+    // nur ein Name im Kopfblock, zwei Treffer in den Mails des Projekts
+    await fs.dateiAnlegen(
+      '/p/BSP Haus',
+      'Termin.msg',
+      statik({ betreff: 'WG: Termin', text: 'Von: Schmidt, Anna\nGesendet: Montag\nBetreff: Termin', nachrichtId: '<wg-9@architekten-beispiel.example>' }),
+    );
+    const von = (vonName: string, vonMail: string, betreff: string) => testMsg({ betreff, vonName, vonMail, an: [], gesendet: mittag('2026-11-01'), empfangen: mittag('2026-11-01') });
+    await fs.dateiAnlegen('/p/BSP Haus', 'a.msg', von('Anna Schmidt', 'a.schmidt@statik-muster.example', 'Statik'));
+    await fs.dateiAnlegen('/p/BSP Haus', 'b.msg', von('Schmidt, Anna', 'anna.schmidt@bau-beispiel.example', 'Rohbau'));
+    useMails.setState({ eigene: ['architekten-beispiel.example'] });
+    const host = zeigen(fs, '/p/BSP Haus');
+    await warten();
+    // nach dem Lesen aller Köpfe sind beide Kontakte bekannt
+    await act(async () => knopf(host, 'Neu einlesen').click());
+    await warten();
+    const zeile = () => [...host.querySelectorAll('.po-mail')].find((z) => z.textContent?.includes('Termin.msg'))!;
+    const hinweis = zeile().querySelector('.po-mail-ursprung.meldung.warnung')!;
+    expect(hinweis.textContent).toContain('Intern weitergeleitet – ursprünglicher Absender unklar');
+    expect(zeile().querySelector('.po-mail-neu')!.textContent).toContain('Name fehlt');
+    expect((zeile().querySelector('input[aria-label="Name"]') as HTMLInputElement).value).toBe('');
+    const auswahl = () => zeile().querySelector('.po-mail-ursprung select') as HTMLSelectElement;
+    expect([...auswahl().options].map((o) => o.textContent)).toEqual([
+      '– bitte wählen –',
+      'Schmidt, Anna <a.schmidt@statik-muster.example>',
+      'Schmidt, Anna <anna.schmidt@bau-beispiel.example>',
+      'kein Absender von außen – Erika Beispiel gilt',
+      'andere Person …',
+    ]);
+    const waehlen = async (wert: string) => {
+      await act(async () => {
+        auswahl().value = wert;
+        auswahl().dispatchEvent(new Event('change', { bubbles: true }));
+      });
+      await warten();
+    };
+    // blättern speichert nichts – erst „Übernehmen“; „Abbrechen“ setzt zurück und gibt den Fokus an die Liste
+    await waehlen('p0');
+    expect(useMails.getState().korrekturen).toEqual({});
+    await act(async () => knopf(zeile(), 'Abbrechen').click());
+    expect(auswahl().value).toBe('');
+    expect(document.activeElement).toBe(auswahl());
+    await waehlen('p1');
+    await act(async () => knopf(zeile(), 'Übernehmen').click());
+    await warten();
+    expect(document.activeElement).toBe(auswahl());
+    expect(useMails.getState().korrekturen['<wg-9@architekten-beispiel.example>']).toEqual({ name: 'Schmidt, Anna', mail: 'anna.schmidt@bau-beispiel.example' });
+    expect(zeile().querySelector('.po-mail-ursprung.warnung')).toBeNull();
+    expect(zeile().querySelector('.po-mail-neu')!.textContent).toContain('BSP von Schmidt 261110 Termin.msg');
+    expect(auswahl().selectedOptions[0].textContent).toBe('Schmidt, Anna <anna.schmidt@bau-beispiel.example> (von Hand)');
+    // gespeichert: neu einlesen behält die Korrektur
+    await act(async () => knopf(host, 'Neu einlesen').click());
+    await warten();
+    expect(zeile().querySelector('.po-mail-neu')!.textContent).toContain('BSP von Schmidt 261110 Termin.msg');
+    // andere Person
+    await waehlen('andere');
+    const feld = zeile().querySelector('input[aria-label="Name und Adresse des ursprünglichen Absenders"]') as HTMLInputElement;
+    expect(knopf(zeile(), 'Übernehmen').disabled).toBe(true);
+    eintippen(feld, 'Neumann, Nora <nora@neu-beispiel.example>');
+    await act(async () => knopf(zeile(), 'Übernehmen').click());
+    await warten();
+    expect(useMails.getState().korrekturen['<wg-9@architekten-beispiel.example>']).toEqual({ name: 'Neumann, Nora', mail: 'nora@neu-beispiel.example' });
+    expect(zeile().querySelector('.po-mail-neu')!.textContent).toContain('BSP von Neumann 261110 Termin.msg');
+    // zurück auf automatisch: wieder unklar
+    await waehlen('auto');
+    await act(async () => knopf(zeile(), 'Übernehmen').click());
+    await warten();
+    expect(useMails.getState().korrekturen).toEqual({});
+    expect(zeile().querySelector('.po-mail-ursprung.warnung')).not.toBeNull();
+  });
+
+  it('aus Outlook abgelegt: Weiterleitung mit angehängter Mail – Name aus dem Original', async () => {
+    const fs = await projekt();
+    useMails.setState({ eigene: ['architekten-beispiel.example'] });
+    const host = zeigen(fs);
+    await warten();
+    const mail = testMsg({
+      betreff: 'Bodengutachten',
+      vonName: 'Erika Beispiel',
+      vonMail: 'e.beispiel@architekten-beispiel.example',
+      an: [],
+      gesendet: mittag('2026-11-12'),
+      empfangen: mittag('2026-11-12'),
+      text: 'siehe Anhang',
+      angehaengt: [{ art: 'msg', name: 'Bodengutachten.msg', mail: { betreff: 'Bodengutachten', vonName: 'Geo Labor', vonMail: 'labor@geo-beispiel.example', an: [] } }],
+    });
+    await fallenLassen(host, [new File([mail], 'Bodengutachten.msg')]);
+    const neu = host.querySelector('.po-mail.neu')!;
+    expect(neu.querySelector('.po-mail-neu')!.textContent).toContain('BSP von Labor 261112 Bodengutachten.msg');
+    expect(neu.querySelector('.po-mail-neu')!.textContent).toContain('weitergeleitet von Erika Beispiel am 12.11.2026');
+    expect((neu.querySelector('.po-mail-ursprung select') as HTMLSelectElement).selectedOptions[0].textContent).toBe('Geo Labor <labor@geo-beispiel.example> (erkannt)');
   });
 });
