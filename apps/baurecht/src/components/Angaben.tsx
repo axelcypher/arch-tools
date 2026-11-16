@@ -673,10 +673,10 @@ function FaktZeile({
 const einzelfragen = (n: number) => (n === 1 ? 'eine Einzelfrage' : `${n} Einzelfragen`);
 
 /**
- * Vorfrage oben in ihrer Gruppe (FaktDef.vorfrage, Kern: fragen.ts), die Einzelfragen darunter. Bei „ja“ und bei einem
- * Widerspruch stehen sie offen da, bei „nein“ entfallen sie (genannt, die Vorfrage ist der Grund). Unbeantwortet sind sie
- * eingeklappt; „unklar“ bzw. „Einzelfragen zeigen“ klappt sie auf, sie bleiben offen. `kinder`: die gestellten
- * Einzelfragen (auch die der Einzelfragen, `tiefe` 2 …), schon nach der Suche gefiltert.
+ * Vorfrage oben in ihrer Gruppe (FaktDef.vorfrage, Kern: fragen.ts), die Einzelfragen darunter. Bei „ja“, „unklar“ und bei
+ * einem Widerspruch stehen sie offen da, bei „nein“ entfallen sie (genannt, die Vorfrage ist der Grund). Unbeantwortet
+ * sind sie eingeklappt; „Einzelfragen zeigen“ klappt nur die Ansicht auf, „unklar“ ist eine Antwort (getrennt gemerkt).
+ * `kinder`: die gestellten Einzelfragen (auch die der Einzelfragen, `tiefe` 2 …), schon nach der Suche gefiltert.
  */
 function Vorfrage({ id, kinder, stand, klaerung, eigene, suche }: { id: string; kinder: { id: string; tiefe: number }[]; stand: Pruefstand; klaerung: Map<string, number>; eigene: Record<string, FaktWert>; suche: string }) {
   const { faktDefs: defs, fakten } = stand.auswertung;
@@ -684,11 +684,19 @@ function Vorfrage({ id, kinder, stand, klaerung, eigene, suche }: { id: string; 
   const wert = fakten[id];
   const name = faktName(def, id);
   const aufGemerkt = useBaurecht((s) => !!s.vorfragenAuf[id]);
+  const unklarGemerkt = useBaurecht((s) => !!s.vorfragenUnklar[id]);
   const setAuf = (a: boolean) => useBaurecht.setState((s) => ({ vorfragenAuf: { ...s.vorfragenAuf, [id]: a } }));
+  const setUnklar = (u: boolean) => useBaurecht.setState((s) => ({ vorfragenUnklar: { ...s.vorfragenUnklar, [id]: u } }));
   const fokus = useBaurecht((s) => s.fokus);
-  const ref = useRef<HTMLDivElement>(null);
-  // offen da, ohne Knopf: „ja“, ein Widerspruch (die Einzelfragen klären ihn) und während der Suche
-  const erzwungen = wert?.wert === true || !!wert?.widerspruch || !!suche;
+  // dieselbe Vorfrage in einem anderen Projekt bzw. Antrag: kein Anlass für eine Ansage
+  const projekt = useBaurecht((s) => `${s.quelle ? (s.quelle.art === 'datei' ? s.quelle.name : s.quelle.datei) : ''}|${s.antrag}`);
+  const unklar = wert?.wert == null && unklarGemerkt;
+  // eine Antwort ersetzt „unklar“
+  useEffect(() => {
+    if (wert?.wert != null && unklarGemerkt) setUnklar(false);
+  }, [wert?.wert, unklarGemerkt]);
+  // offen da, ohne Knopf: „ja“, „unklar“, ein Widerspruch (die Einzelfragen klären ihn) und während der Suche
+  const erzwungen = wert?.wert === true || unklar || !!wert?.widerspruch || !!suche;
   const zeigen = erzwungen || aufGemerkt;
   const nein = vorfrageNein(wert);
   // bei „nein“ entfallen: alle Einzelfragen darunter, deren Wert aus einer Vorfrage folgt
@@ -700,31 +708,33 @@ function Vorfrage({ id, kinder, stand, klaerung, eigene, suche }: { id: string; 
     const ziel = fokus?.replace(/:bestaetigen$/, '');
     if (ziel && !zeigen && kinder.some((k) => k.id === ziel)) setAuf(true);
   }, [fokus, zeigen, kinderSchluessel]);
-  // Wirkung der Antwort ansagen (die Einzelfragen erscheinen bzw. entfallen) – nicht beim ersten Zeichnen
+  // Wirkung der Antwort ansagen (die Einzelfragen erscheinen bzw. entfallen) – nicht beim ersten Zeichnen, nicht nach einem
+  // Wechsel von Projekt bzw. Antrag und nicht nach „Keine davon“ (das sagt einmal für alle an)
   const stufe = nein ? 'nein' : wert?.wert === true ? 'ja' : 'offen';
-  const vorher = useRef(stufe);
+  const vorher = useRef({ stufe, projekt });
   useEffect(() => {
-    if (vorher.current === stufe) return;
-    vorher.current = stufe;
+    const v = vorher.current;
+    vorher.current = { stufe, projekt };
+    if (v.stufe === stufe || v.projekt !== projekt || Date.now() < useBaurecht.getState().vorfragenStillBis) return;
     if (stufe === 'nein') useBaurecht.getState().ansagen(`${name}: nein – ${entfallen.length ? `${einzelfragen(entfallen.length)} entfallen` : 'keine Einzelfrage offen'}`);
     else if (stufe === 'ja') useBaurecht.getState().ansagen(`${name}: ja – ${einzelfragen(kinder.length)} darunter`);
-  }, [stufe]);
+  }, [stufe, projekt]);
   const offen = kinder.filter((k) => fakten[k.id]?.wert == null).length;
   // „unklar“: nur, solange die Vorfrage offen ist oder von Hand beantwortet (ein abgeleitetes „ja“ ist keine Antwort)
-  const unklar: Unklar | undefined =
+  const unklarKnopf: Unklar | undefined =
     wert?.wert == null || (eigene[id] && wert.herkunft === 'manuell')
       ? {
-          gewaehlt: wert?.wert == null && aufGemerkt,
+          gewaehlt: unklar,
           waehlen: () => {
             if (eigene[id]) useBaurecht.getState().faktSetzen(id, undefined, '');
-            setAuf(true);
-            useBaurecht.getState().ansagen(`${name}: unklar – ${kinder.length ? `${einzelfragen(kinder.length)} darunter` : 'keine Einzelfrage gestellt'}`);
+            setUnklar(true);
+            useBaurecht.getState().ansagen(`${name}: unklar – ${kinder.length ? `${einzelfragen(kinder.length)} darunter, offen` : 'keine Einzelfrage gestellt'}`);
           },
         }
       : undefined;
   return (
-    <div ref={ref} className="br-vorfrage" data-vorfrage={id}>
-      <FaktZeile id={id} def={def} wert={wert} klaert={klaerung.get(id) ?? 0} eigen={!!eigene[id]} defs={defs} unklar={unklar} />
+    <div className="br-vorfrage" data-vorfrage={id}>
+      <FaktZeile id={id} def={def} wert={wert} klaert={klaerung.get(id) ?? 0} eigen={!!eigene[id]} defs={defs} unklar={unklarKnopf} />
       {hinweis && <p className="br-leise br-vorfrage-hinweis">{hinweis}</p>}
       {entfallen.length > 0 && (
         <p className="br-leise br-vorfrage-erledigt">
@@ -750,29 +760,34 @@ function Vorfrage({ id, kinder, stand, klaerung, eigene, suche }: { id: string; 
 }
 
 /**
- * „Keine davon“: alle offenen Vorfragen einer Gruppe auf einmal mit „nein“ – mit einem Beleg für alle (Schutzgebiete und
- * Geodaten von Hand nur mit Beleg), sonst sofort. Steht über den Vorfragen der Gruppe, ab zwei offenen.
+ * „Keine davon …“: alle offenen Vorfragen einer Gruppe auf einmal mit „nein“ – Schutzgebiete und Geodaten von Hand nur mit
+ * Beleg, und zwar je Vorfrage einem eigenen (eine Auskunft der Naturschutzbehörde belegt kein Denkmal); sonst sofort.
+ * Steht über den Vorfragen der Gruppe, ab zwei offenen. Danach geht der Fokus auf die erste dieser Vorfragen (die Zeile
+ * mit dem Knopf verschwindet), angesagt wird einmal für alle.
  */
-function VorfragenSammel({ gruppe, ids, stand }: { gruppe: string; ids: string[]; stand: Pruefstand }) {
+function VorfragenSammel({ gruppe, titel, ids, stand }: { gruppe: string; titel: string; ids: string[]; stand: Pruefstand }) {
   const { faktDefs: defs, fakten } = stand.auswertung;
   const namen = ids.map((id) => faktName(defs[id], id));
   const textId = `br-sammel-${gruppe}`;
   const keineDavon = () => {
     if (ids.some((id) => mitBeleg(defs[id], fakten[id])))
       return vorfragenNeinOeffnen(
-        ids.map((id) => ({ id, titel: faktName(defs[id], id) })),
+        ids.map((id) => ({ id, titel: faktName(defs[id], id), frage: defs[id].frage })),
         ids.some((id) => lagebezug(defs[id], fakten[id])),
+        titel,
       );
     const st = useBaurecht.getState();
+    useBaurecht.setState({ vorfragenStillBis: Date.now() + 1500 });
     for (const id of ids) st.faktSetzen(id, false, benutzer(), undefined, lagebezug(defs[id], fakten[id]) ? aktuelleLage(st.project).lage : undefined);
     st.ansagen(`${ids.length} Vorfragen mit „nein“ beantwortet – ihre Einzelfragen entfallen`);
+    st.fokusSetzen(ids[0]);
   };
   return (
     <div className="br-vorfragen-sammel">
       <span className="br-leise" id={textId}>
         {ids.length} Vorfragen offen – trifft keine zu?
       </span>
-      <button type="button" className="small" aria-describedby={textId} title={`Alle mit „nein“ beantworten: ${namen.join(', ')}`} onClick={keineDavon}>
+      <button type="button" className="small" aria-describedby={textId} title={`Alle mit „nein“ beantworten (je mit Beleg): ${namen.join(', ')}`} onClick={keineDavon}>
         Keine davon …
       </button>
     </div>
@@ -944,9 +959,16 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
   // Rückfragen nur, wenn sie gestellt sind, und dann unter ihrem Merkmal (in der Gruppe nur, wenn das Merkmal wegen der
   // Suche nicht zu sehen ist)
   const defs = auswertung.faktDefs;
+  // je Zeichenlauf zwischengespeichert: `oberste` und `kinderVon` fragen dieselben Angaben mehrfach
+  const sichtbarCache = new Map<string, boolean>();
   const sichtbar = (id: string) => {
-    const d = defs[id];
-    return !!d && id !== 'antrag.einreichung' && (alle || relevant.has(id)) && (!RUECKFRAGE_IDS.has(id) || (!(merkmaleSichtbar && alsRueckfrage.has(id)) && rueckfrageSichtbar(id, stand))) && frageGestellt(id, d, ctx);
+    let s = sichtbarCache.get(id);
+    if (s === undefined) {
+      const d = defs[id];
+      s = !!d && id !== 'antrag.einreichung' && (alle || relevant.has(id)) && (!RUECKFRAGE_IDS.has(id) || (!(merkmaleSichtbar && alsRueckfrage.has(id)) && rueckfrageSichtbar(id, stand))) && frageGestellt(id, d, ctx);
+      sichtbarCache.set(id, s);
+    }
+    return s;
   };
   // gesucht wird im sichtbaren Text, nicht in der internen Kennung („gebaeude.…“ träfe sonst jede Gebäudeangabe)
   const passt = (id: string) => {
@@ -966,12 +988,20 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
     for (let x = defs[id]?.vorfrage?.fakt; x && x !== v && n < 20; x = defs[x]?.vorfrage?.fakt) n++;
     return n;
   };
-  const kinderVon = (v: string) =>
-    karte.has(v) && !oberste(v)
-      ? einzelfragenVon(v, karte)
-          .filter((k) => sichtbar(k) && (passt(v) || passt(k)))
-          .map((k) => ({ id: k, tiefe: tiefe(k, v) }))
-      : [];
+  const kinderCache = new Map<string, { id: string; tiefe: number }[]>();
+  const kinderVon = (v: string) => {
+    let k = kinderCache.get(v);
+    if (!k) {
+      k =
+        karte.has(v) && !oberste(v)
+          ? einzelfragenVon(v, karte)
+              .filter((x) => sichtbar(x) && (passt(v) || passt(x)))
+              .map((x) => ({ id: x, tiefe: tiefe(x, v) }))
+          : [];
+      kinderCache.set(v, k);
+    }
+    return k;
+  };
   const gruppen = FAKT_GRUPPEN.map((g) => {
     const ids = Object.entries(defs)
       .filter(([id, d]) => d.gruppe === g.id && sichtbar(id) && !oberste(id) && (passt(id) || kinderVon(id).length > 0))
@@ -1070,8 +1100,9 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
             <h3 id={`br-g-${g.id}`}>{g.titel}</h3>
             {(() => {
               // „Keine davon“ ab zwei offenen Vorfragen – nicht während der Suche (sie zeigt nur einen Teil)
-              const offeneV = suche ? [] : g.ids.filter((id) => karte.has(id) && auswertung.fakten[id]?.wert == null);
-              return offeneV.length >= 2 && <VorfragenSammel gruppe={g.id} ids={offeneV} stand={stand} />;
+              // nur Vorfragen des Katalogs (`vorfrage.…`), nicht Einzelfragen, die zugleich Vorfrage sind (Wasserschutzgebiet …)
+              const offeneV = suche ? [] : g.ids.filter((id) => id.startsWith('vorfrage.') && karte.has(id) && auswertung.fakten[id]?.wert == null);
+              return offeneV.length >= 2 && <VorfragenSammel gruppe={g.id} titel={g.titel} ids={offeneV} stand={stand} />;
             })()}
             {g.ids.map((id) =>
               g.kinder.has(id) ? (

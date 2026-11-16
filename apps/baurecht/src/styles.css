@@ -1921,26 +1921,30 @@ h2.br-detail-name {
   opacity: 1;
   cursor: default;
 }
-/* Vorfrage oben in ihrer Gruppe, die Einzelfragen darunter eingerückt wie Rückfragen (Akzentlinie links) */
+/* Vorfrage oben in ihrer Gruppe, die Einzelfragen darunter eingerückt mit Akzentlinie (wie Rückfragen); Knopf, Hinweis
+   und Linie auf derselben Einrückung */
 .br-vorfrage {
   margin-bottom: var(--s1);
 }
 .br-vorfrage > .br-fakt {
-  margin-bottom: 2px;
+  margin-bottom: 0;
+}
+.br-vorfrage-hinweis,
+.br-vorfrage-erledigt,
+.br-einzelfragen-knopf,
+.br-einzelfragen {
+  margin: var(--s1) 0 var(--s1) var(--s2);
 }
 .br-vorfrage-hinweis,
 .br-vorfrage-erledigt {
-  margin: 0 0 var(--s1) var(--s2);
   font-size: var(--fs-s);
 }
 .br-einzelfragen-knopf {
-  margin: 0 0 var(--s1) var(--s2);
   display: inline-flex;
   align-items: center;
   gap: var(--s1);
 }
 .br-einzelfragen {
-  margin: var(--s1) 0 6px 10px;
   padding-left: var(--s2);
   border-left: 2px solid var(--accent);
 }
@@ -1953,11 +1957,6 @@ h2.br-detail-name {
   flex-wrap: wrap;
   align-items: baseline;
   gap: var(--s1) var(--s2);
-  margin: 0 0 6px;
-  font-size: var(--fs-s);
-}
-.br-sammel-liste {
-  margin: var(--s1) 0 var(--s2);
-  padding-left: 18px;
+  margin: 0 0 var(--s1);
   font-size: var(--fs-s);
 }

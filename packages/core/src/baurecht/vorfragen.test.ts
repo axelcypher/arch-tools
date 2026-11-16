@@ -140,10 +140,28 @@ describe('Vorfragen', () => {
     expect(vorher.a.fakten['schutz.vsg']).toMatchObject({ wert: false, herkunft: 'manuell' });
     expect(vorher.gestellt('schutz.natura_nah')).toBe(true);
     expect(vorher.ampel('34')).toBe('gelb');
-    // danach „nein“ in der Vorfrage: die eigenen Antworten bleiben stehen, die fehlende folgt aus der Vorfrage
+    // danach „nein“ in der Vorfrage: Die Einzelfragen sind nicht mehr gestellt, es gilt derselbe Wert aus der Vorfrage
+    // (die eigenen Antworten bleiben gespeichert, zählen aber nicht doppelt)
     const nachher = lauf({ ...alt, [V]: sicher(false) });
-    expect(nachher.a.fakten['schutz.natura_nah']).toMatchObject({ wert: false, ausVorfrage: V });
+    for (const k of KINDER) expect(nachher.a.fakten[k], k).toMatchObject({ wert: false, ausVorfrage: V });
     expect(nachher.ampel('34')).toBe('gruen');
+  });
+
+  it('kein falsches Grün über Stufen: „ja“ unter einer Einzelfrage, deren Vorfrage „nein“ ist, macht die oberste Vorfrage widersprüchlich', () => {
+    const { a, ampel, gestellt } = lauf({ [V]: sicher(false), 'x.zone': sicher('A') });
+    expect(a.fakten['schutz.vsg']).toMatchObject({ wert: true, herkunft: 'abgeleitet' });
+    expect(a.fakten[V].widerspruch).toMatch(/„Vogelschutzgebiet \(Natura 2000\)“ ist „ja“/);
+    expect(gestellt('schutz.vsg')).toBe(true);
+    expect(gestellt('x.zone')).toBe(true);
+    expect(gestellt('schutz.natura_nah')).toBe(true);
+    expect(ampel('34')).toBe('rot');
+    expect(ampel('Zone')).toBe('rot');
+    // ebenso bei „nein“ in beiden Stufen: der Widerspruch der mittleren reicht nach oben
+    const beide = lauf({ [V]: sicher(false), 'schutz.vsg': sicher(false), 'x.zone': sicher('A') });
+    expect(beide.a.fakten['schutz.vsg'].widerspruch).toBeTruthy();
+    expect(beide.a.fakten[V].widerspruch).toMatch(/widersprüchlich/);
+    expect(beide.gestellt('x.zone')).toBe(true);
+    expect(beide.ampel('Zone')).toBe('rot');
   });
 
   it('eine Antwort mit der Kennung `ausVorfrage` aus einer Datei zählt als eigene Antwort, nicht als abgeleitet', () => {
@@ -156,8 +174,8 @@ describe('Vorfragen', () => {
     const fakten = vorfragenAnwenden({ 'schutz.ffh': { wert: false, herkunft: 'geodienst', sicherheit: 'sicher' } }, defs);
     expect(fakten[V]?.wert ?? null).toBeNull();
     const h = vorfrageHinweis(V, fakten, defs)!;
-    expect(h).toMatch(/ohne Treffer im Umkreis von 25 m: FFH-Gebiet \(Natura 2000\)\./);
-    expect(h).toMatch(/Natura-2000-Gebiet in der Nähe/);
+    expect(h).toMatch(/kein Treffer im Umkreis von 25 m \(FFH-Gebiet \(Natura 2000\)\)\./);
+    expect(h).toMatch(/Nicht geprüft: .*Natura-2000-Gebiet in der Nähe/);
     expect(h).toMatch(/nicht vorbelegt/);
     expect(vorfrageHinweis(V, { ...fakten, [V]: sicher(true) }, defs)).toBeUndefined();
   });

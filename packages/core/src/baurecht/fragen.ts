@@ -83,17 +83,20 @@ export function mitVorfragen(ids: Iterable<string>, defs: Record<string, Pick<Fa
 }
 
 /** Spricht eine Einzelfrage für die Vorfrage? Ein anderer Wert als `sonst` – oder ein Widerspruch (z. B. Treffer eines Dienstes gegen „nein“ von Hand) */
-const sprichtDafuer = (f: FaktWert | undefined, sonst: FaktDef['wert']): boolean => !!f && !f.ausVorfrage && ((f.wert != null && f.wert !== '' && f.wert !== sonst) || !!f.widerspruch);
+const sprichtDafuer = (f: FaktWert | undefined, sonst: FaktDef['wert']): boolean => !!f && ((f.wert != null && f.wert !== '' && f.wert !== sonst) || !!f.widerspruch);
 
 /**
- * Vorfragen anwenden (nach den Werten der Module, vor den Regeln) – bis zum Fixpunkt, denn eine Einzelfrage kann selbst
- * Vorfrage sein:
- *  - Spricht eine Einzelfrage dafür (anderer Wert als `sonst`, z. B. ein Treffer der Lage-Abfrage oder eine ältere Antwort
- *    „ja“), gilt die Vorfrage als „ja“ – so gesichert wie die Einzelfrage. Steht die Vorfrage auf „nein“, ist das ein
- *    Widerspruch: Die Einzelfragen bleiben gestellt, nichts wird abgeleitet (kein falsches Grün).
- *  - Ist die Vorfrage wirksam „nein“ (gesichert, ohne Widerspruch), gilt jede Einzelfrage als `sonst` – mit der Vorfrage
- *    als Quelle (`ausVorfrage`). Eine eigene gesicherte Antwort gleichen Werts bleibt stehen.
- *  - „Unklar“ (keine Antwort) bzw. ein „nein“, das nur Hinweis ist, lässt die Einzelfragen offen.
+ * Vorfragen anwenden (nach den Werten der Module, vor den Regeln), in zwei Schritten:
+ *  1. Von unten nach oben (bis zum Fixpunkt, eine Einzelfrage kann selbst Vorfrage sein): Spricht eine Einzelfrage dafür
+ *     (anderer Wert als `sonst`, z. B. ein Treffer der Lage-Abfrage oder eine ältere Antwort „ja“), gilt die Vorfrage als
+ *     „ja“ – so gesichert wie die Einzelfrage. Steht die Vorfrage auf „nein“, ist das ein Widerspruch; der zählt seinerseits
+ *     für die Vorfrage darüber, bis ganz oben.
+ *  2. Von oben nach unten: Ist eine Vorfrage wirksam „nein“ (gesichert, ohne Widerspruch), gilt jede Einzelfrage als
+ *     `sonst` – mit der Vorfrage als Quelle (`ausVorfrage`). Eine gesicherte Antwort gleichen Werts lässt diese Funktion
+ *     stehen; in der Auswertung zählt sie aber nicht, weil die Frage dann nicht gestellt ist (gestellteAntworten) – es gilt
+ *     derselbe Wert, abgeleitet. Gespeichert bleibt sie.
+ * „Unklar“ (keine Antwort) bzw. ein „nein“, das nur Hinweis ist, lässt die Einzelfragen offen. Nach Schritt 1 spricht
+ * keine Einzelfrage einer wirksam verneinten Vorfrage mehr dafür – Schritt 2 überschreibt nie einen Treffer.
  */
 export function vorfragenAnwenden(fakten: Record<string, FaktWert>, defs: Record<string, FaktDef>): Record<string, FaktWert> {
   const karte = vorfragenKarte(defs);
@@ -103,30 +106,35 @@ export function vorfragenAnwenden(fakten: Record<string, FaktWert>, defs: Record
   for (let runde = 0; runde <= karte.size + 1; runde++) {
     let geaendert = false;
     for (const [v, kinder] of karte) {
-      const vw = out[v];
       const dafuer = kinder.find((k) => sprichtDafuer(out[k], defs[k].vorfrage!.sonst));
-      if (dafuer) {
-        const f = out[dafuer];
-        const wie = f.widerspruch && (f.wert == null || f.wert === defs[dafuer].vorfrage!.sonst) ? 'widersprüchlich' : `„${wertAnzeige(f.wert, defs[dafuer])}“`;
-        if (vw?.wert === false) {
-          if (!vw.widerspruch) {
-            out[v] = { ...vw, widerspruch: `„${name(dafuer)}“ ist ${wie} – das spricht gegen „nein“` };
-            geaendert = true;
-          }
-        } else if (vw?.wert !== true) {
-          const sicher = faktStatus(f) === 'sicher';
-          out[v] = {
-            wert: true,
-            herkunft: 'abgeleitet',
-            quelle: `aus „${name(dafuer)}“${f.quelle ? ` (${f.quelle})` : ''}`,
-            sicherheit: sicher ? 'sicher' : 'hinweis',
-            ...(sicher ? {} : { grund: `folgt aus „${name(dafuer)}“, das nicht gesichert ist` }),
-            ...(f.lage ? { lage: f.lage } : {}),
-          };
+      if (!dafuer) continue;
+      const vw = out[v];
+      const f = out[dafuer];
+      const wie = f.widerspruch && (f.wert == null || f.wert === defs[dafuer].vorfrage!.sonst) ? 'widersprüchlich' : `„${wertAnzeige(f.wert, defs[dafuer])}“`;
+      if (vw?.wert === false) {
+        if (!vw.widerspruch) {
+          out[v] = { ...vw, widerspruch: `„${name(dafuer)}“ ist ${wie} – das spricht gegen „nein“` };
           geaendert = true;
         }
-        continue;
+      } else if (vw?.wert !== true) {
+        const sicher = faktStatus(f) === 'sicher';
+        out[v] = {
+          wert: true,
+          herkunft: 'abgeleitet',
+          quelle: `aus „${name(dafuer)}“${f.quelle ? ` (${f.quelle})` : ''}`,
+          sicherheit: sicher ? 'sicher' : 'hinweis',
+          ...(sicher ? {} : { grund: `folgt aus „${name(dafuer)}“, das nicht gesichert ist` }),
+          ...(f.lage ? { lage: f.lage } : {}),
+        };
+        geaendert = true;
       }
+    }
+    if (!geaendert) break;
+  }
+  for (let runde = 0; runde <= karte.size + 1; runde++) {
+    let geaendert = false;
+    for (const [v, kinder] of karte) {
+      const vw = out[v];
       if (!vorfrageNein(vw)) continue;
       for (const k of kinder) {
         const f = out[k];
@@ -153,5 +161,5 @@ export function vorfrageHinweis(v: string, fakten: Record<string, FaktWert>, def
   const puffer = Math.max(...ohne.map((k) => defs[k].geodienst?.puffer ?? 25));
   const rest = kinder.filter((k) => !ohne.includes(k) && fakten[k]?.wert == null);
   const namen = (ids: string[]) => ids.map((k) => faktName(defs[k], k)).join(', ');
-  return `Lage-Abfrage ohne Treffer im Umkreis von ${puffer} m: ${namen(ohne)}. Das Umfeld darüber hinaus${rest.length ? ` und ${namen(rest)}` : ''} prüft sie nicht – deshalb nicht vorbelegt, bitte selbst prüfen.`;
+  return `Lage-Abfrage: kein Treffer im Umkreis von ${puffer} m (${namen(ohne)}). ${rest.length ? `Nicht geprüft: ${namen(rest)}` : 'Das weitere Umfeld prüft sie nicht'} – deshalb nicht vorbelegt.`;
 }

@@ -774,7 +774,12 @@ describe('Fragen und Regeln', () => {
         const gleich = lauf(fall.ags, fall.m, { ...f, [id]: d.vorfrage!.sonst });
         for (const p of gleich.paragrafen) if (vorher.get(p.id) !== p.automatisch && fehler.size < 40) fehler.add(`${p.id}: ${vorher.get(p.id)} → ${p.automatisch}, wenn ${id} unter Vorfrage „nein“ „${String(d.vorfrage!.sonst)}“ ist (${fall.name})`);
         const ja = lauf(fall.ags, fall.m, { ...f, [id]: anders });
-        if (!ja.fakten[d.vorfrage!.fakt]?.widerspruch && fehler.size < 40) fehler.add(`${id} „${String(anders)}“: Vorfrage ${d.vorfrage!.fakt} ohne Widerspruch (${fall.name})`);
+        // jede Stufe darüber, die vorher wirksam „nein“ war, ist danach „ja“ bzw. widersprüchlich – bis zur obersten Vorfrage
+        for (let v = d.vorfrage?.fakt, n = 0; v && n < 10; v = defs[v]?.vorfrage?.fakt, n++) {
+          if (!vorfrageNein(r.fakten[v])) continue;
+          const nachher = ja.fakten[v];
+          if (!(nachher?.widerspruch || nachher?.wert === true) && fehler.size < 40) fehler.add(`${id} „${String(anders)}“: Vorfrage ${v} weiter „nein“ ohne Widerspruch (${fall.name})`);
+        }
         if (!frageGestellt(id, d, ja.kontext) && fehler.size < 40) fehler.add(`${id} „${String(anders)}“: Frage nicht wieder gestellt (${fall.name})`);
         for (const p of ja.paragrafen) if (RANG[p.automatisch] < RANG[vorher.get(p.id)!] && fehler.size < 40) fehler.add(`${p.id}: ${vorher.get(p.id)} → ${p.automatisch}, wenn ${id} unter Vorfrage „nein“ „${String(anders)}“ ist (${fall.name})`);
       }

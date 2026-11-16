@@ -632,8 +632,8 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
               <thead>
                 <tr>
                   <th style={{ width: '30%' }}>Vorfrage</th>
-                  <th style={{ width: '30%' }}>Antwort „nein“</th>
-                  <th>entfallene Einzelfragen (gelten als „nein“)</th>
+                  <th style={{ width: '30%' }}>beantwortet von, am / Beleg</th>
+                  <th>entfallene Einzelfragen (gelten als „nein“ bzw. „außerhalb“)</th>
                 </tr>
               </thead>
               <tbody>
@@ -654,7 +654,7 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
                         {woher}
                         {ungespeichert.has(v) && <span className="br-entwurf-text"> – noch nicht gespeichert</span>}
                       </td>
-                      <td>{ids.map((id) => faktName(a.faktDefs[id], id)).join(' · ')}</td>
+                      <td>{ids.map((id) => faktName(a.faktDefs[id], id)).join(', ')}</td>
                     </tr>
                   );
                 })}

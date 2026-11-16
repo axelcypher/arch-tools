@@ -190,9 +190,9 @@ Rückfragen; auch Einzelfragen anderer Gruppen, z. B. „Bäume fällen“ unter
 | Vorfrage (Gruppe)                                                              | Einzelfragen                                                                                                           |
 | ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
 | Natura 2000 am Standort **oder im Einwirkungsbereich** (Schutzgebiete)         | FFH-Gebiet, Vogelschutzgebiet (→ Hellwegbörde), Natura-2000-Gebiet in der Nähe                                         |
-| Schutzgebiet oder -objekt (Naturschutz), am Standort **oder angrenzend**       | Natur-, Landschaftsschutzgebiet, Naturdenkmal/Landschaftsbestandteil (auch der Kreisverordnung Soest), geschütztes Biotop |
+| Schutzgebiet oder -objekt (Naturschutz), am Standort **oder im Einwirkungsbereich** | Natur-, Landschaftsschutzgebiet, Naturdenkmal/Landschaftsbestandteil (auch der Kreisverordnung Soest), geschütztes Biotop |
 | Wasserschutz- oder Hochwassergebiet                                            | Wasser-/Heilquellenschutzgebiet (→ Bad Sassendorf → Zonen), Überschwemmungsgebiet, Risikogebiet (HQextrem)             |
-| Denkmal am Standort **oder in der Umgebung** (auch Bodendenkmal, vermutet)     | Baudenkmal, Umgebung eines Baudenkmals, Denkmalbereich und seine Umgebung, Gartendenkmal, Bodendenkmal                 |
+| Denkmal am Standort **oder in der Umgebung** (auch vorläufig geschützt; Bodendenkmal, vermutet) | Baudenkmal, Umgebung eines Baudenkmals, Denkmalbereich und seine Umgebung, Gartendenkmal, Bodendenkmal                 |
 | Bäume, Sträucher oder Hecken (auch angrenzend und im Bereich der Bauarbeiten)  | geschützte Bäume (→ Allee), Bäume fällen, Baumschutzsatzung Soest, geschützte Hecke/Ausgleichspflanzung                |
 | Klassifizierte Straße im Umfeld (Grundstück und Umfeld)                        | an Bundesautobahn/Bundesstraße, Straße außerorts (40 m), Zufahrt bzw. Anschluss an Landes- oder Kreisstraße            |
 
@@ -200,8 +200,9 @@ Rückfragen; auch Einzelfragen anderer Gruppen, z. B. „Bäume fällen“ unter
   bzw. „außerhalb“, mit der Vorfrage als Quelle (`ausVorfrage`, nur in der Auswertung). Unter der Vorfrage steht
   „Entfallen wegen ‚nein‘: …“, im Protokoll die Tabelle „Wegen ‚nein‘ in der Vorfrage entfallen“. Ein „nein“, das nur
   Hinweis ist (z. B. zu einer früheren Lage), erledigt nichts.
-- **„ja“** zeigt die Einzelfragen offen. **„unklar“** (dritter Knopf, keine Antwort) bzw. „Einzelfragen zeigen“ klappt
-  sie auf; sie bleiben offen. Unbeantwortet sind sie eingeklappt („Einzelfragen zeigen (3)“), ein Sprung dorthin (z. B.
+- **„ja“** zeigt die Einzelfragen offen, ebenso **„unklar“** (dritter Knopf: keine Antwort, die Einzelfragen bleiben
+  offen; getrennt vom bloßen Aufklappen gemerkt, eine Antwort hebt es auf). „Einzelfragen zeigen“ klappt nur die
+  Ansicht auf. Unbeantwortet sind sie eingeklappt („Einzelfragen zeigen (3)“), ein Sprung dorthin (z. B.
   „klärt am meisten“) klappt auf. Die Vorfrage klärt, was ihre Einzelfragen klären, und steht deshalb vorn unter „klärt
   am meisten“. Erscheinen bzw. entfallen Einzelfragen, wird das angesagt.
 - **Einzelfrage „ja“** (Treffer der Lage-Abfrage, eine ältere Antwort): Die Vorfrage gilt als „ja“ (so gesichert wie die
@@ -209,19 +210,24 @@ Rückfragen; auch Einzelfragen anderer Gruppen, z. B. „Bäume fällen“ unter
   gestellt, nichts wird abgeleitet; ebenso bei einer widersprüchlichen Einzelfrage. So entsteht aus einer übersehenen
   Einzelantwort kein falsches „entfällt“.
 - **Ältere Projekte** ohne Vorfrage: Ist eine Einzelfrage „ja“, gilt die Vorfrage als „ja“; sonst wird sie gefragt, die
-  gespeicherten Einzelantworten bleiben erhalten und zählen weiter.
-- **„Keine davon …“** steht über den Vorfragen einer Gruppe, sobald zwei offen sind: alle offenen Vorfragen auf einmal
-  „nein“ – bei Schutzgebieten mit einem Beleg für alle (der Dialog nennt sie). Die Liste der Vorfragen steht ohnehin
-  oben in der Gruppe; ein eigenes Ankreuzfeld je Gegenstand gibt es nicht, weil es „unklar“, Belege und Treffer der
-  Lage-Abfrage je Gegenstand nicht abbilden könnte.
+  gespeicherten Einzelantworten bleiben erhalten und zählen weiter. Nach „nein“ in der Vorfrage gilt derselbe Wert aus
+  der Vorfrage (die Antworten bleiben in der Datei). Ein „ja“ bzw. Widerspruch auf einer tieferen Stufe (z. B. Zone des
+  Heilquellenschutzgebiets) reicht bis zur obersten Vorfrage.
+- **„Keine davon …“** steht über den Vorfragen einer Gruppe, sobald zwei offen sind (nur Vorfragen `vorfrage.…`, keine
+  Einzelfragen, die zugleich Vorfrage sind): alle offenen Vorfragen in einem Dialog „nein“ – bei Schutzgebieten mit
+  **einem Beleg je Vorfrage** (Pflicht; eine Auskunft der Naturschutzbehörde belegt weder Denkmal noch Gehölze), die
+  Vorschau zeigt, was alle zusammen herabstufen. Danach geht der Fokus auf die erste Vorfrage, angesagt wird einmal für
+  alle. Die Liste der Vorfragen steht ohnehin oben in der Gruppe; ein Ankreuzfeld je Gegenstand gibt es nicht, weil es
+  „unklar“, Belege und Treffer der Lage-Abfrage je Gegenstand nicht abbilden könnte.
 - **Lage-Abfrage:** Ein Treffer macht die Vorfrage zu „ja“ (mit Beleg). „Kein Treffer“ belegt sie nicht mit „nein“
   vor – die Dienste prüfen nur einen Umkreis von 25 m und nicht jede Einzelfrage (z. B. den Einwirkungsbereich nach
   § 34 BNatSchG, Naturdenkmäler, Bodendenkmäler); an der offenen Vorfrage steht dann ein Hinweis, was die Abfrage
   ergab und was sie nicht prüft.
 - **Anwendungsbereich:** Jede Vorfrage umfasst den ihrer Einzelfragen ganz, sonst entstünde aus „nein“ ein falsches
   Grün. Deshalb fragt Natura 2000 auch nach dem Einwirkungsbereich (§ 34 BNatSchG erfasst Vorhaben außerhalb des
-  Gebiets), Denkmal nach der engeren Umgebung (§ 9 DSchG NRW), Naturschutz nach angrenzenden Objekten und Wirkungen von
-  außen, Gehölze nach Bäumen auf dem Nachbargrundstück und im Straßenraum, Straße nach den Abständen von § 9 FStrG und
+  Gebiets), Denkmal nach der engeren Umgebung (§ 9 DSchG NRW) und nach vorläufigem Schutz (§ 4 DSchG NRW, noch nicht
+  in der Denkmalliste), Naturschutz nach dem Einwirkungsbereich (§ 30 Abs. 2 BNatSchG verbietet auch Beeinträchtigungen
+  von außen), nach einstweilig sichergestellten Gebieten und nach Vorhabenteilen außerhalb des Grundstücks, Gehölze nach Bäumen auf dem Nachbargrundstück und im Straßenraum, Straße nach den Abständen von § 9 FStrG und
   nach mittelbaren Zufahrten. Wasserschutz-, Überschwemmungs- und Risikogebiete wirken nur im Gebiet selbst. Der
   Landschaftsplan ist keine Einzelfrage (sein Geltungsbereich reicht über die Schutzfestsetzungen hinaus), ebenso
   wenig das Gewässer am Grundstück.

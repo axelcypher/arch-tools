@@ -13,7 +13,7 @@ import { Angaben } from './components/Angaben';
 import { AmpelMarke, AMPEL_ERKLAERUNG } from './components/Ampel';
 import { Detail } from './components/Detail';
 import type { FolgenRechner } from './components/Dialoge';
-import { BestaetigenDialog, bestaetigenFragen, FaktBestaetigenDialog, FestlegenDialog } from './components/Dialoge';
+import { BestaetigenDialog, bestaetigenFragen, FaktBestaetigenDialog, FestlegenDialog, VorfragenNeinDialog } from './components/Dialoge';
 import { Kopf } from './components/Kopf';
 import { Protokoll } from './components/Protokoll';
 import { Vorschriften } from './components/Vorschriften';
@@ -360,6 +360,7 @@ export function App() {
       {protokoll && project && <Protokoll stand={stand} onClose={() => setProtokoll(false)} onSpeichern={() => speichern()} />}
       <FestlegenDialog fakten={stand.auswertung.fakten} widerspruchMerkmale={stand.widerspruchMerkmale} paragrafen={stand.auswertung.paragrafen} />
       <FaktBestaetigenDialog folgen={folgen} faktDef={faktDef} />
+      <VorfragenNeinDialog folgen={folgen} />
       <BestaetigenDialog titel={titel} faktTitel={faktTitel} folgen={folgenSeitDatei} faktDef={faktDef} />
       {logOffen && <LogDialog onClose={() => setLogOffen(false)} />}
     </div>

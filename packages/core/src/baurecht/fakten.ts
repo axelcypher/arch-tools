@@ -75,13 +75,15 @@ const KATALOG: Record<string, FaktDef> = {
       '§ 34 BNatSchG erfasst auch Vorhaben außerhalb eines Natura-2000-Gebiets, die es erheblich beeinträchtigen können (z. B. Stoffeinträge, Lärm, Licht, Wasserhaushalt). „nein“ nur, wenn kein Gebiet im möglichen Einwirkungsbereich liegt – im Zweifel offen lassen. Karte: Fachinformationssystem Natura 2000 des LANUK. Die Lage-Abfrage prüft nur einen Umkreis von 25 m und belegt die Frage deshalb nie mit „nein“ vor.',
   },
   'vorfrage.naturschutz': {
-    titel: 'Natur- oder Landschaftsschutzgebiet, Naturdenkmal, geschützter Landschaftsbestandteil oder gesetzlich geschütztes Biotop am Standort oder angrenzend',
+    titel:
+      'Natur- oder Landschaftsschutzgebiet (auch einstweilig sichergestellt), Naturdenkmal, geschützter Landschaftsbestandteil oder gesetzlich geschütztes Biotop am Standort oder im Einwirkungsbereich des Vorhabens',
     kurz: 'Schutzgebiet oder -objekt (Naturschutz)',
     gruppe: 'schutz',
     typ: 'janein',
-    frage: 'Liegt das Grundstück in einem Natur- oder Landschaftsschutzgebiet, oder gibt es auf ihm oder angrenzend ein Naturdenkmal, einen geschützten Landschaftsbestandteil oder ein gesetzlich geschütztes Biotop, das das Vorhaben berühren könnte?',
+    frage:
+      'Liegen das Grundstück oder Teile des Vorhabens (Zufahrt, Leitungen, Baustelleneinrichtung) in einem – auch einstweilig sichergestellten – Natur- oder Landschaftsschutzgebiet, oder gibt es auf dem Grundstück, angrenzend oder sonst im Einwirkungsbereich (z. B. Einleitung von Wasser, Grundwasserabsenkung, Wurzel- und Kronenbereich) ein Naturdenkmal, einen geschützten Landschaftsbestandteil oder ein gesetzlich geschütztes Biotop?',
     hilfe:
-      '§§ 23, 26, 28–30 BNatSchG, § 42 LNatSchG NRW – festgesetzt durch Verordnung oder Landschaftsplan, Biotope auch kraft Gesetzes (Streuobstbestände ab 2 500 m² auch ohne Kartierung). Auch Wirkungen von außen zählen (z. B. Entwässerung in ein Biotop, Wurzelbereich eines Naturdenkmals). Karte: LINFOS NRW. Der Landschaftsplan selbst und Bäume nach einer Baumschutzsatzung sind eigene Angaben.',
+      '§§ 22–23, 26, 28–30 BNatSchG, §§ 42, 48 LNatSchG NRW – Schutzgebiete und -objekte durch Verordnung oder Landschaftsplan, Biotope allein kraft Gesetzes (auch ohne Kartierung). Verboten ist auch, was von außen zu einer Beeinträchtigung führen kann. „nein“ nur, wenn nichts davon im Einwirkungsbereich liegt. Karte: LINFOS NRW. Der Landschaftsplan selbst und Bäume nach einer Baumschutzsatzung sind eigene Angaben.',
   },
   'vorfrage.wasser': {
     titel: 'Wasser- oder Heilquellenschutzgebiet, Überschwemmungsgebiet oder Hochwasser-Risikogebiet',
@@ -96,9 +98,10 @@ const KATALOG: Record<string, FaktDef> = {
     kurz: 'Denkmal am Standort oder in der Umgebung',
     gruppe: 'schutz',
     typ: 'janein',
-    frage: 'Gibt es auf dem Grundstück oder in seiner engeren Umgebung ein Bau- oder Gartendenkmal, liegt es in oder nahe einem Denkmalbereich, oder ist dort ein Bodendenkmal bekannt oder zu vermuten?',
+    frage:
+      'Gibt es auf dem Grundstück oder in seiner engeren Umgebung ein Bau- oder Gartendenkmal – auch vorläufig geschützt –, liegt es in oder nahe einem Denkmalbereich, oder ist auf dem Grundstück oder in seiner engeren Umgebung ein Bodendenkmal bekannt oder zu vermuten?',
     hilfe:
-      '§§ 9, 13, 15 DSchG NRW: Erlaubnispflichtig ist auch, was in der engeren Umgebung eines Denkmals dessen Erscheinungsbild berührt (Sichtbezug). Denkmalliste der Gemeinde bzw. Untere Denkmalbehörde; Bodendenkmäler und Vermutungsflächen bei der LWL- bzw. LVR-Archäologie. „nein“ nur, wenn weder ein Denkmal noch ein Denkmalbereich im Umfeld liegt und keine archäologischen Funde zu erwarten sind.',
+      '§§ 4, 9, 13, 15 DSchG NRW: Erlaubnispflichtig ist auch, was in der engeren Umgebung eines Denkmals dessen Erscheinungsbild berührt (Sichtbezug). Vorläufig geschützt ist ein Objekt schon ab der Mitteilung, dass die Unterschutzstellung eingeleitet ist (§ 4) – in der Denkmalliste steht es dann noch nicht: bei der Unteren Denkmalbehörde fragen. Bodendenkmäler und Vermutungsflächen bei der LWL- bzw. LVR-Archäologie. „nein“ nur, wenn weder ein Denkmal noch ein Denkmalbereich im Umfeld liegt und keine archäologischen Funde zu erwarten sind.',
   },
   'vorfrage.gehoelze': {
     titel: 'Bäume, Sträucher oder Hecken auf dem Grundstück, angrenzend oder im Bereich der Bauarbeiten',
@@ -114,7 +117,7 @@ const KATALOG: Record<string, FaktDef> = {
     gruppe: 'grundstueck',
     typ: 'janein',
     frage: 'Liegt das Grundstück an oder nahe einer Bundesautobahn (bis 100 m) oder einer Bundes-, Landes- oder Kreisstraße (außerhalb der Ortsdurchfahrt bis 40 m, an einer Bundesstraße in der Ortsdurchfahrt angrenzend) – auch geplant –, oder ist bzw. wird es über eine Zufahrt, auch mittelbar, an eine solche Straße außerhalb der Ortsdurchfahrt angeschlossen?',
-    hilfe: '§ 9 FStrG, § 25 StrWG NRW. „nein“ nur, wenn keine dieser Straßen in diesen Abständen liegt und auch keine Zufahrt – auch nicht über einen Privatweg – zu ihr führt.',
+    hilfe: '§ 9 FStrG, § 25 StrWG NRW; die Abstände gelten ab dem äußeren Rand der befestigten Fahrbahn. „nein“ nur, wenn keine dieser Straßen in diesen Abständen liegt und auch keine Zufahrt – auch nicht über einen Privatweg – zu ihr führt.',
   },
 
   /* ---------- Schutzgebiete und Denkmal ---------- */
