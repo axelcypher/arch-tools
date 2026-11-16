@@ -344,8 +344,9 @@ Zurücksetzen, Sonderfunktionen. Feste Namen, in allen Apps gleich:
   - Gibt es die Datei schon, fragt eine Rückfrage „‚Name.xlsx‘ ersetzen?“ bzw. „‚Name.xlsx‘ und ‚Name.pdf‘ ersetzen?“
     mit dem Satz „Die Datei gibt es schon in ‚Ordner‘.“ bzw. „Die Dateien …“ (Abbrechen | Ersetzen; „Ersetzen“ ist ein
     Gefahr-Knopf, Erstfokus und Enter auf „Abbrechen“, siehe „Dialoge“).
-  - Danach meldet ein Hinweis (`zeigeHinweis`, siehe „Meldungen im Inhalt“) den Erfolg mit „Ordner öffnen“; Hinweise
-    der Vorlagenprüfung stehen im selben Hinweis als Warnung und halten den Export nicht auf. Scheitert das Schreiben
+  - Danach meldet ein Hinweis (`zeigeHinweis`, siehe „Meldungen im Inhalt“) den Erfolg mit „Ordner öffnen“; hat die
+    Vorlagenprüfung etwas gefunden, ist es derselbe Hinweis als `.meldung.warnung` mit dem Knopf „Prüfhinweise …“ (die
+    Liste steht in einem `Modal`), und der Export ist trotzdem geschehen. Scheitert das Schreiben
     (z. B. Datei in Excel geöffnet), meldet ein Hinweis den Fehler.
   - Wer Vorlage oder Ziel wählen will, nimmt „Datei → Exportieren → Excel …“.
 - Weitere sprechende Menünamen („Unterlage“, „Einrichtung“, „LV“) nur für eine Gruppe von mindestens drei
@@ -442,16 +443,31 @@ Doppelklick setzt die Vorgabe. Keine eigenen Leisten-Komponenten je App.
 `.fehler` für Meldungen in Dialogen und Seitenleisten; `role="status"`
 für Rückmeldungen, `role="alert"` für Fehler. `.warning` bleibt als Hinweis in Warnfarben.
 
-**Hinweis nach einer Aktion** (`zeigeHinweis`, z. B. „Gespeichert unter …“ nach dem direkten Export): unten rechts
-im Fenster, `.meldung.ok` mit `role="status"`, bei Warnungen `.meldung.warnung`, bei einem Fehler `.meldung.fehler`
-mit `role="alert"`. Darin der Text (ein Pfad bricht um statt abzuschneiden), höchstens zwei Aktionen („Ordner
-öffnen“, „Hinweise …“) und ein Symbolknopf `schliessen` mit `aria-label`/`title` „Hinweis schließen“ (mindestens
-`--ctl-h-s`). Er hält nichts auf, nimmt keinen Fokus und verschwindet nicht von selbst (WCAG 2.2.1): Er bleibt, bis
-man ihn schließt oder ein neuer Hinweis mit demselben Schlüssel (`id`, z. B. `'export'`) ihn ersetzt. Verschiedene
-Hinweise stapeln sich, der neueste unten; mehr als drei verdrängen den ältesten. Per Tastatur erreicht man ihn mit F6
-(der Fokus springt in den neuesten Hinweis, Esc gibt ihn zurück); hat eine App schon einen F6-Kreis zwischen ihren
-Bereichen (LEXIO), nimmt sie den Hinweis mit `hinweisFokussieren()` als letzte Station auf. Stand: Der Baustein kommt
-als Nächstes aus dem Designsystem.
+**Hinweis nach einer Aktion** (`zeigeHinweis`, z. B. „Gespeichert unter …“ nach dem direkten Export):
+
+- **Aussehen:** unten rechts im Fenster, Abstand `var(--s4)` zum Rand und oberhalb einer Statusleiste, Breite höchstens
+  `min(28rem, 100vw - 2 * var(--s4))`. `.meldung.ok` mit `role="status"`, bei Warnungen `.meldung.warnung`, bei einem
+  Fehler `.meldung.fehler` mit `role="alert"`. Darin der Text (ein Pfad bricht um statt abzuschneiden), höchstens zwei
+  Aktionen und ein Symbolknopf `schliessen` mit `aria-label`/`title` „Hinweis schließen“ (mindestens `--ctl-h-s`).
+- **Aktionen:** nach dem Inhalt benannt, z. B. „Ordner öffnen“; „Prüfhinweise …“ erscheint nur, wenn es welche gibt,
+  und öffnet die Liste in einem `Modal`. Eine Aktion schließt den Hinweis.
+- **Dauer:** Er hält nichts auf, nimmt keinen Fokus und verschwindet nicht von selbst (WCAG 2.2.1). Er bleibt, bis man
+  ihn schließt oder ein neuer Hinweis mit demselben Schlüssel (`id`, z. B. `'export'`) ihn ersetzt; der neue Text wird
+  wieder angesagt.
+- **Stapel:** Verschiedene Hinweise stapeln sich, der neueste unten. Ab dem vierten fällt der älteste weg, aber nie
+  einer, in dem gerade der Fokus steht. Ist das Fenster zu niedrig, wird der Stapel in sich scrollbar; er verdeckt
+  höchstens die untere rechte Ecke, nie das fokussierte Element (WCAG 2.4.11). Der Stapel ist immer im DOM (leer, wenn
+  nichts anliegt), damit neue Hinweise zuverlässig vorgelesen werden, und ist ein Bereich mit Namen (`role="region"`,
+  `aria-label` „Hinweise“).
+- **Tastatur:** F6 springt in den neuesten Hinweis (ohne Hinweis tut F6 nichts); Tab und Umschalt+Tab gehen durch die
+  Knöpfe aller Hinweise des Stapels. Esc springt nur zurück an das zuvor fokussierte Element (ersatzweise den
+  Hauptbereich) und schließt den Hinweis nicht – anders als in Dialogen und Menüs; zum Schließen dient der Knopf.
+  Schließt man einen Hinweis mit Fokus, geht der Fokus an den nächsten Hinweis im Stapel, sonst zurück wie bei Esc.
+  Ersetzt ein neuer Hinweis einen fokussierten, bleibt der Fokus im neuen. Hat eine App schon einen F6-Kreis zwischen
+  ihren Bereichen (LEXIO), nimmt sie den Stapel mit `hinweisFokussieren()` als letzte Station auf (sie liefert `false`,
+  wenn kein Hinweis da ist; dann wird die Station übersprungen).
+
+Stand: Der Baustein kommt als Nächstes aus dem Designsystem.
 
 **Statuspunkt (Ampel):** `<span class="statuspunkt ok"></span> gilt` (bzw. `.warnung`, `.fehler`) – ein Punkt (10px,
 Abstand zum Wort per Leerzeichen bzw. `gap: var(--s1)`) in
