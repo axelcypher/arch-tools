@@ -450,10 +450,11 @@ für Rückmeldungen, `role="alert"` für Fehler. `.warning` bleibt als Hinweis i
 
 **Hinweis nach einer Aktion** (`zeigeHinweis`, z. B. „Gespeichert unter …“ nach dem direkten Export):
 
-- **Aussehen:** unten rechts im Fenster, Abstand `var(--s4)` zum Rand und oberhalb einer Statusleiste, Breite höchstens
-  `min(28rem, 100vw - 2 * var(--s4))`; eine App mit Statusleiste hebt ihn über `--hinweis-unten`. `.meldung.ok`, bei
-  Warnungen `.meldung.warnung`, bei einem Fehler `.meldung.fehler`. Darin der Text (ein Pfad bricht um statt abzuschneiden), höchstens zwei
-  Aktionen und ein Symbolknopf `schliessen` mit `aria-label`/`title` „Hinweis schließen“ (mindestens `--ctl-h-s`).
+- **Aussehen:** unten rechts im Fenster, Abstand `var(--s4)` zum Rand und oberhalb einer Statusleiste, Breite
+  höchstens `min(28rem, 100vw - 2 * var(--s4))`; eine App mit Statusleiste hebt ihn über `--hinweis-unten`.
+  `.meldung.ok`, bei Warnungen `.meldung.warnung`, bei einem Fehler `.meldung.fehler`. Darin der Text (ein Pfad bricht
+  um statt abzuschneiden), höchstens zwei Aktionen und ein Symbolknopf `schliessen` mit `aria-label`/`title` „Hinweis
+  schließen“ (mindestens `--ctl-h-s`).
 - **Aktionen:** nach dem Inhalt benannt, z. B. „Ordner öffnen“; „Prüfhinweise …“ erscheint nur, wenn es welche gibt,
   und öffnet die Liste in einem `Modal`; der Hinweis bleibt dabei stehen, damit der Dialog den Fokus an den Knopf
   zurückgeben kann und „Ordner öffnen“ erreichbar bleibt. Abschließende Aktionen wie „Ordner öffnen“ schließen ihn
@@ -464,18 +465,23 @@ für Rückmeldungen, `role="alert"` für Fehler. `.warning` bleibt als Hinweis i
 - **Stapel:** Verschiedene Hinweise stapeln sich, der neueste unten. Ab dem vierten fällt der älteste weg, aber nie
   einer, in dem gerade der Fokus steht. Ist das Fenster zu niedrig, wird der Stapel in sich scrollbar; er verdeckt
   höchstens die untere rechte Ecke, nie das fokussierte Element (WCAG 2.4.11): Liegt es darunter, wird es per
-  `scrollIntoView` über den Stapel geschoben, und geht das nicht, weicht der Stapel nach links unten aus. Der Stapel ist
-  ein Bereich mit Namen (`role="region"`, `aria-label` „Hinweise“) und immer im DOM; darin sagen zwei stets vorhandene
-  Live-Regionen jeden neuen Hinweis an (`role="status"`, bei einem Fehler `role="alert"`).
-- **Tastatur:** F6 springt in den neuesten Hinweis (ohne Hinweis tut F6 nichts), F6 im Hinweis wieder zurück; Tab und Umschalt+Tab gehen durch die
-  Knöpfe aller Hinweise des Stapels. Esc springt nur zurück an das zuvor fokussierte Element (ersatzweise den
-  Hauptbereich) und schließt den Hinweis nicht – anders als in Dialogen und Menüs; zum Schließen dient der Knopf.
-  Schließt man einen Hinweis mit Fokus, geht der Fokus an den nächsten Hinweis im Stapel, sonst zurück wie bei Esc.
-  Ersetzt ein neuer Hinweis einen fokussierten, bleibt der Fokus im neuen. Hat eine App schon einen F6-Kreis zwischen
-  ihren Bereichen (LEXIO), nimmt sie den Stapel mit `hinweisFokussieren()` als letzte Station auf (sie liefert `false`,
-  wenn kein Hinweis da ist; dann wird die Station übersprungen).
+  `scrollIntoView` über den Stapel geschoben, und geht das nicht, weicht der Stapel nach links unten aus. Der Stapel
+  ist ein Bereich mit Namen (`role="region"`, `aria-label` „Hinweise“) und immer im DOM; darin sagen zwei stets
+  vorhandene Live-Regionen jeden neuen Hinweis an (`role="status"`, bei einem Fehler `role="alert"`).
+- **Tastatur:** F6 springt in den neuesten Hinweis (ohne Hinweis tut F6 nichts), F6 im Hinweis wieder zurück; Tab und
+  Umschalt+Tab gehen durch die Knöpfe aller Hinweise des Stapels. Esc springt nur zurück an das zuvor fokussierte
+  Element (ersatzweise den Hauptbereich) und schließt den Hinweis nicht – anders als in Dialogen und Menüs; zum
+  Schließen dient der Knopf. Schließt man einen Hinweis mit Fokus, geht der Fokus an den nächsten Hinweis im Stapel,
+  sonst zurück wie bei Esc. Ersetzt ein neuer Hinweis einen fokussierten, bleibt der Fokus im neuen. Hat eine App
+  schon einen F6-Kreis zwischen ihren Bereichen (LEXIO), nimmt sie den Stapel mit `hinweisFokussieren()` als letzte
+  Station auf (sie liefert `false`, wenn kein Hinweis da ist; dann wird die Station übersprungen).
 
-Stand: Der Baustein kommt als Nächstes aus dem Designsystem.
+Baustein: `ui/Hinweis.tsx` – `zeigeHinweis({ id, art, text, pfad, aktionen })` liefert die id, `schliesseHinweis(id)`
+schließt ihn; der Stapel (`HinweisHost`) steckt in der Titelleiste, also in jeder App. Solange ein Dialog offen ist,
+lässt er F6 und den Fokus in Ruhe. Während eine Aktion läuft, ist ihr Knopf mit `aria-disabled` gesperrt (er behält den
+Fokus); scheitert sie, ersetzt ein Fehler-Hinweis den alten. Apps mit eigenem F6-Kreis rufen beim Start
+`hinweisF6Eigen()` und nehmen den Stapel mit `hinweisFokussieren()` auf. `--hinweis-unten` (Vorgabe `0px`) hebt den
+Stapel über eine Statusleiste. Texte nur für Vorleseprogramme tragen die gemeinsame Klasse `.nur-vorlesen`.
 
 **Statuspunkt (Ampel):** `<span class="statuspunkt ok"></span> gilt` (bzw. `.warnung`, `.fehler`) – ein Punkt (10px,
 Abstand zum Wort per Leerzeichen bzw. `gap: var(--s1)`) in
