@@ -204,7 +204,9 @@ interface FaktZiel {
   lagebezug?: boolean;
 }
 
-const useFaktBestaetigen = create<{ ziel: FaktZiel | null }>(() => ({ ziel: null }));
+const useFaktBestaetigen = create<{ ziel: FaktZiel | null; geschlossen: number }>(() => ({ ziel: null, geschlossen: 0 }));
+/** zählt, wie oft der Beleg-Dialog geschlossen wurde – ein Eingabefeld, das ihn geöffnet hat, setzt sich damit zurück (abgebrochen: es zeigt wieder den geltenden Wert) */
+export const useBelegDialogGeschlossen = () => useFaktBestaetigen((s) => s.geschlossen);
 const eintrag = (id: string) => JSON.stringify(useBaurecht.getState().pruefung.fakten[id] ?? null);
 /** Element, das den Dialog geöffnet hat – dorthin geht der Fokus zurück (gibt es es nicht mehr: in die Zeile der Angabe) */
 let oeffner: HTMLElement | null = null;
@@ -214,7 +216,11 @@ const merken = () => {
 function fokusZurueck(id: string) {
   setTimeout(() => {
     if (oeffner?.isConnected) oeffner.focus();
-    else document.querySelector<HTMLElement>(`[data-fakt="${CSS.escape(id)}"] :is(button:not([disabled]), input, select)`)?.focus();
+    else {
+      // die Zeile wurde neu aufgebaut: auf den gewählten Wert bzw. den Tabstopp der Gruppe, sonst das erste Bedienelement
+      const zeile = document.querySelector<HTMLElement>(`[data-fakt="${CSS.escape(id)}"]`);
+      (zeile?.querySelector<HTMLElement>('[aria-pressed="true"], .segment [tabindex="0"]') ?? zeile?.querySelector<HTMLElement>(':is(button:not([disabled]), input, select)'))?.focus();
+    }
     oeffner = null;
   }, 0);
 }
@@ -470,7 +476,7 @@ export function FaktBestaetigenDialog({ folgen, faktDef = () => undefined }: { f
   if (!ziel) return null;
   const schliessen = () => {
     const id = ziel.id;
-    useFaktBestaetigen.setState({ ziel: null });
+    useFaktBestaetigen.setState((s) => ({ ziel: null, geschlossen: s.geschlossen + 1 }));
     fokusZurueck(id);
   };
   const zu = () => (grund.trim() ? setVerwerfen(true) : schliessen());
@@ -508,6 +514,8 @@ export function FaktBestaetigenDialog({ folgen, faktDef = () => undefined }: { f
             {/* der Grund sagt schon, woher der Wert kommt – die Quelle nur ohne Grund */}
             Bisher nur Hinweis: {ziel.wert.grund ?? (ziel.wert.quelle ? `${ziel.wert.quelle} – nicht gesichert` : 'nicht gesichert')}
           </p>
+        ) : faktDef(ziel.id)?.folgt?.length ? (
+          <p className="br-leise">Der Wert ergibt sich sonst aus anderen Angaben. Abweichen nur in einem begründeten Sonderfall – mit Beleg, er steht im Prüfprotokoll.</p>
         ) : (
           <p className="br-leise">Angaben zu Schutzgebieten und Geodaten gelten von Hand nur mit Beleg. Widerspricht die Angabe einem Treffer eines Dienstes, bleibt der Widerspruch sichtbar – betroffene Vorschriften werden dann nicht „entfällt“.</p>
         )}

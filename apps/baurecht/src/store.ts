@@ -63,6 +63,8 @@ export interface Zustand {
   vorfragenUnklar: Record<string, boolean>;
   /** Vorfragen, deren nächste Einzelansage entfällt – „Keine davon“ sagt selbst einmal für alle an (je Kennung einmal verbraucht) */
   vorfragenStill: string[];
+  /** Werte, die sich aus anderen ergeben und die überstimmt werden sollen (die Frage steht dann da, Antwort mit Beleg) */
+  ueberstimmen: Record<string, boolean>;
   /** Rückmeldung nach dem Speichern (Kopf, Live-Region): Zeitpunkt und Text */
   gespeichertMeldung: { am: number; text: string } | null;
 
@@ -148,6 +150,7 @@ export const useBaurecht = create<Zustand>((set, get) => ({
   vorfragenAuf: {},
   vorfragenUnklar: {},
   vorfragenStill: [],
+  ueberstimmen: {},
   gespeichertMeldung: null,
   ansage: '',
   // derselbe Text noch einmal: unsichtbar verändert, damit der Screenreader ihn erneut vorliest
@@ -158,7 +161,7 @@ export const useBaurecht = create<Zustand>((set, get) => ({
     const antraege = antraegeAus(roh);
     const merkmale = merkmaleAusRoh(roh, antrag);
     const pruefung = baurechtAusRoh(roh).pruefungen[antrag] ?? leerePruefung();
-    set({ quelle, project, roh, antrag, antraege: antraege.includes(antrag) ? antraege : [...antraege, antrag], merkmale, merkmaleDatei: { ...merkmale }, pruefung: kopie(pruefung), pruefungDatei: kopie(pruefung), auswahl: null, fokus: null, merkmaleAuf: null, vorfragenAuf: {}, vorfragenUnklar: {} });
+    set({ quelle, project, roh, antrag, antraege: antraege.includes(antrag) ? antraege : [...antraege, antrag], merkmale, merkmaleDatei: { ...merkmale }, pruefung: kopie(pruefung), pruefungDatei: kopie(pruefung), auswahl: null, fokus: null, merkmaleAuf: null, vorfragenAuf: {}, vorfragenUnklar: {}, ueberstimmen: {} });
   },
   gespeichert: (roh, quelle, seit, project) => {
     const s = get();
@@ -198,13 +201,13 @@ export const useBaurecht = create<Zustand>((set, get) => ({
     // Koordinaten) für die Ortsbindung unsichtbar
     set({ roh, quelle: quelle ?? s.quelle, merkmale, merkmaleDatei, pruefung, pruefungDatei: kopie(pruefungDatei), ...(project ? { project } : {}) });
   },
-  schliessen: () => set({ quelle: null, project: null, roh: null, antrag: 'Projekt', antraege: [], merkmale: {}, merkmaleDatei: {}, pruefung: leerePruefung(), pruefungDatei: leerePruefung(), auswahl: null, merkmaleAuf: null, vorfragenAuf: {}, vorfragenUnklar: {} }),
+  schliessen: () => set({ quelle: null, project: null, roh: null, antrag: 'Projekt', antraege: [], merkmale: {}, merkmaleDatei: {}, pruefung: leerePruefung(), pruefungDatei: leerePruefung(), auswahl: null, merkmaleAuf: null, vorfragenAuf: {}, vorfragenUnklar: {}, ueberstimmen: {} }),
   antragWaehlen: (antrag) => {
     const roh = get().roh;
     if (!roh) return;
     const merkmale = merkmaleAusRoh(roh, antrag);
     const pruefung = baurechtAusRoh(roh).pruefungen[antrag] ?? leerePruefung();
-    set({ antrag, merkmale, merkmaleDatei: { ...merkmale }, pruefung: kopie(pruefung), pruefungDatei: kopie(pruefung), auswahl: null, vorfragenAuf: {}, vorfragenUnklar: {} });
+    set({ antrag, merkmale, merkmaleDatei: { ...merkmale }, pruefung: kopie(pruefung), pruefungDatei: kopie(pruefung), auswahl: null, vorfragenAuf: {}, vorfragenUnklar: {}, ueberstimmen: {} });
   },
   merkmalSetzen: (name, wert) => {
     const m = { ...get().merkmale };

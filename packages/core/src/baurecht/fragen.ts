@@ -28,8 +28,10 @@ export function frageGestellt(id: string, def: Pick<FaktDef, 'wenn' | 'vorfrage'
  * Angabe als Auslöser (die Regel trägt dann deren Widerspruch; Merkmal-Widersprüche ausgenommen, siehe unten).
  */
 export function frageStand(id: string, def: Pick<FaktDef, 'wenn' | 'vorfrage'> | undefined, ctx: KurzKontext): { gestellt: boolean; ueberHinweis: string[]; ueberWiderspruch: string[] } {
-  // Einzelfrage, deren Vorfrage wirksam „nein“ ist: entfällt (der Wert folgt aus der Vorfrage, vorfragenAnwenden)
-  if (def?.vorfrage && vorfrageNein(ctx.fakten[def.vorfrage.fakt])) return { gestellt: false, ueberHinweis: [], ueberWiderspruch: [] };
+  // Einzelfrage, deren Vorfrage wirksam „nein“ ist, bzw. Angabe, deren Wert sich aus anderen ergibt: entfällt (der Wert
+  // folgt daraus, ableitungenAnwenden)
+  // (ein abgeleiteter Wert mit Widerspruch, z. B. aus einem Dienst, bleibt gefragt – der Widerspruch will geklärt sein)
+  if ((def?.vorfrage && vorfrageNein(ctx.fakten[def.vorfrage.fakt])) || (ctx.fakten[id]?.ausFolge && !ctx.fakten[id].widerspruch)) return { gestellt: false, ueberHinweis: [], ueberWiderspruch: [] };
   if (!def?.wenn) return { gestellt: true, ueberHinweis: [], ueberWiderspruch: [] };
   try {
     const b = werten(def.wenn, ctx);
@@ -102,6 +104,13 @@ export function vorfragenAnwenden(fakten: Record<string, FaktWert>, defs: Record
   const karte = vorfragenKarte(defs);
   if (!karte.size) return fakten;
   const out = { ...fakten };
+  vorfragenSchritte(out, defs, karte);
+  return out;
+}
+
+/** die zwei Schritte der Vorfragen an Ort und Stelle; true, wenn sich etwas geändert hat */
+function vorfragenSchritte(out: Record<string, FaktWert>, defs: Record<string, FaktDef>, karte: Map<string, string[]>): boolean {
+  let irgendwas = false;
   const name = (id: string) => faktName(defs[id], id);
   for (let runde = 0; runde <= karte.size + 1; runde++) {
     let geaendert = false;
@@ -129,6 +138,7 @@ export function vorfragenAnwenden(fakten: Record<string, FaktWert>, defs: Record
         geaendert = true;
       }
     }
+    irgendwas ||= geaendert;
     if (!geaendert) break;
   }
   for (let runde = 0; runde <= karte.size + 1; runde++) {
@@ -143,7 +153,82 @@ export function vorfragenAnwenden(fakten: Record<string, FaktWert>, defs: Record
         geaendert = true;
       }
     }
+    irgendwas ||= geaendert;
     if (!geaendert) break;
+  }
+  return irgendwas;
+}
+
+/**
+ * Werte, die sich zwingend aus anderen Angaben ergeben (FaktDef.folgt): Trifft eine Zeile gesichert zu (`wenn` „ja“ ohne
+ * Hinweis bzw. Widerspruch, auch über Merkmale), gilt ihr Wert – abgeleitet, Quelle der Grund (`ausFolge`), die Frage
+ * entfällt (eine Angabe gleichen Werts zählt dann nicht eigens, sie bleibt gespeichert). Eine abweichende Angabe mit
+ * Beleg überstimmt (Sonderfall); jede andere abweichende (auch ein Hinweis, z. B. aus dem Modell) bleibt stehen und wird
+ * zum Widerspruch – nie still überschrieben.
+ */
+function folgenSchritt(out: Record<string, FaktWert>, eingang: Record<string, FaktWert>, defs: Record<string, FaktDef>, rest: Omit<KurzKontext, 'fakten'>): boolean {
+  let geaendert = false;
+  // `out` ändert sich in der Schleife an Ort und Stelle – derselbe Kontext sieht immer den neuesten Stand
+  const ctx: KurzKontext = { ...rest, fakten: out };
+  for (const [id, d] of Object.entries(defs)) {
+    if (!d.folgt?.length) continue;
+    const zeile = d.folgt.find((z) => {
+      try {
+        const b = werten(z.wenn, ctx);
+        return b.w === 'ja' && !b.unsicher.length && !b.widerspruch.length;
+      } catch {
+        return false;
+      }
+    });
+    const f = out[id];
+    if (!zeile) {
+      // trifft nichts (mehr) zu: ein früher abgeleiteter Wert dieses Laufs fällt weg – die eigene Angabe gilt wieder
+      if (f?.ausFolge || f?.gegenFolge) {
+        if (eingang[id]) out[id] = eingang[id];
+        else delete out[id];
+        geaendert = true;
+      }
+      continue;
+    }
+    if (f?.ausFolge === zeile.grund && f.wert === zeile.wert) continue;
+    const eigen = f && f.wert != null && f.wert !== '' && !f.ausFolge;
+    if (eigen && f.wert !== zeile.wert) {
+      // abweichende Angabe: mit Beleg überstimmt sie, sonst Widerspruch (sichtbar, die Frage bleibt)
+      if (!f.bestaetigt && !f.gegenFolge) {
+        out[id] = { ...f, gegenFolge: zeile.grund, ...(f.widerspruch ? {} : { widerspruch: `ergibt sich aus anderen Angaben als „${wertAnzeige(zeile.wert, d)}“ (${zeile.grund})` }) };
+        geaendert = true;
+      }
+      continue;
+    }
+    // ein Widerspruch der eigenen Angabe (z. B. aus einem Dienst) geht mit – er macht den Wert unsicher
+    out[id] = {
+      wert: zeile.wert,
+      herkunft: 'abgeleitet',
+      quelle: `ergibt sich: ${zeile.grund}`,
+      sicherheit: 'sicher',
+      ausFolge: zeile.grund,
+      ...(f?.widerspruch ? { widerspruch: f.widerspruch } : {}),
+    };
+    geaendert = true;
+  }
+  return geaendert;
+}
+
+/**
+ * Ableitungen zwischen den Angaben (nach den Werten der Module, vor den Regeln): Vorfragen (vorfragenAnwenden) und Werte,
+ * die sich aus anderen ergeben (FaktDef.folgt) – abwechselnd bis zum Fixpunkt, denn das eine kann am anderen hängen.
+ * `rest`: Merkmale, Bausteine, Widersprüche (für die Bedingungen von `folgt`). Zyklen lehnt paketPruefen ab
+ * (fragenZyklen); deshalb steht der Fixpunkt nach wenigen Runden.
+ */
+export function ableitungenAnwenden(fakten: Record<string, FaktWert>, defs: Record<string, FaktDef>, rest: Omit<KurzKontext, 'fakten'>): Record<string, FaktWert> {
+  const karte = vorfragenKarte(defs);
+  const mitFolge = Object.values(defs).some((d) => d.folgt?.length);
+  if (!karte.size && !mitFolge) return fakten;
+  const out = { ...fakten };
+  for (let runde = 0; runde < 8; runde++) {
+    const v = karte.size ? vorfragenSchritte(out, defs, karte) : false;
+    const f = mitFolge && folgenSchritt(out, fakten, defs, rest);
+    if (!v && !f) break;
   }
   return out;
 }

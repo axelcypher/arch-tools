@@ -231,10 +231,54 @@ Rückfragen; auch Einzelfragen anderer Gruppen, z. B. „Bäume fällen“ unter
   nach mittelbaren Zufahrten. Wasserschutz-, Überschwemmungs- und Risikogebiete wirken nur im Gebiet selbst. Der
   Landschaftsplan ist keine Einzelfrage (sein Geltungsbereich reicht über die Schutzfestsetzungen hinaus), ebenso
   wenig das Gewässer am Grundstück.
+- Dieselbe Mechanik trägt auch Teilmengen außerhalb der Schutzgebiete: „Vollständige Erneuerung der Dachhaut“ nur bei
+  Arbeiten an Dach oder Fassade, „über 800 m³ Bodenmaterial“ nur bei Erdarbeiten (deren Frage nennt Aufschüttung und
+  Abtrag ausdrücklich), „Feststofffeuerung über 50 kW“ nur mit Feuerstätte, die Fragen der Altstadtsatzung Soest
+  (Gauben, Solaranlagen, Schaufenster, Vordächer, Einfriedigung, Außenanlagen, Garagen, Freitreppen) nur in der
+  Altstadt. Dort steht keine eigene Vorfrage, die Ausgangsfrage selbst ist es.
 - Im Regelmodul: `vorfrage: { fakt, sonst }` an der Einzelfrage (Kern: `fragen.ts`, `vorfragenAnwenden`); eine
   Einzelfrage kann selbst Vorfrage sein. `paketPruefen` verlangt eine sichtbare Ja/Nein-Vorfrage, einen passenden Wert
   `sonst` und keinen Kreis. Module, die eine Einzelfrage des Katalogs neu fassen, nennen ihre Vorfrage dort ebenfalls
   (Test). An einer Vorfrage hängt keine Regel.
+
+## Werte, die sich aus anderen Angaben ergeben
+
+Manche Angaben folgen zwingend aus anderen (`folgt: [{ wenn, wert, grund }]` am Fakt, Kern: `fragen.ts`,
+`ableitungenAnwenden`): Trifft `wenn` gesichert zu (auch über Merkmale; nie aus Hinweisen oder widersprüchlichen
+Merkmalen), gilt der Wert, die Frage entfällt. Die Werte stehen am Ende ihrer Gruppe unter „Ergibt sich aus anderen
+Angaben (n)“ mit dem Grund und im Prüfprotokoll („Ergibt sich aus anderen Angaben“). Ändern heißt die Ausgangsangabe
+ändern; „Überstimmen …“ stellt in einem begründeten Sonderfall die Frage, eine Antwort dann nur mit Beleg.
+
+| Angabe | ergibt sich | Grund |
+| --- | --- | --- |
+| Besucher, Verkaufsfläche | 0 bei Ein-, Zwei- oder Mehrfamilienhaus, nicht bei einer Nutzungsänderung | reines Wohngebäude; Läden, Praxen, Säle machen es zum Wohn- und Geschäftshaus |
+| Gastbetten | 0 bei reinem Wohngebäude **ohne** Ferienwohnungen, nicht bei einer Nutzungsänderung | Ferienwohnungen können im Einzelfall Beherbergung sein (§ 13a Satz 2 BauNVO) |
+| Wohnungen | 1 (Einfamilienhaus), 2 (Zweifamilienhaus), 0 (kein Gebäude) | Gebäudeart |
+| Nutzungseinheiten | 1 bzw. 2, nur ohne Räume für freie Berufe | solche Räume können eine eigene Nutzungseinheit sein |
+| Aufenthaltsräume | ja bei Gebäuden mit Wohnungen, nein bei „kein Gebäude“ | Wohnräume sind Aufenthaltsräume (§ 2 Abs. 5 BauO NRW) |
+| beheizt | nein bei „kein Gebäude“ | das GEG gilt nur für Gebäude |
+| land- oder forstwirtschaftlich genutzt | nein bei Wohngebäuden | bauordnungsrechtliche Nutzung, „ja“ wäre milder (das Betriebsleiter- bzw. Altenteilerwohnhaus nach § 35 BauGB bleibt unberührt) |
+| Stellplätze auf neuer Stellplatzfläche | 0 ohne Stellplätze oder Garagen | nur neue Flächen |
+
+- **Nie still überschrieben:** Eine abweichende gespeicherte Angabe (auch ein Hinweis aus dem Modell, z. B. zwei
+  Wohnungen im Einfamilienhaus) bleibt stehen und wird zum **Widerspruch** (`gegenFolge`, nur in der Auswertung) – die
+  Frage steht wieder da, betroffene Vorschriften werden höchstens „prüfen“, nie „entfällt“. „Mit Beleg übernehmen …“
+  behält sie als begründeten Sonderfall (dann ohne Widerspruch); eine neue Antwort gilt dort ebenfalls nur mit Beleg.
+  „nicht überstimmen“ nimmt „Überstimmen …“ zurück. Bricht man den Beleg-Dialog ab, zeigt das Feld wieder den
+  geltenden Wert.
+- Die Gebäudeart gilt als Zustand nach dem Vorhaben. Bei einer **Nutzungsänderung** könnte ein Teil zu Gästezimmern,
+  Laden o. Ä. werden, ohne dass sie angepasst ist – Besucher, Verkaufsfläche und Gastbetten werden dort nicht
+  abgeleitet.
+- **Bewusst nicht abgeleitet** (fachlich nicht zwingend): Stellplätze nach GEIG und Garagen-Nutzfläche (auch
+  vorhandene, dem Neubau zugeordnete bzw. angrenzende zählen, §§ 6, 7 GEIG), Behelfsbau beim Wohngebäude
+  (Wohncontainer, § 51 BauO NRW), gemischt genutzt beim Mehrfamilienhaus (Runde 3: ein Wohn- und
+  Geschäftshaus wird oft so angegeben), Arbeitsstätte (Telearbeit), öffentlich zugänglich, Versammlungsstätte bei
+  „kein Gebäude“ (Freilichtbühne, Stadion), Wohnungen im Nichtwohngebäude (Hausmeisterwohnung), Technik bei einer
+  Beseitigung, Öltank ohne neue Heizung, Versickerung ohne geänderte Entwässerung, beheizt beim Wohngebäude
+  (Wochenendhaus).
+- `paketPruefen` prüft Bedingung (ohne Paragrafen), Art des Werts und Grund; `folgt` nicht zusammen mit festem Wert
+  oder Tabelle; die Bedingungen von `folgt` und die Vorfragen gehen in die Prüfung auf Fragen-Zyklen ein (auch die des
+  Katalogs).
 
 ## Von Hand festlegen
 
@@ -431,7 +475,8 @@ Zahl der Antworten + 2). Fände die Auswertung dennoch keinen festen Stand, zäh
 gestellt waren (eine weggelassene Antwort führt nur zu „offen“); Antworten auf nicht gestellte Fragen dürfen weder als
 „ja“ noch als „nein“ etwas ändern – ausgenommen Einzelfragen unter einer Vorfrage „nein“: Dort ändert „nein“ nichts,
 „ja“ macht die Vorfrage widersprüchlich, stellt die Frage wieder und stuft keinen Paragrafen zu „entfällt“ hin ab
-(je Grundfall geprüft). § 36 BauGB (Einvernehmen) entfällt, wo die Gemeinde selbst untere Bauaufsicht ist
+(je Grundfall geprüft); ebenso Werte, die sich aus anderen ergeben: derselbe Wert ändert nichts, ein anderer wird zum
+Widerspruch, stellt die Frage wieder und führt nie zu „entfällt“. § 36 BauGB (Einvernehmen) entfällt, wo die Gemeinde selbst untere Bauaufsicht ist
 („Gemeinde ist selbst Bauaufsicht“: im Kreis Soest Lippstadt, Soest, Warstein, Werl; in NRW die kreisfreien Städte und
 Aachen nach Gemeindeschlüssel; sonst offen – „gilt, Ausnahme möglich“). § 47 Abs. 6 BauO NRW (Fassung ab 01.09.2026):
 Bei einer Nutzungsänderung zu Wohnraum wird gefragt, ob Nutzungseinheiten mit Aufenthaltsräumen in einem bestehenden

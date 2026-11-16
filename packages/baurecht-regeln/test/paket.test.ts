@@ -31,7 +31,6 @@ describe('Wert ohne Auslöser (ohneAusloeser)', () => {
   it('gesetzt genau dort, wo der Wert zwingend aus dem fehlenden Auslöser folgt (Fachreview)', () => {
     // Heilquellenschutz, Hellwegbörde und Allee hängen seit den Vorfragen an ihrer Vorfrage (FaktDef.vorfrage, unten)
     expect(Object.fromEntries(mit.map(([id, d]) => [id, d.ohneAusloeser]))).toEqual({
-      'nw.feste_brennstoffe_50kw': false,
       'planung.planreife': false,
       'planung.zurueckstellung': false,
     });
@@ -69,10 +68,40 @@ describe('Vorfragen (FaktDef.vorfrage)', () => {
       'kreis_soest.hsg': ['kreis_soest.hsg_qualitativ', 'kreis_soest.hsg_quantitativ'],
       'schutz.vsg': ['kreis_soest.vsg_hellweg'],
       'schutz.baum': ['schutz.allee'],
+      // Teilmengen: die Dachhaut ist eine Arbeit am Dach, Bodenmaterial auf- oder einbringen eine Erdarbeit
+      'vorhaben.dach_fassade': ['vorhaben.dachhaut'],
+      'vorhaben.erdarbeiten': ['vorhaben.boden_800'],
+      // die Feststofffeuerung ist eine Feuerstätte; die Altstadtsatzung Soest gilt nur in der Altstadt
+      'technik.feuerstaette': ['nw.feste_brennstoffe_50kw'],
+      'soest.altstadt': ['soest.aussenanlagen', 'soest.dachaufbauten', 'soest.einfriedung', 'soest.einfriedungspflicht', 'soest.freitreppe', 'soest.garage', 'soest.schaufenster', 'soest.solaranlage', 'soest.vordach'],
     });
     // an einer Vorfrage hängt keine Regel – sie ist nur eine Frage nach dem Gegenstand
     const regeln = JSON.stringify([...paket.regeln.values()].flat().map((r) => r.regel));
     for (const v of karte.keys()) if (v.startsWith('vorfrage.')) expect(regeln.includes(`"${v}"`), v).toBe(false);
+  });
+
+  it('Werte, die sich aus anderen ergeben (folgt): genau diese, mit bekannten Angaben und Merkmalwerten, Wert passend zur Art', () => {
+    const mitFolge = Object.entries(defs).filter(([, d]) => d.folgt?.length);
+    expect(Object.fromEntries(mitFolge.map(([id, d]) => [id, d.folgt!.map((z) => `${String(z.wert)}: ${z.grund}`)]))).toEqual({
+      'gebaeude.wohnungen': ['1: Einfamilienhaus – eine Wohnung', '2: Zweifamilienhaus – zwei Wohnungen', '0: kein Gebäude – keine Wohnungen'],
+      'gebaeude.aufenthaltsraeume': ['true: Gebäude mit Wohnungen – Wohnräume sind Aufenthaltsräume', 'false: kein Gebäude – keine Aufenthaltsräume'],
+      'gebaeude.nutzungseinheiten': ['1: Einfamilienhaus ohne Räume für freie Berufe – eine Nutzungseinheit', '2: Zweifamilienhaus ohne Räume für freie Berufe – zwei Nutzungseinheiten'],
+      'gebaeude.landwirtschaft': ['false: Wohngebäude – kein land- oder forstwirtschaftlich genutztes Gebäude'],
+      'gebaeude.beheizt': ['false: kein Gebäude – das GEG gilt nur für Gebäude'],
+      'gebaeude.besucher': ['0: reines Wohngebäude – keine Versammlungsstätte'],
+      'gebaeude.gastbetten': ['0: reines Wohngebäude ohne Ferienwohnungen – keine Beherbergung'],
+      'gebaeude.verkaufsflaeche': ['0: reines Wohngebäude – keine Verkaufsstätte'],
+      'nw.stellplatzflaeche': ['0: keine Stellplätze oder Garagen geplant – keine neue Stellplatzfläche'],
+    });
+    for (const [id, d] of mitFolge)
+      for (const z of d.folgt!) {
+        expect(d.typ === 'janein' ? typeof z.wert === 'boolean' : d.typ === 'zahl' ? typeof z.wert === 'number' : typeof z.wert === 'string', id).toBe(true);
+        for (const m of JSON.stringify(z.wenn).matchAll(/"f":"([^"]+)"/g)) expect(defs[m[1]], `${id}: ${m[1]}`).toBeTruthy();
+        for (const m of JSON.stringify(z.wenn).matchAll(/"m":"([^"]+)","in":\[([^\]]*)\]/g)) {
+          const werte = VORGABE_MERKMALE.find((x) => x.name === m[1])!.werte;
+          for (const w of JSON.parse(`[${m[2]}]`)) expect(werte, `${id}: ${m[1]} ${w}`).toContain(w);
+        }
+      }
   });
 
   it('Module, die eine Einzelfrage des Katalogs neu fassen, behalten ihre Vorfrage (sonst stünde sie wieder einzeln da)', () => {
@@ -304,6 +333,11 @@ describe('neue Merkmalwerte (Erweiterung, Wohn- und Geschäftshaus)', () => {
     ['alle ja', alleFakten('ja'), TEXTE],
   ];
   const ampeln = (m: Record<string, string>, f: Record<string, FaktWert>, t: Map<string, TextStand>) => new Map(auswerten(eingabe(m, f, t)).paragrafen.map((p) => [p.id, p.automatisch]));
+  /** die Angaben ohne die, die in einem der Fälle einem Wert widersprechen, der sich aus anderen ergibt (FaktDef.folgt) */
+  const passend = (faelle: Record<string, string>[], f: Record<string, FaktWert>, t: Map<string, TextStand>) => {
+    const weg = new Set(faelle.flatMap((m) => Object.entries(auswerten(eingabe(m, f, t)).fakten).filter(([, w]) => w.widerspruch?.startsWith('ergibt sich aus anderen Angaben')).map(([id]) => id)));
+    return Object.fromEntries(Object.entries(f).filter(([id]) => !weg.has(id)));
+  };
 
   it('Erweiterung nie milder als Änderung – je Paragraf mindestens dieselbe Ampel', { timeout: MATRIX_ZEIT }, () => {
     const fehler: string[] = [];
@@ -323,9 +357,14 @@ describe('neue Merkmalwerte (Erweiterung, Wohn- und Geschäftshaus)', () => {
       for (const vorhaben of ['Errichtung', 'Änderung', 'Nutzungsänderung', 'Beseitigung'])
         for (const m of matrixAuswahl(MATRIX, 6)) {
           const basis = { ...m, Vorhaben: vorhaben };
-          const mfh = ampeln({ ...basis, Gebäudeart: 'Mehrfamilienhaus' }, f, t);
-          const nwg = ampeln({ ...basis, Gebäudeart: 'Nichtwohngebäude' }, f, t);
-          for (const [id, a] of ampeln({ ...basis, Gebäudeart: 'Wohn- und Geschäftshaus' }, f, t)) {
+          // alle drei ohne die Angaben, die einer der Gebäudearten widersprechen (FaktDef.folgt, z. B. „alle nein“ mit 10
+          // Besuchern in einem Mehrfamilienhaus) – solche Angaben machen dort Gelb (Widerspruch); verglichen wird mit
+          // denselben, stimmigen Angaben
+          const arten = ['Mehrfamilienhaus', 'Nichtwohngebäude', 'Wohn- und Geschäftshaus'].map((g) => ({ ...basis, Gebäudeart: g }));
+          const fp = passend(arten, f, t);
+          const mfh = ampeln(arten[0], fp, t);
+          const nwg = ampeln(arten[1], fp, t);
+          for (const [id, a] of ampeln(arten[2], fp, t)) {
             const soll = Math.max(RANG[mfh.get(id) ?? 'gruen'], RANG[nwg.get(id) ?? 'gruen']);
             // GEIG: nach der überwiegenden Nutzung (§ 11 GEIG, eigener Test unten) – ist sie offen, nie grün, wo eine Seite gilt
             if (id.startsWith('bund/geig/')) {
@@ -757,7 +796,9 @@ describe('Fragen und Regeln', () => {
       }
       // Einzelfragen unter einer Vorfrage „nein“ ausgenommen: Ihr „ja“ ist ein Widerspruch zur Vorfrage und zählt (Test unten)
       const unterNein = (d: (typeof defs)[string]) => !!d.vorfrage && vorfrageNein(r.fakten[d.vorfrage.fakt]);
-      const verborgen = Object.entries(defs).filter(([id, d]) => d.typ === 'janein' && !d.nach && d.wert === undefined && !(id in f) && !unterNein(d) && !frageGestellt(id, d, r.kontext)).map(([id]) => id);
+      const verborgen = Object.entries(defs)
+        .filter(([id, d]) => d.typ === 'janein' && !d.nach && d.wert === undefined && !(id in f) && !unterNein(d) && !r.fakten[id]?.ausFolge && !frageGestellt(id, d, r.kontext))
+        .map(([id]) => id);
       const vorher = new Map(r.paragrafen.map((p) => [p.id, p.automatisch]));
       for (const w of [true, false]) {
         const r2 = lauf(fall.ags, fall.m, { ...f, ...Object.fromEntries(verborgen.map((id) => [id, w])) });
@@ -782,6 +823,20 @@ describe('Fragen und Regeln', () => {
         }
         if (!frageGestellt(id, d, ja.kontext) && fehler.size < 40) fehler.add(`${id} „${String(anders)}“: Frage nicht wieder gestellt (${fall.name})`);
         for (const p of ja.paragrafen) if (RANG[p.automatisch] < RANG[vorher.get(p.id)!] && fehler.size < 40) fehler.add(`${p.id}: ${vorher.get(p.id)} → ${p.automatisch}, wenn ${id} unter Vorfrage „nein“ „${String(anders)}“ ist (${fall.name})`);
+      }
+      // Werte, die sich aus anderen ergeben (FaktDef.folgt): derselbe Wert ändert nichts; ein anderer bleibt als
+      // Widerspruch stehen, stellt die Frage wieder und führt nie zu „entfällt“
+      for (const [id, d] of Object.entries(defs).filter(([id]) => !(id in f) && !!r.fakten[id]?.ausFolge)) {
+        const w = r.fakten[id].wert;
+        const anders = d.typ === 'janein' ? !w : d.typ === 'zahl' ? Number(w) + 5 : d.werte?.find((x) => x !== w);
+        if (anders === undefined) continue;
+        const gleich = lauf(fall.ags, fall.m, { ...f, [id]: w });
+        for (const p of gleich.paragrafen) if (vorher.get(p.id) !== p.automatisch && fehler.size < 40) fehler.add(`${p.id}: ${vorher.get(p.id)} → ${p.automatisch}, wenn ${id} wie abgeleitet „${String(w)}“ ist (${fall.name})`);
+        const neu = lauf(fall.ags, fall.m, { ...f, [id]: anders });
+        if (!neu.fakten[id]?.widerspruch && fehler.size < 40) fehler.add(`${id} „${String(anders)}“ gegen abgeleitet „${String(w)}“: kein Widerspruch (${fall.name})`);
+        if (!frageGestellt(id, d, neu.kontext) && fehler.size < 40) fehler.add(`${id} „${String(anders)}“: Frage nicht wieder gestellt (${fall.name})`);
+        // ein milderer Wert gegen die Ableitung: höchstens „prüfen“ (der Widerspruch), nie „entfällt“
+        for (const p of neu.paragrafen) if (p.automatisch === 'gruen' && vorher.get(p.id) !== 'gruen' && fehler.size < 40) fehler.add(`${p.id}: ${vorher.get(p.id)} → ${p.automatisch}, wenn ${id} gegen die Ableitung „${String(anders)}“ ist (${fall.name})`);
       }
     }
     expect([...fehler]).toEqual([]);
@@ -1297,7 +1352,7 @@ describe('Fälle aus dem Fachreview', () => {
     expect(x('nw/bauo-nrw/69')).toBe('rot');
     expect(x('nw/bauo-nrw/72')).toBe('rot');
     // Gegenprobe (kleines Vorhaben, keine Öffentlichkeitsbeteiligung nach Abs. 3)
-    expect(a(M4(), { ...nein('planung.abweichung', 'planung.befreiung', 'ortsrecht.abweichung'), ...wert('gebaeude.besucher', 10), ...wert('gebaeude.bgf', 200) })('nw/bauo-nrw/72')).toBe('gruen');
+    expect(a(M4(), { ...nein('planung.abweichung', 'planung.befreiung', 'ortsrecht.abweichung'), ...wert('gebaeude.besucher', 0), ...wert('gebaeude.bgf', 200) })('nw/bauo-nrw/72')).toBe('gruen');
   });
 
   it('Runde 4: § 9 DSchG auch im Denkmalbereich (Maßstab für die Erlaubnis nach § 10 Abs. 2) sowie bei Garten- und Bodendenkmal', () => {
