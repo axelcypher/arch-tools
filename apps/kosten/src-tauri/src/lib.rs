@@ -2,6 +2,8 @@
 //! gemeinsam und stehen in packages/core/tauri/commands.rs.
 
 include!("../../../../packages/core/tauri/commands.rs");
+include!("../../../../packages/core/tauri/prozess.rs");
+include!("../../../../packages/core/tauri/pdf.rs");
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -33,7 +35,8 @@ pub fn run() {
             pick_open_path,
             read_binary_file,
             datei_stand,
-            write_binary_file
+            write_binary_file,
+            excel_als_pdf
         ])
         .setup(|app| {
             log::info!("{} {} gestartet", app.package_info().name, app.package_info().version);

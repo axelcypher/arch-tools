@@ -9,6 +9,10 @@ import { Symbol } from '@core/ui/Symbol';
 import type { MenuePunkt } from '@core/ui/Menue';
 import { MenueKnopf } from '@core/ui/Menue';
 import { Werkzeugleiste } from '@core/ui/Werkzeugleiste';
+import { DirektExportKnopf, exportUntermenue, useDirektExport } from '@core/ui/DirektExportKnopf';
+import type { ExportDialogStart } from '@core/excel/direktExport';
+import { exportAuftrag } from './export/direktExport';
+import { einstellungenPunkt } from '@core/ui/Einstellungen';
 import { TitleBar } from '@core/ui/TitleBar';
 import { ProjektEinstieg, ProjektWahl } from '@core/ui/ProjektWahl';
 import { createProject } from '@core/model';
@@ -39,7 +43,10 @@ export function App() {
   const wiederhergestellt = useGrz((s) => s.wiederhergestellt);
   // Desktop: beim Start die Projektübersicht (das zuletzt bearbeitete Projekt bleibt über „Zurück zu …“ erreichbar)
   const [projekteOffen, setProjekteOffen] = useState(() => isTauri());
-  const [excelOpen, setExcelOpen] = useState(false);
+  const [excelOpen, setExcelOpen] = useState<ExportDialogStart | null>(null);
+  const direktExport = useDirektExport({ auftrag: exportAuftrag, dialogOeffnen: setExcelOpen, deaktiviert: !hatGebaeude, hinweisDeaktiviert: gesperrt, hinweisKurz: 'Kein Gebäude' });
+  // Tooltip des Direktexports nennt den Berechnungsordner – hängt an den Stammdaten
+  useGrz((s) => s.project.meta);
   const [druckOpen, setDruckOpen] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [bericht, setBericht] = useState<IfcBericht | null>(null);
@@ -167,17 +174,10 @@ export function App() {
       titel: hatGebaeude ? 'Neuen Export desselben IFC-Modells übernehmen: Räume über die IFC-GlobalId abgleichen, Ihre Änderungen bleiben' : gesperrt,
       aktion: () => void onIfcAktualisieren(),
     },
-  ];
-  /** Menü „Mehr“: weitere Ausgabe (ein einzelnes Format – kein eigenes Menü „Exportieren“) */
-  const mehrPunkte = (): MenuePunkt[] => [
-    {
-      text: 'Excel-Export …',
-      symbol: 'tabelle',
-      deaktiviert: !hatGebaeude,
-      hinweis: hatGebaeude ? undefined : 'Kein Gebäude',
-      titel: hatGebaeude ? 'Nachweis als Excel-Datei – Standardlayout oder eigene Vorlage' : gesperrt,
-      aktion: () => setExcelOpen(true),
-    },
+    { trenner: true },
+    exportUntermenue({ dialogOeffnen: setExcelOpen, deaktiviert: !hatGebaeude, hinweis: 'Kein Gebäude' }),
+    { trenner: true },
+    einstellungenPunkt(),
   ];
 
   return (
@@ -236,6 +236,12 @@ export function App() {
           ...(busy ? [{ id: 'busy', kuerzbar: true, inhalt: <span className="busy" title={busy}>{busy}</span> }] : []),
           { abstand: true },
           {
+            id: 'export',
+            rang: 1,
+            inhalt: <DirektExportKnopf {...direktExport} />,
+            menue: direktExport.menue,
+          },
+          {
             id: 'drucken',
             inhalt: (
               <button
@@ -249,7 +255,6 @@ export function App() {
             ),
           },
         ]}
-        mehr={mehrPunkte}
       />
       <main className="grz-main">
         {wiederhergestellt !== null && dirty && (
@@ -314,7 +319,7 @@ export function App() {
         )}
       </main>
       {druckOpen && <NachweisDruck onClose={() => setDruckOpen(false)} />}
-      {excelOpen && <ExcelDialog onClose={() => setExcelOpen(false)} />}
+      {excelOpen && <ExcelDialog start={excelOpen} onClose={() => setExcelOpen(null)} />}
       {projekteOffen && (
         <ProjektWahl
           app={APP_NAMEN.grz.name}

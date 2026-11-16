@@ -7,7 +7,9 @@
 include!("../../../../packages/core/tauri/commands.rs");
 include!("../../../formulare/src-tauri/src/befehle.rs");
 include!("../../../ava/src-tauri/src/befehle.rs");
+include!("../../../../packages/core/tauri/prozess.rs");
 include!("../../../../packages/core/tauri/qgis.rs");
+include!("../../../../packages/core/tauri/pdf.rs");
 include!("../../../baurecht/src-tauri/src/netz.rs");
 include!("../../../../packages/core/tauri/umbenennen.rs");
 
@@ -34,6 +36,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             qgis_suchen,
             qgis_ausfuehren,
+            excel_als_pdf,
             // Projekt: Dateien umbenennen (Mails)
             projekt_datei_umbenennen,
             // gemeinsam

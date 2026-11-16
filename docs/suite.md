@@ -208,6 +208,41 @@ am Tab bzw. in der Titelleiste ● erscheint.
     schließen“ schließt. Bei QUADRIO und TERRIO (lokale IndexedDB) erscheinen die Rückfragen praktisch
     nie.
 
+## Prüfschritte auf Windows: Direktexport und PDF aus Excel
+
+Mit einem Projekt, dessen `.oap` im Projektordner liegt (Vorgabe `03 Berechnungen/Flächen/…oap`), Stammdaten mit
+Projektcode.
+
+1. **Direktexport mit Excel:** Auf einem Rechner mit Microsoft Excel in QUADRIO „Exportieren“ (Werkzeugleiste).
+   Tooltip vorher: „Als Excel und PDF in ‚<Pfad>‘ speichern …“. Erwartet: nach wenigen Sekunden unten rechts der
+   Hinweis „Gespeichert: …“ mit beiden Dateinamen und dem Ordner (hält nichts auf, F6 springt hinein); im Ordner
+   `03 Berechnungen/Flächen` liegen `<Kürzel> <JJMMTT> Flächenaufstellung.xlsx` und `.pdf`. Das PDF hat
+   Seitenformat, Ränder, Kopf- und Fußzeile (Seitenzahlen) der Vorlage; im Task-Manager läuft danach kein `EXCEL.EXE`
+   mehr. „Ordner öffnen“ öffnet den Explorer im Ordner.
+2. **Vorhandene Datei:** Schritt 1 wiederholen. Erwartet: „‚… .xlsx‘ und ‚… .pdf‘ ersetzen?“ mit „Die Dateien gibt es
+   schon in ‚<Ordner>‘.“, Fokus auf „Abbrechen“; Enter bzw. Esc schreibt nichts. Noch einmal, diesmal „Ersetzen“ → die
+   Dateien werden überschrieben.
+3. **Excel offen mit derselben Datei:** Die erzeugte `.xlsx` in Excel öffnen und „Ersetzen“ wählen. Erwartet: Fehler-Hinweis
+   „Export fehlgeschlagen – …“ mit dem Grund (Datei gesperrt), nichts halb Geschriebenes.
+4. **Nur LibreOffice:** Auf einem Rechner ohne Excel, mit LibreOffice (Standardpfad unter `Programme\LibreOffice`).
+   Erwartet: PDF entsteht ebenso. Zahlen mit Dezimalkomma prüfen – zeigt LibreOffice Punkte, steht es auf einer
+   englischen Sprache (Extras ▸ Optionen ▸ Spracheinstellungen ▸ Gebietsschema „Deutsch (Deutschland)“).
+5. **Weder Excel noch LibreOffice:** Erwartet: Hinweis als Warnung „… Das PDF fehlt: Für das PDF wird
+   Microsoft Excel oder LibreOffice gebraucht – keines davon wurde … gefunden.“; die `.xlsx` ist gespeichert.
+6. **Hängender Wandler:** (schwer nachzustellen, z. B. Excel mit offenem modalen Dialog) Erwartet: nach 2 Minuten
+   „… hat nach 2 Minuten nicht geantwortet und wurde beendet.“, kein übrig gebliebener Excel- bzw. soffice-Prozess.
+7. **Datei → Exportieren → PDF …:** Dialog „PDF-Export“, „Excel-Datei daneben mitspeichern“ anhaken, „PDF speichern“.
+   Erwartet: Speicherdialog für das PDF, die `.xlsx` mit gleichem Namen daneben; gibt es sie schon, Rückfrage
+   „‚… .xlsx‘ ersetzen?“ mit Fokus auf „Abbrechen“.
+8. **Ohne Projektdatei bzw. außerhalb des Projektordners:** Neues Projekt (ungespeichert). Erwartet: „Exportieren“
+   gesperrt, per Tab erreichbar, Tooltip „Erst das Projekt speichern …“. Eine `.oap` auf dem Desktop: Tooltip „Kein
+   Berechnungsordner …“. „Datei → Exportieren → Excel …“ geht in beiden Fällen.
+9. **Vorlage mit Tippfehler:** Eigene Vorlage mit `{{flaeche.gibtsnicht}}` hinterlegen, „Exportieren“. Erwartet:
+   Dateien werden gespeichert, der Hinweis (Warnung) nennt die Zahl der Prüfhinweise; „Prüfhinweise …“ öffnet die
+   Liste (Blatt und Zelle).
+10. Schritte 1, 2 und 7 auch in TERRIO (`03 Berechnungen/Nachweise`, „GRZ-Nachweis“) und NUMIO (`03 Berechnungen/Kosten`,
+    Stufe als Inhalt, z. B. „Kostenschätzung“).
+
 ## Entwicklung
 
 ```bash
@@ -267,9 +302,9 @@ Felder und „Übernehmen“ gesperrt.
 „…/Kosten“, „…/Nachweise“); die Projektdatei liegt per Vorgabe in „03 Berechnungen/Flächen“, dem Ordner von QUADRIO.
 PERMIO sucht externe Antragsdokumente (Berechnungen, Nachweise) in den Berechnungsordnern aller drei Rechen-Apps und in
 den zusätzlich eingestellten Ordnern (Vorgabe wie bisher „Planung/Berechnungen“) – so findet es auch die direkten
-Exporte, sobald es sie gibt. Platzhalter der Suchordner setzt PERMIO mit den Angaben des jeweiligen Projekts ein. Die Einträge unter
-„Export“ (Berechnungsordner, Dateinamen, „PDF mitspeichern“) nutzt der direkte Export von QUADRIO, TERRIO und NUMIO;
-er kommt mit einem eigenen PR (bis dahin wirken sie nur auf die Suche von PERMIO).
+Exporte. Platzhalter der Suchordner setzt PERMIO mit den Angaben des jeweiligen Projekts ein. Die Einträge unter
+„Export“ (Berechnungsordner, Dateinamen, „PDF mitspeichern“) nutzt der direkte Export von QUADRIO, TERRIO und NUMIO
+(Knopf „Exportieren“, siehe „Prüfschritte auf Windows: Direktexport und PDF aus Excel“).
 
 **Ohne Verlust übernommen:** Die Werte bleiben unter ihren bisherigen Schlüsseln, die Apps lesen sie dort weiter
 („Vorgabe wiederherstellen“ schreibt die Vorgabe dort ausdrücklich hinein). Neue Einstellungen liegen in `allgemein.json`
@@ -313,5 +348,5 @@ sortiert); mit `entwurf` (geändert?, Fehler, übernehmen, verwerfen) gilt sie f
 5. Ein Rechner mit eigener alter PERMIO-Namensvorlage, ein zweiter mit einer anderen (Netzwerk): Auf dem zweiten zeigt
    die Seite die Abweichung mit der Wahl; nach der Wahl erscheint der Hinweis nicht mehr.
 6. Berechnungsordner von QUADRIO auf einen Unterordner mit Umlaut und Leerzeichen setzen („03 Berechnungen/Flächen alt“)
-   und dort eine Flächenberechnung ablegen: PERMIO findet sie als externes Antragsdokument (nach dem PR des direkten
-   Exports legt QUADRIO den Ordner beim Export selbst an).
+   und in QUADRIO „Exportieren“: QUADRIO legt den Ordner an und speichert dort; PERMIO findet die Datei als externes
+   Antragsdokument.

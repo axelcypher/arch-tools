@@ -2,6 +2,10 @@ import { Symbol } from '@core/ui/Symbol';
 import type { MenuePunkt } from '@core/ui/Menue';
 import { MenueKnopf } from '@core/ui/Menue';
 import { Werkzeugleiste } from '@core/ui/Werkzeugleiste';
+import { DirektExportKnopf, exportUntermenue, useDirektExport } from '@core/ui/DirektExportKnopf';
+import type { ExportDialogStart } from '@core/excel/direktExport';
+import { exportAuftrag } from './export/direktExport';
+import { einstellungenPunkt } from '@core/ui/Einstellungen';
 import { speichernAbwarten } from '@core/platform/projektDatei';
 import { APP_NAMEN } from '@core/appNamen';
 import { dialogOffen, eingabeAbschliessen, istEingabeZiel } from '@core/platform/eingabe';
@@ -42,7 +46,10 @@ export function App() {
   const wiederhergestellt = useKosten((s) => s.wiederhergestellt);
   // Desktop: beim Start die Projektübersicht (das zuletzt bearbeitete Projekt bleibt über „Zurück zu …“ erreichbar)
   const [projekteOffen, setProjekteOffen] = useState(() => isTauri());
-  const [excelOpen, setExcelOpen] = useState(false);
+  const [excelOpen, setExcelOpen] = useState<ExportDialogStart | null>(null);
+  const direktExport = useDirektExport({ auftrag: exportAuftrag, dialogOeffnen: setExcelOpen, deaktiviert: !hatPositionen, hinweisDeaktiviert: 'Erst Positionen anlegen', hinweisKurz: 'erst Positionen anlegen' });
+  // Tooltip des Direktexports nennt den Berechnungsordner – hängt an den Stammdaten
+  useKosten((s) => s.project.meta);
   const [druckOpen, setDruckOpen] = useState(false);
   const [katalogOpen, setKatalogOpen] = useState(false);
   const [ansicht, setAnsicht] = useState<'kosten' | 'mengen'>('kosten');
@@ -198,6 +205,10 @@ export function App() {
       hinweis: !hatGebaeude ? 'erst Projekt mit Gebäude oder IFC-Modell öffnen' : laeuft,
       titel: 'Neuen Export desselben IFC-Modells übernehmen: Räume über die IFC-GlobalId abgleichen, Änderungen von Hand bleiben',
     },
+    { trenner: true },
+    exportUntermenue({ dialogOeffnen: setExcelOpen, deaktiviert: !hatPositionen, hinweis: 'erst Positionen anlegen' }),
+    { trenner: true },
+    einstellungenPunkt(),
   ];
 
   return (
@@ -263,14 +274,10 @@ export function App() {
           ...(busy ? [{ id: 'busy', inhalt: <span className="busy">{busy}</span> }] : []),
           { abstand: true },
           {
-            id: 'excel',
+            id: 'export',
             rang: 1,
-            inhalt: (
-              <button onClick={() => setExcelOpen(true)} disabled={!hatPositionen} title={hatPositionen ? 'Kostenermittlung als Excel-Datei – Standardlayout oder eigene Vorlage' : 'Erst Positionen anlegen'}>
-                <Symbol name="tabelle" /> Excel …
-              </button>
-            ),
-            menue: { text: 'Excel …', symbol: 'tabelle', aktion: () => setExcelOpen(true), deaktiviert: !hatPositionen, hinweis: hatPositionen ? undefined : 'erst Positionen anlegen' },
+            inhalt: <DirektExportKnopf {...direktExport} />,
+            menue: direktExport.menue,
           },
           {
             // Hauptknopf: bleibt immer sichtbar
@@ -350,7 +357,7 @@ export function App() {
         )}
       </main>
       {druckOpen && <KostenDruck onClose={() => setDruckOpen(false)} />}
-      {excelOpen && <ExcelDialog onClose={() => setExcelOpen(false)} />}
+      {excelOpen && <ExcelDialog start={excelOpen} onClose={() => setExcelOpen(null)} />}
       {katalogOpen && <KatalogDialog onClose={() => setKatalogOpen(false)} />}
       {projekteOffen && (
         <ProjektWahl

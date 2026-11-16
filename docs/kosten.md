@@ -38,8 +38,9 @@ und Regionalfaktor.
   eingelesen; Positionen, Kennwerte und von Hand geänderte Werte bleiben erhalten, die Mengen rechnen sich neu.
 - **Werkzeugleiste:** links das Menü **Datei** (Neu, Öffnen … (Strg+O), Speichern unter … (Strg+Umschalt+S, nur
   Desktop), IFC aktualisieren …), daneben **Speichern** (Punkt in der Ecke bei ungespeicherten Änderungen),
-  Rückgängig/Wiederholen und der Umschalter **Kosten | Mengen prüfen**; rechts **Excel …** und der Hauptknopf
-  **Kosten drucken …**. In schmalen Fenstern wandert „Excel …“ ins Menü „Mehr“. Der Kennwertkatalog steht im Kopf
+  Rückgängig/Wiederholen und der Umschalter **Kosten | Mengen prüfen**; rechts **Exportieren** (Direktexport in den
+  Berechnungsordner, siehe docs/excel-vorlagen.md) und der Hauptknopf **Kosten drucken …**; Excel …, PDF … mit Dialog
+  stehen unter Datei → Exportieren. In schmalen Fenstern wandert „Exportieren“ ins Menü „Mehr“. Der Kennwertkatalog steht im Kopf
   der Positionen.
 - **Regeln nachschlagen:** „Berechnungsregeln …“ (Menü „Einstellungen und Hilfe“ der Titelleiste) bzw. F1 öffnet das Nachschlagewerk (DIN 276, DIN 277) mit Quellen und Suche.
 
