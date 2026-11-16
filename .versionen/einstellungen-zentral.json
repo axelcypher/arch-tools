@@ -1,0 +1,11 @@
+{
+  "flaechenrechner": { "stufe": "minor", "notiz": "Neuer gemeinsamer Einstellungsdialog aller Apps (Strg+,) mit der Seite „Pfade und Benennung“, dazu Berechnungsordner und Dateinamen für den Export." },
+  "grz": { "stufe": "minor", "notiz": "Neuer gemeinsamer Einstellungsdialog aller Apps (Strg+,) mit der Seite „Pfade und Benennung“, dazu Berechnungsordner und Dateinamen für den Export." },
+  "kosten": { "stufe": "minor", "notiz": "Neuer gemeinsamer Einstellungsdialog aller Apps (Strg+,) mit der Seite „Pfade und Benennung“, dazu Berechnungsordner und Dateinamen für den Export." },
+  "ordner": { "stufe": "minor", "notiz": "„Datei → Einstellungen …“: Projektnummer, Ordner- und Dateinamen, Projektdatei, Fotoordner und Katasterpläne stellt man jetzt zentral unter „Pfade und Benennung“ ein." },
+  "entzerrung": { "stufe": "minor", "notiz": "„Datei → Einstellungen …“ öffnet den gemeinsamen Einstellungsdialog aller Apps, darin der Fotoordner unter „Pfade und Benennung“." },
+  "formulare": { "stufe": "minor", "notiz": "Pfade und Namen des Exports stehen zentral unter „Datei → Einstellungen … › Pfade und Benennung“ (für alle Rechner gemeinsam, alte Werte übernommen); Berechnungen sucht PERMIO in den Berechnungsordnern der Rechen-Apps." },
+  "ava": { "stufe": "minor", "notiz": "Ablage, Rechnungsmuster und Name neuer LV-Dateien stellt man jetzt zentral unter „Einstellungen … › Pfade und Benennung“ ein (Menü „Datei“ in der Navigation, Strg+,)." },
+  "baurecht": { "stufe": "minor", "notiz": "Neues Menü „Datei“ mit „Einstellungen …“ für den gemeinsamen Einstellungsdialog aller Apps." },
+  "suite": { "stufe": "minor", "notiz": "„Einstellungen …“ im Menü „Einstellungen und Hilfe“ (Strg+,) öffnet den gemeinsamen Einstellungsdialog aller Apps." }
+}
