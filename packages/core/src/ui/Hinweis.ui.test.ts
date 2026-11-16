@@ -2,7 +2,7 @@
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { HINWEISE_HOECHSTENS, HinweisHost, hinweisFokussieren, hinweiseLeeren, schliesseHinweis, zeigeHinweis } from './Hinweis';
+import { HINWEISE_HOECHSTENS, HinweisHost, hinweisF6Eigen, hinweisFokussieren, hinweiseLeeren, schliesseHinweis, zeigeHinweis } from './Hinweis';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -123,12 +123,39 @@ describe('Hinweis nach einer Aktion', () => {
     expect(hinweise(host)).toHaveLength(0);
   });
 
-  it('eine fehlschlagende Aktion lässt die Seite heil und schließt trotzdem', async () => {
+  it('eine fehlschlagende Aktion wird sichtbar gemeldet statt still geschlossen', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
     const host = render();
-    zeige({ text: 'Gespeichert', aktionen: [{ text: 'Ordner öffnen', aktion: () => Promise.reject(new Error('kein Ordner')), schliesst: true }] });
+    zeige({ id: 'export', text: 'Gespeichert', pfad: 'C:\\Ablage', aktionen: [{ text: 'Ordner öffnen', aktion: () => Promise.reject(new Error('kein Ordner')), schliesst: true }] });
     await act(async () => knopf(host, 'Ordner öffnen').click());
-    expect(hinweise(host)).toHaveLength(0);
+    const [h] = hinweise(host);
+    expect(h.className).toBe('hinweis meldung fehler');
+    expect(h.querySelector('.hinweis-text')!.textContent).toBe('„Ordner öffnen“ hat nicht geklappt.');
+    expect(host.querySelector('[role="alert"]')!.textContent).toContain('hat nicht geklappt');
+  });
+
+  it('während eine Aktion läuft, sind die Knöpfe gesperrt (kein Doppelstart)', async () => {
+    const host = render();
+    let fertig = () => {};
+    const aktion = vi.fn(() => new Promise<void>((r) => (fertig = r)));
+    zeige({ text: 'Gespeichert', aktionen: [{ text: 'Prüfhinweise …', aktion }] });
+    await act(async () => knopf(host, 'Prüfhinweise …').click());
+    expect(knopf(host, 'Prüfhinweise …').disabled).toBe(true);
+    await act(async () => knopf(host, 'Prüfhinweise …').click());
+    expect(aktion).toHaveBeenCalledOnce();
+    await act(async () => fertig());
+    expect(knopf(host, 'Prüfhinweise …').disabled).toBe(false);
+    expect(hinweise(host)).toHaveLength(1);
+  });
+
+  it('ersetzt ein neuer Hinweis mit derselben id den alten, während dessen Aktion läuft, bleibt der neue stehen', async () => {
+    const host = render();
+    let fertig = () => {};
+    zeige({ id: 'export', text: 'Gespeichert', aktionen: [{ text: 'Ordner öffnen', aktion: () => new Promise<void>((r) => (fertig = r)), schliesst: true }] });
+    await act(async () => knopf(host, 'Ordner öffnen').click());
+    zeige({ id: 'export', art: 'fehler', text: 'Neuer Fehler' });
+    await act(async () => fertig());
+    expect(hinweise(host).map((h) => h.querySelector('.hinweis-text')!.textContent)).toEqual(['Neuer Fehler']);
   });
 
   it('F6 springt in den neuesten Hinweis und wieder zurück; Esc springt zurück, ohne zu schließen', () => {
@@ -227,6 +254,70 @@ describe('Hinweis nach einer Aktion', () => {
     expect(host.querySelector('.hinweise')!.classList.contains('ausweichen')).toBe(true);
     act(() => frei.focus());
     expect(host.querySelector('.hinweise')!.classList.contains('ausweichen')).toBe(false);
+  });
+
+  it('bei offenem Dialog lässt der Stapel F6 und den Fokus in Ruhe', () => {
+    const host = render();
+    zeige({ text: 'Gespeichert' });
+    host.insertAdjacentHTML('beforeend', '<div role="dialog" aria-modal="true"><button id="im-dialog">OK</button></div>');
+    const imDialog = host.querySelector<HTMLButtonElement>('#im-dialog')!;
+    act(() => imDialog.focus());
+    taste('F6');
+    expect(document.activeElement).toBe(imDialog);
+  });
+
+  it('Apps mit eigenem F6-Kreis (hinweisF6Eigen): der Stapel reagiert nicht selbst auf F6', () => {
+    const host = render();
+    zeige({ text: 'Gespeichert' });
+    const aussen = host.querySelector<HTMLButtonElement>('#aussen')!;
+    act(() => aussen.focus());
+    hinweisF6Eigen();
+    taste('F6');
+    expect(document.activeElement).toBe(aussen);
+    hinweisF6Eigen(false);
+    taste('F6');
+    expect(document.activeElement).toBe(knopf(host, 'Hinweis schließen'));
+  });
+
+  it('ersetzt ein neuer Hinweis mit anderen Aktionen den fokussierten, kommt der Fokus in den neuen', () => {
+    const host = render();
+    zeige({
+      id: 'export',
+      art: 'warnung',
+      text: 'Gespeichert',
+      aktionen: [
+        { text: 'Ordner öffnen', aktion: () => {} },
+        { text: 'Prüfhinweise …', aktion: () => {} },
+      ],
+    });
+    act(() => knopf(host, 'Prüfhinweise …').focus());
+    zeige({ id: 'export', text: 'Erneut gespeichert' });
+    expect(document.activeElement).toBe(knopf(host, 'Hinweis schließen'));
+  });
+
+  it('Tab-Reihenfolge: die Knöpfe aller Hinweise stehen in Stapelreihenfolge im DOM', () => {
+    const host = render();
+    zeige({ id: 'a', text: 'A', aktionen: [{ text: 'A öffnen', aktion: () => {} }] });
+    zeige({ id: 'b', text: 'B', aktionen: [{ text: 'B öffnen', aktion: () => {} }] });
+    expect([...host.querySelectorAll('.hinweise button')].map((b) => b.getAttribute('aria-label') ?? b.textContent)).toEqual(['A öffnen', 'Hinweis schließen', 'B öffnen', 'Hinweis schließen']);
+  });
+
+  it('ein zweiter Host zeigt nichts; baut der erste ab, übernimmt der zweite', () => {
+    const host = render();
+    const zweit = document.createElement('div');
+    document.body.appendChild(zweit);
+    const r2 = createRoot(zweit);
+    act(() => r2.render(createElement(HinweisHost)));
+    expect(document.querySelectorAll('.hinweise')).toHaveLength(1);
+    expect(host.querySelector('.hinweise')).not.toBeNull();
+    zeige({ text: 'Gespeichert' });
+    act(() => root!.unmount());
+    root = null;
+    expect(zweit.querySelector('.hinweis')).not.toBeNull();
+    let ok = false;
+    act(() => void (ok = hinweisFokussieren()));
+    expect(ok).toBe(true);
+    act(() => r2.unmount());
   });
 
   it('schliesseHinweis schließt per id', () => {

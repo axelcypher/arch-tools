@@ -8,7 +8,8 @@ import { Symbol } from './Symbol';
  * unten rechts, hält nichts auf, nimmt keinen Fokus und verschwindet nicht von selbst (WCAG 2.2.1). Er bleibt, bis man
  * ihn schließt oder ein neuer Hinweis mit derselben `id` ihn ersetzt; verschiedene Hinweise stapeln sich (höchstens drei).
  * Angezeigt von `HinweisHost` (steckt in der Titelleiste, also in jeder App). F6 springt hinein und wieder zurück, Esc
- * zurück; Apps mit eigenem F6-Kreis rufen `hinweisFokussieren()`.
+ * zurück – nicht, solange ein Dialog offen ist. Apps mit eigenem F6-Kreis rufen `hinweisF6Eigen()` und nehmen den Stapel
+ * mit `hinweisFokussieren()` auf.
  */
 
 const log = logger('hinweis');
@@ -38,21 +39,32 @@ interface Hinweis extends Required<Pick<HinweisDaten, 'id' | 'art' | 'text'>> {
   aktionen: HinweisAktion[];
   /** zählt jede Anzeige hoch – auch beim Ersetzen, damit die Ansage neu kommt */
   nr: number;
+  /** eine Aktion läuft: Knöpfe gesperrt (kein Doppelstart) */
+  laeuft?: boolean;
 }
 
 interface Stapel {
   liste: Hinweis[];
+  /** eingebundene Hosts; nur der erste zeigt den Stapel (sonst doppelt sichtbar und doppelt angesagt) */
+  hosts: symbol[];
   /** zuletzt angesagt: [höflich, sofort] */
   ansage: { text: string; sofort: boolean; nr: number } | null;
 }
 
-const useStapel = create<Stapel>(() => ({ liste: [], ansage: null }));
+const useStapel = create<Stapel>(() => ({ liste: [], hosts: [], ansage: null }));
 let zaehler = 0;
 
 /** der Stapel im DOM (für Fokus und Verdrängen) */
 let stapelEl: HTMLElement | null = null;
 /** wohin Esc bzw. F6 zurückspringt */
 let zurueck: HTMLElement | null = null;
+/** ersetzter Hinweis hatte den Fokus: nach dem Zeichnen im neuen halten */
+let fokusHalten: string | null = null;
+/** die App führt F6 selbst (eigener F6-Kreis, LEXIO) und ruft `hinweisFokussieren()` */
+let f6Eigen = false;
+
+/** Ein Dialog ist offen: dann gehören F6 und der Fokus ihm, der Stapel liegt darunter */
+const dialogOffen = () => !!document.querySelector('[role="dialog"], [role="alertdialog"]');
 
 const ansageText = (h: Hinweis) => [h.text, h.pfad].filter(Boolean).join(' ');
 
@@ -60,6 +72,7 @@ const ansageText = (h: Hinweis) => [h.text, h.pfad].filter(Boolean).join(' ');
 export function zeigeHinweis(d: HinweisDaten): string {
   if ((d.aktionen?.length ?? 0) > 2) log.warn(`Hinweis „${d.text}“ hat mehr als zwei Aktionen; angezeigt werden zwei`);
   const h: Hinweis = { id: d.id ?? `hinweis-${zaehler + 1}`, art: d.art ?? 'ok', text: d.text, pfad: d.pfad, aktionen: (d.aktionen ?? []).slice(0, 2), nr: ++zaehler };
+  if (fokusId() === h.id) fokusHalten = h.id;
   useStapel.setState((s) => {
     const i = s.liste.findIndex((x) => x.id === h.id);
     let liste = i >= 0 ? s.liste.map((x, j) => (j === i ? h : x)) : [...s.liste, h];
@@ -87,6 +100,14 @@ export function schliesseHinweis(id: string): void {
     else zurueckSpringen();
   }
   useStapel.setState((s) => ({ liste: s.liste.filter((x) => x.id !== id) }));
+}
+
+/**
+ * Für Apps mit eigenem F6-Kreis (LEXIO): der Stapel reagiert dann nicht selbst auf F6; die App nimmt ihn mit
+ * `hinweisFokussieren()` als letzte Station auf und springt mit F6 aus dem Hinweis selbst weiter.
+ */
+export function hinweisF6Eigen(eigen = true): void {
+  f6Eigen = eigen;
 }
 
 /**
@@ -134,6 +155,18 @@ function kartenFlaeche(st: HTMLElement): DOMRect | null {
 
 /** Stelle für Hinweise – einmal je App (steckt in der Titelleiste) */
 export function HinweisHost() {
+  const ich = useRef(globalThis.Symbol('HinweisHost')).current;
+  const aktiv = useStapel((s) => s.hosts[0] === ich);
+  useLayoutEffect(() => {
+    const { hosts } = useStapel.getState();
+    if (hosts.length) log.warn('HinweisHost ist mehrfach eingebunden; nur einer gehört in die App (steckt in der Titelleiste)');
+    useStapel.setState({ hosts: [...hosts, ich] });
+    return () => useStapel.setState((s) => ({ hosts: s.hosts.filter((x) => x !== ich) }));
+  }, [ich]);
+  return aktiv ? <Stapel /> : null;
+}
+
+function Stapel() {
   const liste = useStapel((s) => s.liste);
   const ansage = useStapel((s) => s.ansage);
   const ref = useRef<HTMLDivElement>(null);
@@ -141,9 +174,17 @@ export function HinweisHost() {
   useLayoutEffect(() => {
     stapelEl = ref.current;
     return () => {
-      stapelEl = null;
+      if (stapelEl === ref.current) stapelEl = null;
     };
   }, []);
+
+  // ersetzter Hinweis hatte den Fokus, sein Knopf ist weg (andere Aktionen): Fokus in den neuen
+  useLayoutEffect(() => {
+    if (!fokusHalten) return;
+    const karte = ref.current?.querySelector<HTMLElement>(`[data-hinweis="${CSS.escape(fokusHalten)}"]`);
+    fokusHalten = null;
+    if (karte && !karte.contains(document.activeElement)) ersterKnopf(karte)?.focus();
+  }, [liste]);
 
   // ein neuer bzw. ersetzter Hinweis ist im (scrollbaren) Stapel zu sehen
   useLayoutEffect(() => {
@@ -160,7 +201,7 @@ export function HinweisHost() {
 
   useEffect(() => {
     const taste = (e: KeyboardEvent) => {
-      if (e.defaultPrevented || e.key !== 'F6' || e.ctrlKey || e.altKey || e.metaKey) return;
+      if (f6Eigen || e.defaultPrevented || e.key !== 'F6' || e.ctrlKey || e.altKey || e.metaKey || dialogOffen()) return;
       if (stapelEl?.contains(document.activeElement)) {
         e.preventDefault();
         zurueckSpringen();
@@ -170,13 +211,14 @@ export function HinweisHost() {
     const fokus = (e: FocusEvent) => {
       const el = e.target;
       const st = stapelEl;
-      if (!st || !(el instanceof HTMLElement) || st.contains(el)) return;
+      if (!st || !(el instanceof HTMLElement) || st.contains(el) || dialogOffen()) return;
       st.classList.remove('ausweichen');
       const s = kartenFlaeche(st);
       if (!s || !ueberdeckt(el.getBoundingClientRect(), s)) return;
+      const vorher = el.style.scrollMarginBottom;
       el.style.scrollMarginBottom = `${Math.ceil(window.innerHeight - s.top)}px`;
       el.scrollIntoView?.({ block: 'nearest' });
-      el.style.scrollMarginBottom = '';
+      el.style.scrollMarginBottom = vorher;
       const nachher = kartenFlaeche(st);
       if (nachher && ueberdeckt(el.getBoundingClientRect(), nachher)) st.classList.add('ausweichen');
     };
@@ -201,12 +243,21 @@ export function HinweisHost() {
   };
 
   const ausfuehren = async (h: Hinweis, a: HinweisAktion) => {
+    const setzen = (laeuft: boolean) => useStapel.setState((s) => ({ liste: s.liste.map((x) => (x.nr === h.nr ? { ...x, laeuft } : x)) }));
+    // nur derselbe Hinweis: hat inzwischen ein neuer mit derselben id ihn ersetzt, bleibt der neue stehen
+    const nochDa = () => useStapel.getState().liste.some((x) => x.nr === h.nr);
+    setzen(true);
     try {
       await a.aktion();
     } catch (e) {
       log.error(`Aktion „${a.text}“ des Hinweises fehlgeschlagen`, e);
+      // sichtbar machen statt still schließen: ersetzt den Hinweis (gleiche id)
+      if (nochDa()) zeigeHinweis({ id: h.id, art: 'fehler', text: `„${a.text}“ hat nicht geklappt.`, pfad: h.pfad });
+      return;
     }
+    if (!nochDa()) return;
     if (a.schliesst) schliesseHinweis(h.id);
+    else setzen(false);
   };
 
   return (
@@ -225,8 +276,8 @@ export function HinweisHost() {
             {h.pfad && <div className="hinweis-pfad">{h.pfad}</div>}
             {h.aktionen.length > 0 && (
               <div className="hinweis-aktionen">
-                {h.aktionen.map((a) => (
-                  <button key={a.text} type="button" className="small" onClick={() => void ausfuehren(h, a)}>
+                {h.aktionen.map((a, i) => (
+                  <button key={i} type="button" className="small" disabled={h.laeuft} onClick={() => void ausfuehren(h, a)}>
                     {a.text}
                   </button>
                 ))}
@@ -246,4 +297,6 @@ export function HinweisHost() {
 export function hinweiseLeeren(): void {
   useStapel.setState({ liste: [], ansage: null });
   zurueck = null;
+  fokusHalten = null;
+  f6Eigen = false;
 }
