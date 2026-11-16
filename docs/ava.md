@@ -25,7 +25,7 @@ Grundsätze:
 
 ## Ablage im Projektordner
 
-Vorgabe (alles unter Einstellungen › Ablage änderbar):
+Vorgabe (alles unter Einstellungen › Pfade und Benennung änderbar):
 
 | Ort | Inhalt |
 |---|---|
@@ -231,7 +231,7 @@ gleich der Endsumme der Schlussrechnung (Test).
 
 ### Dateinamen der Rechnungen
 
-Muster mit Platzhaltern (Einstellungen › Rechnungen & Benennung; Schreibweise wie in allen Apps, siehe
+Muster mit Platzhaltern (Einstellungen › Pfade und Benennung; Schreibweise wie in allen Apps, siehe
 [platzhalter.md](platzhalter.md)): global `{PROJEKT_KUERZEL}` Projektnummer (und die übrigen globalen Variablen,
 beim Erkennen als beliebiger Text), lokal `{Nr}` bzw. `{Nr:3}` Nummer der Rechnungsliste (dreistellig), `{Art}`
 Rechnungsart (AB, SR, TSR, R – einstellbar), `{Lfd}` laufende Nummer der Art, `{Firma}`, `{Rechnungsdatum}` als
@@ -263,7 +263,7 @@ die die PDF-Standardschrift nicht kennt (Łukasz, ş), werden durch den Grundbuc
 
 Mails entstehen als `.eml` mit `X-Unsent: 1` und eingebettetem Anhang (`abrechnung/mail.ts`) und öffnen sich im
 Mailprogramm – Outlook zeigt sie als neue, ungesendete Nachricht mit Empfänger, Betreff, Text und Anhang: nur
-noch „Senden“. Vorlagen (Einstellungen › Mailvorlagen) mit den globalen Platzhaltern
+noch „Senden“. Vorlagen (Einstellungen › FABRIO › Mailvorlagen) mit den globalen Platzhaltern
 (`{PROJEKT_KUERZEL}`, `{PROJEKT_VORHABEN}` – ohne Vorhaben der Projektname –, `{BEARBEITER}` – zuerst die Angabe des
 Deckblatts – …, siehe [platzhalter.md](platzhalter.md)) und lokal `{Gewerk} {Firma} {FirmaMail} {Rechnung} {Nr}
 {Betrag} {Rechnungsdatum} {Zahler}`, in der Protokollvorlage `{Nr} {Protokolldatum} {Teilnehmer}`. Die Chips unter
@@ -342,13 +342,16 @@ Bauaufsicht).
 
 ## Einstellungen
 
-Modal mit den Ebenen Ablage, Rechnungen & Benennung, Prüfung (Vorgaben für USt, Umlage, Einbehalt der Abschläge,
-Sicherheit für Mängelansprüche bei Schlussrechnungen, Nachlass, Skonto), Deckblatt (Briefbogen, Büro, Unterschrift, Schlusstext, Fußzeile), Scanordner (Pfad, Endungen),
-Mailvorlagen und Leistungsverzeichnisse (Format neuer LV-Dateien, Dateiname). Gespeichert im gemeinsamen
-Konfigurationsordner (`ava.json`), also für das ganze Büro; „Vorgabe“ setzt nach Rückfrage alles zurück. Esc,
-„Abbrechen“ fragen bei ungespeicherten Änderungen nach; ein Klick neben den Dialog schließt ihn nicht. Die Ebenen
-lassen sich mit ↑/↓ wechseln. Hat ein anderer Rechner die Einstellungen inzwischen gespeichert, überschreibt FABRIO
-sie nicht, sondern meldet es und lädt den neuen Stand.
+Seite **FABRIO** im zentralen Einstellungsdialog („Datei → Einstellungen …“ im Fuß der Navigation, Strg+,; siehe
+„Zentrale Einstellungen“ unten) mit den Abschnitten Ablage (Verweis), Rechnungen (Muster als Verweis, Erkennen
+ausprobieren, Rechnungsarten, Nummer und Deckblatt), Prüfung (Vorgaben für USt, Umlage, Einbehalt der Abschläge,
+Sicherheit für Mängelansprüche bei Schlussrechnungen, Nachlass, Skonto), Deckblatt (Briefbogen, Büro, Unterschrift,
+Schlusstext, Fußzeile), Scanordner (Pfad, Endungen), Mailvorlagen, Leistungsverzeichnisse (Format neuer LV-Dateien;
+der Dateiname als Verweis) und Vorgabe („Alles auf die Vorgabe …“ nach Rückfrage). Gespeichert wie bisher im
+gemeinsamen Konfigurationsordner (`ava.json`), also für das ganze Büro – erst mit „Übernehmen“; Esc, „Abbrechen“
+fragen bei Änderungen nach, im Notbetrieb ist die Seite gesperrt. Hat ein anderer Rechner die Einstellungen
+inzwischen gespeichert, überschreibt FABRIO sie nicht, sondern meldet es im Dialog und lädt den neuen Stand. Wechselt
+der Speicherort, verwirft die Seite ihren Entwurf und sagt es.
 
 ## Dateiformate
 
@@ -499,8 +502,9 @@ KOSTENKONTROLLE_REF=/pfad/zur/kostenkontrolle.xlsx npx vitest run --project core
 
 ## Zentrale Einstellungen
 
-„Datei“ im Fuß der Navigation: „Einstellungen von FABRIO …“ (Prüfung, Rechnungsarten, Deckblatt, Scanordner,
-Mailvorlagen) und „Einstellungen …“ (Strg+,) für die Einstellungen aller Apps. Ablage (Gewerke, Aufträge,
+„Datei“ im Fuß der Navigation: „Einstellungen …“ (Strg+,) öffnet die Einstellungen aller Apps auf der Seite FABRIO;
+der frühere eigene Dialog („Einstellungen von FABRIO …“) ist entfallen, seine Inhalte stehen auf der Seite FABRIO.
+Ablage (Gewerke, Aufträge,
 Korrespondenz, Archiv, Bauleitung, Mailordner, Kostenkontrolle), Muster der Rechnungsdateien und Name neuer LV-Dateien
 stehen dort auf der Seite „Pfade und Benennung“; gespeichert wie bisher in `ava.json`. Siehe
 [suite.md](suite.md#einstellungen-aller-apps).

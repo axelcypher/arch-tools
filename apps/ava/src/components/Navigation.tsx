@@ -3,7 +3,7 @@ import type { ProjectMeta } from '@core/model';
 import { BreitenLeiste } from '@core/ui/Leiste';
 import { StammdatenKnopf } from '@core/ui/Stammdaten';
 import { MenueKnopf } from '@core/ui/Menue';
-import { einstellungenPunkt } from '@core/ui/Einstellungen';
+import { einstellungenOeffnen, einstellungenPunkt } from '@core/ui/Einstellungen';
 import { alleGewerke } from '../abrechnung/aggregat';
 import { gewerkZweistellig } from '../abrechnung/gewerk';
 import type { Ansicht } from '../store';
@@ -80,7 +80,14 @@ export function Navigation({ onStammdaten }: { onStammdaten: (meta: ProjectMeta,
               lvs > 1 ? `${lvs} LV` : null,
             );
           })}
-          {!gewerke.length && <li className="muted">Keine Gewerke gefunden – Ablage in den Einstellungen prüfen.</li>}
+          {!gewerke.length && (
+            <li className="muted ava-nav-leer">
+              <span>Keine Gewerke gefunden – die Ablage prüfen:</span>
+              <button type="button" className="small" title="Datei › Einstellungen › Pfade und Benennung" onClick={() => einstellungenOeffnen('pfade', 'ablage.fabrio.gewerke')}>
+                Ablage …
+              </button>
+            </li>
+          )}
         </ul>
         <div className="ava-nav-titel" title="Objektüberwachung (HOAI Leistungsphase 8): Dokumentation, Termine, Mängel">
           Bauleitung
@@ -95,15 +102,7 @@ export function Navigation({ onStammdaten }: { onStammdaten: (meta: ProjectMeta,
         </ul>
         <div className="ava-nav-fuss">
           {/* „Datei“ (docs/design.md): FABRIO hat keine durchgehende Werkzeugleiste – das Menü steht im Fuß der Navigation */}
-          <MenueKnopf
-            punkte={() => [
-              { text: 'Einstellungen von FABRIO …', titel: 'Prüfung, Rechnungsarten, Deckblatt, Scanordner, Mailvorlagen', aktion: () => useAva.getState().setEinstellungenOffen(true) },
-              { trenner: true },
-              einstellungenPunkt(),
-            ]}
-          >
-            Datei
-          </MenueKnopf>
+          <MenueKnopf punkte={() => [einstellungenPunkt()]}>Datei</MenueKnopf>
         </div>
       </nav>
     </BreitenLeiste>

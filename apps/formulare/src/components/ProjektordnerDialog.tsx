@@ -82,7 +82,7 @@ export function ProjektordnerDialog({ grund }: { grund: string }) {
                 einstellungenOeffnen('pfade', 'projekt.stammordner');
               }}
             >
-              Einstellungen › Pfade und Benennung
+              Datei › Einstellungen › Pfade und Benennung
             </button>
           </p>
         )}

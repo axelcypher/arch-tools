@@ -52,7 +52,7 @@ export function FormularHinzufuegenDialog({ onClose }: { onClose: () => void }) 
     <Modal titel="Formular hinzufügen" kopf onClose={onClose} breit className="fh">
       <p className="muted small-text">
         Aus {vorlagenordner ? 'dem Vorlagenordner und ' : ''}den Formularen der anderen Projekte – je Formular der neueste Stand. Angelegt wird eine Kopie mit geleerten
-        Eingaben.{!vorlagenordner && ' Leere Vorlagen lassen sich unter Einstellungen › Pfade und Benennung als Vorlagenordner angeben.'}
+        Eingaben.{!vorlagenordner && ' Leere Vorlagen lassen sich unter Datei › Einstellungen › Pfade und Benennung als Vorlagenordner angeben.'}
       </p>
       <input type="search" placeholder="Formular suchen …" value={suche} onChange={(e) => setSuche(e.target.value)} aria-label="Formular suchen" />
       <div className="fh-liste" role="listbox" aria-label="Verfügbare Formulare">
