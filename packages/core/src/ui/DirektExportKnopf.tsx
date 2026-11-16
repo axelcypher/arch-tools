@@ -30,6 +30,12 @@ export function direktExportTitel(a: Pick<DirektExportAuftrag, 'app' | 'datei' |
   return `${formate} mit der eingestellten Vorlage direkt in den Berechnungsordner speichern, ohne Dialog: ${z.ordner}`;
 }
 
+/** Beschriftung: „Exportieren“; öffnet der Knopf stattdessen den Dialog (Web, ungespeichert), „Exportieren …“ */
+export function direktExportText(a: Pick<DirektExportAuftrag, 'app' | 'datei' | 'werte' | 'inhalt'>, laeuft = false): string {
+  if (laeuft) return 'Exportiere …';
+  return !isTauri() || 'grund' in direktExportZielJetzt(a) ? 'Exportieren …' : 'Exportieren';
+}
+
 export function useDirektExport(p: DirektExportProps) {
   const [laeuft, setLaeuft] = useState(false);
   const ausfuehren = async () => {
@@ -46,9 +52,10 @@ export function useDirektExport(p: DirektExportProps) {
 
 export function DirektExportKnopf(p: DirektExportProps & { laeuft: boolean; ausfuehren: () => void }) {
   const titel = p.deaktiviert ? p.hinweisDeaktiviert : direktExportTitel(p.auftrag());
+  const text = p.deaktiviert ? 'Exportieren' : direktExportText(p.auftrag(), p.laeuft);
   return (
-    <button onClick={p.ausfuehren} disabled={p.deaktiviert || p.laeuft} aria-busy={p.laeuft || undefined} aria-label="Exportieren" title={titel}>
-      <Symbol name="export" /> <span className="tb-text">{p.laeuft ? 'Exportiere …' : 'Exportieren'}</span>
+    <button onClick={p.ausfuehren} disabled={p.deaktiviert || p.laeuft} aria-busy={p.laeuft || undefined} aria-label={text} title={titel}>
+      <Symbol name="export" /> <span className="tb-text">{text}</span>
     </button>
   );
 }
@@ -67,7 +74,7 @@ export function exportUntermenue(o: { dialogOeffnen: (start: ExportDialogStart) 
         symbol: 'formular',
         titel: pdfMoeglich() ? 'Die gefüllte Excel-Vorlage als PDF speichern (über Microsoft Excel bzw. LibreOffice)' : 'PDF aus der Excel-Vorlage gibt es nur in der Desktop-App',
         aktion: () => o.dialogOeffnen({ art: 'pdf' }),
-        ...sperre,
+        ...(pdfMoeglich() ? sperre : { deaktiviert: true, hinweis: 'nur Desktop-App' }),
       },
       ...(o.csv ? [{ text: 'CSV …', symbol: 'export' as const, titel: 'Als CSV-Datei speichern (z. B. für andere Programme)', aktion: o.csv, ...sperre }] : []),
     ],

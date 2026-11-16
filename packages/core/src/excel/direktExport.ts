@@ -56,7 +56,7 @@ export type DirektExportErgebnis =
 
 export const GRUND_WEB = 'Direkt in den Berechnungsordner speichern geht nur in der Desktop-App – hier wird die Datei heruntergeladen.';
 export const GRUND_UNGESPEICHERT = 'Das Projekt ist noch nicht gespeichert. Erst mit einer Projektdatei im Projektordner gibt es einen Berechnungsordner – bis dahin hier speichern.';
-export const GRUND_KEIN_PROJEKTORDNER = 'Die Projektdatei liegt nicht im üblichen Ordner des Projektordners, daher ist der Berechnungsordner unbekannt – bitte hier einen Speicherort wählen.';
+export const GRUND_KEIN_PROJEKTORDNER = 'Der Berechnungsordner ist unbekannt, weil die Projektdatei nicht im Projektordner liegt. Bitte hier einen Speicherort wählen.';
 
 const trenner = (pfad: string) => (pfad.includes('\\') ? '\\' : '/');
 const verbinde = (ordner: string, name: string) => `${ordner.replace(/[\\/]+$/, '')}${trenner(ordner)}${name}`;
@@ -71,6 +71,24 @@ export interface ExportDialogStart {
 }
 
 export type DirektExportZiel = { ordner: string; xlsx: string; pdf: string | null } | { grund: string };
+
+/**
+ * Gemeinsame Rückfrage, wenn es eine Zieldatei schon gibt (Direktexport und Export-Dialog): „Neue Fassung“ (Hauptknopf),
+ * „Ersetzen“ (Gefahr), „Abbrechen“; null = abgebrochen
+ */
+export async function vorhandeneDateiFragen(fragen: DirektExportUmgebung['fragen'], namen: string[], ordner: string): Promise<'neu' | 'ersetzen' | null> {
+  const wahl = await fragen({
+    titel: 'Vorhandene Datei ersetzen?',
+    text: `„${namen.join('“ bzw. „')}“ gibt es im Ordner schon. „Neue Fassung“ speichert daneben mit einer Nummer im Namen, „Ersetzen“ überschreibt die vorhandene Datei.`,
+    details: ordner,
+    knoepfe: [
+      { id: 'abbrechen', label: 'Abbrechen' },
+      { id: 'ersetzen', label: 'Ersetzen', art: 'danger' },
+      { id: 'neu', label: 'Neue Fassung', art: 'primary' },
+    ],
+  });
+  return wahl === 'neu' || wahl === 'ersetzen' ? wahl : null;
+}
 
 /** Zielpfade aus den Einstellungen bestimmen, ohne etwas zu schreiben (auch für den Tooltip des Knopfs) */
 export function direktExportZielAus(pfade: ExportPfade, a: Pick<DirektExportAuftrag, 'datei' | 'werte' | 'inhalt'>): DirektExportZiel {
@@ -103,17 +121,7 @@ export async function direktExportieren(a: DirektExportAuftrag, u: DirektExportU
   };
   let n = 1;
   if (await belegt(1)) {
-    const vorhanden = [ziel.xlsx, ziel.pdf].filter(Boolean).join(' bzw. ');
-    const wahl = await u.fragen({
-      titel: 'Datei gibt es schon',
-      text: `Im Berechnungsordner gibt es „${vorhanden}“ schon. „Neue Fassung“ speichert daneben mit einer Nummer im Namen, „Ersetzen“ überschreibt die vorhandene Datei.`,
-      details: ordner,
-      knoepfe: [
-        { id: 'abbrechen', label: 'Abbrechen' },
-        { id: 'ersetzen', label: 'Ersetzen', art: 'danger' },
-        { id: 'neu', label: 'Neue Fassung', art: 'primary' },
-      ],
-    });
+    const wahl = await vorhandeneDateiFragen(u.fragen, [ziel.xlsx, ziel.pdf].filter((x): x is string => !!x), ordner);
     if (wahl !== 'neu' && wahl !== 'ersetzen') return { art: 'abgebrochen' };
     if (wahl === 'neu') {
       n = 2;

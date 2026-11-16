@@ -58,7 +58,7 @@ describe('Excel-Dialog', () => {
     expect(d.getAttribute('role')).toBe('dialog');
     expect(document.getElementById(d.getAttribute('aria-labelledby')!)?.textContent).toBe('Excel-Export');
     await act(() => new Promise<void>((r) => requestAnimationFrame(() => r())));
-    expect(document.activeElement?.textContent).toBe('Exportieren');
+    expect(document.activeElement?.textContent).toBe('Excel speichern');
     await act(async () => {
       host.querySelector('form')!.requestSubmit();
     });
@@ -73,7 +73,7 @@ describe('Excel-Dialog', () => {
     act(() => host.querySelectorAll<HTMLInputElement>('input[type="radio"]')[1].click());
     expect(host.textContent).toContain('Vorlage wählen …');
     expect(host.textContent).toContain('Muster-Vorlage herunterladen');
-    const exportieren = [...host.querySelectorAll('button')].find((b) => b.textContent === 'Exportieren')!;
+    const exportieren = [...host.querySelectorAll('button')].find((b) => b.textContent === 'Excel speichern')!;
     expect(exportieren.disabled).toBe(true);
   });
 

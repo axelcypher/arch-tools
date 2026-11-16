@@ -89,7 +89,7 @@ describe('NUMIO', () => {
     const leiste = host.querySelector<HTMLElement>('.toolbar.werkzeugleiste')!;
     expect(leiste.getAttribute('aria-label')).toBe('Werkzeugleiste');
     const knoepfe = [...leiste.querySelectorAll<HTMLButtonElement>(':scope > [data-eintrag] button')].map((b) => b.getAttribute('aria-label') ?? b.textContent?.trim());
-    expect(knoepfe).toEqual(['Datei', 'Speichern', 'Rückgängig', 'Wiederholen', 'Kosten', 'Mengen prüfen', 'Exportieren', 'Kosten drucken …']);
+    expect(knoepfe).toEqual(['Datei', 'Speichern', 'Rückgängig', 'Wiederholen', 'Kosten', 'Mengen prüfen', 'Exportieren …', 'Kosten drucken …']);
     // der Kennwertkatalog steht nur noch im Kopf der Positionen (kein doppelter Einstieg)
     expect(leiste.textContent).not.toContain('Kennwertkatalog');
     expect(knopf(host, 'Kosten drucken').className).toContain('primary');

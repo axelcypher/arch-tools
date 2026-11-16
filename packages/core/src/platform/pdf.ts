@@ -7,7 +7,7 @@ import { base64ToBytes, bytesToBase64, isTauri } from './files';
  */
 
 /** Grund, warum es in der Web-Fassung kein PDF gibt (für gesperrte Knöpfe und Schalter) */
-export const PDF_NUR_DESKTOP = 'Das PDF entsteht über Microsoft Excel oder LibreOffice auf dem Rechner – das geht nur in der Desktop-App.';
+export const PDF_NUR_DESKTOP = 'PDF speichern geht nur in der Desktop-App.';
 
 /** Kann diese Umgebung PDF aus Excel erzeugen? (ob Excel oder LibreOffice installiert ist, zeigt erst der Versuch) */
 export const pdfMoeglich = (): boolean => isTauri();

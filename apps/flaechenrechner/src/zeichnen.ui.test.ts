@@ -325,13 +325,17 @@ describe('QUADRIO: Kontextmenü der Zeichenfläche und Werkzeugleiste (gemeinsam
     const export_ = [...document.querySelectorAll<HTMLButtonElement>('.menue [role="menuitem"]')].find((b) => b.textContent?.trim().startsWith('Export'))!;
     expect(export_.getAttribute('aria-haspopup')).toBe('menu');
     act(() => export_.click());
-    expect(menuePunkte()).toEqual(expect.arrayContaining(['Excel …', 'PDF …', 'CSV …']));
-    act(() => [...document.querySelectorAll<HTMLButtonElement>('.menue [role="menuitem"]')].find((b) => b.textContent?.trim() === 'PDF …')!.click());
-    expect(useEditor.getState().excelOpen).toEqual({ art: 'pdf' });
+    expect(menuePunkte().slice(-3)).toEqual(['Excel …', 'PDF …nur Desktop-App', 'CSV …']);
+    const unterpunkt = (t: string) => [...document.querySelectorAll<HTMLButtonElement>('.menue [role="menuitem"]')].find((b) => b.textContent?.trim().startsWith(t))!;
+    // im Browser kein PDF: gesperrt, Grund steht daneben
+    expect(unterpunkt('PDF …').getAttribute('aria-disabled')).toBe('true');
+    expect(unterpunkt('PDF …').textContent).toContain('nur Desktop-App');
+    act(() => unterpunkt('Excel …').click());
+    expect(useEditor.getState().excelOpen).toEqual({ art: 'excel' });
     act(() => useEditor.getState().setExcelOpen(null));
     // „Exportieren“ in der Leiste ist der Direktexport (kein Menü); der Tooltip sagt, was passiert
-    expect(knopf('Exportieren')!.getAttribute('aria-haspopup')).toBeNull();
-    expect(knopf('Exportieren')!.title).toContain('Export-Dialog');
+    expect(knopf('Exportieren …')!.getAttribute('aria-haspopup')).toBeNull();
+    expect(knopf('Exportieren …')!.title).toContain('Export-Dialog');
   });
 
   it('schmales Fenster: „Exportieren“ (Direktexport) wandert ins Menü „Mehr“, Werkzeuge und Hauptknopf bleiben', async () => {

@@ -12,7 +12,8 @@ import { logger } from '../platform/log';
 import { excelAlsPdf, PDF_NUR_DESKTOP, pdfMoeglich } from '../platform/pdf';
 import { exportDateiname, exportOrdner } from '../platform/projektDatei';
 import { Modal } from './Dialog';
-import { bestaetigen } from './Rueckfrage';
+import { fragen } from './Rueckfrage';
+import { fassungsName, vorhandeneDateiFragen } from '../excel/direktExport';
 
 const log = logger('excel');
 
@@ -51,11 +52,13 @@ export interface ExcelDialogProps {
 }
 
 const PDF_MIME = 'application/pdf';
+/** „…\\A.xlsx“ → „…\\A (2).xlsx“ */
+const fassungsPfad = (pfad: string, n: number) => pfad.replace(/[^\\/]+$/, (name) => fassungsName(name, n));
 const pfadMitEndung = (pfad: string, endung: string) => pfad.replace(/\.[^.\\/]*$/, '') + '.' + endung;
 
 /**
  * Excel-Export: Standardlayout oder eigene Vorlage (.xlsx mit Platzhaltern). Enter exportiert, der Erstfokus liegt auf
- * „Exportieren“; Vorlage wählen, Muster, Platzhalter-Referenz und Vorlagenprüfung erscheinen nur bei „Eigene Vorlage“.
+ * „Excel speichern“ bzw. „PDF speichern“; Vorlage wählen, Muster, Platzhalter-Referenz und Vorlagenprüfung erscheinen nur bei „Eigene Vorlage“.
  * Meldet die Vorlagenprüfung nach dem Export Hinweise, bleibt der Dialog offen und zeigt sie (mit Blatt und Zelle).
  */
 export function ExcelDialog(props: ExcelDialogProps) {
@@ -149,13 +152,20 @@ export function ExcelDialog(props: ExcelDialogProps) {
     const pfad = await saveMergedFile({ defaultName: dateiname('pdf'), defaultDir: exportOrdner(props.datei), filterName: 'PDF-Dokument', extension: 'pdf', mime: PDF_MIME, vorhandenLesen: false, build: () => daten });
     if (!pfad) return false;
     if (excelMit && isTauri()) {
-      const ziel = pfadMitEndung(pfad, 'xlsx');
       const { invoke } = await import('@tauri-apps/api/core');
-      const da = (await invoke<unknown>('datei_stand', { path: ziel })) != null;
-      const name = ziel.split(/[\\/]/).pop();
-      if (!da || (await bestaetigen('Excel-Datei ersetzen?', `„${name}“ gibt es neben dem PDF schon. Ersetzen?`, 'Ersetzen', true))) {
-        await saveMergedFile({ pfad: ziel, defaultName: name ?? dateiname('xlsx'), filterName: 'Excel-Arbeitsmappe', extension: 'xlsx', mime: XLSX_MIME, vorhandenLesen: false, build: () => xlsx });
+      const da = async (p: string) => (await invoke<unknown>('datei_stand', { path: p })) != null;
+      let ziel = pfadMitEndung(pfad, 'xlsx');
+      const name = (p: string) => p.split(/[\\/]/).pop() ?? p;
+      if (await da(ziel)) {
+        const wahl = await vorhandeneDateiFragen(fragen, [name(ziel)], ziel.slice(0, ziel.length - name(ziel).length));
+        if (!wahl) return true;
+        if (wahl === 'neu') {
+          let n = 2;
+          while (await da(fassungsPfad(ziel, n))) n++;
+          ziel = fassungsPfad(ziel, n);
+        }
       }
+      await saveMergedFile({ pfad: ziel, defaultName: name(ziel), filterName: 'Excel-Arbeitsmappe', extension: 'xlsx', mime: XLSX_MIME, vorhandenLesen: false, build: () => xlsx });
     }
     return true;
   };
@@ -215,7 +225,11 @@ export function ExcelDialog(props: ExcelDialogProps) {
           void doExport();
         }}
       >
-        {props.grund && <p className="meldung">{props.grund}</p>}
+        {props.grund && (
+          <p className="meldung" role="status">
+            {props.grund}
+          </p>
+        )}
         {pdf && (
           <p className="muted small-text">
             Die Berechnung wird wie beim Excel-Export gefüllt und dann über Microsoft Excel bzw. LibreOffice als PDF gespeichert – mit Druckbereich, Kopf- und Fußzeile und Seitenformat der Vorlage.
@@ -297,7 +311,7 @@ export function ExcelDialog(props: ExcelDialogProps) {
             {pruefung?.exportiert ? 'Schließen' : 'Abbrechen'}
           </button>
           <button type="submit" className="primary" disabled={busy || ohneVorlage || pdfGesperrt} aria-describedby={pdfGesperrt ? pdfGesperrtId : ohneVorlage ? keineVorlageId : undefined}>
-            {busy ? (pdf ? 'Erzeuge PDF …' : 'Exportiere …') : pdf ? 'PDF speichern' : 'Exportieren'}
+            {busy ? (pdf ? 'Erzeuge PDF …' : 'Exportiere …') : pdf ? 'PDF speichern' : 'Excel speichern'}
           </button>
         </div>
       </form>

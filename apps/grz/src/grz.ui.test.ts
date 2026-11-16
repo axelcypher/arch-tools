@@ -1072,7 +1072,7 @@ describe('Designsystem: Kontextmenü, Symbole, Druckvorschau, Feldfehler', () =>
       'Speichern',
       'Rückgängig',
       'Wiederholen',
-      'Exportieren',
+      'Exportieren …',
       'Nachweis drucken …',
     ]);
     expect(leiste.querySelector('button.primary')!.textContent?.trim()).toBe('Nachweis drucken …');
@@ -1185,7 +1185,7 @@ describe('Kopf- und Werkzeugleisten (Leisten-Regel)', () => {
     expect(texte.slice(-3)).toEqual(['IFC aktualisieren …', 'Export', 'Einstellungen …']);
     expect(menuePunkt(document.body, 'Export').getAttribute('aria-disabled')).toBe('true');
     // ohne Gebäude ist auch der Direktexport gesperrt, mit Grund im Tooltip
-    const direkt = document.querySelector<HTMLButtonElement>('.toolbar button[aria-label="Exportieren"]')!;
+    const direkt = document.querySelector<HTMLButtonElement>('[data-eintrag="export"] button')!;
     expect(direkt.disabled).toBe(true);
     expect(direkt.title).toContain('Erst ein Gebäude öffnen');
     const ifc = menuePunkt(document.body, 'IFC aktualisieren …');
@@ -1213,7 +1213,7 @@ describe('Kopf- und Werkzeugleisten (Leisten-Regel)', () => {
       for (const id of ['speichern', 'verlauf', 'drucken']) expect((leiste.querySelector(`[data-eintrag="${id}"]`) as HTMLElement).hidden).toBe(false);
       // „Datei“ und „Exportieren“ (Direktexport) stehen jetzt in „Mehr“
       act(() => (leiste.querySelector('button[aria-label="Mehr"]') as HTMLButtonElement).click());
-      expect(menueTexte(document.body)).toEqual(['Datei', 'Exportieren']);
+      expect(menueTexte(document.body)).toEqual(['Datei', 'Exportieren …']);
       // das Untermenü „Datei“ in „Mehr“ führt seine Befehle aus (Neu ohne Änderungen: sofort ein leeres Projekt)
       act(() => menuePunkt(document.body, 'Datei').click());
       expect(menueTexte(document.body)).toContain('Neu');
