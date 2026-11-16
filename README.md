@@ -204,8 +204,9 @@ fehlen sie, warnt der Bericht am Bildschirm, und im Druck steht im Kopf „nicht
 - **Einstieg**: Die leere Zeichenfläche bietet „Plan laden …“, „IFC importieren …“ und Zeichnen an; „Plan
   laden …“ steht auch im Menü „Datei“ der Werkzeugleiste, „Kalibrieren“ bei den Werkzeugen. **Werkzeugleiste**:
   sichtbar bleiben „Speichern“, Rückgängig/Wiederholen, die Werkzeuge, der Umschalter BGF-Umriss | Raum und
-  „Flächenaufstellung …“; Neu, Öffnen …, Speichern unter …, Plan laden … und IFC importieren … stehen im Menü „Datei“, CSV …
-  und Excel … in „Exportieren“ (wandert in schmalen Fenstern ins Menü „Mehr“). Kantenfang rastet bei aktivem Rasterfang entlang der
+  „Flächenaufstellung …“; Neu, Öffnen …, Speichern unter …, Plan laden …, IFC importieren … und
+  Exportieren → Excel …/PDF …/CSV … (mit Dialog) stehen im Menü „Datei“; „Exportieren“ speichert direkt in den
+  Berechnungsordner (siehe docs/excel-vorlagen.md, „Direktexport“; wandert in schmalen Fenstern ins Menü „Mehr“). Kantenfang rastet bei aktivem Rasterfang entlang der
   Kante auf das Raster; beim Kalibrieren fängt das Raster nicht. Erkannte BGF-Umrisse tragen „prüfen“, bis ein
   Eckpunkt bearbeitet wurde
 - Eckpunkte ziehen, auf Kantenmitte ziehen = Punkt einfügen, Rechtsklick = Menü (am Punkt: Punkt löschen; auf einer Fläche: kopieren, duplizieren, einfügen, löschen; auch per Tastatur), Koordinaten-Tabelle

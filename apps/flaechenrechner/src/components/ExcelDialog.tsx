@@ -4,17 +4,23 @@ import { QUADRIO_SCHEMA } from '../core/platzhalterSchema';
 import { PlatzhalterReferenz } from '@core/excel/PlatzhalterReferenz';
 import { vorlage } from '../platform/vorlage';
 import { useEditor } from '../store/store';
+import { werteAusMeta } from '@core/excel/direktExport';
+import { EXPORT_INHALT } from '../platform/direktExport';
 
-/** Excel-Export von QUADRIO: Standardlayout oder eigene Vorlage (.xlsx mit Platzhaltern). */
+/** Export-Dialog von QUADRIO (Excel bzw. PDF): Standardlayout oder eigene Vorlage (.xlsx mit Platzhaltern). */
 export function ExcelDialog() {
   const setOpen = useEditor((s) => s.setExcelOpen);
+  const start = useEditor((s) => s.excelOpen);
   const project = useEditor((s) => s.project);
   const datei = useEditor((s) => s.datei);
   return (
     <Dialog
       project={project}
       update={(fn) => useEditor.getState().update(fn)}
-      onClose={() => setOpen(false)}
+      onClose={() => setOpen(null)}
+      art={start?.art}
+      hinweise={start?.hinweise}
+      benennung={{ app: 'flaechenrechner', werte: werteAusMeta(project.meta), inhalt: EXPORT_INHALT }}
       speicher={vorlage}
       standardText="Blätter DIN 277, NRF nach Nutzungsgruppen, Raumliste und Wohnflächen – mit Summenformeln."
       referenz={(zu) => <PlatzhalterReferenz schema={QUADRIO_SCHEMA} onClose={zu} />}

@@ -25,9 +25,6 @@ import { inPfade, unterSchluessel, type PfadEinstellung } from './verzeichnis';
 /** Die Struktur von ATLAS legt nur ATLAS vollständig an (mit Ordnern und Presets) */
 const OHNE_STRUKTUR = 'Die Ordnerstruktur von ATLAS ist noch nicht angelegt oder nicht lesbar – bitte zuerst ATLAS öffnen (Einrichtung › Struktur).';
 
-/** Hinweis, solange der direkte Export von QUADRIO, TERRIO und NUMIO noch nicht ausgeliefert ist – entfällt mit dessen PR */
-const BALD = 'Wirkt mit dem direkten Export, der folgt.';
-
 /** Vorgaben, die auch die Apps brauchen */
 export const VORGABE_FOTOORDNER = '09 Fotos';
 export const VORGABE_BERECHNUNGSORDNER = { flaechenrechner: '03 Berechnungen/Flächen', grz: '03 Berechnungen/Nachweise', kosten: '03 Berechnungen/Kosten' } as const;
@@ -58,7 +55,7 @@ const exportEintraege = (app: 'flaechenrechner' | 'grz' | 'kosten'): PfadEinstel
     thema: 'export',
     art: 'pfad',
     bezeichnung: 'Berechnungsordner',
-    erklaerung: `Ziel des direkten Exports (Excel und PDF), relativ zum Projektordner. Fehlt der Ordner, wird er beim Export angelegt. PERMIO sucht hier Berechnungen. ${BALD}`,
+    erklaerung: `Ziel des direkten Exports (Excel und PDF), relativ zum Projektordner. Fehlt der Ordner, wird er beim Export angelegt. PERMIO sucht hier Berechnungen.`,
     vorgabe: VORGABE_BERECHNUNGSORDNER[app],
     variablen: ORDNER_VARIABLEN,
     pflicht: true,
@@ -70,7 +67,7 @@ const exportEintraege = (app: 'flaechenrechner' | 'grz' | 'kosten'): PfadEinstel
     thema: 'export',
     art: 'name',
     bezeichnung: 'Dateiname Excel-Export',
-    erklaerung: 'Name der Excel-Datei beim Export, ohne Endung. {Inhalt} sagt, was exportiert wird. ' + BALD,
+    erklaerung: 'Name der Excel-Datei beim Export, ohne Endung. {Inhalt} sagt, was exportiert wird.',
     vorgabe: VORGABE_EXPORT_DATEINAME,
     variablen: EXPORT_VARIABLEN,
     beispiel: { Inhalt: INHALT[app] },
@@ -84,7 +81,7 @@ const exportEintraege = (app: 'flaechenrechner' | 'grz' | 'kosten'): PfadEinstel
     thema: 'export',
     art: 'name',
     bezeichnung: 'Dateiname PDF-Export',
-    erklaerung: 'Name der PDF-Datei beim Export, ohne Endung. ' + BALD,
+    erklaerung: 'Name der PDF-Datei beim Export, ohne Endung.',
     vorgabe: VORGABE_EXPORT_DATEINAME,
     variablen: EXPORT_VARIABLEN,
     beispiel: { Inhalt: INHALT[app] },
@@ -363,7 +360,7 @@ export const PFAD_EINSTELLUNGEN: PfadEinstellung[] = [
     thema: 'export',
     art: 'schalter',
     bezeichnung: 'PDF beim direkten Export mitspeichern',
-    erklaerung: 'Der direkte Export legt neben der Excel-Datei ein PDF nach der eingestellten Vorlage ab. ' + BALD,
+    erklaerung: 'Der direkte Export legt neben der Excel-Datei ein PDF nach der eingestellten Vorlage ab.',
     vorgabe: true,
     speicher: inPfade('export.pdfMitspeichern', 'schalter'),
   },

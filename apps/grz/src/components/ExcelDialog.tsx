@@ -3,9 +3,11 @@ import { TERRIO_SCHEMA } from '../export/platzhalterSchema';
 import { PlatzhalterReferenz } from '@core/excel/PlatzhalterReferenz';
 import { useGrz } from '../store';
 import { vorlage } from '../vorlage';
+import { werteAusMeta, type ExportDialogStart } from '@core/excel/direktExport';
+import { EXPORT_INHALT } from '../export/direktExport';
 
-/** Excel-Export des GRZ-Nachweises: Standardlayout oder eigene Vorlage (.xlsx mit Platzhaltern). */
-export function ExcelDialog({ onClose }: { onClose: () => void }) {
+/** Export-Dialog des GRZ-Nachweises (Excel bzw. PDF): Standardlayout oder eigene Vorlage (.xlsx mit Platzhaltern). */
+export function ExcelDialog({ onClose, start }: { onClose: () => void; start: ExportDialogStart }) {
   const project = useGrz((s) => s.project);
   const datei = useGrz((s) => s.datei);
   return (
@@ -13,6 +15,9 @@ export function ExcelDialog({ onClose }: { onClose: () => void }) {
       project={project}
       update={(fn) => useGrz.getState().update(fn, undefined, 'Excel-Vorlage ändern')}
       onClose={onClose}
+      art={start.art}
+      hinweise={start.hinweise}
+      benennung={{ app: 'grz', werte: werteAusMeta(project.meta), inhalt: EXPORT_INHALT }}
       speicher={vorlage}
       standardText="Blatt „GRZ GFZ“: Grundlagen, Kennzahlen, Vollgeschosse, Geschossfläche, Flächenbilanz, Lageplan-Flächen und Hinweise – mit Summenformeln."
       referenz={(zu) => <PlatzhalterReferenz schema={TERRIO_SCHEMA} onClose={zu} />}
