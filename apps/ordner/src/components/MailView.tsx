@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { MsgKopf } from '@core/mail/msg';
 import { msgKopf } from '@core/mail/msg';
 import type { ProjektordnerEintrag } from '@core/platform/projektordner';
@@ -9,8 +9,10 @@ import { Symbol } from '@core/ui/Symbol';
 import type { Dateisystem } from '../dateisystem';
 import { hatDateisystem, oeffneOrdner, tauriDateisystem, verbinde, waehleOrdner, waehleOrdnerImBrowser } from '../dateisystem';
 import type { MailTeile, MailVorschlag, NamensBefund, Richtung } from '../mail/mailname';
-import { datumGueltig, domainVon, MAIL_SCHEMA, mailName, mailNamePruefen, mailVorschlag } from '../mail/mailname';
+import { datumGueltig, domainVon, MAIL_SCHEMA, mailName, mailNamePruefen, mailVorschlag, nachname, weiterleitungText } from '../mail/mailname';
 import { eigeneDomainRaten, useMails } from '../mail/mailStore';
+import type { Glied, Korrektur, Person, Ursprung } from '../mail/ursprung';
+import { personAus, personText } from '../mail/ursprung';
 import { ausOrdnername } from '../nummer';
 import type { GeladenerOrdner } from '../projekt';
 import { projektEinlesen } from '../projekt';
@@ -28,7 +30,7 @@ interface Zeile {
   datei: string;
   befund: NamensBefund;
   /** Abweichungen, die erst die Nachricht zeigt (Datum, von/an) */
-  inhalt: string[];
+  inhalt: Abweichung[];
   kopf?: MsgKopf;
   lesefehler?: string;
   vorschlag?: MailVorschlag;
@@ -88,14 +90,177 @@ const zuLangText = (fs: Dateisystem | null, basis: string, pfad: string): string
 };
 const tag = (d?: Date) => (d ? d.toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '–');
 
-/** Teile vergleichen, die aus der Nachricht folgen: Datum, Richtung und – wenn die Richtung stimmt – nichts weiter */
-function inhaltPruefen(bisher: MailTeile | null, v: MailVorschlag, mitRichtung: boolean): string[] {
+/**
+ * Abweichung eines korrekt benannten Namens von der Nachricht: Datum, Richtung, Absender (der Name nennt die interne
+ * Weiterleitung statt des ursprünglichen Absenders) bzw. ursprünglicher Absender unklar
+ */
+interface Abweichung {
+  art: 'datum' | 'richtung' | 'absender' | 'unklar';
+  text: string;
+}
+/** Name nennt die interne Weiterleitung statt des ursprünglichen Absenders (aus „Absender neu bestimmen“) */
+const absenderFalsch = (z: Zeile) => z.inhalt.some((x) => x.art === 'absender');
+/** Quelle von außen: weitergeleitet bzw. von Hand festgelegt */
+const quelleAussen = (u: Ursprung) => u.art === 'weitergeleitet' || (u.art === 'korrigiert' && !u.intern);
+/** Ursprung, der eine Auswahl zum Korrigieren bekommt (alle internen Weiterleitungen) */
+const mitAuswahl = (u?: Ursprung): u is Ursprung => !!u && u.art !== 'direkt';
+
+/**
+ * Teile vergleichen, die aus der Nachricht folgen: Datum, Richtung bzw. – bei einer internen Weiterleitung – der
+ * ursprüngliche Absender; ist der unklar, wird nichts geändert, nur darauf hingewiesen
+ */
+function inhaltPruefen(bisher: MailTeile | null, v: MailVorschlag, mitRichtung: boolean): Abweichung[] {
   if (!bisher) return [];
-  const out: string[] = [];
-  if (v.teile.datum && bisher.datum !== v.teile.datum) out.push(`Datum ${bisher.datum} – die Mail ist vom ${v.teile.datum} (${bisher.richtung === 'an' ? 'Versand' : 'Empfang'})`);
-  if (mitRichtung && bisher.richtung !== v.teile.richtung) out.push(`„${bisher.richtung}“ statt „${v.teile.richtung}“ (${v.herkunft})`);
+  const out: Abweichung[] = [];
+  const u = v.ursprung;
+  if (v.teile.datum && bisher.datum !== v.teile.datum)
+    out.push({ art: 'datum', text: `Datum ${bisher.datum} – die Mail ist vom ${v.teile.datum} (${bisher.richtung === 'an' ? 'Versand' : 'Empfang'})` });
+  // nennt der Name die Weiterleitung? Nur wenn dort wirklich der Weiterleiter steht (bzw. „an“) – ein von Hand anders, aber
+  // richtig benannter Absender („Bauamt“ statt „Musterstadt“) bleibt unangetastet
+  const weiterleiterImNamen = !!u.weiterleiter && (bisher.richtung === 'an' || bisher.name.toLowerCase() === nachname(u.weiterleiter.name, u.weiterleiter.mail).toLowerCase());
+  if (u.art === 'unklar') out.push({ art: 'unklar', text: 'intern weitergeleitet – ursprünglicher Absender unklar' });
+  else if (quelleAussen(u) && weiterleiterImNamen && (bisher.richtung !== 'von' || bisher.name.toLowerCase() !== v.teile.name.toLowerCase()))
+    out.push({ art: 'absender', text: `Absender „${bisher.richtung} ${bisher.name}“ nennt die interne Weiterleitung – ursprünglich von ${personText(u.quelle)}` });
+  else if (mitRichtung && !quelleAussen(u) && bisher.richtung !== v.teile.richtung) out.push({ art: 'richtung', text: `„${bisher.richtung}“ statt „${v.teile.richtung}“ (${v.herkunft})` });
   return out;
 }
+
+/**
+ * Ursprünglicher Absender einer intern weitergeleiteten Mail: Hinweis, wenn er unklar ist, und eine Auswahl zum
+ * Korrigieren (Absender aus der Kette, Treffer aus den Kontakten, „kein Absender von außen“, „andere Person …“). Die
+ * Wahl wird erst mit „Übernehmen“ (oder Enter) gespeichert – Blättern mit den Pfeiltasten speichert nichts – und gilt
+ * fürs ganze Büro.
+ */
+function UrsprungAuswahl({ u, mail, onWahl }: { u: Ursprung; mail: string; onWahl: (k: Korrektur | null) => void }) {
+  const id = useId();
+  /** vorgemerkte Wahl (Wert der Liste); null = keine */
+  const [wahl, setWahl] = useState<string | null>(null);
+  const [andere, setAndere] = useState('');
+  const liste = useRef<HTMLSelectElement>(null);
+  const gleich = (a: Person, b: Person) => (a.mail && b.mail ? a.mail.toLowerCase() === b.mail.toLowerCase() : !a.mail && !b.mail && a.name === b.name);
+  // die von Hand gewählte Person steht vorn, die erkannte steckt in „(erkannt)“
+  const personen: Person[] = [];
+  for (const p of [...(u.art === 'korrigiert' && !u.intern ? [u.quelle] : []), ...u.kandidaten])
+    if (!personen.some((x) => gleich(x, p)) && !(u.art === 'weitergeleitet' && gleich(p, u.quelle))) personen.push(p);
+  const wert = u.art === 'korrigiert' ? (u.intern ? 'intern' : `p${personen.findIndex((p) => gleich(p, u.quelle))}`) : u.art === 'unklar' ? '' : 'auto';
+  const weiterleiter = u.weiterleiter ? u.weiterleiter.name.split('|')[0].trim() || u.weiterleiter.mail : 'der Absender';
+  const offen = wahl !== null && wahl !== wert;
+  const andereP = personAus(andere);
+  const bereit = offen && (wahl !== 'andere' || !!(andereP.name || andereP.mail));
+  const zurueck = () => {
+    setWahl(null);
+    setAndere('');
+    liste.current?.focus();
+  };
+  const uebernehmen = () => {
+    if (!bereit || wahl === null) return;
+    const k: Korrektur | null = wahl === 'auto' ? null : wahl === 'intern' ? { intern: true } : wahl === 'andere' ? { name: andereP.name, mail: andereP.mail } : personen[Number(wahl.slice(1))];
+    zurueck();
+    onWahl(k);
+  };
+  const tasten = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && bereit) {
+      e.preventDefault();
+      uebernehmen();
+    } else if (e.key === 'Escape' && offen) {
+      // nur zurücksetzen – kein übergeordneter Esc-Handler (Dialog, Rahmen) soll mit auslösen
+      e.preventDefault();
+      e.stopPropagation();
+      zurueck();
+    }
+  };
+  return (
+    <div className={`po-mail-ursprung${u.art === 'unklar' ? ' meldung warnung' : ''}`}>
+      {u.art === 'unklar' && (
+        <p className="po-mail-ursprung-text">
+          <strong>Intern weitergeleitet – ursprünglicher Absender unklar</strong>
+          {u.hinweis ? ` (${u.hinweis})` : ''}. Bitte den Absender wählen – geraten wird nicht.
+        </p>
+      )}
+      <div className="po-mail-ursprung-wahl">
+        <label className="field-label" htmlFor={id}>
+          Ursprünglicher Absender
+        </label>
+        <select ref={liste} id={id} value={wahl ?? wert} aria-label={`Ursprünglicher Absender für ${mail}`} onChange={(e) => setWahl(e.target.value)} onKeyDown={tasten}>
+          {u.art === 'unklar' && (
+            <option value="" disabled>
+              – bitte wählen –
+            </option>
+          )}
+          {u.art === 'weitergeleitet' && <option value="auto">{personText(u.quelle)} (erkannt)</option>}
+          {u.art === 'intern' && <option value="auto">kein Absender von außen – {weiterleiter} (erkannt)</option>}
+          {u.art === 'korrigiert' && <option value="auto">automatisch bestimmen</option>}
+          {personen.map((p, i) => (
+            <option key={`${p.mail}|${p.name}`} value={`p${i}`}>
+              {personText(p)}
+              {p.mail ? '' : ' (ohne Adresse)'}
+              {u.art === 'korrigiert' && !u.intern && i === 0 ? ' (von Hand)' : ''}
+            </option>
+          ))}
+          {u.art !== 'intern' && <option value="intern">kein Absender von außen – {weiterleiter} gilt</option>}
+          <option value="andere">andere Person …</option>
+        </select>
+        {wahl === 'andere' && (
+          <input
+            className="po-mail-ursprung-andere"
+            value={andere}
+            aria-label="Name und Adresse des ursprünglichen Absenders"
+            placeholder="Name <adresse@beispiel.example>"
+            onChange={(e) => setAndere(e.target.value)}
+            onKeyDown={tasten}
+          />
+        )}
+        {offen && (
+          <span className="po-mail-ursprung-knoepfe">
+            <button className="small primary" disabled={!bereit} onClick={uebernehmen}>
+              Übernehmen
+            </button>
+            <button className="small" onClick={zurueck}>
+              Abbrechen
+            </button>
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** Datum eines Kettenglieds wie die übrigen Angaben („10.11.2026, 11:00“); nicht lesbar: wie in der Mail */
+const gliedDatum = (g: Glied) => (g.datum ? tag(g.datum) : (g.datumText ?? ''));
+
+/** ursprünglicher Absender und Weiterleitung in der Vorschau „Mail ansehen“ */
+function UrsprungAngaben({ u }: { u?: Ursprung }) {
+  if (!mitAuswahl(u)) return null;
+  const w = u.weiterleiter;
+  return (
+    <>
+      <dt>Ursprünglich</dt>
+      <dd>
+        {u.art === 'unklar' ? <span className="po-mail-problem">unklar</span> : u.art === 'intern' || u.intern ? 'aus dem Büro' : personText(u.quelle)}
+        {u.hinweis && <span className="muted"> · {u.hinweis}</span>}
+      </dd>
+      {w && (
+        <>
+          <dt>Weitergeleitet</dt>
+          <dd>
+            von {personText(w)}
+            {w.datum ? ` am ${tag(w.datum)}` : ''}
+          </dd>
+        </>
+      )}
+      {/* ein Glied wäre nur der ursprüngliche Absender noch einmal */}
+      {u.kette.length > 1 && (
+        <>
+          <dt>Kette</dt>
+          <dd>{u.kette.map((g) => `${personText(g)}${gliedDatum(g) ? ` (${gliedDatum(g)})` : ''}${g.quelle === 'anhang' ? ' – angehängte Mail' : ''}`).join(' ← ')}</dd>
+        </>
+      )}
+    </>
+  );
+}
+
+/** Herkunftszeile: steht die Auswahl darunter, nur die Weiterleitung – der ursprüngliche Absender steht in der Auswahl */
+const herkunftText = (v: MailVorschlag) => (mitAuswahl(v.ursprung) ? weiterleitungText(v.ursprung) : v.herkunft);
 
 /**
  * Mails im Projektordner prüfen und benennen: sucht alle Outlook-Nachrichten (.msg) im Projektordner (mit
@@ -120,6 +285,8 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
   const [eigeneText, setEigeneText] = useState('');
   const [neue, setNeue] = useState<NeueMail[]>([]);
   const [ziehtDrueber, setZiehtDrueber] = useState(false);
+  /** Ergebnis von „Absender neu bestimmen“ */
+  const [absenderMeldung, setAbsenderMeldung] = useState<string | null>(null);
   const dateiWahl = useRef<HTMLInputElement>(null);
   const projektListe = useRef<HTMLUListElement>(null);
   /** Kennung des Einlesens: nach einem Projektwechsel verwirft ein noch laufender alter Lauf seine Ergebnisse */
@@ -150,6 +317,20 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
 
   /* ---------- Einlesen ---------- */
 
+  /** Kontakte zum Abgleich von Namen ohne Adresse: Absender und Empfänger der gelesenen Mails, dazu das Adressbuch */
+  const kontakteJetzt = (): Person[] => {
+    const out: Person[] = [...useMails.getState().adressbuch];
+    const dazu = (k: MsgKopf, tiefe = 0) => {
+      out.push({ name: k.vonName, mail: k.vonMail }, ...k.empfaenger);
+      if (tiefe < 3) for (const a of k.angehaengt ?? []) dazu(a, tiefe + 1);
+    };
+    for (const z of zeilenRef.current) if (z.kopf) dazu(z.kopf);
+    for (const m of neueRef.current) if (m.kopf) dazu(m.kopf);
+    return out.filter((p) => p.name && p.mail);
+  };
+  /** was zum Bestimmen des Absenders gilt – aus dem Speicher, nicht aus dem Stand beim Rendern */
+  const optionen = (vorgabe?: string[]) => ({ eigene: vorgabe ?? useMails.getState().eigene, kontakte: kontakteJetzt(), korrekturen: useMails.getState().korrekturen });
+
   /**
    * eine Nachricht lesen und daraus den Vorschlag bilden – mit den eigenen Domains, die beim Lesen gelten (aus dem
    * Speicher, nicht aus dem Stand beim Rendern: ein laufendes Einlesen sieht so auch inzwischen gespeicherte Domains)
@@ -158,13 +339,17 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
     try {
       const kopf = z.kopf ?? msgKopf(await o.lies(z.pfad), { mitText: true });
       // erst nach dem Lesen nachsehen – das Lesen kann dauern
-      const mitEigenen = vorgabe ?? useMails.getState().eigene;
-      const vorschlag = mailVorschlag(kopf, { code: o.code, eigene: mitEigenen, bisher: z.befund.teile });
+      const opt = optionen(vorgabe);
+      const vorschlag = mailVorschlag(kopf, { ...opt, code: o.code, bisher: z.befund.teile });
       const bisher = z.befund.ok ? z.befund.teile : null;
-      const inhalt = inhaltPruefen(bisher, vorschlag, mitEigenen.length > 0);
+      const inhalt = inhaltPruefen(bisher, vorschlag, opt.eigene.length > 0);
       // korrekt benannt: das Thema von Hand bleibt; nur Datum bzw. Richtung und Name kommen aus der Nachricht
       const teile = bisher
-        ? { ...bisher, datum: vorschlag.teile.datum || bisher.datum, ...(inhalt.some((x) => x.startsWith('„')) ? { richtung: vorschlag.teile.richtung, name: vorschlag.teile.name } : {}) }
+        ? {
+            ...bisher,
+            datum: vorschlag.teile.datum || bisher.datum,
+            ...(inhalt.some((x) => x.art === 'richtung' || x.art === 'absender') ? { richtung: vorschlag.teile.richtung, name: vorschlag.teile.name } : {}),
+          }
         : vorschlag.teile;
       return { ...z, kopf, vorschlag, inhalt, teile: z.bearbeitet && z.teile ? z.teile : teile, gewaehlt: z.gewaehlt || !z.befund.ok || inhalt.length > 0 };
     } catch (e) {
@@ -202,6 +387,7 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
     setProjekt(p);
     setZeilen(liste);
     setNeue([]);
+    setAbsenderMeldung(null);
     await allesLesen(p, liste, false, kennung);
     // ohne eigene Domain: ein paar korrekt benannte Mails lesen, um sie zu erraten (nur den Kopf, ohne sie zu bewerten)
     if (!useMails.getState().eigene.length) {
@@ -275,7 +461,8 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
       const t = ziel(z);
       return t && !t.problem ? [{ alt: z.datei, neu: t.name }] : [];
     });
-    if (bereit.length > 1) {
+    // mehrere – oder eine schon abgelegte, deren Absender neu bestimmt wurde: vorher fragen
+    if (bereit.length > 1 || (bereit.length === 1 && liste.some(absenderFalsch))) {
       const vorschau = bereit.slice(0, VORSCHAU).map((b) => `${b.alt}\n   → ${b.neu}`);
       const rest = bereit.length - vorschau.length;
       const ausgelassen = liste.length - bereit.length;
@@ -285,7 +472,7 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
         '',
         `Umbenannt wird im selben Ordner, nie überschreibend – rückgängig machen lässt es sich nicht.${ausgelassen ? ` ${ausgelassen} gewählte ${ausgelassen === 1 ? 'Mail bleibt' : 'Mails bleiben'} unverändert – der Grund steht in der Zeile.` : ''}`,
       ].join('\n');
-      if (!(await bestaetigen(`${bereit.length} Mails umbenennen?`, text, 'Umbenennen'))) return;
+      if (!(await bestaetigen(bereit.length === 1 ? 'Mail umbenennen?' : `${bereit.length} Mails umbenennen?`, text, 'Umbenennen'))) return;
       // während der Rückfrage ein anderes Projekt gewählt: nichts tun
       if (kennung !== lauf.current) return;
     }
@@ -356,6 +543,63 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
     );
   };
 
+  /**
+   * ursprünglichen Absender von Hand festlegen bzw. die Korrektur zurücknehmen (`null`): speichern und die Vorschläge
+   * aller Mails mit diesem Schlüssel neu bilden – Richtung und Name kommen aus der Korrektur, andere Änderungen bleiben
+   */
+  const korrekturSetzen = async (schluessel: string, k: Korrektur | null) => {
+    const kennung = lauf.current;
+    await useMails.getState().setKorrektur(schluessel, k);
+    if (!projekt || kennung !== lauf.current) return;
+    const betroffen = zeilenRef.current.filter((z) => z.kopf && z.vorschlag?.ursprung.schluessel === schluessel);
+    const ergebnis = await Promise.all(betroffen.map((z) => lesen(projekt, { ...z, inhalt: [], bearbeitet: false })));
+    if (kennung !== lauf.current) return;
+    const nachPfad = new Map(ergebnis.map((z) => [z.pfad, z]));
+    setZeilen((alt) =>
+      alt.map((x) => {
+        const n = nachPfad.get(x.pfad);
+        if (!n?.teile) return x;
+        const teile = x.bearbeitet && x.teile ? { ...x.teile, richtung: n.teile.richtung, name: n.teile.name } : n.teile;
+        return { ...n, teile, bearbeitet: x.bearbeitet, offen: x.offen, status: undefined, gewaehlt: x.gewaehlt || n.gewaehlt };
+      }),
+    );
+    const opt = optionen();
+    setNeue((alt) =>
+      alt.map((m) => {
+        if (!m.kopf || m.vorschlag?.ursprung.schluessel !== schluessel) return m;
+        const vorschlag = mailVorschlag(m.kopf, { ...opt, code: projekt.code });
+        return { ...m, vorschlag, teile: m.teile ? { ...m.teile, richtung: vorschlag.teile.richtung, name: vorschlag.teile.name } : vorschlag.teile, status: undefined };
+      }),
+    );
+  };
+
+  /**
+   * „Absender neu bestimmen“: alle Mails lesen (auch die korrekt benannten) und die wählen, deren Name die interne
+   * Weiterleitung statt des ursprünglichen Absenders nennt. Umbenannt wird nichts von selbst – erst „Umbenennen“, mit
+   * Vorschau und Rückfrage.
+   */
+  const absenderNeu = async () => {
+    if (!projekt) return;
+    const kennung = lauf.current;
+    setAbsenderMeldung(null);
+    await allesLesen(projekt, zeilenRef.current, true, kennung);
+    if (kennung !== lauf.current) return;
+    const liste = zeilenRef.current;
+    const falsch = liste.filter(absenderFalsch);
+    const unklar = liste.filter((z) => z.vorschlag?.ursprung.art === 'unklar');
+    // zur Auswahl hinzufügen – was vorher gewählt war, bleibt gewählt
+    setZeilen((alt) => alt.map((z) => ({ ...z, gewaehlt: z.gewaehlt || (absenderFalsch(z) && !!z.teile) })));
+    setNurFalsche(true);
+    const teile = [
+      falsch.length
+        ? `${falsch.length} ${falsch.length === 1 ? 'Mail nennt' : 'Mails nennen'} eine interne Weiterleitung als Absender – gewählt. Vor dem Umbenennen zeigt die App die neuen Namen und fragt nach.`
+        : 'Keine Mail nennt eine interne Weiterleitung als Absender.',
+      ...(unklar.length ? [`Bei ${unklar.length} ${unklar.length === 1 ? 'Mail' : 'Mails'} ist der ursprüngliche Absender unklar – dort bitte wählen.`] : []),
+    ];
+    setAbsenderMeldung(teile.join(' '));
+    log.info('Absender neu bestimmt', { projekt: projekt.name, falsch: falsch.length, unklar: unklar.length });
+  };
+
   /* ---------- Aus Outlook ablegen ---------- */
 
   /** Ordner im Projekt, in die Mails abgelegt werden können; vorne der, in dem die meisten Mails liegen */
@@ -412,7 +656,7 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
       const m: NeueMail = { id: naechsteId++, herkunft: f.name, daten, ordner };
       try {
         m.kopf = msgKopf(daten, { mitText: true });
-        m.vorschlag = mailVorschlag(m.kopf, { code: projekt.code, eigene: useMails.getState().eigene });
+        m.vorschlag = mailVorschlag(m.kopf, { ...optionen(), code: projekt.code });
         m.teile = m.vorschlag.teile;
       } catch (e) {
         m.lesefehler = e instanceof Error ? e.message : String(e);
@@ -549,8 +793,8 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
         <h2>Mails</h2>
         <p className="muted small-text">
           Sucht im Projektordner (mit allen Unterordnern) nach Outlook-Mails (.msg), die nicht nach dem Schema <code>{MAIL_SCHEMA}</code> heißen, und schlägt den richtigen Namen vor – aus der Mail
-          selbst: Datum aus Empfang bzw. Versand (nicht das Dateidatum), Name des Gegenübers (bei Weiterleitungen aus dem Büro der ursprüngliche Absender), Thema aus dem Betreff. Umbenannt wird erst
-          auf Klick, im selben Ordner und nie überschreibend.
+          selbst: Datum aus Empfang bzw. Versand (nicht das Dateidatum), Name des Gegenübers (bei Weiterleitungen aus dem Büro der ursprüngliche Absender – aus der angehängten Mail bzw. dem Kopf der
+          weitergeleiteten; ist er unklar, wird nicht geraten), Thema aus dem Betreff. Umbenannt wird erst auf Klick, im selben Ordner und nie überschreibend.
         </p>
         {fs && roots.length > 0 && (
           <>
@@ -650,6 +894,14 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
                 <button className="small" disabled={!!laeuft} title="Auch die korrekt benannten Mails lesen: stimmen Datum und von/an?" onClick={() => void allesLesen(projekt, zeilen, true)}>
                   Auch korrekt benannte prüfen
                 </button>
+                <button
+                  className="small"
+                  disabled={!!laeuft}
+                  title="Mails finden, deren Name die interne Weiterleitung statt des ursprünglichen Absenders nennt – umbenannt wird erst nach Rückfrage"
+                  onClick={() => void absenderNeu()}
+                >
+                  Absender neu bestimmen
+                </button>
                 <button className="small" disabled={!!laeuft} onClick={() => projekt.pfad && void ladenPfad(projekt.pfad)}>
                   Neu einlesen
                 </button>
@@ -669,6 +921,8 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
                 </div>
               )}
             </div>
+            {/* dauerhaft da, damit Screenreader die Meldung vorlesen, sobald sie erscheint */}
+            <div role="status">{absenderMeldung && <p className="meldung">{absenderMeldung}</p>}</div>
             <div
               className={`po-ablage${ziehtDrueber ? ' drueber' : ''}`}
               onDragOver={(e) => {
@@ -774,8 +1028,11 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
                             <p className="small-text po-mail-neu">
                               → <strong>{t?.pfad}</strong>
                               {t?.problem && <span className="po-mail-problem"> · {t.problem}</span>}
-                              {m.vorschlag && <span className="muted"> · {m.vorschlag.herkunft}</span>}
+                              {m.vorschlag && herkunftText(m.vorschlag) && <span className="muted"> · {herkunftText(m.vorschlag)}</span>}
                             </p>
+                            {mitAuswahl(m.vorschlag?.ursprung) && (
+                              <UrsprungAuswahl u={m.vorschlag.ursprung} mail={m.herkunft} onWahl={(k) => void korrekturSetzen(m.vorschlag!.ursprung.schluessel, k)} />
+                            )}
                           </>
                         )}
                         {m.status && <p className={m.status.art === 'ok' ? 'meldung ok' : 'meldung fehler'}>{m.status.text}</p>}
@@ -800,9 +1057,10 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
                       </span>
                       <span className="muted small-text po-mail-ordner">{z.ordner || 'Stamm des Projektordners'}</span>
                     </div>
-                    {(z.befund.gruende.length > 0 || z.inhalt.length > 0) && (
+                    {/* „Absender unklar“ steht ausführlich an der Auswahl darunter */}
+                    {(z.befund.gruende.length > 0 || z.inhalt.some((g) => g.art !== 'unklar')) && (
                       <ul className="po-mail-gruende">
-                        {[...z.befund.gruende, ...z.inhalt].map((g) => (
+                        {[...z.befund.gruende, ...z.inhalt.filter((g) => g.art !== 'unklar').map((g) => g.text)].map((g) => (
                           <li key={g}>{g}</li>
                         ))}
                       </ul>
@@ -847,8 +1105,9 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
                         <p className="small-text po-mail-neu">
                           → <strong>{t?.name}</strong>
                           {t?.problem && t.problem !== 'unverändert' && <span className="po-mail-problem"> · {t.problem}</span>}
-                          {z.vorschlag && <span className="muted"> · {z.vorschlag.herkunft}</span>}
+                          {z.vorschlag && herkunftText(z.vorschlag) && <span className="muted"> · {herkunftText(z.vorschlag)}</span>}
                         </p>
+                        {mitAuswahl(z.vorschlag?.ursprung) && <UrsprungAuswahl u={z.vorschlag.ursprung} mail={z.datei} onWahl={(k) => void korrekturSetzen(z.vorschlag!.ursprung.schluessel, k)} />}
                       </>
                     )}
                     {z.status && <p className={z.status.art === 'ok' ? 'meldung ok' : 'meldung fehler'}>{z.status.text}</p>}
@@ -858,6 +1117,7 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
                         <dl>
                           <dt>Betreff</dt>
                           <dd>{mail.betreff || '–'}</dd>
+                          <UrsprungAngaben u={z.vorschlag?.ursprung} />
                           <dt>Von</dt>
                           <dd>{[mail.vonName, mail.vonMail && `<${mail.vonMail}>`].filter(Boolean).join(' ')}</dd>
                           <dt>An</dt>

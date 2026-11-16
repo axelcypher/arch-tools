@@ -2,7 +2,8 @@
  * Outlook-Nachrichten (.msg) lesen – ohne Outlook: Das Format ist eine Compound-File-Binary-Datei (OLE2) mit je einem
  * Strom pro MAPI-Eigenschaft („__substg1.0_<Tag><Typ>“) und den Eigenschaften fester Länge in
  * „__properties_version1.0“; Empfänger und Anhänge sind Unterspeicher. Gelesen werden die Angaben, die zum Ablegen
- * und Benennen gebraucht werden: Betreff, Absender, Empfänger, Sende- und Empfangszeit, Anhänge.
+ * und Benennen gebraucht werden: Betreff, Absender, Empfänger, Sende- und Empfangszeit, Anhänge – und angehängte
+ * Nachrichten (eingebettet, als .msg- oder .eml-Datei), etwa das Original einer Weiterleitung.
  * (Gemeinsam für die Apps ATLAS – Mails prüfen und benennen – und FABRIO – Mailverlauf.)
  */
 
@@ -119,6 +120,8 @@ export interface MsgEmpfaenger {
   /** SMTP-Adresse, sonst was in der Nachricht steht (bei internen Exchange-Empfängern ggf. leer) */
   mail: string;
   art: 'an' | 'cc' | 'bcc';
+  /** nur eine Exchange-interne Adresse (X.500), keine SMTP-Adresse: ein Empfänger im eigenen Exchange */
+  x500?: true;
 }
 
 export interface MsgKopf {
@@ -129,6 +132,15 @@ export interface MsgKopf {
   thema: string;
   vonName: string;
   vonMail: string;
+  /** Absender nur mit Exchange-interner Adresse (X.500 bzw. Adresstyp „EX“): jemand im eigenen Exchange */
+  vonX500?: true;
+  /** Internet-Kennung der Nachricht (PR_INTERNET_MESSAGE_ID), z. B. „<…@…>“ */
+  nachrichtId?: string;
+  /**
+   * ursprünglicher Absender laut MAPI (PR_ORIGINAL_SENDER_*, PR_ORIGINAL_SENT_REPRESENTING_*), wie ihn etwa eine
+   * Umleitung per Regel setzt – fehlt bei gewöhnlichen Weiterleitungen
+   */
+  original?: { name: string; mail: string; x500?: true };
   /** „im Auftrag von“ (Stellvertretung), falls anders als der Absender */
   imAuftragName?: string;
   imAuftragMail?: string;
@@ -145,6 +157,8 @@ export interface MsgKopf {
   anhaenge: string[];
   /** Text der Nachricht (nur mit `mitText`): PR_BODY, sonst HTML ohne Tags */
   text?: string;
+  /** angehängte Nachrichten (nur mit `mitText`): eingebettet oder als .msg-/.eml-Datei – in der Reihenfolge der Anhänge */
+  angehaengt?: MsgKopf[];
 }
 
 const utf16 = new TextDecoder('utf-16le');
@@ -180,55 +194,102 @@ function eigenschaften(c: ReturnType<typeof cfbLesen>, speicher: Map<string, Cfb
   return { text, zeit, zahl };
 }
 
-/** HTML grob in Text: Zeilenumbrüche an Blöcken, Tags weg, die häufigsten Entitäten */
-function htmlText(html: string): string {
+/**
+ * HTML grob in Text: Zeilenumbrüche im Quelltext zählen nicht (Outlook bricht den HTML-Quelltext mitten im Satz um),
+ * Zeilenumbrüche an Blöcken, Tags weg, Entitäten (benannte häufige und numerische)
+ */
+export function htmlText(html: string): string {
+  const benannt: Record<string, string> = {
+    nbsp: ' ',
+    lt: '<',
+    gt: '>',
+    quot: '"',
+    apos: "'",
+    amp: '&',
+    auml: 'ä',
+    ouml: 'ö',
+    uuml: 'ü',
+    Auml: 'Ä',
+    Ouml: 'Ö',
+    Uuml: 'Ü',
+    szlig: 'ß',
+    ndash: '–',
+    mdash: '—',
+  };
   return html
-    .replace(/<(script|style)[^>]*>[\s\S]*?<\/\1>/gi, '')
-    .replace(/<br\s*\/?>|<\/(p|div|tr|li|h\d)>/gi, '\n')
+    .replace(/<(head|script|style)[^>]*>[\s\S]*?<\/\1>/gi, '')
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/\s+/g, ' ')
+    .replace(/<br\s*\/?>|<hr(\s[^>]*)?>|<\/(p|div|tr|li|h\d|blockquote|table)>/gi, '\n')
     .replace(/<[^>]+>/g, '')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&amp;/g, '&');
+    .replace(/&#x([0-9a-f]+);/gi, (_, h: string) => String.fromCodePoint(parseInt(h, 16)))
+    .replace(/&#(\d+);/g, (_, d: string) => String.fromCodePoint(Number(d)))
+    .replace(/&([a-z]+);/gi, (x, n: string) => benannt[n] ?? x)
+    .replace(/[ \t]*\n[ \t]*/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .replace(/^\s+/, '');
 }
 
 /**
  * Kopf einer Outlook-Nachricht (.msg): Betreff, Absender, Empfänger, Zeiten, Anhänge; mit `mitText` auch der Text
- * (etwa für den Kopf einer weitergeleiteten Nachricht).
+ * (etwa für den Kopf einer weitergeleiteten Nachricht) und die angehängten Nachrichten.
  */
 export function msgKopf(bytes: Uint8Array, o: { mitText?: boolean } = {}): MsgKopf {
   const c = cfbLesen(bytes);
-  const wurzel = c.ordner(0);
-  const { text, zeit, zahl } = eigenschaften(c, wurzel, 32);
+  return nachricht(c, 0, 32, !!o.mitText, 0);
+}
+
+/** so tief werden angehängte Nachrichten gelesen (Weiterleitung einer Weiterleitung …) */
+const TIEFE = 4;
+
+function nachricht(c: ReturnType<typeof cfbLesen>, id: number, kopfGroesse: number, mitText: boolean, tiefe: number): MsgKopf {
+  const wurzel = c.ordner(id);
+  const { text, zeit, zahl } = eigenschaften(c, wurzel, kopfGroesse);
   const smtp = (...werte: string[]) => werte.find((w) => w && !istX500(w)) ?? '';
   const empfaenger: MsgEmpfaenger[] = [];
   const anhaenge: string[] = [];
-  for (const [name, e] of wurzel) {
+  const angehaengt: MsgKopf[] = [];
+  // Reihenfolge wie in der Nachricht (die Speicher heißen …_#00000000, …_#00000001 …)
+  for (const [name, e] of [...wurzel].sort((a, b) => a[0].localeCompare(b[0]))) {
     const idx = c.eintraege.indexOf(e);
     if (name.startsWith('__recip_version1.0_')) {
       const r = eigenschaften(c, c.ordner(idx), 8);
       const typ = r.zahl(0x0c15) ?? 1;
-      empfaenger.push({ name: r.text('3001'), mail: smtp(r.text('39FE'), r.text('3003')), art: typ === 2 ? 'cc' : typ === 3 ? 'bcc' : 'an' });
+      const mail = smtp(r.text('39FE'), r.text('3003'));
+      const x500 = !mail && (istX500(r.text('3003')) || r.text('3002').toUpperCase() === 'EX');
+      empfaenger.push({ name: r.text('3001'), mail, art: typ === 2 ? 'cc' : typ === 3 ? 'bcc' : 'an', ...(x500 ? { x500: true as const } : {}) });
     } else if (name.startsWith('__attach_version1.0_')) {
-      const a = eigenschaften(c, c.ordner(idx), 8);
+      const speicher = c.ordner(idx);
+      const a = eigenschaften(c, speicher, 8);
       const n = a.text('3707') || a.text('3704') || a.text('3001');
       if (n) anhaenge.push(n);
+      if (mitText && tiefe < TIEFE) {
+        const k = angehaengteNachricht(c, speicher, a, n, tiefe + 1);
+        if (k) angehaengt.push(k);
+      }
     }
   }
-  // Reihenfolge wie in der Nachricht (die Speicher heißen …_#00000000, …_#00000001 …)
   const betreff = text('0037');
   const praefix = text('003D');
   const vonName = text('0C1A') || text('0042');
   const vonMail = smtp(text('5D01'), text('0C1F'), text('5D02'), text('0065'));
+  const vonX500 = !vonMail && (istX500(text('0C1F')) || istX500(text('0065')) || text('0C1E').toUpperCase() === 'EX' || text('0064').toUpperCase() === 'EX');
   const imName = text('0042');
   const imMail = smtp(text('5D02'), text('0065'));
+  const nachrichtId = text('1035');
+  const orgName = text('005A') || text('005D');
+  const orgRoh = text('0067') || text('0069');
+  const orgMail = smtp(orgRoh);
+  const original = orgName || orgMail ? { name: orgName, mail: orgMail, ...(!orgMail && istX500(orgRoh) ? { x500: true as const } : {}) } : null;
   return {
     klasse: text('001A'),
     betreff,
     thema: text('0E1D') || (praefix && betreff.startsWith(praefix) ? betreff.slice(praefix.length) : betreff).trim(),
     vonName,
     vonMail,
+    ...(vonX500 ? { vonX500: true as const } : {}),
+    ...(nachrichtId ? { nachrichtId } : {}),
+    ...(original ? { original } : {}),
     ...(imName && imName !== vonName ? { imAuftragName: imName, ...(imMail ? { imAuftragMail: imMail } : {}) } : {}),
     empfaenger,
     anText: text('0E04'),
@@ -237,8 +298,27 @@ export function msgKopf(bytes: Uint8Array, o: { mitText?: boolean } = {}): MsgKo
     ...(zeit(0x0e06) ? { empfangen: zeit(0x0e06) } : {}),
     ...(zahl(0x0e07) !== undefined ? { flags: zahl(0x0e07) } : {}),
     anhaenge,
-    ...(o.mitText ? { text: nachrichtenText(c, wurzel, text) } : {}),
+    ...(mitText ? { text: nachrichtenText(c, wurzel, text), ...(angehaengt.length ? { angehaengt } : {}) } : {}),
   };
+}
+
+/**
+ * Nachricht in einem Anhang: eingebettet (PR_ATTACH_METHOD 5, Unterspeicher „__substg1.0_3701000D“; dessen
+ * Eigenschaftskopf ist 24 Bytes lang), als .msg-Datei oder als .eml bzw. message/rfc822. Nicht lesbar: null.
+ */
+function angehaengteNachricht(c: ReturnType<typeof cfbLesen>, speicher: Map<string, CfbEintrag>, a: ReturnType<typeof eigenschaften>, name: string, tiefe: number): MsgKopf | null {
+  try {
+    const eingebettet = speicher.get('__substg1.0_3701000D');
+    if (eingebettet && eingebettet.typ === 1) return nachricht(c, c.eintraege.indexOf(eingebettet), 24, true, tiefe);
+    const datei = speicher.get('__substg1.0_37010102');
+    if (!datei) return null;
+    const mime = a.text('370E').toLowerCase();
+    if (/\.msg$/i.test(name)) return nachricht(cfbLesen(c.strom(datei)), 0, 32, true, tiefe);
+    if (/\.eml$/i.test(name) || mime === 'message/rfc822') return emlKopf(c.strom(datei));
+  } catch {
+    // beschädigter Anhang: zählt nicht
+  }
+  return null;
 }
 
 function nachrichtenText(c: ReturnType<typeof cfbLesen>, wurzel: Map<string, CfbEintrag>, text: (id: string) => string): string {
@@ -254,4 +334,102 @@ function nachrichtenText(c: ReturnType<typeof cfbLesen>, wurzel: Map<string, Cfb
     html = ansi.decode(bytes);
   }
   return htmlText(html).replace(/\r\n/g, '\n');
+}
+
+/* ---------- Internet-Nachricht (.eml, message/rfc822) ---------- */
+
+const dekodierer = (zeichensatz: string): TextDecoder => {
+  try {
+    return new TextDecoder(zeichensatz.trim().toLowerCase() || 'utf-8');
+  } catch {
+    return new TextDecoder('utf-8');
+  }
+};
+
+/** Bytes aus einem Latin-1-String (so liest `emlKopf` die Nachricht zunächst) */
+const bytesAus = (s: string) => Uint8Array.from(s, (z) => z.charCodeAt(0) & 0xff);
+
+/** „=?utf-8?Q?M=C3=BCller?=“ bzw. „=?utf-8?B?…?=“ in Kopfzeilen */
+function kopfDekodieren(s: string): string {
+  return s.replace(/=\?([^?]+)\?([bq])\?([^?]*)\?=(\s+(?==\?))?/gi, (_, cs: string, art: string, inhalt: string) => {
+    const roh = art.toLowerCase() === 'b' ? atob(inhalt.replace(/[^a-z0-9+/=]/gi, '')) : inhalt.replace(/_/g, ' ').replace(/=([0-9a-f]{2})/gi, (_x, h: string) => String.fromCharCode(parseInt(h, 16)));
+    return dekodierer(cs).decode(bytesAus(roh));
+  });
+}
+
+function teilLesen(roh: string, tiefe = 0): { kopf: Map<string, string>; text: string } {
+  const trenn = /\r?\n\r?\n/.exec(roh);
+  const kopfRoh = trenn ? roh.slice(0, trenn.index) : roh;
+  const rumpf = trenn ? roh.slice(trenn.index + trenn[0].length) : '';
+  const kopf = new Map<string, string>();
+  for (const zeile of kopfRoh.replace(/\r?\n[ \t]+/g, ' ').split(/\r?\n/)) {
+    const m = /^([\w-]+)\s*:\s*(.*)$/.exec(zeile);
+    if (m && !kopf.has(m[1].toLowerCase())) kopf.set(m[1].toLowerCase(), m[2].trim());
+  }
+  const typ = kopf.get('content-type') ?? 'text/plain';
+  const grenze = /boundary="?([^";]+)"?/i.exec(typ)?.[1];
+  if (/^multipart\//i.test(typ) && grenze && tiefe < 5) {
+    const teile = rumpf
+      .split(`--${grenze}`)
+      .slice(1, -1)
+      .map((t) => teilLesen(t.replace(/^\r?\n/, ''), tiefe + 1));
+    const passend = teile.find((t) => /^text\/plain/i.test(t.kopf.get('content-type') ?? 'text/plain') && t.text) ?? teile.find((t) => t.text);
+    return { kopf, text: passend?.text ?? '' };
+  }
+  if (!/^text\//i.test(typ)) return { kopf, text: '' };
+  const kodierung = (kopf.get('content-transfer-encoding') ?? '').toLowerCase();
+  let bin = rumpf;
+  if (kodierung === 'base64') {
+    try {
+      bin = atob(rumpf.replace(/[^a-z0-9+/=]/gi, ''));
+    } catch {
+      bin = '';
+    }
+  } else if (kodierung === 'quoted-printable') bin = rumpf.replace(/=\r?\n/g, '').replace(/=([0-9a-f]{2})/gi, (_, h: string) => String.fromCharCode(parseInt(h, 16)));
+  const text = dekodierer(/charset="?([^";]+)"?/i.exec(typ)?.[1] ?? 'utf-8').decode(bytesAus(bin));
+  return { kopf, text: /^text\/html/i.test(typ) ? htmlText(text) : text.replace(/\r\n/g, '\n') };
+}
+
+/** Adresse „Name <mail>“ bzw. „mail (Name)“ zerlegen */
+function adresseZerlegen(s: string): { name: string; mail: string } {
+  const spitz = /^(.*?)<([^<>]+)>\s*$/.exec(s);
+  if (spitz) return { name: spitz[1].trim().replace(/^"(.*)"$/, '$1'), mail: spitz[2].trim() };
+  const klammer = /^(\S+@\S+)\s*\((.*)\)\s*$/.exec(s);
+  if (klammer) return { name: klammer[2].trim(), mail: klammer[1] };
+  return { name: '', mail: s.trim() };
+}
+
+/**
+ * Internet-Nachricht (.eml, message/rfc822) – nur was zum Bestimmen des Absenders gebraucht wird: Betreff, Absender,
+ * Empfänger, Versand, Text (text/plain, sonst HTML ohne Tags). Die Form ist dieselbe wie bei `msgKopf` (Klasse „eml“).
+ */
+export function emlKopf(bytes: Uint8Array): MsgKopf {
+  let roh = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) roh += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  const { kopf, text } = teilLesen(roh);
+  if (!kopf.has('from')) throw new Error('Keine Internet-Nachricht (.eml)');
+  const von = adresseZerlegen(kopfDekodieren(kopf.get('from') ?? ''));
+  const liste = (feld: string, art: 'an' | 'cc'): MsgEmpfaenger[] =>
+    kopfDekodieren(kopf.get(feld) ?? '')
+      .split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/)
+      .map((x) => x.trim())
+      .filter(Boolean)
+      .map((x) => ({ ...adresseZerlegen(x), art }));
+  const betreff = kopfDekodieren(kopf.get('subject') ?? '');
+  const datum = kopf.has('date') ? new Date(kopf.get('date')!) : undefined;
+  const id = kopf.get('message-id');
+  return {
+    klasse: 'eml',
+    betreff,
+    thema: betreff,
+    vonName: von.name,
+    vonMail: von.mail,
+    ...(id ? { nachrichtId: id } : {}),
+    empfaenger: [...liste('to', 'an'), ...liste('cc', 'cc')],
+    anText: kopfDekodieren(kopf.get('to') ?? ''),
+    ccText: kopfDekodieren(kopf.get('cc') ?? ''),
+    ...(datum && !isNaN(datum.getTime()) ? { gesendet: datum } : {}),
+    anhaenge: [],
+    text,
+  };
 }
