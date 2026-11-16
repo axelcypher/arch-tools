@@ -95,3 +95,40 @@ describe('Vorlagenprüfung', () => {
 });
 
 dokuTest(fileURLToPath(new URL('../../../../docs/excel-vorlagen.md', import.meta.url)), 'kern', kernMarkdown);
+
+describe('Zusätze |vor: und |nach:', () => {
+  it('in Kopf-/Fußzeile und Textfeld, Leerzeichen bleiben, leerer Wert ohne Zusatztext', () => {
+    const c = { ...ctx, scalars: { ...ctx.scalars, 'projekt.code': '', 'projekt.bauherr': 'Muster & Co' } };
+    expect(kopfFusszeileErsetzen('A{{projekt.name|vor: – }}B{{projekt.code|vor: Nr. }}C{{summe.wofl|nach: m²|vor:(}}', c)).toBe('A – MusterhausBC(27 m²');
+    expect(textfeldErsetzen('{{projekt.bauherr|vor:Bauherr: }}', c)).toBe('Bauherr: Muster & Co');
+    expect(kopfFusszeileErsetzen('{{projekt.bauherr|vor:Bauherr: }}', c)).toBe('Bauherr: Muster && Co');
+  });
+  it('allein in einer Zelle: Text statt Zahl, leer bleibt leer', () => {
+    expect(beispielAusfuehren({ vorlage: [['{{summe.wofl|nach: m²}}', '{{raum[geschoss=DG].wohnung|vor: - }}']] }, ctx)).toEqual([['27 m²', null]]);
+  });
+});
+
+describe('Vorlagenprüfung: Blockregeln wie die Engine', () => {
+  const schema = kernBeispielSchema();
+  const arten = (spec: (string | null)[][]) => pruefeBlatt(vorlagenZeilen(spec), ctx, { schema }).map((h) => `${h.ort} ${h.art}`);
+  it('zwei Blockanfänge in einer Zeile, falsches Blockende', () => {
+    expect(arten([['{{#wenn raum}}'], ['{{#geschoss}}{{geschoss.name|einmal}}', '{{raum.name}}{{#wenn[wofl>0]}}'], ['{{/wenn}}'], ['{{/geschoss}}'], ['{{/wenn}}']])).toEqual([
+      'B2 markierung-zeile',
+      'A2 block-doppelt',
+      // der Geschossblock öffnet nicht – geschoss.name wiederholt die Zeile, raum.name bleibt stehen
+      'B2 zweite-sammlung',
+      'A4 block-falsch',
+      'A5 block-verwaist',
+    ]);
+  });
+  it('Markierung mitten im Text, Punkt im Filterfeld', () => {
+    expect(arten([['{{raum.name}}{{#wenn[raum.wohnung!=]}} - {{raum.wohnung}}{{/wenn}}']])).toEqual(['A1 markierung-zeile', 'A1 filterpunkt']);
+    expect(arten([['{{#wenn raum}}x{{/wenn}} danach']])).toEqual(['A1 markierung-zeile']);
+  });
+  it('Markierungen am Zellanfang bzw. -ende sind in Ordnung', () => {
+    expect(arten([['{{#wenn raum[nebenflaeche]}}Überschrift'], [null, '{{raum[nebenflaeche].name}}'], ['Summe{{/wenn}}']])).toEqual([]);
+  });
+  it('|vor: und |nach: sind bekannte Zusätze', () => {
+    expect(arten([['{{raum.name}}{{raum.wohnung|vor: - }}', '{{raum.flaeche|nach: m²|vor:(}}', '{{raum.name|foo}}']])).toEqual(['C1 zusatz']);
+  });
+});

@@ -45,6 +45,9 @@ Weitere: `--radius-s` 4px (Felder, Knöpfe), `--radius` 6px (Dialoge, Karten), `
 
 Zahlen in Tabellen und Feldern stehen rechtsbündig in Tabellenziffern (`.num`, `input.num`).
 
+Kennzahlentabellen nehmen `.summary-table` (Spaltenköpfe rechtsbündig, passend zu Zahlenspalten); `.text` für reine
+Texttabellen: Spaltenköpfe linksbündig (`.summary-table.text`, z. B. Platzhalter-Referenz).
+
 ## Überschriften
 
 - **Seitenleiste und Spalten:** `h2` in Satzschreibung, `--fs-m`, halbfett, Farbe `--text`. Keine Versalien – sie lesen

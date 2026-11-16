@@ -25,7 +25,7 @@ aktuell ist).
 
 <!-- erzeugt:kern – nicht von Hand ändern, scripts/excel-doku.mjs -->
 
-_Beispieldaten: Projekt „Musterhaus“; Geschosse EG (Wohnfläche 21 m²), OG (6 m²), DG (0 m²); Räume Flur 3 m², Küche 18 m², Abstellraum 2 m² (EG), Bad 6 m² (OG), Spitzboden 10 m² (DG) – Abstellraum und Spitzboden ohne Wohnflächenanrechnung; Exportdatum 16.11.2026._
+_Beispieldaten: Projekt „Musterhaus“; Geschosse EG (Wohnfläche 21 m²), OG (6 m²), DG (0 m²); Räume Flur 3 m² und Küche 18 m² (EG, Wohnung WE 1), Abstellraum 2 m² (EG), Bad 6 m² (OG, WE 2), Spitzboden 10 m² (DG) – Abstellraum und Spitzboden ohne Wohnflächenanrechnung; Exportdatum 16.11.2026._
 
 ### Schreibweise und Arten
 
@@ -46,6 +46,7 @@ Unbekannte Einzelwerte bleiben sichtbar stehen, damit Tippfehler auffallen. Ein 
 | `{{geschoss:EG.bgf}}` | Benannter Einzelzugriff | Feld des Geschosses „EG“ |
 | `{{#wenn …}}` … `{{/wenn}}` | Bedingung | Zeilen nur, wenn die Bedingung zutrifft |
 | `{{geschoss.name\|einmal}}` | Zusatz | nur in der ersten Zeile einer Wiederholung |
+| `{{raum.wohnung\|vor: - }}` | Zusatz | Text davor (bzw. \|nach: dahinter), nur wenn der Wert nicht leer ist |
 | `{{DATUM:TT.MM.JJJJ}}` | globale Variable mit Format | Datum im angegebenen Format |
 
 **Beispiel: Einzelwerte im Text und als Zahl**
@@ -154,7 +155,9 @@ Ergebnis:
 
 ### Blöcke
 
-`{{#geschoss}}` … `{{/geschoss}}` wiederholt die Zeilen dazwischen je Datensatz. Die Markierung steht allein in einer Zeile (diese Steuerzeile erscheint nicht in der Ausgabe) oder am Anfang der ersten bzw. am Ende der letzten Blockzeile.
+`{{#geschoss}}` … `{{/geschoss}}` wiederholt die Zeilen dazwischen je Datensatz. Die Markierung steht allein in einer Zeile (diese Steuerzeile erscheint nicht in der Ausgabe) oder am Anfang der ersten bzw. am Ende der letzten Blockzeile. Sie gilt immer für die ganze Zeile – mitten im Text einer Zelle wirkt sie nicht „ab hier“.
+
+Regeln: je Zeile ein Blockanfang (bei zwei gilt nur der letzte); ein Blockende schließt den zuletzt geöffneten Block, ohne den Namen zu prüfen – Anfang und Ende müssen also paarweise zusammenpassen. Die Vorlagenprüfung meldet beides.
 
 Innerhalb des Blocks sind die Felder des Blockdatensatzes Einzelwerte (`{{geschoss.name}}` wiederholt dort nichts). Andere Sammlungen sind auf den Datensatz eingeschränkt, wenn die App das so festlegt – welche, steht je Sammlung unter „Enthält“. Alle übrigen laufen über alle Datensätze.
 
@@ -211,7 +214,7 @@ Filter stehen in eckigen Klammern direkt hinter dem Namen einer Sammlung – in 
 
 Benannte Filter legt jede App je Sammlung fest (siehe dort). Allgemeine Filter gehen bei jeder Sammlung mit jedem Feld.
 
-Mehrere Filter mit Komma müssen alle zutreffen (und); ein „oder“ gibt es nicht. Werte dürfen deshalb kein Komma und keine eckige Klammer enthalten.
+Mehrere Filter mit Komma müssen alle zutreffen (und); ein „oder“ gibt es nicht. Werte dürfen deshalb kein Komma und keine eckige Klammer enthalten. Im Filter steht nur der Feldname ohne Sammlung: [wohnung!=], nicht [raum.wohnung!=].
 
 Ein unbekannter benannter Filter (Tippfehler) trifft nie zu: die Zeile liefert keine Datensätze, eine Bedingung ist nicht erfüllt – die Vorlagenprüfung meldet ihn. Ein Filter an einer Sammlung, die im Block schon gebunden ist (im `{{#raum}}`-Block `{{raum[wofl].name}}`), wirkt als Bedingung auf deren Datensatz: erfüllt er sie nicht, bleibt die Zelle leer.
 
@@ -366,6 +369,8 @@ Ergebnis:
 
 Doppelte oder fehlende eckige Klammern (`{{raum[[wofl].name}}`) machen den Platzhalter unlesbar – er bleibt als Text stehen.
 
+Text nur bei gefülltem Wert: nicht `{{raum.name}}``{{#wenn[wohnung!=]}}` - `{{raum.wohnung}}``{{/wenn}}` – Blockmarkierungen gelten für ganze Zeilen –, sondern `{{raum.name}}``{{raum.wohnung|vor: - }}`.
+
 Feldnamen klein schreiben (`{{raum.name}}`, nicht `{{raum.Name}}`) und ohne Leerzeichen im Namen. Die Vorlagenprüfung schlägt die richtige Schreibweise vor.
 
 **Beispiel: Umgebender Datensatz gegenüber Sammlung** Die Vorlagenprüfung meldet hier: benannter Filter, dessen Felder im Zusammenhang fehlen.
@@ -397,15 +402,41 @@ Beim Export mit eigener Vorlage – und mit „Vorlage prüfen“ im Excel-Dialo
 | unbekanntes Feld einer Sammlung bzw. unbekannter Name beim Einzelzugriff | `{{raum.flache}}`, `{{geschoss:XY.bgf}}` |
 | falsche Groß-/Kleinschreibung oder Leerzeichen im Namen | `{{raum.Name}}`, `{{ raum . name }}` |
 | unbekannter Zusatz | `{{raum.name\|eimal}}` |
+| Punkt in einem Filterfeld | `{{#wenn[hnf.wohnung!=0]}}` |
+| zwei Blockanfänge in einer Zeile | `{{#geschoss}}` … `{{#wenn …}}` in derselben Zeile |
+| Blockende schließt einen anderen offenen Block | `{{#wenn …}}` … `{{/geschoss}}` |
+| Blockmarkierung mitten im Text einer Zelle (gilt für die ganze Zeile) | `{{raum.name}}``{{#wenn …}}` - `{{raum.wohnung}}``{{/wenn}}` |
 | zweite ungebundene Sammlung in einer Zeile | `{{raum.name}}` … `{{geschoss.name}}` |
 | nicht geschlossener bzw. verwaister Block | `{{#geschoss}}` ohne `{{/geschoss}}` |
 | doppelte oder unpaarige eckige Klammern | `{{raum[[wofl].name}}` |
 | \|einmal oder Sammlungsfeld in Kopf-/Fußzeile oder Textfeld | `{{raum.name}}` in der Fußzeile |
 | unbekannter Einzelwert (bleibt stehen) | `{{summe.bfg}}` |
 
-### Zusatz |einmal
+### Zusätze |einmal, |vor:, |nach:
 
-`{{feld|einmal}}` schreibt den Wert nur in die erste Zeile einer Wiederholung – etwa den Geschossnamen über seinen Räumen. In Zeilen, die nicht wiederholt werden, wirkt er nicht (der Wert steht in jeder Blockwiederholung). Andere Zusätze gibt es nicht; ein unbekannter Zusatz (`{{raum.name|foo}}`) wird still ignoriert.
+`{{feld|einmal}}` schreibt den Wert nur in die erste Zeile einer Wiederholung – etwa den Geschossnamen über seinen Räumen. In Zeilen, die nicht wiederholt werden, wirkt er nicht (der Wert steht in jeder Blockwiederholung). In Kopf-/Fußzeilen und Textfeldern geht |einmal nicht.
+
+`{{feld|vor:TEXT}}` und `{{feld|nach:TEXT}}` setzen Text vor bzw. hinter den Wert – nur, wenn der Wert nicht leer ist. Leerzeichen im Text bleiben erhalten: `{{raum.name}}``{{raum.wohnung|vor: - }}` ergibt „Flur - WE 1“, bei einem Raum ohne Wohnung nur „Abstellraum“. Beide gehen zusammen (`{{feld|vor:(|nach:)}}`), auch in Kopf-/Fußzeilen und Textfeldern. Mit Text davor oder danach wird eine Zahl zu Text.
+
+Ein unbekannter Zusatz (`{{raum.name|foo}}`) wird in Zellen ignoriert, in Kopf-/Fußzeilen und Textfeldern bleibt der Platzhalter dann stehen; die Vorlagenprüfung meldet ihn.
+
+**Beispiel: Wohnung nur, wenn zugeordnet**
+
+Vorlage:
+
+|  | A | B |
+| --- | --- | --- |
+| 1 | `{{raum.name}}{{raum.wohnung\|vor: - }}` | `{{raum.flaeche\|nach: m²}}` |
+
+Ergebnis:
+
+|  | A | B |
+| --- | --- | --- |
+| 1 | Flur - WE 1 | 3 m² |
+| 2 | Küche - WE 1 | 18 m² |
+| 3 | Abstellraum | 2 m² |
+| 4 | Bad - WE 2 | 6 m² |
+| 5 | Spitzboden | 10 m² |
 
 **Beispiel: Geschossname nur einmal**
 

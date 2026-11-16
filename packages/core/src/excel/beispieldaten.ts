@@ -11,15 +11,22 @@ export function kernBeispielKontext(): ExportContext {
     { _id: 'og', nr: 2, name: 'OG', wofl: 6 },
     { _id: 'dg', nr: 3, name: 'DG', wofl: 0 },
   ];
-  const r = (g: string, nr: number, name: string, flaeche: number, wofl: boolean): Row => ({
+  const r = (g: string, nr: number, name: string, flaeche: number, wofl: boolean, wohnung = ''): Row => ({
     _geschossId: g.toLowerCase(),
     nr,
     geschoss: g,
     name,
     flaeche,
     wohnflaeche: wofl ? 'ja' : '',
+    wohnung,
   });
-  const raum: Row[] = [r('EG', 1, 'Flur', 3, true), r('EG', 2, 'Küche', 18, true), r('EG', 3, 'Abstellraum', 2, false), r('OG', 4, 'Bad', 6, true), r('DG', 5, 'Spitzboden', 10, false)];
+  const raum: Row[] = [
+    r('EG', 1, 'Flur', 3, true, 'WE 1'),
+    r('EG', 2, 'Küche', 18, true, 'WE 1'),
+    r('EG', 3, 'Abstellraum', 2, false),
+    r('OG', 4, 'Bad', 6, true, 'WE 2'),
+    r('DG', 5, 'Spitzboden', 10, false),
+  ];
   return {
     scalars: { 'projekt.name': 'Musterhaus', 'summe.wofl': 27, 'summe.flaeche': 39, 'DATUM.iso': '2026-11-16' },
     collections: { geschoss, raum },
@@ -57,7 +64,7 @@ export function kernBeispielSchema(): PlatzhalterSchema {
         titel: 'Räume',
         datensatz: 'je Raum',
         text: '',
-        felder: ['nr', 'geschoss', 'name', 'flaeche', 'wohnflaeche'].map(feld),
+        felder: ['nr', 'geschoss', 'name', 'flaeche', 'wohnflaeche', 'wohnung'].map(feld),
         filter: [
           { name: 'wofl', text: '' },
           { name: 'nebenflaeche', text: '' },

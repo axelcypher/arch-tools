@@ -1,5 +1,6 @@
 import type { ExportContext, Row, Value } from './context';
-import { belongsTo, globalMitFormat, isCollection, lookupNamed, parseFilters, vergleiche } from './context';
+import { belongsTo, globalMitFormat, isCollection, lookupNamed, mitZusatz, parseFilters, vergleiche, zusaetzeLesen } from './context';
+import type { Zusaetze } from './context';
 
 type Collection = string;
 
@@ -50,24 +51,20 @@ interface KeyInfo {
   field?: string;
   named?: string;
   scalar?: string;
-  mod?: string;
+  /** Zusätze |einmal, |vor:, |nach: */
+  z: Zusaetze;
 }
 
 function parseKey(raw: string, ctx: ExportContext): KeyInfo {
-  let key = raw.trim();
-  let mod: string | undefined;
-  const pipe = key.lastIndexOf('|');
-  if (pipe > 0 && !key.slice(pipe).includes(']')) {
-    mod = key.slice(pipe + 1).trim().toLowerCase();
-    key = key.slice(0, pipe).trim();
-  }
+  const mod = zusaetzeLesen(raw);
+  const key = mod.key;
   // ein vorhandener Einzelwert geht vor – auch wenn sein Präfix wie eine Sammlung heißt ({{lageplan.angerechnet_auf}})
-  if (Object.prototype.hasOwnProperty.call(ctx.scalars, key)) return { scalar: key, mod };
+  if (Object.prototype.hasOwnProperty.call(ctx.scalars, key)) return { scalar: key, z: mod };
   const named = /^([a-z][a-z0-9]*):(.+)\.([a-z0-9_]+)$/i.exec(key);
-  if (named && ctx.byName?.[named[1].toLowerCase()]) return { named: key, mod };
+  if (named && ctx.byName?.[named[1].toLowerCase()]) return { named: key, z: mod };
   const m = /^([a-z][a-z0-9]*)(?:\[([^\]]*)\])?\.([a-z0-9_]+)$/i.exec(key);
-  if (m && isCollection(ctx, m[1].toLowerCase())) return { coll: m[1].toLowerCase(), filter: m[2], field: m[3], mod };
-  return { scalar: key, mod };
+  if (m && isCollection(ctx, m[1].toLowerCase())) return { coll: m[1].toLowerCase(), filter: m[2], field: m[3], z: mod };
+  return { scalar: key, z: mod };
 }
 
 function cellText(v: CellValue | undefined): string | null {
@@ -94,20 +91,24 @@ function lookup(k: KeyInfo, ctx: ExportContext, b: Bindings): Value | undefined 
 
 /** Zellinhalt mit Platzhaltern auflösen; Einzelplatzhalter liefern den Rohwert (Zahl bleibt Zahl) */
 function resolveCell(text: string, ctx: ExportContext, b: Bindings, firstOfRepeat: boolean): CellValue {
-  const whole = /^\s*\{\{\s*([^{}]+?)\s*\}\}\s*$/.exec(text);
+  const zahl = (v: Value) => (typeof v === 'number' ? v.toLocaleString('de-DE', { maximumFractionDigits: 3 }) : v);
+  // Inhalt ungekürzt aus der Markierung, damit Leerzeichen in |vor:/|nach: erhalten bleiben
+  const whole = /^\s*(\{\{[^{}]+\}\})\s*$/.exec(text);
   if (whole) {
-    const k = parseKey(whole[1], ctx);
-    if (k.mod === 'einmal' && !firstOfRepeat) return null;
+    const k = parseKey(whole[1].slice(2, -2), ctx);
+    if (k.z.einmal && !firstOfRepeat) return null;
     const v = lookup(k, ctx, b);
     if (v === undefined) return text;
-    return v === '' ? null : v;
+    if (v === '') return null;
+    // mit Text davor/danach wird die Zahl zu Text
+    return k.z.vor || k.z.nach ? mitZusatz(zahl(v), k.z) : v;
   }
-  const out = text.replace(PH(), (m, key: string) => {
-    const k = parseKey(key, ctx);
-    if (k.mod === 'einmal' && !firstOfRepeat) return '';
+  const out = text.replace(PH(), (m) => {
+    const k = parseKey(m.slice(2, -2), ctx);
+    if (k.z.einmal && !firstOfRepeat) return '';
     const v = lookup(k, ctx, b);
     if (v === undefined) return m;
-    return typeof v === 'number' ? v.toLocaleString('de-DE', { maximumFractionDigits: 3 }) : v;
+    return mitZusatz(zahl(v), k.z);
   });
   return out === '' ? null : out;
 }

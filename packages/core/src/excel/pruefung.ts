@@ -1,5 +1,5 @@
 import type { ExportContext } from './context';
-import { globalMitFormat, isCollection } from './context';
+import { globalMitFormat, isCollection, zusaetzeLesen } from './context';
 import type { PlatzhalterSchema } from './schema';
 import type { CellValue, TemplateRow } from './template';
 
@@ -21,6 +21,10 @@ export type HinweisArt =
   | 'block-offen'
   | 'block-verwaist'
   | 'block-unbekannt'
+  | 'block-doppelt'
+  | 'block-falsch'
+  | 'markierung-zeile'
+  | 'filterpunkt'
   | 'klammern'
   | 'kopf'
   | 'einzelwert';
@@ -48,6 +52,10 @@ export const HINWEISARTEN: Record<HinweisArt, string> = {
   'block-offen': 'nicht geschlossener Block',
   'block-verwaist': 'Blockende ohne Anfang',
   'block-unbekannt': 'unbekannter Blockname',
+  'block-doppelt': 'zwei Blockanfänge in einer Zeile',
+  'block-falsch': 'Blockende schließt einen anderen offenen Block',
+  'markierung-zeile': 'Blockmarkierung mitten im Text einer Zelle (gilt für die ganze Zeile)',
+  filterpunkt: 'Punkt in einem Filterfeld (sammlung.feld statt feld)',
   klammern: 'doppelte oder unpaarige eckige Klammern',
   kopf: '|einmal oder Sammlungsfeld in Kopf-/Fußzeile oder Textfeld',
   einzelwert: 'unbekannter Einzelwert',
@@ -128,6 +136,17 @@ class Pruefer {
       .filter(Boolean)) {
       const neg = roh.startsWith('!') ? '!' : '';
       const t = neg ? roh.slice(1).trim() : roh;
+      const punkt = /^([a-z][a-z0-9]*)\.([a-z0-9_]+)\s*(!=|>=|<=|=|>|<)/i.exec(t);
+      if (punkt) {
+        this.melde(
+          'filterpunkt',
+          ort,
+          ph,
+          `Im Filter steht nur der Feldname: [${t.replace(/^[a-z][a-z0-9]*\./i, '')}] – „${punkt[1]}.${punkt[2]}“ wird als unbekannter Filter gelesen und trifft nie zu.`,
+        );
+        neu.push(roh);
+        continue;
+      }
       const v = TERM.exec(t);
       if (v) {
         const feld = v[1];
@@ -204,15 +223,13 @@ class Pruefer {
 
   /** ein Platzhalter (ohne Klammern) in einer Zelle bzw. in Kopf-/Fußzeile oder Textfeld */
   schluessel(inner: string, ort: { blatt?: string; ort: string }, gebunden: Set<string>, kopf: boolean): string | undefined {
-    let key = inner.trim();
-    let mod: string | undefined;
-    const pipe = key.lastIndexOf('|');
-    if (pipe > 0 && !key.slice(pipe).includes(']')) {
-      mod = key.slice(pipe + 1).trim();
-      key = key.slice(0, pipe).trim();
-      if (mod.toLowerCase() !== 'einmal') this.melde('zusatz', ort, inner, `Zusatz |${mod} gibt es nicht (nur |einmal) – er wird ignoriert.`);
-      else if (kopf) this.melde('kopf', ort, inner, '|einmal wirkt in Kopf-/Fußzeilen und Textfeldern nicht – der Platzhalter bleibt dort als Text stehen.');
-    }
+    const z = zusaetzeLesen(inner);
+    const key = z.key;
+    const mod = inner.includes('|') ? inner.slice(inner.indexOf('|') + 1) : undefined;
+    for (const u of z.unbekannt)
+      this.melde('zusatz', ort, inner.trim(), `Zusatz |${u} gibt es nicht (nur |einmal, |vor:TEXT, |nach:TEXT)${kopf ? ' – der Platzhalter bleibt hier als Text stehen' : ' – er wird ignoriert'}.`);
+    if (z.einmal && kopf) this.melde('kopf', ort, inner.trim(), '|einmal wirkt in Kopf-/Fußzeilen und Textfeldern nicht – der Platzhalter bleibt dort als Text stehen.');
+    inner = inner.trim();
     if (!this.klammernOk(key, ort)) return undefined;
     if (key in this.ctx.scalars || globalMitFormat(key, this.ctx) !== undefined) return undefined;
     const vorschlag = this.vorschlag(key);
@@ -283,77 +300,100 @@ function abstand(a: string, b: string): number {
   return d[a.length][b.length];
 }
 
-/** Prüft die Zeilen eines Blatts (Zellen mit Platzhaltern, Blöcke, Bedingungen) */
+/** Prüft die Zeilen eines Blatts (Zellen mit Platzhaltern, Blöcke, Bedingungen) – Blockregeln wie in der Engine */
 export function pruefeBlatt(rows: TemplateRow[], ctx: ExportContext, opts: { blatt?: string; schema?: PlatzhalterSchema } = {}): VorlagenHinweis[] {
   const p = new Pruefer(ctx, opts.schema);
-  const stapel: { name: string; ort: string; wenn: boolean }[] = [];
+  const stapel: { name: string; ort: string; ph: string; wenn: boolean }[] = [];
   const blockName = (n: string) => (ctx.collections[n.toLowerCase()] ? n.toLowerCase() : undefined);
+  const hinweis = (art: HinweisArt, ort: { blatt?: string; ort: string }, platzhalter: string, text: string) => p.hinweise.push({ art, ...ort, platzhalter, text });
   for (const row of rows) {
-    const zellen: { ort: { blatt?: string; ort: string }; treffer: { voll: string; inner: string }[] }[] = [];
+    type Treffer = { voll: string; inner: string; vorher: string; nachher: string };
+    const zellen: { ort: { blatt?: string; ort: string }; treffer: Treffer[] }[] = [];
     for (const [col, v] of row.cells) {
       const t = cellText(v);
-      if (t && t.includes('{{')) zellen.push({ ort: { blatt: opts.blatt, ort: `${colLetter(col)}${row.r}` }, treffer: [...t.matchAll(PH())].map((m) => ({ voll: m[0], inner: m[1].trim() })) });
+      if (!t || !t.includes('{{')) continue;
+      zellen.push({
+        ort: { blatt: opts.blatt, ort: `${colLetter(col)}${row.r}` },
+        treffer: [...t.matchAll(PH())].map((m) => ({ voll: m[0], inner: m[0].slice(2, -2), vorher: t.slice(0, m.index), nachher: t.slice(m.index! + m[0].length) })),
+      });
     }
-    // wie die Engine: ein Blockanfang gilt ab seiner Zeile, ein Ende nach ihr
-    const enden: (() => void)[] = [];
     const vorher = [...stapel].reverse().find((s) => !s.wenn)?.name;
     const gebundenVorher = new Set(stapel.filter((s) => !s.wenn).map((s) => s.name));
+    // 1. Blockanfänge: je Zeile gilt nur der letzte (wie die Engine)
+    const anfaenge: { name: string; wenn: boolean; ort: { blatt?: string; ort: string }; ph: string }[] = [];
+    const enden: { name: string; ort: { blatt?: string; ort: string }; ph: string }[] = [];
     for (const z of zellen)
       for (const m of z.treffer) {
-        const wenn = /^#\s*wenn\b\s*(.*)$/i.exec(m.inner);
-        const start = !wenn && /^#\s*([a-z][a-z0-9]*)\s*(?:\[([^\]]*)\])?$/i.exec(m.inner);
+        const inner = m.inner.trim();
+        const wenn = /^#\s*wenn\b\s*(.*)$/i.exec(inner);
+        const start = !wenn && /^#\s*([a-z][a-z0-9]*)\s*(?:\[([^\]]*)\])?$/i.exec(inner);
+        const ende = /^\/\s*([a-z][a-z0-9]*)\s*$/i.exec(inner);
+        if (!wenn && !start && !ende) continue;
+        // Markierungen stehen am Anfang (Anfang) bzw. am Ende (Ende) einer Zelle – sie gelten für die ganze Zeile
+        if ((wenn || start) && m.vorher.replace(/\{\{[^{}]*\}\}/g, (x) => (/^\{\{\s*#/.test(x) ? '' : x)).trim())
+          hinweis('markierung-zeile', z.ort, m.voll, 'Die Markierung gilt für die ganze Zeile, nicht nur für den Text dahinter. Für Text nur bei gefülltem Wert: {{feld|vor:TEXT}}.');
+        if (ende && m.nachher.replace(/\{\{\s*\/[^{}]*\}\}/g, '').trim())
+          hinweis('markierung-zeile', z.ort, m.voll, 'Das Blockende gilt nach der ganzen Zeile, nicht direkt hinter dem Text davor. Für Text nur bei gefülltem Wert: {{feld|vor:TEXT}}.');
         if (wenn) {
           p.bedingung(wenn[1], z.ort, vorher, gebundenVorher);
-          stapel.push({ name: 'wenn', ort: z.ort.ort, wenn: true });
+          anfaenge.push({ name: 'wenn', wenn: true, ort: z.ort, ph: m.voll });
         } else if (start) {
           const coll = blockName(start[1]);
           if (!coll) {
-            p.hinweise.push({ art: 'block-unbekannt', ...z.ort, platzhalter: m.voll, text: `Block „${start[1]}“ gibt es nicht – die Markierung bleibt als Text stehen.` });
+            hinweis('block-unbekannt', z.ort, m.voll, `Block „${start[1]}“ gibt es nicht – die Markierung bleibt als Text stehen.`);
             continue;
           }
           if (start[2]) p.blockFilter(coll, start[2], z.ort, m.voll);
-          stapel.push({ name: coll, ort: z.ort.ort, wenn: false });
+          anfaenge.push({ name: coll, wenn: false, ort: z.ort, ph: m.voll });
+        } else if (ende) {
+          const name = ende[1].toLowerCase();
+          if (name !== 'wenn' && !blockName(name)) hinweis('block-unbekannt', z.ort, m.voll, `Block „${ende[1]}“ gibt es nicht – die Markierung bleibt als Text stehen.`);
+          else enden.push({ name, ort: z.ort, ph: m.voll });
         }
       }
+    const gilt = anfaenge[anfaenge.length - 1];
+    for (const a of anfaenge.slice(0, -1))
+      hinweis('block-doppelt', a.ort, a.ph, `Je Zeile gilt nur ein Blockanfang: ${a.ph} öffnet nicht, es gilt ${gilt.ph}. Den Anfang in eine eigene Zeile setzen.`);
+    if (gilt) stapel.push({ name: gilt.name, ort: gilt.ort.ort, ph: gilt.ph, wenn: gilt.wenn });
+
+    // 2. Platzhalter der Zeile
     const gebunden = new Set(stapel.filter((s) => !s.wenn).map((s) => s.name));
     const ungebunden: { coll: string; ort: string; ph: string }[] = [];
     for (const z of zellen)
       for (const m of z.treffer) {
-        if (/^#/.test(m.inner)) continue;
-        const ende = /^\/\s*([a-z][a-z0-9]*)\s*$/i.exec(m.inner);
-        if (ende) {
-          const name = ende[1].toLowerCase();
-          if (name !== 'wenn' && !blockName(name)) {
-            p.hinweise.push({ art: 'block-unbekannt', ...z.ort, platzhalter: m.voll, text: `Block „${ende[1]}“ gibt es nicht – die Markierung bleibt als Text stehen.` });
-            continue;
-          }
-          enden.push(() => {
-            const oben = stapel[stapel.length - 1];
-            if (oben && (name === 'wenn' ? oben.wenn : !oben.wenn)) stapel.pop();
-            else p.hinweise.push({ art: 'block-verwaist', ...z.ort, platzhalter: m.voll, text: `${m.voll} ohne passenden Anfang – wird ignoriert.` });
-          });
-          continue;
-        }
+        if (/^\s*[#/]/.test(m.inner)) continue;
         const coll = p.schluessel(m.inner, z.ort, gebunden, false);
-        if (coll) ungebunden.push({ coll, ort: z.ort.ort, ph: m.voll });
+        if (coll) ungebunden.push({ coll, ort: z.ort.ort, ph: m.voll.replace(/^\{\{\s*|\s*\}\}$/g, (x) => x.trim()) });
       }
     const erste = ungebunden[0];
     const gemeldet = new Set<string>();
     for (const u of ungebunden)
       if (erste && u.coll !== erste.coll && !gemeldet.has(u.coll)) {
         gemeldet.add(u.coll);
-        p.hinweise.push({
-          art: 'zweite-sammlung',
-          blatt: opts.blatt,
-          ort: u.ort,
-          platzhalter: u.ph,
-          text: `Eine ungebundene Sammlung je Zeile: die Zeile wird je ${erste.coll} wiederholt, ${u.ph} bleibt als Text stehen – für ${u.coll} einen Block verwenden.`,
-        });
+        hinweis(
+          'zweite-sammlung',
+          { blatt: opts.blatt, ort: u.ort },
+          u.ph,
+          `Eine ungebundene Sammlung je Zeile: die Zeile wird je ${erste.coll} wiederholt, ${u.ph} bleibt als Text stehen – für ${u.coll} einen Block verwenden.`,
+        );
       }
-    for (const f of enden) f();
+
+    // 3. Blockenden nach der Zeile – wie die Engine: ein Sammlungsende schließt den obersten Block, ohne den Namen zu prüfen
+    const sammlungsEnden = enden.filter((e) => e.name !== 'wenn');
+    const wennEnden = enden.filter((e) => e.name === 'wenn');
+    sammlungsEnden.forEach((e, i) => {
+      const oben = stapel[stapel.length - 1];
+      if (i > 0 || !oben) return hinweis('block-verwaist', e.ort, e.ph, `${e.ph} ohne passenden Anfang – wird ignoriert.`);
+      stapel.pop();
+      if (oben.wenn || oben.name !== e.name) hinweis('block-falsch', e.ort, e.ph, `${e.ph} schließt den offenen Block ${oben.ph} – Anfang und Ende passen nicht zusammen.`);
+    });
+    wennEnden.forEach((e, i) => {
+      const oben = stapel[stapel.length - 1];
+      if (i === 0 && oben?.wenn) stapel.pop();
+      else hinweis('block-verwaist', e.ort, e.ph, `${e.ph} ohne passenden Anfang – wird ignoriert.`);
+    });
   }
-  for (const s of stapel)
-    p.hinweise.push({ art: 'block-offen', blatt: opts.blatt, ort: s.ort, platzhalter: s.wenn ? '{{#wenn …}}' : `{{#${s.name}}}`, text: 'Block ohne Ende – er läuft bis zum Blattende.' });
+  for (const s of stapel) p.hinweise.push({ art: 'block-offen', blatt: opts.blatt, ort: s.ort, platzhalter: s.ph, text: 'Block ohne Ende – er läuft bis zum Blattende.' });
   return p.hinweise;
 }
 
@@ -361,12 +401,11 @@ export function pruefeBlatt(rows: TemplateRow[], ctx: ExportContext, opts: { bla
 export function pruefeText(text: string, ctx: ExportContext, ort: { blatt?: string; ort: string }, schema?: PlatzhalterSchema): VorlagenHinweis[] {
   const p = new Pruefer(ctx, schema);
   for (const m of text.matchAll(PH())) {
-    const inner = m[1].trim();
-    if (/^[#/]/.test(inner)) {
+    if (/^[#/]/.test(m[1].trim())) {
       p.hinweise.push({ art: 'kopf', ...ort, platzhalter: m[0], text: 'Blöcke und Bedingungen wirken in Kopf-/Fußzeilen und Textfeldern nicht.' });
       continue;
     }
-    p.schluessel(inner, ort, new Set(), true);
+    p.schluessel(m[0].slice(2, -2), ort, new Set(), true);
   }
   return p.hinweise;
 }

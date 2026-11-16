@@ -87,7 +87,7 @@ function Nutzbar({ art }: { art: Art }) {
   return (
     <>
       <h4>Wo nutzbar</h4>
-      <table className="summary-table" aria-label="Wo nutzbar">
+      <table className="summary-table text" aria-label="Wo nutzbar">
         <tbody>
           {ORTE.filter((o) => o.id !== 'wiederholung' || art === 'sammlung').map((o) => (
             <tr key={o.id}>
@@ -106,7 +106,7 @@ function Nutzbar({ art }: { art: Art }) {
 /** Tabelle im Stil der Kennzahlen (.summary-table); ohne `kopf` erklären sich die Spalten selbst (`name` benennt sie) */
 function Tabelle({ kopf, zeilen, name }: { kopf?: string[]; zeilen: ReactNode[][]; name?: string }) {
   return (
-    <table className="summary-table" aria-label={name}>
+    <table className="summary-table text" aria-label={name}>
       {kopf && (
         <thead>
           <tr>
@@ -174,7 +174,7 @@ function BeispielAnsicht({ b, onKopiert }: { b: Beispiel; onKopiert: (t: string)
 function Werte({ zeilen, onKopiert }: { zeilen: { ph: string; text: string; einheit?: string }[]; onKopiert: (t: string) => void }) {
   return (
     <Tabelle
-      name="Platzhalter, Bedeutung, Einheit"
+      kopf={['Platzhalter', 'Bedeutung', 'Einheit', '']}
       zeilen={zeilen.map((z) => [<code key="c">{z.ph}</code>, <MitCode key="t" text={z.text} />, z.einheit ?? '', <Kopieren key="k" text={z.ph} onKopiert={onKopiert} />])}
     />
   );
