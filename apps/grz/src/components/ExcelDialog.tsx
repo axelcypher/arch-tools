@@ -1,5 +1,6 @@
 import { ExcelDialog as Dialog } from '@core/ui/ExcelDialog';
-import { GRZ_PLACEHOLDER_DOCS } from '../export/exportData';
+import { TERRIO_SCHEMA } from '../export/platzhalterSchema';
+import { PlatzhalterReferenz } from '@core/excel/PlatzhalterReferenz';
 import { useGrz } from '../store';
 import { vorlage } from '../vorlage';
 
@@ -14,14 +15,8 @@ export function ExcelDialog({ onClose }: { onClose: () => void }) {
       onClose={onClose}
       speicher={vorlage}
       standardText="Blatt „GRZ GFZ“: Grundlagen, Kennzahlen, Vollgeschosse, Geschossfläche, Flächenbilanz, Lageplan-Flächen und Hinweise – mit Summenformeln."
-      hilfe={
-        <>
-          Vorlagen sind normale .xlsx-Dateien mit Platzhaltern in doppelten geschweiften Klammern, z. B. <code>{'{{grz}}'}</code> oder <code>{'{{geschoss:EG.gf}}'}</code>. Enthält eine Zeile{' '}
-          <code>{'{{geschoss.…}}'}</code>, <code>{'{{lageplan.…}}'}</code>, <code>{'{{raum.…}}'}</code> oder <code>{'{{hinweis.…}}'}</code>, wird sie je Eintrag wiederholt. Formatierung bleibt
-          erhalten, Formeln wie <code>=SUMME(C5:C5)</code> werden auf alle eingefügten Zeilen erweitert. Die Vorlage ist unabhängig von der in QUADRIO (Flächenrechner).
-        </>
-      }
-      docs={GRZ_PLACEHOLDER_DOCS}
+      referenz={(zu) => <PlatzhalterReferenz schema={TERRIO_SCHEMA} onClose={zu} />}
+      pruefeVorlage={async (t, p) => (await import('../export/excel')).pruefeMitVorlage(t, p)}
       datei={datei}
       zusatz={() => 'GRZ+GFZ'}
       musterName="GRZ-Vorlage.xlsx"

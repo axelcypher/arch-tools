@@ -1,0 +1,34 @@
+{
+  "flaechenrechner": {
+    "stufe": "minor",
+    "notiz": "Excel-Vorlagen: vollständige Platzhalter-Referenz im Excel-Dialog und in der Doku, Vorlagenprüfung zeigt Tippfehler, unbekannte Filter liefern keine Datensätze mehr; neue fertige Summen nach DIN 277 je Nutzungsgruppe, Regel-/Sonderfall und ohne Putzabzug (z. B. summe.nnf_s_roh, hnf/nnf) und Filter freisitz."
+  },
+  "grz": {
+    "stufe": "minor",
+    "notiz": "Excel-Vorlagen: vollständige Platzhalter-Referenz im Excel-Dialog und in der Doku, Vorlagenprüfung zeigt Tippfehler, unbekannte Filter liefern keine Datensätze mehr; {{lageplan.angerechnet_auf}} und {{DATUM:…}} in Zellen funktionieren wieder."
+  },
+  "kosten": {
+    "stufe": "minor",
+    "notiz": "Excel-Vorlagen: vollständige Platzhalter-Referenz im Excel-Dialog und in der Doku, Vorlagenprüfung zeigt Tippfehler, unbekannte Filter liefern keine Datensätze mehr; {{kg2.…}} und {{#kg2}} funktionieren jetzt."
+  },
+  "ordner": {
+    "stufe": "minor",
+    "notiz": "Excel-Vorlagen der Projektordner: unbekannte Filter liefern keine Datensätze mehr, {{DATUM:…}} mit Format geht auch in Zellen."
+  },
+  "baurecht": {
+    "stufe": "patch",
+    "notiz": "Gemeinsame Excel-Vorlagen-Engine überarbeitet (keine sichtbare Änderung in LEXIO)."
+  },
+  "entzerrung": {
+    "stufe": "patch",
+    "notiz": "Gemeinsame Stile: Texttabellen mit linksbündigen Spaltenköpfen (keine sichtbare Änderung)."
+  },
+  "formulare": {
+    "stufe": "patch",
+    "notiz": "Gemeinsame Stile: Texttabellen mit linksbündigen Spaltenköpfen (keine sichtbare Änderung)."
+  },
+  "ava": {
+    "stufe": "patch",
+    "notiz": "Gemeinsame Stile: Texttabellen mit linksbündigen Spaltenköpfen (keine sichtbare Änderung)."
+  }
+}

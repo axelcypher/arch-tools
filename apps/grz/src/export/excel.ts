@@ -1,10 +1,11 @@
 import type { Workbook, Worksheet } from 'exceljs';
 import { APP_NAMEN } from '@core/appNamen';
-import { excel, fuelleVorlage, platzhalterBlatt } from '@core/excel/fill';
+import { excel, fuelleVorlage, platzhalterBlattAusSchema, pruefeVorlage } from '@core/excel/fill';
 import type { Project } from '@core/model';
 import { massNachweis } from '../massNutzung';
 import { kennzahlStellenVon } from '../texte';
-import { buildGrzContext, GRZ_PLACEHOLDER_DOCS } from './exportData';
+import { buildGrzContext } from './exportData';
+import { TERRIO_SCHEMA } from './platzhalterSchema';
 
 /**
  * Excel-Export des GRZ-Nachweises. Das Standardlayout ist die Muster-Vorlage selbst (ohne Hilfeblatt),
@@ -221,17 +222,17 @@ async function vorlage(mitHilfe: boolean, stellen?: Parameters<typeof nachweisBl
   wb.creator = APP_NAMEN.grz.name;
   wb.created = new Date();
   nachweisBlatt(wb, stellen);
-  if (mitHilfe)
-    platzhalterBlatt(
-      wb,
-      GRZ_PLACEHOLDER_DOCS,
-      'Platzhalter in doppelten geschweiften Klammern werden beim Export ersetzt. Zeilen mit geschoss.*, lageplan.*, raum.* oder hinweis.* werden je Datensatz wiederholt, #geschoss … /geschoss wiederholt ganze Zeilenblöcke. #wenn … /wenn gibt Zeilen nur aus, wenn es passende Datensätze gibt (#wenn ! … nur, wenn nicht). Formeln (z. B. SUMME über eine Wiederholungszeile) werden automatisch auf die erzeugten Zeilen erweitert. Steht nur ein Platzhalter in der Zelle, wird eine Zahl eingetragen und das Zellformat der Vorlage bleibt erhalten. Dieses Blatt kann gelöscht werden.',
-    );
+  if (mitHilfe) platzhalterBlattAusSchema(wb, TERRIO_SCHEMA);
   return new Uint8Array(await wb.xlsx.writeBuffer());
 }
 
 /** Erzeugt die Muster-Vorlage (Blatt „GRZ GFZ“ und Platzhalter-Hilfe) – Ausgangspunkt für eigene Vorlagen. */
 export const buildSampleTemplate = () => vorlage(true);
+
+/** Vorlagenprüfung: mögliche Tippfehler der Vorlage (Blatt, Zelle) */
+export async function pruefeMitVorlage(template: Uint8Array, p: Project) {
+  return pruefeVorlage(template, buildGrzContext(p), TERRIO_SCHEMA);
+}
 
 export async function exportWithTemplate(template: Uint8Array, project: Project, date = new Date()): Promise<Uint8Array> {
   return fuelleVorlage(template, buildGrzContext(project, date));

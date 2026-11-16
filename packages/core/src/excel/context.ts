@@ -51,8 +51,8 @@ export function vergleiche(v: Value | undefined, op: string, soll: string): bool
   return false;
 }
 
-/** Filter wie raum[wofl,geschoss=EG,flaeche>10]; `unbekannt`: Ergebnis für unbekannte benannte Filter */
-export function parseFilters(spec: string | undefined, named: Record<string, (r: Row) => boolean> = {}, unbekannt = true): ((r: Row) => boolean)[] {
+/** Filter wie raum[wofl,geschoss=EG,flaeche>10]; ein unbekannter benannter Filter (Tippfehler) trifft nie zu */
+export function parseFilters(spec: string | undefined, named: Record<string, (r: Row) => boolean> = {}): ((r: Row) => boolean)[] {
   if (!spec) return [];
   return spec
     .split(',')
@@ -66,9 +66,48 @@ export function parseFilters(spec: string | undefined, named: Record<string, (r:
       if (eq) {
         const [, k, op, v] = eq;
         fn = (r) => vergleiche(r[k], op, v);
-      } else fn = named[name.toLowerCase()] ?? (() => unbekannt);
+      } else fn = named[name.toLowerCase()] ?? (() => false);
       return neg ? (r: Row) => !fn(r) : fn;
     });
+}
+
+/** Zusätze eines Platzhalters: {{feld|einmal}}, {{feld|vor: – }}, {{feld|nach: m²}} */
+export interface Zusaetze {
+  /** Platzhalter ohne Zusätze, ohne Leerzeichen außen */
+  key: string;
+  einmal: boolean;
+  /** Text vor bzw. nach dem Wert – nur, wenn der Wert nicht leer ist; Leerzeichen bleiben erhalten */
+  vor: string;
+  nach: string;
+  /** unbekannte Zusätze (werden ignoriert) */
+  unbekannt: string[];
+}
+
+/** Liest die Zusätze aus dem Inhalt zwischen den Klammern (ungekürzt, damit Leerzeichen in |vor:/|nach: bleiben) */
+export function zusaetzeLesen(inner: string): Zusaetze {
+  let tiefe = 0;
+  let pipe = -1;
+  for (let i = 0; i < inner.length && pipe < 0; i++) {
+    const ch = inner[i];
+    if (ch === '[') tiefe++;
+    else if (ch === ']') tiefe--;
+    else if (ch === '|' && tiefe <= 0) pipe = i;
+  }
+  const z: Zusaetze = { key: (pipe < 0 ? inner : inner.slice(0, pipe)).trim(), einmal: false, vor: '', nach: '', unbekannt: [] };
+  if (pipe < 0) return z;
+  for (const teil of inner.slice(pipe + 1).split('|')) {
+    const m = /^\s*([a-zäöü]+)\s*(?::([\s\S]*))?$/i.exec(teil);
+    const name = m?.[1].toLowerCase();
+    if (name === 'einmal' && m?.[2] === undefined) z.einmal = true;
+    else if ((name === 'vor' || name === 'nach') && m?.[2] !== undefined) z[name] = m[2];
+    else z.unbekannt.push(teil.trim());
+  }
+  return z;
+}
+
+/** Wert mit Text davor/danach (nur, wenn der Wert nicht leer ist) */
+export function mitZusatz(v: string, z: Pick<Zusaetze, 'vor' | 'nach'>): string {
+  return v === '' ? '' : `${z.vor}${v}${z.nach}`;
 }
 
 const PH_SOURCE = /\{\{\s*([^{}]+?)\s*\}\}/.source;
@@ -88,7 +127,7 @@ export function repeatCollection(texts: string[], ctx: ExportContext): string | 
 
 /** {{sammlung:Name.feld}} */
 export function lookupNamed(key: string, ctx: ExportContext): Value | undefined {
-  const named = /^([a-z]+):(.+)\.([a-z0-9_]+)$/i.exec(key);
+  const named = /^([a-z][a-z0-9]*):(.+)\.([a-z0-9_]+)$/i.exec(key);
   if (!named) return undefined;
   const map = ctx.byName?.[named[1].toLowerCase()];
   if (!map) return undefined;
@@ -96,14 +135,20 @@ export function lookupNamed(key: string, ctx: ExportContext): Value | undefined 
   return row ? (row[named[3]] ?? '') : '';
 }
 
-function lookup(key: string, ctx: ExportContext, item?: { collection: string; row: Row }): Value | undefined {
-  if (key in ctx.scalars) return ctx.scalars[key];
-  // globale Variable mit Format: {{DATUM:TT.MM.JJJJ}}, {{JAHR:JJ}}
+/** Globale Variable mit Format: {{DATUM:TT.MM.JJJJ}}, {{JAHR:JJ}} – sonst undefined */
+export function globalMitFormat(key: string, ctx: ExportContext): Value | undefined {
   const iso = ctx.scalars['DATUM.iso'];
   if (typeof iso === 'string' && /^(DATUM|JAHR|JAHR_KURZ)\s*:/.test(key)) {
     const v = ersetzen(`{${key}}`, GLOBALE_VARIABLEN, { DATUM: iso, JAHR: iso, JAHR_KURZ: iso });
     if (v !== `{${key}}`) return v;
   }
+  return undefined;
+}
+
+function lookup(key: string, ctx: ExportContext, item?: { collection: string; row: Row }): Value | undefined {
+  if (key in ctx.scalars) return ctx.scalars[key];
+  const g = globalMitFormat(key, ctx);
+  if (g !== undefined) return g;
   if (item && key.startsWith(`${item.collection}.`)) return item.row[key.slice(item.collection.length + 1)];
   return lookupNamed(key, ctx);
 }
@@ -114,17 +159,36 @@ function lookup(key: string, ctx: ExportContext, item?: { collection: string; ro
  * Unbekannte Platzhalter bleiben sichtbar stehen, damit Tippfehler auffallen.
  */
 export function resolveText(text: string, ctx: ExportContext, item?: { collection: string; row: Row }): Value {
-  const whole = /^\s*\{\{\s*([^{}]+?)\s*\}\}\s*$/.exec(text);
+  // |vor:/|nach: wirken auch hier; |einmal und unbekannte Zusätze nicht – der Platzhalter bleibt dann stehen
+  const wert = (m: string): Value | undefined => {
+    const z = zusaetzeLesen(m.slice(2, -2));
+    if (z.einmal || z.unbekannt.length) return undefined;
+    const v = lookup(z.key, ctx, item);
+    if (v === undefined || (!z.vor && !z.nach)) return v;
+    return mitZusatz(typeof v === 'number' ? v.toLocaleString('de-DE', { maximumFractionDigits: 2 }) : v, z);
+  };
+  const whole = /^\s*(\{\{[^{}]+\}\})\s*$/.exec(text);
   if (whole) {
-    const v = lookup(whole[1], ctx, item);
+    const v = wert(whole[1]);
     return v === undefined ? text : v;
   }
-  return text.replace(ph(), (m, key: string) => {
-    const v = lookup(key, ctx, item);
+  return text.replace(ph(), (m) => {
+    const v = wert(m);
     if (v === undefined) return m;
     return typeof v === 'number' ? v.toLocaleString('de-DE', { maximumFractionDigits: 2 }) : v;
   });
 }
+
+/** Ersetzung in Kopf- und Fußzeilen (wie fuelleVorlage; „&“ ist dort Steuerzeichen und wird verdoppelt) */
+export function kopfFusszeileErsetzen(t: string, ctx: ExportContext): string {
+  return t.replace(/\{\{[^{}]+\}\}/g, (m) => {
+    const v = resolveText(m, ctx);
+    return v === m ? m : (typeof v === 'number' ? v.toLocaleString('de-DE', { maximumFractionDigits: 2 }) : String(v)).replace(/&/g, '&&');
+  });
+}
+
+/** Ersetzung in Textfeldern und Formen (wie fuelleVorlage) */
+export const textfeldErsetzen = (t: string, ctx: ExportContext) => String(resolveText(t, ctx));
 
 export function hasPlaceholder(text: string): boolean {
   return new RegExp(PH_SOURCE).test(text);
@@ -174,6 +238,3 @@ export function shiftRelativeRows(formula: string, delta: number): string {
     }),
   );
 }
-
-/** Platzhalter-Dokumentation (Hilfe-Tabelle und Blatt „Platzhalter“ der Muster-Vorlage) */
-export type PlaceholderDocs = { group: string; keys: [string, string][] }[];

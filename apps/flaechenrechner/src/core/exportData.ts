@@ -3,15 +3,16 @@ import { outlineVolume, raumBodenVersatz } from '@core/calc';
 import { polygonArea } from '@core/geometry';
 import type { OutlineShape, Project } from '@core/model';
 import { istDachgeschoss } from '@core/model';
-import { PROJEKT_DOCS, projektWerte } from '@core/excel/projekt';
+import { projektWerte } from '@core/excel/projekt';
 import { MASSGRUNDLAGEN, NUF_IDS, NUTZUNGSGRUPPEN, nutzungInfo, WOFL_KATEGORIEN, ZWEITE_BV_KURZ } from '@core/norms';
 import { briKoerper, briRechenweg, rechteckMasse } from '@core/rechenweg';
 import { planungsunterlagen, statistik } from './bericht';
 import { gueltigesKontrollmass, kontrollText } from './background';
-import type { ExportContext, PlaceholderDocs, Row, Value } from '@core/excel/context';
+import type { ExportContext, Row, Value } from '@core/excel/context';
 
 /**
- * Datengrundlage für Excel-Export und Vorlagen (Syntax siehe docs/excel-vorlagen.md).
+ * Datengrundlage für Excel-Export und Vorlagen (Syntax siehe docs/excel-vorlagen.md; jeder Platzhalter ist in
+ * platzhalterSchema.ts beschrieben – der Vollständigkeitstest verlangt das für jeden neuen Schlüssel).
  *
  *   {{projekt.name}}              Einzelwert
  *   {{summe.bgf}}                 Projektsumme
@@ -36,7 +37,47 @@ const r2 = (v: number) => Math.round(v * 100) / 100;
 const r3 = (v: number) => Math.round(v * 1000) / 1000;
 const r6 = (v: number) => Math.round(v * 1e6) / 1e6;
 
-function totalsRow(t: AreaTotals): Row {
+/** Fläche eines Raums für die Summen nach DIN 277 (ungerundet) */
+interface RaumFlaeche {
+  storeyId: string;
+  /** Nutzungsgruppe; leer, wenn der Raum nicht zur NRF zählt (außerhalb der BGF, Abzug nur der Wohnfläche) */
+  gruppe: string;
+  rs: 'R' | 'S';
+  flaeche: number;
+  roh: number;
+}
+
+/** Grundgrößen der Summen nach Nutzungsgruppen: Name → Gruppen (hnf/nnf: Altnamen nach DIN 277-2:2005) */
+export const SUMMEN_GRUNDGROESSEN: [string, (g: string) => boolean][] = [
+  ['nuf', (g) => g.startsWith('NUF')],
+  ...NUF_IDS.map((id, i): [string, (g: string) => boolean] => [`nuf${i + 1}`, (g) => g === id]),
+  ['hnf', (g) => g.startsWith('NUF') && g !== 'NUF7'],
+  ['nnf', (g) => g === 'NUF7'],
+  ['tf', (g) => g === 'TF'],
+  ['vf', (g) => g === 'VF'],
+  ['nrf', (g) => g !== ''],
+];
+
+/**
+ * Summen nach Nutzungsgruppe, Raumumschließung (_r, _s) und ohne Putzabzug (_roh) aus den Räumen, z. B. nnf_s_roh;
+ * KGF ohne Putzabzug = BGF − NRF ohne Putzabzug. Vorhandene Schlüssel (aus der Berechnung) bleiben unverändert.
+ */
+function rsSummen(t: AreaTotals, raeume: RaumFlaeche[], row: Row) {
+  for (const [name, passt] of SUMMEN_GRUNDGROESSEN)
+    for (const rs of ['', '_r', '_s'] as const)
+      for (const roh of ['', '_roh'] as const) {
+        const key = `${name}${rs}${roh}`;
+        if (key in row) continue;
+        const v = raeume.filter((r) => r.gruppe && passt(r.gruppe) && (!rs || r.rs === rs.slice(1).toUpperCase())).reduce((a, r) => a + (roh ? r.roh : r.flaeche), 0);
+        row[key] = r2(v);
+      }
+  const nrfRoh = (rs?: 'R' | 'S') => raeume.filter((r) => r.gruppe && (!rs || r.rs === rs)).reduce((a, r) => a + r.roh, 0);
+  row.kgf_roh = r2(t.bgf.total - nrfRoh());
+  row.kgf_r_roh = r2(t.bgf.R - nrfRoh('R'));
+  row.kgf_s_roh = r2(t.bgf.S - nrfRoh('S'));
+}
+
+function totalsRow(t: AreaTotals, raeume: RaumFlaeche[]): Row {
   const row: Row = {
     bgf: r2(t.bgf.total),
     bgf_r: r2(t.bgf.R),
@@ -56,6 +97,7 @@ function totalsRow(t: AreaTotals): Row {
     wofl: r2(t.wofl),
   };
   NUF_IDS.forEach((id, i) => (row[`nuf${i + 1}`] = r2(t.nutzung[id])));
+  rsSummen(t, raeume, row);
   return row;
 }
 
@@ -77,14 +119,32 @@ export function buildExportContext(project: Project, result: ProjectResult, date
   const shapesById = new Map(project.storeys.flatMap((st) => st.shapes.map((sh) => [sh.id, sh] as const)));
   // Geschossart: „ja“ bei Dachgeschossen – für Filter [dg] / [normal] in allen Sammlungen
   const dg = new Map(project.storeys.map((st) => [st.id, istDachgeschoss(st) ? 'ja' : ''] as const));
+  // je Raum einmal: ungerundete Fläche ohne Putzabzug und Nutzungsgruppe für die Summen nach R/S – NRF wie in der
+  // Berechnung: ohne Räume außerhalb der BGF und ohne Abzugsflächen, die nur die Wohnfläche mindern. Die Fläche ohne
+  // Putzabzug merkt sich rohJeRaum je Raum (shapeId) für die Raumzeilen.
+  const rohJeRaum = new Map<string, number>();
+  const rohVon = (id: string, roh: number) => (rohJeRaum.set(id, roh), roh);
+  const flaechen: RaumFlaeche[] = result.storeys.flatMap((s) =>
+    s.rooms.map((r) => {
+      const sh = shapesById.get(r.shapeId);
+      return {
+        storeyId: s.storeyId,
+        gruppe: r.ausserhalbBgf || r.abzugArt === 'wofl' ? '' : r.nutzung,
+        rs: r.umschliessung,
+        flaeche: r.area,
+        roh: rohVon(r.shapeId, sh ? polygonArea(sh.points) * (r.subtract ? -1 : 1) : r.area),
+      };
+    }),
+  );
   let nr = 0;
   const raum: Row[] = result.storeys.flatMap((s) =>
     s.rooms.map((r) => {
       const sh = shapesById.get(r.shapeId);
-      const roh = (sh ? polygonArea(sh.points) : Math.abs(r.area)) * (r.subtract ? -1 : 1);
+      const roh = rohJeRaum.get(r.shapeId) ?? 0;
       const wofl = r.woflKategorie !== 'keine';
       return {
         _geschossId: s.storeyId,
+        _wofl: r.woflKategorie,
         nr: ++nr,
         geschoss: r.storeyName,
         dachgeschoss: dg.get(s.storeyId) ?? '',
@@ -136,7 +196,7 @@ export function buildExportContext(project: Project, result: ProjectResult, date
         return st?.sohle ? r3(st.sohle) : '';
       })(),
       anzahl_raeume: s.rooms.length,
-      ...totalsRow(s),
+      ...totalsRow(s, flaechen.filter((f) => f.storeyId === s.storeyId)),
       wofl_roh: sumBy(rooms, 'wofl_roh'),
       nebenflaeche: sumBy(rooms.filter((r) => !r.wohnflaeche), 'flaeche'),
     };
@@ -172,7 +232,7 @@ export function buildExportContext(project: Project, result: ProjectResult, date
       });
   });
 
-  const sum = totalsRow(result.total);
+  const sum = totalsRow(result.total, flaechen);
   sum.anzahl_raeume = raum.length;
   sum.wofl_roh = sumBy(raum, 'wofl_roh');
   sum.nebenflaeche = sumBy(raum.filter((r) => !r.wohnflaeche), 'flaeche');
@@ -247,147 +307,6 @@ export function buildExportContext(project: Project, result: ProjectResult, date
   };
 }
 
-/** Beschreibung aller Platzhalter – Grundlage für Hilfe-Tabelle und Musterdatei. */
-export const PLACEHOLDER_DOCS: PlaceholderDocs = [
-  {
-    group: 'Blöcke, Filter, Modifikatoren',
-    keys: [
-      ['#geschoss … /geschoss', 'Zeilenblock je Geschoss (Markierung in eigener Zeile oder in der ersten/letzten Blockzeile); ebenso #bgf, #wohnung, #nutzung, #raum, #koerper'],
-      ['raum-/bgf-/bri-/koerper-Zeilen im Block', 'laufen nur über die Räume, BGF-Teilflächen bzw. Körper des aktuellen Geschosses (im #bgf-Block: bri/koerper dieser Teilfläche)'],
-      ['leere Blöcke', 'entfallen: Wiederholungszeilen und innere Blöcke liefern nichts bzw. alle Zahlenwerte des Blocks sind 0'],
-      ['#wenn … /wenn', 'Abschnitt einmal ausgeben, wenn die Bedingung zutrifft: {{#wenn raum[nebenflaeche]}} (Datensätze vorhanden), {{#wenn summe.wofl}} (Wert nicht 0/leer), {{#wenn summe.wofl>100}} / {{#wenn raum[wofl]>=3}} (Vergleich, Anzahl), {{#wenn[nebenflaeche!=0]}} (Filter auf den umgebenden Datensatz, oben auf summe.*), {{#wenn !…}} umgekehrt; im Block je Datensatz'],
-      ['raum[wofl] / raum[nebenflaeche]', 'Filter: Räume mit bzw. ohne Wohnflächenanrechnung'],
-      ['raum[hnf] / raum[nnf] / [nuf] [tf] [vf]', 'Filter nach Nutzungsgruppe: hnf = NUF 1–6, nnf = NUF 7 (Altnamen nach DIN 277-2:2005 – frühere HNF/NNF)'],
-      ['geschoss[dg] / geschoss[normal]', 'Filter: Dachgeschosse bzw. Normalgeschosse (gilt ebenso für raum, bgf, bri, koerper)'],
-      ['koerper[dach] / [gaube] / [grundkoerper]', 'Filter: Dachkörper, Gauben bzw. Grundkörper (Quader)'],
-      ['[r] [s] [abzug] [feld=wert] [feld>wert] [!filter]', 'weitere Filter, mehrere mit Komma: raum[wofl,geschoss=EG], geschoss[wofl>0]; Vergleiche = != > < >= <= (leere Felder = 0)'],
-      ['…|einmal', 'Wert nur in der ersten Zeile der Wiederholung, z. B. geschoss.name|einmal'],
-    ],
-  },
-  PROJEKT_DOCS,
-  {
-    group: 'Maßgrundlage und Normen (QUADRIO)',
-    keys: [
-      ['projekt.massgrundlage', 'Maßgrundlage: „Planmaß Rohbau“, „Planmaß Fertigmaß“ oder „Aufmaß“ (Projekt-Einstellung)'],
-      ['projekt.massgrundlage_text', 'als Satz, z. B. „Flächen aus Planmaßen (Rohbau), Putzabzug je Raum“'],
-      ['projekt.planunterlagen', 'Planungsunterlagen (DIN 277, 5.1): Eingabe im Projekt, sonst die hinterlegten Pläne je Geschoss'],
-      ['projekt.kontrollmass', 'je kalibriertem Plan, z. B. „EG: aus Plan abgegriffen, Maßstab kalibriert, Kontrollmaß 8,00 m: Abweichung +0,12 %“'],
-      ['projekt.normen', '„Wohnfläche nach WoFlV vom 25.11.2003; Grundflächen und Rauminhalte nach DIN 277:2021-08“'],
-      ['statistik.wohnungen, statistik.raeume, statistik.sonstige_nutzflaeche', 'Hochbaustatistik: Zahl der Wohnungen, Räume (NUF 1 ab 6 m², Küchen unabhängig von der Größe), Nutzfläche ohne Wohnflächenräume [m²]'],
-    ],
-  },
-  {
-    group: 'Kennwerte (summe.*, geschoss.*, geschoss:NAME.*)',
-    keys: [
-      ['bgf, bgf_r, bgf_s', 'Brutto-Grundfläche gesamt / Regelfall / Sonderfall [m²]'],
-      ['bri, bri_r, bri_s', 'Brutto-Rauminhalt [m³]'],
-      ['nuf, nuf1 … nuf7', 'Nutzungsfläche gesamt bzw. je Nutzungsgruppe [m²]'],
-      ['tf, vf', 'Technikfläche, Verkehrsfläche [m²]'],
-      ['nrf, nrf_r, nrf_s', 'Netto-Raumfläche [m²]'],
-      ['kgf, kgf_r, kgf_s', 'Konstruktions-Grundfläche (BGF − NRF) gesamt / Regelfall / Sonderfall [m²]'],
-      ['wofl, wofl_roh', 'Wohnfläche nach WoFlV [m²] mit bzw. ohne Putzabzug der Räume'],
-      ['nebenflaeche', 'Summe der Räume ohne Wohnflächenanrechnung [m²]'],
-      ['anzahl_raeume', 'Anzahl Räume'],
-      ['name, hoehe, nr', 'nur geschoss.*: Bezeichnung, Geschosshöhe, laufende Nr.'],
-      ['sohle', 'nur geschoss.*: Bodenplatte inkl. Dämmung darunter, Unterkante bis Fußboden [m] (BRI ab dieser Unterkante)'],
-      ['dachgeschoss, art', 'nur geschoss.*: „ja“ bei Dachgeschossen; „Dachgeschoss“ bzw. „Normalgeschoss“'],
-    ],
-  },
-  {
-    group: 'raum.* (Zeile je Raum)',
-    keys: [
-      ['raum.nr', 'laufende Nummer'],
-      ['raum.geschoss', 'Geschoss'],
-      ['raum.nummer', 'Raumnummer'],
-      ['raum.name', 'Raumbezeichnung'],
-      ['raum.nutzung', 'Nutzungsgruppe kurz (z. B. NUF 1)'],
-      ['raum.nutzung_text', 'Nutzungsgruppe ausgeschrieben'],
-      ['raum.umschliessung', 'R oder S (leer außerhalb der BGF)'],
-      ['raum.ausserhalb_bgf', '„ja“ bei Flächen außerhalb der BGF (z. B. ebenerdige Terrasse) – nur Wohnfläche, nicht in der NRF'],
-      ['raum.flaeche', 'Grundfläche [m²] abzüglich Putzabzug (Abzugsflächen negativ)'],
-      ['raum.flaeche_roh', 'Grundfläche ohne Putzabzug [m²]'],
-      ['raum.putzabzug', 'Putzabzug in %'],
-      ['raum.hoehenlage', 'Höhenlage des Fußbodens gegenüber dem Geschoss [m] (Split-Level, negativ = tiefer)'],
-      ['raum.wohnflaeche', '„ja“, wenn auf die Wohnfläche angerechnet'],
-      ['raum.wofl_kategorie', 'Anrechnung nach WoFlV'],
-      ['raum.wofl_faktor', 'Anrechnungsfaktor'],
-      ['raum.wofl', 'anrechenbare Wohnfläche [m²]'],
-      ['raum.teil_h2, raum.teil_h12, raum.teil_h01', 'nur „Raumteile nach lichter Höhe“: Teilflächen ≥ 2 m, 1–2 m, < 1 m [m²] (Wohnfläche = ≥ 2 m + ½ × 1–2 m)'],
-      ['raum.wofl_roh', 'anrechenbare Wohnfläche ohne Putzabzug [m²] – wenn der Abzug in Excel gerechnet wird'],
-      ['raum.wohnung', 'Wohnungszuordnung'],
-      ['raum.abzug', '„Abzug“ bei Abzugsflächen, sonst leer'],
-      ['raum.bemerkung', 'Bemerkung'],
-    ],
-  },
-  {
-    group: 'bgf.* (BGF-Teilflächen, Zeile je BGF-Umriss)',
-    keys: [
-      ['bgf.geschoss, bgf.nr', 'Geschoss, laufende Nummer im Geschoss'],
-      ['bgf.name', 'Bezeichnung der Teilfläche (Name des BGF-Umrisses)'],
-      ['bgf.umschliessung', 'R oder S'],
-      ['bgf.flaeche', 'Fläche [m²] (negativ bei Abzugsflächen)'],
-      ['bgf.bgf_r, bgf.bgf_s', 'Fläche im Regel- bzw. Sonderfall, sonst leer [m²]'],
-      ['bgf.laenge, bgf.breite', 'Länge und Breite – bei rechteckigen Teilflächen [m]'],
-      ['bgf.bri', 'Brutto-Rauminhalt der Teilfläche [m³]'],
-      ['bgf.hoehenlage', 'Höhenversatz des Körpers gegenüber dem Geschoss [m], sonst leer'],
-      ['bgf.abzug', '„Abzug“ bei Abzugsflächen, sonst leer'],
-      ['bgf.bemerkung, bgf.dachgeschoss', 'Bemerkung; „ja“ im Dachgeschoss'],
-      ['bgf[r] / bgf[s] / bgf[abzug] / bgf[!abzug]', 'Filter wie bei raum'],
-    ],
-  },
-  {
-    group: 'bri.* (Rechenweg Brutto-Rauminhalt, Zeile je Teilkörper)',
-    keys: [
-      ['bri.geschoss, bri.umriss, bri.nr', 'Geschoss, BGF-Umriss, laufende Nummer im Geschoss'],
-      ['bri.bezeichnung', 'Teilkörper, z. B. „Satteldach: Dreiecksprisma“'],
-      ['bri.anzahl', 'Anzahl gleicher Teilkörper (negativ bei Abzügen)'],
-      ['bri.laenge, bri.breite', 'Länge (in Firstrichtung) und Breite – bei rechteckigen Grundflächen'],
-      ['bri.flaeche', 'Grundfläche des Teilkörpers [m²]'],
-      ['bri.hoehe', 'Höhe [m]'],
-      ['bri.faktor', 'Formfaktor (1 Quader, 0,5 Prisma/Keil, 0,333 Pyramide …)'],
-      ['bri.volumen', 'anzahl × flaeche × hoehe × faktor [m³]'],
-      ['bri.formel', 'Rechenweg als Text, z. B. „12,00 × 9,00 × 3,151 × ½“'],
-      ['bri.unterbau', '„Bodenplatte“ bzw. „Split-Level“ bei Teilen unter dem Geschossfußboden, sonst leer'],
-    ],
-  },
-  {
-    group: 'koerper.* (BRI mit geschlossenen Formeln, Zeile je Körper – Normalgeschosse Höhe × BGF, Dächer als ganzer Körper)',
-    keys: [
-      ['koerper.geschoss, koerper.umriss, koerper.nr', 'Geschoss, BGF-Umriss, laufende Nummer im Geschoss'],
-      ['koerper.art', '„Grundkörper“ (Quader bis Geschosshöhe bzw. Traufe), „Dach“ oder „Gaube“'],
-      ['koerper.bezeichnung', 'z. B. „Quader“, „Grundkörper bis Traufe“, „Walmdach“, „Schleppgaube“'],
-      ['koerper.parameter', 'Maße als Text, z. B. „H: 5,375 m; B: 10,75 m; L: 12,00 m“'],
-      ['koerper.formel', 'Formel mit Formelzeichen, z. B. „B × H × (3 × L − B) / 6“'],
-      ['koerper.rechnung', 'Formel mit eingesetzten Werten, z. B. „10,75 × 5,38 × (3 × 12 − 10,75) / 6“'],
-      ['koerper.flaeche', 'Grundfläche [m²] (negativ bei Abzugsflächen)'],
-      ['koerper.hoehe', 'Höhe [m]: Grundkörper = Geschoss-/Traufhöhe, Dach = Höhe über Traufe, Gaube = Höhe der Vorderwand über der Dachfläche'],
-      ['koerper.bemerkung', 'Fußnote, z. B. Abweichung einer aus dem IFC-Modell erkannten Dachform'],
-      ['koerper.laenge, koerper.breite, koerper.neigung', 'Länge (Firstrichtung) bzw. Gaubenbreite, Breite bzw. Gaubentiefe [m], Dach-/Gaubenneigung [°]'],
-      ['koerper.volumen', 'Volumen [m³]; Summe aller Körper = BRI'],
-      ['koerper.dachgeschoss', '„ja“, wenn der Körper in einem Dachgeschoss liegt'],
-    ],
-  },
-  {
-    group: 'wohnung.* (Zeile je Wohnung) bzw. wohnung:NAME.*',
-    keys: [
-      ['wohnung.nr', 'laufende Nummer'],
-      ['wohnung.name', 'Bezeichnung'],
-      ['wohnung.anzahl_raeume', 'Anzahl Räume'],
-      ['wohnung.raeume_statistik', 'Räume für die Hochbaustatistik: NUF 1 ab 6 m², Küchen unabhängig von der Größe (Bad, WC, Flur, Abstellräume nicht)'],
-      ['wohnung.grundflaeche', 'Summe Grundflächen [m²]'],
-      ['wohnung.wofl', 'Wohnfläche [m²]'],
-    ],
-  },
-  {
-    group: 'nutzung.* (Zeile je Nutzungsgruppe)',
-    keys: [
-      ['nutzung.gruppe', 'Kürzel (NUF 1 … VF 9)'],
-      ['nutzung.bezeichnung', 'Bezeichnung'],
-      ['nutzung.flaeche', 'Fläche gesamt [m²]'],
-    ],
-  },
-];
-
 /* ---------- Filter ---------- */
 
 const NUF_HNF = new Set(['NUF 1', 'NUF 2', 'NUF 3', 'NUF 4', 'NUF 5', 'NUF 6']);
@@ -403,6 +322,8 @@ const NAMED_FILTERS: Record<string, (r: Row) => boolean> = {
   tf: (r) => String(r.nutzung).startsWith('TF'),
   vf: (r) => String(r.nutzung).startsWith('VF'),
   hnf: (r) => NUF_HNF.has(String(r.nutzung)),
+  freisitz: (r) => r._wofl === 'freisitz',
+  freisitze: (r) => r._wofl === 'freisitz',
   nnf: (r) => r.nutzung === 'NUF 7',
   r: (r) => r.umschliessung === 'R',
   s: (r) => r.umschliessung === 'S',
@@ -418,16 +339,20 @@ const NAMED_FILTERS: Record<string, (r: Row) => boolean> = {
   'grundkörper': (r) => r.art === 'Grundkörper',
 };
 
+/** Name der Wohnung eines Raums wie in der Berechnung: Wohnflächen ohne Zuordnung unter „(ohne Zuordnung)“ */
+const OHNE_ZUORDNUNG = '(ohne Zuordnung)';
+const wohnungVon = (r: Row) => (r.wohnung ? r.wohnung : r.wohnflaeche === 'ja' ? OHNE_ZUORDNUNG : '');
+
 /** Wie hängen Sammlungen in Blöcken zusammen? (Kind-Datensatz passt zum gebundenen Eltern-Datensatz) */
 function zugehoerig(child: string, row: Row, parent: string, p: Row, ctx: ExportContext): boolean {
   const raeume = ctx.collections.raum ?? [];
   if (parent === 'geschoss') {
     if (child === 'raum' || child === 'bgf' || child === 'bri' || child === 'koerper') return row._geschossId === p._id;
-    if (child === 'wohnung') return raeume.some((r) => r._geschossId === p._id && r.wohnung === row.name);
+    if (child === 'wohnung') return raeume.some((r) => r._geschossId === p._id && wohnungVon(r) === row.name);
   }
   if (parent === 'wohnung') {
-    if (child === 'raum') return row.wohnung === p.name;
-    if (child === 'geschoss') return raeume.some((r) => r._geschossId === row._id && r.wohnung === p.name);
+    if (child === 'raum') return wohnungVon(row) === p.name;
+    if (child === 'geschoss') return raeume.some((r) => r._geschossId === row._id && wohnungVon(r) === p.name);
   }
   if (parent === 'nutzung' && child === 'raum') return row.nutzung === p.gruppe;
   if (parent === 'bgf') {

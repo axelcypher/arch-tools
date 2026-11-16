@@ -1,5 +1,5 @@
-import type { ExportContext, PlaceholderDocs, Row, Value } from '@core/excel/context';
-import { PROJEKT_DOCS, projektWerte } from '@core/excel/projekt';
+import type { ExportContext, Row, Value } from '@core/excel/context';
+import { projektWerte } from '@core/excel/projekt';
 import type { Project } from '@core/model';
 import { istRisiko, kg1, kgName } from '../din276';
 import type { Ergebnis } from '../kosten';
@@ -9,7 +9,8 @@ import { MENGEN_BEZUEGE, MENGEN_INFO } from '../mengen';
 import { datumAnzeige as datum } from '../datum';
 
 /**
- * Datengrundlage für Excel-Export und Vorlagen der Kostenermittlung (Syntax siehe docs/excel-vorlagen.md).
+ * Datengrundlage für Excel-Export und Vorlagen der Kostenermittlung (Syntax siehe docs/excel-vorlagen.md; jeder
+ * Platzhalter ist in platzhalterSchema.ts beschrieben – der Vollständigkeitstest verlangt das für jeden neuen Schlüssel).
  *
  *   {{gesamt.brutto}}                       Einzelwert
  *   {{#kg}} … {{/kg}}                       Zeilenblock je Kostengruppe der 1. Ebene
@@ -138,60 +139,3 @@ export function buildKostenContext(project: Project, date = new Date(), e: Ergeb
   };
 }
 
-export const KOSTEN_PLACEHOLDER_DOCS: PlaceholderDocs = [
-  {
-    group: 'Blöcke, Filter, Modifikatoren',
-    keys: [
-      ['#kg … /kg', 'Zeilenblock je Kostengruppe der 1. Ebene; position- und kg2-Zeilen darin nur für diese Kostengruppe'],
-      ['#wenn … /wenn', 'Abschnitt einmal ausgeben, wenn die Bedingung zutrifft: {{#wenn position[aus]}} (Datensätze vorhanden), {{#wenn kg500}} (Wert nicht 0/leer), {{#wenn gesamt.brutto>500000}} (Vergleich), {{#wenn !…}} umgekehrt; im Block je Datensatz'],
-      ['#kg2 … /kg2', 'Zeilenblock je Kostengruppe der 2. Ebene (auch innerhalb von #kg)'],
-      ['position[aktiv] / position[aus]', 'Filter: gerechnete bzw. ausgeschaltete Positionen'],
-      ['menge[festgelegt]', 'Filter: von Hand festgelegte Mengen'],
-      ['[feld=wert] [feld>wert] [!filter]', 'weitere Filter, z. B. position[aktiv,kg=330], position[kosten>10000]; Vergleiche = != > < >= <= (leere Felder = 0)'],
-      ['…|einmal', 'Wert nur in der ersten Zeile der Wiederholung'],
-    ],
-  },
-  PROJEKT_DOCS,
-  {
-    group: 'Grundlagen und Ergebnis',
-    keys: [
-      ['stufe, stufe.lph, preisstand', 'Stufe der Kostenermittlung (z. B. Kostenschätzung), Leistungsphase, Kostenstand (Preisstand)'],
-      ['stufe.hinweis', 'bei Kostenvoranschlag, -anschlag und -feststellung: Hinweis, dass mit Kennwerten fortgeschrieben wurde (sonst leer)'],
-      ['risiko, risiko.von, risiko.bis', 'Kostenrisiken (gesondert ausgewiesen, netto; im Gesamt netto enthalten)'],
-      ['katalog, katalog.name, katalog.quelle, katalog.stand', 'Herkunft der Kennwerte: in einer Zeile bzw. in Teilen'],
-      ['index.basis, index.aktuell, regionalfaktor, faktor', 'Baupreisindex, Regionalfaktor und daraus der Faktor auf die Kennwerte'],
-      ['gesamt.netto, gesamt.brutto, gesamt.mwst, mwst', 'Gesamtkosten (Mittel) netto/brutto, Umsatzsteuer in € bzw. %'],
-      ['gesamt.netto.von, gesamt.netto.bis, gesamt.brutto.von, gesamt.brutto.bis', 'Bandbreite'],
-      ['kg300, kg300.von, kg300.bis, kg330 …', 'Summe einer Kostengruppe (1. und 2. Ebene, netto)'],
-      ['kg:300.mittel', 'dasselbe über das Nachschlagen per Name (Felder wie kg.*)'],
-      ['kennwert.bgf, kennwert.bri, kennwert.nuf, kennwert.wofl (+ .von/.bis)', 'Bauwerkskosten KG 300 + 400 brutto je Einheit'],
-      ['mengen.bgf, mengen.bri, mengen.awf, mengen.daf …', 'Mengen als Einzelwert (auch nrf, nuf, tf, vf, wofl, grf, bgi, iwf, def, auf, fbg, we)'],
-      ['hinweise, haftung', 'alle Hinweise in einer Zelle; Hinweis zur Herkunft der Kennwerte'],
-    ],
-  },
-  {
-    group: 'kg.* / kg2.* (Zeile je Kostengruppe)',
-    keys: [
-      ['kg.kg, kg.name', 'Kostengruppe und Bezeichnung nach DIN 276; nach den Kostengruppen ggf. die Zeile „Kostenrisiken“ (ohne KG)'],
-      ['kg.von, kg.mittel, kg.bis', 'Summe netto'],
-    ],
-  },
-  {
-    group: 'position.* (Zeile je Position)',
-    keys: [
-      ['position.nr, position.kg, position.kg_name, position.bezeichnung', 'laufende Nummer, Kostengruppe, deren Name, Bezeichnung der Position'],
-      ['position.bezug, position.menge, position.einheit', 'Bezugsgröße (z. B. „m² BGF“, „% von KG 300 + 400“), Menge und Einheit (bei % die Grundlage in €)'],
-      ['position.kennwert, position.kennwert_von, position.kennwert_bis', 'Kennwert netto nach Faktor (bei % der Prozentsatz)'],
-      ['position.kosten, position.kosten_von, position.kosten_bis', 'Kosten netto'],
-      ['position.aktiv, position.quelle, position.bemerkung, position.hinweis', '„ja“, wenn gerechnet; Herkunft des Kennwerts; Bemerkung; Hinweis (fehlende Menge …)'],
-    ],
-  },
-  {
-    group: 'menge.* / stand.* / hinweis.*',
-    keys: [
-      ['menge.kurz, menge.label, menge.wert, menge.einheit, menge.ermittlung, menge.festgelegt', 'Zeile je Menge'],
-      ['stand.datum, stand.stufe, stand.bemerkung, stand.netto, stand.brutto, stand.brutto_von, stand.brutto_bis', 'Zeile je festgehaltenem Stand'],
-      ['hinweis.nr, hinweis.text', 'Zeile je Hinweis'],
-    ],
-  },
-];

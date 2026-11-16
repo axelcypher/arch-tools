@@ -661,6 +661,11 @@ textarea:focus {
   border-top: 1px solid var(--line-soft);
 }
 
+/* reine Texttabellen (z. B. Platzhalter-Referenz): Spaltenköpfe linksbündig */
+.summary-table.text th {
+  text-align: left;
+}
+
 .summary-table tr.strong td {
   font-weight: 600;
 }
