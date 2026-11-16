@@ -171,7 +171,9 @@ Baustein in `packages/core`, und jede App liefert dann ihre Seite (Felder und Pr
   Aktivierung, nur der gewählte Eintrag mit `tabIndex` 0); der Inhalt ist `role="tabpanel"` mit `aria-labelledby` auf
   seinen Eintrag. Die Liste hat eine Mindestbreite, lange Namen brechen um.
 - **Seiten in fester Reihenfolge:** „Allgemein“ (Speicherort der Einstellungen, Büro), „Pfade und Benennung“ (alle
-  Pfadvorgaben und Benennungsschemata auf einer Seite, nach App gegliedert mit `h4`), dann je App eine Seite mit ihrem
+  Pfadvorgaben und Benennungsschemata auf einer Seite, nach Thema gegliedert mit `h4` – Projekt, Ablage, Export …;
+  jede Einstellung nennt die App bzw. Apps, die sie nutzen, als Text neben dem Feld, und ein Filter „App“ über der Seite
+  zeigt nur die Einstellungen einer App), dann je App eine Seite mit ihrem
   Namen, so geschrieben wie die App (QUADRIO), in alphabetischer Reihenfolge. Die öffnende App bestimmt nur die
   Startseite: ihre eigene; Arkly öffnet „Allgemein“, die Warnung zum Notbetrieb ebenfalls „Allgemein“.
 - **Erstfokus:** das erste Feld der Startseite (`data-startfokus`), nicht die Seitenliste; im Notbetrieb (alles
