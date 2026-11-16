@@ -70,9 +70,10 @@ function AblageSymbol() {
 }
 
 /**
- * Punkt „Speicherort der Einstellungen …“ für das Menü „Einstellungen und Hilfe“ der Rahmen-App Arkly – übergangsweise, bis
- * Arkly nachzieht (docs/nachziehen/arkly.md); in den Apps steht der Speicherort im Einstellungsdialog (Seite „Allgemein“). Im Normalfall; im
- * Notbetrieb und bei einem Fehler zeigt ihn `SpeicherortAnzeige nurWarnung` sichtbar in der Leiste (dann `null`)
+ * Punkt „Speicherort der Einstellungen …“ im Normalfall für das Menü „Einstellungen und Hilfe“ der Rahmen-App Arkly –
+ * übergangsweise, bis Arkly nachzieht (docs/nachziehen/arkly.md); in den Apps steht der Speicherort im Einstellungsdialog
+ * (Seite „Allgemein“). Im Notbetrieb und bei einem Fehler zeigt ihn `SpeicherortAnzeige nurWarnung` sichtbar in der Leiste
+ * (dann `null`).
  */
 export function speicherortPunkt(ort: KonfigOrtAnzeige, oeffnen: () => void): MenuePunkt | null {
   if (!ort || ort === 'fehler' || ort.notbetrieb) return null;
@@ -97,7 +98,7 @@ export function SpeicherortAnzeige({ ort, nurWarnung = false, onOeffnen }: { ort
     return (
       <button
         className="titlebar-btn titlebar-notbetrieb"
-        title={`Speicherort der Einstellungen nicht lesbar – Einzelheiten im Protokoll${onOeffnen ? ' – Einstellungen öffnen' : ''}`}
+        title={`Speicherort der Einstellungen nicht lesbar – Einzelheiten im Protokoll${onOeffnen ? '. Klick öffnet die Einstellungen.' : ''}`}
         onClick={oeffnen}
       >
         <span aria-hidden>⚠</span> Einstellungen
@@ -108,7 +109,7 @@ export function SpeicherortAnzeige({ ort, nurWarnung = false, onOeffnen }: { ort
     return (
       <button
         className="titlebar-btn titlebar-notbetrieb"
-        title={`Netzlaufwerk mit den Einstellungen nicht erreichbar (${ort.ordner}) – Einstellungen nur lesbar${onOeffnen ? ' – Einstellungen öffnen' : ''}`}
+        title={`Netzlaufwerk mit den Einstellungen nicht erreichbar (${ort.ordner}) – Einstellungen nur lesbar${onOeffnen ? '. Klick öffnet die Einstellungen.' : ''}`}
         onClick={oeffnen}
       >
         <span aria-hidden>⚠</span> Einstellungen nur lesbar
