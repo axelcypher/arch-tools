@@ -1,12 +1,12 @@
 import { act } from 'react';
 
 /**
- * Rauchtest für die UI-Tests der Apps (nur in Tests verwendet): Farbschema über das Menü der Titelleiste („Einstellungen und Hilfe“, Untermenü „Farbschema“) auf
+ * Rauchtest für die UI-Tests der Apps (nur in Tests verwendet): Farbschema über das Menü der Titelleiste („Darstellung und Hilfe“, Untermenü „Farbschema“) auf
  * „Dunkel“ und zurück auf „Hell“ stellen – das Schema am <html>-Element muss sofort wechseln.
  */
 export function farbschemaWechseln(host: HTMLElement, wahl: 'Hell' | 'Dunkel'): string | undefined {
   const mehr = host.querySelector<HTMLButtonElement>('.titlebar .titlebar-menue');
-  if (!mehr) throw new Error('Menü der Titelleiste („Einstellungen und Hilfe“) fehlt');
+  if (!mehr) throw new Error('Menü der Titelleiste („Darstellung und Hilfe“) fehlt');
   if (mehr.getAttribute('aria-expanded') !== 'false') throw new Error('Menü der Titelleiste: aria-expanded vor dem Öffnen nicht „false“');
   act(() => mehr.click());
   if (mehr.getAttribute('aria-expanded') !== 'true') throw new Error('Menü der Titelleiste: aria-expanded nach dem Öffnen nicht „true“');

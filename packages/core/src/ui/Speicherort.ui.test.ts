@@ -4,6 +4,12 @@ import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { attrappe, BASIS, installieren, KOPIE, legeAn, lies, NAS } from '../__fixtures__/konfigAttrappe';
 
+// Fenster der Titelleiste (Desktop): nur, was die Titelleiste beim Einhängen fragt – gebraucht vom Test mit der ganzen
+// Titelleiste (hier, weil die Konfig-Attrappe den Notbetrieb bereitstellt)
+vi.mock('@tauri-apps/api/window', () => ({
+  getCurrentWindow: () => ({ isMaximized: async () => false, onResized: async () => () => {}, onCloseRequested: async () => () => {} }),
+}));
+
 const fs = () => attrappe.dateien;
 
 /** Speicherort der Einstellungen: Knopf in der Titelleiste, Dialog mit Wechsel und Rückfrage, Notbetrieb */
@@ -204,6 +210,36 @@ describe('Speicherort der Einstellungen', () => {
     expect(dialog()!.querySelector('.sp-notbetrieb')).toBeNull();
     expect(dialog()!.querySelector('.meldung')?.textContent).toContain('wieder erreichbar');
     expect(knopf('⚠ Einstellungen nur lesbar')).toBeUndefined();
+  });
+
+  it('Titelleiste der Apps: Menü „Darstellung und Hilfe“ ohne Speicherort; die Warnung im Notbetrieb öffnet die Einstellungen auf „Allgemein“', async () => {
+    legeAn(`${BASIS}/konfig.json`, { modus: 'netzwerk', ordner: NAS });
+    legeAn(`${KOPIE}/allgemein.json`, { buero: 'Büro' });
+    legeAn(`${KOPIE}/.herkunft.json`, { ordner: NAS, bereiche: ['allgemein'] });
+    attrappe.nasErreichbar = false;
+    const { TitleBar } = await import('./TitleBar');
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    await act(async () => {
+      root = createRoot(host);
+      root.render(createElement(TitleBar, { app: 'QUADRIO', name: 'EFH', dirty: false, onOpenLog: () => {} }));
+    });
+    await warten();
+    const menue = host.querySelector<HTMLButtonElement>('.titlebar-menue')!;
+    expect(menue.getAttribute('aria-label')).toBe('Darstellung und Hilfe');
+    await act(async () => menue.click());
+    const texte = [...document.querySelectorAll('.menue .menue-punkt')].map((p) => p.textContent ?? '');
+    expect(texte.some((t) => t.includes('Speicherort'))).toBe(false);
+    expect(texte.some((t) => t.includes('Einstellungen'))).toBe(false);
+    await esc();
+    const warn = knopf('⚠ Einstellungen nur lesbar', host);
+    expect(warn).toBeTruthy();
+    expect(warn!.title).toContain('Klick öffnet die Einstellungen.');
+    await klick(warn);
+    // nicht der Speicherort-Dialog, sondern der zentrale Einstellungsdialog auf „Allgemein“
+    expect(dialog()).toBeNull();
+    const gewaehlt = document.querySelector('[role="tab"][aria-selected="true"]');
+    expect(gewaehlt?.textContent).toContain('Allgemein');
   });
 
   it('Gegenprobe Browser: kein Knopf, Hinweis auf den Browser-Speicher', async () => {

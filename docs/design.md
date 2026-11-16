@@ -522,12 +522,11 @@ und der Hinweis am Punkt („2 neue“). Der Speicherort der Einstellungen steht
 sichtbar in der Titelleiste bleibt nur die Warnung im Notbetrieb, sie öffnet den Dialog auf dieser Seite. Das Farbschema
 bleibt nur hier (schneller Wechsel, keine Kopie im Dialog). Die Kopfleiste von Arkly hat kein „Datei“: Ihr Menü heißt
 weiter „Einstellungen und Hilfe“ und beginnt nach dem Update-Punkt mit „Einstellungen …“ (Strg+,), dann Farbschema und
-Fehlerprotokoll, ohne „Berechnungsregeln …“. Stand: Die Titelleiste stellt das Designsystem um, sobald der
-Einstellungsdialog da ist; bis dahin heißt das Menü „Einstellungen und Hilfe“ und enthält den Speicherort. Unter 960px
-Fensterbreite (feste Grenze, weil die Titelleiste keinen Überlauf hat; die Werkzeugleiste regelt das selbst, siehe
-„Kopf- und Werkzeugleisten“) zeigen Knöpfe mit Symbol nur noch das Symbol: Text in `<span className="titlebar-text">`,
-der Name bleibt über `aria-label`. Die Tableiste von Arkly zeigt unter 1100px am Tab nur Symbol und Namen der App (das
-Projekt steht im Tooltip); eine Fläche zum Ziehen des Fensters bleibt immer frei.
+Fehlerprotokoll, ohne „Berechnungsregeln …“. Unter 960px Fensterbreite (feste Grenze, weil die Titelleiste keinen
+Überlauf hat; die Werkzeugleiste regelt das selbst, siehe „Kopf- und Werkzeugleisten“) zeigen Knöpfe mit Symbol nur noch
+das Symbol: Text in `<span className="titlebar-text">`, der Name bleibt über `aria-label`. Die Tableiste von Arkly zeigt
+unter 1100px am Tab nur Symbol und Namen der App (das Projekt steht im Tooltip); eine Fläche zum Ziehen des Fensters
+bleibt immer frei.
 
 ## Ungespeicherte Änderungen
 

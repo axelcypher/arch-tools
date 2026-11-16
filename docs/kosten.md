@@ -42,7 +42,7 @@ und Regionalfaktor.
   Berechnungsordner, siehe docs/excel-vorlagen.md) und der Hauptknopf **Kosten drucken …**; Excel …, PDF … mit Dialog
   stehen unter Datei → Exportieren. In schmalen Fenstern wandert „Exportieren“ ins Menü „Mehr“. Der Kennwertkatalog steht im Kopf
   der Positionen.
-- **Regeln nachschlagen:** „Berechnungsregeln …“ (Menü „Einstellungen und Hilfe“ der Titelleiste) bzw. F1 öffnet das Nachschlagewerk (DIN 276, DIN 277) mit Quellen und Suche.
+- **Regeln nachschlagen:** „Berechnungsregeln …“ (Menü „Darstellung und Hilfe“ der Titelleiste) bzw. F1 öffnet das Nachschlagewerk (DIN 276, DIN 277) mit Quellen und Suche.
 
 ## Mengen
 

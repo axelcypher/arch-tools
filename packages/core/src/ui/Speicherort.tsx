@@ -70,8 +70,10 @@ function AblageSymbol() {
 }
 
 /**
- * Punkt „Speicherort der Einstellungen …“ für das Menü der Titelleiste („Einstellungen und Hilfe“) – im Normalfall; im
- * Notbetrieb und bei einem Fehler zeigt ihn `SpeicherortAnzeige nurWarnung` sichtbar in der Leiste (dann `null`)
+ * Punkt „Speicherort der Einstellungen …“ im Normalfall für das Menü „Einstellungen und Hilfe“ der Rahmen-App Arkly –
+ * übergangsweise, bis Arkly nachzieht (docs/nachziehen/arkly.md); in den Apps steht der Speicherort im Einstellungsdialog
+ * (Seite „Allgemein“). Im Notbetrieb und bei einem Fehler zeigt ihn `SpeicherortAnzeige nurWarnung` sichtbar in der Leiste
+ * (dann `null`).
  */
 export function speicherortPunkt(ort: KonfigOrtAnzeige, oeffnen: () => void): MenuePunkt | null {
   if (!ort || ort === 'fehler' || ort.notbetrieb) return null;
@@ -85,21 +87,31 @@ export function SpeicherortKnopf({ nurWarnung = false }: { nurWarnung?: boolean 
 
 /**
  * Wie `SpeicherortKnopf`, mit schon gelesenem Ort (die Titelleiste liest ihn einmal für Knopf und Menüpunkt).
- * `nurWarnung`: nur im Notbetrieb bzw. bei einem Fehler zeigen – sonst steht der Ort im Menü (`speicherortPunkt`).
+ * `nurWarnung`: nur im Notbetrieb bzw. bei einem Fehler zeigen – sonst steht der Ort im Einstellungsdialog bzw. im Menü.
+ * `onOeffnen`: statt des Speicherort-Dialogs etwas anderes öffnen (Titelleiste der Apps: Einstellungsdialog auf „Allgemein“).
  */
-export function SpeicherortAnzeige({ ort, nurWarnung = false }: { ort: KonfigOrtAnzeige; nurWarnung?: boolean }) {
-  const oeffnen = useSpeicherort((s) => s.oeffnen);
+export function SpeicherortAnzeige({ ort, nurWarnung = false, onOeffnen }: { ort: KonfigOrtAnzeige; nurWarnung?: boolean; onOeffnen?: () => void }) {
+  const dialog = useSpeicherort((s) => s.oeffnen);
+  const oeffnen = onOeffnen ?? dialog;
   if (!ort) return null;
   if (ort === 'fehler') {
     return (
-      <button className="titlebar-btn titlebar-notbetrieb" title="Speicherort der Einstellungen nicht lesbar – Einzelheiten im Protokoll" onClick={oeffnen}>
+      <button
+        className="titlebar-btn titlebar-notbetrieb"
+        title={`Speicherort der Einstellungen nicht lesbar – Einzelheiten im Protokoll${onOeffnen ? '. Klick öffnet die Einstellungen.' : ''}`}
+        onClick={oeffnen}
+      >
         <span aria-hidden>⚠</span> Einstellungen
       </button>
     );
   }
   if (ort.notbetrieb) {
     return (
-      <button className="titlebar-btn titlebar-notbetrieb" title={`Netzlaufwerk mit den Einstellungen nicht erreichbar (${ort.ordner}) – Einstellungen nur lesbar`} onClick={oeffnen}>
+      <button
+        className="titlebar-btn titlebar-notbetrieb"
+        title={`Netzlaufwerk mit den Einstellungen nicht erreichbar (${ort.ordner}) – Einstellungen nur lesbar${onOeffnen ? '. Klick öffnet die Einstellungen.' : ''}`}
+        onClick={oeffnen}
+      >
         <span aria-hidden>⚠</span> Einstellungen nur lesbar
       </button>
     );

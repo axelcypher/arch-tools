@@ -17,8 +17,8 @@ import { MenueHost, MenueKnopf } from './Menue';
 import type { MenuePunkt } from './Menue';
 import { Symbol } from './Symbol';
 import { useBuero } from './DruckKopf';
-import { SpeicherortAnzeige, speicherortPunkt, SpeicherortHost, useKonfigOrt, useSpeicherort } from './Speicherort';
-import { EinstellungenHost } from './Einstellungen';
+import { SpeicherortAnzeige, SpeicherortHost, useKonfigOrt } from './Speicherort';
+import { einstellungenOeffnen, EinstellungenHost } from './Einstellungen';
 import { umzugBestaetigen } from './umzug';
 import { schreibenAbwarten } from './vorbereiten';
 
@@ -171,23 +171,23 @@ export function TitleBar({ app, name, dirty, ungespeichert, onOpenLog, regeln, o
   };
 
   const ort = useKonfigOrt();
-  const speicherortOeffnen = useSpeicherort((s) => s.oeffnen);
   const protokollOeffnen = () => {
     setSeen(getEntries().at(-1)?.id ?? 0);
     onOpenLog();
   };
   const neueFehler = errors === 1 ? 'ein neuer Fehler' : `${errors} neue Fehler`;
   /** Name des Menüknopfs – mit neuen Fehlern im Protokoll */
-  const menueName = errors > 0 ? `Einstellungen und Hilfe – ${neueFehler} im Fehlerprotokoll` : 'Einstellungen und Hilfe';
-  /** Menü der Titelleiste („Einstellungen und Hilfe“): seltene Befehle, in allen Apps gleich (docs/design.md, „Titelleiste“) */
+  const menueName = errors > 0 ? `Darstellung und Hilfe – ${neueFehler} im Fehlerprotokoll` : 'Darstellung und Hilfe';
+  /**
+   * Menü der Titelleiste („Darstellung und Hilfe“): seltene Befehle, in allen Apps gleich (docs/design.md, „Titelleiste“).
+   * „Einstellungen …“ steht in „Datei“, der Speicherort im Einstellungsdialog (Seite „Allgemein“).
+   */
   const mehrPunkte = (): MenuePunkt[] => {
-    const sp = rahmen === 'tab' ? null : speicherortPunkt(ort, speicherortOeffnen);
     // nur wo der UpdateKnopf steht (Desktop, eigenständig) und solange ein Update vorliegt
     const update = desktop && !rahmen ? updatePunkt() : null;
     return [
       ...(update ? [update, { trenner: true } as const] : []),
       farbschemaPunkt(zeichenflaeche),
-      ...(sp ? [sp] : []),
       ...(rahmen === 'fenster' && isTauri()
         ? [{ text: 'Andocken', titel: 'Wieder als Tab in das Hauptfenster', aktion: () => void andockenFragen().catch((e) => log.error('Andocken fehlgeschlagen', e)) }]
         : []),
@@ -223,11 +223,11 @@ export function TitleBar({ app, name, dirty, ungespeichert, onOpenLog, regeln, o
         </span>
         <span className="titlebar-drag" {...ziehen} />
         {desktop && !rahmen && <UpdateKnopf app={app} dirty={dirty} />}
-        {/* sichtbar nur im Notbetrieb; sonst steht der Speicherort im Menü (im Tab zeigt ihn der Rahmen) */}
-        {rahmen !== 'tab' && <SpeicherortAnzeige ort={ort} nurWarnung />}
+        {/* sichtbar nur im Notbetrieb; öffnet den Einstellungsdialog auf „Allgemein“ (dort steht der Speicherort; im Tab warnt der Rahmen) */}
+        {rahmen !== 'tab' && <SpeicherortAnzeige ort={ort} nurWarnung onOeffnen={() => einstellungenOeffnen('allgemein')} />}
         {regeln && <Nachschlagewerk app={regeln} />}
         {/* Menü der Titelleiste: neue Fehler zählt die Marke am Knopf, das Protokoll selbst steht im Menü */}
-        <MenueKnopf className="titlebar-btn titlebar-menue" punkte={mehrPunkte} ariaLabel={menueName} title={menueName} name="Einstellungen und Hilfe" pfeil={false}>
+        <MenueKnopf className="titlebar-btn titlebar-menue" punkte={mehrPunkte} ariaLabel={menueName} title={menueName} name="Darstellung und Hilfe" pfeil={false}>
           <Symbol name="menue" />
           {errors > 0 && (
             <span className="titlebar-badge" aria-hidden>
@@ -271,7 +271,7 @@ export function TitleBar({ app, name, dirty, ungespeichert, onOpenLog, regeln, o
 }
 
 /**
- * Untermenü „Farbschema“ (Menü „Einstellungen und Hilfe“ der Titelleiste, auch für die Rahmen-App): Einfachauswahl Auto/Hell/Dunkel,
+ * Untermenü „Farbschema“ (Menü „Darstellung und Hilfe“ der Titelleiste bzw. „Einstellungen und Hilfe“ der Rahmen-App): Einfachauswahl Auto/Hell/Dunkel,
  * mit Zeichenfläche dazu der Schalter „Zeichenfläche im dunklen Schema abdunkeln“. Liest den Stand beim Öffnen.
  */
 export function farbschemaPunkte(zeichenflaeche = true): MenuePunkt[] {

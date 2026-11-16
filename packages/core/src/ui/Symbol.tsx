@@ -18,7 +18,7 @@ const PFADE = {
   /** Gliederungsebene tiefer bzw. höher (Listen, LV): Pfeil von bzw. zur senkrechten Linie am linken Rand */
   einruecken: 'M4 4v16M9 12h11M16 8l4 4-4 4',
   ausruecken: 'M4 4v16M20 12H10M14 8l-4 4 4 4',
-  /** Menü der Titelleiste („Einstellungen und Hilfe“) – drei Striche */
+  /** Menü der Titelleiste („Darstellung und Hilfe“, in Arkly „Einstellungen und Hilfe“) – drei Striche */
   menue: 'M4 7h16M4 12h16M4 17h16',
   /** drei Punkte waagerecht: Zeilenknopf „Aktionen“ und Menü „Mehr“ am Ende einer Werkzeugleiste (öffnet ein Menü; nicht pfeilUnten, das ist der Aufklapp-Pfeil). Kreise statt `h.01` wie in `liste`: ein Symbol nur aus Punkten bliebe sonst bei 1em kaum sichtbar */
   mehr: 'M5 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM12 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM19 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2z',

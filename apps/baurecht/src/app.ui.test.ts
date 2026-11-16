@@ -641,7 +641,7 @@ describe('Baurecht – Oberfläche', () => {
     fremd.remove();
   });
 
-  it('Farbschema im Menü der Titelleiste („Einstellungen und Hilfe“): Fokus hinein, → öffnet das Untermenü, ↑/↓ bewegen, Esc schließt stufenweise und gibt den Fokus zurück', () => {
+  it('Farbschema im Menü der Titelleiste („Darstellung und Hilfe“): Fokus hinein, → öffnet das Untermenü, ↑/↓ bewegen, Esc schließt stufenweise und gibt den Fokus zurück', () => {
     const host = render();
     const mehr = host.querySelector<HTMLButtonElement>('.titlebar .titlebar-menue')!;
     act(() => mehr.focus());
