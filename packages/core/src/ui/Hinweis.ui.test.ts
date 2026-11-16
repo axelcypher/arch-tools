@@ -204,6 +204,31 @@ describe('Hinweis nach einer Aktion', () => {
     expect(host.querySelector('.hinweis')!.contains(document.activeElement)).toBe(true);
   });
 
+  it('verdeckt nie das fokussierte Element (WCAG 2.4.11): erst darüber schieben, sonst weicht der Stapel aus', () => {
+    const host = render();
+    host.querySelector('main')!.insertAdjacentHTML('beforeend', '<button id="frei">Frei</button>');
+    zeige({ text: 'Gespeichert' });
+    const aussen = host.querySelector<HTMLButtonElement>('#aussen')!;
+    const frei = host.querySelector<HTMLButtonElement>('#frei')!;
+    // Karten unten rechts; „Außen“ liegt darunter und lässt sich nicht verschieben, „Frei“ liegt oben links
+    const flaechen = new Map<Element, DOMRect>([
+      [host.querySelector('.hinweise')!, new DOMRect(500, 300, 400, 200)],
+      [host.querySelector('.hinweis')!, new DOMRect(512, 400, 376, 88)],
+      [aussen, new DOMRect(600, 420, 80, 24)],
+      [frei, new DOMRect(10, 10, 80, 24)],
+    ]);
+    vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
+      return flaechen.get(this) ?? new DOMRect();
+    });
+    const schieben = vi.fn();
+    aussen.scrollIntoView = schieben;
+    act(() => aussen.focus());
+    expect(schieben).toHaveBeenCalledWith({ block: 'nearest' });
+    expect(host.querySelector('.hinweise')!.classList.contains('ausweichen')).toBe(true);
+    act(() => frei.focus());
+    expect(host.querySelector('.hinweise')!.classList.contains('ausweichen')).toBe(false);
+  });
+
   it('schliesseHinweis schließt per id', () => {
     const host = render();
     let id = '';

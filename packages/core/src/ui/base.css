@@ -2125,26 +2125,35 @@ button.ph-lokal {
   clip-path: inset(50%);
   white-space: nowrap;
 }
-/* eine App mit Statusleiste setzt --hinweis-unten auf deren Höhe (Vorgabe 0px) */
+/* eine App mit Statusleiste setzt --hinweis-unten auf deren Höhe (Vorgabe 0px). Der Stapel hat innen Luft
+   (--s3), damit das Scrollen die Schatten der Karten nicht abschneidet; die Karten selbst stehen --s4 vom Rand. */
 .hinweise {
   position: fixed;
-  right: var(--s4);
-  bottom: calc(var(--hinweis-unten, 0px) + var(--s4));
+  right: calc(var(--s4) - var(--s3));
+  bottom: calc(var(--hinweis-unten, 0px) + var(--s4) - var(--s3));
   z-index: 15;
   display: flex;
   flex-direction: column;
   gap: var(--s2);
   box-sizing: border-box;
-  width: min(28rem, calc(100vw - 2 * var(--s4)));
-  max-height: calc(100vh - var(--hinweis-unten, 0px) - 2 * var(--s4) - 40px);
+  padding: var(--s3);
+  width: min(calc(28rem + 2 * var(--s3)), calc(100vw - 2 * (var(--s4) - var(--s3))));
+  /* die Titelleiste (34px) bleibt frei */
+  max-height: calc(100vh - var(--hinweis-unten, 0px) - 34px - 2 * (var(--s4) - var(--s3)));
   overflow-y: auto;
-  /* der leere Stapel fängt keine Klicks */
+  /* der leere Stapel und seine Ränder fangen keine Klicks */
   pointer-events: none;
+}
+/* niedrige Fenster: höchstens die halbe Höhe, der Inhalt bleibt sichtbar */
+@media (max-height: 520px) {
+  .hinweise {
+    max-height: 50vh;
+  }
 }
 /* das fokussierte Element läge darunter und lässt sich nicht darüber schieben: links unten */
 .hinweise.ausweichen {
   right: auto;
-  left: var(--s4);
+  left: calc(var(--s4) - var(--s3));
 }
 .hinweis {
   pointer-events: auto;
@@ -2152,7 +2161,7 @@ button.ph-lokal {
   align-items: flex-start;
   gap: var(--s2);
   padding: var(--s2) var(--s2) var(--s2) var(--s3);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--schatten-schwebend);
 }
 .hinweis-inhalt {
   flex: 1 1 auto;
@@ -2177,6 +2186,7 @@ button.ph-lokal {
   justify-content: center;
   min-width: var(--ctl-h-s);
   min-height: var(--ctl-h-s);
+  padding: 0;
 }
 
 /* ungespeicherte Änderungen am Knopf „Speichern“: Punkt (8px) außen an der oberen rechten Ecke – ändert die Breite

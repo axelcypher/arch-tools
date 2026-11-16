@@ -122,6 +122,16 @@ function zurueckSpringen() {
 /** Teilen sich Fokus-Element und Stapel eine Fläche? */
 const ueberdeckt = (a: DOMRect, b: DOMRect) => a.width > 0 && b.width > 0 && a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
 
+/** Fläche der Hinweis-Karten (ohne die Luft des Stapels für die Schatten); null ohne Hinweis */
+function kartenFlaeche(st: HTMLElement): DOMRect | null {
+  const karten = st.querySelectorAll<HTMLElement>('[data-hinweis]');
+  if (!karten.length) return null;
+  const s = st.getBoundingClientRect();
+  const oben = karten[0].getBoundingClientRect();
+  const unten = karten[karten.length - 1].getBoundingClientRect();
+  return new DOMRect(oben.left, Math.max(oben.top, s.top), oben.width, Math.min(unten.bottom, s.bottom) - Math.max(oben.top, s.top));
+}
+
 /** Stelle für Hinweise – einmal je App (steckt in der Titelleiste) */
 export function HinweisHost() {
   const liste = useStapel((s) => s.liste);
@@ -134,6 +144,19 @@ export function HinweisHost() {
       stapelEl = null;
     };
   }, []);
+
+  // ein neuer bzw. ersetzter Hinweis ist im (scrollbaren) Stapel zu sehen
+  useLayoutEffect(() => {
+    const st = ref.current;
+    const id = ansage && useStapel.getState().liste.find((h) => h.nr === ansage.nr)?.id;
+    const karte = id ? st?.querySelector<HTMLElement>(`[data-hinweis="${CSS.escape(id)}"]`) : null;
+    if (!st || !karte) return;
+    const s = st.getBoundingClientRect();
+    const k = karte.getBoundingClientRect();
+    const luft = parseFloat(getComputedStyle(st).paddingBottom) || 0;
+    if (k.bottom + luft > s.bottom) st.scrollTop += k.bottom + luft - s.bottom;
+    else if (k.top - luft < s.top) st.scrollTop -= s.top - (k.top - luft);
+  }, [ansage]);
 
   useEffect(() => {
     const taste = (e: KeyboardEvent) => {
@@ -149,13 +172,13 @@ export function HinweisHost() {
       const st = stapelEl;
       if (!st || !(el instanceof HTMLElement) || st.contains(el)) return;
       st.classList.remove('ausweichen');
-      if (!st.querySelector('[data-hinweis]')) return;
-      const s = st.getBoundingClientRect();
-      if (!ueberdeckt(el.getBoundingClientRect(), s)) return;
+      const s = kartenFlaeche(st);
+      if (!s || !ueberdeckt(el.getBoundingClientRect(), s)) return;
       el.style.scrollMarginBottom = `${Math.ceil(window.innerHeight - s.top)}px`;
       el.scrollIntoView?.({ block: 'nearest' });
       el.style.scrollMarginBottom = '';
-      if (ueberdeckt(el.getBoundingClientRect(), st.getBoundingClientRect())) st.classList.add('ausweichen');
+      const nachher = kartenFlaeche(st);
+      if (nachher && ueberdeckt(el.getBoundingClientRect(), nachher)) st.classList.add('ausweichen');
     };
     window.addEventListener('keydown', taste);
     document.addEventListener('focusin', fokus);
