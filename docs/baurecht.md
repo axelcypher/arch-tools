@@ -39,7 +39,7 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   der Platz auch dann nicht, wenn der Antrag im Menü steht, wird die Leiste kompakt (`tb-text`, Kompaktstufe der
   Werkzeugleiste): „Speichern“ zeigt nur das Symbol, der Name bleibt in `aria-label` und `title`. So passen auch bei
   1000 px alle Einträge ohne Rang neben „Mehr“; kompakt wird die Leiste nur im ungünstigsten Fall (viele Marken).
-  „Fehlerprotokoll …“ im Menü „Einstellungen und Hilfe“ der Titelleiste ist die Fehlersuche der App.
+  „Fehlerprotokoll …“ im Menü „Darstellung und Hilfe“ der Titelleiste ist die Fehlersuche der App.
 - **Koordinaten:** Ergebnisse der Geodienste und Bestätigungen zur Lage gelten nur, solange die Koordinaten zur Adresse
   in den Stammdaten passen. Fehlen sie oder wurde die Adresse geändert, sind sie nur noch Hinweis (auch der
   Gemeindeschlüssel aus ALKIS); der Kopf zeigt „Keine Koordinaten“ bzw. „Koordinaten veraltet“, „Bestätigen …“ wird dann

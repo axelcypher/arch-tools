@@ -15,7 +15,7 @@ const useUpdateDialog = create<{ offen: boolean; setOffen: (offen: boolean) => v
 const liegtVor = (status: string) => status === 'verfuegbar' || status === 'laedt' || status === 'installiert';
 
 /**
- * Punkt „Update auf … …“ für das Menü „Einstellungen und Hilfe“ – nur solange ein Update bereitliegt (gefunden, noch
+ * Punkt „Update auf … …“ für das Menü der Titelleiste („Darstellung und Hilfe“, in Arkly „Einstellungen und Hilfe“) – nur solange ein Update bereitliegt (gefunden, noch
  * nicht geladen), sonst null; Laden und Installieren zeigt der Dialog. Zusätzlich zum `UpdateKnopf`, damit das Update
  * auch im Menü auffindbar ist, wo man die seltenen Befehle sucht (Absprache mit dem Designsystem). Öffnet den Dialog
  * des `UpdateKnopf`, der dafür eingebunden sein muss.

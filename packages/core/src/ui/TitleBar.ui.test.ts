@@ -61,7 +61,7 @@ const antwort = async (host: Element, knopf: string) => {
   await act(async () => {});
 };
 const warten = () => act(async () => void (await new Promise((r) => setTimeout(r, 0))));
-/** „Andocken“ steht im Menü der Titelleiste („Einstellungen und Hilfe“) */
+/** „Andocken“ steht im Menü der Titelleiste („Darstellung und Hilfe“) */
 const andockenKlicken = async (host: Element) => {
   await act(async () => host.querySelector<HTMLButtonElement>('.titlebar-menue')!.click());
   await act(async () => [...document.querySelectorAll<HTMLButtonElement>('.menue .menue-punkt')].find((b) => b.textContent === 'Andocken')!.click());
@@ -101,7 +101,7 @@ describe('Titelleiste auf dem Desktop', () => {
     expect(fenster.destroy).not.toHaveBeenCalled();
   });
 
-  it('Menü „Einstellungen und Hilfe“: „Update auf … …“ oben, nur solange ein Update vorliegt', async () => {
+  it('Menü „Darstellung und Hilfe“: „Update auf … …“ oben, nur solange ein Update vorliegt', async () => {
     const { useUpdate } = await import('../platform/update');
     act(() => useUpdate.setState({ status: 'aktuell', version: undefined }));
     const host = await render({ dirty: false });
