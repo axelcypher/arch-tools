@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { MsgKopf } from '@core/mail/msg';
-import { datumGueltig, istEigene, mailName, mailNameLesen, mailNamePruefen, mailVorschlag, nachname, themaAus, weitergeleitetVon } from './mailname';
+import { datumGueltig, istEigene, mailName, mailNameLesen, mailNamePruefen, mailVorschlag, nachname, themaAus } from './mailname';
+import { personAus } from './ursprung';
 
 const EIGENE = ['architekten-beispiel.example'];
 /** mittags (UTC), damit das Datum in jeder Zeitzone dasselbe ist */
@@ -47,8 +48,8 @@ describe('Mails benennen: <Projektcode> von|an <Name> <JJMMTT> <Thema>.msg', () 
     expect(istEigene('T.Planer@Architekten-Beispiel.example', EIGENE)).toBe(true);
     expect(istEigene('muster@statik-muster.example', EIGENE)).toBe(false);
     expect(istEigene('x@architekten-beispiel.example', ['x@architekten-beispiel.example'])).toBe(true);
-    expect(weitergeleitetVon('Zur Info\n\nVon: Muster, Max <Max.Muster@statik-muster.example> \nGesendet: Montag')).toEqual({ name: 'Muster, Max', mail: 'Max.Muster@statik-muster.example' });
-    expect(weitergeleitetVon('From: bauamt@musterstadt.example [mailto:bauamt@musterstadt.example]')).toEqual({ name: 'bauamt@musterstadt.example', mail: 'bauamt@musterstadt.example' });
+    expect(personAus('Muster, Max <Max.Muster@statik-muster.example> ')).toEqual({ name: 'Muster, Max', mail: 'Max.Muster@statik-muster.example' });
+    expect(personAus('bauamt@musterstadt.example [mailto:bauamt@musterstadt.example]')).toEqual({ name: 'bauamt@musterstadt.example', mail: 'bauamt@musterstadt.example' });
   });
 
   it('Vorschlag aus der Nachricht: von außen, an außen, Weiterleitung aus dem Büro – Datum aus Empfang bzw. Versand', () => {
@@ -65,7 +66,7 @@ describe('Mails benennen: <Projektcode> von|an <Name> <JJMMTT> <Thema>.msg', () 
     });
     const v = mailVorschlag(weiter, { code: 'BSP', eigene: EIGENE });
     expect(v.teile).toEqual({ code: 'BSP', richtung: 'von', name: 'Muster', datum: '261110', thema: 'Grundriss Sanierung Musterschule' });
-    expect(v.herkunft).toBe('weitergeleitet von Erika Beispiel, ursprünglich von Max.Muster@statik-muster.example');
+    expect(v.herkunft).toBe('ursprünglich von Muster, Max <Max.Muster@statik-muster.example> · weitergeleitet von Erika Beispiel am 10.11.2026');
     expect(mailName(v.teile)).toBe('BSP von Muster 261110 Grundriss Sanierung Musterschule.msg');
     expect(mailName({ ...v.teile, thema: 'Raumaufteilung' })).toBe('BSP von Muster 261110 Raumaufteilung.msg');
 

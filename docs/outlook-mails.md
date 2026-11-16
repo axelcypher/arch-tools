@@ -97,6 +97,27 @@ Das Makro sollte nur noch Rohdaten abliefern und das Benennen der App überlasse
 
 Mit dem Reiter „Mails“ ist das aber kaum nötig: Die App liest diese Angaben selbst aus der .msg.
 
+## Interne Weiterleitungen
+
+Bei einer Weiterleitung aus dem Büro ist der Absender der .msg die Kollegin; die Quelle steht woanders. ATLAS liest dafür
+(siehe [projektordner.md](projektordner.md#interne-weiterleitungen)):
+
+- **Absender intern?** PR_SENDER_SMTP_ADDRESS (0x5D01) fehlt bei Exchange-internen Absendern oft; dann steht in
+  PR_SENDER_EMAIL_ADDRESS (0x0C1F) eine X.500-Adresse („/O=…“) und PR_SENDER_ADDRTYPE (0x0C1E) ist „EX“ – ATLAS wertet
+  das als intern (`MsgKopf.vonX500`), sonst gelten die eigenen Domains. Bei Empfängern ebenso (`x500`).
+- **Angehängte Mail:** „Als Anlage weiterleiten“ bettet das Original ein (PR_ATTACH_METHOD 5, Unterspeicher
+  `__substg1.0_3701000D`, Eigenschaftskopf 24 statt 32 Bytes); eine angehängte .msg-Datei steht in
+  `__substg1.0_37010102`, eine .eml bzw. message/rfc822 ebenso (`MsgKopf.angehaengt`, verschachtelt bis zur Tiefe 4).
+- **MAPI:** PR_ORIGINAL_SENDER_* (0x005A/0x0067) bzw. PR_ORIGINAL_SENT_REPRESENTING_* (0x005D/0x0069) – gesetzt bei
+  Umleitungen, nicht bei gewöhnlichen Weiterleitungen (`MsgKopf.original`).
+- **Text:** PR_BODY, sonst PR_HTML ohne Tags (Zeilenumbrüche im HTML-Quelltext zählen nicht, Entitäten werden
+  aufgelöst) – darin die Kopfblöcke der weitergeleiteten Mails.
+- **Korrekturen** werden nach PR_INTERNET_MESSAGE_ID (0x1035) gespeichert (`MsgKopf.nachrichtId`), ohne sie nach
+  Betreff, Versandzeit und Absender.
+
+Ein Makro, das `<GUID>.json` schreibt, sollte deshalb nicht nur den direkten Absender liefern – das Lesen der .msg
+deckt Weiterleitungen ab, die JSON-Angaben nicht.
+
 ## Nicht verifiziert
 
 Ablegen im Tauri-Fenster selbst (nur über Chromium und die Add-in-Doku belegt) · Ablegen direkt aus dem neuen Outlook ·
