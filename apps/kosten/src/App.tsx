@@ -5,6 +5,7 @@ import { Werkzeugleiste } from '@core/ui/Werkzeugleiste';
 import { DirektExportKnopf, direktExportTitel, exportUntermenue, useDirektExport } from '@core/ui/DirektExportKnopf';
 import type { ExportDialogStart } from '@core/excel/direktExport';
 import { exportAuftrag } from './export/direktExport';
+import { einstellungenPunkt } from '@core/ui/Einstellungen';
 import { speichernAbwarten } from '@core/platform/projektDatei';
 import { APP_NAMEN } from '@core/appNamen';
 import { dialogOffen, eingabeAbschliessen, istEingabeZiel } from '@core/platform/eingabe';
@@ -206,6 +207,8 @@ export function App() {
     },
     { trenner: true },
     exportUntermenue({ dialogOeffnen: setExcelOpen, deaktiviert: !hatPositionen, hinweis: 'erst Positionen anlegen' }),
+    { trenner: true },
+    einstellungenPunkt(),
   ];
 
   return (

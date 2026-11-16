@@ -5,7 +5,7 @@ import type { VorlagenHinweis } from '../excel/pruefung';
 import type { VorlagenSpeicher } from '../excel/vorlage';
 import { vorlagePruefen } from '../excel/vorlage';
 import type { Project } from '../model';
-import { exportDateinameAusMuster, exportPfade, type ExportApp } from '../excel/exportZiel';
+import { exportDateinameAusMuster, exportPfade, type ExportApp } from '../einstellungen/pfade';
 import type { GlobaleQuelle } from '../platzhalter';
 import { isTauri, pickFile, saveBinaryFile, saveMergedFile } from '../platform/files';
 import { logger } from '../platform/log';

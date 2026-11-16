@@ -320,7 +320,7 @@ describe('QUADRIO: Kontextmenü der Zeichenfläche und Werkzeugleiste (gemeinsam
     expect(leiste.querySelector('.segment[aria-label="Neue Flächen zeichnen als"]')).not.toBeNull();
     expect(knopf('Flächenaufstellung …')?.classList.contains('primary')).toBe(true);
     act(() => knopf('Datei')!.click());
-    expect(menuePunkte()).toEqual(expect.arrayContaining(['Neu', 'Öffnen …', 'Plan laden …', 'IFC importieren …', 'Export']));
+    expect(menuePunkte()).toEqual(expect.arrayContaining(['Neu', 'Öffnen …', 'Plan laden …', 'IFC importieren …', 'Export', 'Einstellungen …']));
     // Datei ▸ Export ▸ Excel … / PDF … / CSV … – jeweils mit Dialog
     const export_ = [...document.querySelectorAll<HTMLButtonElement>('.menue [role="menuitem"]')].find((b) => b.textContent?.trim().startsWith('Export'))!;
     expect(export_.getAttribute('aria-haspopup')).toBe('menu');

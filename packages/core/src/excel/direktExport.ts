@@ -1,5 +1,6 @@
 import type { VorlagenHinweis } from './pruefung';
-import { berechnungsordnerPfad, exportDateinameAusMuster, exportPfade, exportPfadeLaden, istVollstaendig, projektordnerAusDatei, type ExportApp, type ExportPfade } from './exportZiel';
+import { berechnungsordnerPfad, exportDateinameAusMuster, exportPfade, exportPfadeLaden, type ExportApp, type ExportPfade } from '../einstellungen/pfade';
+import { istVollstaendig, projektordnerAusDatei } from './projektordner';
 import type { GlobaleQuelle } from '../platzhalter';
 import type { Knopf } from '../ui/Rueckfrage';
 

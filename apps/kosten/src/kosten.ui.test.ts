@@ -103,7 +103,7 @@ describe('NUMIO', () => {
     // Menü „Datei“: Neu, Öffnen …, Trenner, IFC aktualisieren … (im Browser ohne „Speichern unter …“)
     act(() => knopf(leiste, 'Datei').click());
     const punkte = [...document.querySelectorAll<HTMLElement>('[role="menu"] > [role]')].map((p) => (p.getAttribute('role') === 'separator' ? '—' : p.textContent));
-    expect(punkte).toEqual(['Neu', expect.stringContaining('Öffnen …'), '—', expect.stringContaining('IFC aktualisieren …'), '—', expect.stringContaining('Export')]);
+    expect(punkte).toEqual(['Neu', expect.stringContaining('Öffnen …'), '—', expect.stringContaining('IFC aktualisieren …'), '—', expect.stringContaining('Export'), '—', expect.stringContaining('Einstellungen …')]);
     expect(document.querySelector('[role="menu"] [aria-keyshortcuts]')?.getAttribute('aria-keyshortcuts')).toBe('Control+O');
     // mit Gebäude ist „IFC aktualisieren …“ frei
     const ifc = () => [...document.querySelectorAll<HTMLElement>('[role="menu"] [role="menuitem"]')].find((p) => p.textContent?.startsWith('IFC aktualisieren'))!;

@@ -12,6 +12,7 @@ import { Werkzeugleiste } from '@core/ui/Werkzeugleiste';
 import { DirektExportKnopf, direktExportTitel, exportUntermenue, useDirektExport } from '@core/ui/DirektExportKnopf';
 import type { ExportDialogStart } from '@core/excel/direktExport';
 import { exportAuftrag } from './export/direktExport';
+import { einstellungenPunkt } from '@core/ui/Einstellungen';
 import { TitleBar } from '@core/ui/TitleBar';
 import { ProjektEinstieg, ProjektWahl } from '@core/ui/ProjektWahl';
 import { createProject } from '@core/model';
@@ -175,6 +176,8 @@ export function App() {
     },
     { trenner: true },
     exportUntermenue({ dialogOeffnen: setExcelOpen, deaktiviert: !hatGebaeude, hinweis: 'Kein Gebäude' }),
+    { trenner: true },
+    einstellungenPunkt(),
   ];
 
   return (

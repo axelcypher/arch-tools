@@ -1182,7 +1182,7 @@ describe('Kopf- und Werkzeugleisten (Leisten-Regel)', () => {
     act(() => [...document.querySelectorAll<HTMLButtonElement>('.toolbar.werkzeugleiste button[aria-haspopup="menu"]')].find((b) => b.textContent?.trim() === 'Datei')!.click());
     const texte = menueTexte(document.body);
     expect(texte.slice(0, 2)).toEqual(['Neu', 'Öffnen …']);
-    expect(texte.slice(-2)).toEqual(['IFC aktualisieren …', 'Export']);
+    expect(texte.slice(-3)).toEqual(['IFC aktualisieren …', 'Export', 'Einstellungen …']);
     expect(menuePunkt(document.body, 'Export').getAttribute('aria-disabled')).toBe('true');
     // ohne Gebäude ist auch der Direktexport gesperrt, mit Grund im Tooltip
     const direkt = document.querySelector<HTMLButtonElement>('.toolbar button[aria-label="Exportieren"]')!;

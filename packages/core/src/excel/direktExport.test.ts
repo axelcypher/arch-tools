@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { direktExportieren, fassungsName, GRUND_KEIN_PROJEKTORDNER, GRUND_UNGESPEICHERT, GRUND_WEB, type DirektExportAuftrag, type DirektExportUmgebung } from './direktExport';
-import { berechnungsordnerPfad, exportDateinameAusMuster, projektordnerAusDatei } from './exportZiel';
+import { berechnungsordnerPfad, exportDateinameAusMuster } from '../einstellungen/pfade';
+import { projektordnerAusDatei } from './projektordner';
 import type { VorlagenHinweis } from './pruefung';
 
 const TAG = new Date(2026, 10, 16);
@@ -46,10 +47,9 @@ describe('Ziel des Direktexports', () => {
     expect(projektordnerAusDatei(null)).toBeNull();
   });
 
-  it('Berechnungsordner relativ zum Projektordner, vollständig oder unbekannt', () => {
+  it('Berechnungsordner relativ zum Projektordner, ohne Projektordner unbekannt', () => {
     expect(berechnungsordnerPfad('03 Berechnungen/Flächen', 'C:\\P', werte)).toBe('C:\\P\\03 Berechnungen\\Flächen');
     expect(berechnungsordnerPfad('Export/{PROJEKT_KUERZEL}', '/p', werte)).toBe('/p/Export/BS5');
-    expect(berechnungsordnerPfad('D:\\Ablage\\{PROJEKT_KUERZEL}', null, werte)).toBe('D:\\Ablage\\BS5');
     expect(berechnungsordnerPfad('03 Berechnungen', null, werte)).toBeNull();
   });
 

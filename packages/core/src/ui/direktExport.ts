@@ -55,7 +55,11 @@ export async function direktExportMitMeldung(
       titel: r.pdfFehler ? 'Exportiert – ohne PDF' : 'Exportiert',
       text: teile.join(' '),
       details: r.dateien.join('\n'),
-      knoepfe: [...(r.hinweise.length ? [{ id: 'hinweise' as const, label: 'Hinweise ansehen …' }] : []), { id: 'ordner' as const, label: 'Ordner öffnen' }, { id: 'ok' as const, label: 'OK', art: 'primary' as const }],
+      knoepfe: [
+        ...(r.hinweise.length ? [{ id: 'hinweise' as const, label: 'Hinweise ansehen …' }] : []),
+        { id: 'ordner' as const, label: 'Ordner öffnen' },
+        { id: 'ok' as const, label: 'OK', art: 'primary' as const },
+      ],
     });
     if (wahl === 'ordner') await ordnerZeigen(r.ordner).catch((e) => log.warn('Ordner ließ sich nicht öffnen', e));
     if (wahl === 'hinweise') dialogOeffnen({ hinweise: r.hinweise });

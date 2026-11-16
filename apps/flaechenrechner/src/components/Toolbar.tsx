@@ -19,6 +19,7 @@ import { MenueKnopf } from '@core/ui/Menue';
 import { Werkzeugleiste } from '@core/ui/Werkzeugleiste';
 import { DirektExportKnopf, direktExportTitel, exportUntermenue, useDirektExport } from '@core/ui/DirektExportKnopf';
 import { exportAuftrag } from '../platform/direktExport';
+import { einstellungenPunkt } from '@core/ui/Einstellungen';
 import { logger } from '@core/platform/log';
 import { mitDatei } from '@core/platform/dateiFehler';
 import { aenderungenSpeichern, meldung, oeffnenFehlgeschlagen } from '@core/ui/Rueckfrage';
@@ -160,6 +161,8 @@ export function Toolbar() {
     { text: 'IFC importieren …', symbol: 'stapel', titel: 'Gebäudemodell als IFC-Datei aus dem CAD-Programm importieren', aktion: () => setIfcOpen(true) },
     { trenner: true },
     exportUntermenue({ dialogOeffnen: st.setExcelOpen, csv: () => void onCsv() }),
+    { trenner: true },
+    einstellungenPunkt(),
   ];
   const direkt = { auftrag: exportAuftrag, dialogOeffnen: st.setExcelOpen };
   const direktExport = useDirektExport(direkt);
