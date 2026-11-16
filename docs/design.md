@@ -189,14 +189,14 @@ mit `einstellungenEntwurfMelden`, Sperre über `useEinstellungenGesperrt`).
 - **Was keine Einstellung ist, bleibt in seinem Dialog:** was nur ein Werkzeug betrifft (z. B. Vorlagen eines Exports)
   und Datenpflege mit eigenem Speichern je Eintrag (z. B. das Adressbuch von PERMIO). Der Einstellungsdialog kopiert
   es nicht, sondern verweist darauf: ein kurzer Satz (`muted small-text`) und ein Knopf mit dem Objekt und „ …“
-  („Adressbuch …“, `type="button"`, damit Enter nicht „Übernehmen“ auslöst). Der Dialog der App liegt dann als eigene
-  Ebene über den Einstellungen (er steht im DOM nach der Titelleiste mit dem `EinstellungenHost`); Esc und Klick
-  daneben schließen nur ihn, der Fokus kehrt auf den Knopf zurück. Was dort gespeichert wird, gilt sofort:
-  „Übernehmen“ und „Abbrechen“ der Einstellungen betreffen es nicht, es zählt nicht als ungespeicherte Änderung der
-  Seite, und ein offener Entwurf der Einstellungen bleibt erhalten. Ist der Speicherort nur lesbar, folgt der Dialog
-  der App derselben Sperre (nur lesend, Grund sichtbar). Den eigenen Einstieg in der App (z. B. „Adressbuch …“ in
-  „Mehr“, „Adressbuch öffnen …“ in der Projektkarte) behält die Datenpflege; der Knopf in den Einstellungen ist ein
-  Verweis, kein doppelter Einstieg.
+  (gleicher Aufbau wie `.einst-verweis`) („Adressbuch …“, `type="button"`, damit Enter nicht „Übernehmen“ auslöst).
+  Der Dialog der App liegt dann als eigene Ebene über den Einstellungen (er steht im DOM nach der Titelleiste mit dem
+  `EinstellungenHost`); Esc und Klick daneben schließen nur ihn, der Fokus kehrt auf den Knopf zurück. Was dort
+  gespeichert wird, gilt sofort: „Übernehmen“ und „Abbrechen“ der Einstellungen betreffen es nicht, es zählt nicht als
+  ungespeicherte Änderung der Seite, und ein offener Entwurf der Einstellungen bleibt erhalten. Ist der Speicherort
+  nur lesbar, folgt der Dialog der App derselben Sperre (nur lesend, Grund sichtbar). Den eigenen Einstieg in der App
+  (z. B. künftig „Adressbuch …“ in „Mehr“, „Adressbuch öffnen …“ in der Projektkarte) behält die Datenpflege; der
+  Knopf in den Einstellungen ist ein Verweis, kein doppelter Einstieg.
 
 ## Druckvorschau
 
