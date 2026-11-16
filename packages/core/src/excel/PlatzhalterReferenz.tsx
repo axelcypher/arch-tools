@@ -442,7 +442,7 @@ export function PlatzhalterReferenz({ schema, onClose }: { schema: PlatzhalterSc
       </div>
       <div className="nw-inhalt">
         <nav className="nw-liste" id="ph-referenz-liste" ref={liste} aria-label="Einträge" onKeyDown={pfeile}>
-          <p className="muted small-text">{q.trim() ? (treffer.length ? `${treffer.length} Treffer` : 'Nichts gefunden.') : ''}</p>
+          {q.trim() && <p className="muted small-text">{treffer.length ? `${treffer.length} Treffer` : 'Nichts gefunden.'}</p>}
           {GRUPPEN.map((g) => {
             const l = treffer.filter((e) => e.gruppe === g.id);
             if (!l.length) return null;
