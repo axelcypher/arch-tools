@@ -5,10 +5,14 @@ import type { VorlagenHinweis } from '../excel/pruefung';
 import type { VorlagenSpeicher } from '../excel/vorlage';
 import { vorlagePruefen } from '../excel/vorlage';
 import type { Project } from '../model';
-import { pickFile, saveBinaryFile } from '../platform/files';
+import { exportDateinameAusMuster, exportPfade, type ExportApp } from '../excel/exportZiel';
+import type { GlobaleQuelle } from '../platzhalter';
+import { isTauri, pickFile, saveBinaryFile, saveMergedFile } from '../platform/files';
 import { logger } from '../platform/log';
+import { excelAlsPdf, PDF_NUR_DESKTOP, pdfMoeglich } from '../platform/pdf';
 import { exportDateiname, exportOrdner } from '../platform/projektDatei';
 import { Modal } from './Dialog';
+import { bestaetigen } from './Rueckfrage';
 
 const log = logger('excel');
 
@@ -36,7 +40,18 @@ export interface ExcelDialogProps {
   exportDefault: (p: Project) => Promise<Uint8Array>;
   exportWithTemplate: (template: Uint8Array, p: Project) => Promise<Uint8Array>;
   buildSampleTemplate: () => Promise<Uint8Array>;
+  /** „excel“ (Vorgabe) speichert die .xlsx, „pdf“ die gefüllte Vorlage als PDF (nur Desktop; .xlsx auf Wunsch daneben) */
+  art?: 'excel' | 'pdf';
+  /** Hinweis oben im Dialog, z. B. warum der Direktexport nicht direkt speichern konnte */
+  grund?: string;
+  /** Hinweise der Vorlagenprüfung, mit denen der Dialog öffnet (nach dem Direktexport) */
+  hinweise?: VorlagenHinweis[];
+  /** Dateinamen nach den Einstellungen („Pfade und Benennung“); fehlt = „<Projektdatei> <Zusatz>“ */
+  benennung?: { app: ExportApp; werte: GlobaleQuelle; inhalt: string };
 }
+
+const PDF_MIME = 'application/pdf';
+const pfadMitEndung = (pfad: string, endung: string) => pfad.replace(/\.[^.\\/]*$/, '') + '.' + endung;
 
 /**
  * Excel-Export: Standardlayout oder eigene Vorlage (.xlsx mit Platzhaltern). Enter exportiert, der Erstfokus liegt auf
@@ -45,6 +60,10 @@ export interface ExcelDialogProps {
  */
 export function ExcelDialog(props: ExcelDialogProps) {
   const { project, update, onClose, speicher } = props;
+  const pdf = props.art === 'pdf';
+  const pdfGesperrt = pdf && !pdfMoeglich();
+  /** im PDF-Modus: die .xlsx daneben mitspeichern */
+  const [excelMit, setExcelMit] = useState(false);
   // Zähler, damit Änderungen an der im Browser hinterlegten Vorlage neu gelesen werden
   const [rev, setRev] = useState(0);
   const template = useMemo(() => speicher.aktuelle(project), [project, rev, speicher]);
@@ -53,9 +72,10 @@ export function ExcelDialog(props: ExcelDialogProps) {
   const [error, setError] = useState<string | null>(null);
   const [hinweis, setHinweis] = useState<string | null>(null);
   const keineVorlageId = useId();
+  const pdfGesperrtId = useId();
   const [referenzOffen, setReferenzOffen] = useState(false);
   /** Ergebnis der Vorlagenprüfung; `exportiert`: nach einem Export mit Vorlage */
-  const [pruefung, setPruefung] = useState<{ hinweise: VorlagenHinweis[]; exportiert: boolean } | null>(null);
+  const [pruefung, setPruefung] = useState<{ hinweise: VorlagenHinweis[]; exportiert: boolean } | null>(props.hinweise?.length ? { hinweise: props.hinweise, exportiert: true } : null);
   const meldungRef = useRef<HTMLElement>(null);
   // Fokus auf das Ergebnis der Prüfung – „Exportieren“ bzw. „Vorlage prüfen“ war während der Arbeit gesperrt
   useEffect(() => {
@@ -116,28 +136,47 @@ export function ExcelDialog(props: ExcelDialogProps) {
     }
   };
 
+  const dateiname = (endung: 'xlsx' | 'pdf') => {
+    const b = props.benennung;
+    if (!b) return exportDateiname({ datei: props.datei, projektName: project.name, zusatz: props.zusatz(project), endung });
+    const p = exportPfade(b.app);
+    return exportDateinameAusMuster(endung === 'pdf' ? p.dateinamePdf : p.dateinameExcel, { werte: b.werte, inhalt: b.inhalt, endung });
+  };
+
+  /** PDF speichern (Dialog), auf Wunsch die .xlsx mit gleichem Namen daneben; false bei Abbruch */
+  const pdfSpeichern = async (xlsx: Uint8Array): Promise<boolean> => {
+    const daten = await excelAlsPdf(xlsx);
+    const pfad = await saveMergedFile({ defaultName: dateiname('pdf'), defaultDir: exportOrdner(props.datei), filterName: 'PDF-Dokument', extension: 'pdf', mime: PDF_MIME, vorhandenLesen: false, build: () => daten });
+    if (!pfad) return false;
+    if (excelMit && isTauri()) {
+      const ziel = pfadMitEndung(pfad, 'xlsx');
+      const { invoke } = await import('@tauri-apps/api/core');
+      const da = (await invoke<unknown>('datei_stand', { path: ziel })) != null;
+      const name = ziel.split(/[\\/]/).pop();
+      if (!da || (await bestaetigen('Excel-Datei ersetzen?', `„${name}“ gibt es neben dem PDF schon. Ersetzen?`, 'Ersetzen', true))) {
+        await saveMergedFile({ pfad: ziel, defaultName: name ?? dateiname('xlsx'), filterName: 'Excel-Arbeitsmappe', extension: 'xlsx', mime: XLSX_MIME, vorhandenLesen: false, build: () => xlsx });
+      }
+    }
+    return true;
+  };
+
   const ohneVorlage = mode === 'template' && !template;
   const doExport = async () => {
-    if (busy || ohneVorlage) return;
+    if (busy || ohneVorlage || pdfGesperrt) return;
     setBusy(true);
     setError(null);
     try {
       const done = log.time(mode === 'template' && template ? `Export mit Vorlage „${template.name}“` : 'Export Standardlayout');
       const data = mode === 'template' && template ? await props.exportWithTemplate(template.daten, project) : await props.exportDefault(project);
       done({ bytes: data.byteLength });
-      const ok = await saveBinaryFile({
-        defaultName: exportDateiname({ datei: props.datei, projektName: project.name, zusatz: props.zusatz(project), endung: 'xlsx' }),
-        defaultDir: exportOrdner(props.datei),
-        data,
-        filterName: 'Excel-Arbeitsmappe',
-        extension: 'xlsx',
-        mime: XLSX_MIME,
-      });
+      const ok = pdf
+        ? await pdfSpeichern(data)
+        : await saveBinaryFile({ defaultName: dateiname('xlsx'), defaultDir: exportOrdner(props.datei), data, filterName: 'Excel-Arbeitsmappe', extension: 'xlsx', mime: XLSX_MIME });
       // Hinweise der Vorlagenprüfung zeigen, statt den Dialog zu schließen
       const hinweise = ok && mode === 'template' ? await pruefen(true) : [];
       if (ok && !hinweise.length) onClose();
     } catch (e) {
-      log.error('Excel-Export fehlgeschlagen', e);
+      log.error(pdf ? 'PDF-Export fehlgeschlagen' : 'Excel-Export fehlgeschlagen', e);
       setError(e instanceof Error ? e.message : String(e));
     } finally {
       setBusy(false);
@@ -169,13 +208,19 @@ export function ExcelDialog(props: ExcelDialogProps) {
   );
 
   return (
-    <Modal titel="Excel-Export" kopf breit onClose={onClose}>
+    <Modal titel={pdf ? 'PDF-Export' : 'Excel-Export'} kopf breit onClose={onClose}>
       <form
         onSubmit={(e) => {
           e.preventDefault();
           void doExport();
         }}
       >
+        {props.grund && <p className="meldung">{props.grund}</p>}
+        {pdf && (
+          <p className="muted small-text">
+            Die Berechnung wird wie beim Excel-Export gefüllt und dann über Microsoft Excel bzw. LibreOffice als PDF gespeichert – mit Druckbereich, Kopf- und Fußzeile und Seitenformat der Vorlage.
+          </p>
+        )}
         <label className="radio-row">
           <input type="radio" name="excel-art" checked={mode === 'default'} onChange={() => setMode('default')} />
           <span>
@@ -230,6 +275,17 @@ export function ExcelDialog(props: ExcelDialogProps) {
           </div>
         )}
 
+        {pdf && (
+          <label className="toggle block">
+            <input type="checkbox" checked={excelMit} disabled={pdfGesperrt} onChange={(e) => setExcelMit(e.target.checked)} />
+            Excel-Datei daneben mitspeichern
+          </label>
+        )}
+        {pdfGesperrt && (
+          <p className="meldung warnung" id={pdfGesperrtId}>
+            {PDF_NUR_DESKTOP}
+          </p>
+        )}
         {hinweis && mode === 'template' && <p className="warning">{hinweis}</p>}
         {error && (
           <p className="warning" role="alert">
@@ -240,8 +296,8 @@ export function ExcelDialog(props: ExcelDialogProps) {
           <button type="button" onClick={onClose}>
             {pruefung?.exportiert ? 'Schließen' : 'Abbrechen'}
           </button>
-          <button type="submit" className="primary" disabled={busy || ohneVorlage} aria-describedby={ohneVorlage ? keineVorlageId : undefined}>
-            {busy ? 'Exportiere …' : 'Exportieren'}
+          <button type="submit" className="primary" disabled={busy || ohneVorlage || pdfGesperrt} aria-describedby={pdfGesperrt ? pdfGesperrtId : ohneVorlage ? keineVorlageId : undefined}>
+            {busy ? (pdf ? 'Erzeuge PDF …' : 'Exportiere …') : pdf ? 'PDF speichern' : 'Exportieren'}
           </button>
         </div>
       </form>
