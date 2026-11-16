@@ -159,14 +159,15 @@ und `ZEICHENFLAECHE_GRUND` in `planFarbe.ts` müssen zu `--canvas-filter` und `-
 
 Ein Einstellungsdialog für alle Apps: in jeder App „Datei → Einstellungen …“ (in FABRIO steht „Datei“ im Fuß der
 Navigation), in Arkly im Menü „Einstellungen und Hilfe“, überall auch mit Strg+, ohne offenes Menü. Er zeigt die
-Einstellungen der ganzen Suite, nicht nur der App, aus der er geöffnet wurde. Stand: Den Dialog und das Muster `.einst*`
-gibt es noch nicht; sie kommen als Baustein in `packages/core`, und jede App liefert dann ihre Seite (Felder und
-Prüfung) – wie, legt dieser Baustein fest.
+Einstellungen der ganzen Suite, nicht nur der App, aus der er geöffnet wurde. Den Dialog stellt
+`packages/core/src/ui/Einstellungen.tsx`; Apps hängen ihre Seite mit `einstellungsSeiteAnmelden` an (Inhalt, `entwurf`
+mit `einstellungenEntwurfMelden`, Sperre über `useEinstellungenGesperrt`).
 
-- **Aufbau:** `Modal` mit `tabelle`; der Titel „Einstellungen“ steht als `h3` im Navigationskopf über der
-  Seitenliste (Ausnahme mit eigenem Kopf, siehe „Dialoge“), rechts der Inhalt der gewählten Seite. Gemeinsames Muster
-  (künftig in `base.css`, aus dem `.es-*` von PERMIO und ATLAS gehoben): `.einst`, `.einst-nav` (Seitenliste, Einträge `.einst-nav-eintrag` mit
-  Symbol, Titel und kurzem Text), `.einst-inhalt`, `.einst-gruppe`. Unterabschnitte einer Seite sind `h4`.
+- **Aufbau:** `Modal` mit `tabelle` und Klasse `einst`; der Titel „Einstellungen“ steht als `h3` im Navigationskopf
+  über der Seitenliste (Ausnahme mit eigenem Kopf, siehe „Dialoge“), rechts der Inhalt der gewählten Seite.
+  Gemeinsames Muster in `base.css`: `.einst-form`, `.einst-nav` (Seitenliste, Einträge `.einst-nav-eintrag` mit
+  Symbol, Titel und kurzem Text), `.einst-inhalt`, `.einst-gruppe`; dazu `.einst-verweis` (`PfadeVerweis`) für den
+  umgekehrten Weg, aus einem Dialog der App auf eine Seite der Einstellungen. Unterabschnitte einer Seite sind `h4`.
 - **Seitenliste:** eine senkrechte Registerleiste wie unter „Umschalter“ (`role="tablist"`,
   `aria-orientation="vertical"`, Einträge `role="tab"` mit `aria-selected`, ↑/↓ wandern, Pos1/Ende, automatische
   Aktivierung, nur der gewählte Eintrag mit `tabIndex` 0); der Inhalt ist `role="tabpanel"` mit `aria-labelledby` auf
@@ -185,8 +186,17 @@ Prüfung) – wie, legt dieser Baustein fest.
   Felder und „Übernehmen“ gesperrt (Grund im `title`), oben ein Hinweis `.meldung.warnung`.
 - **Felder:** die gemeinsamen Bausteine (`.field`, Pfadwahl mit „Ordner wählen …“, Platzhalter mit Vorschau des
   Ergebnisses); Fehler an der Stelle (`.feld-meldung`), nicht als Rückfrage.
-- Was nur ein Werkzeug betrifft (z. B. Vorlagen eines Exports), bleibt in dessen Dialog; der Einstellungsdialog
-  verweist darauf, statt es zu kopieren.
+- **Was keine Einstellung ist, bleibt in seinem Dialog:** was nur ein Werkzeug betrifft (z. B. Vorlagen eines Exports)
+  und Datenpflege mit eigenem Speichern je Eintrag (z. B. das Adressbuch von PERMIO). Der Einstellungsdialog kopiert
+  es nicht, sondern verweist darauf: ein kurzer Satz (`muted small-text`) und ein Knopf mit dem Objekt und „ …“
+  (gleicher Aufbau wie `.einst-verweis`) („Adressbuch …“, `type="button"`, damit Enter nicht „Übernehmen“ auslöst).
+  Der Dialog der App liegt dann als eigene Ebene über den Einstellungen (er steht im DOM nach der Titelleiste mit dem
+  `EinstellungenHost`); Esc und Klick daneben schließen nur ihn, der Fokus kehrt auf den Knopf zurück. Was dort
+  gespeichert wird, gilt sofort: „Übernehmen“ und „Abbrechen“ der Einstellungen betreffen es nicht, es zählt nicht als
+  ungespeicherte Änderung der Seite, und ein offener Entwurf der Einstellungen bleibt erhalten. Ist der Speicherort
+  nur lesbar, folgt der Dialog der App derselben Sperre (nur lesend, Grund sichtbar). Den eigenen Einstieg in der App
+  (z. B. künftig „Adressbuch …“ in „Mehr“, „Adressbuch öffnen …“ in der Projektkarte) behält die Datenpflege; der
+  Knopf in den Einstellungen ist ein Verweis, kein doppelter Einstieg.
 
 ## Druckvorschau
 
@@ -373,7 +383,8 @@ Zurücksetzen, Sonderfunktionen. Feste Namen, in allen Apps gleich:
   Menü der Titelleiste; das Farbschema nur im Menü der Titelleiste, nicht im Einstellungsdialog. Bewusste Ausnahmen:
   der Update-Punkt im Menü der Titelleiste (siehe „Titelleiste“) und in Arkly „Einstellungen …“ im Menü des Rahmens
   neben „Datei“ der App im Tab (Arkly hat kein eigenes „Datei“; Strg+, gilt einmal, siehe oben) sowie befristet
-  „Einstellungen von <App> …“ (siehe oben).
+  „Einstellungen von <App> …“ (siehe oben). Verweise aus den Einstellungen auf einen Dialog der App (Werkzeug,
+  Datenpflege) zählen nicht als doppelter Einstieg (siehe „Einstellungen“).
 - **Aufbau:** links „Datei“ und „Speichern“, in der Mitte die Werkzeuge bzw. Hauptschritte, rechts der Hauptknopf,
   zuletzt „Mehr“ (FABRIO: „Datei“ im Fuß der Navigation, siehe oben).
 - **Zeilen:** Seltene Aktionen einer Tabellen- oder Listenzeile (FABRIO-Rechnung: Deckblatt, Mail an den Zahler)
