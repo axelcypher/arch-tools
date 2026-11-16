@@ -179,6 +179,13 @@ export interface FaktDef {
    * Widerspruch nicht (ueberHinweis, auswertung.ts). Nur, wenn das fachlich zwingend folgt
    */
   ohneAusloeser?: string | number | boolean;
+  /**
+   * Einzelfrage zu einer Vorfrage (fragen.ts, vorfragenAnwenden): Ist die Vorfrage `fakt` (ja/nein) sicher „nein“, gilt
+   * diese Angabe als `sonst` (abgeleitet, mit der Vorfrage als Quelle) und wird nicht gefragt. Ein anderer Wert als
+   * `sonst` macht die Vorfrage zu „ja“ (bzw. zum Widerspruch gegen ihr „nein“). Nur, wenn die Angabe fachlich ganz im
+   * Anwendungsbereich der Vorfrage liegt – aus „nein“ in der Vorfrage muss `sonst` zwingend folgen
+   */
+  vorfrage?: { fakt: string; sonst: string | number | boolean };
 }
 
 export interface Hinweis {
@@ -259,6 +266,8 @@ export interface FaktWert {
   ueberHinweis?: string[];
   /** nur in der Auswertung: wie `ueberHinweis`, die Frage wird nur wegen dieser widersprüchlichen Angaben gestellt */
   ueberWiderspruch?: string[];
+  /** nur in der Auswertung: Wert folgt aus dem „nein“ dieser Vorfrage (FaktDef.vorfrage) – die Einzelfrage entfällt */
+  ausVorfrage?: string;
   /** widersprechende Angabe (z. B. Treffer im Geodienst gegen „nein“ von Hand) – macht Grün gelb */
   widerspruch?: string;
   /** bei Angaben von Hand: das letzte Ergebnis des Dienstes – daraus wird der Widerspruch bei jedem Setzen neu bestimmt */

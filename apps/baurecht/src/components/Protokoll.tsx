@@ -245,7 +245,11 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
   // („ohne Wirkung“), auch wenn der Kern sie nicht ableitet (Bezug einer Tabelle außerhalb seines Gebiets)
   const gestellt = (id: string) => frageGestellt(id, a.faktDefs[id], a.kontext);
   const gesichert = Object.entries(a.fakten).filter(([id, f]) => f.bestaetigt && gestellt(id));
-  const nichtGestellt = Object.entries(eigeneFakten).filter(([id, f]) => !!a.faktDefs[id] && f.wert != null && !gestellt(id));
+  // Einzelfragen, die wegen „nein“ in ihrer Vorfrage entfallen sind – je Vorfrage (sie ist der Grund); eigene Antworten
+  // darauf stehen dort, nicht unter „nicht gestellt“
+  const entfallen = new Map<string, string[]>();
+  for (const [id, f] of Object.entries(a.fakten)) if (f.ausVorfrage) entfallen.set(f.ausVorfrage, [...(entfallen.get(f.ausVorfrage) ?? []), id]);
+  const nichtGestellt = Object.entries(eigeneFakten).filter(([id, f]) => !!a.faktDefs[id] && f.wert != null && !gestellt(id) && !a.fakten[id]?.ausVorfrage);
   // Angaben von Hand ohne Beleg: auch sie tragen Ampeln (z. B. „Kampfmittelverdacht: nein“) – mit wer und wann
   // nur Angaben, die das Regelpaket kennt (eine Angabe einer früheren Fassung stünde sonst mit ihrer rohen Kennung da)
   const vonHandOhneBeleg = Object.entries(a.fakten).filter(
@@ -620,6 +624,43 @@ export function Protokoll({ stand: pruefstand, onClose, onSpeichern }: { stand: 
           </table>
         ) : (
           <p>Keine.</p>
+        )}
+        {entfallen.size > 0 && (
+          <>
+            <h2>Wegen „nein“ in der Vorfrage entfallen ({[...entfallen.values()].reduce((n, l) => n + l.length, 0)})</h2>
+            <table className="report-table">
+              <thead>
+                <tr>
+                  <th style={{ width: '30%' }}>Vorfrage</th>
+                  <th style={{ width: '30%' }}>beantwortet von, am / Beleg</th>
+                  <th>entfallene Einzelfragen (gelten als „nein“ bzw. „außerhalb“)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[...entfallen].map(([v, ids]) => {
+                  const f = a.fakten[v];
+                  const wer = /^von Hand \((.+)\)$/.exec(f?.quelle ?? '')?.[1];
+                  const woher = f?.ausVorfrage
+                    ? `folgt aus „${faktName(a.faktDefs[f.ausVorfrage], f.ausVorfrage)}“: nein`
+                    : f?.herkunft === 'manuell'
+                      ? `von Hand${wer ? ` (${wer})` : ''}${f.stand ? `, ${datum(f.stand)}` : ''}${f.bestaetigt?.grund ? ` – Beleg: ${f.bestaetigt.grund}` : ''}`
+                      : f
+                        ? herkunftText(f)
+                        : '–';
+                  return (
+                    <tr key={v}>
+                      <td className="strong">{faktName(a.faktDefs[v], v)}</td>
+                      <td>
+                        {woher}
+                        {ungespeichert.has(v) && <span className="br-entwurf-text"> – noch nicht gespeichert</span>}
+                      </td>
+                      <td>{ids.map((id) => faktName(a.faktDefs[id], id)).join(', ')}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </>
         )}
         {/* gespeicherte Antworten auf Fragen, die gerade nicht gestellt werden (z. B. nach einem Ortswechsel) */}
         {nichtGestellt.length > 0 && (

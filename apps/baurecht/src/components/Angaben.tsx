@@ -7,14 +7,14 @@ import { aktuelleLage, OHNE_LAGEBEZUG, usePlanungsrechtWirkung } from '../pruefu
 import { textPasst } from '../suche';
 import { ortVon } from '@core/baurecht/ort';
 import type { FaktDef, FaktWert } from '@core/baurecht/typen';
-import { frageGestellt, RUECKFRAGE_IDS, RUECKFRAGEN } from '@core/baurecht/fragen';
+import { einzelfragenVon, frageGestellt, mitVorfragen, RUECKFRAGE_IDS, RUECKFRAGEN, vorfrageHinweis, vorfrageNein, vorfragenKarte } from '@core/baurecht/fragen';
 import { MERKMAL_ERKLAERUNG, VORGABE_MERKMALE } from '@core/bedingung';
 import { MERKMAL_TITEL } from '@core/baurecht/fakten';
 import { NumberField, TextField } from '@core/ui/fields';
 import type { Pruefstand } from '../pruefung';
 import { offeneBestaetigungen, PLANUNGSRECHT, useBaurecht } from '../store';
 import { benutzer } from '../benutzer';
-import { faktBestaetigenOeffnen, faktSetzenOeffnen } from './Dialoge';
+import { faktBestaetigenOeffnen, faktSetzenOeffnen, vorfragenNeinOeffnen } from './Dialoge';
 import { Klaeren } from './Kopf';
 import { datum, inBereichZeigen, nb } from './Ampel';
 
@@ -368,7 +368,13 @@ const beschreibung = (def: FaktDef, id: string) => (def.frage || (def.kurz && de
  */
 export const werteSenkrecht = (werte: readonly string[]) => (werte.length >= 3 && werte.some((w) => w.length > 14)) || werte.join('').length + 4 * werte.length > 52;
 
-function FaktEingabe({ id, def, wert, onWert, alsKnoepfe = false }: { id: string; def: FaktDef; wert: FaktWert | undefined; onWert: (v: FaktWert['wert'] | undefined) => void; alsKnoepfe?: boolean }) {
+/** dritte Antwort einer Vorfrage: „unklar“ – keine Antwort, die Einzelfragen werden gezeigt (und bleiben offen) */
+interface Unklar {
+  gewaehlt: boolean;
+  waehlen: () => void;
+}
+
+function FaktEingabe({ id, def, wert, onWert, alsKnoepfe = false, unklar }: { id: string; def: FaktDef; wert: FaktWert | undefined; onWert: (v: FaktWert['wert'] | undefined) => void; alsKnoepfe?: boolean; unklar?: Unklar }) {
   const v = wert?.wert ?? null;
   // eine Angabe von Hand, die nur noch Hinweis ist (z. B. zu einer früheren Lage): derselbe Wert lässt sich erneut setzen
   // (für alle Typen zusätzlich der Knopf „für diese Lage übernehmen“ in der Fußzeile)
@@ -380,10 +386,15 @@ function FaktEingabe({ id, def, wert, onWert, alsKnoepfe = false }: { id: string
           [true, 'ja'],
           [false, 'nein'],
         ].map(([w, t], i) => (
-          <button key={String(w)} type="button" tabIndex={tabStopp(v === w, i === 0, v === null)} aria-pressed={v === w} className={v === w ? 'active' : ''} onClick={() => (v !== w || neuBinden) && onWert(w as boolean)}>
+          <button key={String(w)} type="button" tabIndex={tabStopp(v === w, i === 0, v === null && !unklar?.gewaehlt)} aria-pressed={v === w} className={v === w ? 'active' : ''} onClick={() => (v !== w || neuBinden) && onWert(w as boolean)}>
             {t as string}
           </button>
         ))}
+        {unklar && (
+          <button type="button" tabIndex={unklar.gewaehlt ? 0 : -1} aria-pressed={unklar.gewaehlt} className={unklar.gewaehlt ? 'active' : ''} title="Nicht bekannt – die Einzelfragen werden gezeigt und bleiben offen" onClick={unklar.waehlen}>
+            unklar
+          </button>
+        )}
       </div>
     );
   if (def.typ === 'zahl')
@@ -450,7 +461,25 @@ function AusloeserMarken({ name, wert, defs }: { name: string; wert: FaktWert | 
   );
 }
 
-function FaktZeile({ id, def, wert, klaert, eigen, alsKnoepfe = false, defs = {} }: { id: string; def: FaktDef; wert: FaktWert | undefined; klaert: number; eigen: boolean; alsKnoepfe?: boolean; defs?: Record<string, FaktDef> }) {
+function FaktZeile({
+  id,
+  def,
+  wert,
+  klaert,
+  eigen,
+  alsKnoepfe = false,
+  defs = {},
+  unklar,
+}: {
+  id: string;
+  def: FaktDef;
+  wert: FaktWert | undefined;
+  klaert: number;
+  eigen: boolean;
+  alsKnoepfe?: boolean;
+  defs?: Record<string, FaktDef>;
+  unklar?: Unklar;
+}) {
   const fokus = useBaurecht((s) => s.fokus);
   const entwurf = useBaurecht((s) => offeneBestaetigungen(s).includes(id));
   const ref = useRef<HTMLDivElement>(null);
@@ -523,6 +552,7 @@ function FaktZeile({ id, def, wert, klaert, eigen, alsKnoepfe = false, defs = {}
           def={def}
           wert={wert}
           alsKnoepfe={alsKnoepfe}
+          unklar={unklar}
           onWert={(v) => {
             // Schutzgebiete und Geodaten (ja/nein, Auswahl) von Hand nur mit Beleg
             if (v !== undefined && mitBeleg(def, wert)) faktSetzenOeffnen(id, faktName(def, id), v, lagebezug(def, wert));
@@ -635,6 +665,139 @@ function FaktZeile({ id, def, wert, klaert, eigen, alsKnoepfe = false, defs = {}
         ) : (
           <div className="br-leise br-erklaerung">{nb(def.hilfe ?? '')}</div>
         ))}
+    </div>
+  );
+}
+
+/** Zahlwort für Ansagen und Hinweise: „eine Einzelfrage“, „3 Einzelfragen“ */
+const einzelfragen = (n: number) => (n === 1 ? 'eine Einzelfrage' : `${n} Einzelfragen`);
+
+/**
+ * Vorfrage oben in ihrer Gruppe (FaktDef.vorfrage, Kern: fragen.ts), die Einzelfragen darunter. Bei „ja“, „unklar“ und bei
+ * einem Widerspruch stehen sie offen da, bei „nein“ entfallen sie (genannt, die Vorfrage ist der Grund). Unbeantwortet
+ * sind sie eingeklappt; „Einzelfragen zeigen“ klappt nur die Ansicht auf, „unklar“ ist eine Antwort (getrennt gemerkt).
+ * `kinder`: die gestellten Einzelfragen (auch die der Einzelfragen, `tiefe` 2 …), schon nach der Suche gefiltert.
+ */
+function Vorfrage({ id, kinder, stand, klaerung, eigene, suche }: { id: string; kinder: { id: string; tiefe: number }[]; stand: Pruefstand; klaerung: Map<string, number>; eigene: Record<string, FaktWert>; suche: string }) {
+  const { faktDefs: defs, fakten } = stand.auswertung;
+  const def = defs[id];
+  const wert = fakten[id];
+  const name = faktName(def, id);
+  const aufGemerkt = useBaurecht((s) => !!s.vorfragenAuf[id]);
+  const unklarGemerkt = useBaurecht((s) => !!s.vorfragenUnklar[id]);
+  const setAuf = (a: boolean) => useBaurecht.setState((s) => ({ vorfragenAuf: { ...s.vorfragenAuf, [id]: a } }));
+  const setUnklar = (u: boolean) => useBaurecht.setState((s) => ({ vorfragenUnklar: { ...s.vorfragenUnklar, [id]: u } }));
+  const fokus = useBaurecht((s) => s.fokus);
+  // dieselbe Vorfrage in einem anderen Projekt bzw. Antrag: kein Anlass für eine Ansage
+  const projekt = useBaurecht((s) => `${s.quelle ? (s.quelle.art === 'datei' ? s.quelle.name : s.quelle.datei) : ''}|${s.antrag}`);
+  const unklar = wert?.wert == null && unklarGemerkt;
+  // eine Antwort ersetzt „unklar“
+  useEffect(() => {
+    if (wert?.wert != null && unklarGemerkt) setUnklar(false);
+  }, [wert?.wert, unklarGemerkt]);
+  // offen da, ohne Knopf: „ja“, „unklar“, ein Widerspruch (die Einzelfragen klären ihn) und während der Suche
+  const erzwungen = wert?.wert === true || unklar || !!wert?.widerspruch || !!suche;
+  const zeigen = erzwungen || aufGemerkt;
+  const nein = vorfrageNein(wert);
+  // bei „nein“ entfallen: alle Einzelfragen darunter, deren Wert aus einer Vorfrage folgt
+  const entfallen = nein ? einzelfragenVon(id, vorfragenKarte(defs)).filter((k) => fakten[k]?.ausVorfrage) : [];
+  const hinweis = vorfrageHinweis(id, fakten, defs);
+  const kinderSchluessel = kinder.map((k) => k.id).join('|');
+  // ein Sprung auf eine eingeklappte Einzelfrage (z. B. „klärt am meisten“): aufklappen, die Zeile fokussiert sich dann selbst
+  useEffect(() => {
+    const ziel = fokus?.replace(/:bestaetigen$/, '');
+    if (ziel && !zeigen && kinder.some((k) => k.id === ziel)) setAuf(true);
+  }, [fokus, zeigen, kinderSchluessel]);
+  // Wirkung der Antwort ansagen (die Einzelfragen erscheinen bzw. entfallen) – nicht beim ersten Zeichnen, nicht nach einem
+  // Wechsel von Projekt bzw. Antrag und nicht nach „Keine davon“ (das sagt einmal für alle an)
+  const stufe = nein ? 'nein' : wert?.wert === true ? 'ja' : 'offen';
+  const vorher = useRef({ stufe, projekt });
+  useEffect(() => {
+    const v = vorher.current;
+    vorher.current = { stufe, projekt };
+    if (v.stufe === stufe || v.projekt !== projekt) return;
+    const still = useBaurecht.getState().vorfragenStill;
+    if (still.includes(id)) return useBaurecht.setState({ vorfragenStill: still.filter((x) => x !== id) });
+    if (stufe === 'nein') useBaurecht.getState().ansagen(`${name}: nein – ${entfallen.length ? `${einzelfragen(entfallen.length)} entfallen` : 'keine Einzelfrage offen'}`);
+    else if (stufe === 'ja') useBaurecht.getState().ansagen(`${name}: ja – ${einzelfragen(kinder.length)} darunter`);
+  }, [stufe, projekt]);
+  const offen = kinder.filter((k) => fakten[k.id]?.wert == null).length;
+  // „unklar“: nur, solange die Vorfrage offen ist oder von Hand beantwortet (ein abgeleitetes „ja“ ist keine Antwort)
+  const unklarKnopf: Unklar | undefined =
+    wert?.wert == null || (eigene[id] && wert.herkunft === 'manuell')
+      ? {
+          gewaehlt: unklar,
+          waehlen: () => {
+            // ein zweiter Klick auf das gewählte „unklar“ nimmt es zurück (unbeantwortet, eingeklappt)
+            if (unklar) {
+              setUnklar(false);
+              useBaurecht.getState().ansagen(`${name}: unklar aufgehoben`);
+              return;
+            }
+            if (eigene[id]) useBaurecht.getState().faktSetzen(id, undefined, '');
+            setUnklar(true);
+            useBaurecht.getState().ansagen(`${name}: unklar – ${kinder.length ? `${einzelfragen(kinder.length)} darunter, offen` : 'keine Einzelfrage gestellt'}`);
+          },
+        }
+      : undefined;
+  return (
+    <div className="br-vorfrage" data-vorfrage={id}>
+      <FaktZeile id={id} def={def} wert={wert} klaert={klaerung.get(id) ?? 0} eigen={!!eigene[id]} defs={defs} unklar={unklarKnopf} />
+      {hinweis && <p className="br-leise br-vorfrage-hinweis">{hinweis}</p>}
+      {entfallen.length > 0 && (
+        <p className="br-leise br-vorfrage-erledigt">
+          Entfallen wegen „nein“: {entfallen.map((k) => faktName(defs[k], k)).join(', ')}
+        </p>
+      )}
+      {kinder.length > 0 && !erzwungen && (
+        <button type="button" className="small br-link br-einzelfragen-knopf" aria-expanded={zeigen} aria-controls={zeigen ? `br-ez-${id}` : undefined} onClick={() => setAuf(!zeigen)}>
+          <Symbol name={zeigen ? 'pfeilUnten' : 'pfeilRechts'} /> {zeigen ? 'Einzelfragen ausblenden' : `Einzelfragen zeigen (${kinder.length}${offen && offen < kinder.length ? `, ${offen} offen` : ''})`}
+        </button>
+      )}
+      {zeigen && kinder.length > 0 && (
+        <div id={`br-ez-${id}`} className="br-einzelfragen" role="group" aria-label={`Einzelfragen zu „${name}“`}>
+          {kinder.map((k) => (
+            <div key={k.id} className={k.tiefe > 1 ? 'br-einzelfrage-tiefer' : undefined}>
+              <FaktZeile id={k.id} def={defs[k.id]} wert={fakten[k.id]} klaert={klaerung.get(k.id) ?? 0} eigen={!!eigene[k.id]} defs={defs} />
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * „Keine davon …“: alle offenen Vorfragen einer Gruppe auf einmal mit „nein“ – Schutzgebiete und Geodaten von Hand nur mit
+ * Beleg, und zwar je Vorfrage einem eigenen (eine Auskunft der Naturschutzbehörde belegt kein Denkmal); sonst sofort.
+ * Steht über den Vorfragen der Gruppe, ab zwei offenen. Danach geht der Fokus auf die erste dieser Vorfragen (die Zeile
+ * mit dem Knopf verschwindet), angesagt wird einmal für alle.
+ */
+function VorfragenSammel({ gruppe, titel, ids, stand }: { gruppe: string; titel: string; ids: string[]; stand: Pruefstand }) {
+  const { faktDefs: defs, fakten } = stand.auswertung;
+  const namen = ids.map((id) => faktName(defs[id], id));
+  const textId = `br-sammel-${gruppe}`;
+  const keineDavon = () => {
+    if (ids.some((id) => mitBeleg(defs[id], fakten[id])))
+      return vorfragenNeinOeffnen(
+        ids.map((id) => ({ id, titel: faktName(defs[id], id), frage: defs[id].frage })),
+        ids.some((id) => lagebezug(defs[id], fakten[id])),
+        titel,
+      );
+    const st = useBaurecht.getState();
+    useBaurecht.setState({ vorfragenStill: ids });
+    for (const id of ids) st.faktSetzen(id, false, benutzer(), undefined, lagebezug(defs[id], fakten[id]) ? aktuelleLage(st.project).lage : undefined);
+    st.ansagen(`${ids.length} Vorfragen mit „nein“ beantwortet – ihre Einzelfragen entfallen`);
+    st.fokusSetzen(ids[0]);
+  };
+  return (
+    <div className="br-vorfragen-sammel">
+      <span className="br-leise" id={textId}>
+        {ids.length} Vorfragen offen – trifft keine zu?
+      </span>
+      <button type="button" className="small" aria-describedby={textId} title={`Alle mit „nein“ beantworten (je mit Beleg): ${namen.join(', ')}`} onClick={keineDavon}>
+        Keine davon …
+      </button>
     </div>
   );
 }
@@ -759,8 +922,9 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
     // Ziele von „bestätigen klärt“ (z. B. der Bezug einer Tabelle) – an ihnen hängt keine Regel unmittelbar, der Chip
     // führte sonst ins Leere
     for (const k of auswertung.bestaetigen ?? []) s.add(k.id);
-    return s;
-  }, [auswertung.paragrafen, auswertung.bestaetigen]);
+    // eine Vorfrage zählt, sobald eine ihrer Einzelfragen zählt (an ihr selbst hängt keine Regel)
+    return mitVorfragen(s, auswertung.faktDefs);
+  }, [auswertung.paragrafen, auswertung.bestaetigen, auswertung.faktDefs]);
   const merkmale = useBaurecht((s) => s.merkmale);
   const ansage = useBaurecht((s) => s.ansage);
   // so viele Paragrafen ändert die Bestätigung des Planungsrechts für diesen Ort – vorher genannt, nicht erst danach
@@ -800,19 +964,64 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
       .flatMap(([, ids]) => ids)
       .filter((rid) => rueckfrageSichtbar(rid, stand)),
   );
+  // Rückfragen nur, wenn sie gestellt sind, und dann unter ihrem Merkmal (in der Gruppe nur, wenn das Merkmal wegen der
+  // Suche nicht zu sehen ist)
+  const defs = auswertung.faktDefs;
+  // je Zeichenlauf zwischengespeichert: `oberste` und `kinderVon` fragen dieselben Angaben mehrfach
+  const sichtbarCache = new Map<string, boolean>();
+  const sichtbar = (id: string) => {
+    let s = sichtbarCache.get(id);
+    if (s === undefined) {
+      const d = defs[id];
+      s = !!d && id !== 'antrag.einreichung' && (alle || relevant.has(id)) && (!RUECKFRAGE_IDS.has(id) || (!(merkmaleSichtbar && alsRueckfrage.has(id)) && rueckfrageSichtbar(id, stand))) && frageGestellt(id, d, ctx);
+      sichtbarCache.set(id, s);
+    }
+    return s;
+  };
+  // gesucht wird im sichtbaren Text, nicht in der internen Kennung („gebaeude.…“ träfe sonst jede Gebäudeangabe)
+  const passt = (id: string) => {
+    const d = defs[id];
+    return textPasst(`${d.kurz ?? ''} ${d.titel} ${d.frage ?? ''} ${(d.werte ?? []).join(' ')}`, suche);
+  };
+  // Vorfragen: Die Einzelfragen stehen unter der obersten sichtbaren Vorfrage (auch aus einer anderen Gruppe, z. B. „Bäume
+  // fällen“ unter „Bäume, Sträucher oder Hecken“), nicht noch einmal in ihrer Gruppe
+  const karte = vorfragenKarte(defs);
+  const oberste = (id: string) => {
+    let top: string | undefined;
+    for (let v = defs[id]?.vorfrage?.fakt, n = 0; v && n < 20; v = defs[v]?.vorfrage?.fakt, n++) if (sichtbar(v)) top = v;
+    return top;
+  };
+  const tiefe = (id: string, v: string) => {
+    let n = 1;
+    for (let x = defs[id]?.vorfrage?.fakt; x && x !== v && n < 20; x = defs[x]?.vorfrage?.fakt) n++;
+    return n;
+  };
+  const kinderCache = new Map<string, { id: string; tiefe: number }[]>();
+  const kinderVon = (v: string) => {
+    let k = kinderCache.get(v);
+    if (!k) {
+      k =
+        karte.has(v) && !oberste(v)
+          ? einzelfragenVon(v, karte)
+              .filter((x) => sichtbar(x) && (passt(v) || passt(x)))
+              .map((x) => ({ id: x, tiefe: tiefe(x, v) }))
+          : [];
+      kinderCache.set(v, k);
+    }
+    return k;
+  };
   const gruppen = FAKT_GRUPPEN.map((g) => {
-    const ids = Object.entries(auswertung.faktDefs)
-      // Rückfragen nur, wenn sie gestellt sind, und dann unter ihrem Merkmal (in der Gruppe nur, wenn das Merkmal wegen
-      // der Suche nicht zu sehen ist)
-      .filter(([id, d]) => d.gruppe === g.id && id !== 'antrag.einreichung' && (alle || relevant.has(id)) && (!RUECKFRAGE_IDS.has(id) || (!(merkmaleSichtbar && alsRueckfrage.has(id)) && rueckfrageSichtbar(id, stand))))
-      .filter(([id, d]) => frageGestellt(id, d, ctx))
-      // gesucht wird im sichtbaren Text, nicht in der internen Kennung („gebaeude.…“ träfe sonst jede Gebäudeangabe)
-      .filter(([, d]) => textPasst(`${d.kurz ?? ''} ${d.titel} ${d.frage ?? ''} ${(d.werte ?? []).join(' ')}`, suche))
+    const ids = Object.entries(defs)
+      .filter(([id, d]) => d.gruppe === g.id && sichtbar(id) && !oberste(id) && (passt(id) || kinderVon(id).length > 0))
       .map(([id]) => id)
-      .sort((a, b) => (rang.get(a) ?? Infinity) - (rang.get(b) ?? Infinity) || vergleich(a, b));
-    return { ...g, ids };
+      // die Vorfragen oben in ihrer Gruppe
+      .sort((a, b) => Number(karte.has(b)) - Number(karte.has(a)) || (rang.get(a) ?? Infinity) - (rang.get(b) ?? Infinity) || vergleich(a, b));
+    const kinder = new Map(ids.filter((id) => karte.has(id)).map((id) => [id, kinderVon(id)]));
+    return { ...g, ids, kinder };
   }).filter((g) => g.ids.length);
-  const trefferZahl = suche ? gruppen.reduce((n, g) => n + g.ids.length, 0) + VORGABE_MERKMALE.filter((m) => merkmalPasst(m, suche)).length + (merkmaleSichtbar ? alsRueckfrage.size : 0) : 0;
+  const trefferZahl = suche
+    ? gruppen.reduce((n, g) => n + g.ids.length + [...g.kinder.values()].reduce((m, k) => m + k.length, 0), 0) + VORGABE_MERKMALE.filter((m) => merkmalPasst(m, suche)).length + (merkmaleSichtbar ? alsRueckfrage.size : 0)
+    : 0;
   const suchText = !suche ? '' : trefferZahl ? `${trefferZahl === 1 ? 'eine Angabe' : `${trefferZahl} Angaben`} zu „${suche}“` : `Keine Angabe zu „${suche}“`;
   const [suchAnsage, setSuchAnsage] = useState('');
   useEffect(() => {
@@ -897,9 +1106,19 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
         {gruppen.map((g) => (
           <section key={g.id} className="br-angaben-gruppe" aria-labelledby={`br-g-${g.id}`}>
             <h3 id={`br-g-${g.id}`}>{g.titel}</h3>
-            {g.ids.map((id) => (
-              <FaktZeile key={id} id={id} def={auswertung.faktDefs[id]} wert={auswertung.fakten[id]} klaert={klaerung.get(id) ?? 0} eigen={!!eigene[id]} defs={auswertung.faktDefs} />
-            ))}
+            {(() => {
+              // „Keine davon“ ab zwei offenen Vorfragen – nicht während der Suche (sie zeigt nur einen Teil)
+              // nur Vorfragen des Katalogs (`vorfrage.…`), nicht Einzelfragen, die zugleich Vorfrage sind (Wasserschutzgebiet …)
+              const offeneV = suche ? [] : g.ids.filter((id) => id.startsWith('vorfrage.') && karte.has(id) && auswertung.fakten[id]?.wert == null);
+              return offeneV.length >= 2 && <VorfragenSammel gruppe={g.id} titel={g.titel} ids={offeneV} stand={stand} />;
+            })()}
+            {g.ids.map((id) =>
+              g.kinder.has(id) ? (
+                <Vorfrage key={id} id={id} kinder={g.kinder.get(id)!} stand={stand} klaerung={klaerung} eigene={eigene} suche={suche} />
+              ) : (
+                <FaktZeile key={id} id={id} def={auswertung.faktDefs[id]} wert={auswertung.fakten[id]} klaert={klaerung.get(id) ?? 0} eigen={!!eigene[id]} defs={auswertung.faktDefs} />
+              ),
+            )}
           </section>
         ))}
       </div>

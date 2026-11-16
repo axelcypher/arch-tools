@@ -62,6 +62,64 @@ const KATALOG: Record<string, FaktDef> = {
   'lage.strasse_ausserorts': j('An einer Bundes-, Landes- oder Kreisstraße außerhalb der Ortsdurchfahrt (bis 40 m)', 'grundstueck', 'Zustimmung der Straßenbaubehörde (§ 25 StrWG NRW, § 9 FStrG)'),
   'lage.zufahrt_neu': j('Neue oder geänderte Zufahrt zu einer öffentlichen Straße', 'grundstueck'),
 
+  /* ---------- Vorfragen (FaktDef.vorfrage): je Gegenstand eine Frage; „nein“ erledigt die Einzelfragen darunter ---------- */
+  // Der Anwendungsbereich jeder Vorfrage umfasst den ihrer Einzelfragen ganz – auch Wirkungen aus dem Umfeld (§ 34 BNatSchG,
+  // Umgebungsschutz der Denkmäler, Anbaubeschränkungen an Straßen); sonst entstünde aus „nein“ ein falsches Grün
+  'vorfrage.natura2000': {
+    titel: 'FFH- oder Vogelschutzgebiet (Natura 2000) am Standort oder im Einwirkungsbereich des Vorhabens',
+    kurz: 'Natura 2000 am Standort oder im Umfeld',
+    gruppe: 'schutz',
+    typ: 'janein',
+    frage: 'Liegt das Grundstück in einem FFH- oder Vogelschutzgebiet oder so nah daran, dass das Vorhaben das Gebiet erheblich beeinträchtigen könnte?',
+    hilfe:
+      '§ 34 BNatSchG erfasst auch Vorhaben außerhalb eines Natura-2000-Gebiets, die es erheblich beeinträchtigen können (z. B. Stoffeinträge, Lärm, Licht, Wasserhaushalt). „nein“ nur, wenn kein Gebiet im möglichen Einwirkungsbereich liegt – im Zweifel offen lassen. Karte: Fachinformationssystem Natura 2000 des LANUK. Die Lage-Abfrage prüft nur einen Umkreis von 25 m und belegt die Frage deshalb nie mit „nein“ vor.',
+  },
+  'vorfrage.naturschutz': {
+    titel:
+      'Natur- oder Landschaftsschutzgebiet (auch einstweilig sichergestellt), Naturdenkmal, geschützter Landschaftsbestandteil oder gesetzlich geschütztes Biotop am Standort oder im Einwirkungsbereich des Vorhabens',
+    kurz: 'Schutzgebiet oder -objekt (Naturschutz)',
+    gruppe: 'schutz',
+    typ: 'janein',
+    frage:
+      'Liegen das Grundstück oder Teile des Vorhabens (Zufahrt, Leitungen, Baustelleneinrichtung) in einem – auch einstweilig sichergestellten – Natur- oder Landschaftsschutzgebiet, oder gibt es auf dem Grundstück, angrenzend oder sonst im Einwirkungsbereich (z. B. Einleitung von Wasser, Grundwasserabsenkung, Wurzel- und Kronenbereich) ein Naturdenkmal, einen geschützten Landschaftsbestandteil oder ein gesetzlich geschütztes Biotop?',
+    hilfe:
+      '§§ 22–23, 26, 28–30 BNatSchG, §§ 42, 48 LNatSchG NRW – Schutzgebiete und -objekte durch Verordnung oder Landschaftsplan, Biotope allein kraft Gesetzes (auch ohne Kartierung). Verboten ist auch, was von außen zu einer Beeinträchtigung führen kann. „nein“ nur, wenn nichts davon im Einwirkungsbereich liegt. Karte: LINFOS NRW. Der Landschaftsplan selbst und Bäume nach einer Baumschutzsatzung sind eigene Angaben.',
+  },
+  'vorfrage.wasser': {
+    titel: 'Wasser- oder Heilquellenschutzgebiet, Überschwemmungsgebiet oder Hochwasser-Risikogebiet',
+    kurz: 'Wasserschutz- oder Hochwassergebiet',
+    gruppe: 'schutz',
+    typ: 'janein',
+    frage: 'Liegt das Grundstück in einem Wasser- oder Heilquellenschutzgebiet, einem (auch vorläufig gesicherten) Überschwemmungsgebiet oder einem Hochwasser-Risikogebiet (HQextrem)?',
+    hilfe: 'Alle drei zeigt ELWAS-WEB des Landes NRW. Die Pflichten gelten im Gebiet selbst (§§ 51–53, 78, 78b WHG): Liegt das Grundstück außerhalb, folgt „nein“. Nahe einer Gebietsgrenze die Karte genau prüfen.',
+  },
+  'vorfrage.denkmal': {
+    titel: 'Denkmal auf dem Grundstück oder in seiner Umgebung, Denkmalbereich oder Bodendenkmal (auch vermutet)',
+    kurz: 'Denkmal am Standort oder in der Umgebung',
+    gruppe: 'schutz',
+    typ: 'janein',
+    frage:
+      'Gibt es auf dem Grundstück oder in seiner engeren Umgebung ein Bau- oder Gartendenkmal – auch vorläufig geschützt –, liegt es in oder nahe einem Denkmalbereich, oder ist auf dem Grundstück oder in seiner engeren Umgebung ein Bodendenkmal bekannt oder zu vermuten?',
+    hilfe:
+      '§§ 4, 9, 13, 15 DSchG NRW: Erlaubnispflichtig ist auch, was in der engeren Umgebung eines Denkmals dessen Erscheinungsbild berührt (Sichtbezug). Vorläufig geschützt ist ein Objekt schon ab der Mitteilung, dass die Unterschutzstellung eingeleitet ist (§ 4) – in der Denkmalliste steht es dann noch nicht: bei der Unteren Denkmalbehörde fragen. Bodendenkmäler und Vermutungsflächen bei der LWL- bzw. LVR-Archäologie. „nein“ nur, wenn weder ein Denkmal noch ein Denkmalbereich im Umfeld liegt und keine archäologischen Funde zu erwarten sind.',
+  },
+  'vorfrage.gehoelze': {
+    titel: 'Bäume, Sträucher oder Hecken auf dem Grundstück, angrenzend oder im Bereich der Bauarbeiten',
+    kurz: 'Bäume, Sträucher oder Hecken',
+    gruppe: 'schutz',
+    typ: 'janein',
+    frage: 'Stehen auf dem Grundstück, angrenzend (auch im Straßenraum oder auf dem Nachbargrundstück, mit Krone oder Wurzeln über die Grenze) oder im Bereich von Zufahrt und Baustelleneinrichtung Bäume, Sträucher oder Hecken?',
+    hilfe: 'Daran hängen geschützte Bäume (Baumschutzsatzung, Naturdenkmal, Allee), geschützte Hecken und Anpflanzungen (§ 39 LNatSchG NRW) sowie das Fällen und Roden. „nein“ nur, wenn dort gar keine Gehölze stehen.',
+  },
+  'vorfrage.strasse': {
+    titel: 'Bundes-, Landes- oder Kreisstraße am oder nahe dem Grundstück, oder Anschluss daran',
+    kurz: 'Klassifizierte Straße im Umfeld',
+    gruppe: 'grundstueck',
+    typ: 'janein',
+    frage: 'Liegt das Grundstück an oder nahe einer Bundesautobahn (bis 100 m) oder einer Bundes-, Landes- oder Kreisstraße (außerhalb der Ortsdurchfahrt bis 40 m, an einer Bundesstraße in der Ortsdurchfahrt angrenzend) – auch geplant –, oder ist bzw. wird es über eine Zufahrt, auch mittelbar, an eine solche Straße außerhalb der Ortsdurchfahrt angeschlossen?',
+    hilfe: '§ 9 FStrG, § 25 StrWG NRW; die Abstände gelten ab dem äußeren Rand der befestigten Fahrbahn. „nein“ nur, wenn keine dieser Straßen in diesen Abständen liegt und auch keine Zufahrt – auch nicht über einen Privatweg – zu ihr führt.',
+  },
+
   /* ---------- Schutzgebiete und Denkmal ---------- */
   'schutz.nsg': j('Naturschutzgebiet (auch einstweilig sichergestellt)', 'schutz'),
   'schutz.lsg': j('Landschaftsschutzgebiet', 'schutz'),
@@ -138,7 +196,32 @@ const KATALOG: Record<string, FaktDef> = {
   'antrag.einreichung': { titel: 'Geplantes Einreichungsdatum', gruppe: 'antrag', typ: 'text' },
 };
 
-export const FAKTEN: Record<string, FaktDef> = Object.fromEntries(Object.entries(KATALOG).map(([id, d]) => [id, KURZ[id] ? { ...d, kurz: KURZ[id] } : d]));
+/**
+ * Einzelfragen des Katalogs zu den Vorfragen: Bei „nein“ in der Vorfrage gilt der Wert (hier überall „nein“). Module, die
+ * eine dieser Angaben neu fassen (z. B. mit Geodienst), nennen die Vorfrage dort ebenfalls
+ */
+const VORFRAGE: Record<string, string> = {
+  'schutz.ffh': 'vorfrage.natura2000',
+  'schutz.vsg': 'vorfrage.natura2000',
+  'schutz.natura_nah': 'vorfrage.natura2000',
+  'schutz.nsg': 'vorfrage.naturschutz',
+  'schutz.lsg': 'vorfrage.naturschutz',
+  'schutz.biotop': 'vorfrage.naturschutz',
+  'schutz.wsg': 'vorfrage.wasser',
+  'schutz.uesg': 'vorfrage.wasser',
+  'schutz.risikogebiet': 'vorfrage.wasser',
+  'schutz.denkmal': 'vorfrage.denkmal',
+  'schutz.denkmal_umgebung': 'vorfrage.denkmal',
+  'schutz.denkmalbereich': 'vorfrage.denkmal',
+  'schutz.bodendenkmal': 'vorfrage.denkmal',
+  'schutz.baum': 'vorfrage.gehoelze',
+  'vorhaben.baeume_faellen': 'vorfrage.gehoelze',
+  'lage.strasse_ausserorts': 'vorfrage.strasse',
+};
+
+export const FAKTEN: Record<string, FaktDef> = Object.fromEntries(
+  Object.entries(KATALOG).map(([id, d]) => [id, { ...d, ...(KURZ[id] ? { kurz: KURZ[id] } : {}), ...(VORFRAGE[id] ? { vorfrage: { fakt: VORFRAGE[id], sonst: false } } : {}) }]),
+);
 
 /** Merkmale aus Formulare (Antragsmerkmale) – Titel für die Anzeige */
 export const MERKMAL_TITEL: Record<string, string> = {

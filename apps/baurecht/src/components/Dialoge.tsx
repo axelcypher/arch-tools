@@ -227,11 +227,179 @@ export const faktSetzenOeffnen = (id: string, titel: string, wert: FaktWert['wer
   useFaktBestaetigen.setState({ ziel: { id, titel, modus: 'setzen', wert: { wert, herkunft: 'manuell', sicherheit: 'sicher' }, vorher: eintrag(id), lagebezug } });
 };
 
+/* ---------- „Keine davon“: offene Vorfragen einer Gruppe mit „nein“ (je mit Beleg) ---------- */
+
+interface VorfragenNeinZiel {
+  /** Gruppe der Angaben (Titel), z. B. „Schutzgebiete und Denkmal“ */
+  gruppe: string;
+  /** die Angaben hängen an der Lage – gelten nach dem Setzen nur für die aktuelle Lage */
+  lagebezug: boolean;
+  /** je Vorfrage: Kennung, Name, Frage und der Eintrag beim Öffnen (hat er sich geändert, wird abgebrochen) */
+  ziele: { id: string; titel: string; frage?: string; vorher: string }[];
+}
+const useVorfragenNein = create<{ ziel: VorfragenNeinZiel | null }>(() => ({ ziel: null }));
+export const vorfragenNeinOeffnen = (ziele: { id: string; titel: string; frage?: string }[], lagebezug: boolean, gruppe: string) => {
+  if (!ziele.length) return;
+  merken();
+  useVorfragenNein.setState({ ziel: { gruppe, lagebezug, ziele: ziele.map((z) => ({ ...z, vorher: eintrag(z.id) })) } });
+};
+
+/**
+ * Mehrere Vorfragen auf einmal mit „nein“ beantworten – je Vorfrage ein eigener Beleg (Pflicht, mindestens 10 Zeichen):
+ * Ein Sammel-„nein“ mit einem Beleg für alles (Naturschutz, Denkmal, Gehölze …) trüge nicht. Die Vorschau zeigt, was
+ * alle zusammen herabstufen. Danach Fokus auf die erste Vorfrage (der Knopf „Keine davon …“ verschwindet), eine Ansage.
+ */
+export function VorfragenNeinDialog({ folgen }: { folgen: FolgenRechner }) {
+  const ziel = useVorfragenNein((s) => s.ziel);
+  const project = useBaurecht((s) => s.project);
+  const [belege, setBelege] = useState<Record<string, string>>({});
+  const [von, setVon] = useState('');
+  const [versucht, setVersucht] = useState(false);
+  const [veraltet, setVeraltet] = useState(false);
+  const [verwerfen, setVerwerfen] = useState(false);
+  const form = useRef<HTMLFormElement>(null);
+  useEffect(() => {
+    if (!ziel) return;
+    setBelege({});
+    setVon(benutzer());
+    setVersucht(false);
+    setVeraltet(false);
+    setVerwerfen(false);
+    // Erstfokus auf das erste Beleg-Feld setzt der gemeinsame Unterbau (ui/dialoge.ts: erstes Textfeld)
+  }, [ziel]);
+  const vorschau = useMemo(() => {
+    if (!ziel) return null;
+    const lage = ziel.lagebezug ? aktuelleLage(project).lage : undefined;
+    const o = { von: 'Vorschau', grund: 'Vorschau', lage, heute: heute(), desktop: isTauri() };
+    const alle = Object.fromEntries(ziel.ziele.map((z) => [z.id, angabeVonHand(useBaurecht.getState().pruefung.fakten[z.id], z.id, false, o)]));
+    const [erste] = ziel.ziele;
+    return folgen(erste.id, alle[erste.id], alle);
+  }, [ziel, folgen, project]);
+  if (!ziel) return null;
+  const fehlt = (id: string) => (belege[id] ?? '').trim().length < 10;
+  const schliessen = (danach?: string) => {
+    useVorfragenNein.setState({ ziel: null });
+    if (danach) {
+      oeffner = null;
+      useBaurecht.getState().fokusSetzen(danach);
+    } else fokusZurueck(ziel.ziele[0].id);
+  };
+  const zu = () => (Object.values(belege).some((b) => b.trim()) ? setVerwerfen(true) : schliessen());
+  const uebernehmen = () => {
+    setVersucht(true);
+    const erstesFehlt = ziel.ziele.find((z) => fehlt(z.id));
+    if (erstesFehlt || !von.trim()) {
+      form.current?.querySelector<HTMLElement>(erstesFehlt ? `#br-vn-${CSS.escape(erstesFehlt.id)}` : '#br-vn-von')?.focus();
+      return;
+    }
+    if (ziel.ziele.some((z) => eintrag(z.id) !== z.vorher)) {
+      setVeraltet(true);
+      return;
+    }
+    benutzerMerken(von);
+    const lage = ziel.lagebezug ? aktuelleLage(project).lage : undefined;
+    const st = useBaurecht.getState();
+    useBaurecht.setState({ vorfragenStill: ziel.ziele.map((z) => z.id) });
+    for (const z of ziel.ziele) st.faktSetzen(z.id, false, von.trim(), belege[z.id], lage);
+    st.ansagen(`${ziel.ziele.length} Vorfragen mit „nein“ beantwortet – ihre Einzelfragen entfallen`);
+    schliessen(ziel.ziele[0].id);
+  };
+  return (
+    <Modal titel={`${ziel.gruppe}: ${ziel.ziele.length} Vorfragen mit „nein“ beantworten`} onClose={zu} breit klickDaneben={false} kopf>
+      <form
+        ref={form}
+        noValidate
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!verwerfen) uebernehmen();
+        }}
+      >
+        <p className="br-leise">Jede dieser Vorfragen gilt danach als „nein“, ihre Einzelfragen entfallen. Je Vorfrage ein eigener Beleg – er muss auch das Umfeld abdecken, wo die Frage es nennt.</p>
+        {vorschau && <Folgen folgen={vorschau} />}
+        <div className="meldung warnung" role="note">
+          Die Angaben gelten danach als gesichert. Bitte nur angeben, was belegt ist – die Belege stehen im Prüfprotokoll.
+          {ziel.lagebezug ? (aktuelleLage(project).lage ? ' Sie gelten nur für die aktuelle Lage des Vorhabens.' : ' Ohne Koordinaten, die zur Adresse passen, lassen sie sich an keine Lage binden und bleiben Hinweis.') : ''}
+        </div>
+        {veraltet && (
+          <div className="meldung fehler" role="alert">
+            Eine der Angaben hat sich inzwischen geändert (z. B. durch „Lage abfragen“). Bitte den Dialog schließen und neu prüfen.
+          </div>
+        )}
+        {ziel.ziele.map((z) => {
+          const fehler = versucht && fehlt(z.id);
+          const hinweisId = `br-vn-${z.id}-frage`;
+          const fehlerId = `br-vn-${z.id}-fehler`;
+          return (
+            <div key={z.id} className="field">
+              <label className="field-label" htmlFor={`br-vn-${z.id}`}>
+                {z.titel}: worauf gestützt? <span aria-hidden="true">*</span>
+              </label>
+              <textarea
+                id={`br-vn-${z.id}`}
+                rows={2}
+                value={belege[z.id] ?? ''}
+                onChange={(e) => setBelege((b) => ({ ...b, [z.id]: e.target.value }))}
+                aria-required="true"
+                aria-invalid={fehler}
+                aria-describedby={[z.frage ? hinweisId : '', fehler ? fehlerId : ''].filter(Boolean).join(' ') || undefined}
+                placeholder="Beleg: Unterlage oder Auskunft mit Datum"
+              />
+              {z.frage && (
+                <span id={hinweisId} className="field-hint br-leise">
+                  {z.frage}
+                </span>
+              )}
+              {fehler && (
+                <span id={fehlerId} className="field-hint br-fehler-text">
+                  Bitte angeben, worauf das „nein“ beruht (mindestens 10 Zeichen).
+                </span>
+              )}
+            </div>
+          );
+        })}
+        <div className="field">
+          <label className="field-label" htmlFor="br-vn-von">
+            Angegeben von <span aria-hidden="true">*</span>
+          </label>
+          <input id="br-vn-von" value={von} onChange={(e) => setVon(e.target.value)} aria-required="true" aria-invalid={versucht && !von.trim()} aria-describedby={versucht && !von.trim() ? 'br-vn-von-fehler' : undefined} />
+          {versucht && !von.trim() && (
+            <span id="br-vn-von-fehler" className="field-hint br-fehler-text">
+              Bitte angeben, wer das „nein“ angibt.
+            </span>
+          )}
+        </div>
+        {verwerfen ? (
+          <div className="dialog-buttons br-verwerfen">
+            <span className="meldung warnung" role="alert">
+              Die Belege sind noch nicht übernommen. Verwerfen?
+            </span>
+            <button type="button" onClick={() => setVerwerfen(false)}>
+              Weiter bearbeiten
+            </button>
+            <button type="button" className="danger" onClick={() => schliessen()}>
+              Verwerfen
+            </button>
+          </div>
+        ) : (
+          <div className="dialog-buttons">
+            <button type="button" onClick={zu}>
+              Abbrechen
+            </button>
+            <button type="submit" className="primary">
+              Übernehmen
+            </button>
+          </div>
+        )}
+      </form>
+    </Modal>
+  );
+}
+
 /** Definition einer Angabe (Typ, Einheit) – für die Anzeige der Werte („139,12 m²“, „3“) */
 export type FaktDefVon = (id: string) => FaktDef | undefined;
 
 /** Folgen einer Angabe: wie viele Paragrafen dadurch auf „entfällt“ (bzw. schwächer) gehen – für die Dialoge */
-export type FolgenRechner = (id: string, wert: FaktWert | null) => { herab: { id: string; titel: string; von: Ampel; nach: Ampel }[]; nachher?: FaktWert };
+export type FolgenRechner = (id: string, wert: FaktWert | null, weitere?: Record<string, FaktWert>) => { herab: { id: string; titel: string; von: Ampel; nach: Ampel }[]; nachher?: FaktWert };
 
 /** Pfeil sichtbar, „wird zu“ für Screenreader (ein aria-label an einem span ohne Rolle wird nicht verlässlich vorgelesen) */
 function Pfeil() {
@@ -376,7 +544,7 @@ export function FaktBestaetigenDialog({ folgen, faktDef = () => undefined }: { f
             Beispiel:{' '}
             {ziel.id.startsWith('lage.')
               ? 'Auszug aus dem Liegenschaftskataster vom 03.11.2026'
-              : geo || ziel.id.startsWith('schutz.')
+              : geo || ziel.id.startsWith('schutz.') || ziel.id.startsWith('vorfrage.')
                 ? 'Auskunft der Unteren Naturschutzbehörde vom 03.11.2026, Aktenzeichen …'
                 : ziel.wert.herkunft === 'flaechen' || ziel.wert.herkunft === 'grz'
                   ? 'Modell vollständig geprüft am 12.11.2026'
@@ -440,6 +608,7 @@ const useBestaetigen = create<BestaetigenState>(() => ({ offen: null, antwort: n
 /** alle Dialoge dieser Datei schließen (Stores auf Modulebene überleben das Unmount – für Tests) */
 export function dialogeZuruecksetzen(): void {
   useFestlegen.setState({ p: null });
+  useVorfragenNein.setState({ ziel: null });
   useFaktBestaetigen.setState({ ziel: null });
   useBestaetigen.setState({ offen: null, antwort: null });
 }

@@ -13,7 +13,7 @@ import { Angaben } from './components/Angaben';
 import { AmpelMarke, AMPEL_ERKLAERUNG } from './components/Ampel';
 import { Detail } from './components/Detail';
 import type { FolgenRechner } from './components/Dialoge';
-import { BestaetigenDialog, bestaetigenFragen, FaktBestaetigenDialog, FestlegenDialog } from './components/Dialoge';
+import { BestaetigenDialog, bestaetigenFragen, FaktBestaetigenDialog, FestlegenDialog, VorfragenNeinDialog } from './components/Dialoge';
 import { Kopf } from './components/Kopf';
 import { Protokoll } from './components/Protokoll';
 import { Vorschriften } from './components/Vorschriften';
@@ -286,8 +286,8 @@ export function App() {
   const faktTitel = (id: string) => faktName(stand.auswertung.faktDefs[id], id);
   const faktDef = (id: string) => stand.auswertung.faktDefs[id];
   // Folgen einer Angabe: Vorschau im Dialog (mit der Angabe gegenüber jetzt) …
-  const folgen: FolgenRechner = (id, wert) => {
-    const eigene = { ...useBaurecht.getState().pruefung.fakten };
+  const folgen: FolgenRechner = (id, wert, weitere) => {
+    const eigene = { ...useBaurecht.getState().pruefung.fakten, ...weitere };
     if (wert) eigene[id] = wert;
     else delete eigene[id];
     const mit = auswertungMit(eigene);
@@ -360,6 +360,7 @@ export function App() {
       {protokoll && project && <Protokoll stand={stand} onClose={() => setProtokoll(false)} onSpeichern={() => speichern()} />}
       <FestlegenDialog fakten={stand.auswertung.fakten} widerspruchMerkmale={stand.widerspruchMerkmale} paragrafen={stand.auswertung.paragrafen} />
       <FaktBestaetigenDialog folgen={folgen} faktDef={faktDef} />
+      <VorfragenNeinDialog folgen={folgen} />
       <BestaetigenDialog titel={titel} faktTitel={faktTitel} folgen={folgenSeitDatei} faktDef={faktDef} />
       {logOffen && <LogDialog onClose={() => setLogOffen(false)} />}
     </div>

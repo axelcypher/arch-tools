@@ -249,10 +249,77 @@ describe('Baurecht – Oberfläche', () => {
     expect(inDatei().fakten[id].bestaetigt).toMatchObject({ grund: 'Flächen im Modell vollständig, geprüft am 12.11.2026' });
   });
 
+  it('Vorfragen: oben in ihrer Gruppe, Einzelfragen eingeklappt; „unklar“ klappt sie auf; „Keine davon …“ mit einem Beleg je Vorfrage; Protokoll nennt, was entfällt', async () => {
+    const host = render();
+    const gruppe = host.querySelector('#br-g-schutz')!.closest('section')!;
+    // oben in der Gruppe: „Keine davon …“, dann die Vorfragen
+    expect(gruppe.firstElementChild!.nextElementSibling!.classList.contains('br-vorfragen-sammel')).toBe(true);
+    const bloecke = [...gruppe.children].filter((e) => e.matches('.br-vorfrage, .br-fakt'));
+    expect(bloecke[0].matches('.br-vorfrage')).toBe(true);
+    const vf = gruppe.querySelector<HTMLElement>('[data-vorfrage="vorfrage.natura2000"]')!;
+    // eingeklappt: „Einzelfragen zeigen“ klappt nur die Ansicht auf – „unklar“ bleibt ungewählt
+    expect(vf.querySelector('[data-fakt="schutz.ffh"]')).toBeNull();
+    const zeigen = knopf(vf, /Einzelfragen zeigen/)!;
+    expect(zeigen.getAttribute('aria-expanded')).toBe('false');
+    act(() => zeigen.click());
+    expect(vf.querySelector('[data-fakt="schutz.ffh"]')).toBeTruthy();
+    expect(knopf(vf, 'unklar')!.getAttribute('aria-pressed')).toBe('false');
+    expect(knopf(vf, /Einzelfragen ausblenden/)!.getAttribute('aria-controls')).toBe('br-ez-vorfrage.natura2000');
+    act(() => knopf(vf, /Einzelfragen ausblenden/)!.click());
+    expect(vf.querySelector('[data-fakt="schutz.ffh"]')).toBeNull();
+    // „unklar“: eine Antwort ohne Wert – die Einzelfragen stehen offen da, ohne Knopf zum Ausblenden
+    act(() => knopf(vf, 'unklar')!.click());
+    expect(vf.querySelector('[data-fakt="schutz.ffh"]')).toBeTruthy();
+    expect(knopf(vf, 'unklar')!.getAttribute('aria-pressed')).toBe('true');
+    expect(knopf(vf, /Einzelfragen ausblenden/)).toBeUndefined();
+    expect(useBaurecht.getState().pruefung.fakten['vorfrage.natura2000']).toBeUndefined();
+    // ein zweiter Klick nimmt „unklar“ zurück
+    act(() => knopf(vf, 'unklar')!.click());
+    expect(knopf(vf, 'unklar')!.getAttribute('aria-pressed')).toBe('false');
+    expect(vf.querySelector('[data-fakt="schutz.ffh"]')).toBeNull();
+    // alle offenen Vorfragen der Gruppe auf einmal mit „nein“ – je Vorfrage ein Beleg
+    const offen = [...gruppe.querySelectorAll<HTMLElement>('[data-vorfrage^="vorfrage."]')].filter((b) => b.querySelector('.br-fakt.br-offen[data-fakt^="vorfrage."]')).map((b) => b.dataset.vorfrage!);
+    expect(offen.length).toBeGreaterThanOrEqual(2);
+    act(() => knopf(gruppe, 'Keine davon …')!.click());
+    const dialog = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find((d) => d.textContent?.includes('Vorfragen mit „nein“ beantworten'))!;
+    expect(dialog.textContent).toMatch(/^Schutzgebiete und Denkmal: \d+ Vorfragen/);
+    const felder = dialog.querySelectorAll<HTMLTextAreaElement>('textarea');
+    expect(felder.length).toBe(offen.length);
+    await vi.waitFor(() => expect(document.activeElement).toBe(felder[0]));
+    // ein fehlender Beleg: nichts übernommen, Fokus auf das Feld
+    tippen(felder[0], 'Auskunft UNB vom 03.11.2026');
+    act(() => knopf(dialog, 'Übernehmen')!.click());
+    expect(useBaurecht.getState().pruefung.fakten[offen[0]]).toBeUndefined();
+    expect(document.activeElement).toBe(felder[1]);
+    expect(felder[1].getAttribute('aria-invalid')).toBe('true');
+    felder.forEach((f, i) => tippen(f, `Beleg ${i + 1}: Auskunft vom 03.11.2026`));
+    act(() => knopf(dialog, 'Übernehmen')!.click());
+    offen.forEach((v, i) => expect(useBaurecht.getState().pruefung.fakten[v], v).toMatchObject({ wert: false, bestaetigt: { grund: `Beleg ${i + 1}: Auskunft vom 03.11.2026` } }));
+    // Fokus auf die erste Vorfrage (der Knopf ist weg), eine Ansage für alle
+    expect(host.querySelector(`[data-fakt="${offen[0]}"]`)!.contains(document.activeElement)).toBe(true);
+    expect(useBaurecht.getState().ansage).toMatch(/Vorfragen mit „nein“ beantwortet/);
+    const nachher = host.querySelector<HTMLElement>('[data-vorfrage="vorfrage.natura2000"]')!;
+    expect(nachher.querySelector('[data-fakt="schutz.ffh"]')).toBeNull();
+    expect(nachher.textContent).toMatch(/Entfallen wegen „nein“: .*FFH-Gebiet/);
+    expect(knopf(host, 'Keine davon …')).toBeUndefined();
+    // im Protokoll: je Vorfrage die entfallenen Einzelfragen, die Vorfrage mit Beleg als Grund
+    act(() => knopf(host, 'Prüfprotokoll …')!.click());
+    const d = document.querySelector<HTMLElement>('.br-protokoll')!;
+    const h = [...d.querySelectorAll('h2')].find((x) => x.textContent?.startsWith('Wegen „nein“ in der Vorfrage entfallen'))!;
+    expect(h).toBeTruthy();
+    const tabelle = h.nextElementSibling as HTMLElement;
+    const zeile = [...tabelle.querySelectorAll('tbody tr')].find((tr) => tr.textContent?.startsWith('Natura 2000'))!;
+    expect(zeile.textContent).toMatch(/von Hand.*Beleg: Beleg \d: Auskunft vom 03\.11\.2026/);
+    expect(zeile.textContent).toMatch(/FFH-Gebiet.*Vogelschutzgebiet.*Natura-2000-Gebiet in der Nähe/);
+    act(() => knopf(d, 'Schließen')!.click());
+  });
+
   it('Schutzgebiet von Hand setzen nur mit Beleg; ändert sich die Angabe währenddessen, wird abgebrochen', async () => {
+    // die Einzelfrage steht unter ihrer Vorfrage – aufgeklappt („Einzelfragen zeigen“)
+    act(() => useBaurecht.setState({ vorfragenAuf: { 'vorfrage.naturschutz': true } }));
     const host = render();
     act(() => knopf(host, 'alle')?.click());
-    const zeile = [...host.querySelectorAll<HTMLElement>('.br-fakt')].find((z) => /Landschaftsschutzgebiet/.test(z.textContent ?? ''))!;
+    const zeile = host.querySelector<HTMLElement>('[data-fakt="schutz.lsg"]')!;
     expect(zeile, 'Zeile Landschaftsschutzgebiet').toBeTruthy();
     act(() => knopf(zeile, 'nein')!.click());
     // noch nichts gesetzt – erst der Dialog mit Begründung
@@ -310,9 +377,10 @@ describe('Baurecht – Oberfläche', () => {
         },
       }),
     );
+    act(() => useBaurecht.setState({ vorfragenAuf: { 'vorfrage.naturschutz': true } }));
     const host = render();
     act(() => knopf(host, 'alle Angaben')?.click());
-    const zeile = [...host.querySelectorAll<HTMLElement>('.br-fakt')].find((z) => /Naturschutzgebiet/.test(z.textContent ?? '') && !!knopf(z, 'Bestätigen …'))!;
+    const zeile = host.querySelector<HTMLElement>('[data-fakt="schutz.nsg"]')!;
     act(() => knopf(zeile, 'Bestätigen …')!.click());
     const dialog = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find((d) => d.textContent?.includes('Worauf gestützt'))!;
     const m = /Stuft (\d+) Vorschrift/.exec(dialog.textContent ?? '');
@@ -328,7 +396,7 @@ describe('Baurecht – Oberfläche', () => {
   it('ohne Koordinaten: eine Angabe mit Lagebezug lässt sich nicht bestätigen (bliebe wirkungslos), die Zeile sagt warum', () => {
     act(() => useBaurecht.getState().geoFakten({ 'schutz.lsg': { wert: false, herkunft: 'geodienst', sicherheit: 'hinweis', quelle: 'LINFOS', grund: 'kein Treffer' } }));
     const p = useBaurecht.getState().project!;
-    act(() => useBaurecht.setState({ project: { ...p, meta: { ...p.meta, koordinaten: undefined } } }));
+    act(() => useBaurecht.setState({ project: { ...p, meta: { ...p.meta, koordinaten: undefined } }, vorfragenAuf: { 'vorfrage.naturschutz': true } }));
     const host = render();
     act(() => knopf(host, 'alle Angaben')?.click());
     const zeile = host.querySelector<HTMLElement>('[data-fakt="schutz.lsg"]')!;
@@ -411,6 +479,15 @@ describe('Baurecht – Oberfläche', () => {
   it('Protokoll: Startfokus auf der Aktionsleiste, nach Esc bzw. „Schließen“ zurück auf „Prüfprotokoll“', async () => {
     const host = render();
     const pause = () => act(async () => void (await new Promise((r) => setTimeout(r, 30))));
+    // erst, wenn die Texte geladen sind: trifft ein Text ein, während das Protokoll offen ist, baut es sich neu auf und der
+    // Startfokus ginge mit dem alten Knopf verloren (je nach Reihenfolge der Tests)
+    await vi.waitFor(
+      async () => {
+        await pause();
+        expect(useBaurecht.getState().laedt).toEqual([]);
+      },
+      { timeout: 15000, interval: 50 },
+    );
     for (const zu of ['Esc', 'Schließen']) {
       const oeffnen = knopf(host, 'Prüfprotokoll …')!;
       // wie ein Mausklick im Browser: der Knopf hat den Fokus, dann öffnet er das Protokoll

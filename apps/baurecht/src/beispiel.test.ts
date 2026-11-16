@@ -9,7 +9,9 @@ import { projektdateiAendern } from '@core/projektdatei';
 import { createOutline, createProject, createRoom, createStorey } from '@core/model';
 import type { Project } from '@core/model';
 import { paketAusDateien } from '@core/baurecht/paket';
-import { pruefstandBerechnen } from './pruefung';
+import { frageGestellt, mitVorfragen } from '@core/baurecht/fragen';
+import type { FaktWert } from '@core/baurecht/typen';
+import { aktuelleLage, pruefstandBerechnen } from './pruefung';
 
 const rechteck = (b: number, t: number) => [
   { x: 0, y: 0 },
@@ -81,5 +83,26 @@ describe('Beispiel: Einfamilienhaus in der Soester Altstadt', () => {
     const gelb = s.auswertung.paragrafen.filter((p) => p.ampel === 'gelb' && p.automatisch === 'gelb' && p.offen.length);
     expect(gelb.length).toBeGreaterThan(10);
     if (process.env.BEISPIEL_OAP) writeFileSync(process.env.BEISPIEL_OAP, beispielOap());
+  });
+
+  it('Vorfragen: fünf Antworten „nein“ erledigen alle Fragen zu Schutzgebieten und Denkmal (vorher 23 Einzelfragen)', () => {
+    const paket = paketAusDateien(dateien, 'test');
+    const merkmale = { Gebäudeart: 'Einfamilienhaus', Vorhaben: 'Errichtung', Verfahren: 'vereinfachtes Verfahren', Planungsrecht: 'Innenbereich', Sonderbau: 'nein', Gebäudeklasse: '1' };
+    const lage = aktuelleLage(beispielProjekt()).lage!;
+    const von = (wert: boolean): FaktWert => ({ wert, herkunft: 'manuell', sicherheit: 'sicher', lage, bestaetigt: { von: 'TP', am: '2026-11-16', grund: 'Auskunft UNB', lage } });
+    const eigene: Record<string, FaktWert> = { 'lage.ags': { wert: '05974040', herkunft: 'manuell', sicherheit: 'sicher' } };
+    const offen = (s: ReturnType<typeof pruefstandBerechnen>) => {
+      const a = s.auswertung;
+      const relevant = mitVorfragen(new Set(a.paragrafen.flatMap((p) => [...p.verwendet, ...p.offen])), a.faktDefs);
+      return Object.keys(a.faktDefs).filter((id) => a.faktDefs[id].gruppe === 'schutz' && relevant.has(id) && a.fakten[id]?.wert == null && frageGestellt(id, a.faktDefs[id], a.kontext));
+    };
+    const vorher = offen(pruefstandBerechnen(paket, beispielProjekt(), merkmale, eigene, {}, '2026-12-01', {}));
+    const vorfragen = vorher.filter((id) => id.startsWith('vorfrage.'));
+    expect(vorfragen.sort()).toEqual(['vorfrage.denkmal', 'vorfrage.gehoelze', 'vorfrage.natura2000', 'vorfrage.naturschutz', 'vorfrage.wasser']);
+    const nachher = pruefstandBerechnen(paket, beispielProjekt(), merkmale, { ...eigene, ...Object.fromEntries(vorfragen.map((v) => [v, von(false)])) }, {}, '2026-12-01', {});
+    expect(offen(nachher)).toEqual([]);
+    // was dadurch entfällt, gilt als „nein“ – mit der Vorfrage als Quelle (Prüfprotokoll)
+    expect(nachher.auswertung.fakten['schutz.ffh']).toMatchObject({ wert: false, ausVorfrage: 'vorfrage.natura2000' });
+    expect(nachher.auswertung.fakten['kreis_soest.hsg_qualitativ']).toMatchObject({ wert: 'außerhalb', ausVorfrage: 'kreis_soest.hsg' });
   });
 });

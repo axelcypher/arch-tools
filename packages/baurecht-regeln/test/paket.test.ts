@@ -7,7 +7,8 @@ import type { AuswertungsEingabe } from '@core/baurecht/auswertung';
 import type { TextStand } from '@core/baurecht/auswertung';
 import { auswerten, faktDefinitionen, gestellteAntworten } from '@core/baurecht/auswertung';
 import { werten } from '@core/baurecht/kurz';
-import { frageGestellt, RUECKFRAGE_IDS } from '@core/baurecht/fragen';
+import { frageGestellt, RUECKFRAGE_IDS, vorfrageNein, vorfragenKarte } from '@core/baurecht/fragen';
+import { FAKTEN } from '@core/baurecht/fakten';
 import { aktiveModule, paketPruefen } from '@core/baurecht/paket';
 import { widersprueche } from '@core/baurecht/projekt';
 import type { FaktWert, ParagrafErgebnis } from '@core/baurecht/typen';
@@ -28,15 +29,11 @@ describe('Wert ohne Auslöser (ohneAusloeser)', () => {
   const mit = Object.entries(defs).filter(([, d]) => d.ohneAusloeser !== undefined);
 
   it('gesetzt genau dort, wo der Wert zwingend aus dem fehlenden Auslöser folgt (Fachreview)', () => {
+    // Heilquellenschutz, Hellwegbörde und Allee hängen seit den Vorfragen an ihrer Vorfrage (FaktDef.vorfrage, unten)
     expect(Object.fromEntries(mit.map(([id, d]) => [id, d.ohneAusloeser]))).toEqual({
-      'kreis_soest.hsg': false,
-      'kreis_soest.hsg_qualitativ': 'außerhalb',
-      'kreis_soest.hsg_quantitativ': 'außerhalb',
-      'kreis_soest.vsg_hellweg': false,
       'nw.feste_brennstoffe_50kw': false,
       'planung.planreife': false,
       'planung.zurueckstellung': false,
-      'schutz.allee': false,
     });
   });
 
@@ -53,6 +50,33 @@ describe('Wert ohne Auslöser (ohneAusloeser)', () => {
       expect(gestellteAntworten({ ...hinweise, [id]: sicher(d.ohneAusloeser!) }, (f) => f, defs, rest)[id]?.ueberHinweis, `${id}: ${String(d.ohneAusloeser)}`).toBeUndefined();
       expect(gestellteAntworten({ ...hinweise, [id]: sicher(anders) }, (f) => f, defs, rest)[id]?.ueberHinweis, `${id}: ${String(anders)}`).toBeTruthy();
     }
+  });
+});
+
+describe('Vorfragen (FaktDef.vorfrage)', () => {
+  const defs = faktDefinitionen(aktiveModule(paket.module, SOEST));
+  const karte = vorfragenKarte(defs);
+
+  it('je Gegenstand eine Vorfrage mit genau diesen Einzelfragen (Fachreview: jede liegt ganz im Anwendungsbereich ihrer Vorfrage)', () => {
+    expect(Object.fromEntries([...karte].map(([v, k]) => [v, [...k].sort()]))).toEqual({
+      'vorfrage.natura2000': ['schutz.ffh', 'schutz.natura_nah', 'schutz.vsg'],
+      'vorfrage.naturschutz': ['kreis_soest.naturdenkmal', 'schutz.biotop', 'schutz.lsg', 'schutz.naturdenkmal', 'schutz.nsg'],
+      'vorfrage.wasser': ['schutz.risikogebiet', 'schutz.uesg', 'schutz.wsg'],
+      'vorfrage.denkmal': ['schutz.bodendenkmal', 'schutz.denkmal', 'schutz.denkmal_umgebung', 'schutz.denkmalbereich', 'schutz.denkmalbereich_umgebung', 'schutz.gartendenkmal'],
+      'vorfrage.gehoelze': ['schutz.baum', 'schutz.hecke_ausgleich', 'soest.baeume', 'vorhaben.baeume_faellen'],
+      'vorfrage.strasse': ['lage.anschluss_klassifiziert', 'lage.bundesfernstrasse', 'lage.strasse_ausserorts', 'lage.zufahrt_klassifiziert'],
+      'schutz.wsg': ['kreis_soest.hsg'],
+      'kreis_soest.hsg': ['kreis_soest.hsg_qualitativ', 'kreis_soest.hsg_quantitativ'],
+      'schutz.vsg': ['kreis_soest.vsg_hellweg'],
+      'schutz.baum': ['schutz.allee'],
+    });
+    // an einer Vorfrage hängt keine Regel – sie ist nur eine Frage nach dem Gegenstand
+    const regeln = JSON.stringify([...paket.regeln.values()].flat().map((r) => r.regel));
+    for (const v of karte.keys()) if (v.startsWith('vorfrage.')) expect(regeln.includes(`"${v}"`), v).toBe(false);
+  });
+
+  it('Module, die eine Einzelfrage des Katalogs neu fassen, behalten ihre Vorfrage (sonst stünde sie wieder einzeln da)', () => {
+    for (const [id, d] of Object.entries(FAKTEN)) if (d.vorfrage) expect(defs[id]?.vorfrage, id).toEqual(d.vorfrage);
   });
 });
 
@@ -731,11 +755,33 @@ describe('Fragen und Regeln', () => {
         for (const id of weg) delete f[id];
         r = lauf(fall.ags, fall.m, f);
       }
-      const verborgen = Object.entries(defs).filter(([id, d]) => d.typ === 'janein' && !d.nach && d.wert === undefined && !(id in f) && !frageGestellt(id, d, r.kontext)).map(([id]) => id);
+      // Einzelfragen unter einer Vorfrage „nein“ ausgenommen: Ihr „ja“ ist ein Widerspruch zur Vorfrage und zählt (Test unten)
+      const unterNein = (d: (typeof defs)[string]) => !!d.vorfrage && vorfrageNein(r.fakten[d.vorfrage.fakt]);
+      const verborgen = Object.entries(defs).filter(([id, d]) => d.typ === 'janein' && !d.nach && d.wert === undefined && !(id in f) && !unterNein(d) && !frageGestellt(id, d, r.kontext)).map(([id]) => id);
       const vorher = new Map(r.paragrafen.map((p) => [p.id, p.automatisch]));
       for (const w of [true, false]) {
         const r2 = lauf(fall.ags, fall.m, { ...f, ...Object.fromEntries(verborgen.map((id) => [id, w])) });
         for (const p of r2.paragrafen) if (vorher.get(p.id) !== p.automatisch && fehler.size < 40) fehler.add(`${p.id}: ${vorher.get(p.id)} → ${p.automatisch}, wenn nicht gestellte Fragen „${w ? 'ja' : 'nein'}“ sind (${fall.name})`);
+      }
+      // „nein“ unter einer Vorfrage „nein“ ändert nichts; „ja“ macht die Vorfrage widersprüchlich, stellt die Frage wieder und
+      // stuft nie zu „entfällt“ hin ab (kein falsches Grün aus einer übersehenen Einzelantwort)
+      const RANG = { gruen: 0, gelb: 1, rot: 2 } as const;
+      // (nur, wo allein die Vorfrage die Frage verbirgt – nicht zugleich ihr „wenn“, z. B. Naturdenkmal der Kreisverordnung außerhalb ihres Gebiets)
+      const nurVorfrage = (id: string, d: (typeof defs)[string]) => frageGestellt(id, { ...d, vorfrage: undefined }, r.kontext);
+      for (const [id, d] of Object.entries(defs).filter(([id, d]) => !(id in f) && unterNein(d) && nurVorfrage(id, d) && !d.nach && d.wert === undefined)) {
+        const anders = d.typ === 'janein' ? !d.vorfrage!.sonst : d.werte?.find((x) => x !== d.vorfrage!.sonst);
+        if (anders === undefined) continue;
+        const gleich = lauf(fall.ags, fall.m, { ...f, [id]: d.vorfrage!.sonst });
+        for (const p of gleich.paragrafen) if (vorher.get(p.id) !== p.automatisch && fehler.size < 40) fehler.add(`${p.id}: ${vorher.get(p.id)} → ${p.automatisch}, wenn ${id} unter Vorfrage „nein“ „${String(d.vorfrage!.sonst)}“ ist (${fall.name})`);
+        const ja = lauf(fall.ags, fall.m, { ...f, [id]: anders });
+        // jede Stufe darüber, die vorher wirksam „nein“ war, ist danach „ja“ bzw. widersprüchlich – bis zur obersten Vorfrage
+        for (let v = d.vorfrage?.fakt, n = 0; v && n < 10; v = defs[v]?.vorfrage?.fakt, n++) {
+          if (!vorfrageNein(r.fakten[v])) continue;
+          const nachher = ja.fakten[v];
+          if (!(nachher?.widerspruch || nachher?.wert === true) && fehler.size < 40) fehler.add(`${id} „${String(anders)}“: Vorfrage ${v} weiter „nein“ ohne Widerspruch (${fall.name})`);
+        }
+        if (!frageGestellt(id, d, ja.kontext) && fehler.size < 40) fehler.add(`${id} „${String(anders)}“: Frage nicht wieder gestellt (${fall.name})`);
+        for (const p of ja.paragrafen) if (RANG[p.automatisch] < RANG[vorher.get(p.id)!] && fehler.size < 40) fehler.add(`${p.id}: ${vorher.get(p.id)} → ${p.automatisch}, wenn ${id} unter Vorfrage „nein“ „${String(anders)}“ ist (${fall.name})`);
       }
     }
     expect([...fehler]).toEqual([]);
@@ -2229,8 +2275,7 @@ describe('Fälle aus dem Fachreview', () => {
   /** Wird die Frage zur Angabe gestellt? (Bedingung `wenn` der Angabe) */
   const gefragt = (id: string, m: Record<string, string>, f: Record<string, FaktWert> = {}, ags = SOEST) => {
     const r = auswerten({ ...eingabe(m, f, TEXTE), module: aktiveModule(paket.module, ags), fakten: { 'lage.ags': sicher(ags), ...f } });
-    const w = r.faktDefs[id]?.wenn;
-    return !w || werten(w, r.kontext).w !== 'nein';
+    return frageGestellt(id, r.faktDefs[id], r.kontext);
   };
 
   it('Runde 12: Heilquellenschutz Bad Sassendorf und Vogelschutzgebiet Hellwegbörde nur mit gestellter Frage; außerhalb Bad Sassendorf und Soest kein Heilquellenschutzgebiet', () => {

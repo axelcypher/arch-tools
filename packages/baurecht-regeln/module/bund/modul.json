@@ -3,7 +3,7 @@
   "id": "bund",
   "name": "Bund",
   "ebene": "bund",
-  "version": "2026-11-12",
+  "version": "2026-11-16",
   "hosts": [
     "www.gesetze-im-internet.de",
     "testphase.rechtsinformationen.bund.de"
@@ -843,14 +843,22 @@
       "kurz": "An Bundesautobahn oder Bundesstraße",
       "gruppe": "grundstueck",
       "typ": "janein",
-      "hilfe": "Anbauverbot bzw. Zustimmung der Straßenbaubehörde (§ 9 Abs. 1, 2 FStrG); bei geplanten Bundesfernstraßen ab Auslegung der Pläne im Planfeststellungsverfahren (Abs. 4); in Ortsdurchfahrten sind die Belange nach Abs. 2 bei der Baugenehmigung zu beachten (Abs. 3a)"
+      "hilfe": "Anbauverbot bzw. Zustimmung der Straßenbaubehörde (§ 9 Abs. 1, 2 FStrG); bei geplanten Bundesfernstraßen ab Auslegung der Pläne im Planfeststellungsverfahren (Abs. 4); in Ortsdurchfahrten sind die Belange nach Abs. 2 bei der Baugenehmigung zu beachten (Abs. 3a)",
+      "vorfrage": {
+        "fakt": "vorfrage.strasse",
+        "sonst": false
+      }
     },
     "schutz.naturdenkmal": {
       "titel": "Naturdenkmal oder geschützter Landschaftsbestandteil betroffen",
       "kurz": "Naturdenkmal oder Landschaftsbestandteil",
       "gruppe": "schutz",
       "typ": "janein",
-      "hilfe": "§§ 28, 29 BNatSchG – festgesetzt durch Schutzverordnung oder Landschaftsplan (Festsetzungskarte); bei Bäumen auch der Kronentraufbereich. Baumschutzsatzungen siehe „Geschützte Bäume“"
+      "hilfe": "§§ 28, 29 BNatSchG – festgesetzt durch Schutzverordnung oder Landschaftsplan (Festsetzungskarte); bei Bäumen auch der Kronentraufbereich. Baumschutzsatzungen siehe „Geschützte Bäume“",
+      "vorfrage": {
+        "fakt": "vorfrage.naturschutz",
+        "sonst": false
+      }
     },
     "gebaeude.gemischt": {
       "titel": "Gemischt genutzt: nicht unerheblicher Teil mit der jeweils anderen Nutzung",
