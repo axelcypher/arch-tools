@@ -157,8 +157,8 @@ und `ZEICHENFLAECHE_GRUND` in `planFarbe.ts` müssen zu `--canvas-filter` und `-
 
 ## Einstellungen
 
-Ein Einstellungsdialog für alle Apps: in jeder App „Datei → Einstellungen …“, in Arkly im Menü „Einstellungen und
-Hilfe“, überall auch mit Strg+, ohne offenes Menü. Er zeigt die Einstellungen der ganzen Suite, nicht nur der App, aus
+Ein Einstellungsdialog für alle Apps: in jeder App „Datei → Einstellungen …“ (in FABRIO steht „Datei“ im Fuß der
+Navigation), in Arkly im Menü „Einstellungen und Hilfe“, überall auch mit Strg+, ohne offenes Menü. Er zeigt die Einstellungen der ganzen Suite, nicht nur der App, aus
 der er geöffnet wurde. Stand: Den Dialog und das Muster `.einst*` gibt es noch nicht; sie kommen als
 Baustein in `packages/core`, und jede App liefert dann ihre Seite (Felder und Prüfung) – wie, legt dieser Baustein fest.
 
@@ -336,9 +336,11 @@ Zurücksetzen, Sonderfunktionen. Feste Namen, in allen Apps gleich:
   (in keiner App anders belegt; das Kürzel wirkt auch ohne offenes Menü), und öffnet den app-übergreifenden
   Einstellungsdialog auf der Seite der App (siehe „Einstellungen“). In Arkly gilt Strg+, einmal: Ist ein App-Tab
   aktiv, öffnet es den Dialog auf der Seite dieser App, sonst auf „Allgemein“.
-  Ausnahme FABRIO: Es hat keine durchgehende Werkzeugleiste (je Ansicht eigene Leisten, links die Navigation); dort
-  steht das Menü „Datei“ im Fuß der Navigation, mit „Einstellungen von FABRIO …“, Trenner, „Einstellungen …“
-  (Strg+,).
+  Ausnahme: FABRIO hat keine durchgehende Werkzeugleiste (je Ansicht eigene Leisten, links die Navigation); dort steht
+  das Menü „Datei“ im Fuß der Navigation und enthält von den Punkten der Tabelle nur die, die es in FABRIO gibt.
+- **Befristet: „Einstellungen von <App> …“** – bis die App ihre eigenen Einstellungen als App-Seite in den zentralen
+  Dialog umgezogen hat, öffnet dieser Punkt den bisherigen App-Dialog: in FABRIO in „Datei“ direkt vor dem Trenner
+  und „Einstellungen …“, in PERMIO im Menü „Mehr“. Mit der App-Seite entfällt er.
 - **Direkter Export:** Wo eine App eine eingestellte Vorlage und einen Zielordner hat (QUADRIO, TERRIO, NUMIO), steht
   in der Leiste der Knopf „Exportieren“ (Symbol `export`, ohne „ …“, weil er sofort wirkt). Er speichert mit der
   eingestellten Vorlage in den Berechnungsordner – als Excel, auf Wunsch zusätzlich als PDF. `title` nennt Ziel und
@@ -369,9 +371,10 @@ Zurücksetzen, Sonderfunktionen. Feste Namen, in allen Apps gleich:
   Einstieg in der Leiste weg (NUMIO: Kennwertkatalog). „Einstellungen …“ steht nur in „Datei“, nicht zusätzlich im
   Menü der Titelleiste; das Farbschema nur im Menü der Titelleiste, nicht im Einstellungsdialog. Bewusste Ausnahmen:
   der Update-Punkt im Menü der Titelleiste (siehe „Titelleiste“) und in Arkly „Einstellungen …“ im Menü des Rahmens
-  neben „Datei“ der App im Tab (Arkly hat kein eigenes „Datei“; Strg+, gilt einmal, siehe oben).
+  neben „Datei“ der App im Tab (Arkly hat kein eigenes „Datei“; Strg+, gilt einmal, siehe oben) sowie befristet
+  „Einstellungen von <App> …“ (siehe oben).
 - **Aufbau:** links „Datei“ und „Speichern“, in der Mitte die Werkzeuge bzw. Hauptschritte, rechts der Hauptknopf,
-  zuletzt „Mehr“.
+  zuletzt „Mehr“ (FABRIO: „Datei“ im Fuß der Navigation, siehe oben).
 - **Zeilen:** Seltene Aktionen einer Tabellen- oder Listenzeile (FABRIO-Rechnung: Deckblatt, Mail an den Zahler)
   kommen in den Zeilenknopf „Aktionen“ (Symbol `mehr`, siehe „Menüs“ und „Listen“); häufige bleiben als Knopf.
 - **Schmale Fenster:** Einträge mit Rang wandern nach ihrem Rang ins Menü „Mehr“ (Überlauf), statt nur auf Symbole zu
