@@ -220,6 +220,13 @@ function Ansicht({ e, q, onKopiert, schema }: { e: Eintrag; q: string; onKopiert
   if (e.gruppe === 'einzelwerte') {
     const a = e.abschnitt;
     const { liste, teil } = gefiltert(a.werte, q, (w) => [w.schluessel, w.text]);
+    const werte = (
+      <>
+        <h4>Werte</h4>
+        {teil && <p className="small-text muted">{`${liste.length} von ${a.werte.length} Werten passen zur Suche.`}</p>}
+        <Werte zeilen={liste.map((w) => ({ ph: `{{${w.schluessel}}}`, text: w.text, einheit: w.einheit }))} onKopiert={onKopiert} />
+      </>
+    );
     return (
       <article>
         <h3>{a.titel}</h3>
@@ -231,10 +238,11 @@ function Ansicht({ e, q, onKopiert, schema }: { e: Eintrag; q: string; onKopiert
             <MitCode text={a.text} />
           </p>
         )}
+        {/* passt die Suche nur zu einigen Werten, stehen sie oben */}
+        {teil && werte}
         <Nutzbar art="einzelwert" />
         {a.tabelle && <Tabelle kopf={a.tabelle[0]} zeilen={a.tabelle.slice(1).map((z) => z.map((c, i) => <MitCode key={i} text={c} />))} />}
-        {teil && <p className="small-text muted">{`${liste.length} von ${a.werte.length} Werten passen zur Suche.`}</p>}
-        <Werte zeilen={liste.map((w) => ({ ph: `{{${w.schluessel}}}`, text: w.text, einheit: w.einheit }))} onKopiert={onKopiert} />
+        {!teil && werte}
         <Beispiele liste={a.beispiele} daten={schema.beispieldaten} onKopiert={onKopiert} />
       </article>
     );
