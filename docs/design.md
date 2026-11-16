@@ -158,9 +158,10 @@ und `ZEICHENFLAECHE_GRUND` in `planFarbe.ts` müssen zu `--canvas-filter` und `-
 ## Einstellungen
 
 Ein Einstellungsdialog für alle Apps: in jeder App „Datei → Einstellungen …“ (in FABRIO steht „Datei“ im Fuß der
-Navigation), in Arkly im Menü „Einstellungen und Hilfe“, überall auch mit Strg+, ohne offenes Menü. Er zeigt die Einstellungen der ganzen Suite, nicht nur der App, aus
-der er geöffnet wurde. Stand: Den Dialog und das Muster `.einst*` gibt es noch nicht; sie kommen als
-Baustein in `packages/core`, und jede App liefert dann ihre Seite (Felder und Prüfung) – wie, legt dieser Baustein fest.
+Navigation), in Arkly im Menü „Einstellungen und Hilfe“, überall auch mit Strg+, ohne offenes Menü. Er zeigt die
+Einstellungen der ganzen Suite, nicht nur der App, aus der er geöffnet wurde. Stand: Den Dialog und das Muster `.einst*`
+gibt es noch nicht; sie kommen als Baustein in `packages/core`, und jede App liefert dann ihre Seite (Felder und
+Prüfung) – wie, legt dieser Baustein fest.
 
 - **Aufbau:** `Modal` mit `tabelle`; der Titel „Einstellungen“ steht als `h3` im Navigationskopf über der
   Seitenliste (Ausnahme mit eigenem Kopf, siehe „Dialoge“), rechts der Inhalt der gewählten Seite. Gemeinsames Muster
