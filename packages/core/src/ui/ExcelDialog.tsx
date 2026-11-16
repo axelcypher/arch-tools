@@ -214,9 +214,9 @@ export function ExcelDialog(props: ExcelDialogProps) {
           void doExport();
         }}
       >
-        {pdf && (
+        {pdf && !pdfGesperrt && (
           <p className="muted small-text">
-            Die Berechnung wird wie beim Excel-Export gefüllt und dann über Microsoft Excel bzw. LibreOffice als PDF gespeichert – mit Druckbereich, Kopf- und Fußzeile und Seitenformat der Vorlage.
+            Die Berechnung wird wie beim Excel-Export gefüllt und dann über Microsoft Excel bzw. LibreOffice als PDF gespeichert – mit Druckbereich und Seitenformat der Blätter.
           </p>
         )}
         <label className="radio-row">
@@ -295,7 +295,7 @@ export function ExcelDialog(props: ExcelDialogProps) {
             {pruefung?.exportiert ? 'Schließen' : 'Abbrechen'}
           </button>
           <button type="submit" className="primary" disabled={busy || ohneVorlage || pdfGesperrt} aria-describedby={pdfGesperrt ? pdfGesperrtId : ohneVorlage ? keineVorlageId : undefined}>
-            {busy ? (pdf ? 'Erzeuge PDF …' : 'Exportiere …') : pdf ? 'PDF speichern' : 'Excel speichern'}
+            {busy ? (pdf ? 'Speichere PDF …' : 'Speichere …') : pdf ? 'PDF speichern' : 'Excel speichern'}
           </button>
         </div>
       </form>

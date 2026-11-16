@@ -44,7 +44,7 @@ export function App() {
   // Desktop: beim Start die Projektübersicht (das zuletzt bearbeitete Projekt bleibt über „Zurück zu …“ erreichbar)
   const [projekteOffen, setProjekteOffen] = useState(() => isTauri());
   const [excelOpen, setExcelOpen] = useState<ExportDialogStart | null>(null);
-  const direktExport = useDirektExport({ auftrag: exportAuftrag, dialogOeffnen: setExcelOpen, deaktiviert: !hatGebaeude, hinweisDeaktiviert: gesperrt });
+  const direktExport = useDirektExport({ auftrag: exportAuftrag, dialogOeffnen: setExcelOpen, deaktiviert: !hatGebaeude, hinweisDeaktiviert: gesperrt, hinweisKurz: 'Kein Gebäude' });
   // Tooltip des Direktexports nennt den Berechnungsordner – hängt an den Stammdaten
   useGrz((s) => s.project.meta);
   const [druckOpen, setDruckOpen] = useState(false);

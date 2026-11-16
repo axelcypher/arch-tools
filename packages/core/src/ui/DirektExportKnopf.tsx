@@ -22,11 +22,13 @@ export interface DirektExportProps {
   deaktiviert?: boolean;
   /** … mit diesem Grund, z. B. „Erst Positionen anlegen“ */
   hinweisDeaktiviert?: string;
+  /** kurzer Grund neben dem Menüpunkt in „Mehr“ – derselbe wie in „Datei → Exportieren“, z. B. „Kein Gebäude“ */
+  hinweisKurz?: string;
 }
 
 /** Zustand des Knopfs: bereit oder gesperrt mit Grund; `titel` für den Tooltip */
-export function direktExportZustand(p: Pick<DirektExportProps, 'auftrag' | 'deaktiviert' | 'hinweisDeaktiviert'>): { bereit: boolean; grund?: string; titel: string } {
-  if (p.deaktiviert) return { bereit: false, grund: p.hinweisDeaktiviert, titel: p.hinweisDeaktiviert ?? 'Exportieren' };
+export function direktExportZustand(p: Pick<DirektExportProps, 'auftrag' | 'deaktiviert' | 'hinweisDeaktiviert' | 'hinweisKurz'>): { bereit: boolean; grund?: string; kurz?: string; titel: string } {
+  if (p.deaktiviert) return { bereit: false, grund: p.hinweisDeaktiviert, kurz: p.hinweisKurz ?? p.hinweisDeaktiviert, titel: p.hinweisDeaktiviert ?? 'Exportieren' };
   const z = direktExportZielJetzt(p.auftrag(), isTauri());
   if ('grund' in z) return { bereit: false, grund: z.grund, titel: z.grund };
   const formate = z.pdf && pdfMoeglich() ? 'Excel und PDF' : 'Excel';
@@ -57,7 +59,7 @@ export function useDirektExport(p: DirektExportProps) {
     symbol: 'export',
     titel: zustand.titel,
     deaktiviert: !zustand.bereit || laeuft,
-    hinweis: zustand.bereit ? undefined : kurzGrund(zustand.grund),
+    hinweis: zustand.bereit ? undefined : (zustand.kurz ?? kurzGrund(zustand.grund)),
     aktion: () => void ausfuehren(),
   };
   return { laeuft, ausfuehren, zustand, menue };
