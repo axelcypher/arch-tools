@@ -102,10 +102,14 @@ const sprichtDafuer = (f: FaktWert | undefined, sonst: FaktDef['wert']): boolean
 export function vorfragenAnwenden(fakten: Record<string, FaktWert>, defs: Record<string, FaktDef>): Record<string, FaktWert> {
   const karte = vorfragenKarte(defs);
   if (!karte.size) return fakten;
-  return vorfragenSchritte({ ...fakten }, defs, karte);
+  const out = { ...fakten };
+  vorfragenSchritte(out, defs, karte);
+  return out;
 }
 
-function vorfragenSchritte(out: Record<string, FaktWert>, defs: Record<string, FaktDef>, karte: Map<string, string[]>): Record<string, FaktWert> {
+/** die zwei Schritte der Vorfragen an Ort und Stelle; true, wenn sich etwas geändert hat */
+function vorfragenSchritte(out: Record<string, FaktWert>, defs: Record<string, FaktDef>, karte: Map<string, string[]>): boolean {
+  let irgendwas = false;
   const name = (id: string) => faktName(defs[id], id);
   for (let runde = 0; runde <= karte.size + 1; runde++) {
     let geaendert = false;
@@ -133,6 +137,7 @@ function vorfragenSchritte(out: Record<string, FaktWert>, defs: Record<string, F
         geaendert = true;
       }
     }
+    irgendwas ||= geaendert;
     if (!geaendert) break;
   }
   for (let runde = 0; runde <= karte.size + 1; runde++) {
@@ -147,9 +152,10 @@ function vorfragenSchritte(out: Record<string, FaktWert>, defs: Record<string, F
         geaendert = true;
       }
     }
+    irgendwas ||= geaendert;
     if (!geaendert) break;
   }
-  return out;
+  return irgendwas;
 }
 
 /**
@@ -159,11 +165,12 @@ function vorfragenSchritte(out: Record<string, FaktWert>, defs: Record<string, F
  * Beleg überstimmt (Sonderfall); jede andere abweichende (auch ein Hinweis, z. B. aus dem Modell) bleibt stehen und wird
  * zum Widerspruch – nie still überschrieben.
  */
-function folgenSchritt(out: Record<string, FaktWert>, defs: Record<string, FaktDef>, rest: Omit<KurzKontext, 'fakten'>): boolean {
+function folgenSchritt(out: Record<string, FaktWert>, eingang: Record<string, FaktWert>, defs: Record<string, FaktDef>, rest: Omit<KurzKontext, 'fakten'>): boolean {
   let geaendert = false;
+  // `out` ändert sich in der Schleife an Ort und Stelle – derselbe Kontext sieht immer den neuesten Stand
+  const ctx: KurzKontext = { ...rest, fakten: out };
   for (const [id, d] of Object.entries(defs)) {
     if (!d.folgt?.length) continue;
-    const ctx: KurzKontext = { ...rest, fakten: out };
     const zeile = d.folgt.find((z) => {
       try {
         const b = werten(z.wenn, ctx);
@@ -174,9 +181,10 @@ function folgenSchritt(out: Record<string, FaktWert>, defs: Record<string, FaktD
     });
     const f = out[id];
     if (!zeile) {
-      // trifft nichts (mehr) zu: ein früher abgeleiteter Wert dieses Laufs fällt weg
-      if (f?.ausFolge) {
-        delete out[id];
+      // trifft nichts (mehr) zu: ein früher abgeleiteter Wert dieses Laufs fällt weg – die eigene Angabe gilt wieder
+      if (f?.ausFolge || f?.gegenFolge) {
+        if (eingang[id]) out[id] = eingang[id];
+        else delete out[id];
         geaendert = true;
       }
       continue;
@@ -185,13 +193,21 @@ function folgenSchritt(out: Record<string, FaktWert>, defs: Record<string, FaktD
     const eigen = f && f.wert != null && f.wert !== '' && !f.ausFolge;
     if (eigen && f.wert !== zeile.wert) {
       // abweichende Angabe: mit Beleg überstimmt sie, sonst Widerspruch (sichtbar, die Frage bleibt)
-      if (!f.bestaetigt && !f.widerspruch) {
-        out[id] = { ...f, widerspruch: `ergibt sich aus anderen Angaben als „${wertAnzeige(zeile.wert, d)}“ (${zeile.grund})` };
+      if (!f.bestaetigt && !f.gegenFolge) {
+        out[id] = { ...f, gegenFolge: zeile.grund, ...(f.widerspruch ? {} : { widerspruch: `ergibt sich aus anderen Angaben als „${wertAnzeige(zeile.wert, d)}“ (${zeile.grund})` }) };
         geaendert = true;
       }
       continue;
     }
-    out[id] = { wert: zeile.wert, herkunft: 'abgeleitet', quelle: `ergibt sich: ${zeile.grund}`, sicherheit: 'sicher', ausFolge: zeile.grund };
+    // ein Widerspruch der eigenen Angabe (z. B. aus einem Dienst) geht mit – er macht den Wert unsicher
+    out[id] = {
+      wert: zeile.wert,
+      herkunft: 'abgeleitet',
+      quelle: `ergibt sich: ${zeile.grund}`,
+      sicherheit: 'sicher',
+      ausFolge: zeile.grund,
+      ...(f?.widerspruch ? { widerspruch: f.widerspruch } : {}),
+    };
     geaendert = true;
   }
   return geaendert;
@@ -200,18 +216,19 @@ function folgenSchritt(out: Record<string, FaktWert>, defs: Record<string, FaktD
 /**
  * Ableitungen zwischen den Angaben (nach den Werten der Module, vor den Regeln): Vorfragen (vorfragenAnwenden) und Werte,
  * die sich aus anderen ergeben (FaktDef.folgt) – abwechselnd bis zum Fixpunkt, denn das eine kann am anderen hängen.
- * `rest`: Merkmale, Bausteine, Widersprüche (für die Bedingungen von `folgt`).
+ * `rest`: Merkmale, Bausteine, Widersprüche (für die Bedingungen von `folgt`). Zyklen lehnt paketPruefen ab
+ * (fragenZyklen); ohne festen Stand nach einigen Runden bleibt der letzte – höchstens „offen“, nie ein Grün aus einem
+ * Wert, der nicht zutrifft (abgeleitet wird nur aus gesicherten Bedingungen).
  */
 export function ableitungenAnwenden(fakten: Record<string, FaktWert>, defs: Record<string, FaktDef>, rest: Omit<KurzKontext, 'fakten'>): Record<string, FaktWert> {
   const karte = vorfragenKarte(defs);
   const mitFolge = Object.values(defs).some((d) => d.folgt?.length);
   if (!karte.size && !mitFolge) return fakten;
-  let out = { ...fakten };
-  for (let runde = 0; runde < 6; runde++) {
-    const vorher = JSON.stringify(out);
-    if (karte.size) out = vorfragenSchritte(out, defs, karte);
-    const neu = mitFolge && folgenSchritt(out, defs, rest);
-    if (!neu && JSON.stringify(out) === vorher) break;
+  const out = { ...fakten };
+  for (let runde = 0; runde < 8; runde++) {
+    const v = karte.size ? vorfragenSchritte(out, defs, karte) : false;
+    const f = mitFolge && folgenSchritt(out, fakten, defs, rest);
+    if (!v && !f) break;
   }
   return out;
 }

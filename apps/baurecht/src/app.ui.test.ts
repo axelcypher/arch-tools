@@ -332,6 +332,23 @@ describe('Baurecht – Oberfläche', () => {
     act(() => knopf(frage, 'nicht überstimmen')!.click());
     expect(host.querySelector('.br-fakt[data-fakt="gebaeude.besucher"]')).toBeNull();
     expect(host.querySelector('.br-ergibt li[data-fakt="gebaeude.besucher"]')).toBeTruthy();
+    // überstimmen mit Beleg (Sonderfall): „Aufenthaltsräume: nein“ im Einfamilienhaus – Dialog mit eigenem Text, danach
+    // gilt die Antwort ohne Widerspruch
+    act(() => knopf(host.querySelector<HTMLElement>('.br-ergibt li[data-fakt="gebaeude.aufenthaltsraeume"]')!, 'Überstimmen …')!.click());
+    const ar = host.querySelector<HTMLElement>('.br-fakt[data-fakt="gebaeude.aufenthaltsraeume"]')!;
+    act(() => knopf(ar, 'nein')!.click());
+    const dlg = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find((x) => x.textContent?.includes('von Hand setzen'))!;
+    expect(dlg.textContent).toMatch(/ergibt sich sonst aus anderen Angaben/);
+    tippen(dlg.querySelector('textarea')!, 'Nur Lagerraum, Bauantrag vom 03.11.2026');
+    act(() => knopf(dlg, 'Übernehmen')!.click());
+    expect(useBaurecht.getState().pruefung.fakten['gebaeude.aufenthaltsraeume']).toMatchObject({ wert: false, bestaetigt: { grund: 'Nur Lagerraum, Bauantrag vom 03.11.2026' } });
+    const arNach = host.querySelector<HTMLElement>('.br-fakt[data-fakt="gebaeude.aufenthaltsraeume"]')!;
+    expect(arNach.querySelector('.br-widerspruch')).toBeNull();
+    // eine abweichende ältere Antwort ohne Beleg: Widerspruch, „Mit Beleg übernehmen …“
+    act(() => useBaurecht.getState().faktSetzen('gebaeude.besucher', 300, 'TP'));
+    const alt = host.querySelector<HTMLElement>('.br-fakt[data-fakt="gebaeude.besucher"]')!;
+    expect(alt.querySelector('.br-widerspruch')).toBeTruthy();
+    expect(knopf(alt, 'Mit Beleg übernehmen …')).toBeTruthy();
     // im Protokoll: „Ergibt sich aus anderen Angaben“ mit Grund
     act(() => knopf(host, 'Prüfprotokoll …')!.click());
     const d = document.querySelector<HTMLElement>('.br-protokoll')!;

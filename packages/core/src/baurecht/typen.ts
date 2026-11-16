@@ -277,6 +277,8 @@ export interface FaktWert {
   ausVorfrage?: string;
   /** nur in der Auswertung: Wert ergibt sich aus anderen Angaben (FaktDef.folgt, der Grund in Worten) – die Frage entfällt */
   ausFolge?: string;
+  /** nur in der Auswertung: diese Angabe weicht von dem Wert ab, der sich aus anderen ergibt (FaktDef.folgt) – Widerspruch, überstimmen mit Beleg */
+  gegenFolge?: string;
   /** widersprechende Angabe (z. B. Treffer im Geodienst gegen „nein“ von Hand) – macht Grün gelb */
   widerspruch?: string;
   /** bei Angaben von Hand: das letzte Ergebnis des Dienstes – daraus wird der Widerspruch bei jedem Setzen neu bestimmt */

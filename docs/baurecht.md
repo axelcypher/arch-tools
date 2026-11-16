@@ -251,26 +251,34 @@ Angaben (n)“ mit dem Grund und im Prüfprotokoll („Ergibt sich aus anderen A
 
 | Angabe | ergibt sich | Grund |
 | --- | --- | --- |
-| Besucher, Verkaufsfläche | 0 bei Ein-, Zwei- oder Mehrfamilienhaus | reines Wohngebäude; Läden, Praxen, Säle machen es zum Wohn- und Geschäftshaus |
-| Gastbetten | 0 bei reinem Wohngebäude **ohne** Ferienwohnungen | Ferienwohnungen gelten als Beherbergung (§ 13a BauNVO) |
+| Besucher, Verkaufsfläche | 0 bei Ein-, Zwei- oder Mehrfamilienhaus, nicht bei einer Nutzungsänderung | reines Wohngebäude; Läden, Praxen, Säle machen es zum Wohn- und Geschäftshaus |
+| Gastbetten | 0 bei reinem Wohngebäude **ohne** Ferienwohnungen, nicht bei einer Nutzungsänderung | Ferienwohnungen können im Einzelfall Beherbergung sein (§ 13a Satz 2 BauNVO) |
 | Wohnungen | 1 (Einfamilienhaus), 2 (Zweifamilienhaus), 0 (kein Gebäude) | Gebäudeart |
 | Nutzungseinheiten | 1 bzw. 2, nur ohne Räume für freie Berufe | solche Räume können eine eigene Nutzungseinheit sein |
 | Aufenthaltsräume | ja bei Gebäuden mit Wohnungen, nein bei „kein Gebäude“ | Wohnräume sind Aufenthaltsräume (§ 2 Abs. 5 BauO NRW) |
 | beheizt | nein bei „kein Gebäude“ | das GEG gilt nur für Gebäude |
-| land- oder forstwirtschaftlich, Behelfsbau | nein bei Wohngebäuden | beides wäre milder |
-| Garagen-Nutzfläche, Stellplätze (GEIG) | 0 bei einer Errichtung ohne Stellplätze oder Garagen | bei Änderungen zählen bestehende mit |
+| land- oder forstwirtschaftlich genutzt | nein bei Wohngebäuden | bauordnungsrechtliche Nutzung, „ja“ wäre milder (das Betriebsleiter- bzw. Altenteilerwohnhaus nach § 35 BauGB bleibt unberührt) |
 | Stellplätze auf neuer Stellplatzfläche | 0 ohne Stellplätze oder Garagen | nur neue Flächen |
 
 - **Nie still überschrieben:** Eine abweichende gespeicherte Angabe (auch ein Hinweis aus dem Modell, z. B. zwei
-  Wohnungen im Einfamilienhaus) bleibt stehen und wird zum **Widerspruch** – die Frage steht wieder da, betroffene
-  Vorschriften werden höchstens „prüfen“, nie „entfällt“. Mit Beleg angegeben überstimmt sie (kein Widerspruch).
-- **Bewusst nicht abgeleitet** (fachlich nicht zwingend): gemischt genutzt beim Mehrfamilienhaus (Runde 3: ein Wohn- und
+  Wohnungen im Einfamilienhaus) bleibt stehen und wird zum **Widerspruch** (`gegenFolge`, nur in der Auswertung) – die
+  Frage steht wieder da, betroffene Vorschriften werden höchstens „prüfen“, nie „entfällt“. „Mit Beleg übernehmen …“
+  behält sie als begründeten Sonderfall (dann ohne Widerspruch); eine neue Antwort gilt dort ebenfalls nur mit Beleg.
+  „nicht überstimmen“ nimmt „Überstimmen …“ zurück. Bricht man den Beleg-Dialog ab, zeigt das Feld wieder den
+  geltenden Wert.
+- Die Gebäudeart gilt als Zustand nach dem Vorhaben. Bei einer **Nutzungsänderung** könnte ein Teil zu Gästezimmern,
+  Laden o. Ä. werden, ohne dass sie angepasst ist – Besucher, Verkaufsfläche und Gastbetten werden dort nicht
+  abgeleitet.
+- **Bewusst nicht abgeleitet** (fachlich nicht zwingend): Stellplätze nach GEIG und Garagen-Nutzfläche (auch
+  vorhandene, dem Neubau zugeordnete bzw. angrenzende zählen, §§ 6, 7 GEIG), Behelfsbau beim Wohngebäude
+  (Wohncontainer, § 51 BauO NRW), gemischt genutzt beim Mehrfamilienhaus (Runde 3: ein Wohn- und
   Geschäftshaus wird oft so angegeben), Arbeitsstätte (Telearbeit), öffentlich zugänglich, Versammlungsstätte bei
   „kein Gebäude“ (Freilichtbühne, Stadion), Wohnungen im Nichtwohngebäude (Hausmeisterwohnung), Technik bei einer
   Beseitigung, Öltank ohne neue Heizung, Versickerung ohne geänderte Entwässerung, beheizt beim Wohngebäude
   (Wochenendhaus).
 - `paketPruefen` prüft Bedingung (ohne Paragrafen), Art des Werts und Grund; `folgt` nicht zusammen mit festem Wert
-  oder Tabelle.
+  oder Tabelle; die Bedingungen von `folgt` und die Vorfragen gehen in die Prüfung auf Fragen-Zyklen ein (auch die des
+  Katalogs).
 
 ## Von Hand festlegen
 

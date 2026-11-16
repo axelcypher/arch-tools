@@ -86,14 +86,11 @@ describe('Vorfragen (FaktDef.vorfrage)', () => {
       'gebaeude.wohnungen': ['1: Einfamilienhaus – eine Wohnung', '2: Zweifamilienhaus – zwei Wohnungen', '0: kein Gebäude – keine Wohnungen'],
       'gebaeude.aufenthaltsraeume': ['true: Gebäude mit Wohnungen – Wohnräume sind Aufenthaltsräume', 'false: kein Gebäude – keine Aufenthaltsräume'],
       'gebaeude.nutzungseinheiten': ['1: Einfamilienhaus ohne Räume für freie Berufe – eine Nutzungseinheit', '2: Zweifamilienhaus ohne Räume für freie Berufe – zwei Nutzungseinheiten'],
-      'gebaeude.landwirtschaft': ['false: Wohngebäude – kein land- oder forstwirtschaftliches Gebäude'],
-      'gebaeude.behelfsbau': ['false: Wohngebäude – kein Behelfsbau, untergeordnetes Gebäude oder Fliegender Bau'],
-      'gebaeude.stellplaetze': ['0: Neubau ohne Stellplätze oder Garagen'],
+      'gebaeude.landwirtschaft': ['false: Wohngebäude – kein land- oder forstwirtschaftlich genutztes Gebäude'],
       'gebaeude.beheizt': ['false: kein Gebäude – das GEG gilt nur für Gebäude'],
       'gebaeude.besucher': ['0: reines Wohngebäude – keine Versammlungsstätte'],
       'gebaeude.gastbetten': ['0: reines Wohngebäude ohne Ferienwohnungen – keine Beherbergung'],
       'gebaeude.verkaufsflaeche': ['0: reines Wohngebäude – keine Verkaufsstätte'],
-      'gebaeude.garage_nutzflaeche': ['0: Neubau ohne Stellplätze oder Garagen'],
       'nw.stellplatzflaeche': ['0: keine Stellplätze oder Garagen geplant – keine neue Stellplatzfläche'],
     });
     for (const [id, d] of mitFolge)

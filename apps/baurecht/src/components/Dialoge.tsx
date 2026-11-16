@@ -204,7 +204,9 @@ interface FaktZiel {
   lagebezug?: boolean;
 }
 
-const useFaktBestaetigen = create<{ ziel: FaktZiel | null }>(() => ({ ziel: null }));
+const useFaktBestaetigen = create<{ ziel: FaktZiel | null; geschlossen: number }>(() => ({ ziel: null, geschlossen: 0 }));
+/** zählt, wie oft der Beleg-Dialog geschlossen wurde – ein Eingabefeld, das ihn geöffnet hat, setzt sich damit zurück (abgebrochen: es zeigt wieder den geltenden Wert) */
+export const useBelegDialogGeschlossen = () => useFaktBestaetigen((s) => s.geschlossen);
 const eintrag = (id: string) => JSON.stringify(useBaurecht.getState().pruefung.fakten[id] ?? null);
 /** Element, das den Dialog geöffnet hat – dorthin geht der Fokus zurück (gibt es es nicht mehr: in die Zeile der Angabe) */
 let oeffner: HTMLElement | null = null;
@@ -470,7 +472,7 @@ export function FaktBestaetigenDialog({ folgen, faktDef = () => undefined }: { f
   if (!ziel) return null;
   const schliessen = () => {
     const id = ziel.id;
-    useFaktBestaetigen.setState({ ziel: null });
+    useFaktBestaetigen.setState((s) => ({ ziel: null, geschlossen: s.geschlossen + 1 }));
     fokusZurueck(id);
   };
   const zu = () => (grund.trim() ? setVerwerfen(true) : schliessen());

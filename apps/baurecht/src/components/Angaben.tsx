@@ -14,7 +14,7 @@ import { NumberField, TextField } from '@core/ui/fields';
 import type { Pruefstand } from '../pruefung';
 import { offeneBestaetigungen, PLANUNGSRECHT, useBaurecht } from '../store';
 import { benutzer } from '../benutzer';
-import { faktBestaetigenOeffnen, faktSetzenOeffnen, vorfragenNeinOeffnen } from './Dialoge';
+import { faktBestaetigenOeffnen, faktSetzenOeffnen, useBelegDialogGeschlossen, vorfragenNeinOeffnen } from './Dialoge';
 import { Klaeren } from './Kopf';
 import { datum, inBereichZeigen, nb } from './Ampel';
 
@@ -484,6 +484,10 @@ function FaktZeile({
   belegPflicht?: boolean;
 }) {
   const fokus = useBaurecht((s) => s.fokus);
+  // weicht die Angabe von einem Wert ab, der sich aus anderen ergibt, gilt eine Antwort ebenfalls nur mit Beleg
+  const mitBelegPflicht = belegPflicht || !!wert?.gegenFolge;
+  // nach dem Beleg-Dialog neu aufbauen: ein abgebrochener Dialog lässt sonst eine nicht übernommene Zahl im Feld stehen
+  const dialogZu = useBelegDialogGeschlossen();
   const entwurf = useBaurecht((s) => offeneBestaetigungen(s).includes(id));
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -551,6 +555,7 @@ function FaktZeile({
         </div>
       ) : (
         <FaktEingabe
+          key={mitBelegPflicht ? `beleg-${dialogZu}` : 'eingabe'}
           id={id}
           def={def}
           wert={wert}
@@ -558,7 +563,7 @@ function FaktZeile({
           unklar={unklar}
           onWert={(v) => {
             // Schutzgebiete und Geodaten (ja/nein, Auswahl) von Hand nur mit Beleg
-            if (v !== undefined && (mitBeleg(def, wert) || belegPflicht)) faktSetzenOeffnen(id, faktName(def, id), v, lagebezug(def, wert));
+            if (v !== undefined && (mitBeleg(def, wert) || mitBelegPflicht)) faktSetzenOeffnen(id, faktName(def, id), v, lagebezug(def, wert));
             // Angaben zur Lage an die aktuelle Lage binden (ohne gültige Koordinaten: null → nur Hinweis)
             else useBaurecht.getState().faktSetzen(id, v, benutzer(), undefined, lagebezug(def, wert) ? aktuelleLage(useBaurecht.getState().project).lage : undefined);
           }}
@@ -636,6 +641,12 @@ function FaktZeile({
             </span>
           )}
           <AusloeserMarken name={name} wert={wert} defs={defs} />
+          {wert.gegenFolge && wert.herkunft === 'manuell' && !wert.bestaetigt && (
+            // die abweichende Angabe behalten: nur mit Beleg (Sonderfall) – dann ohne Widerspruch
+            <button type="button" className="small" aria-label={`${name}: mit Beleg übernehmen …`} title={`Weicht ab von: ${wert.gegenFolge} – als begründeter Sonderfall mit Beleg übernehmen`} onClick={() => faktSetzenOeffnen(id, name, wert.wert, lagebezug(def, wert))}>
+              Mit Beleg übernehmen …
+            </button>
+          )}
           {belegPflicht && wert.ausFolge && (
             // Rückweg aus „Überstimmen …“: die Frage verschwindet wieder, der Fokus geht an die Liste ihrer Gruppe
             <button
@@ -1072,6 +1083,8 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
     }
     return k;
   };
+  // würde die Frage ohne den abgeleiteten Wert gestellt? (frageStand verbirgt sie sonst schon wegen `ausFolge`)
+  const wuerdeGefragt = (id: string) => frageGestellt(id, { wenn: defs[id].wenn }, { ...ctx, fakten: { ...ctx.fakten, [id]: { ...ctx.fakten[id], ausFolge: undefined } } });
   const gruppen = FAKT_GRUPPEN.map((g) => {
     const ids = Object.entries(defs)
       .filter(([id, d]) => d.gruppe === g.id && sichtbar(id) && !oberste(id) && (passt(id) || kinderVon(id).length > 0))
@@ -1080,7 +1093,8 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
       .sort((a, b) => Number(karte.has(b)) - Number(karte.has(a)) || (rang.get(a) ?? Infinity) - (rang.get(b) ?? Infinity) || vergleich(a, b));
     const kinder = new Map(ids.filter((id) => karte.has(id)).map((id) => [id, kinderVon(id)]));
     // Werte, die sich aus anderen ergeben (FaktDef.folgt): keine Frage, aber in der Gruppe genannt
-    const ergibt = Object.keys(defs).filter((id) => defs[id].gruppe === g.id && !!auswertung.fakten[id]?.ausFolge && !ueberstimmen[id] && (alle || relevant.has(id)) && passt(id));
+    // nur, wo die Frage sonst gestellt würde (ihr „wenn“ trifft zu oder ist offen)
+    const ergibt = Object.keys(defs).filter((id) => defs[id].gruppe === g.id && !!auswertung.fakten[id]?.ausFolge && !ueberstimmen[id] && (alle || relevant.has(id)) && passt(id) && wuerdeGefragt(id));
     return { ...g, ids, kinder, ergibt };
   }).filter((g) => g.ids.length || g.ergibt.length);
   const trefferZahl = suche

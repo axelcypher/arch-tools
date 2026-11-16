@@ -279,9 +279,9 @@ function ueberHinweisGestellt(eingang: Record<string, FaktWert>, ableiten: (f: R
 export function ohneUeberHinweis(fakten: Record<string, FaktWert>): Record<string, FaktWert> {
   const out: Record<string, FaktWert> = {};
   for (const [id, f] of Object.entries(fakten)) {
-    if (!f.ueberHinweis && !f.ueberWiderspruch && !f.ausVorfrage && !f.ausFolge) out[id] = f;
+    if (!f.ueberHinweis && !f.ueberWiderspruch && !f.ausVorfrage && !f.ausFolge && !f.gegenFolge) out[id] = f;
     else {
-      const { ueberHinweis: _u, ueberWiderspruch: _w, ausVorfrage: _v, ausFolge: _f, ...ohne } = f;
+      const { ueberHinweis: _u, ueberWiderspruch: _w, ausVorfrage: _v, ausFolge: _f, gegenFolge: _g, ...ohne } = f;
       out[id] = ohne;
     }
   }

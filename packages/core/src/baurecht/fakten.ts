@@ -228,25 +228,27 @@ const VORFRAGE_SONST: Record<string, { fakt: string; sonst: string | number | bo
 };
 
 const WOHNGEBAEUDE = { m: 'Gebäudeart', in: ['Einfamilienhaus', 'Zweifamilienhaus', 'Mehrfamilienhaus'] };
+/** reines Wohngebäude, nicht bei einer Nutzungsänderung (dort könnte ein Teil zu Gästezimmern, Laden o. Ä. werden, ohne dass die Gebäudeart angepasst ist) */
+const WOHNGEBAEUDE_BLEIBT = { und: [WOHNGEBAEUDE, { m: 'Vorhaben', nicht: ['Nutzungsänderung'] }] };
 const KEIN_GEBAEUDE = { m: 'Gebäudeart', in: ['kein Gebäude'] };
 /**
  * Werte, die sich zwingend aus anderen Angaben ergeben (FaktDef.folgt) – die Frage entfällt, eine abweichende Antwort
  * wird zum Widerspruch bzw. überstimmt nur mit Beleg. Ein reines Wohngebäude (Ein-, Zwei-, Mehrfamilienhaus) hat keine
- * andere Nutzung: Läden, Praxen, Gaststätten, Versammlungsräume machen es zum „Wohn- und Geschäftshaus“ (Merkmal).
+ * andere Nutzung: Läden, Praxen, Gästezimmer, Versammlungsräume machen es zum „Wohn- und Geschäftshaus“ (Merkmal).
+ * Bewusst nicht: Stellplätze nach GEIG und Garagen-Nutzfläche (auch vorhandene, dem Neubau zugeordnete zählen),
+ * Behelfsbau (Wohncontainer können einer sein, § 51 BauO NRW), gemischte Nutzung beim Mehrfamilienhaus (Fachreview Runde 3).
  */
 const FOLGT: Record<string, NonNullable<FaktDef['folgt']>> = {
   // nicht bei „kein Gebäude“: Versammlungsstätten im Freien (Freilichtbühne, Stadion) sind bauliche Anlagen ohne Gebäude
-  'gebaeude.besucher': [{ wenn: WOHNGEBAEUDE, wert: 0, grund: 'reines Wohngebäude – keine Versammlungsstätte' }],
-  'gebaeude.verkaufsflaeche': [{ wenn: WOHNGEBAEUDE, wert: 0, grund: 'reines Wohngebäude – keine Verkaufsstätte' }],
-  // Ferienwohnungen gelten als Beherbergung (§ 13a BauNVO): nur ohne sie
-  'gebaeude.gastbetten': [{ wenn: { und: [WOHNGEBAEUDE, { f: 'vorhaben.ferienwohnung', ist: false }] }, wert: 0, grund: 'reines Wohngebäude ohne Ferienwohnungen – keine Beherbergung' }],
+  'gebaeude.besucher': [{ wenn: WOHNGEBAEUDE_BLEIBT, wert: 0, grund: 'reines Wohngebäude – keine Versammlungsstätte' }],
+  'gebaeude.verkaufsflaeche': [{ wenn: WOHNGEBAEUDE_BLEIBT, wert: 0, grund: 'reines Wohngebäude – keine Verkaufsstätte' }],
+  // Ferienwohnungen können im Einzelfall Beherbergung sein (§ 13a Satz 2 BauNVO): nur ohne sie
+  'gebaeude.gastbetten': [{ wenn: { und: [WOHNGEBAEUDE_BLEIBT, { f: 'vorhaben.ferienwohnung', ist: false }] }, wert: 0, grund: 'reines Wohngebäude ohne Ferienwohnungen – keine Beherbergung' }],
   'gebaeude.wohnungen': [
     { wenn: { m: 'Gebäudeart', in: ['Einfamilienhaus'] }, wert: 1, grund: 'Einfamilienhaus – eine Wohnung' },
     { wenn: { m: 'Gebäudeart', in: ['Zweifamilienhaus'] }, wert: 2, grund: 'Zweifamilienhaus – zwei Wohnungen' },
     { wenn: KEIN_GEBAEUDE, wert: 0, grund: 'kein Gebäude – keine Wohnungen' },
   ],
-  // das GEG (§ 2 Abs. 1) setzt ein Gebäude voraus
-  'gebaeude.beheizt': [{ wenn: KEIN_GEBAEUDE, wert: false, grund: 'kein Gebäude – das GEG gilt nur für Gebäude' }],
   // eine Wohnung bzw. zwei; Räume für freie Berufe (§ 13 BauNVO) können eine eigene Nutzungseinheit sein – nur ohne sie
   'gebaeude.nutzungseinheiten': [
     { wenn: { und: [{ m: 'Gebäudeart', in: ['Einfamilienhaus'] }, { f: 'vorhaben.freiberuflich', ist: false }] }, wert: 1, grund: 'Einfamilienhaus ohne Räume für freie Berufe – eine Nutzungseinheit' },
@@ -257,16 +259,11 @@ const FOLGT: Record<string, NonNullable<FaktDef['folgt']>> = {
     { wenn: { m: 'Gebäudeart', in: ['Einfamilienhaus', 'Zweifamilienhaus', 'Mehrfamilienhaus', 'Wohn- und Geschäftshaus'] }, wert: true, grund: 'Gebäude mit Wohnungen – Wohnräume sind Aufenthaltsräume' },
     { wenn: KEIN_GEBAEUDE, wert: false, grund: 'kein Gebäude – keine Aufenthaltsräume' },
   ],
-  // ein Wohngebäude ist weder land- oder forstwirtschaftliches Gebäude noch Behelfsbau bzw. Fliegender Bau (beides wäre milder)
-  'gebaeude.landwirtschaft': [{ wenn: WOHNGEBAEUDE, wert: false, grund: 'Wohngebäude – kein land- oder forstwirtschaftliches Gebäude' }],
-  'gebaeude.behelfsbau': [{ wenn: WOHNGEBAEUDE, wert: false, grund: 'Wohngebäude – kein Behelfsbau, untergeordnetes Gebäude oder Fliegender Bau' }],
-  // nur bei einer Errichtung: bei Änderung und Nutzungsänderung zählen bestehende Garagen bzw. Stellplätze mit
-  'gebaeude.stellplaetze': [
-    { wenn: { und: [{ m: 'Vorhaben', in: ['Errichtung'] }, { f: 'vorhaben.stellplaetze_grundstueck', ist: false }] }, wert: 0, grund: 'Neubau ohne Stellplätze oder Garagen' },
-  ],
-  'gebaeude.garage_nutzflaeche': [
-    { wenn: { und: [{ m: 'Vorhaben', in: ['Errichtung'] }, { f: 'vorhaben.stellplaetze_grundstueck', ist: false }] }, wert: 0, grund: 'Neubau ohne Stellplätze oder Garagen' },
-  ],
+  // bauordnungsrechtliche Nutzung (das Betriebsleiter- oder Altenteilerwohnhaus nach § 35 Abs. 1 Nr. 1 BauGB bleibt davon
+  // unberührt); „ja“ wäre milder
+  'gebaeude.landwirtschaft': [{ wenn: WOHNGEBAEUDE, wert: false, grund: 'Wohngebäude – kein land- oder forstwirtschaftlich genutztes Gebäude' }],
+  // das GEG (§ 2 Abs. 1) setzt ein Gebäude voraus
+  'gebaeude.beheizt': [{ wenn: KEIN_GEBAEUDE, wert: false, grund: 'kein Gebäude – das GEG gilt nur für Gebäude' }],
 };
 
 export const FAKTEN: Record<string, FaktDef> = Object.fromEntries(

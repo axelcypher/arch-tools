@@ -175,6 +175,8 @@ function fragenZyklen(module: Modul[], bausteine: Map<string, Kurz[]>): string[]
   // alle Definitionen je Angabe: welche gilt, hängt an den aktiven Modulen (ein Ort ohne Gemeindemodul nimmt die des
   // Landes) – geprüft wird die Vereinigung ihrer Abhängigkeiten (zur sicheren Seite)
   const defs = new Map<string, FaktDef[]>();
+  // auch der Katalog: seine Vorfragen und Werte nach `folgt` bestimmen ebenfalls, ob eine Frage gestellt wird
+  for (const [id, d] of Object.entries(FAKTEN)) if (d.wenn || d.vorfrage || d.folgt) defs.set(id, [d]);
   for (const m of module) for (const [id, d] of Object.entries(m.fakten ?? {})) defs.set(id, [...(defs.get(id) ?? []), d]);
   const abhaengig = (id: string): Set<string> => {
     const out = new Set<string>();
@@ -192,6 +194,9 @@ function fragenZyklen(module: Modul[], bausteine: Map<string, Kurz[]>): string[]
       // ein abgeleiteter Wert hängt an seinem Bezug (ist der nicht gestellt, wird nichts abgeleitet)
       if (d.nach) out.add(d.nach.fakt);
       sammeln(d.wenn);
+      // ebenso an der Vorfrage und an den Bedingungen von `folgt` (mit abgeleitetem Wert wird nicht gefragt)
+      if (d.vorfrage) out.add(d.vorfrage.fakt);
+      for (const z of d.folgt ?? []) sammeln(z.wenn);
     }
     return out;
   };
