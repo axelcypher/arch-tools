@@ -88,7 +88,7 @@ import type { DialogArt } from './store';
 import { ablageVon, autofillAnbindung, entwurfVon, formularOrdner, karteMitAenderungen, mitAenderungen, profilFuer as wirksamesProfil, sperrAnbindung, unterordnerAnbindung, useFormulare, wertVon } from './store';
 import { fragen } from '@core/ui/Rueckfrage';
 import { lesen, schreiben } from './speicher';
-import { berechnungenSuchordner, pfadeAbonnieren, pfadWert } from '@core/einstellungen/pfade';
+import { berechnungenSuchvorlagen, pfadeAbonnieren, pfadWert, relativerPfad } from '@core/einstellungen/pfade';
 import { pfadeUebernehmen } from '@core/einstellungen/uebernahme';
 import type { PfadWert } from '@core/einstellungen/verzeichnis';
 import { anzahl } from './text';
@@ -116,7 +116,8 @@ export function mitZentral(e: ExportEinstellungen, w: (id: string) => PfadWert =
     namensvorlage: text('plaene.permio.namensvorlage'),
     zielpfad: text('plaene.permio.zielpfad'),
     vorlagenordner: text('vorlagen.permio.vorlagenordner'),
-    berechnungsordner: berechnungenSuchordner({}, w).join('\n'),
+    // Vorlagen je Zeile; ihre Platzhalter ersetzt erst das Lesen im Projekt (quellenLesen) mit dessen Angaben
+    berechnungsordner: berechnungenSuchvorlagen(w).join('\n'),
   };
 }
 
@@ -1272,8 +1273,14 @@ export const useAntrag = create<AntragState>((set, get) => {
         const ordner = new Set((get().projektdatei?.umfang ?? []).filter((u) => u.art !== 'intern').map((u) => quelleVonEintrag(u, e)));
         // mehrere Suchordner (je Zeile einer, z. B. die Berechnungsordner der Rechen-Apps): Dateien aller zusammen, mit
         // dem Ordner vor dem Namen; ein fehlender Ordner zählt als leer
+        const meta = oapMeta(projekt);
+        const projektWerte = { projektcode: projekt.ordner, kurzname: meta?.kurzname, vorhaben: meta?.vorhaben, bearbeiter: meta?.bearbeiter };
         const quellenLesen = async (o: string): Promise<Eintrag[]> => {
-          const teile = o.split('\n').map((x) => x.trim()).filter(Boolean);
+          // Platzhalter der Suchordner mit den Angaben des Projekts ({PROJEKT_KUERZEL} = Name des Projektordners)
+          const teile = o
+            .split('\n')
+            .map((x) => (x.includes('{') ? relativerPfad(x.trim(), projektWerte) : x.trim()))
+            .filter(Boolean);
           if (teile.length === 1) return ds.liste(verbinde(basis, await ordnerAufloesen(ds, basis, teile[0])), 2);
           const alle: Eintrag[] = [];
           for (const t of teile) {

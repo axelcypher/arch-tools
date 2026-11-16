@@ -61,6 +61,9 @@ Werkzeuge in **einem Programm und einem Fenster**. Sie kann nichts weiter, als z
   das Netzlaufwerk wegfällt oder wieder da ist. Im Tab steht der Punkt nur im Menü des Rahmens. Ist das
   Netzlaufwerk nicht erreichbar, zeigt die Kopfleiste „⚠ Einstellungen nur lesbar“ (Notbetrieb mit der lokalen Kopie).
 
+- **Einstellungen …** (im Menü „Einstellungen und Hilfe“ der Kopfleiste, Strg+,): der zentrale Einstellungsdialog
+  aller Apps, siehe unten.
+
 Die einzelnen Apps mit eigenem Installer bleiben unverändert nutzbar; Einstellungen (gemeinsamer
 Konfigurationsordner) und Projektdateien sind dieselben.
 
@@ -252,3 +255,98 @@ Release: Tag `suite-v<version>`. Die Version setzt der Release-Lauf, sobald eine
 (Minor, wenn eine App Minor oder Major erhöht, sonst Patch) oder eine Versionsnotiz für Arkly vorliegt
 (`.versionen/LIESMICH.md`, `scripts/versionen-setzen.mjs`); er committet sie nach main und baut Arkly aus diesem Commit.
 Ein PR braucht eine Notiz für Arkly nur bei Änderungen an `apps/suite` selbst.
+
+## Einstellungen aller Apps
+
+Ein Dialog für alle Apps und Arkly (`packages/core/src/ui/Einstellungen.tsx`; Gestaltung nach docs/design.md,
+„Einstellungen“). Geöffnet über „Datei → Einstellungen …“ in jeder App, in Arkly über „Einstellungen …“ im Menü
+„Einstellungen und Hilfe“, überall mit Strg+,. Links die Seiten (senkrechte Registerleiste: ↑/↓, Pos1/Ende), rechts
+der Inhalt. Änderungen gelten erst mit **Übernehmen**, für alle Seiten zugleich; Abbrechen, Esc und ein Klick daneben
+fragen bei Änderungen „Änderungen an ‚Einstellungen‘ verwerfen?“. Im Notbetrieb (Netzlaufwerk nicht erreichbar) sind
+Felder und „Übernehmen“ gesperrt.
+
+- **Allgemein:** Speicherort der Einstellungen (Einzelplatz/Netzwerk; der Wechsel wirkt sofort), Name des Büros,
+  Kürzel der Mitarbeiter. Das Farbschema bleibt im Menü der Titelleiste.
+- **Pfade und Benennung:** alle Pfadvorgaben und Benennungsschemata, nach Thema gegliedert und mit den Apps
+  gekennzeichnet, die sie nutzen; ein Filter „App“ zeigt nur die einer App. Je Eintrag: Feld (Listen je Zeile),
+  Platzhalter-Chips (am Eintrag mit dem Fokus), Vorschau mit erfundenen Beispielwerten (BS9, „EFH Musterweg“, heute),
+  Prüfung am Feld (unzulässige Zeichen `< > : " | ? *` und bei Namen `/`, `\`; leere Pflichtfelder; absolute Pfade, wo
+  ein relativer verlangt ist; „..“; unter Windows reservierte Namen wie CON) und „Vorgabe wiederherstellen“. Wo ein
+  Projekt einen eigenen Wert tragen kann (Dateinamen der Pläne in der Projektdatei, Abweichungen je Projekt in PERMIO,
+  Kostenkontrolle in FABRIO), sagt es der Eintrag: Auf der Seite steht die Vorgabe des Büros, der Projektwert bleibt im
+  Projekt.
+
+| Thema               | Einstellung                                         | Apps                    | Vorgabe                                                       | gespeichert (Bereich › Schlüssel)                  |
+| ------------------- | --------------------------------------------------- | ----------------------- | ------------------------------------------------------------- | -------------------------------------------------- |
+| Projekt             | Projektnummer                                       | ATLAS                   | `{JAHR}-{Nr:3}`                                               | projektordner › struktur.nummernschema             |
+| Projekt             | Name des Projektordners                             | alle mit Projekten      | `{PROJEKT_KUERZEL} {PROJEKT_KURZNAME}`                        | projektordner › struktur.ordnername (+ allgemein › ordnerSchema) |
+| Projekt             | Projektdatei (.oap) in neuen Projekten              | alle mit Projektdatei   | `03 Berechnungen/Flächen/{PROJEKT_KUERZEL} {PROJEKT_KURZNAME}.oap` | allgemein › oapPfad                           |
+| Ablage              | Fotoordner                                          | RECTIO, FABRIO, ATLAS   | `09 Fotos`                                                    | allgemein › fotoordner                             |
+| Ablage              | Antragsordner                                       | PERMIO                  | `TÖB`                                                         | allgemein › pfade                                  |
+| Ablage              | PERMIO sucht Berechnungen außerdem in               | PERMIO                  | `Planung/Berechnungen` (dazu immer die Berechnungsordner der Rechen-Apps) | allgemein › pfade                       |
+| Ablage              | Ablageordner der Katasterpläne                      | ATLAS                   | `Kataster`                                                    | kataster › zielpfad                                |
+| Ablage              | Gewerke, LV-Unterordner, Aufträge, Mailverkehr, Archiv, Bauleitung, weitere Mailordner, Kostenkontrolle | FABRIO | wie bisher (`Gewerke`, leer, `Auftrag`, `Korrespondenz`, `Archiv`/`_archiv`, `Bauleitung`, `Korrespondenz`, `Kostenkontrolle`) | ava › ablage.* |
+| Pläne und Dokumente | Dateinamen der Pläne                                | ATLAS                   | `{PROJEKT_KUERZEL}_{Plannummer}_{Index}_{Titel}`              | projektordner › struktur.dateischema               |
+| Pläne und Dokumente | Dateinamen exportierter Antragsdokumente (PDF)      | PERMIO                  | `{PROJEKT_KUERZEL} {Art} {DATUM} {Nr} {Name}`                 | allgemein › pfade                                  |
+| Pläne und Dokumente | Fester Zielordner exportierter Antragsdokumente     | PERMIO                  | `TÖB/{Antrag}`                                                | allgemein › pfade                                  |
+| Pläne und Dokumente | Dateinamen der Katasterpläne                        | ATLAS                   | `{PROJEKT_KUERZEL} {Art} {DATUM} {Name}`                      | kataster › dateiname                               |
+| Pläne und Dokumente | Muster der Rechnungsdateien                         | FABRIO                  | wie bisher (das erste für neue Dateien)                       | ava › rechnungen.muster                            |
+| Export              | Berechnungsordner                                   | QUADRIO, TERRIO, NUMIO (je App) | `03 Berechnungen/Flächen`, `…/Nachweise`, `…/Kosten`  | allgemein › pfade                                  |
+| Export              | Dateiname Excel-Export, Dateiname PDF-Export        | QUADRIO, TERRIO, NUMIO (je App) | `{PROJEKT_KUERZEL} {DATUM} {Inhalt}`                  | allgemein › pfade                                  |
+| Export              | PDF beim direkten Export mitspeichern               | QUADRIO, TERRIO, NUMIO  | ja                                                            | allgemein › pfade                                  |
+| Vorlagen            | Dateinamen der Vorlagen im Projekt                  | ATLAS                   | `{PROJEKT_KUERZEL} {Name}`                                    | projektordner › struktur.vorlagenname              |
+| Vorlagen            | Leere Formulare                                     | PERMIO                  | (keiner)                                                      | allgemein › pfade                                  |
+| Vorlagen            | Name neuer LV-Dateien                               | FABRIO                  | `{PROJEKT_KUERZEL} {DATUM} LV {Gewerk}`                       | ava › lv.dateiname                                 |
+
+**Berechnungsordner je App:** Die Vorgabestruktur von ATLAS trennt die Berechnungen nach Art („03 Berechnungen/Flächen“,
+„…/Kosten“, „…/Nachweise“); die Projektdatei liegt per Vorgabe in „03 Berechnungen/Flächen“, dem Ordner von QUADRIO.
+PERMIO sucht externe Antragsdokumente (Berechnungen, Nachweise) in den Berechnungsordnern aller drei Rechen-Apps und in
+den zusätzlich eingestellten Ordnern (Vorgabe wie bisher „Planung/Berechnungen“) – so findet es auch die direkten
+Exporte, sobald es sie gibt. Platzhalter der Suchordner setzt PERMIO mit den Angaben des jeweiligen Projekts ein. Die Einträge unter
+„Export“ (Berechnungsordner, Dateinamen, „PDF mitspeichern“) nutzt der direkte Export von QUADRIO, TERRIO und NUMIO;
+er kommt mit einem eigenen PR (bis dahin wirken sie nur auf die Suche von PERMIO).
+
+**Ohne Verlust übernommen:** Die Werte bleiben unter ihren bisherigen Schlüsseln, die Apps lesen sie dort weiter
+(„Vorgabe wiederherstellen“ schreibt die Vorgabe dort ausdrücklich hinein). Neue Einstellungen liegen in `allgemein.json`
+unter `pfade`. Die Export-Einstellungen von PERMIO standen bis 0.58 nur je Rechner im Browser-Speicher
+(`formulare:export`): Beim Start von PERMIO bzw. beim Öffnen der Seite werden abweichende Werte übernommen, wenn
+gemeinsam noch keiner steht; der alte Eintrag bleibt unverändert. Steht gemeinsam schon ein anderer Wert (zweiter Rechner
+einer Netzwerkinstallation mit eigenem altem Wert), wird nichts still überschrieben – die Seite zeigt die Abweichung und
+fragt, welcher Wert gelten soll. Jeder alte Wert wird je Rechner nur einmal übernommen bzw. entschieden – ein späteres
+„Vorgabe wiederherstellen“ bleibt bestehen. Ein eigener alter Berechnungsordner von PERMIO wird zusätzlicher Suchordner.
+In die Struktur von ATLAS schreibt der
+Dialog nur, wenn ATLAS sie angelegt hat und sie lesbar ist.
+
+**In den App-Dialogen** stehen die Werte nur noch zur Ansicht, mit dem Verweis „Pfade und Benennung …“: ATLAS
+(Einrichtung › Struktur „Namen“, Einstellungen: Projektdatei und Fotoordner bzw. „Speicherort und Büro …“, Vorlagen:
+Dateinamen im Projekt, Katasterpläne: Ordner und Dateiname), PERMIO (Einstellungen › Antrag & Export, › Projektdatei),
+FABRIO (Einstellungen › Ablage, › Rechnungen & Benennung, › Leistungsverzeichnisse). Die übrigen Einstellungen der Apps
+bleiben in deren eigenen Dialogen („Einstellungen von PERMIO …“, „Einstellungen von FABRIO …“); die Stammordner der
+Projekte und der Vorlagenordner von ATLAS ebenso.
+
+**Für Entwickler:** Verzeichnis `packages/core/src/einstellungen/eintraege.ts` (je Einstellung Kennung, Apps,
+Bezeichnung, Vorgabe, Platzhalter, Erklärung, Speicherort), Zugriff `einstellungen/pfade.ts` (`pfadWert`,
+`pfadWertLesen`, `usePfadWert`, `pfadSpeichern`, `pfadeAbonnieren`; für den Export `exportPfade(app)`,
+`exportPfadeLaden(app)`, `berechnungsordnerPfad`, `exportDateinameAusMuster`; für PERMIO `berechnungenSuchordner`),
+Platzhalter `einstellungen/variablen.ts`. Öffnen mit `einstellungenOeffnen(seite?, fokus?)`, Menüpunkt
+`einstellungenPunkt()`, Verweis `<PfadeVerweis fokus="…" />`. **Erweiterungspunkt:** `einstellungsSeiteAnmelden({ id,
+titel, text, symbol, app, inhalt, entwurf? })` hängt eine Seite einer App an (hinter den gemeinsamen, nach App-Namen
+sortiert); mit `entwurf` (geändert?, Fehler, übernehmen, verwerfen) gilt sie für „Übernehmen“ mit,
+`einstellungenEntwurfMelden()` meldet Änderungen, `useEinstellungenGesperrt()` liefert den Grund einer Sperre,
+`einstellungenStartseite(id)` macht sie zur Startseite der App. Apps, die Werte zwischenspeichern, lesen nach einer
+Änderung neu (`konfigBeobachten(bereich, f)`; `konfigGeaendertMelden` meldet allen Fenstern und Tabs).
+
+**Prüfschritte unter Windows** (Desktop, nach dem Update):
+
+1. Strg+, in einer App und in Arkly (ohne Tab bzw. mit einem App-Tab): der Dialog öffnet sich genau einmal.
+2. Speicherort *Netzwerkinstallation* mit einem Netzwerkpfad (`\\server\freigabe\arch-tools`) und mit einem
+   verbundenen Laufwerk (`Z:\arch-tools`): Seite „Pfade und Benennung“ zeigt die Werte des Netzlaufwerks; eine Änderung
+   erscheint nach „Übernehmen“ auf einem zweiten Rechner (nach dem nächsten Lesen, spätestens beim Öffnen des Dialogs).
+3. Netzlaufwerk trennen: Der Dialog zeigt „nur lesbar“, Felder und „Übernehmen“ sind gesperrt.
+4. „Leere Formulare“ (PERMIO) mit „Ordner wählen …“ auf einem UNC-Pfad und auf einem Laufwerk: wird angenommen; ein
+   relativer Wert („Vorlagen“) wird abgelehnt.
+5. Ein Rechner mit eigener alter PERMIO-Namensvorlage, ein zweiter mit einer anderen (Netzwerk): Auf dem zweiten zeigt
+   die Seite die Abweichung mit der Wahl; nach der Wahl erscheint der Hinweis nicht mehr.
+6. Berechnungsordner von QUADRIO auf einen Unterordner mit Umlaut und Leerzeichen setzen („03 Berechnungen/Flächen alt“)
+   und dort eine Flächenberechnung ablegen: PERMIO findet sie als externes Antragsdokument (nach dem PR des direkten
+   Exports legt QUADRIO den Ordner beim Export selbst an).

@@ -496,3 +496,11 @@ KOSTENKONTROLLE_REF=/pfad/zur/kostenkontrolle.xlsx npx vitest run --project core
   (§ 48 EStG, Freistellungsbescheinigung) sind nicht abgebildet – bei Bedarf USt 0 % eintragen und in der
   Anmerkung vermerken.
 - **Zwischenspeicher** (wie in den anderen Apps) für ungespeicherte LV-Änderungen nach einem Absturz.
+
+## Zentrale Einstellungen
+
+„Datei“ im Fuß der Navigation: „Einstellungen von FABRIO …“ (Prüfung, Rechnungsarten, Deckblatt, Scanordner,
+Mailvorlagen) und „Einstellungen …“ (Strg+,) für die Einstellungen aller Apps. Ablage (Gewerke, Aufträge,
+Korrespondenz, Archiv, Bauleitung, Mailordner, Kostenkontrolle), Muster der Rechnungsdateien und Name neuer LV-Dateien
+stehen dort auf der Seite „Pfade und Benennung“; gespeichert wie bisher in `ava.json`. Siehe
+[suite.md](suite.md#einstellungen-aller-apps).

@@ -1331,6 +1331,7 @@ code {
   /* Nicht-Text braucht 3:1 gegen die Leiste: das dunklere Warnorange statt der Auswahlfarbe */
   color: var(--warn-text);
 }
+.unsichtbar,
 .titlebar-unsichtbar {
   position: absolute;
   width: 1px;
@@ -2482,7 +2483,7 @@ button.ungespeichert::after {
 .einst-nav-liste {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--s1);
 }
 .einst-nav-eintrag {
   display: flex;
@@ -2500,6 +2501,7 @@ button.ungespeichert::after {
 }
 .einst-nav-eintrag > .symbol {
   flex: none;
+  /* Symbol (1em) auf die erste Textzeile ausrichten – optische Korrektur, kein Abstand der Skala */
   margin-top: 2px;
   color: var(--muted);
 }
@@ -2524,16 +2526,17 @@ button.ungespeichert::after {
   color: var(--muted);
 }
 .einst-geaendert {
-  color: var(--sel);
+  /* „geändert“ wie der Punkt ungespeicherter Änderungen in der Titelleiste (mindestens 3 : 1) */
+  color: var(--warn-text);
 }
 .einst-inhalt {
   overflow-y: auto;
   padding: var(--s4) var(--s5) var(--s5);
   min-width: 0;
 }
-.einst-inhalt > h2 {
+.einst-inhalt > h3 {
   margin: 0 0 var(--s1);
-  font-size: var(--fs-xl);
+  font-size: var(--fs-l);
   font-weight: 600;
 }
 .einst-einleitung {
@@ -2551,10 +2554,13 @@ button.ungespeichert::after {
   flex-direction: column;
   gap: var(--s2);
 }
+.einst-gruppe > p {
+  margin: 0;
+}
 .einst-gruppe > h4 {
   margin: 0;
   padding-bottom: var(--s1);
-  font-size: var(--fs-m);
+  font-size: var(--fs-s);
   font-weight: 600;
   border-bottom: 1px solid var(--border);
 }
@@ -2575,7 +2581,8 @@ button.ungespeichert::after {
   scroll-margin-top: var(--s4);
 }
 .einst-eintrag.geaendert {
-  border-color: var(--accent);
+  /* „geändert“ wie in der Seitenliste: Linie links in --warn-text (nicht --accent, das läse sich wie Fokus oder Auswahl) */
+  box-shadow: inset 3px 0 0 var(--warn-text);
 }
 .einst-eintrag-kopf {
   display: flex;
@@ -2594,6 +2601,7 @@ button.ungespeichert::after {
 }
 .einst-app {
   font-size: var(--fs-xs);
+  /* Zeilenhöhe der Marke (keine Größe der Abstandsskala) */
   line-height: 1.6;
   padding: 0 var(--s2);
   border-radius: 999px;
@@ -2620,6 +2628,10 @@ button.ungespeichert::after {
 .einst-feldzeile > textarea.einst-feld {
   resize: vertical;
 }
+/* Platzhalter-Chips nur am Eintrag mit dem Fokus (wie die kompakten Namensfelder): die lange Seite bleibt ruhig */
+.einst-eintrag:not(:focus-within) .ph-chips {
+  display: none;
+}
 .einst-vorschau code {
   overflow-wrap: anywhere;
 }
@@ -2640,6 +2652,11 @@ button.ungespeichert::after {
 }
 .einst-abweichung > p {
   margin: 0 0 var(--s2);
+}
+.einst-sperrgrund {
+  margin: 0;
+  color: var(--warn-text);
+  align-self: center;
 }
 .einst-fehler {
   margin: 0 var(--s5);

@@ -68,6 +68,7 @@ export function AntragEinstellungen() {
         </p>
         <p className="field-hint">{ART_HINWEIS}</p>
         {artWarnung && <p className="warning small-text">{artWarnung}</p>}
+        <PfadeVerweis fokus="plaene.permio.namensvorlage" text="Namensvorlage ändern …" />
       </Karte>
 
       <Karte titel="Ziel des Exports" text="Der voreingestellte Ordner im Export-Dialog; dort lässt sich jedes Mal auch ein anderer Ordner im Projekt wählen oder „Speichern unter …“.">
@@ -80,10 +81,10 @@ export function AntragEinstellungen() {
         <label className="radio-row">
           <input type="radio" name="export-ziel" checked={e.ziel === 'pfad'} onChange={() => setEinstellungen({ ziel: 'pfad' })} />
           <span className="es-breit">
-            <strong>Fester Ordner im Projekt</strong> <span className="muted small-text">– </span>
-            <code>{e.zielpfad}</code>
+            <strong>Fester Ordner im Projekt</strong> <code>{e.zielpfad}</code>
           </span>
         </label>
+        <PfadeVerweis fokus="plaene.permio.zielpfad" text="Zielordner ändern …" />
       </Karte>
 
       <Karte titel="Quellen und Vorlagen">

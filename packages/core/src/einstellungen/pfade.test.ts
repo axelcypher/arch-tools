@@ -68,6 +68,19 @@ describe('pfade', () => {
     expect(p.berechnungenSuchordner()).toEqual(['03 Berechnungen/Flächen', '03 Berechnungen/Nachweise', '03 Berechnungen/Kosten', 'Statik']);
   });
 
+  it('Übernahme alter PERMIO-Werte je Rechner nur einmal: „Vorgabe wiederherstellen“ bleibt bestehen', async () => {
+    localStorage.setItem('formulare:export', JSON.stringify({ antragsordner: 'Anträge' }));
+    const p = await import('./pfade');
+    const { pfadeUebernehmen } = await import('./uebernahme');
+    expect(await pfadeUebernehmen()).toEqual([]);
+    expect(await p.pfadWertLesen('ablage.permio.antragsordner')).toBe('Anträge');
+    await p.pfadSpeichern('ablage.permio.antragsordner', undefined);
+    expect(await pfadeUebernehmen()).toEqual([]);
+    expect(await p.pfadWertLesen('ablage.permio.antragsordner')).toBe('TÖB');
+    // der alte Eintrag bleibt unverändert
+    expect(JSON.parse(localStorage.getItem('formulare:export')!)).toEqual({ antragsordner: 'Anträge' });
+  });
+
   it('ein anderes Fenster ändert eine Einstellung: neu lesen', async () => {
     const p = await import('./pfade');
     await p.pfadWerteLaden();

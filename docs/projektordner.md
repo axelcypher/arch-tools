@@ -747,3 +747,12 @@ Presets und Bausteine in der Struktur-Datei:
 - Die Planliste ist eine Vorlage, keine Verwaltung – Revisionen und Verteiler führt das Tool nicht.
 - Die Nummernvergabe ist ein Vorschlag aus den vorhandenen Ordnern. Legen zwei Personen gleichzeitig an,
   erkennt das Tool die Kollision erst am vorhandenen Ordner – und überschreibt auch dann nichts.
+
+## Zentrale Einstellungen
+
+„Datei → Einstellungen …“ (Strg+,) öffnet die Einstellungen aller Apps. Projektnummer, Name des Projektordners,
+Dateinamen der Pläne, Dateinamen der Vorlagen im Projekt, Ort der Projektdatei, Fotoordner sowie Ordner und Dateiname
+der Katasterpläne stellt man dort auf der Seite „Pfade und Benennung“ ein; Speicherort, Büro und Mitarbeiter auf
+„Allgemein“. In ATLAS stehen sie zur Ansicht mit dem Verweis „Pfade und Benennung …“ bzw. „Speicherort und Büro …“.
+Die Stammordner der Projekte, der Vorlagenordner und das Namensschema (Kürzel) bleiben in ATLAS. Siehe
+[suite.md](suite.md#einstellungen-aller-apps).

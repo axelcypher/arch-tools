@@ -10,15 +10,17 @@ import { gleicherWert, type PfadWert } from './verzeichnis';
  *  - Gemeinsam steht noch nichts: Der abweichende lokale Wert wird übernommen.
  *  - Gemeinsam steht schon ein anderer Wert (zweiter Rechner einer Netzwerkinstallation mit eigenem altem Wert): Nichts
  *    wird still überschrieben – die Seite „Pfade und Benennung“ zeigt die Abweichung und fragt, welcher gelten soll.
- *  - Der alte Berechnungsordner von PERMIO entfällt, wenn er die Vorgabe war („Planung/Berechnungen“) – PERMIO sucht
- *    jetzt in den Berechnungsordnern der Rechen-Apps. Ein eigener Wert bleibt als zusätzlicher Suchordner erhalten.
+ *  - Jeder alte Wert wird je Rechner nur einmal übernommen bzw. entschieden – ein späteres „Vorgabe wiederherstellen“
+ *    bleibt bestehen.
+ *  - Der alte Berechnungsordner von PERMIO wird zusätzlicher Suchordner (neben denen der Rechen-Apps); war er die
+ *    Vorgabe („Planung/Berechnungen“), ist nichts zu tun – sie ist auch die Vorgabe der zusätzlichen Suchordner.
  */
 
 const log = logger('einstellungen');
 
 /** alter Schlüssel der Export-Einstellungen von PERMIO (Browser-Speicher, je Rechner) */
 export const PERMIO_ALT = 'formulare:export';
-/** schon entschiedene Abweichungen (je Rechner) */
+/** schon übernommene bzw. entschiedene alte Werte (je Rechner) */
 const ENTSCHIEDEN = 'arch-tools:pfade-uebernahme';
 
 const ALTE_FELDER: { id: string; schluessel: keyof typeof VORGABE_PERMIO; liste?: true }[] = [
@@ -60,23 +62,28 @@ export interface Abweichung {
 const schluessel = (id: string, lokal: PfadWert) => `${id}=${JSON.stringify(lokal)}`;
 
 /** Was zu übernehmen ist und wo gemeinsam schon etwas anderes steht – ohne Nebenwirkungen (getestet) */
-export function uebernahmePlanen(alt: AlterWert[], werte: PfadWerte, entschieden: ReadonlySet<string> = new Set()): { uebernehmen: AlterWert[]; abweichungen: Abweichung[] } {
+export function uebernahmePlanen(alt: AlterWert[], werte: PfadWerte, entschieden: ReadonlySet<string> = new Set()): { uebernehmen: AlterWert[]; abweichungen: Abweichung[]; gleich: AlterWert[] } {
   const uebernehmen: AlterWert[] = [];
   const abweichungen: Abweichung[] = [];
+  /** gemeinsam steht schon derselbe Wert: als erledigt vermerken (ein späteres „Vorgabe wiederherstellen“ gilt) */
+  const gleich: AlterWert[] = [];
   for (const a of alt) {
+    // je Rechner nur einmal: schon übernommen bzw. entschieden – ein späteres „Vorgabe wiederherstellen“ gilt
+    if (entschieden.has(schluessel(a.id, a.wert))) continue;
     const g = werte[a.id];
     if (g === undefined) {
       uebernehmen.push(a);
       continue;
     }
-    if (entschieden.has(schluessel(a.id, a.wert))) continue;
     if (Array.isArray(a.wert)) {
       const liste = Array.isArray(g) ? g : [];
       const fehlt = a.wert.filter((x) => !liste.some((y) => y.toLowerCase() === x.toLowerCase()));
       if (fehlt.length) abweichungen.push({ id: a.id, lokal: a.wert, gemeinsam: liste, neu: [...liste, ...fehlt] });
+      else gleich.push(a);
     } else if (!gleicherWert(g, a.wert)) abweichungen.push({ id: a.id, lokal: a.wert, gemeinsam: g, neu: a.wert });
+    else gleich.push(a);
   }
-  return { uebernehmen, abweichungen };
+  return { uebernehmen, abweichungen, gleich };
 }
 
 function lokalLesen<T>(k: string, vorgabe: T): T {
@@ -111,10 +118,12 @@ export function abweichungEntschieden(a: Pick<Abweichung, 'id' | 'lokal'>): void
 export async function pfadeUebernehmen(): Promise<Abweichung[]> {
   const alt = alteWerteAus(lokalLesen<unknown>(PERMIO_ALT, null));
   if (!alt.length) return [];
-  const { uebernehmen, abweichungen } = uebernahmePlanen(alt, await pfadWerteLaden(), entschiedenLesen());
+  const { uebernehmen, abweichungen, gleich } = uebernahmePlanen(alt, await pfadWerteLaden(), entschiedenLesen());
+  for (const a of gleich) abweichungEntschieden({ id: a.id, lokal: a.wert });
   for (const a of uebernehmen) {
     try {
       await pfadSpeichern(a.id, a.wert);
+      abweichungEntschieden({ id: a.id, lokal: a.wert });
       log.info(`Übernommen aus dem Speicher dieses Rechners: ${a.id}`);
     } catch (e) {
       log.warn(`Übernahme von ${a.id} nicht gespeichert`, e);

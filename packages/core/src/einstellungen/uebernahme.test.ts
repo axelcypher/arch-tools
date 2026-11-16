@@ -21,14 +21,21 @@ describe('Übernahme alter lokaler Werte (PERMIO, „formulare:export“)', () =
     expect(alteWerteAus({ antragsordner: 5, zielpfad: '  ' })).toEqual([]);
   });
 
-  it('gemeinsam noch nichts: der lokale Wert wird übernommen', () => {
+  it('gemeinsam noch nichts: der lokale Wert wird übernommen – je Rechner nur einmal (ein späteres „Vorgabe wiederherstellen“ bleibt)', () => {
     const alt = alteWerteAus({ antragsordner: 'Anträge', berechnungsordner: 'Statik' });
-    expect(uebernahmePlanen(alt, {})).toEqual({ uebernehmen: alt, abweichungen: [] });
+    expect(uebernahmePlanen(alt, {})).toEqual({ uebernehmen: alt, abweichungen: [], gleich: [] });
+    // übernommen und vermerkt, danach im Dialog auf die Vorgabe zurückgesetzt (Eintrag entfällt): nicht erneut übernehmen
+    const vermerkt = new Set(['ablage.permio.antragsordner="Anträge"', 'ablage.permio.berechnungsordner=["Statik"]']);
+    expect(uebernahmePlanen(alt, {}, vermerkt)).toEqual({ uebernehmen: [], abweichungen: [], gleich: [] });
   });
 
   it('gemeinsam gleicher Wert: nichts zu tun', () => {
     const alt = alteWerteAus({ antragsordner: 'Anträge', berechnungsordner: 'Statik' });
-    expect(uebernahmePlanen(alt, { 'ablage.permio.antragsordner': 'Anträge', 'ablage.permio.berechnungsordner': ['Wärmeschutz', 'statik'] })).toEqual({ uebernehmen: [], abweichungen: [] });
+    expect(uebernahmePlanen(alt, { 'ablage.permio.antragsordner': 'Anträge', 'ablage.permio.berechnungsordner': ['Wärmeschutz', 'statik'] })).toEqual({
+      uebernehmen: [],
+      abweichungen: [],
+      gleich: alt,
+    });
   });
 
   it('zwei Rechner mit verschiedenen alten Werten (Netzwerk): nicht still überschreiben, sondern als Abweichung fragen – bis entschieden', () => {

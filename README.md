@@ -71,6 +71,13 @@ Designrichtlinie [docs/design.md](docs/design.md).
   kurzen Sperrdatei `.<bereich>.json.sperre`); sonst wird die Änderung auf den neuen Stand angewandt, bzw. bei ganzen
   Einstellungsdialogen (FABRIO, Struktur in ATLAS) gemeldet und neu geladen. Alle Rechner einer Netzwerkinstallation
   sollten dafür auf dem aktuellen Stand sein. Im Browser liegen die Einstellungen wie bisher im Speicher des Browsers.
+- **Einstellungen** (in jeder App „Datei → Einstellungen …“, in Arkly im Menü „Einstellungen und Hilfe“, überall
+  Strg+,): ein gemeinsamer Dialog für alle Apps. Seite *Allgemein*: Speicherort der Einstellungen, Name des Büros,
+  Kürzel der Mitarbeiter. Seite *Pfade und Benennung*: alle Pfadvorgaben und Benennungsschemata der Apps auf einer
+  Seite, nach Thema gegliedert (Projekt, Ablage, Pläne und Dokumente, Export, Vorlagen) und mit der App gekennzeichnet,
+  mit Platzhalter-Chips, Vorschau mit Beispielwerten, Prüfung (ungültige Zeichen, leere Pflichtfelder) und „Vorgabe
+  wiederherstellen“. Änderungen gelten erst mit *Übernehmen*, für alle Seiten zugleich. Einzelheiten in
+  [docs/suite.md](docs/suite.md#einstellungen-aller-apps).
 - **Dialoge**: Esc schließt den obersten Dialog (in einem Eingabefeld verwirft Esc zuerst die Eingabe), der Fokus
   bleibt im Dialog und springt danach zurück.
 - **Ungespeicherte Änderungen**: Vor Öffnen, Neu und Beenden fragt die App „Änderungen an ‚…‘ speichern?“ mit
