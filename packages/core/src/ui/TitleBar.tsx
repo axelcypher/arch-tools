@@ -17,6 +17,7 @@ import type { MenuePunkt } from './Menue';
 import { Symbol } from './Symbol';
 import { useBuero } from './DruckKopf';
 import { SpeicherortAnzeige, speicherortPunkt, SpeicherortHost, useKonfigOrt, useSpeicherort } from './Speicherort';
+import { EinstellungenHost } from './Einstellungen';
 import { umzugBestaetigen } from './umzug';
 import { schreibenAbwarten } from './vorbereiten';
 
@@ -260,6 +261,7 @@ export function TitleBar({ app, name, dirty, ungespeichert, onOpenLog, regeln, o
         )}
       </header>
       <SpeicherortHost />
+      <EinstellungenHost />
       <RueckfrageHost />
       <MenueHost />
     </>

@@ -15,6 +15,7 @@ import { alleKuerzel, dateinameZerlegenMitStellen, kuerzelZu, planNummerAus, VOR
 import type { FassungsForm } from '@core/fassung';
 import { artDerFassung, fassungAus, fassungsName } from '@core/fassung';
 import { antragKurzAus } from '@core/serialize';
+import { PERMIO_NAMEN, PERMIO_ZIEL } from '@core/einstellungen/variablen';
 import { ersetzen, globaleWerte, GLOBALE_VARIABLEN, mitAliasen, platzhalterIn, type Variable, type Wert } from '@core/platzhalter';
 import type { Zustaende } from './autofill';
 import { zustaendeAus } from './autofill';
@@ -177,24 +178,9 @@ const zweistellig = (n: number) => String(n).padStart(2, '0');
 export const jjmmtt = (d: Date) => `${zweistellig(d.getFullYear() % 100)}${zweistellig(d.getMonth() + 1)}${zweistellig(d.getDate())}`;
 
 /** globale Variablen; {Projekt} hieß hier früher das Projektkürzel, Quelle ist der Name des Projektordners */
-const GLOBAL_FORMULARE: Variable[] = GLOBALE_VARIABLEN.map((v) => (v.name === 'PROJEKT_KUERZEL' ? { ...mitAliasen(v.name, ['Projekt']), quelle: 'Name des Projektordners (in den Formularen wie bisher)' } : v));
-
-/**
- * Variablen der Namensvorlage exportierter PDFs: die globalen (@core/platzhalter) und die lokalen der Formulare.
- * {Phase} aus Vorlagen früherer Fassungen gilt als {Art}.
- */
-export const NAMENS_VARIABLEN: Variable[] = [
-  ...GLOBAL_FORMULARE,
-  { name: 'Art', text: 'Antragsart der aktiven Fassung, z. B. BAUA (Pflicht im Antragsordner)', aliase: ['Phase'] },
-  { name: 'Nr', text: 'Nummer im Antragsumfang (entfällt, wenn leer)' },
-  { name: 'Name', text: 'Titel im Antragsumfang, sonst Name des Formulars' },
-  { name: 'Antrag', text: 'aktive Antragsfassung, z. B. BAUA 2' },
-  { name: 'Formular', text: 'Dateiname des Formulars' },
-  { name: 'Kennung', text: 'Kennung des Formulars, z. B. nw010005' },
-  { name: 'Stand', text: 'Stand des Formulars, z. B. 2026A' },
-];
-/** Variablen im festen Zielordner des Exports */
-export const ZIEL_VARIABLEN: Variable[] = [...GLOBAL_FORMULARE, NAMENS_VARIABLEN.find((v) => v.name === 'Antrag')!, { name: 'Art', text: 'Antragsart der aktiven Fassung, z. B. BAUA' }];
+/** Variablen der Namensvorlage und des Zielordners – eine Quelle in core (zentrale Einstellungen) */
+export const NAMENS_VARIABLEN: Variable[] = PERMIO_NAMEN;
+export const ZIEL_VARIABLEN: Variable[] = PERMIO_ZIEL;
 
 /** Name des Formulars ohne laufende Nummer davor und Jahr dahinter („005-Bauantrag (2026)“ → „Bauantrag“) */
 export const anzeigeName = (formularName: string) => formularName.replace(/^\s*\d+\s*[-_ ]\s*/, '').replace(/\s*\(\d{4}\)\s*$/, '').trim() || formularName;
