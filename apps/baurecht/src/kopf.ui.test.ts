@@ -156,7 +156,8 @@ describe('Kopf (Desktop): Menü „Mehr“ und Sammelmarke', () => {
     expect(leiste.getAttribute('role')).toBe('group');
     expect(leiste.getAttribute('aria-label')).toBe('Prüfung');
     const eintraege = [...leiste.querySelectorAll<HTMLElement>(':scope > [data-eintrag]')].map((e) => e.dataset.eintrag);
-    expect(eintraege[0]).toBe('speichern');
+    // links „Datei“ (nur „Einstellungen …“), dann „Speichern“
+    expect(eintraege.slice(0, 2)).toEqual(['datei', 'speichern']);
     expect(eintraege.at(-1)).toBe('protokoll');
     const knoepfe = [...leiste.querySelectorAll<HTMLButtonElement>('button')];
     const protokoll = knoepfe.find((b) => b.textContent?.trim() === 'Prüfprotokoll …')!;

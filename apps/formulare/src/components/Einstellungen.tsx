@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Modal } from '@core/ui/Dialog';
+import { PfadeVerweis } from '@core/ui/Einstellungen';
 import { dateiname } from '@core/platform/files';
-import { OAP_VARIABLEN, projektdateiPfad } from '@core/projektdatei';
-import { PlatzhalterChips, PlatzhalterHinweise } from '@core/ui/Platzhalter';
+import { projektdateiPfad } from '@core/projektdatei';
 import { hatVorgabe } from '../vorgabe';
 import { VORGABEN } from '../vorgaben';
 import type { Adresse } from '../adressbuch';
@@ -15,7 +15,7 @@ import { AntragEinstellungen } from './AntragEinstellungen';
 import { Karte } from './EinstellungsKarte';
 import { SicherungEinstellungen } from './SicherungEinstellungen';
 import type { EinstellungsBereich } from '../store';
-import { VORGABE_OAP_PFAD, useFormulare } from '../store';
+import { useFormulare } from '../store';
 import { OAP_ANGABEN } from '../oap';
 import type { SymbolName } from '@core/ui/Symbol';
 import { Symbol } from '@core/ui/Symbol';
@@ -578,15 +578,9 @@ function Formulare() {
 /** Beispielwerte für die Vorschau des Pfads neuer Projektdateien */
 const OAP_BEISPIEL = { nummer: 'BS9', kurzname: 'EFH Musterweg', vorhaben: 'Neubau Einfamilienhaus', datum: new Date() };
 
-/** Platzhalter anhängen – vor der Endung „.oap“, falls vorhanden */
-const mitPlatzhalter = (vorlage: string, name: string) => {
-  const m = /^(.*?)\s*(\.oap)\s*$/i.exec(vorlage.trim());
-  return m ? `${`${m[1]} ${name}`.trim()}${m[2]}` : `${vorlage.trim()} ${name}`.trim();
-};
 
 function Projektdaten() {
   const neu = useFormulare((s) => s.oapVorlage);
-  const { setOapVorlage } = useFormulare.getState();
   return (
     <>
       <h2>Projektdatei (.oap)</h2>
@@ -606,21 +600,13 @@ function Projektdaten() {
           </>
         }
       >
-        <div className="es-zeile">
-          <input defaultValue={neu} key={neu} placeholder={VORGABE_OAP_PFAD} onBlur={(e) => e.target.value.trim() !== neu && setOapVorlage(e.target.value)} aria-label="Pfad für neue Projektdateien" />
-        </div>
-        <PlatzhalterHinweise vorlage={neu} variablen={OAP_VARIABLEN} onAnpassen={setOapVorlage} />
-        <div className="es-platzhalter-zeile">
-          <PlatzhalterChips variablen={OAP_VARIABLEN} label="Pfad für neue Projektdateien" fokusBehalten={false} onEinfuegen={(p) => setOapVorlage(mitPlatzhalter(neu, p))} />
-          {neu !== VORGABE_OAP_PFAD && (
-            <button className="small" onClick={() => setOapVorlage(VORGABE_OAP_PFAD)}>
-              Vorgabe
-            </button>
-          )}
-        </div>
+        <p>
+          Pfad: <code>{neu}</code>
+        </p>
         <p className="muted es-beispiel" role="note" aria-label="Beispiel für den Pfad">
           Beispiel: <code>{projektdateiPfad(neu, OAP_BEISPIEL)}</code>
         </p>
+        <PfadeVerweis fokus="projekt.oapPfad" erklaerung="Eingestellt in den Einstellungen aller Apps, Seite „Pfade und Benennung“." />
       </Karte>
       <Karte titel="Angaben">
         <table className="es-tabelle">

@@ -320,7 +320,7 @@ describe('RECTIO (Entzerrung)', () => {
     const punkte = () => [...document.querySelectorAll<HTMLElement>('[role="menu"] [role^="menuitem"]')];
     // „Datei“: Dateibefehle, dann Fotos hinzufügen; ohne Foto ist „Speichern unter …“ gesperrt mit Grund
     act(() => menueKnopf('Datei').click());
-    expect(punkte().map((p) => p.textContent?.trim().replace(/\s+/g, ' '))).toEqual(['Neu', 'Öffnen …Strg+O', expect.stringMatching(/^Speichern unter …/), 'Fotos hinzufügen …']);
+    expect(punkte().map((p) => p.textContent?.trim().replace(/\s+/g, ' '))).toEqual(['Neu', 'Öffnen …Strg+O', expect.stringMatching(/^Speichern unter …/), 'Fotos hinzufügen …', 'Einstellungen …Strg+,']);
     expect(punkte()[2].getAttribute('aria-disabled')).toBe('true');
     act(() => void document.activeElement?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })));
     // „Ansicht“: die linke Leiste als Haken-Schalter

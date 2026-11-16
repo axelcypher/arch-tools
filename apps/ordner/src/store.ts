@@ -7,6 +7,7 @@ import {
   konfigAendern,
   konfigLesen,
   konfigOrt,
+  konfigBeobachten,
   konfigOrtBeobachten,
   konfigSchreibenWennUnveraendert,
   konfigStand,
@@ -511,6 +512,14 @@ vorDemSchliessen(async () => {
   }
   return true;
 });
+// die zentralen Einstellungen (Pfade und Benennung, Büro) haben Namen der Struktur bzw. gemeinsame Angaben geändert – auch
+// in einem anderen Fenster oder Tab: neu lesen, solange hier nichts Eigenes offen ist (Konflikt, nicht Geschriebenes)
+const zentralGeaendert = () => {
+  const s = useOrdner.getState();
+  if (s.geladen && !s.konflikt && !s.strukturNichtGeschrieben) void s.konfigLaden();
+};
+konfigBeobachten(BEREICH, zentralGeaendert);
+konfigBeobachten('allgemein', zentralGeaendert);
 konfigOrtBeobachten((o) => {
   const s = useOrdner.getState();
   if (!s.geladen || (s.konfig && o && s.konfig.ordner === o.ordner && s.konfig.modus === o.modus && s.konfig.notbetrieb === o.notbetrieb)) return;

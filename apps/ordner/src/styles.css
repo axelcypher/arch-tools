@@ -727,6 +727,26 @@
 .po-schemata .field {
   margin-bottom: 4px;
 }
+/* Namen und Pfade: eingestellt zentral (Einstellungen › Pfade und Benennung), hier nur angezeigt */
+.po-schemata-werte {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--s2) var(--s4);
+  margin: 0 0 var(--s2);
+}
+.po-schemata-werte dt {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+.po-schemata-werte dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 900px) {
+  .po-schemata-werte {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
 .po-editor.po-editor-text {
   grid-template-columns: minmax(0, 1fr);
 }

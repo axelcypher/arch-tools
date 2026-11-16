@@ -183,7 +183,8 @@ describe('Rahmen-App', () => {
     expect([...host.querySelectorAll('header button')].map((b) => b.getAttribute('aria-label') ?? b.textContent)).not.toContainEqual(expect.stringMatching(/Protokoll|Farbschema/));
     act(() => knopf().click());
     const punkte = () => [...document.querySelectorAll('.menue [role^="menuitem"]')].map((b) => b.textContent?.trim());
-    expect(punkte()).toEqual([expect.stringContaining('Farbschema'), expect.stringContaining('Fehlerprotokoll …')]);
+    // „Einstellungen …“ (zentraler Dialog, Strg+,) nach dem Update-Punkt
+    expect(punkte()).toEqual(['Einstellungen …Strg+,', expect.stringContaining('Farbschema'), expect.stringContaining('Fehlerprotokoll …')]);
     act(() => document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
     expect(document.activeElement).toBe(knopf());
     // neuer Fehler: Marke am Knopf und im Namen; „Fehlerprotokoll …“ öffnet das Protokoll und setzt die Marke zurück

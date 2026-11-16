@@ -1,7 +1,7 @@
 import { strFromU8, unzipSync } from 'fflate';
 import { isZip } from '@core/archive';
 import type { Koordinaten } from '@core/model';
-import { ersetzen, globaleWerte, GLOBALE_VARIABLEN, mitAliasen, platzhalterIn, type Variable } from '@core/platzhalter';
+import { ersetzen, globaleWerte, platzhalterIn } from '@core/platzhalter';
 import { sichererDateiname } from '@core/projektdatei';
 import { KATASTER_VARIABLEN, KATASTER_ZIEL_VARIABLEN } from '@core/einstellungen/variablen';
 

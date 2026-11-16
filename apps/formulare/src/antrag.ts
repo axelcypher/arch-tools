@@ -16,7 +16,7 @@ import type { FassungsForm } from '@core/fassung';
 import { artDerFassung, fassungAus, fassungsName } from '@core/fassung';
 import { antragKurzAus } from '@core/serialize';
 import { PERMIO_NAMEN, PERMIO_ZIEL } from '@core/einstellungen/variablen';
-import { ersetzen, globaleWerte, GLOBALE_VARIABLEN, mitAliasen, platzhalterIn, type Variable, type Wert } from '@core/platzhalter';
+import { ersetzen, globaleWerte, platzhalterIn, type Variable, type Wert } from '@core/platzhalter';
 import type { Zustaende } from './autofill';
 import { zustaendeAus } from './autofill';
 import type { Bedingung } from './bedingung';

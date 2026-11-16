@@ -1,4 +1,4 @@
-import { GLOBALE_VARIABLEN } from '../platzhalter';
+import { GLOBALE_VARIABLEN, modernisieren } from '../platzhalter';
 import { VORGABE_OAP_PFAD } from '../projektdatei';
 import {
   ATLAS_NUMMER,
@@ -22,6 +22,9 @@ import { inPfade, unterSchluessel, type PfadEinstellung } from './verzeichnis';
  * (`inPfade`). Vorgaben müssen denen der Apps gleichen (Tests in eintraege.test.ts).
  */
 
+/** Die Struktur von ATLAS legt nur ATLAS vollständig an (mit Ordnern und Presets) */
+const OHNE_STRUKTUR = 'Die Ordnerstruktur von ATLAS ist noch nicht angelegt oder nicht lesbar – bitte zuerst ATLAS öffnen (Einrichtung › Struktur).';
+
 /** Vorgaben, die auch die Apps brauchen */
 export const VORGABE_FOTOORDNER = '09 Fotos';
 export const VORGABE_BERECHNUNGSORDNER = { flaechenrechner: '03 Berechnungen/Flächen', grz: '03 Berechnungen/Nachweise', kosten: '03 Berechnungen/Kosten' } as const;
@@ -30,10 +33,20 @@ export const VORGABE_EXPORT_DATEINAME = '{PROJEKT_KUERZEL} {DATUM} {Inhalt}';
 const INHALT = { flaechenrechner: 'Flächenaufstellung', grz: 'GRZ-Nachweis', kosten: 'Kostenschätzung' } as const;
 
 /** Muster der Rechnungsdateien in FABRIO (das erste für neue Dateien) */
-export const VORGABE_RECHNUNGSMUSTER = ['{PROJEKT_KUERZEL} R{Nr:3} {Firma} {Rechnungsdatum} {Art}{Lfd}', '{PROJEKT_KUERZEL} {Rechnungsdatum} {Lfd}.{Art} Fa. {Firma}', '{PROJEKT_KUERZEL} {Rechnungsdatum} {Art}{Lfd} {Firma}'];
+export const VORGABE_RECHNUNGSMUSTER = [
+  '{PROJEKT_KUERZEL} R{Nr:3} {Firma} {Rechnungsdatum} {Art}{Lfd}',
+  '{PROJEKT_KUERZEL} {Rechnungsdatum} {Lfd}.{Art} Fa. {Firma}',
+  '{PROJEKT_KUERZEL} {Rechnungsdatum} {Art}{Lfd} {Firma}',
+];
 
 /** Vorgaben von PERMIO (bis 0.58 nur je Rechner im Browser-Speicher unter „formulare:export“) */
-export const VORGABE_PERMIO = { antragsordner: 'TÖB', namensvorlage: '{PROJEKT_KUERZEL} {Art} {DATUM} {Nr} {Name}', zielpfad: 'TÖB/{Antrag}', berechnungsordner: 'Planung/Berechnungen', vorlagenordner: '' } as const;
+export const VORGABE_PERMIO = {
+  antragsordner: 'TÖB',
+  namensvorlage: '{PROJEKT_KUERZEL} {Art} {DATUM} {Nr} {Name}',
+  zielpfad: 'TÖB/{Antrag}',
+  berechnungsordner: 'Planung/Berechnungen',
+  vorlagenordner: '',
+} as const;
 
 const exportEintraege = (app: 'flaechenrechner' | 'grz' | 'kosten'): PfadEinstellung[] => [
   {
@@ -91,7 +104,7 @@ export const PFAD_EINSTELLUNGEN: PfadEinstellung[] = [
     variablen: ATLAS_NUMMER,
     beispiel: { Nr: 7 },
     pflicht: true,
-    speicher: unterSchluessel('projektordner', 'struktur.nummernschema', 'name', '{JAHR}-{Nr:3}'),
+    speicher: unterSchluessel('projektordner', 'struktur.nummernschema', 'name', '{JAHR}-{Nr:3}', OHNE_STRUKTUR),
   },
   {
     id: 'projekt.ordnername',
@@ -103,7 +116,7 @@ export const PFAD_EINSTELLUNGEN: PfadEinstellung[] = [
     vorgabe: '{PROJEKT_KUERZEL} {PROJEKT_KURZNAME}',
     variablen: ATLAS_PROJEKT,
     pflicht: true,
-    speicher: unterSchluessel('projektordner', 'struktur.ordnername', 'name', '{PROJEKT_KUERZEL} {PROJEKT_KURZNAME}'),
+    speicher: unterSchluessel('projektordner', 'struktur.ordnername', 'name', '{PROJEKT_KUERZEL} {PROJEKT_KURZNAME}', OHNE_STRUKTUR),
     // gespiegelt für alle Apps (wie ATLAS es selbst tut)
     auch: { bereich: 'allgemein', schluessel: 'ordnerSchema' },
   },
@@ -269,7 +282,7 @@ export const PFAD_EINSTELLUNGEN: PfadEinstellung[] = [
     beispiel: { Plannummer: 'GP-04', Index: 'a', Titel: 'Grundriss OG' },
     endung: '.pdf',
     pflicht: true,
-    speicher: unterSchluessel('projektordner', 'struktur.dateischema', 'name', '{PROJEKT_KUERZEL}_{Plannummer}_{Index}_{Titel}'),
+    speicher: unterSchluessel('projektordner', 'struktur.dateischema', 'name', '{PROJEKT_KUERZEL}_{Plannummer}_{Index}_{Titel}', OHNE_STRUKTUR),
     projektwert: 'Jede Projektdatei trägt eine Kopie – für bestehende Projekte gilt deren Schema.',
   },
   {
@@ -286,6 +299,12 @@ export const PFAD_EINSTELLUNGEN: PfadEinstellung[] = [
     pflicht: true,
     speicher: inPfade('plaene.permio.namensvorlage', 'name'),
     projektwert: 'Je Projekt in PERMIO abweichend einstellbar (Antrag › Export für dieses Projekt).',
+    hinweise: (v) =>
+      /^\{PROJEKT_KUERZEL\}\s+\{Art\}\s+\{DATUM\}\s/.test(modernisieren(v, PERMIO_NAMEN))
+        ? []
+        : [
+            'Dateien im Antragsordner müssen mit „Projektcode Antragsart JJMMTT“ beginnen, sonst lassen sie sich nicht als bereit markieren – die Vorlage sollte mit „{PROJEKT_KUERZEL} {Art} {DATUM}“ beginnen.',
+          ],
   },
   {
     id: 'plaene.permio.zielpfad',
@@ -358,17 +377,7 @@ export const PFAD_EINSTELLUNGEN: PfadEinstellung[] = [
     beispiel: { Name: 'Baubeschreibung' },
     endung: '.docx',
     pflicht: true,
-    speicher: unterSchluessel('projektordner', 'struktur.vorlagenname', 'name', '{PROJEKT_KUERZEL} {Name}'),
-  },
-  {
-    id: 'vorlagen.vorlagenordner',
-    apps: ['ordner'],
-    thema: 'vorlagen',
-    art: 'ordner',
-    bezeichnung: 'Vorlagenordner',
-    erklaerung: 'Ordner mit den Vorlagen, aufgebaut wie ein Projektordner; leer = keiner.',
-    vorgabe: '',
-    speicher: unterSchluessel('projektordner', 'vorlagenordner', 'ordner', ''),
+    speicher: unterSchluessel('projektordner', 'struktur.vorlagenname', 'name', '{PROJEKT_KUERZEL} {Name}', OHNE_STRUKTUR),
   },
   {
     id: 'vorlagen.permio.vorlagenordner',

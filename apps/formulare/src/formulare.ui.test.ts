@@ -474,7 +474,7 @@ describe('Formulare', () => {
     await projektOeffnen(host, 'BS9');
     await klick(host.querySelector<HTMLButtonElement>('.fo-eintrag-karte')!);
     const leiste = host.querySelector<HTMLElement>('.toolbar.werkzeugleiste')!;
-    expect([...leiste.querySelectorAll<HTMLElement>(':scope > [data-eintrag]')].filter((e) => !e.hidden).map((e) => e.dataset.eintrag)).toEqual(['karte-speichern', 'status', 'suchen']);
+    expect([...leiste.querySelectorAll<HTMLElement>(':scope > [data-eintrag]')].filter((e) => !e.hidden).map((e) => e.dataset.eintrag)).toEqual(['datei', 'karte-speichern', 'status', 'suchen']);
     expect(knopfGenau(leiste, 'Projektdaten speichern').classList.contains('ungespeichert')).toBe(false);
     // ohne Änderung: gesperrt, mit Grund; der Gefahr-Punkt steht hinter einem Trenner am Ende
     await klick(leistenMenue(host, 'Mehr'));
@@ -1015,9 +1015,9 @@ describe('Formulare', () => {
     // Umschalter Formular | Felder als .segment mit aria-pressed
     expect([...leiste.querySelectorAll('.segment button')].map((b) => `${b.textContent}:${b.getAttribute('aria-pressed')}`)).toEqual(['Formular:true', 'Felder:false']);
     // Menüs: Datei, Ansicht, Mehr – Inhalt und Reihenfolge
-    expect(await leistenMenueTexte(host, 'Datei')).toEqual(['Daten aktualisieren …', 'Speichern unter …', 'Drucken …']);
+    expect(await leistenMenueTexte(host, 'Datei')).toEqual(['Daten aktualisieren …', 'Speichern unter …', 'Drucken …', 'Einstellungen …']);
     expect(await leistenMenueTexte(host, 'Ansicht')).toEqual(['Gliederung', 'Verlauf der Eingaben']);
-    expect(await leistenMenueTexte(host, 'Mehr')).toEqual(['Formular einrichten', 'Manuelle Überschreibungen ignorieren', 'Einstellungen …']);
+    expect(await leistenMenueTexte(host, 'Mehr')).toEqual(['Formular einrichten', 'Manuelle Überschreibungen ignorieren', 'Einstellungen von PERMIO …']);
     // eine Eingabe: Speichern trägt den Punkt und sagt es im Namen
     eingabe(feld(host, 'Bauherrschaft', 1), 'Musterweg 7');
     await warte();
@@ -1049,7 +1049,7 @@ describe('Formulare', () => {
       await schmal(620);
       expect(sichtbar()).toEqual(['datei', 'speichern', 'umschalter', 'status', 'pdf']);
       // die übergelaufenen stehen oben im Menü „Mehr“, in ihrer Reihenfolge, vor den festen Punkten
-      expect(await leistenMenueTexte(host, 'Mehr')).toEqual(['Zoom', 'Ansicht', 'Suchen …', 'Formular einrichten', 'Manuelle Überschreibungen ignorieren', 'Einstellungen …']);
+      expect(await leistenMenueTexte(host, 'Mehr')).toEqual(['Zoom', 'Ansicht', 'Suchen …', 'Formular einrichten', 'Manuelle Überschreibungen ignorieren', 'Einstellungen von PERMIO …']);
     } finally {
       messen.mockRestore();
     }

@@ -18,7 +18,7 @@ import { tauriDateien } from './dateien';
 import { schreibend } from './schreiben';
 import type { AvaEinstellungen } from './einstellungen';
 import { einstellungenLaden, einstellungenSpeichern, VORGABE } from './einstellungen';
-import { konfigNeuLesen } from '@core/platform/konfig';
+import { konfigBeobachten, konfigNeuLesen } from '@core/platform/konfig';
 import { aslvLesen, aslvNeu, aslvSchreiben } from './format/aslv';
 import { eigenLesen, eigenSchreiben } from './format/eigen';
 import type { Lv } from './lv/modell';
@@ -320,3 +320,5 @@ export const gewerkOrdner = (p: OffenesProjekt | null, kennung: string) => p?.st
 // Speicherort der Einstellungen gewechselt (auch in einem anderen Fenster) bzw. Netzlaufwerk weg oder wieder da: neu
 // lesen – sonst schriebe das nächste Speichern den alten Stand über die Einstellungen am neuen Ort
 konfigNeuLesen(() => void useAva.getState().einstellungenLaden());
+// Ablage, Rechnungsmuster und LV-Namen stellen die zentralen Einstellungen ein – nach einer Änderung neu lesen
+konfigBeobachten('ava', () => void useAva.getState().einstellungenLaden());

@@ -2,7 +2,8 @@ import { useMemo } from 'react';
 import type { ProjectMeta } from '@core/model';
 import { BreitenLeiste } from '@core/ui/Leiste';
 import { StammdatenKnopf } from '@core/ui/Stammdaten';
-import { Symbol } from '@core/ui/Symbol';
+import { MenueKnopf } from '@core/ui/Menue';
+import { einstellungenPunkt } from '@core/ui/Einstellungen';
 import { alleGewerke } from '../abrechnung/aggregat';
 import { gewerkZweistellig } from '../abrechnung/gewerk';
 import type { Ansicht } from '../store';
@@ -93,9 +94,16 @@ export function Navigation({ onStammdaten }: { onStammdaten: (meta: ProjectMeta,
           {eintrag({ art: 'mails' }, 'Mailverlauf', 'Mails aus den Korrespondenzordnern')}
         </ul>
         <div className="ava-nav-fuss">
-          <button onClick={() => useAva.getState().setEinstellungenOffen(true)} title="Ablage, Benennung, Prüfung, Deckblatt, Scanordner, Mailvorlagen (Strg+,)">
-            <Symbol name="zahnrad" /> Einstellungen …
-          </button>
+          {/* „Datei“ (docs/design.md): FABRIO hat keine durchgehende Werkzeugleiste – das Menü steht im Fuß der Navigation */}
+          <MenueKnopf
+            punkte={() => [
+              { text: 'Einstellungen von FABRIO …', titel: 'Prüfung, Rechnungsarten, Deckblatt, Scanordner, Mailvorlagen', aktion: () => useAva.getState().setEinstellungenOffen(true) },
+              { trenner: true },
+              einstellungenPunkt(),
+            ]}
+          >
+            Datei
+          </MenueKnopf>
         </div>
       </nav>
     </BreitenLeiste>

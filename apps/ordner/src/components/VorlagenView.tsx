@@ -8,6 +8,7 @@ import { Symbol } from '@core/ui/Symbol';
 import { hatDateisystem, SpeicherDateisystem, tauriDateisystem, waehleOrdner } from '../dateisystem';
 import { nummerAus, PLATZHALTER_VORLAGE } from '../nummer';
 import { SchemaFeld } from './SchemaFeld';
+import { PfadeVerweis } from '@core/ui/Einstellungen';
 import { kurzeWerte, nichtVorausgewaehlt, presetPruefen, vorlagenDateien, zuordnungAufloesen } from '../plan';
 import { bereinigt } from '../stammdaten';
 import { useOrdner } from '../store';
@@ -239,19 +240,10 @@ export function VorlagenView() {
             einem Zielordner der Struktur zuordnen.
           </p>
         ))}
-        <fieldset className="po-sperre" disabled={gesperrt} title={grund}>
-          <Field label="Dateinamen im Projekt" hint="{Name} = Name der Vorlage ohne Endung. Vorlagen mit Platzhaltern im eigenen Namen behalten ihn.">
-            <SchemaFeld
-              label="Dateinamen im Projekt"
-              value={struktur.vorlagenname}
-              placeholder="{Name}"
-              platzhalter={PLATZHALTER_VORLAGE}
-              kompakt
-              vorschau={(t) => `Beispiel: Kostenschätzung.xlsx → ${schemaBeispiel(t)}`}
-              onChange={(v) => setStruktur({ ...struktur, vorlagenname: v.trim() || '{Name}' })}
-            />
-          </Field>
-        </fieldset>
+        <p className="small-text">
+          Dateinamen im Projekt: <code>{struktur.vorlagenname}</code> <span className="muted">– z. B. Kostenschätzung.xlsx → {schemaBeispiel(struktur.vorlagenname)}</span>
+        </p>
+        <PfadeVerweis fokus="vorlagen.vorlagenname" erklaerung="Eingestellt in den Einstellungen aller Apps, Seite „Pfade und Benennung“. {Name} = Name der Vorlage ohne Endung." />
 
         <h3>Muster und Platzhalter</h3>
         <div className="button-row">

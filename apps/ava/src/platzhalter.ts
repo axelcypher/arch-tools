@@ -8,7 +8,7 @@
 
 import type { ProjectMeta } from '@core/model';
 import { FABRIO_FIRMA, FABRIO_GEWERK, FABRIO_LV, FABRIO_RECHNUNG, GLOBAL_FABRIO } from '@core/einstellungen/variablen';
-import { ersetzen, globaleWerte, GLOBALE_VARIABLEN, mitAliasen, type Variable, type Wert } from '@core/platzhalter';
+import { ersetzen, globaleWerte, type Variable, type Wert } from '@core/platzhalter';
 
 /** globale Variablen mit den alten Namen von FABRIO; Rechnungs- und LV-Namen – eine Quelle in core (zentrale Einstellungen) */
 const GLOBAL: Variable[] = GLOBAL_FABRIO;

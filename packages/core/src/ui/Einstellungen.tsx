@@ -316,7 +316,14 @@ interface Buero {
   mitarbeiter: string;
 }
 const bueroStore = create<{ gespeichert: Buero | null; entwurf: Buero | null }>(() => ({ gespeichert: null, entwurf: null }));
-const mitarbeiterAus = (t: string) => [...new Set(t.split(/[,;\n]/).map((x) => x.trim()).filter(Boolean))];
+const mitarbeiterAus = (t: string) => [
+  ...new Set(
+    t
+      .split(/[,;\n]/)
+      .map((x) => x.trim())
+      .filter(Boolean),
+  ),
+];
 
 const bueroEntwurf: SeitenEntwurf = {
   geaendert: () => {
@@ -347,6 +354,13 @@ function SeiteAllgemein() {
     };
   }, []);
   const wert = entwurf ?? gespeichert;
+  // Erstfokus (docs/design.md): das erste Feld der Seite – es ist erst nach dem Lesen bedienbar
+  const erstesFeld = useRef<HTMLInputElement>(null);
+  const geladen = !!gespeichert;
+  useEffect(() => {
+    const aktiv = document.activeElement;
+    if (geladen && (!aktiv || aktiv === document.body || aktiv.classList.contains('modal'))) erstesFeld.current?.focus();
+  }, [geladen]);
   const setze = (patch: Partial<Buero>) => {
     if (!wert) return;
     bueroStore.setState({ entwurf: { ...wert, ...patch } });
@@ -365,7 +379,7 @@ function SeiteAllgemein() {
         <h4 id="einst-buero">Büro</h4>
         <label className="field">
           <span className="field-label">Name des Büros</span>
-          <input value={wert?.buero ?? ''} disabled={!wert || !!gesperrt} title={gesperrt ?? undefined} onChange={(e) => setze({ buero: e.target.value })} />
+          <input ref={erstesFeld} value={wert?.buero ?? ''} disabled={!wert || !!gesperrt} title={gesperrt ?? undefined} onChange={(e) => setze({ buero: e.target.value })} />
           <span className="field-hint">Im Kopf der Ausdrucke und Excel-Dateien; leer = ohne.</span>
         </label>
         <label className="field">
@@ -447,7 +461,12 @@ export function pfadVorschau(e: PfadEinstellung, wert: string, datum = new Date(
   const ersetzt = e.variablen ? ersetzen(wert, e.variablen, werte, { saeubern: sichererDateiname }) : wert;
   if (e.art === 'ordner') return ersetzt;
   const pfad = e.art === 'pfad' || (e.art === 'liste' && e.zeilen === 'pfad');
-  const teile = pfad ? ersetzt.split(/[\\/]+/).map(sichererDateiname).filter(Boolean) : [sichererDateiname(ersetzt)];
+  const teile = pfad
+    ? ersetzt
+        .split(/[\\/]+/)
+        .map(sichererDateiname)
+        .filter(Boolean)
+    : [sichererDateiname(ersetzt)];
   const text = teile.join(pfad ? ' / ' : '');
   return text ? `${text}${e.endung ?? ''}` : '';
 }
@@ -499,8 +518,8 @@ function SeitePfade({ fokus }: { fokus?: string }) {
     <>
       <h2>Pfade und Benennung</h2>
       <p className="einst-einleitung">
-        Alle Pfadvorgaben und Benennungsschemata der Apps an einer Stelle. Pfade gelten relativ zum Projektordner. Platzhalter wie <code>{'{PROJEKT_KUERZEL}'}</code> setzen die Angaben des
-        Projekts ein; die Vorschau zeigt Beispielwerte.
+        Alle Pfadvorgaben und Benennungsschemata der Apps an einer Stelle. Pfade gelten relativ zum Projektordner. Platzhalter wie <code>{'{PROJEKT_KUERZEL}'}</code> setzen die Angaben des Projekts
+        ein; die Vorschau zeigt Beispielwerte.
       </p>
       {abweichungen.map((a) => {
         const e = pfadEinstellung(a.id);
@@ -629,7 +648,21 @@ function PfadFeld({ e, werte }: { e: PfadEinstellung; werte: PfadWerte }) {
 }
 
 /** Textfeld einer Einstellung: jede Eingabe geht in den Entwurf; Fehler stehen am Feld und sperren „Übernehmen“ */
-function TextEinstellung({ e, feldId, hinweisId, text, gesperrt, onText }: { e: PfadEinstellung; feldId: string; hinweisId: string; text: string; gesperrt: string | null; onText: (t: string) => void }) {
+function TextEinstellung({
+  e,
+  feldId,
+  hinweisId,
+  text,
+  gesperrt,
+  onText,
+}: {
+  e: PfadEinstellung;
+  feldId: string;
+  hinweisId: string;
+  text: string;
+  gesperrt: string | null;
+  onText: (t: string) => void;
+}) {
   const feld = useRef<HTMLInputElement & HTMLTextAreaElement>(null);
   const textRef = useRef(text);
   textRef.current = text;

@@ -71,6 +71,6 @@ describe('Kopf (Web-Version)', () => {
     });
     expect(ohne.querySelector('.br-kopf > [data-eintrag="modul-marken"]')?.textContent ?? '').toBe('');
     expect(eintraege(ohne)).not.toContain('modul-marken');
-    expect(eintraege(ohne)).toEqual(['speichern', 'antrag', 'einreichung', 'module', 'rechtsstand', 'protokoll']);
+    expect(eintraege(ohne)).toEqual(['datei', 'speichern', 'antrag', 'einreichung', 'module', 'rechtsstand', 'protokoll']);
   });
 });

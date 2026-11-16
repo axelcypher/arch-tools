@@ -65,6 +65,8 @@ export interface PfadEinstellung {
   beispiel?: Record<string, Wert>;
   /** Endung, die die App anhängt (nur Anzeige in der Vorschau), z. B. „.xlsx“ */
   endung?: string;
+  /** weitere Hinweise zum Wert (blockieren nichts), z. B. was eine App für den Namen verlangt */
+  hinweise?: (wert: string) => string[];
   /** bei Listen: was je Zeile steht (Vorgabe: ein Name) */
   zeilen?: 'name' | 'pfad';
   /** darf nicht leer sein */
@@ -84,7 +86,13 @@ const objekt = (v: unknown): Record<string, unknown> => (v && typeof v === 'obje
 /** Wert lesen: Text (getrimmt), Liste (Texte) bzw. ja/nein; `leerGilt`: ein leerer Text ist ein Wert (bisherige Schlüssel) */
 function wertAus(v: unknown, art: PfadArt, leerGilt = false): PfadWert | undefined {
   if (art === 'schalter') return typeof v === 'boolean' ? v : undefined;
-  if (art === 'liste') return Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string').map((x) => x.trim()).filter(Boolean) : undefined;
+  if (art === 'liste')
+    return Array.isArray(v)
+      ? v
+          .filter((x): x is string => typeof x === 'string')
+          .map((x) => x.trim())
+          .filter(Boolean)
+      : undefined;
   if (typeof v !== 'string') return undefined;
   return v.trim() || leerGilt ? v.trim() : undefined;
 }
@@ -103,10 +111,21 @@ export function inPfade(id: string, art: PfadArt): PfadSpeicher {
   };
 }
 
-/** Rohdaten mit `wert` unter dem Schlüsselpfad (Teile mit Punkten); übrige Angaben bleiben */
-export function mitSchluessel(roh: Record<string, unknown>, schluessel: string, wert: unknown): Record<string, unknown> {
+/**
+ * Rohdaten mit `wert` unter dem Schlüsselpfad (Teile mit Punkten); übrige Angaben bleiben. `elternNoetig`: Fehlt das
+ * Objekt über dem Schlüssel oder ist es keins, wird nichts geschrieben, sondern dieser Fehler gemeldet (etwa die
+ * Struktur von ATLAS, die nur ATLAS selbst vollständig anlegt). Ein Zwischenteil, das kein Objekt ist, wird nie
+ * überschrieben.
+ */
+export function mitSchluessel(roh: Record<string, unknown>, schluessel: string, wert: unknown, elternNoetig?: string): Record<string, unknown> {
   const teile = schluessel.split('.');
-  const setzen = (o: Record<string, unknown>, i: number): Record<string, unknown> => ({ ...o, [teile[i]]: i === teile.length - 1 ? wert : setzen(objekt(o[teile[i]]), i + 1) });
+  const setzen = (o: Record<string, unknown>, i: number): Record<string, unknown> => {
+    if (i === teile.length - 1) return { ...o, [teile[i]]: wert };
+    const kind = o[teile[i]];
+    const istObjekt = !!kind && typeof kind === 'object' && !Array.isArray(kind);
+    if (!istObjekt && (kind !== undefined || elternNoetig)) throw new Error(elternNoetig ?? `„${teile.slice(0, i + 1).join('.')}“ ist nicht lesbar – nichts geändert.`);
+    return { ...o, [teile[i]]: setzen(objekt(kind), i + 1) };
+  };
   return setzen(roh, 0);
 }
 
@@ -115,12 +134,17 @@ export function mitSchluessel(roh: Record<string, unknown>, schluessel: string, 
  * dort unverändert weiter. „Vorgabe wiederherstellen“ schreibt die Vorgabe ausdrücklich hinein: Manche Apps übernehmen
  * einen fehlenden Wert sonst aus ihrem eigenen Speicher zurück.
  */
-export function unterSchluessel(bereich: string, schluessel: string, art: PfadArt, vorgabe: PfadWert): PfadSpeicher {
+export function unterSchluessel(bereich: string, schluessel: string, art: PfadArt, vorgabe: PfadWert, elternNoetig?: string): PfadSpeicher {
   const teile = schluessel.split('.');
   return {
     bereich,
-    lesen: (roh) => wertAus(teile.reduce<unknown>((o, t) => objekt(o)[t], roh), art, true),
-    schreiben: (roh, wert) => mitSchluessel(roh, schluessel, wert === undefined ? vorgabe : wert),
+    lesen: (roh) =>
+      wertAus(
+        teile.reduce<unknown>((o, t) => objekt(o)[t], roh),
+        art,
+        true,
+      ),
+    schreiben: (roh, wert) => mitSchluessel(roh, schluessel, wert === undefined ? vorgabe : wert, elternNoetig),
   };
 }
 
@@ -152,7 +176,10 @@ export function pfadPruefen(e: PfadEinstellung, wert: string): PfadMeldung[] {
   const v = wert.trim();
   if (e.art === 'schalter') return out;
   if (e.art === 'liste') {
-    const zeilen = v.split('\n').map((z) => z.trim()).filter(Boolean);
+    const zeilen = v
+      .split('\n')
+      .map((z) => z.trim())
+      .filter(Boolean);
     if (!zeilen.length && e.pflicht) out.push({ art: 'fehler', text: 'Mindestens eine Zeile angeben. Mit „Vorgabe wiederherstellen“ zurück zur Vorgabe.' });
     const einzel: PfadEinstellung = { ...e, art: e.zeilen ?? 'name', pflicht: false };
     for (const m of zeilen.flatMap((z) => pfadPruefen(einzel, z))) if (!out.some((x) => x.text === m.text)) out.push(m);
@@ -181,6 +208,7 @@ export function pfadPruefen(e: PfadEinstellung, wert: string): PfadMeldung[] {
     if (zeichen.length) out.push({ art: 'fehler', text: `Nicht erlaubt im Dateinamen: ${zeichen.join(' ')}` });
     if (RESERVIERT.test(rein)) out.push({ art: 'fehler', text: `Unter Windows reservierter Name: ${v}` });
   }
+  for (const h of e.hinweise?.(v) ?? []) out.push({ art: 'hinweis', text: h });
   const fremd = e.variablen ? unbekanntePlatzhalter(v, e.variablen) : [];
   if (fremd.length) out.push({ art: 'hinweis', text: `Unbekannter Platzhalter, bleibt so stehen: ${fremd.join(', ')}` });
   return out;
