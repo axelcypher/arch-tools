@@ -241,6 +241,26 @@ export function App() {
         ]
       : []),
     ...(formularSichtbar && offen.projekt ? [{ text: 'Speichern unter …', symbol: 'datei' as const, aktion: () => void useAntrag.getState().speichernUnter(offen.pfad) }] : []),
+    // Ausgaben mit Dialog stehen in jeder App unter „Datei → Exportieren“ – auch wenn dieselbe Ausgabe der Hauptknopf ist
+    // (bewusste Ausnahme von „Doppelte Einstiege vermeiden“, design.md „Kopf- und Werkzeugleisten“): „PDF …“ öffnet
+    // denselben Dialog wie „Als PDF exportieren …“; Strg+E bleibt am Hauptknopf und steht hier zusätzlich
+    ...(formularSichtbar && offen.projekt
+      ? [
+          {
+            text: 'Exportieren',
+            symbol: 'export' as const,
+            unter: [
+              {
+                text: 'PDF …',
+                symbol: 'formular' as const,
+                tasten: 'Strg+E',
+                titel: 'Als PDF in den Antragsordner oder anderswo ins Projekt speichern',
+                aktion: () => useExportDialog.getState().oeffnen(offen.pfad),
+              },
+            ],
+          },
+        ]
+      : []),
     ...(formularSichtbar ? [{ text: 'Drucken …', symbol: 'drucken' as const, tasten: 'Strg+P', aktion: () => void drucken() }] : []),
   ];
   // nur „Formular öffnen …“ (Web-Version ohne Formular): als eigener Knopf sichtbar, nicht zusätzlich im Menü

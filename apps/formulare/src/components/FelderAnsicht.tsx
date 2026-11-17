@@ -17,7 +17,7 @@ import type { Plausi } from '../plausibel';
 import { useVorbelegt } from '../merkmalAbgleich';
 import { springeZuFeld } from '../navigation';
 import { anzahl } from '../text';
-import { Karte } from '@core/ui/Karte';
+import { Karte, useRollendKopf } from '@core/ui/Karte';
 
 const FILTER: { id: FeldFilter; label: string; title: string }[] = [
   { id: 'alle', label: 'Alle', title: 'Alle Felder' },
@@ -35,6 +35,10 @@ export function FelderAnsicht({ offen, gesperrt }: { offen: OffenesFormular; ges
   const markierung = useMarkierung((s) => s.markierung);
   const markiert = useMemo(() => new Set(markierung?.felder), [markierung]);
   const huelle = useRef<HTMLDivElement>(null);
+  // fester Kopf der rollenden Spalte (core): er bricht abhängig vom Inhalt um (Filter mit Zahlen wie „Offene (2) ·
+  // 1 ungeklärt“, Trefferzahl) – useRollendKopf misst ihn, damit fokussierte Felder nicht darunter rollen
+  const kopf = useRef<HTMLDivElement>(null);
+  useRollendKopf(kopf);
   const roh = useProfil(profilSchluessel(offen.formular, offen.name));
   const profil = useMemo(() => ({ ...leeresProfil(), ...roh }), [roh]);
   const entfall = useEntfallen(offen);
@@ -113,18 +117,19 @@ export function FelderAnsicht({ offen, gesperrt }: { offen: OffenesFormular; ges
 
   return (
     <div className="fo-felder" ref={huelle} onKeyDown={(e) => hinweisPerF1(e) || tasten(e)}>
-      <div className="fo-felder-kopf">
+      <div className="fo-felder-kopf rollend-kopf" role="search" aria-label="Felder suchen und filtern" ref={kopf}>
         <input
           type="search"
           className="fo-feldsuche"
-          placeholder="Felder durchsuchen (Beschriftung oder Inhalt) …"
+          placeholder="Felder durchsuchen …"
+          title="Sucht in der Beschriftung und im Inhalt der Felder"
           aria-label="Felder durchsuchen"
           value={suche}
           onChange={(e) => setSuche(e.target.value)}
         />
-        <div className="tb-group">
+        <div className="segment" role="group" aria-label="Filter">
           {FILTER.map((f) => (
-            <button key={f.id} className={filter === f.id ? 'active' : ''} title={f.title} onClick={() => setFilter(f.id)}>
+            <button key={f.id} aria-pressed={filter === f.id} title={f.title} onClick={() => setFilter(f.id)}>
               {f.label}
               {f.id === 'offen' && ` (${gesamt.offen})${gesamt.ungeklaert ? ` · ${gesamt.ungeklaert} ungeklärt` : ''}`}
             </button>
@@ -133,7 +138,10 @@ export function FelderAnsicht({ offen, gesperrt }: { offen: OffenesFormular; ges
         <button className="small" title="Zur nächsten offenen Angabe springen (F8)" disabled={!liste.length} onClick={() => zurNaechstenOffenen()}>
           Nächste offene Angabe
         </button>
-        {eingeschraenkt && filter !== 'offen' && <span className="muted small-text fo-treffer">{treffer === 1 ? '1 Treffer' : `${treffer} Treffer`}</span>}
+        {/* Trefferzahl beim Tippen ansagen: die Live-Region steht immer, ihr Text nur bei Suche */}
+        <span className="muted small-text fo-treffer" aria-live="polite">
+          {eingeschraenkt && filter !== 'offen' ? (treffer === 1 ? '1 Treffer' : `${treffer} Treffer`) : ''}
+        </span>
       </div>
       {filter === 'offen' && (
         <Karte

@@ -24,6 +24,120 @@ describe('Dialoge', () => {
     expect(document.activeElement).toBe(knopf);
   });
 
+  it('geben den Fokus auch an eine SVG-Zeichenfläche zurück und beim Aushängen ohne Esc', async () => {
+    dialogVerhaltenEinrichten();
+    document.body.innerHTML = '<svg class="canvas" tabindex="0"></svg>';
+    const flaeche = document.querySelector<SVGElement>('svg.canvas')!;
+    flaeche.focus();
+    expect(document.activeElement).toBe(flaeche);
+    const hinter = document.createElement('div');
+    hinter.className = 'modal-backdrop';
+    hinter.innerHTML = '<div class="modal"><button id="ok">OK</button></div>';
+    document.body.appendChild(hinter);
+    await warten();
+    expect(document.activeElement?.id).toBe('ok');
+    hinter.remove();
+    await warten();
+    expect(document.activeElement).toBe(flaeche);
+  });
+
+  it('wurde der auslösende Knopf ersetzt, geht der Fokus an den Ersatz im selben Bereich statt auf body', async () => {
+    dialogVerhaltenEinrichten();
+    document.body.innerHTML = '<footer class="karte-fuss"><span class="zeile"><button id="alt">?</button></span></footer>';
+    document.getElementById('alt')!.focus();
+    const hinter = document.createElement('div');
+    hinter.className = 'modal-backdrop';
+    hinter.innerHTML = '<div class="modal"><button id="ok">OK</button></div>';
+    document.body.appendChild(hinter);
+    await warten();
+    // die App rendert die Zeile neu: der alte Knopf ist weg, ein neuer steht an seiner Stelle
+    document.querySelector('.karte-fuss')!.innerHTML = '<span class="zeile"><button id="neu">? Tastenkürzel …</button></span>';
+    hinter.remove();
+    await warten();
+    expect(document.activeElement?.id).toBe('neu');
+  });
+
+  const oeffnen = async (html = '<button id="ok">OK</button>') => {
+    const hinter = document.createElement('div');
+    hinter.className = 'modal-backdrop';
+    hinter.innerHTML = `<div class="modal">${html}</div>`;
+    document.body.appendChild(hinter);
+    await warten();
+    return hinter;
+  };
+
+  it('ersetzt: das Gegenstück (gleiche Beschriftung) unter mehreren Knöpfen, nicht der erste', async () => {
+    dialogVerhaltenEinrichten();
+    document.body.innerHTML = '<div class="toolbar"><button>Neu</button><button aria-label="Alle Tastenkürzel …" id="alt">?</button><button>Mehr</button></div>';
+    document.getElementById('alt')!.focus();
+    const hinter = await oeffnen();
+    document.querySelector('.toolbar')!.innerHTML = '<button>Neu</button><button>Hilfe</button><button aria-label="Alle Tastenkürzel …" id="neu">?</button>';
+    hinter.remove();
+    await warten();
+    expect(document.activeElement?.id).toBe('neu');
+  });
+
+  it('ersetzt: sucht nur im nahen Bereich – kein Sprung an den Anfang der App', async () => {
+    dialogVerhaltenEinrichten();
+    document.body.innerHTML = '<div id="root"><button id="titel">Menü</button><div class="karte"><div><span><button id="alt">?</button></span></div></div></div>';
+    document.getElementById('alt')!.focus();
+    const hinter = await oeffnen();
+    // die ganze Karte wird neu aufgebaut – der nächste vorhandene Vorfahr wäre #root
+    document.querySelector('.karte')!.remove();
+    hinter.remove();
+    await warten();
+    expect(document.activeElement).toBe(document.body);
+  });
+
+  it('ersetzt: überspringt versteckte und ausgeblendete Ziele, nimmt auch eine neue SVG-Zeichenfläche', async () => {
+    dialogVerhaltenEinrichten();
+    document.body.innerHTML = '<div class="karte"><svg class="canvas" tabindex="0" id="alt"></svg></div>';
+    document.querySelector<SVGElement>('#alt')!.focus();
+    const hinter = await oeffnen();
+    document.querySelector('.karte')!.innerHTML = '<input type="hidden" name="x"><button hidden>weg</button><svg class="canvas" tabindex="0" id="neu"></svg>';
+    hinter.remove();
+    await warten();
+    expect(document.activeElement?.id).toBe('neu');
+  });
+
+  it('ersetzt: bei gleich beschrifteten Knöpfen (mehrere „Löschen“) der an der alten Stelle', async () => {
+    dialogVerhaltenEinrichten();
+    document.body.innerHTML = '<div class="karte"><button>Löschen</button><button>Löschen</button><button id="alt">Löschen</button></div>';
+    document.getElementById('alt')!.focus();
+    const hinter = await oeffnen();
+    document.querySelector('.karte')!.innerHTML = '<button>Löschen</button><button>Löschen</button><button id="neu">Löschen</button>';
+    hinter.remove();
+    await warten();
+    expect(document.activeElement?.id).toBe('neu');
+  });
+
+  it('ersetzt: ohne Bereich in drei Ebenen nur das Gegenstück, nie das erste Element', async () => {
+    dialogVerhaltenEinrichten();
+    document.body.innerHTML = '<div id="root"><div><div><button id="menue">Menü</button><span><button id="alt">X</button></span></div></div></div>';
+    document.getElementById('alt')!.focus();
+    const hinter = await oeffnen();
+    document.querySelector('#root span')!.remove();
+    hinter.remove();
+    await warten();
+    expect(document.activeElement).toBe(document.body);
+  });
+
+  it('äußerer und innerer Dialog in einem Schritt ausgehängt: der Fokus bleibt beim Auslöser des äußeren', async () => {
+    dialogVerhaltenEinrichten();
+    document.body.innerHTML = '<div class="toolbar"><button id="ausloeser">Öffnen</button><button>Anderes</button></div>';
+    document.getElementById('ausloeser')!.focus();
+    const aussen = await oeffnen('<button id="innen-ausloeser">Weiter</button>');
+    document.getElementById('innen-ausloeser')!.focus();
+    const innen = document.createElement('div');
+    innen.className = 'modal-backdrop';
+    innen.innerHTML = '<div class="modal"><button id="ok2">OK</button></div>';
+    aussen.querySelector('.modal')!.appendChild(innen);
+    await warten();
+    aussen.remove();
+    await warten();
+    expect(document.activeElement?.id).toBe('ausloeser');
+  });
+
   it('verschachtelt: schließt der innere, geht der Fokus zurück an die Stelle im äußeren (Dialog bzw. Druckvorschau)', async () => {
     dialogVerhaltenEinrichten();
     for (const aussen of [
