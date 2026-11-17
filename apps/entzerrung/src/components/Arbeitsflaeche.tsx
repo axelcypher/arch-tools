@@ -345,7 +345,7 @@ export function Arbeitsflaeche({ ablegen = false }: { ablegen?: boolean } = {}) 
     entwurfOverlay(elemente, abb, entwurf, maus && !ziehen.current ? punktAus(maus, entwurf[entwurf.length - 1] ?? null) : null, werkzeug, ansicht === 'entzerrt' && entz ? (p) => zuEbene(entz, p) : null);
   }
 
-  // Statuszeile
+  // Fußzeile der Zeichenkarte: Koordinaten
   let status = '';
   if (maus && abb && foto) {
     if (ansicht === 'entzerrt' && entz && abb.schirmZuEbene) {
@@ -363,17 +363,16 @@ export function Arbeitsflaeche({ ablegen = false }: { ablegen?: boolean } = {}) 
   return (
     <ZeichenKarte
       ariaLabel="Zeichenfläche"
+      // die Fußzeile steht immer (auch leer): sonst änderte sich die Höhe der Fläche mit Maus und Werkzeug
       fuss={
-        foto && (status || hinweis) ? (
-          <>
-            {hinweis && (
-              <span className="ef-hinweis-text" title={hinweis}>
-                {hinweis}
-              </span>
-            )}
-            {status && <span className="ef-koord">{status}</span>}
-          </>
-        ) : undefined
+        <>
+          {foto && hinweis && (
+            <span className="ef-hinweis-text" title={hinweis}>
+              {hinweis}
+            </span>
+          )}
+          {foto && status && <span className="ef-koord">{status}</span>}
+        </>
       }
     >
       <div className="ef-flaeche" ref={huelle}>

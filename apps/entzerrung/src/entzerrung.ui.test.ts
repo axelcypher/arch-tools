@@ -374,5 +374,18 @@ describe('RECTIO (Entzerrung)', () => {
     act(() => useEntz.getState().setze({ werkzeug: 'ecken' }));
     expect(zeichen.querySelector('.zeichen-fuss .ef-hinweis-text')?.textContent).toBeTruthy();
     expect(host.querySelector('.ef-status')).toBeNull();
+    // im Werkzeug „Auswahl“ ohne Hinweis und ohne Maus steht die Fußzeile trotzdem (gleichbleibende Höhe)
+    act(() => useEntz.getState().setze({ werkzeug: 'auswahl' }));
+    expect(zeichen.querySelector('.zeichen-fuss')).not.toBeNull();
+    expect(zeichen.querySelector('.zeichen-fuss .ef-hinweis-text')).toBeNull();
+  });
+
+  it('Datei über dem Fenster: Ablegen-Hinweis in der Zeichenkarte', () => {
+    const host = render();
+    const app = host.querySelector('.app')!;
+    const ziehen = new Event('dragover', { bubbles: true, cancelable: true });
+    Object.defineProperty(ziehen, 'dataTransfer', { value: { types: ['Files'] } });
+    act(() => void app.dispatchEvent(ziehen));
+    expect(host.querySelector('section.zeichen-karte .ef-ablegen')?.textContent).toContain('hier ablegen');
   });
 });
