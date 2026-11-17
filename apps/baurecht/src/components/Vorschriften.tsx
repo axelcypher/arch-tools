@@ -6,7 +6,7 @@ import { EBENEN, einheitName, normTitel, paragrafName, THEMEN } from '@core/baur
 import type { Pruefstand } from '../pruefung';
 import { useBaurecht } from '../store';
 import { suchNorm, textPasst } from '../suche';
-import { Karte } from '@core/ui/Karte';
+import { FlaechenSpalte, Karte } from '@core/ui/Karte';
 import { AMPEL_TEXT, AmpelMarke, datum, inBereichZeigen, nb, scrollBereich, STATUSPUNKT } from './Ampel';
 
 type Gruppierung = 'offen' | 'ebene' | 'thema';
@@ -465,9 +465,8 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
   };
 
   return (
-    // die Mitte der Fläche: Ergebnis (Bilanz und Filter) über der Liste der Vorschriften. Eine wachsende Spalte der Fläche
-    // (Klassen wie `FlaechenSpalte`), aber als <main> – der Hauptbereich der App für Vorleseprogramme
-    <main className="flaechen-spalte wachsend br-vorschriften" aria-label="Prüfung">
+    // die Mitte der Fläche: Ergebnis (Bilanz und Filter) über der Liste der Vorschriften – der Hauptbereich der App
+    <FlaechenSpalte als="main" ariaLabel="Prüfung" wachsend className="br-vorschriften">
       <Karte titel="Ergebnis" className="br-ergebnis" hoehe="inhalt">
         <div className="br-filter" role="group" aria-label="Ampeln und Filter">
           <div className="br-filter-zeile">
@@ -639,6 +638,6 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
           {!gruppen.length && <p className="br-leer">Keine Vorschriften – das Regelpaket enthält für diese Lage noch kein Modul.</p>}
         </div>
       </Karte>
-    </main>
+    </FlaechenSpalte>
   );
 }

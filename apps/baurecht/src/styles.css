@@ -1089,42 +1089,6 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
   font-weight: 600;
 }
 
-/* Start */
-.br-start {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--s5);
-  overflow: auto;
-}
-.br-start-karte {
-  /* wie eine Karte der Fläche: weicher Schatten statt Rahmen */
-  max-width: 560px;
-  background: var(--panel);
-  border-radius: var(--radius);
-  box-shadow: var(--karte-schatten);
-  padding: var(--s5) var(--s6);
-}
-.br-start-karte h1 {
-  margin: 0;
-  font-size: var(--fs-xl);
-}
-/* wofür die App da ist – unter dem Namen (wie Startseite und Tooltips der Rahmen-App) */
-.br-start-karte p.br-start-was {
-  margin: var(--s1) 0 var(--s2);
-  color: var(--muted);
-  font-size: var(--fs-m);
-}
-.br-start-karte p {
-  line-height: 1.5;
-}
-.br-start-knoepfe {
-  display: flex;
-  gap: var(--s2);
-  margin: var(--s4) 0 var(--s2);
-}
-
 /* Protokoll */
 .br-protokoll h3 {
   font-size: var(--fs-m);

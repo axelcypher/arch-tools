@@ -1,12 +1,5 @@
 /* FABRIO – Ausschreibung, Vergabe, Abrechnung, Bauleitung. Farben nur über die Variablen aus base.css (hell/dunkel). */
 
-.ava-leer {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
 .ava-busy {
   position: fixed;
   bottom: 14px;

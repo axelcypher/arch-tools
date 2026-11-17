@@ -7,7 +7,7 @@ import type { ExportDialogStart } from '@core/excel/direktExport';
 import { exportAuftrag } from './export/direktExport';
 import { einstellungenPunkt } from '@core/ui/Einstellungen';
 import { speichernAbwarten } from '@core/platform/projektDatei';
-import { APP_NAMEN } from '@core/appNamen';
+import { APP_NAMEN, appMitWas } from '@core/appNamen';
 import { dialogOffen, eingabeAbschliessen, istEingabeZiel } from '@core/platform/eingabe';
 import { useEffect, useState } from 'react';
 import { isTauri } from '@core/platform/files';
@@ -333,8 +333,8 @@ export function App() {
         )}
         {einstieg ? (
           <ProjektEinstieg
-            titel="Kostenermittlung nach DIN 276"
-            text={'Projekt oder IFC öffnen: ein Projekt aus QUADRIO (Flächenrechner, .oap) oder direkt ein IFC-Modell. BGF, BRI, Nutzungs- und Wohnflächen sowie grobe Bauteilmengen kommen aus dem Projekt; Kennwerte, Positionen und festgehaltene Stände pflegt NUMIO. Ohne Gebäudemodell lassen sich die Mengen auch von Hand eintragen („Neues Projekt“).'}
+            app="kosten"
+            text={`Kosten nach DIN 276 aus einem Projekt von ${appMitWas('flaechenrechner')} oder einem IFC-Modell – oder mit Mengen von Hand („Neues Projekt“).`}
             onProjekte={isTauri() ? () => setProjekteOffen(true) : undefined}
             onDateiOeffnen={() => void onOpen()}
             dateiHinweis="Projektdatei (.oap) oder IFC-Modell"

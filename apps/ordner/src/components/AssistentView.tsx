@@ -9,6 +9,7 @@ import { saveBinaryFile } from '@core/platform/files';
 import { logger } from '@core/platform/log';
 import { anRahmen, ZUR_APP } from '@core/platform/rahmen';
 import { StammdatenFelder } from '@core/ui/Stammdaten';
+import { Flaeche, Karte } from '@core/ui/Karte';
 import { Symbol } from '@core/ui/Symbol';
 import type { Dateisystem } from '../dateisystem';
 import { hatDateisystem, SpeicherDateisystem, tauriDateisystem, verbinde, waehleOrdner, waehleOrdnerImBrowser } from '../dateisystem';
@@ -42,7 +43,11 @@ const SCHRITTE: { id: SchrittId; label: string }[] = [
 
 /** Desktop: Projektordner einlesen (`fs` ersetzt das Dateisystem des Desktops, etwa in Tests) */
 export async function ladeProjektordner(pfad: string, fs: Dateisystem = tauriDateisystem): Promise<GeladenerOrdner> {
-  const name = pfad.replace(/[\\/]+$/, '').split(/[\\/]/).pop() ?? pfad;
+  const name =
+    pfad
+      .replace(/[\\/]+$/, '')
+      .split(/[\\/]/)
+      .pop() ?? pfad;
   return { pfad, name, eintraege: await fs.liste(pfad, 12), lies: (p) => fs.lies(pfad, p) };
 }
 
@@ -147,7 +152,7 @@ export function AssistentView({
   const weiterKnopf = useRef<HTMLButtonElement>(null);
   /** besuchte Schritte – nur sie gelten in der Schrittleiste als erledigt */
   const [besucht, setBesucht] = useState<Set<SchrittId>>(() => new Set(start || auftrag ? ['start', 'stammdaten'] : ['start']));
-  const bereich = useRef<HTMLElement>(null);
+  const bereich = useRef<HTMLDivElement>(null);
   /** Schritt, für den der Fokus schon gesetzt ist (nur einmal je Schrittwechsel) */
   const fokusBei = useRef<string | null>(null);
 
@@ -238,8 +243,7 @@ export function AssistentView({
     if (!modus || abschluss) return null;
     const teile: string[] = [];
     if (modus === 'ergaenzen' && stammE && stammEBasis && JSON.stringify(stammE) !== JSON.stringify(stammEBasis)) teile.push(`die geänderten Angaben zu „${ordner?.name ?? ''}“`);
-    if (abgewaehlt.size)
-      teile.push(`${abgewaehlt.size} unter „${modus === 'ergaenzen' ? 'Ergänzen' : 'Anlegen'}“ ${abgewaehlt.size === 1 ? 'abgewählter Eintrag' : 'abgewählte Einträge'}`);
+    if (abgewaehlt.size) teile.push(`${abgewaehlt.size} unter „${modus === 'ergaenzen' ? 'Ergänzen' : 'Anlegen'}“ ${abgewaehlt.size === 1 ? 'abgewählter Eintrag' : 'abgewählte Einträge'}`);
     return teile.length ? teile.join(' und ') : null;
   }, [modus, abschluss, stammE, stammEBasis, abgewaehlt, ordner?.name]);
   const onOffenRef = useRef(onOffen);
@@ -386,7 +390,11 @@ export function AssistentView({
             return;
           }
           const liste = await ausfuehren(tauriDateisystem, stammordner, auszufuehren, { fortschritt: (i, n) => setLaeuft(`Projektordner wird angelegt … ${i} / ${n}`) });
-          log.info(`Projektordner angelegt: ${auszufuehren.ordner}`, { angelegt: liste.filter((x) => x.status === 'angelegt').length, fehler: liste.filter((x) => x.status === 'fehler').length, presets: auszufuehren.presets });
+          log.info(`Projektordner angelegt: ${auszufuehren.ordner}`, {
+            angelegt: liste.filter((x) => x.status === 'angelegt').length,
+            fehler: liste.filter((x) => x.status === 'fehler').length,
+            presets: auszufuehren.presets,
+          });
           fertig(auszufuehren.ordner, verbinde(stammordner, auszufuehren.ordner), liste);
           void zuletztMerken(verbinde(stammordner, auszufuehren.ordner), APP_NAMEN.ordner.name).catch(() => undefined);
         } else {
@@ -400,7 +408,11 @@ export function AssistentView({
         if (desktop && ordner.pfad) {
           setLaeuft('Projekt wird ergänzt …');
           const liste = await ausfuehren(tauriDateisystem, ordner.pfad, auszufuehren, { imProjektordner: true, fortschritt: (i, n) => setLaeuft(`Projekt wird ergänzt … ${i} / ${n}`) });
-          log.info(`Projekt ergänzt: ${ordner.name}`, { angelegt: liste.filter((x) => x.status === 'angelegt').length, ergaenzt: liste.some((x) => x.status === 'ergaenzt'), fehler: liste.filter((x) => x.status === 'fehler').length });
+          log.info(`Projekt ergänzt: ${ordner.name}`, {
+            angelegt: liste.filter((x) => x.status === 'angelegt').length,
+            ergaenzt: liste.some((x) => x.status === 'ergaenzt'),
+            fehler: liste.filter((x) => x.status === 'fehler').length,
+          });
           setErgebnis({ ordner: ordner.pfad, liste });
           setAbgewaehlt(new Set());
           // neu einlesen, damit die Vorschau den neuen Stand zeigt
@@ -478,7 +490,7 @@ export function AssistentView({
       // die Stammdaten werden noch gelesen: später
       if (!felder.length) return;
       ziel = stamm?.nummer.trim() && felder[1] ? felder[1] : felder[0];
-    } else ziel = bereich.current.querySelector<HTMLElement>('h2');
+    } else ziel = bereich.current.closest('.karte')?.querySelector<HTMLElement>('.po-schritt-titel');
     if (!ziel) return;
     ziel.focus();
     fokusBei.current = fokusZiel;
@@ -519,9 +531,9 @@ export function AssistentView({
   // Desktop mit Stammordnern: die gemeinsame Projektübersicht als Startseite
   if (schritt === 'start' && desktop && allgemein.projekte.length > 0) {
     return (
-      <div className="po-start-seite">
-        {(fehler || laeuft) && <p className={fehler ? 'meldung fehler' : 'busy'} role={fehler ? 'alert' : undefined}>{fehler ?? laeuft}</p>}
+      <Flaeche>
         <ProjektStart
+          hinweis={fehler || laeuft ? { text: fehler ?? laeuft ?? '', fehler: !!fehler } : undefined}
           fs={tauriDateisystem}
           sichtbar={sichtbar}
           entwurf={entwurfText}
@@ -537,442 +549,482 @@ export function AssistentView({
           onKatasterEinstellungen={onKatasterEinstellungen}
           onMails={onMails}
         />
-      </div>
+      </Flaeche>
     );
   }
 
+  // Überschrift der Karte: der Schritt – sie bekommt beim Schrittwechsel den Fokus (Hilfsmittel lesen sie vor)
+  const schrittTitel =
+    schritt === 'ausfuehren'
+      ? modus === 'neu' && abschluss
+        ? desktop
+          ? 'Projekt angelegt'
+          : 'Projekt als ZIP heruntergeladen'
+        : modus === 'ergaenzen'
+          ? 'Ergänzen'
+          : 'Anlegen'
+      : (SCHRITTE.find((x) => x.id === schritt)?.label ?? 'Projekt');
+
   return (
-    <div className="po-view einspaltig po-assistent">
-      <section className="po-col" onKeyDown={tasten} ref={bereich}>
-        <ol className="po-schritte" aria-label="Schritte">
-          {SCHRITTE.map((s, i) => {
-            const aktiv = s.id === schritt;
-            // nach dem Anlegen ist die Schrittleiste nur noch Rückblick
-            const gesperrt = !!abschluss || (!erreichbar(i) && !aktiv);
-            // erledigt: besucht und vollständig – nicht schon, weil der Schritt vor dem aktuellen liegt
-            const erledigt = !aktiv && (abschluss ? true : besucht.has(s.id) && kannWeiter(s.id) && erreichbar(i));
-            const label = s.id === 'ausfuehren' && modus === 'ergaenzen' ? 'Ergänzen' : s.label;
-            return (
-              <li key={s.id} className={`${aktiv ? 'aktiv' : ''}${erledigt ? ' erledigt' : ''}`} aria-current={aktiv ? 'step' : undefined} title={gesperrt ? gesperrtGrund : undefined}>
-                <button disabled={gesperrt} onClick={() => geheZu(s.id)} aria-label={erledigt ? `${label} (erledigt)` : undefined}>
-                  <span className="po-schritt-nr" aria-hidden>
-                    {erledigt ? <Symbol name="haken" /> : i + 1}
-                  </span>
-                  {label}
-                </button>
-              </li>
-            );
-          })}
-        </ol>
-        {modus && schritt !== 'start' && !abschluss && (
-          <p className="po-kontext">
-            {modus === 'neu' ? (
-              <>
-                Neues Projekt: <strong>{plan?.ordner || 'noch ohne Namen'}</strong>
-                {zurueckZu && (
-                  <>
-                    {' '}
-                    · aus {zurueckZu.name}{' '}
-                    <button className="small" onClick={() => zurueck()} title={`Zurück zu ${zurueckZu.name} – der Entwurf bleibt hier stehen`}>
-                      Zurück zu {zurueckZu.name}
+    <Flaeche className="po-assistent">
+      {/* Strg+Enter auf der ganzen Karte – auch im Kopf, wo der Fokus nach dem Schrittwechsel steht. Die Hülle (display: contents)
+          steht zwischen Fläche und Karte: `.flaeche > .karte` greift deshalb nicht – unschädlich, solange die Karte allein auf der Fläche steht */}
+      <div className="po-assistent-tasten" onKeyDown={tasten}>
+        <Karte
+          als="main"
+          titel={
+            <span className="po-schritt-titel" tabIndex={-1}>
+              {schrittTitel}
+            </span>
+          }
+        >
+          <div className="po-assistent-inhalt" ref={bereich}>
+            <ol className="po-schritte" aria-label="Schritte">
+              {SCHRITTE.map((s, i) => {
+                const aktiv = s.id === schritt;
+                // nach dem Anlegen ist die Schrittleiste nur noch Rückblick
+                const gesperrt = !!abschluss || (!erreichbar(i) && !aktiv);
+                // erledigt: besucht und vollständig – nicht schon, weil der Schritt vor dem aktuellen liegt
+                const erledigt = !aktiv && (abschluss ? true : besucht.has(s.id) && kannWeiter(s.id) && erreichbar(i));
+                const label = s.id === 'ausfuehren' && modus === 'ergaenzen' ? 'Ergänzen' : s.label;
+                return (
+                  <li key={s.id} className={`${aktiv ? 'aktiv' : ''}${erledigt ? ' erledigt' : ''}`} aria-current={aktiv ? 'step' : undefined} title={gesperrt ? gesperrtGrund : undefined}>
+                    <button disabled={gesperrt} onClick={() => geheZu(s.id)} aria-label={erledigt ? `${label} (erledigt)` : undefined}>
+                      <span className="po-schritt-nr" aria-hidden>
+                        {erledigt ? <Symbol name="haken" /> : i + 1}
+                      </span>
+                      {label}
                     </button>
-                  </>
-                )}
-              </>
-            ) : (
-              <>
-                Ergänzen: <strong>{ordner?.name}</strong>
-                {geladen &&
-                  (geladen.projektdatei ? (
-                    <span title={geladen.projektdatei.pfad}> · Projektdatei vorhanden</span>
-                  ) : oapNichtLesbar ? (
-                    <span title={geladen.quelle.pfad}> · Projektdatei nicht lesbar – sie bleibt unverändert</span>
-                  ) : (
-                    ' · noch ohne Projektdatei – sie wird angelegt'
-                  ))}
-              </>
-            )}
-          </p>
-        )}
-        {fehler && <p className="meldung fehler" role="alert">{fehler}</p>}
-
-        {schritt === 'start' && (
-          <div className="po-start">
-            <div className="po-karte">
-              <h3>Neues Projekt anlegen</h3>
-              <p className="muted small-text">Stammdaten erfassen, Umfang und Vorlagen wählen – dann entsteht der Projektordner mit Projektdatei, Ordnern und Vorlagen.</p>
-              <div className="button-row">
-                <button className="primary" onClick={neuBeginnen}>
-                  {entwurf.nummer.trim() || entwurf.kurzname.trim() ? `Weiter mit ${[entwurf.nummer, entwurf.kurzname].filter((x) => x.trim()).join(' ')}` : 'Neues Projekt'}
-                </button>
-                {(entwurf.nummer.trim() || entwurf.kurzname.trim()) && (
-                  <button
-                    title="Den angefangenen Entwurf verwerfen und ein neues Projekt mit leerem Formular beginnen"
-                    onClick={() => {
-                      neuesProjekt();
-                      neuBeginnen();
-                    }}
-                  >
-                    Leer beginnen
-                  </button>
-                )}
-              </div>
-            </div>
-            <div className="po-karte">
-              <h3>Bestehendes Projekt ergänzen</h3>
-              <p className="muted small-text">
-                Fehlende Ordner und Vorlagen ergänzen, weitere Leistungsphasen oder Presets aufnehmen, Stammdaten nachtragen. Fehlt die Projektdatei, wird sie angelegt. Vorhandene
-                Dateien bleiben unverändert; gelöscht wird nichts.
-              </p>
-              {desktop && projekte.length > 0 && (
-                <>
-                  <input
-                    className="po-suche"
-                    value={suche}
-                    placeholder="Projekt suchen …"
-                    aria-label="Projekt suchen"
-                    onChange={(e) => setSuche(e.target.value)}
-                    // Enter öffnet den ersten Treffer
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && gefiltert.length && !laeuft) void ordnerLaden(verbinde(stammordner, gefiltert[0]));
-                    }}
-                  />
-                  <ul className="list po-projektliste">
-                    {gefiltert.slice(0, 200).map((p) => (
-                      <li key={p} title={verbinde(stammordner, p)}>
-                        <button className="po-projekt-knopf" disabled={!!laeuft} onClick={() => void ordnerLaden(verbinde(stammordner, p))}>
-                          {p}
+                  </li>
+                );
+              })}
+            </ol>
+            {modus && schritt !== 'start' && !abschluss && (
+              <p className="po-kontext">
+                {modus === 'neu' ? (
+                  <>
+                    Neues Projekt: <strong>{plan?.ordner || 'noch ohne Namen'}</strong>
+                    {zurueckZu && (
+                      <>
+                        {' '}
+                        · aus {zurueckZu.name}{' '}
+                        <button className="small" onClick={() => zurueck()} title={`Zurück zu ${zurueckZu.name} – der Entwurf bleibt hier stehen`}>
+                          Zurück zu {zurueckZu.name}
                         </button>
-                      </li>
-                    ))}
-                    {!gefiltert.length && <li className="muted">Kein Projekt passt zur Suche.</li>}
-                  </ul>
-                </>
-              )}
-              <div className="button-row">
-                <button disabled={!!laeuft} onClick={() => void ordnerWaehlen()}>
-                  {desktop ? (projekte.length ? 'Anderen Ordner wählen …' : 'Projektordner wählen …') : 'Projektordner einlesen …'}
-                </button>
-                {laeuft && <span className="busy">{laeuft}</span>}
-              </div>
-              {desktop && !stammordner && <p className="muted small-text">Tipp: Unter „Einrichtung“ → „Einstellungen“ den Stammordner der Projekte einstellen – dann stehen sie hier zur Auswahl.</p>}
-            </div>
-          </div>
-        )}
-
-        {schritt === 'stammdaten' && stamm && (
-          <>
-            <h2 tabIndex={-1}>Stammdaten</h2>
-            {ohneProjektdatei && (
-              <p className="meldung">
-                In diesem Ordner liegt noch keine Projektdatei (.oap).{' '}
-                {geladen?.quelle.alteProjektJson
-                  ? 'Die Stammdaten stammen aus der alten projekt.json, die liegen bleibt.'
-                  : geladen?.quelle.alteProjektJsonDefekt
-                    ? 'Die alte projekt.json im Ordner ist nicht lesbar (sie bleibt unverändert liegen) – bitte die Stammdaten neu erfassen.'
-                    : 'Bitte die Stammdaten erfassen.'}{' '}
-                Die Projektdatei wird
-                damit angelegt.
-              </p>
-            )}
-            {geladen?.quelle.fehler && (
-              <p className="warning">
-                Die Projektdatei {geladen.quelle.pfad} ist nicht lesbar: {geladen.quelle.fehler}
-                {oapNichtLesbar && (
+                      </>
+                    )}
+                  </>
+                ) : (
                   <>
-                    {' '}
-                    Sie bleibt unverändert. Was hier an Stammdaten steht, wird <strong>nicht gespeichert</strong> – es dient nur den Namen neuer Ordner und Vorlagen. Ergänzt werden nur fehlende
-                    Ordner und Vorlagen.
+                    Ergänzen: <strong>{ordner?.name}</strong>
+                    {geladen &&
+                      (geladen.projektdatei ? (
+                        <span title={geladen.projektdatei.pfad}> · Projektdatei vorhanden</span>
+                      ) : oapNichtLesbar ? (
+                        <span title={geladen.quelle.pfad}> · Projektdatei nicht lesbar – sie bleibt unverändert</span>
+                      ) : (
+                        ' · noch ohne Projektdatei – sie wird angelegt'
+                      ))}
                   </>
                 )}
               </p>
             )}
-            <StammdatenFelder
-              meta={formularMeta(stamm)}
-              onChange={(m) => aendereStamm(stammAusMeta(m, stamm.presets ? { presets: stamm.presets } : undefined))}
-              bereiche={['projekt']}
-              nummerHinweis={modus === 'neu' ? `z. B. ${nummerBeispiel}` : undefined}
-              nummerVorschlag={modus === 'neu' && desktop && alleNamen.length ? vorschlag : undefined}
-              nummerPruefen={modus === 'neu' ? nummerPruefen : undefined}
-              // beim Ergänzen wird der vorhandene Ordner nicht umbenannt
-              kurznameHinweis={modus === 'neu' ? undefined : 'Der Ordner wird nicht umbenannt.'}
-              kurznamePflicht={modus === 'neu'}
-              ordnerName={modus === 'neu' ? (plan?.ordner ?? '') : undefined}
-              fehlerZeigen={versucht}
-            />
-            <StatusWahl status={stamm.status} onChange={(status) => aendereStamm({ status })} />
-            {modus === 'neu' && gibtEsSchon && (
-              <p className="meldung">
-                Den Ordner „{neuerName}“ gibt es im Stammordner schon.{' '}
-                <button className="small" onClick={() => void ordnerLaden(verbinde(stammordner, neuerName))}>
-                  Dieses Projekt ergänzen
-                </button>
+            {fehler && (
+              <p className="meldung fehler" role="alert">
+                {fehler}
               </p>
             )}
-            {stammFehler
-              .filter((f) => !AM_FELD[f])
-              .map((f) => (
-                <p key={f} className="warning">
-                  {f}
-                </p>
-              ))}
-          </>
-        )}
 
-        {schritt === 'grundstueck' && stamm && (
-          <>
-            <h2 tabIndex={-1}>Grundstück</h2>
-            <p className="muted small-text">Flurstück, Bebauungsplan und Aktenzeichen – Grundlage für Katasterpläne, Nachweise und Formulare. Was noch nicht bekannt ist, lässt sich später ergänzen.</p>
-            <StammdatenFelder meta={formularMeta(stamm)} onChange={(m) => aendereStamm(stammAusMeta(m, stamm.presets ? { presets: stamm.presets } : undefined))} bereiche={['grundstueck']} fehlerZeigen={versucht} />
-          </>
-        )}
-
-        {schritt === 'bauherr' && stamm && (
-          <>
-            <h2 tabIndex={-1}>Bauherr</h2>
-            <p className="muted small-text">Name, Anschrift und Kontakt – für Bauantrag, Formulare und Schreiben. Was noch nicht bekannt ist, lässt sich später ergänzen.</p>
-            <StammdatenFelder meta={formularMeta(stamm)} onChange={(m) => aendereStamm(stammAusMeta(m, stamm.presets ? { presets: stamm.presets } : undefined))} bereiche={['bauherr']} fehlerZeigen={versucht} />
-          </>
-        )}
-
-        {schritt === 'umfang' && stamm && (
-          <>
-            <h2 tabIndex={-1}>Umfang</h2>
-            <p className="muted small-text">Beauftragte Leistungsphasen: Ordner und Vorlagen, die an Leistungsphasen gebunden sind, entstehen nur für die beauftragten. Keine Auswahl = alle Ordner.</p>
-            <StammdatenFelder
-              meta={formularMeta(stamm)}
-              onChange={(m) => aendereStamm(stammAusMeta(m, stamm.presets ? { presets: stamm.presets } : undefined))}
-              bereiche={['leistungen']}
-              bearbeiterVorschlaege={allgemein.mitarbeiter}
-            />
-          </>
-        )}
-
-        {schritt === 'beteiligte' && stamm && (
-          <>
-            <h2 tabIndex={-1}>Beteiligte</h2>
-            <p className="muted small-text">Fachplaner, Gutachter, Behörden – mit Vorschlägen aus früheren Projekten. Später jederzeit ergänzbar.</p>
-            <StammdatenFelder
-              meta={formularMeta(stamm)}
-              onChange={(m) => aendereStamm(stammAusMeta(m, stamm.presets ? { presets: stamm.presets } : undefined))}
-              bereiche={['beteiligte']}
-              beteiligtVorschlaege={beteiligtVorschlaege ?? undefined}
-              rollenSchnell
-            />
-          </>
-        )}
-
-        {schritt === 'vorlagen' && stamm && (
-          <>
-            <h2 tabIndex={-1}>Vorlagen</h2>
-            <VorlagenordnerZeile />
-            <fieldset className="po-vorlagenwahl">
-              <legend>Welche Vorlagen?</legend>
-              <PresetAuswahl struktur={struktur} auswahl={stamm.presets} onChange={(presets) => aendereStamm({ presets })} nichtAutomatisch={nichtAutomatisch} />
-            </fieldset>
-            <p className="muted small-text">Welche Datei wohin kommt und wie sie heißt, steht unter „Einrichtung“ → „Vorlagen“. Die Auswahl wird in der Projektdatei vermerkt.</p>
-          </>
-        )}
-
-        {schritt === 'ausfuehren' && modus === 'neu' && abschluss && (
-          <div className="po-abschluss">
-            <h2 tabIndex={-1}>{desktop ? 'Projekt angelegt' : 'Projekt als ZIP heruntergeladen'}</h2>
-            <p className="po-abschluss-name">
-              <strong>{abschluss.ordner}</strong>
-              {!desktop && <span className="muted small-text"> ({abschluss.ordner}.zip – entpacken, wo das Projekt liegen soll)</span>}
-            </p>
-            <ErgebnisAnzeige ordner={abschluss.pfad} liste={abschluss.liste}>
-              {zurueckZu && desktop && abschluss.pfad && (
-                <button className="small primary" onClick={() => zurueck(abschluss.pfad)} title={zurueckZu.oeffnen ? `Das neue Projekt in ${zurueckZu.name} öffnen` : `Zurück zu ${zurueckZu.name} – das Projekt steht dort in der Übersicht`}>
-                  {zurueckZu.oeffnen ? `In ${zurueckZu.name} öffnen` : `Zurück zu ${zurueckZu.name}`}
-                </button>
-              )}
-              <button className={`small${zurueckZu && desktop ? '' : ' primary'}`} onClick={naechstesProjekt}>
-                Nächstes Projekt
-              </button>
-            </ErgebnisAnzeige>
-            {abschluss.rueckgaengig && (
-              <p className="meldung ok po-rueckgaengig">
-                Das Formular ist für das nächste Projekt geleert.{' '}
-                <button
-                  className="small"
-                  onClick={() => {
-                    setStamm(abschluss.entwurf);
-                    setAbschluss({ ...abschluss, rueckgaengig: false });
-                  }}
-                >
-                  Rückgängig
-                </button>
-              </p>
-            )}
-            {desktop && <p className="muted small-text">Das Projekt steht in allen Apps unter „Zuletzt geöffnet“ – etwa in QUADRIO (Flächenrechner) zum Weiterarbeiten.</p>}
-          </div>
-        )}
-
-        {schritt === 'ausfuehren' && !(modus === 'neu' && abschluss) && (
-          <>
-            <h2 tabIndex={-1}>{modus === 'ergaenzen' ? 'Ergänzen' : 'Anlegen'}</h2>
-            {modus === 'neu' && (
-              <div className="po-ort">
-                <div>
-                  <span className="field-label">{desktop ? 'Stammordner für Projekte' : 'Ausgabe'}</span>
-                  {desktop ? (
-                    <code title={stammordner}>{stammordner || 'noch nicht gewählt'}</code>
-                  ) : (
-                    <span className="muted small-text">Im Browser entsteht der Projektordner als ZIP-Datei zum Herunterladen – entpacken, wo das Projekt liegen soll.</span>
-                  )}
-                </div>
-                {desktop && (
-                  <button className="small" onClick={() => void stammWaehlen()}>
-                    Wählen …
-                  </button>
-                )}
-              </div>
-            )}
-            {stamm && <Steckbrief stamm={stamm} presets={presetsAktiv.map((p) => p.name)} onSchritt={geheZu} nichtGespeichert={oapNichtLesbar} />}
-            {plan && (
-              <>
-                <h3>
-                  {plan.ordner || 'Projektordner'}
-                  <span className="muted small-text">
-                    {' '}
-                    – {offen.filter((s) => s.art === 'ordner').length} Ordner und {anzahlDateien(offen.filter((s) => s.art === 'datei' && !s.vorhanden).length)} neu
-                    {desktop && plan.projektdatei.teile.length && !abgewaehlt.has(plan.projektdatei.pfad) ? `, Projektdatei ergänzt (${plan.projektdatei.teile.join(', ')})` : ''}
-                  </span>
-                </h3>
-                {modus === 'ergaenzen' && !stamm?.leistungsphasen.length && (
-                  <p className="meldung">
-                    Keine Leistungsphasen gewählt – alle Ordner werden vorgeschlagen, auch die für Ausschreibung und Bauleitung.{' '}
-                    <button className="small" onClick={() => setSchritt('umfang')}>
-                      Leistungsphasen wählen
+            {schritt === 'start' && (
+              <div className="po-start">
+                <div className="po-karte">
+                  <h3>Neues Projekt anlegen</h3>
+                  <p className="muted small-text">Stammdaten erfassen, Umfang und Vorlagen wählen – dann entsteht der Projektordner mit Projektdatei, Ordnern und Vorlagen.</p>
+                  <div className="button-row">
+                    <button className="primary" onClick={neuBeginnen}>
+                      {entwurf.nummer.trim() || entwurf.kurzname.trim() ? `Weiter mit ${[entwurf.nummer, entwurf.kurzname].filter((x) => x.trim()).join(' ')}` : 'Neues Projekt'}
                     </button>
-                  </p>
-                )}
-                {modus === 'ergaenzen' && (
-                  <label className="toggle po-nurneu">
-                    <input type="checkbox" checked={nurNeu} onChange={() => setNurNeu(!nurNeu)} />
-                    nur zeigen, was sich ändert
-                  </label>
-                )}
-                {/* „alles abwählen“ nur beim Ergänzen – beim neuen Projekt hieße das: nichts anlegen */}
-                {((modus === 'ergaenzen' && neueEintraege.length > 1) || abgewaehlt.size > 0) && (
-                  <div className="button-row po-auswahl">
-                    {modus === 'ergaenzen' && neueEintraege.length > 1 && (
-                      <button className="small" title="Nichts Neues anlegen – dann einzelne Einträge wieder anwählen" onClick={() => setAbgewaehlt(new Set(neueEintraege))}>
-                        Alle neuen Einträge abwählen
-                      </button>
-                    )}
-                    {abgewaehlt.size > 0 && (
-                      <button className="small" onClick={() => setAbgewaehlt(new Set())}>
-                        Alle wieder wählen
+                    {(entwurf.nummer.trim() || entwurf.kurzname.trim()) && (
+                      <button
+                        title="Den angefangenen Entwurf verwerfen und ein neues Projekt mit leerem Formular beginnen"
+                        onClick={() => {
+                          neuesProjekt();
+                          neuBeginnen();
+                        }}
+                      >
+                        Leer beginnen
                       </button>
                     )}
                   </div>
+                </div>
+                <div className="po-karte">
+                  <h3>Bestehendes Projekt ergänzen</h3>
+                  <p className="muted small-text">
+                    Fehlende Ordner und Vorlagen ergänzen, weitere Leistungsphasen oder Presets aufnehmen, Stammdaten nachtragen. Fehlt die Projektdatei, wird sie angelegt. Vorhandene Dateien bleiben
+                    unverändert; gelöscht wird nichts.
+                  </p>
+                  {desktop && projekte.length > 0 && (
+                    <>
+                      <input
+                        className="po-suche"
+                        value={suche}
+                        placeholder="Projekt suchen …"
+                        aria-label="Projekt suchen"
+                        onChange={(e) => setSuche(e.target.value)}
+                        // Enter öffnet den ersten Treffer
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && gefiltert.length && !laeuft) void ordnerLaden(verbinde(stammordner, gefiltert[0]));
+                        }}
+                      />
+                      <ul className="list po-projektliste">
+                        {gefiltert.slice(0, 200).map((p) => (
+                          <li key={p} title={verbinde(stammordner, p)}>
+                            <button className="po-projekt-knopf" disabled={!!laeuft} onClick={() => void ordnerLaden(verbinde(stammordner, p))}>
+                              {p}
+                            </button>
+                          </li>
+                        ))}
+                        {!gefiltert.length && <li className="muted">Kein Projekt passt zur Suche.</li>}
+                      </ul>
+                    </>
+                  )}
+                  <div className="button-row">
+                    <button disabled={!!laeuft} onClick={() => void ordnerWaehlen()}>
+                      {desktop ? (projekte.length ? 'Anderen Ordner wählen …' : 'Projektordner wählen …') : 'Projektordner einlesen …'}
+                    </button>
+                    {laeuft && <span className="busy">{laeuft}</span>}
+                  </div>
+                  {desktop && !stammordner && (
+                    <p className="muted small-text">Tipp: Unter „Einrichtung“ → „Einstellungen“ den Stammordner der Projekte einstellen – dann stehen sie hier zur Auswahl.</p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {schritt === 'stammdaten' && stamm && (
+              <>
+                {ohneProjektdatei && (
+                  <p className="meldung">
+                    In diesem Ordner liegt noch keine Projektdatei (.oap).{' '}
+                    {geladen?.quelle.alteProjektJson
+                      ? 'Die Stammdaten stammen aus der alten projekt.json, die liegen bleibt.'
+                      : geladen?.quelle.alteProjektJsonDefekt
+                        ? 'Die alte projekt.json im Ordner ist nicht lesbar (sie bleibt unverändert liegen) – bitte die Stammdaten neu erfassen.'
+                        : 'Bitte die Stammdaten erfassen.'}{' '}
+                    Die Projektdatei wird damit angelegt.
+                  </p>
                 )}
-                <PlanTabelle plan={plan} abgewaehlt={abgewaehlt} onUmschalten={umschalten} nurNeu={modus === 'ergaenzen' && nurNeu} neuOhneVermerk={modus === 'neu'} />
-                <PlanMeldungen plan={plan} />
-                {modus === 'ergaenzen' && !desktop && plan.projektdatei.teile.length > 0 && (
-                  <p className="muted small-text">Die vorhandene Projektdatei lässt sich nur in der Desktop-App ergänzen; die ZIP-Datei enthält nur Neues.</p>
+                {geladen?.quelle.fehler && (
+                  <p className="warning">
+                    Die Projektdatei {geladen.quelle.pfad} ist nicht lesbar: {geladen.quelle.fehler}
+                    {oapNichtLesbar && (
+                      <>
+                        {' '}
+                        Sie bleibt unverändert. Was hier an Stammdaten steht, wird <strong>nicht gespeichert</strong> – es dient nur den Namen neuer Ordner und Vorlagen. Ergänzt werden nur fehlende
+                        Ordner und Vorlagen.
+                      </>
+                    )}
+                  </p>
                 )}
+                <StammdatenFelder
+                  meta={formularMeta(stamm)}
+                  onChange={(m) => aendereStamm(stammAusMeta(m, stamm.presets ? { presets: stamm.presets } : undefined))}
+                  bereiche={['projekt']}
+                  nummerHinweis={modus === 'neu' ? `z. B. ${nummerBeispiel}` : undefined}
+                  nummerVorschlag={modus === 'neu' && desktop && alleNamen.length ? vorschlag : undefined}
+                  nummerPruefen={modus === 'neu' ? nummerPruefen : undefined}
+                  // beim Ergänzen wird der vorhandene Ordner nicht umbenannt
+                  kurznameHinweis={modus === 'neu' ? undefined : 'Der Ordner wird nicht umbenannt.'}
+                  kurznamePflicht={modus === 'neu'}
+                  ordnerName={modus === 'neu' ? (plan?.ordner ?? '') : undefined}
+                  fehlerZeigen={versucht}
+                />
+                <StatusWahl status={stamm.status} onChange={(status) => aendereStamm({ status })} />
                 {modus === 'neu' && gibtEsSchon && (
                   <p className="meldung">
-                    Den Ordner „{neuerName}“ gibt es im Stammordner schon – hier entsteht kein zweites Projekt darin.{' '}
+                    Den Ordner „{neuerName}“ gibt es im Stammordner schon.{' '}
                     <button className="small" onClick={() => void ordnerLaden(verbinde(stammordner, neuerName))}>
                       Dieses Projekt ergänzen
                     </button>
                   </p>
                 )}
-                <p className="muted small-text">
-                  Ordner und Dateien werden nur neu angelegt; Vorhandenes bleibt unverändert, nichts wird verschoben oder gelöscht.{' '}
-                  {projektdateiSatz(modus, desktop, plan.projektdatei.neu, oapNichtLesbar)} Einzelne Einträge lassen sich abwählen.
-                </p>
+                {stammFehler
+                  .filter((f) => !AM_FELD[f])
+                  .map((f) => (
+                    <p key={f} className="warning">
+                      {f}
+                    </p>
+                  ))}
               </>
             )}
-            {ergebnis && (
-              <ErgebnisAnzeige ordner={ergebnis.ordner} liste={ergebnis.liste}>
-                {modus === 'neu' && (
-                  <button
-                    className="small"
-                    onClick={() => {
-                      neuesProjekt();
-                      naechstesProjekt();
-                    }}
-                  >
+
+            {schritt === 'grundstueck' && stamm && (
+              <>
+                <p className="muted small-text">
+                  Flurstück, Bebauungsplan und Aktenzeichen – Grundlage für Katasterpläne, Nachweise und Formulare. Was noch nicht bekannt ist, lässt sich später ergänzen.
+                </p>
+                <StammdatenFelder
+                  meta={formularMeta(stamm)}
+                  onChange={(m) => aendereStamm(stammAusMeta(m, stamm.presets ? { presets: stamm.presets } : undefined))}
+                  bereiche={['grundstueck']}
+                  fehlerZeigen={versucht}
+                />
+              </>
+            )}
+
+            {schritt === 'bauherr' && stamm && (
+              <>
+                <p className="muted small-text">Name, Anschrift und Kontakt – für Bauantrag, Formulare und Schreiben. Was noch nicht bekannt ist, lässt sich später ergänzen.</p>
+                <StammdatenFelder
+                  meta={formularMeta(stamm)}
+                  onChange={(m) => aendereStamm(stammAusMeta(m, stamm.presets ? { presets: stamm.presets } : undefined))}
+                  bereiche={['bauherr']}
+                  fehlerZeigen={versucht}
+                />
+              </>
+            )}
+
+            {schritt === 'umfang' && stamm && (
+              <>
+                <p className="muted small-text">
+                  Beauftragte Leistungsphasen: Ordner und Vorlagen, die an Leistungsphasen gebunden sind, entstehen nur für die beauftragten. Keine Auswahl = alle Ordner.
+                </p>
+                <StammdatenFelder
+                  meta={formularMeta(stamm)}
+                  onChange={(m) => aendereStamm(stammAusMeta(m, stamm.presets ? { presets: stamm.presets } : undefined))}
+                  bereiche={['leistungen']}
+                  bearbeiterVorschlaege={allgemein.mitarbeiter}
+                />
+              </>
+            )}
+
+            {schritt === 'beteiligte' && stamm && (
+              <>
+                <p className="muted small-text">Fachplaner, Gutachter, Behörden – mit Vorschlägen aus früheren Projekten. Später jederzeit ergänzbar.</p>
+                <StammdatenFelder
+                  meta={formularMeta(stamm)}
+                  onChange={(m) => aendereStamm(stammAusMeta(m, stamm.presets ? { presets: stamm.presets } : undefined))}
+                  bereiche={['beteiligte']}
+                  beteiligtVorschlaege={beteiligtVorschlaege ?? undefined}
+                  rollenSchnell
+                />
+              </>
+            )}
+
+            {schritt === 'vorlagen' && stamm && (
+              <>
+                <VorlagenordnerZeile />
+                <fieldset className="po-vorlagenwahl">
+                  <legend>Welche Vorlagen?</legend>
+                  <PresetAuswahl struktur={struktur} auswahl={stamm.presets} onChange={(presets) => aendereStamm({ presets })} nichtAutomatisch={nichtAutomatisch} />
+                </fieldset>
+                <p className="muted small-text">Welche Datei wohin kommt und wie sie heißt, steht unter „Einrichtung“ → „Vorlagen“. Die Auswahl wird in der Projektdatei vermerkt.</p>
+              </>
+            )}
+
+            {schritt === 'ausfuehren' && modus === 'neu' && abschluss && (
+              <div className="po-abschluss">
+                <p className="po-abschluss-name">
+                  <strong>{abschluss.ordner}</strong>
+                  {!desktop && <span className="muted small-text"> ({abschluss.ordner}.zip – entpacken, wo das Projekt liegen soll)</span>}
+                </p>
+                <ErgebnisAnzeige ordner={abschluss.pfad} liste={abschluss.liste}>
+                  {zurueckZu && desktop && abschluss.pfad && (
+                    <button
+                      className="small primary"
+                      onClick={() => zurueck(abschluss.pfad)}
+                      title={zurueckZu.oeffnen ? `Das neue Projekt in ${zurueckZu.name} öffnen` : `Zurück zu ${zurueckZu.name} – das Projekt steht dort in der Übersicht`}
+                    >
+                      {zurueckZu.oeffnen ? `In ${zurueckZu.name} öffnen` : `Zurück zu ${zurueckZu.name}`}
+                    </button>
+                  )}
+                  <button className={`small${zurueckZu && desktop ? '' : ' primary'}`} onClick={naechstesProjekt}>
                     Nächstes Projekt
                   </button>
+                </ErgebnisAnzeige>
+                {abschluss.rueckgaengig && (
+                  <p className="meldung ok po-rueckgaengig">
+                    Das Formular ist für das nächste Projekt geleert.{' '}
+                    <button
+                      className="small"
+                      onClick={() => {
+                        setStamm(abschluss.entwurf);
+                        setAbschluss({ ...abschluss, rueckgaengig: false });
+                      }}
+                    >
+                      Rückgängig
+                    </button>
+                  </p>
                 )}
-              </ErgebnisAnzeige>
+                {desktop && <p className="muted small-text">Das Projekt steht in allen Apps unter „Zuletzt geöffnet“ – etwa in QUADRIO (Flächenrechner) zum Weiterarbeiten.</p>}
+              </div>
             )}
-          </>
-        )}
 
-        {/* nach dem Anlegen (Abschlussseite) keine Navigation mehr – sie führte in den schon geleerten Entwurf */}
-        {schritt !== 'start' && !abschluss && (
-          <div className="button-row po-navigation">
-            {voriger && (
-              <button onClick={() => geheZu(voriger.id)}>
-                <Symbol name="pfeilLinks" /> {voriger.id === 'start' ? 'Anderes Projekt' : voriger.label}
-              </button>
-            )}
-            {/* Grund, warum es nicht weitergeht – dauerhaft im DOM, damit Hilfsmittel die Meldung ansagen */}
-            <span className="po-weiter-grund" role="status">
-              {versucht && !kannWeiter(schritt) && (
-                <>
-                  Noch offen:{' '}
-                  {stammFehler.map((f, i) => (
-                    <span key={f}>
-                      {i > 0 && ', '}
-                      {AM_FELD[f] ? (
-                        <button className="po-mehr" onClick={() => feldFokussieren(AM_FELD[f].feld)}>
-                          {offenKurz(f)}
-                        </button>
-                      ) : (
-                        offenKurz(f)
-                      )}
-                    </span>
-                  ))}
-                </>
-              )}
-            </span>
-            {naechster && (
-              <button
-                ref={weiterKnopf}
-                className="primary"
-                title={`${schritt === 'stammdaten' && stammFehler.length ? `Noch offen: ${stammFehler.map(offenKurz).join(', ')} ` : ''}(Strg+Enter)`}
-                aria-keyshortcuts="Control+Enter"
-                onClick={weiterGehen}
-              >
-                Weiter: {naechster.id === 'ausfuehren' && modus === 'ergaenzen' ? 'Ergänzen' : naechster.label} <Symbol name="pfeilRechts" />
-              </button>
-            )}
-            {/* letzter Schritt: die Hauptaktion steht wie „Weiter“ rechts in der Navigation, mit dem Grund, falls gesperrt */}
-            {schritt === 'ausfuehren' && plan && (
+            {schritt === 'ausfuehren' && !(modus === 'neu' && abschluss) && (
               <>
-                {laeuft ? (
-                  <span className="busy">{laeuft}</span>
-                ) : (
-                  anlegenSperre && (
-                    // offene Fehler wie „Noch offen“ der anderen Schritte in Fehlerfarbe, sonst (Hinweis) grau
-                    <span className={`po-sperr-grund${plan.fehler.length ? ' fehler' : ''}`} id="po-anlegen-grund">
-                      {anlegenSperre}
-                    </span>
-                  )
+                {modus === 'neu' && (
+                  <div className="po-ort">
+                    <div>
+                      <span className="field-label">{desktop ? 'Stammordner für Projekte' : 'Ausgabe'}</span>
+                      {desktop ? (
+                        <code title={stammordner}>{stammordner || 'noch nicht gewählt'}</code>
+                      ) : (
+                        <span className="muted small-text">Im Browser entsteht der Projektordner als ZIP-Datei zum Herunterladen – entpacken, wo das Projekt liegen soll.</span>
+                      )}
+                    </div>
+                    {desktop && (
+                      <button className="small" onClick={() => void stammWaehlen()}>
+                        Wählen …
+                      </button>
+                    )}
+                  </div>
                 )}
-                <button
-                  className="primary"
-                  disabled={!!laeuft || !!anlegenSperre}
-                  title={anlegenSperre ?? undefined}
-                  aria-describedby={anlegenSperre ? 'po-anlegen-grund' : undefined}
-                  onClick={() => void ausfuehrenJetzt()}
-                >
-                  {modus === 'neu' ? (desktop ? 'Projektordner anlegen' : 'Als ZIP herunterladen') : desktop ? 'Projekt ergänzen' : 'Neues als ZIP herunterladen'}
-                </button>
+                {stamm && <Steckbrief stamm={stamm} presets={presetsAktiv.map((p) => p.name)} onSchritt={geheZu} nichtGespeichert={oapNichtLesbar} />}
+                {plan && (
+                  <>
+                    <h3>
+                      {plan.ordner || 'Projektordner'}
+                      <span className="muted small-text">
+                        {' '}
+                        – {offen.filter((s) => s.art === 'ordner').length} Ordner und {anzahlDateien(offen.filter((s) => s.art === 'datei' && !s.vorhanden).length)} neu
+                        {desktop && plan.projektdatei.teile.length && !abgewaehlt.has(plan.projektdatei.pfad) ? `, Projektdatei ergänzt (${plan.projektdatei.teile.join(', ')})` : ''}
+                      </span>
+                    </h3>
+                    {modus === 'ergaenzen' && !stamm?.leistungsphasen.length && (
+                      <p className="meldung">
+                        Keine Leistungsphasen gewählt – alle Ordner werden vorgeschlagen, auch die für Ausschreibung und Bauleitung.{' '}
+                        <button className="small" onClick={() => setSchritt('umfang')}>
+                          Leistungsphasen wählen
+                        </button>
+                      </p>
+                    )}
+                    {modus === 'ergaenzen' && (
+                      <label className="toggle po-nurneu">
+                        <input type="checkbox" checked={nurNeu} onChange={() => setNurNeu(!nurNeu)} />
+                        nur zeigen, was sich ändert
+                      </label>
+                    )}
+                    {/* „alles abwählen“ nur beim Ergänzen – beim neuen Projekt hieße das: nichts anlegen */}
+                    {((modus === 'ergaenzen' && neueEintraege.length > 1) || abgewaehlt.size > 0) && (
+                      <div className="button-row po-auswahl">
+                        {modus === 'ergaenzen' && neueEintraege.length > 1 && (
+                          <button className="small" title="Nichts Neues anlegen – dann einzelne Einträge wieder anwählen" onClick={() => setAbgewaehlt(new Set(neueEintraege))}>
+                            Alle neuen Einträge abwählen
+                          </button>
+                        )}
+                        {abgewaehlt.size > 0 && (
+                          <button className="small" onClick={() => setAbgewaehlt(new Set())}>
+                            Alle wieder wählen
+                          </button>
+                        )}
+                      </div>
+                    )}
+                    <PlanTabelle plan={plan} abgewaehlt={abgewaehlt} onUmschalten={umschalten} nurNeu={modus === 'ergaenzen' && nurNeu} neuOhneVermerk={modus === 'neu'} />
+                    <PlanMeldungen plan={plan} />
+                    {modus === 'ergaenzen' && !desktop && plan.projektdatei.teile.length > 0 && (
+                      <p className="muted small-text">Die vorhandene Projektdatei lässt sich nur in der Desktop-App ergänzen; die ZIP-Datei enthält nur Neues.</p>
+                    )}
+                    {modus === 'neu' && gibtEsSchon && (
+                      <p className="meldung">
+                        Den Ordner „{neuerName}“ gibt es im Stammordner schon – hier entsteht kein zweites Projekt darin.{' '}
+                        <button className="small" onClick={() => void ordnerLaden(verbinde(stammordner, neuerName))}>
+                          Dieses Projekt ergänzen
+                        </button>
+                      </p>
+                    )}
+                    <p className="muted small-text">
+                      Ordner und Dateien werden nur neu angelegt; Vorhandenes bleibt unverändert, nichts wird verschoben oder gelöscht.{' '}
+                      {projektdateiSatz(modus, desktop, plan.projektdatei.neu, oapNichtLesbar)} Einzelne Einträge lassen sich abwählen.
+                    </p>
+                  </>
+                )}
+                {ergebnis && (
+                  <ErgebnisAnzeige ordner={ergebnis.ordner} liste={ergebnis.liste}>
+                    {modus === 'neu' && (
+                      <button
+                        className="small"
+                        onClick={() => {
+                          neuesProjekt();
+                          naechstesProjekt();
+                        }}
+                      >
+                        Nächstes Projekt
+                      </button>
+                    )}
+                  </ErgebnisAnzeige>
+                )}
               </>
             )}
+
+            {/* nach dem Anlegen (Abschlussseite) keine Navigation mehr – sie führte in den schon geleerten Entwurf */}
+            {schritt !== 'start' && !abschluss && (
+              <div className="button-row po-navigation">
+                {voriger && (
+                  <button onClick={() => geheZu(voriger.id)}>
+                    <Symbol name="pfeilLinks" /> {voriger.id === 'start' ? 'Anderes Projekt' : voriger.label}
+                  </button>
+                )}
+                {/* Grund, warum es nicht weitergeht – dauerhaft im DOM, damit Hilfsmittel die Meldung ansagen */}
+                <span className="po-weiter-grund" role="status">
+                  {versucht && !kannWeiter(schritt) && (
+                    <>
+                      Noch offen:{' '}
+                      {stammFehler.map((f, i) => (
+                        <span key={f}>
+                          {i > 0 && ', '}
+                          {AM_FELD[f] ? (
+                            <button className="po-mehr" onClick={() => feldFokussieren(AM_FELD[f].feld)}>
+                              {offenKurz(f)}
+                            </button>
+                          ) : (
+                            offenKurz(f)
+                          )}
+                        </span>
+                      ))}
+                    </>
+                  )}
+                </span>
+                {naechster && (
+                  <button
+                    ref={weiterKnopf}
+                    className="primary"
+                    title={`${schritt === 'stammdaten' && stammFehler.length ? `Noch offen: ${stammFehler.map(offenKurz).join(', ')} ` : ''}(Strg+Enter)`}
+                    aria-keyshortcuts="Control+Enter"
+                    onClick={weiterGehen}
+                  >
+                    Weiter: {naechster.id === 'ausfuehren' && modus === 'ergaenzen' ? 'Ergänzen' : naechster.label} <Symbol name="pfeilRechts" />
+                  </button>
+                )}
+                {/* letzter Schritt: die Hauptaktion steht wie „Weiter“ rechts in der Navigation, mit dem Grund, falls gesperrt */}
+                {schritt === 'ausfuehren' && plan && (
+                  <>
+                    {laeuft ? (
+                      <span className="busy">{laeuft}</span>
+                    ) : (
+                      anlegenSperre && (
+                        // offene Fehler wie „Noch offen“ der anderen Schritte in Fehlerfarbe, sonst (Hinweis) grau
+                        <span className={`po-sperr-grund${plan.fehler.length ? ' fehler' : ''}`} id="po-anlegen-grund">
+                          {anlegenSperre}
+                        </span>
+                      )
+                    )}
+                    <button
+                      className="primary"
+                      disabled={!!laeuft || !!anlegenSperre}
+                      title={anlegenSperre ?? undefined}
+                      aria-describedby={anlegenSperre ? 'po-anlegen-grund' : undefined}
+                      onClick={() => void ausfuehrenJetzt()}
+                    >
+                      {modus === 'neu' ? (desktop ? 'Projektordner anlegen' : 'Als ZIP herunterladen') : desktop ? 'Projekt ergänzen' : 'Neues als ZIP herunterladen'}
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
           </div>
-        )}
-      </section>
-    </div>
+        </Karte>
+      </div>
+    </Flaeche>
   );
 }
 
@@ -1046,7 +1098,13 @@ function Steckbrief({ stamm, presets, onSchritt, nichtGespeichert = false }: { s
       schritt: 'umfang',
       inhalt: (
         <>
-          <div>{s.leistungsphasen.length ? `LPh ${s.leistungsphasen.join(', ')} (${LEISTUNGSPHASEN.filter((l) => s.leistungsphasen.includes(l.nr)).map((l) => l.label).join(', ')})` : 'keine Leistungsphasen gewählt – alle Ordner'}</div>
+          <div>
+            {s.leistungsphasen.length
+              ? `LPh ${s.leistungsphasen.join(', ')} (${LEISTUNGSPHASEN.filter((l) => s.leistungsphasen.includes(l.nr))
+                  .map((l) => l.label)
+                  .join(', ')})`
+              : 'keine Leistungsphasen gewählt – alle Ordner'}
+          </div>
           {s.bearbeiter && <div className="muted">Bearbeitung {s.bearbeiter}</div>}
         </>
       ),
@@ -1072,7 +1130,7 @@ function Steckbrief({ stamm, presets, onSchritt, nichtGespeichert = false }: { s
   return (
     <details className="po-steckbrief" open>
       <summary>{nichtGespeichert ? 'Zusammenfassung – wird nicht gespeichert (die Projektdatei ist nicht lesbar)' : 'Zusammenfassung – so steht es in der Projektdatei'}</summary>
-      <table>
+      <table className="summary-table text">
         <tbody>
           {zeilen.map((z) => (
             <tr key={z.titel}>

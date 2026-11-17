@@ -1030,12 +1030,13 @@ function ProjektdatenAbgleich({ karte }: { karte: OffeneKarte }) {
           </select>
         </label>
       )}
-      <table className="pk-abgleich">
+      <table className="summary-table text pk-abgleich">
+        <caption className="unsichtbar">Abgleich der Projektdaten mit der Projektdatei</caption>
         <thead>
           <tr>
             <th>Angabe</th>
-            <th>Projektdatei</th>
-            <th>Projektdaten</th>
+            <th>In der Projektdatei</th>
+            <th>In den Projektdaten</th>
             <th />
           </tr>
         </thead>

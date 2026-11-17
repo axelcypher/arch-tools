@@ -1,3 +1,4 @@
+import { PfadeVerweis } from '@core/ui/Einstellungen';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { MsgKopf } from '@core/mail/msg';
 import { msgKopf } from '@core/mail/msg';
@@ -5,6 +6,8 @@ import type { ProjektordnerEintrag } from '@core/platform/projektordner';
 import { projekteAuflisten } from '@core/platform/projektordner';
 import { logger } from '@core/platform/log';
 import { bestaetigen } from '@core/ui/Rueckfrage';
+import { Flaeche, Karte } from '@core/ui/Karte';
+import { BreitenLeiste } from '@core/ui/Leiste';
 import { Symbol } from '@core/ui/Symbol';
 import type { Dateisystem } from '../dateisystem';
 import { hatDateisystem, oeffneOrdner, tauriDateisystem, verbinde, waehleOrdner, waehleOrdnerImBrowser } from '../dateisystem';
@@ -282,7 +285,6 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
   const [nurFalsche, setNurFalsche] = useState(true);
   const [laeuft, setLaeuft] = useState<string | null>(null);
   const [fehler, setFehler] = useState<string | null>(null);
-  const [eigeneText, setEigeneText] = useState('');
   const [neue, setNeue] = useState<NeueMail[]>([]);
   const [ziehtDrueber, setZiehtDrueber] = useState(false);
   /** Ergebnis von „Absender neu bestimmen“ */
@@ -299,7 +301,6 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
   useEffect(() => {
     if (!einstellungenGeladen) void useMails.getState().laden();
   }, [einstellungenGeladen]);
-  useEffect(() => setEigeneText(eigene.join(', ')), [eigene]);
 
   const rootsSchluessel = roots.join('|');
   useEffect(() => {
@@ -523,13 +524,21 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
   };
 
   /**
-   * eigene Domains geändert: Vorschläge der gelesenen Zeilen neu bilden. Funktional nachgeführt – was ein noch
+   * eigene Domains geändert (hier oder in den Einstellungen): Vorschläge der gelesenen Zeilen neu bilden. Funktional nachgeführt – was ein noch
    * laufendes Einlesen oder eine Eingabe inzwischen geändert hat, bleibt erhalten; nach einem Projektwechsel nichts.
    */
-  const eigeneSetzen = async (liste: string[]) => {
+  const eigeneSetzen = (liste: string[]) => setEigene(liste);
+  // geändert hier (Vorschlag) oder in den Einstellungen (Seite ATLAS): die Vorschläge folgen
+  const eigeneSchluessel = eigene.join(',');
+  const eigeneVorher = useRef(eigeneSchluessel);
+  useEffect(() => {
+    if (eigeneVorher.current === eigeneSchluessel) return;
+    eigeneVorher.current = eigeneSchluessel;
+    void vorschlaegeNeu();
+  }, [eigeneSchluessel]); // eslint-disable-line react-hooks/exhaustive-deps
+  const vorschlaegeNeu = async () => {
     const kennung = lauf.current;
-    await setEigene(liste);
-    if (!projekt || kennung !== lauf.current) return;
+    if (!projekt) return;
     const neu = useMails.getState().eigene;
     const ergebnis = await Promise.all(zeilenRef.current.filter((z) => z.kopf).map((z) => lesen(projekt, { ...z, inhalt: [] }, neu)));
     if (kennung !== lauf.current) return;
@@ -788,77 +797,89 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
   const gefiltert = suche.trim() ? projekte.filter((p) => `${p.gruppe ?? ''} ${p.name}`.toLowerCase().includes(suche.trim().toLowerCase())) : projekte;
 
   return (
-    <div className="po-view po-mails-view">
-      <section className="po-col">
-        <h2>Mails</h2>
-        <p className="muted small-text">
-          Sucht im Projektordner (mit allen Unterordnern) nach Outlook-Mails (.msg), die nicht nach dem Schema <code>{MAIL_SCHEMA}</code> heißen, und schlägt den richtigen Namen vor – aus der Mail
-          selbst: Datum aus Empfang bzw. Versand (nicht das Dateidatum), Name des Gegenübers (bei Weiterleitungen aus dem Büro der ursprüngliche Absender – aus der angehängten Mail bzw. dem Kopf der
-          weitergeleiteten; ist er unklar, wird nicht geraten), Thema aus dem Betreff. Umbenannt wird erst auf Klick, im selben Ordner und nie überschreibend.
-        </p>
-        {fs && roots.length > 0 && (
-          <>
-            <input
-              className="po-suche"
-              value={suche}
-              placeholder="Projekt suchen …"
-              aria-label="Projekt suchen"
-              onChange={(e) => setSuche(e.target.value)}
-              onKeyDown={(e) => {
-                // Enter lädt den ersten Treffer, Pfeil runter springt in die Liste
-                if (e.key === 'Enter' && gefiltert[0]) void ladenPfad(gefiltert[0].pfad);
-                else if (e.key === 'ArrowDown') {
-                  e.preventDefault();
-                  projektKnoepfe()[0]?.focus();
-                }
-              }}
-            />
-            <ul className="list po-projektliste" ref={projektListe} onKeyDown={listeTaste}>
-              {gefiltert.slice(0, 300).map((p) => (
-                <li key={p.pfad} className={projekt?.pfad === p.pfad ? 'active' : ''} title={p.pfad}>
-                  <button className="po-projekt-knopf" aria-current={projekt?.pfad === p.pfad ? 'true' : undefined} onClick={() => void ladenPfad(p.pfad)}>
-                    {p.gruppe && <span className="muted small-text">{p.gruppe} › </span>}
-                    {p.name}
-                  </button>
-                </li>
-              ))}
-              {!gefiltert.length && <li className="muted">Kein Projekt passt zur Suche.</li>}
-            </ul>
-          </>
-        )}
-        <div className="button-row">
-          <button onClick={() => void ordnerWaehlen()}>{!desktop ? 'Projektordner einlesen …' : projekt ? 'Anderen Ordner wählen …' : 'Projektordner wählen …'}</button>
-        </div>
-        {!fs && <p className="muted small-text">Im Browser lassen sich die Mails nur prüfen; umbenennen kann die Desktop-App.</p>}
-
-        <h3>Eigene Domains</h3>
-        <p className="muted small-text">Daran erkennt die App, ob eine Mail von außen kam („von“) oder ins Büro hinaus ging („an“). Gilt fürs ganze Büro.</p>
-        <div className="po-schemafeld">
-          <input
-            value={eigeneText}
-            aria-label="Eigene Domains"
-            placeholder="z. B. architekten-beispiel.example"
-            onChange={(e) => setEigeneText(e.target.value)}
-            onBlur={() => eigeneText !== eigene.join(', ') && void eigeneSetzen(eigeneText.split(/[,;\s]+/))}
-            onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
-          />
-        </div>
-        {vorschlagDomain && (
-          <p className="meldung">
-            Erkannt aus den Mails: <strong>{vorschlagDomain}</strong>{' '}
-            <button className="small" onClick={() => void eigeneSetzen([vorschlagDomain])}>
-              Übernehmen
-            </button>
+    <Flaeche className="po-mails-view">
+      <BreitenLeiste schluessel="ordner:leiste-mails" vorgabe={340} min={260} max={520} titel="Breite der Mails" mitteMin={480}>
+        <Karte als="aside" titel="Mails">
+          <p className="muted small-text">
+            Sucht im Projektordner (mit allen Unterordnern) nach Outlook-Mails (.msg), die nicht nach dem Schema <code>{MAIL_SCHEMA}</code> heißen, und schlägt den richtigen Namen vor – aus der Mail
+            selbst: Datum aus Empfang bzw. Versand (nicht das Dateidatum), Name des Gegenübers (bei Weiterleitungen aus dem Büro der ursprüngliche Absender – aus der angehängten Mail bzw. dem Kopf der
+            weitergeleiteten; ist er unklar, wird nicht geraten), Thema aus dem Betreff. Umbenannt wird erst auf Klick, im selben Ordner und nie überschreibend.
           </p>
-        )}
-        {einstellungenFehler && (
-          <p className="meldung fehler" role="alert">
-            {einstellungenFehler}
-          </p>
-        )}
-      </section>
+          {fs && roots.length > 0 && (
+            <>
+              <input
+                className="po-suche"
+                value={suche}
+                placeholder="Projekt suchen …"
+                aria-label="Projekt suchen"
+                onChange={(e) => setSuche(e.target.value)}
+                onKeyDown={(e) => {
+                  // Enter lädt den ersten Treffer, Pfeil runter springt in die Liste
+                  if (e.key === 'Enter' && gefiltert[0]) void ladenPfad(gefiltert[0].pfad);
+                  else if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    projektKnoepfe()[0]?.focus();
+                  }
+                }}
+              />
+              <ul className="list po-projektliste" ref={projektListe} onKeyDown={listeTaste}>
+                {gefiltert.slice(0, 300).map((p) => (
+                  <li key={p.pfad} className={projekt?.pfad === p.pfad ? 'active' : ''} title={p.pfad}>
+                    <button className="po-projekt-knopf" aria-current={projekt?.pfad === p.pfad ? 'true' : undefined} onClick={() => void ladenPfad(p.pfad)}>
+                      {p.gruppe && <span className="muted small-text">{p.gruppe} › </span>}
+                      {p.name}
+                    </button>
+                  </li>
+                ))}
+                {!gefiltert.length && <li className="muted">Kein Projekt passt zur Suche.</li>}
+              </ul>
+            </>
+          )}
+          <div className="button-row">
+            <button onClick={() => void ordnerWaehlen()}>{!desktop ? 'Projektordner einlesen …' : projekt ? 'Anderen Ordner wählen …' : 'Projektordner wählen …'}</button>
+          </div>
+          {!fs && <p className="muted small-text">Im Browser lassen sich die Mails nur prüfen; umbenennen kann die Desktop-App.</p>}
 
-      <section className="po-col po-mails">
+          <h3>Eigene Domains</h3>
+          <p className="muted small-text">
+            Daran erkennt die App, ob eine Mail von außen kam („von“) oder ins Büro hinaus ging („an“): {eigene.length ? <code>{eigene.join(', ')}</code> : 'noch keine eingetragen'}.
+          </p>
+          <PfadeVerweis seite="ordner" text="Eigene Domains …" />
+          {vorschlagDomain && (
+            <p className="meldung">
+              Erkannt aus den Mails: <strong>{vorschlagDomain}</strong>{' '}
+              <button className="small" onClick={() => void eigeneSetzen([vorschlagDomain])}>
+                Übernehmen
+              </button>
+            </p>
+          )}
+          {einstellungenFehler && (
+            <p className="meldung fehler" role="alert">
+              {einstellungenFehler}
+            </p>
+          )}
+        </Karte>
+      </BreitenLeiste>
+
+      <Karte
+        als="main"
+        titel={projekt ? projekt.name : 'Mails im Projekt'}
+        className="po-mails"
+        aktionen={
+          projekt && (
+            <label className="po-mails-code">
+              <span className="field-label">Projektcode</span>
+              <input
+                defaultValue={projekt.code}
+                key={projekt.pfad}
+                aria-label="Projektcode"
+                onBlur={(e) => e.target.value.trim() !== projekt.code && codeSetzen(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
+              />
+            </label>
+          )
+        }
+      >
         {fehler && (
           <p className="meldung fehler" role="alert">
             {fehler}
@@ -868,19 +889,6 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
         {!projekt && !laeuft && <p className="muted">Ein Projekt wählen – die Mails darin werden geprüft.</p>}
         {projekt && (
           <>
-            <div className="po-mails-kopf">
-              <h3>{projekt.name}</h3>
-              <label className="po-mails-code">
-                <span className="field-label">Projektcode</span>
-                <input
-                  defaultValue={projekt.code}
-                  key={projekt.pfad}
-                  aria-label="Projektcode"
-                  onBlur={(e) => e.target.value.trim() !== projekt.code && codeSetzen(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
-                />
-              </label>
-            </div>
             <p className="small-text">
               <strong>{zeilen.length}</strong> {zeilen.length === 1 ? 'Mail' : 'Mails'}, davon <strong>{falsch.length}</strong> nicht nach dem Schema
               {zeilen.some((z) => z.lesefehler) && <> · {zeilen.filter((z) => z.lesefehler).length} nicht lesbar</>}
@@ -1042,7 +1050,11 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
                 </ul>
               </div>
             )}
-            {ohneDomain && <p className="meldung">Ohne eigene Domain gilt die Richtung (von/an) aus dem bisherigen Namen – links unter „Eigene Domains“ eintragen, dann erkennt die App sie selbst.</p>}
+            {ohneDomain && (
+              <p className="meldung">
+                Ohne eigene Domain gilt die Richtung (von/an) aus dem bisherigen Namen – unter „Eigene Domains“ eintragen (Datei › Einstellungen › ATLAS), dann erkennt die App sie selbst.
+              </p>
+            )}
             {!sichtbar.length && <p className="meldung ok">{zeilen.length ? 'Alle Mails sind nach dem Schema benannt.' : 'In diesem Projektordner gibt es keine Mails (.msg).'}</p>}
             <ul className="po-mailliste">
               {sichtbar.map((z) => {
@@ -1170,7 +1182,7 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
             </datalist>
           </>
         )}
-      </section>
-    </div>
+      </Karte>
+    </Flaeche>
   );
 }

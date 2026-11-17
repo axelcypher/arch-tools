@@ -511,6 +511,8 @@ describe('Projektdatei (.oap) als Quelle der Projektstammdaten', () => {
     expect(eintrag.textContent).toContain('BS9 Flächen.oap');
     await klick(eintrag);
     const zeilen = () => [...host.querySelectorAll('.pk-abgleich tbody tr')];
+    // gemeinsame Zahlentabelle aus core (Textspalten)
+    expect(['summary-table', 'text'].every((k) => host.querySelector('table.pk-abgleich')!.classList.contains(k))).toBe(true);
     expect(zeilen().map((z) => z.querySelector('td')!.firstChild!.textContent)).toEqual([
       'Bezeichnung der Baumaßnahme',
       // Ergänzung der App: in FORMA ohne Eintrag, kommt hier aus der Projektdatei

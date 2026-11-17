@@ -29,8 +29,11 @@ export function ProjektStart({
   onPruefen,
   onKatasterEinstellungen,
   onMails,
+  hinweis,
 }: {
   fs: ProjektordnerZugriff;
+  /** Meldung über der Liste (Projekt wird geöffnet, Fehler) */
+  hinweis?: { text: string; fehler?: boolean };
   /** ausgeblendet (andere Ansicht der App): bleibt eingehängt; beim Wiederzeigen wird die Liste frisch gelesen */
   sichtbar?: boolean;
   /** angefangenes neues Projekt („2026-014 EFH Musterweg“), leer ohne */
@@ -129,6 +132,9 @@ export function ProjektStart({
         zuletzt={liste.zuletzt}
         sucht={liste.sucht}
         fehler={liste.fehler}
+        meldung={hinweis}
+        // die Startseite ist der Hauptbereich von ATLAS
+        als="main"
         onOeffnen={(p) => onOeffnen(p.schluessel)}
         onNeuLaden={liste.neuLaden}
         onEinstellungen={onEinstellungen}
@@ -142,21 +148,11 @@ export function ProjektStart({
         projektAnlegen={false}
         // Stammordner per Ziehen umsortieren (gemeinsame Einstellung; der erste nimmt neue Projekte auf)
         onGruppenOrdnen={(projekte) => setAllgemein({ projekte })}
-        kopf={
-          <>
-            <button className="primary" onClick={onNeu} title="Assistent für ein neues Projekt: Stammdaten, Umfang, Vorlagen, Anlegen">
-              {entwurf ? `Weiter mit ${entwurf}` : 'Neues Projekt'}
-            </button>
-            {entwurf && (
-              <button onClick={onLeerNeu} title="Den angefangenen Entwurf verwerfen und ein neues Projekt mit leerem Formular beginnen">
-                Leer beginnen
-              </button>
-            )}
-            <button onClick={onAndererOrdner} title="Einen Projektordner außerhalb der Stammordner ergänzen">
-              Anderen Ordner …
-            </button>
-          </>
-        }
+        neu={{ text: entwurf ? `Weiter mit ${entwurf}` : undefined, ohneSymbol: !!entwurf, titel: 'Assistent für ein neues Projekt: Stammdaten, Umfang, Vorlagen, Anlegen', aktion: onNeu }}
+        weitere={[
+          ...(entwurf ? [{ text: 'Leer beginnen', titel: 'Den angefangenen Entwurf verwerfen und ein neues Projekt mit leerem Formular beginnen', aktion: onLeerNeu }] : []),
+          { text: 'Anderen Ordner …', titel: 'Einen Projektordner außerhalb der Stammordner ergänzen', aktion: onAndererOrdner },
+        ]}
       />
     </>
   );

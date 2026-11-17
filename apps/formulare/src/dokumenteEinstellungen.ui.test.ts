@@ -68,6 +68,9 @@ describe('Einstellungen › Antrag & Export › Antragsdokumente', () => {
     await zeige();
     expect(document.querySelectorAll('.es-dok')).toHaveLength(VORGABE_KATALOG.length);
     expect(document.querySelector('.es-vorlagen th + th + th + th + th + th')).toBeNull();
+    // gemeinsame Zahlentabelle aus core (design.md „Tabellen“), Felder fluchten mit dem Text
+    expect(document.querySelector('table.es-vorlagen')!.classList.contains('summary-table')).toBe(true);
+    expect(document.querySelector('table.es-vorlagen')!.classList.contains('felder')).toBe(true);
     const bauantrag = zeile('Bauantrag');
     // Formular, dessen Suchbegriff die Bezeichnung ist bzw. ein Teil des Namens
     expect(bauantrag.querySelector('.es-dok-unter')!.textContent).toBe('Formular des Projekts');

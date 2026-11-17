@@ -204,12 +204,10 @@ export function App() {
             onSchliessen={projekt ? () => setProjekteOffen(false) : undefined}
           />
         ) : (
-          <div className="ava-leer">
-            <ProjektEinstieg
-              titel="Ausschreibung, Vergabe, Abrechnung und Bauleitung"
-              text="Die App arbeitet mit den Projektordnern des Büros (Gewerkeordner, LV-Dateien, Kostenkontrolle, Rechnungen). Dafür braucht sie die Desktop-App – im Browser gibt es keinen Ordnerzugriff."
-            />
-          </div>
+          <ProjektEinstieg
+            app="ava"
+            text="Die App arbeitet mit den Projektordnern des Büros (Gewerkeordner, LV-Dateien, Kostenkontrolle, Rechnungen) und braucht dafür die Desktop-App – im Browser gibt es keinen Ordnerzugriff."
+          />
         )
       ) : (
         <Flaeche className="ava-flaeche">

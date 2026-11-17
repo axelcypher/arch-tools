@@ -302,10 +302,11 @@ Gemeinsamer Satz in `ui/Symbol.tsx` (Raster 24, Linie 2, runde Enden, Farbe des 
 - Werkzeuge: `auswahl`, `polygon`, `rechteck`, `erkennen` (Fläche aus dem Plan), `lineal` (Messen), `kalibrieren`, `einpassen`, `raster`,
   `grenze` (Grundstücksgrenze mit Grenzpunkten), `ausrichten` (Unterlage auf einen Punkt schieben).
 - Befehle: `speichern`, `drucken`, `export`, `kopie`, `einfuegen`, `muell`, `rueckgaengig`, `wiederholen`, `plus`,
-  `suche`, `stift`.
+  `suche`, `stift`, `neuLaden` (neu einlesen), `zahnrad` (einstellen).
 - Zustand: `haken` (trifft zu), `schliessen` (trifft nicht zu), `frage` (offen, unbekannt), `warnung`, `info`, `auge`,
   `augeZu`, `stern`; `punkt` (gewählte Einfachauswahl im Menü).
-- Navigation: `pfeilRechts`, `pfeilLinks`, `pfeilUnten`, `ordner`, `ordnerOffen`, `datei`; `menue` (drei Striche) nur für das
+- Navigation: `pfeilRechts`, `pfeilLinks`, `pfeilUnten`, `ordner`, `ordnerOffen`, `datei`, `verlauf` (zuletzt
+  geöffnet); `menue` (drei Striche) nur für das
   Menü der Titelleiste (siehe „Titelleiste“).
 - Listen: `einruecken`, `ausruecken` (Gliederungsebene), `nachOben`, `nachUnten` zum Umsortieren (statt ↑/↓ als Schriftzeichen); `mehr` (drei Punkte, Knopf mit `aria-label="Aktionen"` und `title`; auch „Mehr“ am Ende einer Werkzeugleiste) für
   Zeilenknöpfe „Aktionen“, die ein Menü öffnen – `pfeilUnten` bleibt dem Aufklapp-Pfeil an Knöpfen mit Text vorbehalten.
@@ -548,6 +549,35 @@ Die alten Muster (`.workspace`, `.sidebar`, eigene Spalten-Layouts der Apps) lau
 ist (`docs/nachziehen/`). Eigene Layout-CSS und feste Farben der Apps entfallen mit der Umstellung. Ausgenommen ist die
 Rahmen-App Arkly: Sie hat keine Arbeitsfläche, sondern Tableiste und Startseite; ihre Seiten zeigen die Apps, die selbst
 auf Karten stehen.
+
+## Startseite
+
+**Die Startseite ist in allen Apps derselbe Baustein; Apps liefern nur Daten in Slots.** Ohne geöffnetes Projekt bzw.
+über „Projekte“ zeigt jede App die Projektübersicht aus core (`ui/ProjektUebersicht.tsx`, in den Apps mit
+Projektdatei über `ProjektWahl`) bzw. den Einstieg `ProjektEinstieg` – keine eigene Startseite, keine eigene Startkarte.
+`ui/startseite.test.ts` prüft, dass jede App den Baustein nutzt und keine App-CSS Klassen der Übersicht und des
+Einstiegs (`.pa…`, `.pw…`) umgestaltet.
+
+- **Übersicht:** eine `Karte` auf der `Flaeche`. Kopf: Überschrift „Projekte“, rechts die Knöpfe in fester Reihenfolge –
+  „Zurück zu ‹Kürzel›“ (mit geöffnetem Projekt) bzw. „Schließen“, seltene weitere (`weitere`, z. B. „Leeres Projekt“,
+  „Anderen Ordner …“), „Datei öffnen …“ (`dateiOeffnen`), rechts außen der Hauptknopf (`neu`; Vorgabe in der Rahmen-App
+  „Neues Projekt anlegen …“ mit dem Assistenten von ATLAS, sonst z. B. „Neues Projekt“ ohne „…“, wenn es sofort
+  anlegt). Darunter die feste Leiste (`leiste`): Suche, Sortierung, Statusfilter, rechts die Anzahl, „Neu einlesen“
+  und „Quellen einstellen“. Im Inhalt „Angeheftet“ (Stern), „Zuletzt geöffnet“ (Verlauf) und je Quelle ein
+  aufklappbarer Abschnitt mit Linie bis an den Kartenrand; Meldungen (`meldung`) stehen oben im Inhalt.
+- **Kacheln:** Kürzel (`--fs-l`), Titel, Info und Zeit, darunter Marken (`marken`: Warnung, Hinweis, ok, neutral) und
+  wahlweise eine Statuszeile (`status`: Punkt, Balken je Stufe, Text) – überall gleich, nur die Daten kommen aus der
+  App. Rechtsklick öffnet das Kontextmenü (`kontextMenue`). Symbole aus dem gemeinsamen Satz, eines je Bedeutung. Die
+  App-Farbe nur als Akzent (Fokus, aktive Kachel, Hauptknopf), nie als Fläche.
+- **Einstieg und Leerzustand:** `ProjektEinstieg` – eine Karte mittig auf der Fläche. Titel ist immer der Name der App
+  (`app`), darunter wofür sie da ist (aus `APP_NAMEN`), dann ein Satz der App (`text`, unpersönlich formuliert, z. B.
+  „Ein Projekt … öffnen“). Die Knöpfe stehen wie im Kopf der Übersicht: „Schließen“ links, dann „Neues Projekt“,
+  „Datei öffnen …“, „Projekt wählen …“, rechts außen der Hauptknopf (der erste vorhandene aus Stammordner wählen,
+  Neues Projekt anlegen …, Projekt wählen, Datei öffnen, Neues Projekt). App-eigene Ergänzungen nur unter den
+  Knöpfen (`children`, z. B. die Ampel-Legende von LEXIO) und als Fußnote; `als="main"`, wo der Einstieg der
+  Hauptbereich ist.
+- **Arkly:** Die Startseite der Rahmen-App folgt demselben Muster – eine Karte auf der Fläche, Hauptknopf „Neues Projekt
+  anlegen …“ im Kopf, die Apps als Kacheln im selben Stil (Rahmen, Radius, Abstände, Hover) mit dem Symbol der App.
 
 ## Seitenleisten
 

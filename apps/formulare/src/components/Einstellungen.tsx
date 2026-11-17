@@ -309,7 +309,7 @@ function Projektdaten() {
         Neue Projektdatei: <code>{neu}</code> <span className="muted small-text">z. B. {projektdateiPfad(neu, OAP_BEISPIEL)}</span>
       </p>
       <PfadeVerweis fokus="projekt.oapPfad" erklaerung="Ort und Name neuer Projektdateien stehen auf der Seite „Pfade und Benennung“." />
-      <table className="es-tabelle">
+      <table className="summary-table text">
         <caption className="unsichtbar">Angaben der Projektdaten und der Projektdatei</caption>
         <thead>
           <tr>
