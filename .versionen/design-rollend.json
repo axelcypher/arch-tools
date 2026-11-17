@@ -1,0 +1,34 @@
+{
+  "flaechenrechner": {
+    "stufe": "patch",
+    "notiz": "Kennzahlen: Die Werte stehen auf einer Linie, auch wenn eine Bezeichnung umbricht."
+  },
+  "ava": {
+    "stufe": "patch",
+    "notiz": "Kennzahlen der Übersicht: Die Werte stehen auf einer Linie, auch wenn eine Bezeichnung umbricht."
+  },
+  "grz": {
+    "stufe": "patch",
+    "notiz": "Gemeinsame Gestaltung aktualisiert, ohne sichtbare Änderung."
+  },
+  "kosten": {
+    "stufe": "patch",
+    "notiz": "Gemeinsame Gestaltung aktualisiert, ohne sichtbare Änderung."
+  },
+  "ordner": {
+    "stufe": "patch",
+    "notiz": "Gemeinsame Gestaltung aktualisiert, ohne sichtbare Änderung."
+  },
+  "entzerrung": {
+    "stufe": "patch",
+    "notiz": "Gemeinsame Gestaltung aktualisiert, ohne sichtbare Änderung."
+  },
+  "formulare": {
+    "stufe": "patch",
+    "notiz": "Formular- und Felderansicht enden beim Rollen unten bündig mit den Nachbarkarten."
+  },
+  "baurecht": {
+    "stufe": "patch",
+    "notiz": "Gemeinsame Gestaltung aktualisiert, ohne sichtbare Änderung."
+  }
+}
