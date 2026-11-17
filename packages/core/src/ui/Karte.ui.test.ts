@@ -131,6 +131,10 @@ describe('Fläche und Karten', () => {
     const aside = host.querySelector('aside.karte')!;
     expect(aside.getAttribute('aria-labelledby')).toBe(aside.querySelector('h2')!.id);
     expect(host.querySelector('div.flaechen-spalte')).toBeNull();
+    // Karte als Hauptbereich behält ihren Namen
+    const mitte = render(h(Karte, { titel: 'Ergebnis', als: 'main' }, 'x'));
+    const main = mitte.querySelector('main.karte')!;
+    expect(main.getAttribute('aria-labelledby')).toBe(main.querySelector('h2')!.id);
     // zwei Nebenspalten mit eigenem Namen
     const zwei = render(
       h(Flaeche, {
