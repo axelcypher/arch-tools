@@ -568,16 +568,21 @@ Werkzeugleiste liegt mit auf der Fläche (gleicher Grund, keine Linie). Baustein
   springt die Höhe der Nachbarkarte mit.
 - **Rollende Spalte** (`FlaechenSpalte wachsend rollend`): Die Spalte rollt als Ganzes, die Karten darin sind so hoch
   wie ihr Inhalt – für viele gleichartige Karten untereinander (z. B. die Abschnitte der Felderansicht von PERMIO). Die
-  Spalte hat rundum `--s1` Luft (ein gleich großer negativer Rand gleicht aus, `breite` bleibt die Breite der Karten),
-  damit Kartenschatten und Fokusrahmen am Rand nicht abgeschnitten werden. Solche Karten bekommen `ebene={3}` und
+  Spalte hat rundum `--s1` Luft, damit Kartenschatten und Fokusrahmen am Rand nicht abgeschnitten werden (`breite`
+  bleibt die Breite der Karten; zum Ausgleich siehe „Ränder“). Solche Karten bekommen `ebene={3}` und
   `als="div"` (keine eigene Region – sonst entstünden Dutzende Bereiche); darüber steht ein sichtbares `h2`, das die
   Ansicht liefert (z. B. der Titel des Formulars als erste Karte mit normaler Ebene oder ein Kopf über der Spalte). Im
   Rumpf dieser Karten `h4`/`h5`; `abschnitte` (mit `h2`) und `hoehe` passen nicht dazu – `hoehe` wirkt in der rollenden
   Spalte nicht.
-  - **Fester Kopf** (`.rollend-kopf`, erstes Kind der Spalte): Suche und Filter über den Karten bleiben beim Rollen
-    oben. Der Kopf deckt den Innenabstand der Spalte mit dem Grund der Fläche ab, sonst liefe der Inhalt durch einen
-    Streifen darüber. Was den Fokus bekommt, rollt nicht unter ihn (`scroll-padding-top`, Vorgabe eine Zeile
-    Bedienelemente; ein höherer Kopf setzt `--rollend-kopf-h`).
+  - **Fester Kopf** (`.rollend-kopf`): Suche und Filter über den Karten bleiben beim Rollen oben. Der Kopf steht
+    zuoberst in der Spalte – direkt oder im ersten Element (etwa einer Hülle mit begrenzter Breite) – und deckt den
+    Innenabstand der Spalte mit dem Grund der Fläche ab, sonst liefe der Inhalt durch einen Streifen darüber (in einer
+    Hülle über deren Breite – daneben liegt ohnehin kein Inhalt, solange die Karten in derselben Hülle stehen). Ein Kopf
+    mit Suche ist ein benannter Suchbereich (`role="search"` mit `aria-label`). Was den Fokus bekommt, rollt nicht
+    unter ihn (`scroll-padding-top`): `--rollend-kopf-h` ist die sichtbare Höhe des Kopfs plus Platz für den
+    Fokusrahmen, Vorgabe eine Zeile Bedienelemente (`--ctl-h` + `--s2` + 2 × `--s1`). Ein höherer Kopf setzt den Wert
+    selbst; bricht er in schmalen Fenstern um, setzt die App ihn je Umbruchstufe (Container- oder Media-Abfrage) oder
+    lässt den Kopf nicht umbrechen. Ebenen in den Karten (Aufklapplisten, Hinweise) bleiben unter dem Kopf.
   - **Ränder:** Oben und seitlich reicht die Spalte um `--s1` in den Spalt, damit die Karten mit den Nachbarkarten
     fluchten; unten endet sie bündig mit ihnen. Die Rollleiste hat ihren Platz von Anfang an (`scrollbar-gutter`), die
     Breite springt also nicht, und sie liegt im Spalt zur Nachbarkarte rechts. Dieser Spalt ist deshalb um die Breite

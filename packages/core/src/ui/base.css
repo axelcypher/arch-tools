@@ -230,7 +230,8 @@ body,
   flex: 1;
 }
 /* rollende Spalte: sie rollt als Ganzes, die Karten darin sind so hoch wie ihr Inhalt (hoehe wirkt hier nicht); rundum
-   Luft für Kartenschatten und Fokusrahmen am Rand, ohne die Spalte zu verschieben */
+   Luft für Kartenschatten und Fokusrahmen am Rand – oben und seitlich gleicht ein negativer Rand sie aus, unten endet
+   die Spalte bündig mit den Seitenkarten */
 .flaechen-spalte.rollend {
   overflow-y: auto;
   /* der Innenabstand kommt zur Breite hinzu: die gesetzte Breite bleibt die Breite der Karten */
@@ -243,9 +244,10 @@ body,
      bündig mit den Seitenkarten, der Innenabstand unten bleibt als Luft unter der letzten Karte */
   margin: calc(-1 * var(--s1)) calc(-1 * var(--s1)) 0;
 }
-/* fester Kopf über den Karten (Suche, Filter): erstes Kind der Spalte, bleibt beim Rollen oben und deckt auch den
-   Innenabstand der Spalte ab – sonst liefe der Inhalt durch einen Streifen darüber und daneben */
-.flaechen-spalte.rollend > .rollend-kopf {
+/* fester Kopf über den Karten (Suche, Filter): zuoberst in der Spalte (direkt oder im ersten Element, z. B. einer
+   Hülle mit begrenzter Breite), bleibt beim Rollen oben und deckt auch den Innenabstand der Spalte ab – sonst liefe
+   der Inhalt durch einen Streifen darüber und daneben */
+.flaechen-spalte.rollend .rollend-kopf {
   position: sticky;
   top: calc(-1 * var(--s1));
   z-index: 1;
@@ -253,10 +255,15 @@ body,
   padding: var(--s1) var(--s1) var(--s2);
   background: var(--bg);
 }
-/* was den Fokus bekommt, rollt nicht unter den festen Kopf (Vorgabe: eine Zeile Bedienelemente; ein höherer Kopf setzt
-   --rollend-kopf-h) */
-.flaechen-spalte.rollend:has(> .rollend-kopf) {
-  scroll-padding-top: var(--rollend-kopf-h, calc(var(--ctl-h) + var(--s2)));
+/* was den Fokus bekommt, rollt nicht unter den festen Kopf: --rollend-kopf-h ist die sichtbare Höhe des Kopfs plus Platz
+   für den Fokusrahmen (Vorgabe: eine Zeile Bedienelemente, --ctl-h + --s2, plus 2 × --s1); ein höherer oder
+   umbrechender Kopf setzt den Wert selbst */
+.flaechen-spalte.rollend:has(.rollend-kopf) {
+  scroll-padding-top: var(--rollend-kopf-h, calc(var(--ctl-h) + var(--s2) + 2 * var(--s1)));
+}
+/* Ebenen in den Karten (Aufklapplisten, Hinweise mit z-index) bleiben unter dem festen Kopf */
+.flaechen-spalte.rollend:has(.rollend-kopf) > .karte {
+  isolation: isolate;
 }
 .flaechen-spalte.rollend > .karte,
 .flaechen-spalte.rollend > .karte.karte-inhalt,
