@@ -230,15 +230,41 @@ body,
   flex: 1;
 }
 /* rollende Spalte: sie rollt als Ganzes, die Karten darin sind so hoch wie ihr Inhalt (hoehe wirkt hier nicht); rundum
-   Luft für Kartenschatten und Fokusrahmen am Rand, ohne die Spalte zu verschieben */
+   Luft für Kartenschatten und Fokusrahmen am Rand – oben und seitlich gleicht ein negativer Rand sie aus, unten endet
+   die Spalte bündig mit den Seitenkarten */
 .flaechen-spalte.rollend {
   overflow-y: auto;
   /* der Innenabstand kommt zur Breite hinzu: die gesetzte Breite bleibt die Breite der Karten */
   box-sizing: content-box;
-  /* Platz für die Rollleiste von Anfang an: die Breite springt nicht, wenn sie erscheint */
+  /* Platz für die Rollleiste von Anfang an: die Breite springt nicht, wenn sie erscheint. Sie liegt im Spalt zur
+     Nachbarkarte rechts, der dadurch um ihre Breite wächst (die Breite der Rollleiste kennt das CSS nicht) */
   scrollbar-gutter: stable;
   padding: var(--s1);
-  margin: calc(-1 * var(--s1));
+  /* oben und seitlich in den Spalt hinein (die Karten fluchten mit den Nachbarn), unten nicht: die Spalte endet
+     bündig mit den Seitenkarten, der Innenabstand unten bleibt als Luft unter der letzten Karte */
+  margin: calc(-1 * var(--s1)) calc(-1 * var(--s1)) 0;
+}
+/* fester Kopf über den Karten (Suche, Filter): zuoberst in der Spalte (direkt oder im ersten Element, z. B. einer
+   Hülle mit begrenzter Breite), bleibt beim Rollen oben und deckt auch den Innenabstand der Spalte ab – sonst liefe
+   der Inhalt durch einen Streifen darüber und daneben */
+.flaechen-spalte.rollend .rollend-kopf {
+  position: sticky;
+  top: calc(-1 * var(--s1));
+  z-index: 1;
+  margin: calc(-1 * var(--s1)) calc(-1 * var(--s1)) 0;
+  padding: var(--s1) var(--s1) var(--s2);
+  background: var(--bg);
+}
+/* was den Fokus bekommt, rollt nicht unter den festen Kopf: --rollend-kopf-h ist die sichtbare Höhe des Kopfs plus Platz
+   für den Fokusrahmen (Vorgabe: eine Zeile Bedienelemente, --ctl-h + --s2, plus 2 × --s1); ein höherer oder
+   umbrechender Kopf setzt den Wert selbst */
+.flaechen-spalte.rollend:has(.rollend-kopf) {
+  scroll-padding-top: var(--rollend-kopf-h, calc(var(--ctl-h) + var(--s2) + 2 * var(--s1)));
+}
+/* Ebenen in den Karten (Aufklapplisten, Hinweise mit z-index) bleiben unter dem festen Kopf – auch in einer Hülle; über
+   die Karte hinaus reichen solche Ebenen ohnehin nicht (der Rumpf schneidet ab, siehe „Inhalt“ in design.md) */
+.flaechen-spalte.rollend:has(.rollend-kopf) .karte {
+  isolation: isolate;
 }
 .flaechen-spalte.rollend > .karte,
 .flaechen-spalte.rollend > .karte.karte-inhalt,
@@ -379,6 +405,11 @@ body,
 /* Vorschau (vorschau): Grund der Fläche um das Blatt, das Blatt selbst bleibt hell wie .report */
 .karte-rumpf.vorschau {
   background: var(--bg);
+}
+/* Leertext auf dem Rumpf der Vorschau: mit dem Innenabstand der Karte, nicht am Rand */
+.karte-rumpf.vorschau > .muted {
+  margin: 0;
+  padding: var(--s3) var(--karte-pad) var(--karte-pad);
 }
 /* Rumpf aus Abschnitten (abschnitte): jeder Abschnitt mit eigenem Innenabstand, Trennlinie bis an den Rand wie unter
    dem Kartenkopf; die Abschnittsüberschrift (h2) wie die Überschrift im Kartenkopf */
@@ -938,13 +969,23 @@ textarea:focus {
   flex-direction: column;
 }
 
+/* hat eine Kachel der Zeile Nebentext, bekommen die übrigen (und ein leerer Nebentext) eine leere Zeile gleicher Höhe –
+   so stehen die Werte (unten bündig) auf einer Linie */
+.metric-row:has(> .metric > small) > .metric:not(:has(> small))::after,
+.metric > small:empty::before {
+  content: '\00a0';
+  font-size: var(--fs-xs);
+}
+
 .metric > span,
 .metric > small {
   font-size: var(--fs-xs);
   color: var(--muted);
 }
 
+/* bricht eine Bezeichnung um, bleiben die Werte der Kacheln einer Zeile auf einer Linie (unten bündig) */
 .metric > strong {
+  margin-top: auto;
   font-size: var(--fs-xl);
   /* Wert und Einheit („m²“, „€“) bleiben in einer Zeile */
   white-space: nowrap;

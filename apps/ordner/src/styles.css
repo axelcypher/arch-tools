@@ -865,9 +865,20 @@
 .po-navigation .po-weiter-grund:not(:empty) + .primary {
   margin-left: 0;
 }
+/* „Noch offen: …“ steht in der Navigationszeile (.button-row) – dort kein button.link (design.md); eigener Verweis in
+   der Fehlerfarbe */
 .po-weiter-grund .po-mehr {
+  padding: 0;
+  border: none;
+  background: none;
   color: var(--danger);
   text-decoration: underline;
+  cursor: pointer;
+}
+/* beim Überfahren kein Grund (sonst greift der Hover der Knöpfe aus base.css), sondern eine kräftigere Linie */
+.po-weiter-grund .po-mehr:hover:not(:disabled) {
+  background: none;
+  text-decoration-thickness: 2px;
 }
 .po-sperr-grund {
   align-self: center;
@@ -951,14 +962,6 @@
 .po-abweichung ul {
   margin: 2px 0 4px;
   padding-left: 18px;
-}
-.po-mehr {
-  padding: 0;
-  border: none;
-  background: none;
-  color: var(--accent);
-  font-size: inherit;
-  cursor: pointer;
 }
 .po-navigation {
   justify-content: space-between;
@@ -1132,25 +1135,6 @@
 .ka-dialog .dialog-buttons .ex-links {
   margin-right: auto;
 }
-/* Knopf, der wie ein Verweis aussieht (Einstellungen öffnen, Datei wählen …) */
-button.po-link {
-  border: none;
-  background: none;
-  padding: 0;
-  font: inherit;
-  color: var(--accent);
-  text-decoration: underline;
-  cursor: pointer;
-}
-button.po-link:hover:not(:disabled) {
-  background: none;
-  color: var(--accent-hover);
-}
-button.po-link:focus-visible {
-  outline: 2px solid var(--fokus);
-  outline-offset: 2px;
-  border-radius: 2px;
-}
 .ka-check {
   flex-direction: row !important;
   align-items: center;
@@ -1199,16 +1183,9 @@ button.po-link:focus-visible {
 .ka-ergebnis.fehler {
   color: var(--fehler-text);
 }
-.ka-ergebnis button {
-  background: none;
-  border: none;
-  padding: 0;
+/* „Ordner öffnen“ (button.link aus core) in der Farbe des Ergebnisses */
+.ka-ergebnis button.link {
   color: inherit;
-  cursor: pointer;
-  text-align: left;
-}
-.ka-ergebnis button:hover {
-  text-decoration: underline;
 }
 .ka-meldung {
   white-space: pre-wrap;

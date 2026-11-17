@@ -127,12 +127,13 @@
 
 /* Datentabellen: gemeinsame Zahlentabelle (.summary-table.text, mit Feldern .felder). Hier nur, was core noch nicht hat
    (beim Designsystem gemeldet, kommt als .summary-table.fest u. a.; danach entfallen diese Regeln). Alle unter
-   .ava-flaeche – der Druck liegt als Portal außerhalb und bleibt unberührt:
+   .ava-flaeche (der Druck liegt als Portal außerhalb und bekommt nur Ziffern gleicher Breite und Beträge ohne Umbruch):
    - Ziffern gleicher Breite;
    - der Kopf als Ganzes fest beim Rollen im Kartenrumpf (auch zweizeilige Köpfe wie im Preisspiegel), ohne Umbruch;
    - Felder füllen ihre Zelle;
    - Kontrollkästchen und Optionsfelder in Feldzeilen auf der Textlinie (core rückt nur Zellen ohne Feld ein). */
-.ava-flaeche .summary-table {
+.ava-flaeche .summary-table,
+.ava-druck .summary-table {
   font-variant-numeric: tabular-nums;
 }
 
@@ -350,7 +351,8 @@
   cursor: pointer;
 }
 
-/* Hover auch über Gruppenzeilen (core tönt sie), die gewählte Zeile behält ihre Tönung; die feste OZ-Zelle zieht mit */
+/* Hover über Positionen und – im dunklen Schema sichtbar – über Gruppenzeilen (im hellen gleichen sich --hover und
+   --tabelle-gruppe, ans Designsystem gemeldet); die gewählte Zeile behält ihre Tönung, die feste OZ-Zelle zieht mit */
 .ava-lv-zeilen tbody tr:not(.selected):hover td {
   background: var(--hover);
 }
@@ -1179,7 +1181,8 @@ input.ava-fehler {
   max-width: 100%;
 }
 
-.ava-flaeche .summary-table td.num {
+.ava-flaeche .summary-table td.num,
+.ava-druck .summary-table td.num {
   white-space: nowrap;
 }
 

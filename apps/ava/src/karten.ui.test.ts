@@ -184,6 +184,6 @@ describe('Kartenlayout (docs/design.md „Fläche und Karten“)', () => {
     // alle App-Regeln auf .summary-table hängen an .ava-flaeche (der Druck liegt als Portal außerhalb)
     const ohneKommentare = css.replace(/\/\*[\s\S]*?\*\//g, '');
     for (const m of ohneKommentare.matchAll(/([^{}]+)\{/g))
-      for (const sel of selektoren(m[1].replace(/\s+/g, ' '))) if (sel.includes('.summary-table') && !sel.trim().startsWith('@')) expect(sel.trim()).toMatch(/^\.ava-(flaeche|spiegel-druck)\b/);
+      for (const sel of selektoren(m[1].replace(/\s+/g, ' '))) if (sel.includes('.summary-table') && !sel.trim().startsWith('@')) expect(sel.trim()).toMatch(/^\.ava-(flaeche|spiegel-druck|druck)\b/);
   });
 });
