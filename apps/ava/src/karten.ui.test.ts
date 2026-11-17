@@ -13,6 +13,7 @@ import { GewerkAnsicht } from './components/GewerkAnsicht';
 import { Maengel } from './components/bauleitung/Maengel';
 import { Bautagebuch } from './components/bauleitung/Bautagebuch';
 import { Preisspiegel } from './components/lv/Angebote';
+import { MailListe } from './components/bauleitung/Mailverlauf';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -189,6 +190,14 @@ describe('Kartenlayout (docs/design.md „Fläche und Karten“)', () => {
     for (const k of ['felder', 'fest']) expect(tabelle.classList.contains(k)).toBe(true);
     expect(tabelle.querySelectorAll('input.num.zelle').length).toBeGreaterThan(0);
     expect(host.querySelector('.ava-tabelle')).toBeNull();
+  });
+
+  it('Mails ohne Treffer: Leertext als tr.leer im tbody, kein tfoot', async () => {
+    await zeige(createElement(MailListe, { dateien: [] }));
+    await warte(() => host.querySelector('.ava-mail-tabelle'));
+    const leer = host.querySelector('.ava-mail-tabelle tbody tr.leer');
+    expect(leer?.textContent).toContain('Keine Mails.');
+    expect(host.querySelector('.ava-mail-tabelle tfoot')).toBeNull();
   });
 
   it('Preisspiegel im Druck ohne festen Kopf (fest nur auf dem Bildschirm)', async () => {

@@ -100,6 +100,8 @@ describe('LV-Editor', () => {
     const suche = host.querySelector<HTMLInputElement>('input[aria-label="LV durchsuchen"]')!;
     act(() => tippe(suche, 'gibtesnicht'));
     expect(host.querySelector('.ava-leer-zelle')?.textContent).toContain('Keine Treffer für „gibtesnicht“');
+    // Leerzeile ist tr.leer: nicht wählbar, ohne Tönung und Zeiger (core .waehlbar)
+    expect(host.querySelector('.ava-leer-zelle')?.closest('tr')?.classList.contains('leer')).toBe(true);
     // Gegenprobe: Treffer – keine Meldung, Abschnitt 02 bleibt als Zusammenhang sichtbar
     act(() => tippe(suche, 'Fenstertür'));
     expect(host.querySelector('.ava-leer-zelle')).toBeNull();
