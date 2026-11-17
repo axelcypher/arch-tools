@@ -24,7 +24,7 @@ export function FotoLeiste() {
           </button>
         }
       >
-        {!fotos.length && <p className="muted small-text">Noch kein Foto. Fotos lassen sich auch einfach ins Fenster ziehen.</p>}
+        {!fotos.length && <p className="muted small-text">Noch kein Foto.</p>}
         <ul className="list ef-fotos">
           {fotos.map((f) => (
             <FotoEintrag key={f.id} foto={f} aktiv={f.id === fotoId} />

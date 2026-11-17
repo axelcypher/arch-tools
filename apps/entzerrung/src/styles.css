@@ -212,9 +212,7 @@
 /* Fußzeile der Zeichenkarte: Hinweis (gekürzt), rechts die Koordinaten */
 .ef-hinweis-text {
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  padding: var(--s1) 0;
 }
 .ef-koord {
   flex: none;
@@ -223,7 +221,7 @@
   white-space: pre;
 }
 .ef-overlay:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--fokus);
   outline-offset: -2px;
 }
 
@@ -232,8 +230,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
-  padding: 14px 18px;
+  gap: var(--s3);
+  padding: var(--s3) var(--s4);
   line-height: 1.5;
 }
 .ef-leer p {
@@ -246,9 +244,9 @@
 
 .ef-ablegen {
   position: absolute;
-  inset: 12px;
+  inset: var(--s3);
   border: 3px dashed var(--accent);
-  border-radius: 8px;
+  border-radius: var(--radius);
   background: color-mix(in srgb, var(--accent-soft) 45%, transparent);
   display: flex;
   align-items: center;
@@ -284,7 +282,7 @@
 }
 .ef-methoden {
   display: flex;
-  margin-bottom: 6px;
+  margin-bottom: var(--s2);
 }
 .ef-methoden button {
   flex: 1;
@@ -299,7 +297,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--s2);
 }
 .ef-messungen li {
   align-items: center;
@@ -319,16 +317,16 @@
   line-height: 1.2;
 }
 .ef-hinweis {
-  margin-top: 10px;
+  margin-top: var(--s3);
 }
 
 /* Fotos des Projekts */
 .fw-kopf {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--s2);
   flex-wrap: wrap;
-  padding: 16px 28px 12px;
+  padding: var(--s4) var(--s5) var(--s3);
   border-bottom: 1px solid var(--border);
   background: var(--panel);
 }
@@ -349,10 +347,10 @@
   flex: 1;
   min-height: 0;
   overflow: auto;
-  padding: 12px 28px 28px;
+  padding: var(--s3) var(--s5) var(--s5);
 }
 .fw-gruppe h3 {
-  margin: 14px 0 6px;
+  margin: var(--s3) 0 var(--s2);
   font-size: var(--fs-m);
   color: var(--muted);
 }
@@ -362,7 +360,7 @@
   padding: 0;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 6px;
+  gap: var(--s2);
 }
 .fw-foto {
   width: 100%;
@@ -392,12 +390,12 @@
   opacity: 0.75;
 }
 .ef-schritte {
-  margin: 4px 0 0;
-  padding-left: 18px;
+  margin: 0;
+  padding-left: var(--s4);
   line-height: 1.5;
 }
 .ef-schritte li + li {
-  margin-top: 6px;
+  margin-top: var(--s2);
 }
 .ef-tabelle tr.fehlt td:nth-child(2) input,
 .ef-tabelle tr.fehlt td:nth-child(3) input {
@@ -408,7 +406,7 @@
   font-size: var(--fs-s);
 }
 .ef-feinwerte {
-  margin: 6px 0;
+  margin: var(--s2) 0;
   font-size: var(--fs-s);
 }
 .ef-feinwerte summary {
@@ -428,7 +426,6 @@
   opacity: 1;
 }
 .list li:focus-visible {
-  outline: 2px solid var(--accent);
   outline-offset: -2px;
 }
 
@@ -461,5 +458,5 @@
   display: block;
 }
 .ef-hinweis-ref {
-  margin-bottom: 6px;
+  margin-bottom: var(--s2);
 }

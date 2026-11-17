@@ -13,7 +13,7 @@ Aufbau wie in allen Apps (Kartenlayout): links die Karten „Fotos“ und „Ebe
 entzerrte Ebene als Zeichenfläche mit Bedienhinweis und Koordinaten in der Fußzeile, rechts die Karten der Ansicht
 („Referenz“ und „Objektiv“ bzw. „Messen“ und „Bild“).
 
-1. **Foto hinzufügen**: über „Foto …“ (Plus-Symbol) im Kopf der Fotoleiste bzw. „Datei › Fotos hinzufügen …“ (auch mehrere auf einmal; danach ist das erste gewählt, nicht lesbare
+1. **Foto hinzufügen**: über „Foto …“ (Plus-Symbol) im Kopf der Karte „Fotos“ bzw. „Datei › Fotos hinzufügen …“ (auch mehrere auf einmal; danach ist das erste gewählt, nicht lesbare
    Dateien nennt eine gemeinsame Meldung), den Knopf in der leeren Fläche oder per Ziehen ins
    Fenster (JPEG, PNG, WebP). Die Ausrichtung vom
    Handy (Hochformat) wird übernommen. HEIC-Fotos vom iPhone lassen sich nicht lesen; dann am iPhone unter
@@ -116,7 +116,7 @@ das Foto. Öffnen und Speichern über den Dateidialog bleiben wie bisher.
 Die Kürzel ohne Strg wirken nur, wenn kein Dialog offen ist und der Fokus nicht auf einem Knopf oder Feld liegt;
 `Tab`, Leertaste und Enter bleiben so der Bedienung mit der Tastatur erhalten. Fotos und Ebenen in den Karten
 links sind mit `Tab` erreichbar (Enter wählt, `Entf` entfernt). Beide Seiten lassen sich am Spalt zur Zeichenfläche in
-der Breite ziehen (Doppelklick: Vorgabe), die linke über „Ansicht › Leiste mit Fotos und Ebenen“ ausblenden; dort steht auch „Alles zeigen“ (`Pos1`).
+der Breite ziehen (Doppelklick: Vorgabe), die linke über „Ansicht › Fotos und Ebenen“ ausblenden; dort steht auch „Alles zeigen“ (`Pos1`).
 
 Beim Schließen fragt die App nach, solange ungespeicherte Änderungen bestehen. „Datei › Öffnen …“ merkt sich auf dem
 Desktop den Pfad: „Speichern“ schreibt danach ohne Rückfrage in dieselbe Datei. Ändert man während des

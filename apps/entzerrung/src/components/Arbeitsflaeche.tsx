@@ -367,7 +367,7 @@ export function Arbeitsflaeche({ ablegen = false }: { ablegen?: boolean } = {}) 
       fuss={
         <>
           {foto && hinweis && (
-            <span className="ef-hinweis-text" title={hinweis}>
+            <span className="ef-hinweis-text" aria-live="polite">
               {hinweis}
             </span>
           )}
@@ -458,6 +458,8 @@ function werkzeugHinweis(w: string, ebene: Ebene | null, n: number, shift: boole
       return `Punkte setzen – Enter, Doppel- oder Rechtsklick beendet${shift ? ' (waagerecht/senkrecht)' : ', Umschalt: waagerecht/senkrecht'}`;
     case 'ausschnitt':
       return n ? 'Gegenüberliegende Ecke des Ausschnitts' : 'Erste Ecke des Ausschnitts anklicken';
+    case 'auswahl':
+      return 'Mausrad zoomt, Ziehen verschiebt, Pos1 zeigt alles';
     default:
       return '';
   }

@@ -189,7 +189,7 @@ function ReferenzPanel({ foto, ebene, ergebnis }: { foto: Foto; ebene: Ebene; er
             <WerkzeugKnopf w="passpunkt" anzahl={ebene.passpunkte.length} primaer={ebene.passpunkte.length < 4} />
           </div>
           {ebene.passpunkte.length > 0 && (
-            <table className="summary-table text ef-tabelle" ref={setTabelle}>
+            <table className="summary-table ef-tabelle" ref={setTabelle}>
               <thead>
                 <tr>
                   <th />
@@ -237,7 +237,7 @@ function ReferenzPanel({ foto, ebene, ergebnis }: { foto: Foto; ebene: Ebene; er
             <WerkzeugKnopf w="mass" anzahl={ebene.fluchtlinien.masse.length} />
           </div>
           {ebene.fluchtlinien.masse.length > 0 && (
-            <table className="summary-table text ef-tabelle" ref={setTabelle}>
+            <table className="summary-table ef-tabelle" ref={setTabelle}>
               <thead>
                 <tr>
                   <th />

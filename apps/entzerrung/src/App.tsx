@@ -130,7 +130,7 @@ export function App() {
   ];
   // Menü „Ansicht“: Schalter der Darstellung, dann „Alles zeigen“
   const ansichtPunkte = (): MenuePunkt[] => [
-    { text: 'Leiste mit Fotos und Ebenen', haken: !linksZu, aktion: () => setLinksZu((z) => !z) },
+    { text: 'Fotos und Ebenen', haken: !linksZu, aktion: () => setLinksZu((z) => !z) },
     { trenner: true },
     { text: 'Alles zeigen', tasten: 'Pos1', aktion: () => window.dispatchEvent(new Event('entz:einpassen')), deaktiviert: !foto, hinweis: foto ? undefined : 'Erst ein Foto hinzufügen' },
   ];

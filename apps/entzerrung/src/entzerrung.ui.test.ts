@@ -328,7 +328,7 @@ describe('RECTIO (Entzerrung)', () => {
     // „Ansicht“: die linke Leiste als Haken-Schalter
     expect(karte(host, 'Fotos')).toBeDefined();
     act(() => menueKnopf('Ansicht').click());
-    const leisteSchalter = punkte().find((p) => p.textContent?.includes('Leiste mit Fotos und Ebenen'))!;
+    const leisteSchalter = punkte().find((p) => p.textContent?.includes('Fotos und Ebenen'))!;
     expect(leisteSchalter.getAttribute('role')).toBe('menuitemcheckbox');
     expect(leisteSchalter.getAttribute('aria-checked')).toBe('true');
     act(() => leisteSchalter.click());
@@ -374,10 +374,10 @@ describe('RECTIO (Entzerrung)', () => {
     act(() => useEntz.getState().setze({ werkzeug: 'ecken' }));
     expect(zeichen.querySelector('.zeichen-fuss .ef-hinweis-text')?.textContent).toBeTruthy();
     expect(host.querySelector('.ef-status')).toBeNull();
-    // im Werkzeug „Auswahl“ ohne Hinweis und ohne Maus steht die Fußzeile trotzdem (gleichbleibende Höhe)
+    // im Werkzeug „Auswahl“ ohne Maus steht die Fußzeile mit dem Bedienhinweis (gleichbleibende Höhe)
     act(() => useEntz.getState().setze({ werkzeug: 'auswahl' }));
-    expect(zeichen.querySelector('.zeichen-fuss')).not.toBeNull();
-    expect(zeichen.querySelector('.zeichen-fuss .ef-hinweis-text')).toBeNull();
+    expect(zeichen.querySelector('.zeichen-fuss .ef-hinweis-text')?.textContent).toContain('Mausrad zoomt');
+    expect(zeichen.querySelector('.zeichen-fuss .ef-koord')).toBeNull();
   });
 
   it('Datei über dem Fenster: Ablegen-Hinweis in der Zeichenkarte', () => {
