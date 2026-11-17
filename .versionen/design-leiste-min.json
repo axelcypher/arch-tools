@@ -9,7 +9,7 @@
   },
   "kosten": {
     "stufe": "patch",
-    "notiz": "Seitenkarten geben in schmalen Fenstern nur bis zu ihrer eigenen Mindestbreite nach."
+    "notiz": "Interne Anpassung der gemeinsamen Oberfläche, ohne sichtbare Änderung."
   },
   "ordner": {
     "stufe": "patch",
@@ -25,7 +25,7 @@
   },
   "ava": {
     "stufe": "patch",
-    "notiz": "Seitenkarten geben in schmalen Fenstern nur bis zu ihrer eigenen Mindestbreite nach."
+    "notiz": "Interne Anpassung der gemeinsamen Oberfläche, ohne sichtbare Änderung."
   },
   "baurecht": {
     "stufe": "patch",

@@ -221,8 +221,8 @@ export function BreitenLeiste({
     };
   }, []);
   return (
-    // ein eigenes `min` ist zugleich die Untergrenze beim Nachgeben in schmalen Fenstern (base.css: min-width: var(--leiste-min))
-    <div ref={rahmen} className={`leiste ${className}`} style={{ width: breite, ...(min !== undefined ? ({ '--leiste-min': `${min}px` } as CSSProperties) : {}) }}>
+    // ein eigenes `min` ist zugleich die Untergrenze beim Nachgeben in schmalen Fenstern (base.css: --leiste-eigen-min vor --leiste-min)
+    <div ref={rahmen} className={`leiste ${className}`} style={{ width: breite, ...(min !== undefined ? ({ '--leiste-eigen-min': `${min}px` } as CSSProperties) : {}) }}>
       {children}
       <Ziehgriff breite={breite} setBreite={setBreite} vorgabe={vorgabe} seite={seite} min={min ?? 180} max={max ?? 560} ist={ist || undefined} titel={titel} mitteMin={mitteMin} />
     </div>

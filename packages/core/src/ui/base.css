@@ -266,7 +266,8 @@ body,
 .flaeche > .leiste,
 .flaeche > .flaechen-spalte:not(.wachsend) {
   flex-shrink: 1000;
-  min-width: var(--leiste-min);
+  /* eigenes min einer BreitenLeiste (nur an ihr selbst gesetzt, erbt nicht in verschachtelte Flächen) vor der Vorgabe */
+  min-width: var(--leiste-eigen-min, var(--leiste-min));
 }
 .flaeche > .karte,
 .flaeche > .flaechen-spalte.wachsend {
