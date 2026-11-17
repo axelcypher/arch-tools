@@ -60,7 +60,7 @@ describe('NUMIO', () => {
 
   it('Leerzustand: dieselben Aktionen wie in den anderen Apps (Q-5)', () => {
     useKosten.getState().load(createProject());
-    expect(einstiegsAktionen(render(App))).toEqual(['Datei öffnen …', 'Neues Projekt']);
+    expect(einstiegsAktionen(render(App))).toEqual(['Neues Projekt', 'Datei öffnen …']);
   });
 
   it('Farbschema wechselt sofort (Menü ◐)', () => {
@@ -73,7 +73,7 @@ describe('NUMIO', () => {
   it('zeigt ohne Projekt den Einstieg; Druck und Export sind gesperrt', () => {
     useKosten.getState().load(createProject());
     const host = render(App);
-    expect(host.textContent).toContain('Projekt oder IFC öffnen');
+    expect(host.querySelector('.pw-einstieg')?.textContent).toContain('IFC-Modell');
     expect(knopf(host, 'Kosten drucken').disabled).toBe(true);
     expect(knopf(host, 'Exportieren').getAttribute('aria-disabled')).toBe('true');
     expect(knopf(host, 'Exportieren').title).toBe('Erst Positionen anlegen');

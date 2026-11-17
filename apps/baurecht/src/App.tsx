@@ -7,7 +7,7 @@ import { Flaeche } from '@core/ui/Karte';
 import { BreitenLeiste } from '@core/ui/Leiste';
 import { APP_NAMEN, appMitWas } from '@core/appNamen';
 import { LogDialog } from '@core/ui/LogDialog';
-import { ProjektWahl } from '@core/ui/ProjektWahl';
+import { ProjektEinstieg, ProjektWahl } from '@core/ui/ProjektWahl';
 import { aenderungenSpeichern, fehlerText, meldung } from '@core/ui/Rueckfrage';
 import { TitleBar } from '@core/ui/TitleBar';
 import { Angaben } from './components/Angaben';
@@ -165,36 +165,26 @@ export function bereichWechseln(rueckwaerts: boolean) {
 
 function Start({ onWahl }: { onWahl: () => void }) {
   return (
-    <div className="br-start">
-      <div className="br-start-karte">
-        <hgroup>
-          <h1>{APP_NAMEN.baurecht.name}</h1>
-          <p className="br-start-was">{APP_NAMEN.baurecht.was}</p>
-        </hgroup>
-        <p>Rechtsprüfung vor dem Einreichen eines Antrags: alle Vorschriften, die für das Vorhaben eine Rolle spielen – je Paragraf als Ampel, mit Begründung und dem Text in der maßgeblichen Fassung.</p>
-        <dl className="br-legende">
-          {(['rot', 'gelb', 'gruen'] as const).map((a) => (
-            <div key={a}>
-              <dt>
-                <AmpelMarke ampel={a} />
-              </dt>
-              <dd>{AMPEL_ERKLAERUNG[a]}</dd>
-            </div>
-          ))}
-        </dl>
-        <div className="br-start-knoepfe">
-          {isTauri() && (
-            <button type="button" className="primary" onClick={onWahl}>
-              Projekt wählen …
-            </button>
-          )}
-          <button type="button" className={isTauri() ? '' : 'primary'} onClick={() => void dateiOeffnen()}>
-            Projektdatei öffnen …
-          </button>
-        </div>
-        <p className="br-leise">Die Angaben kommen aus der Projektdatei (.oap) – Stammdaten, Antragsmerkmale aus {appMitWas('formulare')}, Festsetzungen aus {appMitWas('grz')}, Geschosse aus {appMitWas('flaechenrechner')}.</p>
-      </div>
-    </div>
+    <ProjektEinstieg
+      app="baurecht"
+      als="main"
+      text="Rechtsprüfung vor dem Einreichen eines Antrags: alle Vorschriften, die für das Vorhaben eine Rolle spielen – je Paragraf als Ampel, mit Begründung und dem Text in der maßgeblichen Fassung."
+      onProjekte={isTauri() ? onWahl : undefined}
+      onDateiOeffnen={() => void dateiOeffnen()}
+      dateiHinweis="Projektdatei (.oap)"
+      fussnote={`Die Angaben kommen aus der Projektdatei (.oap) – Stammdaten, Antragsmerkmale aus ${appMitWas('formulare')}, Festsetzungen aus ${appMitWas('grz')}, Geschosse aus ${appMitWas('flaechenrechner')}.`}
+    >
+      <dl className="br-legende">
+        {(['rot', 'gelb', 'gruen'] as const).map((a) => (
+          <div key={a}>
+            <dt>
+              <AmpelMarke ampel={a} />
+            </dt>
+            <dd>{AMPEL_ERKLAERUNG[a]}</dd>
+          </div>
+        ))}
+      </dl>
+    </ProjektEinstieg>
   );
 }
 
@@ -332,7 +322,10 @@ export function App() {
           </Flaeche>
         </>
       ) : (
-        <Start onWahl={() => setWahl(true)} />
+        <>
+          <h1 className="br-unsichtbar">{APP_NAMEN.baurecht.name}</h1>
+          <Start onWahl={() => setWahl(true)} />
+        </>
       )}
       {wahl && (
         <ProjektWahl
