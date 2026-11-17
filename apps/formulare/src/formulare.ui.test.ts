@@ -441,6 +441,9 @@ describe('Formulare', () => {
     // als --rollend-kopf-h an der Spalte (Felder ohne Kopf: wieder die Vorgabe aus core)
     const kopf = flaeche.querySelector('.fo-inhalt .fo-felder > .fo-felder-kopf.rollend-kopf:first-child')!;
     expect([kopf.getAttribute('role'), kopf.getAttribute('aria-label')]).toEqual(['search', 'Felder suchen und filtern']);
+    // Filter als Umschalter (.segment) mit aria-pressed: der gewählte ist angesagt
+    const filter = [...kopf.querySelectorAll<HTMLButtonElement>('.segment[role="group"][aria-label="Filter"] > button')];
+    expect(filter.map((b) => `${b.textContent!.split(' (')[0]}:${b.getAttribute('aria-pressed')}`)).toEqual(['Alle:true', 'Offene:false', 'Geänderte:false']);
     const spalte = flaeche.querySelector<HTMLElement>('.fo-inhalt')!;
     expect(spalte.style.getPropertyValue('--rollend-kopf-h')).toMatch(/^calc\(\d+px \+ var\(--s1\)\)$/);
     // Abschnitte unter der Seitenüberschrift (h2): Kopf h3, keine eigene Region (div ohne Namen)

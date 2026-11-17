@@ -124,12 +124,13 @@ export function FelderAnsicht({ offen, gesperrt }: { offen: OffenesFormular; ges
           placeholder="Felder durchsuchen …"
           title="Sucht in der Beschriftung und im Inhalt der Felder"
           aria-label="Felder durchsuchen"
+          aria-description="Sucht in der Beschriftung und im Inhalt der Felder"
           value={suche}
           onChange={(e) => setSuche(e.target.value)}
         />
-        <div className="tb-group">
+        <div className="segment" role="group" aria-label="Filter">
           {FILTER.map((f) => (
-            <button key={f.id} className={filter === f.id ? 'active' : ''} title={f.title} onClick={() => setFilter(f.id)}>
+            <button key={f.id} aria-pressed={filter === f.id} title={f.title} onClick={() => setFilter(f.id)}>
               {f.label}
               {f.id === 'offen' && ` (${gesamt.offen})${gesamt.ungeklaert ? ` · ${gesamt.ungeklaert} ungeklärt` : ''}`}
             </button>
@@ -138,7 +139,10 @@ export function FelderAnsicht({ offen, gesperrt }: { offen: OffenesFormular; ges
         <button className="small" title="Zur nächsten offenen Angabe springen (F8)" disabled={!liste.length} onClick={() => zurNaechstenOffenen()}>
           Nächste offene Angabe
         </button>
-        {eingeschraenkt && filter !== 'offen' && <span className="muted small-text fo-treffer">{treffer === 1 ? '1 Treffer' : `${treffer} Treffer`}</span>}
+        {/* Trefferzahl beim Tippen ansagen: die Live-Region steht immer, ihr Text nur bei Suche */}
+        <span className="muted small-text fo-treffer" aria-live="polite">
+          {eingeschraenkt && filter !== 'offen' ? (treffer === 1 ? '1 Treffer' : `${treffer} Treffer`) : ''}
+        </span>
       </div>
       {filter === 'offen' && (
         <Karte
