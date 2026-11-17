@@ -437,6 +437,9 @@ describe('Formulare', () => {
     expect(flaeche.querySelector(':scope > .flaechen-spalte.wachsend.rollend.fo-inhalt')).not.toBeNull();
     await klick(knopfGenau(host, 'Felder'));
     // Abschnitte unter der Seitenüberschrift (h2): Kopf h3, keine eigene Region (div ohne Namen)
+    // Suche und Filter: fester Kopf der rollenden Spalte aus core, als Suchbereich benannt
+    const kopf = flaeche.querySelector('.fo-inhalt .fo-felder > .fo-felder-kopf.rollend-kopf:first-child')!;
+    expect([kopf.getAttribute('role'), kopf.getAttribute('aria-label')]).toEqual(['search', 'Felder suchen und filtern']);
     const seite = flaeche.querySelector('.fo-inhalt .fo-seite-felder')!;
     expect(seite.querySelector(':scope > h2')!.textContent).toContain('Seite 1');
     const abschnitt = seite.querySelector<HTMLElement>('.fo-abschnitt > div.karte')!;

@@ -35,6 +35,27 @@ export function FelderAnsicht({ offen, gesperrt }: { offen: OffenesFormular; ges
   const markierung = useMarkierung((s) => s.markierung);
   const markiert = useMemo(() => new Set(markierung?.felder), [markierung]);
   const huelle = useRef<HTMLDivElement>(null);
+  // fester Kopf der rollenden Spalte (core): bricht er in schmalen Spalten um, braucht die Spalte seine wirkliche Höhe als
+  // --rollend-kopf-h, damit fokussierte Felder nicht darunter rollen. Wann er umbricht, hängt von der Breite der
+  // Seitenkarten ab – deshalb gemessen statt per Media-Abfrage
+  const kopf = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const k = kopf.current;
+    const spalte = k?.closest<HTMLElement>('.flaechen-spalte.rollend');
+    if (!k || !spalte || typeof ResizeObserver === 'undefined') return;
+    const setzen = () => {
+      // sichtbare Höhe des Kopfs plus --s1 Platz für den Fokusrahmen (wie die Vorgabe aus core)
+      const s1 = parseFloat(getComputedStyle(spalte).getPropertyValue('--s1')) || 4;
+      spalte.style.setProperty('--rollend-kopf-h', `${Math.ceil(k.getBoundingClientRect().height + s1)}px`);
+    };
+    const ro = new ResizeObserver(setzen);
+    ro.observe(k);
+    setzen();
+    return () => {
+      ro.disconnect();
+      spalte.style.removeProperty('--rollend-kopf-h');
+    };
+  }, []);
   const roh = useProfil(profilSchluessel(offen.formular, offen.name));
   const profil = useMemo(() => ({ ...leeresProfil(), ...roh }), [roh]);
   const entfall = useEntfallen(offen);
@@ -113,7 +134,7 @@ export function FelderAnsicht({ offen, gesperrt }: { offen: OffenesFormular; ges
 
   return (
     <div className="fo-felder" ref={huelle} onKeyDown={(e) => hinweisPerF1(e) || tasten(e)}>
-      <div className="fo-felder-kopf">
+      <div className="fo-felder-kopf rollend-kopf" role="search" aria-label="Felder suchen und filtern" ref={kopf}>
         <input
           type="search"
           className="fo-feldsuche"
