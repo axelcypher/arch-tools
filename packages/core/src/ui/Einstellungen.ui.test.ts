@@ -85,31 +85,77 @@ describe('Einstellungen', () => {
   it('Pfade und Benennung: nach Thema gegliedert, App gekennzeichnet, Platzhalter-Chips, Vorschau; Änderung gilt erst mit „Übernehmen“', async () => {
     setze('allgemein', { buero: 'Muster' });
     const e = await zeigen();
-    await act(async () => e.einstellungenOeffnen('pfade', 'export.excel.flaechenrechner'));
+    await act(async () => e.einstellungenOeffnen('pfade', 'export.excel'));
     await warten();
     const d = dialog()!;
     expect([...d.querySelectorAll('.einst-gruppe > h4')].map((h) => h.textContent)).toEqual(['Projekt', 'Ablage', 'Pläne und Dokumente', 'Export', 'Vorlagen']);
-    const ex = eintrag('export.excel.flaechenrechner');
+    const ex = eintrag('export.excel');
     expect(ex.querySelector('.einst-app')?.textContent).toBe('QUADRIO');
     expect(ex.querySelector('[role="group"][aria-label="Platzhalter: Dateiname Excel-Export"]')).not.toBeNull();
     expect(ex.querySelector('.einst-vorschau')?.textContent).toMatch(/^Vorschau: BS9 \d{6} Flächenaufstellung\.xlsx$/);
     // Fokus aus dem Aufruf: das Feld des Eintrags
-    expect(document.activeElement).toBe(feldVon('export.excel.flaechenrechner'));
+    expect(document.activeElement).toBe(feldVon('export.excel'));
     const uebernehmen = knopf('Übernehmen', d)!;
     expect(uebernehmen.type).toBe('submit');
 
-    await tippen(feldVon('export.excel.flaechenrechner'), '{PROJEKT_KUERZEL} Flächen');
+    await tippen(feldVon('export.excel'), '{PROJEKT_KUERZEL} Flächen');
     expect(ex.classList.contains('geaendert')).toBe(true);
     expect(d.querySelector('[role="tab"][aria-selected="true"] .einst-geaendert')).not.toBeNull();
     // noch nichts gespeichert
     expect(roh('allgemein')).toEqual({ buero: 'Muster' });
     // Chip an der Schreibmarke (hier am Ende)
-    await tippen(feldVon('export.excel.flaechenrechner'), '{PROJEKT_KUERZEL} Flächen ');
+    await tippen(feldVon('export.excel'), '{PROJEKT_KUERZEL} Flächen ');
     await klick(ex.querySelector<HTMLButtonElement>('button[aria-label^="{DATUM} einfügen"]'));
-    expect(feldVon('export.excel.flaechenrechner').value).toBe('{PROJEKT_KUERZEL} Flächen {DATUM}');
+    expect(feldVon('export.excel').value).toBe('{PROJEKT_KUERZEL} Flächen {DATUM}');
     await klick(uebernehmen);
     expect(dialog()).toBeNull();
-    expect(roh('allgemein')).toEqual({ buero: 'Muster', pfade: { 'export.excel.flaechenrechner': '{PROJEKT_KUERZEL} Flächen {DATUM}' } });
+    // gemeinsam für QUADRIO, TERRIO und NUMIO; die bisherigen Schlüssel je App für ältere Versionen mitgeschrieben
+    const neu = '{PROJEKT_KUERZEL} Flächen {DATUM}';
+    expect(roh('allgemein')).toEqual({ buero: 'Muster', pfade: { 'export.excel': neu, 'export.excel.flaechenrechner': neu, 'export.excel.grz': neu, 'export.excel.kosten': neu } });
+  });
+
+  it('gemeinsame Angaben: einmal für alle Apps; Abweichungen je App eingeklappt bis gesetzt, Vorschau je App, App-Filter', async () => {
+    setze('allgemein', { pfade: { 'export.excel.kosten': 'K {Inhalt}' } });
+    const e = await zeigen();
+    await act(async () => e.einstellungenOeffnen('pfade'));
+    await warten();
+    const d = dialog()!;
+    // der Berechnungsordner steht einmal, mit den Marken aller drei Apps; die Unterordner je App sind gesetzt und offen
+    expect(d.querySelectorAll('[id^="einst-export.berechnungsordner"]').length).toBe(1);
+    expect([...eintrag('export.berechnungsordner').querySelectorAll('.einst-apps .einst-app')].map((x) => x.textContent)).toEqual(['QUADRIO', 'TERRIO', 'NUMIO']);
+    const wirksam = () => [...eintrag('export.berechnungsordner').querySelectorAll('.einst-wirksam li')].map((li) => li.textContent);
+    expect(wirksam()).toEqual(['QUADRIO 03 Berechnungen / Flächen', 'TERRIO 03 Berechnungen / Nachweise', 'NUMIO 03 Berechnungen / Kosten']);
+    const unter = knopf('Unterordner je App', d)!;
+    expect(unter.getAttribute('aria-expanded')).toBe('true');
+    expect(d.querySelector(`[role="group"][aria-label="Unterordner je App in „Berechnungsordner“"]`)).not.toBeNull();
+    // der gemeinsame Ordner wirkt sofort in der Vorschau je App
+    await tippen(feldVon('export.berechnungsordner'), 'Ber');
+    expect(wirksam()[0]).toBe('QUADRIO Ber / Flächen');
+    // Excel-Name: übernommen – NUMIO weicht ab, deshalb offen; PDF: keine Abweichung, eingeklappt
+    const [excelAuf, pdfAuf] = [...d.querySelectorAll<HTMLButtonElement>('.einst-aufklappen')].filter((b) => b.textContent?.includes('Für einzelne Apps abweichend'));
+    expect(excelAuf.getAttribute('aria-expanded')).toBe('true');
+    expect(feldVon('export.excel.abweichend.kosten').value).toBe('K {Inhalt}');
+    expect(pdfAuf.getAttribute('aria-expanded')).toBe('false');
+    expect(document.getElementById('einst-export.pdf.abweichend.grz')).toBeNull();
+    await klick(pdfAuf);
+    expect(pdfAuf.getAttribute('aria-expanded')).toBe('true');
+    expect(feldVon('export.pdf.abweichend.grz').value).toBe('');
+    // App-Filter: die gemeinsame Angabe bleibt, nur die Abweichung der App
+    const filter = d.querySelector<HTMLSelectElement>('.einst-filter select')!;
+    await act(async () => {
+      filter.value = 'grz';
+      filter.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    expect(document.getElementById('einst-export.berechnungsordner')).not.toBeNull();
+    expect(document.getElementById('einst-export.unterordner.grz')).not.toBeNull();
+    expect(document.getElementById('einst-export.unterordner.kosten')).toBeNull();
+  });
+
+  it('gemeinsame Angaben: ein Aufruf zu einer Abweichung klappt sie auf und setzt den Fokus', async () => {
+    const e = await zeigen();
+    await act(async () => e.einstellungenOeffnen('pfade', 'export.pdf.abweichend.grz'));
+    await warten();
+    expect(document.activeElement).toBe(feldVon('export.pdf.abweichend.grz'));
   });
 
   it('Prüfung: ungültige Zeichen und leere Pflichtfelder am Feld, „Übernehmen“ gesperrt mit Grund; „Vorgabe wiederherstellen“', async () => {
@@ -153,14 +199,14 @@ describe('Einstellungen', () => {
     expect(dialog()).toBeNull();
     await act(async () => e.einstellungenOeffnen('pfade'));
     await warten();
-    await tippen(feldVon('export.pdf.kosten'), 'Kosten');
+    await tippen(feldVon('export.pdf'), 'Kosten');
     await klick(knopf('Abbrechen', dialog()!));
     const rf = document.querySelector<HTMLElement>('.modal.rf')!;
     expect(rf.textContent).toContain('Änderungen an ‚Einstellungen‘ verwerfen?');
     expect(rf.textContent).toContain('Die Änderungen an den Einstellungen gehen verloren.');
     await klick(knopf('Abbrechen', rf));
     expect(dialog()).not.toBeNull();
-    expect(feldVon('export.pdf.kosten').value).toBe('Kosten');
+    expect(feldVon('export.pdf').value).toBe('Kosten');
     await klick(knopf('Abbrechen', dialog()!));
     await klick(knopf('Verwerfen und schließen'));
     expect(dialog()).toBeNull();
@@ -168,7 +214,7 @@ describe('Einstellungen', () => {
     // beim nächsten Öffnen beginnt der Entwurf frisch
     await act(async () => e.einstellungenOeffnen('pfade'));
     await warten();
-    expect(feldVon('export.pdf.kosten').value).toBe('{PROJEKT_KUERZEL} {DATUM} {Inhalt}');
+    expect(feldVon('export.pdf').value).toBe('{PROJEKT_KUERZEL} {DATUM} {Inhalt}');
   });
 
   it('Allgemein: Büro und Mitarbeiter gelten erst mit „Übernehmen“', async () => {

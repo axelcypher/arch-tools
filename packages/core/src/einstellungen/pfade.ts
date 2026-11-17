@@ -5,6 +5,7 @@ import { ersetzen, globaleWerte, type GlobaleQuelle } from '../platzhalter';
 import { sichererDateiname } from '../projektdatei';
 import { gleicherWert, mitSchluessel, type PfadEinstellung, type PfadWert } from './verzeichnis';
 import { PFAD_EINSTELLUNGEN } from './eintraege';
+import { abweichungId, EXPORT_APPS, gemeinsamId, wirksamFuer, type ExportApp, type ExportGruppe } from './gemeinsam';
 import { EXPORT_VARIABLEN } from './variablen';
 
 /**
@@ -154,7 +155,7 @@ konfigNeuLesen(() => void (geladen ? pfadWerteLaden().catch(() => undefined) : u
 
 /* ---------- Export in den Berechnungsordner (QUADRIO, TERRIO, NUMIO) ---------- */
 
-export type ExportApp = 'flaechenrechner' | 'grz' | 'kosten';
+export type { ExportApp } from './gemeinsam';
 
 export interface ExportPfade {
   /** Berechnungsordner als Vorlage relativ zum Projektordner */
@@ -166,12 +167,17 @@ export interface ExportPfade {
   pdfMitspeichern: boolean;
 }
 
-const exportAus = (app: ExportApp, w: (id: string) => PfadWert): ExportPfade => ({
-  berechnungsordner: String(w(`export.berechnungsordner.${app}`)),
-  dateinameExcel: String(w(`export.excel.${app}`)),
-  dateinamePdf: String(w(`export.pdf.${app}`)),
-  pdfMitspeichern: w('export.pdfMitspeichern') !== false,
-});
+/** Export-Einstellungen einer App: gemeinsame Angaben mit ihrer Abweichung (`gemeinsam.ts`) */
+const exportAus = (app: ExportApp, w: (id: string) => PfadWert): ExportPfade => {
+  const gruppe = (g: ExportGruppe) => ({ gemeinsam: String(w(gemeinsamId(g))), je: { ...LEER, [app]: String(w(abweichungId(g, app))) } });
+  return {
+    berechnungsordner: wirksamFuer('ordner', gruppe('ordner'), app),
+    dateinameExcel: wirksamFuer('excel', gruppe('excel'), app),
+    dateinamePdf: wirksamFuer('pdf', gruppe('pdf'), app),
+    pdfMitspeichern: w('export.pdfMitspeichern') !== false,
+  };
+};
+const LEER = { flaechenrechner: '', grz: '', kosten: '' };
 
 /** Export-Einstellungen einer App aus dem Zwischenspeicher (sonst Vorgaben) – synchron */
 export const exportPfade = (app: ExportApp): ExportPfade => exportAus(app, pfadWert);
@@ -214,7 +220,7 @@ export function exportDateinameAusMuster(muster: string, o: { werte: GlobaleQuel
  */
 export function berechnungenSuchvorlagen(w: (id: string) => PfadWert = pfadWert): string[] {
   const extra = w('ablage.permio.berechnungsordner');
-  const vorlagen = [...(['flaechenrechner', 'grz', 'kosten'] as const).map((a) => String(w(`export.berechnungsordner.${a}`))), ...(Array.isArray(extra) ? extra : [])];
+  const vorlagen = [...EXPORT_APPS.map((a) => exportAus(a, w).berechnungsordner), ...(Array.isArray(extra) ? extra : [])];
   const out: string[] = [];
   const norm = (v: string) =>
     v

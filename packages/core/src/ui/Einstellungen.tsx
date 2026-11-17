@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { createContext, Fragment, useContext, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import type { KeyboardEvent, ReactNode } from 'react';
 import { create } from 'zustand';
 import { APP_NAMEN, type AppKennung } from '../appNamen';
@@ -583,14 +583,82 @@ function SeitePfade({ fokus }: { fokus?: string }) {
             <section key={t.id} className="einst-gruppe" aria-labelledby={`einst-thema-${t.id}`}>
               <h4 id={`einst-thema-${t.id}`}>{t.titel}</h4>
               <p className="muted small-text einst-gruppe-text">{t.text}</p>
-              {liste.map((e) => (
-                <PfadFeld key={e.id} e={e} werte={werte} />
-              ))}
+              {liste
+                .filter((e) => !e.abweichungVon)
+                .map((e) => (
+                  <Fragment key={e.id}>
+                    <PfadFeld e={e} werte={werte} />
+                    <Abweichungen basis={e} werte={werte} app={app} fokus={fokus} />
+                  </Fragment>
+                ))}
             </section>
           );
         })
       )}
     </>
+  );
+}
+
+/** Abweichungen einer gemeinsamen Angabe je App (`abweichungVon`) */
+const abweichungenVon = (id: string) => PFAD_EINSTELLUNGEN.filter((x) => x.abweichungVon?.id === id);
+
+/** Text, der für eine Abweichung gilt: verbunden mit der gemeinsamen Angabe (Unterordner) bzw. statt ihrer */
+function wirksamerText(a: PfadEinstellung, werte: PfadWerte, entwurf: Record<string, string | boolean | null>): string {
+  const basis = pfadEinstellung(a.abweichungVon!.id);
+  const gemeinsam = alsText(wirksam(basis, werte, entwurf)).trim();
+  const eigen = alsText(wirksam(a, werte, entwurf)).trim();
+  if (a.abweichungVon!.art === 'ersetzt') return eigen || gemeinsam;
+  return [gemeinsam, eigen]
+    .flatMap((t) => t.split(/[\\/]+/))
+    .map((t) => t.trim())
+    .filter(Boolean)
+    .join('/');
+}
+
+/** Vorschau je App unter der gemeinsamen Angabe: was für jede App gilt */
+function WirksamJeApp({ basis, werte }: { basis: PfadEinstellung; werte: PfadWerte }) {
+  const entwurf = pfadStore((s) => s.entwurf);
+  const liste = abweichungenVon(basis.id);
+  if (!liste.length) return null;
+  return (
+    <ul className="einst-wirksam small-text" aria-label={`Wirksam je App: ${basis.bezeichnung}`}>
+      {liste.map((a) => (
+        <li key={a.id}>
+          <span className="einst-app">{APP_NAMEN[a.apps[0]].name}</span> <code>{pfadVorschau({ ...a, art: basis.art }, wirksamerText(a, werte, entwurf)) || 'Projektordner'}</code>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/**
+ * Abweichungen je App unter der gemeinsamen Angabe: eingeklappt hinter „Für einzelne Apps abweichend …“, solange keine
+ * gesetzt ist (der Unterordner des Berechnungsordners zählt wie eine Abweichung). Mit App-Filter nur die der App.
+ */
+function Abweichungen({ basis, werte, app, fokus }: { basis: PfadEinstellung; werte: PfadWerte; app: AppKennung | ''; fokus?: string }) {
+  const entwurf = pfadStore((s) => s.entwurf);
+  const liste = abweichungenVon(basis.id).filter((a) => !app || a.apps.includes(app));
+  const gesetzt = liste.filter((a) => alsText(wirksam(a, werte, entwurf)).trim() !== '').length;
+  // offen, wenn eine gesetzt ist oder der Aufruf eine davon ansteuert
+  const [offen, setOffen] = useState(gesetzt > 0 || liste.some((a) => a.id === fokus));
+  const id = useId();
+  if (!liste.length) return null;
+  const unterordner = basis.art === 'pfad';
+  return (
+    <div className="einst-abweichungen">
+      <button type="button" className="small einst-aufklappen" aria-expanded={offen} aria-controls={id} onClick={() => setOffen(!offen)}>
+        <Symbol name={offen ? 'pfeilUnten' : 'pfeilRechts'} />
+        {unterordner ? 'Unterordner je App' : 'Für einzelne Apps abweichend'}
+        {!offen && gesetzt > 0 && <span className="muted"> ({gesetzt === 1 ? 'eine gesetzt' : `${gesetzt} gesetzt`})</span>}
+      </button>
+      {offen && (
+        <div className="einst-unter" id={id} role="group" aria-label={`${unterordner ? 'Unterordner je App in' : 'Je App abweichend von'} „${basis.bezeichnung}“`}>
+          {liste.map((a) => (
+            <PfadFeld key={a.id} e={a} werte={werte} />
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -641,6 +709,7 @@ function PfadFeld({ e, werte }: { e: PfadEinstellung; werte: PfadWerte }) {
       <p className="muted small-text einst-erklaerung" id={hinweisId}>
         {e.erklaerung}
       </p>
+      <WirksamJeApp basis={e} werte={werte} />
       {e.projektwert && (
         <p className="small-text einst-projekt">
           <span className="einst-projekt-marke">Je Projekt</span> {e.projektwert} Hier steht die Vorgabe des Büros.

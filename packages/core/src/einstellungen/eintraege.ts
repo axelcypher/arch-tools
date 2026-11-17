@@ -14,6 +14,8 @@ import {
   PERMIO_NAMEN,
   PERMIO_ZIEL,
 } from './variablen';
+import { APP_NAMEN } from '../appNamen';
+import { abweichungId, EXPORT_APPS, gemeinsamId, gemeinsamSpeicher, VORGABE_EXPORT_DATEINAME, VORGABE_GEMEINSAMER_BERECHNUNGSORDNER, VORGABE_UNTERORDNER, type ExportApp } from './gemeinsam';
 import { inPfade, unterSchluessel, type PfadEinstellung, type PfadSpeicher } from './verzeichnis';
 
 /**
@@ -42,8 +44,7 @@ function nebenStruktur(speicher: PfadSpeicher): PfadSpeicher {
 
 /** Vorgaben, die auch die Apps brauchen */
 export const VORGABE_FOTOORDNER = '09 Fotos';
-export const VORGABE_BERECHNUNGSORDNER = { flaechenrechner: '03 Berechnungen/Flächen', grz: '03 Berechnungen/Nachweise', kosten: '03 Berechnungen/Kosten' } as const;
-export const VORGABE_EXPORT_DATEINAME = '{PROJEKT_KUERZEL} {DATUM} {Inhalt}';
+export { VORGABE_BERECHNUNGSORDNER, VORGABE_EXPORT_DATEINAME } from './gemeinsam';
 /** Beispiele für {Inhalt} je App (Vorschau) */
 const INHALT = { flaechenrechner: 'Flächenaufstellung', grz: 'GRZ-Nachweis', kosten: 'Kostenschätzung' } as const;
 
@@ -63,48 +64,79 @@ export const VORGABE_PERMIO = {
   vorlagenordner: '',
 } as const;
 
-const exportEintraege = (app: 'flaechenrechner' | 'grz' | 'kosten'): PfadEinstellung[] => [
-  {
-    id: `export.berechnungsordner.${app}`,
-    apps: [app],
-    thema: 'export',
-    art: 'pfad',
-    bezeichnung: 'Berechnungsordner',
-    erklaerung: `Ziel des direkten Exports (Excel und PDF), relativ zum Projektordner. Fehlt der Ordner, wird er beim Export angelegt. PERMIO sucht hier Berechnungen.`,
-    vorgabe: VORGABE_BERECHNUNGSORDNER[app],
-    variablen: ORDNER_VARIABLEN,
-    pflicht: true,
-    speicher: inPfade(`export.berechnungsordner.${app}`, 'pfad'),
-  },
-  {
-    id: `export.excel.${app}`,
-    apps: [app],
-    thema: 'export',
-    art: 'name',
-    bezeichnung: 'Dateiname Excel-Export',
-    erklaerung: 'Name der Excel-Datei beim Export, ohne Endung. {Inhalt} sagt, was exportiert wird.',
-    vorgabe: VORGABE_EXPORT_DATEINAME,
-    variablen: EXPORT_VARIABLEN,
-    beispiel: { Inhalt: INHALT[app] },
-    endung: '.xlsx',
-    pflicht: true,
-    speicher: inPfade(`export.excel.${app}`, 'name'),
-  },
-  {
-    id: `export.pdf.${app}`,
-    apps: [app],
-    thema: 'export',
-    art: 'name',
-    bezeichnung: 'Dateiname PDF-Export',
-    erklaerung: 'Name der PDF-Datei beim Export, ohne Endung.',
-    vorgabe: VORGABE_EXPORT_DATEINAME,
-    variablen: EXPORT_VARIABLEN,
-    beispiel: { Inhalt: INHALT[app] },
-    endung: '.pdf',
-    pflicht: true,
-    speicher: inPfade(`export.pdf.${app}`, 'name'),
-  },
-];
+/** Beispiel für {Inhalt} in der gemeinsamen Vorschau */
+const INHALT_GEMEINSAM = 'Flächenaufstellung';
+
+/** gemeinsame Angaben des direkten Exports (QUADRIO, TERRIO, NUMIO) mit Abweichung je App – `gemeinsam.ts` */
+const exportEintraege = (): PfadEinstellung[] => {
+  const name = (a: ExportApp) => APP_NAMEN[a].name;
+  const dateiname = (g: 'excel' | 'pdf'): PfadEinstellung[] => {
+    const art = g === 'excel' ? 'Excel' : 'PDF';
+    const endung = g === 'excel' ? '.xlsx' : '.pdf';
+    return [
+      {
+        id: gemeinsamId(g),
+        apps: [...EXPORT_APPS],
+        thema: 'export',
+        art: 'name',
+        bezeichnung: `Dateiname ${art}-Export`,
+        erklaerung: `Name der ${art}-Datei beim Export, ohne Endung – für QUADRIO, TERRIO und NUMIO. {Inhalt} sagt, was exportiert wird.`,
+        vorgabe: VORGABE_EXPORT_DATEINAME,
+        variablen: EXPORT_VARIABLEN,
+        beispiel: { Inhalt: INHALT_GEMEINSAM },
+        endung,
+        pflicht: true,
+        speicher: gemeinsamSpeicher(g),
+      },
+      ...EXPORT_APPS.map(
+        (a): PfadEinstellung => ({
+          id: abweichungId(g, a),
+          apps: [a],
+          thema: 'export',
+          art: 'name',
+          bezeichnung: `Abweichend für ${name(a)}`,
+          erklaerung: `Eigener Name der ${art}-Datei für ${name(a)}; leer = der gemeinsame.`,
+          vorgabe: '',
+          variablen: EXPORT_VARIABLEN,
+          beispiel: { Inhalt: INHALT[a] },
+          endung,
+          abweichungVon: { id: gemeinsamId(g), art: 'ersetzt' },
+          speicher: gemeinsamSpeicher(g, a),
+        }),
+      ),
+    ];
+  };
+  return [
+    {
+      id: gemeinsamId('ordner'),
+      apps: [...EXPORT_APPS],
+      thema: 'export',
+      art: 'pfad',
+      bezeichnung: 'Berechnungsordner',
+      erklaerung:
+        'Ziel des direkten Exports (Excel und PDF) von QUADRIO, TERRIO und NUMIO, relativ zum Projektordner; darin je App ein Unterordner. Leer = der Projektordner selbst. Fehlt der Ordner, wird er beim Export angelegt. PERMIO sucht hier Berechnungen.',
+      vorgabe: VORGABE_GEMEINSAMER_BERECHNUNGSORDNER,
+      variablen: ORDNER_VARIABLEN,
+      speicher: gemeinsamSpeicher('ordner'),
+    },
+    ...EXPORT_APPS.map(
+      (a): PfadEinstellung => ({
+        id: abweichungId('ordner', a),
+        apps: [a],
+        thema: 'export',
+        art: 'pfad',
+        bezeichnung: `Unterordner für ${name(a)}`,
+        erklaerung: 'Im gemeinsamen Berechnungsordner; leer = direkt darin.',
+        vorgabe: VORGABE_UNTERORDNER[a],
+        variablen: ORDNER_VARIABLEN,
+        abweichungVon: { id: gemeinsamId('ordner'), art: 'unterordner' },
+        speicher: gemeinsamSpeicher('ordner', a),
+      }),
+    ),
+    ...dateiname('excel'),
+    ...dateiname('pdf'),
+  ];
+};
 
 export const PFAD_EINSTELLUNGEN: PfadEinstellung[] = [
   /* ---------- Projekt ---------- */
@@ -379,9 +411,7 @@ export const PFAD_EINSTELLUNGEN: PfadEinstellung[] = [
   },
 
   /* ---------- Export ---------- */
-  ...exportEintraege('flaechenrechner'),
-  ...exportEintraege('grz'),
-  ...exportEintraege('kosten'),
+  ...exportEintraege(),
   {
     id: 'export.pdfMitspeichern',
     apps: ['flaechenrechner', 'grz', 'kosten'],

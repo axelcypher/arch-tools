@@ -35,10 +35,11 @@ describe('pfade', () => {
     expect((roh('allgemein')!.pfade as Record<string, unknown>)['export.pdfMitspeichern']).toBe(false);
     await p.pfadSpeichern('export.pdfMitspeichern', true);
     expect(roh('allgemein')!.pfade).toEqual({});
-    await p.pfadSpeichern('export.excel.kosten', '  {PROJEKT_KUERZEL} Kosten  ');
-    expect(p.pfadWert('export.excel.kosten')).toBe('{PROJEKT_KUERZEL} Kosten');
-    await p.pfadSpeichern('export.excel.kosten', undefined);
-    expect(p.pfadWert('export.excel.kosten')).toBe('{PROJEKT_KUERZEL} {DATUM} {Inhalt}');
+    await p.pfadSpeichern('export.excel.abweichend.kosten', '  {PROJEKT_KUERZEL} Kosten  ');
+    expect(p.pfadWert('export.excel.abweichend.kosten')).toBe('{PROJEKT_KUERZEL} Kosten');
+    await p.pfadSpeichern('export.excel.abweichend.kosten', undefined);
+    expect(p.pfadWert('export.excel.abweichend.kosten')).toBe('');
+    expect(roh('allgemein')!.pfade).toEqual({});
   });
 
   it('Export: Einstellungen je App, Berechnungsordner und Dateiname aus den Vorlagen', async () => {

@@ -3047,6 +3047,45 @@ button.ungespeichert::after {
   background: var(--accent-soft);
   color: var(--accent-text);
 }
+/* Abweichungen je App unter einer gemeinsamen Angabe (Pfade und Benennung): eingerückt mit Linie links */
+.einst-abweichungen {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s2);
+  margin-top: calc(-1 * var(--s1));
+}
+.einst-aufklappen {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s1);
+}
+.einst-unter {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  margin-left: var(--s2);
+  padding-left: var(--s4);
+  border-left: 1px solid var(--border);
+}
+/* was je App gilt, unter der gemeinsamen Angabe */
+.einst-wirksam {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+}
+.einst-wirksam > li {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s2);
+}
+.einst-wirksam code {
+  overflow-wrap: anywhere;
+}
 .einst-erklaerung,
 .einst-projekt,
 .einst-vorschau {
