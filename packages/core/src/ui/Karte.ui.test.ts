@@ -57,7 +57,7 @@ describe('Fläche und Karten', () => {
   it('schmale Fenster: zuerst geben die Seitenkarten nach, dann die Mitte von ihrer Wunschbreite', () => {
     const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'base.css'), 'utf8');
     expect(css).toMatch(/--karte-mitte-wunsch: 480px;/);
-    expect(css).toMatch(/\.flaeche > \.flaechen-spalte:not\(\.wachsend\) \{[^}]*flex-shrink: 1000;[^}]*min-width: var\(--leiste-min\);/);
+    expect(css).toMatch(/\.flaeche > \.flaechen-spalte:not\(\.wachsend\) \{[^}]*flex-shrink: 1000;[^}]*min-width: var\(--leiste-eigen-min, var\(--leiste-min\)\);/);
     expect(css).toMatch(/\.flaeche > \.flaechen-spalte\.wachsend \{[^}]*flex: 1 1 var\(--karte-mitte-wunsch\);[^}]*min-width: var\(--karte-mitte-min\);/);
   });
 
@@ -159,6 +159,30 @@ describe('Fläche und Karten', () => {
       }),
     );
     expect([...zwei.querySelectorAll('aside.flaechen-spalte')].map((e) => e.getAttribute('aria-label'))).toEqual(['Gliederung', 'Quellen']);
+  });
+
+  it('ebene und als="div": viele gleichartige Karten ohne eigene Region, Überschrift h3', () => {
+    const host = render(h(Karte, { titel: 'Bauherr', ebene: 3, als: 'div' }, 'x'));
+    const karte = host.querySelector('div.karte')!;
+    expect(karte.querySelector('.karte-kopf h3')?.textContent).toBe('Bauherr');
+    expect(karte.querySelector('h2')).toBeNull();
+    // kein benannter Bereich: weder aria-labelledby noch aria-label
+    expect(karte.hasAttribute('aria-labelledby')).toBe(false);
+    expect(karte.hasAttribute('aria-label')).toBe(false);
+    const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'base.css'), 'utf8');
+    expect(css).toMatch(/\.karte-kopf :is\(h2, h3\) \{[^}]*font-size: var\(--fs-l\);/);
+  });
+
+  it('rollende Spalte: Klasse rollend, Karten in Inhaltshöhe, Luft für Fokussaum', () => {
+    const host = render(h(FlaechenSpalte, { wachsend: true, rollend: true, children: h(Karte, { titel: 'A' }) }));
+    expect(host.querySelector('.flaechen-spalte')!.className).toBe('flaechen-spalte wachsend rollend');
+    const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'base.css'), 'utf8');
+    expect(css).toMatch(/\.flaechen-spalte\.rollend \{[^}]*overflow-y: auto;[^}]*box-sizing: content-box;[^}]*padding: var\(--s1\);/);
+    // auch Inhaltskarten und die Mindesthöhe der teilenden Karte gelten in der rollenden Spalte nicht
+    expect(css).toMatch(
+      /\.flaechen-spalte\.rollend > \.karte,\s*\.flaechen-spalte\.rollend > \.karte\.karte-inhalt,\s*\.flaechen-spalte\.rollend:has\(> \.karte-inhalt\) > \.karte:not\(\.karte-inhalt\) \{[^}]*flex: none;[^}]*min-height: 0;[^}]*max-height: none;/,
+    );
+    expect(css).not.toMatch(/\.placeholder-help/);
   });
 
   it('Fläche und Spalte setzen ihre Klassen; Spalte mit fester Breite', () => {
