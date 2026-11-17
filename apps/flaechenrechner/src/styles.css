@@ -112,28 +112,31 @@
   stroke-width: 1;
 }
 
-.hud {
-  position: absolute;
-  left: 8px;
-  bottom: 8px;
-  /* Platz für die Maßstabsleiste rechts unten (bis etwa 200 px breit) */
-  right: 232px;
+/* ---------- Fußzeile der Zeichenkarte: Bedienhinweis, Eingabe, Koordinaten, Maßstab (Canvas.tsx per Portal) ---------- */
+
+.qu-fuss {
+  flex: 1;
+  min-width: 0;
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  pointer-events: none;
-  font-size: 12px;
+  align-items: center;
+  gap: var(--s3);
 }
 
-.hud > span {
-  align-self: flex-start;
-  background: var(--overlay-bg);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 2px 6px;
+.qu-fuss[hidden] {
+  display: none;
+}
+
+.qu-fuss-text {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .hud-coords {
+  flex: none;
+  white-space: nowrap;
+  color: var(--text);
   font-variant-numeric: tabular-nums;
 }
 
@@ -143,11 +146,15 @@
 }
 
 .hud-input {
+  flex: none;
+  white-space: nowrap;
   font-weight: 600;
-  color: var(--sel);
+  color: var(--accent-text);
 }
 
+/* der Hinweis nimmt den Platz links und schiebt Koordinaten und Maßstab nach rechts */
 .hud-zeile {
+  flex: 1;
   display: flex;
   min-width: 0;
 }
@@ -159,11 +166,9 @@
   gap: 2px;
   min-width: 0;
   max-width: 100%;
-  color: var(--muted);
-  background: var(--overlay-bg);
   border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 0 2px 0 6px;
+  border-radius: var(--radius-s);
+  padding: 0 0 0 var(--s2);
 }
 
 .hud-hint-text {
@@ -188,7 +193,7 @@
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 6px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--schatten-schwebend);
   text-align: center;
 }
 
@@ -234,23 +239,13 @@
   font-weight: 600;
 }
 
-.kuerzel-tabelle {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 12px;
-}
-
-.kuerzel-tabelle th,
-.kuerzel-tabelle td {
-  padding: 3px 6px;
-  border-bottom: 1px solid var(--border);
-  text-align: left;
-  vertical-align: top;
-}
-
-.kuerzel-tabelle th {
+/* Tastenkürzel: gemeinsame Tabelle (.summary-table.text); die Taste in der Zeilenüberschrift hervorgehoben */
+.kuerzel-tabelle th[scope='row'] {
+  font-size: inherit;
   font-weight: 600;
+  color: var(--text);
   white-space: nowrap;
+  vertical-align: top;
 }
 
 /* Werkzeuge der Zeichenfläche: eine Gruppe in der Werkzeugleiste (bleiben immer sichtbar, siehe Toolbar.tsx) */
@@ -267,7 +262,7 @@
   border-bottom: 1px solid var(--border);
 }
 
-/* schmale Fenster: Optionen der Zeichenfläche umbrechen statt abschneiden; Hinweiszeile in voller Breite, Maßstab darüber */
+/* schmale Fenster: Optionen der Zeichenfläche umbrechen statt abschneiden */
 @media (max-width: 1100px) {
   .canvas-oben .canvas-controls {
     flex-wrap: wrap;
@@ -281,14 +276,6 @@
 
   .nur-breit {
     display: none;
-  }
-
-  .view-pane .hud {
-    right: 8px;
-  }
-
-  .view-pane .scalebar {
-    bottom: 64px;
   }
 }
 
@@ -355,25 +342,23 @@
   max-width: min(480px, 100%);
 }
 
-/* Maßstabsleiste: liegt auf der Zeichenfläche, also in deren (hellen) Planfarben und mit ihr invertiert */
+/* Maßstabsleiste in der Fußzeile der Zeichenkarte: in den Farben der Oberfläche (hell und dunkel) */
 .scalebar {
-  position: absolute;
-  right: 12px;
-  bottom: 12px;
+  flex: none;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  font-size: 11px;
-  color: #1f2328;
-  filter: var(--canvas-filter);
-  pointer-events: none;
+  gap: 1px;
+  font-size: var(--fs-xs);
+  line-height: 1;
+  color: var(--muted);
 }
 
 .scalebar-bar {
-  height: 6px;
-  border: 1px solid #333;
+  height: 5px;
+  border: 1px solid var(--text);
   border-top: none;
-  background: linear-gradient(90deg, #333 50%, #fff 50%);
+  background: linear-gradient(90deg, var(--text) 50%, var(--panel) 50%);
 }
 
 .kalibrier-dialog .field input {
@@ -467,7 +452,6 @@
   top: 8px;
   left: 8px;
   z-index: 5;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 }
 
 .view-loading {
@@ -500,24 +484,13 @@
   max-width: 300px;
 }
 
-.view3d-legend table {
-  border-collapse: collapse;
-  margin: 4px 0;
-  width: 100%;
-}
-
-.view3d-legend td {
-  padding: 1px 6px 1px 0;
+.view3d-legend .summary-table {
+  margin: var(--s1) 0;
 }
 
 .view3d-legend tr.active td {
   font-weight: 600;
   color: var(--accent);
-}
-
-.view3d-legend tr.sum td {
-  border-top: 1px solid var(--text);
-  font-weight: 700;
 }
 
 .legend-items {
@@ -638,7 +611,7 @@
 }
 
 /* Meldungen in den Eigenschaften (gemeinsame Familie .meldung) */
-.sidebar-right .meldung {
+.qu-eigenschaften .meldung {
   margin: var(--s2) 0;
 }
 
@@ -743,7 +716,7 @@
   border: 1px solid var(--border);
   border-radius: 6px;
   background: var(--panel);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--schatten-schwebend);
 }
 
 .bericht-knoepfe {
@@ -947,14 +920,16 @@
 
 /* Bedienhinweise ein-/ausklappen, dezenter Fokusrahmen der Zeichenfläche (F-24) */
 .hud-hint-knopf {
-  pointer-events: auto;
-  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--ctl-h-s);
   border: 1px solid var(--border);
-  background: var(--overlay-bg);
+  background: var(--panel);
   color: var(--muted);
-  font-size: 11px;
-  padding: 0 5px;
-  border-radius: 4px;
+  font-size: var(--fs-xs);
+  padding: 0 var(--s2);
+  border-radius: var(--radius-s);
   cursor: pointer;
 }
 
@@ -970,9 +945,8 @@
 .hud-hint .hud-hint-knopf {
   border: none;
   background: none;
-  padding: 0 2px;
-  min-width: 20px;
-  min-height: 20px;
+  padding: 0;
+  min-width: var(--ctl-h-s);
 }
 
 .canvas:focus-visible {
@@ -985,23 +959,37 @@
   color-scheme: light;
 }
 
-/* Rechte Seitenleiste: Eigenschaften scrollen für sich, die Auswertung bleibt unten sichtbar */
-.sidebar-right {
-  overflow: hidden;
+/* ---------- Karten (docs/design.md „Fläche und Karten“; Layout aus base.css) ---------- */
+
+/* Projektkarte: Abschnitte Projekt, Geschosse und Flächen mit Trennlinien bis an den Rand (bündiger Rumpf) */
+.qu-projekt-karte section {
+  padding: var(--s3) var(--karte-pad);
+  border-bottom: 1px solid var(--border);
 }
 
-.sidebar-right > section:first-child {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
+.qu-projekt-karte section:last-child {
+  border-bottom: none;
 }
 
-.sidebar-right > .summary {
-  flex: none;
-  max-height: 40%;
-  overflow-y: auto;
-  border-top: 1px solid var(--border);
+/* Abschnittsüberschriften wie der Kartenkopf: die Karte hat keinen eigenen Kopf */
+.qu-projekt-karte h2 {
+  font-size: var(--fs-l);
+  font-weight: 600;
+  margin: 0 0 var(--s2);
+}
+
+.qu-projekt-karte .section-head h2 {
+  margin: 0;
+}
+
+/* Auswertung unter der Karte der Auswahl: so hoch wie ihr Inhalt, höchstens gut die Hälfte der Spalte */
+.qu-eigenschaften > .qu-auswertung {
+  flex: 0 1 auto;
+  max-height: 60%;
+}
+
+.qu-eigenschaften > .qu-auswahl {
+  min-height: var(--karte-kopf-h);
 }
 
 /* Weitere Angaben (Höhenlage, Putzabzug, Bemerkung) eingeklappt unter den Kernangaben */
@@ -1013,17 +1001,6 @@
 .weitere-angaben > summary {
   cursor: pointer;
   color: var(--muted);
-}
-
-/* schmale Fenster: Seitenleisten schmaler, damit die Zeichenfläche bleibt */
-@media (max-width: 1280px) {
-  .sidebar-left {
-    width: 240px;
-  }
-
-  .sidebar-right {
-    width: 270px;
-  }
 }
 
 /* Listeneinträge als Knöpfe: per Tab erreichbar, Enter bzw. Leertaste wählt (Geschosse, Flächen, Prüfliste) */

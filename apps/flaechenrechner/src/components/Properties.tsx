@@ -26,22 +26,34 @@ import { RoofEditor } from './RoofEditor';
 import { Field, NumberField, TextField } from '@core/ui/fields';
 import { HilfeKnopf } from '@core/ui/Nachschlagewerk';
 import { abzugSetzen } from '../core/abzug';
+import { FlaechenSpalte, Karte } from '@core/ui/Karte';
+import { BreitenLeiste } from '@core/ui/Leiste';
 
-/** Rechte Seitenleiste: Eigenschaften der Auswahl bzw. des Geschosses + Kurzauswertung. */
+/** Rechte Seitenspalte: oben die Karte der Auswahl bzw. des Geschosses, darunter die Auswertung. */
 export function Properties() {
   const shape = useSelectedShape();
   const auswahl = useSelectedShapes();
   return (
-    <aside className="sidebar sidebar-right">
-      {auswahl.length > 1 ? (
-        <MultiProperties key={auswahl.map((s) => s.id).join('|')} shapes={auswahl} />
-      ) : shape ? (
-        <ShapeProperties key={shape.id} shape={shape} />
-      ) : (
-        <StoreyProperties />
-      )}
-      <Summary />
-    </aside>
+    <BreitenLeiste
+      seite="rechts"
+      schluessel="flaechenrechner:breite:rechts"
+      vorgabe={typeof window !== 'undefined' && window.innerWidth <= 1280 ? 270 : 310}
+      min={220}
+      max={520}
+      titel="Breite der Eigenschaften"
+      mitteMin={320}
+    >
+      <FlaechenSpalte className="qu-eigenschaften">
+        {auswahl.length > 1 ? (
+          <MultiProperties key={auswahl.map((s) => s.id).join('|')} shapes={auswahl} />
+        ) : shape ? (
+          <ShapeProperties key={shape.id} shape={shape} />
+        ) : (
+          <StoreyProperties />
+        )}
+        <Summary />
+      </FlaechenSpalte>
+    </BreitenLeiste>
   );
 }
 
@@ -63,12 +75,15 @@ function ShapeProperties({ shape }: { shape: Shape }) {
   ].filter(Boolean);
 
   return (
-    <section>
-      <div className="section-head">
-        <h2>
+    <Karte
+      className="qu-auswahl"
+      titel={
+        <>
           {shape.kind === 'outline' ? 'BGF-Umriss' : 'Raum'}
           <HilfeKnopf thema={shape.kind === 'outline' ? ['bgf', 'bri', 'splitlevel'] : ['nrf', 'nuf', 'wofl', 'splitlevel']} titel={shape.kind === 'outline' ? 'BGF-Umriss' : 'Raum'} />
-        </h2>
+        </>
+      }
+      aktionen={
         <button
           className="small danger"
           onClick={() => {
@@ -78,7 +93,8 @@ function ShapeProperties({ shape }: { shape: Shape }) {
         >
           Löschen
         </button>
-      </div>
+      }
+    >
 
       <div className="metric-row">
         <div className="metric">
@@ -333,7 +349,7 @@ function ShapeProperties({ shape }: { shape: Shape }) {
           </tbody>
         </table>
       </details>
-    </section>
+    </Karte>
   );
 }
 
@@ -384,9 +400,10 @@ function MultiProperties({ shapes }: { shapes: Shape[] }) {
   };
 
   return (
-    <section>
-      <div className="section-head">
-        <h2>{shapes.length} Flächen gewählt</h2>
+    <Karte
+      className="qu-auswahl"
+      titel={`${shapes.length} Flächen gewählt`}
+      aktionen={
         <button
           className="small danger"
           onClick={() => {
@@ -396,7 +413,8 @@ function MultiProperties({ shapes }: { shapes: Shape[] }) {
         >
           Alle löschen
         </button>
-      </div>
+      }
+    >
       <div className="metric-row">
         {outlines.length > 0 && (
           <div className="metric">
@@ -522,7 +540,7 @@ function MultiProperties({ shapes }: { shapes: Shape[] }) {
           <NumberField value={versatz} allowEmpty min={-20} max={20} digits={3} placeholder="unterschiedlich" onChange={(v) => v !== undefined && updAll((s) => ({ ...s, versatz: s.kind === 'room' ? v : v || undefined }))} />
         </Field>
       </details>
-    </section>
+    </Karte>
   );
 }
 
@@ -574,11 +592,15 @@ function StoreyProperties() {
   );
 
   return (
-    <section>
-      <h2>
-        Geschoss
-        <HilfeKnopf thema={['sohle', 'bri', 'dach']} titel="Geschoss" />
-      </h2>
+    <Karte
+      className="qu-auswahl"
+      titel={
+        <>
+          Geschoss
+          <HilfeKnopf thema={['sohle', 'bri', 'dach']} titel="Geschoss" />
+        </>
+      }
+    >
       {/* leeres Geschoss: die nächsten Schritte zuerst (Plan laden, Umriss übernehmen) */}
       {leer && (
         <div className="plan-einstieg">
@@ -692,7 +714,7 @@ function StoreyProperties() {
         </details>
       )}
       {!leer && <BackgroundPanel storey={storey} />}
-    </section>
+    </Karte>
   );
 }
 
@@ -781,16 +803,27 @@ function Summary() {
   const mehrere = project.storeys.length > 1;
 
   return (
-    <section className="summary">
-      <div className="section-head">
-        <h2>
+    <Karte
+      className="qu-auswertung"
+      titel={
+        <>
           Auswertung
           <HilfeKnopf thema={['din277', 'wofl']} titel="Auswertung" />
-        </h2>
+        </>
+      }
+      aktionen={
         <button className="small" aria-expanded={offen} aria-controls="fr-auswertung-tabelle" onClick={umschalten} title={offen ? 'Nur die Kurzfassung zeigen' : 'Alle Kennzahlen (BGF, BRI, NUF, TF, VF, NRF, KGF, WoFl) zeigen'}>
           {offen ? 'Kurzfassung' : 'Alle Kennzahlen'}
         </button>
-      </div>
+      }
+      fuss={
+        offen && sr.bgf.total > 0 ? (
+          <span className="num">
+            NRF/BGF: {fmt2((sr.nrf.total / sr.bgf.total) * 100)} % · KGF/BGF: {fmt2((sr.kgf.total / sr.bgf.total) * 100)} %
+          </span>
+        ) : undefined
+      }
+    >
       {offen ? (
         <table className="summary-table" id="fr-auswertung-tabelle">
           <thead>
@@ -839,12 +872,7 @@ function Summary() {
         </>
       )}
       <Pruefliste />
-      {offen && sr.bgf.total > 0 && (
-        <p className="muted small-text">
-          NRF/BGF: {fmt2((sr.nrf.total / sr.bgf.total) * 100)} % · KGF/BGF: {fmt2((sr.kgf.total / sr.bgf.total) * 100)} %
-        </p>
-      )}
-    </section>
+    </Karte>
   );
 }
 

@@ -15,6 +15,8 @@ import { ProjektInfo } from './ProjektDialog';
 import { bestaetigen, fragen } from '@core/ui/Rueckfrage';
 import { geschossDuplizierenAktion } from './KopieDialog';
 import { UmrissUebernehmen } from './Properties';
+import { Karte } from '@core/ui/Karte';
+import { BreitenLeiste } from '@core/ui/Leiste';
 
 /** „Geschoss …“: Geschoss über oder unter dem aktiven einfügen, Name und Fußbodenhöhe nach der Lage (F-03) */
 async function neuesGeschoss(bezugId: string, bezugName: string) {
@@ -36,7 +38,7 @@ async function neuesGeschoss(bezugId: string, bezugName: string) {
   st.setView({ showGhost: true });
 }
 
-/** Linke Seitenleiste: Projekt, Geschosse, Flächenliste des aktiven Geschosses. */
+/** Linke Seitenkarte: Projekt, Geschosse, Flächenliste des aktiven Geschosses – drei Abschnitte mit Trennlinien. */
 export function Sidebar() {
   const project = useEditor((s) => s.project);
   const storey = useActiveStorey();
@@ -79,7 +81,15 @@ export function Sidebar() {
   const fehlend = fehlendeAngaben(project);
 
   return (
-    <aside className="sidebar sidebar-left">
+    <BreitenLeiste
+      schluessel="flaechenrechner:breite:links"
+      vorgabe={typeof window !== 'undefined' && window.innerWidth <= 1280 ? 240 : 280}
+      min={200}
+      max={440}
+      titel="Breite der Projektkarte"
+      mitteMin={320}
+    >
+      <Karte ariaLabel="Projekt, Geschosse und Flächen" buendig className="qu-projekt-karte">
       <section>
         <h2>Projekt</h2>
         <ProjektInfo />
@@ -187,7 +197,7 @@ export function Sidebar() {
         </label>
       </section>
 
-      <section className="grow">
+      <section>
         <h2>Flächen – {storey.name}</h2>
         <div className="layer-toggles">
           <label className="toggle">
@@ -252,7 +262,8 @@ export function Sidebar() {
           ))}
         </ul>
       </section>
-    </aside>
+      </Karte>
+    </BreitenLeiste>
   );
 }
 
