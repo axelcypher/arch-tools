@@ -1097,7 +1097,7 @@ textarea:focus {
   background: var(--accent-soft);
   color: var(--accent-text);
 }
-:is(tr.selected, tr.selected + tr.zusatz, tr.gruppe, tr:hover, [aria-selected='true'], [aria-current='true'], .pa-karte:hover) .marke {
+:is(tr.selected, tr.selected + tr.zusatz, tr.gruppe, tr:hover, [aria-selected='true'], [aria-current='true'], .pa-karte:hover:not(:disabled)) .marke {
   box-shadow: inset 0 0 0 1px currentColor;
 }
 

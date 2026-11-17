@@ -272,7 +272,7 @@ describe('Fläche und Karten', () => {
     expect(css).toMatch(/\.marke\.ok \{/);
     expect(css).toMatch(/\.marke\.hinweis \{/);
     expect(css).toMatch(
-      /:is\(tr\.selected, tr\.selected \+ tr\.zusatz, tr\.gruppe, tr:hover, \[aria-selected='true'\], \[aria-current='true'\], \.pa-karte:hover\) \.marke \{\s*box-shadow: inset 0 0 0 1px currentColor;/,
+      /:is\(tr\.selected, tr\.selected \+ tr\.zusatz, tr\.gruppe, tr:hover, \[aria-selected='true'\], \[aria-current='true'\], \.pa-karte:hover:not\(:disabled\)\) \.marke \{\s*box-shadow: inset 0 0 0 1px currentColor;/,
     );
   });
 });

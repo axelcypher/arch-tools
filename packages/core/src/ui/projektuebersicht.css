@@ -140,7 +140,10 @@
   flex-wrap: wrap;
   gap: var(--s1);
 }
-/* die Marken selbst: .marke aus base.css */
+/* die Marken selbst: .marke aus base.css; auf schmalen Kacheln dürfen lange Marken umbrechen */
+.pa-marken .marke {
+  white-space: normal;
+}
 /* Statuszeile: Balken je Stufe und kurzer Text – Farben wie die Punkte der Vollständigkeitsprüfung */
 .pa-status {
   display: flex;
