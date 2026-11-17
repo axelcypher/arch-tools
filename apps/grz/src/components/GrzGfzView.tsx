@@ -32,6 +32,8 @@ import { areaMP, unionAll } from '@core/polygon';
 import { polygonArea } from '@core/geometry';
 import { HilfeKnopf, useHilfe } from '@core/ui/Nachschlagewerk';
 import { StammdatenKnopf } from '@core/ui/Stammdaten';
+import { Flaeche, Karte } from '@core/ui/Karte';
+import { BreitenLeiste } from '@core/ui/Leiste';
 import { teilFormel } from '@core/flaechenZerlegung';
 import { flaechenNummern, rechenweg, teilName } from '../rechenweg';
 
@@ -126,278 +128,280 @@ export function GrzGfzView() {
   // nur bei BauNVO 1990 (dort steht das Feld und die Meldung); ein alter Wert aus 1990 macht andere Fassungen nicht ungültig
   const grz2Fehler = n.recht.baunvo === '1990' && m.grzIIMax !== undefined && m.grz !== undefined && m.grzIIMax < m.grz ? 'Kleiner als die GRZ – die GRZ II umfasst die Hauptanlage mit.' : undefined;
   return (
-    <div className="grz-view">
-      <div className="grz-ergebnis-leiste" role="region" aria-label="Ergebnis">
-        <ErgebnisWert titel={n.recht.baunvo === '1990' ? 'GRZ I' : 'GRZ'} wert={kennzahlWert(n.grz)} s={n.grz.status} />
-        {n.grz2 && <ErgebnisWert titel="GRZ II" wert={kennzahlWert(n.grz2)} s={n.grz2.status} />}
-        <ErgebnisWert titel="GFZ" wert={kennzahlWert(n.gfz)} s={n.gfz.status} />
-        <ErgebnisWert titel="Vollgeschosse" wert={roemisch(n.vollgeschosse.anzahl)} s={n.vollgeschosse.status} />
-        <button className="link" onClick={() => document.getElementById('grz-nachweis')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
-          zum Nachweis
-        </button>
-      </div>
-      <section className="grz-col grz-fest" aria-label="Eingaben">
-        <h2>Projekt und Grundstück</h2>
-        <StammdatenKnopf project={project} onAendern={(meta, name) => st.update((p) => ({ ...p, meta, name }), undefined, 'Stammdaten ändern')} />
-        <div id="grz-grundstueck">
-          <Field label="Grundstücksfläche im Bauland [m²]" hint={grundstueckHinweis}>
-            <NumberField
-              value={project.meta.grundstueck.flaeche}
-              allowEmpty
-              min={0}
-              placeholder={ersatzFlaeche !== undefined ? fmt2(ersatzFlaeche) : ''}
-              onChange={(v) => st.update((p) => ({ ...p, meta: { ...p.meta, grundstueck: { ...p.meta.grundstueck, flaeche: v } } }), undefined, 'Grundstücksfläche ändern')}
-            />
-          </Field>
-        </div>
-        {n.recht.baunvo !== '1962' && (
-          <Field label="Anteil an Gemeinschaftsanlagen [m²]" hint="nur bei Festsetzung: wird der Grundstücksfläche hinzugerechnet (§ 21a Abs. 2 BauNVO)">
-            <NumberField value={m.gemeinschaftsanlagen} allowEmpty min={0} onChange={(v) => setM({ gemeinschaftsanlagen: v || undefined })} />
-          </Field>
-        )}
-        <h3>Bebauungsplan</h3>
-        <div className="field-row grz-bplan-zeile">
-          <Field label="Nummer">
-            <TextField value={project.meta.bebauungsplan?.nummer ?? ''} onChange={(v) => setBplan({ nummer: v })} />
-          </Field>
-          <Field label="Name">
-            <TextField value={project.meta.bebauungsplan?.name ?? ''} onChange={(v) => setBplan({ name: v })} />
-          </Field>
-        </div>
-        <div className="field-row">
-          <Field label="Inkrafttreten">
-            <input
-              type="date"
-              aria-label="Inkrafttreten des Bebauungsplans"
-              title="bestimmt den Vollgeschossbegriff der Bauordnung"
-              value={m.planDatum ?? ''}
-              onChange={(e) => setM({ planDatum: e.target.value || undefined })}
-            />
-          </Field>
-          <Field label="Öffentliche Auslegung">
-            <input type="date" aria-label="Öffentliche Auslegung des Planentwurfs" value={m.auslegungDatum ?? ''} onChange={(e) => setM({ auslegungDatum: e.target.value || undefined })} />
-          </Field>
-        </div>
-        <p className="field-hint grz-hinweis-zeile">Die Auslegung bestimmt die BauNVO-Fassung (§ 25c); leer = wie Inkrafttreten. Ohne beide Daten: aktuelles Recht (z. B. § 34/35 BauGB).</p>
-
-        <h2>
-          Festsetzungen
-          <HilfeKnopf thema={['baunvo', 'vollgeschoss']} titel="Festsetzungen" />
-        </h2>
-        <Field label="Baugebiet (Art der Nutzung)">
-          <select value={m.gebietsart ?? ''} onChange={(e) => setM({ gebietsart: (e.target.value || undefined) as Gebietsart | undefined })}>
-            <option value="">– nicht angegeben –</option>
-            {GEBIETSARTEN.map((g) => (
-              <option key={g.id} value={g.id}>
-                {g.id} – {g.label}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label="BauNVO-Fassung">
-          <select value={m.baunvo ?? 'auto'} onChange={(e) => setM({ baunvo: e.target.value === 'auto' ? undefined : (e.target.value as BauNVOFassung) })}>
-            <option value="auto">automatisch ({baunvoLabel(auto.baunvo)})</option>
-            {BAUNVO_FASSUNGEN.map((f) => (
-              <option key={f.id} value={f.id}>
-                {f.label} ({f.zeitraum})
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Vollgeschossbegriff">
-          <select value={m.bauo ?? 'auto'} onChange={(e) => setM({ bauo: e.target.value === 'auto' ? undefined : (e.target.value as BauOFassung) })}>
-            <option value="auto">automatisch ({bauoLabel(auto.bauo)})</option>
-            {BAUO_FASSUNGEN.map((f) => (
-              <option key={f.id} value={f.id}>
-                {f.label} ({f.zeitraum})
-              </option>
-            ))}
-          </select>
-        </Field>
-        <h3>Maß der baulichen Nutzung</h3>
-        <div className="field-row">
-          <Field label={n.recht.baunvo === '1990' ? 'GRZ (I)' : 'GRZ'}>
-            <NumberField value={m.grz} allowEmpty min={0} max={1} ungueltig={!!grz2Fehler} fehlerId="grz-grz2-fehler" onChange={(v) => setM({ grz: v })} />
-          </Field>
-          <Field label="GFZ">
-            <NumberField value={m.gfz} allowEmpty min={0} max={10} onChange={(v) => setM({ gfz: v })} />
-          </Field>
-        </div>
-        {n.recht.baunvo === '1990' && (
-          <Field label="GRZ II höchstens" hint="leer = 1,5 × GRZ, höchstens 0,8 (§ 19 Abs. 4 S. 2)">
-            <NumberField value={m.grzIIMax} allowEmpty min={0} max={1} ungueltig={!!grz2Fehler} fehlerId="grz-grz2-fehler" onChange={(v) => setM({ grzIIMax: v })} />
-            {grz2Fehler && (
-              <span id="grz-grz2-fehler" className="feld-meldung" role="alert">
-                {grz2Fehler}
-              </span>
-            )}
-          </Field>
-        )}
-        <div className="field-row">
-          <Field label="GR [m²]">
-            <NumberField value={m.grAbsolut} allowEmpty min={0} onChange={(v) => setM({ grAbsolut: v })} />
-          </Field>
-          <Field label="GF [m²]">
-            <NumberField value={m.gfAbsolut} allowEmpty min={0} onChange={(v) => setM({ gfAbsolut: v })} />
-          </Field>
-        </div>
-        <p className="field-hint grz-hinweis-zeile">Grund- und Geschossfläche als Höchstmaß in m² (§ 16 Abs. 2) – nur, wenn der Plan sie statt GRZ/GFZ festsetzt.</p>
-        {n.recht.baunvo !== '1962' && (
-          <label className="toggle block" title="nur, wenn der Bebauungsplan es festsetzt oder als Ausnahme vorsieht und sie zugelassen ist">
-            <input type="checkbox" checked={!!m.garagenGfFrei} onChange={(e) => setM({ garagenGfFrei: e.target.checked || undefined })} />
-            Garagen in Vollgeschossen zählen nicht zur Geschossfläche (festgesetzt bzw. als Ausnahme zugelassen, § 21a Abs. 4 Nr. 3)
-          </label>
-        )}
-        <div className="field-row">
-          <Field label="BMZ" hint="Baumassenzahl (§ 21)">
-            <NumberField value={m.bmz} allowEmpty min={0} max={20} onChange={(v) => setM({ bmz: v })} />
-          </Field>
-          <span className="field grz-platz" aria-hidden />
-        </div>
-        <h3>Vollgeschosse</h3>
-        {m.vollgeschosseZwingend ? (
-          <Field label="Anzahl (zwingend)">
-            <NumberField value={m.vollgeschosseMax} allowEmpty min={0} max={40} digits={0} onChange={(v) => setM({ vollgeschosseMax: v === undefined ? undefined : Math.round(v) })} />
-          </Field>
-        ) : (
-          <div className="field-row">
-            <Field label="mindestens">
+    // Richtung C (docs/design.md „Fläche und Karten“): drei Karten auf der Fläche, jede scrollt für sich
+    <Flaeche className="grz-view">
+      <BreitenLeiste schluessel="grz:breite:eingaben" vorgabe={300} min={240} max={440} titel="Breite der Eingaben">
+        <Karte titel="Projekt und Grundstück" className="grz-fest">
+          <StammdatenKnopf project={project} onAendern={(meta, name) => st.update((p) => ({ ...p, meta, name }), undefined, 'Stammdaten ändern')} />
+          <div id="grz-grundstueck">
+            <Field label="Grundstücksfläche im Bauland [m²]" hint={grundstueckHinweis}>
               <NumberField
-                value={m.vollgeschosseMin}
+                value={project.meta.grundstueck.flaeche}
                 allowEmpty
                 min={0}
-                max={40}
-                digits={0}
-                ungueltig={!!vgFehler}
-                fehlerId="grz-vg-fehler"
-                onChange={(v) => setM({ vollgeschosseMin: v === undefined ? undefined : Math.round(v) })}
-              />
-            </Field>
-            <Field label="höchstens">
-              <NumberField
-                value={m.vollgeschosseMax}
-                allowEmpty
-                min={0}
-                max={40}
-                digits={0}
-                ungueltig={!!vgFehler}
-                fehlerId="grz-vg-fehler"
-                onChange={(v) => setM({ vollgeschosseMax: v === undefined ? undefined : Math.round(v) })}
+                placeholder={ersatzFlaeche !== undefined ? fmt2(ersatzFlaeche) : ''}
+                onChange={(v) => st.update((p) => ({ ...p, meta: { ...p.meta, grundstueck: { ...p.meta.grundstueck, flaeche: v } } }), undefined, 'Grundstücksfläche ändern')}
               />
             </Field>
           </div>
-        )}
-        {vgFehler && (
-          <p id="grz-vg-fehler" className="feld-meldung" role="alert">
-            {vgFehler}
-          </p>
-        )}
-        <label className="toggle block">
-          <input type="checkbox" checked={!!m.vollgeschosseZwingend} onChange={(e) => setM({ vollgeschosseZwingend: e.target.checked || undefined })} />
-          zwingend (genau diese Zahl)
-        </label>
-        {n.recht.baunvo === '1990' && (
-          <label className="toggle block" title="nur, wenn der Bebauungsplan es festsetzt">
-            <input type="checkbox" checked={!!m.aufenthaltNichtVollgeschoss} onChange={(e) => setM({ aufenthaltNichtVollgeschoss: e.target.checked || undefined })} />
-            Aufenthaltsräume in Nicht-Vollgeschossen zur Geschossfläche rechnen (§ 20 Abs. 3 S. 2 BauNVO)
-          </label>
-        )}
-        <h3>Höhen</h3>
-        <div className="field-row">
-          <Field label="Traufhöhe [m]">
-            <NumberField value={m.traufhoeheMax} allowEmpty min={0} max={100} onChange={(v) => setM({ traufhoeheMax: v })} />
-          </Field>
-          <Field label="Firsthöhe [m]">
-            <NumberField value={m.firsthoeheMax} allowEmpty min={0} max={100} onChange={(v) => setM({ firsthoeheMax: v })} />
-          </Field>
-        </div>
-        <p className="field-hint grz-hinweis-zeile">Höchstmaße erscheinen als Hinweis im Nachweis; sie werden nicht berechnet, sondern im Schnitt nachgewiesen.</p>
-
-        <h2>Annahmen für die Berechnung</h2>
-        <Field
-          label={n.recht.bauo === 'nw1962' ? 'festgelegte Geländeoberfläche [m]' : 'Geländeoberfläche [m]'}
-          hint={
-            m.gelaende === undefined
-              ? n.gelaende.quelle === 'annahme'
-                ? 'leer: ±0,00 angenommen'
-                : `leer: ${GELAENDE_QUELLE[n.gelaende.quelle]}, im Mittel ${fmt2(n.gelaende.hoehe)} m – je Geschoss entlang seiner Außenwände`
-              : 'über ±0,00 – gilt für alle Geschosse'
-          }
-        >
-          <NumberField value={m.gelaende} allowEmpty placeholder={fmt2(n.gelaende.hoehe)} onChange={(v) => setM({ gelaende: v })} />
-        </Field>
-        <div className="field-row">
-          <Field label="Decken-/Dachaufbau [m]" hint="leer = 0,30 m; für die lichte Höhe abgezogen">
-            <NumberField value={m.dachaufbau} allowEmpty min={0} max={2} placeholder="0,30" onChange={(v) => setM({ dachaufbau: v })} />
-          </Field>
-          {n.aufenthaltZaehlt && (
-            <Field label="Wandzuschlag [m]" hint="leer = 0,25 m">
-              <NumberField value={m.wandzuschlag} allowEmpty min={0} max={2} placeholder="0,25" onChange={(v) => setM({ wandzuschlag: v })} />
+          {n.recht.baunvo !== '1962' && (
+            <Field label="Anteil an Gemeinschaftsanlagen [m²]" hint="nur bei Festsetzung: wird der Grundstücksfläche hinzugerechnet (§ 21a Abs. 2 BauNVO)">
+              <NumberField value={m.gemeinschaftsanlagen} allowEmpty min={0} onChange={(v) => setM({ gemeinschaftsanlagen: v || undefined })} />
             </Field>
           )}
-        </div>
-        {(n.recht.bauo === 'nw1962' || n.aufenthaltZaehlt) && (
-          <label className="toggle block" title={n.recht.bauo === 'nw1962' ? 'BauO NW 1962/1970 § 59' : 'nur, wenn die Bauaufsicht es gestattet (z. B. § 46 Abs. 1 S. 3 BauO NRW 2018)'}>
-            <input type="checkbox" checked={!!m.einfamilienhaus} onChange={(e) => setM({ einfamilienhaus: e.target.checked || undefined })} />
-            {n.recht.bauo === 'nw1962' ? 'Einfamilienhaus (lichte Höhe für Aufenthaltsräume 2,30 statt 2,50 m)' : 'kleines Wohngebäude: lichte Höhe 2,30 statt 2,40 m gestattet'}
-          </label>
-        )}
-        {gebaeudeteile.length > 0 && (
-          <>
-            <h3>Gebäudeteile</h3>
-            <p className="muted small-text">Angebaute Garagen, Carports oder Gartenhäuser aus der IFC zählen als Anlage (§ 19 Abs. 4 bzw. § 21a), nicht als Hauptanlage.</p>
-            {gebaeudeteile.map(({ storey, o }) => (
-              <Field key={o.id} label={`${storey} · ${o.name || 'Umriss'} · ${fmt2(polygonArea(o.points))} m²`}>
-                <select value={o.anlage ?? ''} onChange={(e) => setAnlage(o.id, (e.target.value || undefined) as OutlineShape['anlage'])}>
-                  <option value="">Hauptanlage</option>
-                  <option value="garage">Garage / Carport</option>
-                  <option value="nebenanlage">Nebenanlage</option>
-                </select>
-              </Field>
-            ))}
-          </>
-        )}
-        {offeneNutzungen.length > 0 && (
-          <>
-            <h3>Einstufung offener Fälle</h3>
-            <p className="muted small-text">{baunvoLabel(n.recht.baunvo)} regelt diese Nutzungen nicht eindeutig. Mit der Bauaufsicht klären und hier festlegen.</p>
-            {offeneNutzungen.map((x) => (
-              <Field key={x.id} label={x.label}>
-                <select
-                  value={m.einstufung?.[x.id] ?? 'offen'}
-                  onChange={(e) => {
-                    const einstufung = { ...(m.einstufung ?? {}) };
-                    if (e.target.value === 'offen') delete einstufung[x.id];
-                    else einstufung[x.id] = e.target.value as Einstufung;
-                    setM({ einstufung });
-                  }}
-                >
-                  <option value="offen">offen – ohne und mit rechnen</option>
-                  <option value="ja">{n.recht.baunvo === '1990' ? 'zählt zur GRZ II' : 'zählt zur Grundfläche'}</option>
-                  {n.recht.baunvo === '1990' && <option value="grz1">zählt zur Hauptanlage (GRZ I)</option>}
-                  <option value="nein">zählt nicht</option>
-                </select>
-              </Field>
-            ))}
-          </>
-        )}
-      </section>
+          <h3>Bebauungsplan</h3>
+          <div className="field-row grz-bplan-zeile">
+            <Field label="Nummer">
+              <TextField value={project.meta.bebauungsplan?.nummer ?? ''} onChange={(v) => setBplan({ nummer: v })} />
+            </Field>
+            <Field label="Name">
+              <TextField value={project.meta.bebauungsplan?.name ?? ''} onChange={(v) => setBplan({ name: v })} />
+            </Field>
+          </div>
+          <div className="field-row">
+            <Field label="Inkrafttreten">
+              <input
+                type="date"
+                aria-label="Inkrafttreten des Bebauungsplans"
+                title="bestimmt den Vollgeschossbegriff der Bauordnung"
+                value={m.planDatum ?? ''}
+                onChange={(e) => setM({ planDatum: e.target.value || undefined })}
+              />
+            </Field>
+            <Field label="Öffentliche Auslegung">
+              <input type="date" aria-label="Öffentliche Auslegung des Planentwurfs" value={m.auslegungDatum ?? ''} onChange={(e) => setM({ auslegungDatum: e.target.value || undefined })} />
+            </Field>
+          </div>
+          <p className="field-hint grz-hinweis-zeile">Die Auslegung bestimmt die BauNVO-Fassung (§ 25c); leer = wie Inkrafttreten. Ohne beide Daten: aktuelles Recht (z. B. § 34/35 BauGB).</p>
 
-      <section className="grz-col grz-plan">
-        <div className="section-head">
-          <h2>
+          <h3 className="grz-h-hilfe">
+            Festsetzungen
+            <HilfeKnopf thema={['baunvo', 'vollgeschoss']} titel="Festsetzungen" />
+          </h3>
+          <Field label="Baugebiet (Art der Nutzung)">
+            <select value={m.gebietsart ?? ''} onChange={(e) => setM({ gebietsart: (e.target.value || undefined) as Gebietsart | undefined })}>
+              <option value="">– nicht angegeben –</option>
+              {GEBIETSARTEN.map((g) => (
+                <option key={g.id} value={g.id}>
+                  {g.id} – {g.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="BauNVO-Fassung">
+            <select value={m.baunvo ?? 'auto'} onChange={(e) => setM({ baunvo: e.target.value === 'auto' ? undefined : (e.target.value as BauNVOFassung) })}>
+              <option value="auto">automatisch ({baunvoLabel(auto.baunvo)})</option>
+              {BAUNVO_FASSUNGEN.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.label} ({f.zeitraum})
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Vollgeschossbegriff">
+            <select value={m.bauo ?? 'auto'} onChange={(e) => setM({ bauo: e.target.value === 'auto' ? undefined : (e.target.value as BauOFassung) })}>
+              <option value="auto">automatisch ({bauoLabel(auto.bauo)})</option>
+              {BAUO_FASSUNGEN.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.label} ({f.zeitraum})
+                </option>
+              ))}
+            </select>
+          </Field>
+          <h4>Maß der baulichen Nutzung</h4>
+          <div className="field-row">
+            <Field label={n.recht.baunvo === '1990' ? 'GRZ (I)' : 'GRZ'}>
+              <NumberField value={m.grz} allowEmpty min={0} max={1} ungueltig={!!grz2Fehler} fehlerId="grz-grz2-fehler" onChange={(v) => setM({ grz: v })} />
+            </Field>
+            <Field label="GFZ">
+              <NumberField value={m.gfz} allowEmpty min={0} max={10} onChange={(v) => setM({ gfz: v })} />
+            </Field>
+          </div>
+          {n.recht.baunvo === '1990' && (
+            <Field label="GRZ II höchstens" hint="leer = 1,5 × GRZ, höchstens 0,8 (§ 19 Abs. 4 S. 2)">
+              <NumberField value={m.grzIIMax} allowEmpty min={0} max={1} ungueltig={!!grz2Fehler} fehlerId="grz-grz2-fehler" onChange={(v) => setM({ grzIIMax: v })} />
+              {grz2Fehler && (
+                <span id="grz-grz2-fehler" className="feld-meldung" role="alert">
+                  {grz2Fehler}
+                </span>
+              )}
+            </Field>
+          )}
+          <div className="field-row">
+            <Field label="GR [m²]">
+              <NumberField value={m.grAbsolut} allowEmpty min={0} onChange={(v) => setM({ grAbsolut: v })} />
+            </Field>
+            <Field label="GF [m²]">
+              <NumberField value={m.gfAbsolut} allowEmpty min={0} onChange={(v) => setM({ gfAbsolut: v })} />
+            </Field>
+          </div>
+          <p className="field-hint grz-hinweis-zeile">Grund- und Geschossfläche als Höchstmaß in m² (§ 16 Abs. 2) – nur, wenn der Plan sie statt GRZ/GFZ festsetzt.</p>
+          {n.recht.baunvo !== '1962' && (
+            <label className="toggle block" title="nur, wenn der Bebauungsplan es festsetzt oder als Ausnahme vorsieht und sie zugelassen ist">
+              <input type="checkbox" checked={!!m.garagenGfFrei} onChange={(e) => setM({ garagenGfFrei: e.target.checked || undefined })} />
+              Garagen in Vollgeschossen zählen nicht zur Geschossfläche (festgesetzt bzw. als Ausnahme zugelassen, § 21a Abs. 4 Nr. 3)
+            </label>
+          )}
+          <div className="field-row">
+            <Field label="BMZ" hint="Baumassenzahl (§ 21)">
+              <NumberField value={m.bmz} allowEmpty min={0} max={20} onChange={(v) => setM({ bmz: v })} />
+            </Field>
+            <span className="field grz-platz" aria-hidden />
+          </div>
+          <h4>Vollgeschosse</h4>
+          {m.vollgeschosseZwingend ? (
+            <Field label="Anzahl (zwingend)">
+              <NumberField value={m.vollgeschosseMax} allowEmpty min={0} max={40} digits={0} onChange={(v) => setM({ vollgeschosseMax: v === undefined ? undefined : Math.round(v) })} />
+            </Field>
+          ) : (
+            <div className="field-row">
+              <Field label="mindestens">
+                <NumberField
+                  value={m.vollgeschosseMin}
+                  allowEmpty
+                  min={0}
+                  max={40}
+                  digits={0}
+                  ungueltig={!!vgFehler}
+                  fehlerId="grz-vg-fehler"
+                  onChange={(v) => setM({ vollgeschosseMin: v === undefined ? undefined : Math.round(v) })}
+                />
+              </Field>
+              <Field label="höchstens">
+                <NumberField
+                  value={m.vollgeschosseMax}
+                  allowEmpty
+                  min={0}
+                  max={40}
+                  digits={0}
+                  ungueltig={!!vgFehler}
+                  fehlerId="grz-vg-fehler"
+                  onChange={(v) => setM({ vollgeschosseMax: v === undefined ? undefined : Math.round(v) })}
+                />
+              </Field>
+            </div>
+          )}
+          {vgFehler && (
+            <p id="grz-vg-fehler" className="feld-meldung" role="alert">
+              {vgFehler}
+            </p>
+          )}
+          <label className="toggle block">
+            <input type="checkbox" checked={!!m.vollgeschosseZwingend} onChange={(e) => setM({ vollgeschosseZwingend: e.target.checked || undefined })} />
+            zwingend (genau diese Zahl)
+          </label>
+          {n.recht.baunvo === '1990' && (
+            <label className="toggle block" title="nur, wenn der Bebauungsplan es festsetzt">
+              <input type="checkbox" checked={!!m.aufenthaltNichtVollgeschoss} onChange={(e) => setM({ aufenthaltNichtVollgeschoss: e.target.checked || undefined })} />
+              Aufenthaltsräume in Nicht-Vollgeschossen zur Geschossfläche rechnen (§ 20 Abs. 3 S. 2 BauNVO)
+            </label>
+          )}
+          <h4>Höhen</h4>
+          <div className="field-row">
+            <Field label="Traufhöhe [m]">
+              <NumberField value={m.traufhoeheMax} allowEmpty min={0} max={100} onChange={(v) => setM({ traufhoeheMax: v })} />
+            </Field>
+            <Field label="Firsthöhe [m]">
+              <NumberField value={m.firsthoeheMax} allowEmpty min={0} max={100} onChange={(v) => setM({ firsthoeheMax: v })} />
+            </Field>
+          </div>
+          <p className="field-hint grz-hinweis-zeile">Höchstmaße erscheinen als Hinweis im Nachweis; sie werden nicht berechnet, sondern im Schnitt nachgewiesen.</p>
+
+          <h3>Annahmen für die Berechnung</h3>
+          <Field
+            label={n.recht.bauo === 'nw1962' ? 'festgelegte Geländeoberfläche [m]' : 'Geländeoberfläche [m]'}
+            hint={
+              m.gelaende === undefined
+                ? n.gelaende.quelle === 'annahme'
+                  ? 'leer: ±0,00 angenommen'
+                  : `leer: ${GELAENDE_QUELLE[n.gelaende.quelle]}, im Mittel ${fmt2(n.gelaende.hoehe)} m – je Geschoss entlang seiner Außenwände`
+                : 'über ±0,00 – gilt für alle Geschosse'
+            }
+          >
+            <NumberField value={m.gelaende} allowEmpty placeholder={fmt2(n.gelaende.hoehe)} onChange={(v) => setM({ gelaende: v })} />
+          </Field>
+          <div className="field-row">
+            <Field label="Decken-/Dachaufbau [m]" hint="leer = 0,30 m; für die lichte Höhe abgezogen">
+              <NumberField value={m.dachaufbau} allowEmpty min={0} max={2} placeholder="0,30" onChange={(v) => setM({ dachaufbau: v })} />
+            </Field>
+            {n.aufenthaltZaehlt && (
+              <Field label="Wandzuschlag [m]" hint="leer = 0,25 m">
+                <NumberField value={m.wandzuschlag} allowEmpty min={0} max={2} placeholder="0,25" onChange={(v) => setM({ wandzuschlag: v })} />
+              </Field>
+            )}
+          </div>
+          {(n.recht.bauo === 'nw1962' || n.aufenthaltZaehlt) && (
+            <label className="toggle block" title={n.recht.bauo === 'nw1962' ? 'BauO NW 1962/1970 § 59' : 'nur, wenn die Bauaufsicht es gestattet (z. B. § 46 Abs. 1 S. 3 BauO NRW 2018)'}>
+              <input type="checkbox" checked={!!m.einfamilienhaus} onChange={(e) => setM({ einfamilienhaus: e.target.checked || undefined })} />
+              {n.recht.bauo === 'nw1962' ? 'Einfamilienhaus (lichte Höhe für Aufenthaltsräume 2,30 statt 2,50 m)' : 'kleines Wohngebäude: lichte Höhe 2,30 statt 2,40 m gestattet'}
+            </label>
+          )}
+          {gebaeudeteile.length > 0 && (
+            <>
+              <h4>Gebäudeteile</h4>
+              <p className="muted small-text">Angebaute Garagen, Carports oder Gartenhäuser aus der IFC zählen als Anlage (§ 19 Abs. 4 bzw. § 21a), nicht als Hauptanlage.</p>
+              {gebaeudeteile.map(({ storey, o }) => (
+                <Field key={o.id} label={`${storey} · ${o.name || 'Umriss'} · ${fmt2(polygonArea(o.points))} m²`}>
+                  <select value={o.anlage ?? ''} onChange={(e) => setAnlage(o.id, (e.target.value || undefined) as OutlineShape['anlage'])}>
+                    <option value="">Hauptanlage</option>
+                    <option value="garage">Garage / Carport</option>
+                    <option value="nebenanlage">Nebenanlage</option>
+                  </select>
+                </Field>
+              ))}
+            </>
+          )}
+          {offeneNutzungen.length > 0 && (
+            <>
+              <h4>Einstufung offener Fälle</h4>
+              <p className="muted small-text">{baunvoLabel(n.recht.baunvo)} regelt diese Nutzungen nicht eindeutig. Mit der Bauaufsicht klären und hier festlegen.</p>
+              {offeneNutzungen.map((x) => (
+                <Field key={x.id} label={x.label}>
+                  <select
+                    value={m.einstufung?.[x.id] ?? 'offen'}
+                    onChange={(e) => {
+                      const einstufung = { ...(m.einstufung ?? {}) };
+                      if (e.target.value === 'offen') delete einstufung[x.id];
+                      else einstufung[x.id] = e.target.value as Einstufung;
+                      setM({ einstufung });
+                    }}
+                  >
+                    <option value="offen">offen – ohne und mit rechnen</option>
+                    <option value="ja">{n.recht.baunvo === '1990' ? 'zählt zur GRZ II' : 'zählt zur Grundfläche'}</option>
+                    {n.recht.baunvo === '1990' && <option value="grz1">zählt zur Hauptanlage (GRZ I)</option>}
+                    <option value="nein">zählt nicht</option>
+                  </select>
+                </Field>
+              ))}
+            </>
+          )}
+        </Karte>
+      </BreitenLeiste>
+
+      <Karte
+        className="grz-plan"
+        titel={
+          <>
             {ansicht === 'plan' ? 'Lageplan' : '3D-Ansicht'}
             <HilfeKnopf thema={['lageplan', 'ueberlagerung', 'gelaende']} titel="Lageplan" />
-          </h2>
-          <div className="button-row">
-            <button className={ansicht === 'plan' ? 'small active' : 'small'} onClick={() => setAnsicht('plan')}>
+          </>
+        }
+        aktionen={
+          <div className="segment" role="group" aria-label="Ansicht">
+            <button className={ansicht === 'plan' ? 'active' : undefined} aria-pressed={ansicht === 'plan'} onClick={() => setAnsicht('plan')}>
               Lageplan
             </button>
-            <button className={ansicht === '3d' ? 'small active' : 'small'} onClick={() => setAnsicht('3d')} title="Gebäude, Gelände und Lageplan-Flächen in 3D – Vollgeschosse farbig">
+            <button
+              className={ansicht === '3d' ? 'active' : undefined}
+              aria-pressed={ansicht === '3d'}
+              onClick={() => setAnsicht('3d')}
+              title="Gebäude, Gelände und Lageplan-Flächen in 3D – Vollgeschosse farbig"
+            >
               3D
             </button>
           </div>
-        </div>
+        }
+      >
         {ansicht === 'plan' ? (
           <LageplanEditor n={n} />
         ) : (
@@ -521,8 +525,8 @@ export function GrzGfzView() {
           </div>
         )}
         {flaechen.length > 0 && (
-          <div className="tbl-wrap">
-            <table className="grz-table">
+          <div>
+            <table className="summary-table grz-tabelle">
               <thead>
                 <tr>
                   <th className="num" title="Nummer wie im Plan und im Druck">
@@ -594,309 +598,315 @@ export function GrzGfzView() {
             </table>
           </div>
         )}
-      </section>
+      </Karte>
 
-      <section className="grz-col grz-nachweis" id="grz-nachweis">
-        <h2>
-          Nachweis
-          <HilfeKnopf thema={['grz', 'gfz', 'baunvo']} titel="GRZ/GFZ" />
-        </h2>
-        <p className="muted small-text">
-          {baunvoLabel(n.recht.baunvo)} · Vollgeschosse nach {bauoLabel(n.recht.bauo)}
-          {n.grundstueck.flaeche !== undefined &&
-            ` · Grundstück ${n.grundstueck.gemeinschaftsanlagen !== undefined ? `${fmt2(n.grundstueck.basis!)} m² + ${fmt2(n.grundstueck.gemeinschaftsanlagen)} m² Gemeinschaftsanlagen` : `${fmt2(n.grundstueck.flaeche)} m²`}${n.grundstueck.quelle === 'lageplan' ? ' (aus dem Lageplan)' : ''}`}
-        </p>
-        {vergleich.length > 1 && (
-          <div className="grz-varianten">
-            <div className="button-row" role="group" aria-label="Variante">
-              <span className="muted small-text">Variante:</span>
-              {vergleich.map(({ variante: v }) => (
-                <button key={v} className={v === variante ? 'small active' : 'small'} onClick={() => setM({ variante: v === 'A' ? undefined : v })}>
-                  {v}
-                </button>
-              ))}
-            </div>
-            <table className="grz-table grz-varianten-tabelle">
-              <thead>
-                <tr>
-                  <th>Variante</th>
-                  <th className="num">{n.recht.baunvo === '1990' ? 'GRZ I' : 'GRZ'}</th>
-                  {n.recht.baunvo === '1990' && <th className="num">GRZ II</th>}
-                  <th className="num">GFZ</th>
-                </tr>
-              </thead>
-              <tbody>
-                {vergleich.map(({ variante: v, n: nv }) => (
-                  <tr key={v} className={v === variante ? 'selected' : undefined}>
-                    <td>{v}</td>
-                    <td className="num">{kennzahlWert(nv.grz)}</td>
-                    {n.recht.baunvo === '1990' && <td className="num">{nv.grz2 ? kennzahlWert(nv.grz2) : '–'}</td>}
-                    <td className="num">{kennzahlWert(nv.gfz)}</td>
-                  </tr>
+      <BreitenLeiste schluessel="grz:breite:nachweis" vorgabe={420} min={320} max={600} seite="rechts" titel="Breite des Nachweises">
+        <Karte
+          className="grz-nachweis"
+          titel={
+            <>
+              Nachweis
+              <HilfeKnopf thema={['grz', 'gfz', 'baunvo']} titel="GRZ/GFZ" />
+            </>
+          }
+        >
+          <p className="muted small-text">
+            {baunvoLabel(n.recht.baunvo)} · Vollgeschosse nach {bauoLabel(n.recht.bauo)}
+            {n.grundstueck.flaeche !== undefined &&
+              ` · Grundstück ${n.grundstueck.gemeinschaftsanlagen !== undefined ? `${fmt2(n.grundstueck.basis!)} m² + ${fmt2(n.grundstueck.gemeinschaftsanlagen)} m² Gemeinschaftsanlagen` : `${fmt2(n.grundstueck.flaeche)} m²`}${n.grundstueck.quelle === 'lageplan' ? ' (aus dem Lageplan)' : ''}`}
+          </p>
+          {vergleich.length > 1 && (
+            <div className="grz-varianten">
+              <div className="button-row" role="group" aria-label="Variante">
+                <span className="muted small-text">Variante:</span>
+                {vergleich.map(({ variante: v }) => (
+                  <button key={v} className={v === variante ? 'small active' : 'small'} onClick={() => setM({ variante: v === 'A' ? undefined : v })}>
+                    {v}
+                  </button>
                 ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-        <div className="kpis">
-          <KpiZeile titel={n.recht.baunvo === '1990' ? 'GRZ I' : 'GRZ'} k={n.grz} einheit="Grundfläche" kurz={n.recht.baunvo === '1990' ? 'GR I' : 'GR'} />
-          {n.grz2 && <KpiZeile titel="GRZ II" k={n.grz2} einheit="mit § 19 Abs. 4" kurz="GR II" />}
-          <KpiZeile titel="GFZ" k={n.gfz} einheit="Geschossfläche" kurz="GF" offenText="mit zu prüfenden Räumen bis" />
-          {n.grAbsolut && <AbsolutKpi titel={n.recht.baunvo === '1990' ? 'GR I absolut' : 'GR absolut'} a={n.grAbsolut} />}
-          {n.gr2Absolut && <AbsolutKpi titel="GR II absolut" a={n.gr2Absolut} zusatz="§ 19 Abs. 4 S. 2" />}
-          {n.gfAbsolut && <AbsolutKpi titel="GF absolut" a={n.gfAbsolut} />}
-          {n.bmz && <KpiZeile titel="BMZ" k={n.bmz} einheit="Baumasse" kurz="BM" />}
-          <div className={`kpi${n.vollgeschosse.status === 'ueberschritten' || n.vollgeschosse.status === 'unterschritten' ? ' alarm' : ''}`}>
-            <div className="kpi-head">
-              <span className="kpi-titel">Vollgeschosse</span>
-              <StatusPill s={n.vollgeschosse.status} />
-            </div>
-            <div className="kpi-value">{roemisch(n.vollgeschosse.anzahl)}</div>
-            <div className="kpi-sub">{vollgeschosseZulaessig(n.vollgeschosse, '') || 'keine Festsetzung'}</div>
-            <div className="kpi-sub">
-              Vollgeschosse:{' '}
-              {n.geschosse
-                .filter((g) => g.vollgeschoss)
-                .map((g) => g.name)
-                .join(', ') || 'keine'}
-            </div>
-            {vonHand > 0 && <div className="kpi-sub">davon {vonHand === 1 ? 'eines' : vonHand} von Hand festgelegt</div>}
-          </div>
-        </div>
-        <details className="grz-rechenweg-app">
-          <summary>Rechenweg</summary>
-          <ul className="grz-formeln">
-            {rw.formeln.map((f, i) => (
-              <li key={i}>{f}</li>
-            ))}
-          </ul>
-        </details>
-        {n.garagenFrei !== undefined && n.garagenFrei > 0 && <p className="small-text">{garagenFreiText(n.recht.baunvo, n.garagenFrei)}</p>}
-
-        <div className="grz-h3-zeile">
-          <h3>
-            Vollgeschosse
-            <HilfeKnopf thema={['vollgeschoss', 'gelaende']} titel="Vollgeschosse" />
-          </h3>
-          <label className="toggle small-text">
-            <input type="checkbox" checked={begruendungen} onChange={(e) => setBegruendungen(e.target.checked)} />
-            Begründungen zeigen
-          </label>
-        </div>
-        <div className="tbl-wrap">
-          <table className="grz-table grz-vg-tabelle">
-            <thead>
-              <tr>
-                <th>Geschoss</th>
-                <th className="num" title="Geländeoberfläche entlang der Außenwände des Geschosses: Mittel (tiefster – höchster Punkt), über ±0,00">
-                  Gelände
-                  <br />
-                  [m]
-                </th>
-                <th className="num" title="Oberkante Fußboden des darüberliegenden Geschosses bzw. Dachhaut über der Geländeoberfläche">
-                  über Gel.
-                  <br />
-                  [m]
-                </th>
-                <th className="num" title="Anteil der Grundfläche mit der geforderten lichten Höhe">
-                  Anteil
-                </th>
-                <th>Einstufung</th>
-              </tr>
-            </thead>
-            <tbody>
-              {n.geschosse.map((g) => (
-                <Fragment key={g.storeyId}>
-                  <tr className={begruendungen ? 'grz-vg-zeile' : undefined}>
-                    <td>{g.name}</td>
-                    <td className="num" title={`Quelle: ${GELAENDE_QUELLE[g.gelaende.quelle]}`}>
-                      {fmt2(g.gelaende.mittel)}
-                      {g.gelaende.max - g.gelaende.min > 0.05 && (
-                        <div className="muted small-text">
-                          {fmt2(g.gelaende.min)} – {fmt2(g.gelaende.max)}
-                        </div>
-                      )}
-                    </td>
-                    <td className="num">{fmt2(g.ueberGelaende)}</td>
-                    <td className="num">{g.oberirdisch ? `${Math.round(g.anteil * 100)} %` : '–'}</td>
-                    <td>
-                      <select
-                        className={g.automatisch ? 'grz-wahl' : 'grz-wahl grz-von-hand'}
-                        title={g.automatisch ? 'automatisch eingestuft – von Hand festlegen' : 'von Hand festgelegt'}
-                        aria-label={`Vollgeschoss ${g.name}`}
-                        value={g.automatisch ? 'auto' : g.vollgeschoss ? 'ja' : 'nein'}
-                        onChange={(e) => setVollgeschoss(g.storeyId, e.target.value === 'auto' ? undefined : e.target.value === 'ja')}
-                      >
-                        <option value="auto">{autoVollgeschoss(g)}</option>
-                        <option value="ja">Vollgeschoss (von Hand)</option>
-                        <option value="nein">kein Vollgeschoss (von Hand)</option>
-                      </select>
-                    </td>
-                  </tr>
-                  {begruendungen && (
-                    <tr className="grz-begruendung">
-                      <td colSpan={5}>{g.begruendung}</td>
-                    </tr>
-                  )}
-                </Fragment>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        <h3>Geschossfläche</h3>
-        <table className="grz-table">
-          <thead>
-            <tr>
-              <th>Geschoss</th>
-              <th>zählt als</th>
-              <th className="num">GF</th>
-            </tr>
-          </thead>
-          <tbody>
-            {n.gfJeGeschoss.map((g) => (
-              <tr key={g.storeyId}>
-                <td>{g.name}</td>
-                <td className="muted" title={GF_ART[g.art]}>
-                  {GF_ART_KURZ[g.art]}
-                </td>
-                <td className="num">{fmt2(g.flaeche)} m²</td>
-              </tr>
-            ))}
-            <tr className="sum">
-              <td colSpan={2}>Summe</td>
-              <td className="num">{fmt2(n.gf)} m²</td>
-            </tr>
-          </tbody>
-        </table>
-
-        {n.raeume.length > 0 && (
-          <>
-            <h3>
-              Räume in Nicht-Vollgeschossen
-              <HilfeKnopf thema={['aufenthaltsraum', 'gfz']} titel="Aufenthaltsräume" />
-            </h3>
-            <p className="muted small-text">
-              {baunvoLabel(n.recht.baunvo)}: Aufenthaltsräume samt Treppenräumen zählen zur Geschossfläche. Vorschlag aus Nutzung und lichter Höhe nach {bauoLabel(n.recht.bauo)}.
-            </p>
-            <div className="tbl-wrap">
-              <table className="grz-table grz-raum-tabelle">
+              </div>
+              <table className="summary-table grz-tabelle grz-varianten-tabelle">
                 <thead>
                   <tr>
-                    <th>Geschoss</th>
-                    <th>Raum und Einstufung</th>
-                    <th className="num" title="größte lichte Höhe im Raum">
-                      lichte Höhe
-                    </th>
+                    <th>Variante</th>
+                    <th className="num">{n.recht.baunvo === '1990' ? 'GRZ I' : 'GRZ'}</th>
+                    {n.recht.baunvo === '1990' && <th className="num">GRZ II</th>}
+                    <th className="num">GFZ</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {n.raeume.map((r) => (
-                    <tr key={r.roomId} title={r.anforderung.text}>
-                      <td>{project.storeys.find((s) => s.id === r.storeyId)?.name}</td>
-                      <td>
-                        <div>
-                          {r.name}
-                          {r.zuPruefen && (
-                            <>
-                              {' '}
-                              <span className="pill warn" title="nach Nutzung Aufenthaltsraum, aber ohne die geforderte lichte Höhe">
-                                prüfen
-                              </span>
-                            </>
-                          )}
-                        </div>
-                        <select
-                          className={r.automatisch ? 'grz-wahl' : 'grz-wahl grz-von-hand'}
-                          aria-label={`Einstufung ${r.name}`}
-                          value={r.automatisch ? 'auto' : r.ergebnis}
-                          onChange={(e) => setAufenthalt(r.storeyId, r.roomId, e.target.value === 'auto' ? undefined : (e.target.value as 'ja' | 'nein' | 'treppe'))}
-                        >
-                          <option value="auto">automatisch: {AUFENTHALT[r.automatisch ? r.ergebnis : r.nachName]}</option>
-                          <option value="ja">Aufenthaltsraum (von Hand)</option>
-                          <option value="treppe">Treppenraum (von Hand)</option>
-                          <option value="nein">kein Aufenthaltsraum (von Hand)</option>
-                        </select>
-                        <div className="muted small-text">{r.begruendung}</div>
-                      </td>
-                      <td className="num">{fmt2(r.maxHoehe)} m</td>
+                  {vergleich.map(({ variante: v, n: nv }) => (
+                    <tr key={v} className={v === variante ? 'selected' : undefined}>
+                      <td>{v}</td>
+                      <td className="num">{kennzahlWert(nv.grz)}</td>
+                      {n.recht.baunvo === '1990' && <td className="num">{nv.grz2 ? kennzahlWert(nv.grz2) : '–'}</td>}
+                      <td className="num">{kennzahlWert(nv.gfz)}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-          </>
-        )}
-
-        {flaechen.some((f) => !f.nachbar) && (
-          <>
-            <h3>
-              Flächenbilanz
-              <HilfeKnopf thema="ueberlagerung" titel="Überlagerungen" />
-            </h3>
-            <table className="grz-table">
-              <tbody>
-                <tr>
-                  <td>Gebäude</td>
-                  <td className="num">{fmt2(n.bilanz.gebaeude)} m²</td>
-                </tr>
-                {VERSIEGELUNGEN.map((v) => (
-                  <tr key={v.id}>
-                    <td>
-                      {/* Farbmarke in der Originalfarbe; der Plan rechnet seine Füllung auf der dunklen Zeichenfläche passend vor (planFuellungDunkel) */}
-                      <span className="swatch" style={{ background: v.color }} /> {v.label}
-                    </td>
-                    <td className="num">{fmt2(n.bilanz[v.id])} m²</td>
-                  </tr>
-                ))}
-                <tr className="sum">
-                  <td>Summe</td>
-                  <td className="num">{fmt2(n.bilanz.summe)} m²</td>
-                </tr>
-                {n.bilanz.differenz !== undefined && n.bilanz.differenz > 0.5 && (
-                  <tr>
-                    <td className="muted">{BILANZ_REST}</td>
-                    <td className="num muted">{fmt2(n.bilanz.differenz)} m²</td>
-                  </tr>
-                )}
-                {n.bilanz.differenz !== undefined && n.bilanz.differenz < -0.5 && (
-                  <tr>
-                    <td className="warning">{BILANZ_UEBER}</td>
-                    <td className="num warning">{fmt2(-n.bilanz.differenz)} m²</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </>
-        )}
-
-        {n.recht.hinweise.length + n.hinweise.length > 0 && (
-          <>
-            <h3>Hinweise</h3>
-            <ul className="grz-hinweise">
-              {n.recht.hinweise.map((h, i) => (
-                <li key={`r${i}`}>{h}</li>
-              ))}
-              {n.hinweise.map((h, i) => (
-                <li key={i} className={h.art === 'bedienung' ? 'bedienung' : undefined} title={h.art === 'bedienung' ? 'Bedienhinweis – erscheint nicht im Nachweis' : undefined}>
-                  {h.text}
-                  {h.tipp && <span className="muted"> {h.tipp}</span>}
-                  {h.feld === 'grundstueck' && (
-                    <>
-                      {' '}
-                      <button className="link" onClick={() => document.querySelector<HTMLInputElement>('#grz-grundstueck input')?.focus()}>
-                        zum Feld
-                      </button>
-                    </>
-                  )}
-                </li>
+          )}
+          <div className="kpis">
+            <KpiZeile titel={n.recht.baunvo === '1990' ? 'GRZ I' : 'GRZ'} k={n.grz} einheit="Grundfläche" kurz={n.recht.baunvo === '1990' ? 'GR I' : 'GR'} />
+            {n.grz2 && <KpiZeile titel="GRZ II" k={n.grz2} einheit="mit § 19 Abs. 4" kurz="GR II" />}
+            <KpiZeile titel="GFZ" k={n.gfz} einheit="Geschossfläche" kurz="GF" offenText="mit zu prüfenden Räumen bis" />
+            {n.grAbsolut && <AbsolutKpi titel={n.recht.baunvo === '1990' ? 'GR I absolut' : 'GR absolut'} a={n.grAbsolut} />}
+            {n.gr2Absolut && <AbsolutKpi titel="GR II absolut" a={n.gr2Absolut} zusatz="§ 19 Abs. 4 S. 2" />}
+            {n.gfAbsolut && <AbsolutKpi titel="GF absolut" a={n.gfAbsolut} />}
+            {n.bmz && <KpiZeile titel="BMZ" k={n.bmz} einheit="Baumasse" kurz="BM" />}
+            <div className={`kpi${n.vollgeschosse.status === 'ueberschritten' || n.vollgeschosse.status === 'unterschritten' ? ' alarm' : ''}`}>
+              <div className="kpi-head">
+                <span className="kpi-titel">Vollgeschosse</span>
+                <StatusPill s={n.vollgeschosse.status} />
+              </div>
+              <div className="kpi-value">{roemisch(n.vollgeschosse.anzahl)}</div>
+              <div className="kpi-sub">{vollgeschosseZulaessig(n.vollgeschosse, '') || 'keine Festsetzung'}</div>
+              <div className="kpi-sub">
+                Vollgeschosse:{' '}
+                {n.geschosse
+                  .filter((g) => g.vollgeschoss)
+                  .map((g) => g.name)
+                  .join(', ') || 'keine'}
+              </div>
+              {vonHand > 0 && <div className="kpi-sub">davon {vonHand === 1 ? 'eines' : vonHand} von Hand festgelegt</div>}
+            </div>
+          </div>
+          <details className="grz-rechenweg-app">
+            <summary>Rechenweg</summary>
+            <ul className="grz-formeln">
+              {rw.formeln.map((f, i) => (
+                <li key={i}>{f}</li>
               ))}
             </ul>
-          </>
-        )}
-        <p className="muted small-text">{HAFTUNG}</p>
-      </section>
-    </div>
+          </details>
+          {n.garagenFrei !== undefined && n.garagenFrei > 0 && <p className="small-text">{garagenFreiText(n.recht.baunvo, n.garagenFrei)}</p>}
+
+          <div className="grz-h3-zeile">
+            <h3>
+              Vollgeschosse
+              <HilfeKnopf thema={['vollgeschoss', 'gelaende']} titel="Vollgeschosse" />
+            </h3>
+            <label className="toggle small-text">
+              <input type="checkbox" checked={begruendungen} onChange={(e) => setBegruendungen(e.target.checked)} />
+              Begründungen zeigen
+            </label>
+          </div>
+          <div>
+            <table className="summary-table grz-tabelle grz-vg-tabelle">
+              <thead>
+                <tr>
+                  <th>Geschoss</th>
+                  <th className="num" title="Geländeoberfläche entlang der Außenwände des Geschosses: Mittel (tiefster – höchster Punkt), über ±0,00">
+                    Gelände
+                    <br />
+                    [m]
+                  </th>
+                  <th className="num" title="Oberkante Fußboden des darüberliegenden Geschosses bzw. Dachhaut über der Geländeoberfläche">
+                    über Gel.
+                    <br />
+                    [m]
+                  </th>
+                  <th className="num" title="Anteil der Grundfläche mit der geforderten lichten Höhe">
+                    Anteil
+                  </th>
+                  <th>Einstufung</th>
+                </tr>
+              </thead>
+              <tbody>
+                {n.geschosse.map((g) => (
+                  <Fragment key={g.storeyId}>
+                    <tr className={begruendungen ? 'grz-vg-zeile' : undefined}>
+                      <td>{g.name}</td>
+                      <td className="num" title={`Quelle: ${GELAENDE_QUELLE[g.gelaende.quelle]}`}>
+                        {fmt2(g.gelaende.mittel)}
+                        {g.gelaende.max - g.gelaende.min > 0.05 && (
+                          <div className="muted small-text">
+                            {fmt2(g.gelaende.min)} – {fmt2(g.gelaende.max)}
+                          </div>
+                        )}
+                      </td>
+                      <td className="num">{fmt2(g.ueberGelaende)}</td>
+                      <td className="num">{g.oberirdisch ? `${Math.round(g.anteil * 100)} %` : '–'}</td>
+                      <td>
+                        <select
+                          className={g.automatisch ? 'grz-wahl' : 'grz-wahl grz-von-hand'}
+                          title={g.automatisch ? 'automatisch eingestuft – von Hand festlegen' : 'von Hand festgelegt'}
+                          aria-label={`Vollgeschoss ${g.name}`}
+                          value={g.automatisch ? 'auto' : g.vollgeschoss ? 'ja' : 'nein'}
+                          onChange={(e) => setVollgeschoss(g.storeyId, e.target.value === 'auto' ? undefined : e.target.value === 'ja')}
+                        >
+                          <option value="auto">{autoVollgeschoss(g)}</option>
+                          <option value="ja">Vollgeschoss (von Hand)</option>
+                          <option value="nein">kein Vollgeschoss (von Hand)</option>
+                        </select>
+                      </td>
+                    </tr>
+                    {begruendungen && (
+                      <tr className="grz-begruendung">
+                        <td colSpan={5}>{g.begruendung}</td>
+                      </tr>
+                    )}
+                  </Fragment>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <h3>Geschossfläche</h3>
+          <table className="summary-table grz-tabelle">
+            <thead>
+              <tr>
+                <th>Geschoss</th>
+                <th>zählt als</th>
+                <th className="num">GF</th>
+              </tr>
+            </thead>
+            <tbody>
+              {n.gfJeGeschoss.map((g) => (
+                <tr key={g.storeyId}>
+                  <td>{g.name}</td>
+                  <td className="muted" title={GF_ART[g.art]}>
+                    {GF_ART_KURZ[g.art]}
+                  </td>
+                  <td className="num">{fmt2(g.flaeche)} m²</td>
+                </tr>
+              ))}
+              <tr className="sum">
+                <td colSpan={2}>Summe</td>
+                <td className="num">{fmt2(n.gf)} m²</td>
+              </tr>
+            </tbody>
+          </table>
+
+          {n.raeume.length > 0 && (
+            <>
+              <h3>
+                Räume in Nicht-Vollgeschossen
+                <HilfeKnopf thema={['aufenthaltsraum', 'gfz']} titel="Aufenthaltsräume" />
+              </h3>
+              <p className="muted small-text">
+                {baunvoLabel(n.recht.baunvo)}: Aufenthaltsräume samt Treppenräumen zählen zur Geschossfläche. Vorschlag aus Nutzung und lichter Höhe nach {bauoLabel(n.recht.bauo)}.
+              </p>
+              <div>
+                <table className="summary-table grz-tabelle grz-raum-tabelle">
+                  <thead>
+                    <tr>
+                      <th>Geschoss</th>
+                      <th>Raum und Einstufung</th>
+                      <th className="num" title="größte lichte Höhe im Raum">
+                        lichte Höhe
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {n.raeume.map((r) => (
+                      <tr key={r.roomId} title={r.anforderung.text}>
+                        <td>{project.storeys.find((s) => s.id === r.storeyId)?.name}</td>
+                        <td>
+                          <div>
+                            {r.name}
+                            {r.zuPruefen && (
+                              <>
+                                {' '}
+                                <span className="pill warn" title="nach Nutzung Aufenthaltsraum, aber ohne die geforderte lichte Höhe">
+                                  prüfen
+                                </span>
+                              </>
+                            )}
+                          </div>
+                          <select
+                            className={r.automatisch ? 'grz-wahl' : 'grz-wahl grz-von-hand'}
+                            aria-label={`Einstufung ${r.name}`}
+                            value={r.automatisch ? 'auto' : r.ergebnis}
+                            onChange={(e) => setAufenthalt(r.storeyId, r.roomId, e.target.value === 'auto' ? undefined : (e.target.value as 'ja' | 'nein' | 'treppe'))}
+                          >
+                            <option value="auto">automatisch: {AUFENTHALT[r.automatisch ? r.ergebnis : r.nachName]}</option>
+                            <option value="ja">Aufenthaltsraum (von Hand)</option>
+                            <option value="treppe">Treppenraum (von Hand)</option>
+                            <option value="nein">kein Aufenthaltsraum (von Hand)</option>
+                          </select>
+                          <div className="muted small-text">{r.begruendung}</div>
+                        </td>
+                        <td className="num">{fmt2(r.maxHoehe)} m</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+
+          {flaechen.some((f) => !f.nachbar) && (
+            <>
+              <h3>
+                Flächenbilanz
+                <HilfeKnopf thema="ueberlagerung" titel="Überlagerungen" />
+              </h3>
+              <table className="summary-table grz-tabelle">
+                <tbody>
+                  <tr>
+                    <td>Gebäude</td>
+                    <td className="num">{fmt2(n.bilanz.gebaeude)} m²</td>
+                  </tr>
+                  {VERSIEGELUNGEN.map((v) => (
+                    <tr key={v.id}>
+                      <td>
+                        {/* Farbmarke in der Originalfarbe; der Plan rechnet seine Füllung auf der dunklen Zeichenfläche passend vor (planFuellungDunkel) */}
+                        <span className="swatch" style={{ background: v.color }} /> {v.label}
+                      </td>
+                      <td className="num">{fmt2(n.bilanz[v.id])} m²</td>
+                    </tr>
+                  ))}
+                  <tr className="sum">
+                    <td>Summe</td>
+                    <td className="num">{fmt2(n.bilanz.summe)} m²</td>
+                  </tr>
+                  {n.bilanz.differenz !== undefined && n.bilanz.differenz > 0.5 && (
+                    <tr>
+                      <td className="muted">{BILANZ_REST}</td>
+                      <td className="num muted">{fmt2(n.bilanz.differenz)} m²</td>
+                    </tr>
+                  )}
+                  {n.bilanz.differenz !== undefined && n.bilanz.differenz < -0.5 && (
+                    <tr>
+                      <td className="warning">{BILANZ_UEBER}</td>
+                      <td className="num warning">{fmt2(-n.bilanz.differenz)} m²</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </>
+          )}
+
+          {n.recht.hinweise.length + n.hinweise.length > 0 && (
+            <>
+              <h3>Hinweise</h3>
+              <ul className="grz-hinweise">
+                {n.recht.hinweise.map((h, i) => (
+                  <li key={`r${i}`}>{h}</li>
+                ))}
+                {n.hinweise.map((h, i) => (
+                  <li key={i} className={h.art === 'bedienung' ? 'bedienung' : undefined} title={h.art === 'bedienung' ? 'Bedienhinweis – erscheint nicht im Nachweis' : undefined}>
+                    {h.text}
+                    {h.tipp && <span className="muted"> {h.tipp}</span>}
+                    {h.feld === 'grundstueck' && (
+                      <>
+                        {' '}
+                        <button className="link" onClick={() => document.querySelector<HTMLInputElement>('#grz-grundstueck input')?.focus()}>
+                          zum Feld
+                        </button>
+                      </>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+          <p className="muted small-text">{HAFTUNG}</p>
+        </Karte>
+      </BreitenLeiste>
+    </Flaeche>
   );
 }
 
@@ -974,14 +984,6 @@ function TeilflaechenListe({ f }: { f: ReturnType<typeof rechenweg>['flaechen'][
         </li>
       ))}
     </ul>
-  );
-}
-
-function ErgebnisWert({ titel, wert, s }: { titel: string; wert: string; s: Status }) {
-  return (
-    <span className="nowrap">
-      {titel} <strong>{wert}</strong> <StatusPill s={s} />
-    </span>
   );
 }
 

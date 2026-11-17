@@ -546,7 +546,8 @@ describe('Nachweis-Spalte, Regeln, Rückgängig (G-28, G-29, G-32)', () => {
     const pfad = ['src/styles.css', 'apps/grz/src/styles.css'].find((x) => existsSync(x))!;
     const css = readFileSync(pfad, 'utf8');
     expect(css).toMatch(/\.nowrap,\s*\.num\s*\{\s*white-space: nowrap;/);
-    expect(css).toMatch(/@media \(max-width: 1280px\)/);
+    // Layout aus core (Fläche und Karten): kein eigenes Spalten-Raster mehr in der App
+    expect(css).not.toMatch(/grid-template-columns: minmax\(250px/);
     useGrz.getState().load(projekt());
     const host = render(GrzGfzView);
     // Begründungen auf Wunsch als eigene, ganz breite Zeile
@@ -698,7 +699,7 @@ describe('Gesamt-Review: Tastatur, Ausschnitt, Zeichnen, Unterlage, Speichern', 
     useGrz.getState().load(projekt());
     const host = render(GrzGfzView);
     const ids = useGrz.getState().project.lageplan!.flaechen.map((f) => f.id);
-    const links = [...host.querySelectorAll('.grz-table button.link')] as HTMLButtonElement[];
+    const links = [...host.querySelectorAll('.grz-tabelle button.link')] as HTMLButtonElement[];
     act(() => links[0].click());
     act(() => links[1].dispatchEvent(new MouseEvent('click', { bubbles: true, shiftKey: true })));
     expect(useGrz.getState().selectedIds).toEqual(ids);
@@ -807,7 +808,7 @@ describe('Gesamt-Review: Bedienung der Oberfläche', () => {
     act(() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
     expect(useGrz.getState().werkzeug).toBe('auswahl');
     act(() => useGrz.getState().update((x) => ({ ...x, lageplan: { flaechen } }), undefined, 'Flächen'));
-    const nr = [...host.querySelector('.grz-plan .grz-table')!.querySelectorAll('tbody tr:not(.sum) td:first-child')].map((t) => t.textContent);
+    const nr = [...host.querySelector('.grz-plan .grz-tabelle')!.querySelectorAll('tbody tr:not(.sum) td:first-child')].map((t) => t.textContent);
     expect(nr).toEqual(['1', '2']);
     expect([...host.querySelectorAll('.lp-beschriftung')].map((t) => t.textContent?.split(' · ')[0])).toEqual(expect.arrayContaining(['1', '2']));
   });
@@ -891,7 +892,7 @@ describe('Gesamt-Review: Bedienung der Oberfläche', () => {
     act(() => svg.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerId: 1, ...bildpunkt(svg, { x: -5, y: 10 }) })));
     act(() => svg.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, button: 0, pointerId: 1, ...bildpunkt(svg, { x: -5, y: 10 }) })));
     expect(host.querySelector('.lp-chip.active')).not.toBeNull();
-    act(() => (host.querySelector('.grz-plan .grz-table button.link') as HTMLButtonElement).click());
+    act(() => (host.querySelector('.grz-plan .grz-tabelle button.link') as HTMLButtonElement).click());
     expect(host.querySelector('.lp-chip.active')).toBeNull();
     act(() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', bubbles: true })));
     expect(useGrz.getState().project.lageplan!.grenze).toHaveLength(1);
@@ -1150,7 +1151,7 @@ describe('Designsystem: Kontextmenü, Symbole, Druckvorschau, Feldfehler', () =>
       expect(Number(pfad().getAttribute('fill-opacity'))).toBeCloseTo(dunkel.deckung, 6);
       expect(dunkel.farbe).not.toBe(farbe);
       // Legende bleibt in der Originalfarbe, ohne Filter
-      const marke = [...host.querySelectorAll<HTMLElement>('.grz-table .swatch')].find((m) => m.parentElement?.textContent?.includes(versiegelungInfo(f.versiegelung).label))!;
+      const marke = [...host.querySelectorAll<HTMLElement>('.grz-tabelle .swatch')].find((m) => m.parentElement?.textContent?.includes(versiegelungInfo(f.versiegelung).label))!;
       expect(marke.style.background).not.toBe('');
       expect(marke.style.filter).toBe('');
       // Gegenprobe: dunkles Schema ohne Abdunkeln der Zeichenfläche → wieder die Originalfarbe
@@ -1270,5 +1271,27 @@ describe('Kopf- und Werkzeugleisten (Leisten-Regel)', () => {
     // ohne Unterlage nur ein Knopf zum Laden, kein Menü
     expect(knopf()).toBeUndefined();
     expect([...host.querySelectorAll('.lp-unterlage button')].map((b) => b.textContent?.trim())).toEqual(['Bild/PDF laden …']);
+  });
+});
+
+describe('Kartenlayout (Richtung C)', () => {
+  it('drei Karten auf der Fläche mit Kartenkopf: Projekt und Grundstück, Lageplan, Nachweis; Seitenkarten mit ziehbarer Breite', () => {
+    useGrz.getState().load(projekt());
+    const host = render(GrzGfzView);
+    const flaeche = host.querySelector('.flaeche.grz-view')!;
+    expect(flaeche).not.toBeNull();
+    const karten = [...flaeche.querySelectorAll('section.karte')];
+    expect(karten.map((k) => k.querySelector('.karte-kopf h2')!.firstChild!.textContent?.trim())).toEqual(['Projekt und Grundstück', 'Lageplan', 'Nachweis']);
+    // jede Karte ist ein benannter Bereich (aria-labelledby auf das h2)
+    for (const k of karten) expect(document.getElementById(k.getAttribute('aria-labelledby')!)?.tagName).toBe('H2');
+    // Eingaben und Nachweis in BreitenLeisten (links bzw. rechts), der Lageplan in der Mitte
+    expect(flaeche.querySelectorAll(':scope > .leiste')).toHaveLength(2);
+    expect(flaeche.querySelector(':scope > section.karte.grz-plan')).not.toBeNull();
+    // Umschalter Lageplan | 3D im Kartenkopf (Gegenprobe: 3D gewählt → Titel „3D-Ansicht“)
+    const knopf3d = [...host.querySelectorAll<HTMLButtonElement>('.grz-plan .karte-aktionen button')].find((b) => b.textContent === '3D')!;
+    expect(knopf3d.getAttribute('aria-pressed')).toBe('false');
+    // Tabellen auf der gemeinsamen Zahlentabelle
+    expect(host.querySelectorAll('table.summary-table').length).toBeGreaterThan(0);
+    expect(host.querySelectorAll('table:not(.summary-table):not(.report-table)')).toHaveLength(0);
   });
 });
