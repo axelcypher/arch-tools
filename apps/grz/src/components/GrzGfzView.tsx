@@ -600,7 +600,7 @@ export function GrzGfzView() {
         )}
       </Karte>
 
-      <BreitenLeiste schluessel="grz:breite:nachweis" vorgabe={420} min={320} max={600} seite="rechts" titel="Breite des Nachweises">
+      <BreitenLeiste schluessel="grz:breite:nachweis" vorgabe={380} min={320} max={600} seite="rechts" titel="Breite des Nachweises">
         <Karte
           className="grz-nachweis"
           titel={

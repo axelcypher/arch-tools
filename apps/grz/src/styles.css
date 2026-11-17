@@ -418,6 +418,13 @@ button.link:hover {
   position: absolute;
   top: 8px;
   right: 8px;
+  padding: 2px 6px;
+  border-radius: var(--radius-s);
+  background: var(--overlay-bg);
+}
+/* Bezug für die Breite der Tastenübersicht */
+.grz-plan .karte-rumpf {
+  container-type: inline-size;
 }
 
 .grz-3d-legende {
@@ -495,6 +502,10 @@ button.link:hover {
 .lp-tasten {
   position: relative;
 }
+/* im Bedienfeld des Plans: die Liste richtet sich am Bedienfeld aus (links bündig), nicht am kleinen Knopf */
+.lp-plan-steuerung .lp-tasten {
+  position: static;
+}
 .lp-tasten summary {
   cursor: pointer;
   list-style: none;
@@ -517,8 +528,8 @@ button.link:hover {
   top: 28px;
   right: 0;
   left: auto;
-  width: 380px;
-  max-width: 80vw;
+  /* nie breiter als die Lageplan-Karte (sie schneidet sonst ab) */
+  width: min(380px, calc(100cqi - 2 * var(--s3)));
   padding: 8px 12px;
   background: var(--panel);
   border: 1px solid var(--border);
@@ -554,11 +565,9 @@ button.link:hover {
   align-items: center;
   gap: var(--s1);
 }
-/* Trenner als Rand der Gruppe: beim Umbruch steht nie ein Strich allein */
+/* Gruppenabstand ohne Strich: bricht die Gruppe in schmalen Karten um, steht kein Trenner allein am Zeilenanfang */
 .lp-mit-trenner {
-  border-left: 1px solid var(--border);
-  padding-left: 8px;
-  margin-left: 4px;
+  margin-left: var(--s3);
 }
 .lp-nutzung {
   display: inline-flex;
@@ -657,6 +666,7 @@ button.link:hover {
   margin-right: 0;
 }
 .lp-plan-steuerung .lp-tasten-liste {
+  top: calc(100% + var(--s1));
   left: 0;
   right: auto;
 }
