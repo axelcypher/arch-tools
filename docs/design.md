@@ -62,8 +62,8 @@ Feldzeilen). Ein Verweisknopf im Text (`button.link`, z. B. ein Wert, der seine 
 Text. Diese Tabelle soll die eigenen Tabellenklassen der Apps ersetzen; bis zur Umstellung bleiben diese bestehen.
 
 Marken (`.marke`, z. B. das Kennzeichen „festgelegt“ in einer Zeile, die Marken der Projektübersicht): klein
-(`--fs-xs`), getönt mit `--chip-bg` und Text in `--muted`; Varianten `.warnung`, `.ok`, `.hinweis`. Die Information
-steht immer im Text der Marke, die Fläche ist nur Schmuck. Auf getönten Gründen – gewählte Zeile samt `tr.zusatz`,
+(`--fs-xs`), getönt mit `--chip-bg` und Text in `--muted`; Varianten `.warnung`, `.ok`, `.info` (nicht `.hinweis` – das ist die schwebende Hinweis-Meldung; in der Projektübersicht heißt die Art weiter `hinweis`). Die Information
+steht immer im Text der Marke, die Fläche ist nur Schmuck. Auf getönten Gründen – gewählte Zeile samt `tr.zusatz` (`tr.selected` oder `tr[aria-selected="true"]`),
 überfahrene Zeile, `tr.gruppe`, `aria-selected`/`aria-current`, überfahrene Projektkachel – verschwände jede Fläche
 (etwa 1 : 1); dort trägt die Marke einen Rahmen in ihrer Textfarbe (mindestens 4,9 : 1, hell wie dunkel). Beim
 Überfahren jeder Tabellenzeile erscheint der Rahmen, auch wo die Zeile nicht getönt wird – gewollt, damit es keine

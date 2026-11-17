@@ -1044,7 +1044,7 @@ textarea:focus {
 /* wie die Wahl in senkrechten Segmenten: Tönung und Akzentlinie links – von Gruppenzeilen unterscheidbar */
 .summary-table tr.selected td:first-child,
 .summary-table tr.selected td.zeilenanfang,
-.summary-table tr.selected + tr.zusatz td:first-child {
+.summary-table :is(tr.selected, tr[aria-selected='true']) + tr.zusatz td:first-child {
   box-shadow: inset 3px 0 var(--accent);
 }
 /* Zusatzzeile (Hinweis, Kennzeichen, Handwert unter einer Zeile): gehört zur Zeile darüber – ohne eigene Trennlinie,
@@ -1053,7 +1053,7 @@ textarea:focus {
   border-top: none;
   padding-top: 0;
 }
-.summary-table tr.selected + tr.zusatz td {
+.summary-table :is(tr.selected, tr[aria-selected='true']) + tr.zusatz td {
   background: var(--accent-soft);
 }
 
@@ -1093,11 +1093,14 @@ textarea:focus {
   background: var(--ok-bg);
   color: var(--ok-text);
 }
-.marke.hinweis {
+/* Hinweis-Marke heißt .info: .hinweis ist die schwebende Hinweis-Meldung weiter unten */
+.marke.info {
   background: var(--accent-soft);
   color: var(--accent-text);
 }
-:is(tr.selected, tr.selected + tr.zusatz, tr.gruppe, tr:hover, [aria-selected='true'], [aria-current='true'], .pa-karte:hover:not(:disabled)) .marke {
+/* bewusst weit gefasst (jede überfahrene Zeile, jedes aria-selected/-current): der Rahmen schadet auf ungetöntem Grund
+   nicht, eine eigene Klasse für getönte Zeilen bräuchte jede App */
+:is(tr.selected, tr.selected + tr.zusatz, tr[aria-selected='true'] + tr.zusatz, tr.gruppe, tr:hover, [aria-selected='true'], [aria-current='true'], .pa-karte:hover:not(:disabled)) .marke {
   box-shadow: inset 0 0 0 1px currentColor;
 }
 
