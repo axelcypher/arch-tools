@@ -1,3 +1,4 @@
+import { Karte } from '@core/ui/Karte';
 import { useState } from 'react';
 import { bestaetigen } from '@core/ui/Rueckfrage';
 import { Symbol } from '@core/ui/Symbol';
@@ -28,10 +29,7 @@ export function Notizen() {
   };
 
   return (
-    <div className="ava-seite">
-      <div className="ava-seite-kopf">
-        <h1>Notizen & Aufgaben</h1>
-      </div>
+    <Karte als="main" titel="Notizen & Aufgaben">
       <div className="ava-notiz-neu">
         <textarea rows={2} aria-label="Neue Notiz bzw. Aufgabe" placeholder="Neue Notiz bzw. Aufgabe … (Strg+Enter)" value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && (e.ctrlKey || e.metaKey) && neu()} />
         <div className="ava-reihe">
@@ -103,6 +101,6 @@ export function Notizen() {
         })}
         {!liste.length && <li className="muted">{projekt.ava.notizen.length ? 'Keine Einträge für diesen Filter.' : 'Noch keine Notizen – oben eintragen und „Hinzufügen“.'}</li>}
       </ul>
-    </div>
+    </Karte>
   );
 }
