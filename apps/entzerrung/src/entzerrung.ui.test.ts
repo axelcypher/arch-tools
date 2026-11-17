@@ -377,7 +377,9 @@ describe('RECTIO (Entzerrung)', () => {
     // im Werkzeug „Auswahl“ ohne Maus steht die Fußzeile mit dem Bedienhinweis (gleichbleibende Höhe)
     act(() => useEntz.getState().setze({ werkzeug: 'auswahl' }));
     expect(zeichen.querySelector('.zeichen-fuss .ef-hinweis-text')?.textContent).toContain('Mausrad zoomt');
-    expect(zeichen.querySelector('.zeichen-fuss .ef-koord')).toBeNull();
+    // ohne Maus: Platzhalter für die Koordinaten (unsichtbar, gleiche Breite), damit sich die Höhe nicht mit der Maus ändert
+    expect(zeichen.querySelector('.zeichen-fuss .ef-koord .ef-platzhalter')?.getAttribute('aria-hidden')).toBe('true');
+    expect(zeichen.querySelector('.zeichen-fuss .ef-koord-wert')).toBeNull();
   });
 
   it('Datei über dem Fenster: Ablegen-Hinweis in der Zeichenkarte', () => {

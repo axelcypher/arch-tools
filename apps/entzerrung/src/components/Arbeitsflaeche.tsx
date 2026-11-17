@@ -371,7 +371,16 @@ export function Arbeitsflaeche({ ablegen = false }: { ablegen?: boolean } = {}) 
               {hinweis}
             </span>
           )}
-          {foto && status && <span className="ef-koord">{status}</span>}
+          {/* Koordinaten nehmen ihren Platz auch ohne Maus ein (unsichtbarer Platzhalter gleicher Länge): sonst bräche der
+              Hinweis je nach Mausposition um und die Fläche änderte ihre Höhe */}
+          {foto && (
+            <span className="ef-koord">
+              <span className="ef-platzhalter" aria-hidden="true">
+                {ansicht === 'entzerrt' ? 'x 000,000 m   y 000,000 m   ·   Fotopixel ≈ 00,00 mm' : '0000 × 0000 px'}
+              </span>
+              {status && <span className="ef-koord-wert">{status}</span>}
+            </span>
+          )}
         </>
       }
     >

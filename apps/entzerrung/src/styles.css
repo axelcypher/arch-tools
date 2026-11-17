@@ -209,10 +209,22 @@
   stroke-width: 1.5;
 }
 
-/* Fußzeile der Zeichenkarte: Hinweis (gekürzt), rechts die Koordinaten */
+/* Fußzeile der Zeichenkarte: Hinweis (bricht um), rechts die Koordinaten */
 .ef-hinweis-text {
   min-width: 0;
   padding: var(--s1) 0;
+}
+/* Platzhalter und Wert liegen übereinander: die Breite hängt nicht davon ab, ob die Maus auf dem Foto ist */
+.ef-koord {
+  display: grid;
+  justify-items: end;
+}
+.ef-platzhalter,
+.ef-koord-wert {
+  grid-area: 1 / 1;
+}
+.ef-platzhalter {
+  visibility: hidden;
 }
 .ef-koord {
   flex: none;
