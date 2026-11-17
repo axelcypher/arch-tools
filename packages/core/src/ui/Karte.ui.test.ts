@@ -257,6 +257,22 @@ describe('Fläche und Karten', () => {
     expect(css).toMatch(/\.summary-table tr\.selected td \{\s*background: var\(--accent-soft\);/);
     expect(css).toMatch(/\nbutton\.link \{[^}]*border: none;[^}]*background: none;[^}]*color: var\(--accent-text\);[^}]*text-decoration: underline;/);
     expect(css).toMatch(/button\.link:hover:not\(:disabled\):not\(\[aria-disabled='true'\]\),\s*button\.link:focus-visible \{[^}]*text-decoration-color: currentColor;/);
-    expect(css).toMatch(/\.summary-table tr\.selected td:first-child \{\s*box-shadow: inset 3px 0 var\(--accent\);/);
+    expect(css).toMatch(
+      /\.summary-table tr\.selected td:first-child,\s*\.summary-table tr\.selected td\.zeilenanfang,\s*\.summary-table tr\.selected \+ tr\.zusatz td:first-child \{\s*box-shadow: inset 3px 0 var\(--accent\);/,
+    );
+    // Zusatzzeile gehört zur Zeile darüber: ohne Trennlinie, mit ihr gewählt
+    expect(css).toMatch(/\.summary-table tr\.zusatz td \{\s*border-top: none;/);
+    expect(css).toMatch(/\.summary-table tr\.selected \+ tr\.zusatz td \{\s*background: var\(--accent-soft\);/);
+  });
+
+  it('Marke: getönt, auf der Auswahltönung mit Rahmen in --muted', () => {
+    const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'base.css'), 'utf8');
+    expect(css).toMatch(/\n\.marke \{[^}]*font-size: var\(--fs-xs\);[^}]*background: var\(--chip-bg\);[^}]*color: var\(--muted\);/);
+    expect(css).toMatch(/\.marke\.warnung \{/);
+    expect(css).toMatch(/\.marke\.ok \{/);
+    expect(css).toMatch(/\.marke\.hinweis \{/);
+    expect(css).toMatch(
+      /:is\(tr\.selected, tr\.selected \+ tr\.zusatz, \[aria-selected='true'\], \[aria-current='true'\]\) \.marke:not\(\.warnung, \.ok\) \{\s*box-shadow: inset 0 0 0 1px var\(--muted\);/,
+    );
   });
 });
