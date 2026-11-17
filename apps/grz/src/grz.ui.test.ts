@@ -546,8 +546,13 @@ describe('Nachweis-Spalte, Regeln, Rückgängig (G-28, G-29, G-32)', () => {
     const pfad = ['src/styles.css', 'apps/grz/src/styles.css'].find((x) => existsSync(x))!;
     const css = readFileSync(pfad, 'utf8');
     expect(css).toMatch(/\.nowrap,\s*\.num\s*\{\s*white-space: nowrap;/);
-    // Layout aus core (Fläche und Karten): kein eigenes Spalten-Raster mehr in der App
-    expect(css).not.toMatch(/grid-template-columns: minmax\(250px/);
+    // Layout aus core (Fläche und Karten): kein eigenes Spalten-Raster, keine Spalten-Karten, keine Umbruch-Regel mehr
+    expect(css).not.toMatch(/\.grz-view\s*\{/);
+    expect(css).not.toMatch(/\.grz-col\b/);
+    expect(css).not.toMatch(/@media \(max-width: 1280px\)/);
+    // Skizze ohne eigene Palette (helle Planfarben aus .canvas)
+    const skizze = css.slice(css.indexOf('.grz-skizze {'), css.indexOf('}', css.indexOf('.grz-skizze {')));
+    expect(skizze).not.toMatch(/--panel:|--text:|filter:/);
     useGrz.getState().load(projekt());
     const host = render(GrzGfzView);
     // Begründungen auf Wunsch als eigene, ganz breite Zeile
@@ -1287,9 +1292,14 @@ describe('Kartenlayout (Richtung C)', () => {
     // Eingaben und Nachweis in BreitenLeisten (links bzw. rechts), der Lageplan in der Mitte
     expect(flaeche.querySelectorAll(':scope > .leiste')).toHaveLength(2);
     expect(flaeche.querySelector(':scope > section.karte.grz-plan')).not.toBeNull();
-    // Umschalter Lageplan | 3D im Kartenkopf (Gegenprobe: 3D gewählt → Titel „3D-Ansicht“)
+    // der Plan trägt .canvas (helle Planfarben, im dunklen Schema als Ganzes invertiert)
+    expect(host.querySelector('svg.grz-skizze.canvas')).not.toBeNull();
+    // Umschalter Lageplan | 3D im Kartenkopf; Gegenprobe: 3D gewählt → Titel „3D-Ansicht“, Knopf gedrückt
     const knopf3d = [...host.querySelectorAll<HTMLButtonElement>('.grz-plan .karte-aktionen button')].find((b) => b.textContent === '3D')!;
     expect(knopf3d.getAttribute('aria-pressed')).toBe('false');
+    act(() => knopf3d.click());
+    expect(knopf3d.getAttribute('aria-pressed')).toBe('true');
+    expect(host.querySelector('.grz-plan .karte-kopf h2')!.firstChild!.textContent).toBe('3D-Ansicht');
     // Tabellen auf der gemeinsamen Zahlentabelle
     expect(host.querySelectorAll('table.summary-table').length).toBeGreaterThan(0);
     expect(host.querySelectorAll('table:not(.summary-table):not(.report-table)')).toHaveLength(0);

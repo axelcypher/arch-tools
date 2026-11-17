@@ -51,6 +51,8 @@ erhalten.
 Die Oberfläche folgt dem Kartenlayout der Suite (Richtung C): Unter der Werkzeugleiste liegen drei Karten – links
 „Projekt und Grundstück“, in der Mitte „Lageplan“ (Umschalter Lageplan | 3D im Kartenkopf), rechts „Nachweis“. Jede
 Karte scrollt für sich; die linke und die rechte Karte lassen sich am Spalt in der Breite ziehen (Breite wird gemerkt).
+Der Lageplan ist bewusst eine normale Karte und keine reine Zeichenkarte: Werkzeuge, Plan (feste Höhe), Flächentabelle
+und Eigenschaften der Auswahl gehören zusammen und scrollen gemeinsam.
 
 Die linke Karte ist in drei Abschnitte gegliedert: **Projekt und Grundstück** (Stammdaten, Grundstücksfläche,
 Bebauungsplan), **Festsetzungen** (Baugebiet, Fassungen, Maß der baulichen Nutzung, Vollgeschosse, Höhen) und

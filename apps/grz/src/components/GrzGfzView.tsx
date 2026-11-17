@@ -378,6 +378,8 @@ export function GrzGfzView() {
         </Karte>
       </BreitenLeiste>
 
+      {/* Lageplan als normale Karte (nicht ZeichenKarte), wie in der genehmigten Vorschau: Werkzeuge, Plan, Flächentabelle
+          und Eigenschaften gehören zusammen und scrollen gemeinsam; der Plan selbst hat eine feste Höhe */}
       <Karte
         className="grz-plan"
         titel={
@@ -525,78 +527,76 @@ export function GrzGfzView() {
           </div>
         )}
         {flaechen.length > 0 && (
-          <div>
-            <table className="summary-table grz-tabelle">
-              <thead>
-                <tr>
-                  <th className="num" title="Nummer wie im Plan und im Druck">
-                    Nr.
-                  </th>
-                  <th>Fläche</th>
-                  <th>Nutzung</th>
-                  <th>Versiegelung</th>
-                  <th className="num" title="eindeutig zugeordnete Fläche außerhalb des Gebäudes – Überlagerungen zählen nur einmal">
-                    m²
-                  </th>
-                  <th>Grundfläche</th>
-                </tr>
-              </thead>
-              <tbody>
-                {flaechen.map((f) => {
-                  const post = n.lageplan.find((x) => x.id === f.id);
-                  return (
-                    <tr key={f.id} className={`${f.nachbar || (f.variante && f.variante !== variante) ? 'nachbar' : ''}${selectedIds.includes(f.id) ? ' selected' : ''}`}>
-                      <td className="num">{nummern.get(f.id) ?? ''}</td>
-                      <td>
-                        <button className="link" onClick={(e) => (e.shiftKey || e.ctrlKey || e.metaKey ? st.toggleSelect(f.id) : st.select(f.id))} title="Im Lageplan auswählen (Umschalt: mehrere)">
-                          {f.name || 'Fläche'}
-                        </button>
-                        {f.variante && <span className="muted small-text"> · Variante {f.variante}</span>}
-                        <label className="toggle small-text">
-                          <input type="checkbox" checked={!!f.nachbar} onChange={(e) => updFlaeche(f.id, { nachbar: e.target.checked || undefined })} />
-                          Nachbar
-                        </label>
-                      </td>
-                      <td>
-                        <select value={f.nutzung} disabled={f.nachbar} onChange={(e) => updFlaeche(f.id, { nutzung: e.target.value as LageplanNutzung })}>
-                          {LAGEPLAN_NUTZUNGEN.map((x) => (
-                            <option key={x.id} value={x.id}>
-                              {x.label}
-                            </option>
-                          ))}
-                        </select>
-                      </td>
-                      <td>
-                        <select value={f.versiegelung} disabled={f.nachbar} onChange={(e) => updFlaeche(f.id, { versiegelung: e.target.value as Versiegelung })}>
-                          {VERSIEGELUNGEN.map((x) => (
-                            <option key={x.id} value={x.id}>
-                              {x.label}
-                            </option>
-                          ))}
-                        </select>
-                      </td>
-                      <td className="num" title={post ? `Fläche ${fmt2(post.flaeche)} m², außerhalb des Gebäudes ${fmt2(post.flaecheAussen)} m²` : undefined}>
-                        {fmt2(post?.flaecheEindeutig ?? 0)}
-                        {post && post.ueberlagert > 0.05 && <div className="muted small-text">{fmt2(post.ueberlagert)} überlagert</div>}
-                      </td>
-                      <td>
-                        {f.nachbar ? (
-                          <span className="muted small-text">Nachbar</span>
-                        ) : (
-                          <AnrechnungPill a={post?.anrechnung ?? 'nein'} regel={post?.regel ?? 'nein'} nutzung={f.nutzung} baunvo={n.recht.baunvo} />
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-                <tr className="sum">
-                  <td colSpan={4}>Summe (jede Stelle einmal)</td>
-                  <td className="num">{fmt2(n.lageplan.filter((x) => !x.nachbar).reduce((a, x) => a + x.flaecheEindeutig, 0))}</td>
-                  <td />
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          <table className="summary-table grz-tabelle">
+            <thead>
+              <tr>
+                <th className="num" title="Nummer wie im Plan und im Druck">
+                  Nr.
+                </th>
+                <th>Fläche</th>
+                <th>Nutzung</th>
+                <th>Versiegelung</th>
+                <th className="num" title="eindeutig zugeordnete Fläche außerhalb des Gebäudes – Überlagerungen zählen nur einmal">
+                  m²
+                </th>
+                <th>Grundfläche</th>
+              </tr>
+            </thead>
+            <tbody>
+              {flaechen.map((f) => {
+                const post = n.lageplan.find((x) => x.id === f.id);
+                return (
+                  <tr key={f.id} className={`${f.nachbar || (f.variante && f.variante !== variante) ? 'nachbar' : ''}${selectedIds.includes(f.id) ? ' selected' : ''}`}>
+                    <td className="num">{nummern.get(f.id) ?? ''}</td>
+                    <td>
+                      <button className="link" onClick={(e) => (e.shiftKey || e.ctrlKey || e.metaKey ? st.toggleSelect(f.id) : st.select(f.id))} title="Im Lageplan auswählen (Umschalt: mehrere)">
+                        {f.name || 'Fläche'}
+                      </button>
+                      {f.variante && <span className="muted small-text"> · Variante {f.variante}</span>}
+                      <label className="toggle small-text">
+                        <input type="checkbox" checked={!!f.nachbar} onChange={(e) => updFlaeche(f.id, { nachbar: e.target.checked || undefined })} />
+                        Nachbar
+                      </label>
+                    </td>
+                    <td>
+                      <select value={f.nutzung} disabled={f.nachbar} onChange={(e) => updFlaeche(f.id, { nutzung: e.target.value as LageplanNutzung })}>
+                        {LAGEPLAN_NUTZUNGEN.map((x) => (
+                          <option key={x.id} value={x.id}>
+                            {x.label}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td>
+                      <select value={f.versiegelung} disabled={f.nachbar} onChange={(e) => updFlaeche(f.id, { versiegelung: e.target.value as Versiegelung })}>
+                        {VERSIEGELUNGEN.map((x) => (
+                          <option key={x.id} value={x.id}>
+                            {x.label}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="num" title={post ? `Fläche ${fmt2(post.flaeche)} m², außerhalb des Gebäudes ${fmt2(post.flaecheAussen)} m²` : undefined}>
+                      {fmt2(post?.flaecheEindeutig ?? 0)}
+                      {post && post.ueberlagert > 0.05 && <div className="muted small-text">{fmt2(post.ueberlagert)} überlagert</div>}
+                    </td>
+                    <td>
+                      {f.nachbar ? (
+                        <span className="muted small-text">Nachbar</span>
+                      ) : (
+                        <AnrechnungPill a={post?.anrechnung ?? 'nein'} regel={post?.regel ?? 'nein'} nutzung={f.nutzung} baunvo={n.recht.baunvo} />
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+              <tr className="sum">
+                <td colSpan={4}>Summe (jede Stelle einmal)</td>
+                <td className="num">{fmt2(n.lageplan.filter((x) => !x.nachbar).reduce((a, x) => a + x.flaecheEindeutig, 0))}</td>
+                <td />
+              </tr>
+            </tbody>
+          </table>
         )}
       </Karte>
 
@@ -692,66 +692,64 @@ export function GrzGfzView() {
               Begründungen zeigen
             </label>
           </div>
-          <div>
-            <table className="summary-table grz-tabelle grz-vg-tabelle">
-              <thead>
-                <tr>
-                  <th>Geschoss</th>
-                  <th className="num" title="Geländeoberfläche entlang der Außenwände des Geschosses: Mittel (tiefster – höchster Punkt), über ±0,00">
-                    Gelände
-                    <br />
-                    [m]
-                  </th>
-                  <th className="num" title="Oberkante Fußboden des darüberliegenden Geschosses bzw. Dachhaut über der Geländeoberfläche">
-                    über Gel.
-                    <br />
-                    [m]
-                  </th>
-                  <th className="num" title="Anteil der Grundfläche mit der geforderten lichten Höhe">
-                    Anteil
-                  </th>
-                  <th>Einstufung</th>
-                </tr>
-              </thead>
-              <tbody>
-                {n.geschosse.map((g) => (
-                  <Fragment key={g.storeyId}>
-                    <tr className={begruendungen ? 'grz-vg-zeile' : undefined}>
-                      <td>{g.name}</td>
-                      <td className="num" title={`Quelle: ${GELAENDE_QUELLE[g.gelaende.quelle]}`}>
-                        {fmt2(g.gelaende.mittel)}
-                        {g.gelaende.max - g.gelaende.min > 0.05 && (
-                          <div className="muted small-text">
-                            {fmt2(g.gelaende.min)} – {fmt2(g.gelaende.max)}
-                          </div>
-                        )}
-                      </td>
-                      <td className="num">{fmt2(g.ueberGelaende)}</td>
-                      <td className="num">{g.oberirdisch ? `${Math.round(g.anteil * 100)} %` : '–'}</td>
-                      <td>
-                        <select
-                          className={g.automatisch ? 'grz-wahl' : 'grz-wahl grz-von-hand'}
-                          title={g.automatisch ? 'automatisch eingestuft – von Hand festlegen' : 'von Hand festgelegt'}
-                          aria-label={`Vollgeschoss ${g.name}`}
-                          value={g.automatisch ? 'auto' : g.vollgeschoss ? 'ja' : 'nein'}
-                          onChange={(e) => setVollgeschoss(g.storeyId, e.target.value === 'auto' ? undefined : e.target.value === 'ja')}
-                        >
-                          <option value="auto">{autoVollgeschoss(g)}</option>
-                          <option value="ja">Vollgeschoss (von Hand)</option>
-                          <option value="nein">kein Vollgeschoss (von Hand)</option>
-                        </select>
-                      </td>
+          <table className="summary-table grz-tabelle grz-vg-tabelle">
+            <thead>
+              <tr>
+                <th>Geschoss</th>
+                <th className="num" title="Geländeoberfläche entlang der Außenwände des Geschosses: Mittel (tiefster – höchster Punkt), über ±0,00">
+                  Gelände
+                  <br />
+                  [m]
+                </th>
+                <th className="num" title="Oberkante Fußboden des darüberliegenden Geschosses bzw. Dachhaut über der Geländeoberfläche">
+                  über Gel.
+                  <br />
+                  [m]
+                </th>
+                <th className="num" title="Anteil der Grundfläche mit der geforderten lichten Höhe">
+                  Anteil
+                </th>
+                <th>Einstufung</th>
+              </tr>
+            </thead>
+            <tbody>
+              {n.geschosse.map((g) => (
+                <Fragment key={g.storeyId}>
+                  <tr className={begruendungen ? 'grz-vg-zeile' : undefined}>
+                    <td>{g.name}</td>
+                    <td className="num" title={`Quelle: ${GELAENDE_QUELLE[g.gelaende.quelle]}`}>
+                      {fmt2(g.gelaende.mittel)}
+                      {g.gelaende.max - g.gelaende.min > 0.05 && (
+                        <div className="muted small-text">
+                          {fmt2(g.gelaende.min)} – {fmt2(g.gelaende.max)}
+                        </div>
+                      )}
+                    </td>
+                    <td className="num">{fmt2(g.ueberGelaende)}</td>
+                    <td className="num">{g.oberirdisch ? `${Math.round(g.anteil * 100)} %` : '–'}</td>
+                    <td>
+                      <select
+                        className={g.automatisch ? 'grz-wahl' : 'grz-wahl grz-von-hand'}
+                        title={g.automatisch ? 'automatisch eingestuft – von Hand festlegen' : 'von Hand festgelegt'}
+                        aria-label={`Vollgeschoss ${g.name}`}
+                        value={g.automatisch ? 'auto' : g.vollgeschoss ? 'ja' : 'nein'}
+                        onChange={(e) => setVollgeschoss(g.storeyId, e.target.value === 'auto' ? undefined : e.target.value === 'ja')}
+                      >
+                        <option value="auto">{autoVollgeschoss(g)}</option>
+                        <option value="ja">Vollgeschoss (von Hand)</option>
+                        <option value="nein">kein Vollgeschoss (von Hand)</option>
+                      </select>
+                    </td>
+                  </tr>
+                  {begruendungen && (
+                    <tr className="grz-begruendung">
+                      <td colSpan={5}>{g.begruendung}</td>
                     </tr>
-                    {begruendungen && (
-                      <tr className="grz-begruendung">
-                        <td colSpan={5}>{g.begruendung}</td>
-                      </tr>
-                    )}
-                  </Fragment>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                  )}
+                </Fragment>
+              ))}
+            </tbody>
+          </table>
 
           <h3>Geschossfläche</h3>
           <table className="summary-table grz-tabelle">
@@ -788,52 +786,50 @@ export function GrzGfzView() {
               <p className="muted small-text">
                 {baunvoLabel(n.recht.baunvo)}: Aufenthaltsräume samt Treppenräumen zählen zur Geschossfläche. Vorschlag aus Nutzung und lichter Höhe nach {bauoLabel(n.recht.bauo)}.
               </p>
-              <div>
-                <table className="summary-table grz-tabelle grz-raum-tabelle">
-                  <thead>
-                    <tr>
-                      <th>Geschoss</th>
-                      <th>Raum und Einstufung</th>
-                      <th className="num" title="größte lichte Höhe im Raum">
-                        lichte Höhe
-                      </th>
+              <table className="summary-table grz-tabelle grz-raum-tabelle">
+                <thead>
+                  <tr>
+                    <th>Geschoss</th>
+                    <th>Raum und Einstufung</th>
+                    <th className="num" title="größte lichte Höhe im Raum">
+                      lichte Höhe
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {n.raeume.map((r) => (
+                    <tr key={r.roomId} title={r.anforderung.text}>
+                      <td>{project.storeys.find((s) => s.id === r.storeyId)?.name}</td>
+                      <td>
+                        <div>
+                          {r.name}
+                          {r.zuPruefen && (
+                            <>
+                              {' '}
+                              <span className="pill warn" title="nach Nutzung Aufenthaltsraum, aber ohne die geforderte lichte Höhe">
+                                prüfen
+                              </span>
+                            </>
+                          )}
+                        </div>
+                        <select
+                          className={r.automatisch ? 'grz-wahl' : 'grz-wahl grz-von-hand'}
+                          aria-label={`Einstufung ${r.name}`}
+                          value={r.automatisch ? 'auto' : r.ergebnis}
+                          onChange={(e) => setAufenthalt(r.storeyId, r.roomId, e.target.value === 'auto' ? undefined : (e.target.value as 'ja' | 'nein' | 'treppe'))}
+                        >
+                          <option value="auto">automatisch: {AUFENTHALT[r.automatisch ? r.ergebnis : r.nachName]}</option>
+                          <option value="ja">Aufenthaltsraum (von Hand)</option>
+                          <option value="treppe">Treppenraum (von Hand)</option>
+                          <option value="nein">kein Aufenthaltsraum (von Hand)</option>
+                        </select>
+                        <div className="muted small-text">{r.begruendung}</div>
+                      </td>
+                      <td className="num">{fmt2(r.maxHoehe)} m</td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {n.raeume.map((r) => (
-                      <tr key={r.roomId} title={r.anforderung.text}>
-                        <td>{project.storeys.find((s) => s.id === r.storeyId)?.name}</td>
-                        <td>
-                          <div>
-                            {r.name}
-                            {r.zuPruefen && (
-                              <>
-                                {' '}
-                                <span className="pill warn" title="nach Nutzung Aufenthaltsraum, aber ohne die geforderte lichte Höhe">
-                                  prüfen
-                                </span>
-                              </>
-                            )}
-                          </div>
-                          <select
-                            className={r.automatisch ? 'grz-wahl' : 'grz-wahl grz-von-hand'}
-                            aria-label={`Einstufung ${r.name}`}
-                            value={r.automatisch ? 'auto' : r.ergebnis}
-                            onChange={(e) => setAufenthalt(r.storeyId, r.roomId, e.target.value === 'auto' ? undefined : (e.target.value as 'ja' | 'nein' | 'treppe'))}
-                          >
-                            <option value="auto">automatisch: {AUFENTHALT[r.automatisch ? r.ergebnis : r.nachName]}</option>
-                            <option value="ja">Aufenthaltsraum (von Hand)</option>
-                            <option value="treppe">Treppenraum (von Hand)</option>
-                            <option value="nein">kein Aufenthaltsraum (von Hand)</option>
-                          </select>
-                          <div className="muted small-text">{r.begruendung}</div>
-                        </td>
-                        <td className="num">{fmt2(r.maxHoehe)} m</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                  ))}
+                </tbody>
+              </table>
             </>
           )}
 

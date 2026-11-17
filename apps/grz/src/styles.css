@@ -91,12 +91,6 @@
   border-radius: 4px;
   margin-bottom: 8px;
 }
-.grz-skizze.empty {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 160px;
-}
 /* Tabellen: gemeinsame Zahlentabelle .summary-table; hier nur, was TERRIO darüber hinaus braucht */
 .grz-tabelle th {
   text-align: left;
