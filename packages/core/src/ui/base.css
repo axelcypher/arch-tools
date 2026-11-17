@@ -205,8 +205,8 @@ body,
 
 /* ---------- Fläche und Karten (Karte.tsx, docs/design.md „Fläche und Karten“) ----------
    Unter der Werkzeugleiste eine ruhige Fläche; darauf Seitenleisten, Hauptbereich und Zeichenfläche als Karten mit
-   Spalt. Jede Karte scrollt für sich (Ausnahme: die rollende Spalte), die Fläche nie. Die alten Muster (.workspace, .sidebar, eigene Spalten der Apps)
-   laufen unverändert weiter, bis die App umgestellt ist. */
+   Spalt. Jede Karte scrollt für sich (Ausnahme: die rollende Spalte), die Fläche nie. Die alten Muster (.workspace,
+   .sidebar, eigene Spalten der Apps) laufen unverändert weiter, bis die App umgestellt ist. */
 .flaeche {
   flex: 1;
   min-height: 0;
@@ -233,6 +233,8 @@ body,
   overflow-y: auto;
   /* der Innenabstand kommt zur Breite hinzu: die gesetzte Breite bleibt die Breite der Karten */
   box-sizing: content-box;
+  /* Platz für die Rollleiste von Anfang an: die Breite springt nicht, wenn sie erscheint */
+  scrollbar-gutter: stable;
   padding: var(--s1);
   margin: calc(-1 * var(--s1));
 }
