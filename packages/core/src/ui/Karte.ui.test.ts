@@ -263,9 +263,27 @@ describe('Fläche und Karten', () => {
     expect(css).toMatch(/\n\.report \{[^}]*--tabelle-gruppe: #f1f3f6;/);
     // Tabellen ohne Felder oben bündig, gewählte Zeile, Verweisknopf als Text
     expect(css).toMatch(/\.summary-table\.oben td \{\s*vertical-align: top;/);
-    expect(css).toMatch(/\.summary-table tr\.selected td \{\s*background: var\(--accent-soft\);/);
+    expect(css).toMatch(/\.summary-table :is\(tr\.selected, tr\[aria-selected='true'\]\) td \{\s*background: var\(--accent-soft\);/);
     expect(css).toMatch(/\nbutton\.link \{[^}]*border: none;[^}]*background: none;[^}]*color: var\(--accent-text\);[^}]*text-decoration: underline;/);
     expect(css).toMatch(/button\.link:hover:not\(:disabled\):not\(\[aria-disabled='true'\]\),\s*button\.link:focus-visible \{[^}]*text-decoration-color: currentColor;/);
-    expect(css).toMatch(/\.summary-table tr\.selected td:first-child \{\s*box-shadow: inset 3px 0 var\(--accent\);/);
+    expect(css).toMatch(
+      /\.summary-table :is\(tr\.selected, tr\[aria-selected='true'\]\) td:first-child,\s*\.summary-table :is\(tr\.selected, tr\[aria-selected='true'\]\) td\.zeilenanfang,\s*\.summary-table :is\(tr\.selected, tr\[aria-selected='true'\]\) \+ tr\.zusatz td:first-child \{\s*box-shadow: inset 3px 0 var\(--accent\);/,
+    );
+    // Zusatzzeile gehört zur Zeile darüber: ohne Trennlinie, mit ihr gewählt
+    expect(css).toMatch(/\.summary-table tr\.zusatz td \{\s*border-top: none;/);
+    expect(css).toMatch(/\.summary-table :is\(tr\.selected, tr\[aria-selected='true'\]\) \+ tr\.zusatz td \{\s*background: var\(--accent-soft\);/);
+  });
+
+  it('Marke: getönt, auf getönten Gründen mit Rahmen in der Textfarbe', () => {
+    const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'base.css'), 'utf8');
+    expect(css).toMatch(/\n\.marke \{[^}]*font-size: var\(--fs-xs\);[^}]*background: var\(--chip-bg\);[^}]*color: var\(--muted\);/);
+    expect(css).toMatch(/\.marke\.warnung \{/);
+    expect(css).toMatch(/\.marke\.ok \{/);
+    expect(css).toMatch(/\.marke\.info \{/);
+    // keine Variante darf eine globale Klasse aus base.css tragen (.hinweis ist die schwebende Hinweis-Meldung)
+    expect(css).not.toMatch(/\.marke\.hinweis\b/);
+    expect(css).toMatch(
+      /:is\(tr\.selected, tr\.selected \+ tr\.zusatz, tr\[aria-selected='true'\] \+ tr\.zusatz, tr\.gruppe, tr:hover, \[aria-selected='true'\], \[aria-current='true'\], \.pa-karte:hover:not\(:disabled\)\) \.marke \{\s*box-shadow: inset 0 0 0 1px currentColor;/,
+    );
   });
 });
