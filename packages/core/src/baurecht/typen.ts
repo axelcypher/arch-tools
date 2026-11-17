@@ -193,6 +193,13 @@ export interface FaktDef {
    * fachlich zwingend folgt
    */
   folgt?: { wenn: Kurz; wert: string | number | boolean; grund: string }[];
+  /**
+   * Frage, die nicht mehr gestellt wird, weil sie eine rechtliche Einordnung verlangte (z. B. „Wohnungsbau nach § 246e“):
+   * Der Wert ergibt sich jetzt aus Tatsachenfragen (`folgt`, Pflicht). Eine gespeicherte Antwort aus einer älteren Datei
+   * gilt weiter und bleibt als Frage sichtbar, bis sie zurückgenommen wird; ergeben die Tatsachen etwas anderes, wird sie
+   * zum Widerspruch (Hinweis, nichts wird überschrieben). Ohne eigene Antwort fehlt die Angabe nie (fragen.ts, frageStand)
+   */
+  ersetzt?: true;
 }
 
 export interface Hinweis {
