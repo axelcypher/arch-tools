@@ -59,7 +59,7 @@ export function Protokolle() {
               </button>
           }
         >
-          <ul className="list" role="listbox" aria-label="Protokolle">
+          <ul className="list ava-liste-zweizeilig" role="listbox" aria-label="Protokolle">
             {liste.map((x) => (
               <li
                 key={x.id}

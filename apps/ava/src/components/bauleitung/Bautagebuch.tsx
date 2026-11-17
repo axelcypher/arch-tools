@@ -58,7 +58,7 @@ export function Bautagebuch() {
               </button>
           }
         >
-          <ul className="list" role="listbox" aria-label="Tagesberichte">
+          <ul className="list ava-liste-zweizeilig" role="listbox" aria-label="Tagesberichte">
             {liste.map((x) => (
               <li
                 key={x.id}

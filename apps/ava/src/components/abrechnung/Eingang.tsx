@@ -209,7 +209,7 @@ export function Eingang() {
       </Karte>
       <BreitenLeiste schluessel="ava:breite:zuordnen" vorgabe={340} seite="rechts" titel="Breite der Zuordnung">
         <Karte
-          titel="Zuordnen und ablegen"
+          titel="Zuordnen"
           className="ava-eingang-ziel"
           aktionen={
             <button className="small" onClick={() => setPruefen(true)} title="Erfassen, Korrektur rechnen, Nummer vergeben, in die Kostenkontrolle eintragen">
