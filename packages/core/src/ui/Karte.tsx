@@ -68,6 +68,11 @@ export interface KarteProps extends KopfProps {
   /** Inhalt ohne Innenabstand (Tabellen und Listen bis an den Rand); Fokusrahmen liegen dann innen */
   buendig?: boolean;
   /**
+   * Inhalt aus mehreren Abschnitten (`<section>` direkt im Rumpf, je mit `h2`): Trennlinien bis an den Rand, Abstände
+   * je Abschnitt – für Karten ohne Kopf, die mehrere Themen bündeln (z. B. Projekt, Geschosse, Flächen)
+   */
+  abschnitte?: boolean;
+  /**
    * Höhe in einer `FlaechenSpalte`: Vorgabe teilen sich die Karten die Höhe; `'inhalt'` macht die Karte so hoch wie
    * ihren Inhalt (höchstens die halbe Spalte, darüber scrollt sie) – für kurze Karten unter einer langen
    */
@@ -75,13 +80,13 @@ export interface KarteProps extends KopfProps {
 }
 
 /** Karte: Kopf mit Überschrift und Aktionen, darunter der Inhalt, der in der Karte scrollt */
-export function Karte({ titel, hilfe, aktionen, ariaLabel, fuss, children, className, buendig, hoehe = 'teilen' }: KarteProps) {
+export function Karte({ titel, hilfe, aktionen, ariaLabel, fuss, children, className, buendig, abschnitte, hoehe = 'teilen' }: KarteProps) {
   const { kopf, name } = useKopf({ titel, hilfe, aktionen, ariaLabel });
   const klasse = ['karte', hoehe === 'inhalt' && 'karte-inhalt', className].filter(Boolean).join(' ');
   return (
     <section className={klasse} {...name}>
       {kopf}
-      <div className={buendig ? 'karte-rumpf buendig' : 'karte-rumpf'}>{children}</div>
+      <div className={['karte-rumpf', (buendig || abschnitte) && 'buendig', abschnitte && 'abschnitte'].filter(Boolean).join(' ')}>{children}</div>
       {fuss != null && <footer className="karte-fuss">{fuss}</footer>}
     </section>
   );

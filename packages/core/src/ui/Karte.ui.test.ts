@@ -61,6 +61,15 @@ describe('Fläche und Karten', () => {
     expect(css).toMatch(/\.flaeche > \.flaechen-spalte\.wachsend \{[^}]*flex: 1 1 var\(--karte-mitte-wunsch\);[^}]*min-width: var\(--karte-mitte-min\);/);
   });
 
+  it('Karte mit Abschnitten: bündiger Rumpf mit Klasse abschnitte; Linien und Überschriften aus base.css', () => {
+    const host = render(h(Karte, { ariaLabel: 'Projekt, Geschosse und Flächen', abschnitte: true }, h('section', null, h('h2', null, 'Projekt')), h('section', null, h('h2', null, 'Geschosse'))));
+    expect(host.querySelector('.karte-rumpf')!.className).toBe('karte-rumpf buendig abschnitte');
+    const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'base.css'), 'utf8');
+    expect(css).toMatch(/\.karte-rumpf\.abschnitte > section \{[^}]*padding: var\(--s3\) var\(--karte-pad\);[^}]*border-bottom: 1px solid var\(--line-soft\);/);
+    expect(css).toMatch(/\.karte-rumpf\.abschnitte > section:last-child \{\s*border-bottom: none;/);
+    expect(css).toMatch(/\.karte-rumpf\.abschnitte > section > h2 \{[^}]*font-size: var\(--fs-l\);/);
+  });
+
   it('Karte ohne Titel: kein Kopf, Name über ariaLabel; bündiger Rumpf', () => {
     const host = render(h(Karte, { ariaLabel: 'Räume', buendig: true }, 'x'));
     const karte = host.querySelector('section.karte')!;

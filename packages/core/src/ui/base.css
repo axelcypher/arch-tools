@@ -338,6 +338,26 @@ body,
 .karte-rumpf.buendig {
   padding: 0;
 }
+/* Rumpf aus Abschnitten (abschnitte): jeder Abschnitt mit eigenem Innenabstand, Trennlinie bis an den Rand wie unter
+   dem Kartenkopf; die Abschnittsüberschrift (h2) wie die Überschrift im Kartenkopf */
+.karte-rumpf.abschnitte > section {
+  padding: var(--s3) var(--karte-pad);
+  border-bottom: 1px solid var(--line-soft);
+}
+.karte-rumpf.abschnitte > section:last-child {
+  border-bottom: none;
+}
+.karte-rumpf.abschnitte > section > h2 {
+  font-size: var(--fs-l);
+  font-weight: 600;
+  margin: 0 0 var(--s2);
+}
+/* in einer Kopfzeile mit Knopf (.section-head) kommt der Abstand von der Kopfzeile */
+.karte-rumpf.abschnitte > section > .section-head h2 {
+  font-size: var(--fs-l);
+  font-weight: 600;
+  margin: 0;
+}
 /* bündig: der Rumpf schneidet überstehende Fokusrahmen ab – Rahmen nach innen (wie in Leisten mit overflow: hidden) */
 .karte-rumpf.buendig :focus-visible {
   outline-offset: -2px;
