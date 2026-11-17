@@ -836,7 +836,7 @@ button.link:focus-visible {
 .feldraster > label.toggle {
   grid-template-columns: auto 1fr;
   column-gap: 4px;
-  align-items: center;
+  align-items: center; /* für bloßen Text ohne span (anonymes Element) */
 }
 .feldraster > label.toggle > * {
   align-self: center;
@@ -859,6 +859,7 @@ button.link:focus-visible {
 .feldraster > .feldraster-zwei {
   grid-column: span 2;
 }
+/* 412px = 2 × 200px (Vorgabe von --feld-min) + --s3; bei Änderung mitziehen, der Test prüft es */
 @container feldraster (width < 412px) {
   .feldraster > .feldraster-zwei {
     grid-column: 1 / -1;

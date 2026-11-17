@@ -9,6 +9,8 @@ import { Field } from './fields';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
+// happy-dom rechnet kein Grid: die Tests prüfen die Regeln als Text; die Ausrichtung (Flucht mit Hinweis, Meldung,
+// umbrechender Beschriftung, Kästchen mittig) ist in Chromium nachgemessen.
 const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'base.css'), 'utf8');
 /** Rumpf der ersten Regel mit genau diesem Selektor */
 function regel(selektor: string): string {
