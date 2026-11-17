@@ -35,59 +35,26 @@
   margin: 2px 0 var(--s2);
 }
 
-.ko-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 12px;
-}
-.ko-table th,
-.ko-table td {
-  text-align: left;
-  padding: 4px 6px;
-  border-bottom: 1px solid var(--border);
-  vertical-align: top;
-}
-.ko-table th {
-  font-size: 11px;
-  color: var(--muted);
-  font-weight: 600;
-}
-.ko-table .num {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-.ko-table tr.sum td {
-  font-weight: 600;
-  border-top: 1.5px solid var(--text);
-}
-.ko-table tr.selected td {
-  background: var(--accent-soft);
-}
-.ko-table input,
-.ko-table select {
-  padding: 2px 5px;
-  font-size: 12px;
-}
-.ko-table td.ko-menge {
+/* Tabellen: gemeinsame Zahlentabelle .summary-table (base.css); hier nur, was NUMIO zusätzlich braucht */
+.summary-table td.ko-menge {
   width: 96px;
 }
 /* abgeleitete Mengen stehen als Platzhalter im Feld – lesbar wie ein Wert, nur nicht fett */
-.ko-table td.ko-menge input::placeholder {
+.summary-table td.ko-menge input::placeholder {
   color: var(--text);
   opacity: 0.85;
 }
-.ko-table tr.festgelegt td.ko-menge input {
+.summary-table tr.festgelegt td.ko-menge input {
   font-weight: 600;
   border-color: var(--accent);
 }
-.ko-table tr.festgelegt td:first-child strong {
+.summary-table tr.festgelegt td:first-child strong {
   color: var(--accent);
 }
 .ko-fest {
   color: var(--accent);
 }
-.ko-table td.ko-einheit {
+.summary-table td.ko-einheit {
   white-space: nowrap;
 }
 .ko-zurueck {
@@ -126,11 +93,6 @@
 .ko-pos select {
   min-width: 96px;
 }
-.ko-pos tr.ko-gruppe td {
-  background: var(--bg);
-  font-weight: 600;
-  border-top: 1px solid var(--border);
-}
 .ko-pos tr.aus td {
   opacity: 0.5;
 }
@@ -154,10 +116,10 @@
 }
 
 /* Übersicht */
-.ko-table tr.ko-kg1 td {
+.summary-table tr.ko-kg1 td {
   font-weight: 600;
 }
-.ko-table tr.ko-kg2 td {
+.summary-table tr.ko-kg2 td {
   color: var(--muted);
 }
 /* lange Namen der Kostengruppen umbrechen statt abschneiden */
@@ -166,13 +128,13 @@
   width: 2.6em;
   padding-right: 0;
 }
-.ko-table tr.ko-kg2 td.ko-kgname {
+.summary-table tr.ko-kg2 td.ko-kgname {
   padding-left: 16px;
 }
-.ko-table td.mehr {
+.summary-table td.mehr {
   color: var(--danger);
 }
-.ko-table td.weniger {
+.summary-table td.weniger {
   color: var(--ok-text);
 }
 .ko-hinweise {
@@ -241,7 +203,7 @@ button.link:hover {
   align-items: center;
   gap: 2px 6px;
 }
-.ko-table td.mv-menge-zusatz {
+.summary-table td.mv-menge-zusatz {
   padding-top: 0;
 }
 .mv-abgeleitet {
@@ -299,7 +261,7 @@ button.link:hover {
   text-decoration: line-through;
 }
 /* erste Zelle als Klickfläche des Häkchens */
-.mv-rechenweg .ko-table .mv-check {
+.mv-rechenweg .summary-table .mv-check {
   width: 1px;
   padding: 0;
 }

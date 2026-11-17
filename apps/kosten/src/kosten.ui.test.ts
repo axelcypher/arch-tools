@@ -127,8 +127,8 @@ describe('NUMIO', () => {
     expect(text).toContain('1.954.575 €');
     // abgeleitete BGF als Vorgabe im Mengenfeld
     expect((host.querySelector('.ko-menge input') as HTMLInputElement).placeholder).toBe('540,00');
-    expect(host.querySelectorAll('.ko-pos tr.ko-gruppe')).toHaveLength(4);
-    expect(host.querySelectorAll('.ko-pos tbody tr:not(.ko-gruppe)')).toHaveLength(5);
+    expect(host.querySelectorAll('.ko-pos tr.gruppe')).toHaveLength(4);
+    expect(host.querySelectorAll('.ko-pos tbody tr:not(.gruppe)')).toHaveLength(5);
   });
 
   it('Gliederung anlegen, Kennwert eintragen, Menge festlegen, Position ausschalten und löschen', () => {
@@ -142,7 +142,7 @@ describe('NUMIO', () => {
     expect(host.textContent).toContain('Kennwert fehlt');
 
     // Kennwert „Mittel“ der KG 300
-    const zeile = () => host.querySelectorAll('.ko-pos tbody tr:not(.ko-gruppe)')[0];
+    const zeile = () => host.querySelectorAll('.ko-pos tbody tr:not(.gruppe)')[0];
     eingabe(zeile().querySelectorAll('.ko-kw input')[1] as HTMLInputElement, '1800');
     expect(kosten().positionen[0].mittel).toBe(1800);
     expect(zeile().textContent).toContain('972.000 €');
@@ -291,7 +291,7 @@ describe('NUMIO', () => {
     useKosten.getState().load(projektMitAnbau());
     const host = render(App);
     // Einstieg über das Kürzel in der Kostenansicht
-    const awf = [...host.querySelectorAll('.ko-table button.link')].find((b) => b.textContent === 'AWF') as HTMLButtonElement;
+    const awf = [...host.querySelectorAll('.ko-mengen button.link')].find((b) => b.textContent === 'AWF') as HTMLButtonElement;
     await act(async () => awf.click());
     expect(host.querySelector('.mv-bild h2')?.textContent).toBe('AWF – Außenwandfläche: 307,63 m²');
     expect(host.querySelector('.mv-bild .karte-aktionen .segment button[aria-pressed="true"]')?.textContent).toBe('3D-Modell');

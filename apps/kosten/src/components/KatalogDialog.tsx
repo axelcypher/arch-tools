@@ -173,7 +173,7 @@ export function KatalogDialog({ onClose }: { onClose: () => void }) {
             }}
           />
           <div className="tbl-wrap ko-katalog">
-            <table className="ko-table">
+            <table className="summary-table text">
               <thead>
                 <tr>
                   <th>

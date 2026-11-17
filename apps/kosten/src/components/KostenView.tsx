@@ -154,7 +154,7 @@ export function KostenView({ onKatalog, onMenge }: { onKatalog: () => void; onMe
         </Karte>
 
         <Karte className="ko-mengen-karte" titel="Mengen" aktionen={<HilfeKnopf thema={['bri', 'bgf', 'sohle', 'wofl']} titel="Mengen" />}>
-          <table className="ko-table ko-mengen">
+          <table className="summary-table text felder ko-mengen">
             <tbody>
               {MENGEN_BEZUEGE.map((b) => (
                 <MengeZeile key={b} b={b} e={e} onMenge={onMenge} />
@@ -188,7 +188,7 @@ export function KostenView({ onKatalog, onMenge }: { onKatalog: () => void; onMe
             </p>
           ) : (
             <div className="tbl-wrap">
-              <table className="ko-table ko-pos">
+              <table className="summary-table text felder ko-pos">
                 <thead>
                   <tr>
                     <th>
@@ -295,7 +295,7 @@ function MengeZeile({ b, e, onMenge }: { b: MengenBezug; e: Ergebnis; onMenge?: 
 function Gruppe({ kg, titel, summe, e, zeilen }: { kg: string; titel: string; summe?: number; e: Ergebnis; zeilen: PositionErgebnis[] }) {
   return (
     <>
-      <tr className="ko-gruppe">
+      <tr className="gruppe">
         <td />
         <td>{kg}</td>
         <td colSpan={6}>{titel}</td>
@@ -438,7 +438,7 @@ function Uebersicht({ e, k }: { e: Ergebnis; k: Kosten }) {
 
   return (
     <>
-      <table className="ko-table ko-summen">
+      <table className="summary-table text ko-summen">
         <thead>
           <tr>
             <th colSpan={2}>Kostengruppe</th>
@@ -465,7 +465,7 @@ function Uebersicht({ e, k }: { e: Ergebnis; k: Kosten }) {
               <td className="num">{euro(e.risiko[2])}</td>
             </tr>
           )}
-          <tr className="sum">
+          <tr className="summe">
             <td colSpan={2}>Gesamt netto</td>
             <td className="num">{euro(e.gesamtNetto[0])}</td>
             <td className="num">{euro(e.gesamtNetto[1])}</td>
@@ -477,7 +477,7 @@ function Uebersicht({ e, k }: { e: Ergebnis; k: Kosten }) {
             <td className="num">{euro(e.gesamtBrutto[1] - e.gesamtNetto[1])}</td>
             <td className="num">{euro(e.gesamtBrutto[2] - e.gesamtNetto[2])}</td>
           </tr>
-          <tr className="sum">
+          <tr className="summe">
             <td colSpan={2}>Gesamt brutto</td>
             <td className="num">{euro(e.gesamtBrutto[0])}</td>
             <td className="num">{euro(e.gesamtBrutto[1])}</td>
@@ -489,7 +489,7 @@ function Uebersicht({ e, k }: { e: Ergebnis; k: Kosten }) {
       {e.kennwerte.length > 0 && (
         <>
           <h3>Kennwerte Bauwerk (KG 300 + 400, brutto)</h3>
-          <table className="ko-table">
+          <table className="summary-table text">
             <tbody>
               {e.kennwerte.map((kw) => (
                 <tr key={kw.kurz}>
@@ -547,7 +547,7 @@ function Uebersicht({ e, k }: { e: Ergebnis; k: Kosten }) {
         </button>
       </div>
       {staende.length > 0 && (
-        <table className="ko-table">
+        <table className="summary-table text">
           <thead>
             <tr>
               <th>Stand</th>
@@ -585,7 +585,7 @@ function Uebersicht({ e, k }: { e: Ergebnis; k: Kosten }) {
       {v && vergleich && (
         <>
           <h3>Vorher/Nachher gegenüber {datum(vergleich.datum)} (Mittel, netto)</h3>
-          <table className="ko-table ko-summen">
+          <table className="summary-table text ko-summen">
             <thead>
               <tr>
                 <th colSpan={2}>Kostengruppe</th>
@@ -596,7 +596,7 @@ function Uebersicht({ e, k }: { e: Ergebnis; k: Kosten }) {
             </thead>
             <tbody>
               {[...v.zeilen, v.gesamt].map((z) => (
-                <tr key={z.kg || 'gesamt'} className={z.kg ? '' : 'sum'}>
+                <tr key={z.kg || 'gesamt'} className={z.kg ? '' : 'summe'}>
                   {z.kg && !istRisiko(z.kg) ? (
                     <>
                       <td className="ko-kgnr">{z.kg}</td>

@@ -144,7 +144,7 @@ export function MengenView({ bezug, onBezug }: { bezug: MengenBezug; onBezug: (b
     <Flaeche className="mv-view">
       <FlaechenSpalte breite={300}>
         <Karte className="mv-liste" titel="Mengen">
-          <table className="ko-table">
+          <table className="summary-table text">
             <tbody ref={listeRef}>
               {MENGEN_BEZUEGE.map((b) => {
                 const mi = MENGEN_INFO[b];
@@ -243,7 +243,7 @@ export function MengenView({ bezug, onBezug }: { bezug: MengenBezug; onBezug: (b
           )}
           {menge.teile.length ? (
             <div className="tbl-wrap" ref={wegRef}>
-              <table className="ko-table" onMouseLeave={() => setAktiv(null)}>
+              <table className="summary-table text" onMouseLeave={() => setAktiv(null)}>
                 <thead>
                   <tr>
                     <th className="mv-check">
@@ -281,7 +281,7 @@ export function MengenView({ bezug, onBezug }: { bezug: MengenBezug; onBezug: (b
                       <td className="num">{wert(bezug, t.wert)}</td>
                     </tr>
                   ))}
-                  <tr className="sum">
+                  <tr className="summe">
                     <td colSpan={3}>Summe = {info.kurz}</td>
                     <td className="num">{wert(bezug, menge.summe)}</td>
                   </tr>
