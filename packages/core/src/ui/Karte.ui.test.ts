@@ -98,6 +98,7 @@ describe('Fläche und Karten', () => {
     expect(css).toMatch(/@container karte-leiste \(max-width: 640px\) \{\s*\.segment \.lang \{\s*display: none;\s*\}\s*\.segment \.kurz \{\s*display: inline;/);
     expect(css).toMatch(/\.metric-row \{[^}]*flex-wrap: wrap;/);
     expect(css).toMatch(/\.metric \{[^}]*flex: 1 1 9em;[^}]*border-radius: var\(--radius-s\);/);
+    expect(css).toMatch(/\.metric-row:has\(> \.metric > small\) > \.metric:not\(:has\(> small\)\)::after,\s*\.metric > small:empty::before \{\s*content: '\\00a0';\s*font-size: var\(--fs-xs\);/);
     expect(css).toMatch(/\.metric > strong \{[^}]*margin-top: auto;[^}]*font-size: var\(--fs-xl\);[^}]*white-space: nowrap;/);
   });
 
@@ -106,7 +107,7 @@ describe('Fläche und Karten', () => {
     expect(host.querySelector('.karte-rumpf')?.className).toBe('karte-rumpf buendig vorschau');
     const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'base.css'), 'utf8');
     expect(css).toMatch(/\.karte-rumpf\.vorschau \{\s*background: var\(--bg\);/);
-    expect(css).toMatch(/\.karte-rumpf\.vorschau > \.muted \{[^}]*padding: var\(--s3\) var\(--karte-pad\);/);
+    expect(css).toMatch(/\.karte-rumpf\.vorschau > \.muted \{[^}]*padding: var\(--s3\) var\(--karte-pad\) var\(--karte-pad\);/);
   });
 
   it('Karte ohne Titel: kein Kopf, Name über ariaLabel; bündiger Rumpf', () => {

@@ -61,9 +61,8 @@ Apps ersetzen; bis zur Umstellung bleiben diese bestehen.
 Kennzahlen als Kacheln (`.metric-row` mit `.metric`): oben die Bezeichnung (`span`, `--fs-xs`, `--muted`), darunter der
 Wert (`strong`, `--fs-xl`, Tabellenziffern), wahlweise eine Zeile Nebentext (`small`, wie die Bezeichnung). Die Kacheln
 stehen auf `--bg` mit `--radius-s`; bricht eine Bezeichnung um, bleiben die Werte einer Zeile auf einer Linie (Wert und
-Nebentext unten bündig, Nebentext dann in allen Kacheln der Zeile oder in keiner). Sie brechen in schmalen Karten um
+Nebentext unten bündig; Kacheln ohne Nebentext halten dessen Zeile frei). Sie brechen in schmalen Karten um
 (Wunschbreite 9em, nie schmaler als ihr Inhalt). Mehr als vier oder fünf Kacheln gehören in eine Tabelle.
-
 
 ## Überschriften
 

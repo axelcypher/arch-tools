@@ -409,7 +409,7 @@ body,
 /* Leertext auf dem Rumpf der Vorschau: mit dem Innenabstand der Karte, nicht am Rand */
 .karte-rumpf.vorschau > .muted {
   margin: 0;
-  padding: var(--s3) var(--karte-pad);
+  padding: var(--s3) var(--karte-pad) var(--karte-pad);
 }
 /* Rumpf aus Abschnitten (abschnitte): jeder Abschnitt mit eigenem Innenabstand, Trennlinie bis an den Rand wie unter
    dem Kartenkopf; die Abschnittsüberschrift (h2) wie die Überschrift im Kartenkopf */
@@ -967,6 +967,14 @@ textarea:focus {
   padding: var(--s1) var(--s2);
   display: flex;
   flex-direction: column;
+}
+
+/* hat eine Kachel der Zeile Nebentext, bekommen die übrigen (und ein leerer Nebentext) eine leere Zeile gleicher Höhe –
+   so stehen die Werte (unten bündig) auf einer Linie */
+.metric-row:has(> .metric > small) > .metric:not(:has(> small))::after,
+.metric > small:empty::before {
+  content: '\00a0';
+  font-size: var(--fs-xs);
 }
 
 .metric > span,
