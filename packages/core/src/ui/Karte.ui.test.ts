@@ -47,7 +47,7 @@ describe('Fläche und Karten', () => {
   });
 
   it('ZeichenKarte: Zeichenfläche füllt die Karte, Fußzeile für Hinweis, Koordinaten und Maßstab', () => {
-    const host = render(h(ZeichenKarte, { ariaLabel: 'Grundriss', fuss: h('span', null, 'Klicken: wählen') }, h('canvas', { className: 'canvas' })));
+    const host = render(h(ZeichenKarte, { ariaLabel: 'Grundriss', fuss: h('span', null, 'Klicken: wählen'), children: h('canvas', { className: 'canvas' }) }));
     const karte = host.querySelector('section.karte.zeichen-karte')!;
     expect(karte.getAttribute('aria-label')).toBe('Grundriss');
     expect(karte.querySelector('.zeichen-flaeche > canvas.canvas')).not.toBeNull();
@@ -55,7 +55,7 @@ describe('Fläche und Karten', () => {
   });
 
   it('Fläche und Spalte setzen ihre Klassen; Spalte mit fester Breite', () => {
-    const host = render(h(Flaeche, { className: 'qu-flaeche' }, h(FlaechenSpalte, { breite: 300 }, h(Karte, { titel: 'A' }), h(Karte, { titel: 'B' }))));
+    const host = render(h(Flaeche, { className: 'qu-flaeche', children: h(FlaechenSpalte, { breite: 300, children: [h(Karte, { key: 'a', titel: 'A' }), h(Karte, { key: 'b', titel: 'B' })] }) }));
     const f = host.querySelector('.flaeche.qu-flaeche')!;
     const spalte = f.querySelector<HTMLElement>(':scope > .flaechen-spalte')!;
     expect(spalte.style.width).toBe('300px');
