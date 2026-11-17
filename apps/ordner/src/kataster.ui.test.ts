@@ -139,6 +139,8 @@ describe('Katasterpläne exportieren', () => {
     const host = await zeige(createElement(KatasterDialog, { basis: ORDNER, name: 'BS9 Musterstraße 9', onClose: () => undefined }));
     await klick(knopf(host, '4 Pläne exportieren'));
     expect(host.querySelectorAll('.ka-ergebnis.ok')).toHaveLength(1);
+    // „Ordner öffnen“ als Verweisknopf aus core, mit Zweck und Dateiname im Namen
+    expect(host.querySelector('.ka-ergebnis.ok button.link')?.getAttribute('aria-label')).toMatch(/^Ordner öffnen: /);
     const fehler = [...host.querySelectorAll('.ka-ergebnis.fehler')];
     expect(fehler.map((e) => e.textContent?.trim())).toContain('schwarzplan: Layer nicht erreichbar');
     expect(fehler.every((e) => e.querySelector('svg.symbol'))).toBe(true);
