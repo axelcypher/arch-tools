@@ -51,15 +51,16 @@ Texttabellen: Spaltenköpfe linksbündig (`.summary-table.text`, z. B. Platzhalt
 und Zahlenspalten, z. B. Kostengruppe | von | Mittel | bis) nehmen `.text` und markieren die Zahlenspalten mit `th.num`
 und `td.num`. Zeilen mit Feldern (Eingaben je Zeile) bekommen `.felder`: oben bündig, Text ohne Feld oder Knopf fluchtet
 mit dem Feldtext. Gruppenzeilen `tr.gruppe` (getönt mit `--tabelle-gruppe`, halbfett), Summenzeilen `tr.summe`
-(halbfett, kräftigere Linie darüber); `tr.strong` bleibt für einzelne hervorgehobene Zeilen, `tr.selected` (getönt mit
-`--accent-soft`, Akzentlinie links) für die gewählte Zeile – der Zustand auch für Hilfsmittel (`aria-selected` an der
-Zeile oder `aria-pressed`/`aria-current` am Knopf darin). Eine Zusatzzeile unter einer Zeile (Hinweis, Kennzeichen,
-Handwert) bekommt `tr.zusatz`: ohne eigene Trennlinie, knapp darunter, und mit der Zeile darüber gewählt (Tönung und
-Akzentlinie). Beginnt eine Zelle im Grid eine eigene Zeile (Zeile als Grid, Zelle über die ganze Breite), trägt sie
-`td.zeilenanfang` und bekommt in der gewählten Zeile ebenfalls die Akzentlinie. Je Zeile höchstens eine Zusatzzeile.
-Tabellen ohne Felder mit mehrzeiligen Zellen (Rechenweg, Katalog) bekommen `.oben` (oben bündig, ohne den Ausgleich der
-Feldzeilen). Ein Verweisknopf im Text (`button.link`, z. B. ein Wert, der seine Prüfung öffnet) zählt in Feldzeilen als
-Text. Diese Tabelle soll die eigenen Tabellenklassen der Apps ersetzen; bis zur Umstellung bleiben diese bestehen.
+(halbfett, kräftigere Linie darüber); `tr.strong` bleibt für einzelne hervorgehobene Zeilen, `tr.selected` bzw.
+`tr[aria-selected="true"]` (getönt mit `--accent-soft`, Akzentlinie links) für die gewählte Zeile – der Zustand auch für
+Hilfsmittel (`aria-selected` an der Zeile oder `aria-pressed`/`aria-current` am Knopf darin). Eine Zusatzzeile unter
+einer Zeile (Hinweis, Kennzeichen, Handwert) bekommt `tr.zusatz`: ohne eigene Trennlinie, knapp darunter, und mit der
+Zeile darüber gewählt (Tönung und Akzentlinie). Beginnt eine Zelle im Grid eine eigene Zeile (Zeile als Grid, Zelle über
+die ganze Breite), trägt sie `td.zeilenanfang` und bekommt in der gewählten Zeile ebenfalls die Akzentlinie. Je Zeile
+höchstens eine Zusatzzeile. Tabellen ohne Felder mit mehrzeiligen Zellen (Rechenweg, Katalog) bekommen `.oben` (oben
+bündig, ohne den Ausgleich der Feldzeilen). Ein Verweisknopf im Text (`button.link`, z. B. ein Wert, der seine Prüfung
+öffnet) zählt in Feldzeilen als Text. Diese Tabelle soll die eigenen Tabellenklassen der Apps ersetzen; bis zur
+Umstellung bleiben diese bestehen.
 
 Marken (`.marke`, z. B. das Kennzeichen „festgelegt“ in einer Zeile, die Marken der Projektübersicht): klein
 (`--fs-xs`), getönt mit `--chip-bg` und Text in `--muted`; Varianten `.warnung`, `.ok`, `.info` (nicht `.hinweis` – das

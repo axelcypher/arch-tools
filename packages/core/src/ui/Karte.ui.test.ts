@@ -254,11 +254,11 @@ describe('Fläche und Karten', () => {
     expect(css).toMatch(/\n\.report \{[^}]*--tabelle-gruppe: #f1f3f6;/);
     // Tabellen ohne Felder oben bündig, gewählte Zeile, Verweisknopf als Text
     expect(css).toMatch(/\.summary-table\.oben td \{\s*vertical-align: top;/);
-    expect(css).toMatch(/\.summary-table tr\.selected td \{\s*background: var\(--accent-soft\);/);
+    expect(css).toMatch(/\.summary-table :is\(tr\.selected, tr\[aria-selected='true'\]\) td \{\s*background: var\(--accent-soft\);/);
     expect(css).toMatch(/\nbutton\.link \{[^}]*border: none;[^}]*background: none;[^}]*color: var\(--accent-text\);[^}]*text-decoration: underline;/);
     expect(css).toMatch(/button\.link:hover:not\(:disabled\):not\(\[aria-disabled='true'\]\),\s*button\.link:focus-visible \{[^}]*text-decoration-color: currentColor;/);
     expect(css).toMatch(
-      /\.summary-table tr\.selected td:first-child,\s*\.summary-table tr\.selected td\.zeilenanfang,\s*\.summary-table :is\(tr\.selected, tr\[aria-selected='true'\]\) \+ tr\.zusatz td:first-child \{\s*box-shadow: inset 3px 0 var\(--accent\);/,
+      /\.summary-table :is\(tr\.selected, tr\[aria-selected='true'\]\) td:first-child,\s*\.summary-table :is\(tr\.selected, tr\[aria-selected='true'\]\) td\.zeilenanfang,\s*\.summary-table :is\(tr\.selected, tr\[aria-selected='true'\]\) \+ tr\.zusatz td:first-child \{\s*box-shadow: inset 3px 0 var\(--accent\);/,
     );
     // Zusatzzeile gehört zur Zeile darüber: ohne Trennlinie, mit ihr gewählt
     expect(css).toMatch(/\.summary-table tr\.zusatz td \{\s*border-top: none;/);

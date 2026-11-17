@@ -2,8 +2,7 @@
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, describe, expect, it } from 'vitest';
-import { ProjektUebersicht } from './ProjektUebersicht';
-import type { UebersichtMarke } from './ProjektUebersicht';
+import { ProjektUebersicht, type UebersichtMarke } from './ProjektUebersicht';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 

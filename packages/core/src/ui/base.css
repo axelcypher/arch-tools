@@ -1038,16 +1038,16 @@ textarea:focus {
 
 /* gewählte Zeile (z. B. der Katalogeintrag oder der verglichene Stand) – nach der Gruppenzeile, damit die Wahl auch dort
    sichtbar ist */
-.summary-table tr.selected td {
+.summary-table :is(tr.selected, tr[aria-selected='true']) td {
   background: var(--accent-soft);
 }
 /* wie die Wahl in senkrechten Segmenten: Tönung und Akzentlinie links – von Gruppenzeilen unterscheidbar */
-.summary-table tr.selected td:first-child,
-.summary-table tr.selected td.zeilenanfang,
+.summary-table :is(tr.selected, tr[aria-selected='true']) td:first-child,
+.summary-table :is(tr.selected, tr[aria-selected='true']) td.zeilenanfang,
 .summary-table :is(tr.selected, tr[aria-selected='true']) + tr.zusatz td:first-child {
   box-shadow: inset 3px 0 var(--accent);
 }
-/* Zusatzzeile (Hinweis, Kennzeichen, Handwert unter einer Zeile): gehört zur Zeile darüber – ohne eigene Trennlinie,
+/* Zusatzzeile (Hinweis, Kennzeichen, Handwert unter einer Zeile; höchstens eine je Zeile): gehört zur Zeile darüber – ohne eigene Trennlinie,
    knapp darunter, und mit ihr gewählt. Beginnt eine Zelle im Grid eine eigene Zeile, trägt sie .zeilenanfang */
 .summary-table tr.zusatz td {
   border-top: none;
