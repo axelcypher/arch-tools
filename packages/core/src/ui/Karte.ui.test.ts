@@ -131,6 +131,13 @@ describe('Fläche und Karten', () => {
     const aside = host.querySelector('aside.karte')!;
     expect(aside.getAttribute('aria-labelledby')).toBe(aside.querySelector('h2')!.id);
     expect(host.querySelector('div.flaechen-spalte')).toBeNull();
+    // zwei Nebenspalten mit eigenem Namen
+    const zwei = render(
+      h(Flaeche, {
+        children: [h(FlaechenSpalte, { key: 'l', als: 'aside', ariaLabel: 'Gliederung', children: 'a' }), h(FlaechenSpalte, { key: 'r', als: 'aside', ariaLabel: 'Quellen', children: 'b' })],
+      }),
+    );
+    expect([...zwei.querySelectorAll('aside.flaechen-spalte')].map((e) => e.getAttribute('aria-label'))).toEqual(['Gliederung', 'Quellen']);
   });
 
   it('Fläche und Spalte setzen ihre Klassen; Spalte mit fester Breite', () => {

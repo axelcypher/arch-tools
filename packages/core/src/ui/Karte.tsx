@@ -26,6 +26,7 @@ export function FlaechenSpalte({
   breite,
   wachsend,
   als = 'div',
+  ariaLabel,
 }: {
   children: ReactNode;
   className?: string;
@@ -33,11 +34,13 @@ export function FlaechenSpalte({
   wachsend?: boolean;
   /** Element der Spalte: `main` für den Hauptbereich der App (je Fenster nur eines), `aside` für eine Nebenspalte */
   als?: 'div' | 'main' | 'aside';
+  /** Name der Spalte – Pflicht bei `als="aside"` (jede Nebenspalte braucht einen eigenen Namen) */
+  ariaLabel?: string;
 }) {
   const klasse = ['flaechen-spalte', wachsend && 'wachsend', className].filter(Boolean).join(' ');
   const Element = als;
   return (
-    <Element className={klasse} style={breite ? { width: breite } : undefined}>
+    <Element className={klasse} style={breite ? { width: breite } : undefined} aria-label={ariaLabel}>
       {children}
     </Element>
   );
@@ -92,7 +95,7 @@ export interface KarteProps extends KopfProps {
    * ihren Inhalt (höchstens die halbe Spalte, darüber scrollt sie) – für kurze Karten unter einer langen
    */
   hoehe?: 'teilen' | 'inhalt';
-  /** Element der Karte: Vorgabe `section` (benannter Bereich), `main` für den Hauptbereich (je Fenster nur eines), `aside` für Nebeninhalt */
+  /** Element der Karte: Vorgabe `section` (benannter Bereich), `main` für den Hauptbereich (je Fenster nur eines), `aside` für Nebeninhalt (nur mit `titel` oder `ariaLabel`) */
   als?: 'section' | 'main' | 'aside';
 }
 
