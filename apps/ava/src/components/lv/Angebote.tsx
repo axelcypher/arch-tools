@@ -238,7 +238,7 @@ export function Angebote() {
               </label>
               <span className="muted small-text">Enter springt zur nächsten Position.</span>
             </div>
-            <table className="summary-table text felder ava-erfassen-tabelle">
+            <table className="summary-table text ava-erfassen-tabelle">
               <thead>
                 <tr>
                   <th>OZ</th>
@@ -256,7 +256,7 @@ export function Angebote() {
                   const el = z.el;
                   if (el.art !== 'position')
                     return el.art === 'abschnitt' ? (
-                      <tr key={el.id} className="ava-z-abschnitt">
+                      <tr key={el.id} className="gruppe ava-z-abschnitt">
                         <td>{z.oz}</td>
                         <td colSpan={7}>{el.kurztext}</td>
                       </tr>
@@ -378,7 +378,7 @@ export function Preisspiegel({ nurAuffaellige = false, druck = false }: { nurAuf
             if (el.art === 'abschnitt') {
               if (nurAuffaellige) return null;
               return (
-                <tr key={el.id} className="ava-z-abschnitt">
+                <tr key={el.id} className="gruppe ava-z-abschnitt">
                   <td>{z.oz}</td>
                   <td colSpan={3}>{el.kurztext}</td>
                   {spalten.map((id) => [
@@ -429,7 +429,7 @@ export function Preisspiegel({ nurAuffaellige = false, druck = false }: { nurAuf
             [`USt ${lv.kopf.mwst} %`, (id: number) => s.bieter.get(id)?.mwst],
             ['brutto', (id: number) => s.bieter.get(id)?.brutto],
           ].map(([text, f], i) => (
-            <tr key={text as string} className={i === 0 ? 'summe' : 'strong'}>
+            <tr key={text as string} className={i === 0 || i === 4 ? 'summe' : i === 2 ? 'strong' : undefined}>
               <td colSpan={4}>{text as string}</td>
               {spalten.map((id) => (
                 <td key={id} colSpan={2} className={`num${id === 0 ? ' ava-spiegel-ka' : ''}`}>

@@ -346,7 +346,7 @@ export function LvEditor() {
                 const el = z.el;
                 const aktiv = el.id === auswahl;
                 const kl = `${aktiv ? 'selected ' : ''}${el.art === 'abschnitt' ? 'gruppe ' : ''}ava-z-${el.art}${el.art === 'hinweis' && el.vorbemerkung ? ' ava-z-vorbemerkung' : ''}`;
-                const einzug = { paddingLeft: 6 + z.tiefe * 16 };
+                const einzug = { paddingLeft: 4 + z.tiefe * 16 };
                 if (el.art === 'position') {
                   const gb = s.positionen.get(el.id)?.get(0);
                   return (

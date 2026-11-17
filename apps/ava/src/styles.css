@@ -125,25 +125,46 @@
 
 /* ---------- Tabellen ---------- */
 
-/* Datentabellen: gemeinsame Zahlentabelle (.summary-table.text, mit Feldern .felder). Hier nur, was core nicht hat:
-   Ziffern gleicher Breite, Spaltenköpfe ohne Umbruch und fest beim Rollen in der Karte (gemeldet ans Designsystem),
-   Felder in Zellen in Spaltenbreite */
+/* Datentabellen: gemeinsame Zahlentabelle (.summary-table.text, mit Feldern .felder). Hier nur, was core noch nicht hat
+   (beim Designsystem gemeldet, kommt als .summary-table.fest u. a.; danach entfallen diese Regeln). Alle unter
+   .ava-flaeche – der Druck liegt als Portal außerhalb und bleibt unberührt:
+   - Ziffern gleicher Breite;
+   - der Kopf als Ganzes fest beim Rollen im Kartenrumpf (auch zweizeilige Köpfe wie im Preisspiegel), ohne Umbruch;
+   - Felder füllen ihre Zelle;
+   - Kontrollkästchen und Optionsfelder in Feldzeilen auf der Textlinie (core rückt nur Zellen ohne Feld ein). */
 .ava-flaeche .summary-table {
   font-variant-numeric: tabular-nums;
 }
 
-.ava-flaeche .summary-table thead th {
+.ava-flaeche .summary-table thead {
   position: sticky;
   top: 0;
   z-index: 1;
+}
+
+.ava-flaeche .summary-table thead th {
   background: var(--panel);
   white-space: nowrap;
 }
 
-.summary-table.felder td input:not([type='checkbox']):not([type='radio']),
-.summary-table.felder td select {
+.ava-flaeche .summary-table.felder td input:not([type='checkbox']):not([type='radio']),
+.ava-flaeche .summary-table.felder td select {
   width: 100%;
   min-width: 60px;
+}
+
+.ava-flaeche .summary-table td > input[type='checkbox'],
+.ava-flaeche .summary-table td > input[type='radio'] {
+  width: auto;
+  margin: 0;
+  vertical-align: middle;
+}
+
+.ava-flaeche
+  .summary-table.felder
+  tr:has(input:not([type='checkbox']):not([type='radio']), select, textarea, button:not(.link))
+  > td:has(> input[type='checkbox']:only-child, > input[type='radio']:only-child) {
+  padding-top: calc(3px + (var(--ctl-h) - 1lh) / 2);
 }
 
 .ava-klickbar {
@@ -329,7 +350,8 @@
   cursor: pointer;
 }
 
-.ava-lv-zeilen tr:hover td {
+/* Hover auch über Gruppenzeilen (core tönt sie), die gewählte Zeile behält ihre Tönung; die feste OZ-Zelle zieht mit */
+.ava-lv-zeilen tbody tr:not(.selected):hover td {
   background: var(--hover);
 }
 
@@ -628,15 +650,6 @@ input.ava-fehler {
   grid-template-columns: minmax(0, 1.2fr) minmax(300px, 1fr);
   gap: 16px;
   align-items: start;
-}
-
-.ava-rechnung-tabelle td {
-  padding: 3px 6px;
-}
-
-.ava-zwischensumme td {
-  font-weight: 600;
-  border-top: 1px solid var(--border);
 }
 
 .ava-zahlung td {
@@ -1166,7 +1179,7 @@ input.ava-fehler {
   max-width: 100%;
 }
 
-.summary-table td.num {
+.ava-flaeche .summary-table td.num {
   white-space: nowrap;
 }
 
@@ -1285,7 +1298,7 @@ input.ava-fehler {
   justify-content: flex-end;
 }
 
-.summary-table td .ava-prozent input {
+.ava-flaeche .summary-table td .ava-prozent input {
   width: 56px !important;
   min-width: 0 !important;
   text-align: right;
@@ -1434,7 +1447,7 @@ input.ava-fehler {
 }
 
 /* Bautagebuch: Personen als normales Eingabefeld */
-.summary-table td input.ava-personen:not([type='checkbox']):not([type='radio']) {
+.ava-flaeche .summary-table td input.ava-personen:not([type='checkbox']):not([type='radio']) {
   width: 70px;
 }
 
@@ -1556,7 +1569,7 @@ input.ava-fehler {
   color: var(--muted);
 }
 
-.summary-table td input.ava-bieter-name {
+.ava-flaeche .summary-table td input.ava-bieter-name {
   min-width: 150px !important;
 }
 

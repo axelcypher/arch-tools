@@ -75,7 +75,7 @@ export function AuftragAnsicht({ gewerk }: { gewerk: string }) {
         ) : (
           <>
             <p className="muted small-text">Bieter wählen, an den vergeben wird. Den Auftrag erteilt der Bauherr; hier wird die Vergabe vermerkt.</p>
-            <table className="summary-table text felder">
+            <table className="summary-table text">
               <thead>
                 <tr>
                   <th>Vergabe</th>

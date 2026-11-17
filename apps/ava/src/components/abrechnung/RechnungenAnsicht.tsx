@@ -291,11 +291,11 @@ function PruefungAnsehen({ d, onClose }: { d: RechnungsDatensatz; onClose: () =>
             {zeile('Netto-Freigabesumme', euro(r.freigabeNetto))}
             {zeile(`− Nachlass ${prozent(p.nachlassProzent)}`, euro(r.nachlass))}
             {zeile(`+ USt ${prozent(p.mwstProzent)}`, euro(r.mwst))}
-            {zeile('Brutto-Freigabesumme', euro(r.brutto), 'ava-zwischensumme')}
+            {zeile('Brutto-Freigabesumme', euro(r.brutto), 'summe')}
             {zeile(`− Umlage ${prozent(p.umlageProzent)}`, euro(r.umlage))}
             {zeile(`− ${p.einbehaltText ? `Einbehalt (${p.einbehaltText})` : 'Einbehalt'} ${prozent(p.einbehaltProzent)}`, euro(r.einbehalt))}
             {zeile(`− Skonto ${prozent(p.skontoProzent)}`, euro(r.skonto))}
-            {zeile('Endsumme', euro(r.endsumme), 'ava-zwischensumme')}
+            {zeile('Endsumme', euro(r.endsumme), 'summe')}
             {zeile('− bisher freigegeben', euro(r.bereits))}
             {zeile('Zahlungsfreigabe', euro(r.zahlung), 'ava-zahlung')}
           </tbody>
