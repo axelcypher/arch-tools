@@ -123,22 +123,23 @@ export function App() {
   const exportPunkte = (): MenuePunkt[] => [
     { text: 'PNG …', aktion: () => exportieren('png') },
     { text: 'JPEG …', aktion: () => exportieren('jpeg') },
-    { text: 'PDF im Maßstab …', aktion: () => exportieren('pdf') },
+    { text: 'PDF …', aktion: () => exportieren('pdf') },
   ];
-  // Menü „Datei“: Dateibefehle samt „Exportieren“, dann Fotos hinzufügen (auch aus dem Projekt), zuletzt Einstellungen
+  // Menü „Datei“ (Reihenfolge nach der Leisten-Regel): Dateibefehle, Import (Fotos), Exportieren, zuletzt Einstellungen
   const dateiPunkte = (): MenuePunkt[] => [
     { text: 'Neu', aktion: () => void neu() },
     { text: 'Öffnen …', tasten: 'Strg+O', aktion: () => void oeffnen() },
     { text: 'Speichern unter …', aktion: () => void speichern(true), deaktiviert: !doc.fotos.length, hinweis: doc.fotos.length ? undefined : 'Erst ein Foto hinzufügen' },
+    { trenner: true },
+    // Import: Fotos von der Platte bzw. aus dem Fotoordner des Projekts
+    { text: 'Fotos hinzufügen …', aktion: () => void fotosHinzufuegen() },
+    ...(isTauri() ? [{ text: 'Fotos des Projekts …', aktion: () => setWahl(projektordner ? 'fotos' : 'projekt') }] : []),
     {
       text: 'Exportieren',
       unter: exportPunkte(),
       deaktiviert: !entzerrbar,
       hinweis: entzerrbar ? undefined : foto ? 'Erst die Referenz vervollständigen' : 'Erst ein Foto hinzufügen',
     },
-    { trenner: true },
-    { text: 'Fotos hinzufügen …', aktion: () => void fotosHinzufuegen() },
-    ...(isTauri() ? [{ text: 'Fotos des Projekts …', aktion: () => setWahl(projektordner ? 'fotos' : 'projekt') }] : []),
     { trenner: true },
     einstellungenPunkt(),
   ];
