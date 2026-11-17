@@ -2,6 +2,8 @@ import type { ReactNode } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { LEISTUNGSPHASEN } from '@core/model';
 import { Modal } from '@core/ui/Dialog';
+import { FlaechenSpalte, Karte } from '@core/ui/Karte';
+import { BreitenLeiste } from '@core/ui/Leiste';
 import { TextField } from '@core/ui/fields';
 import type { MenuePunkt } from '@core/ui/Menue';
 import { MenueKnopf, useMenueOffen, zeigeMenue, zeigeMenueAn } from '@core/ui/Menue';
@@ -115,18 +117,18 @@ export function OrdnerEditor({
   onChange,
   bausteine,
   onBausteine,
-  kopf,
-  seite,
+  aktionen,
+  vorspann,
   gesperrt = false,
 }: {
   ordner: OrdnerRegel[];
   onChange: (ordner: OrdnerRegel[]) => void;
   bausteine: Baustein[];
   onBausteine: (b: Baustein[]) => void;
-  /** über dem Baum (Überschrift, Umschalter) */
-  kopf?: ReactNode;
-  /** weitere Abschnitte in der Seitenleiste (unter Auswahl und Bausteinen) */
-  seite?: ReactNode;
+  /** rechts im Kopf der Karte „Ordner“ (Umschalter Baum/Text) */
+  aktionen?: ReactNode;
+  /** über dem Baum (z. B. die Zahl der Ordner) */
+  vorspann?: ReactNode;
   /** nur lesen (unlesbare Bürostruktur) */
   gesperrt?: boolean;
 }) {
@@ -559,9 +561,9 @@ export function OrdnerEditor({
   };
 
   return (
-    <div className="po-editor">
-      <section className="po-col po-editor-baum">
-        {kopf}
+    <>
+      <Karte als="main" titel="Ordner" aktionen={aktionen} className="po-editor-baum">
+        {vorspann}
         <div className="po-werkzeuge" role="toolbar" aria-label="Ordner bearbeiten">
           <div className="po-werkzeuge-gruppe">
             <button className="small" title={grund ?? 'Ordner im Stamm anlegen'} disabled={gesperrt} onClick={() => anlegen('')}>
@@ -806,162 +808,161 @@ export function OrdnerEditor({
         <p className="muted small-text po-k-hilfe">
           Rechtsklick oder Umschalt+F10 zeigt alle Aktionen mit ihren Tastenkürzeln. Ziehen verschiebt: auf einen Ordner hinein, an seinen Rand davor bzw. dahinter.
         </p>
-      </section>
+      </Karte>
 
-      <aside className="po-editor-seite">
-        <section className="po-col po-auswahl-panel" aria-label="Auswahl">
-          {/* nur lesen: Felder und Knöpfe echt gesperrt (fieldset disabled), Texte bleiben lesbar */}
-          <fieldset className="po-sperre" disabled={gesperrt} title={grund}>
-            {!gewaehlt.length && (
-              <>
-                <h3>Auswahl</h3>
-                <p className="muted small-text">Kein Ordner gewählt. Einen Ordner anklicken, um Leistungsphasen und Dateischema festzulegen – mit Strg oder Umschalt auch für mehrere auf einmal.</p>
-              </>
-            )}
-            {einer && (
-              <>
-                <h3>{einer.name}</h3>
-                {einer.tiefe > 0 && (
-                  <p className="po-k-pfad small-text" title={einer.pfad}>
-                    {einer.pfad.split('/').join(' › ')}
-                  </p>
-                )}
-                <label className="field">
-                  <span className="field-label">Name</span>
-                  <TextField key={einer.pfad} value={einer.name} label="Name des Ordners" onChange={(v) => namenSetzen(einer.pfad, v)} />
-                </label>
-                <LphWahl
-                  titel="Entsteht nur mit Leistungsphase"
-                  stand={(n) => (einer.regel?.lph?.includes(n) ? 'ja' : 'nein')}
-                  onUmschalten={(n) => lphSetzen([einer.pfad], n)}
-                  onAlle={(lph) => lphAlle([einer.pfad], lph)}
-                />
-                <LphHinweis kette={lphKette(ordner, einer.pfad)} pfad={einer.pfad} />
-                <label className="toggle">
-                  <input type="checkbox" checked={!!einer.regel?.dateischema} onChange={() => schemaSetzen([einer.pfad])} />
-                  Dateinamen prüfen (Dateischema)
-                </label>
-                <p className="muted small-text">
-                  {einer.hatKinder ? `${zeilen.filter((x) => klein(x.pfad).startsWith(`${klein(einer.pfad)}/`)).length} Unterordner` : 'keine Unterordner'}
-                  {einer.regel ? '' : ' · ohne eigene Regel (entsteht über seine Unterordner)'}
-                </p>
-                <div className="button-row">
-                  <button className="small danger" onClick={() => void loeschenFragen([einer.pfad])}>
-                    {zeile(einer.pfad)?.hatKinder ? 'Löschen …' : 'Löschen'}
-                  </button>
-                </div>
-              </>
-            )}
-            {gewaehlt.length > 1 && (
-              <>
-                <h3>{gewaehlt.length} Ordner gewählt</h3>
-                <p className="po-k-pfad small-text" title={gewaehlt.join('\n')}>
-                  {gewaehlt
-                    .slice(0, 6)
-                    .map((p) => p.split('/').pop())
-                    .join(', ')}
-                  {gewaehlt.length > 6 ? ' …' : ''}
-                </p>
-                <LphWahl
-                  titel="Leistungsphasen für alle"
-                  stand={(n) => {
-                    const k = gewaehlt.filter((p) => zeile(p)?.regel?.lph?.includes(n)).length;
-                    return k === gewaehlt.length ? 'ja' : k ? 'teils' : 'nein';
-                  }}
-                  onUmschalten={(n) => lphSetzen(gewaehlt, n)}
-                  onAlle={(lph) => lphAlle(gewaehlt, lph)}
-                />
-                <label className="toggle">
-                  <input
-                    type="checkbox"
-                    checked={gewaehlt.every((p) => zeile(p)?.regel?.dateischema)}
-                    ref={(el) => {
-                      if (el) el.indeterminate = gewaehlt.some((p) => zeile(p)?.regel?.dateischema) && !gewaehlt.every((p) => zeile(p)?.regel?.dateischema);
-                    }}
-                    onChange={() => schemaSetzen(gewaehlt)}
+      <BreitenLeiste schluessel="ordner:leiste-auswahl" vorgabe={340} min={260} max={520} seite="rechts" titel="Breite von Auswahl und Bausteinen" mitteMin={420}>
+        <FlaechenSpalte als="aside" ariaLabel="Auswahl und Bausteine" className="po-editor-seite">
+          <Karte titel="Auswahl" className="po-auswahl-panel">
+            {/* nur lesen: Felder und Knöpfe echt gesperrt (fieldset disabled), Texte bleiben lesbar */}
+            <fieldset className="po-sperre" disabled={gesperrt} title={grund}>
+              {!gewaehlt.length && (
+                <>
+                  <p className="muted small-text">Kein Ordner gewählt. Einen Ordner anklicken, um Leistungsphasen und Dateischema festzulegen – mit Strg oder Umschalt auch für mehrere auf einmal.</p>
+                </>
+              )}
+              {einer && (
+                <>
+                  <h3>{einer.name}</h3>
+                  {einer.tiefe > 0 && (
+                    <p className="po-k-pfad small-text" title={einer.pfad}>
+                      {einer.pfad.split('/').join(' › ')}
+                    </p>
+                  )}
+                  <label className="field">
+                    <span className="field-label">Name</span>
+                    <TextField key={einer.pfad} value={einer.name} label="Name des Ordners" onChange={(v) => namenSetzen(einer.pfad, v)} />
+                  </label>
+                  <LphWahl
+                    titel="Entsteht nur mit Leistungsphase"
+                    stand={(n) => (einer.regel?.lph?.includes(n) ? 'ja' : 'nein')}
+                    onUmschalten={(n) => lphSetzen([einer.pfad], n)}
+                    onAlle={(lph) => lphAlle([einer.pfad], lph)}
                   />
-                  Dateinamen prüfen (Dateischema)
-                </label>
-                <div className="button-row">
-                  <button className="small danger" onClick={() => void loeschenFragen(gewaehlt)}>
-                    {gewaehlt.length} Ordner löschen …
-                  </button>
-                </div>
-              </>
-            )}
-          </fieldset>
-        </section>
-
-        <section className="po-col po-bausteine" aria-label="Bausteine">
-          <fieldset className="po-sperre" disabled={gesperrt} title={grund}>
-            <h3>Bausteine</h3>
-            <p className="muted small-text">
-              Wiederkehrende Unterordner, z. B. der Aufbau eines Gewerkeordners: Ordner markieren (auch mehrere) und „Einfügen“ – in jedem entstehen die Unterordner des Bausteins.
-            </p>
-            {!bausteine.length && (
-              <>
-                <p className="muted small-text">Noch keine. Ein Baustein entsteht aus den Unterordnern eines Ordners: Rechtsklick → „Unterordner als Baustein speichern …“.</p>
-                <button className="small" onClick={() => bausteineSetzen([BEISPIEL_GEWERK])}>
-                  Beispiel „Gewerk“ anlegen
-                </button>
-              </>
-            )}
-            <ul className="po-baustein-liste">
-              {bausteine.map((b) => (
-                <li key={b.name}>
-                  <details>
-                    <summary>
-                      <strong>{b.name}</strong> <span className="muted small-text">{b.ordner.length} Ordner</span>
-                    </summary>
-                    <pre className="po-baustein-inhalt">
-                      {baumZeilen(b.ordner)
-                        .map((z) => `${'  '.repeat(z.tiefe)}${z.name}${z.regel?.lph?.length ? ` (LPh ${lphText(z.regel.lph)})` : ''}`)
-                        .join('\n')}
-                    </pre>
-                  </details>
-                  <div className="po-baustein-knoepfe">
-                    <button
-                      className="small primary"
-                      title={
-                        grund ??
-                        (gewaehlt.length ? `In ${gewaehlt.length === 1 ? `„${gewaehlt[0]}“` : `${gewaehlt.length} markierte Ordner`} einfügen` : 'Erst Ordner markieren – ohne Auswahl in den Stamm')
-                      }
-                      onClick={() => einfuegenIn(b.ordner, gewaehlt, `Baustein „${b.name}“`)}
-                    >
-                      {gewaehlt.length > 1 ? `In ${gewaehlt.length} einfügen` : 'Einfügen'}
-                    </button>
-                    <button
-                      className="small"
-                      title={grund ?? 'Umbenennen'}
-                      aria-label={`Baustein ${b.name} umbenennen`}
-                      onClick={async () => {
-                        const n = (await frageText('Baustein umbenennen', b.name, 'Umbenennen'))?.trim();
-                        if (!n || n === b.name) return;
-                        if (bausteine.some((x) => x !== b && klein(x.name) === klein(n))) return fehler(`Einen Baustein „${n}“ gibt es schon.`);
-                        bausteineSetzen(bausteine.map((x) => (x === b ? { ...b, name: n } : x)));
-                      }}
-                    >
-                      <Symbol name="stift" />
-                    </button>
-                    <button
-                      className="small danger"
-                      title={grund ?? 'Baustein löschen – die Struktur bleibt unverändert'}
-                      aria-label={`Baustein ${b.name} löschen`}
-                      onClick={async () => {
-                        if (await bestaetigen(`Baustein „${b.name}“ löschen?`, 'Eingefügte Ordner bleiben in der Struktur – nur der Baustein entfällt.', 'Löschen', true))
-                          bausteineSetzen(bausteine.filter((x) => x !== b));
-                      }}
-                    >
-                      <Symbol name="muell" />
+                  <LphHinweis kette={lphKette(ordner, einer.pfad)} pfad={einer.pfad} />
+                  <label className="toggle">
+                    <input type="checkbox" checked={!!einer.regel?.dateischema} onChange={() => schemaSetzen([einer.pfad])} />
+                    Dateinamen prüfen (Dateischema)
+                  </label>
+                  <p className="muted small-text">
+                    {einer.hatKinder ? `${zeilen.filter((x) => klein(x.pfad).startsWith(`${klein(einer.pfad)}/`)).length} Unterordner` : 'keine Unterordner'}
+                    {einer.regel ? '' : ' · ohne eigene Regel (entsteht über seine Unterordner)'}
+                  </p>
+                  <div className="button-row">
+                    <button className="small danger" onClick={() => void loeschenFragen([einer.pfad])}>
+                      {zeile(einer.pfad)?.hatKinder ? 'Löschen …' : 'Löschen'}
                     </button>
                   </div>
-                </li>
-              ))}
-            </ul>
-          </fieldset>
-        </section>
-        {seite}
-      </aside>
+                </>
+              )}
+              {gewaehlt.length > 1 && (
+                <>
+                  <h3>{gewaehlt.length} Ordner gewählt</h3>
+                  <p className="po-k-pfad small-text" title={gewaehlt.join('\n')}>
+                    {gewaehlt
+                      .slice(0, 6)
+                      .map((p) => p.split('/').pop())
+                      .join(', ')}
+                    {gewaehlt.length > 6 ? ' …' : ''}
+                  </p>
+                  <LphWahl
+                    titel="Leistungsphasen für alle"
+                    stand={(n) => {
+                      const k = gewaehlt.filter((p) => zeile(p)?.regel?.lph?.includes(n)).length;
+                      return k === gewaehlt.length ? 'ja' : k ? 'teils' : 'nein';
+                    }}
+                    onUmschalten={(n) => lphSetzen(gewaehlt, n)}
+                    onAlle={(lph) => lphAlle(gewaehlt, lph)}
+                  />
+                  <label className="toggle">
+                    <input
+                      type="checkbox"
+                      checked={gewaehlt.every((p) => zeile(p)?.regel?.dateischema)}
+                      ref={(el) => {
+                        if (el) el.indeterminate = gewaehlt.some((p) => zeile(p)?.regel?.dateischema) && !gewaehlt.every((p) => zeile(p)?.regel?.dateischema);
+                      }}
+                      onChange={() => schemaSetzen(gewaehlt)}
+                    />
+                    Dateinamen prüfen (Dateischema)
+                  </label>
+                  <div className="button-row">
+                    <button className="small danger" onClick={() => void loeschenFragen(gewaehlt)}>
+                      {gewaehlt.length} Ordner löschen …
+                    </button>
+                  </div>
+                </>
+              )}
+            </fieldset>
+          </Karte>
+
+          <Karte titel="Bausteine" className="po-bausteine">
+            <fieldset className="po-sperre" disabled={gesperrt} title={grund}>
+              <p className="muted small-text">
+                Wiederkehrende Unterordner, z. B. der Aufbau eines Gewerkeordners: Ordner markieren (auch mehrere) und „Einfügen“ – in jedem entstehen die Unterordner des Bausteins.
+              </p>
+              {!bausteine.length && (
+                <>
+                  <p className="muted small-text">Noch keine. Ein Baustein entsteht aus den Unterordnern eines Ordners: Rechtsklick → „Unterordner als Baustein speichern …“.</p>
+                  <button className="small" onClick={() => bausteineSetzen([BEISPIEL_GEWERK])}>
+                    Beispiel „Gewerk“ anlegen
+                  </button>
+                </>
+              )}
+              <ul className="po-baustein-liste">
+                {bausteine.map((b) => (
+                  <li key={b.name}>
+                    <details>
+                      <summary>
+                        <strong>{b.name}</strong> <span className="muted small-text">{b.ordner.length} Ordner</span>
+                      </summary>
+                      <pre className="po-baustein-inhalt">
+                        {baumZeilen(b.ordner)
+                          .map((z) => `${'  '.repeat(z.tiefe)}${z.name}${z.regel?.lph?.length ? ` (LPh ${lphText(z.regel.lph)})` : ''}`)
+                          .join('\n')}
+                      </pre>
+                    </details>
+                    <div className="po-baustein-knoepfe">
+                      <button
+                        className="small primary"
+                        title={
+                          grund ??
+                          (gewaehlt.length ? `In ${gewaehlt.length === 1 ? `„${gewaehlt[0]}“` : `${gewaehlt.length} markierte Ordner`} einfügen` : 'Erst Ordner markieren – ohne Auswahl in den Stamm')
+                        }
+                        onClick={() => einfuegenIn(b.ordner, gewaehlt, `Baustein „${b.name}“`)}
+                      >
+                        {gewaehlt.length > 1 ? `In ${gewaehlt.length} einfügen` : 'Einfügen'}
+                      </button>
+                      <button
+                        className="small"
+                        title={grund ?? 'Umbenennen'}
+                        aria-label={`Baustein ${b.name} umbenennen`}
+                        onClick={async () => {
+                          const n = (await frageText('Baustein umbenennen', b.name, 'Umbenennen'))?.trim();
+                          if (!n || n === b.name) return;
+                          if (bausteine.some((x) => x !== b && klein(x.name) === klein(n))) return fehler(`Einen Baustein „${n}“ gibt es schon.`);
+                          bausteineSetzen(bausteine.map((x) => (x === b ? { ...b, name: n } : x)));
+                        }}
+                      >
+                        <Symbol name="stift" />
+                      </button>
+                      <button
+                        className="small danger"
+                        title={grund ?? 'Baustein löschen – die Struktur bleibt unverändert'}
+                        aria-label={`Baustein ${b.name} löschen`}
+                        onClick={async () => {
+                          if (await bestaetigen(`Baustein „${b.name}“ löschen?`, 'Eingefügte Ordner bleiben in der Struktur – nur der Baustein entfällt.', 'Löschen', true))
+                            bausteineSetzen(bausteine.filter((x) => x !== b));
+                        }}
+                      >
+                        <Symbol name="muell" />
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </fieldset>
+          </Karte>
+        </FlaechenSpalte>
+      </BreitenLeiste>
 
       {mehrere && (
         <MehrereDialog
@@ -973,7 +974,7 @@ export function OrdnerEditor({
           }}
         />
       )}
-    </div>
+    </>
   );
 }
 

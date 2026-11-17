@@ -11,6 +11,12 @@ prüfen“ und „Mails“. Die Einrichtung des Büros – „Struktur“ (mit d
 „Katasterpläne“ – steht im Menü **„Einrichtung“** (die früheren „Einstellungen“ stehen jetzt im zentralen Dialog); ist eine davon offen, nennt der Menüknopf sie
 („Einrichtung: Vorlagen“). In schmalen Fenstern wandert „Einrichtung“ in das Menü „Mehr“.
 
+**Aufbau:** Jede Ansicht steht als Karten auf einer ruhigen Fläche (docs/design.md, „Fläche und Karten“); jede Karte
+scrollt für sich. Assistent, „Ordner prüfen“ und „Katasterpläne“ sind eine Karte (die Überschrift des Assistenten ist
+der aktuelle Schritt und bekommt beim Wechsel den Fokus). „Mails“ und „Vorlagen“ haben links eine Seitenkarte
+(Projektliste bzw. Presets) mit ziehbarer Breite, „Struktur“ dazu rechts die Karten „Auswahl“ und „Bausteine“ um den
+Ordnerbaum in der Mitte. Die Startseite ist die gemeinsame Projektübersicht.
+
 Bis Version 0.17.0 hieß die App „Projektordner“ (im Fenstertitel und in der Rahmen-App zuletzt „Projekt“).
 Einstellungen und Daten bleiben beim Update erhalten: Der Installer entfernt eine Installation unter dem alten Namen
 vorher still und legt vorhandene Verknüpfungen im Startmenü bzw. auf dem Desktop unter dem neuen Namen an. Technisch
@@ -394,7 +400,7 @@ wo jede Datei landet und wie sie heißt (mehr als vier Dateien je Zuordnung: auf
 Vorlagenordner nicht gibt, sind markiert. Dazu prüft sie das Preset nach den Regeln von „Ordner prüfen“ und fasst
 zusammen, was danach als Abweichung gälte: „3 Ordner liegen außerhalb der Struktur“, „2 Dateien liegen lose im
 Projektstamm“ (aufklappbar mit Liste). Die Anleitung `LIESMICH.txt` im Stamm des Vorlagenordners zählt nicht mit.
-Die Preset-Liste steht oben in der linken Spalte (per Tab und Enter wählbar); „Löschen …“ fragt wie bei Bausteinen
+Die Preset-Liste steht oben in der linken Karte (per Tab und Enter wählbar); „Löschen …“ fragt wie bei Bausteinen
 nach. Eine entfernte Zuordnung („×“) holt „Rückgängig“ zurück. Die Platzhalter-Übersicht für Vorlagen ist
 eingeklappt („Platzhalter in Vorlagen anzeigen“).
 

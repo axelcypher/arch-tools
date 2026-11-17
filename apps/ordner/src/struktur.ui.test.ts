@@ -954,7 +954,7 @@ describe('Folgerunde: unlesbare Struktur sperrt die Bearbeitung', () => {
     // Dateinamen links: nur angezeigt (eingestellt in den Einstellungen aller Apps)
     expect(host.querySelector('input[aria-label="Dateinamen im Projekt"]')).toBeNull();
     // rechts das gewählte Preset: sichtbar, Felder gesperrt
-    const preset = host.querySelector('section.po-preset')!;
+    const preset = host.querySelector('.po-preset')!;
     expect(preset.querySelector('h2')?.textContent).toContain('Preset');
     const felder = [...preset.querySelectorAll('input:not([type="search"])')];
     expect(felder.length).toBeGreaterThan(2);
