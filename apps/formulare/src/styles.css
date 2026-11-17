@@ -243,7 +243,6 @@ button.icon.active {
   margin-bottom: 4px;
   border: 1px solid color-mix(in srgb, var(--accent) 32%, transparent);
   background: color-mix(in srgb, var(--accent) 9%, var(--panel));
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 .nav-eintrag.fo-eintrag-karte .symbol {
   font-size: 18px;
@@ -257,7 +256,6 @@ button.icon.active {
   background: var(--accent);
   border-color: var(--accent);
   color: var(--on-accent);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 .nav-eintrag.fo-eintrag-karte.aktiv:hover:not(:disabled) {
   background: var(--accent-hover);
@@ -1503,7 +1501,7 @@ button.icon.fo-gl-zaehlt.an {
   justify-content: center;
   align-items: flex-start;
   padding: 16px;
-  background: color-mix(in srgb, var(--bg) 70%, #808080 30%);
+  background: var(--bg);
 }
 .dok-bild img {
   max-width: 100%;
@@ -1517,7 +1515,7 @@ button.icon.fo-gl-zaehlt.an {
   align-items: center;
   gap: 16px;
   padding: 16px 24px 40px;
-  background: color-mix(in srgb, var(--bg) 70%, #808080 30%);
+  background: var(--bg);
 }
 .pdf-seite {
   position: relative;
@@ -1689,7 +1687,7 @@ button.icon.fo-gl-zaehlt.an {
 /* Word */
 .wd-flaeche {
   padding: 16px 24px 40px;
-  background: color-mix(in srgb, var(--bg) 70%, #808080 30%);
+  background: var(--bg);
 }
 .wd-blatt {
   max-width: 794px;
@@ -2087,27 +2085,12 @@ button.icon.fo-gl-zaehlt.an {
   max-width: 900px;
   margin: 10px 0;
 }
+/* Abgleich mit der Projektdatei: gemeinsame Zahlentabelle (.summary-table.text); ein abweichender Wert der Projektdatei
+   steht halbfett (nicht in der Akzentfarbe – die bleibt Bedienbarem vorbehalten) */
 .pk-abgleich {
-  width: 100%;
   max-width: 1080px;
-  border-collapse: collapse;
-  font-size: 13px;
-}
-.pk-abgleich th {
-  text-align: left;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--muted);
-  padding: 6px 8px;
-  border-bottom: 1px solid var(--border);
-}
-.pk-abgleich td {
-  padding: 6px 8px;
-  border-bottom: 1px solid var(--line-soft);
-  vertical-align: top;
 }
 .pk-abgleich tr:not(.gleich) td:nth-child(2) {
-  color: var(--accent);
   font-weight: 600;
 }
 .es-verweis {
@@ -2261,24 +2244,6 @@ button.icon.fo-gl-zaehlt.an {
   padding-left: 18px;
   font-size: 13px;
 }
-.es-tabelle {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-}
-.es-tabelle th {
-  text-align: left;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--muted);
-  padding: 4px 6px;
-  border-bottom: 1px solid var(--border);
-}
-.es-tabelle td {
-  padding: 4px 6px;
-  border-bottom: 1px solid var(--line-soft);
-}
-
 /* ---------- Druck ---------- */
 
 /*
@@ -2820,14 +2785,10 @@ button.icon.ex-baum-pfeil {
 .es-ziel-platzhalter {
   margin: -4px 0 8px 24px;
 }
+/* Kataloge (gemeinsame Zahlentabelle mit Feldern): Felder füllen ihre Spalte */
 .es-katalog input,
 .es-katalog select {
   width: 100%;
-  font-size: 12px;
-  padding: 2px 5px;
-}
-.es-katalog td {
-  padding: 3px 4px;
 }
 
 /* Projektdatei (.oap): Abgleich mit der Projektkarte */
@@ -4109,7 +4070,7 @@ li.es-dok[data-ziehen='danach'] {
   border-radius: 5px;
   background: var(--panel);
   color: var(--text);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+  box-shadow: var(--schatten-schwebend);
   font-size: 12px;
   line-height: 1.4;
   white-space: pre-line;
