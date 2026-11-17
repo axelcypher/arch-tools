@@ -54,7 +54,8 @@ beauftragte Phase ab LPh 5; sonst die kleinste beauftragte Leistungsphase) wird 
 daneben (Leerzeichen, `_`, `-`, im Pfad `/`): `{PROJEKT_KUERZEL}_{PHASE}_{Plannummer}` wird ohne Phase `BS9_GP-04`,
 nicht `BS9__GP-04`; am Anfang bzw. Ende eines Namens oder Pfadteils und vor der Endung fällt der Trenner ebenso weg
 (`BS9_{PHASE}.pdf` → `BS9.pdf`). Nutzt das Dateinamenschema der Pläne die Phase und hat das Projekt keine, meldet die
-Prüfung in ATLAS „Planungsphase nicht festgelegt“.
+Prüfung in ATLAS „Planungsphase nicht festgelegt“. Ein Pfadtrenner bleibt dabei immer stehen (keine Ordnerebene geht
+verloren). Mailvorlagen (Fließtext in FABRIO) sind ausgenommen: Dort bleiben Trenner und Satzzeichen, wie sie stehen.
 
 In PERMIO bleibt an der Stelle der Antragsart (nach dem Namensschema; Vorgabe: nach dem Kürzel) die Antragsart: Steht
 dort `{PHASE}` bzw. das alte `{Phase}`, setzt der Export `{Art}` ein und das Feld zeigt den Hinweis dazu. Grund: Die
