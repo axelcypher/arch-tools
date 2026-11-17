@@ -62,7 +62,7 @@ export function Beteiligte() {
 
   return (
     <AnsichtKarte titel="Beteiligte" leiste={werkzeuge}>
-      <table className="summary-table text felder">
+      <table className="summary-table text felder fest">
         <thead>
           <tr>
             <th>Rolle</th>

@@ -87,7 +87,7 @@ Lange Datentabellen (LV, Rechnungen, Mängel) und ihre Bausteine; die ganze Zahl
   unterscheiden), leiser als die Akzentlinie der gewählten Zeile; Gruppen-, Summen- und gewählte Zeilen bleiben, wie sie
   sind; Leer- und Hinweiszeilen („Keine Mails.“) bekommen `tr.leer` und sind nicht wählbar (oder stehen im `tfoot`). Die
   Zeilen sind per Tastatur wählbar (Knopf in der Zeile oder `tabindex` mit Enter/Leertaste, Zustand über
-  `aria-selected`); der Fokusrahmen einer fokussierbaren Zeile liegt innen, sonst schnitte ihn der Kartenrand ab.
+  `aria-selected`); der Fokusrahmen einer fokussierbaren Zeile liegt innen, sonst schnitte ihn der Kartenrand ab (siehe auch „Fokus und Tastatur“).
 - `.felder`: Kästchen und Optionsfelder lösen den Ausgleich nicht aus und behalten ihre Breite; kleine und Symbolknöpfe
   (× zum Entfernen) stehen mittig zur Feldhöhe.
 - `input.zelle` (Feld in der Zelle, z. B. Menge und Einheitspreis im LV): randlos, so hoch wie eine Textzeile und so
@@ -125,8 +125,9 @@ Nebentext unten bündig; Kacheln ohne Nebentext halten dessen Zeile frei). Sie b
 - Textfelder und Auswahllisten bekommen beim Fokus einen Rand in `--accent` und einen Saum in `--fokus-saum`.
 - Auf Papier (`.report`) und Zeichenfläche (`.canvas`) ist `--fokus` das helle Blau, auch im dunklen Schema.
 - **Nicht** `outline: none` setzen, ohne einen gleichwertigen Ersatz zu zeigen.
-- Ausnahme: In Leisten, die überstehenden Inhalt abschneiden (`overflow: hidden`, z. B. die Tableiste von Arkly), liegt
-  der Fokusrahmen innen (`outline-offset: -2px`), weiterhin in `--fokus`.
+- Ausnahme: In Leisten, die überstehenden Inhalt abschneiden (`overflow: hidden`, z. B. die Tableiste von Arkly), und an
+  fokussierbaren Tabellenzeilen (`.summary-table.waehlbar`, siehe „Lange Datentabellen“) liegt der Fokusrahmen innen
+  (`outline-offset: -2px`), weiterhin in `--fokus`.
 - Umschalter (Werkzeug, Ansicht) tragen `aria-pressed`; Menüknöpfe `aria-haspopup` und `aria-expanded`.
 - Menüs mit `role="menu"` brauchen die Menübedienung: beim Öffnen Fokus auf den aktuellen Eintrag, ↑/↓ (Pos1/Ende)
   wechseln, Esc schließt und gibt den Fokus an den Knopf zurück. Esc über `useEscSchliessen`, damit Dialoge darunter

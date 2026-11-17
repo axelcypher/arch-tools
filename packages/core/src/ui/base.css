@@ -1090,9 +1090,9 @@ textarea:focus {
   line-height: inherit;
   border-color: transparent;
   background: transparent;
-  /* Vorgabe: so breit wie ein Betrag, nie breiter als die Zelle (Felder füllen sonst ihre Zelle) */
+  /* Vorgabe: so breit wie ein Betrag (statt die Zelle zu füllen); ohne max-width in Prozent, sonst dürfte die Spalte
+     schmaler werden als der Betrag – sie hält ihre Breite, der bündige Rumpf rollt dann waagerecht */
   width: 7.5em;
-  max-width: 100%;
 }
 .summary-table input.zelle:hover:not(:disabled, :focus, .feld-fehler, [aria-invalid='true']) {
   border-color: var(--border);
@@ -1148,8 +1148,9 @@ textarea:focus {
 /* was den Fokus bekommt, rollt nicht unter den festen Kopf (Vorgabe: eine Kopfzeile in --fs-xs samt Innenabstand und
    Platz für den Fokusrahmen; ein mehrzeiliger Kopf setzt --tabelle-kopf-h) */
 /* auch, wenn die Tabelle in einer Hülle steht (Tastaturbereich, Abschnitt, Raster neben einer Vorschau) – die Hülle darf
-   dann nicht selbst rollen, sonst klebt der Kopf an ihr */
-.karte-rumpf:has(.summary-table.fest) {
+   dann nicht selbst rollen, sonst klebt der Kopf an ihr; nur der Rumpf der Karte, in der die Tabelle steht, nicht der
+   einer äußeren Karte */
+.karte-rumpf:has(.summary-table.fest):not(:has(.karte .summary-table.fest)) {
   scroll-padding-top: var(--tabelle-kopf-h, calc(1lh + 4px + var(--s1)));
 }
 

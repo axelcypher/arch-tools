@@ -172,11 +172,10 @@ export function Maengel() {
 
   return (
     <AnsichtKarte titel="Mängel" leiste={werkzeuge}>
-      <div className="ava-rollen">
-      <table className="summary-table text felder ava-maengel-tabelle">
+      <table className="summary-table text felder fest ava-maengel-tabelle">
         <thead>
           <tr>
-            <th className="num">Nr.</th>
+            <th className="num" title="Nummer des Mangels">Nr.</th>
             <th>Gewerk</th>
             <th>Firma / Ort</th>
             <th>Mangel</th>
@@ -241,7 +240,6 @@ export function Maengel() {
           )}
         </tbody>
       </table>
-      </div>
       {behalten.size > 0 && <p className="muted small-text">Abgeblendete Mängel sind erledigt bzw. abgenommen und verschwinden beim nächsten Filterwechsel.</p>}
     </AnsichtKarte>
   );

@@ -269,9 +269,9 @@ describe('Fläche und Karten', () => {
     expect(css).toMatch(/\.summary-table\.waehlbar tbody tr:not\(\.gruppe, \.summe, \.leer\) \{\s*cursor: pointer;/);
     expect(css).toMatch(/:where\(\.summary-table\.felder td\) > :where\(button\.icon\) \{\s*min-height: var\(--ctl-h-s\);/);
     expect(css).toMatch(/\n\.summary-table \{[^}]*font-variant-numeric: tabular-nums;/);
-    expect(css).toMatch(/\.summary-table input\.zelle \{[^}]*width: 7\.5em;[^}]*max-width: 100%;/);
+    expect(css).toMatch(/\.summary-table input\.zelle \{[^}]*width: 7\.5em;/);
     expect(css).toMatch(/\.summary-table\.waehlbar tbody tr:focus-visible \{\s*outline-offset: -2px;/);
-    expect(css).toMatch(/\.karte-rumpf:has\(\.summary-table\.fest\) \{\s*scroll-padding-top: var\(--tabelle-kopf-h,/);
+    expect(css).toMatch(/\.karte-rumpf:has\(\.summary-table\.fest\):not\(:has\(\.karte \.summary-table\.fest\)\) \{\s*scroll-padding-top: var\(--tabelle-kopf-h,/);
     // fester Kopf: sticky am thead (mehrzeiliger Kopf bleibt zusammen), ohne Umbruch, Grund der Karte
     expect(css).toMatch(/\.summary-table\.fest thead \{[^}]*position: sticky;[^}]*top: 0;/);
     expect(css).toMatch(/\.summary-table\.fest thead th \{[^}]*white-space: nowrap;[^}]*background: var\(--panel\);/);
