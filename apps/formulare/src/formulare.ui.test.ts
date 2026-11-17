@@ -6,7 +6,8 @@ import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { leistenMessung } from '@core/ui/Werkzeugleiste';
 import { App } from './App';
-import { imLeistenMenue, leistenMenue, leistenMenueTexte } from './testLeiste';
+import { imLeistenMenue, leistenMenue, leistenMenueTexte, leistenPunkt } from './testLeiste';
+import { useExportDialog } from './components/ExportDialog';
 import { SpeicherDateisystem } from './dateisystem';
 import { cp1252Lesen, cp1252Schreiben } from './forma/cp1252';
 import type { Projektkarte } from './forma/projektkarte';
@@ -1090,7 +1091,22 @@ describe('Formulare', () => {
     // Umschalter Formular | Felder als .segment mit aria-pressed
     expect([...leiste.querySelectorAll('.segment button')].map((b) => `${b.textContent}:${b.getAttribute('aria-pressed')}`)).toEqual(['Formular:true', 'Felder:false']);
     // Menüs: Datei, Ansicht, Mehr – Inhalt und Reihenfolge
-    expect(await leistenMenueTexte(host, 'Datei')).toEqual(['Daten aktualisieren …', 'Speichern unter …', 'Drucken …', 'Einstellungen …']);
+    expect(await leistenMenueTexte(host, 'Datei')).toEqual(['Daten aktualisieren …', 'Speichern unter …', 'Exportieren', 'Drucken …', 'Einstellungen …']);
+    // Ausgaben mit Dialog im Untermenü „Exportieren“ (auch neben dem Hauptknopf): „PDF …“ öffnet denselben Dialog für
+    // das offene Formular (ohne Projekt fehlt der Punkt – siehe Web-Version, web.ui.test.ts)
+    act(() => leistenMenue(host, 'Datei').click());
+    await warte();
+    act(() => leistenPunkt('Exportieren').click());
+    await warte();
+    const pdfPunkt = leistenPunkt('PDF …');
+    expect(pdfPunkt.querySelector('.menue-tasten')?.textContent).toBe('Strg+E');
+    act(() => pdfPunkt.click());
+    await warte();
+    expect(useExportDialog.getState().pfad).toBe(useFormulare.getState().offen!.pfad);
+    expect(document.querySelector('.modal.ex')).not.toBeNull();
+    act(() => useExportDialog.getState().schliessen());
+    await warte();
+    expect(document.querySelector('.modal.ex')).toBeNull();
     expect(await leistenMenueTexte(host, 'Ansicht')).toEqual(['Gliederung', 'Verlauf der Eingaben']);
     expect(await leistenMenueTexte(host, 'Mehr')).toEqual(['Formular einrichten', 'Manuelle Überschreibungen ignorieren', 'Adressbuch …']);
     // eine Eingabe: Speichern trägt den Punkt und sagt es im Namen

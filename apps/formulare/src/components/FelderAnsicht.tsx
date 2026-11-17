@@ -17,7 +17,7 @@ import type { Plausi } from '../plausibel';
 import { useVorbelegt } from '../merkmalAbgleich';
 import { springeZuFeld } from '../navigation';
 import { anzahl } from '../text';
-import { Karte } from '@core/ui/Karte';
+import { Karte, useRollendKopf } from '@core/ui/Karte';
 
 const FILTER: { id: FeldFilter; label: string; title: string }[] = [
   { id: 'alle', label: 'Alle', title: 'Alle Felder' },
@@ -35,27 +35,10 @@ export function FelderAnsicht({ offen, gesperrt }: { offen: OffenesFormular; ges
   const markierung = useMarkierung((s) => s.markierung);
   const markiert = useMemo(() => new Set(markierung?.felder), [markierung]);
   const huelle = useRef<HTMLDivElement>(null);
-  // fester Kopf der rollenden Spalte (core): bricht er um, braucht die Spalte seine wirkliche Höhe als --rollend-kopf-h,
-  // damit fokussierte Felder nicht darunter rollen. Ob und wie oft er umbricht, hängt vom Inhalt ab (Filter mit Zahlen
-  // wie „Offene (2) · 1 ungeklärt“, Trefferzahl) – feste Stufen per Container- oder Media-Abfrage träfen das nicht,
-  // deshalb gemessen (Höhe des Kopfs + --s1 wie die Vorgabe aus core)
+  // fester Kopf der rollenden Spalte (core): er bricht abhängig vom Inhalt um (Filter mit Zahlen wie „Offene (2) ·
+  // 1 ungeklärt“, Trefferzahl) – useRollendKopf misst ihn, damit fokussierte Felder nicht darunter rollen
   const kopf = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const k = kopf.current;
-    const spalte = k?.closest<HTMLElement>('.flaechen-spalte.rollend');
-    if (!k || !spalte || typeof ResizeObserver === 'undefined') return;
-    const setzen = () => {
-      // sichtbare Höhe des Kopfs plus --s1 Platz für den Fokusrahmen (wie die Vorgabe aus core; --s1 bleibt Variable)
-      spalte.style.setProperty('--rollend-kopf-h', `calc(${Math.ceil(k.getBoundingClientRect().height)}px + var(--s1))`);
-    };
-    const ro = new ResizeObserver(setzen);
-    ro.observe(k);
-    setzen();
-    return () => {
-      ro.disconnect();
-      spalte.style.removeProperty('--rollend-kopf-h');
-    };
-  }, []);
+  useRollendKopf(kopf);
   const roh = useProfil(profilSchluessel(offen.formular, offen.name));
   const profil = useMemo(() => ({ ...leeresProfil(), ...roh }), [roh]);
   const entfall = useEntfallen(offen);
