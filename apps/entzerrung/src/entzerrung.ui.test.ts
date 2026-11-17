@@ -362,8 +362,10 @@ describe('RECTIO (Entzerrung)', () => {
     expect(host.querySelector('.workspace, .sidebar')).toBeNull();
     expect(karte(host, 'Fotos')).toBeDefined();
     expect(karte(host, 'So geht es')).toBeDefined();
-    const zeichen = flaeche.querySelector('section.zeichen-karte')!;
+    // die Zeichenfläche ist der Hauptbereich (genau ein main)
+    const zeichen = flaeche.querySelector('main.zeichen-karte')!;
     expect(zeichen.getAttribute('aria-label')).toBe('Zeichenfläche');
+    expect(host.querySelectorAll('main')).toHaveLength(1);
     // mit Foto: Ebenen links, Referenz rechts; Bedienhinweis in der Fußzeile der Zeichenkarte, nicht über dem Foto
     act(() => {
       useEntz.getState().fotoHinzufuegen('f1', 'Süd', 'image/png', 10, 8, new Uint8Array(4));
@@ -388,6 +390,6 @@ describe('RECTIO (Entzerrung)', () => {
     const ziehen = new Event('dragover', { bubbles: true, cancelable: true });
     Object.defineProperty(ziehen, 'dataTransfer', { value: { types: ['Files'] } });
     act(() => void app.dispatchEvent(ziehen));
-    expect(host.querySelector('section.zeichen-karte .ef-ablegen')?.textContent).toContain('hier ablegen');
+    expect(host.querySelector('.zeichen-karte .ef-ablegen')?.textContent).toContain('hier ablegen');
   });
 });
