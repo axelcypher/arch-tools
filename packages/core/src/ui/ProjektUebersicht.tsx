@@ -553,7 +553,7 @@ function Karte({ p, hervorgehoben, geoeffnet, onOeffnen, onKontext, status, mark
       {mk.length > 0 && (
         <span className="pa-marken">
           {mk.map((m) => (
-            <span key={m.text} className={`pa-marke ${m.art ?? 'neutral'}`} title={m.titel}>
+            <span key={m.text} className={`marke pa-marke ${m.art ?? 'neutral'}`} title={m.titel}>
               {m.symbol && <Icon name={m.symbol} />} {m.text}
             </span>
           ))}

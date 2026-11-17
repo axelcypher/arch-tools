@@ -265,14 +265,14 @@ describe('Fläche und Karten', () => {
     expect(css).toMatch(/\.summary-table tr\.selected \+ tr\.zusatz td \{\s*background: var\(--accent-soft\);/);
   });
 
-  it('Marke: getönt, auf der Auswahltönung mit Rahmen in --muted', () => {
+  it('Marke: getönt, auf getönten Gründen mit Rahmen in der Textfarbe', () => {
     const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'base.css'), 'utf8');
     expect(css).toMatch(/\n\.marke \{[^}]*font-size: var\(--fs-xs\);[^}]*background: var\(--chip-bg\);[^}]*color: var\(--muted\);/);
     expect(css).toMatch(/\.marke\.warnung \{/);
     expect(css).toMatch(/\.marke\.ok \{/);
     expect(css).toMatch(/\.marke\.hinweis \{/);
     expect(css).toMatch(
-      /:is\(tr\.selected, tr\.selected \+ tr\.zusatz, \[aria-selected='true'\], \[aria-current='true'\]\) \.marke:not\(\.warnung, \.ok\) \{\s*box-shadow: inset 0 0 0 1px var\(--muted\);/,
+      /:is\(tr\.selected, tr\.selected \+ tr\.zusatz, tr\.gruppe, tr:hover, \[aria-selected='true'\], \[aria-current='true'\], \.pa-karte:hover\) \.marke \{\s*box-shadow: inset 0 0 0 1px currentColor;/,
     );
   });
 });

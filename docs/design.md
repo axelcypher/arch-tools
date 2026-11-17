@@ -56,16 +56,16 @@ mit dem Feldtext. Gruppenzeilen `tr.gruppe` (getönt mit `--tabelle-gruppe`, hal
 Zeile oder `aria-pressed`/`aria-current` am Knopf darin). Eine Zusatzzeile unter einer Zeile (Hinweis, Kennzeichen,
 Handwert) bekommt `tr.zusatz`: ohne eigene Trennlinie, knapp darunter, und mit der Zeile darüber gewählt (Tönung und
 Akzentlinie). Beginnt eine Zelle im Grid eine eigene Zeile (Zeile als Grid, Zelle über die ganze Breite), trägt sie
-`td.zeilenanfang` und bekommt in der gewählten Zeile ebenfalls die Akzentlinie. Tabellen ohne Felder mit mehrzeiligen
-Zellen (Rechenweg, Katalog) bekommen `.oben` (oben bündig, ohne den Ausgleich der Feldzeilen). Ein Verweisknopf im Text
-(`button.link`, z. B. ein Wert, der seine Prüfung öffnet) zählt in Feldzeilen als Text. Diese Tabelle soll die eigenen
-Tabellenklassen der Apps ersetzen; bis zur Umstellung bleiben diese bestehen.
+`td.zeilenanfang` und bekommt in der gewählten Zeile ebenfalls die Akzentlinie. Je Zeile höchstens eine Zusatzzeile.
+Tabellen ohne Felder mit mehrzeiligen Zellen (Rechenweg, Katalog) bekommen `.oben` (oben bündig, ohne den Ausgleich der
+Feldzeilen). Ein Verweisknopf im Text (`button.link`, z. B. ein Wert, der seine Prüfung öffnet) zählt in Feldzeilen als
+Text. Diese Tabelle soll die eigenen Tabellenklassen der Apps ersetzen; bis zur Umstellung bleiben diese bestehen.
 
-Marken (`.marke`, z. B. das Kennzeichen „festgelegt“ in einer Zeile): klein (`--fs-xs`), getönt mit `--chip-bg` und
-Text in `--muted`; Varianten `.warnung`, `.ok`, `.hinweis` wie die Marken der Projektübersicht. In einer gewählten
-Zeile (`tr.selected`, deren `tr.zusatz`, `aria-selected`/`aria-current`) verschwände die neutrale Fläche auf der
-Auswahltönung (1,1 : 1) – dort trägt die Marke einen Rahmen in `--muted` (über 3 : 1, hell wie dunkel). Die Information
-steht immer im Text der Marke, nie nur in ihrer Farbe.
+Marken (`.marke`, z. B. das Kennzeichen „festgelegt“ in einer Zeile, die Marken der Projektübersicht): klein
+(`--fs-xs`), getönt mit `--chip-bg` und Text in `--muted`; Varianten `.warnung`, `.ok`, `.hinweis`. Die Information
+steht immer im Text der Marke, die Fläche ist nur Schmuck. Auf getönten Gründen – gewählte Zeile samt `tr.zusatz`,
+überfahrene Zeile, `tr.gruppe`, `aria-selected`/`aria-current`, überfahrene Projektkachel – verschwände jede Fläche
+(etwa 1 : 1); dort trägt die Marke einen Rahmen in ihrer Textfarbe (mindestens 4,9 : 1, hell wie dunkel).
 
 Kennzahlen als Kacheln (`.metric-row` mit `.metric`): oben die Bezeichnung (`span`, `--fs-xs`, `--muted`), darunter
 der Wert (`strong`, `--fs-xl`, Tabellenziffern), wahlweise eine Zeile Nebentext (`small`, wie die Bezeichnung). Die
