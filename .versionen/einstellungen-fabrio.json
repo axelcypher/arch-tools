@@ -1,4 +1,0 @@
-{
-  "ava": { "stufe": "minor", "notiz": "Einstellungen von FABRIO als Seite „FABRIO“ im zentralen Einstellungsdialog („Datei → Einstellungen …“, gilt mit „Übernehmen“); der eigene Dialog entfällt." },
-  "formulare": { "stufe": "patch", "notiz": "Hinweise nennen den Weg „Datei › Einstellungen › …“." }
-}
