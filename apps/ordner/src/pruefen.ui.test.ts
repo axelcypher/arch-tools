@@ -83,6 +83,24 @@ describe('Prüfbericht', () => {
     expect(knopf(host.querySelector('.po-bericht-kopf')!, 'Zur Projektliste')).toBeTruthy();
   });
 
+  it('meldet den Bericht für „Datei → Exportieren → CSV …“ und beim Verlassen wieder ab', async () => {
+    const fs = await projekt('2026-03-01');
+    const meldungen: (string | null)[] = [];
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    root = createRoot(host);
+    act(() => root!.render(createElement(PruefView, { fs, onErgaenzen: () => {}, onCsv: (c) => meldungen.push(c ? c.titel : null), start: 'P:/Projekte/MUS Haus' })));
+    await warten();
+    await warten();
+    expect(meldungen.at(-1)).toBe('Prüfbericht MUS Haus als CSV');
+    // zurück zur Projektliste: kein Bericht mehr
+    act(() => knopf(host.querySelector('.po-bericht-kopf')!, 'Zur Projektliste').click());
+    expect(meldungen.at(-1)).toBeNull();
+    // Ansicht verlassen: abgemeldet
+    act(() => root!.render(createElement('div')));
+    expect(meldungen.at(-1)).toBeNull();
+  });
+
   it('Teilstand nach Fehler beim Anlegen: Bericht neu geprüft und Fehler mit Zahl genannt', async () => {
     const fs = await projekt('2026-03-01');
     const host = await pruefen(fs);

@@ -84,7 +84,7 @@ function PlanKarte({ plan, info, erster, letzter }: { plan: KatasterPlan; info: 
           <Symbol name="muell" />
         </button>
       </div>
-      <div className="es-raster ka-raster">
+      <div className="ka-raster">
         {plan.art === 'pdf' && (
           <>
             <label>
@@ -156,7 +156,7 @@ function PlanKarte({ plan, info, erster, letzter }: { plan: KatasterPlan; info: 
         )}
         {/* DXF hat kein Layout – die Beschriftung hätte keine Wirkung */}
         {plan.art === 'pdf' && (
-          <label className="es-breit">
+          <label className="ka-breit">
             <span className="field-label">
               Beschriftung <code>[% @plan_beschriftung %]</code> – Platzhalter wie im Dateinamen
             </span>
@@ -282,10 +282,10 @@ export function KatasterEinstellungen() {
           </div>
           {gefunden && !gefunden.length && <p className="warning small-text">QGIS wurde in den üblichen Installationsordnern nicht gefunden – bitte den Pfad eintragen.</p>}
           {gefunden && gefunden.length > 0 && (
-            <ul className="es-liste">
+            <ul className="einst-ordnerliste" aria-label="Gefundene Installationen von QGIS">
               {gefunden.map((g) => (
                 <li key={g}>
-                  <span className="es-liste-text">{g}</span>
+                  <code>{g}</code>
                   <button className="small" disabled={g === programm} onClick={() => programmSetzen(g)}>
                     {g === programm ? 'Gewählt' : 'Verwenden'}
                   </button>

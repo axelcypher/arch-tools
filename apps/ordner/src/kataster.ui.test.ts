@@ -270,7 +270,7 @@ describe('Einstellungen der Katasterpläne', () => {
   it('Plankarte: Raster, DXF ohne Beschriftungsfeld, Vorwahl mit Namen, Verweis auf Pfade und Benennung', async () => {
     const host = await zeige(createElement(KatasterEinstellungen));
     const karten = [...host.querySelectorAll('.ka-plan')];
-    expect(karten.every((k) => k.querySelector('.es-raster'))).toBe(true);
+    expect(karten.every((k) => k.querySelector('.ka-raster'))).toBe(true);
     const beschriftung = (k: Element) => k.querySelector('input[aria-label="Beschriftung"]');
     expect(beschriftung(karten[0])).toBeTruthy();
     expect(beschriftung(karten[2])).toBeNull();

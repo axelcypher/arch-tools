@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ProjektordnerEintrag } from '@core/platform/projektordner';
 import { projekteAuflisten } from '@core/platform/projektordner';
 import { saveTextFile } from '@core/platform/files';
@@ -39,7 +39,27 @@ interface Geprueft extends GeladenerOrdner {
  * Stammordner oder per „Ordner wählen …“) oder alle auf einmal mit Übersicht und CSV. Nur lesend; einzig „fehlende
  * Ordner anlegen“ legt auf Wunsch Ordner an. `fs` ersetzt das Dateisystem des Desktops (Tests).
  */
-export function PruefView({ onErgaenzen, onMails, fs: fsVorgabe, start }: { onErgaenzen: (o: GeladenerOrdner) => void; onMails?: (pfad: string) => void; fs?: Dateisystem; start?: string | null }) {
+/** Ausgabe des gerade gezeigten Berichts für „Datei → Exportieren“ (null: kein Bericht) */
+export interface CsvAusgabe {
+  /** was ausgegeben wird, für den Tooltip im Menü */
+  titel: string;
+  aktion: () => void;
+}
+
+export function PruefView({
+  onErgaenzen,
+  onMails,
+  onCsv,
+  fs: fsVorgabe,
+  start,
+}: {
+  onErgaenzen: (o: GeladenerOrdner) => void;
+  onMails?: (pfad: string) => void;
+  /** meldet, welcher Bericht als CSV ausgegeben werden kann – für „Datei → Exportieren → CSV …“ */
+  onCsv?: (csv: CsvAusgabe | null) => void;
+  fs?: Dateisystem;
+  start?: string | null;
+}) {
   const desktop = hatDateisystem();
   const fs = fsVorgabe ?? (desktop ? tauriDateisystem : null);
   const struktur = useOrdner((s) => s.struktur);
@@ -140,6 +160,18 @@ export function PruefView({ onErgaenzen, onMails, fs: fsVorgabe, start }: { onEr
     void saveTextFile({ defaultName: `${sichererName(name)}.csv`, contents: inhalt, filterName: 'CSV (Excel)', extension: 'csv', mime: 'text/csv' }).catch((e) =>
       setFehler(e instanceof Error ? e.message : String(e)),
     );
+
+  // „Datei → Exportieren → CSV …“: der Einzelbericht, sonst die Übersicht aller Projekte; beim Verlassen nichts mehr
+  const csvRef = useRef(onCsv);
+  csvRef.current = onCsv;
+  useEffect(() => {
+    const melden = csvRef.current;
+    if (!melden) return;
+    if (g) melden({ titel: `Prüfbericht ${g.name} als CSV`, aktion: () => csvSpeichern(`Prüfbericht ${g.name}`, berichtCsv(g.ergebnis)) });
+    else if (alle) melden({ titel: 'Prüfung aller Projekte als CSV', aktion: () => csvSpeichern(`Prüfung aller Projekte ${new Date().toISOString().slice(0, 10)}`, sammelCsv(alle)) });
+    else melden(null);
+  }, [g, alle]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => () => csvRef.current?.(null), []);
 
   const zaehlung = g
     ? ZAEHLUNG.map(({ art, eins, mehr }) => [g.ergebnis.befunde.filter((b) => b.art === art).length, eins, mehr] as const)
