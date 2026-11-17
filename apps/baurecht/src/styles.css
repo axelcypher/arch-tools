@@ -311,16 +311,6 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
 
 /* ---------- Fläche und Karten (Karte.tsx): Layout, Kopf, Rumpf und Fuß kommen aus base.css ---------- */
 
-/* Angaben ganz schmal: „alle Angaben“ rückt unter die Überschrift, statt sie zu überdecken */
-.br-angaben > .karte-kopf {
-  flex-wrap: wrap;
-}
-.br-angaben > .karte-kopf h2 {
-  flex: 1 0 auto;
-}
-.br-angaben > .karte-kopf .karte-aktionen {
-  margin-left: 0;
-}
 /* „Für diesen Ort bestätigen“ bricht in schmalen Angaben um, statt über den Kasten zu ragen */
 .br-bestaetigen-zeile > button {
   white-space: normal;
