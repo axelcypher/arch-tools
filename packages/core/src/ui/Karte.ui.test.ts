@@ -97,7 +97,8 @@ describe('Fläche und Karten', () => {
     // Zahlentabelle: gemischte Spalten, Felder, Gruppen- und Summenzeilen
     expect(css).toMatch(/\.summary-table\.text th\.num,\s*\.summary-table td\.num \{[^}]*text-align: right;/);
     expect(css).toMatch(/\.summary-table\.felder td \{[^}]*vertical-align: top;/);
+    expect(css).toMatch(/\.summary-table\.felder td:not\(:has\(input, select, textarea\)\) \{[^}]*padding-top: calc\(3px \+ \(var\(--ctl-h\) - 1lh\) \/ 2\);/);
     expect(css).toMatch(/\.summary-table tr\.gruppe td \{/);
-    expect(css).toMatch(/\.summary-table tr\.summe td \{[^}]*border-top-color: var\(--border\);/);
+    expect(css).toMatch(/\.summary-table tr\.summe td \{[^}]*border-top-color: color-mix\(in srgb, var\(--muted\) 60%, transparent\);/);
   });
 });
