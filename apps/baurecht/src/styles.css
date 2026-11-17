@@ -311,6 +311,13 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
 
 /* ---------- Fläche und Karten (Karte.tsx): Layout, Kopf, Rumpf und Fuß kommen aus base.css ---------- */
 
+/* Angaben ganz schmal: „alle Angaben“ rückt unter die Überschrift, statt sie zu überdecken */
+.br-angaben > .karte-kopf {
+  flex-wrap: wrap;
+}
+.br-angaben > .karte-kopf h2 {
+  flex: 1 0 auto;
+}
 /* Angaben: das Suchfeld bleibt oben in der Karte stehen; scroll-padding hält darunter Platz frei (Tab, Sprung zur Angabe) */
 .br-angaben > .karte-rumpf {
   padding-top: 0;
@@ -544,10 +551,36 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
     padding: var(--s1) var(--s2);
   }
 }
-/* sehr schmale Mitte: die Ampeln nur mit Haken, Punkt und Zahl (das Wort steht im Namen und im Tooltip des Knopfs) */
-@container vorschriften (max-width: 460px) {
+/* sehr schmale Mitte (unter etwa 670 px Fensterbreite): die Suche über die volle Breite, Filter und Ordnung darunter */
+@container vorschriften (max-width: 380px) {
+  .br-filter-zeile2 {
+    flex-wrap: wrap;
+  }
+  .br-filter .br-suchfeld {
+    flex-basis: 100%;
+    max-width: none;
+  }
+}
+/* nur wenn die Wörter wirklich nicht mehr passen: die Ampeln mit Haken, Punkt und Zahl, das Wort darunter klein – die
+   Ampel steht nie nur als Farbe da */
+@container vorschriften (max-width: 340px) {
+  .br-filter .br-bilanz {
+    display: flex;
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+  .br-filter .segment > .br-filter-ampel {
+    flex: 1 1 0;
+    min-width: 0;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0 var(--s1);
+    padding-inline: var(--s1);
+  }
   .br-filter-wort {
-    display: none;
+    flex-basis: 100%;
+    text-align: center;
+    font-size: var(--fs-xs);
   }
 }
 /* Ampel-Filter: Häkchen, Statuspunkt, Zahl und Wort; gewählt wie jedes Segment */
@@ -753,7 +786,7 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
 .br-detail-leer > .karte-rumpf > p:first-child {
   margin-top: 0;
 }
-/* Ziel von F6 und Sprungmarke im Kartenkopf (tabindex -1): Fokusrahmen in --fokus wie überall, innen (der Kopf schneidet ab) */
+/* Ziel von F6 und Sprungmarke im Kartenkopf (tabindex -1): Fokusrahmen in --fokus wie überall, mit Abstand (der Kopf hat Platz) */
 .br-detail [data-f6-ziel]:focus-visible {
   outline: 2px solid var(--fokus);
   outline-offset: 2px;

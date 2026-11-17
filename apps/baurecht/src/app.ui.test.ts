@@ -676,7 +676,8 @@ describe('Baurecht – Oberfläche', () => {
     });
     const inhalt = menue.querySelector<HTMLElement>('.br-filter-menue-inhalt')!;
     expect(inhalt.style.top).toBe('228px');
-    expect(inhalt.style.left).toBe('310px');
+    // rechtsbündig zum Knopf (in happy-dom ohne Layout ist das Menü 0 px breit)
+    expect(inhalt.style.left).toBe('380px');
     expect(document.activeElement).toBe(inhalt.querySelector('input'));
     act(() => void window.dispatchEvent(new Event('resize')));
     expect(menue.open).toBe(false);

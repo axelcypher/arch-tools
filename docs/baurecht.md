@@ -64,9 +64,10 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   Werte und halbe Anzahlen sind nur Hinweis, Angaben zur Lage ohne Lagebezug ebenso („Für diese Lage übernehmen“).
 - **Ergebnis (Karte über den Vorschriften):** Ampelzähler (blenden ein/aus; Häkchen, Statuspunkt, Zahl und Wort im
   Umschalter), Balken, Ordnung (offen zuerst, nach Ebene, nach Thema), Suche und die Kästchen „nur von Hand festgelegte“
-  / „nur geänderte/überholte“, darunter die Trefferzahl. Ist die Mitte schmaler als 640 px, wird die Ordnung zur Auswahlliste, die Kästchen
-  wandern in **Filter** und der Balken entfällt. Die Zähler an den Normen zählen die sichtbaren Zeilen („11 prüfen von
-  14“). Beim Wechsel der Ordnung bleibt der gewählte Paragraf im Blick.
+  / „nur geänderte/überholte“, darunter die Trefferzahl. Ist die Mitte schmaler als 640 px, wird die Ordnung zur
+  Auswahlliste, die Kästchen wandern in **Filter** (ein Menü über der Fläche) und der Balken entfällt; ganz schmal steht
+  die Suche über Filter und Ordnung, und das Wort der Ampel steht klein unter Zahl und Punkt. Die Zähler an den Normen
+  zählen die sichtbaren Zeilen („11 prüfen von 14“). Beim Wechsel der Ordnung bleibt der gewählte Paragraf im Blick.
 - **Rückfrage zum Antragsmerkmal:** Bei „Beseitigung“ steht der **Umfang der Beseitigung** (vollständiger Abbruch ohne
   Ersatzbau, Teilabbruch, Abbruch mit Ersatzbau) direkt unter „Art des Vorhabens“ (als Knöpfe, unter der Erklärung des
   Werts); Teilabbruch wird wie eine Änderung geprüft, Ersatzbau wie Errichtung und Beseitigung; „Erweiterung“ (Anbau,
@@ -370,8 +371,8 @@ Die ersten Tabstopps sind die Sprungmarken „Zu den Angaben“, „Zum Ergebnis
 Einzelheiten“ (sichtbar, sobald sie den Fokus haben), danach die Titelleiste. Die Vorschriftenliste ist ein Tabstopp:
 ↑/↓, Pos1/Ende wählen den Paragrafen.
 Auswahlgruppen (ja/nein, Merkmale) bedienen sich mit ←/→ bzw. ↑/↓ (mit Umlauf), Pos1/Ende. F6 (Umschalt+F6) springt
-zwischen Kopf und den Karten Angaben, Ergebnis, Vorschriften und Einzelheiten; in den Einzelheiten landet der Fokus auf
-der Überschrift im Kartenkopf, auch wenn kein Paragraf gewählt ist (F6 geht weiter). Menüs (Mehr, Filter, Farbschema) nehmen beim Öffnen den Fokus,
+zwischen Kopf und den Karten Angaben (auf das Suchfeld), Ergebnis, Vorschriften und Einzelheiten; in den Einzelheiten
+landet der Fokus auf der Überschrift im Kartenkopf, auch wenn kein Paragraf gewählt ist (F6 geht weiter). Menüs (Mehr, Filter, Farbschema) nehmen beim Öffnen den Fokus,
 bedienen sich mit ↑/↓ und Pos1/Ende, schließen mit Esc (Fokus zurück an ihren Knopf) und schließen, sobald der Fokus sie
 mit Tab verlässt; ihre Einträge sind keine eigenen Tabstopps; ein zweiter Klick auf den Öffner schließt das Menü. Die
 Suche in den Vorschriften findet Zitate genau (Norm nach Kurzform): „§ 6 BauO NRW“, „§ 62 Abs. 1 Satz 1 Nr. 1a BauO

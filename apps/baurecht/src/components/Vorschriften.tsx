@@ -409,15 +409,18 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
       const m = menue.current;
       if (m?.open && !m.contains(e.target as Node)) m.open = false;
     };
-    // die feste Lage des Menüs stimmt nach einer Größenänderung nicht mehr – dann schließen
-    const groesse = () => {
-      if (menue.current?.open) menue.current.open = false;
+    // die feste Lage des Menüs stimmt nach einer Größenänderung bzw. wenn die Karte darunter scrollt nicht mehr – dann schließen
+    const groesse = (e: Event) => {
+      const m = menue.current;
+      if (m?.open && !(e.type === 'scroll' && m.contains(e.target as Node))) m.open = false;
     };
     document.addEventListener('mousedown', zu);
     window.addEventListener('resize', groesse);
+    document.addEventListener('scroll', groesse, true);
     return () => {
       document.removeEventListener('mousedown', zu);
       window.removeEventListener('resize', groesse);
+      document.removeEventListener('scroll', groesse, true);
     };
   }, []);
   const menueTaste = (e: KeyboardEvent<HTMLDetailsElement>) => {
@@ -523,8 +526,10 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
                 // ihren Rand ragt; beim Öffnen den Fokus ins Menü
                 const r = d.querySelector('summary')!.getBoundingClientRect();
                 const inhalt = d.querySelector<HTMLElement>('.br-filter-menue-inhalt')!;
-                inhalt.style.top = `${r.bottom + 4}px`;
-                inhalt.style.left = `${r.left}px`;
+                // Abstand --s1 unter „Filter“, rechtsbündig zum Knopf (ragt nicht über den Rand der Karte hinaus)
+                const abstand = parseFloat(getComputedStyle(d).getPropertyValue('--s1')) || 4;
+                inhalt.style.top = `${r.bottom + abstand}px`;
+                inhalt.style.left = `${Math.max(abstand, Math.min(r.right, window.innerWidth - abstand) - inhalt.offsetWidth)}px`;
                 inhalt.querySelector<HTMLInputElement>('input')?.focus();
               }}
               onBlur={(e) => {
