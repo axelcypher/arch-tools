@@ -5,8 +5,9 @@ App-eigenes steht in `apps/<app>/src/styles.css`. An dieser Richtlinie messen si
 Review-Agent `review-design`.
 
 > Stand: Grundlagen (Skalen, Fokus, Zielgrößen, Überschriften, Meldungen) und gemeinsame Komponenten (Dialoge,
-> Druckvorschau, Felder, Umschalter), Aufbau der Kopf- und Werkzeugleisten. Die Gestaltungsrichtung (Farben,
-> Knopfstufen, Aussehen der Werkzeugleiste, Tabellen) folgt nach der Wahl des Nutzers und wird hier ergänzt.
+> Druckvorschau, Felder, Umschalter), Aufbau der Kopf- und Werkzeugleisten. Gestaltungsrichtung: C „Kachel“ – Farben,
+> App-Farbe, Knopfstufen der Werkzeugleiste, Titelleiste und das Kartenlayout („Fläche und Karten“) stehen hier; die
+> Apps stellen nach und nach um (`docs/nachziehen/`).
 
 ## Grundsätze
 
@@ -32,15 +33,15 @@ Werte nicht frei wählen, sondern aus der Skala nehmen.
 | `--s5`   | 24px | große Gliederung (Zielwert für den Dialog-Innenabstand; `.modal` hat heute 18/22px) |
 | `--s6`   | 32px | Leerzustände, Abstand zum Fensterrand bei Seiten                                    |
 
-| Variable  | Wert | Verwendung                                             |
-| --------- | ---- | ------------------------------------------------------ |
-| `--fs-xs` | 11px | Feldbeschriftung, Hinweis unter dem Feld, Tabellenkopf |
-| `--fs-s`  | 12px | Nebentext, kleine Knöpfe, dichte Tabellen              |
-| `--fs-m`  | 13px | Grundschrift, Abschnittsüberschrift (`.sidebar h2`)    |
-| `--fs-l`  | 15px | Dialogtitel, Titel einer Spalte ohne `.sidebar`        |
-| `--fs-xl` | 18px | Seitentitel (Einstieg, Bericht), Kennzahl              |
+| Variable  | Wert | Verwendung                                                 |
+| --------- | ---- | ---------------------------------------------------------- |
+| `--fs-xs` | 11px | Feldbeschriftung, Hinweis unter dem Feld, Tabellenkopf     |
+| `--fs-s`  | 12px | Nebentext, kleine Knöpfe, dichte Tabellen                  |
+| `--fs-m`  | 13px | Grundschrift, Abschnitt in der Karte (`h3`), `.sidebar h2` |
+| `--fs-l`  | 15px | Kartenkopf (`h2`), Dialogtitel                             |
+| `--fs-xl` | 18px | Seitentitel (Einstieg, Bericht), Kennzahl                  |
 
-Weitere: `--radius-s` 4px (Felder, Knöpfe), `--radius` 6px (Dialoge, Karten), `--ctl-h` 28px und `--ctl-h-s` 24px
+Weitere: `--radius-s` 6px (Felder, Knöpfe), `--radius` 8px (Dialoge, Karten), `--ctl-h` 30px und `--ctl-h-s` 24px
 (Höhe der Bedienelemente).
 
 Zahlen in Tabellen und Feldern stehen rechtsbündig in Tabellenziffern (`.num`, `input.num`).
@@ -50,9 +51,11 @@ Texttabellen: Spaltenköpfe linksbündig (`.summary-table.text`, z. B. Platzhalt
 
 ## Überschriften
 
-- **Seitenleiste und Spalten:** `h2` in Satzschreibung, `--fs-m`, halbfett, Farbe `--text`. Keine Versalien – sie lesen
-  sich langsamer, besonders bei langen Titeln.
-- **Unterabschnitt:** `h3`, `--fs-s`, halbfett.
+- **Karte (Richtung C):** Der Kartenkopf ist die oberste Stufe – `h2` in `--fs-l`, halbfett (`Karte`, siehe „Fläche und
+  Karten“). Abschnitte in der Karte `h3` in `--fs-m`, Unterabschnitte `h4` in `--fs-s`, beide halbfett.
+- **Seitenleiste und Spalten (alte Muster, bis die App auf Karten umstellt):** `h2` in Satzschreibung, `--fs-m`,
+  halbfett, Farbe `--text`; Unterabschnitt `h3`, `--fs-s`, halbfett.
+- Keine Versalien – sie lesen sich langsamer, besonders bei langen Titeln.
 - Überschriften nicht über die Browser-Vorgabe laufen lassen (ein `h2` ohne Regel wird 22px groß). Wer Spalten ohne
   `.sidebar` baut, setzt die Größe aus der Skala.
 
@@ -61,8 +64,9 @@ Texttabellen: Spaltenköpfe linksbündig (`.summary-table.text`, z. B. Platzhalt
 - `base.css` zeigt bei Tastaturbedienung an allen Knöpfen, Links, `summary`, Kästchen, Optionsfeldern, Reglern und
   fokussierbaren Elementen einen Rahmen in `--fokus` (2px, 2px Abstand). Bei Mausbedienung erscheint er nicht
   (`:focus-visible`).
-- Der Abstand trennt **Fokus** von **aktiv**: Ein aktiver Knopf hat einen Rand in `--accent` direkt am Knopf, der
-  Fokusrahmen steht 2px davon ab.
+- Der Abstand trennt **Fokus** von **aktiv**: Ein aktiver Knopf hat einen Rand in `--accent` direkt am Knopf (in der
+  Werkzeugleiste stattdessen Tönung und Strich unten, siehe „Knopfstufen“), der Fokusrahmen steht 2px davon ab.
+- In der farbigen Titelleiste ist der Fokusrahmen weiß (siehe „Titelleiste“).
 - Textfelder und Auswahllisten bekommen beim Fokus einen Rand in `--accent` und einen Saum in `--fokus-saum`.
 - Auf Papier (`.report`) und Zeichenfläche (`.canvas`) ist `--fokus` das helle Blau, auch im dunklen Schema.
 - **Nicht** `outline: none` setzen, ohne einen gleichwertigen Ersatz zu zeigen.
@@ -79,7 +83,7 @@ Texttabellen: Spaltenköpfe linksbündig (`.summary-table.text`, z. B. Platzhalt
 ## Zielgrößen
 
 - Knöpfe in `.toolbar`, `.button-row`, `.dialog-buttons` und `.section-head` sowie Felder und Auswahllisten in
-  `.toolbar` und `.field` sind mindestens `--ctl-h` (28px) hoch, `button.small` und `button.icon` dort `--ctl-h-s` (24px).
+  `.toolbar` und `.field` sind mindestens `--ctl-h` (30px) hoch, `button.small` und `button.icon` dort `--ctl-h-s` (24px).
   Ausnahme Werkzeugleiste (`Werkzeugleiste`): Dort sind auch `button.icon` (Rückgängig, „Mehr“) und die Symbolknöpfe
   der Kompaktstufe `--ctl-h` hoch und mindestens so breit – eine Leiste hat nur eine Knopfgröße, weil Symbol- und
   Textknöpfe dort nebeneinander stehen. App-Regeln mit eigener Größe für `button.icon` nehmen die Werkzeugleiste aus
@@ -90,17 +94,28 @@ Texttabellen: Spaltenköpfe linksbündig (`.summary-table.text`, z. B. Platzhalt
 
 ## Farben
 
-| Variable                           | Bedeutung                                                                                                       |
-| ---------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `--bg`, `--panel`                  | Fensterhintergrund, Flächen (Leisten, Dialoge)                                                                  |
-| `--text`, `--muted`                | Text, Nebentext (`--muted` hält auch auf Tönungen und `--bg` mindestens 4,5 : 1)                                |
-| `--border`, `--line-soft`          | Linien, feine Trennlinien in Tabellen                                                                           |
-| `--accent`, `--accent-soft`        | Akzent (aktive Werkzeuge, primärer Knopf, Links), Tönung                                                        |
-| `--accent-text`                    | Akzent als Schrift auf getönten Flächen (aktive Knöpfe, Chips) – mindestens 4,5:1                               |
-| `--ok-*`, `--warn-*`, `--fehler-*` | Status: eingehalten, prüfen, überschritten/Fehler; `--ok-punkt` usw. für Statuspunkte (Ampel)                   |
-| `--sel`                            | Auswahl auf Plänen (Orange); auch ungespeicherte Änderungen (Punkt in Titelleiste und an „Speichern“)           |
-| `--sel-foto`                       | Auswahl auf Fotos (Magenta, in beiden Schemata gleich) – Orange kollidiert dort mit Mess- und Markierungsfarben |
-| `--danger`                         | zerstörende Aktionen (Löschen)                                                                                  |
+| Variable                           | Bedeutung                                                                                                                                          |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--bg`, `--panel`                  | Fensterhintergrund, Flächen (Leisten, Dialoge)                                                                                                     |
+| `--text`, `--muted`                | Text, Nebentext (`--muted` hält auch auf Tönungen und `--bg` mindestens 4,5 : 1)                                                                   |
+| `--border`, `--line-soft`          | Linien, feine Trennlinien in Tabellen                                                                                                              |
+| `--app`                            | Kachelfarbe der App aus dem Iconset – nur Titelleiste (siehe „App-Farbe“)                                                                          |
+| `--accent`, `--accent-soft`        | Akzent (aktive Werkzeuge, primärer Knopf, Links), Tönung                                                                                           |
+| `--ausgabe`, `--on-ausgabe`        | Bernstein für die eine Ausgabe-Aktion (Hauptknopf der Werkzeugleiste) sowie Update und Speicherort-Warnung in der Titelleiste, mit dunkler Schrift |
+| `--accent-text`                    | Akzent als Schrift auf getönten Flächen (aktive Knöpfe, Chips) – mindestens 4,5:1                                                                  |
+| `--ok-*`, `--warn-*`, `--fehler-*` | Status: eingehalten, prüfen, überschritten/Fehler; `--ok-punkt` usw. für Statuspunkte (Ampel)                                                      |
+| `--sel`                            | Auswahl auf Plänen (Orange); auch ungespeicherte Änderungen (Punkt in Titelleiste und an „Speichern“)                                              |
+| `--sel-foto`                       | Auswahl auf Fotos (Magenta, in beiden Schemata gleich) – Orange kollidiert dort mit Mess- und Markierungsfarben                                    |
+| `--danger`                         | zerstörende Aktionen (Löschen)                                                                                                                     |
+
+**App-Farbe:** Die Titelleiste setzt `data-app` (Kennung aus `APP_NAMEN`) am Wurzelelement; `base.css` hält je App
+die Kachelfarbe `--app`. Sie trägt die Titelleiste (dunkel: mit Schwarz gemischt) – sonst nichts Flächiges. Als Akzent
+dient sie nur, wenn ihr Farbton mindestens 35° von ok, Warnung und Fehler entfernt ist und sie hell wie dunkel 4,5 : 1
+hält: QUADRIO, RECTIO, FABRIO und LEXIO. TERRIO (Grün), NUMIO (Rot), PERMIO (Braun) und ATLAS (Türkis, nah an ok)
+behalten den neutralen Akzent Schiefer-Blaugrau, ebenso Arkly. `appFarben.test.ts` prüft Kontrast und Abstand je App;
+eine neue App bekommt dort ihren Eintrag. **Bernstein** (`--ausgabe`) gibt es nur für die eine Ausgabe je Bildschirm
+(„Flächenaufstellung …“, „Nachweis drucken …“) sowie, auf der farbigen Titelleiste, für Update und Speicherort-Warnung
+(diese mit dunklem Rand), immer mit dunkler Schrift – nie als Schrift auf Weiß.
 
 **Feste Farben – begründete Ausnahmen:** Zeichenfläche und Papier (siehe Grundsätze) sowie der Schließen-Knopf der
 Titelleiste (`.wc-close:hover` in `#c42b1c` mit weißem Symbol), weil Windows ihn in jedem Schema so zeigt und man ihn
@@ -234,7 +249,7 @@ mit `einstellungenEntwurfMelden`, Sperre über `useEinstellungenGesperrt`).
 ## Umschalter
 
 `.segment` für eine Wahl aus wenigen (Ansicht, Modus): Knöpfe direkt nebeneinander in einem Rahmen, der gewählte mit
-`aria-pressed="true"` in Akzent-Tönung. Höhe 24px, in `.toolbar` 28px wie die übrigen Knöpfe dort; der Rahmen des
+`aria-pressed="true"` in Akzent-Tönung. Höhe 24px, in `.toolbar` 30px wie die übrigen Knöpfe dort; der Rahmen des
 Segments zählt mit (die Höhe kommt aus `min-height`, nicht aus dem Innenabstand). Statt eigener
 Varianten je App (`.mv-umschalter`, `.ava-tabs`, `.view-switch`).
 
@@ -334,6 +349,12 @@ Was sichtbar ist und was ins Menü gehört – für die Werkzeugleisten aller Ap
 **Sichtbar bleibt**, was man im Arbeitsablauf ständig braucht: „Speichern“ (mit dem Punkt für ungespeicherte
 Änderungen), Rückgängig/Wiederholen, die Werkzeuge der Zeichenfläche, der Haupt-Umschalter der App (Kosten | Mengen,
 Foto | Entzerrt, BGF | Raum) und der Hauptknopf (`.primary`, z. B. „Flächenaufstellung …“, „Drucken / PDF …“).
+**Knopfstufen:** In der Werkzeugleiste sind Knöpfe ruhig (ohne Rahmen und Fläche, beim Überfahren getönt); das aktive
+Werkzeug (`.active` bzw. `aria-pressed`) zeigt die Akzent-Tönung mit einem Strich unten. Der Hauptknopf (`.primary`) ist
+dort die Ausgabe der App in Bernstein – deshalb ist ein Knopf in einer Werkzeugleiste, der nichts ausgibt (Hinzufügen,
+Prüfen), kein `.primary`, sondern ein Standardknopf. Außerhalb der Leiste bleiben Standardknöpfe mit Rahmen, `.primary` in der
+Akzentfarbe (Hauptknopf eines Dialogs) und `.danger` für Gefahr. `.segment` behält seinen Rahmen.
+
 Richtwert: höchstens sieben, besser fünf Knöpfe bzw. Gruppen je Leiste; „Datei“ und „Speichern“ zählen mit, die
 Werkzeuge als eine Gruppe, „Mehr“ nicht. Status- und Hinweismarken (Warnungen, Module) gehören nicht ins Menü – sie
 bleiben sichtbar, solange sie etwas melden.
@@ -437,9 +458,10 @@ Zurücksetzen, Sonderfunktionen. Feste Namen, in allen Apps gleich:
 - Verb: Für Einträge einer Liste (Positionen, Punkte, Firmen, Merkmale) „hinzufügen“, nicht „neu“ oder „einfügen“.
   Eigenständige Gegenstände wie Projekt, Formular, Ordner oder Datei bleiben bei „Neu“ bzw. „anlegen“ (siehe
   „Begriffe“), ebenfalls mit Symbol `plus` („Neues Projekt anlegen …“).
-- Leiste heißt in diesem Abschnitt nur: `.toolbar` und die Kopfzeile eines Abschnitts (`.section-head`) – auch wenn
-  der Hinzufügen-Knopf dort der Hauptknopf (`.primary`) ist. Dort knapp nur der Gegenstand mit `title` der vollen
-  Aktion, z. B. „Mangel“ mit `title` „Mangel hinzufügen“. App-eigene Kopfzeilen gelten nur als Leiste,
+- Leiste heißt in diesem Abschnitt nur: `.toolbar` und die Kopfzeile eines Abschnitts (`.section-head`) – in einer
+  `.section-head` auch dann, wenn der Hinzufügen-Knopf dort der Hauptknopf (`.primary`) ist; in der Werkzeugleiste ist
+  er ein Standardknopf (siehe „Knopfstufen“). Dort knapp nur der Gegenstand mit `title` der vollen Aktion, z. B.
+  „Mangel“ mit `title` „Mangel hinzufügen“. App-eigene Kopfzeilen gelten nur als Leiste,
   wenn sie `.toolbar` bzw. `.section-head` tragen.
 - Keine Leisten sind `.button-row`, `.dialog-buttons`, Seitenleisten und Tabellenzeilen – dort fehlt der Zusammenhang
   einer Werkzeugleiste, der den knappen Text erklärt: dort gleich mit Verb („Beteiligten hinzufügen“).
@@ -457,11 +479,45 @@ Zurücksetzen, Sonderfunktionen. Feste Namen, in allen Apps gleich:
 - Symbolknöpfe ohne Text (in Zeilen wie in Leisten) brauchen `aria-label` und `title` mit Gegenstand („Position
   einrücken“).
 
+## Fläche und Karten
+
+Das Layout aller Apps (Richtung C): Unter der Werkzeugleiste liegt eine ruhige **Fläche** (`--bg`); Seitenleisten,
+Hauptbereich und Zeichenfläche stehen darauf als **Karten** mit weichem Schatten und 8 px Spalt (`--spalt`). Die
+Werkzeugleiste liegt mit auf der Fläche (gleicher Grund, keine Linie). Bausteine in `ui/Karte.tsx`:
+
+- `Flaeche` (`.flaeche`): Karten nebeneinander mit Spalt und Innenabstand `--spalt`; sie scrollt nie.
+- `Karte` (`.karte`): Kopf (`.karte-kopf`, Überschrift `h2` in `--fs-l`, rechts `aktionen` wie „?“ oder „Hinzufügen“),
+  darunter der Inhalt (`.karte-rumpf`), der **in der Karte** scrollt, wahlweise eine feste Fußzeile (`fuss`, Summen).
+  Mit Titel ist die Karte ein benannter Bereich (`aria-labelledby` auf das `h2`); ohne sichtbaren Titel braucht sie
+  `ariaLabel`. `buendig` lässt Tabellen und Listen bis an den Rand laufen; Fokusrahmen liegen dort innen. Breite
+  Tabellen scrollen mit dem Inhalt der Karte, sie laufen nie aus ihr heraus. Innenabstand waagerecht `--karte-pad`
+  (14px, aus der gewählten Vorschau), Kopfhöhe `--karte-kopf-h` (ein Knopf in `--ctl-h` mit `--s2` darüber und
+  darunter), Fußzeile in `--ctl-h`.
+- `FlaechenSpalte` (`.flaechen-spalte`): mehrere Karten untereinander (z. B. „Geschoss“ über „Auswertung“), sie
+  teilen sich die Höhe; `wachsend` lässt die Spalte die Restbreite nehmen.
+- `ZeichenKarte` (`.zeichen-karte`): Die Zeichenfläche füllt die Karte und bleibt hell (`.canvas`); Bedienhinweis,
+  Koordinaten und Maßstab stehen in der Fußzeile der Karte (`fuss`), nicht über dem Plan. Kopf wie bei `Karte`
+  (`titel`, `aktionen`), meist ohne – die Werkzeuge stehen in der Werkzeugleiste.
+- Seitenkarten mit ziehbarer Breite: `BreitenLeiste` mit einer `Karte` (oder `FlaechenSpalte`) als Kind; auf der
+  Fläche liegt der Griff im Spalt (Linie beim Überfahren in voller Akzentfarbe, weil der Spalt sonst keinen Rand
+  zeigt), und Innenabstand und Spalt zählen bei der Höchstbreite mit.
+- **Schmale Fenster:** Die Fläche scrollt nie. Die Mitte (eine `Karte` direkt auf der Fläche oder eine wachsende Spalte)
+  behält `--karte-mitte-min` (280px), die Seitenkarten geben bis zu ihrer Mindestbreite (`--leiste-min`, 180px) nach;
+  die gemerkte Breite bleibt und gilt wieder, sobald Platz ist. Das gilt auch für eine Seitenspalte (`FlaechenSpalte`
+  ohne `wachsend`). Unter der Summe der Mindestbreiten (zwei Seitenkarten und Mitte, rund 670px) wird abgeschnitten –
+  für Desktop-Fenster vertretbar.
+
+Die alten Muster (`.workspace`, `.sidebar`, eigene Spalten-Layouts der Apps) laufen weiter, bis eine App umgestellt
+ist (`docs/nachziehen/`). Eigene Layout-CSS und feste Farben der Apps entfallen mit der Umstellung. Ausgenommen ist die
+Rahmen-App Arkly: Sie hat keine Arbeitsfläche, sondern Tableiste und Startseite; ihre Seiten zeigen die Apps, die selbst
+auf Karten stehen.
+
 ## Seitenleisten
 
 `BreitenLeiste` (`ui/Leiste.tsx`) mit gemerkter, ziehbarer Breite. Der Griff sitzt am Rand zur Arbeitsfläche: links
 stehende Leiste (Vorgabe) rechts, rechts stehende Leiste mit `seite="rechts"` links. Tastatur ←/→ bewegen den Griff,
-Doppelklick setzt die Vorgabe. Keine eigenen Leisten-Komponenten je App.
+Doppelklick setzt die Vorgabe. Keine eigenen Leisten-Komponenten je App. Auf einer `Flaeche` ist die Leiste eine
+Seitenkarte (siehe „Fläche und Karten“).
 
 ## Meldungen im Inhalt
 
@@ -518,7 +574,11 @@ hellem Grund nur 2,2 : 1). Der Text daneben in `--ok-text` usw. bzw. `--text`.
 
 ## Titelleiste
 
-Links Symbol und Name der App, „Projekte“ und das geöffnete Projekt (mit dem Punkt ● für ungespeicherte Änderungen).
+Die Titelleiste steht in der Kachelfarbe der App (`--app`, siehe „App-Farbe“) mit heller Schrift; darin sind der
+Fokusrahmen weiß, der Punkt für ungespeicherte Änderungen hellgelb, Update-Knopf und Warnung zum Speicherort Bernstein
+mit dunkler Schrift und die Fehlermarke am Menüknopf mit weißem Saum. Dialoge, die aus der Leiste kommen (Update,
+Berechnungsregeln), behalten die Farben des Schemas. Links Symbol und Name
+der App, „Projekte“ und das geöffnete Projekt (mit dem Punkt ● für ungespeicherte Änderungen).
 Rechts nur, was gerade zählt – Version bzw. Update, im Notbetrieb die Warnung zum Speicherort –, dann das Menü der
 Titelleiste und die Fensterknöpfe. Das Menü heißt in den Apps „Darstellung und Hilfe“ (Symbol `menue`, drei Striche;
 Name in `ariaLabel` und `title`), damit es sich vom „Mehr“ der Werkzeugleiste darunter unterscheidet; „Einstellungen …“

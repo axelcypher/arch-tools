@@ -1,6 +1,7 @@
-import { useEffect, useId, useRef, useState, useSyncExternalStore } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { appNameSetzen } from './appName';
+import { appKennungZu } from '../appNamen';
 import { isTauri } from '../platform/files';
 import { andocken, anRahmenMelden, rahmenApp, rahmenModus, schliessenVorbereiten, speichernAnfragenBeantworten, ungespeichertSatz, vorbereitenAnfragenBeantworten } from '../platform/rahmen';
 import { getEntries, logger, logVersion, subscribe } from '../platform/log';
@@ -63,6 +64,15 @@ export function TitleBar({ app, name, dirty, ungespeichert, onOpenLog, regeln, o
 
   // Name der App für Stellen, die allen Apps gehören (z. B. gespeichertes Protokoll)
   appNameSetzen(app);
+  // App-Farbe aus dem Iconset (base.css, „App-Farbe“): Kachelfarbe der Titelleiste und ggf. Akzent
+  useLayoutEffect(() => {
+    const kennung = appKennungZu(app);
+    if (!kennung || kennung === 'suite') return;
+    document.documentElement.dataset.app = kennung;
+    return () => {
+      if (document.documentElement.dataset.app === kennung) delete document.documentElement.dataset.app;
+    };
+  }, [app]);
   // im Tab: Name und ungespeicherte Änderungen an den Rahmen melden (Tab-Beschriftung, Rückfrage beim Schließen) – ohne
   // onSpeichern bietet der Rahmen kein „Speichern“ an, nur Verwerfen
   useEffect(() => anRahmenMelden(app, name, dirty, ungespeichert, !!onSpeichern), [app, name, dirty, ungespeichert, !!onSpeichern]);

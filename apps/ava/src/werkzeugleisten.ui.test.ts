@@ -114,7 +114,8 @@ describe('Werkzeugleisten nach design.md „Kopf- und Werkzeugleisten“', () =>
     await warte(() => host.querySelector('.toolbar.werkzeugleiste[aria-label="Angebote"]'));
     const l = leiste('Angebote');
     expect(knoepfe(l)).toEqual(['Preisspiegel', 'Preise erfassen', 'Bieter …', 'Preisspiegel drucken …', 'Mehr']);
-    expect(l.querySelector('button.primary')?.textContent?.trim()).toBe('Preisspiegel drucken …');
+    // die Ausgabe des Bildschirms ist der einzige Hauptknopf (Bernstein)
+    expect([...l.querySelectorAll('button.primary')].map((b) => b.textContent?.trim())).toEqual(['Preisspiegel drucken …']);
     expect(await menue(mehr(l))).toEqual(['Angebot aus GAEB (X84) …']);
   });
 
@@ -137,6 +138,8 @@ describe('Werkzeugleisten nach design.md „Kopf- und Werkzeugleisten“', () =>
     await warte(() => host.querySelector('.toolbar.werkzeugleiste[aria-label="Rechnungen"]'));
     const l = leiste('Rechnungen');
     expect(knoepfe(l)).toEqual(['Neue Rechnung prüfen …', 'Mehr']);
+    // Prüfen gibt nichts aus: Standardknopf, kein Bernstein-Hauptknopf in der Leiste
+    expect(l.querySelector('button.primary')).toBeNull();
     expect(await menue(mehr(l))).toEqual(['Kostenkontrolle öffnen']);
     // kein Programmname mehr in der Bedienung
     expect(host.textContent).not.toContain('in Excel');
@@ -162,11 +165,14 @@ describe('Werkzeugleisten nach design.md „Kopf- und Werkzeugleisten“', () =>
     await zeige(createElement(Maengel));
     const m = leiste('Mängel');
     expect(knoepfe(m)).toEqual(['Mangel', 'Mängelanzeige mailen …', 'Mehr']);
+    // Ausgabe des Bildschirms (PDF und Mailentwurf) ist der einzige Hauptknopf; „Mangel“ gibt nichts aus
+    expect([...m.querySelectorAll('button.primary')].map((x) => x.textContent?.trim())).toEqual(['Mängelanzeige mailen …']);
     expect(await menue(mehr(m))).toEqual(['PDF ansehen / drucken', 'PDF im Projekt ablegen']);
     act(() => root?.unmount());
     await zeige(createElement(Beteiligte));
     const b = leiste('Beteiligte');
     expect(knoepfe(b)).toEqual(['Beteiligter', 'Mehr']);
+    expect(b.querySelector('button.primary')).toBeNull();
     expect(await menue(mehr(b))).toEqual(['Aus Stammdaten und Gewerken übernehmen']);
   });
 

@@ -45,4 +45,49 @@ describe('BreitenLeiste', () => {
     expect((host.querySelector('.leiste') as HTMLElement).style.width).toBe('284px');
     expect(localStorage.getItem('test:rechts')).toBe('284');
   });
+
+  it('auf einer Fläche: Innenabstand und Spalt zählen bei der Höchstbreite mit (Ende = Platz bis zur Mindestbreite der Mitte)', () => {
+    const host = document.createElement('div');
+    host.style.cssText = 'display:flex; padding: 0 8px; column-gap: 8px';
+    Object.defineProperty(host, 'clientWidth', { value: 1000 });
+    document.body.appendChild(host);
+    act(() => {
+      root = createRoot(host);
+      root.render([
+        createElement(BreitenLeiste, { key: 'l', schluessel: 'test:flaeche', vorgabe: 300, max: 900, mitteMin: 400, children: 'Inhalt' }),
+        createElement('main', { key: 'm' }),
+        createElement('div', { key: 'aus', style: { display: 'none' } }),
+        createElement('div', { key: 'frei', style: { position: 'absolute' } }),
+      ]);
+    });
+    const griff = host.querySelector('.leiste-griff')!;
+    pfeil(griff, 'End');
+    // 1000 − 2 × 8 (Innenabstand) − 1 × 8 (Spalt; ausgeblendete und frei liegende Kinder zählen nicht) − 400 (Mitte) = 576
+    expect((host.querySelector('.leiste') as HTMLElement).style.width).toBe('576px');
+  });
+
+  it('feste Seitenspalte zählt zu den anderen Leisten, eine wachsende nicht', () => {
+    const messen = (wachsend: boolean) => {
+      const host = document.createElement('div');
+      host.style.cssText = 'display:flex';
+      Object.defineProperty(host, 'clientWidth', { value: 1000 });
+      document.body.appendChild(host);
+      act(() => {
+        root = createRoot(host);
+        root.render([
+          createElement(BreitenLeiste, { key: 'l', schluessel: `test:spalte-${wachsend}`, vorgabe: 300, max: 900, mitteMin: 300, children: 'Inhalt' }),
+          createElement('div', { key: 's', className: wachsend ? 'flaechen-spalte wachsend' : 'flaechen-spalte', style: { width: '200px' } }),
+        ]);
+      });
+      pfeil(host.querySelector('.leiste-griff')!, 'End');
+      const w = (host.querySelector('.leiste') as HTMLElement).style.width;
+      act(() => root?.unmount());
+      root = null;
+      host.remove();
+      return w;
+    };
+    // 1000 − 200 (feste Spalte) − 300 (Mitte) = 500; die wachsende Spalte ist die Mitte selbst: 1000 − 300 = 700
+    expect(messen(false)).toBe('500px');
+    expect(messen(true)).toBe('700px');
+  });
 });
