@@ -173,7 +173,7 @@ export function KatalogDialog({ onClose }: { onClose: () => void }) {
             }}
           />
           <div className="ko-katalog">
-            <table className="summary-table text">
+            <table className="summary-table text oben">
               <thead>
                 <tr>
                   <th>
