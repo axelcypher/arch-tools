@@ -489,7 +489,9 @@ Werkzeugleiste liegt mit auf der Fläche (gleicher Grund, keine Linie). Baustein
   darunter der Inhalt (`.karte-rumpf`), der **in der Karte** scrollt, wahlweise eine feste Fußzeile (`fuss`, Summen).
   Mit Titel ist die Karte ein benannter Bereich (`aria-labelledby` auf das `h2`); ohne sichtbaren Titel braucht sie
   `ariaLabel`. `buendig` lässt Tabellen und Listen bis an den Rand laufen; Fokusrahmen liegen dort innen. Breite
-  Tabellen scrollen mit dem Inhalt der Karte, sie laufen nie aus ihr heraus. Innenabstand waagerecht `--karte-pad`
+  Tabellen scrollen mit dem Inhalt der Karte, sie laufen nie aus ihr heraus. Der Rumpf ist positioniert: absolut
+  gesetzte Elemente darin bleiben in seinem Rollbereich. Klappmenüs, Vorschlagslisten und Hinweise, die über die Karte
+  hinausragen sollen, deshalb als Portal bzw. mit `position: fixed` ausführen. Innenabstand waagerecht `--karte-pad`
   (14px, aus der gewählten Vorschau), Kopfhöhe `--karte-kopf-h` (ein Knopf in `--ctl-h` mit `--s2` darüber und
   darunter), Fußzeile in `--ctl-h`.
 - `FlaechenSpalte` (`.flaechen-spalte`): mehrere Karten untereinander (z. B. „Geschoss“ über „Auswertung“), sie
