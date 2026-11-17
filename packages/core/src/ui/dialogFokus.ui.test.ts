@@ -73,4 +73,21 @@ describe('Fokus nach dem Schließen eines React-Modals mit autoFocus', () => {
     await schliessen(host);
     expect(document.activeElement?.id).toBe('knopf-b');
   });
+
+  for (const autoFocus of [true, false]) {
+    it(`stand der Fokus vor dem Öffnen auf der Seite, bleibt er nach dem Schließen dort (autoFocus ${autoFocus})`, async () => {
+      dialogVerhaltenEinrichten();
+      document.body.innerHTML = '<input id="alt"><div id="host"></div>';
+      const alt = document.getElementById('alt') as HTMLInputElement;
+      alt.focus();
+      alt.blur();
+      expect(document.activeElement).toBe(document.body);
+      root = createRoot(document.getElementById('host')!);
+      act(() => root!.render(h(Modal, { titel: 'Rückfrage', onClose: () => {}, children: h('button', { className: 'primary', autoFocus }, 'OK') })));
+      await warten();
+      act(() => root!.render(null));
+      await warten();
+      expect(document.activeElement).toBe(document.body);
+    });
+  }
 });

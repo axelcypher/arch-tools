@@ -54,7 +54,8 @@ const zieleIn = (bereich: Element) => [...(bereich.matches(START) ? [bereich] : 
 const vorher = new WeakMap<Element, Vorher | null>();
 /** die zuletzt fokussierten Elemente (neueste zuerst) – React setzt `autoFocus` schon beim Einhängen, bevor der
  *  MutationObserver den Dialog meldet; dann liegt der Fokus bereits im Dialog, und die Stelle davor steht nur hier */
-const fokusVerlauf: (HTMLElement | SVGElement)[] = [];
+/** `null`: der Fokus ging auf die Seite (z. B. Klick auf eine Fläche) – dann gibt es keine Stelle davor */
+const fokusVerlauf: (HTMLElement | SVGElement | null)[] = [];
 
 const DIALOG = '.modal, .report-backdrop > .report';
 const istDialog = (el: HTMLElement) => el.classList.contains('modal') || (el.classList.contains('report') && !!el.parentElement?.classList.contains('report-backdrop'));
@@ -77,8 +78,10 @@ function geoeffnet(d: HTMLElement) {
   }
   const a = document.activeElement;
   const geeignet = (el: Element | null): el is HTMLElement | SVGElement => (el instanceof HTMLElement || el instanceof SVGElement) && el !== document.body && !d.contains(el) && el.isConnected;
-  // das aktuell fokussierte Element, sonst (Dialog hat schon selbst fokussiert, z. B. autoFocus) das letzte davor
-  const aktiv = geeignet(a) ? a : (fokusVerlauf.find(geeignet) ?? null);
+  // das aktuell fokussierte Element; hat der Dialog schon selbst fokussiert (autoFocus), der letzte Stand davor aus dem
+  // Verlauf – stand der Fokus da auf der Seite (Marke null), gibt es keine Stelle; steht er auf der Seite, auch nicht
+  const davor = a && d.contains(a) ? fokusVerlauf.find((x) => x === null || !d.contains(x)) : undefined;
+  const aktiv = geeignet(a) ? a : davor && geeignet(davor) ? davor : null;
   const ahnen: Element[] = [];
   for (let p = aktiv?.parentElement; p && p !== document.body && ahnen.length < MAX_EBENEN; p = p.parentElement) {
     ahnen.push(p);
@@ -148,6 +151,16 @@ export function dialogVerhaltenEinrichten(): void {
       const i = fokusVerlauf.indexOf(t);
       if (i >= 0) fokusVerlauf.splice(i, 1);
       fokusVerlauf.unshift(t);
+      fokusVerlauf.length = Math.min(fokusVerlauf.length, 5);
+    },
+    true,
+  );
+  // verlässt der Fokus ein Element, ohne dass ein anderes ihn bekommt, steht er auf der Seite: Marke im Verlauf
+  document.addEventListener(
+    'focusout',
+    (e) => {
+      if ((e as FocusEvent).relatedTarget) return;
+      if (fokusVerlauf[0] !== null) fokusVerlauf.unshift(null);
       fokusVerlauf.length = Math.min(fokusVerlauf.length, 5);
     },
     true,
