@@ -547,7 +547,8 @@ function SeitePfade({ fokus }: { fokus?: string }) {
   const [app, setApp] = useState<AppKennung | ''>('');
   // Sprungziel: aus dem Aufruf bzw. nach „Alle Apps zeigen“ der Eintrag, von dem aus es kam
   const [ziel, setZiel] = useState<{ id: string } | null>(null);
-  const sprung = ziel?.id ?? fokus;
+  // das Ziel des Aufrufs gilt einmal (beim ersten Lesen der Werte), nicht bei jeder späteren Änderung
+  const aufrufErledigt = useRef<string | null>(null);
   const appsMitEintrag = useMemo(() => (Object.keys(APP_NAMEN) as AppKennung[]).filter((a) => PFAD_EINSTELLUNGEN.some((e) => e.apps.includes(a))), []);
   const entwurf = pfadStore((s) => s.entwurf);
   const gesperrt = useEinstellungenGesperrt();
@@ -556,9 +557,7 @@ function SeitePfade({ fokus }: { fokus?: string }) {
   // mit App-Filter: die Einträge der App und, zur Orientierung, ihre Eltern
   // übernommene Ausnahmen nur, solange sie gesetzt sind (bzw. gerade bearbeitet werden)
   const gesetzt = (e: PfadEinstellung) => !e.nurWennGesetzt || e.id in entwurf || alsText(werte?.[e.id] ?? e.vorgabe).trim() !== '';
-  const zeigen = new Set(
-    PFAD_EINSTELLUNGEN.filter((e) => fuerApp(e) && gesetzt(e)).flatMap((e) => [e, ...(los(e) ? [] : vorfahren(e))]),
-  );
+  const zeigen = new Set(PFAD_EINSTELLUNGEN.filter((e) => fuerApp(e) && gesetzt(e)).flatMap((e) => [e, ...(los(e) ? [] : vorfahren(e))]));
   /** ein Eintrag mit den Einträgen, die von ihm abhängen, eingerückt darunter */
   const knoten = (e: PfadEinstellung, w: PfadWerte): ReactNode => {
     const kinder = kinderVon(e.id).filter((k) => !k.abweichungVon && zeigen.has(k) && !los(k));
@@ -566,14 +565,18 @@ function SeitePfade({ fokus }: { fokus?: string }) {
     const nurNamen = kinder.every((k) => k.art === 'name' || (k.art === 'liste' && k.zeilen !== 'pfad'));
     return (
       <Fragment key={e.id}>
-        {fuerApp(e) ? <PfadFeld e={e} werte={w} losVon={los(e) ? elternVon(e) : undefined} app={app} fokus={fokus} /> : <PfadBezugsZeile
+        {fuerApp(e) ? (
+          <PfadFeld e={e} werte={w} losVon={los(e) ? elternVon(e) : undefined} app={app} fokus={fokus} />
+        ) : (
+          <PfadBezugsZeile
             e={e}
             werte={w}
             onAlle={() => {
               setApp('');
               setZiel({ id: e.id });
             }}
-          />}
+          />
+        )}
         {kinder.length > 0 && (
           <div className="einst-baum" role="group" aria-label={`${nurOrdner ? 'Unterordner von' : nurNamen ? 'Dateien in' : 'Abhängig von'} „${e.bezeichnung}“`}>
             {kinder.map((k) => knoten(k, w))}
@@ -599,22 +602,27 @@ function SeitePfade({ fokus }: { fokus?: string }) {
     };
   }, []);
 
-  useEffect(() => {
-    if (!sprung || !werte) return;
+  // Sprung zu einem Eintrag: Feld fokussieren; ein eingeklappter Bereich (Abweichungen je App) öffnet sich erst im
+  // nächsten Bild – dann noch einmal. Liefert das Aufräumen.
+  const springen = (id: string) => {
     const hin = () => {
-      const el = document.getElementById(`einst-${sprung}`);
+      const el = document.getElementById(`einst-${id}`);
       el?.scrollIntoView?.({ block: 'start' });
       el?.querySelector<HTMLInputElement>('input, textarea')?.focus();
     };
     hin();
-    // ein eingeklappter Bereich (Abweichungen je App) öffnet sich erst im nächsten Bild – dann noch einmal
-    const bild = requestAnimationFrame(() => {
-      if (!document.activeElement?.closest(`#einst-${CSS.escape(sprung)}`)) hin();
-      // ein Sprung nach „Alle Apps zeigen“ gilt einmal – danach wieder der Aufruf
-      setZiel(null);
-    });
+    const bild = requestAnimationFrame(() => document.activeElement?.closest(`#einst-${CSS.escape(id)}`) || hin());
     return () => cancelAnimationFrame(bild);
-  }, [sprung, ziel, werte]);
+  };
+
+  useEffect(() => {
+    if (!fokus || !werte || aufrufErledigt.current === fokus) return;
+    aufrufErledigt.current = fokus;
+    return springen(fokus);
+  }, [fokus, werte]);
+
+  // nach „Alle Apps zeigen“: zum Eintrag, von dem es kam (jedes Mal ein neues Ziel)
+  useEffect(() => (ziel ? springen(ziel.id) : undefined), [ziel]);
 
   const entscheiden = (a: Abweichung, lokal: boolean) => {
     const s = pfadStore.getState();
@@ -630,8 +638,8 @@ function SeitePfade({ fokus }: { fokus?: string }) {
     <>
       <h3>Pfade und Benennung</h3>
       <p className="einst-einleitung">
-        Alle Pfadvorgaben und Benennungsschemata der Apps an einer Stelle. Die erste Zeile jedes Eintrags sagt, wovon er abhängt; was von einem anderen Eintrag abhängt, steht eingerückt darunter. Platzhalter wie{' '}
-        <code>{'{PROJEKT_KUERZEL}'}</code> setzen die Angaben des Projekts ein; die Vorschau zeigt den vollständigen Pfad mit Beispielwerten.
+        Alle Pfadvorgaben und Benennungsschemata der Apps an einer Stelle. Die erste Zeile jedes Eintrags sagt, wovon er abhängt; was von einem anderen Eintrag abhängt, steht eingerückt darunter.
+        Platzhalter wie <code>{'{PROJEKT_KUERZEL}'}</code> setzen die Angaben des Projekts ein; die Vorschau zeigt den vollständigen Pfad mit Beispielwerten.
       </p>
       {abweichungen.map((a) => {
         const e = pfadEinstellung(a.id);
@@ -828,6 +836,7 @@ function PfadFeld({ e, werte, losVon, app = '', fokus }: { e: PfadEinstellung; w
         <TextEinstellung
           e={e}
           werte={werte}
+          ersetzt={!!ersetztDurch}
           feldId={feldId}
           hinweisId={hinweisId}
           text={typeof entwurf[e.id] === 'string' ? (entwurf[e.id] as string) : alsText(gilt)}
@@ -900,12 +909,15 @@ function TextEinstellung({
   feldId,
   hinweisId,
   werte,
+  ersetzt = false,
   text,
   gesperrt,
   onText,
 }: {
   e: PfadEinstellung;
   werte: PfadWerte;
+  /** ersetzt durch einen anderen Eintrag (`giltNichtWenn`): keine Vorschau – die Bezugszeile sagt es */
+  ersetzt?: boolean;
   feldId: string;
   hinweisId: string;
   text: string;
@@ -924,7 +936,6 @@ function TextEinstellung({
   // gemeinsame Angabe, die je App Verschiedenes ergibt: statt der Vorschau „Gilt je App“ darunter (`WirksamJeApp`, dieselbe Quelle `werte`)
   const jeApp = jeAppTexte(e, werte, entwurfJetzt);
   // sonst die vollständige Vorschau mit den Eltern-Einträgen (Baum)
-  const ersetzt = !!e.giltNichtWenn && alsText(wirksam(pfadEinstellung(e.giltNichtWenn), werte, entwurfJetzt)).trim() !== '';
   const vorschau = e.art === 'ordner' || ordnerListe || jeApp || ersetzt ? '' : vorschauVoll(e, liste ? (alsListe(text)[0] ?? '') : text, werte, entwurfJetzt);
   // Abweichung, die den gemeinsamen Wert ersetzt: leer gilt der gemeinsame – er steht als Platzhalter im Feld
   const platzhalter = e.abweichungVon?.art === 'ersetzt' ? alsText(wirksam(pfadEinstellung(e.abweichungVon.id), werte, entwurfJetzt)) : undefined;

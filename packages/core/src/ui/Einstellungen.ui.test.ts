@@ -229,6 +229,23 @@ describe('Einstellungen', () => {
     expect(feldVon('plaene.permio.zielpfad').value).toBe('Ausgang/{Antrag}');
   });
 
+  it('Sprungziel des Aufrufs gilt einmal: spätere Änderungen auf der Seite holen den Fokus nicht dorthin zurück', async () => {
+    const e = await zeigen();
+    await act(async () => e.einstellungenOeffnen('pfade', 'ablage.fotoordner'));
+    await warten();
+    expect(document.activeElement).toBe(feldVon('ablage.fotoordner'));
+    // anderswo weiterarbeiten, dann den Filter wechseln (neu zeichnen)
+    feldVon('ablage.fabrio.gewerke').focus();
+    await tippen(feldVon('ablage.fabrio.gewerke'), 'Gewerke neu');
+    const filter = dialog()!.querySelector<HTMLSelectElement>('.einst-filter select')!;
+    await act(async () => {
+      filter.value = 'ava';
+      filter.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    await warten();
+    expect(document.activeElement).not.toBe(feldVon('ablage.fotoordner'));
+  });
+
   it('Zielordner außerhalb nicht gesetzt: keine Karte dafür, der Zielordner im Antragsordner gilt mit Vorschau', async () => {
     const e = await zeigen();
     await act(async () => e.einstellungenOeffnen('pfade'));
