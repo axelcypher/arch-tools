@@ -129,8 +129,8 @@ export function Angebote() {
   return (
     <>
       <AnsichtKarte titel="Angebote" className={`ava-angebote ava-angebote-${modus}`} leiste={werkzeuge}>
-        <div className="ava-bieter-liste ava-tabelle-rahmen">
-          <table className="summary-table text felder">
+        <div className="ava-bieter-liste">
+          <table className={`summary-table text felder fest${modus === 'erfassen' ? ' waehlbar' : ''}`}>
             <thead>
               <tr>
                 <th>Rang</th>
@@ -156,6 +156,7 @@ export function Angebote() {
                   <tr
                     key={x.id}
                     className={`${modus === 'erfassen' && x.id === bieterId ? 'selected ' : ''}${lv.auftrag?.bieterId === x.id ? 'ava-auftrag ' : ''}${x.ausgeschlossen ? 'ava-ausgeschlossen' : ''}`}
+                    aria-selected={modus === 'erfassen' ? x.id === bieterId : undefined}
                     onClick={modus === 'erfassen' ? () => setBieterId(x.id) : undefined}
                   >
                     <td>{x.id === 0 ? '—' : (r?.rang ?? '')}</td>
@@ -238,17 +239,17 @@ export function Angebote() {
               </label>
               <span className="muted small-text">Enter springt zur nächsten Position.</span>
             </div>
-            <table className="summary-table text ava-erfassen-tabelle">
+            <table className="summary-table text felder fest ava-erfassen-tabelle">
               <thead>
                 <tr>
-                  <th>OZ</th>
+                  <th title="Ordnungszahl">OZ</th>
                   <th>Kurztext</th>
                   <th className="num">Menge</th>
                   <th>Einheit</th>
                   <th className="num">EP Kostenansatz</th>
                   <th className="num">EP {b?.name}</th>
-                  <th className="num">GB</th>
-                  <th className="num">Abw.</th>
+                  <th className="num" title="Gesamtbetrag">GB</th>
+                  <th className="num" title="Abweichung vom Kostenansatz">Abw.</th>
                 </tr>
               </thead>
               <tbody>
@@ -273,14 +274,15 @@ export function Angebote() {
                       <td className="num">{zahlDE(el.menge)}</td>
                       <td>{el.einheit}</td>
                       <td className="num">{zahlDE(ka, 2)}</td>
-                      <td className="num ava-zelle-eingabe">
+                      <td className="num">
                         <ZahlEingabe
+                          className="zelle"
                           wert={ep}
                           stellen={2}
                           label={`EP ${z.oz}`}
                           onChange={(n) => preisSetzen(el, bieterId, n)}
                           onEnter={() => {
-                            const naechste = document.querySelectorAll<HTMLInputElement>('.ava-erfassen-tabelle .ava-zelle-eingabe input');
+                            const naechste = document.querySelectorAll<HTMLInputElement>('.ava-erfassen-tabelle input.zelle');
                             const liste = Array.from(naechste);
                             const hier = liste.findIndex((x) => x === document.activeElement);
                             liste[hier + 1]?.focus();
@@ -337,15 +339,15 @@ export function Preisspiegel({ nurAuffaellige = false, druck = false }: { nurAuf
           <span className="muted">Bedarfs- und Wahlpositionen grau – zählen nicht zur Summe</span>
         </div>
       )}
-      <table className="summary-table text ava-spiegel-tabelle">
+      <table className={`summary-table text${druck ? '' : ' fest'} ava-spiegel-tabelle`}>
         <thead>
           <tr>
-            <th rowSpan={2}>OZ</th>
+            <th rowSpan={2} title="Ordnungszahl">OZ</th>
             <th rowSpan={2}>Kurztext</th>
             <th rowSpan={2} className="num">
               Menge
             </th>
-            <th rowSpan={2}>Einh.</th>
+            <th rowSpan={2} title="Einheit">Einh.</th>
             {spalten.map((id) => (
               <th key={id} colSpan={2} className={`ava-spiegel-bieter${id === 0 ? ' ava-spiegel-ka' : ''}`}>
                 {lv.bieter.find((b) => b.id === id)?.name}
@@ -357,16 +359,16 @@ export function Preisspiegel({ nurAuffaellige = false, druck = false }: { nurAuf
                 ) : null}
               </th>
             ))}
-            <th rowSpan={2} className="num">
+            <th rowSpan={2} className="num" title="Mittlerer Einheitspreis der Bieter">
               Mittel EP
             </th>
           </tr>
           <tr>
             {spalten.map((id) => [
-              <th key={`${id}e`} className="num">
+              <th key={`${id}e`} className="num" title="Einheitspreis">
                 EP
               </th>,
-              <th key={`${id}g`} className="num">
+              <th key={`${id}g`} className="num" title="Gesamtbetrag">
                 GB
               </th>,
             ])}

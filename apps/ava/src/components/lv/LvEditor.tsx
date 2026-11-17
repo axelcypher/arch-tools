@@ -328,17 +328,17 @@ export function LvEditor() {
         }
       >
         <div className="ava-lv-tabelle" ref={tabelle} tabIndex={0} onKeyDown={tasten} aria-label="Leistungsverzeichnis – ↑/↓ wählen, Enter bearbeiten, Einfg neue Position, Entf entfernen">
-          <table className="summary-table text ava-lv-zeilen">
+          <table className="summary-table text felder fest waehlbar ava-lv-zeilen">
             <thead>
               <tr>
-                <th className="ava-oz">OZ</th>
+                <th className="ava-oz" title="Ordnungszahl">OZ</th>
                 <th>Kurztext</th>
                 <th className="num">Menge</th>
                 <th>Einheit</th>
                 <th className="num" title="Einheitspreis des Kostenansatzes">EP Kostenansatz</th>
-                <th className="num">GB</th>
-                <th>Art</th>
-                <th>KG</th>
+                <th className="num" title="Gesamtbetrag">GB</th>
+                <th title="Art der Position">Art</th>
+                <th title="Kostengruppe nach DIN 276">KG</th>
               </tr>
             </thead>
             <tbody>
@@ -350,18 +350,19 @@ export function LvEditor() {
                 if (el.art === 'position') {
                   const gb = s.positionen.get(el.id)?.get(0);
                   return (
-                    <tr key={el.id} data-id={el.id} className={`${kl}${zaehltInSumme(el.positionsart) ? '' : ' ava-z-ohne-summe'}`} onClick={() => useAva.getState().setAuswahl(el.id)}>
+                    <tr key={el.id} data-id={el.id} className={`${kl}${zaehltInSumme(el.positionsart) ? '' : ' ava-z-ohne-summe'}`} aria-selected={aktiv} onClick={() => useAva.getState().setAuswahl(el.id)}>
                       <td className="ava-oz">{z.oz}</td>
                       <td style={einzug} className="ava-kurztext" title={el.kurztext}>
                         {el.kurztext}
                         {el.nachtrag ? <span className="ava-chip">NT {el.nachtrag}</span> : null}
                       </td>
-                      <td className="num ava-zelle-eingabe">
-                        <ZahlEingabe label={`Menge ${z.oz}`} wert={el.menge} onChange={(n) => aendern((l) => ({ ...l, elemente: aendereElement(l.elemente, el.id, (p) => ({ ...(p as Position), menge: n })) }))} />
+                      <td className="num">
+                        <ZahlEingabe className="zelle" label={`Menge ${z.oz}`} wert={el.menge} onChange={(n) => aendern((l) => ({ ...l, elemente: aendereElement(l.elemente, el.id, (p) => ({ ...(p as Position), menge: n })) }))} />
                       </td>
                       <td>{el.einheit}</td>
-                      <td className="num ava-zelle-eingabe">
+                      <td className="num">
                         <ZahlEingabe
+                          className="zelle"
                           label={`EP Kostenansatz ${z.oz}`}
                           wert={el.preise['0']?.ep ?? null}
                           stellen={2}
@@ -377,7 +378,7 @@ export function LvEditor() {
                 if (el.art === 'abschnitt') {
                   const summe = s.abschnitte.get(el.id)?.get(0);
                   return (
-                    <tr key={el.id} data-id={el.id} className={kl} onClick={() => useAva.getState().setAuswahl(el.id)}>
+                    <tr key={el.id} data-id={el.id} className={kl} aria-selected={aktiv} onClick={() => useAva.getState().setAuswahl(el.id)}>
                       <td className="ava-oz">{z.oz}</td>
                       <td style={einzug} colSpan={4}>
                         {el.kurztext}
@@ -388,7 +389,7 @@ export function LvEditor() {
                   );
                 }
                 return (
-                  <tr key={el.id} data-id={el.id} className={kl} onClick={() => useAva.getState().setAuswahl(el.id)}>
+                  <tr key={el.id} data-id={el.id} className={kl} aria-selected={aktiv} onClick={() => useAva.getState().setAuswahl(el.id)}>
                     <td className="ava-oz">{el.vorbemerkung ? 'VB' : 'H'}</td>
                     <td style={einzug} colSpan={7} className="ava-hinweis-text">
                       {el.kurztext}

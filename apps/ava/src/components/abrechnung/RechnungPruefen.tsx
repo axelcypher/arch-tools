@@ -249,7 +249,7 @@ export function RechnungPruefen({ gewerk: vorgabeGewerk, onClose, onErfasst }: {
           </select>
         </Feld>
         <Feld label="Firma *">
-          <TextEingabe wert={firma} onChange={mit(setFirma)} className={versucht && !firma.trim() ? 'ava-fehler' : ''} />
+          <TextEingabe wert={firma} onChange={mit(setFirma)} className={versucht && !firma.trim() ? 'feld-fehler' : ''} />
         </Feld>
         <Feld label="Rechnungsart">
           <select value={art} onChange={(x) => artWechseln(x.target.value)}>
@@ -286,7 +286,7 @@ export function RechnungPruefen({ gewerk: vorgabeGewerk, onClose, onErfasst }: {
               <ZahlEingabe wert={pruefung.forderungNetto} stellen={2} onChange={(n) => p({ forderungNetto: n, ...(pruefung.freigabeNetto === (pruefung.forderungNetto ?? 0) ? { freigabeNetto: n ?? 0 } : {}) })} />
             </Feld>
             <Feld label="Netto-Freigabesumme (geprüft) *">
-              <ZahlEingabe wert={pruefung.freigabeNetto} stellen={2} leerErlaubt={false} onChange={(n) => p({ freigabeNetto: n ?? 0 })} className={versucht && !pruefung.freigabeNetto ? 'ava-fehler' : ''} />
+              <ZahlEingabe wert={pruefung.freigabeNetto} stellen={2} leerErlaubt={false} onChange={(n) => p({ freigabeNetto: n ?? 0 })} className={versucht && !pruefung.freigabeNetto ? 'feld-fehler' : ''} />
             </Feld>
             <Feld label="Nachlass %">
               <ZahlEingabe wert={pruefung.nachlassProzent} onChange={(n) => p({ nachlassProzent: n ?? 0 })} />
@@ -385,7 +385,7 @@ export function RechnungPruefen({ gewerk: vorgabeGewerk, onClose, onErfasst }: {
       ) : (
         <div className="ava-formular">
           <Feld label="Zahlungsfreigabe brutto *">
-            <ZahlEingabe wert={betrag} stellen={2} onChange={mit(setBetrag)} className={versucht && !betrag ? 'ava-fehler' : ''} />
+            <ZahlEingabe wert={betrag} stellen={2} onChange={mit(setBetrag)} className={versucht && !betrag ? 'feld-fehler' : ''} />
           </Feld>
         </div>
       )}
