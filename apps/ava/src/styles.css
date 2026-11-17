@@ -28,8 +28,12 @@
   gap: var(--s1);
 }
 
-.ava-nav-kopf .sd-knopf {
-  display: inline-block;
+/* Stammdaten mit Planungsphase (core): eigene Zeile in Kartenbreite, damit die Phase nicht über den Rand läuft;
+   „Neu einlesen“ steht dann darunter */
+.ava-nav-kopf .sd-knopf:has(.sd-phase-kopf) {
+  flex: 1 1 100%;
+  min-width: 0;
+  margin-bottom: 0;
 }
 
 .ava-nav-kopf > button,
@@ -93,20 +97,6 @@
   gap: var(--s2);
   flex-wrap: wrap;
   font-size: var(--fs-s);
-}
-
-/* Kennzahlen (gemeinsame .metric-row): im schmalen Fenster umbrechen */
-.ava-kennzahlen {
-  flex-wrap: wrap;
-}
-
-.ava-kennzahlen .metric {
-  min-width: 150px;
-}
-
-.ava-kennzahlen .metric small {
-  font-size: var(--fs-xs);
-  color: var(--muted);
 }
 
 .ava-hinweise {
@@ -741,11 +731,6 @@ input.ava-fehler {
   gap: var(--s2);
 }
 
-/* Vorschau: Grund wie die Fläche, nur die PDF-Seiten sind Papier */
-.ava-eingang-vorschau .karte-rumpf {
-  background: var(--bg);
-}
-
 /* Ablage des gewählten Scans: abgesetzt wie ein Abschnitt */
 .ava-ablage {
   display: flex;
@@ -757,12 +742,12 @@ input.ava-fehler {
 }
 
 .ava-pdf {
-  padding: 12px;
+  padding: var(--s3);
 }
 
 .ava-pdf-seite {
   display: block;
-  margin: 0 auto 12px;
+  margin: 0 auto var(--s3);
   box-shadow: 0 1px 6px rgba(0, 0, 0, 0.25);
   background: #fff;
   max-width: 100%;
@@ -1227,22 +1212,14 @@ input.ava-fehler {
   flex-shrink: 0;
 }
 
-.ava-tab-kurz {
-  display: none;
-}
-
-/* kurze Namen der Tabs, wenn die Karte schmal ist (nach der Breite der Kartenleiste, nicht des Fensters – rechts kann
-   die Karte „Eigenschaften“ stehen) */
-.ava-gewerk-karte .karte-leiste {
-  container-type: inline-size;
-}
-
-@container (max-width: 860px) {
-  .ava-tab-lang {
+/* kurze Registernamen (core: .segment .lang/.kurz) schon unter 860px Breite der Kartenleiste – die langen Namen der
+   fünf Tabs brauchen mehr Platz als die Vorgabe von 640px */
+@container karte-leiste (max-width: 860px) {
+  .ava-tabs .segment .lang {
     display: none;
   }
 
-  .ava-tab-kurz {
+  .ava-tabs .segment .kurz {
     display: inline;
   }
 }
