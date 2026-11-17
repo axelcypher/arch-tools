@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
+import { usePfadWert } from '@core/einstellungen/pfade';
 import { PfadeVerweis } from '@core/ui/Einstellungen';
 import { Flaeche, Karte } from '@core/ui/Karte';
 import { NumberField, TextField } from '@core/ui/fields';
@@ -7,7 +8,7 @@ import type { DxfStil, KatasterPlan, VorlageInfo } from '../kataster/kataster';
 import { ausschnitt, karteVon, planDateiname, planFehler, VORGABE_BESCHRIFTUNG } from '../kataster/kataster';
 import { bestaetigen } from '@core/ui/Rueckfrage';
 import { Symbol } from '@core/ui/Symbol';
-import { useKataster } from '../kataster/katasterStore';
+import { ANTRAGSORDNER_EINSTELLUNG, antragsordner, useKataster } from '../kataster/katasterStore';
 import { tauriQgis } from '../kataster/qgis';
 import { hatDateisystem } from '../dateisystem';
 
@@ -209,6 +210,8 @@ export function KatasterEinstellungen() {
       await vorgabenWiederherstellen();
   };
   const beispiel = planDateiname(e.dateiname, { name: 'Katasterplan A4', art: 'pdf' }, { kuerzel: 'BS9', art: 'BAUA', datum: new Date() });
+  // Antragsordner aus „Pfade und Benennung“ (gemeinsam mit PERMIO)
+  const antragsWert = usePfadWert(ANTRAGSORDNER_EINSTELLUNG);
 
   return (
     <Flaeche>
@@ -309,13 +312,18 @@ export function KatasterEinstellungen() {
             </label>
             <label className={`ex-ziel${e.ziel === 'antrag' ? ' aktiv' : ''}`}>
               <input type="radio" checked={e.ziel === 'antrag'} onChange={() => void aendern({ ziel: 'antrag' })} />
-              <span>Ordner des aktiven Antrags (z. B. TÖB\BAUA 2) – der Antrag aus der Projektdatei, gepflegt in PERMIO (Formulare)</span>
+              <span>
+                Ordner des aktiven Antrags im Antragsordner (z. B. <code>{antragsordner(String(antragsWert))}/BAUA 2</code>) – der Antrag aus der Projektdatei, gepflegt in PERMIO (Formulare)
+              </span>
             </label>
           </div>
           <p className="small-text">
             Dateiname: <code>{e.dateiname}</code>
           </p>
-          <PfadeVerweis fokus="ablage.kataster.zielpfad" erklaerung="Ordner und Dateiname der Katasterpläne stehen in den Einstellungen aller Apps, Seite „Pfade und Benennung“." />
+          <PfadeVerweis
+            fokus="ablage.kataster.zielpfad"
+            erklaerung="Ordner und Dateiname der Katasterpläne sowie der Antragsordner stehen in den Einstellungen aller Apps, Seite „Pfade und Benennung“."
+          />
         </Abschnitt>
 
         <Abschnitt
