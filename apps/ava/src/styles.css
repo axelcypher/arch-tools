@@ -307,6 +307,9 @@
   display: flex;
   align-items: center;
   min-width: 0;
+  /* Rückfall für sehr schmale Karten: die Tabliste rollt statt über den Rand zu laufen */
+  overflow-x: auto;
+  scrollbar-width: thin;
   gap: var(--s1) var(--s3);
 }
 
@@ -1246,7 +1249,8 @@ input.ava-fehler {
 
 /* sehr schmal: „Ordner öffnen“ nur als Symbol (Name bleibt über aria-label) */
 @container (max-width: 560px) {
-  .ava-ordner-text {
+  .ava-ordner-text,
+  .ava-gewerk-angaben {
     display: none;
   }
 }
@@ -1257,7 +1261,12 @@ input.ava-fehler {
   text-align: left;
 }
 
-@media (max-width: 1250px) {
+/* LV-Auswahl im Kopf: in der schmalen Gewerk-Karte kürzer (nach Kartenbreite wie die Tabs) */
+.ava-gewerk-karte {
+  container-type: inline-size;
+}
+
+@container (max-width: 860px) {
   .ava-lv-wahl select {
     max-width: 200px;
   }
