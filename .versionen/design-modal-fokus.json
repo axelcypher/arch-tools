@@ -1,0 +1,34 @@
+{
+  "flaechenrechner": {
+    "stufe": "patch",
+    "notiz": "Nach dem Schließen eines Dialogs kehrt der Fokus an die Stelle davor zurück, auch auf die Zeichenfläche und wenn der auslösende Knopf neu gezeichnet wurde."
+  },
+  "ava": {
+    "stufe": "patch",
+    "notiz": "Nach dem Schließen eines Dialogs kehrt der Fokus an die Stelle davor zurück, auch auf die Zeichenfläche und wenn der auslösende Knopf neu gezeichnet wurde."
+  },
+  "grz": {
+    "stufe": "patch",
+    "notiz": "Nach dem Schließen eines Dialogs kehrt der Fokus an die Stelle davor zurück, auch auf die Zeichenfläche und wenn der auslösende Knopf neu gezeichnet wurde."
+  },
+  "kosten": {
+    "stufe": "patch",
+    "notiz": "Nach dem Schließen eines Dialogs kehrt der Fokus an die Stelle davor zurück, auch auf die Zeichenfläche und wenn der auslösende Knopf neu gezeichnet wurde."
+  },
+  "ordner": {
+    "stufe": "patch",
+    "notiz": "Nach dem Schließen eines Dialogs kehrt der Fokus an die Stelle davor zurück, auch auf die Zeichenfläche und wenn der auslösende Knopf neu gezeichnet wurde."
+  },
+  "entzerrung": {
+    "stufe": "patch",
+    "notiz": "Nach dem Schließen eines Dialogs kehrt der Fokus an die Stelle davor zurück, auch auf die Zeichenfläche und wenn der auslösende Knopf neu gezeichnet wurde."
+  },
+  "formulare": {
+    "stufe": "patch",
+    "notiz": "Nach dem Schließen eines Dialogs kehrt der Fokus an die Stelle davor zurück, auch auf die Zeichenfläche und wenn der auslösende Knopf neu gezeichnet wurde."
+  },
+  "baurecht": {
+    "stufe": "patch",
+    "notiz": "Nach dem Schließen eines Dialogs kehrt der Fokus an die Stelle davor zurück, auch auf die Zeichenfläche und wenn der auslösende Knopf neu gezeichnet wurde."
+  }
+}

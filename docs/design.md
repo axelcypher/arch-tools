@@ -207,8 +207,16 @@ und `ZEICHENFLAECHE_GRUND` in `planFarbe.ts` müssen zu `--canvas-filter` und `-
 - **Breite:** Standard 380px, `breit` 620px (Formulare), `tabelle` bis 1200px (Vorschauen, Zuordnungen).
 - **Erstfokus** (automatisch, `ui/dialoge.ts`): `autoFocus` bzw. `data-startfokus` (der Dialog bestimmt selbst, z. B.
   ein Häkchen), sonst das erste Textfeld, sonst der Hauptknopf (`.primary`), sonst das gewählte Optionsfeld – nie eine
-  Aufklappzeile (`summary`), nie „Abbrechen“: Enter darf nichts verwerfen. Schließt ein Dialog über einem anderen,
-  geht der Fokus an die Stelle im äußeren zurück.
+  Aufklappzeile (`summary`), nie „Abbrechen“: Enter darf nichts verwerfen.
+- **Fokus beim Schließen** (automatisch, `ui/dialoge.ts`): Ob über Esc, einen Knopf oder weil die App den Dialog
+  aushängt – der Fokus geht an das vorher fokussierte Element zurück, z. B. den Knopf, der den Dialog geöffnet hat, oder
+  die Zeichenfläche bei Öffnen per Tastenkürzel. Schließt ein Dialog über einem anderen, geht er an die Stelle im
+  äußeren. Hat die App diese Stelle inzwischen neu gerendert, wird nur im selben Bereich (bis zu drei Ebenen, höchstens
+  bis zur nächsten Leiste, Karte, zum nächsten Abschnitt oder zum äußeren Dialog) nach dem Gegenstück gesucht – gleiche
+  id, Beschriftung, `title` oder Text, bei mehreren gleich beschrifteten das an der alten Stelle; ohne Gegenstück
+  dasselbe Element an derselben Stelle oder das erste sichtbare, aber nur, wenn die Suche an einem solchen Bereich
+  endet; findet sich dort nichts, bleibt der Fokus unverändert. Ausgehängte, versteckte oder `inert` Elemente zählen
+  nicht.
 - **Knöpfe** in `.dialog-buttons` als letztes Kind des Dialogs (oder seines `<form>`, das dann selbst letztes Kind
   ist): rechtsbündig, Hauptknopf rechts außen, „Abbrechen“ links davon. In langen Dialogen bleiben sie unten stehen
   (sticky).

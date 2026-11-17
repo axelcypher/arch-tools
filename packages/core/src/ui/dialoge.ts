@@ -4,8 +4,10 @@
  *  - role="dialog" und aria-modal="true", falls nicht gesetzt; ohne Namen benennt die erste Überschrift den Dialog
  *  - Erstfokus: `autofocus`, sonst das erste Textfeld (nur Dialoge, nicht die Druckvorschau), sonst der Hauptknopf
  *    (`.primary`), sonst das gewählte Optionsfeld, sonst das erste fokussierbare Element – nie „Abbrechen“
- *  - Fokus beim Öffnen in den Dialog (sofern er nicht schon darin liegt), beim Schließen zurück an die
- *    Stelle davor (z. B. der Knopf, der ihn geöffnet hat)
+ *  - Fokus beim Öffnen in den Dialog (sofern er nicht schon darin liegt), beim Schließen oder Aushängen zurück an die
+ *    Stelle davor (z. B. der Knopf, der ihn geöffnet hat, oder die Zeichenfläche bei Öffnen per Taste); wurde sie
+ *    inzwischen ersetzt, an ihr Gegenstück im nahen Bereich (höchstens drei Ebenen, bis zur nächsten Leiste, Karte …),
+ *    sonst bleibt der Fokus unverändert
  *  - Tab und Umschalt+Tab bleiben im obersten Dialog
  *  - Esc schließt den obersten Dialog, der sich dafür angemeldet hat (`escAnmelden`, Hook `useEscSchliessen`);
  *    ein Eingabefeld, das Esc selbst nutzt (Eingabe verwerfen), hält das Ereignis an und schließt nichts
@@ -20,7 +22,43 @@ const KEIN_TEXT = ['checkbox', 'radio', 'range', 'file', 'color', 'hidden', 'sub
 const TEXTFELD = `input${KEIN_TEXT.map((t) => `:not([type='${t}'])`).join('')}:not([disabled]):not([readonly]), textarea:not([disabled]):not([readonly])`;
 
 let eingerichtet = false;
-const vorher = new WeakMap<Element, HTMLElement | null>();
+/** Stelle vor dem Öffnen: das fokussierte Element (auch eine SVG-Zeichenfläche), woran man sein Gegenstück erkennt, und
+ *  die nahen Vorfahren bis zum nächsten Bereich (Zeile, Leiste, Karte) – wird das Element ersetzt, während der Dialog
+ *  offen ist (die App rendert es neu), geht der Fokus an sein Gegenstück in diesem Bereich */
+interface Vorher {
+  el: HTMLElement | SVGElement;
+  kennung: string[];
+  /** die Kette endet an einem Bereich (Leiste, Karte …) – sonst nur das Gegenstück, nie „das erste“ */
+  imBereich: boolean;
+  index: number;
+  ahnen: Element[];
+}
+/** Grenze der Ersatzsuche: weiter oben läge ein Ersatz an einer unerwarteten Stelle (z. B. erster Knopf der App) */
+const BEREICH =
+  '.karte, .karte-fuss, .zeichen-fuss, .karte-kopf, .karte-leiste, .toolbar, .leiste, .modal, .report, [role="dialog"], [role="toolbar"], header, footer, main, aside, section, nav, form';
+const MAX_EBENEN = 3;
+/** woran man das Gegenstück eines neu gerenderten Elements erkennt: id, Beschriftung, title, Text */
+const kennungVon = (el: Element) => {
+  // Text nur bei kurzen Beschriftungen (nicht der ganze Inhalt einer Zeichenfläche)
+  const text = el instanceof SVGElement ? '' : (el.textContent?.trim() ?? '');
+  return [el.id, el.getAttribute('aria-label'), el.getAttribute('title'), text.length <= 80 ? text : ''].map((k) => (k ? k : ''));
+};
+const gleich = (a: string[], b: string[]) => a.some((k, i) => k !== '' && k === b[i]);
+/** sichtbar und fokussierbar: keine versteckten Felder, nichts in inert/aria-hidden, nichts ausgeblendet */
+const fokussierbar = (el: Element): el is HTMLElement | SVGElement =>
+  (el instanceof HTMLElement || el instanceof SVGElement) &&
+  !(el instanceof HTMLInputElement && el.type === 'hidden') &&
+  !el.closest('[inert], [aria-hidden="true"], [hidden]') &&
+  (el instanceof SVGElement || el.offsetParent !== null || getComputedStyle(el).position === 'fixed');
+const zieleIn = (bereich: Element) => [...(bereich.matches(START) ? [bereich] : []), ...bereich.querySelectorAll(START)].filter(fokussierbar);
+const vorher = new WeakMap<Element, Vorher | null>();
+/** die zuletzt fokussierten Elemente (neueste zuerst) – React setzt `autoFocus` schon beim Einhängen, bevor der
+ *  MutationObserver den Dialog meldet; dann liegt der Fokus bereits im Dialog, und die Stelle davor steht nur hier.
+ *  `null`: der Fokus ging auf die Seite (z. B. Klick auf eine Fläche) – dann gibt es keine Stelle davor */
+const fokusVerlauf: (Vorher | null)[] = [];
+/** Element, das den Fokus zuletzt ohne Nachfolger abgegeben hat (focusout ohne relatedTarget) – noch eingehängt heißt:
+ *  der Fokus steht auf der Seite; ausgehängt heißt: die App hat es entfernt (kein Wechsel auf die Seite) */
+let abgegeben: Element | null = null;
 
 const DIALOG = '.modal, .report-backdrop > .report';
 const istDialog = (el: HTMLElement) => el.classList.contains('modal') || (el.classList.contains('report') && !!el.parentElement?.classList.contains('report-backdrop'));
@@ -29,6 +67,16 @@ let ueberschriftNr = 0;
 function obersterDialog(): HTMLElement | null {
   const alle = document.querySelectorAll<HTMLElement>(DIALOG);
   return alle.length ? alle[alle.length - 1] : null;
+}
+
+/** die Stelle eines fokussierten Elements: Kennung, Vorfahren bis zum Bereich, Position darin */
+function merken(el: HTMLElement | SVGElement): Vorher {
+  const ahnen: Element[] = [];
+  for (let p = el.parentElement; p && p !== document.body && ahnen.length < MAX_EBENEN; p = p.parentElement) {
+    ahnen.push(p);
+    if (p.matches(BEREICH)) break;
+  }
+  return { el, kennung: kennungVon(el), index: ahnen[0] ? zieleIn(ahnen[0]).indexOf(el) : -1, ahnen, imBereich: !!ahnen.at(-1)?.matches(BEREICH) };
 }
 
 function geoeffnet(d: HTMLElement) {
@@ -41,8 +89,14 @@ function geoeffnet(d: HTMLElement) {
       d.setAttribute('aria-labelledby', h.id);
     }
   }
-  const aktiv = document.activeElement instanceof HTMLElement && document.activeElement !== document.body ? document.activeElement : null;
-  vorher.set(d, aktiv && !d.contains(aktiv) ? aktiv : null);
+  const a = document.activeElement;
+  // das aktuell fokussierte Element (frisch gemerkt); hat der Dialog schon selbst fokussiert (autoFocus), der letzte
+  // Stand davor aus dem Verlauf – auch wenn die App den Auslöser im selben Zug ersetzt hat (Kennung und Vorfahren
+  // stammen aus dem Moment des Fokussierens); stand der Fokus da auf der Seite (Marke null), gibt es keine Stelle
+  let stelle: Vorher | null = null;
+  if ((a instanceof HTMLElement || a instanceof SVGElement) && a !== document.body && !d.contains(a)) stelle = merken(a);
+  else if (a && d.contains(a) && !abgegeben?.isConnected) stelle = fokusVerlauf.find((x) => x === null || !d.contains(x.el)) ?? null;
+  vorher.set(d, stelle);
   // nach dem Rendern: Dialoge, die selbst fokussieren (z. B. ein Suchfeld), haben Vorrang
   requestAnimationFrame(() => {
     if (!d.isConnected || d.contains(document.activeElement)) return;
@@ -60,10 +114,34 @@ function geoeffnet(d: HTMLElement) {
 
 function geschlossen(d: Element) {
   const v = vorher.get(d);
+  if (!v) return;
   // zurück an die Stelle davor – auch in einen äußeren Dialog, der offen bleibt (z. B. Rückfrage über der
   // Druckvorschau), nur nicht in einen Hintergrund, über dem noch ein anderer Dialog liegt
   const oben = obersterDialog();
-  if (v?.isConnected && (!oben || oben.contains(v))) v.focus();
+  const erlaubt = (el: Element) => !oben || oben.contains(el);
+  // direkter Weg: das gemerkte Element gibt es noch – zurück dorthin (wie bisher, auch wenn die App in onClose selbst
+  // fokussiert hat; „nichts überschreiben“ gilt nur für den Ersatzweg unten)
+  if (v.el.isConnected) {
+    if (erlaubt(v.el)) v.el.focus();
+    return;
+  }
+  // ersetzt: nur, wenn der Fokus sonst auf der Seite läge (z. B. hat ein äußerer Dialog, der mit ausgehängt wurde, ihn
+  // schon zurückgegeben), und nur im nahen Bereich – dort das Gegenstück (gleiche id, Beschriftung oder Text), sonst
+  // das Element an derselben Stelle, sonst das erste
+  if (document.activeElement && document.activeElement !== document.body) return;
+  // die Kette endet an der Grenze des Bereichs (auch an einem äußeren Dialog) – darüber hinaus wird nie gesucht
+  const ahne = v.ahnen.find((x) => x.isConnected);
+  if (!ahne) return;
+  const ziele = zieleIn(ahne).filter(erlaubt);
+  const k = (z: Element) => kennungVon(z);
+  // eine gleiche id gewinnt; bei gleicher Beschriftung oder gleichem Text (mehrere „Löschen“ in einer Liste) der
+  // Kandidat, der der alten Position am nächsten liegt
+  const nachId = v.kennung[0] ? ziele.find((z) => k(z)[0] === v.kennung[0]) : undefined;
+  const passend = ziele.map((z, i) => ({ z, i })).filter(({ z }) => gleich(k(z), v.kennung));
+  const naechster = passend.sort((a, b) => Math.abs(a.i - v.index) - Math.abs(b.i - v.index))[0]?.z;
+  const ander = ahne === v.ahnen[0] && v.index >= 0 ? ziele[v.index] : undefined;
+  const ziel = nachId ?? naechster ?? (v.imBereich ? (ander ?? ziele[0]) : undefined);
+  ziel?.focus();
 }
 
 export function dialogVerhaltenEinrichten(): void {
@@ -74,6 +152,40 @@ export function dialogVerhaltenEinrichten(): void {
     if (istDialog(n)) fn(n);
     n.querySelectorAll<HTMLElement>(DIALOG).forEach(fn);
   };
+  document.addEventListener(
+    'focusin',
+    (e) => {
+      const t = e.target;
+      if (!(t instanceof HTMLElement || t instanceof SVGElement)) return;
+      // auch Elemente in Dialogen: ein Knopf im äußeren Dialog ist die Stelle vor einer Rückfrage darüber. Die Marke
+      // „Seite“ gilt nur bis zum nächsten Fokus – außer dieser kommt per autoFocus aus einem Dialog, der gerade erst
+      // eingehängt wird (den kennt `vorher` noch nicht); sonst ginge ein Blur vor dem Öffnen verloren
+      const dialog = t.closest(DIALOG);
+      if (!dialog || vorher.has(dialog)) abgegeben = null;
+      const i = fokusVerlauf.findIndex((x) => x?.el === t);
+      if (i >= 0) fokusVerlauf.splice(i, 1);
+      fokusVerlauf.unshift(merken(t));
+      fokusVerlauf.length = Math.min(fokusVerlauf.length, 5);
+    },
+    true,
+  );
+  // verlässt der Fokus ein Element, ohne dass ein anderes ihn bekommt, steht er auf der Seite: Marke im Verlauf
+  document.addEventListener(
+    'focusout',
+    (e) => {
+      const t = e.target;
+      if ((e as FocusEvent).relatedTarget || !(t instanceof Element)) return;
+      // gemerkt statt gleich als „Seite“ gewertet: manche Browser feuern focusout ohne Ziel auch, wenn die App das
+      // Element entfernt (teils noch vor dem Aushängen) – ob es noch da ist, zeigt sich erst beim Öffnen des Dialogs
+      abgegeben = t;
+      queueMicrotask(() => {
+        if (abgegeben !== t || !t.isConnected) return;
+        if (fokusVerlauf[0] !== null) fokusVerlauf.unshift(null);
+        fokusVerlauf.length = Math.min(fokusVerlauf.length, 5);
+      });
+    },
+    true,
+  );
   new MutationObserver((liste) => {
     for (const m of liste) {
       m.addedNodes.forEach((n) => pruefen(n, geoeffnet));
