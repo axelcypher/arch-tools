@@ -71,6 +71,27 @@ Projektkachel – verschwände jede Fläche (etwa 1 : 1); dort trägt die Marke 
 4,9 : 1, hell wie dunkel). Beim Überfahren jeder Tabellenzeile erscheint der Rahmen, auch wo die Zeile nicht getönt wird
 – gewollt, damit es keine eigene Klasse für überfahrbare Zeilen braucht.
 
+Lange Datentabellen (LV, Rechnungen, Mängel) und ihre Bausteine:
+
+- `.fest`: Der Spaltenkopf bleibt beim Rollen des Kartenrumpfs stehen (sticky am `thead`, so bleibt auch ein
+  mehrzeiliger Kopf zusammen), mit dem Grund der Karte und einer Linie darunter; die Köpfe brechen nicht um – lange
+  Köpfe kürzen, den vollen Namen in `title`. Was den Fokus bekommt, rollt nicht unter den Kopf (`scroll-padding-top`,
+  Vorgabe eine Kopfzeile; ein mehrzeiliger Kopf setzt `--tabelle-kopf-h`). Der Kopf klebt am nächsten Rollbehälter:
+  Breite Tabellen stehen deshalb ohne eigene rollende Hülle direkt im bündigen Rumpf, der in beide Richtungen rollt.
+  Inhalt über einer breiten Tabelle (Kennzahlen, Hinweise) rollt dann waagerecht mit; ist das störend, bekommt die
+  Tabelle eine eigene Karte.
+- `.waehlbar` (nur, wenn alle Zeilen wählbar sind): Überfahren und Fokus in der Zeile tönen sie leicht in der
+  Akzentfarbe, dazu eine Linie links in abgeschwächter Akzentfarbe (die Tönung allein wäre von der Gruppenzeile kaum zu
+  unterscheiden), leiser als die Akzentlinie der gewählten Zeile; Gruppen-, Summen- und gewählte Zeilen bleiben, wie sie
+  sind. Die Zeilen sind per Tastatur wählbar (Knopf in der Zeile oder `tabindex` mit Enter/Leertaste, Zustand über
+  `aria-selected`).
+- `.felder`: Kästchen und Optionsfelder lösen den Ausgleich nicht aus und behalten ihre Breite; kleine und Symbolknöpfe
+  (× zum Entfernen) stehen mittig zur Feldhöhe.
+- `input.zelle` (Feld in der Zelle, z. B. Menge und Einheitspreis im LV): randlos und so hoch wie eine Textzeile,
+  fluchtet also ohne Ausgleich; Rahmen beim Überfahren, beim Fokus Rand in `--accent` und Saum wie bei allen Feldern;
+  ein Fehler (`feld-fehler`, `aria-invalid`) zeigt den roten Rand auch ohne Fokus. Der Spaltenkopf sagt, dass die Werte
+  bearbeitbar sind (z. B. „Menge“ über Eingaben) – ohne Maus sieht man es dem Feld sonst nicht an.
+
 Kennzahlen als Kacheln (`.metric-row` mit `.metric`): oben die Bezeichnung (`span`, `--fs-xs`, `--muted`), darunter der
 Wert (`strong`, `--fs-xl`, Tabellenziffern), wahlweise eine Zeile Nebentext (`small`, wie die Bezeichnung). Die Kacheln
 stehen auf `--bg` mit `--radius-s`; bricht eine Bezeichnung um, bleiben die Werte einer Zeile auf einer Linie (Wert und
@@ -509,6 +530,13 @@ Zurücksetzen, Sonderfunktionen. Feste Namen, in allen Apps gleich:
   neben „Datei“ der App im Tab (Arkly hat kein eigenes „Datei“; Strg+, gilt einmal, siehe oben). Verweise aus den
   Einstellungen auf einen Dialog der App (Werkzeug, Datenpflege) zählen nicht als doppelter Einstieg (siehe
   „Einstellungen“).
+  Bewusste Ausnahme ist auch „Datei → Exportieren“: Jede Ausgabe in eine Datei (Excel, PDF, CSV) steht dort, auch wenn
+  sie zugleich der Hauptknopf oder der Knopf „Exportieren“ in der Leiste ist – so findet man jede Ausgabe in jeder App
+  an derselben Stelle. Der Knopf „Exportieren“ gibt ohne den Exportdialog mit der eingestellten Vorlage aus, der
+  Menüpunkt öffnet den Dialog; ist der Hauptknopf selbst eine Ausgabe mit Dialog („Als PDF exportieren …“), führen beide
+  zum selben Dialog, und sein Tastenkürzel steht auch am Menüpunkt (`tasten`). Anders „Drucken …“: Drucken ist keine
+  Ausgabe in eine Datei und steht nur dann in „Datei“, wenn es nicht der Hauptknopf ist; ein Hauptknopf „Drucken / PDF
+  …“ (Druckvorschau, daraus auch PDF) bringt deshalb keinen Punkt unter „Exportieren“ mit.
 - **Aufbau:** links „Datei“ und „Speichern“, in der Mitte die Werkzeuge bzw. Hauptschritte, rechts der Hauptknopf,
   zuletzt „Mehr“ (FABRIO: „Datei“ im Fuß der Navigation, siehe oben).
 - **Zeilen:** Seltene Aktionen einer Tabellen- oder Listenzeile (FABRIO-Rechnung: Deckblatt, Mail an den Zahler)
@@ -633,12 +661,14 @@ Werkzeugleiste liegt mit auf der Fläche (gleicher Grund, keine Linie). Baustein
     zuoberst in der Spalte – direkt oder im ersten Element (etwa einer Hülle mit begrenzter Breite) – und deckt den
     Innenabstand der Spalte mit dem Grund der Fläche ab, sonst liefe der Inhalt durch einen Streifen darüber (in einer
     Hülle über deren Breite – daneben liegt ohnehin kein Inhalt, solange die Karten in derselben Hülle stehen). Ein Kopf
-    mit Suche ist ein benannter Suchbereich (`role="search"` mit `aria-label`). Was den Fokus bekommt, rollt nicht
-    unter ihn (`scroll-padding-top`): `--rollend-kopf-h` ist die sichtbare Höhe des Kopfs plus Platz für den
-    Fokusrahmen, Vorgabe eine Zeile Bedienelemente (`--ctl-h` + `--s2` + 2 × `--s1`). Ein höherer Kopf setzt den Wert
-    selbst; bricht er in schmalen Fenstern um, setzt die App ihn je Umbruchstufe (Container- oder Media-Abfrage) oder
-    lässt den Kopf nicht umbrechen. Ebenen in den Karten (Aufklapplisten, Hinweise) bleiben unter dem Kopf; was über
-    die Karte hinausragen soll, kommt wie überall als Portal (siehe „Inhalt“).
+    mit Suche ist ein benannter Suchbereich (`role="search"` mit `aria-label`). Was den Fokus bekommt, rollt nicht unter
+    ihn (`scroll-padding-top`): `--rollend-kopf-h` ist die sichtbare Höhe des Kopfs plus Platz für den Fokusrahmen,
+    Vorgabe eine Zeile Bedienelemente (`--ctl-h` + `--s2` + 2 × `--s1`). Ein höherer Kopf setzt den Wert selbst; bricht
+    er in schmalen Fenstern um, setzt die App ihn je Umbruchstufe (Container- oder Media-Abfrage) oder lässt den Kopf
+    nicht umbrechen. Hängt der Umbruch vom Inhalt ab (Filter, Trefferzahl, Breite der Seitenkarten), misst
+    `useRollendKopf(ref)` den Kopf und setzt den Wert selbst (Höhe des Kopfs + `--s1`; ein fester Kopf je Spalte).
+    Ebenen in den Karten (Aufklapplisten, Hinweise) bleiben unter dem Kopf; was über die Karte hinausragen soll, kommt
+    wie überall als Portal (siehe „Inhalt“).
   - **Ränder:** Oben und seitlich reicht die Spalte um `--s1` in den Spalt, damit die Karten mit den Nachbarkarten
     fluchten; unten endet sie bündig mit ihnen. Die Rollleiste hat ihren Platz von Anfang an (`scrollbar-gutter`), die
     Breite springt also nicht, und sie liegt im Spalt zur Nachbarkarte rechts. Dieser Spalt ist deshalb um die Breite
