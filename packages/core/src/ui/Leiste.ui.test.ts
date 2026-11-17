@@ -1,6 +1,9 @@
 // @vitest-environment happy-dom
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
 import { BreitenLeiste } from './Leiste';
 
@@ -89,6 +92,26 @@ describe('BreitenLeiste', () => {
     });
     pfeil(host.querySelector('.leiste-griff')!, 'End');
     expect((host.querySelector('.leiste') as HTMLElement).style.width).toBe('700px');
+  });
+
+  it('eigenes min ist zugleich die Untergrenze beim Nachgeben (--leiste-eigen-min an der Leiste), ohne min die Vorgabe', () => {
+    const host = document.createElement('div');
+    host.className = 'flaeche';
+    document.body.appendChild(host);
+    act(() => {
+      root = createRoot(host);
+      root.render([
+        createElement(BreitenLeiste, { key: 'a', schluessel: 'test:min-a', vorgabe: 380, min: 320, children: 'A' }),
+        createElement(BreitenLeiste, { key: 'b', schluessel: 'test:min-b', vorgabe: 300, children: 'B' }),
+      ]);
+    });
+    const [mitMin, ohneMin] = host.querySelectorAll<HTMLElement>('.leiste');
+    expect(mitMin.style.getPropertyValue('--leiste-eigen-min')).toBe('320px');
+    expect(ohneMin.style.getPropertyValue('--leiste-eigen-min')).toBe('');
+    // base.css nimmt das eigene min vor der Vorgabe
+    const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'base.css'), 'utf8');
+    expect(css).toMatch(/\.flaeche > \.flaechen-spalte:not\(\.wachsend\) \{[^}]*min-width: var\(--leiste-eigen-min, var\(--leiste-min\)\);/);
+    expect(css).toMatch(/\.flaeche \{[^}]*--leiste-eigen-min: initial;/);
   });
 
   it('feste Seitenspalte zählt zu den anderen Leisten, eine wachsende nicht', () => {

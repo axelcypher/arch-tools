@@ -14,8 +14,25 @@ import { jpegDichte, pngDichte } from '../export/png';
 
 const log = logger('export');
 
-export function ExportDialog({ foto, ebene, e, aufloesung, bereich, onClose }: { foto: Foto; ebene: Ebene; e: Entzerrung; aufloesung: number; bereich: Bereich; onClose: () => void }) {
-  const [format, setFormat] = useState<Format>('png');
+export function ExportDialog({
+  foto,
+  ebene,
+  e,
+  aufloesung,
+  bereich,
+  onClose,
+  anfang = 'png',
+}: {
+  foto: Foto;
+  ebene: Ebene;
+  e: Entzerrung;
+  aufloesung: number;
+  bereich: Bereich;
+  onClose: () => void;
+  /** vorgewähltes Format (aus „Datei → Exportieren“) */
+  anfang?: Format;
+}) {
+  const [format, setFormat] = useState<Format>(anfang);
   const [mitMessungen, setMitMessungen] = useState(ebene.messungen.length > 0);
   const [papier, setPapier] = useState<Papier>('A3');
   // Bereich auf ganze Pixel erweitert – derselbe, mit dem exportiert wird

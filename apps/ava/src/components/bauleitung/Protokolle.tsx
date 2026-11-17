@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import { bestaetigen, meldung } from '@core/ui/Rueckfrage';
 import { Symbol } from '@core/ui/Symbol';
+import { Karte } from '@core/ui/Karte';
+import { BreitenLeiste } from '@core/ui/Leiste';
 import type { Protokoll, Top } from '../../avaDaten';
 import { ABNAHME_HINWEIS, istAbnahme, protokollPdf } from '../../bauleitung/berichte';
 import { vorlageFuellen } from '../../abrechnung/mail';
@@ -46,45 +48,50 @@ export function Protokolle() {
   };
 
   return (
-    <div className="ava-zweispaltig">
-      <div className="ava-liste-spalte">
-        <div className="ava-eingang-kopf">
-          <h2>Protokolle</h2>
-          <button title="Protokoll hinzufügen" className="primary small" onClick={() => void neu()}>
-            <Symbol name="plus" /> Protokoll
-          </button>
-        </div>
-        <ul className="list" role="listbox" aria-label="Protokolle">
-          {liste.map((x) => (
-            <li
-              key={x.id}
-              role="option"
-              aria-selected={x.id === p?.id}
-              tabIndex={x.id === (p?.id ?? liste[0]?.id) ? 0 : -1}
-              className={x.id === p?.id ? 'active' : ''}
-              onClick={() => setId(x.id)}
-              onKeyDown={(e) =>
-                listenTaste(
-                  e,
-                  liste,
-                  liste.findIndex((y) => y.id === p?.id),
-                  (y) => setId(y.id),
-                )
-              }
-            >
-              <div>
-                <strong>Nr. {x.nr}</strong> {x.art}
-              </div>
-              <span className="muted small-text">
-                {datumKurz(x.datum)} · {x.tops.filter((t) => !t.erledigt).length} offen
-              </span>
-            </li>
-          ))}
-          {!liste.length && <li className="muted">Noch keine Protokolle.</li>}
-        </ul>
-      </div>
-      <div className="ava-editor-spalte">{p ? <ProtokollEditor key={p.id} p={p} /> : <p className="muted">Mit „Protokoll“ beginnen.</p>}</div>
-    </div>
+    <>
+      <BreitenLeiste schluessel="ava:breite:protokolle" vorgabe={260} titel="Breite der Liste">
+        <Karte
+          als="aside"
+          titel="Protokolle"
+          buendig
+          aktionen={
+            <button title="Protokoll hinzufügen" className="primary small" onClick={() => void neu()}>
+              <Symbol name="plus" /> Protokoll
+            </button>
+          }
+        >
+          <ul className="list ava-liste-zweizeilig" role="listbox" aria-label="Protokolle">
+            {liste.map((x) => (
+              <li
+                key={x.id}
+                role="option"
+                aria-selected={x.id === p?.id}
+                tabIndex={x.id === (p?.id ?? liste[0]?.id) ? 0 : -1}
+                className={x.id === p?.id ? 'active' : ''}
+                onClick={() => setId(x.id)}
+                onKeyDown={(e) =>
+                  listenTaste(
+                    e,
+                    liste,
+                    liste.findIndex((y) => y.id === p?.id),
+                    (y) => setId(y.id),
+                  )
+                }
+              >
+                <div>
+                  <strong>Nr. {x.nr}</strong> {x.art}
+                </div>
+                <span className="muted small-text">
+                  {datumKurz(x.datum)} · {x.tops.filter((t) => !t.erledigt).length} offen
+                </span>
+              </li>
+            ))}
+            {!liste.length && <li className="muted">Noch keine Protokolle.</li>}
+          </ul>
+        </Karte>
+      </BreitenLeiste>
+      <Karte als="main" titel={p ? `Protokoll ${datumKurz(p.datum)}` : 'Protokoll'}>{p ? <ProtokollEditor key={p.id} p={p} /> : <p className="muted">Mit „Protokoll“ beginnen.</p>}</Karte>
+    </>
   );
 }
 

@@ -606,8 +606,10 @@ QGIS 3.28; geprüft mit 3.34 LTR). Früher war das Teil von PERMIO; dessen Einst
 - **„Katasterpläne“ (Menü „Einrichtung“):** die Vorlage (`.qgz`/`.qgs`, gilt für alle im Büro: gemeinsamer
   Konfigurationsordner, Bereich `kataster`), der Pfad zu `qgis_process` (je Rechner; „Suchen“ findet die
   üblichen Installationen, unter Windows `…\QGIS 3.x\bin\qgis_process-qgis-ltr.bat`), die Ablage (fester Ordner im
-  Projektordner, Vorgabe `Kataster`, oder der Ordner des aktiven Antrags `TÖB/<Antrag>` – der Antrag aus der
-  Projektdatei, `meta.antrag`, gepflegt in PERMIO) mit Dateinamen
+  Projektordner, Vorgabe `Kataster`, oder der Ordner des aktiven Antrags `<Antragsordner>/<Antrag>` – der Antragsordner
+  aus „Pfade und Benennung“, gemeinsam mit PERMIO, Vorgabe `TÖB` (eine Abweichung je Projekt, die nur PERMIO kennt,
+  gilt hier nicht); der Antrag aus der Projektdatei, `meta.antrag`,
+  gepflegt in PERMIO) mit Dateinamen
   (`{PROJEKT_KUERZEL} {Art} {DATUM} {Name}` – passt zum Namensformat des Antragsordners; alle globalen Platzhalter,
   lokal `{Art}` und `{Name}` des Plans, im festen Ordner `{Antrag}`; alte Namen wie `{Code}` gelten weiter) und die
   Pläne. Vorgegeben sind
