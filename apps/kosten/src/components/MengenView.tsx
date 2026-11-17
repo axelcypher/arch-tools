@@ -8,6 +8,7 @@ import { useBauteile } from '../bauteile';
 import type { MengeNachweis, Teil } from '../nachweis';
 import { mengenNachweis } from '../nachweis';
 import { setKosten, useKosten } from '../store';
+import { Flaeche, FlaechenSpalte, Karte } from '@core/ui/Karte';
 import { MengenPlan } from './MengenPlan';
 
 const Mengen3D = lazy(() => import('./Mengen3D'));
@@ -44,7 +45,7 @@ export function MengenView({ bezug, onBezug }: { bezug: MengenBezug; onBezug: (b
   const [ansicht, setAnsicht] = useState<'plan' | 'raum'>(menge.ansicht);
   const [aktiv, setAktiv] = useState<string | null>(null);
   const listeRef = useRef<HTMLTableSectionElement>(null);
-  const wegRef = useRef<HTMLDivElement>(null);
+  const wegRef = useRef<HTMLTableElement>(null);
   const alleRef = useRef<HTMLInputElement>(null);
 
   // jede Menge öffnet in ihrer üblichen Darstellung
@@ -61,9 +62,9 @@ export function MengenView({ bezug, onBezug }: { bezug: MengenBezug; onBezug: (b
   const hatAbzug = menge.teile.some((t) => t.wert < 0 && t.zaehlt);
   const hatAus = menge.teile.some((t) => !t.zaehlt);
 
-  // Teil unter dem Mauszeiger (im Bild) im Rechenweg einblenden – nur innerhalb der Tabelle rollen, nie die Seite
+  // Teil unter dem Mauszeiger (im Bild) im Rechenweg einblenden – nur in der Karte rollen, nie die Seite
   useEffect(() => {
-    const wrap = wegRef.current;
+    const wrap = wegRef.current?.closest<HTMLElement>('.karte-rumpf');
     if (!aktiv || !wrap || wrap.scrollHeight <= wrap.clientHeight) return;
     const zeile = [...wrap.querySelectorAll<HTMLElement>('tr[data-teil]')].find((z) => z.dataset.teil === aktiv);
     if (!zeile) return;
@@ -113,52 +114,79 @@ export function MengenView({ bezug, onBezug }: { bezug: MengenBezug; onBezug: (b
     if (t) waehle([t], () => !t.zaehlt);
   };
 
-  return (
-    <div className="mv-view">
-      <section className="ko-col mv-liste">
-        <h2>Mengen</h2>
-        <table className="ko-table">
-          <tbody ref={listeRef}>
-            {MENGEN_BEZUEGE.map((b) => {
-              const mi = MENGEN_INFO[b];
-              const geaendert = auswahlGeaendert(b);
-              const teile = nachweis.mengen[b].teile;
-              return (
-                <tr key={b} className={`${b === bezug ? 'selected' : ''}${m[b].festgelegt ? ' festgelegt' : ''}`} title={`${mi.label} – ${mi.ermittlung}`} onClick={() => onBezug(b)}>
-                  <td className="mv-menge-titel">
-                    <button type="button" className="mv-menge-knopf" data-bezug={b} aria-current={b === bezug} tabIndex={b === bezug ? 0 : -1} aria-label={`${mi.kurz} – ${mi.label}`} onKeyDown={(e) => listeTaste(e, b)}>
-                      <strong>{mi.kurz}</strong> <span className="mv-menge-name muted small-text">{mi.label}</span>
-                    </button>
-                  </td>
-                  <td className="num mv-menge-wert">
-                    {wert(b, m[b].wert)} <span className="muted small-text">{mi.einheit}</span>
-                  </td>
-                  {(m[b].festgelegt || geaendert) && (
-                    <td className="mv-menge-zusatz muted small-text">
-                      {m[b].festgelegt && <span className="mv-kennzeichen">festgelegt</span>}
-                      {geaendert && (
-                        <span className="mv-kennzeichen" title={`${teile.filter((t) => t.zaehlt).length} von ${teile.length} Teilen zählen`}>
-                          Auswahl geändert
-                        </span>
-                      )}
-                      {m[b].festgelegt && <span className="num mv-abgeleitet">abgeleitet {wert(b, m[b].abgeleitet)}</span>}
-                    </td>
-                  )}
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-        <p className="muted small-text">
-          Mit diesen Werten rechnen die Kosten. Ist ein Wert von Hand festgelegt, steht der abgeleitete klein darunter. Eine Menge wählen, um ihre Teile zu sehen.
-        </p>
-      </section>
+  // Legende der Darstellung: in der Fußzeile der Karte, nicht über dem Bild
+  const legende =
+    hatGeometrie || menge.lageplan ? (
+      <p className="mv-legende">
+        {/* Muster wie im Bild: in den Grundrissen gehören sie zur Zeichenfläche (im dunklen Schema mit ihr umgekehrt) */}
+        {menge.teile.some((t) => t.zaehlt && t.wert >= 0) && (
+          <span>
+            <i className={`zaehlt${ansicht === 'plan' ? ' canvas' : ''}`} /> zählt zur Menge
+          </span>
+        )}
+        {hatAbzug && (
+          <span>
+            <i className={`abzug${ansicht === 'plan' ? ' canvas' : ''}`} /> Abzug
+          </span>
+        )}
+        {hatAus && (
+          <span>
+            <i className={`aus${ansicht === 'plan' ? ' canvas' : ''}`} /> abgewählt, zählt nicht
+          </span>
+        )}
+        <span>
+          <i className={`bezug${ansicht === 'plan' ? ' canvas' : ''}`} /> übrige Geometrie des Projekts
+        </span>
+      </p>
+    ) : undefined;
 
-      <section className="ko-col mv-bild">
-        <div className="mv-kopf">
-          <h2>
-            {info.kurz} – {info.label}: {wert(bezug, menge.summe)} {info.einheit}
-          </h2>
+  return (
+    <Flaeche className="mv-view">
+      <FlaechenSpalte breite={300}>
+        <Karte className="mv-liste" titel="Mengen">
+          <table className="summary-table text">
+            <tbody ref={listeRef}>
+              {MENGEN_BEZUEGE.map((b) => {
+                const mi = MENGEN_INFO[b];
+                const geaendert = auswahlGeaendert(b);
+                const teile = nachweis.mengen[b].teile;
+                return (
+                  <tr key={b} className={`${b === bezug ? 'selected' : ''}${m[b].festgelegt ? ' festgelegt' : ''}`} title={`${mi.label} – ${mi.ermittlung}`} onClick={() => onBezug(b)}>
+                    <td className="mv-menge-titel">
+                      <button type="button" className="mv-menge-knopf" data-bezug={b} aria-current={b === bezug} tabIndex={b === bezug ? 0 : -1} aria-label={`${mi.kurz} – ${mi.label}`} onKeyDown={(e) => listeTaste(e, b)}>
+                        <strong>{mi.kurz}</strong> <span className="mv-menge-name muted small-text">{mi.label}</span>
+                      </button>
+                    </td>
+                    <td className="num mv-menge-wert">
+                      {wert(b, m[b].wert)} <span className="muted small-text">{mi.einheit}</span>
+                    </td>
+                    {(m[b].festgelegt || geaendert) && (
+                      <td className="mv-menge-zusatz muted small-text">
+                        {m[b].festgelegt && <span className="mv-kennzeichen">festgelegt</span>}
+                        {geaendert && (
+                          <span className="mv-kennzeichen" title={`${teile.filter((t) => t.zaehlt).length} von ${teile.length} Teilen zählen`}>
+                            Auswahl geändert
+                          </span>
+                        )}
+                        {m[b].festgelegt && <span className="num mv-abgeleitet">abgeleitet {wert(b, m[b].abgeleitet)}</span>}
+                      </td>
+                    )}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          <p className="muted small-text">
+            Mit diesen Werten rechnen die Kosten. Ist ein Wert von Hand festgelegt, steht der abgeleitete klein darunter. Eine Menge wählen, um ihre Teile zu sehen.
+          </p>
+        </Karte>
+      </FlaechenSpalte>
+
+      <Karte
+        als="main"
+        className="mv-bild"
+        titel={`${info.kurz} – ${info.label}: ${wert(bezug, menge.summe)} ${info.einheit}`}
+        aktionen={
           <div className="segment" role="group" aria-label="Darstellung">
             <button aria-pressed={ansicht === 'plan'} onClick={() => setAnsicht('plan')}>
               Grundrisse
@@ -167,7 +195,9 @@ export function MengenView({ bezug, onBezug }: { bezug: MengenBezug; onBezug: (b
               3D-Modell
             </button>
           </div>
-        </div>
+        }
+        fuss={legende}
+      >
         {menge.hinweis && <p className={schwach(bezug, menge, project) ? 'warning' : 'muted small-text'}>{menge.hinweis}</p>}
         {bezug === 'iwf' && ifcStatus === 'laedt' && <p className="muted small-text">Die Wände des IFC-Modells werden gelesen …</p>}
         {bezug === 'iwf' && ifcStatus === 'fehler' && <p className="warning">Das IFC-Modell des Projekts konnte nicht gelesen werden – die Innenwandfläche ist nur grob aus den Räumen abgeleitet.</p>}
@@ -191,53 +221,29 @@ export function MengenView({ bezug, onBezug }: { bezug: MengenBezug; onBezug: (b
             <Mengen3D project={project} nachweis={nachweis} menge={menge} einheit={info.einheit} format={(v) => wert(bezug, v)} aktiv={aktiv} onAktiv={setAktiv} onUmschalten={umschalten} />
           </Suspense>
         )}
-        {(hatGeometrie || menge.lageplan) && (
-          <p className="mv-legende small-text">
-            {/* Muster wie im Bild: in den Grundrissen gehören sie zur Zeichenfläche (im dunklen Schema mit ihr umgekehrt) */}
-            {menge.teile.some((t) => t.zaehlt && t.wert >= 0) && (
-              <span>
-                <i className={`zaehlt${ansicht === 'plan' ? ' canvas' : ''}`} /> zählt zur Menge
-              </span>
-            )}
-            {hatAbzug && (
-              <span>
-                <i className={`abzug${ansicht === 'plan' ? ' canvas' : ''}`} /> Abzug
-              </span>
-            )}
-            {hatAus && (
-              <span>
-                <i className={`aus${ansicht === 'plan' ? ' canvas' : ''}`} /> abgewählt, zählt nicht
-              </span>
-            )}
-            <span>
-              <i className={`bezug${ansicht === 'plan' ? ' canvas' : ''}`} /> übrige Geometrie des Projekts
-            </span>
-          </p>
-        )}
-      </section>
+      </Karte>
 
-      <section className="ko-col mv-rechenweg">
-        <h2>Rechenweg</h2>
-        {festgelegt && <p className="muted small-text">Die Auswahl wirkt erst ohne Handwert – für die Kosten gilt der festgelegte Wert.</p>}
-        {menge.teile.length > 1 && (
-          <div className="mv-auswahl small-text">
-            <span className="muted">
-              {gezaehlt} von {menge.teile.length} Teilen zählen
-            </span>
-            <button className="small" onClick={() => waehle(menge.teile, () => true)} disabled={gezaehlt === menge.teile.length}>
-              alle
-            </button>
-            <button className="small" onClick={() => waehle(menge.teile, () => false)} disabled={gezaehlt === 0}>
-              keine
-            </button>
-            <button className="small" onClick={() => waehle(menge.teile, (t) => !t.standardAus)} disabled={!abweichend} title="Auswahl dieser Menge auf den Standard zurücksetzen">
-              Standard
-            </button>
-          </div>
-        )}
-        {menge.teile.length ? (
-          <div className="tbl-wrap" ref={wegRef}>
-            <table className="ko-table" onMouseLeave={() => setAktiv(null)}>
+      <FlaechenSpalte breite={380}>
+        <Karte className="mv-rechenweg" titel="Rechenweg">
+          {festgelegt && <p className="muted small-text">Die Auswahl wirkt erst ohne Handwert – für die Kosten gilt der festgelegte Wert.</p>}
+          {menge.teile.length > 1 && (
+            <div className="mv-auswahl small-text">
+              <span className="muted">
+                {gezaehlt} von {menge.teile.length} Teilen zählen
+              </span>
+              <button className="small" onClick={() => waehle(menge.teile, () => true)} disabled={gezaehlt === menge.teile.length}>
+                alle
+              </button>
+              <button className="small" onClick={() => waehle(menge.teile, () => false)} disabled={gezaehlt === 0}>
+                keine
+              </button>
+              <button className="small" onClick={() => waehle(menge.teile, (t) => !t.standardAus)} disabled={!abweichend} title="Auswahl dieser Menge auf den Standard zurücksetzen">
+                Standard
+              </button>
+            </div>
+          )}
+          {menge.teile.length ? (
+            <table ref={wegRef} className="summary-table text" onMouseLeave={() => setAktiv(null)}>
               <thead>
                 <tr>
                   <th className="mv-check">
@@ -275,18 +281,18 @@ export function MengenView({ bezug, onBezug }: { bezug: MengenBezug; onBezug: (b
                     <td className="num">{wert(bezug, t.wert)}</td>
                   </tr>
                 ))}
-                <tr className="sum">
+                <tr className="summe">
                   <td colSpan={3}>Summe = {info.kurz}</td>
                   <td className="num">{wert(bezug, menge.summe)}</td>
                 </tr>
               </tbody>
             </table>
-          </div>
-        ) : (
-          <p className="muted small-text">Keine Teile – die Menge ist 0.</p>
-        )}
-        <p className="muted small-text">{info.ermittlung}</p>
-      </section>
-    </div>
+          ) : (
+            <p className="muted small-text">Keine Teile – die Menge ist 0.</p>
+          )}
+          <p className="muted small-text">{info.ermittlung}</p>
+        </Karte>
+      </FlaechenSpalte>
+    </Flaeche>
   );
 }

@@ -19,6 +19,7 @@ import { datumAnzeige as datum } from '../datum';
 import { HilfeKnopf } from '@core/ui/Nachschlagewerk';
 import { bestaetigen } from '@core/ui/Rueckfrage';
 import { StammdatenKnopf } from '@core/ui/Stammdaten';
+import { Flaeche, FlaechenSpalte, Karte } from '@core/ui/Karte';
 
 const zahl = (v: number, d = 2) => v.toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
 
@@ -93,13 +94,9 @@ export function KostenView({ onKatalog, onMenge }: { onKatalog: () => void; onMe
   };
 
   return (
-    <div className="ko-view">
-      <div className="ko-links">
-        <section className="ko-col">
-          <h2>
-            Grundlagen
-            <HilfeKnopf thema={['kosten', 'kennwerte']} titel="Kostenermittlung" />
-          </h2>
+    <Flaeche className="ko-view">
+      <FlaechenSpalte breite={300}>
+        <Karte titel="Grundlagen" hilfe={<HilfeKnopf thema={['kosten', 'kennwerte']} titel="Kostenermittlung" />}>
           <Field label="Projekt">
             <TextField value={project.name} onChange={(v) => st.update((p) => (v.trim() && v.trim() !== p.name ? { ...p, name: v.trim() } : p))} />
           </Field>
@@ -154,14 +151,10 @@ export function KostenView({ onKatalog, onMenge }: { onKatalog: () => void; onMe
               </>
             )}
           </p>
-        </section>
+        </Karte>
 
-        <section className="ko-col">
-          <h2>
-            Mengen
-            <HilfeKnopf thema={['bri', 'bgf', 'sohle', 'wofl']} titel="Mengen" />
-          </h2>
-          <table className="ko-table ko-mengen">
+        <Karte titel="Mengen" hilfe={<HilfeKnopf thema={['bri', 'bgf', 'sohle', 'wofl']} titel="Mengen" />}>
+          <table className="summary-table text felder ko-mengen">
             <tbody>
               {MENGEN_BEZUEGE.map((b) => (
                 <MengeZeile key={b} b={b} e={e} onMenge={onMenge} />
@@ -172,15 +165,11 @@ export function KostenView({ onKatalog, onMenge }: { onKatalog: () => void; onMe
             Abgeleitet aus dem Projekt; ein eingetragener Wert gilt stattdessen (Zurücksetzen mit dem Pfeil daneben).
             {onMenge && ' Klick auf das Kürzel: Herkunft im Grundriss und 3D-Modell.'}
           </p>
-        </section>
-      </div>
+        </Karte>
+      </FlaechenSpalte>
 
-      <div className="ko-rechts">
-        <section className="ko-col ko-positionen">
-          <h2>
-            Positionen
-            <HilfeKnopf thema={['din276', 'kennwerte']} titel="Kostengruppen" />
-          </h2>
+      <FlaechenSpalte wachsend als="main">
+        <Karte titel="Positionen" hilfe={<HilfeKnopf thema={['din276', 'kennwerte']} titel="Kostengruppen" />}>
           <div className="button-row">
             <button className="small" title="Position hinzufügen – leere Zeile, Kostengruppe eintragen" onClick={() => neu(neuePosition(''))}>
               <Symbol name="plus" /> Position
@@ -198,51 +187,49 @@ export function KostenView({ onKatalog, onMenge }: { onKatalog: () => void; onMe
               die Kennwerte werden eingetragen oder aus dem Kennwertkatalog übernommen.
             </p>
           ) : (
-            <div className="tbl-wrap">
-              <table className="ko-table ko-pos">
-                <thead>
-                  <tr>
-                    <th>
-                      <span className="ko-sr">Rechnen</span>
-                    </th>
-                    <th>KG</th>
-                    <th>Bezeichnung</th>
-                    <th>Bezug</th>
-                    <th className="num">Menge</th>
-                    <th className="num">von</th>
-                    <th className="num">Mittel</th>
-                    <th className="num">bis</th>
-                    <th className="num">Kosten (Mittel)</th>
-                    <th>
-                      <span className="ko-sr">Löschen</span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {KG_ERSTE_EBENE.filter((g) => e.positionen.some((x) => kg1(x.pos.kg) === g)).map((g) => (
-                    <Gruppe key={g} kg={g} titel={kgName(g)} summe={e.summen.find((s) => s.kg === g)?.summe[1]} e={e} zeilen={e.positionen.filter((x) => kg1(x.pos.kg) === g)} />
-                  ))}
-                  {e.positionen.some((x) => istRisiko(x.pos.kg)) && (
-                    <Gruppe kg="" titel="Kostenrisiken" summe={e.risiko[1]} e={e} zeilen={e.positionen.filter((x) => istRisiko(x.pos.kg))} />
-                  )}
-                  {e.positionen.some((x) => !istKg(x.pos.kg) && !istRisiko(x.pos.kg)) && (
-                    <Gruppe kg="" titel="Ohne gültige Kostengruppe – wird nicht gerechnet" e={e} zeilen={e.positionen.filter((x) => !istKg(x.pos.kg) && !istRisiko(x.pos.kg))} />
-                  )}
-                </tbody>
-              </table>
-            </div>
+            <table className="summary-table text felder ko-pos">
+              <thead>
+                <tr>
+                  <th>
+                    <span className="nur-vorlesen">Rechnen</span>
+                  </th>
+                  <th>KG</th>
+                  <th>Bezeichnung</th>
+                  <th>Bezug</th>
+                  <th className="num">Menge</th>
+                  <th className="num">von</th>
+                  <th className="num">Mittel</th>
+                  <th className="num">bis</th>
+                  <th className="num">Kosten (Mittel)</th>
+                  <th>
+                    <span className="nur-vorlesen">Löschen</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {KG_ERSTE_EBENE.filter((g) => e.positionen.some((x) => kg1(x.pos.kg) === g)).map((g) => (
+                  <Gruppe key={g} kg={g} titel={kgName(g)} summe={e.summen.find((s) => s.kg === g)?.summe[1]} e={e} zeilen={e.positionen.filter((x) => kg1(x.pos.kg) === g)} />
+                ))}
+                {e.positionen.some((x) => istRisiko(x.pos.kg)) && (
+                  <Gruppe kg="" titel="Kostenrisiken" summe={e.risiko[1]} e={e} zeilen={e.positionen.filter((x) => istRisiko(x.pos.kg))} />
+                )}
+                {e.positionen.some((x) => !istKg(x.pos.kg) && !istRisiko(x.pos.kg)) && (
+                  <Gruppe kg="" titel="Ohne gültige Kostengruppe – wird nicht gerechnet" e={e} zeilen={e.positionen.filter((x) => !istKg(x.pos.kg) && !istRisiko(x.pos.kg))} />
+                )}
+              </tbody>
+            </table>
           )}
           <p className="muted small-text">
             Kennwerte je Einheit, netto{k.kennwerteBrutto ? ' (eingetragen brutto, gerechnet netto)' : ''}; bei % der Prozentsatz, bei psch der Betrag. Fehlt „von“ oder „bis“, gilt der
             Mittelwert. Der Faktor wirkt nicht auf Pauschalen und Prozentsätze.
           </p>
-        </section>
+        </Karte>
 
-        <section className="ko-col ko-uebersicht">
+        <Karte titel={stufeLabel(k.stufe)}>
           <Uebersicht e={e} k={k} />
-        </section>
-      </div>
-    </div>
+        </Karte>
+      </FlaechenSpalte>
+    </Flaeche>
   );
 }
 
@@ -306,7 +293,7 @@ function MengeZeile({ b, e, onMenge }: { b: MengenBezug; e: Ergebnis; onMenge?: 
 function Gruppe({ kg, titel, summe, e, zeilen }: { kg: string; titel: string; summe?: number; e: Ergebnis; zeilen: PositionErgebnis[] }) {
   return (
     <>
-      <tr className="ko-gruppe">
+      <tr className="gruppe">
         <td />
         <td>{kg}</td>
         <td colSpan={6}>{titel}</td>
@@ -449,8 +436,7 @@ function Uebersicht({ e, k }: { e: Ergebnis; k: Kosten }) {
 
   return (
     <>
-      <h2>{stufeLabel(k.stufe)}</h2>
-      <table className="ko-table ko-summen">
+      <table className="summary-table text ko-summen">
         <thead>
           <tr>
             <th colSpan={2}>Kostengruppe</th>
@@ -477,7 +463,7 @@ function Uebersicht({ e, k }: { e: Ergebnis; k: Kosten }) {
               <td className="num">{euro(e.risiko[2])}</td>
             </tr>
           )}
-          <tr className="sum">
+          <tr className="summe">
             <td colSpan={2}>Gesamt netto</td>
             <td className="num">{euro(e.gesamtNetto[0])}</td>
             <td className="num">{euro(e.gesamtNetto[1])}</td>
@@ -489,7 +475,7 @@ function Uebersicht({ e, k }: { e: Ergebnis; k: Kosten }) {
             <td className="num">{euro(e.gesamtBrutto[1] - e.gesamtNetto[1])}</td>
             <td className="num">{euro(e.gesamtBrutto[2] - e.gesamtNetto[2])}</td>
           </tr>
-          <tr className="sum">
+          <tr className="summe">
             <td colSpan={2}>Gesamt brutto</td>
             <td className="num">{euro(e.gesamtBrutto[0])}</td>
             <td className="num">{euro(e.gesamtBrutto[1])}</td>
@@ -501,7 +487,7 @@ function Uebersicht({ e, k }: { e: Ergebnis; k: Kosten }) {
       {e.kennwerte.length > 0 && (
         <>
           <h3>Kennwerte Bauwerk (KG 300 + 400, brutto)</h3>
-          <table className="ko-table">
+          <table className="summary-table text">
             <tbody>
               {e.kennwerte.map((kw) => (
                 <tr key={kw.kurz}>
@@ -559,13 +545,13 @@ function Uebersicht({ e, k }: { e: Ergebnis; k: Kosten }) {
         </button>
       </div>
       {staende.length > 0 && (
-        <table className="ko-table">
+        <table className="summary-table text">
           <thead>
             <tr>
               <th>Stand</th>
               <th className="num">Gesamt brutto</th>
               <th>
-                <span className="ko-sr">Löschen</span>
+                <span className="nur-vorlesen">Löschen</span>
               </th>
             </tr>
           </thead>
@@ -597,7 +583,7 @@ function Uebersicht({ e, k }: { e: Ergebnis; k: Kosten }) {
       {v && vergleich && (
         <>
           <h3>Vorher/Nachher gegenüber {datum(vergleich.datum)} (Mittel, netto)</h3>
-          <table className="ko-table ko-summen">
+          <table className="summary-table text ko-summen">
             <thead>
               <tr>
                 <th colSpan={2}>Kostengruppe</th>
@@ -608,7 +594,7 @@ function Uebersicht({ e, k }: { e: Ergebnis; k: Kosten }) {
             </thead>
             <tbody>
               {[...v.zeilen, v.gesamt].map((z) => (
-                <tr key={z.kg || 'gesamt'} className={z.kg ? '' : 'sum'}>
+                <tr key={z.kg || 'gesamt'} className={z.kg ? '' : 'summe'}>
                   {z.kg && !istRisiko(z.kg) ? (
                     <>
                       <td className="ko-kgnr">{z.kg}</td>
