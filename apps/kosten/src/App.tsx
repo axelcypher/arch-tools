@@ -185,7 +185,9 @@ export function App() {
     return () => window.removeEventListener('beforeunload', onBeforeUnload);
   }, []);
 
-  // Hauptbereich: auf dem Startbildschirm der Bereich selbst, sonst die Mitte der Fläche (als="main", docs/design.md)
+  // Hauptbereich: auf dem Startbildschirm der Bereich selbst, sonst die Mitte der Fläche (als="main", docs/design.md).
+  // Die Meldungen (Zwischenstand, IFC-Bericht) stehen über der ganzen Fläche, weil sie das Projekt betreffen, nicht eine
+  // Karte; sie liegen damit außerhalb von main, werden aber über role="status" angesagt.
   const Haupt = einstieg ? 'main' : 'div';
   const kostenAktiv = !einstieg && (ansicht === 'kosten' || !hatGebaeude);
   const mengenAktiv = ansicht === 'mengen' && hatGebaeude;

@@ -45,7 +45,7 @@ export function MengenView({ bezug, onBezug }: { bezug: MengenBezug; onBezug: (b
   const [ansicht, setAnsicht] = useState<'plan' | 'raum'>(menge.ansicht);
   const [aktiv, setAktiv] = useState<string | null>(null);
   const listeRef = useRef<HTMLTableSectionElement>(null);
-  const wegRef = useRef<HTMLDivElement>(null);
+  const wegRef = useRef<HTMLTableElement>(null);
   const alleRef = useRef<HTMLInputElement>(null);
 
   // jede Menge öffnet in ihrer üblichen Darstellung
@@ -243,52 +243,50 @@ export function MengenView({ bezug, onBezug }: { bezug: MengenBezug; onBezug: (b
             </div>
           )}
           {menge.teile.length ? (
-            <div className="tbl-wrap" ref={wegRef}>
-              <table className="summary-table text" onMouseLeave={() => setAktiv(null)}>
-                <thead>
-                  <tr>
-                    <th className="mv-check">
-                      {menge.teile.length > 1 && (
-                        <label title="alle Teile an- bzw. abwählen">
-                          <input type="checkbox" ref={alleRef} checked={gezaehlt === menge.teile.length} onChange={() => waehle(menge.teile, () => gezaehlt < menge.teile.length)} aria-label="Alle Teile zählen zur Menge" />
-                        </label>
-                      )}
-                    </th>
-                    <th>Geschoss</th>
-                    <th>Teil</th>
-                    <th className="num">{info.einheit}</th>
+            <table ref={wegRef} className="summary-table text" onMouseLeave={() => setAktiv(null)}>
+              <thead>
+                <tr>
+                  <th className="mv-check">
+                    {menge.teile.length > 1 && (
+                      <label title="alle Teile an- bzw. abwählen">
+                        <input type="checkbox" ref={alleRef} checked={gezaehlt === menge.teile.length} onChange={() => waehle(menge.teile, () => gezaehlt < menge.teile.length)} aria-label="Alle Teile zählen zur Menge" />
+                      </label>
+                    )}
+                  </th>
+                  <th>Geschoss</th>
+                  <th>Teil</th>
+                  <th className="num">{info.einheit}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {menge.teile.map((t) => (
+                  <tr key={t.id} data-teil={t.id} className={`${t.id === aktiv ? 'mv-aktiv' : ''}${t.wert < 0 ? ' mv-abzug' : ''}${t.zaehlt ? '' : ' mv-aus'}`} onMouseEnter={() => setAktiv(t.id)}>
+                    <td className="mv-check">
+                      <label title={t.zaehlt ? 'zählt zur Menge – abwählen' : 'zählt nicht – anwählen'}>
+                        <input
+                          type="checkbox"
+                          checked={!!t.zaehlt}
+                          onChange={() => umschalten(t.id)}
+                          onFocus={() => setAktiv(t.id)}
+                          onBlur={() => setAktiv((a) => (a === t.id ? null : a))}
+                          aria-label={`${t.bezeichnung} zählt zur Menge`}
+                        />
+                      </label>
+                    </td>
+                    <td>{t.geschoss}</td>
+                    <td>
+                      {t.bezeichnung}
+                      {t.ansatz && <div className="muted small-text">{t.ansatz}</div>}
+                    </td>
+                    <td className="num">{wert(bezug, t.wert)}</td>
                   </tr>
-                </thead>
-                <tbody>
-                  {menge.teile.map((t) => (
-                    <tr key={t.id} data-teil={t.id} className={`${t.id === aktiv ? 'mv-aktiv' : ''}${t.wert < 0 ? ' mv-abzug' : ''}${t.zaehlt ? '' : ' mv-aus'}`} onMouseEnter={() => setAktiv(t.id)}>
-                      <td className="mv-check">
-                        <label title={t.zaehlt ? 'zählt zur Menge – abwählen' : 'zählt nicht – anwählen'}>
-                          <input
-                            type="checkbox"
-                            checked={!!t.zaehlt}
-                            onChange={() => umschalten(t.id)}
-                            onFocus={() => setAktiv(t.id)}
-                            onBlur={() => setAktiv((a) => (a === t.id ? null : a))}
-                            aria-label={`${t.bezeichnung} zählt zur Menge`}
-                          />
-                        </label>
-                      </td>
-                      <td>{t.geschoss}</td>
-                      <td>
-                        {t.bezeichnung}
-                        {t.ansatz && <div className="muted small-text">{t.ansatz}</div>}
-                      </td>
-                      <td className="num">{wert(bezug, t.wert)}</td>
-                    </tr>
-                  ))}
-                  <tr className="summe">
-                    <td colSpan={3}>Summe = {info.kurz}</td>
-                    <td className="num">{wert(bezug, menge.summe)}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+                ))}
+                <tr className="summe">
+                  <td colSpan={3}>Summe = {info.kurz}</td>
+                  <td className="num">{wert(bezug, menge.summe)}</td>
+                </tr>
+              </tbody>
+            </table>
           ) : (
             <p className="muted small-text">Keine Teile – die Menge ist 0.</p>
           )}

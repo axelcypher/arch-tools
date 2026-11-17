@@ -36,6 +36,10 @@
 }
 
 /* Tabellen: gemeinsame Zahlentabelle .summary-table (base.css); hier nur, was NUMIO zusätzlich braucht */
+/* gewählte Zeile (Katalogeintrag, verglichener Stand): .summary-table hat dafür noch keine eigene Regel */
+.summary-table tr.selected td {
+  background: var(--accent-soft);
+}
 .summary-table td.ko-menge {
   width: 96px;
 }
@@ -290,12 +294,13 @@ button.link:hover {
 .mv-auswahl span {
   margin-right: auto;
 }
+/* Legende in der Fußzeile der Karte: ohne Außenabstand; bricht sie um, behalten die Zeilen Luft zum Rand */
 .mv-legende {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 16px;
-  margin: 8px 0 0;
-  color: var(--muted);
+  gap: var(--s1) var(--s4);
+  margin: 0;
+  padding: var(--s1) 0;
 }
 .mv-legende i {
   display: inline-block;

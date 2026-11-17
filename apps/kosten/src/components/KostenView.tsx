@@ -95,7 +95,7 @@ export function KostenView({ onKatalog, onMenge }: { onKatalog: () => void; onMe
 
   return (
     <Flaeche className="ko-view">
-      <FlaechenSpalte className="ko-links" breite={300}>
+      <FlaechenSpalte breite={300}>
         <Karte titel="Grundlagen" hilfe={<HilfeKnopf thema={['kosten', 'kennwerte']} titel="Kostenermittlung" />}>
           <Field label="Projekt">
             <TextField value={project.name} onChange={(v) => st.update((p) => (v.trim() && v.trim() !== p.name ? { ...p, name: v.trim() } : p))} />
@@ -153,7 +153,7 @@ export function KostenView({ onKatalog, onMenge }: { onKatalog: () => void; onMe
           </p>
         </Karte>
 
-        <Karte className="ko-mengen-karte" titel="Mengen" hilfe={<HilfeKnopf thema={['bri', 'bgf', 'sohle', 'wofl']} titel="Mengen" />}>
+        <Karte titel="Mengen" hilfe={<HilfeKnopf thema={['bri', 'bgf', 'sohle', 'wofl']} titel="Mengen" />}>
           <table className="summary-table text felder ko-mengen">
             <tbody>
               {MENGEN_BEZUEGE.map((b) => (
@@ -168,8 +168,8 @@ export function KostenView({ onKatalog, onMenge }: { onKatalog: () => void; onMe
         </Karte>
       </FlaechenSpalte>
 
-      <FlaechenSpalte className="ko-rechts" wachsend als="main">
-        <Karte className="ko-positionen" titel="Positionen" hilfe={<HilfeKnopf thema={['din276', 'kennwerte']} titel="Kostengruppen" />}>
+      <FlaechenSpalte wachsend als="main">
+        <Karte titel="Positionen" hilfe={<HilfeKnopf thema={['din276', 'kennwerte']} titel="Kostengruppen" />}>
           <div className="button-row">
             <button className="small" title="Position hinzufügen – leere Zeile, Kostengruppe eintragen" onClick={() => neu(neuePosition(''))}>
               <Symbol name="plus" /> Position
@@ -187,39 +187,37 @@ export function KostenView({ onKatalog, onMenge }: { onKatalog: () => void; onMe
               die Kennwerte werden eingetragen oder aus dem Kennwertkatalog übernommen.
             </p>
           ) : (
-            <div className="tbl-wrap">
-              <table className="summary-table text felder ko-pos">
-                <thead>
-                  <tr>
-                    <th>
-                      <span className="nur-vorlesen">Rechnen</span>
-                    </th>
-                    <th>KG</th>
-                    <th>Bezeichnung</th>
-                    <th>Bezug</th>
-                    <th className="num">Menge</th>
-                    <th className="num">von</th>
-                    <th className="num">Mittel</th>
-                    <th className="num">bis</th>
-                    <th className="num">Kosten (Mittel)</th>
-                    <th>
-                      <span className="nur-vorlesen">Löschen</span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {KG_ERSTE_EBENE.filter((g) => e.positionen.some((x) => kg1(x.pos.kg) === g)).map((g) => (
-                    <Gruppe key={g} kg={g} titel={kgName(g)} summe={e.summen.find((s) => s.kg === g)?.summe[1]} e={e} zeilen={e.positionen.filter((x) => kg1(x.pos.kg) === g)} />
-                  ))}
-                  {e.positionen.some((x) => istRisiko(x.pos.kg)) && (
-                    <Gruppe kg="" titel="Kostenrisiken" summe={e.risiko[1]} e={e} zeilen={e.positionen.filter((x) => istRisiko(x.pos.kg))} />
-                  )}
-                  {e.positionen.some((x) => !istKg(x.pos.kg) && !istRisiko(x.pos.kg)) && (
-                    <Gruppe kg="" titel="Ohne gültige Kostengruppe – wird nicht gerechnet" e={e} zeilen={e.positionen.filter((x) => !istKg(x.pos.kg) && !istRisiko(x.pos.kg))} />
-                  )}
-                </tbody>
-              </table>
-            </div>
+            <table className="summary-table text felder ko-pos">
+              <thead>
+                <tr>
+                  <th>
+                    <span className="nur-vorlesen">Rechnen</span>
+                  </th>
+                  <th>KG</th>
+                  <th>Bezeichnung</th>
+                  <th>Bezug</th>
+                  <th className="num">Menge</th>
+                  <th className="num">von</th>
+                  <th className="num">Mittel</th>
+                  <th className="num">bis</th>
+                  <th className="num">Kosten (Mittel)</th>
+                  <th>
+                    <span className="nur-vorlesen">Löschen</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {KG_ERSTE_EBENE.filter((g) => e.positionen.some((x) => kg1(x.pos.kg) === g)).map((g) => (
+                  <Gruppe key={g} kg={g} titel={kgName(g)} summe={e.summen.find((s) => s.kg === g)?.summe[1]} e={e} zeilen={e.positionen.filter((x) => kg1(x.pos.kg) === g)} />
+                ))}
+                {e.positionen.some((x) => istRisiko(x.pos.kg)) && (
+                  <Gruppe kg="" titel="Kostenrisiken" summe={e.risiko[1]} e={e} zeilen={e.positionen.filter((x) => istRisiko(x.pos.kg))} />
+                )}
+                {e.positionen.some((x) => !istKg(x.pos.kg) && !istRisiko(x.pos.kg)) && (
+                  <Gruppe kg="" titel="Ohne gültige Kostengruppe – wird nicht gerechnet" e={e} zeilen={e.positionen.filter((x) => !istKg(x.pos.kg) && !istRisiko(x.pos.kg))} />
+                )}
+              </tbody>
+            </table>
           )}
           <p className="muted small-text">
             Kennwerte je Einheit, netto{k.kennwerteBrutto ? ' (eingetragen brutto, gerechnet netto)' : ''}; bei % der Prozentsatz, bei psch der Betrag. Fehlt „von“ oder „bis“, gilt der
@@ -227,7 +225,7 @@ export function KostenView({ onKatalog, onMenge }: { onKatalog: () => void; onMe
           </p>
         </Karte>
 
-        <Karte className="ko-uebersicht" titel={stufeLabel(k.stufe)}>
+        <Karte titel={stufeLabel(k.stufe)}>
           <Uebersicht e={e} k={k} />
         </Karte>
       </FlaechenSpalte>
