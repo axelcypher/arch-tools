@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
+import { usePfadWert } from '@core/einstellungen/pfade';
 import { Modal } from '@core/ui/Dialog';
 import { Symbol } from '@core/ui/Symbol';
 import { oeffneOrdner, verbinde } from '../dateisystem';
 import { planFehler } from '../kataster/kataster';
-import { useKataster } from '../kataster/katasterStore';
+import { ANTRAGSORDNER_EINSTELLUNG, useKataster } from '../kataster/katasterStore';
 
 /** Meldung über Fehlendes – mit dem Ort, an dem es sich beheben lässt */
 interface Fehlt {
@@ -44,6 +45,8 @@ export function KatasterDialog({ basis, name, onClose, onEinstellungen, onStammd
   const koordinaten = oap?.projekt.meta.koordinaten;
   const pv = oapDa ? projektVorlage() : null;
   const info = pv ? projektVorlageInfo() : (globalInfo?.info ?? null);
+  // den Antragsordner abonnieren: ändert er sich bei offenem Dialog, zeigt „Ablage“ gleich den neuen Ordner
+  usePfadWert(ANTRAGSORDNER_EINSTELLUNG);
   const ordner = zielOrdner();
   const fehlt: Fehlt[] = [
     geladen && !oapDa && { text: 'Keine Projektdatei (.oap) im Projektordner.' },
@@ -61,7 +64,6 @@ export function KatasterDialog({ basis, name, onClose, onEinstellungen, onStammd
 
   return (
     <Modal titel={`Katasterpläne exportieren – ${name}`} kopf onClose={laeuft ? undefined : onClose} breit className="ka-dialog" klickDaneben={!laeuft}>
-
       {koordinaten && (
         <p className="muted small-text">
           Mittelpunkt (die geokodierte Projektadresse, nicht das Flurstück): E {koordinaten.ost.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} · N{' '}
