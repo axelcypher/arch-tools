@@ -27,8 +27,8 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
   rollt der Rest ab „Formulare“. Aufbau: Dokument › Antrag › Projekt.
 - **Werkzeugleiste** (gemeinsamer Baustein `Werkzeugleiste`, design.md „Kopf- und Werkzeugleisten“): sichtbar bleibt,
   was man ständig braucht – links „Datei ▾“ (Daten aktualisieren …, Speichern unter …, Exportieren › PDF … – derselbe
-  Export wie der Hauptknopf –, Drucken …; in der Web-Version Formular öffnen …), „Speichern“ (mit Punkt bei ungespeicherten Änderungen) mit ↶ ↷, der Umschalter **Formular |
-  Felder**, Zoom und „Ansicht ▾“ (Gliederung, Verlauf der Eingaben als Schalter); rechts der Status (zuerst „n Felder
+  Export wie der Hauptknopf –, Drucken …; in der Web-Version Formular öffnen …), „Speichern“ (mit Punkt bei
+  ungespeicherten Änderungen) mit ↶ ↷, der Umschalter **Formular | Felder**, Zoom und „Ansicht ▾“ (Gliederung, Verlauf der Eingaben als Schalter); rechts der Status (zuerst „n Felder
   geändert“, dann Kennung und Stand; gekürzt, der volle Text samt „lokal gesichert“ im Tooltip), „Suchen …“
   (<kbd>Strg</kbd>+<kbd>K</kbd>) und der Hauptknopf **„Als PDF exportieren …“** (<kbd>Strg</kbd>+<kbd>E</kbd>), zuletzt
   „Mehr“ (⋯) mit „Formular einrichten“, „Manuelle Überschreibungen ignorieren“ und „Adressbuch …“; „Einstellungen …“
