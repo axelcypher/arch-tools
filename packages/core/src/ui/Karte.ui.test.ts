@@ -135,6 +135,9 @@ describe('Fläche und Karten', () => {
     const mitte = render(h(Karte, { titel: 'Ergebnis', als: 'main' }, 'x'));
     const main = mitte.querySelector('main.karte')!;
     expect(main.getAttribute('aria-labelledby')).toBe(main.querySelector('h2')!.id);
+    // eine gewöhnliche Spalte (div) trägt keinen Namen
+    const schlicht = render(h(FlaechenSpalte, { ariaLabel: 'x', children: 'a' }));
+    expect(schlicht.querySelector('div.flaechen-spalte')!.hasAttribute('aria-label')).toBe(false);
     // zwei Nebenspalten mit eigenem Namen
     const zwei = render(
       h(Flaeche, {
