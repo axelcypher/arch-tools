@@ -485,10 +485,12 @@ Hauptbereich und Zeichenfläche stehen darauf als **Karten** mit weichem Schatte
 Werkzeugleiste liegt mit auf der Fläche (gleicher Grund, keine Linie). Bausteine in `ui/Karte.tsx`:
 
 - `Flaeche` (`.flaeche`): Karten nebeneinander mit Spalt und Innenabstand `--spalt`; sie scrollt nie.
-- `Karte` (`.karte`): Kopf (`.karte-kopf`, Überschrift `h2` in `--fs-l`, rechts `aktionen` wie „?“ oder „Hinzufügen“),
-  darunter der Inhalt (`.karte-rumpf`), der **in der Karte** scrollt, wahlweise eine feste Fußzeile (`fuss`, Summen).
-  Mit Titel ist die Karte ein benannter Bereich (`aria-labelledby` auf das `h2`); ohne sichtbaren Titel braucht sie
-  `ariaLabel`. `buendig` lässt Tabellen und Listen bis an den Rand laufen; Fokusrahmen liegen dort innen. Breite
+- `Karte` (`.karte`): Kopf (`.karte-kopf`, Überschrift `h2` in `--fs-l`, direkt dahinter `hilfe` für das „?“
+  (`HilfeKnopf`), rechts `aktionen` wie Umschalter oder „Hinzufügen“), darunter der Inhalt (`.karte-rumpf`), der **in
+  der Karte** scrollt, wahlweise eine feste Fußzeile (`fuss`, Summen). Mit Titel ist die Karte ein benannter Bereich
+  (`aria-labelledby` auf das `h2`); die Hilfe steht außerhalb des `h2` und gehört nicht zum Namen. Ohne sichtbaren
+  Titel braucht die Karte `ariaLabel`. Der Inhalt beginnt und endet immer im Abstand des Rumpfs, gleich ob vorn ein
+  `p`, eine Liste oder ein `h3` steht (Außenabstand des ersten und letzten Kindes entfällt). `buendig` lässt Tabellen und Listen bis an den Rand laufen; Fokusrahmen liegen dort innen. Breite
   Tabellen scrollen mit dem Inhalt der Karte, sie laufen nie aus ihr heraus. Der Rumpf ist positioniert: absolut
   gesetzte Elemente darin bleiben in seinem Rollbereich. Klappmenüs, Vorschlagslisten und Hinweise, die über die Karte
   hinausragen sollen, deshalb als Portal bzw. mit `position: fixed` ausführen. Innenabstand waagerecht `--karte-pad`
@@ -508,9 +510,11 @@ Werkzeugleiste liegt mit auf der Fläche (gleicher Grund, keine Linie). Baustein
 - Seitenkarten mit ziehbarer Breite: `BreitenLeiste` mit einer `Karte` (oder `FlaechenSpalte`) als Kind; auf der
   Fläche liegt der Griff im Spalt (Linie beim Überfahren in voller Akzentfarbe, weil der Spalt sonst keinen Rand
   zeigt), und Innenabstand und Spalt zählen bei der Höchstbreite mit.
-- **Schmale Fenster:** Die Fläche scrollt nie. Die Mitte (eine `Karte` direkt auf der Fläche oder eine wachsende Spalte)
-  behält `--karte-mitte-min` (280px), die Seitenkarten geben bis zu ihrer Mindestbreite (`--leiste-min`, 180px) nach;
-  die gemerkte Breite bleibt und gilt wieder, sobald Platz ist. Das gilt auch für eine Seitenspalte (`FlaechenSpalte`
+- **Schmale Fenster:** Die Fläche scrollt nie. Fehlt Platz, geben zuerst die Seitenkarten bis zu ihrer Mindestbreite
+  (`--leiste-min`, 180px) nach, solange die Mitte (eine `Karte` direkt auf der Fläche oder eine wachsende Spalte) unter
+  ihrer Wunschbreite `--karte-mitte-wunsch` (480px) bliebe; erst dann schrumpft die Mitte bis `--karte-mitte-min`
+  (280px). Breiter ziehen lässt sich eine Seitenkarte auf der Fläche nur, solange der Mitte die Wunschbreite bleibt
+  (oder `mitteMin`, wenn größer). Die gemerkte Breite bleibt und gilt wieder, sobald Platz ist. Das gilt auch für eine Seitenspalte (`FlaechenSpalte`
   ohne `wachsend`). Unter der Summe der Mindestbreiten (zwei Seitenkarten und Mitte, rund 670px) wird abgeschnitten –
   für Desktop-Fenster vertretbar.
 

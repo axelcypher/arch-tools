@@ -66,6 +66,21 @@ describe('BreitenLeiste', () => {
     expect((host.querySelector('.leiste') as HTMLElement).style.width).toBe('576px');
   });
 
+  it('auf einer Fläche (.flaeche) zählt die Wunschbreite der Mitte, wenn sie größer als mitteMin ist', () => {
+    const host = document.createElement('div');
+    host.className = 'flaeche';
+    host.style.cssText = 'display:flex; --karte-mitte-wunsch: 480px';
+    Object.defineProperty(host, 'clientWidth', { value: 1000 });
+    document.body.appendChild(host);
+    act(() => {
+      root = createRoot(host);
+      root.render([createElement(BreitenLeiste, { key: 'l', schluessel: 'test:wunsch', vorgabe: 300, max: 900, mitteMin: 300, children: 'Inhalt' }), createElement('main', { key: 'm' })]);
+    });
+    pfeil(host.querySelector('.leiste-griff')!, 'End');
+    // 1000 − 480 (Wunschbreite statt mitteMin 300) = 520
+    expect((host.querySelector('.leiste') as HTMLElement).style.width).toBe('520px');
+  });
+
   it('feste Seitenspalte zählt zu den anderen Leisten, eine wachsende nicht', () => {
     const messen = (wachsend: boolean) => {
       const host = document.createElement('div');

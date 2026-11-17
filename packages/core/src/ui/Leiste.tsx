@@ -56,7 +56,10 @@ function verfuegbar(griff: HTMLElement | null, mitteMin: number | undefined): nu
     return st.display !== 'none' && st.position !== 'absolute' && st.position !== 'fixed';
   }).length;
   const spalte = (parseFloat(cs.columnGap) || 0) * Math.max(0, imFluss - 1);
-  return Math.floor(innen - spalte - andere - mitteMin);
+  // auf einer Fläche hält die Mitte ihre Wunschbreite, solange Seitenkarten nachgeben können (base.css) – breiter
+  // gezogen schrumpfte die Leiste sofort wieder
+  const wunsch = arbeit.classList.contains('flaeche') ? parseFloat(cs.getPropertyValue('--karte-mitte-wunsch')) || 0 : 0;
+  return Math.floor(innen - spalte - andere - Math.max(mitteMin, wunsch));
 }
 
 const ANGLEICHEN = 'leiste-angleichen';

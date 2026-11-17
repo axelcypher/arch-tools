@@ -29,13 +29,35 @@ describe('Fläche und Karten', () => {
   it('Karte: Kopf mit h2 und Aktionen, scrollender Rumpf, Fußzeile', () => {
     const host = render(h(Karte, { titel: 'Auswertung', aktionen: h('button', null, 'Kurzfassung'), fuss: 'NRF/BGF: 84 %' }, h('p', null, 'Inhalt')));
     const karte = host.querySelector('section.karte')!;
-    expect(karte.querySelector('.karte-kopf > h2')?.textContent).toBe('Auswertung');
+    expect(karte.querySelector('.karte-kopf h2')?.textContent).toBe('Auswertung');
     expect(karte.querySelector('.karte-kopf > .karte-aktionen > button')?.textContent).toBe('Kurzfassung');
     expect(karte.querySelector('.karte-rumpf > p')?.textContent).toBe('Inhalt');
     expect(karte.querySelector('footer.karte-fuss')?.textContent).toBe('NRF/BGF: 84 %');
     // mit sichtbarem Titel benennt das h2 den Bereich
     expect(karte.hasAttribute('aria-label')).toBe(false);
-    expect(karte.getAttribute('aria-labelledby')).toBe(karte.querySelector('.karte-kopf > h2')!.id);
+    expect(karte.getAttribute('aria-labelledby')).toBe(karte.querySelector('.karte-kopf h2')!.id);
+  });
+
+  it('Hilfe hinter der Überschrift gehört nicht zum Namen der Karte', () => {
+    const host = render(h(Karte, { titel: 'Lageplan', hilfe: h('button', { className: 'hilfe-knopf', 'aria-label': 'Berechnungsregeln nachschlagen' }, '?') }, 'x'));
+    const karte = host.querySelector('section.karte')!;
+    const h2 = karte.querySelector('.karte-kopf > .karte-titel > h2')!;
+    expect(h2.textContent).toBe('Lageplan');
+    expect(karte.querySelector('.karte-titel > h2 + .hilfe-knopf')).not.toBeNull();
+    expect(h2.querySelector('button')).toBeNull();
+    expect(karte.getAttribute('aria-labelledby')).toBe(h2.id);
+    const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'base.css'), 'utf8');
+    expect(css).toMatch(/\.karte-titel \{[^}]*flex: 1;[^}]*display: flex;/);
+    // der Rumpf beginnt und endet im eigenen Abstand, gleich welches Element vorn oder hinten steht
+    expect(css).toMatch(/\.karte-rumpf > :first-child \{\s*margin-top: 0;/);
+    expect(css).toMatch(/\.karte-rumpf > :last-child \{\s*margin-bottom: 0;/);
+  });
+
+  it('schmale Fenster: zuerst geben die Seitenkarten nach, dann die Mitte von ihrer Wunschbreite', () => {
+    const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'base.css'), 'utf8');
+    expect(css).toMatch(/--karte-mitte-wunsch: 480px;/);
+    expect(css).toMatch(/\.flaeche > \.flaechen-spalte:not\(\.wachsend\) \{[^}]*flex-shrink: 1000;[^}]*min-width: var\(--leiste-min\);/);
+    expect(css).toMatch(/\.flaeche > \.flaechen-spalte\.wachsend \{[^}]*flex: 1 1 var\(--karte-mitte-wunsch\);[^}]*min-width: var\(--karte-mitte-min\);/);
   });
 
   it('Karte ohne Titel: kein Kopf, Name über ariaLabel; bündiger Rumpf', () => {
@@ -60,7 +82,7 @@ describe('Fläche und Karten', () => {
   it('ZeichenKarte mit Titel: derselbe Kopf wie bei Karte (h2 benennt, Aktionen rechts)', () => {
     const host = render(h(ZeichenKarte, { titel: 'Lageplan', aktionen: h('button', null, '3D'), children: h('div', { className: 'canvas' }) }));
     const karte = host.querySelector('section.zeichen-karte')!;
-    const h2 = karte.querySelector('.karte-kopf > h2')!;
+    const h2 = karte.querySelector('.karte-kopf h2')!;
     expect(h2.textContent).toBe('Lageplan');
     expect(karte.getAttribute('aria-labelledby')).toBe(h2.id);
     expect(karte.querySelector('.karte-kopf > .karte-aktionen > button')?.textContent).toBe('3D');

@@ -31,19 +31,26 @@ export function FlaechenSpalte({ children, className, breite, wachsend }: { chil
 interface KopfProps {
   /** Überschrift im Kartenkopf (h2, `--fs-l`); benennt die Karte für Vorleseprogramme */
   titel?: ReactNode;
-  /** Knöpfe rechts im Kopf (Hilfe „?“, Umschalter, „Hinzufügen“) */
+  /** Hilfe direkt hinter der Überschrift (meist `HilfeKnopf`); gehört nicht zum Namen der Karte */
+  hilfe?: ReactNode;
+  /** Knöpfe rechts im Kopf (Umschalter, „Hinzufügen“) */
   aktionen?: ReactNode;
   /** Name der Karte, wenn kein Titel sichtbar ist */
   ariaLabel?: string;
 }
 
 /** Kopf einer Karte – für `Karte` und `ZeichenKarte` gleich; liefert die Attribute, die die Karte benennen */
-function useKopf({ titel, aktionen, ariaLabel }: KopfProps) {
+function useKopf({ titel, hilfe, aktionen, ariaLabel }: KopfProps) {
   const id = useId();
   const kopf =
-    titel != null || aktionen != null ? (
+    titel != null || hilfe != null || aktionen != null ? (
       <header className="karte-kopf">
-        {titel != null && <h2 id={id}>{titel}</h2>}
+        {(titel != null || hilfe != null) && (
+          <div className="karte-titel">
+            {titel != null && <h2 id={id}>{titel}</h2>}
+            {hilfe}
+          </div>
+        )}
         {aktionen != null && <div className="karte-aktionen">{aktionen}</div>}
       </header>
     ) : null;
@@ -67,8 +74,8 @@ export interface KarteProps extends KopfProps {
 }
 
 /** Karte: Kopf mit Überschrift und Aktionen, darunter der Inhalt, der in der Karte scrollt */
-export function Karte({ titel, aktionen, ariaLabel, fuss, children, className, buendig, hoehe = 'teilen' }: KarteProps) {
-  const { kopf, name } = useKopf({ titel, aktionen, ariaLabel });
+export function Karte({ titel, hilfe, aktionen, ariaLabel, fuss, children, className, buendig, hoehe = 'teilen' }: KarteProps) {
+  const { kopf, name } = useKopf({ titel, hilfe, aktionen, ariaLabel });
   const klasse = ['karte', hoehe === 'inhalt' && 'karte-inhalt', className].filter(Boolean).join(' ');
   return (
     <section className={klasse} {...name}>
@@ -84,8 +91,8 @@ export function Karte({ titel, aktionen, ariaLabel, fuss, children, className, b
  * Bedienhinweis, Koordinaten und Maßstab – so verdeckt nichts den Plan. Der Plan selbst bleibt hell (`.canvas`).
  * Kopf wie bei `Karte` (meist ohne: die Werkzeuge stehen in der Werkzeugleiste).
  */
-export function ZeichenKarte({ titel, aktionen, ariaLabel, fuss, children, className }: KopfProps & { fuss?: ReactNode; children: ReactNode; className?: string }) {
-  const { kopf, name } = useKopf({ titel, aktionen, ariaLabel });
+export function ZeichenKarte({ titel, hilfe, aktionen, ariaLabel, fuss, children, className }: KopfProps & { fuss?: ReactNode; children: ReactNode; className?: string }) {
+  const { kopf, name } = useKopf({ titel, hilfe, aktionen, ariaLabel });
   return (
     <section className={className ? `karte zeichen-karte ${className}` : 'karte zeichen-karte'} {...name}>
       {kopf}

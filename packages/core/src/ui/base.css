@@ -30,6 +30,8 @@
   /* schmale Fenster: Mindestbreite der Seitenkarten und der Mitte */
   --leiste-min: 180px;
   --karte-mitte-min: 280px;
+  /* Breite, die die Mitte behält, solange die Seitenkarten noch nachgeben können */
+  --karte-mitte-wunsch: 480px;
   /* Tönung der Gruppenzeilen in der Zahlentabelle (eigene Bedeutung, auch wenn sie wie --hover aussieht) */
   --tabelle-gruppe: #f1f3f6;
   --bg: #f3f4f6;
@@ -257,15 +259,18 @@ body,
 .leiste > .karte {
   flex: 1;
 }
-/* schmale Fenster: die Mitte behält --karte-mitte-min, die Seitenkarten geben bis zu ihrer Mindestbreite nach (die
-   gemerkte Breite bleibt) – so bleibt jede Karte erreichbar, die Fläche scrollt trotzdem nie */
+/* schmale Fenster: Fehlt Platz, geben zuerst die Seitenkarten bis zu ihrer Mindestbreite nach (die gemerkte Breite
+   bleibt), erst danach die Mitte von --karte-mitte-wunsch bis --karte-mitte-min. Dafür geht die Mitte mit ihrer
+   Wunschbreite in die Rechnung und schrumpft kaum, die Seitenkarten dagegen stark (flex-shrink wird mit der Breite
+   gewichtet). So bleibt jede Karte erreichbar, die Fläche scrollt trotzdem nie. */
 .flaeche > .leiste,
 .flaeche > .flaechen-spalte:not(.wachsend) {
-  flex-shrink: 1;
+  flex-shrink: 1000;
   min-width: var(--leiste-min);
 }
 .flaeche > .karte,
 .flaeche > .flaechen-spalte.wachsend {
+  flex: 1 1 var(--karte-mitte-wunsch);
   min-width: var(--karte-mitte-min);
 }
 .karte-kopf {
@@ -277,8 +282,14 @@ body,
   padding: var(--s2) var(--karte-pad);
   border-bottom: 1px solid var(--line-soft);
 }
-.karte-kopf h2 {
+/* Überschrift mit Hilfe „?“ direkt dahinter; nimmt den Platz bis zu den Aktionen */
+.karte-titel {
   flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+.karte-kopf h2 {
   min-width: 0;
   margin: 0;
   font-size: var(--fs-l);
@@ -305,8 +316,13 @@ body,
   font-weight: 600;
   margin: var(--s4) 0 var(--s2);
 }
-.karte-rumpf > h3:first-child {
+/* der Inhalt beginnt immer im Abstand des Rumpfs unter dem Kopf und endet in dem darüber, gleich welches Element
+   am Anfang oder Ende steht (p, ul, h3 …) */
+.karte-rumpf > :first-child {
   margin-top: 0;
+}
+.karte-rumpf > :last-child {
+  margin-bottom: 0;
 }
 .karte-rumpf h4 {
   font-size: var(--fs-s);
