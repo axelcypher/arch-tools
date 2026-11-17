@@ -45,6 +45,9 @@ describe('NUMIO – Mengen prüfen', () => {
     const bgf = () => zeileDerMenge(host, 'BGF');
     expect(bgf().querySelector('.mv-menge-wert')?.textContent).toBe('250,00 m²');
     expect(bgf().querySelector('.mv-menge-zusatz')?.textContent).toBe('festgelegtabgeleitet 245,00');
+    // Akzentlinie und Rahmen kommen aus core: die Zusatzzelle beginnt eine eigene Zeile, das Kennzeichen ist eine Marke
+    expect(bgf().querySelector('.mv-menge-zusatz')!.classList).toContain('zeilenanfang');
+    expect([...bgf().querySelectorAll('.mv-menge-zusatz .marke')].map((m) => m.textContent)).toEqual(['festgelegt']);
     // Gegenprobe: Mengen ohne Handwert haben keine zweite Zeile
     expect(zeileDerMenge(host, 'BRI').querySelector('.mv-menge-zusatz')).toBeNull();
     expect(host.querySelector('.mv-rechenweg')?.textContent).toContain('Die Auswahl wirkt erst ohne Handwert');

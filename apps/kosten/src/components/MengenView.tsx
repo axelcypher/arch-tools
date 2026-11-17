@@ -161,10 +161,10 @@ export function MengenView({ bezug, onBezug }: { bezug: MengenBezug; onBezug: (b
                       {wert(b, m[b].wert)} <span className="muted small-text">{mi.einheit}</span>
                     </td>
                     {(m[b].festgelegt || geaendert) && (
-                      <td className="mv-menge-zusatz muted small-text">
-                        {m[b].festgelegt && <span className="mv-kennzeichen">festgelegt</span>}
+                      <td className="mv-menge-zusatz zeilenanfang muted small-text">
+                        {m[b].festgelegt && <span className="marke">festgelegt</span>}
                         {geaendert && (
-                          <span className="mv-kennzeichen" title={`${teile.filter((t) => t.zaehlt).length} von ${teile.length} Teilen zählen`}>
+                          <span className="marke" title={`${teile.filter((t) => t.zaehlt).length} von ${teile.length} Teilen zählen`}>
                             Auswahl geändert
                           </span>
                         )}
