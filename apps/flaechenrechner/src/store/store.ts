@@ -582,6 +582,9 @@ export function zwischenstandSichern(): Promise<boolean> {
 
 useEditor.subscribe((s, prev) => {
   if (s.project === prev.project && s.basis === prev.basis && s.datei === prev.datei) return;
+  // ohne IndexedDB (z. B. in der Testumgebung) gibt es nichts zu sichern – wie beim Lesen beim Start; sonst meldete
+  // ein verzögertes Schreiben noch nach dem Test einen Fehler auf die Konsole
+  if (typeof indexedDB === 'undefined') return;
   clearTimeout(autosaveTimer);
   autosaveTimer = setTimeout(() => {
     autosaveTimer = undefined;
