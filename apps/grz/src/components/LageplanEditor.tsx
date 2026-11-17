@@ -1035,7 +1035,7 @@ export function LageplanEditor({ n }: { n: Nachweis }) {
         </div>
         <svg
           ref={svgRef}
-          className={`grz-skizze lp-${werkzeug}`}
+          className={`canvas grz-skizze lp-${werkzeug}`}
           style={{ cursor: cursorStil }}
           viewBox={`${vb.x} ${vb.y} ${vb.w} ${vb.h}`}
           preserveAspectRatio="xMidYMid meet"

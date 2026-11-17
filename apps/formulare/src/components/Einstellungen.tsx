@@ -1,64 +1,154 @@
-import { useMemo, useState } from 'react';
-import { Modal } from '@core/ui/Dialog';
-import { PfadeVerweis } from '@core/ui/Einstellungen';
+import { useEffect, useMemo } from 'react';
+import { einstellungenStartseite, einstellungsSeiteAnmelden, PfadeVerweis, useEinstellungenGesperrt } from '@core/ui/Einstellungen';
 import { dateiname } from '@core/platform/files';
 import { projektdateiPfad } from '@core/projektdatei';
+import { Symbol } from '@core/ui/Symbol';
+import { inRolle, adressName, adressOrt } from '../adressbuch';
+import { waehleOrdner } from '../dateisystem';
+import { PERMIO_ENTWURF, entwurfSetzen, useEntwurfWert } from '../einstellungsEntwurf';
+import { OAP_ANGABEN } from '../oap';
+import { IN_PROJEKTKARTE } from '../projektdaten';
+import { useFormulare } from '../store';
+import { anzahl } from '../text';
 import { hatVorgabe } from '../vorgabe';
 import { VORGABEN } from '../vorgaben';
-import type { Adresse } from '../adressbuch';
-import { ADRESS_TEXTFELDER, adressName, adressOrt, inRolle, neueEigeneAdresse, sucheAdressen } from '../adressbuch';
-import { bestaetigen } from '@core/ui/Rueckfrage';
-import { waehleOrdner } from '../dateisystem';
-import { IN_PROJEKTKARTE } from '../projektdaten';
-import { stammdatenLaden, stammdatenSpeichern } from '../stammdaten';
+import { AdressKarte, adressbuchOeffnen } from './AdressbuchDialog';
 import { AntragEinstellungen } from './AntragEinstellungen';
 import { Karte } from './EinstellungsKarte';
 import { SicherungEinstellungen } from './SicherungEinstellungen';
-import type { EinstellungsBereich } from '../store';
-import { useFormulare } from '../store';
-import { OAP_ANGABEN } from '../oap';
-import type { SymbolName } from '@core/ui/Symbol';
-import { Symbol } from '@core/ui/Symbol';
-import { anzahl } from '../text';
 
-const BEREICHE: { id: EinstellungsBereich; titel: string; symbol: SymbolName; text: string }[] = [
-  { id: 'ordner', titel: 'Ordner', symbol: 'ordner', text: 'Formularprojekte, Projektordner, angezeigte Pfade' },
-  { id: 'stammdaten', titel: 'Büro & Stammdaten', symbol: 'buero', text: 'Vorgaben je Rolle für die Projektdaten neuer Projekte' },
-  { id: 'adressbuch', titel: 'Adressbuch', symbol: 'adressen', text: 'Adressen anlegen und pflegen, aus den Projektdaten aller Projekte' },
-  { id: 'formulare', titel: 'Formulare', symbol: 'formular', text: 'Gliederung und Füllstand je Formular' },
-  { id: 'antrag', titel: 'Antrag & Export', symbol: 'export', text: 'PDF-Export, Antragsfassungen, Antragsdokumente' },
-  { id: 'projektdaten', titel: 'Projektdatei (.oap)', symbol: 'tabelle', text: 'Projektstammdaten aus dem Projektordner' },
-  { id: 'sicherung', titel: 'Sichern & Übertragen', symbol: 'uebertragen', text: 'Einstellungen als Datei exportieren und importieren' },
-];
+/**
+ * Seite „PERMIO“ im zentralen Einstellungsdialog (docs/design.md, „Einstellungen“). Alles hier ändert zunächst nur den
+ * Entwurf (`einstellungsEntwurf.ts`) und gilt mit „Übernehmen“; im Notbetrieb ist die ganze Seite gesperrt. Pfade und
+ * Namensmuster stehen auf „Pfade und Benennung“ (Verweise), das Adressbuch ist ein eigener Dialog.
+ *
+ * Sprungziele für `einstellungenOeffnen('formulare', ziel)`: formularprojekte, pfade, rollen, formulare, antrag,
+ * projektdatei, sicherung.
+ */
 
-/** Einträge einer Adressgruppe in der Projektkarte (für die Anzeige im Adressbuch) */
-const ADRESSFELDER: [string, string][] = [
-  ['10', 'Branche'],
-  ['20', 'Titel'],
-  ['30', 'Vorname'],
-  ['40', 'Name/Firma'],
-  ['50', 'Abteilung'],
-  ['60', 'zu Händen'],
-  ['70', 'Straße/Nr.'],
-  ['80', 'Postfach'],
-  ['90', 'PLZ'],
-  ['100', 'PLZ Postfach'],
-  ['110', 'Ort'],
-  ['120', 'Land'],
-  ['130', 'Telefon 1'],
-  ['140', 'Telefon 2'],
-  ['150', 'Telefax'],
-  ['160', 'Mobilfunk'],
-  ['170', 'E-Mail'],
-  ['180', 'Internet'],
-  ['210', 'Anrede'],
-  ['220', 'Bevorzugter Kontakt'],
-  ['190', 'Kennung'],
-  ['200', 'Info'],
-  ['240', 'Bank'],
-  ['230', 'BIC'],
-  ['250', 'IBAN'],
-];
+export const PERMIO_SEITE = 'formulare';
+
+/** Seite beim Start von PERMIO anmelden – „Datei → Einstellungen …“ öffnet dann auf ihr */
+export function permioSeiteAnmelden(): () => void {
+  const abmelden = einstellungsSeiteAnmelden({
+    id: PERMIO_SEITE,
+    app: 'formulare',
+    titel: 'PERMIO',
+    text: 'Formularprojekte, Vorgaben, Antrag und Export',
+    symbol: 'formular',
+    inhalt: ({ fokus }) => <PermioSeite fokus={fokus} />,
+    entwurf: PERMIO_ENTWURF,
+  });
+  einstellungenStartseite(PERMIO_SEITE);
+  return abmelden;
+}
+
+export function PermioSeite({ fokus }: { fokus?: string }) {
+  const gesperrt = useEinstellungenGesperrt();
+  useEffect(() => {
+    if (!fokus) return;
+    const ziel = document.getElementById(`permio-${fokus}`);
+    ziel?.scrollIntoView?.({ block: 'start' });
+    ziel?.querySelector<HTMLElement>('input, textarea, select, button')?.focus();
+  }, [fokus]);
+  return (
+    <>
+      <h3>PERMIO</h3>
+      <p className="einst-einleitung">
+        Formularprojekte, Vorgaben für neue Projekte, Antrag und Export. Ordner im Projekt und Dateinamen stehen auf „Pfade und Benennung“, die Adressen im Adressbuch.
+      </p>
+      {/* im Notbetrieb sperrt das fieldset alle Felder und Knöpfe der Seite auf einmal */}
+      <fieldset className="es-seite" disabled={!!gesperrt} title={gesperrt ?? undefined}>
+        <legend className="unsichtbar">Einstellungen von PERMIO</legend>
+        <Ordner />
+        <Stammdaten />
+        <Formulare />
+        <AntragEinstellungen />
+        <Projektdaten />
+        <SicherungEinstellungen />
+      </fieldset>
+    </>
+  );
+}
+
+function OrdnerListe({ ordner, onEntfernen }: { ordner: string[]; onEntfernen: (p: string) => void }) {
+  if (!ordner.length) return <p className="muted small-text">Mit „Ordner hinzufügen …“ einen Ordner mit Formularprojekten wählen.</p>;
+  return (
+    <ul className="es-liste">
+      {ordner.map((p) => (
+        <li key={p} title={p}>
+          <Symbol name="ordner" />
+          <span className="es-liste-text">
+            <strong>{dateiname(p) || p}</strong>
+            <span className="muted small-text">{p}</span>
+          </span>
+          <button type="button" className="icon" title="Aus der Liste entfernen (der Ordner selbst bleibt unverändert)" aria-label={`${p} entfernen`} onClick={() => onEntfernen(p)}>
+            <Symbol name="schliessen" />
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function Ordner() {
+  const projektordner = useEntwurfWert('projektordner');
+  const vorgabe = useEntwurfWert('vorgabeAuswahl');
+  const ablageFehler = useFormulare((s) => s.ablageFehler);
+  return (
+    <>
+      <Karte
+        id="formularprojekte"
+        titel="Formularprojekte"
+        text="Ordner, in denen die Formularprojekte liegen (je Projekt ein Unterordner mit Kürzel, z. B. „BS5“, mit den Formularen und den Projektdaten). Es können mehrere sein."
+      >
+        <OrdnerListe
+          ordner={projektordner}
+          onEntfernen={(p) =>
+            entwurfSetzen(
+              'projektordner',
+              projektordner.filter((x) => x !== p),
+            )
+          }
+        />
+        <button
+          type="button"
+          // Erstfokus der Seite (docs/design.md, „Einstellungen“): ihr erstes Feld
+          data-startfokus=""
+          onClick={async () => {
+            const p = await waehleOrdner('Ordner mit Formularprojekten wählen');
+            if (p && !projektordner.includes(p)) entwurfSetzen('projektordner', [...projektordner, p]);
+          }}
+        >
+          <Symbol name="plus" /> Ordner hinzufügen …
+        </button>
+      </Karte>
+      <Karte
+        titel="Stammordner der Projekte"
+        text="Die Stammordner mit den eigentlichen Projektordnern gelten für alle Apps. Zugeordnet wird über das Kürzel („BS5 Buchenstraße 5“), zwei Ebenen tief."
+      >
+        {ablageFehler.map((f) => (
+          <p key={f} className="warning small-text">
+            {f}
+          </p>
+        ))}
+        <PfadeVerweis fokus="projekt.stammordner" text="Stammordner der Projekte …" erklaerung="Eingestellt auf der Seite „Pfade und Benennung“." />
+      </Karte>
+      <Karte
+        id="pfade"
+        titel="Angezeigte Pfade (Vorgabe)"
+        text={
+          <>
+            Welche Teile eines Projektordners in der Navigation erscheinen – je Zeile ein Pfad, z. B. <code>Organisation</code> oder <code>Planung/Berechnungen</code>, Platzhalter <code>*</code> und{' '}
+            <code>?</code> je Ebene. Je Projekt änderbar (<Symbol name="zahnrad" titel="Zahnrad" /> beim Projektordner in der Navigation).
+          </>
+        }
+      >
+        <textarea rows={5} value={vorgabe.join('\n')} onChange={(e) => entwurfSetzen('vorgabeAuswahl', e.target.value.split('\n'))} aria-label="Angezeigte Pfade (Vorgabe)" />
+      </Karte>
+    </>
+  );
+}
 
 /** Rollen, für die eine Vorgabe besonders nützlich ist (falls das Adressbuch noch leer ist) */
 const ROLLEN_VORGABE: [number, string][] = [
@@ -69,200 +159,51 @@ const ROLLEN_VORGABE: [number, string][] = [
   [232, 'Gemeinde'],
 ];
 
-/**
- * Einstellungen als Modal über der aktuellen Ansicht, mit Ebenen: links die Bereiche, rechts der Inhalt. Adressen
- * und Stammdaten kommen aus den Projektkarten – hier wird nur ausgewählt, nichts doppelt gepflegt. Alles wirkt
- * sofort; Schließen (Fertig, ×, Esc) kehrt zur Ansicht darunter zurück, die unverändert bleibt.
- */
-export function EinstellungenModal() {
-  const { einstellungenSchliessen } = useFormulare.getState();
-  return (
-    <Modal titel="Einstellungen" className="es-modal" onClose={einstellungenSchliessen} klickDaneben={false}>
-      <button className="icon es-schliessen" title="Schließen (Esc)" aria-label="Einstellungen schließen" onClick={einstellungenSchliessen}>
-        <Symbol name="schliessen" />
-      </button>
-      <EinstellungenAnsicht />
-    </Modal>
-  );
-}
-
-export function EinstellungenAnsicht() {
-  const bereich = useFormulare((s) => s.einstellungsBereich);
-  const { einstellungenOeffnen, einstellungenSchliessen } = useFormulare.getState();
-  return (
-    <div className="es">
-      <nav className="es-nav" aria-label="Bereiche der Einstellungen">
-        <div className="es-nav-kopf">
-          <Symbol name="zahnrad" /> Einstellungen
-        </div>
-        {BEREICHE.map((b) => (
-          <button key={b.id} className={`es-nav-eintrag${bereich === b.id ? ' aktiv' : ''}`} aria-current={bereich === b.id ? 'page' : undefined} onClick={() => einstellungenOeffnen(b.id)}>
-            <Symbol name={b.symbol} />
-            <span>
-              <span className="es-nav-titel">{b.titel}</span>
-              <span className="es-nav-text">{b.text}</span>
-            </span>
-          </button>
-        ))}
-        <button className="es-zurueck primary" onClick={einstellungenSchliessen}>
-          Fertig
-        </button>
-      </nav>
-      <section className="es-inhalt">
-        {bereich === 'ordner' && <Ordner />}
-        {bereich === 'stammdaten' && <Stammdaten />}
-        {bereich === 'adressbuch' && <Adressbuch />}
-        {bereich === 'formulare' && <Formulare />}
-        {bereich === 'antrag' && <AntragEinstellungen />}
-        {bereich === 'projektdaten' && <Projektdaten />}
-        {bereich === 'sicherung' && <SicherungEinstellungen />}
-      </section>
-    </div>
-  );
-}
-
-function OrdnerListe({ ordner, onEntfernen }: { ordner: string[]; onEntfernen: (p: string) => void }) {
-  if (!ordner.length) return <p className="muted small-text">Noch keiner eingestellt.</p>;
-  return (
-    <ul className="es-liste">
-      {ordner.map((p) => (
-        <li key={p} title={p}>
-          <Symbol name="ordner" />
-          <span className="es-liste-text">
-            <strong>{dateiname(p) || p}</strong>
-            <span className="muted small-text">{p}</span>
-          </span>
-          <button className="icon" title="Aus der Liste entfernen (der Ordner selbst bleibt unverändert)" aria-label={`${p} entfernen`} onClick={() => onEntfernen(p)}>
-            <Symbol name="schliessen" />
-          </button>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function Ordner() {
-  const projektordner = useFormulare((s) => s.projektordner);
-  const ablageordner = useFormulare((s) => s.ablageordner);
-  const vorgabe = useFormulare((s) => s.vorgabeAuswahl);
-  const ablageFehler = useFormulare((s) => s.ablageFehler);
-  const { ordnerHinzufuegen, ordnerEntfernen, ablageHinzufuegen, ablageEntfernen, setVorgabeAuswahl } = useFormulare.getState();
-  return (
-    <>
-      <h2>Ordner</h2>
-      <Karte titel="Formularprojekte" text="Ordner, in denen die Formularprojekte liegen (je Projekt ein Unterordner mit Kürzel, z. B. „BS5“, mit den Formularen und den Projektdaten). Es können mehrere sein.">
-        <OrdnerListe ordner={projektordner} onEntfernen={(p) => void ordnerEntfernen(p)} />
-        <button
-          onClick={async () => {
-            const p = await waehleOrdner('Ordner mit Formularprojekten wählen');
-            if (p) await ordnerHinzufuegen(p);
-          }}
-        >
-          <Symbol name="plus" /> Ordner hinzufügen …
-        </button>
-      </Karte>
-      <Karte
-        titel="Projektordner"
-        text={
-          <>
-            Stammordner mit den eigentlichen Projektordnern (z. B. <code>Z:\Projekte</code>) – gemeinsam für alle Apps (gemeinsamer Konfigurationsordner). Zuordnung
-            über das Kürzel – „BS5 Buchenstraße 5“ oder „JJ H24 …“ –, zwei Ebenen tief (auch in Unterordnern wie der Akquise).
-          </>
-        }
-      >
-        <OrdnerListe ordner={ablageordner} onEntfernen={(p) => void ablageEntfernen(p)} />
-        <button
-          onClick={async () => {
-            const p = await waehleOrdner('Ordner mit den Projektordnern wählen (z. B. Z:\\Projekte)');
-            if (p) await ablageHinzufuegen(p);
-          }}
-        >
-          <Symbol name="plus" /> Ordner hinzufügen …
-        </button>
-        {ablageFehler.map((f) => (
-          <p key={f} className="warning small-text">
-            {f}
-          </p>
-        ))}
-      </Karte>
-      <Karte
-        titel="Angezeigte Pfade (Vorgabe)"
-        text={
-          <>
-            Welche Teile eines Projektordners in der Navigation erscheinen – je Zeile ein Pfad, z. B. <code>Organisation</code> oder <code>Planung/Berechnungen</code>, Platzhalter{' '}
-            <code>*</code> und <code>?</code> je Ebene. Je Projekt änderbar (<Symbol name="zahnrad" titel="Zahnrad" /> beim Projektordner in der Navigation).
-          </>
-        }
-      >
-        <textarea rows={5} defaultValue={vorgabe.join('\n')} onBlur={(e) => setVorgabeAuswahl(e.target.value.split('\n'))} aria-label="Angezeigte Pfade (Vorgabe)" />
-      </Karte>
-    </>
-  );
-}
-
-function AdressKarte({ a }: { a: Adresse }) {
-  return (
-    <div className="es-adresse">
-      <strong>{adressName(a)}</strong>
-      {a.texte['70'] && <span>{a.texte['70']}</span>}
-      {adressOrt(a) && <span>{adressOrt(a)}</span>}
-      {(a.texte['130'] || a.texte['170']) && <span className="muted small-text">{[a.texte['130'], a.texte['170']].filter(Boolean).join(' · ')}</span>}
-    </div>
-  );
-}
-
-/** Noch kein Adressbuch: einlesen oder eine Adresse hinzufügen (`onNeu`; ohne – etwa unter „Büro & Stammdaten“ – führt der Knopf ins Adressbuch) */
-function AdressbuchLeer({ onNeu }: { onNeu?: () => void }) {
-  const laeuft = useFormulare((s) => s.adressbuchLaeuft);
-  const projekte = useFormulare((s) => s.projekte.length);
-  const { adressbuchLaden } = useFormulare.getState();
-  return (
-    <div className="es-leer">
-      <p>Das Adressbuch sammelt die Adressen aus den Projektdaten aller Projekte ({anzahl(projekte, 'Projekt', 'Projekte')}) – und eure eigenen, die ihr hier anlegt.</p>
-      <div className="es-knoepfe">
-        <button className="primary" disabled={!!laeuft || !projekte} title="Die Projektdaten (Projektkarten) aller Projekte lesen" onClick={() => void adressbuchLaden()}>
-          {laeuft ? `Liest … ${laeuft.fertig} von ${laeuft.gesamt}` : 'Aus den Projektdaten einlesen'}
-        </button>
-        {onNeu ? (
-          <button onClick={onNeu}>
-            <Symbol name="plus" /> Adresse hinzufügen
-          </button>
-        ) : (
-          <button onClick={() => useFormulare.getState().einstellungenOeffnen('adressbuch')}>Zum Adressbuch</button>
-        )}
-      </div>
-    </div>
-  );
-}
-
 function Stammdaten() {
   const adressbuch = useFormulare((s) => s.adressbuch);
-  const vorgaben = useFormulare((s) => s.rollenVorgaben);
-  const { setRollenVorgabe, einstellungenOeffnen } = useFormulare.getState();
+  const vorgaben = useEntwurfWert('rollenVorgaben');
   const rollen = useMemo(() => {
     const m = new Map<number, string>(ROLLEN_VORGABE);
     for (const a of adressbuch?.adressen ?? []) for (const v of a.verwendungen) if (!m.has(v.gruppe) && v.gruppe !== 201 && v.gruppe !== 205) m.set(v.gruppe, v.rolle);
     return [...m].sort((a, b) => a[0] - b[0]);
   }, [adressbuch]);
+  const setze = (gruppe: number, schluessel: string | null) => {
+    const neu = { ...vorgaben };
+    if (schluessel) neu[String(gruppe)] = schluessel;
+    else delete neu[String(gruppe)];
+    entwurfSetzen('rollenVorgaben', neu);
+  };
 
   return (
-    <>
-      <h2>Büro & Stammdaten</h2>
-      <p className="muted">
-        Vorgaben je Rolle: Welche Adresse in die Projektdaten eines neuen Projekts eingesetzt wird (Projektdaten → „Vorgaben eintragen“ bzw. „Übernehmen von …“). Die Adressen stammen
-        aus dem <button className="es-verweis" onClick={() => einstellungenOeffnen('adressbuch')}>Adressbuch</button> – dort lassen sie sich anlegen und ändern.
-      </p>
+    <Karte
+      id="rollen"
+      titel="Vorgaben je Rolle"
+      text="Welche Adresse in die Projektdaten eines neuen Projekts eingesetzt wird (Projektdaten → „Vorgaben eintragen“ bzw. „Übernehmen von …“). Die Adressen stammen aus dem Adressbuch – dort lassen sie sich anlegen und ändern."
+    >
       {!adressbuch ? (
-        <AdressbuchLeer />
+        <>
+          <p className="muted small-text">Das Adressbuch ist noch leer – dort die Adressen aus den Projektdaten einlesen oder eigene anlegen.</p>
+          <div className="es-zeile">
+            <button type="button" onClick={adressbuchOeffnen}>
+              <Symbol name="adressen" /> Adressbuch …
+            </button>
+          </div>
+        </>
       ) : (
         <div className="es-rollen">
+          <div className="es-zeile">
+            <button type="button" onClick={adressbuchOeffnen}>
+              <Symbol name="adressen" /> Adressbuch …
+            </button>
+          </div>
           {rollen.map(([gruppe, rolle]) => {
             const passend = inRolle(adressbuch.adressen, gruppe);
             const gewaehlt = adressbuch.adressen.find((a) => a.schluessel === vorgaben[String(gruppe)]);
             const andere = adressbuch.adressen.filter((a) => !passend.includes(a));
             return (
-              <Karte key={gruppe} titel={rolle}>
-                <select value={vorgaben[String(gruppe)] ?? ''} onChange={(e) => setRollenVorgabe(gruppe, e.target.value || null)} aria-label={`Vorgabe für ${rolle}`}>
+              <label key={gruppe} className="field es-rolle">
+                <span className="field-label">{rolle}</span>
+                <select value={vorgaben[String(gruppe)] ?? ''} onChange={(e) => setze(gruppe, e.target.value || null)}>
                   <option value="">– keine Vorgabe –</option>
                   {passend.length > 0 && (
                     <optgroup label={`Bisher als ${rolle}`}>
@@ -282,255 +223,27 @@ function Stammdaten() {
                   </optgroup>
                 </select>
                 {gewaehlt && <AdressKarte a={gewaehlt} />}
-                {vorgaben[String(gruppe)] && !gewaehlt && <p className="warning small-text">Die gewählte Adresse steht nicht mehr im Adressbuch.</p>}
-              </Karte>
+                {vorgaben[String(gruppe)] && !gewaehlt && <span className="warning small-text">Die gewählte Adresse steht nicht mehr im Adressbuch.</span>}
+              </label>
             );
           })}
         </div>
       )}
-    </>
-  );
-}
-
-function Adressbuch() {
-  const adressbuch = useFormulare((s) => s.adressbuch);
-  const eigene = useFormulare((s) => s.eigeneAdressen);
-  const laeuft = useFormulare((s) => s.adressbuchLaeuft);
-  const projekte = useFormulare((s) => s.projekte.length);
-  const { adressbuchLaden, eigeneAdresseSpeichern, eigeneAdresseEntfernen } = useFormulare.getState();
-  const [suche, setSuche] = useState('');
-  const [gewaehlt, setGewaehlt] = useState<string | null>(null);
-  /** in Bearbeitung: Schlüssel und Texte (neu: Schlüssel „e:…“, noch nicht gespeichert) */
-  const [entwurf, setEntwurf] = useState<{ schluessel: string; texte: Record<string, string>; neu: boolean } | null>(null);
-  const [alt, setAlt] = useState(stammdatenLaden);
-  const liste = useMemo(() => sucheAdressen(adressbuch?.adressen ?? [], suche), [adressbuch, suche]);
-  const auswahl = liste.find((a) => a.schluessel === gewaehlt) ?? liste[0];
-  const ausgeblendet = eigene.filter((e) => e.ausgeblendet);
-  /** noch nichts eingelesen: die Knöpfe stehen dann in der Leerseite (nicht doppelt in der Titelzeile) */
-  const leer = !adressbuch && !entwurf;
-
-  const neu = () => {
-    const a = neueEigeneAdresse();
-    setEntwurf({ schluessel: a.schluessel, texte: {}, neu: true });
-  };
-  const bearbeiten = (a: Adresse) => setEntwurf({ schluessel: a.schluessel, texte: Object.fromEntries(ADRESS_TEXTFELDER.map(([id]) => [id, a.texte[id] ?? ''])), neu: false });
-  const speichern = async () => {
-    if (!entwurf || !entwurf.texte['40']?.trim()) return;
-    const texte = Object.fromEntries(Object.entries(entwurf.texte).map(([k, v]) => [k, v.trim()]));
-    await eigeneAdresseSpeichern({ schluessel: entwurf.schluessel, texte, geaendert: Date.now() });
-    setGewaehlt(entwurf.schluessel);
-    setEntwurf(null);
-  };
-  const entfernen = async (a: Adresse) => {
-    if (a.herkunft === 'eigen') {
-      if (await bestaetigen(`„${adressName(a)}“ löschen?`, 'Die Adresse wird aus dem Adressbuch gelöscht. Projektdaten, in die sie übernommen wurde, bleiben unverändert.', 'Löschen'))
-        await eigeneAdresseEntfernen(a.schluessel);
-    } else if (
-      await bestaetigen(
-        `„${adressName(a)}“ ausblenden?`,
-        'Die Adresse steht in den Projektdaten von Projekten und wird dort nicht gelöscht – im Adressbuch erscheint sie nicht mehr (unten wieder einblendbar).',
-        'Ausblenden',
-      )
-    )
-      await eigeneAdresseSpeichern({ schluessel: a.schluessel, texte: {}, ausgeblendet: true, geaendert: Date.now() });
-  };
-
-  return (
-    <>
-      <div className="es-titelzeile">
-        <h2>Adressbuch</h2>
-        {!leer && (
-          <>
-            <button className="primary" onClick={neu}>
-              <Symbol name="plus" /> Adresse hinzufügen
-            </button>
-            <button disabled={!!laeuft || !projekte} onClick={() => void adressbuchLaden()} title="Die Projektdaten (Projektkarten) aller Projekte neu lesen">
-              {laeuft ? `Liest … ${laeuft.fertig} von ${laeuft.gesamt}` : adressbuch?.stand ? 'Neu einlesen' : 'Aus den Projektdaten einlesen'}
-            </button>
-          </>
-        )}
-      </div>
-      <p className="muted">
-        Bauherren, Entwurfsverfasser, Behörden, Fachplaner: die Adressen aus den Projektdaten aller Projekte (gleiche erscheinen einmal mit allen Verwendungen) und eure
-        eigenen. Anlegen, ändern und ausblenden lässt sich alles hier – gespeichert im gemeinsamen Konfigurationsordner, für alle im Büro. Die Projektdaten selbst bleiben
-        unverändert; übernommen wird eine Adresse in den Projektdaten mit „Übernehmen von …“.
-        {adressbuch && ` ${anzahl(adressbuch.adressen.length, 'Adresse', 'Adressen')}${adressbuch.stand ? `, Projektdaten gelesen ${new Date(adressbuch.stand).toLocaleString('de-DE')}` : ''}.`}
-      </p>
-      {leer ? (
-        <AdressbuchLeer onNeu={neu} />
-      ) : (
-        <div className="es-adressbuch">
-          <div className="es-adressliste">
-            <input type="search" placeholder="Name, Ort, Rolle, Projekt …" value={suche} onChange={(e) => setSuche(e.target.value)} aria-label="Adressbuch durchsuchen" />
-            <div className="es-adressliste-eintraege" role="listbox" aria-label="Adressen">
-              {liste.map((a) => (
-                <button
-                  key={a.schluessel}
-                  role="option"
-                  aria-selected={auswahl === a && !entwurf?.neu}
-                  className={`es-adress-eintrag${auswahl === a && !entwurf?.neu ? ' aktiv' : ''}`}
-                  onClick={() => {
-                    setGewaehlt(a.schluessel);
-                    setEntwurf(null);
-                  }}
-                >
-                  <strong>
-                    {adressName(a)}
-                    {a.herkunft && <span className={`es-herkunft ${a.herkunft}`}>{a.herkunft === 'eigen' ? 'eigene' : 'geändert'}</span>}
-                  </strong>
-                  <span className="muted small-text">
-                    {adressOrt(a) || '–'}
-                    {a.verwendungen.length ? ` · ${[...new Set(a.verwendungen.map((v) => v.rolle))].slice(0, 2).join(', ')}` : ''}
-                  </span>
-                </button>
-              ))}
-              {!liste.length && <p className="muted small-text">Keine passenden Adressen.</p>}
-            </div>
-          </div>
-          {entwurf ? (
-            <form
-              className="es-adress-detail es-adress-form"
-              aria-label={entwurf.neu ? 'Neue Adresse' : 'Adresse bearbeiten'}
-              onSubmit={(e) => {
-                e.preventDefault();
-                void speichern();
-              }}
-            >
-              <h3>{entwurf.neu ? 'Neue Adresse' : 'Adresse bearbeiten'}</h3>
-              <div className="es-adress-felder">
-                {ADRESS_TEXTFELDER.map(([id, titel]) => (
-                  <label key={id} className={id === '40' || id === '70' ? 'breit' : ''}>
-                    <span className="field-label">
-                      {titel}
-                      {id === '40' && (
-                        <span className="pflicht" aria-hidden>
-                          {' '}
-                          *
-                        </span>
-                      )}
-                    </span>
-                    <input
-                      value={entwurf.texte[id] ?? ''}
-                      aria-label={titel}
-                      required={id === '40'}
-                      autoFocus={id === '40'}
-                      onChange={(e) => setEntwurf({ ...entwurf, texte: { ...entwurf.texte, [id]: e.target.value } })}
-                    />
-                  </label>
-                ))}
-              </div>
-              <div className="es-knoepfe">
-                <button type="submit" className="primary" disabled={!entwurf.texte['40']?.trim()}>
-                  Speichern
-                </button>
-                <button type="button" onClick={() => setEntwurf(null)}>
-                  Abbrechen
-                </button>
-              </div>
-            </form>
-          ) : (
-            auswahl && (
-              <div className="es-adress-detail">
-                <div className="es-titelzeile">
-                  <h3>{adressName(auswahl)}</h3>
-                  <button className="small" onClick={() => bearbeiten(auswahl)}>
-                    <Symbol name="stift" /> Bearbeiten
-                  </button>
-                  <button className={`small${auswahl.herkunft === 'eigen' ? ' danger' : ''}`} onClick={() => void entfernen(auswahl)}>
-                    {auswahl.herkunft === 'eigen' ? 'Löschen …' : 'Ausblenden …'}
-                  </button>
-                  {auswahl.herkunft === 'geaendert' && (
-                    <button className="small" title="Die eigene Fassung verwerfen – es gilt wieder die aus den Projektdaten" onClick={() => void eigeneAdresseEntfernen(auswahl.schluessel)}>
-                      Änderungen verwerfen
-                    </button>
-                  )}
-                </div>
-                <p className="muted small-text">
-                  {auswahl.herkunft === 'eigen' ? 'Eigene Adresse des Adressbuchs.' : auswahl.herkunft === 'geaendert' ? 'Aus den Projektdaten, im Adressbuch geändert.' : 'Aus den Projektdaten.'}
-                </p>
-                <dl>
-                  {ADRESSFELDER.filter(([id]) => auswahl.texte[id]?.trim()).map(([id, titel]) => (
-                    <div key={id}>
-                      <dt>{titel}</dt>
-                      <dd>{auswahl.texte[id]}</dd>
-                    </div>
-                  ))}
-                </dl>
-                {auswahl.verwendungen.length > 0 && (
-                  <>
-                    <h4>Verwendet in</h4>
-                    <ul className="es-verwendungen">
-                      {auswahl.verwendungen.map((v, i) => (
-                        <li key={i}>
-                          <strong>{v.projekt}</strong> · {v.rolle}
-                        </li>
-                      ))}
-                    </ul>
-                  </>
-                )}
-              </div>
-            )
-          )}
-        </div>
-      )}
-      {ausgeblendet.length > 0 && (
-        <Karte titel={`Ausgeblendet (${ausgeblendet.length})`} text="Adressen aus den Projektdaten, die im Adressbuch nicht erscheinen.">
-          <ul className="es-liste">
-            {ausgeblendet.map((e) => {
-              const a = adressbuch?.adressen.find((x) => x.schluessel === e.schluessel) ?? useFormulare.getState().adressbuchKarten?.adressen.find((x) => x.schluessel === e.schluessel);
-              return (
-                <li key={e.schluessel}>
-                  <Symbol name="adressen" />
-                  <span className="es-liste-text">{a ? `${adressName(a)} · ${adressOrt(a)}` : e.schluessel.split('|').filter(Boolean).join(', ')}</span>
-                  <button className="small" onClick={() => void eigeneAdresseEntfernen(e.schluessel)}>
-                    Einblenden
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        </Karte>
-      )}
-      {alt.length > 0 && (
-        <Karte titel="Früher in der App gemerkte Adressen" text="Aus Version 0.2/0.3 – lassen sich weiter übernehmen. Am besten als neue Adresse ins Adressbuch übertragen und hier entfernen.">
-          <ul className="es-liste">
-            {alt.map((s) => (
-              <li key={s.name}>
-                <Symbol name="adressen" />
-                <span className="es-liste-text">{s.name}</span>
-                <button
-                  className="icon"
-                  aria-label={`${s.name} entfernen`}
-                  title="Entfernen"
-                  onClick={() => {
-                    const liste2 = alt.filter((x) => x.name !== s.name);
-                    stammdatenSpeichern(liste2);
-                    setAlt(liste2);
-                  }}
-                >
-                  <Symbol name="schliessen" />
-                </button>
-              </li>
-            ))}
-          </ul>
-        </Karte>
-      )}
-    </>
+    </Karte>
   );
 }
 
 function Formulare() {
   const profile = useFormulare((s) => s.profile);
-  const { profilSetzen } = useFormulare.getState();
+  const zurueck = useEntwurfWert('profileZurueck');
   const eintraege = Object.entries(profile);
+  const umschalten = (k: string) => entwurfSetzen('profileZurueck', zurueck.includes(k) ? zurueck.filter((x) => x !== k) : [...zurueck, k]);
   return (
-    <>
-      <h2>Formulare</h2>
-      <p className="muted">
-        Je Formular lässt sich einstellen, welche Abschnitte die Gliederung zeigt, wie Abschnitte und Felder heißen, welche Felder in den Füllstand eingehen und welche zusammen
-        als eine Angabe zählen und wann etwas erforderlich ist – im Formular über „Einrichten“ in der Werkzeugleiste. Die Einstellung gilt für das Formular in
-        allen Projekten.
-      </p>
+    <Karte
+      id="formulare"
+      titel="Formulare"
+      text="Je Formular lässt sich einstellen, welche Abschnitte die Gliederung zeigt, wie Abschnitte und Felder heißen, welche Felder in den Füllstand eingehen und wann etwas erforderlich ist – im Formular über „Formular einrichten“ im Menü „Mehr“. Die Einstellung gilt für das Formular in allen Projekten."
+    >
       <p className="muted small-text">
         {Object.keys(VORGABEN).length
           ? `Für ${anzahl(Object.keys(VORGABEN).length, 'Formular', 'Formulare')} bringt die App eine Vorgabe mit (Titel, Gruppen und Bedingungen nach BauO NRW / BauPrüfVO). Eigene Einstellungen gehen vor; gespeichert wird nur, was davon abweicht.`
@@ -547,31 +260,37 @@ function Formulare() {
             const felder = Object.keys(p.feldTitel ?? {}).length;
             const gruppen = (p.gruppen ?? []).length + (p.ohneGruppen ?? []).length;
             const bedingungen = Object.keys(p.bedingungen ?? {}).length + Object.values(p.abschnitte).filter((a) => a.bedingung !== undefined).length;
+            const vorgemerkt = zurueck.includes(k);
+            const name = k.replace(/\|/, ' · Stand ');
             return (
-              <li key={k}>
+              <li key={k} className={vorgemerkt ? 'es-vorgemerkt' : undefined}>
                 <Symbol name="formular" />
                 <span className="es-liste-text">
-                  <strong>{k.replace(/\|/, ' · Stand ')}</strong>
+                  <strong>{name}</strong>
                   <span className="muted small-text">
-                    {[
-                      versteckt && `${anzahl(versteckt, 'Abschnitt', 'Abschnitte')} ausgeblendet`,
-                      umbenannt && `${umbenannt} umbenannt`,
-                      felder && `${anzahl(felder, 'Feld', 'Felder')} umbenannt`,
-                      ohne && `${anzahl(ohne, 'Feld zählt', 'Felder zählen')} nicht`,
-                      gruppen && anzahl(gruppen, 'Gruppe', 'Gruppen'),
-                      bedingungen && anzahl(bedingungen, 'Bedingung', 'Bedingungen'),
-                    ]
-                      .filter(Boolean)
-                      .join(' · ')}
+                    {vorgemerkt
+                      ? `${hatVorgabe(k) ? 'Wird auf die Vorgabe zurückgesetzt' : 'Wird zurückgesetzt'} – gilt mit „Übernehmen“`
+                      : [
+                          versteckt && `${anzahl(versteckt, 'Abschnitt', 'Abschnitte')} ausgeblendet`,
+                          umbenannt && `${umbenannt} umbenannt`,
+                          felder && `${anzahl(felder, 'Feld', 'Felder')} umbenannt`,
+                          ohne && `${anzahl(ohne, 'Feld zählt', 'Felder zählen')} nicht`,
+                          gruppen && anzahl(gruppen, 'Gruppe', 'Gruppen'),
+                          bedingungen && anzahl(bedingungen, 'Bedingung', 'Bedingungen'),
+                        ]
+                          .filter(Boolean)
+                          .join(' · ')}
                   </span>
                 </span>
-                <button onClick={() => profilSetzen(k, null)}>{hatVorgabe(k) ? 'Auf Vorgabe zurücksetzen' : 'Zurücksetzen'}</button>
+                <button type="button" aria-label={`${name}: ${vorgemerkt ? 'Doch behalten' : hatVorgabe(k) ? 'Auf Vorgabe zurücksetzen' : 'Zurücksetzen'}`} onClick={() => umschalten(k)}>
+                  {vorgemerkt ? 'Doch behalten' : hatVorgabe(k) ? 'Auf Vorgabe zurücksetzen' : 'Zurücksetzen'}
+                </button>
               </li>
             );
           })}
         </ul>
       )}
-    </>
+    </Karte>
   );
 }
 
@@ -581,50 +300,32 @@ const OAP_BEISPIEL = { nummer: 'BS9', kurzname: 'EFH Musterweg', vorhaben: 'Neub
 function Projektdaten() {
   const neu = useFormulare((s) => s.oapVorlage);
   return (
-    <>
-      <h2>Projektdatei (.oap)</h2>
-      <p className="muted">
-        Die Projektstammdaten kommen aus der Projektdatei im Projektordner – dem gemeinsamen Projektarchiv von QUADRIO (Flächenrechner), TERRIO (GRZ-Nachweis),
-        NUMIO (Kostenermittlung) und ATLAS (Projektordner). Gesucht wird bis vier Ebenen tief; bei mehreren gilt die im Ordner der Berechnungen, sonst die mit dem kürzesten Pfad –
-        je Projekt lässt sich in den Projektdaten eine andere wählen. In den Projektdaten lassen sich die Angaben in beide Richtungen abgleichen; beim Speichern der
-        Projektdaten werden geänderte Angaben in die Projektdatei eingetragen, alles andere darin bleibt unverändert. Eine alte
-        Projektdaten.xlsx wird nur noch gelesen, um ihre Angaben zu übernehmen.
+    <Karte
+      id="projektdatei"
+      titel="Projektdatei (.oap)"
+      text="Die Projektstammdaten kommen aus der Projektdatei im Projektordner – dem gemeinsamen Projektarchiv von QUADRIO, TERRIO, NUMIO und ATLAS. Gesucht wird bis vier Ebenen tief; bei mehreren gilt die im Ordner der Berechnungen, sonst die mit dem kürzesten Pfad – je Projekt lässt sich in den Projektdaten eine andere wählen. Beim Speichern der Projektdaten werden geänderte Angaben in die Projektdatei eingetragen, alles andere darin bleibt unverändert."
+    >
+      <p>
+        Neue Projektdatei: <code>{neu}</code> <span className="muted small-text">z. B. {projektdateiPfad(neu, OAP_BEISPIEL)}</span>
       </p>
-      <Karte
-        titel="Neue Projektdatei"
-        text={
-          <>
-            Fehlt die Projektdatei, legt sie der Stammdaten-Dialog hier an – relativ zum Projektordner, mit den Angaben aus dem Dialog. Die Einstellung gilt für
-            alle Apps (gemeinsamer Konfigurationsordner).
-          </>
-        }
-      >
-        <p>
-          Pfad: <code>{neu}</code>
-        </p>
-        <p className="muted es-beispiel" role="note" aria-label="Beispiel für den Pfad">
-          Beispiel: <code>{projektdateiPfad(neu, OAP_BEISPIEL)}</code>
-        </p>
-        <PfadeVerweis fokus="projekt.oapPfad" erklaerung="Eingestellt in den Einstellungen aller Apps, Seite „Pfade und Benennung“." />
-      </Karte>
-      <Karte titel="Angaben">
-        <table className="es-tabelle">
-          <thead>
-            <tr>
-              <th>In den Projektdaten</th>
-              <th>In der Projektdatei</th>
+      <PfadeVerweis fokus="projekt.oapPfad" erklaerung="Ort und Name neuer Projektdateien stehen auf der Seite „Pfade und Benennung“." />
+      <table className="es-tabelle">
+        <caption className="unsichtbar">Angaben der Projektdaten und der Projektdatei</caption>
+        <thead>
+          <tr>
+            <th>In den Projektdaten</th>
+            <th>In der Projektdatei</th>
+          </tr>
+        </thead>
+        <tbody>
+          {OAP_ANGABEN.map(({ angabe, feld }) => (
+            <tr key={angabe}>
+              <td>{IN_PROJEKTKARTE[angabe]?.titel}</td>
+              <td>{feld}</td>
             </tr>
-          </thead>
-          <tbody>
-            {OAP_ANGABEN.map(({ angabe, feld }) => (
-              <tr key={angabe}>
-                <td>{IN_PROJEKTKARTE[angabe]?.titel}</td>
-                <td>{feld}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </Karte>
-    </>
+          ))}
+        </tbody>
+      </table>
+    </Karte>
   );
 }

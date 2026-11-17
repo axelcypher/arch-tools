@@ -5,6 +5,7 @@ import type { AntragsVorlage, KatalogEintrag } from '../antrag';
 import { PLANSATZ_QUELLE, VORGABE_KATALOG, VORGABE_VORLAGEN, verschieben, vorlagenAus } from '../antrag';
 import { bedingungText, hatBedingung } from '../bedingung';
 import { useAntrag } from '../antragStore';
+import { entwurfSetzen, entwurfWert, useEntwurfWert } from '../einstellungsEntwurf';
 import { BedingungEditor } from './BedingungEditor';
 import { Karte } from './EinstellungsKarte';
 import { Griff, useSortieren } from './Sortieren';
@@ -48,11 +49,13 @@ function fokussieren(...ziele: (HTMLElement | string | null | undefined)[]) {
  * angekreuzt.
  */
 export function DokumenteEinstellungen() {
-  const katalog = useAntrag((s) => s.katalog);
-  const vorlagen = useAntrag((s) => s.vorlagen);
-  const merkmale = useAntrag((s) => s.merkmalDefinitionen);
+  const katalog = useEntwurfWert('katalog');
+  const vorlagen = useEntwurfWert('vorlagen');
+  const merkmale = useEntwurfWert('merkmale');
   const e = useAntrag((s) => s.einstellungen);
-  const { setKatalog, setVorlagen } = useAntrag.getState();
+  // Änderungen gehen in den Entwurf der Seite und gelten mit „Übernehmen“; null = Vorgabe der App
+  const setKatalog = (k: KatalogEintrag[] | null) => entwurfSetzen('katalog', k);
+  const setVorlagen = (v: AntragsVorlage[] | null) => entwurfSetzen('vorlagen', v);
   const katalogSort = useSortieren(katalog.length, (von, nach) => setKatalog(verschieben(katalog, von, nach)));
   const vorlagenSort = useSortieren(vorlagen.length, (von, nach) => setVorlagen(verschieben(vorlagen, von, nach)));
   const id = useId();
@@ -106,7 +109,8 @@ export function DokumenteEinstellungen() {
       fokussieren(ausloeser, `${dokId(k.id)}-entfernen`);
       return;
     }
-    const { katalog: jetzt, vorlagen: vorlagenJetzt } = useAntrag.getState();
+    const jetzt = entwurfWert('katalog');
+    const vorlagenJetzt = entwurfWert('vorlagen');
     const i = jetzt.findIndex((x) => x.id === k.id);
     const rest = jetzt.filter((x) => x.id !== k.id);
     setKatalog(rest);
@@ -122,7 +126,7 @@ export function DokumenteEinstellungen() {
       fokussieren(ausloeser, `${id}-vorlage-${v.id}-entfernen`);
       return;
     }
-    setVorlagen(useAntrag.getState().vorlagen.filter((x) => x.id !== v.id));
+    setVorlagen(entwurfWert('vorlagen').filter((x) => x.id !== v.id));
     setVorlageId((jetzt) => (jetzt === v.id ? '' : jetzt));
     setFokus([vorlageNeuId]);
   };
@@ -136,8 +140,8 @@ export function DokumenteEinstellungen() {
     }
     // die Vorlagen bleiben: auch solche, die (noch nie gespeichert) aus dem Katalog abgeleitet sind – festschreiben, wenn
     // sie sonst nach dem Zurücksetzen anders abgeleitet würden
-    const vorlagenJetzt = useAntrag.getState().vorlagen;
-    if (JSON.stringify(vorlagenJetzt) !== JSON.stringify(vorlagenAus(null, VORGABE_KATALOG))) setVorlagen(vorlagenJetzt);
+    const vorlagenJetzt = entwurfWert('vorlagen');
+    if (JSON.stringify(vorlagenJetzt) !== JSON.stringify(vorlagenAus(null, VORGABE_KATALOG))) entwurfSetzen('vorlagen', vorlagenJetzt, true);
     setKatalog(null);
     setOffen(null);
     setFokus([hinzufuegenId]);
@@ -192,6 +196,7 @@ export function DokumenteEinstellungen() {
                   </td>
                   <td>
                     <button
+                      type="button"
                       className="small"
                       aria-label={`${dokumenteText(n)} – Dokumente der Vorlage ${v.name} ankreuzen`}
                       title={`Unten die Dokumente der Vorlage „${v.name}“ zeigen und ankreuzen`}
@@ -205,7 +210,7 @@ export function DokumenteEinstellungen() {
                     </button>
                   </td>
                   <td>
-                    <button id={`${id}-vorlage-${v.id}-entfernen`} className="icon" aria-label={`Vorlage ${v.name} entfernen`} title="Entfernen" onClick={() => void vorlageEntfernen(v)}>
+                    <button type="button" id={`${id}-vorlage-${v.id}-entfernen`} className="icon" aria-label={`Vorlage ${v.name} entfernen`} title="Entfernen" onClick={() => void vorlageEntfernen(v)}>
                       <Symbol name="muell" />
                     </button>
                   </td>
@@ -215,11 +220,11 @@ export function DokumenteEinstellungen() {
           </tbody>
         </table>
         <div className="es-zeile">
-          <button id={vorlageNeuId} onClick={() => setVorlagen([...vorlagen, { id: `v${Date.now().toString(36)}`, name: 'Neue Vorlage', dokumente: [] }])}>
+          <button type="button" id={vorlageNeuId} onClick={() => setVorlagen([...vorlagen, { id: `v${Date.now().toString(36)}`, name: 'Neue Vorlage', dokumente: [] }])}>
             <Symbol name="plus" /> Vorlage hinzufügen
           </button>
           {JSON.stringify(vorlagen) !== JSON.stringify(vorlagenAus(null, katalog)) && JSON.stringify(vorlagen) !== JSON.stringify(VORGABE_VORLAGEN) && (
-            <button id={`${id}-vorlagen-vorgabe`} onClick={() => void vorlagenVorgabe()}>
+            <button type="button" id={`${id}-vorlagen-vorgabe`} onClick={() => void vorlagenVorgabe()}>
               Vorgabe wiederherstellen …
             </button>
           )}
@@ -277,6 +282,7 @@ export function DokumenteEinstellungen() {
                       </label>
                     )}
                     <button
+                      type="button"
                       id={knopfId(k.id)}
                       className="es-dok-knopf"
                       aria-expanded={auf}
@@ -387,10 +393,10 @@ export function DokumenteEinstellungen() {
                         <BedingungEditor wert={k.bedingung} merkmale={merkmale} onChange={(b) => setzen(k.id, { bedingung: b })} />
                       </div>
                       <div className="es-zeile es-dok-fuss">
-                        <button id={`${kid}-entfernen`} className="small danger" onClick={() => void entfernen(k)}>
+                        <button type="button" id={`${kid}-entfernen`} className="small danger" onClick={() => void entfernen(k)}>
                           <Symbol name="muell" /> Dokument entfernen …
                         </button>
-                        <button className="small" onClick={() => schliessen(k.id)}>
+                        <button type="button" className="small" onClick={() => schliessen(k.id)}>
                           Schließen
                         </button>
                       </div>
@@ -404,11 +410,11 @@ export function DokumenteEinstellungen() {
           <p className="muted small-text es-dok-leer">Noch keine Dokumente – „Dokument hinzufügen“ legt eins an.</p>
         )}
         <div className="es-zeile">
-          <button id={hinzufuegenId} onClick={hinzufuegen}>
+          <button type="button" id={hinzufuegenId} onClick={hinzufuegen}>
             <Symbol name="plus" /> Dokument hinzufügen
           </button>
           {JSON.stringify(katalog) !== JSON.stringify(VORGABE_KATALOG) && (
-            <button id={`${id}-katalog-vorgabe`} onClick={() => void katalogVorgabe()}>
+            <button type="button" id={`${id}-katalog-vorgabe`} onClick={() => void katalogVorgabe()}>
               Vorgabe wiederherstellen …
             </button>
           )}
