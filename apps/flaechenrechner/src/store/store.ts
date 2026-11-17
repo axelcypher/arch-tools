@@ -568,7 +568,8 @@ function zwischenstandSchreiben(): Promise<boolean> {
  * Vor dem Schließen (Arkly, `vorDemSchliessen`): ausstehendes Zwischenspeichern sofort ausführen und abwarten.
  * `false`, wenn der Stand nicht gesichert ist – Arkly fragt dann „… konnte nicht speichern“, statt still zu schließen.
  * Mehrfach aufrufbar: Ein laufendes Schreiben wird abgewartet statt doppelt geschrieben; ist das letzte gescheitert,
- * wird neu geschrieben (etwa nach „Erneut versuchen“).
+ * wird neu geschrieben (etwa nach „Erneut versuchen“). Ohne IndexedDB wird nie zwischengespeichert: dann `true`, weil
+ * es keinen Speicher gibt, nach dem Arkly fragen könnte (in der Desktop-App gibt es IndexedDB immer).
  */
 export function zwischenstandSichern(): Promise<boolean> {
   if (autosaveTimer !== undefined) {
@@ -582,8 +583,8 @@ export function zwischenstandSichern(): Promise<boolean> {
 
 useEditor.subscribe((s, prev) => {
   if (s.project === prev.project && s.basis === prev.basis && s.datei === prev.datei) return;
-  // ohne IndexedDB (z. B. in der Testumgebung) gibt es nichts zu sichern – wie beim Lesen beim Start; sonst meldete
-  // ein verzögertes Schreiben noch nach dem Test einen Fehler auf die Konsole
+  // ohne IndexedDB (z. B. in der Testumgebung) wird nicht zwischengespeichert – wie beim Lesen beim Start; es fehlt der
+  // Ort zum Sichern. Sonst meldete ein verzögertes Schreiben noch nach dem Test eine Warnung auf die Konsole
   if (typeof indexedDB === 'undefined') return;
   clearTimeout(autosaveTimer);
   autosaveTimer = setTimeout(() => {
