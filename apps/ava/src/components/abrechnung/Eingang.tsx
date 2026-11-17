@@ -1,3 +1,5 @@
+import { Karte } from '@core/ui/Karte';
+import { BreitenLeiste } from '@core/ui/Leiste';
 import { useCallback, useEffect, useState } from 'react';
 import { bestaetigen, fehlerText, frageText, meldung } from '@core/ui/Rueckfrage';
 import { ordnerWaehlen } from '@core/platform/projektordner';
@@ -145,8 +147,7 @@ export function Eingang() {
 
   if (!ordner) {
     return (
-      <div className="ava-seite">
-        <h1>Rechnungseingang</h1>
+      <Karte titel="Rechnungseingang">
         <p>Noch kein Scanordner eingestellt – der Ordner, in dem der Scanner die Dateien ablegt.</p>
         <div className="button-row">
           <button
@@ -161,19 +162,22 @@ export function Eingang() {
           <button onClick={() => setPruefen(true)}>Neue Rechnung prüfen …</button>
         </div>
         {pruefen && <RechnungPruefen onClose={() => setPruefen(false)} onErfasst={(x) => setDatensatz(x.id)} />}
-      </div>
+      </Karte>
     );
   }
 
   return (
-    <div className="ava-eingang">
-      <div className="ava-eingang-liste">
-        <div className="ava-eingang-kopf">
-          <h2>Scans</h2>
-          <button className="small" onClick={() => void laden()} title={ordner}>
-            Neu einlesen
-          </button>
-        </div>
+    <>
+      <BreitenLeiste schluessel="ava:breite:scans" vorgabe={260} titel="Breite der Scanliste">
+        <Karte
+          titel="Scans"
+          className="ava-eingang-liste"
+          aktionen={
+            <button className="small" onClick={() => void laden()} title={ordner}>
+              Neu einlesen
+            </button>
+          }
+        >
         <div className="muted small-text" title={ordner}>
           {ordner}
         </div>
@@ -198,20 +202,27 @@ export function Eingang() {
           ))}
           {scans && !scans.length && <li className="muted">Keine Scans im Scanordner.</li>}
         </ul>
-      </div>
-      <div className="ava-eingang-vorschau">{scan ? <PdfVorschau daten={vorschau} name={scan} laedt={vorschauLaedt} /> : <div className="muted">Kein Scan gewählt.</div>}</div>
-      <div className="ava-eingang-ziel">
-        <div className="button-row">
-          <button onClick={() => setPruefen(true)} title="Erfassen, Korrektur rechnen, Nummer vergeben, in die Kostenkontrolle eintragen">
-            Neue Rechnung prüfen …
-          </button>
-        </div>
+        </Karte>
+      </BreitenLeiste>
+      <Karte titel="Vorschau" className="ava-eingang-vorschau">
+        {scan ? <PdfVorschau daten={vorschau} name={scan} laedt={vorschauLaedt} /> : <div className="muted">Kein Scan gewählt.</div>}
+      </Karte>
+      <BreitenLeiste schluessel="ava:breite:zuordnen" vorgabe={340} seite="rechts" titel="Breite der Zuordnung">
+        <Karte
+          titel="Zuordnen und ablegen"
+          className="ava-eingang-ziel"
+          aktionen={
+            <button className="small" onClick={() => setPruefen(true)} title="Erfassen, Korrektur rechnen, Nummer vergeben, in die Kostenkontrolle eintragen">
+              Neue Rechnung prüfen …
+            </button>
+          }
+        >
         {hinweis && (
           <div className="ava-ok small-text" role="status">
             {hinweis}
           </div>
         )}
-        <h2>Erfasst, noch ohne Scan</h2>
+        <h3>Erfasst, noch ohne Scan</h3>
         <ul className="list" role="listbox" aria-label="Erfasste Rechnungen ohne Scan">
           {offene.map((r, i) => (
             <li
@@ -253,7 +264,7 @@ export function Eingang() {
         )}
         {abgelegte.length > 0 && (
           <>
-            <h2>Abgelegt, noch nicht weitergeleitet</h2>
+            <h3>Abgelegt, noch nicht weitergeleitet</h3>
             <ul className="list">
               {abgelegte.map((r) => (
                 <li key={r.id}>
@@ -268,8 +279,9 @@ export function Eingang() {
             </ul>
           </>
         )}
-      </div>
+        </Karte>
+      </BreitenLeiste>
       {pruefen && <RechnungPruefen onClose={() => setPruefen(false)} onErfasst={(x) => setDatensatz(x.id)} />}
-    </div>
+    </>
   );
 }
