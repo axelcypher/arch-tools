@@ -36,6 +36,7 @@ import type { OffenesFormular } from '../store';
 import { useFormulare, useProfil, wertVon } from '../store';
 import type { FeldWahl } from './BedingungEditor';
 import { BedingungEditor } from './BedingungEditor';
+import { Karte } from '@core/ui/Karte';
 import { Symbol } from '@core/ui/Symbol';
 
 /**
@@ -310,16 +311,17 @@ export function EinrichtenPanel({ offen }: { offen: OffenesFormular }) {
   );
 
   return (
-    <aside className="fo-ein-panel" aria-label="Einstellungen der Auswahl">
-      <div className="fo-ein-panel-kopf">
-        <div>
-          <strong>Formular einrichten</strong>
-          <span className="muted small-text">Gilt für „{offen.name}“ in allen Projekten.</span>
-        </div>
+    <Karte
+      className="fo-ein-panel"
+      titel="Formular einrichten"
+      buendig
+      aktionen={
         <button className="primary small" onClick={() => setAktiv(false)}>
           Fertig
         </button>
-      </div>
+      }
+    >
+      <p className="fo-ein-gilt muted small-text">Gilt für „{offen.name}“ in allen Projekten.</p>
       {waehlt && (
         <div className="fo-ein-waehlen" role="status">
           <Symbol name="ziel" /> Im Formular auf das Feld klicken, von dem es abhängt …
@@ -362,7 +364,7 @@ export function EinrichtenPanel({ offen }: { offen: OffenesFormular }) {
 
         {auswahl.length > 1 && !mehrfach && <p className="muted small-text">Für gemeinsame Einstellungen nur Felder und Gruppen auswählen (keine Abschnitte).</p>}
       </div>
-    </aside>
+    </Karte>
   );
 }
 

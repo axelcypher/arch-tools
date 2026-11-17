@@ -1,6 +1,6 @@
 import type { KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent, ReactNode } from 'react';
 import { einfuegeStelle, zeigerZiehen } from '@core/ui/ziehen';
-import { Ziehgriff } from '@core/ui/Leiste';
+import { Karte } from '@core/ui/Karte';
 import { formularAktualisieren } from '../aktualisieren';
 import { useId, useMemo, useState } from 'react';
 import { oeffnePfad, verbinde } from '../dateisystem';
@@ -72,8 +72,7 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
   const auswahl = useFormulare((s) => auswahlVon(s, s.projekt));
   const eigeneAuswahl = useFormulare((s) => !!s.projekt && !!s.auswahl[s.projekt.ordner]);
   const ablageordner = useFormulare((s) => s.ablageordner.length);
-  const breite = useFormulare((s) => s.leisteBreite);
-  const { projektWaehlen, formularOeffnen, setHaupt, setLeisteBreite, setAuswahl } = useFormulare.getState();
+  const { projektWaehlen, formularOeffnen, setHaupt, setAuswahl } = useFormulare.getState();
   const [pfadeBearbeiten, setPfadeBearbeiten] = useState(false);
   // Projektordner: ganze Auswahl („Ordner“) oder nur die Dokumente im Antragsordner („Antrag“) – je Rechner gemerkt
   const [ablageAnsicht, setAblageAnsichtRoh] = useState<'ordner' | 'antrag'>(() => {
@@ -307,7 +306,7 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
   };
 
   return (
-    <aside className="nav" style={{ width: breite }} aria-label="Navigation">
+    <Karte className="nav" ariaLabel="Navigation" buendig>
       {/* fester Kopf: Projekt, Antrag und die Daten-Knöpfe bleiben stehen, darunter rollt die Navigation */}
       {projekt && (
         <div className="nav-fest">
@@ -515,8 +514,6 @@ export function Seitenleiste({ onProjekte, onSperren }: { onProjekte: () => void
           </>
         )}
       </div>
-      {/* Breite ziehen, mit ←/→ (Tastatur) oder per Doppelklick auf die Vorgabe zurück – gemerkt in den Einstellungen der App */}
-      <Ziehgriff breite={breite} setBreite={setLeisteBreite} vorgabe={300} titel="Breite der Navigation ändern" />
-    </aside>
+    </Karte>
   );
 }

@@ -17,6 +17,7 @@ import { umfangZeigen } from './Antrag';
 import { EinrichtenBaum } from './Einrichten';
 import { usePlausibel } from './Hinweise';
 import { MerkmalWahl } from './MerkmalWahl';
+import { Karte } from '@core/ui/Karte';
 import { Symbol } from '@core/ui/Symbol';
 
 interface Punkt extends AbschnittStand {
@@ -91,12 +92,30 @@ export function Gliederung({ offen }: { offen: OffenesFormular }) {
     });
 
   return (
-    <nav className={`fo-gliederung${anpassen ? ' anpassen' : ''}`} aria-label="Inhalt des Formulars">
-      <div className="fo-gl-kopf">
-        <div className="fo-gl-kopf-text">
-          <span className="fo-gl-art">
-            <Symbol name="liste" /> Inhalt des Formulars
-          </span>
+    <Karte
+      className={`fo-gliederung${anpassen ? ' anpassen' : ''}`}
+      titel="Inhalt des Formulars"
+      buendig
+      aktionen={
+        anpassen ? (
+          // Einrichten: der Baum lässt sich einklappen (Werkzeugleiste „Gliederung“ zeigt ihn wieder) – Platz für das Papier
+          <button
+            className="icon"
+            title="Aufbau ausblenden – „Gliederung“ in der Werkzeugleiste zeigt ihn wieder"
+            aria-label="Aufbau ausblenden"
+            onClick={() => useEinrichten.getState().setBaumOffen(false)}
+          >
+            <Symbol name="schliessen" />
+          </button>
+        ) : (
+          <button className="icon" title="Gliederung ausblenden" aria-label="Gliederung ausblenden" onClick={() => setGliederungOffen(false)}>
+            <Symbol name="schliessen" />
+          </button>
+        )
+      }
+    >
+      <nav className="fo-gl" aria-label="Gliederung">
+        <div className="fo-gl-kopf">
           <strong title={offen.name}>{offen.name}</strong>
           <span className="fo-gl-fortschritt" title="Ausgefüllte Angaben in den angezeigten Abschnitten">
             <span className="fo-gl-balken">
@@ -110,161 +129,150 @@ export function Gliederung({ offen }: { offen: OffenesFormular }) {
             )}
           </span>
         </div>
-        <div className="fo-gl-kopf-knoepfe">
-          {anpassen ? (
-            // Einrichten: der Baum lässt sich einklappen (Werkzeugleiste „Gliederung“ zeigt ihn wieder) – Platz für das Papier
-            <button className="icon" title="Aufbau ausblenden – „Gliederung“ in der Werkzeugleiste zeigt ihn wieder" aria-label="Aufbau ausblenden" onClick={() => useEinrichten.getState().setBaumOffen(false)}>
-              <Symbol name="schliessen" />
-            </button>
-          ) : (
-            <button className="icon" title="Gliederung ausblenden" aria-label="Gliederung ausblenden" onClick={() => setGliederungOffen(false)}>
-              <Symbol name="schliessen" />
-            </button>
-          )}
-        </div>
-      </div>
 
-      {!anpassen && (
-        <div className="fo-gl-pruefliste" role="group" aria-label="Prüfliste">
-          {liste.length || hinweise.length ? (
-            <button className="fo-gl-pruef-zahl" title="Was fehlt noch? – offene Angaben und Hinweise in der Feldansicht zeigen" onClick={zeigeOffene}>
-              {fehlen} offen
-              {liste.length > fehlen && <span className="fo-gl-offen">{liste.length - fehlen} ungeklärt</span>}
-              {hinweise.length > 0 && <span className={`fo-gl-hinweise${hinweise.some((h) => h.art === 'fehler') ? ' fehler' : ''}`}>{hinweise.length === 1 ? '1 Hinweis' : `${hinweise.length} Hinweise`}</span>}
-            </button>
-          ) : null}
-          {liste.length > 0 && (
-            <button className="small" title="Zur nächsten offenen Angabe springen (F8)" onClick={() => zurNaechstenOffenen()}>
-              Nächste offene Angabe
-            </button>
-          )}
-          {!liste.length && <span className="muted small-text">Nach den Vorgaben der App keine offenen Angaben</span>}
-        </div>
-      )}
+        {!anpassen && (
+          <div className="fo-gl-pruefliste" role="group" aria-label="Prüfliste">
+            {liste.length || hinweise.length ? (
+              <button className="fo-gl-pruef-zahl" title="Was fehlt noch? – offene Angaben und Hinweise in der Feldansicht zeigen" onClick={zeigeOffene}>
+                {fehlen} offen
+                {liste.length > fehlen && <span className="fo-gl-offen">{liste.length - fehlen} ungeklärt</span>}
+                {hinweise.length > 0 && (
+                  <span className={`fo-gl-hinweise${hinweise.some((h) => h.art === 'fehler') ? ' fehler' : ''}`}>{hinweise.length === 1 ? '1 Hinweis' : `${hinweise.length} Hinweise`}</span>
+                )}
+              </button>
+            ) : null}
+            {liste.length > 0 && (
+              <button className="small" title="Zur nächsten offenen Angabe springen (F8)" onClick={() => zurNaechstenOffenen()}>
+                Nächste offene Angabe
+              </button>
+            )}
+            {!liste.length && <span className="muted small-text">Nach den Vorgaben der App keine offenen Angaben</span>}
+          </div>
+        )}
 
-      {fehlend.length > 0 && (
-        <div className="fo-gl-merkmal">
-          <span>
-            Für die Bedingungen dieses Formulars fehlt {offen.projekt ? 'im Projekt' : 'für diese Datei'}: <strong>{fehlend.join(', ')}</strong>
-          </span>
-          <MerkmalWahl offen={offen} namen={fehlend} />
-          {offen.projekt && (
-            <button className="small" onClick={umfangZeigen}>
-              Alle Antragsmerkmale
-            </button>
-          )}
-        </div>
-      )}
-
-      {anpassen && <EinrichtenBaum offen={offen} />}
-
-      {!anpassen && seiten.map((s) => {
-        const punkte = s.punkte.filter((p) => p.sichtbar);
-        return (
-          <div key={s.i} className="fo-gl-gruppe">
-            <button className="fo-gl-seite" onClick={() => document.querySelector(`[data-seite="${s.i}"]`)?.scrollIntoView({ block: 'start', behavior: 'smooth' })}>
-              Seite {s.i + 1}
-            </button>
-            {punkte.map((p) =>
-              (
-                <div key={p.id} className={`fo-gl-punkt${p.erforderlich ? '' : ' entfaellt'}`}>
-                  <div className="fo-gl-zeile">
-                    <button
-                      className="fo-gl-abschnitt"
-                      title={
-                        p.erforderlich
-                          ? p.titel
-                          : profil.abschnitte[p.id]?.bedingung && abschnittZustand(p.abschnitt, profil, k) === 'nein'
-                            ? `${p.titel} – entfällt: nur wenn ${bedingungText(profil.abschnitte[p.id]?.bedingung, name)}`
-                            : `${p.titel} – entfällt: keine der Angaben ist erforderlich`
-                      }
-                      onClick={() => springeZuFeld(p.abschnitt.felder[0].schluessel)}
-                      {...hervor({ felder: schluesselVon(p.abschnitt.felder) })}
-                    >
-                      <span className="fo-gl-titel">
-                        {p.titel}
-                        {p.geaendert && <span className="fo-ungespeichert"> ●</span>}
-                      </span>
-                      {!p.erforderlich ? (
-                        <span className="fo-gl-entfaellt">entfällt</span>
-                      ) : p.freiwillig ? (
-                        <span className="fo-gl-freiwillig" title="Zählt nicht für den Füllstand (freiwillig oder von der Behörde auszufüllen)">
-                          freiwillig
-                        </span>
-                      ) : (
-                        <>
-                          <Zahl punkt={p} />
-                          {hinweise.some((h) => h.abschnitt === p.id) && (
-                            <span
-                              className={`fo-gl-hinweise${hinweise.some((h) => h.abschnitt === p.id && h.art === 'fehler') ? ' fehler' : ''}`}
-                              role="img"
-                              aria-label="Hinweise"
-                              title={hinweise
-                                .filter((h) => h.abschnitt === p.id)
-                                .map((h) => h.text)
-                                .join('\n')}
-                            >
-                              <Symbol name="warnung" />
-                            </span>
-                          )}
-                          {p.offen > 0 && (
-                            <span className="fo-gl-offen" title={`${p.offen} ungeklärt – hängt ab von: ${p.fehlend.join(', ')} (nicht festgelegt)`}>
-                              {p.abschnittOffen && p.offen === p.gesamt - p.gefuellt ? 'ungeklärt' : `${p.offen} ungeklärt`}
-                            </span>
-                          )}
-                        </>
-                      )}
-                    </button>
-                    {p.einheiten.length > 1 ? (
-                      <button
-                        className="icon fo-gl-auf"
-                        aria-expanded={offeneAbschnitte.has(p.id)}
-                        aria-label={`Angaben in ${p.titel}`}
-                        title={offeneAbschnitte.has(p.id) ? 'Angaben zuklappen' : 'Angaben zeigen'}
-                        onClick={() => umschalten(p.id)}
-                      >
-                        <Symbol name={offeneAbschnitte.has(p.id) ? 'pfeilUnten' : 'pfeilRechts'} />
-                      </button>
-                    ) : (
-                      <span className="fo-gl-auf" />
-                    )}
-                  </div>
-                  {offeneAbschnitte.has(p.id) && p.einheiten.length > 1 && (
-                    <div className="fo-gl-unter">
-                      {p.einheiten.map(({ einheit: e, voll }) => {
-                        const titel = einheitTitel(e, profil);
-                        const weg = !p.erforderlich || !!e.entfaellt;
-                        const ungeklaert = !weg && !voll && (p.abschnittOffen || !!e.offen);
-                        return (
-                          <button
-                            key={e.id}
-                            className={`fo-gl-einheit${weg ? ' entfaellt' : ''}${ungeklaert ? ' offen' : ''}`}
-                            title={weg ? `${titel} – entfällt (Bedingung trifft nicht zu)` : ungeklaert ? `${titel} – ungeklärt, hängt ab von: ${(e.fehlend ?? p.fehlend).join(', ')}` : titel}
-                            onClick={() => springeZuFeld(e.felder[0].schluessel)}
-                            {...hervor({ felder: schluesselVon(e.felder) })}
-                          >
-                            <span className="fo-gl-titel">{titel}</span>
-                            {weg ? (
-                              <span className="fo-gl-entfaellt">entfällt</span>
-                            ) : ungeklaert ? (
-                              <span className="fo-gl-offen">ungeklärt</span>
-                            ) : (
-                              <span className={`fo-gl-status${voll ? ' voll' : ''}`} role="img" aria-label={voll ? 'ausgefüllt' : 'nicht ausgefüllt'}>
-                                {voll ? '✓' : ''}
-                              </span>
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              ),
+        {fehlend.length > 0 && (
+          <div className="fo-gl-merkmal">
+            <span>
+              Für die Bedingungen dieses Formulars fehlt {offen.projekt ? 'im Projekt' : 'für diese Datei'}: <strong>{fehlend.join(', ')}</strong>
+            </span>
+            <MerkmalWahl offen={offen} namen={fehlend} />
+            {offen.projekt && (
+              <button className="small" onClick={umfangZeigen}>
+                Alle Antragsmerkmale
+              </button>
             )}
           </div>
-        );
-      })}
-    </nav>
+        )}
+
+        {anpassen && <EinrichtenBaum offen={offen} />}
+
+        {!anpassen &&
+          seiten.map((s) => {
+            const punkte = s.punkte.filter((p) => p.sichtbar);
+            return (
+              <div key={s.i} className="fo-gl-gruppe">
+                <button className="fo-gl-seite" onClick={() => document.querySelector(`[data-seite="${s.i}"]`)?.scrollIntoView({ block: 'start', behavior: 'smooth' })}>
+                  Seite {s.i + 1}
+                </button>
+                {punkte.map((p) => (
+                  <div key={p.id} className={`fo-gl-punkt${p.erforderlich ? '' : ' entfaellt'}`}>
+                    <div className="fo-gl-zeile">
+                      <button
+                        className="fo-gl-abschnitt"
+                        title={
+                          p.erforderlich
+                            ? p.titel
+                            : profil.abschnitte[p.id]?.bedingung && abschnittZustand(p.abschnitt, profil, k) === 'nein'
+                              ? `${p.titel} – entfällt: nur wenn ${bedingungText(profil.abschnitte[p.id]?.bedingung, name)}`
+                              : `${p.titel} – entfällt: keine der Angaben ist erforderlich`
+                        }
+                        onClick={() => springeZuFeld(p.abschnitt.felder[0].schluessel)}
+                        {...hervor({ felder: schluesselVon(p.abschnitt.felder) })}
+                      >
+                        <span className="fo-gl-titel">
+                          {p.titel}
+                          {p.geaendert && <span className="fo-ungespeichert"> ●</span>}
+                        </span>
+                        {!p.erforderlich ? (
+                          <span className="fo-gl-entfaellt">entfällt</span>
+                        ) : p.freiwillig ? (
+                          <span className="fo-gl-freiwillig" title="Zählt nicht für den Füllstand (freiwillig oder von der Behörde auszufüllen)">
+                            freiwillig
+                          </span>
+                        ) : (
+                          <>
+                            <Zahl punkt={p} />
+                            {hinweise.some((h) => h.abschnitt === p.id) && (
+                              <span
+                                className={`fo-gl-hinweise${hinweise.some((h) => h.abschnitt === p.id && h.art === 'fehler') ? ' fehler' : ''}`}
+                                role="img"
+                                aria-label="Hinweise"
+                                title={hinweise
+                                  .filter((h) => h.abschnitt === p.id)
+                                  .map((h) => h.text)
+                                  .join('\n')}
+                              >
+                                <Symbol name="warnung" />
+                              </span>
+                            )}
+                            {p.offen > 0 && (
+                              <span className="fo-gl-offen" title={`${p.offen} ungeklärt – hängt ab von: ${p.fehlend.join(', ')} (nicht festgelegt)`}>
+                                {p.abschnittOffen && p.offen === p.gesamt - p.gefuellt ? 'ungeklärt' : `${p.offen} ungeklärt`}
+                              </span>
+                            )}
+                          </>
+                        )}
+                      </button>
+                      {p.einheiten.length > 1 ? (
+                        <button
+                          className="icon fo-gl-auf"
+                          aria-expanded={offeneAbschnitte.has(p.id)}
+                          aria-label={`Angaben in ${p.titel}`}
+                          title={offeneAbschnitte.has(p.id) ? 'Angaben zuklappen' : 'Angaben zeigen'}
+                          onClick={() => umschalten(p.id)}
+                        >
+                          <Symbol name={offeneAbschnitte.has(p.id) ? 'pfeilUnten' : 'pfeilRechts'} />
+                        </button>
+                      ) : (
+                        <span className="fo-gl-auf" />
+                      )}
+                    </div>
+                    {offeneAbschnitte.has(p.id) && p.einheiten.length > 1 && (
+                      <div className="fo-gl-unter">
+                        {p.einheiten.map(({ einheit: e, voll }) => {
+                          const titel = einheitTitel(e, profil);
+                          const weg = !p.erforderlich || !!e.entfaellt;
+                          const ungeklaert = !weg && !voll && (p.abschnittOffen || !!e.offen);
+                          return (
+                            <button
+                              key={e.id}
+                              className={`fo-gl-einheit${weg ? ' entfaellt' : ''}${ungeklaert ? ' offen' : ''}`}
+                              title={weg ? `${titel} – entfällt (Bedingung trifft nicht zu)` : ungeklaert ? `${titel} – ungeklärt, hängt ab von: ${(e.fehlend ?? p.fehlend).join(', ')}` : titel}
+                              onClick={() => springeZuFeld(e.felder[0].schluessel)}
+                              {...hervor({ felder: schluesselVon(e.felder) })}
+                            >
+                              <span className="fo-gl-titel">{titel}</span>
+                              {weg ? (
+                                <span className="fo-gl-entfaellt">entfällt</span>
+                              ) : ungeklaert ? (
+                                <span className="fo-gl-offen">ungeklärt</span>
+                              ) : (
+                                <span className={`fo-gl-status${voll ? ' voll' : ''}`} role="img" aria-label={voll ? 'ausgefüllt' : 'nicht ausgefüllt'}>
+                                  {voll ? '✓' : ''}
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            );
+          })}
+      </nav>
+    </Karte>
   );
 }
 

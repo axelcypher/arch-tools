@@ -160,8 +160,9 @@ async function projektOeffnen(host: HTMLElement, kuerzel: string) {
 const dialogMit = (name: string) =>
   [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].find((d) => (d.getAttribute('aria-label') ?? document.getElementById(d.getAttribute('aria-labelledby') ?? '')?.textContent) === name) ?? null;
 describe('Formular einrichten', () => {
-  const gl = (host: Element) => host.querySelector('nav[aria-label="Inhalt des Formulars"]')!;
-  const panel = (host: Element) => host.querySelector<HTMLElement>('aside[aria-label="Einstellungen der Auswahl"]')!;
+  // die ganze Seitenkarte „Inhalt des Formulars“ (Kopf mit Ausblenden, darunter die Gliederung)
+  const gl = (host: Element) => host.querySelector('section.fo-gliederung')!;
+  const panel = (host: Element) => host.querySelector<HTMLElement>('.fo-ein-panel')!;
   // „Formular einrichten“ steht als Schalter im Menü „Mehr“ der Werkzeugleiste
   const einrichtenUmschalten = (host: Element) => imLeistenMenue(host, 'Mehr', 'Formular einrichten');
   const imFormular = (host: Element, s: string) => host.querySelector<HTMLButtonElement>(`.fo-ein-feld[data-ein="${s}"]`)!;
@@ -182,7 +183,7 @@ describe('Formular einrichten', () => {
     await einrichtenUmschalten(host);
     expect(gl(host).querySelector('.fo-ein-baum')).not.toBeNull();
     await klick(knopfMit(gl(host), 'Aufbau ausblenden'));
-    expect(host.querySelector('nav[aria-label="Inhalt des Formulars"]')).toBeNull();
+    expect(host.querySelector('.fo-gliederung nav[aria-label="Gliederung"]')).toBeNull();
     expect(panel(host)).not.toBeNull();
     // „Gliederung“ ist ein Schalter im Menü „Ansicht“
     await klick(leistenMenue(host, 'Ansicht'));
