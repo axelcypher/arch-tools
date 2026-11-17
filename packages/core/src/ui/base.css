@@ -986,15 +986,6 @@ textarea:focus {
   vertical-align: top;
 }
 
-/* gewählte Zeile (z. B. der Katalogeintrag oder der verglichene Stand) */
-.summary-table tr.selected td {
-  background: var(--accent-soft);
-}
-/* wie die Wahl in senkrechten Segmenten: Tönung und Akzentlinie links – von Gruppenzeilen unterscheidbar */
-.summary-table tr.selected td:first-child {
-  box-shadow: inset 3px 0 var(--accent);
-}
-
 .summary-table tr.strong td,
 .summary-table tr.summe td {
   font-weight: 600;
@@ -1004,6 +995,16 @@ textarea:focus {
 .summary-table tr.gruppe td {
   background: var(--tabelle-gruppe);
   font-weight: 600;
+}
+
+/* gewählte Zeile (z. B. der Katalogeintrag oder der verglichene Stand) – nach der Gruppenzeile, damit die Wahl auch dort
+   sichtbar ist */
+.summary-table tr.selected td {
+  background: var(--accent-soft);
+}
+/* wie die Wahl in senkrechten Segmenten: Tönung und Akzentlinie links – von Gruppenzeilen unterscheidbar */
+.summary-table tr.selected td:first-child {
+  box-shadow: inset 3px 0 var(--accent);
 }
 
 /* Summenzeile: halbfett mit kräftigerer Linie darüber */

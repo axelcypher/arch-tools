@@ -100,7 +100,8 @@ Apps ersetzen; bis zur Umstellung bleiben diese bestehen.
 - Die Regel hat die Spezifität null (`:where`): Eine App-Regel mit eigener `min-height` geht vor. Feste `height`
   allein reicht dafür nicht; wer kleinere Knöpfe braucht, setzt `min-height` mit.
 - Kleiner als 24px nur, wo es nicht anders geht (Hilfe-Knopf „?“, Griffe auf der Zeichenfläche) und beim Verweisknopf
-  `button.link` im Fließtext oder in einer Tabellenzelle; in `.toolbar`, `.button-row`, `.dialog-buttons` und `.section-head` kein `.link`.
+  `button.link` im Fließtext oder in einer Tabellenzelle; in `.toolbar`, `.button-row`, `.dialog-buttons` und
+  `.section-head` kein `.link`.
 
 ## Farben
 

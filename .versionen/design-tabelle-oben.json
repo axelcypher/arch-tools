@@ -1,7 +1,7 @@
 {
   "flaechenrechner": {
     "stufe": "patch",
-    "notiz": "Gemeinsame Zahlentabelle ergänzt (gewählte Zeile, oben bündig) und Verweisknöpfe vereinheitlicht."
+    "notiz": "Gemeinsame Gestaltung aktualisiert, ohne sichtbare Änderung."
   },
   "grz": {
     "stufe": "patch",
@@ -13,22 +13,22 @@
   },
   "ordner": {
     "stufe": "patch",
-    "notiz": "Gemeinsame Zahlentabelle ergänzt (gewählte Zeile, oben bündig) und Verweisknöpfe vereinheitlicht."
+    "notiz": "Verweisknöpfe im Dialog der Katasterpläne und in den Vorlagen einheitlich dezent unterstrichen."
   },
   "entzerrung": {
     "stufe": "patch",
-    "notiz": "Gemeinsame Zahlentabelle ergänzt (gewählte Zeile, oben bündig) und Verweisknöpfe vereinheitlicht."
+    "notiz": "Gemeinsame Gestaltung aktualisiert, ohne sichtbare Änderung."
   },
   "formulare": {
     "stufe": "patch",
-    "notiz": "Gemeinsame Zahlentabelle ergänzt (gewählte Zeile, oben bündig) und Verweisknöpfe vereinheitlicht."
+    "notiz": "Gemeinsame Gestaltung aktualisiert, ohne sichtbare Änderung."
   },
   "ava": {
     "stufe": "patch",
-    "notiz": "Gemeinsame Zahlentabelle ergänzt (gewählte Zeile, oben bündig) und Verweisknöpfe vereinheitlicht."
+    "notiz": "Gemeinsame Gestaltung aktualisiert, ohne sichtbare Änderung."
   },
   "baurecht": {
     "stufe": "patch",
-    "notiz": "Gemeinsame Zahlentabelle ergänzt (gewählte Zeile, oben bündig) und Verweisknöpfe vereinheitlicht."
+    "notiz": "Gemeinsame Gestaltung aktualisiert, ohne sichtbare Änderung."
   }
 }
