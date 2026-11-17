@@ -18,10 +18,11 @@ export function Flaeche({ children, className }: { children: ReactNode; classNam
   return <div className={className ? `flaeche ${className}` : 'flaeche'}>{children}</div>;
 }
 
-/** mehrere Karten untereinander in einer Spalte der Fläche (z. B. links „Grundlagen“ über „Mengen“) */
-export function FlaechenSpalte({ children, className, breite }: { children: ReactNode; className?: string; breite?: number }) {
+/** mehrere Karten untereinander in einer Spalte der Fläche (z. B. links „Grundlagen“ über „Mengen“); `wachsend`: nimmt die Restbreite */
+export function FlaechenSpalte({ children, className, breite, wachsend }: { children: ReactNode; className?: string; breite?: number; wachsend?: boolean }) {
+  const klasse = ['flaechen-spalte', wachsend && 'wachsend', className].filter(Boolean).join(' ');
   return (
-    <div className={className ? `flaechen-spalte ${className}` : 'flaechen-spalte'} style={breite ? { width: breite } : undefined}>
+    <div className={klasse} style={breite ? { width: breite } : undefined}>
       {children}
     </div>
   );
