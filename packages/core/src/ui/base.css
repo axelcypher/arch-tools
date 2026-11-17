@@ -205,8 +205,8 @@ body,
 
 /* ---------- Fläche und Karten (Karte.tsx, docs/design.md „Fläche und Karten“) ----------
    Unter der Werkzeugleiste eine ruhige Fläche; darauf Seitenleisten, Hauptbereich und Zeichenfläche als Karten mit
-   Spalt. Jede Karte scrollt für sich, die Fläche nie. Die alten Muster (.workspace, .sidebar, eigene Spalten der Apps)
-   laufen unverändert weiter, bis die App umgestellt ist. */
+   Spalt. Jede Karte scrollt für sich (Ausnahme: die rollende Spalte), die Fläche nie. Die alten Muster (.workspace,
+   .sidebar, eigene Spalten der Apps) laufen unverändert weiter, bis die App umgestellt ist. */
 .flaeche {
   flex: 1;
   min-height: 0;
@@ -226,6 +226,24 @@ body,
 }
 .flaechen-spalte.wachsend {
   flex: 1;
+}
+/* rollende Spalte: sie rollt als Ganzes, die Karten darin sind so hoch wie ihr Inhalt (hoehe wirkt hier nicht); rundum
+   Luft für Kartenschatten und Fokusrahmen am Rand, ohne die Spalte zu verschieben */
+.flaechen-spalte.rollend {
+  overflow-y: auto;
+  /* der Innenabstand kommt zur Breite hinzu: die gesetzte Breite bleibt die Breite der Karten */
+  box-sizing: content-box;
+  /* Platz für die Rollleiste von Anfang an: die Breite springt nicht, wenn sie erscheint */
+  scrollbar-gutter: stable;
+  padding: var(--s1);
+  margin: calc(-1 * var(--s1));
+}
+.flaechen-spalte.rollend > .karte,
+.flaechen-spalte.rollend > .karte.karte-inhalt,
+.flaechen-spalte.rollend:has(> .karte-inhalt) > .karte:not(.karte-inhalt) {
+  flex: none;
+  min-height: 0;
+  max-height: none;
 }
 /* steht die Werkzeugleiste über einer Fläche, liegt sie mit auf ihr: gleicher Grund, keine Linie */
 .app:has(.flaeche:not(.modal *)) > .toolbar {
@@ -295,7 +313,7 @@ body,
   flex-shrink: 0;
   margin-left: 0;
 }
-.karte-kopf h2 {
+.karte-kopf :is(h2, h3) {
   min-width: 0;
   margin: 0;
   font-size: var(--fs-l);
@@ -1068,25 +1086,6 @@ textarea:focus {
   background: var(--panel);
   border-top: 1px solid var(--line-soft);
   z-index: 1;
-}
-
-.placeholder-help {
-  background: var(--bg);
-  border-radius: 4px;
-  padding: 8px 10px;
-  margin: 8px 0;
-  max-height: 300px;
-  overflow: auto;
-}
-
-.placeholder-help table {
-  border-collapse: collapse;
-  font-size: 12px;
-}
-
-.placeholder-help td {
-  padding: 1px 8px 1px 0;
-  vertical-align: top;
 }
 
 code {
