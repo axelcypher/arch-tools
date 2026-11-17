@@ -222,6 +222,31 @@ describe('Rahmen-App', () => {
     expect(useRahmen.getState().aktiv).toBe('grz');
   });
 
+  it('„Einstellungen …“ und Strg+,: mit aktivem App-Tab öffnet die App den Dialog auf ihrer Seite, sonst der Rahmen auf „Allgemein“', async () => {
+    const host = render();
+    const { useEinstellungen } = await import('@core/ui/Einstellungen');
+    act(() => useEinstellungen.setState({ offen: false }));
+    // ohne App-Tab: der eigene Dialog auf „Allgemein“
+    act(() => void window.dispatchEvent(new KeyboardEvent('keydown', { key: ',', ctrlKey: true, bubbles: true, cancelable: true })));
+    expect(useEinstellungen.getState()).toMatchObject({ offen: true, seite: 'allgemein' });
+    act(() => useEinstellungen.setState({ offen: false }));
+    // mit App-Tab: Nachricht an die App, der eigene Dialog bleibt zu
+    act(() => karte(host, 'QUADRIO').click());
+    const f = host.querySelector<HTMLIFrameElement>('iframe[src^="apps/flaechenrechner/"]')!;
+    const win = { postMessage: vi.fn() } as unknown as Window;
+    Object.defineProperty(f, 'contentWindow', { value: win, configurable: true });
+    act(() => window.dispatchEvent(new MessageEvent('message', { data: { typ: 'arch-tools:bereit', app: 'flaechenrechner' }, origin: window.location.origin, source: win })));
+    act(() => void window.dispatchEvent(new KeyboardEvent('keydown', { key: ',', ctrlKey: true, bubbles: true, cancelable: true })));
+    expect(win.postMessage).toHaveBeenCalledWith({ typ: 'arch-tools:einstellungen-oeffnen', an: 'flaechenrechner' }, window.location.origin);
+    expect(useEinstellungen.getState().offen).toBe(false);
+    // eigener Dialog schon offen (etwa über die Notbetriebswarnung): Strg+, bittet die App nicht um einen zweiten
+    vi.mocked(win.postMessage).mockClear();
+    act(() => useEinstellungen.setState({ offen: true }));
+    act(() => void window.dispatchEvent(new KeyboardEvent('keydown', { key: ',', ctrlKey: true, bubbles: true, cancelable: true })));
+    expect(win.postMessage).not.toHaveBeenCalled();
+    act(() => useEinstellungen.setState({ offen: false }));
+  });
+
   it('Neues Projekt anlegen: aus einer App oder vom Rahmen – der Assistent von ATLAS, danach zurück mit dem neuen Projekt', () => {
     const host = render();
     // je Tab ein eigenes Fenster (happy-dom lädt keine iframes)

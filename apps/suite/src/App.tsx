@@ -19,6 +19,7 @@ import {
   vorbereitenImFenster,
   vorbereitenImTab,
   ZUR_APP,
+  EINSTELLUNGEN_OEFFNEN,
 } from '@core/platform/rahmen';
 import { APP_NAMEN } from '@core/appNamen';
 import { LogDialog } from '@core/ui/LogDialog';
@@ -28,8 +29,8 @@ import { Symbol } from '@core/ui/Symbol';
 import { farbschemaPunkt } from '@core/ui/TitleBar';
 import { dialogVerhaltenEinrichten } from '@core/ui/dialoge';
 import { aenderungenSpeichern, aenderungenVerwerfen, meldung, RueckfrageHost } from '@core/ui/Rueckfrage';
-import { SpeicherortAnzeige, SpeicherortHost, speicherortPunkt, SpeicherortZeile, useKonfigOrt, useSpeicherort } from '@core/ui/Speicherort';
-import { EinstellungenHost, einstellungenPunkt } from '@core/ui/Einstellungen';
+import { SpeicherortAnzeige, SpeicherortHost, SpeicherortZeile, useKonfigOrt } from '@core/ui/Speicherort';
+import { EinstellungenHost, einstellungenOeffnen, einstellungenPunkt, useEinstellungen } from '@core/ui/Einstellungen';
 import { umzugBestaetigen } from '@core/ui/umzug';
 import { schreibenAbwarten } from '@core/ui/vorbereiten';
 import { UpdateKnopf, updatePunkt } from '@core/ui/UpdateKnopf';
@@ -208,6 +209,28 @@ export function App() {
     }
     warteschlange.current.set(id, [...(warteschlange.current.get(id) ?? []), nachricht]);
   };
+
+  /**
+   * „Einstellungen …“ bzw. Strg+, im Rahmen (docs/design.md, „Kopf- und Werkzeugleisten“): mit aktivem App-Tab öffnet
+   * die App den Dialog auf ihrer Seite (sie kennt sie, der Rahmen nicht), sonst der Rahmen auf „Allgemein“
+   */
+  const einstellungenImRahmen = () => {
+    const app = useRahmen.getState().aktiv;
+    if (app) zustellen(app, { typ: EINSTELLUNGEN_OEFFNEN });
+    else einstellungenOeffnen('allgemein');
+  };
+  const einstellungenRef = useRef(einstellungenImRahmen);
+  einstellungenRef.current = einstellungenImRahmen;
+  useEffect(() => {
+    // vor dem Kürzel des eigenen Dialogs (Fangphase): bei aktivem App-Tab weitergeben, das eigene Kürzel tritt zurück
+    const taste = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey || e.key !== ',' || useEinstellungen.getState().offen || !useRahmen.getState().aktiv) return;
+      e.preventDefault();
+      einstellungenRef.current();
+    };
+    window.addEventListener('keydown', taste, true);
+    return () => window.removeEventListener('keydown', taste, true);
+  }, []);
 
   /** Neues Projekt: der Assistent von ATLAS – aus einer App (`von`) oder vom Rahmen selbst */
   const projektAnlegen = (von: string | null, kannOeffnen = false) => {
@@ -486,18 +509,15 @@ export function App() {
   const fehler = getEntries().filter((e) => e.level === 'error' && e.id > gesehen).length;
   void logStand;
   const ort = useKonfigOrt();
-  const speicherortOeffnen = useSpeicherort((s) => s.oeffnen);
   /** Name des Menüs der Kopfleiste – mit neuen Fehlern im Protokoll (wie in der Titelleiste der Apps) */
   const menueName = fehler > 0 ? `Einstellungen und Hilfe – ${fehler === 1 ? 'ein neuer Fehler' : `${fehler} neue Fehler`} im Fehlerprotokoll` : 'Einstellungen und Hilfe';
   /** Menü „Einstellungen und Hilfe“ (docs/design.md, „Titelleiste“): seltene Befehle der Rahmen-App */
   const einstellungenPunkte = (): MenuePunkt[] => {
     const update = desktop ? updatePunkt() : null;
-    const sp = speicherortPunkt(ort, speicherortOeffnen);
     return [
       ...(update ? [update, { trenner: true } as const] : []),
-      einstellungenPunkt('allgemein'),
+      { ...einstellungenPunkt('allgemein'), aktion: einstellungenImRahmen },
       farbschemaPunkt(false),
-      ...(sp ? [sp] : []),
       { trenner: true },
       {
         text: 'Fehlerprotokoll …',
@@ -556,8 +576,8 @@ export function App() {
         </MenueKnopf>
         <span className="titlebar-drag" data-tauri-drag-region />
         {desktop && <UpdateKnopf app={APP_NAMEN.suite.name} dirty={[...tabs, ...fenster].some((id) => status[id]?.dirty)} vorInstallation={() => allesFreigeben('neu starten')} />}
-        {/* sichtbar nur im Notbetrieb; sonst steht der Speicherort im Menü */}
-        <SpeicherortAnzeige ort={ort} nurWarnung />
+        {/* sichtbar nur im Notbetrieb; sonst steht der Speicherort in den Einstellungen (Seite „Allgemein“) */}
+        <SpeicherortAnzeige ort={ort} nurWarnung onOeffnen={() => einstellungenOeffnen('allgemein')} />
         {/* Menü der Kopfleiste: neue Fehler zählt die Marke am Knopf, das Protokoll selbst steht im Menü */}
         <MenueKnopf className="titlebar-btn titlebar-menue" punkte={einstellungenPunkte} ariaLabel={menueName} title={menueName} name="Einstellungen und Hilfe" pfeil={false}>
           <Symbol name="menue" />

@@ -1,0 +1,38 @@
+{
+  "flaechenrechner": {
+    "stufe": "patch",
+    "notiz": "Einstellungsdialog: Strg+, wird in herausgelösten Fenstern und App-Tabs aus Arkly heraus zuverlässig angenommen."
+  },
+  "grz": {
+    "stufe": "patch",
+    "notiz": "Einstellungsdialog: Strg+, wird in herausgelösten Fenstern und App-Tabs aus Arkly heraus zuverlässig angenommen."
+  },
+  "kosten": {
+    "stufe": "patch",
+    "notiz": "Einstellungsdialog: Strg+, wird in herausgelösten Fenstern und App-Tabs aus Arkly heraus zuverlässig angenommen."
+  },
+  "ordner": {
+    "stufe": "patch",
+    "notiz": "Einstellungsdialog: Strg+, wird in herausgelösten Fenstern und App-Tabs aus Arkly heraus zuverlässig angenommen."
+  },
+  "entzerrung": {
+    "stufe": "patch",
+    "notiz": "Einstellungsdialog: Strg+, wird in herausgelösten Fenstern und App-Tabs aus Arkly heraus zuverlässig angenommen."
+  },
+  "formulare": {
+    "stufe": "patch",
+    "notiz": "Einstellungsdialog: Strg+, wird in herausgelösten Fenstern und App-Tabs aus Arkly heraus zuverlässig angenommen."
+  },
+  "ava": {
+    "stufe": "patch",
+    "notiz": "Einstellungsdialog: Strg+, wird in herausgelösten Fenstern und App-Tabs aus Arkly heraus zuverlässig angenommen."
+  },
+  "baurecht": {
+    "stufe": "patch",
+    "notiz": "Einstellungsdialog: Strg+, wird in herausgelösten Fenstern und App-Tabs aus Arkly heraus zuverlässig angenommen."
+  },
+  "suite": {
+    "stufe": "minor",
+    "notiz": "„Einstellungen …“ und Strg+, öffnen den Dialog bei aktivem App-Tab direkt auf der Seite der App; „Speicherort der Einstellungen“ steht nur noch auf der Seite „Allgemein“."
+  }
+}

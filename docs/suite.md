@@ -19,8 +19,8 @@ Werkzeuge in **einem Programm und einem Fenster**. Sie kann nichts weiter, als z
   herausgelöste Apps kommen dann als Tab zurück.
 - **Kopfleiste** (nach docs/design.md, „Titelleiste“): Tabs (am Tab nur ×), „+“ (App öffnen, Neues Projekt anlegen,
   Startseite), die Version bzw. das Update, im Notbetrieb die Warnung zum Speicherort, das Menü „Einstellungen und
-  Hilfe“ (drei Striche) und die Fensterknöpfe. Im Menü: „Update auf ‹Version› …“ (nur solange ein Update bereitliegt), „Farbschema“,
-  „Speicherort der Einstellungen …“ und „Fehlerprotokoll …“; neue Fehler zählt eine Marke am Menüknopf.
+  Hilfe“ (drei Striche) und die Fensterknöpfe. Im Menü: „Update auf ‹Version› …“ (nur solange ein Update bereitliegt), „Einstellungen …“,
+  „Farbschema“ und „Fehlerprotokoll …“; neue Fehler zählt eine Marke am Menüknopf.
 - **Herauslösen** (nur Desktop): „In eigenem Fenster öffnen“ im Kontextmenü des Tabs öffnet die App in einem
   **eigenen Fenster** (z. B. auf dem zweiten Bildschirm) – mit eigenen Fensterknöpfen. **„Andocken“** in dessen Titelleiste holt sie als Tab zurück. Die App
   startet dabei neu:
@@ -53,16 +53,17 @@ Werkzeuge in **einem Programm und einem Fenster**. Sie kann nichts weiter, als z
   bleiben. Einzelheiten in der README unter „Neue Namen“. Hook: `apps/suite/src-tauri/windows/umbenennung.nsh`; die Namen aller
   Apps stehen in der README unter [Neue Namen](../README.md#neue-namen).
 
-- **Speicherort der Einstellungen** (im Menü „Einstellungen und Hilfe“ der Kopfleiste des Rahmens, in den Apps im Einstellungsdialog auf der Seite „Allgemein“, dazu auf der Startseite):
+- **Speicherort der Einstellungen** (im Einstellungsdialog auf der Seite „Allgemein“, dazu auf der Startseite):
   Einzelplatz oder Netzwerkinstallation, für alle Apps auf einmal – Einzelheiten in der README unter
   [Gemeinsame Bedienung](../README.md#gemeinsame-bedienung-aller-apps). Nach einem Wechsel gilt der neue Ort sofort in
   allen Tabs und Fenstern: Was die Apps zwischengespeichert haben (ATLAS: Struktur, Mails, Kataster; FABRIO:
   Einstellungen; QUADRIO: Raumkatalog; Büroname im Kopf der Ausdrucke), lesen sie neu (`konfigNeuLesen`) – ebenso, wenn
-  das Netzlaufwerk wegfällt oder wieder da ist. Im Tab steht der Punkt nur im Menü des Rahmens. Ist das
-  Netzlaufwerk nicht erreichbar, zeigt die Kopfleiste „⚠ Einstellungen nur lesbar“ (Notbetrieb mit der lokalen Kopie).
+  das Netzlaufwerk wegfällt oder wieder da ist. Ist das Netzlaufwerk nicht erreichbar, zeigt die Kopfleiste
+  „⚠ Einstellungen nur lesbar“ (Notbetrieb mit der lokalen Kopie); ein Klick öffnet die Einstellungen auf „Allgemein“.
 
 - **Einstellungen …** (im Menü „Einstellungen und Hilfe“ der Kopfleiste, Strg+,): der zentrale Einstellungsdialog
-  aller Apps, siehe unten.
+  aller Apps, siehe unten. Ist ein App-Tab aktiv, öffnet ihn die App auf ihrer Seite (Nachricht
+  `arch-tools:einstellungen-oeffnen`, auch an herausgelöste Fenster); sonst öffnet Arkly ihn auf „Allgemein“.
 
 Die einzelnen Apps mit eigenem Installer bleiben unverändert nutzbar; Einstellungen (gemeinsamer
 Konfigurationsordner) und Projektdateien sind dieselben.
