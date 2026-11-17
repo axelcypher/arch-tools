@@ -53,8 +53,8 @@ const fokussierbar = (el: Element): el is HTMLElement | SVGElement =>
 const zieleIn = (bereich: Element) => [...(bereich.matches(START) ? [bereich] : []), ...bereich.querySelectorAll(START)].filter(fokussierbar);
 const vorher = new WeakMap<Element, Vorher | null>();
 /** die zuletzt fokussierten Elemente (neueste zuerst) – React setzt `autoFocus` schon beim Einhängen, bevor der
- *  MutationObserver den Dialog meldet; dann liegt der Fokus bereits im Dialog, und die Stelle davor steht nur hier */
-/** `null`: der Fokus ging auf die Seite (z. B. Klick auf eine Fläche) – dann gibt es keine Stelle davor */
+ *  MutationObserver den Dialog meldet; dann liegt der Fokus bereits im Dialog, und die Stelle davor steht nur hier.
+ *  `null`: der Fokus ging auf die Seite (z. B. Klick auf eine Fläche) – dann gibt es keine Stelle davor */
 const fokusVerlauf: (Vorher | null)[] = [];
 /** Element, das den Fokus zuletzt ohne Nachfolger abgegeben hat (focusout ohne relatedTarget) – noch eingehängt heißt:
  *  der Fokus steht auf der Seite; ausgehängt heißt: die App hat es entfernt (kein Wechsel auf die Seite) */
