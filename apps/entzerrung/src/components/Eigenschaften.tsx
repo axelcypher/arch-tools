@@ -493,21 +493,28 @@ function MessPanel({ foto, ebene, e }: { foto: Foto; ebene: Ebene; e: Entzerrung
 
 function BildPanel({ foto, ebene, e }: { foto: Foto; ebene: Ebene; e: Entzerrung }) {
   const [dialog, setDialog] = useState<Format | null>(null);
-  // „Datei → Exportieren → …“ öffnet den Dialog hier, mit dem gewählten Format
-  const wunsch = useEntz((x) => x.exportWunsch);
-  useEffect(() => {
-    if (!wunsch) return;
-    setDialog(wunsch);
-    useEntz.getState().setze({ exportWunsch: null });
-  }, [wunsch]);
   const s = useEntz.getState;
   const aendern = (f: (x: Ebene) => Ebene) => s().aendern(mitEbene(foto.id, ebene.id, f));
   const auto = useMemo(() => autoAufloesung(e, ebene), [e, ebene]);
   const bereich = bereichVon(e, foto, ebene);
-  let a: ReturnType<typeof ausgabe>;
+  let a: ReturnType<typeof ausgabe> | null = null;
+  let fehler: unknown = null;
   try {
     a = ausgabe(bereich, ebene.aufloesung ?? auto);
   } catch (err) {
+    fehler = err;
+  }
+  // „Datei → Exportieren → …“ öffnet den Dialog hier, mit dem gewählten Format. Der Wunsch wird immer verbraucht; lässt
+  // sich das Bild nicht berechnen, bleibt der Dialog zu (die Karte zeigt den Fehler) – sonst ginge er später unerwartet auf
+  const wunsch = useEntz((x) => x.exportWunsch);
+  const ausgabeOk = a !== null;
+  useEffect(() => {
+    if (!wunsch) return;
+    if (ausgabeOk) setDialog(wunsch);
+    useEntz.getState().setze({ exportWunsch: null });
+  }, [wunsch, ausgabeOk]);
+  if (!a) {
+    const err = fehler;
     return (
       <Karte titel="Bild" hoehe="inhalt">
         <div className="meldung fehler" role="alert">

@@ -421,4 +421,31 @@ describe('RECTIO (Entzerrung)', () => {
     expect(pdf?.checked).toBe(true);
     expect(useEntz.getState().exportWunsch).toBeNull();
   });
+
+  it('„Datei → Exportieren“ bei ungültigem Ausschnitt: kein Dialog, auch nicht später nach „Automatisch“; JPEG wählt JPEG', () => {
+    const host = render();
+    const menueKnopf = (name: string) => [...host.querySelectorAll<HTMLButtonElement>('button[aria-haspopup="menu"]')].find((b) => b.textContent?.trim() === name)!;
+    const punkte = () => [...document.querySelectorAll<HTMLElement>('[role="menu"] [role^="menuitem"]')];
+    const waehle = (text: string) => {
+      act(() => menueKnopf('Datei').click());
+      act(() => punkte().find((p) => p.textContent?.startsWith('Exportieren'))!.click());
+      act(() => punkte().find((p) => p.textContent?.trim() === text)!.click());
+    };
+    act(() => useEntz.getState().fotoHinzufuegen('f1', 'Fassade', 'image/jpeg', 3000, 2000, new Uint8Array(4)));
+    const { foto, ebene } = aktuell(useEntz.getState());
+    act(() =>
+      useEntz.getState().aendern(mitEbene(foto!.id, ebene!.id, (e) => ({ ...e, rechteck: { ecken: ECKEN, breite: 1.26, hoehe: 1.51 }, ausschnitt: { x0: 1, y0: 1, x1: 1, y1: 1 } }))),
+    );
+    waehle('PDF …');
+    expect(useEntz.getState().ansicht).toBe('entzerrt');
+    expect(useEntz.getState().exportWunsch).toBeNull();
+    expect(document.querySelector('input[name="ef-format"]')).toBeNull();
+    expect(host.textContent).toContain('Der Ausschnitt ist ungültig');
+    // „Automatisch“ heilt den Ausschnitt – der Dialog darf nicht von selbst aufgehen
+    act(() => knopf(host, 'Automatisch')!.click());
+    expect(document.querySelector('input[name="ef-format"]')).toBeNull();
+    // Gegenprobe: jetzt öffnet „JPEG …“ den Dialog mit JPEG
+    waehle('JPEG …');
+    expect(document.querySelector<HTMLInputElement>('input[name="ef-format"][value="jpeg"]')?.checked).toBe(true);
+  });
 });
