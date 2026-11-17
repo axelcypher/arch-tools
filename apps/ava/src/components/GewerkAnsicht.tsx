@@ -19,6 +19,7 @@ import { GaebExportDialog, gaebWaehlen } from './lv/Gaeb';
 import { LvKopfDialog } from './lv/LvKopfDialog';
 import { LvDruck } from './lv/LvDruck';
 import { MenueKnopf, type MenuePunkt } from '@core/ui/Menue';
+import { AnsichtKarte, GewerkRahmenKontext, type GewerkRahmen } from './AnsichtKarte';
 
 /** `kurz`: Beschriftung bei schmalem Fenster; `kopf`: der LV-Kopf (Auswahl, Neues LV, LV-Befehle, Speichern) gehört dazu */
 const TABS: { id: GewerkTab; text: string; kurz: string; title: string; lv?: boolean; kopf?: boolean }[] = [
@@ -116,77 +117,67 @@ export function GewerkAnsicht({ gewerk, tab }: { gewerk: string; tab: GewerkTab 
     requestAnimationFrame(() => document.getElementById(`ava-tab-${ziel.id}`)?.focus());
   };
 
-  return (
-    <div className="ava-gewerk">
-      <div className="ava-gewerk-kopf">
-        <div>
-          <h1>
-            <span className="ava-kennung">{gewerkZweistellig(gewerk)}</span> {name}
-          </h1>
-          <div className="muted small-text">
-            {[blatt?.auftragnehmer && `Auftragnehmer: ${blatt.auftragnehmer}`, g ? g.pfad : 'Kein Gewerkeordner im Projekt'].filter(Boolean).join(' · ')}
-            {g && (
-              <button className="small ava-link" onClick={() => void useAva.getState().fs.oeffnen(vollerPfad(projekt.ordner, g.pfad)).catch((e) => meldung('Ordner ließ sich nicht öffnen', g.pfad, e))}>
-                <Symbol name="ordnerOffen" /> Ordner öffnen
-              </button>
-            )}
-          </div>
-        </div>
-        {t.kopf && (
-          <div className="ava-lv-wahl">
-            {lvs.length > 0 && (
-              <select
-                value={offenesLv?.datei.pfad ?? ''}
-                onChange={(e) => void wechsle(lvs.find((l) => l.pfad === e.target.value)!)}
-                title={offenesLv ? `${offenesLv.datei.pfad} – ${offenesLv.format === 'aslv' ? 'LV-Datei (.aslv)' : 'eigene LV-Datei (.oalv)'}` : 'LV-Datei dieses Gewerks'}
-                aria-label="LV-Datei"
-              >
-                {!offenesLv && <option value="">LV wählen …</option>}
-                {lvs.map((l) => (
-                  <option key={l.pfad} value={l.pfad}>
-                    {l.name}
-                    {l.archiv ? ' (Archiv)' : ''}
-                  </option>
-                ))}
-              </select>
-            )}
-            {offenesLv?.datei.archiv && (
-              <span className="ava-chip" title="Diese LV-Datei liegt in einem Archivordner">
-                Archiv
-              </span>
-            )}
-            <MenueKnopf
-              title={offenesLv ? 'Befehle für das LV: neu anlegen, Eigenschaften, nummerieren, drucken, GAEB-Export' : 'Neues LV in diesem Gewerk anlegen – leer oder aus einer GAEB-Datei'}
-              punkte={() => [
-                { text: 'Neues leeres LV …', titel: 'Neues, leeres LV in diesem Gewerk anlegen', aktion: () => void neu() },
-                { text: 'Neues LV aus GAEB-Datei (X81–X86) …', titel: 'LV aus einer GAEB-Datei als neue LV-Datei in diesem Gewerk anlegen', aktion: () => void ausGaeb() },
-                ...(offenesLv
-                  ? ([
-                      { trenner: true },
-                      { text: 'LV-Eigenschaften …', titel: 'Bezeichnung, Termine, Vergabeart, Projekt, Auftraggeber, OZ-Maske, Umsatzsteuer', aktion: () => setDialog('kopf') },
-                      { text: 'Neu nummerieren …', titel: 'Ordnungszahlen nach der OZ-Maske neu vergeben', aktion: () => void nummerieren() },
-                      { text: 'Drucken …', symbol: 'drucken', titel: 'Leistungsbeschreibung mit Leistungsverzeichnis drucken bzw. als PDF', aktion: () => setDialog('druck') },
-                      { text: 'GAEB-Export …', symbol: 'export', titel: 'Als GAEB DA XML für die Bieter bzw. andere AVA-Software (X81, X83, X84, X86)', aktion: () => setDialog('gaeb') },
-                    ] satisfies MenuePunkt[])
-                  : []),
-              ]}
-            >
-              LV
-            </MenueKnopf>
-            {offenesLv && (
-              <button
-                className={`ava-speichern${lvOffenGeaendert ? ' ungespeichert' : ''}`}
-                onClick={() => void lvSpeichernMitMeldung()}
-                disabled={!lvOffenGeaendert}
-                aria-label={lvOffenGeaendert ? 'Speichern – ungespeicherte Änderungen' : undefined}
-                title={lvOffenGeaendert ? 'LV speichern (Strg+S) – ungespeicherte Änderungen' : 'LV speichern (Strg+S) – keine Änderungen'}
-              >
-                Speichern
-              </button>
-            )}
-          </div>
+  const rahmen: GewerkRahmen = {
+    titel: (
+      <>
+        <span className="ava-kennung">{gewerkZweistellig(gewerk)}</span> {name}
+      </>
+    ),
+    aktionen: t.kopf ? (
+      <div className="ava-lv-wahl">
+        {lvs.length > 0 && (
+          <select
+            value={offenesLv?.datei.pfad ?? ''}
+            onChange={(e) => void wechsle(lvs.find((l) => l.pfad === e.target.value)!)}
+            title={offenesLv ? `${offenesLv.datei.pfad} – ${offenesLv.format === 'aslv' ? 'LV-Datei (.aslv)' : 'eigene LV-Datei (.oalv)'}` : 'LV-Datei dieses Gewerks'}
+            aria-label="LV-Datei"
+          >
+            {!offenesLv && <option value="">LV wählen …</option>}
+            {lvs.map((l) => (
+              <option key={l.pfad} value={l.pfad}>
+                {l.name}
+                {l.archiv ? ' (Archiv)' : ''}
+              </option>
+            ))}
+          </select>
+        )}
+        {offenesLv?.datei.archiv && (
+          <span className="ava-chip" title="Diese LV-Datei liegt in einem Archivordner">
+            Archiv
+          </span>
+        )}
+        <MenueKnopf
+          title={offenesLv ? 'Befehle für das LV: neu anlegen, Eigenschaften, nummerieren, drucken, GAEB-Export' : 'Neues LV in diesem Gewerk anlegen – leer oder aus einer GAEB-Datei'}
+          punkte={() => [
+            { text: 'Neues leeres LV …', titel: 'Neues, leeres LV in diesem Gewerk anlegen', aktion: () => void neu() },
+            { text: 'Neues LV aus GAEB-Datei (X81–X86) …', titel: 'LV aus einer GAEB-Datei als neue LV-Datei in diesem Gewerk anlegen', aktion: () => void ausGaeb() },
+            ...(offenesLv
+              ? ([
+                  { trenner: true },
+                  { text: 'LV-Eigenschaften …', titel: 'Bezeichnung, Termine, Vergabeart, Projekt, Auftraggeber, OZ-Maske, Umsatzsteuer', aktion: () => setDialog('kopf') },
+                  { text: 'Neu nummerieren …', titel: 'Ordnungszahlen nach der OZ-Maske neu vergeben', aktion: () => void nummerieren() },
+                  { text: 'Drucken …', symbol: 'drucken', titel: 'Leistungsbeschreibung mit Leistungsverzeichnis drucken bzw. als PDF', aktion: () => setDialog('druck') },
+                  { text: 'GAEB-Export …', symbol: 'export', titel: 'Als GAEB DA XML für die Bieter bzw. andere AVA-Software (X81, X83, X84, X86)', aktion: () => setDialog('gaeb') },
+                ] satisfies MenuePunkt[])
+              : []),
+          ]}
+        >
+          LV
+        </MenueKnopf>
+        {offenesLv && (
+          <button
+            className={`ava-speichern${lvOffenGeaendert ? ' ungespeichert' : ''}`}
+            onClick={() => void lvSpeichernMitMeldung()}
+            disabled={!lvOffenGeaendert}
+            aria-label={lvOffenGeaendert ? 'Speichern – ungespeicherte Änderungen' : undefined}
+            title={lvOffenGeaendert ? 'LV speichern (Strg+S) – ungespeicherte Änderungen' : 'LV speichern (Strg+S) – keine Änderungen'}
+          >
+            Speichern
+          </button>
         )}
       </div>
+    ) : undefined,
+    tabs: (
       <div className="ava-tabs">
         <div className="segment" role="tablist" aria-label="Bereiche des Gewerks" onKeyDown={tabTasten}>
           {TABS.map((x) => (
@@ -209,10 +200,29 @@ export function GewerkAnsicht({ gewerk, tab }: { gewerk: string; tab: GewerkTab 
             </button>
           ))}
         </div>
+        <div className="muted small-text ava-gewerk-angaben">
+          {[blatt?.auftragnehmer && `Auftragnehmer: ${blatt.auftragnehmer}`, g ? g.pfad : 'Kein Gewerkeordner im Projekt'].filter(Boolean).join(' · ')}
+          {g && (
+            <button className="small ava-link" onClick={() => void useAva.getState().fs.oeffnen(vollerPfad(projekt.ordner, g.pfad)).catch((e) => meldung('Ordner ließ sich nicht öffnen', g.pfad, e))}>
+              <Symbol name="ordnerOffen" /> Ordner öffnen
+            </button>
+          )}
+        </div>
+        {fehler && (
+          <div className="meldung fehler" role="alert">
+            {fehler}
+          </div>
+        )}
       </div>
-      {fehler && <div className="meldung fehler" role="alert">{fehler}</div>}
-      <div className="ava-gewerk-inhalt" id="ava-gewerk-inhalt" role="tabpanel" aria-labelledby={`ava-tab-${t.id}`}>
-        {t.lv && !offenesLv ? (
+    ),
+    panelId: 'ava-gewerk-inhalt',
+    tabId: `ava-tab-${t.id}`,
+  };
+
+  return (
+    <GewerkRahmenKontext.Provider value={rahmen}>
+      {t.lv && !offenesLv ? (
+        <AnsichtKarte>
           <div className="ava-leer-hinweis">
             {lvs.length ? 'LV wählen …' : 'In diesem Gewerk gibt es noch kein Leistungsverzeichnis.'}
             <div className="button-row">
@@ -222,21 +232,21 @@ export function GewerkAnsicht({ gewerk, tab }: { gewerk: string; tab: GewerkTab 
               <button onClick={() => void ausGaeb()}>LV aus GAEB-Datei …</button>
             </div>
           </div>
-        ) : t.id === 'lv' ? (
-          <LvEditor />
-        ) : t.id === 'angebote' ? (
-          <Angebote />
-        ) : t.id === 'auftrag' ? (
-          <AuftragAnsicht gewerk={gewerk} />
-        ) : t.id === 'rechnungen' ? (
-          <RechnungenAnsicht gewerk={gewerk} />
-        ) : (
-          <Dateiliste gewerk={gewerk} />
-        )}
-      </div>
+        </AnsichtKarte>
+      ) : t.id === 'lv' ? (
+        <LvEditor />
+      ) : t.id === 'angebote' ? (
+        <Angebote />
+      ) : t.id === 'auftrag' ? (
+        <AuftragAnsicht gewerk={gewerk} />
+      ) : t.id === 'rechnungen' ? (
+        <RechnungenAnsicht gewerk={gewerk} />
+      ) : (
+        <Dateiliste gewerk={gewerk} />
+      )}
       {offenesLv && dialog === 'kopf' && <LvKopfDialog onClose={() => setDialog(null)} />}
       {offenesLv && dialog === 'druck' && <LvDruck onClose={() => setDialog(null)} />}
       {offenesLv && dialog === 'gaeb' && <GaebExportDialog onClose={() => setDialog(null)} />}
-    </div>
+    </GewerkRahmenKontext.Provider>
   );
 }

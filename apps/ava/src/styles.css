@@ -92,40 +92,7 @@
   color: var(--accent);
 }
 
-/* ---------- Seiten ---------- */
-
-.ava-seite {
-  flex: 1;
-  overflow: auto;
-  padding: 16px 20px 28px;
-}
-
-.ava-seite-kopf {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  flex-wrap: wrap;
-  margin-bottom: 10px;
-}
-
-.ava-seite h1,
-.ava-gewerk h1 {
-  font-size: 19px;
-  margin: 0;
-  font-weight: 600;
-}
-
-.ava-seite h2,
-.ava-karte h2 {
-  font-size: 14px;
-  margin: 0 0 8px;
-}
-
-.ava-seite h3,
-.ava-bericht h3 {
-  font-size: 13px;
-  margin: 16px 0 6px;
-}
+/* ---------- Ansichten ---------- */
 
 .ava-kopf-info {
   display: flex;
@@ -166,14 +133,6 @@
 .ava-kennzahlen .metric small {
   font-size: 11px;
   color: var(--muted);
-}
-
-.ava-karte {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 12px 14px;
-  margin-bottom: 12px;
 }
 
 .ava-hinweise {
@@ -355,81 +314,49 @@
 
 /* ---------- Gewerk ---------- */
 
-.ava-gewerk {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
-
-.ava-gewerk-kopf {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 12px 16px 8px;
-  background: var(--panel);
-}
-
+/* LV-Wahl im Kartenkopf: Auswahl, LV-Menü, Speichern */
 .ava-lv-wahl {
   display: flex;
-  gap: 6px;
+  gap: var(--s1);
   align-items: center;
-  flex-wrap: wrap;
 }
 
 .ava-lv-wahl select {
-  max-width: 360px;
+  max-width: 300px;
+  min-width: 140px;
+  width: auto;
 }
 
-/* Bereiche des Gewerks: gemeinsamer Umschalter (.segment, base.css) in einer Leiste */
+/* Bereiche des Gewerks (.segment, base.css) in der Kartenleiste über der Werkzeugleiste der Ansicht, daneben die Angaben
+   zum Gewerk */
 .ava-tabs {
   display: flex;
-  padding: var(--s2) var(--s3);
-  background: var(--panel);
-  border-bottom: 1px solid var(--border);
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s1) var(--s3);
 }
 
-.ava-tab-info {
-  margin-left: auto;
-  padding: 0 4px 6px;
+.ava-tabs + .toolbar {
+  margin-top: var(--s1);
 }
 
-.ava-gewerk-inhalt {
+.ava-gewerk-angaben {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: auto;
 }
 
-.ava-gewerk-inhalt > .ava-seite {
-  padding-top: 12px;
+.ava-tabs .meldung {
+  flex-basis: 100%;
 }
 
 /* ---------- LV-Editor ---------- */
 
-.ava-lv {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
-
 .ava-suche {
   margin-left: auto;
   min-width: 220px;
-}
-
-.ava-lv-koerper {
-  flex: 1;
-  display: flex;
-  min-height: 0;
-}
-
-.ava-lv-tabelle {
-  flex: 1;
-  overflow: auto;
 }
 
 .ava-lv-zeilen td {
@@ -504,27 +431,17 @@ input.ava-fehler {
 
 .ava-lv-fuss {
   display: flex;
-  gap: 18px;
+  gap: var(--s3);
   align-items: center;
-  padding: 6px 14px;
-  border-top: 1px solid var(--border);
-  background: var(--panel);
   font-variant-numeric: tabular-nums;
-  font-size: 12px;
   flex-wrap: wrap;
 }
 
+/* Eigenschaften des gewählten Elements (Seitenkarte) */
 .ava-panel {
-  width: 430px;
-  flex-shrink: 0;
-  background: var(--panel);
-  border-left: 1px solid var(--border);
-  overflow-y: auto;
-  padding: 12px 14px 20px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  scrollbar-gutter: stable;
+  gap: var(--s2);
 }
 
 .ava-panel-kopf {
@@ -677,14 +594,6 @@ input.ava-fehler {
 
 /* ---------- Angebote ---------- */
 
-.ava-angebote {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  overflow: auto;
-}
-
 .ava-bieter-liste {
   padding: 8px 12px;
 }
@@ -752,11 +661,6 @@ input.ava-fehler {
 }
 
 /* ---------- Auftrag ---------- */
-
-.ava-auftrag-seite {
-  padding: 12px 16px 24px;
-  overflow: auto;
-}
 
 /* ---------- Rechnungen ---------- */
 
@@ -849,10 +753,14 @@ input.ava-fehler {
   background: var(--canvas);
 }
 
-.ava-eingang-ziel .ava-karte {
+/* Ablage des gewählten Scans: abgesetzt wie ein Abschnitt */
+.ava-ablage {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  align-items: flex-start;
+  gap: var(--s1);
+  padding-top: var(--s2);
+  border-top: 1px solid var(--line-soft);
 }
 
 .ava-pdf {
@@ -1321,27 +1229,6 @@ input.ava-fehler {
   vertical-align: middle;
 }
 
-/* Gewerk: Kopf, Tabs */
-.ava-gewerk-kopf > div:first-child {
-  min-width: 0;
-}
-
-.ava-lv-wahl {
-  flex-wrap: nowrap;
-  flex-shrink: 0;
-}
-
-.ava-lv-wahl select {
-  max-width: 300px;
-  min-width: 140px;
-  width: auto;
-}
-
-.ava-tabs {
-  overflow-x: auto;
-  scrollbar-width: thin;
-}
-
 .ava-tabs button {
   white-space: nowrap;
   flex-shrink: 0;
@@ -1410,37 +1297,11 @@ input.ava-fehler {
   min-width: 180px;
 }
 
-.ava-panel {
-  width: clamp(300px, 30vw, 430px);
-}
-
-/* schmales Fenster: Panel unter die Tabelle, damit OZ, Kurztext und Preise sichtbar bleiben */
-@media (max-width: 1150px) {
-  .ava-lv-koerper {
-    flex-direction: column;
-  }
-
-  .ava-lv-tabelle {
-    min-height: 180px;
-  }
-
-  .ava-panel {
-    width: auto;
-    max-height: 45%;
-    border-left: none;
-    border-top: 1px solid var(--border);
-  }
-}
-
 .ava-zelle-eingabe input {
   padding-block: 1px;
 }
 
 /* Angebote und Preisspiegel */
-.ava-angebote > * {
-  flex-shrink: 0;
-}
-
 .ava-angebote-spiegel .ava-bieter-liste tr {
   cursor: default;
 }
@@ -1555,7 +1416,6 @@ input.ava-fehler {
 /* Gesamt-Review: Bauleitung */
 
 /* Auswahlfelder in Kopfzeilen nur so breit wie nötig (in Werkzeugleisten macht das base.css) */
-.ava-seite-kopf select,
 .ava-bericht .button-row > select {
   width: auto;
   max-width: 320px;
@@ -1662,11 +1522,6 @@ input.ava-fehler {
 
 /* Gesamt-Review: Abrechnung */
 
-.ava-seite .toolbar .ava-suche {
-  width: 260px;
-  flex: 0 1 260px;
-  min-width: 140px;
-}
 
 /* Quellen einer Rechnung: vorhanden = grün, fehlt = gestrichelt (ohne Transparenz, lesbar in Hell/Dunkel) */
 .ava-quellen {

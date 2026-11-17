@@ -247,12 +247,12 @@ export function Eingang() {
           {!offene.length && <li className="muted">Keine – erst „Neue Rechnung prüfen“.</li>}
         </ul>
         {(!d || !scan) && offene.length > 0 && (
-          <div className="ava-karte ava-eingang-hinweis">
+          <p className="ava-eingang-hinweis">
             {!scan ? 'Links einen Scan wählen' : 'Oben die Rechnung wählen, zu der der Scan gehört'}, dann „Zuordnen & ablegen“.
-          </div>
+          </p>
         )}
         {d && scan && (
-          <div className="ava-karte">
+          <div className="ava-ablage">
             <div className="small-text">Ablage als</div>
             <div className="ava-dateiname">{rechnungsDateiname(k, d)}</div>
             <div className="muted small-text">in {auftragsordner(k, gewerkOrdner(projekt, d.gewerk), d.gewerk)}</div>

@@ -9,6 +9,9 @@ import { useAva } from '../../store';
 import { zahlDE, ZahlEingabe } from '../eingaben';
 import { MenueKnopf, type MenuePunkt } from '@core/ui/Menue';
 import { Werkzeugleiste } from '@core/ui/Werkzeugleiste';
+import { Karte } from '@core/ui/Karte';
+import { BreitenLeiste } from '@core/ui/Leiste';
+import { AnsichtKarte } from '../AnsichtKarte';
 import { ElementPanel } from './ElementPanel';
 import { Textbibliothek } from './Textbibliothek';
 
@@ -199,107 +202,125 @@ export function LvEditor() {
     { text: 'Aus Vorlage …', titel: 'Position aus den Vorlagetexten des Büros hinzufügen', aktion: () => setBibliothek('einfuegen') },
   ];
 
-  return (
-    <div className="ava-lv">
-      <Werkzeugleiste
-        name="LV bearbeiten"
-        className="ava-lv-leiste"
-        teile={[
-          {
-            id: 'position',
-            inhalt: (
-              <button onClick={() => neu('position')} title="Position hinzufügen – im gewählten Abschnitt bzw. hinter der gewählten Position (Einfg)">
-                <Symbol name="plus" /> Position
+  const werkzeuge = (
+    <Werkzeugleiste
+      name="Werkzeuge Leistungsverzeichnis"
+      className="ava-lv-leiste"
+      teile={[
+        {
+          id: 'position',
+          inhalt: (
+            <button onClick={() => neu('position')} title="Position hinzufügen – im gewählten Abschnitt bzw. hinter der gewählten Position (Einfg)">
+              <Symbol name="plus" /> Position
+            </button>
+          ),
+        },
+        {
+          id: 'hinzufuegen',
+          gruppe: true,
+          rang: 3,
+          inhalt: (
+            <MenueKnopf title="Abschnitt, Hinweis, Vorbemerkung oder Position aus den Vorlagetexten hinzufügen" punkte={hinzufuegenPunkte}>
+              <Symbol name="plus" /> Hinzufügen
+            </MenueKnopf>
+          ),
+          menue: { text: 'Hinzufügen', unter: hinzufuegenPunkte() },
+        },
+        {
+          id: 'gliederung',
+          gruppe: true,
+          rang: 2,
+          inhalt: (
+            <>
+              <button className="icon" onClick={() => verschieben(-1)} disabled={!kannHoch} title={`${gegenstand} nach oben`} aria-label={`${gegenstand} nach oben`}>
+                <Symbol name="nachOben" />
               </button>
-            ),
-          },
-          {
-            id: 'hinzufuegen',
-            gruppe: true,
-            rang: 3,
-            inhalt: (
-              <MenueKnopf title="Abschnitt, Hinweis, Vorbemerkung oder Position aus den Vorlagetexten hinzufügen" punkte={hinzufuegenPunkte}>
-                <Symbol name="plus" /> Hinzufügen
-              </MenueKnopf>
-            ),
-            menue: { text: 'Hinzufügen', unter: hinzufuegenPunkte() },
-          },
-          {
-            id: 'gliederung',
-            gruppe: true,
-            rang: 2,
-            inhalt: (
-              <>
-                <button className="icon" onClick={() => verschieben(-1)} disabled={!kannHoch} title={`${gegenstand} nach oben`} aria-label={`${gegenstand} nach oben`}>
-                  <Symbol name="nachOben" />
-                </button>
-                <button className="icon" onClick={() => verschieben(1)} disabled={!kannRunter} title={`${gegenstand} nach unten`} aria-label={`${gegenstand} nach unten`}>
-                  <Symbol name="nachUnten" />
-                </button>
-                <button className="icon" onClick={() => einruecken(false)} disabled={!kannAus} title={`${gegenstand} ausrücken: aus dem Abschnitt heraus (eine Ebene höher)`} aria-label={`${gegenstand} ausrücken`}>
-                  <Symbol name="ausruecken" />
-                </button>
-                <button className="icon" onClick={() => einruecken(true)} disabled={!kannEin} title={`${gegenstand} einrücken: in den Abschnitt davor (eine Ebene tiefer)`} aria-label={`${gegenstand} einrücken`}>
-                  <Symbol name="einruecken" />
-                </button>
-              </>
-            ),
-            menue: [
-              { text: `${gegenstand} nach oben`, symbol: 'nachOben', deaktiviert: !kannHoch, aktion: () => verschieben(-1) },
-              { text: `${gegenstand} nach unten`, symbol: 'nachUnten', deaktiviert: !kannRunter, aktion: () => verschieben(1) },
-              { text: `${gegenstand} ausrücken`, symbol: 'ausruecken', deaktiviert: !kannAus, aktion: () => einruecken(false) },
-              { text: `${gegenstand} einrücken`, symbol: 'einruecken', deaktiviert: !kannEin, aktion: () => einruecken(true) },
-            ],
-          },
-          {
-            id: 'verlauf',
-            gruppe: true,
-            rang: 1,
-            menue: [
-              { text: 'Rückgängig', symbol: 'rueckgaengig', tasten: 'Strg+Z', deaktiviert: !offen.verlauf.length, aktion: () => useAva.getState().lvRueckgaengig() },
-              { text: 'Wiederholen', symbol: 'wiederholen', tasten: 'Strg+Y', deaktiviert: !offen.zukunft.length, aktion: () => useAva.getState().lvWiederholen() },
-            ],
-            inhalt: (
-              <>
-                <button className="icon" onClick={() => useAva.getState().lvRueckgaengig()} disabled={!offen.verlauf.length} title="Rückgängig (Strg+Z)" aria-label="Rückgängig">
-                  <Symbol name="rueckgaengig" />
-                </button>
-                <button className="icon" onClick={() => useAva.getState().lvWiederholen()} disabled={!offen.zukunft.length} title="Wiederholen (Strg+Y)" aria-label="Wiederholen">
-                  <Symbol name="wiederholen" />
-                </button>
-              </>
-            ),
-          },
-          { abstand: true },
-          {
-            id: 'suche',
-            kuerzbar: true,
-            inhalt: (
-              <input
-                className="ava-suche"
-                type="search"
-                placeholder="Suchen (OZ, Kurztext) …"
-                aria-label="LV durchsuchen"
-                value={suche}
-                onChange={(e) => setSuche(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Escape' && suche) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    sucheLeeren();
-                  }
-                }}
-              />
-            ),
-          },
-        ]}
-        mehr={() => [
-          { text: 'Duplizieren', titel: `${gegenstand} duplizieren`, tasten: 'Strg+D', deaktiviert: !gewaehlt, hinweis: gewaehlt ? undefined : 'Erst wählen', aktion: duplizieren },
-          { trenner: true },
-          { text: 'Entfernen', titel: `${gegenstand} entfernen`, tasten: 'Entf', gefahr: true, deaktiviert: !gewaehlt, hinweis: gewaehlt ? undefined : 'Erst wählen', aktion: () => void loeschen() },
-        ]}
-      />
-      <div className="ava-lv-koerper">
+              <button className="icon" onClick={() => verschieben(1)} disabled={!kannRunter} title={`${gegenstand} nach unten`} aria-label={`${gegenstand} nach unten`}>
+                <Symbol name="nachUnten" />
+              </button>
+              <button className="icon" onClick={() => einruecken(false)} disabled={!kannAus} title={`${gegenstand} ausrücken: aus dem Abschnitt heraus (eine Ebene höher)`} aria-label={`${gegenstand} ausrücken`}>
+                <Symbol name="ausruecken" />
+              </button>
+              <button className="icon" onClick={() => einruecken(true)} disabled={!kannEin} title={`${gegenstand} einrücken: in den Abschnitt davor (eine Ebene tiefer)`} aria-label={`${gegenstand} einrücken`}>
+                <Symbol name="einruecken" />
+              </button>
+            </>
+          ),
+          menue: [
+            { text: `${gegenstand} nach oben`, symbol: 'nachOben', deaktiviert: !kannHoch, aktion: () => verschieben(-1) },
+            { text: `${gegenstand} nach unten`, symbol: 'nachUnten', deaktiviert: !kannRunter, aktion: () => verschieben(1) },
+            { text: `${gegenstand} ausrücken`, symbol: 'ausruecken', deaktiviert: !kannAus, aktion: () => einruecken(false) },
+            { text: `${gegenstand} einrücken`, symbol: 'einruecken', deaktiviert: !kannEin, aktion: () => einruecken(true) },
+          ],
+        },
+        {
+          id: 'verlauf',
+          gruppe: true,
+          rang: 1,
+          menue: [
+            { text: 'Rückgängig', symbol: 'rueckgaengig', tasten: 'Strg+Z', deaktiviert: !offen.verlauf.length, aktion: () => useAva.getState().lvRueckgaengig() },
+            { text: 'Wiederholen', symbol: 'wiederholen', tasten: 'Strg+Y', deaktiviert: !offen.zukunft.length, aktion: () => useAva.getState().lvWiederholen() },
+          ],
+          inhalt: (
+            <>
+              <button className="icon" onClick={() => useAva.getState().lvRueckgaengig()} disabled={!offen.verlauf.length} title="Rückgängig (Strg+Z)" aria-label="Rückgängig">
+                <Symbol name="rueckgaengig" />
+              </button>
+              <button className="icon" onClick={() => useAva.getState().lvWiederholen()} disabled={!offen.zukunft.length} title="Wiederholen (Strg+Y)" aria-label="Wiederholen">
+                <Symbol name="wiederholen" />
+              </button>
+            </>
+          ),
+        },
+        { abstand: true },
+        {
+          id: 'suche',
+          kuerzbar: true,
+          inhalt: (
+            <input
+              className="ava-suche"
+              type="search"
+              placeholder="Suchen (OZ, Kurztext) …"
+              aria-label="LV durchsuchen"
+              value={suche}
+              onChange={(e) => setSuche(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape' && suche) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  sucheLeeren();
+                }
+              }}
+            />
+          ),
+        },
+      ]}
+      mehr={() => [
+        { text: 'Duplizieren', titel: `${gegenstand} duplizieren`, tasten: 'Strg+D', deaktiviert: !gewaehlt, hinweis: gewaehlt ? undefined : 'Erst wählen', aktion: duplizieren },
+        { trenner: true },
+        { text: 'Entfernen', titel: `${gegenstand} entfernen`, tasten: 'Entf', gefahr: true, deaktiviert: !gewaehlt, hinweis: gewaehlt ? undefined : 'Erst wählen', aktion: () => void loeschen() },
+      ]}
+    />
+  );
+
+  return (
+    <>
+      <AnsichtKarte
+        buendig
+        className="ava-lv"
+        leiste={werkzeuge}
+        fuss={
+          <div className="ava-lv-fuss">
+            <span>{positionsZahl} Positionen</span>
+            <span>Kostenansatz netto: {euro(ka?.netto ?? 0)}</span>
+            <span>
+              {lv.kopf.mwst} % USt: {euro(ka?.mwst ?? 0)}
+            </span>
+            <strong>brutto: {euro(ka?.brutto ?? 0)}</strong>
+            {(ka?.ohnePreis ?? 0) > 0 && <span className="muted">{ka!.ohnePreis} Position(en) ohne Preis im Kostenansatz</span>}
+          </div>
+        }
+      >
         <div className="ava-lv-tabelle" ref={tabelle} tabIndex={0} onKeyDown={tasten} aria-label="Leistungsverzeichnis – ↑/↓ wählen, Enter bearbeiten, Einfg neue Position, Entf entfernen">
           <table className="ava-tabelle ava-lv-zeilen">
             <thead>
@@ -389,17 +410,12 @@ export function LvEditor() {
             </tbody>
           </table>
         </div>
-        <ElementPanel onZurueck={() => tabelle.current?.focus()} />
-      </div>
-      <div className="ava-lv-fuss">
-        <span>{positionsZahl} Positionen</span>
-        <span>Kostenansatz netto: {euro(ka?.netto ?? 0)}</span>
-        <span>
-          {lv.kopf.mwst} % USt: {euro(ka?.mwst ?? 0)}
-        </span>
-        <strong>brutto: {euro(ka?.brutto ?? 0)}</strong>
-        {(ka?.ohnePreis ?? 0) > 0 && <span className="muted">{ka!.ohnePreis} Position(en) ohne Preis im Kostenansatz</span>}
-      </div>
+      </AnsichtKarte>
+      <BreitenLeiste schluessel="ava:breite:eigenschaften" vorgabe={320} min={240} seite="rechts" titel="Breite der Eigenschaften">
+        <Karte als="aside" titel="Eigenschaften" className="ava-panel-karte">
+          <ElementPanel onZurueck={() => tabelle.current?.focus()} />
+        </Karte>
+      </BreitenLeiste>
       {bibliothek && (
         <Textbibliothek
           onClose={() => setBibliothek(null)}
@@ -408,6 +424,6 @@ export function LvEditor() {
           }}
         />
       )}
-    </div>
+    </>
   );
 }
