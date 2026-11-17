@@ -1,6 +1,6 @@
 {
   "ava": {
     "stufe": "patch",
-    "notiz": "Bernstein nur noch für die Ausgabe: „Mängelanzeige mailen …“ und „Preisspiegel drucken …“ sind Hauptknöpfe, „Mangel“, „Beteiligter“ und „Neue Rechnung prüfen …“ Standardknöpfe."
+    "notiz": "Bernstein nur noch für die Ausgabe: „Mängelanzeige mailen …“ ist Hauptknopf, „Mangel“, „Beteiligter“ und „Neue Rechnung prüfen …“ sind Standardknöpfe."
   }
 }
