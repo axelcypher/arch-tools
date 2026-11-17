@@ -80,7 +80,8 @@ function useKopf({ titel, hilfe, aktionen, ariaLabel }: KopfProps) {
 export interface KarteProps extends KopfProps {
   /**
    * Werkzeugleiste der Karte (meist `Werkzeugleiste`): steht fest zwischen Kopf und Inhalt, scrollt nicht mit – für
-   * Ansichten mit eigener Leiste, die zu breit für den Kopf ist
+   * Ansichten mit eigener Leiste, die zu breit für den Kopf ist; wechselt sie mit der Ansicht, braucht die
+   * Werkzeugleiste einen eigenen `name`
    */
   leiste?: ReactNode;
   /** Fußzeile (Summen, Hinweis); steht fest unter dem scrollenden Inhalt */
