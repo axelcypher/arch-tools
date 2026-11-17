@@ -468,7 +468,7 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
     // die Mitte der Fläche: Ergebnis (Bilanz und Filter) über der Liste der Vorschriften. Eine wachsende Spalte der Fläche
     // (Klassen wie `FlaechenSpalte`), aber als <main> – der Hauptbereich der App für Vorleseprogramme
     <main className="flaechen-spalte wachsend br-vorschriften" aria-label="Prüfung">
-      <Karte titel="Ergebnis" className="br-ergebnis">
+      <Karte titel="Ergebnis" className="br-ergebnis" hoehe="inhalt">
         <div className="br-filter" role="group" aria-label="Ampeln und Filter">
           <div className="br-filter-zeile">
             <span className="segment br-bilanz" role="group" aria-label="Ampeln ein- und ausblenden">

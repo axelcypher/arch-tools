@@ -457,10 +457,6 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
   font-size: var(--fs-s);
 }
 
-/* Mitte: Ergebnis (so hoch wie sein Inhalt) über den Vorschriften (nimmt den Rest und scrollt) */
-.br-ergebnis {
-  flex: none;
-}
 .br-filter {
   /* zwei Zeilen: Ampeln, Balken und Ordnung; darunter Suche und Filter. Die Elemente brechen nie treppenartig um */
   display: flex;
