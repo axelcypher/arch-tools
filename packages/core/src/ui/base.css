@@ -301,6 +301,21 @@ body,
   font-size: var(--fs-l);
   font-weight: 600;
 }
+/* feste Werkzeugleiste der Karte (leiste) zwischen Kopf und Rumpf: Grund der Karte, Linie zum scrollenden Inhalt;
+   die Leiste selbst (.toolbar) ohne eigene Fläche und Linie, unter dem Kopf keine Doppellinie */
+.karte-leiste {
+  flex: none;
+  padding: var(--s1) var(--karte-pad);
+  border-bottom: 1px solid var(--line-soft);
+}
+.karte-leiste > .toolbar {
+  padding: 0;
+  background: transparent;
+  border-bottom: none;
+}
+.karte-kopf:has(+ .karte-leiste) {
+  border-bottom-color: transparent;
+}
 .karte-aktionen {
   display: flex;
   align-items: center;
