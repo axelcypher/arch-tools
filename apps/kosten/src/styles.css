@@ -28,14 +28,24 @@
   margin: 0 0 var(--s2);
 }
 .ko-hint {
-  margin: -2px 0 var(--s2);
+  margin: 0 0 var(--s2);
 }
 .toggle.block {
   display: flex;
-  margin: 2px 0 var(--s2);
+  margin: var(--s1) 0 var(--s2);
 }
 
 /* Tabellen: gemeinsame Zahlentabelle .summary-table (base.css); hier nur, was NUMIO zusätzlich braucht */
+/* Tabellen ohne Felder, aber mit zweizeiligen Zellen (Rechenansatz, Kennwert unter dem Namen): oben bündig, damit die
+   übrigen Zellen auf der ersten Zeile stehen; .felder passt nicht – das Häkchen würde die Textzellen verschieben */
+.mv-rechenweg .summary-table td,
+.ko-katalog .summary-table td {
+  vertical-align: top;
+}
+/* Mengen: das Kürzel ist ein Knopf (button.link), steht aber wie Text auf der Höhe des Feldtexts */
+.ko-mengen td:first-child {
+  padding-top: calc(3px + (var(--ctl-h) - 1lh) / 2);
+}
 /* gewählte Zeile (Katalogeintrag, verglichener Stand): .summary-table hat dafür noch keine eigene Regel */
 .summary-table tr.selected td {
   background: var(--accent-soft);
@@ -196,10 +206,11 @@ button.link:hover {
 .mv-liste tbody tr {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  border-bottom: 1px solid var(--border);
+  /* eine Trennlinie je Menge wie in .summary-table – am Grid-Eintrag statt an jeder Zelle (die Zusatzzeile gehört dazu) */
+  border-top: 1px solid var(--line-soft);
 }
 .mv-liste tbody td {
-  border-bottom: none;
+  border-top: none;
 }
 .mv-liste tr.festgelegt .mv-menge-wert {
   font-weight: 600;
@@ -252,7 +263,8 @@ button.link:hover {
 .mv-handwert button {
   flex: none;
 }
-/* Spaltenköpfe bleiben beim Rollen der Karte stehen (am oberen Rand des Rumpfs, über dessen Innenabstand) */
+/* Spaltenköpfe bleiben beim Rollen der Karte stehen – am oberen Rand des Rumpfs: der Versatz gleicht dessen
+   Innenabstand oben aus (.karte-rumpf in base.css: padding-top var(--s3)) */
 .mv-rechenweg thead th {
   position: sticky;
   top: calc(-1 * var(--s3));
@@ -306,7 +318,7 @@ button.link:hover {
   display: inline-block;
   width: 12px;
   height: 12px;
-  margin-right: 4px;
+  margin-right: var(--s1);
   vertical-align: -2px;
   border: 1px solid var(--muted);
   border-radius: 2px;

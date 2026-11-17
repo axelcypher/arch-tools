@@ -188,7 +188,9 @@ describe('NUMIO', () => {
   it('Stufe und Faktoren wirken auf die Übersicht; Stand festhalten und Vorher/Nachher', () => {
     useKosten.getState().load(projektMitKosten());
     const host = render(App);
-    waehle(host.querySelector('.karte select') as HTMLSelectElement, 'berechnung');
+    // die Stufenauswahl in der Karte „Grundlagen“ (über ihr Feld „Stufe“)
+    const stufe = [...host.querySelectorAll<HTMLSelectElement>('.karte select')].find((s) => [...s.options].some((o) => o.value === 'berechnung'))!;
+    waehle(stufe, 'berechnung');
     expect(kosten().stufe).toBe('berechnung');
     expect(host.textContent).toContain('Kostenberechnung');
 
