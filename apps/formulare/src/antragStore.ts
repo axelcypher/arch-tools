@@ -1068,7 +1068,7 @@ export const useAntrag = create<AntragState>((set, get) => {
       const einstellungen = mitZentral(einstellungenAus({ ...get().einstellungen, ...teil }));
       // die zentral eingestellten Angaben bleiben im alten Eintrag, wie sie waren (nichts geht verloren)
       const alt = einstellungenAus(lesen<unknown>(EINSTELLUNGEN, null));
-      schreiben(EINSTELLUNGEN, { ...einstellungen, antragsordner: alt.antragsordner, namensvorlage: alt.namensvorlage, zielpfad: alt.zielpfad, vorlagenordner: alt.vorlagenordner, berechnungsordner: alt.berechnungsordner });
+      schreiben(EINSTELLUNGEN, { ...einstellungen, zielordner: undefined, antragsordner: alt.antragsordner, namensvorlage: alt.namensvorlage, zielpfad: alt.zielpfad, vorlagenordner: alt.vorlagenordner, berechnungsordner: alt.berechnungsordner });
       set({ einstellungen });
       void get().laden();
     },

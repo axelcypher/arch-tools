@@ -642,7 +642,8 @@ function SeitePfade({ fokus }: { fokus?: string }) {
         Platzhalter wie <code>{'{PROJEKT_KUERZEL}'}</code> setzen die Angaben des Projekts ein; die Vorschau zeigt den vollständigen Pfad mit Beispielwerten.
       </p>
       {abweichungen.map((a) => {
-        const e = pfadEinstellung(a.id);
+        // der alte Zielordner war ein vollständiger Pfad – er betrifft den Zielordner, ob im Antragsordner oder außerhalb
+        const e = pfadEinstellung(a.id === 'plaene.permio.zielpfad' ? 'plaene.permio.zielordner' : a.id);
         return (
           <div key={a.id} className="meldung warnung einst-abweichung" role="status">
             <p>

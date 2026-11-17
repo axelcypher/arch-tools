@@ -5,7 +5,7 @@ import type { FeldDef } from '@core/ui/ansicht';
 import { useAnsicht } from '@core/ui/ansicht';
 import { AnsichtAnzeige, AnsichtEditor } from '@core/ui/AnsichtEditor';
 import type { ExportUeberschreibung, Status, UmfangEintrag } from '../antrag';
-import { eingereichtVon, PLANSATZ_QUELLE, standFestgehaltenText, tagVon } from '../antrag';
+import { eingereichtVon, einstellungenFuer, PLANSATZ_QUELLE, standFestgehaltenText, tagVon } from '../antrag';
 import { inFeldEinfuegen, PlatzhalterChips, PlatzhalterHinweise } from '@core/ui/Platzhalter';
 import { ART_HINWEIS, NAMENS_VARIABLEN, ZIEL_VARIABLEN, vorlageArtWarnung, STATUS_TEXT, alsUmfang, dokumenteDerVorlage, naechsteFassung, umfangAusKatalog, verschieben, vorlageFuer, vorlageMitAntragsart } from '../antrag';
 import { bedingungText, hatBedingung, MERKMAL_ERKLAERUNG } from '../bedingung';
@@ -1081,6 +1081,8 @@ function ExportFuerProjekt() {
   const projekt = useFormulare((s) => s.projekt);
   const ueber = useAntrag((s) => (projekt ? s.ueberschreibungen[projekt.ordner] : undefined));
   const global = useAntrag((s) => s.einstellungen);
+  // „wie in den Einstellungen“ für dieses Projekt: der zentrale Zielordner im Antragsordner des Projekts (einstellungenFuer)
+  const globalZiel = einstellungenFuer(global, { ...ueber, zielpfad: undefined }).zielpfad;
   const reihenfolge = useFormulare((s) => namensschemaVon(s).reihenfolge);
   const { setUeberschreibung } = useAntrag.getState();
   const [offen, setOffen] = useState(!!ueber);
@@ -1104,7 +1106,7 @@ function ExportFuerProjekt() {
           <label>
             <span className="field-label">Ziel</span>
             <select value={ueber?.ziel ?? ''} onChange={(e) => setzen({ ziel: (e.target.value || undefined) as ExportUeberschreibung['ziel'] })}>
-              <option value="">wie in den Einstellungen ({global.ziel === 'aktiv' ? 'aktive Antragsfassung' : global.zielpfad})</option>
+              <option value="">wie in den Einstellungen ({global.ziel === 'aktiv' ? 'aktive Antragsfassung' : globalZiel})</option>
               <option value="aktiv">aktive Antragsfassung</option>
               <option value="pfad">fester Ordner</option>
             </select>
@@ -1113,13 +1115,13 @@ function ExportFuerProjekt() {
             <div className="pu-breit">
               <label>
                 <span className="field-label">Fester Ordner</span>
-                <input ref={zielFeld} value={ueber?.zielpfad ?? ''} placeholder={global.zielpfad} onChange={(e) => setzen({ zielpfad: e.target.value })} aria-label="Fester Ordner" />
+                <input ref={zielFeld} value={ueber?.zielpfad ?? ''} placeholder={globalZiel} onChange={(e) => setzen({ zielpfad: e.target.value })} aria-label="Fester Ordner" />
               </label>
               <PlatzhalterHinweise vorlage={ueber?.zielpfad ?? ''} variablen={ZIEL_VARIABLEN} onAnpassen={(zielpfad) => setzen({ zielpfad })} />
               <PlatzhalterChips
                 variablen={ZIEL_VARIABLEN}
                 label="Fester Ordner des Projekts"
-                onEinfuegen={(p) => inFeldEinfuegen(ueber?.zielpfad ? zielFeld.current : null, ueber?.zielpfad || global.zielpfad, p, (zielpfad) => setzen({ zielpfad }))}
+                onEinfuegen={(p) => inFeldEinfuegen(ueber?.zielpfad ? zielFeld.current : null, ueber?.zielpfad || globalZiel, p, (zielpfad) => setzen({ zielpfad }))}
               />
             </div>
           )}
