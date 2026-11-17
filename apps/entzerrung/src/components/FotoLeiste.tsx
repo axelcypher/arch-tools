@@ -18,6 +18,7 @@ export function FotoLeiste() {
     <FlaechenSpalte>
       <Karte
         titel="Fotos"
+        hoehe="inhalt"
         aktionen={
           <button className="small" onClick={() => void fotosHinzufuegen()} title="Fotos hinzufügen (JPEG, PNG, WebP)">
             <Symbol name="plus" /> Foto …

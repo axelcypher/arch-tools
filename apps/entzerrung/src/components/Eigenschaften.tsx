@@ -344,7 +344,7 @@ function ObjektivPanel({ foto }: { foto: Foto }) {
   const hat = foto.linse.k1 !== 0 || foto.linse.k2 !== 0;
   const gueltig = linseGueltig(foto.linse);
   return (
-    <Karte titel="Objektiv · Verzeichnung">
+    <Karte titel="Objektiv · Verzeichnung" hoehe="inhalt">
       <p className="muted small-text">
         Weitwinkel biegen gerade Kanten zum Bildrand hin. Mit Hilfslinien entlang solcher Kanten (je mindestens drei Punkte, gern mehr) wird die Verzeichnung geschätzt und
         bei allen Ebenen dieses Fotos herausgerechnet.
@@ -501,7 +501,7 @@ function BildPanel({ foto, ebene, e }: { foto: Foto; ebene: Ebene; e: Entzerrung
     a = ausgabe(bereich, ebene.aufloesung ?? auto);
   } catch (err) {
     return (
-      <Karte titel="Bild">
+      <Karte titel="Bild" hoehe="inhalt">
         <div className="meldung fehler" role="alert">
           {err instanceof Error ? err.message : String(err)}
         </div>
@@ -510,7 +510,7 @@ function BildPanel({ foto, ebene, e }: { foto: Foto; ebene: Ebene; e: Entzerrung
     );
   }
   return (
-    <Karte titel="Bild">
+    <Karte titel="Bild" hoehe="inhalt">
       <div className="field-row">
         <Field label="Auflösung (mm je Pixel)" hint={ebene.aufloesung === undefined ? 'automatisch: etwa wie im Foto' : undefined}>
           <NumberField value={ebene.aufloesung !== undefined ? ebene.aufloesung * 1000 : undefined} placeholder={fmt2(auto * 1000)} min={0.01} digits={2} allowEmpty onChange={(v) => aendern((x) => ({ ...x, aufloesung: v === undefined ? undefined : v / 1000 }))} />

@@ -594,7 +594,7 @@ function ebenenOverlay(el: ReactNode[], abb: Abbildung, ebene: Ebene, auswahl: A
     }
     if (zu && pts.length > 2 && pts.every(Boolean) && ep.every(Boolean)) {
       const c = { x: pts.reduce((s, p) => s + p!.x, 0) / pts.length, y: pts.reduce((s, p) => s + p!.y, 0) / pts.length };
-      el.push(beschriftung(`m${m.id}f`, c, `${fmt2(flaecheVon(ep as Pt[]))} m²`, 'flaeche', 4));
+      el.push(beschriftung(`m${m.id}f`, c, `${fmt2(flaecheVon(ep as Pt[]))} m²`, 'fl-wert', 4));
     }
     pts.forEach((p, i) => el.push(griff(`m${m.id}-${i}`, p, { art: 'messung', id: m.id, index: i }, auswahl, runter, 'klein')));
   }
@@ -635,7 +635,7 @@ function entwurfOverlay(el: ReactNode[], abb: Abbildung, entwurf: Pt[], cursor: 
     const ea = inEbene(pts[pts.length - 2]);
     const eb = inEbene(pts[pts.length - 1]);
     if (a && b) el.push(segmentText('ewl', a, b, `${fmt2(Math.hypot(eb.x - ea.x, eb.y - ea.y))} m`));
-    if (werkzeug === 'flaeche' && pts.length > 2 && b) el.push(beschriftung('ewf', b, `${fmt2(flaecheVon(pts.map(inEbene)))} m²`, 'flaeche', 22));
+    if (werkzeug === 'flaeche' && pts.length > 2 && b) el.push(beschriftung('ewf', b, `${fmt2(flaecheVon(pts.map(inEbene)))} m²`, 'fl-wert', 22));
   }
 }
 

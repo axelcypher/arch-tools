@@ -93,14 +93,14 @@
   fill: #2b8a3e;
 }
 .ef-text.mass,
-.ef-text.flaeche {
+.ef-text.fl-wert {
   fill: #b8400a;
 }
 .ef-text.klein {
   font-size: 11px;
   font-weight: 500;
 }
-.ef-text.flaeche {
+.ef-text.fl-wert {
   font-size: 13px;
 }
 
