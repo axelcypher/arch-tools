@@ -72,6 +72,10 @@
 }
 
 /* Positionen */
+/* Beträge und Spannen bleiben einzeilig, die Tabelle rollt in der Karte */
+.ko-pos td.num {
+  white-space: nowrap;
+}
 .ko-pos {
   min-width: 860px;
 }
