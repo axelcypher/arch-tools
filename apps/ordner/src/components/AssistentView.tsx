@@ -531,7 +531,7 @@ export function AssistentView({
   // Desktop mit Stammordnern: die gemeinsame Projektübersicht als Startseite
   if (schritt === 'start' && desktop && allgemein.projekte.length > 0) {
     return (
-      <Flaeche>
+      <Flaeche className="po-start-flaeche">
         <ProjektStart
           hinweis={fehler || laeuft ? { text: fehler ?? laeuft ?? '', fehler: !!fehler } : undefined}
           fs={tauriDateisystem}

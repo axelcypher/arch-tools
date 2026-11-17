@@ -187,6 +187,8 @@ export interface ProjektUebersichtProps {
   onSchliessen?: () => void;
   /** Meldung über der Liste (z. B. „Projekt wird geöffnet …“ oder ein Fehler) */
   meldung?: { text: string; fehler?: boolean };
+  /** `main`, wenn die Übersicht der Hauptbereich der App ist (z. B. die Startseite von ATLAS); sonst eine benannte Karte */
+  als?: 'section' | 'main';
   /** Text, wenn eine Gruppe leer ist */
   gruppeLeer?: string;
   /** angeheftete Projekte (Schlüssel) – vorne im Abschnitt „Angeheftet“ */
@@ -436,7 +438,7 @@ export function ProjektUebersicht(props: ProjektUebersichtProps) {
   );
 
   return (
-    <KarteRahmen className="pa" titel={titel} aktionen={kopfAktionen} leiste={leiste} buendig>
+    <KarteRahmen className="pa" titel={titel} aktionen={kopfAktionen} leiste={leiste} buendig als={props.als}>
       <div className="pa-rollbereich">
         {props.meldung && (
           <p className={props.meldung.fehler ? 'warning small-text' : 'busy small-text'} role={props.meldung.fehler ? 'alert' : 'status'}>

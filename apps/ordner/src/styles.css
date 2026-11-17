@@ -1140,6 +1140,12 @@
   min-width: var(--ctl-h-s);
 }
 
+/* Startseite: die gemeinsame Projektübersicht auf ihrer Fläche über die volle Höhe (auch im nicht flexiblen .po-main) */
+.po-start-flaeche {
+  height: 100%;
+  box-sizing: border-box;
+}
+
 /* ---------- Katasterpläne (aus PERMIO übernommen) ---------- */
 .po-kataster {
   height: 100%;
