@@ -496,7 +496,9 @@ Werkzeugleiste liegt mit auf der Fläche (gleicher Grund, keine Linie). Baustein
   zeigt), und Innenabstand und Spalt zählen bei der Höchstbreite mit.
 - **Schmale Fenster:** Die Fläche scrollt nie. Die Mitte (eine `Karte` direkt auf der Fläche oder eine wachsende Spalte)
   behält `--karte-mitte-min` (280px), die Seitenkarten geben bis zu ihrer Mindestbreite (`--leiste-min`, 180px) nach;
-  die gemerkte Breite bleibt und gilt wieder, sobald Platz ist.
+  die gemerkte Breite bleibt und gilt wieder, sobald Platz ist. Das gilt auch für eine Seitenspalte (`FlaechenSpalte`
+  ohne `wachsend`). Unter der Summe der Mindestbreiten (zwei Seitenkarten und Mitte, rund 670px) wird abgeschnitten –
+  für Desktop-Fenster vertretbar.
 
 Die alten Muster (`.workspace`, `.sidebar`, eigene Spalten-Layouts der Apps) laufen weiter, bis eine App umgestellt
 ist (`docs/nachziehen/`). Eigene Layout-CSS und feste Farben der Apps entfallen mit der Umstellung. Ausgenommen ist die
