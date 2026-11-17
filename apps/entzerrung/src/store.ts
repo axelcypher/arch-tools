@@ -1,3 +1,4 @@
+import type { Format } from './export/export';
 import { create } from 'zustand';
 import type { DateiStand } from '@core/platform/projektordner';
 import type { Pt } from './geo/mat';
@@ -57,13 +58,15 @@ interface Zustand {
   projekt: string | null;
   /** Id eines eben gesetzten Passpunkts bzw. Maßes, dessen Eingabefeld den Fokus bekommen soll */
   fokus: string | null;
+  /** „Datei → Exportieren“: Exportdialog mit diesem Format öffnen (die Karte „Bild“ greift das auf) */
+  exportWunsch: Format | null;
 
   /** Dokument ändern; `verlauf: false` für Zwischenschritte beim Ziehen (vorher `merken()`) */
   aendern: (f: (d: Dokument) => Dokument, verlauf?: boolean) => void;
   merken: () => void;
   rueckgaengig: () => void;
   wiederholen: () => void;
-  setze: (p: Partial<Pick<Zustand, 'ansicht' | 'werkzeug' | 'auswahl' | 'entwurf' | 'korrigiert' | 'projekt' | 'fokus'>>) => void;
+  setze: (p: Partial<Pick<Zustand, 'ansicht' | 'werkzeug' | 'auswahl' | 'entwurf' | 'korrigiert' | 'projekt' | 'fokus' | 'exportWunsch'>>) => void;
   waehleFoto: (id: string | null) => void;
   waehleEbene: (id: string) => void;
   fotoHinzufuegen: (id: string, name: string, mime: string, breite: number, hoehe: number, daten: Uint8Array) => void;
@@ -85,6 +88,7 @@ export const useEntz = create<Zustand>((set, get) => ({
   werkzeug: 'auswahl',
   auswahl: null,
   entwurf: [],
+  exportWunsch: null,
   korrigiert: true,
   vergangenheit: [],
   zukunft: [],

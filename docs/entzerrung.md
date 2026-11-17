@@ -54,7 +54,9 @@ entzerrte Ebene als Zeichenfläche mit Bedienhinweis und Koordinaten in der Fuß
    Stellen als Rechenwert). „Fläche“ ist die geometrische Fläche in der entzerrten Ebene (z. B. Fassaden- oder
    Wandfläche), keine Fläche nach DIN 277 oder WoFlV. Liegt ein Messpunkt nach einer geänderten Referenz nicht
    mehr in der Ebene (hinter dem Horizont), steht „nicht messbar“ statt einer Zahl; im Export fehlt die Messung.
-5. **Exportieren**: als PNG (Maßstab 1:1 in den Bilddaten) oder JPEG, die Auflösung immer im Dateinamen, z. B.
+5. **Exportieren** („Exportieren …“ in der Karte „Bild“ oder „Datei › Exportieren“ mit PNG, JPEG bzw. PDF im
+   Maßstab – das wechselt in die entzerrte Ansicht und öffnet den Dialog mit dem gewählten Format; gesperrt, solange
+   die Referenz unvollständig ist): als PNG (Maßstab 1:1 in den Bilddaten) oder JPEG, die Auflösung immer im Dateinamen, z. B.
    „2,5mm-px“. Im JPEG steht der Maßstab nur, wenn er sich genau als ganze Pixel je cm oder je Zoll eintragen
    lässt (z. B. 1, 2, 2,5 oder 5 mm je Pixel); sonst nur im Dateinamen, damit kein CAD-Programm einen gerundeten,
    falschen Maßstab übernimmt. Eingezeichnete Messungen tragen die Legende „Maße in m“.

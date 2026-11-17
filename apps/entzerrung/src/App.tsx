@@ -22,6 +22,7 @@ import { Symbol } from '@core/ui/Symbol';
 import { MenueKnopf } from '@core/ui/Menue';
 import type { MenuePunkt } from '@core/ui/Menue';
 import { Werkzeugleiste } from '@core/ui/Werkzeugleiste';
+import type { Format } from './export/export';
 import { einstellungenPunkt } from '@core/ui/Einstellungen';
 
 export function App() {
@@ -117,11 +118,24 @@ export function App() {
   const ansichtWechseln = (a: 'foto' | 'entzerrt') => useEntz.getState().setze({ ansicht: a, werkzeug: 'auswahl', entwurf: [], auswahl: null });
   const [linksZu, setLinksZu] = useState(false);
 
-  // Menü „Datei“: Dateibefehle, dann Fotos hinzufügen (auch aus dem Projekt)
+  // „Datei → Exportieren“: öffnet den Exportdialog der entzerrten Ebene mit dem gewählten Format
+  const exportieren = (format: Format) => useEntz.getState().setze({ ansicht: 'entzerrt', werkzeug: 'auswahl', entwurf: [], auswahl: null, exportWunsch: format });
+  const exportPunkte = (): MenuePunkt[] => [
+    { text: 'PNG …', aktion: () => exportieren('png') },
+    { text: 'JPEG …', aktion: () => exportieren('jpeg') },
+    { text: 'PDF im Maßstab …', aktion: () => exportieren('pdf') },
+  ];
+  // Menü „Datei“: Dateibefehle samt „Exportieren“, dann Fotos hinzufügen (auch aus dem Projekt), zuletzt Einstellungen
   const dateiPunkte = (): MenuePunkt[] => [
     { text: 'Neu', aktion: () => void neu() },
     { text: 'Öffnen …', tasten: 'Strg+O', aktion: () => void oeffnen() },
     { text: 'Speichern unter …', aktion: () => void speichern(true), deaktiviert: !doc.fotos.length, hinweis: doc.fotos.length ? undefined : 'Erst ein Foto hinzufügen' },
+    {
+      text: 'Exportieren',
+      unter: exportPunkte(),
+      deaktiviert: !entzerrbar,
+      hinweis: entzerrbar ? undefined : foto ? 'Erst die Referenz vervollständigen' : 'Erst ein Foto hinzufügen',
+    },
     { trenner: true },
     { text: 'Fotos hinzufügen …', aktion: () => void fotosHinzufuegen() },
     ...(isTauri() ? [{ text: 'Fotos des Projekts …', aktion: () => setWahl(projektordner ? 'fotos' : 'projekt') }] : []),
