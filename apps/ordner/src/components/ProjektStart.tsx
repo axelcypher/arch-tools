@@ -133,6 +133,8 @@ export function ProjektStart({
         sucht={liste.sucht}
         fehler={liste.fehler}
         meldung={hinweis}
+        // die Startseite ist der Hauptbereich von ATLAS
+        als="main"
         onOeffnen={(p) => onOeffnen(p.schluessel)}
         onNeuLaden={liste.neuLaden}
         onEinstellungen={onEinstellungen}

@@ -168,7 +168,7 @@ describe('Assistent: Ansichtswechsel', () => {
 });
 
 describe('Assistent: Fokus, Schrittleiste, Meldungen', () => {
-  it('Fokus nach jedem Schrittwechsel; „Weiter“ trotz Fehler führt zum ersten offenen Feld (Pflicht 4, 8)', () => {
+  it('Fokus nach jedem Schrittwechsel; „Weiter“ trotz Fehler führt zum ersten offenen Feld; Strg+Enter am Fokus (Pflicht 4, 8)', async () => {
     const host = render();
     act(() => knopf(host, 'Neues Projekt').click());
     expect(document.activeElement).toBe(feld(host, 'Projektnummer'));
@@ -185,10 +185,19 @@ describe('Assistent: Fokus, Schrittleiste, Meldungen', () => {
     // der Bereich für „Noch offen“ bleibt im DOM (leer), damit Hilfsmittel die Meldung ansagen
     expect(host.querySelector('.po-weiter-grund[role="status"]')?.textContent).toBe('');
     act(() => knopf(host, 'Weiter:').click());
-    expect(document.activeElement).toBe(host.querySelector('.po-assistent h2'));
+    expect(document.activeElement).toBe(host.querySelector('.po-assistent .po-schritt-titel'));
     expect(document.activeElement?.textContent).toBe('Grundstück');
     // Strg+Enter steht auch für Hilfsmittel am Knopf
     expect(knopf(host, 'Weiter:').getAttribute('aria-keyshortcuts')).toBe('Control+Enter');
+    // Strg+Enter dort, wo der Fokus nach dem Wechsel steht (Überschrift im Kartenkopf) – zweimal hintereinander
+    const strgEnter = async () => {
+      act(() => document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', ctrlKey: true, bubbles: true })));
+      await act(async () => void (await new Promise((r) => setTimeout(r, 0))));
+    };
+    await strgEnter();
+    expect(document.activeElement?.textContent).toBe('Bauherr');
+    await strgEnter();
+    expect(document.activeElement?.textContent).toBe('Umfang');
   });
 
   it('Schrittleiste: erledigt nur, was besucht und vollständig ist – mit Häkchen; gesperrte Schritte nennen den Grund (Pflicht 9)', () => {
@@ -290,8 +299,8 @@ describe('Assistent: Anlegen', () => {
     await act(async () => knopf(host, 'Projektordner anlegen').click());
     await warten();
     expect(mock.fs.eintraege.has('P:/Projekte/2026-014 EFH/03 Berechnungen/Flächen/2026-014 EFH.oap')).toBe(true);
-    expect(host.querySelector('.po-abschluss h2')?.textContent).toBe('Projekt angelegt');
-    expect(document.activeElement).toBe(host.querySelector('.po-abschluss h2'));
+    expect(host.querySelector('.po-assistent .karte-kopf h2')?.textContent).toBe('Projekt angelegt');
+    expect(document.activeElement).toBe(host.querySelector('.po-assistent .po-schritt-titel'));
     expect(host.querySelector('.po-navigation')).toBeNull();
     expect(host.querySelector('.po-kontext')).toBeNull();
     expect([...host.querySelectorAll<HTMLButtonElement>('.po-schritte button')].every((b) => b.disabled)).toBe(true);

@@ -238,8 +238,8 @@ describe('ATLAS (Projektordner)', () => {
     expect(useOrdner.getState().stamm.beteiligte[1]).toEqual({ rolle: 'Vermessung (ÖbVI)', name: '', kontakt: '' });
     expect(knopf(host, 'Vermessung (ÖbVI)')).toBeUndefined();
 
-    // Vorlagen: Standard-Preset vorausgewählt – mit Strg+Enter (P-12)
-    act(() => host.querySelector('.po-col')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', ctrlKey: true, bubbles: true })));
+    // Vorlagen: Standard-Preset vorausgewählt – mit Strg+Enter in einem Feld (P-12)
+    act(() => host.querySelector('.sd-beteiligte input')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', ctrlKey: true, bubbles: true })));
     await warten();
     expect(host.querySelector('h2')?.textContent).toBe('Vorlagen');
     expect((host.querySelector('.po-presetwahl input') as HTMLInputElement).checked).toBe(true);
@@ -927,7 +927,7 @@ describe('ATLAS (Projektordner)', () => {
     await warten();
     // Entwurf geleert (Bearbeitung bleibt), Abschlussseite nennt den Ordner, kein ZIP-Knopf mehr als Hauptaktion
     expect(useOrdner.getState().stamm).toMatchObject({ nummer: '', kurzname: '', bearbeiter: 'TP' });
-    expect(host.querySelector('.po-abschluss h2')?.textContent).toBe('Projekt als ZIP heruntergeladen');
+    expect(host.querySelector('.po-assistent .karte-kopf h2')?.textContent).toBe('Projekt als ZIP heruntergeladen');
     expect(host.querySelector('.po-abschluss-name')?.textContent).toContain('2026-020 Haus am See');
     expect(knopf(host, 'Als ZIP herunterladen')).toBeUndefined();
     expect(knopf(host, 'Nächstes Projekt').className).toContain('primary');
