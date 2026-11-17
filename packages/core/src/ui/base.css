@@ -205,7 +205,7 @@ body,
 
 /* ---------- Fläche und Karten (Karte.tsx, docs/design.md „Fläche und Karten“) ----------
    Unter der Werkzeugleiste eine ruhige Fläche; darauf Seitenleisten, Hauptbereich und Zeichenfläche als Karten mit
-   Spalt. Jede Karte scrollt für sich, die Fläche nie. Die alten Muster (.workspace, .sidebar, eigene Spalten der Apps)
+   Spalt. Jede Karte scrollt für sich (Ausnahme: die rollende Spalte), die Fläche nie. Die alten Muster (.workspace, .sidebar, eigene Spalten der Apps)
    laufen unverändert weiter, bis die App umgestellt ist. */
 .flaeche {
   flex: 1;
@@ -227,15 +227,21 @@ body,
 .flaechen-spalte.wachsend {
   flex: 1;
 }
-/* rollende Spalte: sie rollt als Ganzes, die Karten darin sind so hoch wie ihr Inhalt; etwas Luft für Fokussaum und
-   Kartenschatten am Rand, ohne die Spalte zu verschieben */
+/* rollende Spalte: sie rollt als Ganzes, die Karten darin sind so hoch wie ihr Inhalt (hoehe wirkt hier nicht); rundum
+   Luft für Kartenschatten und Fokusrahmen am Rand, ohne die Spalte zu verschieben */
 .flaechen-spalte.rollend {
   overflow-y: auto;
-  padding: 2px var(--s1);
-  margin: -2px calc(-1 * var(--s1));
+  /* der Innenabstand kommt zur Breite hinzu: die gesetzte Breite bleibt die Breite der Karten */
+  box-sizing: content-box;
+  padding: var(--s1);
+  margin: calc(-1 * var(--s1));
 }
-.flaechen-spalte.rollend > .karte {
+.flaechen-spalte.rollend > .karte,
+.flaechen-spalte.rollend > .karte.karte-inhalt,
+.flaechen-spalte.rollend:has(> .karte-inhalt) > .karte:not(.karte-inhalt) {
   flex: none;
+  min-height: 0;
+  max-height: none;
 }
 /* steht die Werkzeugleiste über einer Fläche, liegt sie mit auf ihr: gleicher Grund, keine Linie */
 .app:has(.flaeche:not(.modal *)) > .toolbar {

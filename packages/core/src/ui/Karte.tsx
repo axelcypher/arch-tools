@@ -59,7 +59,7 @@ interface KopfProps {
   hilfe?: ReactNode;
   /** Knöpfe rechts im Kopf (Umschalter, „Hinzufügen“) */
   aktionen?: ReactNode;
-  /** Name der Karte, wenn kein Titel sichtbar ist */
+  /** Name der Karte, wenn kein Titel sichtbar ist (wirkt nicht bei `als="div"` – die Karte ist dann kein Bereich) */
   ariaLabel?: string;
   /**
    * Ebene der Überschrift: Vorgabe 2 (die Karte ist ein Bereich der Seite); 3 für viele gleichartige Karten unter einer
@@ -155,7 +155,7 @@ export function ZeichenKarte({
   children,
   className,
   als = 'section',
-}: KopfProps & { fuss?: ReactNode; children: ReactNode; className?: string; als?: 'section' | 'main' }) {
+}: Omit<KopfProps, 'ebene'> & { fuss?: ReactNode; children: ReactNode; className?: string; als?: 'section' | 'main' }) {
   const { kopf, name } = useKopf({ titel, hilfe, aktionen, ariaLabel });
   const [ziel, setZiel] = useState<HTMLElement | null>(null);
   const Element = als;

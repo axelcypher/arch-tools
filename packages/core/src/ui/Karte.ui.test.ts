@@ -177,8 +177,11 @@ describe('Fläche und Karten', () => {
     const host = render(h(FlaechenSpalte, { wachsend: true, rollend: true, children: h(Karte, { titel: 'A' }) }));
     expect(host.querySelector('.flaechen-spalte')!.className).toBe('flaechen-spalte wachsend rollend');
     const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'base.css'), 'utf8');
-    expect(css).toMatch(/\.flaechen-spalte\.rollend \{[^}]*overflow-y: auto;[^}]*padding: 2px var\(--s1\);/);
-    expect(css).toMatch(/\.flaechen-spalte\.rollend > \.karte \{\s*flex: none;/);
+    expect(css).toMatch(/\.flaechen-spalte\.rollend \{[^}]*overflow-y: auto;[^}]*box-sizing: content-box;[^}]*padding: var\(--s1\);/);
+    // auch Inhaltskarten und die Mindesthöhe der teilenden Karte gelten in der rollenden Spalte nicht
+    expect(css).toMatch(
+      /\.flaechen-spalte\.rollend > \.karte,\s*\.flaechen-spalte\.rollend > \.karte\.karte-inhalt,\s*\.flaechen-spalte\.rollend:has\(> \.karte-inhalt\) > \.karte:not\(\.karte-inhalt\) \{[^}]*flex: none;[^}]*min-height: 0;[^}]*max-height: none;/,
+    );
     expect(css).not.toMatch(/\.placeholder-help/);
   });
 
