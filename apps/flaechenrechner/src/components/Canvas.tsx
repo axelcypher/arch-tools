@@ -107,7 +107,7 @@ export function Canvas() {
   const { update, updateSilent, checkpoint, select, setTool } = useEditor.getState();
 
   const svgRef = useRef<SVGSVGElement>(null);
-  /** Fußzeile der Zeichenkarte (nur in der Grundrissansicht gesetzt) */
+  /** Fußzeileninhalt nur in der Grundrissansicht einhängen: bei 3D bleibt die Zeichenfläche versteckt eingehängt */
   const mainView = useEditor((s) => s.mainView);
   const [size, setSize] = useState({ w: 800, h: 600 });
   const [vp, setVp] = useState<Viewport>({ scale: 40, tx: 60, ty: 60 });
