@@ -148,6 +148,12 @@
   container-type: inline-size;
 }
 
+@container (max-width: 480px) {
+  .hud-coords em {
+    display: none;
+  }
+}
+
 @container (max-width: 360px) {
   .hud-coords {
     display: none;
