@@ -1,13 +1,14 @@
-import type { ReactNode } from 'react';
+import { useId, type ReactNode } from 'react';
 
-/** Karte in den Einstellungen: Überschrift (rechts daneben optional `kopf`), Erklärung, Inhalt */
-export function Karte({ titel, text, children, kopf }: { titel: string; text?: ReactNode; children: ReactNode; kopf?: ReactNode }) {
+/**
+ * Abschnitt der Seite „PERMIO“ im zentralen Einstellungsdialog: Überschrift (`h4`, docs/design.md „Einstellungen“),
+ * Erklärung, Inhalt. `id` macht den Abschnitt als Sprungziel erreichbar (`einstellungenOeffnen('formulare', id)`).
+ */
+export function Karte({ titel, text, children, id }: { titel: string; text?: ReactNode; children: ReactNode; id?: string }) {
+  const kopfId = useId();
   return (
-    <section className="es-karte">
-      <div className="es-karte-kopf">
-        <h3>{titel}</h3>
-        {kopf}
-      </div>
+    <section className="einst-gruppe es-gruppe" aria-labelledby={kopfId} id={id ? `permio-${id}` : undefined}>
+      <h4 id={kopfId}>{titel}</h4>
       {text && <p className="muted small-text">{text}</p>}
       {children}
     </section>

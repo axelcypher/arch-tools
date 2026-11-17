@@ -63,6 +63,27 @@ import { mitVerfolgung, standSpeichern, vorgang } from './ausstehend';
 
 const log = logger('formulare');
 
+/**
+ * Merker: Die Stammordner der Projekte gelten gemeinsam (allgemein.json) – die eigenen dieser App sind übernommen.
+ * Er gilt je Rechner: Ein anderer Rechner, der noch nie gemeinsame Stammordner gesehen hat, übernimmt seine alten
+ * einmal, wenn die gemeinsame Liste dann leer ist (wie bisher).
+ */
+const STAMMORDNER_GETEILT = 'formulare:stammordnerGeteilt';
+function stammordnerGeteilt(): boolean {
+  try {
+    return localStorage.getItem(STAMMORDNER_GETEILT) === '1';
+  } catch {
+    return false;
+  }
+}
+function stammordnerGeteiltMerken(): void {
+  try {
+    localStorage.setItem(STAMMORDNER_GETEILT, '1');
+  } catch {
+    // ohne Speicher bleibt es bei der Übernahme beim nächsten Start
+  }
+}
+
 export type Ansicht = 'felder' | 'seite';
 export type Hauptansicht = 'formular' | 'projektkarte' | 'antrag' | 'datei' | 'projekte';
 
@@ -251,10 +272,6 @@ interface FormulareState extends Gespeichert {
   ordnerStand: number;
   /** von Hand zugeordnete Projektordner je Kürzel (vollständiger Pfad) – gemeinsam im Konfigurationsordner */
   ordnerWahl: Record<string, string>;
-  /** Bereich der Einstellungen */
-  einstellungsBereich: EinstellungsBereich;
-  /** Einstellungen als Modal über der aktuellen Ansicht geöffnet */
-  einstellungenOffen: boolean;
   /** echte Projektordner (erste und zweite Ebene) */
   ablage: AblageOrdner[];
   ablageFehler: string[];
@@ -271,8 +288,6 @@ interface FormulareState extends Gespeichert {
   setMeldung: (m: Meldung | null) => void;
   ordnerHinzufuegen: (pfad: string) => Promise<void>;
   ordnerEntfernen: (pfad: string) => Promise<void>;
-  ablageHinzufuegen: (pfad: string) => Promise<void>;
-  ablageEntfernen: (pfad: string) => Promise<void>;
   setVorgabeAuswahl: (liste: string[]) => void;
   /** Pfadliste für ein Projekt; `null` = wieder die Vorgabe */
   setAuswahl: (kuerzel: string, liste: string[] | null) => void;
@@ -343,8 +358,6 @@ interface FormulareState extends Gespeichert {
   /** eigene Änderungen an einem Abschnitt, Feld oder einer Gruppe verwerfen – es gilt wieder die Vorgabe */
   eigenesVerwerfen: (schluessel: string, eintrag: Eintrag) => void;
   /** Einstellungen als Modal öffnen – die Ansicht darunter bleibt, wie sie ist */
-  einstellungenOeffnen: (bereich?: EinstellungsBereich) => void;
-  einstellungenSchliessen: () => void;
   setRollenVorgabe: (gruppe: number, schluessel: string | null) => void;
   /** Gruppe der Projektkarte als Favorit markieren bzw. die Markierung entfernen */
   kartenFavoritUmschalten: (gruppe: number) => void;
@@ -399,7 +412,6 @@ interface FormulareState extends Gespeichert {
   projektdatenUebernehmen: (angaben: Angabe[]) => void;
 }
 
-export type EinstellungsBereich = 'ordner' | 'stammdaten' | 'adressbuch' | 'formulare' | 'antrag' | 'projektdaten' | 'sicherung';
 
 export interface OapDatei {
   /** Projektordner (absolut) */
@@ -1252,8 +1264,6 @@ export const useFormulare = create<FormulareState>()((set, get) => {
     ordnerDialog: null,
     ordnerWahl: {},
     ordnerStand: 0,
-    einstellungsBereich: 'ordner',
-    einstellungenOffen: false,
     ablage: [],
     ablageFehler: [],
     konflikt: false,
@@ -1287,19 +1297,6 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       set({ projektordner: get().projektordner.filter((p) => p !== pfad) });
       if (get().projekt?.root === pfad) await get().projektWaehlen(null);
       await get().projekteLaden();
-    },
-
-    ablageHinzufuegen: async (pfad) => {
-      if (get().ablageordner.includes(pfad)) return;
-      set({ ablageordner: [...get().ablageordner, pfad] });
-      void allgemeinAendern({ projekte: get().ablageordner }).catch((e) => log.warn(`Gemeinsame Einstellungen nicht geschrieben: ${fehlertext(e)}`));
-      await get().ablageLaden();
-    },
-
-    ablageEntfernen: async (pfad) => {
-      set({ ablageordner: get().ablageordner.filter((p) => p !== pfad) });
-      void allgemeinAendern({ projekte: get().ablageordner }).catch((e) => log.warn(`Gemeinsame Einstellungen nicht geschrieben: ${fehlertext(e)}`));
-      await get().ablageLaden();
     },
 
     setVorgabeAuswahl: (liste) => set({ vorgabeAuswahl: auswahlBereinigt(liste) }),
@@ -1829,9 +1826,6 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       }
     },
 
-    einstellungenOeffnen: (bereich) => set({ einstellungenOffen: true, ...(bereich ? { einstellungsBereich: bereich } : {}) }),
-    einstellungenSchliessen: () => set({ einstellungenOffen: false }),
-
     kartenFavoritUmschalten: (gruppe) => {
       const f = get().kartenFavoriten;
       // ein Favorit ist nie zugleich ausgeblendet
@@ -2028,12 +2022,17 @@ export const useFormulare = create<FormulareState>()((set, get) => {
         if (JSON.stringify(roh.namensschema ?? null) !== JSON.stringify(get().namensschemaBuero)) set({ namensschemaBuero: roh.namensschema ?? null });
         const projekte = Array.isArray(roh.projekte) ? roh.projekte.filter((x): x is string => typeof x === 'string' && !!x.trim()) : [];
         // Stammordner: gemeinsam; gibt es dort noch keine, die bisherigen dieser App übernehmen
-        if (projekte.length) {
+        // (einmalig: danach gilt die gemeinsame Liste, auch leer – sonst kehrte ein zentral entfernter Ordner zurück)
+        if (projekte.length || stammordnerGeteilt()) {
+          if (projekte.length) stammordnerGeteiltMerken();
           if (projekte.join('\n') !== get().ablageordner.join('\n')) {
             set({ ablageordner: projekte });
             await get().ablageLaden();
           }
-        } else if (get().ablageordner.length) await allgemeinAendern({ projekte: get().ablageordner });
+        } else if (get().ablageordner.length) {
+          await allgemeinAendern({ projekte: get().ablageordner });
+          stammordnerGeteiltMerken();
+        }
         // Ort neuer Projektdateien: ebenso
         if (typeof roh.oapPfad === 'string' && roh.oapPfad.trim()) set({ oapVorlage: roh.oapPfad.trim() });
         else if (get().oapVorlage.trim() && get().oapVorlage !== VORGABE_OAP_PFAD) await allgemeinAendern({ oapPfad: get().oapVorlage });
@@ -2309,6 +2308,15 @@ konfigBeobachten('allgemein', () => {
     (roh) => {
       const o = (roh ?? {}) as Record<string, unknown>;
       if (typeof o.oapPfad === 'string' && o.oapPfad.trim() && o.oapPfad.trim() !== useFormulare.getState().oapVorlage) useFormulare.setState({ oapVorlage: o.oapPfad.trim() });
+      // Stammordner der Projekte (eingestellt auf „Pfade und Benennung“): übernehmen, nie zurückschreiben
+      if (Array.isArray(o.projekte)) {
+        const projekte = o.projekte.filter((x): x is string => typeof x === 'string' && !!x.trim());
+        if (projekte.length) stammordnerGeteiltMerken();
+        if (projekte.join('\n') !== useFormulare.getState().ablageordner.join('\n')) {
+          useFormulare.setState({ ablageordner: projekte });
+          void useFormulare.getState().ablageLaden();
+        }
+      }
     },
     () => undefined,
   );
