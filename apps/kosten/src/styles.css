@@ -582,7 +582,7 @@ button.link:hover {
 }
 .ko-report-unterschrift span {
   display: block;
-  border-bottom: 1px solid #1f2328;
+  border-bottom: 1px solid var(--text);
   height: 28px;
   margin-bottom: 4px;
 }
