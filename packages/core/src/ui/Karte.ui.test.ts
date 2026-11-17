@@ -96,6 +96,7 @@ describe('Fläche und Karten', () => {
     expect(css).toMatch(/\.flaechen-spalte:has\(> \.karte-inhalt\) > \.karte:not\(\.karte-inhalt\) \{[^}]*min-height: calc\(var\(--karte-kopf-h\) \+ 6 \* var\(--s4\)\);/);
     // Zahlentabelle: gemischte Spalten, Felder, Gruppen- und Summenzeilen
     expect(css).toMatch(/\.summary-table\.text th\.num,\s*\.summary-table td\.num \{[^}]*text-align: right;/);
+    expect(css).toMatch(/\.karte-rumpf \{[^}]*position: relative;[^}]*overflow: auto;/);
     expect(css).toMatch(/\.summary-table\.felder td \{[^}]*vertical-align: top;/);
     expect(css).toMatch(/\.summary-table\.felder td:not\(:has\(input, select, textarea\)\) \{[^}]*padding-top: calc\(3px \+ \(var\(--ctl-h\) - 1lh\) \/ 2\);/);
     expect(css).toMatch(/\.summary-table tr\.gruppe td \{/);

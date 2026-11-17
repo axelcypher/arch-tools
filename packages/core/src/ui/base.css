@@ -290,6 +290,9 @@ body,
   margin-left: auto;
 }
 .karte-rumpf {
+  /* positioniert: absolut gesetzte Kinder (z. B. .nur-vorlesen in breiten Tabellen) bleiben im Rollbereich der Karte
+     und machen die Seite nicht breiter */
+  position: relative;
   flex: 1;
   min-height: 0;
   overflow: auto;
