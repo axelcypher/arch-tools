@@ -33,16 +33,16 @@ export function ElementPanel({ onZurueck }: { onZurueck?: () => void } = {}) {
 
   if (!el) {
     return (
-      <aside className="ava-panel" aria-label="Eigenschaften">
+      <div className="ava-panel">
         <p className="muted">Ein Element in der Tabelle wählen, um Kurz- und Langtext, Menge, Einheit und Art zu bearbeiten.</p>
         <p className="muted small-text">Tastatur in der Tabelle: ↑/↓ wählen, Enter bearbeiten (Esc zurück), Einfg neue Position, Strg+D duplizieren, Entf entfernen, Strg+Z rückgängig, Strg+S speichern.</p>
-      </aside>
+      </div>
     );
   }
   const pfadText = f!.pfad.map((a) => `${a.oz} ${a.kurztext}`).join(' › ');
 
   return (
-    <aside className="ava-panel" aria-label="Eigenschaften des gewählten Elements" onKeyDown={tasten}>
+    <div className="ava-panel" onKeyDown={tasten}>
       <div className="ava-panel-kopf">
         <span className="ava-chip">{el.art === 'position' ? 'Position' : el.art === 'abschnitt' ? 'Abschnitt' : (el as Hinweis).vorbemerkung ? 'Vorbemerkung' : 'Hinweis'}</span>
         {pfadText && <span className="muted small-text">{pfadText}</span>}
@@ -95,7 +95,7 @@ export function ElementPanel({ onZurueck }: { onZurueck?: () => void } = {}) {
           onUebernehmen={(v) => setze<Position>({ kurztext: v.kurztext, langtext: v.langtext, ...(v.einheit ? { einheit: v.einheit } : {}), ...(v.kostengruppe ? { kostengruppe: v.kostengruppe } : {}) })}
         />
       )}
-    </aside>
+    </div>
   );
 }
 

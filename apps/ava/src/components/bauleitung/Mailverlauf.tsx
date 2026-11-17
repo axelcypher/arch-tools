@@ -1,3 +1,4 @@
+import { Karte } from '@core/ui/Karte';
 import { useEffect, useMemo, useState } from 'react';
 import type { Mail } from '../../bauleitung/mails';
 import { mailLesen } from '../../bauleitung/mails';
@@ -155,9 +156,11 @@ export function Mailverlauf() {
   }, [projekt.struktur, gewerk]);
   const gewerkVon = (d: Datei) => projekt.struktur?.gewerke.find((g) => d.pfad.startsWith(`${g.pfad}/`))?.kennung;
   return (
-    <div className="ava-seite ava-mailverlauf">
-      <div className="ava-seite-kopf">
-        <h1>Mailverlauf</h1>
+    <Karte
+      als="main"
+      titel="Mailverlauf"
+      className="ava-mailverlauf"
+      aktionen={
         <select value={gewerk} onChange={(e) => setGewerk(e.target.value)} aria-label="Gewerk">
           <option value="">alle Gewerke und das Projekt</option>
           {projekt.struktur?.gewerke
@@ -168,9 +171,10 @@ export function Mailverlauf() {
               </option>
             ))}
         </select>
-      </div>
+      }
+    >
       <p className="muted small-text">Mails (.eml, .msg) aus den Korrespondenzordnern der Gewerke und den Mailordnern des Projekts ({useAva.getState().einstellungen.ablage.mailOrdner.join(', ')}).</p>
       <MailListe dateien={dateien} gewerkVon={gewerkVon} />
-    </div>
+    </Karte>
   );
 }

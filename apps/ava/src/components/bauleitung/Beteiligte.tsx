@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { AnsichtKarte } from '../AnsichtKarte';
 import { bestaetigen, meldung } from '@core/ui/Rueckfrage';
 import { Symbol } from '@core/ui/Symbol';
 import { Werkzeugleiste } from '@core/ui/Werkzeugleiste';
@@ -35,32 +36,32 @@ export function Beteiligte() {
     await speichern((a) => ({ ...a, beteiligte: [...a.beteiligte, ...neu] }));
   };
 
+  const werkzeuge = (
+    <Werkzeugleiste
+      name="Werkzeuge Beteiligte"
+      teile={[
+        {
+          id: 'beteiligter',
+          inhalt: (
+            <button
+              title="Beteiligten hinzufügen"
+              onClick={() => {
+                const id = neueId('b');
+                setNeuerEintrag(id);
+                void speichern((a) => ({ ...a, beteiligte: [...a.beteiligte, { id, rolle: '' }] }));
+              }}
+            >
+              <Symbol name="plus" /> Beteiligter
+            </button>
+          ),
+        },
+      ]}
+      mehr={() => [{ text: 'Aus Stammdaten und Gewerken übernehmen', titel: 'Bauherr und Beteiligte aus den Stammdaten, Auftragnehmer aus der Kostenkontrolle', aktion: () => void uebernehmen() }]}
+    />
+  );
+
   return (
-    <div className="ava-seite">
-      <div className="ava-seite-kopf">
-        <h1>Beteiligte</h1>
-      </div>
-      <Werkzeugleiste
-        name="Beteiligte"
-        teile={[
-          {
-            id: 'beteiligter',
-            inhalt: (
-              <button
-                title="Beteiligten hinzufügen"
-                onClick={() => {
-                  const id = neueId('b');
-                  setNeuerEintrag(id);
-                  void speichern((a) => ({ ...a, beteiligte: [...a.beteiligte, { id, rolle: '' }] }));
-                }}
-              >
-                <Symbol name="plus" /> Beteiligter
-              </button>
-            ),
-          },
-        ]}
-        mehr={() => [{ text: 'Aus Stammdaten und Gewerken übernehmen', titel: 'Bauherr und Beteiligte aus den Stammdaten, Auftragnehmer aus der Kostenkontrolle', aktion: () => void uebernehmen() }]}
-      />
+    <AnsichtKarte titel="Beteiligte" leiste={werkzeuge}>
       <table className="ava-tabelle">
         <thead>
           <tr>
@@ -125,6 +126,6 @@ export function Beteiligte() {
           <span className="ava-feld-hinweis">leer = E-Mail des Bauherrn aus den Stammdaten</span>
         </label>
       </div>
-    </div>
+    </AnsichtKarte>
   );
 }
