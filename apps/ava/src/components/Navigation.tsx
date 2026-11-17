@@ -45,6 +45,7 @@ export function Navigation({ onStammdaten }: { onStammdaten: (meta: ProjectMeta,
   return (
     <BreitenLeiste schluessel="ava:breite:navigation" vorgabe={250} titel="Breite der Navigation">
       <Karte
+        als="aside"
         className="ava-nav-karte"
         buendig
         titel={

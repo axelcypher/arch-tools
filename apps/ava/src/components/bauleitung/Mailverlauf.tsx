@@ -156,7 +156,7 @@ export function Mailverlauf() {
   }, [projekt.struktur, gewerk]);
   const gewerkVon = (d: Datei) => projekt.struktur?.gewerke.find((g) => d.pfad.startsWith(`${g.pfad}/`))?.kennung;
   return (
-    <Karte
+    <Karte als="main"
       titel="Mailverlauf"
       className="ava-mailverlauf"
       aktionen={

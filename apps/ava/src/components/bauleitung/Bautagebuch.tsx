@@ -49,7 +49,7 @@ export function Bautagebuch() {
   return (
     <>
       <BreitenLeiste schluessel="ava:breite:bautagebuch" vorgabe={260} titel="Breite der Liste">
-        <Karte
+        <Karte als="aside"
           titel="Bautagebuch"
           buendig
           aktionen={
@@ -86,7 +86,7 @@ export function Bautagebuch() {
           </ul>
         </Karte>
       </BreitenLeiste>
-      <Karte titel={t ? `Tagesbericht ${datumKurz(t.datum)}` : 'Tagesbericht'}>{t ? <Bericht key={t.id} t={t} neu={t.id === neuerBericht} /> : <p className="muted">Mit „Tagesbericht“ beginnen.</p>}</Karte>
+      <Karte als="main" titel={t ? `Tagesbericht ${datumKurz(t.datum)}` : 'Tagesbericht'}>{t ? <Bericht key={t.id} t={t} neu={t.id === neuerBericht} /> : <p className="muted">Mit „Tagesbericht“ beginnen.</p>}</Karte>
     </>
   );
 }

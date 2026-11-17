@@ -29,7 +29,7 @@ export function Notizen() {
   };
 
   return (
-    <Karte titel="Notizen & Aufgaben">
+    <Karte als="main" titel="Notizen & Aufgaben">
       <div className="ava-notiz-neu">
         <textarea rows={2} aria-label="Neue Notiz bzw. Aufgabe" placeholder="Neue Notiz bzw. Aufgabe … (Strg+Enter)" value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && (e.ctrlKey || e.metaKey) && neu()} />
         <div className="ava-reihe">

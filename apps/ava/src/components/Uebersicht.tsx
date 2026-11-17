@@ -39,6 +39,7 @@ export function Uebersicht() {
 
   return (
     <Karte
+      als="main"
       titel="Kostenübersicht"
       aktionen={
         <div className="ava-kopf-info">

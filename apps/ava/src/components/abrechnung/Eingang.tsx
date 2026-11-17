@@ -147,7 +147,7 @@ export function Eingang() {
 
   if (!ordner) {
     return (
-      <Karte titel="Rechnungseingang">
+      <Karte als="main" titel="Rechnungseingang">
         <p>Noch kein Scanordner eingestellt – der Ordner, in dem der Scanner die Dateien ablegt.</p>
         <div className="button-row">
           <button
@@ -170,6 +170,7 @@ export function Eingang() {
     <>
       <BreitenLeiste schluessel="ava:breite:scans" vorgabe={260} titel="Breite der Scanliste">
         <Karte
+          als="aside"
           titel="Scans"
           className="ava-eingang-liste"
           aktionen={
@@ -204,11 +205,12 @@ export function Eingang() {
         </ul>
         </Karte>
       </BreitenLeiste>
-      <Karte titel="Vorschau" className="ava-eingang-vorschau">
+      <Karte als="main" titel="Vorschau" className="ava-eingang-vorschau">
         {scan ? <PdfVorschau daten={vorschau} name={scan} laedt={vorschauLaedt} /> : <div className="muted">Kein Scan gewählt.</div>}
       </Karte>
       <BreitenLeiste schluessel="ava:breite:zuordnen" vorgabe={340} seite="rechts" titel="Breite der Zuordnung">
         <Karte
+          als="aside"
           titel="Zuordnen"
           className="ava-eingang-ziel"
           aktionen={

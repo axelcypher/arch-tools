@@ -50,7 +50,7 @@ export function Protokolle() {
   return (
     <>
       <BreitenLeiste schluessel="ava:breite:protokolle" vorgabe={260} titel="Breite der Liste">
-        <Karte
+        <Karte als="aside"
           titel="Protokolle"
           buendig
           aktionen={
@@ -89,7 +89,7 @@ export function Protokolle() {
           </ul>
         </Karte>
       </BreitenLeiste>
-      <Karte titel={p ? `Protokoll ${datumKurz(p.datum)}` : 'Protokoll'}>{p ? <ProtokollEditor key={p.id} p={p} /> : <p className="muted">Mit „Protokoll“ beginnen.</p>}</Karte>
+      <Karte als="main" titel={p ? `Protokoll ${datumKurz(p.datum)}` : 'Protokoll'}>{p ? <ProtokollEditor key={p.id} p={p} /> : <p className="muted">Mit „Protokoll“ beginnen.</p>}</Karte>
     </>
   );
 }
