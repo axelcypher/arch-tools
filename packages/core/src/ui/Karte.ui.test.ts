@@ -209,6 +209,8 @@ describe('Fläche und Karten', () => {
     // Tabellen ohne Felder oben bündig, gewählte Zeile, Verweisknopf als Text
     expect(css).toMatch(/\.summary-table\.oben td \{\s*vertical-align: top;/);
     expect(css).toMatch(/\.summary-table tr\.selected td \{\s*background: var\(--accent-soft\);/);
-    expect(css).toMatch(/\nbutton\.link \{[^}]*border: none;[^}]*background: none;[^}]*color: var\(--accent-text\);/);
+    expect(css).toMatch(/\nbutton\.link \{[^}]*border: none;[^}]*background: none;[^}]*color: var\(--accent-text\);[^}]*text-decoration: underline;/);
+    expect(css).toMatch(/button\.link:hover:not\(:disabled\):not\(\[aria-disabled='true'\]\),\s*button\.link:focus-visible \{[^}]*text-decoration-color: currentColor;/);
+    expect(css).toMatch(/\.summary-table tr\.selected td:first-child \{\s*box-shadow: inset 3px 0 var\(--accent\);/);
   });
 });

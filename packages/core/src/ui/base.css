@@ -610,7 +610,8 @@ button.icon {
 }
 
 /* Knopf als Verweis im Text (z. B. ein Wert in einer Tabelle, der seine Prüfung öffnet): ohne Rahmen und Grund, in der
-   Akzentschrift, unterstrichen beim Überfahren; zählt in Feldzeilen der Zahlentabelle als Text */
+   Akzentschrift, immer dezent unterstrichen (die Farbe allein reicht gegen den Text nicht), beim Überfahren und Fokus
+   voll; zählt in Feldzeilen der Zahlentabelle als Text */
 button.link {
   padding: 0;
   border: none;
@@ -618,10 +619,14 @@ button.link {
   color: var(--accent-text);
   text-align: left;
   white-space: normal;
-}
-button.link:hover:not(:disabled):not([aria-disabled='true']) {
-  background: none;
   text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
+  text-underline-offset: 2px;
+}
+button.link:hover:not(:disabled):not([aria-disabled='true']),
+button.link:focus-visible {
+  background: none;
+  text-decoration-color: currentColor;
 }
 
 .toggle {
@@ -984,6 +989,10 @@ textarea:focus {
 /* gewählte Zeile (z. B. der Katalogeintrag oder der verglichene Stand) */
 .summary-table tr.selected td {
   background: var(--accent-soft);
+}
+/* wie die Wahl in senkrechten Segmenten: Tönung und Akzentlinie links – von Gruppenzeilen unterscheidbar */
+.summary-table tr.selected td:first-child {
+  box-shadow: inset 3px 0 var(--accent);
 }
 
 .summary-table tr.strong td,
