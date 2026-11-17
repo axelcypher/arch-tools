@@ -34,13 +34,13 @@ export function FlaechenSpalte({
   wachsend?: boolean;
   /** Element der Spalte: `main` für den Hauptbereich der App (je Fenster nur eines), `aside` für eine Nebenspalte */
   als?: 'div' | 'main' | 'aside';
-  /** Name der Spalte – Pflicht bei `als="aside"` (jede Nebenspalte braucht einen eigenen Namen) */
+  /** Name der Spalte – Pflicht bei `als="aside"` (jede Nebenspalte braucht einen eigenen Namen); wirkt nur bei `main` und `aside` */
   ariaLabel?: string;
 }) {
   const klasse = ['flaechen-spalte', wachsend && 'wachsend', className].filter(Boolean).join(' ');
   const Element = als;
   return (
-    <Element className={klasse} style={breite ? { width: breite } : undefined} aria-label={ariaLabel}>
+    <Element className={klasse} style={breite ? { width: breite } : undefined} aria-label={als !== 'div' ? ariaLabel : undefined}>
       {children}
     </Element>
   );

@@ -523,10 +523,11 @@ Werkzeugleiste liegt mit auf der Fläche (gleicher Grund, keine Linie). Baustein
   Innenabstand und Spalt zählen bei der Höchstbreite mit.
 - **Hauptbereich:** Die Mitte ist `<main>`, damit Vorleseprogramme sie finden: `als="main"` an der wachsenden
   `FlaechenSpalte`, an einer `Karte` oder an der `ZeichenKarte` (Vorgabe `div` bzw. `section`; `aside` an
-  `FlaechenSpalte` oder `Karte` für eine Nebenspalte oder -karte). Je Fenster nur ein `main`, und zwar an genau einem Element (Spalte oder Karte darin, nicht
-  beides); die App legt dann kein eigenes `<main>` um die Fläche und setzt keine Bausteinklassen von Hand. Jedes `aside`
-  braucht einen eigenen Namen (`Karte` über `titel` oder `ariaLabel`, `FlaechenSpalte` über `ariaLabel`). `main` und
-  `aside` nicht ineinander schachteln: die Karten in der Mitte bleiben `section`.
+  `FlaechenSpalte` oder `Karte` für eine Nebenspalte oder -karte). Je Fenster nur ein `main`, und zwar an genau einem
+  Element (Spalte oder Karte darin, nicht beides); die App legt dann kein eigenes `<main>` um die Fläche und setzt keine
+  Bausteinklassen von Hand. Jedes `aside` braucht einen eigenen Namen (`Karte` über `titel` oder `ariaLabel`,
+  `FlaechenSpalte` über `ariaLabel`). `main` und `aside` nicht ineinander schachteln: die Karten in der Mitte bleiben
+  `section`.
 - **Schmale Fenster:** Die Fläche scrollt nie. Fehlt Platz, geben zuerst die Seitenkarten bis zu ihrer Mindestbreite
   (`--leiste-min`, 180px) nach, solange die Mitte (eine `Karte` direkt auf der Fläche oder eine wachsende Spalte) unter
   ihrer Wunschbreite `--karte-mitte-wunsch` (480px) bliebe; erst dann schrumpft die Mitte bis `--karte-mitte-min`
