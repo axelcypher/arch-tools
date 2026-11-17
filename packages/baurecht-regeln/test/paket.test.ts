@@ -88,7 +88,7 @@ describe('Vorfragen (FaktDef.vorfrage)', () => {
       'gebaeude.nutzungseinheiten': ['1: Einfamilienhaus ohne Räume für freie Berufe – eine Nutzungseinheit', '2: Zweifamilienhaus ohne Räume für freie Berufe – zwei Nutzungseinheiten'],
       'gebaeude.landwirtschaft': ['false: Wohngebäude – kein land- oder forstwirtschaftlich genutztes Gebäude'],
       'gebaeude.beheizt': ['false: kein Gebäude – das GEG gilt nur für Gebäude'],
-      'gebaeude.oeffentlich': ['false: reines Wohngebäude – es dient nicht dem Besucherverkehr'],
+      'gebaeude.oeffentlich': ['false: reines Wohngebäude ohne Praxis, Büro, Laden oder Ferienwohnung – es dient nicht dem Besucherverkehr'],
       'planung.fnp_verfahren': [
         'false: das Vorhaben gehört nicht zu den Anlagen, für die eine Gemeinde Zonen im Flächennutzungsplan festlegt',
         'false: die Gemeinde plant keine Zonen für Anlagen dieser Art im Flächennutzungsplan',
@@ -2771,14 +2771,14 @@ describe('Hinweise tragen kein Grün über gestellte Fragen', () => {
     });
     // nur der Grund zur Antwort zählt hier (die Test-Festlegung hat keinen Textstand – das meldet die Prüfung eigens)
     const grund = (f: Record<string, FaktWert>, s: 'sicher' | 'hinweis') => auswerten({ ...eingabe(m, f, TEXTE), festlegungen: fl(s) }).paragrafen.find((p) => p.id === id)!.ueberholt ?? '';
-    const nurHinweis = /Altbau verfahrensfrei[^;]*jetzt nur Hinweis/;
+    const nurHinweis = /Altbau freistehend und niedrig[^;]*jetzt nur Hinweis/;
     // (a) festgelegt, als die Antwort gesichert war (ältere Datei bzw. Umfang später nur Hinweis): jetzt nur Hinweis → überholt
     expect(grund(umfangHinweis, 'sicher')).toMatch(nurHinweis);
     // (b) festgelegt, als die Antwort nur über den Hinweis galt, danach der Umfang bestätigt: deswegen nicht überholt
-    expect(grund(umfangSicher, 'hinweis')).not.toMatch(/Altbau verfahrensfrei/);
+    expect(grund(umfangSicher, 'hinweis')).not.toMatch(/Altbau freistehend und niedrig/);
     // gleich geblieben: deswegen nicht überholt
-    expect(grund(umfangHinweis, 'hinweis')).not.toMatch(/Altbau verfahrensfrei/);
-    expect(grund(umfangSicher, 'sicher')).not.toMatch(/Altbau verfahrensfrei/);
+    expect(grund(umfangHinweis, 'hinweis')).not.toMatch(/Altbau freistehend und niedrig/);
+    expect(grund(umfangSicher, 'sicher')).not.toMatch(/Altbau freistehend und niedrig/);
   });
 
   it('Umfang nur als Hinweis: § 74 BauO NRW, §§ 1, 2, 15 BauPrüfVO „prüfen“, nicht „entfällt“; gesichert bleibt es „entfällt“', () => {
@@ -2926,13 +2926,21 @@ describe('Fragen nach Tatsachen statt nach Rechtsbegriffen (Teil 2)', () => {
     }
   });
 
-  it('öffentlich zugänglich: beim reinen Wohngebäude „nein“ abgeleitet; Nichtwohngebäude und Nutzungsänderung bleiben gefragt', () => {
-    const efh = lauf(M({ Gebäudeart: 'Einfamilienhaus', Gebäudeklasse: '1' }));
-    expect(efh.fakten['gebaeude.oeffentlich']).toMatchObject({ wert: false, ausFolge: 'reines Wohngebäude – es dient nicht dem Besucherverkehr' });
-    expect(lauf(M()).fakten['gebaeude.oeffentlich']).toBeUndefined();
-    expect(lauf(M({ Gebäudeart: 'Mehrfamilienhaus', Vorhaben: 'Nutzungsänderung' })).fakten['gebaeude.oeffentlich']).toBeUndefined();
+  it('öffentlich zugänglich: beim reinen Wohngebäude ohne Praxis, Ferienwohnung und andere Nutzung „nein“; sonst gefragt', () => {
+    const EFH = M({ Gebäudeart: 'Einfamilienhaus', Gebäudeklasse: '1' });
+    const REIN = nein('vorhaben.freiberuflich', 'vorhaben.ferienwohnung', 'gebaeude.gemischt');
+    expect(lauf(EFH, REIN).fakten['gebaeude.oeffentlich']).toMatchObject({ wert: false, ausFolge: 'reines Wohngebäude ohne Praxis, Büro, Laden oder Ferienwohnung – es dient nicht dem Besucherverkehr' });
+    // kein falsches Grün bei § 49 Abs. 2: Praxis bzw. Kanzlei (Patienten, Mandanten), Ferienwohnung (wechselnde Gäste),
+    // andere Nutzung im Wohnhaus – oder solange das offen ist
+    for (const f of ['vorhaben.freiberuflich', 'vorhaben.ferienwohnung', 'gebaeude.gemischt']) {
+      expect(lauf(EFH, { ...REIN, ...ja(f) }).fakten['gebaeude.oeffentlich'], f).toBeUndefined();
+      const { [f]: _, ...ohne } = REIN;
+      expect(lauf(EFH, ohne).fakten['gebaeude.oeffentlich'], `${f} offen`).toBeUndefined();
+    }
+    expect(lauf(M(), REIN).fakten['gebaeude.oeffentlich']).toBeUndefined();
+    expect(lauf(M({ Gebäudeart: 'Mehrfamilienhaus', Vorhaben: 'Nutzungsänderung' }), REIN).fakten['gebaeude.oeffentlich']).toBeUndefined();
     // eine abweichende alte Antwort wird zum Widerspruch, nicht überschrieben
-    const alt = lauf(M({ Gebäudeart: 'Einfamilienhaus', Gebäudeklasse: '1' }), ja('gebaeude.oeffentlich'));
+    const alt = lauf(EFH, { ...REIN, ...ja('gebaeude.oeffentlich') });
     expect(alt.fakten['gebaeude.oeffentlich']).toMatchObject({ wert: true, herkunft: 'manuell' });
     expect(alt.fakten['gebaeude.oeffentlich'].widerspruch).toBeTruthy();
   });

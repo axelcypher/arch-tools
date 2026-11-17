@@ -656,8 +656,8 @@
       "kurz": "Sondergebiet für Erholung",
       "gruppe": "planung",
       "typ": "janein",
-      "frage": "Setzt der Bebauungsplan ein Wochenendhaus-, Ferienhaus- oder Campingplatzgebiet fest?",
-      "hilfe": "Ja zum Beispiel: Der Bebauungsplan setzt „SO Wochenendhausgebiet“, „SO Ferienhausgebiet“ oder „SO Campingplatz“ fest. Nein zum Beispiel: andere Sondergebiete, etwa für Einzelhandel, Klinik, Hochschule, Hafen oder Energie. Wo erfahre ich das: Bebauungsplan (Planzeichnung und textliche Festsetzungen). Maßgeblich: §§ 10, 11 BauNVO.",
+      "frage": "Setzt der Bebauungsplan ein Sondergebiet für die Erholung fest – etwa ein Wochenendhaus-, Ferienhaus- oder Campingplatzgebiet?",
+      "hilfe": "Ja zum Beispiel: Der Bebauungsplan setzt „SO Wochenendhausgebiet“, „SO Ferienhausgebiet“ oder „SO Campingplatz“ fest, oder ein anderes Sondergebiet, das der Erholung dient (z. B. Ferienpark). Nein zum Beispiel: andere Sondergebiete, etwa für Einzelhandel, Klinik, Hochschule, Hafen oder Energie. Wo erfahre ich das: Bebauungsplan (Planzeichnung und textliche Festsetzungen). Maßgeblich: §§ 10, 11 BauNVO.",
       "wenn": {
         "f": "planung.gebietsart",
         "ist": "SO"
@@ -713,7 +713,7 @@
     },
     "gebaeude.kmu": {
       "titel": "Gebäude gehört einem kleinen oder mittleren Unternehmen, das es überwiegend selbst nutzt",
-      "kurz": "Kleines/mittleres Unternehmen, selbst genutzt",
+      "kurz": "Kleines/mittleres Unternehmen, Eigennutz",
       "gruppe": "gebaeude",
       "typ": "janein",
       "frage": "Gehört das Gebäude einem Unternehmen mit weniger als 250 Beschäftigten und höchstens 50 Mio. € Jahresumsatz oder 43 Mio. € Bilanzsumme, das es überwiegend selbst nutzt?",
@@ -755,8 +755,8 @@
       "kurz": "Entwurf fortgeschritten (Planreife)",
       "gruppe": "planung",
       "typ": "janein",
-      "frage": "Ist der Entwurf des neuen Bebauungsplans schon öffentlich ausgelegt, und erfüllt das Vorhaben alle Voraussetzungen, um schon vorab zugelassen zu werden?",
-      "hilfe": "Ein Vorhaben ist schon vor Inkrafttreten des Plans zulässig, wenn alles zutrifft: Der Entwurf wurde öffentlich ausgelegt bzw. veröffentlicht, und die Behörden wurden beteiligt; das Vorhaben hält die künftigen Festsetzungen ein; die Bauherrschaft hat sie schriftlich anerkannt (meist auf einem Vordruck der Gemeinde); die Erschließung (Straße, Wasser, Abwasser) ist gesichert. Ja zum Beispiel: Wohnhaus in einem Neubaugebiet, dessen Planentwurf ausgelegen hat, mit unterschriebener Anerkennung. Nein, wenn erst beschlossen ist, einen Plan aufzustellen, oder eine der Voraussetzungen fehlt. Wo erfahre ich das: Stadtplanung der Gemeinde (Stand des Verfahrens, Entwurf) bzw. Erschließungsträger. Maßgeblich: § 33 BauGB.",
+      "frage": "Ist die Beteiligung der Öffentlichkeit und der Behörden zum Entwurf des neuen Bebauungsplans abgeschlossen, und erfüllt das Vorhaben alle Voraussetzungen, um vorab zugelassen zu werden?",
+      "hilfe": "Ein Vorhaben ist schon vor Inkrafttreten des Plans zulässig, wenn alles zutrifft: Die Beteiligung der Öffentlichkeit und der Behörden zum Entwurf ist abgeschlossen (eine laufende Auslegung genügt nicht); das Vorhaben hält die künftigen Festsetzungen ein; die Bauherrschaft hat sie schriftlich anerkannt (meist auf einem Vordruck der Gemeinde); die Erschließung (Straße, Wasser, Abwasser) ist gesichert. Ja zum Beispiel: Wohnhaus in einem Neubaugebiet, dessen Planentwurf ausgelegen hat und die Beteiligung beendet ist, mit unterschriebener Anerkennung. Nein, wenn erst beschlossen ist, einen Plan aufzustellen, oder eine der Voraussetzungen fehlt. In Sonderfällen ist ein Vorhaben schon früher zulässig – nur nach Auskunft der Gemeinde. Wo erfahre ich das: Stadtplanung der Gemeinde (Stand des Verfahrens, Entwurf) bzw. Erschließungsträger. Maßgeblich: § 33 BauGB.",
       "ohneAusloeser": false,
       "wenn": {
         "f": "planung.planaufstellung",
@@ -989,7 +989,7 @@
       "gruppe": "planung",
       "typ": "janein",
       "frage": "Hat die Gemeinde beschlossen, im Flächennutzungsplan Zonen für Anlagen dieser Art festzulegen (bei Windenergie: Windenergiegebiete), also den Plan dafür aufzustellen, zu ändern oder zu ergänzen?",
-      "hilfe": "Mit solchen Zonen legt die Gemeinde fest, wo diese Anlagen hin sollen; außerhalb sind sie dann meist ausgeschlossen. Solange das Verfahren läuft, kann die Gemeinde beantragen, den Bauantrag bis zu einem Jahr zurückzustellen. Bei Windenergie an Land schließen solche Zonen andere Standorte nicht mehr aus; zurückstellen kann die Gemeinde aber weiter, wenn sie mit dem Plan ihr gesetzliches Flächenziel (Flächenbeitragswert) erreichen will, längstens bis zum gesetzlichen Stichtag. Ja zum Beispiel: Der Rat hat beschlossen, den Flächennutzungsplan um Windenergiegebiete zu ergänzen. Nein, wenn kein solches Verfahren läuft oder der Plan schon gilt. Wo erfahre ich das: Planauskunft der Gemeinde, Amtsblatt oder Beteiligungsportal. Maßgeblich: § 15 Abs. 3, § 245e Abs. 2, § 249 Abs. 1 BauGB.",
+      "hilfe": "Mit solchen Zonen legt die Gemeinde fest, wo diese Anlagen hin sollen; außerhalb sind sie dann meist ausgeschlossen. Solange das Verfahren läuft, kann die Gemeinde beantragen, den Bauantrag bis zu einem Jahr zurückzustellen (verlängerbar um ein weiteres Jahr). Bei Windenergie an Land gilt diese Ausschlusswirkung von Zonen nicht mehr – stattdessen sind Windräder außerhalb der Windenergiegebiete nicht mehr bevorzugt zulässig, sobald die Gemeinde ihr Flächenziel erreicht hat; zurückstellen kann die Gemeinde aber weiter, wenn sie mit dem Plan ihr gesetzliches Flächenziel (Flächenbeitragswert) erreichen will, längstens bis zum gesetzlichen Stichtag. Ja zum Beispiel: Der Rat hat beschlossen, den Flächennutzungsplan um Windenergiegebiete zu ergänzen. Nein, wenn kein solches Verfahren läuft oder der Plan schon gilt. Wo erfahre ich das: Planauskunft der Gemeinde, Amtsblatt oder Beteiligungsportal. Maßgeblich: § 15 Abs. 3, § 245e Abs. 2, § 249 Abs. 1 BauGB.",
       "wenn": {
         "und": [
           {

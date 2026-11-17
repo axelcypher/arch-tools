@@ -541,12 +541,12 @@
       }
     },
     "ortsrecht.abweichung": {
-      "titel": "Vorhaben hält eine Vorschrift der Gemeinde zu Gestaltung, Werbeanlagen oder Stellplätzen nicht ein",
+      "titel": "Vorhaben hält eine Satzung der Gemeinde zu Gestaltung, Werbeanlagen oder Stellplätzen nicht ein",
       "kurz": "Abweichung von örtlicher Bauvorschrift",
       "gruppe": "ortsrecht",
       "typ": "janein",
-      "frage": "Hält das Vorhaben eine Vorschrift der Gemeinde zu Gestaltung, Werbeanlagen oder Stellplätzen nicht ein – etwa zu Dachform, Dachneigung, Material, Farbe, Einfriedung, Größe einer Werbeanlage oder Zahl der Stellplätze?",
-      "hilfe": "Solche örtlichen Bauvorschriften stehen in einer Gestaltungs-, Werbeanlagen- oder Stellplatzsatzung oder im Bebauungsplan. Ja zum Beispiel: Flachdach, wo ein Satteldach vorgeschrieben ist; andere Dachfarbe oder Fassadenmaterial; Werbeanlage größer als erlaubt; weniger Stellplätze, als die Satzung verlangt. Eine solche Abweichung muss eigens beantragt werden; die Satzungen nennen oft eigene Voraussetzungen. Nein, wenn das Vorhaben alle diese Vorschriften einhält oder die Gemeinde keine hat. Wo erfahre ich das: Satzungen und Bebauungsplan der Gemeinde (oft online). Maßgeblich: §§ 69, 89 BauO NRW."
+      "frage": "Hält das Vorhaben eine Satzung der Gemeinde zu Gestaltung, Werbeanlagen oder Stellplätzen nicht ein – etwa zu Dachform, Material, Farbe, Werbeanlagen oder Zahl der Stellplätze?",
+      "hilfe": "Gemeint sind eigene Satzungen der Gemeinde (Gestaltungs-, Werbeanlagen- oder Stellplatzsatzung). Ja zum Beispiel: Flachdach, wo die Gestaltungssatzung ein Satteldach vorschreibt; andere Dachfarbe oder Fassadenmaterial; Werbeanlage größer als erlaubt; weniger Stellplätze, als die Satzung verlangt. Nein, wenn das Vorhaben alle diese Satzungen einhält oder die Gemeinde keine hat. Steht die Gestaltungsvorschrift im Bebauungsplan, gehört sie zur Frage „Abweichung vom Bebauungsplan“ (Befreiung). Eine Abweichung von einer Satzung muss eigens beantragt werden; die Satzungen nennen oft eigene Voraussetzungen. Wo erfahre ich das: Satzungen der Gemeinde (oft online). Maßgeblich: §§ 69, 89 Abs. 1 BauO NRW; im Bebauungsplan § 89 Abs. 2 BauO NRW, § 31 BauGB."
     },
     "nw.landwirtschaft_angebaut": {
       "titel": "Wohngebäude mit angebautem landwirtschaftlich (oder vergleichbar) genutztem Gebäude bzw. Gebäudeteil",
@@ -593,8 +593,8 @@
       "kurz": "Kleine Anlage ohne Genehmigungspflicht",
       "gruppe": "vorhaben",
       "typ": "janein",
-      "frage": "Ist die abzubrechende Anlage so klein, dass man sie ohne Genehmigung bauen dürfte – etwa Gartenhaus, Garage oder Mauer?",
-      "hilfe": "Ja zum Beispiel: Gartenhaus oder Schuppen bis 75 m³ ohne Aufenthaltsraum, Toilette oder Feuerstätte; Garage oder Carport bis 50 m² und 3 m Wandhöhe; Terrassenüberdachung bis 30 m²; Mauer oder Zaun bis 2 m. Nein zum Beispiel: Wohnhaus (gehört nie dazu); Halle oder Werkstatt mit Aufenthaltsräumen. Im Außenbereich gelten engere Grenzen (Garagen, Mauern und Gebäude ohne Bezug zu einem Hof zählen dort nicht). Bei „ja“ ist auch der Abbruch ohne Genehmigung und ohne Anzeige erlaubt, auch wenn die Anlage angebaut ist. Wo erfahre ich das: Maße der vorhandenen Anlage. Maßgeblich: § 62 Abs. 1 und Abs. 3 Satz 1 Nr. 1 BauO NRW.",
+      "frage": "Ist die abzubrechende Anlage so klein, dass ihr Bau weder Bauantrag noch Anzeige bräuchte (verfahrensfrei) – etwa Gartenhaus, Garage oder Mauer?",
+      "hilfe": "Ja zum Beispiel: Gartenhaus oder Schuppen bis 75 m³ ohne Aufenthaltsraum, Stall, Toilette oder Feuerstätte; Garage oder Carport bis 50 m² und im Mittel 3 m Wandhöhe; Terrassenüberdachung bis 30 m² und 4,50 m Tiefe; Mauer oder Zaun bis 2 m. Nein zum Beispiel: Wohnhaus (gehört nie dazu); Halle oder Werkstatt mit Aufenthaltsräumen. Im Außenbereich gelten engere Grenzen (Garagen, Mauern und Gebäude ohne Bezug zu einem Hof zählen dort nicht). Bei „ja“ braucht auch der Abbruch weder Antrag noch Anzeige, auch wenn die Anlage angebaut ist. Wo erfahre ich das: Maße der vorhandenen Anlage. Maßgeblich: § 62 Abs. 1 und Abs. 3 Satz 1 Nr. 1 BauO NRW.",
       "wenn": {
         "und": [
           {
@@ -686,8 +686,8 @@
       "kurz": "Altbau freistehend und niedrig",
       "gruppe": "vorhaben",
       "typ": "janein",
-      "frage": "Ist der abzubrechende Altbau freistehend und niedrig (oberster Fußboden mit Aufenthaltsraum höchstens 7 m über dem Gelände) oder eine kleine Anlage?",
-      "hilfe": "Beim Abbruch mit Ersatzbau beschreiben Gebäudeart, Gebäudeklasse und „freistehend“ den Neubau; hier zählt der Altbau. Ja zum Beispiel: freistehendes eingeschossiges Wohnhaus; freistehende Scheune eines Hofs (auch höher); Garage; Mast oder Silo bis 10 m. Nein zum Beispiel: Reihen- oder Doppelhaus (angebaut); freistehendes Haus mit Aufenthaltsräumen über 7 m. Bei „ja“ braucht der Abbruch kein Verfahren, sonst muss er einen Monat vorher angezeigt werden – mit Bauvorlagen und, bei angebauten Gebäuden, Nachweis der Standsicherheit des Nachbargebäudes. Wo erfahre ich das: Bestandspläne bzw. Aufmaß des Altbaus. Maßgeblich: § 62 Abs. 3 Sätze 1 und 3 bis 5 BauO NRW (Gebäudeklassen 1 und 3 nach § 2 Abs. 3).",
+      "frage": "Ist der abzubrechende Altbau freistehend und niedrig (Fußboden des obersten Geschosses, in dem ein Aufenthaltsraum möglich ist, höchstens 7 m über dem Gelände) oder eine kleine Anlage?",
+      "hilfe": "Beim Abbruch mit Ersatzbau beschreiben Gebäudeart, Gebäudeklasse und „freistehend“ den Neubau; hier zählt der Altbau. Ja zum Beispiel: freistehendes eingeschossiges Wohnhaus; freistehende Scheune eines Hofs oder ein Gebäude vergleichbarer Nutzung (auch höher); Garage; Mast oder Silo bis 10 m. Nein zum Beispiel: Reihen- oder Doppelhaus (angebaut); freistehendes Haus, dessen oberstes Geschoss, in dem ein Aufenthaltsraum möglich ist (auch ein nicht ausgebautes Dachgeschoss), über 7 m liegt. Bei „ja“ ist der Abbruch verfahrensfrei (weder Antrag noch Anzeige), sonst muss er einen Monat vorher angezeigt werden – mit Bauvorlagen und, bei angebauten Gebäuden, Nachweis der Standsicherheit des Nachbargebäudes. Wo erfahre ich das: Bestandspläne bzw. Aufmaß des Altbaus. Maßgeblich: § 62 Abs. 3 Sätze 1 und 3 bis 5 BauO NRW (Gebäudeklassen 1 und 3 nach § 2 Abs. 3).",
       "wenn": {
         "$": "ersatzbau"
       }

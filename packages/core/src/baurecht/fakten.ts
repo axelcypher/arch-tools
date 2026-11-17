@@ -24,9 +24,9 @@ const KURZ: Record<string, string> = {
   'gebaeude.aufenthaltsraeume': 'Aufenthaltsräume oder Arbeitsplätze',
   'gebaeude.behelfsbau': 'Behelfsbau oder Fliegender Bau',
   'gebaeude.landwirtschaft': 'Land- oder forstwirtschaftliches Gebäude',
-  'gebaeude.hoehe': 'Höhe (oberster Aufenthaltsraum)',
+  'gebaeude.hoehe': 'Höhe (Geschoss mit möglichem Aufenthalt)',
   'gebaeude.oeffentlich': 'Für Kunden oder Besucher zugänglich',
-  'lage.baulast': 'Baulast oder fremdes Grundstück',
+  'lage.baulast': 'Baulast oder anderes Flurstück genutzt',
   'lage.altlasten': 'Altlast oder Altlastverdacht',
   'lage.bergbau': 'Bergbau oder unsicherer Untergrund',
   'lage.gewaesser': 'Grundstück am Gewässer',
@@ -71,12 +71,12 @@ const KATALOG: Record<string, FaktDef> = {
   'lage.altlasten': j('Altlast oder Altlastverdacht auf dem Grundstück', 'lage', 'Auskunft aus dem Altlastenkataster der unteren Bodenschutzbehörde'),
   'lage.kampfmittel': j('Kampfmittelverdacht', 'lage', 'Auskunft über die örtliche Ordnungsbehörde (Luftbildauswertung des Kampfmittelbeseitigungsdienstes)'),
   'lage.baulast': {
-    titel: 'Baulast eingetragen, oder das Vorhaben braucht ein fremdes Grundstück',
+    titel: 'Baulast eingetragen, oder das Vorhaben nutzt ein anderes Grundstück oder Flurstück mit',
     gruppe: 'lage',
     typ: 'janein',
-    frage: 'Ist auf dem Grundstück schon eine Baulast eingetragen, oder soll das Vorhaben ein fremdes Grundstück mitbenutzen – etwa für Abstandsflächen, Zufahrt, Stellplätze oder Leitungen?',
+    frage: 'Ist schon eine Baulast eingetragen, oder nutzt das Vorhaben ein anderes Grundstück oder Flurstück mit (auch ein eigenes) – etwa für Abstandsflächen, Zufahrt oder Stellplätze?',
     hilfe:
-      'Eine Baulast ist eine Verpflichtung, die ein Eigentümer gegenüber der Bauaufsicht übernimmt; sie steht im Baulastenverzeichnis, nicht im Grundbuch. Ja zum Beispiel: Die Abstandsfläche fällt teilweise auf das Nachbargrundstück; die Zufahrt führt über ein fremdes Grundstück; notwendige Stellplätze liegen auf einem anderen Grundstück; ein Gebäude soll über zwei Flurstücke gebaut werden. Nein, wenn nichts eingetragen ist und das Vorhaben alles auf dem eigenen Grundstück nachweist. Wo erfahre ich das: Auskunft aus dem Baulastenverzeichnis bei der Bauaufsichtsbehörde (für Eigentümer oder mit Vollmacht). Maßgeblich: § 85 BauO NRW.',
+      'Eine Baulast ist eine Verpflichtung, die ein Eigentümer gegenüber der Bauaufsicht übernimmt; sie steht im Baulastenverzeichnis, nicht im Grundbuch. Ja zum Beispiel: Die Abstandsfläche fällt teilweise auf das Nachbargrundstück; die Zufahrt führt über ein fremdes Grundstück; notwendige Stellplätze liegen auf einem anderen Grundstück; ein Gebäude soll über zwei Flurstücke gebaut werden, auch wenn beide derselben Person gehören. Nein, wenn nichts eingetragen ist und das Vorhaben alles auf einem einzigen Flurstück nachweist. Wo erfahre ich das: Auskunft aus dem Baulastenverzeichnis bei der Bauaufsichtsbehörde (für Eigentümer oder mit Vollmacht). Maßgeblich: § 85 BauO NRW.',
   },
   'lage.gewaesser': j('Grundstück an einem oberirdischen Gewässer (bis 5 m Uferstreifen) oder Anlage am Gewässer', 'grundstueck'),
   'lage.strasse_ausserorts': j('An einer Bundes-, Landes- oder Kreisstraße außerhalb der Ortsdurchfahrt (bis 40 m)', 'grundstueck', 'Zustimmung der Straßenbaubehörde (§ 25 StrWG NRW, § 9 FStrG)'),
@@ -177,7 +177,7 @@ const KATALOG: Record<string, FaktDef> = {
     typ: 'janein',
     frage: 'Liegt das Grundstück im Gebiet einer Erhaltungssatzung – zum Schutz des Ortsbilds oder der Zusammensetzung der Bewohner („Milieuschutz“)?',
     hilfe:
-      'Beispiele: Altstadt, Gründerzeitviertel, Zechen- oder Werkssiedlung, Milieuschutzgebiet in Großstädten. Dort brauchen Abbruch, Umbau, Nutzungsänderung und auch Neubau zusätzlich eine Genehmigung der Gemeinde. Nicht gemeint: Denkmalschutz und Gestaltungssatzung (eigene Fragen). Ja, wenn das Grundstück im Geltungsbereich liegt. Nein, wenn es außerhalb liegt oder die Gemeinde keine solche Satzung hat. Wo erfahre ich das: Planauskunft der Gemeinde, Geoportal oder Amtsblatt. Maßgeblich: § 172 BauGB.',
+      'Beispiele: Altstadt, Gründerzeitviertel, Zechen- oder Werkssiedlung, Milieuschutzgebiet in Großstädten. Dort brauchen Abbruch, Umbau und Nutzungsänderung – zum Schutz des Ortsbilds auch ein Neubau – zusätzlich eine Genehmigung der Gemeinde. Nicht gemeint: Denkmalschutz und Gestaltungssatzung (eigene Fragen). Ja, wenn das Grundstück im Geltungsbereich liegt. Nein, wenn es außerhalb liegt oder die Gemeinde keine solche Satzung hat. Wo erfahre ich das: Planauskunft der Gemeinde, Geoportal oder Amtsblatt. Maßgeblich: § 172 BauGB.',
   },
   'planung.sanierungsgebiet': {
     titel: 'Förmlich festgelegtes Sanierungsgebiet',
@@ -185,7 +185,7 @@ const KATALOG: Record<string, FaktDef> = {
     typ: 'janein',
     frage: 'Liegt das Grundstück in einem Sanierungsgebiet, das die Gemeinde durch Satzung festgelegt hat?',
     hilfe:
-      'Mit einem Sanierungsgebiet erneuert die Gemeinde ein Viertel, z. B. einen Ortskern oder eine Innenstadt. Dort brauchen viele Vorhaben, Teilungen und Verträge zusätzlich eine Genehmigung der Gemeinde, wenn die Satzung das nicht ausschließt. Ein Hinweis ist der Sanierungsvermerk im Grundbuch, er steht aber nicht immer dort. Ja, wenn das Grundstück im festgelegten Gebiet liegt. Nein, wenn es außerhalb liegt oder die Sanierung aufgehoben ist. Wo erfahre ich das: Planauskunft der Gemeinde oder Grundbuch. Maßgeblich: §§ 142, 144 BauGB.',
+      'Mit einem Sanierungsgebiet erneuert die Gemeinde ein Viertel, z. B. einen Ortskern oder eine Innenstadt. Dort brauchen viele Vorhaben, Teilungen und Verträge zusätzlich eine Genehmigung der Gemeinde, wenn die Satzung das nicht ausschließt. Ein Hinweis ist der Sanierungsvermerk im Grundbuch; er fehlt, wenn die Satzung die zusätzliche Genehmigung insgesamt ausschließt. Ja, wenn das Grundstück im festgelegten Gebiet liegt. Nein, wenn es außerhalb liegt oder die Sanierung aufgehoben ist. Wo erfahre ich das: Planauskunft der Gemeinde oder Grundbuch. Maßgeblich: §§ 142, 144 BauGB.',
   },
   'planung.planaufstellung': {
     titel: 'Bebauungsplan in Aufstellung',
@@ -264,10 +264,10 @@ const KATALOG: Record<string, FaktDef> = {
 
   /* ---------- Gebäude ---------- */
   'gebaeude.hoehe': z(
-    'Höhe des obersten Fußbodens mit Aufenthaltsraum',
+    'Höhe des obersten Geschosses, in dem ein Aufenthaltsraum möglich ist',
     'gebaeude',
     'm',
-    'Gemessen wird nicht bis zum First, sondern vom Gelände (im Mittel) bis zur Oberkante des Fußbodens im obersten Geschoss, in dem ein Aufenthaltsraum möglich ist. Beispiel: Haus mit zwei Vollgeschossen und ausbaufähigem Dachgeschoss, Fußboden des Dachgeschosses 5,60 m über dem Gelände – dann 5,60 m. Davon hängt unter anderem die Gebäudeklasse ab (Grenzen 7 m, 13 m, 22 m). Wo erfahre ich das: aus dem Schnitt der Bauzeichnung. Maßgeblich: § 2 Abs. 3 BauO NRW.',
+    'Gemessen wird nicht bis zum First, sondern vom Gelände (im Mittel) bis zur Oberkante des Fußbodens im obersten Geschoss, in dem ein Aufenthaltsraum möglich ist – auch wenn es nicht ausgebaut ist, z. B. ein ausbaufähiges Dachgeschoss. Beispiel: Haus mit zwei Vollgeschossen und ausbaufähigem Dachgeschoss, Fußboden des Dachgeschosses 5,60 m über dem Gelände – dann 5,60 m. Davon hängt unter anderem die Gebäudeklasse ab (Grenzen 7 m, 13 m, 22 m). Wo erfahre ich das: aus dem Schnitt der Bauzeichnung. Maßgeblich: § 2 Abs. 3 BauO NRW.',
   ),
   'gebaeude.wohnungen': z('Wohnungen', 'gebaeude'),
   'gebaeude.nutzungseinheiten': z('Nutzungseinheiten', 'gebaeude'),
@@ -284,15 +284,15 @@ const KATALOG: Record<string, FaktDef> = {
     typ: 'janein',
     frage: 'Kann das Vorhaben von beliebigen Menschen aufgesucht werden – etwa Kunden, Gästen, Besuchern oder Patienten?',
     hilfe:
-      'Ja zum Beispiel: Laden, Gaststätte, Hotel, Arztpraxis, Büro- oder Verwaltungsgebäude, Schule, Kita, Museum, Sport- oder Freizeitanlage, öffentliche Garage, Parkplatz oder Toilettenanlage – auch wenn nur ein Teil dafür bestimmt ist. Nein zum Beispiel: reines Wohnhaus; Lager oder Produktionshalle ohne Besucherverkehr. Dann müssen die Bereiche für Besucher barrierefrei sein. Bei einem reinen Wohngebäude ergibt sich „nein“. Wo erfahre ich das: aus der geplanten Nutzung (Baubeschreibung). Maßgeblich: § 49 Abs. 2 BauO NRW.',
+      'Ja zum Beispiel: Laden, Gaststätte, Hotel, Arztpraxis, Büro- oder Verwaltungsgebäude, Schule, Kita, Museum, Sport- oder Freizeitanlage, öffentliche Garage, Parkplatz oder Toilettenanlage – auch wenn nur ein Teil dafür bestimmt ist. Nein zum Beispiel: reines Wohnhaus; Lager oder Produktionshalle ohne Besucherverkehr. Dann müssen die Bereiche für Besucher barrierefrei sein. Bei einem reinen Wohngebäude ohne Praxis, Büro, Laden oder Ferienwohnung ergibt sich „nein“. Wo erfahre ich das: aus der geplanten Nutzung (Baubeschreibung). Maßgeblich: § 49 Abs. 2 BauO NRW.',
   },
   'gebaeude.behelfsbau': {
-    titel: 'Behelfsbau, kleines Nebengebäude oder Fliegender Bau',
+    titel: 'Behelfsbau, freistehendes eingeschossiges Nebengebäude oder Fliegender Bau',
     gruppe: 'gebaeude',
     typ: 'janein',
-    frage: 'Ist das Gebäude nur für begrenzte Zeit gedacht, ein kleines Nebengebäude ohne Aufenthalt oder dafür gebaut, immer wieder auf- und abgebaut zu werden?',
+    frage: 'Ist das Gebäude nur für begrenzte Zeit gedacht, ein freistehendes eingeschossiges Nebengebäude ohne längeren Aufenthalt oder zum wiederholten Auf- und Abbau gebaut?',
     hilfe:
-      'Ja zum Beispiel: Baustellen- oder Bürocontainer und Notunterkunft auf Zeit; eingeschossiges freistehendes Gebäude, in dem sich niemand oder nur kurz jemand aufhält, wie Laube, Geräte- oder Gartenhaus, Schutzhütte; Zelt, Bühne, Fahrgeschäft oder Tribüne, die an wechselnden Orten aufgestellt werden. Nein zum Beispiel: dauerhaft genutzte Wohn-, Büro- oder Gewerbegebäude, auch in Modul- oder Containerbauweise. Für diese Bauten gelten Erleichterungen, unter anderem entfällt die Pflicht zur Solaranlage. Wo erfahre ich das: aus der Planung (Bauart und geplante Standdauer). Maßgeblich: §§ 42a Abs. 4, 51, 78 BauO NRW.',
+      'Ja zum Beispiel: Baustellen- oder Bürocontainer und Notunterkunft auf Zeit; eingeschossiges freistehendes Gebäude, in dem sich niemand oder nur kurz jemand aufhält, wie Laube, Geräte- oder Gartenhaus, Schutzhütte; Zelt, Bühne, Fahrgeschäft oder Tribüne, die an wechselnden Orten aufgestellt werden. Nein zum Beispiel: dauerhaft genutzte Wohn-, Büro- oder Gewerbegebäude, auch in Modul- oder Containerbauweise; ein angebauter oder zweigeschossiger Schuppen. Für diese Bauten gelten Erleichterungen, unter anderem entfällt die Pflicht zur Solaranlage. Wo erfahre ich das: aus der Planung (Bauart und geplante Standdauer). Maßgeblich: §§ 42a Abs. 4, 51, 78 BauO NRW.',
   },
   'gebaeude.landwirtschaft': j('Land- oder forstwirtschaftlich genutztes Gebäude', 'gebaeude'),
   'gebaeude.aufzug': j('Aufzug', 'gebaeude'),
@@ -406,8 +406,15 @@ const FOLGT: Record<string, NonNullable<FaktDef['folgt']>> = {
   'gebaeude.landwirtschaft': [{ wenn: WOHNGEBAEUDE, wert: false, grund: 'Wohngebäude – kein land- oder forstwirtschaftlich genutztes Gebäude' }],
   // das GEG (§ 2 Abs. 1) setzt ein Gebäude voraus
   'gebaeude.beheizt': [{ wenn: KEIN_GEBAEUDE, wert: false, grund: 'kein Gebäude – das GEG gilt nur für Gebäude' }],
-  // Wohnungen suchen nur bestimmte Personen auf (Bewohner und ihre Gäste) – nicht bei einer Nutzungsänderung
-  'gebaeude.oeffentlich': [{ wenn: WOHNGEBAEUDE_BLEIBT, wert: false, grund: 'reines Wohngebäude – es dient nicht dem Besucherverkehr' }],
+  // Wohnungen suchen nur bestimmte Personen auf (Bewohner und ihre Gäste) – nicht bei einer Nutzungsänderung und nur ohne
+  // Praxis oder Kanzlei (Patienten, Mandanten), Ferienwohnungen (wechselnde Gäste) und andere Nutzung (Laden, Büro)
+  'gebaeude.oeffentlich': [
+    {
+      wenn: { und: [WOHNGEBAEUDE_BLEIBT, { f: 'vorhaben.freiberuflich', ist: false }, { f: 'vorhaben.ferienwohnung', ist: false }, { f: 'gebaeude.gemischt', ist: false }] },
+      wert: false,
+      grund: 'reines Wohngebäude ohne Praxis, Büro, Laden oder Ferienwohnung – es dient nicht dem Besucherverkehr',
+    },
+  ],
 };
 
 export const FAKTEN: Record<string, FaktDef> = Object.fromEntries(

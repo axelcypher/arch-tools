@@ -226,18 +226,19 @@ eine Veränderungssperre), gilt die frühere Antwort weiter.
 **Weitere Fragen in Tatsachen** (Teil 2): Fragen, die eine rechtliche Einordnung verlangten, fragen jetzt nach dem
 Sachverhalt; Titel, Frage und kurzer Name nennen keinen Paragrafen. Die Erläuterung bringt Beispiele für „ja“ und
 „nein“, sagt, wo man es erfährt („Wo erfahre ich das: Planauskunft der Gemeinde …“), und endet mit der Quelle
-(„Maßgeblich: § …“) – ein Test prüft das für alle diese Fragen.
+(„Maßgeblich: § …“) – ein Test prüft Aufbau und Länge für alle diese Fragen.
 
 - **Zerlegt bzw. abgeleitet:**
   - „Privilegiertes Vorhaben mit FNP-Verfahren (§ 15 Abs. 3)“ wird zu zwei Fragen: Gehört die Anlage ihrer Art nach in
     die freie Landschaft (Windrad, Biogas, gewerbliche Tierhaltung, Gärtnerei, Versorgung, Abbau)? Plant die Gemeinde
     dafür Zonen im Flächennutzungsplan? Die frühere Frage ist ersetzt (`planung.fnp_verfahren`).
-  - Öffentlich zugänglich heißt jetzt: Können Menschen, die vorher nicht feststehen – Kunden, Gäste, Besucher,
-    Patienten –, das Vorhaben aufsuchen (Wortlaut der Begriffsbestimmung)? Beim reinen Wohngebäude folgt „nein“.
+  - Öffentlich zugänglich heißt jetzt: Können beliebige Menschen – Kunden, Gäste, Besucher,
+    Patienten –, das Vorhaben aufsuchen (Begriffsbestimmung)? Beim reinen Wohngebäude ohne Praxis, Ferienwohnung und
+    andere Nutzung folgt „nein“.
   - Innenbereich beim einfachen Bebauungsplan bzw. bei einer Satzung: Liegt das Grundstück in der zusammenhängenden
     Bebauung des Ortes (Baulücke) und nicht am Ortsrand oder bei einzelnen Höfen?
-  - Behelfsbau: nur für begrenzte Zeit, kleines Nebengebäude ohne Aufenthalt oder zum wiederholten Auf- und Abbau
-    gemacht, mit Beispielen.
+  - Behelfsbau: nur für begrenzte Zeit, freistehendes eingeschossiges Nebengebäude ohne längeren Aufenthalt oder zum
+    wiederholten Auf- und Abbau gemacht, mit Beispielen.
 - **In Tatsachen umformuliert, mit Beispielen und „wo erfahre ich das“:** Planreife (Entwurf ausgelegt, Festsetzungen
   anerkannt, Erschließung gesichert), Abweichung von der Bauordnung (Abstandsflächen, Brandschutz, Treppen …), Abweichung
   von örtlicher Bauvorschrift (Dachform, Material, Werbeanlage, Stellplatzzahl), Abbruch einer kleinen Anlage ohne
@@ -330,7 +331,7 @@ Angaben (n)“ mit dem Grund und im Prüfprotokoll („Ergibt sich aus anderen A
 | Stellplätze auf neuer Stellplatzfläche | 0 ohne Stellplätze oder Garagen | nur neue Flächen |
 | Neue oder wieder nutzbare Wohnungen | ja beim Neubau eines Gebäudes mit Wohnungen (Ein-, Zwei-, Mehrfamilienhaus, Wohn- und Geschäftshaus), nein bei „kein Gebäude“ | nicht bei Nutzungsänderung oder Nichtwohngebäude – dort eine Angabe |
 | Sonderregelung Wohnungsbau (§ 246e BauGB) | aus neuen Wohnungen, Abweichung und Lage, siehe „Fragen nach Tatsachen“ | ersetzte Frage |
-| Für Kunden, Besucher oder Patienten zugänglich | nein bei Ein-, Zwei- oder Mehrfamilienhaus, nicht bei einer Nutzungsänderung | Wohnungen suchen nur bestimmte Personen auf (§ 49 Abs. 2 Satz 2 BauO NRW); bauliche Anlagen ohne Gebäude bleiben gefragt |
+| Für Kunden, Besucher oder Patienten zugänglich | nein bei Ein-, Zwei- oder Mehrfamilienhaus ohne Räume für freie Berufe, Ferienwohnungen und gemischte Nutzung, nicht bei einer Nutzungsänderung | Wohnungen suchen nur bestimmte Personen auf (§ 49 Abs. 2 Satz 2 BauO NRW); bauliche Anlagen ohne Gebäude bleiben gefragt |
 | Zurückstellung wegen Zonen im Flächennutzungsplan möglich | aus „Anlage, die in die Landschaft gehört“ und „Zonen im Flächennutzungsplan geplant“ | ersetzte Frage |
 
 - **Nie still überschrieben:** Eine abweichende gespeicherte Angabe (auch ein Hinweis aus dem Modell, z. B. zwei

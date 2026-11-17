@@ -1861,7 +1861,7 @@ describe('Rückfrage, die nur über einen Hinweis gestellt wird', () => {
     expect(marke, 'Marke an der Antwort').toBeTruthy();
     // sichtbar kurz wie an den Angaben selbst, Auslöser und Sprungziel im Namen (der sichtbare Text steht wörtlich darin)
     expect(marke!.textContent).toBe('nur Hinweis');
-    expect(marke!.getAttribute('aria-label')).toBe('Altbau verfahrensfrei zu beseitigen: nur Hinweis über „Umfang der Beseitigung“ – zu „Umfang der Beseitigung“ bestätigen');
+    expect(marke!.getAttribute('aria-label')).toBe('Altbau freistehend und niedrig: nur Hinweis über „Umfang der Beseitigung“ – zu „Umfang der Beseitigung“ bestätigen');
     // erst, wenn die Oberfläche nach der Antwort zur Ruhe gekommen ist (die nächste offene Rückfrage bekommt den Fokus)
     await act(async () => void (await new Promise((r) => echtesSetTimeout(r, 300))));
     act(() => marke!.focus());
