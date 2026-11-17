@@ -308,7 +308,8 @@ vollständiger Wert (`export.berechnungsordner.<app>`, `export.excel.<app>`, `ex
 Seite ohne Verlust – beim Ordner wird der längste gemeinsame Anfang gemeinsam und der Rest Unterordner, bei den Namen
 der häufigste Wert gemeinsam und die übrigen Abweichungen; jede App exportiert danach wie vorher. Beim Speichern stehen
 die wirksamen Werte je App weiter auch unter den alten Schlüsseln, damit ältere Versionen auf anderen Rechnern gleich
-weiterarbeiten (der Projektordner selbst als „.“). Grenze: Sind die neuen Schlüssel einmal geschrieben, liest die neue
+weiterarbeiten (der Projektordner selbst als „.“ – ältere Versionen zeigen dazu am Feld einen Hinweis, exportieren
+aber richtig). Grenze: Sind die neuen Schlüssel einmal geschrieben, liest die neue
 Version die alten nicht mehr – ändert danach eine ältere Version dort etwas, gilt das nur für sie, und das nächste
 Speichern der Gruppe schreibt den wirksamen Wert zurück. PERMIO sucht externe Antragsdokumente (Berechnungen, Nachweise) in den Berechnungsordnern aller drei Rechen-Apps und in
 den zusätzlich eingestellten Ordnern (Vorgabe wie bisher „Planung/Berechnungen“) – so findet es auch die direkten

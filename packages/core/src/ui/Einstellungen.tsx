@@ -520,9 +520,15 @@ function SeitePfade({ fokus }: { fokus?: string }) {
 
   useEffect(() => {
     if (!fokus || !werte) return;
-    const ziel = document.getElementById(`einst-${fokus}`);
-    ziel?.scrollIntoView?.({ block: 'start' });
-    ziel?.querySelector<HTMLInputElement>('input, textarea')?.focus();
+    const hin = () => {
+      const ziel = document.getElementById(`einst-${fokus}`);
+      ziel?.scrollIntoView?.({ block: 'start' });
+      ziel?.querySelector<HTMLInputElement>('input, textarea')?.focus();
+    };
+    hin();
+    // ein eingeklappter Bereich (Abweichungen je App) öffnet sich erst im nächsten Bild – dann noch einmal
+    const bild = requestAnimationFrame(() => document.activeElement?.closest(`#einst-${CSS.escape(fokus)}`) || hin());
+    return () => cancelAnimationFrame(bild);
   }, [fokus, werte]);
 
   const entscheiden = (a: Abweichung, lokal: boolean) => {
@@ -615,7 +621,7 @@ function jeAppTexte(basis: PfadEinstellung, werte: PfadWerte, entwurf: Record<st
  * Was je App gilt – unter Feld und Vorschau der gemeinsamen Angabe, nur wenn sich etwas unterscheidet (sonst gilt für
  * alle dasselbe, die Vorschau sagt es). Mit App-Filter nur die App.
  */
-function WirksamJeApp({ basis, werte, app }: { basis: PfadEinstellung; werte: PfadWerte; app: AppKennung | '' }) {
+function WirksamJeApp({ basis, werte, app, id: listeId }: { basis: PfadEinstellung; werte: PfadWerte; app: AppKennung | ''; id: string }) {
   const entwurf = pfadStore((s) => s.entwurf);
   const id = useId();
   const texte = jeAppTexte(basis, werte, entwurf);
@@ -625,7 +631,7 @@ function WirksamJeApp({ basis, werte, app }: { basis: PfadEinstellung; werte: Pf
       <span className="muted" id={id}>
         Gilt je App:
       </span>
-      <ul aria-labelledby={id}>
+      <ul aria-labelledby={id} id={listeId}>
         {texte
           .filter(({ a }) => !app || a.apps.includes(app))
           .map(({ a, text }) => (
@@ -659,7 +665,7 @@ function Abweichungen({ basis, werte, app, fokus }: { basis: PfadEinstellung; we
   const titel = unterordner ? 'Unterordner je App' : 'Je App abweichend';
   return (
     <div className="einst-abweichungen">
-      <button type="button" className={`small einst-aufklappen${!offen && geaendert ? ' geaendert' : ''}`} aria-expanded={offen} aria-controls={id} onClick={() => setOffen(!offen)}>
+      <button type="button" className="small einst-aufklappen" aria-expanded={offen} aria-controls={id} onClick={() => setOffen(!offen)}>
         <Symbol name={offen ? 'pfeilUnten' : 'pfeilRechts'} />
         {titel}
         {gesetzt > 0 && <span className="muted"> ({gesetzt})</span>}
@@ -727,10 +733,10 @@ function PfadFeld({ e, werte, app = '', fokus }: { e: PfadEinstellung; werte: Pf
         </p>
       )}
       {e.art !== 'schalter' && (
-        <TextEinstellung e={e} feldId={feldId} hinweisId={hinweisId} text={typeof entwurf[e.id] === 'string' ? (entwurf[e.id] as string) : alsText(gilt)} gesperrt={gesperrt} onText={setze} />
+        <TextEinstellung e={e} werte={werte} feldId={feldId} hinweisId={hinweisId} text={typeof entwurf[e.id] === 'string' ? (entwurf[e.id] as string) : alsText(gilt)} gesperrt={gesperrt} onText={setze} />
       )}
       {/* gemeinsame Angabe: statt einer Vorschau, was je App gilt */}
-      <WirksamJeApp basis={e} werte={werte} app={app} />
+      <WirksamJeApp basis={e} werte={werte} app={app} id={`${feldId}-jeapp`} />
       <div className="einst-eintrag-fuss">
         <span className="muted small-text">
           {geaendert ? 'Geändert – gilt mit „Übernehmen“' : istVorgabe ? 'Vorgabe' : 'Eigener Wert'}
@@ -758,11 +764,13 @@ function TextEinstellung({
   e,
   feldId,
   hinweisId,
+  werte,
   text,
   gesperrt,
   onText,
 }: {
   e: PfadEinstellung;
+  werte: PfadWerte;
   feldId: string;
   hinweisId: string;
   text: string;
@@ -778,12 +786,11 @@ function TextEinstellung({
   const ordnerListe = liste && e.zeilen === 'ordner';
   // Liste: Vorschau des ersten Eintrags (bei Mustern gilt es für neue Dateien); absolute Ordner ohne Vorschau
   const entwurfJetzt = pfadStore((s) => s.entwurf);
-  const gespeichertJetzt = pfadStore((s) => s.gespeichert);
-  // gemeinsame Angabe, die je App Verschiedenes ergibt: statt der Vorschau „Gilt je App“ darunter (`WirksamJeApp`)
-  const jeApp = gespeichertJetzt ? jeAppTexte(e, gespeichertJetzt, entwurfJetzt) : null;
+  // gemeinsame Angabe, die je App Verschiedenes ergibt: statt der Vorschau „Gilt je App“ darunter (`WirksamJeApp`, dieselbe Quelle `werte`)
+  const jeApp = jeAppTexte(e, werte, entwurfJetzt);
   const vorschau = e.art === 'ordner' || ordnerListe || jeApp ? '' : pfadVorschau(e, liste ? (alsListe(text)[0] ?? '') : text);
   // Abweichung, die den gemeinsamen Wert ersetzt: leer gilt der gemeinsame – er steht als Platzhalter im Feld
-  const platzhalter = e.abweichungVon?.art === 'ersetzt' && gespeichertJetzt ? alsText(wirksam(pfadEinstellung(e.abweichungVon.id), gespeichertJetzt, entwurfJetzt)) : undefined;
+  const platzhalter = e.abweichungVon?.art === 'ersetzt' ? alsText(wirksam(pfadEinstellung(e.abweichungVon.id), werte, entwurfJetzt)) : undefined;
   const alt = e.variablen ? veraltetePlatzhalter(text, e.variablen) : [];
   const meldungId = `${feldId}-pruefung`;
   const vorschauId = `${feldId}-vorschau`;
@@ -798,7 +805,7 @@ function TextEinstellung({
     'aria-invalid': fehlerhaft || undefined,
     'aria-required': e.pflicht || undefined,
     placeholder: platzhalter,
-    'aria-describedby': [hinweisId, meldungen.length ? meldungId : '', vorschau ? vorschauId : ''].filter(Boolean).join(' '),
+    'aria-describedby': [hinweisId, meldungen.length ? meldungId : '', vorschau ? vorschauId : '', jeApp ? `${feldId}-jeapp` : ''].filter(Boolean).join(' '),
     onChange: (ev: { target: { value: string } }) => onText(ev.target.value),
   };
 

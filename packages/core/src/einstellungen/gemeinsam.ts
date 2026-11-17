@@ -124,7 +124,7 @@ function gruppeSchreiben(g: ExportGruppe, roh: Record<string, unknown>, w: Gemei
   for (const a of EXPORT_APPS) {
     setze(abweichungId(g, a), w.je[a], vorgabeAbweichung(g, a));
     // ältere Versionen lesen einen leeren Wert als Vorgabe – der Projektordner selbst steht deshalb als „.“ (fällt dort weg)
-    setze(alterSchluessel(g, a), wirksamFuer(g, w, a) || '.', vorgabeAlt(g, a));
+    setze(alterSchluessel(g, a), wirksamFuer(g, w, a) || (g === 'ordner' ? '.' : ''), vorgabeAlt(g, a));
   }
   return { ...roh, pfade };
 }

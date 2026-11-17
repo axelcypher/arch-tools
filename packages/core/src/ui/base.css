@@ -3162,6 +3162,10 @@ button.ungespeichert::after {
 .einst-eintrag:not(:focus-within) .ph-chips {
   display: none;
 }
+/* Fokus in einem Feld je App (Abweichungen in der Karte): nur dessen Chips, nicht die der gemeinsamen Angabe */
+.einst-eintrag:has(.einst-unter :focus-within) > .ph-chips {
+  display: none;
+}
 .einst-vorschau code {
   overflow-wrap: anywhere;
 }
