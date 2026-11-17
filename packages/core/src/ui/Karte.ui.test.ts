@@ -259,13 +259,15 @@ describe('Fläche und Karten', () => {
     expect(css).toMatch(new RegExp(`\\.summary-table\\.felder\\s+tr:has\\(${feld}\\)\\s+> td:not\\(:has\\(${feld}\\)\\) \\{[^}]*padding-top: calc\\(3px \\+ \\(var\\(--ctl-h\\) - 1lh\\) \\/ 2\\);`));
     expect(css).toMatch(/\.summary-table\.felder td > button:is\(\.small, \.icon\) \{[^}]*margin-top: calc\(\(var\(--ctl-h\) - var\(--ctl-h-s\)\) \/ 2\);/);
     expect(css).toMatch(/\.summary-table input\.zelle \{[^}]*border-color: transparent;[^}]*background: transparent;/);
-    expect(css).toMatch(/\.summary-table input\.zelle:focus \{[^}]*background: var\(--input-bg\);/);
+    expect(css).toMatch(/\.summary-table input\.zelle:focus \{[^}]*border-color: var\(--accent\);[^}]*background: var\(--input-bg\);/);
+    expect(css).toMatch(/\.summary-table input\.zelle:is\(\.feld-fehler, \[aria-invalid='true'\]\),[^{]*\{[^}]*border-color: var\(--danger\);/);
+    expect(css).toMatch(/\.karte-rumpf:has\(> \.summary-table\.fest\) \{\s*scroll-padding-top: var\(--tabelle-kopf-h,/);
     // fester Kopf: sticky am thead (mehrzeiliger Kopf bleibt zusammen), ohne Umbruch, Grund der Karte
     expect(css).toMatch(/\.summary-table\.fest thead \{[^}]*position: sticky;[^}]*top: 0;/);
     expect(css).toMatch(/\.summary-table\.fest thead th \{[^}]*white-space: nowrap;[^}]*background: var\(--panel\);/);
     // wählbare Zeilen: Überfahren mit leichter Akzenttönung und leiser Linie, nicht an Gruppen-, Summen-, gewählten Zeilen
-    expect(css).toMatch(/\.summary-table\.waehlbar tbody tr:not\(\.gruppe, \.summe, \.selected, \[aria-selected='true'\]\):hover td \{/);
-    expect(css).toMatch(/:hover td:first-child \{\s*box-shadow: inset 3px 0 var\(--border\);/);
+    expect(css).toMatch(/\.summary-table\.waehlbar tbody tr:not\(\.gruppe, \.summe, \.selected, \[aria-selected='true'\]\):is\(:hover, :focus-within\) td \{/);
+    expect(css).toMatch(/:is\(:hover, :focus-within\) td:first-child \{\s*box-shadow: inset 3px 0 color-mix\(in srgb, var\(--accent\) 60%, var\(--panel\)\);/);
     expect(css).toMatch(/\.summary-table tr\.gruppe td \{/);
     expect(css).toMatch(/\.summary-table tr\.summe td \{[^}]*border-top-color: color-mix\(in srgb, var\(--muted\) 60%, transparent\);/);
     // auf Papier bleibt die Gruppentönung hell
