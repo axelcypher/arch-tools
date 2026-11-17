@@ -11,6 +11,7 @@ import type { FaktDef } from './typen';
 const PR = (...werte: string[]) => ({ m: 'Planungsrecht', in: werte });
 const FAKT = (f: string, ist: boolean) => ({ f, ist });
 const MIT_UND_OHNE_PLAN = PR('einfacher Bebauungsplan', 'Satzung nach BauGB');
+// `planung.innen` steht im Bundesmodul (module/bund/modul.json); paket.test.ts prüft, dass jede Angabe aus `folgt` bekannt ist
 const INNEN_34 = { oder: [PR('Innenbereich'), { und: [MIT_UND_OHNE_PLAN, FAKT('planung.innen', true)] }] };
 const AUSSEN_35 = { oder: [PR('Außenbereich'), { und: [MIT_UND_OHNE_PLAN, FAKT('planung.innen', false)] }] };
 const j = (titel: string, gruppe: FaktDef['gruppe'], hilfe?: string, frage?: string): FaktDef => ({ titel, gruppe, typ: 'janein', ...(hilfe ? { hilfe } : {}), ...(frage ? { frage } : {}) });
@@ -163,7 +164,7 @@ const KATALOG: Record<string, FaktDef> = {
     typ: 'janein',
     frage: 'Hält das Vorhaben eine Festsetzung des Bebauungsplans nicht ein, oder ist die geplante Nutzung dort nur ausnahmsweise zulässig?',
     hilfe:
-      'Festsetzungen sind z. B. Art der Nutzung, Geschosse oder Höhe, Baugrenzen und Baulinien, Grund- und Geschossflächenzahl (GRZ, GFZ) und Bauweise. Ja zum Beispiel: ein Geschoss mehr als festgesetzt; ein Anbau über die Baugrenze; Wohnungen im Gewerbegebiet; eine Nutzung, die der Plan nur ausnahmsweise zulässt. Nein, wenn das Vorhaben alle Festsetzungen einhält und dort allgemein zulässig ist. Dachform, Material und Gestaltung zählen hier nicht (Dachbegrünung und Pflanzgebote schon) – dafür gibt es die Frage „Abweichung von einer örtlichen Bauvorschrift“. Maßgeblich: § 31 und § 246e BauGB.',
+      'Festsetzungen sind z. B. Art der Nutzung, Geschosse oder Höhe, Baugrenzen und Baulinien, Grund- und Geschossflächenzahl (GRZ, GFZ) und Bauweise. Ja zum Beispiel: ein Geschoss mehr als festgesetzt; ein Anbau über die Baugrenze; Wohnungen im Gewerbegebiet; eine Nutzung, die der Plan nur ausnahmsweise zulässt. Nein, wenn das Vorhaben alle Festsetzungen einhält und dort allgemein zulässig ist. Dachform, Material und Gestaltung zählen hier nicht (Dachbegrünung und Pflanzgebote schon) – dafür gibt es die Frage „Abweichung von örtlicher Bauvorschrift“. Maßgeblich: § 31 und § 246e BauGB.',
   },
   'planung.abweichung_umgebung': {
     titel: 'Für das Vorhaben fehlt ein Vorbild in der näheren Umgebung',
@@ -199,7 +200,7 @@ const KATALOG: Record<string, FaktDef> = {
     typ: 'janein',
     frage: 'Entstehen durch das Vorhaben neue Wohnungen oder Wohnräume, oder wird leerstehender, bisher nicht bewohnbarer Wohnraum wieder nutzbar?',
     hilfe:
-      'Ja zum Beispiel: Neubau eines Wohnhauses oder eines Studenten- bzw. Seniorenwohnheims; Anbau, Aufstockung oder Dachausbau mit zusätzlicher Wohnung; Büro, Laden, Scheune oder Halle wird zu Wohnungen umgebaut; eine unbewohnbare Wohnung wird wieder hergerichtet; auch ein Neubau mit Wohnungen und Läden oder Büros. Nein zum Beispiel: Umbau, Anbau oder Wintergarten ohne zusätzliche Wohnung; Garage oder Carport; Gewerbe- oder Bürobau ohne Wohnungen. Daran hängt unter anderem die Sonderregelung für den Wohnungsbau (§ 246e BauGB) – ob sie bei gemischt genutzten Gebäuden das ganze Gebäude erfasst, klärt die Gemeinde. Eine Kita, Praxis oder ein Laden für die Bewohner kann zusammen mit einem solchen Wohnungsbau zugelassen werden (§ 246e Abs. 5) – dann beim Wohnungsbau mitfragen.',
+      'Ja zum Beispiel: Neubau eines Wohnhauses oder eines Studenten- bzw. Seniorenwohnheims; Anbau, Aufstockung oder Dachausbau mit zusätzlicher Wohnung; Büro, Laden, Scheune oder Halle wird zu Wohnungen umgebaut; eine unbewohnbare Wohnung wird wieder hergerichtet; auch ein Neubau mit Wohnungen und Läden oder Büros. Nein zum Beispiel: Umbau, Anbau oder Wintergarten ohne zusätzliche Wohnung; Garage oder Carport; Gewerbe- oder Bürobau ohne Wohnungen. Daran hängt unter anderem die Sonderregelung für den Wohnungsbau (§ 246e BauGB) – ob sie bei gemischt genutzten Gebäuden das ganze Gebäude erfasst, klärt die Gemeinde.',
   },
 
 
@@ -311,10 +312,10 @@ const FOLGT: Record<string, NonNullable<FaktDef['folgt']>> = {
     { wenn: FAKT('vorhaben.wohnraum_neu', false), wert: false, grund: 'es entstehen keine neuen Wohnungen bzw. Wohnräume und kein wieder nutzbarer Wohnraum – die Sonderregelung gilt nur für den Wohnungsbau' },
     { wenn: { und: [AUSSEN_35, FAKT('planung.anschluss_ortslage', false)] }, wert: false, grund: 'das Grundstück liegt im Außenbereich nicht nahe an der Ortslage oder einem Baugebiet mit Bebauungsplan' },
     { wenn: { und: [PR('Bebauungsplan'), FAKT('planung.befreiung', false), KEINE_SPERRE] }, wert: false, grund: 'das Vorhaben hält den Bebauungsplan ein, und keine Sperre oder Satzung steht entgegen – eine Abweichung ist nicht nötig' },
-    { wenn: { und: [PR('Innenbereich'), FAKT('planung.abweichung_umgebung', false), KEINE_SPERRE] }, wert: false, grund: 'das Vorhaben hat Vorbilder in der Umgebung, und keine Sperre oder Satzung steht entgegen – eine Abweichung ist nicht nötig' },
-    { wenn: { und: [MIT_UND_OHNE_PLAN, FAKT('planung.innen', true), FAKT('planung.befreiung', false), FAKT('planung.abweichung_umgebung', false), KEINE_SPERRE] }, wert: false, grund: 'das Vorhaben hält den Bebauungsplan ein, hat Vorbilder in der Umgebung, und keine Sperre oder Satzung steht entgegen – eine Abweichung ist nicht nötig' },
+    { wenn: { und: [PR('Innenbereich'), FAKT('planung.abweichung_umgebung', false), KEINE_SPERRE] }, wert: false, grund: 'das Vorhaben hat Vorbilder in der näheren Umgebung, und keine Sperre oder Satzung steht entgegen – eine Abweichung ist nicht nötig' },
+    { wenn: { und: [MIT_UND_OHNE_PLAN, FAKT('planung.innen', true), FAKT('planung.befreiung', false), FAKT('planung.abweichung_umgebung', false), KEINE_SPERRE] }, wert: false, grund: 'das Vorhaben hält den Bebauungsplan ein, hat Vorbilder in der näheren Umgebung, und keine Sperre oder Satzung steht entgegen – eine Abweichung ist nicht nötig' },
     { wenn: { und: [WOHNRAUM_NEU, PR('Bebauungsplan', 'einfacher Bebauungsplan', 'Satzung nach BauGB'), FAKT('planung.befreiung', true)] }, wert: true, grund: 'es entstehen neue Wohnungen, und das Vorhaben weicht vom Bebauungsplan ab' },
-    { wenn: { und: [WOHNRAUM_NEU, INNEN_34, FAKT('planung.abweichung_umgebung', true)] }, wert: true, grund: 'es entstehen neue Wohnungen, und für das Vorhaben fehlt ein Vorbild in der Umgebung' },
+    { wenn: { und: [WOHNRAUM_NEU, INNEN_34, FAKT('planung.abweichung_umgebung', true)] }, wert: true, grund: 'es entstehen neue Wohnungen, und für das Vorhaben fehlt ein Vorbild in der näheren Umgebung' },
     { wenn: { und: [WOHNRAUM_NEU, AUSSEN_35, FAKT('planung.anschluss_ortslage', true)] }, wert: true, grund: 'es entstehen neue Wohnungen im Außenbereich nahe an der Ortslage bzw. einem Baugebiet mit Bebauungsplan' },
   ],
   // nicht bei „kein Gebäude“: Versammlungsstätten im Freien (Freilichtbühne, Stadion) sind bauliche Anlagen ohne Gebäude

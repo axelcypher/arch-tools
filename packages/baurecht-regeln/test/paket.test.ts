@@ -97,10 +97,10 @@ describe('Vorfragen (FaktDef.vorfrage)', () => {
         'false: es entstehen keine neuen Wohnungen bzw. Wohnräume und kein wieder nutzbarer Wohnraum – die Sonderregelung gilt nur für den Wohnungsbau',
         'false: das Grundstück liegt im Außenbereich nicht nahe an der Ortslage oder einem Baugebiet mit Bebauungsplan',
         'false: das Vorhaben hält den Bebauungsplan ein, und keine Sperre oder Satzung steht entgegen – eine Abweichung ist nicht nötig',
-        'false: das Vorhaben hat Vorbilder in der Umgebung, und keine Sperre oder Satzung steht entgegen – eine Abweichung ist nicht nötig',
-        'false: das Vorhaben hält den Bebauungsplan ein, hat Vorbilder in der Umgebung, und keine Sperre oder Satzung steht entgegen – eine Abweichung ist nicht nötig',
+        'false: das Vorhaben hat Vorbilder in der näheren Umgebung, und keine Sperre oder Satzung steht entgegen – eine Abweichung ist nicht nötig',
+        'false: das Vorhaben hält den Bebauungsplan ein, hat Vorbilder in der näheren Umgebung, und keine Sperre oder Satzung steht entgegen – eine Abweichung ist nicht nötig',
         'true: es entstehen neue Wohnungen, und das Vorhaben weicht vom Bebauungsplan ab',
-        'true: es entstehen neue Wohnungen, und für das Vorhaben fehlt ein Vorbild in der Umgebung',
+        'true: es entstehen neue Wohnungen, und für das Vorhaben fehlt ein Vorbild in der näheren Umgebung',
         'true: es entstehen neue Wohnungen im Außenbereich nahe an der Ortslage bzw. einem Baugebiet mit Bebauungsplan',
       ],
     });
@@ -2706,7 +2706,8 @@ describe('§ 246e BauGB aus Tatsachen (neue Wohnungen, Abweichung, Lage) statt �
     const vorbehalt = lauf(M(), { ...nein('planung.abweichung_umgebung'), ...keineSperre() }, '2026-12-01', { widersprueche: new Set(['Planungsrecht']), vorbehalte: { Planungsrecht: 'für diesen Ort noch nicht bestätigt' } });
     expect(vorbehalt.p.ampel).toBe('gelb');
     expect(vorbehalt.p.gruende.join(' ')).not.toMatch(/es fehlt: Angaben/);
-    expect([...vorbehalt.p.offen, ...vorbehalt.p.unsicher]).toContain('merkmal:Planungsrecht');
+    expect(vorbehalt.p.offen).toEqual(['merkmal:Planungsrecht']);
+    expect(vorbehalt.p.gruende[0]).toBe('Offen – es fehlt: Planungsrecht (für diesen Ort noch nicht bestätigt).');
   });
 
   it('ältere Datei: die frühere Antwort gilt, bis die Tatsachen da sind; widersprechen sie, Hinweis statt Überschreiben', () => {

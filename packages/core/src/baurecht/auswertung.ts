@@ -504,6 +504,9 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
     let tragend: Bewertung[] = [];
     // Begründungen nennen die Angaben, die das Ergebnis tragen; die ganze Bedingung steht in `bedingung`
     const warum = (k: Kurz | undefined, w: Wahrheit) => warumText(k, ctx, text, w);
+    // eine fehlende Angabe als Text; ein Merkmal mit Vorbehalt ist angegeben, der Vorbehalt sagt, was fehlt („Planungsrecht
+    // (für diesen Ort noch nicht bestätigt)“)
+    const fehltText = (o: string) => (o.startsWith('merkmal:') && e.vorbehalte?.[o.slice(8)] ? `${offenText(o, text)} (${e.vorbehalte[o.slice(8)]})` : offenText(o, text));
     // eine ersetzte Frage (FaktDef.ersetzt), deren Wert sich aus Tatsachen ergibt: deren Grund in Worten statt des Namens
     // der Rechtsfrage („Sonderregelung …: ja“) – die Begründung sagt, warum
     // – auch, wenn die Zeile nur über Hinweise zutrifft (z. B. Planungsrecht für diesen Ort noch nicht bestätigt; die
@@ -554,7 +557,7 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
       // „Ausnahme möglich“ nur mit einer Frage, die gestellt wird – sonst kann niemand sie beantworten (die Ausnahme greift
       // dann gar nicht, z. B. Umnutzung zu Wohnraum bei einem Gebäude ohne Wohnung)
       const ausnahmeOffen = entf?.w === 'offen' ? nurGestellteStreng(entf.offen) : [];
-      if (ausnahmeOffen.length) hinweise.push(`Ausnahme möglich – es fehlt: ${ausnahmeOffen.map((o) => offenText(o, text)).join(' · ')}`);
+      if (ausnahmeOffen.length) hinweise.push(`Ausnahme möglich – es fehlt: ${ausnahmeOffen.map(fehltText).join(' · ')}`);
       // die Ausnahme ist nur über Hinweise ausgeschlossen: nicht gesichert – bestätigen (oder berichtigen) klärt
       else if (entf?.w === 'nein' && (entf.unsicher.length || entf.widerspruch.length)) {
         // ein Modulwert ist dort zu bestätigen, woher seine Unsicherheit kommt (z. B. der Gemeindeschlüssel)
@@ -586,7 +589,7 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
       const angaben = fehlt.filter((o) => !o.startsWith('paragraf:'));
       const haengt = fehlt.filter((o) => o.startsWith('paragraf:'));
       // überall derselbe kurze Name der Angabe (nicht die Frage)
-      const teile = [angaben.length ? `es fehlt: ${angaben.map((o) => offenText(o, text)).join(' · ')}` : '', haengt.length ? `hängt an ${haengt.map((o) => offenText(o, text)).join(' · ')} – dort offen` : ''].filter(Boolean);
+      const teile = [angaben.length ? `es fehlt: ${angaben.map(fehltText).join(' · ')}` : '', haengt.length ? `hängt an ${haengt.map((o) => offenText(o, text)).join(' · ')} – dort offen` : ''].filter(Boolean);
       const satz = teile.join('; ') || 'es fehlt: Angaben';
       // kein Punkt nach einer Frage („… (LINFOS-Kennung)?“)
       gruende.push(`Offen – ${satz}${/[?.!]$/.test(satz) ? '' : '.'}`);
@@ -619,7 +622,7 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
           const fehlt = nurGestellteStreng(pruef.offen ?? []);
           const angaben = fehlt.filter((o) => !o.startsWith('paragraf:'));
           const haengt = fehlt.filter((o) => o.startsWith('paragraf:'));
-          const teile = [angaben.length ? `es fehlt: ${angaben.map((o) => offenText(o, text)).join(' · ')}` : '', haengt.length ? `hängt an ${haengt.map((o) => offenText(o, text)).join(' · ')} – dort offen` : ''].filter(Boolean);
+          const teile = [angaben.length ? `es fehlt: ${angaben.map(fehltText).join(' · ')}` : '', haengt.length ? `hängt an ${haengt.map((o) => offenText(o, text)).join(' · ')} – dort offen` : ''].filter(Boolean);
           herab.push(teile.length ? `Einzelfall möglich – ${teile.join('; ')}. ${r.pruefen.grund}` : `Einzelfall: ${r.pruefen.grund}`);
           offen = fehlt;
         } else {

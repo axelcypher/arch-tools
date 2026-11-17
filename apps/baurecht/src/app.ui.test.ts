@@ -165,7 +165,7 @@ describe('Baurecht – Oberfläche', () => {
       for (const id of ['planung.abweichung_umgebung', 'planung.veraenderungssperre', 'planung.erhaltungssatzung', 'planung.erhaltungssatzung_aufstellung', 'planung.sanierungsgebiet', 'planung.planaufstellung']) useBaurecht.getState().faktSetzen(id, false, 'TP', undefined, lage);
     });
     const zeile = angaben().querySelector<HTMLElement>('.br-ergibt li[data-fakt="planung.wohnungsbau_246e"]');
-    expect(zeile?.textContent).toMatch(/Sonderregelung Wohnungsbau \(§ 246e\): nein – das Vorhaben hat Vorbilder in der Umgebung/);
+    expect(zeile?.textContent).toMatch(/Sonderregelung Wohnungsbau \(§ 246e\): nein – das Vorhaben hat Vorbilder in der näheren Umgebung/);
     expect(knopf(zeile!, 'Überstimmen …')).toBeUndefined();
     // andere abgeleitete Werte behalten „Überstimmen …“
     expect(knopf(angaben().querySelector<HTMLElement>('.br-ergibt li[data-fakt="gebaeude.wohnungen"]')!, 'Überstimmen …')).toBeTruthy();

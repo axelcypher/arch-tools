@@ -211,7 +211,7 @@ weder Veränderungssperre, Erhaltungssatzung (auch in Aufstellung), Sanierungsge
 Aufstellung entgegenstehen (auch davon kann
 § 246e befreien) und beim einfachen Bebauungsplan bzw. einer Satzung Plan **und** Umgebung eingehalten sind. Ist
 „Im Zusammenhang bebauter Ortsteil“ offen, folgt kein „nein“. Die Begründung sagt, warum („Trifft zu – es entstehen
-neue Wohnungen, und für das Vorhaben fehlt ein Vorbild in der Umgebung“ bzw. „Entfällt – das Vorhaben hält den
+neue Wohnungen, und für das Vorhaben fehlt ein Vorbild in der näheren Umgebung“ bzw. „Entfällt – das Vorhaben hält den
 Bebauungsplan ein …“). Offen bleibt, was fehlt – unter „es fehlt“ stehen die Tatsachenfragen.
 Zustimmung der Gemeinde (§ 36a entsprechend), Vereinbarkeit mit den öffentlichen Belangen, Frist bis Ende 2030 (Abs. 4)
 und Folgeeinrichtungen (Abs. 5) stehen als Hinweise am Paragrafen; ab einer Einreichung 2031 entfällt er.
@@ -220,7 +220,8 @@ und Folgeeinrichtungen (Abs. 5) stehen als Hinweise am Paragrafen; ab einer Einr
 fehlt nie – an ihrer Stelle stehen die Tatsachenfragen unter „es fehlt“ und „klärt am meisten“. Eine Antwort darauf aus
 einer älteren Datei gilt weiter und steht als Frage da („Frühere Angabe: …“), bis sie zurückgenommen wird; ergeben die
 Tatsachen dasselbe, geht sie im abgeleiteten Wert auf, ergeben sie etwas anderes, wird sie zum Widerspruch (Hinweis,
-nie „entfällt“, nichts wird überschrieben).
+nie „entfällt“, nichts wird überschrieben). Ergeben die Tatsachen noch nichts (z. B. Bebauungsplan eingehalten, aber
+eine Veränderungssperre), gilt die frühere Antwort weiter.
 
 ## Vorfragen
 
