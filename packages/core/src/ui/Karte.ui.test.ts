@@ -78,10 +78,35 @@ describe('Fläche und Karten', () => {
     const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'base.css'), 'utf8');
     expect(css).toMatch(/--spalt: 8px;/);
     expect(css.match(/--karte-schatten:/g)?.length).toBe(2);
-    expect(css).toMatch(/\.karte-rumpf \{[^}]*overflow: auto;/);
+    // positioniert: absolut gesetzte Kinder bleiben im Rollbereich der Karte
+    expect(css).toMatch(/\.karte-rumpf \{[^}]*position: relative;[^}]*overflow: auto;/);
     expect(css).toMatch(/\.flaeche \{[^}]*overflow: hidden;/);
     expect(css).toMatch(/\.app:has\(\.flaeche:not\(\.modal \*\)\) > \.toolbar \{/);
     // Radien aus der Skala, keine festen 6px mehr
     expect(css).not.toMatch(/border-radius: 6px/);
+  });
+
+  it('hoehe="inhalt": Klasse karte-inhalt, Vorgabe ohne; base.css begrenzt sie in der Spalte auf die halbe Höhe', () => {
+    const host = render(h(FlaechenSpalte, { children: [h(Karte, { key: 'l', titel: 'Referenz' }), h(Karte, { key: 'k', titel: 'Objektiv', hoehe: 'inhalt', className: 'x' })] }));
+    const [lang, kurz] = host.querySelectorAll('.karte');
+    expect(lang.className).toBe('karte');
+    expect(kurz.className).toBe('karte karte-inhalt x');
+    const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'base.css'), 'utf8');
+    expect(css).toMatch(/\.flaechen-spalte > \.karte\.karte-inhalt \{[^}]*flex: 0 1 auto;[^}]*max-height: 50%;/);
+    // mehrere Inhaltskarten: die teilende Karte behält Kopf und einige Zeilen
+    expect(css).toMatch(/\.flaechen-spalte:has\(> \.karte-inhalt\) > \.karte:not\(\.karte-inhalt\) \{[^}]*min-height: calc\(var\(--karte-kopf-h\) \+ 6 \* var\(--s4\)\);/);
+    // die Inhaltskarte behält mindestens ihren Kopf
+    expect(css).toMatch(/\.flaechen-spalte > \.karte\.karte-inhalt \{[^}]*min-height: var\(--karte-kopf-h\);/);
+  });
+
+  it('Zahlentabelle: gemischte Spalten, Felder, Gruppen- und Summenzeilen', () => {
+    const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'base.css'), 'utf8');
+    expect(css).toMatch(/\.summary-table\.text th\.num,\s*\.summary-table td\.num \{[^}]*text-align: right;/);
+    expect(css).toMatch(/\.summary-table\.felder td \{[^}]*vertical-align: top;/);
+    expect(css).toMatch(/\.summary-table\.felder td:not\(:has\(input, select, textarea, button\)\) \{[^}]*padding-top: calc\(3px \+ \(var\(--ctl-h\) - 1lh\) \/ 2\);/);
+    expect(css).toMatch(/\.summary-table tr\.gruppe td \{/);
+    expect(css).toMatch(/\.summary-table tr\.summe td \{[^}]*border-top-color: color-mix\(in srgb, var\(--muted\) 60%, transparent\);/);
+    // auf Papier bleibt die Gruppentönung hell
+    expect(css).toMatch(/\n\.report \{[^}]*--tabelle-gruppe: #f1f3f6;/);
   });
 });

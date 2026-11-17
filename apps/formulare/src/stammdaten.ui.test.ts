@@ -1,4 +1,7 @@
 // @vitest-environment happy-dom
+import { einstellungenOeffnen, useEinstellungen } from '@core/ui/Einstellungen';
+import { adressbuchOeffnen, useAdressbuchDialog } from './components/AdressbuchDialog';
+import { entwurfVerwerfen } from './einstellungsEntwurf';
 import ExcelJS from 'exceljs';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -63,6 +66,9 @@ let root: ReturnType<typeof createRoot> | null = null;
 
 beforeEach(() => {
   localStorage.clear();
+  useEinstellungen.setState({ offen: false });
+  useAdressbuchDialog.setState({ offen: false });
+  entwurfVerwerfen();
   ds = new SpeicherDateisystem({ benutzer: 't.test', computer: 'HELEN', prozess: 4242 });
   for (const [k, titel, pk] of [
     ['BS9', 'Musterstraße 9', karte('Mustermann', 'Kreis Soest')],
@@ -100,7 +106,6 @@ beforeEach(() => {
     oapVorlage: 'Planung/Berechnungen/{Kürzel}.oap',
     oapWahl: {},
     oap: null,
-    einstellungsBereich: 'ordner',
     meldung: null,
   });
 });
@@ -370,11 +375,14 @@ describe('Formular einrichten', () => {
 });
 
 describe('Einstellungen', () => {
-  it('Adressbuch aus allen Projektkarten, Stammdaten als Vorgabe je Rolle', async () => {
-    const host = await render();
-    await imLeistenMenue(host, 'Mehr', 'Einstellungen');
-    expect(host.querySelector('.es-nav')).not.toBeNull();
-    await klick(knopf(host, 'Adressbuch'));
+  const adressbuchDialog = () => document.querySelector<HTMLElement>('.es-adressbuch-dialog');
+  const rollenWahl = (rolle: string) =>
+    [...document.querySelectorAll('.es-rolle')].find((l) => l.querySelector('.field-label')?.textContent === rolle)!.querySelector<HTMLSelectElement>('select')!;
+
+  it('Adressbuch aus allen Projektkarten, Stammdaten als Vorgabe je Rolle – gilt mit „Übernehmen“', async () => {
+    const app = await render();
+    await imLeistenMenue(app, 'Mehr', 'Adressbuch');
+    let host = adressbuchDialog()!;
     await klick(knopf(host, 'Aus den Projektdaten einlesen'));
     await warte();
     const namen = [...host.querySelectorAll('.es-adress-eintrag strong')].map((s) => s.textContent);
@@ -383,22 +391,35 @@ describe('Einstellungen', () => {
     await klick([...host.querySelectorAll<HTMLButtonElement>('.es-adress-eintrag')].find((b) => b.textContent?.includes('Kreis Soest'))!);
     expect([...host.querySelectorAll('.es-verwendungen li')].map((l) => l.textContent)).toEqual(['BS9 · Bauaufsichtsbehörde', 'H24 · Bauaufsichtsbehörde']);
 
-    await klick(knopf(host, 'Büro & Stammdaten'));
-    const auswahl = host.querySelector<HTMLSelectElement>('select[aria-label="Vorgabe für Bauaufsichtsbehörde"]')!;
+    await klick(knopfGenau(host, 'Schließen'));
+    expect(adressbuchDialog()).toBeNull();
+
+    // Einstellungen › PERMIO › Vorgaben je Rolle
+    act(() => einstellungenOeffnen('formulare', 'rollen'));
+    await warte();
+    host = document.querySelector<HTMLElement>('.einst')!;
+    const auswahl = rollenWahl('Bauaufsichtsbehörde');
     const kreis = [...auswahl.options].find((o) => o.textContent?.startsWith('Kreis Soest'))!;
     expect(kreis.textContent).toContain('(2×)');
     waehle(auswahl, kreis.value);
     await warte();
-    expect(useFormulare.getState().rollenVorgaben['231']).toBe(kreis.value);
     expect(host.querySelector('.es-adresse')!.textContent).toContain('Hoher Weg 1');
+    expect(useFormulare.getState().rollenVorgaben['231']).toBeUndefined();
+    await klick(knopfGenau(host, 'Übernehmen'));
+    expect(useFormulare.getState().rollenVorgaben['231']).toBe(kreis.value);
   });
 
-  it('leeres Adressbuch: „Adresse hinzufügen“ öffnet das Formular für eine neue Adresse; unter „Büro & Stammdaten“ führt der Knopf ins Adressbuch', async () => {
-    const host = await render();
-    await imLeistenMenue(host, 'Mehr', 'Einstellungen');
-    await klick(knopf(host, 'Büro & Stammdaten'));
-    expect(knopf(host, 'Adresse hinzufügen')).toBeUndefined();
-    await klick(knopf(host, 'Zum Adressbuch'));
+  it('leeres Adressbuch: „Adresse hinzufügen“ öffnet das Formular für eine neue Adresse; unter „Vorgaben je Rolle“ öffnet der Knopf das Adressbuch', async () => {
+    await render();
+    act(() => einstellungenOeffnen('formulare', 'rollen'));
+    await warte();
+    const rollen = document.getElementById('permio-rollen')!;
+    expect(knopf(rollen, 'Adresse hinzufügen')).toBeUndefined();
+    expect(knoepfe(rollen, 'Adressbuch …')).toHaveLength(1);
+    await klick(knopf(rollen, 'Adressbuch …'));
+    // über dem Einstellungsdialog, als eigene Ebene
+    const host = adressbuchDialog()!;
+    expect(document.querySelector('.einst')).not.toBeNull();
     // die Leerseite trägt die Knöpfe – jeder nur einmal (nicht zusätzlich in der Titelzeile)
     expect(knoepfe(host, 'Adresse hinzufügen')).toHaveLength(1);
     expect(knoepfe(host, 'Aus den Projektdaten einlesen')).toHaveLength(1);
@@ -421,9 +442,10 @@ describe('Einstellungen', () => {
   });
 
   it('Adressbuch bearbeiten: neue Adresse anlegen, eine aus den Projektkarten ändern und ausblenden – gespeichert im Konfigurationsordner', async () => {
-    const host = await render();
-    await imLeistenMenue(host, 'Mehr', 'Einstellungen');
-    await klick(knopf(host, 'Adressbuch'));
+    await render();
+    act(() => adressbuchOeffnen());
+    await warte();
+    const host = adressbuchDialog()!;
     await klick(knopf(host, 'Aus den Projektdaten einlesen'));
     await warte();
     const namen = () => [...host.querySelectorAll('.es-adress-eintrag strong')].map((s) => s.textContent);
@@ -577,16 +599,15 @@ describe('Projektdatei (.oap) als Quelle der Projektstammdaten', () => {
     await warte();
     expect(ds.schreibvorgaenge).toContain(`neu Organisation/BS9 ${heute} Neubau EFH.oap`);
 
-    // Einstellungen › Projektdatei: Platzhalter einfügen, Beispiel, Warnung
-    act(() => useFormulare.getState().einstellungenOeffnen('projektdaten'));
+    // Einstellungen › PERMIO › Projektdatei: Pfad und Beispiel, eingestellt wird zentral (Pfade und Benennung)
+    act(() => einstellungenOeffnen('formulare', 'projektdatei'));
     await warte();
-    const beispiel = () => document.querySelector('[aria-label="Beispiel für den Pfad"]')!.textContent;
-    expect(beispiel()).toBe(`Beispiel: Organisation/BS9 ${heute} Neubau Einfamilienhaus.oap`);
-    // eingestellt wird der Pfad zentral (Einstellungen aller Apps › Pfade und Benennung): hier Anzeige und Verweis
+    const abschnitt = () => document.getElementById('permio-projektdatei')!;
+    expect(abschnitt().textContent).toContain(`z. B. Organisation/BS9 ${heute} Neubau Einfamilienhaus.oap`);
     act(() => useFormulare.getState().setOapVorlage('Organisation/{PROJEKT_KUERZEL} {Bauherr} {PROJEKT_KURZNAME}.oap'));
     await warte();
-    expect(beispiel()).toBe('Beispiel: Organisation/BS9 {Bauherr} EFH Musterweg.oap');
-    expect(knopf(document.body, 'Pfade und Benennung …')).toBeDefined();
+    expect(abschnitt().textContent).toContain('z. B. Organisation/BS9 {Bauherr} EFH Musterweg.oap');
+    expect(knopf(abschnitt(), 'Pfade und Benennung …')).toBeDefined();
     expect(document.querySelector('.ph-chips')).toBeNull();
   });
 

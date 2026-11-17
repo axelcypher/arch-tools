@@ -11,7 +11,7 @@ import { sichererDateiname } from '../projektdatei';
 import { PFAD_EINSTELLUNGEN } from '../einstellungen/eintraege';
 import { pfadEinstellung, pfadSpeichern, usePfadWerte, type PfadWerte } from '../einstellungen/pfade';
 import { abweichungEntschieden, pfadeUebernehmen, type Abweichung } from '../einstellungen/uebernahme';
-import { PFAD_THEMEN, gleicherWert, hatFehler, pfadPruefen, type PfadEinstellung, type PfadWert } from '../einstellungen/verzeichnis';
+import { PFAD_THEMEN, gleicherWert, hatFehler, istAbsolut, pfadPruefen, type PfadEinstellung, type PfadWert } from '../einstellungen/verzeichnis';
 import { Modal } from './Dialog';
 import { dialogVerhaltenEinrichten } from './dialoge';
 import type { MenuePunkt } from './Menue';
@@ -290,7 +290,8 @@ export function EinstellungenDialog() {
                           </span>
                         )}
                       </span>
-                      <span className="einst-nav-text">{s.app ? `${APP_NAMEN[s.app].name} · ${s.text}` : s.text}</span>
+                      {/* die App nennen, wenn die Seite nicht schon so heißt (Seite „PERMIO“ der App PERMIO) */}
+                      <span className="einst-nav-text">{s.app && s.titel !== APP_NAMEN[s.app].name ? `${APP_NAMEN[s.app].name} · ${s.text}` : s.text}</span>
                     </span>
                   </button>
                 );
@@ -691,8 +692,9 @@ function TextEinstellung({
   const meldungen = pfadPruefen(e, text);
   const fehlerhaft = hatFehler(meldungen);
   const liste = e.art === 'liste';
-  // Liste: Vorschau des ersten Eintrags (bei Mustern gilt es für neue Dateien)
-  const vorschau = e.art === 'ordner' ? '' : pfadVorschau(e, liste ? (alsListe(text)[0] ?? '') : text);
+  const ordnerListe = liste && e.zeilen === 'ordner';
+  // Liste: Vorschau des ersten Eintrags (bei Mustern gilt es für neue Dateien); absolute Ordner ohne Vorschau
+  const vorschau = e.art === 'ordner' || ordnerListe ? '' : pfadVorschau(e, liste ? (alsListe(text)[0] ?? '') : text);
   const alt = e.variablen ? veraltetePlatzhalter(text, e.variablen) : [];
   const meldungId = `${feldId}-pruefung`;
   const vorschauId = `${feldId}-vorschau`;
@@ -709,6 +711,8 @@ function TextEinstellung({
     'aria-describedby': [hinweisId, meldungen.length ? meldungId : '', vorschau ? vorschauId : ''].filter(Boolean).join(' '),
     onChange: (ev: { target: { value: string } }) => onText(ev.target.value),
   };
+
+  if (ordnerListe) return <OrdnerListeFeld e={e} feldId={feldId} hinweisId={hinweisId} ordner={alsListe(text)} gesperrt={gesperrt} onListe={(l) => onText(l.join('\n'))} />;
 
   return (
     <>
@@ -761,6 +765,163 @@ function TextEinstellung({
             Auf neue Namen umstellen
           </button>
         </span>
+      )}
+    </>
+  );
+}
+
+/**
+ * Liste vollständiger Ordner (z. B. Stammordner der Projekte): Reihenfolge zählt – der erste gilt für Neues. Je Zeile
+ * „Nach oben“, „Nach unten“ und „Entfernen“ (Tastatur: Tab und Enter; der Fokus bleibt am verschobenen Ordner), darunter
+ * ein Feld zum Eintragen und – in der Desktop-App – „Ordner wählen …“.
+ */
+/** gleicher Ordner unter Windows: ohne Groß-/Kleinschreibung und abschließenden Trenner */
+const gleicherOrdner = (a: string, b: string) => a.replace(/[\\/]+$/, '').toLowerCase() === b.replace(/[\\/]+$/, '').toLowerCase();
+
+function OrdnerListeFeld({
+  e,
+  feldId,
+  hinweisId,
+  ordner,
+  gesperrt,
+  onListe,
+}: {
+  e: PfadEinstellung;
+  feldId: string;
+  hinweisId: string;
+  ordner: string[];
+  gesperrt: string | null;
+  onListe: (liste: string[]) => void;
+}) {
+  const [neu, setNeu] = useState('');
+  const [fehler, setFehler] = useState<string | null>(null);
+  const listeRef = useRef<HTMLUListElement>(null);
+  const fehlerId = `${feldId}-fehler`;
+
+  /** nach dem Verschieben den Fokus auf denselben Knopf des verschobenen Ordners (sonst auf den Knopf daneben) */
+  const fokussieren = (i: number, knopf: string) =>
+    requestAnimationFrame(() => {
+      const zeile = listeRef.current?.children[i];
+      const ziel = zeile?.querySelector<HTMLButtonElement>(`[data-knopf="${knopf}"]:not(:disabled)`) ?? zeile?.querySelector<HTMLButtonElement>('button:not(:disabled)');
+      ziel?.focus();
+    });
+  const verschieben = (von: number, nach: number, knopf: string) => {
+    const l = [...ordner];
+    const [x] = l.splice(von, 1);
+    l.splice(nach, 0, x);
+    onListe(l);
+    fokussieren(nach, knopf);
+  };
+  const entfernen = (i: number) => {
+    onListe(ordner.filter((_, n) => n !== i));
+    requestAnimationFrame(() => {
+      const zeilen = listeRef.current?.children;
+      const ziel = zeilen?.length ? zeilen[Math.min(i, zeilen.length - 1)].querySelector<HTMLButtonElement>('[data-knopf="entfernen"]') : document.getElementById(feldId);
+      ziel?.focus();
+    });
+  };
+  const hinzufuegen = (pfad: string) => {
+    const p = pfad.trim();
+    if (!p) return;
+    if (!istAbsolut(p)) return setFehler('Vollständigen Ordner angeben – mit Laufwerk (Z:\\Projekte) oder als Netzwerkpfad (\\\\server\\Projekte).');
+    if (ordner.some((x) => gleicherOrdner(x, p))) return setFehler('Dieser Ordner steht schon in der Liste.');
+    onListe([...ordner, p]);
+    setNeu('');
+    setFehler(null);
+  };
+
+  return (
+    <>
+      {ordner.length ? (
+        <ul className="einst-ordnerliste" ref={listeRef} aria-label={e.bezeichnung} aria-describedby={hinweisId}>
+          {ordner.map((p, i) => (
+            <li key={p} className={istAbsolut(p) ? undefined : 'einst-ordner-falsch'}>
+              <code title={p}>{p}</code>
+              {/* ungültig aus älteren Daten: kennzeichnen, damit klar ist, was „Übernehmen“ sperrt */}
+              {!istAbsolut(p) && <span className="feld-meldung">nicht vollständig – entfernen</span>}
+              {i === 0 && <span className="einst-ordner-erster small-text">neue Projekte</span>}
+              <button
+                type="button"
+                className="icon"
+                data-knopf="hoch"
+                disabled={!!gesperrt || i === 0}
+                title={gesperrt ?? 'Nach oben'}
+                aria-label={`${p} nach oben`}
+                onClick={() => verschieben(i, i - 1, 'hoch')}
+              >
+                <Symbol name="nachOben" />
+              </button>
+              <button
+                type="button"
+                className="icon"
+                data-knopf="runter"
+                disabled={!!gesperrt || i === ordner.length - 1}
+                title={gesperrt ?? 'Nach unten'}
+                aria-label={`${p} nach unten`}
+                onClick={() => verschieben(i, i + 1, 'runter')}
+              >
+                <Symbol name="nachUnten" />
+              </button>
+              <button
+                type="button"
+                className="icon"
+                data-knopf="entfernen"
+                disabled={!!gesperrt}
+                title={gesperrt ?? 'Aus der Liste entfernen (der Ordner selbst bleibt unverändert)'}
+                aria-label={`${p} entfernen`}
+                onClick={() => entfernen(i)}
+              >
+                <Symbol name="schliessen" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="muted small-text">{isTauri() ? 'Ordner eintragen oder mit „Ordner wählen …“ wählen' : 'Ordner eintragen'} – im ersten entstehen neue Projekte.</p>
+      )}
+      <div className="einst-feldzeile">
+        <input
+          id={feldId}
+          className={fehler ? 'feld-fehler einst-feld' : 'einst-feld'}
+          value={neu}
+          placeholder={'Z:\\Projekte'}
+          aria-label={`${e.bezeichnung}: Ordner eintragen`}
+          disabled={!!gesperrt}
+          title={gesperrt ?? undefined}
+          spellCheck={false}
+          aria-invalid={!!fehler || undefined}
+          aria-describedby={[hinweisId, fehler ? fehlerId : ''].filter(Boolean).join(' ')}
+          onChange={(ev) => {
+            setNeu(ev.target.value);
+            setFehler(null);
+          }}
+          onKeyDown={(ev) => {
+            // Enter trägt den Ordner ein, statt den Dialog zu übernehmen
+            if (ev.key !== 'Enter') return;
+            ev.preventDefault();
+            hinzufuegen(neu);
+          }}
+        />
+        <button type="button" disabled={!!gesperrt || !neu.trim()} onClick={() => hinzufuegen(neu)}>
+          <Symbol name="plus" /> Ordner hinzufügen
+        </button>
+        {isTauri() && (
+          <button
+            type="button"
+            disabled={!!gesperrt}
+            onClick={async () => {
+              const p = await ordnerWaehlen(e.bezeichnung);
+              if (p) hinzufuegen(p);
+            }}
+          >
+            Ordner wählen …
+          </button>
+        )}
+      </div>
+      {fehler && (
+        <p className="feld-meldung" id={fehlerId} role="alert">
+          {fehler}
+        </p>
       )}
     </>
   );

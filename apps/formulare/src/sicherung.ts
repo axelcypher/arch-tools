@@ -38,14 +38,14 @@ export const SICHERUNG_BEREICHE: SicherungsBereich[] = [
   { schluessel: 'formulare:merkmale', titel: 'Antragsmerkmale', umfang: (w) => anzahl(liste(w), 'Merkmal', 'Merkmale') },
   { schluessel: 'formulare:katalog', titel: 'Antragsdokumente', umfang: (w) => anzahl(liste(w), 'Dokument', 'Dokumente') },
   { schluessel: 'formulare:vorlagen', titel: 'Antragsvorlagen', umfang: (w) => anzahl(liste(w), 'Vorlage', 'Vorlagen') },
-  { schluessel: 'formulare:export', titel: 'Antrag & Export (Ordner, Namensvorlage, Ziel)', umfang: () => 'angepasst' },
+  { schluessel: 'formulare:export', titel: 'Anträge und Export (Antragsarten, Ziel)', umfang: () => 'angepasst' },
   {
     schluessel: 'formulare:export-projekte',
-    titel: 'Antrag & Export: Abweichungen je Projekt',
+    titel: 'Anträge und Export: Abweichungen je Projekt',
     jeEintrag: true,
     umfang: (w) => anzahl(eintraege(w), 'Projekt', 'Projekte'),
   },
-  { schluessel: 'formulare:stammdaten', titel: 'Bürostammdaten', umfang: (w) => anzahl(liste(w), 'Adresse', 'Adressen') },
+  { schluessel: 'formulare:stammdaten', titel: 'Früher gemerkte Adressen', umfang: (w) => anzahl(liste(w), 'Adresse', 'Adressen') },
   {
     schluessel: 'formulare:einstellungen',
     titel: 'Ordner, angezeigte Pfade, Projektdatei, Ansicht',

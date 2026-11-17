@@ -244,12 +244,61 @@ describe('Einstellungen', () => {
     await warten();
     const d = dialog()!;
     expect([...d.querySelectorAll('[role="tab"] .einst-nav-titel')].map((t) => t.textContent)).toEqual(['Allgemein', 'Pfade und Benennung', 'ATLAS', 'FABRIO']);
+    // die Seite heißt wie die App: der Name steht nicht noch einmal in der Zeile darunter
+    expect([...d.querySelectorAll('[role="tab"] .einst-nav-text')].slice(2).map((t) => t.textContent)).toEqual(['Struktur', 'Prüfung']);
     expect(d.querySelector('[role="tabpanel"]')!.textContent).toContain('Seite von FABRIO');
     geaendert = true;
     act(() => e.einstellungenEntwurfMelden());
     await klick(knopf('Übernehmen', d));
     expect(uebernommen).toHaveBeenCalledTimes(1);
     expect(dialog()).toBeNull();
+  });
+
+  it('Stammordner der Projekte: bestehende Liste unverändert gelesen, Reihenfolge per Tastatur (Fokus bleibt), Entfernen, Eintragen nur vollständiger Ordner', async () => {
+    setze('allgemein', { projekte: ['Z:\\Projekte', '\\\\server\\Akquise', 'Y:\\Archiv'], oapPfad: 'x.oap' });
+    const e = await zeigen();
+    act(() => e.einstellungenOeffnen('pfade', 'projekt.stammordner'));
+    await warten();
+    const liste = () => [...eintrag('projekt.stammordner').querySelectorAll('.einst-ordnerliste code')].map((c) => c.textContent);
+    expect(liste()).toEqual(['Z:\\Projekte', '\\\\server\\Akquise', 'Y:\\Archiv']);
+    expect(eintrag('projekt.stammordner').querySelector('.einst-ordnerliste li')!.textContent).toContain('neue Projekte');
+    const knopfMit = (label: string) => [...eintrag('projekt.stammordner').querySelectorAll<HTMLButtonElement>('button')].find((x) => x.getAttribute('aria-label') === label)!;
+    expect(knopfMit('Z:\\Projekte nach oben').disabled).toBe(true);
+    // Akquise nach oben: gilt dann für neue Projekte; der Fokus bleibt an ihrem Knopf
+    await klick(knopfMit('\\\\server\\Akquise nach oben'));
+    expect(liste()).toEqual(['\\\\server\\Akquise', 'Z:\\Projekte', 'Y:\\Archiv']);
+    expect(document.activeElement?.getAttribute('aria-label')).toBe('\\\\server\\Akquise nach unten');
+    await klick(knopfMit('Y:\\Archiv entfernen'));
+    expect(liste()).toEqual(['\\\\server\\Akquise', 'Z:\\Projekte']);
+    // eintragen: relativ geht nicht (Fehler am Feld), vollständig schon – Enter trägt ein statt zu übernehmen
+    const feld = eintrag('projekt.stammordner').querySelector<HTMLInputElement>('input.einst-feld')!;
+    await tippen(feld, 'Projekte');
+    await taste(feld, 'Enter');
+    expect(eintrag('projekt.stammordner').querySelector('.feld-meldung')!.textContent).toContain('Vollständigen Ordner');
+    await tippen(feld, 'z:\\projekte\\');
+    await taste(feld, 'Enter');
+    expect(eintrag('projekt.stammordner').querySelector('.feld-meldung')!.textContent).toContain('schon in der Liste');
+    await tippen(feld, 'W:\\Neu');
+    await taste(feld, 'Enter');
+    expect(liste()).toEqual(['\\\\server\\Akquise', 'Z:\\Projekte', 'W:\\Neu']);
+    expect(dialog()).not.toBeNull();
+    // gespeichert erst mit „Übernehmen“, unter dem bisherigen Schlüssel
+    expect(roh('allgemein')!.projekte).toEqual(['Z:\\Projekte', '\\\\server\\Akquise', 'Y:\\Archiv']);
+    await klick(knopf('Übernehmen', dialog()!));
+    expect(roh('allgemein')).toMatchObject({ projekte: ['\\\\server\\Akquise', 'Z:\\Projekte', 'W:\\Neu'], oapPfad: 'x.oap' });
+  });
+
+  it('Stammordner: ein ungültiger Eintrag aus älteren Daten ist gekennzeichnet und lässt sich entfernen', async () => {
+    setze('allgemein', { projekte: ['Z:\\Projekte', 'Projekte'] });
+    const e = await zeigen();
+    act(() => e.einstellungenOeffnen('pfade', 'projekt.stammordner'));
+    await warten();
+    const falsch = eintrag('projekt.stammordner').querySelector('.einst-ordner-falsch')!;
+    expect(falsch.textContent).toContain('nicht vollständig');
+    await klick([...falsch.querySelectorAll('button')].find((x) => x.getAttribute('aria-label') === 'Projekte entfernen'));
+    expect(eintrag('projekt.stammordner').querySelector('.einst-ordner-falsch')).toBeNull();
+    await klick(knopf('Übernehmen', dialog()!));
+    expect(roh('allgemein')!.projekte).toEqual(['Z:\\Projekte']);
   });
 
   it('Menüpunkt und Verweis: „Einstellungen …“ mit Strg+, bzw. „Pfade und Benennung …“ öffnen den Dialog', async () => {

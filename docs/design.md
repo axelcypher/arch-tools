@@ -47,7 +47,12 @@ Weitere: `--radius-s` 6px (Felder, Knöpfe), `--radius` 8px (Dialoge, Karten), `
 Zahlen in Tabellen und Feldern stehen rechtsbündig in Tabellenziffern (`.num`, `input.num`).
 
 Kennzahlentabellen nehmen `.summary-table` (Spaltenköpfe rechtsbündig, passend zu Zahlenspalten); `.text` für reine
-Texttabellen: Spaltenköpfe linksbündig (`.summary-table.text`, z. B. Platzhalter-Referenz).
+Texttabellen: Spaltenköpfe linksbündig (`.summary-table.text`, z. B. Platzhalter-Referenz). Gemischte Tabellen (Text-
+und Zahlenspalten, z. B. Kostengruppe | von | Mittel | bis) nehmen `.text` und markieren die Zahlenspalten mit `th.num`
+und `td.num`. Zeilen mit Feldern (Eingaben je Zeile) bekommen `.felder`: oben bündig, Text ohne Feld oder Knopf fluchtet
+mit dem Feldtext. Gruppenzeilen `tr.gruppe` (getönt mit `--tabelle-gruppe`, halbfett), Summenzeilen `tr.summe`
+(halbfett, kräftigere Linie darüber); `tr.strong` bleibt für einzelne hervorgehobene Zeilen. Diese Tabelle soll die
+eigenen Tabellenklassen der Apps ersetzen; bis zur Umstellung bleiben diese bestehen.
 
 ## Überschriften
 
@@ -201,6 +206,12 @@ mit `einstellungenEntwurfMelden`, Sperre über `useEinstellungenGesperrt`).
   Felder und „Übernehmen“ gesperrt (Grund im `title`), oben ein Hinweis `.meldung.warnung`.
 - **Felder:** die gemeinsamen Bausteine (`.field`, Pfadwahl mit „Ordner wählen …“, Platzhalter mit Vorschau des
   Ergebnisses); Fehler an der Stelle (`.feld-meldung`), nicht als Rückfrage.
+- **Ordnerliste** (Listen vollständiger Ordner, `zeilen: 'ordner'` – z. B. „Stammordner der Projekte“): Liste statt
+  Textfeld (`.einst-ordnerliste`), der erste Eintrag mit dem Hinweis „neue Projekte“; je Zeile Symbolknöpfe „Nach
+  oben“, „Nach unten“ (`nachOben`, `nachUnten`), „Entfernen“ (`schliessen`: aus der Liste, der Ordner bleibt;
+  `aria-label` „‹Pfad› nach oben“ …), nach dem Verschieben bleibt der Fokus am Ordner. Darunter ein Feld zum Eintragen
+  mit „Ordner hinzufügen“ (`plus`) und in der Desktop-App „Ordner wählen …“; Enter trägt ein (statt zu übernehmen).
+  Keine Vorschau; nicht vollständig oder schon vorhanden als `.feld-meldung` am Feld.
 - **Was keine Einstellung ist, bleibt in seinem Dialog:** was nur ein Werkzeug betrifft (z. B. Vorlagen eines Exports)
   und Datenpflege mit eigenem Speichern je Eintrag (z. B. das Adressbuch von PERMIO). Der Einstellungsdialog kopiert
   es nicht, sondern verweist darauf: ein kurzer Satz (`muted small-text`) und ein Knopf mit dem Objekt und „ …“
@@ -210,7 +221,7 @@ mit `einstellungenEntwurfMelden`, Sperre über `useEinstellungenGesperrt`).
   gespeichert wird, gilt sofort: „Übernehmen“ und „Abbrechen“ der Einstellungen betreffen es nicht, es zählt nicht als
   ungespeicherte Änderung der Seite, und ein offener Entwurf der Einstellungen bleibt erhalten. Ist der Speicherort
   nur lesbar, folgt der Dialog der App derselben Sperre (nur lesend, Grund sichtbar). Den eigenen Einstieg in der App
-  (z. B. künftig „Adressbuch …“ in „Mehr“, „Adressbuch öffnen …“ in der Projektkarte) behält die Datenpflege; der
+  (z. B. „Adressbuch …“ in „Mehr“, „Adressbuch öffnen …“ in der Projektkarte) behält die Datenpflege; der
   Knopf in den Einstellungen ist ein Verweis, kein doppelter Einstieg.
 
 ## Druckvorschau
@@ -372,7 +383,7 @@ Zurücksetzen, Sonderfunktionen. Feste Namen, in allen Apps gleich:
   das Menü „Datei“ im Fuß der Navigation und enthält von den Punkten der Tabelle nur die, die es in FABRIO gibt.
 - **Befristet: „Einstellungen von <App> …“** – bis die App ihre eigenen Einstellungen als App-Seite in den zentralen
   Dialog umgezogen hat, öffnet dieser Punkt den bisherigen App-Dialog: in FABRIO in „Datei“ direkt vor dem Trenner
-  und „Einstellungen …“, in PERMIO im Menü „Mehr“. Mit der App-Seite entfällt er.
+  und „Einstellungen …“. Mit der App-Seite entfällt er (PERMIO hat seine Seite schon).
 - **Direkter Export:** Wo eine App eine eingestellte Vorlage und einen Zielordner hat (QUADRIO, TERRIO, NUMIO), steht
   in der Leiste der Knopf „Exportieren“ (Symbol `export`, ohne „ …“, weil er sofort wirkt). Er speichert mit der
   eingestellten Vorlage in den Berechnungsordner – als Excel, auf Wunsch zusätzlich als PDF. `title` nennt Ziel und
@@ -484,11 +495,19 @@ Werkzeugleiste liegt mit auf der Fläche (gleicher Grund, keine Linie). Baustein
   darunter der Inhalt (`.karte-rumpf`), der **in der Karte** scrollt, wahlweise eine feste Fußzeile (`fuss`, Summen).
   Mit Titel ist die Karte ein benannter Bereich (`aria-labelledby` auf das `h2`); ohne sichtbaren Titel braucht sie
   `ariaLabel`. `buendig` lässt Tabellen und Listen bis an den Rand laufen; Fokusrahmen liegen dort innen. Breite
-  Tabellen scrollen mit dem Inhalt der Karte, sie laufen nie aus ihr heraus. Innenabstand waagerecht `--karte-pad`
+  Tabellen scrollen mit dem Inhalt der Karte, sie laufen nie aus ihr heraus. Der Rumpf ist positioniert: absolut
+  gesetzte Elemente darin bleiben in seinem Rollbereich. Klappmenüs, Vorschlagslisten und Hinweise, die über die Karte
+  hinausragen sollen, deshalb als Portal bzw. mit `position: fixed` ausführen. Innenabstand waagerecht `--karte-pad`
   (14px, aus der gewählten Vorschau), Kopfhöhe `--karte-kopf-h` (ein Knopf in `--ctl-h` mit `--s2` darüber und
   darunter), Fußzeile in `--ctl-h`.
-- `FlaechenSpalte` (`.flaechen-spalte`): mehrere Karten untereinander (z. B. „Geschoss“ über „Auswertung“), sie
-  teilen sich die Höhe; `wachsend` lässt die Spalte die Restbreite nehmen.
+- `FlaechenSpalte` (`.flaechen-spalte`): mehrere Karten untereinander (z. B. „Geschoss“ über „Auswertung“), sie teilen
+  sich die Höhe; `wachsend` lässt die Spalte die Restbreite nehmen. Eine kurze Karte unter einer langen bekommt
+  `hoehe="inhalt"`: Sie ist so hoch wie ihr Inhalt (höchstens die halbe Spalte, darüber scrollt sie), die übrigen Karten
+  teilen sich den Rest. Mehrere Inhaltskarten in einer Spalte sind erlaubt; die teilende Karte zeigt dann immer
+  mindestens ihren Kopf und einige Zeilen (Mindesthöhe `--karte-kopf-h` + 6 × `--s4`), notfalls scrollen die
+  Inhaltskarten (ihr Kopf bleibt stehen). `hoehe` wirkt nur in einer `FlaechenSpalte`, nicht in einer `BreitenLeiste`
+  oder direkt auf der Fläche. Nur für Karten mit weitgehend festem Inhalt – wächst der Inhalt (Aufklappen, Bild lädt),
+  springt die Höhe der Nachbarkarte mit.
 - `ZeichenKarte` (`.zeichen-karte`): Die Zeichenfläche füllt die Karte und bleibt hell (`.canvas`); Bedienhinweis,
   Koordinaten und Maßstab stehen in der Fußzeile der Karte (`fuss`), nicht über dem Plan. Kopf wie bei `Karte`
   (`titel`, `aktionen`), meist ohne – die Werkzeuge stehen in der Werkzeugleiste.

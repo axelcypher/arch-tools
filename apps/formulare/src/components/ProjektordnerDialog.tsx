@@ -1,3 +1,4 @@
+import { einstellungenOeffnen } from '@core/ui/Einstellungen';
 import { useState } from 'react';
 import { sichererDateiname } from '@core/projektdatei';
 import { verbinde, waehleOrdner } from '../dateisystem';
@@ -12,7 +13,7 @@ import { Modal } from '@core/ui/Dialog';
 export function ProjektordnerDialog({ grund }: { grund: string }) {
   const projekt = useFormulare((s) => s.projekt)!;
   const stammordner = useFormulare((s) => s.ablageordner);
-  const { projektordnerWaehlen, projektordnerAnlegen, ordnerDialogSchliessen, einstellungenOeffnen } = useFormulare.getState();
+  const { projektordnerWaehlen, projektordnerAnlegen, ordnerDialogSchliessen } = useFormulare.getState();
   const [ziel, setZiel] = useState(stammordner[0] ?? '');
   const [name, setName] = useState(sichererDateiname(`${projekt.ordner} ${projekt.titel}`));
   const [fehler, setFehler] = useState<string | null>(null);
@@ -78,10 +79,10 @@ export function ProjektordnerDialog({ grund }: { grund: string }) {
               className="es-verweis"
               onClick={() => {
                 ordnerDialogSchliessen();
-                einstellungenOeffnen('ordner');
+                einstellungenOeffnen('pfade', 'projekt.stammordner');
               }}
             >
-              Einstellungen › Ordner
+              Einstellungen › Pfade und Benennung
             </button>
           </p>
         )}

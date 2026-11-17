@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { PfadeVerweis } from '@core/ui/Einstellungen';
 import { VORGABE_MERKMALE, istVorgabeMerkmal } from '../bedingung';
 import { ART_HINWEIS, vorlageArtWarnung, dateiname, verschieben, vorlageMitAntragsart } from '../antrag';
@@ -6,6 +7,7 @@ import { Karte } from './EinstellungsKarte';
 import { Griff, useSortieren } from './Sortieren';
 import { namensschemaVon, useAntrag } from '../antragStore';
 import { useFormulare } from '../store';
+import { entwurfSetzen, useEntwurf, useEntwurfWert } from '../einstellungsEntwurf';
 import { Symbol } from '@core/ui/Symbol';
 
 /**
@@ -15,9 +17,18 @@ import { Symbol } from '@core/ui/Symbol';
  */
 
 export function AntragEinstellungen() {
-  const e = useAntrag((s) => s.einstellungen);
-  const merkmale = useAntrag((s) => s.merkmalDefinitionen);
-  const { setEinstellungen, setMerkmalDefinitionen } = useAntrag.getState();
+  const gespeichert = useAntrag((s) => s.einstellungen);
+  const arten = useEntwurfWert('arten');
+  const ziel = useEntwurfWert('ziel');
+  const e = { ...gespeichert, arten, ziel };
+  const [artenText, setArtenText] = useState(() => arten.join(', '));
+  // ohne Entwurf zeigt das Feld, was gilt (z. B. nach „Einstellungen importieren“)
+  useEffect(() => {
+    if (!('arten' in useEntwurf.getState().werte)) setArtenText(gespeichert.arten.join(', '));
+  }, [gespeichert.arten]);
+  const artenLeer = !artenText.split(/[,;\s]+/).some(Boolean);
+  const merkmale = useEntwurfWert('merkmale');
+  const setMerkmalDefinitionen = (m: typeof merkmale | null) => entwurfSetzen('merkmale', m);
   const merkmalSort = useSortieren(merkmale.length, (von, nach) => setMerkmalDefinitionen(verschieben(merkmale, von, nach)));
   // beim Export steht an der Stelle der Antragsart immer {Art} (nach dem Namensschema)
   const reihenfolge = useFormulare((s) => namensschemaVon(s).reihenfolge);
@@ -27,19 +38,21 @@ export function AntragEinstellungen() {
 
   return (
     <>
-      <h2>Antrag & Export</h2>
-      <p className="muted">
-        Ausgefüllte Formulare lassen sich als PDF exportieren – in den Ordner der aktiven Antragsfassung (z. B. <code>TÖB\BAUA 2</code>) oder an jeden anderen Ort. Was zu einem
-        Antrag gehört, wird je Antrag in den Antragsdaten unter „Antragsumfang“ ausgewählt; daran prüft die App, ob alles vollständig und aktuell vorliegt. Abweichungen je
-        Projekt lassen sich dort ebenfalls einstellen.
-      </p>
-
-      <PfadeVerweis
-        fokus="ablage.permio.antragsordner"
-        erklaerung="Antragsordner, Namensvorlage, fester Zielordner, Suchordner der Berechnungen und Vorlagenordner stehen in den Einstellungen aller Apps, Seite „Pfade und Benennung“."
-      />
-
-      <Karte titel="Anträge im Projektordner" text="Ordner der Anträge relativ zum Projektordner, darin je Antragsfassung ein Ordner: BAUA, BAUA 2 (oder BAUA2) …">
+      <Karte
+        id="antrag"
+        titel="Anträge im Projektordner"
+        text={
+          <>
+            Ausgefüllte Formulare lassen sich als PDF exportieren – in den Ordner der aktiven Antragsfassung (z. B. <code>TÖB\BAUA 2</code>) oder an jeden anderen Ort. Was zu einem
+            Antrag gehört, wird je Antrag in den Antragsdaten unter „Antragsumfang“ ausgewählt; dort lassen sich auch Abweichungen je Projekt einstellen. Im Antragsordner liegt je
+            Antragsfassung ein Ordner: BAUA, BAUA 2 (oder BAUA2) …
+          </>
+        }
+      >
+        <PfadeVerweis
+          fokus="ablage.permio.antragsordner"
+          erklaerung="Antragsordner, Namensvorlage, fester Zielordner, Suchordner der Berechnungen und Vorlagenordner stehen auf der Seite „Pfade und Benennung“."
+        />
         <div className="es-raster">
           <div>
             <span className="field-label">Antragsordner</span>
@@ -48,15 +61,24 @@ export function AntragEinstellungen() {
           <label>
             <span className="field-label">Antragsarten (die erste ist der Standard)</span>
             <input
-              defaultValue={e.arten.join(', ')}
-              key={e.arten.join(',')}
-              aria-label="Antragsarten"
-              aria-describedby="es-arten-hinweis"
+              value={artenText}
+              aria-describedby={artenLeer ? 'es-arten-hinweis es-arten-fehler' : 'es-arten-hinweis'}
+              aria-invalid={artenLeer || undefined}
               placeholder="BAUA, BAUVA, DENK"
-              onBlur={(x) => setEinstellungen({ arten: x.target.value.split(/[,;\s]+/).filter(Boolean).map((a) => a.toUpperCase()) })}
+              onChange={(x) => {
+                setArtenText(x.target.value);
+                // leer gilt nicht: dann bleiben die bisherigen Antragsarten
+                const neu = x.target.value.split(/[,;\s]+/).filter(Boolean).map((a) => a.toUpperCase());
+                if (neu.length) entwurfSetzen('arten', neu);
+              }}
             />
+            {artenLeer && (
+              <span className="feld-meldung" id="es-arten-fehler" role="alert">
+                Mindestens eine Antragsart angeben – sonst bleiben die bisherigen.
+              </span>
+            )}
             <span className="field-hint" id="es-arten-hinweis">
-              Dazu kommen die Antragsarten aus ATLAS (Projektordner) › Einstellungen › Namensschema: Kürzel und Plannummern.
+              Dazu kommen die Antragsarten aus dem Namensschema von ATLAS (Kürzel und Plannummern).
             </span>
           </label>
         </div>
@@ -73,13 +95,13 @@ export function AntragEinstellungen() {
 
       <Karte titel="Ziel des Exports" text="Der voreingestellte Ordner im Export-Dialog; dort lässt sich jedes Mal auch ein anderer Ordner im Projekt wählen oder „Speichern unter …“.">
         <label className="radio-row">
-          <input type="radio" name="export-ziel" checked={e.ziel === 'aktiv'} onChange={() => setEinstellungen({ ziel: 'aktiv' })} />
+          <input type="radio" name="export-ziel" checked={e.ziel === 'aktiv'} onChange={() => entwurfSetzen('ziel', 'aktiv')} />
           <span>
             <strong>Aktive Antragsfassung</strong> <span className="muted small-text">– {e.antragsordner || 'TÖB'}\{e.arten[0]} bzw. die oben links am Projekt gewählte Fassung</span>
           </span>
         </label>
         <label className="radio-row">
-          <input type="radio" name="export-ziel" checked={e.ziel === 'pfad'} onChange={() => setEinstellungen({ ziel: 'pfad' })} />
+          <input type="radio" name="export-ziel" checked={e.ziel === 'pfad'} onChange={() => entwurfSetzen('ziel', 'pfad')} />
           <span className="es-breit">
             <strong>Fester Ordner im Projekt</strong> <code>{e.zielpfad}</code>
           </span>
@@ -157,6 +179,7 @@ export function AntragEinstellungen() {
                 </td>
                 <td>
                   <button
+                    type="button"
                     className="icon"
                     aria-label={`${m.name} entfernen`}
                     title={istVorgabeMerkmal(m.name) ? 'Merkmal der App – bleibt' : 'Entfernen'}
@@ -171,10 +194,10 @@ export function AntragEinstellungen() {
           </tbody>
         </table>
         <div className="es-zeile">
-          <button onClick={() => setMerkmalDefinitionen([...merkmale, { name: 'Neues Merkmal', werte: ['ja', 'nein'] }])}>
+          <button type="button" onClick={() => setMerkmalDefinitionen([...merkmale, { name: 'Neues Merkmal', werte: ['ja', 'nein'] }])}>
             <Symbol name="plus" /> Merkmal hinzufügen
           </button>
-          {JSON.stringify(merkmale) !== JSON.stringify(VORGABE_MERKMALE) && <button onClick={() => setMerkmalDefinitionen(null)}>Vorgabe wiederherstellen</button>}
+          {JSON.stringify(merkmale) !== JSON.stringify(VORGABE_MERKMALE) && <button type="button" onClick={() => setMerkmalDefinitionen(null)}>Vorgabe wiederherstellen</button>}
         </div>
       </Karte>
 

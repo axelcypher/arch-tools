@@ -49,6 +49,7 @@ describe('Verzeichnis der Pfad- und Namenseinstellungen', () => {
       ava: { ablage: { gewerke: 'LV', lv: '', archive: ['Alt'], kostenkontrolle: 'KK' }, rechnungen: { muster: ['{Kürzel} {Nr}'] }, lv: { dateiname: '{Kürzel} LV {Gewerk}' } },
     });
     expect(werte).toMatchObject({
+      'projekt.stammordner': ['Z:\\Projekte'],
       'projekt.oapPfad': 'Organisation/{Kürzel}.oap',
       'ablage.fotoordner': '10 Fotos',
       'projekt.nummernschema': '{jj}-{nr:3}',
@@ -68,6 +69,16 @@ describe('Verzeichnis der Pfad- und Namenseinstellungen', () => {
     // nicht Gesetztes fehlt (es gilt die Vorgabe)
     expect(werte['export.excel.flaechenrechner']).toBeUndefined();
     expect(pfadWerteAus({})).toEqual({});
+  });
+
+  it('Stammordner der Projekte: bisheriger Schlüssel allgemein.projekte, je Zeile ein vollständiger Ordner, Reihenfolge bleibt', () => {
+    const e = nachId('projekt.stammordner');
+    expect(e.apps).toHaveLength(8);
+    expect(e.speicher.schreiben({ oapPfad: 'x.oap', projekte: ['Z:\\Alt'] }, ['Z:\\Projekte', '\\\\server\\Akquise'])).toEqual({ oapPfad: 'x.oap', projekte: ['Z:\\Projekte', '\\\\server\\Akquise'] });
+    // leer ist erlaubt (noch kein Stammordner); relative Ordner nicht
+    expect(hatFehler(pfadPruefen(e, ''))).toBe(false);
+    expect(hatFehler(pfadPruefen(e, 'Z:\\Projekte\n\\\\server\\Akquise'))).toBe(false);
+    expect(hatFehler(pfadPruefen(e, 'Z:\\Projekte\nProjekte'))).toBe(true);
   });
 
   it('Schreiben: nur der eine Wert ändert sich, alle übrigen Angaben (auch unbekannte) bleiben', () => {
