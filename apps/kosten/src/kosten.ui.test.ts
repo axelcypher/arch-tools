@@ -73,7 +73,7 @@ describe('NUMIO', () => {
   it('zeigt ohne Projekt den Einstieg; Druck und Export sind gesperrt', () => {
     useKosten.getState().load(createProject());
     const host = render(App);
-    expect(host.textContent).toContain('Projekt oder IFC öffnen');
+    expect(host.querySelector('.pw-einstieg')?.textContent).toContain('IFC-Modell');
     expect(knopf(host, 'Kosten drucken').disabled).toBe(true);
     expect(knopf(host, 'Exportieren').getAttribute('aria-disabled')).toBe('true');
     expect(knopf(host, 'Exportieren').title).toBe('Erst Positionen anlegen');
