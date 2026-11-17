@@ -28,8 +28,9 @@
   gap: var(--s1);
 }
 
-/* Stammdaten mit Planungsphase (core): eigene Zeile in Kartenbreite, damit die Phase nicht über den Rand läuft */
-.ava-nav-kopf .sd-knopf {
+/* Stammdaten mit Planungsphase (core): eigene Zeile in Kartenbreite, damit die Phase nicht über den Rand läuft;
+   „Neu einlesen“ steht dann darunter */
+.ava-nav-kopf .sd-knopf:has(.sd-phase-kopf) {
   flex: 1 1 100%;
   min-width: 0;
   margin-bottom: 0;
@@ -741,12 +742,12 @@ input.ava-fehler {
 }
 
 .ava-pdf {
-  padding: 12px;
+  padding: var(--s3);
 }
 
 .ava-pdf-seite {
   display: block;
-  margin: 0 auto 12px;
+  margin: 0 auto var(--s3);
   box-shadow: 0 1px 6px rgba(0, 0, 0, 0.25);
   background: #fff;
   max-width: 100%;
@@ -1214,11 +1215,11 @@ input.ava-fehler {
 /* kurze Registernamen (core: .segment .lang/.kurz) schon unter 860px Breite der Kartenleiste – die langen Namen der
    fünf Tabs brauchen mehr Platz als die Vorgabe von 640px */
 @container karte-leiste (max-width: 860px) {
-  .segment .lang {
+  .ava-tabs .segment .lang {
     display: none;
   }
 
-  .segment .kurz {
+  .ava-tabs .segment .kurz {
     display: inline;
   }
 }
