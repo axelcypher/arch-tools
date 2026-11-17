@@ -12,6 +12,7 @@ import {
   VORBEREITEN_MS,
   vorbereitenImTab,
   vorDemSchliessen,
+  vomRahmen,
 } from './rahmen';
 
 afterEach(() => window.history.replaceState(null, '', '/'));
@@ -28,6 +29,24 @@ describe('Rahmen-App: Modus der App', () => {
     const melden = vi.spyOn(window.parent, 'postMessage');
     anRahmenMelden('Formulare', 'BS5', true);
     expect(melden).not.toHaveBeenCalled();
+  });
+});
+
+describe('Rahmen-App: vomRahmen', () => {
+  it('meldet BEREIT – mit bereit: false nicht (sonst gäbe es die Warteschlange frei, bevor spätere Empfänger hören)', () => {
+    window.history.replaceState(null, '', '/?rahmen=fenster&app=formulare');
+    const opener = { postMessage: vi.fn() };
+    Object.defineProperty(window, 'opener', { value: opener, configurable: true });
+    try {
+      const f = vi.fn();
+      const aus = vomRahmen('arch-tools:einstellungen-oeffnen', f, { bereit: false });
+      expect(opener.postMessage).not.toHaveBeenCalled();
+      aus();
+      vomRahmen('arch-tools:projekt-angelegt', f)();
+      expect(opener.postMessage).toHaveBeenCalledWith({ typ: 'arch-tools:bereit', app: 'formulare' }, window.location.origin);
+    } finally {
+      Object.defineProperty(window, 'opener', { value: null, configurable: true });
+    }
   });
 });
 

@@ -6,6 +6,7 @@ import { allgemeinAendern, allgemeinLaden, konfigGeaendertMelden } from '../plat
 import { isTauri } from '../platform/files';
 import { ordnerWaehlen } from '../platform/projektordner';
 import { logger } from '../platform/log';
+import { EINSTELLUNGEN_OEFFNEN, vomRahmen } from '../platform/rahmen';
 import { ersetzen, globaleWerte, modernisieren, veraltetePlatzhalter, type Wert } from '../platzhalter';
 import { sichererDateiname } from '../projektdatei';
 import { bezugText, elternVon, kinderVon, vollerOrt, vorfahren } from '../einstellungen/baum';
@@ -154,6 +155,9 @@ export function PfadeVerweis({ fokus, seite = 'pfade', text = 'Pfade und Benennu
 export function EinstellungenHost() {
   const offen = useEinstellungen((s) => s.offen);
   useEffect(() => tastenAnmelden(), []);
+  // im Tab von Arkly: der Rahmen bittet um den Dialog (sein „Einstellungen …“ bzw. Strg+, bei aktivem Tab); ohne BEREIT,
+  // der Rahmen schickt diese Nachricht ohne Warteschlange (`vomRahmen`)
+  useEffect(() => vomRahmen(EINSTELLUNGEN_OEFFNEN, () => einstellungenOeffnen(), { bereit: false }), []);
   // Erstfokus, Fokusfalle und Rückkehr des Fokus (auch im Rahmen Arkly, der keine Titelleiste der Apps hat)
   useEffect(() => dialogVerhaltenEinrichten(), []);
   return offen ? <EinstellungenDialog /> : null;
@@ -167,7 +171,8 @@ function tastenAnmelden(): () => void {
   };
 }
 function tastenkuerzel(e: globalThis.KeyboardEvent) {
-  if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && e.key === ',' && !useEinstellungen.getState().offen) {
+  // `defaultPrevented`: der Rahmen Arkly hat das Kürzel schon an den aktiven App-Tab weitergegeben
+  if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && e.key === ',' && !e.defaultPrevented && !useEinstellungen.getState().offen) {
     e.preventDefault();
     einstellungenOeffnen();
   }
