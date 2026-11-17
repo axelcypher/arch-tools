@@ -27,9 +27,10 @@ function Ansicht() {
     h(
       'footer',
       { className: 'karte-fuss zeichen-fuss' },
+      // wie in Canvas.tsx: im Hinweis-Zweig steht der Knopf in einem span, sonst allein – React tauscht den Knoten aus
       hinweis
-        ? h('button', { id: 'knopf-a', 'aria-label': 'Alle Tastenkürzel …', onClick: () => (setOffen(true), setHinweis(false)) }, '?')
-        : h('button', { id: 'knopf-b', onClick: () => setOffen(true) }, '? Tastenkürzel …'),
+        ? h('span', { className: 'hud-hint' }, h('button', { id: 'knopf-a', 'aria-label': 'Alle Tastenkürzel …', onClick: () => (setOffen(true), setHinweis(false)) }, '?'))
+        : h('button', { id: 'knopf-b', title: 'Alle Tastenkürzel …', onClick: () => setOffen(true) }, '? Tastenkürzel …'),
     ),
     offen && h(Modal, { titel: 'Tastenkürzel', onClose: () => setOffen(false), children: h('button', { className: 'primary', autoFocus: true, onClick: () => setOffen(false) }, 'Schließen') }),
   );
@@ -69,6 +70,7 @@ describe('Fokus nach dem Schließen eines React-Modals mit autoFocus', () => {
     knopf.focus();
     act(() => knopf.click());
     await warten();
+    expect(knopf.isConnected).toBe(false);
     expect(document.activeElement?.textContent).toBe('Schließen');
     await schliessen(host);
     expect(document.activeElement?.id).toBe('knopf-b');

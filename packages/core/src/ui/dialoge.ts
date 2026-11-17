@@ -55,7 +55,10 @@ const vorher = new WeakMap<Element, Vorher | null>();
 /** die zuletzt fokussierten Elemente (neueste zuerst) – React setzt `autoFocus` schon beim Einhängen, bevor der
  *  MutationObserver den Dialog meldet; dann liegt der Fokus bereits im Dialog, und die Stelle davor steht nur hier */
 /** `null`: der Fokus ging auf die Seite (z. B. Klick auf eine Fläche) – dann gibt es keine Stelle davor */
-const fokusVerlauf: (HTMLElement | SVGElement | null)[] = [];
+const fokusVerlauf: (Vorher | null)[] = [];
+/** Element, das den Fokus zuletzt ohne Nachfolger abgegeben hat (focusout ohne relatedTarget) – noch eingehängt heißt:
+ *  der Fokus steht auf der Seite; ausgehängt heißt: die App hat es entfernt (kein Wechsel auf die Seite) */
+let abgegeben: Element | null = null;
 
 const DIALOG = '.modal, .report-backdrop > .report';
 const istDialog = (el: HTMLElement) => el.classList.contains('modal') || (el.classList.contains('report') && !!el.parentElement?.classList.contains('report-backdrop'));
@@ -64,6 +67,16 @@ let ueberschriftNr = 0;
 function obersterDialog(): HTMLElement | null {
   const alle = document.querySelectorAll<HTMLElement>(DIALOG);
   return alle.length ? alle[alle.length - 1] : null;
+}
+
+/** die Stelle eines fokussierten Elements: Kennung, Vorfahren bis zum Bereich, Position darin */
+function merken(el: HTMLElement | SVGElement): Vorher {
+  const ahnen: Element[] = [];
+  for (let p = el.parentElement; p && p !== document.body && ahnen.length < MAX_EBENEN; p = p.parentElement) {
+    ahnen.push(p);
+    if (p.matches(BEREICH)) break;
+  }
+  return { el, kennung: kennungVon(el), index: ahnen[0] ? zieleIn(ahnen[0]).indexOf(el) : -1, ahnen, imBereich: !!ahnen.at(-1)?.matches(BEREICH) };
 }
 
 function geoeffnet(d: HTMLElement) {
@@ -77,17 +90,13 @@ function geoeffnet(d: HTMLElement) {
     }
   }
   const a = document.activeElement;
-  const geeignet = (el: Element | null): el is HTMLElement | SVGElement => (el instanceof HTMLElement || el instanceof SVGElement) && el !== document.body && !d.contains(el) && el.isConnected;
-  // das aktuell fokussierte Element; hat der Dialog schon selbst fokussiert (autoFocus), der letzte Stand davor aus dem
-  // Verlauf – stand der Fokus da auf der Seite (Marke null), gibt es keine Stelle; steht er auf der Seite, auch nicht
-  const davor = a && d.contains(a) ? fokusVerlauf.find((x) => x === null || !d.contains(x)) : undefined;
-  const aktiv = geeignet(a) ? a : davor && geeignet(davor) ? davor : null;
-  const ahnen: Element[] = [];
-  for (let p = aktiv?.parentElement; p && p !== document.body && ahnen.length < MAX_EBENEN; p = p.parentElement) {
-    ahnen.push(p);
-    if (p.matches(BEREICH)) break;
-  }
-  vorher.set(d, aktiv ? { el: aktiv, kennung: kennungVon(aktiv), index: ahnen[0] ? zieleIn(ahnen[0]).indexOf(aktiv) : -1, ahnen, imBereich: !!ahnen.at(-1)?.matches(BEREICH) } : null);
+  // das aktuell fokussierte Element (frisch gemerkt); hat der Dialog schon selbst fokussiert (autoFocus), der letzte
+  // Stand davor aus dem Verlauf – auch wenn die App den Auslöser im selben Zug ersetzt hat (Kennung und Vorfahren
+  // stammen aus dem Moment des Fokussierens); stand der Fokus da auf der Seite (Marke null), gibt es keine Stelle
+  let stelle: Vorher | null = null;
+  if ((a instanceof HTMLElement || a instanceof SVGElement) && a !== document.body && !d.contains(a)) stelle = merken(a);
+  else if (a && d.contains(a) && !abgegeben?.isConnected) stelle = fokusVerlauf.find((x) => x === null || !d.contains(x.el)) ?? null;
+  vorher.set(d, stelle);
   // nach dem Rendern: Dialoge, die selbst fokussieren (z. B. ein Suchfeld), haben Vorrang
   requestAnimationFrame(() => {
     if (!d.isConnected || d.contains(document.activeElement)) return;
@@ -148,9 +157,12 @@ export function dialogVerhaltenEinrichten(): void {
     (e) => {
       const t = e.target;
       if (!(t instanceof HTMLElement || t instanceof SVGElement)) return;
-      const i = fokusVerlauf.indexOf(t);
+      // Elemente im Dialog selbst brauchen keine Stelle (sie werden nie „davor“)
+      if (t.closest(DIALOG)) return;
+      abgegeben = null;
+      const i = fokusVerlauf.findIndex((x) => x?.el === t);
       if (i >= 0) fokusVerlauf.splice(i, 1);
-      fokusVerlauf.unshift(t);
+      fokusVerlauf.unshift(merken(t));
       fokusVerlauf.length = Math.min(fokusVerlauf.length, 5);
     },
     true,
@@ -159,9 +171,16 @@ export function dialogVerhaltenEinrichten(): void {
   document.addEventListener(
     'focusout',
     (e) => {
-      if ((e as FocusEvent).relatedTarget) return;
-      if (fokusVerlauf[0] !== null) fokusVerlauf.unshift(null);
-      fokusVerlauf.length = Math.min(fokusVerlauf.length, 5);
+      const t = e.target;
+      if ((e as FocusEvent).relatedTarget || !(t instanceof Element)) return;
+      // gemerkt statt gleich als „Seite“ gewertet: manche Browser feuern focusout ohne Ziel auch, wenn die App das
+      // Element entfernt (teils noch vor dem Aushängen) – ob es noch da ist, zeigt sich erst beim Öffnen des Dialogs
+      abgegeben = t;
+      queueMicrotask(() => {
+        if (abgegeben !== t || !t.isConnected) return;
+        if (fokusVerlauf[0] !== null) fokusVerlauf.unshift(null);
+        fokusVerlauf.length = Math.min(fokusVerlauf.length, 5);
+      });
     },
     true,
   );
