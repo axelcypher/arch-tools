@@ -321,7 +321,6 @@ body,
 .karte-kopf :is(h2, h3) {
   min-width: 0;
   margin: 0;
-  overflow-wrap: break-word;
   font-size: var(--fs-l);
   font-weight: 600;
 }

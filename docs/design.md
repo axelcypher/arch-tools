@@ -525,10 +525,11 @@ Werkzeugleiste liegt mit auf der Fläche (gleicher Grund, keine Linie). Baustein
   - **Kopf** (`.karte-kopf`): Überschrift `h2` in `--fs-l`, direkt dahinter `hilfe` für das „?“ (`HilfeKnopf`), rechts
     `aktionen` wie Umschalter oder „Hinzufügen“. In schmalen Karten rücken die Aktionen rechtsbündig in eine zweite
     Zeile; der Titel wird nie schmaler als sein längstes Wort samt „?“, das „?“ liegt also nie über dem Text. Ebenso
-    bricht eine `.section-head` um, ihr Knopf bleibt rechts. Mit Titel ist die Karte ein benannter Bereich
-    (`aria-labelledby` auf das `h2`); die Hilfe steht außerhalb des `h2` und gehört nicht zum Namen. Ohne sichtbaren
-    Titel braucht die Karte `ariaLabel`. Ausnahme rollende Spalte: `ebene={3}` setzt die Überschrift als `h3`, `als="div"` macht die Karte zu
-    keinem Bereich (dann wirkt auch `ariaLabel` nicht).
+    bricht eine `.section-head` um, ihr Knopf bleibt rechts (mehrere Knöpfe dort in einem Element bündeln). Ein Titel
+    aus einem sehr langen Wort würde in einer schmalen Seitenkarte abgeschnitten – Kartentitel kurz halten. Mit Titel
+    ist die Karte ein benannter Bereich (`aria-labelledby` auf das `h2`); die Hilfe steht außerhalb des `h2` und gehört
+    nicht zum Namen. Ohne sichtbaren Titel braucht die Karte `ariaLabel`. Ausnahme rollende Spalte: `ebene={3}` setzt
+    die Überschrift als `h3`, `als="div"` macht die Karte zu keinem Bereich (dann wirkt auch `ariaLabel` nicht).
   - **Leiste** (`leiste`): Hat eine Ansicht eine eigene Werkzeugleiste, die zu breit für den Kopf ist (z. B. FABRIO je
     Ansicht), steht sie fest zwischen Kopf und Inhalt, im Grund der Karte, mit einer Linie zum scrollenden Inhalt; sie
     gehört damit zu ihrer Karte und steht nicht über der ganzen Fläche. Wechselt die Leiste mit der Ansicht, bekommt
@@ -541,7 +542,7 @@ Werkzeugleiste liegt mit auf der Fläche (gleicher Grund, keine Linie). Baustein
     Klappmenüs, Vorschlagslisten und Hinweise, die über die Karte hinausragen sollen, deshalb als Portal bzw. mit
     `position: fixed` ausführen.
   - **Vorschau** (`vorschau`, Druckvorschau, PDF-Seiten, Blatt): Der Rumpf ist bündig und hat den Grund der Fläche
-    (`--bg`); darauf liegt das Blatt hell wie `.report`, auch im dunklen Schema (Ausnahme „Papier“). Ein Leertext
+    (`--bg`); darauf liegt das Blatt hell wie `.report`, auch im dunklen Schema (siehe „Farben“, feste Farben). Ein Leertext
     („Noch keine Seiten“) steht auf dem Rumpf in `.muted`, nicht auf dem Blatt; auf dem Blatt gelten die Papierfarben,
     nie `--muted` oder andere Farben des Schemas.
   - **Abschnitte** (`abschnitte`): Bündelt eine Karte ohne Kopf mehrere Themen (z. B. Projekt, Geschosse, Flächen), je
