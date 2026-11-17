@@ -16,6 +16,7 @@ import { offeneBestaetigungen, PLANUNGSRECHT, useBaurecht } from '../store';
 import { benutzer } from '../benutzer';
 import { faktBestaetigenOeffnen, faktSetzenOeffnen, useBelegDialogGeschlossen, vorfragenNeinOeffnen } from './Dialoge';
 import { Klaeren } from './Kopf';
+import { Karte } from '@core/ui/Karte';
 import { datum, inBereichZeigen, nb } from './Ampel';
 
 /**
@@ -129,7 +130,7 @@ function Merkmale({ klaerung, suche = '', planungsrechtOffen, planungsrechtKlaer
     const el = ref.current.querySelector<HTMLElement>(`[data-merkmal="${CSS.escape(name)}"]`);
     // noch nicht zu sehen (eine Suche blendet es aus – Angaben leert sie gleich): Ziel behalten, nach der Suche erneut
     if (!el) return;
-    inBereichZeigen(el.closest<HTMLElement>('.br-angaben-liste'), el, 'mitte');
+    inBereichZeigen(el.closest<HTMLElement>('.karte-rumpf'), el, 'mitte');
     // auf den gewählten Wert (nicht den ersten Knopf – ein weiteres Enter änderte sonst das Merkmal)
     const knopf = ziel === 'bestaetigen' ? el.querySelector<HTMLElement>('button[data-bestaetigen]') : null;
     (knopf ?? el.querySelector<HTMLElement>('button[aria-pressed="true"]') ?? el.querySelector<HTMLElement>('button'))?.focus();
@@ -159,7 +160,7 @@ function Merkmale({ klaerung, suche = '', planungsrechtOffen, planungsrechtKlaer
     useBaurecht.getState().ansagen(`Rückfrage: ${neu.map((r) => faktName(defsRef.current[r], r)).join(', ')}`);
     setTimeout(() => {
       const z = ref.current?.querySelector<HTMLElement>(`[data-fakt="${CSS.escape(neu[0])}"]`);
-      if (z) inBereichZeigen(z.closest<HTMLElement>('.br-angaben-liste'), z, 'naechst');
+      if (z) inBereichZeigen(z.closest<HTMLElement>('.karte-rumpf'), z, 'naechst');
     }, 0);
   }, [rfSchluessel]);
   // eingeklappt beantwortete Rückfragen bleiben bis zum Aufklappen kompakt stehen (die Antwort bleibt zu sehen); der
@@ -493,7 +494,7 @@ function FaktZeile({
   useEffect(() => {
     // „<id>:bestaetigen“: direkt auf „Bestätigen …“ (z. B. vom Hinweis an festen Modulwerten zum Gemeindeschlüssel)
     if ((fokus === id || fokus === `${id}:bestaetigen`) && ref.current) {
-      inBereichZeigen(ref.current.closest<HTMLElement>('.br-angaben-liste'), ref.current, 'mitte');
+      inBereichZeigen(ref.current.closest<HTMLElement>('.karte-rumpf'), ref.current, 'mitte');
       const ziel = fokus.endsWith(':bestaetigen') ? ref.current.querySelector<HTMLElement>('button[data-bestaetigen]') : null;
       (ziel ?? ref.current.querySelector<HTMLElement>('[aria-pressed="true"], .segment [tabindex="0"]') ?? ref.current.querySelector<HTMLElement>('button, input, select'))?.focus();
       useBaurecht.getState().fokusSetzen(null);
@@ -1108,25 +1109,28 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
     return () => clearTimeout(t);
   }, [suchText]);
   return (
-    <aside className="br-angaben" aria-label="Angaben zum Projekt">
-      <div className="br-unsichtbar" role="status" aria-live="polite">
-        {ansage}
-      </div>
-      <div className="br-leiste-kopf">
-        <h2>Angaben</h2>
+    <Karte
+      titel="Angaben"
+      className="br-angaben"
+      aktionen={
         <label className="toggle" title="auch Angaben zeigen, an denen gerade keine Regel hängt">
           <input type="checkbox" checked={alle} onChange={(e) => setAlle(e.target.checked)} /> alle Angaben
         </label>
+      }
+    >
+      <div className="br-unsichtbar" role="status" aria-live="polite">
+        {ansage}
       </div>
+      {/* bleibt beim Scrollen oben in der Karte stehen */}
       <div className="br-suche">
-        <input ref={suchfeld} type="search" placeholder="Angabe suchen …" value={suche} onChange={(e) => setSuche(e.target.value)} aria-label="Angaben durchsuchen" />
+        <input ref={suchfeld} type="search" data-f6-ziel="" placeholder="Angabe suchen …" value={suche} onChange={(e) => setSuche(e.target.value)} aria-label="Angaben durchsuchen" />
       </div>
       {/* Suche: Trefferzahl bzw. „keine Angabe“ in einer stehenden Live-Region, entprellt (nicht bei jedem Tastendruck) */}
       <div className="br-unsichtbar" role="status">
         {suchAnsage}
       </div>
       {/* stehende Live-Region für neue Widersprüche (eine neu eingefügte Region sagen manche Screenreader nicht an) –
-          außerhalb der scrollenden Liste */}
+          außerhalb der Liste, die sich bei jeder Antwort neu aufbaut */}
       <div className="br-unsichtbar br-widerspruch-ansage" role="status">
         {widerspruchAnsage}
       </div>
@@ -1202,6 +1206,6 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
           </section>
         ))}
       </div>
-    </aside>
+    </Karte>
   );
 }

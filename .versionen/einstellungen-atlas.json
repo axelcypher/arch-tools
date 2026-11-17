@@ -1,0 +1,34 @@
+{
+  "ordner": {
+    "stufe": "minor",
+    "notiz": "Einstellungen von ATLAS als Seite „ATLAS“ im zentralen Einstellungsdialog (Namensschema, eigene Domains; gilt mit „Übernehmen“); Stammordner und Vorlagenordner auf „Pfade und Benennung“, „Einrichtung › Einstellungen“ entfällt."
+  },
+  "flaechenrechner": {
+    "stufe": "patch",
+    "notiz": "Einstellungen › Pfade und Benennung: neu „Vorlagenordner“ von ATLAS."
+  },
+  "grz": {
+    "stufe": "patch",
+    "notiz": "Einstellungen › Pfade und Benennung: neu „Vorlagenordner“ von ATLAS."
+  },
+  "kosten": {
+    "stufe": "patch",
+    "notiz": "Einstellungen › Pfade und Benennung: neu „Vorlagenordner“ von ATLAS."
+  },
+  "entzerrung": {
+    "stufe": "patch",
+    "notiz": "Einstellungen › Pfade und Benennung: neu „Vorlagenordner“ von ATLAS."
+  },
+  "formulare": {
+    "stufe": "patch",
+    "notiz": "Einstellungen › Pfade und Benennung: neu „Vorlagenordner“ von ATLAS."
+  },
+  "ava": {
+    "stufe": "patch",
+    "notiz": "Einstellungen › Pfade und Benennung: neu „Vorlagenordner“ von ATLAS."
+  },
+  "baurecht": {
+    "stufe": "patch",
+    "notiz": "Einstellungen › Pfade und Benennung: neu „Vorlagenordner“ von ATLAS."
+  }
+}

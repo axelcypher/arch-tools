@@ -5,7 +5,9 @@ import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { strToU8 } from 'fflate';
 import { VORGABE_ALLGEMEIN } from '@core/platform/konfig';
-import { useEinstellungen } from '@core/ui/Einstellungen';
+import { einstellungenOeffnen, useEinstellungen } from '@core/ui/Einstellungen';
+import { useAtlasEntwurf } from './components/AtlasEinstellungen';
+import { useMails } from './mail/mailStore';
 import { getEntries } from '@core/platform/log';
 import { App } from './App';
 import { AssistentView } from './components/AssistentView';
@@ -53,6 +55,9 @@ beforeEach(() => {
   });
 });
 afterEach(async () => {
+  // offene Einstellungen und ihren Entwurf nicht in den nächsten Test tragen
+  act(() => useEinstellungen.setState({ offen: false }));
+  useAtlasEntwurf.setState({ entwurf: {} });
   // anstehendes (entprelltes) Schreiben nicht in den nächsten Test tragen
   await act(() => useOrdner.getState().speichernJetzt());
   // ein offenes gemeinsames Menü (globaler Zustand) nicht in den nächsten Test tragen
@@ -112,10 +117,10 @@ describe('ATLAS (Projektordner)', () => {
     const menueKnopf = () => knopf(host, 'Einrichtung');
     expect(menueKnopf().className).not.toContain('active');
     expect(menueKnopf().getAttribute('aria-label')).toBe('Einrichtung');
-    // Menü: die vier Einrichtungsansichten als Einfachauswahl, „Struktur“ nennt die geladene Struktur
+    // Menü: die drei Einrichtungsansichten als Einfachauswahl, „Struktur“ nennt die geladene Struktur
     act(() => menueKnopf().click());
     const punkte = () => [...document.querySelectorAll<HTMLButtonElement>('[role="menuitemradio"]')];
-    const namen = ['Struktur', 'Vorlagen', 'Katasterpläne', 'Einstellungen'];
+    const namen = ['Struktur', 'Vorlagen', 'Katasterpläne'];
     expect(punkte().map((b) => namen.find((n) => b.textContent?.trim().startsWith(n)))).toEqual(namen);
     expect(punkte().every((b) => b.getAttribute('aria-checked') === 'false')).toBe(true);
     expect(punkte()[0].textContent).toContain(useOrdner.getState().struktur.name);
@@ -276,53 +281,27 @@ describe('ATLAS (Projektordner)', () => {
     expect(knopf(host, '8Anlegen').disabled).toBe(true);
   });
 
-  it('Einstellungen: gemeinsame Einstellungen aller Apps', () => {
+  it('Einstellungen: Seite ATLAS im zentralen Dialog – Verweis auf „Pfade und Benennung“, eigene Domains gelten mit „Übernehmen“', async () => {
     const host = render();
-    einrichtung(host, 'Einstellungen');
-    expect(host.textContent).toContain('Gemeinsame Einstellungen');
-    // Projektdatei, Fotoordner, Büro und Mitarbeiter: angezeigt, eingestellt in den Einstellungen aller Apps
-    act(() => useOrdner.setState({ allgemein: { ...useOrdner.getState().allgemein, oapPfad: 'Planung/Berechnungen/{nummer}', fotoordner: '10 Fotos' } }));
-    expect(host.textContent).toContain('Planung/Berechnungen/{nummer}');
-    expect(host.textContent).toContain('z. B. Planung/Berechnungen/');
-    expect(host.textContent).toContain('10 Fotos');
-    expect(host.querySelector('label.field input')).toBeNull();
-    act(() => knopf(host, 'Pfade und Benennung …').click());
-    expect(useEinstellungen.getState()).toMatchObject({ offen: true, seite: 'pfade', fokus: 'projekt.oapPfad' });
-    act(() => knopf(host, 'Speicherort und Büro …').click());
-    expect(useEinstellungen.getState()).toMatchObject({ offen: true, seite: 'allgemein' });
-    act(() => useEinstellungen.getState().schliessen());
-    // die Struktur steht im eigenen Reiter
-    expect(host.querySelector('[role="tree"]')).toBeNull();
-  });
-
-  it('Einstellungen: Stammordner per Ziehen bzw. „Nach oben“/„Nach unten“ umsortieren – der erste nimmt neue Projekte auf', () => {
-    useOrdner.setState({ allgemein: { ...VORGABE_ALLGEMEIN, projekte: ['/srv/Projekte', '/srv/Akquise', '/srv/Archiv'] }, stammordner: '/srv/Projekte' });
-    const host = render();
-    einrichtung(host, 'Einstellungen');
-    const eintraege = () => [...host.querySelectorAll('.po-stammordner li')];
-    const reihe = () => useOrdner.getState().allgemein.projekte;
-    // Archiv ganz nach oben ziehen
-    act(() => eintraege()[2].dispatchEvent(new Event('dragstart', { bubbles: true })));
-    act(() => eintraege()[0].dispatchEvent(new Event('dragover', { bubbles: true, cancelable: true })));
-    act(() => eintraege()[0].dispatchEvent(new Event('drop', { bubbles: true, cancelable: true })));
-    expect(reihe()).toEqual(['/srv/Archiv', '/srv/Projekte', '/srv/Akquise']);
-    expect(useOrdner.getState().stammordner).toBe('/srv/Archiv');
-    expect(eintraege()[0].textContent).toContain('neue Projekte');
-    // mit den Knöpfen: gezeichnete Symbole statt der Schriftzeichen ↑ ↓, Name im aria-label, Tooltip
-    const runter = host.querySelector<HTMLButtonElement>('button[aria-label="/srv/Archiv nach unten"]')!;
-    const hoch = host.querySelector<HTMLButtonElement>('button[aria-label="/srv/Akquise nach oben"]')!;
-    expect(runter.title).toBe('Nach unten');
-    expect(hoch.title).toBe('Nach oben');
-    expect(runter.querySelector('svg.symbol')).not.toBeNull();
-    expect(hoch.querySelector('svg.symbol')).not.toBeNull();
-    expect(host.querySelector('.po-stammordner')!.textContent).not.toMatch(/[↑↓]/);
-    act(() => runter.click());
-    expect(reihe()).toEqual(['/srv/Projekte', '/srv/Archiv', '/srv/Akquise']);
-    act(() => host.querySelector<HTMLButtonElement>('button[aria-label="/srv/Akquise nach oben"]')!.click());
-    expect(reihe()).toEqual(['/srv/Projekte', '/srv/Akquise', '/srv/Archiv']);
-    // Gegenprobe: der letzte kann nicht weiter nach unten
-    expect(host.querySelector<HTMLButtonElement>('button[aria-label="/srv/Archiv nach unten"]')!.disabled).toBe(true);
-    expect(host.querySelector<HTMLButtonElement>('button[aria-label="/srv/Projekte nach oben"]')!.disabled).toBe(true);
+    // „Einrichtung“ hat keine eigenen Einstellungen mehr
+    act(() => knopf(host, 'Einrichtung').click());
+    expect([...document.querySelectorAll('[role^="menuitem"]')].map((b) => b.textContent?.trim())).not.toContain('Einstellungen');
+    act(() => void window.dispatchEvent(new Event('blur')));
+    act(() => einstellungenOeffnen());
+    await warten();
+    const d = document.querySelector<HTMLElement>('.einst')!;
+    expect(d.querySelector('[role="tab"][aria-selected="true"]')!.textContent).toContain('ATLAS');
+    act(() => knopf(d, 'Pfade und Benennung …').click());
+    expect(useEinstellungen.getState()).toMatchObject({ seite: 'pfade', fokus: 'projekt.stammordner' });
+    act(() => einstellungenOeffnen('ordner'));
+    await warten();
+    const feld = document.querySelector<HTMLInputElement>('.einst-inhalt input[placeholder^="z. B. architekten"]')!;
+    eingabe(feld, 'Architekten-Beispiel.example, @buero.example');
+    expect(useMails.getState().eigene).toEqual([]);
+    act(() => [...document.querySelectorAll<HTMLButtonElement>('.einst button')].find((b) => b.textContent?.trim() === 'Übernehmen')!.click());
+    await warten();
+    expect(useMails.getState().eigene).toEqual(['architekten-beispiel.example', 'buero.example']);
+    expect(JSON.parse(localStorage.getItem('arch-tools:konfig:mails') ?? '{}').eigene).toEqual(['architekten-beispiel.example', 'buero.example']);
   });
 
   it('Struktur: Klick-Editor – auswählen, umbenennen, anlegen, Leistungsphasen, ziehen, kopieren, Bausteine, rückgängig', async () => {
@@ -566,10 +545,12 @@ describe('ATLAS (Projektordner)', () => {
   });
 
   it('Einstellungen: Kürzel und Plannummern – Stellen tauschen, Kürzel ändern, ungültige Kürzel melden, Vorgabe wiederherstellen', async () => {
-    const host = render();
-    einrichtung(host, 'Einstellungen');
-    const bereich = host.querySelector<HTMLElement>('.po-namensschema')!;
-    const schema = () => useOrdner.getState().allgemein.namensschema!;
+    render();
+    act(() => einstellungenOeffnen('ordner'));
+    await warten();
+    const bereich = document.querySelector<HTMLElement>('.po-namensschema')!;
+    // im Entwurf der Seite ATLAS (gilt mit „Übernehmen“)
+    const schema = () => useAtlasEntwurf.getState().entwurf.namensschema ?? useOrdner.getState().allgemein.namensschema!;
     const beispiel = () => bereich.querySelector('code')!.textContent;
     const eingabeMit = (label: string) => bereich.querySelector<HTMLInputElement>(`input[aria-label="${label}"]`)!;
     expect(beispiel()).toBe('HVO GP 261111 GP-04 Grundriss OG.pdf');
@@ -661,8 +642,8 @@ describe('ATLAS (Projektordner)', () => {
 
     // neues Kürzel: erst gespeichert, wenn die Zeile mit einem gültigen Kürzel verlassen wird
     const antragsarten = bereich.querySelectorAll<HTMLElement>('.po-kuerzel')[1];
-    act(() => plusKnopf(antragsarten, 'Kürzel').click());
-    expect(plusKnopf(antragsarten, 'Kürzel').disabled).toBe(true);
+    act(() => plusKnopf(antragsarten, 'Kürzel hinzufügen').click());
+    expect(plusKnopf(antragsarten, 'Kürzel hinzufügen').disabled).toBe(true);
     expect(schema().antragsarten.map((k) => k.kuerzel)).not.toContain('');
     eingabe(eingabeMit('Antrags- und Verfahrensarten: Bedeutung von neues Kürzel'), 'Wohnungseigentum');
     expect(schema().antragsarten).toHaveLength(6);
@@ -671,33 +652,33 @@ describe('ATLAS (Projektordner)', () => {
     expect(schema().antragsarten).toHaveLength(6);
     eingabe(eingabeMit('Antrags- und Verfahrensarten: Kürzel neues Kürzel'), 'weg');
     expect(schema().antragsarten.at(-1)).toEqual({ kuerzel: 'WEG', name: 'Wohnungseigentum' });
-    expect(plusKnopf(antragsarten, 'Kürzel').disabled).toBe(false);
+    expect(plusKnopf(antragsarten, 'Kürzel hinzufügen').disabled).toBe(false);
     // verwerfen (× oder Esc) speichert nichts
-    act(() => plusKnopf(antragsarten, 'Kürzel').click());
+    act(() => plusKnopf(antragsarten, 'Kürzel hinzufügen').click());
     act(() => bereich.querySelector<HTMLButtonElement>('button[aria-label="Neues Kürzel verwerfen"]')!.click());
     expect(schema().antragsarten).toHaveLength(7);
-    act(() => plusKnopf(antragsarten, 'Kürzel').click());
+    act(() => plusKnopf(antragsarten, 'Kürzel hinzufügen').click());
     act(() => void eingabeMit('Antrags- und Verfahrensarten: Kürzel neues Kürzel').dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
     expect(bereich.querySelector('button[aria-label="Neues Kürzel verwerfen"]')).toBeNull();
     expect(schema().antragsarten).toHaveLength(7);
     // entfernen: mit Rückfrage
     act(() => bereich.querySelector<HTMLButtonElement>('button[aria-label="WEG entfernen"]')!.click());
     await warten();
-    expect(host.querySelector('.modal')?.textContent).toContain('WEG entfernen?');
-    act(() => knopf(host.querySelector('.modal')!, 'Abbrechen').click());
+    expect(document.querySelector('.modal.rf')?.textContent).toContain('WEG entfernen?');
+    act(() => knopf(document.querySelector('.modal.rf')!, 'Abbrechen').click());
     await warten();
     expect(schema().antragsarten.map((k) => k.kuerzel)).toContain('WEG');
     act(() => bereich.querySelector<HTMLButtonElement>('button[aria-label="WEG entfernen"]')!.click());
     await warten();
-    act(() => knopf(host.querySelector('.modal')!, 'Entfernen').click());
+    act(() => knopf(document.querySelector('.modal.rf')!, 'Entfernen').click());
     await warten();
     expect(schema().antragsarten.map((k) => k.kuerzel)).not.toContain('WEG');
 
     // Vorgabe wiederherstellen: mit Rückfrage, danach gilt wieder die eingebaute Vorgabe – auch in den Feldern
     act(() => knopf(bereich, 'Vorgabe wiederherstellen').click());
     await warten();
-    expect(host.querySelector('.modal')?.textContent).toContain('Vorgabe wiederherstellen?');
-    act(() => knopf(host.querySelector('.modal')!, 'Wiederherstellen').click());
+    expect(document.querySelector('.modal.rf')?.textContent).toContain('Vorgabe wiederherstellen?');
+    act(() => knopf(document.querySelector('.modal.rf')!, 'Wiederherstellen').click());
     await warten();
     expect(schema().reihenfolge).toEqual(['code', 'art', 'datum', 'nummer']);
     expect(schema().phasen[0].kuerzel).toBe('BP');

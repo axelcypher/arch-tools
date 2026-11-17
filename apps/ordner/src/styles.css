@@ -1134,55 +1134,10 @@
   background: var(--panel);
 }
 
-/* Einstellungen */
-/* Abschnitt der gemeinsamen Einstellungen (Stammordner) – so groß wie die übrigen Abschnittsüberschriften */
-h3.po-abschnitt {
-  margin: 18px 0 2px;
-  font-size: 14px;
-}
-/* Symbolknöpfe zum Umsortieren und Entfernen: Zielgröße 24px wie button.small (docs/design.md „Zielgrößen“) */
-.ka-plan-kopf button.icon,
-.po-stammordner li button.icon {
+/* Symbolknöpfe im Kopf der Katasterpläne: Zielgröße 24px wie button.small (docs/design.md „Zielgrößen“) */
+.ka-plan-kopf button.icon {
   min-height: var(--ctl-h-s);
   min-width: var(--ctl-h-s);
-}
-.po-stammordner {
-  margin-bottom: 12px;
-}
-.po-stammordner li {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-/* „neue Projekte“ und „Neue Projekte hier“ gleich breit – die Pfade stehen bündig */
-.po-stamm-neu {
-  flex: 0 0 auto;
-  min-width: 132px;
-  text-align: center;
-}
-.po-stammordner li[draggable='true'] {
-  cursor: grab;
-}
-.po-stammordner li.zieht {
-  opacity: 0.5;
-}
-.po-stammordner li.ziel-davor {
-  box-shadow: inset 0 2px 0 var(--accent);
-}
-.po-stammordner li.ziel-danach {
-  box-shadow: inset 0 -2px 0 var(--accent);
-}
-.po-griff {
-  color: var(--muted);
-  cursor: grab;
-  user-select: none;
-}
-.po-stammordner code {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 /* Startseite: gemeinsame Projektübersicht über die volle Höhe */
@@ -1743,12 +1698,13 @@ button.po-link:focus-visible {
 .po-namensschema {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-top: 18px;
+  gap: var(--s2);
+  margin-top: var(--s4);
 }
-.po-namensschema h3 {
-  margin: 8px 0 0;
-  font-size: 13px;
+.po-namensschema h5 {
+  margin: var(--s2) 0 0;
+  font-size: var(--fs-s);
+  color: var(--muted);
 }
 .po-namensschema p {
   margin: 0;
@@ -1866,4 +1822,15 @@ button.po-link:focus-visible {
 .po-mail-ursprung-knoepfe {
   display: flex;
   gap: var(--s1);
+}
+
+/* Seite „ATLAS“ im zentralen Einstellungsdialog (Abschnitte .einst-gruppe aus base.css) */
+.po-einst-seite {
+  margin: 0;
+  padding: 0;
+  border: none;
+  min-width: 0;
+}
+.po-einst-gruppe > .po-namensschema {
+  margin: 0;
 }
