@@ -49,10 +49,10 @@ Zahlen in Tabellen und Feldern stehen rechtsbündig in Tabellenziffern (`.num`, 
 Kennzahlentabellen nehmen `.summary-table` (Spaltenköpfe rechtsbündig, passend zu Zahlenspalten); `.text` für reine
 Texttabellen: Spaltenköpfe linksbündig (`.summary-table.text`, z. B. Platzhalter-Referenz). Gemischte Tabellen (Text-
 und Zahlenspalten, z. B. Kostengruppe | von | Mittel | bis) nehmen `.text` und markieren die Zahlenspalten mit `th.num`
-und `td.num`. Zeilen mit Feldern (Eingaben je Zeile) bekommen `.felder`: oben bündig, Text ohne Feld fluchtet mit dem
-Feldtext. Gruppenzeilen `tr.gruppe` (getönt mit `--tabelle-gruppe`, halbfett), Summenzeilen `tr.summe` (halbfett,
-kräftigere Linie darüber); `tr.strong` bleibt für einzelne hervorgehobene Zeilen.
-Diese Tabelle ersetzt die eigenen Tabellenklassen der Apps.
+und `td.num`. Zeilen mit Feldern (Eingaben je Zeile) bekommen `.felder`: oben bündig, Text ohne Feld oder Knopf fluchtet
+mit dem Feldtext. Gruppenzeilen `tr.gruppe` (getönt mit `--tabelle-gruppe`, halbfett), Summenzeilen `tr.summe`
+(halbfett, kräftigere Linie darüber); `tr.strong` bleibt für einzelne hervorgehobene Zeilen. Diese Tabelle soll die
+eigenen Tabellenklassen der Apps ersetzen; bis zur Umstellung bleiben diese bestehen.
 
 ## Überschriften
 
@@ -494,14 +494,14 @@ Werkzeugleiste liegt mit auf der Fläche (gleicher Grund, keine Linie). Baustein
   hinausragen sollen, deshalb als Portal bzw. mit `position: fixed` ausführen. Innenabstand waagerecht `--karte-pad`
   (14px, aus der gewählten Vorschau), Kopfhöhe `--karte-kopf-h` (ein Knopf in `--ctl-h` mit `--s2` darüber und
   darunter), Fußzeile in `--ctl-h`.
-- `FlaechenSpalte` (`.flaechen-spalte`): mehrere Karten untereinander (z. B. „Geschoss“ über „Auswertung“), sie
-  teilen sich die Höhe; `wachsend` lässt die Spalte die Restbreite nehmen. Eine kurze Karte unter einer langen bekommt
-  `hoehe="inhalt"`: Sie ist so hoch wie ihr Inhalt (höchstens die halbe Spalte, darüber scrollt sie), die übrigen
-  Karten teilen sich den Rest. Mehrere Inhaltskarten in einer Spalte sind erlaubt; die teilende Karte zeigt dann immer
+- `FlaechenSpalte` (`.flaechen-spalte`): mehrere Karten untereinander (z. B. „Geschoss“ über „Auswertung“), sie teilen
+  sich die Höhe; `wachsend` lässt die Spalte die Restbreite nehmen. Eine kurze Karte unter einer langen bekommt
+  `hoehe="inhalt"`: Sie ist so hoch wie ihr Inhalt (höchstens die halbe Spalte, darüber scrollt sie), die übrigen Karten
+  teilen sich den Rest. Mehrere Inhaltskarten in einer Spalte sind erlaubt; die teilende Karte zeigt dann immer
   mindestens ihren Kopf und einige Zeilen (Mindesthöhe `--karte-kopf-h` + 6 × `--s4`), notfalls scrollen die
-  Inhaltskarten. `hoehe` wirkt nur in einer `FlaechenSpalte`, nicht in einer `BreitenLeiste` oder direkt auf der
-  Fläche. Nur für Karten mit weitgehend festem Inhalt – wächst der Inhalt (Aufklappen, Bild lädt), springt die
-  Höhe der Nachbarkarte mit.
+  Inhaltskarten (ihr Kopf bleibt stehen). `hoehe` wirkt nur in einer `FlaechenSpalte`, nicht in einer `BreitenLeiste`
+  oder direkt auf der Fläche. Nur für Karten mit weitgehend festem Inhalt – wächst der Inhalt (Aufklappen, Bild lädt),
+  springt die Höhe der Nachbarkarte mit.
 - `ZeichenKarte` (`.zeichen-karte`): Die Zeichenfläche füllt die Karte und bleibt hell (`.canvas`); Bedienhinweis,
   Koordinaten und Maßstab stehen in der Fußzeile der Karte (`fuss`), nicht über dem Plan. Kopf wie bei `Karte`
   (`titel`, `aktionen`), meist ohne – die Werkzeuge stehen in der Werkzeugleiste.
