@@ -38,7 +38,7 @@ export function PlanTabelle({
   if (!zeilen.length) return <p className="muted small-text">Es fehlt nichts – alles ist schon vorhanden.</p>;
   return (
     <div className="po-plan">
-      <table className="po-table">
+      <table className="summary-table text">
         <tbody>
           {zeilen.map((s) => {
             const tiefe = s.pfad.split('/').length - 1;
@@ -69,7 +69,7 @@ export function PlanTabelle({
                   {herkunft}
                 </td>
                 <td
-                  className="po-status"
+                  className="num po-status"
                   title={s.aenderung?.teile.length ? `wird ergänzt: ${s.aenderung.teile.join(', ')}` : s.vorhandenAls ? `mit anderem Datum vorhanden – nach dem Schema hieße sie heute ${s.pfad.split('/').pop()}` : undefined}
                 >
                   {status}

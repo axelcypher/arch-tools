@@ -302,10 +302,11 @@ Gemeinsamer Satz in `ui/Symbol.tsx` (Raster 24, Linie 2, runde Enden, Farbe des 
 - Werkzeuge: `auswahl`, `polygon`, `rechteck`, `erkennen` (Fläche aus dem Plan), `lineal` (Messen), `kalibrieren`, `einpassen`, `raster`,
   `grenze` (Grundstücksgrenze mit Grenzpunkten), `ausrichten` (Unterlage auf einen Punkt schieben).
 - Befehle: `speichern`, `drucken`, `export`, `kopie`, `einfuegen`, `muell`, `rueckgaengig`, `wiederholen`, `plus`,
-  `suche`, `stift`.
+  `suche`, `stift`, `neuLaden` (neu einlesen), `zahnrad` (einstellen).
 - Zustand: `haken` (trifft zu), `schliessen` (trifft nicht zu), `frage` (offen, unbekannt), `warnung`, `info`, `auge`,
   `augeZu`, `stern`; `punkt` (gewählte Einfachauswahl im Menü).
-- Navigation: `pfeilRechts`, `pfeilLinks`, `pfeilUnten`, `ordner`, `ordnerOffen`, `datei`; `menue` (drei Striche) nur für das
+- Navigation: `pfeilRechts`, `pfeilLinks`, `pfeilUnten`, `ordner`, `ordnerOffen`, `datei`, `verlauf` (zuletzt
+  geöffnet); `menue` (drei Striche) nur für das
   Menü der Titelleiste (siehe „Titelleiste“).
 - Listen: `einruecken`, `ausruecken` (Gliederungsebene), `nachOben`, `nachUnten` zum Umsortieren (statt ↑/↓ als Schriftzeichen); `mehr` (drei Punkte, Knopf mit `aria-label="Aktionen"` und `title`; auch „Mehr“ am Ende einer Werkzeugleiste) für
   Zeilenknöpfe „Aktionen“, die ein Menü öffnen – `pfeilUnten` bleibt dem Aufklapp-Pfeil an Knöpfen mit Text vorbehalten.
@@ -488,20 +489,28 @@ Hauptbereich und Zeichenfläche stehen darauf als **Karten** mit weichem Schatte
 Werkzeugleiste liegt mit auf der Fläche (gleicher Grund, keine Linie). Bausteine in `ui/Karte.tsx`:
 
 - `Flaeche` (`.flaeche`): Karten nebeneinander mit Spalt und Innenabstand `--spalt`; sie scrollt nie.
-- `Karte` (`.karte`): Kopf (`.karte-kopf`, Überschrift `h2` in `--fs-l`, direkt dahinter `hilfe` für das „?“
-  (`HilfeKnopf`), rechts `aktionen` wie Umschalter oder „Hinzufügen“), darunter der Inhalt (`.karte-rumpf`), der **in
-  der Karte** scrollt, wahlweise eine feste Fußzeile (`fuss`, Summen). Mit Titel ist die Karte ein benannter Bereich
-  (`aria-labelledby` auf das `h2`); die Hilfe steht außerhalb des `h2` und gehört nicht zum Namen. Ohne sichtbaren Titel
-  braucht die Karte `ariaLabel`. Der Inhalt beginnt und endet immer im Abstand des Rumpfs, gleich ob vorn ein `p`, eine
-  Liste oder ein `h3` steht (Außenabstand des ersten und letzten Kindes entfällt). `buendig` lässt Tabellen und Listen
-  bis an den Rand laufen; Fokusrahmen liegen dort innen. Breite Tabellen scrollen mit dem Inhalt der Karte, sie laufen
-  nie aus ihr heraus. Der Rumpf ist positioniert: absolut gesetzte Elemente darin bleiben in seinem Rollbereich.
-  Klappmenüs, Vorschlagslisten und Hinweise, die über die Karte hinausragen sollen, deshalb als Portal bzw. mit
-  `position: fixed` ausführen. Bündelt eine Karte ohne Kopf mehrere Themen (z. B. Projekt, Geschosse, Flächen), bekommt
-  sie `abschnitte`: je Thema ein `<section>` direkt im Rumpf mit `h2` (wie die Kopfüberschrift, `--fs-l`), Trennlinien
-  bis an den Rand, in einer `.section-head` mit Knopf ohne eigenen Abstand. Innenabstand waagerecht `--karte-pad` (14px,
-  aus der gewählten Vorschau), Kopfhöhe `--karte-kopf-h` (ein Knopf in `--ctl-h` mit `--s2` darüber und darunter),
-  Fußzeile in `--ctl-h`.
+- `Karte` (`.karte`): Kopf, wahlweise Leiste, der Inhalt, der **in der Karte** scrollt, wahlweise eine feste Fußzeile
+  (`fuss`, Summen).
+  - **Kopf** (`.karte-kopf`): Überschrift `h2` in `--fs-l`, direkt dahinter `hilfe` für das „?“ (`HilfeKnopf`), rechts
+    `aktionen` wie Umschalter oder „Hinzufügen“. Mit Titel ist die Karte ein benannter Bereich (`aria-labelledby` auf
+    das `h2`); die Hilfe steht außerhalb des `h2` und gehört nicht zum Namen. Ohne sichtbaren Titel braucht die Karte
+    `ariaLabel`.
+  - **Leiste** (`leiste`): Hat eine Ansicht eine eigene Werkzeugleiste, die zu breit für den Kopf ist (z. B. FABRIO je
+    Ansicht), steht sie fest zwischen Kopf und Inhalt, im Grund der Karte, mit einer Linie zum scrollenden Inhalt; sie
+    gehört damit zu ihrer Karte und steht nicht über der ganzen Fläche. Wechselt die Leiste mit der Ansicht, bekommt
+    die `Werkzeugleiste` einen eigenen Namen (`name="Werkzeuge Rechnungen"`). Nur an `Karte`; die `ZeichenKarte` nutzt
+    die Werkzeugleiste der App.
+  - **Inhalt** (`.karte-rumpf`): beginnt und endet immer im Abstand des Rumpfs, gleich ob vorn ein `p`, eine Liste oder
+    ein `h3` steht (Außenabstand des ersten und letzten Kindes entfällt). `buendig` lässt Tabellen und Listen bis an
+    den Rand laufen; Fokusrahmen liegen dort innen. Breite Tabellen scrollen mit dem Inhalt der Karte, sie laufen nie
+    aus ihr heraus. Der Rumpf ist positioniert: absolut gesetzte Elemente darin bleiben in seinem Rollbereich.
+    Klappmenüs, Vorschlagslisten und Hinweise, die über die Karte hinausragen sollen, deshalb als Portal bzw. mit
+    `position: fixed` ausführen.
+  - **Abschnitte** (`abschnitte`): Bündelt eine Karte ohne Kopf mehrere Themen (z. B. Projekt, Geschosse, Flächen), je
+    Thema ein `<section>` direkt im Rumpf mit `h2` (wie die Kopfüberschrift, `--fs-l`), Trennlinien bis an den Rand, in
+    einer `.section-head` mit Knopf ohne eigenen Abstand.
+  - **Maße:** Innenabstand waagerecht `--karte-pad` (14px, aus der gewählten Vorschau), Kopfhöhe `--karte-kopf-h` (ein
+    Knopf in `--ctl-h` mit `--s2` darüber und darunter), Fußzeile in `--ctl-h`.
 - `FlaechenSpalte` (`.flaechen-spalte`): mehrere Karten untereinander (z. B. „Geschoss“ über „Auswertung“), sie teilen
   sich die Höhe; `wachsend` lässt die Spalte die Restbreite nehmen. Eine kurze Karte unter einer langen bekommt
   `hoehe="inhalt"`: Sie ist so hoch wie ihr Inhalt (höchstens die halbe Spalte, darüber scrollt sie), die übrigen Karten
@@ -540,6 +549,35 @@ Die alten Muster (`.workspace`, `.sidebar`, eigene Spalten-Layouts der Apps) lau
 ist (`docs/nachziehen/`). Eigene Layout-CSS und feste Farben der Apps entfallen mit der Umstellung. Ausgenommen ist die
 Rahmen-App Arkly: Sie hat keine Arbeitsfläche, sondern Tableiste und Startseite; ihre Seiten zeigen die Apps, die selbst
 auf Karten stehen.
+
+## Startseite
+
+**Die Startseite ist in allen Apps derselbe Baustein; Apps liefern nur Daten in Slots.** Ohne geöffnetes Projekt bzw.
+über „Projekte“ zeigt jede App die Projektübersicht aus core (`ui/ProjektUebersicht.tsx`, in den Apps mit
+Projektdatei über `ProjektWahl`) bzw. den Einstieg `ProjektEinstieg` – keine eigene Startseite, keine eigene Startkarte.
+`ui/startseite.test.ts` prüft, dass jede App den Baustein nutzt und keine App-CSS Klassen der Übersicht und des
+Einstiegs (`.pa…`, `.pw…`) umgestaltet.
+
+- **Übersicht:** eine `Karte` auf der `Flaeche`. Kopf: Überschrift „Projekte“, rechts die Knöpfe in fester Reihenfolge –
+  „Zurück zu ‹Kürzel›“ (mit geöffnetem Projekt) bzw. „Schließen“, seltene weitere (`weitere`, z. B. „Leeres Projekt“,
+  „Anderen Ordner …“), „Datei öffnen …“ (`dateiOeffnen`), rechts außen der Hauptknopf (`neu`; Vorgabe in der Rahmen-App
+  „Neues Projekt anlegen …“ mit dem Assistenten von ATLAS, sonst z. B. „Neues Projekt“ ohne „…“, wenn es sofort
+  anlegt). Darunter die feste Leiste (`leiste`): Suche, Sortierung, Statusfilter, rechts die Anzahl, „Neu einlesen“
+  und „Quellen einstellen“. Im Inhalt „Angeheftet“ (Stern), „Zuletzt geöffnet“ (Verlauf) und je Quelle ein
+  aufklappbarer Abschnitt mit Linie bis an den Kartenrand; Meldungen (`meldung`) stehen oben im Inhalt.
+- **Kacheln:** Kürzel (`--fs-l`), Titel, Info und Zeit, darunter Marken (`marken`: Warnung, Hinweis, ok, neutral) und
+  wahlweise eine Statuszeile (`status`: Punkt, Balken je Stufe, Text) – überall gleich, nur die Daten kommen aus der
+  App. Rechtsklick öffnet das Kontextmenü (`kontextMenue`). Symbole aus dem gemeinsamen Satz, eines je Bedeutung. Die
+  App-Farbe nur als Akzent (Fokus, aktive Kachel, Hauptknopf), nie als Fläche.
+- **Einstieg und Leerzustand:** `ProjektEinstieg` – eine Karte mittig auf der Fläche. Titel ist immer der Name der App
+  (`app`), darunter wofür sie da ist (aus `APP_NAMEN`), dann ein Satz der App (`text`, unpersönlich formuliert, z. B.
+  „Ein Projekt … öffnen“). Die Knöpfe stehen wie im Kopf der Übersicht: „Schließen“ links, dann „Neues Projekt“,
+  „Datei öffnen …“, „Projekt wählen …“, rechts außen der Hauptknopf (der erste vorhandene aus Stammordner wählen,
+  Neues Projekt anlegen …, Projekt wählen, Datei öffnen, Neues Projekt). App-eigene Ergänzungen nur unter den
+  Knöpfen (`children`, z. B. die Ampel-Legende von LEXIO) und als Fußnote; `als="main"`, wo der Einstieg der
+  Hauptbereich ist.
+- **Arkly:** Die Startseite der Rahmen-App folgt demselben Muster – eine Karte auf der Fläche, Hauptknopf „Neues Projekt
+  anlegen …“ im Kopf, die Apps als Kacheln im selben Stil (Rahmen, Radius, Abstände, Hover) mit dem Symbol der App.
 
 ## Seitenleisten
 

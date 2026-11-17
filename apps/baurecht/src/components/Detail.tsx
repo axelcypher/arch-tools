@@ -177,6 +177,7 @@ export function Detail({ stand }: { stand: Pruefstand }) {
   if (!p)
     return (
       <Karte
+        als="aside"
         className="br-detail br-detail-leer"
         titel={
           // F6 und Sprungmarke landen auf der Überschrift (die leere Karte hat kein Bedienelement)
@@ -253,6 +254,7 @@ export function Detail({ stand }: { stand: Pruefstand }) {
   );
   return (
     <Karte
+      als="aside"
       className={`br-detail br-detail-${p.ampel}`}
       titel={
         // F6 und Sprungmarke landen hier – immer an derselben Stelle, nicht auf einem zufälligen Knopf; die Überschrift

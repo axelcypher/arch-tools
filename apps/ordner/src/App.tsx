@@ -265,50 +265,45 @@ export function App() {
           {konfliktLaeuft && <span className="muted small-text">Speichert …</span>}
         </div>
       )}
-      <main className="po-main">
-        {/* der Assistent bleibt beim Wechsel der Ansicht eingehängt (nur ausgeblendet): Schritt und Eingaben bleiben erhalten */}
-        <div className="po-assistent-huelle" hidden={ansicht !== 'projekt'}>
-          <AssistentView
-            key={`${start?.nr ?? 0}-${neustart}-${auftrag?.nr ?? 0}`}
-            sichtbar={ansicht === 'projekt'}
-            start={start?.ordner ?? null}
-            auftrag={start ? null : auftrag}
-            onEinstellungen={() => einstellungenOeffnen('pfade', 'projekt.stammordner')}
-            onPruefen={(pfad) => {
-              setPruefStart({ pfad, nr: (pruefStart?.nr ?? 0) + 1 });
-              setAnsicht('pruefen');
-            }}
-            onKatasterEinstellungen={() => setAnsicht('kataster')}
-            onMails={mailsPruefen}
-            onOffen={(was) => {
-              assistentOffen.current = was;
-              setAssistentOffenText(was);
-            }}
-          />
-        </div>
-        {ansicht === 'pruefen' && (
-          <PruefView
-            key={pruefStart?.nr ?? 0}
-            start={pruefStart?.pfad ?? null}
-            onMails={mailsPruefen}
-            onErgaenzen={(ordner) =>
-              nachRueckfrage(() => {
-                setAuftrag(null);
-                setStart((s) => ({ ordner, nr: (s?.nr ?? 0) + 1 }));
-                setAnsicht('projekt');
-              })
-            }
-          />
-        )}
-        {ansicht === 'vorlagen' && <VorlagenView />}
-        {ansicht === 'kataster' && (
-          <div className="po-kataster">
-            <KatasterEinstellungen />
-          </div>
-        )}
-        {ansicht === 'mails' && <MailView key={mailStart?.nr ?? 0} start={mailStart?.pfad ?? null} />}
-        {ansicht === 'struktur' && <StrukturView />}
-      </main>
+      {/* jede Ansicht bringt ihre Fläche mit Karten mit; das <main> ist darin die Hauptkarte */}
+      {/* der Assistent bleibt beim Wechsel der Ansicht eingehängt (nur ausgeblendet): Schritt und Eingaben bleiben erhalten */}
+      <div className="po-assistent-huelle" hidden={ansicht !== 'projekt'}>
+        <AssistentView
+          key={`${start?.nr ?? 0}-${neustart}-${auftrag?.nr ?? 0}`}
+          sichtbar={ansicht === 'projekt'}
+          start={start?.ordner ?? null}
+          auftrag={start ? null : auftrag}
+          onEinstellungen={() => einstellungenOeffnen('pfade', 'projekt.stammordner')}
+          onPruefen={(pfad) => {
+            setPruefStart({ pfad, nr: (pruefStart?.nr ?? 0) + 1 });
+            setAnsicht('pruefen');
+          }}
+          onKatasterEinstellungen={() => setAnsicht('kataster')}
+          onMails={mailsPruefen}
+          onOffen={(was) => {
+            assistentOffen.current = was;
+            setAssistentOffenText(was);
+          }}
+        />
+      </div>
+      {ansicht === 'pruefen' && (
+        <PruefView
+          key={pruefStart?.nr ?? 0}
+          start={pruefStart?.pfad ?? null}
+          onMails={mailsPruefen}
+          onErgaenzen={(ordner) =>
+            nachRueckfrage(() => {
+              setAuftrag(null);
+              setStart((s) => ({ ordner, nr: (s?.nr ?? 0) + 1 }));
+              setAnsicht('projekt');
+            })
+          }
+        />
+      )}
+      {ansicht === 'vorlagen' && <VorlagenView />}
+      {ansicht === 'kataster' && <KatasterEinstellungen />}
+      {ansicht === 'mails' && <MailView key={mailStart?.nr ?? 0} start={mailStart?.pfad ?? null} />}
+      {ansicht === 'struktur' && <StrukturView />}
       {logOpen && <LogDialog onClose={() => setLogOpen(false)} />}
     </div>
   );

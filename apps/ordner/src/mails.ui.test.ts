@@ -335,7 +335,7 @@ describe('Mails: Bedienung per Tastatur', () => {
     eintippen(suche, 'Sanierung');
     await act(async () => void suche.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })));
     await warten();
-    expect(host.querySelector('.po-mails-kopf h3')!.textContent).toBe('BSP Sanierung');
+    expect(host.querySelector('.po-mails .karte-kopf h2')!.textContent).toBe('BSP Sanierung');
     expect(knoepfe()[0].getAttribute('aria-current')).toBe('true');
     // Datei-Auswahl: ein echter Knopf öffnet das versteckte Dateifeld
     const feld = host.querySelector('.po-ablage input[type="file"]') as HTMLInputElement;
@@ -401,7 +401,7 @@ describe('Mails: kein Rennen beim Einlesen', () => {
     expect(host.querySelector('.po-mail-neu')!.textContent).toContain('BBB von BBB 261102 Betreff BBB.msg');
     s.auf();
     await warten();
-    expect(host.querySelector('.po-mails-kopf h3')!.textContent).toBe('BBB Haus');
+    expect(host.querySelector('.po-mails .karte-kopf h2')!.textContent).toBe('BBB Haus');
     expect(host.querySelector('.po-mail-neu')!.textContent).toContain('BBB von BBB 261102 Betreff BBB.msg');
     expect(host.textContent).not.toContain('Betreff AAA');
     expect(host.querySelector('.busy')).toBeNull();

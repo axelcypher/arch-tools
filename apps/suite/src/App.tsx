@@ -26,6 +26,7 @@ import { LogDialog } from '@core/ui/LogDialog';
 import type { MenuePunkt } from '@core/ui/Menue';
 import { MenueHost, MenueKnopf, zeigeMenue } from '@core/ui/Menue';
 import { Symbol } from '@core/ui/Symbol';
+import { Flaeche, Karte } from '@core/ui/Karte';
 import { farbschemaPunkt } from '@core/ui/TitleBar';
 import { dialogVerhaltenEinrichten } from '@core/ui/dialoge';
 import { aenderungenSpeichern, aenderungenVerwerfen, meldung, RueckfrageHost } from '@core/ui/Rueckfrage';
@@ -638,33 +639,42 @@ export function App() {
           </div>
         ))}
         {!aktiv && (
-          <div className="rahmen-start">
-            <h2>{APP_NAMEN.suite.name}</h2>
-            <p className="muted">Eine App öffnen – sie erscheint als Tab.</p>
-            <div className="rahmen-anlegen">
-              <button className="primary" onClick={() => projektAnlegen(null)} title="Assistent: Stammdaten, Umfang, Beteiligte – dann entstehen Projektordner, Vorlagen und Projektdatei. Auch auf der Projektübersicht jeder App.">
-                <Symbol name="plus" /> Neues Projekt anlegen …
-              </button>
-            </div>
-            <div className="rahmen-karten">
-              {APPS.map((a) => (
-                <button key={a.id} className="rahmen-karte" onClick={() => void oeffnenOderZeigen(a.id)}>
-                  <img src={`apps/${a.id}/favicon.svg`} alt="" />
-                  <span>
-                    <strong>
-                      {a.name} <span className="muted small-text rahmen-karte-was">{a.was}</span>
-                    </strong>
-                    <span className="muted small-text">{fenster.includes(a.id) ? 'läuft in eigenem Fenster' : a.text}</span>
-                  </span>
+          // Startseite im Stil der Projektübersicht der Apps: eine Karte auf der Fläche, die Apps als Kacheln
+          <Flaeche className="rahmen-start">
+            <Karte
+              titel={APP_NAMEN.suite.name}
+              aktionen={
+                <button
+                  className="primary"
+                  onClick={() => projektAnlegen(null)}
+                  title="Assistent: Stammdaten, Umfang, Beteiligte – dann entstehen Projektordner, Vorlagen und Projektdatei. Auch auf der Projektübersicht jeder App."
+                >
+                  <Symbol name="plus" /> Neues Projekt anlegen …
                 </button>
-              ))}
-            </div>
-            {desktop && (
-              <div className="rahmen-speicherort">
-                <SpeicherortZeile />
+              }
+            >
+              <p className="muted">Eine App öffnen – sie erscheint als Tab.</p>
+              <h3>Apps</h3>
+              <div className="rahmen-karten">
+                {APPS.map((a) => (
+                  <button key={a.id} className="rahmen-karte" onClick={() => void oeffnenOderZeigen(a.id)}>
+                    <img src={`apps/${a.id}/favicon.svg`} alt="" />
+                    <span>
+                      <strong>
+                        {a.name} <span className="muted small-text rahmen-karte-was">{a.was}</span>
+                      </strong>
+                      <span className="muted small-text">{fenster.includes(a.id) ? 'läuft in eigenem Fenster' : a.text}</span>
+                    </span>
+                  </button>
+                ))}
               </div>
-            )}
-          </div>
+              {desktop && (
+                <div className="rahmen-speicherort">
+                  <SpeicherortZeile />
+                </div>
+              )}
+            </Karte>
+          </Flaeche>
         )}
       </main>
       {logOffen && <LogDialog onClose={() => setLogOffen(false)} />}

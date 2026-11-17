@@ -1,93 +1,64 @@
-/* Projektübersicht (gemeinsame Startseite der Apps): zuletzt geöffnet, darunter je Quelle – volle Höhe, Karten im Raster */
-.pa {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  background: color-mix(in srgb, var(--bg) 92%, var(--accent) 8%);
-}
-.pa-kopf {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 18px 28px 14px;
-  border-bottom: 1px solid var(--border);
-  background: var(--panel);
-  flex-wrap: wrap;
-}
-.pa-kopf-titel {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  margin-right: auto;
-}
-.pa-kopf h2 {
-  margin: 0;
-  font-size: 20px;
+/* Projektübersicht – die gemeinsame Startseite aller Apps (docs/design.md „Startseite“): eine Karte auf der Fläche.
+   Kopf mit Überschrift und den Knöpfen der App (immer gleiche Reihenfolge), darunter die feste Leiste mit Suche,
+   Sortierung und Filter; im Rumpf „Angeheftet“, „Zuletzt geöffnet“ und die Quellen mit den Projekten als Kacheln.
+   Die App-Farbe nur als Akzent (Fokus, aktive Kachel, Hauptknopf) – nie als Fläche. */
+.pa-leiste {
+  gap: var(--s2);
 }
 .pa-suche {
-  width: min(340px, 100%);
+  width: min(320px, 100%);
+}
+.pa-auswahl {
+  max-width: 200px;
+}
+.pa-anzahl {
+  margin-left: auto;
+  white-space: nowrap;
 }
 .pa-rollbereich {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  scrollbar-gutter: stable;
-  padding: 18px 28px 32px;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: var(--s4);
+  padding: var(--s3) var(--karte-pad) var(--s5);
 }
-/* Abschnitte behalten ihre Höhe – die Seite scrollt, statt die Quellen auf die Fensterhöhe zu quetschen */
-.pa-rollbereich > * {
-  flex-shrink: 0;
-}
-/* „Zuletzt geöffnet“ hervorgehoben: Streifen über die ganze Breite */
-.pa-zuletzt {
-  margin: 0 -28px;
-  padding: 14px 28px 18px;
-  background: color-mix(in srgb, var(--accent) 11%, var(--panel));
-  border-top: 1px solid color-mix(in srgb, var(--accent) 22%, var(--border));
-  border-bottom: 1px solid color-mix(in srgb, var(--accent) 22%, var(--border));
-}
-.pa-rollbereich > .pa-zuletzt:first-child {
-  margin-top: -18px;
-  border-top: 0;
-}
-.pa-zuletzt .pa-abschnitt-titel {
-  color: var(--accent);
+.pa-rollbereich > p {
+  margin: 0;
 }
 .pa-abschnitt-titel {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin: 0 0 10px;
+  gap: var(--s1);
+  margin: 0 0 var(--s2);
   font-size: var(--fs-m);
   font-weight: 600;
   color: var(--text);
 }
+.pa-abschnitt-titel .symbol {
+  color: var(--muted);
+}
 .pa-raster {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--s2);
 }
+/* Quellen: Abschnitte mit Linie bis an den Kartenrand, Kopf zum Auf- und Zuklappen */
 .pa-gruppe {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  overflow: hidden;
+  margin: 0 calc(-1 * var(--karte-pad));
+  padding: var(--s2) var(--karte-pad) 0;
+  border-top: 1px solid var(--line-soft);
 }
 .pa-gruppe > .pa-raster {
-  padding: 4px 14px 14px;
+  padding: var(--s1) 0 var(--s2);
 }
 .pa-gruppe-kopf {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--s2);
   width: 100%;
-  padding: 12px 14px;
+  min-height: var(--ctl-h);
+  padding: 0 var(--s2);
   border: 0;
-  border-radius: 0;
+  border-radius: var(--radius-s);
   background: transparent;
   text-align: left;
   font-weight: 600;
@@ -100,7 +71,7 @@
   cursor: default;
 }
 .pa-gruppe-name {
-  font-size: 14px;
+  font-size: var(--fs-m);
 }
 .pa-gruppe-pfad {
   font-weight: 400;
@@ -111,34 +82,32 @@
 }
 .pa-zahl {
   margin-left: auto;
-  padding: 1px 8px;
-  border-radius: 10px;
-  background: var(--accent-soft);
-  color: var(--accent);
-  font-size: 12px;
+  padding: 0 var(--s2);
+  border-radius: var(--radius);
+  background: var(--chip-bg);
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  font-weight: 400;
+  line-height: 18px;
 }
+/* Kachel eines Projekts */
 .pa-karte {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 4px;
-  padding: 12px 14px 10px;
-  min-height: 132px;
+  gap: var(--s1);
+  height: auto;
+  min-height: 120px;
+  padding: var(--s3);
   text-align: left;
+  white-space: normal;
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 10px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-  transition:
-    border-color 0.12s,
-    box-shadow 0.12s,
-    transform 0.12s;
-  white-space: normal;
+  border-radius: var(--radius);
 }
-.pa-karte:hover {
+.pa-karte:hover:not(:disabled) {
   border-color: var(--accent);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
-  transform: translateY(-1px);
+  background: var(--hover);
 }
 .pa-karte.aktiv {
   border-color: var(--accent);
@@ -148,16 +117,15 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--s2);
 }
 .pa-kuerzel {
-  font-size: 17px;
-  font-weight: 700;
-  letter-spacing: 0.01em;
+  font-size: var(--fs-l);
+  font-weight: 600;
 }
 .pa-titel {
-  font-size: 13px;
-  line-height: 1.3;
+  font-size: var(--fs-m);
+  line-height: 1.35;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -166,20 +134,21 @@
 .pa-info {
   margin-top: auto;
 }
+/* Marken: einheitlich klein, Bedeutung über die Art (Warnung, Hinweis, ok, neutral) */
 .pa-marken {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: var(--s1);
 }
 .pa-marke {
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  padding: 0 6px;
-  border-radius: 8px;
-  font-size: 11px;
+  padding: 0 var(--s1);
+  border-radius: var(--radius-s);
+  font-size: var(--fs-xs);
   line-height: 18px;
-  background: var(--hover);
+  background: var(--chip-bg);
   color: var(--muted);
 }
 .pa-marke svg {
@@ -196,14 +165,15 @@
 }
 .pa-marke.hinweis {
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-text, var(--accent));
 }
+/* Statuszeile: Balken je Stufe und kurzer Text – Farben wie die Punkte der Vollständigkeitsprüfung */
 .pa-status {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding-top: 6px;
-  border-top: 1px solid var(--line-soft, var(--border));
+  gap: var(--s1);
+  padding-top: var(--s1);
+  border-top: 1px solid var(--line-soft);
 }
 .pa-balken {
   display: flex;
@@ -213,17 +183,21 @@
   overflow: hidden;
   background: var(--hover);
 }
-.pa-balken-teil.aktuell {
-  background: #2e9e5b;
+.pa-balken-teil.aktuell,
+.pa-ampel.aktuell {
+  background: var(--ok-punkt);
 }
-.pa-balken-teil.offen {
-  background: #e3a412;
+.pa-balken-teil.offen,
+.pa-ampel.offen {
+  background: var(--warn-punkt);
 }
-.pa-balken-teil.unvollstaendig {
-  background: #d64541;
+.pa-balken-teil.unvollstaendig,
+.pa-ampel.unvollstaendig {
+  background: var(--fehler-punkt);
 }
-.pa-balken-teil.fehlt {
-  background: #9aa1ad;
+.pa-balken-teil.fehlt,
+.pa-ampel.fehlt {
+  background: var(--muted);
 }
 .pa-status-text {
   color: var(--muted);
@@ -234,58 +208,29 @@
   border-radius: 50%;
   flex-shrink: 0;
 }
-.pa-ampel.aktuell {
-  background: #2e9e5b;
-}
-.pa-ampel.offen {
-  background: #e3a412;
-}
-.pa-ampel.unvollstaendig {
-  background: #d64541;
-}
-.pa-ampel.fehlt {
-  background: #9aa1ad;
-}
 .pa-ampel.ohne,
 .pa-ampel.unbekannt {
-  box-shadow: inset 0 0 0 1.5px #9aa1ad;
+  box-shadow: inset 0 0 0 1.5px var(--muted);
 }
 .pa-ampel.unbekannt {
   opacity: 0.5;
 }
-.pa-leer {
-  max-width: 520px;
-  margin: 80px auto;
-  padding: 0 16px;
-  text-align: center;
-}
 .pa-nichts {
   text-align: center;
-  margin-top: 30px;
+  margin-top: var(--s5);
 }
 .pa .symbol {
   flex-shrink: 0;
-}
-.pa-auswahl {
-  font-size: 12px;
-  max-width: 190px;
 }
 .pa-ausgeblendet {
   align-self: center;
   justify-self: start;
 }
-/* „Neues Projekt anlegen“ (Assistent von ATLAS über die Rahmen-App) */
 .pa-anlegen {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: var(--s1);
 }
-.pa-leer-anlegen {
-  display: flex;
-  justify-content: center;
-  padding: 0 28px 24px;
-}
-
 /* Stammordner per Ziehen umsortieren */
 .pa-gruppe-kopf[draggable='true'] {
   cursor: grab;
@@ -295,4 +240,9 @@
 }
 .pa-gruppe.ziel-danach > .pa-gruppe-kopf {
   box-shadow: inset 0 -3px 0 var(--accent);
+}
+/* steht eine Quelle zuoberst, trägt die Linie der Leiste – keine Doppellinie */
+.pa-rollbereich > .pa-gruppe:first-child {
+  border-top: 0;
+  padding-top: 0;
 }
