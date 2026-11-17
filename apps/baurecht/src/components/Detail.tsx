@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
+import { Karte } from '@core/ui/Karte';
 import { Symbol } from '@core/ui/Symbol';
 import { einheitName, paragrafName } from '@core/baurecht/typen';
 import type { KurzKnoten } from '@core/baurecht/kurz';
@@ -175,8 +176,15 @@ export function Detail({ stand }: { stand: Pruefstand }) {
   }, [aufgehoben]);
   if (!p)
     return (
-      <aside className="br-detail br-detail-leer" aria-label="Einzelheiten" tabIndex={-1}>
-        <h2>Einzelheiten</h2>
+      <Karte
+        className="br-detail br-detail-leer"
+        titel={
+          // F6 und Sprungmarke landen auf der Überschrift (die leere Karte hat kein Bedienelement)
+          <span tabIndex={-1} data-f6-ziel="">
+            Einzelheiten
+          </span>
+        }
+      >
         <p>Paragraf in der Liste wählen: Begründung, beteiligte Angaben, Text in der maßgeblichen Fassung und Festlegung von Hand.</p>
         <dl className="br-legende">
           {(['rot', 'gelb', 'gruen'] as const).map((a) => (
@@ -188,7 +196,7 @@ export function Detail({ stand }: { stand: Pruefstand }) {
             </div>
           ))}
         </dl>
-      </aside>
+      </Karte>
     );
   const norm = stand.auswertung.normen.find((n) => n.id === `${p.modul}/${p.norm}`)!;
   const laedt = laedtListe.includes(norm.id);
@@ -208,216 +216,220 @@ export function Detail({ stand }: { stand: Pruefstand }) {
     useBaurecht.getState().festlegungAufheben(p.id);
     useBaurecht.getState().ansagen(`Festlegung aufgehoben – automatisch: „${AMPEL_TEXT[p.automatisch]}“${p.festlegung.bestaetigt ? '; beim Speichern noch einmal bestätigen' : ''}`);
   };
+  // feste Fußzeile der Karte: Festlegen, Aufheben, Rückgängig
+  const fuss = (
+    <>
+      <button type="button" ref={festlegenKnopf} onClick={() => festlegenOeffnen(p)}>
+        {p.festlegung ? 'Festlegung ändern …' : 'Von Hand festlegen …'}
+      </button>
+      {p.festlegung && (
+        <button type="button" className="danger" onClick={aufheben}>
+          Festlegung aufheben
+        </button>
+      )}
+      {aufgehoben && !p.festlegung && (
+        <span className="br-aufgehoben" role="status">
+          Festlegung aufgehoben.{' '}
+          <button
+            type="button"
+            className="small"
+            onClick={() => {
+              useBaurecht.getState().festlegungWiederherstellen(aufgehoben.id, aufgehoben.f);
+              // was jetzt im Stand steht (die Bestätigung entfällt, wenn sie vom Stand der Datei abweicht); wie beim
+              // Festlegen: ein „entfällt“, das noch nicht wirkt, sagt es dazu
+              const wieder = useBaurecht.getState().pruefung.festlegungen[aufgehoben.id] ?? aufgehoben.f;
+              const vorbehalt = wieder.ampel === 'gruen' ? p.entfaelltVorbehalt : undefined;
+              useBaurecht.getState().ansagen(`Festlegung wiederhergestellt – „${AMPEL_TEXT[wieder.ampel]}“${wieder.bestaetigt ? '' : ' (Entwurf)'}${vorbehalt ? `, noch nicht wirksam (${vorbehalt}), es bleibt bei „${AMPEL_TEXT[p.automatisch === 'gruen' ? 'gelb' : p.automatisch]}“` : ''}`);
+              setAufgehoben(null);
+              // der Knopf verschwindet – Fokus auf „Festlegung ändern …“
+              setTimeout(() => festlegenKnopf.current?.focus(), 0);
+            }}
+          >
+            Rückgängig
+          </button>
+        </span>
+      )}
+    </>
+  );
   return (
-    <aside className="br-detail" aria-label={`Einzelheiten ${titel}`} tabIndex={-1}>
-      <header className={`br-detail-kopf br-kopf-${p.ampel}`}>
-        {/* F6 und Sprungmarke landen hier – immer an derselben Stelle, nicht auf einem zufälligen Knopf; die Überschrift
-            nennt § und Norm mit (optisch als Zeile darüber) */}
-        <h2 className="br-detail-titel br-detail-name" tabIndex={-1} data-f6-ziel="">
+    <Karte
+      className={`br-detail br-detail-${p.ampel}`}
+      titel={
+        // F6 und Sprungmarke landen hier – immer an derselben Stelle, nicht auf einem zufälligen Knopf; die Überschrift
+        // nennt § und Norm mit (optisch als Zeile darüber)
+        <span className="br-detail-titel" tabIndex={-1} data-f6-ziel="">
+          {/* der Name der Karte für Vorleseprogramme: „Einzelheiten: § … – …“ */}
+          <span className="br-unsichtbar">Einzelheiten: </span>
           <span className="br-detail-nr">{nb(einheit.nr ? titel : norm.def.kurz)}</span>
           <span className="br-unsichtbar"> – </span>
           <span>{nb(einheit.titel || titel)}</span>
-        </h2>
-        <div className="br-detail-ampel">
-          <AmpelMarke ampel={p.ampel} />
-          {p.festlegung && (
-            <span className="br-leise">
-              {p.ueberholt || p.unwirksam
-                ? `Festlegung „${AMPEL_TEXT[p.festlegung.ampel]}“ ${p.ueberholt ? 'überholt' : 'noch nicht wirksam'}`
-                : p.festlegung.bestaetigt
-                  ? 'von Hand festgelegt'
-                  : 'von Hand festgelegt · Entwurf (beim Speichern bestätigen)'}
-            </span>
-          )}
+        </span>
+      }
+      aktionen={<AmpelMarke ampel={p.ampel} />}
+      fuss={fuss}
+    >
+      {p.festlegung && (
+        <p className="br-leise br-detail-festlegung">
+          {p.ueberholt || p.unwirksam
+            ? `Festlegung „${AMPEL_TEXT[p.festlegung.ampel]}“ ${p.ueberholt ? 'überholt' : 'noch nicht wirksam'}`
+            : p.festlegung.bestaetigt
+              ? 'von Hand festgelegt'
+              : 'von Hand festgelegt · Entwurf (beim Speichern bestätigen)'}
+        </p>
+      )}
+      {p.ueberholt && (
+        <div className="meldung warnung" role="status">
+          <strong>Festlegung überholt:</strong> {nb(p.ueberholt)}. Bitte erneut festlegen oder aufheben.
         </div>
-      </header>
-      <div className="br-detail-inhalt">
-        {p.ueberholt && (
-          <div className="meldung warnung" role="status">
-            <strong>Festlegung überholt:</strong> {nb(p.ueberholt)}. Bitte erneut festlegen oder aufheben.
-          </div>
+      )}
+      {!p.ueberholt && p.unwirksam && (
+        <div className="meldung" role="status">
+          <strong>Festlegung „entfällt“ noch nicht wirksam:</strong> {nb(p.unwirksam)}. Bis dahin bleibt es bei „{AMPEL_TEXT[p.ampel]}“.{' '}
+          {isTauri() ? 'Mit „Rechtsstand prüfen“ den Text an der Quelle holen; liegt er geprüft vor, zählt die Festlegung – wurde sie ohne Text getroffen, dann am Text erneut festlegen.' : 'Die Gesetzestexte gibt es nur in der Desktop-App – dort prüfen und festlegen.'}
+        </div>
+      )}
+      <section>
+        <h3>Begründung</h3>
+        {p.festlegung && (
+          <p className="br-festlegung-text">
+            <strong>Von Hand ({p.festlegung.von}, {datum(p.festlegung.am)}):</strong> {nb(p.festlegung.grund)}
+            <br />
+            <span className="br-leise">automatisch wäre: {AMPEL_TEXT[p.automatisch]}</span>
+          </p>
         )}
-        {!p.ueberholt && p.unwirksam && (
-          <div className="meldung" role="status">
-            <strong>Festlegung „entfällt“ noch nicht wirksam:</strong> {nb(p.unwirksam)}. Bis dahin bleibt es bei „{AMPEL_TEXT[p.ampel]}“.{' '}
-            {isTauri() ? 'Mit „Rechtsstand prüfen“ den Text an der Quelle holen; liegt er geprüft vor, zählt die Festlegung – wurde sie ohne Text getroffen, dann am Text erneut festlegen.' : 'Die Gesetzestexte gibt es nur in der Desktop-App – dort prüfen und festlegen.'}
-          </div>
-        )}
-        <section>
-          <h3>Begründung</h3>
-          {p.festlegung && (
-            <p className="br-festlegung-text">
-              <strong>Von Hand ({p.festlegung.von}, {datum(p.festlegung.am)}):</strong> {nb(p.festlegung.grund)}
-              <br />
-              <span className="br-leise">automatisch wäre: {AMPEL_TEXT[p.automatisch]}</span>
-            </p>
-          )}
-          <ul className="br-gruende">
-            {gruende.map((g, i) => (
+        <ul className="br-gruende">
+          {gruende.map((g, i) => (
+            <li key={i}>
+              {nb(g)}
+              {/* der Vorbehalt am Planungsrecht mit Ausweg: zum Bestätigen am Merkmal */}
+              {/^Nicht gesichert: Planungsrecht/.test(g) && (
+                <>
+                  {' '}
+                  <button type="button" className="small br-link" onClick={() => useBaurecht.getState().fokusSetzen('merkmal:Planungsrecht:bestaetigen')}>
+                    Zum Bestätigen
+                  </button>
+                </>
+              )}
+            </li>
+          ))}
+        </ul>
+        {p.hinweise.length > 0 && (
+          <ul className="br-hinweise">
+            {p.hinweise.map((h, i) => (
               <li key={i}>
-                {nb(g)}
-                {/* der Vorbehalt am Planungsrecht mit Ausweg: zum Bestätigen am Merkmal */}
-                {/^Nicht gesichert: Planungsrecht/.test(g) && (
-                  <>
-                    {' '}
-                    <button type="button" className="small br-link" onClick={() => useBaurecht.getState().fokusSetzen('merkmal:Planungsrecht:bestaetigen')}>
-                      Zum Bestätigen
-                    </button>
-                  </>
-                )}
+                <strong>Hinweis:</strong> {nb(h)}
               </li>
             ))}
           </ul>
-          {p.hinweise.length > 0 && (
-            <ul className="br-hinweise">
-              {p.hinweise.map((h, i) => (
-                <li key={i}>
-                  <strong>Hinweis:</strong> {nb(h)}
+        )}
+      </section>
+      {p.offen.some((o) => !o.startsWith('paragraf:')) && (
+        <section>
+          <h3>Fehlende Angaben</h3>
+          <div className="br-chips">
+            {p.offen.filter((o) => !o.startsWith('paragraf:')).map((o) => (
+              <button
+                key={o}
+                type="button"
+                className="br-chip-knopf"
+                onClick={() => (o.startsWith('paragraf:') ? zuParagraf(o.slice(9)) : useBaurecht.getState().fokusSetzen(o))}
+                title={o.startsWith('paragraf:') ? 'zum Paragrafen' : 'zur Angabe'}
+              >
+                {nb(offenText(o, ctx))}
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+      {p.offen.some((o) => o.startsWith('paragraf:')) && (
+        <section>
+          <h3>Hängt an</h3>
+          <p className="br-leise">Diese Paragrafen sind selbst noch offen – ist dort entschieden, entscheidet sich auch dieser.</p>
+          <div className="br-chips">
+            {p.offen
+              .filter((o) => o.startsWith('paragraf:'))
+              .map((o) => (
+                <button key={o} type="button" className="br-chip-knopf" onClick={() => zuParagraf(o.slice(9))} title="zum Paragrafen">
+                  {nb(offenText(o, ctx))}
+                </button>
+              ))}
+          </div>
+        </section>
+      )}
+      {p.unsicher.length > 0 && (
+        <section>
+          <h3>Nur Hinweis, nicht gesichert</h3>
+          <div className="br-chips">
+            {p.unsicher.map((o) => (
+              <button key={o} type="button" className="br-chip-knopf" onClick={() => useBaurecht.getState().fokusSetzen(o)}>
+                {nb(offenText(o, ctx))}
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+      <section className="br-fakten-kurz">
+        <h3>Prüfung und Nachweis</h3>
+        {p.behoerde ? <p>{BEHOERDE[p.behoerde]}</p> : null}
+        {p.nachweis?.length ? <p>Nachweis: {nb(p.nachweis.join('; '))}</p> : null}
+        {p.verweise?.length ? (
+          <>
+            <p className="br-verweise-kopf">Siehe auch:</p>
+            <ul className="br-verweise">
+              {p.verweise.map((v) => (
+                <li key={v}>
+                  <button type="button" className="br-link" onClick={() => zuParagraf(v)}>
+                    {nb(ctx.paragraf?.(v) ?? v)}
+                  </button>
                 </li>
               ))}
             </ul>
-          )}
-        </section>
-        {p.offen.some((o) => !o.startsWith('paragraf:')) && (
-          <section>
-            <h3>Fehlende Angaben</h3>
-            <div className="br-chips">
-              {p.offen.filter((o) => !o.startsWith('paragraf:')).map((o) => (
-                <button
-                  key={o}
-                  type="button"
-                  className="br-chip-knopf"
-                  onClick={() => (o.startsWith('paragraf:') ? zuParagraf(o.slice(9)) : useBaurecht.getState().fokusSetzen(o))}
-                  title={o.startsWith('paragraf:') ? 'zum Paragrafen' : 'zur Angabe'}
-                >
-                  {nb(offenText(o, ctx))}
-                </button>
+          </>
+        ) : null}
+        {p.regel && (
+          <p className="br-leise" title={p.regel.datei}>
+            Regel Stand {datum(p.regel.fassung)} (an dieser Fassung geprüft), Version{'\u00a0'}{p.regel.version}
+          </p>
+        )}
+        {p.annahme && <p className="br-leise">Annahme: {p.annahme}</p>}
+        {p.regelteile?.length ? (
+          <details className="br-regel-einzeln">
+            <summary>Regel im Einzelnen</summary>
+            <ul className="br-regel-baum">
+              {p.regelteile.map((r) => (
+                <Baum key={r.titel} k={{ text: `${r.titel}:`, kinder: [kurzBaum(r.kurz, ctx, stand.auswertung.kontext)] }} />
               ))}
-            </div>
-          </section>
-        )}
-        {p.offen.some((o) => o.startsWith('paragraf:')) && (
-          <section>
-            <h3>Hängt an</h3>
-            <p className="br-leise">Diese Paragrafen sind selbst noch offen – ist dort entschieden, entscheidet sich auch dieser.</p>
-            <div className="br-chips">
-              {p.offen
-                .filter((o) => o.startsWith('paragraf:'))
-                .map((o) => (
-                  <button key={o} type="button" className="br-chip-knopf" onClick={() => zuParagraf(o.slice(9))} title="zum Paragrafen">
-                    {nb(offenText(o, ctx))}
-                  </button>
-                ))}
-            </div>
-          </section>
-        )}
-        {p.unsicher.length > 0 && (
-          <section>
-            <h3>Nur Hinweis, nicht gesichert</h3>
-            <div className="br-chips">
-              {p.unsicher.map((o) => (
-                <button key={o} type="button" className="br-chip-knopf" onClick={() => useBaurecht.getState().fokusSetzen(o)}>
-                  {nb(offenText(o, ctx))}
-                </button>
-              ))}
-            </div>
-          </section>
-        )}
-        <section className="br-fakten-kurz">
-          <h3>Prüfung und Nachweis</h3>
-          {p.behoerde ? <p>{BEHOERDE[p.behoerde]}</p> : null}
-          {p.nachweis?.length ? <p>Nachweis: {nb(p.nachweis.join('; '))}</p> : null}
-          {p.verweise?.length ? (
-            <>
-              <p className="br-verweise-kopf">Siehe auch:</p>
-              <ul className="br-verweise">
-                {p.verweise.map((v) => (
-                  <li key={v}>
-                    <button type="button" className="br-link" onClick={() => zuParagraf(v)}>
-                      {nb(ctx.paragraf?.(v) ?? v)}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </>
-          ) : null}
-          {p.regel && (
-            <p className="br-leise" title={p.regel.datei}>
-              Regel Stand {datum(p.regel.fassung)} (an dieser Fassung geprüft), Version{'\u00a0'}{p.regel.version}
-            </p>
-          )}
-          {p.annahme && <p className="br-leise">Annahme: {p.annahme}</p>}
-          {p.regelteile?.length ? (
-            <details className="br-regel-einzeln">
-              <summary>Regel im Einzelnen</summary>
-              <ul className="br-regel-baum">
-                {p.regelteile.map((r) => (
-                  <Baum key={r.titel} k={{ text: `${r.titel}:`, kinder: [kurzBaum(r.kurz, ctx, stand.auswertung.kontext)] }} />
-                ))}
-              </ul>
-            </details>
-          ) : null}
-        </section>
-        <section>
-          <div className="section-head">
-            <h3>Gesetzestext</h3>
-            <span>
-              {p.geaendert.length > 0 && t?.vorige && (
-                <button type="button" className="small" aria-pressed={vergleich} onClick={() => setVergleich(!vergleich)} title="Fassung, an der die Regel geprüft ist, und geltende Fassung gegenüberstellen">
-                  alt/neu vergleichen
-                </button>
-              )}{' '}
-              {text?.url && (
-                <button type="button" className="small" onClick={() => void externOeffnen(text.url)} title="Original in der Quelle öffnen">
-                  <Symbol name="extern" /> Original
-                </button>
-              )}
-            </span>
-          </div>
-          {t?.fassung && <p className="br-leise">{t.fassung.fassung} · abgerufen {datum(t.fassung.abgerufen)}</p>}
-          {text && !zeigeVergleich && (
-            <p className="br-text-legende" aria-hidden="true">
-              <span className="br-legende-hervor">Fundstelle der Regel</span>
-              {geaendert.size > 0 && <span className="br-legende-geaendert">seit der Prüfung geändert</span>}
-            </p>
-          )}
-          {zeigeVergleich && t?.vorige
-            ? p.geaendert.map((g) => <Gegenueberstellung key={g} alt={t.vorige!.paragrafen[p.paragraf]} neu={text} absatz={g.split('/')[1] ?? ''} />)
-            : text ? <ParagrafText p={text} absaetze={absaetze} geaendert={geaendert} /> : <p className="br-leise">{laedt ? 'Text wird geholt …' : norm.def.quelle.art === 'verweis' ? 'Nur Fundstelle – der Text ist nicht frei verfügbar.' : `Text nicht verfügbar${t?.fehler ? `: ${t.fehler}` : ' (Web-Version oder noch nicht geholt)'}.`}</p>}
-        </section>
-      </div>
-      <footer className="br-detail-fuss">
-        <button type="button" ref={festlegenKnopf} onClick={() => festlegenOeffnen(p)}>
-          {p.festlegung ? 'Festlegung ändern …' : 'Von Hand festlegen …'}
-        </button>
-        {p.festlegung && (
-          <button type="button" className="danger" onClick={aufheben}>
-            Festlegung aufheben
-          </button>
-        )}
-        {aufgehoben && !p.festlegung && (
-          <span className="br-aufgehoben" role="status">
-            Festlegung aufgehoben.{' '}
-            <button
-              type="button"
-              className="small"
-              onClick={() => {
-                useBaurecht.getState().festlegungWiederherstellen(aufgehoben.id, aufgehoben.f);
-                // was jetzt im Stand steht (die Bestätigung entfällt, wenn sie vom Stand der Datei abweicht); wie beim
-                // Festlegen: ein „entfällt“, das noch nicht wirkt, sagt es dazu
-                const wieder = useBaurecht.getState().pruefung.festlegungen[aufgehoben.id] ?? aufgehoben.f;
-                const vorbehalt = wieder.ampel === 'gruen' ? p.entfaelltVorbehalt : undefined;
-                useBaurecht.getState().ansagen(`Festlegung wiederhergestellt – „${AMPEL_TEXT[wieder.ampel]}“${wieder.bestaetigt ? '' : ' (Entwurf)'}${vorbehalt ? `, noch nicht wirksam (${vorbehalt}), es bleibt bei „${AMPEL_TEXT[p.automatisch === 'gruen' ? 'gelb' : p.automatisch]}“` : ''}`);
-                setAufgehoben(null);
-                // der Knopf verschwindet – Fokus auf „Festlegung ändern …“
-                setTimeout(() => festlegenKnopf.current?.focus(), 0);
-              }}
-            >
-              Rückgängig
-            </button>
+            </ul>
+          </details>
+        ) : null}
+      </section>
+      <section>
+        <div className="section-head">
+          <h3>Gesetzestext</h3>
+          <span>
+            {p.geaendert.length > 0 && t?.vorige && (
+              <button type="button" className="small" aria-pressed={vergleich} onClick={() => setVergleich(!vergleich)} title="Fassung, an der die Regel geprüft ist, und geltende Fassung gegenüberstellen">
+                alt/neu vergleichen
+              </button>
+            )}{' '}
+            {text?.url && (
+              <button type="button" className="small" onClick={() => void externOeffnen(text.url)} title="Original in der Quelle öffnen">
+                <Symbol name="extern" /> Original
+              </button>
+            )}
           </span>
+        </div>
+        {t?.fassung && <p className="br-leise">{t.fassung.fassung} · abgerufen {datum(t.fassung.abgerufen)}</p>}
+        {text && !zeigeVergleich && (
+          <p className="br-text-legende" aria-hidden="true">
+            <span className="br-legende-hervor">Fundstelle der Regel</span>
+            {geaendert.size > 0 && <span className="br-legende-geaendert">seit der Prüfung geändert</span>}
+          </p>
         )}
-      </footer>
-    </aside>
+        {zeigeVergleich && t?.vorige
+          ? p.geaendert.map((g) => <Gegenueberstellung key={g} alt={t.vorige!.paragrafen[p.paragraf]} neu={text} absatz={g.split('/')[1] ?? ''} />)
+          : text ? <ParagrafText p={text} absaetze={absaetze} geaendert={geaendert} /> : <p className="br-leise">{laedt ? 'Text wird geholt …' : norm.def.quelle.art === 'verweis' ? 'Nur Fundstelle – der Text ist nicht frei verfügbar.' : `Text nicht verfügbar${t?.fehler ? `: ${t.fehler}` : ' (Web-Version oder noch nicht geholt)'}.`}</p>}
+      </section>
+    </Karte>
   );
 }

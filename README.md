@@ -228,12 +228,16 @@ fehlen sie, warnt der Bericht am Bildschirm, und im Druck steht im Kopf „nicht
   einen Bereich; „Gewählte Räume fortlaufend nummerieren …“. **Raumtabelle** aller Räume des Projekts (oberstes
   Geschoss oben, Summe je Geschoss) mit direkt bearbeitbaren Spalten (Nr., Bezeichnung, R/S, Nutzung,
   WoFlV-Anrechnung, Faktor, Wohnung, Abzug, Putzabzug); Enter bzw. ↓ springt in Nr. und Bezeichnung zur nächsten Zeile
+- **Kartenlayout**: links die Karte Projekt · Geschosse · Flächen, in der Mitte die Zeichenkarte (Grundriss oder 3D),
+  rechts die Karten der Auswahl bzw. des Geschosses und darunter die **Auswertung**; die Seitenkarten lassen sich in der
+  Breite ziehen (bleibt gemerkt). Bedienhinweis, Zahleneingabe, Koordinaten und Maßstab stehen in der Fußzeile der
+  Zeichenkarte, nichts verdeckt den Plan
 - **Auswertung** rechts unten: Kurzfassung (BGF · NRF · WoFl je Geschoss) oder alle Kennzahlen, der Zustand bleibt;
-  Geschoss umbenennen per Doppelklick oder F2 in der Geschossliste
+  NRF/BGF und KGF/BGF in der Fußzeile der Karte; Geschoss umbenennen per Doppelklick oder F2 in der Geschossliste
 - **Neues Geschoss**: das darunterliegende wird eingeblendet; „BGF-Umriss aus [Geschoss darunter] übernehmen“
   kopiert nur die Geometrie (ohne Dach, Körperhöhe, Höhenversatz, Umschließung) und markiert den Umriss zum Prüfen
 - IFC-Import: das IFC-Modul lädt schon beim Öffnen des Dialogs, das Lesen einer Datei lässt sich abbrechen;
-  Bedienhinweise unten lassen sich einklappen (bleibt so); „Neu“ beginnt mit dem BGF-Umriss
+  Bedienhinweise in der Fußzeile der Zeichenkarte lassen sich einklappen (bleibt so); „Neu“ beginnt mit dem BGF-Umriss
 - Live-Auswertung je Geschoss und gesamt
 - **Flächenaufstellung** zum Drucken/PDF mit **Grundriss je Geschoss** (farbig nach Nutzungsgruppe, beschriftet,
   Maßstabsleiste, Legende, optional mit Hintergrundplan) und Raumliste je Geschoss; auf Wunsch mit **Rechenweg je

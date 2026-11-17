@@ -12,12 +12,18 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
 
 ## Bedienung
 
-- **Aufbau der Oberfläche:** Links die **Navigation** (Projekt, Projektdaten | Antragsdaten, Formulare und – durch
-  eine Linie getrennt – Projektordner) auf eigenem, dunklerem Grund wie die Titelleiste; der gewählte Eintrag ist hell
-  hinterlegt und links markiert. Der **Kopf der Navigation steht fest** (rollt nicht mit): Projekt, Antrag und darunter
-  ein Knopf in zwei Hälften – **Projektdaten** (die Projektkarte – gilt für das ganze Projekt; aus ihr werden die
-  Formulare ausgefüllt) und **Antragsdaten** (nur für den aktiven Antrag: Status, Antragsmerkmale, Antragsumfang –
-  siehe unten); darunter rollt der Rest ab „Formulare“. Aufbau: Dokument › Antrag › Projekt.
+- **Aufbau der Oberfläche** (Kartenlayout, [design.md](design.md) „Fläche und Karten“): Unter der Werkzeugleiste liegt
+  die Fläche, darauf stehen die Bereiche als Karten mit Spalt. Links die **Navigation** als Seitenkarte (Projekt,
+  Projektdaten | Antragsdaten, Formulare und – durch eine Linie getrennt – Projektordner); der gewählte Eintrag ist
+  getönt hinterlegt und links markiert. Daneben die Gliederung („Inhalt des Formulars“), rechts Verlauf bzw.
+  „Formular einrichten“ – ebenfalls Seitenkarten. Formular und Felderansicht stehen direkt auf der Fläche: das weiße
+  Papier bzw. **jeder Abschnitt der Felderansicht** ist die Karte, „Was fehlt noch?“ ebenso. Projektdaten (Gruppen als
+  Seitenkarte, die gewählte Gruppe als Karte), Antragsdaten, Projektübersicht und Dateien sind je eine Karte. Die
+  Seitenüberschriften der Felderansicht („Seite 1 von 2“) sind größer als die Köpfe der Abschnittskarten. Der **Kopf
+  der Navigation steht fest** (rollt nicht mit): Projekt, Antrag und darunter ein Knopf in zwei Hälften –
+  **Projektdaten** (die Projektkarte – gilt für das ganze Projekt; aus ihr werden die Formulare ausgefüllt) und
+  **Antragsdaten** (nur für den aktiven Antrag: Status, Antragsmerkmale, Antragsumfang – siehe unten); darunter
+  rollt der Rest ab „Formulare“. Aufbau: Dokument › Antrag › Projekt.
 - **Werkzeugleiste** (gemeinsamer Baustein `Werkzeugleiste`, design.md „Kopf- und Werkzeugleisten“): sichtbar bleibt,
   was man ständig braucht – links „Datei ▾“ (Daten aktualisieren …, Speichern unter …, Drucken …; in der Web-Version
   Formular öffnen …), „Speichern“ (mit Punkt bei ungespeicherten Änderungen) mit ↶ ↷, der Umschalter **Formular |
@@ -62,18 +68,18 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
   Bedingungen (`--bed-*`), Dateitypen (`--typ-*`) – stehen oben in `styles.css` mit Wert für das dunkle Schema. Status
   der Antragsdokumente: roter Ring = fehlt, rot = unvollständig, gelb = noch nicht (aktuell) im Antragsordner, grün =
   aktuell.
-- **Kleinste Fensterbreite (1000 px):** Navigation, Gliederung, Verlauf und das Einrichten-Panel schrumpfen bei
-  knapper Breite bis auf ihre Mindestbreite (220/180/220/280 px), das Papier behält mindestens 320 px. Die Projektdaten
-  ordnen ihr Raster nach dem Platz neben den Leisten (Containerabfrage): schmal 6 statt 12 Spalten, die Anschrift-Vorschau
+- **Kleinste Fensterbreite (1000 px):** Die Seitenkarten (Navigation, Gliederung, Verlauf, Einrichten, Gruppen der
+  Projektdaten) schrumpfen bei knapper Breite bis auf ihre Mindestbreite, die Mitte behält mindestens 280 px (Regeln
+  aus core). Die Projektdaten ordnen ihr Raster nach der Breite ihrer Karte (Containerabfrage): schmal 6 statt 12 Spalten, die Anschrift-Vorschau
   rückt nach oben.
 - **Ohne Programmnamen:** Die Oberfläche nennt kein anderes Programm (Dateiformate wie PDF, Excel, Word ausgenommen,
   siehe [design.md](design.md) „Begriffe“). Die App liest und schreibt das Dateiformat der Formularprojekte (siehe
   „Dateiformat“) und soll künftig auch ganz ohne das Originalprogramm auskommen.
-- **Seitenleisten** behalten ihre Breite, auch wenn eine Ansicht einen Rollbalken braucht (Platz dafür ist immer
-  frei); die Navigation, die Gliederung des Formulars und die Leiste der Projektdaten lassen sich am rechten Rand in der
-  Breite ziehen – auch mit der Tastatur (Griff fokussieren, ←/→) – gemerkt je Leiste, Doppelklick: Vorgabe. Rollbalken in den Farben des Schemas (alle Apps).
-  Rechts der **Inhalt**. Was zum Dokument gehört – Gliederung, Verlauf, Formularfläche –, steht im Grau der
-  Formularfläche.
+- **Seitenkarten** (`BreitenLeiste` aus core) behalten ihre Breite, auch wenn eine Ansicht einen Rollbalken braucht
+  (Platz dafür ist immer frei); Navigation, Gliederung, Gruppen der Projektdaten, Verlauf und Einrichten lassen sich am
+  Griff im Spalt in der Breite ziehen – auch mit der Tastatur (Griff fokussieren, ←/→) – gemerkt je Karte,
+  Doppelklick: Vorgabe. Die bisher in den Einstellungen gemerkte Breite der Navigation wird beim ersten Start einmal
+  übernommen. Rollbalken in den Farben des Schemas (alle Apps).
 - **Gemeinsame Einstellungen:** Die Stammordner der Projektordner und der Ort neuer Projektdateien gelten für alle
   Apps (`allgemein.json` im gemeinsamen Konfigurationsordner, siehe `packages/core/src/platform/konfig.ts`) und stehen
   auf „Pfade und Benennung“; PERMIO übernimmt beim ersten Start seine bisherigen Stammordner dorthin, wenn dort noch
@@ -124,8 +130,8 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
 - **Gesetzestext-Fenster:** Schließen (Esc, Knopf, Klick daneben) und Reiterwechsel sind gegen den Absturz
   „destroy is not a function“ (Chromium/WebView2 liefert bei `scrollIntoView` ein Promise) abgesichert
   (`gesetz.ui.test.ts`).
-- **Gliederung:** eigener Bereich direkt am Formular („Inhalt des Formulars“, im Grau der Formularfläche – getrennt
-  von der Navigation links): Seiten und Abschnitte mit Füllstand (z. B. 3/5, ✓ wenn vollständig) und Balken für
+- **Gliederung:** eigene Seitenkarte direkt am Formular („Inhalt des Formulars“ – getrennt von der Navigation
+  links): Seiten und Abschnitte mit Füllstand (z. B. 3/5, ✓ wenn vollständig) und Balken für
   das ganze Formular; ein Klick springt hin. Zeigt man auf einen Eintrag, werden seine Felder im Formular wie mit
   dem Textmarker hervorgehoben. Über den Pfeil rechts klappt ein Abschnitt seine einzelnen Angaben auf (mit ✓ für
   ausgefüllte), auch sie springen und heben hervor. Ein- und ausblenden über „Ansicht › Gliederung“ in der Werkzeugleiste.

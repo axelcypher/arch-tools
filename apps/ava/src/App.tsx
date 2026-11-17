@@ -15,7 +15,7 @@ import { Uebersicht } from './components/Uebersicht';
 import { GewerkAnsicht } from './components/GewerkAnsicht';
 import { RechnungenAnsicht } from './components/abrechnung/RechnungenAnsicht';
 import { Eingang } from './components/abrechnung/Eingang';
-import { EinstellungenModal } from './components/Einstellungen';
+import { fabrioSeiteAnmelden } from './components/Einstellungen';
 import { Bautagebuch } from './components/bauleitung/Bautagebuch';
 import { Protokolle } from './components/bauleitung/Protokolle';
 import { Maengel } from './components/bauleitung/Maengel';
@@ -76,7 +76,6 @@ export function App() {
   const lv = useAva((s) => s.lv);
   const ansicht = useAva((s) => s.ansicht);
   const busy = useAva((s) => s.busy);
-  const einstellungenOffen = useAva((s) => s.einstellungenOffen);
   const [logOffen, setLogOffen] = useState(false);
   const [projekteOffen, setProjekteOffen] = useState(() => isTauri());
   // begonnene Eingabe im Feld zählt bei offenem LV mit – sonst fragte Arkly beim Schließen nicht, solange der Cursor im
@@ -84,6 +83,9 @@ export function App() {
   const entwurfOffen = useEntwurf((s) => s.offen);
   const dirty = lvGeaendert(lv) || (!!lv && entwurfOffen);
   const name = projekt ? `${projekt.meta.projektcode ? `${projekt.meta.projektcode} ` : ''}${projekt.name}${lv ? ` – ${lv.datei.name}` : ''}` : 'Kein Projekt';
+
+  // Seite „FABRIO“ im zentralen Einstellungsdialog
+  useEffect(() => fabrioSeiteAnmelden(), []);
 
   useEffect(() => {
     // Entwicklung: erfundenes Projekt im Speicher (Adresse mit ?demo)
@@ -223,7 +225,6 @@ export function App() {
           <main className="ava-main">{inhalt()}</main>
         </div>
       )}
-      {einstellungenOffen && <EinstellungenModal />}
       {logOffen && <LogDialog onClose={() => setLogOffen(false)} />}
       {busy && <div className="ava-busy">{busy}</div>}
     </div>

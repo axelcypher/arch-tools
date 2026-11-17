@@ -552,7 +552,7 @@ describe('PDF: Text und Kreuze', { timeout: 30_000 }, () => {
 
 describe('Bedingungen: Antragsmerkmale und Felder', () => {
   const GK345 = { art: 'gruppe' as const, op: 'und' as const, teile: [{ art: 'merkmal' as const, merkmal: 'Gebäudeklasse', werte: ['3', '4', '5'] }] };
-  const gl = (host: Element) => host.querySelector('nav[aria-label="Inhalt des Formulars"]')!;
+  const gl = (host: Element) => host.querySelector('.fo-gliederung nav[aria-label="Gliederung"]')!;
 
   it('ein Abschnitt nur bei Gebäudeklasse 3–5: offen, solange die Gebäudeklasse fehlt; entfällt bei GK 1 – das Merkmal gilt für alle Formulare', async () => {
     useFormulare.getState().profilSetzen('nw019999|2026A', { abschnitte: { '0:Panel1': { bedingung: GK345 } }, zaehlt: {} });
@@ -624,7 +624,7 @@ describe('Bedingungen: Antragsmerkmale und Felder', () => {
     await klick(knopf(host, '001-Muster'));
     await klick(host.querySelector<HTMLButtonElement>('.toolbar button[aria-label="Mehr"]')!);
     await klick(menuePunkt('Formular einrichten'));
-    const panel = () => host.querySelector<HTMLElement>('aside[aria-label="Einstellungen der Auswahl"]')!;
+    const panel = () => host.querySelector<HTMLElement>('.fo-ein-panel')!;
     const bedingung = () => useFormulare.getState().profile['nw019999|2026A']?.abschnitte['0:Panel1']?.bedingung;
     // Abschnitt im Baum wählen; „immer erforderlich“ → nur bei Gebäudeklasse 4 oder 5
     await klick(host.querySelector<HTMLButtonElement>('.fo-ein-baum [data-auswahl="a:0:Panel1"]')!);
@@ -4116,7 +4116,7 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     expect(useAntrag.getState().projektdatei?.ansicht).toBe('BAUA');
     const inhalt = host.querySelector('.pu-inhalt')!;
     expect(inhalt.hasAttribute('inert')).toBe(true);
-    expect(host.querySelector('.pu')!.getAttribute('aria-busy')).toBe('true');
+    expect(host.querySelector('.pu-inhalt')!.getAttribute('aria-busy')).toBe('true');
     // Hinweis und Abblenden erst nach einem Moment (ein schneller Wechsel flackert nicht); die Live-Region ist schon da
     expect(host.querySelector('.pu-laedt-hinweis')?.textContent).toBe('');
     expect(inhalt.classList.contains('laedt')).toBe(false);
@@ -4143,7 +4143,7 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     // fertig geöffnet: wieder bedienbar
     expect(host.querySelector('.pu-inhalt')!.hasAttribute('inert')).toBe(false);
     expect(host.querySelector('.pu-laedt-hinweis')?.textContent).toBe('');
-    expect(host.querySelector('.pu')!.hasAttribute('aria-busy')).toBe(false);
+    expect(host.querySelector('.pu-inhalt')!.hasAttribute('aria-busy')).toBe(false);
   });
 
   it('Bearbeiten: Felder speichern im beim Speichern gelesenen Umfang – von woanders Ergänztes bleibt, Entferntes verschwindet sofort aus der Ansicht', async () => {
@@ -5479,7 +5479,7 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
   it('Status von Hand: eingereicht sperrt Formulare und Antragsdaten, ein Nachtrag entsperrt; die Startseite zeigt den aktiven Antrag', async () => {
     const host = await projektBS9();
     await klick(antragsdaten(host));
-    expect(host.querySelector('.pu-kopf h2')!.textContent).toBe('Antragsdaten');
+    expect(host.querySelector('.pu > .karte-kopf h2')!.textContent).toBe('Antragsdaten');
     const status = () => host.querySelector<HTMLSelectElement>('select[aria-label="Status des Antrags"]')!;
     expect(status().value).toBe('auto');
     act(() => {

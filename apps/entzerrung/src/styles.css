@@ -93,14 +93,14 @@
   fill: #2b8a3e;
 }
 .ef-text.mass,
-.ef-text.flaeche {
+.ef-text.fl-wert {
   fill: #b8400a;
 }
 .ef-text.klein {
   font-size: 11px;
   font-weight: 500;
 }
-.ef-text.flaeche {
+.ef-text.fl-wert {
   font-size: 13px;
 }
 
@@ -209,55 +209,31 @@
   stroke-width: 1.5;
 }
 
-.ef-status {
-  position: absolute;
-  left: 8px;
-  bottom: 8px;
-  right: 8px;
-  display: flex;
-  gap: 16px;
-  justify-content: space-between;
-  pointer-events: none;
-  font-size: 12px;
-}
-.ef-status span {
-  background: var(--overlay-bg);
-  padding: 3px 8px;
-  border-radius: 4px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
+/* Fußzeile der Zeichenkarte: Hinweis (bricht um), rechts die Koordinaten */
 .ef-hinweis-text {
-  flex: 0 1 auto;
+  min-width: 0;
+  padding: var(--s1) 0;
+}
+/* Platzhalter und Wert liegen übereinander: die Breite hängt nicht davon ab, ob die Maus auf dem Foto ist */
+.ef-koord {
+  display: grid;
+  justify-items: end;
+}
+.ef-platzhalter,
+.ef-koord-wert {
+  grid-area: 1 / 1;
+}
+.ef-platzhalter {
+  visibility: hidden;
 }
 .ef-koord {
-  flex: 0 0 auto;
-  font-variant-numeric: tabular-nums;
+  flex: none;
   margin-left: auto;
+  font-variant-numeric: tabular-nums;
   white-space: pre;
 }
-/* schmale Fläche: Koordinaten über dem Hinweis statt daneben */
-@container (max-width: 560px) {
-  .ef-status {
-    flex-direction: column-reverse;
-    align-items: flex-start;
-    gap: 4px;
-  }
-  .ef-koord {
-    margin-left: 0;
-  }
-  .ef-status span {
-    max-width: 100%;
-  }
-}
-.ef-flaeche {
-  container-type: size;
-}
 .ef-overlay:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--fokus);
   outline-offset: -2px;
 }
 
@@ -266,8 +242,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
-  padding: 14px 18px;
+  gap: var(--s3);
+  padding: var(--s3) var(--s4);
   line-height: 1.5;
 }
 .ef-leer p {
@@ -280,14 +256,14 @@
 
 .ef-ablegen {
   position: absolute;
-  inset: 12px;
+  inset: var(--s3);
   border: 3px dashed var(--accent);
-  border-radius: 8px;
+  border-radius: var(--radius);
   background: color-mix(in srgb, var(--accent-soft) 45%, transparent);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
+  font-size: var(--fs-l);
   color: #fff;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
   pointer-events: none;
@@ -318,38 +294,22 @@
 }
 .ef-methoden {
   display: flex;
-  margin-bottom: 6px;
+  margin-bottom: var(--s2);
 }
 .ef-methoden button {
   flex: 1;
-}
-.ef-tabelle {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 12px;
-  margin: 4px 0 6px;
-}
-.ef-tabelle th {
-  text-align: left;
-  font-weight: 500;
-  color: var(--muted);
-  font-size: 11px;
-  padding: 2px 3px;
-}
-.ef-tabelle td {
-  padding: 2px 3px;
 }
 .ef-tabelle tr.sel td {
   background: var(--accent-soft);
 }
 .ef-tabelle input.num {
-  padding: 2px 4px;
+  padding: 2px var(--s1);
 }
 .ef-ok {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--s2);
 }
 .ef-messungen li {
   align-items: center;
@@ -369,16 +329,16 @@
   line-height: 1.2;
 }
 .ef-hinweis {
-  margin-top: 10px;
+  margin-top: var(--s3);
 }
 
 /* Fotos des Projekts */
 .fw-kopf {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--s2);
   flex-wrap: wrap;
-  padding: 16px 28px 12px;
+  padding: var(--s4) var(--s5) var(--s3);
   border-bottom: 1px solid var(--border);
   background: var(--panel);
 }
@@ -390,7 +350,7 @@
 }
 .fw-kopf h2 {
   margin: 0;
-  font-size: 20px;
+  font-size: var(--fs-xl);
 }
 .fw-suche {
   width: min(260px, 100%);
@@ -399,11 +359,11 @@
   flex: 1;
   min-height: 0;
   overflow: auto;
-  padding: 12px 28px 28px;
+  padding: var(--s3) var(--s5) var(--s5);
 }
 .fw-gruppe h3 {
-  margin: 14px 0 6px;
-  font-size: 13px;
+  margin: var(--s3) 0 var(--s2);
+  font-size: var(--fs-m);
   color: var(--muted);
 }
 .fw-gruppe ul {
@@ -412,7 +372,7 @@
   padding: 0;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 6px;
+  gap: var(--s2);
 }
 .fw-foto {
   width: 100%;
@@ -429,7 +389,7 @@
 }
 .fw-marke {
   flex: 0 0 auto;
-  font-size: 10.5px;
+  font-size: var(--fs-xs);
   padding: 1px 6px;
   border-radius: 999px;
   color: var(--accent);
@@ -442,12 +402,12 @@
   opacity: 0.75;
 }
 .ef-schritte {
-  margin: 4px 0 0;
-  padding-left: 18px;
+  margin: 0;
+  padding-left: var(--s4);
   line-height: 1.5;
 }
 .ef-schritte li + li {
-  margin-top: 6px;
+  margin-top: var(--s2);
 }
 .ef-tabelle tr.fehlt td:nth-child(2) input,
 .ef-tabelle tr.fehlt td:nth-child(3) input {
@@ -455,11 +415,11 @@
 }
 .ef-ungueltig {
   color: var(--warn-text);
-  font-size: 12px;
+  font-size: var(--fs-s);
 }
 .ef-feinwerte {
-  margin: 6px 0;
-  font-size: 12px;
+  margin: var(--s2) 0;
+  font-size: var(--fs-s);
 }
 .ef-feinwerte summary {
   cursor: pointer;
@@ -478,7 +438,6 @@
   opacity: 1;
 }
 .list li:focus-visible {
-  outline: 2px solid var(--accent);
   outline-offset: -2px;
 }
 
@@ -493,7 +452,7 @@
   flex: 1;
 }
 .fw-datum {
-  font-size: 11px;
+  font-size: var(--fs-xs);
   color: var(--muted);
 }
 .fw-vorschau {
@@ -511,5 +470,5 @@
   display: block;
 }
 .ef-hinweis-ref {
-  margin-bottom: 6px;
+  margin-bottom: var(--s2);
 }
