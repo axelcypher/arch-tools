@@ -3,6 +3,7 @@ import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, describe, expect, it } from 'vitest';
 import { ProjektUebersicht } from './ProjektUebersicht';
+import type { UebersichtMarke } from './ProjektUebersicht';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -25,7 +26,7 @@ describe('Marken der Projektübersicht', () => {
           projekte: [{ schluessel: 'p1', gruppe: 'g', kuerzel: '2026-001', titel: 'Kita' }],
           zuletzt: [],
           onOeffnen: () => {},
-          marken: () => [
+          marken: (): UebersichtMarke[] => [
             { text: 'ungespeichert', art: 'hinweis' },
             { text: 'Frist', art: 'warnung' },
             { text: 'Stand', art: 'neutral' },
