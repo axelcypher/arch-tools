@@ -376,7 +376,7 @@ export function VorlagenView() {
                       ))}
                       {ziele.length > MAX_VORSCHAU && (
                         <button
-                          className="link po-mehr"
+                          className="link"
                           aria-expanded={aufgeklappt.has(k)}
                           onClick={() =>
                             setAufgeklappt((alt) => {

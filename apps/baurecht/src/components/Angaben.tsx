@@ -850,18 +850,21 @@ function ErgibtSich({ ids, stand, suche }: { ids: string[]; stand: Pruefstand; s
           return (
             <li key={id} data-fakt={id}>
               {name}: <strong>{wertAnzeige(fakten[id].wert, defs[id])}</strong> <span className="br-leise">– {fakten[id].ausFolge}</span>{' '}
-              <button
-                type="button"
-                className="small br-link"
-                aria-label={`${name} überstimmen …`}
-                title="Nur für einen begründeten Sonderfall – die Antwort braucht dann einen Beleg"
-                onClick={() => {
-                  useBaurecht.setState((s) => ({ ueberstimmen: { ...s.ueberstimmen, [id]: true } }));
-                  useBaurecht.getState().fokusSetzen(id);
-                }}
-              >
-                Überstimmen …
-              </button>
+              {/* eine ersetzte Rechtsfrage (FaktDef.ersetzt) wird nicht überstimmt – geändert werden die Tatsachen */}
+              {!defs[id].ersetzt && (
+                <button
+                  type="button"
+                  className="small br-link"
+                  aria-label={`${name} überstimmen …`}
+                  title="Nur für einen begründeten Sonderfall – die Antwort braucht dann einen Beleg"
+                  onClick={() => {
+                    useBaurecht.setState((s) => ({ ueberstimmen: { ...s.ueberstimmen, [id]: true } }));
+                    useBaurecht.getState().fokusSetzen(id);
+                  }}
+                >
+                  Überstimmen …
+                </button>
+              )}
             </li>
           );
         })}
