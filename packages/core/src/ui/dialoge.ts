@@ -4,8 +4,9 @@
  *  - role="dialog" und aria-modal="true", falls nicht gesetzt; ohne Namen benennt die erste Überschrift den Dialog
  *  - Erstfokus: `autofocus`, sonst das erste Textfeld (nur Dialoge, nicht die Druckvorschau), sonst der Hauptknopf
  *    (`.primary`), sonst das gewählte Optionsfeld, sonst das erste fokussierbare Element – nie „Abbrechen“
- *  - Fokus beim Öffnen in den Dialog (sofern er nicht schon darin liegt), beim Schließen zurück an die
- *    Stelle davor (z. B. der Knopf, der ihn geöffnet hat)
+ *  - Fokus beim Öffnen in den Dialog (sofern er nicht schon darin liegt), beim Schließen oder Aushängen zurück an die
+ *    Stelle davor (z. B. der Knopf, der ihn geöffnet hat, oder die Zeichenfläche bei Öffnen per Taste); wurde sie
+ *    inzwischen ersetzt, an das erste fokussierbare Element im nächsten noch vorhandenen Vorfahren
  *  - Tab und Umschalt+Tab bleiben im obersten Dialog
  *  - Esc schließt den obersten Dialog, der sich dafür angemeldet hat (`escAnmelden`, Hook `useEscSchliessen`);
  *    ein Eingabefeld, das Esc selbst nutzt (Eingabe verwerfen), hält das Ereignis an und schließt nichts
@@ -20,7 +21,14 @@ const KEIN_TEXT = ['checkbox', 'radio', 'range', 'file', 'color', 'hidden', 'sub
 const TEXTFELD = `input${KEIN_TEXT.map((t) => `:not([type='${t}'])`).join('')}:not([disabled]):not([readonly]), textarea:not([disabled]):not([readonly])`;
 
 let eingerichtet = false;
-const vorher = new WeakMap<Element, HTMLElement | null>();
+/** Stelle vor dem Öffnen: das fokussierte Element (auch eine SVG-Zeichenfläche) und seine Vorfahren – wird das Element
+ *  während der Dialog offen ist ersetzt (die App rendert es neu), geht der Fokus an das erste fokussierbare Element im
+ *  nächsten noch vorhandenen Vorfahren */
+interface Vorher {
+  el: HTMLElement | SVGElement;
+  ahnen: Element[];
+}
+const vorher = new WeakMap<Element, Vorher | null>();
 
 const DIALOG = '.modal, .report-backdrop > .report';
 const istDialog = (el: HTMLElement) => el.classList.contains('modal') || (el.classList.contains('report') && !!el.parentElement?.classList.contains('report-backdrop'));
@@ -41,8 +49,11 @@ function geoeffnet(d: HTMLElement) {
       d.setAttribute('aria-labelledby', h.id);
     }
   }
-  const aktiv = document.activeElement instanceof HTMLElement && document.activeElement !== document.body ? document.activeElement : null;
-  vorher.set(d, aktiv && !d.contains(aktiv) ? aktiv : null);
+  const a = document.activeElement;
+  const aktiv = (a instanceof HTMLElement || a instanceof SVGElement) && a !== document.body && !d.contains(a) ? a : null;
+  const ahnen: Element[] = [];
+  for (let p = aktiv?.parentElement; p && p !== document.body; p = p.parentElement) ahnen.push(p);
+  vorher.set(d, aktiv ? { el: aktiv, ahnen } : null);
   // nach dem Rendern: Dialoge, die selbst fokussieren (z. B. ein Suchfeld), haben Vorrang
   requestAnimationFrame(() => {
     if (!d.isConnected || d.contains(document.activeElement)) return;
@@ -60,10 +71,19 @@ function geoeffnet(d: HTMLElement) {
 
 function geschlossen(d: Element) {
   const v = vorher.get(d);
+  if (!v) return;
   // zurück an die Stelle davor – auch in einen äußeren Dialog, der offen bleibt (z. B. Rückfrage über der
   // Druckvorschau), nur nicht in einen Hintergrund, über dem noch ein anderer Dialog liegt
   const oben = obersterDialog();
-  if (v?.isConnected && (!oben || oben.contains(v))) v.focus();
+  const erlaubt = (el: Element) => !oben || oben.contains(el);
+  if (v.el.isConnected) {
+    if (erlaubt(v.el)) v.el.focus();
+    return;
+  }
+  // ersetzt: das erste fokussierbare Element im nächsten noch vorhandenen Vorfahren
+  const ahne = v.ahnen.find((x) => x.isConnected);
+  const ziel = ahne && (ahne.matches(START) ? ahne : ahne.querySelector<HTMLElement>(START));
+  if (ziel instanceof HTMLElement && erlaubt(ziel)) ziel.focus();
 }
 
 export function dialogVerhaltenEinrichten(): void {

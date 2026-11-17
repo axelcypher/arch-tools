@@ -24,6 +24,39 @@ describe('Dialoge', () => {
     expect(document.activeElement).toBe(knopf);
   });
 
+  it('geben den Fokus auch an eine SVG-Zeichenfläche zurück und beim Aushängen ohne Esc', async () => {
+    dialogVerhaltenEinrichten();
+    document.body.innerHTML = '<svg class="canvas" tabindex="0"></svg>';
+    const flaeche = document.querySelector<SVGElement>('svg.canvas')!;
+    flaeche.focus();
+    expect(document.activeElement).toBe(flaeche);
+    const hinter = document.createElement('div');
+    hinter.className = 'modal-backdrop';
+    hinter.innerHTML = '<div class="modal"><button id="ok">OK</button></div>';
+    document.body.appendChild(hinter);
+    await warten();
+    expect(document.activeElement?.id).toBe('ok');
+    hinter.remove();
+    await warten();
+    expect(document.activeElement).toBe(flaeche);
+  });
+
+  it('wurde der auslösende Knopf ersetzt, geht der Fokus an den Ersatz im selben Bereich statt auf body', async () => {
+    dialogVerhaltenEinrichten();
+    document.body.innerHTML = '<div class="fuss"><span class="zeile"><button id="alt">?</button></span></div>';
+    document.getElementById('alt')!.focus();
+    const hinter = document.createElement('div');
+    hinter.className = 'modal-backdrop';
+    hinter.innerHTML = '<div class="modal"><button id="ok">OK</button></div>';
+    document.body.appendChild(hinter);
+    await warten();
+    // die App rendert die Zeile neu: der alte Knopf ist weg, ein neuer steht an seiner Stelle
+    document.querySelector('.fuss')!.innerHTML = '<span class="zeile"><button id="neu">? Tastenkürzel …</button></span>';
+    hinter.remove();
+    await warten();
+    expect(document.activeElement?.id).toBe('neu');
+  });
+
   it('verschachtelt: schließt der innere, geht der Fokus zurück an die Stelle im äußeren (Dialog bzw. Druckvorschau)', async () => {
     dialogVerhaltenEinrichten();
     for (const aussen of [

@@ -1,0 +1,34 @@
+{
+  "flaechenrechner": {
+    "stufe": "patch",
+    "notiz": "Nach dem Schließen eines Dialogs kehrt der Fokus zuverlässig an die Stelle davor zurück, auch auf die Zeichenfläche."
+  },
+  "ava": {
+    "stufe": "patch",
+    "notiz": "Nach dem Schließen eines Dialogs kehrt der Fokus zuverlässig an die Stelle davor zurück, auch auf die Zeichenfläche."
+  },
+  "grz": {
+    "stufe": "patch",
+    "notiz": "Nach dem Schließen eines Dialogs kehrt der Fokus zuverlässig an die Stelle davor zurück, auch auf die Zeichenfläche."
+  },
+  "kosten": {
+    "stufe": "patch",
+    "notiz": "Nach dem Schließen eines Dialogs kehrt der Fokus zuverlässig an die Stelle davor zurück, auch auf die Zeichenfläche."
+  },
+  "ordner": {
+    "stufe": "patch",
+    "notiz": "Nach dem Schließen eines Dialogs kehrt der Fokus zuverlässig an die Stelle davor zurück, auch auf die Zeichenfläche."
+  },
+  "entzerrung": {
+    "stufe": "patch",
+    "notiz": "Nach dem Schließen eines Dialogs kehrt der Fokus zuverlässig an die Stelle davor zurück, auch auf die Zeichenfläche."
+  },
+  "formulare": {
+    "stufe": "patch",
+    "notiz": "Nach dem Schließen eines Dialogs kehrt der Fokus zuverlässig an die Stelle davor zurück, auch auf die Zeichenfläche."
+  },
+  "baurecht": {
+    "stufe": "patch",
+    "notiz": "Nach dem Schließen eines Dialogs kehrt der Fokus zuverlässig an die Stelle davor zurück, auch auf die Zeichenfläche."
+  }
+}
