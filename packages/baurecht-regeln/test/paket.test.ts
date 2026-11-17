@@ -92,6 +92,18 @@ describe('Vorfragen (FaktDef.vorfrage)', () => {
       'gebaeude.gastbetten': ['0: reines Wohngebäude ohne Ferienwohnungen – keine Beherbergung'],
       'gebaeude.verkaufsflaeche': ['0: reines Wohngebäude – keine Verkaufsstätte'],
       'nw.stellplatzflaeche': ['0: keine Stellplätze oder Garagen geplant – keine neue Stellplatzfläche'],
+      'vorhaben.wohnraum_neu': ['true: Neubau eines Gebäudes mit Wohnungen', 'false: kein Gebäude – es entstehen keine Wohnungen'],
+      'planung.wohnungsbau_246e': [
+        'false: es entstehen keine neuen Wohnungen und kein wieder nutzbarer Wohnraum – die Sonderregelung gilt nur für den Wohnungsbau',
+        'false: Außenbereich ohne räumlichen Zusammenhang mit der Ortslage oder einem Bebauungsplangebiet (§ 246e Abs. 3)',
+        'false: das Vorhaben hält den Bebauungsplan ein – eine Abweichung ist nicht nötig',
+        'false: das Vorhaben hält sich im Rahmen der Umgebung – eine Abweichung ist nicht nötig',
+        'false: das Vorhaben hält den Bebauungsplan und den Rahmen der Umgebung ein – eine Abweichung ist nicht nötig',
+        'true: es entstehen neue Wohnungen, und das Vorhaben weicht vom Bebauungsplan ab',
+        'true: es entstehen neue Wohnungen, und das Vorhaben fällt aus dem Rahmen der Umgebung',
+        'true: es entstehen neue Wohnungen, und das Vorhaben weicht vom Bebauungsplan bzw. vom Rahmen der Umgebung ab',
+        'true: es entstehen neue Wohnungen im Außenbereich, im Zusammenhang mit der Ortslage bzw. einem Bebauungsplangebiet',
+      ],
     });
     for (const [id, d] of mitFolge)
       for (const z of d.folgt!) {
@@ -2606,6 +2618,84 @@ describe('Fälle aus dem Fachreview', () => {
   });
 });
 
+
+describe('§ 246e BauGB aus Tatsachen (neue Wohnungen, Abweichung, Lage) statt „Wohnungsbau nach § 246e“', () => {
+  const ID = 'bund/baugb/246e';
+  const S = 'planung.wohnungsbau_246e';
+  const M = (x: Record<string, string> = {}) => ({ Vorhaben: 'Errichtung', Gebäudeart: 'Einfamilienhaus', Gebäudeklasse: '1', Planungsrecht: 'Innenbereich', Verfahren: 'vereinfachtes Verfahren', Sonderbau: 'nein', ...x });
+  const lauf = (m: Record<string, string>, f: Record<string, FaktWert> = {}, einreichung = '2026-12-01') => {
+    const r = auswerten({ ...eingabe(m, f, TEXTE), einreichung });
+    return { p: r.paragrafen.find((x) => x.id === ID)!, r };
+  };
+  const ja = (...ids: string[]) => Object.fromEntries(ids.map((i) => [i, sicher(true)]));
+  const nein = (...ids: string[]) => Object.fromEntries(ids.map((i) => [i, sicher(false)]));
+
+  it('Bebauungsplan: neue Wohnungen und Abweichung → kommt in Betracht (mit Grund); Plan eingehalten → entfällt', () => {
+    const mit = lauf(M({ Planungsrecht: 'Bebauungsplan' }), ja('planung.befreiung'));
+    expect(mit.p.ampel).toBe('rot');
+    // neue Wohnungen folgen aus dem Neubau eines Einfamilienhauses, das Ergebnis mit dem Grund in Worten
+    expect(mit.r.fakten['vorhaben.wohnraum_neu']).toMatchObject({ wert: true, ausFolge: 'Neubau eines Gebäudes mit Wohnungen' });
+    expect(mit.r.fakten[S]).toMatchObject({ wert: true, ausFolge: 'es entstehen neue Wohnungen, und das Vorhaben weicht vom Bebauungsplan ab' });
+    // die Begründung sagt in Worten, warum – nicht „Sonderregelung …: ja“
+    expect(mit.p.gruende[0]).toBe('Trifft zu – es entstehen neue Wohnungen, und das Vorhaben weicht vom Bebauungsplan ab.');
+    const ohne = lauf(M({ Planungsrecht: 'Bebauungsplan' }), nein('planung.befreiung'));
+    expect(ohne.p.ampel).toBe('gruen');
+    expect(ohne.p.gruende[0]).toBe('Entfällt – das Vorhaben hält den Bebauungsplan ein – eine Abweichung ist nicht nötig.');
+  });
+
+  it('Innenbereich: nach dem Rahmen der Umgebung; Außenbereich: nur im Zusammenhang mit der Ortslage (Abs. 3)', () => {
+    expect(lauf(M(), ja('planung.abweichung_umgebung')).p.ampel).toBe('rot');
+    expect(lauf(M(), nein('planung.abweichung_umgebung')).p.ampel).toBe('gruen');
+    expect(lauf(M({ Planungsrecht: 'Außenbereich' }), ja('planung.anschluss_ortslage')).p.ampel).toBe('rot');
+    const frei = lauf(M({ Planungsrecht: 'Außenbereich' }), nein('planung.anschluss_ortslage'));
+    expect(frei.p.ampel).toBe('gruen');
+    expect(frei.r.fakten[S]?.ausFolge).toMatch(/Abs\. 3/);
+  });
+
+  it('ohne neue Wohnungen entfällt die Sonderregelung; Satzung bzw. einfacher Bebauungsplan nur mit beiden „nein“', () => {
+    expect(lauf(M({ Vorhaben: 'Änderung', Gebäudeart: 'Nichtwohngebäude' }), { ...nein('vorhaben.wohnraum_neu'), ...ja('planung.abweichung_umgebung') }).p.ampel).toBe('gruen');
+    // Umbau eines Büros zu Wohnungen: neue Wohnungen sind eine Angabe (nicht abgeleitet), dann kommt § 246e in Betracht
+    expect(lauf(M({ Vorhaben: 'Nutzungsänderung', Gebäudeart: 'Mehrfamilienhaus', Gebäudeklasse: '3' }), ja('vorhaben.wohnraum_neu', 'planung.abweichung_umgebung')).p.ampel).toBe('rot');
+    // kein falsches Grün: beim einfachen Bebauungsplan zählen Plan und Umgebung
+    expect(lauf(M({ Planungsrecht: 'einfacher Bebauungsplan' }), nein('planung.befreiung')).p.ampel).not.toBe('gruen');
+    expect(lauf(M({ Planungsrecht: 'einfacher Bebauungsplan' }), nein('planung.befreiung', 'planung.abweichung_umgebung')).p.ampel).toBe('gruen');
+    // Einreichung ab 2031: die Frist ist abgelaufen
+    expect(lauf(M(), ja('planung.abweichung_umgebung'), '2031-02-01').p.ampel).toBe('gruen');
+  });
+
+  it('ohne Angaben: gelb, es fehlen die Tatsachen – nie die ersetzte Frage', () => {
+    const { p, r } = lauf(M());
+    expect(p.ampel).toBe('gelb');
+    expect(p.offen).toEqual(['planung.abweichung_umgebung']);
+    expect(p.offen).not.toContain(S);
+    expect(frageGestellt(S, r.faktDefs[S], r.kontext)).toBe(false);
+    // im Außenbereich ohne Bezug zu neuen Wohnungen: beide Tatsachen
+    const aussen = lauf(M({ Planungsrecht: 'Außenbereich', Vorhaben: 'Änderung', Gebäudeart: 'Nichtwohngebäude' }));
+    expect(aussen.p.offen.sort()).toEqual(['planung.anschluss_ortslage', 'vorhaben.wohnraum_neu']);
+    expect(aussen.r.klaerung.map((k) => k.id)).not.toContain(S);
+  });
+
+  it('ältere Datei: die frühere Antwort gilt, bis die Tatsachen da sind; widersprechen sie, Hinweis statt Überschreiben', () => {
+    // „ja“ ohne Tatsachen: weiterhin rot, die Frage bleibt sichtbar (mit der Antwort)
+    const alt = lauf(M(), ja(S));
+    expect(alt.p.ampel).toBe('rot');
+    expect(frageGestellt(S, alt.r.faktDefs[S], alt.r.kontext)).toBe(true);
+    expect(alt.r.fakten[S]).toMatchObject({ wert: true, herkunft: 'manuell' });
+    // die Tatsachen ergeben „nein“: die Antwort bleibt, wird zum Widerspruch – kein Grün
+    const gegen = lauf(M(), { ...ja(S), ...nein('planung.abweichung_umgebung') });
+    expect(gegen.p.ampel).not.toBe('gruen');
+    expect(gegen.r.fakten[S]).toMatchObject({ wert: true, herkunft: 'manuell' });
+    expect(gegen.r.fakten[S].widerspruch).toMatch(/ergibt sich aus anderen Angaben/);
+    // umgekehrt „nein“ aus der älteren Datei, die Tatsachen ergeben „ja“: nicht grün, Widerspruch an der Antwort
+    const umgekehrt = lauf(M(), { ...nein(S), ...ja('planung.abweichung_umgebung') });
+    expect(umgekehrt.p.ampel).not.toBe('gruen');
+    expect(umgekehrt.r.fakten[S].widerspruch).toBeTruthy();
+    // gleiche Aussage: die frühere Antwort geht im abgeleiteten Wert auf, die Frage entfällt
+    const gleich = lauf(M(), { ...nein(S), ...nein('planung.abweichung_umgebung') });
+    expect(gleich.p.ampel).toBe('gruen');
+    expect(frageGestellt(S, gleich.r.faktDefs[S], gleich.r.kontext)).toBe(false);
+  });
+});
 
 describe('Hinweise tragen kein Grün über gestellte Fragen', () => {
   // Befund der Fallmatrix: Ist der Umfang der Beseitigung nur Hinweis („Abbruch mit Ersatzbau“), wird „Altbau

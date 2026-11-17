@@ -185,6 +185,36 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   Mindestbreite nach, die Mitte behält ihre Mindestbreite; Ziehen und Tastatur gehen nie über den verfügbaren Platz
   hinaus. Der Hinweis der Web-Version steht auf der Fläche über den Karten.
 
+## Fragen nach Tatsachen statt nach Rechtsbegriffen
+
+LEXIO fragt nach dem, was ein Architekt über das Vorhaben weiß, nicht nach der rechtlichen Einordnung („Wohnungsbau
+nach § 246e?“). Ob eine Vorschrift greift, leitet LEXIO aus den Tatsachen ab (`folgt`); der Paragraf steht höchstens als
+Quelle in der Erläuterung.
+
+**§ 246e BauGB (Sonderregelung für den Wohnungsbau, „Bau-Turbo“):** gefragt wird
+
+- **Neue oder wieder nutzbare Wohnungen** – entstehen neue Wohnungen (Neubau, Anbau, Aufstockung, Dachausbau, Umbau
+  bzw. Umnutzung zu Wohnungen), oder wird unbewohnbarer Wohnraum wieder nutzbar? (Abs. 1 Nr. 1–3; beim Neubau eines
+  Gebäudes mit Wohnungen abgeleitet)
+- je nach Planungsrecht: **Bebauungsplan** – hält das Vorhaben eine Festsetzung nicht ein (Nutzung, Geschosse, Höhe,
+  Baugrenzen, GRZ/GFZ, Bauweise, Gestaltung)? **Innenbereich** – fällt es aus dem Rahmen dessen, was in der näheren
+  Umgebung steht? **Einfacher Bebauungsplan, Satzung nach BauGB** – beides. **Außenbereich** – steht das Grundstück
+  im räumlichen Zusammenhang mit der Ortslage oder einem Bebauungsplangebiet (Abs. 3)?
+
+Daraus folgt „Sonderregelung Wohnungsbau (§ 246e)“: **ja** bei neuen Wohnungen und einer Abweichung (im Außenbereich:
+mit Zusammenhang zur Ortslage), **nein** ohne neue Wohnungen, ohne Abweichung (beim einfachen Bebauungsplan bzw. einer
+Satzung nur, wenn Plan **und** Umgebung eingehalten sind) bzw. im Außenbereich ohne Zusammenhang. Die Begründung sagt,
+warum („Trifft zu – es entstehen neue Wohnungen, und das Vorhaben fällt aus dem Rahmen der Umgebung“ bzw. „Entfällt –
+das Vorhaben hält den Bebauungsplan ein …“). Offen bleibt, was fehlt – unter „es fehlt“ stehen die Tatsachenfragen.
+Zustimmung der Gemeinde (§ 36a entsprechend), Vereinbarkeit mit den öffentlichen Belangen, Frist bis Ende 2030 (Abs. 4)
+und Folgeeinrichtungen (Abs. 5) stehen als Hinweise am Paragrafen; ab einer Einreichung 2031 entfällt er.
+
+**Ersetzte Fragen** (`ersetzt: true` am Fakt, nur mit `folgt`): Die frühere Rechtsfrage wird nicht mehr gestellt und
+fehlt nie – an ihrer Stelle stehen die Tatsachenfragen unter „es fehlt“ und „klärt am meisten“. Eine Antwort darauf aus
+einer älteren Datei gilt weiter und steht als Frage da („Frühere Angabe: …“), bis sie zurückgenommen wird; ergeben die
+Tatsachen dasselbe, geht sie im abgeleiteten Wert auf, ergeben sie etwas anderes, wird sie zum Widerspruch (Hinweis,
+nie „entfällt“, nichts wird überschrieben).
+
 ## Vorfragen
 
 Statt vieler Einzelfragen fragt LEXIO je Gegenstand zuerst eine **Vorfrage**; die Einzelfragen braucht es nur bei „ja“
@@ -263,6 +293,8 @@ Angaben (n)“ mit dem Grund und im Prüfprotokoll („Ergibt sich aus anderen A
 | beheizt | nein bei „kein Gebäude“ | das GEG gilt nur für Gebäude |
 | land- oder forstwirtschaftlich genutzt | nein bei Wohngebäuden | bauordnungsrechtliche Nutzung, „ja“ wäre milder (das Betriebsleiter- bzw. Altenteilerwohnhaus nach § 35 BauGB bleibt unberührt) |
 | Stellplätze auf neuer Stellplatzfläche | 0 ohne Stellplätze oder Garagen | nur neue Flächen |
+| Neue oder wieder nutzbare Wohnungen | ja beim Neubau eines Gebäudes mit Wohnungen (Ein-, Zwei-, Mehrfamilienhaus, Wohn- und Geschäftshaus), nein bei „kein Gebäude“ | nicht bei Nutzungsänderung oder Nichtwohngebäude – dort eine Angabe |
+| Sonderregelung Wohnungsbau (§ 246e BauGB) | aus neuen Wohnungen, Abweichung und Lage, siehe „Fragen nach Tatsachen“ | ersetzte Frage |
 
 - **Nie still überschrieben:** Eine abweichende gespeicherte Angabe (auch ein Hinweis aus dem Modell, z. B. zwei
   Wohnungen im Einfamilienhaus) bleibt stehen und wird zum **Widerspruch** (`gegenFolge`, nur in der Auswertung) – die

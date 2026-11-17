@@ -3,7 +3,7 @@
   "modul": "bund",
   "norm": "baugb",
   "fassung": "2026-09-30",
-  "version": 2,
+  "version": 3,
   "paragrafen": {
     "14": {
       "titel": "Veränderungssperre",
@@ -774,8 +774,89 @@
     "246e": {
       "titel": "Befristete Sonderregelung für den Wohnungsbau",
       "gilt": {
-        "f": "planung.wohnungsbau_246e",
-        "ist": true
+        "oder": [
+          {
+            "f": "planung.wohnungsbau_246e",
+            "ist": true
+          },
+          {
+            "und": [
+              {
+                "f": "vorhaben.wohnraum_neu",
+                "ist": true
+              },
+              {
+                "oder": [
+                  {
+                    "und": [
+                      {
+                        "m": "Planungsrecht",
+                        "in": [
+                          "Bebauungsplan"
+                        ]
+                      },
+                      {
+                        "f": "planung.befreiung",
+                        "ist": true
+                      }
+                    ]
+                  },
+                  {
+                    "und": [
+                      {
+                        "m": "Planungsrecht",
+                        "in": [
+                          "Innenbereich"
+                        ]
+                      },
+                      {
+                        "f": "planung.abweichung_umgebung",
+                        "ist": true
+                      }
+                    ]
+                  },
+                  {
+                    "und": [
+                      {
+                        "m": "Planungsrecht",
+                        "in": [
+                          "einfacher Bebauungsplan",
+                          "Satzung nach BauGB"
+                        ]
+                      },
+                      {
+                        "oder": [
+                          {
+                            "f": "planung.befreiung",
+                            "ist": true
+                          },
+                          {
+                            "f": "planung.abweichung_umgebung",
+                            "ist": true
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "und": [
+                      {
+                        "m": "Planungsrecht",
+                        "in": [
+                          "Außenbereich"
+                        ]
+                      },
+                      {
+                        "f": "planung.anschluss_ortslage",
+                        "ist": true
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
       },
       "entfaellt": {
         "oder": [
@@ -785,19 +866,23 @@
           {
             "tag": "einreichung",
             "ab": "2031-01-01"
+          },
+          {
+            "f": "planung.wohnungsbau_246e",
+            "ist": false
           }
         ]
       },
-      "grund": "Mit Zustimmung der Gemeinde kann bis zum 31.12.2030 zugunsten des Wohnungsbaus (Errichtung, Erweiterung, Nutzungsänderung zu Wohnzwecken) von Vorschriften des BauGB abgewichen werden, wenn die Abweichung mit den öffentlichen Belangen vereinbar ist (Abs. 1).",
+      "grund": "Mit Zustimmung der Gemeinde kann bis Ende 2030 zugunsten des Wohnungsbaus vom Bebauungsplan bzw. vom Rahmen der Umgebung abgewichen werden – beim Neubau von Wohngebäuden, bei Anbau, Aufstockung oder Umbau mit neuen bzw. wieder nutzbaren Wohnungen und bei der Umnutzung zu Wohnzwecken (Abs. 1), im Außenbereich nur im Zusammenhang mit der Ortslage bzw. einem Bebauungsplangebiet (Abs. 3).",
       "fundstellen": [
         "246e/1",
         "246e/3",
         "246e/4"
       ],
       "pruefen": {
-        "grund": "Vereinbarkeit mit den öffentlichen Belangen und nachbarlichen Interessen; im Außenbereich nur im räumlichen Zusammenhang mit Flächen nach § 30 oder § 34 (Abs. 3)."
+        "grund": "Zustimmung der Gemeinde einholen (für sie gilt § 36a entsprechend, Abs. 2); die Abweichung muss unter Würdigung nachbarlicher Interessen mit den öffentlichen Belangen vereinbar sein; daneben bleiben Befreiung (§ 31) bzw. Bebauungsplan möglich."
       },
-      "hinweis": "Die Frist bezieht sich auf die Entscheidung im bauaufsichtlichen Verfahren (Abs. 4) – Antrag rechtzeitig vor Ende 2030 stellen; ggf. Strategische Umweltprüfung (Abs. 1 Satz 2).",
+      "hinweis": "Die Frist bezieht sich auf die Entscheidung im bauaufsichtlichen Verfahren (Abs. 4) – Antrag rechtzeitig vor Ende 2030 stellen; ggf. Strategische Umweltprüfung (Abs. 1 Satz 2). Mit dem Wohnungsbau können auch Anlagen für kulturelle, gesundheitliche und soziale Zwecke und Läden für den täglichen Bedarf der Bewohner zugelassen werden (Abs. 5).",
       "behoerde": {
         "$": "genehmigung"
       },

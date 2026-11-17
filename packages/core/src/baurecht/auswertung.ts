@@ -390,12 +390,30 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
     }
     return g;
   };
+  // eine ersetzte Frage (FaktDef.ersetzt) ohne eigene Antwort fehlt nicht selbst – an ihrer Stelle fehlen die gestellten
+  // Tatsachenfragen, aus denen sie sich ergibt (Bedingungen von `folgt`), die noch keinen gesicherten Wert haben
+  const ersetztDurch = (id: string): string[] => {
+    const out = new Set<string>();
+    // nur Zeilen, die noch offen sind (eine Zeile mit falschem Planungsrecht zählt nicht): deren offene Angaben, dazu
+    // widersprüchliche bzw. unsichere, die eine Zeile tragen würden
+    for (const z of faktDefs[id]?.folgt ?? []) {
+      try {
+        const b = werten(z.wenn, ctx);
+        if (b.w === 'nein') continue;
+        for (const o of [...b.offen, ...b.widerspruch, ...b.unsicher]) if (!o.startsWith('merkmal:') && !o.startsWith('paragraf:')) out.add(o);
+      } catch {
+        // eine Bedingung, die sich nicht werten lässt, trägt nichts bei
+      }
+    }
+    return [...out].filter((f) => gestellt(f));
+  };
+  const ersetzteAufloesen = (offen: string[]) => [...new Set(offen.flatMap((o) => (faktDefs[o]?.ersetzt && !gestellt(o) ? ersetztDurch(o) : [o])))];
   // nur gestellte Angaben (und Verweise) – bleibt nichts übrig, alle (sonst stünde ein Gelb ohne Grund da)
-  const nurGestellteStreng = (offen: string[]) => offen.filter((o) => o.startsWith('paragraf:') || gestellt(o));
+  const nurGestellteStreng = (offen: string[]) => ersetzteAufloesen(offen).filter((o) => o.startsWith('paragraf:') || gestellt(o));
   // gelb: bleibt sonst kein Grund, wird die Angabe weiter genannt (die Ampel ist ja gelb)
   const nurGestellte = (offen: string[]) => {
     const g = nurGestellteStreng(offen);
-    return g.length ? g : offen;
+    return g.length ? g : ersetzteAufloesen(offen);
   };
 
   const geltungCache = new Map<string, Bewertung>();
@@ -473,6 +491,36 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
     let tragend: Bewertung[] = [];
     // Begründungen nennen die Angaben, die das Ergebnis tragen; die ganze Bedingung steht in `bedingung`
     const warum = (k: Kurz | undefined, w: Wahrheit) => warumText(k, ctx, text, w);
+    // eine ersetzte Frage (FaktDef.ersetzt), deren Wert sich aus Tatsachen ergibt: deren Grund in Worten statt des Namens
+    // der Rechtsfrage („Sonderregelung …: ja“) – die Begründung sagt, warum
+    // – auch, wenn die Zeile nur über Hinweise zutrifft (z. B. Planungsrecht für diesen Ort noch nicht bestätigt; die
+    // Unsicherheit trägt die Ampel ohnehin)
+    // (die ersetzte Angabe aus der Bedingung selbst – sie trägt das Ergebnis nicht, solange sie offen ist)
+    const ersetzteIn = (k: unknown, out = new Set<string>()): Set<string> => {
+      if (Array.isArray(k)) k.forEach((x) => ersetzteIn(x, out));
+      else if (k && typeof k === 'object') {
+        const o = k as Record<string, unknown>;
+        if (typeof o.f === 'string' && faktDefs[o.f]?.ersetzt) out.add(o.f);
+        Object.values(o).forEach((x) => ersetzteIn(x, out));
+      }
+      return out;
+    };
+    const ausTatsachen = (k: Kurz | undefined, wert: boolean) =>
+      [
+        ...new Set(
+          [...ersetzteIn(k)].flatMap((v) => {
+            if (fakten[v]?.ausFolge) return fakten[v].wert === wert ? [fakten[v].ausFolge!] : [];
+            const zeile = faktDefs[v].folgt?.find((z) => {
+              try {
+                return z.wert === wert && werten(z.wenn, ctx).w === 'ja';
+              } catch {
+                return false;
+              }
+            });
+            return zeile ? [zeile.grund] : [];
+          }),
+        ),
+      ];
     if (g.w === 'nein') {
       ampel = 'gruen';
       const w = warum(n.datei?.regel.geltung, 'nein');
@@ -480,10 +528,13 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
       tragend = [g];
     } else if (entf?.w === 'ja' && !(tatbestand === 'nein' && gewicht(gilt) < gewicht(entf))) {
       ampel = 'gruen';
-      gruende.push(`Entfällt – ${warum(r.entfaellt, 'ja') || kurzText(r.entfaellt, text)}.`);
+      const tatsachen = ausTatsachen(r.entfaellt, false);
+      gruende.push(`Entfällt – ${tatsachen.length ? tatsachen.join('; ') : warum(r.entfaellt, 'ja') || kurzText(r.entfaellt, text)}.`);
       tragend = [entf];
     } else if (tatbestand === 'ja') {
       ampel = 'rot';
+      const tatsachen = ausTatsachen(r.gilt, true);
+      if (tatsachen.length) gruende.push(`Trifft zu – ${tatsachen.join('; ')}.`);
       gruende.push(r.grund);
       tragend = [g, gilt];
       // „Ausnahme möglich“ nur mit einer Frage, die gestellt wird – sonst kann niemand sie beantworten (die Ausnahme greift

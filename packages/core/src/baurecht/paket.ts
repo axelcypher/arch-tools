@@ -369,6 +369,8 @@ export function paketPruefen(p: Paket, merkmale: { name: string; werte: string[]
         if (!z.grund?.trim()) fehler.push(`${wo}: Grund fehlt`);
       }
       if (f.folgt?.length && (f.wert !== undefined || f.nach)) fehler.push(`${m.id} Fakt ${id}: „folgt“ nicht zusammen mit festem Wert oder Tabelle`);
+      // ersetzte Frage: ihr Wert muss sich aus Tatsachenfragen ergeben – sonst bliebe sie ohne alte Antwort für immer offen
+      if (f.ersetzt && !f.folgt?.length) fehler.push(`${m.id} Fakt ${id}: „ersetzt“ nur zusammen mit „folgt“`);
     }
     for (const h of m.hinweise ?? []) pruefe(`${m.id} Hinweis ${h.titel}`, m, h.wenn);
   }

@@ -23,9 +23,12 @@ const KURZ: Record<string, string> = {
   'lage.strasse_ausserorts': 'An klassifizierter Straße außerorts',
   'lage.zufahrt_neu': 'Neue oder geänderte Zufahrt',
   'planung.abweichung': 'Abweichung von der Bauordnung',
-  'planung.befreiung': 'Befreiung vom Bebauungsplan',
+  'planung.befreiung': 'Weicht vom Bebauungsplan ab',
+  'planung.abweichung_umgebung': 'Fällt aus dem Rahmen der Umgebung',
+  'planung.anschluss_ortslage': 'Anschluss an Ortslage oder Plangebiet',
   'planung.planaufstellung': 'Bebauungsplan in Aufstellung',
-  'planung.wohnungsbau_246e': 'Wohnungsbau nach § 246e BauGB',
+  'planung.wohnungsbau_246e': 'Sonderregelung Wohnungsbau (§ 246e)',
+  'vorhaben.wohnraum_neu': 'Neue oder wieder nutzbare Wohnungen',
   'schutz.baum': 'Baum, Allee oder Naturdenkmal betroffen',
   'schutz.bodendenkmal': 'Bodendenkmal (auch vermutet)',
   'schutz.denkmal': 'Baudenkmal auf dem Grundstück',
@@ -147,9 +150,50 @@ const KATALOG: Record<string, FaktDef> = {
   'planung.erhaltungssatzung': j('Erhaltungssatzung (§ 172 BauGB)', 'planung'),
   'planung.sanierungsgebiet': j('Sanierungsgebiet', 'planung'),
   'planung.planaufstellung': j('Bebauungsplan in Aufstellung (§ 33 BauGB)', 'planung'),
-  'planung.befreiung': j('Abweichung von Festsetzungen des Bebauungsplans beabsichtigt', 'planung', 'Ausnahme oder Befreiung nach § 31 BauGB'),
+  'planung.befreiung': {
+    titel: 'Vorhaben hält eine Festsetzung des Bebauungsplans nicht ein',
+    gruppe: 'planung',
+    typ: 'janein',
+    frage: 'Hält das Vorhaben eine Festsetzung des Bebauungsplans nicht ein – etwa die zulässige Nutzung, die Zahl der Geschosse oder die Höhe, die überbaubare Fläche (Baugrenzen, Baulinien), GRZ bzw. GFZ, die Bauweise oder Vorgaben zu Dach und Gestaltung?',
+    hilfe:
+      'Ja zum Beispiel: ein Geschoss mehr als festgesetzt; ein Anbau ragt über die Baugrenze; ein Flachdach, wo Satteldach vorgeschrieben ist; Wohnungen in einem Gewerbegebiet. Nein, wenn das Vorhaben alle Festsetzungen einhält. Für jede Abweichung braucht es eine Ausnahme oder Befreiung (§ 31 BauGB), für den Wohnungsbau kommt auch die Sonderregelung nach § 246e BauGB in Betracht.',
+  },
+  'planung.abweichung_umgebung': {
+    titel: 'Vorhaben fällt aus dem Rahmen der Bebauung in der näheren Umgebung',
+    gruppe: 'planung',
+    typ: 'janein',
+    frage: 'Weicht das Vorhaben deutlich von dem ab, was in der näheren Umgebung schon steht – in der Nutzung, der Höhe bzw. Zahl der Geschosse, der Größe, der Lage auf dem Grundstück oder der Bauweise?',
+    hilfe:
+      'Ja zum Beispiel: ein viergeschossiges Haus zwischen zweigeschossigen; ein Wohnhaus im rückwärtigen Garten, wo bisher nur an der Straße gebaut ist („zweite Reihe“); Wohnungen, wo ringsum nur Gewerbe ist; ein Gebäude, das deutlich größer ist als alles in der Nachbarschaft. Nein, wenn es für Nutzung, Höhe, Größe, Lage und Bauweise Vorbilder in der näheren Umgebung gibt. Im Zweifel offen lassen und mit der Bauaufsicht klären. Ohne Bebauungsplan muss sich ein Vorhaben in die Umgebung einfügen (§ 34 BauGB); für den Wohnungsbau kommt bei einer Abweichung die Sonderregelung nach § 246e BauGB in Betracht.',
+    wenn: { m: 'Planungsrecht', in: ['Innenbereich', 'einfacher Bebauungsplan', 'Satzung nach BauGB'] },
+  },
+  'planung.anschluss_ortslage': {
+    titel: 'Grundstück im räumlichen Zusammenhang mit der bebauten Ortslage oder einem Bebauungsplangebiet',
+    gruppe: 'planung',
+    typ: 'janein',
+    frage: 'Schließt das Grundstück an die zusammenhängend bebaute Ortslage oder an ein Gebiet mit Bebauungsplan an – unmittelbar oder nur durch eine Straße, einen Weg oder einen schmalen Streifen davon getrennt?',
+    hilfe:
+      'Nein nur, wenn das Grundstück frei in der Landschaft liegt oder allein an einzelne Höfe bzw. eine Splittersiedlung grenzt. Nur bei einem solchen Zusammenhang kann im Außenbereich die Sonderregelung für den Wohnungsbau genutzt werden (§ 246e Abs. 3 BauGB).',
+    wenn: { m: 'Planungsrecht', in: ['Außenbereich'] },
+  },
   'planung.abweichung': j('Abweichung von Anforderungen der Bauordnung beabsichtigt', 'planung', '§ 69 BauO NRW'),
-  'planung.wohnungsbau_246e': j('Abweichung vom Planungsrecht für Wohnungsbau nach § 246e BauGB beabsichtigt', 'planung'),
+  'planung.wohnungsbau_246e': {
+    titel: 'Sonderregelung für den Wohnungsbau kommt in Betracht (§ 246e BauGB)',
+    gruppe: 'planung',
+    typ: 'janein',
+    frage: 'Frühere Angabe: Soll zugunsten des Wohnungsbaus vom Planungsrecht abgewichen werden (§ 246e BauGB)?',
+    hilfe:
+      'Diese Frage stellt LEXIO nicht mehr: Ob die Sonderregelung in Betracht kommt, ergibt sich aus den Angaben zu neuen Wohnungen und zur Abweichung vom Bebauungsplan bzw. von der Umgebung (im Außenbereich: Zusammenhang mit der Ortslage). Die Antwort aus der älteren Datei gilt, bis diese Angaben vorliegen; ergeben sie etwas anderes, steht hier ein Hinweis.',
+    ersetzt: true,
+  },
+  'vorhaben.wohnraum_neu': {
+    titel: 'Durch das Vorhaben entstehen neue Wohnungen oder wird Wohnraum wieder nutzbar',
+    gruppe: 'vorhaben',
+    typ: 'janein',
+    frage: 'Entstehen durch das Vorhaben neue Wohnungen, oder wird leerstehender, bisher nicht bewohnbarer Wohnraum wieder nutzbar?',
+    hilfe:
+      'Ja zum Beispiel: Neubau eines Wohnhauses; Anbau, Aufstockung oder Dachausbau mit zusätzlicher Wohnung; Büro, Laden, Scheune oder Halle wird zu Wohnungen umgebaut; eine unbewohnbare Wohnung wird wieder hergerichtet. Nein zum Beispiel: Umbau, Anbau oder Wintergarten ohne zusätzliche Wohnung; Garage oder Carport; Gewerbe- oder Bürobau ohne Wohnungen. Daran hängt unter anderem die Sonderregelung für den Wohnungsbau (§ 246e BauGB).',
+  },
 
   /* ---------- Vorhaben ---------- */
   'vorhaben.dach_fassade': j('Arbeiten an Dach oder Fassade (Artenschutz: Quartiere von Fledermäusen und Gebäudebrütern)', 'vorhaben'),
@@ -231,6 +275,12 @@ const WOHNGEBAEUDE = { m: 'Gebäudeart', in: ['Einfamilienhaus', 'Zweifamilienha
 /** reines Wohngebäude, nicht bei einer Nutzungsänderung (dort könnte ein Teil zu Gästezimmern, Laden o. Ä. werden, ohne dass die Gebäudeart angepasst ist) */
 const WOHNGEBAEUDE_BLEIBT = { und: [WOHNGEBAEUDE, { m: 'Vorhaben', nicht: ['Nutzungsänderung'] }] };
 const KEIN_GEBAEUDE = { m: 'Gebäudeart', in: ['kein Gebäude'] };
+/* § 246e BauGB: neue Wohnungen (Abs. 1 Nr. 1–3) und eine Abweichung vom Planungsrecht – je nach Lage vom Bebauungsplan
+   (§ 30), vom Rahmen der Umgebung (§ 34) oder im Außenbereich nur mit Zusammenhang zur Ortslage bzw. einem Plangebiet (Abs. 3) */
+const PR = (...werte: string[]) => ({ m: 'Planungsrecht', in: werte });
+const FAKT = (f: string, ist: boolean) => ({ f, ist });
+const WOHNRAUM_NEU = FAKT('vorhaben.wohnraum_neu', true);
+const MIT_UND_OHNE_PLAN = PR('einfacher Bebauungsplan', 'Satzung nach BauGB');
 /**
  * Werte, die sich zwingend aus anderen Angaben ergeben (FaktDef.folgt) – die Frage entfällt, eine abweichende Antwort
  * wird zum Widerspruch bzw. überstimmt nur mit Beleg. Ein reines Wohngebäude (Ein-, Zwei-, Mehrfamilienhaus) hat keine
@@ -239,6 +289,26 @@ const KEIN_GEBAEUDE = { m: 'Gebäudeart', in: ['kein Gebäude'] };
  * Behelfsbau (Wohncontainer können einer sein, § 51 BauO NRW), gemischte Nutzung beim Mehrfamilienhaus (Fachreview Runde 3).
  */
 const FOLGT: Record<string, NonNullable<FaktDef['folgt']>> = {
+  // ein neues Gebäude mit Wohnungen schafft neue Wohnungen (§ 246e Abs. 1 Nr. 1); nicht bei der Nutzungsänderung (sie kann
+  // auch innerhalb eines Wohngebäudes liegen, z. B. Keller zu Hobbyraum) und nicht bei Nichtwohngebäuden (Betriebswohnung)
+  'vorhaben.wohnraum_neu': [
+    { wenn: { und: [{ m: 'Vorhaben', in: ['Errichtung'] }, { m: 'Gebäudeart', in: ['Einfamilienhaus', 'Zweifamilienhaus', 'Mehrfamilienhaus', 'Wohn- und Geschäftshaus'] }] }, wert: true, grund: 'Neubau eines Gebäudes mit Wohnungen' },
+    { wenn: KEIN_GEBAEUDE, wert: false, grund: 'kein Gebäude – es entstehen keine Wohnungen' },
+  ],
+  // Sonderregelung für den Wohnungsbau: kommt in Betracht bei neuen Wohnungen und einer Abweichung vom Planungsrecht; nicht
+  // ohne neue Wohnungen, ohne Abweichung bzw. im Außenbereich ohne Zusammenhang mit der Ortslage. „Satzung nach BauGB“ und
+  // der einfache Bebauungsplan: Bebauungsplan und Umgebung zugleich maßgeblich – „keine Abweichung“ nur, wenn beides nein
+  'planung.wohnungsbau_246e': [
+    { wenn: FAKT('vorhaben.wohnraum_neu', false), wert: false, grund: 'es entstehen keine neuen Wohnungen und kein wieder nutzbarer Wohnraum – die Sonderregelung gilt nur für den Wohnungsbau' },
+    { wenn: { und: [PR('Außenbereich'), FAKT('planung.anschluss_ortslage', false)] }, wert: false, grund: 'Außenbereich ohne räumlichen Zusammenhang mit der Ortslage oder einem Bebauungsplangebiet (§ 246e Abs. 3)' },
+    { wenn: { und: [PR('Bebauungsplan'), FAKT('planung.befreiung', false)] }, wert: false, grund: 'das Vorhaben hält den Bebauungsplan ein – eine Abweichung ist nicht nötig' },
+    { wenn: { und: [PR('Innenbereich'), FAKT('planung.abweichung_umgebung', false)] }, wert: false, grund: 'das Vorhaben hält sich im Rahmen der Umgebung – eine Abweichung ist nicht nötig' },
+    { wenn: { und: [MIT_UND_OHNE_PLAN, FAKT('planung.befreiung', false), FAKT('planung.abweichung_umgebung', false)] }, wert: false, grund: 'das Vorhaben hält den Bebauungsplan und den Rahmen der Umgebung ein – eine Abweichung ist nicht nötig' },
+    { wenn: { und: [WOHNRAUM_NEU, PR('Bebauungsplan'), FAKT('planung.befreiung', true)] }, wert: true, grund: 'es entstehen neue Wohnungen, und das Vorhaben weicht vom Bebauungsplan ab' },
+    { wenn: { und: [WOHNRAUM_NEU, PR('Innenbereich'), FAKT('planung.abweichung_umgebung', true)] }, wert: true, grund: 'es entstehen neue Wohnungen, und das Vorhaben fällt aus dem Rahmen der Umgebung' },
+    { wenn: { und: [WOHNRAUM_NEU, MIT_UND_OHNE_PLAN, { oder: [FAKT('planung.befreiung', true), FAKT('planung.abweichung_umgebung', true)] }] }, wert: true, grund: 'es entstehen neue Wohnungen, und das Vorhaben weicht vom Bebauungsplan bzw. vom Rahmen der Umgebung ab' },
+    { wenn: { und: [WOHNRAUM_NEU, PR('Außenbereich'), FAKT('planung.anschluss_ortslage', true)] }, wert: true, grund: 'es entstehen neue Wohnungen im Außenbereich, im Zusammenhang mit der Ortslage bzw. einem Bebauungsplangebiet' },
+  ],
   // nicht bei „kein Gebäude“: Versammlungsstätten im Freien (Freilichtbühne, Stadion) sind bauliche Anlagen ohne Gebäude
   'gebaeude.besucher': [{ wenn: WOHNGEBAEUDE_BLEIBT, wert: 0, grund: 'reines Wohngebäude – keine Versammlungsstätte' }],
   'gebaeude.verkaufsflaeche': [{ wenn: WOHNGEBAEUDE_BLEIBT, wert: 0, grund: 'reines Wohngebäude – keine Verkaufsstätte' }],
