@@ -398,7 +398,7 @@ export function LvEditor() {
                 );
               })}
               {zeilen.length > 0 && !sichtbar.length && (
-                <tr>
+                <tr className="leer">
                   <td colSpan={8} className="muted ava-leer-zelle">
                     Keine Treffer für „{suche.trim()}“.{' '}
                     <button className="small" onClick={sucheLeeren}>
@@ -408,7 +408,7 @@ export function LvEditor() {
                 </tr>
               )}
               {!zeilen.length && (
-                <tr>
+                <tr className="leer">
                   <td colSpan={8} className="muted ava-leer-zelle">
                     Das LV ist leer – mit „Abschnitt“ und „Position“ beginnen oder über „Hinzufügen“ › „Aus Vorlage …“ Positionen übernehmen.
                   </td>

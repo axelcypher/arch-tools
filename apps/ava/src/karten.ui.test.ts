@@ -13,6 +13,7 @@ import { GewerkAnsicht } from './components/GewerkAnsicht';
 import { Maengel } from './components/bauleitung/Maengel';
 import { Bautagebuch } from './components/bauleitung/Bautagebuch';
 import { Preisspiegel } from './components/lv/Angebote';
+import { MailListe } from './components/bauleitung/Mailverlauf';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -191,6 +192,14 @@ describe('Kartenlayout (docs/design.md „Fläche und Karten“)', () => {
     expect(host.querySelector('.ava-tabelle')).toBeNull();
   });
 
+  it('Mails ohne Treffer: Leertext als tr.leer im tbody, kein tfoot', async () => {
+    await zeige(createElement(MailListe, { dateien: [] }));
+    await warte(() => host.querySelector('.ava-mail-tabelle'));
+    const leer = host.querySelector('.ava-mail-tabelle tbody tr.leer');
+    expect(leer?.textContent).toContain('Keine Mails.');
+    expect(host.querySelector('.ava-mail-tabelle tfoot')).toBeNull();
+  });
+
   it('Preisspiegel im Druck ohne festen Kopf (fest nur auf dem Bildschirm)', async () => {
     act(() => useAva.getState().setAnsicht({ art: 'gewerk', gewerk: 'G8', tab: 'lv' }));
     await zeige(createElement(Gewerk));
@@ -208,6 +217,10 @@ describe('Kartenlayout (docs/design.md „Fläche und Karten“)', () => {
     expect(css).not.toMatch(/\.ava-zwischensumme/);
     expect(css).not.toMatch(/thead[^{]*\{[^}]*position: sticky/);
     expect(css).not.toMatch(/\.ava-(zelle-eingabe|klickbar|tabelle-rolle|tabelle-rahmen|fehler)\b/);
+    // seit core #216: Platz unter festen Köpfen, Breite der Zellenfelder und Fokusrahmen wählbarer Zeilen aus core
+    expect(css).not.toMatch(/scroll-padding-top/);
+    expect(css).not.toMatch(/input\.zelle\s*\{/);
+    expect(css).not.toMatch(/waehlbar[^{]*:focus-visible/);
     // alle App-Regeln auf .summary-table hängen an .ava-flaeche (der Druck liegt als Portal außerhalb)
     const ohneKommentare = css.replace(/\/\*[\s\S]*?\*\//g, '');
     for (const m of ohneKommentare.matchAll(/([^{}]+)\{/g))

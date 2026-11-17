@@ -125,25 +125,12 @@
 
 /* ---------- Tabellen ---------- */
 
-/* Datentabellen: gemeinsame Zahlentabelle (.summary-table.text; .felder, .fest, .waehlbar, input.zelle aus core). Hier
-   nur, was core nicht hat: Felder füllen ihre Zelle, Zellenfelder so breit wie ein Betrag, Platz unter festen Köpfen (unter
-   .ava-flaeche; der Druck liegt als Portal außerhalb) */
+/* Datentabellen: gemeinsame Zahlentabelle (.summary-table.text; .felder, .fest, .waehlbar, input.zelle, tr.leer aus
+   core). Hier nur, was core nicht hat: gewöhnliche Felder füllen ihre Zelle (unter .ava-flaeche) */
 .ava-flaeche .summary-table.felder td input:not([type='checkbox'], [type='radio'], .zelle),
 .ava-flaeche .summary-table.felder td select {
   width: 100%;
   min-width: 60px;
-}
-
-/* Zellenfelder (input.zelle, z. B. Menge und EP im LV) so breit wie ein Betrag */
-.ava-flaeche .summary-table input.zelle {
-  width: 7.5em;
-}
-
-/* feste Köpfe in Tabellen, die nicht direkt im Rumpf stehen (LV im Tastaturbereich, Mails neben der Vorschau, Bieter und
-   Erfassen): was den Fokus bekommt oder per ↑/↓ gewählt wird, rollt nicht unter den Kopf – core setzt das nur für
-   direkte Kinder des Rumpfs (gemeldet) */
-.ava-flaeche .karte-rumpf:has(.summary-table.fest) {
-  scroll-padding-top: var(--tabelle-kopf-h, calc(1lh + 4px + var(--s1)));
 }
 
 .ava-ueber {
@@ -1082,7 +1069,6 @@
 }
 
 .ava-nav-knopf:focus-visible,
-.ava-flaeche .summary-table.waehlbar tbody tr:focus-visible,
 .ava-kennung-knopf:focus-visible {
   outline: 2px solid var(--fokus);
   outline-offset: -2px;
