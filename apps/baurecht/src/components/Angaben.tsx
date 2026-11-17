@@ -1110,6 +1110,7 @@ export function Angaben({ stand }: { stand: Pruefstand }) {
   }, [suchText]);
   return (
     <Karte
+      als="aside"
       titel="Angaben"
       className="br-angaben"
       aktionen={

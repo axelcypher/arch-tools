@@ -6,7 +6,6 @@ import { createProject } from '@core/model';
 import { VORGABE_ALLGEMEIN } from '@core/platform/konfig';
 import { projektdateiAnlegen } from '@core/platform/projektordner';
 import { PruefView } from './components/PruefView';
-import { EinstellungenView } from './components/StrukturView';
 import { SpeicherDateisystem } from './dateisystem';
 import { leereStammdaten } from './stammdaten';
 import { useOrdner } from './store';
@@ -104,24 +103,5 @@ describe('Prüfbericht', () => {
     const ordner = [...fs.eintraege.keys()].filter((k) => k.startsWith('P:/Projekte/MUS Haus/Archiv'));
     expect(ordner).toEqual([]);
     expect(host.textContent).toContain('Alle 7 Ordner der Struktur sind vorhanden');
-  });
-});
-
-describe('Einstellungen: Stammordner', () => {
-  it('Abschnittsüberschrift, Icon-Knöpfe mit Namen, „Neue Projekte hier“, Leerzustand', async () => {
-    useOrdner.setState({ allgemein: { ...VORGABE_ALLGEMEIN, projekte: ['P:/Projekte', 'P:/Archiv'] } });
-    const host = document.createElement('div');
-    document.body.appendChild(host);
-    root = createRoot(host);
-    act(() => root!.render(createElement(EinstellungenView)));
-    expect([...host.querySelectorAll('h3')].map((h) => h.textContent)).toContain('Stammordner der Projekte');
-    const liste = host.querySelector('.po-stammordner')!;
-    expect(liste.querySelector('button.icon[aria-label="P:/Archiv entfernen"] .symbol, button.icon[aria-label="P:/Archiv entfernen"] svg')).toBeTruthy();
-    expect(liste.querySelector('button.icon[aria-label="P:/Archiv nach oben"]')).toBeTruthy();
-    act(() => knopf(liste, 'Neue Projekte hier').click());
-    expect(useOrdner.getState().allgemein.projekte).toEqual(['P:/Archiv', 'P:/Projekte']);
-    act(() => (liste.querySelector('button[aria-label="P:/Archiv entfernen"]') as HTMLButtonElement).click());
-    act(() => (liste.querySelector('button[aria-label="P:/Projekte entfernen"]') as HTMLButtonElement).click());
-    expect(host.querySelector('.po-stammordner')!.textContent).toBe('Noch kein Stammordner – hinzufügen lässt er sich nur in der Desktop-App.');
   });
 });

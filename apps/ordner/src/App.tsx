@@ -5,10 +5,11 @@ import { bestaetigen, meldung } from '@core/ui/Rueckfrage';
 import { TitleBar } from '@core/ui/TitleBar';
 import { MenueKnopf, type MenuePunkt } from '@core/ui/Menue';
 import { Werkzeugleiste } from '@core/ui/Werkzeugleiste';
-import { einstellungenPunkt } from '@core/ui/Einstellungen';
+import { einstellungenOeffnen, einstellungenPunkt } from '@core/ui/Einstellungen';
+import { atlasSeiteAnmelden } from './components/AtlasEinstellungen';
 import { AssistentView } from './components/AssistentView';
 import { PruefView } from './components/PruefView';
-import { EinstellungenView, StrukturView } from './components/StrukturView';
+import { StrukturView } from './components/StrukturView';
 import { VorlagenView } from './components/VorlagenView';
 import { KatasterEinstellungen } from './components/KatasterEinstellungen';
 import { MailView } from './components/MailView';
@@ -19,7 +20,7 @@ import { useOrdner } from './store';
 import { ordnerAlsText } from './struktur';
 import { ASSISTENT_ANGABEN, ORDNERSTRUKTUR, satzUngespeichert } from './ungespeichert';
 
-type Ansicht = 'projekt' | 'pruefen' | 'mails' | 'struktur' | 'vorlagen' | 'kataster' | 'einstellungen';
+type Ansicht = 'projekt' | 'pruefen' | 'mails' | 'struktur' | 'vorlagen' | 'kataster';
 
 /**
  * Ansichten der App. Im Arbeitsablauf ständig gebraucht und deshalb sichtbar: Assistent, „Ordner prüfen“ und Mails;
@@ -33,7 +34,6 @@ const ANSICHTEN: { id: Ansicht; label: string; title: string; einrichtung?: true
   { id: 'struktur', label: 'Struktur', title: 'Ordnerbaum des Büros zum Klicken – mit Bausteinen für wiederkehrende Unterordner (z. B. Gewerke) – und Namensschemata', einrichtung: true },
   { id: 'vorlagen', label: 'Vorlagen', title: 'Vorlagenordner, Dateinamen und Presets: welche Vorlage wohin kommt und wie sie dort heißt', einrichtung: true },
   { id: 'kataster', label: 'Katasterpläne', title: 'QGIS-Vorlage, Katasterauszüge und DXF-Pläne einstellen – exportiert wird je Projekt über die Startseite', einrichtung: true },
-  { id: 'einstellungen', label: 'Einstellungen', title: 'Gemeinsame Einstellungen aller Apps: Konfigurationsordner, Stammordner, Ort der Projektdatei, Büro, Mitarbeiter', einrichtung: true },
 ];
 
 export function App() {
@@ -147,14 +147,16 @@ export function App() {
     document.title = APP_NAMEN.ordner.name;
   }, []);
 
+  // Seite „ATLAS“ im zentralen Einstellungsdialog
+  useEffect(() => atlasSeiteAnmelden(), []);
   // gemeinsame Einstellungen aus dem Konfigurationsordner
   useEffect(() => {
     void useOrdner.getState().konfigLaden();
   }, []);
 
-  // Struktur beim Wechsel in Einstellungen bzw. Vorlagen frisch lesen – ein anderer Rechner kann sie geändert haben
+  // Struktur beim Wechsel in Struktur bzw. Vorlagen frisch lesen – ein anderer Rechner kann sie geändert haben
   useEffect(() => {
-    if (ansicht === 'struktur' || ansicht === 'einstellungen' || ansicht === 'vorlagen') void useOrdner.getState().neuLesen();
+    if (ansicht === 'struktur' || ansicht === 'vorlagen') void useOrdner.getState().neuLesen();
   }, [ansicht]);
 
   // Anstehendes Schreiben der Einstellungen beim Schließen nicht verlieren
@@ -263,51 +265,45 @@ export function App() {
           {konfliktLaeuft && <span className="muted small-text">Speichert …</span>}
         </div>
       )}
-      <main className="po-main">
-        {/* der Assistent bleibt beim Wechsel der Ansicht eingehängt (nur ausgeblendet): Schritt und Eingaben bleiben erhalten */}
-        <div className="po-assistent-huelle" hidden={ansicht !== 'projekt'}>
-          <AssistentView
-            key={`${start?.nr ?? 0}-${neustart}-${auftrag?.nr ?? 0}`}
-            sichtbar={ansicht === 'projekt'}
-            start={start?.ordner ?? null}
-            auftrag={start ? null : auftrag}
-            onEinstellungen={() => setAnsicht('einstellungen')}
-            onPruefen={(pfad) => {
-              setPruefStart({ pfad, nr: (pruefStart?.nr ?? 0) + 1 });
-              setAnsicht('pruefen');
-            }}
-            onKatasterEinstellungen={() => setAnsicht('kataster')}
-            onMails={mailsPruefen}
-            onOffen={(was) => {
-              assistentOffen.current = was;
-              setAssistentOffenText(was);
-            }}
-          />
-        </div>
-        {ansicht === 'pruefen' && (
-          <PruefView
-            key={pruefStart?.nr ?? 0}
-            start={pruefStart?.pfad ?? null}
-            onMails={mailsPruefen}
-            onErgaenzen={(ordner) =>
-              nachRueckfrage(() => {
-                setAuftrag(null);
-                setStart((s) => ({ ordner, nr: (s?.nr ?? 0) + 1 }));
-                setAnsicht('projekt');
-              })
-            }
-          />
-        )}
-        {ansicht === 'vorlagen' && <VorlagenView />}
-        {ansicht === 'kataster' && (
-          <div className="po-kataster">
-            <KatasterEinstellungen />
-          </div>
-        )}
-        {ansicht === 'mails' && <MailView key={mailStart?.nr ?? 0} start={mailStart?.pfad ?? null} />}
-        {ansicht === 'struktur' && <StrukturView />}
-        {ansicht === 'einstellungen' && <EinstellungenView />}
-      </main>
+      {/* jede Ansicht bringt ihre Fläche mit Karten mit; das <main> ist darin die Hauptkarte */}
+      {/* der Assistent bleibt beim Wechsel der Ansicht eingehängt (nur ausgeblendet): Schritt und Eingaben bleiben erhalten */}
+      <div className="po-assistent-huelle" hidden={ansicht !== 'projekt'}>
+        <AssistentView
+          key={`${start?.nr ?? 0}-${neustart}-${auftrag?.nr ?? 0}`}
+          sichtbar={ansicht === 'projekt'}
+          start={start?.ordner ?? null}
+          auftrag={start ? null : auftrag}
+          onEinstellungen={() => einstellungenOeffnen('pfade', 'projekt.stammordner')}
+          onPruefen={(pfad) => {
+            setPruefStart({ pfad, nr: (pruefStart?.nr ?? 0) + 1 });
+            setAnsicht('pruefen');
+          }}
+          onKatasterEinstellungen={() => setAnsicht('kataster')}
+          onMails={mailsPruefen}
+          onOffen={(was) => {
+            assistentOffen.current = was;
+            setAssistentOffenText(was);
+          }}
+        />
+      </div>
+      {ansicht === 'pruefen' && (
+        <PruefView
+          key={pruefStart?.nr ?? 0}
+          start={pruefStart?.pfad ?? null}
+          onMails={mailsPruefen}
+          onErgaenzen={(ordner) =>
+            nachRueckfrage(() => {
+              setAuftrag(null);
+              setStart((s) => ({ ordner, nr: (s?.nr ?? 0) + 1 }));
+              setAnsicht('projekt');
+            })
+          }
+        />
+      )}
+      {ansicht === 'vorlagen' && <VorlagenView />}
+      {ansicht === 'kataster' && <KatasterEinstellungen />}
+      {ansicht === 'mails' && <MailView key={mailStart?.nr ?? 0} start={mailStart?.pfad ?? null} />}
+      {ansicht === 'struktur' && <StrukturView />}
       {logOpen && <LogDialog onClose={() => setLogOpen(false)} />}
     </div>
   );

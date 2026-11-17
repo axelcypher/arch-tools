@@ -136,32 +136,27 @@
   border: none;
 }
 
-/* Startseite */
+/* Startseite: wie die Projektübersicht der Apps eine Karte auf der Fläche, die Apps als Kacheln (gleiche Maße wie
+   die Projektkacheln in core/projektuebersicht.css) */
 .rahmen-start {
-  max-width: 880px;
-  margin: var(--s6) auto;
-  padding: 0 var(--s4);
-}
-.rahmen-start h2 {
-  margin: 0 0 var(--s1);
-  font-size: var(--fs-xl);
+  position: absolute;
+  inset: 0;
 }
 .rahmen-karten {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: var(--s2);
-  margin-top: var(--s4);
 }
 .rahmen-karte {
   display: flex;
   align-items: flex-start;
   gap: var(--s2);
-  padding: var(--s3) var(--s4);
+  height: auto;
+  padding: var(--s3);
   text-align: left;
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  height: auto;
 }
 .rahmen-karte:hover:not(:disabled) {
   border-color: var(--accent);
@@ -186,14 +181,6 @@
 .rahmen-karte-was {
   margin-left: var(--s1);
   font-weight: 400;
-}
-/* Neues Projekt anlegen (Assistent von ATLAS) */
-.rahmen-anlegen {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--s2) var(--s3);
-  margin: var(--s1) 0 var(--s4);
 }
 .rahmen-speicherort {
   margin-top: var(--s5);
