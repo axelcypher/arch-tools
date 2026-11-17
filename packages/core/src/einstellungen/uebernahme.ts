@@ -2,6 +2,7 @@ import { logger } from '../platform/log';
 import { VORGABE_PERMIO } from './eintraege';
 import { pfadSpeichern, pfadWerteLaden, type PfadWerte } from './pfade';
 import { gleicherWert, type PfadWert } from './verzeichnis';
+import { VORGABE_ANTRAGSORDNER, VORGABE_ZIELORDNER, zielpfadWirksam } from './zielordner';
 
 /**
  * Übernahme alter Werte, die bisher nur je Rechner im Browser-Speicher lagen (PERMIO bis 0.58: „formulare:export“), in
@@ -61,6 +62,23 @@ export interface Abweichung {
 
 const schluessel = (id: string, lokal: PfadWert) => `${id}=${JSON.stringify(lokal)}`;
 
+/**
+ * gemeinsamer Wert, mit dem ein alter lokaler verglichen wird; `undefined` = gemeinsam steht noch nichts. Der alte
+ * Zielordner war ein vollständiger Pfad relativ zum Projektordner – verglichen wird mit dem wirksamen (Zielordner im
+ * Antragsordner bzw. der abweichende außerhalb, `zielordner.ts`), sonst überschriebe er still einen gemeinsamen Zielordner.
+ */
+function gemeinsamFuer(id: string, werte: PfadWerte): PfadWert | undefined {
+  if (id !== 'plaene.permio.zielpfad') return werte[id];
+  const zielordner = werte['plaene.permio.zielordner'];
+  const abweichend = werte['plaene.permio.zielpfad'];
+  if (zielordner === undefined && abweichend === undefined) return undefined;
+  return zielpfadWirksam({
+    antragsordner: String(werte['ablage.permio.antragsordner'] ?? VORGABE_ANTRAGSORDNER),
+    zielordner: String(zielordner ?? VORGABE_ZIELORDNER),
+    abweichend: String(abweichend ?? ''),
+  });
+}
+
 /** Was zu übernehmen ist und wo gemeinsam schon etwas anderes steht – ohne Nebenwirkungen (getestet) */
 export function uebernahmePlanen(alt: AlterWert[], werte: PfadWerte, entschieden: ReadonlySet<string> = new Set()): { uebernehmen: AlterWert[]; abweichungen: Abweichung[]; gleich: AlterWert[] } {
   const uebernehmen: AlterWert[] = [];
@@ -70,7 +88,7 @@ export function uebernahmePlanen(alt: AlterWert[], werte: PfadWerte, entschieden
   for (const a of alt) {
     // je Rechner nur einmal: schon übernommen bzw. entschieden – ein späteres „Vorgabe wiederherstellen“ gilt
     if (entschieden.has(schluessel(a.id, a.wert))) continue;
-    const g = werte[a.id];
+    const g = gemeinsamFuer(a.id, werte);
     if (g === undefined) {
       uebernehmen.push(a);
       continue;

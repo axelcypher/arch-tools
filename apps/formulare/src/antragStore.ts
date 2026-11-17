@@ -90,6 +90,7 @@ import { ablageVon, autofillAnbindung, entwurfVon, formularOrdner, karteMitAende
 import { fragen } from '@core/ui/Rueckfrage';
 import { lesen, schreiben } from './speicher';
 import { berechnungenSuchvorlagen, pfadeAbonnieren, pfadWert, relativerPfad } from '@core/einstellungen/pfade';
+import { zielpfadWirksam } from '@core/einstellungen/zielordner';
 import { pfadeUebernehmen } from '@core/einstellungen/uebernahme';
 import type { PfadWert } from '@core/einstellungen/verzeichnis';
 import { anzahl } from './text';
@@ -115,7 +116,10 @@ export function mitZentral(e: ExportEinstellungen, w: (id: string) => PfadWert =
     ...e,
     antragsordner: text('ablage.permio.antragsordner'),
     namensvorlage: text('plaene.permio.namensvorlage'),
-    zielpfad: text('plaene.permio.zielpfad'),
+    // fester Zielordner im Antragsordner bzw. der übernommene abweichende (zielordner.ts) – relativ zum Projektordner
+    zielpfad: zielpfadWirksam({ antragsordner: text('ablage.permio.antragsordner'), zielordner: text('plaene.permio.zielordner'), abweichend: text('plaene.permio.zielpfad') }),
+    // relativ zum Antragsordner – je Projekt mit dessen Antragsordner (einstellungenFuer); nicht bei einem Ordner außerhalb
+    zielordner: text('plaene.permio.zielpfad').trim() ? undefined : text('plaene.permio.zielordner'),
     vorlagenordner: text('vorlagen.permio.vorlagenordner'),
     // Vorlagen je Zeile; ihre Platzhalter ersetzt erst das Lesen im Projekt (quellenLesen) mit dessen Angaben
     berechnungsordner: berechnungenSuchvorlagen(w).join('\n'),
@@ -1064,7 +1068,7 @@ export const useAntrag = create<AntragState>((set, get) => {
       const einstellungen = mitZentral(einstellungenAus({ ...get().einstellungen, ...teil }));
       // die zentral eingestellten Angaben bleiben im alten Eintrag, wie sie waren (nichts geht verloren)
       const alt = einstellungenAus(lesen<unknown>(EINSTELLUNGEN, null));
-      schreiben(EINSTELLUNGEN, { ...einstellungen, antragsordner: alt.antragsordner, namensvorlage: alt.namensvorlage, zielpfad: alt.zielpfad, vorlagenordner: alt.vorlagenordner, berechnungsordner: alt.berechnungsordner });
+      schreiben(EINSTELLUNGEN, { ...einstellungen, zielordner: undefined, antragsordner: alt.antragsordner, namensvorlage: alt.namensvorlage, zielpfad: alt.zielpfad, vorlagenordner: alt.vorlagenordner, berechnungsordner: alt.berechnungsordner });
       set({ einstellungen });
       void get().laden();
     },

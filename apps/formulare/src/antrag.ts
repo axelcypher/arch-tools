@@ -9,6 +9,7 @@
  * „BS9 BAUA 261110 01 Bauantrag.pdf“ – nur so benannte Dateien lassen sich als „bereit“ markieren (von Hand).
  */
 
+import { zielpfadWirksam } from '@core/einstellungen/zielordner';
 import type { AntragKurz } from '@core/model';
 import type { Kuerzel, Namensschema, NamensTeil } from '@core/namensschema';
 import { alleKuerzel, dateinameZerlegenMitStellen, KUERZEL_MUSTER, kuerzelZu, planNummerAus, VORGABE_NAMENSSCHEMA } from '@core/namensschema';
@@ -40,6 +41,11 @@ export interface ExportEinstellungen {
   ziel: 'aktiv' | 'pfad';
   /** fester Zielordner relativ zum Projektordner (Platzhalter erlaubt, z. B. „TÖB/{Antrag}/Formulare“, siehe {@link ZIEL_VARIABLEN}) */
   zielpfad: string;
+  /**
+   * zentraler Zielordner relativ zum Antragsordner (Pfade und Benennung, `zielordner.ts`); gesetzt, solange kein
+   * abweichender Ordner außerhalb gilt – dann folgt `zielpfad` je Projekt dessen Antragsordner
+   */
+  zielordner?: string;
   /** Berechnungen im Projektordner (Quelle externer Dokumente) */
   berechnungsordner: string;
   /** Ordner mit leeren FORMA-Formularen als Vorlage (vollständiger Pfad); leer = aus anderen Projekten */
@@ -119,6 +125,8 @@ export function einstellungenFuer(global: ExportEinstellungen, ueber: ExportUebe
     const v = u[k];
     if (v !== undefined && v !== '') (out as Record<string, unknown>)[k] = v;
   }
+  // der zentrale Zielordner liegt im Antragsordner: mit dem Antragsordner des Projekts, wenn dort keiner eigens steht
+  if (out.zielordner !== undefined && !u.zielpfad) out.zielpfad = zielpfadWirksam({ antragsordner: out.antragsordner, zielordner: out.zielordner, abweichend: '' });
   return out;
 }
 

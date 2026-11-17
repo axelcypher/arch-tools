@@ -3218,8 +3218,8 @@ button.ungespeichert::after {
   display: flex;
   flex-direction: column;
   gap: var(--s3);
-  margin-left: var(--s2);
-  padding-left: var(--s4);
+  /* je Ebene um --s5 eingerückt, die Linie links ist nur Schmuck (die Gruppe trägt den Namen) */
+  padding-left: var(--s5);
   border-left: 1px solid var(--border);
 }
 .einst-unter[hidden] {
@@ -3254,6 +3254,35 @@ button.ungespeichert::after {
 }
 .einst-wirksam code {
   overflow-wrap: anywhere;
+}
+/* Baum (Pfade und Benennung): Einträge, die von einem anderen abhängen, als eigene Karten eingerückt darunter – die Linie
+   zeigt, wozu sie gehören */
+.einst-baum {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  /* je Ebene um --s5 eingerückt, die Linie links ist nur Schmuck (die Gruppe trägt den Namen) */
+  padding-left: var(--s5);
+  border-left: 1px solid var(--border);
+}
+/* Bezugszeile: wovon der Wert abhängt (erste Zeile der Erklärung) */
+.einst-bezug {
+  display: block;
+  margin-bottom: var(--s1);
+  font-size: var(--fs-s);
+  color: var(--muted);
+}
+.einst-bezug.los {
+  color: var(--warn-text);
+}
+/* Eltern-Eintrag einer anderen App (App-Filter): abgeblendet, nur zur Orientierung */
+.einst-bezugseintrag {
+  background: transparent;
+  border-style: dashed;
+}
+.einst-bezugseintrag .einst-eintrag-titel,
+.einst-bezugseintrag .einst-vorschau code {
+  color: var(--muted);
 }
 .einst-erklaerung,
 .einst-projekt,

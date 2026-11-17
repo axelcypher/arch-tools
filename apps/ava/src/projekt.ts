@@ -8,7 +8,7 @@
 import type { OrdnerEintrag } from '@core/projektdatei';
 import type { RechnungsName } from './abrechnung/benennung';
 import { datumAusJJMMTT, nameErkennen } from './abrechnung/benennung';
-import { gewerkKennung, gewerkNummer } from './abrechnung/gewerk';
+import { gewerkKennung, gewerkNummer, gewerkZweistellig } from './abrechnung/gewerk';
 import type { AvaDateien } from './dateien';
 import type { AvaEinstellungen } from './einstellungen';
 import { imArchiv } from './einstellungen';
@@ -105,6 +105,16 @@ export function aktuellsteKostenkontrolle(kandidaten: Datei[]): Datei | null {
     if (ad !== bd) return bd.localeCompare(ad);
     return b.geaendert - a.geaendert;
   })[0];
+}
+
+/**
+ * Ort einer neuen LV-Datei relativ zum Projektordner: im Ordner des Gewerks im Ordner der Gewerke, darin im
+ * LV-Unterordner (leer = direkt im Ordner des Gewerks); `g` ist das gefundene Gewerk, sonst entsteht sein Ordner neu.
+ */
+export function neuesLvPfad(ablage: AvaEinstellungen['ablage'], g: Pick<Gewerk, 'pfad'> | null, gewerk: string, name: string, bezeichnung: string, format: LvFormat): string {
+  const ordner = g ? g.pfad : `${ablage.gewerke}/${gewerkZweistellig(gewerk)}`;
+  const unter = ablage.lv ? `${ordner}/${ablage.lv}` : ordner;
+  return `${unter}/${name} ${bezeichnung.replace(/^G\d+\s*/i, '')}`.replace(/\s+$/, '').replace(/[\\:*?"<>|]/g, ' ') + `.${format}`;
 }
 
 export async function projektLesen(fs: AvaDateien, ordner: string, e: AvaEinstellungen, o: { kostenkontrolle?: string | null } = {}): Promise<Projektstruktur> {
