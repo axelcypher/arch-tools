@@ -169,7 +169,7 @@ const KATALOG: Record<string, FaktDef> = {
     typ: 'janein',
     frage: 'Gilt für das Grundstück eine Veränderungssperre der Gemeinde?',
     hilfe:
-      'Eine Veränderungssperre beschließt die Gemeinde als Satzung, während sie einen Bebauungsplan aufstellt oder ändert. Solange sie gilt (meist zwei, höchstens vier Jahre), sind Bauvorhaben und wesentliche Veränderungen am Grundstück nur mit einer Ausnahme zulässig. Wo erfahre ich das: Planauskunft der Gemeinde (Stadtplanung), oft auch im Geoportal oder Amtsblatt der Gemeinde. Maßgeblich: §§ 14, 17 BauGB.',
+      'Eine Veränderungssperre beschließt die Gemeinde als Satzung, während sie einen Bebauungsplan aufstellt oder ändert. Solange sie gilt (meist zwei, höchstens vier Jahre), sind Bauvorhaben und wesentliche Veränderungen am Grundstück nur mit einer Ausnahme zulässig. Ja, wenn die Sperre für das Grundstück gilt. Nein, wenn keine beschlossen oder sie abgelaufen ist. Wo erfahre ich das: Planauskunft der Gemeinde (Stadtplanung), oft auch im Geoportal oder Amtsblatt der Gemeinde. Maßgeblich: §§ 14, 17 BauGB.',
   },
   'planung.erhaltungssatzung': {
     titel: 'Gebiet mit Erhaltungssatzung',
@@ -177,7 +177,7 @@ const KATALOG: Record<string, FaktDef> = {
     typ: 'janein',
     frage: 'Liegt das Grundstück im Gebiet einer Erhaltungssatzung – zum Schutz des Ortsbilds oder der Zusammensetzung der Bewohner („Milieuschutz“)?',
     hilfe:
-      'Beispiele: Altstadt, Gründerzeitviertel, Zechen- oder Werkssiedlung, Milieuschutzgebiet in Großstädten. Dort brauchen Abbruch, Umbau, Nutzungsänderung und auch Neubau zusätzlich eine Genehmigung der Gemeinde. Nicht gemeint: Denkmalschutz und Gestaltungssatzung (eigene Fragen). Wo erfahre ich das: Planauskunft der Gemeinde, Geoportal oder Amtsblatt. Maßgeblich: § 172 BauGB.',
+      'Beispiele: Altstadt, Gründerzeitviertel, Zechen- oder Werkssiedlung, Milieuschutzgebiet in Großstädten. Dort brauchen Abbruch, Umbau, Nutzungsänderung und auch Neubau zusätzlich eine Genehmigung der Gemeinde. Nicht gemeint: Denkmalschutz und Gestaltungssatzung (eigene Fragen). Ja, wenn das Grundstück im Geltungsbereich liegt. Nein, wenn es außerhalb liegt oder die Gemeinde keine solche Satzung hat. Wo erfahre ich das: Planauskunft der Gemeinde, Geoportal oder Amtsblatt. Maßgeblich: § 172 BauGB.',
   },
   'planung.sanierungsgebiet': {
     titel: 'Förmlich festgelegtes Sanierungsgebiet',
@@ -185,7 +185,7 @@ const KATALOG: Record<string, FaktDef> = {
     typ: 'janein',
     frage: 'Liegt das Grundstück in einem Sanierungsgebiet, das die Gemeinde durch Satzung festgelegt hat?',
     hilfe:
-      'Mit einem Sanierungsgebiet erneuert die Gemeinde ein Viertel, z. B. einen Ortskern oder eine Innenstadt. Dort brauchen viele Vorhaben, Teilungen und Verträge zusätzlich eine Genehmigung der Gemeinde, wenn die Satzung das nicht ausschließt. Ein Hinweis ist der Sanierungsvermerk im Grundbuch; er fehlt im vereinfachten Verfahren. Wo erfahre ich das: Planauskunft der Gemeinde oder Grundbuch. Maßgeblich: §§ 142, 144 BauGB.',
+      'Mit einem Sanierungsgebiet erneuert die Gemeinde ein Viertel, z. B. einen Ortskern oder eine Innenstadt. Dort brauchen viele Vorhaben, Teilungen und Verträge zusätzlich eine Genehmigung der Gemeinde, wenn die Satzung das nicht ausschließt. Ein Hinweis ist der Sanierungsvermerk im Grundbuch, er steht aber nicht immer dort. Ja, wenn das Grundstück im festgelegten Gebiet liegt. Nein, wenn es außerhalb liegt oder die Sanierung aufgehoben ist. Wo erfahre ich das: Planauskunft der Gemeinde oder Grundbuch. Maßgeblich: §§ 142, 144 BauGB.',
   },
   'planung.planaufstellung': {
     titel: 'Bebauungsplan in Aufstellung',
@@ -193,7 +193,7 @@ const KATALOG: Record<string, FaktDef> = {
     typ: 'janein',
     frage: 'Hat die Gemeinde beschlossen, für das Grundstück einen Bebauungsplan aufzustellen oder einen bestehenden zu ändern?',
     hilfe:
-      'Gemeint ist ein Beschluss des Rates, ein Planverfahren zu beginnen, auch wenn schon ein Bebauungsplan gilt, der geändert werden soll. Solange der Plan nicht in Kraft ist, kann die Gemeinde Bauanträge zurückstellen lassen oder eine Veränderungssperre beschließen; umgekehrt kann ein weit fortgeschrittener Entwurf ein Vorhaben schon zulässig machen. Wo erfahre ich das: Planauskunft der Gemeinde, Amtsblatt oder Beteiligungsportal mit den laufenden Verfahren. Maßgeblich: §§ 2, 15, 33 BauGB.',
+      'Gemeint ist ein Beschluss des Rates, ein Planverfahren zu beginnen, auch wenn schon ein Bebauungsplan gilt, der geändert werden soll. Solange der Plan nicht in Kraft ist, kann die Gemeinde Bauanträge zurückstellen lassen oder eine Veränderungssperre beschließen; umgekehrt kann ein weit fortgeschrittener Entwurf ein Vorhaben schon zulässig machen. Ja zum Beispiel: Der Rat hat die Aufstellung eines Bebauungsplans für das Gebiet beschlossen; ein geltender Plan soll geändert werden. Nein, wenn kein solcher Beschluss vorliegt oder der Plan schon in Kraft ist. Wo erfahre ich das: Planauskunft der Gemeinde, Amtsblatt oder Beteiligungsportal mit den laufenden Verfahren. Maßgeblich: §§ 2, 15, 33 BauGB.',
   },
   'planung.befreiung': {
     titel: 'Vorhaben hält eine Festsetzung des Bebauungsplans nicht ein oder ist dort nur ausnahmsweise zulässig',
@@ -282,9 +282,9 @@ const KATALOG: Record<string, FaktDef> = {
     titel: 'Für Kunden, Besucher oder Patienten zugänglich',
     gruppe: 'gebaeude',
     typ: 'janein',
-    frage: 'Kann das Vorhaben von Menschen aufgesucht werden, die vorher nicht feststehen – etwa Kunden, Gäste, Besucher oder Patienten?',
+    frage: 'Kann das Vorhaben von beliebigen Menschen aufgesucht werden – etwa Kunden, Gästen, Besuchern oder Patienten?',
     hilfe:
-      'Ja zum Beispiel: Laden, Gaststätte, Hotel, Arztpraxis, Büro- oder Verwaltungsgebäude, Schule, Kita, Museum, Sport- oder Freizeitanlage, öffentliche Garage, Parkplatz oder Toilettenanlage – auch wenn nur ein Teil dafür bestimmt ist. Nein zum Beispiel: reines Wohnhaus; Lager oder Produktionshalle ohne Besucherverkehr. Dann müssen die Bereiche für Besucher barrierefrei sein. Bei einem reinen Wohngebäude ergibt sich „nein“. Maßgeblich: § 49 Abs. 2 BauO NRW.',
+      'Ja zum Beispiel: Laden, Gaststätte, Hotel, Arztpraxis, Büro- oder Verwaltungsgebäude, Schule, Kita, Museum, Sport- oder Freizeitanlage, öffentliche Garage, Parkplatz oder Toilettenanlage – auch wenn nur ein Teil dafür bestimmt ist. Nein zum Beispiel: reines Wohnhaus; Lager oder Produktionshalle ohne Besucherverkehr. Dann müssen die Bereiche für Besucher barrierefrei sein. Bei einem reinen Wohngebäude ergibt sich „nein“. Wo erfahre ich das: aus der geplanten Nutzung (Baubeschreibung). Maßgeblich: § 49 Abs. 2 BauO NRW.',
   },
   'gebaeude.behelfsbau': {
     titel: 'Behelfsbau, kleines Nebengebäude oder Fliegender Bau',
@@ -292,7 +292,7 @@ const KATALOG: Record<string, FaktDef> = {
     typ: 'janein',
     frage: 'Ist das Gebäude nur für begrenzte Zeit gedacht, ein kleines Nebengebäude ohne Aufenthalt oder dafür gebaut, immer wieder auf- und abgebaut zu werden?',
     hilfe:
-      'Ja zum Beispiel: Baustellen- oder Bürocontainer und Notunterkunft auf Zeit; eingeschossiges freistehendes Gebäude, in dem sich niemand oder nur kurz jemand aufhält, wie Laube, Geräte- oder Gartenhaus, Schutzhütte; Zelt, Bühne, Fahrgeschäft oder Tribüne, die an wechselnden Orten aufgestellt werden. Nein: dauerhaft genutzte Wohn-, Büro- oder Gewerbegebäude, auch in Modul- oder Containerbauweise. Für diese Bauten gelten Erleichterungen, unter anderem entfällt die Pflicht zur Solaranlage. Maßgeblich: §§ 42a Abs. 4, 51, 78 BauO NRW.',
+      'Ja zum Beispiel: Baustellen- oder Bürocontainer und Notunterkunft auf Zeit; eingeschossiges freistehendes Gebäude, in dem sich niemand oder nur kurz jemand aufhält, wie Laube, Geräte- oder Gartenhaus, Schutzhütte; Zelt, Bühne, Fahrgeschäft oder Tribüne, die an wechselnden Orten aufgestellt werden. Nein zum Beispiel: dauerhaft genutzte Wohn-, Büro- oder Gewerbegebäude, auch in Modul- oder Containerbauweise. Für diese Bauten gelten Erleichterungen, unter anderem entfällt die Pflicht zur Solaranlage. Wo erfahre ich das: aus der Planung (Bauart und geplante Standdauer). Maßgeblich: §§ 42a Abs. 4, 51, 78 BauO NRW.',
   },
   'gebaeude.landwirtschaft': j('Land- oder forstwirtschaftlich genutztes Gebäude', 'gebaeude'),
   'gebaeude.aufzug': j('Aufzug', 'gebaeude'),

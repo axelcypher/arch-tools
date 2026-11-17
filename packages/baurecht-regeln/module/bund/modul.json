@@ -602,7 +602,7 @@
       "kurz": "Lage in der zusammenhängenden Bebauung",
       "gruppe": "planung",
       "typ": "janein",
-      "frage": "Liegt das Grundstück innerhalb der zusammenhängenden Bebauung des Ortes – etwa als Baulücke zwischen bebauten Grundstücken –, und nicht am Ortsrand zur freien Landschaft oder bei einzelnen Höfen?",
+      "frage": "Liegt das Grundstück mitten in der zusammenhängenden Bebauung des Ortes, etwa in einer Baulücke – nicht am Ortsrand oder bei einzelnen Höfen?",
       "hilfe": "LEXIO fragt das nur beim einfachen Bebauungsplan oder bei einer Satzung der Gemeinde nach dem BauGB: Sie regeln nicht alles, und für den Rest kommt es auf die Lage an. Ja zum Beispiel: Baulücke in einer Straße, die auf beiden Seiten bebaut ist; Grundstück im Ortskern. Nein zum Beispiel: Wiese am Ortsrand, hinter der die freie Landschaft beginnt; Grundstück bei einer Splittersiedlung oder einem einzelnen Hof. Eine Satzung, die Flächen dem Ort zurechnet (Klarstellungs-, Entwicklungs- oder Ergänzungssatzung), bedeutet ja, eine Außenbereichssatzung nein. Im Zweifel offen lassen. Wo erfahre ich das: Planauskunft der Gemeinde. Maßgeblich: §§ 34, 35 BauGB.",
       "wenn": {
         "oder": [
@@ -657,7 +657,7 @@
       "gruppe": "planung",
       "typ": "janein",
       "frage": "Setzt der Bebauungsplan ein Wochenendhaus-, Ferienhaus- oder Campingplatzgebiet fest?",
-      "hilfe": "Steht im Bebauungsplan „SO“ mit einer dieser Zweckbestimmungen, ja. Nein bei anderen Sondergebieten, z. B. für Einzelhandel, Klinik, Hochschule, Hafen oder Energie. Wo erfahre ich das: Bebauungsplan (Planzeichnung und textliche Festsetzungen). Maßgeblich: §§ 10, 11 BauNVO.",
+      "hilfe": "Ja zum Beispiel: Der Bebauungsplan setzt „SO Wochenendhausgebiet“, „SO Ferienhausgebiet“ oder „SO Campingplatz“ fest. Nein zum Beispiel: andere Sondergebiete, etwa für Einzelhandel, Klinik, Hochschule, Hafen oder Energie. Wo erfahre ich das: Bebauungsplan (Planzeichnung und textliche Festsetzungen). Maßgeblich: §§ 10, 11 BauNVO.",
       "wenn": {
         "f": "planung.gebietsart",
         "ist": "SO"
@@ -712,12 +712,12 @@
       "hilfe": "in Überschwemmungs- und Risikogebieten verboten bzw. eingeschränkt (§ 78c WHG)"
     },
     "gebaeude.kmu": {
-      "titel": "Gehört einem kleinen oder mittleren Unternehmen, das es überwiegend selbst nutzt",
-      "kurz": "Eigentum eines KMU, selbst genutzt",
+      "titel": "Gebäude gehört einem kleinen oder mittleren Unternehmen, das es überwiegend selbst nutzt",
+      "kurz": "Kleines/mittleres Unternehmen, selbst genutzt",
       "gruppe": "gebaeude",
       "typ": "janein",
       "frage": "Gehört das Gebäude einem Unternehmen mit weniger als 250 Beschäftigten und höchstens 50 Mio. € Jahresumsatz oder 43 Mio. € Bilanzsumme, das es überwiegend selbst nutzt?",
-      "hilfe": "Das sind kleine und mittlere Unternehmen nach der Empfehlung der EU-Kommission; Beteiligungen anderer Unternehmen können mitzählen. Ja zum Beispiel: Handwerksbetrieb mit eigener Werkhalle; Arztpraxis oder Kanzlei im eigenen Haus. Nein: Gebäude wird überwiegend vermietet, oder es gehört einem großen Unternehmen bzw. einer Behörde. Ihre Nichtwohngebäude sind von der Pflicht zur Ladeinfrastruktur ausgenommen. Wo erfahre ich das: von der Bauherrschaft. Maßgeblich: § 1 Abs. 2 GEIG.",
+      "hilfe": "Gebäude solcher Unternehmen sind von der Pflicht zur Ladeinfrastruktur für Elektroautos ausgenommen. Klein oder mittel ist ein Unternehmen nach der Empfehlung der EU-Kommission; Beteiligungen anderer Unternehmen können mitzählen. Ja zum Beispiel: Handwerksbetrieb mit eigener Werkhalle; Arztpraxis oder Kanzlei im eigenen Haus. Nein zum Beispiel: Das Gebäude wird überwiegend vermietet, oder es gehört einem großen Unternehmen bzw. einer Behörde. Wo erfahre ich das: von der Bauherrschaft. Maßgeblich: § 1 Abs. 2 GEIG.",
       "wenn": {
         "$": "nichtwohnnutzung"
       }
@@ -733,12 +733,12 @@
       }
     },
     "vorhaben.groessere_renovierung": {
-      "titel": "Umfangreiche Renovierung, die den Parkplatz oder die elektrische Anlage einschließt",
+      "titel": "Größere Renovierung, die den Parkplatz oder die elektrische Anlage einschließt",
       "kurz": "Größere Renovierung (Parkplatz/Elektrik)",
       "gruppe": "vorhaben",
       "typ": "janein",
-      "frage": "Wird das Gebäude umfassend renoviert, und gehören dazu der Parkplatz bzw. die Stellplätze oder die elektrische Anlage des Gebäudes?",
-      "hilfe": "Gemeint ist eine Renovierung, bei der mehr als ein Viertel der Gebäudehülle (Dach, Fassade, Fenster, Bodenplatte) erneuert wird, und dabei werden auch Parkplatz oder Elektroinstallation erneuert. Ja zum Beispiel: Sanierung eines Bürohauses mit neuer Fassade und neuer Tiefgarage. Nein: neue Fenster allein; nur der Parkplatz wird neu asphaltiert, ohne dass das Gebäude saniert wird. Wichtig nur bei Gebäuden mit mehr als zehn Stellplätzen; dann sind Leitungen bzw. Ladepunkte für Elektroautos vorzusehen. Maßgeblich: §§ 2, 8, 9 GEIG.",
+      "frage": "Wird mehr als ein Viertel der Gebäudehülle erneuert (größere Renovierung), und gehören dazu der Parkplatz bzw. die Stellplätze oder die elektrische Anlage?",
+      "hilfe": "Zur Gebäudehülle gehören Dach, Fassade, Fenster und Bodenplatte. Ja zum Beispiel: Sanierung eines Bürohauses mit neuer Fassade und neuer Tiefgarage. Nein zum Beispiel: nur neue Fenster; nur der Parkplatz wird neu asphaltiert, ohne dass das Gebäude saniert wird. Wichtig nur bei Gebäuden mit mehr als zehn Stellplätzen; dann sind Leitungen bzw. Ladepunkte für Elektroautos vorzusehen. Wo erfahre ich das: aus der Planung bzw. von der Bauherrschaft. Maßgeblich: §§ 2, 8, 9 GEIG.",
       "wenn": {
         "oder": [
           {
@@ -755,8 +755,8 @@
       "kurz": "Entwurf fortgeschritten (Planreife)",
       "gruppe": "planung",
       "typ": "janein",
-      "frage": "Wurde der Entwurf des neuen Bebauungsplans schon öffentlich ausgelegt bzw. veröffentlicht, hält das Vorhaben seine künftigen Festsetzungen ein, hat die Bauherrschaft diese schriftlich anerkannt, und ist die Erschließung (Straße, Wasser, Abwasser) gesichert?",
-      "hilfe": "Nur wenn alles zutrifft, ist ein Vorhaben schon zulässig, bevor der Plan in Kraft tritt. Der Beschluss, einen Plan aufzustellen, genügt allein nicht. Die schriftliche Anerkennung nimmt die Gemeinde meist auf einem eigenen Vordruck entgegen. Wo erfahre ich das: Stadtplanung der Gemeinde (Stand des Verfahrens, Entwurf) bzw. Erschließungsträger. Maßgeblich: § 33 BauGB.",
+      "frage": "Ist der Entwurf des neuen Bebauungsplans schon öffentlich ausgelegt, und erfüllt das Vorhaben alle Voraussetzungen, um schon vorab zugelassen zu werden?",
+      "hilfe": "Ein Vorhaben ist schon vor Inkrafttreten des Plans zulässig, wenn alles zutrifft: Der Entwurf wurde öffentlich ausgelegt bzw. veröffentlicht, und die Behörden wurden beteiligt; das Vorhaben hält die künftigen Festsetzungen ein; die Bauherrschaft hat sie schriftlich anerkannt (meist auf einem Vordruck der Gemeinde); die Erschließung (Straße, Wasser, Abwasser) ist gesichert. Ja zum Beispiel: Wohnhaus in einem Neubaugebiet, dessen Planentwurf ausgelegen hat, mit unterschriebener Anerkennung. Nein, wenn erst beschlossen ist, einen Plan aufzustellen, oder eine der Voraussetzungen fehlt. Wo erfahre ich das: Stadtplanung der Gemeinde (Stand des Verfahrens, Entwurf) bzw. Erschließungsträger. Maßgeblich: § 33 BauGB.",
       "ohneAusloeser": false,
       "wenn": {
         "f": "planung.planaufstellung",
@@ -769,7 +769,7 @@
       "gruppe": "planung",
       "typ": "janein",
       "frage": "Hat die Gemeinde bei der Bauaufsicht beantragt, die Entscheidung über den Bauantrag aufzuschieben (Zurückstellung)?",
-      "hilfe": "Das kann die Gemeinde, solange sie einen Bebauungsplan oder einen Flächennutzungsplan mit Zonen für bestimmte Anlagen aufstellt, eine Sanierung vorbereitet oder eine Erhaltungssatzung aufstellt – auch noch, nachdem der Bauantrag eingegangen ist; dann ruht das Verfahren bis zu einem Jahr. Wo erfahre ich das: Mitteilung der Bauaufsicht bzw. Nachfrage bei der Gemeinde. Maßgeblich: § 15 BauGB, auch mit § 141 Abs. 4 und § 172 Abs. 2 BauGB.",
+      "hilfe": "Das kann die Gemeinde, solange sie einen Bebauungsplan oder einen Flächennutzungsplan mit Zonen für bestimmte Anlagen aufstellt, eine Sanierung vorbereitet oder eine Erhaltungssatzung aufstellt – auch noch, nachdem der Bauantrag eingegangen ist; dann ruht das Verfahren bis zu einem Jahr. Ja, wenn die Bauaufsicht mitteilt, dass die Gemeinde die Zurückstellung beantragt hat. Nein, wenn kein solcher Antrag vorliegt. Wo erfahre ich das: Mitteilung der Bauaufsicht bzw. Nachfrage bei der Gemeinde. Maßgeblich: § 15 BauGB, auch mit § 141 Abs. 4 und § 172 Abs. 2 BauGB.",
       "ohneAusloeser": false,
       "wenn": {
         "oder": [
@@ -798,7 +798,7 @@
       "gruppe": "planung",
       "typ": "janein",
       "frage": "Hat die Gemeinde beschlossen und bekannt gemacht, das Gebiet für eine Sanierung oder eine städtebauliche Entwicklungsmaßnahme zu untersuchen (vorbereitende Untersuchungen)?",
-      "hilfe": "Das ist die Vorstufe eines Sanierungsgebiets bzw. Entwicklungsbereichs. Ab der Bekanntmachung kann die Gemeinde beantragen, Bauvorhaben und Abbrüche zurückzustellen; ist das Gebiet förmlich festgelegt, gelten stattdessen dessen Regeln. Wo erfahre ich das: Planauskunft der Gemeinde oder Amtsblatt. Maßgeblich: § 141 Abs. 3 und 4, § 165 Abs. 4 BauGB.",
+      "hilfe": "Das ist die Vorstufe eines Sanierungsgebiets bzw. Entwicklungsbereichs. Ab der Bekanntmachung kann die Gemeinde beantragen, Bauvorhaben und Abbrüche zurückzustellen; ist das Gebiet förmlich festgelegt, gelten stattdessen dessen Regeln. Ja zum Beispiel: Die Gemeinde hat bekannt gemacht, dass sie den Ortskern auf eine Sanierung hin untersucht. Nein, wenn nichts beschlossen ist oder das Sanierungsgebiet schon festgelegt ist (dann die Frage „Förmlich festgelegtes Sanierungsgebiet“). Wo erfahre ich das: Planauskunft der Gemeinde oder Amtsblatt. Maßgeblich: § 141 Abs. 3 und 4, § 165 Abs. 4 BauGB.",
       "wenn": {
         "nicht": {
           "f": "planung.sanierungsgebiet",
@@ -812,7 +812,7 @@
       "gruppe": "planung",
       "typ": "janein",
       "frage": "Hat die Gemeinde beschlossen und bekannt gemacht, dass sie für das Gebiet eine Erhaltungssatzung aufstellt (Schutz des Ortsbilds oder der Bewohner)?",
-      "hilfe": "Ab der Bekanntmachung kann die Gemeinde beantragen, den Bauantrag bis zu einem Jahr zurückzustellen. Wo erfahre ich das: Planauskunft der Gemeinde oder Amtsblatt. Maßgeblich: § 172 Abs. 2, § 15 Abs. 1 BauGB.",
+      "hilfe": "Ab der Bekanntmachung kann die Gemeinde beantragen, den Bauantrag bis zu einem Jahr zurückzustellen. Ja, wenn der Beschluss bekannt gemacht ist, auch wenn die Satzung noch nicht gilt. Nein, wenn nichts beschlossen ist oder die Satzung schon gilt (dann die Frage „Gebiet mit Erhaltungssatzung“). Wo erfahre ich das: Planauskunft der Gemeinde oder Amtsblatt. Maßgeblich: § 172 Abs. 2, § 15 Abs. 1 BauGB.",
       "wenn": {
         "nicht": {
           "f": "planung.erhaltungssatzung",
@@ -973,23 +973,23 @@
       }
     },
     "vorhaben.aussen_typisch": {
-      "titel": "Anlage, die ihrer Art nach in die freie Landschaft gehört (Wind, Biogas, Tierhaltung, Versorgung, Abbau)",
+      "titel": "Anlage, die ihrer Art nach in die freie Landschaft gehört",
       "kurz": "Anlage, die in die Landschaft gehört",
       "gruppe": "vorhaben",
       "typ": "janein",
       "frage": "Ist das Vorhaben eine Anlage, die ihrer Art nach in die freie Landschaft gehört – etwa Windrad, Biogasanlage, Stall für gewerbliche Tierhaltung, Gärtnerei, Versorgungsanlage oder Kiesgrube?",
-      "hilfe": "Ja zum Beispiel: Windenergie- oder Wasserkraftanlage; Biogas- oder Biomasseanlage im Zusammenhang mit einem Hof; Stall für gewerbliche Tierhaltung (nicht zum eigenen Hof); Gartenbaubetrieb; Umspannwerk, Gasregler, Wasserwerk, Kläranlage oder Funkmast; Kies-, Sand- oder Steinabbau; ein Betrieb, der wegen Lärm, Geruch, Gefahr oder seines Zwecks nur außerhalb des Ortes stehen kann (z. B. Schießstand). Nein zum Beispiel: Wohnhaus oder Wochenendhaus; gewöhnlicher Gewerbebetrieb; land- oder forstwirtschaftlicher Hof selbst; Solarpark auf freier Fläche. Maßgeblich: § 35 Abs. 1 Nr. 2 bis 6 BauGB.",
+      "hilfe": "Ja zum Beispiel: Windenergie- oder Wasserkraftanlage; Biogas- oder Biomasseanlage im Zusammenhang mit einem Hof; Stall für gewerbliche Tierhaltung (nicht zum eigenen Hof); Gartenbaubetrieb; Umspannwerk, Gasregler, Wasserwerk, Kläranlage oder Funkmast; Kies-, Sand- oder Steinabbau; ein Betrieb, der wegen Lärm, Geruch, Gefahr oder seines Zwecks nur außerhalb des Ortes stehen kann (z. B. Schießstand). Nein zum Beispiel: Wohnhaus oder Wochenendhaus; gewöhnlicher Gewerbebetrieb; land- oder forstwirtschaftlicher Hof selbst; Solarpark auf freier Fläche. Wo erfahre ich das: aus der Planung bzw. von der Bauherrschaft. Maßgeblich: § 35 Abs. 1 Nr. 2 bis 6 BauGB.",
       "wenn": {
         "$": "aussen_planrecht"
       }
     },
     "planung.fnp_zonen": {
-      "titel": "Gemeinde plant Zonen für solche Anlagen im Flächennutzungsplan",
+      "titel": "Gemeinde plant im Flächennutzungsplan Zonen für Windräder, Biogas- oder ähnliche Anlagen",
       "kurz": "Zonen im Flächennutzungsplan geplant",
       "gruppe": "planung",
       "typ": "janein",
       "frage": "Hat die Gemeinde beschlossen, im Flächennutzungsplan Zonen für Anlagen dieser Art festzulegen (bei Windenergie: Windenergiegebiete), also den Plan dafür aufzustellen, zu ändern oder zu ergänzen?",
-      "hilfe": "Mit solchen Zonen legt die Gemeinde fest, wo diese Anlagen hin sollen; außerhalb sind sie dann meist ausgeschlossen. Solange das Verfahren läuft, kann die Gemeinde beantragen, den Bauantrag bis zu einem Jahr zurückzustellen. Bei Windenergie an Land schließen solche Zonen andere Standorte nicht mehr aus; zurückstellen kann die Gemeinde aber weiter, wenn sie mit dem Plan ihr gesetzliches Flächenziel (Flächenbeitragswert) erreichen will, längstens bis zum gesetzlichen Stichtag. Wo erfahre ich das: Planauskunft der Gemeinde, Amtsblatt oder Beteiligungsportal. Maßgeblich: § 15 Abs. 3, § 245e Abs. 2, § 249 Abs. 1 BauGB.",
+      "hilfe": "Mit solchen Zonen legt die Gemeinde fest, wo diese Anlagen hin sollen; außerhalb sind sie dann meist ausgeschlossen. Solange das Verfahren läuft, kann die Gemeinde beantragen, den Bauantrag bis zu einem Jahr zurückzustellen. Bei Windenergie an Land schließen solche Zonen andere Standorte nicht mehr aus; zurückstellen kann die Gemeinde aber weiter, wenn sie mit dem Plan ihr gesetzliches Flächenziel (Flächenbeitragswert) erreichen will, längstens bis zum gesetzlichen Stichtag. Ja zum Beispiel: Der Rat hat beschlossen, den Flächennutzungsplan um Windenergiegebiete zu ergänzen. Nein, wenn kein solches Verfahren läuft oder der Plan schon gilt. Wo erfahre ich das: Planauskunft der Gemeinde, Amtsblatt oder Beteiligungsportal. Maßgeblich: § 15 Abs. 3, § 245e Abs. 2, § 249 Abs. 1 BauGB.",
       "wenn": {
         "und": [
           {
@@ -1004,7 +1004,7 @@
     },
     "planung.fnp_verfahren": {
       "titel": "Zurückstellung wegen Zonen im Flächennutzungsplan möglich",
-      "kurz": "Zonen im FNP: Zurückstellung möglich",
+      "kurz": "Zurückstellung wegen Zonenplanung",
       "gruppe": "planung",
       "typ": "janein",
       "frage": "Frühere Angabe: Ist das Vorhaben nach § 35 Abs. 1 Nr. 2–6 BauGB privilegiert (z. B. Biogas, Tierhaltung, Windenergie) und hat die Gemeinde beschlossen, einen Flächennutzungsplan mit Konzentrationszonen (bei Windenergie an Land: mit Windenergiegebieten, um den Flächenbeitragswert bzw. ein Teilflächenziel zu erreichen) aufzustellen, zu ändern oder zu ergänzen?",

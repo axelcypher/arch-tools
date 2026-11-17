@@ -2901,7 +2901,7 @@ describe('Fragen nach Tatsachen statt nach Rechtsbegriffen (Teil 2)', () => {
   const nein = (...ids: string[]) => Object.fromEntries(ids.map((i) => [i, sicher(false)]));
   const F = 'planung.fnp_verfahren';
 
-  it('Titel, Frage und Name nennen keinen Paragrafen; die Quelle steht am Ende der Erklärung („Maßgeblich: …“)', () => {
+  it('Titel, Frage und Name nennen keinen Paragrafen; die Erläuterung bringt Ja-/Nein-Beispiele, „Wo erfahre ich das“ und am Ende die Quelle', () => {
     const defs = { ...FAKTEN, ...faktDefinitionen(aktiveModule(paket.module, SOEST)) };
     const ids = [
       'planung.innen', 'planung.planreife', 'planung.abweichung', 'ortsrecht.abweichung', 'nw.beseitigung_abs1', 'nw.altbau_verfahrensfrei', 'vorhaben.aussen_typisch', 'planung.fnp_zonen',
@@ -2914,6 +2914,13 @@ describe('Fragen nach Tatsachen statt nach Rechtsbegriffen (Teil 2)', () => {
       expect(d, id).toBeDefined();
       expect(`${d.titel} | ${d.kurz ?? ''} | ${d.frage ?? ''}`, id).not.toMatch(/§/);
       expect(d.hilfe, id).toMatch(/Maßgeblich: [^.]*§/);
+      // Aufbau wie in Teil 1: Beispiele für Ja und Nein, wo man es erfährt; die Frage bleibt in der Leiste lesbar (ausgenommen
+      // feste Werte aus dem Gemeindemodul, die nicht gefragt werden, und die Zahl „Höhe“ mit Rechenbeispiel)
+      if (d.wert !== undefined || id === 'gebaeude.hoehe') continue;
+      expect(d.hilfe, id).toMatch(/Ja zum Beispiel:|Ja, wenn/);
+      expect(d.hilfe, id).toMatch(/Nein zum Beispiel:|Nein, wenn/);
+      expect(d.hilfe, id).toMatch(/Wo erfahre ich das: /);
+      expect((d.frage ?? d.titel).length, id).toBeLessThanOrEqual(220);
       // der Paragraf steht nur als Quelle am Ende
       expect(d.hilfe!.indexOf('§'), id).toBeGreaterThan(d.hilfe!.indexOf('Maßgeblich:') - 1);
     }
