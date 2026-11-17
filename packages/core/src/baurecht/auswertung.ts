@@ -547,11 +547,11 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
       // nur, wenn allein die ersetzte Angabe trägt – trägt etwas anderes mit (z. B. die abgelaufene Frist), dessen Grund
       const blaetter = tragendeBlaetter(r.entfaellt, ctx, 'ja');
       const ersetzt = (b: Kurz) => 'f' in b && !!faktDefs[b.f]?.ersetzt;
+      // Grund in Worten einer abgeleiteten ersetzten Angabe (sonst undefined)
+      const ausFolgeVon = (b: Kurz) => ('f' in b && faktDefs[b.f]?.ersetzt ? fakten[b.f]?.ausFolge : undefined);
       const tatsachen = blaetter.length && blaetter.every(ersetzt) ? ausTatsachen(r.entfaellt, false) : [];
       // trägt eine ersetzte Angabe neben anderen mit: an ihrer Stelle ihr Grund in Worten (nicht „Rechtsfrage: nein“)
-      const gemischt = !tatsachen.length && blaetter.some((b) => ersetzt(b) && 'f' in b && fakten[b.f]?.ausFolge)
-        ? [...new Set(blaetter.map((b) => (ersetzt(b) && 'f' in b && fakten[b.f]?.ausFolge ? fakten[b.f].ausFolge! : istText(b, ctx, text))))].join(' · ')
-        : '';
+      const gemischt = !tatsachen.length && blaetter.some(ausFolgeVon) ? [...new Set(blaetter.map((b) => ausFolgeVon(b) ?? istText(b, ctx, text)))].join(' · ') : '';
       gruende.push(`Entfällt – ${tatsachen.length ? tatsachen.join('; ') : gemischt || warum(r.entfaellt, 'ja') || kurzText(r.entfaellt, text)}.`);
       tragend = [entf];
     } else if (tatbestand === 'ja') {
