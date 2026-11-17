@@ -1,8 +1,7 @@
 import { Symbol } from '@core/ui/Symbol';
 import { zeichenKuerzelErlaubt } from '@core/platform/eingabe';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
-import { useZeichenFussZiel } from './zeichenFuss';
+import { ZeichenFussInhalt } from '@core/ui/Karte';
 import type { Point } from '@core/geometry';
 import {
   bounds,
@@ -108,8 +107,8 @@ export function Canvas() {
   const { update, updateSilent, checkpoint, select, setTool } = useEditor.getState();
 
   const svgRef = useRef<SVGSVGElement>(null);
-  /** Fußzeile der Zeichenkarte (nur in der Grundrissansicht gesetzt) */
-  const fussZiel = useZeichenFussZiel();
+  /** Fußzeileninhalt nur in der Grundrissansicht einhängen: bei 3D bleibt die Zeichenfläche versteckt eingehängt */
+  const mainView = useEditor((s) => s.mainView);
   const [size, setSize] = useState({ w: 800, h: 600 });
   const [vp, setVp] = useState<Viewport>({ scale: 40, tx: 60, ty: 60 });
   const [cursor, setCursor] = useState<SnapResult | null>(null);
@@ -1394,41 +1393,38 @@ export function Canvas() {
       </svg>
 
       {/* Bedienhinweis, Eingabe, Koordinaten und Maßstab stehen in der Fußzeile der Zeichenkarte – nichts verdeckt den Plan */}
-      {fussZiel &&
-        createPortal(
-          <>
-            <div className="hud-zeile">
-              {hinweisZu || !hint ? (
-                <button className="hud-hint-knopf" onClick={() => (hint ? hinweisUmschalten(false) : setKuerzelOffen(true))} title={hint ? 'Bedienhinweise einblenden' : 'Tastenkürzel anzeigen … (?)'}>
-                  {hint ? '? Hinweise' : '? Tastenkürzel …'}
+      {mainView === '2d' && (
+        <ZeichenFussInhalt>
+          <div className="hud-zeile">
+            {hinweisZu || !hint ? (
+              <button className="hud-hint-knopf" onClick={() => (hint ? hinweisUmschalten(false) : setKuerzelOffen(true))} title={hint ? 'Bedienhinweise einblenden' : 'Tastenkürzel anzeigen … (?)'}>
+                {hint ? '? Hinweise' : '? Tastenkürzel …'}
+              </button>
+            ) : (
+              <span className="hud-hint" title={hint}>
+                <span className="hud-hint-text">{hint}</span>
+                <button className="hud-hint-knopf" onClick={() => setKuerzelOffen(true)} title="Alle Tastenkürzel … (?)" aria-label="Alle Tastenkürzel …">
+                  ?
                 </button>
-              ) : (
-                <span className="hud-hint" title={hint}>
-                  <span className="hud-hint-text">{hint}</span>
-                  <button className="hud-hint-knopf" onClick={() => setKuerzelOffen(true)} title="Alle Tastenkürzel … (?)" aria-label="Alle Tastenkürzel …">
-                    ?
-                  </button>
-                  <button className="hud-hint-knopf" onClick={() => hinweisUmschalten(true)} title="Bedienhinweise ausblenden (bleibt so)" aria-label="Bedienhinweise ausblenden">
-                    <Symbol name="schliessen" />
-                  </button>
-                </span>
-              )}
-            </div>
-            {numBuf && <span className="hud-input">Eingabe: {numBuf}▏</span>}
-            {/* Koordinaten wie im Plan: y nach oben positiv (wie Messen und die Eingabe dx;dy) */}
-            {(cursor || ziehInfo) && (
-              <span className="hud-coords">
-                {ziehInfo ?? (cursor ? `X ${fmt2(cursor.p.x)}  Y ${fmt2(-cursor.p.y)} m` : '')}
-                {!ziehInfo && cursor && cursor.kind !== 'none' && cursor.kind !== 'grid' && tool !== 'select' && (
-                  <em> · Fang: {{ vertex: 'Punkt', edge: 'Kante', guide: 'Hilfslinie', ortho: 'Achse', grid: 'Raster', none: '' }[cursor.kind]}</em>
-                )}
-                {!ziehInfo && origin && preview && tool === 'polygon' && <em> · Segment {fmt2(distance(origin, preview))} m</em>}
+                <button className="hud-hint-knopf" onClick={() => hinweisUmschalten(true)} title="Bedienhinweise ausblenden (bleibt so)" aria-label="Bedienhinweise ausblenden">
+                  <Symbol name="schliessen" />
+                </button>
               </span>
             )}
-            <ScaleBar scale={vp.scale} />
-          </>,
-          fussZiel,
-        )}
+          </div>
+          {numBuf && <span className="hud-input">Eingabe: {numBuf}▏</span>}
+          {/* Koordinaten wie im Plan: y nach oben positiv (wie Messen und die Eingabe dx;dy) */}
+          {/* dauerhaft da (die Fußzeile springt nicht); außerhalb des Plans „–“ */}
+          <span className="hud-coords">
+            {ziehInfo ?? (cursor ? `X ${fmt2(cursor.p.x)}  Y ${fmt2(-cursor.p.y)} m` : '–')}
+            {!ziehInfo && cursor && cursor.kind !== 'none' && cursor.kind !== 'grid' && tool !== 'select' && (
+              <em> · Fang: {{ vertex: 'Punkt', edge: 'Kante', guide: 'Hilfslinie', ortho: 'Achse', grid: 'Raster', none: '' }[cursor.kind]}</em>
+            )}
+            {!ziehInfo && origin && preview && tool === 'polygon' && <em> · Segment {fmt2(distance(origin, preview))} m</em>}
+          </span>
+          <ScaleBar scale={vp.scale} />
+        </ZeichenFussInhalt>
+      )}
       {einstieg && (
         <div className="canvas-leer">
           <p className="canvas-leer-titel">Wie soll es losgehen?</p>

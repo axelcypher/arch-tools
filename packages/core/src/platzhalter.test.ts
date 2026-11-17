@@ -79,7 +79,9 @@ describe('Platzhalter der Suite', () => {
   });
 
   it('ohne Wert: leer (Vorgabe) oder stehen lassen', () => {
-    expect(ersetzen('{Name}-{Nr}', LOKAL, { Name: 'X' })).toBe('X-');
+    // ein leerer Wert nimmt den Trenner davor mit (keine Trenner am Ende); mit trennerLassen wie früher
+    expect(ersetzen('{Name}-{Nr}', LOKAL, { Name: 'X' })).toBe('X');
+    expect(ersetzen('{Name}-{Nr}', LOKAL, { Name: 'X' }, { trennerLassen: true })).toBe('X-');
     expect(ersetzen('{Name}-{Nr}', LOKAL, { Name: 'X' }, { ohneWert: 'stehen' })).toBe('X-{Nr}');
     expect(ersetzen('{Name}', LOKAL, { Name: 'a/b' }, { saeubern: (t) => t.replace('/', ' ') })).toBe('a b');
   });

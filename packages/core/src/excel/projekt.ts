@@ -5,6 +5,7 @@ import { datumText, kopfZeilen } from '../ui/DruckKopf';
 import type { Value } from './context';
 import type { EinzelwertGruppe } from './schema';
 import { datumNachFormat, GLOBALE_VARIABLEN } from '../platzhalter';
+import { projektPlanphase } from '../planphase';
 
 /** alle Kontakte einer Art, mit Komma getrennt */
 function kontakte(project: Project, art: 'email' | 'telefon'): string {
@@ -16,6 +17,7 @@ function kontakte(project: Project, art: 'email' | 'telefon'): string {
 
 /** Projektangaben als Einzelwerte – in allen Apps gleich */
 export function projektWerte(project: Project, date = new Date()): Record<string, Value> {
+  const phase = projektPlanphase(project);
   return {
     'projekt.name': project.name,
     'projekt.code': project.meta.projektcode,
@@ -58,6 +60,10 @@ export function projektWerte(project: Project, date = new Date()): Record<string
     DATUM: datumNachFormat(date, 'JJMMTT'),
     JAHR: datumNachFormat(date, 'JJJJ'),
     JAHR_KURZ: datumNachFormat(date, 'JJ'),
+    // Planungsphase nach dem Namensschema des Projekts (sonst des Büros); ohne Festlegung leer
+    PHASE: phase?.kuerzel ?? '',
+    PHASE_NAME: phase?.name ?? '',
+    LPH: phase?.lph ?? '',
     // für {{DATUM:TT.MM.JJJJ}} (Format wie in Datei- und Ordnernamen)
     'DATUM.iso': datumNachFormat(date, 'JJJJ-MM-TT'),
   };

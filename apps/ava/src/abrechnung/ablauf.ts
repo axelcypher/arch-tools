@@ -37,6 +37,8 @@ export interface Kontext {
   /** Projektdatei relativ zum Projektordner */
   oap: string;
   meta: ProjectMeta;
+  /** Namensschema der Projektdatei (Planungsphase); fehlt = das des Büros */
+  namensschema?: unknown;
   projektName: string;
   e: AvaEinstellungen;
 }
@@ -227,7 +229,7 @@ export async function deckblattErzeugen(k: Kontext, d: RechnungsDatensatz): Prom
 
 /** Dateiname der Rechnung im Auftragsordner (erstes Muster) */
 export function rechnungsDateiname(k: Kontext, d: RechnungsDatensatz): string {
-  return `${nameBilden(k.e.rechnungen.muster[0], { kuerzel: k.meta.projektcode, nr: typeof d.nr === 'number' ? d.nr : Number(d.nr) || undefined, art: d.art, lfd: d.lfd, firma: d.firma, datum: d.rechnungsdatum, gewerk: gewerkZweistellig(d.gewerk) }, globaleAva(k.meta, k.projektName, k.e.deckblatt.bearbeiter))}.pdf`;
+  return `${nameBilden(k.e.rechnungen.muster[0], { kuerzel: k.meta.projektcode, nr: typeof d.nr === 'number' ? d.nr : Number(d.nr) || undefined, art: d.art, lfd: d.lfd, firma: d.firma, datum: d.rechnungsdatum, gewerk: gewerkZweistellig(d.gewerk) }, globaleAva(k.meta, k.projektName, k.e.deckblatt.bearbeiter, undefined, k.namensschema))}.pdf`;
 }
 
 /** Zielordner des Gewerks (Auftrag) relativ zum Projektordner */
@@ -277,7 +279,7 @@ export async function scanAblegen(
 export function mailWerte(k: Kontext, d: RechnungsDatensatz, ava: AvaProjekt): Record<string, Wert> {
   const zahler = ava.gewerke[d.gewerk]?.zahler || ava.zahler || k.meta.bauherr.kontakte.find((c) => c.art === 'email')?.wert || '';
   return {
-    ...globaleAva(k.meta, k.projektName, k.e.deckblatt.bearbeiter),
+    ...globaleAva(k.meta, k.projektName, k.e.deckblatt.bearbeiter, undefined, k.namensschema),
     Gewerk: `${gewerkZweistellig(d.gewerk)} ${ava.gewerke[d.gewerk]?.kostengruppe ?? ''}`.trim(),
     Firma: d.firma,
     FirmaMail: ava.gewerke[d.gewerk]?.email ?? '',

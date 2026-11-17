@@ -5,6 +5,7 @@ import type { ProjektdateiKopf, ProjektordnerEintrag, ProjektordnerZugriff } fro
 import { AKQUISE_NAME, ARCHIV_NAME, projektdateiFinden, projektdateiKopf, projekteAuflisten, statusAusGruppe, verbinde } from '../platform/projektordner';
 import type { UebersichtGruppe, UebersichtMarke, UebersichtProjekt } from './ProjektUebersicht';
 import { quellenName } from './ProjektUebersicht';
+import { phaseMarke, projektPlanphase } from '../planphase';
 import { GLOBALE_VARIABLEN, platzhalterIn } from '../platzhalter';
 
 /**
@@ -94,7 +95,7 @@ export interface ProjektListe {
   koepfe: Record<string, ProjektKopf>;
   sucht: boolean;
   fehler: string[];
-  /** Marken je Karte: „ohne Projektdatei“ bzw. „nicht lesbar“ */
+  /** Marken je Karte: „ohne Projektdatei“ bzw. „nicht lesbar“, sonst die Planungsphase */
   marken: (p: UebersichtProjekt) => UebersichtMarke[];
   /** alles neu lesen (auch die Projektdateien) */
   neuLaden: () => void;
@@ -191,7 +192,8 @@ export function useProjektordnerListe(fs: ProjektordnerZugriff | null, roots: st
     if (k?.art === 'fehlt')
       return [{ text: 'ohne Projektdatei', art: 'hinweis', symbol: 'warnung', titel: 'Noch keine Projektdatei – beim Öffnen werden die Stammdaten erfasst und die Projektdatei angelegt.' }];
     if (k?.art === 'fehler') return [{ text: 'Projektdatei nicht lesbar', art: 'warnung', symbol: 'warnung', titel: k.text }];
-    return [];
+    const phase = k?.art === 'da' ? projektPlanphase(k.kopf) : null;
+    return phase ? [phaseMarke(phase)] : [];
   };
 
   return {

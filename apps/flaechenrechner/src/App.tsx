@@ -15,7 +15,6 @@ import { isTauri } from '@core/platform/files';
 import { ProjektWahl } from '@core/ui/ProjektWahl';
 import { useEditor } from './store/store';
 import { Flaeche, ZeichenKarte } from '@core/ui/Karte';
-import { ZeichenFussZiel } from './components/zeichenFuss';
 
 const View3D = lazy(() => import('./components/View3D'));
 
@@ -30,8 +29,6 @@ export function App() {
   const name = useEditor((s) => s.project.name);
   const dirty = useEditor((s) => s.dirty);
   const [logOpen, setLogOpen] = useState(false);
-  /** Fußzeile der Zeichenkarte: Ziel für Bedienhinweis, Koordinaten und Maßstab der Zeichenfläche */
-  const [fussZiel, setFussZiel] = useState<HTMLElement | null>(null);
   const datei = useEditor((s) => s.datei);
   // Beim Start die Projektübersicht – auf dem Desktop immer (das zuletzt bearbeitete Projekt bleibt über „Zurück zu …“
   // erreichbar), im Browser, solange kein Projekt bzw. kein Zwischenstand da ist (gleicher Einstieg wie die anderen Apps)
@@ -73,15 +70,13 @@ export function App() {
         <ZeichenKarte
           ariaLabel={mainView === '2d' ? 'Grundriss' : '3D-Ansicht'}
           className="qu-zeichen-karte"
+          als="main"
           fuss={
-            <>
-              <div className="qu-fuss" ref={setFussZiel} hidden={mainView !== '2d'} />
-              {mainView === '3d' && (
-                <span className="qu-fuss-text" title={BEDIENUNG_3D}>
-                  {BEDIENUNG_3D}
-                </span>
-              )}
-            </>
+            mainView === '3d' && (
+              <span className="qu-fuss-text" title={BEDIENUNG_3D}>
+                {BEDIENUNG_3D}
+              </span>
+            )
           }
         >
           <div className="segment view-switch" role="group" aria-label="Ansicht">
@@ -93,9 +88,7 @@ export function App() {
             </button>
           </div>
           <div className={mainView === '2d' ? 'view-pane' : 'view-pane hidden'}>
-            <ZeichenFussZiel.Provider value={mainView === '2d' ? fussZiel : null}>
-              <Canvas />
-            </ZeichenFussZiel.Provider>
+            <Canvas />
           </div>
           {mainView === '3d' && (
             <div className="view-pane">

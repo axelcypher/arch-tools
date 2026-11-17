@@ -551,7 +551,7 @@ export function App() {
           </Karte>
         ) : offen ? (
           // Formular und Felder stehen direkt auf der Fläche: das Papier bzw. jeder Abschnitt ist selbst die Karte
-          <FlaechenSpalte wachsend className="fo-inhalt">
+          <FlaechenSpalte wachsend rollend className="fo-inhalt">
             {ansicht === 'felder' ? <FelderAnsicht offen={offen} gesperrt={!!grund} /> : <SeitenAnsicht offen={offen} gesperrt={!!grund} />}
           </FlaechenSpalte>
         ) : (

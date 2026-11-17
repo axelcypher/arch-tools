@@ -1,3 +1,4 @@
+import { phaseQuelle, projektPlanphase, type Planphase } from '@core/planphase';
 import type { Namensschema } from '@core/namensschema';
 import { APP_NAMEN } from '@core/appNamen';
 import { writeArchive } from '@core/archive';
@@ -102,7 +103,7 @@ const KEINE_VORLAGE = /(^|\/)(thumbs\.db|desktop\.ini|\.ds_store|~\$[^/]*|\.[^/]
 const ANLEITUNG = /^liesmich\.(txt|md)$/i;
 
 /** Werte für Platzhalter in Datei- und Ordnernamen (aus bereinigten Stammdaten) */
-export const kurzeWerte = (s: Stammdaten, date: Date, jahr = date.getFullYear()): Record<string, string | number> => ({
+export const kurzeWerte = (s: Stammdaten, date: Date, jahr = date.getFullYear(), namensschema?: unknown): Record<string, string | number> => ({
   nummer: s.nummer,
   kurzname: s.kurzname,
   vorhaben: s.bezeichnung,
@@ -110,7 +111,12 @@ export const kurzeWerte = (s: Stammdaten, date: Date, jahr = date.getFullYear())
   jj: String(jahr % 100).padStart(2, '0'),
   bearbeiter: s.bearbeiter,
   datum: isoDatum(date),
+  // Planungsphase nach dem übergebenen Namensschema (sonst dem des Büros, sonst der Vorgabe); ohne Festlegung leer – Trenner daneben entfallen
+  ...phasenWerte(projektPlanphase({ meta: { planphase: s.planphase }, namensschema })),
 });
+
+/** {PHASE}, {PHASE_NAME}, {LPH} als Werte für nameAus – leer statt fehlend, damit kein „{PHASE}“ im Namen stehen bleibt */
+const phasenWerte = (p: Planphase | null): Record<string, string | number> => ({ PHASE: p?.kuerzel ?? '', PHASE_NAME: p?.name ?? '', LPH: p?.lph ?? '' });
 
 /** steht im Dateinamen für {datum}, um Dateien mit anderem Datum als vorhanden zu erkennen */
 const DATUM_PLATZHALTER = '\uE000';
@@ -250,7 +256,9 @@ export function ordnerName(stamm: Stammdaten, struktur: Struktur, date = new Dat
  */
 export function planen(stamm: Stammdaten, struktur: Struktur, vorlagen: Vorlage[], vorhandene: Eintrag[] = [], date = new Date(), optionen: PlanOptionen = {}): Plan {
   const s = bereinigt(stamm);
-  const werte = kurzeWerte(s, date, optionen.jahr);
+  // Planungsphase nach dem Namensschema der Projektdatei, sonst dem des Büros (das neue Projekte bekommen)
+  const namensschema = optionen.projektdatei?.namensschema ?? optionen.namensschema;
+  const werte = kurzeWerte(s, date, optionen.jahr, namensschema);
   const ordner = optionen.ordner ?? ordnerName(s, struktur, date, optionen.jahr);
   const fehler: string[] = [];
   const warnungen: string[] = [];
@@ -330,7 +338,7 @@ export function planen(stamm: Stammdaten, struktur: Struktur, vorlagen: Vorlage[
     projektdatei = { pfad: schonDa.pfad, neu: false, teile: [] };
     warnungen.push(`Die vorhandene Projektdatei „${schonDa.pfad}“ bleibt unverändert – Stammdaten und Presets werden darin nicht gespeichert.`);
   } else {
-    const pfad = projektdateiPfad(optionen.oapPfad ?? VORGABE_OAP_PFAD, { nummer: s.nummer, kurzname: s.kurzname, vorhaben: s.bezeichnung, jahr: werte.jahr, datum: date });
+    const pfad = projektdateiPfad(optionen.oapPfad ?? VORGABE_OAP_PFAD, { nummer: s.nummer, kurzname: s.kurzname, vorhaben: s.bezeichnung, jahr: werte.jahr, datum: date, phase: phaseQuelle(projektPlanphase({ meta: { planphase: s.planphase }, namensschema })) });
     datei(pfad, 'projektdatei', async () => writeArchive(alsProject(s, { struktur, presets: presetNamen, date, namensschema: optionen.namensschema }), { app: `${APP_NAMEN.ordner.name} ${__APP_VERSION__}`, date }));
     projektdatei = { pfad, neu: true, teile: [] };
   }

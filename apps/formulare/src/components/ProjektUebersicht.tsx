@@ -1,3 +1,5 @@
+import { wirksamesNamensschema } from '@core/namensschema';
+import { phaseMarke, planphaseVon } from '@core/planphase';
 import { useMemo } from 'react';
 import type { UebersichtMarke, UebersichtProjekt, UebersichtStatus } from '@core/ui/ProjektUebersicht';
 import { ProjektUebersicht as Uebersicht, quellenName, wann } from '@core/ui/ProjektUebersicht';
@@ -38,6 +40,7 @@ export function ProjektUebersicht({ onEinstellungen }: { onEinstellungen: () => 
   const ordnerWahl = useFormulare((s) => s.ordnerWahl);
   const ablageGesucht = useFormulare((s) => s.ablageordner.length > 0);
   const projektStatus = useAntrag((s) => s.projektStatus);
+  const namensschemaBuero = useFormulare((s) => s.namensschemaBuero);
   const { projekteLaden, setHaupt } = useFormulare.getState();
 
   const nachSchluessel = useMemo(() => new Map(projekte.map((p) => [projektSchluessel(p), p])), [projekte]);
@@ -83,6 +86,9 @@ export function ProjektUebersicht({ onEinstellungen }: { onEinstellungen: () => 
     if (p.info?.gesperrt) m.push({ text: `${p.info.gesperrt} geöffnet`, art: 'warnung', symbol: 'schloss', titel: 'Formulare mit Sperrdatei – hier oder in einem anderen Programm geöffnet' });
     if (projektHatEntwuerfe(p)) m.push({ text: 'ungespeichert', art: 'hinweis', symbol: 'stift', titel: 'Hier eingegeben, aber noch nicht in die Formulardatei gespeichert' });
     if (ablageGesucht && !ablageVon({ ablage, ordnerWahl }, p)) m.push({ text: 'kein Projektordner', symbol: 'ordner', titel: 'Kein Projektordner mit diesem Kürzel gefunden' });
+    // neutrale Marke zuletzt – Warnungen stehen vorn
+    const phase = planphaseVon(projektStatus[e.schluessel]?.planphase, wirksamesNamensschema(undefined, namensschemaBuero));
+    if (phase) m.push(phaseMarke(phase));
     return m;
   };
 

@@ -295,7 +295,17 @@ Die **Namensschemata** stehen im Kopf der Struktur (sie gelten für alle Ordner,
 |---|---|---|
 | Projektnummer | `{JAHR}-{Nr:3}` → 2026-014 | `{JAHR}`, `{JAHR_KURZ}`, `{Nr}` bzw. `{Nr:3}` (führende Nullen) |
 | Name des Projektordners | `{PROJEKT_KUERZEL} {PROJEKT_KURZNAME}` | alle globalen |
-| Dateinamenschema für Pläne | `{PROJEKT_KUERZEL}_{Plannummer}_{Index}_{Titel}` | alle globalen, dazu `{Plannummer}`, `{Index}`, `{Titel}` |
+| Dateinamenschema für Pläne | `{PROJEKT_KUERZEL}_{PHASE}_{Plannummer}_{Index}_{Titel}` | alle globalen, dazu `{Plannummer}`, `{Index}`, `{Titel}` |
+
+**Planungsphase im Dateinamenschema:** Die Vorgabe setzt `{PHASE}` nach das Kürzel, passend zum Namensschema
+(„HVO GP 261111 GP-04 …“). Sie gilt nur, wo das Schema nie gespeichert wurde: Gespeicherte Strukturen und jede
+Projektdatei (`projektordner.dateischema`) behalten ihr Schema. Geprüft wird `{PHASE}` als eine der Planphasen des
+Namensschemas (Pläne früherer Phasen bleiben gültig) und samt Trenner optional – Pläne ohne Phase gelten weiter als
+passend. Hat das Projekt keine Phase, aber Pläne in den Planordnern, meldet die Prüfung „Planungsphase nicht
+festgelegt“. Die Planungsphase selbst setzt man im Assistenten (Stammdaten › Leistungen) oder auf der Startseite im
+Kontextmenü der Projektkarte („Planungsphase …“, schreibt nur `meta.planphase`); die Karte zeigt sie als Marke
+„Phase GP“. Die Plannummer (GP-04) vergibt weiter der Planer im Dateinamen; ATLAS liest ihr Präfix nur und erzeugt
+keine Plannummern – eine zweite Quelle der Phase gibt es also nicht.
 
 Solange ein Schemafeld den Fokus hat, stehen darunter die Platzhalter als Chips – globale und lokale unterscheidbar, wie in allen Apps
 ([platzhalter.md](platzhalter.md)). Gespeicherte Schemata mit alten Namen (`{jahr}-{nr:3}`, `{nummer} {kurzname}`)
@@ -695,7 +705,7 @@ unter `projektordner`:
     "beteiligte": [{ "rolle": "Tragwerk", "name": "…", "kontakt": "…" }],
     "angelegt": "2026-10-01"
   },
-  "projektordner": { "struktur": "Standard", "dateischema": "{PROJEKT_KUERZEL}_{Plannummer}_{Index}_{Titel}", "presets": ["Jedes Projekt", "Bauantrag"] }
+  "projektordner": { "struktur": "Standard", "dateischema": "{PROJEKT_KUERZEL}_{PHASE}_{Plannummer}_{Index}_{Titel}", "presets": ["Jedes Projekt", "Bauantrag"] }
 }
 ```
 

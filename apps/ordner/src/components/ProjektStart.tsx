@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { ProjektStatus } from '@core/model';
+import type { ProjectMeta, ProjektStatus } from '@core/model';
 import { angeheftetLesen, anheftenUmschalten } from '@core/platform/konfig';
 import type { ProjektordnerZugriff } from '@core/platform/projektordner';
 import { ordnerZeigen, statusAusGruppe } from '@core/platform/projektordner';
@@ -8,9 +8,10 @@ import { useProjektordnerListe } from '@core/ui/projektListe';
 import type { KontextEintrag, UebersichtProjekt } from '@core/ui/ProjektUebersicht';
 import { ProjektUebersicht } from '@core/ui/ProjektUebersicht';
 import { ausOrdnername } from '../nummer';
-import { projektStatusSetzen } from '../projekt';
+import { projektPlanphaseSetzen, projektStatusSetzen } from '../projekt';
 import { useOrdner } from '../store';
 import { KatasterDialog } from './KatasterDialog';
+import { PlanphaseDialog } from './PlanphaseDialog';
 
 /**
  * Startseite des Assistenten: die gemeinsame Projektübersicht aller Apps – zuletzt geöffnet, darunter die
@@ -57,6 +58,8 @@ export function ProjektStart({
   const [angeheftet, setAngeheftet] = useState<string[]>([]);
   // Katasterpläne eines Projekts exportieren
   const [kataster, setKataster] = useState<{ basis: string; name: string } | null>(null);
+  // Planungsphase eines Projekts wechseln (Kontextmenü)
+  const [phase, setPhase] = useState<{ pfad: string; name: string; meta: ProjectMeta; namensschema?: unknown } | null>(null);
   // wieder sichtbar: Projekte frisch lesen – inzwischen kann ein Kollege oder eine andere App etwas geändert haben
   const warSichtbar = useRef(sichtbar);
   useEffect(() => {
@@ -81,10 +84,20 @@ export function ProjektStart({
       await meldung('Status nicht gesetzt', e instanceof Error ? e.message : String(e));
     }
   };
-  /** Kontextmenü je Projekt: ergänzen, prüfen, Ordner öffnen, Status, anheften */
+  const phaseSetzen = async (pfad: string, kuerzel: string | null) => {
+    try {
+      await projektPlanphaseSetzen(fs, pfad, kuerzel);
+      setPhase(null);
+      liste.neuLaden();
+    } catch (e) {
+      await meldung('Planungsphase nicht gesetzt', e instanceof Error ? e.message : String(e));
+    }
+  };
+  /** Kontextmenü je Projekt: ergänzen, prüfen, Ordner öffnen, Planungsphase, Status, anheften */
   const kontextMenue = (p: UebersichtProjekt): KontextEintrag[] => {
     const dran = angeheftet.some((a) => a.toLowerCase() === p.schluessel.toLowerCase());
     const status = p.projektStatus ?? 'aktiv';
+    const kopf = liste.koepfe[p.schluessel];
     return [
       { label: 'Ergänzen …', aktion: () => onOeffnen(p.schluessel) },
       ...(onPruefen ? [{ label: 'Projekt prüfen', aktion: () => onPruefen(p.schluessel) }] : []),
@@ -95,6 +108,14 @@ export function ProjektStart({
         aktion: () => setKataster({ basis: p.schluessel, name: p.titel ? `${p.kuerzel} ${p.titel}` : p.kuerzel }),
       },
       { label: 'Ordner öffnen', symbol: 'ordnerOffen', aktion: () => void ordnerZeigen(p.schluessel).catch((e) => void meldung('Ordner ließ sich nicht öffnen', String(e))) },
+      kopf?.art === 'da'
+        ? {
+            label: 'Planungsphase …',
+            titel: 'Aktuelle Planungsphase in der Projektdatei setzen (für {PHASE} in Datei- und Ordnernamen)',
+            ...(kopf.kopf.meta.planphase ? { hinweis: kopf.kopf.meta.planphase } : {}),
+            aktion: () => setPhase({ pfad: p.schluessel, name: p.titel ? `${p.kuerzel} ${p.titel}` : p.kuerzel, meta: kopf.kopf.meta, namensschema: kopf.kopf.namensschema }),
+          }
+        : { label: 'Planungsphase …', deaktiviert: true, hinweis: 'ohne Projektdatei', aktion: () => undefined },
       ...(status !== 'abgeschlossen'
         ? [
             {
@@ -112,6 +133,7 @@ export function ProjektStart({
 
   return (
     <>
+      {phase && <PlanphaseDialog name={phase.name} meta={phase.meta} namensschema={phase.namensschema} onUebernehmen={(k) => phaseSetzen(phase.pfad, k)} onAbbrechen={() => setPhase(null)} />}
       {kataster && (
         <KatasterDialog
           basis={kataster.basis}
