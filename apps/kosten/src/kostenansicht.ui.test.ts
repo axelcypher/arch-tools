@@ -73,7 +73,7 @@ describe('Kostenansicht: Bedienung', () => {
     p.kosten = { positionen: [] };
     useKosten.getState().load(p);
     const host = ansicht();
-    expect((host.querySelector('select') as HTMLSelectElement).value).toBe('schaetzung');
+    expect((host.querySelector('select:not(.sd-phase)') as HTMLSelectElement).value).toBe('schaetzung');
     expect(host.querySelector('.ko-uebersicht h2')!.textContent).toBe('Kostenschätzung');
     expect(host.textContent).toContain('Für die Kostenschätzung passt die Gliederung 2. Ebene');
     expect(host.textContent).toContain('mindestens 2. Ebene');

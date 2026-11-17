@@ -172,7 +172,7 @@ describe('NUMIO', () => {
   it('Stufe und Faktoren wirken auf die Übersicht; Stand festhalten und Vorher/Nachher', () => {
     useKosten.getState().load(projektMitKosten());
     const host = render(App);
-    waehle(host.querySelector('.ko-col select') as HTMLSelectElement, 'berechnung');
+    waehle(host.querySelector('.ko-col select:not(.sd-phase)') as HTMLSelectElement, 'berechnung');
     expect(kosten().stufe).toBe('berechnung');
     expect(host.textContent).toContain('Kostenberechnung');
 

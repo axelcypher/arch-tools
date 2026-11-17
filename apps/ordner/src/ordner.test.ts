@@ -10,7 +10,7 @@ import { ausfuehren, ladeVorlagen, nichtVorausgewaehlt, ohne, ordnerName, planen
 import { ausserhalbDerStruktur, pruefe } from './pruefung';
 import { allePruefen, berichtCsv, sammelCsv } from './sammel';
 import type { Stammdaten } from './stammdaten';
-import { beteiligteSammeln, projektEinlesen, projektStatusSetzen } from './projekt';
+import { beteiligteSammeln, projektEinlesen, projektPlanphaseSetzen, projektStatusSetzen } from './projekt';
 import { alsProject, angabenAusProjekt, leereStammdaten, leseProjektJson, metaAus, mitAlterProjektJson, platzhalter, projektdateiAenderung, stammAusMeta } from './stammdaten';
 import type { OrdnerRegel, Struktur } from './struktur';
 import { alleLoeschen, ausEingerueckt, ausruecken, baumOrdnung, baumZeilen, duplizieren, einfuegen, einruecken, hinzufuegen, loeschen, obersteAuswahl, teilbaumVon, umbenennen, unterordnerVon, verschieben, verschiebenNach, zusatzSetzen, zusatzSetzenAlle } from './baum';
@@ -102,6 +102,19 @@ describe('Nummern und Namen', () => {
     expect(m.test('Grundriss EG')).toBe(false);
     expect(m.test('2026-014_A-101_Grundriss EG')).toBe(false); // Index fehlt
     expect(dateimuster('{datum}_{titel}', '').test('2026-10-01_Aktennotiz')).toBe(true);
+  });
+
+  it('Dateinamenschema mit Planungsphase: Phase samt Trenner optional, nur Kürzel des Namensschemas', () => {
+    expect(STANDARD.dateischema).toBe('{PROJEKT_KUERZEL}_{PHASE}_{Plannummer}_{Index}_{Titel}');
+    const m = dateimuster(STANDARD.dateischema, '2026-014', ['BP', 'EP', 'GP', 'AP', 'AB']);
+    expect(m.test('2026-014_GP_GP-04_a_Grundriss OG')).toBe(true);
+    expect(m.test('2026-014_EP_EP-02_a_Schnitt')).toBe(true); // Pläne früherer Phasen bleiben gültig
+    expect(m.test('2026-014_GP-04_a_Grundriss OG')).toBe(true); // ohne Phase (alte Pläne bzw. keine festgelegt)
+    expect(m.test('2026-014_XY_GP-04_a_Grundriss OG')).toBe(false); // keine Phase des Namensschemas
+    expect(dateimuster('{PROJEKT_KUERZEL}_LPh{LPH}_{Titel}', '').test('BS9_LPh4_Ansicht')).toBe(true);
+    // Name aus Stammdaten: ohne Phase entfällt sie samt Trenner, mit Phase steht das Kürzel da
+    expect(nameAus('{PROJEKT_KUERZEL}_{PHASE}_{Titel}', { nummer: 'BS9', titel: 'X', PHASE: '' })).toBe('BS9_X');
+    expect(nameAus('{PROJEKT_KUERZEL}_{PHASE}_{Titel}', { nummer: 'BS9', titel: 'X', PHASE: 'GP' })).toBe('BS9_GP_X');
   });
 
   it('ein Platzhalter-Satz: Groß-/Kleinschreibung egal, {kürzel} = {nummer}, {datum:JJMMTT}, unbekannte erkannt (P-06)', () => {
@@ -822,6 +835,13 @@ describe('Vorlagen-Presets', () => {
     // ohne Projektdatei: verständliche Meldung, nichts wird angelegt
     await fs.ordnerAnlegen('P:/Projekte', '2019-003 Altbau');
     await expect(projektStatusSetzen(fs, 'P:/Projekte/2019-003 Altbau', 'abgeschlossen')).rejects.toThrow(/noch keine Projektdatei/);
+    // Planungsphase: ebenso nur meta.planphase; null löscht sie
+    await projektPlanphaseSetzen(fs, basis, 'GP');
+    expect(readProjectFile(fs.eintraege.get(pfad)!).meta.planphase).toBe('GP');
+    expect(readProjectFile(fs.eintraege.get(pfad)!).meta.projektcode).toBe(metaVorher.projektcode);
+    await projektPlanphaseSetzen(fs, basis, null);
+    expect(readProjectFile(fs.eintraege.get(pfad)!).meta.planphase).toBeUndefined();
+    await expect(projektPlanphaseSetzen(fs, 'P:/Projekte/2019-003 Altbau', 'GP')).rejects.toThrow(/noch keine Projektdatei/);
     // verschobene Projekte im Archiv-Stammordner zählen beim Nummernvorschlag mit
     expect(naechsteNummer('{jahr}-{nr:3}', ['2026-014 EFH Musterweg', ...['2026-020 Archiviert']], TAG)).toBe('2026-021');
   });
@@ -949,6 +969,7 @@ describe('Prüfmodus', () => {
       'warnung: 1 von 2 Dateien folgt nicht dem Dateinamenschema → 02 Pläne/Entwurf/Grundriss final neu.pdf',
       'hinweis: 2 Ordner stehen nicht in der Struktur → 02 Pläne/Alt, Diverses',
       'hinweis: 1 Datei liegt lose im Projektordner → Angebot.pdf',
+      'hinweis: Planungsphase nicht festgelegt',
       'ok: Projektdatei vorhanden',
     ]);
   });

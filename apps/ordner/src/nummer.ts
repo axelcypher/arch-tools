@@ -116,26 +116,40 @@ export function nameAus(schema: string, werte: Record<string, string | number>):
   return ersetzen(schema, ALLE, w, { ohneWert: 'stehen' });
 }
 
+/** Trenner, die mit einer leeren Variable entfallen (wie beim Ersetzen, @core/platzhalter) */
+const TRENNER = /^[ _\-]$/;
+
 /**
  * Prüfmuster für Dateinamen (ohne Endung) aus dem Dateinamenschema. {nummer} muss der Projektnummer
  * entsprechen, wenn sie bekannt ist; die übrigen Teile sind frei, dürfen aber das Trennzeichen nicht enthalten.
+ * Die Planungsphase ({PHASE}, {PHASE_NAME}, {LPH}) ist samt dem Trenner danach optional – Pläne aus der Zeit vor der
+ * Phase bzw. ohne festgelegte Phase passen weiter; {PHASE} ist mit `phasen` (Kürzel des Namensschemas) eins davon,
+ * nicht nur die aktuelle Phase (Pläne früherer Phasen bleiben liegen).
  */
-export function dateimuster(schema: string, nummer: string): RegExp {
+export function dateimuster(schema: string, nummer: string, phasen: string[] = []): RegExp {
   let muster = '';
   let pos = 0;
   const tokens = platzhalterIn(schema, ALLE);
   tokens.forEach((f, i) => {
+    if (f.index < pos) return;
     muster += escape(schema.slice(pos, f.index));
     const n = f.treffer?.variable.name;
     const letzter = i === tokens.length - 1;
     // Zeichen, das auf diesen Teil folgt – der Teil selbst darf es nicht enthalten
     const danach = schema.slice(f.index + f.roh.length)[0];
     const frei = danach && !letzter ? `[^${escape(danach)}]+` : '.+';
+    pos = f.index + f.roh.length;
+    if (n === 'PHASE' || n === 'PHASE_NAME' || n === 'LPH') {
+      const teil = n === 'LPH' ? '\\d' : n === 'PHASE' && phasen.length ? `(?:${phasen.map(escape).join('|')})` : frei;
+      const mitTrenner = danach && TRENNER.test(danach) && !letzter;
+      muster += `(?:${teil}${mitTrenner ? escape(danach) : ''})?`;
+      if (mitTrenner) pos += 1;
+      return;
+    }
     if (n === 'PROJEKT_KUERZEL') muster += nummer ? escape(nummer) : frei;
     else if (n === 'Index') muster += '[A-Za-z0-9]{1,3}';
     else if (n === 'DATUM') muster += DATUM_MUSTER;
     else muster += frei;
-    pos = f.index + f.roh.length;
   });
   muster += escape(schema.slice(pos));
   return new RegExp(`^${muster}$`);

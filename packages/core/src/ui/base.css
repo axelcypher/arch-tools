@@ -2665,6 +2665,29 @@ button.ungespeichert::after {
 .sd-knopf {
   margin-bottom: var(--s2);
 }
+.sd-knopf-zeile {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s1) var(--s2);
+}
+/* Planungsphase: ohne Festlegung gedämpft, damit „nicht festgelegt“ auffällt, ohne zu warnen */
+.sd-phase.leer {
+  color: var(--muted);
+  font-style: italic;
+}
+.sd-phase option {
+  color: var(--text);
+  font-style: normal;
+}
+.sd-phase-kopf {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s1);
+}
+.sd-phase-kopf .sd-vorschlag {
+  margin: 0;
+}
 
 /* ---------- Umschalter (Segmente): eine Wahl aus wenigen, z. B. Ansicht oder Modus ---------- */
 

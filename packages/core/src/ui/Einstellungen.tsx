@@ -473,7 +473,13 @@ const GEMEINSAM: EinstellungsSeite[] = [
 ];
 
 /** Beispielwerte der globalen Platzhalter für die Vorschau (erfunden) */
-export const BEISPIEL_QUELLE = { projektcode: 'BS9', kurzname: 'EFH Musterweg', vorhaben: 'Neubau eines Einfamilienhauses', bearbeiter: 'TP' };
+export const BEISPIEL_QUELLE = {
+  projektcode: 'BS9',
+  kurzname: 'EFH Musterweg',
+  vorhaben: 'Neubau eines Einfamilienhauses',
+  bearbeiter: 'TP',
+  phase: { kuerzel: 'GP', name: 'Genehmigungsplanung', lph: 4 },
+};
 
 /** Vorschau eines Werts mit Beispielwerten; Pfade mit „/“ gegliedert, Namen bereinigt */
 export function pfadVorschau(e: PfadEinstellung, wert: string, datum = new Date()): string {

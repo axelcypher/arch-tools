@@ -298,6 +298,8 @@ export interface ProjektdateiKopf {
   meta: Project['meta'];
   projektordner?: Project['projektordner'];
   formulare?: unknown;
+  /** Namensschema der Projektdatei (für Name und Leistungsphase der Planungsphase) */
+  namensschema?: Project['namensschema'];
   stand: DateiStand;
 }
 
@@ -321,7 +323,14 @@ export async function projektdateiKopf(fs: ProjektordnerZugriff, root: string, p
     stand = r.stand;
   }
   const p = parseProjectData(JSON.parse(strFromU8(json)) as unknown);
-  return { name: p.name, meta: p.meta, ...(p.projektordner ? { projektordner: p.projektordner } : {}), ...(p.formulare !== undefined ? { formulare: p.formulare } : {}), stand };
+  return {
+    name: p.name,
+    meta: p.meta,
+    ...(p.projektordner ? { projektordner: p.projektordner } : {}),
+    ...(p.formulare !== undefined ? { formulare: p.formulare } : {}),
+    ...(p.namensschema ? { namensschema: p.namensschema } : {}),
+    stand,
+  };
 }
 
 /** Neue Projektdatei anlegen; false, wenn es an der Stelle schon eine Datei gibt (sie bleibt unverändert) */

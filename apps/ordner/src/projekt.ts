@@ -83,6 +83,21 @@ export async function projektStatusSetzen(fs: ProjektordnerZugriff, projektordne
 }
 
 /**
+ * Planungsphase eines Projekts setzen bzw. löschen (`null`): nur `meta.planphase` in der Projektdatei – frisch gelesen,
+ * alles andere bleibt, wie es ist. Ohne Projektdatei geht es nicht – dann zuerst ergänzen.
+ */
+export async function projektPlanphaseSetzen(fs: ProjektordnerZugriff, projektordner: string, kuerzel: string | null): Promise<void> {
+  const datei = await projektdateiFinden(fs, projektordner);
+  if (!datei) throw new Error('Das Projekt hat noch keine Projektdatei (.oap) – bitte zuerst im Assistenten ergänzen.');
+  await projektdateiSchreiben(fs, projektordner, datei.pfad, (roh) => {
+    const meta = { ...((roh.meta ?? {}) as Record<string, unknown>) };
+    if (kuerzel) meta.planphase = kuerzel;
+    else delete meta.planphase;
+    return { ...roh, meta };
+  });
+}
+
+/**
  * Beteiligte aus den Projektdateien der Stammordner – Vorschläge für neue Projekte (P-14). Gelesen werden nur die
  * Stammdaten (projekt.json in der Projektdatei) der zuletzt geänderten `max` Projektordner, einige gleichzeitig;
  * je Name zählt der Eintrag aus dem jüngsten Projekt. Nicht lesbare Projekte werden übergangen.

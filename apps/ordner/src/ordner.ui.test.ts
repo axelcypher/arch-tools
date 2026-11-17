@@ -1050,10 +1050,26 @@ describe('Startseite mit der gemeinsamen Projektübersicht', () => {
       'Ergänzen …',
       'Katasterpläne …',
       'Ordner öffnen',
+      'Planungsphase …',
       'Projekt abschließen',
       'Als Akquise kennzeichnen',
       'Anheften',
     ]);
+    // Planungsphase wechseln: Dialog mit Vorschlag (LPh 1, 2 beauftragt → BP), schreibt nur meta.planphase; Marke auf der Karte
+    await act(async () => ([...host.querySelectorAll('.menue [role="menuitem"]')].find((b) => b.textContent === 'Planungsphase …') as HTMLButtonElement).click());
+    const dialog = document.querySelector('.po-phase-dialog') as HTMLElement;
+    expect(dialog.textContent).toContain('Planungsphase – 2026-014 Neubau EFH');
+    expect((dialog.querySelector('select.sd-phase') as HTMLSelectElement).value).toBe('');
+    expect(knopf(dialog, 'Übernehmen').disabled).toBe(true);
+    act(() => knopf(dialog, 'Vorschlag BP übernehmen').click());
+    await act(async () => knopf(document.querySelector('.po-phase-dialog') as HTMLElement, 'Übernehmen').click());
+    await warten();
+    await warten();
+    const { readProjectFile: lesenPhase } = await import('@core/archive');
+    expect(lesenPhase(fs.eintraege.get('P:/Projekte/2026-014 EFH Musterweg/03 Berechnungen/Flächen/2026-014 EFH Musterweg.oap')!).meta.planphase).toBe('BP');
+    expect(document.querySelector('.po-phase-dialog')).toBeNull();
+    expect(karteVon('Neubau EFH').querySelector('.pa-marken')!.textContent).toContain('Phase BP');
+    act(() => karteVon('Neubau EFH').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 5, clientY: 5 })));
     await act(async () => ([...host.querySelectorAll('.menue [role="menuitem"]')].find((b) => b.textContent === 'Projekt abschließen') as HTMLButtonElement).click());
     await warten();
     await warten();

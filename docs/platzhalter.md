@@ -31,12 +31,34 @@ kennt oder deren Angabe nicht passt (`{DATUM:xyz}`), bleiben so stehen und werde
 | `{DATUM}`            | Datum des Vorgangs als JJMMTT; mit Format z. B. `{DATUM:JJJJ-MM-TT}` | heute bzw. Tag des Vorgangs (Export, Anlegen) | `261113`                         |
 | `{JAHR}`             | Jahr des Vorgangs, vierstellig                                       | wie `{DATUM}`                                 | `2026`                           |
 | `{JAHR_KURZ}`        | Jahr des Vorgangs, zweistellig                                       | wie `{DATUM}`                                 | `26`                             |
+| `{PHASE}`            | Planungsphase des Projekts als Kürzel; leer ohne Festlegung          | Projektdatei, Stammdaten „Planungsphase“      | `GP`                             |
+| `{PHASE_NAME}`       | Name der Planungsphase                                               | Namensschema, zur Planungsphase               | `Genehmigungsplanung`            |
+| `{LPH}`              | Leistungsphase (HOAI) der Planungsphase; leer bei Phasen ohne (AB)   | Namensschema, zur Planungsphase               | `4`                              |
 
 „Vorgang“ ist, was den Namen erzeugt: der Export eines PDFs, das Anlegen eines Projekts oder einer Datei. In
 ATLAS (Projektordner) ist `{JAHR}` beim Ergänzen eines bestehenden Projekts das Jahr, in dem es angelegt wurde. In FABRIO (AVA)
 ist `{PROJEKT_VORHABEN}` ohne Vorhaben der Name des Projekts und `{BEARBEITER}` zuerst die Angabe aus den
 Einstellungen des Deckblatts. In PERMIO (Formulare) ist `{PROJEKT_KUERZEL}` wie bisher der Name des Projektordners (im Büro
 gleich dem Projektcode); in den Katasterplänen ohne Projektcode der Name des Projekts.
+
+**Planungsphase:** Jedes Projekt kann eine aktuelle Planungsphase tragen (`meta.planphase`, Kürzel aus den Planphasen
+des Namensschemas – Projekt vor Büro vor Vorgabe, also z. B. BP, EP, GP, AP oder AB). Name und Leistungsphase kommen
+aus dem Namensschema; AB hat keine Leistungsphase, `{LPH}` ist dort leer. Eingestellt wird sie in den Stammdaten
+(Bereich „Leistungen“, in jeder App über „Stammdaten …“), im Projektkopf neben „Stammdaten …“ (QUADRIO, TERRIO, NUMIO,
+FABRIO) und in ATLAS über das Kontextmenü der Projektkarte („Planungsphase …“) bzw. im Assistenten. Ohne Festlegung
+steht „nicht festgelegt“ da; ein Vorschlag (aus einem Antrag in Arbeit: Bauantrag bzw. Genehmigungsfreistellung → LPh 4,
+Abgeschlossenheit → AB; sonst die kleinste beauftragte Leistungsphase) wird nur angeboten, nie still gesetzt.
+
+**Leere Werte und Trenner:** Ist eine Variable leer (etwa `{PHASE}` ohne festgelegte Phase), entfällt ein Trenner
+daneben (Leerzeichen, `_`, `-`, im Pfad `/`): `{PROJEKT_KUERZEL}_{PHASE}_{Plannummer}` wird ohne Phase `BS9_GP-04`,
+nicht `BS9__GP-04`; am Anfang bzw. Ende eines Namens oder Pfadteils und vor der Endung fällt der Trenner ebenso weg
+(`BS9_{PHASE}.pdf` → `BS9.pdf`). Nutzt das Dateinamenschema der Pläne die Phase und hat das Projekt keine, meldet die
+Prüfung in ATLAS „Planungsphase nicht festgelegt“.
+
+In PERMIO bleibt an der Stelle der Antragsart (nach dem Namensschema; Vorgabe: nach dem Kürzel) die Antragsart: Steht
+dort `{PHASE}` bzw. das alte `{Phase}`, setzt der Export `{Art}` ein und das Feld zeigt den Hinweis dazu. Grund: Die
+frühere PERMIO-Einstellung „Phase“ landete genau dort und lieferte im Antragsordner falsche Namen (BVA im Bauantrag) –
+die Planungsphase ist keine Antragsart. An anderer Stelle der Namensvorlage ist `{PHASE}` frei verwendbar.
 
 In **Dokumentvorlagen** (Excel, Word, Text – doppelte Klammern, siehe [excel-vorlagen.md](excel-vorlagen.md) und
 [projektordner.md](projektordner.md#vorlagen)) gibt es dieselben globalen Variablen: `{{PROJEKT_KUERZEL}}`,
@@ -92,7 +114,9 @@ um, mit gleicher Bedeutung (`{datum}` in ATLAS wird zu `{DATUM:JJJJ-MM-TT}`).
 - `GLOBALE_VARIABLEN` – Liste mit Name, Erklärung, Quelle, Beispiel, Vorgabe-Angabe und alten Namen.
 - `ersetzen(vorlage, variablen, werte, { saeubern?, ohneWert? })` – die gemeinsame Ersetzungsfunktion; `werte`
   nach dem neuen Namen (Text, Zahl oder Datum).
-- `globaleWerte({ projektcode, kurzname, vorhaben, bearbeiter, datum })` – Werte der globalen Variablen.
+- `globaleWerte({ projektcode, kurzname, vorhaben, bearbeiter, datum, phase })` – Werte der globalen Variablen;
+  `phase` aus `phaseQuelle(projektPlanphase(projekt))` (`packages/core/src/planphase.ts`).
+- `ersetzen` lässt um leere Werte einen Trenner entfallen; `{ trennerLassen: true }` schaltet das ab.
 - `mitAliasen(name, aliase, ersetzen?)` – globale Variable mit eigenen alten Namen für einen Zusammenhang.
 - `platzhalterIn`, `unbekanntePlatzhalter`, `veraltetePlatzhalter`, `modernisieren` – zum Zerlegen, Prüfen und
   Umstellen.

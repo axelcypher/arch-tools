@@ -23,6 +23,11 @@ describe('Dateinamen aus der Vorlage', () => {
     // {Kürzel} an der Stelle des Kürzels: ein festes Kürzel bzw. {Phase} an der Stelle der Antragsart wird {Art} – auch mit neuen Namen
     expect(vorlageMitAntragsart('{PROJEKT_KUERZEL} BVA {DATUM} {Name}')).toBe('{PROJEKT_KUERZEL} {Art} {DATUM} {Name}');
     expect(vorlageMitAntragsart('{Kürzel} {Phase} {Datum} {Name}')).toBe('{Kürzel} {Art} {Datum} {Name}');
+    // die Planungsphase ist keine Antragsart: {PHASE} an der Stelle der Art wird {Art}, an anderer Stelle bleibt sie
+    expect(vorlageMitAntragsart('{PROJEKT_KUERZEL} {PHASE} {DATUM} {Name}')).toBe('{PROJEKT_KUERZEL} {Art} {DATUM} {Name}');
+    expect(vorlageMitAntragsart('{PROJEKT_KUERZEL} {Art} {DATUM} {Nr} {Name} {PHASE}')).toBe('{PROJEKT_KUERZEL} {Art} {DATUM} {Nr} {Name} {PHASE}');
+    expect(dateiname('{PROJEKT_KUERZEL} {Art} {DATUM} {Nr} {Name} {PHASE}', { kuerzel: 'BS9', datum: new Date(2026, 10, 3), name: 'Bauantrag', art: 'BAUA', phase: { kuerzel: 'GP' } })).toBe('BS9 BAUA 261103 Bauantrag GP');
+    expect(dateiname('{PROJEKT_KUERZEL} {Art} {DATUM} {Nr} {Name} {PHASE}', { kuerzel: 'BS9', datum: new Date(2026, 10, 3), name: 'Bauantrag', art: 'BAUA' })).toBe('BS9 BAUA 261103 Bauantrag');
     expect(vorlageMitAntragsart('{PROJEKT_KURZNAME} BVA {DATUM}')).toBe('{PROJEKT_KURZNAME} BVA {DATUM}');
   });
 

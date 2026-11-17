@@ -622,6 +622,9 @@ const texte = (v: unknown) => (Array.isArray(v) ? [...new Set(v.filter((x): x is
 let bueroZuletzt = '';
 /** zuletzt gelesener Büroname (für den Kopf der Excel-Dateien; leer, solange die Einstellungen nicht gelesen sind) */
 export const bueroName = (): string => bueroZuletzt;
+let namensschemaZuletzt: Namensschema | undefined;
+/** zuletzt gelesenes Namensschema des Büros (undefined, solange die Einstellungen nicht gelesen sind oder keins da ist) */
+export const bueroNamensschema = (): Namensschema | undefined => namensschemaZuletzt;
 
 /** Gemeinsame Einstellungen aus Rohdaten; Fehlendes aus der Vorgabe */
 export function allgemeinAus(roh: unknown): AllgemeineEinstellungen {
@@ -638,6 +641,7 @@ export function allgemeinAus(roh: unknown): AllgemeineEinstellungen {
   const schema = namensschemaAus(o.namensschema);
   if (schema) a.namensschema = schema;
   bueroZuletzt = a.buero ?? '';
+  namensschemaZuletzt = a.namensschema;
   return a;
 }
 

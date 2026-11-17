@@ -20,7 +20,7 @@ export function ExcelDialog() {
       onClose={() => setOpen(null)}
       art={start?.art}
       hinweise={start?.hinweise}
-      benennung={{ app: 'flaechenrechner', werte: werteAusMeta(project.meta), inhalt: EXPORT_INHALT }}
+      benennung={{ app: 'flaechenrechner', werte: werteAusMeta(project.meta, project.namensschema), inhalt: EXPORT_INHALT }}
       speicher={vorlage}
       standardText="Blätter DIN 277, NRF nach Nutzungsgruppen, Raumliste und Wohnflächen – mit Summenformeln."
       referenz={(zu) => <PlatzhalterReferenz schema={QUADRIO_SCHEMA} onClose={zu} />}

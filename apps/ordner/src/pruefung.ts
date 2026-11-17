@@ -1,5 +1,9 @@
+import { alleKuerzel, wirksamesNamensschema } from '@core/namensschema';
+import { PHASE_FEHLT } from '@core/planphase';
+import { nutztPhase } from '@core/platzhalter';
+import { bueroNamensschema } from '@core/platform/konfig';
 import type { Eintrag } from './dateisystem';
-import { dateimuster, nameAus } from './nummer';
+import { dateimuster, nameAus, PLATZHALTER_PLAN } from './nummer';
 import type { ProjektAngaben } from './stammdaten';
 import { PROJEKT_DATEI } from './stammdaten';
 import type { Struktur } from './struktur';
@@ -196,8 +200,16 @@ export function pruefe(ordnerName: string, eintraege: Eintrag[], struktur: Struk
   const schema = projekt?.dateischema || struktur.dateischema;
   const schemaOrdner = regeln.filter((r) => r.dateischema && r.pfad).map((r) => `${r.pfad.toLowerCase()}/`);
   if (schema && schemaOrdner.length) {
-    const muster = dateimuster(schema, projekt?.nummer ?? '');
+    // Phase: jede Planphase des Namensschemas (Pläne früherer Phasen bleiben liegen), samt Trenner optional
+    const muster = dateimuster(schema, projekt?.nummer ?? '', alleKuerzel(wirksamesNamensschema(undefined, bueroNamensschema()).phasen));
     const geprueft = dateien.filter((e) => schemaOrdner.some((o) => e.pfad.toLowerCase().startsWith(o)));
+    // nur mit Plänen in den Planordnern – sonst gibt es keinen Namen, in dem die Phase fehlen könnte
+    if (projekt && !projekt.planphase && geprueft.length && nutztPhase(schema, PLATZHALTER_PLAN))
+      befunde.push({
+        art: 'hinweis',
+        titel: PHASE_FEHLT,
+        text: `Das Dateinamenschema enthält die Planungsphase (${schema}); ohne Phase entfällt sie samt Trenner. Festlegen unter „Projekt ergänzen“ › Stammdaten › Leistungen.`,
+      });
     const abweichend = geprueft
       .map((e) => e.pfad)
       .filter((p) => {

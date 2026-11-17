@@ -11,12 +11,12 @@
 
 import type { AntragKurz } from '@core/model';
 import type { Kuerzel, Namensschema, NamensTeil } from '@core/namensschema';
-import { alleKuerzel, dateinameZerlegenMitStellen, kuerzelZu, planNummerAus, VORGABE_NAMENSSCHEMA } from '@core/namensschema';
+import { alleKuerzel, dateinameZerlegenMitStellen, KUERZEL_MUSTER, kuerzelZu, planNummerAus, VORGABE_NAMENSSCHEMA } from '@core/namensschema';
 import type { FassungsForm } from '@core/fassung';
 import { artDerFassung, fassungAus, fassungsName } from '@core/fassung';
 import { antragKurzAus } from '@core/serialize';
 import { PERMIO_NAMEN, PERMIO_ZIEL } from '@core/einstellungen/variablen';
-import { ersetzen, globaleWerte, platzhalterIn, type Variable, type Wert } from '@core/platzhalter';
+import { ersetzen, globaleWerte, platzhalterIn, type GlobaleQuelle, type Variable, type Wert } from '@core/platzhalter';
 import type { Zustaende } from './autofill';
 import { zustaendeAus } from './autofill';
 import type { Bedingung } from './bedingung';
@@ -160,6 +160,8 @@ export interface NamensAngaben {
   kurzname?: string;
   vorhaben?: string;
   bearbeiter?: string;
+  /** Planungsphase des Projekts ({PHASE}, {PHASE_NAME}, {LPH}); fehlt = nicht festgelegt */
+  phase?: GlobaleQuelle['phase'];
   datum: Date;
   nr?: string;
   /** Name des Dokuments (Titel im Antragsumfang, sonst der Name des Formulars) */
@@ -191,7 +193,7 @@ export const anzeigeName = (formularName: string) => formularName.replace(/^\s*\
  */
 export function dateiname(vorlage: string, a: NamensAngaben): string {
   const werte: Record<string, Wert> = {
-    ...globaleWerte({ projektcode: a.kuerzel, kurzname: a.kurzname, vorhaben: a.vorhaben, bearbeiter: a.bearbeiter, datum: a.datum }),
+    ...globaleWerte({ projektcode: a.kuerzel, kurzname: a.kurzname, vorhaben: a.vorhaben, bearbeiter: a.bearbeiter, datum: a.datum, phase: a.phase }),
     Nr: a.nr ?? '',
     Name: a.name,
     Formular: a.formular ?? a.name,
@@ -213,8 +215,11 @@ export function dateiname(vorlage: string, a: NamensAngaben): string {
  * Fester Zielordner des Exports mit eingesetzten Variablen ({Antrag}, {PROJEKT_KUERZEL} …; alte Namen wie {antrag},
  * {Kürzel} gelten weiter), relativ zum Projektordner mit „/“.
  */
-export function zielpfadAus(zielpfad: string, w: { kuerzel: string; antrag: string; art?: string; kurzname?: string; vorhaben?: string; bearbeiter?: string; datum?: Date }): string {
-  const werte = { ...globaleWerte({ projektcode: w.kuerzel, kurzname: w.kurzname, vorhaben: w.vorhaben, bearbeiter: w.bearbeiter, datum: w.datum }), Antrag: w.antrag, Art: w.art ?? artDerFassung(w.antrag) };
+export function zielpfadAus(
+  zielpfad: string,
+  w: { kuerzel: string; antrag: string; art?: string; kurzname?: string; vorhaben?: string; bearbeiter?: string; datum?: Date; phase?: GlobaleQuelle['phase'] },
+): string {
+  const werte = { ...globaleWerte({ projektcode: w.kuerzel, kurzname: w.kurzname, vorhaben: w.vorhaben, bearbeiter: w.bearbeiter, datum: w.datum, phase: w.phase }), Antrag: w.antrag, Art: w.art ?? artDerFassung(w.antrag) };
   return ersetzen(zielpfad, ZIEL_VARIABLEN, werte, { saeubern: (t) => t.replace(/[\\/]+/g, ' ') })
     .replace(/\\/g, '/')
     .replace(/^\/+|\/+$/g, '');
@@ -1762,6 +1767,8 @@ export interface ProjektStatus {
   zeit: number;
   /** der zuletzt angelegte Antrag (mit „eingereicht“) */
   antrag?: AntragKurz;
+  /** Planungsphase aus der Projektdatei (`meta.planphase`, Kürzel) – Marke auf der Projektkarte */
+  planphase?: string;
 }
 
 export function projektStatusAus(status: Status[], fassung: string, zeit: number, antrag?: AntragKurz | null): ProjektStatus {
@@ -1792,7 +1799,8 @@ export function projektStatusLesen(roh: unknown): Record<string, ProjektStatus> 
       if (typeof n === 'number' && n > 0) anzahl[st] = Math.floor(n);
     }
     const antrag = antragKurzAus(o.antrag);
-    out[k] = { anzahl, fassung: o.fassung, zeit: o.zeit, ...(antrag ? { antrag } : {}) };
+    const planphase = typeof o.planphase === 'string' && KUERZEL_MUSTER.test(o.planphase) ? o.planphase : undefined;
+    out[k] = { anzahl, fassung: o.fassung, zeit: o.zeit, ...(antrag ? { antrag } : {}), ...(planphase ? { planphase } : {}) };
   }
   return out;
 }
