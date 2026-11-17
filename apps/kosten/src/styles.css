@@ -36,20 +36,6 @@
 }
 
 /* Tabellen: gemeinsame Zahlentabelle .summary-table (base.css); hier nur, was NUMIO zusätzlich braucht */
-/* Tabellen ohne Felder, aber mit zweizeiligen Zellen (Rechenansatz, Kennwert unter dem Namen): oben bündig, damit die
-   übrigen Zellen auf der ersten Zeile stehen; .felder passt nicht – das Häkchen würde die Textzellen verschieben */
-.mv-rechenweg .summary-table td,
-.ko-katalog .summary-table td {
-  vertical-align: top;
-}
-/* Mengen: das Kürzel ist ein Knopf (button.link), steht aber wie Text auf der Höhe des Feldtexts */
-.ko-mengen td:first-child {
-  padding-top: calc(3px + (var(--ctl-h) - 1lh) / 2);
-}
-/* gewählte Zeile (Katalogeintrag, verglichener Stand): .summary-table hat dafür noch keine eigene Regel */
-.summary-table tr.selected td {
-  background: var(--accent-soft);
-}
 .summary-table td.ko-menge {
   width: 96px;
 }
@@ -168,18 +154,6 @@
   gap: 6px;
   margin-bottom: 6px;
 }
-button.link {
-  border: none;
-  background: none;
-  padding: 0;
-  color: var(--accent);
-  cursor: pointer;
-  text-align: left;
-  font: inherit;
-}
-button.link:hover {
-  text-decoration: underline;
-}
 
 /* ---------- Mengen prüfen ---------- */
 
@@ -192,11 +166,14 @@ button.link:hover {
 .mv-liste tbody tr {
   cursor: pointer;
 }
-.mv-liste tbody tr:hover td {
+/* Überfahren tönt nur nicht gewählte Mengen – die gewählte behält die Auswahl aus core (tr.selected) */
+.mv-liste tbody tr:not(.selected):hover td {
   background: var(--hover);
 }
-.mv-liste tbody tr.selected td {
-  background: var(--accent-soft);
+/* die Zusatzzeile (festgelegt, Auswahl geändert) gehört zur gewählten Menge: Akzentlinie wie an der ersten Zelle
+   (core zeichnet sie an td:first-child; die Liste ist ein Grid mit Zusatzzelle über die ganze Breite) */
+.mv-liste tr.selected td.mv-menge-zusatz {
+  box-shadow: inset 3px 0 var(--accent);
 }
 /* je Menge eine Zeile: Kürzel und Name | Wert; mit Handwert oder geänderter Auswahl eine zweite Zeile darunter */
 .mv-liste table,

@@ -18,7 +18,7 @@ export function ExcelDialog({ onClose, start }: { onClose: () => void; start: Ex
       onClose={onClose}
       art={start.art}
       hinweise={start.hinweise}
-      benennung={{ app: 'kosten', werte: werteAusMeta(project.meta), inhalt: exportInhalt(project) }}
+      benennung={{ app: 'kosten', werte: werteAusMeta(project.meta, project.namensschema), inhalt: exportInhalt(project) }}
       speicher={vorlage}
       standardText="Blatt „Kosten“: Grundlagen, Kostenübersicht nach Kostengruppen mit Bandbreite, Kennwerte des Bauwerks, Positionen, Mengen, Kostenstände und Hinweise – mit Summenformeln."
       referenz={(zu) => <PlatzhalterReferenz schema={NUMIO_SCHEMA} onClose={zu} />}

@@ -298,15 +298,17 @@ body,
   flex: none;
   display: flex;
   align-items: center;
-  gap: var(--s2);
+  flex-wrap: wrap;
+  gap: var(--s1) var(--s2);
   min-height: var(--karte-kopf-h);
   padding: var(--s2) var(--karte-pad);
   border-bottom: 1px solid var(--line-soft);
 }
-/* Überschrift mit Hilfe „?“ direkt dahinter; nimmt den Platz bis zu den Aktionen */
+/* Überschrift mit Hilfe „?“ direkt dahinter; nimmt den Platz bis zu den Aktionen. Nie schmaler als ihr längstes
+   Wort samt „?“ (keine min-width: 0): fehlt Platz, rücken die Aktionen in eine zweite Zeile, statt dass der Titel
+   schrumpft und das „?“ über dem Text liegt */
 .karte-titel {
-  flex: 1;
-  min-width: 0;
+  flex: 1 1 auto;
   display: flex;
   align-items: center;
   gap: var(--s1);
@@ -373,6 +375,10 @@ body,
 }
 .karte-rumpf.buendig {
   padding: 0;
+}
+/* Vorschau (vorschau): Grund der Fläche um das Blatt, das Blatt selbst bleibt hell wie .report */
+.karte-rumpf.vorschau {
+  background: var(--bg);
 }
 /* Rumpf aus Abschnitten (abschnitte): jeder Abschnitt mit eigenem Innenabstand, Trennlinie bis an den Rand wie unter
    dem Kartenkopf; die Abschnittsüberschrift (h2) wie die Überschrift im Kartenkopf */
@@ -718,9 +724,15 @@ button.link:focus-visible {
 
 .section-head {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
+  gap: var(--s1) var(--s2);
   margin-bottom: 8px;
+}
+/* in schmalen Karten rückt der Knopf in eine zweite Zeile und bleibt dort rechts */
+.section-head > :last-child:not(:first-child) {
+  margin-left: auto;
 }
 
 .section-head h2 {
@@ -908,28 +920,34 @@ textarea:focus {
   margin-bottom: 6px;
 }
 
+/* Kennzahlen: Kacheln nebeneinander, in schmalen Karten umbrechend statt gestaucht (die Mindestbreite ist der Inhalt,
+   9em die Wunschbreite) */
 .metric-row {
   display: flex;
-  gap: 8px;
-  margin-bottom: 10px;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  margin-bottom: var(--s3);
 }
 
 .metric {
-  flex: 1;
+  flex: 1 1 9em;
   background: var(--bg);
-  border-radius: 4px;
-  padding: 6px 8px;
+  border-radius: var(--radius-s);
+  padding: var(--s1) var(--s2);
   display: flex;
   flex-direction: column;
 }
 
-.metric span {
-  font-size: 11px;
+.metric > span,
+.metric > small {
+  font-size: var(--fs-xs);
   color: var(--muted);
 }
 
-.metric strong {
-  font-size: 16px;
+.metric > strong {
+  font-size: var(--fs-xl);
+  /* Wert und Einheit („m²“, „€“) bleiben in einer Zeile */
+  white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
 
@@ -2292,7 +2310,7 @@ svg[tabindex]:focus:not(:focus-visible) {
   font-size: 13px;
 }
 .sd-vorschlag {
-  margin: -2px 0 8px;
+  margin: 0 0 var(--s2);
 }
 .sd-lph {
   display: grid;
@@ -2703,6 +2721,38 @@ button.ungespeichert::after {
 .sd-knopf {
   margin-bottom: var(--s2);
 }
+.sd-knopf-zeile {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s1) var(--s2);
+}
+/* Planungsphase: ohne Festlegung gedämpft, damit „nicht festgelegt“ auffällt, ohne zu warnen */
+.sd-phase.leer {
+  color: var(--muted);
+  font-style: italic;
+}
+.sd-phase option {
+  color: var(--text);
+  font-style: normal;
+}
+.sd-phase-kopf {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s1);
+  min-width: 0;
+  max-width: 100%;
+}
+.sd-phase-kopf select {
+  width: auto;
+  max-width: 100%;
+  min-height: var(--ctl-h-s);
+  font-size: var(--fs-s);
+}
+.sd-phase-kopf .sd-vorschlag {
+  margin: 0;
+}
 
 /* ---------- Umschalter (Segmente): eine Wahl aus wenigen, z. B. Ansicht oder Modus ---------- */
 
@@ -2742,6 +2792,24 @@ button.ungespeichert::after {
   background: var(--accent-soft);
   color: var(--accent-text);
   font-weight: 600;
+}
+
+/* Register mit kurzem und langem Namen (<span class="lang">, <span class="kurz" aria-hidden="true">, voller Name als
+   aria-label am Tab): in einer schmalen Kartenleiste nur der kurze. Gemessen wird die Leiste, nicht das Fenster –
+   neben der Karte können Seitenkarten stehen. */
+.segment .kurz {
+  display: none;
+}
+.karte-leiste:has(.segment .kurz) {
+  container: karte-leiste / inline-size;
+}
+@container karte-leiste (max-width: 640px) {
+  .segment .lang {
+    display: none;
+  }
+  .segment .kurz {
+    display: inline;
+  }
 }
 
 /* lange oder viele Werte: senkrecht untereinander statt umbrechend (umbrechende Segmente lesen sich treppenartig) */

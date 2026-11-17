@@ -243,7 +243,7 @@ export function MengenView({ bezug, onBezug }: { bezug: MengenBezug; onBezug: (b
             </div>
           )}
           {menge.teile.length ? (
-            <table ref={wegRef} className="summary-table text" onMouseLeave={() => setAktiv(null)}>
+            <table ref={wegRef} className="summary-table text oben" onMouseLeave={() => setAktiv(null)}>
               <thead>
                 <tr>
                   <th className="mv-check">

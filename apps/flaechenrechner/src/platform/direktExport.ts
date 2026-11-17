@@ -14,7 +14,7 @@ export function exportAuftrag(): DirektExportAuftrag {
   return {
     app: 'flaechenrechner',
     datei,
-    werte: werteAusMeta(project.meta),
+    werte: werteAusMeta(project.meta, project.namensschema),
     inhalt: EXPORT_INHALT,
     erzeugen: mitEingestellterVorlage({
       vorlage: () => vorlage.aktuelle(project),

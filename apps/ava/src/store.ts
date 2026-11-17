@@ -54,6 +54,8 @@ export interface OffenesProjekt {
   ava: AvaProjekt;
   kk: KkStand | null;
   kkFehler: string | null;
+  /** Namensschema der Projektdatei (für {PHASE_NAME} und {LPH}); fehlt = das des Büros */
+  namensschema?: unknown;
 }
 
 export interface OffenesLv {
@@ -146,9 +148,14 @@ export const useAva = create<AvaZustand>((set, get) => ({
     set({ busy: 'Projekt wird gelesen …', lv: null, auswahl: null });
     try {
       let ava = leeresAvaProjekt();
+      let namensschema: unknown;
       const oap = await fs.lies(o.ordner, o.oap);
-      if (oap) ava = avaAus(projektdateiRoh(oap.daten).ava);
-      set({ projekt: { ...o, struktur: null, ava, kk: null, kkFehler: null }, ansicht: { art: 'uebersicht' } });
+      if (oap) {
+        const roh = projektdateiRoh(oap.daten);
+        ava = avaAus(roh.ava);
+        namensschema = roh.namensschema;
+      }
+      set({ projekt: { ...o, struktur: null, ava, kk: null, kkFehler: null, ...(namensschema ? { namensschema } : {}) }, ansicht: { art: 'uebersicht' } });
       await get().neuLaden();
     } finally {
       set({ busy: null });
@@ -292,7 +299,7 @@ export const useAva = create<AvaZustand>((set, get) => ({
         lv.kopf.nummer ??= gewerk.slice(1);
         const ordner = g ? g.pfad : `${einstellungen.ablage.gewerke}/${gewerkZweistellig(gewerk)}`;
         const unter = einstellungen.ablage.lv ? `${ordner}/${einstellungen.ablage.lv}` : ordner;
-        const name = lvDateiname(einstellungen.lv.dateiname, { ...globaleAva(projekt.meta, projekt.name, einstellungen.deckblatt.bearbeiter), Gewerk: gewerkZweistellig(gewerk) }) || bezeichnung;
+        const name = lvDateiname(einstellungen.lv.dateiname, { ...globaleAva(projekt.meta, projekt.name, einstellungen.deckblatt.bearbeiter, undefined, projekt.namensschema), Gewerk: gewerkZweistellig(gewerk) }) || bezeichnung;
         const pfad = `${unter}/${name} ${bezeichnung.replace(/^G\d+\s*/i, '')}`.replace(/\s+$/, '').replace(/[\\:*?"<>|]/g, ' ') + `.${format}`;
         const daten = format === 'aslv' ? aslvNeu(lv) : eigenSchreiben(lv);
         if (!(await fs.anlegen(projekt.ordner, pfad, daten))) throw new Error(`${pfad}: Die Datei gibt es schon.`);
@@ -306,7 +313,7 @@ export const useAva = create<AvaZustand>((set, get) => ({
   kontext() {
     const { fs, projekt, einstellungen } = get();
     if (!projekt) return null;
-    return { fs, ordner: projekt.ordner, oap: projekt.oap, meta: projekt.meta, projektName: projekt.name, e: einstellungen };
+    return { fs, ordner: projekt.ordner, oap: projekt.oap, meta: projekt.meta, namensschema: projekt.namensschema, projektName: projekt.name, e: einstellungen };
   },
 }));
 

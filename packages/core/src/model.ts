@@ -432,6 +432,11 @@ export interface ProjectMeta {
   bearbeiter: string;
   /** beauftragte Leistungsphasen (1–9); fehlt = nicht festgelegt */
   leistungsphasen?: number[];
+  /**
+   * Aktuelle Planungsphase: Kürzel einer Planphase des wirksamen Namensschemas (GP, AP, AB …); Name und Leistungsphase
+   * ergeben sich aus dem Namensschema (`planphaseVon`). Fehlt = nicht festgelegt.
+   */
+  planphase?: string;
   beteiligte?: Beteiligter[];
   /** Tag, an dem das Projekt angelegt wurde (JJJJ-MM-TT) */
   angelegt?: string;

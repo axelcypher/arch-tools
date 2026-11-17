@@ -15,7 +15,7 @@ export function exportAuftrag(): DirektExportAuftrag {
   return {
     app: 'kosten',
     datei,
-    werte: werteAusMeta(project.meta),
+    werte: werteAusMeta(project.meta, project.namensschema),
     inhalt: exportInhalt(project),
     erzeugen: mitEingestellterVorlage({
       vorlage: () => vorlage.aktuelle(project),

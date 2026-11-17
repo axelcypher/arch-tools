@@ -7,6 +7,9 @@ import { alle, email, ordnername, plz } from './pruefen';
 import { Modal } from './Dialog';
 import { Symbol } from './Symbol';
 import { abfragbar, adresseSchluessel, geokodierungMoeglich, koordinatenFuerQgis, koordinatenVeraltet, mitKoordinaten, QUELLE } from '../platform/geokodierung';
+import { wirksamesNamensschema } from '../namensschema';
+import { bueroNamensschema } from '../platform/konfig';
+import { phasenOption, planphaseVon, planphaseVorschlag } from '../planphase';
 
 /**
  * Stammdaten eines Projekts bearbeiten – gemeinsam für alle Apps. `StammdatenFelder` sind die Eingaben (auch in
@@ -68,6 +71,7 @@ export function StammdatenFelder({
   bearbeiterVorschlaege,
   beteiligtVorschlaege,
   rollenSchnell = false,
+  namensschema,
 }: {
   meta: ProjectMeta;
   onChange: (meta: ProjectMeta) => void;
@@ -92,6 +96,8 @@ export function StammdatenFelder({
   beteiligtVorschlaege?: Beteiligter[];
   /** Knöpfe „+ Tragwerksplanung“ … zum schnellen Anlegen typischer Beteiligter */
   rollenSchnell?: boolean;
+  /** Namensschema der Projektdatei (Planphasen zur Auswahl); fehlt = das des Büros bzw. die Vorgabe */
+  namensschema?: unknown;
 }) {
   const id = useId();
   const set = (patch: Partial<ProjectMeta>) => onChange({ ...meta, ...patch });
@@ -301,6 +307,7 @@ export function StammdatenFelder({
               </label>
             ))}
           </div>
+          <PlanphaseWahl meta={meta} onChange={onChange} namensschema={namensschema} />
           <Field label="Bearbeitung" hint="Kürzel, z. B. TP">
             <TextField value={meta.bearbeiter} list={bearbeiterVorschlaege?.length ? `${id}-bearbeiter` : undefined} onChange={(v) => set({ bearbeiter: v.trim() })} />
           </Field>
@@ -406,6 +413,7 @@ export function StammdatenDialog({
   onAbbrechen,
   name: nameAnfang,
   projektnummerPflicht = true,
+  namensschema,
 }: {
   titel: string;
   text?: string;
@@ -418,6 +426,8 @@ export function StammdatenDialog({
   name?: string;
   /** ohne Projektnummer nicht speichern (Anlegen einer Projektdatei) */
   projektnummerPflicht?: boolean;
+  /** Namensschema der Projektdatei (Planphasen zur Auswahl) */
+  namensschema?: unknown;
 }) {
   const [meta, setMeta] = useState(anfang);
   const [name, setName] = useState(nameAnfang ?? '');
@@ -454,7 +464,7 @@ export function StammdatenDialog({
           <TextField value={name} onChange={setName} />
         </Field>
       )}
-      <StammdatenFelder meta={meta} onChange={setMeta} fehlerZeigen={versucht} kurznameHinweis={projektnummerPflicht ? undefined : null} />
+      <StammdatenFelder meta={meta} onChange={setMeta} fehlerZeigen={versucht} kurznameHinweis={projektnummerPflicht ? undefined : null} namensschema={namensschema} />
       {fehler && <p className="warning">{fehler}</p>}
       <div className="dialog-buttons">
         <button onClick={onAbbrechen} disabled={laeuft}>
@@ -473,7 +483,15 @@ export function StammdatenDialog({
  * gemeinsamen Dialog öffnet. Die Stammdaten liegen in der Projektdatei; andere Apps sehen Änderungen nach dem Speichern
  * und erneuten Laden (zusammengeführt wie alle Abschnitte).
  */
-export function StammdatenKnopf({ project, onAendern, kurz = true }: { project: { name: string; meta: ProjectMeta }; onAendern: (meta: ProjectMeta, name: string) => void; kurz?: boolean }) {
+export function StammdatenKnopf({
+  project,
+  onAendern,
+  kurz = true,
+}: {
+  project: { name: string; meta: ProjectMeta; namensschema?: unknown };
+  onAendern: (meta: ProjectMeta, name: string) => void;
+  kurz?: boolean;
+}) {
   const [offen, setOffen] = useState(false);
   const m = project.meta;
   const zeilen = [
@@ -486,15 +504,19 @@ export function StammdatenKnopf({ project, onAendern, kurz = true }: { project: 
   return (
     <div className="sd-knopf">
       {kurz && (zeilen.length ? <div className="small-text">{zeilen.join(' · ')}</div> : <div className="muted small-text">Noch keine Stammdaten erfasst.</div>)}
-      <button className="small" onClick={() => setOffen(true)} title="Bauvorhaben, Grundstück, Bebauungsplan, Bauherr – gemeinsam für alle Apps in der Projektdatei">
-        Stammdaten …
-      </button>
+      <div className="sd-knopf-zeile">
+        <button className="small" onClick={() => setOffen(true)} title="Bauvorhaben, Grundstück, Bebauungsplan, Bauherr – gemeinsam für alle Apps in der Projektdatei">
+          Stammdaten …
+        </button>
+        <PlanphaseWahl kompakt meta={m} namensschema={project.namensschema} onChange={(meta) => onAendern(meta, project.name)} />
+      </div>
       {offen && (
         <StammdatenDialog
           titel="Stammdaten des Projekts"
           text="Gelten für alle Apps (Projektdatei). Andere Apps zeigen Änderungen, sobald das Projekt dort neu geladen wird."
           meta={m}
           name={project.name}
+          namensschema={project.namensschema}
           projektnummerPflicht={false}
           speichernText="Übernehmen"
           onSpeichern={(meta, name) => {
@@ -505,6 +527,84 @@ export function StammdatenKnopf({ project, onAendern, kurz = true }: { project: 
         />
       )}
     </div>
+  );
+}
+
+/**
+ * Planungsphase des Projekts wählen: die Planphasen des wirksamen Namensschemas (Projekt vor Büro vor Vorgabe) und
+ * „nicht festgelegt“. Ohne Phase steht das sichtbar da, mit einem Vorschlag aus Leistungsphasen bzw. aktivem Antrag
+ * zum Übernehmen – gesetzt wird nur auf Klick. `kompakt`: für den Projektkopf, ohne Feldbeschriftung und Hinweis.
+ */
+export function PlanphaseWahl({
+  meta,
+  onChange,
+  namensschema,
+  kompakt = false,
+  startfokus = false,
+}: {
+  meta: ProjectMeta;
+  onChange: (meta: ProjectMeta) => void;
+  namensschema?: unknown;
+  kompakt?: boolean;
+  /** Erstfokus im Dialog (`data-startfokus`) */
+  startfokus?: boolean;
+}) {
+  const id = useId();
+  const schema = wirksamesNamensschema(namensschema, bueroNamensschema());
+  const aktuell = planphaseVon(meta.planphase, schema);
+  const vorschlag = aktuell ? null : planphaseVorschlag(meta, schema);
+  const setzen = (kuerzel: string) => {
+    const m: ProjectMeta = { ...meta, planphase: kuerzel };
+    if (!kuerzel) delete m.planphase;
+    onChange(m);
+  };
+  const auswahl = (
+    <select
+      id={id}
+      className={`sd-phase${aktuell ? '' : ' leer'}`}
+      value={aktuell?.kuerzel ?? ''}
+      data-startfokus={startfokus ? '' : undefined}
+      title={aktuell ? `Planungsphase ${aktuell.kuerzel}${aktuell.name ? ` – ${aktuell.name}` : ''}` : 'Planungsphase wählen, damit {PHASE} in Datei- und Ordnernamen erscheint'}
+      onChange={(e) => setzen(e.target.value)}
+    >
+      <option value="">nicht festgelegt</option>
+      {schema.phasen.map((k) => (
+        <option key={k.kuerzel} value={k.kuerzel}>
+          {kompakt ? `${k.kuerzel}${k.name ? ` – ${k.name}` : ''}` : phasenOption(k)}
+        </option>
+      ))}
+      {aktuell && !aktuell.bekannt && <option value={aktuell.kuerzel}>{aktuell.kuerzel} (nicht im Namensschema)</option>}
+    </select>
+  );
+  const vorschlagKnopf = vorschlag && (
+    <button type="button" className="small sd-vorschlag" title={`Vorschlag: ${vorschlag.grund} – wird erst mit dem Klick gesetzt`} onClick={() => setzen(vorschlag.kuerzel)}>
+      {kompakt ? `${vorschlag.kuerzel} übernehmen` : `Vorschlag ${vorschlag.kuerzel} übernehmen`}
+    </button>
+  );
+  if (kompakt)
+    return (
+      <span className="sd-phase-kopf">
+        <label htmlFor={id} className="small-text">
+          Planungsphase
+        </label>
+        {auswahl}
+        {vorschlagKnopf}
+      </span>
+    );
+  return (
+    <>
+      <Field
+        label="Planungsphase"
+        hint={
+          aktuell
+            ? `Aktuelle Phase${aktuell.lph !== undefined ? ` (LPh ${aktuell.lph})` : ' (ohne Leistungsphase)'} – für den Platzhalter {PHASE} in Datei- und Ordnernamen`
+            : 'Phase wählen, damit {PHASE} in Datei- und Ordnernamen erscheint.'
+        }
+      >
+        {auswahl}
+      </Field>
+      {vorschlagKnopf}
+    </>
   );
 }
 

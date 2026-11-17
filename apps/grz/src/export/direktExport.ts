@@ -13,7 +13,7 @@ export function exportAuftrag(): DirektExportAuftrag {
   return {
     app: 'grz',
     datei,
-    werte: werteAusMeta(project.meta),
+    werte: werteAusMeta(project.meta, project.namensschema),
     inhalt: EXPORT_INHALT,
     erzeugen: mitEingestellterVorlage({
       vorlage: () => vorlage.aktuelle(project),

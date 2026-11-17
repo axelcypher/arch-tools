@@ -4,7 +4,7 @@ import { createRoot } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ProjectMeta } from '../model';
 import { leereMeta } from '../model';
-import { StammdatenDialog, StammdatenFelder } from './Stammdaten';
+import { PlanphaseWahl, StammdatenDialog, StammdatenFelder, StammdatenKnopf } from './Stammdaten';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -174,5 +174,84 @@ describe('Stammdaten: Koordinaten der Adresse', () => {
     await act(async () => knopf(host, 'Übernehmen').click());
     expect(gespeichert.mock.calls[0][0].koordinaten).toMatchObject({ epsg: 25832, ost: 405577.31, adresse: 'Prinzipalmarkt 10, Münster' });
     geokodiererSetzen(null);
+  });
+});
+
+describe('Planungsphase', () => {
+  const zeichneWahl = (start: ProjectMeta, props: Record<string, unknown> = {}) => {
+    let meta = start;
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    act(() => {
+      root = createRoot(host);
+    });
+    const zeichne = () =>
+      act(() =>
+        root!.render(
+          createElement(PlanphaseWahl, {
+            meta,
+            onChange: (m: ProjectMeta) => {
+              meta = m;
+              zeichne();
+            },
+            ...props,
+          }),
+        ),
+      );
+    zeichne();
+    return { host, meta: () => meta };
+  };
+  const waehle = (el: HTMLSelectElement, wert: string) =>
+    act(() => {
+      el.value = wert;
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+
+  it('ohne Festlegung sichtbar leer; Vorschlag wird erst auf Klick gesetzt; Wechsel und Zurücksetzen', () => {
+    const { host, meta } = zeichneWahl({ ...leereMeta(), leistungsphasen: [1, 2, 3, 4] });
+    const sel = host.querySelector('select.sd-phase') as HTMLSelectElement;
+    expect(sel.value).toBe('');
+    expect(sel.classList.contains('leer')).toBe(true);
+    expect(sel.closest('label')!.textContent).toContain('Planungsphase');
+    expect(host.textContent).toContain('Phase wählen, damit {PHASE} in Datei- und Ordnernamen erscheint.');
+    // Planphasen des Namensschemas (Vorgabe) mit LPh, AB ohne
+    expect([...sel.options].map((o) => o.value)).toEqual(['', 'BP', 'EP', 'GP', 'AP', 'AB']);
+    expect(sel.options[3].textContent).toBe('GP – Genehmigungsplanung · LPh 4');
+    expect(sel.options[5].textContent).toContain('ohne LPh');
+    // Vorschlag aus der ersten beauftragten Leistungsphase – nicht still gesetzt
+    expect(meta().planphase).toBeUndefined();
+    act(() => knopf(host, 'Vorschlag BP übernehmen').click());
+    expect(meta().planphase).toBe('BP');
+    expect(knopf(host, 'Vorschlag')).toBeUndefined();
+    waehle(host.querySelector('select.sd-phase') as HTMLSelectElement, 'GP');
+    expect(meta().planphase).toBe('GP');
+    expect(host.textContent).toContain('Aktuelle Phase (LPh 4)');
+    waehle(host.querySelector('select.sd-phase') as HTMLSelectElement, '');
+    expect('planphase' in meta()).toBe(false);
+  });
+
+  it('Phase aus einem anderen Namensschema bleibt sichtbar; eigenes Namensschema des Projekts gilt', () => {
+    const { host } = zeichneWahl({ ...leereMeta(), planphase: 'XY' });
+    const sel = host.querySelector('select.sd-phase') as HTMLSelectElement;
+    expect(sel.value).toBe('XY');
+    expect(sel.selectedOptions[0].textContent).toBe('XY (nicht im Namensschema)');
+    act(() => root?.unmount());
+    root = null;
+    const eigen = zeichneWahl({ ...leereMeta(), planphase: 'XY' }, { namensschema: { phasen: [{ kuerzel: 'XY', name: 'Sonderphase' }] } });
+    expect([...(eigen.host.querySelector('select.sd-phase') as HTMLSelectElement).options].map((o) => o.value)).toEqual(['', 'XY']);
+  });
+
+  it('im Projektkopf (Stammdaten-Knopf): Phase direkt wechseln, beschriftet', () => {
+    const geaendert = vi.fn<(m: ProjectMeta, name: string) => void>();
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    act(() => {
+      root = createRoot(host);
+      root.render(createElement(StammdatenKnopf, { project: { name: 'Test', meta: { ...leereMeta(), projektcode: 'BS9' } }, onAendern: geaendert }));
+    });
+    const sel = host.querySelector('.sd-phase-kopf select') as HTMLSelectElement;
+    expect(host.querySelector(`label[for="${sel.id}"]`)!.textContent).toBe('Planungsphase');
+    waehle(sel, 'AP');
+    expect(geaendert).toHaveBeenCalledWith(expect.objectContaining({ planphase: 'AP', projektcode: 'BS9' }), 'Test');
   });
 });

@@ -56,7 +56,7 @@ export async function projektEinlesen(o: GeladenerOrdner, gewaehlt?: string | nu
     return {
       // Lücken (etwa Kurzname oder Leistungsphasen aus der Zeit vor der Projektdatei) aus der alten projekt.json
       angaben: alt ? mitAlterProjektJson(angaben, alt) : angaben,
-      quelle: { pfad: datei.pfad, ...defekt },
+      quelle: { pfad: datei.pfad, ...defekt, ...(p.namensschema ? { namensschema: p.namensschema } : {}) },
       projektdatei: { pfad: datei.pfad, meta: p.meta, ...(p.projektordner ? { projektordner: p.projektordner } : {}), ...(p.namensschema ? { namensschema: p.namensschema } : {}) },
       kandidaten,
     };
@@ -78,6 +78,21 @@ export async function projektStatusSetzen(fs: ProjektordnerZugriff, projektordne
     const meta = { ...((roh.meta ?? {}) as Record<string, unknown>) };
     if (status === 'aktiv' && !ausdruecklich) delete meta.status;
     else meta.status = status;
+    return { ...roh, meta };
+  });
+}
+
+/**
+ * Planungsphase eines Projekts setzen bzw. löschen (`null`): nur `meta.planphase` in der Projektdatei – frisch gelesen,
+ * alles andere bleibt, wie es ist. Ohne Projektdatei geht es nicht – dann zuerst ergänzen.
+ */
+export async function projektPlanphaseSetzen(fs: ProjektordnerZugriff, projektordner: string, kuerzel: string | null): Promise<void> {
+  const datei = await projektdateiFinden(fs, projektordner);
+  if (!datei) throw new Error('Das Projekt hat noch keine Projektdatei (.oap) – bitte zuerst im Assistenten ergänzen.');
+  await projektdateiSchreiben(fs, projektordner, datei.pfad, (roh) => {
+    const meta = { ...((roh.meta ?? {}) as Record<string, unknown>) };
+    if (kuerzel) meta.planphase = kuerzel;
+    else delete meta.planphase;
     return { ...roh, meta };
   });
 }
