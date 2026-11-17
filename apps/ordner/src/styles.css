@@ -331,10 +331,10 @@
 }
 /* Meldungen über dem unteren Rand des Baums – der Baum springt nicht */
 /* als erstes Kind einer Karte: der Inhalt beginnt und endet im Abstand des Rumpfs wie in den Nachbarkarten */
-.po-sperre > :first-child {
+.karte-rumpf > .po-sperre > :first-child {
   margin-top: 0;
 }
-.po-sperre > :last-child {
+.karte-rumpf > .po-sperre > :last-child {
   margin-bottom: 0;
 }
 /* Strg+Enter für die ganze Karte des Assistenten; ohne eigenen Kasten */

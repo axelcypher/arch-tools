@@ -571,7 +571,8 @@ export function AssistentView({
 
   return (
     <Flaeche className="po-assistent">
-      {/* Strg+Enter auf der ganzen Karte – auch im Kopf, wo der Fokus nach dem Schrittwechsel steht */}
+      {/* Strg+Enter auf der ganzen Karte – auch im Kopf, wo der Fokus nach dem Schrittwechsel steht. Die Hülle (display: contents)
+          steht zwischen Fläche und Karte: `.flaeche > .karte` greift deshalb nicht – unschädlich, solange die Karte allein auf der Fläche steht */}
       <div className="po-assistent-tasten" onKeyDown={tasten}>
         <Karte
           als="main"
