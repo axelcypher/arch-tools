@@ -205,7 +205,7 @@ export function App() {
         ) : (
           <ProjektEinstieg
             app="ava"
-            text="Ausschreibung, Vergabe, Abrechnung und Bauleitung. Die App arbeitet mit den Projektordnern des Büros (Gewerkeordner, LV-Dateien, Kostenkontrolle, Rechnungen). Dafür braucht sie die Desktop-App – im Browser gibt es keinen Ordnerzugriff."
+            text="Die App arbeitet mit den Projektordnern des Büros (Gewerkeordner, LV-Dateien, Kostenkontrolle, Rechnungen) und braucht dafür die Desktop-App – im Browser gibt es keinen Ordnerzugriff."
           />
         )
       ) : (

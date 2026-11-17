@@ -14,9 +14,10 @@ body:has(.titlebar-im-rahmen) .pw-ebene {
 }
 /* Einstieg ohne Projekt (ProjektEinstieg): eine Karte mittig auf der Fläche – in jeder App gleich */
 .pw-einstieg-ort {
-  /* füllt den Platz – im Flex-Container über flex, in einem Block (z. B. rollender Hauptbereich) über die Mindesthöhe */
+  /* füllt den Platz im Flex-Container über flex; steht er allein in einem Block (z. B. rollender Hauptbereich), über
+     die Mindesthöhe – mit Meldungen darüber nicht, sonst würde der Bereich um deren Höhe zu hoch */
   flex: 1;
-  min-height: 100%;
+  min-height: 0;
   box-sizing: border-box;
   display: flex;
   align-items: center;
@@ -24,6 +25,9 @@ body:has(.titlebar-im-rahmen) .pw-ebene {
   padding: var(--spalt);
   overflow: auto;
   background: var(--bg);
+}
+.pw-einstieg-ort:only-child {
+  min-height: 100%;
 }
 /* auf einer Fläche (Leerzustand der Übersicht, PERMIO) trägt die Fläche Grund und Abstand */
 .flaeche > .pw-einstieg-ort {

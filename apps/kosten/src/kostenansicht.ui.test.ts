@@ -63,7 +63,7 @@ describe('Kostenansicht: Bedienung', () => {
     useKosten.getState().load(createProject());
     const host = render(App);
     expect(host.querySelector('.ko-view')).toBeNull();
-    expect(host.textContent).toContain('Kostenermittlung nach DIN 276');
+    expect(host.querySelector('.pw-einstieg h2')?.textContent).toBe('NUMIO');
     await act(async () => knopf(host.querySelector('main')!, 'Neues Projekt').click());
     expect(host.querySelector('.ko-view')).not.toBeNull();
   });

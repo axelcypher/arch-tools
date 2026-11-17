@@ -24,7 +24,6 @@ import { useOrdner } from '../store';
 import { aktivePresets } from '../struktur';
 import { ErgebnisAnzeige, PlanMeldungen, PlanTabelle, PresetAuswahl, VorlagenordnerZeile } from './gemeinsam';
 import { ProjektStart } from './ProjektStart';
-import { Flaeche } from '@core/ui/Karte';
 
 const log = logger('assistent');
 
