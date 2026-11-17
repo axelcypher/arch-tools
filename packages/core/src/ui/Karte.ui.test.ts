@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { Flaeche, FlaechenSpalte, Karte, ZeichenKarte } from './Karte';
+import { Flaeche, FlaechenSpalte, Karte, ZeichenFussInhalt, ZeichenKarte } from './Karte';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -29,13 +29,47 @@ describe('Fläche und Karten', () => {
   it('Karte: Kopf mit h2 und Aktionen, scrollender Rumpf, Fußzeile', () => {
     const host = render(h(Karte, { titel: 'Auswertung', aktionen: h('button', null, 'Kurzfassung'), fuss: 'NRF/BGF: 84 %' }, h('p', null, 'Inhalt')));
     const karte = host.querySelector('section.karte')!;
-    expect(karte.querySelector('.karte-kopf > h2')?.textContent).toBe('Auswertung');
+    expect(karte.querySelector('.karte-kopf h2')?.textContent).toBe('Auswertung');
     expect(karte.querySelector('.karte-kopf > .karte-aktionen > button')?.textContent).toBe('Kurzfassung');
     expect(karte.querySelector('.karte-rumpf > p')?.textContent).toBe('Inhalt');
     expect(karte.querySelector('footer.karte-fuss')?.textContent).toBe('NRF/BGF: 84 %');
     // mit sichtbarem Titel benennt das h2 den Bereich
     expect(karte.hasAttribute('aria-label')).toBe(false);
-    expect(karte.getAttribute('aria-labelledby')).toBe(karte.querySelector('.karte-kopf > h2')!.id);
+    expect(karte.getAttribute('aria-labelledby')).toBe(karte.querySelector('.karte-kopf h2')!.id);
+  });
+
+  it('Hilfe hinter der Überschrift gehört nicht zum Namen der Karte', () => {
+    const host = render(h(Karte, { titel: 'Lageplan', hilfe: h('button', { className: 'hilfe-knopf', 'aria-label': 'Berechnungsregeln nachschlagen' }, '?') }, 'x'));
+    const karte = host.querySelector('section.karte')!;
+    const h2 = karte.querySelector('.karte-kopf > .karte-titel > h2')!;
+    expect(h2.textContent).toBe('Lageplan');
+    expect(karte.querySelector('.karte-titel > h2 + .hilfe-knopf')).not.toBeNull();
+    expect(h2.querySelector('button')).toBeNull();
+    expect(karte.getAttribute('aria-labelledby')).toBe(h2.id);
+    const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'base.css'), 'utf8');
+    expect(css).toMatch(/\.karte-titel \{[^}]*flex: 1;[^}]*display: flex;/);
+    expect(css).toMatch(/\.karte-titel > \.hilfe-knopf \{[^}]*flex-shrink: 0;[^}]*margin-left: 0;/);
+    // der Rumpf beginnt und endet im eigenen Abstand, gleich welches Element vorn oder hinten steht
+    expect(css).toMatch(/\.karte-rumpf > :first-child \{\s*margin-top: 0;/);
+    expect(css).toMatch(/\.karte-rumpf > :last-child \{\s*margin-bottom: 0;/);
+  });
+
+  it('schmale Fenster: zuerst geben die Seitenkarten nach, dann die Mitte von ihrer Wunschbreite', () => {
+    const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'base.css'), 'utf8');
+    expect(css).toMatch(/--karte-mitte-wunsch: 480px;/);
+    expect(css).toMatch(/\.flaeche > \.flaechen-spalte:not\(\.wachsend\) \{[^}]*flex-shrink: 1000;[^}]*min-width: var\(--leiste-min\);/);
+    expect(css).toMatch(/\.flaeche > \.flaechen-spalte\.wachsend \{[^}]*flex: 1 1 var\(--karte-mitte-wunsch\);[^}]*min-width: var\(--karte-mitte-min\);/);
+  });
+
+  it('Karte mit Abschnitten: bündiger Rumpf mit Klasse abschnitte; Linien und Überschriften aus base.css', () => {
+    const host = render(h(Karte, { ariaLabel: 'Projekt, Geschosse und Flächen', abschnitte: true }, h('section', null, h('h2', null, 'Projekt')), h('section', null, h('h2', null, 'Geschosse'))));
+    expect(host.querySelector('.karte-rumpf')!.className).toBe('karte-rumpf buendig abschnitte');
+    const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'base.css'), 'utf8');
+    expect(css).toMatch(/\.karte-rumpf\.abschnitte > section \{[^}]*padding: var\(--s3\) var\(--karte-pad\);[^}]*border-bottom: 1px solid var\(--line-soft\);/);
+    expect(css).toMatch(/\.karte-rumpf\.abschnitte > section:last-child \{\s*padding-bottom: var\(--karte-pad\);\s*border-bottom: none;/);
+    expect(css).toMatch(/\.karte-rumpf\.abschnitte > section > h2,\s*\.karte-rumpf\.abschnitte > section > \.section-head h2 \{[^}]*font-size: var\(--fs-l\);/);
+    expect(css).toMatch(/\.karte-rumpf\.abschnitte > section > :first-child \{\s*margin-top: 0;/);
+    expect(css).toMatch(/\.karte-rumpf\.abschnitte > section > :last-child \{\s*margin-bottom: 0;/);
   });
 
   it('Karte ohne Titel: kein Kopf, Name über ariaLabel; bündiger Rumpf', () => {
@@ -60,10 +94,57 @@ describe('Fläche und Karten', () => {
   it('ZeichenKarte mit Titel: derselbe Kopf wie bei Karte (h2 benennt, Aktionen rechts)', () => {
     const host = render(h(ZeichenKarte, { titel: 'Lageplan', aktionen: h('button', null, '3D'), children: h('div', { className: 'canvas' }) }));
     const karte = host.querySelector('section.zeichen-karte')!;
-    const h2 = karte.querySelector('.karte-kopf > h2')!;
+    const h2 = karte.querySelector('.karte-kopf h2')!;
     expect(h2.textContent).toBe('Lageplan');
     expect(karte.getAttribute('aria-labelledby')).toBe(h2.id);
     expect(karte.querySelector('.karte-kopf > .karte-aktionen > button')?.textContent).toBe('3D');
+  });
+
+  it('ZeichenKarte: ZeichenFussInhalt aus der Zeichenfläche landet in der Fußzeile; als="main"; leere Fußzeile verborgen', () => {
+    const host = render(
+      h(ZeichenKarte, {
+        ariaLabel: 'Grundriss',
+        als: 'main',
+        fuss: h('span', null, 'Hinweis'),
+        children: h('div', { className: 'canvas' }, h('div', null, h(ZeichenFussInhalt, null, h('span', { className: 'koord' }, 'x 1,00')))),
+      }),
+    );
+    const karte = host.querySelector('main.karte.zeichen-karte')!;
+    expect(karte.getAttribute('aria-label')).toBe('Grundriss');
+    const fuss = karte.querySelector('footer.zeichen-fuss')!;
+    expect(fuss.textContent).toBe('Hinweisx 1,00');
+    expect(karte.querySelector('.zeichen-flaeche .koord')).toBeNull();
+    // außerhalb einer ZeichenKarte rendert ZeichenFussInhalt nichts
+    const ohne = render(h('div', null, h(ZeichenFussInhalt, null, 'weg')));
+    expect(ohne.textContent).toBe('');
+    const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'base.css'), 'utf8');
+    expect(css).toMatch(/\.zeichen-fuss:empty \{\s*display: none;/);
+  });
+
+  it('als: Spalte und Karte als main bzw. aside', () => {
+    const host = render(
+      h(Flaeche, {
+        children: [h(FlaechenSpalte, { key: 's', als: 'main', wachsend: true, children: h(Karte, { titel: 'Ergebnis', hoehe: 'inhalt' }) }), h(Karte, { key: 'k', titel: 'Quellen', als: 'aside' })],
+      }),
+    );
+    expect(host.querySelector('main.flaechen-spalte.wachsend > section.karte.karte-inhalt')).not.toBeNull();
+    const aside = host.querySelector('aside.karte')!;
+    expect(aside.getAttribute('aria-labelledby')).toBe(aside.querySelector('h2')!.id);
+    expect(host.querySelector('div.flaechen-spalte')).toBeNull();
+    // Karte als Hauptbereich behält ihren Namen
+    const mitte = render(h(Karte, { titel: 'Ergebnis', als: 'main' }, 'x'));
+    const main = mitte.querySelector('main.karte')!;
+    expect(main.getAttribute('aria-labelledby')).toBe(main.querySelector('h2')!.id);
+    // eine gewöhnliche Spalte (div) trägt keinen Namen
+    const schlicht = render(h(FlaechenSpalte, { ariaLabel: 'x', children: 'a' }));
+    expect(schlicht.querySelector('div.flaechen-spalte')!.hasAttribute('aria-label')).toBe(false);
+    // zwei Nebenspalten mit eigenem Namen
+    const zwei = render(
+      h(Flaeche, {
+        children: [h(FlaechenSpalte, { key: 'l', als: 'aside', ariaLabel: 'Gliederung', children: 'a' }), h(FlaechenSpalte, { key: 'r', als: 'aside', ariaLabel: 'Quellen', children: 'b' })],
+      }),
+    );
+    expect([...zwei.querySelectorAll('aside.flaechen-spalte')].map((e) => e.getAttribute('aria-label'))).toEqual(['Gliederung', 'Quellen']);
   });
 
   it('Fläche und Spalte setzen ihre Klassen; Spalte mit fester Breite', () => {
@@ -103,7 +184,10 @@ describe('Fläche und Karten', () => {
     const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'base.css'), 'utf8');
     expect(css).toMatch(/\.summary-table\.text th\.num,\s*\.summary-table td\.num \{[^}]*text-align: right;/);
     expect(css).toMatch(/\.summary-table\.felder td \{[^}]*vertical-align: top;/);
-    expect(css).toMatch(/\.summary-table\.felder td:not\(:has\(input, select, textarea, button\)\) \{[^}]*padding-top: calc\(3px \+ \(var\(--ctl-h\) - 1lh\) \/ 2\);/);
+    // nur Zeilen mit Feld oder Knopf (Anlass: NUMIO, Gruppenzeile ohne Feld wurde höher); :has() prüft happy-dom nicht verlässlich
+    expect(css).toMatch(
+      /\.summary-table\.felder tr:has\(input, select, textarea, button\) > td:not\(:has\(input, select, textarea, button\)\) \{[^}]*padding-top: calc\(3px \+ \(var\(--ctl-h\) - 1lh\) \/ 2\);/,
+    );
     expect(css).toMatch(/\.summary-table tr\.gruppe td \{/);
     expect(css).toMatch(/\.summary-table tr\.summe td \{[^}]*border-top-color: color-mix\(in srgb, var\(--muted\) 60%, transparent\);/);
     // auf Papier bleibt die Gruppentönung hell

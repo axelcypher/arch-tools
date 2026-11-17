@@ -30,6 +30,8 @@
   /* schmale Fenster: Mindestbreite der Seitenkarten und der Mitte */
   --leiste-min: 180px;
   --karte-mitte-min: 280px;
+  /* Breite, die die Mitte behält, solange die Seitenkarten noch nachgeben können (nur in px: Leiste.tsx liest den Wert) */
+  --karte-mitte-wunsch: 480px;
   /* Tönung der Gruppenzeilen in der Zahlentabelle (eigene Bedeutung, auch wenn sie wie --hover aussieht) */
   --tabelle-gruppe: #f1f3f6;
   --bg: #f3f4f6;
@@ -257,15 +259,18 @@ body,
 .leiste > .karte {
   flex: 1;
 }
-/* schmale Fenster: die Mitte behält --karte-mitte-min, die Seitenkarten geben bis zu ihrer Mindestbreite nach (die
-   gemerkte Breite bleibt) – so bleibt jede Karte erreichbar, die Fläche scrollt trotzdem nie */
+/* schmale Fenster: Fehlt Platz, geben zuerst die Seitenkarten bis zu ihrer Mindestbreite nach (die gemerkte Breite
+   bleibt), erst danach die Mitte von --karte-mitte-wunsch bis --karte-mitte-min. Dafür geht die Mitte mit ihrer
+   Wunschbreite in die Rechnung und schrumpft kaum, die Seitenkarten dagegen stark (flex-shrink wird mit der Breite
+   gewichtet). So bleibt jede Karte erreichbar, die Fläche scrollt trotzdem nie. */
 .flaeche > .leiste,
 .flaeche > .flaechen-spalte:not(.wachsend) {
-  flex-shrink: 1;
+  flex-shrink: 1000;
   min-width: var(--leiste-min);
 }
 .flaeche > .karte,
 .flaeche > .flaechen-spalte.wachsend {
+  flex: 1 1 var(--karte-mitte-wunsch);
   min-width: var(--karte-mitte-min);
 }
 .karte-kopf {
@@ -277,8 +282,20 @@ body,
   padding: var(--s2) var(--karte-pad);
   border-bottom: 1px solid var(--line-soft);
 }
-.karte-kopf h2 {
+/* Überschrift mit Hilfe „?“ direkt dahinter; nimmt den Platz bis zu den Aktionen */
+.karte-titel {
   flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--s1);
+}
+/* der runde Knopf bleibt rund, auch bei langem Titel; Abstand über gap statt eigenem Rand */
+.karte-titel > .hilfe-knopf {
+  flex-shrink: 0;
+  margin-left: 0;
+}
+.karte-kopf h2 {
   min-width: 0;
   margin: 0;
   font-size: var(--fs-l);
@@ -305,8 +322,13 @@ body,
   font-weight: 600;
   margin: var(--s4) 0 var(--s2);
 }
-.karte-rumpf > h3:first-child {
+/* der Inhalt beginnt immer im Abstand des Rumpfs unter dem Kopf und endet in dem darüber, gleich welches Element
+   am Anfang oder Ende steht (p, ul, h3 …) */
+.karte-rumpf > :first-child {
   margin-top: 0;
+}
+.karte-rumpf > :last-child {
+  margin-bottom: 0;
 }
 .karte-rumpf h4 {
   font-size: var(--fs-s);
@@ -315,6 +337,34 @@ body,
 }
 .karte-rumpf.buendig {
   padding: 0;
+}
+/* Rumpf aus Abschnitten (abschnitte): jeder Abschnitt mit eigenem Innenabstand, Trennlinie bis an den Rand wie unter
+   dem Kartenkopf; die Abschnittsüberschrift (h2) wie die Überschrift im Kartenkopf */
+.karte-rumpf.abschnitte > section {
+  padding: var(--s3) var(--karte-pad);
+  border-bottom: 1px solid var(--line-soft);
+}
+/* der letzte Abschnitt endet so tief wie der Rumpf einer gewöhnlichen Karte */
+.karte-rumpf.abschnitte > section:last-child {
+  padding-bottom: var(--karte-pad);
+  border-bottom: none;
+}
+.karte-rumpf.abschnitte > section > h2,
+.karte-rumpf.abschnitte > section > .section-head h2 {
+  font-size: var(--fs-l);
+  font-weight: 600;
+  margin: 0 0 var(--s2);
+}
+/* in einer Kopfzeile mit Knopf (.section-head) kommt der Abstand von der Kopfzeile */
+.karte-rumpf.abschnitte > section > .section-head h2 {
+  margin: 0;
+}
+/* wie im Rumpf: jeder Abschnitt beginnt und endet in seinem eigenen Abstand */
+.karte-rumpf.abschnitte > section > :first-child {
+  margin-top: 0;
+}
+.karte-rumpf.abschnitte > section > :last-child {
+  margin-bottom: 0;
 }
 /* bündig: der Rumpf schneidet überstehende Fokusrahmen ab – Rahmen nach innen (wie in Leisten mit overflow: hidden) */
 .karte-rumpf.buendig :focus-visible {
@@ -330,6 +380,10 @@ body,
   border-top: 1px solid var(--line-soft);
   color: var(--muted);
   font-size: var(--fs-s);
+}
+/* ohne Inhalt (weder fuss noch ZeichenFussInhalt) bleibt die Fußzeile der Zeichenkarte unsichtbar */
+.zeichen-fuss:empty {
+  display: none;
 }
 .zeichen-flaeche {
   position: relative;
@@ -885,8 +939,9 @@ textarea:focus {
 .summary-table.felder td {
   vertical-align: top;
 }
-/* Text ohne Feld oder Knopf in einer Feldzeile fluchtet mit dem Text in den Feldern (der steht in --ctl-h senkrecht mittig) */
-.summary-table.felder td:not(:has(input, select, textarea, button)) {
+/* In einer Zeile mit Feldern fluchtet Text ohne Feld oder Knopf mit dem Text in den Feldern (der steht in --ctl-h
+   senkrecht mittig); Zeilen ohne Feld oder Knopf (z. B. Gruppen und Summen) bleiben knapp */
+.summary-table.felder tr:has(input, select, textarea, button) > td:not(:has(input, select, textarea, button)) {
   padding-top: calc(3px + (var(--ctl-h) - 1lh) / 2);
 }
 
