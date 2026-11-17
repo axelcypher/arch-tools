@@ -333,8 +333,8 @@ export function App() {
         )}
         {einstieg ? (
           <ProjektEinstieg
-            titel="Kostenermittlung nach DIN 276"
-            text={'Projekt oder IFC öffnen: ein Projekt aus QUADRIO (Flächenrechner, .oap) oder direkt ein IFC-Modell. BGF, BRI, Nutzungs- und Wohnflächen sowie grobe Bauteilmengen kommen aus dem Projekt; Kennwerte, Positionen und festgehaltene Stände pflegt NUMIO. Ohne Gebäudemodell lassen sich die Mengen auch von Hand eintragen („Neues Projekt“).'}
+            app="kosten"
+            text={'Kostenermittlung nach DIN 276. Projekt oder IFC öffnen: ein Projekt aus QUADRIO (Flächenrechner, .oap) oder direkt ein IFC-Modell. BGF, BRI, Nutzungs- und Wohnflächen sowie grobe Bauteilmengen kommen aus dem Projekt; Kennwerte, Positionen und festgehaltene Stände pflegt NUMIO. Ohne Gebäudemodell lassen sich die Mengen auch von Hand eintragen („Neues Projekt“).'}
             onProjekte={isTauri() ? () => setProjekteOffen(true) : undefined}
             onDateiOeffnen={() => void onOpen()}
             dateiHinweis="Projektdatei (.oap) oder IFC-Modell"

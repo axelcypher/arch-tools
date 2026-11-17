@@ -16,6 +16,7 @@ import { appMitWas } from '../appNamen';
 import { zeigeMenue } from './Menue';
 import { Karte as KarteRahmen } from './Karte';
 import type { SymbolName } from './Symbol';
+import { Symbol } from './Symbol';
 import './projektuebersicht.css';
 
 /** Stufen des Status vom besten zum schlimmsten – Farben wie in der Vollständigkeitsprüfung */
@@ -150,6 +151,8 @@ export interface UebersichtAktion {
   text?: string;
   titel?: string;
   aktion: () => void;
+  /** Hauptknopf ohne Plus-Symbol (z. B. „Weiter mit …“, wenn nichts neu angelegt wird) */
+  ohneSymbol?: boolean;
 }
 
 export interface ProjektUebersichtProps {
@@ -175,7 +178,7 @@ export interface ProjektUebersichtProps {
   /** gezeigt statt der Übersicht, wenn es keine Gruppen gibt – der gemeinsame `ProjektEinstieg` (z. B. „Ordner einstellen …“) */
   leer?: ReactNode;
   /**
-   * Hauptknopf „Neues Projekt …“ rechts im Kopf (Vorgabe: der Assistent von ATLAS über die Rahmen-App, siehe
+   * Hauptknopf „Neues Projekt anlegen …“ rechts im Kopf (Vorgabe: der Assistent von ATLAS über die Rahmen-App, siehe
    * `projektAnlegen`); `text` nur, wenn der Knopf etwas anderes tut (z. B. „Weiter mit 2026-014 …“)
    */
   neu?: UebersichtAktion;
@@ -242,29 +245,9 @@ export function quellenName(pfad: string, alle: string[]): string {
   return teile(pfad).slice(-2).join('/') || pfad;
 }
 
-/* ---------- Symbole (eigene kleine Auswahl, damit die Seite ohne App auskommt) ---------- */
-
-const ICONS = {
-  verlauf: 'M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7v5l3 2',
-  zahnrad:
-    'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z',
-  pfeilUnten: 'M6 9l6 6 6-6',
-  pfeilRechts: 'M9 6l6 6-6 6',
-  ordner: 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z',
-  schloss: 'M6 11h12v9H6zM8 11V8a4 4 0 0 1 8 0v3',
-  stift: 'M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4',
-  warnung: 'M12 3l10 18H2L12 3zM12 10v4M12 17h.01',
-  plus: 'M12 5v14M5 12h14',
-} as const;
-export type IconName = keyof typeof ICONS;
-
-function Icon({ name }: { name: IconName }) {
-  return (
-    <svg className="symbol" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d={ICONS[name]} />
-    </svg>
-  );
-}
+/** Symbole der Übersicht: der gemeinsame Satz (ui/Symbol.tsx) – ein Symbol je Bedeutung */
+export type IconName = SymbolName;
+const Icon = ({ name }: { name: SymbolName }) => <Symbol name={name} />;
 
 /* ---------- Seite ---------- */
 
@@ -372,7 +355,7 @@ export function ProjektUebersicht(props: ProjektUebersichtProps) {
       )}
       {neu && (
         <button className="primary pa-anlegen" onClick={neu.aktion} title={neu.titel}>
-          <Icon name="plus" /> {neu.text ?? 'Neues Projekt …'}
+          {!neu.ohneSymbol && <Icon name="plus" />} {neu.text ?? 'Neues Projekt anlegen …'}
         </button>
       )}
     </>
@@ -426,7 +409,7 @@ export function ProjektUebersicht(props: ProjektUebersichtProps) {
       </span>
       {onNeuLaden && (
         <button className="icon" title="Projekte neu einlesen" aria-label="Projekte neu einlesen" disabled={sucht} onClick={onNeuLaden}>
-          <Icon name="verlauf" />
+          <Icon name="neuLaden" />
         </button>
       )}
       {onEinstellungen && (
@@ -454,7 +437,7 @@ export function ProjektUebersicht(props: ProjektUebersichtProps) {
         {!q && angeheftet.length > 0 && (
           <section className="pa-abschnitt" aria-label="Angeheftet">
             <h3 className="pa-abschnitt-titel">
-              <Icon name="stift" /> Angeheftet
+              <Icon name="stern" /> Angeheftet
             </h3>
             <div className="pa-raster">{angeheftet.map((p) => karte(p))}</div>
           </section>

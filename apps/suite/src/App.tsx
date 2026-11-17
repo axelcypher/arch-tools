@@ -435,16 +435,7 @@ export function App() {
   /** Tastatur am Tab: ←/→ wechseln, Pos1/Ende springen (der Wechsel wirkt sofort), Entf bzw. Strg+F4 schließt */
   const tabTasten = (e: ReactKeyboardEvent, id: string) => {
     const i = tabs.indexOf(id);
-    const ziel =
-      e.key === 'ArrowRight'
-        ? tabs[(i + 1) % tabs.length]
-        : e.key === 'ArrowLeft'
-          ? tabs[(i - 1 + tabs.length) % tabs.length]
-          : e.key === 'Home'
-            ? tabs[0]
-            : e.key === 'End'
-              ? tabs[tabs.length - 1]
-              : null;
+    const ziel = e.key === 'ArrowRight' ? tabs[(i + 1) % tabs.length] : e.key === 'ArrowLeft' ? tabs[(i - 1 + tabs.length) % tabs.length] : e.key === 'Home' ? tabs[0] : e.key === 'End' ? tabs[tabs.length - 1] : null;
     if (ziel) {
       e.preventDefault();
       fokusTab.current = ziel;
@@ -481,23 +472,10 @@ export function App() {
   const plusMenue = (): MenuePunkt[] => {
     const zu = APPS.filter((a) => !tabs.includes(a.id));
     return [
-      {
-        text: 'Neues Projekt anlegen …',
-        symbol: 'plus',
-        titel: `Assistent von ${APP_NAMEN.ordner.name} (${APP_NAMEN.ordner.was}): Stammdaten, Umfang, Beteiligte, Ordner und Vorlagen`,
-        aktion: () => projektAnlegen(null),
-      },
+      { text: 'Neues Projekt anlegen …', symbol: 'plus', titel: `Assistent von ${APP_NAMEN.ordner.name} (${APP_NAMEN.ordner.was}): Stammdaten, Umfang, Beteiligte, Ordner und Vorlagen`, aktion: () => projektAnlegen(null) },
       { trenner: true },
       ...(zu.length
-        ? zu.map(
-            (a): MenuePunkt => ({
-              text: `${a.name} – ${a.was}`,
-              bild: `apps/${a.id}/favicon.svg`,
-              hinweis: fenster.includes(a.id) ? 'eigenes Fenster' : undefined,
-              titel: a.text,
-              aktion: () => void oeffnenOderZeigen(a.id),
-            }),
-          )
+        ? zu.map((a): MenuePunkt => ({ text: `${a.name} – ${a.was}`, bild: `apps/${a.id}/favicon.svg`, hinweis: fenster.includes(a.id) ? 'eigenes Fenster' : undefined, titel: a.text, aktion: () => void oeffnenOderZeigen(a.id) }))
         : [{ text: 'Alle Apps sind geöffnet', deaktiviert: true }]),
       ...(aktiv ? [{ trenner: true } as const, { text: 'Startseite', titel: 'Alle Apps im Überblick', aktion: startseite }] : []),
     ];
@@ -545,13 +523,7 @@ export function App() {
             const name = `${info.name} (${info.was})${s?.name ? ` – ${s.name}` : ''}`;
             return (
               // Wahl per Tastatur am Tab-Knopf; ⧉ und × sind für die Maus da (Tastatur: Entf bzw. Strg+F4, Kontextmenü)
-              <div
-                key={id}
-                role="presentation"
-                className={`rahmen-tab${id === aktiv ? ' aktiv' : ''}`}
-                onAuxClick={(e) => e.button === 1 && void tabSchliessen(id)}
-                onContextMenu={(e) => tabMenue(e, id)}
-              >
+              <div key={id} role="presentation" className={`rahmen-tab${id === aktiv ? ' aktiv' : ''}`} onAuxClick={(e) => e.button === 1 && void tabSchliessen(id)} onContextMenu={(e) => tabMenue(e, id)}>
                 <button
                   id={tabKennung(id)}
                   role="tab"

@@ -60,7 +60,7 @@ describe('NUMIO', () => {
 
   it('Leerzustand: dieselben Aktionen wie in den anderen Apps (Q-5)', () => {
     useKosten.getState().load(createProject());
-    expect(einstiegsAktionen(render(App))).toEqual(['Datei öffnen …', 'Neues Projekt']);
+    expect(einstiegsAktionen(render(App))).toEqual(['Neues Projekt', 'Datei öffnen …']);
   });
 
   it('Farbschema wechselt sofort (Menü ◐)', () => {

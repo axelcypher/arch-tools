@@ -553,24 +553,30 @@ auf Karten stehen.
 
 **Die Startseite ist in allen Apps derselbe Baustein; Apps liefern nur Daten in Slots.** Ohne geöffnetes Projekt bzw.
 über „Projekte“ zeigt jede App die Projektübersicht aus core (`ui/ProjektUebersicht.tsx`, in den Apps mit
-Projektdatei über `ProjektWahl`), keine eigene Seite und keine eigene CSS dafür (ein Test prüft beides).
+Projektdatei über `ProjektWahl`) bzw. den Einstieg `ProjektEinstieg` – keine eigene Startseite, keine eigene Startkarte.
+`ui/startseite.test.ts` prüft, dass jede App den Baustein nutzt und keine App-CSS Klassen der Übersicht und des
+Einstiegs (`.pa…`, `.pw…`) umgestaltet.
 
-- **Aufbau:** eine `Karte` auf der `Flaeche`. Kopf: Überschrift „Projekte“, rechts die Knöpfe in fester Reihenfolge –
-  „Zurück zu ‹Kürzel›“ (mit geöffnetem Projekt) bzw. „Schließen“, seltene weitere (`weitere`, z. B. „Leer beginnen“),
-  „Datei öffnen …“ (`dateiOeffnen`), ganz rechts der Hauptknopf „Neues Projekt …“ (`neu`; in der Rahmen-App ohne
-  eigenen Knopf der Assistent von ATLAS). Darunter die feste Leiste (`leiste`): Suche, Sortierung, Statusfilter, rechts
-  die Anzahl, „Neu einlesen“ und „Quellen einstellen“. Im Inhalt „Angeheftet“, „Zuletzt geöffnet“ und je Quelle ein
-  aufklappbarer Abschnitt mit Linie bis an den Kartenrand.
+- **Übersicht:** eine `Karte` auf der `Flaeche`. Kopf: Überschrift „Projekte“, rechts die Knöpfe in fester Reihenfolge –
+  „Zurück zu ‹Kürzel›“ (mit geöffnetem Projekt) bzw. „Schließen“, seltene weitere (`weitere`, z. B. „Leeres Projekt“,
+  „Anderen Ordner …“), „Datei öffnen …“ (`dateiOeffnen`), rechts außen der Hauptknopf (`neu`; Vorgabe in der Rahmen-App
+  „Neues Projekt anlegen …“ mit dem Assistenten von ATLAS, sonst z. B. „Neues Projekt“ ohne „…“, wenn es sofort
+  anlegt). Darunter die feste Leiste (`leiste`): Suche, Sortierung, Statusfilter, rechts die Anzahl, „Neu einlesen“
+  und „Quellen einstellen“. Im Inhalt „Angeheftet“ (Stern), „Zuletzt geöffnet“ (Verlauf) und je Quelle ein
+  aufklappbarer Abschnitt mit Linie bis an den Kartenrand; Meldungen (`meldung`) stehen oben im Inhalt.
 - **Kacheln:** Kürzel (`--fs-l`), Titel, Info und Zeit, darunter Marken (`marken`: Warnung, Hinweis, ok, neutral) und
   wahlweise eine Statuszeile (`status`: Punkt, Balken je Stufe, Text) – überall gleich, nur die Daten kommen aus der
-  App. Rechtsklick öffnet das Kontextmenü (`kontextMenue`). Die App-Farbe nur als Akzent (Fokus, aktive Kachel,
-  Hauptknopf), nie als Fläche.
-- **Einstieg und Leerzustand:** `ProjektEinstieg` – eine Karte mittig auf der Fläche, Titel im Kartenkopf, darunter
-  wofür die App da ist (`was`), ein Satz (`text`), die Knöpfe in fester Reihenfolge (Stammordner wählen bzw. Projekt
-  wählen, Datei öffnen, Neues Projekt, Schließen), unter den Knöpfen app-eigene Ergänzungen (`children`, z. B. die
-  Ampel-Legende von LEXIO) und eine Fußnote. Keine eigene Startkarte je App.
+  App. Rechtsklick öffnet das Kontextmenü (`kontextMenue`). Symbole aus dem gemeinsamen Satz, eines je Bedeutung. Die
+  App-Farbe nur als Akzent (Fokus, aktive Kachel, Hauptknopf), nie als Fläche.
+- **Einstieg und Leerzustand:** `ProjektEinstieg` – eine Karte mittig auf der Fläche. Titel ist immer der Name der App
+  (`app`), darunter wofür sie da ist (aus `APP_NAMEN`), dann ein Satz der App (`text`, unpersönlich formuliert, z. B.
+  „Ein Projekt … öffnen“). Die Knöpfe stehen wie im Kopf der Übersicht: „Schließen“ links, dann „Neues Projekt“,
+  „Datei öffnen …“, „Projekt wählen …“, rechts außen der Hauptknopf (der erste vorhandene aus Stammordner wählen,
+  Neues Projekt anlegen …, Projekt wählen, Datei öffnen, Neues Projekt). App-eigene Ergänzungen nur unter den
+  Knöpfen (`children`, z. B. die Ampel-Legende von LEXIO) und als Fußnote; `als="main"`, wo der Einstieg der
+  Hauptbereich ist.
 - **Arkly:** Die Startseite der Rahmen-App folgt demselben Muster – eine Karte auf der Fläche, Hauptknopf „Neues Projekt
-  anlegen …“ im Kopf, die Apps als Kacheln in denselben Maßen wie die Projektkacheln.
+  anlegen …“ im Kopf, die Apps als Kacheln im selben Stil (Rahmen, Radius, Abstände, Hover) mit dem Symbol der App.
 
 ## Seitenleisten
 

@@ -42,7 +42,7 @@ describe('QUADRIO (Oberfläche)', () => {
   it('Start ohne Projekt (Browser): Projektübersicht mit denselben Aktionen wie in den anderen Apps (Q-5)', () => {
     useEditor.getState().loadProject(createProject());
     const host = render();
-    expect(einstiegsAktionen(host)).toEqual(['Datei öffnen …', 'Neues Projekt', 'Schließen']);
+    expect(einstiegsAktionen(host)).toEqual(['Schließen', 'Neues Projekt', 'Datei öffnen …']);
     act(() => [...host.querySelectorAll<HTMLButtonElement>('.pw-einstieg button')].find((b) => b.textContent === 'Schließen')!.click());
     expect(host.querySelector('.pw-einstieg')).toBeNull();
   });

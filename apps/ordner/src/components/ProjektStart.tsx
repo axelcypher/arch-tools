@@ -146,7 +146,7 @@ export function ProjektStart({
         projektAnlegen={false}
         // Stammordner per Ziehen umsortieren (gemeinsame Einstellung; der erste nimmt neue Projekte auf)
         onGruppenOrdnen={(projekte) => setAllgemein({ projekte })}
-        neu={{ text: entwurf ? `Weiter mit ${entwurf}` : undefined, titel: 'Assistent für ein neues Projekt: Stammdaten, Umfang, Vorlagen, Anlegen', aktion: onNeu }}
+        neu={{ text: entwurf ? `Weiter mit ${entwurf}` : undefined, ohneSymbol: !!entwurf, titel: 'Assistent für ein neues Projekt: Stammdaten, Umfang, Vorlagen, Anlegen', aktion: onNeu }}
         weitere={[
           ...(entwurf ? [{ text: 'Leer beginnen', titel: 'Den angefangenen Entwurf verwerfen und ein neues Projekt mit leerem Formular beginnen', aktion: onLeerNeu }] : []),
           { text: 'Anderen Ordner …', titel: 'Einen Projektordner außerhalb der Stammordner ergänzen', aktion: onAndererOrdner },

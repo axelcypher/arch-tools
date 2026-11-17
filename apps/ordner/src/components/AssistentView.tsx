@@ -43,11 +43,7 @@ const SCHRITTE: { id: SchrittId; label: string }[] = [
 
 /** Desktop: Projektordner einlesen (`fs` ersetzt das Dateisystem des Desktops, etwa in Tests) */
 export async function ladeProjektordner(pfad: string, fs: Dateisystem = tauriDateisystem): Promise<GeladenerOrdner> {
-  const name =
-    pfad
-      .replace(/[\\/]+$/, '')
-      .split(/[\\/]/)
-      .pop() ?? pfad;
+  const name = pfad.replace(/[\\/]+$/, '').split(/[\\/]/).pop() ?? pfad;
   return { pfad, name, eintraege: await fs.liste(pfad, 12), lies: (p) => fs.lies(pfad, p) };
 }
 
@@ -243,7 +239,8 @@ export function AssistentView({
     if (!modus || abschluss) return null;
     const teile: string[] = [];
     if (modus === 'ergaenzen' && stammE && stammEBasis && JSON.stringify(stammE) !== JSON.stringify(stammEBasis)) teile.push(`die geänderten Angaben zu „${ordner?.name ?? ''}“`);
-    if (abgewaehlt.size) teile.push(`${abgewaehlt.size} unter „${modus === 'ergaenzen' ? 'Ergänzen' : 'Anlegen'}“ ${abgewaehlt.size === 1 ? 'abgewählter Eintrag' : 'abgewählte Einträge'}`);
+    if (abgewaehlt.size)
+      teile.push(`${abgewaehlt.size} unter „${modus === 'ergaenzen' ? 'Ergänzen' : 'Anlegen'}“ ${abgewaehlt.size === 1 ? 'abgewählter Eintrag' : 'abgewählte Einträge'}`);
     return teile.length ? teile.join(' und ') : null;
   }, [modus, abschluss, stammE, stammEBasis, abgewaehlt, ordner?.name]);
   const onOffenRef = useRef(onOffen);
@@ -390,11 +387,7 @@ export function AssistentView({
             return;
           }
           const liste = await ausfuehren(tauriDateisystem, stammordner, auszufuehren, { fortschritt: (i, n) => setLaeuft(`Projektordner wird angelegt … ${i} / ${n}`) });
-          log.info(`Projektordner angelegt: ${auszufuehren.ordner}`, {
-            angelegt: liste.filter((x) => x.status === 'angelegt').length,
-            fehler: liste.filter((x) => x.status === 'fehler').length,
-            presets: auszufuehren.presets,
-          });
+          log.info(`Projektordner angelegt: ${auszufuehren.ordner}`, { angelegt: liste.filter((x) => x.status === 'angelegt').length, fehler: liste.filter((x) => x.status === 'fehler').length, presets: auszufuehren.presets });
           fertig(auszufuehren.ordner, verbinde(stammordner, auszufuehren.ordner), liste);
           void zuletztMerken(verbinde(stammordner, auszufuehren.ordner), APP_NAMEN.ordner.name).catch(() => undefined);
         } else {
@@ -408,11 +401,7 @@ export function AssistentView({
         if (desktop && ordner.pfad) {
           setLaeuft('Projekt wird ergänzt …');
           const liste = await ausfuehren(tauriDateisystem, ordner.pfad, auszufuehren, { imProjektordner: true, fortschritt: (i, n) => setLaeuft(`Projekt wird ergänzt … ${i} / ${n}`) });
-          log.info(`Projekt ergänzt: ${ordner.name}`, {
-            angelegt: liste.filter((x) => x.status === 'angelegt').length,
-            ergaenzt: liste.some((x) => x.status === 'ergaenzt'),
-            fehler: liste.filter((x) => x.status === 'fehler').length,
-          });
+          log.info(`Projekt ergänzt: ${ordner.name}`, { angelegt: liste.filter((x) => x.status === 'angelegt').length, ergaenzt: liste.some((x) => x.status === 'ergaenzt'), fehler: liste.filter((x) => x.status === 'fehler').length });
           setErgebnis({ ordner: ordner.pfad, liste });
           setAbgewaehlt(new Set());
           // neu einlesen, damit die Vorschau den neuen Stand zeigt
@@ -606,11 +595,7 @@ export function AssistentView({
             )}
           </p>
         )}
-        {fehler && (
-          <p className="meldung fehler" role="alert">
-            {fehler}
-          </p>
-        )}
+        {fehler && <p className="meldung fehler" role="alert">{fehler}</p>}
 
         {schritt === 'start' && (
           <div className="po-start">
@@ -637,8 +622,8 @@ export function AssistentView({
             <div className="po-karte">
               <h3>Bestehendes Projekt ergänzen</h3>
               <p className="muted small-text">
-                Fehlende Ordner und Vorlagen ergänzen, weitere Leistungsphasen oder Presets aufnehmen, Stammdaten nachtragen. Fehlt die Projektdatei, wird sie angelegt. Vorhandene Dateien bleiben
-                unverändert; gelöscht wird nichts.
+                Fehlende Ordner und Vorlagen ergänzen, weitere Leistungsphasen oder Presets aufnehmen, Stammdaten nachtragen. Fehlt die Projektdatei, wird sie angelegt. Vorhandene
+                Dateien bleiben unverändert; gelöscht wird nichts.
               </p>
               {desktop && projekte.length > 0 && (
                 <>
@@ -687,7 +672,8 @@ export function AssistentView({
                   : geladen?.quelle.alteProjektJsonDefekt
                     ? 'Die alte projekt.json im Ordner ist nicht lesbar (sie bleibt unverändert liegen) – bitte die Stammdaten neu erfassen.'
                     : 'Bitte die Stammdaten erfassen.'}{' '}
-                Die Projektdatei wird damit angelegt.
+                Die Projektdatei wird
+                damit angelegt.
               </p>
             )}
             {geladen?.quelle.fehler && (
@@ -696,8 +682,8 @@ export function AssistentView({
                 {oapNichtLesbar && (
                   <>
                     {' '}
-                    Sie bleibt unverändert. Was hier an Stammdaten steht, wird <strong>nicht gespeichert</strong> – es dient nur den Namen neuer Ordner und Vorlagen. Ergänzt werden nur fehlende Ordner
-                    und Vorlagen.
+                    Sie bleibt unverändert. Was hier an Stammdaten steht, wird <strong>nicht gespeichert</strong> – es dient nur den Namen neuer Ordner und Vorlagen. Ergänzt werden nur fehlende
+                    Ordner und Vorlagen.
                   </>
                 )}
               </p>
@@ -737,15 +723,8 @@ export function AssistentView({
         {schritt === 'grundstueck' && stamm && (
           <>
             <h2 tabIndex={-1}>Grundstück</h2>
-            <p className="muted small-text">
-              Flurstück, Bebauungsplan und Aktenzeichen – Grundlage für Katasterpläne, Nachweise und Formulare. Was noch nicht bekannt ist, lässt sich später ergänzen.
-            </p>
-            <StammdatenFelder
-              meta={formularMeta(stamm)}
-              onChange={(m) => aendereStamm(stammAusMeta(m, stamm.presets ? { presets: stamm.presets } : undefined))}
-              bereiche={['grundstueck']}
-              fehlerZeigen={versucht}
-            />
+            <p className="muted small-text">Flurstück, Bebauungsplan und Aktenzeichen – Grundlage für Katasterpläne, Nachweise und Formulare. Was noch nicht bekannt ist, lässt sich später ergänzen.</p>
+            <StammdatenFelder meta={formularMeta(stamm)} onChange={(m) => aendereStamm(stammAusMeta(m, stamm.presets ? { presets: stamm.presets } : undefined))} bereiche={['grundstueck']} fehlerZeigen={versucht} />
           </>
         )}
 
@@ -753,12 +732,7 @@ export function AssistentView({
           <>
             <h2 tabIndex={-1}>Bauherr</h2>
             <p className="muted small-text">Name, Anschrift und Kontakt – für Bauantrag, Formulare und Schreiben. Was noch nicht bekannt ist, lässt sich später ergänzen.</p>
-            <StammdatenFelder
-              meta={formularMeta(stamm)}
-              onChange={(m) => aendereStamm(stammAusMeta(m, stamm.presets ? { presets: stamm.presets } : undefined))}
-              bereiche={['bauherr']}
-              fehlerZeigen={versucht}
-            />
+            <StammdatenFelder meta={formularMeta(stamm)} onChange={(m) => aendereStamm(stammAusMeta(m, stamm.presets ? { presets: stamm.presets } : undefined))} bereiche={['bauherr']} fehlerZeigen={versucht} />
           </>
         )}
 
@@ -810,11 +784,7 @@ export function AssistentView({
             </p>
             <ErgebnisAnzeige ordner={abschluss.pfad} liste={abschluss.liste}>
               {zurueckZu && desktop && abschluss.pfad && (
-                <button
-                  className="small primary"
-                  onClick={() => zurueck(abschluss.pfad)}
-                  title={zurueckZu.oeffnen ? `Das neue Projekt in ${zurueckZu.name} öffnen` : `Zurück zu ${zurueckZu.name} – das Projekt steht dort in der Übersicht`}
-                >
+                <button className="small primary" onClick={() => zurueck(abschluss.pfad)} title={zurueckZu.oeffnen ? `Das neue Projekt in ${zurueckZu.name} öffnen` : `Zurück zu ${zurueckZu.name} – das Projekt steht dort in der Übersicht`}>
                   {zurueckZu.oeffnen ? `In ${zurueckZu.name} öffnen` : `Zurück zu ${zurueckZu.name}`}
                 </button>
               )}
@@ -1077,13 +1047,7 @@ function Steckbrief({ stamm, presets, onSchritt, nichtGespeichert = false }: { s
       schritt: 'umfang',
       inhalt: (
         <>
-          <div>
-            {s.leistungsphasen.length
-              ? `LPh ${s.leistungsphasen.join(', ')} (${LEISTUNGSPHASEN.filter((l) => s.leistungsphasen.includes(l.nr))
-                  .map((l) => l.label)
-                  .join(', ')})`
-              : 'keine Leistungsphasen gewählt – alle Ordner'}
-          </div>
+          <div>{s.leistungsphasen.length ? `LPh ${s.leistungsphasen.join(', ')} (${LEISTUNGSPHASEN.filter((l) => s.leistungsphasen.includes(l.nr)).map((l) => l.label).join(', ')})` : 'keine Leistungsphasen gewählt – alle Ordner'}</div>
           {s.bearbeiter && <div className="muted">Bearbeitung {s.bearbeiter}</div>}
         </>
       ),
