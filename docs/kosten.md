@@ -42,6 +42,9 @@ und Regionalfaktor.
   Berechnungsordner, siehe docs/excel-vorlagen.md) und der Hauptknopf **Kosten drucken …**; Excel …, PDF … mit Dialog
   stehen unter Datei → Exportieren. In schmalen Fenstern wandert „Exportieren“ ins Menü „Mehr“. Der Kennwertkatalog steht im Kopf
   der Positionen.
+- **Aufbau:** Unter der Werkzeugleiste liegen die Karten auf einer ruhigen Fläche (docs/design.md, „Fläche und
+  Karten“): links „Grundlagen“ über „Mengen“, rechts „Positionen“ über der Kostenübersicht (Überschrift nach der
+  Stufe, z. B. „Kostenschätzung“). Jede Karte rollt für sich; „?“ im Kartenkopf öffnet die passenden Regeln.
 - **Regeln nachschlagen:** „Berechnungsregeln …“ (Menü „Darstellung und Hilfe“ der Titelleiste) bzw. F1 öffnet das Nachschlagewerk (DIN 276, DIN 277) mit Quellen und Suche.
 
 ## Mengen
@@ -137,6 +140,9 @@ Menge in der Kostenansicht):
   dunklen Farbschema folgen sie der Einstellung „Zeichenfläche dunkel“ (Menü ◐),
 - **rechts** der Rechenweg: je Teil Geschoss, Bezeichnung, Rechenansatz und Wert (Abzüge mit Minus); die Summe
   ist die Menge.
+
+Die drei Bereiche sind Karten: Die Mitte trägt die gewählte Menge mit Summe als Überschrift, den Umschalter
+**Grundrisse | 3D-Modell** im Kartenkopf und die Legende in der Fußzeile.
 
 Ein Teil unter dem Mauszeiger wird in Bild und Tabelle gemeinsam hervorgehoben, die Zeile im Rechenweg wird
 dabei eingeblendet; ein Klick darauf wählt es an oder ab (siehe oben). Im 3D-Modell steht über dem Bild

@@ -3,6 +3,7 @@ import type { ProjektordnerEintrag } from '@core/platform/projektordner';
 import { projekteAuflisten } from '@core/platform/projektordner';
 import { saveTextFile } from '@core/platform/files';
 import { logger } from '@core/platform/log';
+import { Flaeche, Karte } from '@core/ui/Karte';
 import { Symbol } from '@core/ui/Symbol';
 import type { Dateisystem } from '../dateisystem';
 import { hatDateisystem, oeffneOrdner, tauriDateisystem, waehleOrdner, waehleOrdnerImBrowser } from '../dateisystem';
@@ -150,12 +151,11 @@ export function PruefView({ onErgaenzen, onMails, fs: fsVorgabe, start }: { onEr
   const gefiltert = suche.trim() ? projekte.filter((p) => `${p.gruppe ?? ''} ${p.name}`.toLowerCase().includes(suche.trim().toLowerCase())) : projekte;
 
   return (
-    <div className="po-view einspaltig">
-      <section className="po-col">
-        <h2>Projektordner prüfen</h2>
+    <Flaeche>
+      <Karte als="main" titel="Projektordner prüfen" className="po-pruefen">
         <p className="muted small-text">
-          Vergleicht vorhandene Projektordner mit der Struktur „{struktur.name}“: Projektdatei (.oap) mit den Stammdaten, fehlende und zusätzliche Ordner, Dateinamen in den
-          Planordnern, lose Dateien und überlange Pfade. Das Tool meldet nur – es verschiebt, benennt und löscht nichts.
+          Vergleicht vorhandene Projektordner mit der Struktur „{struktur.name}“: Projektdatei (.oap) mit den Stammdaten, fehlende und zusätzliche Ordner, Dateinamen in den Planordnern, lose Dateien
+          und überlange Pfade. Das Tool meldet nur – es verschiebt, benennt und löscht nichts.
           {!desktop && ' Im Browser werden leere Ordner nicht erkannt.'}
         </p>
         <div className="button-row">
@@ -179,7 +179,11 @@ export function PruefView({ onErgaenzen, onMails, fs: fsVorgabe, start }: { onEr
           )}
           {laeuft && <span className="busy">{laeuft}</span>}
         </div>
-        {fehler && <p className="meldung fehler" role="alert">{fehler}</p>}
+        {fehler && (
+          <p className="meldung fehler" role="alert">
+            {fehler}
+          </p>
+        )}
 
         {projekte.length > 0 && !g && !alle && (
           <>
@@ -207,34 +211,34 @@ export function PruefView({ onErgaenzen, onMails, fs: fsVorgabe, start }: { onEr
                 – {alle.length} geprüft, {alle.filter((z) => z.abweichungen || z.lesefehler).length} mit Abweichungen
               </span>
             </h3>
-            <div className="po-plan">
-              <table className="po-table po-sammel">
-                <thead>
-                  <tr>
-                    <th>Projekt</th>
-                    <th>Abweichungen</th>
-                    <th>Projektdatei</th>
-                    <th title="Zeichen ab dem Projektordner">Längster Pfad</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[...alle]
-                    .sort((a, b) => b.fehler - a.fehler || b.abweichungen - a.abweichungen || a.projekt.localeCompare(b.projekt, 'de', { numeric: true }))
-                    .map((z) => (
-                      <tr key={z.pfad}>
-                        <td>
-                          <button className="po-projekt-knopf" title={`${z.pfad} – Einzelbericht`} onClick={() => void pruefenPfad(z.pfad)}>
-                            {z.projekt}
-                          </button>
-                        </td>
-                        <td>{z.lesefehler ? <span className="po-warn">nicht lesbar</span> : `${z.abweichungen}${z.fehler ? ` (${z.fehler} Fehler)` : ''}`}</td>
-                        <td>{z.projektdatei ? 'ja' : 'nein'}</td>
-                        <td>{z.laengsterPfad || ''}</td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
-            </div>
+            <table className="summary-table text po-sammel">
+              <thead>
+                <tr>
+                  <th>Projekt</th>
+                  <th>Abweichungen</th>
+                  <th>Projektdatei</th>
+                  <th className="num" title="Zeichen ab dem Projektordner">
+                    Längster Pfad
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {[...alle]
+                  .sort((a, b) => b.fehler - a.fehler || b.abweichungen - a.abweichungen || a.projekt.localeCompare(b.projekt, 'de', { numeric: true }))
+                  .map((z) => (
+                    <tr key={z.pfad}>
+                      <td>
+                        <button className="po-projekt-knopf" title={`${z.pfad} – Einzelbericht`} onClick={() => void pruefenPfad(z.pfad)}>
+                          {z.projekt}
+                        </button>
+                      </td>
+                      <td>{z.lesefehler ? <span className="po-warn">nicht lesbar</span> : `${z.abweichungen}${z.fehler ? ` (${z.fehler} Fehler)` : ''}`}</td>
+                      <td>{z.projektdatei ? 'ja' : 'nein'}</td>
+                      <td className="num">{z.laengsterPfad || ''}</td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
             <div className="button-row">
               <button onClick={() => csvSpeichern(`Prüfung aller Projekte ${new Date().toISOString().slice(0, 10)}`, sammelCsv(alle))}>{CSV_KNOPF}</button>
               <button onClick={() => setAlle(null)}>
@@ -279,7 +283,12 @@ export function PruefView({ onErgaenzen, onMails, fs: fsVorgabe, start }: { onEr
                       b.pfade && <Pfade pfade={b.pfade} />
                     )}
                     {b.aktion === 'ordnerAnlegen' && fs && g.pfad && g.ergebnis.fehlendeOrdner.length > 0 && (
-                      <button className="small po-befund-aktion" disabled={!!laeuft} onClick={() => void fehlendeAnlegen()} title="Legt nur die fehlenden Ordner der Struktur an – sonst wird nichts verändert">
+                      <button
+                        className="small po-befund-aktion"
+                        disabled={!!laeuft}
+                        onClick={() => void fehlendeAnlegen()}
+                        title="Legt nur die fehlenden Ordner der Struktur an – sonst wird nichts verändert"
+                      >
                         {g.ergebnis.fehlendeOrdner.length === 1 ? 'Fehlenden Ordner anlegen' : `${g.ergebnis.fehlendeOrdner.length} fehlende Ordner anlegen`}
                       </button>
                     )}
@@ -300,8 +309,8 @@ export function PruefView({ onErgaenzen, onMails, fs: fsVorgabe, start }: { onEr
             </div>
           </>
         )}
-      </section>
-    </div>
+      </Karte>
+    </Flaeche>
   );
 }
 

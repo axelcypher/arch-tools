@@ -109,9 +109,14 @@ describe('Projektwahl (QUADRIO, TERRIO, NUMIO)', () => {
     document.body.appendChild(host);
     act(() => {
       root = createRoot(host);
-      root.render(createElement(ProjektWahl, { app: 'GRZ-Nachweis', fs: undefined, onGewaehlt: () => {}, onSchliessen: () => {}, onDateiOeffnen: () => {}, onNeu: neu }));
+      root.render(createElement(ProjektWahl, { app: 'TERRIO', fs: undefined, onGewaehlt: () => {}, onSchliessen: () => {}, onDateiOeffnen: () => {}, onNeu: neu }));
     });
-    expect([...host.querySelectorAll('.pw-aktionen button')].map((b) => b.textContent)).toEqual(['Datei öffnen …', 'Neues Projekt', 'Schließen']);
+    // Reihenfolge wie im Kopf der Übersicht: „Schließen“ links, der Hauptknopf rechts außen
+    expect([...host.querySelectorAll('.pw-aktionen button')].map((b) => b.textContent)).toEqual(['Schließen', 'Neues Projekt', 'Datei öffnen …']);
+    expect(host.querySelector('.pw-aktionen button:last-child')!.className).toBe('primary');
+    // Titel ist der Name der App, darunter wofür sie da ist
+    expect(host.querySelector('.pw-einstieg .karte-kopf h2')?.textContent).toBe('TERRIO');
+    expect(host.querySelector('.pw-einstieg-was')?.textContent).toBe('GRZ-Nachweis');
     act(() => ([...host.querySelectorAll('.pw-aktionen button')][1] as HTMLButtonElement).click());
     expect(neu).toHaveBeenCalled();
   });
@@ -153,9 +158,9 @@ describe('Neues Projekt anlegen aus jeder App (Rahmen-App)', () => {
     const gewaehlt: GewaehltesProjekt[] = [];
     host = zeigen(gewaehlt);
     await warten();
-    // hört auf den Rahmen; das leere Projekt heißt jetzt „Leer beginnen“
+    // hört auf den Rahmen; das leere Projekt heißt jetzt „Leeres Projekt“
     expect(gesendet).toContainEqual({ typ: 'arch-tools:bereit', app: 'flaechenrechner' });
-    expect(knopf(host, 'Leer beginnen')).toBeTruthy();
+    expect(knopf(host, 'Leeres Projekt')).toBeTruthy();
     act(() => knopf(host, 'Neues Projekt anlegen').click());
     expect(gesendet).toContainEqual({ typ: 'arch-tools:projekt-anlegen', von: 'flaechenrechner', kannOeffnen: true, app: 'flaechenrechner' });
 
@@ -214,5 +219,71 @@ describe('Projektübersicht: Sammelordner und Reihenfolge der Stammordner', () =
     await warten();
     expect(JSON.parse(localStorage.getItem('arch-tools:konfig:allgemein')!).projekte).toEqual(['/b', '/a']);
     expect([...host.querySelectorAll('.pa-gruppe-name')].map((x) => x.textContent)).toEqual(['b', 'a', 'a › Wohnungsbau', 'a › Akquise', 'a › _Archiv']);
+  });
+});
+
+describe('Startseite: Kopf, Meldung und Leerzustand in jeder App gleich', () => {
+  const echterParent = window.parent;
+  afterEach(() => {
+    Object.defineProperty(window, 'parent', { value: echterParent, configurable: true });
+    window.history.replaceState(null, '', '/');
+  });
+  const zeigen = (props: Record<string, unknown>) => {
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    act(() => {
+      root = createRoot(host);
+      root.render(createElement(ProjektWahl, { app: 'QUADRIO', onGewaehlt: () => {}, ...props }));
+    });
+    return host;
+  };
+  const kopfKnoepfe = (host: Element) => [...host.querySelectorAll('.pa > .karte-kopf .karte-aktionen button')].map((b) => b.textContent?.trim());
+
+  it('Kopf: Schließen, weitere, Datei öffnen, Hauptknopf rechts; mit geöffnetem Projekt „Zurück zu …“ statt „Schließen“', async () => {
+    localStorage.setItem('arch-tools:konfig:allgemein', JSON.stringify({ projekte: ['/p'] }));
+    const fs = new SpeicherProjektordner();
+    await fs.ordnerAnlegen('/p', '2025-007 Kita');
+    const p = createProject('Kita');
+    await projektdateiAnlegen(fs, '/p/2025-007 Kita', 'Berechnungen/2025-007.oap', p, 'Test');
+    let host = zeigen({ fs, onSchliessen: () => {}, onDateiOeffnen: () => {}, onNeu: () => {} });
+    await warten();
+    expect(kopfKnoepfe(host)).toEqual(['Schließen', 'Datei öffnen …', 'Neues Projekt']);
+    expect(host.querySelector('.pa > .karte-kopf .karte-aktionen button:last-child')!.className).toContain('primary');
+    // Leiste mit Suche, Sortierung, Anzahl und Neu einlesen – die App-Farbe nur als Akzent
+    expect(host.querySelector('.pa .karte-leiste input[type="search"]')).not.toBeNull();
+    expect(host.querySelector('.pa .karte-leiste [aria-label="Projekte neu einlesen"]')).not.toBeNull();
+    act(() => root?.unmount());
+    document.body.innerHTML = '';
+    // geöffnetes Projekt: „Zurück zu ‹Kürzel›“, kein zusätzliches „Schließen“
+    host = zeigen({ fs, onSchliessen: () => {}, offeneDatei: '/p/2025-007 Kita/Berechnungen/2025-007.oap' });
+    await warten();
+    expect(kopfKnoepfe(host)).toEqual(['Zurück zu 2025-007']);
+  });
+
+  it('Meldung beim Öffnen steht in der Karte (role="alert" bei Fehlern)', async () => {
+    localStorage.setItem('arch-tools:konfig:allgemein', JSON.stringify({ projekte: ['/p'] }));
+    const fs = new SpeicherProjektordner();
+    await fs.ordnerAnlegen('/p', '2025-007 Kita');
+    // die Projektdatei ist kaputt: Lesen schlägt fehl
+    fs.setze('/p/2025-007 Kita/Berechnungen/2025-007.oap', new Uint8Array([1, 2, 3]));
+    const host = zeigen({ fs, onSchliessen: () => {} });
+    await warten();
+    act(() => karte(host, '2025-007').click());
+    await warten();
+    const meldung = host.querySelector('.pa [role="alert"], .pa [role="status"]');
+    expect(meldung).not.toBeNull();
+  });
+
+  it('Leerzustand ohne Stammordner in der Rahmen-App: Einstieg mit „Neues Projekt anlegen …“ (Assistent von ATLAS)', async () => {
+    const gesendet: unknown[] = [];
+    Object.defineProperty(window, 'parent', { value: { postMessage: (d: unknown) => gesendet.push(d) } as unknown as Window, configurable: true });
+    window.history.replaceState(null, '', '/?rahmen=tab&app=flaechenrechner');
+    const host = zeigen({ fs: new SpeicherProjektordner(), onSchliessen: () => {}, onDateiOeffnen: () => {} });
+    await warten();
+    expect(host.querySelector('.pw-einstieg .karte-kopf h2')?.textContent).toBe('QUADRIO');
+    // Stammordner bleibt der Hauptknopf (rechts außen), der Assistent steht daneben
+    expect([...host.querySelectorAll('.pw-aktionen button')].map((b) => b.textContent?.trim())).toEqual(['Schließen', 'Datei öffnen …', 'Neues Projekt anlegen …', 'Stammordner wählen …']);
+    act(() => knopf(host, 'Neues Projekt anlegen').click());
+    expect(gesendet).toContainEqual({ typ: 'arch-tools:projekt-anlegen', von: 'flaechenrechner', kannOeffnen: true, app: 'flaechenrechner' });
   });
 });
