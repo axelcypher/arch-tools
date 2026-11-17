@@ -1075,7 +1075,6 @@
   background: var(--accent-soft);
   color: var(--accent);
 }
-/* Felder einer Plankarte im Raster; Zahlenfelder bleiben kurz */
 /* Angaben eines Plans: Felder mit Beschriftung darüber, so viele Spalten wie Platz ist (in core gibt es dafür noch kein
    Muster – ans Designsystem gemeldet); ka-breit über die ganze Breite, ka-zwei über zwei Spalten */
 .ka-raster {
@@ -1087,7 +1086,7 @@
 .ka-raster > label {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--s1);
   min-width: 0;
 }
 .ka-raster input:not([type='checkbox']),

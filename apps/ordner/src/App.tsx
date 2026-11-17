@@ -189,7 +189,8 @@ export function App() {
   const dateiPunkte = (): MenuePunkt[] => [
     {
       text: 'Exportieren',
-      unter: [{ text: 'CSV …', titel: csv?.titel, aktion: () => csv?.aktion() }],
+      symbol: 'export',
+      unter: [{ text: 'CSV …', symbol: 'export', titel: csv?.titel, aktion: () => csv?.aktion() }],
       deaktiviert: !csv,
       hinweis: csv ? undefined : 'Erst einen Ordner prüfen',
     },

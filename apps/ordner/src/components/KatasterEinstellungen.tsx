@@ -286,7 +286,7 @@ export function KatasterEinstellungen() {
               {gefunden.map((g) => (
                 <li key={g}>
                   <code>{g}</code>
-                  <button className="small" disabled={g === programm} onClick={() => programmSetzen(g)}>
+                  <button className="small" aria-pressed={g === programm} onClick={() => g !== programm && programmSetzen(g)}>
                     {g === programm ? 'Gewählt' : 'Verwenden'}
                   </button>
                 </li>

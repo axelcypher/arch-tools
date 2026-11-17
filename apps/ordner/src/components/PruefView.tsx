@@ -34,11 +34,6 @@ interface Geprueft extends GeladenerOrdner {
   ergebnis: Pruefergebnis;
 }
 
-/**
- * Prüfmodus: Projektordner einlesen und Abweichungen von der Struktur melden – einzeln (aus der Projektliste der
- * Stammordner oder per „Ordner wählen …“) oder alle auf einmal mit Übersicht und CSV. Nur lesend; einzig „fehlende
- * Ordner anlegen“ legt auf Wunsch Ordner an. `fs` ersetzt das Dateisystem des Desktops (Tests).
- */
 /** Ausgabe des gerade gezeigten Berichts für „Datei → Exportieren“ (null: kein Bericht) */
 export interface CsvAusgabe {
   /** was ausgegeben wird, für den Tooltip im Menü */
@@ -46,6 +41,11 @@ export interface CsvAusgabe {
   aktion: () => void;
 }
 
+/**
+ * Prüfmodus: Projektordner einlesen und Abweichungen von der Struktur melden – einzeln (aus der Projektliste der
+ * Stammordner oder per „Ordner wählen …“) oder alle auf einmal mit Übersicht und CSV. Nur lesend; einzig „fehlende
+ * Ordner anlegen“ legt auf Wunsch Ordner an. `fs` ersetzt das Dateisystem des Desktops (Tests).
+ */
 export function PruefView({
   onErgaenzen,
   onMails,
@@ -160,6 +160,9 @@ export function PruefView({
     void saveTextFile({ defaultName: `${sichererName(name)}.csv`, contents: inhalt, filterName: 'CSV (Excel)', extension: 'csv', mime: 'text/csv' }).catch((e) =>
       setFehler(e instanceof Error ? e.message : String(e)),
     );
+  // gemeinsam für die Knöpfe „Als CSV speichern …“ und „Datei → Exportieren → CSV …“
+  const berichtSpeichern = (b: Geprueft) => csvSpeichern(`Prüfbericht ${b.name}`, berichtCsv(b.ergebnis));
+  const uebersichtSpeichern = (liste: SammelZeile[]) => csvSpeichern(`Prüfung aller Projekte ${new Date().toISOString().slice(0, 10)}`, sammelCsv(liste));
 
   // „Datei → Exportieren → CSV …“: der Einzelbericht, sonst die Übersicht aller Projekte; beim Verlassen nichts mehr
   const csvRef = useRef(onCsv);
@@ -167,8 +170,8 @@ export function PruefView({
   useEffect(() => {
     const melden = csvRef.current;
     if (!melden) return;
-    if (g) melden({ titel: `Prüfbericht ${g.name} als CSV`, aktion: () => csvSpeichern(`Prüfbericht ${g.name}`, berichtCsv(g.ergebnis)) });
-    else if (alle) melden({ titel: 'Prüfung aller Projekte als CSV', aktion: () => csvSpeichern(`Prüfung aller Projekte ${new Date().toISOString().slice(0, 10)}`, sammelCsv(alle)) });
+    if (g) melden({ titel: `Prüfbericht „${g.name}“ als CSV-Datei speichern`, aktion: () => berichtSpeichern(g) });
+    else if (alle) melden({ titel: 'Übersicht aller Projekte als CSV-Datei speichern', aktion: () => uebersichtSpeichern(alle) });
     else melden(null);
   }, [g, alle]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => () => csvRef.current?.(null), []);
@@ -272,7 +275,7 @@ export function PruefView({
               </tbody>
             </table>
             <div className="button-row">
-              <button onClick={() => csvSpeichern(`Prüfung aller Projekte ${new Date().toISOString().slice(0, 10)}`, sammelCsv(alle))}>{CSV_KNOPF}</button>
+              <button onClick={() => uebersichtSpeichern(alle)}>{CSV_KNOPF}</button>
               <button onClick={() => setAlle(null)}>
                 <Symbol name="pfeilLinks" /> Zur Projektliste
               </button>
@@ -334,7 +337,7 @@ export function PruefView({
               ))}
             </ul>
             <div className="button-row">
-              <button onClick={() => csvSpeichern(`Prüfbericht ${g.name}`, berichtCsv(g.ergebnis))}>{CSV_KNOPF}</button>
+              <button onClick={() => berichtSpeichern(g)}>{CSV_KNOPF}</button>
               <button onClick={() => onErgaenzen(g)} title="Im Assistenten fehlende Ordner, Vorlagen und die Projektdatei ergänzen – vorhandene Dateien bleiben unverändert">
                 Projekt ergänzen …
               </button>

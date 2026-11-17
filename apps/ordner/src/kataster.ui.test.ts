@@ -238,7 +238,10 @@ describe('Einstellungen der Katasterpläne', () => {
     expect(host.textContent).toContain('zeigt bei 1:1.000 einen Ausschnitt von 190 × 190 m');
     await klick(knopf(host, 'Suchen'));
     expect(useKataster.getState().programm).toBe('C:/Program Files/QGIS 3.40.5/bin/qgis_process-qgis-ltr.bat');
-    expect(host.textContent).toContain('Gewählt');
+    // gewählt bleibt bedienbar (Fokus geht nicht verloren) und ist als gedrückt ausgezeichnet
+    const gewaehlt = knopf(host, 'Gewählt');
+    expect(gewaehlt.disabled).toBe(false);
+    expect(gewaehlt.getAttribute('aria-pressed')).toBe('true');
 
     // Thema, das es nicht gibt → Hinweis; Plan entfernen und hinzufügen
     await act(() => useKataster.getState().planAendern('schwarzplan', { thema: 'Luftbild' }));
