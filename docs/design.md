@@ -524,6 +524,10 @@ Werkzeugleiste liegt mit auf der Fläche (gleicher Grund, keine Linie). Baustein
 - Seitenkarten mit ziehbarer Breite: `BreitenLeiste` mit einer `Karte` (oder `FlaechenSpalte`) als Kind; auf der Fläche
   liegt der Griff im Spalt (Linie beim Überfahren in voller Akzentfarbe, weil der Spalt sonst keinen Rand zeigt), und
   Innenabstand und Spalt zählen bei der Höchstbreite mit.
+- **Hauptbereich:** Die Mitte ist `<main>`, damit Vorleseprogramme sie finden: `als="main"` an der wachsenden
+  `FlaechenSpalte`, an einer `Karte` oder an der `ZeichenKarte` (Vorgabe `div` bzw. `section`; `aside` für eine
+  Nebenspalte oder -karte). Je Fenster nur ein `main`; die App legt dann kein eigenes `<main>` um die Fläche und setzt
+  keine Bausteinklassen von Hand.
 - **Schmale Fenster:** Die Fläche scrollt nie. Fehlt Platz, geben zuerst die Seitenkarten bis zu ihrer Mindestbreite
   (`--leiste-min`, 180px) nach, solange die Mitte (eine `Karte` direkt auf der Fläche oder eine wachsende Spalte) unter
   ihrer Wunschbreite `--karte-mitte-wunsch` (480px) bliebe; erst dann schrumpft die Mitte bis `--karte-mitte-min`

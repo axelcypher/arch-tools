@@ -121,6 +121,18 @@ describe('Fläche und Karten', () => {
     expect(css).toMatch(/\.zeichen-fuss:empty \{\s*display: none;/);
   });
 
+  it('als: Spalte und Karte als main bzw. aside', () => {
+    const host = render(
+      h(Flaeche, {
+        children: [h(FlaechenSpalte, { key: 's', als: 'main', wachsend: true, children: h(Karte, { titel: 'Ergebnis', hoehe: 'inhalt' }) }), h(Karte, { key: 'k', titel: 'Quellen', als: 'aside' })],
+      }),
+    );
+    expect(host.querySelector('main.flaechen-spalte.wachsend > section.karte.karte-inhalt')).not.toBeNull();
+    const aside = host.querySelector('aside.karte')!;
+    expect(aside.getAttribute('aria-labelledby')).toBe(aside.querySelector('h2')!.id);
+    expect(host.querySelector('div.flaechen-spalte')).toBeNull();
+  });
+
   it('Fläche und Spalte setzen ihre Klassen; Spalte mit fester Breite', () => {
     const host = render(h(Flaeche, { className: 'qu-flaeche', children: h(FlaechenSpalte, { breite: 300, children: [h(Karte, { key: 'a', titel: 'A' }), h(Karte, { key: 'b', titel: 'B' })] }) }));
     const f = host.querySelector('.flaeche.qu-flaeche')!;

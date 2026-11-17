@@ -20,12 +20,26 @@ export function Flaeche({ children, className }: { children: ReactNode; classNam
 }
 
 /** mehrere Karten untereinander in einer Spalte der Fläche (z. B. links „Grundlagen“ über „Mengen“); `wachsend`: nimmt die Restbreite */
-export function FlaechenSpalte({ children, className, breite, wachsend }: { children: ReactNode; className?: string; breite?: number; wachsend?: boolean }) {
+export function FlaechenSpalte({
+  children,
+  className,
+  breite,
+  wachsend,
+  als = 'div',
+}: {
+  children: ReactNode;
+  className?: string;
+  breite?: number;
+  wachsend?: boolean;
+  /** Element der Spalte: `main` für den Hauptbereich der App (je Fenster nur eines), `aside` für eine Nebenspalte */
+  als?: 'div' | 'main' | 'aside';
+}) {
   const klasse = ['flaechen-spalte', wachsend && 'wachsend', className].filter(Boolean).join(' ');
+  const Element = als;
   return (
-    <div className={klasse} style={breite ? { width: breite } : undefined}>
+    <Element className={klasse} style={breite ? { width: breite } : undefined}>
       {children}
-    </div>
+    </Element>
   );
 }
 
@@ -78,18 +92,21 @@ export interface KarteProps extends KopfProps {
    * ihren Inhalt (höchstens die halbe Spalte, darüber scrollt sie) – für kurze Karten unter einer langen
    */
   hoehe?: 'teilen' | 'inhalt';
+  /** Element der Karte: Vorgabe `section` (benannter Bereich), `main` für den Hauptbereich (je Fenster nur eines), `aside` für Nebeninhalt */
+  als?: 'section' | 'main' | 'aside';
 }
 
 /** Karte: Kopf mit Überschrift und Aktionen, darunter der Inhalt, der in der Karte scrollt */
-export function Karte({ titel, hilfe, aktionen, ariaLabel, fuss, children, className, buendig, abschnitte, hoehe = 'teilen' }: KarteProps) {
+export function Karte({ titel, hilfe, aktionen, ariaLabel, fuss, children, className, buendig, abschnitte, hoehe = 'teilen', als = 'section' }: KarteProps) {
   const { kopf, name } = useKopf({ titel, hilfe, aktionen, ariaLabel });
   const klasse = ['karte', hoehe === 'inhalt' && 'karte-inhalt', className].filter(Boolean).join(' ');
+  const Element = als;
   return (
-    <section className={klasse} {...name}>
+    <Element className={klasse} {...name}>
       {kopf}
       <div className={['karte-rumpf', (buendig || abschnitte) && 'buendig', abschnitte && 'abschnitte'].filter(Boolean).join(' ')}>{children}</div>
       {fuss != null && <footer className="karte-fuss">{fuss}</footer>}
-    </section>
+    </Element>
   );
 }
 
