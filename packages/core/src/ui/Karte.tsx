@@ -25,6 +25,7 @@ export function FlaechenSpalte({
   className,
   breite,
   wachsend,
+  rollend,
   als = 'div',
   ariaLabel,
 }: {
@@ -32,12 +33,17 @@ export function FlaechenSpalte({
   className?: string;
   breite?: number;
   wachsend?: boolean;
+  /**
+   * die Spalte rollt als Ganzes, die Karten darin sind so hoch wie ihr Inhalt (z. B. die Abschnitte einer Felderansicht)
+   * – statt sich die Höhe zu teilen und je für sich zu rollen
+   */
+  rollend?: boolean;
   /** Element der Spalte: `main` für den Hauptbereich der App (je Fenster nur eines), `aside` für eine Nebenspalte */
   als?: 'div' | 'main' | 'aside';
   /** Name der Spalte – Pflicht bei `als="aside"` (jede Nebenspalte braucht einen eigenen Namen); wirkt nur bei `main` und `aside` */
   ariaLabel?: string;
 }) {
-  const klasse = ['flaechen-spalte', wachsend && 'wachsend', className].filter(Boolean).join(' ');
+  const klasse = ['flaechen-spalte', wachsend && 'wachsend', rollend && 'rollend', className].filter(Boolean).join(' ');
   const Element = als;
   return (
     <Element className={klasse} style={breite ? { width: breite } : undefined} aria-label={als !== 'div' ? ariaLabel : undefined}>
@@ -55,17 +61,23 @@ interface KopfProps {
   aktionen?: ReactNode;
   /** Name der Karte, wenn kein Titel sichtbar ist */
   ariaLabel?: string;
+  /**
+   * Ebene der Überschrift: Vorgabe 2 (die Karte ist ein Bereich der Seite); 3 für viele gleichartige Karten unter einer
+   * Seitenüberschrift (z. B. die Abschnitte einer Felderansicht) – zusammen mit `als="div"`
+   */
+  ebene?: 2 | 3;
 }
 
 /** Kopf einer Karte – für `Karte` und `ZeichenKarte` gleich; liefert die Attribute, die die Karte benennen */
-function useKopf({ titel, hilfe, aktionen, ariaLabel }: KopfProps) {
+function useKopf({ titel, hilfe, aktionen, ariaLabel, ebene = 2 }: KopfProps) {
   const id = useId();
+  const Ueberschrift = ebene === 3 ? 'h3' : 'h2';
   const kopf =
     titel != null || hilfe != null || aktionen != null ? (
       <header className="karte-kopf">
         {(titel != null || hilfe != null) && (
           <div className="karte-titel">
-            {titel != null && <h2 id={id}>{titel}</h2>}
+            {titel != null && <Ueberschrift id={id}>{titel}</Ueberschrift>}
             {hilfe}
           </div>
         )}
@@ -101,17 +113,21 @@ export interface KarteProps extends KopfProps {
    * ihren Inhalt (höchstens die halbe Spalte, darüber scrollt sie) – für kurze Karten unter einer langen
    */
   hoehe?: 'teilen' | 'inhalt';
-  /** Element der Karte: Vorgabe `section` (benannter Bereich), `main` für den Hauptbereich (je Fenster nur eines), `aside` für Nebeninhalt (nur mit `titel` oder `ariaLabel`) */
-  als?: 'section' | 'main' | 'aside';
+  /**
+   * Element der Karte: Vorgabe `section` (benannter Bereich), `main` für den Hauptbereich (je Fenster nur eines), `aside`
+   * für Nebeninhalt (nur mit `titel` oder `ariaLabel`), `div` ohne eigenen Bereich – für viele gleichartige Karten, die
+   * sonst Dutzende Regionen ergäben; die Überschrift gliedert sie
+   */
+  als?: 'section' | 'main' | 'aside' | 'div';
 }
 
 /** Karte: Kopf mit Überschrift und Aktionen, darunter der Inhalt, der in der Karte scrollt */
-export function Karte({ titel, hilfe, aktionen, ariaLabel, leiste, fuss, children, className, buendig, abschnitte, hoehe = 'teilen', als = 'section' }: KarteProps) {
-  const { kopf, name } = useKopf({ titel, hilfe, aktionen, ariaLabel });
+export function Karte({ titel, hilfe, aktionen, ariaLabel, ebene, leiste, fuss, children, className, buendig, abschnitte, hoehe = 'teilen', als = 'section' }: KarteProps) {
+  const { kopf, name } = useKopf({ titel, hilfe, aktionen, ariaLabel, ebene });
   const klasse = ['karte', hoehe === 'inhalt' && 'karte-inhalt', className].filter(Boolean).join(' ');
   const Element = als;
   return (
-    <Element className={klasse} {...name}>
+    <Element className={klasse} {...(als === 'div' ? {} : name)}>
       {kopf}
       {leiste != null && <div className="karte-leiste">{leiste}</div>}
       <div className={['karte-rumpf', (buendig || abschnitte) && 'buendig', abschnitte && 'abschnitte'].filter(Boolean).join(' ')}>{children}</div>

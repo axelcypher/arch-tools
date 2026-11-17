@@ -161,6 +161,27 @@ describe('Fläche und Karten', () => {
     expect([...zwei.querySelectorAll('aside.flaechen-spalte')].map((e) => e.getAttribute('aria-label'))).toEqual(['Gliederung', 'Quellen']);
   });
 
+  it('ebene und als="div": viele gleichartige Karten ohne eigene Region, Überschrift h3', () => {
+    const host = render(h(Karte, { titel: 'Bauherr', ebene: 3, als: 'div' }, 'x'));
+    const karte = host.querySelector('div.karte')!;
+    expect(karte.querySelector('.karte-kopf h3')?.textContent).toBe('Bauherr');
+    expect(karte.querySelector('h2')).toBeNull();
+    // kein benannter Bereich: weder aria-labelledby noch aria-label
+    expect(karte.hasAttribute('aria-labelledby')).toBe(false);
+    expect(karte.hasAttribute('aria-label')).toBe(false);
+    const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'base.css'), 'utf8');
+    expect(css).toMatch(/\.karte-kopf :is\(h2, h3\) \{[^}]*font-size: var\(--fs-l\);/);
+  });
+
+  it('rollende Spalte: Klasse rollend, Karten in Inhaltshöhe, Luft für Fokussaum', () => {
+    const host = render(h(FlaechenSpalte, { wachsend: true, rollend: true, children: h(Karte, { titel: 'A' }) }));
+    expect(host.querySelector('.flaechen-spalte')!.className).toBe('flaechen-spalte wachsend rollend');
+    const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'base.css'), 'utf8');
+    expect(css).toMatch(/\.flaechen-spalte\.rollend \{[^}]*overflow-y: auto;[^}]*padding: 2px var\(--s1\);/);
+    expect(css).toMatch(/\.flaechen-spalte\.rollend > \.karte \{\s*flex: none;/);
+    expect(css).not.toMatch(/\.placeholder-help/);
+  });
+
   it('Fläche und Spalte setzen ihre Klassen; Spalte mit fester Breite', () => {
     const host = render(h(Flaeche, { className: 'qu-flaeche', children: h(FlaechenSpalte, { breite: 300, children: [h(Karte, { key: 'a', titel: 'A' }), h(Karte, { key: 'b', titel: 'B' })] }) }));
     const f = host.querySelector('.flaeche.qu-flaeche')!;

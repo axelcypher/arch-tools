@@ -5,3 +5,4 @@ Designsystem ein. Erledigte Punkte löscht die App in ihrem eigenen PR (löschen
 sich auf den Stand beim Eintragen.
 
 - **„Exportieren“ in „Datei“** (design.md „Kopf- und Werkzeugleisten“): Ausgaben mit Dialog (Excel …, PDF …, CSV …) als Untermenü „Exportieren“ (Punkt mit `unter`) in „Datei“ statt als eigener Menüknopf.
+- **Rollende Spalte aus core** (design.md „Fläche und Karten“): Felder- und Seitenansicht über `FlaechenSpalte wachsend rollend` statt der eigenen Regel `.fo-inhalt` (overflow, Rand für den Fokussaum); die Abschnittskarten mit `ebene={3}` und `als="div"`, damit die Seite nicht Dutzende Regionen und gleichrangige h2 bekommt.

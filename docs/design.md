@@ -518,6 +518,11 @@ Werkzeugleiste liegt mit auf der Fläche (gleicher Grund, keine Linie). Baustein
   Inhaltskarten (ihr Kopf bleibt stehen). `hoehe` wirkt nur in einer `FlaechenSpalte`, nicht in einer `BreitenLeiste`
   oder direkt auf der Fläche. Nur für Karten mit weitgehend festem Inhalt – wächst der Inhalt (Aufklappen, Bild lädt),
   springt die Höhe der Nachbarkarte mit.
+- **Rollende Spalte** (`FlaechenSpalte wachsend rollend`): Die Spalte rollt als Ganzes, die Karten darin sind so hoch wie
+  ihr Inhalt – für viele gleichartige Karten untereinander (z. B. die Abschnitte der Felderansicht von PERMIO). Die Spalte
+  hat etwas Luft am Rand (2px bzw. `--s1`), damit Fokussaum und Kartenschatten nicht abgeschnitten werden. Solche Karten
+  bekommen `ebene={3}` (Überschrift h3 unter der Seitenüberschrift) und `als="div"` (keine eigene Region – sonst
+  entstünden Dutzende Bereiche).
 - `ZeichenKarte` (`.zeichen-karte`): Die Zeichenfläche füllt die Karte und bleibt hell (`.canvas`); Bedienhinweis,
   Koordinaten und Maßstab stehen in der Fußzeile der Karte, nicht über dem Plan: aus `fuss` oder, wenn sie tief in der
   Zeichenkomponente entstehen, über `ZeichenFussInhalt` (Portal in die Fußzeile der umgebenden Karte). Ohne Inhalt
