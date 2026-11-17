@@ -6,7 +6,8 @@
  *    (`.primary`), sonst das gewählte Optionsfeld, sonst das erste fokussierbare Element – nie „Abbrechen“
  *  - Fokus beim Öffnen in den Dialog (sofern er nicht schon darin liegt), beim Schließen oder Aushängen zurück an die
  *    Stelle davor (z. B. der Knopf, der ihn geöffnet hat, oder die Zeichenfläche bei Öffnen per Taste); wurde sie
- *    inzwischen ersetzt, an das erste fokussierbare Element im nächsten noch vorhandenen Vorfahren
+ *    inzwischen ersetzt, an ihr Gegenstück im nahen Bereich (höchstens drei Ebenen, bis zur nächsten Leiste, Karte …),
+ *    sonst bleibt der Fokus unverändert
  *  - Tab und Umschalt+Tab bleiben im obersten Dialog
  *  - Esc schließt den obersten Dialog, der sich dafür angemeldet hat (`escAnmelden`, Hook `useEscSchliessen`);
  *    ein Eingabefeld, das Esc selbst nutzt (Eingabe verwerfen), hält das Ereignis an und schließt nichts
@@ -27,11 +28,14 @@ let eingerichtet = false;
 interface Vorher {
   el: HTMLElement | SVGElement;
   kennung: string[];
+  /** die Kette endet an einem Bereich (Leiste, Karte …) – sonst nur das Gegenstück, nie „das erste“ */
+  imBereich: boolean;
   index: number;
   ahnen: Element[];
 }
 /** Grenze der Ersatzsuche: weiter oben läge ein Ersatz an einer unerwarteten Stelle (z. B. erster Knopf der App) */
-const BEREICH = '.karte, .toolbar, .leiste, .modal, .report, [role="dialog"], [role="toolbar"], header, footer, main, aside, section, nav, form';
+const BEREICH =
+  '.karte, .karte-fuss, .zeichen-fuss, .karte-kopf, .karte-leiste, .toolbar, .leiste, .modal, .report, [role="dialog"], [role="toolbar"], header, footer, main, aside, section, nav, form';
 const MAX_EBENEN = 3;
 /** woran man das Gegenstück eines neu gerenderten Elements erkennt: id, Beschriftung, title, Text */
 const kennungVon = (el: Element) => [el.id, el.getAttribute('aria-label'), el.getAttribute('title'), el.textContent?.trim()].map((k) => (k ? k : ''));
@@ -71,7 +75,7 @@ function geoeffnet(d: HTMLElement) {
     ahnen.push(p);
     if (p.matches(BEREICH)) break;
   }
-  vorher.set(d, aktiv ? { el: aktiv, kennung: kennungVon(aktiv), index: ahnen[0] ? zieleIn(ahnen[0]).indexOf(aktiv) : -1, ahnen } : null);
+  vorher.set(d, aktiv ? { el: aktiv, kennung: kennungVon(aktiv), index: ahnen[0] ? zieleIn(ahnen[0]).indexOf(aktiv) : -1, ahnen, imBereich: !!ahnen.at(-1)?.matches(BEREICH) } : null);
   // nach dem Rendern: Dialoge, die selbst fokussieren (z. B. ein Suchfeld), haben Vorrang
   requestAnimationFrame(() => {
     if (!d.isConnected || d.contains(document.activeElement)) return;
@@ -106,7 +110,14 @@ function geschlossen(d: Element) {
   const ahne = v.ahnen.find((x) => x.isConnected);
   if (!ahne) return;
   const ziele = zieleIn(ahne).filter(erlaubt);
-  const ziel = ziele.find((z) => gleich(kennungVon(z), v.kennung)) || (ahne === v.ahnen[0] && v.index >= 0 ? ziele[v.index] : undefined) || ziele[0];
+  const k = (z: Element) => kennungVon(z);
+  // eine gleiche id gewinnt; bei gleicher Beschriftung oder gleichem Text (mehrere „Löschen“ in einer Liste) der
+  // Kandidat, der der alten Position am nächsten liegt
+  const nachId = v.kennung[0] ? ziele.find((z) => k(z)[0] === v.kennung[0]) : undefined;
+  const passend = ziele.map((z, i) => ({ z, i })).filter(({ z }) => gleich(k(z), v.kennung));
+  const naechster = passend.sort((a, b) => Math.abs(a.i - v.index) - Math.abs(b.i - v.index))[0]?.z;
+  const ander = ahne === v.ahnen[0] && v.index >= 0 ? ziele[v.index] : undefined;
+  const ziel = nachId ?? naechster ?? (v.imBereich ? (ander ?? ziele[0]) : undefined);
   ziel?.focus();
 }
 

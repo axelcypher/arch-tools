@@ -43,7 +43,7 @@ describe('Dialoge', () => {
 
   it('wurde der auslösende Knopf ersetzt, geht der Fokus an den Ersatz im selben Bereich statt auf body', async () => {
     dialogVerhaltenEinrichten();
-    document.body.innerHTML = '<div class="fuss"><span class="zeile"><button id="alt">?</button></span></div>';
+    document.body.innerHTML = '<footer class="karte-fuss"><span class="zeile"><button id="alt">?</button></span></footer>';
     document.getElementById('alt')!.focus();
     const hinter = document.createElement('div');
     hinter.className = 'modal-backdrop';
@@ -51,7 +51,7 @@ describe('Dialoge', () => {
     document.body.appendChild(hinter);
     await warten();
     // die App rendert die Zeile neu: der alte Knopf ist weg, ein neuer steht an seiner Stelle
-    document.querySelector('.fuss')!.innerHTML = '<span class="zeile"><button id="neu">? Tastenkürzel …</button></span>';
+    document.querySelector('.karte-fuss')!.innerHTML = '<span class="zeile"><button id="neu">? Tastenkürzel …</button></span>';
     hinter.remove();
     await warten();
     expect(document.activeElement?.id).toBe('neu');
@@ -98,6 +98,28 @@ describe('Dialoge', () => {
     hinter.remove();
     await warten();
     expect(document.activeElement?.id).toBe('neu');
+  });
+
+  it('ersetzt: bei gleich beschrifteten Knöpfen (mehrere „Löschen“) der an der alten Stelle', async () => {
+    dialogVerhaltenEinrichten();
+    document.body.innerHTML = '<div class="karte"><button>Löschen</button><button>Löschen</button><button id="alt">Löschen</button></div>';
+    document.getElementById('alt')!.focus();
+    const hinter = await oeffnen();
+    document.querySelector('.karte')!.innerHTML = '<button>Löschen</button><button>Löschen</button><button id="neu">Löschen</button>';
+    hinter.remove();
+    await warten();
+    expect(document.activeElement?.id).toBe('neu');
+  });
+
+  it('ersetzt: ohne Bereich in drei Ebenen nur das Gegenstück, nie das erste Element', async () => {
+    dialogVerhaltenEinrichten();
+    document.body.innerHTML = '<div id="root"><div><div><button id="menue">Menü</button><span><button id="alt">X</button></span></div></div></div>';
+    document.getElementById('alt')!.focus();
+    const hinter = await oeffnen();
+    document.querySelector('#root span')!.remove();
+    hinter.remove();
+    await warten();
+    expect(document.activeElement?.id).not.toBe('menue');
   });
 
   it('äußerer und innerer Dialog in einem Schritt ausgehängt: der Fokus bleibt beim Auslöser des äußeren', async () => {
