@@ -48,9 +48,27 @@ export interface PfadSpeicher {
 /** gleiche Werte? (Listen elementweise) */
 export const gleicherWert = (a: PfadWert | undefined, b: PfadWert | undefined): boolean => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
 
+/**
+ * Wovon ein Pfad bzw. Name abhängt – so, wie die Apps ihn tatsächlich auflösen (Abgleich in den Tests `bezug*.test.ts`):
+ *  - `projekt`: relativ zum Projektordner
+ *  - `absolut`: ein vollständiger Ordner
+ *  - `eintrag`: relativ zum Ordner eines anderen Eintrags (`id`), ggf. mit einem Ordner dazwischen (`zwischen`, z. B. je
+ *    Gewerk ein Ordner); Namen liegen in diesem Ordner
+ *  - `suche`: Namen, die die App überall im Projekt sucht – kein fester Ort
+ *  - `frei`: anderswo festgelegt bzw. kein Pfad (`text` sagt wo bzw. was)
+ */
+export type PfadBezug =
+  | { art: 'projekt' }
+  | { art: 'absolut' }
+  | { art: 'eintrag'; id: string; zwischen?: { text: string; beispiel: string } }
+  | { art: 'suche'; text: string }
+  | { art: 'frei'; text: string };
+
 export interface PfadEinstellung {
   /** Kennung, z. B. „export.berechnungsordner“ – bleibt stabil */
   id: string;
+  /** wovon der Wert abhängt (Baum auf der Seite „Pfade und Benennung“, vollständige Vorschau) */
+  bezug: PfadBezug;
   /** Apps, die die Einstellung nutzen */
   apps: AppKennung[];
   thema: PfadThema;
@@ -171,7 +189,7 @@ export const istAbsolut = (v: string) => /^[a-zA-Z]:[\\/]/.test(v) || /^\\\\[^\\
  * Prüft einen Wert: leere Pflichtfelder, ungültige Zeichen, absolute Pfade, wo ein relativer verlangt ist, „..“,
  * reservierte Namen und unbekannte Platzhalter. Fehler verhindern das Speichern, Hinweise nicht.
  */
-export function pfadPruefen(e: PfadEinstellung, wert: string): PfadMeldung[] {
+export function pfadPruefen(e: PfadEinstellung, wert: string, bezugName?: string): PfadMeldung[] {
   const out: PfadMeldung[] = [];
   const v = wert.trim();
   if (e.art === 'schalter') return out;
@@ -182,7 +200,7 @@ export function pfadPruefen(e: PfadEinstellung, wert: string): PfadMeldung[] {
       .filter(Boolean);
     if (!zeilen.length && e.pflicht) out.push({ art: 'fehler', text: 'Mindestens eine Zeile angeben. Mit „Vorgabe wiederherstellen“ zurück zur Vorgabe.' });
     const einzel: PfadEinstellung = { ...e, art: e.zeilen ?? 'name', pflicht: false };
-    for (const m of zeilen.flatMap((z) => pfadPruefen(einzel, z))) if (!out.some((x) => x.text === m.text)) out.push(m);
+    for (const m of zeilen.flatMap((z) => pfadPruefen(einzel, z, bezugName))) if (!out.some((x) => x.text === m.text)) out.push(m);
     return out;
   }
   if (!v) {
@@ -195,7 +213,8 @@ export function pfadPruefen(e: PfadEinstellung, wert: string): PfadMeldung[] {
   }
   const rein = ohnePlatzhalter(v);
   if (e.art === 'pfad') {
-    if (istAbsolut(v)) out.push({ art: 'fehler', text: 'Relativ zum Projektordner angeben, ohne Laufwerk, z. B. „03 Berechnungen“.' });
+    if (istAbsolut(v))
+      out.push({ art: 'fehler', text: bezugName ? `Relativ zu „${bezugName}“ angeben, ohne Laufwerk.` : 'Relativ zum Projektordner angeben, ohne Laufwerk, z. B. „03 Berechnungen“.' });
     const zeichen = [...new Set(rein.replace(/^[a-zA-Z]:/, '').match(UNZULAESSIG_PFAD) ?? [])];
     if (zeichen.length) out.push({ art: 'fehler', text: `Nicht erlaubt in Ordner- und Dateinamen: ${zeichen.join(' ')}` });
     const teile = v.split(/[\\/]+/).filter(Boolean);

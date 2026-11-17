@@ -3047,6 +3047,32 @@ button.ungespeichert::after {
   background: var(--accent-soft);
   color: var(--accent-text);
 }
+/* Baum (Pfade und Benennung): Einträge, die von einem anderen abhängen, eingerückt darunter – die Linie zeigt, wozu sie gehören */
+.einst-unter {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  margin-left: var(--s2);
+  padding-left: var(--s4);
+  border-left: 1px solid var(--border);
+}
+/* Bezugszeile: wovon der Wert abhängt (erste Zeile der Erklärung) */
+.einst-bezug {
+  display: block;
+  color: var(--text);
+}
+.einst-bezug.los {
+  color: var(--warn-text);
+}
+/* Eltern-Eintrag einer anderen App (App-Filter): abgeblendet, nur zur Orientierung */
+.einst-bezugseintrag {
+  background: transparent;
+  border-style: dashed;
+}
+.einst-bezugseintrag .einst-eintrag-titel,
+.einst-bezugseintrag .einst-vorschau code {
+  color: var(--muted);
+}
 .einst-erklaerung,
 .einst-projekt,
 .einst-vorschau {

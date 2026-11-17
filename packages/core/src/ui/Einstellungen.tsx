@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { createContext, Fragment, useContext, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import type { KeyboardEvent, ReactNode } from 'react';
 import { create } from 'zustand';
 import { APP_NAMEN, type AppKennung } from '../appNamen';
@@ -8,6 +8,7 @@ import { ordnerWaehlen } from '../platform/projektordner';
 import { logger } from '../platform/log';
 import { ersetzen, globaleWerte, modernisieren, veraltetePlatzhalter, type Wert } from '../platzhalter';
 import { sichererDateiname } from '../projektdatei';
+import { bezugText, elternVon, kinderVon, vorfahren } from '../einstellungen/baum';
 import { PFAD_EINSTELLUNGEN } from '../einstellungen/eintraege';
 import { pfadEinstellung, pfadSpeichern, usePfadWerte, type PfadWerte } from '../einstellungen/pfade';
 import { abweichungEntschieden, pfadeUebernehmen, type Abweichung } from '../einstellungen/uebernahme';
@@ -491,6 +492,34 @@ export function pfadVorschau(e: PfadEinstellung, wert: string, datum = new Date(
   return text ? `${text}${e.endung ?? ''}` : '';
 }
 
+/**
+ * Vollständige Vorschau mit den Eltern-Einträgen (Baum, `einstellungen/baum.ts`): „Projektordner / Gewerke / G08 Fenster
+ * / Auftrag“ – mit dem, was jeweils gilt bzw. nach „Übernehmen“ gelten wird (Änderungen der Eltern wirken sofort).
+ * `eigen`: Vorschau des eigenen Werts. Suchende, anderswo festgelegte und absolute Einträge bleiben, wie sie sind.
+ */
+export function vorschauVoll(e: PfadEinstellung, eigen: string, gespeichert: PfadWerte, entwurf: Record<string, string | boolean | null>): string {
+  const b = e.bezug.art;
+  if (b !== 'projekt' && b !== 'eintrag') return eigen;
+  if (!eigen && !(b === 'eintrag' && e.art === 'pfad')) return eigen;
+  const kette = [...vorfahren(e), e];
+  const teile: string[] = kette[0].bezug.art === 'projekt' ? ['Projektordner'] : [];
+  for (const x of kette) {
+    if (x.bezug.art === 'eintrag' && x.bezug.zwischen) teile.push(x.bezug.zwischen.beispiel);
+    if (x === e) {
+      teile.push(eigen);
+      continue;
+    }
+    const w = (alsText(wirksam(x, gespeichert, entwurf)).split('\n')[0] ?? '').trim();
+    // vollständige Ordner wörtlich (ohne Platzhalter); fehlt der Wert, steht der Name des Eintrags
+    teile.push((x.art === 'ordner' || x.art === 'liste' ? w : pfadVorschau(x, w)) || (x.art === 'pfad' ? '' : `‹${x.bezeichnung}›`));
+  }
+  return teile.filter(Boolean).join(' / ');
+}
+
+/** absolut angegebenes Kind: gilt nicht relativ zu seinem Eltern-Eintrag und löst sich aus dem Baum */
+const losgeloest = (e: PfadEinstellung, gespeichert: PfadWerte, entwurf: Record<string, string | boolean | null>) =>
+  e.art === 'pfad' && e.bezug.art === 'eintrag' && istAbsolut(alsText(wirksam(e, gespeichert, entwurf)).trim());
+
 const appsText = (e: PfadEinstellung) => e.apps.map((a) => APP_NAMEN[a].name).join(', ');
 
 function SeitePfade({ fokus }: { fokus?: string }) {
@@ -498,8 +527,27 @@ function SeitePfade({ fokus }: { fokus?: string }) {
   const { abweichungen } = pfadStore();
   const [app, setApp] = useState<AppKennung | ''>('');
   const appsMitEintrag = useMemo(() => (Object.keys(APP_NAMEN) as AppKennung[]).filter((a) => PFAD_EINSTELLUNGEN.some((e) => e.apps.includes(a))), []);
-  const sichtbar = PFAD_EINSTELLUNGEN.filter((e) => !app || e.apps.includes(app));
+  const entwurf = pfadStore((s) => s.entwurf);
   const gesperrt = useEinstellungenGesperrt();
+  const fuerApp = (e: PfadEinstellung) => !app || e.apps.includes(app);
+  const los = (e: PfadEinstellung) => !!werte && losgeloest(e, werte, entwurf);
+  // mit App-Filter: die Einträge der App und, zur Orientierung, ihre Eltern
+  const zeigen = new Set(PFAD_EINSTELLUNGEN.filter(fuerApp).flatMap((e) => [e, ...(los(e) ? [] : vorfahren(e))]));
+  /** ein Eintrag mit den Einträgen, die von ihm abhängen, eingerückt darunter */
+  const knoten = (e: PfadEinstellung, w: PfadWerte): ReactNode => {
+    const kinder = kinderVon(e.id).filter((k) => zeigen.has(k) && !los(k));
+    const nurOrdner = kinder.every((k) => k.art === 'pfad');
+    return (
+      <Fragment key={e.id}>
+        {fuerApp(e) ? <PfadFeld e={e} werte={w} losVon={los(e) ? elternVon(e) : undefined} /> : <PfadBezugsZeile e={e} werte={w} onAlle={() => setApp('')} />}
+        {kinder.length > 0 && (
+          <div className="einst-unter" role="group" aria-label={`${nurOrdner ? 'Unterordner von' : 'Abhängig von'} „${e.bezeichnung}“`}>
+            {kinder.map((k) => knoten(k, w))}
+          </div>
+        )}
+      </Fragment>
+    );
+  };
 
   useEffect(() => {
     if (werte) pfadStore.setState({ gespeichert: werte });
@@ -538,8 +586,8 @@ function SeitePfade({ fokus }: { fokus?: string }) {
     <>
       <h3>Pfade und Benennung</h3>
       <p className="einst-einleitung">
-        Alle Pfadvorgaben und Benennungsschemata der Apps an einer Stelle. Pfade gelten relativ zum Projektordner. Platzhalter wie <code>{'{PROJEKT_KUERZEL}'}</code> setzen die Angaben des Projekts
-        ein; die Vorschau zeigt Beispielwerte.
+        Alle Pfadvorgaben und Benennungsschemata der Apps an einer Stelle. Pfade gelten relativ zum Projektordner; was von einem anderen Eintrag abhängt, steht eingerückt darunter. Platzhalter wie{' '}
+        <code>{'{PROJEKT_KUERZEL}'}</code> setzen die Angaben des Projekts ein; die Vorschau zeigt den vollständigen Pfad mit Beispielwerten.
       </p>
       {abweichungen.map((a) => {
         const e = pfadEinstellung(a.id);
@@ -577,15 +625,13 @@ function SeitePfade({ fokus }: { fokus?: string }) {
         <p className="muted">Einstellungen werden gelesen …</p>
       ) : (
         PFAD_THEMEN.map((t) => {
-          const liste = sichtbar.filter((e) => e.thema === t.id);
+          const liste = PFAD_EINSTELLUNGEN.filter((e) => e.thema === t.id && zeigen.has(e) && (e.bezug.art !== 'eintrag' || los(e)));
           if (!liste.length) return null;
           return (
             <section key={t.id} className="einst-gruppe" aria-labelledby={`einst-thema-${t.id}`}>
               <h4 id={`einst-thema-${t.id}`}>{t.titel}</h4>
               <p className="muted small-text einst-gruppe-text">{t.text}</p>
-              {liste.map((e) => (
-                <PfadFeld key={e.id} e={e} werte={werte} />
-              ))}
+              {liste.map((e) => knoten(e, werte))}
             </section>
           );
         })
@@ -595,7 +641,7 @@ function SeitePfade({ fokus }: { fokus?: string }) {
 }
 
 /** eine Einstellung: Feld, Platzhalter, Vorschau, Prüfung, „Vorgabe wiederherstellen“ */
-function PfadFeld({ e, werte }: { e: PfadEinstellung; werte: PfadWerte }) {
+function PfadFeld({ e, werte, losVon }: { e: PfadEinstellung; werte: PfadWerte; losVon?: PfadEinstellung }) {
   const entwurf = pfadStore((s) => s.entwurf);
   const gesperrt = useEinstellungenGesperrt();
   const gilt = wirksam(e, werte, entwurf);
@@ -639,6 +685,7 @@ function PfadFeld({ e, werte }: { e: PfadEinstellung; werte: PfadWerte }) {
         </span>
       </div>
       <p className="muted small-text einst-erklaerung" id={hinweisId}>
+        <span className={`einst-bezug${losVon ? ' los' : ''}`}>{losVon ? `Absolut angegeben – gehört unter „${losVon.bezeichnung}“ und gilt nur relativ dazu.` : bezugText(e)}</span>
         {e.erklaerung}
       </p>
       {e.projektwert && (
@@ -670,6 +717,41 @@ function PfadFeld({ e, werte }: { e: PfadEinstellung; werte: PfadWerte }) {
   );
 }
 
+/**
+ * Eltern-Eintrag, den die gewählte App nicht selbst nutzt: abgeblendet, ohne Feld – nur zur Orientierung, wovon die
+ * Einträge darunter abhängen. Bearbeiten geht unter „Alle Apps“.
+ */
+function PfadBezugsZeile({ e, werte, onAlle }: { e: PfadEinstellung; werte: PfadWerte; onAlle: () => void }) {
+  const entwurf = pfadStore((s) => s.entwurf);
+  const w = alsText(wirksam(e, werte, entwurf));
+  const erster = (w.split('\n')[0] ?? '').trim();
+  const vorschau = vorschauVoll(e, e.art === 'ordner' || e.art === 'liste' ? erster : pfadVorschau(e, erster), werte, entwurf);
+  return (
+    <div className="einst-eintrag einst-bezugseintrag" id={`einst-${e.id}`}>
+      <div className="einst-eintrag-kopf">
+        <span className="einst-eintrag-titel">{e.bezeichnung}</span>
+        <span className="einst-apps" title={`genutzt von ${appsText(e)}`}>
+          {e.apps.map((a) => (
+            <span key={a} className="einst-app">
+              {APP_NAMEN[a].name}
+            </span>
+          ))}
+        </span>
+      </div>
+      <p className="small-text einst-vorschau">
+        <span className="muted">Gilt: </span>
+        <code>{vorschau || '(leer)'}</code>
+      </p>
+      <div className="einst-eintrag-fuss">
+        <span className="muted small-text">Bezug für die Einträge darunter</span>
+        <button type="button" className="small" onClick={onAlle}>
+          Alle Apps zeigen
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /** Textfeld einer Einstellung: jede Eingabe geht in den Entwurf; Fehler stehen am Feld und sperren „Übernehmen“ */
 function TextEinstellung({
   e,
@@ -689,12 +771,14 @@ function TextEinstellung({
   const feld = useRef<HTMLInputElement & HTMLTextAreaElement>(null);
   const textRef = useRef(text);
   textRef.current = text;
-  const meldungen = pfadPruefen(e, text);
+  const meldungen = pfadPruefen(e, text, elternVon(e)?.bezeichnung);
+  const entwurf = pfadStore((s) => s.entwurf);
+  const gespeichert = pfadStore((s) => s.gespeichert) ?? {};
   const fehlerhaft = hatFehler(meldungen);
   const liste = e.art === 'liste';
   const ordnerListe = liste && e.zeilen === 'ordner';
   // Liste: Vorschau des ersten Eintrags (bei Mustern gilt es für neue Dateien); absolute Ordner ohne Vorschau
-  const vorschau = e.art === 'ordner' || ordnerListe ? '' : pfadVorschau(e, liste ? (alsListe(text)[0] ?? '') : text);
+  const vorschau = e.art === 'ordner' || ordnerListe ? '' : vorschauVoll(e, pfadVorschau(e, liste ? (alsListe(text)[0] ?? '') : text), gespeichert, entwurf);
   const alt = e.variablen ? veraltetePlatzhalter(text, e.variablen) : [];
   const meldungId = `${feldId}-pruefung`;
   const vorschauId = `${feldId}-vorschau`;
