@@ -1,0 +1,10 @@
+{
+  "flaechenrechner": { "stufe": "patch", "notiz": "Designsystem: Feldraster für Formulare." },
+  "ava": { "stufe": "patch", "notiz": "Designsystem: Feldraster für Formulare." },
+  "grz": { "stufe": "patch", "notiz": "Designsystem: Feldraster für Formulare." },
+  "kosten": { "stufe": "patch", "notiz": "Designsystem: Feldraster für Formulare." },
+  "ordner": { "stufe": "patch", "notiz": "Designsystem: Feldraster für Formulare." },
+  "entzerrung": { "stufe": "patch", "notiz": "Designsystem: Feldraster für Formulare." },
+  "formulare": { "stufe": "patch", "notiz": "Designsystem: Feldraster für Formulare." },
+  "baurecht": { "stufe": "patch", "notiz": "Designsystem: Feldraster für Formulare." }
+}

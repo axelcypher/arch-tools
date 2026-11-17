@@ -346,6 +346,15 @@ mit `einstellungenEntwurfMelden`, Sperre über `useEinstellungenGesperrt`).
   `ungueltig` und `fehlerId` setzen – das Feld wird rot markiert, `aria-invalid` und von der Meldung beschrieben. Die
   gemeinsame Meldung trägt `role="alert"` und erscheint erst, wenn der Fehler besteht.
 - `.toggle` (Kästchen oder Optionsfeld mit Text): das Kästchen wird nie gestaucht.
+- **Feldraster** (`.feldraster`) für Formulare mit mehreren Angaben nebeneinander (Planangaben, Antragsdaten,
+  Adressen): Kinder sind beschriftete Felder (`label` mit `.field-label` und Feld, oder `Field`), die Beschriftung
+  steht über dem Feld. Es gibt so viele Spalten, wie Platz ist (Mindestbreite 200px, abweichend über `--feld-min`),
+  Felder füllen ihre Spalte, und die Felder einer Zeile fluchten unten. Abstände `--s2` zwischen den Zeilen und `--s3`
+  zwischen den Spalten. `.feldraster-breit` (bzw. `Field breite="zeile"`) nimmt die ganze Zeile, z. B. für
+  Beschriftungen oder Textbereiche. `.feldraster-zwei` (`breite="zwei"`) nimmt zwei Spalten, z. B. für Auswahlen mit
+  langen Einträgen; passt nur eine Spalte, nimmt es die ganze Zeile. Ein `.toggle` (Kästchen mit Text) steht in
+  Feldhöhe neben den Feldern. Nicht für Felder mit Knopf in einer Zeile (`.einst-feldzeile`) und nicht für Layouts mit
+  fester Spaltenzahl oder Breiten pro Feld (`.av-raster`).
 
 ## Umschalter
 
