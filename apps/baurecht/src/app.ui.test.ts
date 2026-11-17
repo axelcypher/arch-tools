@@ -1690,9 +1690,10 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
     expect(chip.title).toBe('QUADRIO (Flächenrechner)');
     // Startseite ohne Projekt
     act(() => useBaurecht.setState({ project: null }));
-    const start = host.querySelector<HTMLElement>('.br-start-karte')!;
-    expect(start.querySelector('h1')?.textContent).toBe('LEXIO');
-    expect(start.querySelector('.br-start-was')?.textContent).toBe('Baurecht');
+    // gemeinsamer Einstieg aus core: Name als Kartenüberschrift, darunter wofür die App da ist
+    const start = host.querySelector<HTMLElement>('.pw-einstieg')!;
+    expect(start.querySelector('h2')?.textContent).toBe('LEXIO');
+    expect(start.querySelector('.pw-einstieg-was')?.textContent).toBe('Baurecht');
     expect(start.textContent).toMatch(/aus PERMIO \(Formulare\), Festsetzungen aus TERRIO \(GRZ-Nachweis\), Geschosse aus QUADRIO \(Flächenrechner\)/);
   });
 

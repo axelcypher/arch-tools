@@ -531,13 +531,9 @@ export function AssistentView({
   // Desktop mit Stammordnern: die gemeinsame Projektübersicht als Startseite
   if (schritt === 'start' && desktop && allgemein.projekte.length > 0) {
     return (
-      <main className="po-start-seite">
-        {(fehler || laeuft) && (
-          <p className={fehler ? 'meldung fehler' : 'busy'} role={fehler ? 'alert' : undefined}>
-            {fehler ?? laeuft}
-          </p>
-        )}
+      <Flaeche>
         <ProjektStart
+          hinweis={fehler || laeuft ? { text: fehler ?? laeuft ?? '', fehler: !!fehler } : undefined}
           fs={tauriDateisystem}
           sichtbar={sichtbar}
           entwurf={entwurfText}
@@ -553,7 +549,7 @@ export function AssistentView({
           onKatasterEinstellungen={onKatasterEinstellungen}
           onMails={onMails}
         />
-      </main>
+      </Flaeche>
     );
   }
 

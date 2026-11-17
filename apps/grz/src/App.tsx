@@ -307,8 +307,8 @@ export function App() {
         )}
         {einstieg ? (
           <ProjektEinstieg
-            titel={`${APP_NAMEN.grz.name} – ${APP_NAMEN.grz.was}`}
-            text={`Öffnen Sie ein Projekt aus ${appMitWas('flaechenrechner')} oder ein IFC-Modell. Gebäude und Geschosse kommen von dort, den Lageplan zeichnen Sie hier. Gespeichert wird in dieselbe Projektdatei.`}
+            app="grz"
+            text={`Ein Projekt aus ${appMitWas('flaechenrechner')} oder ein IFC-Modell öffnen. Gebäude und Geschosse kommen von dort, der Lageplan entsteht hier. Gespeichert wird in dieselbe Projektdatei.`}
             onProjekte={isTauri() ? () => setProjekteOffen(true) : undefined}
             onDateiOeffnen={() => void onOpen()}
             dateiHinweis="Projektdatei (.oap) oder IFC-Modell"

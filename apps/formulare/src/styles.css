@@ -832,10 +832,6 @@ button.icon.fo-gl-zaehlt.an {
   background: var(--fehler-bg);
   color: var(--fehler-text);
 }
-.fo-leer {
-  max-width: 640px;
-  margin: var(--s5) auto;
-}
 .fo-status {
   overflow: hidden;
   text-overflow: ellipsis;

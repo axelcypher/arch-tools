@@ -96,7 +96,7 @@ describe('TERRIO', () => {
 
   it('Leerzustand: dieselben Aktionen wie in den anderen Apps (Q-5)', () => {
     useGrz.getState().load(createProject());
-    expect(einstiegsAktionen(render(App))).toEqual(['Datei öffnen …', 'Neues Projekt']);
+    expect(einstiegsAktionen(render(App))).toEqual(['Neues Projekt', 'Datei öffnen …']);
   });
 
   it('Farbschema wechselt sofort (Menü ◐)', () => {
@@ -108,7 +108,10 @@ describe('TERRIO', () => {
 
   it('zeigt ohne Projekt den Einstieg', () => {
     useGrz.getState().load(createProject());
-    expect(render(App).textContent).toContain('TERRIO – GRZ-Nachweis');
+    // gemeinsamer Einstieg: Name der App als Überschrift, darunter wofür sie da ist
+    const host = render(App);
+    expect(host.querySelector('.pw-einstieg h2')?.textContent).toBe('TERRIO');
+    expect(host.querySelector('.pw-einstieg-was')?.textContent).toBe('GRZ-Nachweis');
   });
 
   it('rechnet nach dem Recht des Plandatums und zeigt Lageplan und Nachweis', () => {

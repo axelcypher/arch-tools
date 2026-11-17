@@ -9,13 +9,6 @@
   background: var(--bg);
 }
 
-.ava-leer {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
 .ava-busy {
   position: fixed;
   bottom: 14px;

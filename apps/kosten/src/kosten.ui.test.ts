@@ -60,7 +60,7 @@ describe('NUMIO', () => {
 
   it('Leerzustand: dieselben Aktionen wie in den anderen Apps (Q-5)', () => {
     useKosten.getState().load(createProject());
-    expect(einstiegsAktionen(render(App))).toEqual(['Datei öffnen …', 'Neues Projekt']);
+    expect(einstiegsAktionen(render(App))).toEqual(['Neues Projekt', 'Datei öffnen …']);
   });
 
   it('Farbschema wechselt sofort (Menü ◐)', () => {
@@ -73,7 +73,7 @@ describe('NUMIO', () => {
   it('zeigt ohne Projekt den Einstieg; Druck und Export sind gesperrt', () => {
     useKosten.getState().load(createProject());
     const host = render(App);
-    expect(host.textContent).toContain('Projekt oder IFC öffnen');
+    expect(host.querySelector('.pw-einstieg')?.textContent).toContain('IFC-Modell');
     expect(knopf(host, 'Kosten drucken').disabled).toBe(true);
     expect(knopf(host, 'Exportieren').getAttribute('aria-disabled')).toBe('true');
     expect(knopf(host, 'Exportieren').title).toBe('Erst Positionen anlegen');
@@ -117,6 +117,22 @@ describe('NUMIO', () => {
     expect(ifc().textContent).toContain('erst Projekt mit Gebäude oder IFC-Modell öffnen');
   });
 
+  it('Kartenlayout: vier benannte Karten, genau ein Hauptbereich, „?“ gehört nicht zum Namen der Karte', () => {
+    useKosten.getState().load(projektMitKosten());
+    const host = render(App);
+    const karten = [...host.querySelectorAll<HTMLElement>('.flaeche .karte')];
+    const name = (k: HTMLElement) => document.getElementById(k.getAttribute('aria-labelledby')!)?.textContent;
+    expect(karten.map(name)).toEqual(['Grundlagen', 'Mengen', 'Positionen', 'Kostenschätzung']);
+    // „?“ steht hinter der Überschrift, nicht in ihr
+    expect(karten[0].querySelector('.karte-titel button')).not.toBeNull();
+    expect(karten[0].querySelector('h2 button')).toBeNull();
+    // ein main: die rechte Spalte mit Positionen und Übersicht
+    const haupt = host.querySelectorAll('main');
+    expect(haupt).toHaveLength(1);
+    expect(haupt[0].textContent).toContain('Positionen');
+    expect(haupt[0].textContent).not.toContain('Grundlagen');
+  });
+
   it('zeigt Mengen aus dem Projekt, Positionen je Kostengruppe und die Übersicht', () => {
     useKosten.getState().load(projektMitKosten());
     const host = render(App);
@@ -127,8 +143,8 @@ describe('NUMIO', () => {
     expect(text).toContain('1.954.575 €');
     // abgeleitete BGF als Vorgabe im Mengenfeld
     expect((host.querySelector('.ko-menge input') as HTMLInputElement).placeholder).toBe('540,00');
-    expect(host.querySelectorAll('.ko-pos tr.ko-gruppe')).toHaveLength(4);
-    expect(host.querySelectorAll('.ko-pos tbody tr:not(.ko-gruppe)')).toHaveLength(5);
+    expect(host.querySelectorAll('.ko-pos tr.gruppe')).toHaveLength(4);
+    expect(host.querySelectorAll('.ko-pos tbody tr:not(.gruppe)')).toHaveLength(5);
   });
 
   it('Gliederung anlegen, Kennwert eintragen, Menge festlegen, Position ausschalten und löschen', () => {
@@ -142,7 +158,7 @@ describe('NUMIO', () => {
     expect(host.textContent).toContain('Kennwert fehlt');
 
     // Kennwert „Mittel“ der KG 300
-    const zeile = () => host.querySelectorAll('.ko-pos tbody tr:not(.ko-gruppe)')[0];
+    const zeile = () => host.querySelectorAll('.ko-pos tbody tr:not(.gruppe)')[0];
     eingabe(zeile().querySelectorAll('.ko-kw input')[1] as HTMLInputElement, '1800');
     expect(kosten().positionen[0].mittel).toBe(1800);
     expect(zeile().textContent).toContain('972.000 €');
@@ -172,7 +188,9 @@ describe('NUMIO', () => {
   it('Stufe und Faktoren wirken auf die Übersicht; Stand festhalten und Vorher/Nachher', () => {
     useKosten.getState().load(projektMitKosten());
     const host = render(App);
-    waehle(host.querySelector('.ko-col select') as HTMLSelectElement, 'berechnung');
+    // die Stufenauswahl in der Karte „Grundlagen“ (über ihr Feld „Stufe“)
+    const stufe = [...host.querySelectorAll<HTMLSelectElement>('.karte select')].find((s) => [...s.options].some((o) => o.value === 'berechnung'))!;
+    waehle(stufe, 'berechnung');
     expect(kosten().stufe).toBe('berechnung');
     expect(host.textContent).toContain('Kostenberechnung');
 
@@ -291,14 +309,14 @@ describe('NUMIO', () => {
     useKosten.getState().load(projektMitAnbau());
     const host = render(App);
     // Einstieg über das Kürzel in der Kostenansicht
-    const awf = [...host.querySelectorAll('.ko-table button.link')].find((b) => b.textContent === 'AWF') as HTMLButtonElement;
+    const awf = [...host.querySelectorAll('.ko-mengen button.link')].find((b) => b.textContent === 'AWF') as HTMLButtonElement;
     await act(async () => awf.click());
     expect(host.querySelector('.mv-bild h2')?.textContent).toBe('AWF – Außenwandfläche: 307,63 m²');
-    expect(host.querySelector('.mv-kopf .segment button[aria-pressed="true"]')?.textContent).toBe('3D-Modell');
+    expect(host.querySelector('.mv-bild .karte-aktionen .segment button[aria-pressed="true"]')?.textContent).toBe('3D-Modell');
     expect(host.querySelectorAll('.mp-geschoss')).toHaveLength(0);
     expect(host.querySelector('.mv-rechenweg tbody tr')?.textContent).toContain('ohne 1 Abschnitt an anderen Umrissen');
     // im Grundriss: Wände als Kanten
-    act(() => knopf(host.querySelector('.mv-kopf .segment')!, 'Grundrisse').click());
+    act(() => knopf(host.querySelector('.mv-bild .karte-aktionen .segment')!, 'Grundrisse').click());
     expect(host.querySelectorAll('.mp-teil.kanten')).toHaveLength(3);
 
     // festgelegte Menge: Hinweis, dass das Bild die abgeleitete Menge zeigt
