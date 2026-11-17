@@ -475,10 +475,13 @@ describe('Baurecht – Oberfläche', () => {
     const flaeche = host.querySelector('.flaeche')!;
     expect(flaeche).toBeTruthy();
     // jede Karte ist ein Bereich, benannt über die Überschrift im Kartenkopf (h2)
-    const titel = [...flaeche.querySelectorAll<HTMLElement>('section.karte')].map((k) => document.getElementById(k.getAttribute('aria-labelledby') ?? '')?.textContent);
+    const titel = [...flaeche.querySelectorAll<HTMLElement>('.karte')].map((k) => document.getElementById(k.getAttribute('aria-labelledby') ?? '')?.textContent);
     expect(titel.slice(0, 3)).toEqual(['Angaben', 'Ergebnis', 'Vorschriften']);
-    expect(host.querySelector('.br-detail')!.matches('section.karte')).toBe(true);
-    // die Mitte ist der Hauptbereich der App
+    // Angaben und Einzelheiten sind Nebenbereiche (aside, benannt über die Überschrift), die Mitte der Hauptbereich – genau ein main
+    expect(host.querySelector('.br-angaben')!.matches('aside.karte[aria-labelledby]')).toBe(true);
+    expect(host.querySelector('.br-detail')!.matches('aside.karte[aria-labelledby]')).toBe(true);
+    expect(host.querySelectorAll('main')).toHaveLength(1);
+    expect(host.querySelector('main')!.getAttribute('aria-label')).toBe('Prüfung');
     expect(host.querySelector('main')!.contains(host.querySelector('.br-ergebnis'))).toBe(true);
     expect(host.querySelector('main')!.contains(host.querySelector('.br-vorschriften-karte'))).toBe(true);
     // F6 läuft durch Werkzeugleiste und alle Karten
