@@ -914,10 +914,13 @@ button.icon.fo-gl-zaehlt.an {
   margin: 0 auto;
   padding-bottom: var(--s5);
 }
-/* Suche und Filter stehen auf der Fläche und bleiben beim Rollen oben */
+/* Suche und Filter stehen auf der Fläche und bleiben beim Rollen oben – bündig an der Oberkante der rollenden Spalte
+   (ihr Innenabstand --s1 aus core wird überdeckt, sonst liefe der Inhalt durch einen Streifen darüber) */
 .fo-felder-kopf {
   position: sticky;
-  top: 0;
+  top: calc(-1 * var(--s1));
+  padding-top: var(--s1);
+  margin-top: calc(-1 * var(--s1));
   z-index: 1;
   display: flex;
   flex-wrap: wrap;
