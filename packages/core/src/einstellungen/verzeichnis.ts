@@ -17,7 +17,7 @@ import { unbekanntePlatzhalter } from '../platzhalter';
 export type PfadThema = 'projekt' | 'ablage' | 'plaene' | 'export' | 'vorlagen';
 
 export const PFAD_THEMEN: { id: PfadThema; titel: string; text: string }[] = [
-  { id: 'projekt', titel: 'Projekt', text: 'Projektordner, Projektnummer und Projektdatei' },
+  { id: 'projekt', titel: 'Projekt', text: 'Stammordner, Projektordner, Projektnummer und Projektdatei' },
   { id: 'ablage', titel: 'Ablage', text: 'Ordner im Projekt, in denen die Apps suchen und ablegen' },
   { id: 'plaene', titel: 'Pläne und Dokumente', text: 'Dateinamen von Plänen, Anträgen und Rechnungen' },
   { id: 'export', titel: 'Export', text: 'Zielordner und Dateinamen beim Exportieren' },
@@ -67,8 +67,8 @@ export interface PfadEinstellung {
   endung?: string;
   /** weitere Hinweise zum Wert (blockieren nichts), z. B. was eine App für den Namen verlangt */
   hinweise?: (wert: string) => string[];
-  /** bei Listen: was je Zeile steht (Vorgabe: ein Name) */
-  zeilen?: 'name' | 'pfad';
+  /** bei Listen: was je Zeile steht (Vorgabe: ein Name; `ordner`: ein vollständiger Ordner – als Liste mit Umsortieren und Entfernen) */
+  zeilen?: 'name' | 'pfad' | 'ordner';
   /** darf nicht leer sein */
   pflicht?: boolean;
   speicher: PfadSpeicher;

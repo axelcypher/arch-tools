@@ -94,6 +94,19 @@ const exportEintraege = (app: 'flaechenrechner' | 'grz' | 'kosten'): PfadEinstel
 export const PFAD_EINSTELLUNGEN: PfadEinstellung[] = [
   /* ---------- Projekt ---------- */
   {
+    id: 'projekt.stammordner',
+    apps: ['ordner', 'formulare', 'flaechenrechner', 'grz', 'kosten', 'entzerrung', 'ava', 'baurecht'],
+    thema: 'projekt',
+    art: 'liste',
+    zeilen: 'ordner',
+    bezeichnung: 'Stammordner der Projekte',
+    erklaerung:
+      'Ordner mit den Projektordnern, je Zeile einer – in dieser Reihenfolge in der Projektübersicht aller Apps. Im ersten entstehen neue Projekte. Projekte in Gruppen-, Akquise- und Archivordnern darin werden mit erfasst.',
+    vorgabe: [],
+    // bisheriger Schlüssel aller Apps (ProjektWahl, ATLAS, PERMIO) – nichts zu übernehmen
+    speicher: unterSchluessel('allgemein', 'projekte', 'liste', []),
+  },
+  {
     id: 'projekt.nummernschema',
     apps: ['ordner'],
     thema: 'projekt',

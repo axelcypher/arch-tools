@@ -24,7 +24,8 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
   Felder**, Zoom und „Ansicht ▾“ (Gliederung, Verlauf der Eingaben als Schalter); rechts der Status (zuerst „n Felder
   geändert“, dann Kennung und Stand; gekürzt, der volle Text samt „lokal gesichert“ im Tooltip), „Suchen …“
   (<kbd>Strg</kbd>+<kbd>K</kbd>) und der Hauptknopf **„Als PDF exportieren …“** (<kbd>Strg</kbd>+<kbd>E</kbd>), zuletzt
-  „Mehr“ (⋯) mit „Formular einrichten“, „Manuelle Überschreibungen ignorieren“ und „Einstellungen …“. In schmalen
+  „Mehr“ (⋯) mit „Formular einrichten“, „Manuelle Überschreibungen ignorieren“ und „Adressbuch …“; „Einstellungen …“
+  (Strg+,) steht als letzter Punkt in „Datei“. In schmalen
   Fenstern kürzt sich zuerst der Status (bis auf eine Mindestbreite), dann wandern „Suchen …“, Zoom und „Ansicht“ ins
   Menü „Mehr“. In den Projektdaten: „Projektdaten
   speichern“ mit ↶ ↷; „Änderungen verwerfen“ steht in „Mehr“.
@@ -47,8 +48,8 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
   und kehrt danach an die Stelle davor zurück. Das gilt auch für die Schnellwahl (<kbd>Strg</kbd>+<kbd>K</kbd>; der
   Fokus bleibt im Suchfeld, ↑/↓ markieren einen Treffer, der im Bild bleibt) und die Vorschau der Antragsunterlagen
   (Startfokus auf „Schließen“). Der Titel steht als Kopf des Dialogs (`kopf`) und benennt ihn zugleich für
-  Screenreader; Ausnahmen sind die Einstellungen und die Vorschau der Antragsunterlagen, die als Vollfläche eine
-  eigene Kopfleiste haben.
+  Screenreader; Ausnahme ist die Vorschau der Antragsunterlagen, die als Vollfläche eine eigene Kopfleiste hat (die
+  Einstellungen sind der zentrale Dialog aller Apps, das Adressbuch nennt seinen Titel als `h3` im Inhalt).
 - **Befehle** enden auf „ …“, wenn sie einen Dialog, eine Rückfrage oder die Dateiauswahl öffnen („Formular
   öffnen …“, „Ordner hinzufügen …“), nicht aber, wenn sie nur zu einer Ansicht führen („Antragsdaten“, „Alle
   Antragsmerkmale“, „Zum Adressbuch“). Hinzufügen-Knöpfe tragen das Symbol Plus.
@@ -74,11 +75,11 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
   Rechts der **Inhalt**. Was zum Dokument gehört – Gliederung, Verlauf, Formularfläche –, steht im Grau der
   Formularfläche.
 - **Gemeinsame Einstellungen:** Die Stammordner der Projektordner und der Ort neuer Projektdateien gelten für alle
-  Apps (`allgemein.json` im gemeinsamen Konfigurationsordner, siehe `packages/core/src/platform/konfig.ts`); PERMIO
-  übernimmt beim ersten Start seine bisherigen Werte dorthin, wenn dort noch keine stehen.
-- **Einstellungen (⚙)** als Modal über der aktuellen Ansicht (die bleibt, wie sie ist; Fertig, × oder Esc schließt)
-  mit Ebenen: **Ordner** (Formularprojekte, Projektordner, angezeigte Pfade), **Büro & Stammdaten**, **Adressbuch**,
-  **Formulare**, **Antrag & Export** und **Projektdatei (.oap)** (siehe unten).
+  Apps (`allgemein.json` im gemeinsamen Konfigurationsordner, siehe `packages/core/src/platform/konfig.ts`) und stehen
+  auf „Pfade und Benennung“; PERMIO übernimmt beim ersten Start seine bisherigen Stammordner dorthin, wenn dort noch
+  keine stehen – einmal (Merker `formulare:stammordnerGeteilt`), danach gilt die gemeinsame Liste, auch wenn sie leer ist.
+- **Einstellungen:** „Datei → Einstellungen …“ (Strg+,) öffnet den zentralen Einstellungsdialog aller Apps auf der
+  Seite **PERMIO** (siehe „Zentrale Einstellungen“ unten). Das **Adressbuch** ist ein eigener Dialog („Mehr → Adressbuch …“).
 - **Projektübersicht:** Ohne gewähltes Projekt (und über „Wechseln“ oben links) zeigt der Inhalt alle Projekte
   über die volle Fensterhöhe – vorne **Zuletzt geöffnet** (die letzten acht), darunter je **Quelle** (Ordner mit
   FORMA-Projekten) eine Gruppe, beim Start eingeklappt. Jede Karte zeigt Kürzel, Titel, Anzahl der Formulare,
@@ -310,7 +311,8 @@ Anschrift, wie sie in Formularen steht.
   Titel (Besondere Auflagen). Die Möglichkeiten selbst bleiben, wie FORMA sie angelegt hat.
 - **Übernehmen von …:** alle Angaben einer anderen Adressgruppe dieses Projekts (z. B. Eigentümer = Bauherr) oder
   aus den Bürostammdaten – in einem Schritt, der sich rückgängig machen lässt. „Leeren“ entfernt alle Angaben.
-- **Adressbuch** (Einstellungen): alle Adressen aus den Projektkarten aller Projekte – Bauherren,
+- **Adressbuch** (eigener Dialog: „Mehr → Adressbuch …“, in den Projektdaten „Übernehmen von … → Adressbuch öffnen …“
+  und in den Einstellungen bei „Vorgaben je Rolle“; liegt dort als eigene Ebene über dem Dialog): alle Adressen aus den Projektkarten aller Projekte – Bauherren,
   Entwurfsverfasser, Behörden, Fachplaner –, gleiche Adressen einmal mit allen Verwendungen („BS5 ·
   Bauaufsichtsbehörde“), dazu die **eigenen**: „Adresse hinzufügen“ legt eine an, „Bearbeiten“ ändert eine (bei einer
   Adresse aus den Projektkarten entsteht eine eigene Fassung, Marke „geändert“, „Änderungen verwerfen“ nimmt sie
@@ -351,7 +353,7 @@ Anschrift, wie sie in Formularen steht.
   Zahlen an – ein Textfeld mit Zifferntastatur, in das sich nur Ziffern tippen lassen; ein alter oder eingefügter
   Text wie „ca. 3“ oder „1.5“ bleibt unverändert sichtbar, wird gemeldet und lässt sich korrigieren oder leeren.
   Gespeichert wird weiter als Text der Projektkarte.
-- **Büro & Stammdaten** (Einstellungen): je Rolle (Entwurfsverfasser, Bauvorlageberechtigter,
+- **Vorgaben je Rolle** (Einstellungen › PERMIO, gilt mit „Übernehmen“): je Rolle (Entwurfsverfasser, Bauvorlageberechtigter,
   Bauaufsichtsbehörde, Gemeinde …) eine Vorgabe aus dem Adressbuch – die bisher in dieser Rolle verwendeten
   Adressen zuerst. In der Projektkarte: „Als Vorgabe festlegen“ bei einer Adresse, **„Vorgaben eintragen“** füllt
   alle leeren Rollen auf einmal, und „Übernehmen von …“ bietet die Vorgabe und die bisherigen Adressen der Rolle an.
@@ -556,7 +558,7 @@ Einstellungen und des Namensschemas – `packages/core/src/fassung.ts`, auch in 
   Formularname ohne laufende Nummer und Jahr. Alte Namen (`{Kürzel}`, `{Projekt}`, `{Datum}`, `{Jahr}` …) gelten weiter;
   `{Phase}` (frühere Einstellung „Phase“, entfallen; alte Abweichungen je Projekt, die nur sie enthielten, entfallen beim Lesen) gilt überall als `{Art}`. Unter der Namensvorlage stehen die Chips, im
   festen Zielordner `{Antrag}`, `{Art}` und die globalen.
-- **Einstellungen › Antrag & Export:** Antragsordner, Antragsarten (die erste ist der Standard; dazu die des
+- **Einstellungen › PERMIO (Antrag und Export):** Antragsordner, Antragsarten (die erste ist der Standard; dazu die des
   Namensschemas), Namensvorlage, Ziel (aktive Antragsfassung oder fester Ordner, z. B.
   `TÖB/{Antrag}/Formulare`), Ordner der Berechnungen, Vorlagenordner für neue Formulare, Antragsvorlagen und die
   **Antragsdokumente** (der Katalog): eine Liste mit Kurzbeschreibung je Dokument („Formular des Projekts“, „Formular
@@ -632,7 +634,7 @@ Einstellungen und des Namensschemas – `packages/core/src/fassung.ts`, auch in 
   des nächsten Nachtrags („BVA 2“). Ändert sich das Namensschema (in der Projektdatei oder in ATLAS,
   gelesen beim Zurückkommen ins Fenster), werden Antragsordner und Plansätze sofort neu erkannt. Eine in PERMIO
   angelegte Projektdatei bekommt wie in ATLAS eine Kopie des Büro-Schemas.
-- **Antragsvorlagen** (Einstellungen › Antrag & Export): benannte Zusammenstellungen von Katalogdokumenten je Antragsart
+- **Antragsvorlagen** (Einstellungen › PERMIO): benannte Zusammenstellungen von Katalogdokumenten je Antragsart
   – Vorgabe „Bauantrag“ (BAUA), „Bauvoranfrage“ (BAUVA), „Denkmalrechtliche Erlaubnis“ (DENK). Welche Dokumente
   dazugehören, wird bei den Antragsdokumenten angekreuzt: über der Liste „Vorlage zusammenstellen“ wählen (oder „n
   Dokumente“ in der Vorlagen-Tabelle, das auch den Fokus dorthin setzt), dann je Dokument ein Häkchen; ein neues
@@ -649,7 +651,7 @@ Einstellungen und des Namensschemas – `packages/core/src/fassung.ts`, auch in 
   „Nach unten“).
 - **Antragsmerkmale** (in den Antragsdaten): Gebäudeklasse, Sonderbau, Verfahren … – **je Antrag** gewählt, gelten sie
   für alle Formulare (Bedingungen in der Gliederung) und für den Antragsumfang des Antrags. Welche Merkmale es gibt,
-  ihre Werte und die **Vorgabe für neue Anträge** (globales Preset) stehen in Einstellungen › Antrag & Export. Ein
+  ihre Werte und die **Vorgabe für neue Anträge** (globales Preset) stehen in Einstellungen › PERMIO. Ein
   neuer Antrag übernimmt die Vorgaben einmalig; danach ist er unabhängig – spätere Änderungen am Preset oder an
   anderen Anträgen ändern ihn nicht. „Ansicht …“ stellt mit dem Ansicht-Editor eine eigene Ansicht zusammen (welche
   Merkmale in welcher Reihenfolge, in Abschnitten; die übrigen unter „weitere Merkmale – zeigen“).
@@ -1030,8 +1032,8 @@ genauso:
 
 ### Einstellungen sichern und übertragen
 
-Die Einstellungen liegen im Speicher der App auf diesem Rechner. Unter **Einstellungen › Sichern & Übertragen**
-lassen sie sich als JSON-Datei exportieren (`PERMIO-Einstellungen JJMMTT.json`; bis 0.42 `Formulare-Einstellungen …`) und wieder einspielen – zum
+Die Einstellungen liegen im Speicher der App auf diesem Rechner. Unter **Einstellungen › PERMIO › Einstellungen
+exportieren / importieren** lassen sie sich als JSON-Datei exportieren (`PERMIO-Einstellungen JJMMTT.json`; bis 0.42 `Formulare-Einstellungen …`) und wieder einspielen – zum
 Sichern, für einen anderen Rechner oder für Kolleginnen und Kollegen. Entwürfe, Verlauf und Formularinhalte
 gehören nicht dazu.
 
@@ -1040,9 +1042,9 @@ gehören nicht dazu.
 | Gliederung der Formulare (Titel, Gruppen, Bedingungen) | `formulare:profile` | ergänzt – gleiche Formulare ersetzt |
 | Antragsmerkmale | `formulare:merkmale` | ersetzt |
 | Antragsdokumente | `formulare:katalog` | ersetzt |
-| Antrag & Export | `formulare:export` | ersetzt |
-| Antrag & Export: Abweichungen je Projekt | `formulare:export-projekte` | ergänzt – gleiche Projekte ersetzt |
-| Bürostammdaten | `formulare:stammdaten` | ersetzt |
+| Anträge und Export (Antragsarten, Ziel) | `formulare:export` | ersetzt |
+| Anträge und Export: Abweichungen je Projekt | `formulare:export-projekte` | ergänzt – gleiche Projekte ersetzt |
+| Früher gemerkte Adressen | `formulare:stammdaten` | ersetzt |
 | Ordner, angezeigte Pfade, Projektdatei, Ansicht | `formulare:einstellungen` | ersetzt – zunächst nicht angehakt (Pfade dieses Rechners) |
 
 Beim Einspielen zeigt die App, was in der Datei steht, und übernimmt nur die angehakten Bereiche. Gliederungen
@@ -1248,8 +1250,25 @@ SJFORMA_REF=/pfad/zu/forma-projekten cargo test --manifest-path apps/formulare/s
 
 ## Zentrale Einstellungen
 
-„Datei → Einstellungen …“ (Strg+,) öffnet die Einstellungen aller Apps; die eigenen Einstellungen von PERMIO heißen im
-Menü „Mehr“ jetzt „Einstellungen von PERMIO …“. Antragsordner, Namensvorlage exportierter PDFs, fester Zielordner,
+„Datei → Einstellungen …“ (Strg+,) öffnet die Einstellungen aller Apps auf der Seite **PERMIO**. Der frühere eigene
+Dialog („Einstellungen von PERMIO …“ im Menü „Mehr“) ist entfallen; seine Inhalte stehen so:
+
+| Bisher (eigener Dialog)                         | Jetzt                                                                                    |
+| ----------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Ordner › Formularprojekte, angezeigte Pfade     | Seite PERMIO                                                                             |
+| Ordner › Projektordner (Stammordner)            | „Pfade und Benennung“ › Projekt › Stammordner der Projekte (Verweis auf der Seite PERMIO) |
+| Büro & Stammdaten                               | Seite PERMIO › Vorgaben je Rolle                                                          |
+| Adressbuch                                      | eigener Dialog „Adressbuch …“ (Datenpflege, keine Einstellung)                            |
+| Formulare (angepasste Gliederungen)             | Seite PERMIO › Formulare – „Zurücksetzen“ gilt mit „Übernehmen“                           |
+| Antrag & Export                                 | Seite PERMIO (Antragsarten, Ziel, Merkmale, Vorlagen, Antragsdokumente)                  |
+| Projektdatei (.oap)                             | Seite PERMIO (Anzeige; der Pfad steht auf „Pfade und Benennung“)                         |
+| Sichern & Übertragen                            | Seite PERMIO › Einstellungen exportieren / importieren                                   |
+
+Alles auf der Seite gilt erst mit „Übernehmen“ (Entwurf in `einstellungsEntwurf.ts`, geschrieben mit den bisherigen
+Settern – Speicherorte und Schlüssel wie `formulare:export`, `formulare:katalog`, `formulare:vorlagen`,
+`formulare:merkmale`, `formulare:einstellungen`, `formulare:profile` bleiben, nichts muss umziehen). Ausnahmen, die sofort
+wirken: „Aus den Projektdaten einlesen“ (liest Daten, keine Einstellung) und „Einstellungen importieren“ (gesperrt,
+solange die Seite ungespeicherte Änderungen hat). Im Notbetrieb ist die ganze Seite gesperrt. Antragsordner, Namensvorlage exportierter PDFs, fester Zielordner,
 Vorlagenordner der leeren Formulare und der Ort neuer Projektdateien stehen auf der Seite „Pfade und Benennung“ – im
 gemeinsamen Speicher statt wie bisher je Rechner; alte Werte werden übernommen (bei abweichenden Werten auf mehreren
 Rechnern fragt die Seite). Berechnungen als externe Antragsdokumente sucht PERMIO in den Berechnungsordnern von

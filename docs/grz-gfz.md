@@ -48,7 +48,13 @@ erhalten.
 
 ## Projekt und Bebauungsplan
 
-Die linke Spalte ist in drei Abschnitte gegliedert: **Projekt und Grundstück** (Stammdaten, Grundstücksfläche,
+Die Oberfläche folgt dem Kartenlayout der Suite (Richtung C): Unter der Werkzeugleiste liegen drei Karten – links
+„Projekt und Grundstück“, in der Mitte „Lageplan“ (Umschalter Lageplan | 3D im Kartenkopf), rechts „Nachweis“. Jede
+Karte scrollt für sich; die linke und die rechte Karte lassen sich am Spalt in der Breite ziehen (Breite wird gemerkt).
+Der Lageplan ist bewusst eine normale Karte und keine reine Zeichenkarte: Werkzeuge, Plan (feste Höhe), Flächentabelle
+und Eigenschaften der Auswahl gehören zusammen und scrollen gemeinsam.
+
+Die linke Karte ist in drei Abschnitte gegliedert: **Projekt und Grundstück** (Stammdaten, Grundstücksfläche,
 Bebauungsplan), **Festsetzungen** (Baugebiet, Fassungen, Maß der baulichen Nutzung, Vollgeschosse, Höhen) und
 **Annahmen für die Berechnung** (Geländeoberfläche, Decken-/Dachaufbau, Wandzuschlag, Einfamilienhaus). Felder
 einer Zeile stehen unten bündig. Widersprüche melden sich am Feld, ohne die Eingabe zu sperren: „Mindestens ist
@@ -304,9 +310,8 @@ unter dem Plan beginnt mit der Nummer wie im Plan und im Druck.
   Flächen eine eigene Zeile „mit ungeklärten Flächen bis …“; der Flächenvergleich steht im Tooltip und im
   Rechenweg), Vollgeschossprüfung (Begründungen über „Begründungen zeigen“), Geschossfläche je Geschoss,
   Flächenbilanz (Gebäude, voll-/teilversiegelt, grün; der Rest als „nicht gezeichnet (Rest des Grundstücks)“,
-  Überlappungen warnend) und Hinweise. Zahl und Einheit stehen nie getrennt; die Tabellen laufen nicht über. Bis
-  1280 px Fensterbreite steht der Nachweis unter Festsetzungen und Plan, eine Ergebnisleiste oben (GRZ, GFZ,
-  Vollgeschosse mit Ampel, „zum Nachweis“) bleibt beim Scrollen stehen.
+  Überlappungen warnend) und Hinweise. Zahl und Einheit stehen nie getrennt; breite Tabellen scrollen in der Karte
+  und laufen nie aus ihr heraus. Der Nachweis steht immer als eigene Karte neben Eingaben und Plan.
 - **Einstufung automatisch oder von Hand:** Vollgeschosse und Räume haben dasselbe Muster – eine Auswahl
   „automatisch: Vollgeschoss“ (mit dem Ergebnis der Prüfung) bzw. „… (von Hand)“. Eine Festlegung von Hand ist
   farbig und kursiv hervorgehoben; die Karte „Vollgeschosse“ nennt „davon … von Hand festgelegt“, der Druck

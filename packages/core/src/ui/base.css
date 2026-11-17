@@ -30,6 +30,8 @@
   /* schmale Fenster: Mindestbreite der Seitenkarten und der Mitte */
   --leiste-min: 180px;
   --karte-mitte-min: 280px;
+  /* Tönung der Gruppenzeilen in der Zahlentabelle (eigene Bedeutung, auch wenn sie wie --hover aussieht) */
+  --tabelle-gruppe: #f1f3f6;
   --bg: #f3f4f6;
   --panel: #ffffff;
   --border: #d8dbe0;
@@ -239,6 +241,18 @@ body,
   box-shadow: var(--karte-schatten);
   overflow: hidden;
 }
+/* Karte in Inhaltshöhe (hoehe="inhalt") in einer Spalte: so hoch wie ihr Inhalt, höchstens die halbe Spalte –
+   darüber scrollt ihr Rumpf; die übrigen Karten teilen sich den Rest */
+.flaechen-spalte > .karte.karte-inhalt {
+  flex: 0 1 auto;
+  max-height: 50%;
+  min-height: var(--karte-kopf-h);
+}
+/* die teilende Karte zeigt neben Inhaltskarten immer mindestens ihren Kopf und einige Zeilen (auch bei zwei
+   Inhaltskarten, die zusammen fast die ganze Spalte wollen) */
+.flaechen-spalte:has(> .karte-inhalt) > .karte:not(.karte-inhalt) {
+  min-height: calc(var(--karte-kopf-h) + 6 * var(--s4));
+}
 /* Seitenkarten in einer Leiste nehmen deren Breite; in einer Spalte teilen sich die Karten die Höhe */
 .leiste > .karte {
   flex: 1;
@@ -277,6 +291,9 @@ body,
   margin-left: auto;
 }
 .karte-rumpf {
+  /* positioniert: absolut gesetzte Kinder (z. B. .nur-vorlesen in breiten Tabellen) bleiben im Rollbereich der Karte
+     und machen die Seite nicht breiter */
+  position: relative;
   flex: 1;
   min-height: 0;
   overflow: auto;
@@ -842,7 +859,7 @@ textarea:focus {
   text-align: right;
   font-weight: normal;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--fs-xs);
   padding: 2px 4px;
 }
 
@@ -856,8 +873,37 @@ textarea:focus {
   text-align: left;
 }
 
-.summary-table tr.strong td {
+/* gemischte Tabellen (Text- und Zahlenspalten): .text für die Tabelle, Zahlenspalten mit th.num und td.num rechts –
+   höhere Spezifität als .summary-table.text th */
+.summary-table.text th.num,
+.summary-table td.num {
+  text-align: right;
+}
+
+/* Zeilen mit Feldern (Eingaben, Auswahllisten): oben bündig, damit Zellen mit zweizeiligem Inhalt (z. B. Spanne
+   „810.000 – 1.134.000 €“) die Zeile nicht verschieben */
+.summary-table.felder td {
+  vertical-align: top;
+}
+/* Text ohne Feld oder Knopf in einer Feldzeile fluchtet mit dem Text in den Feldern (der steht in --ctl-h senkrecht mittig) */
+.summary-table.felder td:not(:has(input, select, textarea, button)) {
+  padding-top: calc(3px + (var(--ctl-h) - 1lh) / 2);
+}
+
+.summary-table tr.strong td,
+.summary-table tr.summe td {
   font-weight: 600;
+}
+
+/* Gruppenzeile (z. B. Kostengruppe 300): leicht getönt, halbfett */
+.summary-table tr.gruppe td {
+  background: var(--tabelle-gruppe);
+  font-weight: 600;
+}
+
+/* Summenzeile: halbfett mit kräftigerer Linie darüber */
+.summary-table tr.summe td {
+  border-top-color: color-mix(in srgb, var(--muted) 60%, transparent);
 }
 
 .summary-table small {
@@ -1403,6 +1449,7 @@ code {
   --danger: #ef6b5b;
   --input-bg: #262a31;
   --hover: #2b3038;
+  --tabelle-gruppe: #24282e;
   --line-soft: #2b3038;
   --room-bg: #3a3120;
   --room-border: #b8912c;
@@ -1577,6 +1624,7 @@ code {
   --input-bg: #ffffff;
   --hover: #f1f3f6;
   --line-soft: #eef0f3;
+  --tabelle-gruppe: #f1f3f6;
   --warn-bg: #fff4e5;
   --warn-border: #f5c26b;
   --warn-text: #8a5300;
@@ -2948,6 +2996,36 @@ button.ungespeichert::after {
 }
 .einst-feldzeile > textarea.einst-feld {
   resize: vertical;
+}
+/* Liste vollständiger Ordner (Stammordner der Projekte): Reihenfolge zählt, der erste gilt für Neues */
+.einst-ordnerliste {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.einst-ordnerliste > li {
+  display: flex;
+  align-items: center;
+  gap: var(--s1);
+  padding: var(--s1) var(--s2);
+}
+.einst-ordnerliste > li + li {
+  border-top: 1px solid var(--line-soft);
+}
+.einst-ordnerliste code {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.einst-ordner-erster {
+  color: var(--muted);
+  white-space: nowrap;
+}
+/* Knopf neben einer Liste bleibt oben, statt mit der Liste zu wachsen */
+.einst-feldzeile > button {
+  align-self: flex-start;
 }
 /* Platzhalter-Chips nur am Eintrag mit dem Fokus (wie die kompakten Namensfelder): die lange Seite bleibt ruhig */
 .einst-eintrag:not(:focus-within) .ph-chips {
