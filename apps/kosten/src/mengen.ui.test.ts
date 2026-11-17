@@ -109,6 +109,28 @@ describe('NUMIO – Mengen prüfen', () => {
     expect(host.querySelectorAll('.mp-teil.aktiv')).toHaveLength(0);
   });
 
+  it('Rechenweg: das hervorgehobene Teil rollt in der Karte ins Bild, nicht die Seite', () => {
+    const host = mengenPruefen(projektMitAnbau());
+    const rumpf = host.querySelector<HTMLElement>('.mv-rechenweg .karte-rumpf')!;
+    const zeile = rechenweg(host)[1];
+    // Geometrie vorgeben: der Rumpf zeigt 100–200 px, die Zeile liegt darunter bei 300–320 px
+    const rechteck = (top: number, bottom: number) => () => ({ top, bottom, height: bottom - top, left: 0, right: 100, width: 100, x: 0, y: top, toJSON: () => ({}) }) as DOMRect;
+    Object.defineProperty(rumpf, 'scrollHeight', { value: 1000, configurable: true });
+    Object.defineProperty(rumpf, 'clientHeight', { value: 100, configurable: true });
+    rumpf.getBoundingClientRect = rechteck(100, 200);
+    zeile.getBoundingClientRect = rechteck(300, 320);
+    rumpf.scrollTop = 0;
+    act(() => (zeile.querySelector('input') as HTMLInputElement).focus());
+    expect(rumpf.scrollTop).toBe(120);
+    expect(window.scrollY).toBe(0);
+    // Gegenprobe: liegt die Zeile schon im sichtbaren Bereich, rollt nichts
+    act(() => (zeile.querySelector('input') as HTMLInputElement).blur());
+    zeile.getBoundingClientRect = rechteck(150, 170);
+    rumpf.scrollTop = 0;
+    act(() => (zeile.querySelector('input') as HTMLInputElement).focus());
+    expect(rumpf.scrollTop).toBe(0);
+  });
+
   it('Grundriss per Tastatur: Teile sind Kontrollkästchen, Leertaste schaltet', () => {
     const host = mengenPruefen(projektMitAnbau());
     const teil = () => host.querySelectorAll('.mp-teil')[2] as SVGGElement;
@@ -122,8 +144,8 @@ describe('NUMIO – Mengen prüfen', () => {
     expect(teil().getAttribute('aria-checked')).toBe('true');
     expect(host.querySelector('.mp-hilfe')?.textContent).toContain('Klick auf ein Teil: an- oder abwählen');
     // Umschalter als Umschaltknöpfe, nicht als Reiter
-    expect(host.querySelector('.mv-kopf .segment')?.getAttribute('role')).toBe('group');
-    expect(knopf(host.querySelector('.mv-kopf .segment')!, 'Grundrisse').getAttribute('aria-pressed')).toBe('true');
+    expect(host.querySelector('.mv-bild .karte-aktionen .segment')?.getAttribute('role')).toBe('group');
+    expect(knopf(host.querySelector('.mv-bild .karte-aktionen .segment')!, 'Grundrisse').getAttribute('aria-pressed')).toBe('true');
     expect(host.querySelector('[role="tab"]')).toBeNull();
   });
 
