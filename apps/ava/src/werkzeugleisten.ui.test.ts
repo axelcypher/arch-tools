@@ -165,7 +165,8 @@ describe('Werkzeugleisten nach design.md „Kopf- und Werkzeugleisten“', () =>
     await zeige(createElement(Maengel));
     const m = leiste('Mängel');
     expect(knoepfe(m)).toEqual(['Mangel', 'Mängelanzeige mailen …', 'Mehr']);
-    expect(m.querySelector('button.primary')).toBeNull();
+    // Ausgabe des Bildschirms (PDF und Mailentwurf) ist der einzige Hauptknopf; „Mangel“ gibt nichts aus
+    expect([...m.querySelectorAll('button.primary')].map((x) => x.textContent?.trim())).toEqual(['Mängelanzeige mailen …']);
     expect(await menue(mehr(m))).toEqual(['PDF ansehen / drucken', 'PDF im Projekt ablegen']);
     act(() => root?.unmount());
     await zeige(createElement(Beteiligte));

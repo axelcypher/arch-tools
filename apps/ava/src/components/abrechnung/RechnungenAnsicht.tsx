@@ -121,7 +121,7 @@ export function RechnungenAnsicht({ gewerk }: { gewerk?: string }) {
           {
             id: 'pruefen',
             inhalt: (
-              <button onClick={() => setPruefen(true)} title="Rechnung erfassen, Korrektur rechnen, Nummer vergeben, in die Kostenkontrolle eintragen">
+              <button onClick={() => setPruefen(true)} title="Rechnung erfassen, prüfen und in die Kostenkontrolle eintragen">
                 Neue Rechnung prüfen …
               </button>
             ),
