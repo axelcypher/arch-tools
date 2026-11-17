@@ -1,17 +1,10 @@
 /* PERMIO (Grund-Styles: @core/ui/base.css) */
 
 /*
- * Bildsprache: Die Navigation (links, auch die der Einstellungen und der Projektkarte) liegt auf eigenem,
- * dunklerem Grund wie die Titelleiste – sie gehört zur App. Inhalte liegen auf Panel-Weiß bzw. Hintergrund.
- * Was zum Dokument gehört (Gliederung, Verlauf, Formularfläche), steht im Grau der Formularfläche.
+ * Bildsprache: Kartenlayout aus core (docs/design.md „Fläche und Karten“) – Navigation, Gliederung, Verlauf und
+ * Projektdaten stehen als Karten auf der Fläche; das Formularpapier bleibt weiß.
  */
 :root {
-  --nav-bg: #e8ebef;
-  --nav-hover: rgba(0, 0, 0, 0.05);
-  --nav-aktiv: #ffffff;
-  --nav-linie: #d3d7de;
-  --dok-bg: color-mix(in srgb, var(--bg) 70%, #808080 30%);
-  --dok-leiste: color-mix(in srgb, var(--bg) 86%, #808080 14%);
   /*
    * Eigene Farben der App (Statusfarben kommen immer aus base.css: --ok-*, --fehler-*, --warn-*):
    * Bedingungen („nur erforderlich, wenn …“) in Lila, Dateitypen wie die Programme. Kontrast je Schema mind. 4,5:1
@@ -30,12 +23,6 @@
   --fo-markiert: color-mix(in srgb, #ffc400 24%, transparent);
 }
 :root[data-theme='dunkel'] {
-  --nav-bg: #121418;
-  --nav-hover: rgba(255, 255, 255, 0.05);
-  --nav-aktiv: #262a31;
-  --nav-linie: #2a2e35;
-  --dok-bg: #0f1115;
-  --dok-leiste: #181b20;
   --bed-text: #d4a5ee;
   --bed-bg: color-mix(in srgb, #b26ad6 16%, var(--panel));
   --bed-linie: #b67ad8;
@@ -535,7 +522,7 @@ button.icon.active {
 }
 .fo-gl-seite:hover:not(:disabled),
 .fo-gl-abschnitt:hover:not(:disabled) {
-  background: var(--panel);
+  background: var(--hover);
 }
 .fo-gl-titel {
   min-width: 0;
@@ -626,7 +613,7 @@ button.icon.fo-gl-auf {
   color: var(--muted);
 }
 .fo-gl-einheit:hover:not(:disabled) {
-  background: var(--panel);
+  background: var(--hover);
   color: var(--text);
 }
 .fo-gl-status {
@@ -662,7 +649,7 @@ button.icon.fo-gl-auf {
   font-size: 11.5px;
 }
 .fo-gl-feld:hover {
-  background: var(--panel);
+  background: var(--hover);
 }
 .fo-gl-feld input[type='checkbox'] {
   width: auto;
@@ -823,6 +810,9 @@ button.icon.fo-gl-zaehlt.an {
    die Karte (Vorschau Richtung C) */
 .fo-inhalt {
   overflow: auto;
+  /* Luft für Fokussaum und Kartenschatten am Rand der rollenden Spalte, ohne die Spalte zu verschieben */
+  padding: 2px var(--s1);
+  margin: -2px calc(-1 * var(--s1));
 }
 .fo-meldung {
   display: flex;
@@ -925,7 +915,6 @@ button.icon.fo-gl-zaehlt.an {
 }
 .fo-verlauf-frueher h3 {
   margin: 0 0 4px;
-  font-size: var(--fs-s);
 }
 .fo-verlauf-schritt.frueher:hover {
   background: none;
@@ -954,9 +943,10 @@ button.icon.fo-gl-zaehlt.an {
 .fo-feldsuche {
   flex: 1 1 220px;
 }
+/* Seitenüberschrift größer als die Köpfe der Abschnittskarten darunter: die Abschnitte gehören zur Seite */
 .fo-seite-felder > h2 {
   margin: var(--s4) 0 var(--s2);
-  font-size: var(--fs-l);
+  font-size: var(--fs-xl);
 }
 .fo-reihe {
   display: flex;
@@ -1193,6 +1183,9 @@ button.icon.fo-gl-zaehlt.an {
 .pk-editor > .karte-kopf {
   flex-wrap: wrap;
 }
+.pk-editor > .karte-kopf h2 {
+  flex: 1 1 12rem;
+}
 .pk-unterzeile {
   margin: 0 0 var(--s1);
   overflow: hidden;
@@ -1383,7 +1376,7 @@ button.icon.fo-gl-zaehlt.an {
 }
 .pk-vorschau {
   position: sticky;
-  top: 84px;
+  top: var(--s3);
   align-self: start;
   margin-top: 14px;
   padding: 12px 14px;
@@ -3159,13 +3152,6 @@ button.icon.fo-gl-bed.gesetzt {
   row-gap: 2px;
   padding: 1px 6px;
   font-size: 11.5px;
-}
-.fo-pruefliste {
-  margin: 0 0 16px;
-}
-.fo-pruefliste h2 {
-  font-size: var(--fs-l);
-  margin: 8px 0;
 }
 .fo-pruef-zeile {
   padding: 6px 8px;

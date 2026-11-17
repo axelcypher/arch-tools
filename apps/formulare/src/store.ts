@@ -438,10 +438,25 @@ export interface ProjektdatenDatei {
 const strings = (x: unknown) => (Array.isArray(x) ? x.filter((p): p is string => typeof p === 'string') : []);
 const zahlen = (x: unknown) => (Array.isArray(x) ? [...new Set(x.filter((p): p is number => Number.isInteger(p)))] : []);
 
+/**
+ * Bis zum Kartenlayout stand die Breite der Navigation in den Einstellungen (`leisteBreite`); jetzt merkt sie die
+ * Seitenkarte selbst (`BreitenLeiste`, Schlüssel `formulare:breite:navigation`). Einmal übernehmen, solange dort noch
+ * nichts steht – sonst spränge die Navigation nach dem Update auf die Vorgabe zurück.
+ */
+export function navigationsBreiteUebernehmen(alt: unknown) {
+  if (typeof alt !== 'number' || !Number.isFinite(alt)) return;
+  try {
+    if (localStorage.getItem('formulare:breite:navigation') === null) localStorage.setItem('formulare:breite:navigation', String(Math.round(Math.min(600, Math.max(220, alt)))));
+  } catch {
+    // ohne Speicher gilt die Vorgabe
+  }
+}
+
 function ladeEinstellungen(): Gespeichert {
   const o = lesen<Partial<Gespeichert>>(EINSTELLUNGEN, {});
   const auswahl: Record<string, string[]> = {};
   if (o.auswahl && typeof o.auswahl === 'object') for (const [k, v] of Object.entries(o.auswahl)) auswahl[k] = strings(v);
+  navigationsBreiteUebernehmen((o as { leisteBreite?: unknown }).leisteBreite);
   return {
     projektordner: strings(o.projektordner),
     ablageordner: strings(o.ablageordner),

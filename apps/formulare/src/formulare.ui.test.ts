@@ -11,7 +11,8 @@ import { SpeicherDateisystem } from './dateisystem';
 import { cp1252Lesen, cp1252Schreiben } from './forma/cp1252';
 import type { Projektkarte } from './forma/projektkarte';
 import { sperreVermerken } from './eigeneSperren';
-import { kartenVerknuepfbar, mitAenderungen, useFormulare } from './store';
+import { kartenVerknuepfbar, mitAenderungen, navigationsBreiteUebernehmen, useFormulare } from './store';
+import { useEinrichten } from './einrichten';
 import { useAktualisieren } from './aktualisieren';
 import { einstiegsAktionen, farbschemaWechseln } from '@core/ui/rauchtest';
 
@@ -443,6 +444,42 @@ describe('Formulare', () => {
     const rechts = [...flaeche.querySelectorAll<HTMLElement>(':scope > .leiste')].at(-1)!;
     expect(rechts.querySelector('.karte-kopf h2')!.textContent).toBe('Verlauf');
     expect(rechts.querySelector('.leiste-griff-links')).not.toBeNull();
+  });
+
+  it('Verlauf und „Formular einrichten“ merken ihre Breite je für sich (eigene Seitenkarte, eigener Schlüssel)', async () => {
+    localStorage.removeItem('formulare:breite:verlauf');
+    localStorage.removeItem('formulare:breite:einrichten');
+    const host = await oeffneMuster();
+    await imLeistenMenue(host, 'Ansicht', 'Verlauf der Eingaben');
+    const griff = () => [...host.querySelectorAll<HTMLElement>('.flaeche > .leiste')].at(-1)!.querySelector<HTMLElement>(':scope > .leiste-griff')!;
+    expect(griff().getAttribute('aria-label')).toBe('Breite des Verlaufs');
+    // rechte Leiste: ← macht sie breiter, → schmaler
+    taste(griff(), 'ArrowRight');
+    expect(griff().getAttribute('aria-valuenow')).toBe('264');
+    expect(localStorage.getItem('formulare:breite:verlauf')).toBe('264');
+    await act(async () => useEinrichten.getState().setAktiv(true));
+    await warte();
+    expect(griff().getAttribute('aria-label')).toBe('Breite von „Formular einrichten“');
+    expect(griff().getAttribute('aria-valuenow')).toBe('340');
+    expect(griff().getAttribute('aria-valuemin')).toBe('280');
+    expect(localStorage.getItem('formulare:breite:verlauf')).toBe('264');
+    await act(async () => useEinrichten.getState().setAktiv(false));
+    await warte();
+    expect(griff().getAttribute('aria-valuenow')).toBe('264');
+  });
+
+  it('die bisher in den Einstellungen gemerkte Breite der Navigation wird einmal für die Seitenkarte übernommen', () => {
+    localStorage.removeItem('formulare:breite:navigation');
+    navigationsBreiteUebernehmen(410);
+    expect(localStorage.getItem('formulare:breite:navigation')).toBe('410');
+    // steht schon eine Breite der Seitenkarte, bleibt sie; Unsinn wird nicht übernommen
+    navigationsBreiteUebernehmen(250);
+    expect(localStorage.getItem('formulare:breite:navigation')).toBe('410');
+    localStorage.removeItem('formulare:breite:navigation');
+    navigationsBreiteUebernehmen('breit');
+    expect(localStorage.getItem('formulare:breite:navigation')).toBeNull();
+    navigationsBreiteUebernehmen(5000);
+    expect(localStorage.getItem('formulare:breite:navigation')).toBe('600');
   });
 
   it('Enter in einzeiligen Feldern springt zum nächsten Feld', async () => {

@@ -548,7 +548,7 @@ export function App() {
         ) : haupt === 'antrag' && projekt ? (
           <AntragsdatenAnsicht />
         ) : haupt === 'datei' && datei ? (
-          <Karte ariaLabel={datei.name} buendig className="fo-datei-karte">
+          <Karte ariaLabel={datei.name} buendig>
             <DateiAnsicht />
           </Karte>
         ) : offen ? (
@@ -563,10 +563,13 @@ export function App() {
         )}
         {formularSichtbar && (einrichten || verlaufOffen) && (
           <BreitenLeiste
+            // je Karte eine eigene Leiste: die Breite wird beim Anlegen gelesen und unter dem eigenen Schlüssel gemerkt
+            key={einrichten ? 'einrichten' : 'verlauf'}
             seite="rechts"
             schluessel={einrichten ? 'formulare:breite:einrichten' : 'formulare:breite:verlauf'}
             vorgabe={einrichten ? 340 : 280}
-            titel={einrichten ? 'Breite der Einstellungen' : 'Breite des Verlaufs'}
+            min={einrichten ? 280 : 220}
+            titel={einrichten ? 'Breite von „Formular einrichten“' : 'Breite des Verlaufs'}
           >
             {einrichten ? <EinrichtenPanel offen={offen} /> : <VerlaufLeiste offen={offen} />}
           </BreitenLeiste>
