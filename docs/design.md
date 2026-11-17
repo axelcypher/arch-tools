@@ -6,8 +6,8 @@ Review-Agent `review-design`.
 
 > Stand: Grundlagen (Skalen, Fokus, Zielgrößen, Überschriften, Meldungen) und gemeinsame Komponenten (Dialoge,
 > Druckvorschau, Felder, Umschalter), Aufbau der Kopf- und Werkzeugleisten. Gestaltungsrichtung: C „Kachel“ – Farben,
-> App-Farbe, Knopfstufen der Werkzeugleiste und Titelleiste stehen hier; das Kartenlayout und die gemeinsame
-> Zahlentabelle folgen.
+> App-Farbe, Knopfstufen der Werkzeugleiste, Titelleiste und das Kartenlayout („Fläche und Karten“) stehen hier; die
+> Apps stellen nach und nach um (`docs/nachziehen/`).
 
 ## Grundsätze
 
@@ -33,13 +33,13 @@ Werte nicht frei wählen, sondern aus der Skala nehmen.
 | `--s5`   | 24px | große Gliederung (Zielwert für den Dialog-Innenabstand; `.modal` hat heute 18/22px) |
 | `--s6`   | 32px | Leerzustände, Abstand zum Fensterrand bei Seiten                                    |
 
-| Variable  | Wert | Verwendung                                             |
-| --------- | ---- | ------------------------------------------------------ |
-| `--fs-xs` | 11px | Feldbeschriftung, Hinweis unter dem Feld, Tabellenkopf |
-| `--fs-s`  | 12px | Nebentext, kleine Knöpfe, dichte Tabellen              |
-| `--fs-m`  | 13px | Grundschrift, Abschnittsüberschrift (`.sidebar h2`)    |
-| `--fs-l`  | 15px | Dialogtitel, Titel einer Spalte ohne `.sidebar`        |
-| `--fs-xl` | 18px | Seitentitel (Einstieg, Bericht), Kennzahl              |
+| Variable  | Wert | Verwendung                                                 |
+| --------- | ---- | ---------------------------------------------------------- |
+| `--fs-xs` | 11px | Feldbeschriftung, Hinweis unter dem Feld, Tabellenkopf     |
+| `--fs-s`  | 12px | Nebentext, kleine Knöpfe, dichte Tabellen                  |
+| `--fs-m`  | 13px | Grundschrift, Abschnitt in der Karte (`h3`), `.sidebar h2` |
+| `--fs-l`  | 15px | Kartenkopf (`h2`), Dialogtitel                             |
+| `--fs-xl` | 18px | Seitentitel (Einstieg, Bericht), Kennzahl                  |
 
 Weitere: `--radius-s` 6px (Felder, Knöpfe), `--radius` 8px (Dialoge, Karten), `--ctl-h` 30px und `--ctl-h-s` 24px
 (Höhe der Bedienelemente).
@@ -51,9 +51,11 @@ Texttabellen: Spaltenköpfe linksbündig (`.summary-table.text`, z. B. Platzhalt
 
 ## Überschriften
 
-- **Seitenleiste und Spalten:** `h2` in Satzschreibung, `--fs-m`, halbfett, Farbe `--text`. Keine Versalien – sie lesen
-  sich langsamer, besonders bei langen Titeln.
-- **Unterabschnitt:** `h3`, `--fs-s`, halbfett.
+- **Karte (Richtung C):** Der Kartenkopf ist die oberste Stufe – `h2` in `--fs-l`, halbfett (`Karte`, siehe „Fläche und
+  Karten“). Abschnitte in der Karte `h3` in `--fs-m`, Unterabschnitte `h4` in `--fs-s`, beide halbfett.
+- **Seitenleiste und Spalten (alte Muster, bis die App auf Karten umstellt):** `h2` in Satzschreibung, `--fs-m`,
+  halbfett, Farbe `--text`; Unterabschnitt `h3`, `--fs-s`, halbfett.
+- Keine Versalien – sie lesen sich langsamer, besonders bei langen Titeln.
 - Überschriften nicht über die Browser-Vorgabe laufen lassen (ein `h2` ohne Regel wird 22px groß). Wer Spalten ohne
   `.sidebar` baut, setzt die Größe aus der Skala.
 
@@ -450,9 +452,10 @@ Zurücksetzen, Sonderfunktionen. Feste Namen, in allen Apps gleich:
 - Verb: Für Einträge einer Liste (Positionen, Punkte, Firmen, Merkmale) „hinzufügen“, nicht „neu“ oder „einfügen“.
   Eigenständige Gegenstände wie Projekt, Formular, Ordner oder Datei bleiben bei „Neu“ bzw. „anlegen“ (siehe
   „Begriffe“), ebenfalls mit Symbol `plus` („Neues Projekt anlegen …“).
-- Leiste heißt in diesem Abschnitt nur: `.toolbar` und die Kopfzeile eines Abschnitts (`.section-head`) – auch wenn
-  der Hinzufügen-Knopf dort der Hauptknopf (`.primary`) ist. Dort knapp nur der Gegenstand mit `title` der vollen
-  Aktion, z. B. „Mangel“ mit `title` „Mangel hinzufügen“. App-eigene Kopfzeilen gelten nur als Leiste,
+- Leiste heißt in diesem Abschnitt nur: `.toolbar` und die Kopfzeile eines Abschnitts (`.section-head`) – in einer
+  `.section-head` auch dann, wenn der Hinzufügen-Knopf dort der Hauptknopf (`.primary`) ist; in der Werkzeugleiste ist
+  er ein Standardknopf (siehe „Knopfstufen“). Dort knapp nur der Gegenstand mit `title` der vollen Aktion, z. B.
+  „Mangel“ mit `title` „Mangel hinzufügen“. App-eigene Kopfzeilen gelten nur als Leiste,
   wenn sie `.toolbar` bzw. `.section-head` tragen.
 - Keine Leisten sind `.button-row`, `.dialog-buttons`, Seitenleisten und Tabellenzeilen – dort fehlt der Zusammenhang
   einer Werkzeugleiste, der den knappen Text erklärt: dort gleich mit Verb („Beteiligten hinzufügen“).
@@ -470,11 +473,45 @@ Zurücksetzen, Sonderfunktionen. Feste Namen, in allen Apps gleich:
 - Symbolknöpfe ohne Text (in Zeilen wie in Leisten) brauchen `aria-label` und `title` mit Gegenstand („Position
   einrücken“).
 
+## Fläche und Karten
+
+Das Layout aller Apps (Richtung C): Unter der Werkzeugleiste liegt eine ruhige **Fläche** (`--bg`); Seitenleisten,
+Hauptbereich und Zeichenfläche stehen darauf als **Karten** mit weichem Schatten und 8 px Spalt (`--spalt`). Die
+Werkzeugleiste liegt mit auf der Fläche (gleicher Grund, keine Linie). Bausteine in `ui/Karte.tsx`:
+
+- `Flaeche` (`.flaeche`): Karten nebeneinander mit Spalt und Innenabstand `--spalt`; sie scrollt nie.
+- `Karte` (`.karte`): Kopf (`.karte-kopf`, Überschrift `h2` in `--fs-l`, rechts `aktionen` wie „?“ oder „Hinzufügen“),
+  darunter der Inhalt (`.karte-rumpf`), der **in der Karte** scrollt, wahlweise eine feste Fußzeile (`fuss`, Summen).
+  Mit Titel ist die Karte ein benannter Bereich (`aria-labelledby` auf das `h2`); ohne sichtbaren Titel braucht sie
+  `ariaLabel`. `buendig` lässt Tabellen und Listen bis an den Rand laufen; Fokusrahmen liegen dort innen. Breite
+  Tabellen scrollen mit dem Inhalt der Karte, sie laufen nie aus ihr heraus. Innenabstand waagerecht `--karte-pad`
+  (14px, aus der gewählten Vorschau), Kopfhöhe `--karte-kopf-h` (ein Knopf in `--ctl-h` mit `--s2` darüber und
+  darunter), Fußzeile in `--ctl-h`.
+- `FlaechenSpalte` (`.flaechen-spalte`): mehrere Karten untereinander (z. B. „Geschoss“ über „Auswertung“), sie
+  teilen sich die Höhe; `wachsend` lässt die Spalte die Restbreite nehmen.
+- `ZeichenKarte` (`.zeichen-karte`): Die Zeichenfläche füllt die Karte und bleibt hell (`.canvas`); Bedienhinweis,
+  Koordinaten und Maßstab stehen in der Fußzeile der Karte (`fuss`), nicht über dem Plan. Kopf wie bei `Karte`
+  (`titel`, `aktionen`), meist ohne – die Werkzeuge stehen in der Werkzeugleiste.
+- Seitenkarten mit ziehbarer Breite: `BreitenLeiste` mit einer `Karte` (oder `FlaechenSpalte`) als Kind; auf der
+  Fläche liegt der Griff im Spalt (Linie beim Überfahren in voller Akzentfarbe, weil der Spalt sonst keinen Rand
+  zeigt), und Innenabstand und Spalt zählen bei der Höchstbreite mit.
+- **Schmale Fenster:** Die Fläche scrollt nie. Die Mitte (eine `Karte` direkt auf der Fläche oder eine wachsende Spalte)
+  behält `--karte-mitte-min` (280px), die Seitenkarten geben bis zu ihrer Mindestbreite (`--leiste-min`, 180px) nach;
+  die gemerkte Breite bleibt und gilt wieder, sobald Platz ist. Das gilt auch für eine Seitenspalte (`FlaechenSpalte`
+  ohne `wachsend`). Unter der Summe der Mindestbreiten (zwei Seitenkarten und Mitte, rund 670px) wird abgeschnitten –
+  für Desktop-Fenster vertretbar.
+
+Die alten Muster (`.workspace`, `.sidebar`, eigene Spalten-Layouts der Apps) laufen weiter, bis eine App umgestellt
+ist (`docs/nachziehen/`). Eigene Layout-CSS und feste Farben der Apps entfallen mit der Umstellung. Ausgenommen ist die
+Rahmen-App Arkly: Sie hat keine Arbeitsfläche, sondern Tableiste und Startseite; ihre Seiten zeigen die Apps, die selbst
+auf Karten stehen.
+
 ## Seitenleisten
 
 `BreitenLeiste` (`ui/Leiste.tsx`) mit gemerkter, ziehbarer Breite. Der Griff sitzt am Rand zur Arbeitsfläche: links
 stehende Leiste (Vorgabe) rechts, rechts stehende Leiste mit `seite="rechts"` links. Tastatur ←/→ bewegen den Griff,
-Doppelklick setzt die Vorgabe. Keine eigenen Leisten-Komponenten je App.
+Doppelklick setzt die Vorgabe. Keine eigenen Leisten-Komponenten je App. Auf einer `Flaeche` ist die Leiste eine
+Seitenkarte (siehe „Fläche und Karten“).
 
 ## Meldungen im Inhalt
 

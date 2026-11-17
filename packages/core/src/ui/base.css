@@ -20,6 +20,16 @@
   --radius: 8px;
   --ctl-h: 30px;
   --ctl-h-s: 24px;
+  /* Fläche und Karten (Karte.tsx): Spalt zwischen den Karten, Schatten der Karte */
+  --spalt: 8px;
+  --karte-schatten: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 6px rgba(16, 24, 40, 0.05);
+  /* Innenabstand der Karte waagerecht und Höhe des Kartenkopfs (aus der gewählten Vorschau: etwas mehr Luft als --s3,
+     damit der Text nicht an der gerundeten Ecke klebt; der Kopf fasst einen Knopf in --ctl-h mit --s2 darüber und darunter) */
+  --karte-pad: 14px;
+  --karte-kopf-h: calc(var(--ctl-h) + 2 * var(--s2));
+  /* schmale Fenster: Mindestbreite der Seitenkarten und der Mitte */
+  --leiste-min: 180px;
+  --karte-mitte-min: 280px;
   --bg: #f3f4f6;
   --panel: #ffffff;
   --border: #d8dbe0;
@@ -132,7 +142,7 @@ body,
 }
 ::-webkit-scrollbar-thumb {
   background: var(--scroll-thumb);
-  border-radius: 6px;
+  border-radius: var(--radius);
   border: 2px solid transparent;
   background-clip: padding-box;
   min-height: 28px;
@@ -187,6 +197,142 @@ body,
     scrollbar-width: thin;
     scrollbar-color: var(--scroll-thumb) var(--scroll-track);
   }
+}
+
+/* ---------- Fläche und Karten (Karte.tsx, docs/design.md „Fläche und Karten“) ----------
+   Unter der Werkzeugleiste eine ruhige Fläche; darauf Seitenleisten, Hauptbereich und Zeichenfläche als Karten mit
+   Spalt. Jede Karte scrollt für sich, die Fläche nie. Die alten Muster (.workspace, .sidebar, eigene Spalten der Apps)
+   laufen unverändert weiter, bis die App umgestellt ist. */
+.flaeche {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  gap: var(--spalt);
+  padding: var(--spalt);
+  background: var(--bg);
+  overflow: hidden;
+}
+.flaechen-spalte {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spalt);
+  min-width: 0;
+  min-height: 0;
+}
+.flaechen-spalte.wachsend {
+  flex: 1;
+}
+/* steht die Werkzeugleiste über einer Fläche, liegt sie mit auf ihr: gleicher Grund, keine Linie */
+.app:has(.flaeche:not(.modal *)) > .toolbar {
+  background: var(--bg);
+  border-bottom-color: transparent;
+}
+.karte {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  background: var(--panel);
+  border-radius: var(--radius);
+  box-shadow: var(--karte-schatten);
+  overflow: hidden;
+}
+/* Seitenkarten in einer Leiste nehmen deren Breite; in einer Spalte teilen sich die Karten die Höhe */
+.leiste > .karte {
+  flex: 1;
+}
+/* schmale Fenster: die Mitte behält --karte-mitte-min, die Seitenkarten geben bis zu ihrer Mindestbreite nach (die
+   gemerkte Breite bleibt) – so bleibt jede Karte erreichbar, die Fläche scrollt trotzdem nie */
+.flaeche > .leiste,
+.flaeche > .flaechen-spalte:not(.wachsend) {
+  flex-shrink: 1;
+  min-width: var(--leiste-min);
+}
+.flaeche > .karte,
+.flaeche > .flaechen-spalte.wachsend {
+  min-width: var(--karte-mitte-min);
+}
+.karte-kopf {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  min-height: var(--karte-kopf-h);
+  padding: var(--s2) var(--karte-pad);
+  border-bottom: 1px solid var(--line-soft);
+}
+.karte-kopf h2 {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: var(--fs-l);
+  font-weight: 600;
+}
+.karte-aktionen {
+  display: flex;
+  align-items: center;
+  gap: var(--s1);
+  margin-left: auto;
+}
+.karte-rumpf {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: var(--s3) var(--karte-pad) var(--karte-pad);
+}
+/* Gliederung in der Karte: der Kartenkopf ist die oberste Stufe (h2), Abschnitte h3, Unterabschnitte h4 */
+.karte-rumpf h3 {
+  font-size: var(--fs-m);
+  font-weight: 600;
+  margin: var(--s4) 0 var(--s2);
+}
+.karte-rumpf > h3:first-child {
+  margin-top: 0;
+}
+.karte-rumpf h4 {
+  font-size: var(--fs-s);
+  font-weight: 600;
+  margin: var(--s3) 0 var(--s1);
+}
+.karte-rumpf.buendig {
+  padding: 0;
+}
+/* bündig: der Rumpf schneidet überstehende Fokusrahmen ab – Rahmen nach innen (wie in Leisten mit overflow: hidden) */
+.karte-rumpf.buendig :focus-visible {
+  outline-offset: -2px;
+}
+.karte-fuss {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  min-height: var(--ctl-h);
+  padding: 0 var(--karte-pad);
+  border-top: 1px solid var(--line-soft);
+  color: var(--muted);
+  font-size: var(--fs-s);
+}
+.zeichen-flaeche {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+/* Ziehgriff der Leiste im Spalt: Greiffläche über den ganzen Spalt, Linie (Überfahren, Fokus) in seiner Mitte */
+.flaeche > .leiste > .leiste-griff {
+  right: calc(-1 * var(--spalt) - 1px);
+}
+.flaeche > .leiste > .leiste-griff-links {
+  right: auto;
+  left: calc(-1 * var(--spalt) - 1px);
+}
+.flaeche > .leiste > .leiste-griff:hover {
+  background: linear-gradient(to right, transparent 3px, var(--accent) 3px, var(--accent) 7px, transparent 7px);
+}
+.flaeche > .leiste > .leiste-griff:focus-visible {
+  background: linear-gradient(to right, transparent 3px, var(--fokus) 3px, var(--fokus) 7px, transparent 7px);
 }
 
 /* ---------- Toolbar ---------- */
@@ -736,7 +882,7 @@ textarea:focus {
   --modal-pad-x: 22px;
   background: var(--panel);
   padding: var(--modal-pad-y) var(--modal-pad-x);
-  border-radius: 6px;
+  border-radius: var(--radius);
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
   width: 380px;
   max-height: 90vh;
@@ -956,7 +1102,7 @@ code {
   max-width: 1100px;
   margin: 0 auto;
   padding: var(--report-pad-y, 28px) var(--report-pad-x, 36px);
-  border-radius: 6px;
+  border-radius: var(--radius);
   position: relative;
 }
 
@@ -973,7 +1119,7 @@ code {
   padding: var(--s2) var(--report-pad-x, 36px);
   background: var(--panel);
   border-bottom: 1px solid var(--border);
-  border-radius: 6px 6px 0 0;
+  border-radius: var(--radius) var(--radius) 0 0;
 }
 
 .report-actions :where(input, select) {
@@ -1196,7 +1342,7 @@ code {
 }
 .gaube {
   border: 1px solid var(--border, #d8dbe0);
-  border-radius: 6px;
+  border-radius: var(--radius);
   padding: 8px;
   margin-bottom: 8px;
 }
@@ -1277,6 +1423,8 @@ code {
   --on-accent: #10131a;
   --accent-text: #a9bde0;
   --ausgabe-hover: #ffc861;
+  /* dunkel trägt der Schatten kaum: feiner heller Saum hält die Karte von der Fläche ab */
+  --karte-schatten: 0 1px 2px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05);
   --ausgabe-rand: #fcba43;
   --overlay-bg: rgba(31, 34, 40, 0.92);
   --code-bg: rgba(255, 255, 255, 0.08);
@@ -1598,7 +1746,7 @@ code {
   padding: 6px;
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
   display: flex;
   flex-direction: column;
@@ -1775,7 +1923,7 @@ code {
   padding: 24px;
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius);
 }
 
 .crash pre {
@@ -1798,7 +1946,7 @@ code {
   background: var(--warn-bg);
   color: var(--warn-text);
   border: 1px solid var(--warn-border);
-  border-radius: 6px;
+  border-radius: var(--radius);
 }
 
 .unterbau-liste {
