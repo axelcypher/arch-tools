@@ -200,6 +200,11 @@ describe('Fläche und Karten', () => {
     expect(host.querySelector('.flaechen-spalte')!.className).toBe('flaechen-spalte wachsend rollend');
     const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'base.css'), 'utf8');
     expect(css).toMatch(/\.flaechen-spalte\.rollend \{[^}]*overflow-y: auto;[^}]*box-sizing: content-box;[^}]*padding: var\(--s1\);/);
+    // unten bündig mit den Seitenkarten (kein negativer Rand unten)
+    expect(css).toMatch(/\.flaechen-spalte\.rollend \{[^}]*margin: calc\(-1 \* var\(--s1\)\) calc\(-1 \* var\(--s1\)\) 0;/);
+    // fester Kopf deckt den Innenabstand ab: um --s1 nach oben versetzt und mit Grund der Fläche
+    expect(css).toMatch(/\.flaechen-spalte\.rollend > \.rollend-kopf \{[^}]*position: sticky;[^}]*top: calc\(-1 \* var\(--s1\)\);[^}]*background: var\(--bg\);/);
+    expect(css).toMatch(/\.flaechen-spalte\.rollend:has\(> \.rollend-kopf\) \{\s*scroll-padding-top: var\(--rollend-kopf-h, calc\(var\(--ctl-h\) \+ var\(--s2\)\)\);/);
     // auch Inhaltskarten und die Mindesthöhe der teilenden Karte gelten in der rollenden Spalte nicht
     expect(css).toMatch(
       /\.flaechen-spalte\.rollend > \.karte,\s*\.flaechen-spalte\.rollend > \.karte\.karte-inhalt,\s*\.flaechen-spalte\.rollend:has\(> \.karte-inhalt\) > \.karte:not\(\.karte-inhalt\) \{[^}]*flex: none;[^}]*min-height: 0;[^}]*max-height: none;/,

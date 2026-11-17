@@ -574,6 +574,14 @@ Werkzeugleiste liegt mit auf der Fläche (gleicher Grund, keine Linie). Baustein
   Ansicht liefert (z. B. der Titel des Formulars als erste Karte mit normaler Ebene oder ein Kopf über der Spalte). Im
   Rumpf dieser Karten `h4`/`h5`; `abschnitte` (mit `h2`) und `hoehe` passen nicht dazu – `hoehe` wirkt in der rollenden
   Spalte nicht.
+  - **Fester Kopf** (`.rollend-kopf`, erstes Kind der Spalte): Suche und Filter über den Karten bleiben beim Rollen
+    oben. Der Kopf deckt den Innenabstand der Spalte mit dem Grund der Fläche ab, sonst liefe der Inhalt durch einen
+    Streifen darüber. Was den Fokus bekommt, rollt nicht unter ihn (`scroll-padding-top`, Vorgabe eine Zeile
+    Bedienelemente; ein höherer Kopf setzt `--rollend-kopf-h`).
+  - **Ränder:** Oben und seitlich reicht die Spalte um `--s1` in den Spalt, damit die Karten mit den Nachbarkarten
+    fluchten; unten endet sie bündig mit ihnen. Die Rollleiste hat ihren Platz von Anfang an (`scrollbar-gutter`), die
+    Breite springt also nicht, und sie liegt im Spalt zur Nachbarkarte rechts. Dieser Spalt ist deshalb um die Breite
+    der Rollleiste breiter als `--spalt` – gewollt, denn die Breite der Rollleiste hängt vom System ab.
 - `ZeichenKarte` (`.zeichen-karte`): Die Zeichenfläche füllt die Karte und bleibt hell (`.canvas`); Bedienhinweis,
   Koordinaten und Maßstab stehen in der Fußzeile der Karte, nicht über dem Plan: aus `fuss` oder, wenn sie tief in der
   Zeichenkomponente entstehen, über `ZeichenFussInhalt` (Portal in die Fußzeile der umgebenden Karte). Ohne Inhalt

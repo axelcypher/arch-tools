@@ -1,0 +1,34 @@
+{
+  "flaechenrechner": {
+    "stufe": "patch",
+    "notiz": "Gemeinsame Gestaltung aktualisiert, ohne sichtbare Änderung."
+  },
+  "ava": {
+    "stufe": "patch",
+    "notiz": "Gemeinsame Gestaltung aktualisiert, ohne sichtbare Änderung."
+  },
+  "grz": {
+    "stufe": "patch",
+    "notiz": "Gemeinsame Gestaltung aktualisiert, ohne sichtbare Änderung."
+  },
+  "kosten": {
+    "stufe": "patch",
+    "notiz": "Gemeinsame Gestaltung aktualisiert, ohne sichtbare Änderung."
+  },
+  "ordner": {
+    "stufe": "patch",
+    "notiz": "Gemeinsame Gestaltung aktualisiert, ohne sichtbare Änderung."
+  },
+  "entzerrung": {
+    "stufe": "patch",
+    "notiz": "Gemeinsame Gestaltung aktualisiert, ohne sichtbare Änderung."
+  },
+  "formulare": {
+    "stufe": "patch",
+    "notiz": "Die Felderansicht endet beim Rollen unten bündig mit den Nachbarkarten."
+  },
+  "baurecht": {
+    "stufe": "patch",
+    "notiz": "Gemeinsame Gestaltung aktualisiert, ohne sichtbare Änderung."
+  }
+}

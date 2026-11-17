@@ -235,10 +235,28 @@ body,
   overflow-y: auto;
   /* der Innenabstand kommt zur Breite hinzu: die gesetzte Breite bleibt die Breite der Karten */
   box-sizing: content-box;
-  /* Platz für die Rollleiste von Anfang an: die Breite springt nicht, wenn sie erscheint */
+  /* Platz für die Rollleiste von Anfang an: die Breite springt nicht, wenn sie erscheint. Sie liegt im Spalt zur
+     Nachbarkarte rechts, der dadurch um ihre Breite wächst (die Breite der Rollleiste kennt das CSS nicht) */
   scrollbar-gutter: stable;
   padding: var(--s1);
-  margin: calc(-1 * var(--s1));
+  /* oben und seitlich in den Spalt hinein (die Karten fluchten mit den Nachbarn), unten nicht: die Spalte endet
+     bündig mit den Seitenkarten, der Innenabstand unten bleibt als Luft unter der letzten Karte */
+  margin: calc(-1 * var(--s1)) calc(-1 * var(--s1)) 0;
+}
+/* fester Kopf über den Karten (Suche, Filter): erstes Kind der Spalte, bleibt beim Rollen oben und deckt auch den
+   Innenabstand der Spalte ab – sonst liefe der Inhalt durch einen Streifen darüber und daneben */
+.flaechen-spalte.rollend > .rollend-kopf {
+  position: sticky;
+  top: calc(-1 * var(--s1));
+  z-index: 1;
+  margin: calc(-1 * var(--s1)) calc(-1 * var(--s1)) 0;
+  padding: var(--s1) var(--s1) var(--s2);
+  background: var(--bg);
+}
+/* was den Fokus bekommt, rollt nicht unter den festen Kopf (Vorgabe: eine Zeile Bedienelemente; ein höherer Kopf setzt
+   --rollend-kopf-h) */
+.flaechen-spalte.rollend:has(> .rollend-kopf) {
+  scroll-padding-top: var(--rollend-kopf-h, calc(var(--ctl-h) + var(--s2)));
 }
 .flaechen-spalte.rollend > .karte,
 .flaechen-spalte.rollend > .karte.karte-inhalt,
