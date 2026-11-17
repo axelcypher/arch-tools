@@ -1149,7 +1149,8 @@ textarea:focus {
    Platz für den Fokusrahmen; ein mehrzeiliger Kopf setzt --tabelle-kopf-h) */
 /* auch, wenn die Tabelle in einer Hülle steht (Tastaturbereich, Abschnitt, Raster neben einer Vorschau) – die Hülle darf
    dann nicht selbst rollen, sonst klebt der Kopf an ihr; nur der Rumpf der Karte, in der die Tabelle steht, nicht der
-   einer äußeren Karte */
+   einer äußeren Karte (hat die äußere Karte zugleich eine eigene feste Tabelle, fehlt ihr der Abstand – in den Apps
+   kommt das nicht vor und ist hinnehmbar) */
 .karte-rumpf:has(.summary-table.fest):not(:has(.karte .summary-table.fest)) {
   scroll-padding-top: var(--tabelle-kopf-h, calc(1lh + 4px + var(--s1)));
 }

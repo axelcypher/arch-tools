@@ -87,11 +87,13 @@ Lange Datentabellen (LV, Rechnungen, Mängel) und ihre Bausteine; die ganze Zahl
   unterscheiden), leiser als die Akzentlinie der gewählten Zeile; Gruppen-, Summen- und gewählte Zeilen bleiben, wie sie
   sind; Leer- und Hinweiszeilen („Keine Mails.“) bekommen `tr.leer` und sind nicht wählbar (oder stehen im `tfoot`). Die
   Zeilen sind per Tastatur wählbar (Knopf in der Zeile oder `tabindex` mit Enter/Leertaste, Zustand über
-  `aria-selected`); der Fokusrahmen einer fokussierbaren Zeile liegt innen, sonst schnitte ihn der Kartenrand ab (siehe auch „Fokus und Tastatur“).
+  `aria-selected`); der Fokusrahmen einer fokussierbaren Zeile liegt innen, sonst schnitte ihn der Kartenrand ab
+  (siehe auch „Fokus und Tastatur“).
 - `.felder`: Kästchen und Optionsfelder lösen den Ausgleich nicht aus und behalten ihre Breite; kleine und Symbolknöpfe
   (× zum Entfernen) stehen mittig zur Feldhöhe.
 - `input.zelle` (Feld in der Zelle, z. B. Menge und Einheitspreis im LV): randlos, so hoch wie eine Textzeile und so
-  breit wie ein Betrag (7,5em, nie breiter als die Zelle), fluchtet also ohne Ausgleich; Rahmen beim Überfahren, beim
+  breit wie ein Betrag (7,5em; die Spalte hält diese Breite, ein bündiger Rumpf rollt dann waagerecht), fluchtet also
+  ohne Ausgleich; Rahmen beim Überfahren, beim
   Fokus Rand in `--accent` und Saum wie bei allen Feldern; ein Fehler (`feld-fehler`, `aria-invalid`) zeigt den roten
   Rand auch ohne Fokus. Der Spaltenkopf sagt, dass die Werte bearbeitbar sind (z. B. „Menge“ über Eingaben) – ohne Maus
   sieht man es dem Feld sonst nicht an.
