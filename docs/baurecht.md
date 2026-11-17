@@ -62,9 +62,9 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   „Speichern, diese als Entwurf behalten“ lässt sie Entwurf. Ein Wert außerhalb der Liste lässt sich nicht für den Ort
   bestätigen – er zählt ohnehin nicht. Angaben von Hand aus älteren Dateien werden wie bei der Eingabe geprüft: negative
   Werte und halbe Anzahlen sind nur Hinweis, Angaben zur Lage ohne Lagebezug ebenso („Für diese Lage übernehmen“).
-- **Filterleiste:** Ampelzähler (blenden ein/aus; Häkchen, Statuspunkt, Zahl und Wort im Umschalter), Balken, Ordnung
-  (offen zuerst, nach Ebene, nach Thema), Suche und die Kästchen „nur von Hand festgelegte“ / „nur
-  geänderte/überholte“. Ist die mittlere Spalte schmaler als 640 px, wird die Ordnung zur Auswahlliste, die Kästchen
+- **Ergebnis (Karte über den Vorschriften):** Ampelzähler (blenden ein/aus; Häkchen, Statuspunkt, Zahl und Wort im
+  Umschalter), Balken, Ordnung (offen zuerst, nach Ebene, nach Thema), Suche und die Kästchen „nur von Hand festgelegte“
+  / „nur geänderte/überholte“, darunter die Trefferzahl. Ist die Mitte schmaler als 640 px, wird die Ordnung zur Auswahlliste, die Kästchen
   wandern in **Filter** und der Balken entfällt. Die Zähler an den Normen zählen die sichtbaren Zeilen („11 prüfen von
   14“). Beim Wechsel der Ordnung bleibt der gewählte Paragraf im Blick.
 - **Rückfrage zum Antragsmerkmal:** Bei „Beseitigung“ steht der **Umfang der Beseitigung** (vollständiger Abbruch ohne
@@ -161,12 +161,12 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   Sätzen steht bei der Anzeige nach „§“, „Abs.“, „Nr.“ ein geschütztes Leerzeichen.
 - **Vorschriften (Mitte):** **offen zuerst** (Vorgabe: prüfen, gilt, entfällt), nach Ebene oder nach Thema; je Norm
   Fassung und Zähler in Worten, darunter die Paragrafen mit Ampel und Hauptgrund (die Angaben, die das Ergebnis tragen).
-  Oben das Ergebnis je Ampel (zugleich Ein-/Ausblenden), Suche und Filter „nur von Hand festgelegte“ bzw. „nur
-  geänderte/überholte“, mit Trefferzahl. Marken: „von Hand“ bzw. „von Hand · Entwurf“, „überholt“, „nicht wirksam“,
+  Darüber steht die Karte „Ergebnis“ (siehe oben). Marken: „von Hand“ bzw. „von Hand · Entwurf“, „überholt“, „nicht wirksam“,
   „Text geändert“, „eigene Verantwortung“ (prüft die Bauaufsicht nicht). Hängt eine Regel an einem anderen Paragrafen,
   der selbst offen ist, heißt es „hängt an § … – dort offen“; in den Einzelheiten steht das unter „Hängt an“ (getrennt
-  von den fehlenden Angaben). Ist die Spalte schmaler als 900 px, steht der Grund unter dem Titel.
-- **Einzelheiten (rechts):** Ampel, Begründung in Worten, Hinweise (Ausnahmen, Einzelfall, Vorrang des Ortsrechts,
+  von den fehlenden Angaben). Ist die Mitte schmaler als 900 px, steht der Grund unter dem Titel.
+- **Einzelheiten (rechts):** im Kartenkopf § und Norm, der Name des Paragrafen und die Ampel (als Wort und als Linie
+  oben am Kopf), darunter Begründung in Worten, Hinweise (Ausnahmen, Einzelfall, Vorrang des Ortsrechts,
   Annahmen des Büros), fehlende und unsichere Angaben (Klick springt hin), ob die Bauaufsicht das im Verfahren prüft,
   womit es nachgewiesen wird, Stand der Regel, aufklappbar die **Regel im Einzelnen** (eingerückt, je Bedingung ✓ trifft
   zu, ✗ trifft nicht zu, ? offen, mit dem aktuellen Wert; entschiedene Unterzweige zugeklappt; „keines davon“ für
@@ -176,10 +176,13 @@ Die Ampel steht nie nur als Farbe da, immer auch als Wort.
   BauGB – Einvernehmen …“); Folgezeilen hängend eingerückt; ✓/✗ neutral eingefärbt, nicht in Ampelfarben), und der
   **Gesetzestext** mit den Absätzen der Fundstellen hervorgehoben (mit Legende); nach einer Änderung **alt/neu**
   untereinander mit gestrichenen bzw. unterstrichenen Wörtern – verglichen mit der Fassung, an der die Regel geprüft
-  ist. Die Spalte lässt sich am linken Rand in der Breite ziehen (auch mit ←/→, Pos1/Ende). Beide Leisten schrumpfen bei
-  schmalen Fenstern, die Mitte behält mindestens 420 px; Ziehen und Tastatur gehen nie über den verfügbaren Platz
-  hinaus. Unter 1000 CSS-px (Web-Version, Browser-Zoom; der Desktop hat eine Mindestbreite) behält die Arbeitsfläche
-  1000 px und die Seite scrollt waagerecht – keine Spalte wird abgeschnitten.
+  ist. „Von Hand festlegen …“ bzw. „Festlegung ändern …“ und „Festlegung aufheben“ stehen fest im Fuß der Karte.
+- **Fläche und Karten** (docs/design.md „Fläche und Karten“): Unter der Werkzeugleiste liegt die Fläche mit vier Karten –
+  links „Angaben“, in der Mitte „Ergebnis“ über „Vorschriften“, rechts „Einzelheiten“. Jede Karte hat einen Kopf mit
+  Überschrift und scrollt für sich, die Fläche nie; in den Angaben bleibt das Suchfeld oben stehen. Die Seitenkarten
+  lassen sich am Spalt in der Breite ziehen (auch mit ←/→, Pos1/Ende) und geben in schmalen Fenstern bis zu ihrer
+  Mindestbreite nach, die Mitte behält ihre Mindestbreite; Ziehen und Tastatur gehen nie über den verfügbaren Platz
+  hinaus. Der Hinweis der Web-Version steht auf der Fläche über den Karten.
 
 ## Vorfragen
 
@@ -363,11 +366,12 @@ Personendaten.
 
 ## Bedienung mit der Tastatur
 
-Die ersten Tabstopps sind die Sprungmarken „Zu den Angaben / Vorschriften / Einzelheiten“ (sichtbar, sobald sie den
-Fokus haben), danach die Titelleiste. Die Vorschriftenliste ist ein Tabstopp: ↑/↓, Pos1/Ende wählen den Paragrafen.
+Die ersten Tabstopps sind die Sprungmarken „Zu den Angaben“, „Zum Ergebnis“, „Zu den Vorschriften“ und „Zu den
+Einzelheiten“ (sichtbar, sobald sie den Fokus haben), danach die Titelleiste. Die Vorschriftenliste ist ein Tabstopp:
+↑/↓, Pos1/Ende wählen den Paragrafen.
 Auswahlgruppen (ja/nein, Merkmale) bedienen sich mit ←/→ bzw. ↑/↓ (mit Umlauf), Pos1/Ende. F6 (Umschalt+F6) springt
-zwischen Kopf, Angaben, Vorschriften und Einzelheiten; ist kein Paragraf gewählt, bekommen die Einzelheiten selbst den
-Fokus (der Bereich wird angesagt, F6 geht weiter). Menüs (Mehr, Filter, Farbschema) nehmen beim Öffnen den Fokus,
+zwischen Kopf und den Karten Angaben, Ergebnis, Vorschriften und Einzelheiten; in den Einzelheiten landet der Fokus auf
+der Überschrift im Kartenkopf, auch wenn kein Paragraf gewählt ist (F6 geht weiter). Menüs (Mehr, Filter, Farbschema) nehmen beim Öffnen den Fokus,
 bedienen sich mit ↑/↓ und Pos1/Ende, schließen mit Esc (Fokus zurück an ihren Knopf) und schließen, sobald der Fokus sie
 mit Tab verlässt; ihre Einträge sind keine eigenen Tabstopps; ein zweiter Klick auf den Öffner schließt das Menü. Die
 Suche in den Vorschriften findet Zitate genau (Norm nach Kurzform): „§ 6 BauO NRW“, „§ 62 Abs. 1 Satz 1 Nr. 1a BauO

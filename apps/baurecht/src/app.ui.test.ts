@@ -470,18 +470,42 @@ describe('Baurecht – Oberfläche', () => {
     expect(document.activeElement).toBe(knoepfe[0]);
   });
 
-  it('F6 ohne gewählten Paragrafen: die Einzelheiten bekommen selbst den Fokus, nichts hängt', () => {
+  it('Kartenlayout: Angaben, Ergebnis, Vorschriften und Einzelheiten als benannte Karten auf der Fläche; F6 und Sprungmarken erreichen jede', () => {
+    const host = render();
+    const flaeche = host.querySelector('.flaeche')!;
+    expect(flaeche).toBeTruthy();
+    // jede Karte ist ein Bereich, benannt über die Überschrift im Kartenkopf (h2)
+    const titel = [...flaeche.querySelectorAll<HTMLElement>('section.karte')].map((k) => document.getElementById(k.getAttribute('aria-labelledby') ?? '')?.textContent);
+    expect(titel.slice(0, 3)).toEqual(['Angaben', 'Ergebnis', 'Vorschriften']);
+    expect(host.querySelector('.br-detail')!.matches('section.karte')).toBe(true);
+    // die Mitte ist der Hauptbereich der App
+    expect(host.querySelector('main')!.contains(host.querySelector('.br-ergebnis'))).toBe(true);
+    expect(host.querySelector('main')!.contains(host.querySelector('.br-vorschriften-karte'))).toBe(true);
+    // F6 läuft durch Werkzeugleiste und alle Karten
+    const f6 = () => act(() => void window.dispatchEvent(new KeyboardEvent('keydown', { key: 'F6', bubbles: true })));
+    const stationen: string[] = [];
+    for (let i = 0; i < 5; i++) {
+      f6();
+      stationen.push(['.br-kopf', '.br-angaben', '.br-ergebnis', '.br-vorschriften-karte', '.br-detail'].find((sel) => host.querySelector(sel)!.contains(document.activeElement)) ?? '');
+    }
+    expect(stationen).toEqual(['.br-kopf', '.br-angaben', '.br-ergebnis', '.br-vorschriften-karte', '.br-detail']);
+    expect([...host.querySelectorAll('.br-sprung button')].map((b) => b.textContent)).toEqual(['Zu den Angaben', 'Zum Ergebnis', 'Zu den Vorschriften', 'Zu den Einzelheiten']);
+    act(() => [...host.querySelectorAll<HTMLButtonElement>('.br-sprung button')].find((b) => b.textContent === 'Zum Ergebnis')!.click());
+    expect(host.querySelector('.br-ergebnis')!.contains(document.activeElement)).toBe(true);
+  });
+
+  it('F6 ohne gewählten Paragrafen: die Überschrift der leeren Einzelheiten bekommt den Fokus, nichts hängt', () => {
     act(() => useBaurecht.getState().waehlen(null));
     const host = render();
     const liste = host.querySelector<HTMLElement>('.br-vorschriften-liste [data-roving][tabindex="0"]')!;
     act(() => liste.focus());
     const f6 = (shift = false) => act(() => void window.dispatchEvent(new KeyboardEvent('keydown', { key: 'F6', shiftKey: shift, bubbles: true })));
     f6();
-    expect(document.activeElement).toBe(host.querySelector('.br-detail'));
+    expect(document.activeElement).toBe(host.querySelector('.br-detail h2 [data-f6-ziel]'));
     f6();
     expect(host.querySelector('.br-kopf')!.contains(document.activeElement)).toBe(true);
     f6(true);
-    expect(document.activeElement).toBe(host.querySelector('.br-detail'));
+    expect(document.activeElement).toBe(host.querySelector('.br-detail h2 [data-f6-ziel]'));
     f6(true);
     expect(host.querySelector('.br-vorschriften-liste')!.contains(document.activeElement)).toBe(true);
   });
@@ -641,6 +665,23 @@ describe('Baurecht – Oberfläche', () => {
     fremd.remove();
   });
 
+  it('Filter-Menü: liegt fest positioniert unter „Filter“ über der Fläche (die Karte „Ergebnis“ schnitte es ab); Größenänderung schließt es', () => {
+    const host = render();
+    const menue = host.querySelector<HTMLDetailsElement>('.br-filter-menue')!;
+    expect(menue.closest('.br-ergebnis')).toBeTruthy();
+    menue.querySelector('summary')!.getBoundingClientRect = () => ({ top: 200, bottom: 224, left: 310, right: 380, width: 70, height: 24, x: 310, y: 200, toJSON: () => ({}) }) as DOMRect;
+    act(() => {
+      menue.open = true;
+      menue.dispatchEvent(new Event('toggle'));
+    });
+    const inhalt = menue.querySelector<HTMLElement>('.br-filter-menue-inhalt')!;
+    expect(inhalt.style.top).toBe('228px');
+    expect(inhalt.style.left).toBe('310px');
+    expect(document.activeElement).toBe(inhalt.querySelector('input'));
+    act(() => void window.dispatchEvent(new Event('resize')));
+    expect(menue.open).toBe(false);
+  });
+
   it('Farbschema im Menü der Titelleiste („Darstellung und Hilfe“): Fokus hinein, → öffnet das Untermenü, ↑/↓ bewegen, Esc schließt stufenweise und gibt den Fokus zurück', () => {
     const host = render();
     const mehr = host.querySelector<HTMLButtonElement>('.titlebar .titlebar-menue')!;
@@ -733,7 +774,7 @@ describe('Baurecht – Oberfläche', () => {
     // angezeigt mit geschützten Leerzeichen nach „§“ und „Abs.“ (nb)
     const satz = /Verfahren „verfahrensfrei“ festgelegt, ein neues Wohngebäude \(Einfamilienhaus\) ist aber nicht verfahrensfrei \(§\u00a062 Abs\.\u00a01 BauO NRW\) – mindestens vereinfachtes Baugenehmigungsverfahren \(§\u00a064\)/;
     expect(host.querySelector('.br-angaben-liste')!.textContent).not.toMatch(satz);
-    const regionen = () => [...host.querySelectorAll('.br-angaben > .br-widerspruch-ansage')].map((r) => r.textContent ?? '').join(' ');
+    const regionen = () => [...host.querySelectorAll('.br-angaben > .karte-rumpf > .br-widerspruch-ansage')].map((r) => r.textContent ?? '').join(' ');
     if (!host.querySelector('[data-merkmal="Verfahren"]')) act(() => knopf(host, /Antragsmerkmale/)!.click());
     act(() => knopf(host.querySelector('[data-merkmal="Verfahren"]')!, 'verfahrensfrei')!.click());
     const warnung = [...host.querySelectorAll('.br-angaben-liste .meldung.warnung')].find((w) => satz.test(w.textContent ?? ''));
@@ -743,7 +784,7 @@ describe('Baurecht – Oberfläche', () => {
     await vi.waitFor(
       async () => {
         await act(async () => void (await new Promise((r) => echtesSetTimeout(r, 50))));
-        expect([...host.querySelectorAll('.br-angaben > .br-widerspruch-ansage')].some((r) => satz.test(r.textContent ?? ''))).toBe(true);
+        expect([...host.querySelectorAll('.br-angaben > .karte-rumpf > .br-widerspruch-ansage')].some((r) => satz.test(r.textContent ?? ''))).toBe(true);
       },
       LANGSAME_RUNNER,
     );
@@ -791,7 +832,7 @@ describe('Baurecht – Oberfläche', () => {
     const satz = /Verfahren „verfahrensfrei“ festgelegt/;
     expect([...host.querySelectorAll('.br-angaben-liste .meldung.warnung')].some((w) => satz.test(w.textContent ?? '')), 'Warnung steht').toBe(true);
     await act(async () => void (await new Promise((r) => echtesSetTimeout(r, 400))));
-    expect([...host.querySelectorAll('.br-angaben > .br-widerspruch-ansage')].map((r) => r.textContent ?? '').join(' ')).not.toMatch(satz);
+    expect([...host.querySelectorAll('.br-angaben > .karte-rumpf > .br-widerspruch-ansage')].map((r) => r.textContent ?? '').join(' ')).not.toMatch(satz);
   });
 
   it('Merkmal ändern wirkt sofort auf die Ampeln und gilt als ungespeicherte Änderung', () => {
@@ -967,7 +1008,7 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
     await warten(150);
     await warten(150);
     expect(useBaurecht.getState().fokus).toBeNull();
-    expect(host.querySelector<HTMLInputElement>('.br-angaben .br-leiste-kopf input[type="checkbox"]')!.checked).toBe(true);
+    expect(host.querySelector<HTMLInputElement>('.br-angaben .karte-kopf input[type="checkbox"]')!.checked).toBe(true);
   });
 
   it('eingeklappt: eine Rückfrage, die nur Hinweis ist, bleibt offen (mit „Bestätigen …“) und zählt im Kopf', async () => {
@@ -1187,7 +1228,7 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
     const host = render();
     const suchfeld = host.querySelector<HTMLInputElement>('input[aria-label="Angaben durchsuchen"]')!;
     tippen(suchfeld, 'zzzz');
-    const region = () => [...host.querySelectorAll('.br-angaben > [role="status"]')].map((e) => e.textContent).join('|');
+    const region = () => [...host.querySelectorAll('.br-angaben > .karte-rumpf > [role="status"]')].map((e) => e.textContent).join('|');
     expect(region()).not.toMatch(/zzzz/);
     await warten(400);
     expect(region()).toMatch(/Keine Angabe zu „zzzz“/);

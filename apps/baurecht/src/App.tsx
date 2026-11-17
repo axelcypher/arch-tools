@@ -3,6 +3,7 @@ import type { FaktWert, Festlegung } from '@core/baurecht/typen';
 import { faktName } from '@core/baurecht/typen';
 import { isTauri } from '@core/platform/files';
 import { logger } from '@core/platform/log';
+import { Flaeche } from '@core/ui/Karte';
 import { BreitenLeiste } from '@core/ui/Leiste';
 import { APP_NAMEN, appMitWas } from '@core/appNamen';
 import { LogDialog } from '@core/ui/LogDialog';
@@ -130,12 +131,13 @@ export async function speichernVollstaendig(): Promise<boolean> {
  */
 export const UNGESPEICHERT = 'Die Baurechtsprüfung hat ungespeicherte Änderungen.';
 
-/** Bereiche für F6 und die Sprungmarken */
-const BEREICHE = [
-  { sel: '.br-kopf', titel: 'Kopf' },
-  { sel: '.br-angaben', titel: 'Angaben' },
-  { sel: '.br-vorschriften-liste', titel: 'Vorschriften' },
-  { sel: '.br-detail', titel: 'Einzelheiten' },
+/** Bereiche für F6 und die Sprungmarken: die Werkzeugleiste und jede Karte der Fläche eine Station */
+const BEREICHE: { sel: string; sprung?: string }[] = [
+  { sel: '.br-kopf' },
+  { sel: '.br-angaben', sprung: 'Zu den Angaben' },
+  { sel: '.br-ergebnis', sprung: 'Zum Ergebnis' },
+  { sel: '.br-vorschriften-liste', sprung: 'Zu den Vorschriften' },
+  { sel: '.br-detail', sprung: 'Zu den Einzelheiten' },
 ];
 
 /**
@@ -210,13 +212,6 @@ export function App() {
   useEffect(() => {
     document.title = project ? `${name} – ${APP_NAMEN.baurecht.name}` : APP_NAMEN.baurecht.name;
   }, [project, name]);
-  // schmale Fenster (waagerecht scrollende Arbeitsfläche): nach dem Öffnen am linken Rand beginnen – das Einblenden der
-  // Spalten verschiebt sonst die Ansicht
-  const geoeffnet = useBaurecht((s) => (s.quelle ? (s.quelle.art === 'datei' ? s.quelle.name : s.quelle.datei) : ''));
-  useEffect(() => {
-    const t = setTimeout(() => document.getElementById('root')?.scrollTo({ left: 0 }), 50);
-    return () => clearTimeout(t);
-  }, [geoeffnet]);
 
   // Regelpaket: abgelegtes (falls neuer), dann nachladen
   useEffect(() => {
@@ -239,7 +234,7 @@ export function App() {
   // Titelleiste (Beenden, Rahmen-App): nur „gespeichert“, wenn keine Entwürfe übrig bleiben
   const speichernMitMeldung = useCallback(async () => speichernVollstaendig(), []);
 
-  // Strg+S speichern; F6 / Umschalt+F6 springt zwischen Kopf, Angaben, Vorschriften und Einzelheiten
+  // Strg+S speichern; F6 / Umschalt+F6 springt zwischen Kopf, Angaben, Ergebnis, Vorschriften und Einzelheiten
   useEffect(() => {
     const taste = (e: KeyboardEvent) => {
       const strg = e.ctrlKey || e.metaKey;
@@ -304,9 +299,9 @@ export function App() {
       {/* Sprungmarken als erste Tabstopps (vor der Titelleiste); sichtbar, sobald sie den Fokus haben */}
       {project && (
         <nav className="br-sprung" aria-label="Sprungmarken (auch F6)">
-          {BEREICHE.slice(1).map((b) => (
+          {BEREICHE.filter((b) => b.sprung).map((b) => (
             <button key={b.sel} type="button" onClick={() => bereichFokussieren(b.sel)}>
-              Zu den {b.titel}
+              {b.sprung}
             </button>
           ))}
         </nav>
@@ -323,16 +318,18 @@ export function App() {
               Web-Version: Die Gesetzestexte lassen sich hier nicht abrufen. Ohne Text kann die App nicht prüfen, ob sich ein Paragraf seit der Prüfung der Regel geändert hat – deshalb bleibt, was sonst entfiele, gelb. Die volle Prüfung bietet die Desktop-App.
             </div>
           )}
-          <div className="workspace br-arbeit">
-            {/* schmale Fenster: die Angaben-Leiste startet schmaler, damit die Liste Platz behält */}
-            <BreitenLeiste schluessel="baurecht:leiste-angaben" vorgabe={typeof window !== 'undefined' && window.innerWidth < 1200 ? 260 : 330} min={240} max={520} className="br-leiste-links" titel="Breite der Angaben" mitteMin={420}>
+          {/* Fläche mit Karten (docs/design.md „Fläche und Karten“): links Angaben, in der Mitte Ergebnis über den
+              Vorschriften, rechts die Einzelheiten – jede Karte scrollt für sich, jede ist eine Station für F6 */}
+          <Flaeche>
+            {/* schmale Fenster: die Seitenkarten starten schmaler, damit die Mitte Platz behält */}
+            <BreitenLeiste schluessel="baurecht:leiste-angaben" vorgabe={typeof window !== 'undefined' && window.innerWidth < 1200 ? 260 : 330} min={240} max={520} titel="Breite der Angaben" mitteMin={420}>
               <Angaben stand={stand} />
             </BreitenLeiste>
             <Vorschriften stand={stand} />
-            <BreitenLeiste schluessel="baurecht:leiste-einzelheiten" vorgabe={typeof window !== 'undefined' && window.innerWidth < 1400 ? 360 : 420} min={280} max={680} seite="rechts" className="br-leiste-rechts" titel="Breite der Einzelheiten" mitteMin={420}>
+            <BreitenLeiste schluessel="baurecht:leiste-einzelheiten" vorgabe={typeof window === 'undefined' || window.innerWidth >= 1400 ? 420 : window.innerWidth < 1200 ? 300 : 360} min={280} max={680} seite="rechts" titel="Breite der Einzelheiten" mitteMin={420}>
               <Detail stand={stand} />
             </BreitenLeiste>
-          </div>
+          </Flaeche>
         </>
       ) : (
         <Start onWahl={() => setWahl(true)} />
