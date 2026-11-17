@@ -47,7 +47,11 @@ function verfuegbar(griff: HTMLElement | null, mitteMin: number | undefined): nu
   const andere = [...arbeit.children]
     .filter((c): c is HTMLElement => c !== leiste && c.classList.contains('leiste') && c instanceof HTMLElement)
     .reduce((s, c) => s + (parseFloat(c.style.width) || c.getBoundingClientRect().width), 0);
-  return Math.floor(arbeit.clientWidth - andere - mitteMin);
+  // auf einer Fläche (Karte.tsx) zählen Innenabstand und Spalte zwischen den Karten mit
+  const cs = getComputedStyle(arbeit);
+  const innen = arbeit.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0);
+  const spalte = (parseFloat(cs.columnGap) || 0) * Math.max(0, arbeit.children.length - 1);
+  return Math.floor(innen - spalte - andere - mitteMin);
 }
 
 const ANGLEICHEN = 'leiste-angleichen';

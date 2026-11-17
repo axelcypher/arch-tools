@@ -6,8 +6,8 @@ Review-Agent `review-design`.
 
 > Stand: Grundlagen (Skalen, Fokus, Zielgrößen, Überschriften, Meldungen) und gemeinsame Komponenten (Dialoge,
 > Druckvorschau, Felder, Umschalter), Aufbau der Kopf- und Werkzeugleisten. Gestaltungsrichtung: C „Kachel“ – Farben,
-> App-Farbe, Knopfstufen der Werkzeugleiste und Titelleiste stehen hier; das Kartenlayout und die gemeinsame
-> Zahlentabelle folgen.
+> App-Farbe, Knopfstufen der Werkzeugleiste, Titelleiste und das Kartenlayout („Fläche und Karten“) stehen hier; die
+> Apps stellen nach und nach um (`docs/nachziehen/`).
 
 ## Grundsätze
 
@@ -470,11 +470,33 @@ Zurücksetzen, Sonderfunktionen. Feste Namen, in allen Apps gleich:
 - Symbolknöpfe ohne Text (in Zeilen wie in Leisten) brauchen `aria-label` und `title` mit Gegenstand („Position
   einrücken“).
 
+## Fläche und Karten
+
+Das Layout aller Apps (Richtung C): Unter der Werkzeugleiste liegt eine ruhige **Fläche** (`--bg`); Seitenleisten,
+Hauptbereich und Zeichenfläche stehen darauf als **Karten** mit weichem Schatten und 8 px Spalt (`--spalt`). Die
+Werkzeugleiste liegt mit auf der Fläche (gleicher Grund, keine Linie). Bausteine in `ui/Karte.tsx`:
+
+- `Flaeche` (`.flaeche`): Karten nebeneinander mit Spalt und Innenabstand `--spalt`; sie scrollt nie.
+- `Karte` (`.karte`): Kopf (`.karte-kopf`, Überschrift `h2` in `--fs-l`, rechts `aktionen` wie „?“ oder „Hinzufügen“),
+  darunter der Inhalt (`.karte-rumpf`), der **in der Karte** scrollt, wahlweise eine feste Fußzeile (`fuss`, Summen).
+  Ohne sichtbaren Titel braucht die Karte `ariaLabel`; `buendig` lässt Tabellen und Listen bis an den Rand laufen.
+  Breite Tabellen scrollen in der Karte, sie laufen nie aus ihr heraus.
+- `FlaechenSpalte` (`.flaechen-spalte`): mehrere Karten untereinander (z. B. „Geschoss“ über „Auswertung“), sie
+  teilen sich die Höhe; `wachsend` lässt die Spalte die Restbreite nehmen.
+- `ZeichenKarte` (`.zeichen-karte`): Die Zeichenfläche füllt die Karte und bleibt hell (`.canvas`); Bedienhinweis,
+  Koordinaten und Maßstab stehen in der Fußzeile der Karte (`fuss`), nicht über dem Plan.
+- Seitenkarten mit ziehbarer Breite: `BreitenLeiste` mit einer `Karte` (oder `FlaechenSpalte`) als Kind; auf der
+  Fläche liegt der Griff im Spalt, und Innenabstand und Spalt zählen bei der Höchstbreite mit.
+
+Die alten Muster (`.workspace`, `.sidebar`, eigene Spalten-Layouts der Apps) laufen weiter, bis eine App umgestellt
+ist (`docs/nachziehen/`). Eigene Layout-CSS und feste Farben der Apps entfallen mit der Umstellung.
+
 ## Seitenleisten
 
 `BreitenLeiste` (`ui/Leiste.tsx`) mit gemerkter, ziehbarer Breite. Der Griff sitzt am Rand zur Arbeitsfläche: links
 stehende Leiste (Vorgabe) rechts, rechts stehende Leiste mit `seite="rechts"` links. Tastatur ←/→ bewegen den Griff,
-Doppelklick setzt die Vorgabe. Keine eigenen Leisten-Komponenten je App.
+Doppelklick setzt die Vorgabe. Keine eigenen Leisten-Komponenten je App. Auf einer `Flaeche` ist die Leiste eine
+Seitenkarte (siehe „Fläche und Karten“).
 
 ## Meldungen im Inhalt
 

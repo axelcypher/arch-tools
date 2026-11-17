@@ -45,4 +45,19 @@ describe('BreitenLeiste', () => {
     expect((host.querySelector('.leiste') as HTMLElement).style.width).toBe('284px');
     expect(localStorage.getItem('test:rechts')).toBe('284');
   });
+
+  it('auf einer Fläche: Innenabstand und Spalt zählen bei der Höchstbreite mit (Ende = Platz bis zur Mindestbreite der Mitte)', () => {
+    const host = document.createElement('div');
+    host.style.cssText = 'display:flex; padding: 0 8px; column-gap: 8px';
+    Object.defineProperty(host, 'clientWidth', { value: 1000 });
+    document.body.appendChild(host);
+    act(() => {
+      root = createRoot(host);
+      root.render([createElement(BreitenLeiste, { key: 'l', schluessel: 'test:flaeche', vorgabe: 300, max: 900, mitteMin: 400, children: 'Inhalt' }), createElement('main', { key: 'm' })]);
+    });
+    const griff = host.querySelector('.leiste-griff')!;
+    pfeil(griff, 'End');
+    // 1000 − 2 × 8 (Innenabstand) − 1 × 8 (Spalt) − 400 (Mitte) = 576
+    expect((host.querySelector('.leiste') as HTMLElement).style.width).toBe('576px');
+  });
 });
