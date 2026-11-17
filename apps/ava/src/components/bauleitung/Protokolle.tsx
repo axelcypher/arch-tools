@@ -195,7 +195,7 @@ function ProtokollEditor({ p }: { p: Protokoll }) {
         </div>
       )}
       <h3>Teilnehmer</h3>
-      <table className="ava-tabelle">
+      <table className="summary-table text felder">
         <thead>
           <tr>
             <th>Name</th>

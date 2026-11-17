@@ -130,7 +130,7 @@ export function Angebote() {
     <>
       <AnsichtKarte titel="Angebote" className={`ava-angebote ava-angebote-${modus}`} leiste={werkzeuge}>
         <div className="ava-bieter-liste ava-tabelle-rahmen">
-          <table className="ava-tabelle">
+          <table className="summary-table text felder">
             <thead>
               <tr>
                 <th>Rang</th>
@@ -155,7 +155,7 @@ export function Angebote() {
                 return (
                   <tr
                     key={x.id}
-                    className={`${modus === 'erfassen' && x.id === bieterId ? 'active ' : ''}${lv.auftrag?.bieterId === x.id ? 'ava-auftrag ' : ''}${x.ausgeschlossen ? 'ava-ausgeschlossen' : ''}`}
+                    className={`${modus === 'erfassen' && x.id === bieterId ? 'selected ' : ''}${lv.auftrag?.bieterId === x.id ? 'ava-auftrag ' : ''}${x.ausgeschlossen ? 'ava-ausgeschlossen' : ''}`}
                     onClick={modus === 'erfassen' ? () => setBieterId(x.id) : undefined}
                   >
                     <td>{x.id === 0 ? '—' : (r?.rang ?? '')}</td>
@@ -238,7 +238,7 @@ export function Angebote() {
               </label>
               <span className="muted small-text">Enter springt zur nächsten Position.</span>
             </div>
-            <table className="ava-tabelle ava-erfassen-tabelle">
+            <table className="summary-table text felder ava-erfassen-tabelle">
               <thead>
                 <tr>
                   <th>OZ</th>
@@ -337,7 +337,7 @@ export function Preisspiegel({ nurAuffaellige = false, druck = false }: { nurAuf
           <span className="muted">Bedarfs- und Wahlpositionen grau – zählen nicht zur Summe</span>
         </div>
       )}
-      <table className="ava-tabelle ava-spiegel-tabelle">
+      <table className="summary-table text ava-spiegel-tabelle">
         <thead>
           <tr>
             <th rowSpan={2}>OZ</th>
@@ -428,8 +428,8 @@ export function Preisspiegel({ nurAuffaellige = false, druck = false }: { nurAuf
             ['nach Nachlass', (id: number) => s.bieter.get(id)?.netto],
             [`USt ${lv.kopf.mwst} %`, (id: number) => s.bieter.get(id)?.mwst],
             ['brutto', (id: number) => s.bieter.get(id)?.brutto],
-          ].map(([text, f]) => (
-            <tr key={text as string}>
+          ].map(([text, f], i) => (
+            <tr key={text as string} className={i === 0 ? 'summe' : 'strong'}>
               <td colSpan={4}>{text as string}</td>
               {spalten.map((id) => (
                 <td key={id} colSpan={2} className={`num${id === 0 ? ' ava-spiegel-ka' : ''}`}>

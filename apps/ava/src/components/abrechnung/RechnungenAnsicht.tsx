@@ -144,7 +144,7 @@ export function RechnungenAnsicht({ gewerk }: { gewerk?: string }) {
         </div>
       ))}
       <div className="ava-tabelle-rolle">
-        <table className="ava-tabelle ava-rechnungen">
+        <table className="summary-table text felder ava-rechnungen">
           <thead>
             <tr>
               <th className="num">Nr.</th>
@@ -225,7 +225,7 @@ export function RechnungenAnsicht({ gewerk }: { gewerk?: string }) {
             )}
           </tbody>
           <tfoot>
-            <tr>
+            <tr className="summe">
               <td colSpan={gewerk ? 4 : 5}>Summe ({zeilen.length})</td>
               <td className="num">{euro(summe)}</td>
               <td colSpan={4} />
@@ -285,7 +285,7 @@ function PruefungAnsehen({ d, onClose }: { d: RechnungsDatensatz; onClose: () =>
         {d.rechnungsnummer ? ` · Rechnungsnummer ${d.rechnungsnummer}` : ''}
       </p>
       {p && r ? (
-        <table className="ava-tabelle ava-rechnung-tabelle">
+        <table className="summary-table text ava-rechnung-tabelle">
           <tbody>
             {p.forderungNetto !== null && zeile('Netto-Forderung laut Rechnung', euro(p.forderungNetto))}
             {zeile('Netto-Freigabesumme', euro(r.freigabeNetto))}

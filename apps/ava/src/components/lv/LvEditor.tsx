@@ -328,7 +328,7 @@ export function LvEditor() {
         }
       >
         <div className="ava-lv-tabelle" ref={tabelle} tabIndex={0} onKeyDown={tasten} aria-label="Leistungsverzeichnis – ↑/↓ wählen, Enter bearbeiten, Einfg neue Position, Entf entfernen">
-          <table className="ava-tabelle ava-lv-zeilen">
+          <table className="summary-table text ava-lv-zeilen">
             <thead>
               <tr>
                 <th className="ava-oz">OZ</th>
@@ -345,7 +345,7 @@ export function LvEditor() {
               {sichtbar.map((z) => {
                 const el = z.el;
                 const aktiv = el.id === auswahl;
-                const kl = `${aktiv ? 'active ' : ''}ava-z-${el.art}${el.art === 'hinweis' && el.vorbemerkung ? ' ava-z-vorbemerkung' : ''}`;
+                const kl = `${aktiv ? 'selected ' : ''}${el.art === 'abschnitt' ? 'gruppe ' : ''}ava-z-${el.art}${el.art === 'hinweis' && el.vorbemerkung ? ' ava-z-vorbemerkung' : ''}`;
                 const einzug = { paddingLeft: 6 + z.tiefe * 16 };
                 if (el.art === 'position') {
                   const gb = s.positionen.get(el.id)?.get(0);

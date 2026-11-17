@@ -327,7 +327,7 @@ export function RechnungPruefen({ gewerk: vorgabeGewerk, onClose, onErfasst }: {
             </Feld>
           </div>
           <div className="ava-korrektur-rechnung">
-            <table className="ava-tabelle ava-rechnung-tabelle">
+            <table className="summary-table text ava-rechnung-tabelle">
               <tbody>
                 <tr>
                   <td>Netto-Freigabesumme</td>

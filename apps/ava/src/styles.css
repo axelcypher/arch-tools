@@ -125,52 +125,25 @@
 
 /* ---------- Tabellen ---------- */
 
-.ava-tabelle {
-  width: 100%;
-  border-collapse: collapse;
-  background: var(--panel);
+/* Datentabellen: gemeinsame Zahlentabelle (.summary-table.text, mit Feldern .felder). Hier nur, was core nicht hat:
+   Ziffern gleicher Breite, Spaltenköpfe ohne Umbruch und fest beim Rollen in der Karte (gemeldet ans Designsystem),
+   Felder in Zellen in Spaltenbreite */
+.ava-flaeche .summary-table {
   font-variant-numeric: tabular-nums;
 }
 
-.ava-tabelle th {
-  text-align: left;
-  font-weight: 600;
-  font-size: 11.5px;
-  color: var(--muted);
-  padding: 5px 6px;
-  border-bottom: 1px solid var(--border);
-  background: var(--panel);
+.ava-flaeche .summary-table thead th {
   position: sticky;
   top: 0;
   z-index: 1;
+  background: var(--panel);
   white-space: nowrap;
 }
 
-.ava-tabelle td {
-  padding: 4px 6px;
-  border-bottom: 1px solid var(--line-soft);
-  vertical-align: top;
-}
-
-.ava-tabelle td input:not([type='checkbox']):not([type='radio']),
-.ava-tabelle td select {
+.summary-table.felder td input:not([type='checkbox']):not([type='radio']),
+.summary-table.felder td select {
   width: 100%;
   min-width: 60px;
-}
-
-.ava-tabelle .num,
-.ava-tabelle th.num {
-  text-align: right;
-}
-
-.ava-tabelle tfoot td {
-  font-weight: 600;
-  border-top: 2px solid var(--border);
-  border-bottom: none;
-}
-
-.ava-tabelle tr.active td {
-  background: var(--accent-soft);
 }
 
 .ava-klickbar {
@@ -358,11 +331,6 @@
 
 .ava-lv-zeilen tr:hover td {
   background: var(--hover);
-}
-
-.ava-z-abschnitt td {
-  font-weight: 600;
-  background: color-mix(in srgb, var(--chip-bg) 70%, var(--panel));
 }
 
 .ava-z-hinweis td {
@@ -1101,11 +1069,11 @@ input.ava-fehler {
   padding-top: 4px;
 }
 
-.ava-spiegel-druck .ava-tabelle {
+.ava-spiegel-druck .summary-table {
   font-size: 10px;
 }
 
-.ava-spiegel-druck .ava-tabelle th {
+.ava-spiegel-druck .summary-table th {
   position: static;
 }
 
@@ -1198,13 +1166,8 @@ input.ava-fehler {
   max-width: 100%;
 }
 
-.ava-tabelle .num,
-.ava-tabelle td.num {
+.summary-table td.num {
   white-space: nowrap;
-}
-
-.ava-tabelle td {
-  vertical-align: middle;
 }
 
 .ava-tabs button {
@@ -1288,12 +1251,13 @@ input.ava-fehler {
   z-index: 2;
 }
 
-.ava-lv-zeilen tr.active td.ava-oz {
-  background: var(--accent-soft);
+/* die feste OZ-Spalte trägt die Tönung der Zeile mit (Gruppe bzw. Wahl, wie core) */
+.ava-lv-zeilen tr.gruppe td.ava-oz {
+  background: var(--tabelle-gruppe);
 }
 
-.ava-z-abschnitt td.ava-oz {
-  background: color-mix(in srgb, var(--chip-bg) 70%, var(--panel));
+.ava-lv-zeilen tr.selected td.ava-oz {
+  background: var(--accent-soft);
 }
 
 .ava-lv-zeilen td.ava-kurztext {
@@ -1321,7 +1285,7 @@ input.ava-fehler {
   justify-content: flex-end;
 }
 
-.ava-tabelle td .ava-prozent input {
+.summary-table td .ava-prozent input {
   width: 56px !important;
   min-width: 0 !important;
   text-align: right;
@@ -1470,7 +1434,7 @@ input.ava-fehler {
 }
 
 /* Bautagebuch: Personen als normales Eingabefeld */
-.ava-tabelle td input.ava-personen:not([type='checkbox']):not([type='radio']) {
+.summary-table td input.ava-personen:not([type='checkbox']):not([type='radio']) {
   width: 70px;
 }
 
@@ -1592,7 +1556,7 @@ input.ava-fehler {
   color: var(--muted);
 }
 
-.ava-tabelle td input.ava-bieter-name {
+.summary-table td input.ava-bieter-name {
   min-width: 150px !important;
 }
 
