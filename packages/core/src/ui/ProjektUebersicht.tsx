@@ -52,6 +52,9 @@ export interface UebersichtProjekt {
   antrag?: AntragKurz;
 }
 
+/** Klasse der Marke je Art – „hinweis“ heißt in base.css `.info`, weil `.hinweis` die schwebende Hinweis-Meldung ist */
+const MARKEN_KLASSE: Record<NonNullable<UebersichtMarke['art']>, string> = { warnung: 'warnung', hinweis: 'info', neutral: 'neutral', ok: 'ok' };
+
 const tag = (iso: string) => iso.split('-').reverse().join('.');
 
 /** Marke des aktiven Antrags: „BAUA 2 · eingereicht 03.11.2026“ bzw. „BAUA 2 in Arbeit“ */
@@ -553,7 +556,7 @@ function Karte({ p, hervorgehoben, geoeffnet, onOeffnen, onKontext, status, mark
       {mk.length > 0 && (
         <span className="pa-marken">
           {mk.map((m) => (
-            <span key={m.text} className={`pa-marke ${m.art ?? 'neutral'}`} title={m.titel}>
+            <span key={m.text} className={`marke pa-marke ${MARKEN_KLASSE[m.art ?? 'neutral']}`} title={m.titel}>
               {m.symbol && <Icon name={m.symbol} />} {m.text}
             </span>
           ))}

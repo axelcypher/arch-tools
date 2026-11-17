@@ -327,7 +327,7 @@ export function RechnungPruefen({ gewerk: vorgabeGewerk, onClose, onErfasst }: {
             </Feld>
           </div>
           <div className="ava-korrektur-rechnung">
-            <table className="ava-tabelle ava-rechnung-tabelle">
+            <table className="summary-table text ava-rechnung-tabelle">
               <tbody>
                 <tr>
                   <td>Netto-Freigabesumme</td>
@@ -347,7 +347,7 @@ export function RechnungPruefen({ gewerk: vorgabeGewerk, onClose, onErfasst }: {
                   <td>+ USt {zahlDE(pruefung.mwstProzent)} %</td>
                   <td className="num">{euro(r.mwst)}</td>
                 </tr>
-                <tr className="ava-zwischensumme">
+                <tr className="summe">
                   <td>Brutto-Freigabesumme</td>
                   <td className="num">{euro(r.brutto)}</td>
                 </tr>
@@ -365,7 +365,7 @@ export function RechnungPruefen({ gewerk: vorgabeGewerk, onClose, onErfasst }: {
                   <td>− Skonto {zahlDE(pruefung.skontoProzent)} %</td>
                   <td className="num">{euro(r.skonto)}</td>
                 </tr>
-                <tr className="ava-zwischensumme">
+                <tr className="summe">
                   <td>Endsumme</td>
                   <td className="num">{euro(r.endsumme)}</td>
                 </tr>

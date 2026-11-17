@@ -257,7 +257,7 @@ body,
 }
 /* was den Fokus bekommt, rollt nicht unter den festen Kopf: --rollend-kopf-h ist die sichtbare Höhe des Kopfs plus Platz
    für den Fokusrahmen (Vorgabe: eine Zeile Bedienelemente, --ctl-h + --s2, plus 2 × --s1); ein höherer oder
-   umbrechender Kopf setzt den Wert selbst */
+   umbrechender Kopf setzt den Wert selbst (useRollendKopf misst ihn) */
 .flaechen-spalte.rollend:has(.rollend-kopf) {
   scroll-padding-top: var(--rollend-kopf-h, calc(var(--ctl-h) + var(--s2) + 2 * var(--s1)));
 }
@@ -806,7 +806,8 @@ select {
   min-width: 0;
 }
 
-input[type='checkbox'] {
+input[type='checkbox'],
+input[type='radio'] {
   width: auto;
 }
 
@@ -1057,8 +1058,88 @@ textarea:focus {
 /* In einer Zeile mit Feldern fluchtet Text ohne Feld oder Knopf mit dem Text in den Feldern (der steht in --ctl-h
    senkrecht mittig); Zeilen ohne Feld oder Knopf (z. B. Gruppen und Summen) bleiben knapp. Ein Verweisknopf
    (button.link) zählt als Text */
-.summary-table.felder tr:has(input, select, textarea, button:not(.link)) > td:not(:has(input, select, textarea, button:not(.link))) {
+.summary-table.felder
+  tr:has(input:not([type='checkbox'], [type='radio'], .zelle), select, textarea, button:not(.link))
+  > td:not(:has(input:not([type='checkbox'], [type='radio'], .zelle), select, textarea, button:not(.link))) {
   padding-top: calc(3px + (var(--ctl-h) - 1lh) / 2);
+}
+/* kleine und Symbolknöpfe (× zum Entfernen) in Feldzeilen: mittig zur Feldhöhe wie der Text daneben */
+.summary-table.felder td > button:is(.small, .icon) {
+  margin-top: calc((var(--ctl-h) - var(--ctl-h-s)) / 2);
+}
+/* Symbolknöpfe dort so hoch wie kleine (Spezifität null wie die übrigen Mindesthöhen – App-Regeln gehen vor) */
+:where(.summary-table.felder td) > :where(button.icon) {
+  min-height: var(--ctl-h-s);
+}
+/* Kästchen und Optionsfelder in Tabellen: so breit wie sie sind, ohne Rand, mittig zur Zeile – sie lösen den Ausgleich
+   der Feldzeilen nicht aus und rücken in echten Feldzeilen mit dem Text */
+.summary-table input:is([type='checkbox'], [type='radio']) {
+  margin: 0;
+  vertical-align: middle;
+}
+/* Feld in der Zelle (input.zelle, z. B. Menge und Einheitspreis im LV): randlos und durchsichtig, so hoch wie eine
+   Textzeile – es fluchtet ohne Ausgleich mit dem Text der Nachbarzellen; Rahmen beim Überfahren, beim Fokus Rand
+   in --accent und Saum wie bei allen Feldern */
+.summary-table input.zelle {
+  margin-block: -1px;
+  padding-block: 0;
+  /* Ziffern bündig mit td.num derselben Spalte: 1px Rand + 3px = die 4px Zellenabstand (die Zelle selbst ohne, s. u.) */
+  padding-inline: 3px;
+  line-height: inherit;
+  border-color: transparent;
+  background: transparent;
+}
+.summary-table input.zelle:hover:not(:disabled, :focus, .feld-fehler, [aria-invalid='true']) {
+  border-color: var(--border);
+}
+.summary-table input.zelle:focus {
+  border-color: var(--accent);
+  background: var(--input-bg);
+}
+/* Zelle mit Zellenfeld: ohne eigenen Abstand waagerecht, das Feld bringt ihn mit */
+.summary-table td:has(> input.zelle) {
+  padding-inline: 0;
+}
+/* Fehler bleibt sichtbar, auch ohne Fokus (die randlose Regel oben ginge sonst vor input.feld-fehler) */
+.summary-table input.zelle:is(.feld-fehler, [aria-invalid='true']),
+.summary-table input.zelle:is(.feld-fehler, [aria-invalid='true']):focus {
+  border-color: var(--danger);
+  outline-color: var(--danger);
+}
+/* Tabellen mit wählbaren Zeilen (.waehlbar): Überfahren tönt die Zeile leicht in der Akzentfarbe – von der grauen
+   Gruppenzeile (--tabelle-gruppe, hell gleich --hover) und der gewählten Zeile (volle Tönung und Linie) unterscheidbar;
+   Gruppen-, Summen- und gewählte Zeilen behalten ihre Tönung */
+.summary-table.waehlbar tbody tr:not(.gruppe, .summe, .selected, [aria-selected='true']):is(:hover, :focus-within) td {
+  background: color-mix(in srgb, var(--accent-soft) 50%, var(--panel));
+}
+/* die Tönung allein unterscheidet sich kaum von der Gruppenzeile (etwa 1 : 1) – dazu eine Linie links in
+   abgeschwächter Akzentfarbe (gemessen 2,6 : 1 hell, 3,3 : 1 dunkel), leiser als die volle Akzentlinie der gewählten
+   Zeile; ebenso, wenn der Fokus in der Zeile steht (Tastatur) */
+.summary-table.waehlbar tbody tr:not(.gruppe, .summe, .selected, [aria-selected='true']):is(:hover, :focus-within) td:first-child {
+  box-shadow: inset 3px 0 color-mix(in srgb, var(--accent) 60%, var(--panel));
+}
+.summary-table.waehlbar tbody tr:not(.gruppe, .summe) {
+  cursor: pointer;
+}
+/* fester Spaltenkopf (.fest) für lange Datentabellen im rollenden Kartenrumpf: der ganze Kopf bleibt stehen (sticky am
+   thead, damit ein mehrzeiliger Kopf zusammenbleibt), Grund wie die Karte, Linie darunter (die Linie der ersten Zeile
+   rollt sonst darunter weg); Köpfe brechen nicht um – lange Köpfe kürzen, den vollen Namen in title */
+.summary-table.fest thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.summary-table.fest thead th {
+  white-space: nowrap;
+  background: var(--panel);
+}
+.summary-table.fest thead tr:last-child th {
+  box-shadow: inset 0 -1px var(--line-soft);
+}
+/* was den Fokus bekommt, rollt nicht unter den festen Kopf (Vorgabe: eine Kopfzeile in --fs-xs samt Innenabstand und
+   Platz für den Fokusrahmen; ein mehrzeiliger Kopf setzt --tabelle-kopf-h) */
+.karte-rumpf:has(> .summary-table.fest) {
+  scroll-padding-top: var(--tabelle-kopf-h, calc(1lh + 4px + var(--s1)));
 }
 
 /* Tabellen ohne Felder mit mehrzeiligen Zellen (Rechenweg, Katalog): oben bündig, ohne den Ausgleich der Feldzeilen */
@@ -1079,12 +1160,23 @@ textarea:focus {
 
 /* gewählte Zeile (z. B. der Katalogeintrag oder der verglichene Stand) – nach der Gruppenzeile, damit die Wahl auch dort
    sichtbar ist */
-.summary-table tr.selected td {
+.summary-table :is(tr.selected, tr[aria-selected='true']) td {
   background: var(--accent-soft);
 }
 /* wie die Wahl in senkrechten Segmenten: Tönung und Akzentlinie links – von Gruppenzeilen unterscheidbar */
-.summary-table tr.selected td:first-child {
+.summary-table :is(tr.selected, tr[aria-selected='true']) td:first-child,
+.summary-table :is(tr.selected, tr[aria-selected='true']) td.zeilenanfang,
+.summary-table :is(tr.selected, tr[aria-selected='true']) + tr.zusatz td:first-child {
   box-shadow: inset 3px 0 var(--accent);
+}
+/* Zusatzzeile (Hinweis, Kennzeichen, Handwert unter einer Zeile; höchstens eine je Zeile): gehört zur Zeile darüber – ohne eigene Trennlinie,
+   knapp darunter, und mit ihr gewählt. Beginnt eine Zelle im Grid eine eigene Zeile, trägt sie .zeilenanfang */
+.summary-table tr.zusatz td {
+  border-top: none;
+  padding-top: 0;
+}
+.summary-table :is(tr.selected, tr[aria-selected='true']) + tr.zusatz td {
+  background: var(--accent-soft);
 }
 
 /* Summenzeile: halbfett mit kräftigerer Linie darüber */
@@ -1094,6 +1186,44 @@ textarea:focus {
 
 .summary-table small {
   color: var(--muted);
+}
+
+/* Marke (Kennzeichen wie „festgelegt“, Status in der Projektübersicht): klein, getönt; die Information steht im Text.
+   Auf getönten Gründen (Auswahl, Überfahren, Gruppenzeile) verschwindet jede Fläche (etwa 1 : 1) – dort trägt die
+   Marke einen Rahmen in ihrer Textfarbe (mindestens 4,9 : 1) */
+.marke {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s1);
+  padding: 0 var(--s1);
+  border-radius: var(--radius-s);
+  font-size: var(--fs-xs);
+  line-height: 18px;
+  white-space: nowrap;
+  background: var(--chip-bg);
+  color: var(--muted);
+}
+.marke svg {
+  width: 11px;
+  height: 11px;
+}
+.marke.warnung {
+  background: var(--warn-bg);
+  color: var(--warn-text);
+}
+.marke.ok {
+  background: var(--ok-bg);
+  color: var(--ok-text);
+}
+/* Hinweis-Marke heißt .info: .hinweis ist die schwebende Hinweis-Meldung weiter unten */
+.marke.info {
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+/* bewusst weit gefasst (jede überfahrene Zeile, jedes aria-selected/-current): der Rahmen schadet auf ungetöntem Grund
+   nicht, eine eigene Klasse für getönte Zeilen bräuchte jede App */
+:is(tr.selected, tr.selected + tr.zusatz, tr[aria-selected='true'] + tr.zusatz, tr.gruppe, tr:hover, [aria-selected='true'], [aria-current='true'], .pa-karte:hover:not(:disabled)) .marke {
+  box-shadow: inset 0 0 0 1px currentColor;
 }
 
 /* ---------- Dialoge ---------- */
@@ -3218,8 +3348,8 @@ button.ungespeichert::after {
   display: flex;
   flex-direction: column;
   gap: var(--s3);
-  margin-left: var(--s2);
-  padding-left: var(--s4);
+  /* je Ebene um --s5 eingerückt, die Linie links ist nur Schmuck (die Gruppe trägt den Namen) */
+  padding-left: var(--s5);
   border-left: 1px solid var(--border);
 }
 .einst-unter[hidden] {
@@ -3254,6 +3384,35 @@ button.ungespeichert::after {
 }
 .einst-wirksam code {
   overflow-wrap: anywhere;
+}
+/* Baum (Pfade und Benennung): Einträge, die von einem anderen abhängen, als eigene Karten eingerückt darunter – die Linie
+   zeigt, wozu sie gehören */
+.einst-baum {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  /* je Ebene um --s5 eingerückt, die Linie links ist nur Schmuck (die Gruppe trägt den Namen) */
+  padding-left: var(--s5);
+  border-left: 1px solid var(--border);
+}
+/* Bezugszeile: wovon der Wert abhängt (erste Zeile der Erklärung) */
+.einst-bezug {
+  display: block;
+  margin-bottom: var(--s1);
+  font-size: var(--fs-s);
+  color: var(--muted);
+}
+.einst-bezug.los {
+  color: var(--warn-text);
+}
+/* Eltern-Eintrag einer anderen App (App-Filter): abgeblendet, nur zur Orientierung */
+.einst-bezugseintrag {
+  background: transparent;
+  border-style: dashed;
+}
+.einst-bezugseintrag .einst-eintrag-titel,
+.einst-bezugseintrag .einst-vorschau code {
+  color: var(--muted);
 }
 .einst-erklaerung,
 .einst-projekt,

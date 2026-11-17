@@ -173,6 +173,9 @@ const exportAus = (app: ExportApp, w: (id: string) => PfadWert): ExportPfade => 
   return { berechnungsordner: gilt('ordner'), dateinameExcel: gilt('excel'), dateinamePdf: gilt('pdf'), pdfMitspeichern: w('export.pdfMitspeichern') !== false };
 };
 
+/** Export-Einstellungen einer App aus beliebigen Werten (für Tests des Abgleichs mit dem Baum) */
+export const exportAusWerten = exportAus;
+
 /** Export-Einstellungen einer App aus dem Zwischenspeicher (sonst Vorgaben) – synchron */
 export const exportPfade = (app: ExportApp): ExportPfade => exportAus(app, pfadWert);
 

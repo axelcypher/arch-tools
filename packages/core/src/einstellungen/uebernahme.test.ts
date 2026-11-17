@@ -51,4 +51,16 @@ describe('Übernahme alter lokaler Werte (PERMIO, „formulare:export“)', () =
     const entschieden = new Set(['ablage.permio.antragsordner="Anträge"']);
     expect(uebernahmePlanen(alt, werte, entschieden).abweichungen.map((a) => a.id)).toEqual(['ablage.permio.berechnungsordner']);
   });
+
+  it('alter Zielordner: verglichen mit dem wirksamen gemeinsamen (Zielordner im Antragsordner) – nicht still überschrieben', () => {
+    const alt = [{ id: 'plaene.permio.zielpfad', wert: 'Ausgang/{Antrag}' }];
+    // gemeinsam steht ein Zielordner im Antragsordner: Abweichung mit Wahl, kein stilles Übernehmen
+    const p = uebernahmePlanen(alt, { 'plaene.permio.zielordner': 'Export/{Antrag}' });
+    expect(p.uebernehmen).toEqual([]);
+    expect(p.abweichungen).toEqual([{ id: 'plaene.permio.zielpfad', lokal: 'Ausgang/{Antrag}', gemeinsam: 'TÖB/Export/{Antrag}', neu: 'Ausgang/{Antrag}' }]);
+    // derselbe wirksame Pfad: nichts zu tun
+    expect(uebernahmePlanen([{ id: 'plaene.permio.zielpfad', wert: 'TÖB/Export/{Antrag}' }], { 'plaene.permio.zielordner': 'Export/{Antrag}' }).gleich).toHaveLength(1);
+    // gemeinsam noch nichts eingestellt: übernommen
+    expect(uebernahmePlanen(alt, {}).uebernehmen).toEqual(alt);
+  });
 });

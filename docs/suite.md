@@ -19,8 +19,8 @@ Werkzeuge in **einem Programm und einem Fenster**. Sie kann nichts weiter, als z
   herausgelöste Apps kommen dann als Tab zurück.
 - **Kopfleiste** (nach docs/design.md, „Titelleiste“): Tabs (am Tab nur ×), „+“ (App öffnen, Neues Projekt anlegen,
   Startseite), die Version bzw. das Update, im Notbetrieb die Warnung zum Speicherort, das Menü „Einstellungen und
-  Hilfe“ (drei Striche) und die Fensterknöpfe. Im Menü: „Update auf ‹Version› …“ (nur solange ein Update bereitliegt), „Farbschema“,
-  „Speicherort der Einstellungen …“ und „Fehlerprotokoll …“; neue Fehler zählt eine Marke am Menüknopf.
+  Hilfe“ (drei Striche) und die Fensterknöpfe. Im Menü: „Update auf ‹Version› …“ (nur solange ein Update bereitliegt), „Einstellungen …“,
+  „Farbschema“ und „Fehlerprotokoll …“; neue Fehler zählt eine Marke am Menüknopf.
 - **Herauslösen** (nur Desktop): „In eigenem Fenster öffnen“ im Kontextmenü des Tabs öffnet die App in einem
   **eigenen Fenster** (z. B. auf dem zweiten Bildschirm) – mit eigenen Fensterknöpfen. **„Andocken“** in dessen Titelleiste holt sie als Tab zurück. Die App
   startet dabei neu:
@@ -53,16 +53,18 @@ Werkzeuge in **einem Programm und einem Fenster**. Sie kann nichts weiter, als z
   bleiben. Einzelheiten in der README unter „Neue Namen“. Hook: `apps/suite/src-tauri/windows/umbenennung.nsh`; die Namen aller
   Apps stehen in der README unter [Neue Namen](../README.md#neue-namen).
 
-- **Speicherort der Einstellungen** (im Menü „Einstellungen und Hilfe“ der Kopfleiste des Rahmens, in den Apps im Einstellungsdialog auf der Seite „Allgemein“, dazu auf der Startseite):
+- **Speicherort der Einstellungen** (im Einstellungsdialog auf der Seite „Allgemein“, dazu auf der Startseite):
   Einzelplatz oder Netzwerkinstallation, für alle Apps auf einmal – Einzelheiten in der README unter
   [Gemeinsame Bedienung](../README.md#gemeinsame-bedienung-aller-apps). Nach einem Wechsel gilt der neue Ort sofort in
   allen Tabs und Fenstern: Was die Apps zwischengespeichert haben (ATLAS: Struktur, Mails, Kataster; FABRIO:
   Einstellungen; QUADRIO: Raumkatalog; Büroname im Kopf der Ausdrucke), lesen sie neu (`konfigNeuLesen`) – ebenso, wenn
-  das Netzlaufwerk wegfällt oder wieder da ist. Im Tab steht der Punkt nur im Menü des Rahmens. Ist das
-  Netzlaufwerk nicht erreichbar, zeigt die Kopfleiste „⚠ Einstellungen nur lesbar“ (Notbetrieb mit der lokalen Kopie).
+  das Netzlaufwerk wegfällt oder wieder da ist. Ist das Netzlaufwerk nicht erreichbar, zeigt die Kopfleiste
+  „⚠ Einstellungen nur lesbar“ (Notbetrieb mit der lokalen Kopie); ein Klick öffnet die Einstellungen auf „Allgemein“.
 
 - **Einstellungen …** (im Menü „Einstellungen und Hilfe“ der Kopfleiste, Strg+,): der zentrale Einstellungsdialog
-  aller Apps, siehe unten.
+  aller Apps, siehe unten. Ist ein App-Tab aktiv, öffnet ihn die App auf ihrer Seite (Nachricht
+  `arch-tools:einstellungen-oeffnen` an den aktiven Tab, ohne Warteschlange); sonst öffnet Arkly ihn auf „Allgemein“.
+  Solange im Rahmen ein Dialog oder Menü offen ist, wirkt Strg+, nicht. Im herausgelösten Fenster gilt das Strg+, der App selbst.
 
 Die einzelnen Apps mit eigenem Installer bleiben unverändert nutzbar; Einstellungen (gemeinsamer
 Konfigurationsordner) und Projektdateien sind dieselben.
@@ -288,7 +290,7 @@ Felder und „Übernehmen“ gesperrt.
 | Ablage              | Gewerke, LV-Unterordner, Aufträge, Mailverkehr, Archiv, Bauleitung, weitere Mailordner, Kostenkontrolle | FABRIO | wie bisher (`Gewerke`, leer, `Auftrag`, `Korrespondenz`, `Archiv`/`_archiv`, `Bauleitung`, `Korrespondenz`, `Kostenkontrolle`) | ava › ablage.* |
 | Pläne und Dokumente | Dateinamen der Pläne                                | ATLAS                   | `{PROJEKT_KUERZEL}_{PHASE}_{Plannummer}_{Index}_{Titel}`      | projektordner › struktur.dateischema               |
 | Pläne und Dokumente | Dateinamen exportierter Antragsdokumente (PDF)      | PERMIO                  | `{PROJEKT_KUERZEL} {Art} {DATUM} {Nr} {Name}`                 | allgemein › pfade                                  |
-| Pläne und Dokumente | Fester Zielordner exportierter Antragsdokumente     | PERMIO                  | `TÖB/{Antrag}`                                                | allgemein › pfade                                  |
+| Ablage              | Fester Zielordner exportierter Antragsdokumente (im Antragsordner) | PERMIO   | `{Antrag}` (zusammen mit dem Antragsordner `TÖB/{Antrag}`) | allgemein › pfade                                  |
 | Pläne und Dokumente | Dateinamen der Katasterpläne                        | ATLAS                   | `{PROJEKT_KUERZEL} {Art} {DATUM} {Name}`                      | kataster › dateiname                               |
 | Pläne und Dokumente | Muster der Rechnungsdateien                         | FABRIO                  | wie bisher (das erste für neue Dateien)                       | ava › rechnungen.muster                            |
 | Export              | Berechnungsordner (gemeinsam), darin Unterordner je App | QUADRIO, TERRIO, NUMIO | `03 Berechnungen`; Unterordner `Flächen`, `Nachweise`, `Kosten` | allgemein › pfade                                  |
@@ -297,6 +299,29 @@ Felder und „Übernehmen“ gesperrt.
 | Vorlagen            | Dateinamen der Vorlagen im Projekt                  | ATLAS                   | `{PROJEKT_KUERZEL} {Name}`                                    | projektordner › struktur.vorlagenname              |
 | Vorlagen            | Leere Formulare                                     | PERMIO                  | (keiner)                                                      | allgemein › pfade                                  |
 | Vorlagen            | Name neuer LV-Dateien                               | FABRIO                  | `{PROJEKT_KUERZEL} {DATUM} LV {Gewerk}`                       | ava › lv.dateiname                                 |
+
+**Baum:** Jeder Eintrag sagt, wovon er abhängt – so, wie die Apps den Pfad tatsächlich auflösen (Abgleich in den Tests
+`einstellungen/baum.test.ts` und `bezug.test.ts` in FABRIO, PERMIO und ATLAS). Was von einem Eintrag abhängt, steht
+eingerückt darunter; die Vorschau zeigt den vollständigen Pfad. Bezüge:
+
+- relativ zum Projektordner: Projektdatei, Fotoordner, Antragsordner, „PERMIO sucht Berechnungen außerdem in“,
+  Ablageordner der Katasterpläne, Ordner der Gewerke, Bauleitung, Berechnungsordner; ein aus früheren Einstellungen
+  übernommener Zielordner der Antragsdokumente außerhalb des Antragsordners (nur sichtbar, solange er gesetzt ist)
+- vollständige Ordner: Stammordner der Projekte, Vorlagenordner (ATLAS), Leere Formulare (PERMIO)
+- im Stammordner: Name des Projektordners
+- im Ordner der Gewerke, je Gewerk ein Ordner: LV-Unterordner, Aufträge und Rechnungen, Mailverkehr des Gewerks
+- darunter: Name neuer LV-Dateien (im LV-Unterordner), Muster der Rechnungsdateien (im Auftragsordner)
+- im Antragsordner: fester Zielordner der Antragsdokumente (Vorgabe `{Antrag}`, zieht mit, wenn sich der Antragsordner
+  ändert); im Ordner der aktiven Antragsfassung bzw. im festen Zielordner: Dateinamen exportierter Antragsdokumente.
+  Übernommen ohne Verlust: Lag der bisherige feste Zielordner (relativ zum Projektordner) im Antragsordner, entfällt
+  dieser Teil; sonst bleibt er als abweichender Ordner relativ zum Projektordner stehen. War nie einer eingestellt, gilt
+  jetzt der Antragsordner (bisher fest `TÖB/{Antrag}`, auch bei anderem Antragsordner). Der wirksame Pfad steht für
+  ältere Versionen weiter unter dem bisherigen Schlüssel
+- im Ablageordner der Katasterpläne: Dateinamen der Katasterpläne
+- im Berechnungsordner: Unterordner je App; darin die Dateinamen für Excel und PDF
+- überall gesucht: Archivordner, weitere Mailordner, Kostenkontrolle (FABRIO)
+- anderswo festgelegt: Projektnummer (Teil des Ordnernamens), Dateinamen der Pläne (Planordner der Struktur), Dateinamen
+  der Vorlagen (Zielordner der Zuordnung), „PDF mitspeichern“
 
 **Gemeinsame Angaben:** Was mehrere Apps gleich nutzen, steht einmal (docs/design.md, „Einstellungen“). Der
 Berechnungsordner gilt für QUADRIO, TERRIO und NUMIO; darin hat jede App einen Unterordner (leer = direkt im

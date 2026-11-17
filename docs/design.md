@@ -51,12 +51,46 @@ Texttabellen: Spaltenköpfe linksbündig (`.summary-table.text`, z. B. Platzhalt
 und Zahlenspalten, z. B. Kostengruppe | von | Mittel | bis) nehmen `.text` und markieren die Zahlenspalten mit `th.num`
 und `td.num`. Zeilen mit Feldern (Eingaben je Zeile) bekommen `.felder`: oben bündig, Text ohne Feld oder Knopf fluchtet
 mit dem Feldtext. Gruppenzeilen `tr.gruppe` (getönt mit `--tabelle-gruppe`, halbfett), Summenzeilen `tr.summe`
-(halbfett, kräftigere Linie darüber); `tr.strong` bleibt für einzelne hervorgehobene Zeilen, `tr.selected` (getönt mit
-`--accent-soft`, Akzentlinie links) für die gewählte Zeile – der Zustand auch für Hilfsmittel (`aria-selected` an der
-Zeile oder `aria-pressed`/`aria-current` am Knopf darin). Tabellen ohne Felder mit mehrzeiligen Zellen (Rechenweg,
-Katalog) bekommen `.oben` (oben bündig, ohne den Ausgleich der Feldzeilen). Ein Verweisknopf im Text (`button.link`, z.
-B. ein Wert, der seine Prüfung öffnet) zählt in Feldzeilen als Text. Diese Tabelle soll die eigenen Tabellenklassen der
-Apps ersetzen; bis zur Umstellung bleiben diese bestehen.
+(halbfett, kräftigere Linie darüber); `tr.strong` bleibt für einzelne hervorgehobene Zeilen, `tr.selected` bzw.
+`tr[aria-selected="true"]` (getönt mit `--accent-soft`, Akzentlinie links) für die gewählte Zeile – der Zustand auch für
+Hilfsmittel (`aria-selected` an der Zeile oder `aria-pressed`/`aria-current` am Knopf darin). Eine Zusatzzeile unter
+einer Zeile (Hinweis, Kennzeichen, Handwert) bekommt `tr.zusatz`: ohne eigene Trennlinie, knapp darunter, und mit der
+Zeile darüber gewählt (Tönung und Akzentlinie). Beginnt eine Zelle im Grid eine eigene Zeile (Zeile als Grid, Zelle über
+die ganze Breite), trägt sie `td.zeilenanfang` und bekommt in der gewählten Zeile ebenfalls die Akzentlinie. Je Zeile
+höchstens eine Zusatzzeile. Tabellen ohne Felder mit mehrzeiligen Zellen (Rechenweg, Katalog) bekommen `.oben` (oben
+bündig, ohne den Ausgleich der Feldzeilen). Ein Verweisknopf im Text (`button.link`, z. B. ein Wert, der seine Prüfung
+öffnet) zählt in Feldzeilen als Text. Diese Tabelle soll die eigenen Tabellenklassen der Apps ersetzen; bis zur
+Umstellung bleiben diese bestehen.
+
+Marken (`.marke`, z. B. das Kennzeichen „festgelegt“ in einer Zeile, die Marken der Projektübersicht): klein
+(`--fs-xs`), getönt mit `--chip-bg` und Text in `--muted`; Varianten `.warnung`, `.ok`, `.info` (nicht `.hinweis` – das
+ist die schwebende Hinweis-Meldung; in der Projektübersicht heißt die Art weiter `hinweis`). Die Information steht immer
+im Text der Marke, die Fläche ist nur Schmuck. Auf getönten Gründen – gewählte Zeile samt `tr.zusatz` (`tr.selected`
+oder `tr[aria-selected="true"]`), überfahrene Zeile, `tr.gruppe`, `aria-selected`/`aria-current`, überfahrene
+Projektkachel – verschwände jede Fläche (etwa 1 : 1); dort trägt die Marke einen Rahmen in ihrer Textfarbe (mindestens
+4,9 : 1, hell wie dunkel). Beim Überfahren jeder Tabellenzeile erscheint der Rahmen, auch wo die Zeile nicht getönt wird
+– gewollt, damit es keine eigene Klasse für überfahrbare Zeilen braucht.
+
+Lange Datentabellen (LV, Rechnungen, Mängel) und ihre Bausteine:
+
+- `.fest`: Der Spaltenkopf bleibt beim Rollen des Kartenrumpfs stehen (sticky am `thead`, so bleibt auch ein
+  mehrzeiliger Kopf zusammen), mit dem Grund der Karte und einer Linie darunter; die Köpfe brechen nicht um – lange
+  Köpfe kürzen, den vollen Namen in `title`. Was den Fokus bekommt, rollt nicht unter den Kopf (`scroll-padding-top`,
+  Vorgabe eine Kopfzeile; ein mehrzeiliger Kopf setzt `--tabelle-kopf-h`). Der Kopf klebt am nächsten Rollbehälter:
+  Breite Tabellen stehen deshalb ohne eigene rollende Hülle direkt im bündigen Rumpf, der in beide Richtungen rollt.
+  Inhalt über einer breiten Tabelle (Kennzahlen, Hinweise) rollt dann waagerecht mit; ist das störend, bekommt die
+  Tabelle eine eigene Karte.
+- `.waehlbar` (nur, wenn alle Zeilen wählbar sind): Überfahren und Fokus in der Zeile tönen sie leicht in der
+  Akzentfarbe, dazu eine Linie links in abgeschwächter Akzentfarbe (die Tönung allein wäre von der Gruppenzeile kaum zu
+  unterscheiden), leiser als die Akzentlinie der gewählten Zeile; Gruppen-, Summen- und gewählte Zeilen bleiben, wie sie
+  sind. Die Zeilen sind per Tastatur wählbar (Knopf in der Zeile oder `tabindex` mit Enter/Leertaste, Zustand über
+  `aria-selected`).
+- `.felder`: Kästchen und Optionsfelder lösen den Ausgleich nicht aus und behalten ihre Breite; kleine und Symbolknöpfe
+  (× zum Entfernen) stehen mittig zur Feldhöhe.
+- `input.zelle` (Feld in der Zelle, z. B. Menge und Einheitspreis im LV): randlos und so hoch wie eine Textzeile,
+  fluchtet also ohne Ausgleich; Rahmen beim Überfahren, beim Fokus Rand in `--accent` und Saum wie bei allen Feldern;
+  ein Fehler (`feld-fehler`, `aria-invalid`) zeigt den roten Rand auch ohne Fokus. Der Spaltenkopf sagt, dass die Werte
+  bearbeitbar sind (z. B. „Menge“ über Eingaben) – ohne Maus sieht man es dem Feld sonst nicht an.
 
 Kennzahlen als Kacheln (`.metric-row` mit `.metric`): oben die Bezeichnung (`span`, `--fs-xs`, `--muted`), darunter der
 Wert (`strong`, `--fs-xl`, Tabellenziffern), wahlweise eine Zeile Nebentext (`small`, wie die Bezeichnung). Die Kacheln
@@ -200,9 +234,10 @@ mit `einstellungenEntwurfMelden`, Sperre über `useEinstellungenGesperrt`).
 - **Aufbau:** `Modal` mit `tabelle` und Klasse `einst`; der Titel „Einstellungen“ steht als `h3` im Navigationskopf
   über der Seitenliste (Ausnahme mit eigenem Kopf, siehe „Dialoge“), rechts der Inhalt der gewählten Seite.
   Gemeinsames Muster in `base.css`: `.einst-form`, `.einst-nav` (Seitenliste, Einträge `.einst-nav-eintrag` mit
-  Symbol, Titel und kurzem Text), `.einst-inhalt`, `.einst-gruppe`, für gemeinsame Angaben `.einst-abweichungen`, `.einst-aufklappen`, `.einst-unter`
-  und `.einst-wirksam`; dazu `.einst-verweis` (`PfadeVerweis`) für den
-  umgekehrten Weg, aus einem Dialog der App auf eine Seite der Einstellungen. Unterabschnitte einer Seite sind `h4`.
+  Symbol, Titel und kurzem Text), `.einst-inhalt`, `.einst-gruppe`, für gemeinsame Angaben `.einst-abweichungen`,
+  `.einst-aufklappen`, `.einst-unter` und `.einst-wirksam`, für den Baum der Pfade `.einst-baum`, `.einst-bezug` und
+  `.einst-bezugseintrag`; dazu `.einst-verweis` (`PfadeVerweis`) für den umgekehrten Weg, aus einem Dialog der App auf
+  eine Seite der Einstellungen. Unterabschnitte einer Seite sind `h4`.
 - **Seitenliste:** eine senkrechte Registerleiste wie unter „Umschalter“ (`role="tablist"`,
   `aria-orientation="vertical"`, Einträge `role="tab"` mit `aria-selected`, ↑/↓ wandern, Pos1/Ende, automatische
   Aktivierung, nur der gewählte Eintrag mit `tabIndex` 0); der Inhalt ist `role="tabpanel"` mit `aria-labelledby` auf
@@ -221,16 +256,37 @@ mit `einstellungenEntwurfMelden`, Sperre über `useEinstellungenGesperrt`).
   Felder und „Übernehmen“ gesperrt (Grund im `title`), oben ein Hinweis `.meldung.warnung`.
 - **Felder:** die gemeinsamen Bausteine (`.field`, Pfadwahl mit „Ordner wählen …“, Platzhalter mit Vorschau des
   Ergebnisses); Fehler an der Stelle (`.feld-meldung`), nicht als Rückfrage.
+- **Baum der Pfade:** Jeder Eintrag sagt, wovon er abhängt (`bezug` in `einstellungen/eintraege.ts`: Projektordner,
+  vollständiger Ordner, ein anderer Eintrag – ggf. mit Ordner dazwischen, etwa je Gewerk –, überall gesucht oder
+  anderswo festgelegt; wo die App in einem anderen Modus woanders ablegt, sagt die Zeile auch das). Die erste Zeile
+  der Erklärung nennt das als Satz (`.einst-bezug`, `--fs-s` in `--muted`, Teil von `aria-describedby`, z. B. „Relativ
+  zu „Ordner der Gewerke“ › je Gewerk ein Ordner.“). Was von einem Eintrag abhängt, steht als eigene Karte darunter,
+  je Ebene um `--s5` eingerückt mit Linie links (1px `--border`; `.einst-baum`, Abstand `--s2` wie zwischen den Karten
+  der Gruppe; die Linie ist nur Schmuck, die Gliederung trägt `role="group"` mit „Unterordner von „…““, „Dateien in
+  „…““ bzw. „Abhängig von „…““). Dateinamen stehen unter dem Ordner, in den sie schreiben, und damit in dessen Gruppe.
+  Die Vorschau zeigt den vollständigen Pfad mit Beispielwerten („Projektordner / Gewerke / G08 Fenster / Auftrag“,
+  Monoschrift, lange Pfade brechen um) und folgt Änderungen der Eltern sofort. Wird ein Kind absolut angegeben, gilt
+  die Feldfehler-Regel (`.feld-meldung` mit Abhilfe „Relativ zu „…“ angeben …“); die Bezugszeile nennt den Zustand im
+  Text („Absolut angegeben – gehört unter „…“ und gilt nur relativ dazu.“), `--warn-text` kommt nur hinzu. Beim Tippen
+  bleibt die Karte an ihrem Platz (Fokus). Ist ein absoluter Wert gespeichert, löst sich die Karte aus dem Baum und
+  steht auf oberster Ebene der Gruppe; die Vorschau beginnt dann beim absoluten Wert. Der Filter „App“ zeigt Eltern,
+  die die App nicht selbst nutzt, ohne Feld in `--muted` (`.einst-bezugseintrag`: „Gilt:“ mit Vorschau, „Alle Apps
+  zeigen“ – danach steht der Fokus in deren Feld), nicht über `opacity`. Keine eigene Ausklapp-Bedienung: Der Baum
+  gliedert nur, die Tab-Reihenfolge bleibt (gleich der Lesereihenfolge, eingerückte Karten werden nicht übersprungen).
+  Ersetzt ein anderer Eintrag den Wert (`giltNichtWenn`, etwa ein übernommener Zielordner außerhalb des
+  Antragsordners), nennt die Bezugszeile auch das im Text („Gilt nicht, solange „…“ gesetzt ist.“, dazu
+  `--warn-text`), ohne Vorschau; der ersetzende Eintrag steht direkt hinter dem Baum seines Bezugs.
 - **Gemeinsame Angaben:** Was mehrere Apps gleich nutzen (Ordner, Dateinamen), steht einmal; die Karte nennt alle Apps
   als Marken. Nicht: dieselbe Angabe je App als eigenes Feld wiederholen. Abweichungen je App gibt es nur, wo sie
   fachlich nötig sind, und nur auf Wunsch: unter dem Fuß der Karte, abgesetzt durch eine Linie (`--line-soft`), ein
-  Knopf `small` mit Aufklapp-Pfeil (`pfeilRechts`/`pfeilUnten`, `aria-expanded`, `aria-controls`) – „Je App abweichend“
-  bzw. bei Ordnern „Unterordner je App“, mit der Zahl der gesetzten in Klammern, eingeklappt mit „· geändert“, wenn
-  darin etwas geändert ist. Er öffnet die Felder je App eingerückt mit Linie links (`.einst-unter`, `role="group"` mit
-  Namen, ohne eigenen Rahmen); leer heißt „wie die gemeinsame Angabe“ (sie steht als Platzhalter im Feld). Offen ist er,
-  wenn eine Abweichung gesetzt ist oder ein Sprung ein Feld darin ansteuert. Unterscheidet sich etwas je App, zeigt die
-  Karte unter dem Feld statt einer Vorschau „Gilt je App:“ mit App-Marke und Ergebnis (`.einst-wirksam`). Der Filter
-  „App“ zeigt die gemeinsame Angabe und nur die Abweichung dieser App.
+  Knopf `small` mit Aufklapp-Pfeil (`pfeilRechts`/`pfeilUnten`, `aria-expanded`, `aria-controls`) – „Je App
+  abweichend“ bzw. bei Ordnern „Unterordner je App“, mit der Zahl der gesetzten in Klammern, eingeklappt mit „·
+  geändert“, wenn darin etwas geändert ist. Er öffnet die Felder je App, um `--s5` eingerückt mit Linie links (1px
+  `--border`; `.einst-unter`, `role="group"` mit Namen, ohne eigenen Rahmen); leer heißt „wie die gemeinsame Angabe“
+  (sie steht als Platzhalter im Feld). Offen ist er, wenn eine Abweichung gesetzt ist oder ein Sprung ein Feld darin
+  ansteuert. Unterscheidet sich etwas je App, zeigt die Karte unter dem Feld statt einer Vorschau „Gilt je App:“ mit
+  App-Marke und Ergebnis (`.einst-wirksam`). Der Filter „App“ zeigt die gemeinsame Angabe und nur die Abweichung
+  dieser App.
 - **Ordnerliste** (Listen vollständiger Ordner, `zeilen: 'ordner'` – z. B. „Stammordner der Projekte“): Liste statt
   Textfeld (`.einst-ordnerliste`), der erste Eintrag mit dem Hinweis „neue Projekte“; je Zeile Symbolknöpfe „Nach
   oben“, „Nach unten“ (`nachOben`, `nachUnten`), „Entfernen“ (`schliessen`: aus der Liste, der Ordner bleibt;
@@ -466,6 +522,13 @@ Zurücksetzen, Sonderfunktionen. Feste Namen, in allen Apps gleich:
   neben „Datei“ der App im Tab (Arkly hat kein eigenes „Datei“; Strg+, gilt einmal, siehe oben). Verweise aus den
   Einstellungen auf einen Dialog der App (Werkzeug, Datenpflege) zählen nicht als doppelter Einstieg (siehe
   „Einstellungen“).
+  Bewusste Ausnahme ist auch „Datei → Exportieren“: Jede Ausgabe in eine Datei (Excel, PDF, CSV) steht dort, auch wenn
+  sie zugleich der Hauptknopf oder der Knopf „Exportieren“ in der Leiste ist – so findet man jede Ausgabe in jeder App
+  an derselben Stelle. Der Knopf „Exportieren“ gibt ohne den Exportdialog mit der eingestellten Vorlage aus, der
+  Menüpunkt öffnet den Dialog; ist der Hauptknopf selbst eine Ausgabe mit Dialog („Als PDF exportieren …“), führen beide
+  zum selben Dialog, und sein Tastenkürzel steht auch am Menüpunkt (`tasten`). Anders „Drucken …“: Drucken ist keine
+  Ausgabe in eine Datei und steht nur dann in „Datei“, wenn es nicht der Hauptknopf ist; ein Hauptknopf „Drucken / PDF
+  …“ (Druckvorschau, daraus auch PDF) bringt deshalb keinen Punkt unter „Exportieren“ mit.
 - **Aufbau:** links „Datei“ und „Speichern“, in der Mitte die Werkzeuge bzw. Hauptschritte, rechts der Hauptknopf,
   zuletzt „Mehr“ (FABRIO: „Datei“ im Fuß der Navigation, siehe oben).
 - **Zeilen:** Seltene Aktionen einer Tabellen- oder Listenzeile (FABRIO-Rechnung: Deckblatt, Mail an den Zahler)
@@ -590,12 +653,14 @@ Werkzeugleiste liegt mit auf der Fläche (gleicher Grund, keine Linie). Baustein
     zuoberst in der Spalte – direkt oder im ersten Element (etwa einer Hülle mit begrenzter Breite) – und deckt den
     Innenabstand der Spalte mit dem Grund der Fläche ab, sonst liefe der Inhalt durch einen Streifen darüber (in einer
     Hülle über deren Breite – daneben liegt ohnehin kein Inhalt, solange die Karten in derselben Hülle stehen). Ein Kopf
-    mit Suche ist ein benannter Suchbereich (`role="search"` mit `aria-label`). Was den Fokus bekommt, rollt nicht
-    unter ihn (`scroll-padding-top`): `--rollend-kopf-h` ist die sichtbare Höhe des Kopfs plus Platz für den
-    Fokusrahmen, Vorgabe eine Zeile Bedienelemente (`--ctl-h` + `--s2` + 2 × `--s1`). Ein höherer Kopf setzt den Wert
-    selbst; bricht er in schmalen Fenstern um, setzt die App ihn je Umbruchstufe (Container- oder Media-Abfrage) oder
-    lässt den Kopf nicht umbrechen. Ebenen in den Karten (Aufklapplisten, Hinweise) bleiben unter dem Kopf; was über
-    die Karte hinausragen soll, kommt wie überall als Portal (siehe „Inhalt“).
+    mit Suche ist ein benannter Suchbereich (`role="search"` mit `aria-label`). Was den Fokus bekommt, rollt nicht unter
+    ihn (`scroll-padding-top`): `--rollend-kopf-h` ist die sichtbare Höhe des Kopfs plus Platz für den Fokusrahmen,
+    Vorgabe eine Zeile Bedienelemente (`--ctl-h` + `--s2` + 2 × `--s1`). Ein höherer Kopf setzt den Wert selbst; bricht
+    er in schmalen Fenstern um, setzt die App ihn je Umbruchstufe (Container- oder Media-Abfrage) oder lässt den Kopf
+    nicht umbrechen. Hängt der Umbruch vom Inhalt ab (Filter, Trefferzahl, Breite der Seitenkarten), misst
+    `useRollendKopf(ref)` den Kopf und setzt den Wert selbst (Höhe des Kopfs + `--s1`; ein fester Kopf je Spalte).
+    Ebenen in den Karten (Aufklapplisten, Hinweise) bleiben unter dem Kopf; was über die Karte hinausragen soll, kommt
+    wie überall als Portal (siehe „Inhalt“).
   - **Ränder:** Oben und seitlich reicht die Spalte um `--s1` in den Spalt, damit die Karten mit den Nachbarkarten
     fluchten; unten endet sie bündig mit ihnen. Die Rollleiste hat ihren Platz von Anfang an (`scrollbar-gutter`), die
     Breite springt also nicht, und sie liegt im Spalt zur Nachbarkarte rechts. Dieser Spalt ist deshalb um die Breite

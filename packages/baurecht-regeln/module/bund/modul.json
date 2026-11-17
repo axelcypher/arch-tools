@@ -598,12 +598,12 @@
   },
   "fakten": {
     "planung.innen": {
-      "titel": "Im Zusammenhang bebauter Ortsteil (§ 34 BauGB)",
-      "kurz": "Im Zusammenhang bebauter Ortsteil",
+      "titel": "Grundstück liegt in der zusammenhängenden Bebauung des Ortes",
+      "kurz": "Lage in der zusammenhängenden Bebauung",
       "gruppe": "planung",
       "typ": "janein",
-      "frage": "Richtet sich die Zulässigkeit im Übrigen nach § 34 BauGB (Innenbereich) – nicht nach § 35 (Außenbereich)?",
-      "hilfe": "nur bei einfachem Bebauungsplan (§ 30 Abs. 3 BauGB) oder Satzung nach BauGB (Innenbereichssatzung § 34 Abs. 4 = ja, Außenbereichssatzung § 35 Abs. 6 = nein)",
+      "frage": "Liegt das Grundstück innerhalb der zusammenhängenden Bebauung des Ortes, etwa in einer Baulücke – nicht jenseits der letzten Bebauung oder bei einzelnen Höfen?",
+      "hilfe": "LEXIO fragt das nur beim einfachen Bebauungsplan oder bei einer Satzung der Gemeinde nach dem BauGB: Sie regeln nicht alles, und für den Rest kommt es auf die Lage an. Ja zum Beispiel: Baulücke in einer Straße, die auf beiden Seiten bebaut ist; Grundstück im Ortskern; auch das letzte bebaute Grundstück am Ortsrand. Nein zum Beispiel: Wiese am Ortsrand, hinter der die freie Landschaft beginnt; Grundstück bei einer Splittersiedlung oder einem einzelnen Hof. Eine Satzung, die Flächen dem Ort zurechnet (Klarstellungs-, Entwicklungs- oder Ergänzungssatzung), bedeutet ja, eine Außenbereichssatzung nein. Im Zweifel offen lassen. Wo erfahre ich das: Planauskunft der Gemeinde. Maßgeblich: §§ 34, 35 BauGB.",
       "wenn": {
         "oder": [
           {
@@ -652,11 +652,12 @@
       }
     },
     "planung.so_erholung": {
-      "titel": "Sondergebiet, das der Erholung dient (§ 10 BauNVO)",
-      "kurz": "Sondergebiet Erholung (§ 10 BauNVO)",
+      "titel": "Sondergebiet für Wochenendhäuser, Ferienhäuser oder Camping",
+      "kurz": "Sondergebiet für Erholung",
       "gruppe": "planung",
       "typ": "janein",
-      "hilfe": "ja = Wochenendhaus-, Ferienhaus-, Campingplatzgebiet; nein = sonstiges Sondergebiet (§ 11 BauNVO)",
+      "frage": "Setzt der Bebauungsplan ein Sondergebiet für die Erholung fest – etwa ein Wochenendhaus-, Ferienhaus- oder Campingplatzgebiet?",
+      "hilfe": "Ja zum Beispiel: Der Bebauungsplan setzt „SO Wochenendhausgebiet“, „SO Ferienhausgebiet“ oder „SO Campingplatz“ fest, oder ein anderes Sondergebiet, das der Erholung dient (z. B. Ferienpark). Nein zum Beispiel: andere Sondergebiete, etwa für Einzelhandel, Klinik, Hochschule, Hafen oder Energie. Wo erfahre ich das: Bebauungsplan (Planzeichnung und textliche Festsetzungen). Maßgeblich: §§ 10, 11 BauNVO.",
       "wenn": {
         "f": "planung.gebietsart",
         "ist": "SO"
@@ -711,11 +712,12 @@
       "hilfe": "in Überschwemmungs- und Risikogebieten verboten bzw. eingeschränkt (§ 78c WHG)"
     },
     "gebaeude.kmu": {
-      "titel": "Eigentum eines kleinen oder mittleren Unternehmens, überwiegend selbst genutzt",
-      "kurz": "Eigentum eines KMU, selbst genutzt",
+      "titel": "Gebäude gehört einem kleinen oder mittleren Unternehmen, das es überwiegend selbst nutzt",
+      "kurz": "Kleine/mittlere Firma, selbst genutzt",
       "gruppe": "gebaeude",
       "typ": "janein",
-      "hilfe": "Nichtwohngebäude solcher Unternehmen sind vom GEIG ausgenommen (§ 1 Abs. 2 GEIG)",
+      "frage": "Gehört das Gebäude einem Unternehmen mit weniger als 250 Beschäftigten und höchstens 50 Mio. € Jahresumsatz oder 43 Mio. € Bilanzsumme, das es überwiegend selbst nutzt?",
+      "hilfe": "Gebäude solcher Unternehmen sind von der Pflicht zur Ladeinfrastruktur für Elektroautos ausgenommen. Klein oder mittel ist ein Unternehmen nach der Empfehlung der EU-Kommission; Beteiligungen anderer Unternehmen können mitzählen. Ja zum Beispiel: Handwerksbetrieb mit eigener Werkhalle; Arztpraxis oder Kanzlei im eigenen Haus. Nein zum Beispiel: Das Gebäude wird überwiegend vermietet, oder es gehört einem großen Unternehmen bzw. einer Behörde. Wo erfahre ich das: von der Bauherrschaft. Maßgeblich: § 1 Abs. 2 GEIG.",
       "wenn": {
         "$": "nichtwohnnutzung"
       }
@@ -731,11 +733,12 @@
       }
     },
     "vorhaben.groessere_renovierung": {
-      "titel": "Größere Renovierung, die den Parkplatz oder die elektrische Infrastruktur umfasst",
+      "titel": "Größere Renovierung, die den Parkplatz oder die elektrische Anlage einschließt",
       "kurz": "Größere Renovierung (Parkplatz/Elektrik)",
       "gruppe": "vorhaben",
       "typ": "janein",
-      "hilfe": "§§ 8, 9 GEIG – bei Gebäuden mit mehr als zehn Stellplätzen im oder am Gebäude",
+      "frage": "Wird mehr als ein Viertel der Gebäudehülle erneuert (größere Renovierung), und gehören dazu der Parkplatz bzw. die Stellplätze oder die elektrische Anlage?",
+      "hilfe": "Zur Gebäudehülle gehören Dach, Fassade, Fenster und Bodenplatte. Ja zum Beispiel: Sanierung eines Bürohauses mit neuer Fassade und neuer Tiefgarage. Nein zum Beispiel: nur neue Fenster; nur der Parkplatz wird neu asphaltiert, ohne dass das Gebäude saniert wird. Wichtig nur bei Gebäuden mit mehr als zehn Stellplätzen; dann sind Leitungen bzw. Ladepunkte für Elektroautos vorzusehen. Wo erfahre ich das: aus der Planung bzw. von der Bauherrschaft. Maßgeblich: §§ 2, 8, 9 GEIG.",
       "wenn": {
         "oder": [
           {
@@ -748,11 +751,12 @@
       }
     },
     "planung.planreife": {
-      "titel": "Vorhaben nach § 33 BauGB zulässig (Planreife; Festsetzungen schriftlich anerkannt, Erschließung gesichert)",
-      "kurz": "Planreife nach § 33 BauGB",
+      "titel": "Entwurf des neuen Bebauungsplans weit fortgeschritten, Vorhaben passt dazu",
+      "kurz": "Entwurf fortgeschritten (Planreife)",
       "gruppe": "planung",
       "typ": "janein",
-      "hilfe": "Ein Aufstellungsbeschluss allein genügt nicht – § 33 Abs. 1 Nr. 1–4 BauGB",
+      "frage": "Ist die Beteiligung zum Entwurf des neuen Bebauungsplans abgeschlossen, hält das Vorhaben die künftigen Festsetzungen ein, hat die Bauherrschaft sie schriftlich anerkannt, und ist die Erschließung gesichert?",
+      "hilfe": "Ein Vorhaben ist schon vor Inkrafttreten des Plans zulässig, wenn alles zutrifft: Die Beteiligung der Öffentlichkeit und der Behörden zum Entwurf ist abgeschlossen (eine laufende Auslegung genügt nicht); das Vorhaben hält die künftigen Festsetzungen ein; die Bauherrschaft hat sie schriftlich anerkannt (meist auf einem Vordruck der Gemeinde); die Erschließung (Straße, Wasser, Abwasser) ist gesichert. Ja zum Beispiel: Wohnhaus in einem Neubaugebiet, dessen Planentwurf ausgelegen hat und für das die Beteiligung abgeschlossen ist, mit unterschriebener Anerkennung. Nein, wenn erst beschlossen ist, einen Plan aufzustellen, oder eine der Voraussetzungen fehlt. In Sonderfällen ist ein Vorhaben schon früher zulässig – nur nach Auskunft der Gemeinde. Wo erfahre ich das: Stadtplanung der Gemeinde (Stand des Verfahrens, Entwurf) bzw. Erschließungsträger. Maßgeblich: § 33 BauGB.",
       "ohneAusloeser": false,
       "wenn": {
         "f": "planung.planaufstellung",
@@ -760,11 +764,12 @@
       }
     },
     "planung.zurueckstellung": {
-      "titel": "Die Gemeinde hat die Zurückstellung des Baugesuchs beantragt (§ 15 BauGB, auch nach § 141 Abs. 4 oder § 172 Abs. 2 BauGB)",
-      "kurz": "Zurückstellung beantragt (§ 15 BauGB)",
+      "titel": "Gemeinde hat beantragt, den Bauantrag zurückzustellen",
+      "kurz": "Zurückstellung beantragt",
       "gruppe": "planung",
       "typ": "janein",
-      "hilfe": "bei der Gemeinde erfragen, solange ein Bebauungsplan oder ein Flächennutzungsplan mit Konzentrationszonen aufgestellt wird, vorbereitende Untersuchungen für eine Sanierung laufen oder eine Erhaltungssatzung aufgestellt wird – die Gemeinde kann die Zurückstellung auch noch nach Eingang des Bauantrags beantragen",
+      "frage": "Hat die Gemeinde bei der Bauaufsicht beantragt, die Entscheidung über den Bauantrag aufzuschieben (Zurückstellung)?",
+      "hilfe": "Das kann die Gemeinde, solange sie einen Bebauungsplan oder einen Flächennutzungsplan mit Zonen für bestimmte Anlagen aufstellt, eine Sanierung vorbereitet oder eine Erhaltungssatzung aufstellt – auch noch, nachdem der Bauantrag eingegangen ist; dann ruht das Verfahren bis zu einem Jahr. Ja, wenn die Bauaufsicht mitteilt, dass die Gemeinde die Zurückstellung beantragt hat. Nein, wenn kein solcher Antrag vorliegt. Wo erfahre ich das: Mitteilung der Bauaufsicht bzw. Nachfrage bei der Gemeinde. Maßgeblich: § 15 BauGB, auch mit § 141 Abs. 4 und § 172 Abs. 2 BauGB.",
       "ohneAusloeser": false,
       "wenn": {
         "oder": [
@@ -788,11 +793,12 @@
       }
     },
     "planung.vorbereitende_untersuchungen": {
-      "titel": "Beginn vorbereitender Untersuchungen für eine Sanierung oder einen städtebaulichen Entwicklungsbereich beschlossen und ortsüblich bekannt gemacht (§ 141 Abs. 3, § 165 Abs. 4 BauGB)",
-      "kurz": "Vorbereitende Untersuchungen (§ 141)",
+      "titel": "Gemeinde untersucht das Gebiet für eine Sanierung oder Entwicklung",
+      "kurz": "Sanierung wird vorbereitet",
       "gruppe": "planung",
       "typ": "janein",
-      "hilfe": "Ab der Bekanntmachung kann die Gemeinde die Zurückstellung von Vorhaben und Beseitigungen beantragen (§ 141 Abs. 4 Satz 1 BauGB, § 15 entsprechend). Mit der förmlichen Festlegung des Sanierungsgebiets bzw. Entwicklungsbereichs wird sie unwirksam (§ 141 Abs. 4 Satz 2); dann gilt § 144, soweit die Satzung ihn nicht ausschließt (§ 142 Abs. 4) – bei der Gemeinde erfragen",
+      "frage": "Hat die Gemeinde beschlossen und bekannt gemacht, das Gebiet für eine Sanierung oder eine städtebauliche Entwicklungsmaßnahme zu untersuchen (vorbereitende Untersuchungen)?",
+      "hilfe": "Das ist die Vorstufe eines Sanierungsgebiets bzw. Entwicklungsbereichs. Ab der Bekanntmachung kann die Gemeinde beantragen, Bauvorhaben und Abbrüche zurückzustellen; ist das Gebiet förmlich festgelegt, gelten stattdessen dessen Regeln. Ja zum Beispiel: Die Gemeinde hat bekannt gemacht, dass sie den Ortskern auf eine Sanierung hin untersucht. Nein, wenn nichts beschlossen ist oder das Sanierungsgebiet schon festgelegt ist (dann die Frage „Förmlich festgelegtes Sanierungsgebiet“). Wo erfahre ich das: Planauskunft der Gemeinde oder Amtsblatt. Maßgeblich: § 141 Abs. 3 und 4, § 165 Abs. 4 BauGB.",
       "wenn": {
         "nicht": {
           "f": "planung.sanierungsgebiet",
@@ -801,11 +807,12 @@
       }
     },
     "planung.erhaltungssatzung_aufstellung": {
-      "titel": "Aufstellung einer Erhaltungssatzung beschlossen und ortsüblich bekannt gemacht (§ 172 Abs. 2 BauGB)",
+      "titel": "Gemeinde bereitet eine Erhaltungssatzung vor",
       "kurz": "Erhaltungssatzung in Aufstellung",
       "gruppe": "planung",
       "typ": "janein",
-      "hilfe": "Ab der Bekanntmachung kann die Gemeinde die Zurückstellung von Vorhaben im Sinne des § 172 Abs. 1 beantragen (§ 15 Abs. 1 entsprechend) – bei der Gemeinde erfragen",
+      "frage": "Hat die Gemeinde beschlossen und bekannt gemacht, dass sie für das Gebiet eine Erhaltungssatzung aufstellt (Schutz des Ortsbilds oder der Bewohner)?",
+      "hilfe": "Ab der Bekanntmachung kann die Gemeinde beantragen, den Bauantrag bis zu einem Jahr zurückzustellen. Ja, wenn der Beschluss bekannt gemacht ist, auch wenn die Satzung noch nicht gilt. Nein, wenn nichts beschlossen ist oder die Satzung schon gilt (dann die Frage „Gebiet mit Erhaltungssatzung“). Wo erfahre ich das: Planauskunft der Gemeinde oder Amtsblatt. Maßgeblich: § 172 Abs. 2, § 15 Abs. 1 BauGB.",
       "wenn": {
         "nicht": {
           "f": "planung.erhaltungssatzung",
@@ -965,16 +972,81 @@
         "ist": true
       }
     },
-    "planung.fnp_verfahren": {
-      "titel": "Flächennutzungsplan mit Konzentrationszonen bzw. Windenergiegebieten in Aufstellung (privilegiertes Vorhaben im Außenbereich)",
-      "kurz": "FNP-Verfahren nach § 15 Abs. 3 in Arbeit",
-      "gruppe": "planung",
+    "vorhaben.aussen_typisch": {
+      "titel": "Anlage, die ihrer Art nach in die freie Landschaft gehört",
+      "kurz": "Anlage, die in die Landschaft gehört",
+      "gruppe": "vorhaben",
       "typ": "janein",
-      "frage": "Ist das Vorhaben nach § 35 Abs. 1 Nr. 2–6 BauGB privilegiert (z. B. Biogas, Tierhaltung, Windenergie) und hat die Gemeinde beschlossen, einen Flächennutzungsplan mit Konzentrationszonen (bei Windenergie an Land: mit Windenergiegebieten, um den Flächenbeitragswert bzw. ein Teilflächenziel zu erreichen) aufzustellen, zu ändern oder zu ergänzen?",
-      "hilfe": "§ 15 Abs. 3 BauGB: dann kann die Gemeinde die Zurückstellung bis zu einem Jahr beantragen. Windenergie an Land: § 35 Abs. 3 Satz 3 gilt nicht (§ 249 Abs. 1), § 15 Abs. 3 aber entsprechend für einen Flächennutzungsplan zur Erreichung des Flächenbeitragswerts (§ 245e Abs. 2), längstens bis zum Stichtag nach der Anlage zum Windenergieflächenbedarfsgesetz – bei der Gemeinde erfragen",
+      "frage": "Ist das Vorhaben eine Anlage, die ihrer Art nach in die freie Landschaft gehört – etwa Windrad, Biogasanlage, Stall für gewerbliche Tierhaltung, Gärtnerei, Versorgungsanlage oder Kiesgrube?",
+      "hilfe": "Ja zum Beispiel: Windenergie- oder Wasserkraftanlage; Biogas- oder Biomasseanlage im Zusammenhang mit einem Hof; Stall für gewerbliche Tierhaltung (nicht zum eigenen Hof); Gartenbaubetrieb; Umspannwerk, Gasregler, Wasserwerk, Kläranlage oder Funkmast; Kies-, Sand- oder Steinabbau; ein Betrieb, der wegen Lärm, Geruch, Gefahr oder seines Zwecks nur außerhalb des Ortes stehen kann (z. B. Schießstand). Nein zum Beispiel: Wohnhaus oder Wochenendhaus; gewöhnlicher Gewerbebetrieb; land- oder forstwirtschaftlicher Hof selbst; Solarpark auf freier Fläche. Wo erfahre ich das: aus der Planung bzw. von der Bauherrschaft. Maßgeblich: § 35 Abs. 1 Nr. 2 bis 6 BauGB.",
       "wenn": {
         "$": "aussen_planrecht"
       }
+    },
+    "planung.fnp_zonen": {
+      "titel": "Gemeinde plant im Flächennutzungsplan Zonen für Windräder, Biogas- oder ähnliche Anlagen",
+      "kurz": "Zonen im Flächennutzungsplan geplant",
+      "gruppe": "planung",
+      "typ": "janein",
+      "frage": "Hat die Gemeinde beschlossen, im Flächennutzungsplan Zonen für Anlagen dieser Art festzulegen (bei Windenergie: Windenergiegebiete), also den Plan dafür aufzustellen, zu ändern oder zu ergänzen?",
+      "hilfe": "Mit solchen Zonen legt die Gemeinde fest, wo diese Anlagen hin sollen; außerhalb sind sie dann meist ausgeschlossen. Solange das Verfahren läuft, kann die Gemeinde beantragen, den Bauantrag bis zu einem Jahr zurückzustellen (verlängerbar um ein weiteres Jahr). Bei Windenergie an Land gelten dafür eigene Regeln (Windenergiegebiete); zurückstellen kann die Gemeinde aber weiter, wenn sie mit dem Plan ihr gesetzliches Flächenziel (Flächenbeitragswert) erreichen will, längstens bis zum gesetzlichen Stichtag. Ja zum Beispiel: Der Rat hat beschlossen, den Flächennutzungsplan um Windenergiegebiete zu ergänzen. Nein, wenn kein solches Verfahren läuft oder der Plan schon gilt. Wo erfahre ich das: Planauskunft der Gemeinde, Amtsblatt oder Beteiligungsportal. Maßgeblich: § 15 Abs. 3, § 245e Abs. 2, § 249 Abs. 1 BauGB.",
+      "wenn": {
+        "und": [
+          {
+            "$": "aussen_planrecht"
+          },
+          {
+            "f": "vorhaben.aussen_typisch",
+            "ist": true
+          }
+        ]
+      }
+    },
+    "planung.fnp_verfahren": {
+      "titel": "Zurückstellung wegen Zonen im Flächennutzungsplan möglich",
+      "kurz": "Zurückstellung wegen Zonenplanung",
+      "gruppe": "planung",
+      "typ": "janein",
+      "frage": "Frühere Angabe: Ist das Vorhaben nach § 35 Abs. 1 Nr. 2–6 BauGB privilegiert (z. B. Biogas, Tierhaltung, Windenergie) und hat die Gemeinde beschlossen, einen Flächennutzungsplan mit Konzentrationszonen (bei Windenergie an Land: mit Windenergiegebieten, um den Flächenbeitragswert bzw. ein Teilflächenziel zu erreichen) aufzustellen, zu ändern oder zu ergänzen?",
+      "hilfe": "Diese Frage stellt LEXIO nicht mehr: Sie ergibt sich aus den Angaben „Anlage, die in die Landschaft gehört“ und „Zonen im Flächennutzungsplan geplant“. Die Antwort aus der älteren Datei gilt, bis diese Angaben vorliegen; ergeben sie etwas anderes, steht hier ein Hinweis.",
+      "wenn": {
+        "$": "aussen_planrecht"
+      },
+      "ersetzt": true,
+      "folgt": [
+        {
+          "wenn": {
+            "f": "vorhaben.aussen_typisch",
+            "ist": false
+          },
+          "wert": false,
+          "grund": "das Vorhaben gehört nicht zu den Anlagen, für die eine Gemeinde Zonen im Flächennutzungsplan festlegt"
+        },
+        {
+          "wenn": {
+            "f": "planung.fnp_zonen",
+            "ist": false
+          },
+          "wert": false,
+          "grund": "die Gemeinde plant keine Zonen für Anlagen dieser Art im Flächennutzungsplan"
+        },
+        {
+          "wenn": {
+            "und": [
+              {
+                "f": "vorhaben.aussen_typisch",
+                "ist": true
+              },
+              {
+                "f": "planung.fnp_zonen",
+                "ist": true
+              }
+            ]
+          },
+          "wert": true,
+          "grund": "die Gemeinde plant Zonen im Flächennutzungsplan für Anlagen dieser Art"
+        }
+      ]
     },
     "planung.umlegung": {
       "titel": "Grundstück in einem Umlegungsgebiet (Umlegungsbeschluss bekannt gemacht)",
