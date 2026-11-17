@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { RueckfrageHost } from '@core/ui/Rueckfrage';
 import { VORGABE_EXPORT, VORGABE_KATALOG, VORGABE_VORLAGEN, vorlagenAus } from './antrag';
 import { useAntrag } from './antragStore';
+import { entwurfUebernehmen, entwurfVerwerfen, entwurfWert } from './einstellungsEntwurf';
 import { VORGABE_MERKMALE } from './bedingung';
 import { DokumenteEinstellungen } from './components/DokumenteEinstellungen';
 
@@ -14,6 +15,7 @@ let root: ReturnType<typeof createRoot> | null = null;
 
 beforeEach(() => {
   localStorage.clear();
+  entwurfVerwerfen();
   useAntrag.setState({
     einstellungen: { ...VORGABE_EXPORT },
     merkmalDefinitionen: VORGABE_MERKMALE,
@@ -58,8 +60,8 @@ const oeffnen = (titel: string) => klick(zeile(titel).querySelector('.es-dok-kno
 const feld = (z: HTMLElement, label: string) =>
   [...z.querySelectorAll('label')].find((l) => l.querySelector('.field-label')?.textContent === label)?.querySelector('input') as HTMLInputElement | undefined;
 const vorlageWahl = () => document.querySelector<HTMLSelectElement>('.es-dok-kopf select')!;
-const katalogEintrag = (id: string) => useAntrag.getState().katalog.find((k) => k.id === id);
-const vorlage = (id: string) => useAntrag.getState().vorlagen.find((v) => v.id === id)!;
+const katalogEintrag = (id: string) => entwurfWert('katalog').find((k) => k.id === id);
+const vorlage = (id: string) => entwurfWert('vorlagen').find((v) => v.id === id)!;
 
 describe('Einstellungen › Antrag & Export › Antragsdokumente', () => {
   it('Liste mit Kurzbeschreibung und Vorlagen je Dokument – keine Tabelle mit einer Spalte je Vorlage', async () => {
@@ -175,7 +177,7 @@ describe('Einstellungen › Antrag & Export › Antragsdokumente', () => {
     expect(vorlageWahl().value).toBe('denk');
     await klick(muell());
     await klick(knopf('Entfernen', dialog()));
-    expect(useAntrag.getState().vorlagen.some((v) => v.id === 'denk')).toBe(false);
+    expect(entwurfWert('vorlagen').some((v) => v.id === 'denk')).toBe(false);
     expect(vorlageWahl().value).toBe('');
     expect(document.querySelector('.es-dok-haken')).toBeNull();
     expect(document.activeElement).toBe(knopf('Vorlage hinzufügen'));
@@ -191,7 +193,7 @@ describe('Einstellungen › Antrag & Export › Antragsdokumente', () => {
     waehlen(vorlageWahl(), 'baua');
     await warte();
     await klick(knopf('Dokument hinzufügen'));
-    const k = useAntrag.getState().katalog.at(-1)!;
+    const k = entwurfWert('katalog').at(-1)!;
     expect(k).toMatchObject({ titel: 'Neues Dokument', art: 'extern' });
     expect(vorlage('baua').dokumente).toContain(k.id);
     const z = zeile('Neues Dokument');
@@ -220,7 +222,7 @@ describe('Einstellungen › Antrag & Export › Antragsdokumente', () => {
     await klick(knopf('Dokument entfernen', zeile('Lageplan')));
     await klick(knopf('Entfernen', dialog()));
     expect(katalogEintrag('lageplan')).toBeUndefined();
-    expect(useAntrag.getState().vorlagen.some((v) => v.dokumente.includes('lageplan'))).toBe(false);
+    expect(entwurfWert('vorlagen').some((v) => v.dokumente.includes('lageplan'))).toBe(false);
     // der Fokus steht auf dem Dokument, das nun an seiner Stelle steht
     expect(document.activeElement).toBe(zeile(VORGABE_KATALOG[i + 1].titel).querySelector('.es-dok-knopf'));
   });
@@ -228,11 +230,11 @@ describe('Einstellungen › Antrag & Export › Antragsdokumente', () => {
   it('ein Dokument ohne Vorlage entfernen schreibt die Vorlagen nicht; das letzte entfernen zeigt den Leerzustand', async () => {
     useAntrag.setState({ katalog: [{ id: 'x1', titel: 'Eigenes', art: 'extern', vorgewaehlt: false }] });
     await zeige();
-    const vorher = useAntrag.getState().vorlagen;
+    const vorher = entwurfWert('vorlagen');
     await oeffnen('Eigenes');
     await klick(knopf('Dokument entfernen', zeile('Eigenes')));
     await klick(knopf('Entfernen', document.querySelector('.modal.rf')!));
-    expect(useAntrag.getState().vorlagen).toBe(vorher);
+    expect(entwurfWert('vorlagen')).toBe(vorher);
     expect(document.querySelector('.es-dok-liste')).toBeNull();
     expect(document.querySelector('.es-dok-leer')!.textContent).toContain('Noch keine Dokumente');
     expect(document.activeElement).toBe(knopf('Dokument hinzufügen'));
@@ -244,7 +246,7 @@ describe('Einstellungen › Antrag & Export › Antragsdokumente', () => {
 
   it('„Vorgabe wiederherstellen“ nur bei Abweichung und mit Rückfrage', async () => {
     const host = await zeige();
-    const karte = () => [...host.querySelectorAll('.es-karte')].find((k) => k.querySelector('h3')!.textContent === 'Antragsdokumente')!;
+    const karte = () => [...host.querySelectorAll('.es-gruppe')].find((k) => k.querySelector('h4')!.textContent === 'Antragsdokumente')!;
     expect(knopf('Vorgabe wiederherstellen', karte())).toBeUndefined();
     await oeffnen('Bauantrag');
     eingabe(feld(zeile('Bauantrag'), 'Bezeichnung')!, 'Eigener Titel');
@@ -255,7 +257,7 @@ describe('Einstellungen › Antrag & Export › Antragsdokumente', () => {
     expect(katalogEintrag('bauantrag')!.titel).toBe('Eigener Titel');
     await klick(knopf('Vorgabe wiederherstellen', karte()));
     await klick(knopf('Zurücksetzen', document.querySelector('.modal.rf')!));
-    expect(useAntrag.getState().katalog).toEqual(VORGABE_KATALOG);
+    expect(entwurfWert('katalog')).toEqual(VORGABE_KATALOG);
   });
 
   it('„Vorgabe wiederherstellen“ der Antragsdokumente lässt auch abgeleitete Vorlagen, wie sie sind', async () => {
@@ -263,29 +265,31 @@ describe('Einstellungen › Antrag & Export › Antragsdokumente', () => {
     const katalog = [...structuredClone(VORGABE_KATALOG), { id: 'x1', titel: 'Eigenes', art: 'extern' as const, vorgewaehlt: true }];
     useAntrag.setState({ katalog, vorlagen: vorlagenAus(null, katalog) });
     const host = await zeige();
-    const karte = [...host.querySelectorAll('.es-karte')].find((k) => k.querySelector('h3')!.textContent === 'Antragsdokumente')!;
+    const karte = [...host.querySelectorAll('.es-gruppe')].find((k) => k.querySelector('h4')!.textContent === 'Antragsdokumente')!;
     await klick(knopf('Vorgabe wiederherstellen', karte));
     await klick(knopf('Zurücksetzen', document.querySelector('.modal.rf')!));
-    expect(useAntrag.getState().katalog).toEqual(VORGABE_KATALOG);
+    expect(entwurfWert('katalog')).toEqual(VORGABE_KATALOG);
     expect(vorlage('baua').dokumente).toContain('x1');
+    await act(() => entwurfUebernehmen());
     expect(JSON.parse(localStorage.getItem('formulare:vorlagen')!).find((v: { id: string }) => v.id === 'baua').dokumente).toContain('x1');
   });
 
   it('„Vorgabe wiederherstellen“ der Antragsdokumente schreibt Vorlagen, die ohnehin so abgeleitet würden, nicht fest', async () => {
     const host = await zeige();
-    const karte = [...host.querySelectorAll('.es-karte')].find((k) => k.querySelector('h3')!.textContent === 'Antragsdokumente')!;
+    const karte = [...host.querySelectorAll('.es-gruppe')].find((k) => k.querySelector('h4')!.textContent === 'Antragsdokumente')!;
     await oeffnen('Bauantrag');
     eingabe(feld(zeile('Bauantrag'), 'Bezeichnung')!, 'Eigener Titel');
     await warte();
     await klick(knopf('Vorgabe wiederherstellen', karte));
     await klick(knopf('Zurücksetzen', document.querySelector('.modal.rf')!));
-    expect(useAntrag.getState().katalog).toEqual(VORGABE_KATALOG);
+    expect(entwurfWert('katalog')).toEqual(VORGABE_KATALOG);
+    await act(() => entwurfUebernehmen());
     expect(localStorage.getItem('formulare:vorlagen')).toBeNull();
   });
 
   it('„Vorgabe wiederherstellen“ der Antragsvorlagen: nur bei Abweichung, „Abbrechen“ behält, „Zurücksetzen“ setzt zurück', async () => {
     const host = await zeige();
-    const karte = () => [...host.querySelectorAll('.es-karte')].find((k) => k.querySelector('h3')!.textContent === 'Antragsvorlagen')!;
+    const karte = () => [...host.querySelectorAll('.es-gruppe')].find((k) => k.querySelector('h4')!.textContent === 'Antragsvorlagen')!;
     expect(knopf('Vorgabe wiederherstellen', karte())).toBeUndefined();
     const name = [...karte().querySelectorAll<HTMLInputElement>('input[aria-label="Name der Vorlage"]')].find((x) => x.value === 'Bauantrag')!;
     eingabe(name, 'Bauantrag (eigen)');
@@ -297,7 +301,8 @@ describe('Einstellungen › Antrag & Export › Antragsdokumente', () => {
     expect(vorlage('baua').name).toBe('Bauantrag (eigen)');
     await klick(knopf('Vorgabe wiederherstellen', karte()));
     await klick(knopf('Zurücksetzen', document.querySelector('.modal.rf')!));
-    expect(useAntrag.getState().vorlagen).toEqual(vorlagenAus(null, useAntrag.getState().katalog));
+    expect(entwurfWert('vorlagen')).toEqual(vorlagenAus(null, entwurfWert('katalog')));
+    await act(() => entwurfUebernehmen());
     expect(localStorage.getItem('formulare:vorlagen')).toBeNull();
     expect(knopf('Vorgabe wiederherstellen', karte())).toBeUndefined();
   });
