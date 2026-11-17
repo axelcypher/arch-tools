@@ -49,6 +49,8 @@ describe('Feldraster', () => {
     expect(regel('.feldraster > *')).toMatch(/margin:\s*0 0 var\(--s2\)/);
     expect(regel('.feldraster > :is(label, .field, :has(> .field-label))')).toMatch(/grid-template-rows:\s*subgrid/);
     expect(regel('.feldraster > :is(label, .field, :has(> .field-label)) > *')).toMatch(/grid-row:\s*2/);
+    // Felder werden nicht gestreckt, wenn eine Angabe daneben die Spur höher macht
+    expect(regel('.feldraster > :is(label, .field, :has(> .field-label)) > *')).toMatch(/align-self:\s*start/);
     const beschriftung = regel('.feldraster > :is(label, .field, :has(> .field-label)) > .field-label');
     expect(beschriftung).toMatch(/grid-row:\s*1/);
     expect(beschriftung).toMatch(/align-self:\s*end/);
@@ -58,6 +60,7 @@ describe('Feldraster', () => {
 
   it('Kästchen mit Text steht in der Spur der Felder, auch mit bloßem Text', () => {
     expect(regel('.feldraster > label.toggle')).toMatch(/grid-template-columns:\s*auto 1fr/);
+    expect(regel('.feldraster > label.toggle > *')).toMatch(/align-self:\s*center/);
     const vor = regel('.feldraster > label.toggle::before');
     expect(vor).toMatch(/grid-row:\s*1/);
     expect(vor).toMatch(/grid-column:\s*1\s*\/\s*-1/);

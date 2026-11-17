@@ -816,6 +816,7 @@ button.link:focus-visible {
 }
 .feldraster > :is(label, .field, :has(> .field-label)) > * {
   grid-row: 2;
+  align-self: start;
   min-width: 0;
 }
 .feldraster > :is(label, .field, :has(> .field-label)) > .field-label {
@@ -836,6 +837,9 @@ button.link:focus-visible {
   grid-template-columns: auto 1fr;
   column-gap: 4px;
   align-items: center;
+}
+.feldraster > label.toggle > * {
+  align-self: center;
 }
 .feldraster > label.toggle::before {
   content: '';
