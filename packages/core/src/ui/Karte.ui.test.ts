@@ -33,8 +33,9 @@ describe('Fläche und Karten', () => {
     expect(karte.querySelector('.karte-kopf > .karte-aktionen > button')?.textContent).toBe('Kurzfassung');
     expect(karte.querySelector('.karte-rumpf > p')?.textContent).toBe('Inhalt');
     expect(karte.querySelector('footer.karte-fuss')?.textContent).toBe('NRF/BGF: 84 %');
-    // mit sichtbarem Titel kein zusätzlicher Name
+    // mit sichtbarem Titel benennt das h2 den Bereich
     expect(karte.hasAttribute('aria-label')).toBe(false);
+    expect(karte.getAttribute('aria-labelledby')).toBe(karte.querySelector('.karte-kopf > h2')!.id);
   });
 
   it('Karte ohne Titel: kein Kopf, Name über ariaLabel; bündiger Rumpf', () => {
@@ -42,6 +43,7 @@ describe('Fläche und Karten', () => {
     const karte = host.querySelector('section.karte')!;
     expect(karte.querySelector('.karte-kopf')).toBeNull();
     expect(karte.getAttribute('aria-label')).toBe('Räume');
+    expect(karte.hasAttribute('aria-labelledby')).toBe(false);
     expect(karte.querySelector('.karte-rumpf')!.className).toBe('karte-rumpf buendig');
     expect(karte.querySelector('.karte-fuss')).toBeNull();
   });
@@ -52,6 +54,16 @@ describe('Fläche und Karten', () => {
     expect(karte.getAttribute('aria-label')).toBe('Grundriss');
     expect(karte.querySelector('.zeichen-flaeche > canvas.canvas')).not.toBeNull();
     expect(karte.querySelector('footer.karte-fuss.zeichen-fuss')?.textContent).toBe('Klicken: wählen');
+    expect(karte.querySelector('.karte-kopf')).toBeNull();
+  });
+
+  it('ZeichenKarte mit Titel: derselbe Kopf wie bei Karte (h2 benennt, Aktionen rechts)', () => {
+    const host = render(h(ZeichenKarte, { titel: 'Lageplan', aktionen: h('button', null, '3D'), children: h('div', { className: 'canvas' }) }));
+    const karte = host.querySelector('section.zeichen-karte')!;
+    const h2 = karte.querySelector('.karte-kopf > h2')!;
+    expect(h2.textContent).toBe('Lageplan');
+    expect(karte.getAttribute('aria-labelledby')).toBe(h2.id);
+    expect(karte.querySelector('.karte-kopf > .karte-aktionen > button')?.textContent).toBe('3D');
   });
 
   it('Fläche und Spalte setzen ihre Klassen; Spalte mit fester Breite', () => {

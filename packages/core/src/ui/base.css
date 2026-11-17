@@ -21,6 +21,10 @@
   --ctl-h: 30px;
   /* Fläche und Karten (Karte.tsx): Spalt zwischen den Karten, Schatten der Karte */
   --spalt: 8px;
+  /* Innenabstand der Karte waagerecht und Höhe des Kartenkopfs (aus der gewählten Vorschau: etwas mehr Luft als --s3,
+     damit der Text nicht an der gerundeten Ecke klebt; der Kopf fasst einen Knopf in --ctl-h mit --s2 darüber und darunter) */
+  --karte-pad: 14px;
+  --karte-kopf-h: calc(var(--ctl-h) + 2 * var(--s2));
   --karte-schatten: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 6px rgba(16, 24, 40, 0.05);
   --ctl-h-s: 24px;
   --bg: #f3f4f6;
@@ -236,13 +240,23 @@ body,
 .leiste > .karte {
   flex: 1;
 }
+/* schmale Fenster: die Mitte behält --karte-mitte-min, die Seitenkarten geben bis zu ihrer Mindestbreite nach (die
+   gemerkte Breite bleibt) – so bleibt jede Karte erreichbar, die Fläche scrollt trotzdem nie */
+.flaeche > .leiste {
+  flex-shrink: 1;
+  min-width: var(--leiste-min, 180px);
+}
+.flaeche > .karte,
+.flaeche > .flaechen-spalte.wachsend {
+  min-width: var(--karte-mitte-min, 280px);
+}
 .karte-kopf {
   flex: none;
   display: flex;
   align-items: center;
   gap: var(--s2);
-  min-height: 44px;
-  padding: var(--s2) 14px;
+  min-height: var(--karte-kopf-h);
+  padding: var(--s2) var(--karte-pad);
   border-bottom: 1px solid var(--line-soft);
 }
 .karte-kopf h2 {
@@ -262,22 +276,36 @@ body,
   flex: 1;
   min-height: 0;
   overflow: auto;
-  padding: var(--s3) 14px 14px;
+  padding: var(--s3) var(--karte-pad) var(--karte-pad);
+}
+/* Gliederung in der Karte: der Kartenkopf ist die oberste Stufe (h2), Abschnitte h3, Unterabschnitte h4 */
+.karte-rumpf h3 {
+  font-size: var(--fs-m);
+  font-weight: 600;
+  margin: var(--s4) 0 var(--s2);
+}
+.karte-rumpf > h3:first-child {
+  margin-top: 0;
+}
+.karte-rumpf h4 {
+  font-size: var(--fs-s);
+  font-weight: 600;
+  margin: var(--s3) 0 var(--s1);
 }
 .karte-rumpf.buendig {
   padding: 0;
 }
-/* Tabellen laufen nicht aus der Karte: breite Tabellen scrollen in der Karte waagerecht */
-.karte-rumpf > table {
-  max-width: 100%;
+/* bündig: der Rumpf schneidet überstehende Fokusrahmen ab – Rahmen nach innen (wie in Leisten mit overflow: hidden) */
+.karte-rumpf.buendig :focus-visible {
+  outline-offset: -2px;
 }
 .karte-fuss {
   flex: none;
   display: flex;
   align-items: center;
   gap: var(--s2);
-  min-height: 30px;
-  padding: 2px var(--s3);
+  min-height: var(--ctl-h);
+  padding: 0 var(--karte-pad);
   border-top: 1px solid var(--line-soft);
   color: var(--muted);
   font-size: var(--fs-s);

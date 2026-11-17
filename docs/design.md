@@ -33,13 +33,13 @@ Werte nicht frei wählen, sondern aus der Skala nehmen.
 | `--s5`   | 24px | große Gliederung (Zielwert für den Dialog-Innenabstand; `.modal` hat heute 18/22px) |
 | `--s6`   | 32px | Leerzustände, Abstand zum Fensterrand bei Seiten                                    |
 
-| Variable  | Wert | Verwendung                                             |
-| --------- | ---- | ------------------------------------------------------ |
-| `--fs-xs` | 11px | Feldbeschriftung, Hinweis unter dem Feld, Tabellenkopf |
-| `--fs-s`  | 12px | Nebentext, kleine Knöpfe, dichte Tabellen              |
-| `--fs-m`  | 13px | Grundschrift, Abschnittsüberschrift (`.sidebar h2`)    |
-| `--fs-l`  | 15px | Dialogtitel, Titel einer Spalte ohne `.sidebar`        |
-| `--fs-xl` | 18px | Seitentitel (Einstieg, Bericht), Kennzahl              |
+| Variable  | Wert | Verwendung                                                 |
+| --------- | ---- | ---------------------------------------------------------- |
+| `--fs-xs` | 11px | Feldbeschriftung, Hinweis unter dem Feld, Tabellenkopf     |
+| `--fs-s`  | 12px | Nebentext, kleine Knöpfe, dichte Tabellen                  |
+| `--fs-m`  | 13px | Grundschrift, Abschnitt in der Karte (`h3`), `.sidebar h2` |
+| `--fs-l`  | 15px | Kartenkopf (`h2`), Dialogtitel                             |
+| `--fs-xl` | 18px | Seitentitel (Einstieg, Bericht), Kennzahl                  |
 
 Weitere: `--radius-s` 6px (Felder, Knöpfe), `--radius` 8px (Dialoge, Karten), `--ctl-h` 30px und `--ctl-h-s` 24px
 (Höhe der Bedienelemente).
@@ -51,9 +51,11 @@ Texttabellen: Spaltenköpfe linksbündig (`.summary-table.text`, z. B. Platzhalt
 
 ## Überschriften
 
-- **Seitenleiste und Spalten:** `h2` in Satzschreibung, `--fs-m`, halbfett, Farbe `--text`. Keine Versalien – sie lesen
-  sich langsamer, besonders bei langen Titeln.
-- **Unterabschnitt:** `h3`, `--fs-s`, halbfett.
+- **Karte (Richtung C):** Der Kartenkopf ist die oberste Stufe – `h2` in `--fs-l`, halbfett (`Karte`, siehe „Fläche und
+  Karten“). Abschnitte in der Karte `h3` in `--fs-m`, Unterabschnitte `h4` in `--fs-s`, beide halbfett.
+- **Seitenleiste und Spalten (alte Muster, bis die App auf Karten umstellt):** `h2` in Satzschreibung, `--fs-m`,
+  halbfett, Farbe `--text`; Unterabschnitt `h3`, `--fs-s`, halbfett.
+- Keine Versalien – sie lesen sich langsamer, besonders bei langen Titeln.
 - Überschriften nicht über die Browser-Vorgabe laufen lassen (ein `h2` ohne Regel wird 22px groß). Wer Spalten ohne
   `.sidebar` baut, setzt die Größe aus der Skala.
 
@@ -479,17 +481,27 @@ Werkzeugleiste liegt mit auf der Fläche (gleicher Grund, keine Linie). Baustein
 - `Flaeche` (`.flaeche`): Karten nebeneinander mit Spalt und Innenabstand `--spalt`; sie scrollt nie.
 - `Karte` (`.karte`): Kopf (`.karte-kopf`, Überschrift `h2` in `--fs-l`, rechts `aktionen` wie „?“ oder „Hinzufügen“),
   darunter der Inhalt (`.karte-rumpf`), der **in der Karte** scrollt, wahlweise eine feste Fußzeile (`fuss`, Summen).
-  Ohne sichtbaren Titel braucht die Karte `ariaLabel`; `buendig` lässt Tabellen und Listen bis an den Rand laufen.
-  Breite Tabellen scrollen in der Karte, sie laufen nie aus ihr heraus.
+  Mit Titel ist die Karte ein benannter Bereich (`aria-labelledby` auf das `h2`); ohne sichtbaren Titel braucht sie
+  `ariaLabel`. `buendig` lässt Tabellen und Listen bis an den Rand laufen; Fokusrahmen liegen dort innen. Breite
+  Tabellen scrollen mit dem Inhalt der Karte, sie laufen nie aus ihr heraus. Innenabstand waagerecht `--karte-pad`
+  (14px, aus der gewählten Vorschau), Kopfhöhe `--karte-kopf-h` (ein Knopf in `--ctl-h` mit `--s2` darüber und
+  darunter), Fußzeile in `--ctl-h`.
 - `FlaechenSpalte` (`.flaechen-spalte`): mehrere Karten untereinander (z. B. „Geschoss“ über „Auswertung“), sie
   teilen sich die Höhe; `wachsend` lässt die Spalte die Restbreite nehmen.
 - `ZeichenKarte` (`.zeichen-karte`): Die Zeichenfläche füllt die Karte und bleibt hell (`.canvas`); Bedienhinweis,
-  Koordinaten und Maßstab stehen in der Fußzeile der Karte (`fuss`), nicht über dem Plan.
+  Koordinaten und Maßstab stehen in der Fußzeile der Karte (`fuss`), nicht über dem Plan. Kopf wie bei `Karte`
+  (`titel`, `aktionen`), meist ohne – die Werkzeuge stehen in der Werkzeugleiste.
 - Seitenkarten mit ziehbarer Breite: `BreitenLeiste` mit einer `Karte` (oder `FlaechenSpalte`) als Kind; auf der
-  Fläche liegt der Griff im Spalt, und Innenabstand und Spalt zählen bei der Höchstbreite mit.
+  Fläche liegt der Griff im Spalt (Linie beim Überfahren in voller Akzentfarbe, weil der Spalt sonst keinen Rand
+  zeigt), und Innenabstand und Spalt zählen bei der Höchstbreite mit.
+- **Schmale Fenster:** Die Fläche scrollt nie. Die Mitte (eine `Karte` direkt auf der Fläche oder eine wachsende Spalte)
+  behält `--karte-mitte-min` (280px), die Seitenkarten geben bis zu ihrer Mindestbreite (`--leiste-min`, 180px) nach;
+  die gemerkte Breite bleibt und gilt wieder, sobald Platz ist.
 
 Die alten Muster (`.workspace`, `.sidebar`, eigene Spalten-Layouts der Apps) laufen weiter, bis eine App umgestellt
-ist (`docs/nachziehen/`). Eigene Layout-CSS und feste Farben der Apps entfallen mit der Umstellung.
+ist (`docs/nachziehen/`). Eigene Layout-CSS und feste Farben der Apps entfallen mit der Umstellung. Ausgenommen ist die
+Rahmen-App Arkly: Sie hat keine Arbeitsfläche, sondern Tableiste und Startseite; ihre Seiten zeigen die Apps, die selbst
+auf Karten stehen.
 
 ## Seitenleisten
 
