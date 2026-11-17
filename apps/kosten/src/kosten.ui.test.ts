@@ -117,6 +117,22 @@ describe('NUMIO', () => {
     expect(ifc().textContent).toContain('erst Projekt mit Gebäude oder IFC-Modell öffnen');
   });
 
+  it('Kartenlayout: vier benannte Karten, genau ein Hauptbereich, „?“ gehört nicht zum Namen der Karte', () => {
+    useKosten.getState().load(projektMitKosten());
+    const host = render(App);
+    const karten = [...host.querySelectorAll<HTMLElement>('.flaeche .karte')];
+    const name = (k: HTMLElement) => document.getElementById(k.getAttribute('aria-labelledby')!)?.textContent;
+    expect(karten.map(name)).toEqual(['Grundlagen', 'Mengen', 'Positionen', 'Kostenschätzung']);
+    // „?“ steht hinter der Überschrift, nicht in ihr
+    expect(karten[0].querySelector('.karte-titel button')).not.toBeNull();
+    expect(karten[0].querySelector('h2 button')).toBeNull();
+    // ein main: die rechte Spalte mit Positionen und Übersicht
+    const haupt = host.querySelectorAll('main');
+    expect(haupt).toHaveLength(1);
+    expect(haupt[0].textContent).toContain('Positionen');
+    expect(haupt[0].textContent).not.toContain('Grundlagen');
+  });
+
   it('zeigt Mengen aus dem Projekt, Positionen je Kostengruppe und die Übersicht', () => {
     useKosten.getState().load(projektMitKosten());
     const host = render(App);

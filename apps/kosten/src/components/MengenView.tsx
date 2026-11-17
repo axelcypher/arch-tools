@@ -183,6 +183,7 @@ export function MengenView({ bezug, onBezug }: { bezug: MengenBezug; onBezug: (b
       </FlaechenSpalte>
 
       <Karte
+        als="main"
         className="mv-bild"
         titel={`${info.kurz} – ${info.label}: ${wert(bezug, menge.summe)} ${info.einheit}`}
         aktionen={

@@ -96,7 +96,7 @@ export function KostenView({ onKatalog, onMenge }: { onKatalog: () => void; onMe
   return (
     <Flaeche className="ko-view">
       <FlaechenSpalte className="ko-links" breite={300}>
-        <Karte titel="Grundlagen" aktionen={<HilfeKnopf thema={['kosten', 'kennwerte']} titel="Kostenermittlung" />}>
+        <Karte titel="Grundlagen" hilfe={<HilfeKnopf thema={['kosten', 'kennwerte']} titel="Kostenermittlung" />}>
           <Field label="Projekt">
             <TextField value={project.name} onChange={(v) => st.update((p) => (v.trim() && v.trim() !== p.name ? { ...p, name: v.trim() } : p))} />
           </Field>
@@ -153,7 +153,7 @@ export function KostenView({ onKatalog, onMenge }: { onKatalog: () => void; onMe
           </p>
         </Karte>
 
-        <Karte className="ko-mengen-karte" titel="Mengen" aktionen={<HilfeKnopf thema={['bri', 'bgf', 'sohle', 'wofl']} titel="Mengen" />}>
+        <Karte className="ko-mengen-karte" titel="Mengen" hilfe={<HilfeKnopf thema={['bri', 'bgf', 'sohle', 'wofl']} titel="Mengen" />}>
           <table className="summary-table text felder ko-mengen">
             <tbody>
               {MENGEN_BEZUEGE.map((b) => (
@@ -168,8 +168,8 @@ export function KostenView({ onKatalog, onMenge }: { onKatalog: () => void; onMe
         </Karte>
       </FlaechenSpalte>
 
-      <FlaechenSpalte className="ko-rechts" wachsend>
-        <Karte className="ko-positionen" titel="Positionen" aktionen={<HilfeKnopf thema={['din276', 'kennwerte']} titel="Kostengruppen" />}>
+      <FlaechenSpalte className="ko-rechts" wachsend als="main">
+        <Karte className="ko-positionen" titel="Positionen" hilfe={<HilfeKnopf thema={['din276', 'kennwerte']} titel="Kostengruppen" />}>
           <div className="button-row">
             <button className="small" title="Position hinzufügen – leere Zeile, Kostengruppe eintragen" onClick={() => neu(neuePosition(''))}>
               <Symbol name="plus" /> Position
