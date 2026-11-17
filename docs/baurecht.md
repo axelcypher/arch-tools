@@ -442,9 +442,9 @@ Einzelheiten“ (sichtbar, sobald sie den Fokus haben), danach die Titelleiste. 
 ↑/↓, Pos1/Ende wählen den Paragrafen.
 Auswahlgruppen (ja/nein, Merkmale) bedienen sich mit ←/→ bzw. ↑/↓ (mit Umlauf), Pos1/Ende. F6 (Umschalt+F6) springt
 zwischen Kopf und den Karten Angaben (auf das Suchfeld), Ergebnis, Vorschriften und Einzelheiten; in den Einzelheiten
-landet der Fokus auf der Überschrift im Kartenkopf, auch wenn kein Paragraf gewählt ist (F6 geht weiter). Steht ein Hinweis nach einer
-Aktion unten rechts, ist er die letzte Station (ohne Hinweis übersprungen); F6 im Hinweis springt weiter zum Kopf, Esc
-zurück – LEXIO führt F6 selbst (`hinweisF6Eigen`), core nicht zusätzlich. Menüs (Mehr, Filter, Farbschema) nehmen beim Öffnen den Fokus,
+landet der Fokus auf der Überschrift im Kartenkopf, auch wenn kein Paragraf gewählt ist (F6 geht weiter). Steht
+unten rechts ein Hinweis nach einer Aktion, ist er die letzte Station (ohne Hinweis übersprungen); F6 im Hinweis
+springt weiter zum Kopf, Esc zurück an die Stelle davor. Menüs (Mehr, Filter, Farbschema) nehmen beim Öffnen den Fokus,
 bedienen sich mit ↑/↓ und Pos1/Ende, schließen mit Esc (Fokus zurück an ihren Knopf) und schließen, sobald der Fokus sie
 mit Tab verlässt; ihre Einträge sind keine eigenen Tabstopps; ein zweiter Klick auf den Öffner schließt das Menü. Die
 Suche in den Vorschriften findet Zitate genau (Norm nach Kurzform): „§ 6 BauO NRW“, „§ 62 Abs. 1 Satz 1 Nr. 1a BauO

@@ -244,7 +244,7 @@ export function App() {
         e.preventDefault();
         void speichern();
       }
-      if (e.key === 'F6' && !document.querySelector('[role="dialog"]')) {
+      if (e.key === 'F6' && !document.querySelector('[role="dialog"], [role="alertdialog"]')) {
         e.preventDefault();
         bereichWechseln(e.shiftKey);
       }
