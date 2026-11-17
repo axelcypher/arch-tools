@@ -208,6 +208,10 @@ describe('Kartenlayout (docs/design.md „Fläche und Karten“)', () => {
     expect(css).not.toMatch(/\.ava-zwischensumme/);
     expect(css).not.toMatch(/thead[^{]*\{[^}]*position: sticky/);
     expect(css).not.toMatch(/\.ava-(zelle-eingabe|klickbar|tabelle-rolle|tabelle-rahmen|fehler)\b/);
+    // seit core #216: Platz unter festen Köpfen, Breite der Zellenfelder und Fokusrahmen wählbarer Zeilen aus core
+    expect(css).not.toMatch(/scroll-padding-top/);
+    expect(css).not.toMatch(/input\.zelle\s*\{/);
+    expect(css).not.toMatch(/waehlbar[^{]*:focus-visible/);
     // alle App-Regeln auf .summary-table hängen an .ava-flaeche (der Druck liegt als Portal außerhalb)
     const ohneKommentare = css.replace(/\/\*[\s\S]*?\*\//g, '');
     for (const m of ohneKommentare.matchAll(/([^{}]+)\{/g))
