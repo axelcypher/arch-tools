@@ -15,6 +15,8 @@ import { ProjektInfo } from './ProjektDialog';
 import { bestaetigen, fragen } from '@core/ui/Rueckfrage';
 import { geschossDuplizierenAktion } from './KopieDialog';
 import { UmrissUebernehmen } from './Properties';
+import { Karte } from '@core/ui/Karte';
+import { BreitenLeiste } from '@core/ui/Leiste';
 
 /** „Geschoss …“: Geschoss über oder unter dem aktiven einfügen, Name und Fußbodenhöhe nach der Lage (F-03) */
 async function neuesGeschoss(bezugId: string, bezugName: string) {
@@ -36,7 +38,7 @@ async function neuesGeschoss(bezugId: string, bezugName: string) {
   st.setView({ showGhost: true });
 }
 
-/** Linke Seitenleiste: Projekt, Geschosse, Flächenliste des aktiven Geschosses. */
+/** Linke Seitenkarte: Projekt, Geschosse, Flächenliste des aktiven Geschosses – drei Abschnitte mit Trennlinien. */
 export function Sidebar() {
   const project = useEditor((s) => s.project);
   const storey = useActiveStorey();
@@ -79,180 +81,189 @@ export function Sidebar() {
   const fehlend = fehlendeAngaben(project);
 
   return (
-    <aside className="sidebar sidebar-left">
-      <section>
-        <h2>Projekt</h2>
-        <ProjektInfo />
-        {/* Berechnungsgrundlagen eingeklappt, damit Geschosse und Flächen sichtbar bleiben; gesetzte bzw. fehlende Angaben
-            stehen in der Zeile */}
-        <details className="weitere-angaben berechnungsgrundlagen">
-          <summary>
-            Berechnungsgrundlagen
-            <span className="muted"> ({grundlagen.join(' · ')})</span>
-            {fehlend.length > 0 && (
-              <span className="fehlt-text">
-                {' '}
-                – {fehlend.join(', ')} {fehlend.length > 1 ? 'fehlen' : 'fehlt'}
-              </span>
-            )}
-          </summary>
-          <div className="field-row projekt-settings">
-            <Field label="Raster [m]">
-              <NumberField
-                value={project.settings.gridStep}
-                min={0.001}
-                digits={3}
-                onChange={(v) => v && st.update((p) => ({ ...p, settings: { ...p.settings, gridStep: v } }))}
-              />
-            </Field>
-            <Field label="Balkonfaktor">
-              <NumberField
-                value={project.settings.freisitzFaktor}
-                min={0}
-                max={0.5}
-                onChange={(v) => v !== undefined && st.update((p) => ({ ...p, settings: { ...p.settings, freisitzFaktor: v } }))}
-              />
-            </Field>
-          </div>
-          <Field label="Messverfahren" hint="Maßgrundlage der Flächen (DIN 277, 5.1) – steht im Kopf von Bericht und Excel">
-            <select
-              value={project.settings.massgrundlage ?? ''}
-              onChange={(e) => st.update((p) => ({ ...p, settings: { ...p.settings, massgrundlage: (e.target.value || undefined) as Massgrundlage | undefined } }))}
-            >
-              <option value="">nicht angegeben</option>
-              {MASSGRUNDLAGEN.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.label}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Planungsunterlagen" hint={planAuto ? `leer = hinterlegte Pläne (${planAuto})` : 'DIN 277, 5.1 – z. B. Grundrisse 1:100, Stand …'}>
-            <TextField
-              value={project.settings.planunterlagen ?? ''}
-              placeholder="z. B. Grundrisse 1:100, Stand 01.10.2026"
-              onChange={(v) => st.update((p) => ({ ...p, settings: { ...p.settings, planunterlagen: v.trim() || undefined } }))}
-            />
-          </Field>
-          <label className="toggle block" title="Nur zum Vergleich mit Bestandsberechnungen nach II. BV a. F. (bis 31.12.2003, § 5 WoFlV). Standard bleibt die WoFlV.">
-            <input type="checkbox" checked={!!project.settings.zweiteBV} onChange={(e) => st.update((p) => ({ ...p, settings: { ...p.settings, zweiteBV: e.target.checked || undefined } }))} />
-            Vergleich mit II. BV: Freisitze zu ½
-          </label>
-          {project.settings.zweiteBV && <p className="warning small-text">Vergleichsrechnung – nur Freisitze zur Hälfte, weitere Regeln der II. BV a. F. sind nicht nachgebildet. Für neue Nachweise gilt die WoFlV.</p>}
-        </details>
-      </section>
-
-      <section>
-        <div className="section-head">
-          <h2>Geschosse</h2>
-          <button
-            className="small"
-            onClick={() => void neuesGeschoss(storey.id, storey.name)}
-            title="Geschoss über oder unter dem aktiven hinzufügen …"
-          >
-            <Symbol name="plus" /> Geschoss …
-          </button>
-        </div>
-        <ul className="list">
-          {[...project.storeys].reverse().map((s) => (
-            <StoreyRow key={s.id} id={s.id} name={s.name} active={s.id === storey.id} />
-          ))}
-        </ul>
-        <div className="button-row">
-          <button
-            className="small"
-            onClick={() => void geschossDuplizierenAktion(storey.id)}
-            title="Aktives Geschoss mit allen Flächen kopieren …"
-          >
-            Duplizieren …
-          </button>
-          <button className="small icon" disabled={obenAmEnde} onClick={() => st.update((p) => moveStorey(p, storey.id, 1))} title="Geschoss in der Liste nach oben" aria-label="Geschoss nach oben">
-            <Symbol name="nachOben" />
-          </button>
-          <button className="small icon" disabled={untenAmEnde} onClick={() => st.update((p) => moveStorey(p, storey.id, -1))} title="Geschoss in der Liste nach unten" aria-label="Geschoss nach unten">
-            <Symbol name="nachUnten" />
-          </button>
-          <button
-            className="small danger"
-            disabled={project.storeys.length <= 1}
-            title={project.storeys.length <= 1 ? 'Das einzige Geschoss lässt sich nicht löschen' : `Geschoss „${storey.name}“ mit allen Flächen löschen`}
-            onClick={() => void bestaetigen(`Geschoss „${storey.name}“ löschen?`, 'Das Geschoss wird mit allen Flächen gelöscht (rückgängig mit Strg+Z).', 'Löschen', true).then((ok) => ok && st.update((p) => removeStorey(p, storey.id)))}
-          >
-            Löschen
-          </button>
-        </div>
-        <label className="toggle">
-          <input type="checkbox" checked={view.showGhost} onChange={(e) => st.setView({ showGhost: e.target.checked })} />
-          darunterliegendes Geschoss einblenden
-        </label>
-      </section>
-
-      <section className="grow">
-        <h2>Flächen – {storey.name}</h2>
-        <div className="layer-toggles">
-          <label className="toggle">
-            <input type="checkbox" checked={view.showOutlines} onChange={(e) => st.setView({ showOutlines: e.target.checked })} />
-            BGF-Umrisse
-          </label>
-          <label className="toggle">
-            <input type="checkbox" checked={view.showRooms} onChange={(e) => st.setView({ showRooms: e.target.checked })} />
-            Räume
-          </label>
-          <label className="toggle">
-            <input type="checkbox" checked={view.showDimensions} onChange={(e) => st.setView({ showDimensions: e.target.checked })} />
-            Maße
-          </label>
-          <label className="toggle" title="Dachflächen und Höhenlinien 1 m / 2 m lichte Höhe unter Dachformen">
-            <input type="checkbox" checked={view.showHoehenlinien} onChange={(e) => st.setView({ showHoehenlinien: e.target.checked })} />
-            Höhenlinien
-          </label>
-        </div>
-        {storey.shapes.length === 0 && (
-          <div className="leer-hinweis">
-            <p className="muted">Noch keine Flächen. Plan laden (Datei → Plan laden …) und Räume erkennen (E) oder mit Rechteck (R) bzw. Polygon (P) zeichnen.</p>
-            <UmrissUebernehmen />
-          </div>
-        )}
-        {outlines.length > 0 && <h3>BGF-Umrisse</h3>}
-        <ul className="list shape-list">
-          {outlines.map((s) => (
-            <li key={s.id} className={gewaehlt.has(s.id) ? 'active' : ''}>
-              <button type="button" className="list-btn" aria-pressed={gewaehlt.has(s.id)} onClick={(e) => listeKlick(e, s.id, outlines)} title="Klick wählt; Strg+Klick: dazu/weg; Umschalt+Klick: Bereich">
-                <span className="swatch" style={{ background: s.subtract ? 'var(--danger)' : 'var(--accent)' }} aria-hidden />
-                <span className="grow-text">
-                  {s.name} <small>({s.umschliessung})</small>
+    <BreitenLeiste
+      schluessel="flaechenrechner:breite:links"
+      vorgabe={typeof window !== 'undefined' && window.innerWidth <= 1280 ? 240 : 280}
+      min={200}
+      max={440}
+      titel="Breite der Projektkarte"
+      mitteMin={320}
+    >
+      <Karte ariaLabel="Projekt, Geschosse und Flächen" buendig className="qu-projekt-karte">
+        <section>
+          <h2>Projekt</h2>
+          <ProjektInfo />
+          {/* Berechnungsgrundlagen eingeklappt, damit Geschosse und Flächen sichtbar bleiben; gesetzte bzw. fehlende Angaben
+              stehen in der Zeile */}
+          <details className="weitere-angaben berechnungsgrundlagen">
+            <summary>
+              Berechnungsgrundlagen
+              <span className="muted"> ({grundlagen.join(' · ')})</span>
+              {fehlend.length > 0 && (
+                <span className="fehlt-text">
+                  {' '}
+                  – {fehlend.join(', ')} {fehlend.length > 1 ? 'fehlen' : 'fehlt'}
                 </span>
-                <span className="num">{fmt2(shapeArea(s) * (s.subtract ? -1 : 1))} m²</span>
-              </button>
-            </li>
-          ))}
-        </ul>
-        {rooms.length > 0 && (
+              )}
+            </summary>
+            <div className="field-row projekt-settings">
+              <Field label="Raster [m]">
+                <NumberField
+                  value={project.settings.gridStep}
+                  min={0.001}
+                  digits={3}
+                  onChange={(v) => v && st.update((p) => ({ ...p, settings: { ...p.settings, gridStep: v } }))}
+                />
+              </Field>
+              <Field label="Balkonfaktor">
+                <NumberField
+                  value={project.settings.freisitzFaktor}
+                  min={0}
+                  max={0.5}
+                  onChange={(v) => v !== undefined && st.update((p) => ({ ...p, settings: { ...p.settings, freisitzFaktor: v } }))}
+                />
+              </Field>
+            </div>
+            <Field label="Messverfahren" hint="Maßgrundlage der Flächen (DIN 277, 5.1) – steht im Kopf von Bericht und Excel">
+              <select
+                value={project.settings.massgrundlage ?? ''}
+                onChange={(e) => st.update((p) => ({ ...p, settings: { ...p.settings, massgrundlage: (e.target.value || undefined) as Massgrundlage | undefined } }))}
+              >
+                <option value="">nicht angegeben</option>
+                {MASSGRUNDLAGEN.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Planungsunterlagen" hint={planAuto ? `leer = hinterlegte Pläne (${planAuto})` : 'DIN 277, 5.1 – z. B. Grundrisse 1:100, Stand …'}>
+              <TextField
+                value={project.settings.planunterlagen ?? ''}
+                placeholder="z. B. Grundrisse 1:100, Stand 01.10.2026"
+                onChange={(v) => st.update((p) => ({ ...p, settings: { ...p.settings, planunterlagen: v.trim() || undefined } }))}
+              />
+            </Field>
+            <label className="toggle block" title="Nur zum Vergleich mit Bestandsberechnungen nach II. BV a. F. (bis 31.12.2003, § 5 WoFlV). Standard bleibt die WoFlV.">
+              <input type="checkbox" checked={!!project.settings.zweiteBV} onChange={(e) => st.update((p) => ({ ...p, settings: { ...p.settings, zweiteBV: e.target.checked || undefined } }))} />
+              Vergleich mit II. BV: Freisitze zu ½
+            </label>
+            {project.settings.zweiteBV && <p className="warning small-text">Vergleichsrechnung – nur Freisitze zur Hälfte, weitere Regeln der II. BV a. F. sind nicht nachgebildet. Für neue Nachweise gilt die WoFlV.</p>}
+          </details>
+        </section>
+
+        <section>
           <div className="section-head">
-            <h3>Räume</h3>
-            <button className="small" onClick={() => setTabelle(true)} title="Alle Räume des Projekts als Tabelle bearbeiten">
-              Raumtabelle …
+            <h2>Geschosse</h2>
+            <button
+              className="small"
+              onClick={() => void neuesGeschoss(storey.id, storey.name)}
+              title="Geschoss über oder unter dem aktiven hinzufügen …"
+            >
+              <Symbol name="plus" /> Geschoss …
             </button>
           </div>
-        )}
-        {tabelle && <RaumTabelle onClose={() => setTabelle(false)} />}
-        <ul className="list shape-list">
-          {rooms.map((s) => (
-            <li key={s.id} className={gewaehlt.has(s.id) ? 'active' : ''}>
-              <button type="button" className="list-btn" aria-pressed={gewaehlt.has(s.id)} onClick={(e) => listeKlick(e, s.id, rooms)} title="Klick wählt; Strg+Klick: dazu/weg; Umschalt+Klick: Bereich">
-                <span className="swatch" style={{ background: s.subtract ? 'var(--danger)' : nutzungInfo(raumNutzung(s)).color }} aria-hidden />
-                <span className="raum-nr">{s.nummer}</span>
-                <span className="grow-text">
-                  {s.name}
-                  {s.ausserhalbBgf && !s.subtract && <small className="muted"> (außerhalb BGF)</small>}
-                </span>
-                <span className="num">{fmt2(shapeArea(s) * (s.subtract ? -1 : 1))} m²</span>
+          <ul className="list">
+            {[...project.storeys].reverse().map((s) => (
+              <StoreyRow key={s.id} id={s.id} name={s.name} active={s.id === storey.id} />
+            ))}
+          </ul>
+          <div className="button-row">
+            <button
+              className="small"
+              onClick={() => void geschossDuplizierenAktion(storey.id)}
+              title="Aktives Geschoss mit allen Flächen kopieren …"
+            >
+              Duplizieren …
+            </button>
+            <button className="small icon" disabled={obenAmEnde} onClick={() => st.update((p) => moveStorey(p, storey.id, 1))} title="Geschoss in der Liste nach oben" aria-label="Geschoss nach oben">
+              <Symbol name="nachOben" />
+            </button>
+            <button className="small icon" disabled={untenAmEnde} onClick={() => st.update((p) => moveStorey(p, storey.id, -1))} title="Geschoss in der Liste nach unten" aria-label="Geschoss nach unten">
+              <Symbol name="nachUnten" />
+            </button>
+            <button
+              className="small danger"
+              disabled={project.storeys.length <= 1}
+              title={project.storeys.length <= 1 ? 'Das einzige Geschoss lässt sich nicht löschen' : `Geschoss „${storey.name}“ mit allen Flächen löschen`}
+              onClick={() => void bestaetigen(`Geschoss „${storey.name}“ löschen?`, 'Das Geschoss wird mit allen Flächen gelöscht (rückgängig mit Strg+Z).', 'Löschen', true).then((ok) => ok && st.update((p) => removeStorey(p, storey.id)))}
+            >
+              Löschen
+            </button>
+          </div>
+          <label className="toggle">
+            <input type="checkbox" checked={view.showGhost} onChange={(e) => st.setView({ showGhost: e.target.checked })} />
+            darunterliegendes Geschoss einblenden
+          </label>
+        </section>
+
+        <section>
+          <h2>Flächen – {storey.name}</h2>
+          <div className="layer-toggles">
+            <label className="toggle">
+              <input type="checkbox" checked={view.showOutlines} onChange={(e) => st.setView({ showOutlines: e.target.checked })} />
+              BGF-Umrisse
+            </label>
+            <label className="toggle">
+              <input type="checkbox" checked={view.showRooms} onChange={(e) => st.setView({ showRooms: e.target.checked })} />
+              Räume
+            </label>
+            <label className="toggle">
+              <input type="checkbox" checked={view.showDimensions} onChange={(e) => st.setView({ showDimensions: e.target.checked })} />
+              Maße
+            </label>
+            <label className="toggle" title="Dachflächen und Höhenlinien 1 m / 2 m lichte Höhe unter Dachformen">
+              <input type="checkbox" checked={view.showHoehenlinien} onChange={(e) => st.setView({ showHoehenlinien: e.target.checked })} />
+              Höhenlinien
+            </label>
+          </div>
+          {storey.shapes.length === 0 && (
+            <div className="leer-hinweis">
+              <p className="muted">Noch keine Flächen. Plan laden (Datei → Plan laden …) und Räume erkennen (E) oder mit Rechteck (R) bzw. Polygon (P) zeichnen.</p>
+              <UmrissUebernehmen />
+            </div>
+          )}
+          {outlines.length > 0 && <h3>BGF-Umrisse</h3>}
+          <ul className="list shape-list">
+            {outlines.map((s) => (
+              <li key={s.id} className={gewaehlt.has(s.id) ? 'active' : ''}>
+                <button type="button" className="list-btn" aria-pressed={gewaehlt.has(s.id)} onClick={(e) => listeKlick(e, s.id, outlines)} title="Klick wählt; Strg+Klick: dazu/weg; Umschalt+Klick: Bereich">
+                  <span className="swatch" style={{ background: s.subtract ? 'var(--danger)' : 'var(--accent)' }} aria-hidden />
+                  <span className="grow-text">
+                    {s.name} <small>({s.umschliessung})</small>
+                  </span>
+                  <span className="num">{fmt2(shapeArea(s) * (s.subtract ? -1 : 1))} m²</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+          {rooms.length > 0 && (
+            <div className="section-head">
+              <h3>Räume</h3>
+              <button className="small" onClick={() => setTabelle(true)} title="Alle Räume des Projekts als Tabelle bearbeiten">
+                Raumtabelle …
               </button>
-            </li>
-          ))}
-        </ul>
-      </section>
-    </aside>
+            </div>
+          )}
+          {tabelle && <RaumTabelle onClose={() => setTabelle(false)} />}
+          <ul className="list shape-list">
+            {rooms.map((s) => (
+              <li key={s.id} className={gewaehlt.has(s.id) ? 'active' : ''}>
+                <button type="button" className="list-btn" aria-pressed={gewaehlt.has(s.id)} onClick={(e) => listeKlick(e, s.id, rooms)} title="Klick wählt; Strg+Klick: dazu/weg; Umschalt+Klick: Bereich">
+                  <span className="swatch" style={{ background: s.subtract ? 'var(--danger)' : nutzungInfo(raumNutzung(s)).color }} aria-hidden />
+                  <span className="raum-nr">{s.nummer}</span>
+                  <span className="grow-text">
+                    {s.name}
+                    {s.ausserhalbBgf && !s.subtract && <small className="muted"> (außerhalb BGF)</small>}
+                  </span>
+                  <span className="num">{fmt2(shapeArea(s) * (s.subtract ? -1 : 1))} m²</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      </Karte>
+    </BreitenLeiste>
   );
 }
 

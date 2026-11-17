@@ -57,7 +57,7 @@ export function RechnungenAnsicht({ gewerk }: { gewerk?: string }) {
   const mailAnZahler = async (d: RechnungsDatensatz, nr: Rechnung['nr']) => {
     const v = e.mail.vorlagen.find((x) => x.id === 'rechnung') ?? e.mail.vorlagen[0];
     if (!v) {
-      await meldung('Keine Mailvorlage', 'Es gibt keine Mailvorlage „Rechnung“ – bitte unter Einstellungen › Mailvorlagen anlegen.');
+      await meldung('Keine Mailvorlage', 'Es gibt keine Mailvorlage „Rechnung“ – bitte unter Datei › Einstellungen › FABRIO › Mailvorlagen anlegen.');
       return;
     }
     try {

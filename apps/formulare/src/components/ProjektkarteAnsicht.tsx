@@ -307,7 +307,7 @@ function Navigation({
         {vorgabeGruppen > 0 && !q && (
           <button
             className="pk-vorgaben"
-            title="Leere Gruppen mit den Vorgaben je Rolle (Einstellungen › PERMIO) füllen"
+            title="Leere Gruppen mit den Vorgaben je Rolle (Datei › Einstellungen › PERMIO) füllen"
             onClick={() => {
               karteMehrere(vorschlag, 'Vorgaben eingetragen');
               setMeldung({ art: 'info', text: `Vorgaben in ${vorgabeGruppen} ${vorgabeGruppen === 1 ? 'Gruppe' : 'Gruppen'} eingetragen – Strg+Z nimmt es zurück.` });
@@ -530,7 +530,7 @@ function GruppenEditor({
     if (!a) return;
     adressbuchErgaenzen([a]);
     setRollenVorgabe(gruppe.id, a.schluessel);
-    setMeldung({ art: 'info', text: `„${adressName(a)}“ ist jetzt die Vorgabe für ${gruppe.text} (Einstellungen › PERMIO › Vorgaben je Rolle).` });
+    setMeldung({ art: 'info', text: `„${adressName(a)}“ ist jetzt die Vorgabe für ${gruppe.text} (Datei › Einstellungen › PERMIO › Vorgaben je Rolle).` });
   };
   const istVorgabe = !!vorgabeSchluessel && vorgabeSchluessel === adressSchluessel(Object.fromEntries(eintraege.map((e) => [String(e.id), text(e.id)])));
 

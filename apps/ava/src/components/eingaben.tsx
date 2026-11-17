@@ -140,6 +140,7 @@ export function TextEingabe({
   autoFocus,
   label,
   feld,
+  startfokus,
 }: {
   wert: string | undefined;
   onChange: (s: string) => void;
@@ -154,6 +155,8 @@ export function TextEingabe({
   label?: string;
   /** Kennung zum Ansprechen per Tastatur (data-feld), z. B. „kurztext“ */
   feld?: string;
+  /** erstes Feld eines Dialogs bzw. einer Einstellungsseite (data-startfokus) */
+  startfokus?: boolean;
 }) {
   const [text, setText] = useState(wert ?? '');
   const fokus = useRef(false);
@@ -170,6 +173,7 @@ export function TextEingabe({
     autoFocus,
     'aria-label': label,
     'data-feld': feld,
+    'data-startfokus': startfokus ? '' : undefined,
     onFocus: () => {
       fokus.current = true;
     },

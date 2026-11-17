@@ -59,13 +59,19 @@ export interface KarteProps extends KopfProps {
   className?: string;
   /** Inhalt ohne Innenabstand (Tabellen und Listen bis an den Rand); Fokusrahmen liegen dann innen */
   buendig?: boolean;
+  /**
+   * Höhe in einer `FlaechenSpalte`: Vorgabe teilen sich die Karten die Höhe; `'inhalt'` macht die Karte so hoch wie
+   * ihren Inhalt (höchstens die halbe Spalte, darüber scrollt sie) – für kurze Karten unter einer langen
+   */
+  hoehe?: 'teilen' | 'inhalt';
 }
 
 /** Karte: Kopf mit Überschrift und Aktionen, darunter der Inhalt, der in der Karte scrollt */
-export function Karte({ titel, aktionen, ariaLabel, fuss, children, className, buendig }: KarteProps) {
+export function Karte({ titel, aktionen, ariaLabel, fuss, children, className, buendig, hoehe = 'teilen' }: KarteProps) {
   const { kopf, name } = useKopf({ titel, aktionen, ariaLabel });
+  const klasse = ['karte', hoehe === 'inhalt' && 'karte-inhalt', className].filter(Boolean).join(' ');
   return (
-    <section className={className ? `karte ${className}` : 'karte'} {...name}>
+    <section className={klasse} {...name}>
       {kopf}
       <div className={buendig ? 'karte-rumpf buendig' : 'karte-rumpf'}>{children}</div>
       {fuss != null && <footer className="karte-fuss">{fuss}</footer>}

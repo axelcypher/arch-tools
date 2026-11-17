@@ -70,7 +70,7 @@ export function ExportDialog({ formularPfad, onClose }: { formularPfad: string; 
     <Modal titel="Als PDF exportieren" kopf onClose={onClose} breit className="ex">
       {!basis ? (
         <p className="warning small-text">
-          Zu diesem Projekt ist kein Projektordner eingestellt bzw. gefunden (Einstellungen › Pfade und Benennung › Stammordner der Projekte). Mit „Speichern unter …“ lässt sich die PDF trotzdem speichern.
+          Zu diesem Projekt ist kein Projektordner eingestellt bzw. gefunden (Datei › Einstellungen › Pfade und Benennung › Stammordner der Projekte). Mit „Speichern unter …“ lässt sich die PDF trotzdem speichern.
         </p>
       ) : (
         <>
