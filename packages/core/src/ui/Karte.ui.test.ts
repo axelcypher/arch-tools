@@ -261,6 +261,8 @@ describe('Fläche und Karten', () => {
     expect(css).toMatch(/\.summary-table input\.zelle \{[^}]*border-color: transparent;[^}]*background: transparent;/);
     expect(css).toMatch(/\.summary-table input\.zelle:focus \{[^}]*border-color: var\(--accent\);[^}]*background: var\(--input-bg\);/);
     expect(css).toMatch(/\.summary-table input\.zelle:is\(\.feld-fehler, \[aria-invalid='true'\]\),[^{]*\{[^}]*border-color: var\(--danger\);/);
+    expect(css).toMatch(/\.summary-table input\.zelle:hover:not\(:disabled, :focus, \.feld-fehler, \[aria-invalid='true'\]\) \{/);
+    expect(css).toMatch(/\.summary-table td:has\(> input\.zelle\) \{\s*padding-inline: 0;/);
     expect(css).toMatch(/\.karte-rumpf:has\(> \.summary-table\.fest\) \{\s*scroll-padding-top: var\(--tabelle-kopf-h,/);
     // fester Kopf: sticky am thead (mehrzeiliger Kopf bleibt zusammen), ohne Umbruch, Grund der Karte
     expect(css).toMatch(/\.summary-table\.fest thead \{[^}]*position: sticky;[^}]*top: 0;/);
