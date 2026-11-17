@@ -564,6 +564,7 @@ export function GrzGfzView() {
                     <td>
                       <select
                         value={f.nutzung}
+                        aria-label={`Nutzung ${f.name || 'Fläche'}`}
                         title={LAGEPLAN_NUTZUNGEN.find((x) => x.id === f.nutzung)?.label}
                         disabled={f.nachbar}
                         onChange={(e) => updFlaeche(f.id, { nutzung: e.target.value as LageplanNutzung })}
@@ -576,6 +577,7 @@ export function GrzGfzView() {
                       </select>
                       <select
                         value={f.versiegelung}
+                        aria-label={`Versiegelung ${f.name || 'Fläche'}`}
                         title={VERSIEGELUNGEN.find((x) => x.id === f.versiegelung)?.label}
                         disabled={f.nachbar}
                         onChange={(e) => updFlaeche(f.id, { versiegelung: e.target.value as Versiegelung })}

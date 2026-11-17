@@ -147,7 +147,7 @@
 }
 .grz-begruendung td {
   padding-top: 0;
-  font-size: 11px;
+  font-size: var(--fs-xs);
   color: var(--muted);
 }
 .grz-begruendung summary {

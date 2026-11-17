@@ -1350,6 +1350,8 @@ describe('Kartenlayout (Richtung C)', () => {
     expect(versiegelung).toBeDefined();
     expect(nutzung.title).toBe(nutzung.selectedOptions[0].textContent);
     expect(versiegelung.title).toBe(versiegelung.selectedOptions[0].textContent);
+    // eigene Namen für Vorleseprogramme (gemeinsamer Spaltenkopf)
+    expect([nutzung.getAttribute('aria-label'), versiegelung.getAttribute('aria-label')]).toEqual(['Nutzung Zufahrt', 'Versiegelung Zufahrt']);
     // Eingabekarte: BauNVO-Fassung und Vollgeschossbegriff nennen den vollen Stand im Tooltip
     const fest = [...host.querySelectorAll<HTMLSelectElement>('.grz-fest select')];
     expect(fest.map((x) => x.title)).toEqual(expect.arrayContaining(['automatisch (BauNVO 1962)', 'automatisch (BauO NW 1962/1970)']));
