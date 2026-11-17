@@ -14,8 +14,13 @@ import { projektDateiOeffnen, projektSpeichernAktion, projektUebernehmen, Toolba
 import { isTauri } from '@core/platform/files';
 import { ProjektWahl } from '@core/ui/ProjektWahl';
 import { useEditor } from './store/store';
+import { Flaeche, ZeichenKarte } from '@core/ui/Karte';
+import { ZeichenFussZiel } from './components/zeichenFuss';
 
 const View3D = lazy(() => import('./components/View3D'));
+
+/** Bedienung der 3D-Ansicht – steht in der Fußzeile der Zeichenkarte statt des Grundriss-Hinweises */
+const BEDIENUNG_3D = 'Klick wählt den Raum, ein zweiter Klick den Umriss · linke Maus: drehen · rechte Maus: verschieben · Rad: zoomen';
 
 export function App() {
   const reportOpen = useEditor((s) => s.reportOpen);
@@ -25,6 +30,8 @@ export function App() {
   const name = useEditor((s) => s.project.name);
   const dirty = useEditor((s) => s.dirty);
   const [logOpen, setLogOpen] = useState(false);
+  /** Fußzeile der Zeichenkarte: Ziel für Bedienhinweis, Koordinaten und Maßstab der Zeichenfläche */
+  const [fussZiel, setFussZiel] = useState<HTMLElement | null>(null);
   const datei = useEditor((s) => s.datei);
   // Beim Start die Projektübersicht – auf dem Desktop immer (das zuletzt bearbeitete Projekt bleibt über „Zurück zu …“
   // erreichbar), im Browser, solange kein Projekt bzw. kein Zwischenstand da ist (gleicher Einstieg wie die anderen Apps)
@@ -60,9 +67,23 @@ export function App() {
         onSpeichern={() => projektSpeichernAktion()}
       />
       <Toolbar />
-      <div className="workspace">
+      {/* Kartenlayout (docs/design.md „Fläche und Karten“): links Projekt, Mitte Zeichenfläche, rechts Geschoss und Auswertung */}
+      <Flaeche className="qu-flaeche">
         <Sidebar />
-        <main className="main">
+        <ZeichenKarte
+          ariaLabel={mainView === '2d' ? 'Grundriss' : '3D-Ansicht'}
+          className="qu-zeichen-karte"
+          fuss={
+            <>
+              <div className="qu-fuss" ref={setFussZiel} hidden={mainView !== '2d'} />
+              {mainView === '3d' && (
+                <span className="qu-fuss-text" title={BEDIENUNG_3D}>
+                  {BEDIENUNG_3D}
+                </span>
+              )}
+            </>
+          }
+        >
           <div className="segment view-switch" role="group" aria-label="Ansicht">
             <button aria-pressed={mainView === '2d'} onClick={() => setMainView('2d')}>
               Grundriss
@@ -72,7 +93,9 @@ export function App() {
             </button>
           </div>
           <div className={mainView === '2d' ? 'view-pane' : 'view-pane hidden'}>
-            <Canvas />
+            <ZeichenFussZiel.Provider value={mainView === '2d' ? fussZiel : null}>
+              <Canvas />
+            </ZeichenFussZiel.Provider>
           </div>
           {mainView === '3d' && (
             <div className="view-pane">
@@ -81,9 +104,9 @@ export function App() {
               </Suspense>
             </div>
           )}
-        </main>
+        </ZeichenKarte>
         <Properties />
-      </div>
+      </Flaeche>
       {reportOpen && <Report />}
       {excelOpen && <ExcelDialog />}
       {projekteOffen && (

@@ -58,7 +58,7 @@
   display: inline-block;
   width: 8px;
   height: 8px;
-  margin-right: 6px;
+  margin-right: var(--s1);
   border-radius: 50%;
   border: 2px solid var(--accent);
   border-right-color: transparent;
@@ -81,7 +81,7 @@
 .br-ampel {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: var(--s1);
   font-weight: 600;
   white-space: nowrap;
 }
@@ -131,7 +131,7 @@
   z-index: 2;
 }
 .br-kopf .br-gespeichert:not(:empty) {
-  padding: 2px var(--s2);
+  padding: var(--s1) var(--s2);
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: var(--radius-s);
@@ -140,16 +140,7 @@
 .br-kopf-feld {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-}
-.br-kopf-feld select,
-.br-kopf-feld input {
-  font: inherit;
-  padding: 4px 6px;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  background: var(--input-bg);
-  color: var(--text);
+  gap: var(--s1);
 }
 .br-module-text {
   /* kürzt sich mit „…“ (Eintrag `kuerzbar`), die Gemeinde steht vorn */
@@ -205,7 +196,7 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
 .br-kopf-marken {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--s1);
   flex-shrink: 0;
 }
 .br-kopf-marken > * {
@@ -218,8 +209,8 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
 }
 .br-modul-chip {
   display: inline-block;
-  padding: 2px 8px;
-  border-radius: 10px;
+  padding: var(--s1) var(--s2);
+  border-radius: var(--radius);
   background: var(--chip-bg);
   color: var(--text);
   font-size: var(--fs-s);
@@ -258,7 +249,7 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
   flex: 0 1 260px;
   min-width: 120px;
   height: 8px;
-  border-radius: 4px;
+  border-radius: var(--radius-s);
   overflow: hidden;
   background: var(--line-soft);
 }
@@ -270,10 +261,10 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
 .br-klaeren {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--s1);
   flex-wrap: wrap;
   min-width: 0;
-  margin: 8px 0 4px;
+  margin: var(--s2) 0 var(--s1);
 }
 .br-klaeren-titel {
   width: 100%;
@@ -284,8 +275,8 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
 }
 .br-chip-knopf {
   font-size: var(--fs-s);
-  padding: 3px 9px;
-  border-radius: 12px;
+  padding: var(--s1) var(--s2);
+  border-radius: var(--radius);
   background: var(--accent-soft);
   border-color: transparent;
   color: var(--accent-text);
@@ -304,88 +295,63 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
 .br-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 5px;
+  gap: var(--s1);
 }
 
 .br-hinweisband {
-  padding: 6px 12px;
+  /* Hinweis der Web-Version: auf der Fläche zwischen Werkzeugleiste und Karten, im Spalt der Fläche */
+  margin: 0 var(--spalt);
+  padding: var(--s1) var(--s3);
   background: var(--warn-bg);
   color: var(--warn-text);
-  border-bottom: 1px solid var(--warn-border);
+  border: 1px solid var(--warn-border);
+  border-radius: var(--radius-s);
   font-size: var(--fs-s);
 }
 
-/* ---------- Arbeitsbereich ---------- */
+/* ---------- Fläche und Karten (Karte.tsx): Layout, Kopf, Rumpf und Fuß kommen aus base.css ---------- */
 
-.br-arbeit {
-  min-height: 0;
+/* Angaben ganz schmal: „alle Angaben“ rückt unter die Überschrift, statt sie zu überdecken */
+.br-angaben > .karte-kopf {
+  flex-wrap: wrap;
 }
-.br-leiste-links {
-  border-right: 1px solid var(--border);
-  background: var(--panel);
+.br-angaben > .karte-kopf h2 {
+  flex: 1 0 auto;
 }
-.br-leiste-rechts {
-  flex-shrink: 0;
-  border-left: 1px solid var(--border);
-  background: var(--panel);
-  display: flex;
-  min-height: 0;
+.br-angaben > .karte-kopf .karte-aktionen {
+  margin-left: 0;
 }
-.br-leiste-kopf {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 12px 6px;
+/* „Für diesen Ort bestätigen“ bricht in schmalen Angaben um, statt über den Kasten zu ragen */
+.br-bestaetigen-zeile > button {
+  white-space: normal;
+  max-width: 100%;
+  text-align: left;
 }
-.br-leiste-kopf h2,
-.br-detail-leer h2 {
-  /* Seitenleisten-Überschrift wie im Designsystem: Satzschreibung, --fs-m, halbfett */
-  font-size: var(--fs-m);
-  font-weight: 600;
-  color: var(--text);
-  margin: 0;
-}
-
-/* Angaben */
-.br-angaben {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  width: 100%;
+/* Angaben: das Suchfeld bleibt oben in der Karte stehen; scroll-padding hält darunter Platz frei (Tab, Sprung zur Angabe) */
+.br-angaben > .karte-rumpf {
+  padding-top: 0;
+  scroll-padding-top: calc(var(--ctl-h) + 2 * var(--s2));
 }
 .br-suche {
-  padding: 0 12px 8px;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: var(--s2) 0;
+  background: var(--panel);
 }
 .br-suche input,
 .br-suchfeld {
   width: 100%;
-  font: inherit;
-  padding: 4px 8px;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  background: var(--input-bg);
-  color: var(--text);
-}
-.br-angaben-liste {
-  overflow-y: auto;
-  flex: 1;
-  padding: 0 12px 16px;
-  scrollbar-gutter: stable;
-}
-.br-angaben-gruppe {
-  margin-top: 10px;
 }
 .br-angaben-gruppe > h3 {
-  font-size: var(--fs-s);
-  font-weight: 600;
-  color: var(--text);
-  margin: 6px 0;
+  hyphens: auto;
+  overflow-wrap: anywhere;
 }
 .br-merkmal,
 .br-fakt {
-  padding: 7px 8px;
-  border-radius: 5px;
-  margin-bottom: 4px;
+  padding: var(--s2);
+  border-radius: var(--radius-s);
+  margin-bottom: var(--s1);
   border: 1px solid transparent;
 }
 .br-offen {
@@ -399,8 +365,8 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
 .br-fakt-kopf {
   display: flex;
   align-items: baseline;
-  gap: 6px;
-  margin-bottom: 4px;
+  gap: var(--s1);
+  margin-bottom: var(--s1);
 }
 .br-fakt-titel {
   flex: 1;
@@ -413,14 +379,14 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
 }
 .br-erklaerung {
   font-size: var(--fs-s);
-  margin-top: 3px;
+  margin-top: var(--s1);
 }
 .br-merkmal-fuss {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 8px;
-  margin-top: 3px;
+  gap: var(--s2);
+  margin-top: var(--s1);
 }
 .br-gruppe-knopf {
   border: none;
@@ -437,7 +403,7 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
   color: var(--text);
 }
 .br-gruppe-stand {
-  margin-left: 6px;
+  margin-left: var(--s1);
   text-transform: none;
   letter-spacing: 0;
   font-weight: normal;
@@ -446,31 +412,25 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
 .br-zahl {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--s1);
 }
 .br-zahl input {
   width: 110px;
 }
 .br-fakt select {
-  font: inherit;
-  padding: 3px 6px;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  background: var(--input-bg);
-  color: var(--text);
   max-width: 100%;
 }
 .br-fakt-fuss {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
-  margin-top: 4px;
+  gap: var(--s1);
+  margin-top: var(--s1);
   font-size: var(--fs-xs);
 }
 .br-herkunft {
-  padding: 0 6px;
-  border-radius: 8px;
+  padding: 0 var(--s1);
+  border-radius: var(--radius);
   background: var(--chip-bg);
 }
 .br-herkunft-geodienst {
@@ -482,8 +442,8 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
   color: var(--room-text);
 }
 .br-hinweis-marke {
-  padding: 0 6px;
-  border-radius: 8px;
+  padding: 0 var(--s1);
+  border-radius: var(--radius);
   background: var(--warn-bg);
   color: var(--warn-text);
   border: 1px solid var(--warn-border);
@@ -497,29 +457,17 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
   font-size: var(--fs-s);
 }
 
-/* Vorschriften */
-.br-vorschriften {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  background: var(--bg);
-}
 .br-filter {
-  /* zwei Zeilen: Ergebnis, Balken und Ordnung; darunter Suche und Filter. Die Elemente brechen nie treppenartig um */
+  /* zwei Zeilen: Ampeln, Balken und Ordnung; darunter Suche und Filter. Die Elemente brechen nie treppenartig um */
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 7px 12px;
-  background: var(--panel);
-  border-bottom: 1px solid var(--border);
+  gap: var(--s2);
 }
 .br-filter-zeile,
 .br-filter-zeile2 {
   display: flex;
   align-items: center;
-  gap: 8px 12px;
+  gap: var(--s2) var(--s3);
   min-width: 0;
 }
 .br-filter-zeile {
@@ -538,22 +486,17 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
 }
 .br-filter-kaesten {
   display: inline-flex;
-  gap: 12px;
+  gap: var(--s3);
 }
 .br-filter-zeile2 .toggle {
   white-space: nowrap;
 }
 .br-ordnung-wahl {
+  /* so hoch und so groß geschrieben wie „Filter“ daneben */
   width: auto;
   flex: 0 0 auto;
-  font: inherit;
+  min-height: var(--ctl-h-s);
   font-size: var(--fs-s);
-  padding: 3px 6px;
-  min-height: 26px;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  background: var(--input-bg);
-  color: var(--text);
 }
 /* Filter-Menü für schmale Spalten */
 .br-filter-menue {
@@ -563,13 +506,13 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
   list-style: none;
   cursor: pointer;
   font-size: var(--fs-s);
-  padding: 3px 9px;
-  min-height: 26px;
+  padding: var(--s1) var(--s2);
+  min-height: var(--ctl-h-s);
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--s1);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-s);
   background: var(--input-bg);
   white-space: nowrap;
 }
@@ -577,17 +520,16 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
   display: none;
 }
 .br-filter-menue-inhalt {
-  position: absolute;
+  /* über der Fläche, die Lage setzt das Öffnen (unter „Filter“) – in der Karte schnitte deren Rand das Menü ab */
+  position: fixed;
   z-index: 20;
-  top: calc(100% + 4px);
-  left: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 10px 12px;
+  gap: var(--s2);
+  padding: var(--s2) var(--s3);
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-s);
   box-shadow: var(--schatten-schwebend);
 }
 .br-nur-schmal {
@@ -611,17 +553,46 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
     display: inline-block;
   }
   .br-filter .segment > .br-filter-ampel {
-    padding: 3px 7px;
+    padding: var(--s1) var(--s2);
   }
-  .br-filter-zeile {
-    justify-content: space-between;
+}
+/* sehr schmale Mitte (unter etwa 670 px Fensterbreite): die Suche über die volle Breite, Filter und Ordnung darunter */
+@container vorschriften (max-width: 380px) {
+  .br-filter-zeile2 {
+    flex-wrap: wrap;
+  }
+  .br-filter .br-suchfeld {
+    flex-basis: 100%;
+    max-width: none;
+  }
+}
+/* nur wenn die Wörter wirklich nicht mehr passen: die Ampeln mit Haken, Punkt und Zahl, das Wort darunter klein – die
+   Ampel steht nie nur als Farbe da */
+@container vorschriften (max-width: 340px) {
+  .br-filter .br-bilanz {
+    display: flex;
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+  .br-filter .segment > .br-filter-ampel {
+    flex: 1 1 0;
+    min-width: 0;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0 var(--s1);
+    padding-inline: var(--s1);
+  }
+  .br-filter-wort {
+    flex-basis: 100%;
+    text-align: center;
+    font-size: var(--fs-xs);
   }
 }
 /* Ampel-Filter: Häkchen, Statuspunkt, Zahl und Wort; gewählt wie jedes Segment */
 .br-filter-ampel {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: var(--s1);
 }
 .br-filter-ampel strong {
   font-variant-numeric: tabular-nums;
@@ -637,7 +608,7 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
   min-width: 60px;
 }
 .br-treffer {
-  padding: 5px 14px 0;
+  margin-top: var(--s2);
   font-size: var(--fs-s);
   color: var(--muted);
 }
@@ -645,32 +616,25 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
   display: none;
 }
 .br-leer-zustand {
-  padding: 32px 16px;
+  padding: var(--s6) var(--s4);
   text-align: center;
   color: var(--muted);
 }
-.br-vorschriften-liste {
-  overflow-y: auto;
-  flex: 1;
-  padding: 10px 14px 24px;
-  scrollbar-gutter: stable;
-}
 .br-gruppe > h3 {
-  font-size: var(--fs-m);
-  margin: 14px 0 8px;
+  margin: var(--s4) 0 var(--s2);
 }
 .br-gruppe-module {
   font-weight: normal;
   color: var(--muted);
 }
 .br-gruppe:first-of-type > h3 {
-  margin-top: 2px;
+  margin-top: 0;
 }
 .br-norm {
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 6px;
-  margin-bottom: 8px;
+  border-radius: var(--radius-s);
+  margin-bottom: var(--s2);
   overflow: hidden;
 }
 .br-norm-entfaellt .br-norm-kopf {
@@ -688,12 +652,12 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
 .br-norm-kopf {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--s2);
   width: 100%;
   border: none;
   border-radius: 0;
   background: none;
-  padding: 8px 12px;
+  padding: var(--s2) var(--s3);
   text-align: left;
   white-space: normal;
 }
@@ -711,14 +675,14 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
 }
 .br-zaehler {
   display: inline-flex;
-  gap: 4px;
+  gap: var(--s1);
 }
 .br-zahl-chip {
   min-width: 24px;
   white-space: nowrap;
   text-align: center;
-  padding: 0 7px;
-  border-radius: 10px;
+  padding: 0 var(--s2);
+  border-radius: var(--radius);
   border: 1px solid;
   font-size: var(--fs-s);
   font-variant-numeric: tabular-nums;
@@ -729,27 +693,27 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
 .br-norm-info {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 14px;
-  padding: 6px 12px 6px 30px;
+  gap: var(--s1) var(--s3);
+  padding: var(--s1) var(--s3) var(--s1) var(--s6);
   font-size: var(--fs-s);
   color: var(--muted);
 }
 .br-paragrafen {
   list-style: none;
   margin: 0;
-  padding: 0 0 4px;
+  padding: 0 0 var(--s1);
 }
 .br-paragraf {
   /* breit: Titel gewichtiger als der Grund; schmal (Container): Grund unter dem Titel */
   display: grid;
   grid-template-columns: 78px 64px minmax(200px, 1.3fr) minmax(0, 1fr);
   align-items: baseline;
-  gap: 8px;
+  gap: var(--s2);
   width: 100%;
   border: none;
   border-radius: 0;
   background: none;
-  padding: 5px 12px 5px 30px;
+  padding: var(--s1) var(--s3) var(--s1) var(--s6);
   text-align: left;
   white-space: normal;
   border-top: 1px solid var(--line-soft);
@@ -770,7 +734,7 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
 .br-paragraf-kopf {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: var(--s1);
   min-width: 0;
 }
 .br-paragraf-titel {
@@ -790,7 +754,7 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
 }
 .br-paragraf-marken {
   display: flex;
-  gap: 4px;
+  gap: var(--s1);
   flex-wrap: wrap;
 }
 .br-paragraf-marken:empty {
@@ -801,8 +765,8 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
 }
 .br-marke {
   font-size: var(--fs-xs);
-  padding: 0 6px;
-  border-radius: 8px;
+  padding: 0 var(--s1);
+  border-radius: var(--radius);
   background: var(--chip-bg);
   color: var(--text);
   white-space: nowrap;
@@ -816,117 +780,112 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
   color: var(--warn-text);
 }
 .br-leer {
-  padding: 8px 30px 12px;
+  padding: var(--s2) var(--s6) var(--s3);
   color: var(--muted);
 }
 
-/* Einzelheiten */
-.br-detail {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  width: 100%;
-}
-.br-detail-leer {
-  padding: 12px;
-}
+/* Einzelheiten: die Ampel als Linie oben am Kartenkopf (das Wort steht daneben in der Marke) */
 .br-detail-leer p {
   color: var(--muted);
 }
-.br-detail-kopf {
-  padding: 12px 14px 10px;
-  border-bottom: 1px solid var(--border);
-  border-top: 4px solid var(--border);
+.br-detail-leer > .karte-rumpf > p:first-child {
+  margin-top: 0;
 }
-.br-kopf-rot {
-  border-top-color: var(--fehler-punkt);
+/* Ziel von F6 und Sprungmarke im Kartenkopf (tabindex -1): Fokusrahmen in --fokus wie überall, mit Abstand (der Kopf hat Platz) */
+.br-detail [data-f6-ziel]:focus-visible {
+  outline: 2px solid var(--fokus);
+  outline-offset: 2px;
+  border-radius: var(--radius-s);
 }
-.br-kopf-gelb {
-  border-top-color: var(--warn-punkt);
+/* Normen und Paragrafen schneiden überstehende Fokusrahmen ab (overflow) – Rahmen nach innen */
+.br-norm :focus-visible,
+.br-paragraf:focus-visible {
+  outline-offset: -2px;
 }
-.br-kopf-gruen {
-  border-top-color: var(--ok-punkt);
+.br-detail-rot > .karte-kopf {
+  box-shadow: inset 0 3px 0 var(--fehler-punkt);
+}
+.br-detail-gelb > .karte-kopf {
+  box-shadow: inset 0 3px 0 var(--warn-punkt);
+}
+.br-detail-gruen > .karte-kopf {
+  box-shadow: inset 0 3px 0 var(--ok-punkt);
+}
+/* Kartenkopf zweizeilig: § und Norm klein darüber, der Name in der Größe des Kartenkopfs */
+.br-detail .karte-kopf {
+  align-items: flex-start;
 }
 .br-detail-titel {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  hyphens: auto;
+  overflow-wrap: anywhere;
+  hyphenate-limit-chars: 10 4 4;
 }
 .br-detail-nr {
   font-size: var(--fs-s);
   color: var(--muted);
-  font-weight: 600;
 }
-.br-detail-name {
-  font-size: var(--fs-l);
-  font-weight: 600;
+.br-detail-festlegung {
+  margin: 0 0 var(--s2);
 }
-.br-detail-ampel {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 6px;
-}
-.br-detail-inhalt {
-  overflow-y: auto;
-  flex: 1;
-  padding: 4px 14px 14px;
-  scrollbar-gutter: stable;
-}
-.br-detail-inhalt section {
-  padding: 8px 0;
+/* Abschnitte der Einzelheiten mit feiner Linie dazwischen */
+.br-detail > .karte-rumpf > section {
+  padding: var(--s2) 0;
   border-bottom: 1px solid var(--line-soft);
+  overflow-wrap: anywhere;
 }
-.br-detail-inhalt section:last-child {
+.br-detail > .karte-rumpf > section:last-child {
   border-bottom: none;
 }
-.br-detail-inhalt h3 {
-  font-size: var(--fs-s);
-  font-weight: 600;
+.br-detail > .karte-rumpf > section > h3,
+.br-detail > .karte-rumpf > section > .section-head h3 {
+  margin: 0 0 var(--s2);
+}
+/* Fuß der Einzelheiten trägt Knöpfe (Festlegen, Aufheben) statt Summen: Schrift wie im Rumpf, Luft über und unter */
+.br-detail > .karte-fuss {
+  padding-block: var(--s2);
   color: var(--text);
-  margin: 4px 0 6px;
+  font-size: inherit;
 }
 .br-gruende,
 .br-hinweise {
   margin: 0;
-  padding-left: 18px;
+  padding-left: var(--s4);
 }
 .br-gruende li {
-  margin-bottom: 4px;
+  margin-bottom: var(--s1);
   line-height: 1.45;
 }
 .br-gruende li:first-child {
   font-weight: 500;
 }
 .br-hinweise {
-  margin-top: 6px;
+  margin-top: var(--s1);
   color: var(--muted);
 }
 .br-hinweise li {
-  margin-bottom: 3px;
+  margin-bottom: var(--s1);
   line-height: 1.4;
 }
 .br-festlegung-text {
   background: var(--room-bg);
   color: var(--room-text);
-  border-radius: 5px;
-  padding: 6px 8px;
-  margin: 0 0 8px;
+  border-radius: var(--radius-s);
+  padding: var(--s1) var(--s2);
+  margin: 0 0 var(--s2);
 }
 .br-fakten-kurz p {
-  margin: 4px 0;
+  margin: var(--s1) 0;
   line-height: 1.45;
 }
 .br-text {
   font-size: var(--fs-m);
   line-height: 1.55;
-  max-height: 46vh;
-  overflow-y: auto;
-  padding-right: 4px;
 }
 .br-text p {
-  margin: 0 0 6px;
-  padding: 1px 6px;
+  margin: 0 0 var(--s1);
+  padding: var(--s1);
   border-left: 3px solid transparent;
 }
 .br-text-hervor {
@@ -944,10 +903,10 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
 .br-text-legende {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: var(--s3);
   font-size: var(--fs-xs);
   color: var(--muted);
-  margin: 2px 0 6px;
+  margin: var(--s1) 0 var(--s1);
 }
 .br-legende-hervor::before,
 .br-legende-geaendert::before {
@@ -955,7 +914,7 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
   display: inline-block;
   width: 3px;
   height: 12px;
-  margin-right: 5px;
+  margin-right: var(--s1);
   vertical-align: -2px;
 }
 .br-legende-hervor::before {
@@ -966,14 +925,14 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
 }
 .br-vergleich {
   background: var(--bg);
-  border-radius: 4px;
-  padding: 6px 8px;
-  margin-bottom: 8px;
+  border-radius: var(--radius-s);
+  padding: var(--s1) var(--s2);
+  margin-bottom: var(--s2);
 }
 .br-vergleich h4 {
   font-size: var(--fs-s);
   font-weight: 600;
-  margin: 0 0 4px;
+  margin: 0 0 var(--s1);
 }
 .br-vergleich-text {
   white-space: pre-wrap;
@@ -991,31 +950,24 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
   text-decoration: underline;
 }
 .br-verweise-kopf {
-  margin: 6px 0 2px;
+  margin: var(--s1) 0 var(--s1);
 }
 .br-verweise {
-  margin: 0 0 6px;
-  padding-left: 18px;
+  margin: 0 0 var(--s1);
+  padding-left: var(--s4);
 }
 .br-verweise li {
-  margin-bottom: 3px;
+  margin-bottom: var(--s1);
   line-height: 1.4;
 }
-.br-detail-fuss {
-  display: flex;
-  gap: 8px;
-  padding: 10px 14px;
-  border-top: 1px solid var(--border);
-  background: var(--panel);
-}
 .br-legende {
-  margin: 12px 0 0;
+  margin: var(--s3) 0 0;
 }
 .br-legende > div {
   display: grid;
   grid-template-columns: 90px 1fr;
-  gap: 8px;
-  padding: 4px 0;
+  gap: var(--s2);
+  padding: var(--s1) 0;
 }
 .br-legende dt,
 .br-legende dd {
@@ -1032,28 +984,28 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 8px;
+  gap: var(--s2);
 }
 .br-verwerfen .meldung {
   margin: 0 auto 0 0;
 }
 /* Folgen einer Angabe in den Dialogen */
 .br-folgen {
-  margin: 6px 0;
+  margin: var(--s1) 0;
 }
 .br-folgen summary {
   cursor: pointer;
 }
 .br-folgen ul {
   list-style: none;
-  margin: 6px 0;
-  padding: 0 0 0 4px;
+  margin: var(--s1) 0;
+  padding: 0 0 0 var(--s1);
 }
 .br-folgen li {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 2px 0;
+  gap: var(--s1);
+  padding: var(--s1) 0;
   font-size: var(--fs-s);
 }
 
@@ -1061,20 +1013,20 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
 .br-wahl {
   border: none;
   padding: 0;
-  margin: 8px 0;
+  margin: var(--s2) 0;
 }
 .br-wahl legend {
   font-weight: 600;
-  margin-bottom: 4px;
+  margin-bottom: var(--s1);
 }
 .br-wahl-zeile {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 6px 8px;
+  gap: var(--s2);
+  padding: var(--s1) var(--s2);
   border: 1px solid var(--border);
-  border-radius: 5px;
-  margin-bottom: 4px;
+  border-radius: var(--radius-s);
+  margin-bottom: var(--s1);
   cursor: pointer;
 }
 .br-wahl-zeile input {
@@ -1093,9 +1045,9 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
 .modal textarea {
   width: 100%;
   font: inherit;
-  padding: 6px 8px;
+  padding: var(--s1) var(--s2);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-s);
   background: var(--input-bg);
   color: var(--text);
   resize: vertical;
@@ -1108,13 +1060,13 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
   /* nur der Dialog scrollt – keine verschachtelten Scrollbereiche */
   list-style: none;
   padding: 0;
-  margin: 8px 0;
+  margin: var(--s2) 0;
 }
 .br-bestaetigen-liste > li {
   border: 1px solid var(--border);
-  border-radius: 5px;
-  padding: 7px 10px;
-  margin-bottom: 6px;
+  border-radius: var(--radius-s);
+  padding: var(--s2);
+  margin-bottom: var(--s1);
 }
 .br-bestaetigen-liste > li.br-herab {
   border-color: var(--warn-border);
@@ -1124,16 +1076,16 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 2px;
+  gap: var(--s2);
+  margin-bottom: var(--s1);
 }
 .br-bestaetigen-ampeln {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--s1);
 }
 .br-geprueft {
-  margin-top: 6px;
+  margin-top: var(--s1);
   font-weight: 600;
 }
 
@@ -1143,15 +1095,16 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
+  padding: var(--s5);
   overflow: auto;
 }
 .br-start-karte {
+  /* wie eine Karte der Fläche: weicher Schatten statt Rahmen */
   max-width: 560px;
   background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 26px 30px;
+  border-radius: var(--radius);
+  box-shadow: var(--karte-schatten);
+  padding: var(--s5) var(--s6);
 }
 .br-start-karte h1 {
   margin: 0;
@@ -1159,7 +1112,7 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
 }
 /* wofür die App da ist – unter dem Namen (wie Startseite und Tooltips der Rahmen-App) */
 .br-start-karte p.br-start-was {
-  margin: 2px 0 10px;
+  margin: var(--s1) 0 var(--s2);
   color: var(--muted);
   font-size: var(--fs-m);
 }
@@ -1168,14 +1121,14 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
 }
 .br-start-knoepfe {
   display: flex;
-  gap: 8px;
-  margin: 18px 0 10px;
+  gap: var(--s2);
+  margin: var(--s4) 0 var(--s2);
 }
 
 /* Protokoll */
 .br-protokoll h3 {
   font-size: var(--fs-m);
-  margin: 14px 0 4px;
+  margin: var(--s3) 0 var(--s1);
 }
 /* Aktionen als eigene Leiste im Fluss (nicht über dem Inhalt) */
 .br-protokoll .report-actions.br-protokoll-aktionen {
@@ -1190,14 +1143,14 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
   padding: 10px 36px;
   background: var(--panel);
   border-bottom: 1px solid var(--border);
-  border-radius: 6px 6px 0 0;
+  border-radius: var(--radius) var(--radius) 0 0;
 }
 .br-protokoll h2,
 .br-protokoll h3 {
   break-after: avoid;
 }
 .br-protokoll-liste li {
-  margin-bottom: 3px;
+  margin-bottom: var(--s1);
   line-height: 1.4;
 }
 .br-entwurf-text {
@@ -1205,13 +1158,13 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
   color: var(--warn-text);
 }
 .br-zeile-rot td:nth-child(3) {
-  color: #a3281d;
+  color: var(--fehler-text);
 }
 .br-zeile-gelb td:nth-child(3) {
-  color: #8a5300;
+  color: var(--warn-text);
 }
 .br-zeile-gruen td:nth-child(3) {
-  color: #1f6b3d;
+  color: var(--ok-text);
 }
 
 @media print {
@@ -1243,8 +1196,8 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
 @container vorschriften (max-width: 560px) {
   .br-paragraf {
     grid-template-columns: 64px minmax(0, 1fr);
-    row-gap: 2px;
-    padding-left: 16px;
+    row-gap: var(--s1);
+    padding-left: var(--s4);
   }
   .br-paragraf > .br-ampel {
     grid-column: 1;
@@ -1272,7 +1225,7 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
   transform: translateX(-50%);
   z-index: 30;
   display: flex;
-  gap: 6px;
+  gap: var(--s1);
 }
 .br-sprung button:not(:focus) {
   position: absolute;
@@ -1295,17 +1248,12 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
 .br-app .toggle {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: var(--s1);
 }
 
-/* Einzelheiten: Paragraf als Überschrift, Regel im Einzelnen */
-h2.br-detail-name {
-  margin: 0;
-  font-size: var(--fs-l);
-  font-weight: 600;
-}
+/* Einzelheiten: Regel im Einzelnen */
 .br-regel-einzeln {
-  margin-top: 6px;
+  margin-top: var(--s1);
 }
 .br-regel-einzeln summary {
   cursor: pointer;
@@ -1343,25 +1291,25 @@ h2.br-detail-name {
   min-height: var(--ctl-h-s);
 }
 .br-regel-einzeln > summary {
-  padding: 4px 0;
+  padding: var(--s1) 0;
 }
 /* Regel im Einzelnen als eingerückter Baum */
 .br-regel-baum,
 .br-regel-baum ul {
   list-style: none;
-  margin: 4px 0 0;
+  margin: var(--s1) 0 0;
   padding-left: 0;
 }
 .br-regel-baum ul {
-  padding-left: 14px;
+  padding-left: var(--s3);
   border-left: 1px solid var(--line-soft);
-  margin-left: 4px;
+  margin-left: var(--s1);
 }
 .br-regel-baum li {
-  margin: 2px 0;
+  margin: var(--s1) 0;
 }
 .br-regel-baum > li {
-  margin-top: 6px;
+  margin-top: var(--s1);
   font-weight: 600;
   color: var(--text);
 }
@@ -1376,13 +1324,13 @@ h2.br-detail-name {
 }
 .br-regel-baum li.br-haengend > ul {
   text-indent: 0;
-  margin-left: calc(4px - 1.2em);
+  margin-left: calc(var(--s1) - 1.2em);
 }
 /* Rückgängig nach „Festlegung aufheben“ */
 .br-aufgehoben {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--s1);
   font-size: var(--fs-s);
   color: var(--muted);
 }
@@ -1462,12 +1410,12 @@ h2.br-detail-name {
   font-weight: normal;
   font-size: var(--fs-s);
   color: var(--muted);
-  margin-top: 1px;
+  margin-top: var(--s1);
 }
 
 /* Protokoll: Abstand zwischen Hinweis und Titel */
 .br-entwurf-hinweis {
-  margin-bottom: 14px;
+  margin-bottom: var(--s3);
 }
 
 /* Startfokus in Dialogen sichtbar, auch wenn der Dialog über Strg+S kam (dann greift :focus-visible nicht) */
@@ -1475,11 +1423,6 @@ h2.br-detail-name {
 .modal input[type='radio']:focus {
   outline: 2px solid var(--fokus);
   outline-offset: 2px;
-}
-/* Einzelheiten ohne Auswahl (F6): Fokusrahmen im Stil der App */
-.br-detail:focus-visible {
-  outline: 2px solid var(--fokus);
-  outline-offset: -2px;
 }
 
 /* Angaben: Titel halbfett, Frage und Erläuterung zurückgenommen, lange Erläuterungen einklappbar */
@@ -1493,16 +1436,6 @@ h2.br-detail-name {
   min-height: var(--ctl-h-s);
 }
 
-/* Leisten an die Fensterbreite gebunden: sie schrumpfen (bis 240 px), die Mitte behält mindestens 420 px – auch mit
-   gemerkten Breiten vom großen Bildschirm */
-.br-arbeit > .leiste {
-  flex-shrink: 1;
-  min-width: 240px;
-}
-.br-arbeit > .br-vorschriften {
-  min-width: 420px;
-  flex-shrink: 0;
-}
 
 .br-stand-unsicher {
   color: var(--muted);
@@ -1513,10 +1446,10 @@ h2.br-detail-name {
 .br-protokoll .report-table thead th {
   position: sticky;
   top: calc(var(--br-aktionen-h, 46px) - 28px);
-  background: var(--panel, #fff);
+  background: var(--panel);
   z-index: 1;
   /* Trennlinie: darunter laufende Zeilen wirken nicht abgeschnitten (box-shadow bleibt beim Kleben sichtbar) */
-  box-shadow: inset 0 -1px 0 var(--border), 0 2px 3px -2px rgba(0, 0, 0, 0.25);
+  box-shadow: inset 0 -1px 0 var(--border), 0 2px 3px -2px color-mix(in srgb, var(--text) 25%, transparent);
 }
 @media print {
   .br-protokoll .report-table thead th {
@@ -1528,18 +1461,17 @@ h2.br-detail-name {
   text-align: left;
   font-size: var(--fs-s);
   color: var(--muted);
-  padding-top: 10px;
+  padding-top: var(--s2);
 }
 .br-weitere {
   margin: 0;
-  padding-left: 16px;
+  padding-left: var(--s4);
 }
 .br-weitere li {
-  margin: 1px 0;
+  margin: var(--s1) 0;
 }
 /* lange Wörter und Adressen in Begründungen umbrechen statt abschneiden */
-.br-festlegung-text,
-.br-detail-inhalt {
+.br-festlegung-text {
   overflow-wrap: anywhere;
 }
 /* Protokoll: erst nach Silben trennen, nur notfalls mitten im Wort („Altstadt-satzung“ statt „Altstadtsat|zung“) */
@@ -1552,9 +1484,7 @@ h2.br-detail-name {
 
 /* Schmale Leisten (ab 240 px): lange Wörter trennen statt überlaufen, Stand und Zahl brechen um */
 .br-angaben .br-fakt-titel,
-.br-angaben .br-fakt-frage,
-.br-angaben-gruppe > h3,
-.br-detail-name {
+.br-angaben .br-fakt-frage {
   hyphens: auto;
   overflow-wrap: anywhere;
 }
@@ -1577,7 +1507,7 @@ h2.br-detail-name {
 }
 .br-fakt-kopf {
   flex-wrap: wrap;
-  column-gap: 8px;
+  column-gap: var(--s2);
 }
 .br-fakt-kopf > .br-fakt-titel {
   flex: 1 1 8em;
@@ -1605,30 +1535,30 @@ h2.br-detail-name {
 
 /* Festlegungen ohne Ortsangabe (ältere Datei): Sammelaktion über der Liste */
 .br-ohne-ort {
-  margin: 6px 14px 0;
+  margin: 0 0 var(--s3);
 }
 /* feste Modulwerte, die nur Hinweis sind: Grund sichtbar, mit Ausweg */
 .br-fester-grund {
   display: block;
-  margin-top: 3px;
+  margin-top: var(--s1);
   font-size: var(--fs-s);
 }
 /* Rückfrage zu einem Antragsmerkmal (z. B. Umfang der Beseitigung) direkt unter dem Merkmal */
 .br-rueckfrage {
-  margin: 6px 0 2px 10px;
-  padding-left: 8px;
+  margin: var(--s1) 0 var(--s1) var(--s2);
+  padding-left: var(--s2);
   border-left: 2px solid var(--accent);
 }
 .br-rueckfrage > .br-fakt {
   margin: 0;
 }
 .br-rueckfrage-zu {
-  margin: 0 0 4px;
+  margin: 0 0 var(--s1);
   font-size: var(--fs-s);
 }
 /* fremder Merkmalwert bzw. Wert, der nicht zur Angabe passt */
 .br-merkmal-fremd {
-  margin: 4px 0 0;
+  margin: var(--s1) 0 0;
   font-size: var(--fs-s);
   color: var(--warn-text);
 }
@@ -1650,7 +1580,7 @@ h2.br-detail-name {
   .br-angaben .br-klaeren .br-chip-knopf {
     display: flex;
     align-items: baseline;
-    gap: 4px;
+    gap: var(--s1);
     white-space: nowrap;
   }
   .br-klaeren .br-chip-name {
@@ -1682,8 +1612,8 @@ h2.br-detail-name {
   font-size: var(--fs-xs);
   color: var(--accent-text);
   border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
-  border-radius: 9px;
-  padding: 0 6px;
+  border-radius: var(--radius);
+  padding: 0 var(--s1);
   white-space: nowrap;
 }
 /* Stand der Bestätigung des Planungsrechts: eigene Zeile unter dem Titel */
@@ -1691,13 +1621,13 @@ h2.br-detail-name {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: 2px 8px;
-  margin: -2px 0 6px;
+  gap: var(--s1) var(--s2);
+  margin: 0 0 var(--s2);
 }
 /* „leeren“ läuft hinter der Erklärung des Werts mit (im Satz: ohne eigene Zielhöhe) */
 .br-merkmal-fuss .br-leeren,
 .br-erklaerung .br-mehr {
-  padding: 0 2px;
+  padding: 0 var(--s1);
   min-height: 0;
   vertical-align: baseline;
   font-size: var(--fs-s);
@@ -1706,20 +1636,20 @@ h2.br-detail-name {
   display: inline-flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: 4px 8px;
+  gap: var(--s1) var(--s2);
 }
 /* eingeklappt beantwortete Rückfrage: kompakt, mit „ändern“ */
 .br-rueckfrage-erledigt {
-  margin: 0 0 4px;
+  margin: 0 0 var(--s1);
   font-size: var(--fs-s);
 }
 .br-rueckfrage-erledigt .br-link {
-  padding: 0 2px;
+  padding: 0 var(--s1);
   min-height: 0;
   font-size: var(--fs-s);
 }
 .br-merkmal-marken .br-link {
-  padding: 0 2px;
+  padding: 0 var(--s1);
   min-height: 0;
   font-size: var(--fs-s);
 }
@@ -1735,19 +1665,7 @@ h2.br-detail-name {
     page-break-after: avoid;
   }
 }
-/* schmale Fenster bzw. Browser-Zoom (Web; der Desktop hat eine Mindestbreite): unter 1000 CSS-px behält die
-   Arbeitsfläche 1000 px und die Seite scrollt waagerecht – keine Spalte wird abgeschnitten, „Speichern“ bleibt erreichbar */
-@media screen and (max-width: 999px) {
-  #root:has(> .br-app) {
-    overflow-x: auto;
-    overflow-y: hidden;
-  }
-  .br-app {
-    min-width: 1000px;
-  }
-}
 /* Überschriften nicht in kurze Silben trennen („ei-nes“, „Gel-tungsbereich“) */
-.br-detail-name,
 .br-paragraf-titel {
   hyphenate-limit-chars: 10 4 4;
 }
@@ -1772,7 +1690,7 @@ h2.br-detail-name {
 .br-bestaetigen-fuss {
   flex: 0 0 auto;
   border-top: 1px solid var(--line-soft);
-  padding-top: 6px;
+  padding-top: var(--s1);
 }
 /* Prüfprotokoll in schmalen Fenstern (Zoom): die Aktionsleiste bricht um, nichts wird angeschnitten */
 .br-protokoll-aktionen {
@@ -1780,16 +1698,16 @@ h2.br-detail-name {
 }
 /* „nur Hinweis“ mit Abstand zum Wert davor */
 .br-hinweis-marke {
-  margin-left: 4px;
+  margin-left: var(--s1);
 }
 /* Prüfprotokoll in schmalen Fenstern (Zoom): Kopf zweispaltig, ganz schmal einspaltig; Tabellen brechen um statt über
    den Rand zu laufen; schmaler Rand */
 @media screen and (max-width: 600px) {
   .report-backdrop {
-    padding: 4px;
+    padding: var(--s1);
   }
   .br-protokoll.report {
-    padding: 12px 8px;
+    padding: var(--s3) var(--s2);
   }
   .br-protokoll .druck-kopf-zeilen {
     grid-template-columns: minmax(0, 1fr);
@@ -1831,7 +1749,7 @@ h2.br-detail-name {
 @media screen and (max-width: 660px) {
   .modal.br-bestaetigen {
     width: calc(100vw - 16px);
-    padding: 12px;
+    padding: var(--s3);
   }
 }
 @media screen and (max-width: 600px) {

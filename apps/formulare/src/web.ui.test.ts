@@ -91,7 +91,7 @@ describe('Web-Version', () => {
     await warte();
     expect(useFormulare.getState().haupt).toBe('formular');
     expect(knopfGenau(host, 'Herunterladen')).toBeDefined();
-    expect(host.querySelector('nav[aria-label="Inhalt des Formulars"]')).not.toBeNull();
+    expect(host.querySelector('.fo-gliederung nav[aria-label="Gliederung"]')).not.toBeNull();
   });
 
   it('Werkzeugleiste der Web-Version: erst nur „Formular öffnen …“, mit Formular „Datei“ (Formular öffnen …, Drucken …) und „Herunterladen“', async () => {

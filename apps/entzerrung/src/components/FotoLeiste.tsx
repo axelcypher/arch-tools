@@ -5,6 +5,7 @@ import type { Foto } from '../model';
 import { fotosHinzufuegen } from '../projekt';
 import { bestaetigen } from '@core/ui/Rueckfrage';
 import { Symbol } from '@core/ui/Symbol';
+import { FlaechenSpalte, Karte } from '@core/ui/Karte';
 import { ebeneHinzufuegen, mitEbene, mitFoto, useEntz } from '../store';
 
 /** Linke Leiste: Fotos des Projekts und Ebenen des gewählten Fotos */
@@ -14,23 +15,25 @@ export function FotoLeiste() {
   const foto = fotos.find((f) => f.id === fotoId) ?? null;
 
   return (
-    <aside className="sidebar sidebar-left">
-      <section>
-        <div className="section-head">
-          <h2>Fotos</h2>
+    <FlaechenSpalte>
+      <Karte
+        titel="Fotos"
+        hoehe="inhalt"
+        aktionen={
           <button className="small" onClick={() => void fotosHinzufuegen()} title="Fotos hinzufügen (JPEG, PNG, WebP)">
             <Symbol name="plus" /> Foto …
           </button>
-        </div>
-        {!fotos.length && <p className="muted small-text">Noch kein Foto. Fotos lassen sich auch einfach ins Fenster ziehen.</p>}
+        }
+      >
+        {!fotos.length && <p className="muted small-text">Noch kein Foto.</p>}
         <ul className="list ef-fotos">
           {fotos.map((f) => (
             <FotoEintrag key={f.id} foto={f} aktiv={f.id === fotoId} />
           ))}
         </ul>
-      </section>
+      </Karte>
       {foto && <EbenenListe foto={foto} />}
-    </aside>
+    </FlaechenSpalte>
   );
 }
 
@@ -101,13 +104,14 @@ function EbenenListe({ foto }: { foto: Foto }) {
     if (s.ebeneId === id) s.waehleEbene(rest[0].id);
   };
   return (
-    <section className="grow">
-      <div className="section-head">
-        <h2>Ebenen</h2>
+    <Karte
+      titel="Ebenen"
+      aktionen={
         <button className="small" onClick={() => ebeneHinzufuegen(foto.id)} title="Ebene hinzufügen – weitere Ebene in diesem Foto, z. B. die zweite Fassadenseite an einer Gebäudeecke">
           <Symbol name="plus" /> Ebene
         </button>
-      </div>
+      }
+    >
       <ul className="list">
         {foto.ebenen.map((e) => (
           <li
@@ -197,6 +201,6 @@ function EbenenListe({ foto }: { foto: Foto }) {
       <p className="muted small-text">
         Jede Ebene ist eine ebene Fläche im Foto (Fassade, Wand, Boden, abfotografierter Plan) mit eigener Referenz und eigenen Messungen.
       </p>
-    </section>
+    </Karte>
   );
 }

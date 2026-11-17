@@ -9,12 +9,16 @@ Bis Version 0.12.0 hieß die App „Entzerrung“. Einstellungen und Daten bleib
 
 ## Ablauf
 
-1. **Foto hinzufügen**: über „Foto …“ (Plus-Symbol) im Kopf der Fotoleiste bzw. „Datei › Fotos hinzufügen …“ (auch mehrere auf einmal; danach ist das erste gewählt, nicht lesbare
+Aufbau wie in allen Apps (Kartenlayout): links die Karten „Fotos“ und „Ebenen“, in der Mitte das Foto bzw. die
+entzerrte Ebene als Zeichenfläche mit Bedienhinweis und Koordinaten in der Fußzeile, rechts die Karten der Ansicht
+(„Referenz“ und „Objektiv“ bzw. „Messen“ und „Bild“).
+
+1. **Foto hinzufügen**: über „Foto …“ (Plus-Symbol) im Kopf der Karte „Fotos“ bzw. „Datei › Fotos hinzufügen …“ (auch mehrere auf einmal; danach ist das erste gewählt, nicht lesbare
    Dateien nennt eine gemeinsame Meldung), den Knopf in der leeren Fläche oder per Ziehen ins
    Fenster (JPEG, PNG, WebP). Die Ausrichtung vom
    Handy (Hochformat) wird übernommen. HEIC-Fotos vom iPhone lassen sich nicht lesen; dann am iPhone unter
    Einstellungen › Kamera › Formate „Maximale Kompatibilität“ wählen.
-2. **Referenz festlegen** (rechte Leiste, Fotoansicht; alle Werkzeuge zum Setzen und Messen stehen dort, oben
+2. **Referenz festlegen** (Karte „Referenz“ rechts, Fotoansicht; alle Werkzeuge zum Setzen und Messen stehen dort, oben
    „Datei“, „Speichern“, die Umschaltung Foto | Entzerrt, Auswahl, Rückgängig/Wiederholen und „Ansicht“ – in schmalen
    Fenstern wandert „Ansicht“ ins Menü „Mehr“). Drei Wege:
    - **Rechteck**: Die vier Ecken eines bekannten Rechtecks anklicken (links unten, rechts unten, rechts oben,
@@ -85,8 +89,8 @@ das Foto. Öffnen und Speichern über den Dateidialog bleiben wie bisher.
   Laibung, Dachüberstand, Fallrohr), wird verzerrt wiedergegeben.
 - Die Referenz sollte einen großen Teil der Fläche abdecken. Ein kleines Rechteck in einer Ecke verstärkt
   jeden Klickfehler, wenn weit davon entfernt gemessen wird.
-- Die Lupe beim Setzen von Punkten und das Zoomen (Mausrad) helfen, Ecken pixelgenau zu treffen. Die Statuszeile
-  zeigt in der entzerrten Ansicht, wie groß ein Fotopixel an der Mausposition in Wirklichkeit ist, also die
+- Die Lupe beim Setzen von Punkten und das Zoomen (Mausrad) helfen, Ecken pixelgenau zu treffen. Die Fußzeile
+  der Zeichenfläche zeigt in der entzerrten Ansicht, wie groß ein Fotopixel an der Mausposition in Wirklichkeit ist, also die
   erreichbare Genauigkeit an dieser Stelle.
 - Zur Kontrolle ein bekanntes Maß nachmessen, das nicht zur Referenz gehört.
 
@@ -110,9 +114,9 @@ das Foto. Öffnen und Speichern über den Dateidialog bleiben wie bisher.
 | `Strg+S` / `Strg+O` | Speichern / Öffnen |
 
 Die Kürzel ohne Strg wirken nur, wenn kein Dialog offen ist und der Fokus nicht auf einem Knopf oder Feld liegt;
-`Tab`, Leertaste und Enter bleiben so der Bedienung mit der Tastatur erhalten. Fotos und Ebenen in der linken
-Leiste sind mit `Tab` erreichbar (Enter wählt, `Entf` entfernt). Beide Seitenleisten lassen sich in der Breite
-ziehen (Doppelklick: Vorgabe), die linke über „Ansicht › Leiste mit Fotos und Ebenen“ ausblenden; dort steht auch „Alles zeigen“ (`Pos1`).
+`Tab`, Leertaste und Enter bleiben so der Bedienung mit der Tastatur erhalten. Fotos und Ebenen in den Karten
+links sind mit `Tab` erreichbar (Enter wählt, `Entf` entfernt). Beide Seiten lassen sich am Spalt zur Zeichenfläche in
+der Breite ziehen (Doppelklick: Vorgabe), die linke über „Ansicht › Fotos und Ebenen“ ausblenden; dort steht auch „Alles zeigen“ (`Pos1`).
 
 Beim Schließen fragt die App nach, solange ungespeicherte Änderungen bestehen. „Datei › Öffnen …“ merkt sich auf dem
 Desktop den Pfad: „Speichern“ schreibt danach ohne Rückfrage in dieselbe Datei. Ändert man während des

@@ -314,7 +314,7 @@ export default function View3D() {
             <span className="num">{fmt2(result.total.bri.total)} m³</span>
           ) : (
             <>
-              <table>
+              <table className="summary-table">
                 <tbody>
                   {/* oberstes Geschoss oben – wie in der Seitenleiste */}
                   {[...result.storeys].reverse().map((s) => (
@@ -323,7 +323,7 @@ export default function View3D() {
                       <td className="num">{fmt2(s.bri.total)} m³</td>
                     </tr>
                   ))}
-                  <tr className="sum">
+                  <tr className="strong">
                     <td>Summe</td>
                     <td className="num">{fmt2(result.total.bri.total)} m³</td>
                   </tr>
@@ -353,7 +353,6 @@ export default function View3D() {
                   ))}
                 </div>
               )}
-              <p className="muted small-text">Klick wählt den Raum, ein zweiter Klick den Umriss. Linke Maus: drehen · rechte Maus: verschieben · Rad: zoomen</p>
             </>
           )}
         </div>
