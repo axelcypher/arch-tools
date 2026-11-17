@@ -81,14 +81,12 @@ interface AvaZustand {
   /** gewähltes Element im LV */
   auswahl: string | null;
   busy: string | null;
-  einstellungenOffen: boolean;
 
   einstellungenLaden(): Promise<void>;
   einstellungenSetzen(e: AvaEinstellungen): Promise<void>;
   setAnsicht(a: Ansicht): void;
   setAuswahl(id: string | null): void;
   setBusy(b: string | null): void;
-  setEinstellungenOffen(o: boolean): void;
   projektOeffnen(o: { ordner: string; oap: string; name: string; meta: ProjectMeta }): Promise<void>;
   projektSchliessen(): void;
   neuLaden(): Promise<void>;
@@ -120,7 +118,6 @@ export const useAva = create<AvaZustand>((set, get) => ({
   ansicht: { art: 'uebersicht' },
   auswahl: null,
   busy: null,
-  einstellungenOffen: false,
 
   async einstellungenLaden() {
     try {
@@ -143,7 +140,6 @@ export const useAva = create<AvaZustand>((set, get) => ({
   setAnsicht: (ansicht) => set({ ansicht }),
   setAuswahl: (auswahl) => set({ auswahl }),
   setBusy: (busy) => set({ busy }),
-  setEinstellungenOffen: (einstellungenOffen) => set({ einstellungenOffen }),
 
   async projektOeffnen(o) {
     const { fs } = get();

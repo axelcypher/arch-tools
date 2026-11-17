@@ -1175,34 +1175,6 @@ input.ava-fehler {
   margin-top: 0;
 }
 
-.ava-einstellungen {
-  width: min(980px, 96vw);
-}
-
-.ava-einst-kopf {
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
-  margin: calc(-1 * var(--s1)) 0 var(--s3);
-}
-
-.ava-einst-koerper {
-  display: grid;
-  grid-template-columns: 200px minmax(0, 1fr);
-  gap: 16px;
-  min-height: 52vh;
-}
-
-.ava-einst-ebenen {
-  margin: 0;
-}
-
-.ava-einst-inhalt {
-  overflow-y: auto;
-  max-height: 64vh;
-  padding-right: 4px;
-}
-
 .ava-mailvorlagen {
   display: flex;
   flex-direction: column;
@@ -1853,8 +1825,7 @@ input.ava-fehler {
 }
 
 /* Rechnungseingang: Listen per Tastatur, Hinweis zur Zuordnung, schmale Fenster */
-.ava-eingang .list li:focus-visible,
-.ava-einst-ebenen li:focus-visible {
+.ava-eingang .list li:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: -2px;
 }
@@ -1918,4 +1889,24 @@ input.ava-fehler {
 .modal h3:not(.modal-kopf, .ava-bib-titel) {
   font-size: var(--fs-s);
   font-weight: 600;
+}
+
+/* Seite „FABRIO“ im zentralen Einstellungsdialog (Abschnitte .einst-gruppe aus base.css) */
+.ava-einst-seite {
+  margin: 0;
+  padding: 0;
+  border: none;
+  min-width: 0;
+}
+.ava-einst-gruppe > .ava-formular {
+  margin: 0;
+}
+.ava-einst-vorgabe {
+  align-self: flex-start;
+}
+.ava-nav-leer {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s1);
 }
