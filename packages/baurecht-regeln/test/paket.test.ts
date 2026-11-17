@@ -95,13 +95,13 @@ describe('Vorfragen (FaktDef.vorfrage)', () => {
       'vorhaben.wohnraum_neu': ['true: Neubau eines Gebäudes mit Wohnungen', 'false: kein Gebäude – es entstehen keine Wohnungen'],
       'planung.wohnungsbau_246e': [
         'false: es entstehen keine neuen Wohnungen bzw. Wohnräume und kein wieder nutzbarer Wohnraum – die Sonderregelung gilt nur für den Wohnungsbau',
-        'false: Außenbereich ohne räumlichen Zusammenhang mit der Ortslage oder einem Bebauungsplangebiet (§ 246e Abs. 3)',
+        'false: das Grundstück liegt im Außenbereich nicht nahe an der Ortslage oder einem Baugebiet mit Bebauungsplan',
         'false: das Vorhaben hält den Bebauungsplan ein, und keine Sperre oder Satzung steht entgegen – eine Abweichung ist nicht nötig',
         'false: das Vorhaben hat Vorbilder in der Umgebung, und keine Sperre oder Satzung steht entgegen – eine Abweichung ist nicht nötig',
         'false: das Vorhaben hält den Bebauungsplan ein, hat Vorbilder in der Umgebung, und keine Sperre oder Satzung steht entgegen – eine Abweichung ist nicht nötig',
         'true: es entstehen neue Wohnungen, und das Vorhaben weicht vom Bebauungsplan ab',
         'true: es entstehen neue Wohnungen, und für das Vorhaben fehlt ein Vorbild in der Umgebung',
-        'true: es entstehen neue Wohnungen im Außenbereich, im Zusammenhang mit der Ortslage bzw. einem Bebauungsplangebiet',
+        'true: es entstehen neue Wohnungen im Außenbereich nahe an der Ortslage bzw. einem Baugebiet mit Bebauungsplan',
       ],
     });
     for (const [id, d] of mitFolge)
@@ -2651,6 +2651,7 @@ describe('§ 246e BauGB aus Tatsachen (neue Wohnungen, Abweichung, Lage) statt �
       expect(x.p.ampel, sperre).not.toBe('gruen');
     }
     // unbeantwortet: offen, die Fragen stehen unter „es fehlt“
+    // erst die Hauptfrage, dann die Sperren: hält das Vorhaben den Plan ein, stehen sie unter „es fehlt“
     const offen = lauf(M({ Planungsrecht: 'Bebauungsplan' }), nein('planung.befreiung'));
     expect(offen.p.ampel).toBe('gelb');
     expect(offen.p.offen).toEqual(expect.arrayContaining(['planung.veraenderungssperre', 'planung.sanierungsgebiet']));
@@ -2662,7 +2663,7 @@ describe('§ 246e BauGB aus Tatsachen (neue Wohnungen, Abweichung, Lage) statt �
     expect(lauf(M({ Planungsrecht: 'Außenbereich' }), ja('planung.anschluss_ortslage')).p.ampel).toBe('rot');
     const frei = lauf(M({ Planungsrecht: 'Außenbereich' }), nein('planung.anschluss_ortslage'));
     expect(frei.p.ampel).toBe('gruen');
-    expect(frei.r.fakten[S]?.ausFolge).toMatch(/Abs\. 3/);
+    expect(frei.r.fakten[S]?.ausFolge).toMatch(/nicht nahe an der Ortslage/);
   });
 
   it('einfacher Bebauungsplan bzw. Satzung: nach „Im Zusammenhang bebauter Ortsteil“ – im Außenbereich nie „keine Abweichung“', () => {
@@ -2693,7 +2694,8 @@ describe('§ 246e BauGB aus Tatsachen (neue Wohnungen, Abweichung, Lage) statt �
   it('ohne Angaben: gelb, es fehlen die Tatsachen – nie die ersetzte Frage; Planungsrecht nicht bestätigt: der Grund steht da', () => {
     const { p, r } = lauf(M());
     expect(p.ampel).toBe('gelb');
-    expect(p.offen).toContain('planung.abweichung_umgebung');
+    // zuerst nur die Hauptfrage (die Sperren erst, wenn sie beantwortet ist)
+    expect(p.offen).toEqual(['planung.abweichung_umgebung']);
     expect(p.offen).not.toContain(S);
     expect(frageGestellt(S, r.faktDefs[S], r.kontext)).toBe(false);
     // im Außenbereich ohne Bezug zu neuen Wohnungen: beide Tatsachen

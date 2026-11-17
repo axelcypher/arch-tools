@@ -392,24 +392,31 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
   };
   // eine ersetzte Frage (FaktDef.ersetzt) ohne eigene Antwort fehlt nicht selbst – an ihrer Stelle fehlen die gestellten
   // Tatsachenfragen, aus denen sie sich ergibt (Bedingungen von `folgt`), die noch keinen gesicherten Wert haben
+  // zuerst die Zeilen, die das Ergebnis „ja“ bzw. den Hauptweg tragen (bei § 246e die Tatsachenfrage), erst wenn sie
+  // entschieden sind, die übrigen (z. B. Sperren, die nur ein „nein“ verhindern) – sonst ginge die Hauptfrage in einer
+  // langen Liste unter. Merkmale (Planungsrecht für den Ort nicht bestätigt) nur, wenn sonst nichts fehlt
   const ersetztCache = new Map<string, string[]>();
   const ersetztDurch = (id: string): string[] => {
     const schon = ersetztCache.get(id);
     if (schon) return schon;
-    const out = new Set<string>();
-    // nur Zeilen, die noch offen sind (eine Zeile mit falschem Planungsrecht zählt nicht): deren offene Angaben, dazu
-    // widersprüchliche bzw. unsichere, die eine Zeile tragen würden
-    for (const z of faktDefs[id]?.folgt ?? []) {
-      try {
-        const b = werten(z.wenn, ctx);
-        if (b.w === 'nein') continue;
-        // auch Merkmale: ein für den Ort nicht bestätigtes Planungsrecht trägt die Zeile nicht (sonst stünde ein Gelb ohne Grund da)
-        for (const o of [...b.offen, ...b.widerspruch, ...b.unsicher]) if (!o.startsWith('paragraf:')) out.add(o);
-      } catch {
-        // eine Bedingung, die sich nicht werten lässt, trägt nichts bei
+    const zeilen = faktDefs[id]?.folgt ?? [];
+    const sammeln = (auswahl: typeof zeilen) => {
+      const out = new Set<string>();
+      for (const z of auswahl) {
+        try {
+          const b = werten(z.wenn, ctx);
+          if (b.w === 'nein') continue;
+          for (const o of [...b.offen, ...b.widerspruch, ...b.unsicher]) if (!o.startsWith('paragraf:')) out.add(o);
+        } catch {
+          // eine Bedingung, die sich nicht werten lässt, trägt nichts bei
+        }
       }
-    }
-    const liste = [...out].filter((f) => gestellt(f));
+      const g = [...out].filter((f) => gestellt(f));
+      const ohneMerkmal = g.filter((f) => !f.startsWith('merkmal:'));
+      return ohneMerkmal.length ? ohneMerkmal : g;
+    };
+    const ja = sammeln(zeilen.filter((z) => z.wert === true));
+    const liste = ja.some((f) => !f.startsWith('merkmal:')) ? ja : sammeln(zeilen);
     ersetztCache.set(id, liste);
     return liste;
   };
