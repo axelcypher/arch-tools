@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { bestaetigen, frageText } from '@core/ui/Rueckfrage';
 import { Symbol } from '@core/ui/Symbol';
+import { AnsichtKarte } from '../AnsichtKarte';
 import { Werkzeugleiste } from '@core/ui/Werkzeugleiste';
 import type { Bieter, Position } from '../../lv/modell';
 import { aendereElement, heuteIso } from '../../lv/modell';
@@ -62,240 +63,245 @@ export function Angebote() {
 
   const b = lv.bieter.find((x) => x.id === bieterId);
 
+  const werkzeuge = (
+    <Werkzeugleiste
+      name="Werkzeuge Angebote"
+      teile={[
+        {
+          id: 'ansicht',
+          gruppe: true,
+          inhalt: (
+            <div className="segment" role="group" aria-label="Ansicht">
+              <button className={modus === 'spiegel' ? 'active' : ''} aria-pressed={modus === 'spiegel'} onClick={() => setModus('spiegel')}>
+                Preisspiegel
+              </button>
+              <button className={modus === 'erfassen' ? 'active' : ''} aria-pressed={modus === 'erfassen'} onClick={() => setModus('erfassen')}>
+                Preise erfassen
+              </button>
+            </div>
+          ),
+        },
+        {
+          id: 'bieter',
+          inhalt: (
+            <button onClick={() => void neuerBieter()} title="Bieter hinzufügen">
+              <Symbol name="plus" /> Bieter …
+            </button>
+          ),
+        },
+        ...(modus === 'spiegel'
+          ? [
+              {
+                id: 'auffaellig',
+                rang: 1,
+                inhalt: (
+                  <label className="ava-check">
+                    <input type="checkbox" checked={nurAuffaellige} onChange={(e) => setNurAuffaellige(e.target.checked)} /> nur auffällige Preise (±30 % vom Mittel)
+                  </label>
+                ),
+                menue: { text: 'Nur auffällige Preise (±30 % vom Mittel)', haken: nurAuffaellige, aktion: () => setNurAuffaellige(!nurAuffaellige) },
+              },
+            ]
+          : []),
+        { abstand: true },
+        {
+          id: 'drucken',
+          inhalt: (
+            <button className="primary" onClick={() => setDruck(true)} disabled={!gewertet.length} title={gewertet.length ? 'Preisspiegel drucken bzw. als PDF' : 'Erst Preise erfassen'}>
+              Preisspiegel drucken …
+            </button>
+          ),
+        },
+      ]}
+      mehr={() => [
+        {
+          text: 'Angebot aus GAEB (X84) …',
+          titel: 'Angebot eines Bieters als GAEB-Datei (X84) einlesen – Preise über die Ordnungszahl',
+          aktion: () =>
+            void angebotEinlesen().then((id) => {
+              if (id !== null) setBieterId(id);
+            }),
+        },
+      ]}
+    />
+  );
+
   return (
-    <div className={`ava-angebote ava-angebote-${modus}`}>
-      <Werkzeugleiste
-        name="Angebote"
-        teile={[
-          {
-            id: 'ansicht',
-            gruppe: true,
-            inhalt: (
-              <div className="segment" role="group" aria-label="Ansicht">
-                <button className={modus === 'spiegel' ? 'active' : ''} aria-pressed={modus === 'spiegel'} onClick={() => setModus('spiegel')}>
-                  Preisspiegel
-                </button>
-                <button className={modus === 'erfassen' ? 'active' : ''} aria-pressed={modus === 'erfassen'} onClick={() => setModus('erfassen')}>
-                  Preise erfassen
-                </button>
-              </div>
-            ),
-          },
-          {
-            id: 'bieter',
-            inhalt: (
-              <button onClick={() => void neuerBieter()} title="Bieter hinzufügen">
-                <Symbol name="plus" /> Bieter …
-              </button>
-            ),
-          },
-          ...(modus === 'spiegel'
-            ? [
-                {
-                  id: 'auffaellig',
-                  rang: 1,
-                  inhalt: (
-                    <label className="ava-check">
-                      <input type="checkbox" checked={nurAuffaellige} onChange={(e) => setNurAuffaellige(e.target.checked)} /> nur auffällige Preise (±30 % vom Mittel)
-                    </label>
-                  ),
-                  menue: { text: 'Nur auffällige Preise (±30 % vom Mittel)', haken: nurAuffaellige, aktion: () => setNurAuffaellige(!nurAuffaellige) },
-                },
-              ]
-            : []),
-          { abstand: true },
-          {
-            id: 'drucken',
-            inhalt: (
-              <button className="primary" onClick={() => setDruck(true)} disabled={!gewertet.length} title={gewertet.length ? 'Preisspiegel drucken bzw. als PDF' : 'Erst Preise erfassen'}>
-                Preisspiegel drucken …
-              </button>
-            ),
-          },
-        ]}
-        mehr={() => [
-          {
-            text: 'Angebot aus GAEB (X84) …',
-            titel: 'Angebot eines Bieters als GAEB-Datei (X84) einlesen – Preise über die Ordnungszahl',
-            aktion: () =>
-              void angebotEinlesen().then((id) => {
-                if (id !== null) setBieterId(id);
-              }),
-          },
-        ]}
-      />
-      <div className="ava-bieter-liste ava-tabelle-rahmen">
-        <table className="ava-tabelle">
-          <thead>
-            <tr>
-              <th>Rang</th>
-              <th>Bieter</th>
-              <th>Angebot vom</th>
-              <th className="num">Summe netto</th>
-              <th className="num">Nachlass %</th>
-              <th className="num">nach Nachlass</th>
-              <th className="num">brutto</th>
-              <th className="num">Abstand</th>
-              <th>Preise</th>
-              <th title={nurAslv ? aslvHinweis(ASLV_NICHT_GESPEICHERT.bieterStatus) : 'Im Preisspiegel und in der Rangfolge werten'}>gewertet</th>
-              <th>
-                <span className="ava-sr-only">Entfernen</span>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {lv.bieter.map((x) => {
-              const sb = s.bieter.get(x.id);
-              const r = rang.find((y) => y.id === x.id);
-              return (
-                <tr
-                  key={x.id}
-                  className={`${modus === 'erfassen' && x.id === bieterId ? 'active ' : ''}${lv.auftrag?.bieterId === x.id ? 'ava-auftrag ' : ''}${x.ausgeschlossen ? 'ava-ausgeschlossen' : ''}`}
-                  onClick={modus === 'erfassen' ? () => setBieterId(x.id) : undefined}
-                >
-                  <td>{x.id === 0 ? '—' : (r?.rang ?? '')}</td>
-                  <td>
-                    {x.id === 0 ? (
-                      <span title="Vom Planer bepreistes LV (Kostenansatz) – kein Angebot">{x.name}</span>
-                    ) : (
-                      <TextEingabe className="ava-bieter-name" label="Name des Bieters" wert={x.name} onChange={(name) => bieterSetzen(x.id, { name: name.trim() || x.name })} />
-                    )}
-                    {lv.auftrag?.bieterId === x.id && <span className="ava-chip ava-chip-ok">Auftrag</span>}
-                    {r?.unvollstaendig && (
-                      <span className="ava-chip ava-chip-warn" title="Angebot ohne alle geforderten Preise – Ausschluss prüfen (§ 16a VOB/A); steht hinter den vollständigen Angeboten">
-                        unvollständig ({r.ohnePreis} fehlende Preise)
-                      </span>
-                    )}
-                  </td>
-                  <td>
-                    {x.id !== 0 &&
-                      (nurAslv ? (
-                        <span className="muted" title={aslvHinweis(ASLV_NICHT_GESPEICHERT.bieterAngebotsdatum)}>
-                          {x.angebotsdatum ? x.angebotsdatum.split('-').reverse().join('.') : '—'}
-                        </span>
-                      ) : (
-                        <DatumEingabe label={`Angebot vom, ${x.name}`} wert={x.angebotsdatum} onChange={(angebotsdatum) => bieterSetzen(x.id, { angebotsdatum })} />
-                      ))}
-                  </td>
-                  <td className="num">{euro(sb?.ohneNachlass)}</td>
-                  <td className="num">
-                    {x.id !== 0 && (
-                      <span className="ava-prozent">
-                        <ZahlEingabe label={`Nachlass in Prozent, ${x.name}`} wert={x.nachlass ? -x.nachlass : null} onChange={(n) => bieterSetzen(x.id, { nachlass: n ? -Math.abs(n) : undefined })} title="Nachlass in Prozent (z. B. 3 für 3 %)" placeholder="0" />
-                        <span aria-hidden="true">%</span>
-                      </span>
-                    )}
-                  </td>
-                  <td className="num">{euro(sb?.netto)}</td>
-                  <td className="num">{euro(sb?.brutto)}</td>
-                  <td className="num">{r ? abstandText(r) : ''}</td>
-                  <td className={sb && sb.ohnePreis > 0 && x.id !== 0 ? 'ava-ueber' : ''} title={sb && sb.ohnePreis > 0 ? `${sb.ohnePreis} Position(en) ohne Preis` : undefined}>
-                    {sb ? `${sb.mitPreis}/${sb.mitPreis + sb.ohnePreis}` : ''}
-                  </td>
-                  <td>
-                    {x.id !== 0 && (
-                      <input
-                        type="checkbox"
-                        checked={!x.ausgeschlossen}
-                        disabled={nurAslv}
-                        onChange={(e) => bieterSetzen(x.id, { ausgeschlossen: !e.target.checked || undefined })}
-                        title={nurAslv ? aslvHinweis(ASLV_NICHT_GESPEICHERT.bieterStatus) : 'Im Preisspiegel und in der Rangfolge werten'}
-                        aria-label={`${x.name} werten`}
-                      />
-                    )}
-                  </td>
-                  <td>
-                    {x.id !== 0 && lv.auftrag?.bieterId !== x.id && (
-                      <button className="small icon danger" onClick={(e) => (e.stopPropagation(), void bieterEntfernen(x))} title="Bieter entfernen" aria-label={`Bieter ${x.name} entfernen`}>
-                        <Symbol name="schliessen" />
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-      {modus === 'erfassen' ? (
-        <div className="ava-erfassen">
-          <div className="ava-erfassen-kopf">
-            <label className="ava-erfassen-wahl">
-              <strong>Einheitspreise von</strong>
-              <select value={bieterId} onChange={(e) => setBieterId(Number(e.target.value))} aria-label="Bieter, dessen Preise erfasst werden">
-                {lv.bieter.map((x) => (
-                  <option key={x.id} value={x.id}>
-                    {x.name}
-                    {x.id === 0 ? ' (bepreistes LV)' : ''}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <span className="muted small-text">Enter springt zur nächsten Position.</span>
-          </div>
-          <table className="ava-tabelle ava-erfassen-tabelle">
+    <>
+      <AnsichtKarte titel="Angebote" className={`ava-angebote ava-angebote-${modus}`} leiste={werkzeuge}>
+        <div className="ava-bieter-liste ava-tabelle-rahmen">
+          <table className="ava-tabelle">
             <thead>
               <tr>
-                <th>OZ</th>
-                <th>Kurztext</th>
-                <th className="num">Menge</th>
-                <th>Einheit</th>
-                <th className="num">EP Kostenansatz</th>
-                <th className="num">EP {b?.name}</th>
-                <th className="num">GB</th>
-                <th className="num">Abw.</th>
+                <th>Rang</th>
+                <th>Bieter</th>
+                <th>Angebot vom</th>
+                <th className="num">Summe netto</th>
+                <th className="num">Nachlass %</th>
+                <th className="num">nach Nachlass</th>
+                <th className="num">brutto</th>
+                <th className="num">Abstand</th>
+                <th>Preise</th>
+                <th title={nurAslv ? aslvHinweis(ASLV_NICHT_GESPEICHERT.bieterStatus) : 'Im Preisspiegel und in der Rangfolge werten'}>gewertet</th>
+                <th>
+                  <span className="nur-vorlesen">Entfernen</span>
+                </th>
               </tr>
             </thead>
             <tbody>
-              {zeilen.map((z, i) => {
-                const el = z.el;
-                if (el.art !== 'position')
-                  return el.art === 'abschnitt' ? (
-                    <tr key={el.id} className="ava-z-abschnitt">
-                      <td>{z.oz}</td>
-                      <td colSpan={7}>{el.kurztext}</td>
-                    </tr>
-                  ) : null;
-                const ep = el.preise[String(bieterId)]?.ep ?? null;
-                const ka = el.preise['0']?.ep ?? null;
-                const abw = ep !== null && ka ? ((ep - ka) / ka) * 100 : null;
+              {lv.bieter.map((x) => {
+                const sb = s.bieter.get(x.id);
+                const r = rang.find((y) => y.id === x.id);
                 return (
-                  <tr key={el.id}>
-                    <td className="ava-oz">{z.oz}</td>
-                    <td className="ava-kurztext" title={el.kurztext}>
-                      {el.kurztext}
+                  <tr
+                    key={x.id}
+                    className={`${modus === 'erfassen' && x.id === bieterId ? 'active ' : ''}${lv.auftrag?.bieterId === x.id ? 'ava-auftrag ' : ''}${x.ausgeschlossen ? 'ava-ausgeschlossen' : ''}`}
+                    onClick={modus === 'erfassen' ? () => setBieterId(x.id) : undefined}
+                  >
+                    <td>{x.id === 0 ? '—' : (r?.rang ?? '')}</td>
+                    <td>
+                      {x.id === 0 ? (
+                        <span title="Vom Planer bepreistes LV (Kostenansatz) – kein Angebot">{x.name}</span>
+                      ) : (
+                        <TextEingabe className="ava-bieter-name" label="Name des Bieters" wert={x.name} onChange={(name) => bieterSetzen(x.id, { name: name.trim() || x.name })} />
+                      )}
+                      {lv.auftrag?.bieterId === x.id && <span className="ava-chip ava-chip-ok">Auftrag</span>}
+                      {r?.unvollstaendig && (
+                        <span className="ava-chip ava-chip-warn" title="Angebot ohne alle geforderten Preise – Ausschluss prüfen (§ 16a VOB/A); steht hinter den vollständigen Angeboten">
+                          unvollständig ({r.ohnePreis} fehlende Preise)
+                        </span>
+                      )}
                     </td>
-                    <td className="num">{zahlDE(el.menge)}</td>
-                    <td>{el.einheit}</td>
-                    <td className="num">{zahlDE(ka, 2)}</td>
-                    <td className="num ava-zelle-eingabe">
-                      <ZahlEingabe
-                        wert={ep}
-                        stellen={2}
-                        label={`EP ${z.oz}`}
-                        onChange={(n) => preisSetzen(el, bieterId, n)}
-                        onEnter={() => {
-                          const naechste = document.querySelectorAll<HTMLInputElement>('.ava-erfassen-tabelle .ava-zelle-eingabe input');
-                          const liste = Array.from(naechste);
-                          const hier = liste.findIndex((x) => x === document.activeElement);
-                          liste[hier + 1]?.focus();
-                        }}
-                        placeholder={i === 1 ? '0,00' : undefined}
-                      />
+                    <td>
+                      {x.id !== 0 &&
+                        (nurAslv ? (
+                          <span className="muted" title={aslvHinweis(ASLV_NICHT_GESPEICHERT.bieterAngebotsdatum)}>
+                            {x.angebotsdatum ? x.angebotsdatum.split('-').reverse().join('.') : '—'}
+                          </span>
+                        ) : (
+                          <DatumEingabe label={`Angebot vom, ${x.name}`} wert={x.angebotsdatum} onChange={(angebotsdatum) => bieterSetzen(x.id, { angebotsdatum })} />
+                        ))}
                     </td>
-                    <td className="num">{s.positionen.get(el.id)?.get(bieterId) !== undefined ? zahlDE(s.positionen.get(el.id)!.get(bieterId)!, 2) : ''}</td>
-                    <td className={`num ${abw !== null && Math.abs(abw) > 30 ? 'ava-ueber' : ''}`}>{abw !== null ? `${abw > 0 ? '+' : ''}${zahlDE(abw, 0)} %` : ''}</td>
+                    <td className="num">{euro(sb?.ohneNachlass)}</td>
+                    <td className="num">
+                      {x.id !== 0 && (
+                        <span className="ava-prozent">
+                          <ZahlEingabe label={`Nachlass in Prozent, ${x.name}`} wert={x.nachlass ? -x.nachlass : null} onChange={(n) => bieterSetzen(x.id, { nachlass: n ? -Math.abs(n) : undefined })} title="Nachlass in Prozent (z. B. 3 für 3 %)" placeholder="0" />
+                          <span aria-hidden="true">%</span>
+                        </span>
+                      )}
+                    </td>
+                    <td className="num">{euro(sb?.netto)}</td>
+                    <td className="num">{euro(sb?.brutto)}</td>
+                    <td className="num">{r ? abstandText(r) : ''}</td>
+                    <td className={sb && sb.ohnePreis > 0 && x.id !== 0 ? 'ava-ueber' : ''} title={sb && sb.ohnePreis > 0 ? `${sb.ohnePreis} Position(en) ohne Preis` : undefined}>
+                      {sb ? `${sb.mitPreis}/${sb.mitPreis + sb.ohnePreis}` : ''}
+                    </td>
+                    <td>
+                      {x.id !== 0 && (
+                        <input
+                          type="checkbox"
+                          checked={!x.ausgeschlossen}
+                          disabled={nurAslv}
+                          onChange={(e) => bieterSetzen(x.id, { ausgeschlossen: !e.target.checked || undefined })}
+                          title={nurAslv ? aslvHinweis(ASLV_NICHT_GESPEICHERT.bieterStatus) : 'Im Preisspiegel und in der Rangfolge werten'}
+                          aria-label={`${x.name} werten`}
+                        />
+                      )}
+                    </td>
+                    <td>
+                      {x.id !== 0 && lv.auftrag?.bieterId !== x.id && (
+                        <button className="small icon danger" onClick={(e) => (e.stopPropagation(), void bieterEntfernen(x))} title="Bieter entfernen" aria-label={`Bieter ${x.name} entfernen`}>
+                          <Symbol name="schliessen" />
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 );
               })}
             </tbody>
           </table>
         </div>
-      ) : (
-        <Preisspiegel nurAuffaellige={nurAuffaellige} />
-      )}
+        {modus === 'erfassen' ? (
+          <div className="ava-erfassen">
+            <div className="ava-erfassen-kopf">
+              <label className="ava-erfassen-wahl">
+                <strong>Einheitspreise von</strong>
+                <select value={bieterId} onChange={(e) => setBieterId(Number(e.target.value))} aria-label="Bieter, dessen Preise erfasst werden">
+                  {lv.bieter.map((x) => (
+                    <option key={x.id} value={x.id}>
+                      {x.name}
+                      {x.id === 0 ? ' (bepreistes LV)' : ''}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <span className="muted small-text">Enter springt zur nächsten Position.</span>
+            </div>
+            <table className="ava-tabelle ava-erfassen-tabelle">
+              <thead>
+                <tr>
+                  <th>OZ</th>
+                  <th>Kurztext</th>
+                  <th className="num">Menge</th>
+                  <th>Einheit</th>
+                  <th className="num">EP Kostenansatz</th>
+                  <th className="num">EP {b?.name}</th>
+                  <th className="num">GB</th>
+                  <th className="num">Abw.</th>
+                </tr>
+              </thead>
+              <tbody>
+                {zeilen.map((z, i) => {
+                  const el = z.el;
+                  if (el.art !== 'position')
+                    return el.art === 'abschnitt' ? (
+                      <tr key={el.id} className="ava-z-abschnitt">
+                        <td>{z.oz}</td>
+                        <td colSpan={7}>{el.kurztext}</td>
+                      </tr>
+                    ) : null;
+                  const ep = el.preise[String(bieterId)]?.ep ?? null;
+                  const ka = el.preise['0']?.ep ?? null;
+                  const abw = ep !== null && ka ? ((ep - ka) / ka) * 100 : null;
+                  return (
+                    <tr key={el.id}>
+                      <td className="ava-oz">{z.oz}</td>
+                      <td className="ava-kurztext" title={el.kurztext}>
+                        {el.kurztext}
+                      </td>
+                      <td className="num">{zahlDE(el.menge)}</td>
+                      <td>{el.einheit}</td>
+                      <td className="num">{zahlDE(ka, 2)}</td>
+                      <td className="num ava-zelle-eingabe">
+                        <ZahlEingabe
+                          wert={ep}
+                          stellen={2}
+                          label={`EP ${z.oz}`}
+                          onChange={(n) => preisSetzen(el, bieterId, n)}
+                          onEnter={() => {
+                            const naechste = document.querySelectorAll<HTMLInputElement>('.ava-erfassen-tabelle .ava-zelle-eingabe input');
+                            const liste = Array.from(naechste);
+                            const hier = liste.findIndex((x) => x === document.activeElement);
+                            liste[hier + 1]?.focus();
+                          }}
+                          placeholder={i === 1 ? '0,00' : undefined}
+                        />
+                      </td>
+                      <td className="num">{s.positionen.get(el.id)?.get(bieterId) !== undefined ? zahlDE(s.positionen.get(el.id)!.get(bieterId)!, 2) : ''}</td>
+                      <td className={`num ${abw !== null && Math.abs(abw) > 30 ? 'ava-ueber' : ''}`}>{abw !== null ? `${abw > 0 ? '+' : ''}${zahlDE(abw, 0)} %` : ''}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <Preisspiegel nurAuffaellige={nurAuffaellige} />
+        )}
+      </AnsichtKarte>
       {druck && <PreisspiegelDruck onClose={() => setDruck(false)} />}
-    </div>
+    </>
   );
 }
 

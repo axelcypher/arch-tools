@@ -42,6 +42,8 @@ const eingabe = (el: HTMLInputElement, value: string) => {
 function KostenMitMenue() {
   return createElement('div', null, createElement(KostenView, { onKatalog: () => undefined }), createElement(MenueHost));
 }
+/** Karte nach ihrem Titel */
+const karte = (host: Element, titel: string) => [...host.querySelectorAll<HTMLElement>('.karte')].find((k) => k.querySelector('h2')?.textContent === titel)!;
 const ansicht = () => render(KostenMitMenue);
 /** Punkt eines Menüs: Menüknopf öffnen, Punkt suchen (Menü bleibt offen, bis der Punkt gewählt wird) */
 const menuePunkt = (host: Element, menue: string, punkt: string) => {
@@ -74,7 +76,7 @@ describe('Kostenansicht: Bedienung', () => {
     useKosten.getState().load(p);
     const host = ansicht();
     expect((host.querySelector('select:not(.sd-phase)') as HTMLSelectElement).value).toBe('schaetzung');
-    expect(host.querySelector('.ko-uebersicht h2')!.textContent).toBe('Kostenschätzung');
+    expect(karte(host, 'Kostenschätzung').querySelector('h2')!.textContent).toBe('Kostenschätzung');
     expect(host.textContent).toContain('Für die Kostenschätzung passt die Gliederung 2. Ebene');
     expect(host.textContent).toContain('mindestens 2. Ebene');
   });
@@ -172,7 +174,7 @@ describe('Kostenansicht: Bedienung', () => {
     const r = kosten().positionen.find((p) => p.kg === KG_RISIKO)!;
     expect(r).toMatchObject({ bezug: 'prozent', basis: ['300', '400'], bezeichnung: 'Kostenrisiken' });
     eingabe(host.querySelector(`tr[data-pos="${r.id}"] input[aria-label="Mittel, Kostenrisiko"]`) as HTMLInputElement, '5');
-    const zeilen = [...host.querySelectorAll('.ko-uebersicht tbody tr')].map((z) => z.textContent ?? '');
+    const zeilen = [...karte(host, 'Kostenschätzung').querySelectorAll('tbody tr')].map((z) => z.textContent ?? '');
     const i = zeilen.findIndex((z) => z.startsWith('Kostenrisiken'));
     expect(i).toBeGreaterThan(0);
     expect(zeilen[i + 1]).toContain('Gesamt netto');
@@ -195,5 +197,9 @@ describe('Kostenansicht: Bedienung', () => {
     expect(kosten().staende?.map((s) => s.bemerkung)).toEqual(['Variante A']);
     expect(feld.value).toBe('');
     expect(host.textContent).toContain('vorherjetztDifferenz');
+    // der verglichene Stand ist als gewählte Zeile markiert (Hervorhebung über tr.selected)
+    const gewaehlt = karte(host, 'Kostenschätzung').querySelectorAll('tr.selected');
+    expect(gewaehlt).toHaveLength(1);
+    expect(gewaehlt[0].textContent).toContain('Variante A');
   });
 });

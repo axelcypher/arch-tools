@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { allgemeinLaden } from '@core/platform/konfig';
 import { bestaetigen, meldung } from '@core/ui/Rueckfrage';
 import { Symbol } from '@core/ui/Symbol';
+import { Karte } from '@core/ui/Karte';
+import { BreitenLeiste } from '@core/ui/Leiste';
 import type { Firmeneinsatz, Tagesbericht } from '../../avaDaten';
 import { tagesberichtPdf } from '../../bauleitung/berichte';
 import { wetterAbrufen } from '../../bauleitung/wetter';
@@ -45,43 +47,48 @@ export function Bautagebuch() {
   };
 
   return (
-    <div className="ava-zweispaltig">
-      <div className="ava-liste-spalte">
-        <div className="ava-eingang-kopf">
-          <h2>Bautagebuch</h2>
-          <button title="Tagesbericht hinzufügen" className="primary small" onClick={() => void neu()}>
-            <Symbol name="plus" /> Tagesbericht
-          </button>
-        </div>
-        <ul className="list" role="listbox" aria-label="Tagesberichte">
-          {liste.map((x) => (
-            <li
-              key={x.id}
-              role="option"
-              aria-selected={x.id === t?.id}
-              tabIndex={x.id === (t?.id ?? liste[0]?.id) ? 0 : -1}
-              className={x.id === t?.id ? 'active' : ''}
-              onClick={() => setId(x.id)}
-              onKeyDown={(e) =>
-                listenTaste(
-                  e,
-                  liste,
-                  liste.findIndex((y) => y.id === t?.id),
-                  (y) => setId(y.id),
-                )
-              }
-            >
-              <div>
-                <strong>{datumKurz(x.datum)}</strong> {x.nr ? <span className="muted">Nr. {x.nr}</span> : null}
-              </div>
-              <span className="muted small-text">{[x.wetter, `${x.firmen.length} Firma(en)`].filter(Boolean).join(' · ')}</span>
-            </li>
-          ))}
-          {!liste.length && <li className="muted">Noch keine Tagesberichte.</li>}
-        </ul>
-      </div>
-      <div className="ava-editor-spalte">{t ? <Bericht key={t.id} t={t} neu={t.id === neuerBericht} /> : <p className="muted">Mit „Tagesbericht“ beginnen.</p>}</div>
-    </div>
+    <>
+      <BreitenLeiste schluessel="ava:breite:bautagebuch" vorgabe={260} titel="Breite der Liste">
+        <Karte
+          als="aside"
+          titel="Bautagebuch"
+          buendig
+          aktionen={
+            <button title="Tagesbericht hinzufügen" className="primary small" onClick={() => void neu()}>
+              <Symbol name="plus" /> Tagesbericht
+            </button>
+          }
+        >
+          <ul className="list ava-liste-zweizeilig" role="listbox" aria-label="Tagesberichte">
+            {liste.map((x) => (
+              <li
+                key={x.id}
+                role="option"
+                aria-selected={x.id === t?.id}
+                tabIndex={x.id === (t?.id ?? liste[0]?.id) ? 0 : -1}
+                className={x.id === t?.id ? 'active' : ''}
+                onClick={() => setId(x.id)}
+                onKeyDown={(e) =>
+                  listenTaste(
+                    e,
+                    liste,
+                    liste.findIndex((y) => y.id === t?.id),
+                    (y) => setId(y.id),
+                  )
+                }
+              >
+                <div>
+                  <strong>{datumKurz(x.datum)}</strong> {x.nr ? <span className="muted">Nr. {x.nr}</span> : null}
+                </div>
+                <span className="muted small-text">{[x.wetter, `${x.firmen.length} Firma(en)`].filter(Boolean).join(' · ')}</span>
+              </li>
+            ))}
+            {!liste.length && <li className="muted">Noch keine Tagesberichte.</li>}
+          </ul>
+        </Karte>
+      </BreitenLeiste>
+      <Karte als="main" titel={t ? `Tagesbericht ${datumKurz(t.datum)}` : 'Tagesbericht'}>{t ? <Bericht key={t.id} t={t} neu={t.id === neuerBericht} /> : <p className="muted">Mit „Tagesbericht“ beginnen.</p>}</Karte>
+    </>
   );
 }
 

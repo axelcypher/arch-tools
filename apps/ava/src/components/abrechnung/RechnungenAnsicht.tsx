@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { AnsichtKarte } from '../AnsichtKarte';
 import { Modal } from '@core/ui/Dialog';
 import { MenueKnopf } from '@core/ui/Menue';
 import { Symbol } from '@core/ui/Symbol';
@@ -72,15 +73,53 @@ export function RechnungenAnsicht({ gewerk }: { gewerk?: string }) {
 
   const oeffnen = (pfad: string) => void useAva.getState().fs.oeffnen(vollerPfad(projekt.ordner, pfad)).catch((x) => meldung('Datei ließ sich nicht öffnen', pfad, x));
 
+  const werkzeuge = (
+    <Werkzeugleiste
+      name="Werkzeuge Rechnungen"
+      teile={[
+        {
+          id: 'suche',
+          kuerzbar: true,
+          inhalt: <input className="ava-suche" placeholder="Suchen (Nr., Firma, Gewerk) …" aria-label="Rechnungen durchsuchen" value={suche} onChange={(x) => setSuche(x.target.value)} onKeyDown={(x) => x.key === 'Escape' && setSuche('')} />,
+        },
+        {
+          id: 'hinweise',
+          rang: 1,
+          inhalt: (
+            <label className="ava-check">
+              <input type="checkbox" checked={nurHinweise} onChange={(x) => setNurHinweise(x.target.checked)} /> nur mit Hinweisen
+            </label>
+          ),
+          menue: { text: 'Nur mit Hinweisen', haken: nurHinweise, aktion: () => setNurHinweise(!nurHinweise) },
+        },
+        { abstand: true },
+        {
+          id: 'pruefen',
+          inhalt: (
+            <button onClick={() => setPruefen(true)} title="Rechnung erfassen, prüfen und in die Kostenkontrolle eintragen">
+              Neue Rechnung prüfen …
+            </button>
+          ),
+        },
+      ]}
+      mehr={() => (projekt.kk ? [{ text: 'Kostenkontrolle öffnen', titel: `Öffnet die Excel-Datei der Kostenkontrolle mit dem Standardprogramm (${projekt.kk.pfad})`, aktion: () => oeffnen(projekt.kk!.pfad) }] : [])}
+    />
+  );
+
   return (
-    <div className="ava-seite">
-      {!gewerk && (
-        <div className="ava-seite-kopf">
-          <h1>Rechnungen</h1>
-        </div>
-      )}
+    <AnsichtKarte
+      titel="Rechnungen"
+      leiste={
+        <>
+          {werkzeuge}
+          <div className="ava-ok small-text ava-leiste-status" role="status" title={hinweis ?? undefined}>
+            {hinweis ?? ''}
+          </div>
+        </>
+      }
+    >
       {a1 && (
-        <div className="ava-kennzahlen">
+        <div className="metric-row ava-kennzahlen">
           <div className="metric">
             <span>Kostenschätzung</span>
             <strong>{euro(a1.kostenschaetzung)}</strong>
@@ -99,39 +138,6 @@ export function RechnungenAnsicht({ gewerk }: { gewerk?: string }) {
           </div>
         </div>
       )}
-      <Werkzeugleiste
-        name="Rechnungen"
-        teile={[
-          {
-            id: 'suche',
-            kuerzbar: true,
-            inhalt: <input className="ava-suche" placeholder="Suchen (Nr., Firma, Gewerk) …" aria-label="Rechnungen durchsuchen" value={suche} onChange={(x) => setSuche(x.target.value)} onKeyDown={(x) => x.key === 'Escape' && setSuche('')} />,
-          },
-          {
-            id: 'hinweise',
-            rang: 1,
-            inhalt: (
-              <label className="ava-check">
-                <input type="checkbox" checked={nurHinweise} onChange={(x) => setNurHinweise(x.target.checked)} /> nur mit Hinweisen
-              </label>
-            ),
-            menue: { text: 'Nur mit Hinweisen', haken: nurHinweise, aktion: () => setNurHinweise(!nurHinweise) },
-          },
-          { abstand: true },
-          {
-            id: 'pruefen',
-            inhalt: (
-              <button onClick={() => setPruefen(true)} title="Rechnung erfassen, prüfen und in die Kostenkontrolle eintragen">
-                Neue Rechnung prüfen …
-              </button>
-            ),
-          },
-        ]}
-        mehr={() => (projekt.kk ? [{ text: 'Kostenkontrolle öffnen', titel: `Öffnet die Excel-Datei der Kostenkontrolle mit dem Standardprogramm (${projekt.kk.pfad})`, aktion: () => oeffnen(projekt.kk!.pfad) }] : [])}
-      />
-      <div className="ava-ok small-text ava-leiste-status" role="status" title={hinweis ?? undefined}>
-        {hinweis ?? ''}
-      </div>
       {a1?.hinweise.map((h, i) => (
         <div key={i} className="warning">
           {h}
@@ -230,7 +236,7 @@ export function RechnungenAnsicht({ gewerk }: { gewerk?: string }) {
       <p className="muted small-text">Quellen: Liste = Rechnungsliste, Blatt = Gewerkblatt der Kostenkontrolle, PDF = Datei im Auftragsordner, Prüfung = Prüfung in der App (Projektdatei). Doppelklick auf eine geprüfte Rechnung zeigt die Prüfung.</p>
       {pruefen && <RechnungPruefen gewerk={gewerk} onClose={() => setPruefen(false)} />}
       {ansehen && <PruefungAnsehen d={ansehen} onClose={() => setAnsehen(null)} />}
-    </div>
+    </AnsichtKarte>
   );
 }
 
