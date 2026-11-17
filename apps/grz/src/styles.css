@@ -1,71 +1,11 @@
 /* TERRIO (Grund-Styles: @core/ui/base.css) */
 
-.grz-view {
-  display: grid;
-  grid-template-columns: minmax(250px, 300px) minmax(320px, 1fr) minmax(360px, 440px);
-  gap: 12px;
-  padding: 12px;
-  align-items: start;
-}
-/* bis 1280 px zwei Spalten: Festsetzungen | Plan, der Nachweis darunter über die volle Breite */
-@media (max-width: 1280px) {
-  .grz-view {
-    grid-template-columns: minmax(250px, 300px) minmax(0, 1fr);
-  }
-  .grz-nachweis {
-    grid-column: 1 / -1;
-  }
-}
-/* Sprungziel „zum Nachweis“: Überschrift nicht unter der klebenden Ergebnisleiste */
-#grz-nachweis {
-  scroll-margin-top: 52px;
-}
-/* Ergebnisleiste: nur, wenn der Nachweis unter Eingaben und Plan rutscht – Kennzahlen bleiben im Blick */
-.grz-ergebnis-leiste {
-  display: none;
-}
-@media (max-width: 1280px) {
-  .grz-ergebnis-leiste {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 6px 16px;
-    grid-column: 1 / -1;
-    position: sticky;
-    top: 0;
-    z-index: 5;
-    padding: 6px 12px;
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    font-size: 12px;
-  }
-  .grz-ergebnis-leiste strong {
-    font-variant-numeric: tabular-nums;
-  }
-  .grz-ergebnis-leiste button.link {
-    margin-left: auto;
-  }
-}
-.grz-col {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 12px 14px;
-  min-width: 0;
-}
-.grz-col h2 {
-  /* docs/design.md: Titel einer Spalte ohne .sidebar */
-  font-size: var(--fs-l);
-  font-weight: 600;
-  margin: 18px 0 10px;
+/* Layout: Fläche und Karten aus base.css (Richtung C) – hier nur Inhalte der Karten */
+.karte-kopf h2 {
+  /* Hilfe „?“ direkt hinter dem Titel */
   display: flex;
   align-items: center;
-  gap: 4px;
-}
-.grz-col h2:first-child,
-.grz-col > .section-head h2 {
-  margin-top: 0;
+  gap: var(--s1);
 }
 /* Eingaben: Felder einer Zeile unten bündig, auch wenn ein Label umbricht */
 .grz-fest .field-row {
@@ -86,7 +26,7 @@
   margin: 2px 0 10px;
 }
 .grz-fest .toggle input,
-.grz-table .toggle input {
+.grz-tabelle .toggle input {
   flex: none;
   margin-top: 2px;
 }
@@ -112,7 +52,7 @@
 .grz-vg-tabelle th:nth-child(4) {
   width: 10%;
 }
-.grz-table.grz-vg-tabelle th.num,
+.grz-tabelle.grz-vg-tabelle th.num,
 .grz-vg-tabelle th {
   white-space: normal;
 }
@@ -137,27 +77,12 @@
 .grz-h3-zeile .toggle {
   margin-right: 0;
 }
-.grz-col h3 {
-  margin: 14px 0 6px;
-  font-size: var(--fs-s);
-  font-weight: 600;
-}
-.grz-col input[type='date'] {
+.grz-view input[type='date'] {
   font: inherit;
   padding: 4px 6px;
 }
 .grz-skizze {
-  /* Lageplan wie die Zeichenfläche von QUADRIO: helle Planfarben, im dunklen Schema als Ganzes
-     invertiert (Option „Zeichenfläche abdunkeln“); Papier (Druck) bleibt hell */
-  --text: #1f2328;
-  --muted: #5f6673;
-  --border: #d8dbe0;
-  --panel: #ffffff;
-  --accent: #2a5bd7;
-  --accent-soft: #e6edfb;
-  --sel: #ff7a00;
-  --danger: #c0392b;
-  filter: var(--canvas-filter);
+  /* helle Planfarben und Filter im dunklen Schema aus .canvas (base.css); hier nur Maße */
   width: 100%;
   height: 360px;
   display: block;
@@ -166,57 +91,37 @@
   border-radius: 4px;
   margin-bottom: 8px;
 }
-.grz-skizze.empty {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 160px;
-}
-.tbl-wrap {
-  overflow-x: auto;
-}
-.grz-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 12px;
-}
-.grz-table th,
-.grz-table td {
+/* Tabellen: gemeinsame Zahlentabelle .summary-table; hier nur, was TERRIO darüber hinaus braucht */
+.grz-tabelle th {
   text-align: left;
-  padding: 4px 6px;
-  border-bottom: 1px solid var(--border);
+}
+.grz-tabelle td {
   vertical-align: top;
 }
-.grz-table th {
-  font-size: 11px;
-  color: var(--muted);
-  font-weight: 600;
-}
-.grz-table .num {
+.grz-tabelle .num {
   text-align: right;
-  font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
-.grz-table tr.sum td {
+.grz-tabelle tr.sum td {
   font-weight: 600;
-  border-top: 1.5px solid var(--text);
+  border-top-color: var(--text);
 }
-.grz-table tr.nachbar td {
+.grz-tabelle tr.nachbar td {
   opacity: 0.55;
 }
 /* Auswahlfelder in Tabellen so breit wie ihr Inhalt, aber nie breiter als die Zelle */
-.grz-table select {
+.grz-tabelle select {
   width: auto;
   max-width: 100%;
 }
-.grz-table select.grz-wahl {
+.grz-tabelle select.grz-wahl {
   padding: 1px 2px;
 }
 .grz-vg-zeile td {
   border-bottom: none;
 }
 /* Einstufung von Hand: kursiv und mit Warnrand, damit sie sich von „automatisch“ abhebt */
-.grz-table select.grz-von-hand {
+.grz-tabelle select.grz-von-hand {
   font-style: italic;
   border-color: var(--warn-border);
   background: var(--warn-bg);
@@ -233,7 +138,7 @@
 .grz-begruendung summary {
   cursor: pointer;
 }
-.grz-table .toggle {
+.grz-tabelle .toggle {
   display: flex;
   margin-top: 2px;
 }
@@ -339,21 +244,24 @@ button.link:hover {
   margin-bottom: 4px;
 }
 
+/* Meldungen oben, darunter die Fläche (sie füllt den Rest und scrollt nie – die Karten scrollen) */
 .grz-main {
   flex: 1;
   min-height: 0;
+  display: flex;
+  flex-direction: column;
   overflow: auto;
   background: var(--bg);
 }
 /* Legende der Flächenbilanz: Farbmarke sichtbar (Inline-Element), Originalfarbe ohne Filter (docs/design.md, Planfarben) */
-.grz-table .swatch {
+.grz-tabelle .swatch {
   display: inline-block;
   vertical-align: middle;
 }
 
 /* Meldungen über dem Inhalt: Gestalt und Farben aus .meldung (base.css), hier nur Lage und Liste */
 .grz-bericht {
-  margin: var(--s3) var(--s3) 0;
+  margin: var(--spalt) var(--spalt) 0;
 }
 .grz-bericht-kopf {
   display: flex;
@@ -407,7 +315,7 @@ button.link:hover {
 .lp-eigenschaften .field {
   flex: 1 1 160px;
 }
-.grz-table tr.selected td {
+.grz-tabelle tr.selected td {
   background: var(--accent-soft);
 }
 
@@ -467,7 +375,7 @@ button.link:hover {
 
 .grz-report-unterschrift span {
   display: block;
-  border-bottom: 1px solid #1f2328;
+  border-bottom: 1px solid var(--text);
   height: 28px;
   margin-bottom: 4px;
 }
@@ -510,6 +418,13 @@ button.link:hover {
   position: absolute;
   top: 8px;
   right: 8px;
+  padding: 2px 6px;
+  border-radius: var(--radius-s);
+  background: var(--overlay-bg);
+}
+/* Bezug für die Breite der Tastenübersicht */
+.grz-plan .karte-rumpf {
+  container-type: inline-size;
 }
 
 .grz-3d-legende {
@@ -575,16 +490,21 @@ button.link:hover {
 
 /* Lageplan: Beschriftung, Tastenübersicht, Unterlage */
 .lp-beschriftung {
-  fill: #1f2328;
+  fill: var(--text);
   font-family: 'Segoe UI', Arial, sans-serif;
   paint-order: stroke;
-  stroke: rgba(255, 255, 255, 0.85);
+  stroke: var(--panel);
+  stroke-opacity: 0.85;
   stroke-width: 0.25em;
   stroke-linejoin: round;
   font-variant-numeric: tabular-nums;
 }
 .lp-tasten {
   position: relative;
+}
+/* im Bedienfeld des Plans: die Liste richtet sich am Bedienfeld aus (links bündig), nicht am kleinen Knopf */
+.lp-plan-steuerung .lp-tasten {
+  position: static;
 }
 .lp-tasten summary {
   cursor: pointer;
@@ -608,13 +528,13 @@ button.link:hover {
   top: 28px;
   right: 0;
   left: auto;
-  width: 380px;
-  max-width: 80vw;
+  /* nie breiter als die Lageplan-Karte (sie schneidet sonst ab) */
+  width: min(380px, calc(100cqi - 2 * var(--s3)));
   padding: 8px 12px;
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 6px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--schatten-schwebend);
   font-size: 11.5px;
 }
 .lp-tasten-liste ul {
@@ -635,14 +555,19 @@ button.link:hover {
 /* Lageplan-Leiste: Werkzeuge | Nutzung | Einpassen | Anzeige */
 .lp-gruppe {
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 4px;
 }
-/* Trenner als Rand der Gruppe: beim Umbruch steht nie ein Strich allein */
+/* Abschnittstitel mit Hilfe „?“ dahinter */
+.grz-h-hilfe {
+  display: flex;
+  align-items: center;
+  gap: var(--s1);
+}
+/* Gruppenabstand ohne Strich: bricht die Gruppe in schmalen Karten um, steht kein Trenner allein am Zeilenanfang */
 .lp-mit-trenner {
-  border-left: 1px solid var(--border);
-  padding-left: 8px;
-  margin-left: 4px;
+  margin-left: var(--s3);
 }
 .lp-nutzung {
   display: inline-flex;
@@ -654,7 +579,7 @@ button.link:hover {
   max-width: 150px;
 }
 /* Nutzung/Versiegelung in der Flächentabelle: Tabelle bleibt ohne waagerechtes Scrollen */
-.grz-plan .grz-table select {
+.grz-plan .grz-tabelle select {
   max-width: 150px;
 }
 .lp-deckkraft {
@@ -707,7 +632,7 @@ button.link:hover {
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 6px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--schatten-schwebend);
   font-size: 12px;
   text-align: center;
 }
@@ -741,6 +666,7 @@ button.link:hover {
   margin-right: 0;
 }
 .lp-plan-steuerung .lp-tasten-liste {
+  top: calc(100% + var(--s1));
   left: 0;
   right: auto;
 }

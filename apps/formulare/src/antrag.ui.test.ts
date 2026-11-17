@@ -1,4 +1,6 @@
 // @vitest-environment happy-dom
+import { einstellungenOeffnen, useEinstellungen } from '@core/ui/Einstellungen';
+import { entwurfVerwerfen, entwurfWert } from './einstellungsEntwurf';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { act, createElement } from 'react';
@@ -98,9 +100,10 @@ beforeEach(() => {
     oapVorlage: 'Planung/Berechnungen/{nummer}.oap',
     stammdatenDialog: null,
     ordnerDialog: null,
-    // keine offenen Einstellungen aus einem früheren Test (sonst läge ein weiterer Dialog über der App)
-    einstellungenOffen: false,
   });
+  // keine offenen Einstellungen aus einem früheren Test (sonst läge ein weiterer Dialog über der App)
+  useEinstellungen.setState({ offen: false });
+  entwurfVerwerfen();
   useAntrag.setState({ einstellungen: { ...VORGABE_EXPORT }, katalog: KATALOG, vorlagen: VORLAGEN, merkmalDefinitionen: VORGABE_MERKMALE, ueberschreibungen: {}, projektdatei: null, fassungen: [], dateien: [], quellen: {}, formularInfo: {}, dokumente: [], dokumenteFuer: null, projektStatus: {} });
   useAufgeklappt.setState({ offen: [] });
 });
@@ -932,10 +935,13 @@ describe('Antragsvorlagen und Reihenfolge', () => {
     expect([...host.querySelectorAll('.pu-zeile strong')].map((x) => x.textContent)).toEqual(['Musterformular', 'Bauantrag', 'Lageplan']);
   });
 
-  it('Einstellungen: Vorlagen anlegen, Dokumente ankreuzen, Katalog und Vorlagen sortieren', async () => {
-    useFormulare.setState({ einstellungenOffen: true, einstellungsBereich: 'antrag' });
-    const host = await render();
-    const katalogTitel = () => useAntrag.getState().katalog.map((k) => k.id);
+  it('Einstellungen: Vorlagen anlegen, Dokumente ankreuzen, Katalog und Vorlagen sortieren – gilt erst mit „Übernehmen“', async () => {
+    await render();
+    act(() => einstellungenOeffnen('formulare', 'antrag'));
+    await warte();
+    const host = document.querySelector<HTMLElement>('.einst')!;
+    expect(host.querySelector('[role="tab"][aria-selected="true"]')!.textContent).toContain('PERMIO');
+    const katalogTitel = () => entwurfWert('katalog').map((k) => k.id);
     // Antragsdokumente: über der Liste die Vorlage wählen, dann je Dokument ankreuzen
     const wahl = host.querySelector<HTMLSelectElement>('.es-dok-kopf select')!;
     act(() => {
@@ -946,27 +952,39 @@ describe('Antragsvorlagen und Reihenfolge', () => {
     expect(kreuz('Lageplan', 'Bauvoranfrage').checked).toBe(true);
     expect(kreuz('Bauantrag', 'Bauvoranfrage').checked).toBe(false);
     act(() => kreuz('Bauantrag', 'Bauvoranfrage').click());
-    expect(useAntrag.getState().vorlagen.find((v) => v.id === 'bauva')!.dokumente).toEqual(['lageplan', 'bauantrag']);
+    expect(entwurfWert('vorlagen').find((v) => v.id === 'bauva')!.dokumente).toEqual(['lageplan', 'bauantrag']);
+    // noch nicht gespeichert: erst der Entwurf
+    expect(useAntrag.getState().vorlagen.find((v) => v.id === 'bauva')!.dokumente).toEqual(['lageplan']);
 
     // neue Vorlage mit Antragsart
     await klick(knopf(host, 'Vorlage hinzufügen'));
-    const neu = useAntrag.getState().vorlagen[2];
+    const neu = entwurfWert('vorlagen')[2];
     expect(neu).toMatchObject({ name: 'Neue Vorlage', dokumente: [] });
     const art = host.querySelector<HTMLSelectElement>('select[aria-label="Antragsart von Neue Vorlage"]')!;
     act(() => {
       art.value = 'DENK';
       art.dispatchEvent(new Event('change', { bubbles: true }));
     });
-    expect(useAntrag.getState().vorlagen[2].art).toBe('DENK');
-    // gespeichert (und damit auch in der Einstellungsdatei)
-    expect(JSON.parse(localStorage.getItem('formulare:vorlagen')!)[2]).toMatchObject({ name: 'Neue Vorlage', art: 'DENK' });
+    expect(entwurfWert('vorlagen')[2].art).toBe('DENK');
 
     // Katalog sortieren: Muster eine Zeile nach unten, Vorlage „Neue Vorlage“ nach oben
     expect(katalogTitel()).toEqual(['muster', 'bauantrag', 'lageplan']);
     taste(host.querySelector<HTMLElement>('button[aria-label="Musterformular verschieben"]')!, 'ArrowDown');
     expect(katalogTitel()).toEqual(['bauantrag', 'muster', 'lageplan']);
     taste(host.querySelector<HTMLElement>('button[aria-label="Vorlage Neue Vorlage verschieben"]')!, 'ArrowUp');
+    expect(entwurfWert('vorlagen').map((v) => v.name)).toEqual(['Bauantrag', 'Neue Vorlage', 'Bauvoranfrage']);
+    expect(useAntrag.getState().katalog.map((k) => k.id)).toEqual(['muster', 'bauantrag', 'lageplan']);
+    expect(host.querySelector('[role="tab"][aria-selected="true"]')!.textContent).toContain('geändert');
+
+    // „Übernehmen“ schreibt alles unter die bisherigen Schlüssel (und damit auch in die Einstellungsdatei)
+    await klick(knopfGenau(host, 'Übernehmen'));
+    await warte();
+    expect(document.querySelector('.einst')).toBeNull();
+    expect(useAntrag.getState().katalog.map((k) => k.id)).toEqual(['bauantrag', 'muster', 'lageplan']);
     expect(useAntrag.getState().vorlagen.map((v) => v.name)).toEqual(['Bauantrag', 'Neue Vorlage', 'Bauvoranfrage']);
+    expect(useAntrag.getState().vorlagen.find((v) => v.id === 'bauva')!.dokumente).toEqual(['lageplan', 'bauantrag']);
+    expect(JSON.parse(localStorage.getItem('formulare:vorlagen')!)[1]).toMatchObject({ name: 'Neue Vorlage', art: 'DENK' });
+    expect(JSON.parse(localStorage.getItem('formulare:katalog')!).map((k: { id: string }) => k.id)).toEqual(['bauantrag', 'muster', 'lageplan']);
   });
 });
 

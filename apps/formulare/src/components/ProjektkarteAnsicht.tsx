@@ -18,6 +18,7 @@ import { AnsichtAnzeige, AnsichtEditor } from '@core/ui/AnsichtEditor';
 import { BreitenLeiste } from '@core/ui/Leiste';
 import type { KartenWert, OffeneKarte } from '../store';
 import { KARTEN_ANSICHT, kartenVerknuepfbar, karteMitAenderungen, karteText, karteWert, useFormulare } from '../store';
+import { adressbuchOeffnen } from './AdressbuchDialog';
 
 /** zuletzt gewählte Gruppe je Projekt (bleibt beim Wechsel zwischen Formular und Projektkarte) */
 const gewaehlt = new Map<string, number>();
@@ -296,7 +297,7 @@ function Navigation({
       {vorgabeGruppen > 0 && !q && (
         <button
           className="pk-vorgaben"
-          title="Leere Gruppen mit den Vorgaben aus „Büro & Stammdaten“ füllen"
+          title="Leere Gruppen mit den Vorgaben je Rolle (Einstellungen › PERMIO) füllen"
           onClick={() => {
             karteMehrere(vorschlag, 'Vorgaben eingetragen');
             setMeldung({ art: 'info', text: `Vorgaben in ${vorgabeGruppen} ${vorgabeGruppen === 1 ? 'Gruppe' : 'Gruppen'} eingetragen – Strg+Z nimmt es zurück.` });
@@ -461,7 +462,7 @@ function GruppenEditor({
   alleGruppen: PkGruppe[];
   stamm: Stammadresse[];
 }) {
-  const { karteMehrere, setMeldung, setRollenVorgabe, adressbuchErgaenzen, einstellungenOeffnen } = useFormulare.getState();
+  const { karteMehrere, setMeldung, setRollenVorgabe, adressbuchErgaenzen } = useFormulare.getState();
   const adressbuch = useFormulare((s) => s.adressbuch);
   const vorgabeSchluessel = useFormulare((s) => s.rollenVorgaben[String(gruppe.id)]);
   const vorgabe = adressbuch?.adressen.find((a) => a.schluessel === vorgabeSchluessel);
@@ -518,7 +519,7 @@ function GruppenEditor({
     if (!a) return;
     adressbuchErgaenzen([a]);
     setRollenVorgabe(gruppe.id, a.schluessel);
-    setMeldung({ art: 'info', text: `„${adressName(a)}“ ist jetzt die Vorgabe für ${gruppe.text} (Einstellungen → Büro & Stammdaten).` });
+    setMeldung({ art: 'info', text: `„${adressName(a)}“ ist jetzt die Vorgabe für ${gruppe.text} (Einstellungen › PERMIO › Vorgaben je Rolle).` });
   };
   const istVorgabe = !!vorgabeSchluessel && vorgabeSchluessel === adressSchluessel(Object.fromEntries(eintraege.map((e) => [String(e.id), text(e.id)])));
 
@@ -553,7 +554,7 @@ function GruppenEditor({
         </div>
         <div className="pk-aktionen">
           {adresse && (
-            <select className="pk-uebernehmen" aria-label="Angaben übernehmen" value="" onChange={(e) => (e.target.value === 'mehr' ? einstellungenOeffnen('adressbuch') : e.target.value && uebernehmen(e.target.value))}>
+            <select className="pk-uebernehmen" aria-label="Angaben übernehmen" value="" onChange={(e) => (e.target.value === 'mehr' ? adressbuchOeffnen() : e.target.value && uebernehmen(e.target.value))}>
               <option value="">Übernehmen von …</option>
               {vorgabe && (
                 <optgroup label="Vorgabe (Stammdaten)">

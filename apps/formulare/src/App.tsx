@@ -10,8 +10,9 @@ import { ignoriert, ignorierenSetzen, useAktualisieren } from './aktualisieren';
 import { auffrischen } from './dateiAktionen';
 import { AktualisierenDialog, UnterlagenDialog } from './components/AktualisierenDialog';
 import { GesetzModal } from './components/GesetzModal';
-import { EinstellungenModal } from './components/Einstellungen';
-import { einstellungenPunkt } from '@core/ui/Einstellungen';
+import { permioSeiteAnmelden } from './components/Einstellungen';
+import { AdressbuchDialog, adressbuchOeffnen } from './components/AdressbuchDialog';
+import { einstellungenOeffnen, einstellungenPunkt } from '@core/ui/Einstellungen';
 import { ExportDialog, useExportDialog } from './components/ExportDialog';
 import { FormularHinzufuegenDialog, useHinzufuegenDialog } from './components/FormularHinzufuegen';
 import type { MenuePunkt } from '@core/ui/Menue';
@@ -97,7 +98,6 @@ export function App() {
   const konflikt = useFormulare((s) => s.konflikt);
   const stammdaten = useFormulare((s) => s.stammdatenDialog);
   const ordnerDialog = useFormulare((s) => s.ordnerDialog);
-  const einstellungenOffen = useFormulare((s) => s.einstellungenOffen);
   const { setAnsicht, setZoom, setMeldung, speichern, neuLaden, dateiOeffnen, projekteLaden, rueckgaengig, wiederholen, setVerlaufOffen, setGliederungOffen, karteSpeichern, karteVerwerfen, karteRueckgaengig, karteWiederholen, sperreNeuPruefen, sperreAufheben } =
     useFormulare.getState();
   const [dialog, setDialog] = useState<'log' | 'schnellwahl' | 'aufheben' | 'sperren' | null>(null);
@@ -139,6 +139,9 @@ export function App() {
     // ungespeichert auch bei Bearbeitungen in Dokumenten (PDF, Excel, Word) – wie die Titelleiste (dirty)
     document.title = `${geaendert || dokGeaendert ? '● ' : ''}${name} – ${APP_NAMEN.formulare.name}`;
   }, [name, geaendert, dokGeaendert]);
+
+  // Seite „PERMIO“ im zentralen Einstellungsdialog
+  useEffect(() => permioSeiteAnmelden(), []);
 
   useEffect(() => {
     // erst die gemeinsamen Einstellungen (Stammordner der Projekte), dann suchen
@@ -277,7 +280,7 @@ export function App() {
           },
         ]
       : []),
-    ...(ds ? [{ text: 'Einstellungen von PERMIO …', titel: 'Ordner, Stammdaten, Adressbuch, Formulare, Antrag und Export', aktion: () => useFormulare.getState().einstellungenOeffnen() }] : []),
+    ...(ds ? [{ text: 'Adressbuch …', symbol: 'adressen' as const, titel: 'Adressen aus den Projektdaten aller Projekte und eigene', aktion: adressbuchOeffnen }] : []),
     ...(kartenansicht && karte
       ? [
           { trenner: true } as const,
@@ -533,7 +536,7 @@ export function App() {
         )}
         <section className={`fo-inhalt${formularSichtbar && ansicht === 'seite' ? ' fo-inhalt-papier' : ''}`}>
           {ds && (!projekt || haupt === 'projekte') ? (
-            <ProjektUebersicht onEinstellungen={() => useFormulare.getState().einstellungenOeffnen('ordner')} />
+            <ProjektUebersicht onEinstellungen={() => einstellungenOeffnen('formulare', 'formularprojekte')} />
           ) : haupt === 'projektkarte' && projekt ? (
             <ProjektkarteAnsicht />
           ) : haupt === 'antrag' && projekt ? (
@@ -549,7 +552,7 @@ export function App() {
               <SeitenAnsicht offen={offen} gesperrt={!!grund} />
             )
           ) : (
-            <Leer desktop={!!ds} onEinstellungen={() => useFormulare.getState().einstellungenOeffnen('ordner')} />
+            <Leer desktop={!!ds} onEinstellungen={() => einstellungenOeffnen('formulare', 'formularprojekte')} />
           )}
         </section>
         {formularSichtbar && einrichten ? <EinrichtenPanel offen={offen} /> : formularSichtbar && verlaufOffen && <VerlaufLeiste offen={offen} />}
@@ -566,7 +569,7 @@ export function App() {
           onAbbrechen={() => useFormulare.getState().stammdatenAbbrechen()}
         />
       )}
-      {einstellungenOffen && <EinstellungenModal />}
+      <AdressbuchDialog />
       {dialog === 'log' && <LogDialog onClose={() => setDialog(null)} />}
       <GesetzModal />
       {dialog === 'schnellwahl' && <Schnellwahl onClose={() => setDialog(null)} />}
