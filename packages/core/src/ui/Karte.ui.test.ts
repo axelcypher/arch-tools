@@ -47,7 +47,11 @@ describe('Fläche und Karten', () => {
     expect(h2.querySelector('button')).toBeNull();
     expect(karte.getAttribute('aria-labelledby')).toBe(h2.id);
     const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'base.css'), 'utf8');
-    expect(css).toMatch(/\.karte-titel \{[^}]*flex: 1;[^}]*display: flex;/);
+    expect(css).toMatch(/\.karte-titel \{[^}]*flex: 1 1 auto;[^}]*display: flex;/);
+    // der Titel schrumpft nicht unter sein längstes Wort (das „?“ läge sonst über dem Text); der Kopf bricht um
+    expect(css).not.toMatch(/\.karte-titel \{[^}]*min-width: 0;/);
+    expect(css).toMatch(/\.karte-kopf \{[^}]*flex-wrap: wrap;/);
+    expect(css).toMatch(/\.section-head \{[^}]*flex-wrap: wrap;/);
     expect(css).toMatch(/\.karte-titel > \.hilfe-knopf \{[^}]*flex-shrink: 0;[^}]*margin-left: 0;/);
     // der Rumpf beginnt und endet im eigenen Abstand, gleich welches Element vorn oder hinten steht
     expect(css).toMatch(/\.karte-rumpf > :first-child \{\s*margin-top: 0;/);
@@ -94,7 +98,14 @@ describe('Fläche und Karten', () => {
     expect(css).toMatch(/@container karte-leiste \(max-width: 640px\) \{\s*\.segment \.lang \{\s*display: none;\s*\}\s*\.segment \.kurz \{\s*display: inline;/);
     expect(css).toMatch(/\.metric-row \{[^}]*flex-wrap: wrap;/);
     expect(css).toMatch(/\.metric \{[^}]*flex: 1 1 9em;[^}]*border-radius: var\(--radius-s\);/);
-    expect(css).toMatch(/\.metric strong \{[^}]*font-size: var\(--fs-xl\);/);
+    expect(css).toMatch(/\.metric > strong \{[^}]*font-size: var\(--fs-xl\);[^}]*white-space: nowrap;/);
+  });
+
+  it('Karte vorschau: Rumpf bündig auf dem Grund der Fläche', () => {
+    const host = render(h(Karte, { titel: 'Vorschau', vorschau: true }, 'x'));
+    expect(host.querySelector('.karte-rumpf')?.className).toBe('karte-rumpf buendig vorschau');
+    const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'base.css'), 'utf8');
+    expect(css).toMatch(/\.karte-rumpf\.vorschau \{\s*background: var\(--bg\);/);
   });
 
   it('Karte ohne Titel: kein Kopf, Name über ariaLabel; bündiger Rumpf', () => {

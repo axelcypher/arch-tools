@@ -109,6 +109,11 @@ export interface KarteProps extends KopfProps {
    */
   abschnitte?: boolean;
   /**
+   * Vorschau (Druckvorschau, PDF-Seiten, Blatt): Rumpf bündig auf dem Grund der Fläche (`--bg`), darauf liegt das Blatt
+   * hell wie `.report`
+   */
+  vorschau?: boolean;
+  /**
    * Höhe in einer `FlaechenSpalte`: Vorgabe teilen sich die Karten die Höhe; `'inhalt'` macht die Karte so hoch wie
    * ihren Inhalt (höchstens die halbe Spalte, darüber scrollt sie) – für kurze Karten unter einer langen
    */
@@ -122,7 +127,7 @@ export interface KarteProps extends KopfProps {
 }
 
 /** Karte: Kopf mit Überschrift und Aktionen, darunter der Inhalt, der in der Karte scrollt */
-export function Karte({ titel, hilfe, aktionen, ariaLabel, ebene, leiste, fuss, children, className, buendig, abschnitte, hoehe = 'teilen', als = 'section' }: KarteProps) {
+export function Karte({ titel, hilfe, aktionen, ariaLabel, ebene, leiste, fuss, children, className, buendig, abschnitte, vorschau, hoehe = 'teilen', als = 'section' }: KarteProps) {
   const { kopf, name } = useKopf({ titel, hilfe, aktionen, ariaLabel, ebene });
   const klasse = ['karte', hoehe === 'inhalt' && 'karte-inhalt', className].filter(Boolean).join(' ');
   const Element = als;
@@ -130,7 +135,7 @@ export function Karte({ titel, hilfe, aktionen, ariaLabel, ebene, leiste, fuss, 
     <Element className={klasse} {...(als === 'div' ? {} : name)}>
       {kopf}
       {leiste != null && <div className="karte-leiste">{leiste}</div>}
-      <div className={['karte-rumpf', (buendig || abschnitte) && 'buendig', abschnitte && 'abschnitte'].filter(Boolean).join(' ')}>{children}</div>
+      <div className={['karte-rumpf', (buendig || abschnitte || vorschau) && 'buendig', abschnitte && 'abschnitte', vorschau && 'vorschau'].filter(Boolean).join(' ')}>{children}</div>
       {fuss != null && <footer className="karte-fuss">{fuss}</footer>}
     </Element>
   );

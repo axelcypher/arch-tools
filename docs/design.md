@@ -270,17 +270,34 @@ Als Registerleiste (Bereiche wechseln, der Inhalt darunter tauscht sich) mit `ro
 Registern, Pos1/Ende springen zum ersten bzw. letzten; der Wechsel wirkt sofort (automatische Aktivierung). Nur das
 gewählte Register liegt in der Tab-Reihenfolge (`tabIndex` 0, die übrigen -1).
 
-Register in der Leiste einer Karte (`leiste`) dürfen einen kurzen Namen haben: im Knopf `<span class="lang">` und
-`<span class="kurz" aria-hidden="true">`, der volle Name zusätzlich als `aria-label`, damit Vorleseprogramme immer
-ihn hören. Ist die Kartenleiste schmaler als 640px, zeigt das Register nur den kurzen Namen – gemessen an der Leiste,
-nicht am Fenster, denn neben der Karte können Seitenkarten stehen. Viele Register brauchen eine höhere Schwelle: dann
-eine eigene Abfrage `@container karte-leiste (max-width: …)` in der App. Außerhalb einer Kartenleiste bleibt der lange
-Name.
-
 ```html
 <div class="segment" role="group" aria-label="Ansicht">
   <button aria-pressed="true">Grundriss</button>
   <button aria-pressed="false">3D</button>
+</div>
+```
+
+Register in der Leiste einer Karte (`leiste`) dürfen einen kurzen Namen haben: im Knopf `<span class="lang">` und
+`<span class="kurz" aria-hidden="true">`. Ist die Inhaltsbreite der Kartenleiste (ohne ihren Innenabstand
+`--karte-pad`) kleiner als 640px, zeigt das Register nur den kurzen Namen – gemessen an der Leiste, nicht am Fenster,
+denn neben der Karte können Seitenkarten stehen. Viele Register brauchen eine höhere Schwelle: dann eine eigene Abfrage
+`@container karte-leiste (max-width: …)` in der App. Außerhalb einer Kartenleiste bleibt der lange Name.
+
+- Der kurze Name ist möglichst ein Wort oder der Anfang des langen („Angebote“ für „Angebote und Preisspiegel“).
+- Der volle Name steht als `aria-label` am Register, damit Vorleseprogramme immer ihn hören. Ist der kurze Name eine
+  Abkürzung, enthält das `aria-label` beide Formen („Leistungsverzeichnis (LV)“) – sonst reagiert die Sprachsteuerung
+  nicht auf das, was zu sehen ist.
+- Der volle Name steht auch im `title` (oder eine vorhandene Beschreibung im `title` beginnt mit ihm), damit ihn
+  Mausnutzer erfahren, solange nur der kurze zu sehen ist.
+
+```html
+<div class="segment" role="tablist" aria-label="Bereiche des Gewerks">
+  <button role="tab" aria-selected="true" tabindex="0" aria-label="Leistungsverzeichnis (LV)" title="Leistungsverzeichnis">
+    <span class="lang">Leistungsverzeichnis</span><span class="kurz" aria-hidden="true">LV</span>
+  </button>
+  <button role="tab" aria-selected="false" tabindex="-1" aria-label="Angebote und Preisspiegel" title="Angebote und Preisspiegel">
+    <span class="lang">Angebote und Preisspiegel</span><span class="kurz" aria-hidden="true">Angebote</span>
+  </button>
 </div>
 ```
 
@@ -506,9 +523,11 @@ Werkzeugleiste liegt mit auf der Fläche (gleicher Grund, keine Linie). Baustein
 - `Karte` (`.karte`): Kopf, wahlweise Leiste, der Inhalt, der **in der Karte** scrollt, wahlweise eine feste Fußzeile
   (`fuss`, Summen).
   - **Kopf** (`.karte-kopf`): Überschrift `h2` in `--fs-l`, direkt dahinter `hilfe` für das „?“ (`HilfeKnopf`), rechts
-    `aktionen` wie Umschalter oder „Hinzufügen“. Mit Titel ist die Karte ein benannter Bereich (`aria-labelledby` auf
-    das `h2`); die Hilfe steht außerhalb des `h2` und gehört nicht zum Namen. Ohne sichtbaren Titel braucht die Karte
-    `ariaLabel`. Ausnahme rollende Spalte: `ebene={3}` setzt die Überschrift als `h3`, `als="div"` macht die Karte zu
+    `aktionen` wie Umschalter oder „Hinzufügen“. In schmalen Karten rücken die Aktionen rechtsbündig in eine zweite
+    Zeile; der Titel wird nie schmaler als sein längstes Wort samt „?“, das „?“ liegt also nie über dem Text. Ebenso
+    bricht eine `.section-head` um, ihr Knopf bleibt rechts. Mit Titel ist die Karte ein benannter Bereich
+    (`aria-labelledby` auf das `h2`); die Hilfe steht außerhalb des `h2` und gehört nicht zum Namen. Ohne sichtbaren
+    Titel braucht die Karte `ariaLabel`. Ausnahme rollende Spalte: `ebene={3}` setzt die Überschrift als `h3`, `als="div"` macht die Karte zu
     keinem Bereich (dann wirkt auch `ariaLabel` nicht).
   - **Leiste** (`leiste`): Hat eine Ansicht eine eigene Werkzeugleiste, die zu breit für den Kopf ist (z. B. FABRIO je
     Ansicht), steht sie fest zwischen Kopf und Inhalt, im Grund der Karte, mit einer Linie zum scrollenden Inhalt; sie
@@ -521,10 +540,10 @@ Werkzeugleiste liegt mit auf der Fläche (gleicher Grund, keine Linie). Baustein
     aus ihr heraus. Der Rumpf ist positioniert: absolut gesetzte Elemente darin bleiben in seinem Rollbereich.
     Klappmenüs, Vorschlagslisten und Hinweise, die über die Karte hinausragen sollen, deshalb als Portal bzw. mit
     `position: fixed` ausführen.
-  - **Vorschau in der Karte** (Druckvorschau, PDF-Seiten, Blatt): Die Karte ist `buendig`, ihr Rumpf bekommt `--bg`
-    als Grund (in der App: `.karte-rumpf { background: var(--bg) }`), darauf liegt das Blatt hell wie `.report`, auch im
-    dunklen Schema (Ausnahme „Papier“). Ein Leertext („Noch keine Seiten“) steht auf dem Rumpf in `.muted`, nicht auf
-    dem Blatt; auf dem Blatt gelten die Papierfarben, nie `--muted` oder andere Farben des Schemas.
+  - **Vorschau** (`vorschau`, Druckvorschau, PDF-Seiten, Blatt): Der Rumpf ist bündig und hat den Grund der Fläche
+    (`--bg`); darauf liegt das Blatt hell wie `.report`, auch im dunklen Schema (Ausnahme „Papier“). Ein Leertext
+    („Noch keine Seiten“) steht auf dem Rumpf in `.muted`, nicht auf dem Blatt; auf dem Blatt gelten die Papierfarben,
+    nie `--muted` oder andere Farben des Schemas.
   - **Abschnitte** (`abschnitte`): Bündelt eine Karte ohne Kopf mehrere Themen (z. B. Projekt, Geschosse, Flächen), je
     Thema ein `<section>` direkt im Rumpf mit `h2` (wie die Kopfüberschrift, `--fs-l`), Trennlinien bis an den Rand, in
     einer `.section-head` mit Knopf ohne eigenen Abstand.

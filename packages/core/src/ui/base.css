@@ -298,15 +298,17 @@ body,
   flex: none;
   display: flex;
   align-items: center;
-  gap: var(--s2);
+  flex-wrap: wrap;
+  gap: var(--s1) var(--s2);
   min-height: var(--karte-kopf-h);
   padding: var(--s2) var(--karte-pad);
   border-bottom: 1px solid var(--line-soft);
 }
-/* Überschrift mit Hilfe „?“ direkt dahinter; nimmt den Platz bis zu den Aktionen */
+/* Überschrift mit Hilfe „?“ direkt dahinter; nimmt den Platz bis zu den Aktionen. Nie schmaler als ihr längstes
+   Wort samt „?“ (keine min-width: 0): fehlt Platz, rücken die Aktionen in eine zweite Zeile, statt dass der Titel
+   schrumpft und das „?“ über dem Text liegt */
 .karte-titel {
-  flex: 1;
-  min-width: 0;
+  flex: 1 1 auto;
   display: flex;
   align-items: center;
   gap: var(--s1);
@@ -319,6 +321,7 @@ body,
 .karte-kopf :is(h2, h3) {
   min-width: 0;
   margin: 0;
+  overflow-wrap: break-word;
   font-size: var(--fs-l);
   font-weight: 600;
 }
@@ -373,6 +376,10 @@ body,
 }
 .karte-rumpf.buendig {
   padding: 0;
+}
+/* Vorschau (vorschau): Grund der Fläche um das Blatt, das Blatt selbst bleibt hell wie .report */
+.karte-rumpf.vorschau {
+  background: var(--bg);
 }
 /* Rumpf aus Abschnitten (abschnitte): jeder Abschnitt mit eigenem Innenabstand, Trennlinie bis an den Rand wie unter
    dem Kartenkopf; die Abschnittsüberschrift (h2) wie die Überschrift im Kartenkopf */
@@ -698,9 +705,15 @@ button.icon {
 
 .section-head {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
+  gap: var(--s1) var(--s2);
   margin-bottom: 8px;
+}
+/* in schmalen Karten rückt der Knopf in eine zweite Zeile und bleibt dort rechts */
+.section-head > :last-child:not(:first-child) {
+  margin-left: auto;
 }
 
 .section-head h2 {
@@ -906,14 +919,16 @@ textarea:focus {
   flex-direction: column;
 }
 
-.metric span,
-.metric small {
+.metric > span,
+.metric > small {
   font-size: var(--fs-xs);
   color: var(--muted);
 }
 
-.metric strong {
+.metric > strong {
   font-size: var(--fs-xl);
+  /* Wert und Einheit („m²“, „€“) bleiben in einer Zeile */
+  white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
 
