@@ -10,6 +10,7 @@ import { ProjektEinstieg, ProjektWahl } from '@core/ui/ProjektWahl';
 import { aenderungenSpeichern, bestaetigen, meldung } from '@core/ui/Rueckfrage';
 import { ASLV_NICHT_GESPEICHERT, aslvVerluste } from './format/aslv';
 import { TitleBar } from '@core/ui/TitleBar';
+import { Flaeche } from '@core/ui/Karte';
 import { Navigation } from './components/Navigation';
 import { Uebersicht } from './components/Uebersicht';
 import { GewerkAnsicht } from './components/GewerkAnsicht';
@@ -211,7 +212,7 @@ export function App() {
           </div>
         )
       ) : (
-        <div className="workspace">
+        <Flaeche className="ava-flaeche">
           <Navigation
             onStammdaten={async (meta, neuerName) => {
               try {
@@ -222,8 +223,9 @@ export function App() {
               }
             }}
           />
-          <main className="ava-main">{inhalt()}</main>
-        </div>
+          {/* die Ansicht steht als Karte(n) auf der Fläche (docs/design.md „Fläche und Karten“) */}
+          {inhalt()}
+        </Flaeche>
       )}
       {logOffen && <LogDialog onClose={() => setLogOffen(false)} />}
       {busy && <div className="ava-busy">{busy}</div>}
