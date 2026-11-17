@@ -594,7 +594,8 @@ Werkzeugleiste liegt mit auf der Fläche (gleicher Grund, keine Linie). Baustein
     unter ihn (`scroll-padding-top`): `--rollend-kopf-h` ist die sichtbare Höhe des Kopfs plus Platz für den
     Fokusrahmen, Vorgabe eine Zeile Bedienelemente (`--ctl-h` + `--s2` + 2 × `--s1`). Ein höherer Kopf setzt den Wert
     selbst; bricht er in schmalen Fenstern um, setzt die App ihn je Umbruchstufe (Container- oder Media-Abfrage) oder
-    lässt den Kopf nicht umbrechen. Ebenen in den Karten (Aufklapplisten, Hinweise) bleiben unter dem Kopf; was über
+    lässt den Kopf nicht umbrechen. Hängt der Umbruch vom Inhalt ab (Filter, Trefferzahl, Breite der Seitenkarten),
+    misst `useRollendKopf(ref)` den Kopf und setzt den Wert selbst (Höhe des Kopfs + `--s1`). Ebenen in den Karten (Aufklapplisten, Hinweise) bleiben unter dem Kopf; was über
     die Karte hinausragen soll, kommt wie überall als Portal (siehe „Inhalt“).
   - **Ränder:** Oben und seitlich reicht die Spalte um `--s1` in den Spalt, damit die Karten mit den Nachbarkarten
     fluchten; unten endet sie bündig mit ihnen. Die Rollleiste hat ihren Platz von Anfang an (`scrollbar-gutter`), die
