@@ -363,6 +363,7 @@ export function Arbeitsflaeche({ ablegen = false }: { ablegen?: boolean } = {}) 
 
   return (
     <ZeichenKarte
+      als="main"
       ariaLabel="Zeichenfläche"
       // die Fußzeile steht immer (auch leer): sonst änderte sich die Höhe der Fläche mit Maus und Werkzeug
       fuss={
