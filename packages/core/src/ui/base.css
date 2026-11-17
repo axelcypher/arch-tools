@@ -939,8 +939,9 @@ textarea:focus {
 .summary-table.felder td {
   vertical-align: top;
 }
-/* Text ohne Feld oder Knopf in einer Feldzeile fluchtet mit dem Text in den Feldern (der steht in --ctl-h senkrecht mittig) */
-.summary-table.felder td:not(:has(input, select, textarea, button)) {
+/* In einer Zeile mit Feldern fluchtet Text ohne Feld oder Knopf mit dem Text in den Feldern (der steht in --ctl-h
+   senkrecht mittig); Zeilen ganz ohne Felder (z. B. Gruppen und Summen) bleiben knapp */
+.summary-table.felder tr:has(input, select, textarea, button) > td:not(:has(input, select, textarea, button)) {
   padding-top: calc(3px + (var(--ctl-h) - 1lh) / 2);
 }
 
