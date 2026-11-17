@@ -71,7 +71,7 @@ export function Uebersicht() {
         </div>
       }
     >
-      <div className="metric-row ava-kennzahlen">
+      <div className="metric-row">
         <div className="metric">
           <span>Zielsumme</span>
           <strong>{euro(kk?.uebersicht?.zielsumme ?? null) || '—'}</strong>
