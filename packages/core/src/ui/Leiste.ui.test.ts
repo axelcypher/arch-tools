@@ -111,6 +111,7 @@ describe('BreitenLeiste', () => {
     // base.css nimmt das eigene min vor der Vorgabe
     const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'base.css'), 'utf8');
     expect(css).toMatch(/\.flaeche > \.flaechen-spalte:not\(\.wachsend\) \{[^}]*min-width: var\(--leiste-eigen-min, var\(--leiste-min\)\);/);
+    expect(css).toMatch(/\.flaeche \{[^}]*--leiste-eigen-min: initial;/);
   });
 
   it('feste Seitenspalte zählt zu den anderen Leisten, eine wachsende nicht', () => {

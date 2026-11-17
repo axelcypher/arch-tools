@@ -208,6 +208,8 @@ body,
    Spalt. Jede Karte scrollt für sich, die Fläche nie. Die alten Muster (.workspace, .sidebar, eigene Spalten der Apps)
    laufen unverändert weiter, bis die App umgestellt ist. */
 .flaeche {
+  /* das eigene min einer Seitenkarte gilt nur für sie selbst, nicht für Karten einer darin verschachtelten Fläche */
+  --leiste-eigen-min: initial;
   flex: 1;
   min-height: 0;
   display: flex;
@@ -266,7 +268,7 @@ body,
 .flaeche > .leiste,
 .flaeche > .flaechen-spalte:not(.wachsend) {
   flex-shrink: 1000;
-  /* eigenes min einer BreitenLeiste (nur an ihr selbst gesetzt, erbt nicht in verschachtelte Flächen) vor der Vorgabe */
+  /* eigenes min einer BreitenLeiste (inline an ihr gesetzt, an jeder .flaeche zurückgesetzt) vor der Vorgabe */
   min-width: var(--leiste-eigen-min, var(--leiste-min));
 }
 .flaeche > .karte,
