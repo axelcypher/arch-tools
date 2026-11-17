@@ -21,13 +21,28 @@ const KEIN_TEXT = ['checkbox', 'radio', 'range', 'file', 'color', 'hidden', 'sub
 const TEXTFELD = `input${KEIN_TEXT.map((t) => `:not([type='${t}'])`).join('')}:not([disabled]):not([readonly]), textarea:not([disabled]):not([readonly])`;
 
 let eingerichtet = false;
-/** Stelle vor dem Öffnen: das fokussierte Element (auch eine SVG-Zeichenfläche) und seine Vorfahren – wird das Element
- *  während der Dialog offen ist ersetzt (die App rendert es neu), geht der Fokus an das erste fokussierbare Element im
- *  nächsten noch vorhandenen Vorfahren */
+/** Stelle vor dem Öffnen: das fokussierte Element (auch eine SVG-Zeichenfläche), woran man sein Gegenstück erkennt, und
+ *  die nahen Vorfahren bis zum nächsten Bereich (Zeile, Leiste, Karte) – wird das Element ersetzt, während der Dialog
+ *  offen ist (die App rendert es neu), geht der Fokus an sein Gegenstück in diesem Bereich */
 interface Vorher {
   el: HTMLElement | SVGElement;
+  kennung: string[];
+  index: number;
   ahnen: Element[];
 }
+/** Grenze der Ersatzsuche: weiter oben läge ein Ersatz an einer unerwarteten Stelle (z. B. erster Knopf der App) */
+const BEREICH = '.karte, .toolbar, .leiste, .modal, .report, [role="dialog"], [role="toolbar"], header, footer, main, aside, section, nav, form';
+const MAX_EBENEN = 3;
+/** woran man das Gegenstück eines neu gerenderten Elements erkennt: id, Beschriftung, title, Text */
+const kennungVon = (el: Element) => [el.id, el.getAttribute('aria-label'), el.getAttribute('title'), el.textContent?.trim()].map((k) => (k ? k : ''));
+const gleich = (a: string[], b: string[]) => a.some((k, i) => k !== '' && k === b[i]);
+/** sichtbar und fokussierbar: keine versteckten Felder, nichts in inert/aria-hidden, nichts ausgeblendet */
+const fokussierbar = (el: Element): el is HTMLElement | SVGElement =>
+  (el instanceof HTMLElement || el instanceof SVGElement) &&
+  !(el instanceof HTMLInputElement && el.type === 'hidden') &&
+  !el.closest('[inert], [aria-hidden="true"], [hidden]') &&
+  (el instanceof SVGElement || el.offsetParent !== null || getComputedStyle(el).position === 'fixed');
+const zieleIn = (bereich: Element) => [...(bereich.matches(START) ? [bereich] : []), ...bereich.querySelectorAll(START)].filter(fokussierbar);
 const vorher = new WeakMap<Element, Vorher | null>();
 
 const DIALOG = '.modal, .report-backdrop > .report';
@@ -52,8 +67,11 @@ function geoeffnet(d: HTMLElement) {
   const a = document.activeElement;
   const aktiv = (a instanceof HTMLElement || a instanceof SVGElement) && a !== document.body && !d.contains(a) ? a : null;
   const ahnen: Element[] = [];
-  for (let p = aktiv?.parentElement; p && p !== document.body; p = p.parentElement) ahnen.push(p);
-  vorher.set(d, aktiv ? { el: aktiv, ahnen } : null);
+  for (let p = aktiv?.parentElement; p && p !== document.body && ahnen.length < MAX_EBENEN; p = p.parentElement) {
+    ahnen.push(p);
+    if (p.matches(BEREICH)) break;
+  }
+  vorher.set(d, aktiv ? { el: aktiv, kennung: kennungVon(aktiv), index: ahnen[0] ? zieleIn(ahnen[0]).indexOf(aktiv) : -1, ahnen } : null);
   // nach dem Rendern: Dialoge, die selbst fokussieren (z. B. ein Suchfeld), haben Vorrang
   requestAnimationFrame(() => {
     if (!d.isConnected || d.contains(document.activeElement)) return;
@@ -80,10 +98,16 @@ function geschlossen(d: Element) {
     if (erlaubt(v.el)) v.el.focus();
     return;
   }
-  // ersetzt: das erste fokussierbare Element im nächsten noch vorhandenen Vorfahren
+  // ersetzt: nur, wenn der Fokus sonst auf der Seite läge (z. B. hat ein äußerer Dialog, der mit ausgehängt wurde, ihn
+  // schon zurückgegeben), und nur im nahen Bereich – dort das Gegenstück (gleiche id, Beschriftung oder Text), sonst
+  // das Element an derselben Stelle, sonst das erste
+  if (document.activeElement && document.activeElement !== document.body) return;
+  // die Kette endet an der Grenze des Bereichs (auch an einem äußeren Dialog) – darüber hinaus wird nie gesucht
   const ahne = v.ahnen.find((x) => x.isConnected);
-  const ziel = ahne && (ahne.matches(START) ? ahne : ahne.querySelector<HTMLElement>(START));
-  if (ziel instanceof HTMLElement && erlaubt(ziel)) ziel.focus();
+  if (!ahne) return;
+  const ziele = zieleIn(ahne).filter(erlaubt);
+  const ziel = ziele.find((z) => gleich(kennungVon(z), v.kennung)) || (ahne === v.ahnen[0] && v.index >= 0 ? ziele[v.index] : undefined) || ziele[0];
+  ziel?.focus();
 }
 
 export function dialogVerhaltenEinrichten(): void {

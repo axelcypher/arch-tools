@@ -173,11 +173,14 @@ und `ZEICHENFLAECHE_GRUND` in `planFarbe.ts` müssen zu `--canvas-filter` und `-
 - **Breite:** Standard 380px, `breit` 620px (Formulare), `tabelle` bis 1200px (Vorschauen, Zuordnungen).
 - **Erstfokus** (automatisch, `ui/dialoge.ts`): `autoFocus` bzw. `data-startfokus` (der Dialog bestimmt selbst, z. B.
   ein Häkchen), sonst das erste Textfeld, sonst der Hauptknopf (`.primary`), sonst das gewählte Optionsfeld – nie eine
-  Aufklappzeile (`summary`), nie „Abbrechen“: Enter darf nichts verwerfen. Beim Schließen – über Esc, Knopf oder weil
-  die App den Dialog aushängt – geht der Fokus an die Stelle davor zurück: den Knopf, der ihn geöffnet hat, oder die
-  Zeichenfläche, wenn er per Taste kam. Hat die App diese Stelle inzwischen neu gerendert, geht er an das erste
-  fokussierbare Element im nächsten noch vorhandenen Bereich darum statt auf die Seite. Schließt ein Dialog über einem
-  anderen, geht der Fokus an die Stelle im äußeren zurück.
+  Aufklappzeile (`summary`), nie „Abbrechen“: Enter darf nichts verwerfen.
+- **Fokus beim Schließen** (automatisch, `ui/dialoge.ts`): Ob über Esc, einen Knopf oder weil die App den Dialog
+  aushängt – der Fokus geht an das vorher fokussierte Element zurück, z. B. den Knopf, der den Dialog geöffnet hat, oder
+  die Zeichenfläche bei Öffnen per Tastenkürzel. Schließt ein Dialog über einem anderen, geht er an die Stelle im
+  äußeren. Hat die App diese Stelle inzwischen neu gerendert, sucht core nur im selben Bereich (bis zu drei Ebenen,
+  höchstens bis zur nächsten Leiste, Karte, zum nächsten Abschnitt oder zum äußeren Dialog) nach dem Gegenstück –
+  gleiche id, Beschriftung, `title` oder Text, sonst dasselbe Element an derselben Stelle, sonst das erste sichtbare;
+  findet sich dort nichts, bleibt der Fokus unverändert. Ausgehängte, versteckte oder `inert` Elemente zählen nicht.
 - **Knöpfe** in `.dialog-buttons` als letztes Kind des Dialogs (oder seines `<form>`, das dann selbst letztes Kind
   ist): rechtsbündig, Hauptknopf rechts außen, „Abbrechen“ links davon. In langen Dialogen bleiben sie unten stehen
   (sticky).
