@@ -78,6 +78,11 @@ function useKopf({ titel, hilfe, aktionen, ariaLabel }: KopfProps) {
 }
 
 export interface KarteProps extends KopfProps {
+  /**
+   * Werkzeugleiste der Karte (meist `Werkzeugleiste`): steht fest zwischen Kopf und Inhalt, scrollt nicht mit – für
+   * Ansichten mit eigener Leiste, die zu breit für den Kopf ist
+   */
+  leiste?: ReactNode;
   /** Fußzeile (Summen, Hinweis); steht fest unter dem scrollenden Inhalt */
   fuss?: ReactNode;
   children?: ReactNode;
@@ -100,13 +105,14 @@ export interface KarteProps extends KopfProps {
 }
 
 /** Karte: Kopf mit Überschrift und Aktionen, darunter der Inhalt, der in der Karte scrollt */
-export function Karte({ titel, hilfe, aktionen, ariaLabel, fuss, children, className, buendig, abschnitte, hoehe = 'teilen', als = 'section' }: KarteProps) {
+export function Karte({ titel, hilfe, aktionen, ariaLabel, leiste, fuss, children, className, buendig, abschnitte, hoehe = 'teilen', als = 'section' }: KarteProps) {
   const { kopf, name } = useKopf({ titel, hilfe, aktionen, ariaLabel });
   const klasse = ['karte', hoehe === 'inhalt' && 'karte-inhalt', className].filter(Boolean).join(' ');
   const Element = als;
   return (
     <Element className={klasse} {...name}>
       {kopf}
+      {leiste != null && <div className="karte-leiste">{leiste}</div>}
       <div className={['karte-rumpf', (buendig || abschnitte) && 'buendig', abschnitte && 'abschnitte'].filter(Boolean).join(' ')}>{children}</div>
       {fuss != null && <footer className="karte-fuss">{fuss}</footer>}
     </Element>

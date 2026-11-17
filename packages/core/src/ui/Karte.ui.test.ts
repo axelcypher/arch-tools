@@ -72,6 +72,17 @@ describe('Fläche und Karten', () => {
     expect(css).toMatch(/\.karte-rumpf\.abschnitte > section > :last-child \{\s*margin-bottom: 0;/);
   });
 
+  it('Karte mit Leiste: fest zwischen Kopf und Rumpf, Leiste ohne eigene Fläche', () => {
+    const host = render(h(Karte, { titel: 'Rechnungen', leiste: h('div', { className: 'toolbar', role: 'toolbar' }, h('button', null, 'Neu')) }, h('p', null, 'Liste')));
+    const karte = host.querySelector('section.karte')!;
+    expect([...karte.children].map((c) => c.className)).toEqual(['karte-kopf', 'karte-leiste', 'karte-rumpf']);
+    expect(karte.querySelector('.karte-leiste > .toolbar > button')?.textContent).toBe('Neu');
+    const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'base.css'), 'utf8');
+    expect(css).toMatch(/\.karte-leiste \{[^}]*flex: none;[^}]*border-bottom: 1px solid var\(--line-soft\);/);
+    expect(css).toMatch(/\.karte-leiste > \.toolbar \{[^}]*background: transparent;[^}]*border-bottom: none;/);
+    expect(css).toMatch(/\.karte-kopf:has\(\+ \.karte-leiste\) \{\s*border-bottom-color: transparent;/);
+  });
+
   it('Karte ohne Titel: kein Kopf, Name über ariaLabel; bündiger Rumpf', () => {
     const host = render(h(Karte, { ariaLabel: 'Räume', buendig: true }, 'x'));
     const karte = host.querySelector('section.karte')!;
