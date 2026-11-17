@@ -207,7 +207,8 @@ Quelle in der Erläuterung.
 Neue Wohnungen umfassen auch Wohnräume (Wohnheim- und Appartementzimmer). Daraus folgt „Sonderregelung Wohnungsbau
 (§ 246e)“: **ja** bei neuen Wohnungen und einer Abweichung (im Außenbereich: mit Zusammenhang zur Ortslage), **nein**
 ohne neue Wohnungen, im Außenbereich ohne Zusammenhang bzw. ohne Abweichung – „keine Abweichung“ aber nur, wenn
-weder Veränderungssperre, Erhaltungssatzung (auch in Aufstellung) noch Sanierungsgebiet entgegenstehen (auch davon kann
+weder Veränderungssperre, Erhaltungssatzung (auch in Aufstellung), Sanierungsgebiet noch ein Bebauungsplan in
+Aufstellung entgegenstehen (auch davon kann
 § 246e befreien) und beim einfachen Bebauungsplan bzw. einer Satzung Plan **und** Umgebung eingehalten sind. Ist
 „Im Zusammenhang bebauter Ortsteil“ offen, folgt kein „nein“. Die Begründung sagt, warum („Trifft zu – es entstehen
 neue Wohnungen, und für das Vorhaben fehlt ein Vorbild in der Umgebung“ bzw. „Entfällt – das Vorhaben hält den

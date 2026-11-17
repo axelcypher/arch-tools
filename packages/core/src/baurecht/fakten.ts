@@ -163,7 +163,7 @@ const KATALOG: Record<string, FaktDef> = {
     typ: 'janein',
     frage: 'Hält das Vorhaben eine Festsetzung des Bebauungsplans nicht ein, oder ist die geplante Nutzung dort nur ausnahmsweise zulässig?',
     hilfe:
-      'Festsetzungen sind z. B. die Art der Nutzung, die Zahl der Geschosse oder die Höhe, die überbaubare Fläche (Baugrenzen, Baulinien), die Grund- und Geschossfläche im Verhältnis zum Grundstück (GRZ, GFZ) und die Bauweise. Ja zum Beispiel: ein Geschoss mehr als festgesetzt; ein Anbau ragt über die Baugrenze; Wohnungen in einem Gewerbegebiet; ein Gartenbaubetrieb im allgemeinen Wohngebiet, den der Plan nur ausnahmsweise zulässt. Nein, wenn das Vorhaben alle Festsetzungen einhält und dort allgemein zulässig ist. Vorgaben zu Dachform, Material oder Gestaltung zählen hier nicht: Das sind örtliche Bauvorschriften – dafür gibt es die Frage nach einer Abweichung von örtlichen Bauvorschriften. Für Ausnahme oder Befreiung gilt § 31 BauGB; für den Wohnungsbau kommt auch die Sonderregelung nach § 246e BauGB in Betracht.',
+      'Festsetzungen sind z. B. die Art der Nutzung, die Zahl der Geschosse oder die Höhe, die überbaubare Fläche (Baugrenzen, Baulinien), die Grund- und Geschossfläche im Verhältnis zum Grundstück (GRZ, GFZ) und die Bauweise. Ja zum Beispiel: ein Geschoss mehr als festgesetzt; ein Anbau ragt über die Baugrenze; Wohnungen in einem Gewerbegebiet; ein Gartenbaubetrieb im allgemeinen Wohngebiet, den der Plan nur ausnahmsweise zulässt. Nein, wenn das Vorhaben alle Festsetzungen einhält und dort allgemein zulässig ist. Vorgaben zu Dachform, Material oder Gestaltung zählen hier nicht (Dachbegrünung und Pflanzgebote im Plan dagegen schon): Das sind örtliche Bauvorschriften – dafür gibt es die Frage nach einer Abweichung von örtlichen Bauvorschriften. Für Ausnahme oder Befreiung gilt § 31 BauGB; für den Wohnungsbau kommt auch die Sonderregelung nach § 246e BauGB in Betracht.',
   },
   'planung.abweichung_umgebung': {
     titel: 'Für das Vorhaben fehlt ein Vorbild in der näheren Umgebung',
@@ -199,7 +199,7 @@ const KATALOG: Record<string, FaktDef> = {
     typ: 'janein',
     frage: 'Entstehen durch das Vorhaben neue Wohnungen oder Wohnräume (auch Zimmer in einem Wohnheim, Appartements), oder wird leerstehender, bisher nicht bewohnbarer Wohnraum wieder nutzbar?',
     hilfe:
-      'Ja zum Beispiel: Neubau eines Wohnhauses oder eines Studenten- bzw. Seniorenwohnheims; Anbau, Aufstockung oder Dachausbau mit zusätzlicher Wohnung; Büro, Laden, Scheune oder Halle wird zu Wohnungen umgebaut; eine unbewohnbare Wohnung wird wieder hergerichtet; auch ein Neubau mit Wohnungen und Läden oder Büros. Nein zum Beispiel: Umbau, Anbau oder Wintergarten ohne zusätzliche Wohnung; Garage oder Carport; Gewerbe- oder Bürobau ohne Wohnungen. Daran hängt unter anderem die Sonderregelung für den Wohnungsbau (§ 246e BauGB) – ob sie bei gemischt genutzten Gebäuden das ganze Gebäude erfasst, klärt die Gemeinde.',
+      'Ja zum Beispiel: Neubau eines Wohnhauses oder eines Studenten- bzw. Seniorenwohnheims; Anbau, Aufstockung oder Dachausbau mit zusätzlicher Wohnung; Büro, Laden, Scheune oder Halle wird zu Wohnungen umgebaut; eine unbewohnbare Wohnung wird wieder hergerichtet; auch ein Neubau mit Wohnungen und Läden oder Büros. Nein zum Beispiel: Umbau, Anbau oder Wintergarten ohne zusätzliche Wohnung; Garage oder Carport; Gewerbe- oder Bürobau ohne Wohnungen. Daran hängt unter anderem die Sonderregelung für den Wohnungsbau (§ 246e BauGB) – ob sie bei gemischt genutzten Gebäuden das ganze Gebäude erfasst, klärt die Gemeinde. Eine Kita, Praxis oder ein Laden für die Bewohner kann zusammen mit einem solchen Wohnungsbau zugelassen werden (§ 246e Abs. 5) – dann beim Wohnungsbau mitfragen.',
   },
 
 
@@ -286,9 +286,10 @@ const KEIN_GEBAEUDE = { m: 'Gebäudeart', in: ['kein Gebäude'] };
 /* § 246e BauGB: neue Wohnungen (Abs. 1 Nr. 1–3) und eine Abweichung vom Planungsrecht – je nach Lage vom Bebauungsplan
    (§ 30), vom Rahmen der Umgebung (§ 34) oder im Außenbereich nur mit Zusammenhang zur Ortslage bzw. einem Plangebiet (Abs. 3) */
 const WOHNRAUM_NEU = FAKT('vorhaben.wohnraum_neu', true);
-/* „keine Abweichung nötig“ nur ohne Veränderungssperre, Erhaltungssatzung (auch in Aufstellung) und Sanierungsgebiet:
+/* „keine Abweichung nötig“ nur ohne Veränderungssperre, Erhaltungssatzung (auch in Aufstellung), Sanierungsgebiet und
+   Bebauungsplan in Aufstellung (Zurückstellung, künftige Sperre):
    auch von diesen Vorschriften des BauGB kann § 246e befreien (offen gilt als „vielleicht“ – dann folgt nichts) */
-const KEINE_SPERRE = { und: ['planung.veraenderungssperre', 'planung.erhaltungssatzung', 'planung.erhaltungssatzung_aufstellung', 'planung.sanierungsgebiet'].map((f) => ({ nicht: FAKT(f, true) })) };
+const KEINE_SPERRE = { und: ['planung.veraenderungssperre', 'planung.erhaltungssatzung', 'planung.erhaltungssatzung_aufstellung', 'planung.sanierungsgebiet', 'planung.planaufstellung'].map((f) => ({ nicht: FAKT(f, true) })) };
 /**
  * Werte, die sich zwingend aus anderen Angaben ergeben (FaktDef.folgt) – die Frage entfällt, eine abweichende Antwort
  * wird zum Widerspruch bzw. überstimmt nur mit Beleg. Ein reines Wohngebäude (Ein-, Zwei-, Mehrfamilienhaus) hat keine

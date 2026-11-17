@@ -2629,7 +2629,7 @@ describe('§ 246e BauGB aus Tatsachen (neue Wohnungen, Abweichung, Lage) statt �
   const ja = (...ids: string[]) => Object.fromEntries(ids.map((i) => [i, sicher(true)]));
   const nein = (...ids: string[]) => Object.fromEntries(ids.map((i) => [i, sicher(false)]));
   // „keine Abweichung nötig“ setzt voraus, dass weder Veränderungssperre, Erhaltungssatzung noch Sanierungsgebiet entgegenstehen
-  const SPERREN = ['planung.veraenderungssperre', 'planung.erhaltungssatzung', 'planung.erhaltungssatzung_aufstellung', 'planung.sanierungsgebiet'];
+  const SPERREN = ['planung.veraenderungssperre', 'planung.erhaltungssatzung', 'planung.erhaltungssatzung_aufstellung', 'planung.sanierungsgebiet', 'planung.planaufstellung'];
   const keineSperre = () => nein(...SPERREN);
 
   it('Bebauungsplan: neue Wohnungen und Abweichung → kommt in Betracht (mit Grund); Plan eingehalten → entfällt', () => {

@@ -162,7 +162,7 @@ describe('Baurecht – Oberfläche', () => {
     act(() => {
       // Angaben zum Ort zählen nur mit Lagebezug als gesichert
       const lage = aktuelleLage(useBaurecht.getState().project).lage;
-      for (const id of ['planung.abweichung_umgebung', 'planung.veraenderungssperre', 'planung.erhaltungssatzung', 'planung.erhaltungssatzung_aufstellung', 'planung.sanierungsgebiet']) useBaurecht.getState().faktSetzen(id, false, 'TP', undefined, lage);
+      for (const id of ['planung.abweichung_umgebung', 'planung.veraenderungssperre', 'planung.erhaltungssatzung', 'planung.erhaltungssatzung_aufstellung', 'planung.sanierungsgebiet', 'planung.planaufstellung']) useBaurecht.getState().faktSetzen(id, false, 'TP', undefined, lage);
     });
     const zeile = angaben().querySelector<HTMLElement>('.br-ergibt li[data-fakt="planung.wohnungsbau_246e"]');
     expect(zeile?.textContent).toMatch(/Sonderregelung Wohnungsbau \(§ 246e\): nein – das Vorhaben hat Vorbilder in der Umgebung/);
