@@ -185,6 +185,10 @@ export function App() {
     return () => window.removeEventListener('beforeunload', onBeforeUnload);
   }, []);
 
+  // Hauptbereich: auf dem Startbildschirm der Bereich selbst, sonst die Mitte der Fläche (als="main", docs/design.md).
+  // Die Meldungen (Zwischenstand, IFC-Bericht) stehen über der ganzen Fläche, weil sie das Projekt betreffen, nicht eine
+  // Karte; sie liegen damit außerhalb von main, werden aber über role="status" angesagt.
+  const Haupt = einstieg ? 'main' : 'div';
   const kostenAktiv = !einstieg && (ansicht === 'kosten' || !hatGebaeude);
   const mengenAktiv = ansicht === 'mengen' && hatGebaeude;
   // Menü „Datei“ (docs/design.md, „Kopf- und Werkzeugleisten“): Neu, Öffnen, Speichern unter, IFC aktualisieren
@@ -295,7 +299,7 @@ export function App() {
           },
         ]}
       />
-      <main className="ko-main">
+      <Haupt className="ko-main">
         {wiederhergestellt !== null && dirty && (
           <div className="ko-bericht meldung warnung" role="status">
             Ungespeicherter Stand vom {datumText(new Date(wiederhergestellt))}{' '}
@@ -355,7 +359,7 @@ export function App() {
             }
           />
         )}
-      </main>
+      </Haupt>
       {druckOpen && <KostenDruck onClose={() => setDruckOpen(false)} />}
       {excelOpen && <ExcelDialog start={excelOpen} onClose={() => setExcelOpen(null)} />}
       {katalogOpen && <KatalogDialog onClose={() => setKatalogOpen(false)} />}

@@ -1,18 +1,22 @@
 /* NUMIO (Grund-Styles: @core/ui/base.css) */
 
+/* Hauptbereich: Meldungen oben, darunter die Fläche mit den Karten (docs/design.md „Fläche und Karten“) */
 .ko-main {
   flex: 1;
   min-height: 0;
+  display: flex;
+  flex-direction: column;
   overflow: auto;
   background: var(--bg);
 }
-/* Leisten über der Ansicht (Zwischenstand, IFC-Bericht): Farben aus .meldung, hier nur Lage und Innenabstand */
+/* Leisten über der Fläche (Zwischenstand, IFC-Bericht): Farben aus .meldung, hier nur Lage und Innenabstand */
 .ko-bericht {
-  margin: var(--s3) var(--s3) 0;
+  flex: none;
+  margin: var(--spalt) var(--spalt) 0;
   padding: var(--s2) var(--s3);
 }
 .ko-bericht ul {
-  margin: 4px 0 8px;
+  margin: var(--s1) 0 var(--s2);
   padding-left: 18px;
 }
 /* IFC-Bericht: nur Warnzeilen hervorgehoben */
@@ -21,150 +25,50 @@
   font-weight: 600;
 }
 .ko-bericht p {
-  margin: 0 0 8px;
+  margin: 0 0 var(--s2);
 }
-
-/*
- * Kostenansicht: links Grundlagen und Mengen, rechts Positionen und Übersicht (untereinander, ab 1800 px nebeneinander);
- * unter 1200 px Grundlagen und Mengen nebeneinander über den Positionen, damit die Positionstabelle die volle Breite hat
- */
-.ko-view {
-  display: grid;
-  grid-template-columns: minmax(260px, 300px) minmax(0, 1fr);
-  gap: 12px;
-  padding: 12px;
-  align-items: start;
-}
-.ko-links,
-.ko-rechts {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  min-width: 0;
-}
-@media (min-width: 1800px) {
-  .ko-rechts {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(460px, 500px);
-    align-items: start;
-  }
-}
-@media (max-width: 1200px) {
-  .ko-view {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .ko-links {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    align-items: start;
-  }
-}
-@media (max-width: 760px) {
-  .ko-links {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-.ko-col .ko-hint {
-  margin: -2px 0 8px;
-}
-.ko-col select {
-  max-width: 100%;
-}
-/* nur für Screenreader (Spaltenköpfe über Häkchen und Löschknöpfen) */
-.ko-sr {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-}
-.ko-col {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 12px 14px;
-  min-width: 0;
-}
-.ko-col h2 {
-  margin-top: 0;
-  /* Spaltenüberschrift nach docs/design.md: --fs-l, halbfett */
-  font-size: var(--fs-l);
-  font-weight: 600;
-}
-.ko-col h2:not(:first-child) {
-  margin-top: 18px;
-}
-.ko-col h3 {
-  margin: 14px 0 6px;
-  font-size: 12px;
-}
-.ko-col input[type='date'] {
-  font: inherit;
-  padding: 4px 6px;
+.ko-hint {
+  margin: 0 0 var(--s2);
 }
 .toggle.block {
   display: flex;
-  margin: 2px 0 8px;
-  font-size: 12px;
+  margin: var(--s1) 0 var(--s2);
 }
 
-.tbl-wrap {
-  overflow-x: auto;
-}
-.ko-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 12px;
-}
-.ko-table th,
-.ko-table td {
-  text-align: left;
-  padding: 4px 6px;
-  border-bottom: 1px solid var(--border);
+/* Tabellen: gemeinsame Zahlentabelle .summary-table (base.css); hier nur, was NUMIO zusätzlich braucht */
+/* Tabellen ohne Felder, aber mit zweizeiligen Zellen (Rechenansatz, Kennwert unter dem Namen): oben bündig, damit die
+   übrigen Zellen auf der ersten Zeile stehen; .felder passt nicht – das Häkchen würde die Textzellen verschieben */
+.mv-rechenweg .summary-table td,
+.ko-katalog .summary-table td {
   vertical-align: top;
 }
-.ko-table th {
-  font-size: 11px;
-  color: var(--muted);
-  font-weight: 600;
+/* Mengen: das Kürzel ist ein Knopf (button.link), steht aber wie Text auf der Höhe des Feldtexts */
+.ko-mengen td:first-child {
+  padding-top: calc(3px + (var(--ctl-h) - 1lh) / 2);
 }
-.ko-table .num {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-.ko-table tr.sum td {
-  font-weight: 600;
-  border-top: 1.5px solid var(--text);
-}
-.ko-table tr.selected td {
+/* gewählte Zeile (Katalogeintrag, verglichener Stand): .summary-table hat dafür noch keine eigene Regel */
+.summary-table tr.selected td {
   background: var(--accent-soft);
 }
-.ko-table input,
-.ko-table select {
-  padding: 2px 5px;
-  font-size: 12px;
-}
-.ko-table td.ko-menge {
+.summary-table td.ko-menge {
   width: 96px;
 }
 /* abgeleitete Mengen stehen als Platzhalter im Feld – lesbar wie ein Wert, nur nicht fett */
-.ko-table td.ko-menge input::placeholder {
+.summary-table td.ko-menge input::placeholder {
   color: var(--text);
   opacity: 0.85;
 }
-.ko-table tr.festgelegt td.ko-menge input {
+.summary-table tr.festgelegt td.ko-menge input {
   font-weight: 600;
   border-color: var(--accent);
 }
-.ko-table tr.festgelegt td:first-child strong {
+.summary-table tr.festgelegt td:first-child strong {
   color: var(--accent);
 }
 .ko-fest {
   color: var(--accent);
 }
-.ko-table td.ko-einheit {
+.summary-table td.ko-einheit {
   white-space: nowrap;
 }
 .ko-zurueck {
@@ -182,6 +86,10 @@
 }
 
 /* Positionen */
+/* Beträge und Spannen bleiben einzeilig, die Tabelle rollt in der Karte */
+.ko-pos td.num {
+  white-space: nowrap;
+}
 .ko-pos {
   min-width: 860px;
 }
@@ -202,11 +110,6 @@
 }
 .ko-pos select {
   min-width: 96px;
-}
-.ko-pos tr.ko-gruppe td {
-  background: var(--bg);
-  font-weight: 600;
-  border-top: 1px solid var(--border);
 }
 .ko-pos tr.aus td {
   opacity: 0.5;
@@ -231,10 +134,10 @@
 }
 
 /* Übersicht */
-.ko-table tr.ko-kg1 td {
+.summary-table tr.ko-kg1 td {
   font-weight: 600;
 }
-.ko-table tr.ko-kg2 td {
+.summary-table tr.ko-kg2 td {
   color: var(--muted);
 }
 /* lange Namen der Kostengruppen umbrechen statt abschneiden */
@@ -243,13 +146,13 @@
   width: 2.6em;
   padding-right: 0;
 }
-.ko-table tr.ko-kg2 td.ko-kgname {
+.summary-table tr.ko-kg2 td.ko-kgname {
   padding-left: 16px;
 }
-.ko-table td.mehr {
+.summary-table td.mehr {
   color: var(--danger);
 }
-.ko-table td.weniger {
+.summary-table td.weniger {
   color: var(--ok-text);
 }
 .ko-hinweise {
@@ -280,35 +183,10 @@ button.link:hover {
 
 /* ---------- Mengen prüfen ---------- */
 
-.mv-view {
-  display: grid;
-  grid-template-columns: minmax(250px, 300px) minmax(420px, 1fr) minmax(320px, 420px);
-  gap: 12px;
-  padding: 12px;
-  align-items: start;
-}
-/* schmaler: Mengenliste nur mit Kürzel und Wert (Name als Tooltip), Bild und Rechenweg bleiben nebeneinander */
+/* schmaler: Mengenliste nur mit Kürzel und Wert (Name als Tooltip) */
 @media (max-width: 1300px) {
-  .mv-view {
-    grid-template-columns: 170px minmax(300px, 1fr) minmax(280px, 360px);
-  }
   .mv-liste .mv-menge-name {
     display: none;
-  }
-}
-/* noch schmaler: Rechenweg unter dem Bild, ohne eigenen Rollbereich */
-@media (max-width: 999px) {
-  .mv-view {
-    grid-template-columns: 170px minmax(0, 1fr);
-  }
-  .mv-view > .mv-liste {
-    grid-row: 1 / span 2;
-  }
-  .mv-rechenweg {
-    grid-column: 2;
-  }
-  .mv-rechenweg .tbl-wrap {
-    max-height: none;
   }
 }
 .mv-liste tbody tr {
@@ -328,10 +206,11 @@ button.link:hover {
 .mv-liste tbody tr {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  border-bottom: 1px solid var(--border);
+  /* eine Trennlinie je Menge wie in .summary-table – am Grid-Eintrag statt an jeder Zelle (die Zusatzzeile gehört dazu) */
+  border-top: 1px solid var(--line-soft);
 }
 .mv-liste tbody td {
-  border-bottom: none;
+  border-top: none;
 }
 .mv-liste tr.festgelegt .mv-menge-wert {
   font-weight: 600;
@@ -343,7 +222,7 @@ button.link:hover {
   align-items: center;
   gap: 2px 6px;
 }
-.ko-table td.mv-menge-zusatz {
+.summary-table td.mv-menge-zusatz {
   padding-top: 0;
 }
 .mv-abgeleitet {
@@ -384,24 +263,11 @@ button.link:hover {
 .mv-handwert button {
   flex: none;
 }
-.mv-kopf {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-bottom: 6px;
-}
-.mv-kopf h2 {
-  margin: 0;
-}
-.mv-rechenweg .tbl-wrap {
-  max-height: calc(100vh - 220px);
-  overflow-y: auto;
-}
+/* Spaltenköpfe bleiben beim Rollen der Karte stehen – am oberen Rand des Rumpfs: der Versatz gleicht dessen
+   Innenabstand oben aus (.karte-rumpf in base.css: padding-top var(--s3)) */
 .mv-rechenweg thead th {
   position: sticky;
-  top: 0;
+  top: calc(-1 * var(--s3));
   background: var(--panel);
 }
 .mv-rechenweg tr.mv-aktiv td {
@@ -415,7 +281,7 @@ button.link:hover {
   text-decoration: line-through;
 }
 /* erste Zelle als Klickfläche des Häkchens */
-.mv-rechenweg .ko-table .mv-check {
+.mv-rechenweg .summary-table .mv-check {
   width: 1px;
   padding: 0;
 }
@@ -440,18 +306,19 @@ button.link:hover {
 .mv-auswahl span {
   margin-right: auto;
 }
+/* Legende in der Fußzeile der Karte: ohne Außenabstand; bricht sie um, behalten die Zeilen Luft zum Rand */
 .mv-legende {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 16px;
-  margin: 8px 0 0;
-  color: var(--muted);
+  gap: var(--s1) var(--s4);
+  margin: 0;
+  padding: var(--s1) 0;
 }
 .mv-legende i {
   display: inline-block;
   width: 12px;
   height: 12px;
-  margin-right: 4px;
+  margin-right: var(--s1);
   vertical-align: -2px;
   border: 1px solid var(--muted);
   border-radius: 2px;
@@ -698,7 +565,7 @@ button.link:hover {
 }
 .ko-report-unterschrift span {
   display: block;
-  border-bottom: 1px solid #1f2328;
+  border-bottom: 1px solid var(--text);
   height: 28px;
   margin-bottom: 4px;
 }
