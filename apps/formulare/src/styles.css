@@ -804,14 +804,6 @@ button.icon.fo-gl-zaehlt.an {
 
 /* ---------- Inhalt ---------- */
 
-/* Formular und Felder stehen direkt auf der Fläche (wachsende Spalte, rollt selbst): das Papier bzw. jeder Abschnitt ist
-   die Karte (Vorschau Richtung C) */
-.fo-inhalt {
-  overflow: auto;
-  /* Luft für Fokussaum und Kartenschatten am Rand der rollenden Spalte, ohne die Spalte zu verschieben */
-  padding: 2px var(--s1);
-  margin: -2px calc(-1 * var(--s1));
-}
 .fo-meldung {
   display: flex;
   align-items: center;
