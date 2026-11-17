@@ -3111,11 +3111,12 @@ button.icon.fo-gl-bed.gesetzt {
   margin-bottom: 4px;
 }
 .fo-treffer {
-  margin-left: 6px;
+  margin-left: var(--s1);
 }
-/* leer (keine Suche) ohne eigenen Abstand: die Live-Region bleibt im Baum (sonst sagten Vorleseprogramme den ersten
-   Text nicht an), ist aber null breit und rutscht an der Umbruchgrenze nicht allein in eine Zeile */
+/* leer (keine Suche) aus dem Fluss: die Live-Region bleibt im Baum (sonst sagten Vorleseprogramme den ersten Text nicht
+   an), nimmt aber nicht am Umbruch des Kopfs teil – keine leere Zeile, die useRollendKopf mitmäße */
 .fo-treffer:empty {
+  position: absolute;
   margin-left: 0;
 }
 
