@@ -507,8 +507,11 @@ Werkzeugleiste liegt mit auf der Fläche (gleicher Grund, keine Linie). Baustein
 - `ZeichenKarte` (`.zeichen-karte`): Die Zeichenfläche füllt die Karte und bleibt hell (`.canvas`); Bedienhinweis,
   Koordinaten und Maßstab stehen in der Fußzeile der Karte, nicht über dem Plan: aus `fuss` oder, wenn sie tief in der
   Zeichenkomponente entstehen, über `ZeichenFussInhalt` (Portal in die Fußzeile der umgebenden Karte). Ohne Inhalt
-  bleibt die Fußzeile unsichtbar. `als="main"`, wenn die Zeichenfläche der Hauptbereich der App ist. Kopf wie bei
-  `Karte` (`titel`, `aktionen`), meist ohne – die Werkzeuge stehen in der Werkzeugleiste.
+  bleibt die Fußzeile unsichtbar; was über `ZeichenFussInhalt` kommt, bleibt deshalb dauerhaft eingehängt (Koordinaten
+  außerhalb des Plans als „–“, nicht ausgehängt), sonst springt die Höhe der Zeichenfläche. Je Fußzeile möglichst nur
+  eine Einhängung: mehrere stehen in der Reihenfolge des Einhängens. `als="main"`, wenn die Zeichenfläche der
+  Hauptbereich der App ist – je Fenster nur ein `main`, die App legt dann kein eigenes `<main>` um die Fläche. Kopf wie
+  bei `Karte` (`titel`, `aktionen`), meist ohne – die Werkzeuge stehen in der Werkzeugleiste.
 - Seitenkarten mit ziehbarer Breite: `BreitenLeiste` mit einer `Karte` (oder `FlaechenSpalte`) als Kind; auf der Fläche
   liegt der Griff im Spalt (Linie beim Überfahren in voller Akzentfarbe, weil der Spalt sonst keinen Rand zeigt), und
   Innenabstand und Spalt zählen bei der Höchstbreite mit.
