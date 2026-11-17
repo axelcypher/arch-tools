@@ -1112,3 +1112,24 @@
   white-space: normal;
   text-align: left;
 }
+
+/* schmale Seitenkarten: der Titel samt „?“ behält seine Breite, die Aktionen rücken in eine zweite Zeile – das „?“
+   liegt nie über dem Titel (Wörter wie „Auswertung“ haben keine Trennstelle). Gemeldet an core (.karte-kopf). */
+.qu-flaeche .karte-kopf {
+  flex-wrap: wrap;
+  row-gap: var(--s1);
+}
+
+.qu-flaeche .karte-titel {
+  flex: 1 0 auto;
+}
+
+.qu-flaeche .karte-aktionen {
+  margin-left: auto;
+}
+
+/* Abschnittskopf mit Knopf („Geschosse“ + „+ Geschoss …“): bei schmaler Karte umbrechen statt abschneiden */
+.qu-flaeche .section-head {
+  flex-wrap: wrap;
+  gap: var(--s1);
+}

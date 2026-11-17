@@ -147,6 +147,10 @@ describe('QUADRIO: Kartenlayout (Richtung C, docs/design.md „Fläche und Karte
     // Hinweis in der Fußzeile: Knöpfe schrumpfen nicht (nur der Text kürzt), Fokusrahmen nach innen
     expect(css).toMatch(/\.hud-hint \.hud-hint-knopf\s*\{[^}]*flex:\s*none/);
     expect(css).toMatch(/\.karte-fuss button:focus-visible\s*\{[^}]*outline-offset:\s*-2px/);
+    // schmale Seitenkarten: Titel samt „?“ behält seine Breite, Aktionen und Abschnittsknöpfe brechen um
+    expect(css).toMatch(/\.qu-flaeche \.karte-kopf\s*\{[^}]*flex-wrap:\s*wrap/);
+    expect(css).toMatch(/\.qu-flaeche \.karte-titel\s*\{[^}]*flex:\s*1 0 auto/);
+    expect(css).toMatch(/\.qu-flaeche \.section-head\s*\{[^}]*flex-wrap:\s*wrap/);
   });
 
   it('Seitenkarten merken ihre Breite (BreitenLeiste, localStorage) – auch nach erneutem Öffnen', () => {
