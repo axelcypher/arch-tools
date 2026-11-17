@@ -118,6 +118,8 @@ export function mitZentral(e: ExportEinstellungen, w: (id: string) => PfadWert =
     namensvorlage: text('plaene.permio.namensvorlage'),
     // fester Zielordner im Antragsordner bzw. der übernommene abweichende (zielordner.ts) – relativ zum Projektordner
     zielpfad: zielpfadWirksam({ antragsordner: text('ablage.permio.antragsordner'), zielordner: text('plaene.permio.zielordner'), abweichend: text('plaene.permio.zielpfad') }),
+    // relativ zum Antragsordner – je Projekt mit dessen Antragsordner (einstellungenFuer); nicht bei einem Ordner außerhalb
+    zielordner: text('plaene.permio.zielpfad').trim() ? undefined : text('plaene.permio.zielordner'),
     vorlagenordner: text('vorlagen.permio.vorlagenordner'),
     // Vorlagen je Zeile; ihre Platzhalter ersetzt erst das Lesen im Projekt (quellenLesen) mit dessen Angaben
     berechnungsordner: berechnungenSuchvorlagen(w).join('\n'),

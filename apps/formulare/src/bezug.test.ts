@@ -51,4 +51,20 @@ describe('Bezüge von PERMIO', () => {
     expect(zielOrdner(zustand({ ...mitZentral(VORGABE_EXPORT, w2), ziel: 'pfad' }), null)).toBe('Ausgang/BAUA 2');
     expect(pfadEinstellung('plaene.permio.zielpfad').bezug).toEqual({ art: 'projekt' });
   });
+
+  it('je Projekt abweichender Antragsordner: der zentrale Zielordner liegt in dessen Antragsordner', async () => {
+    const { pfadWerteAus } = await import('@core/einstellungen/pfade');
+    const { mitZentral } = await import('./antragStore');
+    const { einstellungenFuer } = await import('./antrag');
+    const w = pfadWerteAus({ allgemein: { pfade: { 'plaene.permio.zielordner': 'Export/{Antrag}' } } });
+    const global = { ...mitZentral(VORGABE_EXPORT, (id) => w[id] ?? pfadEinstellung(id).vorgabe), ziel: 'pfad' as const };
+    expect(global.zielpfad).toBe('TÖB/Export/{Antrag}');
+    expect(einstellungenFuer(global, { antragsordner: 'Projekt/Anträge' }).zielpfad).toBe('Projekt/Anträge/Export/{Antrag}');
+    // ein je Projekt eingestellter Zielordner gilt wie bisher (relativ zum Projektordner)
+    expect(einstellungenFuer(global, { antragsordner: 'Projekt/Anträge', zielpfad: 'Eigen/{Antrag}' }).zielpfad).toBe('Eigen/{Antrag}');
+    // ein übernommener Ordner außerhalb folgt dem Antragsordner nicht
+    const w2 = pfadWerteAus({ allgemein: { pfade: { 'plaene.permio.zielpfad': 'Ausgang' } } });
+    const g2 = mitZentral(VORGABE_EXPORT, (id) => w2[id] ?? pfadEinstellung(id).vorgabe);
+    expect(einstellungenFuer(g2, { antragsordner: 'Projekt/Anträge' }).zielpfad).toBe('Ausgang');
+  });
 });

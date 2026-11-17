@@ -567,7 +567,10 @@ Einstellungen und des Namensschemas – `packages/core/src/fassung.ts`, auch in 
   festen Zielordner `{Antrag}`, `{Art}` und die globalen.
 - **Einstellungen › PERMIO (Antrag und Export):** Antragsordner, Antragsarten (die erste ist der Standard; dazu die des
   Namensschemas), Namensvorlage, Ziel (aktive Antragsfassung oder fester Ordner im Antragsordner, z. B.
-  `{Antrag}/Formulare`), Ordner der Berechnungen, Vorlagenordner für neue Formulare, Antragsvorlagen und die
+  `{Antrag}/Formulare`; der feste Ordner zieht mit, wenn sich der Antragsordner ändert, auch je Projekt. War nie ein
+  fester Ordner eingestellt und hieß der Antragsordner nicht „TÖB“, galt bis zur Umstellung fest `TÖB/{Antrag}` – jetzt
+  gilt der Antragsordner. Eingestellte feste Ordner gelten weiter; lag einer außerhalb des Antragsordners, steht er als
+  eigener Eintrag unter „Pfade und Benennung“), Ordner der Berechnungen, Vorlagenordner für neue Formulare, Antragsvorlagen und die
   **Antragsdokumente** (der Katalog): eine Liste mit Kurzbeschreibung je Dokument („Formular des Projekts“, „Formular
   mit „Statisti“ im Namen“, „Datei aus Planung/Berechnungen · *Flächen*“) und den Vorlagen, zu denen es gehört (lange
   Titel und Vorlagen werden gekürzt); ein Klick öffnet die Angaben als beschriftetes Formular – Bezeichnung, Art

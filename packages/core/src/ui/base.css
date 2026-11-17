@@ -3227,6 +3227,7 @@ button.ungespeichert::after {
 /* Bezugszeile: wovon der Wert abhängt (erste Zeile der Erklärung) */
 .einst-bezug {
   display: block;
+  margin-bottom: var(--s1);
   font-size: var(--fs-s);
   color: var(--muted);
 }

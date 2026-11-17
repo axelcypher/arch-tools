@@ -214,6 +214,29 @@ describe('Einstellungen', () => {
     expect(eintrag('plaene.fabrio.rechnungen').querySelector('.einst-vorschau')?.textContent).toMatch(/^Vorschau \(erstes Muster\): Z: \/ Auftrag \/ /);
   });
 
+  it('Zielordner der Antragsdokumente: im Antragsordner; ein übernommener außerhalb steht direkt dahinter und ersetzt ihn', async () => {
+    setze('allgemein', { pfade: { 'plaene.permio.zielpfad': 'Ausgang/{Antrag}' } });
+    const e = await zeigen();
+    await act(async () => e.einstellungenOeffnen('pfade'));
+    await warten();
+    const ziel = eintrag('plaene.permio.zielordner');
+    expect(ziel.parentElement?.getAttribute('aria-label')).toBe('Abhängig von „Antragsordner“');
+    expect(ziel.querySelector('.einst-bezug')?.textContent).toBe('Relativ zu „Antragsordner“. Gilt nicht, solange „Fester Zielordner außerhalb des Antragsordners“ gesetzt ist.');
+    expect(ziel.querySelector('.einst-vorschau')).toBeNull();
+    // die Karte außerhalb folgt direkt auf den Baum des Antragsordners
+    const baum = eintrag('ablage.permio.antragsordner').nextElementSibling!;
+    expect(baum.nextElementSibling?.id).toBe('einst-plaene.permio.zielpfad');
+    expect(feldVon('plaene.permio.zielpfad').value).toBe('Ausgang/{Antrag}');
+  });
+
+  it('Zielordner außerhalb nicht gesetzt: keine Karte dafür, der Zielordner im Antragsordner gilt mit Vorschau', async () => {
+    const e = await zeigen();
+    await act(async () => e.einstellungenOeffnen('pfade'));
+    await warten();
+    expect(document.getElementById('einst-plaene.permio.zielpfad')).toBeNull();
+    expect(eintrag('plaene.permio.zielordner').querySelector('.einst-vorschau')?.textContent).toBe('Vorschau: Projektordner / TÖB / BAUA 2');
+  });
+
   it('Baum mit App-Filter: Eltern einer anderen App abgeblendet zur Orientierung, ohne Feld; „Alle Apps zeigen“', async () => {
     const e = await zeigen();
     await act(async () => e.einstellungenOeffnen('pfade'));

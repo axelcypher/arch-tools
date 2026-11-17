@@ -18,12 +18,21 @@ describe('Zielordner der Antragsdokumente', () => {
     { 'ablage.permio.antragsordner': 'Anträge', 'plaene.permio.zielpfad': 'Anträge/{Art}' },
     { 'ablage.permio.antragsordner': 'Anträge', 'plaene.permio.zielpfad': 'Ausgang' },
     { 'plaene.permio.zielpfad': 'TÖB' },
+    // eigener Antragsordner, nie ein Zielordner: hier ändert sich der Ausgabeordner bewusst (siehe unten)
+    { 'ablage.permio.antragsordner': 'Anträge' },
   ];
-  it('PERMIO schreibt danach in denselben Ordner wie vorher (war ein Zielordner eingestellt)', () => {
+  it('PERMIO schreibt danach in denselben Ordner wie vorher – außer bei eigenem Antragsordner ohne eingestellten Zielordner', () => {
     for (const pfade of FAELLE) {
-      const vorher = pfade['plaene.permio.zielpfad'] ?? `${pfade['ablage.permio.antragsordner'] ?? 'TÖB'}/{Antrag}`;
-      expect(zielpfadWirksam(zielGruppeLesen(pfade)), JSON.stringify(pfade)).toBe(vorher);
+      // bisher galt der eingestellte Zielordner, sonst fest „TÖB/{Antrag}“ (auch bei anderem Antragsordner)
+      const vorher = pfade['plaene.permio.zielpfad'] ?? 'TÖB/{Antrag}';
+      // jetzt folgt der nie eingestellte Zielordner dem Antragsordner – die einzige bewusste Änderung
+      const jetzt = !pfade['plaene.permio.zielpfad'] && pfade['ablage.permio.antragsordner'] ? `${pfade['ablage.permio.antragsordner']}/{Antrag}` : vorher;
+      expect(zielpfadWirksam(zielGruppeLesen(pfade)), JSON.stringify(pfade)).toBe(jetzt);
     }
+  });
+
+  it('bewusst geändert: eigener Antragsordner, nie ein Zielordner – bisher fest „TÖB/{Antrag}“, jetzt im Antragsordner', () => {
+    expect(zielpfadWirksam(zielGruppeLesen({ 'ablage.permio.antragsordner': 'Anträge' }))).toBe('Anträge/{Antrag}');
   });
 
   it('der Antragsordner ändert sich: der Zielordner zieht mit, der wirksame Pfad steht für ältere Versionen unter dem alten Schlüssel', () => {

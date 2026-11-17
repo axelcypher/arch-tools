@@ -608,7 +608,11 @@ function SeitePfade({ fokus }: { fokus?: string }) {
     };
     hin();
     // ein eingeklappter Bereich (Abweichungen je App) öffnet sich erst im nächsten Bild – dann noch einmal
-    const bild = requestAnimationFrame(() => document.activeElement?.closest(`#einst-${CSS.escape(sprung)}`) || hin());
+    const bild = requestAnimationFrame(() => {
+      if (!document.activeElement?.closest(`#einst-${CSS.escape(sprung)}`)) hin();
+      // ein Sprung nach „Alle Apps zeigen“ gilt einmal – danach wieder der Aufruf
+      setZiel(null);
+    });
     return () => cancelAnimationFrame(bild);
   }, [sprung, ziel, werte]);
 
@@ -762,6 +766,8 @@ function PfadFeld({ e, werte, losVon, app = '', fokus }: { e: PfadEinstellung; w
   const entwurf = pfadStore((s) => s.entwurf);
   // absolut angegeben (gespeichert: losgelöst; im Entwurf: bleibt an seinem Platz, mit Fehler am Feld)
   const absolutVon = losVon ?? (e.art === 'pfad' && e.bezug.art === 'eintrag' && istAbsolut(alsText(wirksam(e, werte, entwurf)).trim()) ? elternVon(e) : undefined);
+  // ersetzt durch einen anderen Eintrag (z. B. einen übernommenen Zielordner außerhalb des Antragsordners)
+  const ersetztDurch = e.giltNichtWenn && alsText(wirksam(pfadEinstellung(e.giltNichtWenn), werte, entwurf)).trim() ? pfadEinstellung(e.giltNichtWenn) : undefined;
   const gesperrt = useEinstellungenGesperrt();
   const gilt = wirksam(e, werte, entwurf);
   const gespeichert = werte[e.id] ?? e.vorgabe;
@@ -804,7 +810,13 @@ function PfadFeld({ e, werte, losVon, app = '', fokus }: { e: PfadEinstellung; w
         </span>
       </div>
       <p className="muted small-text einst-erklaerung" id={hinweisId}>
-        <span className={`einst-bezug${absolutVon ? ' los' : ''}`}>{absolutVon ? `Absolut angegeben – gehört unter „${absolutVon.bezeichnung}“ und gilt nur relativ dazu.` : satz(bezugText(e))}</span>{' '}
+        <span className={`einst-bezug${absolutVon || ersetztDurch ? ' los' : ''}`}>
+          {absolutVon
+            ? `Absolut angegeben – gehört unter „${absolutVon.bezeichnung}“ und gilt nur relativ dazu.`
+            : ersetztDurch
+              ? `${satz(bezugText(e))} Gilt nicht, solange „${ersetztDurch.bezeichnung}“ gesetzt ist.`
+              : satz(bezugText(e))}
+        </span>{' '}
         {e.erklaerung}
       </p>
       {e.projektwert && (
@@ -912,7 +924,8 @@ function TextEinstellung({
   // gemeinsame Angabe, die je App Verschiedenes ergibt: statt der Vorschau „Gilt je App“ darunter (`WirksamJeApp`, dieselbe Quelle `werte`)
   const jeApp = jeAppTexte(e, werte, entwurfJetzt);
   // sonst die vollständige Vorschau mit den Eltern-Einträgen (Baum)
-  const vorschau = e.art === 'ordner' || ordnerListe || jeApp ? '' : vorschauVoll(e, liste ? (alsListe(text)[0] ?? '') : text, werte, entwurfJetzt);
+  const ersetzt = !!e.giltNichtWenn && alsText(wirksam(pfadEinstellung(e.giltNichtWenn), werte, entwurfJetzt)).trim() !== '';
+  const vorschau = e.art === 'ordner' || ordnerListe || jeApp || ersetzt ? '' : vorschauVoll(e, liste ? (alsListe(text)[0] ?? '') : text, werte, entwurfJetzt);
   // Abweichung, die den gemeinsamen Wert ersetzt: leer gilt der gemeinsame – er steht als Platzhalter im Feld
   const platzhalter = e.abweichungVon?.art === 'ersetzt' ? alsText(wirksam(pfadEinstellung(e.abweichungVon.id), werte, entwurfJetzt)) : undefined;
   const alt = e.variablen ? veraltetePlatzhalter(text, e.variablen) : [];

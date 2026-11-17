@@ -235,13 +235,15 @@ mit `einstellungenEntwurfMelden`, Sperre über `useEinstellungenGesperrt`).
   oberster Ebene der Gruppe; die Vorschau beginnt dann beim absoluten Wert. Der Filter „App“ zeigt Eltern, die die App
   nicht selbst nutzt, ohne Feld in `--muted` (`.einst-bezugseintrag`: „Gilt:“ mit Vorschau, „Alle Apps zeigen“ – danach
   steht der Fokus in deren Feld), nicht über `opacity`. Keine eigene Ausklapp-Bedienung: Der Baum gliedert nur, die
-  Tab-Reihenfolge bleibt.
+  Tab-Reihenfolge bleibt. Ersetzt ein anderer Eintrag den Wert (`giltNichtWenn`, etwa ein übernommener Zielordner
+  außerhalb des Antragsordners), sagt die Bezugszeile in `--warn-text` „Gilt nicht, solange „…“ gesetzt ist.“, ohne
+  Vorschau; der ersetzende Eintrag steht direkt hinter dem Baum seines Bezugs.
 - **Gemeinsame Angaben:** Was mehrere Apps gleich nutzen (Ordner, Dateinamen), steht einmal; die Karte nennt alle Apps
   als Marken. Nicht: dieselbe Angabe je App als eigenes Feld wiederholen. Abweichungen je App gibt es nur, wo sie
   fachlich nötig sind, und nur auf Wunsch: unter dem Fuß der Karte, abgesetzt durch eine Linie (`--line-soft`), ein
   Knopf `small` mit Aufklapp-Pfeil (`pfeilRechts`/`pfeilUnten`, `aria-expanded`, `aria-controls`) – „Je App abweichend“
   bzw. bei Ordnern „Unterordner je App“, mit der Zahl der gesetzten in Klammern, eingeklappt mit „· geändert“, wenn
-  darin etwas geändert ist. Er öffnet die Felder je App eingerückt mit Linie links (`.einst-unter`, `role="group"` mit
+  darin etwas geändert ist. Er öffnet die Felder je App, um `--s5` eingerückt mit Linie links (`.einst-unter`, `role="group"` mit
   Namen, ohne eigenen Rahmen); leer heißt „wie die gemeinsame Angabe“ (sie steht als Platzhalter im Feld). Offen ist er,
   wenn eine Abweichung gesetzt ist oder ein Sprung ein Feld darin ansteuert. Unterscheidet sich etwas je App, zeigt die
   Karte unter dem Feld statt einer Vorschau „Gilt je App:“ mit App-Marke und Ergebnis (`.einst-wirksam`). Der Filter
