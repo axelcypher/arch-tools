@@ -57,7 +57,7 @@ describe('Fläche und Karten', () => {
   it('schmale Fenster: zuerst geben die Seitenkarten nach, dann die Mitte von ihrer Wunschbreite', () => {
     const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'base.css'), 'utf8');
     expect(css).toMatch(/--karte-mitte-wunsch: 480px;/);
-    expect(css).toMatch(/\.flaeche > \.flaechen-spalte:not\(\.wachsend\) \{[^}]*flex-shrink: 1000;[^}]*min-width: var\(--leiste-min\);/);
+    expect(css).toMatch(/\.flaeche > \.flaechen-spalte:not\(\.wachsend\) \{[^}]*flex-shrink: 1000;[^}]*min-width: var\(--leiste-eigen-min, var\(--leiste-min\)\);/);
     expect(css).toMatch(/\.flaeche > \.flaechen-spalte\.wachsend \{[^}]*flex: 1 1 var\(--karte-mitte-wunsch\);[^}]*min-width: var\(--karte-mitte-min\);/);
   });
 
