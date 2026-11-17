@@ -14,7 +14,9 @@ import { PROJEKT_STATUS } from '../model';
 import { PROJEKT_ANGELEGT, projektAnlegenMoeglich, projektAnlegenStarten, vomRahmen } from '../platform/rahmen';
 import { appMitWas } from '../appNamen';
 import { zeigeMenue } from './Menue';
+import { Karte as KarteRahmen } from './Karte';
 import type { SymbolName } from './Symbol';
+import { Symbol } from './Symbol';
 import './projektuebersicht.css';
 
 /** Stufen des Status vom besten zum schlimmsten – Farben wie in der Vollständigkeitsprüfung */
@@ -144,6 +146,15 @@ export interface UebersichtMarke {
   symbol?: IconName;
 }
 
+/** Knopf im Kopf der Übersicht – Darstellung und Reihenfolge legt die Übersicht fest, die App liefert nur Text und Aktion */
+export interface UebersichtAktion {
+  text?: string;
+  titel?: string;
+  aktion: () => void;
+  /** Hauptknopf ohne Plus-Symbol (z. B. „Weiter mit …“, wenn nichts neu angelegt wird) */
+  ohneSymbol?: boolean;
+}
+
 export interface ProjektUebersichtProps {
   titel?: string;
   gruppen: UebersichtGruppe[];
@@ -164,10 +175,23 @@ export interface ProjektUebersichtProps {
   onKontext?: (p: UebersichtProjekt, e: ReactMouseEvent, zuletzt: boolean) => void;
   status?: (p: UebersichtProjekt) => UebersichtStatus | undefined;
   marken?: (p: UebersichtProjekt) => UebersichtMarke[];
-  /** gezeigt, wenn es keine Gruppen gibt (z. B. „Ordner einstellen …“) */
+  /** gezeigt statt der Übersicht, wenn es keine Gruppen gibt – der gemeinsame `ProjektEinstieg` (z. B. „Ordner einstellen …“) */
   leer?: ReactNode;
-  /** weitere Knöpfe im Kopf */
-  kopf?: ReactNode;
+  /**
+   * Hauptknopf „Neues Projekt anlegen …“ rechts im Kopf (Vorgabe: der Assistent von ATLAS über die Rahmen-App, siehe
+   * `projektAnlegen`); `text` nur, wenn der Knopf etwas anderes tut (z. B. „Weiter mit 2026-014 …“)
+   */
+  neu?: UebersichtAktion;
+  /** „Datei öffnen …“ im Kopf (Dateidialog; was sich öffnen lässt, steht in `titel`) */
+  dateiOeffnen?: UebersichtAktion;
+  /** weitere Knöpfe im Kopf, vor „Datei öffnen …“ – selten, z. B. „Leer beginnen“, „Anderen Ordner …“ */
+  weitere?: (UebersichtAktion & { text: string })[];
+  /** Knopf „Schließen“ im Kopf (ohne geöffnetes Projekt; mit Projekt heißt er „Zurück zu …“ und nimmt `onZurueck`) */
+  onSchliessen?: () => void;
+  /** Meldung über der Liste (z. B. „Projekt wird geöffnet …“ oder ein Fehler) */
+  meldung?: { text: string; fehler?: boolean };
+  /** `main`, wenn die Übersicht der Hauptbereich der App ist (z. B. die Startseite von ATLAS); sonst eine benannte Karte */
+  als?: 'section' | 'main';
   /** Text, wenn eine Gruppe leer ist */
   gruppeLeer?: string;
   /** angeheftete Projekte (Schlüssel) – vorne im Abschnitt „Angeheftet“ */
@@ -221,29 +245,9 @@ export function quellenName(pfad: string, alle: string[]): string {
   return teile(pfad).slice(-2).join('/') || pfad;
 }
 
-/* ---------- Symbole (eigene kleine Auswahl, damit die Seite ohne App auskommt) ---------- */
-
-const ICONS = {
-  verlauf: 'M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7v5l3 2',
-  zahnrad:
-    'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z',
-  pfeilUnten: 'M6 9l6 6 6-6',
-  pfeilRechts: 'M9 6l6 6-6 6',
-  ordner: 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z',
-  schloss: 'M6 11h12v9H6zM8 11V8a4 4 0 0 1 8 0v3',
-  stift: 'M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4',
-  warnung: 'M12 3l10 18H2L12 3zM12 10v4M12 17h.01',
-  plus: 'M12 5v14M5 12h14',
-} as const;
-export type IconName = keyof typeof ICONS;
-
-function Icon({ name }: { name: IconName }) {
-  return (
-    <svg className="symbol" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d={ICONS[name]} />
-    </svg>
-  );
-}
+/** Symbole der Übersicht: der gemeinsame Satz (ui/Symbol.tsx) – ein Symbol je Bedeutung */
+export type IconName = SymbolName;
+const Icon = ({ name }: { name: SymbolName }) => <Symbol name={name} />;
 
 /* ---------- Seite ---------- */
 
@@ -324,86 +328,106 @@ export function ProjektUebersicht(props: ProjektUebersichtProps) {
   const treffer = inGruppen.flatMap((x) => x.treffer);
   const aktivesProjekt = aktiv ? nachSchluessel.get(aktiv) : undefined;
 
-  const anlegenKnopf = anlegen && (
-    <button className="primary pa-anlegen" onClick={anlegen} title={`Neues Projekt mit dem Assistenten von ${appMitWas('ordner')} anlegen: Stammdaten, Umfang, Beteiligte, Ordner und Vorlagen`}>
-      <Icon name="plus" /> Neues Projekt anlegen
-    </button>
+  // Kopf: immer dieselben Knöpfe in derselben Reihenfolge – Zurück/Schließen, weitere, Datei öffnen, Hauptknopf rechts
+  const neu: UebersichtAktion | null =
+    props.neu ??
+    (anlegen
+      ? { text: 'Neues Projekt anlegen …', titel: `Neues Projekt mit dem Assistenten von ${appMitWas('ordner')} anlegen: Stammdaten, Umfang, Beteiligte, Ordner und Vorlagen`, aktion: anlegen }
+      : null);
+  const kopfAktionen = (
+    <>
+      {aktivesProjekt && onZurueck ? (
+        <button onClick={onZurueck} title="Zurück zum geöffneten Projekt">
+          Zurück zu {aktivesProjekt.kuerzel}
+        </button>
+      ) : (
+        props.onSchliessen && <button onClick={props.onSchliessen}>Schließen</button>
+      )}
+      {props.weitere?.map((w) => (
+        <button key={w.text} onClick={w.aktion} title={w.titel}>
+          {w.text}
+        </button>
+      ))}
+      {props.dateiOeffnen && (
+        <button onClick={props.dateiOeffnen.aktion} title={props.dateiOeffnen.titel ?? 'Projektdatei über den Dateidialog öffnen (Strg+O)'}>
+          {props.dateiOeffnen.text ?? 'Datei öffnen …'}
+        </button>
+      )}
+      {neu && (
+        <button className="primary pa-anlegen" onClick={neu.aktion} title={neu.titel}>
+          {!neu.ohneSymbol && <Icon name="plus" />} {neu.text ?? 'Neues Projekt anlegen …'}
+        </button>
+      )}
+    </>
   );
 
-  if (!gruppen.length && props.leer)
-    return (
-      <div className="pa">
-        {props.leer}
-        {anlegenKnopf && <div className="pa-leer-anlegen">{anlegenKnopf}</div>}
-      </div>
-    );
+  if (!gruppen.length && props.leer) return <>{props.leer}</>;
 
   const karte = (p: UebersichtProjekt, geoeffnet?: number) => (
     <Karte key={p.schluessel} p={p} geoeffnet={geoeffnet} hervorgehoben={p.schluessel === aktiv} onOeffnen={onOeffnen} onKontext={kontext} status={props.status} marken={props.marken} />
   );
 
-  return (
-    <div className="pa">
-      <header className="pa-kopf">
-        <div className="pa-kopf-titel">
-          <h2>{titel}</h2>
-          <span className="muted small-text">{sucht ? 'werden gesucht …' : `${projekte.length} in ${gruppen.length === 1 ? 'einer Quelle' : `${gruppen.length} Quellen`}`}</span>
-        </div>
-        <input
-          type="search"
-          className="pa-suche"
-          placeholder="Kürzel oder Titel …"
-          aria-label="Projekte durchsuchen"
-          value={suche}
-          onChange={(e) => setSuche(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && q && treffer[0]) onOeffnen(treffer[0]);
-            // Esc verwirft zuerst die Suche, erst dann schließt es die Übersicht
-            if (e.key === 'Escape' && suche) {
-              e.stopPropagation();
-              setSuche('');
-            }
-          }}
-          autoFocus
-        />
-        {onNeuLaden && (
-          <button className="icon" title="Projekte neu einlesen" aria-label="Projekte neu einlesen" disabled={sucht} onClick={onNeuLaden}>
-            <Icon name="verlauf" />
-          </button>
-        )}
-        {onEinstellungen && (
-          <button className="icon" title="Quellen einstellen" aria-label="Quellen einstellen" onClick={onEinstellungen}>
-            <Icon name="zahnrad" />
-          </button>
-        )}
-        <select className="pa-auswahl" aria-label="Sortierung" title="Sortierung der Projekte in den Quellen" value={sortierung} onChange={(e) => setSortierung(e.target.value as Sortierung)}>
-          {SORTIERUNGEN.map((s) => (
+  const leiste = (
+    <div className="toolbar pa-leiste">
+      <input
+        type="search"
+        className="pa-suche"
+        placeholder="Kürzel oder Titel …"
+        aria-label="Projekte durchsuchen"
+        value={suche}
+        onChange={(e) => setSuche(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && q && treffer[0]) onOeffnen(treffer[0]);
+          // Esc verwirft zuerst die Suche, erst dann schließt es die Übersicht
+          if (e.key === 'Escape' && suche) {
+            e.stopPropagation();
+            setSuche('');
+          }
+        }}
+        autoFocus
+      />
+      <select className="pa-auswahl" aria-label="Sortierung" title="Sortierung der Projekte in den Quellen" value={sortierung} onChange={(e) => setSortierung(e.target.value as Sortierung)}>
+        {SORTIERUNGEN.map((s) => (
+          <option key={s.id} value={s.id}>
+            {s.label}
+          </option>
+        ))}
+      </select>
+      {mitStatus && (
+        <select className="pa-auswahl" aria-label="Status" title="Projekte nach Status filtern (aus der Projektdatei)" value={filter} onChange={(e) => setFilter(e.target.value as StatusFilter)}>
+          <option value="offen">ohne abgeschlossene</option>
+          {PROJEKT_STATUS.map((s) => (
             <option key={s.id} value={s.id}>
-              {s.label}
+              nur {s.label}
             </option>
           ))}
+          <option value="alle">alle</option>
         </select>
-        {mitStatus && (
-          <select className="pa-auswahl" aria-label="Status" title="Projekte nach Status filtern (aus der Projektdatei)" value={filter} onChange={(e) => setFilter(e.target.value as StatusFilter)}>
-            <option value="offen">ohne abgeschlossene</option>
-            {PROJEKT_STATUS.map((s) => (
-              <option key={s.id} value={s.id}>
-                nur {s.label}
-              </option>
-            ))}
-            <option value="alle">alle</option>
-          </select>
-        )}
-        {props.kopf}
-        {anlegenKnopf}
-        {aktivesProjekt && onZurueck && (
-          <button onClick={onZurueck} title="Zurück zum geöffneten Projekt">
-            Zurück zu {aktivesProjekt.kuerzel}
-          </button>
-        )}
-      </header>
+      )}
+      <span className="pa-anzahl muted small-text" aria-live="polite">
+        {sucht ? 'werden gesucht …' : `${projekte.length} ${projekte.length === 1 ? 'Projekt' : 'Projekte'} in ${gruppen.length === 1 ? 'einer Quelle' : `${gruppen.length} Quellen`}`}
+      </span>
+      {onNeuLaden && (
+        <button className="icon" title="Projekte neu einlesen" aria-label="Projekte neu einlesen" disabled={sucht} onClick={onNeuLaden}>
+          <Icon name="neuLaden" />
+        </button>
+      )}
+      {onEinstellungen && (
+        <button className="icon" title="Quellen einstellen" aria-label="Quellen einstellen" onClick={onEinstellungen}>
+          <Icon name="zahnrad" />
+        </button>
+      )}
+    </div>
+  );
 
+  return (
+    <KarteRahmen className="pa" titel={titel} aktionen={kopfAktionen} leiste={leiste} buendig als={props.als}>
       <div className="pa-rollbereich">
+        {props.meldung && (
+          <p className={props.meldung.fehler ? 'warning small-text' : 'busy small-text'} role={props.meldung.fehler ? 'alert' : 'status'}>
+            {props.meldung.text}
+          </p>
+        )}
         {fehler.map((f) => (
           <p key={f} className="warning small-text">
             {f}
@@ -413,7 +437,7 @@ export function ProjektUebersicht(props: ProjektUebersichtProps) {
         {!q && angeheftet.length > 0 && (
           <section className="pa-abschnitt" aria-label="Angeheftet">
             <h3 className="pa-abschnitt-titel">
-              <Icon name="stift" /> Angeheftet
+              <Icon name="stern" /> Angeheftet
             </h3>
             <div className="pa-raster">{angeheftet.map((p) => karte(p))}</div>
           </section>
@@ -500,7 +524,7 @@ export function ProjektUebersicht(props: ProjektUebersichtProps) {
         })}
         {q && !treffer.length && <p className="pa-nichts muted">Kein Projekt passt zu „{suche.trim()}“.</p>}
       </div>
-    </div>
+    </KarteRahmen>
   );
 }
 

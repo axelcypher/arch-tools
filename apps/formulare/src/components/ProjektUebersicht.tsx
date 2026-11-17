@@ -10,7 +10,8 @@ import { projektSchluessel } from '../projekte';
 import { ablageVon, projektHatEntwuerfe, useFormulare } from '../store';
 import type { MenuePunkt } from '@core/ui/Menue';
 import { zeigeMenue } from '@core/ui/Menue';
-import { Symbol } from '@core/ui/Symbol';
+import { ProjektEinstieg } from '@core/ui/ProjektWahl';
+import { projektAnlegenMoeglich, projektAnlegenStarten } from '@core/platform/rahmen';
 
 export { useAufgeklappt } from '@core/ui/ProjektUebersicht';
 
@@ -123,13 +124,13 @@ export function ProjektUebersicht({ onEinstellungen }: { onEinstellungen: () => 
       marken={marken}
       gruppeLeer="Keine Formularprojekte in diesem Ordner."
       leer={
-        <div className="pa-leer">
-          <h2>Willkommen</h2>
-          <p>Stelle zuerst ein, wo eure Formularprojekte liegen – danach erscheinen sie hier.</p>
-          <button className="primary" onClick={onEinstellungen}>
-            <Symbol name="ordner" /> Ordner einstellen …
-          </button>
-        </div>
+        <ProjektEinstieg
+          app="formulare"
+          onAnlegen={projektAnlegenMoeglich() ? () => projektAnlegenStarten(false) : undefined}
+          text="Zuerst einstellen, wo die Formularprojekte liegen – danach erscheinen sie hier."
+          onStammordner={onEinstellungen}
+          stammordnerText="Ordner einstellen …"
+        />
       }
     />
   );

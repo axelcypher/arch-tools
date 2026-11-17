@@ -540,9 +540,7 @@ export function App() {
           </BreitenLeiste>
         )}
         {ds && (!projekt || haupt === 'projekte') ? (
-          <Karte ariaLabel="Projekte" buendig>
-            <ProjektUebersicht onEinstellungen={() => einstellungenOeffnen('formulare', 'formularprojekte')} />
-          </Karte>
+          <ProjektUebersicht onEinstellungen={() => einstellungenOeffnen('formulare', 'formularprojekte')} />
         ) : haupt === 'projektkarte' && projekt ? (
           <ProjektkarteAnsicht />
         ) : haupt === 'antrag' && projekt ? (
@@ -557,9 +555,7 @@ export function App() {
             {ansicht === 'felder' ? <FelderAnsicht offen={offen} gesperrt={!!grund} /> : <SeitenAnsicht offen={offen} gesperrt={!!grund} />}
           </FlaechenSpalte>
         ) : (
-          <Karte ariaLabel="Einstieg">
-            <Leer desktop={!!ds} onEinstellungen={() => einstellungenOeffnen('formulare', 'formularprojekte')} />
-          </Karte>
+          <Leer desktop={!!ds} onEinstellungen={() => einstellungenOeffnen('formulare', 'formularprojekte')} />
         )}
         {formularSichtbar && (einrichten || verlaufOffen) && (
           <BreitenLeiste
@@ -604,36 +600,35 @@ export function App() {
 function Leer({ desktop, onEinstellungen }: { desktop: boolean; onEinstellungen: () => void }) {
   const ordner = useFormulare((s) => s.projektordner.length);
   const projekt = useFormulare((s) => s.projekt);
+  // gleicher Einstieg wie in den anderen Apps; was PERMIO ergänzt, steht nur in den Slots
   return (
-    <div className="fo-leer">
-      {/* gleicher Einstieg wie in den anderen Apps: Projekt wählen bzw. Datei öffnen */}
-      <ProjektEinstieg
-        titel="Bauantragsformulare"
-        text={
-          desktop
-            ? 'Bauantragsformulare ausfüllen – Projekt wählen (links oder über „Projekte“), dann ein Formular.'
-            : 'In der Web-Version lässt sich ein einzelnes Formular (.frmsjf) öffnen; die geänderte Fassung wird heruntergeladen. Projektordner, Sperrdateien und direktes Speichern gibt es nur in der Desktop-App.'
-        }
-        onProjekte={desktop && ordner > 0 ? () => useFormulare.getState().setHaupt('projekte') : undefined}
-        onDateiOeffnen={desktop ? undefined : () => void useFormulare.getState().dateiOeffnen()}
-        dateiHinweis="Formular (.frmsjf)"
-      />
-      {desktop && !ordner && (
-        <p>
-          Stelle zuerst ein, wo eure Formularprojekte liegen. <button onClick={onEinstellungen}>Einstellungen …</button>
-        </p>
-      )}
-      {desktop && ordner > 0 && !projekt && (
-        <p>
-          Wähle links ein Projekt – oder suche mit <kbd>Strg</kbd>+<kbd>K</kbd> nach Kürzel oder Titel.
-        </p>
-      )}
-      {desktop && projekt && <p>Wähle links ein Formular oder die Projektdaten.</p>}
-      <p className="muted small-text">
-        Jede Eingabe wird sofort lokal gesichert, mit Verlauf (<kbd>Strg</kbd>+<kbd>Z</kbd> / <kbd>Strg</kbd>+<kbd>Y</kbd>). In die Formulardatei kommt sie mit „Speichern“ (
-        <kbd>Strg</kbd>+<kbd>S</kbd>) – geändert wird nur der Inhalt der Felder, Layout und alles andere bleiben Byte für Byte erhalten. Ist ein Formular in einem anderen Programm geöffnet, lässt
-        es sich hier nur ansehen.
-      </p>
-    </div>
+    <ProjektEinstieg
+      app="formulare"
+      text={
+        !desktop ? (
+          'In der Web-Version lässt sich ein einzelnes Formular (.frmsjf) öffnen; die geänderte Fassung wird heruntergeladen. Projektordner, Sperrdateien und direktes Speichern gibt es nur in der Desktop-App.'
+        ) : projekt ? (
+          'Links ein Formular oder die Projektdaten wählen.'
+        ) : ordner ? (
+          <>
+            Bauantragsformulare ausfüllen – links oder über „Projekte“ ein Projekt wählen, oder mit <kbd>Strg</kbd>+<kbd>K</kbd> nach Kürzel oder Titel suchen.
+          </>
+        ) : (
+          'Zuerst einstellen, wo die Formularprojekte liegen – danach erscheinen sie hier.'
+        )
+      }
+      onStammordner={desktop && !ordner ? onEinstellungen : undefined}
+      stammordnerText="Ordner einstellen …"
+      onProjekte={desktop && ordner > 0 && !projekt ? () => useFormulare.getState().setHaupt('projekte') : undefined}
+      onDateiOeffnen={desktop ? undefined : () => void useFormulare.getState().dateiOeffnen()}
+      dateiHinweis="Formular (.frmsjf)"
+      fussnote={
+        <>
+          Jede Eingabe wird sofort lokal gesichert, mit Verlauf (<kbd>Strg</kbd>+<kbd>Z</kbd> / <kbd>Strg</kbd>+<kbd>Y</kbd>). In die Formulardatei kommt sie mit „Speichern“ (<kbd>Strg</kbd>+
+          <kbd>S</kbd>) – geändert wird nur der Inhalt der Felder, Layout und alles andere bleiben Byte für Byte erhalten. Ist ein Formular in einem anderen Programm geöffnet, lässt es sich hier nur
+          ansehen.
+        </>
+      }
+    />
   );
 }
