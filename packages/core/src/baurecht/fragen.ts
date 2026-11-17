@@ -16,7 +16,7 @@ export const RUECKFRAGE_IDS: ReadonlySet<string> = new Set(Object.values(RUECKFR
  * ein Widerspruch bzw. Vorbehalt – an einem Merkmal oder einer Angabe – öffnet keine; das Urteil hängt so nicht daran). Eine Rückfrage erst, wenn ihre Bedingung „ja“ ergibt – vorher stünde z. B. „Altbau
  * verfahrensfrei“ vor dem Umfang der Beseitigung. Eine fehlerhafte Bedingung: lieber fragen.
  */
-export function frageGestellt(id: string, def: Pick<FaktDef, 'wenn' | 'vorfrage'> | undefined, ctx: KurzKontext): boolean {
+export function frageGestellt(id: string, def: Pick<FaktDef, 'wenn' | 'vorfrage' | 'ersetzt'> | undefined, ctx: KurzKontext): boolean {
   return frageStand(id, def, ctx).gestellt;
 }
 
@@ -27,11 +27,17 @@ export function frageGestellt(id: string, def: Pick<FaktDef, 'wenn' | 'vorfrage'
  * als `ueberHinweis` mit, Regeln zählen dann ihn als nicht gesichert. Ebenso `ueberWiderspruch` für eine widersprüchliche
  * Angabe als Auslöser (die Regel trägt dann deren Widerspruch; Merkmal-Widersprüche ausgenommen, siehe unten).
  */
-export function frageStand(id: string, def: Pick<FaktDef, 'wenn' | 'vorfrage'> | undefined, ctx: KurzKontext): { gestellt: boolean; ueberHinweis: string[]; ueberWiderspruch: string[] } {
+export function frageStand(id: string, def: Pick<FaktDef, 'wenn' | 'vorfrage' | 'ersetzt'> | undefined, ctx: KurzKontext): { gestellt: boolean; ueberHinweis: string[]; ueberWiderspruch: string[] } {
   // Einzelfrage, deren Vorfrage wirksam „nein“ ist, bzw. Angabe, deren Wert sich aus anderen ergibt: entfällt (der Wert
   // folgt daraus, ableitungenAnwenden)
   // (ein abgeleiteter Wert mit Widerspruch, z. B. aus einem Dienst, bleibt gefragt – der Widerspruch will geklärt sein)
   if ((def?.vorfrage && vorfrageNein(ctx.fakten[def.vorfrage.fakt])) || (ctx.fakten[id]?.ausFolge && !ctx.fakten[id].widerspruch)) return { gestellt: false, ueberHinweis: [], ueberWiderspruch: [] };
+  // ersetzte Frage (FaktDef.ersetzt): nur mit eigener Antwort aus einer älteren Datei – sie gilt weiter und bleibt sichtbar;
+  // ohne sie wird nicht gefragt, die Tatsachenfragen stehen an ihrer Stelle
+  if (def?.ersetzt) {
+    const v = ctx.fakten[id];
+    return { gestellt: !!v && !v.ausFolge && v.wert != null && v.wert !== '', ueberHinweis: [], ueberWiderspruch: [] };
+  }
   if (!def?.wenn) return { gestellt: true, ueberHinweis: [], ueberWiderspruch: [] };
   try {
     const b = werten(def.wenn, ctx);

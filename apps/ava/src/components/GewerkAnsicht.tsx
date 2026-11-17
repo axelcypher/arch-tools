@@ -192,16 +192,16 @@ export function GewerkAnsicht({ gewerk, tab }: { gewerk: string; tab: GewerkTab 
               key={x.id}
               id={`ava-tab-${x.id}`}
               role="tab"
-              aria-label={x.text}
+              aria-label={x.text.includes(x.kurz) ? x.text : `${x.text} (${x.kurz})`}
               aria-selected={x.id === t.id}
               aria-controls="ava-gewerk-inhalt"
               tabIndex={x.id === t.id ? 0 : -1}
               className={x.id === t.id ? 'active' : ''}
-              title={x.title}
+              title={`${x.text}: ${x.title}`}
               onClick={() => zeigeTab(x.id)}
             >
-              <span className="ava-tab-lang">{x.text}</span>
-              <span className="ava-tab-kurz" aria-hidden="true">
+              <span className="lang">{x.text}</span>
+              <span className="kurz" aria-hidden="true">
                 {x.kurz}
               </span>
             </button>
