@@ -134,10 +134,24 @@
 }
 
 .hud-coords {
-  flex: none;
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--text);
   font-variant-numeric: tabular-nums;
+}
+
+/* schmale Fußzeile: Koordinaten ganz ausblenden statt zu einem „…“ zu kürzen – Hinweis und Maßstab bleiben */
+.zeichen-karte > .karte-fuss {
+  container-type: inline-size;
+}
+
+@container (max-width: 360px) {
+  .hud-coords {
+    display: none;
+  }
 }
 
 .hud-coords em {
@@ -156,7 +170,8 @@
 .hud-zeile {
   flex: 1;
   display: flex;
-  min-width: 0;
+  /* der Hinweis geht vor: erst kürzen die Koordinaten. 140 px = Text (4em) + zwei Knöpfe (2 × 24 px) + Abstände und Rand */
+  min-width: min(140px, 100%);
   container-type: inline-size;
 }
 
@@ -180,10 +195,12 @@
   min-width: 4em;
 }
 
-/* sehr schmale Mitte: kein leerer Rahmen – nur noch „?“ und „×“, der Hinweis steht im Tooltip.
-   130 px ≈ Mindestbreite des Texts (4em) + zwei Knöpfe à 24 px + Abstände und Innenrand */
+/* sehr schmale Fußzeile (unter den 140 px oben): kein leerer Rahmen und nichts beschnitten – nur noch „?“ und „×“,
+   der Hinweis steht im Tooltip */
 @container (max-width: 130px) {
   .hud-hint {
+    flex: none;
+    overflow: visible;
     border-color: transparent;
     padding: 0;
   }
@@ -316,7 +333,7 @@
   background: var(--overlay-bg);
   border: 1px solid var(--border);
   border-radius: var(--radius-s);
-  padding: 3px var(--s1) 3px var(--s2);
+  padding: var(--s1) var(--s1) var(--s1) var(--s2);
   font-size: var(--fs-s);
 }
 
