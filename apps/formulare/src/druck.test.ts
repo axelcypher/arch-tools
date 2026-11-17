@@ -77,6 +77,14 @@ describe('Druck der Formulare (B-02)', () => {
     for (const a of ausblenden) for (const s of aufheben) expect(groesser(spezifitaet(s), spezifitaet(a)), `${s} gegen ${a}`).toBeGreaterThan(0);
   });
 
+  it('die rollende Spalte (core: Innenabstand, negativer Rand, Rollen) wird im Druck zurückgesetzt – das Blatt verschiebt sich nicht', () => {
+    const ruecksetzen = eigene.filter((r) => r.selektoren.some((s) => /\.fo-main > \.fo-inhalt$/.test(s)));
+    const decl = ruecksetzen.map((r) => r.deklarationen).join(';');
+    for (const d of [/padding\s*:\s*0\s*!important/, /margin\s*:\s*0\s*!important/, /overflow\s*:\s*visible\s*!important/]) expect(decl).toMatch(d);
+    const sel = ruecksetzen.flatMap((r) => r.selektoren).find((s) => /\.fo-main > \.fo-inhalt$/.test(s))!;
+    expect(groesser(spezifitaet(sel), spezifitaet('.flaechen-spalte.rollend'))).toBeGreaterThan(0);
+  });
+
   it('Formularblätter sichtbar, ein Blatt je Seite; Info-Symbole, Hinweise und Gliederung ausgeblendet', () => {
     const versteckt = new Set(eigene.filter(blendetAus).flatMap((r) => r.selektoren));
     for (const s of ['.fo-entfall-info', '.fo-tipp', '.fo-gliederung', '.fo-umrandung', '.fo-blatt-kopf']) expect(versteckt, s).toContain(s);
