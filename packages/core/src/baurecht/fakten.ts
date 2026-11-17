@@ -24,7 +24,7 @@ const KURZ: Record<string, string> = {
   'gebaeude.aufenthaltsraeume': 'Aufenthaltsräume oder Arbeitsplätze',
   'gebaeude.behelfsbau': 'Behelfsbau oder Fliegender Bau',
   'gebaeude.landwirtschaft': 'Land- oder forstwirtschaftliches Gebäude',
-  'gebaeude.hoehe': 'Höhe (oberstes Aufenthaltsgeschoss)',
+  'gebaeude.hoehe': 'Höhe zum möglichen Aufenthaltsgeschoss',
   'gebaeude.oeffentlich': 'Für Kunden oder Besucher zugänglich',
   'lage.baulast': 'Baulast oder anderes Flurstück genutzt',
   'lage.altlasten': 'Altlast oder Altlastverdacht',

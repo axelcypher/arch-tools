@@ -239,7 +239,7 @@ Sachverhalt; Titel, Frage und kurzer Name nennen keinen Paragrafen. Die Erläute
     Bebauung des Ortes (Baulücke) und nicht jenseits der letzten Bebauung oder bei einzelnen Höfen?
   - Behelfsbau: nur für begrenzte Zeit, freistehendes eingeschossiges Nebengebäude ohne längeren Aufenthalt oder zum
     wiederholten Auf- und Abbau gemacht, mit Beispielen.
-- **In Tatsachen umformuliert, mit Beispielen und „wo erfahre ich das“:** Planreife (Entwurf ausgelegt, Festsetzungen
+- **In Tatsachen umformuliert, mit Beispielen und „wo erfahre ich das“:** Planreife (Beteiligung zum Entwurf abgeschlossen, Festsetzungen
   anerkannt, Erschließung gesichert), Abweichung von der Bauordnung (Abstandsflächen, Brandschutz, Treppen …), Abweichung
   von örtlicher Bauvorschrift (Dachform, Material, Werbeanlage, Stellplatzzahl), Abbruch einer kleinen Anlage ohne
   Genehmigungspflicht, Abbruch eines freistehenden niedrigen Altbaus (bis 7 m), Höhe (oberster Fußboden mit

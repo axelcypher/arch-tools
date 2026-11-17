@@ -2771,14 +2771,14 @@ describe('Hinweise tragen kein Grün über gestellte Fragen', () => {
     });
     // nur der Grund zur Antwort zählt hier (die Test-Festlegung hat keinen Textstand – das meldet die Prüfung eigens)
     const grund = (f: Record<string, FaktWert>, s: 'sicher' | 'hinweis') => auswerten({ ...eingabe(m, f, TEXTE), festlegungen: fl(s) }).paragrafen.find((p) => p.id === id)!.ueberholt ?? '';
-    const nurHinweis = /Altbau freistehend und niedrig[^;]*jetzt nur Hinweis/;
+    const nurHinweis = /Altbau niedrig, freistehend oder klein[^;]*jetzt nur Hinweis/;
     // (a) festgelegt, als die Antwort gesichert war (ältere Datei bzw. Umfang später nur Hinweis): jetzt nur Hinweis → überholt
     expect(grund(umfangHinweis, 'sicher')).toMatch(nurHinweis);
     // (b) festgelegt, als die Antwort nur über den Hinweis galt, danach der Umfang bestätigt: deswegen nicht überholt
-    expect(grund(umfangSicher, 'hinweis')).not.toMatch(/Altbau freistehend und niedrig/);
+    expect(grund(umfangSicher, 'hinweis')).not.toMatch(/Altbau niedrig, freistehend oder klein/);
     // gleich geblieben: deswegen nicht überholt
-    expect(grund(umfangHinweis, 'hinweis')).not.toMatch(/Altbau freistehend und niedrig/);
-    expect(grund(umfangSicher, 'sicher')).not.toMatch(/Altbau freistehend und niedrig/);
+    expect(grund(umfangHinweis, 'hinweis')).not.toMatch(/Altbau niedrig, freistehend oder klein/);
+    expect(grund(umfangSicher, 'sicher')).not.toMatch(/Altbau niedrig, freistehend oder klein/);
   });
 
   it('Umfang nur als Hinweis: § 74 BauO NRW, §§ 1, 2, 15 BauPrüfVO „prüfen“, nicht „entfällt“; gesichert bleibt es „entfällt“', () => {
