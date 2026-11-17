@@ -352,7 +352,8 @@ export function Arbeitsflaeche({ ablegen = false }: { ablegen?: boolean } = {}) 
       const q = abb.schirmZuEbene(maus);
       const p = abb.vonSchirm(maus);
       const px = p ? pixelGroesse(entz, p) : NaN;
-      status = `x ${fmt3(q.x)} m   y ${fmt3(q.y)} m${Number.isFinite(px) ? `   ·   Fotopixel ≈ ${fmt2(px * 1000)} mm` : ''}`;
+      // zweizeilig, damit neben den Koordinaten Platz für den Hinweis bleibt
+      status = `x ${fmt3(q.x)} m   y ${fmt3(q.y)} m${Number.isFinite(px) ? `\nFotopixel ≈ ${fmt2(px * 1000)} mm` : ''}`;
     } else {
       const p = abb.vonSchirm(maus);
       if (p) status = `${Math.round(p.x)} × ${Math.round(p.y)} px`;
@@ -376,7 +377,7 @@ export function Arbeitsflaeche({ ablegen = false }: { ablegen?: boolean } = {}) 
           {foto && (
             <span className="ef-koord">
               <span className="ef-platzhalter" aria-hidden="true">
-                {ansicht === 'entzerrt' ? 'x 000,000 m   y 000,000 m   ·   Fotopixel ≈ 00,00 mm' : '0000 × 0000 px'}
+                {ansicht === 'entzerrt' ? 'x 000,000 m   y 000,000 m\nFotopixel ≈ 00,00 mm' : '0000 × 0000 px'}
               </span>
               {status && <span className="ef-koord-wert">{status}</span>}
             </span>
