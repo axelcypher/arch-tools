@@ -7,6 +7,7 @@ import { readProjectFile } from '@core/archive';
 import { baurechtAusRoh } from '@core/baurecht/projekt';
 import { projektdateiRoh } from '@core/projektdatei';
 import { farbschemaWechseln } from '@core/ui/rauchtest';
+import { hinweiseLeeren, zeigeHinweis } from '@core/ui/Hinweis';
 
 // Speichern (Web): die Datei, die heruntergeladen würde, wird hier aufgefangen und danach gelesen
 let geschrieben: Uint8Array | null = null;
@@ -47,6 +48,8 @@ afterEach(() => {
   ausblendenAngehalten = null;
   // Dialoge mit eigenem Store blieben sonst für den nächsten Test offen
   dialogeZuruecksetzen();
+  // Hinweise stehen in einem Store auf Modulebene und überleben das Unmount
+  hinweiseLeeren();
 });
 
 let root: ReturnType<typeof createRoot> | null = null;
@@ -547,6 +550,31 @@ describe('Baurecht – Oberfläche', () => {
     expect(document.activeElement).toBe(host.querySelector('.br-detail h2 [data-f6-ziel]'));
     f6(true);
     expect(host.querySelector('.br-vorschriften-liste')!.contains(document.activeElement)).toBe(true);
+  });
+
+  it('F6: der Hinweis nach einer Aktion ist die letzte Station – ohne Hinweis übersprungen, aus dem Hinweis weiter zum Kopf', () => {
+    const host = render();
+    const f6 = (shift = false) => act(() => void window.dispatchEvent(new KeyboardEvent('keydown', { key: 'F6', shiftKey: shift, bubbles: true, cancelable: true })));
+    const inDetail = () => host.querySelector('.br-detail')!.contains(document.activeElement);
+    const imKopf = () => host.querySelector('.br-kopf')!.contains(document.activeElement);
+    const imHinweis = () => !!document.querySelector('.hinweise')?.contains(document.activeElement);
+    // ohne Hinweis: von den Einzelheiten direkt zum Kopf
+    act(() => host.querySelector<HTMLButtonElement>('.br-paragraf')!.click());
+    for (let i = 0; i < 6 && !inDetail(); i++) f6();
+    expect(inDetail()).toBe(true);
+    f6();
+    expect(imKopf()).toBe(true);
+    // mit Hinweis: Einzelheiten → Hinweis → Kopf, genau ein Schritt je F6 (core führt F6 nicht zusätzlich)
+    act(() => void zeigeHinweis({ id: 'test-f6', text: 'Gespeichert', aktionen: [{ text: 'Ordner öffnen', aktion: () => undefined }] }));
+    f6(true);
+    expect(imHinweis()).toBe(true);
+    expect(document.activeElement?.textContent).toBe('Ordner öffnen');
+    f6();
+    expect(imKopf()).toBe(true);
+    f6(true);
+    expect(imHinweis()).toBe(true);
+    f6(true);
+    expect(inDetail()).toBe(true);
   });
 
   it('Festlegung aufheben: Fokus auf „Von Hand festlegen …“, Rückgängig stellt sie wieder her', () => {

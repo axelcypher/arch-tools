@@ -3,6 +3,7 @@ import type { FaktWert, Festlegung } from '@core/baurecht/typen';
 import { faktName } from '@core/baurecht/typen';
 import { isTauri } from '@core/platform/files';
 import { logger } from '@core/platform/log';
+import { hinweisF6Eigen, hinweisFokussieren } from '@core/ui/Hinweis';
 import { Flaeche } from '@core/ui/Karte';
 import { BreitenLeiste } from '@core/ui/Leiste';
 import { APP_NAMEN, appMitWas } from '@core/appNamen';
@@ -131,13 +132,17 @@ export async function speichernVollstaendig(): Promise<boolean> {
  */
 export const UNGESPEICHERT = 'Die Baurechtsprüfung hat ungespeicherte Änderungen.';
 
-/** Bereiche für F6 und die Sprungmarken: die Werkzeugleiste und jede Karte der Fläche eine Station */
-const BEREICHE: { sel: string; sprung?: string }[] = [
+/**
+ * Bereiche für F6 und die Sprungmarken: die Werkzeugleiste und jede Karte der Fläche eine Station; zuletzt der Stapel der
+ * Hinweise nach einer Aktion (core, `ui/Hinweis.tsx`) – ohne Hinweis übersprungen, F6 im Hinweis springt zur ersten Station
+ */
+const BEREICHE: { sel: string; sprung?: string; fokus?: () => boolean }[] = [
   { sel: '.br-kopf' },
   { sel: '.br-angaben', sprung: 'Zu den Angaben' },
   { sel: '.br-ergebnis', sprung: 'Zum Ergebnis' },
   { sel: '.br-vorschriften-liste', sprung: 'Zu den Vorschriften' },
   { sel: '.br-detail', sprung: 'Zu den Einzelheiten' },
+  { sel: '.hinweise', fokus: hinweisFokussieren },
 ];
 
 /**
@@ -159,7 +164,8 @@ export function bereichWechseln(rueckwaerts: boolean) {
   const i = BEREICHE.findIndex((b) => document.querySelector(b.sel)?.contains(document.activeElement));
   for (let k = 1; k <= n; k++) {
     const j = i < 0 ? (rueckwaerts ? n - k : k - 1) : (i + (rueckwaerts ? n - k : k)) % n;
-    if (bereichFokussieren(BEREICHE[j].sel)) return;
+    const b = BEREICHE[j];
+    if (b.fokus ? b.fokus() : bereichFokussieren(b.sel)) return;
   }
 }
 
@@ -224,7 +230,13 @@ export function App() {
   // Titelleiste (Beenden, Rahmen-App): nur „gespeichert“, wenn keine Entwürfe übrig bleiben
   const speichernMitMeldung = useCallback(async () => speichernVollstaendig(), []);
 
-  // Strg+S speichern; F6 / Umschalt+F6 springt zwischen Kopf, Angaben, Ergebnis, Vorschriften und Einzelheiten
+  // F6 führt LEXIO selbst (eigener Kreis mit dem Hinweis-Stapel als letzter Station), nicht zusätzlich core
+  useEffect(() => {
+    hinweisF6Eigen();
+    return () => hinweisF6Eigen(false);
+  }, []);
+
+  // Strg+S speichern; F6 / Umschalt+F6 springt zwischen Kopf, Angaben, Ergebnis, Vorschriften, Einzelheiten und Hinweisen
   useEffect(() => {
     const taste = (e: KeyboardEvent) => {
       const strg = e.ctrlKey || e.metaKey;
@@ -232,7 +244,7 @@ export function App() {
         e.preventDefault();
         void speichern();
       }
-      if (e.key === 'F6' && !document.querySelector('[role="dialog"]')) {
+      if (e.key === 'F6' && !document.querySelector('[role="dialog"], [role="alertdialog"]')) {
         e.preventDefault();
         bereichWechseln(e.shiftKey);
       }

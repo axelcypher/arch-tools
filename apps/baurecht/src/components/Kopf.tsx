@@ -130,7 +130,9 @@ export function Kopf({
   const modulMarken = agsWiderspruch || agsVorschlag || !!lageText || stand.fehlend.length > 0;
   const rechtsstandTitel = `${paket.herkunft === 'nachgeladen' ? 'Regelpaket nachgeladen' : 'Regelpaket des Builds'} ${paket.version}${paketMeldung ? ` – ${paketMeldung}` : ''}${zeiten.length ? ` · Normen zuletzt an der Quelle bestätigt zwischen ${datumZeit(zeiten[0])} und ${datumZeit(zeiten[zeiten.length - 1])}` : ''}`;
   const teile: LeistenTeil[] = [
-    // „Datei“ links (docs/design.md, „Kopf- und Werkzeugleisten“): in LEXIO nur „Einstellungen …“
+    // „Datei“ links (docs/design.md, „Kopf- und Werkzeugleisten“): in LEXIO nur „Einstellungen …“ – kein „Exportieren“:
+    // „Drucken / PDF …“ (Druckvorschau, daraus auch PDF) im Hauptknopf „Prüfprotokoll …“ bringt keinen Punkt darunter mit,
+    // eine andere Ausgabe in eine Datei gibt es nicht
     { id: 'datei', inhalt: <MenueKnopf punkte={() => [einstellungenPunkt()]}>Datei</MenueKnopf> },
     {
       id: 'speichern',

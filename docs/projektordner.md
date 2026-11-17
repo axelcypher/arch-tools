@@ -9,7 +9,9 @@ vorhandene Projektordner gegen die Struktur und exportiert Katasterpläne.
 **Werkzeugleiste:** Sichtbar sind die Ansichten, die man im Arbeitsablauf ständig braucht – „Assistent“, „Ordner
 prüfen“ und „Mails“. Die Einrichtung des Büros – „Struktur“ (mit dem Namen der geladenen Struktur), „Vorlagen“,
 „Katasterpläne“ – steht im Menü **„Einrichtung“** (die früheren „Einstellungen“ stehen jetzt im zentralen Dialog); ist eine davon offen, nennt der Menüknopf sie
-(„Einrichtung: Vorlagen“). In schmalen Fenstern wandert „Einrichtung“ in das Menü „Mehr“.
+(„Einrichtung: Vorlagen“). In schmalen Fenstern wandert „Einrichtung“ in das Menü „Mehr“. „Datei“ enthält „Exportieren ▸
+CSV …“ (der Bericht aus „Ordner prüfen“ – Einzelbericht bzw. Übersicht aller Projekte; ohne Bericht gesperrt mit
+Grund) und „Einstellungen …“.
 
 **Aufbau:** Jede Ansicht steht als Karten auf einer ruhigen Fläche (docs/design.md, „Fläche und Karten“); jede Karte
 scrollt für sich. Assistent, „Ordner prüfen“ und „Katasterpläne“ sind eine Karte (die Überschrift des Assistenten ist
