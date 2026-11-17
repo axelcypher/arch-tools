@@ -170,11 +170,6 @@
 .mv-liste tbody tr:not(.selected):hover td {
   background: var(--hover);
 }
-/* die Zusatzzeile (festgelegt, Auswahl geändert) gehört zur gewählten Menge: Akzentlinie wie an der ersten Zelle
-   (core zeichnet sie an td:first-child; die Liste ist ein Grid mit Zusatzzelle über die ganze Breite) */
-.mv-liste tr.selected td.mv-menge-zusatz {
-  box-shadow: inset 3px 0 var(--accent);
-}
 /* je Menge eine Zeile: Kürzel und Name | Wert; mit Handwert oder geänderter Auswahl eine zweite Zeile darunter */
 .mv-liste table,
 .mv-liste tbody {
@@ -222,12 +217,6 @@
 .mv-menge-knopf:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
-}
-.mv-kennzeichen {
-  padding: 0 5px;
-  border: 1px solid var(--border);
-  border-radius: 3px;
-  white-space: nowrap;
 }
 .mv-handwert {
   display: flex;
