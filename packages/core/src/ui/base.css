@@ -16,18 +16,20 @@
   --fs-m: 13px;
   --fs-l: 15px;
   --fs-xl: 18px;
-  --radius-s: 4px;
-  --radius: 6px;
-  --ctl-h: 28px;
+  --radius-s: 6px;
+  --radius: 8px;
+  --ctl-h: 30px;
   --ctl-h-s: 24px;
   --bg: #f3f4f6;
   --panel: #ffffff;
   --border: #d8dbe0;
   --text: #1f2328;
   --muted: #5f6673;
-  --accent: #2a5bd7;
-  --accent-hover: #2350bf;
-  --accent-soft: #e6edfb;
+  /* Akzent: neutrales Schiefer-Blaugrau; Apps, deren Kachelfarbe sich klar von ok/Warnung/Fehler abhebt, setzen
+     sie als Akzent (Abschnitt „App-Farbe“, docs/design.md „Farben“) */
+  --accent: #3b5b8c;
+  --accent-hover: #304c77;
+  --accent-soft: #e8edf5;
   --sel: #ff7a00;
   /* Auswahl auf Fotos (RECTIO): Magenta, weil Orange mit Mess- und Markierungsfarben und Fassadentönen kollidiert.
      In beiden Schemata gleich (das Foto ändert sich nicht); immer mit hellem und dunklem Saum zeichnen (docs/design.md) */
@@ -57,7 +59,15 @@
   --chip-bg: #eef0f2;
   --on-accent: #ffffff;
   /* Akzent als Schrift auf getönten Flächen (aktive Knöpfe, Chips) – mindestens 4,5:1 */
-  --accent-text: #2a5bd7;
+  --accent-text: #3b5b8c;
+  /* Kachelfarbe der App (Iconset): Titelleiste; ohne data-app neutral */
+  --app: #242d42;
+  /* Bernstein: die eine Ausgabe-Aktion je Bildschirm (Hauptknopf der Werkzeugleiste), dazu Update und Speicherort-Warnung
+     in der farbigen Titelleiste; immer dunkle Schrift */
+  --ausgabe: #fcba43;
+  --ausgabe-hover: #f0a91f;
+  --ausgabe-rand: #b87d10;
+  --on-ausgabe: #1d2129;
   --overlay-bg: rgba(255, 255, 255, 0.92);
   --code-bg: rgba(0, 0, 0, 0.05);
   --backdrop: rgba(20, 24, 31, 0.4);
@@ -74,7 +84,11 @@
   --fokus: var(--accent);
   --fokus-saum: color-mix(in srgb, var(--accent) 35%, transparent);
   color-scheme: light;
-  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-family:
+    'Segoe UI',
+    system-ui,
+    -apple-system,
+    sans-serif;
   font-size: var(--fs-m);
   color: var(--text);
   background: var(--bg);
@@ -280,7 +294,7 @@ button {
   padding: 4px 8px;
   border: 1px solid var(--border);
   background: var(--input-bg);
-  border-radius: 4px;
+  border-radius: var(--radius-s);
   cursor: pointer;
   color: var(--text);
   white-space: nowrap;
@@ -322,6 +336,36 @@ button.primary:hover:not(:disabled) {
 
 button.danger {
   color: var(--danger);
+}
+
+/* ---------- Knopfstufen (docs/design.md „Knöpfe“) ----------
+   primär (.primary: die Hauptaktion eines Dialogs bzw. – in der Werkzeugleiste – die eine Ausgabe in Bernstein),
+   Standard (Rahmen), ruhig (in der Werkzeugleiste ohne Rahmen und Fläche, auch .danger), Gefahr (.danger: Schrift in
+   --danger). :where() hält die Spezifität niedrig: App-Klassen (z. B. Statusmarken in der Leiste) gehen vor. */
+:where(.toolbar) button:where(:not(.primary, .segment > button)) {
+  border-color: transparent;
+  background: transparent;
+}
+:where(.toolbar) button:where(:not(.primary, .segment > button)):hover:not(:disabled):not([aria-disabled='true']) {
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+}
+/* aktives Werkzeug: getönte Fläche und Strich unten in der Akzentfarbe (gleiche Spezifität wie button.active, steht danach) */
+:where(.toolbar) button.active:where(:not(.segment > button)),
+:where(.toolbar) button[aria-pressed='true']:where(:not(.segment > button)) {
+  border-color: transparent;
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+/* die eine Ausgabe der App (Flächenaufstellung …, Nachweis drucken …): Bernstein wie im Icon */
+:where(.toolbar) button.primary {
+  background: var(--ausgabe);
+  border-color: var(--ausgabe-rand);
+  color: var(--on-ausgabe);
+  font-weight: 600;
+}
+:where(.toolbar) button.primary:hover:not(:disabled):not([aria-disabled='true']) {
+  background: var(--ausgabe-hover);
 }
 
 button.small {
@@ -1094,7 +1138,10 @@ code {
     /* Seitenzahlen in allen Ausdrucken */
     @bottom-right {
       content: 'Seite ' counter(page) ' von ' counter(pages);
-      font: 9px 'Segoe UI', system-ui, sans-serif;
+      font:
+        9px 'Segoe UI',
+        system-ui,
+        sans-serif;
       color: #5f6673;
     }
   }
@@ -1203,9 +1250,9 @@ code {
   --border: #353a43;
   --text: #e4e6ea;
   --muted: #9aa1ad;
-  --accent: #5b8cff;
-  --accent-hover: #7aa2ff;
-  --accent-soft: #24324f;
+  --accent: #9db3d6;
+  --accent-hover: #b4c6e3;
+  --accent-soft: #26303f;
   --sel: #ff9a3c;
   --danger: #ef6b5b;
   --input-bg: #262a31;
@@ -1228,7 +1275,9 @@ code {
   --fehler-text: #f3a197;
   --chip-bg: #2b3038;
   --on-accent: #10131a;
-  --accent-text: #8fb0ff;
+  --accent-text: #a9bde0;
+  --ausgabe-hover: #ffc861;
+  --ausgabe-rand: #fcba43;
   --overlay-bg: rgba(31, 34, 40, 0.92);
   --code-bg: rgba(255, 255, 255, 0.08);
   --backdrop: rgba(0, 0, 0, 0.55);
@@ -1239,6 +1288,128 @@ code {
 
 :root[data-theme='dunkel'][data-canvas='dunkel'] {
   --canvas-filter: invert(0.92) hue-rotate(180deg);
+}
+
+/* ---------- App-Farbe (Iconset) ----------
+   Die Titelleiste setzt data-app (Kennung aus APP_NAMEN). --app ist die Kachelfarbe des Icons und trägt nur die
+   Titelleiste. Als Akzent (aktives Werkzeug, Links, Hauptknopf im Dialog) dient sie nur, wenn sie sich klar von
+   ok/Warnung/Fehler abhebt (Farbton mindestens 35° entfernt) und Kontrast ≥ 4,5 : 1 hat; sonst bleibt der neutrale
+   Akzent. Geprüft in appFarben.test.ts. */
+:root[data-app='flaechenrechner'] {
+  --app: #2855ad;
+  --accent: #2855ad;
+  --accent-hover: #1f4590;
+  --accent-soft: #e7edf8;
+  --accent-text: #2855ad;
+}
+:root[data-app='entzerrung'] {
+  --app: #63489a;
+  --accent: #63489a;
+  --accent-hover: #533b84;
+  --accent-soft: #efebf6;
+  --accent-text: #63489a;
+}
+:root[data-app='ava'] {
+  --app: #853a77;
+  --accent: #853a77;
+  --accent-hover: #6f2f63;
+  --accent-soft: #f5ebf3;
+  --accent-text: #853a77;
+}
+:root[data-app='baurecht'] {
+  --app: #33607e;
+  --accent: #33607e;
+  --accent-hover: #29506a;
+  --accent-soft: #e8eff4;
+  --accent-text: #33607e;
+}
+/* Grün, Rot und Braun lägen bei ok, Fehler und Warnung: nur Titelleiste, Akzent neutral; Türkis zu nah an ok */
+:root[data-app='grz'] {
+  --app: #256b35;
+}
+:root[data-app='kosten'] {
+  --app: #9a303c;
+}
+:root[data-app='formulare'] {
+  --app: #8f410e;
+}
+:root[data-app='ordner'] {
+  --app: #006a65;
+}
+:root[data-theme='dunkel'][data-app='flaechenrechner'] {
+  --accent: #8fb0f5;
+  --accent-hover: #a9c2f7;
+  --accent-soft: #24304a;
+  --accent-text: #9dbaf6;
+}
+:root[data-theme='dunkel'][data-app='entzerrung'] {
+  --accent: #b9a3e6;
+  --accent-hover: #cbb9ee;
+  --accent-soft: #2e2740;
+  --accent-text: #c3b0ea;
+}
+:root[data-theme='dunkel'][data-app='ava'] {
+  --accent: #d99bcb;
+  --accent-hover: #e4b3d8;
+  --accent-soft: #3a2635;
+  --accent-text: #dfa8d2;
+}
+:root[data-theme='dunkel'][data-app='baurecht'] {
+  --accent: #8fbbd9;
+  --accent-hover: #a8cbe3;
+  --accent-soft: #22303a;
+  --accent-text: #9cc4df;
+}
+
+/* Titelleiste in der Kachelfarbe: die App ist sofort erkennbar, auch im Tab der Rahmen-App. Die hellen Farben gelten
+   nur für die Bedienelemente der Leiste selbst (eigene Regeln statt umgesetzter Variablen) – Dialoge, die in der Leiste
+   stecken (Update, Berechnungsregeln), behalten die Farben des Schemas. */
+:root[data-app] .titlebar {
+  /* Punkt für ungespeicherte Änderungen in der farbigen Leiste (mindestens 3 : 1 auf jeder Kachelfarbe) */
+  --tb-ungespeichert: #ffd27a;
+  background: var(--app);
+  border-bottom-color: transparent;
+}
+:root[data-theme='dunkel'][data-app] .titlebar {
+  background: color-mix(in oklab, var(--app) 62%, #000);
+}
+:root[data-app] .titlebar-app,
+:root[data-app] .titlebar-btn,
+:root[data-app] .wc-btn {
+  color: #ffffff;
+}
+:root[data-app] .titlebar-sep,
+:root[data-app] .titlebar-project {
+  color: rgba(255, 255, 255, 0.82);
+}
+:root[data-app] .titlebar-btn:hover:not(:disabled),
+:root[data-app] .wc-btn:not(.wc-close):hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+}
+:root[data-app] .titlebar-dirty {
+  color: var(--tb-ungespeichert);
+}
+:root[data-app] :is(.titlebar-btn, .wc-btn):focus-visible {
+  outline-color: #ffffff;
+}
+/* Update und Notbetrieb: Bernstein mit dunkler Schrift – auf jeder Kachelfarbe lesbar */
+:root[data-app] .titlebar-btn:is(.titlebar-update, .titlebar-notbetrieb),
+:root[data-app] .titlebar-btn:is(.titlebar-update, .titlebar-notbetrieb):hover:not(:disabled) {
+  background: var(--ausgabe);
+  border-color: transparent;
+  color: var(--on-ausgabe);
+}
+:root[data-app] .titlebar-btn:is(.titlebar-update, .titlebar-notbetrieb):hover:not(:disabled) {
+  background: var(--ausgabe-hover);
+}
+/* die Warnung unterscheidet sich vom Angebot (Update) durch einen dunklen Rand, nicht nur durch das ⚠ */
+:root[data-app] .titlebar-btn.titlebar-notbetrieb {
+  box-shadow: inset 0 0 0 1px var(--on-ausgabe);
+}
+/* Fehlermarke am Menüknopf: weißer Saum, sonst verschwindet das Rot auf der Kachelfarbe */
+:root[data-app] .titlebar-badge {
+  box-shadow: 0 0 0 1.5px #ffffff;
 }
 
 /* Papier (Flächenaufstellung, Planausschnitte) bleibt immer hell */
@@ -1368,7 +1539,7 @@ code {
 .titlebar-btn.titlebar-update {
   background: var(--accent);
   color: var(--on-accent);
-  border-radius: 4px;
+  border-radius: var(--radius-s);
 }
 
 .titlebar-btn.titlebar-update:hover:not(:disabled) {
@@ -2016,7 +2187,7 @@ button.ph-lokal {
   background: var(--warn-bg);
   color: var(--warn-text);
   border: 1px solid var(--warn-border);
-  border-radius: 4px;
+  border-radius: var(--radius-s);
 }
 .titlebar-btn.titlebar-notbetrieb:hover:not(:disabled) {
   background: var(--warn-bg);
@@ -2244,9 +2415,9 @@ button.ungespeichert::after {
   /* Höhe kommt aus min-height (unten), nicht aus dem Innenabstand */
   padding-block: 2px;
 }
-/* außerhalb der Leisten 24px; in .toolbar gilt deren 28px (beide mit Spezifität null, die Leiste steht vorher) */
+/* außerhalb der Leisten 24px; in .toolbar gilt deren 30px (beide mit Spezifität null, die Leiste steht vorher) */
 :where(.segment) > :where(button) {
-  /* der Rahmen des Segments (2 × 1px) zählt mit: außen 24px bzw. in Leisten 28px wie die übrigen Knöpfe */
+  /* der Rahmen des Segments (2 × 1px) zählt mit: außen 24px bzw. in Leisten 30px wie die übrigen Knöpfe */
   min-height: calc(var(--ctl-h-s) - 2px);
 }
 :where(.toolbar) :where(.segment) > :where(button) {
@@ -2417,7 +2588,9 @@ button.ungespeichert::after {
 /* Fokus auf dem Menü selbst (nur Gefahr-Punkte, siehe Menue.tsx): sichtbare Marke, auch mit tabindex="-1" */
 .menue:focus-visible {
   outline: none;
-  box-shadow: var(--schatten-schwebend), inset 0 0 0 2px var(--fokus);
+  box-shadow:
+    var(--schatten-schwebend),
+    inset 0 0 0 2px var(--fokus);
 }
 /* Haken eines angehakten Umschalters ist die Zustandsanzeige: in Textfarbe, nicht blass wie ein Schmucksymbol */
 .menue-punkt[aria-checked='true']:not([aria-disabled='true']) .menue-symbol {
