@@ -105,7 +105,7 @@ export function LvKopfDialog({ onClose }: { onClose: () => void }) {
         </Feld>
       </div>
       <h3>OZ-Maske</h3>
-      <table className="ava-tabelle ava-oz-maske">
+      <table className="summary-table text felder ava-oz-maske">
         <thead>
           <tr>
             <th>Ebene</th>

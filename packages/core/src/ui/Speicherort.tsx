@@ -7,7 +7,6 @@ import { ordnerWaehlen, ordnerZeigen } from '../platform/projektordner';
 import { logger } from '../platform/log';
 import { Modal } from './Dialog';
 import { fehlerText, fragen } from './Rueckfrage';
-import type { MenuePunkt } from './Menue';
 
 /**
  * Speicherort der Einstellungen – für alle Apps gleich: Einzelplatz (nur dieser Rechner) oder Netzwerkinstallation
@@ -69,17 +68,6 @@ function AblageSymbol() {
   );
 }
 
-/**
- * Punkt „Speicherort der Einstellungen …“ im Normalfall für das Menü „Einstellungen und Hilfe“ der Rahmen-App Arkly –
- * übergangsweise, bis Arkly nachzieht (docs/nachziehen/arkly.md); in den Apps steht der Speicherort im Einstellungsdialog
- * (Seite „Allgemein“). Im Notbetrieb und bei einem Fehler zeigt ihn `SpeicherortAnzeige nurWarnung` sichtbar in der Leiste
- * (dann `null`).
- */
-export function speicherortPunkt(ort: KonfigOrtAnzeige, oeffnen: () => void): MenuePunkt | null {
-  if (!ort || ort === 'fehler' || ort.notbetrieb) return null;
-  return { text: 'Speicherort der Einstellungen …', hinweis: ort.modus === 'netzwerk' ? 'Netzwerk' : 'Einzelplatz', titel: ortText(ort), aktion: oeffnen };
-}
-
 /** Knopf in der Kopfleiste: zeigt den Ort kurz an und öffnet den Dialog; im Notbetrieb als Warnung */
 export function SpeicherortKnopf({ nurWarnung = false }: { nurWarnung?: boolean } = {}) {
   return <SpeicherortAnzeige ort={useKonfigOrt()} nurWarnung={nurWarnung} />;
@@ -87,7 +75,7 @@ export function SpeicherortKnopf({ nurWarnung = false }: { nurWarnung?: boolean 
 
 /**
  * Wie `SpeicherortKnopf`, mit schon gelesenem Ort (die Titelleiste liest ihn einmal für Knopf und Menüpunkt).
- * `nurWarnung`: nur im Notbetrieb bzw. bei einem Fehler zeigen – sonst steht der Ort im Einstellungsdialog bzw. im Menü.
+ * `nurWarnung`: nur im Notbetrieb bzw. bei einem Fehler zeigen – sonst steht der Ort im Einstellungsdialog (Seite „Allgemein“).
  * `onOeffnen`: statt des Speicherort-Dialogs etwas anderes öffnen (Titelleiste der Apps: Einstellungsdialog auf „Allgemein“).
  */
 export function SpeicherortAnzeige({ ort, nurWarnung = false, onOeffnen }: { ort: KonfigOrtAnzeige; nurWarnung?: boolean; onOeffnen?: () => void }) {

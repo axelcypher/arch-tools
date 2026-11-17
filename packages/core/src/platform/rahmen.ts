@@ -251,6 +251,8 @@ export function speichernAnfragenBeantworten(speichern: (() => Promise<boolean |
 
 /** App → Rahmen: den Assistenten von ATLAS für ein neues Projekt starten */
 export const PROJEKT_ANLEGEN = 'arch-tools:projekt-anlegen';
+/** Rahmen → App: den Einstellungsdialog in der App öffnen (auf ihrer Seite) – „Einstellungen …“ und Strg+, in Arkly */
+export const EINSTELLUNGEN_OEFFNEN = 'arch-tools:einstellungen-oeffnen';
 /** Rahmen → ATLAS: Assistent für ein neues Projekt (mit der App, aus der der Auftrag kommt) */
 export const ASSISTENT_NEU = 'arch-tools:assistent-neu';
 /** ATLAS → Rahmen: zurück zu einer App (`an`), mit dem neu angelegten Projektordner (`ordner`) */
@@ -298,9 +300,11 @@ export function anRahmen(n: RahmenNachricht): void {
 
 /**
  * Auf Nachrichten des Rahmens hören (nur in der Rahmen-App). Meldet sich danach mit `BEREIT` beim Rahmen, damit er
- * zwischendurch Angekommenes zustellt. Liefert die Abmeldung.
+ * zwischendurch Angekommenes zustellt – `bereit: false` für Empfänger, die von Anfang an hören und deren Nachrichten
+ * der Rahmen ohne Warteschlange schickt (`EINSTELLUNGEN_OEFFNEN`): Ihr BEREIT gäbe sonst die Warteschlange frei, bevor
+ * später eingehängte Empfänger (etwa für `PROJEKT_ANGELEGT`) hören. Liefert die Abmeldung.
  */
-export function vomRahmen(typ: string, f: (n: RahmenNachricht) => void): () => void {
+export function vomRahmen(typ: string, f: (n: RahmenNachricht) => void, { bereit = true }: { bereit?: boolean } = {}): () => void {
   const modus = rahmenModus();
   if (!modus) return () => {};
   const app = rahmenApp();
@@ -318,9 +322,9 @@ export function vomRahmen(typ: string, f: (n: RahmenNachricht) => void): () => v
       const aus = await listen<RahmenNachricht>(AN_APP, (e) => passt(e.payload) && f(e.payload));
       if (lebt) ende = aus;
       else aus();
-      if (lebt) anRahmen({ typ: BEREIT });
+      if (lebt && bereit) anRahmen({ typ: BEREIT });
     });
-  else anRahmen({ typ: BEREIT });
+  else if (bereit) anRahmen({ typ: BEREIT });
   return () => {
     lebt = false;
     window.removeEventListener('message', hoeren);

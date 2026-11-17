@@ -1,6 +1,9 @@
 // @vitest-environment happy-dom
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { MenueHost } from '@core/ui/Menue';
 import { demoLaden } from './demo';
@@ -42,6 +45,24 @@ afterEach(() => {
   root = null;
   document.body.innerHTML = '';
 });
+
+/** Selektorliste an den Kommas der obersten Ebene teilen (nicht in :has(…)/:not(…)) */
+const selektoren = (liste: string) => {
+  const teile: string[] = [];
+  let tiefe = 0;
+  let aktuell = '';
+  for (const z of liste) {
+    if (z === ',' && tiefe === 0) {
+      teile.push(aktuell);
+      aktuell = '';
+      continue;
+    }
+    if (z === '(') tiefe++;
+    if (z === ')') tiefe--;
+    aktuell += z;
+  }
+  return [...teile, aktuell];
+};
 
 describe('Kartenlayout (docs/design.md „Fläche und Karten“)', () => {
   it('Gewerk: eine Hauptkarte mit dem Gewerk als Titel, Tabs und Werkzeugleiste in der Kartenleiste, Tabpanel passend zum Tab', async () => {
@@ -130,5 +151,39 @@ describe('Kartenlayout (docs/design.md „Fläche und Karten“)', () => {
     await warte(() => host.querySelector('aside.karte'));
     expect(host.querySelector('aside.karte .karte-kopf h2')?.textContent).toBe('Bautagebuch');
     expect(host.querySelectorAll('main.karte').length).toBe(1);
+  });
+
+  it('Tabellen auf der gemeinsamen Zahlentabelle: LV mit Gruppenzeilen und gewählter Zeile, Preisspiegel mit Gruppen und Summe', async () => {
+    act(() => useAva.getState().setAnsicht({ art: 'gewerk', gewerk: 'G8', tab: 'lv' }));
+    await zeige(createElement(Gewerk));
+    await warte(() => useAva.getState().lv && host.querySelector('.ava-lv-zeilen'));
+    const lv = host.querySelector('table.ava-lv-zeilen')!;
+    expect(lv.classList.contains('summary-table')).toBe(true);
+    expect(lv.querySelectorAll('tbody tr.gruppe').length).toBeGreaterThan(0);
+    expect(lv.querySelector('tbody tr.gruppe')?.classList.contains('ava-z-abschnitt')).toBe(true);
+    const z = zeilenVon(useAva.getState().lv!.lv).find((x) => x.el.art === 'position')!;
+    act(() => useAva.getState().setAuswahl(z.el.id));
+    await warte(() => lv.querySelector('tbody tr.selected'));
+    expect(lv.querySelectorAll('tbody tr.selected').length).toBe(1);
+    expect(host.querySelector('tr.active')).toBeNull();
+    // Preisspiegel
+    act(() => useAva.getState().setAnsicht({ art: 'gewerk', gewerk: 'G8', tab: 'angebote' }));
+    await warte(() => host.querySelector('table.ava-spiegel-tabelle'));
+    const spiegel = host.querySelector('table.ava-spiegel-tabelle')!;
+    expect(spiegel.querySelectorAll('tbody tr.gruppe').length).toBeGreaterThan(0);
+    expect(spiegel.querySelector('tfoot tr')?.classList.contains('summe')).toBe(true);
+    expect(host.querySelector('.ava-tabelle')).toBeNull();
+  });
+
+  it('styles.css: keine eigene Grundtabelle mehr; Ergänzungen zur Zahlentabelle nur in der Fläche, fester Kopf am ganzen thead', () => {
+    const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'styles.css'), 'utf8');
+    expect(css).not.toMatch(/\.ava-tabelle\s*[{,]/);
+    expect(css).not.toMatch(/tr\.active/);
+    expect(css).not.toMatch(/\.ava-zwischensumme/);
+    expect(css).toMatch(/\.ava-flaeche \.summary-table thead \{\s*position: sticky;/);
+    // alle App-Regeln auf .summary-table hängen an .ava-flaeche (der Druck liegt als Portal außerhalb)
+    const ohneKommentare = css.replace(/\/\*[\s\S]*?\*\//g, '');
+    for (const m of ohneKommentare.matchAll(/([^{}]+)\{/g))
+      for (const sel of selektoren(m[1].replace(/\s+/g, ' '))) if (sel.includes('.summary-table') && !sel.trim().startsWith('@')) expect(sel.trim()).toMatch(/^\.ava-(flaeche|spiegel-druck|druck)\b/);
   });
 });
