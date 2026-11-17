@@ -318,6 +318,15 @@ button.br-modul-chip.br-modul-widerspruch:hover:not(:disabled) {
 .br-angaben > .karte-kopf h2 {
   flex: 1 0 auto;
 }
+.br-angaben > .karte-kopf .karte-aktionen {
+  margin-left: 0;
+}
+/* „Für diesen Ort bestätigen“ bricht in schmalen Angaben um, statt über den Kasten zu ragen */
+.br-bestaetigen-zeile > button {
+  white-space: normal;
+  max-width: 100%;
+  text-align: left;
+}
 /* Angaben: das Suchfeld bleibt oben in der Karte stehen; scroll-padding hält darunter Platz frei (Tab, Sprung zur Angabe) */
 .br-angaben > .karte-rumpf {
   padding-top: 0;
