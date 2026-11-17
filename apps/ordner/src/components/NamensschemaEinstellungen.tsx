@@ -4,7 +4,6 @@ import type { Kuerzel, Namensschema, NamensTeil } from '@core/namensschema';
 import { alleKuerzel, dateinameZerlegen, KUERZEL_MUSTER, NAMENS_TEILE, namensschemaAus, VORGABE_NAMENSSCHEMA } from '@core/namensschema';
 import { bestaetigen } from '@core/ui/Rueckfrage';
 import { Symbol } from '@core/ui/Symbol';
-import { useOrdner } from '../store';
 
 /** Schreibweisen aus der Eingabe: groß, ohne Doppelte und ohne das Kürzel selbst */
 const schreibweisenAus = (text: string, kuerzel: string) => [
@@ -21,10 +20,9 @@ const schreibweisenAus = (text: string, kuerzel: string) => [
  * die Stellen der Teile im Dateinamen und ab welcher Leistungsphase Pläne einen Index tragen. Jede neue Projektdatei
  * bekommt eine Kopie; beim Ergänzen eines Projekts wird sie auf den Stand des Büros gebracht.
  */
-export function NamensschemaEinstellungen() {
-  const { allgemein, setAllgemein } = useOrdner();
-  const s: Namensschema = allgemein.namensschema ?? VORGABE_NAMENSSCHEMA;
-  const setzen = (patch: Partial<Namensschema>) => setAllgemein({ namensschema: namensschemaAus({ ...s, ...patch }) ?? VORGABE_NAMENSSCHEMA });
+export function NamensschemaEinstellungen({ wert, onChange }: { wert: Namensschema; onChange: (s: Namensschema) => void }) {
+  const s = wert;
+  const setzen = (patch: Partial<Namensschema>) => onChange(namensschemaAus({ ...s, ...patch }) ?? VORGABE_NAMENSSCHEMA);
   // Beispiel mit den Kürzeln des Schemas (GP, sonst die erste Phase; die erste Antragsart)
   const phase = s.phasen.find((k) => k.kuerzel === 'GP')?.kuerzel ?? s.phasen[0]?.kuerzel ?? 'GP';
   const antragsart = s.antragsarten[0]?.kuerzel ?? 'BAUA';
@@ -50,24 +48,24 @@ export function NamensschemaEinstellungen() {
         'Wiederherstellen',
       )
     )
-      setAllgemein({ namensschema: structuredClone(VORGABE_NAMENSSCHEMA) });
+      onChange(structuredClone(VORGABE_NAMENSSCHEMA));
   };
 
   return (
-    <section className="po-namensschema" aria-labelledby="po-namensschema-titel">
-      <h2 id="po-namensschema-titel">Namensschema: Kürzel und Plannummern</h2>
+    // Überschrift und Abschnitt stellt die Seite ATLAS (`Abschnitt` mit h4)
+    <div className="po-namensschema">
       <p className="muted small-text">
         Gilt für alle Apps – PERMIO (Formulare) erkennt daran Antragsordner und die Pläne eines Plansatzes (GP-04, GP01-07). Neue Projektdateien bekommen eine Kopie, das Ergänzen eines Projekts bringt
         sie auf den Stand des Büros; die übrigen Teile der Dateinamen regelt das „Dateinamenschema für Pläne“ der Struktur.
       </p>
 
-      <h3>Stellen der Teile im Dateinamen</h3>
+      <h5>Stellen der Teile im Dateinamen</h5>
       <p className="muted small-text">Wählt man für eine Stelle einen anderen Teil, tauschen die beiden ihre Plätze.</p>
       <div className="po-stellen">
         {s.reihenfolge.map((t, i) => (
           <label key={i}>
             <span className="field-label">Stelle {i + 1}</span>
-            <select value={t} onChange={(e) => stelleSetzen(i, e.target.value as NamensTeil)}>
+            <select value={t} data-startfokus={i === 0 ? '' : undefined} onChange={(e) => stelleSetzen(i, e.target.value as NamensTeil)}>
               {NAMENS_TEILE.map((n) => (
                 <option key={n.id} value={n.id}>
                   {n.name}
@@ -107,15 +105,16 @@ export function NamensschemaEinstellungen() {
       />
       <div className="po-namensschema-fuss">
         <button
+          type="button"
           className="small"
-          disabled={JSON.stringify(namensschemaAus(allgemein.namensschema) ?? VORGABE_NAMENSSCHEMA) === JSON.stringify(VORGABE_NAMENSSCHEMA)}
+          disabled={JSON.stringify(namensschemaAus(s) ?? VORGABE_NAMENSSCHEMA) === JSON.stringify(VORGABE_NAMENSSCHEMA)}
           title="Die eingebaute Vorgabe wiederherstellen (mit Rückfrage)"
           onClick={() => void zuruecksetzen()}
         >
           Vorgabe wiederherstellen …
         </button>
       </div>
-    </section>
+    </div>
   );
 }
 
@@ -229,7 +228,7 @@ function KuerzelListe({
   };
   return (
     <div className="po-kuerzel">
-      <h3>{titel}</h3>
+      <h5>{titel}</h5>
       <p className="muted small-text">{text}</p>
       <table className="po-kuerzel-tabelle">
         <colgroup>
@@ -269,8 +268,8 @@ function KuerzelListe({
           )}
         </tbody>
       </table>
-      <button className="small" disabled={neu} title={neu ? 'Erst das neue Kürzel eintragen' : undefined} onClick={() => setNeu(true)}>
-        <Symbol name="plus" /> Kürzel
+      <button type="button" className="small" disabled={neu} title={neu ? 'Erst das neue Kürzel eintragen' : undefined} onClick={() => setNeu(true)}>
+        <Symbol name="plus" /> Kürzel hinzufügen
       </button>
     </div>
   );
@@ -428,7 +427,13 @@ function KuerzelZeile({
           )}
         </td>
         <td>
-          <button className="icon" title={neu ? 'Verwerfen (Esc)' : 'Entfernen (mit Rückfrage)'} aria-label={neu ? 'Neues Kürzel verwerfen' : `${k.kuerzel} entfernen`} onClick={onEntfernen}>
+          <button
+            type="button"
+            className="icon"
+            title={neu ? 'Verwerfen (Esc)' : 'Entfernen (mit Rückfrage)'}
+            aria-label={neu ? 'Neues Kürzel verwerfen' : `${k.kuerzel} entfernen`}
+            onClick={onEntfernen}
+          >
             <Symbol name={neu ? 'schliessen' : 'muell'} />
           </button>
         </td>

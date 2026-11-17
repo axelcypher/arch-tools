@@ -8,7 +8,7 @@ vorhandene Projektordner gegen die Struktur und exportiert Katasterpläne.
 
 **Werkzeugleiste:** Sichtbar sind die Ansichten, die man im Arbeitsablauf ständig braucht – „Assistent“, „Ordner
 prüfen“ und „Mails“. Die Einrichtung des Büros – „Struktur“ (mit dem Namen der geladenen Struktur), „Vorlagen“,
-„Katasterpläne“ und „Einstellungen“ – steht im Menü **„Einrichtung“**; ist eine davon offen, nennt der Menüknopf sie
+„Katasterpläne“ – steht im Menü **„Einrichtung“** (die früheren „Einstellungen“ stehen jetzt im zentralen Dialog); ist eine davon offen, nennt der Menüknopf sie
 („Einrichtung: Vorlagen“). In schmalen Fenstern wandert „Einrichtung“ in das Menü „Mehr“.
 
 Bis Version 0.17.0 hieß die App „Projektordner“ (im Fenstertitel und in der Rahmen-App zuletzt „Projekt“).
@@ -50,7 +50,7 @@ auch beim Ergänzen.
    Projekt. Ohne Status in der Projektdatei gelten Projekte im Archivordner als abgeschlossen (in der Standardansicht
    ausgeblendet) und in der Akquise als Akquise; „Wieder aktiv“ schreibt dann „aktiv“ ausdrücklich in die Datei.
    **Reihenfolge der Stammordner:** die Abschnitte der Übersicht ziehen (die Sammelordner wandern mit) oder unter
-   „Einstellungen“ ziehen bzw. mit „Nach oben“/„Nach unten“ – gilt für alle Apps; im ersten entstehen neue Projekte.
+   „Datei → Einstellungen …“ › „Pfade und Benennung“ mit „Nach oben“/„Nach unten“ – gilt für alle Apps; im ersten entstehen neue Projekte.
    Gibt es genau einen Stammordner, ist er aufgeklappt (ein Archivordner darin nicht). Die Projekte lassen sich sortieren (Ordnername, Nummer –
    neueste zuerst –, zuletzt geändert, Titel) und nach Status filtern (Standard: ohne abgeschlossene; die Wahl gilt
    je Benutzer). Rechtsklick auf ein Projekt: „Ergänzen …“, „Projekt prüfen“, „Ordner öffnen“, **„Projekt
@@ -187,8 +187,8 @@ Angelegt bzw. ergänzt werden
 
 ### Gemeinsame Einstellungen
 
-Alle Apps lesen ihre übergreifenden Einstellungen aus einem **Konfigurationsordner**. Oben unter „Gemeinsame
-Einstellungen“ (und über den Knopf „Einzelplatz“ bzw. „Netzwerk“ in der Titelleiste jeder App) steht, wo er liegt; „Ändern …“ wählt zwischen
+Alle Apps lesen ihre übergreifenden Einstellungen aus einem **Konfigurationsordner**. In den Einstellungen aller Apps
+auf der Seite „Allgemein“ (und über den Knopf „Einzelplatz“ bzw. „Netzwerk“ in der Titelleiste jeder App) steht, wo er liegt; „Ändern …“ wählt zwischen
 **Einzelplatz** (ein Ordner auf diesem Rechner, `%APPDATA%\arch-tools`) und **Netzwerkinstallation** (ein Ordner auf
 dem Netzlaufwerk – dann gilt er für das ganze Büro). Beim Wechsel ziehen alle gemeinsamen Einstellungen mit; liegen
 dort schon welche, fragt die App, ob sie gelten („Vorhandene übernehmen“, Fehlendes kommt dazu) oder ersetzt werden
@@ -209,11 +209,11 @@ die Datei seit dem Lesen unverändert ist. Hat ein anderer Rechner sie inzwische
 sie nicht, sondern meldet „Die Struktur wurde inzwischen von einem anderen Rechner geändert – neu laden?“ mit
 „Neu laden“ (die eigene Fassung bleibt über „Rückgängig“ erreichbar) und „Meine Fassung trotzdem speichern“ – dabei
 kommt die Fassung des anderen Rechners vorher in die Sicherungen (siehe unten), mit Eintrag im Protokoll. Beim
-Wechsel in „Struktur“, „Einstellungen“ und „Vorlagen“ liest die App die Datei frisch.
+Wechsel in „Struktur“ und „Vorlagen“ und nach Änderungen in den zentralen Einstellungen liest die App die Datei frisch.
 
 ### Namensschema
 
-Unter „Gemeinsame Einstellungen“ steht das **Namensschema** des Büros (Abschnitt „Namensschema: Kürzel und
+In den Einstellungen aller Apps auf der Seite **ATLAS** steht das **Namensschema** des Büros (gilt mit „Übernehmen“) (Abschnitt „Namensschema: Kürzel und
 Plannummern“) – gemeinsam für alle Apps (`allgemein.json`, Eintrag `namensschema`;
 `packages/core/src/namensschema.ts`):
 
@@ -750,9 +750,19 @@ Presets und Bausteine in der Struktur-Datei:
 
 ## Zentrale Einstellungen
 
-„Datei → Einstellungen …“ (Strg+,) öffnet die Einstellungen aller Apps. Projektnummer, Name des Projektordners,
-Dateinamen der Pläne, Dateinamen der Vorlagen im Projekt, Ort der Projektdatei, Fotoordner sowie Ordner und Dateiname
-der Katasterpläne stellt man dort auf der Seite „Pfade und Benennung“ ein; Speicherort, Büro und Mitarbeiter auf
-„Allgemein“. In ATLAS stehen sie zur Ansicht mit dem Verweis „Pfade und Benennung …“ bzw. „Speicherort und Büro …“.
-Die Stammordner der Projekte, der Vorlagenordner und das Namensschema (Kürzel) bleiben in ATLAS. Siehe
+„Datei → Einstellungen …“ (Strg+,) öffnet die Einstellungen aller Apps auf der Seite **ATLAS**. Die frühere Ansicht
+„Einrichtung › Einstellungen“ ist entfallen:
+
+| Einstellung | Jetzt |
+| --- | --- |
+| Stammordner der Projekte, Vorlagenordner | „Pfade und Benennung“ (Ordnerliste bzw. Ordner; bisherige Schlüssel `allgemein.projekte`, `projektordner.vorlagenordner`) |
+| Projektnummer, Name des Projektordners, Dateinamen der Pläne und der Vorlagen, Projektdatei, Fotoordner, Kataster-Ziel | „Pfade und Benennung“ (wie bisher) |
+| Speicherort, Büro, Mitarbeiter | „Allgemein“ |
+| Namensschema (Kürzel, Stellen, Indizes) | Seite ATLAS |
+| Eigene Domains der Mailprüfung | Seite ATLAS (in „Mails“ Anzeige mit Verweis; der Vorschlag „Übernehmen“ wirkt dort sofort) |
+| Zielordner und Dateinamen je Vorlage, Katasterpläne | bleiben in Einrichtung › Vorlagen bzw. Einrichtung › Katasterpläne (Werkzeug, die Seite ATLAS verweist darauf) |
+
+Auf der Seite ATLAS gilt alles erst mit „Übernehmen“; im Notbetrieb ist sie gesperrt. Wo der Vorlagenordner gebraucht
+wird (Vorlagen, Assistent), zeigt die Desktop-App ihn mit „Neu einlesen“ und dem Verweis „Vorlagenordner …“; im Browser
+wird er dort weiter über den Dateidialog gewählt (ohne gespeicherten Pfad). Siehe
 [suite.md](suite.md#einstellungen-aller-apps).
