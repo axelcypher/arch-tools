@@ -80,7 +80,7 @@ const exportEintraege = (): PfadEinstellung[] => {
     return [
       {
         id: gemeinsamId(g),
-        bezug: { art: 'eintrag', id: gemeinsamId('ordner'), zwischen: { text: 'Unterordner der App', beispiel: VORGABE_UNTERORDNER.flaechenrechner } },
+        bezug: { art: 'eintrag', id: gemeinsamId('ordner'), zwischen: { text: 'Unterordner der App', beispiel: '‹Unterordner der App›' } },
         apps: [...EXPORT_APPS],
         thema: 'export',
         art: 'name',
@@ -374,7 +374,12 @@ export const PFAD_EINSTELLUNGEN: PfadEinstellung[] = [
   },
   {
     id: 'plaene.permio.namensvorlage',
-    bezug: { art: 'eintrag', id: 'ablage.permio.antragsordner', zwischen: { text: 'Ordner der aktiven Antragsfassung', beispiel: 'BAUA 2' } },
+    bezug: {
+      art: 'eintrag',
+      id: 'ablage.permio.antragsordner',
+      zwischen: { text: 'Ordner der aktiven Antragsfassung', beispiel: 'BAUA 2' },
+      sonst: 'bei „fester Ordner“ im festen Zielordner',
+    },
     apps: ['formulare'],
     thema: 'ablage',
     art: 'name',
@@ -424,7 +429,7 @@ export const PFAD_EINSTELLUNGEN: PfadEinstellung[] = [
   },
   {
     id: 'plaene.kataster.dateiname',
-    bezug: { art: 'eintrag', id: 'ablage.kataster.zielpfad' },
+    bezug: { art: 'eintrag', id: 'ablage.kataster.zielpfad', sonst: 'bei Ablage im Ordner des aktiven Antrags dort (Antragsordner › Antrag)' },
     apps: ['ordner'],
     thema: 'ablage',
     art: 'name',

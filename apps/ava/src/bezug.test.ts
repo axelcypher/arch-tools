@@ -1,11 +1,12 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { vollerOrt } from '@core/einstellungen/baum';
 import { pfadEinstellung } from '@core/einstellungen/pfade';
 import type { OrdnerEintrag } from '@core/projektdatei';
 import type { AvaDateien } from './dateien';
 import { VORGABE, type AvaEinstellungen } from './einstellungen';
-import { projektLesen } from './projekt';
+import { neuesLvPfad, projektLesen } from './projekt';
 import { auftragsordner, type Kontext } from './abrechnung/ablauf';
+import { nameBilden } from './abrechnung/benennung';
 
 /**
  * Bezüge auf „Pfade und Benennung“ gegen die Auflösung in FABRIO: Die Pfade der Unterordner bildet der Test aus dem
@@ -61,14 +62,29 @@ describe('Bezüge von FABRIO: Unterordner relativ zum Ordner des Gewerks im Ordn
     expect(g.sonstige).toEqual([]);
   });
 
-  it('Auftragsordner (Rechnungen, Muster der Rechnungsdateien) wie in der Abrechnung', () => {
+  it('Auftragsordner wie in der Abrechnung; Rechnungsdateien nach dem ersten Muster werden dort als Rechnung erkannt', async () => {
     const k = { e } as Kontext;
     expect(auftragsordner(k, { pfad: `${e.ablage.gewerke}/${GEWERK}` } as never, 'G08')).toBe(ort('ablage.fabrio.auftrag'));
-    // die Rechnungsdateien liegen im Auftragsordner
-    expect(ort('plaene.fabrio.rechnungen', 'R.pdf')).toBe(`${ort('ablage.fabrio.auftrag')}/R.pdf`);
+    // eine Datei nach dem Muster dort, wo der Baum die Rechnungsdateien zeigt (im Auftragsordner)
+    const name = `${nameBilden(e.rechnungen.muster[0], { kuerzel: 'BS9', nr: 53, art: 'SR', lfd: 4, firma: 'Musterbau', datum: '2026-11-12', gewerk: 'G08' })}.pdf`;
+    const p = await projektLesen(dateien([ort('plaene.fabrio.rechnungen', name)]), 'P', e);
+    expect(p.gewerke.find((x) => x.ordner === GEWERK)!.rechnungen.map((d) => d.name)).toEqual([name]);
   });
 
-  it('neue LV-Dateien im LV-Unterordner des Gewerks', () => {
-    expect(ort('vorlagen.fabrio.lv', 'x')).toBe(`${ort('ablage.fabrio.lv')}/x`);
+  it('neue LV-Dateien im LV-Unterordner des Gewerks (wo FABRIO sie anlegt)', () => {
+    const pfad = neuesLvPfad(e.ablage, { pfad: `${e.ablage.gewerke}/${GEWERK}` }, 'G08', 'BS9 LV', 'Fenster', 'oalv');
+    expect(pfad).toBe(ort('vorlagen.fabrio.lv', 'BS9 LV Fenster.oalv'));
+  });
+
+  it('Bauleitung relativ zum Projektordner (wo FABRIO Berichte ablegt)', async () => {
+    const { useAva } = await import('./store');
+    const { berichtAblegen } = await import('./components/bauleitung/gemeinsam');
+    const anlegen = vi.fn(async () => true);
+    useAva.setState({ projekt: { ordner: 'P' } as never, einstellungen: { ...e, ablage: { ...e.ablage, bauleitung: 'Ausführung/Bauleitung' } }, fs: { anlegen } as never });
+    const pfad = await berichtAblegen('Protokoll 1.pdf', new Uint8Array([1]));
+    const o = vollerOrt(pfadEinstellung('ablage.fabrio.bauleitung'), () => 'Ausführung/Bauleitung');
+    expect(o?.von).toBe('projekt');
+    expect(pfad).toBe(`${o!.teile.join('/')}/Protokoll 1.pdf`);
+    expect(anlegen).toHaveBeenCalledWith('P', pfad, expect.any(Uint8Array));
   });
 });

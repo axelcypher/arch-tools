@@ -50,6 +50,23 @@ describe('Fotos des Projekts', () => {
     expect(geoeffnet).toEqual(['/p/2026-014 Haus/09 Fotos|Bestand/Nord.jpg']);
   });
 
+  it('Bezug auf „Pfade und Benennung“: der Fotoordner gilt relativ zum Projektordner – dort sucht RECTIO', async () => {
+    const { vollerOrt } = await import('@core/einstellungen/baum');
+    const { pfadEinstellung } = await import('@core/einstellungen/pfade');
+    const o = vollerOrt(pfadEinstellung('ablage.fotoordner'), () => 'Dokumentation/Fotos');
+    expect(o?.von).toBe('projekt');
+    const fs = new SpeicherProjektordner();
+    const gelesen: string[] = [];
+    fs.liste = async (r: string) => (gelesen.push(r), []);
+    const host = document.body.appendChild(document.createElement('div'));
+    act(() => {
+      root = createRoot(host);
+      root.render(createElement(FotoWahl, { fs, projektordner: '/p/X', fotoordner: 'Dokumentation/Fotos', onFoto: () => {}, onAnderesProjekt: () => {} }));
+    });
+    await warten();
+    expect(gelesen[0]).toBe(['/p/X', ...o!.teile].join('/'));
+  });
+
   it('ohne Fotoordner: verständlicher Hinweis', async () => {
     const host = document.createElement('div');
     document.body.appendChild(host);

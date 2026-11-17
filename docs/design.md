@@ -222,14 +222,20 @@ mit `einstellungenEntwurfMelden`, Sperre über `useEinstellungenGesperrt`).
   Ergebnisses); Fehler an der Stelle (`.feld-meldung`), nicht als Rückfrage.
 - **Baum der Pfade:** Jeder Eintrag sagt, wovon er abhängt (`bezug` in `einstellungen/eintraege.ts`: Projektordner,
   vollständiger Ordner, ein anderer Eintrag – ggf. mit Ordner dazwischen, etwa je Gewerk –, überall gesucht oder
-  anderswo festgelegt). Die erste Zeile der Erklärung nennt das (`.einst-bezug`, z. B. „Relativ zu „Ordner der Gewerke“
-  › je Gewerk ein Ordner“). Was von einem Eintrag abhängt, steht als eigene Karte eingerückt darunter, mit Linie links
-  (`.einst-baum`, `role="group"` mit „Unterordner von „…““ bzw. „Abhängig von „…““), auch mehrstufig; Dateinamen stehen
-  unter dem Ordner, in den sie schreiben, und damit in dessen Gruppe. Die Vorschau zeigt den vollständigen Pfad mit
-  Beispielwerten („Projektordner / Gewerke / G08 Fenster / Auftrag“) und folgt Änderungen der Eltern sofort. Ein absolut
-  angegebenes Kind löst sich aus dem Baum und steht oben in der Gruppe, Bezugszeile in `--warn-text`, Fehler am Feld.
-  Der Filter „App“ zeigt Eltern, die die App nicht selbst nutzt, abgeblendet ohne Feld (`.einst-bezugseintrag`: „Gilt:“
-  mit Vorschau, „Alle Apps zeigen“). Keine eigene Ausklapp-Bedienung: Der Baum gliedert nur, die Tab-Reihenfolge bleibt.
+  anderswo festgelegt; wo die App in einem anderen Modus woanders ablegt, sagt die Zeile auch das). Die erste Zeile der
+  Erklärung nennt das als Satz (`.einst-bezug`, `--fs-s` in `--muted`, Teil von `aria-describedby`, z. B. „Relativ zu
+  „Ordner der Gewerke“ › je Gewerk ein Ordner.“). Was von einem Eintrag abhängt, steht als eigene Karte darunter, je
+  Ebene um `--s5` eingerückt mit Linie links (`.einst-baum`, Abstand `--s2` wie zwischen den Karten der Gruppe; die
+  Linie ist nur Schmuck, die Gliederung trägt `role="group"` mit „Unterordner von „…““, „Dateien in „…““ bzw. „Abhängig
+  von „…““). Dateinamen stehen unter dem Ordner, in den sie schreiben, und damit in dessen Gruppe. Die Vorschau zeigt den
+  vollständigen Pfad mit Beispielwerten („Projektordner / Gewerke / G08 Fenster / Auftrag“, Monoschrift, lange Pfade
+  brechen um) und folgt Änderungen der Eltern sofort. Wird ein Kind absolut angegeben, gilt die Feldfehler-Regel
+  (`.feld-meldung` mit Abhilfe „Relativ zu „…“ angeben …“), die Bezugszeile sagt es in `--warn-text`; beim Tippen bleibt
+  die Karte an ihrem Platz (Fokus). Ist ein absoluter Wert gespeichert, löst sich die Karte aus dem Baum und steht auf
+  oberster Ebene der Gruppe; die Vorschau beginnt dann beim absoluten Wert. Der Filter „App“ zeigt Eltern, die die App
+  nicht selbst nutzt, ohne Feld in `--muted` (`.einst-bezugseintrag`: „Gilt:“ mit Vorschau, „Alle Apps zeigen“ – danach
+  steht der Fokus in deren Feld), nicht über `opacity`. Keine eigene Ausklapp-Bedienung: Der Baum gliedert nur, die
+  Tab-Reihenfolge bleibt.
 - **Gemeinsame Angaben:** Was mehrere Apps gleich nutzen (Ordner, Dateinamen), steht einmal; die Karte nennt alle Apps
   als Marken. Nicht: dieselbe Angabe je App als eigenes Feld wiederholen. Abweichungen je App gibt es nur, wo sie
   fachlich nötig sind, und nur auf Wunsch: unter dem Fuß der Karte, abgesetzt durch eine Linie (`--line-soft`), ein

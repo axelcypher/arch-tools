@@ -18,8 +18,8 @@ export type PfadThema = 'projekt' | 'ablage' | 'plaene' | 'export' | 'vorlagen';
 
 export const PFAD_THEMEN: { id: PfadThema; titel: string; text: string }[] = [
   { id: 'projekt', titel: 'Projekt', text: 'Stammordner, Projektordner, Projektnummer und Projektdatei' },
-  { id: 'ablage', titel: 'Ablage', text: 'Ordner im Projekt, in denen die Apps suchen und ablegen' },
-  { id: 'plaene', titel: 'Pläne und Dokumente', text: 'Dateinamen von Plänen, Anträgen und Rechnungen' },
+  { id: 'ablage', titel: 'Ablage', text: 'Ordner im Projekt, in denen die Apps suchen und ablegen, mit den Dateinamen darin' },
+  { id: 'plaene', titel: 'Pläne und Dokumente', text: 'Dateischema der Planordner' },
   { id: 'export', titel: 'Export', text: 'Zielordner und Dateinamen beim Exportieren' },
   { id: 'vorlagen', titel: 'Vorlagen', text: 'Namen der Dateien, die aus Vorlagen entstehen' },
 ];
@@ -60,7 +60,7 @@ export const gleicherWert = (a: PfadWert | undefined, b: PfadWert | undefined): 
 export type PfadBezug =
   | { art: 'projekt' }
   | { art: 'absolut' }
-  | { art: 'eintrag'; id: string; zwischen?: { text: string; beispiel: string } }
+  | { art: 'eintrag'; id: string; zwischen?: { text: string; beispiel: string }; sonst?: string }
   | { art: 'suche'; text: string }
   | { art: 'frei'; text: string };
 

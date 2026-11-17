@@ -8,7 +8,7 @@ import { ordnerWaehlen } from '../platform/projektordner';
 import { logger } from '../platform/log';
 import { ersetzen, globaleWerte, modernisieren, veraltetePlatzhalter, type Wert } from '../platzhalter';
 import { sichererDateiname } from '../projektdatei';
-import { bezugText, elternVon, kinderVon, vorfahren } from '../einstellungen/baum';
+import { bezugText, elternVon, kinderVon, vollerOrt, vorfahren } from '../einstellungen/baum';
 import { PFAD_EINSTELLUNGEN } from '../einstellungen/eintraege';
 import { wirksamAus } from '../einstellungen/gemeinsam';
 import { pfadEinstellung, pfadSpeichern, usePfadWerte, type PfadWerte } from '../einstellungen/pfade';
@@ -500,32 +500,44 @@ export function pfadVorschau(e: PfadEinstellung, wert: string, datum = new Date(
 }
 
 /**
- * Vollständige Vorschau mit den Eltern-Einträgen (Baum, `einstellungen/baum.ts`): „Projektordner / Gewerke / G08 Fenster
- * / Auftrag“ – mit dem, was jeweils gilt bzw. nach „Übernehmen“ gelten wird (Änderungen der Eltern wirken sofort).
- * `eigen`: Vorschau des eigenen Werts. Suchende, anderswo festgelegte und absolute Einträge bleiben, wie sie sind.
+ * Vollständige Vorschau mit den Eltern-Einträgen (Baum, `vollerOrt` in `einstellungen/baum.ts` – dieselbe Auflösung wie in
+ * den Abgleichstests): „Projektordner / Gewerke / G08 Fenster / Auftrag“ – mit dem, was jeweils gilt bzw. nach
+ * „Übernehmen“ gelten wird (Änderungen der Eltern wirken sofort). `roh`: eigener Wert (bei Listen die erste Zeile).
+ * Suchende, anderswo festgelegte und absolute Einträge zeigen nur ihren eigenen Wert (`pfadVorschau`).
  */
-export function vorschauVoll(e: PfadEinstellung, eigen: string, gespeichert: PfadWerte, entwurf: Record<string, string | boolean | null>): string {
+export function vorschauVoll(e: PfadEinstellung, roh: string, gespeichert: PfadWerte, entwurf: Record<string, string | boolean | null>): string {
+  const eigen = pfadVorschau(e, roh);
   const b = e.bezug.art;
   if (b !== 'projekt' && b !== 'eintrag') return eigen;
   if (!eigen && !(b === 'eintrag' && e.art === 'pfad')) return eigen;
-  const kette = [...vorfahren(e), e];
-  const teile: string[] = kette[0].bezug.art === 'projekt' ? ['Projektordner'] : [];
-  for (const x of kette) {
-    if (x.bezug.art === 'eintrag' && x.bezug.zwischen) teile.push(x.bezug.zwischen.beispiel);
-    if (x === e) {
-      teile.push(eigen);
-      continue;
-    }
-    const w = (alsText(wirksam(x, gespeichert, entwurf)).split('\n')[0] ?? '').trim();
-    // vollständige Ordner wörtlich (ohne Platzhalter); fehlt der Wert, steht der Name des Eintrags
-    teile.push((x.art === 'ordner' || x.art === 'liste' ? w : pfadVorschau(x, w)) || (x.art === 'pfad' ? '' : `‹${x.bezeichnung}›`));
-  }
-  return teile.filter(Boolean).join(' / ');
+  const text = (x: PfadEinstellung) => (x === e ? roh : (alsText(wirksam(x, gespeichert, entwurf)).split('\n')[0] ?? '').trim());
+  const ort = vollerOrt(
+    e,
+    (id) => {
+      const x = pfadEinstellung(id);
+      // ein leerer vollständiger Ordner (z. B. kein Stammordner): der Name des Eintrags
+      return text(x) || (x.art === 'ordner' || (x.art === 'liste' && x.zeilen === 'ordner') ? `‹${x.bezeichnung}›` : '');
+    },
+    (z) => z.beispiel,
+  );
+  if (!ort) return eigen;
+  const teile = ort.teile.map((t, i) => {
+    const q = ort.quellen[i];
+    const x = q ? pfadEinstellung(q) : null;
+    // je Teil mit Beispielwerten; vollständige Ordner und Laufwerke („Z:“) wörtlich
+    return !x || x.art === 'ordner' || (x.art === 'liste' && x.zeilen === 'ordner') || /^[a-z]:$/i.test(t) ? t : pfadVorschau(x, t);
+  });
+  return [...(ort.von === 'projekt' ? ['Projektordner'] : []), ...teile].filter(Boolean).join(' / ');
 }
 
-/** absolut angegebenes Kind: gilt nicht relativ zu seinem Eltern-Eintrag und löst sich aus dem Baum */
-const losgeloest = (e: PfadEinstellung, gespeichert: PfadWerte, entwurf: Record<string, string | boolean | null>) =>
-  e.art === 'pfad' && e.bezug.art === 'eintrag' && istAbsolut(alsText(wirksam(e, gespeichert, entwurf)).trim());
+/**
+ * absolut gespeichertes Kind: gilt nicht relativ zu seinem Eltern-Eintrag und löst sich aus dem Baum. Nur nach dem
+ * gespeicherten Wert – beim Tippen bleibt die Karte an ihrem Platz (Fokus), Fehler und Bezugszeile stehen dort.
+ */
+const losgeloest = (e: PfadEinstellung, gespeichert: PfadWerte) => e.art === 'pfad' && e.bezug.art === 'eintrag' && istAbsolut(alsText(gespeichert[e.id] ?? e.vorgabe).trim());
+
+/** als Satz (mit Punkt am Ende) – Bezugszeile und Erklärung werden zusammen vorgelesen */
+const satz = (t: string) => (/[.!?…]$/.test(t) ? t : `${t}.`);
 
 const appsText = (e: PfadEinstellung) => e.apps.map((a) => APP_NAMEN[a].name).join(', ');
 
@@ -533,11 +545,14 @@ function SeitePfade({ fokus }: { fokus?: string }) {
   const werte = usePfadWerte();
   const { abweichungen } = pfadStore();
   const [app, setApp] = useState<AppKennung | ''>('');
+  // Sprungziel: aus dem Aufruf bzw. nach „Alle Apps zeigen“ der Eintrag, von dem aus es kam
+  const [ziel, setZiel] = useState<{ id: string } | null>(null);
+  const sprung = ziel?.id ?? fokus;
   const appsMitEintrag = useMemo(() => (Object.keys(APP_NAMEN) as AppKennung[]).filter((a) => PFAD_EINSTELLUNGEN.some((e) => e.apps.includes(a))), []);
   const entwurf = pfadStore((s) => s.entwurf);
   const gesperrt = useEinstellungenGesperrt();
   const fuerApp = (e: PfadEinstellung) => !app || e.apps.includes(app);
-  const los = (e: PfadEinstellung) => !!werte && losgeloest(e, werte, entwurf);
+  const los = (e: PfadEinstellung) => !!werte && losgeloest(e, werte);
   // mit App-Filter: die Einträge der App und, zur Orientierung, ihre Eltern
   // übernommene Ausnahmen nur, solange sie gesetzt sind (bzw. gerade bearbeitet werden)
   const gesetzt = (e: PfadEinstellung) => !e.nurWennGesetzt || e.id in entwurf || alsText(werte?.[e.id] ?? e.vorgabe).trim() !== '';
@@ -548,11 +563,19 @@ function SeitePfade({ fokus }: { fokus?: string }) {
   const knoten = (e: PfadEinstellung, w: PfadWerte): ReactNode => {
     const kinder = kinderVon(e.id).filter((k) => !k.abweichungVon && zeigen.has(k) && !los(k));
     const nurOrdner = kinder.every((k) => k.art === 'pfad');
+    const nurNamen = kinder.every((k) => k.art === 'name' || (k.art === 'liste' && k.zeilen !== 'pfad'));
     return (
       <Fragment key={e.id}>
-        {fuerApp(e) ? <PfadFeld e={e} werte={w} losVon={los(e) ? elternVon(e) : undefined} app={app} fokus={fokus} /> : <PfadBezugsZeile e={e} werte={w} onAlle={() => setApp('')} />}
+        {fuerApp(e) ? <PfadFeld e={e} werte={w} losVon={los(e) ? elternVon(e) : undefined} app={app} fokus={fokus} /> : <PfadBezugsZeile
+            e={e}
+            werte={w}
+            onAlle={() => {
+              setApp('');
+              setZiel({ id: e.id });
+            }}
+          />}
         {kinder.length > 0 && (
-          <div className="einst-baum" role="group" aria-label={`${nurOrdner ? 'Unterordner von' : 'Abhängig von'} „${e.bezeichnung}“`}>
+          <div className="einst-baum" role="group" aria-label={`${nurOrdner ? 'Unterordner von' : nurNamen ? 'Dateien in' : 'Abhängig von'} „${e.bezeichnung}“`}>
             {kinder.map((k) => knoten(k, w))}
           </div>
         )}
@@ -577,17 +600,17 @@ function SeitePfade({ fokus }: { fokus?: string }) {
   }, []);
 
   useEffect(() => {
-    if (!fokus || !werte) return;
+    if (!sprung || !werte) return;
     const hin = () => {
-      const ziel = document.getElementById(`einst-${fokus}`);
-      ziel?.scrollIntoView?.({ block: 'start' });
-      ziel?.querySelector<HTMLInputElement>('input, textarea')?.focus();
+      const el = document.getElementById(`einst-${sprung}`);
+      el?.scrollIntoView?.({ block: 'start' });
+      el?.querySelector<HTMLInputElement>('input, textarea')?.focus();
     };
     hin();
     // ein eingeklappter Bereich (Abweichungen je App) öffnet sich erst im nächsten Bild – dann noch einmal
-    const bild = requestAnimationFrame(() => document.activeElement?.closest(`#einst-${CSS.escape(fokus)}`) || hin());
+    const bild = requestAnimationFrame(() => document.activeElement?.closest(`#einst-${CSS.escape(sprung)}`) || hin());
     return () => cancelAnimationFrame(bild);
-  }, [fokus, werte]);
+  }, [sprung, ziel, werte]);
 
   const entscheiden = (a: Abweichung, lokal: boolean) => {
     const s = pfadStore.getState();
@@ -603,7 +626,7 @@ function SeitePfade({ fokus }: { fokus?: string }) {
     <>
       <h3>Pfade und Benennung</h3>
       <p className="einst-einleitung">
-        Alle Pfadvorgaben und Benennungsschemata der Apps an einer Stelle. Pfade gelten relativ zum Projektordner; was von einem anderen Eintrag abhängt, steht eingerückt darunter. Platzhalter wie{' '}
+        Alle Pfadvorgaben und Benennungsschemata der Apps an einer Stelle. Die erste Zeile jedes Eintrags sagt, wovon er abhängt; was von einem anderen Eintrag abhängt, steht eingerückt darunter. Platzhalter wie{' '}
         <code>{'{PROJEKT_KUERZEL}'}</code> setzen die Angaben des Projekts ein; die Vorschau zeigt den vollständigen Pfad mit Beispielwerten.
       </p>
       {abweichungen.map((a) => {
@@ -737,6 +760,8 @@ function Abweichungen({ basis, werte, app, fokus }: { basis: PfadEinstellung; we
 /** eine Einstellung: Feld, Platzhalter, Vorschau, Prüfung, „Vorgabe wiederherstellen“ */
 function PfadFeld({ e, werte, losVon, app = '', fokus }: { e: PfadEinstellung; werte: PfadWerte; losVon?: PfadEinstellung; app?: AppKennung | ''; fokus?: string }) {
   const entwurf = pfadStore((s) => s.entwurf);
+  // absolut angegeben (gespeichert: losgelöst; im Entwurf: bleibt an seinem Platz, mit Fehler am Feld)
+  const absolutVon = losVon ?? (e.art === 'pfad' && e.bezug.art === 'eintrag' && istAbsolut(alsText(wirksam(e, werte, entwurf)).trim()) ? elternVon(e) : undefined);
   const gesperrt = useEinstellungenGesperrt();
   const gilt = wirksam(e, werte, entwurf);
   const gespeichert = werte[e.id] ?? e.vorgabe;
@@ -779,7 +804,7 @@ function PfadFeld({ e, werte, losVon, app = '', fokus }: { e: PfadEinstellung; w
         </span>
       </div>
       <p className="muted small-text einst-erklaerung" id={hinweisId}>
-        <span className={`einst-bezug${losVon ? ' los' : ''}`}>{losVon ? `Absolut angegeben – gehört unter „${losVon.bezeichnung}“ und gilt nur relativ dazu.` : bezugText(e)}</span>
+        <span className={`einst-bezug${absolutVon ? ' los' : ''}`}>{absolutVon ? `Absolut angegeben – gehört unter „${absolutVon.bezeichnung}“ und gilt nur relativ dazu.` : satz(bezugText(e))}</span>{' '}
         {e.erklaerung}
       </p>
       {e.projektwert && (
@@ -830,7 +855,7 @@ export function PfadBezugsZeile({ e, werte, onAlle }: { e: PfadEinstellung; wert
   const entwurf = pfadStore((s) => s.entwurf);
   const w = alsText(wirksam(e, werte, entwurf));
   const erster = (w.split('\n')[0] ?? '').trim();
-  const vorschau = vorschauVoll(e, e.art === 'ordner' || e.art === 'liste' ? erster : pfadVorschau(e, erster), werte, entwurf);
+  const vorschau = e.art === 'ordner' || (e.art === 'liste' && e.zeilen === 'ordner') ? erster : vorschauVoll(e, erster, werte, entwurf);
   return (
     <div className="einst-eintrag einst-bezugseintrag" id={`einst-${e.id}`}>
       <div className="einst-eintrag-kopf">
@@ -887,7 +912,7 @@ function TextEinstellung({
   // gemeinsame Angabe, die je App Verschiedenes ergibt: statt der Vorschau „Gilt je App“ darunter (`WirksamJeApp`, dieselbe Quelle `werte`)
   const jeApp = jeAppTexte(e, werte, entwurfJetzt);
   // sonst die vollständige Vorschau mit den Eltern-Einträgen (Baum)
-  const vorschau = e.art === 'ordner' || ordnerListe || jeApp ? '' : vorschauVoll(e, pfadVorschau(e, liste ? (alsListe(text)[0] ?? '') : text), werte, entwurfJetzt);
+  const vorschau = e.art === 'ordner' || ordnerListe || jeApp ? '' : vorschauVoll(e, liste ? (alsListe(text)[0] ?? '') : text, werte, entwurfJetzt);
   // Abweichung, die den gemeinsamen Wert ersetzt: leer gilt der gemeinsame – er steht als Platzhalter im Feld
   const platzhalter = e.abweichungVon?.art === 'ersetzt' ? alsText(wirksam(pfadEinstellung(e.abweichungVon.id), werte, entwurfJetzt)) : undefined;
   const alt = e.variablen ? veraltetePlatzhalter(text, e.variablen) : [];

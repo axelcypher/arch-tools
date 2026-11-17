@@ -177,25 +177,41 @@ describe('Einstellungen', () => {
     // je Unterordner seine Karte, dahinter die Gruppe der von ihm abhängigen (neue LV-Dateien, Rechnungsmuster)
     expect([...gruppe.children].map((x) => x.id || x.getAttribute('aria-label'))).toEqual([
       'einst-ablage.fabrio.lv',
-      'Abhängig von „LV-Dateien im Unterordner“',
+      'Dateien in „LV-Dateien im Unterordner“',
       'einst-ablage.fabrio.auftrag',
-      'Abhängig von „Aufträge und Rechnungen“',
+      'Dateien in „Aufträge und Rechnungen“',
       'einst-ablage.fabrio.korrespondenz',
     ]);
     const auftrag = eintrag('ablage.fabrio.auftrag');
-    expect(auftrag.querySelector('.einst-bezug')?.textContent).toBe('Relativ zu „Ordner der Gewerke“ › je Gewerk ein Ordner');
+    expect(auftrag.querySelector('.einst-bezug')?.textContent).toBe('Relativ zu „Ordner der Gewerke“ › je Gewerk ein Ordner.');
     expect(auftrag.querySelector('.einst-vorschau')?.textContent).toBe('Vorschau: Projektordner / Gewerke / G08 Fenster / Auftrag');
     // die Rechnungsmuster hängen am Auftragsordner (zweite Ebene)
-    expect(eintrag('plaene.fabrio.rechnungen').parentElement?.getAttribute('aria-label')).toBe('Abhängig von „Aufträge und Rechnungen“');
+    expect(eintrag('plaene.fabrio.rechnungen').parentElement?.getAttribute('aria-label')).toBe('Dateien in „Aufträge und Rechnungen“');
     // Eltern ändern: die Vorschau der Kinder folgt sofort
     await tippen(feldVon('ablage.fabrio.gewerke'), 'Ausführung/Gewerke');
     expect(auftrag.querySelector('.einst-vorschau')?.textContent).toBe('Vorschau: Projektordner / Ausführung / Gewerke / G08 Fenster / Auftrag');
-    // ein absolut angegebenes Kind löst sich aus dem Baum, mit Fehler am Feld
-    await tippen(feldVon('ablage.fabrio.auftrag'), 'Z:\\Auftrag');
+    // absolut getippt: die Karte bleibt an ihrem Platz, der Fokus im Feld – Fehler und Bezugszeile stehen dort
+    const feld = feldVon('ablage.fabrio.auftrag');
+    feld.focus();
+    for (const t of ['Z', 'Z:', 'Z:\\', 'Z:\\Auftrag']) {
+      await tippen(feld, t);
+      expect(document.activeElement, t).toBe(feld);
+    }
+    expect(auftrag.parentElement).toBe(gruppe);
+    expect(auftrag.querySelector('.einst-bezug')?.textContent).toBe('Absolut angegeben – gehört unter „Ordner der Gewerke“ und gilt nur relativ dazu.');
+    expect(auftrag.querySelector('.feld-meldung')?.textContent).toBe('Relativ zu „Ordner der Gewerke“ angeben, ohne Laufwerk.');
+  });
+
+  it('Baum: ein absolut gespeichertes Kind löst sich aus dem Baum und steht auf oberster Ebene der Gruppe', async () => {
+    setze('ava', { ablage: { auftrag: 'Z:\\Auftrag' } });
+    const e = await zeigen();
+    await act(async () => e.einstellungenOeffnen('pfade'));
+    await warten();
     const los = eintrag('ablage.fabrio.auftrag');
     expect(los.parentElement?.classList.contains('einst-gruppe')).toBe(true);
-    expect(los.querySelector('.einst-bezug')?.textContent).toBe('Absolut angegeben – gehört unter „Ordner der Gewerke“ und gilt nur relativ dazu.');
-    expect(los.querySelector('.feld-meldung')?.textContent).toBe('Relativ zu „Ordner der Gewerke“ angeben, ohne Laufwerk.');
+    expect(los.querySelector('.einst-bezug')?.classList.contains('los')).toBe(true);
+    // die Vorschau beginnt beim absoluten Wert, nicht im Projektordner
+    expect(eintrag('plaene.fabrio.rechnungen').querySelector('.einst-vorschau')?.textContent).toMatch(/^Vorschau \(erstes Muster\): Z: \/ Auftrag \/ /);
   });
 
   it('Baum mit App-Filter: Eltern einer anderen App abgeblendet zur Orientierung, ohne Feld; „Alle Apps zeigen“', async () => {
@@ -208,7 +224,7 @@ describe('Einstellungen', () => {
       filter.dispatchEvent(new Event('change', { bubbles: true }));
     });
     // „Name des Projektordners“ nutzt ATLAS, sein Eltern-Eintrag „Stammordner“ auch – beide mit Feld; Katasterpläne: Ordner und Dateiname
-    expect(eintrag('plaene.kataster.dateiname').parentElement?.getAttribute('aria-label')).toBe('Abhängig von „Ablageordner der Katasterpläne“');
+    expect(eintrag('plaene.kataster.dateiname').parentElement?.getAttribute('aria-label')).toBe('Dateien in „Ablageordner der Katasterpläne“');
     await act(async () => {
       filter.value = 'grz';
       filter.dispatchEvent(new Event('change', { bubbles: true }));

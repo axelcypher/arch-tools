@@ -69,9 +69,18 @@ describe('Baum der Pfadeinstellungen: Abgleich mit dem Export', () => {
       const ziel = direktExportZielAus(pfade, { datei, werte, inhalt: 'X' });
       expect('ordner' in ziel && ziel).toMatchObject({ xlsx: 'A.xlsx', pdf: 'B.pdf' });
       const ordner = vollerOrt(pfadEinstellung(`export.unterordner.${app}`), (x) => w[x])!;
-      expect(ordner).toEqual({ von: 'projekt', teile: ['Ber', 'Ergebnis'] });
+      expect(ordner).toMatchObject({ von: 'projekt', teile: ['Ber', 'Ergebnis'] });
       expect('ordner' in ziel && ziel.ordner.replace(/\\/g, '/')).toBe([projekt, ...ordner.teile].join('/'));
       // die Dateinamen der App hängen an ihrem Unterordner
       for (const n of [`export.excel.abweichend.${app}`, `export.pdf.abweichend.${app}`]) expect(vollerOrt(pfadEinstellung(n), (x) => w[x])!.teile, n).toEqual([...ordner.teile, w[n]]);
     });
+
+  it('PERMIO sucht Berechnungen relativ zum Projektordner: in den Berechnungsordnern der Rechen-Apps und den zusätzlichen', async () => {
+    const { berechnungenSuchordner } = await import('./pfade');
+    const w: Record<string, unknown> = { 'ablage.permio.berechnungsordner': ['Planung/Statik'] };
+    const ordner = berechnungenSuchordner({}, (id) => (w[id] as never) ?? pfadEinstellung(id).vorgabe);
+    expect(pfadEinstellung('ablage.permio.berechnungsordner').bezug).toEqual({ art: 'projekt' });
+    expect(ordner).toContain(vollerOrt(pfadEinstellung('ablage.permio.berechnungsordner'), (id) => w[id] as never)!.teile.join('/'));
+    expect(ordner).toContain(vollerOrt(pfadEinstellung('export.unterordner.grz'), (id) => pfadEinstellung(id).vorgabe)!.teile.join('/'));
+  });
 });

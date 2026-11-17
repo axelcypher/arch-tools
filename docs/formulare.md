@@ -566,8 +566,8 @@ Einstellungen und des Namensschemas – `packages/core/src/fassung.ts`, auch in 
   `{Phase}` (frühere Einstellung „Phase“, entfallen; alte Abweichungen je Projekt, die nur sie enthielten, entfallen beim Lesen) gilt überall als `{Art}`. Unter der Namensvorlage stehen die Chips, im
   festen Zielordner `{Antrag}`, `{Art}` und die globalen.
 - **Einstellungen › PERMIO (Antrag und Export):** Antragsordner, Antragsarten (die erste ist der Standard; dazu die des
-  Namensschemas), Namensvorlage, Ziel (aktive Antragsfassung oder fester Ordner, z. B.
-  `TÖB/{Antrag}/Formulare`), Ordner der Berechnungen, Vorlagenordner für neue Formulare, Antragsvorlagen und die
+  Namensschemas), Namensvorlage, Ziel (aktive Antragsfassung oder fester Ordner im Antragsordner, z. B.
+  `{Antrag}/Formulare`), Ordner der Berechnungen, Vorlagenordner für neue Formulare, Antragsvorlagen und die
   **Antragsdokumente** (der Katalog): eine Liste mit Kurzbeschreibung je Dokument („Formular des Projekts“, „Formular
   mit „Statisti“ im Namen“, „Datei aus Planung/Berechnungen · *Flächen*“) und den Vorlagen, zu denen es gehört (lange
   Titel und Vorlagen werden gekürzt); ein Klick öffnet die Angaben als beschriftetes Formular – Bezeichnung, Art

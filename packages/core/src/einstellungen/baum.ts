@@ -1,5 +1,5 @@
 import { PFAD_EINSTELLUNGEN } from './eintraege';
-import type { PfadEinstellung, PfadWert } from './verzeichnis';
+import { istAbsolut, type PfadEinstellung, type PfadWert } from './verzeichnis';
 
 /**
  * Baum der Pfad- und Namenseinstellungen: wovon ein Wert abhängt (`PfadEinstellung.bezug`). Grundlage der Gliederung auf
@@ -40,7 +40,7 @@ export function bezugText(e: PfadEinstellung): string {
     case 'eintrag': {
       const p = nachId.get(b.id);
       const ort = `„${p?.bezeichnung ?? b.id}“${b.zwischen ? ` › ${b.zwischen.text}` : ''}`;
-      return e.art === 'pfad' ? `Relativ zu ${ort}` : `Liegt in ${ort}`;
+      return `${e.art === 'pfad' ? `Relativ zu ${ort}` : `Liegt in ${ort}`}${b.sonst ? ` – ${b.sonst}` : ''}`;
     }
     case 'suche':
     case 'frei':
@@ -48,31 +48,58 @@ export function bezugText(e: PfadEinstellung): string {
   }
 }
 
-/** Teile eines Werts (Pfade an „/“ bzw. „\“ getrennt; Listen: der erste Eintrag) */
+/** Teile eines Werts (Pfade an „/“ bzw. „\\“ getrennt; Listen: der erste Eintrag) */
 function teileAus(e: PfadEinstellung, wert: PfadWert | undefined): string[] {
   const v = Array.isArray(wert) ? (wert[0] ?? '') : typeof wert === 'string' ? wert : '';
   const pfad = e.art === 'pfad' || e.art === 'ordner' || (e.art === 'liste' && (e.zeilen === 'pfad' || e.zeilen === 'ordner'));
-  return pfad ? v.split(/[\\/]+/).filter(Boolean) : v.trim() ? [v.trim()] : [];
+  return pfad
+    ? v
+        .split(/[\\/]+/)
+        .map((t) => t.trim())
+        .filter(Boolean)
+    : v.trim()
+      ? [v.trim()]
+      : [];
 }
+
+const erster = (wert: PfadWert | undefined) => (Array.isArray(wert) ? (wert[0] ?? '') : typeof wert === 'string' ? wert : '').trim();
 
 /**
  * Teile des vollständigen Orts eines Eintrags – ab dem Projektordner (Bezug `projekt`) bzw. ab dem Laufwerk (`absolut`),
  * mit `wert` je Eintrag und `zwischen` für Ordner dazwischen (z. B. das Gewerk). `null`, wo der Ort nicht fest ist
- * (`suche`, `frei`). Namen schließen den Pfad ab.
+ * (`suche`, `frei`). Namen schließen den Pfad ab. Ist ein Pfad der Kette absolut angegeben, beginnt der Ort dort.
+ * `quellen` nennt je Teil den Eintrag, aus dem er stammt (`null`: Ordner dazwischen) – für die Vorschau mit
+ * Beispielwerten; dieselbe Auflösung nutzt die Seite „Pfade und Benennung“.
  */
-export function vollerOrt(e: PfadEinstellung, wert: (id: string) => PfadWert | undefined, zwischen: (text: string) => string = () => ''): { von: 'projekt' | 'absolut'; teile: string[] } | null {
+export function vollerOrt(
+  e: PfadEinstellung,
+  wert: (id: string) => PfadWert | undefined,
+  zwischen: (z: { text: string; beispiel: string }) => string = () => '',
+): { von: 'projekt' | 'absolut'; teile: string[]; quellen: (string | null)[] } | null {
   const kette = [...vorfahren(e), e];
   const wurzel = kette[0].bezug;
   if (wurzel.art !== 'projekt' && wurzel.art !== 'absolut') return null;
-  const teile: string[] = [];
+  let von: 'projekt' | 'absolut' = wurzel.art;
+  let teile: string[] = [];
+  let quellen: (string | null)[] = [];
   for (const x of kette) {
     if (x.bezug.art === 'eintrag' && x.bezug.zwischen)
-      teile.push(
-        ...zwischen(x.bezug.zwischen.text)
-          .split(/[\\/]+/)
-          .filter(Boolean),
-      );
-    teile.push(...teileAus(x, wert(x.id)));
+      for (const t of zwischen(x.bezug.zwischen)
+        .split(/[\\/]+/)
+        .filter(Boolean)) {
+        teile.push(t);
+        quellen.push(null);
+      }
+    const w = wert(x.id);
+    if (x !== kette[0] && x.art === 'pfad' && istAbsolut(erster(w))) {
+      von = 'absolut';
+      teile = [];
+      quellen = [];
+    }
+    for (const t of teileAus(x, w)) {
+      teile.push(t);
+      quellen.push(x.id);
+    }
   }
-  return { von: wurzel.art, teile };
+  return { von, teile, quellen };
 }
