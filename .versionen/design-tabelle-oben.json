@@ -5,11 +5,11 @@
   },
   "grz": {
     "stufe": "patch",
-    "notiz": "Gemeinsame Zahlentabelle ergänzt (gewählte Zeile, oben bündig) und Verweisknöpfe vereinheitlicht."
+    "notiz": "Verweisknöpfe sind jetzt immer dezent unterstrichen und zeigen beim Überfahren keinen grauen Grund mehr."
   },
   "kosten": {
     "stufe": "patch",
-    "notiz": "Gemeinsame Zahlentabelle ergänzt (gewählte Zeile, oben bündig) und Verweisknöpfe vereinheitlicht."
+    "notiz": "Verweisknöpfe sind jetzt immer dezent unterstrichen und zeigen beim Überfahren keinen grauen Grund mehr."
   },
   "ordner": {
     "stufe": "patch",
