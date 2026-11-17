@@ -144,7 +144,7 @@ export function Angebote() {
                 <th>Preise</th>
                 <th title={nurAslv ? aslvHinweis(ASLV_NICHT_GESPEICHERT.bieterStatus) : 'Im Preisspiegel und in der Rangfolge werten'}>gewertet</th>
                 <th>
-                  <span className="ava-sr-only">Entfernen</span>
+                  <span className="nur-vorlesen">Entfernen</span>
                 </th>
               </tr>
             </thead>

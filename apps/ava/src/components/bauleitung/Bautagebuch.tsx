@@ -49,13 +49,14 @@ export function Bautagebuch() {
   return (
     <>
       <BreitenLeiste schluessel="ava:breite:bautagebuch" vorgabe={260} titel="Breite der Liste">
-        <Karte als="aside"
+        <Karte
+          als="aside"
           titel="Bautagebuch"
           buendig
           aktionen={
-              <button title="Tagesbericht hinzufügen" className="primary small" onClick={() => void neu()}>
-                <Symbol name="plus" /> Tagesbericht
-              </button>
+            <button title="Tagesbericht hinzufügen" className="primary small" onClick={() => void neu()}>
+              <Symbol name="plus" /> Tagesbericht
+            </button>
           }
         >
           <ul className="list ava-liste-zweizeilig" role="listbox" aria-label="Tagesberichte">

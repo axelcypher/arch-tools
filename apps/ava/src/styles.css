@@ -90,9 +90,9 @@
 .ava-kopf-info {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--s2);
   flex-wrap: wrap;
-  font-size: 12px;
+  font-size: var(--fs-s);
 }
 
 /* Kennzahlen (gemeinsame .metric-row): im schmalen Fenster umbrechen */
@@ -105,7 +105,7 @@
 }
 
 .ava-kennzahlen .metric small {
-  font-size: 11px;
+  font-size: var(--fs-xs);
   color: var(--muted);
 }
 
@@ -306,7 +306,7 @@
 .ava-tabs {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
+  min-width: 0;
   gap: var(--s1) var(--s3);
 }
 
@@ -315,15 +315,25 @@
 }
 
 .ava-gewerk-angaben {
+  flex: 1 1 0;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  flex: 1;
 }
 
-.ava-tabs .meldung {
-  flex-basis: 100%;
+.ava-gewerk-karte .karte-leiste > .meldung {
+  margin-top: var(--s1);
+}
+
+.ava-tabs > .segment,
+.ava-tabs > .ava-link {
+  flex: none;
+}
+
+/* lange Dateinamen der Scans umbrechen statt abschneiden */
+.ava-eingang-liste .list li > div {
+  overflow-wrap: anywhere;
 }
 
 /* ---------- LV-Editor ---------- */
@@ -403,12 +413,25 @@ input.ava-fehler {
   text-align: center;
 }
 
+/* Summen im Kartenfuß: einzeilig; kürzen dürfen sich nur die Nebenangaben, brutto bleibt immer sichtbar */
 .ava-lv-fuss {
   display: flex;
-  gap: var(--s1) var(--s3);
+  gap: var(--s3);
   align-items: center;
   font-variant-numeric: tabular-nums;
-  flex-wrap: wrap;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.ava-lv-fuss > * {
+  flex: none;
+}
+
+.ava-lv-fuss > .ava-fuss-neben {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Eigenschaften des gewählten Elements (Seitenkarte) */
@@ -416,6 +439,22 @@ input.ava-fehler {
   display: flex;
   flex-direction: column;
   gap: var(--s2);
+}
+
+/* der Abstand kommt aus gap, der Inhalt beginnt im Rumpfabstand */
+.ava-panel > p {
+  margin: 0;
+}
+
+/* Abschnitte in einer Karte (Auftrag, Dateien): h3, getrennt durch eine feine Linie */
+.ava-abschnitt + .ava-abschnitt {
+  margin-top: var(--s4);
+  padding-top: var(--s3);
+  border-top: 1px solid var(--line-soft);
+}
+
+.ava-abschnitt > h3:first-child {
+  margin-top: 0;
 }
 
 .ava-panel-kopf {
@@ -517,21 +556,6 @@ input.ava-fehler {
   gap: 8px;
 }
 
-/* Ablage: eingestellt zentral (Einstellungen › Pfade und Benennung), hier nur angezeigt */
-.ava-werte {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: var(--s2) var(--s3);
-  margin: 0;
-}
-.ava-werte dt {
-  font-size: var(--fs-xs);
-  color: var(--muted);
-}
-.ava-werte dd {
-  margin: 0;
-  overflow-wrap: anywhere;
-}
 .ava-formular {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -553,10 +577,6 @@ input.ava-fehler {
 .ava-reihe > select {
   flex: 1;
   min-width: 0;
-}
-
-.ava-klein {
-  max-width: 64px;
 }
 
 .ava-check {
@@ -718,13 +738,9 @@ input.ava-fehler {
   gap: var(--s2);
 }
 
-.ava-eingang-ziel h3 {
-  font-size: 13px;
-  margin: var(--s2) 0 0;
-}
-
+/* Vorschau: Grund wie die Fläche, nur die PDF-Seiten sind Papier */
 .ava-eingang-vorschau .karte-rumpf {
-  background: var(--canvas);
+  background: var(--bg);
 }
 
 /* Ablage des gewählten Scans: abgesetzt wie ein Abschnitt */
@@ -1135,15 +1151,6 @@ input.ava-fehler {
 
 /* Gesamt-Review: Rahmen und LV */
 
-.ava-sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-}
-
 .ava-nav-liste li.muted {
   padding: 5px 8px;
 }
@@ -1177,7 +1184,7 @@ input.ava-fehler {
 .ava-nav-knopf:focus-visible,
 .ava-klickbar:focus-visible,
 .ava-kennung-knopf:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--fokus);
   outline-offset: -2px;
 }
 
@@ -1221,7 +1228,13 @@ input.ava-fehler {
   display: none;
 }
 
-@media (max-width: 1250px) {
+/* kurze Namen der Tabs, wenn die Karte schmal ist (nach der Breite der Kartenleiste, nicht des Fensters – rechts kann
+   die Karte „Eigenschaften“ stehen) */
+.ava-gewerk-karte .karte-leiste {
+  container-type: inline-size;
+}
+
+@container (max-width: 860px) {
   .ava-tab-lang {
     display: none;
   }
@@ -1229,7 +1242,22 @@ input.ava-fehler {
   .ava-tab-kurz {
     display: inline;
   }
+}
 
+/* sehr schmal: „Ordner öffnen“ nur als Symbol (Name bleibt über aria-label) */
+@container (max-width: 560px) {
+  .ava-ordner-text {
+    display: none;
+  }
+}
+
+/* in der schmalen Zuordnen-Karte darf der Knopf umbrechen */
+.ava-eingang-ziel .button-row button {
+  white-space: normal;
+  text-align: left;
+}
+
+@media (max-width: 1250px) {
   .ava-lv-wahl select {
     max-width: 200px;
   }
@@ -1247,14 +1275,20 @@ input.ava-fehler {
   margin-left: 0;
 }
 
-/* Statusmeldung unter der Rechnungsleiste: dauerhafter Live-Bereich (leer ohne Höhe) */
+/* Statusmeldung in der Kartenleiste unter der Werkzeugleiste: dauerhafter Live-Bereich, leer ohne Höhe und Fläche */
 .ava-leiste-status:not(:empty) {
+  margin-top: var(--s1);
   padding: var(--s1) var(--s2);
+}
+
+.ava-leiste-status:empty {
+  padding: 0;
+  background: none;
 }
 
 .ava-lv-tabelle:focus-visible {
   outline: none;
-  box-shadow: inset 0 0 0 2px var(--accent);
+  box-shadow: inset 0 0 0 2px var(--fokus);
 }
 
 .ava-lv-zeilen th.ava-oz,
@@ -1495,7 +1529,7 @@ input.ava-fehler {
 /* Tastatur: sichtbarer Fokus in Listen und der Mailtabelle */
 .ava-liste-zweizeilig li:focus-visible,
 .ava-mail-tabelle tr:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--fokus);
   outline-offset: -2px;
 }
 
@@ -1504,7 +1538,6 @@ input.ava-fehler {
 }
 
 /* Gesamt-Review: Abrechnung */
-
 
 /* Quellen einer Rechnung: vorhanden = grün, fehlt = gestrichelt (ohne Transparenz, lesbar in Hell/Dunkel) */
 .ava-quellen {
@@ -1564,7 +1597,7 @@ input.ava-fehler {
 /* Rechnungseingang: Listen per Tastatur, Hinweis zur Zuordnung, schmale Fenster */
 .ava-eingang-liste .list li:focus-visible,
 .ava-eingang-ziel .list li:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--fokus);
   outline-offset: -2px;
 }
 

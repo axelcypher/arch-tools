@@ -43,7 +43,7 @@ export function Dateiliste({ gewerk }: { gewerk: string }) {
               <th className="num">Größe</th>
               <th>geändert</th>
               <th>
-                <span className="ava-sr-only">Öffnen</span>
+                <span className="nur-vorlesen">Öffnen</span>
               </th>
             </tr>
           </thead>

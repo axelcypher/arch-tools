@@ -50,7 +50,12 @@ export function Navigation({ onStammdaten }: { onStammdaten: (meta: ProjectMeta,
         buendig
         titel={
           <span title={projekt.ordner}>
-            {projekt.meta.projektcode ? <span className="ava-nav-code">{projekt.meta.projektcode}</span> : null} {projekt.name}
+            {projekt.meta.projektcode ? (
+              <>
+                <span className="ava-nav-code">{projekt.meta.projektcode}</span>{' '}
+              </>
+            ) : null}
+            {projekt.name}
           </span>
         }
         fuss={

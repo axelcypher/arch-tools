@@ -10,6 +10,8 @@ export interface GewerkRahmen {
   aktionen?: ReactNode;
   /** Zeile mit den Tabs (und Angaben zum Gewerk) über der Werkzeugleiste der Ansicht */
   tabs: ReactNode;
+  /** Fehlermeldung des Gewerks (z. B. LV ließ sich nicht öffnen), unter den Tabs */
+  fehler?: string | null;
   /** `id` des Tabpanels und `id` des gewählten Tabs */
   panelId: string;
   tabId: string;
@@ -52,6 +54,11 @@ export function AnsichtKarte({ titel, aktionen, leiste, fuss, buendig, className
       leiste={
         <>
           {g.tabs}
+          {g.fehler && (
+            <div className="meldung fehler" role="alert">
+              {g.fehler}
+            </div>
+          )}
           {leiste}
         </>
       }
@@ -59,6 +66,8 @@ export function AnsichtKarte({ titel, aktionen, leiste, fuss, buendig, className
       buendig={buendig}
       className={['ava-gewerk-karte', className].filter(Boolean).join(' ')}
     >
+      {/* Tabpanel ist der Inhalt: Werkzeugleiste und Fuß stehen fest in der Karte (Kartenleiste bzw. Kartenfuß) und
+          folgen in der Tab-Reihenfolge direkt auf die Tabliste */}
       <div className="ava-tabpanel" id={g.panelId} role="tabpanel" aria-labelledby={g.tabId}>
         {children}
       </div>

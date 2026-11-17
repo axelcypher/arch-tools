@@ -50,13 +50,14 @@ export function Protokolle() {
   return (
     <>
       <BreitenLeiste schluessel="ava:breite:protokolle" vorgabe={260} titel="Breite der Liste">
-        <Karte als="aside"
+        <Karte
+          als="aside"
           titel="Protokolle"
           buendig
           aktionen={
-              <button title="Protokoll hinzufügen" className="primary small" onClick={() => void neu()}>
-                <Symbol name="plus" /> Protokoll
-              </button>
+            <button title="Protokoll hinzufügen" className="primary small" onClick={() => void neu()}>
+              <Symbol name="plus" /> Protokoll
+            </button>
           }
         >
           <ul className="list ava-liste-zweizeilig" role="listbox" aria-label="Protokolle">

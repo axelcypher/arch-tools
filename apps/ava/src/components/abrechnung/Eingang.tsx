@@ -174,35 +174,35 @@ export function Eingang() {
           titel="Scans"
           className="ava-eingang-liste"
           aktionen={
-            <button className="small" onClick={() => void laden()} title={ordner}>
+            <button className="small" onClick={() => void laden()} title={ordner} aria-label="Neu einlesen: Scanordner">
               Neu einlesen
             </button>
           }
         >
-        <div className="muted small-text" title={ordner}>
-          {ordner}
-        </div>
-        {fehler && <div className="meldung fehler" role="alert">{fehler}</div>}
-        <ul className="list" role="listbox" aria-label="Scans">
-          {scans?.map((s, i) => (
-            <li
-              key={s.pfad}
-              role="option"
-              tabIndex={0}
-              aria-selected={s.pfad === scan}
-              className={s.pfad === scan ? 'active' : ''}
-              onClick={() => setGewaehlt(s.pfad)}
-              onKeyDown={(x) => listenTaste(x, scans, i, (y) => setGewaehlt(y.pfad))}
-              title="Doppelklick öffnet den Scan"
-              onDoubleClick={() => void fs.oeffnen(`${ordner.replace(/[\\/]+$/, '')}${ordner.includes('\\') ? '\\' : '/'}${s.pfad}`)}>
-              <div>{s.pfad}</div>
-              <span className="muted small-text">
-                {zeit(s.geaendert ?? 0)} · {Math.round(s.groesse / 1024)} KB
-              </span>
-            </li>
-          ))}
-          {scans && !scans.length && <li className="muted">Keine Scans im Scanordner.</li>}
-        </ul>
+          <div className="muted small-text" title={ordner}>
+            {ordner}
+          </div>
+          {fehler && <div className="meldung fehler" role="alert">{fehler}</div>}
+          <ul className="list" role="listbox" aria-label="Scans">
+            {scans?.map((s, i) => (
+              <li
+                key={s.pfad}
+                role="option"
+                tabIndex={0}
+                aria-selected={s.pfad === scan}
+                className={s.pfad === scan ? 'active' : ''}
+                onClick={() => setGewaehlt(s.pfad)}
+                onKeyDown={(x) => listenTaste(x, scans, i, (y) => setGewaehlt(y.pfad))}
+                title="Doppelklick öffnet den Scan"
+                onDoubleClick={() => void fs.oeffnen(`${ordner.replace(/[\\/]+$/, '')}${ordner.includes('\\') ? '\\' : '/'}${s.pfad}`)}>
+                <div>{s.pfad}</div>
+                <span className="muted small-text">
+                  {zeit(s.geaendert ?? 0)} · {Math.round(s.groesse / 1024)} KB
+                </span>
+              </li>
+            ))}
+            {scans && !scans.length && <li className="muted">Keine Scans im Scanordner.</li>}
+          </ul>
         </Karte>
       </BreitenLeiste>
       <Karte als="main" titel="Vorschau" className="ava-eingang-vorschau">
@@ -213,74 +213,74 @@ export function Eingang() {
           als="aside"
           titel="Zuordnen"
           className="ava-eingang-ziel"
-          aktionen={
-            <button className="small" onClick={() => setPruefen(true)} title="Erfassen, Korrektur rechnen, Nummer vergeben, in die Kostenkontrolle eintragen">
+        >
+          <div className="button-row">
+            <button onClick={() => setPruefen(true)} title="Erfassen, Korrektur rechnen, Nummer vergeben, in die Kostenkontrolle eintragen">
               Neue Rechnung prüfen …
             </button>
-          }
-        >
-        {hinweis && (
-          <div className="ava-ok small-text" role="status">
-            {hinweis}
           </div>
-        )}
-        <h3>Erfasst, noch ohne Scan</h3>
-        <ul className="list" role="listbox" aria-label="Erfasste Rechnungen ohne Scan">
-          {offene.map((r, i) => (
-            <li
-              key={r.id}
-              role="option"
-              tabIndex={0}
-              aria-selected={r.id === d?.id}
-              className={r.id === d?.id ? 'active' : ''}
-              onClick={() => setDatensatz(r.id)}
-              onKeyDown={(x) => listenTaste(x, offene, i, (y) => setDatensatz(y.id))}
-            >
-              <div>
-                <strong>Nr. {String(r.nr)}</strong> {gewerkZweistellig(r.gewerk)} {r.firma} {r.art} {r.lfd ?? ''}
-              </div>
-              <span className="muted small-text">
-                {datumKurz(r.rechnungsdatum)} · {euro(r.betrag)}
-              </span>
-            </li>
-          ))}
-          {!offene.length && <li className="muted">Keine – erst „Neue Rechnung prüfen“.</li>}
-        </ul>
-        {(!d || !scan) && offene.length > 0 && (
-          <p className="ava-eingang-hinweis">
-            {!scan ? 'Links einen Scan wählen' : 'Oben die Rechnung wählen, zu der der Scan gehört'}, dann „Zuordnen & ablegen“.
-          </p>
-        )}
-        {d && scan && (
-          <div className="ava-ablage">
-            <div className="small-text">Ablage als</div>
-            <div className="ava-dateiname">{rechnungsDateiname(k, d)}</div>
-            <div className="muted small-text">in {auftragsordner(k, gewerkOrdner(projekt, d.gewerk), d.gewerk)}</div>
-            <label className="ava-check">
-              <input type="checkbox" checked={deckblatt} onChange={(x) => setDeckblatt(x.target.checked)} disabled={!/\.pdf$/i.test(scan)} /> Deckblatt digital voranstellen
-            </label>
-            <button className="primary" disabled={laeuft} onClick={() => void ablegen()}>
-              {laeuft ? 'Wird abgelegt …' : 'Zuordnen & ablegen …'}
-            </button>
-          </div>
-        )}
-        {abgelegte.length > 0 && (
-          <>
-            <h3>Abgelegt, noch nicht weitergeleitet</h3>
-            <ul className="list">
-              {abgelegte.map((r) => (
-                <li key={r.id}>
-                  <div>
-                    Nr. {String(r.nr)} {gewerkZweistellig(r.gewerk)} {r.firma} {r.art} {r.lfd ?? ''}
-                  </div>
-                  <button className="small" onClick={() => void mail(r)} title="Mailentwurf mit der Rechnung als Anhang öffnen">
-                    Mail an Zahler …
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </>
-        )}
+          {hinweis && (
+            <div className="ava-ok small-text" role="status">
+              {hinweis}
+            </div>
+          )}
+          <h3>Erfasst, noch ohne Scan</h3>
+          <ul className="list" role="listbox" aria-label="Erfasste Rechnungen ohne Scan">
+            {offene.map((r, i) => (
+              <li
+                key={r.id}
+                role="option"
+                tabIndex={0}
+                aria-selected={r.id === d?.id}
+                className={r.id === d?.id ? 'active' : ''}
+                onClick={() => setDatensatz(r.id)}
+                onKeyDown={(x) => listenTaste(x, offene, i, (y) => setDatensatz(y.id))}
+              >
+                <div>
+                  <strong>Nr. {String(r.nr)}</strong> {gewerkZweistellig(r.gewerk)} {r.firma} {r.art} {r.lfd ?? ''}
+                </div>
+                <span className="muted small-text">
+                  {datumKurz(r.rechnungsdatum)} · {euro(r.betrag)}
+                </span>
+              </li>
+            ))}
+            {!offene.length && <li className="muted">Keine – erst „Neue Rechnung prüfen“.</li>}
+          </ul>
+          {(!d || !scan) && offene.length > 0 && (
+            <p className="ava-eingang-hinweis">
+              {!scan ? 'Links einen Scan wählen' : 'Oben die Rechnung wählen, zu der der Scan gehört'}, dann „Zuordnen & ablegen“.
+            </p>
+          )}
+          {d && scan && (
+            <div className="ava-ablage">
+              <div className="small-text">Ablage als</div>
+              <div className="ava-dateiname">{rechnungsDateiname(k, d)}</div>
+              <div className="muted small-text">in {auftragsordner(k, gewerkOrdner(projekt, d.gewerk), d.gewerk)}</div>
+              <label className="ava-check">
+                <input type="checkbox" checked={deckblatt} onChange={(x) => setDeckblatt(x.target.checked)} disabled={!/\.pdf$/i.test(scan)} /> Deckblatt digital voranstellen
+              </label>
+              <button className="primary" disabled={laeuft} onClick={() => void ablegen()}>
+                {laeuft ? 'Wird abgelegt …' : 'Zuordnen & ablegen …'}
+              </button>
+            </div>
+          )}
+          {abgelegte.length > 0 && (
+            <>
+              <h3>Abgelegt, noch nicht weitergeleitet</h3>
+              <ul className="list">
+                {abgelegte.map((r) => (
+                  <li key={r.id}>
+                    <div>
+                      Nr. {String(r.nr)} {gewerkZweistellig(r.gewerk)} {r.firma} {r.art} {r.lfd ?? ''}
+                    </div>
+                    <button className="small" onClick={() => void mail(r)} title="Mailentwurf mit der Rechnung als Anhang öffnen">
+                      Mail an Zahler …
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
         </Karte>
       </BreitenLeiste>
       {pruefen && <RechnungPruefen onClose={() => setPruefen(false)} onErfasst={(x) => setDatensatz(x.id)} />}

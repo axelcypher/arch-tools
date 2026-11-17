@@ -107,7 +107,17 @@ export function RechnungenAnsicht({ gewerk }: { gewerk?: string }) {
   );
 
   return (
-    <AnsichtKarte titel="Rechnungen" leiste={werkzeuge}>
+    <AnsichtKarte
+      titel="Rechnungen"
+      leiste={
+        <>
+          {werkzeuge}
+          <div className="ava-ok small-text ava-leiste-status" role="status" title={hinweis ?? undefined}>
+            {hinweis ?? ''}
+          </div>
+        </>
+      }
+    >
       {a1 && (
         <div className="metric-row ava-kennzahlen">
           <div className="metric">
@@ -128,9 +138,6 @@ export function RechnungenAnsicht({ gewerk }: { gewerk?: string }) {
           </div>
         </div>
       )}
-      <div className="ava-ok small-text ava-leiste-status" role="status" title={hinweis ?? undefined}>
-        {hinweis ?? ''}
-      </div>
       {a1?.hinweise.map((h, i) => (
         <div key={i} className="warning">
           {h}

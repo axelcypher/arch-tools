@@ -156,20 +156,21 @@ export function Mailverlauf() {
   }, [projekt.struktur, gewerk]);
   const gewerkVon = (d: Datei) => projekt.struktur?.gewerke.find((g) => d.pfad.startsWith(`${g.pfad}/`))?.kennung;
   return (
-    <Karte als="main"
+    <Karte
+      als="main"
       titel="Mailverlauf"
       className="ava-mailverlauf"
       aktionen={
-            <select value={gewerk} onChange={(e) => setGewerk(e.target.value)} aria-label="Gewerk">
-              <option value="">alle Gewerke und das Projekt</option>
-              {projekt.struktur?.gewerke
-                .filter((g) => g.korrespondenz.length)
-                .map((g) => (
-                  <option key={g.kennung} value={g.kennung}>
-                    {gewerkZweistellig(g.kennung)} {g.name}
-                  </option>
-                ))}
-            </select>
+        <select value={gewerk} onChange={(e) => setGewerk(e.target.value)} aria-label="Gewerk">
+          <option value="">alle Gewerke und das Projekt</option>
+          {projekt.struktur?.gewerke
+            .filter((g) => g.korrespondenz.length)
+            .map((g) => (
+              <option key={g.kennung} value={g.kennung}>
+                {gewerkZweistellig(g.kennung)} {g.name}
+              </option>
+            ))}
+        </select>
       }
     >
       <p className="muted small-text">Mails (.eml, .msg) aus den Korrespondenzordnern der Gewerke und den Mailordnern des Projekts ({useAva.getState().einstellungen.ablage.mailOrdner.join(', ')}).</p>

@@ -115,7 +115,7 @@ export function Uebersicht() {
               </th>
               <th>freigegeben</th>
               <th>
-                <span className="ava-sr-only">Hinweise</span>
+                <span className="nur-vorlesen">Hinweise</span>
               </th>
             </tr>
           </thead>

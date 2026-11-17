@@ -97,7 +97,14 @@ export function GewerkAnsicht({ gewerk, tab }: { gewerk: string; tab: GewerkTab 
   const offenesLv = lv?.gewerk === gewerk ? lv : null;
   const lvOffenGeaendert = lvGeaendert(offenesLv);
   const t = TABS.find((x) => x.id === tab) ?? TABS[0];
-  const zeigeTab = (id: GewerkTab) => useAva.getState().setAnsicht({ art: 'gewerk', gewerk, tab: id });
+  /**
+   * Tab wechseln. Jede Ansicht bringt ihre eigene Karte mit (samt Tabs im Kopf), die Karte wird also neu eingehängt –
+   * der Fokus geht deshalb auf den neuen Tab, sonst landete er nach Klick, Enter oder Leertaste im Leeren
+   */
+  const zeigeTab = (id: GewerkTab) => {
+    useAva.getState().setAnsicht({ art: 'gewerk', gewerk, tab: id });
+    requestAnimationFrame(() => document.getElementById(`ava-tab-${id}`)?.focus());
+  };
 
   const nummerieren = async () => {
     if (!offenesLv) return;
@@ -114,9 +121,9 @@ export function GewerkAnsicht({ gewerk, tab }: { gewerk: string; tab: GewerkTab 
     e.preventDefault();
     const ziel = TABS[(n + TABS.length) % TABS.length];
     zeigeTab(ziel.id);
-    requestAnimationFrame(() => document.getElementById(`ava-tab-${ziel.id}`)?.focus());
   };
 
+  const angaben = [blatt?.auftragnehmer && `Auftragnehmer: ${blatt.auftragnehmer}`, g ? g.pfad : 'Kein Gewerkeordner im Projekt'].filter(Boolean).join(' · ');
   const rahmen: GewerkRahmen = {
     titel: (
       <>
@@ -200,21 +207,17 @@ export function GewerkAnsicht({ gewerk, tab }: { gewerk: string; tab: GewerkTab 
             </button>
           ))}
         </div>
-        <div className="muted small-text ava-gewerk-angaben">
-          {[blatt?.auftragnehmer && `Auftragnehmer: ${blatt.auftragnehmer}`, g ? g.pfad : 'Kein Gewerkeordner im Projekt'].filter(Boolean).join(' · ')}
-          {g && (
-            <button className="small ava-link" onClick={() => void useAva.getState().fs.oeffnen(vollerPfad(projekt.ordner, g.pfad)).catch((e) => meldung('Ordner ließ sich nicht öffnen', g.pfad, e))}>
-              <Symbol name="ordnerOffen" /> Ordner öffnen
-            </button>
-          )}
-        </div>
-        {fehler && (
-          <div className="meldung fehler" role="alert">
-            {fehler}
-          </div>
+        <span className="muted small-text ava-gewerk-angaben" title={angaben}>
+          {angaben}
+        </span>
+        {g && (
+          <button className="small ava-link" title="Ordner des Gewerks öffnen" aria-label="Ordner öffnen" onClick={() => void useAva.getState().fs.oeffnen(vollerPfad(projekt.ordner, g.pfad)).catch((e) => meldung('Ordner ließ sich nicht öffnen', g.pfad, e))}>
+            <Symbol name="ordnerOffen" /> <span className="ava-ordner-text">Ordner öffnen</span>
+          </button>
         )}
       </div>
     ),
+    fehler,
     panelId: 'ava-gewerk-inhalt',
     tabId: `ava-tab-${t.id}`,
   };

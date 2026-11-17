@@ -311,13 +311,19 @@ export function LvEditor() {
         leiste={werkzeuge}
         fuss={
           <div className="ava-lv-fuss">
-            <span>{positionsZahl} Positionen</span>
-            <span>Kostenansatz netto: {euro(ka?.netto ?? 0)}</span>
-            <span>
-              {lv.kopf.mwst} % USt: {euro(ka?.mwst ?? 0)}
+            <span className="ava-fuss-neben" title={`${positionsZahl} Positionen`}>
+              {positionsZahl} Positionen
             </span>
-            <strong>brutto: {euro(ka?.brutto ?? 0)}</strong>
-            {(ka?.ohnePreis ?? 0) > 0 && <span className="muted">{ka!.ohnePreis} Position(en) ohne Preis im Kostenansatz</span>}
+            <span title="Kostenansatz netto">netto {euro(ka?.netto ?? 0)}</span>
+            <span title={`Umsatzsteuer ${lv.kopf.mwst} %`}>
+              USt {lv.kopf.mwst} % {euro(ka?.mwst ?? 0)}
+            </span>
+            <strong title="Kostenansatz brutto">brutto {euro(ka?.brutto ?? 0)}</strong>
+            {(ka?.ohnePreis ?? 0) > 0 && (
+              <span className="muted ava-fuss-neben" title={`${ka!.ohnePreis} Position(en) ohne Preis im Kostenansatz`}>
+                {ka!.ohnePreis} ohne Preis
+              </span>
+            )}
           </div>
         }
       >
