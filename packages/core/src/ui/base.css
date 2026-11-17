@@ -636,6 +636,26 @@ button.icon {
   padding: 0 6px;
 }
 
+/* Knopf als Verweis im Text (z. B. ein Wert in einer Tabelle, der seine Prüfung öffnet): ohne Rahmen und Grund, in der
+   Akzentschrift, immer dezent unterstrichen (die Farbe allein reicht gegen den Text nicht), beim Überfahren und Fokus
+   voll; zählt in Feldzeilen der Zahlentabelle als Text */
+button.link {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--accent-text);
+  text-align: left;
+  white-space: normal;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
+  text-underline-offset: 2px;
+}
+button.link:hover:not(:disabled):not([aria-disabled='true']),
+button.link:focus-visible {
+  background: none;
+  text-decoration-color: currentColor;
+}
+
 .toggle {
   display: inline-flex;
   align-items: center;
@@ -994,9 +1014,15 @@ textarea:focus {
   vertical-align: top;
 }
 /* In einer Zeile mit Feldern fluchtet Text ohne Feld oder Knopf mit dem Text in den Feldern (der steht in --ctl-h
-   senkrecht mittig); Zeilen ohne Feld oder Knopf (z. B. Gruppen und Summen) bleiben knapp */
-.summary-table.felder tr:has(input, select, textarea, button) > td:not(:has(input, select, textarea, button)) {
+   senkrecht mittig); Zeilen ohne Feld oder Knopf (z. B. Gruppen und Summen) bleiben knapp. Ein Verweisknopf
+   (button.link) zählt als Text */
+.summary-table.felder tr:has(input, select, textarea, button:not(.link)) > td:not(:has(input, select, textarea, button:not(.link))) {
   padding-top: calc(3px + (var(--ctl-h) - 1lh) / 2);
+}
+
+/* Tabellen ohne Felder mit mehrzeiligen Zellen (Rechenweg, Katalog): oben bündig, ohne den Ausgleich der Feldzeilen */
+.summary-table.oben td {
+  vertical-align: top;
 }
 
 .summary-table tr.strong td,
@@ -1008,6 +1034,16 @@ textarea:focus {
 .summary-table tr.gruppe td {
   background: var(--tabelle-gruppe);
   font-weight: 600;
+}
+
+/* gewählte Zeile (z. B. der Katalogeintrag oder der verglichene Stand) – nach der Gruppenzeile, damit die Wahl auch dort
+   sichtbar ist */
+.summary-table tr.selected td {
+  background: var(--accent-soft);
+}
+/* wie die Wahl in senkrechten Segmenten: Tönung und Akzentlinie links – von Gruppenzeilen unterscheidbar */
+.summary-table tr.selected td:first-child {
+  box-shadow: inset 3px 0 var(--accent);
 }
 
 /* Summenzeile: halbfett mit kräftigerer Linie darüber */

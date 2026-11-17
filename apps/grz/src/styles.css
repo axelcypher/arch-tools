@@ -1,12 +1,6 @@
 /* TERRIO (Grund-Styles: @core/ui/base.css) */
 
 /* Layout: Fläche und Karten aus base.css (Richtung C) – hier nur Inhalte der Karten */
-.karte-kopf h2 {
-  /* Hilfe „?“ direkt hinter dem Titel */
-  display: flex;
-  align-items: center;
-  gap: var(--s1);
-}
 /* Eingaben: Felder einer Zeile unten bündig, auch wenn ein Label umbricht */
 .grz-fest .field-row {
   align-items: flex-end;
@@ -38,28 +32,32 @@
   gap: 4px;
   margin-bottom: 12px;
 }
-/* Vollgeschoss-Tabelle: feste Spalten, die Einstufung bekommt die Hälfte – kein Überlauf bei 360 px */
+/* Vollgeschoss-Tabelle: feste Spalten, bemessen an der Zellschrift (--fs-m: „−0,20“, „100 %“) bzw. am längsten
+   Kopfwort („Geschoss“); die Einstufung nimmt den Rest. Köpfe höchstens zweizeilig („über / Gel.“), die Einheit steht
+   im Tooltip – ein längeres Kopfwort braucht eine breitere Spalte. So passen die Zahlen auch, wenn die Nachweis-Karte
+   auf 320 px nachgibt. */
 .grz-vg-tabelle {
   table-layout: fixed;
 }
 .grz-vg-tabelle th:nth-child(1) {
-  width: 14%;
+  width: calc(4.3 * var(--fs-m));
 }
-.grz-vg-tabelle th:nth-child(2),
+.grz-vg-tabelle th:nth-child(2) {
+  width: calc(3.7 * var(--fs-m));
+}
 .grz-vg-tabelle th:nth-child(3) {
-  width: 11%;
+  width: calc(3.3 * var(--fs-m));
 }
 .grz-vg-tabelle th:nth-child(4) {
-  width: 10%;
+  width: calc(3.6 * var(--fs-m));
 }
 .grz-tabelle.grz-vg-tabelle th.num,
 .grz-vg-tabelle th {
   white-space: normal;
 }
-.grz-vg-tabelle select {
-  width: 100%;
-  font-size: 11px;
-  text-overflow: ellipsis;
+/* Spanne des Geländes („−0,40 – 1,25“) darf umbrechen, statt in die Nachbarspalte zu laufen */
+.grz-vg-tabelle td .small-text {
+  white-space: normal;
 }
 .grz-hinweis-zeile {
   display: block;
@@ -127,12 +125,29 @@
   background: var(--warn-bg);
   color: var(--warn-text);
 }
+/* Auswahlen in den dichten Tabellen: einheitlich --fs-s, so breit wie die Spalte (lange Einträge gekürzt, voller Stand im
+   Tooltip); Nutzung und Versiegelung stehen in der Flächentabelle untereinander, damit beide ganz lesbar bleiben */
+.grz-flaechen-tabelle select,
+.grz-raum-tabelle select,
+.grz-vg-tabelle select {
+  width: 100%;
+  font-size: var(--fs-s);
+  text-overflow: ellipsis;
+}
+.grz-flaechen-tabelle select {
+  display: block;
+}
+.grz-flaechen-tabelle select + select,
 .grz-raum-tabelle select {
   margin: 2px 0;
 }
+/* Eingabekarte: gekürzte Auswahl mit Auslassungspunkten (voller Stand im Tooltip) */
+.grz-fest select {
+  text-overflow: ellipsis;
+}
 .grz-begruendung td {
   padding-top: 0;
-  font-size: 11px;
+  font-size: var(--fs-xs);
   color: var(--muted);
 }
 .grz-begruendung summary {
@@ -156,7 +171,8 @@ button.link:hover {
 }
 .kpis {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* zwei Kacheln nebeneinander, wenn sie Platz haben (Zahl mit Einheit bricht nicht um); sonst untereinander */
+  grid-template-columns: repeat(auto-fit, minmax(12em, 1fr));
   gap: 8px;
   margin: 8px 0;
 }
