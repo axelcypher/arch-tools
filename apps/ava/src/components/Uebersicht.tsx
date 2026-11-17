@@ -71,7 +71,7 @@ export function Uebersicht() {
         </div>
       }
     >
-      <div className="ava-kennzahlen">
+      <div className="metric-row ava-kennzahlen">
         <div className="metric">
           <span>Zielsumme</span>
           <strong>{euro(kk?.uebersicht?.zielsumme ?? null) || '—'}</strong>
@@ -96,7 +96,7 @@ export function Uebersicht() {
         </div>
       </div>
       <div className="ava-tabelle-rahmen">
-        <table className="ava-tabelle">
+        <table className="summary-table text ava-uebersicht-tabelle">
           <thead>
             <tr>
               <th>Gewerk</th>
@@ -175,7 +175,7 @@ export function Uebersicht() {
             })}
           </tbody>
           <tfoot>
-            <tr>
+            <tr className="summe">
               <td colSpan={3}>Summe</td>
               <td className="num">{euro(ks)}</td>
               <td className="num">{euro(ka)}</td>

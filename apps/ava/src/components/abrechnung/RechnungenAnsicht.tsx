@@ -109,7 +109,7 @@ export function RechnungenAnsicht({ gewerk }: { gewerk?: string }) {
   return (
     <AnsichtKarte titel="Rechnungen" leiste={werkzeuge}>
       {a1 && (
-        <div className="ava-kennzahlen">
+        <div className="metric-row ava-kennzahlen">
           <div className="metric">
             <span>Kostenschätzung</span>
             <strong>{euro(a1.kostenschaetzung)}</strong>

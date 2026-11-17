@@ -232,7 +232,7 @@ export function AuftragAnsicht({ gewerk }: { gewerk: string }) {
             <div className="muted small-text">
               Auftragnehmer: {blatt.auftragnehmer || '—'} · Kostenschätzung: {euro(blatt.kostenschaetzung)}
             </div>
-            <table className="ava-tabelle">
+            <table className="summary-table text">
               <thead>
                 <tr>
                   <th>Nr.</th>
@@ -252,7 +252,7 @@ export function AuftragAnsicht({ gewerk }: { gewerk: string }) {
                 ))}
               </tbody>
               <tfoot>
-                <tr>
+                <tr className="summe">
                   <td colSpan={3}>Kostenanschlag</td>
                   <td className="num">{euro(blatt.anschlag.summe)}</td>
                 </tr>

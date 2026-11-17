@@ -95,32 +95,13 @@
   font-size: 12px;
 }
 
+/* Kennzahlen (gemeinsame .metric-row): im schmalen Fenster umbrechen */
 .ava-kennzahlen {
-  display: flex;
-  gap: 10px;
   flex-wrap: wrap;
-  margin: 8px 0 14px;
 }
 
 .ava-kennzahlen .metric {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 8px 12px;
   min-width: 150px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.ava-kennzahlen .metric span {
-  font-size: 11px;
-  color: var(--muted);
-}
-
-.ava-kennzahlen .metric strong {
-  font-size: 16px;
-  font-variant-numeric: tabular-nums;
 }
 
 .ava-kennzahlen .metric small {
@@ -424,7 +405,7 @@ input.ava-fehler {
 
 .ava-lv-fuss {
   display: flex;
-  gap: var(--s3);
+  gap: var(--s1) var(--s3);
   align-items: center;
   font-variant-numeric: tabular-nums;
   flex-wrap: wrap;
@@ -1206,6 +1187,15 @@ input.ava-fehler {
   font-weight: 600;
   color: var(--accent);
   min-width: 44px;
+}
+
+/* Kostenübersicht (gemeinsame Zahlentabelle): Beträge nicht umbrechen, Zellen mittig zum Kennungsknopf */
+.ava-uebersicht-tabelle td.num {
+  white-space: nowrap;
+}
+
+.ava-uebersicht-tabelle td {
+  vertical-align: middle;
 }
 
 .ava-tabelle-rahmen {
