@@ -792,7 +792,9 @@
                       {
                         "m": "Planungsrecht",
                         "in": [
-                          "Bebauungsplan"
+                          "Bebauungsplan",
+                          "einfacher Bebauungsplan",
+                          "Satzung nach BauGB"
                         ]
                       },
                       {
@@ -804,9 +806,28 @@
                   {
                     "und": [
                       {
-                        "m": "Planungsrecht",
-                        "in": [
-                          "Innenbereich"
+                        "oder": [
+                          {
+                            "m": "Planungsrecht",
+                            "in": [
+                              "Innenbereich"
+                            ]
+                          },
+                          {
+                            "und": [
+                              {
+                                "m": "Planungsrecht",
+                                "in": [
+                                  "einfacher Bebauungsplan",
+                                  "Satzung nach BauGB"
+                                ]
+                              },
+                              {
+                                "f": "planung.innen",
+                                "ist": true
+                              }
+                            ]
+                          }
                         ]
                       },
                       {
@@ -818,32 +839,28 @@
                   {
                     "und": [
                       {
-                        "m": "Planungsrecht",
-                        "in": [
-                          "einfacher Bebauungsplan",
-                          "Satzung nach BauGB"
-                        ]
-                      },
-                      {
                         "oder": [
                           {
-                            "f": "planung.befreiung",
-                            "ist": true
+                            "m": "Planungsrecht",
+                            "in": [
+                              "Außenbereich"
+                            ]
                           },
                           {
-                            "f": "planung.abweichung_umgebung",
-                            "ist": true
+                            "und": [
+                              {
+                                "m": "Planungsrecht",
+                                "in": [
+                                  "einfacher Bebauungsplan",
+                                  "Satzung nach BauGB"
+                                ]
+                              },
+                              {
+                                "f": "planung.innen",
+                                "ist": false
+                              }
+                            ]
                           }
-                        ]
-                      }
-                    ]
-                  },
-                  {
-                    "und": [
-                      {
-                        "m": "Planungsrecht",
-                        "in": [
-                          "Außenbereich"
                         ]
                       },
                       {
@@ -873,7 +890,7 @@
           }
         ]
       },
-      "grund": "Mit Zustimmung der Gemeinde kann bis Ende 2030 zugunsten des Wohnungsbaus vom Bebauungsplan bzw. vom Rahmen der Umgebung abgewichen werden – beim Neubau von Wohngebäuden, bei Anbau, Aufstockung oder Umbau mit neuen bzw. wieder nutzbaren Wohnungen und bei der Umnutzung zu Wohnzwecken (Abs. 1), im Außenbereich nur im Zusammenhang mit der Ortslage bzw. einem Bebauungsplangebiet (Abs. 3).",
+      "grund": "Mit Zustimmung der Gemeinde kann bis Ende 2030 zugunsten des Wohnungsbaus von Vorschriften des BauGB abgewichen werden – etwa vom Bebauungsplan, vom Rahmen der Umgebung oder von einer Veränderungssperre bzw. Erhaltungssatzung – beim Neubau von Wohngebäuden, bei Anbau, Aufstockung oder Umbau mit neuen bzw. wieder nutzbaren Wohnungen und bei der Umnutzung zu Wohnzwecken (Abs. 1), im Außenbereich nur im räumlichen Zusammenhang mit der Ortslage bzw. einem Bebauungsplangebiet (Abs. 3).",
       "fundstellen": [
         "246e/1",
         "246e/3",

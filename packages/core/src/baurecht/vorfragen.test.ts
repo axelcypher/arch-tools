@@ -10,6 +10,7 @@ import { FAKTEN } from './fakten';
 import { ableitungenAnwenden, einzelfragenVon, frageGestellt, mitVorfragen, vorfrageHinweis, vorfragenAnwenden, vorfragenKarte } from './fragen';
 import { aktiveModule, paketAusDateien, paketPruefen } from './paket';
 import type { FaktDef, FaktWert, Kurz, Modul, Regeldatei } from './typen';
+import type { KurzKontext } from './kurz';
 
 const sicher = (wert: FaktWert['wert']): FaktWert => ({ wert, herkunft: 'manuell', sicherheit: 'sicher' });
 const V = 'vorfrage.natura2000';
@@ -271,6 +272,31 @@ describe('Werte, die sich aus anderen ergeben (FaktDef.folgt)', () => {
     expect(mit(z('null')).join('\n')).toMatch(/folgt\[0\]: Wert „null“ passt nicht zur Art „zahl“/);
     expect(mit(z(0, ' ')).join('\n')).toMatch(/folgt\[0\]: Grund fehlt/);
     expect(mit({ ...z(0), wert: 1 }).join('\n')).toMatch(/„folgt“ nicht zusammen mit festem Wert/);
+  });
+
+  it('Prüfung des Pakets: „ersetzt“ nur zusammen mit „folgt“', () => {
+    const mit = (f: NonNullable<Modul['fakten']>[string]) =>
+      paketPruefen(
+        paketAusDateien({ 'module/bund/modul.json': { ...bund, fakten: { 'x.f': f } }, 'module/bund/bnatschg@2026-09-30.json': { ...bnatschg, paragrafen: { '34': bnatschg.paragrafen['34'] } } }, 'x'),
+        VORGABE_MERKMALE,
+      );
+    const alt = { titel: 'Alte Rechtsfrage', gruppe: 'planung' as const, typ: 'janein' as const, ersetzt: true as const };
+    expect(mit(alt).join('\n')).toMatch(/x\.f: „ersetzt“ nur zusammen mit „folgt“/);
+    expect(mit({ ...alt, folgt: [{ wenn: { f: 'schutz.ffh', ist: false }, wert: false, grund: 'kein FFH-Gebiet' }] })).toEqual([]);
+  });
+
+  it('ersetzte Frage (FaktDef.ersetzt): nur mit eigener Antwort gestellt – nicht leer, nicht abgeleitet; ein Widerspruch hält sie', () => {
+    const def: FaktDef = { titel: 'Alt', gruppe: 'planung', typ: 'janein', ersetzt: true, folgt: [{ wenn: { f: 'schutz.ffh', ist: false }, wert: false, grund: 'kein FFH-Gebiet' }] };
+    const ctx = (v?: FaktWert): KurzKontext => ({ merkmale: {}, einreichung: '2026-12-01', heute: '2026-11-16', bausteine: {}, fakten: v ? { 'x.alt': v } : {} });
+    expect(frageGestellt('x.alt', def, ctx())).toBe(false);
+    expect(frageGestellt('x.alt', def, ctx({ ...sicher(''), wert: '' }))).toBe(false);
+    expect(frageGestellt('x.alt', def, ctx(sicher(true)))).toBe(true);
+    // eine Antwort, die nur Hinweis ist, bleibt eine eigene Antwort: sichtbar (sie trägt dann kein Grün)
+    expect(frageGestellt('x.alt', def, ctx({ wert: true, herkunft: 'manuell', sicherheit: 'hinweis' }))).toBe(true);
+    // abgeleitet: nicht gestellt (die Tatsachen stehen an ihrer Stelle)
+    expect(frageGestellt('x.alt', def, ctx({ wert: false, herkunft: 'abgeleitet', sicherheit: 'sicher', ausFolge: 'kein FFH-Gebiet' }))).toBe(false);
+    // eigene Antwort gegen die Tatsachen (gegenFolge, Widerspruch): bleibt sichtbar
+    expect(frageGestellt('x.alt', def, ctx({ ...sicher(true), gegenFolge: 'kein FFH-Gebiet', widerspruch: 'ergibt sich anders' }))).toBe(true);
   });
 
   it('Fixpunkt im Wechsel: ein Wert nach `folgt` stützt sich auf eine Vorfrage und umgekehrt', () => {

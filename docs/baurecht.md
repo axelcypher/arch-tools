@@ -197,15 +197,21 @@ Quelle in der Erläuterung.
   bzw. Umnutzung zu Wohnungen), oder wird unbewohnbarer Wohnraum wieder nutzbar? (Abs. 1 Nr. 1–3; beim Neubau eines
   Gebäudes mit Wohnungen abgeleitet)
 - je nach Planungsrecht: **Bebauungsplan** – hält das Vorhaben eine Festsetzung nicht ein (Nutzung, Geschosse, Höhe,
-  Baugrenzen, GRZ/GFZ, Bauweise, Gestaltung)? **Innenbereich** – fällt es aus dem Rahmen dessen, was in der näheren
-  Umgebung steht? **Einfacher Bebauungsplan, Satzung nach BauGB** – beides. **Außenbereich** – steht das Grundstück
-  im räumlichen Zusammenhang mit der Ortslage oder einem Bebauungsplangebiet (Abs. 3)?
+  Baugrenzen, GRZ/GFZ, Bauweise), oder ist die Nutzung dort nur ausnahmsweise zulässig? Dachform und Gestaltung zählen
+  nicht – das sind örtliche Bauvorschriften (Abweichung nach § 69 BauO NRW, davon befreit § 246e nicht).
+  **Innenbereich** – fehlt in der näheren Umgebung ein Vorbild (Nutzung, Höhe, Grundfläche, Lage, Bauweise)?
+  **Außenbereich** – liegt das Grundstück nahe (etwa bis 100 m) an der zusammenhängenden Bebauung oder einem
+  qualifizierten bzw. vorhabenbezogenen Bebauungsplangebiet (Abs. 3)? **Einfacher Bebauungsplan, Satzung nach BauGB**
+  – nach „Im Zusammenhang bebauter Ortsteil“: ja wie Innenbereich (dazu die Festsetzungen), nein wie Außenbereich.
 
-Daraus folgt „Sonderregelung Wohnungsbau (§ 246e)“: **ja** bei neuen Wohnungen und einer Abweichung (im Außenbereich:
-mit Zusammenhang zur Ortslage), **nein** ohne neue Wohnungen, ohne Abweichung (beim einfachen Bebauungsplan bzw. einer
-Satzung nur, wenn Plan **und** Umgebung eingehalten sind) bzw. im Außenbereich ohne Zusammenhang. Die Begründung sagt,
-warum („Trifft zu – es entstehen neue Wohnungen, und das Vorhaben fällt aus dem Rahmen der Umgebung“ bzw. „Entfällt –
-das Vorhaben hält den Bebauungsplan ein …“). Offen bleibt, was fehlt – unter „es fehlt“ stehen die Tatsachenfragen.
+Neue Wohnungen umfassen auch Wohnräume (Wohnheim- und Appartementzimmer). Daraus folgt „Sonderregelung Wohnungsbau
+(§ 246e)“: **ja** bei neuen Wohnungen und einer Abweichung (im Außenbereich: mit Zusammenhang zur Ortslage), **nein**
+ohne neue Wohnungen, im Außenbereich ohne Zusammenhang bzw. ohne Abweichung – „keine Abweichung“ aber nur, wenn
+weder Veränderungssperre, Erhaltungssatzung (auch in Aufstellung) noch Sanierungsgebiet entgegenstehen (auch davon kann
+§ 246e befreien) und beim einfachen Bebauungsplan bzw. einer Satzung Plan **und** Umgebung eingehalten sind. Ist
+„Im Zusammenhang bebauter Ortsteil“ offen, folgt kein „nein“. Die Begründung sagt, warum („Trifft zu – es entstehen
+neue Wohnungen, und für das Vorhaben fehlt ein Vorbild in der Umgebung“ bzw. „Entfällt – das Vorhaben hält den
+Bebauungsplan ein …“). Offen bleibt, was fehlt – unter „es fehlt“ stehen die Tatsachenfragen.
 Zustimmung der Gemeinde (§ 36a entsprechend), Vereinbarkeit mit den öffentlichen Belangen, Frist bis Ende 2030 (Abs. 4)
 und Folgeeinrichtungen (Abs. 5) stehen als Hinweise am Paragrafen; ab einer Einreichung 2031 entfällt er.
 

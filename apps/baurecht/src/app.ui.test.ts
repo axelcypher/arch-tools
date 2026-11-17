@@ -142,6 +142,35 @@ describe('Baurecht – Oberfläche', () => {
     document.body.innerHTML = '';
   });
 
+  it('§ 246e: gefragt werden Tatsachen; die frühere Rechtsfrage steht nur mit einer Antwort aus einer älteren Datei da und geht mit „zurücksetzen“', async () => {
+    const { aktuelleLage } = await import('./pruefung');
+    const host = render();
+    const angaben = () => host.querySelector('.br-angaben')!;
+    const frage = () => [...angaben().querySelectorAll<HTMLElement>('.br-fakt')].find((z) => /Frühere Angabe/.test(z.textContent ?? ''));
+    // neues Projekt: die Tatsachenfrage zur Umgebung, keine Rechtsfrage
+    expect(angaben().textContent).toMatch(/Fehlt für das Vorhaben ein Vorbild in der näheren Umgebung/);
+    expect(frage()).toBeUndefined();
+    // Antwort aus einer älteren Datei: die Frage steht mit ihr da (sie gilt weiter); „zurücksetzen“ nimmt sie zurück
+    act(() => useBaurecht.getState().faktSetzen('planung.wohnungsbau_246e', true, 'TP'));
+    expect(frage()).toBeTruthy();
+    act(() => knopf(frage()!, 'zurücksetzen')!.click());
+    expect(frage()).toBeUndefined();
+    expect(useBaurecht.getState().pruefung.fakten['planung.wohnungsbau_246e']).toBeUndefined();
+    // ergibt sich der Wert aus den Tatsachen (Planungsrecht für den Ort bestätigt, Vorbild in der Umgebung vorhanden, keine Sperre
+    // oder Satzung): er steht unter „Ergibt sich …“ – ohne „Überstimmen …“, geändert werden die Tatsachen
+    act(() => useBaurecht.getState().planungsrechtBestaetigen());
+    act(() => {
+      // Angaben zum Ort zählen nur mit Lagebezug als gesichert
+      const lage = aktuelleLage(useBaurecht.getState().project).lage;
+      for (const id of ['planung.abweichung_umgebung', 'planung.veraenderungssperre', 'planung.erhaltungssatzung', 'planung.erhaltungssatzung_aufstellung', 'planung.sanierungsgebiet']) useBaurecht.getState().faktSetzen(id, false, 'TP', undefined, lage);
+    });
+    const zeile = angaben().querySelector<HTMLElement>('.br-ergibt li[data-fakt="planung.wohnungsbau_246e"]');
+    expect(zeile?.textContent).toMatch(/Sonderregelung Wohnungsbau \(§ 246e\): nein – das Vorhaben hat Vorbilder in der Umgebung/);
+    expect(knopf(zeile!, 'Überstimmen …')).toBeUndefined();
+    // andere abgeleitete Werte behalten „Überstimmen …“
+    expect(knopf(angaben().querySelector<HTMLElement>('.br-ergibt li[data-fakt="gebaeude.wohnungen"]')!, 'Überstimmen …')).toBeTruthy();
+  });
+
   it('zeigt Kopf, Bilanz, Angaben, Vorschriften; Ampel immer mit Wort; Farbschema wechselt', () => {
     const host = render();
     expect(host.textContent).toContain('Antragsmerkmale');

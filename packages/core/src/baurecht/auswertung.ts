@@ -14,7 +14,7 @@ import { VORGABE_MERKMALE } from '../bedingung';
 import type { Fassung } from '../recht/typen';
 import { FAKTEN } from './fakten';
 import type { Bewertung, KurzKontext, TextKontext } from './kurz';
-import { kurzText, offenText, warumText, werten } from './kurz';
+import { kurzText, offenText, tragendeBlaetter, warumText, werten } from './kurz';
 import type { Paket } from './paket';
 import { regeldateiFuer } from './paket';
 import { ableitungenAnwenden, einzelfragenVon, frageGestellt, frageStand, vorfragenKarte } from './fragen';
@@ -392,7 +392,10 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
   };
   // eine ersetzte Frage (FaktDef.ersetzt) ohne eigene Antwort fehlt nicht selbst – an ihrer Stelle fehlen die gestellten
   // Tatsachenfragen, aus denen sie sich ergibt (Bedingungen von `folgt`), die noch keinen gesicherten Wert haben
+  const ersetztCache = new Map<string, string[]>();
   const ersetztDurch = (id: string): string[] => {
+    const schon = ersetztCache.get(id);
+    if (schon) return schon;
     const out = new Set<string>();
     // nur Zeilen, die noch offen sind (eine Zeile mit falschem Planungsrecht zählt nicht): deren offene Angaben, dazu
     // widersprüchliche bzw. unsichere, die eine Zeile tragen würden
@@ -400,12 +403,15 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
       try {
         const b = werten(z.wenn, ctx);
         if (b.w === 'nein') continue;
-        for (const o of [...b.offen, ...b.widerspruch, ...b.unsicher]) if (!o.startsWith('merkmal:') && !o.startsWith('paragraf:')) out.add(o);
+        // auch Merkmale: ein für den Ort nicht bestätigtes Planungsrecht trägt die Zeile nicht (sonst stünde ein Gelb ohne Grund da)
+        for (const o of [...b.offen, ...b.widerspruch, ...b.unsicher]) if (!o.startsWith('paragraf:')) out.add(o);
       } catch {
         // eine Bedingung, die sich nicht werten lässt, trägt nichts bei
       }
     }
-    return [...out].filter((f) => gestellt(f));
+    const liste = [...out].filter((f) => gestellt(f));
+    ersetztCache.set(id, liste);
+    return liste;
   };
   const ersetzteAufloesen = (offen: string[]) => [...new Set(offen.flatMap((o) => (faktDefs[o]?.ersetzt && !gestellt(o) ? ersetztDurch(o) : [o])))];
   // nur gestellte Angaben (und Verweise) – bleibt nichts übrig, alle (sonst stünde ein Gelb ohne Grund da)
@@ -528,7 +534,8 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
       tragend = [g];
     } else if (entf?.w === 'ja' && !(tatbestand === 'nein' && gewicht(gilt) < gewicht(entf))) {
       ampel = 'gruen';
-      const tatsachen = ausTatsachen(r.entfaellt, false);
+      // nur, wenn allein die ersetzte Angabe trägt – trägt etwas anderes mit (z. B. die abgelaufene Frist), dessen Grund
+      const tatsachen = tragendeBlaetter(r.entfaellt, ctx, 'ja').every((b) => 'f' in b && !!faktDefs[b.f]?.ersetzt) ? ausTatsachen(r.entfaellt, false) : [];
       gruende.push(`Entfällt – ${tatsachen.length ? tatsachen.join('; ') : warum(r.entfaellt, 'ja') || kurzText(r.entfaellt, text)}.`);
       tragend = [entf];
     } else if (tatbestand === 'ja') {
@@ -830,6 +837,8 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
       return 'gelb';
     }
   };
+  // Hinweis: klaert setzt die Angabe ohne die Ableitungen (folgt) – eine ersetzte Frage (FaktDef.ersetzt) wirkt hier nur,
+  // weil die Regel ihre Tatsachen auch selbst nennt (z. B. § 246e: „gilt“ mit neuen Wohnungen und Abweichung)
   const klaert = (p: ParagrafErgebnis, o: string): boolean => {
     const werte = moeglich(o);
     if (!werte || !regelVon.has(p.id)) return true;
