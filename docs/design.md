@@ -452,9 +452,10 @@ Zurücksetzen, Sonderfunktionen. Feste Namen, in allen Apps gleich:
 - Verb: Für Einträge einer Liste (Positionen, Punkte, Firmen, Merkmale) „hinzufügen“, nicht „neu“ oder „einfügen“.
   Eigenständige Gegenstände wie Projekt, Formular, Ordner oder Datei bleiben bei „Neu“ bzw. „anlegen“ (siehe
   „Begriffe“), ebenfalls mit Symbol `plus` („Neues Projekt anlegen …“).
-- Leiste heißt in diesem Abschnitt nur: `.toolbar` und die Kopfzeile eines Abschnitts (`.section-head`) – auch wenn
-  der Hinzufügen-Knopf dort der Hauptknopf (`.primary`) ist. Dort knapp nur der Gegenstand mit `title` der vollen
-  Aktion, z. B. „Mangel“ mit `title` „Mangel hinzufügen“. App-eigene Kopfzeilen gelten nur als Leiste,
+- Leiste heißt in diesem Abschnitt nur: `.toolbar` und die Kopfzeile eines Abschnitts (`.section-head`) – in einer
+  `.section-head` auch dann, wenn der Hinzufügen-Knopf dort der Hauptknopf (`.primary`) ist; in der Werkzeugleiste ist
+  er ein Standardknopf (siehe „Knopfstufen“). Dort knapp nur der Gegenstand mit `title` der vollen Aktion, z. B.
+  „Mangel“ mit `title` „Mangel hinzufügen“. App-eigene Kopfzeilen gelten nur als Leiste,
   wenn sie `.toolbar` bzw. `.section-head` tragen.
 - Keine Leisten sind `.button-row`, `.dialog-buttons`, Seitenleisten und Tabellenzeilen – dort fehlt der Zusammenhang
   einer Werkzeugleiste, der den knappen Text erklärt: dort gleich mit Verb („Beteiligten hinzufügen“).
