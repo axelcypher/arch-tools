@@ -48,7 +48,6 @@ export function Beteiligte() {
             inhalt: (
               <button
                 title="Beteiligten hinzufügen"
-                className="primary"
                 onClick={() => {
                   const id = neueId('b');
                   setNeuerEintrag(id);
