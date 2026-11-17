@@ -30,7 +30,7 @@
   /* schmale Fenster: Mindestbreite der Seitenkarten und der Mitte */
   --leiste-min: 180px;
   --karte-mitte-min: 280px;
-  /* Breite, die die Mitte behält, solange die Seitenkarten noch nachgeben können */
+  /* Breite, die die Mitte behält, solange die Seitenkarten noch nachgeben können (nur in px: Leiste.tsx liest den Wert) */
   --karte-mitte-wunsch: 480px;
   /* Tönung der Gruppenzeilen in der Zahlentabelle (eigene Bedeutung, auch wenn sie wie --hover aussieht) */
   --tabelle-gruppe: #f1f3f6;

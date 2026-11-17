@@ -79,6 +79,16 @@ describe('BreitenLeiste', () => {
     pfeil(host.querySelector('.leiste-griff')!, 'End');
     // 1000 − 480 (Wunschbreite statt mitteMin 300) = 520
     expect((host.querySelector('.leiste') as HTMLElement).style.width).toBe('520px');
+    // ohne .flaeche zählt die Wunschbreite nicht: 1000 − 300 = 700
+    act(() => root?.unmount());
+    host.className = '';
+    localStorage.removeItem('test:wunsch');
+    act(() => {
+      root = createRoot(host);
+      root.render([createElement(BreitenLeiste, { key: 'l', schluessel: 'test:wunsch', vorgabe: 300, max: 900, mitteMin: 300, children: 'Inhalt' }), createElement('main', { key: 'm' })]);
+    });
+    pfeil(host.querySelector('.leiste-griff')!, 'End');
+    expect((host.querySelector('.leiste') as HTMLElement).style.width).toBe('700px');
   });
 
   it('feste Seitenspalte zählt zu den anderen Leisten, eine wachsende nicht', () => {

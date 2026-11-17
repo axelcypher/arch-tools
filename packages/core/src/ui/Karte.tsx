@@ -123,7 +123,11 @@ export function ZeichenKarte({
   );
 }
 
-/** Inhalt für die Fußzeile der umgebenden ZeichenKarte (Bedienhinweis, Koordinaten, Maßstab aus der Zeichenkomponente) */
+/**
+ * Inhalt für die Fußzeile der umgebenden ZeichenKarte (Bedienhinweis, Koordinaten, Maßstab aus der Zeichenkomponente).
+ * Dauerhaft eingehängt lassen (sonst springt die Höhe der Zeichenfläche); mehrere Einhängungen stehen in der
+ * Reihenfolge des Einhängens, deshalb je Karte möglichst nur eine.
+ */
 export function ZeichenFussInhalt({ children }: { children: ReactNode }) {
   const ziel = useContext(ZeichenFussZiel);
   return ziel ? createPortal(children, ziel) : null;

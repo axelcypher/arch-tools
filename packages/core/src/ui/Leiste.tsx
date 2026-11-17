@@ -36,7 +36,8 @@ export function useLeistenBreite(schluessel: string, vorgabe: number, min = 180,
 
 /**
  * Platz, den eine Leiste höchstens bekommen kann: Breite des Arbeitsbereichs minus die anderen Leisten minus die
- * Mindestbreite der Mitte. Ohne `mitteMin` keine Grenze.
+ * Breite, die der Mitte bleibt (`mitteMin`, auf einer `.flaeche` mindestens `--karte-mitte-wunsch`, in px angegeben).
+ * Ohne `mitteMin` keine Grenze.
  */
 function verfuegbar(griff: HTMLElement | null, mitteMin: number | undefined): number {
   const leiste = griff?.parentElement;
