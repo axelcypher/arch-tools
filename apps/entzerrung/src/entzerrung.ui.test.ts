@@ -37,6 +37,8 @@ const eingabe = (el: HTMLInputElement, value: string) => {
   });
   act(() => el.blur());
 };
+/** Karte (Kartenlayout) nach dem Anfang ihres Titels */
+const karte = (host: Element, titel: string) => [...host.querySelectorAll<HTMLElement>('section.karte')].find((k) => k.querySelector('.karte-kopf h2')?.textContent?.startsWith(titel));
 const knopf = (host: Element, text: string) => [...host.querySelectorAll('button')].find((b) => b.textContent?.trim() === text) as HTMLButtonElement | undefined;
 const feld = (host: Element, label: string) => [...host.querySelectorAll('label.field')].find((l) => l.querySelector('.field-label')?.textContent === label)!.querySelector('input') as HTMLInputElement;
 
@@ -80,12 +82,12 @@ describe('RECTIO (Entzerrung)', () => {
     const host = render();
     act(() => useEntz.getState().fotoHinzufuegen('f1', 'Fassade', 'image/jpeg', 3000, 2000, new Uint8Array(4)));
     expect(host.querySelector('.ef-fotos')?.textContent).toContain('Fassade');
-    expect(host.querySelector('.sidebar-right .ef-fehlt')?.textContent).toContain('Noch 4 Ecken');
+    expect(host.querySelector('.ef-fehlt')?.textContent).toContain('Noch 4 Ecken');
 
     const s = useEntz.getState();
     const { foto, ebene } = aktuell(s);
     act(() => s.aendern(mitEbene(foto!.id, ebene!.id, (e) => ({ ...e, rechteck: { ...e.rechteck, ecken: ECKEN } }))));
-    expect(host.querySelector('.sidebar-right .ef-fehlt')?.textContent).toContain('Breite und Höhe');
+    expect(host.querySelector('.ef-fehlt')?.textContent).toContain('Breite und Höhe');
     eingabe(feld(host, 'Breite (m)'), '1,26');
     eingabe(feld(host, 'Höhe (m)'), '1,51');
     expect(aktuell(useEntz.getState()).ebene!.rechteck).toMatchObject({ breite: 1.26, hoehe: 1.51 });
@@ -118,10 +120,10 @@ describe('RECTIO (Entzerrung)', () => {
     const host = render();
     act(() => useEntz.getState().fotoHinzufuegen('f1', 'Fassade', 'image/jpeg', 3000, 2000, new Uint8Array(4)));
     act(() => knopf(host, 'Ebene')!.click());
-    expect([...host.querySelectorAll('.sidebar-left .list')[1].querySelectorAll('li')].map((l) => l.textContent)).toEqual(['Ebene 1', 'Ebene 2']);
+    expect([...karte(host, 'Ebenen')!.querySelectorAll('.list li')].map((l) => l.textContent)).toEqual(['Ebene 1', 'Ebene 2']);
     act(() => knopf(host, 'Fluchtlinien')!.click());
     expect(aktuell(useEntz.getState()).ebene!.methode).toBe('fluchtlinien');
-    expect(host.querySelector('.sidebar-right .ef-fehlt')?.textContent).toContain('2 waagerechte Kanten, 2 senkrechte Kanten');
+    expect(host.querySelector('.ef-fehlt')?.textContent).toContain('2 waagerechte Kanten, 2 senkrechte Kanten');
     expect(knopf(host, 'Waagerechte (0)')).toBeDefined();
     act(() => knopf(host, 'Passpunkte')!.click());
     expect(knopf(host, 'Passpunkt setzen (0)')).toBeDefined();
@@ -324,13 +326,13 @@ describe('RECTIO (Entzerrung)', () => {
     expect(punkte()[2].getAttribute('aria-disabled')).toBe('true');
     act(() => void document.activeElement?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })));
     // „Ansicht“: die linke Leiste als Haken-Schalter
-    expect(host.querySelector('.sidebar-left')).not.toBeNull();
+    expect(karte(host, 'Fotos')).toBeDefined();
     act(() => menueKnopf('Ansicht').click());
     const leisteSchalter = punkte().find((p) => p.textContent?.includes('Leiste mit Fotos und Ebenen'))!;
     expect(leisteSchalter.getAttribute('role')).toBe('menuitemcheckbox');
     expect(leisteSchalter.getAttribute('aria-checked')).toBe('true');
     act(() => leisteSchalter.click());
-    expect(host.querySelector('.sidebar-left')).toBeNull();
+    expect(karte(host, 'Fotos')).toBeUndefined();
     // Speichern zeigt ungespeicherte Änderungen als Punkt und im Namen; Gegenprobe ohne Änderungen
     const speichernKnopf = () => knopf(leiste, 'Speichern')!;
     expect(speichernKnopf().classList.contains('ungespeichert')).toBe(false);
@@ -351,5 +353,26 @@ describe('RECTIO (Entzerrung)', () => {
     act(() => punkte().find((p) => p.textContent?.startsWith('Alles zeigen'))!.click());
     window.removeEventListener('entz:einpassen', zaehlen);
     expect(eingepasst).toBe(1);
+  });
+
+  it('Kartenlayout: Fläche mit Fotos und Ebenen links, Zeichenfläche als Karte, rechts die Anleitung bzw. Referenz', () => {
+    const host = render();
+    const flaeche = host.querySelector('.flaeche')!;
+    expect(flaeche).not.toBeNull();
+    expect(host.querySelector('.workspace, .sidebar')).toBeNull();
+    expect(karte(host, 'Fotos')).toBeDefined();
+    expect(karte(host, 'So geht es')).toBeDefined();
+    const zeichen = flaeche.querySelector('section.zeichen-karte')!;
+    expect(zeichen.getAttribute('aria-label')).toBe('Zeichenfläche');
+    // mit Foto: Ebenen links, Referenz rechts; Bedienhinweis in der Fußzeile der Zeichenkarte, nicht über dem Foto
+    act(() => {
+      useEntz.getState().fotoHinzufuegen('f1', 'Süd', 'image/png', 10, 8, new Uint8Array(4));
+      useEntz.getState().waehleFoto('f1');
+    });
+    expect(karte(host, 'Ebenen')).toBeDefined();
+    expect(karte(host, 'Referenz')).toBeDefined();
+    act(() => useEntz.getState().setze({ werkzeug: 'ecken' }));
+    expect(zeichen.querySelector('.zeichen-fuss .ef-hinweis-text')?.textContent).toBeTruthy();
+    expect(host.querySelector('.ef-status')).toBeNull();
   });
 });

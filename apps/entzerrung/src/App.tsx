@@ -17,6 +17,7 @@ import { ablegen, fotoImProjektOeffnen, fotosHinzufuegen, neu, oeffnen, speicher
 import { aktuell, useEntz } from './store';
 import { dialogOffen, kuerzelErlaubt, verlaufErlaubt } from './tastatur';
 import { BreitenLeiste } from '@core/ui/Leiste';
+import { Flaeche } from '@core/ui/Karte';
 import { Symbol } from '@core/ui/Symbol';
 import { MenueKnopf } from '@core/ui/Menue';
 import type { MenuePunkt } from '@core/ui/Menue';
@@ -204,20 +205,17 @@ export function App() {
           { id: 'ansicht', rang: 1, inhalt: <MenueKnopf punkte={ansichtPunkte}>Ansicht</MenueKnopf>, menue: { text: 'Ansicht', unter: ansichtPunkte() } },
         ]}
       />
-      <div className="workspace">
+      <Flaeche>
         {!linksZu && (
           <BreitenLeiste schluessel="entzerrung:breite:links" vorgabe={260} min={190} max={420}>
             <FotoLeiste />
           </BreitenLeiste>
         )}
-        <main className="main">
-          <Arbeitsflaeche />
-          {ziehtDatei && <div className="ef-ablegen">Fotos oder Entzerrungs-Projekt hier ablegen</div>}
-        </main>
+        <Arbeitsflaeche ablegen={ziehtDatei} />
         <BreitenLeiste schluessel="entzerrung:breite:rechts" vorgabe={310} min={250} max={480} seite="rechts">
           <Eigenschaften />
         </BreitenLeiste>
-      </div>
+      </Flaeche>
       {wahl === 'projekt' && (
         <ProjektWahl
           app={APP_NAMEN.entzerrung.name}

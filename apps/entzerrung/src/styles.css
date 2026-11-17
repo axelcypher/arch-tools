@@ -209,52 +209,18 @@
   stroke-width: 1.5;
 }
 
-.ef-status {
-  position: absolute;
-  left: 8px;
-  bottom: 8px;
-  right: 8px;
-  display: flex;
-  gap: 16px;
-  justify-content: space-between;
-  pointer-events: none;
-  font-size: 12px;
-}
-.ef-status span {
-  background: var(--overlay-bg);
-  padding: 3px 8px;
-  border-radius: 4px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+/* Fußzeile der Zeichenkarte: Hinweis (gekürzt), rechts die Koordinaten */
+.ef-hinweis-text {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.ef-hinweis-text {
-  flex: 0 1 auto;
-}
 .ef-koord {
-  flex: 0 0 auto;
-  font-variant-numeric: tabular-nums;
+  flex: none;
   margin-left: auto;
+  font-variant-numeric: tabular-nums;
   white-space: pre;
-}
-/* schmale Fläche: Koordinaten über dem Hinweis statt daneben */
-@container (max-width: 560px) {
-  .ef-status {
-    flex-direction: column-reverse;
-    align-items: flex-start;
-    gap: 4px;
-  }
-  .ef-koord {
-    margin-left: 0;
-  }
-  .ef-status span {
-    max-width: 100%;
-  }
-}
-.ef-flaeche {
-  container-type: size;
 }
 .ef-overlay:focus-visible {
   outline: 2px solid var(--accent);
@@ -287,7 +253,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
+  font-size: var(--fs-l);
   color: #fff;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
   pointer-events: none;
@@ -323,27 +289,11 @@
 .ef-methoden button {
   flex: 1;
 }
-.ef-tabelle {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 12px;
-  margin: 4px 0 6px;
-}
-.ef-tabelle th {
-  text-align: left;
-  font-weight: 500;
-  color: var(--muted);
-  font-size: 11px;
-  padding: 2px 3px;
-}
-.ef-tabelle td {
-  padding: 2px 3px;
-}
 .ef-tabelle tr.sel td {
   background: var(--accent-soft);
 }
 .ef-tabelle input.num {
-  padding: 2px 4px;
+  padding: 2px var(--s1);
 }
 .ef-ok {
   display: flex;
@@ -390,7 +340,7 @@
 }
 .fw-kopf h2 {
   margin: 0;
-  font-size: 20px;
+  font-size: var(--fs-xl);
 }
 .fw-suche {
   width: min(260px, 100%);
@@ -403,7 +353,7 @@
 }
 .fw-gruppe h3 {
   margin: 14px 0 6px;
-  font-size: 13px;
+  font-size: var(--fs-m);
   color: var(--muted);
 }
 .fw-gruppe ul {
@@ -429,7 +379,7 @@
 }
 .fw-marke {
   flex: 0 0 auto;
-  font-size: 10.5px;
+  font-size: var(--fs-xs);
   padding: 1px 6px;
   border-radius: 999px;
   color: var(--accent);
@@ -455,11 +405,11 @@
 }
 .ef-ungueltig {
   color: var(--warn-text);
-  font-size: 12px;
+  font-size: var(--fs-s);
 }
 .ef-feinwerte {
   margin: 6px 0;
-  font-size: 12px;
+  font-size: var(--fs-s);
 }
 .ef-feinwerte summary {
   cursor: pointer;
@@ -493,7 +443,7 @@
   flex: 1;
 }
 .fw-datum {
-  font-size: 11px;
+  font-size: var(--fs-xs);
   color: var(--muted);
 }
 .fw-vorschau {

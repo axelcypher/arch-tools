@@ -14,6 +14,7 @@ import type { Pt } from '../geo/mat';
 import { bereichVon, flaecheVon, inEbene, pixelGroesse } from '../geo/messen';
 import { fotosHinzufuegen } from '../projekt';
 import { Symbol } from '@core/ui/Symbol';
+import { ZeichenKarte } from '@core/ui/Karte';
 import { kuerzelErlaubt } from '../tastatur';
 import { ECKEN, ECKEN_KURZ } from '../model';
 import type { Ebene, Foto } from '../model';
@@ -30,7 +31,8 @@ const FANG = 9;
 
 type Ziehen = { art: 'pan'; start: Pt; sicht: Sicht; bewegt: boolean; klickBeiEnde: boolean } | { art: 'punkt'; a: Auswahl; bewegt: boolean };
 
-export function Arbeitsflaeche() {
+/** Zeichenfläche als Karte; `ablegen`: gerade wird eine Datei über das Fenster gezogen */
+export function Arbeitsflaeche({ ablegen = false }: { ablegen?: boolean } = {}) {
   const doc = useEntz((s) => s.doc);
   const fotoId = useEntz((s) => s.fotoId);
   const ebeneId = useEntz((s) => s.ebeneId);
@@ -359,67 +361,74 @@ export function Arbeitsflaeche() {
   const hinweis = werkzeugHinweis(werkzeug, ebene, entwurf.length, shift);
 
   return (
-    <div className="ef-flaeche" ref={huelle}>
-      <canvas ref={canvas} className="ef-canvas" />
-      <svg
-        ref={svg}
-        className={`ef-overlay wz-${werkzeug}`}
-        tabIndex={foto ? 0 : -1}
-        role="img"
-        aria-label={foto ? `${ansicht === 'entzerrt' ? 'Entzerrte Ebene' : 'Foto'} ${foto.name} – Mausrad zoomt, Ziehen verschiebt, Pos1 zeigt alles` : 'Zeichenfläche'}
-        onPointerDown={zeigerRunter}
-        onPointerMove={zeigerBewegt}
-        onPointerUp={zeigerHoch}
-        onPointerCancel={() => (ziehen.current = null)}
-        onLostPointerCapture={() => (ziehen.current = null)}
-        onPointerLeave={() => !ziehen.current && setMaus(null)}
-        onDoubleClick={() => abschliessen()}
-        onContextMenu={(e) => {
-          e.preventDefault();
-          // beim Zeichnen schließt der Rechtsklick ab (wie Enter); sonst das Kontextmenü der Fläche
-          if (useEntz.getState().entwurf.length) abschliessen();
-          else zeigeMenue(e, flaechenMenue(), 'Zeichenfläche');
-        }}
-      >
-        {lupeAn && lupePos && (
-          <mask id="ef-ohne-lupe">
-            <rect x={0} y={0} width={groesse.w} height={groesse.h} fill="white" />
-            <rect x={lupePos.x} y={lupePos.y} width={LUPE} height={LUPE} fill="black" />
-          </mask>
-        )}
-        <g mask={lupeAn ? 'url(#ef-ohne-lupe)' : undefined}>{elemente}</g>
-        {lupeAn && lupePos && (
-          <g className="ef-lupe" pointerEvents="none">
-            <rect x={lupePos.x} y={lupePos.y} width={LUPE} height={LUPE} />
-            <path d={`M${lupePos.x + LUPE / 2} ${lupePos.y + 8}V${lupePos.y + LUPE / 2 - 6}M${lupePos.x + LUPE / 2} ${lupePos.y + LUPE / 2 + 6}V${lupePos.y + LUPE - 8}M${lupePos.x + 8} ${lupePos.y + LUPE / 2}H${lupePos.x + LUPE / 2 - 6}M${lupePos.x + LUPE / 2 + 6} ${lupePos.y + LUPE / 2}H${lupePos.x + LUPE - 8}`} />
-          </g>
-        )}
-      </svg>
-      {!foto && (
-        <div className="canvas-message leer ef-leer">
-          <p>
-            <strong>Noch kein Foto</strong>
-            <br />
-            Ein Foto einer ebenen Fläche (Fassade, Wand, Boden) hinzufügen oder ins Fenster ziehen.
-          </p>
-          <button className="primary" onClick={() => void fotosHinzufuegen()}>
-            <Symbol name="plus" /> Foto hinzufügen …
-          </button>
-        </div>
-      )}
-      {glFehler && <div className="canvas-message">Darstellung nicht möglich: {glFehler}</div>}
-      {fotoFehler && fotoFehler.id === foto?.id && <div className="canvas-message">{fotoFehler.text}</div>}
-      {foto && (status || hinweis) && (
-        <div className="ef-status">
-          {hinweis && (
-            <span className="ef-hinweis-text" title={hinweis}>
-              {hinweis}
-            </span>
+    <ZeichenKarte
+      ariaLabel="Zeichenfläche"
+      fuss={
+        foto && (status || hinweis) ? (
+          <>
+            {hinweis && (
+              <span className="ef-hinweis-text" title={hinweis}>
+                {hinweis}
+              </span>
+            )}
+            {status && <span className="ef-koord">{status}</span>}
+          </>
+        ) : undefined
+      }
+    >
+      <div className="ef-flaeche" ref={huelle}>
+        <canvas ref={canvas} className="ef-canvas" />
+        <svg
+          ref={svg}
+          className={`ef-overlay wz-${werkzeug}`}
+          tabIndex={foto ? 0 : -1}
+          role="img"
+          aria-label={foto ? `${ansicht === 'entzerrt' ? 'Entzerrte Ebene' : 'Foto'} ${foto.name} – Mausrad zoomt, Ziehen verschiebt, Pos1 zeigt alles` : 'Zeichenfläche'}
+          onPointerDown={zeigerRunter}
+          onPointerMove={zeigerBewegt}
+          onPointerUp={zeigerHoch}
+          onPointerCancel={() => (ziehen.current = null)}
+          onLostPointerCapture={() => (ziehen.current = null)}
+          onPointerLeave={() => !ziehen.current && setMaus(null)}
+          onDoubleClick={() => abschliessen()}
+          onContextMenu={(e) => {
+            e.preventDefault();
+            // beim Zeichnen schließt der Rechtsklick ab (wie Enter); sonst das Kontextmenü der Fläche
+            if (useEntz.getState().entwurf.length) abschliessen();
+            else zeigeMenue(e, flaechenMenue(), 'Zeichenfläche');
+          }}
+        >
+          {lupeAn && lupePos && (
+            <mask id="ef-ohne-lupe">
+              <rect x={0} y={0} width={groesse.w} height={groesse.h} fill="white" />
+              <rect x={lupePos.x} y={lupePos.y} width={LUPE} height={LUPE} fill="black" />
+            </mask>
           )}
-          {status && <span className="ef-koord">{status}</span>}
-        </div>
-      )}
-    </div>
+          <g mask={lupeAn ? 'url(#ef-ohne-lupe)' : undefined}>{elemente}</g>
+          {lupeAn && lupePos && (
+            <g className="ef-lupe" pointerEvents="none">
+              <rect x={lupePos.x} y={lupePos.y} width={LUPE} height={LUPE} />
+              <path d={`M${lupePos.x + LUPE / 2} ${lupePos.y + 8}V${lupePos.y + LUPE / 2 - 6}M${lupePos.x + LUPE / 2} ${lupePos.y + LUPE / 2 + 6}V${lupePos.y + LUPE - 8}M${lupePos.x + 8} ${lupePos.y + LUPE / 2}H${lupePos.x + LUPE / 2 - 6}M${lupePos.x + LUPE / 2 + 6} ${lupePos.y + LUPE / 2}H${lupePos.x + LUPE - 8}`} />
+            </g>
+          )}
+        </svg>
+        {!foto && (
+          <div className="canvas-message leer ef-leer">
+            <p>
+              <strong>Noch kein Foto</strong>
+              <br />
+              Ein Foto einer ebenen Fläche (Fassade, Wand, Boden) hinzufügen oder ins Fenster ziehen.
+            </p>
+            <button className="primary" onClick={() => void fotosHinzufuegen()}>
+              <Symbol name="plus" /> Foto hinzufügen …
+            </button>
+          </div>
+        )}
+        {glFehler && <div className="canvas-message">Darstellung nicht möglich: {glFehler}</div>}
+        {fotoFehler && fotoFehler.id === foto?.id && <div className="canvas-message">{fotoFehler.text}</div>}
+        {ablegen && <div className="ef-ablegen">Fotos oder Entzerrungs-Projekt hier ablegen</div>}
+      </div>
+    </ZeichenKarte>
   );
 }
 
