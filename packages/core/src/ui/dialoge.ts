@@ -157,9 +157,11 @@ export function dialogVerhaltenEinrichten(): void {
     (e) => {
       const t = e.target;
       if (!(t instanceof HTMLElement || t instanceof SVGElement)) return;
-      // Elemente im Dialog selbst brauchen keine Stelle (sie werden nie „davor“)
-      if (t.closest(DIALOG)) return;
-      abgegeben = null;
+      // auch Elemente in Dialogen: ein Knopf im äußeren Dialog ist die Stelle vor einer Rückfrage darüber. Die Marke
+      // „Seite“ gilt nur bis zum nächsten Fokus – außer dieser kommt per autoFocus aus einem Dialog, der gerade erst
+      // eingehängt wird (den kennt `vorher` noch nicht); sonst ginge ein Blur vor dem Öffnen verloren
+      const dialog = t.closest(DIALOG);
+      if (!dialog || vorher.has(dialog)) abgegeben = null;
       const i = fokusVerlauf.findIndex((x) => x?.el === t);
       if (i >= 0) fokusVerlauf.splice(i, 1);
       fokusVerlauf.unshift(merken(t));

@@ -92,4 +92,38 @@ describe('Fokus nach dem Schließen eines React-Modals mit autoFocus', () => {
       expect(document.activeElement).toBe(document.body);
     });
   }
+
+  for (const vorherBlur of [false, true]) {
+    it(`verschachtelt: Rückfrage mit autoFocus über einem Dialog gibt den Fokus an den Knopf im äußeren zurück${vorherBlur ? ' (nach einem Blur außerhalb)' : ''}`, async () => {
+      dialogVerhaltenEinrichten();
+      document.body.innerHTML = '<input id="aussen-feld"><div id="host"></div>';
+      if (vorherBlur) {
+        const f = document.getElementById('aussen-feld') as HTMLInputElement;
+        f.focus();
+        f.blur();
+      }
+      function Zwei() {
+        const [innen, setInnen] = useState(false);
+        return h(Modal, {
+          titel: 'Außen',
+          onClose: () => {},
+          children: [
+            h('button', { key: 'w', id: 'weiter', onClick: () => setInnen(true) }, 'Weiter'),
+            innen && h(Modal, { key: 'r', titel: 'Rückfrage', onClose: () => setInnen(false), children: h('button', { className: 'primary', autoFocus: true, onClick: () => setInnen(false) }, 'Ja') }),
+          ],
+        });
+      }
+      root = createRoot(document.getElementById('host')!);
+      act(() => root!.render(h(Zwei)));
+      await warten();
+      const weiter = document.getElementById('weiter') as HTMLButtonElement;
+      weiter.focus();
+      act(() => weiter.click());
+      await warten();
+      expect(document.activeElement?.textContent).toBe('Ja');
+      act(() => (document.activeElement as HTMLButtonElement).click());
+      await warten();
+      expect(document.activeElement).toBe(weiter);
+    });
+  }
 });
