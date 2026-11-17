@@ -347,14 +347,19 @@ mit `einstellungenEntwurfMelden`, Sperre über `useEinstellungenGesperrt`).
   gemeinsame Meldung trägt `role="alert"` und erscheint erst, wenn der Fehler besteht.
 - `.toggle` (Kästchen oder Optionsfeld mit Text): das Kästchen wird nie gestaucht.
 - **Feldraster** (`.feldraster`) für Formulare mit mehreren Angaben nebeneinander (Planangaben, Antragsdaten,
-  Adressen): Kinder sind beschriftete Felder (`label` mit `.field-label` und Feld, oder `Field`), die Beschriftung
-  steht über dem Feld. Es gibt so viele Spalten, wie Platz ist (Mindestbreite 200px, abweichend über `--feld-min`),
-  Felder füllen ihre Spalte, und die Felder einer Zeile fluchten unten. Abstände `--s2` zwischen den Zeilen und `--s3`
-  zwischen den Spalten. `.feldraster-breit` (bzw. `Field breite="zeile"`) nimmt die ganze Zeile, z. B. für
-  Beschriftungen oder Textbereiche. `.feldraster-zwei` (`breite="zwei"`) nimmt zwei Spalten, z. B. für Auswahlen mit
-  langen Einträgen; passt nur eine Spalte, nimmt es die ganze Zeile. Ein `.toggle` (Kästchen mit Text) steht in
-  Feldhöhe neben den Feldern. Nicht für Felder mit Knopf in einer Zeile (`.einst-feldzeile`) und nicht für Layouts mit
-  fester Spaltenzahl oder Breiten pro Feld (`.av-raster`).
+  Adressen): Kinder sind beschriftete Felder – `label` mit `.field-label` und genau einem Feld, `Field`, oder für
+  schreibgeschützte Angaben ein `div` mit `.field-label` und Wert. Die Beschriftung steht über dem Feld, darunter
+  wahlweise `.field-hint` und `.feld-meldung`. Es gibt so viele Spalten, wie Platz ist (Mindestbreite 200px,
+  abweichend über `--feld-min`), Felder füllen ihre Spalte und sind `--ctl-h` hoch. Die Felder einer Zeile fluchten,
+  auch wenn eine Beschriftung umbricht oder nur ein Feld einen Hinweis hat. Abstände `--s3` zwischen den Spalten und
+  `--s2` unter jeder Zeile, auch unter der letzten. `.feldraster-breit` (bzw. `Field breite="breit"`) nimmt die ganze
+  Zeile, z. B. für Textbereiche oder eine Knopfzeile. `.feldraster-zwei` (`breite="zwei"`) nimmt zwei Spalten, z. B.
+  für Auswahlen mit langen Einträgen; passt nur eine Spalte, nimmt es die ganze Zeile – das gilt für `--feld-min` bis
+  200px, wer mehr setzt, braucht eine eigene `@container feldraster`-Abfrage. Mit `.feldraster-zwei` wird das Raster
+  zum Container: Es braucht dann seine Breite vom Elternteil (in einem Flex-Elternteil `flex: 1` oder volle Breite),
+  und Menüs (`MenueKnopf`) oder Dialoge (`Modal`) gehören nicht hinein, weil sie mit `position: fixed` am Raster statt
+  am Fenster hingen. Ein `label.toggle` (Kästchen mit Text) steht in der Spur der Felder. Abgrenzung: `.field-row` ist eine feste Zeile ohne Umbruch,
+  `.einst-feldzeile` ein Feld mit Knopf in einer Zeile, `.av-raster` ein Layout mit Breiten pro Feld.
 
 ## Umschalter
 

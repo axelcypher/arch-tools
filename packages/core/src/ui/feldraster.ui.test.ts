@@ -34,25 +34,37 @@ afterEach(() => {
 });
 
 describe('Feldraster', () => {
-  it('Spalten nach Platz, Mindestbreite über --feld-min, Felder fluchten unten', () => {
+  it('Spalten nach Platz, Mindestbreite über --feld-min, Abstände aus der Skala', () => {
     const r = regel('.feldraster');
     expect(r).toMatch(/grid-template-columns:\s*repeat\(auto-fill,\s*minmax\(min\(var\(--feld-min,\s*200px\),\s*100%\),\s*1fr\)\)/);
-    expect(r).toMatch(/gap:\s*var\(--s2\)\s+var\(--s3\)/);
-    expect(r).toMatch(/align-items:\s*end/);
-    expect(r).toMatch(/container:\s*feldraster\s*\/\s*inline-size/);
+    expect(r).toMatch(/column-gap:\s*var\(--s3\)/);
+    expect(r).toMatch(/row-gap:\s*0/);
+    // Container nur mit Zwei-Spalten-Feld (Container sind Bezug für position: fixed)
+    expect(r).not.toMatch(/container/);
+    expect(regel('.feldraster:has(> .feldraster-zwei)')).toMatch(/container:\s*feldraster\s*\/\s*inline-size/);
   });
 
-  it('Beschriftung über dem Feld, ohne den Außenabstand von .field; Kästchen mit Text bleibt in einer Zeile', () => {
-    const r = regel('.feldraster > :where(label, .field):not(.toggle)');
-    expect(r).toMatch(/flex-direction:\s*column/);
-    expect(r).toMatch(/margin:\s*0/);
-    expect(r).toMatch(/min-width:\s*0/);
-    expect(regel('.feldraster > .toggle')).toMatch(/min-height:\s*var\(--ctl-h\)/);
+  it('jedes Feld belegt vier Spuren (Beschriftung, Feld, Hinweis, Meldung), damit die Felder einer Zeile fluchten', () => {
+    expect(regel('.feldraster > *')).toMatch(/grid-row:\s*span 4/);
+    expect(regel('.feldraster > *')).toMatch(/margin:\s*0 0 var\(--s2\)/);
+    expect(regel('.feldraster > :is(label, .field, :has(> .field-label))')).toMatch(/grid-template-rows:\s*subgrid/);
+    expect(regel('.feldraster > :is(label, .field, :has(> .field-label)) > *')).toMatch(/grid-row:\s*2/);
+    const beschriftung = regel('.feldraster > :is(label, .field, :has(> .field-label)) > .field-label');
+    expect(beschriftung).toMatch(/grid-row:\s*1/);
+    expect(beschriftung).toMatch(/align-self:\s*end/);
+    expect(regel('.feldraster > :is(label, .field, :has(> .field-label)) > .field-hint')).toMatch(/grid-row:\s*3/);
+    expect(regel('.feldraster > :is(label, .field, :has(> .field-label)) > .feld-meldung')).toMatch(/grid-row:\s*4/);
   });
 
-  it('Felder füllen ihre Spalte, Kästchen und Regler nicht', () => {
-    const r = regel(".feldraster > * > :where(input:not([type='checkbox'], [type='radio'], [type='range']), select, textarea)");
-    expect(r).toMatch(/width:\s*100%/);
+  it('Kästchen mit Text steht in der Spur der Felder, auch mit bloßem Text', () => {
+    expect(regel('.feldraster > label.toggle')).toMatch(/grid-template-columns:\s*auto 1fr/);
+    const vor = regel('.feldraster > label.toggle::before');
+    expect(vor).toMatch(/grid-row:\s*1/);
+    expect(vor).toMatch(/grid-column:\s*1\s*\/\s*-1/);
+  });
+
+  it('Felder im Raster sind so hoch wie die anderen Bedienelemente', () => {
+    expect(css).toMatch(/:where\(\.toolbar, \.field, \.feldraster\) :where\(select, input:not\([^)]*\)\) \{\s*min-height:\s*var\(--ctl-h\)/);
   });
 
   it('ganze Zeile und zwei Spalten; zwei Spalten wird schmal zur ganzen Zeile', () => {
@@ -69,7 +81,7 @@ describe('Feldraster', () => {
       h('div', { className: 'feldraster' }, [
         h(Field, { key: 'a', label: 'Maßstab', children: h('input') }),
         h(Field, { key: 'b', label: 'Stil', breite: 'zwei', children: h('select') }),
-        h(Field, { key: 'c', label: 'Beschriftung', breite: 'zeile', children: h('textarea') }),
+        h(Field, { key: 'c', label: 'Beschriftung', breite: 'breit', children: h('textarea') }),
       ]),
     );
     const labels = [...host.querySelectorAll('label')];

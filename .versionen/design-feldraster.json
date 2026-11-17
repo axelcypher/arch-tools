@@ -1,10 +1,34 @@
 {
-  "flaechenrechner": { "stufe": "patch", "notiz": "Designsystem: Feldraster für Formulare." },
-  "ava": { "stufe": "patch", "notiz": "Designsystem: Feldraster für Formulare." },
-  "grz": { "stufe": "patch", "notiz": "Designsystem: Feldraster für Formulare." },
-  "kosten": { "stufe": "patch", "notiz": "Designsystem: Feldraster für Formulare." },
-  "ordner": { "stufe": "patch", "notiz": "Designsystem: Feldraster für Formulare." },
-  "entzerrung": { "stufe": "patch", "notiz": "Designsystem: Feldraster für Formulare." },
-  "formulare": { "stufe": "patch", "notiz": "Designsystem: Feldraster für Formulare." },
-  "baurecht": { "stufe": "patch", "notiz": "Designsystem: Feldraster für Formulare." }
+  "flaechenrechner": {
+    "stufe": "patch",
+    "notiz": "Gemeinsame Gestaltung erweitert, ohne sichtbare Änderung."
+  },
+  "ava": {
+    "stufe": "patch",
+    "notiz": "Gemeinsame Gestaltung erweitert, ohne sichtbare Änderung."
+  },
+  "grz": {
+    "stufe": "patch",
+    "notiz": "Gemeinsame Gestaltung erweitert, ohne sichtbare Änderung."
+  },
+  "kosten": {
+    "stufe": "patch",
+    "notiz": "Gemeinsame Gestaltung erweitert, ohne sichtbare Änderung."
+  },
+  "ordner": {
+    "stufe": "patch",
+    "notiz": "Gemeinsame Gestaltung erweitert, ohne sichtbare Änderung."
+  },
+  "entzerrung": {
+    "stufe": "patch",
+    "notiz": "Gemeinsame Gestaltung erweitert, ohne sichtbare Änderung."
+  },
+  "formulare": {
+    "stufe": "patch",
+    "notiz": "Gemeinsame Gestaltung erweitert, ohne sichtbare Änderung."
+  },
+  "baurecht": {
+    "stufe": "patch",
+    "notiz": "Gemeinsame Gestaltung erweitert, ohne sichtbare Änderung."
+  }
 }

@@ -794,35 +794,64 @@ button.link:focus-visible {
   gap: 8px;
 }
 
-/* Feldraster für Formulare: beschriftete Felder (Beschriftung über dem Feld) in so vielen Spalten, wie Platz ist; die
-   Felder einer Zeile fluchten unten, auch wenn eine Beschriftung umbricht. Mindestbreite einer Spalte über --feld-min. */
+/* Feldraster für Formulare: beschriftete Felder (Beschriftung über dem Feld) in so vielen Spalten, wie Platz ist.
+   Jedes Feld belegt vier Zeilenspuren des Rasters (Subgrid): Beschriftung, Feld, Hinweis, Meldung. So fluchten die
+   Felder einer Zeile, auch wenn eine Beschriftung umbricht oder nur ein Feld einen Hinweis hat; leere Spuren kosten
+   keinen Platz. Den Abstand zwischen den Zeilen trägt jedes Feld unten (auch unter der letzten Zeile). */
 .feldraster {
-  container: feldraster / inline-size;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(var(--feld-min, 200px), 100%), 1fr));
-  gap: var(--s2) var(--s3);
-  align-items: end;
+  column-gap: var(--s3);
+  row-gap: 0;
 }
-.feldraster > :where(label, .field):not(.toggle) {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+.feldraster > * {
+  grid-row: span 4;
   min-width: 0;
-  margin: 0;
+  margin: 0 0 var(--s2);
 }
-.feldraster > * > :where(input:not([type='checkbox'], [type='radio'], [type='range']), select, textarea) {
-  width: 100%;
+.feldraster > :is(label, .field, :has(> .field-label)) {
+  display: grid;
+  grid-template-rows: subgrid;
+  row-gap: 0;
 }
-/* Kästchen mit Text steht in Feldhöhe neben den anderen Feldern */
-.feldraster > .toggle {
-  min-height: var(--ctl-h);
-  margin: 0;
+.feldraster > :is(label, .field, :has(> .field-label)) > * {
+  grid-row: 2;
+  min-width: 0;
+}
+.feldraster > :is(label, .field, :has(> .field-label)) > .field-label {
+  grid-row: 1;
+  align-self: end;
+  margin-bottom: 2px;
+}
+.feldraster > :is(label, .field, :has(> .field-label)) > .field-hint {
+  grid-row: 3;
+  margin-top: 2px;
+}
+.feldraster > :is(label, .field, :has(> .field-label)) > .feld-meldung {
+  grid-row: 4;
+}
+/* Kästchen mit Text steht in der Spur der Felder, mittig zu ihrer Höhe; ::before belegt die Spur der Beschriftung,
+   damit auch bloßer Text neben dem Kästchen (ohne span) in die Spur der Felder fällt */
+.feldraster > label.toggle {
+  grid-template-columns: auto 1fr;
+  column-gap: 4px;
+  align-items: center;
+}
+.feldraster > label.toggle::before {
+  content: '';
+  grid-row: 1;
+  grid-column: 1 / -1;
 }
 .feldraster > .feldraster-breit {
   grid-column: 1 / -1;
 }
-/* zwei Spalten, z. B. für Auswahlen mit langen Einträgen; passt nur eine Spalte, die ganze Zeile (die Grenze gilt für
-   die Vorgabe von --feld-min: zwei Spalten zu 200px und der Spalt) */
+/* zwei Spalten, z. B. für Auswahlen mit langen Einträgen; passt nur eine Spalte, die ganze Zeile. Die Grenze gilt für
+   --feld-min bis 200px (zwei Spalten zu 200px und der Spalt); wer mehr setzt, braucht eine eigene Abfrage. Container
+   wird das Raster nur mit einem solchen Feld: Ein Container ist Bezug für position: fixed (Menüs, Dialoge ohne Portal)
+   und braucht eine Breite vom Elternteil. */
+.feldraster:has(> .feldraster-zwei) {
+  container: feldraster / inline-size;
+}
 .feldraster > .feldraster-zwei {
   grid-column: span 2;
 }
@@ -898,7 +927,7 @@ textarea:focus {
    --ctl-h-s. :where() hält die Spezifität bei null – App-Regeln mit eigener min-height gehen vor; height allein reicht
    nicht (min-height setzt sich gegen ein kleineres height immer durch). */
 :where(.toolbar, .button-row, .dialog-buttons, .section-head) :where(button),
-:where(.toolbar, .field) :where(select, input:not([type='checkbox'], [type='radio'], [type='range'], [type='color'])) {
+:where(.toolbar, .field, .feldraster) :where(select, input:not([type='checkbox'], [type='radio'], [type='range'], [type='color'])) {
   min-height: var(--ctl-h);
 }
 :where(.toolbar, .button-row, .dialog-buttons, .section-head) :where(button.small, button.icon) {
