@@ -230,6 +230,11 @@ describe('Rahmen-App', () => {
     act(() => void window.dispatchEvent(new KeyboardEvent('keydown', { key: ',', ctrlKey: true, bubbles: true, cancelable: true })));
     expect(useEinstellungen.getState()).toMatchObject({ offen: true, seite: 'allgemein' });
     act(() => useEinstellungen.setState({ offen: false, seite: 'pfade' }));
+    // ohne App-Tab bei offenem Menü: Strg+, wirkt nicht
+    act(() => host.querySelector<HTMLButtonElement>('button.titlebar-menue')!.click());
+    act(() => void window.dispatchEvent(new KeyboardEvent('keydown', { key: ',', ctrlKey: true, bubbles: true, cancelable: true })));
+    expect(useEinstellungen.getState().offen).toBe(false);
+    act(() => document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
     // ebenso der Menüpunkt „Einstellungen …“ ohne App-Tab
     act(() => host.querySelector<HTMLButtonElement>('button.titlebar-menue')!.click());
     act(() => ([...document.querySelectorAll('.menue button')].find((b) => b.textContent?.startsWith('Einstellungen …')) as HTMLButtonElement).click());

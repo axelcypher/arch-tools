@@ -229,13 +229,15 @@ export function App() {
   const einstellungenRef = useRef(einstellungenImRahmen);
   einstellungenRef.current = einstellungenImRahmen;
   useEffect(() => {
-    // vor dem Kürzel des eigenen Dialogs (Fangphase): bei aktivem App-Tab weitergeben, das eigene Kürzel tritt zurück –
-    // nicht, solange im Rahmen ein Dialog oder Menü offen ist (der Dialog des Tabs läge sonst darunter)
+    // vor dem Kürzel des eigenen Dialogs (Fangphase): Solange im Rahmen ein Dialog oder Menü offen ist, wirkt Strg+,
+    // nicht (weder an den Tab noch der eigene Dialog darüber); sonst bei aktivem App-Tab weitergeben, das eigene Kürzel
+    // tritt zurück – ohne App-Tab öffnet es den eigenen Dialog
     const taste = (e: KeyboardEvent) => {
-      if (!(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey || e.key !== ',' || !useRahmen.getState().aktiv) return;
+      if (!(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey || e.key !== ',') return;
+      const offen = useEinstellungen.getState().offen || !!document.querySelector('.modal-backdrop, [role="dialog"], [role="alertdialog"], .menue');
+      if (!offen && !useRahmen.getState().aktiv) return;
       e.preventDefault();
-      // gilt dann für den offenen Dialog nicht: weder weitergeben noch den eigenen Dialog darüber öffnen
-      if (useEinstellungen.getState().offen || document.querySelector('.modal-backdrop, [role="dialog"], [role="alertdialog"], .menue')) return;
+      if (offen) return;
       einstellungenRef.current();
     };
     window.addEventListener('keydown', taste, true);
