@@ -88,6 +88,12 @@ describe('Vorfragen (FaktDef.vorfrage)', () => {
       'gebaeude.nutzungseinheiten': ['1: Einfamilienhaus ohne Räume für freie Berufe – eine Nutzungseinheit', '2: Zweifamilienhaus ohne Räume für freie Berufe – zwei Nutzungseinheiten'],
       'gebaeude.landwirtschaft': ['false: Wohngebäude – kein land- oder forstwirtschaftlich genutztes Gebäude'],
       'gebaeude.beheizt': ['false: kein Gebäude – das GEG gilt nur für Gebäude'],
+      'gebaeude.oeffentlich': ['false: reines Wohngebäude – es dient nicht dem Besucherverkehr'],
+      'planung.fnp_verfahren': [
+        'false: das Vorhaben gehört nicht zu den Anlagen, für die eine Gemeinde Zonen im Flächennutzungsplan festlegt',
+        'false: die Gemeinde plant keine Zonen für Anlagen dieser Art im Flächennutzungsplan',
+        'true: die Gemeinde plant Zonen im Flächennutzungsplan für Anlagen dieser Art',
+      ],
       'gebaeude.besucher': ['0: reines Wohngebäude – keine Versammlungsstätte'],
       'gebaeude.gastbetten': ['0: reines Wohngebäude ohne Ferienwohnungen – keine Beherbergung'],
       'gebaeude.verkaufsflaeche': ['0: reines Wohngebäude – keine Verkaufsstätte'],
@@ -1210,12 +1216,17 @@ describe('Fälle aus dem Fachreview', () => {
   });
 
   it('FNP und Windenergie: § 35 Abs. 3 Satz 3 gilt nicht (§ 249 Abs. 1), § 15 Abs. 3 aber entsprechend beim Flächenbeitragswert (§ 245e Abs. 2)', () => {
-    const d = faktDefinitionen(aktiveModule(paket.module, SOEST))['planung.fnp_verfahren'];
-    const text = `${d.frage} ${d.hilfe}`;
+    // gefragt wird in Tatsachen: Art der Anlage, dann der Beschluss der Gemeinde; die frühere Rechtsfrage ist ersetzt
+    const fd = faktDefinitionen(aktiveModule(paket.module, SOEST));
+    const art = fd['vorhaben.aussen_typisch'];
+    const zonen = fd['planung.fnp_zonen'];
+    const text = `${zonen.frage} ${zonen.hilfe}`;
+    expect(fd['planung.fnp_verfahren'].ersetzt).toBe(true);
     // Windenergie bleibt erfasst (sonst „nein“ → § 15 „entfällt“, ein falsches Grün) – mit dem Flächenbeitragswert als Anlass
-    expect(text).not.toMatch(/nicht Windenergie/);
-    expect(d.frage).toMatch(/Windenergie/);
-    expect(d.frage).toMatch(/Flächenbeitragswert/);
+    expect(`${art.frage} ${art.hilfe} ${text}`).not.toMatch(/nicht Windenergie/);
+    expect(art.frage).toMatch(/Windrad/);
+    expect(zonen.frage).toMatch(/Windenergie/);
+    expect(zonen.hilfe).toMatch(/Flächenbeitragswert/);
     expect(text).toMatch(/§ 249 Abs\. 1/);
     expect(text).toMatch(/§ 245e Abs\. 2/);
     // die Regel zu § 15 nennt § 245e Abs. 2 (in Begründung und Prüfhinweis; Fundstellen nur des eigenen Paragrafen)
@@ -2314,9 +2325,10 @@ describe('Fälle aus dem Fachreview', () => {
 
   it('Runde 11: Satzangaben zu § 62 Abs. 3 BauO NRW; Fragen zur Verfahrensfreiheit des Abbruchs nicht beim Ersatzbau; Hinweise ohne Bezug beim reinen Abbruch', () => {
     const defs = faktDefinitionen(aktiveModule(paket.module, SOEST));
-    expect(defs['nw.altbau_verfahrensfrei'].hilfe).toMatch(/anzuzeigen \(Satz 3\)/);
-    expect(defs['nw.altbau_verfahrensfrei'].hilfe).toMatch(/\(Sätze 4, 5\)/);
-    expect(defs['nw.altbau_verfahrensfrei'].hilfe).not.toMatch(/Satz 2\)|Satz 3, 4\)/);
+    // in Worten: sonst anzuzeigen (Satz 3), bei angebauten Gebäuden Standsicherheit des Nachbarn (Sätze 4, 5); Quelle am Ende
+    expect(defs['nw.altbau_verfahrensfrei'].hilfe).toMatch(/einen Monat vorher angezeigt/);
+    expect(defs['nw.altbau_verfahrensfrei'].hilfe).toMatch(/Standsicherheit des Nachbargebäudes/);
+    expect(defs['nw.altbau_verfahrensfrei'].hilfe).toMatch(/Maßgeblich: § 62 Abs\. 3 Sätze 1 und 3 bis 5 BauO NRW/);
     const bausteine = Object.assign({}, ...aktiveModule(paket.module, SOEST).map((m) => m.bausteine ?? {}));
     const ctx = (m: Record<string, string>, w: string) => ({ merkmale: m, fakten: { [UMFANG]: sicher(w) }, einreichung: '2026-12-01', heute: '2026-11-12', bausteine });
     const nwb = M4({ Vorhaben: 'Beseitigung', Gebäudeart: 'Nichtwohngebäude' });
@@ -2879,5 +2891,74 @@ describe('Werkzeuge', () => {
       const text = readFileSync(join(WURZEL, datei), 'utf8');
       expect(text, datei).not.toMatch(/ohneFassungsdatum\(def/);
     }
+  });
+});
+
+describe('Fragen nach Tatsachen statt nach Rechtsbegriffen (Teil 2)', () => {
+  const M = (x: Record<string, string> = {}) => ({ Vorhaben: 'Errichtung', Gebäudeart: 'Nichtwohngebäude', Gebäudeklasse: '3', Planungsrecht: 'Außenbereich', Verfahren: 'Baugenehmigungsverfahren', Sonderbau: 'nein', ...x });
+  const lauf = (m: Record<string, string>, f: Record<string, FaktWert> = {}) => auswerten(eingabe(m, f, TEXTE));
+  const ja = (...ids: string[]) => Object.fromEntries(ids.map((i) => [i, sicher(true)]));
+  const nein = (...ids: string[]) => Object.fromEntries(ids.map((i) => [i, sicher(false)]));
+  const F = 'planung.fnp_verfahren';
+
+  it('Titel, Frage und Name nennen keinen Paragrafen; die Quelle steht am Ende der Erklärung („Maßgeblich: …“)', () => {
+    const defs = { ...FAKTEN, ...faktDefinitionen(aktiveModule(paket.module, SOEST)) };
+    const ids = [
+      'planung.innen', 'planung.planreife', 'planung.abweichung', 'ortsrecht.abweichung', 'nw.beseitigung_abs1', 'nw.altbau_verfahrensfrei', 'vorhaben.aussen_typisch', 'planung.fnp_zonen',
+      'gebaeude.hoehe', 'gebaeude.oeffentlich', 'gebaeude.behelfsbau', 'planung.so_erholung', 'nw.elt_betriebsraum', 'gebaeude.kmu', 'vorhaben.groessere_renovierung', 'lage.baulast',
+      'planung.veraenderungssperre', 'planung.erhaltungssatzung', 'planung.erhaltungssatzung_aufstellung', 'planung.planaufstellung', 'planung.zurueckstellung', 'planung.vorbereitende_untersuchungen',
+      'planung.sanierungsgebiet', 'ortsrecht.stellplatzsatzung', 'nw.umnutzung_wohnraum', 'nw.beseitigung_mit_beantragt',
+    ];
+    for (const id of ids) {
+      const d = defs[id];
+      expect(d, id).toBeDefined();
+      expect(`${d.titel} | ${d.kurz ?? ''} | ${d.frage ?? ''}`, id).not.toMatch(/§/);
+      expect(d.hilfe, id).toMatch(/Maßgeblich: [^.]*§/);
+      // der Paragraf steht nur als Quelle am Ende
+      expect(d.hilfe!.indexOf('§'), id).toBeGreaterThan(d.hilfe!.indexOf('Maßgeblich:') - 1);
+    }
+  });
+
+  it('öffentlich zugänglich: beim reinen Wohngebäude „nein“ abgeleitet; Nichtwohngebäude und Nutzungsänderung bleiben gefragt', () => {
+    const efh = lauf(M({ Gebäudeart: 'Einfamilienhaus', Gebäudeklasse: '1' }));
+    expect(efh.fakten['gebaeude.oeffentlich']).toMatchObject({ wert: false, ausFolge: 'reines Wohngebäude – es dient nicht dem Besucherverkehr' });
+    expect(lauf(M()).fakten['gebaeude.oeffentlich']).toBeUndefined();
+    expect(lauf(M({ Gebäudeart: 'Mehrfamilienhaus', Vorhaben: 'Nutzungsänderung' })).fakten['gebaeude.oeffentlich']).toBeUndefined();
+    // eine abweichende alte Antwort wird zum Widerspruch, nicht überschrieben
+    const alt = lauf(M({ Gebäudeart: 'Einfamilienhaus', Gebäudeklasse: '1' }), ja('gebaeude.oeffentlich'));
+    expect(alt.fakten['gebaeude.oeffentlich']).toMatchObject({ wert: true, herkunft: 'manuell' });
+    expect(alt.fakten['gebaeude.oeffentlich'].widerspruch).toBeTruthy();
+  });
+
+  it('privilegiertes Vorhaben in Tatsachen: Art der Anlage, dann der Beschluss der Gemeinde – die frühere Frage ist ersetzt', () => {
+    // ohne Angaben: gefragt wird nach der Art der Anlage, nicht nach der früheren Rechtsfrage
+    const leer = lauf(M());
+    expect(frageGestellt('vorhaben.aussen_typisch', leer.faktDefs['vorhaben.aussen_typisch'], leer.kontext)).toBe(true);
+    expect(frageGestellt(F, leer.faktDefs[F], leer.kontext)).toBe(false);
+    expect(leer.paragrafen.flatMap((x) => x.offen)).not.toContain(F);
+    // keine solche Anlage: „nein“ mit Grund, die Frage nach dem Beschluss entfällt
+    const keine = lauf(M(), nein('vorhaben.aussen_typisch'));
+    expect(keine.fakten[F]).toMatchObject({ wert: false, ausFolge: 'das Vorhaben gehört nicht zu den Anlagen, für die eine Gemeinde Zonen im Flächennutzungsplan festlegt' });
+    expect(frageGestellt('planung.fnp_zonen', keine.faktDefs['planung.fnp_zonen'], keine.kontext)).toBe(false);
+    // Anlage und Beschluss: „ja“ – dann wird nach der Zurückstellung gefragt
+    const beides = lauf(M(), ja('vorhaben.aussen_typisch', 'planung.fnp_zonen'));
+    expect(beides.fakten[F]).toMatchObject({ wert: true });
+    expect(frageGestellt('planung.zurueckstellung', beides.faktDefs['planung.zurueckstellung'], beides.kontext)).toBe(true);
+    expect(lauf(M(), { ...ja('vorhaben.aussen_typisch'), ...nein('planung.fnp_zonen') }).fakten[F]).toMatchObject({ wert: false });
+    // im Innenbereich gar nicht gefragt
+    const innen = lauf(M({ Planungsrecht: 'Innenbereich' }));
+    expect(frageGestellt('vorhaben.aussen_typisch', innen.faktDefs['vorhaben.aussen_typisch'], innen.kontext)).toBe(false);
+  });
+
+  it('ältere Datei mit der früheren Frage: die Antwort gilt weiter, bis die Tatsachen vorliegen; Widerspruch statt Überschreiben', () => {
+    const alt = lauf(M(), ja(F));
+    expect(alt.fakten[F]).toMatchObject({ wert: true, herkunft: 'manuell' });
+    expect(frageGestellt(F, alt.faktDefs[F], alt.kontext)).toBe(true);
+    expect(frageGestellt('planung.zurueckstellung', alt.faktDefs['planung.zurueckstellung'], alt.kontext)).toBe(true);
+    const gegen = lauf(M(), { ...ja(F), ...nein('vorhaben.aussen_typisch') });
+    expect(gegen.fakten[F]).toMatchObject({ wert: true, herkunft: 'manuell' });
+    expect(gegen.fakten[F].widerspruch).toMatch(/ergibt sich aus anderen Angaben/);
+    // die Gemeinde kann weiter zurückstellen: die Frage danach bleibt, bis der Widerspruch geklärt ist
+    expect(frageGestellt('planung.zurueckstellung', gegen.faktDefs['planung.zurueckstellung'], gegen.kontext)).toBe(true);
   });
 });

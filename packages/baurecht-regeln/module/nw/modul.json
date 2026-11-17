@@ -180,11 +180,12 @@
   },
   "fakten": {
     "ortsrecht.stellplatzsatzung": {
-      "titel": "Stellplatzsatzung der Gemeinde (örtliche Bauvorschrift nach § 89 Abs. 1 Nr. 4 BauO NRW)",
+      "titel": "Stellplatzsatzung der Gemeinde",
       "kurz": "Stellplatzsatzung der Gemeinde",
       "gruppe": "ortsrecht",
       "typ": "janein",
-      "hilfe": "setzt das Gemeindemodul; ohne Gemeindemodul von Hand – auch Stellplatzregeln im Bebauungsplan zählen (§ 1 Abs. 2 StellplatzVO NRW)"
+      "frage": "Hat die Gemeinde eine Stellplatzsatzung, oder regelt der Bebauungsplan, wie viele Stellplätze nötig sind?",
+      "hilfe": "Dann richtet sich die Zahl der Stellplätze und Fahrradplätze danach und nicht nach der Stellplatzverordnung des Landes. Das Gemeindemodul setzt die Angabe, wo bekannt; sonst von Hand. Wo erfahre ich das: Satzungen der Gemeinde (oft online) oder Bebauungsplan. Maßgeblich: § 89 Abs. 1 Nr. 4 BauO NRW, § 1 Abs. 2 StellplatzVO NRW."
     },
     "nw.stellplatzflaeche": {
       "titel": "Notwendige Kfz-Stellplätze für ein Nichtwohngebäude auf einer neu errichteten Stellplatzfläche",
@@ -254,11 +255,12 @@
       }
     },
     "nw.elt_betriebsraum": {
-      "titel": "Elektrischer Betriebsraum nach § 143 SBauVO",
+      "titel": "Raum für Transformatoren, Hochspannungs-Schaltanlagen, Notstromaggregat oder zentrale Sicherheitsbatterien",
       "kurz": "Elektrischer Betriebsraum",
       "gruppe": "technik",
       "typ": "janein",
-      "hilfe": "Transformatoren und Schaltanlagen über 1 kV, ortsfeste Stromerzeugungsaggregate oder zentrale Batterieanlagen für bauordnungsrechtlich vorgeschriebene sicherheitstechnische Anlagen im Gebäude – nicht der Batteriespeicher einer PV-Anlage"
+      "frage": "Bekommt das Gebäude einen Raum für Transformatoren oder Schaltanlagen über 1 000 Volt, ein fest eingebautes Stromaggregat (z. B. Notstrom) oder zentrale Batterien für vorgeschriebene Sicherheitsanlagen (z. B. Sicherheitsbeleuchtung)?",
+      "hilfe": "Für solche Räume gelten besondere Anforderungen an Lage, Wände, Türen und Lüftung. Nicht gemeint: der Hausanschluss- oder Zählerraum, der Batteriespeicher einer Photovoltaikanlage (dafür gibt es eine eigene Frage). Wo erfahre ich das: Elektroplanung. Maßgeblich: § 143 SBauVO NRW."
     },
     "nw.feste_brennstoffe_50kw": {
       "titel": "Feuerstätten für feste Brennstoffe mit zusammen mehr als 50 kW Nennleistung",
@@ -539,11 +541,12 @@
       }
     },
     "ortsrecht.abweichung": {
-      "titel": "Abweichung von einer örtlichen Bauvorschrift beabsichtigt (Gestaltungs-, Werbeanlagen- oder Stellplatzsatzung)",
+      "titel": "Vorhaben hält eine Vorschrift der Gemeinde zu Gestaltung, Werbeanlagen oder Stellplätzen nicht ein",
       "kurz": "Abweichung von örtlicher Bauvorschrift",
       "gruppe": "ortsrecht",
       "typ": "janein",
-      "hilfe": "§ 69 Abs. 1 und 3 BauO NRW: Abweichungen von örtlichen Bauvorschriften (§ 89) sind gesondert zu beantragen; die Satzungen nennen oft eigene Voraussetzungen"
+      "frage": "Hält das Vorhaben eine Vorschrift der Gemeinde zu Gestaltung, Werbeanlagen oder Stellplätzen nicht ein – etwa zu Dachform, Dachneigung, Material, Farbe, Einfriedung, Größe einer Werbeanlage oder Zahl der Stellplätze?",
+      "hilfe": "Solche örtlichen Bauvorschriften stehen in einer Gestaltungs-, Werbeanlagen- oder Stellplatzsatzung oder im Bebauungsplan. Ja zum Beispiel: Flachdach, wo ein Satteldach vorgeschrieben ist; andere Dachfarbe oder Fassadenmaterial; Werbeanlage größer als erlaubt; weniger Stellplätze, als die Satzung verlangt. Eine solche Abweichung muss eigens beantragt werden; die Satzungen nennen oft eigene Voraussetzungen. Wo erfahre ich das: Satzungen und Bebauungsplan der Gemeinde (oft online). Maßgeblich: §§ 69, 89 BauO NRW."
     },
     "nw.landwirtschaft_angebaut": {
       "titel": "Wohngebäude mit angebautem landwirtschaftlich (oder vergleichbar) genutztem Gebäude bzw. Gebäudeteil",
@@ -586,11 +589,12 @@
       }
     },
     "nw.beseitigung_abs1": {
-      "titel": "Die Errichtung der zu beseitigenden Anlage wäre verfahrensfrei (§ 62 Abs. 1 BauO NRW, z. B. Garage, Gartenhaus, Einfriedung)",
-      "kurz": "Errichtung wäre verfahrensfrei",
+      "titel": "Abzubrechen ist eine kleine Anlage, für deren Bau man keine Genehmigung bräuchte (z. B. Garage, Gartenhaus, Mauer)",
+      "kurz": "Kleine Anlage ohne Genehmigungspflicht",
       "gruppe": "vorhaben",
       "typ": "janein",
-      "hilfe": "§ 62 Abs. 3 Satz 1 Nr. 1 BauO NRW: Die Beseitigung von Anlagen nach Absatz 1 ist verfahrensfrei – auch wenn sie angebaut sind. Wohngebäude gehören nie dazu.",
+      "frage": "Ist die abzubrechende Anlage so klein, dass man sie ohne Genehmigung bauen dürfte – etwa Gartenhaus oder Schuppen bis 75 m³ ohne Aufenthaltsraum, Toilette oder Feuerstätte, Garage oder Carport bis 50 m², Terrassenüberdachung bis 30 m², Mauer oder Zaun bis 2 m?",
+      "hilfe": "Dann ist auch der Abbruch ohne Genehmigung und ohne Anzeige erlaubt – auch wenn die Anlage angebaut ist. Im Außenbereich gelten engere Grenzen (Garagen, Mauern und Gebäude ohne Hofbezug zählen dort nicht). Wohngebäude gehören nie dazu. Wo erfahre ich das: Maße der vorhandenen Anlage, Liste der verfahrensfreien Anlagen in der Bauordnung. Maßgeblich: § 62 Abs. 1 und Abs. 3 Satz 1 Nr. 1 BauO NRW.",
       "wenn": {
         "und": [
           {
@@ -678,23 +682,23 @@
       }
     },
     "nw.altbau_verfahrensfrei": {
-      "titel": "Abbruch des Altbaus verfahrensfrei (§ 62 Abs. 3 Satz 1 BauO NRW): freistehendes Gebäude der Gebäudeklasse 1 oder 3, Anlage (kein Gebäude) bis 10 m oder verfahrensfreie Anlage nach § 62 Abs. 1",
+      "titel": "Abzubrechender Altbau ist freistehend und niedrig oder eine kleine Anlage",
       "kurz": "Altbau verfahrensfrei zu beseitigen",
       "gruppe": "vorhaben",
       "typ": "janein",
-      "frage": "Ist der abzubrechende Altbau ein freistehendes Gebäude der Gebäudeklasse 1 oder 3, eine Anlage (kein Gebäude) bis 10 m Höhe oder eine verfahrensfreie Anlage nach § 62 Abs. 1?",
-      "hilfe": "Beim Abbruch mit Ersatzbau beschreiben Gebäudeart, Gebäudeklasse und „freistehend“ den Neubau. Für den Abbruch zählt der Altbau: verfahrensfrei nach § 62 Abs. 3 Satz 1 BauO NRW, sonst ist die Beseitigung anzuzeigen (Satz 3) – mit Bauvorlagen nach § 15 BauPrüfVO und, bei angebauten Gebäuden, Standsicherheitsnachweis für das Nachbargebäude und Überwachung (Sätze 4, 5).",
+      "frage": "Ist der abzubrechende Altbau freistehend und höchstens 7 m hoch (Fußboden des obersten Geschosses mit Aufenthaltsraum über dem Gelände), ein freistehendes land- oder forstwirtschaftliches Gebäude, eine Anlage ohne Gebäude bis 10 m Höhe oder eine kleine Anlage, die man ohne Genehmigung bauen dürfte?",
+      "hilfe": "Beim Abbruch mit Ersatzbau beschreiben Gebäudeart, Gebäudeklasse und „freistehend“ den Neubau; hier zählt der Altbau. Ja zum Beispiel: freistehendes eingeschossiges Wohnhaus, Scheune, Garage. Nein zum Beispiel: Reihen- oder Doppelhaus (angebaut); freistehendes Haus mit Aufenthaltsräumen über 7 m. Bei „ja“ ist der Abbruch verfahrensfrei, sonst muss er einen Monat vorher angezeigt werden – mit Bauvorlagen und, bei angebauten Gebäuden, Nachweis der Standsicherheit des Nachbargebäudes. Maßgeblich: § 62 Abs. 3 Sätze 1 und 3 bis 5 BauO NRW (Gebäudeklassen 1 und 3 nach § 2 Abs. 3).",
       "wenn": {
         "$": "ersatzbau"
       }
     },
     "nw.beseitigung_mit_beantragt": {
-      "titel": "Abbruch des Altbaus im Bauantrag mit beantragt (§ 62 Abs. 3 Satz 2 BauO NRW)",
+      "titel": "Abbruch des Altbaus im Bauantrag mit beantragt",
       "kurz": "Abbruch im Bauantrag mitbeantragt",
       "gruppe": "vorhaben",
       "typ": "janein",
-      "frage": "Ist der (verfahrensfreie) Abbruch des Altbaus im Bauantrag für den Ersatzbau ausdrücklich mit beantragt?",
-      "hilfe": "Die Baugenehmigung für den Neubau erfasst den Abbruch nicht von selbst: Eine verfahrensfreie Beseitigung wird nur genehmigt, wenn sie beantragt ist; eine anzuzeigende Beseitigung kann nicht genehmigt werden. Ohne Genehmigung braucht der Abbruch eines Denkmals bzw. im Denkmalbereich eine eigene denkmalrechtliche Erlaubnis (§§ 9, 24 DSchG).",
+      "frage": "Ist der Abbruch des Altbaus im Bauantrag für den Ersatzbau ausdrücklich mit beantragt?",
+      "hilfe": "Die Baugenehmigung für den Neubau erfasst den Abbruch nicht von selbst: Ein Abbruch ohne Genehmigungspflicht wird nur mitgenehmigt, wenn er ausdrücklich beantragt ist; ein anzeigepflichtiger Abbruch kann nicht genehmigt werden. Ohne Genehmigung braucht der Abbruch eines Denkmals bzw. im Denkmalbereich eine eigene Erlaubnis der Denkmalbehörde. Maßgeblich: § 62 Abs. 3 Satz 2 BauO NRW, §§ 9, 24 DSchG NRW.",
       "wenn": {
         "und": [
           {
@@ -746,12 +750,12 @@
       }
     },
     "nw.umnutzung_wohnraum": {
-      "titel": "Nutzungseinheiten mit Aufenthaltsräumen in einem bestehenden Gebäude werden zu Wohnraum umgenutzt (§ 47 Abs. 6 BauO NRW)",
-      "kurz": "Umnutzung zu Wohnraum (§ 47 Abs. 6)",
+      "titel": "In einem bestehenden Gebäude werden Büros, Praxen, Läden o. Ä. zu Wohnungen",
+      "kurz": "Umnutzung zu Wohnraum",
       "gruppe": "vorhaben",
       "typ": "janein",
-      "frage": "Werden Nutzungseinheiten mit Aufenthaltsräumen (z. B. Büro, Praxis, Laden) in einem bestehenden Gebäude zu Wohnraum umgenutzt?",
-      "hilfe": "Dann sind §§ 29, 34, 35 Abs. 1 und 3 bis 8 sowie § 36 BauO NRW nicht anzuwenden, §§ 6, 15, 27, 28, 30 bis 32 gelten nicht für bestehende Bauteile (§ 47 Abs. 6). Nicht gemeint: Umnutzung von Räumen ohne Aufenthaltsräume (Lager, Scheune ohne Aufenthaltsräume) oder ein Neubau.",
+      "frage": "Werden in einem bestehenden Gebäude Räume, in denen sich Menschen aufhalten – z. B. Büro, Praxis oder Laden –, zu Wohnungen umgebaut?",
+      "hilfe": "Dann gelten für die neuen Wohnungen Erleichterungen: Einige Anforderungen der Bauordnung (u. a. an Wände, Decken, Treppen und Rettungswege) gelten nicht für bestehende Bauteile. Nicht gemeint: Räume ohne Aufenthaltsräume (Lager, Scheune) werden zu Wohnungen, oder ein Neubau. Maßgeblich: § 47 Abs. 6 BauO NRW.",
       "wenn": {
         "und": [
           {

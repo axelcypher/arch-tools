@@ -202,7 +202,7 @@ Quelle in der Erläuterung.
   **Innenbereich** – fehlt in der näheren Umgebung ein Vorbild (Nutzung, Höhe, Grundfläche, Lage, Bauweise)?
   **Außenbereich** – liegt das Grundstück nahe (etwa bis 100 m) an der zusammenhängenden Bebauung oder einem
   qualifizierten bzw. vorhabenbezogenen Bebauungsplangebiet (Abs. 3)? **Einfacher Bebauungsplan, Satzung nach BauGB**
-  – nach „Im Zusammenhang bebauter Ortsteil“: ja wie Innenbereich (dazu die Festsetzungen), nein wie Außenbereich.
+  – nach „Lage in der zusammenhängenden Bebauung“: ja wie Innenbereich (dazu die Festsetzungen), nein wie Außenbereich.
 
 Neue Wohnungen umfassen auch Wohnräume (Wohnheim- und Appartementzimmer). Daraus folgt „Sonderregelung Wohnungsbau
 (§ 246e)“: **ja** bei neuen Wohnungen und einer Abweichung (im Außenbereich: mit Zusammenhang zur Ortslage), **nein**
@@ -210,7 +210,7 @@ ohne neue Wohnungen, im Außenbereich ohne Zusammenhang bzw. ohne Abweichung –
 weder Veränderungssperre, Erhaltungssatzung (auch in Aufstellung), Sanierungsgebiet noch ein Bebauungsplan in
 Aufstellung entgegenstehen (auch davon kann
 § 246e befreien) und beim einfachen Bebauungsplan bzw. einer Satzung Plan **und** Umgebung eingehalten sind. Ist
-„Im Zusammenhang bebauter Ortsteil“ offen, folgt kein „nein“. Die Begründung sagt, warum („Trifft zu – es entstehen
+„Lage in der zusammenhängenden Bebauung“ offen, folgt kein „nein“. Die Begründung sagt, warum („Trifft zu – es entstehen
 neue Wohnungen, und für das Vorhaben fehlt ein Vorbild in der näheren Umgebung“ bzw. „Entfällt – das Vorhaben hält den
 Bebauungsplan ein …“). Offen bleibt, was fehlt – unter „es fehlt“ stehen die Tatsachenfragen.
 Zustimmung der Gemeinde (§ 36a entsprechend), Vereinbarkeit mit den öffentlichen Belangen, Frist bis Ende 2030 (Abs. 4)
@@ -222,6 +222,33 @@ einer älteren Datei gilt weiter und steht als Frage da („Frühere Angabe: …
 Tatsachen dasselbe, geht sie im abgeleiteten Wert auf, ergeben sie etwas anderes, wird sie zum Widerspruch (Hinweis,
 nie „entfällt“, nichts wird überschrieben). Ergeben die Tatsachen noch nichts (z. B. Bebauungsplan eingehalten, aber
 eine Veränderungssperre), gilt die frühere Antwort weiter.
+
+**Weitere Fragen in Tatsachen** (Teil 2): Fragen, die eine rechtliche Einordnung verlangten, fragen jetzt nach dem
+Sachverhalt; Titel, Frage und kurzer Name nennen keinen Paragrafen. Die Erläuterung bringt Beispiele für „ja“ und
+„nein“, sagt, wo man es erfährt („Wo erfahre ich das: Planauskunft der Gemeinde …“), und endet mit der Quelle
+(„Maßgeblich: § …“) – ein Test prüft das für alle diese Fragen.
+
+- **Zerlegt bzw. abgeleitet:**
+  - „Privilegiertes Vorhaben mit FNP-Verfahren (§ 15 Abs. 3)“ wird zu zwei Fragen: Gehört die Anlage ihrer Art nach in
+    die freie Landschaft (Windrad, Biogas, gewerbliche Tierhaltung, Gärtnerei, Versorgung, Abbau)? Plant die Gemeinde
+    dafür Zonen im Flächennutzungsplan? Die frühere Frage ist ersetzt (`planung.fnp_verfahren`).
+  - Öffentlich zugänglich heißt jetzt: Können Menschen, die vorher nicht feststehen – Kunden, Gäste, Besucher,
+    Patienten –, das Vorhaben aufsuchen (Wortlaut der Begriffsbestimmung)? Beim reinen Wohngebäude folgt „nein“.
+  - Innenbereich beim einfachen Bebauungsplan bzw. bei einer Satzung: Liegt das Grundstück in der zusammenhängenden
+    Bebauung des Ortes (Baulücke) und nicht am Ortsrand oder bei einzelnen Höfen?
+  - Behelfsbau: nur für begrenzte Zeit, kleines Nebengebäude ohne Aufenthalt oder zum wiederholten Auf- und Abbau
+    gemacht, mit Beispielen.
+- **In Tatsachen umformuliert, mit Beispielen und „wo erfahre ich das“:** Planreife (Entwurf ausgelegt, Festsetzungen
+  anerkannt, Erschließung gesichert), Abweichung von der Bauordnung (Abstandsflächen, Brandschutz, Treppen …), Abweichung
+  von örtlicher Bauvorschrift (Dachform, Material, Werbeanlage, Stellplatzzahl), Abbruch einer kleinen Anlage ohne
+  Genehmigungspflicht, Abbruch eines freistehenden niedrigen Altbaus (bis 7 m), Höhe (oberster Fußboden mit
+  Aufenthaltsraum), Sondergebiet für Erholung, elektrischer Betriebsraum, kleines oder mittleres Unternehmen,
+  größere Renovierung, Baulast bzw. Mitbenutzung eines fremden Grundstücks, Veränderungssperre, Erhaltungssatzung (auch
+  in Aufstellung), Bebauungsplan in Aufstellung, Zurückstellung, vorbereitende Untersuchungen, Sanierungsgebiet,
+  Stellplatzsatzung, Umnutzung zu Wohnraum, Abbruch im Bauantrag mitbeantragt.
+- **Alte Projekte:** Wo nur der Wortlaut neu ist, bleibt die Bedeutung gleich – gespeicherte Antworten gelten
+  unverändert. Die zerlegte Frage ist ersetzt; ihre frühere Antwort gilt, bis die Tatsachen vorliegen, und wird bei
+  Widerspruch nicht überschrieben.
 
 ## Vorfragen
 
@@ -303,6 +330,8 @@ Angaben (n)“ mit dem Grund und im Prüfprotokoll („Ergibt sich aus anderen A
 | Stellplätze auf neuer Stellplatzfläche | 0 ohne Stellplätze oder Garagen | nur neue Flächen |
 | Neue oder wieder nutzbare Wohnungen | ja beim Neubau eines Gebäudes mit Wohnungen (Ein-, Zwei-, Mehrfamilienhaus, Wohn- und Geschäftshaus), nein bei „kein Gebäude“ | nicht bei Nutzungsänderung oder Nichtwohngebäude – dort eine Angabe |
 | Sonderregelung Wohnungsbau (§ 246e BauGB) | aus neuen Wohnungen, Abweichung und Lage, siehe „Fragen nach Tatsachen“ | ersetzte Frage |
+| Für Kunden, Besucher oder Patienten zugänglich | nein bei Ein-, Zwei- oder Mehrfamilienhaus, nicht bei einer Nutzungsänderung | Wohnungen suchen nur bestimmte Personen auf (§ 49 Abs. 2 Satz 2 BauO NRW); bauliche Anlagen ohne Gebäude bleiben gefragt |
+| Zurückstellung wegen Zonen im Flächennutzungsplan möglich | aus „Anlage, die in die Landschaft gehört“ und „Zonen im Flächennutzungsplan geplant“ | ersetzte Frage |
 
 - **Nie still überschrieben:** Eine abweichende gespeicherte Angabe (auch ein Hinweis aus dem Modell, z. B. zwei
   Wohnungen im Einfamilienhaus) bleibt stehen und wird zum **Widerspruch** (`gegenFolge`, nur in der Auswertung) – die
@@ -316,7 +345,7 @@ Angaben (n)“ mit dem Grund und im Prüfprotokoll („Ergibt sich aus anderen A
 - **Bewusst nicht abgeleitet** (fachlich nicht zwingend): Stellplätze nach GEIG und Garagen-Nutzfläche (auch
   vorhandene, dem Neubau zugeordnete bzw. angrenzende zählen, §§ 6, 7 GEIG), Behelfsbau beim Wohngebäude
   (Wohncontainer, § 51 BauO NRW), gemischt genutzt beim Mehrfamilienhaus (Runde 3: ein Wohn- und
-  Geschäftshaus wird oft so angegeben), Arbeitsstätte (Telearbeit), öffentlich zugänglich, Versammlungsstätte bei
+  Geschäftshaus wird oft so angegeben), Arbeitsstätte (Telearbeit), öffentlich zugänglich bei „kein Gebäude“ (Spielplatz, Parkplatz), Versammlungsstätte bei
   „kein Gebäude“ (Freilichtbühne, Stadion), Wohnungen im Nichtwohngebäude (Hausmeisterwohnung), Technik bei einer
   Beseitigung, Öltank ohne neue Heizung, Versickerung ohne geänderte Entwässerung, beheizt beim Wohngebäude
   (Wochenendhaus).

@@ -241,7 +241,8 @@ describe('Ampel je Paragraf', () => {
     const a = auswerten(eingabe({ merkmale: { Vorhaben: 'Errichtung', Gebäudeart: 'Einfamilienhaus', Planungsrecht: 'Außenbereich' } }));
     const x = p(a, 'nw/bauo-nrw/49');
     expect(x.ampel).toBe('gelb');
-    expect(x.offen).toEqual(expect.arrayContaining(['merkmal:Gebäudeklasse', 'gebaeude.oeffentlich']));
+    // beim reinen Wohngebäude ergibt sich „nicht öffentlich zugänglich“ – offen bleibt nur die Gebäudeklasse
+    expect(x.offen).toEqual(['merkmal:Gebäudeklasse']);
     expect(a.klaerung.map((k) => k.id)).toEqual(expect.arrayContaining(['merkmal:Gebäudeklasse']));
   });
 

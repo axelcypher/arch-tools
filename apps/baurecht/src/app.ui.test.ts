@@ -1502,9 +1502,9 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
     act(() => knopf(host, 'Prüfprotokoll …')!.click());
     const d = document.querySelector<HTMLElement>('.br-protokoll')!;
     const tabelle = [...d.querySelectorAll('h2')].find((h) => h.textContent?.startsWith('Angaben von Hand ohne Beleg'))!.nextElementSibling!.textContent ?? '';
-    const ohneWirkung = /Antworten auf derzeit nicht gestellte Fragen \(ohne Wirkung\):[^\n]*Im Zusammenhang bebauter Ortsteil/.test(d.textContent ?? '');
+    const ohneWirkung = /Antworten auf derzeit nicht gestellte Fragen \(ohne Wirkung\):[^\n]*Lage in der zusammenhängenden Bebauung/.test(d.textContent ?? '');
     // die Antwort steht im Protokoll – je nachdem in der Tabelle oder unter „ohne Wirkung“, nie gar nicht
-    expect(/Im Zusammenhang bebauter Ortsteil/.test(tabelle) || ohneWirkung).toBe(true);
+    expect(/Lage in der zusammenhängenden Bebauung/.test(tabelle) || ohneWirkung).toBe(true);
     expect(ohneWirkung).toBe(!gestellt);
   });
 

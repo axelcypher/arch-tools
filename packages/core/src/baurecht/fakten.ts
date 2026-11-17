@@ -7,7 +7,7 @@
 import type { FaktDef } from './typen';
 
 /* Planungsrecht im Übrigen: Innenbereich bzw. Außenbereich – beim einfachen Bebauungsplan und bei Satzungen nach dem
-   BauGB nach der Angabe „Im Zusammenhang bebauter Ortsteil“ (§ 30 Abs. 3, § 34 Abs. 4, § 35 Abs. 6 BauGB) */
+   BauGB nach der Angabe „Lage in der zusammenhängenden Bebauung“ (planung.innen) (§ 30 Abs. 3, § 34 Abs. 4, § 35 Abs. 6 BauGB) */
 const PR = (...werte: string[]) => ({ m: 'Planungsrecht', in: werte });
 const FAKT = (f: string, ist: boolean) => ({ f, ist });
 const MIT_UND_OHNE_PLAN = PR('einfacher Bebauungsplan', 'Satzung nach BauGB');
@@ -24,7 +24,9 @@ const KURZ: Record<string, string> = {
   'gebaeude.aufenthaltsraeume': 'Aufenthaltsräume oder Arbeitsplätze',
   'gebaeude.behelfsbau': 'Behelfsbau oder Fliegender Bau',
   'gebaeude.landwirtschaft': 'Land- oder forstwirtschaftliches Gebäude',
-  'gebaeude.oeffentlich': 'Öffentlich zugänglich',
+  'gebaeude.hoehe': 'Höhe (oberster Aufenthaltsraum)',
+  'gebaeude.oeffentlich': 'Für Kunden oder Besucher zugänglich',
+  'lage.baulast': 'Baulast oder fremdes Grundstück',
   'lage.altlasten': 'Altlast oder Altlastverdacht',
   'lage.bergbau': 'Bergbau oder unsicherer Untergrund',
   'lage.gewaesser': 'Grundstück am Gewässer',
@@ -68,7 +70,14 @@ const KATALOG: Record<string, FaktDef> = {
   'lage.radon': j('Radonvorsorgegebiet', 'lage', 'Festlegung nach § 121 StrlSchG durch das Land'),
   'lage.altlasten': j('Altlast oder Altlastverdacht auf dem Grundstück', 'lage', 'Auskunft aus dem Altlastenkataster der unteren Bodenschutzbehörde'),
   'lage.kampfmittel': j('Kampfmittelverdacht', 'lage', 'Auskunft über die örtliche Ordnungsbehörde (Luftbildauswertung des Kampfmittelbeseitigungsdienstes)'),
-  'lage.baulast': j('Baulast eingetragen oder nötig', 'lage', 'Baulastenverzeichnis der Bauaufsichtsbehörde'),
+  'lage.baulast': {
+    titel: 'Baulast eingetragen, oder das Vorhaben braucht ein fremdes Grundstück',
+    gruppe: 'lage',
+    typ: 'janein',
+    frage: 'Ist auf dem Grundstück schon eine Baulast eingetragen, oder soll das Vorhaben ein fremdes Grundstück mitbenutzen – etwa für Abstandsflächen, Zufahrt, Stellplätze oder Leitungen?',
+    hilfe:
+      'Eine Baulast ist eine Verpflichtung, die ein Eigentümer gegenüber der Bauaufsicht übernimmt; sie steht im Baulastenverzeichnis, nicht im Grundbuch. Ja zum Beispiel: Die Abstandsfläche fällt teilweise auf das Nachbargrundstück; die Zufahrt führt über ein fremdes Grundstück; notwendige Stellplätze liegen auf einem anderen Grundstück; ein Gebäude soll über zwei Flurstücke gebaut werden. Nein, wenn nichts eingetragen ist und das Vorhaben alles auf dem eigenen Grundstück nachweist. Wo erfahre ich das: Auskunft aus dem Baulastenverzeichnis bei der Bauaufsichtsbehörde (für Eigentümer oder mit Vollmacht). Maßgeblich: § 85 BauO NRW.',
+  },
   'lage.gewaesser': j('Grundstück an einem oberirdischen Gewässer (bis 5 m Uferstreifen) oder Anlage am Gewässer', 'grundstueck'),
   'lage.strasse_ausserorts': j('An einer Bundes-, Landes- oder Kreisstraße außerhalb der Ortsdurchfahrt (bis 40 m)', 'grundstueck', 'Zustimmung der Straßenbaubehörde (§ 25 StrWG NRW, § 9 FStrG)'),
   'lage.zufahrt_neu': j('Neue oder geänderte Zufahrt zu einer öffentlichen Straße', 'grundstueck'),
@@ -154,10 +163,38 @@ const KATALOG: Record<string, FaktDef> = {
   'planung.bplan_datum': { titel: 'Bebauungsplan in Kraft seit', gruppe: 'planung', typ: 'text', hilfe: 'JJJJ-MM-TT' },
   'planung.gebietsart': { titel: 'Baugebiet', gruppe: 'planung', typ: 'wahl', werte: ['WS', 'WR', 'WA', 'WB', 'MD', 'MDW', 'MI', 'MU', 'MK', 'GE', 'GI', 'SO', 'keins'] },
   'planung.baunvo': { titel: 'BauNVO-Fassung', gruppe: 'planung', typ: 'wahl', werte: ['1962', '1968', '1977', '1990', '2013', '2017', '2021', 'aktuell'], hilfe: 'im Bebauungsplan die Fassung zum Zeitpunkt der öffentlichen Auslegung (§§ 25c ff. BauNVO); im Innenbereich die geltende' },
-  'planung.veraenderungssperre': j('Veränderungssperre (§ 14 BauGB)', 'planung'),
-  'planung.erhaltungssatzung': j('Erhaltungssatzung (§ 172 BauGB)', 'planung'),
-  'planung.sanierungsgebiet': j('Sanierungsgebiet', 'planung'),
-  'planung.planaufstellung': j('Bebauungsplan in Aufstellung (§ 33 BauGB)', 'planung'),
+  'planung.veraenderungssperre': {
+    titel: 'Veränderungssperre der Gemeinde',
+    gruppe: 'planung',
+    typ: 'janein',
+    frage: 'Gilt für das Grundstück eine Veränderungssperre der Gemeinde?',
+    hilfe:
+      'Eine Veränderungssperre beschließt die Gemeinde als Satzung, während sie einen Bebauungsplan aufstellt oder ändert. Solange sie gilt (meist zwei, höchstens vier Jahre), sind Bauvorhaben und wesentliche Veränderungen am Grundstück nur mit einer Ausnahme zulässig. Wo erfahre ich das: Planauskunft der Gemeinde (Stadtplanung), oft auch im Geoportal oder Amtsblatt der Gemeinde. Maßgeblich: §§ 14, 17 BauGB.',
+  },
+  'planung.erhaltungssatzung': {
+    titel: 'Gebiet mit Erhaltungssatzung',
+    gruppe: 'planung',
+    typ: 'janein',
+    frage: 'Liegt das Grundstück im Gebiet einer Erhaltungssatzung – zum Schutz des Ortsbilds oder der Zusammensetzung der Bewohner („Milieuschutz“)?',
+    hilfe:
+      'Beispiele: Altstadt, Gründerzeitviertel, Zechen- oder Werkssiedlung, Milieuschutzgebiet in Großstädten. Dort brauchen Abbruch, Umbau, Nutzungsänderung und auch Neubau zusätzlich eine Genehmigung der Gemeinde. Nicht gemeint: Denkmalschutz und Gestaltungssatzung (eigene Fragen). Wo erfahre ich das: Planauskunft der Gemeinde, Geoportal oder Amtsblatt. Maßgeblich: § 172 BauGB.',
+  },
+  'planung.sanierungsgebiet': {
+    titel: 'Förmlich festgelegtes Sanierungsgebiet',
+    gruppe: 'planung',
+    typ: 'janein',
+    frage: 'Liegt das Grundstück in einem Sanierungsgebiet, das die Gemeinde durch Satzung festgelegt hat?',
+    hilfe:
+      'Mit einem Sanierungsgebiet erneuert die Gemeinde ein Viertel, z. B. einen Ortskern oder eine Innenstadt. Dort brauchen viele Vorhaben, Teilungen und Verträge zusätzlich eine Genehmigung der Gemeinde, wenn die Satzung das nicht ausschließt. Ein Hinweis ist der Sanierungsvermerk im Grundbuch; er fehlt im vereinfachten Verfahren. Wo erfahre ich das: Planauskunft der Gemeinde oder Grundbuch. Maßgeblich: §§ 142, 144 BauGB.',
+  },
+  'planung.planaufstellung': {
+    titel: 'Bebauungsplan in Aufstellung',
+    gruppe: 'planung',
+    typ: 'janein',
+    frage: 'Hat die Gemeinde beschlossen, für das Grundstück einen Bebauungsplan aufzustellen oder einen bestehenden zu ändern?',
+    hilfe:
+      'Gemeint ist ein Beschluss des Rates, ein Planverfahren zu beginnen, auch wenn schon ein Bebauungsplan gilt, der geändert werden soll. Solange der Plan nicht in Kraft ist, kann die Gemeinde Bauanträge zurückstellen lassen oder eine Veränderungssperre beschließen; umgekehrt kann ein weit fortgeschrittener Entwurf ein Vorhaben schon zulässig machen. Wo erfahre ich das: Planauskunft der Gemeinde, Amtsblatt oder Beteiligungsportal mit den laufenden Verfahren. Maßgeblich: §§ 2, 15, 33 BauGB.',
+  },
   'planung.befreiung': {
     titel: 'Vorhaben hält eine Festsetzung des Bebauungsplans nicht ein oder ist dort nur ausnahmsweise zulässig',
     gruppe: 'planung',
@@ -184,7 +221,14 @@ const KATALOG: Record<string, FaktDef> = {
       'Ja, wenn das Grundstück an die zusammenhängende Bebauung des Ortes oder an ein Baugebiet mit vollständigem (qualifiziertem) oder vorhabenbezogenem Bebauungsplan anschließt oder nur durch ein Feld, eine Straße oder einen Weg davon getrennt ist. Nein, wenn es klar abgesetzt in der freien Landschaft liegt (deutlich weiter als etwa 100 m) oder nur an einzelne Höfe bzw. eine Splittersiedlung grenzt. Im Zweifel offen lassen – es kommt auf den Einzelfall an. Maßgeblich: § 246e Abs. 3 BauGB.',
     wenn: AUSSEN_35,
   },
-  'planung.abweichung': j('Abweichung von Anforderungen der Bauordnung beabsichtigt', 'planung', '§ 69 BauO NRW'),
+  'planung.abweichung': {
+    titel: 'Vorhaben hält eine Anforderung der Bauordnung nicht ein',
+    gruppe: 'planung',
+    typ: 'janein',
+    frage: 'Hält das Vorhaben eine Anforderung der Bauordnung nicht ein, etwa bei Abstandsflächen, Brandschutz, Rettungswegen, Treppen oder Barrierefreiheit?',
+    hilfe:
+      'Ja zum Beispiel: Die Abstandsfläche zum Nachbarn ist kleiner als vorgeschrieben; eine Treppe ist schmaler oder steiler; eine Brandwand fehlt oder hat Öffnungen; bei einem Umbau im Bestand werden heutige Anforderungen nicht erfüllt. Nein, wenn das Vorhaben alle Anforderungen der Bauordnung und ihrer Verordnungen einhält. Eine solche Abweichung muss eigens beantragt und begründet werden. Nicht gemeint: Abweichungen vom Bebauungsplan oder von einer Satzung der Gemeinde (eigene Fragen). Wo erfahre ich das: aus der Planung – Entwurfsverfasser bzw. Brandschutzplaner prüfen das. Maßgeblich: § 69 BauO NRW.',
+  },
   'planung.wohnungsbau_246e': {
     titel: 'Sonderregelung für den Wohnungsbau kommt in Betracht (§ 246e BauGB)',
     gruppe: 'planung',
@@ -219,7 +263,12 @@ const KATALOG: Record<string, FaktDef> = {
   'vorhaben.grundwasser': j('Eingriff ins Grundwasser (Wasserhaltung, Erdwärmesonde, Brunnen)', 'vorhaben'),
 
   /* ---------- Gebäude ---------- */
-  'gebaeude.hoehe': z('Höhe nach § 2 Abs. 3 BauO NRW', 'gebaeude', 'm', 'Fußbodenoberkante des höchsten Geschosses mit möglichem Aufenthaltsraum über der mittleren Geländeoberfläche'),
+  'gebaeude.hoehe': z(
+    'Höhe des obersten Fußbodens mit Aufenthaltsraum',
+    'gebaeude',
+    'm',
+    'Gemessen wird nicht bis zum First, sondern vom Gelände (im Mittel) bis zur Oberkante des Fußbodens im obersten Geschoss, in dem ein Aufenthaltsraum möglich ist. Beispiel: Haus mit zwei Vollgeschossen und ausbaufähigem Dachgeschoss, Fußboden des Dachgeschosses 5,60 m über dem Gelände – dann 5,60 m. Davon hängt unter anderem die Gebäudeklasse ab (Grenzen 7 m, 13 m, 22 m). Wo erfahre ich das: aus dem Schnitt der Bauzeichnung. Maßgeblich: § 2 Abs. 3 BauO NRW.',
+  ),
   'gebaeude.wohnungen': z('Wohnungen', 'gebaeude'),
   'gebaeude.nutzungseinheiten': z('Nutzungseinheiten', 'gebaeude'),
   'gebaeude.bgf': z('Brutto-Grundfläche', 'gebaeude', 'm²'),
@@ -229,8 +278,22 @@ const KATALOG: Record<string, FaktDef> = {
   'gebaeude.aufenthaltsraeume': j('Aufenthaltsräume oder Arbeitsplätze im Gebäude', 'gebaeude'),
   'gebaeude.beheizt': j('Gebäude wird beheizt oder gekühlt', 'gebaeude', 'Anwendungsbereich des GEG'),
   'gebaeude.arbeitsstaette': j('Arbeitsstätte (Arbeitsplätze von Beschäftigten)', 'gebaeude'),
-  'gebaeude.oeffentlich': j('Öffentlich zugänglich (§ 49 Abs. 2 BauO NRW)', 'gebaeude'),
-  'gebaeude.behelfsbau': j('Behelfsbau, untergeordnetes Gebäude oder Fliegender Bau', 'gebaeude'),
+  'gebaeude.oeffentlich': {
+    titel: 'Für Kunden, Besucher oder Patienten zugänglich',
+    gruppe: 'gebaeude',
+    typ: 'janein',
+    frage: 'Kann das Vorhaben von Menschen aufgesucht werden, die vorher nicht feststehen – etwa Kunden, Gäste, Besucher oder Patienten?',
+    hilfe:
+      'Ja zum Beispiel: Laden, Gaststätte, Hotel, Arztpraxis, Büro- oder Verwaltungsgebäude, Schule, Kita, Museum, Sport- oder Freizeitanlage, öffentliche Garage, Parkplatz oder Toilettenanlage – auch wenn nur ein Teil dafür bestimmt ist. Nein zum Beispiel: reines Wohnhaus; Lager oder Produktionshalle ohne Besucherverkehr. Dann müssen die Bereiche für Besucher barrierefrei sein. Bei einem reinen Wohngebäude ergibt sich „nein“. Maßgeblich: § 49 Abs. 2 BauO NRW.',
+  },
+  'gebaeude.behelfsbau': {
+    titel: 'Behelfsbau, kleines Nebengebäude oder Fliegender Bau',
+    gruppe: 'gebaeude',
+    typ: 'janein',
+    frage: 'Ist das Gebäude nur für begrenzte Zeit gedacht, ein kleines Nebengebäude ohne Aufenthalt oder dafür gebaut, immer wieder auf- und abgebaut zu werden?',
+    hilfe:
+      'Ja zum Beispiel: Baustellen- oder Bürocontainer und Notunterkunft auf Zeit; eingeschossiges freistehendes Gebäude, in dem sich niemand oder nur kurz jemand aufhält, wie Laube, Geräte- oder Gartenhaus, Schutzhütte; Zelt, Bühne, Fahrgeschäft oder Tribüne, die an wechselnden Orten aufgestellt werden. Nein: dauerhaft genutzte Wohn-, Büro- oder Gewerbegebäude, auch in Modul- oder Containerbauweise. Für diese Bauten gelten Erleichterungen, unter anderem entfällt die Pflicht zur Solaranlage. Maßgeblich: §§ 42a Abs. 4, 51, 78 BauO NRW.',
+  },
   'gebaeude.landwirtschaft': j('Land- oder forstwirtschaftlich genutztes Gebäude', 'gebaeude'),
   'gebaeude.aufzug': j('Aufzug', 'gebaeude'),
   'gebaeude.besucher': z('Besucher (Versammlungsstätte)', 'gebaeude'),
@@ -343,6 +406,8 @@ const FOLGT: Record<string, NonNullable<FaktDef['folgt']>> = {
   'gebaeude.landwirtschaft': [{ wenn: WOHNGEBAEUDE, wert: false, grund: 'Wohngebäude – kein land- oder forstwirtschaftlich genutztes Gebäude' }],
   // das GEG (§ 2 Abs. 1) setzt ein Gebäude voraus
   'gebaeude.beheizt': [{ wenn: KEIN_GEBAEUDE, wert: false, grund: 'kein Gebäude – das GEG gilt nur für Gebäude' }],
+  // Wohnungen suchen nur bestimmte Personen auf (Bewohner und ihre Gäste) – nicht bei einer Nutzungsänderung
+  'gebaeude.oeffentlich': [{ wenn: WOHNGEBAEUDE_BLEIBT, wert: false, grund: 'reines Wohngebäude – es dient nicht dem Besucherverkehr' }],
 };
 
 export const FAKTEN: Record<string, FaktDef> = Object.fromEntries(

@@ -159,12 +159,12 @@
   },
   "fakten": {
     "ortsrecht.stellplatzsatzung": {
-      "titel": "Stellplatzsatzung der Gemeinde (örtliche Bauvorschrift nach § 89 Abs. 1 Nr. 4 BauO NRW)",
+      "titel": "Stellplatzsatzung der Gemeinde",
       "kurz": "Stellplatzsatzung der Gemeinde",
       "gruppe": "ortsrecht",
       "typ": "janein",
-      "wert": true,
-      "hilfe": "Stellplatzsatzung Stadt Soest vom 28.01.2022 – die Stellplatzverordnung NRW tritt zurück (§ 1 Abs. 2 StellplatzVO NRW)"
+      "hilfe": "Stellplatzsatzung Stadt Soest vom 28.01.2022 – sie bestimmt, wie viele Stellplätze nötig sind; die Stellplatzverordnung NRW tritt zurück. Maßgeblich: § 89 Abs. 1 Nr. 4 BauO NRW, § 1 Abs. 2 StellplatzVO NRW.",
+      "wert": true
     },
     "soest.denkmalbereich": {
       "titel": "Im Denkmalbereich Altstadt Soest (Denkmal-Dienst der Stadt)",
@@ -499,11 +499,12 @@
       "wert": true
     },
     "planung.planreife": {
-      "titel": "Vorhaben nach § 33 BauGB zulässig (Planreife; Festsetzungen schriftlich anerkannt, Erschließung gesichert)",
-      "kurz": "Planreife nach § 33 BauGB",
+      "titel": "Entwurf des neuen Bebauungsplans weit fortgeschritten, Vorhaben passt dazu",
+      "kurz": "Entwurf fortgeschritten (Planreife)",
       "gruppe": "planung",
       "typ": "janein",
-      "hilfe": "Ein Aufstellungsbeschluss allein genügt nicht – § 33 Abs. 1 Nr. 1–4 BauGB",
+      "frage": "Wurde der Entwurf des neuen Bebauungsplans schon öffentlich ausgelegt bzw. veröffentlicht, hält das Vorhaben seine künftigen Festsetzungen ein, hat die Bauherrschaft diese schriftlich anerkannt, und ist die Erschließung (Straße, Wasser, Abwasser) gesichert?",
+      "hilfe": "Nur wenn alles zutrifft, ist ein Vorhaben schon zulässig, bevor der Plan in Kraft tritt. Der Beschluss, einen Plan aufzustellen, genügt allein nicht. Die schriftliche Anerkennung nimmt die Gemeinde meist auf einem eigenen Vordruck entgegen. Wo erfahre ich das: Stadtplanung der Gemeinde (Stand des Verfahrens, Entwurf) bzw. Erschließungsträger. Maßgeblich: § 33 BauGB.",
       "ohneAusloeser": false,
       "wenn": {
         "oder": [
