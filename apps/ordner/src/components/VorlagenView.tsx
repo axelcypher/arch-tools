@@ -4,6 +4,8 @@ import { saveBinaryFile } from '@core/platform/files';
 import { logger } from '@core/platform/log';
 import { Field, TextField } from '@core/ui/fields';
 import { bestaetigen } from '@core/ui/Rueckfrage';
+import { Flaeche, Karte } from '@core/ui/Karte';
+import { BreitenLeiste } from '@core/ui/Leiste';
 import { Symbol } from '@core/ui/Symbol';
 import { hatDateisystem, SpeicherDateisystem, tauriDateisystem, waehleOrdner } from '../dateisystem';
 import { nummerAus, PLATZHALTER_VORLAGE } from '../nummer';
@@ -187,105 +189,104 @@ export function VorlagenView() {
   const schemaBeispiel = (schema: string) => zielDateiname('Kostenschätzung.xlsx', undefined, schema || '{Name}', werte);
 
   return (
-    <div className="po-view">
-      <section className="po-col po-vorlagen-links">
-        <h2>Vorlagen</h2>
-        <p className="muted small-text">
-          Die Vorlagen des Büros liegen in einem eigenen Ordner, gegliedert, wie es dem Büro passt. Presets legen fest, welche Datei an welche Stelle im Projekt kommt und wie sie dort heißt. Beim
-          Anlegen und beim Aktualisieren eines Projekts werden fehlende Dateien ergänzt – vorhandene bleiben unverändert.
-        </p>
-        <StrukturSperre />
-
-        <h3>Presets</h3>
-        <p className="muted small-text">
-          Ein Preset fasst Vorlagen zusammen, etwa für jedes Projekt, für den Bauantrag oder die Ausschreibung. Im Assistenten (Projekt) wird gewählt, welche gelten; Presets mit „Standard“ sind bei
-          neuen Projekten vorausgewählt. Die Presets gehören zur Struktur und werden mit ihr gespeichert.
-        </p>
-        <ul className="list po-presets" aria-label="Presets">
-          {presets.map((p, i) => (
-            <li key={`${i}:${p.name}`} className={i === index ? 'active' : ''}>
-              <button className="po-preset-knopf" aria-current={i === index ? 'true' : undefined} onClick={() => waehle(i)}>
-                <span>{p.name}</span>
-                <span className="muted small-text">
-                  {p.standard ? 'Standard · ' : ''}
-                  {p.eintraege.length} {p.eintraege.length === 1 ? 'Zuordnung' : 'Zuordnungen'}
-                </span>
-              </button>
-            </li>
-          ))}
-          {!presets.length && <li className="muted">Noch keine Presets.</li>}
-        </ul>
-        <div className="button-row">
-          <button className="small" disabled={gesperrt} title={grund} onClick={neuesPreset}>
-            <Symbol name="plus" /> Preset
-          </button>
-          <button className="small" disabled={!preset || gesperrt} title={grund} onClick={duplizieren}>
-            Duplizieren
-          </button>
-          <button className="small danger" disabled={!preset || gesperrt} title={grund} onClick={() => void presetLoeschen()}>
-            Löschen …
-          </button>
-        </div>
-        {meldung && (
-          <p className={`meldung ${meldung.art}`} role={meldung.art === 'fehler' ? 'alert' : 'status'}>
-            {meldung.text}
+    <Flaeche>
+      <BreitenLeiste schluessel="ordner:leiste-vorlagen" vorgabe={400} min={280} max={560} titel="Breite der Vorlagen" mitteMin={480}>
+        <Karte als="aside" titel="Vorlagen" className="po-vorlagen-links">
+          <p className="muted small-text">
+            Die Vorlagen des Büros liegen in einem eigenen Ordner, gegliedert, wie es dem Büro passt. Presets legen fest, welche Datei an welche Stelle im Projekt kommt und wie sie dort heißt. Beim
+            Anlegen und beim Aktualisieren eines Projekts werden fehlende Dateien ergänzt – vorhandene bleiben unverändert.
           </p>
-        )}
+          <StrukturSperre />
 
-        <h3>Vorlagenordner und Dateinamen</h3>
-        <VorlagenordnerZeile leerText="noch nicht gewählt" />
-        {[...nichtAutomatisch].map(([name, a]) => (
-          <p key={name} className="meldung">
-            Der Vorlagenordner ist anders gegliedert als die Struktur: Mit „{name}“ {abweichungText(a)}. Das Preset wird deshalb bei neuen Projekten nicht vorausgewählt – besser seine Ordner gezielt
-            einem Zielordner der Struktur zuordnen.
+          <h3>Presets</h3>
+          <p className="muted small-text">
+            Ein Preset fasst Vorlagen zusammen, etwa für jedes Projekt, für den Bauantrag oder die Ausschreibung. Im Assistenten (Projekt) wird gewählt, welche gelten; Presets mit „Standard“ sind bei
+            neuen Projekten vorausgewählt. Die Presets gehören zur Struktur und werden mit ihr gespeichert.
           </p>
-        ))}
-        <p className="small-text">
-          Dateinamen im Projekt: <code>{struktur.vorlagenname}</code> <span className="muted">– z. B. Kostenschätzung.xlsx → {schemaBeispiel(struktur.vorlagenname)}</span>
-        </p>
-        <PfadeVerweis fokus="vorlagen.vorlagenname" erklaerung="Eingestellt in den Einstellungen aller Apps, Seite „Pfade und Benennung“. {Name} = Name der Vorlage ohne Endung." />
-
-        <h3>Muster und Platzhalter</h3>
-        <div className="button-row">
-          <button onClick={() => void musterSchreiben()} title="Projektblatt, Planliste und Besprechungsprotokoll als Ausgangspunkt für eigene Vorlagen – aufgebaut wie ein Projektordner">
-            {desktop ? 'Muster-Vorlagen in einen Ordner schreiben …' : 'Muster-Vorlagen als ZIP herunterladen'}
-          </button>
-        </div>
-        <details className="po-platzhalter-klapp">
-          <summary>Platzhalter in Vorlagen anzeigen</summary>
-          <div className="placeholder-help">
-            {PLATZHALTER_DOCS.map((g) => (
-              <div key={g.gruppe}>
-                <h4>{g.gruppe}</h4>
-                <table>
-                  <tbody>
-                    {g.zeilen.map(([k, d]) => (
-                      <tr key={k}>
-                        <td>
-                          <code>{k}</code>
-                        </td>
-                        <td>{d}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+          <ul className="list po-presets" aria-label="Presets">
+            {presets.map((p, i) => (
+              <li key={`${i}:${p.name}`} className={i === index ? 'active' : ''}>
+                <button className="po-preset-knopf" aria-current={i === index ? 'true' : undefined} onClick={() => waehle(i)}>
+                  <span>{p.name}</span>
+                  <span className="muted small-text">
+                    {p.standard ? 'Standard · ' : ''}
+                    {p.eintraege.length} {p.eintraege.length === 1 ? 'Zuordnung' : 'Zuordnungen'}
+                  </span>
+                </button>
+              </li>
             ))}
+            {!presets.length && <li className="muted">Noch keine Presets.</li>}
+          </ul>
+          <div className="button-row">
+            <button className="small" disabled={gesperrt} title={grund} onClick={neuesPreset}>
+              <Symbol name="plus" /> Preset
+            </button>
+            <button className="small" disabled={!preset || gesperrt} title={grund} onClick={duplizieren}>
+              Duplizieren
+            </button>
+            <button className="small danger" disabled={!preset || gesperrt} title={grund} onClick={() => void presetLoeschen()}>
+              Löschen …
+            </button>
           </div>
-        </details>
-      </section>
+          {meldung && (
+            <p className={`meldung ${meldung.art}`} role={meldung.art === 'fehler' ? 'alert' : 'status'}>
+              {meldung.text}
+            </p>
+          )}
+
+          <h3>Vorlagenordner und Dateinamen</h3>
+          <VorlagenordnerZeile leerText="noch nicht gewählt" />
+          {[...nichtAutomatisch].map(([name, a]) => (
+            <p key={name} className="meldung">
+              Der Vorlagenordner ist anders gegliedert als die Struktur: Mit „{name}“ {abweichungText(a)}. Das Preset wird deshalb bei neuen Projekten nicht vorausgewählt – besser seine Ordner gezielt
+              einem Zielordner der Struktur zuordnen.
+            </p>
+          ))}
+          <p className="small-text">
+            Dateinamen im Projekt: <code>{struktur.vorlagenname}</code> <span className="muted">– z. B. Kostenschätzung.xlsx → {schemaBeispiel(struktur.vorlagenname)}</span>
+          </p>
+          <PfadeVerweis fokus="vorlagen.vorlagenname" erklaerung="Eingestellt in den Einstellungen aller Apps, Seite „Pfade und Benennung“. {Name} = Name der Vorlage ohne Endung." />
+
+          <h3>Muster und Platzhalter</h3>
+          <div className="button-row">
+            <button onClick={() => void musterSchreiben()} title="Projektblatt, Planliste und Besprechungsprotokoll als Ausgangspunkt für eigene Vorlagen – aufgebaut wie ein Projektordner">
+              {desktop ? 'Muster-Vorlagen in einen Ordner schreiben …' : 'Muster-Vorlagen als ZIP herunterladen'}
+            </button>
+          </div>
+          <details className="po-platzhalter-klapp">
+            <summary>Platzhalter in Vorlagen anzeigen</summary>
+            <div className="po-platzhalter">
+              {PLATZHALTER_DOCS.map((g) => (
+                <div key={g.gruppe}>
+                  <h4>{g.gruppe}</h4>
+                  <table className="summary-table text">
+                    <tbody>
+                      {g.zeilen.map(([k, d]) => (
+                        <tr key={k}>
+                          <td>
+                            <code>{k}</code>
+                          </td>
+                          <td>{d}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ))}
+            </div>
+          </details>
+        </Karte>
+      </BreitenLeiste>
 
       {/* unlesbare Struktur: das gewählte Preset nur lesen – Felder und Knöpfe gesperrt, Vorschau und Suche bleiben */}
-      <section className="po-col po-preset">
+      <Karte als="main" titel={preset ? `Preset „${preset.name}“` : 'Preset'} className="po-preset">
         {!preset && (
           <>
-            <h2>Preset</h2>
             <p className="muted small-text">Mit dem Knopf „Preset“ (links, mit Plus) ein Preset anlegen und ihm Vorlagen aus dem Vorlagenordner zuordnen.</p>
           </>
         )}
         {preset && (
           <>
-            <h2>Preset „{preset.name}“</h2>
             <fieldset className="po-sperre field-row" disabled={gesperrt} title={grund}>
               <Field label="Name" hint="Projekte merken sich ihre Presets beim Namen (in der Projektdatei)">
                 <TextField value={preset.name} onChange={umbenennen} />
@@ -408,7 +409,7 @@ export function VorlagenView() {
                   </button>
                 </div>
                 <div className="po-plan po-quellen">
-                  <table className="po-table">
+                  <table className="summary-table text">
                     <tbody>
                       {gefiltert.slice(0, MAX_QUELLEN).map((q) => {
                         const tiefe = f ? 0 : q.pfad.split('/').length - 1;
@@ -425,7 +426,7 @@ export function VorlagenView() {
                                 </span>
                               )}
                             </td>
-                            <td className="po-status">
+                            <td className="num po-status">
                               {drin ? (
                                 'im Preset'
                               ) : (
@@ -451,7 +452,7 @@ export function VorlagenView() {
             )}
           </>
         )}
-      </section>
-    </div>
+      </Karte>
+    </Flaeche>
   );
 }

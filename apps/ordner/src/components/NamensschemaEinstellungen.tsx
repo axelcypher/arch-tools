@@ -230,7 +230,7 @@ function KuerzelListe({
     <div className="po-kuerzel">
       <h5>{titel}</h5>
       <p className="muted small-text">{text}</p>
-      <table className="po-kuerzel-tabelle">
+      <table className="summary-table text felder po-kuerzel-tabelle">
         <colgroup>
           <col className="po-kuerzel-spalte" />
           <col />

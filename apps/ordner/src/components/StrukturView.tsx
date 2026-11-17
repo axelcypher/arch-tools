@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react';
 import { openTextFile, saveTextFile } from '@core/platform/files';
 import { logger } from '@core/platform/log';
 import { Field, TextField } from '@core/ui/fields';
+import { Flaeche, Karte } from '@core/ui/Karte';
+import { BreitenLeiste } from '@core/ui/Leiste';
 import { bestaetigen, fragen } from '@core/ui/Rueckfrage';
 import { nameAus, nummerAus } from '../nummer';
 import { PfadeVerweis } from '@core/ui/Einstellungen';
@@ -169,20 +171,19 @@ export function StrukturView() {
 
   const beispiel = musterWerte(nummerAus(struktur.nummernschema, 14));
 
-  const ordnerKopf = (
-    <div className="po-ordner-kopf">
-      <h2>Ordner</h2>
-      <span className="muted small-text">
-        {struktur.ordner.length} Ordner, davon {struktur.ordner.filter((o) => o.lph?.length).length} an Leistungsphasen gebunden
-      </span>
-      <div className="segment" role="group" aria-label="Ansicht der Ordnerliste">
-        <button aria-pressed={ordnerAnsicht === 'baum'} onClick={() => void zumBaum()}>
-          Baum
-        </button>
-        <button aria-pressed={ordnerAnsicht === 'text'} title="Die Ordnerliste als Text mit eigener Schreibweise bearbeiten" onClick={() => setOrdnerAnsicht('text')}>
-          Text (Experte)
-        </button>
-      </div>
+  const ordnerZahl = (
+    <p className="muted small-text po-ordner-zahl">
+      {struktur.ordner.length} Ordner, davon {struktur.ordner.filter((o) => o.lph?.length).length} an Leistungsphasen gebunden
+    </p>
+  );
+  const ordnerAktionen = (
+    <div className="segment" role="group" aria-label="Ansicht der Ordnerliste">
+      <button aria-pressed={ordnerAnsicht === 'baum'} onClick={() => void zumBaum()}>
+        Baum
+      </button>
+      <button aria-pressed={ordnerAnsicht === 'text'} title="Die Ordnerliste als Text mit eigener Schreibweise bearbeiten" onClick={() => setOrdnerAnsicht('text')}>
+        Text (Experte)
+      </button>
     </div>
   );
 
@@ -215,82 +216,83 @@ export function StrukturView() {
   );
 
   return (
-    <div className="po-struktur">
-      <section className="po-col po-struktur-kopf">
-        <div className="po-struktur-titel">
-          <h2>Struktur</h2>
-          {/* unlesbare Struktur: Feld gesperrt (Erklärung und „Angezeigte Struktur übernehmen …“ darunter) */}
+    <Flaeche className="po-struktur">
+      <BreitenLeiste schluessel="ordner:leiste-struktur" vorgabe={380} min={280} max={560} titel="Breite der Struktur" mitteMin={420}>
+        <Karte als="aside" titel="Struktur" className="po-struktur-kopf">
+          <div className="po-struktur-titel">
+            {/* unlesbare Struktur: Feld gesperrt (Erklärung und „Angezeigte Struktur übernehmen …“ darunter) */}
+            <fieldset className="po-sperre" disabled={gesperrt} title={grund}>
+              <Field label="Name der Struktur">
+                <TextField value={struktur.name} onChange={(v) => set({ name: v.trim() || struktur.name })} />
+              </Field>
+            </fieldset>
+            <div className="button-row">
+              <button onClick={() => void laden()}>Struktur laden …</button>
+              <button onClick={() => void speichern()}>Struktur speichern …</button>
+              <button
+                title="Ordner und Namensschemata auf die neutrale Vorgabe zurücksetzen – Presets, Bausteine und Dateinamen der Vorlagen bleiben (mit Rückfrage)"
+                onClick={() =>
+                  void ersetzen(
+                    { ...STANDARD, vorlagenname: struktur.vorlagenname, presets: struktur.presets, ...(struktur.bausteine ? { bausteine: struktur.bausteine } : {}) },
+                    'Vorgabe wiederherstellen?',
+                    'Neutrale Vorgabe wiederhergestellt; die Vorlagen-Presets bleiben.',
+                  )
+                }
+              >
+                Vorgabe wiederherstellen …
+              </button>
+              <button
+                className={sicherungen ? 'active' : undefined}
+                aria-expanded={!!sicherungen}
+                aria-controls="po-sicherungen"
+                title="Frühere Fassungen der Struktur – vor jedem Ersetzen gesichert (die letzten zehn)"
+                onClick={() => void sicherungenZeigen()}
+              >
+                Sicherungen
+              </button>
+            </div>
+          </div>
+          <p className="muted small-text">
+            Ordnerbaum, Bausteine und Namensschemata gehören dem Büro, nicht dem Tool: Die Struktur gilt für alle, die diesen Konfigurationsordner nutzen, und lässt sich als Datei speichern,
+            weitergeben und auf einem anderen Rechner laden – samt den Vorlagen-Presets (unter „Vorlagen“).
+          </p>
+          <StrukturSperre />
+          {meldung && (
+            <p className={`meldung ${meldung.art}`} role={meldung.art === 'fehler' ? 'alert' : 'status'}>
+              {meldung.text}
+            </p>
+          )}
+          {rueckgaengig && (
+            <p className="meldung ok po-rueckgaengig">
+              {rueckgaengig.text}{' '}
+              <button className="small" onClick={() => void strukturRueckgaengig().catch((e: unknown) => setMeldung({ art: 'fehler', text: e instanceof Error ? e.message : String(e) }))}>
+                Rückgängig
+              </button>
+            </p>
+          )}
+          {sicherungen && (
+            <div className="po-sicherungen" id="po-sicherungen">
+              <span className="field-label">Sicherungen der Struktur</span>
+              {!sicherungen.length && <p className="muted small-text">Noch keine – eine Sicherung entsteht vor jedem Ersetzen der Struktur.</p>}
+              <ul className="list">
+                {sicherungen.map((x) => (
+                  <li key={`${x.name}:${x.grund}`}>
+                    <span title={x.grund}>
+                      {x.name.replace(/^projektordner\.json\.bak-/, '')} · „{typeof x.inhalt.struktur?.name === 'string' ? x.inhalt.struktur.name : 'nicht lesbar'}“ · {x.grund}
+                    </span>
+                    <button className="small" onClick={() => sicherungWiederherstellen(x)}>
+                      Wiederherstellen …
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           <fieldset className="po-sperre" disabled={gesperrt} title={grund}>
-            <Field label="Name der Struktur">
-              <TextField value={struktur.name} onChange={(v) => set({ name: v.trim() || struktur.name })} />
-            </Field>
+            {schemata}
           </fieldset>
-          <div className="button-row">
-            <button onClick={() => void laden()}>Struktur laden …</button>
-            <button onClick={() => void speichern()}>Struktur speichern …</button>
-            <button
-              title="Ordner und Namensschemata auf die neutrale Vorgabe zurücksetzen – Presets, Bausteine und Dateinamen der Vorlagen bleiben (mit Rückfrage)"
-              onClick={() =>
-                void ersetzen(
-                  { ...STANDARD, vorlagenname: struktur.vorlagenname, presets: struktur.presets, ...(struktur.bausteine ? { bausteine: struktur.bausteine } : {}) },
-                  'Vorgabe wiederherstellen?',
-                  'Neutrale Vorgabe wiederhergestellt; die Vorlagen-Presets bleiben.',
-                )
-              }
-            >
-              Vorgabe wiederherstellen …
-            </button>
-            <button
-              className={sicherungen ? 'active' : undefined}
-              aria-expanded={!!sicherungen}
-              aria-controls="po-sicherungen"
-              title="Frühere Fassungen der Struktur – vor jedem Ersetzen gesichert (die letzten zehn)"
-              onClick={() => void sicherungenZeigen()}
-            >
-              Sicherungen
-            </button>
-          </div>
-        </div>
-        <p className="muted small-text">
-          Ordnerbaum, Bausteine und Namensschemata gehören dem Büro, nicht dem Tool: Die Struktur gilt für alle, die diesen Konfigurationsordner nutzen, und lässt sich als Datei speichern, weitergeben
-          und auf einem anderen Rechner laden – samt den Vorlagen-Presets (unter „Vorlagen“).
-        </p>
-        <StrukturSperre />
-        {meldung && (
-          <p className={`meldung ${meldung.art}`} role={meldung.art === 'fehler' ? 'alert' : 'status'}>
-            {meldung.text}
-          </p>
-        )}
-        {rueckgaengig && (
-          <p className="meldung ok po-rueckgaengig">
-            {rueckgaengig.text}{' '}
-            <button className="small" onClick={() => void strukturRueckgaengig().catch((e: unknown) => setMeldung({ art: 'fehler', text: e instanceof Error ? e.message : String(e) }))}>
-              Rückgängig
-            </button>
-          </p>
-        )}
-        {sicherungen && (
-          <div className="po-sicherungen" id="po-sicherungen">
-            <span className="field-label">Sicherungen der Struktur</span>
-            {!sicherungen.length && <p className="muted small-text">Noch keine – eine Sicherung entsteht vor jedem Ersetzen der Struktur.</p>}
-            <ul className="list">
-              {sicherungen.map((x) => (
-                <li key={`${x.name}:${x.grund}`}>
-                  <span title={x.grund}>
-                    {x.name.replace(/^projektordner\.json\.bak-/, '')} · „{typeof x.inhalt.struktur?.name === 'string' ? x.inhalt.struktur.name : 'nicht lesbar'}“ · {x.grund}
-                  </span>
-                  <button className="small" onClick={() => sicherungWiederherstellen(x)}>
-                    Wiederherstellen …
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-        <fieldset className="po-sperre" disabled={gesperrt} title={grund}>
-          {schemata}
-        </fieldset>
-      </section>
+        </Karte>
+      </BreitenLeiste>
 
       {/* Ordnerliste: bei unlesbarer Struktur nur lesen – Baum (scrollen, Pfeiltasten, Auswahl) bzw. Text bleiben zugänglich */}
       {ordnerAnsicht === 'baum' ? (
@@ -302,47 +304,46 @@ export function StrukturView() {
             const { bausteine: _alt, ...rest } = struktur;
             setStruktur(b.length ? { ...rest, bausteine: b } : rest);
           }}
-          kopf={ordnerKopf}
+          aktionen={ordnerAktionen}
+          vorspann={ordnerZahl}
           gesperrt={gesperrt}
         />
       ) : (
-        <div className="po-editor po-editor-text">
-          <section className="po-col po-editor-baum">
-            {ordnerKopf}
-            <p className="muted small-text">
-              Eine Zeile je Ordner, Unterordner mit „/“. Zusätze nach „|“: <code>LPh 5</code> oder <code>LPh 6-7</code> – der Ordner entsteht nur, wenn eine dieser Leistungsphasen beauftragt ist
-              (Unterordner erben sie); <code>Dateischema</code> – Dateien darin werden im Prüfmodus gegen das Dateinamenschema geprüft. Änderungen gelten erst mit „Ordnerliste übernehmen“.
+        <Karte als="main" titel="Ordner" aktionen={ordnerAktionen} className="po-editor-baum po-editor-text">
+          {ordnerZahl}
+          <p className="muted small-text">
+            Eine Zeile je Ordner, Unterordner mit „/“. Zusätze nach „|“: <code>LPh 5</code> oder <code>LPh 6-7</code> – der Ordner entsteht nur, wenn eine dieser Leistungsphasen beauftragt ist
+            (Unterordner erben sie); <code>Dateischema</code> – Dateien darin werden im Prüfmodus gegen das Dateinamenschema geprüft. Änderungen gelten erst mit „Ordnerliste übernehmen“.
+          </p>
+          <textarea className="po-ordnertext" aria-label="Ordnerliste" value={text} readOnly={gesperrt} title={grund} spellCheck={false} onChange={(e) => setText(e.target.value)} />
+          {veraltet && (
+            <p className="warning po-text-veraltet" role="status">
+              Die Ordnerliste wurde inzwischen geändert (z. B. auf einem anderen Rechner). Der Text oben geht noch vom alten Stand aus: „Ordnerliste übernehmen“ ersetzt den neuen Stand durch ihn,
+              „Verwerfen“ zeigt den neuen Stand.
             </p>
-            <textarea className="po-ordnertext" aria-label="Ordnerliste" value={text} readOnly={gesperrt} title={grund} spellCheck={false} onChange={(e) => setText(e.target.value)} />
-            {veraltet && (
-              <p className="warning po-text-veraltet" role="status">
-                Die Ordnerliste wurde inzwischen geändert (z. B. auf einem anderen Rechner). Der Text oben geht noch vom alten Stand aus: „Ordnerliste übernehmen“ ersetzt den neuen Stand durch ihn,
-                „Verwerfen“ zeigt den neuen Stand.
-              </p>
-            )}
-            {gelesen.meldungen.length > 0 && (
-              <div className="warning po-ordnermeldungen">
-                <ul>
-                  {gelesen.meldungen.map((m) => (
-                    <li key={`${m.zeile}:${m.text}`}>{m.text}</li>
-                  ))}
-                </ul>
-                {geaendert && <span className="small-text">Mit „Ordnerliste übernehmen“ gilt die Liste so, wie oben beschrieben bereinigt.</span>}
-              </div>
-            )}
-            <div className="button-row">
-              <button className="primary" disabled={!geaendert || gesperrt} title={grund} onClick={() => void ordnerUebernehmen()}>
-                Ordnerliste übernehmen
-              </button>
-              <button disabled={!geaendert || gesperrt} title={grund} onClick={textVerwerfen}>
-                Verwerfen
-              </button>
-              {geaendert && <span className="muted small-text">noch nicht übernommen</span>}
+          )}
+          {gelesen.meldungen.length > 0 && (
+            <div className="warning po-ordnermeldungen">
+              <ul>
+                {gelesen.meldungen.map((m) => (
+                  <li key={`${m.zeile}:${m.text}`}>{m.text}</li>
+                ))}
+              </ul>
+              {geaendert && <span className="small-text">Mit „Ordnerliste übernehmen“ gilt die Liste so, wie oben beschrieben bereinigt.</span>}
             </div>
-          </section>
-        </div>
+          )}
+          <div className="button-row">
+            <button className="primary" disabled={!geaendert || gesperrt} title={grund} onClick={() => void ordnerUebernehmen()}>
+              Ordnerliste übernehmen
+            </button>
+            <button disabled={!geaendert || gesperrt} title={grund} onClick={textVerwerfen}>
+              Verwerfen
+            </button>
+            {geaendert && <span className="muted small-text">noch nicht übernommen</span>}
+          </div>
+        </Karte>
       )}
-    </div>
+    </Flaeche>
   );
 }
 
