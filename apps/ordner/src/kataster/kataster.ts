@@ -1,7 +1,7 @@
 import { strFromU8, unzipSync } from 'fflate';
 import { isZip } from '@core/archive';
 import type { Koordinaten } from '@core/model';
-import { ersetzen, globaleWerte, platzhalterIn } from '@core/platzhalter';
+import { ersetzen, globaleWerte, platzhalterIn, type GlobaleQuelle } from '@core/platzhalter';
 import { sichererDateiname } from '@core/projektdatei';
 import { KATASTER_VARIABLEN, KATASTER_ZIEL_VARIABLEN } from '@core/einstellungen/variablen';
 
@@ -285,12 +285,14 @@ export interface Namensteile {
   kurzname?: string;
   vorhaben?: string;
   bearbeiter?: string;
+  /** Planungsphase des Projekts (für {PHASE}, {PHASE_NAME}, {LPH}); fehlt = nicht festgelegt */
+  phase?: GlobaleQuelle['phase'];
 }
 
 /** Variablen des Dateinamens und des Ablageordners – eine Quelle in core (zentrale Einstellungen) */
 export { KATASTER_VARIABLEN, KATASTER_ZIEL_VARIABLEN };
 
-const globaleAus = (t: Namensteile) => globaleWerte({ projektcode: t.kuerzel, kurzname: t.kurzname, vorhaben: t.vorhaben, bearbeiter: t.bearbeiter, datum: t.datum });
+const globaleAus = (t: Namensteile) => globaleWerte({ projektcode: t.kuerzel, kurzname: t.kurzname, vorhaben: t.vorhaben, bearbeiter: t.bearbeiter, datum: t.datum, phase: t.phase });
 
 /** Dateiname eines Plans (mit Endung) nach der Vorlage */
 export function planDateiname(vorlage: string, plan: Pick<KatasterPlan, 'name' | 'art'>, t: Namensteile): string {

@@ -2,6 +2,7 @@ import type { VorlagenHinweis } from './pruefung';
 import { berechnungsordnerPfad, exportDateinameAusMuster, exportPfade, exportPfadeLaden, type ExportApp, type ExportPfade } from '../einstellungen/pfade';
 import { istVollstaendig, projektordnerAusDatei } from './projektordner';
 import type { GlobaleQuelle } from '../platzhalter';
+import { phaseQuelle, projektPlanphase } from '../planphase';
 import type { Knopf } from '../ui/Rueckfrage';
 
 /**
@@ -157,10 +158,14 @@ export function mitEingestellterVorlage<P>(o: {
   };
 }
 
-/** Werte der globalen Platzhalter aus den Stammdaten des Projekts */
-export const werteAusMeta = (m: { projektcode?: string; kurzname?: string; vorhaben?: string; bearbeiter?: string } | undefined): GlobaleQuelle => ({
+/**
+ * Werte der globalen Platzhalter aus den Stammdaten des Projekts; die Planungsphase nach dem Namensschema des
+ * Projekts (`namensschema`, sonst des Büros, sonst der Vorgabe)
+ */
+export const werteAusMeta = (m: { projektcode?: string; kurzname?: string; vorhaben?: string; bearbeiter?: string; planphase?: string } | undefined, namensschema?: unknown): GlobaleQuelle => ({
   projektcode: m?.projektcode ?? '',
   kurzname: m?.kurzname ?? '',
   vorhaben: m?.vorhaben ?? '',
   bearbeiter: m?.bearbeiter ?? '',
+  phase: phaseQuelle(projektPlanphase({ meta: m, namensschema })),
 });

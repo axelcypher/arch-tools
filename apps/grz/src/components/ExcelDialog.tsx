@@ -17,7 +17,7 @@ export function ExcelDialog({ onClose, start }: { onClose: () => void; start: Ex
       onClose={onClose}
       art={start.art}
       hinweise={start.hinweise}
-      benennung={{ app: 'grz', werte: werteAusMeta(project.meta), inhalt: EXPORT_INHALT }}
+      benennung={{ app: 'grz', werte: werteAusMeta(project.meta, project.namensschema), inhalt: EXPORT_INHALT }}
       speicher={vorlage}
       standardText="Blatt „GRZ GFZ“: Grundlagen, Kennzahlen, Vollgeschosse, Geschossfläche, Flächenbilanz, Lageplan-Flächen und Hinweise – mit Summenformeln."
       referenz={(zu) => <PlatzhalterReferenz schema={TERRIO_SCHEMA} onClose={zu} />}

@@ -1,4 +1,4 @@
-import { namensschemaAus } from './namensschema';
+import { KUERZEL_MUSTER, namensschemaAus } from './namensschema';
 import type {
   AntragKurz,
   Anschrift,
@@ -251,6 +251,8 @@ function normalizeMeta(v: unknown): ProjectMeta {
     if (mk.length) meta.merkmale = Object.fromEntries(mk);
   }
   if (m.status === 'akquise' || m.status === 'aktiv' || m.status === 'abgeschlossen') meta.status = m.status;
+  // Planungsphase: Kürzel wie im Namensschema (Großbuchstaben, Ziffern, höchstens 8 Zeichen) – sonst entfällt sie
+  if (typeof m.planphase === 'string' && KUERZEL_MUSTER.test(m.planphase.trim().toUpperCase())) meta.planphase = m.planphase.trim().toUpperCase();
   const a = antragKurzAus(m.antrag);
   if (a) meta.antrag = a;
   return meta;

@@ -2,7 +2,7 @@ import type { ZipOptions } from 'fflate';
 import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
 import { ARCHIV_ENDUNG, ARCHIV_FORMAT, isZip } from './archive';
 import { gleich } from './zusammenfuehren';
-import { datumNachFormat, ersetzen, globaleWerte, GLOBALE_VARIABLEN, unbekanntePlatzhalter as unbekannteIn, type Variable } from './platzhalter';
+import { datumNachFormat, ersetzen, globaleWerte, GLOBALE_VARIABLEN, unbekanntePlatzhalter as unbekannteIn, type GlobaleQuelle, type Variable } from './platzhalter';
 
 /**
  * Die Projektdatei (.oap) im Projektordner – gemeinsam für alle Apps. Jedes Projekt hat eine; sie gehört keinem
@@ -77,9 +77,12 @@ export const unbekanntePlatzhalter = (vorlage: string) => unbekannteIn(vorlage, 
  * Pfad einer neuen Projektdatei im Projektordner aus der Vorlage – Variablen siehe {@link OAP_VARIABLEN}. Fehlt die
  * Endung, wird sie ergänzt; leere Teile (z. B. ohne Kurzname) fallen weg. Unbekannte Platzhalter bleiben stehen.
  */
-export function projektdateiPfad(vorlage: string, werte: { nummer: string; kurzname?: string; vorhaben?: string; bearbeiter?: string; jahr?: number | string; datum?: Date }): string {
+export function projektdateiPfad(
+  vorlage: string,
+  werte: { nummer: string; kurzname?: string; vorhaben?: string; bearbeiter?: string; jahr?: number | string; datum?: Date; phase?: GlobaleQuelle['phase'] },
+): string {
   const tag = werte.datum ?? new Date();
-  const w = globaleWerte({ projektcode: werte.nummer, kurzname: werte.kurzname, vorhaben: werte.vorhaben, bearbeiter: werte.bearbeiter, datum: tag });
+  const w = globaleWerte({ projektcode: werte.nummer, kurzname: werte.kurzname, vorhaben: werte.vorhaben, bearbeiter: werte.bearbeiter, datum: tag, phase: werte.phase });
   if (werte.jahr !== undefined) Object.assign(w, { JAHR: String(werte.jahr), JAHR_KURZ: String(Number(werte.jahr) % 100).padStart(2, '0') });
   // Werte ohne Trenner und unzulässige Zeichen – ein „/“ im Kurznamen darf keinen Unterordner ergeben
   const ersetzt = ersetzen(vorlage.trim() || VORGABE_OAP_PFAD, OAP_VARIABLEN, w, { saeubern: sichererDateiname });

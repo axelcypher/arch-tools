@@ -71,6 +71,19 @@ export const GLOBALE_VARIABLEN: Variable[] = [
   },
   { name: 'JAHR', text: 'Jahr des Vorgangs, vierstellig', quelle: 'heute bzw. Tag des Vorgangs', beispiel: '2026', vorgabe: 'JJJJ', aliase: ['Jahr'] },
   { name: 'JAHR_KURZ', text: 'Jahr des Vorgangs, zweistellig', quelle: 'heute bzw. Tag des Vorgangs', beispiel: '26', vorgabe: 'JJ', aliase: ['jj'] },
+  {
+    name: 'PHASE',
+    text: 'Planungsphase des Projekts als Kürzel; leer, solange keine festgelegt ist',
+    quelle: 'Projektdatei (.oap), Stammdaten „Planungsphase“ (Kürzel aus dem Namensschema)',
+    beispiel: 'GP',
+  },
+  { name: 'PHASE_NAME', text: 'Name der Planungsphase; ohne festgelegte Phase leer', quelle: 'Namensschema, zur Planungsphase des Projekts', beispiel: 'Genehmigungsplanung' },
+  {
+    name: 'LPH',
+    text: 'Leistungsphase (HOAI) der Planungsphase als Zahl; leer, wenn die Phase keine hat (z. B. AB) oder keine festgelegt ist',
+    quelle: 'Namensschema, zur Planungsphase des Projekts',
+    beispiel: '4',
+  },
 ];
 
 /** eine globale Variable nach Namen */
@@ -95,15 +108,35 @@ export interface GlobaleQuelle {
   kurzname?: string;
   vorhaben?: string;
   bearbeiter?: string;
+  /** Planungsphase des Projekts (Kürzel, Name und Leistungsphase nach dem Namensschema); fehlt = nicht festgelegt */
+  phase?: { kuerzel: string; name?: string; lph?: number } | null;
   /** Tag des Vorgangs; Vorgabe heute */
   datum?: Date;
 }
 
-/** Werte der globalen Variablen */
+/** Namen der Variablen, die aus der Planungsphase kommen – leer, solange keine festgelegt ist */
+export const PHASEN_VARIABLEN = ['PHASE', 'PHASE_NAME', 'LPH'] as const;
+
+/** Werte der globalen Variablen; ohne Planungsphase sind PHASE, PHASE_NAME und LPH leer */
 export function globaleWerte(q: GlobaleQuelle): Record<string, Wert> {
   const tag = q.datum ?? new Date();
-  return { PROJEKT_KUERZEL: q.projektcode ?? '', PROJEKT_KURZNAME: q.kurzname ?? '', PROJEKT_VORHABEN: q.vorhaben ?? '', BEARBEITER: q.bearbeiter ?? '', DATUM: tag, JAHR: tag, JAHR_KURZ: tag };
+  return {
+    PROJEKT_KUERZEL: q.projektcode ?? '',
+    PROJEKT_KURZNAME: q.kurzname ?? '',
+    PROJEKT_VORHABEN: q.vorhaben ?? '',
+    BEARBEITER: q.bearbeiter ?? '',
+    DATUM: tag,
+    JAHR: tag,
+    JAHR_KURZ: tag,
+    PHASE: q.phase?.kuerzel ?? '',
+    PHASE_NAME: q.phase?.name ?? '',
+    LPH: q.phase?.lph ?? '',
+  };
 }
+
+/** Nutzt die Vorlage eine Variable der Planungsphase ({PHASE}, {PHASE_NAME}, {LPH})? – für den Hinweis „Planungsphase nicht festgelegt“ */
+export const nutztPhase = (vorlage: string, variablen: Variable[]): boolean =>
+  platzhalterIn(vorlage, variablen).some((f) => (PHASEN_VARIABLEN as readonly string[]).includes(f.treffer?.variable.name ?? ''));
 
 /* ---------- Datum ---------- */
 
@@ -238,19 +271,48 @@ export interface ErsetzenOptionen {
   saeubern?: (text: string, variable: Variable) => string;
   /** Variable ohne Wert: leer einsetzen (Vorgabe) oder den Platzhalter stehen lassen */
   ohneWert?: 'leer' | 'stehen';
+  /** Trenner rund um einen leeren Wert stehen lassen (Vorgabe: einer entfällt, siehe {@link ersetzen}) */
+  trennerLassen?: boolean;
+}
+
+/** Marke eines leer ersetzten Platzhalters, bis die Trenner darum bereinigt sind (kommt in keiner Vorlage vor) */
+const LEER = '\u0000';
+/** Trenner zwischen Teilen eines Namens; „.“ nicht (Endung), Zeilenumbrüche nicht (Text) */
+const TRENNER = '[ _\\-/\\\\]';
+const TRENNER_RAND = '[ _\\-]';
+
+/**
+ * Trenner um leer ersetzte Platzhalter: Steht ein leerer Wert zwischen zwei Trennern, entfällt der folgende
+ * („BS9_{PHASE}_GP-04“ → „BS9_GP-04“, nicht „BS9__GP-04“); am Anfang bzw. Ende (auch eines Pfadteils und vor der
+ * Endung) entfällt der Trenner danach bzw. davor.
+ */
+function leereTrennerBereinigen(text: string): string {
+  if (!text.includes(LEER)) return text;
+  let s = text;
+  // zwei Trenner um den leeren Wert: einer entfällt – ein Pfadtrenner („/“, „\\“) bleibt immer, sonst gingen Ordnerebenen verloren
+  const mitte = new RegExp(`(${TRENNER})${LEER}+(${TRENNER})`);
+  const pfad = (t: string) => t === '/' || t === '\\';
+  while (mitte.test(s)) s = s.replace(mitte, (_m, a: string, b: string) => (pfad(b) && !pfad(a) ? b : a));
+  // am Rand des Namens bzw. eines Pfadteils und vor der Endung: „{PHASE}_BS9“ → „BS9“, „BS9_{PHASE}.pdf“ → „BS9.pdf“
+  s = s.replace(new RegExp(`(^|[/\\\\])${LEER}+${TRENNER_RAND}`, 'g'), '$1').replace(new RegExp(`${TRENNER_RAND}${LEER}+(?=$|[./\\\\])`, 'g'), '');
+  return s.split(LEER).join('');
 }
 
 /**
  * Platzhalter einer Vorlage ersetzen. `werte` nach dem (neuen) Namen der Variable. Unbekannte Platzhalter und solche
- * mit unpassender Angabe bleiben stehen.
+ * mit unpassender Angabe bleiben stehen. Ein leerer Wert nimmt einen Trenner mit (Leerzeichen, _, -, /), damit keine
+ * doppelten Trenner entstehen – „{PROJEKT_KUERZEL}_{PHASE}_{Plannummer}“ ohne Phase wird „BS9_GP-04“.
  */
 export function ersetzen(vorlage: string, variablen: Variable[], werte: Record<string, Wert>, opt: ErsetzenOptionen = {}): string {
-  return vorlage.replace(TOKEN, (roh: string, name: string, angabe?: string) => {
+  const leer = opt.trennerLassen ? '' : LEER;
+  const ersetzt = vorlage.replace(TOKEN, (roh: string, name: string, angabe?: string) => {
     const t = aufloesen(name, angabe, variablen);
     if (!t) return roh;
-    if (!(t.variable.name in werte) || werte[t.variable.name] === undefined) return opt.ohneWert === 'stehen' ? roh : '';
+    if (!(t.variable.name in werte) || werte[t.variable.name] === undefined) return opt.ohneWert === 'stehen' ? roh : leer;
     const text = alsText(werte[t.variable.name], t.angabe);
     if (text === null) return roh;
+    if (text === '') return leer;
     return opt.saeubern ? opt.saeubern(text, t.variable) : text;
   });
+  return leereTrennerBereinigen(ersetzt);
 }
