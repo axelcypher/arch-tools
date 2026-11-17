@@ -38,7 +38,11 @@ const BEREICH =
   '.karte, .karte-fuss, .zeichen-fuss, .karte-kopf, .karte-leiste, .toolbar, .leiste, .modal, .report, [role="dialog"], [role="toolbar"], header, footer, main, aside, section, nav, form';
 const MAX_EBENEN = 3;
 /** woran man das Gegenstück eines neu gerenderten Elements erkennt: id, Beschriftung, title, Text */
-const kennungVon = (el: Element) => [el.id, el.getAttribute('aria-label'), el.getAttribute('title'), el.textContent?.trim()].map((k) => (k ? k : ''));
+const kennungVon = (el: Element) => {
+  // Text nur bei kurzen Beschriftungen (nicht der ganze Inhalt einer Zeichenfläche)
+  const text = el instanceof SVGElement ? '' : (el.textContent?.trim() ?? '');
+  return [el.id, el.getAttribute('aria-label'), el.getAttribute('title'), text.length <= 80 ? text : ''].map((k) => (k ? k : ''));
+};
 const gleich = (a: string[], b: string[]) => a.some((k, i) => k !== '' && k === b[i]);
 /** sichtbar und fokussierbar: keine versteckten Felder, nichts in inert/aria-hidden, nichts ausgeblendet */
 const fokussierbar = (el: Element): el is HTMLElement | SVGElement =>
@@ -48,6 +52,9 @@ const fokussierbar = (el: Element): el is HTMLElement | SVGElement =>
   (el instanceof SVGElement || el.offsetParent !== null || getComputedStyle(el).position === 'fixed');
 const zieleIn = (bereich: Element) => [...(bereich.matches(START) ? [bereich] : []), ...bereich.querySelectorAll(START)].filter(fokussierbar);
 const vorher = new WeakMap<Element, Vorher | null>();
+/** die zuletzt fokussierten Elemente (neueste zuerst) – React setzt `autoFocus` schon beim Einhängen, bevor der
+ *  MutationObserver den Dialog meldet; dann liegt der Fokus bereits im Dialog, und die Stelle davor steht nur hier */
+const fokusVerlauf: (HTMLElement | SVGElement)[] = [];
 
 const DIALOG = '.modal, .report-backdrop > .report';
 const istDialog = (el: HTMLElement) => el.classList.contains('modal') || (el.classList.contains('report') && !!el.parentElement?.classList.contains('report-backdrop'));
@@ -69,7 +76,9 @@ function geoeffnet(d: HTMLElement) {
     }
   }
   const a = document.activeElement;
-  const aktiv = (a instanceof HTMLElement || a instanceof SVGElement) && a !== document.body && !d.contains(a) ? a : null;
+  const geeignet = (el: Element | null): el is HTMLElement | SVGElement => (el instanceof HTMLElement || el instanceof SVGElement) && el !== document.body && !d.contains(el) && el.isConnected;
+  // das aktuell fokussierte Element, sonst (Dialog hat schon selbst fokussiert, z. B. autoFocus) das letzte davor
+  const aktiv = geeignet(a) ? a : (fokusVerlauf.find(geeignet) ?? null);
   const ahnen: Element[] = [];
   for (let p = aktiv?.parentElement; p && p !== document.body && ahnen.length < MAX_EBENEN; p = p.parentElement) {
     ahnen.push(p);
@@ -98,6 +107,8 @@ function geschlossen(d: Element) {
   // Druckvorschau), nur nicht in einen Hintergrund, über dem noch ein anderer Dialog liegt
   const oben = obersterDialog();
   const erlaubt = (el: Element) => !oben || oben.contains(el);
+  // direkter Weg: das gemerkte Element gibt es noch – zurück dorthin (wie bisher, auch wenn die App in onClose selbst
+  // fokussiert hat; „nichts überschreiben“ gilt nur für den Ersatzweg unten)
   if (v.el.isConnected) {
     if (erlaubt(v.el)) v.el.focus();
     return;
@@ -129,6 +140,18 @@ export function dialogVerhaltenEinrichten(): void {
     if (istDialog(n)) fn(n);
     n.querySelectorAll<HTMLElement>(DIALOG).forEach(fn);
   };
+  document.addEventListener(
+    'focusin',
+    (e) => {
+      const t = e.target;
+      if (!(t instanceof HTMLElement || t instanceof SVGElement)) return;
+      const i = fokusVerlauf.indexOf(t);
+      if (i >= 0) fokusVerlauf.splice(i, 1);
+      fokusVerlauf.unshift(t);
+      fokusVerlauf.length = Math.min(fokusVerlauf.length, 5);
+    },
+    true,
+  );
   new MutationObserver((liste) => {
     for (const m of liste) {
       m.addedNodes.forEach((n) => pruefen(n, geoeffnet));

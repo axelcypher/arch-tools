@@ -86,7 +86,7 @@ describe('Dialoge', () => {
     document.querySelector('.karte')!.remove();
     hinter.remove();
     await warten();
-    expect(document.activeElement?.id).not.toBe('titel');
+    expect(document.activeElement).toBe(document.body);
   });
 
   it('ersetzt: überspringt versteckte und ausgeblendete Ziele, nimmt auch eine neue SVG-Zeichenfläche', async () => {
@@ -119,7 +119,7 @@ describe('Dialoge', () => {
     document.querySelector('#root span')!.remove();
     hinter.remove();
     await warten();
-    expect(document.activeElement?.id).not.toBe('menue');
+    expect(document.activeElement).toBe(document.body);
   });
 
   it('äußerer und innerer Dialog in einem Schritt ausgehängt: der Fokus bleibt beim Auslöser des äußeren', async () => {
