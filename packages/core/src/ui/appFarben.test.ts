@@ -3,20 +3,28 @@
 // als Akzent, wenn ihr Farbton mindestens 35° von ok, Warnung und Fehler entfernt ist – sonst bleibt der neutrale Akzent.
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { APP_NAMEN, type AppKennung } from '../appNamen';
+import { APP_NAMEN, appKennungZu, type AppKennung } from '../appNamen';
 
-const css = readFileSync(new URL('./base.css', import.meta.url), 'utf8');
+// Kommentare entfernen: Beispiele darin (z. B. „--x: …;“) sind keine Deklarationen
+const css = readFileSync(new URL('./base.css', import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
 
-/** Deklarationen eines Blocks mit genau diesem Selektor */
+/** Deklarationen eines Blocks mit genau diesem Selektor; ohne den Block leer (Pflichtblöcke: `muss`) */
 function block(selektor: string): Record<string, string> {
   const i = css.indexOf(`${selektor} {`);
   if (i < 0) return {};
   const rumpf = css.slice(css.indexOf('{', i) + 1, css.indexOf('}', i));
   return Object.fromEntries([...rumpf.matchAll(/(--[a-z-]+):\s*([^;]+);/g)].map((m) => [m[1], m[2].trim()]));
 }
+/** wie `block`, aber der Block und die genannten Variablen müssen da sein */
+function muss(selektor: string, ...namen: string[]): Record<string, string> {
+  const b = block(selektor);
+  for (const n of namen) if (!b[n]) throw new Error(`${n} fehlt in „${selektor}“ (base.css)`);
+  return b;
+}
 
-const hell = block(':root');
-const dunkel = block(":root[data-theme='dunkel']");
+const hell = muss(':root', '--panel', '--accent', '--accent-text', '--accent-soft', '--on-accent', '--ausgabe', '--ausgabe-hover', '--on-ausgabe', '--ok-punkt', '--warn-punkt', '--fehler-punkt');
+const dunkel = muss(":root[data-theme='dunkel']", '--panel', '--accent', '--accent-text', '--accent-soft', '--on-accent', '--ausgabe-hover');
+const leiste = muss(':root[data-app] .titlebar', '--tb-ungespeichert');
 
 const rgb = (hex: string): [number, number, number] => {
   const m = /^#([0-9a-f]{6})$/i.exec(hex);
@@ -43,6 +51,16 @@ const farbton = (hex: string) => {
   const h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
   return (h * 60 + 360) % 360;
 };
+/** a mit Deckung über b (Farbe auf undurchsichtigem Grund) */
+const mischen = (a: string, b: string, deckung: number) =>
+  '#' +
+  rgb(a)
+    .map((c, i) =>
+      Math.round(c * deckung + rgb(b)[i] * (1 - deckung))
+        .toString(16)
+        .padStart(2, '0'),
+    )
+    .join('');
 const abstand = (a: number, b: number) => Math.min(Math.abs(a - b), 360 - Math.abs(a - b));
 
 const status = { ok: hell['--ok-punkt'], warnung: hell['--warn-punkt'], fehler: hell['--fehler-punkt'] };
@@ -64,15 +82,16 @@ describe('Farben je App', () => {
   });
 
   it.each(apps)('%s: Kachelfarbe trägt weiße Schrift in der Titelleiste', (k) => {
-    const app = block(`:root[data-app='${k}']`)['--app'];
-    expect(app, `--app für ${k} fehlt in base.css`).toBeDefined();
+    const app = muss(`:root[data-app='${k}']`, '--app')['--app'];
     expect(kontrast('#ffffff', app)).toBeGreaterThanOrEqual(4.5);
-    // Hinweis „ungespeichert“ in der Leiste (--warn-text der Titelleiste)
-    expect(kontrast('#ffd27a', app)).toBeGreaterThanOrEqual(3);
+    // Nebentext der Leiste (Projekt): Weiß mit 82 % Deckung, auf die Kachelfarbe gerechnet
+    expect(kontrast(mischen('#ffffff', app, 0.82), app)).toBeGreaterThanOrEqual(4.5);
+    // Punkt für ungespeicherte Änderungen (Nicht-Text: 3 : 1)
+    expect(kontrast(leiste['--tb-ungespeichert'], app)).toBeGreaterThanOrEqual(3);
   });
 
   it.each(apps)('%s: eigener Akzent nur mit Abstand zu ok, Warnung und Fehler – und mit Kontrast hell und dunkel', (k) => {
-    const h = block(`:root[data-app='${k}']`);
+    const h = muss(`:root[data-app='${k}']`, '--app');
     const d = block(`:root[data-theme='dunkel'][data-app='${k}']`);
     const weitWeg = naechsterStatus(h['--app']) >= 35;
     // die Regel gilt in beide Richtungen: weit genug weg → Akzent aus der Kachelfarbe, sonst neutral
@@ -88,5 +107,15 @@ describe('Farben je App', () => {
     expect(kontrast(d['--accent'], dunkel['--panel'])).toBeGreaterThanOrEqual(4.5);
     expect(kontrast(d['--accent-text'], d['--accent-soft'])).toBeGreaterThanOrEqual(4.5);
     expect(kontrast(dunkel['--on-accent'], d['--accent'])).toBeGreaterThanOrEqual(4.5);
+  });
+});
+
+describe('appKennungZu', () => {
+  it('Produktname → Kennung; unbekannt → undefined', () => {
+    expect(appKennungZu('QUADRIO')).toBe('flaechenrechner');
+    expect(appKennungZu('Arkly')).toBe('suite');
+    for (const k of Object.keys(APP_NAMEN) as AppKennung[]) expect(appKennungZu(APP_NAMEN[k].name)).toBe(k);
+    expect(appKennungZu('Quadrio')).toBeUndefined();
+    expect(appKennungZu('')).toBeUndefined();
   });
 });

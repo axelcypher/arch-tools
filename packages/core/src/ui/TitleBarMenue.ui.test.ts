@@ -151,3 +151,19 @@ describe('Speicherort: in den Apps nicht im Menü, im Notbetrieb als Warnung', (
     expect(zeige(null, true)).toBe('');
   });
 });
+
+describe('App-Farbe: data-app am Wurzelelement', () => {
+  it('Titelleiste setzt die Kennung der App und nimmt sie beim Abbauen wieder weg; Arkly und Unbekanntes setzen nichts', () => {
+    render({ app: 'QUADRIO' });
+    expect(document.documentElement.dataset.app).toBe('flaechenrechner');
+    act(() => root?.unmount());
+    root = null;
+    expect(document.documentElement.dataset.app).toBeUndefined();
+    render({ app: 'Arkly' });
+    expect(document.documentElement.dataset.app).toBeUndefined();
+    act(() => root?.unmount());
+    root = null;
+    render({ app: 'Testapp' });
+    expect(document.documentElement.dataset.app).toBeUndefined();
+  });
+});

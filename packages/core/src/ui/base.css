@@ -339,33 +339,31 @@ button.danger {
 
 /* ---------- Knopfstufen (docs/design.md „Knöpfe“) ----------
    primär (.primary: die Hauptaktion eines Dialogs bzw. – in der Werkzeugleiste – die eine Ausgabe in Bernstein),
-   Standard (Rahmen), ruhig (in der Werkzeugleiste ohne Rahmen und Fläche), Gefahr (.danger). */
-.toolbar button:not(.primary, .danger, .segment > button) {
+   Standard (Rahmen), ruhig (in der Werkzeugleiste ohne Rahmen und Fläche, auch .danger), Gefahr (.danger: Schrift in
+   --danger). :where() hält die Spezifität niedrig: App-Klassen (z. B. Statusmarken in der Leiste) gehen vor. */
+:where(.toolbar) button:where(:not(.primary, .segment > button)) {
   border-color: transparent;
   background: transparent;
 }
-.toolbar button:not(.primary, .segment > button):hover:not(:disabled):not([aria-disabled='true']) {
+:where(.toolbar) button:where(:not(.primary, .segment > button)):hover:not(:disabled):not([aria-disabled='true']) {
   background: color-mix(in srgb, var(--text) 8%, transparent);
 }
-/* aktives Werkzeug: getönte Fläche und Strich unten in der Akzentfarbe */
-.toolbar button.active:not(.segment > button),
-.toolbar button[aria-pressed='true']:not(.segment > button) {
+/* aktives Werkzeug: getönte Fläche und Strich unten in der Akzentfarbe (gleiche Spezifität wie button.active, steht danach) */
+:where(.toolbar) button.active:where(:not(.segment > button)),
+:where(.toolbar) button[aria-pressed='true']:where(:not(.segment > button)) {
+  border-color: transparent;
   background: var(--accent-soft);
   color: var(--accent-text);
   box-shadow: inset 0 -2px 0 var(--accent);
 }
-.toolbar button.danger {
-  border-color: transparent;
-  background: transparent;
-}
 /* die eine Ausgabe der App (Flächenaufstellung …, Nachweis drucken …): Bernstein wie im Icon */
-.toolbar button.primary {
+:where(.toolbar) button.primary {
   background: var(--ausgabe);
   border-color: var(--ausgabe-rand);
   color: var(--on-ausgabe);
   font-weight: 600;
 }
-.toolbar button.primary:hover:not(:disabled):not([aria-disabled='true']) {
+:where(.toolbar) button.primary:hover:not(:disabled):not([aria-disabled='true']) {
   background: var(--ausgabe-hover);
 }
 
@@ -1366,6 +1364,8 @@ code {
    nur für die Bedienelemente der Leiste selbst (eigene Regeln statt umgesetzter Variablen) – Dialoge, die in der Leiste
    stecken (Update, Berechnungsregeln), behalten die Farben des Schemas. */
 :root[data-app] .titlebar {
+  /* Punkt für ungespeicherte Änderungen in der farbigen Leiste (mindestens 3 : 1 auf jeder Kachelfarbe) */
+  --tb-ungespeichert: #ffd27a;
   background: var(--app);
   border-bottom-color: transparent;
 }
@@ -1387,7 +1387,7 @@ code {
   color: #ffffff;
 }
 :root[data-app] .titlebar-dirty {
-  color: #ffd27a;
+  color: var(--tb-ungespeichert);
 }
 :root[data-app] :is(.titlebar-btn, .wc-btn):focus-visible {
   outline-color: #ffffff;
