@@ -58,6 +58,18 @@ Katalog) bekommen `.oben` (oben bündig, ohne den Ausgleich der Feldzeilen). Ein
 B. ein Wert, der seine Prüfung öffnet) zählt in Feldzeilen als Text. Diese Tabelle soll die eigenen Tabellenklassen der
 Apps ersetzen; bis zur Umstellung bleiben diese bestehen.
 
+Lange Datentabellen (LV, Rechnungen, Mängel) bekommen `.fest`: Der Spaltenkopf bleibt beim Rollen des Kartenrumpfs
+stehen (sticky am `thead`, so bleibt auch ein mehrzeiliger Kopf zusammen), mit dem Grund der Karte und einer Linie
+darunter; die Köpfe brechen nicht um – lange Köpfe kürzen, den vollen Namen in `title`. Der Kopf klebt am nächsten
+Rollbehälter: Breite Tabellen stehen deshalb ohne eigene rollende Hülle direkt im bündigen Rumpf, der in beide
+Richtungen rollt. Inhalt über einer breiten Tabelle (Kennzahlen, Hinweise) rollt dann waagerecht mit; ist das störend,
+bekommt die Tabelle eine eigene Karte. Tabellen mit wählbaren Zeilen bekommen `.waehlbar`: Überfahren tönt die Zeile
+leicht in der Akzentfarbe mit einer leisen Linie links (die Tönung allein wäre von der Gruppenzeile kaum zu
+unterscheiden); Gruppen-, Summen- und gewählte Zeilen bleiben, wie sie sind. In Feldzeilen (`.felder`) lösen Kästchen
+und Optionsfelder den Ausgleich nicht aus und behalten ihre Breite; kleine und Symbolknöpfe (× zum Entfernen) stehen
+mittig zur Feldhöhe. Ein Feld in der Zelle (`input.zelle`, z. B. Menge und Einheitspreis im LV) ist randlos und so hoch
+wie eine Textzeile, fluchtet also ohne Ausgleich; Rahmen beim Überfahren, Rahmen, Grund und Fokusrahmen beim Fokus.
+
 Kennzahlen als Kacheln (`.metric-row` mit `.metric`): oben die Bezeichnung (`span`, `--fs-xs`, `--muted`), darunter der
 Wert (`strong`, `--fs-xl`, Tabellenziffern), wahlweise eine Zeile Nebentext (`small`, wie die Bezeichnung). Die Kacheln
 stehen auf `--bg` mit `--radius-s`; bricht eine Bezeichnung um, bleiben die Werte einer Zeile auf einer Linie (Wert und

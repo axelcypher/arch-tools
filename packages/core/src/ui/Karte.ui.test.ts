@@ -254,9 +254,18 @@ describe('Fläche und Karten', () => {
     expect(css).toMatch(/\.summary-table\.text th\.num,\s*\.summary-table td\.num \{[^}]*text-align: right;/);
     expect(css).toMatch(/\.summary-table\.felder td \{[^}]*vertical-align: top;/);
     // nur Zeilen mit Feld oder Knopf (Anlass: NUMIO, Gruppenzeile ohne Feld wurde höher); :has() prüft happy-dom nicht verlässlich
-    expect(css).toMatch(
-      /\.summary-table\.felder tr:has\(input, select, textarea, button:not\(\.link\)\) > td:not\(:has\(input, select, textarea, button:not\(\.link\)\)\) \{[^}]*padding-top: calc\(3px \+ \(var\(--ctl-h\) - 1lh\) \/ 2\);/,
-    );
+    // Kästchen, Optionsfelder und Zellenfelder (input.zelle) lösen den Ausgleich nicht aus
+    const feld = "input:not\\(\\[type='checkbox'\\], \\[type='radio'\\], \\.zelle\\), select, textarea, button:not\\(\\.link\\)";
+    expect(css).toMatch(new RegExp(`\\.summary-table\\.felder\\s+tr:has\\(${feld}\\)\\s+> td:not\\(:has\\(${feld}\\)\\) \\{[^}]*padding-top: calc\\(3px \\+ \\(var\\(--ctl-h\\) - 1lh\\) \\/ 2\\);`));
+    expect(css).toMatch(/\.summary-table\.felder td > button:is\(\.small, \.icon\) \{[^}]*margin-top: calc\(\(var\(--ctl-h\) - var\(--ctl-h-s\)\) \/ 2\);/);
+    expect(css).toMatch(/\.summary-table input\.zelle \{[^}]*border-color: transparent;[^}]*background: transparent;/);
+    expect(css).toMatch(/\.summary-table input\.zelle:focus \{[^}]*background: var\(--input-bg\);/);
+    // fester Kopf: sticky am thead (mehrzeiliger Kopf bleibt zusammen), ohne Umbruch, Grund der Karte
+    expect(css).toMatch(/\.summary-table\.fest thead \{[^}]*position: sticky;[^}]*top: 0;/);
+    expect(css).toMatch(/\.summary-table\.fest thead th \{[^}]*white-space: nowrap;[^}]*background: var\(--panel\);/);
+    // wählbare Zeilen: Überfahren mit leichter Akzenttönung und leiser Linie, nicht an Gruppen-, Summen-, gewählten Zeilen
+    expect(css).toMatch(/\.summary-table\.waehlbar tbody tr:not\(\.gruppe, \.summe, \.selected, \[aria-selected='true'\]\):hover td \{/);
+    expect(css).toMatch(/:hover td:first-child \{\s*box-shadow: inset 3px 0 var\(--border\);/);
     expect(css).toMatch(/\.summary-table tr\.gruppe td \{/);
     expect(css).toMatch(/\.summary-table tr\.summe td \{[^}]*border-top-color: color-mix\(in srgb, var\(--muted\) 60%, transparent\);/);
     // auf Papier bleibt die Gruppentönung hell
