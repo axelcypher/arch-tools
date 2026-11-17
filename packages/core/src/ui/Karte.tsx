@@ -24,6 +24,8 @@ export function Flaeche({ children, className }: { children: ReactNode; classNam
  * Breite der Seitenkarten): misst ihn und setzt `--rollend-kopf-h` an der rollenden Spalte – Höhe des Kopfs plus `--s1`
  * (oben hebt `top: -s1` den Innenabstand auf, dazu Platz für den Fokusrahmen; einzeilig gleich der Vorgabe in base.css).
  * Ohne Kopf, ohne rollende Spalte oder ohne ResizeObserver bleibt die Vorgabe; beim Aushängen wird der Wert entfernt.
+ * Voraussetzungen: ein fester Kopf je rollender Spalte, und er wird mit der Komponente eingehängt, die den Hook ruft
+ * (der Effekt misst beim Einhängen).
  */
 export function useRollendKopf(ref: RefObject<HTMLElement | null>): void {
   useEffect(() => {
@@ -32,7 +34,7 @@ export function useRollendKopf(ref: RefObject<HTMLElement | null>): void {
     if (!kopf || !spalte || typeof ResizeObserver === 'undefined') return;
     const setzen = () => spalte.style.setProperty('--rollend-kopf-h', `calc(${kopf.offsetHeight}px + var(--s1))`);
     const beobachter = new ResizeObserver(setzen);
-    beobachter.observe(kopf);
+    beobachter.observe(kopf, { box: 'border-box' });
     setzen();
     return () => {
       beobachter.disconnect();

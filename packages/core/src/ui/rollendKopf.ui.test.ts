@@ -12,6 +12,7 @@ afterEach(() => {
   root = null;
   document.body.innerHTML = '';
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
 });
 
 function Kopf() {
@@ -20,12 +21,12 @@ function Kopf() {
   return h('div', { ref, className: 'rollend-kopf' }, 'Suche');
 }
 
-function zeigen(mitKopf = true) {
+function zeigen(rollend = true) {
   const host = document.createElement('div');
   document.body.appendChild(host);
   act(() => {
     root = createRoot(host);
-    root.render(h(FlaechenSpalte, { wachsend: true, rollend: true, children: mitKopf ? h('div', { className: 'huelle' }, h(Kopf)) : null }));
+    root.render(h(FlaechenSpalte, { wachsend: true, rollend, children: h('div', { className: 'huelle' }, h(Kopf)) }));
   });
   return host.querySelector<HTMLElement>('.flaechen-spalte')!;
 }
@@ -67,6 +68,18 @@ describe('useRollendKopf', () => {
   it('ohne ResizeObserver bleibt die Vorgabe aus base.css', () => {
     vi.stubGlobal('ResizeObserver', undefined);
     const spalte = zeigen();
+    expect(spalte.style.getPropertyValue('--rollend-kopf-h')).toBe('');
+  });
+
+  it('außerhalb einer rollenden Spalte setzt er nichts', () => {
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        observe() {}
+        disconnect() {}
+      },
+    );
+    const spalte = zeigen(false);
     expect(spalte.style.getPropertyValue('--rollend-kopf-h')).toBe('');
   });
 });

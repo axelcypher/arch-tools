@@ -593,13 +593,14 @@ Werkzeugleiste liegt mit auf der Fläche (gleicher Grund, keine Linie). Baustein
     zuoberst in der Spalte – direkt oder im ersten Element (etwa einer Hülle mit begrenzter Breite) – und deckt den
     Innenabstand der Spalte mit dem Grund der Fläche ab, sonst liefe der Inhalt durch einen Streifen darüber (in einer
     Hülle über deren Breite – daneben liegt ohnehin kein Inhalt, solange die Karten in derselben Hülle stehen). Ein Kopf
-    mit Suche ist ein benannter Suchbereich (`role="search"` mit `aria-label`). Was den Fokus bekommt, rollt nicht
-    unter ihn (`scroll-padding-top`): `--rollend-kopf-h` ist die sichtbare Höhe des Kopfs plus Platz für den
-    Fokusrahmen, Vorgabe eine Zeile Bedienelemente (`--ctl-h` + `--s2` + 2 × `--s1`). Ein höherer Kopf setzt den Wert
-    selbst; bricht er in schmalen Fenstern um, setzt die App ihn je Umbruchstufe (Container- oder Media-Abfrage) oder
-    lässt den Kopf nicht umbrechen. Hängt der Umbruch vom Inhalt ab (Filter, Trefferzahl, Breite der Seitenkarten),
-    misst `useRollendKopf(ref)` den Kopf und setzt den Wert selbst (Höhe des Kopfs + `--s1`). Ebenen in den Karten (Aufklapplisten, Hinweise) bleiben unter dem Kopf; was über
-    die Karte hinausragen soll, kommt wie überall als Portal (siehe „Inhalt“).
+    mit Suche ist ein benannter Suchbereich (`role="search"` mit `aria-label`). Was den Fokus bekommt, rollt nicht unter
+    ihn (`scroll-padding-top`): `--rollend-kopf-h` ist die sichtbare Höhe des Kopfs plus Platz für den Fokusrahmen,
+    Vorgabe eine Zeile Bedienelemente (`--ctl-h` + `--s2` + 2 × `--s1`). Ein höherer Kopf setzt den Wert selbst; bricht
+    er in schmalen Fenstern um, setzt die App ihn je Umbruchstufe (Container- oder Media-Abfrage) oder lässt den Kopf
+    nicht umbrechen. Hängt der Umbruch vom Inhalt ab (Filter, Trefferzahl, Breite der Seitenkarten), misst
+    `useRollendKopf(ref)` den Kopf und setzt den Wert selbst (Höhe des Kopfs + `--s1`; ein fester Kopf je Spalte).
+    Ebenen in den Karten (Aufklapplisten, Hinweise) bleiben unter dem Kopf; was über die Karte hinausragen soll, kommt
+    wie überall als Portal (siehe „Inhalt“).
   - **Ränder:** Oben und seitlich reicht die Spalte um `--s1` in den Spalt, damit die Karten mit den Nachbarkarten
     fluchten; unten endet sie bündig mit ihnen. Die Rollleiste hat ihren Platz von Anfang an (`scrollbar-gutter`), die
     Breite springt also nicht, und sie liegt im Spalt zur Nachbarkarte rechts. Dieser Spalt ist deshalb um die Breite
