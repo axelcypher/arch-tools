@@ -56,7 +56,7 @@ export async function projektEinlesen(o: GeladenerOrdner, gewaehlt?: string | nu
     return {
       // Lücken (etwa Kurzname oder Leistungsphasen aus der Zeit vor der Projektdatei) aus der alten projekt.json
       angaben: alt ? mitAlterProjektJson(angaben, alt) : angaben,
-      quelle: { pfad: datei.pfad, ...defekt },
+      quelle: { pfad: datei.pfad, ...defekt, ...(p.namensschema ? { namensschema: p.namensschema } : {}) },
       projektdatei: { pfad: datei.pfad, meta: p.meta, ...(p.projektordner ? { projektordner: p.projektordner } : {}), ...(p.namensschema ? { namensschema: p.namensschema } : {}) },
       kandidaten,
     };

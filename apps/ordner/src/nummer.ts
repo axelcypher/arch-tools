@@ -132,20 +132,25 @@ export function dateimuster(schema: string, nummer: string, phasen: string[] = [
   const tokens = platzhalterIn(schema, ALLE);
   tokens.forEach((f, i) => {
     if (f.index < pos) return;
-    muster += escape(schema.slice(pos, f.index));
     const n = f.treffer?.variable.name;
+    const phasenTeil = n === 'PHASE' || n === 'PHASE_NAME' || n === 'LPH';
+    const literal = schema.slice(pos, f.index);
     const letzter = i === tokens.length - 1;
     // Zeichen, das auf diesen Teil folgt – der Teil selbst darf es nicht enthalten
     const danach = schema.slice(f.index + f.roh.length)[0];
     const frei = danach && !letzter ? `[^${escape(danach)}]+` : '.+';
     pos = f.index + f.roh.length;
-    if (n === 'PHASE' || n === 'PHASE_NAME' || n === 'LPH') {
+    if (phasenTeil) {
       const teil = n === 'LPH' ? '\\d' : n === 'PHASE' && phasen.length ? `(?:${phasen.map(escape).join('|')})` : frei;
-      const mitTrenner = danach && TRENNER.test(danach) && !letzter;
-      muster += `(?:${teil}${mitTrenner ? escape(danach) : ''})?`;
+      const mitTrenner = !!danach && TRENNER.test(danach) && !letzter;
+      // ohne Trenner danach (am Ende): der Trenner davor entfällt mit dem leeren Wert – er ist mit optional
+      const davor = !mitTrenner && literal && TRENNER.test(literal.slice(-1)) ? literal.slice(-1) : '';
+      muster += escape(davor ? literal.slice(0, -1) : literal);
+      muster += `(?:${escape(davor)}${teil}${mitTrenner ? escape(danach) : ''})?`;
       if (mitTrenner) pos += 1;
       return;
     }
+    muster += escape(literal);
     if (n === 'PROJEKT_KUERZEL') muster += nummer ? escape(nummer) : frei;
     else if (n === 'Index') muster += '[A-Za-z0-9]{1,3}';
     else if (n === 'DATUM') muster += DATUM_MUSTER;

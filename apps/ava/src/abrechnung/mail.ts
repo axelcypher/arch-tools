@@ -77,8 +77,9 @@ export function emlBauen(m: Mail, jetzt = new Date(), grenze = `----=_arch-tools
 
 /**
  * Platzhalter in Empfängern, Betreff und Text der Mailvorlagen ersetzen – Variablen siehe ../platzhalter.ts (Rechnung
- * bzw. Protokoll); `werte` nach den neuen Namen. Platzhalter ohne Wert bleiben sichtbar stehen.
+ * bzw. Protokoll); `werte` nach den neuen Namen. Platzhalter ohne Wert bleiben sichtbar stehen, Trenner um leere Werte auch.
  */
 export function vorlageFuellen(vorlage: string, werte: Record<string, Wert>, variablen: Variable[] = MAIL_RECHNUNG_VARIABLEN): string {
-  return ersetzen(vorlage, variablen, werte, { ohneWert: 'stehen' });
+  // Fließtext: Trenner bleiben, wie sie in der Vorlage stehen (die Bereinigung gilt Datei- und Ordnernamen)
+  return ersetzen(vorlage, variablen, werte, { ohneWert: 'stehen', trennerLassen: true });
 }

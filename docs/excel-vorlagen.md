@@ -1259,7 +1259,7 @@ Ergebnis:
 | `{{DATUM}}` | Datum des Vorgangs (Export, Anlegen …) als JJMMTT; mit Format z. B. `{{DATUM:JJJJ-MM-TT}}` |  |
 | `{{JAHR}}` | Jahr des Vorgangs, vierstellig |  |
 | `{{JAHR_KURZ}}` | Jahr des Vorgangs, zweistellig |  |
-| `{{PHASE}}` | Planungsphase des Projekts als Kürzel; ohne festgelegte Phase leer (Trenner davor bzw. danach entfallen) |  |
+| `{{PHASE}}` | Planungsphase des Projekts als Kürzel; leer, solange keine festgelegt ist |  |
 | `{{PHASE_NAME}}` | Name der Planungsphase; ohne festgelegte Phase leer |  |
 | `{{LPH}}` | Leistungsphase (HOAI) der Planungsphase als Zahl; leer, wenn die Phase keine hat (z. B. AB) oder keine festgelegt ist |  |
 | `{{DATUM.iso}}` | Datum des Exports als JJJJ-MM-TT |  |
@@ -1844,7 +1844,7 @@ Ergebnis:
 | `{{DATUM}}` | Datum des Vorgangs (Export, Anlegen …) als JJMMTT; mit Format z. B. `{{DATUM:JJJJ-MM-TT}}` |  |
 | `{{JAHR}}` | Jahr des Vorgangs, vierstellig |  |
 | `{{JAHR_KURZ}}` | Jahr des Vorgangs, zweistellig |  |
-| `{{PHASE}}` | Planungsphase des Projekts als Kürzel; ohne festgelegte Phase leer (Trenner davor bzw. danach entfallen) |  |
+| `{{PHASE}}` | Planungsphase des Projekts als Kürzel; leer, solange keine festgelegt ist |  |
 | `{{PHASE_NAME}}` | Name der Planungsphase; ohne festgelegte Phase leer |  |
 | `{{LPH}}` | Leistungsphase (HOAI) der Planungsphase als Zahl; leer, wenn die Phase keine hat (z. B. AB) oder keine festgelegt ist |  |
 | `{{DATUM.iso}}` | Datum des Exports als JJJJ-MM-TT |  |
@@ -2291,7 +2291,7 @@ Ergebnis:
 | `{{DATUM}}` | Datum des Vorgangs (Export, Anlegen …) als JJMMTT; mit Format z. B. `{{DATUM:JJJJ-MM-TT}}` |  |
 | `{{JAHR}}` | Jahr des Vorgangs, vierstellig |  |
 | `{{JAHR_KURZ}}` | Jahr des Vorgangs, zweistellig |  |
-| `{{PHASE}}` | Planungsphase des Projekts als Kürzel; ohne festgelegte Phase leer (Trenner davor bzw. danach entfallen) |  |
+| `{{PHASE}}` | Planungsphase des Projekts als Kürzel; leer, solange keine festgelegt ist |  |
 | `{{PHASE_NAME}}` | Name der Planungsphase; ohne festgelegte Phase leer |  |
 | `{{LPH}}` | Leistungsphase (HOAI) der Planungsphase als Zahl; leer, wenn die Phase keine hat (z. B. AB) oder keine festgelegt ist |  |
 | `{{DATUM.iso}}` | Datum des Exports als JJJJ-MM-TT |  |

@@ -112,6 +112,11 @@ describe('Nummern und Namen', () => {
     expect(m.test('2026-014_GP-04_a_Grundriss OG')).toBe(true); // ohne Phase (alte Pläne bzw. keine festgelegt)
     expect(m.test('2026-014_XY_GP-04_a_Grundriss OG')).toBe(false); // keine Phase des Namensschemas
     expect(dateimuster('{PROJEKT_KUERZEL}_LPh{LPH}_{Titel}', '').test('BS9_LPh4_Ansicht')).toBe(true);
+    // Phase am Ende: der Trenner davor entfällt mit ihr – wie beim Erzeugen
+    const ende = dateimuster('{PROJEKT_KUERZEL}_{Titel}_{PHASE}', 'BS9', ['GP']);
+    expect(ende.test('BS9_Grundriss_GP')).toBe(true);
+    expect(ende.test('BS9_Grundriss')).toBe(true);
+    expect(dateimuster('{PROJEKT_KUERZEL}_{PHASE}', 'BS9', ['GP']).test('BS9')).toBe(true);
     // Name aus Stammdaten: ohne Phase entfällt sie samt Trenner, mit Phase steht das Kürzel da
     expect(nameAus('{PROJEKT_KUERZEL}_{PHASE}_{Titel}', { nummer: 'BS9', titel: 'X', PHASE: '' })).toBe('BS9_X');
     expect(nameAus('{PROJEKT_KUERZEL}_{PHASE}_{Titel}', { nummer: 'BS9', titel: 'X', PHASE: 'GP' })).toBe('BS9_GP_X');
@@ -723,7 +728,8 @@ describe('Vorlagen-Presets', () => {
 
     // eingelesen wie im Assistenten
     const g = await projektEinlesen(await eingelesen(fs, basis));
-    expect(g.quelle).toEqual({ pfad: '00 Projekt/2026-014 EFH Musterweg.oap' });
+    // mit dem Namensschema der Projektdatei (für die Planphasen der Prüfung)
+    expect(g.quelle).toEqual({ pfad: '00 Projekt/2026-014 EFH Musterweg.oap', namensschema: VORGABE_NAMENSSCHEMA });
     const { angelegt, struktur: _s, dateischema: _d, ...stammdaten } = g.angaben!;
     expect(angelegt).toBe('2026-10-01');
     expect(stammdaten.presets).toEqual(['Jedes Projekt']);
@@ -1073,5 +1079,29 @@ describe('Plan: Warnungen vor dem Anlegen (Gesamt-Review)', () => {
     expect(await zielordnerVorhanden(fs, 'P:/Projekte', '2026-015 Anderes')).toBeNull();
     // nur die oberste Ebene zählt
     expect(await zielordnerVorhanden(fs, 'P:/Projekte', 'Kollege.oap')).toBeNull();
+  });
+});
+
+describe('Prüfung mit Planungsphase', () => {
+  it('Namensschema der Projektdatei und eigene Phase des Projekts zählen; Hinweis nur mit Plänen ohne Phase', async () => {
+    const fs = new SpeicherDateisystem();
+    await ausfuehren(fs, 'P:/Projekte', plane(stamm(), KLEIN, []));
+    const basis = 'P:/Projekte/2026-014 EFH Musterweg';
+    const ordner = KLEIN.ordner.find((o) => o.dateischema)!.pfad;
+    const struktur: Struktur = { ...KLEIN, dateischema: '{PROJEKT_KUERZEL}_{PHASE}_{Plannummer}_{Index}_{Titel}' };
+    await fs.dateiAnlegen(basis, `${ordner}/2026-014_XY_XY-01_a_Grundriss.pdf`, strToU8('x'));
+    const projekt = { ...angabenAusProjekt(readProjectFile(fs.eintraege.get(`${basis}/00 Projekt/2026-014 EFH Musterweg.oap`)!)) };
+    const titel = (r: ReturnType<typeof pruefe>) => r.befunde.map((b) => b.titel);
+    // Büro-Schema kennt XY nicht: abweichend, und ohne Phase der Hinweis
+    const ohne = pruefe('2026-014 EFH Musterweg', await fs.liste(basis, 12), struktur, projekt, { pfad: 'x.oap' });
+    expect(titel(ohne).some((t) => t.includes('folgt nicht dem Dateinamenschema'))).toBe(true);
+    expect(titel(ohne)).toContain('Planungsphase nicht festgelegt');
+    // Namensschema der Projektdatei mit XY: passt
+    const eigen = pruefe('2026-014 EFH Musterweg', await fs.liste(basis, 12), struktur, projekt, { pfad: 'x.oap', namensschema: { phasen: [{ kuerzel: 'XY', name: 'Sonderphase' }] } });
+    expect(titel(eigen).some((t) => t.includes('folgt nicht dem Dateinamenschema'))).toBe(false);
+    // eigene Phase XY des Projekts zählt, auch wenn sie im Schema fehlt; kein Hinweis mehr
+    const mitPhase = pruefe('2026-014 EFH Musterweg', await fs.liste(basis, 12), struktur, { ...projekt, planphase: 'XY' }, { pfad: 'x.oap' });
+    expect(titel(mitPhase).some((t) => t.includes('folgt nicht dem Dateinamenschema'))).toBe(false);
+    expect(titel(mitPhase)).not.toContain('Planungsphase nicht festgelegt');
   });
 });

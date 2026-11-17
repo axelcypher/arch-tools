@@ -1,10 +1,19 @@
 {
-  "ordner": { "stufe": "minor", "notiz": "Planungsphase je Projekt: im Assistenten und im Kontextmenü der Projektkarte („Planungsphase …“) wählbar, als Marke auf der Karte; Dateinamenschema der Pläne mit {PHASE} nach dem Kürzel (Vorgabe), Phase in der Prüfung optional." },
-  "formulare": { "stufe": "minor", "notiz": "Neue Variablen {PHASE}, {PHASE_NAME} und {LPH} in Namensvorlage und Zielordner; Planungsphase als Marke auf der Projektkarte – an der Stelle der Antragsart bleibt die Antragsart." },
+  "ordner": {
+    "stufe": "minor",
+    "notiz": "Planungsphase je Projekt: im Assistenten und im Kontextmenü der Projektkarte („Planungsphase …“) wählbar, als Marke auf der Karte; Dateinamenschema der Pläne mit {PHASE} nach dem Kürzel (Vorgabe), Phase in der Prüfung optional."
+  },
+  "formulare": {
+    "stufe": "minor",
+    "notiz": "Neue Variablen {PHASE}, {PHASE_NAME} und {LPH} in Namensvorlage und Zielordner; Planungsphase als Marke auf der Projektkarte – an der Stelle der Antragsart bleibt die Antragsart."
+  },
   "flaechenrechner": { "stufe": "minor", "notiz": "Planungsphase im Projektkopf neben „Stammdaten …“ wählbar; neue Variablen {PHASE}, {PHASE_NAME} und {LPH} in Exportnamen und Excel-Vorlagen." },
   "grz": { "stufe": "minor", "notiz": "Planungsphase im Projektkopf neben „Stammdaten …“ wählbar; neue Variablen {PHASE}, {PHASE_NAME} und {LPH} in Exportnamen und Excel-Vorlagen." },
   "kosten": { "stufe": "minor", "notiz": "Planungsphase im Projektkopf neben „Stammdaten …“ wählbar; neue Variablen {PHASE}, {PHASE_NAME} und {LPH} in Exportnamen und Excel-Vorlagen." },
-  "ava": { "stufe": "minor", "notiz": "Planungsphase im Projektkopf neben „Stammdaten …“ wählbar; neue Variablen {PHASE}, {PHASE_NAME} und {LPH} in LV-Dateinamen, Rechnungsmustern und Mailvorlagen." },
+  "ava": {
+    "stufe": "minor",
+    "notiz": "Planungsphase im Projektkopf neben „Stammdaten …“ wählbar; neue Variablen {PHASE}, {PHASE_NAME} und {LPH} in LV-Dateinamen, Rechnungsmustern und Mailvorlagen."
+  },
   "entzerrung": { "stufe": "minor", "notiz": "Gemeinsamer Kern: neue globale Variablen der Planungsphase; um leere Platzhalter entfallen doppelte Trenner." },
   "baurecht": { "stufe": "minor", "notiz": "Gemeinsamer Kern: neue globale Variablen der Planungsphase; um leere Platzhalter entfallen doppelte Trenner." }
 }

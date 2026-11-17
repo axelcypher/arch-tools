@@ -3,6 +3,7 @@ import { VORGABE_NAMENSSCHEMA, wirksamesNamensschema } from './namensschema';
 import { parseProjectData } from './serialize';
 import { createProject } from './model';
 import { ersetzen, globaleWerte, GLOBALE_VARIABLEN, istGlobalerName, nutztPhase } from './platzhalter';
+import { relativerPfad } from './einstellungen/pfade';
 import { phaseMarke, phaseQuelle, planphaseText, planphaseVon, planphaseVorschlag, projektPlanphase } from './planphase';
 
 const TAG = new Date(2026, 10, 3);
@@ -91,6 +92,19 @@ describe('Variablen {PHASE}, {PHASE_NAME}, {LPH}', () => {
     expect(ersetzen('{PROJEKT_KUERZEL}_{PHASE}_{LPH}', GLOBALE_VARIABLEN, ab)).toBe('BS9_AB');
     // die Endung bleibt
     expect(ohne('{PROJEKT_KUERZEL}_{PHASE}.pdf')).toBe('BS9.pdf');
+    // Pfadtrenner bleiben immer – keine Ordnerebene geht verloren
+    expect(ohne('04 Ausgang/{PROJEKT_KUERZEL} {PHASE}/Pläne')).toBe('04 Ausgang/BS9/Pläne');
+    expect(ohne('Ausgang_{PHASE}/Pläne')).toBe('Ausgang/Pläne');
+    expect(ohne('Ausgang/{PHASE}_Pläne')).toBe('Ausgang/Pläne');
+    expect(ohne('C:\\a {PHASE}\\b')).toBe('C:\\a\\b');
+    // ebenso für bestehende Variablen: leerer Kurzname im Ordnernamen
+    expect(ohne('{PROJEKT_KUERZEL} {PROJEKT_KURZNAME}/Formulare')).toBe('BS9/Formulare');
+  });
+
+  it('Exportpfade: leere Phase lässt keine Ordnerebene wegfallen', () => {
+    expect(relativerPfad('Planung/{PROJEKT_KUERZEL} {PHASE}/Berechnungen', { projektcode: 'BS9' })).toBe('Planung/BS9/Berechnungen');
+    expect(relativerPfad('Planung/{PHASE}/Berechnungen', { projektcode: 'BS9' })).toBe('Planung/Berechnungen');
+    expect(relativerPfad('Planung/{PHASE}/Berechnungen', { projektcode: 'BS9', phase: { kuerzel: 'GP' } })).toBe('Planung/GP/Berechnungen');
   });
 
   it('nutztPhase erkennt die Variablen der Phase (für den Hinweis „Planungsphase nicht festgelegt“)', () => {

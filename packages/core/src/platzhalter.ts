@@ -73,7 +73,7 @@ export const GLOBALE_VARIABLEN: Variable[] = [
   { name: 'JAHR_KURZ', text: 'Jahr des Vorgangs, zweistellig', quelle: 'heute bzw. Tag des Vorgangs', beispiel: '26', vorgabe: 'JJ', aliase: ['jj'] },
   {
     name: 'PHASE',
-    text: 'Planungsphase des Projekts als Kürzel; ohne festgelegte Phase leer (Trenner davor bzw. danach entfallen)',
+    text: 'Planungsphase des Projekts als Kürzel; leer, solange keine festgelegt ist',
     quelle: 'Projektdatei (.oap), Stammdaten „Planungsphase“ (Kürzel aus dem Namensschema)',
     beispiel: 'GP',
   },
@@ -289,8 +289,10 @@ const TRENNER_RAND = '[ _\\-]';
 function leereTrennerBereinigen(text: string): string {
   if (!text.includes(LEER)) return text;
   let s = text;
-  const mitte = new RegExp(`(${TRENNER})${LEER}+${TRENNER}`);
-  while (mitte.test(s)) s = s.replace(mitte, '$1');
+  // zwei Trenner um den leeren Wert: einer entfällt – ein Pfadtrenner („/“, „\\“) bleibt immer, sonst gingen Ordnerebenen verloren
+  const mitte = new RegExp(`(${TRENNER})${LEER}+(${TRENNER})`);
+  const pfad = (t: string) => t === '/' || t === '\\';
+  while (mitte.test(s)) s = s.replace(mitte, (_m, a: string, b: string) => (pfad(b) && !pfad(a) ? b : a));
   // am Rand des Namens bzw. eines Pfadteils und vor der Endung: „{PHASE}_BS9“ → „BS9“, „BS9_{PHASE}.pdf“ → „BS9.pdf“
   s = s.replace(new RegExp(`(^|[/\\\\])${LEER}+${TRENNER_RAND}`, 'g'), '$1').replace(new RegExp(`${TRENNER_RAND}${LEER}+(?=$|[./\\\\])`, 'g'), '');
   return s.split(LEER).join('');

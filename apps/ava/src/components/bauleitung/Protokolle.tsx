@@ -122,7 +122,7 @@ function ProtokollEditor({ p }: { p: Protokoll }) {
       const an = p.teilnehmer.map((t) => t.email).filter((x): x is string => !!x);
       setMailHinweis('');
       if (!an.length && !(await bestaetigen('Keine E-Mail-Adressen', 'Kein Teilnehmer hat eine E-Mail-Adresse. Den Mailentwurf trotzdem ohne Empfänger erstellen?', 'Ohne Empfänger erstellen'))) return;
-      const werte = { ...globaleAva(projekt.meta, projekt.name, e.deckblatt.bearbeiter), Nr: String(p.nr), Protokolldatum: datumKurz(p.datum), Teilnehmer: an.join('; ') };
+      const werte = { ...globaleAva(projekt.meta, projekt.name, e.deckblatt.bearbeiter, undefined, projekt.namensschema), Nr: String(p.nr), Protokolldatum: datumKurz(p.datum), Teilnehmer: an.join('; ') };
       const ok = await mitPdfMailen({
         an,
         betreff: vorlageFuellen(v?.betreff ?? 'Protokoll Nr. {Nr} vom {Protokolldatum}', werte, MAIL_PROTOKOLL_VARIABLEN),

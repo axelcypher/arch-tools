@@ -28,6 +28,9 @@ describe('Dateinamen aus der Vorlage', () => {
     expect(vorlageMitAntragsart('{PROJEKT_KUERZEL} {Art} {DATUM} {Nr} {Name} {PHASE}')).toBe('{PROJEKT_KUERZEL} {Art} {DATUM} {Nr} {Name} {PHASE}');
     expect(dateiname('{PROJEKT_KUERZEL} {Art} {DATUM} {Nr} {Name} {PHASE}', { kuerzel: 'BS9', datum: new Date(2026, 10, 3), name: 'Bauantrag', art: 'BAUA', phase: { kuerzel: 'GP' } })).toBe('BS9 BAUA 261103 Bauantrag GP');
     expect(dateiname('{PROJEKT_KUERZEL} {Art} {DATUM} {Nr} {Name} {PHASE}', { kuerzel: 'BS9', datum: new Date(2026, 10, 3), name: 'Bauantrag', art: 'BAUA' })).toBe('BS9 BAUA 261103 Bauantrag');
+    // Zielordner: eine leere Phase lässt keine Ordnerebene wegfallen
+    expect(zielpfadAus('TÖB/{PROJEKT_KUERZEL} {PHASE}/{Antrag}', { kuerzel: 'BS9', antrag: 'BAUA 2' })).toBe('TÖB/BS9/BAUA 2');
+    expect(zielpfadAus('TÖB/{PHASE}/{Antrag}', { kuerzel: 'BS9', antrag: 'BAUA 2', phase: { kuerzel: 'GP' } })).toBe('TÖB/GP/BAUA 2');
     expect(vorlageMitAntragsart('{PROJEKT_KURZNAME} BVA {DATUM}')).toBe('{PROJEKT_KURZNAME} BVA {DATUM}');
   });
 

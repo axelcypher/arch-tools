@@ -424,8 +424,7 @@ const oapMeta = (p: Projekt | null) => {
 /** Planungsphase des gewählten Projekts nach dem Namensschema seiner Projektdatei (sonst des Büros) – für {PHASE} … */
 const oapPhase = (p: Projekt | null) => {
   const { oap: o, namensschemaBuero } = useFormulare.getState();
-  const meta = oapMeta(p);
-  return meta && o && o !== 'fehlt' ? phaseQuelle(projektPlanphase(o.inhalt, namensschemaBuero)) : null;
+  return oapMeta(p) && o && o !== 'fehlt' ? phaseQuelle(projektPlanphase(o.inhalt, namensschemaBuero)) : null;
 };
 
 /** voreingestellter Zielordner des Exports (relativ zum Projektordner) */

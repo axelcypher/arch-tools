@@ -66,6 +66,8 @@ export interface ProjektQuelle {
   fehler?: string;
   /** eine alte projekt.json liegt im Ordner, ist aber nicht lesbar (kaputt oder fremd) – sie bleibt unangetastet */
   alteProjektJsonDefekt?: string;
+  /** Namensschema der Projektdatei (Planphasen für das Dateinamenschema); fehlt = das des Büros */
+  namensschema?: unknown;
 }
 
 /**
@@ -201,7 +203,10 @@ export function pruefe(ordnerName: string, eintraege: Eintrag[], struktur: Struk
   const schemaOrdner = regeln.filter((r) => r.dateischema && r.pfad).map((r) => `${r.pfad.toLowerCase()}/`);
   if (schema && schemaOrdner.length) {
     // Phase: jede Planphase des Namensschemas (Pläne früherer Phasen bleiben liegen), samt Trenner optional
-    const muster = dateimuster(schema, projekt?.nummer ?? '', alleKuerzel(wirksamesNamensschema(undefined, bueroNamensschema()).phasen));
+    const phasen = alleKuerzel(wirksamesNamensschema(quelle.namensschema, bueroNamensschema()).phasen);
+    // die eigene Phase des Projekts zählt immer, auch wenn sie im Namensschema (nicht mehr) steht
+    if (projekt?.planphase && !phasen.includes(projekt.planphase)) phasen.push(projekt.planphase);
+    const muster = dateimuster(schema, projekt?.nummer ?? '', phasen);
     const geprueft = dateien.filter((e) => schemaOrdner.some((o) => e.pfad.toLowerCase().startsWith(o)));
     // nur mit Plänen in den Planordnern – sonst gibt es keinen Namen, in dem die Phase fehlen könnte
     if (projekt && !projekt.planphase && geprueft.length && nutztPhase(schema, PLATZHALTER_PLAN))
