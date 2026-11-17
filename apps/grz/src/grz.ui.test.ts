@@ -558,8 +558,11 @@ describe('Nachweis-Spalte, Regeln, Rückgängig (G-28, G-29, G-32)', () => {
     // schmale Fenster: der Nachweis gibt nur bis 320 px nach (Kacheln und Vollgeschoss-Tabelle passen noch),
     // die Kacheln stehen dann untereinander, die Zahlenspalten haben feste Breiten statt Prozent
     expect(css).toMatch(/\.leiste:has\(> \.grz-nachweis\)\s*\{\s*--leiste-min: 320px;/);
-    expect(css).toMatch(/\.kpis\s*\{[^}]*grid-template-columns: repeat\(auto-fit, minmax\(165px, 1fr\)\)/);
+    expect(css).toMatch(/\.kpis\s*\{[^}]*grid-template-columns: repeat\(auto-fit, minmax\(12em, 1fr\)\)/);
     expect(css.slice(css.indexOf('.grz-vg-tabelle th:nth-child(1)'), css.indexOf('.grz-vg-tabelle select'))).not.toMatch(/width: \d+%/);
+    // Auswahlen in Flächen- und Raumtabelle spaltenbreit, damit die Tabellen nicht über die Karte hinausragen
+    expect(css).toMatch(/\.grz-flaechen-tabelle select\s*\{\s*width: 100%;/);
+    expect(css).toMatch(/\.grz-raum-tabelle select\s*\{\s*width: 100%;/);
     // Skizze ohne eigene Palette (helle Planfarben aus .canvas)
     expect(css).toContain('.grz-skizze {');
     const skizze = css.slice(css.indexOf('.grz-skizze {'), css.indexOf('}', css.indexOf('.grz-skizze {')));
@@ -575,12 +578,15 @@ describe('Nachweis-Spalte, Regeln, Rückgängig (G-28, G-29, G-32)', () => {
     expect(zeilen[0].querySelector('td')!.getAttribute('colspan')).toBe('5');
     // eine Auswahl: automatisch (mit Ergebnis) oder von Hand; von Hand sichtbar gekennzeichnet
     const wahl = host.querySelector('select.grz-wahl') as HTMLSelectElement;
-    expect([...wahl.options].map((o) => o.textContent)).toEqual(['automatisch: Vollgeschoss', 'Vollgeschoss (von Hand)', 'kein Vollgeschoss (von Hand)']);
+    expect([...wahl.options].map((o) => o.textContent)).toEqual(['Vollgeschoss (auto)', 'Vollgeschoss (von Hand)', 'kein Vollgeschoss (von Hand)']);
+    // der volle Stand steht im Tooltip (die Auswahl wird in schmalen Karten gekürzt)
+    expect(wahl.title).toBe('Vollgeschoss (auto) – automatisch eingestuft, von Hand festlegen');
     expect(wahl.classList.contains('grz-von-hand')).toBe(false);
     change(wahl, 'nein');
     const neu = host.querySelector('select.grz-wahl') as HTMLSelectElement;
     expect(neu.classList.contains('grz-von-hand')).toBe(true);
-    expect(neu.options[0].textContent).toBe('automatisch: Vollgeschoss');
+    expect(neu.options[0].textContent).toBe('Vollgeschoss (auto)');
+    expect(neu.title).toBe('kein Vollgeschoss – von Hand festgelegt');
     expect(host.querySelector('.kpis')!.textContent).toContain('davon eines von Hand festgelegt');
   });
 

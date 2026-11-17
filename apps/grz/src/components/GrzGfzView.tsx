@@ -523,7 +523,7 @@ export function GrzGfzView() {
           </div>
         )}
         {flaechen.length > 0 && (
-          <table className="summary-table grz-tabelle">
+          <table className="summary-table grz-tabelle grz-flaechen-tabelle">
             <thead>
               <tr>
                 <th className="num" title="Nummer wie im Plan und im Druck">
@@ -597,11 +597,7 @@ export function GrzGfzView() {
       </Karte>
 
       <BreitenLeiste schluessel="grz:breite:nachweis" vorgabe={380} min={320} max={600} seite="rechts" titel="Breite des Nachweises">
-        <Karte
-          className="grz-nachweis"
-          titel="Nachweis"
-          hilfe={<HilfeKnopf thema={['grz', 'gfz', 'baunvo']} titel="GRZ/GFZ" />}
-        >
+        <Karte className="grz-nachweis" titel="Nachweis" hilfe={<HilfeKnopf thema={['grz', 'gfz', 'baunvo']} titel="GRZ/GFZ" />}>
           <p className="muted small-text">
             {baunvoLabel(n.recht.baunvo)} · Vollgeschosse nach {bauoLabel(n.recht.bauo)}
             {n.grundstueck.flaeche !== undefined &&
@@ -688,15 +684,11 @@ export function GrzGfzView() {
             <thead>
               <tr>
                 <th>Geschoss</th>
-                <th className="num" title="Geländeoberfläche entlang der Außenwände des Geschosses: Mittel (tiefster – höchster Punkt), über ±0,00">
+                <th className="num" title="Geländeoberfläche entlang der Außenwände des Geschosses in m: Mittel (tiefster – höchster Punkt), über ±0,00">
                   Gelände
-                  <br />
-                  [m]
                 </th>
-                <th className="num" title="Oberkante Fußboden des darüberliegenden Geschosses bzw. Dachhaut über der Geländeoberfläche">
+                <th className="num" title="Oberkante Fußboden des darüberliegenden Geschosses bzw. Dachhaut über der Geländeoberfläche in m">
                   über Gel.
-                  <br />
-                  [m]
                 </th>
                 <th className="num" title="Anteil der Grundfläche mit der geforderten lichten Höhe">
                   Anteil
@@ -722,7 +714,7 @@ export function GrzGfzView() {
                     <td>
                       <select
                         className={g.automatisch ? 'grz-wahl' : 'grz-wahl grz-von-hand'}
-                        title={g.automatisch ? 'automatisch eingestuft – von Hand festlegen' : 'von Hand festgelegt'}
+                        title={g.automatisch ? `${autoVollgeschoss(g)} – automatisch eingestuft, von Hand festlegen` : `${g.vollgeschoss ? 'Vollgeschoss' : 'kein Vollgeschoss'} – von Hand festgelegt`}
                         aria-label={`Vollgeschoss ${g.name}`}
                         value={g.automatisch ? 'auto' : g.vollgeschoss ? 'ja' : 'nein'}
                         onChange={(e) => setVollgeschoss(g.storeyId, e.target.value === 'auto' ? undefined : e.target.value === 'ja')}
@@ -807,10 +799,11 @@ export function GrzGfzView() {
                         <select
                           className={r.automatisch ? 'grz-wahl' : 'grz-wahl grz-von-hand'}
                           aria-label={`Einstufung ${r.name}`}
+                          title={r.automatisch ? `${AUFENTHALT[r.ergebnis]} – automatisch eingestuft, von Hand festlegen` : `${AUFENTHALT[r.ergebnis]} – von Hand festgelegt`}
                           value={r.automatisch ? 'auto' : r.ergebnis}
                           onChange={(e) => setAufenthalt(r.storeyId, r.roomId, e.target.value === 'auto' ? undefined : (e.target.value as 'ja' | 'nein' | 'treppe'))}
                         >
-                          <option value="auto">automatisch: {AUFENTHALT[r.automatisch ? r.ergebnis : r.nachName]}</option>
+                          <option value="auto">{AUFENTHALT[r.automatisch ? r.ergebnis : r.nachName]} (auto)</option>
                           <option value="ja">Aufenthaltsraum (von Hand)</option>
                           <option value="treppe">Treppenraum (von Hand)</option>
                           <option value="nein">kein Aufenthaltsraum (von Hand)</option>
@@ -976,7 +969,7 @@ function TeilflaechenListe({ f }: { f: ReturnType<typeof rechenweg>['flaechen'][
 }
 
 /** erste Option der Einstufung: was die Prüfung ohne Festlegung ergibt */
-const autoVollgeschoss = (g: { vollgeschossAuto: boolean }) => `automatisch: ${g.vollgeschossAuto ? 'Vollgeschoss' : 'kein Vollgeschoss'}`;
+const autoVollgeschoss = (g: { vollgeschossAuto: boolean }) => `${g.vollgeschossAuto ? 'Vollgeschoss' : 'kein Vollgeschoss'} (auto)`;
 
 export function StatusPill({ s }: { s: Status }) {
   return (

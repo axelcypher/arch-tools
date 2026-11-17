@@ -43,7 +43,7 @@
   table-layout: fixed;
 }
 .grz-vg-tabelle th:nth-child(1) {
-  width: 4em;
+  width: 5.5em;
 }
 .grz-vg-tabelle th:nth-child(2),
 .grz-vg-tabelle th:nth-child(3) {
@@ -128,6 +128,10 @@
   color: var(--warn-text);
 }
 /* Auswahl so breit wie die Spalte (lange Einträge gekürzt), damit die Tabelle nicht über die Karte hinausragt */
+.grz-flaechen-tabelle select {
+  width: 100%;
+  text-overflow: ellipsis;
+}
 .grz-raum-tabelle select {
   width: 100%;
   margin: 2px 0;
@@ -160,7 +164,7 @@ button.link:hover {
 .kpis {
   display: grid;
   /* zwei Kacheln nebeneinander, wenn sie Platz haben (Zahl mit Einheit bricht nicht um); sonst untereinander */
-  grid-template-columns: repeat(auto-fit, minmax(165px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(12em, 1fr));
   gap: 8px;
   margin: 8px 0;
 }
