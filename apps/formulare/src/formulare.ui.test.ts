@@ -444,6 +444,12 @@ describe('Formulare', () => {
     // Filter als Umschalter (.segment) mit aria-pressed: der gewählte ist angesagt
     const filter = [...kopf.querySelectorAll<HTMLButtonElement>('.segment[role="group"][aria-label="Filter"] > button')];
     expect(filter.map((b) => `${b.textContent!.split(' (')[0]}:${b.getAttribute('aria-pressed')}`)).toEqual(['Alle:true', 'Offene:false', 'Geänderte:false']);
+    // Trefferzahl als Live-Region: ohne Suche leer
+    expect(kopf.querySelector('.fo-treffer')!.getAttribute('aria-live')).toBe('polite');
+    expect(kopf.querySelector('.fo-treffer')!.textContent).toBe('');
+    await klick(filter[1]);
+    expect(filter.map((b) => b.getAttribute('aria-pressed'))).toEqual(['false', 'true', 'false']);
+    await klick(filter[0]);
     const spalte = flaeche.querySelector<HTMLElement>('.fo-inhalt')!;
     expect(spalte.style.getPropertyValue('--rollend-kopf-h')).toMatch(/^calc\(\d+px \+ var\(--s1\)\)$/);
     // Abschnitte unter der Seitenüberschrift (h2): Kopf h3, keine eigene Region (div ohne Namen)

@@ -124,7 +124,6 @@ export function FelderAnsicht({ offen, gesperrt }: { offen: OffenesFormular; ges
           placeholder="Felder durchsuchen …"
           title="Sucht in der Beschriftung und im Inhalt der Felder"
           aria-label="Felder durchsuchen"
-          aria-description="Sucht in der Beschriftung und im Inhalt der Felder"
           value={suche}
           onChange={(e) => setSuche(e.target.value)}
         />

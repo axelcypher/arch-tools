@@ -3113,6 +3113,11 @@ button.icon.fo-gl-bed.gesetzt {
 .fo-treffer {
   margin-left: 6px;
 }
+/* leer (keine Suche) ohne eigenen Abstand: die Live-Region bleibt im Baum (sonst sagten Vorleseprogramme den ersten
+   Text nicht an), ist aber null breit und rutscht an der Umbruchgrenze nicht allein in eine Zeile */
+.fo-treffer:empty {
+  margin-left: 0;
+}
 
 /* Projektmerkmale direkt am Formular festlegen (U-02) */
 .fo-merkmal-wahl {
