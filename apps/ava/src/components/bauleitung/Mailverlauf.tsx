@@ -101,14 +101,17 @@ export function MailListe({ dateien, gewerkVon }: { dateien: Datei[]; gewerkVon?
                 <td className="ava-kurztext">{m instanceof Error ? <span className="muted">{d.name} (nicht lesbar)</span> : (m?.betreff || d.name)}</td>
               </tr>
             ))}
-            {!zeilen.length && (
+          </tbody>
+          {/* Leertext im Fuß: wählbar sind nur die Zeilen im tbody (core .waehlbar) */}
+          {!zeilen.length && (
+            <tfoot>
               <tr>
                 <td colSpan={gewerkVon ? 4 : 3} className="muted">
                   {suche ? `Keine Treffer für „${suche}“.` : 'Keine Mails.'}
                 </td>
               </tr>
-            )}
-          </tbody>
+            </tfoot>
+          )}
         </table>
         {aktiv && aktiv.m && !(aktiv.m instanceof Error) && (
           <div className="ava-mail-vorschau">

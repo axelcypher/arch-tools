@@ -74,7 +74,7 @@ describe('Bautagebuch', () => {
     expect(firmen[0].taetigkeit).toBe('Fenster EG eingebaut');
     // das Feld „Personen“ ist eine normale, sichtbare Eingabe mit Beschriftung
     const personen = host.querySelector<HTMLInputElement>('input[aria-label^="Personen"]')!;
-    expect(personen.closest('.ava-zelle-eingabe')).toBeNull();
+    expect(personen.classList.contains('zelle')).toBe(false);
     // Entfernen hat eine Beschriftung
     expect(host.querySelector('button[aria-label$="entfernen"]')).not.toBeNull();
   });

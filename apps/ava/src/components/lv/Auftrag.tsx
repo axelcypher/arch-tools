@@ -184,7 +184,7 @@ export function AuftragAnsicht({ gewerk }: { gewerk: string }) {
                       </select>
                     </td>
                     <td className="num">
-                      <ZahlEingabe className="zelle" label={`Betrag netto Nachtrag ${n.nr}`} wert={n.betrag ?? null} stellen={2} onChange={(betrag) => nachtragSetzen(n.nr, { betrag: betrag ?? undefined })} placeholder={s?.nachtraege.get(n.nr) ? euro(s.nachtraege.get(n.nr)) : 'aus Positionen'} />
+                      <ZahlEingabe label={`Betrag netto Nachtrag ${n.nr}`} wert={n.betrag ?? null} stellen={2} onChange={(betrag) => nachtragSetzen(n.nr, { betrag: betrag ?? undefined })} placeholder={s?.nachtraege.get(n.nr) ? euro(s.nachtraege.get(n.nr)) : 'aus Positionen'} />
                     </td>
                     <td className="num">{euro(brutto(netto, ust))}</td>
                     <td>

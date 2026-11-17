@@ -156,6 +156,7 @@ export function Angebote() {
                   <tr
                     key={x.id}
                     className={`${modus === 'erfassen' && x.id === bieterId ? 'selected ' : ''}${lv.auftrag?.bieterId === x.id ? 'ava-auftrag ' : ''}${x.ausgeschlossen ? 'ava-ausgeschlossen' : ''}`}
+                    aria-selected={modus === 'erfassen' ? x.id === bieterId : undefined}
                     onClick={modus === 'erfassen' ? () => setBieterId(x.id) : undefined}
                   >
                     <td>{x.id === 0 ? '—' : (r?.rang ?? '')}</td>
@@ -338,7 +339,7 @@ export function Preisspiegel({ nurAuffaellige = false, druck = false }: { nurAuf
           <span className="muted">Bedarfs- und Wahlpositionen grau – zählen nicht zur Summe</span>
         </div>
       )}
-      <table className="summary-table text fest ava-spiegel-tabelle">
+      <table className={`summary-table text${druck ? '' : ' fest'} ava-spiegel-tabelle`}>
         <thead>
           <tr>
             <th rowSpan={2} title="Ordnungszahl">OZ</th>

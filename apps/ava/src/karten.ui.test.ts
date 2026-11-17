@@ -12,6 +12,7 @@ import { zeilenVon } from './components/lv/LvEditor';
 import { GewerkAnsicht } from './components/GewerkAnsicht';
 import { Maengel } from './components/bauleitung/Maengel';
 import { Bautagebuch } from './components/bauleitung/Bautagebuch';
+import { Preisspiegel } from './components/lv/Angebote';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -175,7 +176,29 @@ describe('Kartenlayout (docs/design.md „Fläche und Karten“)', () => {
     expect(spiegel.querySelectorAll('tbody tr.gruppe').length).toBeGreaterThan(0);
     expect(spiegel.querySelector('tfoot tr')?.classList.contains('summe')).toBe(true);
     expect(spiegel.classList.contains('fest')).toBe(true);
+    // Bieterliste: wählbar nur im Modus „Preise erfassen“
+    const bieter = () => host.querySelector('.ava-bieter-liste table')!;
+    expect(bieter().classList.contains('fest')).toBe(true);
+    expect(bieter().classList.contains('waehlbar')).toBe(false);
+    const erfassen = [...host.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent?.trim() === 'Preise erfassen')!;
+    await act(async () => erfassen.click());
+    await warte(() => host.querySelector('table.ava-erfassen-tabelle'));
+    expect(bieter().classList.contains('waehlbar')).toBe(true);
+    expect(bieter().querySelectorAll('tbody tr[aria-selected="true"]').length).toBe(1);
+    const tabelle = host.querySelector('table.ava-erfassen-tabelle')!;
+    for (const k of ['felder', 'fest']) expect(tabelle.classList.contains(k)).toBe(true);
+    expect(tabelle.querySelectorAll('input.num.zelle').length).toBeGreaterThan(0);
     expect(host.querySelector('.ava-tabelle')).toBeNull();
+  });
+
+  it('Preisspiegel im Druck ohne festen Kopf (fest nur auf dem Bildschirm)', async () => {
+    act(() => useAva.getState().setAnsicht({ art: 'gewerk', gewerk: 'G8', tab: 'lv' }));
+    await zeige(createElement(Gewerk));
+    await warte(() => useAva.getState().lv);
+    act(() => root?.unmount());
+    await zeige(createElement(Preisspiegel, { druck: true }));
+    await warte(() => host.querySelector('table.ava-spiegel-tabelle'));
+    expect(host.querySelector('table.ava-spiegel-tabelle')!.classList.contains('fest')).toBe(false);
   });
 
   it('styles.css: keine eigene Grundtabelle, kein eigener fester Kopf, keine eigenen Zellenfelder; Ergänzungen zur Zahlentabelle nur in der Fläche', () => {

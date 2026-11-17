@@ -350,7 +350,7 @@ export function LvEditor() {
                 if (el.art === 'position') {
                   const gb = s.positionen.get(el.id)?.get(0);
                   return (
-                    <tr key={el.id} data-id={el.id} className={`${kl}${zaehltInSumme(el.positionsart) ? '' : ' ava-z-ohne-summe'}`} onClick={() => useAva.getState().setAuswahl(el.id)}>
+                    <tr key={el.id} data-id={el.id} className={`${kl}${zaehltInSumme(el.positionsart) ? '' : ' ava-z-ohne-summe'}`} aria-selected={aktiv} onClick={() => useAva.getState().setAuswahl(el.id)}>
                       <td className="ava-oz">{z.oz}</td>
                       <td style={einzug} className="ava-kurztext" title={el.kurztext}>
                         {el.kurztext}
@@ -378,7 +378,7 @@ export function LvEditor() {
                 if (el.art === 'abschnitt') {
                   const summe = s.abschnitte.get(el.id)?.get(0);
                   return (
-                    <tr key={el.id} data-id={el.id} className={kl} onClick={() => useAva.getState().setAuswahl(el.id)}>
+                    <tr key={el.id} data-id={el.id} className={kl} aria-selected={aktiv} onClick={() => useAva.getState().setAuswahl(el.id)}>
                       <td className="ava-oz">{z.oz}</td>
                       <td style={einzug} colSpan={4}>
                         {el.kurztext}
@@ -389,7 +389,7 @@ export function LvEditor() {
                   );
                 }
                 return (
-                  <tr key={el.id} data-id={el.id} className={kl} onClick={() => useAva.getState().setAuswahl(el.id)}>
+                  <tr key={el.id} data-id={el.id} className={kl} aria-selected={aktiv} onClick={() => useAva.getState().setAuswahl(el.id)}>
                     <td className="ava-oz">{el.vorbemerkung ? 'VB' : 'H'}</td>
                     <td style={einzug} colSpan={7} className="ava-hinweis-text">
                       {el.kurztext}
