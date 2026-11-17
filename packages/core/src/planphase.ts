@@ -61,18 +61,25 @@ export interface PhasenVorschlag {
  * Vorschlag für die Planungsphase aus vorhandenen Angaben – nur als Angebot (Knopf „übernehmen“), nie still gesetzt:
  *  1. ein Antrag in Arbeit (nicht eingereicht): Bauantrag bzw. Genehmigungsfreistellung → die Phase mit LPh 4,
  *     Abgeschlossenheitsbescheinigung (ABGE) → AB, wenn das Namensschema sie hat;
- *  2. sonst die beauftragten Leistungsphasen: die Phase mit der kleinsten beauftragten Leistungsphase (zu Beginn
+ *  2. Bauantrag bzw. Genehmigungsfreistellung eingereicht: die nächste beauftragte Phase ab LPh 5 (sonst keiner –
+ *     nie eine frühere Phase als LPh 4);
+ *  3. sonst die beauftragten Leistungsphasen: die Phase mit der kleinsten beauftragten Leistungsphase (zu Beginn
  *     des Auftrags).
  * Ohne passende Phase im Namensschema: null.
  */
 export function planphaseVorschlag(meta: { leistungsphasen?: number[]; antrag?: AntragKurz }, schema: Pick<Namensschema, 'phasen'>): PhasenVorschlag | null {
   const beauftragt = meta.leistungsphasen ?? [];
   const a = meta.antrag;
+  const art = a ? a.name.trim().split(/\s+/)[0].toUpperCase() : '';
   if (a && !a.eingereicht) {
-    const art = a.name.trim().split(/\s+/)[0].toUpperCase();
     if (art === 'ABGE' && kuerzelZu(schema.phasen, 'AB')) return { kuerzel: kuerzelZu(schema.phasen, 'AB')!.kuerzel, grund: `Antrag ${a.name} in Arbeit` };
     const gp = schema.phasen.find((p) => p.lph === 4);
     if (ARTEN_LPH4.includes(art) && gp && (!beauftragt.length || beauftragt.includes(4))) return { kuerzel: gp.kuerzel, grund: `Antrag ${a.name} in Arbeit` };
+  }
+  // eingereichter Bauantrag bzw. Freistellung: LPh 4 ist erbracht – nie eine frühere Phase, sondern die nächste beauftragte ab LPh 5
+  if (a?.eingereicht && ARTEN_LPH4.includes(art)) {
+    const danach = schema.phasen.filter((p) => p.lph !== undefined && p.lph >= 5 && (!beauftragt.length || beauftragt.includes(p.lph))).sort((x, y) => x.lph! - y.lph!);
+    return danach.length ? { kuerzel: danach[0].kuerzel, grund: `Antrag ${a.name} eingereicht – nächste beauftragte Leistungsphase (LPh ${danach[0].lph})` } : null;
   }
   if (!beauftragt.length) return null;
   const passend = schema.phasen.filter((p) => p.lph !== undefined && beauftragt.includes(p.lph)).sort((x, y) => x.lph! - y.lph!);

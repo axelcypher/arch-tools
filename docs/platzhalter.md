@@ -47,7 +47,8 @@ aus dem Namensschema; AB hat keine Leistungsphase, `{LPH}` ist dort leer. Einges
 (Bereich „Leistungen“, in jeder App über „Stammdaten …“), im Projektkopf neben „Stammdaten …“ (QUADRIO, TERRIO, NUMIO,
 FABRIO) und in ATLAS über das Kontextmenü der Projektkarte („Planungsphase …“) bzw. im Assistenten. Ohne Festlegung
 steht „nicht festgelegt“ da; ein Vorschlag (aus einem Antrag in Arbeit: Bauantrag bzw. Genehmigungsfreistellung → LPh 4,
-Abgeschlossenheit → AB; sonst die kleinste beauftragte Leistungsphase) wird nur angeboten, nie still gesetzt.
+Abgeschlossenheitsbescheinigung (ABGE) → AB; nach dem Einreichen eines Bauantrags bzw. einer Freistellung die nächste
+beauftragte Phase ab LPh 5; sonst die kleinste beauftragte Leistungsphase) wird nur angeboten, nie still gesetzt.
 
 **Leere Werte und Trenner:** Ist eine Variable leer (etwa `{PHASE}` ohne festgelegte Phase), entfällt ein Trenner
 daneben (Leerzeichen, `_`, `-`, im Pfad `/`): `{PROJEKT_KUERZEL}_{PHASE}_{Plannummer}` wird ohne Phase `BS9_GP-04`,

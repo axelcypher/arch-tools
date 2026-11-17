@@ -2256,7 +2256,7 @@ svg[tabindex]:focus:not(:focus-visible) {
   font-size: 13px;
 }
 .sd-vorschlag {
-  margin: -2px 0 8px;
+  margin: 0 0 var(--s2);
 }
 .sd-lph {
   display: grid;
@@ -2686,6 +2686,12 @@ button.ungespeichert::after {
   display: inline-flex;
   align-items: center;
   gap: var(--s1);
+}
+.sd-phase-kopf select {
+  width: auto;
+  max-width: 100%;
+  min-height: var(--ctl-h-s);
+  font-size: var(--fs-s);
 }
 .sd-phase-kopf .sd-vorschlag {
   margin: 0;

@@ -535,7 +535,20 @@ export function StammdatenKnopf({
  * „nicht festgelegt“. Ohne Phase steht das sichtbar da, mit einem Vorschlag aus Leistungsphasen bzw. aktivem Antrag
  * zum Übernehmen – gesetzt wird nur auf Klick. `kompakt`: für den Projektkopf, ohne Feldbeschriftung und Hinweis.
  */
-export function PlanphaseWahl({ meta, onChange, namensschema, kompakt = false }: { meta: ProjectMeta; onChange: (meta: ProjectMeta) => void; namensschema?: unknown; kompakt?: boolean }) {
+export function PlanphaseWahl({
+  meta,
+  onChange,
+  namensschema,
+  kompakt = false,
+  startfokus = false,
+}: {
+  meta: ProjectMeta;
+  onChange: (meta: ProjectMeta) => void;
+  namensschema?: unknown;
+  kompakt?: boolean;
+  /** Erstfokus im Dialog (`data-startfokus`) */
+  startfokus?: boolean;
+}) {
   const id = useId();
   const schema = wirksamesNamensschema(namensschema, bueroNamensschema());
   const aktuell = planphaseVon(meta.planphase, schema);
@@ -550,7 +563,8 @@ export function PlanphaseWahl({ meta, onChange, namensschema, kompakt = false }:
       id={id}
       className={`sd-phase${aktuell ? '' : ' leer'}`}
       value={aktuell?.kuerzel ?? ''}
-      title={aktuell ? `Planungsphase ${aktuell.kuerzel}${aktuell.name ? ` – ${aktuell.name}` : ''}` : 'Keine Planungsphase festgelegt – {PHASE} bleibt in Datei- und Ordnernamen leer'}
+      data-startfokus={startfokus ? '' : undefined}
+      title={aktuell ? `Planungsphase ${aktuell.kuerzel}${aktuell.name ? ` – ${aktuell.name}` : ''}` : 'Planungsphase wählen, damit {PHASE} in Datei- und Ordnernamen erscheint'}
       onChange={(e) => setzen(e.target.value)}
     >
       <option value="">nicht festgelegt</option>
@@ -564,14 +578,14 @@ export function PlanphaseWahl({ meta, onChange, namensschema, kompakt = false }:
   );
   const vorschlagKnopf = vorschlag && (
     <button type="button" className="small sd-vorschlag" title={`Vorschlag: ${vorschlag.grund} – wird erst mit dem Klick gesetzt`} onClick={() => setzen(vorschlag.kuerzel)}>
-      {kompakt ? vorschlag.kuerzel : `Vorschlag ${vorschlag.kuerzel} übernehmen`}
+      {kompakt ? `${vorschlag.kuerzel} übernehmen` : `Vorschlag ${vorschlag.kuerzel} übernehmen`}
     </button>
   );
   if (kompakt)
     return (
       <span className="sd-phase-kopf">
         <label htmlFor={id} className="small-text">
-          Phase
+          Planungsphase
         </label>
         {auswahl}
         {vorschlagKnopf}
@@ -583,8 +597,8 @@ export function PlanphaseWahl({ meta, onChange, namensschema, kompakt = false }:
         label="Planungsphase"
         hint={
           aktuell
-            ? `Aktuelle Phase${aktuell.lph !== undefined ? ` (LPh ${aktuell.lph})` : ' (ohne Leistungsphase)'} – für {PHASE}, {PHASE_NAME} und {LPH} in Datei- und Ordnernamen`
-            : 'Nicht festgelegt – {PHASE} bleibt in Datei- und Ordnernamen leer.'
+            ? `Aktuelle Phase${aktuell.lph !== undefined ? ` (LPh ${aktuell.lph})` : ' (ohne Leistungsphase)'} – für den Platzhalter {PHASE} in Datei- und Ordnernamen`
+            : 'Phase wählen, damit {PHASE} in Datei- und Ordnernamen erscheint.'
         }
       >
         {auswahl}

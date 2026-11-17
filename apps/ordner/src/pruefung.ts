@@ -208,7 +208,7 @@ export function pruefe(ordnerName: string, eintraege: Eintrag[], struktur: Struk
       befunde.push({
         art: 'hinweis',
         titel: PHASE_FEHLT,
-        text: `Das Dateinamenschema enthält die Planungsphase (${schema}); ohne Phase entfällt sie samt Trenner. Festlegen unter „Projekt ergänzen“ › Stammdaten › Leistungen.`,
+        text: `Das Dateinamenschema enthält die Planungsphase (${schema}); ohne Phase entfällt sie samt Trenner. Festlegen über „Planungsphase …“ im Kontextmenü der Projektkarte oder unter „Projekt ergänzen …“ › Stammdaten › Leistungen.`,
       });
     const abweichend = geprueft
       .map((e) => e.pfad)

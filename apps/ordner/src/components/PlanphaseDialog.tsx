@@ -23,6 +23,7 @@ export function PlanphaseDialog({
 }) {
   const [meta, setMeta] = useState(anfang);
   const [laeuft, setLaeuft] = useState(false);
+  const unveraendert = (meta.planphase ?? '') === (anfang.planphase ?? '');
   const uebernehmen = async () => {
     setLaeuft(true);
     try {
@@ -32,16 +33,25 @@ export function PlanphaseDialog({
     }
   };
   return (
-    <Modal titel={`Planungsphase – ${name}`} kopf className="po-phase-dialog" onClose={laeuft ? undefined : onAbbrechen}>
-      <PlanphaseWahl meta={meta} onChange={setMeta} namensschema={namensschema} />
-      <div className="dialog-buttons">
-        <button onClick={onAbbrechen} disabled={laeuft}>
-          Abbrechen
-        </button>
-        <button className="primary" disabled={laeuft || (meta.planphase ?? '') === (anfang.planphase ?? '')} onClick={() => void uebernehmen()}>
-          Übernehmen
-        </button>
-      </div>
+    <Modal titel={`Planungsphase – ${name}`} kopf onClose={laeuft ? undefined : onAbbrechen}>
+      {/* Enter im Auswahlfeld übernimmt (Hauptknopf), wie in allen Dialogen */}
+      <form
+        className="po-phase-dialog"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!unveraendert) void uebernehmen();
+        }}
+      >
+        <PlanphaseWahl meta={meta} onChange={setMeta} namensschema={namensschema} startfokus />
+        <div className="dialog-buttons">
+          <button type="button" onClick={onAbbrechen} disabled={laeuft}>
+            Abbrechen
+          </button>
+          <button type="submit" className="primary" disabled={laeuft || unveraendert}>
+            Übernehmen
+          </button>
+        </div>
+      </form>
     </Modal>
   );
 }

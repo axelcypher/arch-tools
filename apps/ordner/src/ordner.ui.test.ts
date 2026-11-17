@@ -1058,11 +1058,13 @@ describe('Startseite mit der gemeinsamen Projektübersicht', () => {
     // Planungsphase wechseln: Dialog mit Vorschlag (LPh 1, 2 beauftragt → BP), schreibt nur meta.planphase; Marke auf der Karte
     await act(async () => ([...host.querySelectorAll('.menue [role="menuitem"]')].find((b) => b.textContent === 'Planungsphase …') as HTMLButtonElement).click());
     const dialog = document.querySelector('.po-phase-dialog') as HTMLElement;
-    expect(dialog.textContent).toContain('Planungsphase – 2026-014 Neubau EFH');
+    expect(dialog.closest('.modal')!.textContent).toContain('Planungsphase – 2026-014 Neubau EFH');
+    expect((dialog.querySelector('select.sd-phase') as HTMLElement).hasAttribute('data-startfokus')).toBe(true);
     expect((dialog.querySelector('select.sd-phase') as HTMLSelectElement).value).toBe('');
     expect(knopf(dialog, 'Übernehmen').disabled).toBe(true);
     act(() => knopf(dialog, 'Vorschlag BP übernehmen').click());
-    await act(async () => knopf(document.querySelector('.po-phase-dialog') as HTMLElement, 'Übernehmen').click());
+    // Enter im Formular übernimmt (Hauptknopf)
+    await act(async () => (document.querySelector('form.po-phase-dialog') as HTMLFormElement).requestSubmit());
     await warten();
     await warten();
     const { readProjectFile: lesenPhase } = await import('@core/archive');

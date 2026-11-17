@@ -213,7 +213,7 @@ describe('Planungsphase', () => {
     expect(sel.value).toBe('');
     expect(sel.classList.contains('leer')).toBe(true);
     expect(sel.closest('label')!.textContent).toContain('Planungsphase');
-    expect(host.textContent).toContain('Nicht festgelegt – {PHASE} bleibt in Datei- und Ordnernamen leer.');
+    expect(host.textContent).toContain('Phase wählen, damit {PHASE} in Datei- und Ordnernamen erscheint.');
     // Planphasen des Namensschemas (Vorgabe) mit LPh, AB ohne
     expect([...sel.options].map((o) => o.value)).toEqual(['', 'BP', 'EP', 'GP', 'AP', 'AB']);
     expect(sel.options[3].textContent).toBe('GP – Genehmigungsplanung · LPh 4');
@@ -250,7 +250,7 @@ describe('Planungsphase', () => {
       root.render(createElement(StammdatenKnopf, { project: { name: 'Test', meta: { ...leereMeta(), projektcode: 'BS9' } }, onAendern: geaendert }));
     });
     const sel = host.querySelector('.sd-phase-kopf select') as HTMLSelectElement;
-    expect(host.querySelector(`label[for="${sel.id}"]`)!.textContent).toBe('Phase');
+    expect(host.querySelector(`label[for="${sel.id}"]`)!.textContent).toBe('Planungsphase');
     waehle(sel, 'AP');
     expect(geaendert).toHaveBeenCalledWith(expect.objectContaining({ planphase: 'AP', projektcode: 'BS9' }), 'Test');
   });

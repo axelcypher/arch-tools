@@ -47,7 +47,11 @@ describe('Planungsphase je Projekt', () => {
     expect(planphaseVorschlag({ antrag: { name: 'BAUA 2' } }, s)).toEqual({ kuerzel: 'GP', grund: 'Antrag BAUA 2 in Arbeit' });
     expect(planphaseVorschlag({ antrag: { name: 'ABGE' } }, s)?.kuerzel).toBe('AB');
     // eingereicht: der Antrag sagt nichts mehr über die aktuelle Phase
-    expect(planphaseVorschlag({ antrag: { name: 'BAUA', eingereicht: { datum: '2026-11-01', manuell: true } } }, s)).toBeNull();
+    const eingereicht = { datum: '2026-11-01', manuell: true as const };
+    expect(planphaseVorschlag({ antrag: { name: 'BAUA', eingereicht } }, s)?.kuerzel).toBe('AP');
+    // Vollauftrag und eingereichter Bauantrag: nie zurück auf LPh 1
+    expect(planphaseVorschlag({ antrag: { name: 'BAUA', eingereicht }, leistungsphasen: [1, 2, 3, 4, 5, 6, 7, 8, 9] }, s)?.kuerzel).toBe('AP');
+    expect(planphaseVorschlag({ antrag: { name: 'BAUF', eingereicht }, leistungsphasen: [1, 2, 3, 4] }, s)).toBeNull();
     // Bauantrag, aber LPh 4 nicht beauftragt: kein GP, sondern nach den Leistungsphasen
     expect(planphaseVorschlag({ antrag: { name: 'BAUA' }, leistungsphasen: [5, 6, 7, 8] }, s)?.kuerzel).toBe('AP');
     expect(planphaseVorschlag({ leistungsphasen: [1, 2, 3, 4] }, s)).toEqual({ kuerzel: 'BP', grund: 'erste beauftragte Leistungsphase (LPh 1)' });

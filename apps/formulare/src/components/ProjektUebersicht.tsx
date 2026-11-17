@@ -83,11 +83,12 @@ export function ProjektUebersicht({ onEinstellungen }: { onEinstellungen: () => 
     const p = nachSchluessel.get(e.schluessel);
     if (!p) return [];
     const m: UebersichtMarke[] = [];
-    const phase = planphaseVon(projektStatus[e.schluessel]?.planphase, wirksamesNamensschema(undefined, namensschemaBuero));
-    if (phase) m.push(phaseMarke(phase));
     if (p.info?.gesperrt) m.push({ text: `${p.info.gesperrt} geöffnet`, art: 'warnung', symbol: 'schloss', titel: 'Formulare mit Sperrdatei – hier oder in einem anderen Programm geöffnet' });
     if (projektHatEntwuerfe(p)) m.push({ text: 'ungespeichert', art: 'hinweis', symbol: 'stift', titel: 'Hier eingegeben, aber noch nicht in die Formulardatei gespeichert' });
     if (ablageGesucht && !ablageVon({ ablage, ordnerWahl }, p)) m.push({ text: 'kein Projektordner', symbol: 'ordner', titel: 'Kein Projektordner mit diesem Kürzel gefunden' });
+    // neutrale Marke zuletzt – Warnungen stehen vorn
+    const phase = planphaseVon(projektStatus[e.schluessel]?.planphase, wirksamesNamensschema(undefined, namensschemaBuero));
+    if (phase) m.push(phaseMarke(phase));
     return m;
   };
 
