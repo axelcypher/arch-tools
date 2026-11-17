@@ -925,6 +925,11 @@ button.icon.fo-gl-zaehlt.an {
 .fo-feldsuche {
   flex: 1 1 220px;
 }
+/* die Filter trennt hier der Abstand des Kopfs; ein Trennstrich stünde beim Umbruch allein am Zeilenende */
+.fo-felder-kopf > .tb-group {
+  padding-right: 0;
+  border-right: none;
+}
 /* Seitenüberschrift größer als die Köpfe der Abschnittskarten darunter: die Abschnitte gehören zur Seite */
 .fo-seite-felder > h2 {
   margin: var(--s4) 0 var(--s2);

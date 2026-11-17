@@ -35,18 +35,18 @@ export function FelderAnsicht({ offen, gesperrt }: { offen: OffenesFormular; ges
   const markierung = useMarkierung((s) => s.markierung);
   const markiert = useMemo(() => new Set(markierung?.felder), [markierung]);
   const huelle = useRef<HTMLDivElement>(null);
-  // fester Kopf der rollenden Spalte (core): bricht er in schmalen Spalten um, braucht die Spalte seine wirkliche Höhe als
-  // --rollend-kopf-h, damit fokussierte Felder nicht darunter rollen. Wann er umbricht, hängt von der Breite der
-  // Seitenkarten ab – deshalb gemessen statt per Media-Abfrage
+  // fester Kopf der rollenden Spalte (core): bricht er um, braucht die Spalte seine wirkliche Höhe als --rollend-kopf-h,
+  // damit fokussierte Felder nicht darunter rollen. Ob und wie oft er umbricht, hängt vom Inhalt ab (Filter mit Zahlen
+  // wie „Offene (2) · 1 ungeklärt“, Trefferzahl) – feste Stufen per Container- oder Media-Abfrage träfen das nicht,
+  // deshalb gemessen (Höhe des Kopfs + --s1 wie die Vorgabe aus core)
   const kopf = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const k = kopf.current;
     const spalte = k?.closest<HTMLElement>('.flaechen-spalte.rollend');
     if (!k || !spalte || typeof ResizeObserver === 'undefined') return;
     const setzen = () => {
-      // sichtbare Höhe des Kopfs plus --s1 Platz für den Fokusrahmen (wie die Vorgabe aus core)
-      const s1 = parseFloat(getComputedStyle(spalte).getPropertyValue('--s1')) || 4;
-      spalte.style.setProperty('--rollend-kopf-h', `${Math.ceil(k.getBoundingClientRect().height + s1)}px`);
+      // sichtbare Höhe des Kopfs plus --s1 Platz für den Fokusrahmen (wie die Vorgabe aus core; --s1 bleibt Variable)
+      spalte.style.setProperty('--rollend-kopf-h', `calc(${Math.ceil(k.getBoundingClientRect().height)}px + var(--s1))`);
     };
     const ro = new ResizeObserver(setzen);
     ro.observe(k);
@@ -138,7 +138,8 @@ export function FelderAnsicht({ offen, gesperrt }: { offen: OffenesFormular; ges
         <input
           type="search"
           className="fo-feldsuche"
-          placeholder="Felder durchsuchen (Beschriftung oder Inhalt) …"
+          placeholder="Felder durchsuchen …"
+          title="Sucht in der Beschriftung und im Inhalt der Felder"
           aria-label="Felder durchsuchen"
           value={suche}
           onChange={(e) => setSuche(e.target.value)}
