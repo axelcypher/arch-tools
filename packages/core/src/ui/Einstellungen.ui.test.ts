@@ -373,6 +373,29 @@ describe('Einstellungen', () => {
     expect(roh('allgemein')!.projekte).toEqual(['Z:\\Projekte']);
   });
 
+  it('herausgelöst bzw. im Tab von Arkly: der Rahmen bittet um den Dialog – er öffnet auf der Seite der App', async () => {
+    window.history.replaceState(null, '', '/?rahmen=fenster&app=ava');
+    try {
+      const e = await zeigen();
+      e.einstellungsSeiteAnmelden({ id: 'ava', app: 'ava', titel: 'FABRIO', text: 'Prüfung', symbol: 'liste', inhalt: () => createElement('p', null, 'Seite von FABRIO') });
+      e.einstellungenStartseite('ava');
+      // fremde Herkunft zählt nicht
+      await act(async () => void window.dispatchEvent(new MessageEvent('message', { data: { typ: 'arch-tools:einstellungen-oeffnen', an: 'ava' }, origin: 'https://example.org', source: window })));
+      expect(dialog()).toBeNull();
+      await act(async () => void window.dispatchEvent(new MessageEvent('message', { data: { typ: 'arch-tools:einstellungen-oeffnen', an: 'ava' }, origin: window.location.origin, source: window })));
+      await warten();
+      expect(dialog()!.querySelector('[role="tabpanel"]')!.textContent).toContain('Seite von FABRIO');
+      // Strg+, mit vorab abgefangenem Ereignis (Rahmen hat weitergegeben): der Dialog öffnet nicht noch einmal
+      act(() => e.useEinstellungen.getState().schliessen());
+      const ev = new KeyboardEvent('keydown', { key: ',', ctrlKey: true, bubbles: true, cancelable: true });
+      ev.preventDefault();
+      await act(async () => void window.dispatchEvent(ev));
+      expect(dialog()).toBeNull();
+    } finally {
+      window.history.replaceState(null, '', '/');
+    }
+  });
+
   it('Menüpunkt und Verweis: „Einstellungen …“ mit Strg+, bzw. „Pfade und Benennung …“ öffnen den Dialog', async () => {
     const e = await zeigen();
     expect(e.einstellungenPunkt()).toMatchObject({ text: 'Einstellungen …', symbol: 'zahnrad', tasten: 'Strg+,' });
