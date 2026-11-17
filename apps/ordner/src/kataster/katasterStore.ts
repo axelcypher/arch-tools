@@ -8,6 +8,7 @@
  */
 
 import { create } from 'zustand';
+import { pfadText, pfadWerteLaden } from '@core/einstellungen/pfade';
 import { artDerFassung } from '@core/fassung';
 import { openFileWithPath } from '@core/platform/files';
 import { konfigAendern, konfigBeobachten, konfigLesen, konfigNeuLesen } from '@core/platform/konfig';
@@ -42,8 +43,23 @@ export const KATASTER_BEREICH = 'kataster';
 const PROGRAMM = 'projektordner:qgis-programm';
 /** früher in PERMIO */
 const PROGRAMM_ALT = 'formulare:qgis-programm';
-/** Ordner der Anträge im Projektordner (wie in PERMIO vorgegeben) */
-export const ANTRAGSORDNER = 'TÖB';
+/** zentrale Einstellung „Antragsordner“ (Pfade und Benennung, gemeinsam mit PERMIO) */
+export const ANTRAGSORDNER_EINSTELLUNG = 'ablage.permio.antragsordner';
+/** wenn die Einstellung leer oder unbrauchbar ist: die Vorgabe */
+const ANTRAGSORDNER_VORGABE = 'TÖB';
+
+/**
+ * Ordner der Anträge im Projektordner – aus der zentralen Einstellung (Vorgabe „TÖB“), als relativer Pfad mit „/“:
+ * Rückstriche werden zu „/“, leere Teile, „.“ und „..“ sowie ein Laufwerk („C:“) entfallen – der Ordner bleibt im
+ * Projektordner. Die Abweichung je Projekt, die PERMIO kennt (lokal in PERMIO), gilt hier nicht.
+ */
+export function antragsordner(wert: string = pfadText(ANTRAGSORDNER_EINSTELLUNG)): string {
+  const teile = wert
+    .split(/[\\/]+/)
+    .map((t) => t.trim())
+    .filter((t, i) => t && t !== '.' && t !== '..' && !(i === 0 && /^[a-z]:$/i.test(t)));
+  return teile.join('/') || ANTRAGSORDNER_VORGABE;
+}
 
 function programmLesen(): string {
   try {
@@ -351,7 +367,8 @@ export const useKataster = create<KatasterState>()((set, get) => {
       }
       let oap: GeladeneProjektdatei | null = null;
       try {
-        oap = await projektdateiLaden(get().fs, basis);
+        // mit der Projektdatei auch die zentralen Pfade (Antragsordner für die Ablage im Dialog)
+        [oap] = await Promise.all([projektdateiLaden(get().fs, basis), pfadWerteLaden().catch(() => undefined)]);
       } catch (e) {
         log.warn(`${basis}: Projektdatei nicht lesbar: ${fehlertext(e)}`);
       }
@@ -422,7 +439,7 @@ export const useKataster = create<KatasterState>()((set, get) => {
       if (e.ziel === 'antrag' || !e.zielpfad.trim()) {
         // der Name aus der .oap wird wie ein Platzhalter gesäubert: kein „/“, kein „..“, keine unzulässigen Zeichen
         const ordner = antrag ? katasterZielpfad('{Antrag}', antrag, get().namensteile()) : null;
-        return ordner ? `${ANTRAGSORDNER}/${ordner}` : null;
+        return ordner ? `${antragsordner()}/${ordner}` : null;
       }
       return katasterZielpfad(e.zielpfad, antrag, get().namensteile());
     },
@@ -432,6 +449,8 @@ export const useKataster = create<KatasterState>()((set, get) => {
       if (!get().projekt || get().laeuft) return [];
       set({ laeuft: true, ausgang: null });
       try {
+        // den Antragsordner frisch lesen – auf einem anderen Rechner kann er inzwischen geändert sein
+        await pfadWerteLaden().catch(() => undefined);
         return await exportLauf(ids);
       } finally {
         set({ laeuft: false });

@@ -143,9 +143,18 @@ describe('TERRIO', () => {
     change(vg[vg.length - 1], 'auto');
     change(host.querySelector('input[type="date"]') as HTMLInputElement, '1967-03-14');
     const auf = selects().find((s) => [...s.options].some((o) => o.value === 'treppe'))!;
+    // Raum-Einstufung: Vorschlag als „… (auto)“, voller Stand im Tooltip
+    const auto = auf.options[0].textContent!;
+    expect(auto).toMatch(/^(Aufenthaltsraum|kein Aufenthaltsraum|Treppenraum) \(auto\)$/);
+    expect(auf.title).toBe(`${auto.replace(' (auto)', '')} – automatisch eingestuft, von Hand festlegen`);
     change(auf, 'treppe');
     const r = useGrz.getState().project.storeys[2].shapes.find((s) => s.kind === 'room');
     expect(r?.kind === 'room' && r.aufenthalt).toBe('treppe');
+    // Gegenprobe von Hand: Tooltip nennt die Festlegung, die erste Option bleibt der Vorschlag nach Name/Nutzung
+    const neu = selects().find((s) => [...s.options].some((o) => o.value === 'treppe'))!;
+    expect(neu.title).toBe('Treppenraum – von Hand festgelegt');
+    expect(neu.options[0].textContent).toMatch(/ \(auto\)$/);
+    expect(neu.classList.contains('grz-von-hand')).toBe(true);
   });
 
   it('wählt eine Fläche aus der Liste aus und löscht sie', () => {
@@ -553,6 +562,21 @@ describe('Nachweis-Spalte, Regeln, Rückgängig (G-28, G-29, G-32)', () => {
     expect(css).not.toMatch(/\.grz-view\s*\{/);
     expect(css).not.toMatch(/\.grz-col\b/);
     expect(css).not.toMatch(/@media \(max-width: 1280px\)/);
+    // Kartenkopf ganz aus core: das „?“ kommt über die Eigenschaft hilfe, keine eigene Regel für das h2
+    expect(css).not.toMatch(/\.karte-kopf h2\s*\{/);
+    // schmale Fenster: die Untergrenze der Seitenkarten kommt aus BreitenLeiste min (core), keine eigene Regel;
+    // die Kacheln stehen bei wenig Platz untereinander, die Zahlenspalten haben feste Breiten statt Prozent
+    expect(css).not.toMatch(/--leiste-min/);
+    expect(css).toMatch(/\.kpis\s*\{[^}]*grid-template-columns: repeat\(auto-fit, minmax\(12em, 1fr\)\)/);
+    const spalten = css.slice(css.indexOf('.grz-vg-tabelle th:nth-child(1)'), css.indexOf('.grz-tabelle.grz-vg-tabelle th.num'));
+    expect(spalten.match(/width: calc\([\d.]+ \* var\(--fs-m\)\)/g)).toHaveLength(4);
+    expect(spalten).not.toMatch(/width: \d+(%|px)/);
+    // Spanne des Geländes bricht in der festen Spalte um, statt die Nachbarspalte zu überdecken
+    expect(css).toMatch(/\.grz-vg-tabelle td \.small-text\s*\{\s*white-space: normal;/);
+    // Auswahlen in Flächen- und Raumtabelle spaltenbreit, damit die Tabellen nicht über die Karte hinausragen
+    // … in einer Skalengröße (--fs-s) für alle dichten Tabellen
+    expect(css).toMatch(/\.grz-flaechen-tabelle select,\s*\.grz-raum-tabelle select,\s*\.grz-vg-tabelle select\s*\{\s*width: 100%;\s*font-size: var\(--fs-s\);/);
+    expect(css).not.toMatch(/select[^{]*\{[^}]*font-size: 11px/);
     // Skizze ohne eigene Palette (helle Planfarben aus .canvas)
     expect(css).toContain('.grz-skizze {');
     const skizze = css.slice(css.indexOf('.grz-skizze {'), css.indexOf('}', css.indexOf('.grz-skizze {')));
@@ -568,12 +592,15 @@ describe('Nachweis-Spalte, Regeln, Rückgängig (G-28, G-29, G-32)', () => {
     expect(zeilen[0].querySelector('td')!.getAttribute('colspan')).toBe('5');
     // eine Auswahl: automatisch (mit Ergebnis) oder von Hand; von Hand sichtbar gekennzeichnet
     const wahl = host.querySelector('select.grz-wahl') as HTMLSelectElement;
-    expect([...wahl.options].map((o) => o.textContent)).toEqual(['automatisch: Vollgeschoss', 'Vollgeschoss (von Hand)', 'kein Vollgeschoss (von Hand)']);
+    expect([...wahl.options].map((o) => o.textContent)).toEqual(['ja (auto)', 'ja (von Hand)', 'nein (von Hand)']);
+    // der volle Stand steht im Tooltip (die Auswahl wird in schmalen Karten gekürzt)
+    expect(wahl.title).toBe('EG: Vollgeschoss – automatisch eingestuft, von Hand festlegen');
     expect(wahl.classList.contains('grz-von-hand')).toBe(false);
     change(wahl, 'nein');
     const neu = host.querySelector('select.grz-wahl') as HTMLSelectElement;
     expect(neu.classList.contains('grz-von-hand')).toBe(true);
-    expect(neu.options[0].textContent).toBe('automatisch: Vollgeschoss');
+    expect(neu.options[0].textContent).toBe('ja (auto)');
+    expect(neu.title).toBe('EG: kein Vollgeschoss – von Hand festgelegt');
     expect(host.querySelector('.kpis')!.textContent).toContain('davon eines von Hand festgelegt');
   });
 
@@ -1290,11 +1317,21 @@ describe('Kartenlayout (Richtung C)', () => {
     const flaeche = host.querySelector('.flaeche.grz-view')!;
     expect(flaeche).not.toBeNull();
     const karten = [...flaeche.querySelectorAll('section.karte')];
-    expect(karten.map((k) => k.querySelector('.karte-kopf h2')!.firstChild!.textContent?.trim())).toEqual(['Projekt und Grundstück', 'Lageplan', 'Nachweis']);
+    // das h2 ist der reine Titel (Kartenname für Vorleseprogramme), das „?“ steht daneben im Kartentitel
+    expect(karten.map((k) => k.querySelector('.karte-kopf h2')!.textContent)).toEqual(['Projekt und Grundstück', 'Lageplan', 'Nachweis']);
+    for (const k of karten.slice(1)) {
+      expect(k.querySelector('.karte-titel > h2 + .hilfe-knopf')).not.toBeNull();
+      expect(k.querySelector('.karte-kopf h2 button')).toBeNull();
+    }
+    // Gegenprobe: die Eingabekarte hat keine Hilfe im Kopf
+    expect(karten[0].querySelector('.karte-titel .hilfe-knopf')).toBeNull();
     // jede Karte ist ein benannter Bereich (aria-labelledby auf das h2)
     for (const k of karten) expect(document.getElementById(k.getAttribute('aria-labelledby')!)?.tagName).toBe('H2');
     // Eingaben und Nachweis in BreitenLeisten (links bzw. rechts), der Lageplan in der Mitte
-    expect(flaeche.querySelectorAll(':scope > .leiste')).toHaveLength(2);
+    const leisten = [...flaeche.querySelectorAll<HTMLElement>(':scope > .leiste')];
+    expect(leisten).toHaveLength(2);
+    // in schmalen Fenstern geben die Seitenkarten nur bis zu ihrem eigenen min nach: Eingaben 240 px, Nachweis 320 px
+    expect(leisten.map((l) => l.style.getPropertyValue('--leiste-eigen-min'))).toEqual(['240px', '320px']);
     expect(flaeche.querySelector(':scope > section.karte.grz-plan')).not.toBeNull();
     // der Plan trägt .canvas (helle Planfarben, im dunklen Schema als Ganzes invertiert)
     expect(host.querySelector('svg.grz-skizze.canvas')).not.toBeNull();
@@ -1303,9 +1340,21 @@ describe('Kartenlayout (Richtung C)', () => {
     expect(knopf3d.getAttribute('aria-pressed')).toBe('false');
     act(() => knopf3d.click());
     expect(knopf3d.getAttribute('aria-pressed')).toBe('true');
-    expect(host.querySelector('.grz-plan .karte-kopf h2')!.firstChild!.textContent).toBe('3D-Ansicht');
+    expect(host.querySelector('.grz-plan .karte-kopf h2')!.textContent).toBe('3D-Ansicht');
     // Tabellen auf der gemeinsamen Zahlentabelle
     expect(host.querySelectorAll('table.summary-table').length).toBeGreaterThan(0);
+    // Flächentabelle: gekürzte Auswahlen nennen den vollen Eintrag im Tooltip
+    // Nutzung und Versiegelung in einer Zelle untereinander, gekürzt mit vollem Eintrag im Tooltip
+    const zelle = host.querySelector('.grz-flaechen-tabelle tbody tr td:nth-child(3)')!;
+    const [nutzung, versiegelung] = [...zelle.querySelectorAll('select')];
+    expect(versiegelung).toBeDefined();
+    expect(nutzung.title).toBe(nutzung.selectedOptions[0].textContent);
+    expect(versiegelung.title).toBe(versiegelung.selectedOptions[0].textContent);
+    // eigene Namen für Vorleseprogramme (gemeinsamer Spaltenkopf)
+    expect([nutzung.getAttribute('aria-label'), versiegelung.getAttribute('aria-label')]).toEqual(['Nutzung Zufahrt', 'Versiegelung Zufahrt']);
+    // Eingabekarte: BauNVO-Fassung und Vollgeschossbegriff nennen den vollen Stand im Tooltip
+    const fest = [...host.querySelectorAll<HTMLSelectElement>('.grz-fest select')];
+    expect(fest.map((x) => x.title)).toEqual(expect.arrayContaining(['automatisch (BauNVO 1962)', 'automatisch (BauO NW 1962/1970)']));
     expect(host.querySelectorAll('table:not(.summary-table):not(.report-table)')).toHaveLength(0);
   });
 });
