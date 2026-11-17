@@ -257,7 +257,7 @@ body,
 }
 /* was den Fokus bekommt, rollt nicht unter den festen Kopf: --rollend-kopf-h ist die sichtbare Höhe des Kopfs plus Platz
    für den Fokusrahmen (Vorgabe: eine Zeile Bedienelemente, --ctl-h + --s2, plus 2 × --s1); ein höherer oder
-   umbrechender Kopf setzt den Wert selbst */
+   umbrechender Kopf setzt den Wert selbst (useRollendKopf misst ihn) */
 .flaechen-spalte.rollend:has(.rollend-kopf) {
   scroll-padding-top: var(--rollend-kopf-h, calc(var(--ctl-h) + var(--s2) + 2 * var(--s1)));
 }
