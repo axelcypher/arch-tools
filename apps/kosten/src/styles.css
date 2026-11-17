@@ -1,18 +1,22 @@
 /* NUMIO (Grund-Styles: @core/ui/base.css) */
 
+/* Hauptbereich: Meldungen oben, darunter die Fläche mit den Karten (docs/design.md „Fläche und Karten“) */
 .ko-main {
   flex: 1;
   min-height: 0;
+  display: flex;
+  flex-direction: column;
   overflow: auto;
   background: var(--bg);
 }
-/* Leisten über der Ansicht (Zwischenstand, IFC-Bericht): Farben aus .meldung, hier nur Lage und Innenabstand */
+/* Leisten über der Fläche (Zwischenstand, IFC-Bericht): Farben aus .meldung, hier nur Lage und Innenabstand */
 .ko-bericht {
-  margin: var(--s3) var(--s3) 0;
+  flex: none;
+  margin: var(--spalt) var(--spalt) 0;
   padding: var(--s2) var(--s3);
 }
 .ko-bericht ul {
-  margin: 4px 0 8px;
+  margin: var(--s1) 0 var(--s2);
   padding-left: 18px;
 }
 /* IFC-Bericht: nur Warnzeilen hervorgehoben */
@@ -21,97 +25,16 @@
   font-weight: 600;
 }
 .ko-bericht p {
-  margin: 0 0 8px;
+  margin: 0 0 var(--s2);
 }
-
-/*
- * Kostenansicht: links Grundlagen und Mengen, rechts Positionen und Übersicht (untereinander, ab 1800 px nebeneinander);
- * unter 1200 px Grundlagen und Mengen nebeneinander über den Positionen, damit die Positionstabelle die volle Breite hat
- */
-.ko-view {
-  display: grid;
-  grid-template-columns: minmax(260px, 300px) minmax(0, 1fr);
-  gap: 12px;
-  padding: 12px;
-  align-items: start;
-}
-.ko-links,
-.ko-rechts {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  min-width: 0;
-}
-@media (min-width: 1800px) {
-  .ko-rechts {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(460px, 500px);
-    align-items: start;
-  }
-}
-@media (max-width: 1200px) {
-  .ko-view {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .ko-links {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    align-items: start;
-  }
-}
-@media (max-width: 760px) {
-  .ko-links {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-.ko-col .ko-hint {
-  margin: -2px 0 8px;
-}
-.ko-col select {
-  max-width: 100%;
-}
-/* nur für Screenreader (Spaltenköpfe über Häkchen und Löschknöpfen) */
-.ko-sr {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-}
-.ko-col {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 12px 14px;
-  min-width: 0;
-}
-.ko-col h2 {
-  margin-top: 0;
-  /* Spaltenüberschrift nach docs/design.md: --fs-l, halbfett */
-  font-size: var(--fs-l);
-  font-weight: 600;
-}
-.ko-col h2:not(:first-child) {
-  margin-top: 18px;
-}
-.ko-col h3 {
-  margin: 14px 0 6px;
-  font-size: 12px;
-}
-.ko-col input[type='date'] {
-  font: inherit;
-  padding: 4px 6px;
+.ko-hint {
+  margin: -2px 0 var(--s2);
 }
 .toggle.block {
   display: flex;
-  margin: 2px 0 8px;
-  font-size: 12px;
+  margin: 2px 0 var(--s2);
 }
 
-.tbl-wrap {
-  overflow-x: auto;
-}
 .ko-table {
   width: 100%;
   border-collapse: collapse;
@@ -280,35 +203,10 @@ button.link:hover {
 
 /* ---------- Mengen prüfen ---------- */
 
-.mv-view {
-  display: grid;
-  grid-template-columns: minmax(250px, 300px) minmax(420px, 1fr) minmax(320px, 420px);
-  gap: 12px;
-  padding: 12px;
-  align-items: start;
-}
-/* schmaler: Mengenliste nur mit Kürzel und Wert (Name als Tooltip), Bild und Rechenweg bleiben nebeneinander */
+/* schmaler: Mengenliste nur mit Kürzel und Wert (Name als Tooltip) */
 @media (max-width: 1300px) {
-  .mv-view {
-    grid-template-columns: 170px minmax(300px, 1fr) minmax(280px, 360px);
-  }
   .mv-liste .mv-menge-name {
     display: none;
-  }
-}
-/* noch schmaler: Rechenweg unter dem Bild, ohne eigenen Rollbereich */
-@media (max-width: 999px) {
-  .mv-view {
-    grid-template-columns: 170px minmax(0, 1fr);
-  }
-  .mv-view > .mv-liste {
-    grid-row: 1 / span 2;
-  }
-  .mv-rechenweg {
-    grid-column: 2;
-  }
-  .mv-rechenweg .tbl-wrap {
-    max-height: none;
   }
 }
 .mv-liste tbody tr {
@@ -384,24 +282,10 @@ button.link:hover {
 .mv-handwert button {
   flex: none;
 }
-.mv-kopf {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-bottom: 6px;
-}
-.mv-kopf h2 {
-  margin: 0;
-}
-.mv-rechenweg .tbl-wrap {
-  max-height: calc(100vh - 220px);
-  overflow-y: auto;
-}
+/* Spaltenköpfe bleiben beim Rollen der Karte stehen (am oberen Rand des Rumpfs, über dessen Innenabstand) */
 .mv-rechenweg thead th {
   position: sticky;
-  top: 0;
+  top: calc(-1 * var(--s3));
   background: var(--panel);
 }
 .mv-rechenweg tr.mv-aktiv td {

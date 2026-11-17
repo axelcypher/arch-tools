@@ -19,6 +19,7 @@ import { datumAnzeige as datum } from '../datum';
 import { HilfeKnopf } from '@core/ui/Nachschlagewerk';
 import { bestaetigen } from '@core/ui/Rueckfrage';
 import { StammdatenKnopf } from '@core/ui/Stammdaten';
+import { Flaeche, FlaechenSpalte, Karte } from '@core/ui/Karte';
 
 const zahl = (v: number, d = 2) => v.toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
 
@@ -93,13 +94,9 @@ export function KostenView({ onKatalog, onMenge }: { onKatalog: () => void; onMe
   };
 
   return (
-    <div className="ko-view">
-      <div className="ko-links">
-        <section className="ko-col">
-          <h2>
-            Grundlagen
-            <HilfeKnopf thema={['kosten', 'kennwerte']} titel="Kostenermittlung" />
-          </h2>
+    <Flaeche className="ko-view">
+      <FlaechenSpalte className="ko-links" breite={300}>
+        <Karte titel="Grundlagen" aktionen={<HilfeKnopf thema={['kosten', 'kennwerte']} titel="Kostenermittlung" />}>
           <Field label="Projekt">
             <TextField value={project.name} onChange={(v) => st.update((p) => (v.trim() && v.trim() !== p.name ? { ...p, name: v.trim() } : p))} />
           </Field>
@@ -154,13 +151,9 @@ export function KostenView({ onKatalog, onMenge }: { onKatalog: () => void; onMe
               </>
             )}
           </p>
-        </section>
+        </Karte>
 
-        <section className="ko-col">
-          <h2>
-            Mengen
-            <HilfeKnopf thema={['bri', 'bgf', 'sohle', 'wofl']} titel="Mengen" />
-          </h2>
+        <Karte className="ko-mengen-karte" titel="Mengen" aktionen={<HilfeKnopf thema={['bri', 'bgf', 'sohle', 'wofl']} titel="Mengen" />}>
           <table className="ko-table ko-mengen">
             <tbody>
               {MENGEN_BEZUEGE.map((b) => (
@@ -172,15 +165,11 @@ export function KostenView({ onKatalog, onMenge }: { onKatalog: () => void; onMe
             Abgeleitet aus dem Projekt; ein eingetragener Wert gilt stattdessen (Zurücksetzen mit dem Pfeil daneben).
             {onMenge && ' Klick auf das Kürzel: Herkunft im Grundriss und 3D-Modell.'}
           </p>
-        </section>
-      </div>
+        </Karte>
+      </FlaechenSpalte>
 
-      <div className="ko-rechts">
-        <section className="ko-col ko-positionen">
-          <h2>
-            Positionen
-            <HilfeKnopf thema={['din276', 'kennwerte']} titel="Kostengruppen" />
-          </h2>
+      <FlaechenSpalte className="ko-rechts" wachsend>
+        <Karte className="ko-positionen" titel="Positionen" aktionen={<HilfeKnopf thema={['din276', 'kennwerte']} titel="Kostengruppen" />}>
           <div className="button-row">
             <button className="small" title="Position hinzufügen – leere Zeile, Kostengruppe eintragen" onClick={() => neu(neuePosition(''))}>
               <Symbol name="plus" /> Position
@@ -203,7 +192,7 @@ export function KostenView({ onKatalog, onMenge }: { onKatalog: () => void; onMe
                 <thead>
                   <tr>
                     <th>
-                      <span className="ko-sr">Rechnen</span>
+                      <span className="nur-vorlesen">Rechnen</span>
                     </th>
                     <th>KG</th>
                     <th>Bezeichnung</th>
@@ -214,7 +203,7 @@ export function KostenView({ onKatalog, onMenge }: { onKatalog: () => void; onMe
                     <th className="num">bis</th>
                     <th className="num">Kosten (Mittel)</th>
                     <th>
-                      <span className="ko-sr">Löschen</span>
+                      <span className="nur-vorlesen">Löschen</span>
                     </th>
                   </tr>
                 </thead>
@@ -236,13 +225,13 @@ export function KostenView({ onKatalog, onMenge }: { onKatalog: () => void; onMe
             Kennwerte je Einheit, netto{k.kennwerteBrutto ? ' (eingetragen brutto, gerechnet netto)' : ''}; bei % der Prozentsatz, bei psch der Betrag. Fehlt „von“ oder „bis“, gilt der
             Mittelwert. Der Faktor wirkt nicht auf Pauschalen und Prozentsätze.
           </p>
-        </section>
+        </Karte>
 
-        <section className="ko-col ko-uebersicht">
+        <Karte className="ko-uebersicht" titel={stufeLabel(k.stufe)}>
           <Uebersicht e={e} k={k} />
-        </section>
-      </div>
-    </div>
+        </Karte>
+      </FlaechenSpalte>
+    </Flaeche>
   );
 }
 
@@ -449,7 +438,6 @@ function Uebersicht({ e, k }: { e: Ergebnis; k: Kosten }) {
 
   return (
     <>
-      <h2>{stufeLabel(k.stufe)}</h2>
       <table className="ko-table ko-summen">
         <thead>
           <tr>
@@ -565,7 +553,7 @@ function Uebersicht({ e, k }: { e: Ergebnis; k: Kosten }) {
               <th>Stand</th>
               <th className="num">Gesamt brutto</th>
               <th>
-                <span className="ko-sr">Löschen</span>
+                <span className="nur-vorlesen">Löschen</span>
               </th>
             </tr>
           </thead>

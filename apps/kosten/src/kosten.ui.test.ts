@@ -172,7 +172,7 @@ describe('NUMIO', () => {
   it('Stufe und Faktoren wirken auf die Übersicht; Stand festhalten und Vorher/Nachher', () => {
     useKosten.getState().load(projektMitKosten());
     const host = render(App);
-    waehle(host.querySelector('.ko-col select') as HTMLSelectElement, 'berechnung');
+    waehle(host.querySelector('.ko-links select') as HTMLSelectElement, 'berechnung');
     expect(kosten().stufe).toBe('berechnung');
     expect(host.textContent).toContain('Kostenberechnung');
 
@@ -294,11 +294,11 @@ describe('NUMIO', () => {
     const awf = [...host.querySelectorAll('.ko-table button.link')].find((b) => b.textContent === 'AWF') as HTMLButtonElement;
     await act(async () => awf.click());
     expect(host.querySelector('.mv-bild h2')?.textContent).toBe('AWF – Außenwandfläche: 307,63 m²');
-    expect(host.querySelector('.mv-kopf .segment button[aria-pressed="true"]')?.textContent).toBe('3D-Modell');
+    expect(host.querySelector('.mv-bild .karte-aktionen .segment button[aria-pressed="true"]')?.textContent).toBe('3D-Modell');
     expect(host.querySelectorAll('.mp-geschoss')).toHaveLength(0);
     expect(host.querySelector('.mv-rechenweg tbody tr')?.textContent).toContain('ohne 1 Abschnitt an anderen Umrissen');
     // im Grundriss: Wände als Kanten
-    act(() => knopf(host.querySelector('.mv-kopf .segment')!, 'Grundrisse').click());
+    act(() => knopf(host.querySelector('.mv-bild .karte-aktionen .segment')!, 'Grundrisse').click());
     expect(host.querySelectorAll('.mp-teil.kanten')).toHaveLength(3);
 
     // festgelegte Menge: Hinweis, dass das Bild die abgeleitete Menge zeigt
