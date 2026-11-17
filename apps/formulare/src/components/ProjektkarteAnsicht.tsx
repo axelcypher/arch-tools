@@ -15,6 +15,7 @@ import { Symbol } from '@core/ui/Symbol';
 import type { FeldDef } from '@core/ui/ansicht';
 import { felderDerAnsicht, useAnsicht } from '@core/ui/ansicht';
 import { AnsichtAnzeige, AnsichtEditor } from '@core/ui/AnsichtEditor';
+import { Karte } from '@core/ui/Karte';
 import { BreitenLeiste } from '@core/ui/Leiste';
 import type { KartenWert, OffeneKarte } from '../store';
 import { KARTEN_ANSICHT, kartenVerknuepfbar, karteMitAenderungen, karteText, karteWert, useFormulare } from '../store';
@@ -51,14 +52,19 @@ export function ProjektkarteAnsicht() {
     if (!karte) void karteLaden().finally(() => setGeladen(true));
   }, [karte, karteLaden]);
 
-  if (!ds) return <div className="fo-leer">Die Projektdaten gibt es nur in der Desktop-App.</div>;
+  if (!ds)
+    return (
+      <Karte titel="Projektdaten">
+        <p>Die Projektdaten gibt es nur in der Desktop-App.</p>
+      </Karte>
+    );
   if (!projekt) return null;
   if (!karte)
     return (
-      <div className="fo-leer">
+      <Karte titel="Projektdaten">
         {geladen ? (
           <>
-            <h2>Keine Projektdaten</h2>
+            <h3>Keine Projektdaten</h3>
             <p title="Die Projektdaten stehen in der Projektkarte des Formularprojekts">
               Im Projekt <strong>{projekt.ordner}</strong> gibt es keine lesbaren Projektdaten.
             </p>
@@ -67,12 +73,12 @@ export function ProjektkarteAnsicht() {
         ) : (
           <p className="muted">Projektdaten werden gelesen …</p>
         )}
-      </div>
+      </Karte>
     );
-  return <Karte key={`${projekt.root}|${projekt.ordner}`} karte={karte} />;
+  return <Projektkarte key={`${projekt.root}|${projekt.ordner}`} karte={karte} />;
 }
 
-function Karte({ karte }: { karte: OffeneKarte }) {
+function Projektkarte({ karte }: { karte: OffeneKarte }) {
   const projektKey = `${karte.projekt.root}|${karte.projekt.ordner}`;
   const reihen = useMemo(() => gruppenReihen(karte.karte), [karte.karte]);
   const alle = reihen.flatMap((r) => r.gruppen);
@@ -99,11 +105,17 @@ function Karte({ karte }: { karte: OffeneKarte }) {
     return () => window.removeEventListener('formulare:pk-sprung', beiSprung);
   });
 
-  if (!alle.length) return <div className="fo-leer">Die Projektdaten enthalten keine Einträge.</div>;
+  if (!alle.length)
+    return (
+      <Karte titel="Projektdaten">
+        <p>Die Projektdaten enthalten keine Einträge.</p>
+      </Karte>
+    );
 
+  // Seitenkarte mit den Gruppen, daneben die gewählte Gruppe als Karte – beide stehen direkt auf der Fläche der App
   return (
-    <div className="pk">
-      <BreitenLeiste schluessel="formulare:breite:projektkarte" vorgabe={270}>
+    <>
+      <BreitenLeiste schluessel="formulare:breite:projektkarte" vorgabe={270} titel="Breite der Gruppen">
         <Navigation karte={karte} reihen={reihen} aktiv={gruppe?.id ?? gruppeId} suche={suche} setSuche={setSuche} onWahl={waehle} />
       </BreitenLeiste>
       {gruppe ? (
@@ -113,7 +125,7 @@ function Karte({ karte }: { karte: OffeneKarte }) {
       ) : (
         <ProjektdatenAbgleich karte={karte} />
       )}
-    </div>
+    </>
   );
 }
 
@@ -176,18 +188,18 @@ function EigeneAnsicht({ karte }: { karte: OffeneKarte }) {
     );
   };
   return (
-    <section className="pk-editor" aria-label="Eigene Ansicht">
-      <header className="pk-kopf">
-        <div className="pk-kopf-text">
-          <h2>Eigene Ansicht</h2>
-          <span className="muted">Die Einträge, die ihr nutzt – aus allen Gruppen auf einer Seite. Gilt für alle Projekte.</span>
-        </div>
+    <Karte
+      className="pk-editor"
+      titel="Eigene Ansicht"
+      aktionen={
         <div className="pk-aktionen">
           <button onClick={() => setEditor(true)}>
             <Symbol name="stift" /> Ansicht bearbeiten …
           </button>
         </div>
-      </header>
+      }
+    >
+      <p className="pk-unterzeile muted">Die Einträge, die ihr nutzt – aus allen Gruppen auf einer Seite. Gilt für alle Projekte.</p>
       <div className="pk-koerper">
         <div className="pk-abschnitte pk-eigen">
           {ansicht && felderDerAnsicht(ansicht).length ? (
@@ -213,7 +225,7 @@ function EigeneAnsicht({ karte }: { karte: OffeneKarte }) {
           verknuepfbar={verknuepfbar}
         />
       )}
-    </section>
+    </Karte>
   );
 }
 
@@ -289,72 +301,71 @@ function Navigation({
   );
 
   return (
-    <nav className="pk-nav" aria-label="Gruppen der Projektdaten">
-      <div className="pk-nav-kopf" title="Projektdaten aus der Projektkarte des Formularprojekts">
-        <Symbol name="karte" /> Projektdaten <strong>{karte.projekt.ordner}</strong>
-      </div>
-      <input type="search" className="pk-suche" placeholder="Projektdaten durchsuchen …" aria-label="Projektdaten durchsuchen" value={suche} onChange={(e) => setSuche(e.target.value)} />
-      {vorgabeGruppen > 0 && !q && (
-        <button
-          className="pk-vorgaben"
-          title="Leere Gruppen mit den Vorgaben je Rolle (Einstellungen › PERMIO) füllen"
-          onClick={() => {
-            karteMehrere(vorschlag, 'Vorgaben eingetragen');
-            setMeldung({ art: 'info', text: `Vorgaben in ${vorgabeGruppen} ${vorgabeGruppen === 1 ? 'Gruppe' : 'Gruppen'} eingetragen – Strg+Z nimmt es zurück.` });
-          }}
-        >
-          <Symbol name="buero" /> Vorgaben eintragen ({vorgabeGruppen})
-        </button>
-      )}
-      {q ? (
-        <div className="pk-treffer">
-          {treffer.map(({ e, g, text }) => (
-            <button key={pkSchluessel(e.gruppe, e.id)} className="pk-treffer-zeile" onClick={() => onWahl(g.id, pkSchluessel(e.gruppe, e.id))}>
-              <span className="pk-treffer-ort">
-                {g.text} › {feldTitel(e.titel)}
-              </span>
-              <span className="pk-treffer-wert">{text || <span className="muted">leer</span>}</span>
-            </button>
-          ))}
-          {!treffer.length && <p className="muted small-text">Nichts gefunden.</p>}
-        </div>
-      ) : (
-        <>
-          <EigeneNavEintrag aktiv={aktiv === EIGENE} onClick={() => onWahl(EIGENE)} />
-          {favoriten.length > 0 && (
-            <div className="pk-nav-reihe pk-nav-favoriten">
-              <div className="pk-nav-titel">Favoriten</div>
-              {favoriten.map((g) => eintrag(g))}
-            </div>
-          )}
-          {sichtbareReihen.map((r) => (
-            <div key={r.titel} className="pk-nav-reihe">
-              <div className="pk-nav-titel">{r.titel}</div>
-              {r.gruppen.map((g) => eintrag(g))}
-            </div>
-          ))}
-          {versteckt.length > 0 && (
-            <div className="pk-nav-reihe pk-nav-ausgeblendet">
-              <button className="pk-nav-mehr" aria-expanded={zeigeVersteckte} onClick={() => setZeigeVersteckte(!zeigeVersteckte)}>
-                {versteckt.length} ausgeblendet – {zeigeVersteckte ? 'verbergen' : 'zeigen'}
-              </button>
-              {zeigeVersteckte && versteckt.map((g) => eintrag(g))}
-            </div>
-          )}
-        </>
-      )}
-      {!q && oap !== null && (
-        <div className="pk-nav-reihe">
-          <div className="pk-nav-titel">Projektordner</div>
-          <button className={`pk-nav-eintrag${aktiv === PROJEKTDATEN ? ' aktiv' : ''}${oap === 'fehlt' ? ' leer' : ''}`} onClick={() => onWahl(PROJEKTDATEN)}>
-            <span className="pk-nav-name">
-              <Symbol name="tabelle" /> Projektdatei (.oap)
-            </span>
-            <span className="pk-nav-kurz">{oap === 'fehlt' ? 'nicht gefunden' : oap.pfad.split('/').pop()}</span>
+    <Karte className="pk-nav" titel={`Projektdaten ${karte.projekt.ordner}`}>
+      <nav className="pk-nav-liste" aria-label="Gruppen der Projektdaten">
+        <input type="search" className="pk-suche" placeholder="Projektdaten durchsuchen …" aria-label="Projektdaten durchsuchen" value={suche} onChange={(e) => setSuche(e.target.value)} />
+        {vorgabeGruppen > 0 && !q && (
+          <button
+            className="pk-vorgaben"
+            title="Leere Gruppen mit den Vorgaben je Rolle (Einstellungen › PERMIO) füllen"
+            onClick={() => {
+              karteMehrere(vorschlag, 'Vorgaben eingetragen');
+              setMeldung({ art: 'info', text: `Vorgaben in ${vorgabeGruppen} ${vorgabeGruppen === 1 ? 'Gruppe' : 'Gruppen'} eingetragen – Strg+Z nimmt es zurück.` });
+            }}
+          >
+            <Symbol name="buero" /> Vorgaben eintragen ({vorgabeGruppen})
           </button>
-        </div>
-      )}
-    </nav>
+        )}
+        {q ? (
+          <div className="pk-treffer">
+            {treffer.map(({ e, g, text }) => (
+              <button key={pkSchluessel(e.gruppe, e.id)} className="pk-treffer-zeile" onClick={() => onWahl(g.id, pkSchluessel(e.gruppe, e.id))}>
+                <span className="pk-treffer-ort">
+                  {g.text} › {feldTitel(e.titel)}
+                </span>
+                <span className="pk-treffer-wert">{text || <span className="muted">leer</span>}</span>
+              </button>
+            ))}
+            {!treffer.length && <p className="muted small-text">Nichts gefunden.</p>}
+          </div>
+        ) : (
+          <>
+            <EigeneNavEintrag aktiv={aktiv === EIGENE} onClick={() => onWahl(EIGENE)} />
+            {favoriten.length > 0 && (
+              <div className="pk-nav-reihe pk-nav-favoriten">
+                <div className="pk-nav-titel">Favoriten</div>
+                {favoriten.map((g) => eintrag(g))}
+              </div>
+            )}
+            {sichtbareReihen.map((r) => (
+              <div key={r.titel} className="pk-nav-reihe">
+                <div className="pk-nav-titel">{r.titel}</div>
+                {r.gruppen.map((g) => eintrag(g))}
+              </div>
+            ))}
+            {versteckt.length > 0 && (
+              <div className="pk-nav-reihe pk-nav-ausgeblendet">
+                <button className="pk-nav-mehr" aria-expanded={zeigeVersteckte} onClick={() => setZeigeVersteckte(!zeigeVersteckte)}>
+                  {versteckt.length} ausgeblendet – {zeigeVersteckte ? 'verbergen' : 'zeigen'}
+                </button>
+                {zeigeVersteckte && versteckt.map((g) => eintrag(g))}
+              </div>
+            )}
+          </>
+        )}
+        {!q && oap !== null && (
+          <div className="pk-nav-reihe">
+            <div className="pk-nav-titel">Projektordner</div>
+            <button className={`pk-nav-eintrag${aktiv === PROJEKTDATEN ? ' aktiv' : ''}${oap === 'fehlt' ? ' leer' : ''}`} onClick={() => onWahl(PROJEKTDATEN)}>
+              <span className="pk-nav-name">
+                <Symbol name="tabelle" /> Projektdatei (.oap)
+              </span>
+              <span className="pk-nav-kurz">{oap === 'fehlt' ? 'nicht gefunden' : oap.pfad.split('/').pop()}</span>
+            </button>
+          </div>
+        )}
+      </nav>
+    </Karte>
   );
 }
 
@@ -546,12 +557,10 @@ function GruppenEditor({
   };
 
   return (
-    <section className="pk-editor" aria-label={gruppe.text}>
-      <header className="pk-kopf">
-        <div className="pk-kopf-text">
-          <h2>{gruppe.text}</h2>
-          <span className="muted">{zusammenfassung(gruppe, text) || (gefuellt ? '' : 'Noch keine Angaben')}</span>
-        </div>
+    <Karte
+      className="pk-editor"
+      titel={gruppe.text}
+      aktionen={
         <div className="pk-aktionen">
           {adresse && (
             <select className="pk-uebernehmen" aria-label="Angaben übernehmen" value="" onChange={(e) => (e.target.value === 'mehr' ? adressbuchOeffnen() : e.target.value && uebernehmen(e.target.value))}>
@@ -610,7 +619,9 @@ function GruppenEditor({
             </button>
           )}
         </div>
-      </header>
+      }
+    >
+      <p className="pk-unterzeile muted">{zusammenfassung(gruppe, text) || (gefuellt ? '' : 'Noch keine Angaben')}</p>
 
       <div className={`pk-koerper${adresse ? ' mit-vorschau' : ''}`}>
         <div className="pk-abschnitte" ref={inhalt} onKeyDown={tasten}>
@@ -629,7 +640,7 @@ function GruppenEditor({
         </div>
         {adresse && <Vorschau zeilen={anschrift(text)} />}
       </div>
-    </section>
+    </Karte>
   );
 }
 
@@ -974,12 +985,10 @@ function ProjektdatenAbgleich({ karte }: { karte: OffeneKarte }) {
       : [];
 
   return (
-    <section className="pk-editor">
-      <header className="pk-kopf">
-        <div className="pk-kopf-text">
-          <h2>Projektdatei (.oap)</h2>
-          <span className="muted">{oap && oap !== 'fehlt' ? oap.pfad : oap === 'fehlt' ? 'im Projektordner nicht gefunden' : 'wird gesucht …'}</span>
-        </div>
+    <Karte
+      className="pk-editor"
+      titel="Projektdatei (.oap)"
+      aktionen={
         <div className="pk-aktionen">
           {werte && (
             <>
@@ -993,7 +1002,9 @@ function ProjektdatenAbgleich({ karte }: { karte: OffeneKarte }) {
           )}
           <button onClick={() => void oapLaden()}>Neu einlesen</button>
         </div>
-      </header>
+      }
+    >
+      <p className="pk-unterzeile muted">{oap && oap !== 'fehlt' ? oap.pfad : oap === 'fehlt' ? 'im Projektordner nicht gefunden' : 'wird gesucht …'}</p>
       <p className="muted pk-text">
         Die Projektdatei ist das gemeinsame Projektarchiv von QUADRIO (Flächenrechner), TERRIO (GRZ-Nachweis), NUMIO (Kostenermittlung) und ATLAS (Projektordner); darin stehen auch die
         Projektstammdaten. Beim Speichern der Projektdaten werden geänderte Angaben dort mitgeführt – nur diese, alles andere in der Datei bleibt.
@@ -1080,6 +1091,6 @@ function ProjektdatenAbgleich({ karte }: { karte: OffeneKarte }) {
           </span>
         </div>
       )}
-    </section>
+    </Karte>
   );
 }

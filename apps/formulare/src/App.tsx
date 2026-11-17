@@ -4,6 +4,7 @@ import { LogDialog } from '@core/ui/LogDialog';
 import { StammdatenDialog } from '@core/ui/Stammdaten';
 import { ProjektEinstieg } from '@core/ui/ProjektWahl';
 import { TitleBar } from '@core/ui/TitleBar';
+import { Flaeche, FlaechenSpalte, Karte } from '@core/ui/Karte';
 import { BreitenLeiste } from '@core/ui/Leiste';
 import { autofillFelder } from './autofill';
 import { ignoriert, ignorierenSetzen, useAktualisieren } from './aktualisieren';
@@ -527,36 +528,50 @@ export function App() {
           )}
         </>
       )}
-      <main className="fo-main">
-        {ds && projekt && haupt !== 'projekte' && <Seitenleiste onProjekte={() => useFormulare.getState().setHaupt('projekte')} onSperren={() => setDialog('sperren')} />}
+      <Flaeche className="fo-main">
+        {ds && projekt && haupt !== 'projekte' && (
+          <BreitenLeiste schluessel="formulare:breite:navigation" vorgabe={300} min={220} max={600} titel="Breite der Navigation">
+            <Seitenleiste onProjekte={() => useFormulare.getState().setHaupt('projekte')} onSperren={() => setDialog('sperren')} />
+          </BreitenLeiste>
+        )}
         {formularSichtbar && gliederungSichtbar && (
-          <BreitenLeiste schluessel="formulare:breite:gliederung" vorgabe={260}>
+          <BreitenLeiste schluessel="formulare:breite:gliederung" vorgabe={260} titel="Breite der Gliederung">
             <Gliederung offen={offen} />
           </BreitenLeiste>
         )}
-        <section className={`fo-inhalt${formularSichtbar && ansicht === 'seite' ? ' fo-inhalt-papier' : ''}`}>
-          {ds && (!projekt || haupt === 'projekte') ? (
+        {ds && (!projekt || haupt === 'projekte') ? (
+          <Karte ariaLabel="Projekte" buendig>
             <ProjektUebersicht onEinstellungen={() => einstellungenOeffnen('formulare', 'formularprojekte')} />
-          ) : haupt === 'projektkarte' && projekt ? (
-            <ProjektkarteAnsicht />
-          ) : haupt === 'antrag' && projekt ? (
-            <div className="fo-antragsdaten">
-              <AntragsdatenAnsicht />
-            </div>
-          ) : haupt === 'datei' && datei ? (
+          </Karte>
+        ) : haupt === 'projektkarte' && projekt ? (
+          <ProjektkarteAnsicht />
+        ) : haupt === 'antrag' && projekt ? (
+          <AntragsdatenAnsicht />
+        ) : haupt === 'datei' && datei ? (
+          <Karte ariaLabel={datei.name} buendig className="fo-datei-karte">
             <DateiAnsicht />
-          ) : offen ? (
-            ansicht === 'felder' ? (
-              <FelderAnsicht offen={offen} gesperrt={!!grund} />
-            ) : (
-              <SeitenAnsicht offen={offen} gesperrt={!!grund} />
-            )
-          ) : (
+          </Karte>
+        ) : offen ? (
+          // Formular und Felder stehen direkt auf der Fläche: das Papier bzw. jeder Abschnitt ist selbst die Karte
+          <FlaechenSpalte wachsend className="fo-inhalt">
+            {ansicht === 'felder' ? <FelderAnsicht offen={offen} gesperrt={!!grund} /> : <SeitenAnsicht offen={offen} gesperrt={!!grund} />}
+          </FlaechenSpalte>
+        ) : (
+          <Karte ariaLabel="Einstieg">
             <Leer desktop={!!ds} onEinstellungen={() => einstellungenOeffnen('formulare', 'formularprojekte')} />
-          )}
-        </section>
-        {formularSichtbar && einrichten ? <EinrichtenPanel offen={offen} /> : formularSichtbar && verlaufOffen && <VerlaufLeiste offen={offen} />}
-      </main>
+          </Karte>
+        )}
+        {formularSichtbar && (einrichten || verlaufOffen) && (
+          <BreitenLeiste
+            seite="rechts"
+            schluessel={einrichten ? 'formulare:breite:einrichten' : 'formulare:breite:verlauf'}
+            vorgabe={einrichten ? 340 : 280}
+            titel={einrichten ? 'Breite der Einstellungen' : 'Breite des Verlaufs'}
+          >
+            {einrichten ? <EinrichtenPanel offen={offen} /> : <VerlaufLeiste offen={offen} />}
+          </BreitenLeiste>
+        )}
+      </Flaeche>
       {exportPfad && <ExportDialog formularPfad={exportPfad} onClose={() => useExportDialog.getState().schliessen()} />}
       {hinzufuegen && projekt && <FormularHinzufuegenDialog onClose={() => useHinzufuegenDialog.getState().setOffen(false)} />}
       {ordnerDialog && projekt && <ProjektordnerDialog grund={ordnerDialog.grund} />}

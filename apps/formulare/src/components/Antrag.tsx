@@ -21,6 +21,7 @@ import type { MenuePunkt } from '@core/ui/Menue';
 import { MenueKnopf, zeigeMenue } from '@core/ui/Menue';
 import { bestaetigen } from '@core/ui/Rueckfrage';
 import { Griff, useSortieren } from './Sortieren';
+import { Karte } from '@core/ui/Karte';
 import { Symbol } from '@core/ui/Symbol';
 
 /** Farbpunkt für den Status eines Dokuments */
@@ -636,7 +637,12 @@ export function AntragsdatenAnsicht() {
       { ansicht: zf, eintrag: zeile.id, titel: zeile.titel, was: 'Nicht verschoben', verschoben: true },
     );
   });
-  if (!ds) return <div className="fo-leer">Antragsdaten gibt es nur in der Desktop-App.</div>;
+  if (!ds)
+    return (
+      <Karte titel="Antragsdaten">
+        <p>Antragsdaten gibt es nur in der Desktop-App.</p>
+      </Karte>
+    );
   if (!projekt) return null;
   const fassung = aktiveFassung(st, projekt);
   // Vorschlag: die Vorlage zur Antragsart der aktiven Fassung („BAUA 2“ → BAUA, „BVA“ → BAUVA); keine passende = keine Vorwahl
@@ -723,17 +729,11 @@ export function AntragsdatenAnsicht() {
   };
 
   return (
-    <div className={`pu${gesperrt ? ' gesperrt' : ''}`} aria-busy={!!wechsel || undefined}>
-      <div className="pu-kopf">
-        <div>
-          <h2>Antragsdaten</h2>
-          <p className="muted small-text">
-            Gilt nur für den Antrag <strong>{fassung}</strong> – jeder Antrag hat eigene Antragsdaten, ein neuer beginnt mit den Vorgaben aus den Einstellungen. Die
-            Projektdaten gelten für das ganze Projekt. Geprüft wird im Ordner <strong>{ordner}</strong>
-            {basis ? '' : ' (kein Projektordner gefunden)'}; gespeichert in der Projektdatei (.oap), gilt für alle im Büro.
-          </p>
-        </div>
-        <div className="pu-kopf-knoepfe">
+    <Karte
+      className={`pu${gesperrt ? ' gesperrt' : ''}`}
+      titel="Antragsdaten"
+      aktionen={
+        <>
           {/* immer da (Live-Region), der Text erst nach einem Moment */}
           <span className="pu-laedt-hinweis small-text" role="status">
             {wechsel && ladenSichtbar ? `Antrag ${wechsel} wird geöffnet …` : ''}
@@ -747,11 +747,17 @@ export function AntragsdatenAnsicht() {
               <Symbol name="ordnerOffen" />
             </button>
           )}
-        </div>
-      </div>
+        </>
+      }
+    >
+      <p className="pu-unterzeile muted small-text">
+        Gilt nur für den Antrag <strong>{fassung}</strong> – jeder Antrag hat eigene Antragsdaten, ein neuer beginnt mit den Vorgaben aus den Einstellungen. Die Projektdaten gelten für das ganze
+        Projekt. Geprüft wird im Ordner <strong>{ordner}</strong>
+        {basis ? '' : ' (kein Projektordner gefunden)'}; gespeichert in der Projektdatei (.oap), gilt für alle im Büro.
+      </p>
 
       {/* während ein Antrag geöffnet wird, gehören Zeilen und Angaben noch zum bisherigen – so lange nicht bedienbar */}
-      <div className={`pu-inhalt${wechsel && ladenSichtbar ? ' laedt' : ''}`} inert={!!wechsel}>
+      <div className={`pu-inhalt${wechsel && ladenSichtbar ? ' laedt' : ''}`} inert={!!wechsel} aria-busy={!!wechsel || undefined}>
         <AntragStatus />
 
         <Merkmale gesperrt={gesperrt} />
@@ -1066,7 +1072,7 @@ export function AntragsdatenAnsicht() {
         )}
       </div>
       <ExportFuerProjekt />
-    </div>
+    </Karte>
   );
 }
 

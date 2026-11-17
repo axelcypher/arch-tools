@@ -190,10 +190,10 @@ describe('Formulare', () => {
   it('fester Kopf der Navigation: Projekt, Antrag und Projektdaten | Antragsdaten rollen nicht mit – darunter „Formulare“', async () => {
     const host = await render();
     await projektOeffnen(host, 'BS9');
-    const fest = host.querySelector('.nav > .nav-fest')!;
+    const fest = host.querySelector('.nav > .karte-rumpf > .nav-fest')!;
     expect(fest.querySelector('.fo-projektkopf')).not.toBeNull();
     expect([...fest.querySelectorAll('.fo-daten strong')].map((s) => s.textContent)).toEqual(['Projektdaten', 'Antragsdaten']);
-    const rollt = host.querySelector('.nav > .nav-rollbereich')!;
+    const rollt = host.querySelector('.nav > .karte-rumpf > .nav-rollbereich')!;
     expect(rollt.querySelector('.fo-daten, .fo-projektkopf')).toBeNull();
     expect(rollt.querySelector('.nav-kopf-titel')!.textContent).toContain('Formulare');
   });
@@ -415,14 +415,34 @@ describe('Formulare', () => {
 
   it('die Gliederung gehört zum Formular: eigener Bereich neben dem Formular, nicht in der Navigation', async () => {
     const host = await oeffneMuster();
-    const gl = host.querySelector('nav[aria-label="Inhalt des Formulars"]')!;
+    const gl = host.querySelector('.fo-gliederung nav[aria-label="Gliederung"]')!;
     expect(gl.closest('.fo-leiste')).toBeNull();
     expect(gl.textContent).toContain('001-Muster');
     expect(gl.textContent).toContain('Bauherrschaft');
     await klick(knopfMit(host, 'Gliederung ausblenden'));
-    expect(host.querySelector('nav[aria-label="Inhalt des Formulars"]')).toBeNull();
+    expect(host.querySelector('.fo-gliederung nav[aria-label="Gliederung"]')).toBeNull();
     await imLeistenMenue(host, 'Ansicht', 'Gliederung');
-    expect(host.querySelector('nav[aria-label="Inhalt des Formulars"]')).not.toBeNull();
+    expect(host.querySelector('.fo-gliederung nav[aria-label="Gliederung"]')).not.toBeNull();
+  });
+
+  it('Kartenlayout (Richtung C): Gliederung und Verlauf als Seitenkarten auf der Fläche, in der Felderansicht jeder Abschnitt eine Karte', async () => {
+    const host = await oeffneMuster();
+    const flaeche = host.querySelector('.flaeche.fo-main')!;
+    // Gliederung: Seitenkarte mit Überschrift, die den Bereich benennt
+    const gliederung = flaeche.querySelector<HTMLElement>(':scope > .leiste > section.karte.fo-gliederung')!;
+    const id = gliederung.getAttribute('aria-labelledby')!;
+    expect(gliederung.querySelector(`#${CSS.escape(id)}`)!.textContent).toBe('Inhalt des Formulars');
+    // Formular und Felder stehen direkt auf der Fläche (das Papier bzw. die Abschnitte sind die Karten)
+    expect(flaeche.querySelector(':scope > .flaechen-spalte.wachsend.fo-inhalt')).not.toBeNull();
+    await klick(knopfGenau(host, 'Felder'));
+    const abschnitt = flaeche.querySelector('.fo-inhalt .fo-abschnitt > section.karte')!;
+    expect(abschnitt.querySelector('.karte-kopf h2')!.textContent).toBe('Bauherrschaft');
+    expect(abschnitt.querySelector('.karte-rumpf .fo-zeile')).not.toBeNull();
+    // Verlauf: Seitenkarte rechts, Griff links
+    await imLeistenMenue(host, 'Ansicht', 'Verlauf der Eingaben');
+    const rechts = [...flaeche.querySelectorAll<HTMLElement>(':scope > .leiste')].at(-1)!;
+    expect(rechts.querySelector('.karte-kopf h2')!.textContent).toBe('Verlauf');
+    expect(rechts.querySelector('.leiste-griff-links')).not.toBeNull();
   });
 
   it('Enter in einzeiligen Feldern springt zum nächsten Feld', async () => {
@@ -657,7 +677,7 @@ describe('Formulare', () => {
     const treffer = [...host.querySelectorAll<HTMLButtonElement>('.pk-treffer-zeile')];
     expect(treffer.map((t) => t.querySelector('.pk-treffer-ort')!.textContent)).toEqual(['Bauherr › Straße/Nr.']);
     await klick(treffer[0]);
-    expect(host.querySelector('.pk-kopf h2')!.textContent).toBe('Bauherr');
+    expect(host.querySelector('.pk-editor > .karte-kopf h2')!.textContent).toBe('Bauherr');
   });
 
   it('Projektkarte: Gruppen als Favorit oben anzeigen und ausblenden – gilt für alle Projekte, bleibt gespeichert', async () => {
@@ -697,7 +717,7 @@ describe('Formulare', () => {
     await projektOeffnen(host, 'BS9');
     await klick(host.querySelector<HTMLButtonElement>('.fo-eintrag-karte')!);
     await klick([...host.querySelectorAll<HTMLButtonElement>('.pk-nav-eintrag')].find((b) => b.textContent!.includes('Eigene Ansicht'))!);
-    expect(host.querySelector('.pk-kopf h2')!.textContent).toBe('Eigene Ansicht');
+    expect(host.querySelector('.pk-editor > .karte-kopf h2')!.textContent).toBe('Eigene Ansicht');
     await klick([...host.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent === 'Ansicht zusammenstellen …')!);
     const editor = document.querySelector<HTMLElement>('.av-editor')!;
     expect(editor).toBeTruthy();
@@ -986,18 +1006,22 @@ describe('Formulare', () => {
     expect(document.activeElement).toBe(suchen);
   });
 
-  it('Breite der Navigation: Griff aus core – per Tastatur (←/→) und Doppelklick (Vorgabe) bedienbar', async () => {
+  it('Navigation als Seitenkarte (BreitenLeiste aus core): Griff im Spalt, per Tastatur (←/→) und Doppelklick (Vorgabe) bedienbar', async () => {
+    localStorage.removeItem('formulare:breite:navigation');
     const host = await render();
     await projektOeffnen(host, 'BS9');
-    const griff = host.querySelector<HTMLElement>('.nav .leiste-griff')!;
+    const leiste = host.querySelector<HTMLElement>('.flaeche > .leiste')!;
+    expect(leiste.querySelector(':scope > .karte.nav')!.getAttribute('aria-label')).toBe('Navigation');
+    const griff = leiste.querySelector<HTMLElement>(':scope > .leiste-griff')!;
     expect(griff.getAttribute('role')).toBe('separator');
     expect(griff.tabIndex).toBe(0);
-    expect(griff.getAttribute('aria-label')).toBe('Breite der Navigation ändern');
-    const vorher = useFormulare.getState().leisteBreite;
-    taste(griff, 'ArrowRight');
-    expect(useFormulare.getState().leisteBreite).toBe(vorher + 16);
+    expect(griff.getAttribute('aria-label')).toBe('Breite der Navigation');
+    expect(griff.getAttribute('aria-valuenow')).toBe('300');
+    taste(griff, 'ArrowLeft');
+    expect(griff.getAttribute('aria-valuenow')).toBe('284');
+    expect(localStorage.getItem('formulare:breite:navigation')).toBe('284');
     act(() => void griff.dispatchEvent(new MouseEvent('dblclick', { bubbles: true })));
-    expect(useFormulare.getState().leisteBreite).toBe(300);
+    expect(griff.getAttribute('aria-valuenow')).toBe('300');
   });
 
   it('Werkzeugleiste nach design.md: sichtbar Datei, Speichern, Umschalter, Zoom, Ansicht, Suchen und PDF; Seltenes in den Menüs', async () => {

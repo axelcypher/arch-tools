@@ -148,7 +148,6 @@ interface Gespeichert {
   ablageordner: string[];
   ansicht: Ansicht;
   zoom: number;
-  leisteBreite: number;
   verlaufOffen: boolean;
   gliederungOffen: boolean;
   /** Stammdaten: Vorgabe je Rolle (Gruppe der Projektkarte) → Schlüssel einer Adresse im Adressbuch */
@@ -282,7 +281,6 @@ interface FormulareState extends Gespeichert {
   setAnsicht: (a: Ansicht) => void;
   setHaupt: (h: Hauptansicht) => void;
   setZoom: (z: number) => void;
-  setLeisteBreite: (b: number) => void;
   setVerlaufOffen: (o: boolean) => void;
   setGliederungOffen: (o: boolean) => void;
   setMeldung: (m: Meldung | null) => void;
@@ -449,7 +447,6 @@ function ladeEinstellungen(): Gespeichert {
     ablageordner: strings(o.ablageordner),
     ansicht: o.ansicht === 'felder' ? 'felder' : 'seite',
     zoom: typeof o.zoom === 'number' && (o.zoom === 0 || ZOOMSTUFEN.includes(o.zoom)) ? o.zoom : 0,
-    leisteBreite: typeof o.leisteBreite === 'number' ? Math.min(600, Math.max(220, o.leisteBreite)) : 300,
     verlaufOffen: o.verlaufOffen === true,
     gliederungOffen: o.gliederungOffen !== false,
     rollenVorgaben: o.rollenVorgaben && typeof o.rollenVorgaben === 'object' ? Object.fromEntries(Object.entries(o.rollenVorgaben).filter(([, v]) => typeof v === 'string')) : {},
@@ -1282,7 +1279,6 @@ export const useFormulare = create<FormulareState>()((set, get) => {
       else wechseln();
     },
     setZoom: (zoom) => set({ zoom }),
-    setLeisteBreite: (b) => set({ leisteBreite: Math.min(600, Math.max(220, Math.round(b))) }),
     setVerlaufOffen: (verlaufOffen) => set({ verlaufOffen }),
     setGliederungOffen: (gliederungOffen) => set({ gliederungOffen }),
     setMeldung: (meldung) => set({ meldung }),
@@ -2278,7 +2274,6 @@ useFormulare.subscribe((s) => {
     ablageordner: s.ablageordner,
     ansicht: s.ansicht,
     zoom: s.zoom,
-    leisteBreite: s.leisteBreite,
     verlaufOffen: s.verlaufOffen,
     gliederungOffen: s.gliederungOffen,
     rollenVorgaben: s.rollenVorgaben,

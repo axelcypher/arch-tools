@@ -47,13 +47,6 @@
   --fo-markiert: color-mix(in srgb, #ffc400 18%, transparent);
 }
 
-.fo-main {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  background: var(--bg);
-}
-
 /* mehrzeilige Felder wie die übrigen Eingabefelder (core gestaltet nur input/select) */
 textarea {
   font: inherit;
@@ -85,7 +78,7 @@ button.icon:not(.werkzeugleiste *) {
   padding: 0 4px;
 }
 button.icon:hover:not(:disabled) {
-  background: var(--nav-hover);
+  background: var(--hover);
   color: var(--text);
 }
 button.icon.active {
@@ -96,14 +89,11 @@ button.icon.active {
 
 /* ---------- Navigation ---------- */
 
-.nav {
-  position: relative;
-  flex-shrink: 0;
+/* Navigation als Seitenkarte: der feste Kopf bleibt stehen, nur die Liste darunter rollt (nicht der ganze Rumpf) */
+.nav > .karte-rumpf {
   display: flex;
   flex-direction: column;
-  background: var(--nav-bg);
-  border-right: 1px solid var(--nav-linie);
-  min-width: 0;
+  overflow: hidden;
 }
 /* fester Kopf der Navigation: Projekt, Antrag, Projektdaten | Antragsdaten – rollt nicht mit */
 .nav-fest {
@@ -112,7 +102,7 @@ button.icon.active {
   flex-direction: column;
   gap: 8px;
   padding: 10px 8px 8px;
-  border-bottom: 1px solid var(--nav-linie);
+  border-bottom: 1px solid var(--line-soft);
   /* gleich breit wie die rollende Liste darunter (dort ist Platz für den Rollbalken reserviert) */
   overflow: hidden;
   scrollbar-gutter: stable;
@@ -224,13 +214,11 @@ button.icon.active {
   color: var(--muted);
 }
 .nav-eintrag:hover:not(:disabled) {
-  background: var(--nav-hover);
+  background: var(--hover);
 }
 .nav-eintrag.aktiv {
-  background: var(--nav-aktiv);
-  box-shadow:
-    inset 3px 0 0 var(--accent),
-    0 1px 2px rgba(0, 0, 0, 0.08);
+  background: var(--accent-soft);
+  box-shadow: inset 3px 0 0 var(--accent);
   font-weight: 600;
 }
 .nav-eintrag.aktiv .symbol {
@@ -238,7 +226,7 @@ button.icon.active {
 }
 .nav-trenner {
   border: none;
-  border-top: 1px solid var(--nav-linie);
+  border-top: 1px solid var(--line-soft);
   margin: 0 4px;
 }
 /* Projektdaten | Antragsdaten: ein Knopf in zwei Hälften, hervorgehoben – daraus werden die Formulare ausgefüllt */
@@ -267,7 +255,7 @@ button.icon.active {
   padding: 7px 8px;
   margin-bottom: 4px;
   border: 1px solid color-mix(in srgb, var(--accent) 32%, transparent);
-  background: color-mix(in srgb, var(--accent) 9%, var(--nav-aktiv));
+  background: color-mix(in srgb, var(--accent) 9%, var(--panel));
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 .nav-eintrag.fo-eintrag-karte .symbol {
@@ -275,7 +263,7 @@ button.icon.active {
   color: var(--accent);
 }
 .nav-eintrag.fo-eintrag-karte:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--accent) 16%, var(--nav-aktiv));
+  background: color-mix(in srgb, var(--accent) 16%, var(--panel));
 }
 .nav-eintrag.fo-eintrag-karte.aktiv,
 .nav-eintrag.fo-eintrag-karte.aktiv:hover:not(:disabled) {
@@ -394,7 +382,7 @@ button.icon.active {
   width: 100%;
 }
 .nav-hinweis {
-  border: 1px dashed var(--nav-linie);
+  border: 1px dashed var(--line-soft);
   border-radius: 6px;
   padding: 8px 10px;
   font-size: 12px;
@@ -420,8 +408,7 @@ button.icon.active {
   gap: 6px;
   padding: 8px 8px 8px 10px;
   border-radius: 6px;
-  background: var(--nav-aktiv);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  background: var(--bg);
   border-left: 3px solid var(--accent);
 }
 .fo-projektkopf-text {
@@ -478,54 +465,24 @@ button.icon.active {
   font-size: 11px;
 }
 
-/* Gliederung: gehört zum Dokument – im Grau der Formularfläche, mit Kopf wie ein Inhaltsverzeichnis */
-.fo-gliederung {
-  width: 260px;
-  flex-shrink: 0;
-  overflow-y: auto;
-  scrollbar-gutter: stable;
+/* Gliederung (Seitenkarte „Inhalt des Formulars“): oben Formularname und Fortschritt, darunter die Seiten */
+.fo-gl {
   display: flex;
   flex-direction: column;
-  font-size: 12px;
-  padding: 0 0 16px;
-  background: var(--dok-leiste);
-  border-right: 1px solid var(--nav-linie);
+  font-size: var(--fs-s);
+  padding-bottom: var(--s4);
 }
 .fo-gl-kopf {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  display: flex;
-  align-items: flex-start;
-  gap: 4px;
-  padding: 10px 8px 10px 12px;
-  margin-bottom: 4px;
-  background: var(--panel);
-  border-bottom: 1px solid var(--border);
-}
-.fo-gl-kopf-text {
-  flex: 1;
-  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 2px;
+  padding: var(--s3) var(--karte-pad) var(--s2);
 }
-.fo-gl-kopf-text strong {
-  font-size: 12.5px;
+.fo-gl-kopf strong {
+  font-size: var(--fs-m);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-.fo-gl-kopf-knoepfe {
-  display: flex;
-}
-.fo-gl-art {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--muted);
 }
 .fo-gl-fortschritt {
   display: flex;
@@ -822,7 +779,7 @@ button.icon.fo-gl-zaehlt.an {
   white-space: nowrap;
 }
 .fo-baum-zeile:hover:not(:disabled) {
-  background: var(--nav-hover);
+  background: var(--hover);
 }
 .fo-baum-name {
   overflow: hidden;
@@ -862,22 +819,10 @@ button.icon.fo-gl-zaehlt.an {
 
 /* ---------- Inhalt ---------- */
 
+/* Formular und Felder stehen direkt auf der Fläche (wachsende Spalte, rollt selbst): das Papier bzw. jeder Abschnitt ist
+   die Karte (Vorschau Richtung C) */
 .fo-inhalt {
-  flex: 1;
-  /* bei knapper Fensterbreite (ab 1000 px erlaubt) schrumpfen die Leisten daneben bis auf ihre Mindestbreite */
-  min-width: 320px;
   overflow: auto;
-}
-.fo-main > .nav {
-  flex-shrink: 1;
-  min-width: 220px;
-}
-.fo-main > .leiste {
-  flex-shrink: 1;
-  min-width: 180px;
-}
-.fo-inhalt-papier {
-  background: color-mix(in srgb, var(--bg) 70%, #808080 30%);
 }
 .fo-meldung {
   display: flex;
@@ -901,8 +846,7 @@ button.icon.fo-gl-zaehlt.an {
 }
 .fo-leer {
   max-width: 640px;
-  margin: 40px auto;
-  padding: 0 16px;
+  margin: var(--s5) auto;
 }
 .fo-status {
   overflow: hidden;
@@ -928,24 +872,6 @@ button.icon.fo-gl-zaehlt.an {
 
 /* ---------- Verlauf ---------- */
 
-.fo-verlauf {
-  width: 280px;
-  flex-shrink: 1;
-  min-width: 220px;
-  overflow-y: auto;
-  background: var(--panel);
-  border-left: 1px solid var(--border);
-  padding: 8px 10px 16px;
-}
-.fo-verlauf-kopf {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.fo-verlauf-kopf h3 {
-  margin: 0;
-  font-size: var(--fs-m);
-}
 .fo-verlauf-liste {
   list-style: none;
   margin: 0;
@@ -997,7 +923,7 @@ button.icon.fo-gl-zaehlt.an {
   padding-top: 8px;
   border-top: 1px dashed var(--border);
 }
-.fo-verlauf-frueher h4 {
+.fo-verlauf-frueher h3 {
   margin: 0 0 4px;
   font-size: var(--fs-s);
 }
@@ -1008,47 +934,47 @@ button.icon.fo-gl-zaehlt.an {
 /* ---------- Feldansicht ---------- */
 
 .fo-felder {
+  width: 100%;
   max-width: 1100px;
   margin: 0 auto;
-  padding: 12px 16px 40px;
+  padding-bottom: var(--s5);
 }
+/* Suche und Filter stehen auf der Fläche und bleiben beim Rollen oben */
 .fo-felder-kopf {
   position: sticky;
   top: 0;
   z-index: 1;
   display: flex;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: var(--s2);
   align-items: center;
-  padding: 6px 0;
+  padding-bottom: var(--s2);
   background: var(--bg);
 }
 .fo-feldsuche {
-  flex: 1;
+  flex: 1 1 220px;
 }
-.fo-seite-felder h2 {
-  margin: 18px 0 8px;
+.fo-seite-felder > h2 {
+  margin: var(--s4) 0 var(--s2);
   font-size: var(--fs-l);
 }
 .fo-reihe {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 10px;
+  gap: var(--spalt);
+  margin-bottom: var(--spalt);
 }
+/* Hülle eines Abschnitts: Breite im Raster der Reihe; die Karte darin füllt sie */
 .fo-abschnitt {
   flex-basis: 300px;
   min-width: 0;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 10px 14px;
+  display: flex;
+}
+
+.fo-abschnitt .karte-rumpf {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-}
-.fo-abschnitt h3 {
-  margin: 0;
-  font-size: var(--fs-m);
+  gap: var(--s2);
 }
 .fo-zeile {
   display: flex;
@@ -1083,6 +1009,8 @@ button.icon.fo-gl-zaehlt.an {
   outline-offset: 2px;
 }
 .fo-kreuz {
+  /* Kästchen nehmen mindestens ihre Beschriftung (lange brechen um), dann den Anteil wie im Formular */
+  flex-basis: auto;
   flex-direction: row;
   align-items: flex-start;
   gap: 6px;
@@ -1096,35 +1024,11 @@ button.icon.fo-gl-zaehlt.an {
 
 /* ---------- Projektkarte ---------- */
 
-.pk {
-  display: flex;
-  height: 100%;
-  min-height: 0;
-}
-.pk-nav {
-  width: 270px;
-  flex-shrink: 0;
-  overflow-y: auto;
-  scrollbar-gutter: stable;
-  border-right: 1px solid var(--nav-linie);
-  background: var(--nav-bg);
-  padding: 10px 8px 24px;
+/* Gruppen als Seitenkarte; die Liste läuft bis an den Rand der Karte */
+.pk-nav-liste {
   display: flex;
   flex-direction: column;
   gap: 2px;
-}
-.pk-nav-kopf {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 2px 6px 10px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--muted);
-}
-.pk-nav-kopf strong {
-  color: var(--text);
-  font-size: 13px;
 }
 .toolbar button {
   display: inline-flex;
@@ -1165,9 +1069,8 @@ button.icon.fo-gl-zaehlt.an {
   background: var(--hover);
 }
 .pk-nav-eintrag.aktiv {
-  background: var(--nav-aktiv);
+  background: var(--accent-soft);
   border-left-color: var(--accent);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
 }
 .pk-nav-name {
   font-size: 13px;
@@ -1282,44 +1185,16 @@ button.icon.fo-gl-zaehlt.an {
   white-space: nowrap;
 }
 
+/* Raster und Vorschau richten sich nach der Breite der Karte, nicht nach dem Fenster */
 .pk-editor {
-  flex: 1;
-  /* bei knapper Breite schrumpft zuerst die Leiste der Gruppen (bis 180 px), dann erst der Inhalt */
-  min-width: 280px;
-  overflow-y: auto;
-  padding: 0 28px 48px;
-  /* Raster und Vorschau richten sich nach dem Platz neben den Leisten, nicht nach dem Fenster */
   container: pk-editor / inline-size;
 }
-.pk > .leiste {
-  flex-shrink: 1;
-  min-width: 180px;
-}
-.pk-kopf {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+/* viele Aktionen (Übernehmen, Leeren …): der Kopf bricht um, statt die Überschrift zu quetschen */
+.pk-editor > .karte-kopf {
   flex-wrap: wrap;
-  gap: 10px 16px;
-  padding: 16px 0 12px;
-  margin-bottom: 4px;
-  background: var(--bg);
-  border-bottom: 1px solid var(--border);
 }
-.pk-kopf-text {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-.pk-kopf h2 {
-  margin: 0;
-  font-size: var(--fs-xl);
-}
-.pk-kopf-text .muted {
-  font-size: 12.5px;
+.pk-unterzeile {
+  margin: 0 0 var(--s1);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2445,14 +2320,15 @@ button.icon.fo-gl-zaehlt.an {
   body,
   #root,
   body .app,
-  body .app > main.fo-main,
-  body .app > main.fo-main > .fo-inhalt {
+  body .app > .fo-main,
+  body .app > .fo-main > .fo-inhalt {
     display: block !important;
     height: auto !important;
+    padding: 0 !important;
     overflow: visible !important;
     background: #fff !important;
   }
-  body .app > main.fo-main > :not(.fo-inhalt) {
+  body .app > .fo-main > :not(.fo-inhalt) {
     display: none !important;
   }
   .fo-seiten {
@@ -2619,7 +2495,7 @@ button.icon.ex-baum-pfeil {
   width: 9px;
   height: 9px;
   border-radius: 50%;
-  box-shadow: 0 0 0 1.5px var(--nav-bg, var(--panel));
+  box-shadow: 0 0 0 1.5px var(--panel);
   vertical-align: 0;
 }
 /* fehlt: roter Ring (es gibt noch nichts) – fällt so stärker auf als „unvollständig“ (rot gefüllt) */
@@ -2627,7 +2503,7 @@ button.icon.ex-baum-pfeil {
   background: transparent;
   box-shadow:
     inset 0 0 0 2px var(--fehler-text),
-    0 0 0 1.5px var(--nav-bg, var(--panel));
+    0 0 0 1.5px var(--panel);
 }
 .st-punkt.unvollstaendig {
   background: var(--fehler-text);
@@ -2711,41 +2587,30 @@ button.icon.ex-baum-pfeil {
   font-variant-numeric: tabular-nums;
   color: var(--text);
 }
-.pu-kopf .an-fassung {
+.pu .karte-aktionen .an-fassung {
   flex-basis: auto;
   border: none;
   padding: 0;
   margin: 0;
 }
 
-/* ---------- Projektumfang ---------- */
+/* ---------- Antragsdaten (Karte) ---------- */
 
-.pu {
-  max-width: 980px;
+.pu > .karte-rumpf {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--s3);
 }
-.pu-kopf {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
+/* lesbare Zeilenlänge: der Inhalt wird nicht beliebig breit */
+.pu > .karte-rumpf > *,
+.pu-inhalt > * {
+  max-width: 980px;
 }
-.pu-kopf > div:first-child {
-  flex: 1;
-  min-width: 0;
-}
-.pu-kopf h2 {
-  margin: 0 0 4px;
-  font-size: var(--fs-xl);
-}
-.pu-kopf p {
+.pu-unterzeile {
   margin: 0;
 }
-.pu-kopf-knoepfe {
-  display: flex;
-  align-items: center;
-  gap: 4px;
+/* „Antrag … wird geöffnet“ steht unter den Knöpfen im Kopf */
+.pu .karte-aktionen {
   position: relative;
 }
 .pu-leer {
@@ -3688,7 +3553,7 @@ tr[data-ziehen='danach'] > td {
   cursor: pointer;
 }
 .es-dok-haken:hover {
-  background: var(--nav-hover);
+  background: var(--hover);
 }
 .es-dok-haken input {
   width: auto;
@@ -3708,7 +3573,7 @@ tr[data-ziehen='danach'] > td {
   white-space: normal;
 }
 .es-dok-knopf:hover {
-  background: var(--nav-hover);
+  background: var(--hover);
 }
 .es-dok-symbol {
   flex: 0 0 auto;
@@ -3964,28 +3829,9 @@ li.es-dok[data-ziehen='danach'] {
   opacity: 0.55;
 }
 
-.fo-ein-panel {
-  /* schrumpft bei knapper Breite bis 280 px – das Papier daneben behält seine Mindestbreite */
-  flex: 0 1 320px;
-  min-width: 280px;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  border-left: 1px solid var(--border);
-  background: var(--panel);
-}
-.fo-ein-panel-kopf {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 12px 14px;
-  border-bottom: 1px solid var(--border);
-}
-.fo-ein-panel-kopf > div {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
+.fo-ein-gilt {
+  margin: 0;
+  padding: var(--s2) var(--karte-pad) 0;
 }
 .fo-ein-waehlen {
   display: flex;
@@ -4000,9 +3846,7 @@ li.es-dok[data-ziehen='danach'] {
   margin-left: auto;
 }
 .fo-ein-panel-inhalt {
-  flex: 1;
-  overflow-y: auto;
-  padding: 14px;
+  padding: var(--s3) var(--karte-pad) var(--karte-pad);
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -4720,13 +4564,6 @@ li.es-dok[data-ziehen='danach'] {
   white-space: nowrap;
 }
 
-/* Antragsdaten als eigene Ansicht */
-.fo-antragsdaten {
-  height: 100%;
-  overflow-y: auto;
-  scrollbar-gutter: stable;
-  padding: 18px 28px 48px;
-}
 .pu-abschnitt-kopf {
   display: flex;
   align-items: baseline;
