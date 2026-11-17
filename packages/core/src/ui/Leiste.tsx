@@ -45,12 +45,17 @@ function verfuegbar(griff: HTMLElement | null, mitteMin: number | undefined): nu
   // die anderen Leisten mit ihrer Basisbreite (gesetzte Breite), nicht der geschrumpften – sonst wüchse diese auf
   // deren Kosten über den Platz hinaus
   const andere = [...arbeit.children]
-    .filter((c): c is HTMLElement => c !== leiste && c.classList.contains('leiste') && c instanceof HTMLElement)
+    .filter((c): c is HTMLElement => c !== leiste && c instanceof HTMLElement && (c.classList.contains('leiste') || (c.classList.contains('flaechen-spalte') && !c.classList.contains('wachsend'))))
     .reduce((s, c) => s + (parseFloat(c.style.width) || c.getBoundingClientRect().width), 0);
   // auf einer Fläche (Karte.tsx) zählen Innenabstand und Spalte zwischen den Karten mit
   const cs = getComputedStyle(arbeit);
   const innen = arbeit.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0);
-  const spalte = (parseFloat(cs.columnGap) || 0) * Math.max(0, arbeit.children.length - 1);
+  // nur Kinder im Fluss erzeugen einen Spalt (ausgeblendete und frei liegende nicht)
+  const imFluss = [...arbeit.children].filter((c) => {
+    const st = getComputedStyle(c);
+    return st.display !== 'none' && st.position !== 'absolute' && st.position !== 'fixed';
+  }).length;
+  const spalte = (parseFloat(cs.columnGap) || 0) * Math.max(0, imFluss - 1);
   return Math.floor(innen - spalte - andere - mitteMin);
 }
 

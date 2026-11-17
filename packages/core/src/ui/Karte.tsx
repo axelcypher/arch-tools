@@ -40,14 +40,14 @@ interface KopfProps {
 function useKopf({ titel, aktionen, ariaLabel }: KopfProps) {
   const id = useId();
   const kopf =
-    titel || aktionen ? (
+    titel != null || aktionen != null ? (
       <header className="karte-kopf">
-        {titel && <h2 id={id}>{titel}</h2>}
-        {aktionen && <div className="karte-aktionen">{aktionen}</div>}
+        {titel != null && <h2 id={id}>{titel}</h2>}
+        {aktionen != null && <div className="karte-aktionen">{aktionen}</div>}
       </header>
     ) : null;
   // mit Titel benennt das h2 den Bereich (Landmark), sonst ariaLabel
-  const name = titel ? { 'aria-labelledby': id } : ariaLabel ? { 'aria-label': ariaLabel } : {};
+  const name = titel != null ? { 'aria-labelledby': id } : ariaLabel ? { 'aria-label': ariaLabel } : {};
   return { kopf, name };
 }
 
@@ -67,7 +67,7 @@ export function Karte({ titel, aktionen, ariaLabel, fuss, children, className, b
     <section className={className ? `karte ${className}` : 'karte'} {...name}>
       {kopf}
       <div className={buendig ? 'karte-rumpf buendig' : 'karte-rumpf'}>{children}</div>
-      {fuss && <footer className="karte-fuss">{fuss}</footer>}
+      {fuss != null && <footer className="karte-fuss">{fuss}</footer>}
     </section>
   );
 }
@@ -83,7 +83,7 @@ export function ZeichenKarte({ titel, aktionen, ariaLabel, fuss, children, class
     <section className={className ? `karte zeichen-karte ${className}` : 'karte zeichen-karte'} {...name}>
       {kopf}
       <div className="zeichen-flaeche">{children}</div>
-      {fuss && <footer className="karte-fuss zeichen-fuss">{fuss}</footer>}
+      {fuss != null && <footer className="karte-fuss zeichen-fuss">{fuss}</footer>}
     </section>
   );
 }

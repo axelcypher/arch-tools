@@ -80,6 +80,8 @@ describe('Fläche und Karten', () => {
     expect(css.match(/--karte-schatten:/g)?.length).toBe(2);
     expect(css).toMatch(/\.karte-rumpf \{[^}]*overflow: auto;/);
     expect(css).toMatch(/\.flaeche \{[^}]*overflow: hidden;/);
-    expect(css).toMatch(/\.app:has\(\.flaeche\) > \.toolbar \{/);
+    expect(css).toMatch(/\.app:has\(\.flaeche:not\(\.modal \*\)\) > \.toolbar \{/);
+    // Radien aus der Skala, keine festen 6px mehr
+    expect(css).not.toMatch(/border-radius: 6px/);
   });
 });

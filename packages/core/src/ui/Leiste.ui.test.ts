@@ -53,11 +53,16 @@ describe('BreitenLeiste', () => {
     document.body.appendChild(host);
     act(() => {
       root = createRoot(host);
-      root.render([createElement(BreitenLeiste, { key: 'l', schluessel: 'test:flaeche', vorgabe: 300, max: 900, mitteMin: 400, children: 'Inhalt' }), createElement('main', { key: 'm' })]);
+      root.render([
+        createElement(BreitenLeiste, { key: 'l', schluessel: 'test:flaeche', vorgabe: 300, max: 900, mitteMin: 400, children: 'Inhalt' }),
+        createElement('main', { key: 'm' }),
+        createElement('div', { key: 'aus', style: { display: 'none' } }),
+        createElement('div', { key: 'frei', style: { position: 'absolute' } }),
+      ]);
     });
     const griff = host.querySelector('.leiste-griff')!;
     pfeil(griff, 'End');
-    // 1000 − 2 × 8 (Innenabstand) − 1 × 8 (Spalt) − 400 (Mitte) = 576
+    // 1000 − 2 × 8 (Innenabstand) − 1 × 8 (Spalt; ausgeblendete und frei liegende Kinder zählen nicht) − 400 (Mitte) = 576
     expect((host.querySelector('.leiste') as HTMLElement).style.width).toBe('576px');
   });
 });
