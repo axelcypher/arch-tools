@@ -7,7 +7,7 @@ import { readProjectFile } from '@core/archive';
 import { baurechtAusRoh } from '@core/baurecht/projekt';
 import { projektdateiRoh } from '@core/projektdatei';
 import { farbschemaWechseln } from '@core/ui/rauchtest';
-import { schliesseHinweis, zeigeHinweis } from '@core/ui/Hinweis';
+import { hinweiseLeeren, zeigeHinweis } from '@core/ui/Hinweis';
 
 // Speichern (Web): die Datei, die heruntergeladen würde, wird hier aufgefangen und danach gelesen
 let geschrieben: Uint8Array | null = null;
@@ -48,6 +48,8 @@ afterEach(() => {
   ausblendenAngehalten = null;
   // Dialoge mit eigenem Store blieben sonst für den nächsten Test offen
   dialogeZuruecksetzen();
+  // Hinweise stehen in einem Store auf Modulebene und überleben das Unmount
+  hinweiseLeeren();
 });
 
 let root: ReturnType<typeof createRoot> | null = null;
@@ -573,7 +575,6 @@ describe('Baurecht – Oberfläche', () => {
     expect(imHinweis()).toBe(true);
     f6(true);
     expect(inDetail()).toBe(true);
-    act(() => schliesseHinweis('test-f6'));
   });
 
   it('Festlegung aufheben: Fokus auf „Von Hand festlegen …“, Rückgängig stellt sie wieder her', () => {
