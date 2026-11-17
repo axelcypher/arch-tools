@@ -86,6 +86,17 @@ describe('Fläche und Karten', () => {
     expect(css).toMatch(/\.karte-kopf:has\(\+ \.karte-leiste\) \{\s*border-bottom-color: transparent;/);
   });
 
+  it('Register in der Kartenleiste zeigen in schmaler Leiste den kurzen Namen; Kennzahlen brechen um', () => {
+    const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'base.css'), 'utf8');
+    // nur Leisten mit kurzen Namen werden Container (inline-size), gemessen an der Leiste, nicht am Fenster
+    expect(css).toMatch(/\.segment \.kurz \{\s*display: none;/);
+    expect(css).toMatch(/\.karte-leiste:has\(\.segment \.kurz\) \{\s*container: karte-leiste \/ inline-size;/);
+    expect(css).toMatch(/@container karte-leiste \(max-width: 640px\) \{\s*\.segment \.lang \{\s*display: none;\s*\}\s*\.segment \.kurz \{\s*display: inline;/);
+    expect(css).toMatch(/\.metric-row \{[^}]*flex-wrap: wrap;/);
+    expect(css).toMatch(/\.metric \{[^}]*flex: 1 1 9em;[^}]*border-radius: var\(--radius-s\);/);
+    expect(css).toMatch(/\.metric strong \{[^}]*font-size: var\(--fs-xl\);/);
+  });
+
   it('Karte ohne Titel: kein Kopf, Name über ariaLabel; bündiger Rumpf', () => {
     const host = render(h(Karte, { ariaLabel: 'Räume', buendig: true }, 'x'));
     const karte = host.querySelector('section.karte')!;

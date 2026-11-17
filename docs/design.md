@@ -54,6 +54,11 @@ mit dem Feldtext. Gruppenzeilen `tr.gruppe` (getönt mit `--tabelle-gruppe`, hal
 (halbfett, kräftigere Linie darüber); `tr.strong` bleibt für einzelne hervorgehobene Zeilen. Diese Tabelle soll die
 eigenen Tabellenklassen der Apps ersetzen; bis zur Umstellung bleiben diese bestehen.
 
+Kennzahlen als Kacheln (`.metric-row` mit `.metric`): oben die Bezeichnung (`span`, `--fs-xs`, `--muted`), darunter
+der Wert (`strong`, `--fs-xl`, Tabellenziffern), wahlweise eine Zeile Nebentext (`small`, wie die Bezeichnung). Die
+Kacheln stehen auf `--bg` mit `--radius-s` und brechen in schmalen Karten um (Wunschbreite 9em, nie schmaler als ihr
+Inhalt). Mehr als vier oder fünf Kacheln gehören in eine Tabelle.
+
 ## Überschriften
 
 - **Karte (Richtung C):** Der Kartenkopf ist die oberste Stufe – `h2` in `--fs-l`, halbfett (`Karte`, siehe „Fläche und
@@ -264,6 +269,13 @@ Als Registerleiste (Bereiche wechseln, der Inhalt darunter tauscht sich) mit `ro
 `role="tab"` und `aria-selected`; `.segment` färbt `aria-selected="true"` wie `aria-pressed`. ←/→ wechseln zwischen den
 Registern, Pos1/Ende springen zum ersten bzw. letzten; der Wechsel wirkt sofort (automatische Aktivierung). Nur das
 gewählte Register liegt in der Tab-Reihenfolge (`tabIndex` 0, die übrigen -1).
+
+Register in der Leiste einer Karte (`leiste`) dürfen einen kurzen Namen haben: im Knopf `<span class="lang">` und
+`<span class="kurz" aria-hidden="true">`, der volle Name zusätzlich als `aria-label`, damit Vorleseprogramme immer
+ihn hören. Ist die Kartenleiste schmaler als 640px, zeigt das Register nur den kurzen Namen – gemessen an der Leiste,
+nicht am Fenster, denn neben der Karte können Seitenkarten stehen. Viele Register brauchen eine höhere Schwelle: dann
+eine eigene Abfrage `@container karte-leiste (max-width: …)` in der App. Außerhalb einer Kartenleiste bleibt der lange
+Name.
 
 ```html
 <div class="segment" role="group" aria-label="Ansicht">
@@ -509,6 +521,10 @@ Werkzeugleiste liegt mit auf der Fläche (gleicher Grund, keine Linie). Baustein
     aus ihr heraus. Der Rumpf ist positioniert: absolut gesetzte Elemente darin bleiben in seinem Rollbereich.
     Klappmenüs, Vorschlagslisten und Hinweise, die über die Karte hinausragen sollen, deshalb als Portal bzw. mit
     `position: fixed` ausführen.
+  - **Vorschau in der Karte** (Druckvorschau, PDF-Seiten, Blatt): Die Karte ist `buendig`, ihr Rumpf bekommt `--bg`
+    als Grund (in der App: `.karte-rumpf { background: var(--bg) }`), darauf liegt das Blatt hell wie `.report`, auch im
+    dunklen Schema (Ausnahme „Papier“). Ein Leertext („Noch keine Seiten“) steht auf dem Rumpf in `.muted`, nicht auf
+    dem Blatt; auf dem Blatt gelten die Papierfarben, nie `--muted` oder andere Farben des Schemas.
   - **Abschnitte** (`abschnitte`): Bündelt eine Karte ohne Kopf mehrere Themen (z. B. Projekt, Geschosse, Flächen), je
     Thema ein `<section>` direkt im Rumpf mit `h2` (wie die Kopfüberschrift, `--fs-l`), Trennlinien bis an den Rand, in
     einer `.section-head` mit Knopf ohne eigenen Abstand.

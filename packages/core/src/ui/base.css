@@ -888,28 +888,32 @@ textarea:focus {
   margin-bottom: 6px;
 }
 
+/* Kennzahlen: Kacheln nebeneinander, in schmalen Karten umbrechend statt gestaucht (die Mindestbreite ist der Inhalt,
+   9em die Wunschbreite) */
 .metric-row {
   display: flex;
-  gap: 8px;
-  margin-bottom: 10px;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  margin-bottom: var(--s3);
 }
 
 .metric {
-  flex: 1;
+  flex: 1 1 9em;
   background: var(--bg);
-  border-radius: 4px;
-  padding: 6px 8px;
+  border-radius: var(--radius-s);
+  padding: var(--s1) var(--s2);
   display: flex;
   flex-direction: column;
 }
 
-.metric span {
-  font-size: 11px;
+.metric span,
+.metric small {
+  font-size: var(--fs-xs);
   color: var(--muted);
 }
 
 .metric strong {
-  font-size: 16px;
+  font-size: var(--fs-xl);
   font-variant-numeric: tabular-nums;
 }
 
@@ -2706,6 +2710,24 @@ button.ungespeichert::after {
   background: var(--accent-soft);
   color: var(--accent-text);
   font-weight: 600;
+}
+
+/* Register mit kurzem und langem Namen (<span class="lang">, <span class="kurz" aria-hidden="true">, voller Name als
+   aria-label am Tab): in einer schmalen Kartenleiste nur der kurze. Gemessen wird die Leiste, nicht das Fenster –
+   neben der Karte können Seitenkarten stehen. */
+.segment .kurz {
+  display: none;
+}
+.karte-leiste:has(.segment .kurz) {
+  container: karte-leiste / inline-size;
+}
+@container karte-leiste (max-width: 640px) {
+  .segment .lang {
+    display: none;
+  }
+  .segment .kurz {
+    display: inline;
+  }
 }
 
 /* lange oder viele Werte: senkrecht untereinander statt umbrechend (umbrechende Segmente lesen sich treppenartig) */
