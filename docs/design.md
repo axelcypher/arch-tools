@@ -466,9 +466,13 @@ Zurücksetzen, Sonderfunktionen. Feste Namen, in allen Apps gleich:
   neben „Datei“ der App im Tab (Arkly hat kein eigenes „Datei“; Strg+, gilt einmal, siehe oben). Verweise aus den
   Einstellungen auf einen Dialog der App (Werkzeug, Datenpflege) zählen nicht als doppelter Einstieg (siehe
   „Einstellungen“).
-  Ebenso „Exportieren“: Es steht in jeder App unter „Datei → Exportieren“, auch wenn dieselbe Ausgabe zugleich der
-  Hauptknopf (oder der Knopf „Exportieren“ in der Leiste) ist – der Knopf ist die schnelle Ausgabe ohne Rückfrage, der
-  Menüpunkt öffnet den Dialog mit Ziel und Vorlage. So findet man jede Ausgabe in jeder App an derselben Stelle.
+  Bewusste Ausnahme ist auch „Datei → Exportieren“: Jede Ausgabe in eine Datei (Excel, PDF, CSV) steht dort, auch wenn
+  sie zugleich der Hauptknopf oder der Knopf „Exportieren“ in der Leiste ist – so findet man jede Ausgabe in jeder App
+  an derselben Stelle. Der Knopf „Exportieren“ gibt ohne Dialog mit der eingestellten Vorlage aus, der Menüpunkt öffnet
+  den Dialog; ist der Hauptknopf selbst eine Ausgabe mit Dialog („Als PDF exportieren …“), führen beide zum selben
+  Dialog, und sein Tastenkürzel steht auch am Menüpunkt (`tasten`). Anders „Drucken …“: Drucken ist keine Ausgabe in
+  eine Datei und steht nur dann in „Datei“, wenn es nicht der Hauptknopf ist; ein Hauptknopf „Drucken / PDF …“
+  (Druckvorschau, daraus auch PDF) bringt deshalb keinen Punkt unter „Exportieren“ mit.
 - **Aufbau:** links „Datei“ und „Speichern“, in der Mitte die Werkzeuge bzw. Hauptschritte, rechts der Hauptknopf,
   zuletzt „Mehr“ (FABRIO: „Datei“ im Fuß der Navigation, siehe oben).
 - **Zeilen:** Seltene Aktionen einer Tabellen- oder Listenzeile (FABRIO-Rechnung: Deckblatt, Mail an den Zahler)
