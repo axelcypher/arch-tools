@@ -344,7 +344,9 @@ body,
   padding: var(--s3) var(--karte-pad);
   border-bottom: 1px solid var(--line-soft);
 }
+/* der letzte Abschnitt endet so tief wie der Rumpf einer gewöhnlichen Karte */
 .karte-rumpf.abschnitte > section:last-child {
+  padding-bottom: var(--karte-pad);
   border-bottom: none;
 }
 .karte-rumpf.abschnitte > section > h2,
