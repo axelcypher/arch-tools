@@ -239,6 +239,12 @@ body,
   box-shadow: var(--karte-schatten);
   overflow: hidden;
 }
+/* Karte in Inhaltshöhe (hoehe="inhalt") in einer Spalte: so hoch wie ihr Inhalt, höchstens die halbe Spalte –
+   darüber scrollt ihr Rumpf; die übrigen Karten teilen sich den Rest */
+.flaechen-spalte > .karte.karte-inhalt {
+  flex: 0 1 auto;
+  max-height: 50%;
+}
 /* Seitenkarten in einer Leiste nehmen deren Breite; in einer Spalte teilen sich die Karten die Höhe */
 .leiste > .karte {
   flex: 1;

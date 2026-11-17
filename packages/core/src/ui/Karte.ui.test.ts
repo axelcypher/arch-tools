@@ -84,4 +84,13 @@ describe('Fläche und Karten', () => {
     // Radien aus der Skala, keine festen 6px mehr
     expect(css).not.toMatch(/border-radius: 6px/);
   });
+
+  it('hoehe="inhalt": Klasse karte-inhalt, Vorgabe ohne; base.css begrenzt sie in der Spalte auf die halbe Höhe', () => {
+    const host = render(h(FlaechenSpalte, { children: [h(Karte, { key: 'l', titel: 'Referenz' }), h(Karte, { key: 'k', titel: 'Objektiv', hoehe: 'inhalt', className: 'x' })] }));
+    const [lang, kurz] = host.querySelectorAll('.karte');
+    expect(lang.className).toBe('karte');
+    expect(kurz.className).toBe('karte karte-inhalt x');
+    const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'base.css'), 'utf8');
+    expect(css).toMatch(/\.flaechen-spalte > \.karte\.karte-inhalt \{[^}]*flex: 0 1 auto;[^}]*max-height: 50%;/);
+  });
 });

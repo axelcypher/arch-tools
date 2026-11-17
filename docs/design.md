@@ -488,7 +488,9 @@ Werkzeugleiste liegt mit auf der Fläche (gleicher Grund, keine Linie). Baustein
   (14px, aus der gewählten Vorschau), Kopfhöhe `--karte-kopf-h` (ein Knopf in `--ctl-h` mit `--s2` darüber und
   darunter), Fußzeile in `--ctl-h`.
 - `FlaechenSpalte` (`.flaechen-spalte`): mehrere Karten untereinander (z. B. „Geschoss“ über „Auswertung“), sie
-  teilen sich die Höhe; `wachsend` lässt die Spalte die Restbreite nehmen.
+  teilen sich die Höhe; `wachsend` lässt die Spalte die Restbreite nehmen. Eine kurze Karte unter einer langen bekommt
+  `hoehe="inhalt"`: Sie ist so hoch wie ihr Inhalt (höchstens die halbe Spalte, darüber scrollt sie), die übrigen
+  Karten teilen sich den Rest.
 - `ZeichenKarte` (`.zeichen-karte`): Die Zeichenfläche füllt die Karte und bleibt hell (`.canvas`); Bedienhinweis,
   Koordinaten und Maßstab stehen in der Fußzeile der Karte (`fuss`), nicht über dem Plan. Kopf wie bei `Karte`
   (`titel`, `aktionen`), meist ohne – die Werkzeuge stehen in der Werkzeugleiste.
