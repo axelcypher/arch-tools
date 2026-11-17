@@ -564,6 +564,8 @@ describe('Nachweis-Spalte, Regeln, Rückgängig (G-28, G-29, G-32)', () => {
     expect(css).not.toMatch(/@media \(max-width: 1280px\)/);
     // Kartenkopf ganz aus core: das „?“ kommt über die Eigenschaft hilfe, keine eigene Regel für das h2
     expect(css).not.toMatch(/\.karte-kopf h2\s*\{/);
+    // Verweisknopf (button.link) kommt aus core, keine eigene Regel
+    expect(css).not.toMatch(/button\.link/);
     // schmale Fenster: die Untergrenze der Seitenkarten kommt aus BreitenLeiste min (core), keine eigene Regel;
     // die Kacheln stehen bei wenig Platz untereinander, die Zahlenspalten haben feste Breiten statt Prozent
     expect(css).not.toMatch(/--leiste-min/);
