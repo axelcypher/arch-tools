@@ -189,7 +189,11 @@ export function GrzGfzView() {
             </select>
           </Field>
           <Field label="BauNVO-Fassung">
-            <select value={m.baunvo ?? 'auto'} onChange={(e) => setM({ baunvo: e.target.value === 'auto' ? undefined : (e.target.value as BauNVOFassung) })}>
+            <select
+              value={m.baunvo ?? 'auto'}
+              title={m.baunvo ? BAUNVO_FASSUNGEN.find((f) => f.id === m.baunvo)?.label : `automatisch (${baunvoLabel(auto.baunvo)})`}
+              onChange={(e) => setM({ baunvo: e.target.value === 'auto' ? undefined : (e.target.value as BauNVOFassung) })}
+            >
               <option value="auto">automatisch ({baunvoLabel(auto.baunvo)})</option>
               {BAUNVO_FASSUNGEN.map((f) => (
                 <option key={f.id} value={f.id}>
@@ -199,7 +203,11 @@ export function GrzGfzView() {
             </select>
           </Field>
           <Field label="Vollgeschossbegriff">
-            <select value={m.bauo ?? 'auto'} onChange={(e) => setM({ bauo: e.target.value === 'auto' ? undefined : (e.target.value as BauOFassung) })}>
+            <select
+              value={m.bauo ?? 'auto'}
+              title={m.bauo ? BAUO_FASSUNGEN.find((f) => f.id === m.bauo)?.label : `automatisch (${bauoLabel(auto.bauo)})`}
+              onChange={(e) => setM({ bauo: e.target.value === 'auto' ? undefined : (e.target.value as BauOFassung) })}
+            >
               <option value="auto">automatisch ({bauoLabel(auto.bauo)})</option>
               {BAUO_FASSUNGEN.map((f) => (
                 <option key={f.id} value={f.id}>
@@ -530,8 +538,7 @@ export function GrzGfzView() {
                   Nr.
                 </th>
                 <th>Fläche</th>
-                <th>Nutzung</th>
-                <th>Versiegelung</th>
+                <th>Nutzung · Versiegelung</th>
                 <th className="num" title="eindeutig zugeordnete Fläche außerhalb des Gebäudes – Überlagerungen zählen nur einmal">
                   m²
                 </th>
@@ -567,8 +574,6 @@ export function GrzGfzView() {
                           </option>
                         ))}
                       </select>
-                    </td>
-                    <td>
                       <select
                         value={f.versiegelung}
                         title={VERSIEGELUNGEN.find((x) => x.id === f.versiegelung)?.label}
@@ -597,7 +602,7 @@ export function GrzGfzView() {
                 );
               })}
               <tr className="sum">
-                <td colSpan={4}>Summe (jede Stelle einmal)</td>
+                <td colSpan={3}>Summe (jede Stelle einmal)</td>
                 <td className="num">{fmt2(n.lageplan.filter((x) => !x.nachbar).reduce((a, x) => a + x.flaecheEindeutig, 0))}</td>
                 <td />
               </tr>

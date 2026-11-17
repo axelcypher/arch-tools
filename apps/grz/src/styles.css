@@ -32,23 +32,24 @@
   gap: 4px;
   margin-bottom: 12px;
 }
-/* Vollgeschoss-Tabelle: feste Spalten in px, bemessen an der Zellschrift (13 px: „−0,20“, „100 %“) bzw. am längsten
+/* Vollgeschoss-Tabelle: feste Spalten, bemessen an der Zellschrift (--fs-m: „−0,20“, „100 %“) bzw. am längsten
    Kopfwort („Geschoss“); die Einstufung nimmt den Rest. Köpfe höchstens zweizeilig („über / Gel.“), die Einheit steht
-   im Tooltip. So passen die Zahlen auch, wenn die Nachweis-Karte auf 320 px nachgibt. */
+   im Tooltip – ein längeres Kopfwort braucht eine breitere Spalte. So passen die Zahlen auch, wenn die Nachweis-Karte
+   auf 320 px nachgibt. */
 .grz-vg-tabelle {
   table-layout: fixed;
 }
 .grz-vg-tabelle th:nth-child(1) {
-  width: 56px;
+  width: calc(4.3 * var(--fs-m));
 }
 .grz-vg-tabelle th:nth-child(2) {
-  width: 52px;
+  width: calc(3.7 * var(--fs-m));
 }
 .grz-vg-tabelle th:nth-child(3) {
-  width: 44px;
+  width: calc(3.3 * var(--fs-m));
 }
 .grz-vg-tabelle th:nth-child(4) {
-  width: 48px;
+  width: calc(3.6 * var(--fs-m));
 }
 .grz-tabelle.grz-vg-tabelle th.num,
 .grz-vg-tabelle th {
@@ -57,11 +58,6 @@
 /* Spanne des Geländes („−0,40 – 1,25“) darf umbrechen, statt in die Nachbarspalte zu laufen */
 .grz-vg-tabelle td .small-text {
   white-space: normal;
-}
-.grz-vg-tabelle select {
-  width: 100%;
-  font-size: 11px;
-  text-overflow: ellipsis;
 }
 .grz-hinweis-zeile {
   display: block;
@@ -129,16 +125,24 @@
   background: var(--warn-bg);
   color: var(--warn-text);
 }
-/* Auswahl so breit wie die Spalte (lange Einträge gekürzt), damit die Tabelle nicht über die Karte hinausragt */
-.grz-flaechen-tabelle select {
+/* Auswahlen in den dichten Tabellen: einheitlich --fs-s, so breit wie die Spalte (lange Einträge gekürzt, voller Stand im
+   Tooltip); Nutzung und Versiegelung stehen in der Flächentabelle untereinander, damit beide ganz lesbar bleiben */
+.grz-flaechen-tabelle select,
+.grz-raum-tabelle select,
+.grz-vg-tabelle select {
   width: 100%;
-  min-width: 6.25em;
   font-size: var(--fs-s);
   text-overflow: ellipsis;
 }
+.grz-flaechen-tabelle select {
+  display: block;
+}
+.grz-flaechen-tabelle select + select,
 .grz-raum-tabelle select {
-  width: 100%;
   margin: 2px 0;
+}
+/* Eingabekarte: gekürzte Auswahl mit Auslassungspunkten (voller Stand im Tooltip) */
+.grz-fest select {
   text-overflow: ellipsis;
 }
 .grz-begruendung td {

@@ -568,12 +568,15 @@ describe('Nachweis-Spalte, Regeln, Rückgängig (G-28, G-29, G-32)', () => {
     // die Kacheln stehen bei wenig Platz untereinander, die Zahlenspalten haben feste Breiten statt Prozent
     expect(css).not.toMatch(/--leiste-min/);
     expect(css).toMatch(/\.kpis\s*\{[^}]*grid-template-columns: repeat\(auto-fit, minmax\(12em, 1fr\)\)/);
-    expect(css.slice(css.indexOf('.grz-vg-tabelle th:nth-child(1)'), css.indexOf('.grz-vg-tabelle select'))).not.toMatch(/width: \d+%/);
+    const spalten = css.slice(css.indexOf('.grz-vg-tabelle th:nth-child(1)'), css.indexOf('.grz-tabelle.grz-vg-tabelle th.num'));
+    expect(spalten.match(/width: calc\([\d.]+ \* var\(--fs-m\)\)/g)).toHaveLength(4);
+    expect(spalten).not.toMatch(/width: \d+(%|px)/);
     // Spanne des Geländes bricht in der festen Spalte um, statt die Nachbarspalte zu überdecken
     expect(css).toMatch(/\.grz-vg-tabelle td \.small-text\s*\{\s*white-space: normal;/);
     // Auswahlen in Flächen- und Raumtabelle spaltenbreit, damit die Tabellen nicht über die Karte hinausragen
-    expect(css).toMatch(/\.grz-flaechen-tabelle select\s*\{\s*width: 100%;/);
-    expect(css).toMatch(/\.grz-raum-tabelle select\s*\{\s*width: 100%;/);
+    // … in einer Skalengröße (--fs-s) für alle dichten Tabellen
+    expect(css).toMatch(/\.grz-flaechen-tabelle select,\s*\.grz-raum-tabelle select,\s*\.grz-vg-tabelle select\s*\{\s*width: 100%;\s*font-size: var\(--fs-s\);/);
+    expect(css).not.toMatch(/select[^{]*\{[^}]*font-size: 11px/);
     // Skizze ohne eigene Palette (helle Planfarben aus .canvas)
     expect(css).toContain('.grz-skizze {');
     const skizze = css.slice(css.indexOf('.grz-skizze {'), css.indexOf('}', css.indexOf('.grz-skizze {')));
@@ -1341,8 +1344,15 @@ describe('Kartenlayout (Richtung C)', () => {
     // Tabellen auf der gemeinsamen Zahlentabelle
     expect(host.querySelectorAll('table.summary-table').length).toBeGreaterThan(0);
     // Flächentabelle: gekürzte Auswahlen nennen den vollen Eintrag im Tooltip
-    const nutzung = host.querySelector<HTMLSelectElement>('.grz-flaechen-tabelle tbody select')!;
+    // Nutzung und Versiegelung in einer Zelle untereinander, gekürzt mit vollem Eintrag im Tooltip
+    const zelle = host.querySelector('.grz-flaechen-tabelle tbody tr td:nth-child(3)')!;
+    const [nutzung, versiegelung] = [...zelle.querySelectorAll('select')];
+    expect(versiegelung).toBeDefined();
     expect(nutzung.title).toBe(nutzung.selectedOptions[0].textContent);
+    expect(versiegelung.title).toBe(versiegelung.selectedOptions[0].textContent);
+    // Eingabekarte: BauNVO-Fassung und Vollgeschossbegriff nennen den vollen Stand im Tooltip
+    const fest = [...host.querySelectorAll<HTMLSelectElement>('.grz-fest select')];
+    expect(fest.map((x) => x.title)).toEqual(expect.arrayContaining(['automatisch (BauNVO 1962)', 'automatisch (BauO NW 1962/1970)']));
     expect(host.querySelectorAll('table:not(.summary-table):not(.report-table)')).toHaveLength(0);
   });
 });

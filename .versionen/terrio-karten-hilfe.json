@@ -1,3 +1,6 @@
 {
-  "grz": { "stufe": "patch", "notiz": "Hilfe „?“ direkt hinter dem Kartentitel; in schmalen Fenstern behält der Lageplan seine Breite und der Nachweis bleibt ohne Überlauf lesbar." }
+  "grz": {
+    "stufe": "patch",
+    "notiz": "Hilfe „?“ direkt hinter dem Kartentitel; in schmalen Fenstern bleiben Eingaben, Lageplan und Nachweis ohne Überlauf lesbar (Einstufung „ja/nein (auto)“, Nutzung und Versiegelung untereinander)."
+  }
 }
