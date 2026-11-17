@@ -949,7 +949,7 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
               <strong>Mails aus Outlook hierher ziehen</strong>
               <span className="muted small-text">
                 Aus dem klassischen Outlook direkt hierher – sie werden mit dem richtigen Namen im gewählten Ordner abgelegt (kopiert, in Outlook bleiben sie). Oder gespeicherte .msg-Dateien{' '}
-                <button className="po-link" onClick={() => dateiWahl.current?.click()}>
+                <button className="link" onClick={() => dateiWahl.current?.click()}>
                   wählen …
                 </button>
                 <input

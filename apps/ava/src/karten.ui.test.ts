@@ -65,6 +65,18 @@ describe('Kartenlayout (docs/design.md „Fläche und Karten“)', () => {
     expect(aside.querySelector('.karte-kopf h2')?.textContent).toBe('Eigenschaften');
   });
 
+  it('Tabs mit kurzem und langem Namen (core .lang/.kurz): zugänglicher Name enthält den kurzen, title den vollen', async () => {
+    act(() => useAva.getState().setAnsicht({ art: 'gewerk', gewerk: 'G8', tab: 'lv' }));
+    await zeige(createElement(Gewerk));
+    await warte(() => host.querySelector('#ava-tab-lv'));
+    const lv = document.getElementById('ava-tab-lv')!;
+    expect(lv.getAttribute('aria-label')).toBe('Leistungsverzeichnis (LV)');
+    expect(lv.getAttribute('title')).toMatch(/^Leistungsverzeichnis: /);
+    expect(lv.querySelector('.lang')?.textContent).toBe('Leistungsverzeichnis');
+    expect(lv.querySelector('.kurz[aria-hidden="true"]')?.textContent).toBe('LV');
+    expect(document.getElementById('ava-tab-angebote')?.getAttribute('aria-label')).toBe('Angebote & Preisspiegel');
+  });
+
   it('Tabwechsel per Klick: der neue Tab hat den Fokus, das Tabpanel gehört zu ihm', async () => {
     act(() => useAva.getState().setAnsicht({ art: 'gewerk', gewerk: 'G8', tab: 'lv' }));
     await zeige(createElement(Gewerk));

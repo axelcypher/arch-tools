@@ -119,7 +119,7 @@ export function RechnungenAnsicht({ gewerk }: { gewerk?: string }) {
       }
     >
       {a1 && (
-        <div className="metric-row ava-kennzahlen">
+        <div className="metric-row">
           <div className="metric">
             <span>Kostenschätzung</span>
             <strong>{euro(a1.kostenschaetzung)}</strong>
