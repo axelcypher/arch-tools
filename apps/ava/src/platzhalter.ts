@@ -9,6 +9,7 @@
 import type { ProjectMeta } from '@core/model';
 import { FABRIO_FIRMA, FABRIO_GEWERK, FABRIO_LV, FABRIO_RECHNUNG, GLOBAL_FABRIO } from '@core/einstellungen/variablen';
 import { ersetzen, globaleWerte, type Variable, type Wert } from '@core/platzhalter';
+import { phaseQuelle, projektPlanphase } from '@core/planphase';
 
 /** globale Variablen mit den alten Namen von FABRIO; Rechnungs- und LV-Namen – eine Quelle in core (zentrale Einstellungen) */
 const GLOBAL: Variable[] = GLOBAL_FABRIO;
@@ -45,8 +46,15 @@ export const mailVariablen = (id: string) => (id === 'protokoll' ? MAIL_PROTOKOL
  * Werte der globalen Variablen in FABRIO: {PROJEKT_VORHABEN} ohne Vorhaben der Name des Projekts (wie früher
  * {Projekt}), {BEARBEITER} aus den Einstellungen des Deckblatts, sonst aus der Projektdatei.
  */
-export function globaleAva(meta: Pick<ProjectMeta, 'projektcode' | 'kurzname' | 'vorhaben' | 'bearbeiter'>, projektName: string, bearbeiter?: string, datum?: Date): Record<string, Wert> {
-  return globaleWerte({ projektcode: meta.projektcode, kurzname: meta.kurzname, vorhaben: meta.vorhaben || projektName, bearbeiter: bearbeiter || meta.bearbeiter || '', datum });
+export function globaleAva(
+  meta: Pick<ProjectMeta, 'projektcode' | 'kurzname' | 'vorhaben' | 'bearbeiter' | 'planphase'>,
+  projektName: string,
+  bearbeiter?: string,
+  datum?: Date,
+  namensschema?: unknown,
+): Record<string, Wert> {
+  const phase = phaseQuelle(projektPlanphase({ meta, namensschema }));
+  return globaleWerte({ projektcode: meta.projektcode, kurzname: meta.kurzname, vorhaben: meta.vorhaben || projektName, bearbeiter: bearbeiter || meta.bearbeiter || '', datum, phase });
 }
 
 /** Name einer neuen LV-Datei (ohne Bezeichnung und Endung); unbekannte Platzhalter fallen weg */

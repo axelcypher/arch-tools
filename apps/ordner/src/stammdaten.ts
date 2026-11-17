@@ -31,6 +31,8 @@ export interface Stammdaten {
   status?: ProjektStatus;
   /** beauftragte Leistungsphasen (1–9); leer = nicht festgelegt */
   leistungsphasen: number[];
+  /** aktuelle Planungsphase (Kürzel aus dem Namensschema, z. B. GP); fehlt = nicht festgelegt */
+  planphase?: string;
   beteiligte: Beteiligter[];
   /** gewählte Vorlagen-Presets; nicht gesetzt = die Standard-Presets der Struktur */
   presets?: string[];
@@ -87,6 +89,7 @@ export function bereinigt(s: Stammdaten): Stammdaten {
     bearbeiter: t(s.bearbeiter),
     ...(s.status && s.status !== 'aktiv' ? { status: s.status } : {}),
     leistungsphasen: [...new Set(s.leistungsphasen)].sort((x, y) => x - y),
+    ...(s.planphase?.trim() ? { planphase: s.planphase.trim().toUpperCase() } : {}),
     beteiligte: s.beteiligte.map((b) => ({ rolle: t(b.rolle), name: t(b.name), kontakt: t(b.kontakt) })).filter((b) => b.rolle || b.name || b.kontakt),
     ...(s.presets ? { presets: [...new Set(s.presets.map(t).filter(Boolean))] } : {}),
     ...(s.koordinaten ? { koordinaten: { ...s.koordinaten } } : {}),
@@ -112,6 +115,7 @@ export function metaAus(stamm: Stammdaten): ProjectMeta {
   if (s.bebauungsplan) m.bebauungsplan = { ...s.bebauungsplan };
   if (s.status) m.status = s.status;
   if (s.leistungsphasen.length) m.leistungsphasen = [...s.leistungsphasen];
+  if (s.planphase) m.planphase = s.planphase;
   if (s.beteiligte.length) m.beteiligte = s.beteiligte.map((b) => ({ ...b }));
   if (s.koordinaten) m.koordinaten = { ...s.koordinaten };
   return m;
@@ -125,6 +129,7 @@ export function formularMeta(s: Stammdaten): ProjectMeta {
   if (s.aktenzeichen) m.aktenzeichen = s.aktenzeichen;
   if (s.bebauungsplan) m.bebauungsplan = s.bebauungsplan;
   if (s.status) m.status = s.status;
+  if (s.planphase) m.planphase = s.planphase;
   if (s.koordinaten) m.koordinaten = s.koordinaten;
   return m;
 }
@@ -143,6 +148,8 @@ export function stammAusMeta(m: ProjectMeta, angaben?: ProjektordnerAngaben): St
     bearbeiter: m.bearbeiter,
     ...(m.status ? { status: m.status } : {}),
     leistungsphasen: [...(m.leistungsphasen ?? [])],
+    // immer gesetzt (auch undefined): beim Übernehmen als Änderung im Assistenten löscht eine geleerte Phase die alte
+    planphase: m.planphase,
     beteiligte: (m.beteiligte ?? []).map((b) => ({ ...b })),
     ...(angaben?.presets ? { presets: [...angaben.presets] } : {}),
     ...(m.koordinaten ? { koordinaten: { ...m.koordinaten } } : {}),
@@ -185,6 +192,7 @@ const META_TEILE: [keyof ProjectMeta, string][] = [
   ['status', 'Status'],
   ['bearbeiter', 'Bearbeitung'],
   ['leistungsphasen', 'Leistungsphasen'],
+  ['planphase', 'Planungsphase'],
   ['beteiligte', 'Beteiligte'],
   ['koordinaten', 'Koordinaten'],
 ];

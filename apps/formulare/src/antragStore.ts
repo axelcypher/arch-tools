@@ -66,6 +66,7 @@ import {
 } from './antrag';
 import type { Namensschema } from '@core/namensschema';
 import { alleKuerzel, wirksamesNamensschema } from '@core/namensschema';
+import { phaseQuelle, projektPlanphase } from '@core/planphase';
 import type { PlansatzErgebnis } from './plansatz';
 import { plansatzPruefen } from './plansatz';
 import type { Merkmal } from './bedingung';
@@ -420,12 +421,18 @@ const oapMeta = (p: Projekt | null) => {
   return o && o !== 'fehlt' ? o.inhalt.meta : undefined;
 };
 
+/** Planungsphase des gewählten Projekts nach dem Namensschema seiner Projektdatei (sonst des Büros) – für {PHASE} … */
+const oapPhase = (p: Projekt | null) => {
+  const { oap: o, namensschemaBuero } = useFormulare.getState();
+  return oapMeta(p) && o && o !== 'fehlt' ? phaseQuelle(projektPlanphase(o.inhalt, namensschemaBuero)) : null;
+};
+
 /** voreingestellter Zielordner des Exports (relativ zum Projektordner) */
 export function zielOrdner(s: Parameters<typeof aktiveFassung>[0], p: Projekt | null): string {
   const e = wirksameEinstellungen(s, p);
   if (e.ziel === 'aktiv' || !e.zielpfad.trim()) return antragsOrdner(s, p);
   const meta = oapMeta(p);
-  return zielpfadAus(e.zielpfad, { kuerzel: p?.ordner ?? '', antrag: aktiveFassung(s, p), art: artVonFassung(s, p, aktiveFassung(s, p)), kurzname: meta?.kurzname, vorhaben: meta?.vorhaben, bearbeiter: meta?.bearbeiter });
+  return zielpfadAus(e.zielpfad, { kuerzel: p?.ordner ?? '', antrag: aktiveFassung(s, p), art: artVonFassung(s, p, aktiveFassung(s, p)), kurzname: meta?.kurzname, vorhaben: meta?.vorhaben, bearbeiter: meta?.bearbeiter, phase: oapPhase(p) });
 }
 
 const ohneEndung = (n: string) => n.replace(/\.[^.]+$/, '');
@@ -1433,7 +1440,16 @@ export const useAntrag = create<AntragState>((set, get) => {
         const vollstaendig = infos.length >= s.formulare.length;
         const neu = vollstaendig || !alt ? projektStatusAus(st.projektdatei.umfang ? dokumente.map((d) => d.status) : [], fassung, Date.now(), antrag) : { ...alt, fassung, ...(antrag ? { antrag } : {}) };
         if (!antrag) delete neu.antrag;
-        if (!alt || JSON.stringify([alt.anzahl, alt.fassung, alt.antrag]) !== JSON.stringify([neu.anzahl, neu.fassung, neu.antrag]) || neu.zeit - alt.zeit > 60_000) {
+        // Planungsphase aus der gelesenen Projektdatei (wie der Antrag: Stand beim letzten Öffnen); noch nicht gelesen: die bisherige
+        const oap = oapMeta(projekt);
+        const planphase = oap ? oap.planphase : alt?.planphase;
+        if (planphase) neu.planphase = planphase;
+        else delete neu.planphase;
+        if (
+          !alt ||
+          JSON.stringify([alt.anzahl, alt.fassung, alt.antrag, alt.planphase]) !== JSON.stringify([neu.anzahl, neu.fassung, neu.antrag, neu.planphase]) ||
+          neu.zeit - alt.zeit > 60_000
+        ) {
           const projektStatus = { ...st.projektStatus, [k]: neu };
           schreiben(PROJEKTSTATUS, projektStatus);
           set({ projektStatus });
@@ -1951,6 +1967,7 @@ export function exportVorschlag(formularPfad: string, datum = new Date()): Expor
     kurzname: meta?.kurzname,
     vorhaben: meta?.vorhaben,
     bearbeiter: meta?.bearbeiter,
+    phase: oapPhase(projekt),
     datum,
     nr: doc?.eintrag.nr,
     name: doc?.eintrag.titel ?? anzeigeName(formularName),

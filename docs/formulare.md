@@ -19,8 +19,9 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
   „Formular einrichten“ – ebenfalls Seitenkarten. Formular und Felderansicht stehen direkt auf der Fläche: das weiße
   Papier bzw. **jeder Abschnitt der Felderansicht** ist die Karte, „Was fehlt noch?“ ebenso. Projektdaten (Gruppen als
   Seitenkarte, die gewählte Gruppe als Karte), Antragsdaten, Projektübersicht und Dateien sind je eine Karte. Die
-  Seitenüberschriften der Felderansicht („Seite 1 von 2“) sind größer als die Köpfe der Abschnittskarten. Der **Kopf
-  der Navigation steht fest** (rollt nicht mit): Projekt, Antrag und darunter ein Knopf in zwei Hälften –
+  Seitenüberschriften der Felderansicht („Seite 1 von 2“, h2) sind größer als die Köpfe der Abschnittskarten (h3,
+  ohne eigene Region für Vorleseprogramme); Formular und Felder rollen als Ganzes, Suche und Filter bleiben oben.
+  Der **Kopf der Navigation steht fest** (rollt nicht mit): Projekt, Antrag und darunter ein Knopf in zwei Hälften –
   **Projektdaten** (die Projektkarte – gilt für das ganze Projekt; aus ihr werden die Formulare ausgefüllt) und
   **Antragsdaten** (nur für den aktiven Antrag: Status, Antragsmerkmale, Antragsumfang – siehe unten); darunter
   rollt der Rest ab „Formulare“. Aufbau: Dokument › Antrag › Projekt.

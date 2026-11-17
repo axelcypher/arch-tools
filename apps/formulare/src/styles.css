@@ -804,14 +804,6 @@ button.icon.fo-gl-zaehlt.an {
 
 /* ---------- Inhalt ---------- */
 
-/* Formular und Felder stehen direkt auf der Fläche (wachsende Spalte, rollt selbst): das Papier bzw. jeder Abschnitt ist
-   die Karte (Vorschau Richtung C) */
-.fo-inhalt {
-  overflow: auto;
-  /* Luft für Fokussaum und Kartenschatten am Rand der rollenden Spalte, ohne die Spalte zu verschieben */
-  padding: 2px var(--s1);
-  margin: -2px calc(-1 * var(--s1));
-}
 .fo-meldung {
   display: flex;
   align-items: center;
@@ -922,10 +914,13 @@ button.icon.fo-gl-zaehlt.an {
   margin: 0 auto;
   padding-bottom: var(--s5);
 }
-/* Suche und Filter stehen auf der Fläche und bleiben beim Rollen oben */
+/* Suche und Filter stehen auf der Fläche und bleiben beim Rollen oben – bündig an der Oberkante der rollenden Spalte
+   (ihr Innenabstand --s1 aus core wird überdeckt, sonst liefe der Inhalt durch einen Streifen darüber) */
 .fo-felder-kopf {
   position: sticky;
-  top: 0;
+  top: calc(-1 * var(--s1));
+  padding-top: var(--s1);
+  margin-top: calc(-1 * var(--s1));
   z-index: 1;
   display: flex;
   flex-wrap: wrap;

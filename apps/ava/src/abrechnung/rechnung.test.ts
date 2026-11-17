@@ -20,6 +20,9 @@ describe('Benennung der Rechnungen', () => {
   it('bildet Dateinamen nach dem Muster und ohne unzulässige Zeichen', () => {
     const w = { kuerzel: 'K62', nr: 53, firma: 'Musterbau', datum: '2026-11-12', art: 'SR', lfd: 4 };
     expect(nameBilden(VORGABE_MUSTER[0], w)).toBe('K62 R053 Musterbau 261112 SR4');
+    // Dateiname mit Phase: leer entfällt sie samt Trenner, sonst steht sie da
+    expect(nameBilden('{Kürzel} {PHASE} {Datum} {Art}{Lfd}', w, { PHASE: '' })).toBe('K62 261112 SR4');
+    expect(nameBilden('{Kürzel} {PHASE} {Datum} {Art}{Lfd}', w, { PHASE: 'AP' })).toBe('K62 AP 261112 SR4');
     expect(nameBilden('{Kürzel} {Datum} {Lfd}.{Art} Fa. {Firma}', { ...w, firma: 'Müller/Söhne' })).toBe('HVO'.length && 'K62 261112 4.SR Fa. Müller Söhne');
     expect(nameLesen(`${nameBilden(VORGABE_MUSTER[0], w)}.pdf`, VORGABE_MUSTER[0])).toMatchObject(w);
     // alte Muster ({Kürzel}, {Datum}) bilden und erkennen dasselbe wie die neuen (Gegenprobe)
@@ -92,6 +95,10 @@ describe('Mailentwurf', () => {
     // gespeicherte Vorlagen mit alten Namen ergeben dasselbe (Gegenprobe)
     expect(vorlageFuellen('{Kürzel} {Projekt} – {Firma-Mail} {Datum} {Bearbeiter}', w)).toBe(vorlageFuellen('{PROJEKT_KUERZEL} {PROJEKT_VORHABEN} – {FirmaMail} {Rechnungsdatum} {BEARBEITER}', w));
     expect(vorlageFuellen('{Kürzel} {Datum}', w)).toBe('K62 12.11.2026');
+    // Fließtext: um eine leere Phase bleiben Trenner, Satzzeichen und Zeilen, wie sie in der Vorlage stehen
+    const ohnePhase = { ...w, PHASE: '', PHASE_NAME: '', LPH: '' };
+    expect(vorlageFuellen('Rechnung {Nr} – {PHASE_NAME} – {Firma}\nPhase: {PHASE}, LPh {LPH}.', ohnePhase)).toBe('Rechnung 53 –  – Musterbau\nPhase: , LPh .');
+    expect(vorlageFuellen('{PROJEKT_KUERZEL} {PHASE} – Rechnung', { ...w, PHASE: 'AP' })).toBe('K62 AP – Rechnung');
     // im Protokoll ist {Datum} das Datum der Besprechung; Unbekanntes und Werte anderer Vorlagen bleiben stehen
     expect(vorlageFuellen('Protokoll {Nr} vom {Datum} {Gewerk} {Foo}', { Nr: '3', Protokolldatum: '01.02.2026' }, MAIL_PROTOKOLL_VARIABLEN)).toBe('Protokoll 3 vom 01.02.2026 {Gewerk} {Foo}');
     for (const v of VORGABE_MAIL) expect(veraltetePlatzhalter([v.an, v.betreff, v.text].join(' '), mailVariablen(v.id))).toEqual([]);

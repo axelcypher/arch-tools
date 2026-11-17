@@ -60,7 +60,7 @@ export interface Struktur {
   nummernschema: string;
   /** Name des Projektordners, z. B. „{PROJEKT_KUERZEL} {PROJEKT_KURZNAME}“ */
   ordnername: string;
-  /** Dateinamenschema für Pläne, z. B. „{PROJEKT_KUERZEL}_{Plannummer}_{Index}_{Titel}“ */
+  /** Dateinamenschema für Pläne, z. B. „{PROJEKT_KUERZEL}_{PHASE}_{Plannummer}_{Index}_{Titel}“ */
   dateischema: string;
   ordner: OrdnerRegel[];
   /**
@@ -80,7 +80,7 @@ export const STANDARD: Struktur = {
   name: 'Standard',
   nummernschema: '{JAHR}-{Nr:3}',
   ordnername: '{PROJEKT_KUERZEL} {PROJEKT_KURZNAME}',
-  dateischema: '{PROJEKT_KUERZEL}_{Plannummer}_{Index}_{Titel}',
+  dateischema: '{PROJEKT_KUERZEL}_{PHASE}_{Plannummer}_{Index}_{Titel}',
   ordner: [
     { pfad: '00 Projekt' },
     { pfad: '01 Grundlagen/Bestand' },

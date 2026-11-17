@@ -1,6 +1,0 @@
-{
-  "flaechenrechner": {
-    "stufe": "patch",
-    "notiz": "Kartenlayout auf die gemeinsamen Bausteine umgestellt: Nachschlagen direkt hinter dem Kartentitel, Zeichenfläche als Hauptbereich, Koordinaten in der Fußzeile dauerhaft sichtbar."
-  }
-}
