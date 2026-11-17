@@ -92,19 +92,19 @@ Texttabellen: Spaltenköpfe linksbündig (`.summary-table.text`, z. B. Platzhalt
 
 ## Farben
 
-| Variable                           | Bedeutung                                                                                                       |
-| ---------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `--bg`, `--panel`                  | Fensterhintergrund, Flächen (Leisten, Dialoge)                                                                  |
-| `--text`, `--muted`                | Text, Nebentext (`--muted` hält auch auf Tönungen und `--bg` mindestens 4,5 : 1)                                |
-| `--border`, `--line-soft`          | Linien, feine Trennlinien in Tabellen                                                                           |
-| `--app`                            | Kachelfarbe der App aus dem Iconset – nur Titelleiste (siehe „App-Farbe“)                                       |
-| `--accent`, `--accent-soft`        | Akzent (aktive Werkzeuge, primärer Knopf, Links), Tönung                                                        |
-| `--ausgabe`, `--on-ausgabe`        | Bernstein für die eine Ausgabe-Aktion (Hauptknopf der Werkzeugleiste), mit dunkler Schrift                      |
-| `--accent-text`                    | Akzent als Schrift auf getönten Flächen (aktive Knöpfe, Chips) – mindestens 4,5:1                               |
-| `--ok-*`, `--warn-*`, `--fehler-*` | Status: eingehalten, prüfen, überschritten/Fehler; `--ok-punkt` usw. für Statuspunkte (Ampel)                   |
-| `--sel`                            | Auswahl auf Plänen (Orange); auch ungespeicherte Änderungen (Punkt in Titelleiste und an „Speichern“)           |
-| `--sel-foto`                       | Auswahl auf Fotos (Magenta, in beiden Schemata gleich) – Orange kollidiert dort mit Mess- und Markierungsfarben |
-| `--danger`                         | zerstörende Aktionen (Löschen)                                                                                  |
+| Variable                           | Bedeutung                                                                                                                                          |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--bg`, `--panel`                  | Fensterhintergrund, Flächen (Leisten, Dialoge)                                                                                                     |
+| `--text`, `--muted`                | Text, Nebentext (`--muted` hält auch auf Tönungen und `--bg` mindestens 4,5 : 1)                                                                   |
+| `--border`, `--line-soft`          | Linien, feine Trennlinien in Tabellen                                                                                                              |
+| `--app`                            | Kachelfarbe der App aus dem Iconset – nur Titelleiste (siehe „App-Farbe“)                                                                          |
+| `--accent`, `--accent-soft`        | Akzent (aktive Werkzeuge, primärer Knopf, Links), Tönung                                                                                           |
+| `--ausgabe`, `--on-ausgabe`        | Bernstein für die eine Ausgabe-Aktion (Hauptknopf der Werkzeugleiste) sowie Update und Speicherort-Warnung in der Titelleiste, mit dunkler Schrift |
+| `--accent-text`                    | Akzent als Schrift auf getönten Flächen (aktive Knöpfe, Chips) – mindestens 4,5:1                                                                  |
+| `--ok-*`, `--warn-*`, `--fehler-*` | Status: eingehalten, prüfen, überschritten/Fehler; `--ok-punkt` usw. für Statuspunkte (Ampel)                                                      |
+| `--sel`                            | Auswahl auf Plänen (Orange); auch ungespeicherte Änderungen (Punkt in Titelleiste und an „Speichern“)                                              |
+| `--sel-foto`                       | Auswahl auf Fotos (Magenta, in beiden Schemata gleich) – Orange kollidiert dort mit Mess- und Markierungsfarben                                    |
+| `--danger`                         | zerstörende Aktionen (Löschen)                                                                                                                     |
 
 **App-Farbe:** Die Titelleiste setzt `data-app` (Kennung aus `APP_NAMEN`) am Wurzelelement; `base.css` hält je App
 die Kachelfarbe `--app`. Sie trägt die Titelleiste (dunkel: mit Schwarz gemischt) – sonst nichts Flächiges. Als Akzent
@@ -112,7 +112,8 @@ dient sie nur, wenn ihr Farbton mindestens 35° von ok, Warnung und Fehler entfe
 hält: QUADRIO, RECTIO, FABRIO und LEXIO. TERRIO (Grün), NUMIO (Rot), PERMIO (Braun) und ATLAS (Türkis, nah an ok)
 behalten den neutralen Akzent Schiefer-Blaugrau, ebenso Arkly. `appFarben.test.ts` prüft Kontrast und Abstand je App;
 eine neue App bekommt dort ihren Eintrag. **Bernstein** (`--ausgabe`) gibt es nur für die eine Ausgabe je Bildschirm
-(„Flächenaufstellung …“, „Nachweis drucken …“), immer mit dunkler Schrift – nie als Schrift auf Weiß.
+(„Flächenaufstellung …“, „Nachweis drucken …“) sowie, auf der farbigen Titelleiste, für Update und Speicherort-Warnung
+(diese mit dunklem Rand), immer mit dunkler Schrift – nie als Schrift auf Weiß.
 
 **Feste Farben – begründete Ausnahmen:** Zeichenfläche und Papier (siehe Grundsätze) sowie der Schließen-Knopf der
 Titelleiste (`.wc-close:hover` in `#c42b1c` mit weißem Symbol), weil Windows ihn in jedem Schema so zeigt und man ihn
