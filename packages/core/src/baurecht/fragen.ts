@@ -33,10 +33,11 @@ export function frageStand(id: string, def: Pick<FaktDef, 'wenn' | 'vorfrage' | 
   // (ein abgeleiteter Wert mit Widerspruch, z. B. aus einem Dienst, bleibt gefragt – der Widerspruch will geklärt sein)
   if ((def?.vorfrage && vorfrageNein(ctx.fakten[def.vorfrage.fakt])) || (ctx.fakten[id]?.ausFolge && !ctx.fakten[id].widerspruch)) return { gestellt: false, ueberHinweis: [], ueberWiderspruch: [] };
   // ersetzte Frage (FaktDef.ersetzt): nur mit eigener Antwort aus einer älteren Datei – sie gilt weiter und bleibt sichtbar;
-  // ohne sie wird nicht gefragt, die Tatsachenfragen stehen an ihrer Stelle
+  // ohne sie wird nicht gefragt, die Tatsachenfragen stehen an ihrer Stelle. Mit Antwort gilt ihr `wenn` wie bei jeder Frage
+  // (außerhalb ihres Bereichs bleibt die alte Antwort ohne Wirkung)
   if (def?.ersetzt) {
     const v = ctx.fakten[id];
-    return { gestellt: !!v && !v.ausFolge && v.wert != null && v.wert !== '', ueberHinweis: [], ueberWiderspruch: [] };
+    if (!v || v.ausFolge || v.wert == null || v.wert === '') return { gestellt: false, ueberHinweis: [], ueberWiderspruch: [] };
   }
   if (!def?.wenn) return { gestellt: true, ueberHinweis: [], ueberWiderspruch: [] };
   try {

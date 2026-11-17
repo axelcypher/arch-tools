@@ -14,7 +14,7 @@ import { VORGABE_MERKMALE } from '../bedingung';
 import type { Fassung } from '../recht/typen';
 import { FAKTEN } from './fakten';
 import type { Bewertung, KurzKontext, TextKontext } from './kurz';
-import { kurzText, offenText, tragendeBlaetter, warumText, werten } from './kurz';
+import { istText, kurzText, offenText, tragendeBlaetter, warumText, werten } from './kurz';
 import type { Paket } from './paket';
 import { regeldateiFuer } from './paket';
 import { ableitungenAnwenden, einzelfragenVon, frageGestellt, frageStand, vorfragenKarte } from './fragen';
@@ -545,8 +545,14 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
     } else if (entf?.w === 'ja' && !(tatbestand === 'nein' && gewicht(gilt) < gewicht(entf))) {
       ampel = 'gruen';
       // nur, wenn allein die ersetzte Angabe trägt – trägt etwas anderes mit (z. B. die abgelaufene Frist), dessen Grund
-      const tatsachen = tragendeBlaetter(r.entfaellt, ctx, 'ja').every((b) => 'f' in b && !!faktDefs[b.f]?.ersetzt) ? ausTatsachen(r.entfaellt, false) : [];
-      gruende.push(`Entfällt – ${tatsachen.length ? tatsachen.join('; ') : warum(r.entfaellt, 'ja') || kurzText(r.entfaellt, text)}.`);
+      const blaetter = tragendeBlaetter(r.entfaellt, ctx, 'ja');
+      const ersetzt = (b: Kurz) => 'f' in b && !!faktDefs[b.f]?.ersetzt;
+      const tatsachen = blaetter.length && blaetter.every(ersetzt) ? ausTatsachen(r.entfaellt, false) : [];
+      // trägt eine ersetzte Angabe neben anderen mit: an ihrer Stelle ihr Grund in Worten (nicht „Rechtsfrage: nein“)
+      const gemischt = !tatsachen.length && blaetter.some((b) => ersetzt(b) && 'f' in b && fakten[b.f]?.ausFolge)
+        ? [...new Set(blaetter.map((b) => (ersetzt(b) && 'f' in b && fakten[b.f]?.ausFolge ? fakten[b.f].ausFolge! : istText(b, ctx, text))))].join(' · ')
+        : '';
+      gruende.push(`Entfällt – ${tatsachen.length ? tatsachen.join('; ') : gemischt || warum(r.entfaellt, 'ja') || kurzText(r.entfaellt, text)}.`);
       tragend = [entf];
     } else if (tatbestand === 'ja') {
       ampel = 'rot';

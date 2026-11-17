@@ -233,10 +233,10 @@ Sachverhalt; Titel, Frage und kurzer Name nennen keinen Paragrafen. Die Erläute
     die freie Landschaft (Windrad, Biogas, gewerbliche Tierhaltung, Gärtnerei, Versorgung, Abbau)? Plant die Gemeinde
     dafür Zonen im Flächennutzungsplan? Die frühere Frage ist ersetzt (`planung.fnp_verfahren`).
   - Öffentlich zugänglich heißt jetzt: Können beliebige Menschen – Kunden, Gäste, Besucher,
-    Patienten –, das Vorhaben aufsuchen (Begriffsbestimmung)? Beim reinen Wohngebäude ohne Praxis, Ferienwohnung und
+    Patienten – das Vorhaben aufsuchen (Begriffsbestimmung)? Beim reinen Wohngebäude ohne Praxis, Ferienwohnung und
     andere Nutzung folgt „nein“.
   - Innenbereich beim einfachen Bebauungsplan bzw. bei einer Satzung: Liegt das Grundstück in der zusammenhängenden
-    Bebauung des Ortes (Baulücke) und nicht am Ortsrand oder bei einzelnen Höfen?
+    Bebauung des Ortes (Baulücke) und nicht jenseits der letzten Bebauung oder bei einzelnen Höfen?
   - Behelfsbau: nur für begrenzte Zeit, freistehendes eingeschossiges Nebengebäude ohne längeren Aufenthalt oder zum
     wiederholten Auf- und Abbau gemacht, mit Beispielen.
 - **In Tatsachen umformuliert, mit Beispielen und „wo erfahre ich das“:** Planreife (Entwurf ausgelegt, Festsetzungen

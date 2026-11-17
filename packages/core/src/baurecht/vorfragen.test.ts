@@ -299,6 +299,15 @@ describe('Werte, die sich aus anderen ergeben (FaktDef.folgt)', () => {
     expect(frageGestellt('x.alt', def, ctx({ ...sicher(true), gegenFolge: 'kein FFH-Gebiet', widerspruch: 'ergibt sich anders' }))).toBe(true);
   });
 
+  it('ersetzte Frage mit `wenn`: die alte Antwort gilt nur in ihrem Bereich – sonst nicht gestellt (ohne Wirkung)', () => {
+    const def: FaktDef = { titel: 'Alt', gruppe: 'planung', typ: 'janein', ersetzt: true, wenn: { m: 'Planungsrecht', in: ['Außenbereich'] }, folgt: [{ wenn: { f: 'schutz.ffh', ist: false }, wert: false, grund: 'kein FFH-Gebiet' }] };
+    const ctx = (pr: string, v?: FaktWert): KurzKontext => ({ merkmale: { Planungsrecht: pr }, einreichung: '2026-12-01', heute: '2026-11-17', bausteine: {}, fakten: v ? { 'x.alt': v } : {} });
+    expect(frageGestellt('x.alt', def, ctx('Außenbereich', sicher(true)))).toBe(true);
+    expect(frageGestellt('x.alt', def, ctx('Innenbereich', sicher(true)))).toBe(false);
+    // ohne eigene Antwort auch im Bereich nicht gestellt
+    expect(frageGestellt('x.alt', def, ctx('Außenbereich'))).toBe(false);
+  });
+
   it('Fixpunkt im Wechsel: ein Wert nach `folgt` stützt sich auf eine Vorfrage und umgekehrt', () => {
     const defs: Record<string, FaktDef> = {
       ...FAKTEN,

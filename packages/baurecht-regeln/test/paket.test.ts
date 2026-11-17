@@ -2945,7 +2945,7 @@ describe('Fragen nach Tatsachen statt nach Rechtsbegriffen (Teil 2)', () => {
     expect(alt.fakten['gebaeude.oeffentlich'].widerspruch).toBeTruthy();
   });
 
-  it('privilegiertes Vorhaben in Tatsachen: Art der Anlage, dann der Beschluss der Gemeinde – die frühere Frage ist ersetzt', () => {
+  it('privilegiertes Vorhaben in Tatsachen: Art der Anlage und Beschluss der Gemeinde – die frühere Frage ist ersetzt', () => {
     // ohne Angaben: gefragt wird nach der Art der Anlage, nicht nach der früheren Rechtsfrage
     const leer = lauf(M());
     expect(frageGestellt('vorhaben.aussen_typisch', leer.faktDefs['vorhaben.aussen_typisch'], leer.kontext)).toBe(true);
@@ -2963,6 +2963,21 @@ describe('Fragen nach Tatsachen statt nach Rechtsbegriffen (Teil 2)', () => {
     // im Innenbereich gar nicht gefragt
     const innen = lauf(M({ Planungsrecht: 'Innenbereich' }));
     expect(frageGestellt('vorhaben.aussen_typisch', innen.faktDefs['vorhaben.aussen_typisch'], innen.kontext)).toBe(false);
+    // die Begründung bei § 15 nennt die Tatsache, nicht die frühere Rechtsfrage
+    const r15 = lauf(M(), nein('vorhaben.aussen_typisch', 'planung.planaufstellung')).paragrafen.find((x) => x.id === 'bund/baugb/15')!;
+    expect(r15.ampel).toBe('gruen');
+    expect(r15.gruende.join(' ')).not.toMatch(/FNP|Zurückstellung wegen Zonenplanung: nein/);
+    expect(r15.gruende[0]).toMatch(/das Vorhaben gehört nicht zu den Anlagen, für die eine Gemeinde Zonen im Flächennutzungsplan festlegt/);
+  });
+
+  it('Art der Anlage noch offen: die Frage nach den Zonen steht schon da (nach dem Muster aller Folgefragen) und ist für sich verständlich', () => {
+    const leer = lauf(M());
+    expect(frageGestellt('planung.fnp_zonen', leer.faktDefs['planung.fnp_zonen'], leer.kontext)).toBe(true);
+    // Titel und Frage verweisen nicht nur auf die vorige Frage – sie nennen Beispiele
+    expect(leer.faktDefs['planung.fnp_zonen'].titel).toMatch(/Windräder/);
+    expect(leer.faktDefs['planung.fnp_zonen'].frage).toMatch(/Windenergie/);
+    // offen: keine Ableitung, die frühere Frage fehlt nie
+    expect(leer.fakten[F]).toBeUndefined();
   });
 
   it('ältere Datei mit der früheren Frage: die Antwort gilt weiter, bis die Tatsachen vorliegen; Widerspruch statt Überschreiben', () => {
@@ -2975,5 +2990,9 @@ describe('Fragen nach Tatsachen statt nach Rechtsbegriffen (Teil 2)', () => {
     expect(gegen.fakten[F].widerspruch).toMatch(/ergibt sich aus anderen Angaben/);
     // die Gemeinde kann weiter zurückstellen: die Frage danach bleibt, bis der Widerspruch geklärt ist
     expect(frageGestellt('planung.zurueckstellung', gegen.faktDefs['planung.zurueckstellung'], gegen.kontext)).toBe(true);
+    // außerhalb ihres Bereichs (Innenbereich) bleibt die alte Antwort ohne Wirkung – wie vor der Zerlegung
+    const innen = lauf(M({ Planungsrecht: 'Innenbereich' }), ja(F));
+    expect(frageGestellt(F, innen.faktDefs[F], innen.kontext)).toBe(false);
+    expect(F in innen.fakten).toBe(false);
   });
 });

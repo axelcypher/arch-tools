@@ -24,7 +24,7 @@ const KURZ: Record<string, string> = {
   'gebaeude.aufenthaltsraeume': 'Aufenthaltsräume oder Arbeitsplätze',
   'gebaeude.behelfsbau': 'Behelfsbau oder Fliegender Bau',
   'gebaeude.landwirtschaft': 'Land- oder forstwirtschaftliches Gebäude',
-  'gebaeude.hoehe': 'Höhe (Geschoss mit möglichem Aufenthalt)',
+  'gebaeude.hoehe': 'Höhe (oberstes Aufenthaltsgeschoss)',
   'gebaeude.oeffentlich': 'Für Kunden oder Besucher zugänglich',
   'lage.baulast': 'Baulast oder anderes Flurstück genutzt',
   'lage.altlasten': 'Altlast oder Altlastverdacht',
@@ -264,7 +264,7 @@ const KATALOG: Record<string, FaktDef> = {
 
   /* ---------- Gebäude ---------- */
   'gebaeude.hoehe': z(
-    'Höhe des obersten Geschosses, in dem ein Aufenthaltsraum möglich ist',
+    'Höhe des Fußbodens im obersten Geschoss, in dem ein Aufenthaltsraum möglich ist',
     'gebaeude',
     'm',
     'Gemessen wird nicht bis zum First, sondern vom Gelände (im Mittel) bis zur Oberkante des Fußbodens im obersten Geschoss, in dem ein Aufenthaltsraum möglich ist – auch wenn es nicht ausgebaut ist, z. B. ein ausbaufähiges Dachgeschoss. Beispiel: Haus mit zwei Vollgeschossen und ausbaufähigem Dachgeschoss, Fußboden des Dachgeschosses 5,60 m über dem Gelände – dann 5,60 m. Davon hängt unter anderem die Gebäudeklasse ab (Grenzen 7 m, 13 m, 22 m). Wo erfahre ich das: aus dem Schnitt der Bauzeichnung. Maßgeblich: § 2 Abs. 3 BauO NRW.',
