@@ -77,7 +77,7 @@ export function KatasterDialog({ basis, name, onClose, onEinstellungen, onStammd
           {f.ziel === 'einstellungen' && onEinstellungen && (
             <>
               {' '}
-              <button className="po-link" onClick={() => wechseln(onEinstellungen)}>
+              <button className="link" onClick={() => wechseln(onEinstellungen)}>
                 Einstellungen öffnen
               </button>
             </>
@@ -85,7 +85,7 @@ export function KatasterDialog({ basis, name, onClose, onEinstellungen, onStammd
           {f.ziel === 'stammdaten' && onStammdaten && (
             <>
               {' '}
-              <button className="po-link" onClick={() => wechseln(onStammdaten)}>
+              <button className="link" onClick={() => wechseln(onStammdaten)}>
                 Stammdaten öffnen
               </button>
             </>
@@ -118,6 +118,7 @@ export function KatasterDialog({ basis, name, onClose, onEinstellungen, onStammd
                     <button
                       className="link"
                       title="Ordner öffnen"
+                      aria-label={`Ordner öffnen: ${a.datei}`}
                       onClick={() => a.datei && void oeffneOrdner(verbinde(basis, a.datei.split('/').slice(0, -1).join('/') || '.')).catch(() => undefined)}
                     >
                       <Symbol name="haken" /> {a.datei}
