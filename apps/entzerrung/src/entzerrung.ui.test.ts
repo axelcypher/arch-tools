@@ -322,7 +322,7 @@ describe('RECTIO (Entzerrung)', () => {
     const punkte = () => [...document.querySelectorAll<HTMLElement>('[role="menu"] [role^="menuitem"]')];
     // „Datei“: Dateibefehle, dann Fotos hinzufügen; ohne Foto ist „Speichern unter …“ gesperrt mit Grund
     act(() => menueKnopf('Datei').click());
-    expect(punkte().map((p) => p.textContent?.trim().replace(/\s+/g, ' '))).toEqual(['Neu', 'Öffnen …Strg+O', expect.stringMatching(/^Speichern unter …/), 'Fotos hinzufügen …', 'Einstellungen …Strg+,']);
+    expect(punkte().map((p) => p.textContent?.trim().replace(/\s+/g, ' '))).toEqual(['Neu', 'Öffnen …Strg+O', expect.stringMatching(/^Speichern unter …/), 'Fotos hinzufügen …', expect.stringMatching(/^Exportieren/), 'Einstellungen …Strg+,']);
     expect(punkte()[2].getAttribute('aria-disabled')).toBe('true');
     act(() => void document.activeElement?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })));
     // „Ansicht“: die linke Leiste als Haken-Schalter
@@ -362,8 +362,10 @@ describe('RECTIO (Entzerrung)', () => {
     expect(host.querySelector('.workspace, .sidebar')).toBeNull();
     expect(karte(host, 'Fotos')).toBeDefined();
     expect(karte(host, 'So geht es')).toBeDefined();
-    const zeichen = flaeche.querySelector('section.zeichen-karte')!;
+    // die Zeichenfläche ist der Hauptbereich (genau ein main)
+    const zeichen = flaeche.querySelector('main.zeichen-karte')!;
     expect(zeichen.getAttribute('aria-label')).toBe('Zeichenfläche');
+    expect(host.querySelectorAll('main')).toHaveLength(1);
     // mit Foto: Ebenen links, Referenz rechts; Bedienhinweis in der Fußzeile der Zeichenkarte, nicht über dem Foto
     act(() => {
       useEntz.getState().fotoHinzufuegen('f1', 'Süd', 'image/png', 10, 8, new Uint8Array(4));
@@ -388,6 +390,62 @@ describe('RECTIO (Entzerrung)', () => {
     const ziehen = new Event('dragover', { bubbles: true, cancelable: true });
     Object.defineProperty(ziehen, 'dataTransfer', { value: { types: ['Files'] } });
     act(() => void app.dispatchEvent(ziehen));
-    expect(host.querySelector('section.zeichen-karte .ef-ablegen')?.textContent).toContain('hier ablegen');
+    expect(host.querySelector('.zeichen-karte .ef-ablegen')?.textContent).toContain('hier ablegen');
+  });
+
+  it('„Datei → Exportieren“: ohne Referenz gesperrt mit Grund; mit entzerrbarer Ebene öffnet „PDF …“ den Exportdialog mit PDF', () => {
+    const host = render();
+    const menueKnopf = (name: string) => [...host.querySelectorAll<HTMLButtonElement>('button[aria-haspopup="menu"]')].find((b) => b.textContent?.trim() === name)!;
+    const punkte = () => [...document.querySelectorAll<HTMLElement>('[role="menu"] [role^="menuitem"]')];
+    const schliessen = () => act(() => void document.activeElement?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })));
+    act(() => menueKnopf('Datei').click());
+    const export0 = punkte().find((p) => p.textContent?.startsWith('Exportieren'))!;
+    expect(export0.getAttribute('aria-disabled')).toBe('true');
+    expect(export0.textContent).toContain('Erst ein Foto hinzufügen');
+    schliessen();
+    // entzerrbare Ebene (Rechteck mit Maßen), Fotoansicht
+    act(() => useEntz.getState().fotoHinzufuegen('f1', 'Fassade', 'image/jpeg', 3000, 2000, new Uint8Array(4)));
+    const { foto, ebene } = aktuell(useEntz.getState());
+    act(() => useEntz.getState().aendern(mitEbene(foto!.id, ebene!.id, (e) => ({ ...e, rechteck: { ecken: ECKEN, breite: 1.26, hoehe: 1.51 } }))));
+    expect(useEntz.getState().ansicht).toBe('foto');
+    act(() => menueKnopf('Datei').click());
+    const exportPunkt = punkte().find((p) => p.textContent?.startsWith('Exportieren'))!;
+    expect(exportPunkt.getAttribute('aria-disabled')).not.toBe('true');
+    // Untermenü öffnen und „PDF …“ wählen
+    act(() => exportPunkt.click());
+    expect(punkte().map((p) => p.textContent?.trim())).toEqual(expect.arrayContaining(['PNG …', 'JPEG …', 'PDF …']));
+    act(() => punkte().find((p) => p.textContent?.trim() === 'PDF …')!.click());
+    // wechselt in die entzerrte Ansicht und öffnet den Dialog mit PDF
+    expect(useEntz.getState().ansicht).toBe('entzerrt');
+    const pdf = document.querySelector<HTMLInputElement>('input[name="ef-format"][value="pdf"]');
+    expect(pdf?.checked).toBe(true);
+    expect(useEntz.getState().exportWunsch).toBeNull();
+  });
+
+  it('„Datei → Exportieren“ bei ungültigem Ausschnitt: kein Dialog, auch nicht später nach „Automatisch“; JPEG wählt JPEG', () => {
+    const host = render();
+    const menueKnopf = (name: string) => [...host.querySelectorAll<HTMLButtonElement>('button[aria-haspopup="menu"]')].find((b) => b.textContent?.trim() === name)!;
+    const punkte = () => [...document.querySelectorAll<HTMLElement>('[role="menu"] [role^="menuitem"]')];
+    const waehle = (text: string) => {
+      act(() => menueKnopf('Datei').click());
+      act(() => punkte().find((p) => p.textContent?.startsWith('Exportieren'))!.click());
+      act(() => punkte().find((p) => p.textContent?.trim() === text)!.click());
+    };
+    act(() => useEntz.getState().fotoHinzufuegen('f1', 'Fassade', 'image/jpeg', 3000, 2000, new Uint8Array(4)));
+    const { foto, ebene } = aktuell(useEntz.getState());
+    act(() =>
+      useEntz.getState().aendern(mitEbene(foto!.id, ebene!.id, (e) => ({ ...e, rechteck: { ecken: ECKEN, breite: 1.26, hoehe: 1.51 }, ausschnitt: { x0: 1, y0: 1, x1: 1, y1: 1 } }))),
+    );
+    waehle('PDF …');
+    expect(useEntz.getState().ansicht).toBe('entzerrt');
+    expect(useEntz.getState().exportWunsch).toBeNull();
+    expect(document.querySelector('input[name="ef-format"]')).toBeNull();
+    expect(host.textContent).toContain('Der Ausschnitt ist ungültig');
+    // „Automatisch“ heilt den Ausschnitt – der Dialog darf nicht von selbst aufgehen
+    act(() => knopf(host, 'Automatisch')!.click());
+    expect(document.querySelector('input[name="ef-format"]')).toBeNull();
+    // Gegenprobe: jetzt öffnet „JPEG …“ den Dialog mit JPEG
+    waehle('JPEG …');
+    expect(document.querySelector<HTMLInputElement>('input[name="ef-format"][value="jpeg"]')?.checked).toBe(true);
   });
 });

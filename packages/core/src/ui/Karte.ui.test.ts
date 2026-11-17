@@ -57,7 +57,7 @@ describe('Fläche und Karten', () => {
   it('schmale Fenster: zuerst geben die Seitenkarten nach, dann die Mitte von ihrer Wunschbreite', () => {
     const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'base.css'), 'utf8');
     expect(css).toMatch(/--karte-mitte-wunsch: 480px;/);
-    expect(css).toMatch(/\.flaeche > \.flaechen-spalte:not\(\.wachsend\) \{[^}]*flex-shrink: 1000;[^}]*min-width: var\(--leiste-min\);/);
+    expect(css).toMatch(/\.flaeche > \.flaechen-spalte:not\(\.wachsend\) \{[^}]*flex-shrink: 1000;[^}]*min-width: var\(--leiste-eigen-min, var\(--leiste-min\)\);/);
     expect(css).toMatch(/\.flaeche > \.flaechen-spalte\.wachsend \{[^}]*flex: 1 1 var\(--karte-mitte-wunsch\);[^}]*min-width: var\(--karte-mitte-min\);/);
   });
 
@@ -161,6 +161,30 @@ describe('Fläche und Karten', () => {
     expect([...zwei.querySelectorAll('aside.flaechen-spalte')].map((e) => e.getAttribute('aria-label'))).toEqual(['Gliederung', 'Quellen']);
   });
 
+  it('ebene und als="div": viele gleichartige Karten ohne eigene Region, Überschrift h3', () => {
+    const host = render(h(Karte, { titel: 'Bauherr', ebene: 3, als: 'div' }, 'x'));
+    const karte = host.querySelector('div.karte')!;
+    expect(karte.querySelector('.karte-kopf h3')?.textContent).toBe('Bauherr');
+    expect(karte.querySelector('h2')).toBeNull();
+    // kein benannter Bereich: weder aria-labelledby noch aria-label
+    expect(karte.hasAttribute('aria-labelledby')).toBe(false);
+    expect(karte.hasAttribute('aria-label')).toBe(false);
+    const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'base.css'), 'utf8');
+    expect(css).toMatch(/\.karte-kopf :is\(h2, h3\) \{[^}]*font-size: var\(--fs-l\);/);
+  });
+
+  it('rollende Spalte: Klasse rollend, Karten in Inhaltshöhe, Luft für Fokussaum', () => {
+    const host = render(h(FlaechenSpalte, { wachsend: true, rollend: true, children: h(Karte, { titel: 'A' }) }));
+    expect(host.querySelector('.flaechen-spalte')!.className).toBe('flaechen-spalte wachsend rollend');
+    const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'base.css'), 'utf8');
+    expect(css).toMatch(/\.flaechen-spalte\.rollend \{[^}]*overflow-y: auto;[^}]*box-sizing: content-box;[^}]*padding: var\(--s1\);/);
+    // auch Inhaltskarten und die Mindesthöhe der teilenden Karte gelten in der rollenden Spalte nicht
+    expect(css).toMatch(
+      /\.flaechen-spalte\.rollend > \.karte,\s*\.flaechen-spalte\.rollend > \.karte\.karte-inhalt,\s*\.flaechen-spalte\.rollend:has\(> \.karte-inhalt\) > \.karte:not\(\.karte-inhalt\) \{[^}]*flex: none;[^}]*min-height: 0;[^}]*max-height: none;/,
+    );
+    expect(css).not.toMatch(/\.placeholder-help/);
+  });
+
   it('Fläche und Spalte setzen ihre Klassen; Spalte mit fester Breite', () => {
     const host = render(h(Flaeche, { className: 'qu-flaeche', children: h(FlaechenSpalte, { breite: 300, children: [h(Karte, { key: 'a', titel: 'A' }), h(Karte, { key: 'b', titel: 'B' })] }) }));
     const f = host.querySelector('.flaeche.qu-flaeche')!;
@@ -200,11 +224,17 @@ describe('Fläche und Karten', () => {
     expect(css).toMatch(/\.summary-table\.felder td \{[^}]*vertical-align: top;/);
     // nur Zeilen mit Feld oder Knopf (Anlass: NUMIO, Gruppenzeile ohne Feld wurde höher); :has() prüft happy-dom nicht verlässlich
     expect(css).toMatch(
-      /\.summary-table\.felder tr:has\(input, select, textarea, button\) > td:not\(:has\(input, select, textarea, button\)\) \{[^}]*padding-top: calc\(3px \+ \(var\(--ctl-h\) - 1lh\) \/ 2\);/,
+      /\.summary-table\.felder tr:has\(input, select, textarea, button:not\(\.link\)\) > td:not\(:has\(input, select, textarea, button:not\(\.link\)\)\) \{[^}]*padding-top: calc\(3px \+ \(var\(--ctl-h\) - 1lh\) \/ 2\);/,
     );
     expect(css).toMatch(/\.summary-table tr\.gruppe td \{/);
     expect(css).toMatch(/\.summary-table tr\.summe td \{[^}]*border-top-color: color-mix\(in srgb, var\(--muted\) 60%, transparent\);/);
     // auf Papier bleibt die Gruppentönung hell
     expect(css).toMatch(/\n\.report \{[^}]*--tabelle-gruppe: #f1f3f6;/);
+    // Tabellen ohne Felder oben bündig, gewählte Zeile, Verweisknopf als Text
+    expect(css).toMatch(/\.summary-table\.oben td \{\s*vertical-align: top;/);
+    expect(css).toMatch(/\.summary-table tr\.selected td \{\s*background: var\(--accent-soft\);/);
+    expect(css).toMatch(/\nbutton\.link \{[^}]*border: none;[^}]*background: none;[^}]*color: var\(--accent-text\);[^}]*text-decoration: underline;/);
+    expect(css).toMatch(/button\.link:hover:not\(:disabled\):not\(\[aria-disabled='true'\]\),\s*button\.link:focus-visible \{[^}]*text-decoration-color: currentColor;/);
+    expect(css).toMatch(/\.summary-table tr\.selected td:first-child \{\s*box-shadow: inset 3px 0 var\(--accent\);/);
   });
 });

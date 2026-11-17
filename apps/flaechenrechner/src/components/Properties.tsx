@@ -78,19 +78,17 @@ function ShapeProperties({ shape }: { shape: Shape }) {
     <Karte
       className="qu-auswahl"
       titel={shape.kind === 'outline' ? 'BGF-Umriss' : 'Raum'}
+      hilfe={<HilfeKnopf thema={shape.kind === 'outline' ? ['bgf', 'bri', 'splitlevel'] : ['nrf', 'nuf', 'wofl', 'splitlevel']} titel={shape.kind === 'outline' ? 'BGF-Umriss' : 'Raum'} />}
       aktionen={
-        <>
-          <HilfeKnopf thema={shape.kind === 'outline' ? ['bgf', 'bri', 'splitlevel'] : ['nrf', 'nuf', 'wofl', 'splitlevel']} titel={shape.kind === 'outline' ? 'BGF-Umriss' : 'Raum'} />
-          <button
-            className="small danger"
-            onClick={() => {
-              st.update((p) => mapStorey(p, storey.id, (s) => ({ ...s, shapes: s.shapes.filter((x) => x.id !== shape.id) })));
-              st.select(null);
-            }}
-          >
-            Löschen
-          </button>
-        </>
+        <button
+          className="small danger"
+          onClick={() => {
+            st.update((p) => mapStorey(p, storey.id, (s) => ({ ...s, shapes: s.shapes.filter((x) => x.id !== shape.id) })));
+            st.select(null);
+          }}
+        >
+          Löschen
+        </button>
       }
     >
       <div className="metric-row">
@@ -592,7 +590,7 @@ function StoreyProperties() {
     <Karte
       className="qu-auswahl"
       titel="Geschoss"
-      aktionen={<HilfeKnopf thema={['sohle', 'bri', 'dach']} titel="Geschoss" />}
+      hilfe={<HilfeKnopf thema={['sohle', 'bri', 'dach']} titel="Geschoss" />}
     >
       {/* leeres Geschoss: die nächsten Schritte zuerst (Plan laden, Umriss übernehmen) */}
       {leer && (
@@ -799,13 +797,11 @@ function Summary() {
     <Karte
       className="qu-auswertung"
       titel="Auswertung"
+      hilfe={<HilfeKnopf thema={['din277', 'wofl']} titel="Auswertung" />}
       aktionen={
-        <>
-          <HilfeKnopf thema={['din277', 'wofl']} titel="Auswertung" />
-          <button className="small" aria-expanded={offen} aria-controls="fr-auswertung-tabelle" onClick={umschalten} title={offen ? 'Nur die Kurzfassung zeigen' : 'Alle Kennzahlen (BGF, BRI, NUF, TF, VF, NRF, KGF, WoFl) zeigen'}>
-            {offen ? 'Kurzfassung' : 'Alle Kennzahlen'}
-          </button>
-        </>
+        <button className="small" aria-expanded={offen} aria-controls="fr-auswertung-tabelle" onClick={umschalten} title={offen ? 'Nur die Kurzfassung zeigen' : 'Alle Kennzahlen (BGF, BRI, NUF, TF, VF, NRF, KGF, WoFl) zeigen'}>
+          {offen ? 'Kurzfassung' : 'Alle Kennzahlen'}
+        </button>
       }
       fuss={
         offen && sr.bgf.total > 0 ? (

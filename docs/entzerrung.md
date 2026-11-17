@@ -64,6 +64,9 @@ entzerrte Ebene als Zeichenfläche mit Bedienhinweis und Koordinaten in der Fuß
    der Hinweis, maßgebliche Maße am Bau zu prüfen; rechts die Maßstabsleiste. Mit „Ausschnitt ziehen“ wird nur
    ein Teil exportiert. Mehrere Ebenen ergeben keine zusammenhängende Ansicht oder Abwicklung; jede Ebene wird
    einzeln exportiert.
+   Den Dialog öffnet „Exportieren …“ in der Karte „Bild“ oder „Datei › Exportieren“ mit PNG …, JPEG … bzw. PDF … –
+   das wechselt in die entzerrte Ansicht, das Format ist vorgewählt; solange die Referenz unvollständig ist, ist
+   „Exportieren“ gesperrt.
 
 Ein Foto kann mehrere **Ebenen** haben, jede mit eigener Referenz und eigenen Messungen, zum Beispiel beide
 Fassadenseiten an einer Gebäudeecke.

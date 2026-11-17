@@ -51,13 +51,19 @@ Texttabellen: Spaltenköpfe linksbündig (`.summary-table.text`, z. B. Platzhalt
 und Zahlenspalten, z. B. Kostengruppe | von | Mittel | bis) nehmen `.text` und markieren die Zahlenspalten mit `th.num`
 und `td.num`. Zeilen mit Feldern (Eingaben je Zeile) bekommen `.felder`: oben bündig, Text ohne Feld oder Knopf fluchtet
 mit dem Feldtext. Gruppenzeilen `tr.gruppe` (getönt mit `--tabelle-gruppe`, halbfett), Summenzeilen `tr.summe`
-(halbfett, kräftigere Linie darüber); `tr.strong` bleibt für einzelne hervorgehobene Zeilen. Diese Tabelle soll die
-eigenen Tabellenklassen der Apps ersetzen; bis zur Umstellung bleiben diese bestehen.
+(halbfett, kräftigere Linie darüber); `tr.strong` bleibt für einzelne hervorgehobene Zeilen, `tr.selected` (getönt mit
+`--accent-soft`, Akzentlinie links) für die gewählte Zeile – der Zustand auch für Hilfsmittel (`aria-selected` an der
+Zeile oder `aria-pressed`/`aria-current` am Knopf darin). Tabellen ohne Felder mit mehrzeiligen Zellen (Rechenweg,
+Katalog) bekommen `.oben` (oben bündig, ohne den Ausgleich der Feldzeilen). Ein Verweisknopf im Text (`button.link`, z.
+B. ein Wert, der seine Prüfung öffnet) zählt in Feldzeilen als Text. Diese Tabelle soll die eigenen Tabellenklassen der
+Apps ersetzen; bis zur Umstellung bleiben diese bestehen.
 
 ## Überschriften
 
 - **Karte (Richtung C):** Der Kartenkopf ist die oberste Stufe – `h2` in `--fs-l`, halbfett (`Karte`, siehe „Fläche und
-  Karten“). Abschnitte in der Karte `h3` in `--fs-m`, Unterabschnitte `h4` in `--fs-s`, beide halbfett.
+  Karten“). Abschnitte in der Karte `h3` in `--fs-m`, Unterabschnitte `h4` in `--fs-s`, beide halbfett. Karten mit
+  `ebene={3}` (rollende Spalte, siehe dort) rücken eine Stufe tiefer: Kopf `h3` (gleich gestaltet wie `h2` – die Stufe
+  ist strukturell, nicht sichtbar), Abschnitte `h4`, Unterabschnitte `h5`.
 - **Seitenleiste und Spalten (alte Muster, bis die App auf Karten umstellt):** `h2` in Satzschreibung, `--fs-m`,
   halbfett, Farbe `--text`; Unterabschnitt `h3`, `--fs-s`, halbfett.
 - Keine Versalien – sie lesen sich langsamer, besonders bei langen Titeln.
@@ -95,7 +101,9 @@ eigenen Tabellenklassen der Apps ersetzen; bis zur Umstellung bleiben diese best
   (z. B. `button.icon:not(.werkzeugleiste *)`) – sonst schlägt ihre `min-width` die Regel der Leiste.
 - Die Regel hat die Spezifität null (`:where`): Eine App-Regel mit eigener `min-height` geht vor. Feste `height`
   allein reicht dafür nicht; wer kleinere Knöpfe braucht, setzt `min-height` mit.
-- Kleiner als 24px nur, wo es nicht anders geht (Hilfe-Knopf „?“, Griffe auf der Zeichenfläche).
+- Kleiner als 24px nur, wo es nicht anders geht (Hilfe-Knopf „?“, Griffe auf der Zeichenfläche) und beim Verweisknopf
+  `button.link` im Fließtext oder in einer Tabellenzelle; in `.toolbar`, `.button-row`, `.dialog-buttons` und
+  `.section-head` kein `.link`.
 
 ## Farben
 
@@ -105,9 +113,9 @@ eigenen Tabellenklassen der Apps ersetzen; bis zur Umstellung bleiben diese best
 | `--text`, `--muted`                | Text, Nebentext (`--muted` hält auch auf Tönungen und `--bg` mindestens 4,5 : 1)                                                                   |
 | `--border`, `--line-soft`          | Linien, feine Trennlinien in Tabellen                                                                                                              |
 | `--app`                            | Kachelfarbe der App aus dem Iconset – nur Titelleiste (siehe „App-Farbe“)                                                                          |
-| `--accent`, `--accent-soft`        | Akzent (aktive Werkzeuge, primärer Knopf, Links), Tönung                                                                                           |
+| `--accent`, `--accent-soft`        | Akzent (aktive Werkzeuge, primärer Knopf, Akzentlinien), Tönung                                                                                    |
 | `--ausgabe`, `--on-ausgabe`        | Bernstein für die eine Ausgabe-Aktion (Hauptknopf der Werkzeugleiste) sowie Update und Speicherort-Warnung in der Titelleiste, mit dunkler Schrift |
-| `--accent-text`                    | Akzent als Schrift auf getönten Flächen (aktive Knöpfe, Chips) – mindestens 4,5:1                                                                  |
+| `--accent-text`                    | Akzent als Schrift: auf getönten Flächen (aktive Knöpfe, Chips) sowie Verweisknöpfe und Links (`button.link`) auf jedem Grund – mindestens 4,5:1   |
 | `--ok-*`, `--warn-*`, `--fehler-*` | Status: eingehalten, prüfen, überschritten/Fehler; `--ok-punkt` usw. für Statuspunkte (Ampel)                                                      |
 | `--sel`                            | Auswahl auf Plänen (Orange); auch ungespeicherte Änderungen (Punkt in Titelleiste und an „Speichern“)                                              |
 | `--sel-foto`                       | Auswahl auf Fotos (Magenta, in beiden Schemata gleich) – Orange kollidiert dort mit Mess- und Markierungsfarben                                    |
@@ -370,7 +378,9 @@ Foto | Entzerrt, BGF | Raum) und der Hauptknopf (`.primary`, z. B. „Flächenau
 Werkzeug (`.active` bzw. `aria-pressed`) zeigt die Akzent-Tönung mit einem Strich unten. Der Hauptknopf (`.primary`) ist
 dort die Ausgabe der App in Bernstein – deshalb ist ein Knopf in einer Werkzeugleiste, der nichts ausgibt (Hinzufügen,
 Prüfen), kein `.primary`, sondern ein Standardknopf. Außerhalb der Leiste bleiben Standardknöpfe mit Rahmen, `.primary` in der
-Akzentfarbe (Hauptknopf eines Dialogs) und `.danger` für Gefahr. `.segment` behält seinen Rahmen.
+Akzentfarbe (Hauptknopf eines Dialogs) und `.danger` für Gefahr. `.segment` behält seinen Rahmen. `.link` ist ein
+Verweis im Text (ohne Rahmen und Fläche, `--accent-text`, immer dezent unterstrichen, beim Überfahren und Fokus voll) –
+für Werte und Namen in Tabellen oder Sätzen, die etwas öffnen; ein eigenständiger Befehl bleibt ein Knopf (`.small`).
 
 Richtwert: höchstens sieben, besser fünf Knöpfe bzw. Gruppen je Leiste; „Datei“ und „Speichern“ zählen mit, die
 Werkzeuge als eine Gruppe, „Mehr“ nicht. Status- und Hinweismarken (Warnungen, Module) gehören nicht ins Menü – sie
@@ -505,7 +515,8 @@ Werkzeugleiste liegt mit auf der Fläche (gleicher Grund, keine Linie). Baustein
   - **Kopf** (`.karte-kopf`): Überschrift `h2` in `--fs-l`, direkt dahinter `hilfe` für das „?“ (`HilfeKnopf`), rechts
     `aktionen` wie Umschalter oder „Hinzufügen“. Mit Titel ist die Karte ein benannter Bereich (`aria-labelledby` auf
     das `h2`); die Hilfe steht außerhalb des `h2` und gehört nicht zum Namen. Ohne sichtbaren Titel braucht die Karte
-    `ariaLabel`.
+    `ariaLabel`. Ausnahme rollende Spalte: `ebene={3}` setzt die Überschrift als `h3`, `als="div"` macht die Karte zu
+    keinem Bereich (dann wirkt auch `ariaLabel` nicht).
   - **Leiste** (`leiste`): Hat eine Ansicht eine eigene Werkzeugleiste, die zu breit für den Kopf ist (z. B. FABRIO je
     Ansicht), steht sie fest zwischen Kopf und Inhalt, im Grund der Karte, mit einer Linie zum scrollenden Inhalt; sie
     gehört damit zu ihrer Karte und steht nicht über der ganzen Fläche. Wechselt die Leiste mit der Ansicht, bekommt
@@ -530,6 +541,14 @@ Werkzeugleiste liegt mit auf der Fläche (gleicher Grund, keine Linie). Baustein
   Inhaltskarten (ihr Kopf bleibt stehen). `hoehe` wirkt nur in einer `FlaechenSpalte`, nicht in einer `BreitenLeiste`
   oder direkt auf der Fläche. Nur für Karten mit weitgehend festem Inhalt – wächst der Inhalt (Aufklappen, Bild lädt),
   springt die Höhe der Nachbarkarte mit.
+- **Rollende Spalte** (`FlaechenSpalte wachsend rollend`): Die Spalte rollt als Ganzes, die Karten darin sind so hoch
+  wie ihr Inhalt – für viele gleichartige Karten untereinander (z. B. die Abschnitte der Felderansicht von PERMIO). Die
+  Spalte hat rundum `--s1` Luft (ein gleich großer negativer Rand gleicht aus, `breite` bleibt die Breite der Karten),
+  damit Kartenschatten und Fokusrahmen am Rand nicht abgeschnitten werden. Solche Karten bekommen `ebene={3}` und
+  `als="div"` (keine eigene Region – sonst entstünden Dutzende Bereiche); darüber steht ein sichtbares `h2`, das die
+  Ansicht liefert (z. B. der Titel des Formulars als erste Karte mit normaler Ebene oder ein Kopf über der Spalte). Im
+  Rumpf dieser Karten `h4`/`h5`; `abschnitte` (mit `h2`) und `hoehe` passen nicht dazu – `hoehe` wirkt in der rollenden
+  Spalte nicht.
 - `ZeichenKarte` (`.zeichen-karte`): Die Zeichenfläche füllt die Karte und bleibt hell (`.canvas`); Bedienhinweis,
   Koordinaten und Maßstab stehen in der Fußzeile der Karte, nicht über dem Plan: aus `fuss` oder, wenn sie tief in der
   Zeichenkomponente entstehen, über `ZeichenFussInhalt` (Portal in die Fußzeile der umgebenden Karte). Ohne Inhalt
@@ -543,18 +562,24 @@ Werkzeugleiste liegt mit auf der Fläche (gleicher Grund, keine Linie). Baustein
   Innenabstand und Spalt zählen bei der Höchstbreite mit.
 - **Hauptbereich:** Die Mitte ist `<main>`, damit Vorleseprogramme sie finden: `als="main"` an der wachsenden
   `FlaechenSpalte`, an einer `Karte` oder an der `ZeichenKarte` (Vorgabe `div` bzw. `section`; `aside` an
-  `FlaechenSpalte` oder `Karte` für eine Nebenspalte oder -karte). Je Fenster nur ein `main`, und zwar an genau einem
-  Element (Spalte oder Karte darin, nicht beides); die App legt dann kein eigenes `<main>` um die Fläche und setzt keine
-  Bausteinklassen von Hand. Jedes `aside` braucht einen eigenen Namen (`Karte` über `titel` oder `ariaLabel`,
-  `FlaechenSpalte` über `ariaLabel`). `main` und `aside` nicht ineinander schachteln: die Karten in der Mitte bleiben
-  `section`.
+  `FlaechenSpalte` oder `Karte` für eine Nebenspalte oder -karte; `div` an einer `Karte` ohne eigene Region, siehe
+  „Rollende Spalte“). Je Fenster nur ein `main`, und zwar an genau einem Element (Spalte oder Karte darin, nicht
+  beides); die App legt dann kein eigenes `<main>` um die Fläche und setzt keine Bausteinklassen von Hand. Jedes `aside`
+  braucht einen eigenen Namen (`Karte` über `titel` oder `ariaLabel`, `FlaechenSpalte` über `ariaLabel`). `main` und
+  `aside` nicht ineinander schachteln: die Karten in der Mitte bleiben `section`, viele gleichartige Karten in einer
+  rollenden Spalte `div` (siehe „Rollende Spalte“).
 - **Schmale Fenster:** Die Fläche scrollt nie. Fehlt Platz, geben zuerst die Seitenkarten bis zu ihrer Mindestbreite
   (`--leiste-min`, 180px) nach, solange die Mitte (eine `Karte` direkt auf der Fläche oder eine wachsende Spalte) unter
   ihrer Wunschbreite `--karte-mitte-wunsch` (480px) bliebe; erst dann schrumpft die Mitte bis `--karte-mitte-min`
   (280px). Breiter ziehen lässt sich eine Seitenkarte auf der Fläche nur, solange der Mitte die Wunschbreite bleibt
   (oder `mitteMin`, wenn größer). Die gemerkte Breite bleibt und gilt wieder, sobald Platz ist. Das gilt auch für eine
-  Seitenspalte (`FlaechenSpalte` ohne `wachsend`). Unter der Summe der Mindestbreiten (zwei Seitenkarten und Mitte, rund
-  670px) wird abgeschnitten – für Desktop-Fenster vertretbar.
+  Seitenspalte (`FlaechenSpalte` ohne `wachsend`). Gibt eine `BreitenLeiste` ein eigenes `min` an, ist das zugleich ihre
+  Untergrenze beim Nachgeben statt `--leiste-min` – auch nach unten, wenn es kleiner ist. Es gilt nur für die Leiste
+  selbst: jede `.flaeche` setzt es zurück (`--leiste-eigen-min: initial`), sonst erbten Karten einer verschachtelten
+  Fläche das `min` der äußeren Leiste. Die Mindestbreiten müssen in ein Fenster von 1000px passen: Seitenkarten plus
+  `--karte-mitte-min` plus Innenabstand und Spalt der Fläche (2 × `--spalt` und ein `--spalt` je weitere Karte); passt
+  es nicht, das `min` der Seitenkarten senken, nicht die Mitte. Darunter wird abgeschnitten – für Desktop-Fenster
+  vertretbar.
 
 Die alten Muster (`.workspace`, `.sidebar`, eigene Spalten-Layouts der Apps) laufen weiter, bis eine App umgestellt
 ist (`docs/nachziehen/`). Eigene Layout-CSS und feste Farben der Apps entfallen mit der Umstellung. Ausgenommen ist die
