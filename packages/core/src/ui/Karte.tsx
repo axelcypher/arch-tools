@@ -1,5 +1,6 @@
-import { useId } from 'react';
+import { createContext, useContext, useId, useState } from 'react';
 import type { ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 
 /**
  * Gemeinsames Layout-Muster (docs/design.md „Fläche und Karten“): Unter der Werkzeugleiste liegt eine ruhige Fläche;
@@ -86,18 +87,44 @@ export function Karte({ titel, hilfe, aktionen, ariaLabel, fuss, children, class
   );
 }
 
+/** Ziel für Inhalte der Fußzeile, die tief in der Zeichenkomponente entstehen (ZeichenFussInhalt) */
+const ZeichenFussZiel = createContext<HTMLElement | null>(null);
+
 /**
  * Zeichenflächen-Karte: die Zeichenfläche füllt die Karte (sie scrollt nicht, sie zoomt), darunter eine Fußzeile für
  * Bedienhinweis, Koordinaten und Maßstab – so verdeckt nichts den Plan. Der Plan selbst bleibt hell (`.canvas`).
- * Kopf wie bei `Karte` (meist ohne: die Werkzeuge stehen in der Werkzeugleiste).
+ * Kopf wie bei `Karte` (meist ohne: die Werkzeuge stehen in der Werkzeugleiste). Die Fußzeile füllt sich aus `fuss`
+ * und aus `ZeichenFussInhalt` irgendwo in der Zeichenfläche; leer bleibt sie unsichtbar. `als="main"`, wenn die
+ * Zeichenfläche der Hauptbereich der App ist.
  */
-export function ZeichenKarte({ titel, hilfe, aktionen, ariaLabel, fuss, children, className }: KopfProps & { fuss?: ReactNode; children: ReactNode; className?: string }) {
+export function ZeichenKarte({
+  titel,
+  hilfe,
+  aktionen,
+  ariaLabel,
+  fuss,
+  children,
+  className,
+  als = 'section',
+}: KopfProps & { fuss?: ReactNode; children: ReactNode; className?: string; als?: 'section' | 'main' }) {
   const { kopf, name } = useKopf({ titel, hilfe, aktionen, ariaLabel });
+  const [ziel, setZiel] = useState<HTMLElement | null>(null);
+  const Element = als;
   return (
-    <section className={className ? `karte zeichen-karte ${className}` : 'karte zeichen-karte'} {...name}>
+    <Element className={className ? `karte zeichen-karte ${className}` : 'karte zeichen-karte'} {...name}>
       {kopf}
-      <div className="zeichen-flaeche">{children}</div>
-      {fuss != null && <footer className="karte-fuss zeichen-fuss">{fuss}</footer>}
-    </section>
+      <ZeichenFussZiel.Provider value={ziel}>
+        <div className="zeichen-flaeche">{children}</div>
+      </ZeichenFussZiel.Provider>
+      <footer className="karte-fuss zeichen-fuss" ref={setZiel}>
+        {fuss}
+      </footer>
+    </Element>
   );
+}
+
+/** Inhalt für die Fußzeile der umgebenden ZeichenKarte (Bedienhinweis, Koordinaten, Maßstab aus der Zeichenkomponente) */
+export function ZeichenFussInhalt({ children }: { children: ReactNode }) {
+  const ziel = useContext(ZeichenFussZiel);
+  return ziel ? createPortal(children, ziel) : null;
 }

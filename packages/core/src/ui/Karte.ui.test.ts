@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { Flaeche, FlaechenSpalte, Karte, ZeichenKarte } from './Karte';
+import { Flaeche, FlaechenSpalte, Karte, ZeichenFussInhalt, ZeichenKarte } from './Karte';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -48,6 +48,7 @@ describe('Fläche und Karten', () => {
     expect(karte.getAttribute('aria-labelledby')).toBe(h2.id);
     const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'base.css'), 'utf8');
     expect(css).toMatch(/\.karte-titel \{[^}]*flex: 1;[^}]*display: flex;/);
+    expect(css).toMatch(/\.karte-titel > \.hilfe-knopf \{[^}]*flex-shrink: 0;[^}]*margin-left: 0;/);
     // der Rumpf beginnt und endet im eigenen Abstand, gleich welches Element vorn oder hinten steht
     expect(css).toMatch(/\.karte-rumpf > :first-child \{\s*margin-top: 0;/);
     expect(css).toMatch(/\.karte-rumpf > :last-child \{\s*margin-bottom: 0;/);
@@ -86,6 +87,27 @@ describe('Fläche und Karten', () => {
     expect(h2.textContent).toBe('Lageplan');
     expect(karte.getAttribute('aria-labelledby')).toBe(h2.id);
     expect(karte.querySelector('.karte-kopf > .karte-aktionen > button')?.textContent).toBe('3D');
+  });
+
+  it('ZeichenKarte: ZeichenFussInhalt aus der Zeichenfläche landet in der Fußzeile; als="main"; leere Fußzeile verborgen', () => {
+    const host = render(
+      h(ZeichenKarte, {
+        ariaLabel: 'Grundriss',
+        als: 'main',
+        fuss: h('span', null, 'Hinweis'),
+        children: h('div', { className: 'canvas' }, h('div', null, h(ZeichenFussInhalt, null, h('span', { className: 'koord' }, 'x 1,00')))),
+      }),
+    );
+    const karte = host.querySelector('main.karte.zeichen-karte')!;
+    expect(karte.getAttribute('aria-label')).toBe('Grundriss');
+    const fuss = karte.querySelector('footer.zeichen-fuss')!;
+    expect(fuss.textContent).toBe('Hinweisx 1,00');
+    expect(karte.querySelector('.zeichen-flaeche .koord')).toBeNull();
+    // außerhalb einer ZeichenKarte rendert ZeichenFussInhalt nichts
+    const ohne = render(h('div', null, h(ZeichenFussInhalt, null, 'weg')));
+    expect(ohne.textContent).toBe('');
+    const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'base.css'), 'utf8');
+    expect(css).toMatch(/\.zeichen-fuss:empty \{\s*display: none;/);
   });
 
   it('Fläche und Spalte setzen ihre Klassen; Spalte mit fester Breite', () => {

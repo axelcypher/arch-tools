@@ -288,6 +288,12 @@ body,
   min-width: 0;
   display: flex;
   align-items: center;
+  gap: var(--s1);
+}
+/* der runde Knopf bleibt rund, auch bei langem Titel; Abstand über gap statt eigenem Rand */
+.karte-titel > .hilfe-knopf {
+  flex-shrink: 0;
+  margin-left: 0;
 }
 .karte-kopf h2 {
   min-width: 0;
@@ -346,6 +352,10 @@ body,
   border-top: 1px solid var(--line-soft);
   color: var(--muted);
   font-size: var(--fs-s);
+}
+/* ohne Inhalt (weder fuss noch ZeichenFussInhalt) bleibt die Fußzeile der Zeichenkarte unsichtbar */
+.zeichen-fuss:empty {
+  display: none;
 }
 .zeichen-flaeche {
   position: relative;
