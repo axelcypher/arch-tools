@@ -26,16 +26,16 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
   **Antragsdaten** (nur für den aktiven Antrag: Status, Antragsmerkmale, Antragsumfang – siehe unten); darunter
   rollt der Rest ab „Formulare“. Aufbau: Dokument › Antrag › Projekt.
 - **Werkzeugleiste** (gemeinsamer Baustein `Werkzeugleiste`, design.md „Kopf- und Werkzeugleisten“): sichtbar bleibt,
-  was man ständig braucht – links „Datei ▾“ (Daten aktualisieren …, Speichern unter …, Drucken …; in der Web-Version
-  Formular öffnen …), „Speichern“ (mit Punkt bei ungespeicherten Änderungen) mit ↶ ↷, der Umschalter **Formular |
-  Felder**, Zoom und „Ansicht ▾“ (Gliederung, Verlauf der Eingaben als Schalter); rechts der Status (zuerst „n Felder
-  geändert“, dann Kennung und Stand; gekürzt, der volle Text samt „lokal gesichert“ im Tooltip), „Suchen …“
-  (<kbd>Strg</kbd>+<kbd>K</kbd>) und der Hauptknopf **„Als PDF exportieren …“** (<kbd>Strg</kbd>+<kbd>E</kbd>), zuletzt
-  „Mehr“ (⋯) mit „Formular einrichten“, „Manuelle Überschreibungen ignorieren“ und „Adressbuch …“; „Einstellungen …“
-  (Strg+,) steht als letzter Punkt in „Datei“. In schmalen
-  Fenstern kürzt sich zuerst der Status (bis auf eine Mindestbreite), dann wandern „Suchen …“, Zoom und „Ansicht“ ins
-  Menü „Mehr“. In den Projektdaten: „Projektdaten
-  speichern“ mit ↶ ↷; „Änderungen verwerfen“ steht in „Mehr“.
+  was man ständig braucht – links „Datei ▾“ (Daten aktualisieren …, Speichern unter …, Exportieren › PDF … – derselbe
+  Export wie der Hauptknopf –, Drucken …; in der Web-Version Formular öffnen …), „Speichern“ (mit Punkt bei
+  ungespeicherten Änderungen) mit ↶ ↷, der Umschalter **Formular | Felder**, Zoom und „Ansicht ▾“ (Gliederung, Verlauf
+  der Eingaben als Schalter); rechts der Status (zuerst „n Felder geändert“, dann Kennung und Stand; gekürzt, der volle
+  Text samt „lokal gesichert“ im Tooltip), „Suchen …“ (<kbd>Strg</kbd>+<kbd>K</kbd>) und der Hauptknopf **„Als PDF
+  exportieren …“** (<kbd>Strg</kbd>+<kbd>E</kbd>), zuletzt „Mehr“ (⋯) mit „Formular einrichten“, „Manuelle
+  Überschreibungen ignorieren“ und „Adressbuch …“; „Einstellungen …“ (Strg+,) steht als letzter Punkt in „Datei“. In
+  schmalen Fenstern kürzt sich zuerst der Status (bis auf eine Mindestbreite), dann wandern „Suchen …“, Zoom und
+  „Ansicht“ ins Menü „Mehr“. In den Projektdaten: „Projektdaten speichern“ mit ↶ ↷; „Änderungen verwerfen“ steht in
+  „Mehr“.
 - **Zuletzt bearbeitet:** Rechts an jedem Formular der Navigation und an jeder Datei im Projektordner (Ordner und
   Ansicht „Antrag“) steht kurz, wann zuletzt geändert wurde („heute 14:30“, „gestern 09:05“, „03.03.“) – beim Formular
   auch nicht gespeicherte Eingaben; der volle Zeitpunkt steht im Tooltip (`zeit.ts`). In einer schmalen Navigation

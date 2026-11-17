@@ -6,7 +6,8 @@ import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { leistenMessung } from '@core/ui/Werkzeugleiste';
 import { App } from './App';
-import { imLeistenMenue, leistenMenue, leistenMenueTexte } from './testLeiste';
+import { imLeistenMenue, leistenMenue, leistenMenueTexte, leistenPunkt } from './testLeiste';
+import { useExportDialog } from './components/ExportDialog';
 import { SpeicherDateisystem } from './dateisystem';
 import { cp1252Lesen, cp1252Schreiben } from './forma/cp1252';
 import type { Projektkarte } from './forma/projektkarte';
@@ -436,6 +437,21 @@ describe('Formulare', () => {
     // Formular und Felder stehen direkt auf der Fläche (das Papier bzw. die Abschnitte sind die Karten)
     expect(flaeche.querySelector(':scope > .flaechen-spalte.wachsend.rollend.fo-inhalt')).not.toBeNull();
     await klick(knopfGenau(host, 'Felder'));
+    // Suche und Filter: fester Kopf der rollenden Spalte aus core, als Suchbereich benannt; seine gemessene Höhe steht
+    // als --rollend-kopf-h an der Spalte (Felder ohne Kopf: wieder die Vorgabe aus core)
+    const kopf = flaeche.querySelector('.fo-inhalt .fo-felder > .fo-felder-kopf.rollend-kopf:first-child')!;
+    expect([kopf.getAttribute('role'), kopf.getAttribute('aria-label')]).toEqual(['search', 'Felder suchen und filtern']);
+    // Filter als Umschalter (.segment) mit aria-pressed: der gewählte ist angesagt
+    const filter = [...kopf.querySelectorAll<HTMLButtonElement>('.segment[role="group"][aria-label="Filter"] > button')];
+    expect(filter.map((b) => `${b.textContent!.split(' (')[0]}:${b.getAttribute('aria-pressed')}`)).toEqual(['Alle:true', 'Offene:false', 'Geänderte:false']);
+    // Trefferzahl als Live-Region: ohne Suche leer
+    expect(kopf.querySelector('.fo-treffer')!.getAttribute('aria-live')).toBe('polite');
+    expect(kopf.querySelector('.fo-treffer')!.textContent).toBe('');
+    await klick(filter[1]);
+    expect(filter.map((b) => b.getAttribute('aria-pressed'))).toEqual(['false', 'true', 'false']);
+    await klick(filter[0]);
+    const spalte = flaeche.querySelector<HTMLElement>('.fo-inhalt')!;
+    expect(spalte.style.getPropertyValue('--rollend-kopf-h')).toMatch(/^calc\(\d+px \+ var\(--s1\)\)$/);
     // Abschnitte unter der Seitenüberschrift (h2): Kopf h3, keine eigene Region (div ohne Namen)
     const seite = flaeche.querySelector('.fo-inhalt .fo-seite-felder')!;
     expect(seite.querySelector(':scope > h2')!.textContent).toContain('Seite 1');
@@ -445,6 +461,8 @@ describe('Formulare', () => {
     expect(abschnitt.hasAttribute('aria-labelledby') || abschnitt.hasAttribute('aria-label')).toBe(false);
     expect(flaeche.querySelectorAll('.fo-inhalt section')).toHaveLength(seite.parentElement!.querySelectorAll('section.fo-seite-felder').length);
     expect(abschnitt.querySelector('.karte-rumpf .fo-zeile')).not.toBeNull();
+    await klick(knopfGenau(host, 'Formular'));
+    expect(flaeche.querySelector<HTMLElement>('.fo-inhalt')!.style.getPropertyValue('--rollend-kopf-h')).toBe('');
     // Verlauf: Seitenkarte rechts, Griff links
     await imLeistenMenue(host, 'Ansicht', 'Verlauf der Eingaben');
     const rechts = [...flaeche.querySelectorAll<HTMLElement>(':scope > .leiste')].at(-1)!;
@@ -1082,7 +1100,22 @@ describe('Formulare', () => {
     // Umschalter Formular | Felder als .segment mit aria-pressed
     expect([...leiste.querySelectorAll('.segment button')].map((b) => `${b.textContent}:${b.getAttribute('aria-pressed')}`)).toEqual(['Formular:true', 'Felder:false']);
     // Menüs: Datei, Ansicht, Mehr – Inhalt und Reihenfolge
-    expect(await leistenMenueTexte(host, 'Datei')).toEqual(['Daten aktualisieren …', 'Speichern unter …', 'Drucken …', 'Einstellungen …']);
+    expect(await leistenMenueTexte(host, 'Datei')).toEqual(['Daten aktualisieren …', 'Speichern unter …', 'Exportieren', 'Drucken …', 'Einstellungen …']);
+    // Ausgaben mit Dialog im Untermenü „Exportieren“ (auch neben dem Hauptknopf): „PDF …“ öffnet denselben Dialog für
+    // das offene Formular (ohne Projekt fehlt der Punkt – siehe Web-Version, web.ui.test.ts)
+    act(() => leistenMenue(host, 'Datei').click());
+    await warte();
+    act(() => leistenPunkt('Exportieren').click());
+    await warte();
+    const pdfPunkt = leistenPunkt('PDF …');
+    expect(pdfPunkt.querySelector('.menue-tasten')?.textContent).toBe('Strg+E');
+    act(() => pdfPunkt.click());
+    await warte();
+    expect(useExportDialog.getState().pfad).toBe(useFormulare.getState().offen!.pfad);
+    expect(document.querySelector('.modal.ex')).not.toBeNull();
+    act(() => useExportDialog.getState().schliessen());
+    await warte();
+    expect(document.querySelector('.modal.ex')).toBeNull();
     expect(await leistenMenueTexte(host, 'Ansicht')).toEqual(['Gliederung', 'Verlauf der Eingaben']);
     expect(await leistenMenueTexte(host, 'Mehr')).toEqual(['Formular einrichten', 'Manuelle Überschreibungen ignorieren', 'Adressbuch …']);
     // eine Eingabe: Speichern trägt den Punkt und sagt es im Namen

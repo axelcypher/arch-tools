@@ -914,20 +914,13 @@ button.icon.fo-gl-zaehlt.an {
   margin: 0 auto;
   padding-bottom: var(--s5);
 }
-/* Suche und Filter stehen auf der Fläche und bleiben beim Rollen oben – bündig an der Oberkante der rollenden Spalte
-   (ihr Innenabstand --s1 aus core wird überdeckt, sonst liefe der Inhalt durch einen Streifen darüber) */
+/* Suche und Filter: fester Kopf der rollenden Spalte aus core (.rollend-kopf: bleibt oben, deckt den Innenabstand ab);
+   hier nur die Anordnung */
 .fo-felder-kopf {
-  position: sticky;
-  top: calc(-1 * var(--s1));
-  padding-top: var(--s1);
-  margin-top: calc(-1 * var(--s1));
-  z-index: 1;
   display: flex;
   flex-wrap: wrap;
   gap: var(--s2);
   align-items: center;
-  padding-bottom: var(--s2);
-  background: var(--bg);
 }
 .fo-feldsuche {
   flex: 1 1 220px;
@@ -1167,13 +1160,6 @@ button.icon.fo-gl-zaehlt.an {
 /* Raster und Vorschau richten sich nach der Breite der Karte, nicht nach dem Fenster */
 .pk-editor {
   container: pk-editor / inline-size;
-}
-/* viele Aktionen (Übernehmen, Leeren …): der Kopf bricht um, statt die Überschrift zu quetschen */
-.pk-editor > .karte-kopf {
-  flex-wrap: wrap;
-}
-.pk-editor > .karte-kopf h2 {
-  flex: 1 1 12rem;
 }
 .pk-unterzeile {
   margin: 0 0 var(--s1);
@@ -3125,7 +3111,13 @@ button.icon.fo-gl-bed.gesetzt {
   margin-bottom: 4px;
 }
 .fo-treffer {
-  margin-left: 6px;
+  margin-left: var(--s1);
+}
+/* leer (keine Suche) aus dem Fluss: die Live-Region bleibt im Baum (sonst sagten Vorleseprogramme den ersten Text nicht
+   an), nimmt aber nicht am Umbruch des Kopfs teil – keine leere Zeile, die useRollendKopf mitmäße */
+.fo-treffer:empty {
+  position: absolute;
+  margin-left: 0;
 }
 
 /* Projektmerkmale direkt am Formular festlegen (U-02) */
