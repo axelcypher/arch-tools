@@ -266,14 +266,17 @@ describe('Fläche und Karten', () => {
     expect(css).toMatch(/input\[type='checkbox'\],\s*input\[type='radio'\] \{\s*width: auto;/);
     expect(css).toMatch(/\.summary-table input:is\(\[type='checkbox'\], \[type='radio'\]\) \{\s*margin: 0;\s*vertical-align: middle;/);
     expect(css).toMatch(/\.summary-table\.fest thead tr:last-child th \{\s*box-shadow: inset 0 -1px var\(--line-soft\);/);
-    expect(css).toMatch(/\.summary-table\.waehlbar tbody tr:not\(\.gruppe, \.summe\) \{\s*cursor: pointer;/);
+    expect(css).toMatch(/\.summary-table\.waehlbar tbody tr:not\(\.gruppe, \.summe, \.leer\) \{\s*cursor: pointer;/);
     expect(css).toMatch(/:where\(\.summary-table\.felder td\) > :where\(button\.icon\) \{\s*min-height: var\(--ctl-h-s\);/);
-    expect(css).toMatch(/\.karte-rumpf:has\(> \.summary-table\.fest\) \{\s*scroll-padding-top: var\(--tabelle-kopf-h,/);
+    expect(css).toMatch(/\n\.summary-table \{[^}]*font-variant-numeric: tabular-nums;/);
+    expect(css).toMatch(/\.summary-table input\.zelle \{[^}]*width: 7\.5em;[^}]*max-width: 100%;/);
+    expect(css).toMatch(/\.summary-table\.waehlbar tbody tr:focus-visible \{\s*outline-offset: -2px;/);
+    expect(css).toMatch(/\.karte-rumpf:has\(\.summary-table\.fest\) \{\s*scroll-padding-top: var\(--tabelle-kopf-h,/);
     // fester Kopf: sticky am thead (mehrzeiliger Kopf bleibt zusammen), ohne Umbruch, Grund der Karte
     expect(css).toMatch(/\.summary-table\.fest thead \{[^}]*position: sticky;[^}]*top: 0;/);
     expect(css).toMatch(/\.summary-table\.fest thead th \{[^}]*white-space: nowrap;[^}]*background: var\(--panel\);/);
     // wählbare Zeilen: Überfahren mit leichter Akzenttönung und leiser Linie, nicht an Gruppen-, Summen-, gewählten Zeilen
-    expect(css).toMatch(/\.summary-table\.waehlbar tbody tr:not\(\.gruppe, \.summe, \.selected, \[aria-selected='true'\]\):is\(:hover, :focus-within\) td \{/);
+    expect(css).toMatch(/\.summary-table\.waehlbar tbody tr:not\(\.gruppe, \.summe, \.leer, \.selected, \[aria-selected='true'\]\):is\(:hover, :focus-within\) td \{/);
     expect(css).toMatch(/:is\(:hover, :focus-within\) td:first-child \{\s*box-shadow: inset 3px 0 color-mix\(in srgb, var\(--accent\) 60%, var\(--panel\)\);/);
     expect(css).toMatch(/\.summary-table tr\.gruppe td \{/);
     expect(css).toMatch(/\.summary-table tr\.summe td \{[^}]*border-top-color: color-mix\(in srgb, var\(--muted\) 60%, transparent\);/);

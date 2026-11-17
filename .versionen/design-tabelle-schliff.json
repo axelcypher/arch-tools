@@ -1,0 +1,34 @@
+{
+  "flaechenrechner": {
+    "stufe": "patch",
+    "notiz": "Zahlentabellen: Ziffern gleicher Breite in allen Spalten."
+  },
+  "ava": {
+    "stufe": "patch",
+    "notiz": "Zahlentabellen: Ziffern gleicher Breite in allen Spalten."
+  },
+  "grz": {
+    "stufe": "patch",
+    "notiz": "Zahlentabellen: Ziffern gleicher Breite in allen Spalten."
+  },
+  "kosten": {
+    "stufe": "patch",
+    "notiz": "Zahlentabellen: Ziffern gleicher Breite in allen Spalten."
+  },
+  "ordner": {
+    "stufe": "patch",
+    "notiz": "Zahlentabellen: Ziffern gleicher Breite in allen Spalten."
+  },
+  "entzerrung": {
+    "stufe": "patch",
+    "notiz": "Zahlentabellen: Ziffern gleicher Breite in allen Spalten."
+  },
+  "formulare": {
+    "stufe": "patch",
+    "notiz": "Zahlentabellen: Ziffern gleicher Breite in allen Spalten."
+  },
+  "baurecht": {
+    "stufe": "patch",
+    "notiz": "Zahlentabellen: Ziffern gleicher Breite in allen Spalten."
+  }
+}
