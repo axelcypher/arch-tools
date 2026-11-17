@@ -551,6 +551,7 @@ describe('Nachweis-Spalte, Regeln, Rückgängig (G-28, G-29, G-32)', () => {
     expect(css).not.toMatch(/\.grz-col\b/);
     expect(css).not.toMatch(/@media \(max-width: 1280px\)/);
     // Skizze ohne eigene Palette (helle Planfarben aus .canvas)
+    expect(css).toContain('.grz-skizze {');
     const skizze = css.slice(css.indexOf('.grz-skizze {'), css.indexOf('}', css.indexOf('.grz-skizze {')));
     expect(skizze).not.toMatch(/--panel:|--text:|filter:/);
     useGrz.getState().load(projekt());
