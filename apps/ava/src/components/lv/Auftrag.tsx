@@ -75,7 +75,7 @@ export function AuftragAnsicht({ gewerk }: { gewerk: string }) {
         ) : (
           <>
             <p className="muted small-text">Bieter wählen, an den vergeben wird. Den Auftrag erteilt der Bauherr; hier wird die Vergabe vermerkt.</p>
-            <table className="ava-tabelle">
+            <table className="summary-table text">
               <thead>
                 <tr>
                   <th>Vergabe</th>
@@ -152,7 +152,7 @@ export function AuftragAnsicht({ gewerk }: { gewerk: string }) {
         <section className="ava-abschnitt">
           <h3>Nachträge</h3>
           {nurAslv && <p className="warning-text small-text">{aslvHinweis(ASLV_NICHT_GESPEICHERT.nachtraege)}. Nachtragspositionen im LV (Feld „Nachtrag“) bleiben erhalten.</p>}
-          <table className="ava-tabelle">
+          <table className="summary-table text felder">
             <thead>
               <tr>
                 <th>Nr.</th>
@@ -289,7 +289,7 @@ export function AuftragAnsicht({ gewerk }: { gewerk: string }) {
       {g && g.auftrag.length > 0 && (
         <section className="ava-abschnitt">
           <h3>Dokumente im Auftragsordner</h3>
-          <table className="ava-tabelle ava-dateien">
+          <table className="summary-table text felder ava-dateien">
             <tbody>
               {g.auftrag
                 .filter((d) => !d.archiv)

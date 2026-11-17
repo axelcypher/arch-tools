@@ -28,7 +28,7 @@ export function Dateiliste({ gewerk }: { gewerk: string }) {
     return (
       <section className="ava-abschnitt">
         <h3>{titel}</h3>
-        <table className="ava-tabelle ava-dateien">
+        <table className="summary-table text felder ava-dateien">
           <colgroup>
             <col />
             <col className="ava-dateien-ort" />
