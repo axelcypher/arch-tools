@@ -224,11 +224,17 @@ describe('Fläche und Karten', () => {
     expect(css).toMatch(/\.summary-table\.felder td \{[^}]*vertical-align: top;/);
     // nur Zeilen mit Feld oder Knopf (Anlass: NUMIO, Gruppenzeile ohne Feld wurde höher); :has() prüft happy-dom nicht verlässlich
     expect(css).toMatch(
-      /\.summary-table\.felder tr:has\(input, select, textarea, button\) > td:not\(:has\(input, select, textarea, button\)\) \{[^}]*padding-top: calc\(3px \+ \(var\(--ctl-h\) - 1lh\) \/ 2\);/,
+      /\.summary-table\.felder tr:has\(input, select, textarea, button:not\(\.link\)\) > td:not\(:has\(input, select, textarea, button:not\(\.link\)\)\) \{[^}]*padding-top: calc\(3px \+ \(var\(--ctl-h\) - 1lh\) \/ 2\);/,
     );
     expect(css).toMatch(/\.summary-table tr\.gruppe td \{/);
     expect(css).toMatch(/\.summary-table tr\.summe td \{[^}]*border-top-color: color-mix\(in srgb, var\(--muted\) 60%, transparent\);/);
     // auf Papier bleibt die Gruppentönung hell
     expect(css).toMatch(/\n\.report \{[^}]*--tabelle-gruppe: #f1f3f6;/);
+    // Tabellen ohne Felder oben bündig, gewählte Zeile, Verweisknopf als Text
+    expect(css).toMatch(/\.summary-table\.oben td \{\s*vertical-align: top;/);
+    expect(css).toMatch(/\.summary-table tr\.selected td \{\s*background: var\(--accent-soft\);/);
+    expect(css).toMatch(/\nbutton\.link \{[^}]*border: none;[^}]*background: none;[^}]*color: var\(--accent-text\);[^}]*text-decoration: underline;/);
+    expect(css).toMatch(/button\.link:hover:not\(:disabled\):not\(\[aria-disabled='true'\]\),\s*button\.link:focus-visible \{[^}]*text-decoration-color: currentColor;/);
+    expect(css).toMatch(/\.summary-table tr\.selected td:first-child \{\s*box-shadow: inset 3px 0 var\(--accent\);/);
   });
 });

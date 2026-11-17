@@ -51,8 +51,12 @@ Texttabellen: Spaltenköpfe linksbündig (`.summary-table.text`, z. B. Platzhalt
 und Zahlenspalten, z. B. Kostengruppe | von | Mittel | bis) nehmen `.text` und markieren die Zahlenspalten mit `th.num`
 und `td.num`. Zeilen mit Feldern (Eingaben je Zeile) bekommen `.felder`: oben bündig, Text ohne Feld oder Knopf fluchtet
 mit dem Feldtext. Gruppenzeilen `tr.gruppe` (getönt mit `--tabelle-gruppe`, halbfett), Summenzeilen `tr.summe`
-(halbfett, kräftigere Linie darüber); `tr.strong` bleibt für einzelne hervorgehobene Zeilen. Diese Tabelle soll die
-eigenen Tabellenklassen der Apps ersetzen; bis zur Umstellung bleiben diese bestehen.
+(halbfett, kräftigere Linie darüber); `tr.strong` bleibt für einzelne hervorgehobene Zeilen, `tr.selected` (getönt mit
+`--accent-soft`, Akzentlinie links) für die gewählte Zeile – der Zustand auch für Hilfsmittel (`aria-selected` an der
+Zeile oder `aria-pressed`/`aria-current` am Knopf darin). Tabellen ohne Felder mit mehrzeiligen Zellen (Rechenweg,
+Katalog) bekommen `.oben` (oben bündig, ohne den Ausgleich der Feldzeilen). Ein Verweisknopf im Text (`button.link`, z.
+B. ein Wert, der seine Prüfung öffnet) zählt in Feldzeilen als Text. Diese Tabelle soll die eigenen Tabellenklassen der
+Apps ersetzen; bis zur Umstellung bleiben diese bestehen.
 
 ## Überschriften
 
@@ -97,7 +101,9 @@ eigenen Tabellenklassen der Apps ersetzen; bis zur Umstellung bleiben diese best
   (z. B. `button.icon:not(.werkzeugleiste *)`) – sonst schlägt ihre `min-width` die Regel der Leiste.
 - Die Regel hat die Spezifität null (`:where`): Eine App-Regel mit eigener `min-height` geht vor. Feste `height`
   allein reicht dafür nicht; wer kleinere Knöpfe braucht, setzt `min-height` mit.
-- Kleiner als 24px nur, wo es nicht anders geht (Hilfe-Knopf „?“, Griffe auf der Zeichenfläche).
+- Kleiner als 24px nur, wo es nicht anders geht (Hilfe-Knopf „?“, Griffe auf der Zeichenfläche) und beim Verweisknopf
+  `button.link` im Fließtext oder in einer Tabellenzelle; in `.toolbar`, `.button-row`, `.dialog-buttons` und
+  `.section-head` kein `.link`.
 
 ## Farben
 
@@ -107,9 +113,9 @@ eigenen Tabellenklassen der Apps ersetzen; bis zur Umstellung bleiben diese best
 | `--text`, `--muted`                | Text, Nebentext (`--muted` hält auch auf Tönungen und `--bg` mindestens 4,5 : 1)                                                                   |
 | `--border`, `--line-soft`          | Linien, feine Trennlinien in Tabellen                                                                                                              |
 | `--app`                            | Kachelfarbe der App aus dem Iconset – nur Titelleiste (siehe „App-Farbe“)                                                                          |
-| `--accent`, `--accent-soft`        | Akzent (aktive Werkzeuge, primärer Knopf, Links), Tönung                                                                                           |
+| `--accent`, `--accent-soft`        | Akzent (aktive Werkzeuge, primärer Knopf, Akzentlinien), Tönung                                                                                    |
 | `--ausgabe`, `--on-ausgabe`        | Bernstein für die eine Ausgabe-Aktion (Hauptknopf der Werkzeugleiste) sowie Update und Speicherort-Warnung in der Titelleiste, mit dunkler Schrift |
-| `--accent-text`                    | Akzent als Schrift auf getönten Flächen (aktive Knöpfe, Chips) – mindestens 4,5:1                                                                  |
+| `--accent-text`                    | Akzent als Schrift: auf getönten Flächen (aktive Knöpfe, Chips) sowie Verweisknöpfe und Links (`button.link`) auf jedem Grund – mindestens 4,5:1   |
 | `--ok-*`, `--warn-*`, `--fehler-*` | Status: eingehalten, prüfen, überschritten/Fehler; `--ok-punkt` usw. für Statuspunkte (Ampel)                                                      |
 | `--sel`                            | Auswahl auf Plänen (Orange); auch ungespeicherte Änderungen (Punkt in Titelleiste und an „Speichern“)                                              |
 | `--sel-foto`                       | Auswahl auf Fotos (Magenta, in beiden Schemata gleich) – Orange kollidiert dort mit Mess- und Markierungsfarben                                    |
@@ -361,7 +367,9 @@ Foto | Entzerrt, BGF | Raum) und der Hauptknopf (`.primary`, z. B. „Flächenau
 Werkzeug (`.active` bzw. `aria-pressed`) zeigt die Akzent-Tönung mit einem Strich unten. Der Hauptknopf (`.primary`) ist
 dort die Ausgabe der App in Bernstein – deshalb ist ein Knopf in einer Werkzeugleiste, der nichts ausgibt (Hinzufügen,
 Prüfen), kein `.primary`, sondern ein Standardknopf. Außerhalb der Leiste bleiben Standardknöpfe mit Rahmen, `.primary` in der
-Akzentfarbe (Hauptknopf eines Dialogs) und `.danger` für Gefahr. `.segment` behält seinen Rahmen.
+Akzentfarbe (Hauptknopf eines Dialogs) und `.danger` für Gefahr. `.segment` behält seinen Rahmen. `.link` ist ein
+Verweis im Text (ohne Rahmen und Fläche, `--accent-text`, immer dezent unterstrichen, beim Überfahren und Fokus voll) –
+für Werte und Namen in Tabellen oder Sätzen, die etwas öffnen; ein eigenständiger Befehl bleibt ein Knopf (`.small`).
 
 Richtwert: höchstens sieben, besser fünf Knöpfe bzw. Gruppen je Leiste; „Datei“ und „Speichern“ zählen mit, die
 Werkzeuge als eine Gruppe, „Mehr“ nicht. Status- und Hinweismarken (Warnungen, Module) gehören nicht ins Menü – sie
