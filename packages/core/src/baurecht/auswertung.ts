@@ -14,7 +14,7 @@ import { VORGABE_MERKMALE } from '../bedingung';
 import type { Fassung } from '../recht/typen';
 import { FAKTEN } from './fakten';
 import type { Bewertung, KurzKontext, TextKontext } from './kurz';
-import { kurzText, offenText, warumText, werten } from './kurz';
+import { kurzText, offenText, tragendeBlaetter, warumText, werten } from './kurz';
 import type { Paket } from './paket';
 import { regeldateiFuer } from './paket';
 import { ableitungenAnwenden, einzelfragenVon, frageGestellt, frageStand, vorfragenKarte } from './fragen';
@@ -390,12 +390,43 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
     }
     return g;
   };
+  // eine ersetzte Frage (FaktDef.ersetzt) ohne eigene Antwort fehlt nicht selbst – an ihrer Stelle fehlen die gestellten
+  // Tatsachenfragen, aus denen sie sich ergibt (Bedingungen von `folgt`), die noch keinen gesicherten Wert haben
+  // zuerst die Zeilen, die das Ergebnis „ja“ bzw. den Hauptweg tragen (bei § 246e die Tatsachenfrage), erst wenn sie
+  // entschieden sind, die übrigen (z. B. Sperren, die nur ein „nein“ verhindern) – sonst ginge die Hauptfrage in einer
+  // langen Liste unter. Merkmale (Planungsrecht für den Ort nicht bestätigt) nur, wenn sonst nichts fehlt
+  const ersetztCache = new Map<string, string[]>();
+  const ersetztDurch = (id: string): string[] => {
+    const schon = ersetztCache.get(id);
+    if (schon) return schon;
+    const zeilen = faktDefs[id]?.folgt ?? [];
+    const sammeln = (auswahl: typeof zeilen) => {
+      const out = new Set<string>();
+      for (const z of auswahl) {
+        try {
+          const b = werten(z.wenn, ctx);
+          if (b.w === 'nein') continue;
+          for (const o of [...b.offen, ...b.widerspruch, ...b.unsicher]) if (!o.startsWith('paragraf:')) out.add(o);
+        } catch {
+          // eine Bedingung, die sich nicht werten lässt, trägt nichts bei
+        }
+      }
+      const g = [...out].filter((f) => gestellt(f));
+      const ohneMerkmal = g.filter((f) => !f.startsWith('merkmal:'));
+      return ohneMerkmal.length ? ohneMerkmal : g;
+    };
+    const ja = sammeln(zeilen.filter((z) => z.wert === true));
+    const liste = ja.some((f) => !f.startsWith('merkmal:')) ? ja : sammeln(zeilen);
+    ersetztCache.set(id, liste);
+    return liste;
+  };
+  const ersetzteAufloesen = (offen: string[]) => [...new Set(offen.flatMap((o) => (faktDefs[o]?.ersetzt && !gestellt(o) ? ersetztDurch(o) : [o])))];
   // nur gestellte Angaben (und Verweise) – bleibt nichts übrig, alle (sonst stünde ein Gelb ohne Grund da)
-  const nurGestellteStreng = (offen: string[]) => offen.filter((o) => o.startsWith('paragraf:') || gestellt(o));
+  const nurGestellteStreng = (offen: string[]) => ersetzteAufloesen(offen).filter((o) => o.startsWith('paragraf:') || gestellt(o));
   // gelb: bleibt sonst kein Grund, wird die Angabe weiter genannt (die Ampel ist ja gelb)
   const nurGestellte = (offen: string[]) => {
     const g = nurGestellteStreng(offen);
-    return g.length ? g : offen;
+    return g.length ? g : ersetzteAufloesen(offen);
   };
 
   const geltungCache = new Map<string, Bewertung>();
@@ -473,6 +504,39 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
     let tragend: Bewertung[] = [];
     // Begründungen nennen die Angaben, die das Ergebnis tragen; die ganze Bedingung steht in `bedingung`
     const warum = (k: Kurz | undefined, w: Wahrheit) => warumText(k, ctx, text, w);
+    // eine fehlende Angabe als Text; ein Merkmal mit Vorbehalt ist angegeben, der Vorbehalt sagt, was fehlt („Planungsrecht
+    // (für diesen Ort noch nicht bestätigt)“)
+    const fehltText = (o: string) => (o.startsWith('merkmal:') && e.vorbehalte?.[o.slice(8)] ? `${offenText(o, text)} (${e.vorbehalte[o.slice(8)]})` : offenText(o, text));
+    // eine ersetzte Frage (FaktDef.ersetzt), deren Wert sich aus Tatsachen ergibt: deren Grund in Worten statt des Namens
+    // der Rechtsfrage („Sonderregelung …: ja“) – die Begründung sagt, warum
+    // – auch, wenn die Zeile nur über Hinweise zutrifft (z. B. Planungsrecht für diesen Ort noch nicht bestätigt; die
+    // Unsicherheit trägt die Ampel ohnehin)
+    // (die ersetzte Angabe aus der Bedingung selbst – sie trägt das Ergebnis nicht, solange sie offen ist)
+    const ersetzteIn = (k: unknown, out = new Set<string>()): Set<string> => {
+      if (Array.isArray(k)) k.forEach((x) => ersetzteIn(x, out));
+      else if (k && typeof k === 'object') {
+        const o = k as Record<string, unknown>;
+        if (typeof o.f === 'string' && faktDefs[o.f]?.ersetzt) out.add(o.f);
+        Object.values(o).forEach((x) => ersetzteIn(x, out));
+      }
+      return out;
+    };
+    const ausTatsachen = (k: Kurz | undefined, wert: boolean) =>
+      [
+        ...new Set(
+          [...ersetzteIn(k)].flatMap((v) => {
+            if (fakten[v]?.ausFolge) return fakten[v].wert === wert ? [fakten[v].ausFolge!] : [];
+            const zeile = faktDefs[v].folgt?.find((z) => {
+              try {
+                return z.wert === wert && werten(z.wenn, ctx).w === 'ja';
+              } catch {
+                return false;
+              }
+            });
+            return zeile ? [zeile.grund] : [];
+          }),
+        ),
+      ];
     if (g.w === 'nein') {
       ampel = 'gruen';
       const w = warum(n.datei?.regel.geltung, 'nein');
@@ -480,16 +544,20 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
       tragend = [g];
     } else if (entf?.w === 'ja' && !(tatbestand === 'nein' && gewicht(gilt) < gewicht(entf))) {
       ampel = 'gruen';
-      gruende.push(`Entfällt – ${warum(r.entfaellt, 'ja') || kurzText(r.entfaellt, text)}.`);
+      // nur, wenn allein die ersetzte Angabe trägt – trägt etwas anderes mit (z. B. die abgelaufene Frist), dessen Grund
+      const tatsachen = tragendeBlaetter(r.entfaellt, ctx, 'ja').every((b) => 'f' in b && !!faktDefs[b.f]?.ersetzt) ? ausTatsachen(r.entfaellt, false) : [];
+      gruende.push(`Entfällt – ${tatsachen.length ? tatsachen.join('; ') : warum(r.entfaellt, 'ja') || kurzText(r.entfaellt, text)}.`);
       tragend = [entf];
     } else if (tatbestand === 'ja') {
       ampel = 'rot';
+      const tatsachen = ausTatsachen(r.gilt, true);
+      if (tatsachen.length) gruende.push(`Trifft zu – ${tatsachen.join('; ')}.`);
       gruende.push(r.grund);
       tragend = [g, gilt];
       // „Ausnahme möglich“ nur mit einer Frage, die gestellt wird – sonst kann niemand sie beantworten (die Ausnahme greift
       // dann gar nicht, z. B. Umnutzung zu Wohnraum bei einem Gebäude ohne Wohnung)
       const ausnahmeOffen = entf?.w === 'offen' ? nurGestellteStreng(entf.offen) : [];
-      if (ausnahmeOffen.length) hinweise.push(`Ausnahme möglich – es fehlt: ${ausnahmeOffen.map((o) => offenText(o, text)).join(' · ')}`);
+      if (ausnahmeOffen.length) hinweise.push(`Ausnahme möglich – es fehlt: ${ausnahmeOffen.map(fehltText).join(' · ')}`);
       // die Ausnahme ist nur über Hinweise ausgeschlossen: nicht gesichert – bestätigen (oder berichtigen) klärt
       else if (entf?.w === 'nein' && (entf.unsicher.length || entf.widerspruch.length)) {
         // ein Modulwert ist dort zu bestätigen, woher seine Unsicherheit kommt (z. B. der Gemeindeschlüssel)
@@ -521,7 +589,7 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
       const angaben = fehlt.filter((o) => !o.startsWith('paragraf:'));
       const haengt = fehlt.filter((o) => o.startsWith('paragraf:'));
       // überall derselbe kurze Name der Angabe (nicht die Frage)
-      const teile = [angaben.length ? `es fehlt: ${angaben.map((o) => offenText(o, text)).join(' · ')}` : '', haengt.length ? `hängt an ${haengt.map((o) => offenText(o, text)).join(' · ')} – dort offen` : ''].filter(Boolean);
+      const teile = [angaben.length ? `es fehlt: ${angaben.map(fehltText).join(' · ')}` : '', haengt.length ? `hängt an ${haengt.map((o) => offenText(o, text)).join(' · ')} – dort offen` : ''].filter(Boolean);
       const satz = teile.join('; ') || 'es fehlt: Angaben';
       // kein Punkt nach einer Frage („… (LINFOS-Kennung)?“)
       gruende.push(`Offen – ${satz}${/[?.!]$/.test(satz) ? '' : '.'}`);
@@ -554,7 +622,7 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
           const fehlt = nurGestellteStreng(pruef.offen ?? []);
           const angaben = fehlt.filter((o) => !o.startsWith('paragraf:'));
           const haengt = fehlt.filter((o) => o.startsWith('paragraf:'));
-          const teile = [angaben.length ? `es fehlt: ${angaben.map((o) => offenText(o, text)).join(' · ')}` : '', haengt.length ? `hängt an ${haengt.map((o) => offenText(o, text)).join(' · ')} – dort offen` : ''].filter(Boolean);
+          const teile = [angaben.length ? `es fehlt: ${angaben.map(fehltText).join(' · ')}` : '', haengt.length ? `hängt an ${haengt.map((o) => offenText(o, text)).join(' · ')} – dort offen` : ''].filter(Boolean);
           herab.push(teile.length ? `Einzelfall möglich – ${teile.join('; ')}. ${r.pruefen.grund}` : `Einzelfall: ${r.pruefen.grund}`);
           offen = fehlt;
         } else {
@@ -779,6 +847,8 @@ export function auswerten(e: AuswertungsEingabe): Auswertung {
       return 'gelb';
     }
   };
+  // Hinweis: klaert setzt die Angabe ohne die Ableitungen (folgt) – eine ersetzte Frage (FaktDef.ersetzt) wirkt hier nur,
+  // weil die Regel ihre Tatsachen auch selbst nennt (z. B. § 246e: „gilt“ mit neuen Wohnungen und Abweichung)
   const klaert = (p: ParagrafErgebnis, o: string): boolean => {
     const werte = moeglich(o);
     if (!werte || !regelVon.has(p.id)) return true;

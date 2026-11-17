@@ -9,6 +9,7 @@ import { logger } from '../platform/log';
 import { ersetzen, globaleWerte, modernisieren, veraltetePlatzhalter, type Wert } from '../platzhalter';
 import { sichererDateiname } from '../projektdatei';
 import { PFAD_EINSTELLUNGEN } from '../einstellungen/eintraege';
+import { wirksamAus } from '../einstellungen/gemeinsam';
 import { pfadEinstellung, pfadSpeichern, usePfadWerte, type PfadWerte } from '../einstellungen/pfade';
 import { abweichungEntschieden, pfadeUebernehmen, type Abweichung } from '../einstellungen/uebernahme';
 import { PFAD_THEMEN, gleicherWert, hatFehler, istAbsolut, pfadPruefen, type PfadEinstellung, type PfadWert } from '../einstellungen/verzeichnis';
@@ -525,9 +526,15 @@ function SeitePfade({ fokus }: { fokus?: string }) {
 
   useEffect(() => {
     if (!fokus || !werte) return;
-    const ziel = document.getElementById(`einst-${fokus}`);
-    ziel?.scrollIntoView?.({ block: 'start' });
-    ziel?.querySelector<HTMLInputElement>('input, textarea')?.focus();
+    const hin = () => {
+      const ziel = document.getElementById(`einst-${fokus}`);
+      ziel?.scrollIntoView?.({ block: 'start' });
+      ziel?.querySelector<HTMLInputElement>('input, textarea')?.focus();
+    };
+    hin();
+    // ein eingeklappter Bereich (Abweichungen je App) öffnet sich erst im nächsten Bild – dann noch einmal
+    const bild = requestAnimationFrame(() => document.activeElement?.closest(`#einst-${CSS.escape(fokus)}`) || hin());
+    return () => cancelAnimationFrame(bild);
   }, [fokus, werte]);
 
   const entscheiden = (a: Abweichung, lokal: boolean) => {
@@ -589,9 +596,11 @@ function SeitePfade({ fokus }: { fokus?: string }) {
             <section key={t.id} className="einst-gruppe" aria-labelledby={`einst-thema-${t.id}`}>
               <h4 id={`einst-thema-${t.id}`}>{t.titel}</h4>
               <p className="muted small-text einst-gruppe-text">{t.text}</p>
-              {liste.map((e) => (
-                <PfadFeld key={e.id} e={e} werte={werte} />
-              ))}
+              {liste
+                .filter((e) => !e.abweichungVon)
+                .map((e) => (
+                  <PfadFeld key={e.id} e={e} werte={werte} app={app} fokus={fokus} />
+                ))}
             </section>
           );
         })
@@ -600,8 +609,85 @@ function SeitePfade({ fokus }: { fokus?: string }) {
   );
 }
 
+/** Abweichungen einer gemeinsamen Angabe je App (`abweichungVon`) */
+const abweichungenVon = (id: string) => PFAD_EINSTELLUNGEN.filter((x) => x.abweichungVon?.id === id);
+
+/** Text, der für eine Abweichung gilt – nach derselben Regel wie beim Export (`wirksamAus`) */
+const wirksamerText = (a: PfadEinstellung, werte: PfadWerte, entwurf: Record<string, string | boolean | null>): string =>
+  wirksamAus(a.abweichungVon!.art, alsText(wirksam(pfadEinstellung(a.abweichungVon!.id), werte, entwurf)).trim(), alsText(wirksam(a, werte, entwurf)).trim());
+
+/** was je App gilt (Vorschau); `null`, wenn es keine Abweichungen gibt oder für alle dasselbe gilt – dann bleibt die Vorschau */
+function jeAppTexte(basis: PfadEinstellung, werte: PfadWerte, entwurf: Record<string, string | boolean | null>): { a: PfadEinstellung; text: string }[] | null {
+  const alle = abweichungenVon(basis.id);
+  const texte = alle.map((a) => ({ a, text: pfadVorschau({ ...a, art: basis.art }, wirksamerText(a, werte, entwurf)) }));
+  return !alle.length || texte.every((t) => t.text === texte[0].text) ? null : texte;
+}
+
+/**
+ * Was je App gilt – unter Feld und Vorschau der gemeinsamen Angabe, nur wenn sich etwas unterscheidet (sonst gilt für
+ * alle dasselbe, die Vorschau sagt es). Mit App-Filter nur die App.
+ */
+function WirksamJeApp({ basis, werte, app, id: listeId }: { basis: PfadEinstellung; werte: PfadWerte; app: AppKennung | ''; id: string }) {
+  const entwurf = pfadStore((s) => s.entwurf);
+  const id = useId();
+  const texte = jeAppTexte(basis, werte, entwurf);
+  if (!texte) return null;
+  return (
+    <div className="einst-wirksam small-text">
+      <span className="muted" id={id}>
+        Gilt je App:
+      </span>
+      <ul aria-labelledby={id} id={listeId}>
+        {texte
+          .filter(({ a }) => !app || a.apps.includes(app))
+          .map(({ a, text }) => (
+            <li key={a.id}>
+              <span className="einst-app">{APP_NAMEN[a.apps[0]].name}</span> {text ? <code>{text}</code> : <span className="muted">direkt im Projektordner</span>}
+            </li>
+          ))}
+      </ul>
+    </div>
+  );
+}
+
+/**
+ * Abweichungen je App in der Karte der gemeinsamen Angabe: hinter „Je App abweichend“ (bei Ordnern „Unterordner je App“),
+ * mit der Zahl der gesetzten. Offen, wenn eine gesetzt ist oder ein Sprung ein Feld darin ansteuert; mit App-Filter nur
+ * die der App.
+ */
+function Abweichungen({ basis, werte, app, fokus }: { basis: PfadEinstellung; werte: PfadWerte; app: AppKennung | ''; fokus?: string }) {
+  const entwurf = pfadStore((s) => s.entwurf);
+  const liste = abweichungenVon(basis.id).filter((a) => !app || a.apps.includes(app));
+  const gesetzt = liste.filter((a) => alsText(wirksam(a, werte, entwurf)).trim() !== '').length;
+  const geaendert = liste.some((a) => !gleicherWert(wirksam(a, werte, entwurf), werte[a.id] ?? a.vorgabe));
+  const [offen, setOffen] = useState(gesetzt > 0 || liste.some((a) => a.id === fokus));
+  const angesteuert = liste.some((a) => a.id === fokus);
+  useEffect(() => {
+    if (angesteuert) setOffen(true);
+  }, [angesteuert, fokus]);
+  const id = useId();
+  if (!liste.length) return null;
+  const unterordner = basis.art === 'pfad';
+  const titel = unterordner ? 'Unterordner je App' : 'Je App abweichend';
+  return (
+    <div className="einst-abweichungen">
+      <button type="button" className="small einst-aufklappen" aria-expanded={offen} aria-controls={id} onClick={() => setOffen(!offen)}>
+        <Symbol name={offen ? 'pfeilUnten' : 'pfeilRechts'} />
+        {titel}
+        {gesetzt > 0 && <span className="muted"> ({gesetzt})</span>}
+        {!offen && geaendert && <span className="einst-aufklappen-geaendert"> · geändert</span>}
+      </button>
+      <div className="einst-unter" id={id} role="group" aria-label={`${titel}: ${basis.bezeichnung}`} hidden={!offen}>
+        {liste.map((a) => (
+          <PfadFeld key={a.id} e={a} werte={werte} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /** eine Einstellung: Feld, Platzhalter, Vorschau, Prüfung, „Vorgabe wiederherstellen“ */
-function PfadFeld({ e, werte }: { e: PfadEinstellung; werte: PfadWerte }) {
+function PfadFeld({ e, werte, app = '', fokus }: { e: PfadEinstellung; werte: PfadWerte; app?: AppKennung | ''; fokus?: string }) {
   const entwurf = pfadStore((s) => s.entwurf);
   const gesperrt = useEinstellungenGesperrt();
   const gilt = wirksam(e, werte, entwurf);
@@ -653,8 +739,10 @@ function PfadFeld({ e, werte }: { e: PfadEinstellung; werte: PfadWerte }) {
         </p>
       )}
       {e.art !== 'schalter' && (
-        <TextEinstellung e={e} feldId={feldId} hinweisId={hinweisId} text={typeof entwurf[e.id] === 'string' ? (entwurf[e.id] as string) : alsText(gilt)} gesperrt={gesperrt} onText={setze} />
+        <TextEinstellung e={e} werte={werte} feldId={feldId} hinweisId={hinweisId} text={typeof entwurf[e.id] === 'string' ? (entwurf[e.id] as string) : alsText(gilt)} gesperrt={gesperrt} onText={setze} />
       )}
+      {/* gemeinsame Angabe: statt einer Vorschau, was je App gilt */}
+      <WirksamJeApp basis={e} werte={werte} app={app} id={`${feldId}-jeapp`} />
       <div className="einst-eintrag-fuss">
         <span className="muted small-text">
           {geaendert ? 'Geändert – gilt mit „Übernehmen“' : istVorgabe ? 'Vorgabe' : 'Eigener Wert'}
@@ -672,6 +760,7 @@ function PfadFeld({ e, werte }: { e: PfadEinstellung; werte: PfadWerte }) {
           </button>
         )}
       </div>
+      {!e.abweichungVon && <Abweichungen basis={e} werte={werte} app={app} fokus={fokus} />}
     </div>
   );
 }
@@ -681,11 +770,13 @@ function TextEinstellung({
   e,
   feldId,
   hinweisId,
+  werte,
   text,
   gesperrt,
   onText,
 }: {
   e: PfadEinstellung;
+  werte: PfadWerte;
   feldId: string;
   hinweisId: string;
   text: string;
@@ -700,7 +791,12 @@ function TextEinstellung({
   const liste = e.art === 'liste';
   const ordnerListe = liste && e.zeilen === 'ordner';
   // Liste: Vorschau des ersten Eintrags (bei Mustern gilt es für neue Dateien); absolute Ordner ohne Vorschau
-  const vorschau = e.art === 'ordner' || ordnerListe ? '' : pfadVorschau(e, liste ? (alsListe(text)[0] ?? '') : text);
+  const entwurfJetzt = pfadStore((s) => s.entwurf);
+  // gemeinsame Angabe, die je App Verschiedenes ergibt: statt der Vorschau „Gilt je App“ darunter (`WirksamJeApp`, dieselbe Quelle `werte`)
+  const jeApp = jeAppTexte(e, werte, entwurfJetzt);
+  const vorschau = e.art === 'ordner' || ordnerListe || jeApp ? '' : pfadVorschau(e, liste ? (alsListe(text)[0] ?? '') : text);
+  // Abweichung, die den gemeinsamen Wert ersetzt: leer gilt der gemeinsame – er steht als Platzhalter im Feld
+  const platzhalter = e.abweichungVon?.art === 'ersetzt' ? alsText(wirksam(pfadEinstellung(e.abweichungVon.id), werte, entwurfJetzt)) : undefined;
   const alt = e.variablen ? veraltetePlatzhalter(text, e.variablen) : [];
   const meldungId = `${feldId}-pruefung`;
   const vorschauId = `${feldId}-vorschau`;
@@ -714,7 +810,8 @@ function TextEinstellung({
     spellCheck: false,
     'aria-invalid': fehlerhaft || undefined,
     'aria-required': e.pflicht || undefined,
-    'aria-describedby': [hinweisId, meldungen.length ? meldungId : '', vorschau ? vorschauId : ''].filter(Boolean).join(' '),
+    placeholder: platzhalter,
+    'aria-describedby': [hinweisId, meldungen.length ? meldungId : '', vorschau ? vorschauId : '', jeApp ? `${feldId}-jeapp` : ''].filter(Boolean).join(' '),
     onChange: (ev: { target: { value: string } }) => onText(ev.target.value),
   };
 

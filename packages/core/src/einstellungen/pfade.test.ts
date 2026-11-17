@@ -35,10 +35,11 @@ describe('pfade', () => {
     expect((roh('allgemein')!.pfade as Record<string, unknown>)['export.pdfMitspeichern']).toBe(false);
     await p.pfadSpeichern('export.pdfMitspeichern', true);
     expect(roh('allgemein')!.pfade).toEqual({});
-    await p.pfadSpeichern('export.excel.kosten', '  {PROJEKT_KUERZEL} Kosten  ');
-    expect(p.pfadWert('export.excel.kosten')).toBe('{PROJEKT_KUERZEL} Kosten');
-    await p.pfadSpeichern('export.excel.kosten', undefined);
-    expect(p.pfadWert('export.excel.kosten')).toBe('{PROJEKT_KUERZEL} {DATUM} {Inhalt}');
+    await p.pfadSpeichern('export.excel.abweichend.kosten', '  {PROJEKT_KUERZEL} Kosten  ');
+    expect(p.pfadWert('export.excel.abweichend.kosten')).toBe('{PROJEKT_KUERZEL} Kosten');
+    await p.pfadSpeichern('export.excel.abweichend.kosten', undefined);
+    expect(p.pfadWert('export.excel.abweichend.kosten')).toBe('');
+    expect(roh('allgemein')!.pfade).toEqual({});
   });
 
   it('Export: Einstellungen je App, Berechnungsordner und Dateiname aus den Vorlagen', async () => {
@@ -90,5 +91,44 @@ describe('pfade', () => {
     window.dispatchEvent(new StorageEvent('storage', { key: 'arch-tools:konfig-geaendert', newValue: JSON.stringify({ bereiche: ['allgemein'] }) }));
     await vi.waitFor(() => expect(p.pfadWert('ablage.fotoordner')).toBe('Bilder'));
     expect(f).toHaveBeenCalled();
+  });
+
+  it('gemeinsame Angaben: mehrere Einträge einer Gruppe in einem „Übernehmen“ vom bisherigen Stand aus – in beiden Reihenfolgen', async () => {
+    const vorher = {
+      'export.berechnungsordner.flaechenrechner': ' 03 Berechnungen \\ Flächen ',
+      'export.berechnungsordner.grz': '03 Berechnungen/Nachweise',
+      'export.excel.flaechenrechner': 'A {Inhalt}',
+      'export.excel.grz': 'B {Inhalt}',
+      'export.excel.kosten': 'B {Inhalt}',
+    };
+    for (const reihenfolge of [
+      ['export.excel', 'export.excel.abweichend.grz'],
+      ['export.excel.abweichend.grz', 'export.excel'],
+    ]) {
+      localStorage.clear();
+      vi.resetModules();
+      setze('allgemein', { pfade: vorher });
+      const p = await import('./pfade');
+      const werte = { projektcode: 'BS9' };
+      // vor dem Speichern: jede App wie bisher (Ordner auch mit „\“ und Leerzeichen)
+      expect(p.berechnungsordnerPfad((await p.exportPfadeLaden('flaechenrechner')).berechnungsordner, 'P:/BS9', werte)).toBe(p.berechnungsordnerPfad('03 Berechnungen/Flächen', 'P:/BS9', werte));
+      expect((await p.exportPfadeLaden('flaechenrechner')).dateinameExcel).toBe('A {Inhalt}');
+      for (const id of reihenfolge) await p.pfadSpeichern(id, id === 'export.excel' ? 'C {Inhalt}' : 'G {Inhalt}');
+      const nach = await Promise.all((['flaechenrechner', 'grz', 'kosten'] as const).map((a) => p.exportPfadeLaden(a)));
+      expect(
+        nach.map((x) => x.dateinameExcel),
+        reihenfolge.join(' → '),
+      ).toEqual(['A {Inhalt}', 'G {Inhalt}', 'C {Inhalt}']);
+      expect(nach.map((x) => x.berechnungsordner)).toEqual(['03 Berechnungen/Flächen', '03 Berechnungen/Nachweise', '03 Berechnungen/Kosten']);
+      expect([p.pfadWert('export.excel'), p.pfadWert('export.excel.abweichend.flaechenrechner'), p.pfadWert('export.excel.abweichend.grz'), p.pfadWert('export.excel.abweichend.kosten')]).toEqual([
+        'C {Inhalt}',
+        'A {Inhalt}',
+        'G {Inhalt}',
+        '',
+      ]);
+      // für ältere Versionen gespiegelt
+      const pfade = roh('allgemein')!.pfade as Record<string, string>;
+      expect([pfade['export.excel.flaechenrechner'], pfade['export.excel.grz'], pfade['export.excel.kosten']]).toEqual(['A {Inhalt}', 'G {Inhalt}', 'C {Inhalt}']);
+    }
   });
 });
