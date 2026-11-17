@@ -564,9 +564,9 @@ describe('Nachweis-Spalte, Regeln, Rückgängig (G-28, G-29, G-32)', () => {
     expect(css).not.toMatch(/@media \(max-width: 1280px\)/);
     // Kartenkopf ganz aus core: das „?“ kommt über die Eigenschaft hilfe, keine eigene Regel für das h2
     expect(css).not.toMatch(/\.karte-kopf h2\s*\{/);
-    // schmale Fenster: der Nachweis gibt nur bis 320 px nach (Kacheln und Vollgeschoss-Tabelle passen noch),
-    // die Kacheln stehen dann untereinander, die Zahlenspalten haben feste Breiten statt Prozent
-    expect(css).toMatch(/\.leiste:has\(> \.grz-nachweis\)\s*\{\s*--leiste-min: 320px;/);
+    // schmale Fenster: die Untergrenze der Seitenkarten kommt aus BreitenLeiste min (core), keine eigene Regel;
+    // die Kacheln stehen bei wenig Platz untereinander, die Zahlenspalten haben feste Breiten statt Prozent
+    expect(css).not.toMatch(/--leiste-min/);
     expect(css).toMatch(/\.kpis\s*\{[^}]*grid-template-columns: repeat\(auto-fit, minmax\(12em, 1fr\)\)/);
     expect(css.slice(css.indexOf('.grz-vg-tabelle th:nth-child(1)'), css.indexOf('.grz-vg-tabelle select'))).not.toMatch(/width: \d+%/);
     // Spanne des Geländes bricht in der festen Spalte um, statt die Nachbarspalte zu überdecken
@@ -1325,7 +1325,10 @@ describe('Kartenlayout (Richtung C)', () => {
     // jede Karte ist ein benannter Bereich (aria-labelledby auf das h2)
     for (const k of karten) expect(document.getElementById(k.getAttribute('aria-labelledby')!)?.tagName).toBe('H2');
     // Eingaben und Nachweis in BreitenLeisten (links bzw. rechts), der Lageplan in der Mitte
-    expect(flaeche.querySelectorAll(':scope > .leiste')).toHaveLength(2);
+    const leisten = [...flaeche.querySelectorAll<HTMLElement>(':scope > .leiste')];
+    expect(leisten).toHaveLength(2);
+    // in schmalen Fenstern geben die Seitenkarten nur bis zu ihrem eigenen min nach: Eingaben 240 px, Nachweis 320 px
+    expect(leisten.map((l) => l.style.getPropertyValue('--leiste-eigen-min'))).toEqual(['240px', '320px']);
     expect(flaeche.querySelector(':scope > section.karte.grz-plan')).not.toBeNull();
     // der Plan trägt .canvas (helle Planfarben, im dunklen Schema als Ganzes invertiert)
     expect(host.querySelector('svg.grz-skizze.canvas')).not.toBeNull();
@@ -1337,6 +1340,9 @@ describe('Kartenlayout (Richtung C)', () => {
     expect(host.querySelector('.grz-plan .karte-kopf h2')!.textContent).toBe('3D-Ansicht');
     // Tabellen auf der gemeinsamen Zahlentabelle
     expect(host.querySelectorAll('table.summary-table').length).toBeGreaterThan(0);
+    // Flächentabelle: gekürzte Auswahlen nennen den vollen Eintrag im Tooltip
+    const nutzung = host.querySelector<HTMLSelectElement>('.grz-flaechen-tabelle tbody select')!;
+    expect(nutzung.title).toBe(nutzung.selectedOptions[0].textContent);
     expect(host.querySelectorAll('table:not(.summary-table):not(.report-table)')).toHaveLength(0);
   });
 });

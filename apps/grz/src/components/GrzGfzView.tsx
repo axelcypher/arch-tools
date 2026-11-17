@@ -535,7 +535,7 @@ export function GrzGfzView() {
                 <th className="num" title="eindeutig zugeordnete Fläche außerhalb des Gebäudes – Überlagerungen zählen nur einmal">
                   m²
                 </th>
-                <th>Grundfläche</th>
+                <th title="Anrechnung auf die Grundfläche (§ 19 BauNVO)">GR</th>
               </tr>
             </thead>
             <tbody>
@@ -555,7 +555,12 @@ export function GrzGfzView() {
                       </label>
                     </td>
                     <td>
-                      <select value={f.nutzung} disabled={f.nachbar} onChange={(e) => updFlaeche(f.id, { nutzung: e.target.value as LageplanNutzung })}>
+                      <select
+                        value={f.nutzung}
+                        title={LAGEPLAN_NUTZUNGEN.find((x) => x.id === f.nutzung)?.label}
+                        disabled={f.nachbar}
+                        onChange={(e) => updFlaeche(f.id, { nutzung: e.target.value as LageplanNutzung })}
+                      >
                         {LAGEPLAN_NUTZUNGEN.map((x) => (
                           <option key={x.id} value={x.id}>
                             {x.label}
@@ -564,7 +569,12 @@ export function GrzGfzView() {
                       </select>
                     </td>
                     <td>
-                      <select value={f.versiegelung} disabled={f.nachbar} onChange={(e) => updFlaeche(f.id, { versiegelung: e.target.value as Versiegelung })}>
+                      <select
+                        value={f.versiegelung}
+                        title={VERSIEGELUNGEN.find((x) => x.id === f.versiegelung)?.label}
+                        disabled={f.nachbar}
+                        onChange={(e) => updFlaeche(f.id, { versiegelung: e.target.value as Versiegelung })}
+                      >
                         {VERSIEGELUNGEN.map((x) => (
                           <option key={x.id} value={x.id}>
                             {x.label}
