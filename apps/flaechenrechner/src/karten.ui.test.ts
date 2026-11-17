@@ -63,7 +63,12 @@ describe('QUADRIO: Kartenlayout (Richtung C, docs/design.md „Fläche und Karte
     expect(rechts.matches('.leiste')).toBe(true);
     expect(rechts.querySelector(':scope > .leiste-griff.leiste-griff-links')).not.toBeNull();
     const karten = [...rechts.querySelectorAll(':scope > .flaechen-spalte > section.karte')];
-    expect(karten.map((k) => name(k).replace('?', '').trim())).toEqual(['Geschoss', 'Auswertung']);
+    // Name wie ein Vorleseprogramm ihn hört: nur der Titel – das „?“ steht in den Aktionen rechts, nicht im h2
+    expect(karten.map(name)).toEqual(['Geschoss', 'Auswertung']);
+    for (const k of karten) {
+      expect(k.querySelector('.karte-kopf h2 button')).toBeNull();
+      expect(k.querySelector('.karte-kopf .karte-aktionen .hilfe-knopf')).not.toBeNull();
+    }
     // Gegenprobe: die alten Layout-Klassen sind weg
     expect(host.querySelector('.workspace, .sidebar, .sidebar-left, .sidebar-right, main.main')).toBeNull();
   });
@@ -73,8 +78,9 @@ describe('QUADRIO: Kartenlayout (Richtung C, docs/design.md „Fläche und Karte
     const raum = useEditor.getState().project.storeys[0].shapes.find((s) => s.kind === 'room')!;
     act(() => useEditor.getState().select(raum.id));
     const karten = [...host.querySelectorAll('.qu-eigenschaften > section.karte')];
-    expect(karten.map((k) => k.querySelector('.karte-kopf h2')?.firstChild?.textContent)).toEqual(['Raum', 'Auswertung']);
-    expect(karten[0].querySelector('.karte-aktionen button')?.textContent).toBe('Löschen');
+    expect(karten.map((k) => k.querySelector('.karte-kopf h2')?.textContent)).toEqual(['Raum', 'Auswertung']);
+    // Aktionen rechts im Kopf: Nachschlagen, dann Löschen
+    expect([...karten[0].querySelectorAll('.karte-aktionen button')].map((b) => b.textContent)).toEqual(['?', 'Löschen']);
   });
 
   it('Bedienhinweis, Eingabe, Koordinaten und Maßstab stehen in der Fußzeile der Zeichenkarte, nicht im Planbereich', () => {
@@ -130,7 +136,28 @@ describe('QUADRIO: Kartenlayout (Richtung C, docs/design.md „Fläche und Karte
     expect(css).not.toMatch(/\.(sidebar|sidebar-left|sidebar-right|workspace|hud)\s*[{,]/);
     expect(css).not.toMatch(/\.scalebar\s*\{[^}]*position:\s*absolute/);
     // Maßstab und Hinweis in Variablen (hell und dunkel)
-    const scalebar = css.slice(css.indexOf('.scalebar {'), css.indexOf('.kalibrier-dialog'));
-    expect(scalebar).not.toMatch(/#[0-9a-f]{3,6}\b|rgba?\(/i);
+    const scalebar = css.match(/\.scalebar(-bar)?\s*\{[^}]*\}/g) ?? [];
+    expect(scalebar.length).toBeGreaterThan(1);
+    for (const regel of scalebar) expect(regel).not.toMatch(/#[0-9a-f]{3,6}\b|rgba?\(/i);
+    // Hinweis in der Fußzeile: Knöpfe schrumpfen nicht (nur der Text kürzt), Fokusrahmen nach innen
+    expect(css).toMatch(/\.hud-hint \.hud-hint-knopf\s*\{[^}]*flex:\s*none/);
+    expect(css).toMatch(/\.karte-fuss button:focus-visible\s*\{[^}]*outline-offset:\s*-2px/);
+  });
+
+  it('Seitenkarten merken ihre Breite (BreitenLeiste, localStorage) – auch nach erneutem Öffnen', () => {
+    localStorage.setItem('flaechenrechner:breite:rechts', '360');
+    let host = render();
+    const rechts = () => host.querySelector<HTMLElement>('.app > .flaeche > .leiste:last-child')!;
+    expect(rechts().style.width).toBe('360px');
+    act(() => root?.unmount());
+    document.body.innerHTML = '';
+    host = render();
+    expect(rechts().style.width).toBe('360px');
+    // Gegenprobe: ohne gemerkten Wert die Vorgabe
+    act(() => root?.unmount());
+    document.body.innerHTML = '';
+    localStorage.clear();
+    host = render();
+    expect(rechts().style.width).not.toBe('360px');
   });
 });
