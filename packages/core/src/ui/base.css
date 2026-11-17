@@ -347,16 +347,22 @@ body,
 .karte-rumpf.abschnitte > section:last-child {
   border-bottom: none;
 }
-.karte-rumpf.abschnitte > section > h2 {
+.karte-rumpf.abschnitte > section > h2,
+.karte-rumpf.abschnitte > section > .section-head h2 {
   font-size: var(--fs-l);
   font-weight: 600;
   margin: 0 0 var(--s2);
 }
 /* in einer Kopfzeile mit Knopf (.section-head) kommt der Abstand von der Kopfzeile */
 .karte-rumpf.abschnitte > section > .section-head h2 {
-  font-size: var(--fs-l);
-  font-weight: 600;
   margin: 0;
+}
+/* wie im Rumpf: jeder Abschnitt beginnt und endet in seinem eigenen Abstand */
+.karte-rumpf.abschnitte > section > :first-child {
+  margin-top: 0;
+}
+.karte-rumpf.abschnitte > section > :last-child {
+  margin-bottom: 0;
 }
 /* bündig: der Rumpf schneidet überstehende Fokusrahmen ab – Rahmen nach innen (wie in Leisten mit overflow: hidden) */
 .karte-rumpf.buendig :focus-visible {

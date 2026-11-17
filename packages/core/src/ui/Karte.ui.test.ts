@@ -67,7 +67,9 @@ describe('Fläche und Karten', () => {
     const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'base.css'), 'utf8');
     expect(css).toMatch(/\.karte-rumpf\.abschnitte > section \{[^}]*padding: var\(--s3\) var\(--karte-pad\);[^}]*border-bottom: 1px solid var\(--line-soft\);/);
     expect(css).toMatch(/\.karte-rumpf\.abschnitte > section:last-child \{\s*border-bottom: none;/);
-    expect(css).toMatch(/\.karte-rumpf\.abschnitte > section > h2 \{[^}]*font-size: var\(--fs-l\);/);
+    expect(css).toMatch(/\.karte-rumpf\.abschnitte > section > h2,\s*\.karte-rumpf\.abschnitte > section > \.section-head h2 \{[^}]*font-size: var\(--fs-l\);/);
+    expect(css).toMatch(/\.karte-rumpf\.abschnitte > section > :first-child \{\s*margin-top: 0;/);
+    expect(css).toMatch(/\.karte-rumpf\.abschnitte > section > :last-child \{\s*margin-bottom: 0;/);
   });
 
   it('Karte ohne Titel: kein Kopf, Name über ariaLabel; bündiger Rumpf', () => {

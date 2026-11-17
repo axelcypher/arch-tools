@@ -69,7 +69,8 @@ export interface KarteProps extends KopfProps {
   buendig?: boolean;
   /**
    * Inhalt aus mehreren Abschnitten (`<section>` direkt im Rumpf, je mit `h2`): Trennlinien bis an den Rand, Abstände
-   * je Abschnitt – für Karten ohne Kopf, die mehrere Themen bündeln (z. B. Projekt, Geschosse, Flächen)
+   * je Abschnitt – für Karten ohne Kopf, die mehrere Themen bündeln (z. B. Projekt, Geschosse, Flächen); ohne Kopf
+   * braucht die Karte `ariaLabel`
    */
   abschnitte?: boolean;
   /**

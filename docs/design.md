@@ -494,10 +494,11 @@ Werkzeugleiste liegt mit auf der Fläche (gleicher Grund, keine Linie). Baustein
   bis an den Rand laufen; Fokusrahmen liegen dort innen. Breite Tabellen scrollen mit dem Inhalt der Karte, sie laufen
   nie aus ihr heraus. Der Rumpf ist positioniert: absolut gesetzte Elemente darin bleiben in seinem Rollbereich.
   Klappmenüs, Vorschlagslisten und Hinweise, die über die Karte hinausragen sollen, deshalb als Portal bzw. mit
-  `position: fixed` ausführen. Bündelt eine Karte ohne Kopf mehrere Themen (z. B. Projekt, Geschosse, Flächen),
-  bekommt sie `abschnitte`: je Thema ein `<section>` direkt im Rumpf mit `h2` (wie die Kopfüberschrift, `--fs-l`),
-  Trennlinien bis an den Rand, in einer `.section-head` mit Knopf ohne eigenen Abstand. Innenabstand waagerecht `--karte-pad` (14px, aus der gewählten Vorschau), Kopfhöhe
-  `--karte-kopf-h` (ein Knopf in `--ctl-h` mit `--s2` darüber und darunter), Fußzeile in `--ctl-h`.
+  `position: fixed` ausführen. Bündelt eine Karte ohne Kopf mehrere Themen (z. B. Projekt, Geschosse, Flächen), bekommt
+  sie `abschnitte`: je Thema ein `<section>` direkt im Rumpf mit `h2` (wie die Kopfüberschrift, `--fs-l`), Trennlinien
+  bis an den Rand, in einer `.section-head` mit Knopf ohne eigenen Abstand. Innenabstand waagerecht `--karte-pad` (14px,
+  aus der gewählten Vorschau), Kopfhöhe `--karte-kopf-h` (ein Knopf in `--ctl-h` mit `--s2` darüber und darunter),
+  Fußzeile in `--ctl-h`.
 - `FlaechenSpalte` (`.flaechen-spalte`): mehrere Karten untereinander (z. B. „Geschoss“ über „Auswertung“), sie teilen
   sich die Höhe; `wachsend` lässt die Spalte die Restbreite nehmen. Eine kurze Karte unter einer langen bekommt
   `hoehe="inhalt"`: Sie ist so hoch wie ihr Inhalt (höchstens die halbe Spalte, darüber scrollt sie), die übrigen Karten
