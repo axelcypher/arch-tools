@@ -166,8 +166,14 @@
 .mv-liste tbody tr {
   cursor: pointer;
 }
-.mv-liste tbody tr:hover td {
+/* Überfahren tönt nur nicht gewählte Mengen – die gewählte behält die Auswahl aus core (tr.selected) */
+.mv-liste tbody tr:not(.selected):hover td {
   background: var(--hover);
+}
+/* die Zusatzzeile (festgelegt, Auswahl geändert) gehört zur gewählten Menge: Akzentlinie wie an der ersten Zelle
+   (core zeichnet sie an td:first-child; die Liste ist ein Grid mit Zusatzzelle über die ganze Breite) */
+.mv-liste tr.selected td.mv-menge-zusatz {
+  box-shadow: inset 3px 0 var(--accent);
 }
 /* je Menge eine Zeile: Kürzel und Name | Wert; mit Handwert oder geänderter Auswahl eine zweite Zeile darunter */
 .mv-liste table,
