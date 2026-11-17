@@ -92,5 +92,12 @@ describe('Fläche und Karten', () => {
     expect(kurz.className).toBe('karte karte-inhalt x');
     const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'base.css'), 'utf8');
     expect(css).toMatch(/\.flaechen-spalte > \.karte\.karte-inhalt \{[^}]*flex: 0 1 auto;[^}]*max-height: 50%;/);
+    // mehrere Inhaltskarten: die teilende Karte behält Kopf und einige Zeilen
+    expect(css).toMatch(/\.flaechen-spalte:has\(> \.karte-inhalt\) > \.karte:not\(\.karte-inhalt\) \{[^}]*min-height: calc\(var\(--karte-kopf-h\) \+ 6 \* var\(--s4\)\);/);
+    // Zahlentabelle: gemischte Spalten, Felder, Gruppen- und Summenzeilen
+    expect(css).toMatch(/\.summary-table\.text th\.num,\s*\.summary-table td\.num \{[^}]*text-align: right;/);
+    expect(css).toMatch(/\.summary-table\.felder td \{[^}]*vertical-align: top;/);
+    expect(css).toMatch(/\.summary-table tr\.gruppe td \{/);
+    expect(css).toMatch(/\.summary-table tr\.summe td \{[^}]*border-top-color: var\(--border\);/);
   });
 });

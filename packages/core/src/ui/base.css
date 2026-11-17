@@ -245,6 +245,11 @@ body,
   flex: 0 1 auto;
   max-height: 50%;
 }
+/* die teilende Karte zeigt neben Inhaltskarten immer mindestens ihren Kopf und einige Zeilen (auch bei zwei
+   Inhaltskarten, die zusammen fast die ganze Spalte wollen) */
+.flaechen-spalte:has(> .karte-inhalt) > .karte:not(.karte-inhalt) {
+  min-height: calc(var(--karte-kopf-h) + 6 * var(--s4));
+}
 /* Seitenkarten in einer Leiste nehmen deren Breite; in einer Spalte teilen sich die Karten die Höhe */
 .leiste > .karte {
   flex: 1;
@@ -862,8 +867,33 @@ textarea:focus {
   text-align: left;
 }
 
-.summary-table tr.strong td {
+/* gemischte Tabellen (Text- und Zahlenspalten): .text für die Tabelle, Zahlenspalten mit th.num und td.num rechts –
+   höhere Spezifität als .summary-table.text th */
+.summary-table.text th.num,
+.summary-table td.num {
+  text-align: right;
+}
+
+/* Zeilen mit Feldern (Eingaben, Auswahllisten): oben bündig, damit Zellen mit zweizeiligem Inhalt (z. B. Spanne
+   „810.000 – 1.134.000 €“) die Zeile nicht verschieben */
+.summary-table.felder td {
+  vertical-align: top;
+}
+
+.summary-table tr.strong td,
+.summary-table tr.summe td {
   font-weight: 600;
+}
+
+/* Gruppenzeile (z. B. Kostengruppe 300): leicht getönt, halbfett */
+.summary-table tr.gruppe td {
+  background: var(--hover);
+  font-weight: 600;
+}
+
+/* Summenzeile: halbfett mit kräftigerer Linie darüber */
+.summary-table tr.summe td {
+  border-top-color: var(--border);
 }
 
 .summary-table small {
