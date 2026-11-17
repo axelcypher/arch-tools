@@ -22,7 +22,8 @@ Unveränderte bleibt Byte für Byte erhalten. Was sich nicht verlustfrei zurück
   Seitenüberschriften der Felderansicht („Seite 1 von 2“) sind größer als die Köpfe der Abschnittskarten. Der **Kopf
   der Navigation steht fest** (rollt nicht mit): Projekt, Antrag und darunter ein Knopf in zwei Hälften –
   **Projektdaten** (die Projektkarte – gilt für das ganze Projekt; aus ihr werden die Formulare ausgefüllt) und
-  **Antragsdaten** (nur für den aktiven Antrag: Status, Antragsmerkmale, Antragsumfang – siehe unten); darunter rollt der Rest ab „Formulare“. Aufbau: Dokument › Antrag › Projekt.
+  **Antragsdaten** (nur für den aktiven Antrag: Status, Antragsmerkmale, Antragsumfang – siehe unten); darunter
+  rollt der Rest ab „Formulare“. Aufbau: Dokument › Antrag › Projekt.
 - **Werkzeugleiste** (gemeinsamer Baustein `Werkzeugleiste`, design.md „Kopf- und Werkzeugleisten“): sichtbar bleibt,
   was man ständig braucht – links „Datei ▾“ (Daten aktualisieren …, Speichern unter …, Drucken …; in der Web-Version
   Formular öffnen …), „Speichern“ (mit Punkt bei ungespeicherten Änderungen) mit ↶ ↷, der Umschalter **Formular |

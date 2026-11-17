@@ -2318,6 +2318,7 @@ button.icon.fo-gl-zaehlt.an {
     display: block !important;
     height: auto !important;
     padding: 0 !important;
+    margin: 0 !important;
     overflow: visible !important;
     background: #fff !important;
   }
