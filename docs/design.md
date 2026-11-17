@@ -542,8 +542,9 @@ Werkzeugleiste liegt mit auf der Fläche (gleicher Grund, keine Linie). Baustein
   ihrer Wunschbreite `--karte-mitte-wunsch` (480px) bliebe; erst dann schrumpft die Mitte bis `--karte-mitte-min`
   (280px). Breiter ziehen lässt sich eine Seitenkarte auf der Fläche nur, solange der Mitte die Wunschbreite bleibt
   (oder `mitteMin`, wenn größer). Die gemerkte Breite bleibt und gilt wieder, sobald Platz ist. Das gilt auch für eine
-  Seitenspalte (`FlaechenSpalte` ohne `wachsend`). Unter der Summe der Mindestbreiten (zwei Seitenkarten und Mitte, rund
-  670px) wird abgeschnitten – für Desktop-Fenster vertretbar.
+  Seitenspalte (`FlaechenSpalte` ohne `wachsend`). Gibt eine `BreitenLeiste` ein eigenes `min` an, ist das zugleich ihre
+  Untergrenze beim Nachgeben (statt `--leiste-min`); die Summe der Mindestbreiten (Seitenkarten und Mitte) soll in ein
+  Fenster von 1000px passen. Darunter wird abgeschnitten – für Desktop-Fenster vertretbar.
 
 Die alten Muster (`.workspace`, `.sidebar`, eigene Spalten-Layouts der Apps) laufen weiter, bis eine App umgestellt
 ist (`docs/nachziehen/`). Eigene Layout-CSS und feste Farben der Apps entfallen mit der Umstellung. Ausgenommen ist die

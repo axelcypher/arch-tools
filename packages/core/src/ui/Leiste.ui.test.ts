@@ -91,6 +91,22 @@ describe('BreitenLeiste', () => {
     expect((host.querySelector('.leiste') as HTMLElement).style.width).toBe('700px');
   });
 
+  it('eigenes min ist zugleich die Untergrenze beim Nachgeben (--leiste-min an der Leiste), ohne min die Vorgabe', () => {
+    const host = document.createElement('div');
+    host.className = 'flaeche';
+    document.body.appendChild(host);
+    act(() => {
+      root = createRoot(host);
+      root.render([
+        createElement(BreitenLeiste, { key: 'a', schluessel: 'test:min-a', vorgabe: 380, min: 320, children: 'A' }),
+        createElement(BreitenLeiste, { key: 'b', schluessel: 'test:min-b', vorgabe: 300, children: 'B' }),
+      ]);
+    });
+    const [mitMin, ohneMin] = host.querySelectorAll<HTMLElement>('.leiste');
+    expect(mitMin.style.getPropertyValue('--leiste-min')).toBe('320px');
+    expect(ohneMin.style.getPropertyValue('--leiste-min')).toBe('');
+  });
+
   it('feste Seitenspalte zählt zu den anderen Leisten, eine wachsende nicht', () => {
     const messen = (wachsend: boolean) => {
       const host = document.createElement('div');

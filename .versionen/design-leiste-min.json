@@ -1,0 +1,34 @@
+{
+  "flaechenrechner": {
+    "stufe": "patch",
+    "notiz": "Seitenkarten geben in schmalen Fenstern nur bis zu ihrer eigenen Mindestbreite nach."
+  },
+  "grz": {
+    "stufe": "patch",
+    "notiz": "Seitenkarten geben in schmalen Fenstern nur bis zu ihrer eigenen Mindestbreite nach."
+  },
+  "kosten": {
+    "stufe": "patch",
+    "notiz": "Seitenkarten geben in schmalen Fenstern nur bis zu ihrer eigenen Mindestbreite nach."
+  },
+  "ordner": {
+    "stufe": "patch",
+    "notiz": "Seitenkarten geben in schmalen Fenstern nur bis zu ihrer eigenen Mindestbreite nach."
+  },
+  "entzerrung": {
+    "stufe": "patch",
+    "notiz": "Seitenkarten geben in schmalen Fenstern nur bis zu ihrer eigenen Mindestbreite nach."
+  },
+  "formulare": {
+    "stufe": "patch",
+    "notiz": "Seitenkarten geben in schmalen Fenstern nur bis zu ihrer eigenen Mindestbreite nach."
+  },
+  "ava": {
+    "stufe": "patch",
+    "notiz": "Seitenkarten geben in schmalen Fenstern nur bis zu ihrer eigenen Mindestbreite nach."
+  },
+  "baurecht": {
+    "stufe": "patch",
+    "notiz": "Seitenkarten geben in schmalen Fenstern nur bis zu ihrer eigenen Mindestbreite nach."
+  }
+}
