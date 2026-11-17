@@ -261,8 +261,9 @@ body,
 .flaechen-spalte.rollend:has(.rollend-kopf) {
   scroll-padding-top: var(--rollend-kopf-h, calc(var(--ctl-h) + var(--s2) + 2 * var(--s1)));
 }
-/* Ebenen in den Karten (Aufklapplisten, Hinweise mit z-index) bleiben unter dem festen Kopf */
-.flaechen-spalte.rollend:has(.rollend-kopf) > .karte {
+/* Ebenen in den Karten (Aufklapplisten, Hinweise mit z-index) bleiben unter dem festen Kopf – auch in einer Hülle; über
+   die Karte hinaus reichen solche Ebenen ohnehin nicht (der Rumpf schneidet ab, siehe „Inhalt“ in design.md) */
+.flaechen-spalte.rollend:has(.rollend-kopf) .karte {
   isolation: isolate;
 }
 .flaechen-spalte.rollend > .karte,
@@ -404,6 +405,11 @@ body,
 /* Vorschau (vorschau): Grund der Fläche um das Blatt, das Blatt selbst bleibt hell wie .report */
 .karte-rumpf.vorschau {
   background: var(--bg);
+}
+/* Leertext auf dem Rumpf der Vorschau: mit dem Innenabstand der Karte, nicht am Rand */
+.karte-rumpf.vorschau > .muted {
+  margin: 0;
+  padding: var(--s3) var(--karte-pad);
 }
 /* Rumpf aus Abschnitten (abschnitte): jeder Abschnitt mit eigenem Innenabstand, Trennlinie bis an den Rand wie unter
    dem Kartenkopf; die Abschnittsüberschrift (h2) wie die Überschrift im Kartenkopf */
@@ -969,7 +975,9 @@ textarea:focus {
   color: var(--muted);
 }
 
+/* bricht eine Bezeichnung um, bleiben die Werte der Kacheln einer Zeile auf einer Linie (unten bündig) */
 .metric > strong {
+  margin-top: auto;
   font-size: var(--fs-xl);
   /* Wert und Einheit („m²“, „€“) bleiben in einer Zeile */
   white-space: nowrap;

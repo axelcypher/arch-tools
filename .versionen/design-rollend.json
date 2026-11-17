@@ -1,11 +1,11 @@
 {
   "flaechenrechner": {
     "stufe": "patch",
-    "notiz": "Gemeinsame Gestaltung aktualisiert, ohne sichtbare Änderung."
+    "notiz": "Kennzahlen: Die Werte stehen auf einer Linie, auch wenn eine Bezeichnung umbricht."
   },
   "ava": {
     "stufe": "patch",
-    "notiz": "Gemeinsame Gestaltung aktualisiert, ohne sichtbare Änderung."
+    "notiz": "Kennzahlen der Übersicht: Die Werte stehen auf einer Linie, auch wenn eine Bezeichnung umbricht."
   },
   "grz": {
     "stufe": "patch",

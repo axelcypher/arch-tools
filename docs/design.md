@@ -58,10 +58,12 @@ Katalog) bekommen `.oben` (oben bündig, ohne den Ausgleich der Feldzeilen). Ein
 B. ein Wert, der seine Prüfung öffnet) zählt in Feldzeilen als Text. Diese Tabelle soll die eigenen Tabellenklassen der
 Apps ersetzen; bis zur Umstellung bleiben diese bestehen.
 
-Kennzahlen als Kacheln (`.metric-row` mit `.metric`): oben die Bezeichnung (`span`, `--fs-xs`, `--muted`), darunter
-der Wert (`strong`, `--fs-xl`, Tabellenziffern), wahlweise eine Zeile Nebentext (`small`, wie die Bezeichnung). Die
-Kacheln stehen auf `--bg` mit `--radius-s` und brechen in schmalen Karten um (Wunschbreite 9em, nie schmaler als ihr
-Inhalt). Mehr als vier oder fünf Kacheln gehören in eine Tabelle.
+Kennzahlen als Kacheln (`.metric-row` mit `.metric`): oben die Bezeichnung (`span`, `--fs-xs`, `--muted`), darunter der
+Wert (`strong`, `--fs-xl`, Tabellenziffern), wahlweise eine Zeile Nebentext (`small`, wie die Bezeichnung). Die Kacheln
+stehen auf `--bg` mit `--radius-s`; bricht eine Bezeichnung um, bleiben die Werte einer Zeile auf einer Linie (Wert und
+Nebentext unten bündig, Nebentext dann in allen Kacheln der Zeile oder in keiner). Sie brechen in schmalen Karten um
+(Wunschbreite 9em, nie schmaler als ihr Inhalt). Mehr als vier oder fünf Kacheln gehören in eine Tabelle.
+
 
 ## Überschriften
 
@@ -550,9 +552,9 @@ Werkzeugleiste liegt mit auf der Fläche (gleicher Grund, keine Linie). Baustein
     Klappmenüs, Vorschlagslisten und Hinweise, die über die Karte hinausragen sollen, deshalb als Portal bzw. mit
     `position: fixed` ausführen.
   - **Vorschau** (`vorschau`, Druckvorschau, PDF-Seiten, Blatt): Der Rumpf ist bündig und hat den Grund der Fläche
-    (`--bg`); darauf liegt das Blatt hell wie `.report`, auch im dunklen Schema (siehe „Farben“, feste Farben). Ein Leertext
-    („Noch keine Seiten“) steht auf dem Rumpf in `.muted`, nicht auf dem Blatt; auf dem Blatt gelten die Papierfarben,
-    nie `--muted` oder andere Farben des Schemas.
+    (`--bg`); darauf liegt das Blatt hell wie `.report`, auch im dunklen Schema (siehe „Farben“, feste Farben). Ein
+    Leertext („Noch keine Seiten“) steht als `.muted` direkt im Rumpf (mit dem Innenabstand der Karte), nicht auf dem
+    Blatt; auf dem Blatt gelten die Papierfarben, nie `--muted` oder andere Farben des Schemas.
   - **Abschnitte** (`abschnitte`): Bündelt eine Karte ohne Kopf mehrere Themen (z. B. Projekt, Geschosse, Flächen), je
     Thema ein `<section>` direkt im Rumpf mit `h2` (wie die Kopfüberschrift, `--fs-l`), Trennlinien bis an den Rand, in
     einer `.section-head` mit Knopf ohne eigenen Abstand.
@@ -582,7 +584,8 @@ Werkzeugleiste liegt mit auf der Fläche (gleicher Grund, keine Linie). Baustein
     unter ihn (`scroll-padding-top`): `--rollend-kopf-h` ist die sichtbare Höhe des Kopfs plus Platz für den
     Fokusrahmen, Vorgabe eine Zeile Bedienelemente (`--ctl-h` + `--s2` + 2 × `--s1`). Ein höherer Kopf setzt den Wert
     selbst; bricht er in schmalen Fenstern um, setzt die App ihn je Umbruchstufe (Container- oder Media-Abfrage) oder
-    lässt den Kopf nicht umbrechen. Ebenen in den Karten (Aufklapplisten, Hinweise) bleiben unter dem Kopf.
+    lässt den Kopf nicht umbrechen. Ebenen in den Karten (Aufklapplisten, Hinweise) bleiben unter dem Kopf; was über
+    die Karte hinausragen soll, kommt wie überall als Portal (siehe „Inhalt“).
   - **Ränder:** Oben und seitlich reicht die Spalte um `--s1` in den Spalt, damit die Karten mit den Nachbarkarten
     fluchten; unten endet sie bündig mit ihnen. Die Rollleiste hat ihren Platz von Anfang an (`scrollbar-gutter`), die
     Breite springt also nicht, und sie liegt im Spalt zur Nachbarkarte rechts. Dieser Spalt ist deshalb um die Breite
