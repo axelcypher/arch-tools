@@ -111,7 +111,8 @@ describe('Verzeichnis der Pfad- und Namenseinstellungen', () => {
     // neue Einstellungen: unter pfade, „Vorgabe“ entfernt den Eintrag
     const x = nachId('ablage.permio.antragsordner').speicher;
     const mit = x.schreiben({ buero: 'B', pfade: { andere: 'y' } }, 'Anträge');
-    expect(mit).toEqual({ buero: 'B', pfade: { andere: 'y', 'ablage.permio.antragsordner': 'Anträge' } });
+    // der Zielordner im Antragsordner zieht mit – für ältere Versionen steht er vollständig unter dem bisherigen Schlüssel
+    expect(mit).toEqual({ buero: 'B', pfade: { andere: 'y', 'ablage.permio.antragsordner': 'Anträge', 'plaene.permio.zielpfad': 'Anträge/{Antrag}' } });
     expect(x.schreiben(mit, undefined)).toEqual({ buero: 'B', pfade: { andere: 'y' } });
   });
 

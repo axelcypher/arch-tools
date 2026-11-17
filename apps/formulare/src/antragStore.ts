@@ -89,6 +89,7 @@ import { ablageVon, autofillAnbindung, entwurfVon, formularOrdner, karteMitAende
 import { fragen } from '@core/ui/Rueckfrage';
 import { lesen, schreiben } from './speicher';
 import { berechnungenSuchvorlagen, pfadeAbonnieren, pfadWert, relativerPfad } from '@core/einstellungen/pfade';
+import { zielpfadWirksam } from '@core/einstellungen/zielordner';
 import { pfadeUebernehmen } from '@core/einstellungen/uebernahme';
 import type { PfadWert } from '@core/einstellungen/verzeichnis';
 import { anzahl } from './text';
@@ -114,7 +115,8 @@ export function mitZentral(e: ExportEinstellungen, w: (id: string) => PfadWert =
     ...e,
     antragsordner: text('ablage.permio.antragsordner'),
     namensvorlage: text('plaene.permio.namensvorlage'),
-    zielpfad: text('plaene.permio.zielpfad'),
+    // fester Zielordner im Antragsordner bzw. der übernommene abweichende (zielordner.ts) – relativ zum Projektordner
+    zielpfad: zielpfadWirksam({ antragsordner: text('ablage.permio.antragsordner'), zielordner: text('plaene.permio.zielordner'), abweichend: text('plaene.permio.zielpfad') }),
     vorlagenordner: text('vorlagen.permio.vorlagenordner'),
     // Vorlagen je Zeile; ihre Platzhalter ersetzt erst das Lesen im Projekt (quellenLesen) mit dessen Angaben
     berechnungsordner: berechnungenSuchvorlagen(w).join('\n'),

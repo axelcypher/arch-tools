@@ -93,6 +93,8 @@ export interface PfadEinstellung {
   hinweise?: (wert: string) => string[];
   /** bei Listen: was je Zeile steht (Vorgabe: ein Name; `ordner`: ein vollständiger Ordner – als Liste mit Umsortieren und Entfernen) */
   zeilen?: 'name' | 'pfad' | 'ordner';
+  /** nur zeigen, wenn ein Wert gesetzt ist (übernommene Ausnahme, die man nicht neu anlegt) */
+  nurWennGesetzt?: boolean;
   /** darf nicht leer sein */
   pflicht?: boolean;
   speicher: PfadSpeicher;

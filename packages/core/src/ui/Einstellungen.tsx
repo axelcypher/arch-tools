@@ -533,7 +533,11 @@ function SeitePfade({ fokus }: { fokus?: string }) {
   const fuerApp = (e: PfadEinstellung) => !app || e.apps.includes(app);
   const los = (e: PfadEinstellung) => !!werte && losgeloest(e, werte, entwurf);
   // mit App-Filter: die Einträge der App und, zur Orientierung, ihre Eltern
-  const zeigen = new Set(PFAD_EINSTELLUNGEN.filter(fuerApp).flatMap((e) => [e, ...(los(e) ? [] : vorfahren(e))]));
+  // übernommene Ausnahmen nur, solange sie gesetzt sind (bzw. gerade bearbeitet werden)
+  const gesetzt = (e: PfadEinstellung) => !e.nurWennGesetzt || e.id in entwurf || alsText(werte?.[e.id] ?? e.vorgabe).trim() !== '';
+  const zeigen = new Set(
+    PFAD_EINSTELLUNGEN.filter((e) => fuerApp(e) && gesetzt(e)).flatMap((e) => [e, ...(los(e) ? [] : vorfahren(e))]),
+  );
   /** ein Eintrag mit den Einträgen, die von ihm abhängen, eingerückt darunter */
   const knoten = (e: PfadEinstellung, w: PfadWerte): ReactNode => {
     const kinder = kinderVon(e.id).filter((k) => !k.abweichungVon && zeigen.has(k) && !los(k));

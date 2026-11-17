@@ -17,6 +17,7 @@ import {
 import { APP_NAMEN } from '../appNamen';
 import { abweichungId, EXPORT_APPS, gemeinsamId, gemeinsamSpeicher, VORGABE_EXPORT_DATEINAME, VORGABE_GEMEINSAMER_BERECHNUNGSORDNER, VORGABE_UNTERORDNER, type ExportApp } from './gemeinsam';
 import { inPfade, unterSchluessel, type PfadEinstellung, type PfadSpeicher } from './verzeichnis';
+import { antragsordnerSpeicher, VORGABE_ZIELORDNER, zielSpeicher } from './zielordner';
 
 /**
  * Alle zentralen Pfad- und Namenseinstellungen. Vorhandene Werte bleiben unter ihrem bisherigen Schlüssel
@@ -227,7 +228,8 @@ export const PFAD_EINSTELLUNGEN: PfadEinstellung[] = [
     erklaerung: 'Ordner der Anträge im Projektordner; darin je Antragsfassung ein Unterordner (z. B. „BAUA 2“).',
     vorgabe: VORGABE_PERMIO.antragsordner,
     pflicht: true,
-    speicher: inPfade('ablage.permio.antragsordner', 'pfad'),
+    // der feste Zielordner zieht mit (zielordner.ts)
+    speicher: antragsordnerSpeicher(),
     projektwert: 'Je Projekt in PERMIO abweichend einstellbar (Antrag › Export für dieses Projekt).',
   },
   {
@@ -393,19 +395,32 @@ export const PFAD_EINSTELLUNGEN: PfadEinstellung[] = [
           ],
   },
   {
+    id: 'plaene.permio.zielordner',
+    bezug: { art: 'eintrag', id: 'ablage.permio.antragsordner' },
+    apps: ['formulare'],
+    thema: 'ablage',
+    art: 'pfad',
+    bezeichnung: 'Fester Zielordner exportierter Antragsdokumente',
+    erklaerung: 'Im Antragsordner; gilt, wenn in PERMIO „fester Ordner“ als Ziel gewählt ist, sonst der Ordner der aktiven Antragsfassung. Leer = der Antragsordner selbst.',
+    vorgabe: VORGABE_ZIELORDNER,
+    variablen: PERMIO_ZIEL,
+    beispiel: { Antrag: 'BAUA 2', Art: 'BAUA' },
+    speicher: zielSpeicher('zielordner'),
+    projektwert: 'Je Projekt in PERMIO abweichend einstellbar (Antrag › Export für dieses Projekt).',
+  },
+  {
     id: 'plaene.permio.zielpfad',
     bezug: { art: 'projekt' },
     apps: ['formulare'],
-    thema: 'plaene',
+    thema: 'ablage',
     art: 'pfad',
-    bezeichnung: 'Fester Zielordner exportierter Antragsdokumente',
-    erklaerung: 'Gilt, wenn in PERMIO „fester Ordner“ als Ziel gewählt ist; sonst der Ordner der aktiven Antragsfassung.',
-    vorgabe: VORGABE_PERMIO.zielpfad,
+    bezeichnung: 'Fester Zielordner außerhalb des Antragsordners',
+    erklaerung: 'Aus einer früheren Einstellung übernommen, die nicht im Antragsordner lag; gilt statt des Zielordners im Antragsordner. Leer = der Zielordner im Antragsordner.',
+    vorgabe: '',
     variablen: PERMIO_ZIEL,
     beispiel: { Antrag: 'BAUA 2', Art: 'BAUA' },
-    pflicht: true,
-    speicher: inPfade('plaene.permio.zielpfad', 'pfad'),
-    projektwert: 'Je Projekt in PERMIO abweichend einstellbar (Antrag › Export für dieses Projekt).',
+    nurWennGesetzt: true,
+    speicher: zielSpeicher('abweichend'),
   },
   {
     id: 'plaene.kataster.dateiname',
