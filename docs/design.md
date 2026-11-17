@@ -71,26 +71,32 @@ Projektkachel – verschwände jede Fläche (etwa 1 : 1); dort trägt die Marke 
 4,9 : 1, hell wie dunkel). Beim Überfahren jeder Tabellenzeile erscheint der Rahmen, auch wo die Zeile nicht getönt wird
 – gewollt, damit es keine eigene Klasse für überfahrbare Zeilen braucht.
 
-Lange Datentabellen (LV, Rechnungen, Mängel) und ihre Bausteine:
+Lange Datentabellen (LV, Rechnungen, Mängel) und ihre Bausteine; die ganze Zahlentabelle hat Ziffern gleicher Breite
+(auch OZ, Datum, Nummern):
 
 - `.fest`: Der Spaltenkopf bleibt beim Rollen des Kartenrumpfs stehen (sticky am `thead`, so bleibt auch ein
   mehrzeiliger Kopf zusammen), mit dem Grund der Karte und einer Linie darunter; die Köpfe brechen nicht um – lange
   Köpfe kürzen, den vollen Namen in `title`. Was den Fokus bekommt, rollt nicht unter den Kopf (`scroll-padding-top`,
   Vorgabe eine Kopfzeile; ein mehrzeiliger Kopf setzt `--tabelle-kopf-h`). Der Kopf klebt am nächsten Rollbehälter:
-  Breite Tabellen stehen deshalb ohne eigene rollende Hülle direkt im bündigen Rumpf, der in beide Richtungen rollt.
+  Breite Tabellen stehen deshalb ohne eigene rollende Hülle im bündigen Rumpf, der in beide Richtungen rollt; eine Hülle
+  um die Tabelle (Tastaturbereich, Abschnitt, Raster neben einer Vorschau) ist erlaubt, darf aber nicht selbst rollen.
   Inhalt über einer breiten Tabelle (Kennzahlen, Hinweise) rollt dann waagerecht mit; ist das störend, bekommt die
   Tabelle eine eigene Karte.
 - `.waehlbar` (nur, wenn alle Zeilen wählbar sind): Überfahren und Fokus in der Zeile tönen sie leicht in der
   Akzentfarbe, dazu eine Linie links in abgeschwächter Akzentfarbe (die Tönung allein wäre von der Gruppenzeile kaum zu
   unterscheiden), leiser als die Akzentlinie der gewählten Zeile; Gruppen-, Summen- und gewählte Zeilen bleiben, wie sie
-  sind. Die Zeilen sind per Tastatur wählbar (Knopf in der Zeile oder `tabindex` mit Enter/Leertaste, Zustand über
-  `aria-selected`).
+  sind; Leer- und Hinweiszeilen („Keine Mails.“) bekommen `tr.leer` und sind nicht wählbar (oder stehen im `tfoot`). Die
+  Zeilen sind per Tastatur wählbar (Knopf in der Zeile oder `tabindex` mit Enter/Leertaste, Zustand über
+  `aria-selected`); der Fokusrahmen einer fokussierbaren Zeile liegt innen, sonst schnitte ihn der Kartenrand ab
+  (siehe auch „Fokus und Tastatur“).
 - `.felder`: Kästchen und Optionsfelder lösen den Ausgleich nicht aus und behalten ihre Breite; kleine und Symbolknöpfe
   (× zum Entfernen) stehen mittig zur Feldhöhe.
-- `input.zelle` (Feld in der Zelle, z. B. Menge und Einheitspreis im LV): randlos und so hoch wie eine Textzeile,
-  fluchtet also ohne Ausgleich; Rahmen beim Überfahren, beim Fokus Rand in `--accent` und Saum wie bei allen Feldern;
-  ein Fehler (`feld-fehler`, `aria-invalid`) zeigt den roten Rand auch ohne Fokus. Der Spaltenkopf sagt, dass die Werte
-  bearbeitbar sind (z. B. „Menge“ über Eingaben) – ohne Maus sieht man es dem Feld sonst nicht an.
+- `input.zelle` (Feld in der Zelle, z. B. Menge und Einheitspreis im LV): randlos, so hoch wie eine Textzeile und so
+  breit wie ein Betrag (7,5em; die Spalte hält diese Breite, ein bündiger Rumpf rollt dann waagerecht), fluchtet also
+  ohne Ausgleich; Rahmen beim Überfahren, beim
+  Fokus Rand in `--accent` und Saum wie bei allen Feldern; ein Fehler (`feld-fehler`, `aria-invalid`) zeigt den roten
+  Rand auch ohne Fokus. Der Spaltenkopf sagt, dass die Werte bearbeitbar sind (z. B. „Menge“ über Eingaben) – ohne Maus
+  sieht man es dem Feld sonst nicht an.
 
 Kennzahlen als Kacheln (`.metric-row` mit `.metric`): oben die Bezeichnung (`span`, `--fs-xs`, `--muted`), darunter der
 Wert (`strong`, `--fs-xl`, Tabellenziffern), wahlweise eine Zeile Nebentext (`small`, wie die Bezeichnung). Die Kacheln
@@ -121,8 +127,9 @@ Nebentext unten bündig; Kacheln ohne Nebentext halten dessen Zeile frei). Sie b
 - Textfelder und Auswahllisten bekommen beim Fokus einen Rand in `--accent` und einen Saum in `--fokus-saum`.
 - Auf Papier (`.report`) und Zeichenfläche (`.canvas`) ist `--fokus` das helle Blau, auch im dunklen Schema.
 - **Nicht** `outline: none` setzen, ohne einen gleichwertigen Ersatz zu zeigen.
-- Ausnahme: In Leisten, die überstehenden Inhalt abschneiden (`overflow: hidden`, z. B. die Tableiste von Arkly), liegt
-  der Fokusrahmen innen (`outline-offset: -2px`), weiterhin in `--fokus`.
+- Ausnahme: In Leisten, die überstehenden Inhalt abschneiden (`overflow: hidden`, z. B. die Tableiste von Arkly), und an
+  fokussierbaren Tabellenzeilen (`.summary-table.waehlbar`, siehe „Lange Datentabellen“) liegt der Fokusrahmen innen
+  (`outline-offset: -2px`), weiterhin in `--fokus`.
 - Umschalter (Werkzeug, Ansicht) tragen `aria-pressed`; Menüknöpfe `aria-haspopup` und `aria-expanded`.
 - Menüs mit `role="menu"` brauchen die Menübedienung: beim Öffnen Fokus auf den aktuellen Eintrag, ↑/↓ (Pos1/Ende)
   wechseln, Esc schließt und gibt den Fokus an den Knopf zurück. Esc über `useEscSchliessen`, damit Dialoge darunter

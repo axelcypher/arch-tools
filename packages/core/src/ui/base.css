@@ -1023,6 +1023,8 @@ textarea:focus {
 .summary-table {
   width: 100%;
   border-collapse: collapse;
+  /* Ziffern gleicher Breite in der ganzen Tabelle (OZ, Datum, Nummern – nicht nur Zahlenspalten mit .num) */
+  font-variant-numeric: tabular-nums;
 }
 
 .summary-table th {
@@ -1088,6 +1090,9 @@ textarea:focus {
   line-height: inherit;
   border-color: transparent;
   background: transparent;
+  /* Vorgabe: so breit wie ein Betrag (statt die Zelle zu füllen); ohne max-width in Prozent, sonst dürfte die Spalte
+     schmaler werden als der Betrag – sie hält ihre Breite, der bündige Rumpf rollt dann waagerecht */
+  width: 7.5em;
 }
 .summary-table input.zelle:hover:not(:disabled, :focus, .feld-fehler, [aria-invalid='true']) {
   border-color: var(--border);
@@ -1108,18 +1113,22 @@ textarea:focus {
 }
 /* Tabellen mit wählbaren Zeilen (.waehlbar): Überfahren tönt die Zeile leicht in der Akzentfarbe – von der grauen
    Gruppenzeile (--tabelle-gruppe, hell gleich --hover) und der gewählten Zeile (volle Tönung und Linie) unterscheidbar;
-   Gruppen-, Summen- und gewählte Zeilen behalten ihre Tönung */
-.summary-table.waehlbar tbody tr:not(.gruppe, .summe, .selected, [aria-selected='true']):is(:hover, :focus-within) td {
+   Gruppen-, Summen- und gewählte Zeilen behalten ihre Tönung, Leer- und Hinweiszeilen (tr.leer) sind nicht wählbar */
+.summary-table.waehlbar tbody tr:not(.gruppe, .summe, .leer, .selected, [aria-selected='true']):is(:hover, :focus-within) td {
   background: color-mix(in srgb, var(--accent-soft) 50%, var(--panel));
 }
 /* die Tönung allein unterscheidet sich kaum von der Gruppenzeile (etwa 1 : 1) – dazu eine Linie links in
    abgeschwächter Akzentfarbe (gemessen 2,6 : 1 hell, 3,3 : 1 dunkel), leiser als die volle Akzentlinie der gewählten
    Zeile; ebenso, wenn der Fokus in der Zeile steht (Tastatur) */
-.summary-table.waehlbar tbody tr:not(.gruppe, .summe, .selected, [aria-selected='true']):is(:hover, :focus-within) td:first-child {
+.summary-table.waehlbar tbody tr:not(.gruppe, .summe, .leer, .selected, [aria-selected='true']):is(:hover, :focus-within) td:first-child {
   box-shadow: inset 3px 0 color-mix(in srgb, var(--accent) 60%, var(--panel));
 }
-.summary-table.waehlbar tbody tr:not(.gruppe, .summe) {
+.summary-table.waehlbar tbody tr:not(.gruppe, .summe, .leer) {
   cursor: pointer;
+}
+/* fokussierbare Zeile (tr[tabindex]): Fokusrahmen innen – außen schnitte ihn der Rand des Kartenrumpfs ab */
+.summary-table.waehlbar tbody tr:focus-visible {
+  outline-offset: -2px;
 }
 /* fester Spaltenkopf (.fest) für lange Datentabellen im rollenden Kartenrumpf: der ganze Kopf bleibt stehen (sticky am
    thead, damit ein mehrzeiliger Kopf zusammenbleibt), Grund wie die Karte, Linie darunter (die Linie der ersten Zeile
@@ -1138,7 +1147,11 @@ textarea:focus {
 }
 /* was den Fokus bekommt, rollt nicht unter den festen Kopf (Vorgabe: eine Kopfzeile in --fs-xs samt Innenabstand und
    Platz für den Fokusrahmen; ein mehrzeiliger Kopf setzt --tabelle-kopf-h) */
-.karte-rumpf:has(> .summary-table.fest) {
+/* auch, wenn die Tabelle in einer Hülle steht (Tastaturbereich, Abschnitt, Raster neben einer Vorschau) – die Hülle darf
+   dann nicht selbst rollen, sonst klebt der Kopf an ihr; nur der Rumpf der Karte, in der die Tabelle steht, nicht der
+   einer äußeren Karte (hat die äußere Karte zugleich eine eigene feste Tabelle, fehlt ihr der Abstand – in den Apps
+   kommt das nicht vor und ist hinnehmbar) */
+.karte-rumpf:has(.summary-table.fest):not(:has(.karte .summary-table.fest)) {
   scroll-padding-top: var(--tabelle-kopf-h, calc(1lh + 4px + var(--s1)));
 }
 
