@@ -119,7 +119,7 @@ export function Maengel() {
           {
             id: 'mangel',
             inhalt: (
-              <button title="Mangel hinzufügen" className="primary" onClick={neu}>
+              <button title="Mangel hinzufügen" onClick={neu}>
                 <Symbol name="plus" /> Mangel
               </button>
             ),
