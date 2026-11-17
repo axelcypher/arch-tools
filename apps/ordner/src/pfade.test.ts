@@ -17,6 +17,7 @@ describe('Vorgaben von ATLAS im zentralen Verzeichnis', () => {
     expect(pfadEinstellung('projekt.oapPfad').vorgabe).toBe(VORGABE_ALLGEMEIN.oapPfad);
     expect(VORGABE_FOTOORDNER).toBe(VORGABE_ALLGEMEIN.fotoordner);
     // die Berechnungsordner des Exports sind Ordner der Standardstruktur
-    for (const app of ['flaechenrechner', 'grz', 'kosten']) expect(STANDARD.ordner.map((o) => o.pfad)).toContain(pfadEinstellung(`export.berechnungsordner.${app}`).vorgabe);
+    for (const app of ['flaechenrechner', 'grz', 'kosten'])
+      expect(STANDARD.ordner.map((o) => o.pfad)).toContain(`${pfadEinstellung('export.berechnungsordner').vorgabe}/${pfadEinstellung(`export.unterordner.${app}`).vorgabe}`);
   });
 });

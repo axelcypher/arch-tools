@@ -1,0 +1,34 @@
+{
+  "flaechenrechner": {
+    "stufe": "patch",
+    "notiz": "Kennzahlen (Fläche, Umfang, BRI) etwas größer und in schmalen Seitenkarten umbrechend statt gestaucht. In schmalen Karten rücken Knöpfe im Kartenkopf in eine zweite Zeile, statt den Titel zu überdecken."
+  },
+  "ava": {
+    "stufe": "patch",
+    "notiz": "Kennzahlen der Übersicht mit größerem Wert. In schmalen Karten rücken Knöpfe im Kartenkopf in eine zweite Zeile, statt den Titel zu überdecken."
+  },
+  "grz": {
+    "stufe": "patch",
+    "notiz": "In schmalen Karten rücken Knöpfe im Kartenkopf in eine zweite Zeile, statt den Titel zu überdecken."
+  },
+  "kosten": {
+    "stufe": "patch",
+    "notiz": "In schmalen Karten rücken Knöpfe im Kartenkopf in eine zweite Zeile, statt den Titel zu überdecken."
+  },
+  "ordner": {
+    "stufe": "patch",
+    "notiz": "In schmalen Karten rücken Knöpfe im Kartenkopf in eine zweite Zeile, statt den Titel zu überdecken."
+  },
+  "entzerrung": {
+    "stufe": "patch",
+    "notiz": "In schmalen Karten rücken Knöpfe im Kartenkopf in eine zweite Zeile, statt den Titel zu überdecken."
+  },
+  "formulare": {
+    "stufe": "patch",
+    "notiz": "In schmalen Karten rücken Knöpfe im Kartenkopf in eine zweite Zeile, statt den Titel zu überdecken."
+  },
+  "baurecht": {
+    "stufe": "patch",
+    "notiz": "In schmalen Karten rücken Knöpfe im Kartenkopf in eine zweite Zeile, statt den Titel zu überdecken."
+  }
+}

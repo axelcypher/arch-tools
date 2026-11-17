@@ -24,17 +24,26 @@ describe('Verzeichnis der Pfad- und Namenseinstellungen', () => {
     }
   });
 
-  it('neue Einträge für den direkten Export: Berechnungsordner je App nach der Struktur von ATLAS, Dateinamen je App, PDF mitspeichern (ja)', () => {
-    expect(nachId('export.berechnungsordner.flaechenrechner').vorgabe).toBe('03 Berechnungen/Flächen');
-    expect(nachId('export.berechnungsordner.grz').vorgabe).toBe('03 Berechnungen/Nachweise');
-    expect(nachId('export.berechnungsordner.kosten').vorgabe).toBe('03 Berechnungen/Kosten');
+  it('direkter Export: gemeinsamer Berechnungsordner mit Unterordner je App (zusammen die Struktur von ATLAS), gemeinsame Dateinamen mit Abweichung je App, PDF mitspeichern (ja)', () => {
+    expect(nachId('export.berechnungsordner').vorgabe).toBe('03 Berechnungen');
+    expect(nachId('export.berechnungsordner').apps).toEqual(['flaechenrechner', 'grz', 'kosten']);
+    expect(['flaechenrechner', 'grz', 'kosten'].map((a) => nachId(`export.unterordner.${a}`).vorgabe)).toEqual(['Flächen', 'Nachweise', 'Kosten']);
     // die Projektdatei liegt per Vorgabe im Berechnungsordner von QUADRIO
-    expect(VORGABE_OAP_PFAD.startsWith(`${nachId('export.berechnungsordner.flaechenrechner').vorgabe}/`)).toBe(true);
+    expect(VORGABE_OAP_PFAD.startsWith('03 Berechnungen/Flächen/')).toBe(true);
+    expect(nachId('export.excel').endung).toBe('.xlsx');
+    expect(nachId('export.pdf').endung).toBe('.pdf');
+    expect(nachId('export.excel').variablen!.map((v) => v.name)).toContain('Inhalt');
     for (const app of ['flaechenrechner', 'grz', 'kosten']) {
-      expect(nachId(`export.excel.${app}`).endung).toBe('.xlsx');
-      expect(nachId(`export.pdf.${app}`).endung).toBe('.pdf');
-      expect(nachId(`export.excel.${app}`).variablen!.map((v) => v.name)).toContain('Inhalt');
+      expect(nachId(`export.excel.abweichend.${app}`)).toMatchObject({ vorgabe: '', apps: [app], endung: '.xlsx', abweichungVon: { id: 'export.excel', art: 'ersetzt' } });
+      expect(nachId(`export.pdf.abweichend.${app}`)).toMatchObject({ vorgabe: '', endung: '.pdf', abweichungVon: { id: 'export.pdf', art: 'ersetzt' } });
+      expect(nachId(`export.unterordner.${app}`).abweichungVon).toEqual({ id: 'export.berechnungsordner', art: 'unterordner' });
     }
+    // keine Angabe mehr je App doppelt: jede gemeinsame gibt es einmal
+    for (const alt of ['export.berechnungsordner.kosten', 'export.excel.kosten', 'export.pdf.kosten'])
+      expect(
+        PFAD_EINSTELLUNGEN.some((e) => e.id === alt),
+        alt,
+      ).toBe(false);
     expect(nachId('export.pdfMitspeichern').vorgabe).toBe(true);
   });
 
@@ -68,7 +77,7 @@ describe('Verzeichnis der Pfad- und Namenseinstellungen', () => {
       'vorlagen.fabrio.lv': '{Kürzel} LV {Gewerk}',
     });
     // nicht Gesetztes fehlt (es gilt die Vorgabe)
-    expect(werte['export.excel.flaechenrechner']).toBeUndefined();
+    expect(werte['export.excel']).toBeUndefined();
     expect(pfadWerteAus({})).toEqual({});
   });
 
@@ -100,9 +109,9 @@ describe('Verzeichnis der Pfad- und Namenseinstellungen', () => {
     // „Vorgabe wiederherstellen“ schreibt die Vorgabe ausdrücklich (Apps übernähmen einen fehlenden Wert sonst aus ihrem Speicher)
     expect(nachId('projekt.oapPfad').speicher.schreiben({ oapPfad: 'x.oap', fotoordner: 'F' }, undefined)).toEqual({ oapPfad: VORGABE_OAP_PFAD, fotoordner: 'F' });
     // neue Einstellungen: unter pfade, „Vorgabe“ entfernt den Eintrag
-    const x = nachId('export.excel.grz').speicher;
-    const mit = x.schreiben({ buero: 'B', pfade: { andere: 'y' } }, '{PROJEKT_KUERZEL} GRZ');
-    expect(mit).toEqual({ buero: 'B', pfade: { andere: 'y', 'export.excel.grz': '{PROJEKT_KUERZEL} GRZ' } });
+    const x = nachId('ablage.permio.antragsordner').speicher;
+    const mit = x.schreiben({ buero: 'B', pfade: { andere: 'y' } }, 'Anträge');
+    expect(mit).toEqual({ buero: 'B', pfade: { andere: 'y', 'ablage.permio.antragsordner': 'Anträge' } });
     expect(x.schreiben(mit, undefined)).toEqual({ buero: 'B', pfade: { andere: 'y' } });
   });
 
@@ -120,8 +129,8 @@ describe('Verzeichnis der Pfad- und Namenseinstellungen', () => {
 });
 
 describe('Prüfung', () => {
-  const pfad: PfadEinstellung = { ...nachId('export.berechnungsordner.kosten') };
-  const name: PfadEinstellung = { ...nachId('export.excel.kosten') };
+  const pfad: PfadEinstellung = { ...nachId('export.berechnungsordner'), pflicht: true };
+  const name: PfadEinstellung = { ...nachId('export.excel') };
   const texte = (e: PfadEinstellung, v: string) => pfadPruefen(e, v).map((m) => `${m.art}: ${m.text}`);
 
   it('Pfade: relativ, ohne ungültige Zeichen, ohne „..“, ohne reservierte Namen; Pflichtfeld', () => {

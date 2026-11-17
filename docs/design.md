@@ -58,6 +58,11 @@ Katalog) bekommen `.oben` (oben bündig, ohne den Ausgleich der Feldzeilen). Ein
 B. ein Wert, der seine Prüfung öffnet) zählt in Feldzeilen als Text. Diese Tabelle soll die eigenen Tabellenklassen der
 Apps ersetzen; bis zur Umstellung bleiben diese bestehen.
 
+Kennzahlen als Kacheln (`.metric-row` mit `.metric`): oben die Bezeichnung (`span`, `--fs-xs`, `--muted`), darunter
+der Wert (`strong`, `--fs-xl`, Tabellenziffern), wahlweise eine Zeile Nebentext (`small`, wie die Bezeichnung). Die
+Kacheln stehen auf `--bg` mit `--radius-s` und brechen in schmalen Karten um (Wunschbreite 9em, nie schmaler als ihr
+Inhalt). Mehr als vier oder fünf Kacheln gehören in eine Tabelle.
+
 ## Überschriften
 
 - **Karte (Richtung C):** Der Kartenkopf ist die oberste Stufe – `h2` in `--fs-l`, halbfett (`Karte`, siehe „Fläche und
@@ -194,7 +199,8 @@ mit `einstellungenEntwurfMelden`, Sperre über `useEinstellungenGesperrt`).
 - **Aufbau:** `Modal` mit `tabelle` und Klasse `einst`; der Titel „Einstellungen“ steht als `h3` im Navigationskopf
   über der Seitenliste (Ausnahme mit eigenem Kopf, siehe „Dialoge“), rechts der Inhalt der gewählten Seite.
   Gemeinsames Muster in `base.css`: `.einst-form`, `.einst-nav` (Seitenliste, Einträge `.einst-nav-eintrag` mit
-  Symbol, Titel und kurzem Text), `.einst-inhalt`, `.einst-gruppe`; dazu `.einst-verweis` (`PfadeVerweis`) für den
+  Symbol, Titel und kurzem Text), `.einst-inhalt`, `.einst-gruppe`, für gemeinsame Angaben `.einst-abweichungen`, `.einst-aufklappen`, `.einst-unter`
+  und `.einst-wirksam`; dazu `.einst-verweis` (`PfadeVerweis`) für den
   umgekehrten Weg, aus einem Dialog der App auf eine Seite der Einstellungen. Unterabschnitte einer Seite sind `h4`.
 - **Seitenliste:** eine senkrechte Registerleiste wie unter „Umschalter“ (`role="tablist"`,
   `aria-orientation="vertical"`, Einträge `role="tab"` mit `aria-selected`, ↑/↓ wandern, Pos1/Ende, automatische
@@ -214,6 +220,16 @@ mit `einstellungenEntwurfMelden`, Sperre über `useEinstellungenGesperrt`).
   Felder und „Übernehmen“ gesperrt (Grund im `title`), oben ein Hinweis `.meldung.warnung`.
 - **Felder:** die gemeinsamen Bausteine (`.field`, Pfadwahl mit „Ordner wählen …“, Platzhalter mit Vorschau des
   Ergebnisses); Fehler an der Stelle (`.feld-meldung`), nicht als Rückfrage.
+- **Gemeinsame Angaben:** Was mehrere Apps gleich nutzen (Ordner, Dateinamen), steht einmal; die Karte nennt alle Apps
+  als Marken. Nicht: dieselbe Angabe je App als eigenes Feld wiederholen. Abweichungen je App gibt es nur, wo sie
+  fachlich nötig sind, und nur auf Wunsch: unter dem Fuß der Karte, abgesetzt durch eine Linie (`--line-soft`), ein
+  Knopf `small` mit Aufklapp-Pfeil (`pfeilRechts`/`pfeilUnten`, `aria-expanded`, `aria-controls`) – „Je App abweichend“
+  bzw. bei Ordnern „Unterordner je App“, mit der Zahl der gesetzten in Klammern, eingeklappt mit „· geändert“, wenn
+  darin etwas geändert ist. Er öffnet die Felder je App eingerückt mit Linie links (`.einst-unter`, `role="group"` mit
+  Namen, ohne eigenen Rahmen); leer heißt „wie die gemeinsame Angabe“ (sie steht als Platzhalter im Feld). Offen ist er,
+  wenn eine Abweichung gesetzt ist oder ein Sprung ein Feld darin ansteuert. Unterscheidet sich etwas je App, zeigt die
+  Karte unter dem Feld statt einer Vorschau „Gilt je App:“ mit App-Marke und Ergebnis (`.einst-wirksam`). Der Filter
+  „App“ zeigt die gemeinsame Angabe und nur die Abweichung dieser App.
 - **Ordnerliste** (Listen vollständiger Ordner, `zeilen: 'ordner'` – z. B. „Stammordner der Projekte“): Liste statt
   Textfeld (`.einst-ordnerliste`), der erste Eintrag mit dem Hinweis „neue Projekte“; je Zeile Symbolknöpfe „Nach
   oben“, „Nach unten“ (`nachOben`, `nachUnten`), „Entfernen“ (`schliessen`: aus der Liste, der Ordner bleibt;
@@ -275,6 +291,30 @@ gewählte Register liegt in der Tab-Reihenfolge (`tabIndex` 0, die übrigen -1).
 <div class="segment" role="group" aria-label="Ansicht">
   <button aria-pressed="true">Grundriss</button>
   <button aria-pressed="false">3D</button>
+</div>
+```
+
+Register in der Leiste einer Karte (`leiste`) dürfen einen kurzen Namen haben: im Knopf `<span class="lang">` und
+`<span class="kurz" aria-hidden="true">`. Ist die Inhaltsbreite der Kartenleiste (ohne ihren Innenabstand
+`--karte-pad`) kleiner als 640px, zeigt das Register nur den kurzen Namen – gemessen an der Leiste, nicht am Fenster,
+denn neben der Karte können Seitenkarten stehen. Viele Register brauchen eine höhere Schwelle: dann eine eigene Abfrage
+`@container karte-leiste (max-width: …)` in der App. Außerhalb einer Kartenleiste bleibt der lange Name.
+
+- Der kurze Name ist möglichst ein Wort oder der Anfang des langen („Angebote“ für „Angebote und Preisspiegel“).
+- Der volle Name steht als `aria-label` am Register, damit Vorleseprogramme immer ihn hören. Ist der kurze Name eine
+  Abkürzung, enthält das `aria-label` beide Formen („Leistungsverzeichnis (LV)“) – sonst reagiert die Sprachsteuerung
+  nicht auf das, was zu sehen ist.
+- Der volle Name steht auch im `title` (oder eine vorhandene Beschreibung im `title` beginnt mit ihm), damit ihn
+  Mausnutzer erfahren, solange nur der kurze zu sehen ist.
+
+```html
+<div class="segment" role="tablist" aria-label="Bereiche des Gewerks">
+  <button role="tab" aria-selected="true" tabindex="0" aria-label="Leistungsverzeichnis (LV)" title="Leistungsverzeichnis">
+    <span class="lang">Leistungsverzeichnis</span><span class="kurz" aria-hidden="true">LV</span>
+  </button>
+  <button role="tab" aria-selected="false" tabindex="-1" aria-label="Angebote und Preisspiegel" title="Angebote und Preisspiegel">
+    <span class="lang">Angebote und Preisspiegel</span><span class="kurz" aria-hidden="true">Angebote</span>
+  </button>
 </div>
 ```
 
@@ -502,10 +542,13 @@ Werkzeugleiste liegt mit auf der Fläche (gleicher Grund, keine Linie). Baustein
 - `Karte` (`.karte`): Kopf, wahlweise Leiste, der Inhalt, der **in der Karte** scrollt, wahlweise eine feste Fußzeile
   (`fuss`, Summen).
   - **Kopf** (`.karte-kopf`): Überschrift `h2` in `--fs-l`, direkt dahinter `hilfe` für das „?“ (`HilfeKnopf`), rechts
-    `aktionen` wie Umschalter oder „Hinzufügen“. Mit Titel ist die Karte ein benannter Bereich (`aria-labelledby` auf
-    das `h2`); die Hilfe steht außerhalb des `h2` und gehört nicht zum Namen. Ohne sichtbaren Titel braucht die Karte
-    `ariaLabel`. Ausnahme rollende Spalte: `ebene={3}` setzt die Überschrift als `h3`, `als="div"` macht die Karte zu
-    keinem Bereich (dann wirkt auch `ariaLabel` nicht).
+    `aktionen` wie Umschalter oder „Hinzufügen“. In schmalen Karten rücken die Aktionen rechtsbündig in eine zweite
+    Zeile; der Titel wird nie schmaler als sein längstes Wort samt „?“, das „?“ liegt also nie über dem Text. Ebenso
+    bricht eine `.section-head` um, ihr Knopf bleibt rechts (mehrere Knöpfe dort in einem Element bündeln). Ein Titel
+    aus einem sehr langen Wort würde in einer schmalen Seitenkarte abgeschnitten – Kartentitel kurz halten. Mit Titel
+    ist die Karte ein benannter Bereich (`aria-labelledby` auf das `h2`); die Hilfe steht außerhalb des `h2` und gehört
+    nicht zum Namen. Ohne sichtbaren Titel braucht die Karte `ariaLabel`. Ausnahme rollende Spalte: `ebene={3}` setzt
+    die Überschrift als `h3`, `als="div"` macht die Karte zu keinem Bereich (dann wirkt auch `ariaLabel` nicht).
   - **Leiste** (`leiste`): Hat eine Ansicht eine eigene Werkzeugleiste, die zu breit für den Kopf ist (z. B. FABRIO je
     Ansicht), steht sie fest zwischen Kopf und Inhalt, im Grund der Karte, mit einer Linie zum scrollenden Inhalt; sie
     gehört damit zu ihrer Karte und steht nicht über der ganzen Fläche. Wechselt die Leiste mit der Ansicht, bekommt
@@ -517,6 +560,10 @@ Werkzeugleiste liegt mit auf der Fläche (gleicher Grund, keine Linie). Baustein
     aus ihr heraus. Der Rumpf ist positioniert: absolut gesetzte Elemente darin bleiben in seinem Rollbereich.
     Klappmenüs, Vorschlagslisten und Hinweise, die über die Karte hinausragen sollen, deshalb als Portal bzw. mit
     `position: fixed` ausführen.
+  - **Vorschau** (`vorschau`, Druckvorschau, PDF-Seiten, Blatt): Der Rumpf ist bündig und hat den Grund der Fläche
+    (`--bg`); darauf liegt das Blatt hell wie `.report`, auch im dunklen Schema (siehe „Farben“, feste Farben). Ein Leertext
+    („Noch keine Seiten“) steht auf dem Rumpf in `.muted`, nicht auf dem Blatt; auf dem Blatt gelten die Papierfarben,
+    nie `--muted` oder andere Farben des Schemas.
   - **Abschnitte** (`abschnitte`): Bündelt eine Karte ohne Kopf mehrere Themen (z. B. Projekt, Geschosse, Flächen), je
     Thema ein `<section>` direkt im Rumpf mit `h2` (wie die Kopfüberschrift, `--fs-l`), Trennlinien bis an den Rand, in
     einer `.section-head` mit Knopf ohne eigenen Abstand.
