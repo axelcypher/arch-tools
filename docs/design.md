@@ -488,20 +488,28 @@ Hauptbereich und Zeichenfläche stehen darauf als **Karten** mit weichem Schatte
 Werkzeugleiste liegt mit auf der Fläche (gleicher Grund, keine Linie). Bausteine in `ui/Karte.tsx`:
 
 - `Flaeche` (`.flaeche`): Karten nebeneinander mit Spalt und Innenabstand `--spalt`; sie scrollt nie.
-- `Karte` (`.karte`): Kopf (`.karte-kopf`, Überschrift `h2` in `--fs-l`, direkt dahinter `hilfe` für das „?“
-  (`HilfeKnopf`), rechts `aktionen` wie Umschalter oder „Hinzufügen“), darunter der Inhalt (`.karte-rumpf`), der **in
-  der Karte** scrollt, wahlweise eine feste Fußzeile (`fuss`, Summen). Mit Titel ist die Karte ein benannter Bereich
-  (`aria-labelledby` auf das `h2`); die Hilfe steht außerhalb des `h2` und gehört nicht zum Namen. Ohne sichtbaren Titel
-  braucht die Karte `ariaLabel`. Der Inhalt beginnt und endet immer im Abstand des Rumpfs, gleich ob vorn ein `p`, eine
-  Liste oder ein `h3` steht (Außenabstand des ersten und letzten Kindes entfällt). `buendig` lässt Tabellen und Listen
-  bis an den Rand laufen; Fokusrahmen liegen dort innen. Breite Tabellen scrollen mit dem Inhalt der Karte, sie laufen
-  nie aus ihr heraus. Der Rumpf ist positioniert: absolut gesetzte Elemente darin bleiben in seinem Rollbereich.
-  Klappmenüs, Vorschlagslisten und Hinweise, die über die Karte hinausragen sollen, deshalb als Portal bzw. mit
-  `position: fixed` ausführen. Bündelt eine Karte ohne Kopf mehrere Themen (z. B. Projekt, Geschosse, Flächen), bekommt
-  sie `abschnitte`: je Thema ein `<section>` direkt im Rumpf mit `h2` (wie die Kopfüberschrift, `--fs-l`), Trennlinien
-  bis an den Rand, in einer `.section-head` mit Knopf ohne eigenen Abstand. Innenabstand waagerecht `--karte-pad` (14px,
-  aus der gewählten Vorschau), Kopfhöhe `--karte-kopf-h` (ein Knopf in `--ctl-h` mit `--s2` darüber und darunter),
-  Fußzeile in `--ctl-h`.
+- `Karte` (`.karte`): Kopf, wahlweise Leiste, der Inhalt, der **in der Karte** scrollt, wahlweise eine feste Fußzeile
+  (`fuss`, Summen).
+  - **Kopf** (`.karte-kopf`): Überschrift `h2` in `--fs-l`, direkt dahinter `hilfe` für das „?“ (`HilfeKnopf`), rechts
+    `aktionen` wie Umschalter oder „Hinzufügen“. Mit Titel ist die Karte ein benannter Bereich (`aria-labelledby` auf
+    das `h2`); die Hilfe steht außerhalb des `h2` und gehört nicht zum Namen. Ohne sichtbaren Titel braucht die Karte
+    `ariaLabel`.
+  - **Leiste** (`leiste`): Hat eine Ansicht eine eigene Werkzeugleiste, die zu breit für den Kopf ist (z. B. FABRIO je
+    Ansicht), steht sie fest zwischen Kopf und Inhalt, im Grund der Karte, mit einer Linie zum scrollenden Inhalt; sie
+    gehört damit zu ihrer Karte und steht nicht über der ganzen Fläche. Wechselt die Leiste mit der Ansicht, bekommt
+    die `Werkzeugleiste` einen eigenen Namen (`name="Werkzeuge Rechnungen"`). Nur an `Karte`; die `ZeichenKarte` nutzt
+    die Werkzeugleiste der App.
+  - **Inhalt** (`.karte-rumpf`): beginnt und endet immer im Abstand des Rumpfs, gleich ob vorn ein `p`, eine Liste oder
+    ein `h3` steht (Außenabstand des ersten und letzten Kindes entfällt). `buendig` lässt Tabellen und Listen bis an
+    den Rand laufen; Fokusrahmen liegen dort innen. Breite Tabellen scrollen mit dem Inhalt der Karte, sie laufen nie
+    aus ihr heraus. Der Rumpf ist positioniert: absolut gesetzte Elemente darin bleiben in seinem Rollbereich.
+    Klappmenüs, Vorschlagslisten und Hinweise, die über die Karte hinausragen sollen, deshalb als Portal bzw. mit
+    `position: fixed` ausführen.
+  - **Abschnitte** (`abschnitte`): Bündelt eine Karte ohne Kopf mehrere Themen (z. B. Projekt, Geschosse, Flächen), je
+    Thema ein `<section>` direkt im Rumpf mit `h2` (wie die Kopfüberschrift, `--fs-l`), Trennlinien bis an den Rand, in
+    einer `.section-head` mit Knopf ohne eigenen Abstand.
+  - **Maße:** Innenabstand waagerecht `--karte-pad` (14px, aus der gewählten Vorschau), Kopfhöhe `--karte-kopf-h` (ein
+    Knopf in `--ctl-h` mit `--s2` darüber und darunter), Fußzeile in `--ctl-h`.
 - `FlaechenSpalte` (`.flaechen-spalte`): mehrere Karten untereinander (z. B. „Geschoss“ über „Auswertung“), sie teilen
   sich die Höhe; `wachsend` lässt die Spalte die Restbreite nehmen. Eine kurze Karte unter einer langen bekommt
   `hoehe="inhalt"`: Sie ist so hoch wie ihr Inhalt (höchstens die halbe Spalte, darüber scrollt sie), die übrigen Karten
