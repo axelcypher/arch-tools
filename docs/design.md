@@ -51,12 +51,25 @@ Texttabellen: Spaltenköpfe linksbündig (`.summary-table.text`, z. B. Platzhalt
 und Zahlenspalten, z. B. Kostengruppe | von | Mittel | bis) nehmen `.text` und markieren die Zahlenspalten mit `th.num`
 und `td.num`. Zeilen mit Feldern (Eingaben je Zeile) bekommen `.felder`: oben bündig, Text ohne Feld oder Knopf fluchtet
 mit dem Feldtext. Gruppenzeilen `tr.gruppe` (getönt mit `--tabelle-gruppe`, halbfett), Summenzeilen `tr.summe`
-(halbfett, kräftigere Linie darüber); `tr.strong` bleibt für einzelne hervorgehobene Zeilen, `tr.selected` (getönt mit
-`--accent-soft`, Akzentlinie links) für die gewählte Zeile – der Zustand auch für Hilfsmittel (`aria-selected` an der
-Zeile oder `aria-pressed`/`aria-current` am Knopf darin). Tabellen ohne Felder mit mehrzeiligen Zellen (Rechenweg,
-Katalog) bekommen `.oben` (oben bündig, ohne den Ausgleich der Feldzeilen). Ein Verweisknopf im Text (`button.link`, z.
-B. ein Wert, der seine Prüfung öffnet) zählt in Feldzeilen als Text. Diese Tabelle soll die eigenen Tabellenklassen der
-Apps ersetzen; bis zur Umstellung bleiben diese bestehen.
+(halbfett, kräftigere Linie darüber); `tr.strong` bleibt für einzelne hervorgehobene Zeilen, `tr.selected` bzw.
+`tr[aria-selected="true"]` (getönt mit `--accent-soft`, Akzentlinie links) für die gewählte Zeile – der Zustand auch für
+Hilfsmittel (`aria-selected` an der Zeile oder `aria-pressed`/`aria-current` am Knopf darin). Eine Zusatzzeile unter
+einer Zeile (Hinweis, Kennzeichen, Handwert) bekommt `tr.zusatz`: ohne eigene Trennlinie, knapp darunter, und mit der
+Zeile darüber gewählt (Tönung und Akzentlinie). Beginnt eine Zelle im Grid eine eigene Zeile (Zeile als Grid, Zelle über
+die ganze Breite), trägt sie `td.zeilenanfang` und bekommt in der gewählten Zeile ebenfalls die Akzentlinie. Je Zeile
+höchstens eine Zusatzzeile. Tabellen ohne Felder mit mehrzeiligen Zellen (Rechenweg, Katalog) bekommen `.oben` (oben
+bündig, ohne den Ausgleich der Feldzeilen). Ein Verweisknopf im Text (`button.link`, z. B. ein Wert, der seine Prüfung
+öffnet) zählt in Feldzeilen als Text. Diese Tabelle soll die eigenen Tabellenklassen der Apps ersetzen; bis zur
+Umstellung bleiben diese bestehen.
+
+Marken (`.marke`, z. B. das Kennzeichen „festgelegt“ in einer Zeile, die Marken der Projektübersicht): klein
+(`--fs-xs`), getönt mit `--chip-bg` und Text in `--muted`; Varianten `.warnung`, `.ok`, `.info` (nicht `.hinweis` – das
+ist die schwebende Hinweis-Meldung; in der Projektübersicht heißt die Art weiter `hinweis`). Die Information steht immer
+im Text der Marke, die Fläche ist nur Schmuck. Auf getönten Gründen – gewählte Zeile samt `tr.zusatz` (`tr.selected`
+oder `tr[aria-selected="true"]`), überfahrene Zeile, `tr.gruppe`, `aria-selected`/`aria-current`, überfahrene
+Projektkachel – verschwände jede Fläche (etwa 1 : 1); dort trägt die Marke einen Rahmen in ihrer Textfarbe (mindestens
+4,9 : 1, hell wie dunkel). Beim Überfahren jeder Tabellenzeile erscheint der Rahmen, auch wo die Zeile nicht getönt wird
+– gewollt, damit es keine eigene Klasse für überfahrbare Zeilen braucht.
 
 Lange Datentabellen (LV, Rechnungen, Mängel) und ihre Bausteine:
 
@@ -221,9 +234,10 @@ mit `einstellungenEntwurfMelden`, Sperre über `useEinstellungenGesperrt`).
 - **Aufbau:** `Modal` mit `tabelle` und Klasse `einst`; der Titel „Einstellungen“ steht als `h3` im Navigationskopf
   über der Seitenliste (Ausnahme mit eigenem Kopf, siehe „Dialoge“), rechts der Inhalt der gewählten Seite.
   Gemeinsames Muster in `base.css`: `.einst-form`, `.einst-nav` (Seitenliste, Einträge `.einst-nav-eintrag` mit
-  Symbol, Titel und kurzem Text), `.einst-inhalt`, `.einst-gruppe`, für gemeinsame Angaben `.einst-abweichungen`, `.einst-aufklappen`, `.einst-unter`
-  und `.einst-wirksam`; dazu `.einst-verweis` (`PfadeVerweis`) für den
-  umgekehrten Weg, aus einem Dialog der App auf eine Seite der Einstellungen. Unterabschnitte einer Seite sind `h4`.
+  Symbol, Titel und kurzem Text), `.einst-inhalt`, `.einst-gruppe`, für gemeinsame Angaben `.einst-abweichungen`,
+  `.einst-aufklappen`, `.einst-unter` und `.einst-wirksam`, für den Baum der Pfade `.einst-baum`, `.einst-bezug` und
+  `.einst-bezugseintrag`; dazu `.einst-verweis` (`PfadeVerweis`) für den umgekehrten Weg, aus einem Dialog der App auf
+  eine Seite der Einstellungen. Unterabschnitte einer Seite sind `h4`.
 - **Seitenliste:** eine senkrechte Registerleiste wie unter „Umschalter“ (`role="tablist"`,
   `aria-orientation="vertical"`, Einträge `role="tab"` mit `aria-selected`, ↑/↓ wandern, Pos1/Ende, automatische
   Aktivierung, nur der gewählte Eintrag mit `tabIndex` 0); der Inhalt ist `role="tabpanel"` mit `aria-labelledby` auf
@@ -242,16 +256,37 @@ mit `einstellungenEntwurfMelden`, Sperre über `useEinstellungenGesperrt`).
   Felder und „Übernehmen“ gesperrt (Grund im `title`), oben ein Hinweis `.meldung.warnung`.
 - **Felder:** die gemeinsamen Bausteine (`.field`, Pfadwahl mit „Ordner wählen …“, Platzhalter mit Vorschau des
   Ergebnisses); Fehler an der Stelle (`.feld-meldung`), nicht als Rückfrage.
+- **Baum der Pfade:** Jeder Eintrag sagt, wovon er abhängt (`bezug` in `einstellungen/eintraege.ts`: Projektordner,
+  vollständiger Ordner, ein anderer Eintrag – ggf. mit Ordner dazwischen, etwa je Gewerk –, überall gesucht oder
+  anderswo festgelegt; wo die App in einem anderen Modus woanders ablegt, sagt die Zeile auch das). Die erste Zeile
+  der Erklärung nennt das als Satz (`.einst-bezug`, `--fs-s` in `--muted`, Teil von `aria-describedby`, z. B. „Relativ
+  zu „Ordner der Gewerke“ › je Gewerk ein Ordner.“). Was von einem Eintrag abhängt, steht als eigene Karte darunter,
+  je Ebene um `--s5` eingerückt mit Linie links (1px `--border`; `.einst-baum`, Abstand `--s2` wie zwischen den Karten
+  der Gruppe; die Linie ist nur Schmuck, die Gliederung trägt `role="group"` mit „Unterordner von „…““, „Dateien in
+  „…““ bzw. „Abhängig von „…““). Dateinamen stehen unter dem Ordner, in den sie schreiben, und damit in dessen Gruppe.
+  Die Vorschau zeigt den vollständigen Pfad mit Beispielwerten („Projektordner / Gewerke / G08 Fenster / Auftrag“,
+  Monoschrift, lange Pfade brechen um) und folgt Änderungen der Eltern sofort. Wird ein Kind absolut angegeben, gilt
+  die Feldfehler-Regel (`.feld-meldung` mit Abhilfe „Relativ zu „…“ angeben …“); die Bezugszeile nennt den Zustand im
+  Text („Absolut angegeben – gehört unter „…“ und gilt nur relativ dazu.“), `--warn-text` kommt nur hinzu. Beim Tippen
+  bleibt die Karte an ihrem Platz (Fokus). Ist ein absoluter Wert gespeichert, löst sich die Karte aus dem Baum und
+  steht auf oberster Ebene der Gruppe; die Vorschau beginnt dann beim absoluten Wert. Der Filter „App“ zeigt Eltern,
+  die die App nicht selbst nutzt, ohne Feld in `--muted` (`.einst-bezugseintrag`: „Gilt:“ mit Vorschau, „Alle Apps
+  zeigen“ – danach steht der Fokus in deren Feld), nicht über `opacity`. Keine eigene Ausklapp-Bedienung: Der Baum
+  gliedert nur, die Tab-Reihenfolge bleibt (gleich der Lesereihenfolge, eingerückte Karten werden nicht übersprungen).
+  Ersetzt ein anderer Eintrag den Wert (`giltNichtWenn`, etwa ein übernommener Zielordner außerhalb des
+  Antragsordners), nennt die Bezugszeile auch das im Text („Gilt nicht, solange „…“ gesetzt ist.“, dazu
+  `--warn-text`), ohne Vorschau; der ersetzende Eintrag steht direkt hinter dem Baum seines Bezugs.
 - **Gemeinsame Angaben:** Was mehrere Apps gleich nutzen (Ordner, Dateinamen), steht einmal; die Karte nennt alle Apps
   als Marken. Nicht: dieselbe Angabe je App als eigenes Feld wiederholen. Abweichungen je App gibt es nur, wo sie
   fachlich nötig sind, und nur auf Wunsch: unter dem Fuß der Karte, abgesetzt durch eine Linie (`--line-soft`), ein
-  Knopf `small` mit Aufklapp-Pfeil (`pfeilRechts`/`pfeilUnten`, `aria-expanded`, `aria-controls`) – „Je App abweichend“
-  bzw. bei Ordnern „Unterordner je App“, mit der Zahl der gesetzten in Klammern, eingeklappt mit „· geändert“, wenn
-  darin etwas geändert ist. Er öffnet die Felder je App eingerückt mit Linie links (`.einst-unter`, `role="group"` mit
-  Namen, ohne eigenen Rahmen); leer heißt „wie die gemeinsame Angabe“ (sie steht als Platzhalter im Feld). Offen ist er,
-  wenn eine Abweichung gesetzt ist oder ein Sprung ein Feld darin ansteuert. Unterscheidet sich etwas je App, zeigt die
-  Karte unter dem Feld statt einer Vorschau „Gilt je App:“ mit App-Marke und Ergebnis (`.einst-wirksam`). Der Filter
-  „App“ zeigt die gemeinsame Angabe und nur die Abweichung dieser App.
+  Knopf `small` mit Aufklapp-Pfeil (`pfeilRechts`/`pfeilUnten`, `aria-expanded`, `aria-controls`) – „Je App
+  abweichend“ bzw. bei Ordnern „Unterordner je App“, mit der Zahl der gesetzten in Klammern, eingeklappt mit „·
+  geändert“, wenn darin etwas geändert ist. Er öffnet die Felder je App, um `--s5` eingerückt mit Linie links (1px
+  `--border`; `.einst-unter`, `role="group"` mit Namen, ohne eigenen Rahmen); leer heißt „wie die gemeinsame Angabe“
+  (sie steht als Platzhalter im Feld). Offen ist er, wenn eine Abweichung gesetzt ist oder ein Sprung ein Feld darin
+  ansteuert. Unterscheidet sich etwas je App, zeigt die Karte unter dem Feld statt einer Vorschau „Gilt je App:“ mit
+  App-Marke und Ergebnis (`.einst-wirksam`). Der Filter „App“ zeigt die gemeinsame Angabe und nur die Abweichung
+  dieser App.
 - **Ordnerliste** (Listen vollständiger Ordner, `zeilen: 'ordner'` – z. B. „Stammordner der Projekte“): Liste statt
   Textfeld (`.einst-ordnerliste`), der erste Eintrag mit dem Hinweis „neue Projekte“; je Zeile Symbolknöpfe „Nach
   oben“, „Nach unten“ (`nachOben`, `nachUnten`), „Entfernen“ (`schliessen`: aus der Liste, der Ordner bleibt;

@@ -1,0 +1,34 @@
+{
+  "flaechenrechner": {
+    "stufe": "minor",
+    "notiz": "„Pfade und Benennung“ zeigt, wovon ein Pfad abhängt: Unterordner und Dateinamen stehen eingerückt unter ihrem Ordner, die Vorschau nennt den vollständigen Pfad."
+  },
+  "grz": {
+    "stufe": "minor",
+    "notiz": "„Pfade und Benennung“ zeigt, wovon ein Pfad abhängt: Unterordner und Dateinamen stehen eingerückt unter ihrem Ordner, die Vorschau nennt den vollständigen Pfad."
+  },
+  "kosten": {
+    "stufe": "minor",
+    "notiz": "„Pfade und Benennung“ zeigt, wovon ein Pfad abhängt: Unterordner und Dateinamen stehen eingerückt unter ihrem Ordner, die Vorschau nennt den vollständigen Pfad."
+  },
+  "ordner": {
+    "stufe": "minor",
+    "notiz": "„Pfade und Benennung“ zeigt, wovon ein Pfad abhängt: Unterordner und Dateinamen stehen eingerückt unter ihrem Ordner, die Vorschau nennt den vollständigen Pfad."
+  },
+  "entzerrung": {
+    "stufe": "minor",
+    "notiz": "„Pfade und Benennung“ zeigt, wovon ein Pfad abhängt: Unterordner und Dateinamen stehen eingerückt unter ihrem Ordner, die Vorschau nennt den vollständigen Pfad."
+  },
+  "formulare": {
+    "stufe": "minor",
+    "notiz": "„Pfade und Benennung“ zeigt, wovon ein Pfad abhängt. Der feste Zielordner der Antragsdokumente liegt im Antragsordner und zieht mit (auch je Projekt); eingestellte Zielordner gelten weiter. War nie einer eingestellt, gilt jetzt der Antragsordner statt fest „TÖB“."
+  },
+  "ava": {
+    "stufe": "minor",
+    "notiz": "„Pfade und Benennung“ zeigt, wovon ein Pfad abhängt: Unterordner und Dateinamen stehen eingerückt unter ihrem Ordner, die Vorschau nennt den vollständigen Pfad."
+  },
+  "baurecht": {
+    "stufe": "minor",
+    "notiz": "„Pfade und Benennung“ zeigt, wovon ein Pfad abhängt: Unterordner und Dateinamen stehen eingerückt unter ihrem Ordner, die Vorschau nennt den vollständigen Pfad."
+  }
+}

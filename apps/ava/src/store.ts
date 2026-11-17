@@ -24,7 +24,7 @@ import { eigenLesen, eigenSchreiben } from './format/eigen';
 import type { Lv } from './lv/modell';
 import { leeresLv, xmlIdsUebernehmen } from './lv/modell';
 import type { Gewerk, LvDatei, LvFormat, Projektstruktur } from './projekt';
-import { projektLesen } from './projekt';
+import { neuesLvPfad, projektLesen } from './projekt';
 import { gewerkZweistellig } from './abrechnung/gewerk';
 import { globaleAva, lvDateiname } from './platzhalter';
 
@@ -297,10 +297,8 @@ export const useAva = create<AvaZustand>((set, get) => ({
         lv.kopf.projektName ??= projekt.meta.vorhaben || projekt.name;
         lv.kopf.projekt ??= [projekt.meta.vorhaben, projekt.meta.adresse.strasse, `${projekt.meta.adresse.plz} ${projekt.meta.adresse.ort}`.trim()].filter(Boolean).join('\n');
         lv.kopf.nummer ??= gewerk.slice(1);
-        const ordner = g ? g.pfad : `${einstellungen.ablage.gewerke}/${gewerkZweistellig(gewerk)}`;
-        const unter = einstellungen.ablage.lv ? `${ordner}/${einstellungen.ablage.lv}` : ordner;
         const name = lvDateiname(einstellungen.lv.dateiname, { ...globaleAva(projekt.meta, projekt.name, einstellungen.deckblatt.bearbeiter, undefined, projekt.namensschema), Gewerk: gewerkZweistellig(gewerk) }) || bezeichnung;
-        const pfad = `${unter}/${name} ${bezeichnung.replace(/^G\d+\s*/i, '')}`.replace(/\s+$/, '').replace(/[\\:*?"<>|]/g, ' ') + `.${format}`;
+        const pfad = neuesLvPfad(einstellungen.ablage, g, gewerk, name, bezeichnung, format);
         const daten = format === 'aslv' ? aslvNeu(lv) : eigenSchreiben(lv);
         if (!(await fs.anlegen(projekt.ordner, pfad, daten))) throw new Error(`${pfad}: Die Datei gibt es schon.`);
         await get().neuLaden();

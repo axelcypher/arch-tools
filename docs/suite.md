@@ -290,7 +290,7 @@ Felder und „Übernehmen“ gesperrt.
 | Ablage              | Gewerke, LV-Unterordner, Aufträge, Mailverkehr, Archiv, Bauleitung, weitere Mailordner, Kostenkontrolle | FABRIO | wie bisher (`Gewerke`, leer, `Auftrag`, `Korrespondenz`, `Archiv`/`_archiv`, `Bauleitung`, `Korrespondenz`, `Kostenkontrolle`) | ava › ablage.* |
 | Pläne und Dokumente | Dateinamen der Pläne                                | ATLAS                   | `{PROJEKT_KUERZEL}_{PHASE}_{Plannummer}_{Index}_{Titel}`      | projektordner › struktur.dateischema               |
 | Pläne und Dokumente | Dateinamen exportierter Antragsdokumente (PDF)      | PERMIO                  | `{PROJEKT_KUERZEL} {Art} {DATUM} {Nr} {Name}`                 | allgemein › pfade                                  |
-| Pläne und Dokumente | Fester Zielordner exportierter Antragsdokumente     | PERMIO                  | `TÖB/{Antrag}`                                                | allgemein › pfade                                  |
+| Ablage              | Fester Zielordner exportierter Antragsdokumente (im Antragsordner) | PERMIO   | `{Antrag}` (zusammen mit dem Antragsordner `TÖB/{Antrag}`) | allgemein › pfade                                  |
 | Pläne und Dokumente | Dateinamen der Katasterpläne                        | ATLAS                   | `{PROJEKT_KUERZEL} {Art} {DATUM} {Name}`                      | kataster › dateiname                               |
 | Pläne und Dokumente | Muster der Rechnungsdateien                         | FABRIO                  | wie bisher (das erste für neue Dateien)                       | ava › rechnungen.muster                            |
 | Export              | Berechnungsordner (gemeinsam), darin Unterordner je App | QUADRIO, TERRIO, NUMIO | `03 Berechnungen`; Unterordner `Flächen`, `Nachweise`, `Kosten` | allgemein › pfade                                  |
@@ -299,6 +299,29 @@ Felder und „Übernehmen“ gesperrt.
 | Vorlagen            | Dateinamen der Vorlagen im Projekt                  | ATLAS                   | `{PROJEKT_KUERZEL} {Name}`                                    | projektordner › struktur.vorlagenname              |
 | Vorlagen            | Leere Formulare                                     | PERMIO                  | (keiner)                                                      | allgemein › pfade                                  |
 | Vorlagen            | Name neuer LV-Dateien                               | FABRIO                  | `{PROJEKT_KUERZEL} {DATUM} LV {Gewerk}`                       | ava › lv.dateiname                                 |
+
+**Baum:** Jeder Eintrag sagt, wovon er abhängt – so, wie die Apps den Pfad tatsächlich auflösen (Abgleich in den Tests
+`einstellungen/baum.test.ts` und `bezug.test.ts` in FABRIO, PERMIO und ATLAS). Was von einem Eintrag abhängt, steht
+eingerückt darunter; die Vorschau zeigt den vollständigen Pfad. Bezüge:
+
+- relativ zum Projektordner: Projektdatei, Fotoordner, Antragsordner, „PERMIO sucht Berechnungen außerdem in“,
+  Ablageordner der Katasterpläne, Ordner der Gewerke, Bauleitung, Berechnungsordner; ein aus früheren Einstellungen
+  übernommener Zielordner der Antragsdokumente außerhalb des Antragsordners (nur sichtbar, solange er gesetzt ist)
+- vollständige Ordner: Stammordner der Projekte, Vorlagenordner (ATLAS), Leere Formulare (PERMIO)
+- im Stammordner: Name des Projektordners
+- im Ordner der Gewerke, je Gewerk ein Ordner: LV-Unterordner, Aufträge und Rechnungen, Mailverkehr des Gewerks
+- darunter: Name neuer LV-Dateien (im LV-Unterordner), Muster der Rechnungsdateien (im Auftragsordner)
+- im Antragsordner: fester Zielordner der Antragsdokumente (Vorgabe `{Antrag}`, zieht mit, wenn sich der Antragsordner
+  ändert); im Ordner der aktiven Antragsfassung bzw. im festen Zielordner: Dateinamen exportierter Antragsdokumente.
+  Übernommen ohne Verlust: Lag der bisherige feste Zielordner (relativ zum Projektordner) im Antragsordner, entfällt
+  dieser Teil; sonst bleibt er als abweichender Ordner relativ zum Projektordner stehen. War nie einer eingestellt, gilt
+  jetzt der Antragsordner (bisher fest `TÖB/{Antrag}`, auch bei anderem Antragsordner). Der wirksame Pfad steht für
+  ältere Versionen weiter unter dem bisherigen Schlüssel
+- im Ablageordner der Katasterpläne: Dateinamen der Katasterpläne
+- im Berechnungsordner: Unterordner je App; darin die Dateinamen für Excel und PDF
+- überall gesucht: Archivordner, weitere Mailordner, Kostenkontrolle (FABRIO)
+- anderswo festgelegt: Projektnummer (Teil des Ordnernamens), Dateinamen der Pläne (Planordner der Struktur), Dateinamen
+  der Vorlagen (Zielordner der Zuordnung), „PDF mitspeichern“
 
 **Gemeinsame Angaben:** Was mehrere Apps gleich nutzen, steht einmal (docs/design.md, „Einstellungen“). Der
 Berechnungsordner gilt für QUADRIO, TERRIO und NUMIO; darin hat jede App einen Unterordner (leer = direkt im
