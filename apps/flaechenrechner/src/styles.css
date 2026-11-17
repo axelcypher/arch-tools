@@ -180,7 +180,8 @@
   min-width: 4em;
 }
 
-/* sehr schmale Mitte: kein leerer Rahmen – nur noch „?“ und „×“, der Hinweis steht im Tooltip */
+/* sehr schmale Mitte: kein leerer Rahmen – nur noch „?“ und „×“, der Hinweis steht im Tooltip.
+   130 px ≈ Mindestbreite des Texts (4em) + zwei Knöpfe à 24 px + Abstände und Innenrand */
 @container (max-width: 130px) {
   .hud-hint {
     border-color: transparent;

@@ -153,11 +153,17 @@ describe('QUADRIO: Kartenlayout (Richtung C, docs/design.md „Fläche und Karte
     document.body.innerHTML = '';
     host = render();
     expect(rechts().style.width).toBe('360px');
-    // Gegenprobe: ohne gemerkten Wert die Vorgabe
+    // per Tastatur am Griff verschmälern (rechte Leiste: → macht schmaler) – die neue Breite wird gespeichert
+    const griff = rechts().querySelector<HTMLElement>(':scope > .leiste-griff')!;
+    act(() => griff.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true })));
+    expect(rechts().style.width).toBe('344px');
+    expect(localStorage.getItem('flaechenrechner:breite:rechts')).toBe('344');
+    // Gegenprobe: ohne gemerkten Wert die Vorgabe (Fenster bis 1280 px: 270 px)
     act(() => root?.unmount());
     document.body.innerHTML = '';
     localStorage.clear();
+    expect(window.innerWidth).toBeLessThanOrEqual(1280);
     host = render();
-    expect(rechts().style.width).not.toBe('360px');
+    expect(rechts().style.width).toBe('270px');
   });
 });
