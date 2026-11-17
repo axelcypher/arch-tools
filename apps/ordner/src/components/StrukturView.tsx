@@ -3,17 +3,13 @@ import { openTextFile, saveTextFile } from '@core/platform/files';
 import { logger } from '@core/platform/log';
 import { Field, TextField } from '@core/ui/fields';
 import { bestaetigen, fragen } from '@core/ui/Rueckfrage';
-import { projektdateiPfad } from '@core/projektdatei';
-import { hatDateisystem, waehleOrdner } from '../dateisystem';
 import { nameAus, nummerAus } from '../nummer';
 import { PfadeVerweis } from '@core/ui/Einstellungen';
 import { SPERRGRUND, StrukturSperre } from './StrukturSperre';
 import type { Sicherung } from '../sicherung';
 import { strukturUnterschied, unterschiedText } from '../sicherung';
 import { useOrdner } from '../store';
-import { Symbol } from '@core/ui/Symbol';
 import { OrdnerEditor } from './OrdnerEditor';
-import { NamensschemaEinstellungen } from './NamensschemaEinstellungen';
 import type { Struktur } from '../struktur';
 import { ordnerAlsText, ordnerAusTextMitMeldungen, sichererName, STANDARD, strukturAlsJson, strukturAusJson } from '../struktur';
 
@@ -351,152 +347,3 @@ export function StrukturView() {
 }
 
 /** Einstellungen: die gemeinsamen Einstellungen aller Apps */
-export function EinstellungenView() {
-  return (
-    <div className="po-view einspaltig">
-      <section className="po-col">
-        <GemeinsameEinstellungen />
-        <NamensschemaEinstellungen />
-      </section>
-    </div>
-  );
-}
-
-/** Gemeinsame Einstellungen aller Apps – im Konfigurationsordner (auf einem Server-Laufwerk für das ganze Büro) */
-function GemeinsameEinstellungen() {
-  const desktop = hatDateisystem();
-  const { konfigFehler, allgemein, setAllgemein, struktur } = useOrdner();
-  const beispiel = musterWerte(nummerAus(struktur.nummernschema, 14));
-  /** Stammordner per Ziehen umsortieren: gezogener Eintrag und Ziel */
-  const [zieht, setZieht] = useState<number | null>(null);
-  const [ziel, setZiel] = useState<{ i: number; davor: boolean } | null>(null);
-  /** Eintrag `von` vor die Stelle `vor` setzen (Index in der alten Liste; Länge = ans Ende) */
-  const verschieben = (von: number, vor: number) => {
-    const liste = [...allgemein.projekte];
-    const [x] = liste.splice(von, 1);
-    liste.splice(vor > von ? vor - 1 : vor, 0, x);
-    if (liste.join('|') !== allgemein.projekte.join('|')) setAllgemein({ projekte: liste });
-  };
-
-  const stammordnerHinzufuegen = async () => {
-    const p = await waehleOrdner('Stammordner mit Projektordnern wählen');
-    if (p && !allgemein.projekte.includes(p)) setAllgemein({ projekte: [...allgemein.projekte, p] });
-  };
-
-  return (
-    <>
-      <h2>Gemeinsame Einstellungen</h2>
-      <p className="muted small-text">Gelten für alle Apps. Bei einer Netzwerkinstallation liegen sie auf dem Netzlaufwerk und gelten für das ganze Büro.</p>
-      <PfadeVerweis
-        seite="allgemein"
-        text="Speicherort und Büro …"
-        erklaerung="Speicherort der Einstellungen, Name des Büros und Kürzel der Mitarbeiter stehen in den Einstellungen aller Apps, Seite „Allgemein“."
-      />
-      {konfigFehler && (
-        <p className="meldung fehler" role="alert">
-          {konfigFehler}
-        </p>
-      )}
-
-      <h3 className="po-abschnitt">Stammordner der Projekte</h3>
-      <p className="muted small-text">
-        Reihenfolge wie in der Projektübersicht aller Apps – zum Umsortieren ziehen (oder die Knöpfe „Nach oben“/„Nach unten“; auch die Abschnitte der Projektübersicht lassen sich ziehen). Im ersten
-        entstehen neue Projekte. Projekte in Gruppen-, Akquise- und Archivordnern darin werden mit erfasst.
-      </p>
-      <ul className="list po-stammordner" aria-label="Stammordner der Projekte">
-        {allgemein.projekte.map((p, i) => (
-          <li
-            key={p}
-            draggable
-            className={`${zieht === i ? 'zieht' : ''}${ziel && ziel.i === i && zieht !== null && zieht !== i ? (ziel.davor ? ' ziel-davor' : ' ziel-danach') : ''}`}
-            onDragStart={(e) => {
-              setZieht(i);
-              try {
-                e.dataTransfer.effectAllowed = 'move';
-                e.dataTransfer.setData('text/plain', p);
-              } catch {
-                // ohne Datenübergabe genügt der Zustand
-              }
-            }}
-            onDragOver={(e) => {
-              if (zieht === null) return;
-              e.preventDefault();
-              const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
-              const davor = !r.height || e.clientY - r.top < r.height / 2;
-              if (ziel?.i !== i || ziel.davor !== davor) setZiel({ i, davor });
-            }}
-            onDrop={(e) => {
-              e.preventDefault();
-              if (zieht !== null) verschieben(zieht, ziel?.davor === false ? i + 1 : i);
-              setZieht(null);
-              setZiel(null);
-            }}
-            onDragEnd={() => {
-              setZieht(null);
-              setZiel(null);
-            }}
-          >
-            <span className="po-griff" aria-hidden title="Zum Umsortieren ziehen">
-              ⠿
-            </span>
-            <code title={p}>{p}</code>
-            {i === 0 ? (
-              <span className="muted small-text po-stamm-neu">neue Projekte</span>
-            ) : (
-              <button
-                className="small po-stamm-neu"
-                title="Neue Projekte in diesem Stammordner anlegen (er rückt an die erste Stelle)"
-                onClick={() => setAllgemein({ projekte: [p, ...allgemein.projekte.filter((x) => x !== p)] })}
-              >
-                Neue Projekte hier
-              </button>
-            )}
-            <button className="icon" title="Nach oben" aria-label={`${p} nach oben`} disabled={i === 0} onClick={() => verschieben(i, i - 1)}>
-              <Symbol name="nachOben" />
-            </button>
-            <button className="icon" title="Nach unten" aria-label={`${p} nach unten`} disabled={i === allgemein.projekte.length - 1} onClick={() => verschieben(i, i + 2)}>
-              <Symbol name="nachUnten" />
-            </button>
-            <button
-              className="icon"
-              title="Aus der Liste nehmen – am Ordner ändert sich nichts"
-              aria-label={`${p} entfernen`}
-              onClick={() => setAllgemein({ projekte: allgemein.projekte.filter((x) => x !== p) })}
-            >
-              <Symbol name="muell" />
-            </button>
-          </li>
-        ))}
-        {!allgemein.projekte.length && (
-          <li className="muted">
-            {desktop ? 'Noch kein Stammordner – mit dem Knopf „Stammordner“ (mit Plus) hinzufügen.' : 'Noch kein Stammordner – hinzufügen lässt er sich nur in der Desktop-App.'}
-          </li>
-        )}
-      </ul>
-      {desktop && (
-        <div className="button-row">
-          <button className="small" onClick={() => void stammordnerHinzufuegen()}>
-            <Symbol name="plus" /> Stammordner
-          </button>
-        </div>
-      )}
-      <h3 className="po-abschnitt">Projektdatei und Fotoordner</h3>
-      <dl className="po-schemata-werte">
-        <div>
-          <dt>Projektdatei (.oap) in neuen Projekten</dt>
-          <dd>
-            <code>{allgemein.oapPfad}</code>{' '}
-            <span className="muted small-text">z. B. {projektdateiPfad(allgemein.oapPfad, { nummer: beispiel.nummer, kurzname: beispiel.kurzname, vorhaben: beispiel.vorhaben })}</span>
-          </dd>
-        </div>
-        <div>
-          <dt>Fotoordner im Projekt</dt>
-          <dd>
-            <code>{allgemein.fotoordner}</code>
-          </dd>
-        </div>
-      </dl>
-      <PfadeVerweis fokus="projekt.oapPfad" erklaerung="Eingestellt in den Einstellungen aller Apps, Seite „Pfade und Benennung“." />
-    </>
-  );
-}

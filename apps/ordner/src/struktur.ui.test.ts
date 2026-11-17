@@ -1,4 +1,6 @@
 // @vitest-environment happy-dom
+import { einstellungenOeffnen, useEinstellungen } from '@core/ui/Einstellungen';
+import { useAtlasEntwurf } from './components/AtlasEinstellungen';
 import type { ReactElement } from 'react';
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -81,6 +83,9 @@ beforeEach(() => {
   });
 });
 afterEach(async () => {
+  // offene Einstellungen und ihren Entwurf nicht in den nächsten Test tragen
+  act(() => useEinstellungen.setState({ offen: false }));
+  useAtlasEntwurf.setState({ entwurf: {} });
   await act(() => useOrdner.getState().speichernJetzt());
   // ein offenes gemeinsames Menü (globaler Zustand) nicht in den nächsten Test tragen
   if (document.querySelector('.menue')) act(() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
@@ -576,15 +581,15 @@ describe('Vorlagen', () => {
 });
 
 describe('Kürzel (Einstellungen)', () => {
-  it('ungültiges neues Kürzel bleibt zum Korrigieren stehen – mit Fehlermarke; „LPh“ in der Spalte', () => {
-    const host = render();
-    einrichtung(host, 'Einstellungen');
-    const bereich = host.querySelector<HTMLElement>('.po-namensschema')!;
+  it('ungültiges neues Kürzel bleibt zum Korrigieren stehen – mit Fehlermarke; „LPh“ in der Spalte', async () => {
+    render();
+    act(() => einstellungenOeffnen('ordner'));
+    const bereich = document.querySelector<HTMLElement>('.po-namensschema')!;
     expect([...bereich.querySelectorAll('th')].map((t) => t.textContent)).toContain('LPh');
     expect(bereich.textContent).not.toContain('LPH');
     expect(knopf(bereich, 'Vorgabe wiederherstellen').textContent).toBe('Vorgabe wiederherstellen …');
-    const antragsarten = [...bereich.querySelectorAll('.po-kuerzel')].find((k) => k.querySelector('h3')?.textContent === 'Antrags- und Verfahrensarten')!;
-    act(() => plusKnopf(antragsarten, 'Kürzel').click());
+    const antragsarten = [...bereich.querySelectorAll('.po-kuerzel')].find((k) => k.querySelector('h5')?.textContent === 'Antrags- und Verfahrensarten')!;
+    act(() => plusKnopf(antragsarten, 'Kürzel hinzufügen').click());
     const feld = () => bereich.querySelector<HTMLInputElement>('input[aria-label="Antrags- und Verfahrensarten: Kürzel neues Kürzel"]')!;
     eingabe(feld(), 'baua');
     expect(feld().value).toBe('baua');
@@ -596,6 +601,11 @@ describe('Kürzel (Einstellungen)', () => {
     expect(gespeichertes.value).toBe('WEG');
     expect(gespeichertes.getAttribute('aria-invalid')).toBeNull();
     expect(gespeichertes.className).not.toContain('feld-fehler');
+    expect(useAtlasEntwurf.getState().entwurf.namensschema!.antragsarten.map((k) => k.kuerzel)).toContain('WEG');
+    // gespeichert erst mit „Übernehmen“ – im gemeinsamen Namensschema des Büros
+    expect(useOrdner.getState().allgemein.namensschema?.antragsarten.map((k) => k.kuerzel) ?? []).not.toContain('WEG');
+    act(() => [...document.querySelectorAll<HTMLButtonElement>('.einst button')].find((x) => x.textContent?.trim() === 'Übernehmen')!.click());
+    await warten();
     expect(useOrdner.getState().allgemein.namensschema!.antragsarten.map((k) => k.kuerzel)).toContain('WEG');
   });
 });

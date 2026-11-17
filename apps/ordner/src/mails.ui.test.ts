@@ -345,7 +345,7 @@ describe('Mails: Bedienung per Tastatur', () => {
     expect(geoeffnet).toBe(1);
     // der Hinweis auf „Eigene Domains“ steht einmal über der Liste, nicht in jeder Zeile
     expect(host.querySelectorAll('.po-mails .meldung:not(.ok):not(.warnung):not(.fehler)').length).toBe(1);
-    expect(host.querySelector('.po-mails .meldung:not(.ok):not(.warnung):not(.fehler)')!.textContent).toContain('links unter „Eigene Domains“ eintragen');
+    expect(host.querySelector('.po-mails .meldung:not(.ok):not(.warnung):not(.fehler)')!.textContent).toContain('„Eigene Domains“ eintragen');
     expect(host.textContent).not.toContain('in den Einstellungen festlegen');
   });
 });
@@ -427,9 +427,8 @@ describe('Mails: kein Rennen beim Einlesen', () => {
     const host = zeigen(fs, '/p/BSP Haus');
     await warten();
     // „eins“ ist gelesen, „zwei“ hängt noch – jetzt die Domain eintragen (das Speichern dauert)
-    const domains = host.querySelector('input[aria-label="Eigene Domains"]') as HTMLInputElement;
-    eintippen(domains, 'architekten-beispiel.example');
-    act(() => domains.dispatchEvent(new FocusEvent('focusout', { bubbles: true })));
+    // eingetragen in den Einstellungen (Seite ATLAS) – gespeichert über denselben Setter
+    act(() => void useMails.getState().setEigene(['architekten-beispiel.example']));
     lesen.auf();
     await warten();
     speichern.auf();
@@ -460,9 +459,8 @@ describe('Mails: kein Rennen beim Einlesen', () => {
     const neuerName = (datei: string) => [...host.querySelectorAll('.po-mail')].find((z) => z.textContent?.includes(datei))!.querySelector('.po-mail-neu')!.textContent;
     // Gegenprobe: ohne Domain gilt die Richtung aus dem bisherigen Namen
     expect(neuerName('eins.msg')).toContain('Richtung aus dem bisherigen Namen');
-    const domains = host.querySelector('input[aria-label="Eigene Domains"]') as HTMLInputElement;
-    eintippen(domains, 'architekten-beispiel.example');
-    act(() => domains.dispatchEvent(new FocusEvent('focusout', { bubbles: true })));
+    // eingetragen in den Einstellungen (Seite ATLAS) – gespeichert über denselben Setter
+    act(() => void useMails.getState().setEigene(['architekten-beispiel.example']));
     // umgekehrt: erst ist das Speichern fertig, dann erst wird „zwei“ gelesen
     speichern.auf();
     await warten();

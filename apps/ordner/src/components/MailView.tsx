@@ -1,3 +1,4 @@
+import { PfadeVerweis } from '@core/ui/Einstellungen';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { MsgKopf } from '@core/mail/msg';
 import { msgKopf } from '@core/mail/msg';
@@ -282,7 +283,6 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
   const [nurFalsche, setNurFalsche] = useState(true);
   const [laeuft, setLaeuft] = useState<string | null>(null);
   const [fehler, setFehler] = useState<string | null>(null);
-  const [eigeneText, setEigeneText] = useState('');
   const [neue, setNeue] = useState<NeueMail[]>([]);
   const [ziehtDrueber, setZiehtDrueber] = useState(false);
   /** Ergebnis von „Absender neu bestimmen“ */
@@ -299,7 +299,6 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
   useEffect(() => {
     if (!einstellungenGeladen) void useMails.getState().laden();
   }, [einstellungenGeladen]);
-  useEffect(() => setEigeneText(eigene.join(', ')), [eigene]);
 
   const rootsSchluessel = roots.join('|');
   useEffect(() => {
@@ -523,13 +522,21 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
   };
 
   /**
-   * eigene Domains geändert: Vorschläge der gelesenen Zeilen neu bilden. Funktional nachgeführt – was ein noch
+   * eigene Domains geändert (hier oder in den Einstellungen): Vorschläge der gelesenen Zeilen neu bilden. Funktional nachgeführt – was ein noch
    * laufendes Einlesen oder eine Eingabe inzwischen geändert hat, bleibt erhalten; nach einem Projektwechsel nichts.
    */
-  const eigeneSetzen = async (liste: string[]) => {
+  const eigeneSetzen = (liste: string[]) => setEigene(liste);
+  // geändert hier (Vorschlag) oder in den Einstellungen (Seite ATLAS): die Vorschläge folgen
+  const eigeneSchluessel = eigene.join(',');
+  const eigeneVorher = useRef(eigeneSchluessel);
+  useEffect(() => {
+    if (eigeneVorher.current === eigeneSchluessel) return;
+    eigeneVorher.current = eigeneSchluessel;
+    void vorschlaegeNeu();
+  }, [eigeneSchluessel]); // eslint-disable-line react-hooks/exhaustive-deps
+  const vorschlaegeNeu = async () => {
     const kennung = lauf.current;
-    await setEigene(liste);
-    if (!projekt || kennung !== lauf.current) return;
+    if (!projekt) return;
     const neu = useMails.getState().eigene;
     const ergebnis = await Promise.all(zeilenRef.current.filter((z) => z.kopf).map((z) => lesen(projekt, { ...z, inhalt: [] }, neu)));
     if (kennung !== lauf.current) return;
@@ -832,17 +839,10 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
         {!fs && <p className="muted small-text">Im Browser lassen sich die Mails nur prüfen; umbenennen kann die Desktop-App.</p>}
 
         <h3>Eigene Domains</h3>
-        <p className="muted small-text">Daran erkennt die App, ob eine Mail von außen kam („von“) oder ins Büro hinaus ging („an“). Gilt fürs ganze Büro.</p>
-        <div className="po-schemafeld">
-          <input
-            value={eigeneText}
-            aria-label="Eigene Domains"
-            placeholder="z. B. architekten-beispiel.example"
-            onChange={(e) => setEigeneText(e.target.value)}
-            onBlur={() => eigeneText !== eigene.join(', ') && void eigeneSetzen(eigeneText.split(/[,;\s]+/))}
-            onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
-          />
-        </div>
+        <p className="muted small-text">
+          Daran erkennt die App, ob eine Mail von außen kam („von“) oder ins Büro hinaus ging („an“): {eigene.length ? <code>{eigene.join(', ')}</code> : 'noch keine eingetragen'}.
+        </p>
+        <PfadeVerweis seite="ordner" text="Eigene Domains …" />
         {vorschlagDomain && (
           <p className="meldung">
             Erkannt aus den Mails: <strong>{vorschlagDomain}</strong>{' '}
@@ -1042,7 +1042,11 @@ export function MailView({ fs: fsVorgabe, start }: { fs?: Dateisystem; start?: s
                 </ul>
               </div>
             )}
-            {ohneDomain && <p className="meldung">Ohne eigene Domain gilt die Richtung (von/an) aus dem bisherigen Namen – links unter „Eigene Domains“ eintragen, dann erkennt die App sie selbst.</p>}
+            {ohneDomain && (
+              <p className="meldung">
+                Ohne eigene Domain gilt die Richtung (von/an) aus dem bisherigen Namen – unter „Eigene Domains“ eintragen (Datei › Einstellungen › ATLAS), dann erkennt die App sie selbst.
+              </p>
+            )}
             {!sichtbar.length && <p className="meldung ok">{zeilen.length ? 'Alle Mails sind nach dem Schema benannt.' : 'In diesem Projektordner gibt es keine Mails (.msg).'}</p>}
             <ul className="po-mailliste">
               {sichtbar.map((z) => {

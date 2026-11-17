@@ -1,6 +1,7 @@
+import { PfadeVerweis } from '@core/ui/Einstellungen';
 import { useState } from 'react';
 import { Symbol } from '@core/ui/Symbol';
-import { hatDateisystem, oeffneOrdner, waehleOrdner, waehleOrdnerImBrowser } from '../dateisystem';
+import { hatDateisystem, oeffneOrdner, waehleOrdnerImBrowser } from '../dateisystem';
 import type { Ergebnis, Herkunft, Plan, PresetAbweichung } from '../plan';
 import { tutEtwas, vorlagenAnzahl } from '../plan';
 import { useOrdner } from '../store';
@@ -109,7 +110,7 @@ export function PlanMeldungen({ plan }: { plan: Plan }) {
   );
 }
 
-/** Vorlagenordner: anzeigen, wählen, neu einlesen, abwählen */
+/** Vorlagenordner: anzeigen und neu einlesen; eingestellt auf „Pfade und Benennung“ (im Browser hier über den Dateidialog gewählt) */
 export function VorlagenordnerZeile({ leerText = 'keiner – es entstehen nur Ordner, Stammdaten und die leere Flächenberechnung' }: { leerText?: string }) {
   const desktop = hatDateisystem();
   const { vorlagenordner, vorlagenName, vorlagen, vorlagenFehler, vorlagenLaden, setVorlagenordner, ladeVorlagen, setVorlagenImBrowser } = useOrdner();
@@ -117,11 +118,6 @@ export function VorlagenordnerZeile({ leerText = 'keiner – es entstehen nur Or
   // unlesbare Struktur: der Vorlagenordner steht mit ihr in projektordner.json und wird solange nicht gespeichert – gesperrt
   const gesperrt = !!useOrdner((s) => s.strukturFehler);
   const waehlen = async () => {
-    if (desktop) {
-      const p = await waehleOrdner('Vorlagenordner wählen');
-      if (p) setVorlagenordner(p);
-      return;
-    }
     const o = await waehleOrdnerImBrowser();
     if (o) setVorlagenImBrowser(o.name, o.eintraege.filter((e) => !e.ordner).map((e) => ({ pfad: e.pfad, lies: () => o.lies(e.pfad) })));
   };
@@ -137,15 +133,20 @@ export function VorlagenordnerZeile({ leerText = 'keiner – es entstehen nur Or
           </span>
           {gewaehlt ? <code title={vorlagenordner}>{gewaehlt}</code> : <span className="muted small-text">{leerText}</span>}
         </div>
-        <button className="small" disabled={gesperrt} onClick={() => void waehlen()}>
-          Wählen …
-        </button>
+        {/* Desktop: der Pfad steht auf „Pfade und Benennung“ (Verweis); der Browser wählt über den Dateidialog, ohne Pfad */}
+        {desktop ? (
+          <PfadeVerweis fokus="vorlagen.atlas.vorlagenordner" text="Vorlagenordner …" />
+        ) : (
+          <button className="small" disabled={gesperrt} onClick={() => void waehlen()}>
+            Wählen …
+          </button>
+        )}
         {desktop && vorlagenordner && (
           <button className="small" title="Vorlagenordner neu einlesen – nach Änderungen an den Vorlagen" disabled={vorlagenLaden} onClick={() => void ladeVorlagen()}>
             Neu einlesen
           </button>
         )}
-        {gewaehlt && (
+        {gewaehlt && !desktop && (
           <button
             className="small"
             title="Ohne Vorlagenordner arbeiten"

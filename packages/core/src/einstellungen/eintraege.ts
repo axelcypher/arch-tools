@@ -14,7 +14,7 @@ import {
   PERMIO_NAMEN,
   PERMIO_ZIEL,
 } from './variablen';
-import { inPfade, unterSchluessel, type PfadEinstellung } from './verzeichnis';
+import { inPfade, unterSchluessel, type PfadEinstellung, type PfadSpeicher } from './verzeichnis';
 
 /**
  * Alle zentralen Pfad- und Namenseinstellungen. Vorhandene Werte bleiben unter ihrem bisherigen Schlüssel
@@ -24,6 +24,21 @@ import { inPfade, unterSchluessel, type PfadEinstellung } from './verzeichnis';
 
 /** Die Struktur von ATLAS legt nur ATLAS vollständig an (mit Ordnern und Presets) */
 const OHNE_STRUKTUR = 'Die Ordnerstruktur von ATLAS ist noch nicht angelegt oder nicht lesbar – bitte zuerst ATLAS öffnen (Einrichtung › Struktur).';
+
+/**
+ * Wert neben der Struktur von ATLAS (oberste Ebene von projektordner.json): geschrieben wird nur, wenn die Struktur
+ * lesbar ist – sonst ersetzte das Schreiben einen unlesbaren Inhalt ungesichert (ATLAS sichert und sperrt dann selbst).
+ */
+function nebenStruktur(speicher: PfadSpeicher): PfadSpeicher {
+  return {
+    ...speicher,
+    schreiben: (roh, wert) => {
+      const struktur = roh.struktur;
+      if (!struktur || typeof struktur !== 'object' || Array.isArray(struktur)) throw new Error(OHNE_STRUKTUR);
+      return speicher.schreiben(roh, wert);
+    },
+  };
+}
 
 /** Vorgaben, die auch die Apps brauchen */
 export const VORGABE_FOTOORDNER = '09 Fotos';
@@ -392,6 +407,17 @@ export const PFAD_EINSTELLUNGEN: PfadEinstellung[] = [
     endung: '.docx',
     pflicht: true,
     speicher: unterSchluessel('projektordner', 'struktur.vorlagenname', 'name', '{PROJEKT_KUERZEL} {Name}', OHNE_STRUKTUR),
+  },
+  {
+    id: 'vorlagen.atlas.vorlagenordner',
+    apps: ['ordner'],
+    thema: 'vorlagen',
+    art: 'ordner',
+    bezeichnung: 'Vorlagenordner',
+    erklaerung: 'Ordner mit den Vorlagen, die ATLAS in neue Projekte kopiert (Presets in Einrichtung › Vorlagen); leer = ohne Vorlagen.',
+    vorgabe: '',
+    // bisheriger Schlüssel von ATLAS (projektordner.json, neben der Struktur) – nichts zu übernehmen
+    speicher: nebenStruktur(unterSchluessel('projektordner', 'vorlagenordner', 'ordner', '')),
   },
   {
     id: 'vorlagen.permio.vorlagenordner',
