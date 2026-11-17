@@ -609,6 +609,21 @@ button.icon {
   padding: 0 6px;
 }
 
+/* Knopf als Verweis im Text (z. B. ein Wert in einer Tabelle, der seine Prüfung öffnet): ohne Rahmen und Grund, in der
+   Akzentschrift, unterstrichen beim Überfahren; zählt in Feldzeilen der Zahlentabelle als Text */
+button.link {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--accent-text);
+  text-align: left;
+  white-space: normal;
+}
+button.link:hover:not(:disabled):not([aria-disabled='true']) {
+  background: none;
+  text-decoration: underline;
+}
+
 .toggle {
   display: inline-flex;
   align-items: center;
@@ -955,9 +970,20 @@ textarea:focus {
   vertical-align: top;
 }
 /* In einer Zeile mit Feldern fluchtet Text ohne Feld oder Knopf mit dem Text in den Feldern (der steht in --ctl-h
-   senkrecht mittig); Zeilen ohne Feld oder Knopf (z. B. Gruppen und Summen) bleiben knapp */
-.summary-table.felder tr:has(input, select, textarea, button) > td:not(:has(input, select, textarea, button)) {
+   senkrecht mittig); Zeilen ohne Feld oder Knopf (z. B. Gruppen und Summen) bleiben knapp. Ein Verweisknopf
+   (button.link) zählt als Text */
+.summary-table.felder tr:has(input, select, textarea, button:not(.link)) > td:not(:has(input, select, textarea, button:not(.link))) {
   padding-top: calc(3px + (var(--ctl-h) - 1lh) / 2);
+}
+
+/* Tabellen ohne Felder mit mehrzeiligen Zellen (Rechenweg, Katalog): oben bündig, ohne den Ausgleich der Feldzeilen */
+.summary-table.oben td {
+  vertical-align: top;
+}
+
+/* gewählte Zeile (z. B. der Katalogeintrag oder der verglichene Stand) */
+.summary-table tr.selected td {
+  background: var(--accent-soft);
 }
 
 .summary-table tr.strong td,

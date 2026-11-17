@@ -51,8 +51,11 @@ Texttabellen: Spaltenköpfe linksbündig (`.summary-table.text`, z. B. Platzhalt
 und Zahlenspalten, z. B. Kostengruppe | von | Mittel | bis) nehmen `.text` und markieren die Zahlenspalten mit `th.num`
 und `td.num`. Zeilen mit Feldern (Eingaben je Zeile) bekommen `.felder`: oben bündig, Text ohne Feld oder Knopf fluchtet
 mit dem Feldtext. Gruppenzeilen `tr.gruppe` (getönt mit `--tabelle-gruppe`, halbfett), Summenzeilen `tr.summe`
-(halbfett, kräftigere Linie darüber); `tr.strong` bleibt für einzelne hervorgehobene Zeilen. Diese Tabelle soll die
-eigenen Tabellenklassen der Apps ersetzen; bis zur Umstellung bleiben diese bestehen.
+(halbfett, kräftigere Linie darüber); `tr.strong` bleibt für einzelne hervorgehobene Zeilen, `tr.selected` (getönt mit
+`--accent-soft`) für die gewählte Zeile. Tabellen ohne Felder mit mehrzeiligen Zellen (Rechenweg, Katalog) bekommen
+`.oben` (oben bündig, ohne den Ausgleich der Feldzeilen). Ein Verweisknopf im Text (`button.link`, z. B. ein Wert, der
+seine Prüfung öffnet) zählt in Feldzeilen als Text. Diese Tabelle soll die eigenen Tabellenklassen der Apps ersetzen;
+bis zur Umstellung bleiben diese bestehen.
 
 ## Überschriften
 
