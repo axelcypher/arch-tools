@@ -693,7 +693,7 @@ export function GrzGfzView() {
                 <th className="num" title="Anteil der Grundfläche mit der geforderten lichten Höhe">
                   Anteil
                 </th>
-                <th>Einstufung</th>
+                <th title="Einstufung als Vollgeschoss: automatisch aus der Prüfung oder von Hand festgelegt">Vollgeschoss</th>
               </tr>
             </thead>
             <tbody>
@@ -714,14 +714,14 @@ export function GrzGfzView() {
                     <td>
                       <select
                         className={g.automatisch ? 'grz-wahl' : 'grz-wahl grz-von-hand'}
-                        title={g.automatisch ? `${autoVollgeschoss(g)} – automatisch eingestuft, von Hand festlegen` : `${g.vollgeschoss ? 'Vollgeschoss' : 'kein Vollgeschoss'} – von Hand festgelegt`}
+                        title={`${g.name}: ${(g.automatisch ? g.vollgeschossAuto : g.vollgeschoss) ? 'Vollgeschoss' : 'kein Vollgeschoss'} – ${g.automatisch ? 'automatisch eingestuft, von Hand festlegen' : 'von Hand festgelegt'}`}
                         aria-label={`Vollgeschoss ${g.name}`}
                         value={g.automatisch ? 'auto' : g.vollgeschoss ? 'ja' : 'nein'}
                         onChange={(e) => setVollgeschoss(g.storeyId, e.target.value === 'auto' ? undefined : e.target.value === 'ja')}
                       >
                         <option value="auto">{autoVollgeschoss(g)}</option>
-                        <option value="ja">Vollgeschoss (von Hand)</option>
-                        <option value="nein">kein Vollgeschoss (von Hand)</option>
+                        <option value="ja">ja (von Hand)</option>
+                        <option value="nein">nein (von Hand)</option>
                       </select>
                     </td>
                   </tr>
@@ -969,7 +969,7 @@ function TeilflaechenListe({ f }: { f: ReturnType<typeof rechenweg>['flaechen'][
 }
 
 /** erste Option der Einstufung: was die Prüfung ohne Festlegung ergibt */
-const autoVollgeschoss = (g: { vollgeschossAuto: boolean }) => `${g.vollgeschossAuto ? 'Vollgeschoss' : 'kein Vollgeschoss'} (auto)`;
+const autoVollgeschoss = (g: { vollgeschossAuto: boolean }) => `${g.vollgeschossAuto ? 'ja' : 'nein'} (auto)`;
 
 export function StatusPill({ s }: { s: Status }) {
   return (

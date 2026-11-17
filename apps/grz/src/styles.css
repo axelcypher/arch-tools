@@ -37,23 +37,30 @@
   gap: 4px;
   margin-bottom: 12px;
 }
-/* Vollgeschoss-Tabelle: feste Spalten, so breit wie ihre Zahlen („−0,28“, „100 %“); die Einstufung nimmt den Rest –
-   kein Überlauf und keine überlappenden Zahlen, auch wenn die Nachweis-Karte auf 320 px nachgibt */
+/* Vollgeschoss-Tabelle: feste Spalten in px, bemessen an der Zellschrift (13 px: „−0,20“, „100 %“) bzw. am längsten
+   Kopfwort („Geschoss“); die Einstufung nimmt den Rest. Köpfe höchstens zweizeilig („über / Gel.“), die Einheit steht
+   im Tooltip. So passen die Zahlen auch, wenn die Nachweis-Karte auf 320 px nachgibt. */
 .grz-vg-tabelle {
   table-layout: fixed;
 }
 .grz-vg-tabelle th:nth-child(1) {
-  width: 5.5em;
+  width: 56px;
 }
-.grz-vg-tabelle th:nth-child(2),
+.grz-vg-tabelle th:nth-child(2) {
+  width: 52px;
+}
 .grz-vg-tabelle th:nth-child(3) {
-  width: 4.5em;
+  width: 44px;
 }
 .grz-vg-tabelle th:nth-child(4) {
-  width: 4em;
+  width: 48px;
 }
 .grz-tabelle.grz-vg-tabelle th.num,
 .grz-vg-tabelle th {
+  white-space: normal;
+}
+/* Spanne des Geländes („−0,40 – 1,25“) darf umbrechen, statt in die Nachbarspalte zu laufen */
+.grz-vg-tabelle td .small-text {
   white-space: normal;
 }
 .grz-vg-tabelle select {
