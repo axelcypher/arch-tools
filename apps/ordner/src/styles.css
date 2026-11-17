@@ -1076,7 +1076,7 @@
   color: var(--accent);
 }
 /* Angaben eines Plans: Felder mit Beschriftung darüber, so viele Spalten wie Platz ist (in core gibt es dafür noch kein
-   Muster – ans Designsystem gemeldet); ka-breit über die ganze Breite, ka-zwei über zwei Spalten */
+   Muster); ka-breit über die ganze Breite, ka-zwei über zwei Spalten */
 .ka-raster {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));

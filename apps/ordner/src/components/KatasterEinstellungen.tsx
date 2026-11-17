@@ -285,8 +285,8 @@ export function KatasterEinstellungen() {
             <ul className="einst-ordnerliste" aria-label="Gefundene Installationen von QGIS">
               {gefunden.map((g) => (
                 <li key={g}>
-                  <code>{g}</code>
-                  <button className="small" aria-pressed={g === programm} onClick={() => g !== programm && programmSetzen(g)}>
+                  <code title={g}>{g}</code>
+                  <button className="small" aria-current={g === programm || undefined} onClick={() => g !== programm && programmSetzen(g)}>
                     {g === programm ? 'Gewählt' : 'Verwenden'}
                   </button>
                 </li>

@@ -186,6 +186,7 @@ export function App() {
     }));
 
   // „Datei → Exportieren“: die Ausgaben in eine Datei – in ATLAS der Bericht aus „Ordner prüfen“ als CSV
+  // eigenes Untermenü statt exportUntermenue aus core: ATLAS bietet weder Excel noch PDF, nur den Prüfbericht als CSV
   const dateiPunkte = (): MenuePunkt[] => [
     {
       text: 'Exportieren',
