@@ -796,7 +796,7 @@ export function AntragsdatenAnsicht() {
             </div>
             {ohneVorlage && (
               <p className="pu-ohne-vorlage small-text" id="pu-ohne-vorlage">
-                {art.trim() ? `Für ${art} gibt es keine Antragsvorlage` : 'Für diesen Antrag gibt es keine passende Antragsvorlage'} – bitte eine wählen oder unter Einstellungen › PERMIO eine
+                {art.trim() ? `Für ${art} gibt es keine Antragsvorlage` : 'Für diesen Antrag gibt es keine passende Antragsvorlage'} – bitte eine wählen oder unter Datei › Einstellungen › PERMIO eine
                 anlegen.
               </p>
             )}

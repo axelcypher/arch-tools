@@ -131,7 +131,7 @@ export function Eingang() {
   const mail = async (r: RechnungsDatensatz) => {
     const vorlage = e.mail.vorlagen.find((v) => v.id === 'rechnung') ?? e.mail.vorlagen[0];
     if (!vorlage) {
-      await meldung('Keine Mailvorlage', 'Es gibt keine Mailvorlage „Rechnung“ – bitte unter Einstellungen › Mailvorlagen anlegen.');
+      await meldung('Keine Mailvorlage', 'Es gibt keine Mailvorlage „Rechnung“ – bitte unter Datei › Einstellungen › FABRIO › Mailvorlagen anlegen.');
       return;
     }
     try {
