@@ -160,7 +160,8 @@ describe('Titelleiste auf dem Desktop', () => {
   it('Meldung an den Rahmen mit dem Satz für dessen Rückfrage (ungespeichert); ohne ihn ohne das Feld; ohne onSpeichern kannSpeichern: false', async () => {
     window.history.replaceState(null, '', '/?rahmen=fenster&app=ava');
     const gemeldet: object[] = [];
-    await listen<object>('arch-tools:an-rahmen', (e) => void gemeldet.push(e.payload));
+    // nur die Statusmeldungen (BEREIT melden auch die Empfänger, etwa der Einstellungsdialog)
+    await listen<{ typ: string }>('arch-tools:an-rahmen', (e) => void (e.payload.typ === 'arch-tools:status' && gemeldet.push(e.payload)));
     await render({ app: 'FABRIO', name: 'LV 1', ungespeichert: 'Das LV hat ungespeicherte Änderungen.', onSpeichern: async () => true });
     await warten();
     expect(gemeldet.at(-1)).toEqual({ typ: 'arch-tools:status', app: 'FABRIO', kennung: 'ava', name: 'LV 1', dirty: true, ungespeichert: 'Das LV hat ungespeicherte Änderungen.' });

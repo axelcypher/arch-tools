@@ -239,6 +239,14 @@ describe('Rahmen-App', () => {
     act(() => void window.dispatchEvent(new KeyboardEvent('keydown', { key: ',', ctrlKey: true, bubbles: true, cancelable: true })));
     expect(win.postMessage).toHaveBeenCalledWith({ typ: 'arch-tools:einstellungen-oeffnen', an: 'flaechenrechner' }, window.location.origin);
     expect(useEinstellungen.getState().offen).toBe(false);
+    // der Fokus geht in den Tab, wo der Dialog liegt
+    expect(document.activeElement).toBe(f);
+    // ein anderer Dialog des Rahmens offen (etwa das Fehlerprotokoll): keine Nachricht, der Dialog des Tabs läge darunter
+    vi.mocked(win.postMessage).mockClear();
+    const anderer = document.body.appendChild(Object.assign(document.createElement('div'), { className: 'modal-backdrop' }));
+    act(() => void window.dispatchEvent(new KeyboardEvent('keydown', { key: ',', ctrlKey: true, bubbles: true, cancelable: true })));
+    expect(win.postMessage).not.toHaveBeenCalled();
+    anderer.remove();
     // eigener Dialog schon offen (etwa über die Notbetriebswarnung): Strg+, bittet die App nicht um einen zweiten
     vi.mocked(win.postMessage).mockClear();
     act(() => useEinstellungen.setState({ offen: true }));

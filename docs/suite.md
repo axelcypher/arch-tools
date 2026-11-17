@@ -63,7 +63,8 @@ Werkzeuge in **einem Programm und einem Fenster**. Sie kann nichts weiter, als z
 
 - **Einstellungen …** (im Menü „Einstellungen und Hilfe“ der Kopfleiste, Strg+,): der zentrale Einstellungsdialog
   aller Apps, siehe unten. Ist ein App-Tab aktiv, öffnet ihn die App auf ihrer Seite (Nachricht
-  `arch-tools:einstellungen-oeffnen`, auch an herausgelöste Fenster); sonst öffnet Arkly ihn auf „Allgemein“.
+  `arch-tools:einstellungen-oeffnen` an den aktiven Tab, nicht, solange im Rahmen ein Dialog oder Menü offen ist);
+  sonst öffnet Arkly ihn auf „Allgemein“. Im herausgelösten Fenster gilt das Strg+, der App selbst.
 
 Die einzelnen Apps mit eigenem Installer bleiben unverändert nutzbar; Einstellungen (gemeinsamer
 Konfigurationsordner) und Projektdateien sind dieselben.

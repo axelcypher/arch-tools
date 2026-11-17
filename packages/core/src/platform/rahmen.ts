@@ -250,9 +250,9 @@ export function speichernAnfragenBeantworten(speichern: (() => Promise<boolean |
 /* ---------- Nachrichten zwischen den Apps über den Rahmen (z. B. „Neues Projekt anlegen“ aus jeder App) ---------- */
 
 /** App → Rahmen: den Assistenten von ATLAS für ein neues Projekt starten */
+export const PROJEKT_ANLEGEN = 'arch-tools:projekt-anlegen';
 /** Rahmen → App: den Einstellungsdialog in der App öffnen (auf ihrer Seite) – „Einstellungen …“ und Strg+, in Arkly */
 export const EINSTELLUNGEN_OEFFNEN = 'arch-tools:einstellungen-oeffnen';
-export const PROJEKT_ANLEGEN = 'arch-tools:projekt-anlegen';
 /** Rahmen → ATLAS: Assistent für ein neues Projekt (mit der App, aus der der Auftrag kommt) */
 export const ASSISTENT_NEU = 'arch-tools:assistent-neu';
 /** ATLAS → Rahmen: zurück zu einer App (`an`), mit dem neu angelegten Projektordner (`ordner`) */

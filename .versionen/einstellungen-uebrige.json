@@ -1,38 +1,38 @@
 {
   "flaechenrechner": {
     "stufe": "patch",
-    "notiz": "Einstellungsdialog: Strg+, wird in herausgelösten Fenstern und App-Tabs aus Arkly heraus zuverlässig angenommen."
+    "notiz": "In Arkly öffnet Strg+, die Einstellungen nur noch einmal, auf der Seite der App."
   },
   "grz": {
     "stufe": "patch",
-    "notiz": "Einstellungsdialog: Strg+, wird in herausgelösten Fenstern und App-Tabs aus Arkly heraus zuverlässig angenommen."
+    "notiz": "In Arkly öffnet Strg+, die Einstellungen nur noch einmal, auf der Seite der App."
   },
   "kosten": {
     "stufe": "patch",
-    "notiz": "Einstellungsdialog: Strg+, wird in herausgelösten Fenstern und App-Tabs aus Arkly heraus zuverlässig angenommen."
+    "notiz": "In Arkly öffnet Strg+, die Einstellungen nur noch einmal, auf der Seite der App."
   },
   "ordner": {
     "stufe": "patch",
-    "notiz": "Einstellungsdialog: Strg+, wird in herausgelösten Fenstern und App-Tabs aus Arkly heraus zuverlässig angenommen."
+    "notiz": "In Arkly öffnet Strg+, die Einstellungen nur noch einmal, auf der Seite der App."
   },
   "entzerrung": {
     "stufe": "patch",
-    "notiz": "Einstellungsdialog: Strg+, wird in herausgelösten Fenstern und App-Tabs aus Arkly heraus zuverlässig angenommen."
+    "notiz": "In Arkly öffnet Strg+, die Einstellungen nur noch einmal, auf der Seite der App."
   },
   "formulare": {
     "stufe": "patch",
-    "notiz": "Einstellungsdialog: Strg+, wird in herausgelösten Fenstern und App-Tabs aus Arkly heraus zuverlässig angenommen."
+    "notiz": "In Arkly öffnet Strg+, die Einstellungen nur noch einmal, auf der Seite der App."
   },
   "ava": {
     "stufe": "patch",
-    "notiz": "Einstellungsdialog: Strg+, wird in herausgelösten Fenstern und App-Tabs aus Arkly heraus zuverlässig angenommen."
+    "notiz": "In Arkly öffnet Strg+, die Einstellungen nur noch einmal, auf der Seite der App."
   },
   "baurecht": {
     "stufe": "patch",
-    "notiz": "Einstellungsdialog: Strg+, wird in herausgelösten Fenstern und App-Tabs aus Arkly heraus zuverlässig angenommen."
+    "notiz": "In Arkly öffnet Strg+, die Einstellungen nur noch einmal, auf der Seite der App."
   },
   "suite": {
     "stufe": "minor",
-    "notiz": "„Einstellungen …“ und Strg+, öffnen den Dialog bei aktivem App-Tab direkt auf der Seite der App; „Speicherort der Einstellungen“ steht nur noch auf der Seite „Allgemein“."
+    "notiz": "„Einstellungen …“ und Strg+, öffnen den Dialog bei aktivem App-Tab auf der Seite der App; „Speicherort der Einstellungen“ steht nicht mehr im Menü, sondern in den Einstellungen auf „Allgemein“."
   }
 }

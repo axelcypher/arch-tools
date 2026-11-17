@@ -216,15 +216,20 @@ export function App() {
    */
   const einstellungenImRahmen = () => {
     const app = useRahmen.getState().aktiv;
-    if (app) zustellen(app, { typ: EINSTELLUNGEN_OEFFNEN });
-    else einstellungenOeffnen('allgemein');
+    if (app) {
+      // Fokus in den Tab: dort liegt der Dialog, und nach dem Schließen kehrt der Fokus dorthin zurück
+      rahmen.current.get(app)?.focus();
+      zustellen(app, { typ: EINSTELLUNGEN_OEFFNEN });
+    } else einstellungenOeffnen('allgemein');
   };
   const einstellungenRef = useRef(einstellungenImRahmen);
   einstellungenRef.current = einstellungenImRahmen;
   useEffect(() => {
-    // vor dem Kürzel des eigenen Dialogs (Fangphase): bei aktivem App-Tab weitergeben, das eigene Kürzel tritt zurück
+    // vor dem Kürzel des eigenen Dialogs (Fangphase): bei aktivem App-Tab weitergeben, das eigene Kürzel tritt zurück –
+    // nicht, solange im Rahmen ein Dialog oder Menü offen ist (der Dialog des Tabs läge sonst darunter)
     const taste = (e: KeyboardEvent) => {
-      if (!(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey || e.key !== ',' || useEinstellungen.getState().offen || !useRahmen.getState().aktiv) return;
+      if (!(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey || e.key !== ',' || !useRahmen.getState().aktiv) return;
+      if (useEinstellungen.getState().offen || document.querySelector('.modal-backdrop, [role="dialog"], .menue')) return;
       e.preventDefault();
       einstellungenRef.current();
     };
