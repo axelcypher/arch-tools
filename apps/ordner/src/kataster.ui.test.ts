@@ -6,7 +6,8 @@ import { readProjectFile, writeArchive } from '@core/archive';
 import { createProject, leereMeta } from '@core/model';
 import { RueckfrageHost } from '@core/ui/Rueckfrage';
 import { VORGABE_KATASTER, vorlageLesen } from './kataster/kataster';
-import { useKataster } from './kataster/katasterStore';
+import { antragsordner, useKataster } from './kataster/katasterStore';
+import { pfadSpeichern } from '@core/einstellungen/pfade';
 import { vorlageQgs, vorlageQgz } from './__fixtures__/qgisVorlage';
 import { KatasterDialog } from './components/KatasterDialog';
 import { KatasterEinstellungen } from './components/KatasterEinstellungen';
@@ -176,6 +177,28 @@ describe('Ablage im Ordner des aktiven Antrags', () => {
     const h2 = await zeige(createElement(KatasterDialog, { basis: ORDNER, name: 'BS9', onClose: () => undefined }));
     expect(h2.textContent).toContain('Kein aktiver Antrag in der Projektdatei');
     expect(knopf(h2, 'Pläne exportieren').disabled).toBe(true);
+  });
+
+  it('nimmt den eingestellten Antragsordner („Pfade und Benennung“) statt fest „TÖB“ – auch beim Export', async () => {
+    await pfadSpeichern('ablage.permio.antragsordner', 'Anträge\\Bauamt\\');
+    try {
+      const p = readProjectFile(fs.eintraege.get(OAP)!);
+      p.meta.antrag = { name: 'BAUA 2' };
+      fs.setze(OAP, writeArchive(p));
+      await useKataster.getState().aendern({ ziel: 'antrag' });
+      const host = await zeige(createElement(KatasterDialog, { basis: ORDNER, name: 'BS9', onClose: () => undefined }));
+      expect(host.textContent).toContain('Ablage: Anträge/Bauamt/BAUA 2');
+      await klick(knopf(host, '4 Pläne exportieren'));
+      expect(fs.eintraege.has(`${ORDNER}/Anträge/Bauamt/BAUA 2/MUS BAUA ${jjmmtt()} Katasterplan A4.pdf`)).toBe(true);
+      expect([...fs.eintraege.keys()].some((k) => k.includes('/TÖB/'))).toBe(false);
+    } finally {
+      await pfadSpeichern('ablage.permio.antragsordner', undefined);
+    }
+    // ohne eigenen Wert die Vorgabe; der Ordner bleibt im Projektordner
+    expect(antragsordner()).toBe('TÖB');
+    expect(antragsordner('../TÖB/./Anträge/')).toBe('TÖB/Anträge');
+    expect(antragsordner(' / ')).toBe('TÖB');
+    expect(antragsordner('C:\\Anträge')).toBe('Anträge');
   });
 
   it('säubert den Antragsnamen aus der Projektdatei: kein „/“ oder „..“ führt aus dem Antragsordner', async () => {

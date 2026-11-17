@@ -56,6 +56,10 @@ Gewerk – in Ordnern, Blattnamen und der Rechnungsliste.
   gilt dann auch für Felder außerhalb des LV (Stammdaten, Bauleitung): Arkly fragt nach, obwohl diese Felder sich beim
   Verlassen selbst speichern – verloren geht dabei nichts. Ohne offenes LV übernimmt FABRIO eine laufende Eingabe vor
   dem Schließen und speichert sie.
+- **Aufbau** (design.md „Fläche und Karten“): Auf der Fläche stehen die Navigation als Seitenkarte und die Ansicht
+  als Karten mit Kartenkopf; jede Karte scrollt für sich, Werkzeugleisten stehen fest unter dem Kartenkopf.
+  Bautagebuch und Protokolle zeigen links die Liste, rechts den Bericht; der Rechnungseingang Scans, Vorschau und
+  Zuordnung als drei Karten (Listen in der Breite ziehbar).
 - **Navigation** (links, Breite ziehbar): Kostenübersicht, Rechnungen, Rechnungseingang; die **Gewerke** aus
   Ordnern, Kostenkontrolle und Prüfungen (Zahl der LV-Dateien, wenn es mehr als eine gibt); **Bauleitung**
   (Objektüberwachung nach HOAI Leistungsphase 8); Einstellungen (Strg+,). Die Einträge sind Knöpfe: mit Tab
@@ -70,8 +74,9 @@ Gewerk – in Ordnern, Blattnamen und der Rechnungsliste.
 
 ### Gewerk
 
-Kopf mit Kennung, Bezeichnung, Auftragnehmer und Ordner. Auf den Tabs Leistungsverzeichnis, Angebote und Auftrag
-rechts der **LV-Kopf**: die LV-Dateien des Gewerks (aktuelle zuerst, Archiv gekennzeichnet; Format im Tooltip),
+Eine Karte je Tab: im Kartenkopf Kennung und Bezeichnung, darunter die Tabs mit Auftragnehmer und Ordner, darunter
+die Werkzeugleiste des Tabs. Auf den Tabs Leistungsverzeichnis, Angebote und Auftrag rechts im Kartenkopf der
+**LV-Kopf**: die LV-Dateien des Gewerks (aktuelle zuerst, Archiv gekennzeichnet; Format im Tooltip),
 ein Menü „LV ▾“ (neues leeres LV, neues LV aus einer GAEB-Datei X81–X86; bei offenem LV dahinter die Befehle für
 das ganze LV: LV-Eigenschaften, Neu nummerieren, Drucken, GAEB-Export – ein Menü für alles zum LV, auch wenn
 ohne offenes LV nur die zwei Punkte zum Anlegen darin stehen) und „Speichern“ (Strg+S; übernimmt auch die gerade
@@ -97,11 +102,11 @@ Hinweis „wird in LV-Dateien (.aslv) nicht gespeichert – im eigenen Format (.
   Fenster wandern erst „Hinzufügen“, dann die Gliederungsknöpfe, zuletzt Rückgängig/Wiederholen ins Menü „Mehr“, und
   die Suche wird kürzer. Die Suche findet OZ und Kurztext (Treffer mit ihren Abschnitten; ohne
   Treffer eine Meldung mit „Suche leeren“, Esc leert). Tastatur in der Tabelle (Fokus sichtbar): ↑/↓ wählen, Enter
-  springt in den Kurztext des Seitenpanels, Esc dort zurück, Einfg neue Position. Bei schmalem Fenster (unter
-  etwa 1150 px) steht das Seitenpanel unter der Tabelle; die OZ-Spalte bleibt beim seitlichen Rollen stehen.
+  springt in den Kurztext der Karte „Eigenschaften“, Esc dort zurück, Einfg neue Position. Die Summen stehen fest
+  im Fuß der Karte; die OZ-Spalte bleibt beim seitlichen Rollen stehen.
 - Ein Zahlenfeld übernimmt nur, was geändert wurde: Ein Einheitspreis mit drei Nachkommastellen (z. B. aus GAEB),
   der gerundet angezeigt wird, bleibt beim Durchklicken unverändert.
-- **Seitenpanel** des gewählten Elements: OZ, Kurztext, Langtext (fett, kursiv, unterstrichen, Aufzählung –
+- **Eigenschaften** des gewählten Elements (Seitenkarte rechts, Breite ziehbar): OZ, Kurztext, Langtext (fett, kursiv, unterstrichen, Aufzählung –
   übernommen beim Verlassen, ein Schritt im Verlauf), Menge, Einheit (Vorschläge), Einheitspreis des
   Kostenansatzes, **Art der Position** (Normal-, Bedarfs-, Grund-, Wahl-, Zulageposition), Kostengruppe nach
   DIN 276, Nachtrag (0 = Hauptauftrag) und der Gesamtbetrag. In LV-Dateien des Originalprogramms gibt es nur

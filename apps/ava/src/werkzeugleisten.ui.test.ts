@@ -88,7 +88,7 @@ describe('Werkzeugleisten nach design.md „Kopf- und Werkzeugleisten“', () =>
   it('LV-Editor: sichtbar Position, Hinzufügen, Gliederung, Rückgängig, Suche; Abschnitt im Menü „Hinzufügen“, Duplizieren und Entfernen in „Mehr“', async () => {
     await zeige(createElement(GewerkAnsicht, { gewerk: 'G8', tab: 'lv' }));
     await warte(() => useAva.getState().lv && host.querySelector('.ava-lv-zeilen'));
-    const l = leiste('LV bearbeiten');
+    const l = leiste('Werkzeuge Leistungsverzeichnis');
     const sichtbar = knoepfe(l);
     expect(sichtbar).toEqual(expect.arrayContaining(['Position', 'Hinzufügen', 'Rückgängig', 'Wiederholen', 'Mehr']));
     // Gegenprobe: was ins Menü gewandert ist, steht nicht mehr als Knopf in der Leiste
@@ -111,8 +111,8 @@ describe('Werkzeugleisten nach design.md „Kopf- und Werkzeugleisten“', () =>
 
   it('Angebote: Umschalter, Bieter und Hauptknopf sichtbar; GAEB-Import in „Mehr“', async () => {
     await zeige(createElement(GewerkAnsicht, { gewerk: 'G8', tab: 'angebote' }));
-    await warte(() => host.querySelector('.toolbar.werkzeugleiste[aria-label="Angebote"]'));
-    const l = leiste('Angebote');
+    await warte(() => host.querySelector('.toolbar.werkzeugleiste[aria-label="Werkzeuge Angebote"]'));
+    const l = leiste('Werkzeuge Angebote');
     expect(knoepfe(l)).toEqual(['Preisspiegel', 'Preise erfassen', 'Bieter …', 'Preisspiegel drucken …', 'Mehr']);
     // die Ausgabe des Bildschirms ist der einzige Hauptknopf (Bernstein)
     expect([...l.querySelectorAll('button.primary')].map((b) => b.textContent?.trim())).toEqual(['Preisspiegel drucken …']);
@@ -135,8 +135,8 @@ describe('Werkzeugleisten nach design.md „Kopf- und Werkzeugleisten“', () =>
     };
     useAva.setState({ projekt: { ...p, ava: { ...p.ava, rechnungen: [...p.ava.rechnungen, d] } } });
     await zeige(createElement(RechnungenAnsicht));
-    await warte(() => host.querySelector('.toolbar.werkzeugleiste[aria-label="Rechnungen"]'));
-    const l = leiste('Rechnungen');
+    await warte(() => host.querySelector('.toolbar.werkzeugleiste[aria-label="Werkzeuge Rechnungen"]'));
+    const l = leiste('Werkzeuge Rechnungen');
     expect(knoepfe(l)).toEqual(['Neue Rechnung prüfen …', 'Mehr']);
     // Prüfen gibt nichts aus: Standardknopf, kein Bernstein-Hauptknopf in der Leiste
     expect(l.querySelector('button.primary')).toBeNull();
@@ -163,14 +163,14 @@ describe('Werkzeugleisten nach design.md „Kopf- und Werkzeugleisten“', () =>
 
   it('Mängel und Beteiligte: Hinzufügen sichtbar, PDF bzw. Übernahme in „Mehr“', async () => {
     await zeige(createElement(Maengel));
-    const m = leiste('Mängel');
+    const m = leiste('Werkzeuge Mängel');
     expect(knoepfe(m)).toEqual(['Mangel', 'Mängelanzeige mailen …', 'Mehr']);
     // Ausgabe des Bildschirms (PDF und Mailentwurf) ist der einzige Hauptknopf; „Mangel“ gibt nichts aus
     expect([...m.querySelectorAll('button.primary')].map((x) => x.textContent?.trim())).toEqual(['Mängelanzeige mailen …']);
     expect(await menue(mehr(m))).toEqual(['PDF ansehen / drucken', 'PDF im Projekt ablegen']);
     act(() => root?.unmount());
     await zeige(createElement(Beteiligte));
-    const b = leiste('Beteiligte');
+    const b = leiste('Werkzeuge Beteiligte');
     expect(knoepfe(b)).toEqual(['Beteiligter', 'Mehr']);
     expect(b.querySelector('button.primary')).toBeNull();
     expect(await menue(mehr(b))).toEqual(['Aus Stammdaten und Gewerken übernehmen']);
@@ -180,7 +180,7 @@ describe('Werkzeugleisten nach design.md „Kopf- und Werkzeugleisten“', () =>
     await zeige(createElement(GewerkAnsicht, { gewerk: 'G8', tab: 'lv' }));
     await warte(() => useAva.getState().lv && host.querySelector('.ava-lv-zeilen'));
     act(() => useAva.getState().setAuswahl(null));
-    const l = leiste('LV bearbeiten');
+    const l = leiste('Werkzeuge Leistungsverzeichnis');
     const vorher = elementzahl();
     expect(await waehle(mehr(l), 'Duplizieren')).toEqual({ gesperrt: true, hinweis: 'Erst wählen' });
     expect(await waehle(mehr(l), 'Entfernen')).toEqual({ gesperrt: true, hinweis: 'Erst wählen' });
@@ -221,7 +221,7 @@ describe('Werkzeugleisten nach design.md „Kopf- und Werkzeugleisten“', () =>
     try {
       await zeige(createElement(GewerkAnsicht, { gewerk: 'G8', tab: 'lv' }));
       await warte(() => useAva.getState().lv && host.querySelector('.ava-lv-zeilen'));
-      const l = leiste('LV bearbeiten');
+      const l = leiste('Werkzeuge Leistungsverzeichnis');
       const weg = () => [...l.querySelectorAll<HTMLElement>(':scope > [data-eintrag][hidden]')].map((x) => x.dataset.eintrag);
       const breite = async (b: number) => {
         verfuegbar = b;

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { AnsichtKarte } from '../AnsichtKarte';
 import { bestaetigen, meldung } from '@core/ui/Rueckfrage';
 import { Symbol } from '@core/ui/Symbol';
 import type { GewerkAngaben } from '../../avaDaten';
@@ -66,9 +67,9 @@ export function AuftragAnsicht({ gewerk }: { gewerk: string }) {
   const nachtragSetzen = (nr: number, patch: Partial<Nachtrag>) => aendern((l) => ({ ...l, nachtraege: l.nachtraege.map((n) => (n.nr === nr ? { ...n, ...patch } : n)) }));
 
   return (
-    <div className="ava-auftrag-seite">
-      <section className="ava-karte">
-        <h2>Vergabe</h2>
+    <AnsichtKarte titel="Auftrag" className="ava-auftrag-seite">
+      <section className="ava-abschnitt">
+        <h3>Vergabe</h3>
         {!lv ? (
           <p className="muted">Kein LV geöffnet – Vergabe und Nachträge stehen im LV. Die Kostenkontrolle lässt sich unten trotzdem pflegen.</p>
         ) : (
@@ -148,8 +149,8 @@ export function AuftragAnsicht({ gewerk }: { gewerk: string }) {
       </section>
 
       {lv && (
-        <section className="ava-karte">
-          <h2>Nachträge</h2>
+        <section className="ava-abschnitt">
+          <h3>Nachträge</h3>
           {nurAslv && <p className="warning-text small-text">{aslvHinweis(ASLV_NICHT_GESPEICHERT.nachtraege)}. Nachtragspositionen im LV (Feld „Nachtrag“) bleiben erhalten.</p>}
           <table className="ava-tabelle">
             <thead>
@@ -220,8 +221,8 @@ export function AuftragAnsicht({ gewerk }: { gewerk: string }) {
         </section>
       )}
 
-      <section className="ava-karte">
-        <h2>Kostenkontrolle {blatt ? `(Blatt „${blatt.blattName.trim()}“)` : ''}</h2>
+      <section className="ava-abschnitt">
+        <h3>Kostenkontrolle {blatt ? `(Blatt „${blatt.blattName.trim()}“)` : ''}</h3>
         {!projekt.kk ? (
           <p className="muted">Keine Kostenkontrolle im Projekt.</p>
         ) : !blatt ? (
@@ -231,7 +232,7 @@ export function AuftragAnsicht({ gewerk }: { gewerk: string }) {
             <div className="muted small-text">
               Auftragnehmer: {blatt.auftragnehmer || '—'} · Kostenschätzung: {euro(blatt.kostenschaetzung)}
             </div>
-            <table className="ava-tabelle">
+            <table className="summary-table text">
               <thead>
                 <tr>
                   <th>Nr.</th>
@@ -251,7 +252,7 @@ export function AuftragAnsicht({ gewerk }: { gewerk: string }) {
                 ))}
               </tbody>
               <tfoot>
-                <tr>
+                <tr className="summe">
                   <td colSpan={3}>Kostenanschlag</td>
                   <td className="num">{euro(blatt.anschlag.summe)}</td>
                 </tr>
@@ -264,8 +265,8 @@ export function AuftragAnsicht({ gewerk }: { gewerk: string }) {
         )}
       </section>
 
-      <section className="ava-karte">
-        <h2>Auftragnehmer & Zahlung</h2>
+      <section className="ava-abschnitt">
+        <h3>Auftragnehmer & Zahlung</h3>
         <div className="ava-formular">
           <Feld label="Firma">
             <TextEingabe wert={angaben.firma ?? blatt?.auftragnehmer ?? auftragBieter?.name} onChange={(firma) => angabenSetzen({ firma })} />
@@ -286,8 +287,8 @@ export function AuftragAnsicht({ gewerk }: { gewerk: string }) {
       </section>
 
       {g && g.auftrag.length > 0 && (
-        <section className="ava-karte">
-          <h2>Dokumente im Auftragsordner</h2>
+        <section className="ava-abschnitt">
+          <h3>Dokumente im Auftragsordner</h3>
           <table className="ava-tabelle ava-dateien">
             <tbody>
               {g.auftrag
@@ -308,6 +309,6 @@ export function AuftragAnsicht({ gewerk }: { gewerk: string }) {
           </table>
         </section>
       )}
-    </div>
+    </AnsichtKarte>
   );
 }
