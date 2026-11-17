@@ -1448,7 +1448,7 @@ code {
   --danger: #ef6b5b;
   --input-bg: #262a31;
   --hover: #2b3038;
-  --tabelle-gruppe: #262a31;
+  --tabelle-gruppe: #24282e;
   --line-soft: #2b3038;
   --room-bg: #3a3120;
   --room-border: #b8912c;
@@ -1623,6 +1623,7 @@ code {
   --input-bg: #ffffff;
   --hover: #f1f3f6;
   --line-soft: #eef0f3;
+  --tabelle-gruppe: #f1f3f6;
   --warn-bg: #fff4e5;
   --warn-border: #f5c26b;
   --warn-text: #8a5300;

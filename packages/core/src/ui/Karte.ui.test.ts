@@ -78,6 +78,7 @@ describe('Fläche und Karten', () => {
     const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'base.css'), 'utf8');
     expect(css).toMatch(/--spalt: 8px;/);
     expect(css.match(/--karte-schatten:/g)?.length).toBe(2);
+    expect(css).toMatch(/\n\.report \{[^}]*--tabelle-gruppe: #f1f3f6;/);
     expect(css).toMatch(/\.karte-rumpf \{[^}]*overflow: auto;/);
     expect(css).toMatch(/\.flaeche \{[^}]*overflow: hidden;/);
     expect(css).toMatch(/\.app:has\(\.flaeche:not\(\.modal \*\)\) > \.toolbar \{/);

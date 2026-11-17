@@ -47,10 +47,11 @@ Weitere: `--radius-s` 6px (Felder, Knöpfe), `--radius` 8px (Dialoge, Karten), `
 Zahlen in Tabellen und Feldern stehen rechtsbündig in Tabellenziffern (`.num`, `input.num`).
 
 Kennzahlentabellen nehmen `.summary-table` (Spaltenköpfe rechtsbündig, passend zu Zahlenspalten); `.text` für reine
-Texttabellen: Spaltenköpfe linksbündig (`.summary-table.text`, z. B. Platzhalter-Referenz). Gemischte Tabellen (Text- und Zahlenspalten,
-z. B. Kostengruppe | von | Mittel | bis) nehmen `.text` und markieren die Zahlenspalten mit `th.num` und `td.num`.
-Zeilen mit Feldern (Eingaben je Zeile) bekommen `.felder`: oben bündig, Text ohne Feld fluchtet mit dem Feldtext. Gruppenzeilen `tr.gruppe` (getönt mit `--tabelle-gruppe`, halbfett),
-Summenzeilen `tr.summe` (halbfett, kräftigere Linie darüber); `tr.strong` bleibt für einzelne hervorgehobene Zeilen.
+Texttabellen: Spaltenköpfe linksbündig (`.summary-table.text`, z. B. Platzhalter-Referenz). Gemischte Tabellen (Text-
+und Zahlenspalten, z. B. Kostengruppe | von | Mittel | bis) nehmen `.text` und markieren die Zahlenspalten mit `th.num`
+und `td.num`. Zeilen mit Feldern (Eingaben je Zeile) bekommen `.felder`: oben bündig, Text ohne Feld fluchtet mit dem
+Feldtext. Gruppenzeilen `tr.gruppe` (getönt mit `--tabelle-gruppe`, halbfett), Summenzeilen `tr.summe` (halbfett,
+kräftigere Linie darüber); `tr.strong` bleibt für einzelne hervorgehobene Zeilen.
 Diese Tabelle ersetzt die eigenen Tabellenklassen der Apps.
 
 ## Überschriften
