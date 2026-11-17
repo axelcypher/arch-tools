@@ -112,19 +112,7 @@
   stroke-width: 1;
 }
 
-/* ---------- Fußzeile der Zeichenkarte: Bedienhinweis, Eingabe, Koordinaten, Maßstab (Canvas.tsx per Portal) ---------- */
-
-.qu-fuss {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: var(--s3);
-}
-
-.qu-fuss[hidden] {
-  display: none;
-}
+/* ---------- Fußzeile der Zeichenkarte: Bedienhinweis, Eingabe, Koordinaten, Maßstab (Canvas.tsx, ZeichenFussInhalt) ---------- */
 
 .qu-fuss-text {
   min-width: 0;
@@ -1006,27 +994,6 @@
 
 /* ---------- Karten (docs/design.md „Fläche und Karten“; Layout aus base.css) ---------- */
 
-/* Projektkarte: Abschnitte Projekt, Geschosse und Flächen mit Trennlinien bis an den Rand (bündiger Rumpf) */
-.qu-projekt-karte section {
-  padding: var(--s3) var(--karte-pad);
-  border-bottom: 1px solid var(--border);
-}
-
-.qu-projekt-karte section:last-child {
-  border-bottom: none;
-}
-
-/* Abschnittsüberschriften wie der Kartenkopf: die Karte hat keinen eigenen Kopf */
-.qu-projekt-karte h2 {
-  font-size: var(--fs-l);
-  font-weight: 600;
-  margin: 0 0 var(--s2);
-}
-
-.qu-projekt-karte .section-head h2 {
-  margin: 0;
-}
-
 /* Auswertung unter der Karte der Auswahl: so hoch wie ihr Inhalt, höchstens gut die Hälfte der Spalte */
 .qu-eigenschaften > .qu-auswertung {
   flex: 0 1 auto;
@@ -1144,4 +1111,25 @@
   height: auto;
   white-space: normal;
   text-align: left;
+}
+
+/* schmale Seitenkarten: der Titel samt „?“ behält seine Breite, die Aktionen rücken in eine zweite Zeile – das „?“
+   liegt nie über dem Titel (Wörter wie „Auswertung“ haben keine Trennstelle). Gemeldet an core (.karte-kopf). */
+.qu-flaeche .karte-kopf {
+  flex-wrap: wrap;
+  row-gap: var(--s1);
+}
+
+.qu-flaeche .karte-titel {
+  flex: 1 0 auto;
+}
+
+.qu-flaeche .karte-aktionen {
+  margin-left: auto;
+}
+
+/* Abschnittskopf mit Knopf („Geschosse“ + „+ Geschoss …“): bei schmaler Karte umbrechen statt abschneiden */
+.qu-flaeche .section-head {
+  flex-wrap: wrap;
+  gap: var(--s1);
 }

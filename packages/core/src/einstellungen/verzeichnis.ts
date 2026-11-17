@@ -69,6 +69,12 @@ export interface PfadEinstellung {
   id: string;
   /** wovon der Wert abhängt (Baum auf der Seite „Pfade und Benennung“, vollständige Vorschau) */
   bezug: PfadBezug;
+  /**
+   * Abweichung einer gemeinsamen Angabe für eine App (`gemeinsam.ts`): steht unter der gemeinsamen und ist sonst
+   * eingeklappt. `unterordner`: Ordner im gemeinsamen Ordner (leer = direkt darin); `ersetzt`: eigener Wert statt des
+   * gemeinsamen (leer = der gemeinsame).
+   */
+  abweichungVon?: { id: string; art: 'unterordner' | 'ersetzt' };
   /** Apps, die die Einstellung nutzen */
   apps: AppKennung[];
   thema: PfadThema;

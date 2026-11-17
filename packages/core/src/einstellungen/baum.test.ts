@@ -53,14 +53,16 @@ describe('Baum der Pfadeinstellungen: Abgleich mit dem Export', () => {
   });
 
   for (const app of ['flaechenrechner', 'grz', 'kosten'] as const)
-    it(`${app}: Excel und PDF im Berechnungsordner, der relativ zum Projektordner liegt`, () => {
-      const w: Record<string, string> = { [`export.berechnungsordner.${app}`]: 'Ber/Ergebnis', [`export.excel.${app}`]: 'A', [`export.pdf.${app}`]: 'B' };
-      const ziel = direktExportZielAus({ berechnungsordner: 'Ber/Ergebnis', dateinameExcel: 'A', dateinamePdf: 'B', pdfMitspeichern: true }, { datei, werte, inhalt: 'X' });
+    it(`${app}: Excel und PDF im Unterordner der App im gemeinsamen Berechnungsordner, der relativ zum Projektordner liegt`, async () => {
+      const w: Record<string, string> = { 'export.berechnungsordner': 'Ber', [`export.unterordner.${app}`]: 'Ergebnis', [`export.excel.abweichend.${app}`]: 'A', [`export.pdf.abweichend.${app}`]: 'B' };
+      const { exportAusWerten } = await import('./pfade');
+      const pfade = exportAusWerten(app, (id) => w[id] ?? pfadEinstellung(id).vorgabe);
+      const ziel = direktExportZielAus(pfade, { datei, werte, inhalt: 'X' });
       expect('ordner' in ziel && ziel).toMatchObject({ xlsx: 'A.xlsx', pdf: 'B.pdf' });
-      const ordner = vollerOrt(pfadEinstellung(`export.berechnungsordner.${app}`), (x) => w[x])!;
-      expect(ordner.von).toBe('projekt');
+      const ordner = vollerOrt(pfadEinstellung(`export.unterordner.${app}`), (x) => w[x])!;
+      expect(ordner).toEqual({ von: 'projekt', teile: ['Ber', 'Ergebnis'] });
       expect('ordner' in ziel && ziel.ordner.replace(/\\/g, '/')).toBe([projekt, ...ordner.teile].join('/'));
-      // die Dateinamen hängen am Berechnungsordner
-      for (const n of [`export.excel.${app}`, `export.pdf.${app}`]) expect(vollerOrt(pfadEinstellung(n), (x) => w[x])!.teile, n).toEqual([...ordner.teile, w[n]]);
+      // die Dateinamen der App hängen an ihrem Unterordner
+      for (const n of [`export.excel.abweichend.${app}`, `export.pdf.abweichend.${app}`]) expect(vollerOrt(pfadEinstellung(n), (x) => w[x])!.teile, n).toEqual([...ordner.teile, w[n]]);
     });
 });

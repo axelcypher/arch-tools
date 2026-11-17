@@ -52,10 +52,12 @@ describe('QUADRIO: Kartenlayout (Richtung C, docs/design.md „Fläche und Karte
     expect(links.matches('.leiste')).toBe(true);
     const projekt = links.querySelector(':scope > section.karte')!;
     expect(name(projekt)).toBe('Projekt, Geschosse und Flächen');
-    expect([...projekt.querySelectorAll('.karte-rumpf > section h2')].map((h) => h.textContent)).toEqual(['Projekt', 'Geschosse', 'Flächen – EG']);
+    expect([...projekt.querySelectorAll('.karte-rumpf.abschnitte > section h2')].map((h) => h.textContent)).toEqual(['Projekt', 'Geschosse', 'Flächen – EG']);
     expect(links.querySelector(':scope > .leiste-griff')?.getAttribute('aria-label')).toBe('Breite der Projektkarte');
     // Mitte: Zeichenkarte mit Ansicht-Umschalter und Zeichenfläche im Planbereich
-    expect(mitte.matches('section.karte.zeichen-karte')).toBe(true);
+    // Hauptbereich der App: genau ein main je Fenster
+    expect(mitte.matches('main.karte.zeichen-karte')).toBe(true);
+    expect(host.querySelectorAll('main')).toHaveLength(1);
     expect(name(mitte)).toBe('Grundriss');
     expect(mitte.querySelector('.zeichen-flaeche .view-switch')).not.toBeNull();
     expect(mitte.querySelector('.zeichen-flaeche svg.canvas')).not.toBeNull();
@@ -63,11 +65,11 @@ describe('QUADRIO: Kartenlayout (Richtung C, docs/design.md „Fläche und Karte
     expect(rechts.matches('.leiste')).toBe(true);
     expect(rechts.querySelector(':scope > .leiste-griff.leiste-griff-links')).not.toBeNull();
     const karten = [...rechts.querySelectorAll(':scope > .flaechen-spalte > section.karte')];
-    // Name wie ein Vorleseprogramm ihn hört: nur der Titel – das „?“ steht in den Aktionen rechts, nicht im h2
+    // Name wie ein Vorleseprogramm ihn hört: nur der Titel – das „?“ steht hinter dem h2 (core `hilfe`), nicht darin
     expect(karten.map(name)).toEqual(['Geschoss', 'Auswertung']);
     for (const k of karten) {
       expect(k.querySelector('.karte-kopf h2 button')).toBeNull();
-      expect(k.querySelector('.karte-kopf .karte-aktionen .hilfe-knopf')).not.toBeNull();
+      expect(k.querySelector('.karte-kopf .karte-titel > h2 + .hilfe-knopf')).not.toBeNull();
     }
     // Gegenprobe: die alten Layout-Klassen sind weg
     expect(host.querySelector('.workspace, .sidebar, .sidebar-left, .sidebar-right, main.main')).toBeNull();
@@ -79,13 +81,14 @@ describe('QUADRIO: Kartenlayout (Richtung C, docs/design.md „Fläche und Karte
     act(() => useEditor.getState().select(raum.id));
     const karten = [...host.querySelectorAll('.qu-eigenschaften > section.karte')];
     expect(karten.map((k) => k.querySelector('.karte-kopf h2')?.textContent)).toEqual(['Raum', 'Auswertung']);
-    // Aktionen rechts im Kopf: Nachschlagen, dann Löschen
-    expect([...karten[0].querySelectorAll('.karte-aktionen button')].map((b) => b.textContent)).toEqual(['?', 'Löschen']);
+    // „?“ hinter dem Titel, Löschen rechts in den Aktionen
+    expect(karten[0].querySelector('.karte-titel .hilfe-knopf')).not.toBeNull();
+    expect([...karten[0].querySelectorAll('.karte-aktionen button')].map((b) => b.textContent)).toEqual(['Löschen']);
   });
 
   it('Bedienhinweis, Eingabe, Koordinaten und Maßstab stehen in der Fußzeile der Zeichenkarte, nicht im Planbereich', () => {
     const host = render();
-    const karte = host.querySelector('section.zeichen-karte')!;
+    const karte = host.querySelector('main.zeichen-karte')!;
     const fuss = karte.querySelector(':scope > footer.karte-fuss.zeichen-fuss')!;
     const plan = karte.querySelector(':scope > .zeichen-flaeche')!;
     expect(fuss.querySelector('.hud-zeile .hud-hint-text')?.textContent).toMatch(/Klicken: wählen/);
@@ -94,6 +97,8 @@ describe('QUADRIO: Kartenlayout (Richtung C, docs/design.md „Fläche und Karte
     expect(fuss.querySelector('.scalebar[role="img"]')?.getAttribute('aria-label')).toMatch(/^Maßstab: [\d,]+ m$/);
     // Gegenprobe: nichts davon liegt über dem Plan
     expect(plan.querySelector('.hud, .hud-zeile, .hud-hint, .scalebar, .hud-coords')).toBeNull();
+    // Koordinaten dauerhaft da (die Fußzeile springt nicht): außerhalb des Plans „–“
+    expect(fuss.querySelector('.hud-coords')?.textContent).toBe('–');
     // Koordinaten erscheinen beim Überfahren ebenfalls in der Fußzeile
     act(() => useEditor.getState().setTool('rect'));
     const svg = plan.querySelector('svg.canvas')!;
@@ -109,7 +114,7 @@ describe('QUADRIO: Kartenlayout (Richtung C, docs/design.md „Fläche und Karte
   it('3D-Ansicht: kein Grundriss-Hinweis und kein Maßstab in der Fußzeile, stattdessen die Bedienung der 3D-Ansicht', () => {
     const host = render();
     act(() => useEditor.getState().setMainView('3d'));
-    const karte = host.querySelector('section.zeichen-karte')!;
+    const karte = host.querySelector('main.zeichen-karte')!;
     expect(name(karte)).toBe('3D-Ansicht');
     const fuss = karte.querySelector(':scope > footer.zeichen-fuss')!;
     expect(fuss.querySelector('.scalebar, .hud-zeile')).toBeNull();
@@ -142,6 +147,10 @@ describe('QUADRIO: Kartenlayout (Richtung C, docs/design.md „Fläche und Karte
     // Hinweis in der Fußzeile: Knöpfe schrumpfen nicht (nur der Text kürzt), Fokusrahmen nach innen
     expect(css).toMatch(/\.hud-hint \.hud-hint-knopf\s*\{[^}]*flex:\s*none/);
     expect(css).toMatch(/\.karte-fuss button:focus-visible\s*\{[^}]*outline-offset:\s*-2px/);
+    // schmale Seitenkarten: Titel samt „?“ behält seine Breite, Aktionen und Abschnittsknöpfe brechen um
+    expect(css).toMatch(/\.qu-flaeche \.karte-kopf\s*\{[^}]*flex-wrap:\s*wrap/);
+    expect(css).toMatch(/\.qu-flaeche \.karte-titel\s*\{[^}]*flex:\s*1 0 auto/);
+    expect(css).toMatch(/\.qu-flaeche \.section-head\s*\{[^}]*flex-wrap:\s*wrap/);
   });
 
   it('Seitenkarten merken ihre Breite (BreitenLeiste, localStorage) – auch nach erneutem Öffnen', () => {

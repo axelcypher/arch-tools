@@ -224,7 +224,9 @@ export function FelderAnsicht({ offen, gesperrt }: { offen: OffenesFormular; ges
                               </>
                             ) : undefined
                           }
-                          ariaLabel={`Abschnitt ${s.reihen.slice(0, n).reduce((z, r) => z + r.length, 0) + reihe.indexOf(a) + 1} auf Seite ${s.i + 1}`}
+                          // Abschnitte stehen unter der Seitenüberschrift (h2): Kopf als h3, keine eigene Region je Abschnitt
+                          ebene={3}
+                          als="div"
                         >
                           {zeilen(a.felder).map((z) => (
                             <div key={z[0].schluessel} className="fo-zeile">

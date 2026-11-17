@@ -42,7 +42,7 @@ function haus(): { p: Project; ids: string[] } {
   return { p, ids: raeume.map((r) => r.id) };
 }
 
-const listenKnoepfe = (host: HTMLElement) => [...host.querySelectorAll<HTMLButtonElement>('.qu-projekt-karte .shape-list .list-btn')].filter((b) => b.querySelector('.raum-nr'));
+const listenKnoepfe = (host: HTMLElement) => [...host.querySelectorAll<HTMLButtonElement>('.karte-rumpf.abschnitte .shape-list .list-btn')].filter((b) => b.querySelector('.raum-nr'));
 const klick = (el: HTMLElement, init: MouseEventInit = {}) => act(() => void el.dispatchEvent(new MouseEvent('click', { bubbles: true, ...init })));
 
 describe('QUADRIO: Flächenliste mit Mehrfachauswahl (B7)', () => {

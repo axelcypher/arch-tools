@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { AnsichtKarte } from '../AnsichtKarte';
 import { bestaetigen, meldung } from '@core/ui/Rueckfrage';
 import { Symbol } from '@core/ui/Symbol';
 import { Werkzeugleiste } from '@core/ui/Werkzeugleiste';
@@ -108,69 +109,69 @@ export function Maengel() {
     }
   };
 
+  const werkzeuge = (
+    <Werkzeugleiste
+      name="Werkzeuge Mängel"
+      teile={[
+        {
+          id: 'mangel',
+          inhalt: (
+            <button title="Mangel hinzufügen" onClick={neu}>
+              <Symbol name="plus" /> Mangel
+            </button>
+          ),
+        },
+        {
+          id: 'filter',
+          rang: 1,
+          menue: [
+            { text: 'Gewerk', unter: [{ text: 'alle Gewerke', gewaehlt: !gewerk, aktion: () => setGewerk('') }, ...gewerke.map((g) => ({ text: `${gewerkZweistellig(g)} ${firmaVon(g)}`.trim(), gewaehlt: gewerk === g, aktion: () => setGewerk(g) }))] },
+            {
+              text: 'Anzeigen',
+              unter: [
+                { text: 'offene und angezeigte', gewaehlt: filter === 'offen', aktion: () => filterSetzen('offen') },
+                { text: 'alle', gewaehlt: filter === 'alle', aktion: () => filterSetzen('alle') },
+              ],
+            },
+          ],
+          inhalt: (
+            <>
+              <select value={gewerk} onChange={(e) => setGewerk(e.target.value)} aria-label="Gewerk">
+                <option value="">alle Gewerke</option>
+                {gewerke.map((g) => (
+                  <option key={g} value={g}>
+                    {gewerkZweistellig(g)} {firmaVon(g)}
+                  </option>
+                ))}
+              </select>
+              <select value={filter} onChange={(e) => filterSetzen(e.target.value as 'offen' | 'alle')} aria-label="Anzeigen">
+                <option value="offen">offene und angezeigte</option>
+                <option value="alle">alle</option>
+              </select>
+            </>
+          ),
+        },
+        { abstand: true },
+        {
+          id: 'anzeige',
+          rang: 2,
+          menue: { text: 'Mängelanzeige mailen …', deaktiviert: !offeneListe.length || !gewerk, hinweis: !gewerk ? 'Erst Gewerk wählen' : offeneListe.length ? undefined : 'Keine offenen Mängel', titel: 'Mängelanzeige mit den offenen Mängeln an die Firma des Gewerks (Mailentwurf mit PDF)', aktion: () => void pdf('mail') },
+          inhalt: (
+            <button className="primary" onClick={() => void pdf('mail')} disabled={!offeneListe.length || !gewerk} title={!gewerk ? 'Erst Gewerk wählen' : offeneListe.length ? 'Mängelanzeige mit den offenen Mängeln an die Firma des Gewerks (Mailentwurf mit PDF)' : 'Keine offenen Mängel'}>
+              Mängelanzeige mailen …
+            </button>
+          ),
+        },
+      ]}
+      mehr={() => [
+        { text: 'PDF ansehen / drucken', symbol: 'drucken', deaktiviert: !liste.length, hinweis: liste.length ? undefined : 'Keine Mängel', titel: 'Mängelliste als PDF ansehen bzw. drucken', aktion: () => void pdf('zeigen') },
+        { text: 'PDF im Projekt ablegen', deaktiviert: !liste.length, hinweis: liste.length ? undefined : 'Keine Mängel', titel: 'Mängelliste als PDF im Projektordner ablegen', aktion: () => void pdf('ablegen') },
+      ]}
+    />
+  );
+
   return (
-    <div className="ava-seite">
-      <div className="ava-seite-kopf">
-        <h1>Mängel</h1>
-      </div>
-      <Werkzeugleiste
-        name="Mängel"
-        teile={[
-          {
-            id: 'mangel',
-            inhalt: (
-              <button title="Mangel hinzufügen" onClick={neu}>
-                <Symbol name="plus" /> Mangel
-              </button>
-            ),
-          },
-          {
-            id: 'filter',
-            rang: 1,
-            menue: [
-              { text: 'Gewerk', unter: [{ text: 'alle Gewerke', gewaehlt: !gewerk, aktion: () => setGewerk('') }, ...gewerke.map((g) => ({ text: `${gewerkZweistellig(g)} ${firmaVon(g)}`.trim(), gewaehlt: gewerk === g, aktion: () => setGewerk(g) }))] },
-              {
-                text: 'Anzeigen',
-                unter: [
-                  { text: 'offene und angezeigte', gewaehlt: filter === 'offen', aktion: () => filterSetzen('offen') },
-                  { text: 'alle', gewaehlt: filter === 'alle', aktion: () => filterSetzen('alle') },
-                ],
-              },
-            ],
-            inhalt: (
-              <>
-                <select value={gewerk} onChange={(e) => setGewerk(e.target.value)} aria-label="Gewerk">
-                  <option value="">alle Gewerke</option>
-                  {gewerke.map((g) => (
-                    <option key={g} value={g}>
-                      {gewerkZweistellig(g)} {firmaVon(g)}
-                    </option>
-                  ))}
-                </select>
-                <select value={filter} onChange={(e) => filterSetzen(e.target.value as 'offen' | 'alle')} aria-label="Anzeigen">
-                  <option value="offen">offene und angezeigte</option>
-                  <option value="alle">alle</option>
-                </select>
-              </>
-            ),
-          },
-          { abstand: true },
-          {
-            id: 'anzeige',
-            rang: 2,
-            menue: { text: 'Mängelanzeige mailen …', deaktiviert: !offeneListe.length || !gewerk, hinweis: !gewerk ? 'Erst Gewerk wählen' : offeneListe.length ? undefined : 'Keine offenen Mängel', titel: 'Mängelanzeige mit den offenen Mängeln an die Firma des Gewerks (Mailentwurf mit PDF)', aktion: () => void pdf('mail') },
-            inhalt: (
-              <button className="primary" onClick={() => void pdf('mail')} disabled={!offeneListe.length || !gewerk} title={!gewerk ? 'Erst Gewerk wählen' : offeneListe.length ? 'Mängelanzeige mit den offenen Mängeln an die Firma des Gewerks (Mailentwurf mit PDF)' : 'Keine offenen Mängel'}>
-                Mängelanzeige mailen …
-              </button>
-            ),
-          },
-        ]}
-        mehr={() => [
-          { text: 'PDF ansehen / drucken', symbol: 'drucken', deaktiviert: !liste.length, hinweis: liste.length ? undefined : 'Keine Mängel', titel: 'Mängelliste als PDF ansehen bzw. drucken', aktion: () => void pdf('zeigen') },
-          { text: 'PDF im Projekt ablegen', deaktiviert: !liste.length, hinweis: liste.length ? undefined : 'Keine Mängel', titel: 'Mängelliste als PDF im Projektordner ablegen', aktion: () => void pdf('ablegen') },
-        ]}
-      />
+    <AnsichtKarte titel="Mängel" leiste={werkzeuge}>
       <div className="ava-rollen">
       <table className="ava-tabelle ava-maengel-tabelle">
         <thead>
@@ -242,6 +243,6 @@ export function Maengel() {
       </table>
       </div>
       {behalten.size > 0 && <p className="muted small-text">Abgeblendete Mängel sind erledigt bzw. abgenommen und verschwinden beim nächsten Filterwechsel.</p>}
-    </div>
+    </AnsichtKarte>
   );
 }

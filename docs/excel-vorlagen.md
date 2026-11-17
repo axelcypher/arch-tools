@@ -20,8 +20,9 @@ Im Excel-Dialog unter **Eigene Vorlage**:
 - **Exportieren** (Werkzeugleiste von QUADRIO, TERRIO, NUMIO) speichert ohne Dialog: mit der eingestellten Vorlage
   (sonst dem Standardlayout) als `.xlsx` im **Berechnungsordner** des Projekts, mit dem Dateinamen aus den
   Einstellungen („Pfade und Benennung“, Vorgabe `{PROJEKT_KUERZEL} {DATUM} {Inhalt}`). Ist „PDF mitspeichern“ an,
-  entsteht das PDF daneben. Der Berechnungsordner liegt im Projektordner (Vorgabe QUADRIO `03 Berechnungen/Flächen`,
-  TERRIO `03 Berechnungen/Nachweise`, NUMIO `03 Berechnungen/Kosten`) und wird bei Bedarf angelegt. Der Tooltip nennt
+  entsteht das PDF daneben. Der Berechnungsordner liegt im Projektordner und gilt gemeinsam (Vorgabe
+  `03 Berechnungen`), darin je App ein Unterordner (QUADRIO `Flächen`, TERRIO `Nachweise`, NUMIO `Kosten`); er wird bei
+  Bedarf angelegt. Der Tooltip nennt
   Ziel und Formate.
 - Gibt es eine der Dateien schon, fragt die App „‚Name.xlsx‘ ersetzen?“ mit **Abbrechen** (Standard) und
   **Ersetzen** – still überschrieben wird nie.

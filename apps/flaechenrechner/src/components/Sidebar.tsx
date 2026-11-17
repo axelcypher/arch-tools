@@ -89,7 +89,7 @@ export function Sidebar() {
       titel="Breite der Projektkarte"
       mitteMin={320}
     >
-      <Karte ariaLabel="Projekt, Geschosse und Flächen" buendig className="qu-projekt-karte">
+      <Karte ariaLabel="Projekt, Geschosse und Flächen" abschnitte>
         <section>
           <h2>Projekt</h2>
           <ProjektInfo />
