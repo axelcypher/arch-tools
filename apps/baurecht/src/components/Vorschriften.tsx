@@ -6,7 +6,8 @@ import { EBENEN, einheitName, normTitel, paragrafName, THEMEN } from '@core/baur
 import type { Pruefstand } from '../pruefung';
 import { useBaurecht } from '../store';
 import { suchNorm, textPasst } from '../suche';
-import { AMPEL_TEXT, AmpelMarke, datum, inBereichZeigen, nb, STATUSPUNKT } from './Ampel';
+import { Karte } from '@core/ui/Karte';
+import { AMPEL_TEXT, AmpelMarke, datum, inBereichZeigen, nb, scrollBereich, STATUSPUNKT } from './Ampel';
 
 type Gruppierung = 'offen' | 'ebene' | 'thema';
 
@@ -380,7 +381,10 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
     }
     const zeile = gewaehlteZeile();
     if (zeile) inBereichZeigen(liste.current, zeile, 'mitte');
-    else if (liste.current) liste.current.scrollTop = 0;
+    else {
+      const r = scrollBereich(liste.current);
+      if (r) r.scrollTop = 0;
+    }
   }, [w.gruppierung]);
   // Suche oder Filter geändert (auch geleert bzw. zurückgesetzt): die gewählte Zeile mittig einblenden, sobald sie
   // wieder in der Liste steht
@@ -405,8 +409,19 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
       const m = menue.current;
       if (m?.open && !m.contains(e.target as Node)) m.open = false;
     };
+    // die feste Lage des Menüs stimmt nach einer Größenänderung bzw. wenn die Karte darunter scrollt nicht mehr – dann schließen
+    const groesse = (e: Event) => {
+      const m = menue.current;
+      if (m?.open && !(e.type === 'scroll' && m.contains(e.target as Node))) m.open = false;
+    };
     document.addEventListener('mousedown', zu);
-    return () => document.removeEventListener('mousedown', zu);
+    window.addEventListener('resize', groesse);
+    document.addEventListener('scroll', groesse, true);
+    return () => {
+      document.removeEventListener('mousedown', zu);
+      window.removeEventListener('resize', groesse);
+      document.removeEventListener('scroll', groesse, true);
+    };
   }, []);
   const menueTaste = (e: KeyboardEvent<HTMLDetailsElement>) => {
     const m = menue.current;
@@ -450,167 +465,180 @@ export function Vorschriften({ stand }: { stand: Pruefstand }) {
   };
 
   return (
-    <main className="br-vorschriften" aria-labelledby="br-vorschriften-titel">
-      {/* Bereichsüberschrift wie „Angaben“ und „Einzelheiten“ (sichtbar sagt es die Filterleiste) */}
-      <h2 id="br-vorschriften-titel" className="br-unsichtbar">
-        Vorschriften
-      </h2>
-      <div className="br-filter" role="group" aria-label="Ergebnis und Filter">
-        <div className="br-filter-zeile">
-        <span className="segment br-bilanz" role="group" aria-label="Ergebnis – Ampeln ein- und ausblenden">
-          {AMPELN.map((a) => {
-            const an = w.ampeln.includes(a);
-            return (
-              <button
-                key={a}
-                type="button"
-                aria-pressed={an}
-                title={an ? `${AMPEL_TEXT[a]} ausblenden` : `${AMPEL_TEXT[a]} einblenden`}
-                className={`br-filter-ampel${an ? ' active' : ''}`}
-                onClick={() => {
-                  if (an && w.ampeln.length === 1) {
-                    setAmpelHinweis('Mindestens eine Ampel bleibt eingeblendet.');
-                    return;
-                  }
-                  setAmpelHinweis('');
-                  setze({ ...w, ampeln: an ? w.ampeln.filter((x) => x !== a) : [...w.ampeln, a] });
-                }}
-              >
-                <span className="br-filter-haken">{an && <Symbol name="haken" />}</span>
-                <span className={`statuspunkt ${STATUSPUNKT[a]}`} aria-hidden="true" />
-                <strong>{zaehler[a]}</strong> {AMPEL_TEXT[a]}
-              </button>
-            );
-          })}
-        </span>
-        <span className="br-balken" aria-hidden="true">
-          {AMPELN.map((a) => (
-            <span key={a} className={`br-balken-${a}`} style={{ width: `${(zaehler[a] / summe) * 100}%` }} />
-          ))}
-        </span>
-        {/* breit: Segmente; schmal (Container unter 640 px): Auswahlliste */}
-        <span className="segment br-ordnung br-nur-breit" role="group" aria-label="Ordnung">
-          {ORDNUNGEN.map(([g, t]) => (
-            <button key={g} type="button" className={w.gruppierung === g ? 'active' : ''} aria-pressed={w.gruppierung === g} onClick={() => setze({ ...w, gruppierung: g })}>
-              {t}
-            </button>
-          ))}
-        </span>
-        <select className="br-ordnung-wahl br-nur-schmal" value={w.gruppierung} onChange={(e) => setze({ ...w, gruppierung: e.target.value as Gruppierung })} aria-label="Ordnung">
-          {ORDNUNGEN.map(([g, t]) => (
-            <option key={g} value={g}>
-              {t}
-            </option>
-          ))}
-        </select>
+    // die Mitte der Fläche: Ergebnis (Bilanz und Filter) über der Liste der Vorschriften. Eine wachsende Spalte der Fläche
+    // (Klassen wie `FlaechenSpalte`), aber als <main> – der Hauptbereich der App für Vorleseprogramme
+    <main className="flaechen-spalte wachsend br-vorschriften" aria-label="Prüfung">
+      <Karte titel="Ergebnis" className="br-ergebnis" hoehe="inhalt">
+        <div className="br-filter" role="group" aria-label="Ampeln und Filter">
+          <div className="br-filter-zeile">
+            <span className="segment br-bilanz" role="group" aria-label="Ampeln ein- und ausblenden">
+              {AMPELN.map((a) => {
+                const an = w.ampeln.includes(a);
+                return (
+                  <button
+                    key={a}
+                    type="button"
+                    aria-pressed={an}
+                    title={an ? `${AMPEL_TEXT[a]} ausblenden` : `${AMPEL_TEXT[a]} einblenden`}
+                    aria-label={`${zaehler[a]} ${AMPEL_TEXT[a]}`}
+                    className={`br-filter-ampel${an ? ' active' : ''}`}
+                    onClick={() => {
+                      if (an && w.ampeln.length === 1) {
+                        setAmpelHinweis('Mindestens eine Ampel bleibt eingeblendet.');
+                        return;
+                      }
+                      setAmpelHinweis('');
+                      setze({ ...w, ampeln: an ? w.ampeln.filter((x) => x !== a) : [...w.ampeln, a] });
+                    }}
+                  >
+                    <span className="br-filter-haken">{an && <Symbol name="haken" />}</span>
+                    <span className={`statuspunkt ${STATUSPUNKT[a]}`} aria-hidden="true" />
+                    <strong>{zaehler[a]}</strong> <span className="br-filter-wort">{AMPEL_TEXT[a]}</span>
+                  </button>
+                );
+              })}
+            </span>
+            <span className="br-balken" aria-hidden="true">
+              {AMPELN.map((a) => (
+                <span key={a} className={`br-balken-${a}`} style={{ width: `${(zaehler[a] / summe) * 100}%` }} />
+              ))}
+            </span>
+            {/* breit: Segmente; schmal (Container unter 640 px): Auswahlliste */}
+            <span className="segment br-ordnung br-nur-breit" role="group" aria-label="Ordnung">
+              {ORDNUNGEN.map(([g, t]) => (
+                <button key={g} type="button" className={w.gruppierung === g ? 'active' : ''} aria-pressed={w.gruppierung === g} onClick={() => setze({ ...w, gruppierung: g })}>
+                  {t}
+                </button>
+              ))}
+            </span>
+          </div>
+          <div className="br-filter-zeile2">
+            <input ref={suchfeld} className="br-suchfeld" type="search" placeholder="§ oder Stichwort …" value={suche} onChange={(e) => setSuche(e.target.value)} aria-label="Vorschriften durchsuchen" />
+            <span className="br-filter-kaesten br-nur-breit">{kaesten(false)}</span>
+            <details
+              className="br-filter-menue br-nur-schmal"
+              ref={menue}
+              onKeyDown={menueTaste}
+              onToggle={(e) => {
+                const d = e.currentTarget as HTMLDetailsElement;
+                if (!d.open) return;
+                // das Menü liegt über der Fläche (fest positioniert unter „Filter“) – die Karte schneidet ab, was über
+                // ihren Rand ragt; beim Öffnen den Fokus ins Menü
+                const r = d.querySelector('summary')!.getBoundingClientRect();
+                const inhalt = d.querySelector<HTMLElement>('.br-filter-menue-inhalt')!;
+                // Abstand --s1 unter „Filter“, rechtsbündig zum Knopf (ragt nicht über den Rand der Karte hinaus)
+                const abstand = parseFloat(getComputedStyle(d).getPropertyValue('--s1')) || 4;
+                inhalt.style.top = `${r.bottom + abstand}px`;
+                inhalt.style.left = `${Math.max(abstand, Math.min(r.right, window.innerWidth - abstand) - inhalt.offsetWidth)}px`;
+                inhalt.querySelector<HTMLInputElement>('input')?.focus();
+              }}
+              onBlur={(e) => {
+                if (menue.current?.open && !menue.current.contains(e.relatedTarget as Node | null)) menue.current.open = false;
+              }}
+            >
+              <summary>
+                Filter{nurHand || nurGeaendert ? ` (${Number(nurHand) + Number(nurGeaendert)})` : ''} <Symbol name="pfeilUnten" />
+              </summary>
+              <div className="br-filter-menue-inhalt">{kaesten(true)}</div>
+            </details>
+            {/* schmal (Container unter 640 px): die Ordnung als Auswahlliste hinter Suche und Filter – die Ampeln behalten Zeile 1 */}
+            <select className="br-ordnung-wahl br-nur-schmal" value={w.gruppierung} onChange={(e) => setze({ ...w, gruppierung: e.target.value as Gruppierung })} aria-label="Ordnung">
+              {ORDNUNGEN.map(([g, t]) => (
+                <option key={g} value={g}>
+                  {t}
+                </option>
+              ))}
+            </select>
+            <span className="br-leise" role="status">
+              {ampelHinweis}
+            </span>
+          </div>
         </div>
-        <div className="br-filter-zeile2">
-          <input ref={suchfeld} className="br-suchfeld" type="search" placeholder="§ oder Stichwort …" value={suche} onChange={(e) => setSuche(e.target.value)} aria-label="Vorschriften durchsuchen" />
-          <span className="br-filter-kaesten br-nur-breit">{kaesten(false)}</span>
-          <details
-            className="br-filter-menue br-nur-schmal"
-            ref={menue}
-            onKeyDown={menueTaste}
-            onToggle={(e) => {
-              // beim Öffnen den Fokus ins Menü
-              if ((e.currentTarget as HTMLDetailsElement).open) (e.currentTarget as HTMLDetailsElement).querySelector<HTMLInputElement>('.br-filter-menue-inhalt input')?.focus();
-            }}
-            onBlur={(e) => {
-              if (menue.current?.open && !menue.current.contains(e.relatedTarget as Node | null)) menue.current.open = false;
-            }}
-          >
-            <summary>
-              Filter{nurHand || nurGeaendert ? ` (${Number(nurHand) + Number(nurGeaendert)})` : ''} <Symbol name="pfeilUnten" />
-            </summary>
-            <div className="br-filter-menue-inhalt">{kaesten(true)}</div>
-          </details>
-          <span className="br-leise" role="status">
-            {ampelHinweis}
+        {/* die Live-Region liest nur den Stand vor, nicht den Knopf; ohne Treffer steht „zurücksetzen“ nur im Leerzustand */}
+        <div className="br-treffer">
+          {/* sichtbar; für Screenreader steht derselbe Text (entprellt) in der Live-Region daneben */}
+          <span aria-hidden="true">{trefferText}</span>
+          {/* angesagt wird entprellt (nicht bei jedem Tastendruck) – wie in den Angaben */}
+          <span className="br-unsichtbar" aria-live="polite">
+            {trefferAnsage}
           </span>
+          {filterAktiv && treffer > 0 && (
+            <>
+              {' '}
+              <button type="button" className="small br-link" onClick={zuruecksetzen}>
+                {nurSuche ? 'Suche leeren' : 'Filter zurücksetzen'}
+              </button>
+            </>
+          )}
         </div>
-      </div>
-      {ohneOrt.length > 0 && (
-        <div className="meldung warnung br-ohne-ort" role="status">
-          {ohneOrt.length === 1 ? 'Eine Festlegung' : `${ohneOrt.length} Festlegungen`} ohne Ortsangabe (ältere Datei) {ohneOrt.length === 1 ? 'gilt' : 'gelten'} als überholt. Übernehmen ordnet {ohneOrt.length === 1 ? 'sie' : 'sie alle'} dem jetzigen Ort zu – als Entwurf, beim Speichern zu bestätigen.{' '}
-          <button type="button" className="small br-link" onClick={() => setNurGeaendert(true)} title="Nur die geänderten bzw. überholten Paragrafen zeigen">
-            zeigen
-          </button>{' '}
-          <button
-            type="button"
-            className="small"
-            onClick={() => {
-              const n = ohneOrt.length;
-              useBaurecht.getState().festlegungenOrtUebernehmen(ohneOrt);
-              // die Entwürfe zeigen (nur von Hand festgelegte) – eine Meldung in der Trefferzeile (eine Live-Region), Fokus
-              // ins Suchfeld statt auf die Seite
-              setNurGeaendert(false);
-              setNurHand(true);
-              setOrtMeldung({ text: `${n === 1 ? 'Eine Festlegung' : `${n} Festlegungen`} dem jetzigen Ort zugeordnet – als Entwurf, beim Speichern bestätigen`, filter: filterKennung(suche, true, false, w.ampeln) });
-              setTimeout(() => suchfeld.current?.focus(), 0);
-            }}
-            title="Dem jetzigen Ort zuordnen – als Entwurf; beim Speichern wird jede noch einmal bestätigt"
-          >
-            Für diesen Ort übernehmen
-          </button>
-        </div>
-      )}
-      {/* die Live-Region liest nur den Stand vor, nicht den Knopf; ohne Treffer steht „zurücksetzen“ nur im Leerzustand */}
-      <div className="br-treffer">
-        {/* sichtbar; für Screenreader steht derselbe Text (entprellt) in der Live-Region daneben */}
-        <span aria-hidden="true">{trefferText}</span>
-        {/* angesagt wird entprellt (nicht bei jedem Tastendruck) – wie in den Angaben */}
-        <span className="br-unsichtbar" aria-live="polite">
-          {trefferAnsage}
-        </span>
-        {filterAktiv && treffer > 0 && (
-          <>
-            {' '}
-            <button type="button" className="small br-link" onClick={zuruecksetzen}>
-              {nurSuche ? 'Suche leeren' : 'Filter zurücksetzen'}
-            </button>
-          </>
-        )}
-      </div>
-      <div className="br-vorschriften-liste" ref={liste} onKeyDown={taste}>
-        {ansicht.map((g) => (
-          <section key={g.id} className="br-gruppe" aria-labelledby={`br-gruppe-${g.id}`}>
-            <h3 id={`br-gruppe-${g.id}`}>
-              {g.titel}
-              {w.gruppierung === 'ebene' && [...new Set(g.normen.map((x) => modulName(x.n.modul)))].filter((m) => m !== g.titel).length > 0 && <span className="br-gruppe-module"> · {[...new Set(g.normen.map((x) => modulName(x.n.modul)))].join(', ')}</span>}
-            </h3>
-            {g.normen.map(({ n, sichtbar }) => {
-              const k = `${g.id}|${n.id}`;
-              return (
-                <NormKarte
-                  key={k}
-                  gruppe={g.id}
-                  n={n}
-                  sichtbar={sichtbar}
-                  offen={!zu.has(k)}
-                  gewaehlt={auswahl}
-                  tabStop={tabStop}
-                  setFokus={setFokus}
-                  umschalten={() => {
-                    const s = new Set(zu);
-                    if (s.has(k)) s.delete(k);
-                    else s.add(k);
-                    setZu(s);
-                  }}
-                />
-              );
-            })}
-          </section>
-        ))}
-        {!ansicht.length && gruppen.length > 0 && (
-          <div className="br-leer-zustand">
-            <p>{nurSuche ? `Keine Paragrafen zu „${suche}“.` : `Keine Paragrafen${suche ? ` zu „${suche}“` : ''} in diesem Filter.`}</p>
-            <button type="button" onClick={zuruecksetzen}>
-              {nurSuche ? 'Suche leeren' : 'Filter zurücksetzen'}
+      </Karte>
+      <Karte titel="Vorschriften" className="br-vorschriften-karte">
+        {ohneOrt.length > 0 && (
+          <div className="meldung warnung br-ohne-ort" role="status">
+            {ohneOrt.length === 1 ? 'Eine Festlegung' : `${ohneOrt.length} Festlegungen`} ohne Ortsangabe (ältere Datei) {ohneOrt.length === 1 ? 'gilt' : 'gelten'} als überholt. Übernehmen ordnet {ohneOrt.length === 1 ? 'sie' : 'sie alle'} dem jetzigen Ort zu – als Entwurf, beim Speichern zu bestätigen.{' '}
+            <button type="button" className="small br-link" onClick={() => setNurGeaendert(true)} title="Nur die geänderten bzw. überholten Paragrafen zeigen">
+              zeigen
+            </button>{' '}
+            <button
+              type="button"
+              className="small"
+              onClick={() => {
+                const n = ohneOrt.length;
+                useBaurecht.getState().festlegungenOrtUebernehmen(ohneOrt);
+                // die Entwürfe zeigen (nur von Hand festgelegte) – eine Meldung in der Trefferzeile (eine Live-Region), Fokus
+                // ins Suchfeld statt auf die Seite
+                setNurGeaendert(false);
+                setNurHand(true);
+                setOrtMeldung({ text: `${n === 1 ? 'Eine Festlegung' : `${n} Festlegungen`} dem jetzigen Ort zugeordnet – als Entwurf, beim Speichern bestätigen`, filter: filterKennung(suche, true, false, w.ampeln) });
+                setTimeout(() => suchfeld.current?.focus(), 0);
+              }}
+              title="Dem jetzigen Ort zuordnen – als Entwurf; beim Speichern wird jede noch einmal bestätigt"
+            >
+              Für diesen Ort übernehmen
             </button>
           </div>
         )}
-        {!gruppen.length && <p className="br-leer">Keine Vorschriften – das Regelpaket enthält für diese Lage noch kein Modul.</p>}
-      </div>
+        <div className="br-vorschriften-liste" ref={liste} onKeyDown={taste}>
+          {ansicht.map((g) => (
+            <section key={g.id} className="br-gruppe" aria-labelledby={`br-gruppe-${g.id}`}>
+              <h3 id={`br-gruppe-${g.id}`}>
+                {g.titel}
+                {w.gruppierung === 'ebene' && [...new Set(g.normen.map((x) => modulName(x.n.modul)))].filter((m) => m !== g.titel).length > 0 && <span className="br-gruppe-module"> · {[...new Set(g.normen.map((x) => modulName(x.n.modul)))].join(', ')}</span>}
+              </h3>
+              {g.normen.map(({ n, sichtbar }) => {
+                const k = `${g.id}|${n.id}`;
+                return (
+                  <NormKarte
+                    key={k}
+                    gruppe={g.id}
+                    n={n}
+                    sichtbar={sichtbar}
+                    offen={!zu.has(k)}
+                    gewaehlt={auswahl}
+                    tabStop={tabStop}
+                    setFokus={setFokus}
+                    umschalten={() => {
+                      const s = new Set(zu);
+                      if (s.has(k)) s.delete(k);
+                      else s.add(k);
+                      setZu(s);
+                    }}
+                  />
+                );
+              })}
+            </section>
+          ))}
+          {!ansicht.length && gruppen.length > 0 && (
+            <div className="br-leer-zustand">
+              <p>{nurSuche ? `Keine Paragrafen zu „${suche}“.` : `Keine Paragrafen${suche ? ` zu „${suche}“` : ''} in diesem Filter.`}</p>
+              <button type="button" onClick={zuruecksetzen}>
+                {nurSuche ? 'Suche leeren' : 'Filter zurücksetzen'}
+              </button>
+            </div>
+          )}
+          {!gruppen.length && <p className="br-leer">Keine Vorschriften – das Regelpaket enthält für diese Lage noch kein Modul.</p>}
+        </div>
+      </Karte>
     </main>
   );
 }

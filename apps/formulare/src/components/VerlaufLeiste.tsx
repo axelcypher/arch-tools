@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import type { OffenesFormular } from '../store';
 import { useFormulare } from '../store';
+import { Karte } from '@core/ui/Karte';
 import { Symbol } from '@core/ui/Symbol';
 
 const zeit = (ms: number) => {
@@ -30,16 +31,16 @@ export function VerlaufLeiste({ offen }: { offen: OffenesFormular }) {
     );
 
   return (
-    <aside className="fo-verlauf" aria-label="Verlauf">
-      <div className="fo-verlauf-kopf">
-        <h3>Verlauf</h3>
+    <Karte
+      className="fo-verlauf"
+      titel="Verlauf"
+      aktionen={
         <button className="icon" title="Verlauf ausblenden" aria-label="Verlauf ausblenden" onClick={() => setVerlaufOffen(false)}>
           <Symbol name="schliessen" />
         </button>
-      </div>
-      <p className="muted small-text">
-        {offen.gesichert ? `Lokal gesichert ${zeit(offen.gesichert)}. ` : ''}Jede Eingabe wird sofort lokal gesichert; in die Formulardatei kommt sie mit „Speichern“.
-      </p>
+      }
+    >
+      <p className="muted small-text">{offen.gesichert ? `Lokal gesichert ${zeit(offen.gesichert)}. ` : ''}Jede Eingabe wird sofort lokal gesichert; in die Formulardatei kommt sie mit „Speichern“.</p>
       <ol className="fo-verlauf-liste" reversed>
         {[...schritte.keys()].reverse().map((i) => {
           const s = schritte[i];
@@ -68,7 +69,7 @@ export function VerlaufLeiste({ offen }: { offen: OffenesFormular }) {
       {!schritte.length && <p className="muted small-text">Noch keine Eingaben.</p>}
       {frueher.length > 0 && (
         <div className="fo-verlauf-frueher">
-          <h4>Frühere Sitzung – nicht in dieser Datei</h4>
+          <h3>Frühere Sitzung – nicht in dieser Datei</h3>
           <p className="muted small-text">Diese Eingaben stehen nicht in der geöffneten Datei (z. B. heruntergeladen, aber die ältere Datei geöffnet). Sie lassen sich hier nicht zurücknehmen.</p>
           <ol className="fo-verlauf-liste" reversed>
             {[...frueher].reverse().map((s, i) => (
@@ -83,6 +84,6 @@ export function VerlaufLeiste({ offen }: { offen: OffenesFormular }) {
           </ol>
         </div>
       )}
-    </aside>
+    </Karte>
   );
 }

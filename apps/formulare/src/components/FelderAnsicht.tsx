@@ -17,6 +17,7 @@ import type { Plausi } from '../plausibel';
 import { useVorbelegt } from '../merkmalAbgleich';
 import { springeZuFeld } from '../navigation';
 import { anzahl } from '../text';
+import { Karte } from '@core/ui/Karte';
 
 const FILTER: { id: FeldFilter; label: string; title: string }[] = [
   { id: 'alle', label: 'Alle', title: 'Alle Felder' },
@@ -135,14 +136,18 @@ export function FelderAnsicht({ offen, gesperrt }: { offen: OffenesFormular; ges
         {eingeschraenkt && filter !== 'offen' && <span className="muted small-text fo-treffer">{treffer === 1 ? '1 Treffer' : `${treffer} Treffer`}</span>}
       </div>
       {filter === 'offen' && (
-        <section className="fo-pruefliste" aria-label="Was fehlt noch?">
-          <h2>
-            Was fehlt noch?{' '}
-            <span className="muted">
-              {anzahl(gefiltert.offen, 'offene Angabe', 'offene Angaben')}
-              {gefiltert.ungeklaert > 0 && ` · ${gefiltert.ungeklaert} ungeklärt`}
-            </span>
-          </h2>
+        <Karte
+          className="fo-pruefliste"
+          titel={
+            <>
+              Was fehlt noch?{' '}
+              <span className="muted">
+                {anzahl(gefiltert.offen, 'offene Angabe', 'offene Angaben')}
+                {gefiltert.ungeklaert > 0 && ` · ${gefiltert.ungeklaert} ungeklärt`}
+              </span>
+            </>
+          }
+        >
           {!listeGefiltert.length && <p className="muted small-text">{q ? 'Keine passenden offenen Angaben.' : 'Nach den Vorgaben der App keine offenen Angaben.'}</p>}
           {listeGefiltert.map((o) => (
             <div key={o.id} className={`fo-pruef-zeile${o.ungeklaert ? ' ungeklaert' : ''}`} data-angabe={o.id}>
@@ -162,9 +167,9 @@ export function FelderAnsicht({ offen, gesperrt }: { offen: OffenesFormular; ges
           ))}
           {hinweise.length > 0 && (
             <>
-              <h2>
+              <h3>
                 Hinweise <span className="muted">{hinweise.length === 1 ? '1 Hinweis' : `${hinweise.length} Hinweise`}</span>
-              </h2>
+              </h3>
               {hinweise.map((h, i) => (
                 <div key={i} className={`fo-pruef-zeile hinweis${h.art === 'fehler' ? ' fehler' : ''}`}>
                   <div className="fo-pruef-kopf">
@@ -188,7 +193,7 @@ export function FelderAnsicht({ offen, gesperrt }: { offen: OffenesFormular; ges
               ))}
             </>
           )}
-        </section>
+        </Karte>
       )}
       {filter !== 'offen' && eingeschraenkt && !treffer && <p className="muted small-text fo-keine-treffer">Keine passenden Felder.</p>}
       {filter !== 'offen' &&
@@ -206,20 +211,27 @@ export function FelderAnsicht({ offen, gesperrt }: { offen: OffenesFormular; ges
                     const titel = profil.abschnitte[abschnittId(a)]?.titel?.trim() || a.titel;
                     const buendel = gebuendelt(a.felder);
                     return (
+                      // jeder Abschnitt eine Karte; die Hülle trägt nur die Breite im Raster der Reihe (wie im Formular)
                       <div key={a.felder[0].schluessel} className="fo-abschnitt" style={{ flexGrow: a.rahmen?.b ?? 700 }}>
-                        {(titel || buendel) && (
-                          <h3>
-                            {titel}
-                            {buendel && (
-                              <EntfallInfo gruende={buendel.gruende} text={buendel.text} offen={buendel.offen} merkmale={buendel.merkmale} info={a.felder.map((f) => f.schluessel).join(' ')} />
-                            )}
-                          </h3>
-                        )}
-                        {zeilen(a.felder).map((z) => (
-                          <div key={z[0].schluessel} className="fo-zeile">
-                            {z.map((f) => eingabe(f, feldTitel(f, profil) === titel && f.art === 'text', !!buendel))}
-                          </div>
-                        ))}
+                        <Karte
+                          titel={
+                            titel || buendel ? (
+                              <>
+                                {titel}
+                                {buendel && (
+                                  <EntfallInfo gruende={buendel.gruende} text={buendel.text} offen={buendel.offen} merkmale={buendel.merkmale} info={a.felder.map((f) => f.schluessel).join(' ')} />
+                                )}
+                              </>
+                            ) : undefined
+                          }
+                          ariaLabel={`Abschnitt ${s.reihen.slice(0, n).reduce((z, r) => z + r.length, 0) + reihe.indexOf(a) + 1} auf Seite ${s.i + 1}`}
+                        >
+                          {zeilen(a.felder).map((z) => (
+                            <div key={z[0].schluessel} className="fo-zeile">
+                              {z.map((f) => eingabe(f, feldTitel(f, profil) === titel && f.art === 'text', !!buendel))}
+                            </div>
+                          ))}
+                        </Karte>
                       </div>
                     );
                   })}

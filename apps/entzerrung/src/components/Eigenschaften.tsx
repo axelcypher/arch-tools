@@ -1,3 +1,4 @@
+import { FlaechenSpalte, Karte } from '@core/ui/Karte';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { fmt2, fmt3, fmtPlain } from '@core/format';
@@ -76,9 +77,8 @@ export function Eigenschaften() {
   const ergebnis = useMemo(() => (foto && ebene ? entzerrung(foto, ebene) : null), [foto, ebene]);
   if (!foto || !ebene || !ergebnis) {
     return (
-      <aside className="sidebar sidebar-right">
-        <section>
-          <h2>So geht es</h2>
+      <FlaechenSpalte>
+        <Karte titel="So geht es">
           <ol className="ef-schritte small-text">
             <li>
               <strong>Foto</strong> einer ebenen Fläche hinzufügen (Fassade, Wand, Boden, abfotografierter Plan).
@@ -93,13 +93,13 @@ export function Eigenschaften() {
               <strong>Exportieren</strong> als Bild oder als PDF im Maßstab.
             </li>
           </ol>
-        </section>
-      </aside>
+        </Karte>
+      </FlaechenSpalte>
     );
   }
   const entzerrt = gewuenscht === 'entzerrt' && ergebnis.ok;
   return (
-    <aside className="sidebar sidebar-right">
+    <FlaechenSpalte>
       {entzerrt && ergebnis.ok ? (
         <>
           <MessPanel foto={foto} ebene={ebene} e={ergebnis.e} />
@@ -111,7 +111,7 @@ export function Eigenschaften() {
           <ObjektivPanel foto={foto} />
         </>
       )}
-    </aside>
+    </FlaechenSpalte>
   );
 }
 
@@ -141,8 +141,7 @@ function ReferenzPanel({ foto, ebene, ergebnis }: { foto: Foto; ebene: Ebene; er
   };
 
   return (
-    <section>
-      <h2>Referenz · {ebene.name}</h2>
+    <Karte titel={`Referenz · ${ebene.name}`}>
       <div className="ef-methoden segment" role="group" aria-label="Art der Referenz">
         {METHODEN.map((m) => (
           <button key={m.id} aria-pressed={ebene.methode === m.id} title={m.text} onClick={() => aendern((e) => ({ ...e, methode: m.id }))}>
@@ -190,7 +189,7 @@ function ReferenzPanel({ foto, ebene, ergebnis }: { foto: Foto; ebene: Ebene; er
             <WerkzeugKnopf w="passpunkt" anzahl={ebene.passpunkte.length} primaer={ebene.passpunkte.length < 4} />
           </div>
           {ebene.passpunkte.length > 0 && (
-            <table className="ef-tabelle" ref={setTabelle}>
+            <table className="summary-table ef-tabelle" ref={setTabelle}>
               <thead>
                 <tr>
                   <th />
@@ -238,7 +237,7 @@ function ReferenzPanel({ foto, ebene, ergebnis }: { foto: Foto; ebene: Ebene; er
             <WerkzeugKnopf w="mass" anzahl={ebene.fluchtlinien.masse.length} />
           </div>
           {ebene.fluchtlinien.masse.length > 0 && (
-            <table className="ef-tabelle" ref={setTabelle}>
+            <table className="summary-table ef-tabelle" ref={setTabelle}>
               <thead>
                 <tr>
                   <th />
@@ -316,7 +315,7 @@ function ReferenzPanel({ foto, ebene, ergebnis }: { foto: Foto; ebene: Ebene; er
           <Symbol name="info" /> {ergebnis.fehler}
         </div>
       )}
-    </section>
+    </Karte>
   );
 }
 
@@ -345,8 +344,7 @@ function ObjektivPanel({ foto }: { foto: Foto }) {
   const hat = foto.linse.k1 !== 0 || foto.linse.k2 !== 0;
   const gueltig = linseGueltig(foto.linse);
   return (
-    <section>
-      <h2>Objektiv · Verzeichnung</h2>
+    <Karte titel="Objektiv · Verzeichnung" hoehe="inhalt">
       <p className="muted small-text">
         Weitwinkel biegen gerade Kanten zum Bildrand hin. Mit Hilfslinien entlang solcher Kanten (je mindestens drei Punkte, gern mehr) wird die Verzeichnung geschätzt und
         bei allen Ebenen dieses Fotos herausgerechnet.
@@ -390,7 +388,7 @@ function ObjektivPanel({ foto }: { foto: Foto }) {
           </button>
         )}
       </div>
-    </section>
+    </Karte>
   );
 }
 
@@ -425,15 +423,16 @@ function MessPanel({ foto, ebene, e }: { foto: Foto; ebene: Ebene; e: Entzerrung
     return () => clearTimeout(kopiertRef.current);
   }, [kopiert]);
   return (
-    <section className="grow">
-      <div className="section-head">
-        <h2>Messen · {ebene.name}</h2>
-        {ebene.messungen.length > 0 && (
+    <Karte
+      titel={`Messen · ${ebene.name}`}
+      aktionen={
+        ebene.messungen.length > 0 && (
           <button className="small" onClick={() => void kopieren()} title="Als Tabelle in die Zwischenablage (zum Einfügen in Excel)">
             Kopieren
           </button>
-        )}
-      </div>
+        )
+      }
+    >
       {kopiert && (
         <div className={`meldung ${kopiert.startsWith('Kopieren nicht') ? 'fehler' : 'ok'}`} role={kopiert.startsWith('Kopieren nicht') ? 'alert' : 'status'}>
           {kopiert}
@@ -485,7 +484,7 @@ function MessPanel({ foto, ebene, e }: { foto: Foto; ebene: Ebene; e: Entzerrung
         })}
       </ul>
       <p className="muted small-text ef-hinweis">Maße stimmen nur für Punkte, die in der entzerrten Ebene liegen. Vor- und Rücksprünge (Fensterbank, Gesims, Dachüberstand) werden verzerrt.</p>
-    </section>
+    </Karte>
   );
 }
 
@@ -502,18 +501,16 @@ function BildPanel({ foto, ebene, e }: { foto: Foto; ebene: Ebene; e: Entzerrung
     a = ausgabe(bereich, ebene.aufloesung ?? auto);
   } catch (err) {
     return (
-      <section>
-        <h2>Bild</h2>
+      <Karte titel="Bild" hoehe="inhalt">
         <div className="meldung fehler" role="alert">
           {err instanceof Error ? err.message : String(err)}
         </div>
         {ebene.ausschnitt && <button onClick={() => aendern((x) => ({ ...x, ausschnitt: undefined }))}>Automatisch</button>}
-      </section>
+      </Karte>
     );
   }
   return (
-    <section>
-      <h2>Bild</h2>
+    <Karte titel="Bild" hoehe="inhalt">
       <div className="field-row">
         <Field label="Auflösung (mm je Pixel)" hint={ebene.aufloesung === undefined ? 'automatisch: etwa wie im Foto' : undefined}>
           <NumberField value={ebene.aufloesung !== undefined ? ebene.aufloesung * 1000 : undefined} placeholder={fmt2(auto * 1000)} min={0.01} digits={2} allowEmpty onChange={(v) => aendern((x) => ({ ...x, aufloesung: v === undefined ? undefined : v / 1000 }))} />
@@ -534,6 +531,6 @@ function BildPanel({ foto, ebene, e }: { foto: Foto; ebene: Ebene; e: Entzerrung
         </button>
       </div>
       {dialog && <ExportDialog foto={foto} ebene={ebene} e={e} aufloesung={a.aufloesung} bereich={bereich} onClose={() => setDialog(false)} />}
-    </section>
+    </Karte>
   );
 }

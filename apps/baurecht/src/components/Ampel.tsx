@@ -6,16 +6,24 @@ import type { Ampel } from '@core/baurecht/typen';
  */
 export const nb = (s: string): string => s.replace(/(§§?|Abs\.|Nr\.|Satz|Art\.) (?=[\dIVX])/g, '$1\u00a0').replace(/\b([A-ZÄÖÜ]{1,4})-(?=\d)/g, '$1\u2011');
 
+/** der Scrollbereich zu einem Element: der Rumpf seiner Karte (die Karte scrollt, nicht die Liste darin) */
+export function scrollBereich(el: HTMLElement | null): HTMLElement | null {
+  return el?.closest<HTMLElement>('.karte-rumpf') ?? el;
+}
+
 /**
- * Element in seinem Scrollbereich einblenden, ohne Vorfahren mitzuscrollen (scrollIntoView verschöbe sonst auch die
- * ganze App, obwohl #root nicht scrollen soll)
+ * Element in seinem Scrollbereich (Rumpf der Karte, in der `bereich` steht) einblenden, ohne Vorfahren mitzuscrollen
+ * (scrollIntoView verschöbe sonst auch die ganze App, obwohl die Fläche nie scrollt)
  */
-export function inBereichZeigen(bereich: HTMLElement | null, el: HTMLElement | null, wo: 'mitte' | 'naechst' = 'naechst'): void {
+export function inBereichZeigen(innerhalb: HTMLElement | null, el: HTMLElement | null, wo: 'mitte' | 'naechst' = 'naechst'): void {
+  const bereich = scrollBereich(innerhalb);
   if (!bereich || !el) return;
   const b = bereich.getBoundingClientRect();
   const e = el.getBoundingClientRect();
-  if (wo === 'mitte') bereich.scrollTop += e.top - b.top - (bereich.clientHeight - e.height) / 2;
-  else if (e.top < b.top) bereich.scrollTop += e.top - b.top - 8;
+  // oben stehen bleibende Teile (Suchfeld der Angaben) halten über scroll-padding-top Platz frei
+  const oben = b.top + (parseFloat(getComputedStyle(bereich).scrollPaddingTop) || 0);
+  if (wo === 'mitte') bereich.scrollTop += e.top - oben - (b.bottom - oben - e.height) / 2;
+  else if (e.top < oben) bereich.scrollTop += e.top - oben - 8;
   else if (e.bottom > b.bottom) bereich.scrollTop += e.bottom - b.bottom + 8;
 }
 

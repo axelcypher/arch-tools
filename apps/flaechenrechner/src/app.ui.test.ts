@@ -93,7 +93,7 @@ describe('QUADRIO: Mehrfachauswahl (Eigenschaften)', () => {
     const host = render();
     act(() => [...host.querySelectorAll<HTMLButtonElement>('.pw-einstieg button')].find((x) => x.textContent === 'Schließen')?.click());
     act(() => useEditor.getState().selectMany([bad.id, flur.id]));
-    const feld = (name: string) => [...host.querySelectorAll<HTMLLabelElement>('.sidebar-right label.field')].find((l) => l.querySelector('.field-label')?.textContent === name)!;
+    const feld = (name: string) => [...host.querySelectorAll<HTMLLabelElement>('.qu-eigenschaften label.field')].find((l) => l.querySelector('.field-label')?.textContent === name)!;
     const gruppe = feld('Nutzungsgruppe (DIN 277)').querySelector('select')!;
     act(() => {
       gruppe.value = 'VF';

@@ -36,7 +36,8 @@ export function useLeistenBreite(schluessel: string, vorgabe: number, min = 180,
 
 /**
  * Platz, den eine Leiste höchstens bekommen kann: Breite des Arbeitsbereichs minus die anderen Leisten minus die
- * Mindestbreite der Mitte. Ohne `mitteMin` keine Grenze.
+ * Breite, die der Mitte bleibt (`mitteMin`, auf einer `.flaeche` mindestens `--karte-mitte-wunsch`, in px angegeben).
+ * Ohne `mitteMin` keine Grenze.
  */
 function verfuegbar(griff: HTMLElement | null, mitteMin: number | undefined): number {
   const leiste = griff?.parentElement;
@@ -56,7 +57,10 @@ function verfuegbar(griff: HTMLElement | null, mitteMin: number | undefined): nu
     return st.display !== 'none' && st.position !== 'absolute' && st.position !== 'fixed';
   }).length;
   const spalte = (parseFloat(cs.columnGap) || 0) * Math.max(0, imFluss - 1);
-  return Math.floor(innen - spalte - andere - mitteMin);
+  // auf einer Fläche hält die Mitte ihre Wunschbreite, solange Seitenkarten nachgeben können (base.css) – breiter
+  // gezogen schrumpfte die Leiste sofort wieder
+  const wunsch = arbeit.classList.contains('flaeche') ? parseFloat(cs.getPropertyValue('--karte-mitte-wunsch')) || 0 : 0;
+  return Math.floor(innen - spalte - andere - Math.max(mitteMin, wunsch));
 }
 
 const ANGLEICHEN = 'leiste-angleichen';

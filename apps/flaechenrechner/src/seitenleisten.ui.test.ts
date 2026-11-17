@@ -42,7 +42,7 @@ function haus(): { p: Project; ids: string[] } {
   return { p, ids: raeume.map((r) => r.id) };
 }
 
-const listenKnoepfe = (host: HTMLElement) => [...host.querySelectorAll<HTMLButtonElement>('.sidebar-left .shape-list .list-btn')].filter((b) => b.querySelector('.raum-nr'));
+const listenKnoepfe = (host: HTMLElement) => [...host.querySelectorAll<HTMLButtonElement>('.qu-projekt-karte .shape-list .list-btn')].filter((b) => b.querySelector('.raum-nr'));
 const klick = (el: HTMLElement, init: MouseEventInit = {}) => act(() => void el.dispatchEvent(new MouseEvent('click', { bubbles: true, ...init })));
 
 describe('QUADRIO: Flächenliste mit Mehrfachauswahl (B7)', () => {
@@ -63,7 +63,7 @@ describe('QUADRIO: Flächenliste mit Mehrfachauswahl (B7)', () => {
     klick(listenKnoepfe(host)[0]);
     klick(listenKnoepfe(host)[2], { shiftKey: true });
     expect(useEditor.getState().selectedIds).toEqual(ids);
-    expect(host.querySelector('.sidebar-right h2')?.textContent).toContain('3 Flächen gewählt');
+    expect(host.querySelector('.qu-auswahl .karte-kopf h2')?.textContent).toContain('3 Flächen gewählt');
   });
 });
 
@@ -167,7 +167,7 @@ describe('QUADRIO: Auswertung ein- und ausklappbar (B1)', () => {
     let host = render(p);
     expect(host.querySelector('.summary-table')).toBeNull();
     expect(host.querySelector('.summary-kurz')?.textContent).toContain('BGF 60,00');
-    act(() => [...host.querySelectorAll<HTMLButtonElement>('.summary button')].find((b) => b.textContent === 'Alle Kennzahlen')!.click());
+    act(() => [...host.querySelectorAll<HTMLButtonElement>('.qu-auswertung button')].find((b) => b.textContent === 'Alle Kennzahlen')!.click());
     expect(host.querySelector('.summary-table')).not.toBeNull();
     expect(localStorage.getItem('arch-flaechen-tool:auswertung-offen')).toBe('1');
     act(() => root?.unmount());
@@ -175,7 +175,7 @@ describe('QUADRIO: Auswertung ein- und ausklappbar (B1)', () => {
     host = render(p);
     expect(host.querySelector('.summary-table')).not.toBeNull();
     // Gegenprobe: wieder einklappen
-    act(() => [...host.querySelectorAll<HTMLButtonElement>('.summary button')].find((b) => b.textContent === 'Kurzfassung')!.click());
+    act(() => [...host.querySelectorAll<HTMLButtonElement>('.qu-auswertung button')].find((b) => b.textContent === 'Kurzfassung')!.click());
     expect(host.querySelector('.summary-table')).toBeNull();
   });
 });
