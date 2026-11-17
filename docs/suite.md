@@ -291,16 +291,27 @@ Felder und „Übernehmen“ gesperrt.
 | Pläne und Dokumente | Fester Zielordner exportierter Antragsdokumente     | PERMIO                  | `TÖB/{Antrag}`                                                | allgemein › pfade                                  |
 | Pläne und Dokumente | Dateinamen der Katasterpläne                        | ATLAS                   | `{PROJEKT_KUERZEL} {Art} {DATUM} {Name}`                      | kataster › dateiname                               |
 | Pläne und Dokumente | Muster der Rechnungsdateien                         | FABRIO                  | wie bisher (das erste für neue Dateien)                       | ava › rechnungen.muster                            |
-| Export              | Berechnungsordner                                   | QUADRIO, TERRIO, NUMIO (je App) | `03 Berechnungen/Flächen`, `…/Nachweise`, `…/Kosten`  | allgemein › pfade                                  |
-| Export              | Dateiname Excel-Export, Dateiname PDF-Export        | QUADRIO, TERRIO, NUMIO (je App) | `{PROJEKT_KUERZEL} {DATUM} {Inhalt}`                  | allgemein › pfade                                  |
+| Export              | Berechnungsordner (gemeinsam), darin Unterordner je App | QUADRIO, TERRIO, NUMIO | `03 Berechnungen`; Unterordner `Flächen`, `Nachweise`, `Kosten` | allgemein › pfade                                  |
+| Export              | Dateiname Excel-Export, Dateiname PDF-Export (gemeinsam, je App abweichend möglich) | QUADRIO, TERRIO, NUMIO | `{PROJEKT_KUERZEL} {DATUM} {Inhalt}`; abweichend leer | allgemein › pfade                                  |
 | Export              | PDF beim direkten Export mitspeichern               | QUADRIO, TERRIO, NUMIO  | ja                                                            | allgemein › pfade                                  |
 | Vorlagen            | Dateinamen der Vorlagen im Projekt                  | ATLAS                   | `{PROJEKT_KUERZEL} {Name}`                                    | projektordner › struktur.vorlagenname              |
 | Vorlagen            | Leere Formulare                                     | PERMIO                  | (keiner)                                                      | allgemein › pfade                                  |
 | Vorlagen            | Name neuer LV-Dateien                               | FABRIO                  | `{PROJEKT_KUERZEL} {DATUM} LV {Gewerk}`                       | ava › lv.dateiname                                 |
 
-**Berechnungsordner je App:** Die Vorgabestruktur von ATLAS trennt die Berechnungen nach Art („03 Berechnungen/Flächen“,
-„…/Kosten“, „…/Nachweise“); die Projektdatei liegt per Vorgabe in „03 Berechnungen/Flächen“, dem Ordner von QUADRIO.
-PERMIO sucht externe Antragsdokumente (Berechnungen, Nachweise) in den Berechnungsordnern aller drei Rechen-Apps und in
+**Gemeinsame Angaben:** Was mehrere Apps gleich nutzen, steht einmal (docs/design.md, „Einstellungen“). Der
+Berechnungsordner gilt für QUADRIO, TERRIO und NUMIO; darin hat jede App einen Unterordner (leer = direkt im
+gemeinsamen). Die Vorgaben ergeben zusammen die Struktur von ATLAS („03 Berechnungen/Flächen“, „…/Nachweise“,
+„…/Kosten“); die Projektdatei liegt per Vorgabe in „03 Berechnungen/Flächen“, dem Ordner von QUADRIO. Die Dateinamen
+für Excel und PDF gelten ebenso gemeinsam; „Je App abweichend“ klappt je App ein Feld auf (leer = der
+gemeinsame Name), die Vorschau unter der gemeinsamen Angabe zeigt, was je App gilt. Bis zur Umstellung stand je App ein
+vollständiger Wert (`export.berechnungsordner.<app>`, `export.excel.<app>`, `export.pdf.<app>`): Daraus übernimmt die
+Seite ohne Verlust – beim Ordner wird der längste gemeinsame Anfang gemeinsam und der Rest Unterordner, bei den Namen
+der häufigste Wert gemeinsam und die übrigen Abweichungen; jede App exportiert danach wie vorher. Beim Speichern stehen
+die wirksamen Werte je App weiter auch unter den alten Schlüsseln, damit ältere Versionen auf anderen Rechnern gleich
+weiterarbeiten (der Projektordner selbst als „.“ – ältere Versionen zeigen dazu am Feld einen Hinweis, exportieren
+aber richtig). Grenze: Sind die neuen Schlüssel einmal geschrieben, liest die neue
+Version die alten nicht mehr – ändert danach eine ältere Version dort etwas, gilt das nur für sie, und das nächste
+Speichern der Gruppe schreibt den wirksamen Wert zurück. PERMIO sucht externe Antragsdokumente (Berechnungen, Nachweise) in den Berechnungsordnern aller drei Rechen-Apps und in
 den zusätzlich eingestellten Ordnern (Vorgabe wie bisher „Planung/Berechnungen“) – so findet es auch die direkten
 Exporte. Platzhalter der Suchordner setzt PERMIO mit den Angaben des jeweiligen Projekts ein. Die Einträge unter
 „Export“ (Berechnungsordner, Dateinamen, „PDF mitspeichern“) nutzt der direkte Export von QUADRIO, TERRIO und NUMIO
@@ -347,6 +358,6 @@ sortiert); mit `entwurf` (geändert?, Fehler, übernehmen, verwerfen) gilt sie f
    relativer Wert („Vorlagen“) wird abgelehnt.
 5. Ein Rechner mit eigener alter PERMIO-Namensvorlage, ein zweiter mit einer anderen (Netzwerk): Auf dem zweiten zeigt
    die Seite die Abweichung mit der Wahl; nach der Wahl erscheint der Hinweis nicht mehr.
-6. Berechnungsordner von QUADRIO auf einen Unterordner mit Umlaut und Leerzeichen setzen („03 Berechnungen/Flächen alt“)
+6. Unterordner von QUADRIO im Berechnungsordner auf einen Namen mit Umlaut und Leerzeichen setzen („Flächen alt“)
    und in QUADRIO „Exportieren“: QUADRIO legt den Ordner an und speichert dort; PERMIO findet die Datei als externes
    Antragsdokument.

@@ -1,0 +1,34 @@
+{
+  "flaechenrechner": {
+    "stufe": "minor",
+    "notiz": "Berechnungsordner und Dateinamen des Exports stehen einmal für QUADRIO, TERRIO und NUMIO, je App mit Unterordner bzw. abweichendem Namen; bisherige Einstellungen werden ohne Verlust übernommen."
+  },
+  "grz": {
+    "stufe": "minor",
+    "notiz": "Berechnungsordner und Dateinamen des Exports stehen einmal für QUADRIO, TERRIO und NUMIO, je App mit Unterordner bzw. abweichendem Namen; bisherige Einstellungen werden ohne Verlust übernommen."
+  },
+  "kosten": {
+    "stufe": "minor",
+    "notiz": "Berechnungsordner und Dateinamen des Exports stehen einmal für QUADRIO, TERRIO und NUMIO, je App mit Unterordner bzw. abweichendem Namen; bisherige Einstellungen werden ohne Verlust übernommen."
+  },
+  "formulare": {
+    "stufe": "patch",
+    "notiz": "PERMIO sucht Berechnungen im gemeinsamen Berechnungsordner samt den Unterordnern der Rechen-Apps."
+  },
+  "ordner": {
+    "stufe": "patch",
+    "notiz": "„Pfade und Benennung“: gleiche Angaben mehrerer Apps stehen nur noch einmal."
+  },
+  "entzerrung": {
+    "stufe": "patch",
+    "notiz": "„Pfade und Benennung“: gleiche Angaben mehrerer Apps stehen nur noch einmal."
+  },
+  "ava": {
+    "stufe": "patch",
+    "notiz": "„Pfade und Benennung“: gleiche Angaben mehrerer Apps stehen nur noch einmal."
+  },
+  "baurecht": {
+    "stufe": "patch",
+    "notiz": "„Pfade und Benennung“: gleiche Angaben mehrerer Apps stehen nur noch einmal."
+  }
+}
