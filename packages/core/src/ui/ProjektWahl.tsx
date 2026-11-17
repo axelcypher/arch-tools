@@ -16,6 +16,7 @@ import { StammdatenDialog } from './Stammdaten';
 import './projektwahl.css';
 import { useEscSchliessen } from './Dialog';
 import { Symbol } from './Symbol';
+import { Flaeche, Karte } from './Karte';
 import { appMitWas } from '../appNamen';
 
 const log = logger('projektwahl');
@@ -200,64 +201,60 @@ export function ProjektWahl({
   if (!allgemein) {
     return (
       <div className="pw-ebene">
-        <p className={fehler ? 'warning pw-meldung' : 'busy pw-meldung'}>{fehler ?? 'Einstellungen werden gelesen …'}</p>
+        <Flaeche>
+          <Karte className="pa" titel="Projekte">
+            <p className={fehler ? 'warning' : 'busy'} role={fehler ? 'alert' : 'status'}>
+              {fehler ?? 'Einstellungen werden gelesen …'}
+            </p>
+          </Karte>
+        </Flaeche>
       </div>
     );
   }
 
+  // ohne Rahmen-App ist „Neues Projekt“ das leere Projekt; mit Rahmen-App legt der Hauptknopf über den Assistenten an
+  const rahmenAnlegen = projektAnlegenMoeglich();
   return (
     <div className="pw-ebene">
-      {(fehler || laeuft) && <p className={fehler ? 'warning pw-meldung' : 'busy pw-meldung'}>{fehler ?? laeuft}</p>}
-      <ProjektUebersicht
-        titel="Projekte"
-        gruppen={liste.gruppen}
-        projekte={liste.projekte}
-        zuletzt={liste.zuletzt}
-        aktiv={aktiv}
-        sucht={liste.sucht}
-        fehler={liste.fehler}
-        onOeffnen={(p) => {
-          if (p.schluessel === aktiv && onSchliessen) onSchliessen();
-          else void oeffnen(p.schluessel);
-        }}
-        onZurueck={onSchliessen}
-        onNeuLaden={liste.neuLaden}
-        marken={liste.marken}
-        angeheftet={angeheftet}
-        kontextMenue={kontextMenue}
-        // ein mit dem Assistenten von ATLAS angelegtes Projekt gleich öffnen
-        onAngelegt={(ordner) => void oeffnen(ordner)}
-        // Stammordner per Ziehen umsortieren – gilt für alle Apps (gemeinsame Einstellung); der erste nimmt neue Projekte auf
-        onGruppenOrdnen={(projekte) => void allgemeinAendern({ projekte }).then(setAllgemein, (e) => setFehler(e instanceof Error ? e.message : String(e)))}
-        kopf={
-          <>
-            {onDateiOeffnen && (
-              <button onClick={onDateiOeffnen} title={`${dateiHinweis ?? 'Projektdatei'} über den Dateidialog öffnen (Strg+O)`}>
-                Datei öffnen …
-              </button>
-            )}
-            {onNeu &&
-              (projektAnlegenMoeglich() ? (
-                <button onClick={onNeu} title="Neues, leeres Projekt ohne Projektordner – gespeichert wird später als Datei">
-                  Leer beginnen
-                </button>
-              ) : (
-                <button onClick={onNeu}>Neues Projekt</button>
-              ))}
-            {onSchliessen && <button onClick={onSchliessen}>Schließen</button>}
-          </>
-        }
-        leer={
-          <ProjektEinstieg
-            text="Noch kein Stammordner eingestellt – der Ordner, in dem die Projektordner liegen. Er gilt für alle Apps."
-            onStammordner={() => void stammordnerWaehlen()}
-            onDateiOeffnen={onDateiOeffnen}
-            dateiHinweis={dateiHinweis}
-            onNeu={onNeu}
-            onSchliessen={onSchliessen}
-          />
-        }
-      />
+      <Flaeche>
+        <ProjektUebersicht
+          titel="Projekte"
+          gruppen={liste.gruppen}
+          projekte={liste.projekte}
+          zuletzt={liste.zuletzt}
+          aktiv={aktiv}
+          sucht={liste.sucht}
+          fehler={liste.fehler}
+          meldung={fehler || laeuft ? { text: fehler ?? laeuft ?? '', fehler: !!fehler } : undefined}
+          onOeffnen={(p) => {
+            if (p.schluessel === aktiv && onSchliessen) onSchliessen();
+            else void oeffnen(p.schluessel);
+          }}
+          onZurueck={onSchliessen}
+          onSchliessen={onSchliessen}
+          onNeuLaden={liste.neuLaden}
+          marken={liste.marken}
+          angeheftet={angeheftet}
+          kontextMenue={kontextMenue}
+          // ein mit dem Assistenten von ATLAS angelegtes Projekt gleich öffnen
+          onAngelegt={(ordner) => void oeffnen(ordner)}
+          // Stammordner per Ziehen umsortieren – gilt für alle Apps (gemeinsame Einstellung); der erste nimmt neue Projekte auf
+          onGruppenOrdnen={(projekte) => void allgemeinAendern({ projekte }).then(setAllgemein, (e) => setFehler(e instanceof Error ? e.message : String(e)))}
+          neu={onNeu && !rahmenAnlegen ? { aktion: onNeu, titel: 'Neues, leeres Projekt – gespeichert wird später als Datei' } : undefined}
+          weitere={onNeu && rahmenAnlegen ? [{ text: 'Leer beginnen', titel: 'Neues, leeres Projekt ohne Projektordner – gespeichert wird später als Datei', aktion: onNeu }] : undefined}
+          dateiOeffnen={onDateiOeffnen ? { aktion: onDateiOeffnen, titel: `${dateiHinweis ?? 'Projektdatei'} über den Dateidialog öffnen (Strg+O)` } : undefined}
+          leer={
+            <ProjektEinstieg
+              text="Noch kein Stammordner eingestellt – der Ordner, in dem die Projektordner liegen. Er gilt für alle Apps."
+              onStammordner={() => void stammordnerWaehlen()}
+              onDateiOeffnen={onDateiOeffnen}
+              dateiHinweis={dateiHinweis}
+              onNeu={onNeu}
+              onSchliessen={onSchliessen}
+            />
+          }
+        />
+      </Flaeche>
       {dialog && (
         <StammdatenDialog
           titel="Projektdatei anlegen"
@@ -272,14 +269,19 @@ export function ProjektWahl({
 }
 
 /**
- * Einheitlicher Leerzustand aller Apps („Projekte“): dieselben Aktionen in derselben Reihenfolge – Projekt wählen
- * (Übersicht mit „zuletzt geöffnet“), Datei öffnen, neues Projekt. Was eine App nicht anbietet, entfällt.
+ * Einheitlicher Einstieg aller Apps ohne geöffnetes Projekt und Leerzustand der Projektübersicht: eine Karte auf der
+ * Fläche, mittig, mit denselben Aktionen in derselben Reihenfolge – Stammordner wählen bzw. Projekt wählen
+ * (Übersicht mit „zuletzt geöffnet“), Projektdatei öffnen, neues Projekt. Was eine App nicht anbietet, entfällt.
+ * App-eigene Inhalte nur über die Slots: `was` (wofür die App da ist, unter dem Titel), `text`, `children` (unter
+ * den Knöpfen, z. B. eine Legende) und `fussnote`.
  */
 export function ProjektEinstieg({
   titel = 'Projekte',
+  was,
   text,
   onProjekte,
   onStammordner,
+  stammordnerText = 'Stammordner wählen …',
   onDateiOeffnen,
   dateiHinweis,
   onNeu,
@@ -288,48 +290,55 @@ export function ProjektEinstieg({
   children,
 }: {
   titel?: string;
+  /** wofür die App da ist (`APP_NAMEN[app].was`) – klein unter dem Titel */
+  was?: React.ReactNode;
   text: React.ReactNode;
   /** Nebensache unter den Knöpfen (z. B. was es nur in der Desktop-App gibt) */
   fussnote?: React.ReactNode;
   /** Projektübersicht öffnen (Desktop: Projektordner, zuletzt geöffnet) */
   onProjekte?: () => void;
   onStammordner?: () => void;
+  /** Beschriftung des Knopfs für `onStammordner` (Vorgabe „Stammordner wählen …“) */
+  stammordnerText?: string;
   onDateiOeffnen?: () => void;
   dateiHinweis?: string;
   onNeu?: () => void;
   onSchliessen?: () => void;
+  /** unter den Knöpfen (z. B. eine Legende oder ein weiterer Knopf) */
   children?: React.ReactNode;
 }) {
   const erste = onStammordner ? 'stammordner' : onProjekte ? 'projekte' : onDateiOeffnen ? 'datei' : 'neu';
   return (
-    <div className="pw-leer pw-einstieg">
-      <h2>{titel}</h2>
-      <p>{text}</p>
-      <div className="button-row pw-aktionen">
-        {onStammordner && (
-          <button className="primary" onClick={onStammordner}>
-            Stammordner wählen …
-          </button>
-        )}
-        {onProjekte && (
-          <button className={erste === 'projekte' ? 'primary' : ''} onClick={onProjekte} title="Projektübersicht: Projektordner, zuletzt geöffnet">
-            Projekt wählen …
-          </button>
-        )}
-        {onDateiOeffnen && (
-          <button className={erste === 'datei' ? 'primary' : ''} onClick={onDateiOeffnen} title={`${dateiHinweis ?? 'Projektdatei (.oap)'} über den Dateidialog öffnen (Strg+O)`}>
-            Datei öffnen …
-          </button>
-        )}
-        {onNeu && (
-          <button className={erste === 'neu' ? 'primary' : ''} onClick={onNeu}>
-            Neues Projekt
-          </button>
-        )}
-        {onSchliessen && <button onClick={onSchliessen}>Schließen</button>}
-      </div>
-      {children}
-      {fussnote && <p className="muted small-text pw-fussnote">{fussnote}</p>}
+    <div className="pw-einstieg-ort">
+      <Karte className="pw-einstieg" titel={titel}>
+        {was && <p className="pw-einstieg-was">{was}</p>}
+        <p>{text}</p>
+        <div className="button-row pw-aktionen">
+          {onStammordner && (
+            <button className="primary" onClick={onStammordner}>
+              {stammordnerText}
+            </button>
+          )}
+          {onProjekte && (
+            <button className={erste === 'projekte' ? 'primary' : ''} onClick={onProjekte} title="Projektübersicht: Projektordner, zuletzt geöffnet">
+              Projekt wählen …
+            </button>
+          )}
+          {onDateiOeffnen && (
+            <button className={erste === 'datei' ? 'primary' : ''} onClick={onDateiOeffnen} title={`${dateiHinweis ?? 'Projektdatei (.oap)'} über den Dateidialog öffnen (Strg+O)`}>
+              Datei öffnen …
+            </button>
+          )}
+          {onNeu && (
+            <button className={erste === 'neu' ? 'primary' : ''} onClick={onNeu}>
+              Neues Projekt
+            </button>
+          )}
+          {onSchliessen && <button onClick={onSchliessen}>Schließen</button>}
+        </div>
+        {children}
+        {fussnote && <p className="muted small-text pw-fussnote">{fussnote}</p>}
+      </Karte>
     </div>
   );
 }

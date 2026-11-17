@@ -14,6 +14,7 @@ import { PROJEKT_STATUS } from '../model';
 import { PROJEKT_ANGELEGT, projektAnlegenMoeglich, projektAnlegenStarten, vomRahmen } from '../platform/rahmen';
 import { appMitWas } from '../appNamen';
 import { zeigeMenue } from './Menue';
+import { Karte as KarteRahmen } from './Karte';
 import type { SymbolName } from './Symbol';
 import './projektuebersicht.css';
 
@@ -144,6 +145,13 @@ export interface UebersichtMarke {
   symbol?: IconName;
 }
 
+/** Knopf im Kopf der Übersicht – Darstellung und Reihenfolge legt die Übersicht fest, die App liefert nur Text und Aktion */
+export interface UebersichtAktion {
+  text?: string;
+  titel?: string;
+  aktion: () => void;
+}
+
 export interface ProjektUebersichtProps {
   titel?: string;
   gruppen: UebersichtGruppe[];
@@ -164,10 +172,21 @@ export interface ProjektUebersichtProps {
   onKontext?: (p: UebersichtProjekt, e: ReactMouseEvent, zuletzt: boolean) => void;
   status?: (p: UebersichtProjekt) => UebersichtStatus | undefined;
   marken?: (p: UebersichtProjekt) => UebersichtMarke[];
-  /** gezeigt, wenn es keine Gruppen gibt (z. B. „Ordner einstellen …“) */
+  /** gezeigt statt der Übersicht, wenn es keine Gruppen gibt – der gemeinsame `ProjektEinstieg` (z. B. „Ordner einstellen …“) */
   leer?: ReactNode;
-  /** weitere Knöpfe im Kopf */
-  kopf?: ReactNode;
+  /**
+   * Hauptknopf „Neues Projekt …“ rechts im Kopf (Vorgabe: der Assistent von ATLAS über die Rahmen-App, siehe
+   * `projektAnlegen`); `text` nur, wenn der Knopf etwas anderes tut (z. B. „Weiter mit 2026-014 …“)
+   */
+  neu?: UebersichtAktion;
+  /** „Datei öffnen …“ im Kopf (Dateidialog; was sich öffnen lässt, steht in `titel`) */
+  dateiOeffnen?: UebersichtAktion;
+  /** weitere Knöpfe im Kopf, vor „Datei öffnen …“ – selten, z. B. „Leer beginnen“, „Anderen Ordner …“ */
+  weitere?: (UebersichtAktion & { text: string })[];
+  /** Knopf „Schließen“ im Kopf (ohne geöffnetes Projekt; mit Projekt heißt er „Zurück zu …“ und nimmt `onZurueck`) */
+  onSchliessen?: () => void;
+  /** Meldung über der Liste (z. B. „Projekt wird geöffnet …“ oder ein Fehler) */
+  meldung?: { text: string; fehler?: boolean };
   /** Text, wenn eine Gruppe leer ist */
   gruppeLeer?: string;
   /** angeheftete Projekte (Schlüssel) – vorne im Abschnitt „Angeheftet“ */
@@ -324,86 +343,106 @@ export function ProjektUebersicht(props: ProjektUebersichtProps) {
   const treffer = inGruppen.flatMap((x) => x.treffer);
   const aktivesProjekt = aktiv ? nachSchluessel.get(aktiv) : undefined;
 
-  const anlegenKnopf = anlegen && (
-    <button className="primary pa-anlegen" onClick={anlegen} title={`Neues Projekt mit dem Assistenten von ${appMitWas('ordner')} anlegen: Stammdaten, Umfang, Beteiligte, Ordner und Vorlagen`}>
-      <Icon name="plus" /> Neues Projekt anlegen
-    </button>
+  // Kopf: immer dieselben Knöpfe in derselben Reihenfolge – Zurück/Schließen, weitere, Datei öffnen, Hauptknopf rechts
+  const neu: UebersichtAktion | null =
+    props.neu ??
+    (anlegen
+      ? { text: 'Neues Projekt anlegen …', titel: `Neues Projekt mit dem Assistenten von ${appMitWas('ordner')} anlegen: Stammdaten, Umfang, Beteiligte, Ordner und Vorlagen`, aktion: anlegen }
+      : null);
+  const kopfAktionen = (
+    <>
+      {aktivesProjekt && onZurueck ? (
+        <button onClick={onZurueck} title="Zurück zum geöffneten Projekt">
+          Zurück zu {aktivesProjekt.kuerzel}
+        </button>
+      ) : (
+        props.onSchliessen && <button onClick={props.onSchliessen}>Schließen</button>
+      )}
+      {props.weitere?.map((w) => (
+        <button key={w.text} onClick={w.aktion} title={w.titel}>
+          {w.text}
+        </button>
+      ))}
+      {props.dateiOeffnen && (
+        <button onClick={props.dateiOeffnen.aktion} title={props.dateiOeffnen.titel ?? 'Projektdatei über den Dateidialog öffnen (Strg+O)'}>
+          {props.dateiOeffnen.text ?? 'Datei öffnen …'}
+        </button>
+      )}
+      {neu && (
+        <button className="primary pa-anlegen" onClick={neu.aktion} title={neu.titel}>
+          <Icon name="plus" /> {neu.text ?? 'Neues Projekt …'}
+        </button>
+      )}
+    </>
   );
 
-  if (!gruppen.length && props.leer)
-    return (
-      <div className="pa">
-        {props.leer}
-        {anlegenKnopf && <div className="pa-leer-anlegen">{anlegenKnopf}</div>}
-      </div>
-    );
+  if (!gruppen.length && props.leer) return <>{props.leer}</>;
 
   const karte = (p: UebersichtProjekt, geoeffnet?: number) => (
     <Karte key={p.schluessel} p={p} geoeffnet={geoeffnet} hervorgehoben={p.schluessel === aktiv} onOeffnen={onOeffnen} onKontext={kontext} status={props.status} marken={props.marken} />
   );
 
-  return (
-    <div className="pa">
-      <header className="pa-kopf">
-        <div className="pa-kopf-titel">
-          <h2>{titel}</h2>
-          <span className="muted small-text">{sucht ? 'werden gesucht …' : `${projekte.length} in ${gruppen.length === 1 ? 'einer Quelle' : `${gruppen.length} Quellen`}`}</span>
-        </div>
-        <input
-          type="search"
-          className="pa-suche"
-          placeholder="Kürzel oder Titel …"
-          aria-label="Projekte durchsuchen"
-          value={suche}
-          onChange={(e) => setSuche(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && q && treffer[0]) onOeffnen(treffer[0]);
-            // Esc verwirft zuerst die Suche, erst dann schließt es die Übersicht
-            if (e.key === 'Escape' && suche) {
-              e.stopPropagation();
-              setSuche('');
-            }
-          }}
-          autoFocus
-        />
-        {onNeuLaden && (
-          <button className="icon" title="Projekte neu einlesen" aria-label="Projekte neu einlesen" disabled={sucht} onClick={onNeuLaden}>
-            <Icon name="verlauf" />
-          </button>
-        )}
-        {onEinstellungen && (
-          <button className="icon" title="Quellen einstellen" aria-label="Quellen einstellen" onClick={onEinstellungen}>
-            <Icon name="zahnrad" />
-          </button>
-        )}
-        <select className="pa-auswahl" aria-label="Sortierung" title="Sortierung der Projekte in den Quellen" value={sortierung} onChange={(e) => setSortierung(e.target.value as Sortierung)}>
-          {SORTIERUNGEN.map((s) => (
+  const leiste = (
+    <div className="toolbar pa-leiste">
+      <input
+        type="search"
+        className="pa-suche"
+        placeholder="Kürzel oder Titel …"
+        aria-label="Projekte durchsuchen"
+        value={suche}
+        onChange={(e) => setSuche(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && q && treffer[0]) onOeffnen(treffer[0]);
+          // Esc verwirft zuerst die Suche, erst dann schließt es die Übersicht
+          if (e.key === 'Escape' && suche) {
+            e.stopPropagation();
+            setSuche('');
+          }
+        }}
+        autoFocus
+      />
+      <select className="pa-auswahl" aria-label="Sortierung" title="Sortierung der Projekte in den Quellen" value={sortierung} onChange={(e) => setSortierung(e.target.value as Sortierung)}>
+        {SORTIERUNGEN.map((s) => (
+          <option key={s.id} value={s.id}>
+            {s.label}
+          </option>
+        ))}
+      </select>
+      {mitStatus && (
+        <select className="pa-auswahl" aria-label="Status" title="Projekte nach Status filtern (aus der Projektdatei)" value={filter} onChange={(e) => setFilter(e.target.value as StatusFilter)}>
+          <option value="offen">ohne abgeschlossene</option>
+          {PROJEKT_STATUS.map((s) => (
             <option key={s.id} value={s.id}>
-              {s.label}
+              nur {s.label}
             </option>
           ))}
+          <option value="alle">alle</option>
         </select>
-        {mitStatus && (
-          <select className="pa-auswahl" aria-label="Status" title="Projekte nach Status filtern (aus der Projektdatei)" value={filter} onChange={(e) => setFilter(e.target.value as StatusFilter)}>
-            <option value="offen">ohne abgeschlossene</option>
-            {PROJEKT_STATUS.map((s) => (
-              <option key={s.id} value={s.id}>
-                nur {s.label}
-              </option>
-            ))}
-            <option value="alle">alle</option>
-          </select>
-        )}
-        {props.kopf}
-        {anlegenKnopf}
-        {aktivesProjekt && onZurueck && (
-          <button onClick={onZurueck} title="Zurück zum geöffneten Projekt">
-            Zurück zu {aktivesProjekt.kuerzel}
-          </button>
-        )}
-      </header>
+      )}
+      <span className="pa-anzahl muted small-text" aria-live="polite">
+        {sucht ? 'werden gesucht …' : `${projekte.length} ${projekte.length === 1 ? 'Projekt' : 'Projekte'} in ${gruppen.length === 1 ? 'einer Quelle' : `${gruppen.length} Quellen`}`}
+      </span>
+      {onNeuLaden && (
+        <button className="icon" title="Projekte neu einlesen" aria-label="Projekte neu einlesen" disabled={sucht} onClick={onNeuLaden}>
+          <Icon name="verlauf" />
+        </button>
+      )}
+      {onEinstellungen && (
+        <button className="icon" title="Quellen einstellen" aria-label="Quellen einstellen" onClick={onEinstellungen}>
+          <Icon name="zahnrad" />
+        </button>
+      )}
+    </div>
+  );
 
+  return (
+    <KarteRahmen className="pa" titel={titel} aktionen={kopfAktionen} leiste={leiste} buendig>
       <div className="pa-rollbereich">
+        {props.meldung && (
+          <p className={props.meldung.fehler ? 'warning small-text' : 'busy small-text'} role={props.meldung.fehler ? 'alert' : 'status'}>
+            {props.meldung.text}
+          </p>
+        )}
         {fehler.map((f) => (
           <p key={f} className="warning small-text">
             {f}
@@ -500,7 +539,7 @@ export function ProjektUebersicht(props: ProjektUebersichtProps) {
         })}
         {q && !treffer.length && <p className="pa-nichts muted">Kein Projekt passt zu „{suche.trim()}“.</p>}
       </div>
-    </div>
+    </KarteRahmen>
   );
 }
 

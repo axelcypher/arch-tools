@@ -549,6 +549,29 @@ ist (`docs/nachziehen/`). Eigene Layout-CSS und feste Farben der Apps entfallen 
 Rahmen-App Arkly: Sie hat keine Arbeitsfläche, sondern Tableiste und Startseite; ihre Seiten zeigen die Apps, die selbst
 auf Karten stehen.
 
+## Startseite
+
+**Die Startseite ist in allen Apps derselbe Baustein; Apps liefern nur Daten in Slots.** Ohne geöffnetes Projekt bzw.
+über „Projekte“ zeigt jede App die Projektübersicht aus core (`ui/ProjektUebersicht.tsx`, in den Apps mit
+Projektdatei über `ProjektWahl`), keine eigene Seite und keine eigene CSS dafür (ein Test prüft beides).
+
+- **Aufbau:** eine `Karte` auf der `Flaeche`. Kopf: Überschrift „Projekte“, rechts die Knöpfe in fester Reihenfolge –
+  „Zurück zu ‹Kürzel›“ (mit geöffnetem Projekt) bzw. „Schließen“, seltene weitere (`weitere`, z. B. „Leer beginnen“),
+  „Datei öffnen …“ (`dateiOeffnen`), ganz rechts der Hauptknopf „Neues Projekt …“ (`neu`; in der Rahmen-App ohne
+  eigenen Knopf der Assistent von ATLAS). Darunter die feste Leiste (`leiste`): Suche, Sortierung, Statusfilter, rechts
+  die Anzahl, „Neu einlesen“ und „Quellen einstellen“. Im Inhalt „Angeheftet“, „Zuletzt geöffnet“ und je Quelle ein
+  aufklappbarer Abschnitt mit Linie bis an den Kartenrand.
+- **Kacheln:** Kürzel (`--fs-l`), Titel, Info und Zeit, darunter Marken (`marken`: Warnung, Hinweis, ok, neutral) und
+  wahlweise eine Statuszeile (`status`: Punkt, Balken je Stufe, Text) – überall gleich, nur die Daten kommen aus der
+  App. Rechtsklick öffnet das Kontextmenü (`kontextMenue`). Die App-Farbe nur als Akzent (Fokus, aktive Kachel,
+  Hauptknopf), nie als Fläche.
+- **Einstieg und Leerzustand:** `ProjektEinstieg` – eine Karte mittig auf der Fläche, Titel im Kartenkopf, darunter
+  wofür die App da ist (`was`), ein Satz (`text`), die Knöpfe in fester Reihenfolge (Stammordner wählen bzw. Projekt
+  wählen, Datei öffnen, Neues Projekt, Schließen), unter den Knöpfen app-eigene Ergänzungen (`children`, z. B. die
+  Ampel-Legende von LEXIO) und eine Fußnote. Keine eigene Startkarte je App.
+- **Arkly:** Die Startseite der Rahmen-App folgt demselben Muster – eine Karte auf der Fläche, Hauptknopf „Neues Projekt
+  anlegen …“ im Kopf, die Apps als Kacheln in denselben Maßen wie die Projektkacheln.
+
 ## Seitenleisten
 
 `BreitenLeiste` (`ui/Leiste.tsx`) mit gemerkter, ziehbarer Breite. Der Griff sitzt am Rand zur Arbeitsfläche: links

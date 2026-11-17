@@ -7,7 +7,7 @@ import { Flaeche } from '@core/ui/Karte';
 import { BreitenLeiste } from '@core/ui/Leiste';
 import { APP_NAMEN, appMitWas } from '@core/appNamen';
 import { LogDialog } from '@core/ui/LogDialog';
-import { ProjektWahl } from '@core/ui/ProjektWahl';
+import { ProjektEinstieg, ProjektWahl } from '@core/ui/ProjektWahl';
 import { aenderungenSpeichern, fehlerText, meldung } from '@core/ui/Rueckfrage';
 import { TitleBar } from '@core/ui/TitleBar';
 import { Angaben } from './components/Angaben';
@@ -47,7 +47,8 @@ export function speichern(): Promise<boolean> {
 async function speichernLauf(): Promise<boolean> {
   if (!useBaurecht.getState().quelle) return false;
   // Modulwerte, die nicht mehr gelten, nicht wieder in die Datei schreiben (eine Auswertung nur, wenn es welche gibt)
-  if (Object.values(useBaurecht.getState().pruefung.fakten).some((f) => f.herkunft === 'modul')) useBaurecht.getState().veralteteModulwerteEntfernen(auswertungMit(useBaurecht.getState().pruefung.fakten).fakten);
+  if (Object.values(useBaurecht.getState().pruefung.fakten).some((f) => f.herkunft === 'modul'))
+    useBaurecht.getState().veralteteModulwerteEntfernen(auswertungMit(useBaurecht.getState().pruefung.fakten).fakten);
   const s = useBaurecht.getState();
   // vor dem Dialog: „ohne diese speichern“ setzt die Entwürfe vorübergehend auf den Stand der Datei
   const warGeaendert = istGeaendert(s);
@@ -74,7 +75,10 @@ async function speichernLauf(): Promise<boolean> {
     const konflikte: string[] = [];
     ok = await speichernJetzt(konflikte);
     if (ok && konflikte.length)
-      await meldung('Gleichzeitig geändert', `Diese Einträge wurden inzwischen auch an anderer Stelle (andere App-Instanz) geändert; gespeichert ist Ihr Stand:\n\n${konflikte.join('\n')}\n\nBitte prüfen, ob das so stimmt.`);
+      await meldung(
+        'Gleichzeitig geändert',
+        `Diese Einträge wurden inzwischen auch an anderer Stelle (andere App-Instanz) geändert; gespeichert ist Ihr Stand:\n\n${konflikte.join('\n')}\n\nBitte prüfen, ob das so stimmt.`,
+      );
     return ok;
   } catch (e) {
     log.error('Speichern fehlgeschlagen', { fehler: fehlerText(e) });
@@ -106,7 +110,12 @@ async function speichernLauf(): Promise<boolean> {
     if (ok) {
       const st = useBaurecht.getState();
       const offen = offeneFestlegungen(st).length + offeneBestaetigungen(st).length;
-      useBaurecht.setState({ gespeichertMeldung: { am: Date.now(), text: offen ? `Gespeichert – ${offen === 1 ? 'ein Entwurf bleibt' : `${offen} Entwürfe bleiben`} offen` : warGeaendert ? 'Gespeichert' : 'Gespeichert – keine Änderungen' } });
+      useBaurecht.setState({
+        gespeichertMeldung: {
+          am: Date.now(),
+          text: offen ? `Gespeichert – ${offen === 1 ? 'ein Entwurf bleibt' : `${offen} Entwürfe bleiben`} offen` : warGeaendert ? 'Gespeichert' : 'Gespeichert – keine Änderungen',
+        },
+      });
     }
   }
 }
@@ -119,7 +128,10 @@ export async function speichernVollstaendig(): Promise<boolean> {
   const ok = await speichern();
   if (!ok) return false;
   if (istGeaendert(useBaurecht.getState())) {
-    await meldung('Entwürfe bleiben offen', 'Gespeichert ist alles außer den Entwürfen. Damit sie nicht verloren gehen, bleibt das Projekt geöffnet: bitte die Entwürfe beim Speichern bestätigen, aufheben oder ausdrücklich verwerfen („Nicht speichern“).');
+    await meldung(
+      'Entwürfe bleiben offen',
+      'Gespeichert ist alles außer den Entwürfen. Damit sie nicht verloren gehen, bleibt das Projekt geöffnet: bitte die Entwürfe beim Speichern bestätigen, aufheben oder ausdrücklich verwerfen („Nicht speichern“).',
+    );
     return false;
   }
   return true;
@@ -147,7 +159,11 @@ const BEREICHE: { sel: string; sprung?: string }[] = [
 function bereichFokussieren(sel: string): boolean {
   const b = document.querySelector<HTMLElement>(sel);
   if (!b) return false;
-  const ziel = b.querySelector<HTMLElement>('[data-f6-ziel]') ?? b.querySelector<HTMLElement>('[data-roving][tabindex="0"]') ?? b.querySelector<HTMLElement>('button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea, [tabindex="0"]') ?? (b.hasAttribute('tabindex') ? b : null);
+  const ziel =
+    b.querySelector<HTMLElement>('[data-f6-ziel]') ??
+    b.querySelector<HTMLElement>('[data-roving][tabindex="0"]') ??
+    b.querySelector<HTMLElement>('button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea, [tabindex="0"]') ??
+    (b.hasAttribute('tabindex') ? b : null);
   if (!ziel) return false;
   ziel.focus();
   return document.activeElement === ziel;
@@ -165,36 +181,26 @@ export function bereichWechseln(rueckwaerts: boolean) {
 
 function Start({ onWahl }: { onWahl: () => void }) {
   return (
-    <div className="br-start">
-      <div className="br-start-karte">
-        <hgroup>
-          <h1>{APP_NAMEN.baurecht.name}</h1>
-          <p className="br-start-was">{APP_NAMEN.baurecht.was}</p>
-        </hgroup>
-        <p>Rechtsprüfung vor dem Einreichen eines Antrags: alle Vorschriften, die für das Vorhaben eine Rolle spielen – je Paragraf als Ampel, mit Begründung und dem Text in der maßgeblichen Fassung.</p>
-        <dl className="br-legende">
-          {(['rot', 'gelb', 'gruen'] as const).map((a) => (
-            <div key={a}>
-              <dt>
-                <AmpelMarke ampel={a} />
-              </dt>
-              <dd>{AMPEL_ERKLAERUNG[a]}</dd>
-            </div>
-          ))}
-        </dl>
-        <div className="br-start-knoepfe">
-          {isTauri() && (
-            <button type="button" className="primary" onClick={onWahl}>
-              Projekt wählen …
-            </button>
-          )}
-          <button type="button" className={isTauri() ? '' : 'primary'} onClick={() => void dateiOeffnen()}>
-            Projektdatei öffnen …
-          </button>
-        </div>
-        <p className="br-leise">Die Angaben kommen aus der Projektdatei (.oap) – Stammdaten, Antragsmerkmale aus {appMitWas('formulare')}, Festsetzungen aus {appMitWas('grz')}, Geschosse aus {appMitWas('flaechenrechner')}.</p>
-      </div>
-    </div>
+    <ProjektEinstieg
+      titel={APP_NAMEN.baurecht.name}
+      was={APP_NAMEN.baurecht.was}
+      text="Rechtsprüfung vor dem Einreichen eines Antrags: alle Vorschriften, die für das Vorhaben eine Rolle spielen – je Paragraf als Ampel, mit Begründung und dem Text in der maßgeblichen Fassung."
+      onProjekte={isTauri() ? onWahl : undefined}
+      onDateiOeffnen={() => void dateiOeffnen()}
+      dateiHinweis="Projektdatei (.oap)"
+      fussnote={`Die Angaben kommen aus der Projektdatei (.oap) – Stammdaten, Antragsmerkmale aus ${appMitWas('formulare')}, Festsetzungen aus ${appMitWas('grz')}, Geschosse aus ${appMitWas('flaechenrechner')}.`}
+    >
+      <dl className="br-legende">
+        {(['rot', 'gelb', 'gruen'] as const).map((a) => (
+          <div key={a}>
+            <dt>
+              <AmpelMarke ampel={a} />
+            </dt>
+            <dd>{AMPEL_ERKLAERUNG[a]}</dd>
+          </div>
+        ))}
+      </dl>
+    </ProjektEinstieg>
   );
 }
 
@@ -306,27 +312,60 @@ export function App() {
           ))}
         </nav>
       )}
-      <TitleBar app={APP_NAMEN.baurecht.name} name={name} dirty={dirty} ungespeichert={UNGESPEICHERT} zeichenflaeche={false} onOpenLog={() => setLogOffen(true)} onProjekte={() => void projekteOeffnen()} onSpeichern={quelle ? speichernMitMeldung : undefined} />
+      <TitleBar
+        app={APP_NAMEN.baurecht.name}
+        name={name}
+        dirty={dirty}
+        ungespeichert={UNGESPEICHERT}
+        zeichenflaeche={false}
+        onOpenLog={() => setLogOffen(true)}
+        onProjekte={() => void projekteOeffnen()}
+        onSpeichern={quelle ? speichernMitMeldung : undefined}
+      />
       {project ? (
         <>
           <h1 className="br-unsichtbar">
             {APP_NAMEN.baurecht.name} – {name}
           </h1>
-          <Kopf stand={stand} onRechtsstand={() => void texteLaden(stand.module, stand.einreichung, { aktualisieren: true })} onLage={() => void lage()} onProtokoll={() => setProtokoll(true)} onSpeichern={() => void speichern()} onAntrag={(a) => void antragWechseln(a)} lageLaeuft={lageLaeuft} />
+          <Kopf
+            stand={stand}
+            onRechtsstand={() => void texteLaden(stand.module, stand.einreichung, { aktualisieren: true })}
+            onLage={() => void lage()}
+            onProtokoll={() => setProtokoll(true)}
+            onSpeichern={() => void speichern()}
+            onAntrag={(a) => void antragWechseln(a)}
+            lageLaeuft={lageLaeuft}
+          />
           {!isTauri() && (
             <div className="br-hinweisband" role="note">
-              Web-Version: Die Gesetzestexte lassen sich hier nicht abrufen. Ohne Text kann die App nicht prüfen, ob sich ein Paragraf seit der Prüfung der Regel geändert hat – deshalb bleibt, was sonst entfiele, gelb. Die volle Prüfung bietet die Desktop-App.
+              Web-Version: Die Gesetzestexte lassen sich hier nicht abrufen. Ohne Text kann die App nicht prüfen, ob sich ein Paragraf seit der Prüfung der Regel geändert hat – deshalb bleibt, was
+              sonst entfiele, gelb. Die volle Prüfung bietet die Desktop-App.
             </div>
           )}
           {/* Fläche mit Karten (docs/design.md „Fläche und Karten“): links Angaben, in der Mitte Ergebnis über den
               Vorschriften, rechts die Einzelheiten – jede Karte scrollt für sich, jede ist eine Station für F6 */}
           <Flaeche>
             {/* schmale Fenster: die Seitenkarten starten schmaler, damit die Mitte Platz behält */}
-            <BreitenLeiste schluessel="baurecht:leiste-angaben" vorgabe={typeof window !== 'undefined' && window.innerWidth < 1200 ? 260 : 330} min={240} max={520} titel="Breite der Angaben" mitteMin={420}>
+            <BreitenLeiste
+              schluessel="baurecht:leiste-angaben"
+              vorgabe={typeof window !== 'undefined' && window.innerWidth < 1200 ? 260 : 330}
+              min={240}
+              max={520}
+              titel="Breite der Angaben"
+              mitteMin={420}
+            >
               <Angaben stand={stand} />
             </BreitenLeiste>
             <Vorschriften stand={stand} />
-            <BreitenLeiste schluessel="baurecht:leiste-einzelheiten" vorgabe={typeof window === 'undefined' || window.innerWidth >= 1400 ? 420 : window.innerWidth < 1200 ? 300 : 360} min={280} max={680} seite="rechts" titel="Breite der Einzelheiten" mitteMin={420}>
+            <BreitenLeiste
+              schluessel="baurecht:leiste-einzelheiten"
+              vorgabe={typeof window === 'undefined' || window.innerWidth >= 1400 ? 420 : window.innerWidth < 1200 ? 300 : 360}
+              min={280}
+              max={680}
+              seite="rechts"
+              titel="Breite der Einzelheiten"
+              mitteMin={420}
+            >
               <Detail stand={stand} />
             </BreitenLeiste>
           </Flaeche>

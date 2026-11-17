@@ -540,9 +540,7 @@ export function App() {
           </BreitenLeiste>
         )}
         {ds && (!projekt || haupt === 'projekte') ? (
-          <Karte ariaLabel="Projekte" buendig>
-            <ProjektUebersicht onEinstellungen={() => einstellungenOeffnen('formulare', 'formularprojekte')} />
-          </Karte>
+          <ProjektUebersicht onEinstellungen={() => einstellungenOeffnen('formulare', 'formularprojekte')} />
         ) : haupt === 'projektkarte' && projekt ? (
           <ProjektkarteAnsicht />
         ) : haupt === 'antrag' && projekt ? (
