@@ -1,6 +1,8 @@
 import { Symbol } from '@core/ui/Symbol';
 import { zeichenKuerzelErlaubt } from '@core/platform/eingabe';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { useZeichenFussZiel } from './zeichenFuss';
 import type { Point } from '@core/geometry';
 import {
   bounds,
@@ -106,6 +108,8 @@ export function Canvas() {
   const { update, updateSilent, checkpoint, select, setTool } = useEditor.getState();
 
   const svgRef = useRef<SVGSVGElement>(null);
+  /** Fußzeile der Zeichenkarte (nur in der Grundrissansicht gesetzt) */
+  const fussZiel = useZeichenFussZiel();
   const [size, setSize] = useState({ w: 800, h: 600 });
   const [vp, setVp] = useState<Viewport>({ scale: 40, tx: 60, ty: 60 });
   const [cursor, setCursor] = useState<SnapResult | null>(null);
@@ -1389,36 +1393,42 @@ export function Canvas() {
         )}
       </svg>
 
-      <div className="hud">
-        {/* Koordinaten wie im Plan: y nach oben positiv (wie Messen und die Eingabe dx;dy) */}
-        {(cursor || ziehInfo) && (
-          <span className="hud-coords">
-            {ziehInfo ?? (cursor ? `X ${fmt2(cursor.p.x)}  Y ${fmt2(-cursor.p.y)} m` : '')}
-            {!ziehInfo && cursor && cursor.kind !== 'none' && cursor.kind !== 'grid' && tool !== 'select' && (
-              <em> · Fang: {{ vertex: 'Punkt', edge: 'Kante', guide: 'Hilfslinie', ortho: 'Achse', grid: 'Raster', none: '' }[cursor.kind]}</em>
+      {/* Bedienhinweis, Eingabe, Koordinaten und Maßstab stehen in der Fußzeile der Zeichenkarte – nichts verdeckt den Plan */}
+      {fussZiel &&
+        createPortal(
+          <>
+            <div className="hud-zeile">
+              {hinweisZu || !hint ? (
+                <button className="hud-hint-knopf" onClick={() => (hint ? hinweisUmschalten(false) : setKuerzelOffen(true))} title={hint ? 'Bedienhinweise einblenden' : 'Tastenkürzel anzeigen … (?)'}>
+                  {hint ? '? Hinweise' : '? Tastenkürzel …'}
+                </button>
+              ) : (
+                <span className="hud-hint" title={hint}>
+                  <span className="hud-hint-text">{hint}</span>
+                  <button className="hud-hint-knopf" onClick={() => setKuerzelOffen(true)} title="Alle Tastenkürzel … (?)" aria-label="Alle Tastenkürzel …">
+                    ?
+                  </button>
+                  <button className="hud-hint-knopf" onClick={() => hinweisUmschalten(true)} title="Bedienhinweise ausblenden (bleibt so)" aria-label="Bedienhinweise ausblenden">
+                    <Symbol name="schliessen" />
+                  </button>
+                </span>
+              )}
+            </div>
+            {numBuf && <span className="hud-input">Eingabe: {numBuf}▏</span>}
+            {/* Koordinaten wie im Plan: y nach oben positiv (wie Messen und die Eingabe dx;dy) */}
+            {(cursor || ziehInfo) && (
+              <span className="hud-coords">
+                {ziehInfo ?? (cursor ? `X ${fmt2(cursor.p.x)}  Y ${fmt2(-cursor.p.y)} m` : '')}
+                {!ziehInfo && cursor && cursor.kind !== 'none' && cursor.kind !== 'grid' && tool !== 'select' && (
+                  <em> · Fang: {{ vertex: 'Punkt', edge: 'Kante', guide: 'Hilfslinie', ortho: 'Achse', grid: 'Raster', none: '' }[cursor.kind]}</em>
+                )}
+                {!ziehInfo && origin && preview && tool === 'polygon' && <em> · Segment {fmt2(distance(origin, preview))} m</em>}
+              </span>
             )}
-            {!ziehInfo && origin && preview && tool === 'polygon' && <em> · Segment {fmt2(distance(origin, preview))} m</em>}
-          </span>
+            <ScaleBar scale={vp.scale} />
+          </>,
+          fussZiel,
         )}
-        {numBuf && <span className="hud-input">Eingabe: {numBuf}▏</span>}
-        <div className="hud-zeile">
-          {hinweisZu || !hint ? (
-            <button className="hud-hint-knopf" onClick={() => (hint ? hinweisUmschalten(false) : setKuerzelOffen(true))} title={hint ? 'Bedienhinweise einblenden' : 'Tastenkürzel anzeigen … (?)'}>
-              {hint ? '? Hinweise' : '? Tastenkürzel …'}
-            </button>
-          ) : (
-            <span className="hud-hint" title={hint}>
-              <span className="hud-hint-text">{hint}</span>
-              <button className="hud-hint-knopf" onClick={() => setKuerzelOffen(true)} title="Alle Tastenkürzel … (?)" aria-label="Alle Tastenkürzel …">
-                ?
-              </button>
-              <button className="hud-hint-knopf" onClick={() => hinweisUmschalten(true)} title="Bedienhinweise ausblenden (bleibt so)" aria-label="Bedienhinweise ausblenden">
-                <Symbol name="schliessen" />
-              </button>
-            </span>
-          )}
-        </div>
-      </div>
       {einstieg && (
         <div className="canvas-leer">
           <p className="canvas-leer-titel">Wie soll es losgehen?</p>
@@ -1432,7 +1442,6 @@ export function Canvas() {
         </div>
       )}
       {kuerzelOffen && <KuerzelDialog onClose={() => setKuerzelOffen(false)} />}
-      <ScaleBar scale={vp.scale} />
       {/* Ansichtsoptionen, Werkzeugoptionen und Meldung untereinander rechts oben – brechen in schmalen Fenstern um,
           ohne sich zu überdecken */}
       <div className="canvas-oben">
@@ -1523,7 +1532,7 @@ const KUERZEL: [string, string][] = [
 function KuerzelDialog({ onClose }: { onClose: () => void }) {
   return (
     <Modal titel="Tastenkürzel der Zeichenfläche" kopf onClose={onClose} breit>
-      <table className="kuerzel-tabelle">
+      <table className="summary-table text kuerzel-tabelle">
         <tbody>
           {KUERZEL.map(([k, w]) => (
             <tr key={k}>
@@ -1546,7 +1555,7 @@ function ScaleBar({ scale }: { scale: number }) {
   const candidates = [0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500];
   const len = candidates.find((c) => c * scale >= 80) ?? 500;
   return (
-    <div className="scalebar">
+    <div className="scalebar" role="img" aria-label={`Maßstab: ${String(len).replace('.', ',')} m`}>
       <div className="scalebar-bar" style={{ width: len * scale }} />
       <span>{String(len).replace('.', ',')} m</span>
     </div>
