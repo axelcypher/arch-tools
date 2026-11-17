@@ -382,12 +382,8 @@ export function GrzGfzView() {
           und Eigenschaften gehören zusammen und scrollen gemeinsam; der Plan selbst hat eine feste Höhe */}
       <Karte
         className="grz-plan"
-        titel={
-          <>
-            {ansicht === 'plan' ? 'Lageplan' : '3D-Ansicht'}
-            <HilfeKnopf thema={['lageplan', 'ueberlagerung', 'gelaende']} titel="Lageplan" />
-          </>
-        }
+        titel={ansicht === 'plan' ? 'Lageplan' : '3D-Ansicht'}
+        hilfe={<HilfeKnopf thema={['lageplan', 'ueberlagerung', 'gelaende']} titel="Lageplan" />}
         aktionen={
           <div className="segment" role="group" aria-label="Ansicht">
             <button className={ansicht === 'plan' ? 'active' : undefined} aria-pressed={ansicht === 'plan'} onClick={() => setAnsicht('plan')}>
@@ -603,12 +599,8 @@ export function GrzGfzView() {
       <BreitenLeiste schluessel="grz:breite:nachweis" vorgabe={380} min={320} max={600} seite="rechts" titel="Breite des Nachweises">
         <Karte
           className="grz-nachweis"
-          titel={
-            <>
-              Nachweis
-              <HilfeKnopf thema={['grz', 'gfz', 'baunvo']} titel="GRZ/GFZ" />
-            </>
-          }
+          titel="Nachweis"
+          hilfe={<HilfeKnopf thema={['grz', 'gfz', 'baunvo']} titel="GRZ/GFZ" />}
         >
           <p className="muted small-text">
             {baunvoLabel(n.recht.baunvo)} · Vollgeschosse nach {bauoLabel(n.recht.bauo)}

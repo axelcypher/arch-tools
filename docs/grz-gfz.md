@@ -51,6 +51,9 @@ erhalten.
 Die Oberfläche folgt dem Kartenlayout der Suite (Richtung C): Unter der Werkzeugleiste liegen drei Karten – links
 „Projekt und Grundstück“, in der Mitte „Lageplan“ (Umschalter Lageplan | 3D im Kartenkopf), rechts „Nachweis“. Jede
 Karte scrollt für sich; die linke und die rechte Karte lassen sich am Spalt in der Breite ziehen (Breite wird gemerkt).
+In schmalen Fenstern geben zuerst die Seitenkarten nach – die Eingaben bis zur allgemeinen Mindestbreite, der Nachweis
+nur bis 320 px (dann stehen die Kacheln GRZ/GFZ/Vollgeschosse untereinander) –, der Lageplan behält möglichst seine
+Breite. Das „?“ steht in jedem Kartenkopf direkt hinter dem Titel.
 Der Lageplan ist bewusst eine normale Karte und keine reine Zeichenkarte: Werkzeuge, Plan (feste Höhe), Flächentabelle
 und Eigenschaften der Auswahl gehören zusammen und scrollen gemeinsam.
 

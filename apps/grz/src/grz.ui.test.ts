@@ -550,6 +550,13 @@ describe('Nachweis-Spalte, Regeln, Rückgängig (G-28, G-29, G-32)', () => {
     expect(css).not.toMatch(/\.grz-view\s*\{/);
     expect(css).not.toMatch(/\.grz-col\b/);
     expect(css).not.toMatch(/@media \(max-width: 1280px\)/);
+    // Kartenkopf ganz aus core: das „?“ kommt über die Eigenschaft hilfe, keine eigene Regel für das h2
+    expect(css).not.toMatch(/\.karte-kopf h2\s*\{/);
+    // schmale Fenster: der Nachweis gibt nur bis 320 px nach (Kacheln und Vollgeschoss-Tabelle passen noch),
+    // die Kacheln stehen dann untereinander, die Zahlenspalten haben feste Breiten statt Prozent
+    expect(css).toMatch(/\.leiste:has\(> \.grz-nachweis\)\s*\{\s*--leiste-min: 320px;/);
+    expect(css).toMatch(/\.kpis\s*\{[^}]*grid-template-columns: repeat\(auto-fit, minmax\(165px, 1fr\)\)/);
+    expect(css.slice(css.indexOf('.grz-vg-tabelle th:nth-child(1)'), css.indexOf('.grz-vg-tabelle select'))).not.toMatch(/width: \d+%/);
     // Skizze ohne eigene Palette (helle Planfarben aus .canvas)
     expect(css).toContain('.grz-skizze {');
     const skizze = css.slice(css.indexOf('.grz-skizze {'), css.indexOf('}', css.indexOf('.grz-skizze {')));
@@ -1287,7 +1294,14 @@ describe('Kartenlayout (Richtung C)', () => {
     const flaeche = host.querySelector('.flaeche.grz-view')!;
     expect(flaeche).not.toBeNull();
     const karten = [...flaeche.querySelectorAll('section.karte')];
-    expect(karten.map((k) => k.querySelector('.karte-kopf h2')!.firstChild!.textContent?.trim())).toEqual(['Projekt und Grundstück', 'Lageplan', 'Nachweis']);
+    // das h2 ist der reine Titel (Kartenname für Vorleseprogramme), das „?“ steht daneben im Kartentitel
+    expect(karten.map((k) => k.querySelector('.karte-kopf h2')!.textContent)).toEqual(['Projekt und Grundstück', 'Lageplan', 'Nachweis']);
+    for (const k of karten.slice(1)) {
+      expect(k.querySelector('.karte-titel > h2 + .hilfe-knopf')).not.toBeNull();
+      expect(k.querySelector('.karte-kopf h2 button')).toBeNull();
+    }
+    // Gegenprobe: die Eingabekarte hat keine Hilfe im Kopf
+    expect(karten[0].querySelector('.karte-titel .hilfe-knopf')).toBeNull();
     // jede Karte ist ein benannter Bereich (aria-labelledby auf das h2)
     for (const k of karten) expect(document.getElementById(k.getAttribute('aria-labelledby')!)?.tagName).toBe('H2');
     // Eingaben und Nachweis in BreitenLeisten (links bzw. rechts), der Lageplan in der Mitte
@@ -1300,7 +1314,7 @@ describe('Kartenlayout (Richtung C)', () => {
     expect(knopf3d.getAttribute('aria-pressed')).toBe('false');
     act(() => knopf3d.click());
     expect(knopf3d.getAttribute('aria-pressed')).toBe('true');
-    expect(host.querySelector('.grz-plan .karte-kopf h2')!.firstChild!.textContent).toBe('3D-Ansicht');
+    expect(host.querySelector('.grz-plan .karte-kopf h2')!.textContent).toBe('3D-Ansicht');
     // Tabellen auf der gemeinsamen Zahlentabelle
     expect(host.querySelectorAll('table.summary-table').length).toBeGreaterThan(0);
     expect(host.querySelectorAll('table:not(.summary-table):not(.report-table)')).toHaveLength(0);

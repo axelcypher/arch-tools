@@ -1,11 +1,10 @@
 /* TERRIO (Grund-Styles: @core/ui/base.css) */
 
 /* Layout: Fläche und Karten aus base.css (Richtung C) – hier nur Inhalte der Karten */
-.karte-kopf h2 {
-  /* Hilfe „?“ direkt hinter dem Titel */
-  display: flex;
-  align-items: center;
-  gap: var(--s1);
+/* Nachweis: Kacheln und Vollgeschoss-Tabelle brauchen etwa 320 px – in schmalen Fenstern gibt diese Seitenkarte nur bis
+   dahin nach (statt bis zur allgemeinen Mindestbreite), den Rest geben die Eingaben und die Mitte ab */
+.grz-view > .leiste:has(> .grz-nachweis) {
+  --leiste-min: 320px;
 }
 /* Eingaben: Felder einer Zeile unten bündig, auch wenn ein Label umbricht */
 .grz-fest .field-row {
@@ -38,19 +37,20 @@
   gap: 4px;
   margin-bottom: 12px;
 }
-/* Vollgeschoss-Tabelle: feste Spalten, die Einstufung bekommt die Hälfte – kein Überlauf bei 360 px */
+/* Vollgeschoss-Tabelle: feste Spalten, so breit wie ihre Zahlen („−0,28“, „100 %“); die Einstufung nimmt den Rest –
+   kein Überlauf und keine überlappenden Zahlen, auch wenn die Nachweis-Karte auf 320 px nachgibt */
 .grz-vg-tabelle {
   table-layout: fixed;
 }
 .grz-vg-tabelle th:nth-child(1) {
-  width: 14%;
+  width: 4em;
 }
 .grz-vg-tabelle th:nth-child(2),
 .grz-vg-tabelle th:nth-child(3) {
-  width: 11%;
+  width: 4.5em;
 }
 .grz-vg-tabelle th:nth-child(4) {
-  width: 10%;
+  width: 4em;
 }
 .grz-tabelle.grz-vg-tabelle th.num,
 .grz-vg-tabelle th {
@@ -127,8 +127,11 @@
   background: var(--warn-bg);
   color: var(--warn-text);
 }
+/* Auswahl so breit wie die Spalte (lange Einträge gekürzt), damit die Tabelle nicht über die Karte hinausragt */
 .grz-raum-tabelle select {
+  width: 100%;
   margin: 2px 0;
+  text-overflow: ellipsis;
 }
 .grz-begruendung td {
   padding-top: 0;
@@ -156,7 +159,8 @@ button.link:hover {
 }
 .kpis {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* zwei Kacheln nebeneinander, wenn sie Platz haben (Zahl mit Einheit bricht nicht um); sonst untereinander */
+  grid-template-columns: repeat(auto-fit, minmax(165px, 1fr));
   gap: 8px;
   margin: 8px 0;
 }
