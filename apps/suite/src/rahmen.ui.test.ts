@@ -229,13 +229,18 @@ describe('Rahmen-App', () => {
     // ohne App-Tab: der eigene Dialog auf „Allgemein“
     act(() => void window.dispatchEvent(new KeyboardEvent('keydown', { key: ',', ctrlKey: true, bubbles: true, cancelable: true })));
     expect(useEinstellungen.getState()).toMatchObject({ offen: true, seite: 'allgemein' });
+    act(() => useEinstellungen.setState({ offen: false, seite: 'pfade' }));
+    // ebenso der Menüpunkt „Einstellungen …“ ohne App-Tab
+    act(() => host.querySelector<HTMLButtonElement>('button.titlebar-menue')!.click());
+    act(() => ([...document.querySelectorAll('.menue button')].find((b) => b.textContent?.startsWith('Einstellungen …')) as HTMLButtonElement).click());
+    expect(useEinstellungen.getState()).toMatchObject({ offen: true, seite: 'allgemein' });
     act(() => useEinstellungen.setState({ offen: false }));
     // mit App-Tab: Nachricht an die App, der eigene Dialog bleibt zu
     act(() => karte(host, 'QUADRIO').click());
     const f = host.querySelector<HTMLIFrameElement>('iframe[src^="apps/flaechenrechner/"]')!;
     const win = { postMessage: vi.fn() } as unknown as Window;
     Object.defineProperty(f, 'contentWindow', { value: win, configurable: true });
-    act(() => window.dispatchEvent(new MessageEvent('message', { data: { typ: 'arch-tools:bereit', app: 'flaechenrechner' }, origin: window.location.origin, source: win })));
+    // ohne Warteschlange: der Einstellungsdialog der App hört von Anfang an und meldet kein BEREIT
     act(() => void window.dispatchEvent(new KeyboardEvent('keydown', { key: ',', ctrlKey: true, bubbles: true, cancelable: true })));
     expect(win.postMessage).toHaveBeenCalledWith({ typ: 'arch-tools:einstellungen-oeffnen', an: 'flaechenrechner' }, window.location.origin);
     expect(useEinstellungen.getState().offen).toBe(false);
@@ -246,6 +251,8 @@ describe('Rahmen-App', () => {
     const anderer = document.body.appendChild(Object.assign(document.createElement('div'), { className: 'modal-backdrop' }));
     act(() => void window.dispatchEvent(new KeyboardEvent('keydown', { key: ',', ctrlKey: true, bubbles: true, cancelable: true })));
     expect(win.postMessage).not.toHaveBeenCalled();
+    // … und auch nicht der eigene Dialog darüber
+    expect(useEinstellungen.getState().offen).toBe(false);
     anderer.remove();
     // eigener Dialog schon offen (etwa über die Notbetriebswarnung): Strg+, bittet die App nicht um einen zweiten
     vi.mocked(win.postMessage).mockClear();
@@ -253,6 +260,15 @@ describe('Rahmen-App', () => {
     act(() => void window.dispatchEvent(new KeyboardEvent('keydown', { key: ',', ctrlKey: true, bubbles: true, cancelable: true })));
     expect(win.postMessage).not.toHaveBeenCalled();
     act(() => useEinstellungen.setState({ offen: false }));
+    // Menüpunkt „Einstellungen …“: mit App-Tab ebenso an die App
+    const menue = host.querySelector<HTMLButtonElement>('button.titlebar-menue')!;
+    const einstellungenKlicken = () => {
+      act(() => menue.click());
+      act(() => ([...document.querySelectorAll('.menue button')].find((b) => b.textContent?.startsWith('Einstellungen …')) as HTMLButtonElement).click());
+    };
+    einstellungenKlicken();
+    expect(win.postMessage).toHaveBeenCalledWith({ typ: 'arch-tools:einstellungen-oeffnen', an: 'flaechenrechner' }, window.location.origin);
+    expect(useEinstellungen.getState().offen).toBe(false);
   });
 
   it('Neues Projekt anlegen: aus einer App oder vom Rahmen – der Assistent von ATLAS, danach zurück mit dem neuen Projekt', () => {

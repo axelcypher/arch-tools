@@ -153,8 +153,9 @@ export function PfadeVerweis({ fokus, seite = 'pfade', text = 'Pfade und Benennu
 export function EinstellungenHost() {
   const offen = useEinstellungen((s) => s.offen);
   useEffect(() => tastenAnmelden(), []);
-  // im Tab von Arkly: der Rahmen bittet um den Dialog (sein „Einstellungen …“ bzw. Strg+, bei aktivem Tab)
-  useEffect(() => vomRahmen(EINSTELLUNGEN_OEFFNEN, () => einstellungenOeffnen()), []);
+  // im Tab von Arkly: der Rahmen bittet um den Dialog (sein „Einstellungen …“ bzw. Strg+, bei aktivem Tab); ohne BEREIT,
+  // der Rahmen schickt diese Nachricht ohne Warteschlange (`vomRahmen`)
+  useEffect(() => vomRahmen(EINSTELLUNGEN_OEFFNEN, () => einstellungenOeffnen(), { bereit: false }), []);
   // Erstfokus, Fokusfalle und Rückkehr des Fokus (auch im Rahmen Arkly, der keine Titelleiste der Apps hat)
   useEffect(() => dialogVerhaltenEinrichten(), []);
   return offen ? <EinstellungenDialog /> : null;

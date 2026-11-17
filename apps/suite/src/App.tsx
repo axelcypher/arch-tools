@@ -10,6 +10,7 @@ import {
   ANDOCKEN,
   ASSISTENT_NEU,
   BEREIT,
+  EINSTELLUNGEN_OEFFNEN,
   PROJEKT_ANGELEGT,
   PROJEKT_ANLEGEN,
   PROJEKT_APP,
@@ -19,7 +20,6 @@ import {
   vorbereitenImFenster,
   vorbereitenImTab,
   ZUR_APP,
-  EINSTELLUNGEN_OEFFNEN,
 } from '@core/platform/rahmen';
 import { APP_NAMEN } from '@core/appNamen';
 import { LogDialog } from '@core/ui/LogDialog';
@@ -198,11 +198,14 @@ export function App() {
     oeffnen(id);
   };
 
-  /** Nachricht an eine App – im Tab, im herausgelösten Fenster oder, solange sie noch nicht hört, später */
-  const zustellen = (id: string, n: RahmenNachricht) => {
+  /**
+   * Nachricht an eine App – im Tab, im herausgelösten Fenster oder, solange sie noch nicht hört, später. `sofort`: ohne
+   * Warteschlange, für Empfänger, die von Anfang an hören und kein BEREIT melden (`vomRahmen`, `bereit: false`).
+   */
+  const zustellen = (id: string, n: RahmenNachricht, sofort = false) => {
     const nachricht = { ...n, an: id };
     const ziel = rahmen.current.get(id)?.contentWindow;
-    if (ziel && bereitTabs.current.has(ziel)) return ziel.postMessage(nachricht, window.location.origin);
+    if (ziel && (sofort || bereitTabs.current.has(ziel))) return ziel.postMessage(nachricht, window.location.origin);
     if (desktop && fensterJetzt.current.includes(id) && bereitFenster.current.has(id)) {
       void ereignisse().then(({ emit }) => emit(AN_APP, nachricht));
       return;
@@ -219,7 +222,7 @@ export function App() {
     if (app) {
       // Fokus in den Tab: dort liegt der Dialog, und nach dem Schließen kehrt der Fokus dorthin zurück
       rahmen.current.get(app)?.focus();
-      zustellen(app, { typ: EINSTELLUNGEN_OEFFNEN });
+      zustellen(app, { typ: EINSTELLUNGEN_OEFFNEN }, true);
     } else einstellungenOeffnen('allgemein');
   };
   const einstellungenRef = useRef(einstellungenImRahmen);
@@ -229,8 +232,9 @@ export function App() {
     // nicht, solange im Rahmen ein Dialog oder Menü offen ist (der Dialog des Tabs läge sonst darunter)
     const taste = (e: KeyboardEvent) => {
       if (!(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey || e.key !== ',' || !useRahmen.getState().aktiv) return;
-      if (useEinstellungen.getState().offen || document.querySelector('.modal-backdrop, [role="dialog"], .menue')) return;
       e.preventDefault();
+      // gilt dann für den offenen Dialog nicht: weder weitergeben noch den eigenen Dialog darüber öffnen
+      if (useEinstellungen.getState().offen || document.querySelector('.modal-backdrop, [role="dialog"], [role="alertdialog"], .menue')) return;
       einstellungenRef.current();
     };
     window.addEventListener('keydown', taste, true);
@@ -521,7 +525,7 @@ export function App() {
     const update = desktop ? updatePunkt() : null;
     return [
       ...(update ? [update, { trenner: true } as const] : []),
-      { ...einstellungenPunkt('allgemein'), aktion: einstellungenImRahmen },
+      { ...einstellungenPunkt(), aktion: einstellungenImRahmen },
       farbschemaPunkt(false),
       { trenner: true },
       {
