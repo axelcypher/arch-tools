@@ -2085,15 +2085,12 @@ button.icon.fo-gl-zaehlt.an {
   max-width: 900px;
   margin: 10px 0;
 }
-/* Abgleich mit der Projektdatei: gemeinsame Zahlentabelle (.summary-table.text), abweichende Werte der Projektdatei hervorgehoben */
+/* Abgleich mit der Projektdatei: gemeinsame Zahlentabelle (.summary-table.text); ein abweichender Wert der Projektdatei
+   steht halbfett (nicht in der Akzentfarbe – die bleibt Bedienbarem vorbehalten) */
 .pk-abgleich {
   max-width: 1080px;
 }
-.pk-abgleich td {
-  vertical-align: top;
-}
 .pk-abgleich tr:not(.gleich) td:nth-child(2) {
-  color: var(--accent);
   font-weight: 600;
 }
 .es-verweis {
@@ -2247,24 +2244,6 @@ button.icon.fo-gl-zaehlt.an {
   padding-left: 18px;
   font-size: 13px;
 }
-.es-tabelle {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-}
-.es-tabelle th {
-  text-align: left;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--muted);
-  padding: 4px 6px;
-  border-bottom: 1px solid var(--border);
-}
-.es-tabelle td {
-  padding: 4px 6px;
-  border-bottom: 1px solid var(--line-soft);
-}
-
 /* ---------- Druck ---------- */
 
 /*
