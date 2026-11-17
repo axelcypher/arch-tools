@@ -1030,7 +1030,7 @@ function ProjektdatenAbgleich({ karte }: { karte: OffeneKarte }) {
           </select>
         </label>
       )}
-      <table className="pk-abgleich">
+      <table className="summary-table text pk-abgleich">
         <thead>
           <tr>
             <th>Angabe</th>

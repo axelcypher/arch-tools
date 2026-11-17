@@ -163,7 +163,7 @@ export function DokumenteEinstellungen() {
         titel="Antragsvorlagen"
         text="Zusammenstellungen der Antragsdokumente je Art von Antrag. Beim Festlegen des Antragsumfangs wird die Vorlage zur Antragsart der aktiven Fassung vorgeschlagen (z. B. BAUA → Bauantrag). Welche Dokumente dazugehören, legst du unten bei den Antragsdokumenten fest – „Dokumente“ führt dorthin."
       >
-        <table className="es-tabelle es-katalog es-vorlagen" data-sortier-liste="">
+        <table className="summary-table text felder es-katalog es-vorlagen" data-sortier-liste="">
           <thead>
             <tr>
               <th />
