@@ -9,7 +9,9 @@ describe('PERMIO und die zentralen Einstellungen', () => {
   it('Vorgaben gleich; die Übernahme kennt die alten Vorgaben', () => {
     expect(pfadEinstellung('ablage.permio.antragsordner').vorgabe).toBe(VORGABE_EXPORT.antragsordner);
     expect(pfadEinstellung('plaene.permio.namensvorlage').vorgabe).toBe(VORGABE_EXPORT.namensvorlage);
-    expect(pfadEinstellung('plaene.permio.zielpfad').vorgabe).toBe(VORGABE_EXPORT.zielpfad);
+    // der feste Zielordner liegt jetzt im Antragsordner: zusammen die bisherige Vorgabe
+    expect(`${pfadEinstellung('ablage.permio.antragsordner').vorgabe}/${pfadEinstellung('plaene.permio.zielordner').vorgabe}`).toBe(VORGABE_EXPORT.zielpfad);
+    expect(pfadEinstellung('plaene.permio.zielpfad').vorgabe).toBe('');
     expect(pfadEinstellung('vorlagen.permio.vorlagenordner').vorgabe).toBe(VORGABE_EXPORT.vorlagenordner);
     expect(VORGABE_PERMIO.berechnungsordner).toBe(VORGABE_EXPORT.berechnungsordner);
   });

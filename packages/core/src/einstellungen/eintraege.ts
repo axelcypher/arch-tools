@@ -17,6 +17,7 @@ import {
 import { APP_NAMEN } from '../appNamen';
 import { abweichungId, EXPORT_APPS, gemeinsamId, gemeinsamSpeicher, VORGABE_EXPORT_DATEINAME, VORGABE_GEMEINSAMER_BERECHNUNGSORDNER, VORGABE_UNTERORDNER, type ExportApp } from './gemeinsam';
 import { inPfade, unterSchluessel, type PfadEinstellung, type PfadSpeicher } from './verzeichnis';
+import { antragsordnerSpeicher, VORGABE_ZIELORDNER, zielSpeicher } from './zielordner';
 
 /**
  * Alle zentralen Pfad- und Namenseinstellungen. Vorhandene Werte bleiben unter ihrem bisherigen Schlüssel
@@ -41,6 +42,9 @@ function nebenStruktur(speicher: PfadSpeicher): PfadSpeicher {
     },
   };
 }
+
+/** Ordner zwischen dem Ordner der Gewerke und seinen Unterordnern (FABRIO) */
+const GEWERK = { text: 'je Gewerk ein Ordner', beispiel: 'G08 Fenster' };
 
 /** Vorgaben, die auch die Apps brauchen */
 export const VORGABE_FOTOORDNER = '09 Fotos';
@@ -76,6 +80,7 @@ const exportEintraege = (): PfadEinstellung[] => {
     return [
       {
         id: gemeinsamId(g),
+        bezug: { art: 'eintrag', id: gemeinsamId('ordner'), zwischen: { text: 'Unterordner der App', beispiel: '‹Unterordner der App›' } },
         apps: [...EXPORT_APPS],
         thema: 'export',
         art: 'name',
@@ -91,6 +96,7 @@ const exportEintraege = (): PfadEinstellung[] => {
       ...EXPORT_APPS.map(
         (a): PfadEinstellung => ({
           id: abweichungId(g, a),
+          bezug: { art: 'eintrag', id: abweichungId('ordner', a) },
           apps: [a],
           thema: 'export',
           art: 'name',
@@ -109,6 +115,7 @@ const exportEintraege = (): PfadEinstellung[] => {
   return [
     {
       id: gemeinsamId('ordner'),
+      bezug: { art: 'projekt' },
       apps: [...EXPORT_APPS],
       thema: 'export',
       art: 'pfad',
@@ -122,6 +129,7 @@ const exportEintraege = (): PfadEinstellung[] => {
     ...EXPORT_APPS.map(
       (a): PfadEinstellung => ({
         id: abweichungId('ordner', a),
+        bezug: { art: 'eintrag', id: gemeinsamId('ordner') },
         apps: [a],
         thema: 'export',
         art: 'pfad',
@@ -142,6 +150,7 @@ export const PFAD_EINSTELLUNGEN: PfadEinstellung[] = [
   /* ---------- Projekt ---------- */
   {
     id: 'projekt.stammordner',
+    bezug: { art: 'absolut' },
     apps: ['ordner', 'formulare', 'flaechenrechner', 'grz', 'kosten', 'entzerrung', 'ava', 'baurecht'],
     thema: 'projekt',
     art: 'liste',
@@ -155,6 +164,7 @@ export const PFAD_EINSTELLUNGEN: PfadEinstellung[] = [
   },
   {
     id: 'projekt.nummernschema',
+    bezug: { art: 'frei', text: 'Teil des Namens des Projektordners ({PROJEKT_KUERZEL}) – kein Pfad' },
     apps: ['ordner'],
     thema: 'projekt',
     art: 'name',
@@ -168,6 +178,7 @@ export const PFAD_EINSTELLUNGEN: PfadEinstellung[] = [
   },
   {
     id: 'projekt.ordnername',
+    bezug: { art: 'eintrag', id: 'projekt.stammordner' },
     apps: ['ordner', 'formulare', 'flaechenrechner', 'grz', 'kosten', 'entzerrung', 'ava'],
     thema: 'projekt',
     art: 'name',
@@ -182,6 +193,7 @@ export const PFAD_EINSTELLUNGEN: PfadEinstellung[] = [
   },
   {
     id: 'projekt.oapPfad',
+    bezug: { art: 'projekt' },
     apps: ['ordner', 'formulare', 'flaechenrechner', 'grz', 'kosten', 'entzerrung', 'ava', 'baurecht'],
     thema: 'projekt',
     art: 'pfad',
@@ -196,6 +208,7 @@ export const PFAD_EINSTELLUNGEN: PfadEinstellung[] = [
   /* ---------- Ablage ---------- */
   {
     id: 'ablage.fotoordner',
+    bezug: { art: 'projekt' },
     apps: ['entzerrung', 'ava', 'ordner'],
     thema: 'ablage',
     art: 'pfad',
@@ -207,6 +220,7 @@ export const PFAD_EINSTELLUNGEN: PfadEinstellung[] = [
   },
   {
     id: 'ablage.permio.antragsordner',
+    bezug: { art: 'projekt' },
     apps: ['formulare'],
     thema: 'ablage',
     art: 'pfad',
@@ -214,11 +228,27 @@ export const PFAD_EINSTELLUNGEN: PfadEinstellung[] = [
     erklaerung: 'Ordner der Anträge im Projektordner; darin je Antragsfassung ein Unterordner (z. B. „BAUA 2“).',
     vorgabe: VORGABE_PERMIO.antragsordner,
     pflicht: true,
-    speicher: inPfade('ablage.permio.antragsordner', 'pfad'),
+    // der feste Zielordner zieht mit (zielordner.ts)
+    speicher: antragsordnerSpeicher(),
     projektwert: 'Je Projekt in PERMIO abweichend einstellbar (Antrag › Export für dieses Projekt).',
   },
   {
+    id: 'plaene.permio.zielpfad',
+    bezug: { art: 'projekt' },
+    apps: ['formulare'],
+    thema: 'ablage',
+    art: 'pfad',
+    bezeichnung: 'Fester Zielordner außerhalb des Antragsordners',
+    erklaerung: 'Aus einer früheren Einstellung übernommen, die nicht im Antragsordner lag; gilt statt des Zielordners im Antragsordner. Leer = der Zielordner im Antragsordner.',
+    vorgabe: '',
+    variablen: PERMIO_ZIEL,
+    beispiel: { Antrag: 'BAUA 2', Art: 'BAUA' },
+    nurWennGesetzt: true,
+    speicher: zielSpeicher('abweichend'),
+  },
+  {
     id: 'ablage.permio.berechnungsordner',
+    bezug: { art: 'projekt' },
     apps: ['formulare'],
     thema: 'ablage',
     art: 'liste',
@@ -232,6 +262,7 @@ export const PFAD_EINSTELLUNGEN: PfadEinstellung[] = [
   },
   {
     id: 'ablage.kataster.zielpfad',
+    bezug: { art: 'projekt' },
     apps: ['ordner'],
     thema: 'ablage',
     art: 'pfad',
@@ -245,6 +276,7 @@ export const PFAD_EINSTELLUNGEN: PfadEinstellung[] = [
   },
   {
     id: 'ablage.fabrio.gewerke',
+    bezug: { art: 'projekt' },
     apps: ['ava'],
     thema: 'ablage',
     art: 'pfad',
@@ -256,6 +288,7 @@ export const PFAD_EINSTELLUNGEN: PfadEinstellung[] = [
   },
   {
     id: 'ablage.fabrio.lv',
+    bezug: { art: 'eintrag', id: 'ablage.fabrio.gewerke', zwischen: GEWERK },
     apps: ['ava'],
     thema: 'ablage',
     art: 'pfad',
@@ -266,6 +299,7 @@ export const PFAD_EINSTELLUNGEN: PfadEinstellung[] = [
   },
   {
     id: 'ablage.fabrio.auftrag',
+    bezug: { art: 'eintrag', id: 'ablage.fabrio.gewerke', zwischen: GEWERK },
     apps: ['ava'],
     thema: 'ablage',
     art: 'pfad',
@@ -277,6 +311,7 @@ export const PFAD_EINSTELLUNGEN: PfadEinstellung[] = [
   },
   {
     id: 'ablage.fabrio.korrespondenz',
+    bezug: { art: 'eintrag', id: 'ablage.fabrio.gewerke', zwischen: GEWERK },
     apps: ['ava'],
     thema: 'ablage',
     art: 'pfad',
@@ -288,6 +323,7 @@ export const PFAD_EINSTELLUNGEN: PfadEinstellung[] = [
   },
   {
     id: 'ablage.fabrio.archive',
+    bezug: { art: 'suche', text: 'Ordnernamen – gelten in jedem Gewerk und Auftragsordner, bei Kostenkontrolle und Mails im ganzen Projekt' },
     apps: ['ava'],
     thema: 'ablage',
     art: 'liste',
@@ -298,6 +334,7 @@ export const PFAD_EINSTELLUNGEN: PfadEinstellung[] = [
   },
   {
     id: 'ablage.fabrio.bauleitung',
+    bezug: { art: 'projekt' },
     apps: ['ava'],
     thema: 'ablage',
     art: 'pfad',
@@ -309,6 +346,7 @@ export const PFAD_EINSTELLUNGEN: PfadEinstellung[] = [
   },
   {
     id: 'ablage.fabrio.mailOrdner',
+    bezug: { art: 'suche', text: 'Ordnernamen – FABRIO sucht sie überall im Projekt (außer im Ordner der Gewerke)' },
     apps: ['ava'],
     thema: 'ablage',
     art: 'liste',
@@ -319,6 +357,7 @@ export const PFAD_EINSTELLUNGEN: PfadEinstellung[] = [
   },
   {
     id: 'ablage.fabrio.kostenkontrolle',
+    bezug: { art: 'suche', text: 'Teil des Dateinamens – FABRIO sucht im ganzen Projekt' },
     apps: ['ava'],
     thema: 'ablage',
     art: 'name',
@@ -333,6 +372,7 @@ export const PFAD_EINSTELLUNGEN: PfadEinstellung[] = [
   /* ---------- Pläne und Dokumente ---------- */
   {
     id: 'plaene.dateischema',
+    bezug: { art: 'frei', text: 'Gilt in den Planordnern der Struktur von ATLAS (Einrichtung › Struktur, Ordner mit Dateischema)' },
     apps: ['ordner'],
     thema: 'plaene',
     art: 'name',
@@ -348,8 +388,14 @@ export const PFAD_EINSTELLUNGEN: PfadEinstellung[] = [
   },
   {
     id: 'plaene.permio.namensvorlage',
+    bezug: {
+      art: 'eintrag',
+      id: 'ablage.permio.antragsordner',
+      zwischen: { text: 'Ordner der aktiven Antragsfassung', beispiel: 'BAUA 2' },
+      sonst: 'bei „fester Ordner“ im festen Zielordner',
+    },
     apps: ['formulare'],
-    thema: 'plaene',
+    thema: 'ablage',
     art: 'name',
     bezeichnung: 'Dateinamen exportierter Antragsdokumente (PDF)',
     erklaerung: 'Die Antragsart ({Art}) kommt immer aus dem aktiven Antrag – „BAUA 2“ → BAUA.',
@@ -368,23 +414,25 @@ export const PFAD_EINSTELLUNGEN: PfadEinstellung[] = [
           ],
   },
   {
-    id: 'plaene.permio.zielpfad',
+    id: 'plaene.permio.zielordner',
+    bezug: { art: 'eintrag', id: 'ablage.permio.antragsordner' },
     apps: ['formulare'],
-    thema: 'plaene',
+    thema: 'ablage',
     art: 'pfad',
     bezeichnung: 'Fester Zielordner exportierter Antragsdokumente',
-    erklaerung: 'Gilt, wenn in PERMIO „fester Ordner“ als Ziel gewählt ist; sonst der Ordner der aktiven Antragsfassung.',
-    vorgabe: VORGABE_PERMIO.zielpfad,
+    erklaerung: 'Gilt, wenn in PERMIO „fester Ordner“ als Ziel gewählt ist, sonst der Ordner der aktiven Antragsfassung. Leer = der Antragsordner selbst.',
+    giltNichtWenn: 'plaene.permio.zielpfad',
+    vorgabe: VORGABE_ZIELORDNER,
     variablen: PERMIO_ZIEL,
     beispiel: { Antrag: 'BAUA 2', Art: 'BAUA' },
-    pflicht: true,
-    speicher: inPfade('plaene.permio.zielpfad', 'pfad'),
+    speicher: zielSpeicher('zielordner'),
     projektwert: 'Je Projekt in PERMIO abweichend einstellbar (Antrag › Export für dieses Projekt).',
   },
   {
     id: 'plaene.kataster.dateiname',
+    bezug: { art: 'eintrag', id: 'ablage.kataster.zielpfad', sonst: 'bei Ablage beim Antrag im Ordner des aktiven Antrags' },
     apps: ['ordner'],
-    thema: 'plaene',
+    thema: 'ablage',
     art: 'name',
     bezeichnung: 'Dateinamen der Katasterpläne',
     erklaerung: 'Name der Katasterpläne, die ATLAS aus dem Geoportal erzeugt.',
@@ -397,8 +445,9 @@ export const PFAD_EINSTELLUNGEN: PfadEinstellung[] = [
   },
   {
     id: 'plaene.fabrio.rechnungen',
+    bezug: { art: 'eintrag', id: 'ablage.fabrio.auftrag' },
     apps: ['ava'],
-    thema: 'plaene',
+    thema: 'ablage',
     art: 'liste',
     bezeichnung: 'Muster der Rechnungsdateien',
     erklaerung: 'Je Zeile ein Muster. Das erste gilt für neue Dateien, alle dienen zum Erkennen vorhandener im Auftragsordner.',
@@ -414,6 +463,7 @@ export const PFAD_EINSTELLUNGEN: PfadEinstellung[] = [
   ...exportEintraege(),
   {
     id: 'export.pdfMitspeichern',
+    bezug: { art: 'frei', text: 'Das PDF liegt neben der Excel-Datei im Berechnungsordner der App' },
     apps: ['flaechenrechner', 'grz', 'kosten'],
     thema: 'export',
     art: 'schalter',
@@ -426,6 +476,7 @@ export const PFAD_EINSTELLUNGEN: PfadEinstellung[] = [
   /* ---------- Vorlagen ---------- */
   {
     id: 'vorlagen.vorlagenname',
+    bezug: { art: 'frei', text: 'Liegt im Zielordner der Zuordnung (ATLAS, Einrichtung › Vorlagen)' },
     apps: ['ordner'],
     thema: 'vorlagen',
     art: 'name',
@@ -440,6 +491,7 @@ export const PFAD_EINSTELLUNGEN: PfadEinstellung[] = [
   },
   {
     id: 'vorlagen.atlas.vorlagenordner',
+    bezug: { art: 'absolut' },
     apps: ['ordner'],
     thema: 'vorlagen',
     art: 'ordner',
@@ -451,6 +503,7 @@ export const PFAD_EINSTELLUNGEN: PfadEinstellung[] = [
   },
   {
     id: 'vorlagen.permio.vorlagenordner',
+    bezug: { art: 'absolut' },
     apps: ['formulare'],
     thema: 'vorlagen',
     art: 'ordner',
@@ -461,8 +514,9 @@ export const PFAD_EINSTELLUNGEN: PfadEinstellung[] = [
   },
   {
     id: 'vorlagen.fabrio.lv',
+    bezug: { art: 'eintrag', id: 'ablage.fabrio.lv' },
     apps: ['ava'],
-    thema: 'vorlagen',
+    thema: 'ablage',
     art: 'name',
     bezeichnung: 'Name neuer LV-Dateien',
     erklaerung: 'Name, den FABRIO neuen LV-Dateien vorschlägt.',

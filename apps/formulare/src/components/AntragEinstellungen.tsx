@@ -106,7 +106,7 @@ export function AntragEinstellungen() {
             <strong>Fester Ordner im Projekt</strong> <code>{e.zielpfad}</code>
           </span>
         </label>
-        <PfadeVerweis fokus="plaene.permio.zielpfad" text="Zielordner ändern …" />
+        <PfadeVerweis fokus="plaene.permio.zielordner" text="Zielordner ändern …" />
       </Karte>
 
       <Karte titel="Quellen und Vorlagen">

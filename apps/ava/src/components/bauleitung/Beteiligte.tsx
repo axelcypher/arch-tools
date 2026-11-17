@@ -62,7 +62,7 @@ export function Beteiligte() {
 
   return (
     <AnsichtKarte titel="Beteiligte" leiste={werkzeuge}>
-      <table className="ava-tabelle">
+      <table className="summary-table text felder">
         <thead>
           <tr>
             <th>Rolle</th>

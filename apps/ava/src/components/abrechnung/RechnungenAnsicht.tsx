@@ -144,7 +144,7 @@ export function RechnungenAnsicht({ gewerk }: { gewerk?: string }) {
         </div>
       ))}
       <div className="ava-tabelle-rolle">
-        <table className="ava-tabelle ava-rechnungen">
+        <table className="summary-table text felder ava-rechnungen">
           <thead>
             <tr>
               <th className="num">Nr.</th>
@@ -225,7 +225,7 @@ export function RechnungenAnsicht({ gewerk }: { gewerk?: string }) {
             )}
           </tbody>
           <tfoot>
-            <tr>
+            <tr className="summe">
               <td colSpan={gewerk ? 4 : 5}>Summe ({zeilen.length})</td>
               <td className="num">{euro(summe)}</td>
               <td colSpan={4} />
@@ -285,17 +285,17 @@ function PruefungAnsehen({ d, onClose }: { d: RechnungsDatensatz; onClose: () =>
         {d.rechnungsnummer ? ` · Rechnungsnummer ${d.rechnungsnummer}` : ''}
       </p>
       {p && r ? (
-        <table className="ava-tabelle ava-rechnung-tabelle">
+        <table className="summary-table text ava-rechnung-tabelle">
           <tbody>
             {p.forderungNetto !== null && zeile('Netto-Forderung laut Rechnung', euro(p.forderungNetto))}
             {zeile('Netto-Freigabesumme', euro(r.freigabeNetto))}
             {zeile(`− Nachlass ${prozent(p.nachlassProzent)}`, euro(r.nachlass))}
             {zeile(`+ USt ${prozent(p.mwstProzent)}`, euro(r.mwst))}
-            {zeile('Brutto-Freigabesumme', euro(r.brutto), 'ava-zwischensumme')}
+            {zeile('Brutto-Freigabesumme', euro(r.brutto), 'summe')}
             {zeile(`− Umlage ${prozent(p.umlageProzent)}`, euro(r.umlage))}
             {zeile(`− ${p.einbehaltText ? `Einbehalt (${p.einbehaltText})` : 'Einbehalt'} ${prozent(p.einbehaltProzent)}`, euro(r.einbehalt))}
             {zeile(`− Skonto ${prozent(p.skontoProzent)}`, euro(r.skonto))}
-            {zeile('Endsumme', euro(r.endsumme), 'ava-zwischensumme')}
+            {zeile('Endsumme', euro(r.endsumme), 'summe')}
             {zeile('− bisher freigegeben', euro(r.bereits))}
             {zeile('Zahlungsfreigabe', euro(r.zahlung), 'ava-zahlung')}
           </tbody>

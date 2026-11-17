@@ -166,6 +166,126 @@ describe('Einstellungen', () => {
     expect(wirksam()).toEqual(['TERRIO Ber / Nachweise']);
   });
 
+  it('Baum: was von einem Eintrag abhängt, steht eingerückt darunter – mit Bezugszeile und vollständiger Vorschau, die den Eltern folgt', async () => {
+    const e = await zeigen();
+    await act(async () => e.einstellungenOeffnen('pfade'));
+    await warten();
+    const gewerke = eintrag('ablage.fabrio.gewerke');
+    const gruppe = gewerke.nextElementSibling as HTMLElement;
+    expect(gruppe.getAttribute('role')).toBe('group');
+    expect(gruppe.getAttribute('aria-label')).toBe('Unterordner von „Ordner der Gewerke“');
+    // je Unterordner seine Karte, dahinter die Gruppe der von ihm abhängigen (neue LV-Dateien, Rechnungsmuster)
+    expect([...gruppe.children].map((x) => x.id || x.getAttribute('aria-label'))).toEqual([
+      'einst-ablage.fabrio.lv',
+      'Dateien in „LV-Dateien im Unterordner“',
+      'einst-ablage.fabrio.auftrag',
+      'Dateien in „Aufträge und Rechnungen“',
+      'einst-ablage.fabrio.korrespondenz',
+    ]);
+    const auftrag = eintrag('ablage.fabrio.auftrag');
+    expect(auftrag.querySelector('.einst-bezug')?.textContent).toBe('Relativ zu „Ordner der Gewerke“ › je Gewerk ein Ordner.');
+    expect(auftrag.querySelector('.einst-vorschau')?.textContent).toBe('Vorschau: Projektordner / Gewerke / G08 Fenster / Auftrag');
+    // die Rechnungsmuster hängen am Auftragsordner (zweite Ebene)
+    expect(eintrag('plaene.fabrio.rechnungen').parentElement?.getAttribute('aria-label')).toBe('Dateien in „Aufträge und Rechnungen“');
+    // Eltern ändern: die Vorschau der Kinder folgt sofort
+    await tippen(feldVon('ablage.fabrio.gewerke'), 'Ausführung/Gewerke');
+    expect(auftrag.querySelector('.einst-vorschau')?.textContent).toBe('Vorschau: Projektordner / Ausführung / Gewerke / G08 Fenster / Auftrag');
+    // absolut getippt: die Karte bleibt an ihrem Platz, der Fokus im Feld – Fehler und Bezugszeile stehen dort
+    const feld = feldVon('ablage.fabrio.auftrag');
+    feld.focus();
+    for (const t of ['Z', 'Z:', 'Z:\\', 'Z:\\Auftrag']) {
+      await tippen(feld, t);
+      expect(document.activeElement, t).toBe(feld);
+    }
+    expect(auftrag.parentElement).toBe(gruppe);
+    expect(auftrag.querySelector('.einst-bezug')?.textContent).toBe('Absolut angegeben – gehört unter „Ordner der Gewerke“ und gilt nur relativ dazu.');
+    expect(auftrag.querySelector('.feld-meldung')?.textContent).toBe('Relativ zu „Ordner der Gewerke“ angeben, ohne Laufwerk.');
+  });
+
+  it('Baum: ein absolut gespeichertes Kind löst sich aus dem Baum und steht auf oberster Ebene der Gruppe', async () => {
+    setze('ava', { ablage: { auftrag: 'Z:\\Auftrag' } });
+    const e = await zeigen();
+    await act(async () => e.einstellungenOeffnen('pfade'));
+    await warten();
+    const los = eintrag('ablage.fabrio.auftrag');
+    expect(los.parentElement?.classList.contains('einst-gruppe')).toBe(true);
+    expect(los.querySelector('.einst-bezug')?.classList.contains('los')).toBe(true);
+    // die Vorschau beginnt beim absoluten Wert, nicht im Projektordner
+    expect(eintrag('plaene.fabrio.rechnungen').querySelector('.einst-vorschau')?.textContent).toMatch(/^Vorschau \(erstes Muster\): Z: \/ Auftrag \/ /);
+  });
+
+  it('Zielordner der Antragsdokumente: im Antragsordner; ein übernommener außerhalb steht direkt dahinter und ersetzt ihn', async () => {
+    setze('allgemein', { pfade: { 'plaene.permio.zielpfad': 'Ausgang/{Antrag}' } });
+    const e = await zeigen();
+    await act(async () => e.einstellungenOeffnen('pfade'));
+    await warten();
+    const ziel = eintrag('plaene.permio.zielordner');
+    expect(ziel.parentElement?.getAttribute('aria-label')).toBe('Abhängig von „Antragsordner“');
+    expect(ziel.querySelector('.einst-bezug')?.textContent).toBe('Relativ zu „Antragsordner“. Gilt nicht, solange „Fester Zielordner außerhalb des Antragsordners“ gesetzt ist.');
+    expect(ziel.querySelector('.einst-vorschau')).toBeNull();
+    // die Karte außerhalb folgt direkt auf den Baum des Antragsordners
+    const baum = eintrag('ablage.permio.antragsordner').nextElementSibling!;
+    expect(baum.nextElementSibling?.id).toBe('einst-plaene.permio.zielpfad');
+    expect(feldVon('plaene.permio.zielpfad').value).toBe('Ausgang/{Antrag}');
+  });
+
+  it('Sprungziel des Aufrufs gilt einmal: spätere Änderungen auf der Seite holen den Fokus nicht dorthin zurück', async () => {
+    const e = await zeigen();
+    await act(async () => e.einstellungenOeffnen('pfade', 'ablage.fotoordner'));
+    await warten();
+    expect(document.activeElement).toBe(feldVon('ablage.fotoordner'));
+    // anderswo weiterarbeiten, dann den Filter wechseln (neu zeichnen)
+    feldVon('ablage.fabrio.gewerke').focus();
+    await tippen(feldVon('ablage.fabrio.gewerke'), 'Gewerke neu');
+    const filter = dialog()!.querySelector<HTMLSelectElement>('.einst-filter select')!;
+    await act(async () => {
+      filter.value = 'ava';
+      filter.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    await warten();
+    expect(document.activeElement).not.toBe(feldVon('ablage.fotoordner'));
+  });
+
+  it('Zielordner außerhalb nicht gesetzt: keine Karte dafür, der Zielordner im Antragsordner gilt mit Vorschau', async () => {
+    const e = await zeigen();
+    await act(async () => e.einstellungenOeffnen('pfade'));
+    await warten();
+    expect(document.getElementById('einst-plaene.permio.zielpfad')).toBeNull();
+    expect(eintrag('plaene.permio.zielordner').querySelector('.einst-vorschau')?.textContent).toBe('Vorschau: Projektordner / TÖB / BAUA 2');
+  });
+
+  it('Baum mit App-Filter: Eltern einer anderen App abgeblendet zur Orientierung, ohne Feld; „Alle Apps zeigen“', async () => {
+    const e = await zeigen();
+    await act(async () => e.einstellungenOeffnen('pfade'));
+    await warten();
+    const filter = dialog()!.querySelector<HTMLSelectElement>('.einst-filter select')!;
+    await act(async () => {
+      filter.value = 'ordner';
+      filter.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    // „Name des Projektordners“ nutzt ATLAS, sein Eltern-Eintrag „Stammordner“ auch – beide mit Feld; Katasterpläne: Ordner und Dateiname
+    expect(eintrag('plaene.kataster.dateiname').parentElement?.getAttribute('aria-label')).toBe('Dateien in „Ablageordner der Katasterpläne“');
+    await act(async () => {
+      filter.value = 'grz';
+      filter.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    // TERRIO nutzt den gemeinsamen Berechnungsordner selbst: mit Feld, nicht abgeblendet
+    expect(eintrag('export.berechnungsordner').classList.contains('einst-bezugseintrag')).toBe(false);
+    expect(feldVon('export.berechnungsordner')).not.toBeNull();
+    // Baustein für Eltern einer anderen App: abgeblendet, ohne Feld, mit dem, was gilt, und „Alle Apps zeigen“
+    const host = document.body.appendChild(document.createElement('div'));
+    const alle = vi.fn();
+    const wurzel = createRoot(host);
+    await act(async () => wurzel.render(createElement(e.PfadBezugsZeile, { e: (await import('../einstellungen/pfade')).pfadEinstellung('ablage.fabrio.gewerke'), werte: {}, onAlle: alle })));
+    const z = host.querySelector('.einst-bezugseintrag')!;
+    expect(z.querySelector('input, textarea')).toBeNull();
+    expect(z.querySelector('.einst-vorschau')?.textContent).toBe('Gilt: Projektordner / Gewerke');
+    await klick(knopf('Alle Apps zeigen', z));
+    expect(alle).toHaveBeenCalledTimes(1);
+    act(() => wurzel.unmount());
+    host.remove();
+  });
+
   it('gemeinsame Angaben: gilt für alle Apps dasselbe, steht keine Liste je App', async () => {
     setze('allgemein', { pfade: { 'export.unterordner.flaechenrechner': '', 'export.unterordner.grz': '', 'export.unterordner.kosten': '' } });
     const e = await zeigen();
@@ -173,7 +293,7 @@ describe('Einstellungen', () => {
     await warten();
     expect(eintrag('export.berechnungsordner').querySelector('.einst-wirksam')).toBeNull();
     // dann bleibt die Vorschau
-    expect(eintrag('export.berechnungsordner').querySelector(':scope > .einst-vorschau')?.textContent).toBe('Vorschau: 03 Berechnungen');
+    expect(eintrag('export.berechnungsordner').querySelector(':scope > .einst-vorschau')?.textContent).toBe('Vorschau: Projektordner / 03 Berechnungen');
     expect(knopf('Unterordner je App', dialog()!)?.getAttribute('aria-expanded')).toBe('false');
   });
 
@@ -371,6 +491,29 @@ describe('Einstellungen', () => {
     expect(eintrag('projekt.stammordner').querySelector('.einst-ordner-falsch')).toBeNull();
     await klick(knopf('Übernehmen', dialog()!));
     expect(roh('allgemein')!.projekte).toEqual(['Z:\\Projekte']);
+  });
+
+  it('herausgelöst bzw. im Tab von Arkly: der Rahmen bittet um den Dialog – er öffnet auf der Seite der App', async () => {
+    window.history.replaceState(null, '', '/?rahmen=fenster&app=ava');
+    try {
+      const e = await zeigen();
+      e.einstellungsSeiteAnmelden({ id: 'ava', app: 'ava', titel: 'FABRIO', text: 'Prüfung', symbol: 'liste', inhalt: () => createElement('p', null, 'Seite von FABRIO') });
+      e.einstellungenStartseite('ava');
+      // fremde Herkunft zählt nicht
+      await act(async () => void window.dispatchEvent(new MessageEvent('message', { data: { typ: 'arch-tools:einstellungen-oeffnen', an: 'ava' }, origin: 'https://example.org', source: window })));
+      expect(dialog()).toBeNull();
+      await act(async () => void window.dispatchEvent(new MessageEvent('message', { data: { typ: 'arch-tools:einstellungen-oeffnen', an: 'ava' }, origin: window.location.origin, source: window })));
+      await warten();
+      expect(dialog()!.querySelector('[role="tabpanel"]')!.textContent).toContain('Seite von FABRIO');
+      // Strg+, mit vorab abgefangenem Ereignis (Rahmen hat weitergegeben): der Dialog öffnet nicht noch einmal
+      act(() => e.useEinstellungen.getState().schliessen());
+      const ev = new KeyboardEvent('keydown', { key: ',', ctrlKey: true, bubbles: true, cancelable: true });
+      ev.preventDefault();
+      await act(async () => void window.dispatchEvent(ev));
+      expect(dialog()).toBeNull();
+    } finally {
+      window.history.replaceState(null, '', '/');
+    }
   });
 
   it('Menüpunkt und Verweis: „Einstellungen …“ mit Strg+, bzw. „Pfade und Benennung …“ öffnen den Dialog', async () => {
