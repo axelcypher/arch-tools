@@ -1432,7 +1432,7 @@ dependencies = [
 
 [[package]]
 name = "grz-nachweis"
-version = "0.44.0"
+version = "0.44.2"
 dependencies = [
  "base64 0.22.1",
  "log",

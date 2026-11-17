@@ -1,4 +1,4 @@
-/* Projektwahl: die gemeinsame Projektübersicht als Ebene über der App, unter der Titelleiste */
+/* Projektwahl: die gemeinsame Projektübersicht als Ebene über der App, unter der Titelleiste – auf der Fläche */
 .pw-ebene {
   position: fixed;
   inset: 34px 0 0 0;
@@ -8,36 +8,48 @@
   min-height: 0;
   background: var(--bg);
 }
-.pw-ebene > .pa {
-  flex: 1;
-  min-height: 0;
-}
-.pw-meldung {
-  margin: 8px 28px 0;
-}
-.pw-leer {
-  max-width: 560px;
-  margin: 60px auto;
-  padding: 0 16px;
-}
-.pw-leer h2 {
-  margin-top: 0;
-}
 /* im Tab der Rahmen-App ist die Titelleiste schmaler */
 body:has(.titlebar-im-rahmen) .pw-ebene {
   top: 30px;
 }
-/* Einstieg ohne Projekt (ProjektEinstieg) in der App selbst: als Karte über dem (leeren) Inhalt */
-main .pw-einstieg,
-.workspace .pw-einstieg {
-  max-width: 640px;
-  margin: 24px auto 0;
-  padding: 16px 20px;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 6px;
+/* Einstieg ohne Projekt (ProjektEinstieg): eine Karte mittig auf der Fläche – in jeder App gleich */
+.pw-einstieg-ort {
+  /* füllt den Platz im Flex-Container über flex; steht er allein in einem Block (z. B. rollender Hauptbereich), über
+     die Mindesthöhe – mit Meldungen darüber nicht, sonst würde der Bereich um deren Höhe zu hoch */
+  flex: 1;
+  min-height: 0;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spalt);
+  overflow: auto;
+  background: var(--bg);
 }
-
+.pw-einstieg-ort:only-child {
+  min-height: 100%;
+}
+/* auf einer Fläche (Leerzustand der Übersicht, PERMIO) trägt die Fläche Grund und Abstand */
+.flaeche > .pw-einstieg-ort {
+  padding: 0;
+  background: none;
+}
+.pw-einstieg-ort > .karte.pw-einstieg {
+  flex: 0 1 600px;
+  max-width: 600px;
+  min-width: 0;
+  max-height: 100%;
+}
+.pw-einstieg-was {
+  margin-top: 0;
+  color: var(--muted);
+}
+.pw-einstieg .karte-rumpf p {
+  line-height: 1.5;
+}
+.pw-aktionen {
+  margin-top: var(--s4);
+}
 /* Nebensache unter den Knöpfen des Einstiegs */
 .pw-fussnote {
   margin-top: var(--s4);

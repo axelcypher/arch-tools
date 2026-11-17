@@ -130,7 +130,7 @@ export function AntragEinstellungen() {
         titel="Antragsmerkmale"
         text="Merkmale eines Antrags, von denen Formularteile und Dokumente abhängen können (z. B. Gebäudeklasse). Jeder Antrag hat seine eigenen Werte (in den Antragsdaten unter „Antragsmerkmale“ gewählt); ein neuer Antrag übernimmt einmalig die Vorgabe – spätere Änderungen hier ändern bestehende Anträge nicht. Bedingungen stellst du im Formular über „Einrichten“ und bei den Antragsdokumenten ein."
       >
-        <table className="es-tabelle es-katalog" data-sortier-liste="">
+        <table className="summary-table text felder es-katalog" data-sortier-liste="">
           <thead>
             <tr>
               <th />

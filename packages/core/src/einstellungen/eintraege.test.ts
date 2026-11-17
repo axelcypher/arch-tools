@@ -50,6 +50,7 @@ describe('Verzeichnis der Pfad- und Namenseinstellungen', () => {
     });
     expect(werte).toMatchObject({
       'projekt.stammordner': ['Z:\\Projekte'],
+      'vorlagen.atlas.vorlagenordner': 'V:\\Vorlagen',
       'projekt.oapPfad': 'Organisation/{Kürzel}.oap',
       'ablage.fotoordner': '10 Fotos',
       'projekt.nummernschema': '{jj}-{nr:3}',
@@ -79,6 +80,15 @@ describe('Verzeichnis der Pfad- und Namenseinstellungen', () => {
     expect(hatFehler(pfadPruefen(e, ''))).toBe(false);
     expect(hatFehler(pfadPruefen(e, 'Z:\\Projekte\n\\\\server\\Akquise'))).toBe(false);
     expect(hatFehler(pfadPruefen(e, 'Z:\\Projekte\nProjekte'))).toBe(true);
+  });
+
+  it('Vorlagenordner von ATLAS: bisheriger Schlüssel neben der Struktur; ohne lesbare Struktur wird nichts geschrieben', () => {
+    const e = nachId('vorlagen.atlas.vorlagenordner');
+    const roh = { struktur: { name: 'Büro' }, vorlagenordner: 'V:\\Alt' };
+    expect(e.speicher.schreiben(roh, 'W:\\Vorlagen')).toEqual({ struktur: { name: 'Büro' }, vorlagenordner: 'W:\\Vorlagen' });
+    // unlesbar (kein Objekt, ohne Struktur): Fehler statt eines ungesicherten Überschreibens
+    expect(() => e.speicher.schreiben({}, 'W:\\Vorlagen')).toThrow(/Ordnerstruktur von ATLAS/);
+    expect(() => e.speicher.schreiben({ struktur: 'kaputt' }, 'W:\\Vorlagen')).toThrow(/Ordnerstruktur von ATLAS/);
   });
 
   it('Schreiben: nur der eine Wert ändert sich, alle übrigen Angaben (auch unbekannte) bleiben', () => {

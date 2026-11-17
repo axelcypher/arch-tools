@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 import { PfadeVerweis } from '@core/ui/Einstellungen';
+import { Flaeche, Karte } from '@core/ui/Karte';
 import { NumberField, TextField } from '@core/ui/fields';
 import type { DxfStil, KatasterPlan, VorlageInfo } from '../kataster/kataster';
 import { ausschnitt, karteVon, planDateiname, planFehler, VORGABE_BESCHRIFTUNG } from '../kataster/kataster';
@@ -10,13 +11,18 @@ import { useKataster } from '../kataster/katasterStore';
 import { tauriQgis } from '../kataster/qgis';
 import { hatDateisystem } from '../dateisystem';
 
-function Karte({ titel, text, children, kopf }: { titel: string; text?: ReactNode; children: ReactNode; kopf?: ReactNode }) {
+/** Abschnitt der Karte „Katasterpläne“ (Karte mit `abschnitte`): Überschrift h2, rechts daneben Knöpfe */
+function Abschnitt({ titel, text, children, kopf }: { titel: string; text?: ReactNode; children: ReactNode; kopf?: ReactNode }) {
   return (
-    <section className="es-karte">
-      <div className="es-karte-kopf">
-        <h3>{titel}</h3>
-        {kopf}
-      </div>
+    <section className="ka-abschnitt">
+      {kopf ? (
+        <div className="section-head">
+          <h2>{titel}</h2>
+          {kopf}
+        </div>
+      ) : (
+        <h2>{titel}</h2>
+      )}
       {text && <p className="muted small-text">{text}</p>}
       {children}
     </section>
@@ -192,140 +198,149 @@ export function KatasterEinstellungen() {
   const info = vi?.info ?? null;
   // ersetzt alle Pläne in den gemeinsamen Einstellungen des Büros – nur nach Rückfrage
   const vorgaben = async () => {
-    if (await bestaetigen('Standardpläne wiederherstellen?', 'Die vier Standardpläne ersetzen alle eingerichteten Pläne; eigene Pläne und Änderungen entfallen – für alle, die diese Einstellungen gemeinsam nutzen.', 'Wiederherstellen', true))
+    if (
+      await bestaetigen(
+        'Standardpläne wiederherstellen?',
+        'Die vier Standardpläne ersetzen alle eingerichteten Pläne; eigene Pläne und Änderungen entfallen – für alle, die diese Einstellungen gemeinsam nutzen.',
+        'Wiederherstellen',
+        true,
+      )
+    )
       await vorgabenWiederherstellen();
   };
   const beispiel = planDateiname(e.dateiname, { name: 'Katasterplan A4', art: 'pdf' }, { kuerzel: 'BS9', art: 'BAUA', datum: new Date() });
 
   return (
-    <>
-      <h2>Katasterpläne</h2>
-      <p className="muted">
-        Exportiert wird je Projekt auf der Startseite: Rechtsklick auf das Projekt → „Katasterpläne …“.
-      </p>
-      <p className="muted">
-        Katasterpläne (PDF aus Layouts) und DXF-Pläne (Vektorlayer eines Kartenthemas) kommen aus einem QGIS-Projekt als Vorlage – mit den Diensten (WMS/WFS) und Layouts des Büros. QGIS läuft dafür
-        unsichtbar im Hintergrund (<code>qgis_process</code>, ab QGIS 3.28). Der Plan wird um die Koordinaten der Projektadresse gelegt (EPSG:25832). Beim ersten Export wird die Vorlage in die
-        Projektdatei (.oap) übernommen und danach von dort verwendet; „Vorlage aktualisieren“ im Export-Dialog holt die aktuelle Fassung.
-      </p>
-      <p className="muted">
-        Die Pläne sind eine Arbeits- und Planungsgrundlage, kein amtlicher Auszug aus dem Liegenschaftskataster. Für den Bauantrag bleibt der amtlich beglaubigte Auszug aus der Flurkarte (§ 2
-        BauPrüfVO NRW) bzw. der amtliche Lageplan (§ 3 Abs. 3 BauPrüfVO NRW) nötig.
-      </p>
-      {!desktop && <p className="warning small-text">Der Export braucht die Desktop-App (QGIS läuft auf diesem Rechner).</p>}
-
-      <Karte
-        titel="QGIS-Vorlage"
-        text={
-          <>
-            Planköpfe: Projektvariablen <code>@project_title</code> (Vorhaben), <code>@project_identifier</code> (Projektcode), <code>@project_street</code>, <code>@project_city</code>,{' '}
-            <code>@project_zip_code</code>; je Plan zusätzlich <code>@plan_name</code>, <code>@plan_massstab</code>, <code>@plan_datum</code> und <code>@plan_beschriftung</code>.
-          </>
-        }
-      >
-        <div className="ka-zeile">
-          <span className="ka-pfad" title={e.vorlage}>
-            {e.vorlage || <span className="muted">Keine Vorlage gewählt</span>}
-          </span>
-          <button className="small" disabled={!desktop} onClick={() => void vorlageWaehlen()}>
-            <Symbol name="ordner" /> Wählen …
-          </button>
-          {e.vorlage && (
-            <button className="small" disabled={!desktop} title="Vorlage neu einlesen (nach Änderungen in QGIS)" onClick={() => void vorlageInfoLaden()}>
-              Neu einlesen
-            </button>
-          )}
-        </div>
-        {vi?.fehler && <p className="warning small-text">Vorlage nicht lesbar: {vi.fehler}</p>}
-        {info && (
+    <Flaeche>
+      <Karte als="main" ariaLabel="Katasterpläne" abschnitte className="po-kataster">
+        <section>
+          <h2>Katasterpläne</h2>
+          <p>Exportiert wird je Projekt auf der Startseite: Rechtsklick auf das Projekt → „Katasterpläne …“.</p>
           <p className="muted small-text">
-            {info.layouts.length} {info.layouts.length === 1 ? 'Layout' : 'Layouts'}
-            {info.layouts.length ? ` (${info.layouts.map((l) => l.name).join(', ')})` : ''} · {info.themen.length} {info.themen.length === 1 ? 'Kartenthema' : 'Kartenthemen'}
-            {info.themen.length ? ` (${info.themen.join(', ')})` : ''}
+            Katasterpläne (PDF aus Layouts) und DXF-Pläne (Vektorlayer eines Kartenthemas) kommen aus einem QGIS-Projekt als Vorlage – mit den Diensten (WMS/WFS) und Layouts des Büros. QGIS läuft
+            dafür unsichtbar im Hintergrund (<code>qgis_process</code>, ab QGIS 3.28). Der Plan wird um die Koordinaten der Projektadresse gelegt (EPSG:25832). Beim ersten Export wird die Vorlage in
+            die Projektdatei (.oap) übernommen und danach von dort verwendet; „Vorlage aktualisieren“ im Export-Dialog holt die aktuelle Fassung.
           </p>
-        )}
-      </Karte>
+          <p className="muted small-text">
+            Die Pläne sind eine Arbeits- und Planungsgrundlage, kein amtlicher Auszug aus dem Liegenschaftskataster. Für den Bauantrag bleibt der amtlich beglaubigte Auszug aus der Flurkarte (§ 2
+            BauPrüfVO NRW) bzw. der amtliche Lageplan (§ 3 Abs. 3 BauPrüfVO NRW) nötig.
+          </p>
+          {!desktop && <p className="warning small-text">Der Export braucht die Desktop-App (QGIS läuft auf diesem Rechner).</p>}
+        </section>
 
-      <Karte titel="QGIS auf diesem Rechner" text="Pfad zu qgis_process – unter Windows z. B. C:\Program Files\QGIS 3.40\bin\qgis_process-qgis-ltr.bat. Gilt nur für diesen Rechner.">
-        <div className="ka-zeile">
-          <span className="ka-name">
-            <TextField value={programm} onChange={programmSetzen} label="Pfad zu qgis_process" placeholder="qgis_process-qgis-ltr.bat" />
-          </span>
-          <button
-            className="small"
-            disabled={!desktop}
-            onClick={() =>
-              void programmSuchen()
-                .then(setGefunden)
-                .catch(() => setGefunden([]))
-            }
-          >
-            <Symbol name="suche" /> Suchen
-          </button>
-        </div>
-        {gefunden && !gefunden.length && <p className="warning small-text">QGIS wurde in den üblichen Installationsordnern nicht gefunden – bitte den Pfad eintragen.</p>}
-        {gefunden && gefunden.length > 0 && (
-          <ul className="es-liste">
-            {gefunden.map((g) => (
-              <li key={g}>
-                <span className="es-liste-text">{g}</span>
-                <button className="small" disabled={g === programm} onClick={() => programmSetzen(g)}>
-                  {g === programm ? 'Gewählt' : 'Verwenden'}
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Karte>
-
-      <Karte
-        titel="Ablage"
-        text={
-          <>
-            Beispiel: <strong>{beispiel}</strong> – Platzhalter wie in allen Apps, zum Anklicken unter den Feldern.
-          </>
-        }
-      >
-        <div className="ex-ziele" role="radiogroup" aria-label="Ablage der Katasterpläne">
-          <label className={`ex-ziel${e.ziel === 'pfad' ? ' aktiv' : ''}`}>
-            <input type="radio" checked={e.ziel === 'pfad'} onChange={() => void aendern({ ziel: 'pfad' })} />
-            <span>
-              Ordner im Projektordner: <code>{e.zielpfad}</code>
+        <Abschnitt
+          titel="QGIS-Vorlage"
+          text={
+            <>
+              Planköpfe: Projektvariablen <code>@project_title</code> (Vorhaben), <code>@project_identifier</code> (Projektcode), <code>@project_street</code>, <code>@project_city</code>,{' '}
+              <code>@project_zip_code</code>; je Plan zusätzlich <code>@plan_name</code>, <code>@plan_massstab</code>, <code>@plan_datum</code> und <code>@plan_beschriftung</code>.
+            </>
+          }
+        >
+          <div className="ka-zeile">
+            <span className="ka-pfad" title={e.vorlage}>
+              {e.vorlage || <span className="muted">Keine Vorlage gewählt</span>}
             </span>
-          </label>
-          <label className={`ex-ziel${e.ziel === 'antrag' ? ' aktiv' : ''}`}>
-            <input type="radio" checked={e.ziel === 'antrag'} onChange={() => void aendern({ ziel: 'antrag' })} />
-            <span>Ordner des aktiven Antrags (z. B. TÖB\BAUA 2) – der Antrag aus der Projektdatei, gepflegt in PERMIO (Formulare)</span>
-          </label>
-        </div>
-        <p className="small-text">
-          Dateiname: <code>{e.dateiname}</code>
-        </p>
-        <PfadeVerweis fokus="ablage.kataster.zielpfad" erklaerung="Ordner und Dateiname der Katasterpläne stehen in den Einstellungen aller Apps, Seite „Pfade und Benennung“." />
-      </Karte>
+            <button className="small" disabled={!desktop} onClick={() => void vorlageWaehlen()}>
+              <Symbol name="ordner" /> Wählen …
+            </button>
+            {e.vorlage && (
+              <button className="small" disabled={!desktop} title="Vorlage neu einlesen (nach Änderungen in QGIS)" onClick={() => void vorlageInfoLaden()}>
+                Neu einlesen
+              </button>
+            )}
+          </div>
+          {vi?.fehler && <p className="warning small-text">Vorlage nicht lesbar: {vi.fehler}</p>}
+          {info && (
+            <p className="muted small-text">
+              {info.layouts.length} {info.layouts.length === 1 ? 'Layout' : 'Layouts'}
+              {info.layouts.length ? ` (${info.layouts.map((l) => l.name).join(', ')})` : ''} · {info.themen.length} {info.themen.length === 1 ? 'Kartenthema' : 'Kartenthemen'}
+              {info.themen.length ? ` (${info.themen.join(', ')})` : ''}
+            </p>
+          )}
+        </Abschnitt>
 
-      <Karte
-        titel="Pläne"
-        kopf={
-          <span className="ka-knoepfe">
-            <button className="small" onClick={() => void planHinzufuegen('pdf')}>
-              <Symbol name="plus" /> PDF
+        <Abschnitt titel="QGIS auf diesem Rechner" text="Pfad zu qgis_process – unter Windows z. B. C:\Program Files\QGIS 3.40\bin\qgis_process-qgis-ltr.bat. Gilt nur für diesen Rechner.">
+          <div className="ka-zeile">
+            <span className="ka-name">
+              <TextField value={programm} onChange={programmSetzen} label="Pfad zu qgis_process" placeholder="qgis_process-qgis-ltr.bat" />
+            </span>
+            <button
+              className="small"
+              disabled={!desktop}
+              onClick={() =>
+                void programmSuchen()
+                  .then(setGefunden)
+                  .catch(() => setGefunden([]))
+              }
+            >
+              <Symbol name="suche" /> Suchen
             </button>
-            <button className="small" onClick={() => void planHinzufuegen('dxf')}>
-              <Symbol name="plus" /> DXF
-            </button>
-            <button className="small" title="Die vier Standardpläne wiederherstellen (eigene Pläne entfallen)" onClick={() => void vorgaben()}>
-              Vorgaben …
-            </button>
-          </span>
-        }
-        text="PDF: Layout der Vorlage, das Kartenobjekt wird auf die Projektadresse gesetzt. DXF: die sichtbaren Vektorlayer des Kartenthemas im Ausschnitt um die Projektadresse (WMS-Rasterlayer entfallen)."
-      >
-        {!e.plaene.length && <p className="muted small-text">Keine Pläne eingerichtet.</p>}
-        {e.plaene.map((p, i) => (
-          <PlanKarte key={p.id} plan={p} info={info} erster={i === 0} letzter={i === e.plaene.length - 1} />
-        ))}
+          </div>
+          {gefunden && !gefunden.length && <p className="warning small-text">QGIS wurde in den üblichen Installationsordnern nicht gefunden – bitte den Pfad eintragen.</p>}
+          {gefunden && gefunden.length > 0 && (
+            <ul className="es-liste">
+              {gefunden.map((g) => (
+                <li key={g}>
+                  <span className="es-liste-text">{g}</span>
+                  <button className="small" disabled={g === programm} onClick={() => programmSetzen(g)}>
+                    {g === programm ? 'Gewählt' : 'Verwenden'}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Abschnitt>
+
+        <Abschnitt
+          titel="Ablage"
+          text={
+            <>
+              Beispiel: <strong>{beispiel}</strong> – Platzhalter wie in allen Apps, zum Anklicken unter den Feldern.
+            </>
+          }
+        >
+          <div className="ex-ziele" role="radiogroup" aria-label="Ablage der Katasterpläne">
+            <label className={`ex-ziel${e.ziel === 'pfad' ? ' aktiv' : ''}`}>
+              <input type="radio" checked={e.ziel === 'pfad'} onChange={() => void aendern({ ziel: 'pfad' })} />
+              <span>
+                Ordner im Projektordner: <code>{e.zielpfad}</code>
+              </span>
+            </label>
+            <label className={`ex-ziel${e.ziel === 'antrag' ? ' aktiv' : ''}`}>
+              <input type="radio" checked={e.ziel === 'antrag'} onChange={() => void aendern({ ziel: 'antrag' })} />
+              <span>Ordner des aktiven Antrags (z. B. TÖB\BAUA 2) – der Antrag aus der Projektdatei, gepflegt in PERMIO (Formulare)</span>
+            </label>
+          </div>
+          <p className="small-text">
+            Dateiname: <code>{e.dateiname}</code>
+          </p>
+          <PfadeVerweis fokus="ablage.kataster.zielpfad" erklaerung="Ordner und Dateiname der Katasterpläne stehen in den Einstellungen aller Apps, Seite „Pfade und Benennung“." />
+        </Abschnitt>
+
+        <Abschnitt
+          titel="Pläne"
+          kopf={
+            <span className="ka-knoepfe">
+              <button className="small" onClick={() => void planHinzufuegen('pdf')}>
+                <Symbol name="plus" /> PDF
+              </button>
+              <button className="small" onClick={() => void planHinzufuegen('dxf')}>
+                <Symbol name="plus" /> DXF
+              </button>
+              <button className="small" title="Die vier Standardpläne wiederherstellen (eigene Pläne entfallen)" onClick={() => void vorgaben()}>
+                Vorgaben …
+              </button>
+            </span>
+          }
+          text="PDF: Layout der Vorlage, das Kartenobjekt wird auf die Projektadresse gesetzt. DXF: die sichtbaren Vektorlayer des Kartenthemas im Ausschnitt um die Projektadresse (WMS-Rasterlayer entfallen)."
+        >
+          {!e.plaene.length && <p className="muted small-text">Keine Pläne eingerichtet.</p>}
+          {e.plaene.map((p, i) => (
+            <PlanKarte key={p.id} plan={p} info={info} erster={i === 0} letzter={i === e.plaene.length - 1} />
+          ))}
+        </Abschnitt>
       </Karte>
-    </>
+    </Flaeche>
   );
 }
