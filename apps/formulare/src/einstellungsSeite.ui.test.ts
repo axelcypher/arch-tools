@@ -33,5 +33,10 @@ describe('Seite PERMIO im Notbetrieb', () => {
       expect.arrayContaining(['Formularprojekte', 'Vorgaben je Rolle', 'Formulare', 'Anträge im Projektordner', 'Antragsmerkmale', 'Projektdatei (.oap)', 'Einstellungen importieren']),
     );
     expect(host.querySelectorAll('.es-gruppe').length).toBe(feldgruppe.querySelectorAll('.es-gruppe').length);
+    // Tabellen der Seite in der gemeinsamen Zahlentabelle aus core: Katalog der Antragsmerkmale mit Feldern, Angaben der Projektdatei als Text
+    const tabellen = [...host.querySelectorAll('table')];
+    expect(tabellen.length).toBeGreaterThanOrEqual(2);
+    for (const t of tabellen) expect(['summary-table', 'text'].every((k) => t.classList.contains(k))).toBe(true);
+    expect(host.querySelector('table.es-katalog')!.classList.contains('felder')).toBe(true);
   });
 });
