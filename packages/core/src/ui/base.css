@@ -2684,8 +2684,11 @@ button.ungespeichert::after {
 }
 .sd-phase-kopf {
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--s1);
+  min-width: 0;
+  max-width: 100%;
 }
 .sd-phase-kopf select {
   width: auto;

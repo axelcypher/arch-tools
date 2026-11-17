@@ -1064,7 +1064,7 @@ describe('Startseite mit der gemeinsamen Projektübersicht', () => {
     expect(knopf(dialog, 'Übernehmen').disabled).toBe(true);
     act(() => knopf(dialog, 'Vorschlag BP übernehmen').click());
     // Enter im Formular übernimmt (Hauptknopf)
-    await act(async () => (document.querySelector('form.po-phase-dialog') as HTMLFormElement).requestSubmit());
+    await act(async () => (document.querySelector('form.po-phase-dialog select') as HTMLSelectElement).dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })));
     await warten();
     await warten();
     const { readProjectFile: lesenPhase } = await import('@core/archive');

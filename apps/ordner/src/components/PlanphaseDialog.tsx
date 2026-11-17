@@ -41,6 +41,13 @@ export function PlanphaseDialog({
           e.preventDefault();
           if (!unveraendert) void uebernehmen();
         }}
+        // Enter in einer Auswahl sendet Formulare in Chromium nicht von selbst ab
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && e.target instanceof HTMLSelectElement) {
+            e.preventDefault();
+            e.currentTarget.requestSubmit();
+          }
+        }}
       >
         <PlanphaseWahl meta={meta} onChange={setMeta} namensschema={namensschema} startfokus />
         <div className="dialog-buttons">
