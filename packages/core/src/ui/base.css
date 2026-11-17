@@ -1065,8 +1065,11 @@ textarea:focus {
 }
 /* kleine und Symbolknöpfe (× zum Entfernen) in Feldzeilen: mittig zur Feldhöhe wie der Text daneben */
 .summary-table.felder td > button:is(.small, .icon) {
-  min-height: var(--ctl-h-s);
   margin-top: calc((var(--ctl-h) - var(--ctl-h-s)) / 2);
+}
+/* Symbolknöpfe dort so hoch wie kleine (Spezifität null wie die übrigen Mindesthöhen – App-Regeln gehen vor) */
+:where(.summary-table.felder td) > :where(button.icon) {
+  min-height: var(--ctl-h-s);
 }
 /* Kästchen und Optionsfelder in Tabellen: so breit wie sie sind, ohne Rand, mittig zur Zeile – sie lösen den Ausgleich
    der Feldzeilen nicht aus und rücken in echten Feldzeilen mit dem Text */

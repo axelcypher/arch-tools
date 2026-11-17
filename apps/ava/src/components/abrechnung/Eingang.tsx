@@ -206,7 +206,7 @@ export function Eingang() {
         </Karte>
       </BreitenLeiste>
       <Karte als="main" titel="Vorschau" vorschau>
-        {scan ? <PdfVorschau daten={vorschau} name={scan} laedt={vorschauLaedt} /> : <div className="ava-pdf muted">Kein Scan gewählt.</div>}
+        {scan ? <PdfVorschau daten={vorschau} name={scan} laedt={vorschauLaedt} /> : <div className="muted">Kein Scan gewählt.</div>}
       </Karte>
       <BreitenLeiste schluessel="ava:breite:zuordnen" vorgabe={340} seite="rechts" titel="Breite der Zuordnung">
         <Karte

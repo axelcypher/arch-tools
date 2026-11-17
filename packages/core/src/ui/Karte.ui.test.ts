@@ -263,6 +263,11 @@ describe('Fläche und Karten', () => {
     expect(css).toMatch(/\.summary-table input\.zelle:is\(\.feld-fehler, \[aria-invalid='true'\]\),[^{]*\{[^}]*border-color: var\(--danger\);/);
     expect(css).toMatch(/\.summary-table input\.zelle:hover:not\(:disabled, :focus, \.feld-fehler, \[aria-invalid='true'\]\) \{/);
     expect(css).toMatch(/\.summary-table td:has\(> input\.zelle\) \{\s*padding-inline: 0;/);
+    expect(css).toMatch(/input\[type='checkbox'\],\s*input\[type='radio'\] \{\s*width: auto;/);
+    expect(css).toMatch(/\.summary-table input:is\(\[type='checkbox'\], \[type='radio'\]\) \{\s*margin: 0;\s*vertical-align: middle;/);
+    expect(css).toMatch(/\.summary-table\.fest thead tr:last-child th \{\s*box-shadow: inset 0 -1px var\(--line-soft\);/);
+    expect(css).toMatch(/\.summary-table\.waehlbar tbody tr:not\(\.gruppe, \.summe\) \{\s*cursor: pointer;/);
+    expect(css).toMatch(/:where\(\.summary-table\.felder td\) > :where\(button\.icon\) \{\s*min-height: var\(--ctl-h-s\);/);
     expect(css).toMatch(/\.karte-rumpf:has\(> \.summary-table\.fest\) \{\s*scroll-padding-top: var\(--tabelle-kopf-h,/);
     // fester Kopf: sticky am thead (mehrzeiliger Kopf bleibt zusammen), ohne Umbruch, Grund der Karte
     expect(css).toMatch(/\.summary-table\.fest thead \{[^}]*position: sticky;[^}]*top: 0;/);

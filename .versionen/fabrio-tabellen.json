@@ -1,0 +1,3 @@
+{
+  "ava": { "stufe": "patch", "notiz": "Alle Tabellen (LV, Angebote und Preisspiegel, Auftrag, Rechnungen, Mängel, Beteiligte, Bauleitung, Dateien, Mails) nutzen die gemeinsame Zahlentabelle; Abschnitte und die gewählte Zeile sind wie in den anderen Apps markiert." }
+}

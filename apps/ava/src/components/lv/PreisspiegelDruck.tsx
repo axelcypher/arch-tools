@@ -26,7 +26,7 @@ export function PreisspiegelDruck({ onClose }: { onClose: () => void }) {
       </div>
       <Preisspiegel druck />
       <h3>Rangfolge</h3>
-      <table className="ava-tabelle ava-rang-tabelle">
+      <table className="summary-table text ava-rang-tabelle">
         <thead>
           <tr>
             <th>Rang</th>

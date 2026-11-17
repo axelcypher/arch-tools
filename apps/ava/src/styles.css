@@ -125,52 +125,47 @@
 
 /* ---------- Tabellen ---------- */
 
-.ava-tabelle {
-  width: 100%;
-  border-collapse: collapse;
-  background: var(--panel);
+/* Datentabellen: gemeinsame Zahlentabelle (.summary-table.text, mit Feldern .felder). Hier nur, was core noch nicht hat
+   (beim Designsystem gemeldet, kommt als .summary-table.fest u. a.; danach entfallen diese Regeln). Alle unter
+   .ava-flaeche (der Druck liegt als Portal außerhalb und bekommt nur Ziffern gleicher Breite und Beträge ohne Umbruch):
+   - Ziffern gleicher Breite;
+   - der Kopf als Ganzes fest beim Rollen im Kartenrumpf (auch zweizeilige Köpfe wie im Preisspiegel), ohne Umbruch;
+   - Felder füllen ihre Zelle;
+   - Kontrollkästchen und Optionsfelder in Feldzeilen auf der Textlinie (core rückt nur Zellen ohne Feld ein). */
+.ava-flaeche .summary-table,
+.ava-druck .summary-table {
   font-variant-numeric: tabular-nums;
 }
 
-.ava-tabelle th {
-  text-align: left;
-  font-weight: 600;
-  font-size: 11.5px;
-  color: var(--muted);
-  padding: 5px 6px;
-  border-bottom: 1px solid var(--border);
-  background: var(--panel);
+.ava-flaeche .summary-table thead {
   position: sticky;
   top: 0;
   z-index: 1;
+}
+
+.ava-flaeche .summary-table thead th {
+  background: var(--panel);
   white-space: nowrap;
 }
 
-.ava-tabelle td {
-  padding: 4px 6px;
-  border-bottom: 1px solid var(--line-soft);
-  vertical-align: top;
-}
-
-.ava-tabelle td input:not([type='checkbox']):not([type='radio']),
-.ava-tabelle td select {
+.ava-flaeche .summary-table.felder td input:not([type='checkbox']):not([type='radio']),
+.ava-flaeche .summary-table.felder td select {
   width: 100%;
   min-width: 60px;
 }
 
-.ava-tabelle .num,
-.ava-tabelle th.num {
-  text-align: right;
+.ava-flaeche .summary-table td > input[type='checkbox'],
+.ava-flaeche .summary-table td > input[type='radio'] {
+  width: auto;
+  margin: 0;
+  vertical-align: middle;
 }
 
-.ava-tabelle tfoot td {
-  font-weight: 600;
-  border-top: 2px solid var(--border);
-  border-bottom: none;
-}
-
-.ava-tabelle tr.active td {
-  background: var(--accent-soft);
+.ava-flaeche
+  .summary-table.felder
+  tr:has(input:not([type='checkbox']):not([type='radio']), select, textarea, button:not(.link))
+  > td:has(> input[type='checkbox']:only-child, > input[type='radio']:only-child) {
+  padding-top: calc(3px + (var(--ctl-h) - 1lh) / 2);
 }
 
 .ava-klickbar {
@@ -356,13 +351,10 @@
   cursor: pointer;
 }
 
-.ava-lv-zeilen tr:hover td {
+/* Hover über Positionen und – im dunklen Schema sichtbar – über Gruppenzeilen (im hellen gleichen sich --hover und
+   --tabelle-gruppe, ans Designsystem gemeldet); die gewählte Zeile behält ihre Tönung, die feste OZ-Zelle zieht mit */
+.ava-lv-zeilen tbody tr:not(.selected):hover td {
   background: var(--hover);
-}
-
-.ava-z-abschnitt td {
-  font-weight: 600;
-  background: color-mix(in srgb, var(--chip-bg) 70%, var(--panel));
 }
 
 .ava-z-hinweis td {
@@ -660,15 +652,6 @@ input.ava-fehler {
   grid-template-columns: minmax(0, 1.2fr) minmax(300px, 1fr);
   gap: 16px;
   align-items: start;
-}
-
-.ava-rechnung-tabelle td {
-  padding: 3px 6px;
-}
-
-.ava-zwischensumme td {
-  font-weight: 600;
-  border-top: 1px solid var(--border);
 }
 
 .ava-zahlung td {
@@ -1101,11 +1084,11 @@ input.ava-fehler {
   padding-top: 4px;
 }
 
-.ava-spiegel-druck .ava-tabelle {
+.ava-spiegel-druck .summary-table {
   font-size: 10px;
 }
 
-.ava-spiegel-druck .ava-tabelle th {
+.ava-spiegel-druck .summary-table th {
   position: static;
 }
 
@@ -1198,13 +1181,9 @@ input.ava-fehler {
   max-width: 100%;
 }
 
-.ava-tabelle .num,
-.ava-tabelle td.num {
+.ava-flaeche .summary-table td.num,
+.ava-druck .summary-table td.num {
   white-space: nowrap;
-}
-
-.ava-tabelle td {
-  vertical-align: middle;
 }
 
 .ava-tabs button {
@@ -1288,12 +1267,13 @@ input.ava-fehler {
   z-index: 2;
 }
 
-.ava-lv-zeilen tr.active td.ava-oz {
-  background: var(--accent-soft);
+/* die feste OZ-Spalte trägt die Tönung der Zeile mit (Gruppe bzw. Wahl, wie core) */
+.ava-lv-zeilen tr.gruppe td.ava-oz {
+  background: var(--tabelle-gruppe);
 }
 
-.ava-z-abschnitt td.ava-oz {
-  background: color-mix(in srgb, var(--chip-bg) 70%, var(--panel));
+.ava-lv-zeilen tr.selected td.ava-oz {
+  background: var(--accent-soft);
 }
 
 .ava-lv-zeilen td.ava-kurztext {
@@ -1321,7 +1301,7 @@ input.ava-fehler {
   justify-content: flex-end;
 }
 
-.ava-tabelle td .ava-prozent input {
+.ava-flaeche .summary-table td .ava-prozent input {
   width: 56px !important;
   min-width: 0 !important;
   text-align: right;
@@ -1470,7 +1450,7 @@ input.ava-fehler {
 }
 
 /* Bautagebuch: Personen als normales Eingabefeld */
-.ava-tabelle td input.ava-personen:not([type='checkbox']):not([type='radio']) {
+.ava-flaeche .summary-table td input.ava-personen:not([type='checkbox']):not([type='radio']) {
   width: 70px;
 }
 
@@ -1592,7 +1572,7 @@ input.ava-fehler {
   color: var(--muted);
 }
 
-.ava-tabelle td input.ava-bieter-name {
+.ava-flaeche .summary-table td input.ava-bieter-name {
   min-width: 150px !important;
 }
 

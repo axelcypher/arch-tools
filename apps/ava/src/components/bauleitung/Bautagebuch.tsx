@@ -181,7 +181,7 @@ function Bericht({ t, neu }: { t: Tagesbericht; neu: boolean }) {
         </Feld>
       </div>
       <h3>Firmen auf der Baustelle</h3>
-      <table className="ava-tabelle">
+      <table className="summary-table text felder">
         <thead>
           <tr>
             <th>Firma</th>

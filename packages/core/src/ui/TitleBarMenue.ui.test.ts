@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { TitleBar } from './TitleBar';
 import { logger } from '../platform/log';
 import { useTheme } from '../platform/theme';
-import { SpeicherortAnzeige, speicherortPunkt } from './Speicherort';
+import { SpeicherortAnzeige } from './Speicherort';
 import type { KonfigOrt } from '../platform/konfig';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -122,15 +122,6 @@ describe('Titelleiste: Menü „Darstellung und Hilfe“', () => {
 
 describe('Speicherort: in den Apps nicht im Menü, im Notbetrieb als Warnung', () => {
   const ort = (o: Partial<KonfigOrt>): KonfigOrt => ({ ordner: 'C:/x', basis: 'C:/x', modus: 'einzelplatz', notbetrieb: false, ...o }) as KonfigOrt;
-  it('speicherortPunkt (nur noch für das Menü der Rahmen-App Arkly): im Normalfall Punkt mit Einzelplatz bzw. Netzwerk als Hinweis; im Browser, beim Lesen, bei Fehler und im Notbetrieb keiner', () => {
-    const oeffnen = vi.fn();
-    const p = speicherortPunkt(ort({}), oeffnen)!;
-    expect(p).toMatchObject({ text: 'Speicherort der Einstellungen …', hinweis: 'Einzelplatz' });
-    (p as { aktion: () => void }).aktion();
-    expect(oeffnen).toHaveBeenCalledTimes(1);
-    expect(speicherortPunkt(ort({ modus: 'netzwerk', ordner: '//nas/arch' }), oeffnen)).toMatchObject({ hinweis: 'Netzwerk', titel: expect.stringContaining('//nas/arch') });
-    for (const o of [null, undefined, 'fehler' as const, ort({ modus: 'netzwerk', notbetrieb: true })]) expect(speicherortPunkt(o, oeffnen)).toBeNull();
-  });
   it('SpeicherortAnzeige nurWarnung: im Normalfall nichts (der Ort steht im Einstellungsdialog), im Notbetrieb und bei Fehler sichtbar; Gegenprobe ohne nurWarnung', () => {
     const zeige = (o: Parameters<typeof SpeicherortAnzeige>[0]['ort'], nurWarnung: boolean) => {
       const host = document.createElement('div');
