@@ -157,18 +157,6 @@
   display: flex;
   margin-top: 2px;
 }
-button.link {
-  border: none;
-  background: none;
-  padding: 0;
-  color: var(--accent);
-  cursor: pointer;
-  text-align: left;
-  font: inherit;
-}
-button.link:hover {
-  text-decoration: underline;
-}
 .kpis {
   display: grid;
   /* zwei Kacheln nebeneinander, wenn sie Platz haben (Zahl mit Einheit bricht nicht um); sonst untereinander */
