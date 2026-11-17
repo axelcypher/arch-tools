@@ -992,36 +992,6 @@
   min-width: var(--ctl-h-s);
 }
 
-.es-liste {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.es-liste li {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 6px 8px;
-  border-radius: 6px;
-  background: var(--bg);
-}
-.es-liste li > .symbol {
-  color: var(--muted);
-}
-.es-liste-text {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-}
-.es-liste-text > * {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 .ex-ziele {
   display: flex;
   flex-direction: column;
@@ -1105,31 +1075,30 @@
   background: var(--accent-soft);
   color: var(--accent);
 }
-/* Felder einer Plankarte im Raster; Zahlenfelder bleiben kurz */
-.es-raster {
+/* Angaben eines Plans: Felder mit Beschriftung darüber, so viele Spalten wie Platz ist (in core gibt es dafür noch kein
+   Muster); ka-breit über die ganze Breite, ka-zwei über zwei Spalten */
+.ka-raster {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 8px 12px;
+  gap: var(--s2) var(--s3);
   align-items: end;
 }
-.es-raster > label {
+.ka-raster > label {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--s1);
   min-width: 0;
 }
-.es-raster input:not([type='checkbox']) {
+.ka-raster input:not([type='checkbox']),
+.ka-raster select {
   width: 100%;
 }
-.es-breit {
+.ka-raster > .ka-breit {
   grid-column: 1 / -1;
 }
 /* Auswahl mit langen Einträgen (Stil der DXF) über zwei Spalten */
-.es-raster > .ka-zwei {
+.ka-raster > .ka-zwei {
   grid-column: span 2;
-}
-.ka-raster select {
-  width: 100%;
 }
 /* Einstellungen links im Dialogfuß, Abbrechen und Exportieren rechts */
 .ka-dialog .dialog-buttons .ex-links {

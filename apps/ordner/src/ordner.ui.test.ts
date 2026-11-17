@@ -112,7 +112,7 @@ describe('ATLAS (Projektordner)', () => {
     const leiste = host.querySelector('.toolbar.werkzeugleiste[aria-label="Ansichten"]')!;
     expect(leiste).not.toBeNull();
     const sichtbar = [...leiste.querySelectorAll(':scope > [data-eintrag] button')].map((b) => b.textContent?.trim());
-    // links „Datei“ (nur „Einstellungen …“)
+    // links „Datei“ („Exportieren ▸“ und „Einstellungen …“)
     expect(sichtbar).toEqual(['Datei', 'Assistent', 'Ordner prüfen', 'Mails', 'Einrichtung']);
     const menueKnopf = () => knopf(host, 'Einrichtung');
     expect(menueKnopf().className).not.toContain('active');

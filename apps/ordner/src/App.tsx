@@ -8,6 +8,7 @@ import { Werkzeugleiste } from '@core/ui/Werkzeugleiste';
 import { einstellungenOeffnen, einstellungenPunkt } from '@core/ui/Einstellungen';
 import { atlasSeiteAnmelden } from './components/AtlasEinstellungen';
 import { AssistentView } from './components/AssistentView';
+import type { CsvAusgabe } from './components/PruefView';
 import { PruefView } from './components/PruefView';
 import { StrukturView } from './components/StrukturView';
 import { VorlagenView } from './components/VorlagenView';
@@ -49,6 +50,8 @@ export function App() {
   const [neustart, setNeustart] = useState(0);
   // „Projekt prüfen“ aus der Projektübersicht
   const [pruefStart, setPruefStart] = useState<{ pfad: string; nr: number } | null>(null);
+  /** Bericht aus „Ordner prüfen“, der sich als CSV ausgeben lässt (für „Datei → Exportieren“) */
+  const [csv, setCsv] = useState<CsvAusgabe | null>(null);
   // „Mails prüfen“ aus der Projektübersicht bzw. aus „Ordner prüfen“
   const [mailStart, setMailStart] = useState<{ pfad: string; nr: number } | null>(null);
   const mailsPruefen = (pfad: string) => {
@@ -182,6 +185,20 @@ export function App() {
       aktion: () => setAnsicht(a.id),
     }));
 
+  // „Datei → Exportieren“: die Ausgaben in eine Datei – in ATLAS der Bericht aus „Ordner prüfen“ als CSV
+  // eigenes Untermenü statt exportUntermenue aus core: ATLAS bietet weder Excel noch PDF, nur den Prüfbericht als CSV
+  const dateiPunkte = (): MenuePunkt[] => [
+    {
+      text: 'Exportieren',
+      symbol: 'export',
+      unter: [{ text: 'CSV …', symbol: 'export', titel: csv?.titel, aktion: () => csv?.aktion() }],
+      deaktiviert: !csv,
+      hinweis: csv ? undefined : 'Erst einen Ordner prüfen',
+    },
+    { trenner: true },
+    einstellungenPunkt(),
+  ];
+
   return (
     <div className="app">
       <TitleBar
@@ -205,8 +222,8 @@ export function App() {
       <Werkzeugleiste
         name="Ansichten"
         teile={[
-          // „Datei“ (docs/design.md, „Kopf- und Werkzeugleisten“): in ATLAS nur „Einstellungen …“
-          { id: 'datei', gruppe: true, inhalt: <MenueKnopf punkte={() => [einstellungenPunkt()]}>Datei</MenueKnopf> },
+          // „Datei“ (docs/design.md, „Kopf- und Werkzeugleisten“): „Exportieren“ (jede Ausgabe in eine Datei) und „Einstellungen …“
+          { id: 'datei', gruppe: true, inhalt: <MenueKnopf punkte={dateiPunkte}>Datei</MenueKnopf> },
           {
             id: 'ansichten',
             gruppe: true,
@@ -288,6 +305,7 @@ export function App() {
       </div>
       {ansicht === 'pruefen' && (
         <PruefView
+          onCsv={setCsv}
           key={pruefStart?.nr ?? 0}
           start={pruefStart?.pfad ?? null}
           onMails={mailsPruefen}

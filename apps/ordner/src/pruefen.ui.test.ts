@@ -1,10 +1,11 @@
 // @vitest-environment happy-dom
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createProject } from '@core/model';
 import { VORGABE_ALLGEMEIN } from '@core/platform/konfig';
 import { projektdateiAnlegen } from '@core/platform/projektordner';
+import type { CsvAusgabe } from './components/PruefView';
 import { PruefView } from './components/PruefView';
 import { SpeicherDateisystem } from './dateisystem';
 import { leereStammdaten } from './stammdaten';
@@ -13,6 +14,15 @@ import type { Struktur } from './struktur';
 import { STANDARD } from './struktur';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+
+const gespeichert = vi.hoisted(() => [] as { defaultName: string; contents: string }[]);
+vi.mock('@core/platform/files', async (original) => ({
+  ...(await original<typeof import('@core/platform/files')>()),
+  saveTextFile: async (o: { defaultName: string; contents: string }) => {
+    gespeichert.push(o);
+    return true;
+  },
+}));
 
 /** Struktur mit dem Jahr in einem Ordner und sieben weiteren Ordnern */
 const STRUKTUR: Struktur = {
@@ -25,6 +35,7 @@ const STRUKTUR: Struktur = {
 let root: ReturnType<typeof createRoot> | null = null;
 beforeEach(() => {
   localStorage.clear();
+  gespeichert.length = 0;
   useOrdner.setState({ stamm: leereStammdaten(), struktur: STRUKTUR, allgemein: { ...VORGABE_ALLGEMEIN, projekte: ['P:/Projekte'] }, konfigLaden: async () => {} });
 });
 afterEach(() => {
@@ -81,6 +92,51 @@ describe('Prüfbericht', () => {
     expect([...unten.querySelectorAll('button')].map((b) => b.textContent)).toEqual(['Als CSV speichern …', 'Projekt ergänzen …']);
     // Rückkehr steht oben am Bericht (es gibt eine Projektliste)
     expect(knopf(host.querySelector('.po-bericht-kopf')!, 'Zur Projektliste')).toBeTruthy();
+  });
+
+  it('meldet den Bericht für „Datei → Exportieren → CSV …“, speichert ihn und meldet beim Verlassen wieder ab', async () => {
+    const fs = await projekt('2026-03-01');
+    const meldungen: (CsvAusgabe | null)[] = [];
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    root = createRoot(host);
+    act(() => root!.render(createElement(PruefView, { fs, onErgaenzen: () => {}, onCsv: (c) => meldungen.push(c), start: 'P:/Projekte/MUS Haus' })));
+    await warten();
+    await warten();
+    const bericht = meldungen.at(-1)!;
+    expect(bericht.titel).toBe('Prüfbericht „MUS Haus“ als CSV-Datei speichern');
+    // dieselbe Datei wie der Knopf „Als CSV speichern …“
+    await act(async () => bericht.aktion());
+    await act(async () => knopf(host, 'Als CSV speichern').click());
+    expect(gespeichert.map((g) => g.defaultName)).toEqual(['Prüfbericht MUS Haus.csv', 'Prüfbericht MUS Haus.csv']);
+    expect(gespeichert[0].contents).toBe(gespeichert[1].contents);
+    expect(gespeichert[0].contents).toContain('Ordner der Struktur fehlen');
+    // Ansicht direkt aus dem Bericht verlassen: abgemeldet
+    const vorher = meldungen.length;
+    act(() => root!.render(createElement('div')));
+    expect(meldungen.length).toBe(vorher + 1);
+    expect(meldungen.at(-1)).toBeNull();
+  });
+
+  it('meldet die Übersicht aller Projekte und nach „Zur Projektliste“ nichts mehr', async () => {
+    const fs = await projekt('2026-03-01');
+    const meldungen: (CsvAusgabe | null)[] = [];
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    root = createRoot(host);
+    act(() => root!.render(createElement(PruefView, { fs, onErgaenzen: () => {}, onCsv: (c) => meldungen.push(c) })));
+    await warten();
+    expect(meldungen.at(-1)).toBeNull();
+    await act(async () => knopf(host, 'Alle Projekte prüfen').click());
+    await warten();
+    const uebersicht = meldungen.at(-1)!;
+    expect(uebersicht.titel).toBe('Übersicht aller Projekte als CSV-Datei speichern');
+    await act(async () => uebersicht.aktion());
+    expect(gespeichert).toHaveLength(1);
+    expect(gespeichert[0].defaultName).toMatch(/^Prüfung aller Projekte \d{4}-\d{2}-\d{2}\.csv$/);
+    expect(gespeichert[0].contents).toContain('MUS Haus');
+    act(() => knopf(host, 'Zur Projektliste').click());
+    expect(meldungen.at(-1)).toBeNull();
   });
 
   it('Teilstand nach Fehler beim Anlegen: Bericht neu geprüft und Fehler mit Zahl genannt', async () => {

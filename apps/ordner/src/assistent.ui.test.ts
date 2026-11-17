@@ -656,3 +656,30 @@ describe('Rahmen-App Arkly: ungespeicherte Änderungen melden und auf Anfrage sp
     expect(meldungText()).toContain('Projektordner anzulegen');
   });
 });
+
+describe('Datei → Exportieren', () => {
+  it('ohne Bericht gesperrt mit Grund; nach „Alle Projekte prüfen“ frei mit „CSV …“', async () => {
+    await desktopMitProjekt();
+    useOrdner.setState({ allgemein: { ...VORGABE_ALLGEMEIN, projekte: ['P:/Projekte'] } });
+    const host = render();
+    const datei = () => [...host.querySelectorAll<HTMLButtonElement>('button[aria-haspopup="menu"]')].find((b) => b.textContent?.trim() === 'Datei')!;
+    const punkte = () => [...document.querySelectorAll<HTMLElement>('[role="menu"] [role^="menuitem"]')];
+    const schliessen = () => act(() => void document.activeElement?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })));
+    act(() => datei().click());
+    const gesperrt = punkte().find((p) => p.textContent?.startsWith('Exportieren'))!;
+    expect(gesperrt.getAttribute('aria-disabled')).toBe('true');
+    expect(gesperrt.textContent).toContain('Erst einen Ordner prüfen');
+    schliessen();
+    act(() => knopf(host, 'Ordner prüfen').click());
+    await warten();
+    await act(async () => knopf(host, 'Alle Projekte prüfen').click());
+    await warten();
+    act(() => datei().click());
+    const frei = punkte().find((p) => p.textContent?.startsWith('Exportieren'))!;
+    expect(frei.getAttribute('aria-disabled')).not.toBe('true');
+    act(() => frei.click());
+    const csv = punkte().find((p) => p.textContent?.trim() === 'CSV …')!;
+    expect(csv.title).toBe('Übersicht aller Projekte als CSV-Datei speichern');
+    schliessen();
+  });
+});
