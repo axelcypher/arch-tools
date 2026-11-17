@@ -497,7 +497,8 @@ Werkzeugleiste liegt mit auf der Fläche (gleicher Grund, keine Linie). Baustein
   - **Leiste** (`leiste`): Hat eine Ansicht eine eigene Werkzeugleiste, die zu breit für den Kopf ist (z. B. FABRIO je
     Ansicht), steht sie fest zwischen Kopf und Inhalt, im Grund der Karte, mit einer Linie zum scrollenden Inhalt; sie
     gehört damit zu ihrer Karte und steht nicht über der ganzen Fläche. Wechselt die Leiste mit der Ansicht, bekommt
-    die `Werkzeugleiste` einen eigenen Namen (`name="Werkzeuge Rechnungen"`).
+    die `Werkzeugleiste` einen eigenen Namen (`name="Werkzeuge Rechnungen"`). Nur an `Karte`; die `ZeichenKarte` nutzt
+    die Werkzeugleiste der App.
   - **Inhalt** (`.karte-rumpf`): beginnt und endet immer im Abstand des Rumpfs, gleich ob vorn ein `p`, eine Liste oder
     ein `h3` steht (Außenabstand des ersten und letzten Kindes entfällt). `buendig` lässt Tabellen und Listen bis an
     den Rand laufen; Fokusrahmen liegen dort innen. Breite Tabellen scrollen mit dem Inhalt der Karte, sie laufen nie

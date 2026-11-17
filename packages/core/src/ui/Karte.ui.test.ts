@@ -78,6 +78,9 @@ describe('Fläche und Karten', () => {
     expect([...karte.children].map((c) => c.className)).toEqual(['karte-kopf', 'karte-leiste', 'karte-rumpf']);
     expect(karte.querySelector('.karte-leiste > .toolbar > button')?.textContent).toBe('Neu');
     const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'base.css'), 'utf8');
+    // ohne Kopf ist die Leiste das erste Kind
+    const ohneKopf = render(h(Karte, { ariaLabel: 'Positionen', leiste: h('div', { className: 'toolbar' }, 'x') }, 'y'));
+    expect([...ohneKopf.querySelector('section.karte')!.children].map((c) => c.className)).toEqual(['karte-leiste', 'karte-rumpf']);
     expect(css).toMatch(/\.karte-leiste \{[^}]*flex: none;[^}]*border-bottom: 1px solid var\(--line-soft\);/);
     expect(css).toMatch(/\.karte-leiste > \.toolbar \{[^}]*background: transparent;[^}]*border-bottom: none;/);
     expect(css).toMatch(/\.karte-kopf:has\(\+ \.karte-leiste\) \{\s*border-bottom-color: transparent;/);
