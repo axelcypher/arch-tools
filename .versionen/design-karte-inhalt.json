@@ -1,0 +1,34 @@
+{
+  "flaechenrechner": {
+    "stufe": "patch",
+    "notiz": "Kleinere Verbesserungen an Tabellen und Kartenhöhen für das neue Kartenlayout."
+  },
+  "grz": {
+    "stufe": "patch",
+    "notiz": "Kleinere Verbesserungen an Tabellen und Kartenhöhen für das neue Kartenlayout."
+  },
+  "kosten": {
+    "stufe": "patch",
+    "notiz": "Kleinere Verbesserungen an Tabellen und Kartenhöhen für das neue Kartenlayout."
+  },
+  "ordner": {
+    "stufe": "patch",
+    "notiz": "Kleinere Verbesserungen an Tabellen und Kartenhöhen für das neue Kartenlayout."
+  },
+  "entzerrung": {
+    "stufe": "patch",
+    "notiz": "Kleinere Verbesserungen an Tabellen und Kartenhöhen für das neue Kartenlayout."
+  },
+  "formulare": {
+    "stufe": "patch",
+    "notiz": "Kleinere Verbesserungen an Tabellen und Kartenhöhen für das neue Kartenlayout."
+  },
+  "ava": {
+    "stufe": "patch",
+    "notiz": "Kleinere Verbesserungen an Tabellen und Kartenhöhen für das neue Kartenlayout."
+  },
+  "baurecht": {
+    "stufe": "patch",
+    "notiz": "Kleinere Verbesserungen an Tabellen und Kartenhöhen für das neue Kartenlayout."
+  }
+}
