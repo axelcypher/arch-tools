@@ -436,10 +436,13 @@ describe('Formulare', () => {
     // Formular und Felder stehen direkt auf der Fläche (das Papier bzw. die Abschnitte sind die Karten)
     expect(flaeche.querySelector(':scope > .flaechen-spalte.wachsend.rollend.fo-inhalt')).not.toBeNull();
     await klick(knopfGenau(host, 'Felder'));
-    // Abschnitte unter der Seitenüberschrift (h2): Kopf h3, keine eigene Region (div ohne Namen)
-    // Suche und Filter: fester Kopf der rollenden Spalte aus core, als Suchbereich benannt
+    // Suche und Filter: fester Kopf der rollenden Spalte aus core, als Suchbereich benannt; seine gemessene Höhe steht
+    // als --rollend-kopf-h an der Spalte (Felder ohne Kopf: wieder die Vorgabe aus core)
     const kopf = flaeche.querySelector('.fo-inhalt .fo-felder > .fo-felder-kopf.rollend-kopf:first-child')!;
     expect([kopf.getAttribute('role'), kopf.getAttribute('aria-label')]).toEqual(['search', 'Felder suchen und filtern']);
+    const spalte = flaeche.querySelector<HTMLElement>('.fo-inhalt')!;
+    expect(spalte.style.getPropertyValue('--rollend-kopf-h')).toMatch(/^calc\(\d+px \+ var\(--s1\)\)$/);
+    // Abschnitte unter der Seitenüberschrift (h2): Kopf h3, keine eigene Region (div ohne Namen)
     const seite = flaeche.querySelector('.fo-inhalt .fo-seite-felder')!;
     expect(seite.querySelector(':scope > h2')!.textContent).toContain('Seite 1');
     const abschnitt = seite.querySelector<HTMLElement>('.fo-abschnitt > div.karte')!;
@@ -448,6 +451,8 @@ describe('Formulare', () => {
     expect(abschnitt.hasAttribute('aria-labelledby') || abschnitt.hasAttribute('aria-label')).toBe(false);
     expect(flaeche.querySelectorAll('.fo-inhalt section')).toHaveLength(seite.parentElement!.querySelectorAll('section.fo-seite-felder').length);
     expect(abschnitt.querySelector('.karte-rumpf .fo-zeile')).not.toBeNull();
+    await klick(knopfGenau(host, 'Formular'));
+    expect(flaeche.querySelector<HTMLElement>('.fo-inhalt')!.style.getPropertyValue('--rollend-kopf-h')).toBe('');
     // Verlauf: Seitenkarte rechts, Griff links
     await imLeistenMenue(host, 'Ansicht', 'Verlauf der Eingaben');
     const rechts = [...flaeche.querySelectorAll<HTMLElement>(':scope > .leiste')].at(-1)!;
