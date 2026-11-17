@@ -51,6 +51,12 @@ export const gleicherWert = (a: PfadWert | undefined, b: PfadWert | undefined): 
 export interface PfadEinstellung {
   /** Kennung, z. B. „export.berechnungsordner“ – bleibt stabil */
   id: string;
+  /**
+   * Abweichung einer gemeinsamen Angabe für eine App (`gemeinsam.ts`): steht unter der gemeinsamen und ist sonst
+   * eingeklappt. `unterordner`: Ordner im gemeinsamen Ordner (leer = direkt darin); `ersetzt`: eigener Wert statt des
+   * gemeinsamen (leer = der gemeinsame).
+   */
+  abweichungVon?: { id: string; art: 'unterordner' | 'ersetzt' };
   /** Apps, die die Einstellung nutzen */
   apps: AppKennung[];
   thema: PfadThema;

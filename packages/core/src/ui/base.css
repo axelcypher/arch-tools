@@ -3153,6 +3153,67 @@ button.ungespeichert::after {
   background: var(--accent-soft);
   color: var(--accent-text);
 }
+/* Abweichungen je App in der Karte der gemeinsamen Angabe (Pfade und Benennung): unter dem Fuß, abgesetzt durch eine
+   Linie; die Felder je App eingerückt mit Linie links, ohne eigenen Rahmen (keine Karte in der Karte) */
+.einst-abweichungen {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s2);
+  margin-top: var(--s1);
+  padding-top: var(--s2);
+  border-top: 1px solid var(--line-soft);
+}
+.einst-aufklappen {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s1);
+}
+.einst-aufklappen-geaendert {
+  color: var(--warn-text);
+}
+.einst-unter {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  margin-left: var(--s2);
+  padding-left: var(--s4);
+  border-left: 1px solid var(--border);
+}
+.einst-unter[hidden] {
+  display: none;
+}
+.einst-unter > .einst-eintrag {
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+.einst-unter > .einst-eintrag.geaendert {
+  padding-left: var(--s2);
+}
+/* was je App gilt (nur, wenn sich etwas unterscheidet) */
+.einst-wirksam {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+}
+.einst-wirksam > ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+}
+.einst-wirksam li {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s2);
+}
+.einst-wirksam code {
+  overflow-wrap: anywhere;
+}
 .einst-erklaerung,
 .einst-projekt,
 .einst-vorschau {
@@ -3205,6 +3266,10 @@ button.ungespeichert::after {
 }
 /* Platzhalter-Chips nur am Eintrag mit dem Fokus (wie die kompakten Namensfelder): die lange Seite bleibt ruhig */
 .einst-eintrag:not(:focus-within) .ph-chips {
+  display: none;
+}
+/* Fokus in einem Feld je App (Abweichungen in der Karte): nur dessen Chips, nicht die der gemeinsamen Angabe */
+.einst-eintrag:has(.einst-unter :focus-within) > .ph-chips {
   display: none;
 }
 .einst-vorschau code {
