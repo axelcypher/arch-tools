@@ -48,18 +48,24 @@ export interface GemeinsamUndJeApp {
   je: Record<ExportApp, string>;
 }
 
+/** Teile eines Ordners; „.“ fällt weg (so steht der Projektordner selbst unter den alten Schlüsseln, siehe `gruppeSchreiben`) */
 const normPfad = (v: string) =>
   v
     .split(/[\\/]+/)
     .map((t) => t.trim())
-    .filter(Boolean);
+    .filter((t) => t && t !== '.');
 
 /** Ordner relativ zum Projektordner: der gemeinsame und darin der Unterordner der App */
 export const ordnerVerbinden = (gemeinsam: string, unter: string): string => [...normPfad(gemeinsam), ...normPfad(unter)].join('/');
 
+/** was mit einer Abweichung gilt: Unterordner im gemeinsamen Ordner bzw. eigener Wert statt des gemeinsamen (leer = der gemeinsame) */
+export function wirksamAus(art: 'unterordner' | 'ersetzt', gemeinsam: string, abweichung: string): string {
+  return art === 'unterordner' ? ordnerVerbinden(gemeinsam, abweichung) : abweichung.trim() || gemeinsam;
+}
+
 /** was für eine App gilt: Ordner verbunden, Namen ersetzt */
 export function wirksamFuer(g: ExportGruppe, w: GemeinsamUndJeApp, app: ExportApp): string {
-  return g === 'ordner' ? ordnerVerbinden(w.gemeinsam, w.je[app]) : w.je[app].trim() || w.gemeinsam;
+  return wirksamAus(g === 'ordner' ? 'unterordner' : 'ersetzt', w.gemeinsam, w.je[app]);
 }
 
 /**
@@ -87,12 +93,18 @@ export function ausAlten(g: ExportGruppe, voll: Record<ExportApp, string>): Geme
 const objekt = (v: unknown): Record<string, unknown> => (v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : {});
 const text = (v: unknown): string | undefined => (typeof v === 'string' ? v.trim() : undefined);
 
-/** gemeinsame Angabe und Abweichungen aus `allgemein.pfade` – neue Schlüssel, sonst Übernahme aus den bisherigen, sonst Vorgaben */
+/**
+ * gemeinsame Angabe und Abweichungen aus `allgemein.pfade` – neue Schlüssel, sonst Übernahme aus den bisherigen, sonst
+ * Vorgaben. Grenze: Steht ein neuer Schlüssel, gelten die alten nicht mehr – ändert danach eine ältere Version einen
+ * alten Schlüssel, liest diese Version das nicht, und das nächste Speichern der Gruppe schreibt den wirksamen Wert
+ * zurück (docs/suite.md, „Gemeinsame Angaben“).
+ */
 export function gruppeLesen(g: ExportGruppe, pfade: Record<string, unknown>): GemeinsamUndJeApp {
   const neu = [gemeinsamId(g), ...EXPORT_APPS.map((a) => abweichungId(g, a))].some((k) => text(pfade[k]) !== undefined);
   if (neu)
     return {
-      gemeinsam: text(pfade[gemeinsamId(g)]) ?? vorgabeGemeinsam(g),
+      // ein leerer Dateiname gilt nicht (Pflicht) – dann die Vorgabe; ein leerer Ordner ist der Projektordner
+      gemeinsam: (g === 'ordner' ? text(pfade[gemeinsamId(g)]) : text(pfade[gemeinsamId(g)]) || undefined) ?? vorgabeGemeinsam(g),
       je: Object.fromEntries(EXPORT_APPS.map((a) => [a, text(pfade[abweichungId(g, a)]) ?? vorgabeAbweichung(g, a)])) as Record<ExportApp, string>,
     };
   const alt = EXPORT_APPS.map((a) => text(pfade[alterSchluessel(g, a)]));
@@ -111,7 +123,8 @@ function gruppeSchreiben(g: ExportGruppe, roh: Record<string, unknown>, w: Gemei
   setze(gemeinsamId(g), w.gemeinsam, vorgabeGemeinsam(g));
   for (const a of EXPORT_APPS) {
     setze(abweichungId(g, a), w.je[a], vorgabeAbweichung(g, a));
-    setze(alterSchluessel(g, a), wirksamFuer(g, w, a), vorgabeAlt(g, a));
+    // ältere Versionen lesen einen leeren Wert als Vorgabe – der Projektordner selbst steht deshalb als „.“ (fällt dort weg)
+    setze(alterSchluessel(g, a), wirksamFuer(g, w, a) || '.', vorgabeAlt(g, a));
   }
   return { ...roh, pfade };
 }

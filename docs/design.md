@@ -186,7 +186,8 @@ mit `einstellungenEntwurfMelden`, Sperre über `useEinstellungenGesperrt`).
 - **Aufbau:** `Modal` mit `tabelle` und Klasse `einst`; der Titel „Einstellungen“ steht als `h3` im Navigationskopf
   über der Seitenliste (Ausnahme mit eigenem Kopf, siehe „Dialoge“), rechts der Inhalt der gewählten Seite.
   Gemeinsames Muster in `base.css`: `.einst-form`, `.einst-nav` (Seitenliste, Einträge `.einst-nav-eintrag` mit
-  Symbol, Titel und kurzem Text), `.einst-inhalt`, `.einst-gruppe`; dazu `.einst-verweis` (`PfadeVerweis`) für den
+  Symbol, Titel und kurzem Text), `.einst-inhalt`, `.einst-gruppe`, für gemeinsame Angaben `.einst-abweichungen`, `.einst-aufklappen`, `.einst-unter`
+  und `.einst-wirksam`; dazu `.einst-verweis` (`PfadeVerweis`) für den
   umgekehrten Weg, aus einem Dialog der App auf eine Seite der Einstellungen. Unterabschnitte einer Seite sind `h4`.
 - **Seitenliste:** eine senkrechte Registerleiste wie unter „Umschalter“ (`role="tablist"`,
   `aria-orientation="vertical"`, Einträge `role="tab"` mit `aria-selected`, ↑/↓ wandern, Pos1/Ende, automatische
@@ -206,6 +207,16 @@ mit `einstellungenEntwurfMelden`, Sperre über `useEinstellungenGesperrt`).
   Felder und „Übernehmen“ gesperrt (Grund im `title`), oben ein Hinweis `.meldung.warnung`.
 - **Felder:** die gemeinsamen Bausteine (`.field`, Pfadwahl mit „Ordner wählen …“, Platzhalter mit Vorschau des
   Ergebnisses); Fehler an der Stelle (`.feld-meldung`), nicht als Rückfrage.
+- **Gemeinsame Angaben:** Was mehrere Apps gleich nutzen (Ordner, Dateinamen), steht einmal; die Karte nennt alle Apps
+  als Marken. Nicht: dieselbe Angabe je App als eigenes Feld wiederholen. Abweichungen je App gibt es nur, wo sie
+  fachlich nötig sind, und nur auf Wunsch: unter dem Fuß der Karte, abgesetzt durch eine Linie (`--line-soft`), ein
+  Knopf `small` mit Aufklapp-Pfeil (`pfeilRechts`/`pfeilUnten`, `aria-expanded`, `aria-controls`) – „Je App abweichend“
+  bzw. bei Ordnern „Unterordner je App“, mit der Zahl der gesetzten in Klammern, eingeklappt mit „· geändert“, wenn
+  darin etwas geändert ist. Er öffnet die Felder je App eingerückt mit Linie links (`.einst-unter`, `role="group"` mit
+  Namen, ohne eigenen Rahmen); leer heißt „wie die gemeinsame Angabe“ (sie steht als Platzhalter im Feld). Offen ist er,
+  wenn eine Abweichung gesetzt ist oder ein Sprung ein Feld darin ansteuert. Unterscheidet sich etwas je App, zeigt die
+  Karte unter dem Feld statt einer Vorschau „Gilt je App:“ mit App-Marke und Ergebnis (`.einst-wirksam`). Der Filter
+  „App“ zeigt die gemeinsame Angabe und nur die Abweichung dieser App.
 - **Ordnerliste** (Listen vollständiger Ordner, `zeilen: 'ordner'` – z. B. „Stammordner der Projekte“): Liste statt
   Textfeld (`.einst-ordnerliste`), der erste Eintrag mit dem Hinweis „neue Projekte“; je Zeile Symbolknöpfe „Nach
   oben“, „Nach unten“ (`nachOben`, `nachUnten`), „Entfernen“ (`schliessen`: aus der Liste, der Ordner bleibt;

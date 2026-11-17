@@ -92,7 +92,13 @@ describe('Einstellungen', () => {
     const ex = eintrag('export.excel');
     expect(ex.querySelector('.einst-app')?.textContent).toBe('QUADRIO');
     expect(ex.querySelector('[role="group"][aria-label="Platzhalter: Dateiname Excel-Export"]')).not.toBeNull();
-    expect(ex.querySelector('.einst-vorschau')?.textContent).toMatch(/^Vorschau: BS9 \d{6} Flächenaufstellung\.xlsx$/);
+    // gemeinsame Angabe: die Vorschau je App, mit dem Inhalt der App
+    expect([...ex.querySelectorAll('.einst-wirksam li')].map((li) => li.textContent)).toEqual([
+      expect.stringMatching(/^QUADRIO BS9 \d{6} Flächenaufstellung\.xlsx$/),
+      expect.stringMatching(/^TERRIO BS9 \d{6} GRZ-Nachweis\.xlsx$/),
+      expect.stringMatching(/^NUMIO BS9 \d{6} Kostenschätzung\.xlsx$/),
+    ]);
+    expect(ex.querySelector('.einst-vorschau')).toBeNull();
     // Fokus aus dem Aufruf: das Feld des Eintrags
     expect(document.activeElement).toBe(feldVon('export.excel'));
     const uebernehmen = knopf('Übernehmen', d)!;
@@ -122,24 +128,32 @@ describe('Einstellungen', () => {
     const d = dialog()!;
     // der Berechnungsordner steht einmal, mit den Marken aller drei Apps; die Unterordner je App sind gesetzt und offen
     expect(d.querySelectorAll('[id^="einst-export.berechnungsordner"]').length).toBe(1);
-    expect([...eintrag('export.berechnungsordner').querySelectorAll('.einst-apps .einst-app')].map((x) => x.textContent)).toEqual(['QUADRIO', 'TERRIO', 'NUMIO']);
+    expect([...eintrag('export.berechnungsordner').querySelectorAll(':scope > .einst-eintrag-kopf .einst-app')].map((x) => x.textContent)).toEqual(['QUADRIO', 'TERRIO', 'NUMIO']);
     const wirksam = () => [...eintrag('export.berechnungsordner').querySelectorAll('.einst-wirksam li')].map((li) => li.textContent);
     expect(wirksam()).toEqual(['QUADRIO 03 Berechnungen / Flächen', 'TERRIO 03 Berechnungen / Nachweise', 'NUMIO 03 Berechnungen / Kosten']);
-    const unter = knopf('Unterordner je App', d)!;
+    const unter = knopf('Unterordner je App (3)', d)!;
     expect(unter.getAttribute('aria-expanded')).toBe('true');
-    expect(d.querySelector(`[role="group"][aria-label="Unterordner je App in „Berechnungsordner“"]`)).not.toBeNull();
+    expect(d.querySelector('[role="group"][aria-label="Unterordner je App: Berechnungsordner"]')?.hasAttribute('hidden')).toBe(false);
+    // sichtbare Einleitung der Liste je App, daran hängt ihr Name
+    const liste = eintrag('export.berechnungsordner').querySelector('.einst-wirksam ul')!;
+    expect(document.getElementById(liste.getAttribute('aria-labelledby')!)?.textContent).toBe('Gilt je App:');
     // der gemeinsame Ordner wirkt sofort in der Vorschau je App
     await tippen(feldVon('export.berechnungsordner'), 'Ber');
     expect(wirksam()[0]).toBe('QUADRIO Ber / Flächen');
     // Excel-Name: übernommen – NUMIO weicht ab, deshalb offen; PDF: keine Abweichung, eingeklappt
-    const [excelAuf, pdfAuf] = [...d.querySelectorAll<HTMLButtonElement>('.einst-aufklappen')].filter((b) => b.textContent?.includes('Für einzelne Apps abweichend'));
+    const [excelAuf, pdfAuf] = [...d.querySelectorAll<HTMLButtonElement>('.einst-aufklappen')].filter((b) => b.textContent?.startsWith('Je App abweichend'));
+    expect(excelAuf.textContent).toBe('Je App abweichend (1)');
     expect(excelAuf.getAttribute('aria-expanded')).toBe('true');
     expect(feldVon('export.excel.abweichend.kosten').value).toBe('K {Inhalt}');
     expect(pdfAuf.getAttribute('aria-expanded')).toBe('false');
-    expect(document.getElementById('einst-export.pdf.abweichend.grz')).toBeNull();
+    expect(eintrag('export.pdf.abweichend.grz').closest('[hidden]')).not.toBeNull();
+    expect(document.getElementById(pdfAuf.getAttribute('aria-controls')!)).not.toBeNull();
     await klick(pdfAuf);
     expect(pdfAuf.getAttribute('aria-expanded')).toBe('true');
+    expect(eintrag('export.pdf.abweichend.grz').closest('[hidden]')).toBeNull();
     expect(feldVon('export.pdf.abweichend.grz').value).toBe('');
+    // leer gilt der gemeinsame Name – er steht als Platzhalter im Feld
+    expect(feldVon('export.pdf.abweichend.grz').placeholder).toBe('{PROJEKT_KUERZEL} {DATUM} {Inhalt}');
     // App-Filter: die gemeinsame Angabe bleibt, nur die Abweichung der App
     const filter = d.querySelector<HTMLSelectElement>('.einst-filter select')!;
     await act(async () => {
@@ -149,6 +163,18 @@ describe('Einstellungen', () => {
     expect(document.getElementById('einst-export.berechnungsordner')).not.toBeNull();
     expect(document.getElementById('einst-export.unterordner.grz')).not.toBeNull();
     expect(document.getElementById('einst-export.unterordner.kosten')).toBeNull();
+    expect(wirksam()).toEqual(['TERRIO Ber / Nachweise']);
+  });
+
+  it('gemeinsame Angaben: gilt für alle Apps dasselbe, steht keine Liste je App', async () => {
+    setze('allgemein', { pfade: { 'export.unterordner.flaechenrechner': '', 'export.unterordner.grz': '', 'export.unterordner.kosten': '' } });
+    const e = await zeigen();
+    await act(async () => e.einstellungenOeffnen('pfade'));
+    await warten();
+    expect(eintrag('export.berechnungsordner').querySelector('.einst-wirksam')).toBeNull();
+    // dann bleibt die Vorschau
+    expect(eintrag('export.berechnungsordner').querySelector(':scope > .einst-vorschau')?.textContent).toBe('Vorschau: 03 Berechnungen');
+    expect(knopf('Unterordner je App', dialog()!)?.getAttribute('aria-expanded')).toBe('false');
   });
 
   it('gemeinsame Angaben: ein Aufruf zu einer Abweichung klappt sie auf und setzt den Fokus', async () => {

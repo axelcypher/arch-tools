@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ausAlten, EXPORT_APPS, gemeinsamSpeicher, gruppeLesen, VORGABE_BERECHNUNGSORDNER, VORGABE_EXPORT_DATEINAME, wirksamFuer, type ExportApp, type ExportGruppe } from './gemeinsam';
-import { pfadWerteAus } from './pfade';
+import { berechnungsordnerPfad, pfadWerteAus } from './pfade';
+import { inPfade } from './verzeichnis';
 
 /** Gemeinsame Angaben des direkten Exports: Übernahme der bisherigen Werte je App ohne Verlust, ältere Versionen lesen weiter */
 
@@ -86,5 +87,21 @@ describe('Gemeinsame Angaben: Schreiben', () => {
     const w = gruppeLesen('excel', roh.pfade as Record<string, unknown>);
     expect(EXPORT_APPS.map((a) => wirksamFuer('excel', w, a))).toEqual(['A2', 'B', 'B']);
     expect(w).toEqual({ gemeinsam: 'B', je: je('A2', '', '') });
+  });
+
+  it('der Projektordner selbst (alles leer) steht für ältere Versionen als „.“ – sie exportieren in denselben Ordner', () => {
+    const roh = gemeinsamSpeicher('ordner', 'kosten').schreiben(gemeinsamSpeicher('ordner').schreiben({}, ''), '');
+    const pfade = roh.pfade as Record<string, string>;
+    expect(pfade['export.berechnungsordner.kosten']).toBe('.');
+    // Leselogik der älteren Versionen: Wert unter pfade, dann Ordner im Projekt
+    const alt = inPfade('export.berechnungsordner.kosten', 'pfad').lesen(roh) as string;
+    expect(berechnungsordnerPfad(alt, 'P:/BS9', {})).toBe('P:/BS9');
+    // die neue Version liest „.“ unter den alten Schlüsseln ebenso als Projektordner
+    expect(wirksamFuer('ordner', gruppeLesen('ordner', { 'export.berechnungsordner.kosten': '.' }), 'kosten')).toBe('');
+  });
+
+  it('ein leerer Dateiname unter dem neuen Schlüssel gilt nicht – dann die Vorgabe', () => {
+    expect(gruppeLesen('excel', { 'export.excel': '' }).gemeinsam).toBe(VORGABE_EXPORT_DATEINAME);
+    expect(gruppeLesen('ordner', { 'export.berechnungsordner': '' }).gemeinsam).toBe('');
   });
 });

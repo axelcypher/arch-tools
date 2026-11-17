@@ -302,13 +302,15 @@ Felder und „Übernehmen“ gesperrt.
 Berechnungsordner gilt für QUADRIO, TERRIO und NUMIO; darin hat jede App einen Unterordner (leer = direkt im
 gemeinsamen). Die Vorgaben ergeben zusammen die Struktur von ATLAS („03 Berechnungen/Flächen“, „…/Nachweise“,
 „…/Kosten“); die Projektdatei liegt per Vorgabe in „03 Berechnungen/Flächen“, dem Ordner von QUADRIO. Die Dateinamen
-für Excel und PDF gelten ebenso gemeinsam; „Für einzelne Apps abweichend“ klappt je App ein Feld auf (leer = der
+für Excel und PDF gelten ebenso gemeinsam; „Je App abweichend“ klappt je App ein Feld auf (leer = der
 gemeinsame Name), die Vorschau unter der gemeinsamen Angabe zeigt, was je App gilt. Bis zur Umstellung stand je App ein
 vollständiger Wert (`export.berechnungsordner.<app>`, `export.excel.<app>`, `export.pdf.<app>`): Daraus übernimmt die
 Seite ohne Verlust – beim Ordner wird der längste gemeinsame Anfang gemeinsam und der Rest Unterordner, bei den Namen
 der häufigste Wert gemeinsam und die übrigen Abweichungen; jede App exportiert danach wie vorher. Beim Speichern stehen
 die wirksamen Werte je App weiter auch unter den alten Schlüsseln, damit ältere Versionen auf anderen Rechnern gleich
-weiterarbeiten. PERMIO sucht externe Antragsdokumente (Berechnungen, Nachweise) in den Berechnungsordnern aller drei Rechen-Apps und in
+weiterarbeiten (der Projektordner selbst als „.“). Grenze: Sind die neuen Schlüssel einmal geschrieben, liest die neue
+Version die alten nicht mehr – ändert danach eine ältere Version dort etwas, gilt das nur für sie, und das nächste
+Speichern der Gruppe schreibt den wirksamen Wert zurück. PERMIO sucht externe Antragsdokumente (Berechnungen, Nachweise) in den Berechnungsordnern aller drei Rechen-Apps und in
 den zusätzlich eingestellten Ordnern (Vorgabe wie bisher „Planung/Berechnungen“) – so findet es auch die direkten
 Exporte. Platzhalter der Suchordner setzt PERMIO mit den Angaben des jeweiligen Projekts ein. Die Einträge unter
 „Export“ (Berechnungsordner, Dateinamen, „PDF mitspeichern“) nutzt der direkte Export von QUADRIO, TERRIO und NUMIO

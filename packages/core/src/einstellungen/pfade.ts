@@ -5,7 +5,7 @@ import { ersetzen, globaleWerte, type GlobaleQuelle } from '../platzhalter';
 import { sichererDateiname } from '../projektdatei';
 import { gleicherWert, mitSchluessel, type PfadEinstellung, type PfadWert } from './verzeichnis';
 import { PFAD_EINSTELLUNGEN } from './eintraege';
-import { abweichungId, EXPORT_APPS, gemeinsamId, wirksamFuer, type ExportApp, type ExportGruppe } from './gemeinsam';
+import { abweichungId, EXPORT_APPS, gemeinsamId, wirksamAus, type ExportApp, type ExportGruppe } from './gemeinsam';
 import { EXPORT_VARIABLEN } from './variablen';
 
 /**
@@ -169,15 +169,9 @@ export interface ExportPfade {
 
 /** Export-Einstellungen einer App: gemeinsame Angaben mit ihrer Abweichung (`gemeinsam.ts`) */
 const exportAus = (app: ExportApp, w: (id: string) => PfadWert): ExportPfade => {
-  const gruppe = (g: ExportGruppe) => ({ gemeinsam: String(w(gemeinsamId(g))), je: { ...LEER, [app]: String(w(abweichungId(g, app))) } });
-  return {
-    berechnungsordner: wirksamFuer('ordner', gruppe('ordner'), app),
-    dateinameExcel: wirksamFuer('excel', gruppe('excel'), app),
-    dateinamePdf: wirksamFuer('pdf', gruppe('pdf'), app),
-    pdfMitspeichern: w('export.pdfMitspeichern') !== false,
-  };
+  const gilt = (g: ExportGruppe) => wirksamAus(g === 'ordner' ? 'unterordner' : 'ersetzt', String(w(gemeinsamId(g))), String(w(abweichungId(g, app))));
+  return { berechnungsordner: gilt('ordner'), dateinameExcel: gilt('excel'), dateinamePdf: gilt('pdf'), pdfMitspeichern: w('export.pdfMitspeichern') !== false };
 };
-const LEER = { flaechenrechner: '', grz: '', kosten: '' };
 
 /** Export-Einstellungen einer App aus dem Zwischenspeicher (sonst Vorgaben) – synchron */
 export const exportPfade = (app: ExportApp): ExportPfade => exportAus(app, pfadWert);
