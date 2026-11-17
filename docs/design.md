@@ -5,8 +5,9 @@ App-eigenes steht in `apps/<app>/src/styles.css`. An dieser Richtlinie messen si
 Review-Agent `review-design`.
 
 > Stand: Grundlagen (Skalen, Fokus, Zielgrößen, Überschriften, Meldungen) und gemeinsame Komponenten (Dialoge,
-> Druckvorschau, Felder, Umschalter), Aufbau der Kopf- und Werkzeugleisten. Die Gestaltungsrichtung (Farben,
-> Knopfstufen, Aussehen der Werkzeugleiste, Tabellen) folgt nach der Wahl des Nutzers und wird hier ergänzt.
+> Druckvorschau, Felder, Umschalter), Aufbau der Kopf- und Werkzeugleisten. Gestaltungsrichtung: C „Kachel“ – Farben,
+> App-Farbe, Knopfstufen der Werkzeugleiste und Titelleiste stehen hier; das Kartenlayout und die gemeinsame
+> Zahlentabelle folgen.
 
 ## Grundsätze
 
@@ -61,8 +62,9 @@ Texttabellen: Spaltenköpfe linksbündig (`.summary-table.text`, z. B. Platzhalt
 - `base.css` zeigt bei Tastaturbedienung an allen Knöpfen, Links, `summary`, Kästchen, Optionsfeldern, Reglern und
   fokussierbaren Elementen einen Rahmen in `--fokus` (2px, 2px Abstand). Bei Mausbedienung erscheint er nicht
   (`:focus-visible`).
-- Der Abstand trennt **Fokus** von **aktiv**: Ein aktiver Knopf hat einen Rand in `--accent` direkt am Knopf, der
-  Fokusrahmen steht 2px davon ab.
+- Der Abstand trennt **Fokus** von **aktiv**: Ein aktiver Knopf hat einen Rand in `--accent` direkt am Knopf (in der
+  Werkzeugleiste stattdessen Tönung und Strich unten, siehe „Knopfstufen“), der Fokusrahmen steht 2px davon ab.
+- In der farbigen Titelleiste ist der Fokusrahmen weiß (siehe „Titelleiste“).
 - Textfelder und Auswahllisten bekommen beim Fokus einen Rand in `--accent` und einen Saum in `--fokus-saum`.
 - Auf Papier (`.report`) und Zeichenfläche (`.canvas`) ist `--fokus` das helle Blau, auch im dunklen Schema.
 - **Nicht** `outline: none` setzen, ohne einen gleichwertigen Ersatz zu zeigen.
@@ -340,7 +342,8 @@ Was sichtbar ist und was ins Menü gehört – für die Werkzeugleisten aller Ap
 Foto | Entzerrt, BGF | Raum) und der Hauptknopf (`.primary`, z. B. „Flächenaufstellung …“, „Drucken / PDF …“).
 **Knopfstufen:** In der Werkzeugleiste sind Knöpfe ruhig (ohne Rahmen und Fläche, beim Überfahren getönt); das aktive
 Werkzeug (`.active` bzw. `aria-pressed`) zeigt die Akzent-Tönung mit einem Strich unten. Der Hauptknopf (`.primary`) ist
-dort die Ausgabe der App in Bernstein. Außerhalb der Leiste bleiben Standardknöpfe mit Rahmen, `.primary` in der
+dort die Ausgabe der App in Bernstein – deshalb ist ein Knopf in einer Werkzeugleiste, der nichts ausgibt (Hinzufügen,
+Prüfen), kein `.primary`, sondern ein Standardknopf. Außerhalb der Leiste bleiben Standardknöpfe mit Rahmen, `.primary` in der
 Akzentfarbe (Hauptknopf eines Dialogs) und `.danger` für Gefahr. `.segment` behält seinen Rahmen.
 
 Richtwert: höchstens sieben, besser fünf Knöpfe bzw. Gruppen je Leiste; „Datei“ und „Speichern“ zählen mit, die
@@ -528,7 +531,9 @@ hellem Grund nur 2,2 : 1). Der Text daneben in `--ok-text` usw. bzw. `--text`.
 ## Titelleiste
 
 Die Titelleiste steht in der Kachelfarbe der App (`--app`, siehe „App-Farbe“) mit heller Schrift; darin sind der
-Fokusrahmen weiß, der Punkt für ungespeicherte Änderungen hellgelb und der Update-Knopf Bernstein. Links Symbol und Name
+Fokusrahmen weiß, der Punkt für ungespeicherte Änderungen hellgelb, Update-Knopf und Warnung zum Speicherort Bernstein
+mit dunkler Schrift und die Fehlermarke am Menüknopf mit weißem Saum. Dialoge, die aus der Leiste kommen (Update,
+Berechnungsregeln), behalten die Farben des Schemas. Links Symbol und Name
 der App, „Projekte“ und das geöffnete Projekt (mit dem Punkt ● für ungespeicherte Änderungen).
 Rechts nur, was gerade zählt – Version bzw. Update, im Notbetrieb die Warnung zum Speicherort –, dann das Menü der
 Titelleiste und die Fensterknöpfe. Das Menü heißt in den Apps „Darstellung und Hilfe“ (Symbol `menue`, drei Striche;
