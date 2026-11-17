@@ -173,7 +173,7 @@ export function Maengel() {
   return (
     <AnsichtKarte titel="Mängel" leiste={werkzeuge}>
       <div className="ava-rollen">
-      <table className="summary-table text felder ava-maengel-tabelle">
+      <table className="summary-table text felder fest ava-maengel-tabelle">
         <thead>
           <tr>
             <th className="num">Nr.</th>

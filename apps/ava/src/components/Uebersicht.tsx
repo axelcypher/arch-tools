@@ -95,98 +95,95 @@ export function Uebersicht() {
           <strong className={ka - kf < 0 ? 'ava-ueber' : ''}>{euro(ka - kf)}</strong>
         </div>
       </div>
-      <div className="ava-tabelle-rahmen">
-        <table className="summary-table text ava-uebersicht-tabelle">
-          <thead>
-            <tr>
-              <th>Gewerk</th>
-              <th>Bezeichnung</th>
-              <th>Auftragnehmer</th>
-              <th className="num">Kostenschätzung</th>
-              <th className="num">Kostenanschlag</th>
-              <th className="num" title="Kostenanschlag minus Kostenschätzung – nur für vergebene Gewerke">
-                Abw. KA/KS
-              </th>
-              <th className="num" title="Summe der geprüften Zahlungsfreigaben">
-                Zahlungsfreigaben
-              </th>
-              <th className="num" title="Kostenanschlag abzüglich Zahlungsfreigaben">
-                offen
-              </th>
-              <th>freigegeben</th>
-              <th>
-                <span className="nur-vorlesen">Hinweise</span>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {zeilen.map((z) => {
-              const abw = abweichung(z);
-              const hinweise = z.hinweise.length + z.rechnungen.filter((r) => r.hinweise.length).length;
-              return (
-                <tr
-                  key={z.gewerk}
-                  className="ava-klickbar"
-                  tabIndex={0}
-                  title="Rechnungen dieses Gewerks zeigen (Enter)"
-                  onClick={() => oeffneGewerk(z.gewerk, 'rechnungen')}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && e.target === e.currentTarget) oeffneGewerk(z.gewerk, 'rechnungen');
-                  }}
-                >
-                  <td>
-                    <button
-                      type="button"
-                      className="small ava-kennung-knopf"
-                      title="Gewerk öffnen (Leistungsverzeichnis)"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        oeffneGewerk(z.gewerk, 'lv');
-                      }}
-                    >
-                      {gewerkZweistellig(z.gewerk)}
-                    </button>
-                  </td>
-                  <td>{z.bezeichnung}</td>
-                  <td>{z.firma}</td>
-                  <td className="num">{euro(z.kostenschaetzung)}</td>
-                  <td className="num">{euro(z.kostenanschlag)}</td>
-                  <td className={`num ${abw !== null && abw > 0 ? 'ava-ueber' : abw !== null && abw < 0 ? 'ava-unter' : ''}`}>{abw ? euro(abw) : ''}</td>
-                  <td className="num">{euro(z.kostenfeststellung)}</td>
-                  <td className={`num${z.offen !== null && z.offen < 0 ? ' ava-ueber' : ''}`} title={z.offen !== null && z.offen < 0 ? 'Mehr freigegeben als beauftragt' : undefined}>
-                    {z.offen ? euro(z.offen) : ''}
-                  </td>
-                  <td>
-                    {z.anteil !== null && (
-                      <div className="ava-balken" title={`${prozent(z.anteil)} des Kostenanschlags freigegeben`} role="img" aria-label={`${prozent(z.anteil)} freigegeben`}>
-                        <div style={{ width: `${Math.min(100, Math.max(0, z.anteil))}%` }} className={z.anteil > 100.5 ? 'ava-balken-ueber' : ''} />
-                      </div>
-                    )}
-                  </td>
-                  <td>
-                    {hinweise ? (
-                      <span className="ava-warn-marke" role="img" title={`${hinweise} Hinweis(e)`} aria-label={`${hinweise} Hinweis(e)`}>
-                        <Symbol name="warnung" /> {hinweise}
-                      </span>
-                    ) : null}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-          <tfoot>
-            <tr className="summe">
-              <td colSpan={3}>Summe</td>
-              <td className="num">{euro(ks)}</td>
-              <td className="num">{euro(ka)}</td>
-              <td className="num">{abwSumme ? euro(abwSumme) : ''}</td>
-              <td className="num">{euro(kf)}</td>
-              <td className={`num${ka - kf < 0 ? ' ava-ueber' : ''}`}>{euro(ka - kf)}</td>
-              <td colSpan={2} />
-            </tr>
-          </tfoot>
-        </table>
-      </div>
+      <table className="summary-table text fest waehlbar ava-uebersicht-tabelle">
+        <thead>
+          <tr>
+            <th>Gewerk</th>
+            <th>Bezeichnung</th>
+            <th>Auftragnehmer</th>
+            <th className="num">Kostenschätzung</th>
+            <th className="num">Kostenanschlag</th>
+            <th className="num" title="Kostenanschlag minus Kostenschätzung – nur für vergebene Gewerke">
+              Abw. KA/KS
+            </th>
+            <th className="num" title="Summe der geprüften Zahlungsfreigaben">
+              Zahlungsfreigaben
+            </th>
+            <th className="num" title="Kostenanschlag abzüglich Zahlungsfreigaben">
+              offen
+            </th>
+            <th>freigegeben</th>
+            <th>
+              <span className="nur-vorlesen">Hinweise</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {zeilen.map((z) => {
+            const abw = abweichung(z);
+            const hinweise = z.hinweise.length + z.rechnungen.filter((r) => r.hinweise.length).length;
+            return (
+              <tr
+                key={z.gewerk}
+                tabIndex={0}
+                title="Rechnungen dieses Gewerks zeigen (Enter)"
+                onClick={() => oeffneGewerk(z.gewerk, 'rechnungen')}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && e.target === e.currentTarget) oeffneGewerk(z.gewerk, 'rechnungen');
+                }}
+              >
+                <td>
+                  <button
+                    type="button"
+                    className="small ava-kennung-knopf"
+                    title="Gewerk öffnen (Leistungsverzeichnis)"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      oeffneGewerk(z.gewerk, 'lv');
+                    }}
+                  >
+                    {gewerkZweistellig(z.gewerk)}
+                  </button>
+                </td>
+                <td>{z.bezeichnung}</td>
+                <td>{z.firma}</td>
+                <td className="num">{euro(z.kostenschaetzung)}</td>
+                <td className="num">{euro(z.kostenanschlag)}</td>
+                <td className={`num ${abw !== null && abw > 0 ? 'ava-ueber' : abw !== null && abw < 0 ? 'ava-unter' : ''}`}>{abw ? euro(abw) : ''}</td>
+                <td className="num">{euro(z.kostenfeststellung)}</td>
+                <td className={`num${z.offen !== null && z.offen < 0 ? ' ava-ueber' : ''}`} title={z.offen !== null && z.offen < 0 ? 'Mehr freigegeben als beauftragt' : undefined}>
+                  {z.offen ? euro(z.offen) : ''}
+                </td>
+                <td>
+                  {z.anteil !== null && (
+                    <div className="ava-balken" title={`${prozent(z.anteil)} des Kostenanschlags freigegeben`} role="img" aria-label={`${prozent(z.anteil)} freigegeben`}>
+                      <div style={{ width: `${Math.min(100, Math.max(0, z.anteil))}%` }} className={z.anteil > 100.5 ? 'ava-balken-ueber' : ''} />
+                    </div>
+                  )}
+                </td>
+                <td>
+                  {hinweise ? (
+                    <span className="ava-warn-marke" role="img" title={`${hinweise} Hinweis(e)`} aria-label={`${hinweise} Hinweis(e)`}>
+                      <Symbol name="warnung" /> {hinweise}
+                    </span>
+                  ) : null}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+        <tfoot>
+          <tr className="summe">
+            <td colSpan={3}>Summe</td>
+            <td className="num">{euro(ks)}</td>
+            <td className="num">{euro(ka)}</td>
+            <td className="num">{abwSumme ? euro(abwSumme) : ''}</td>
+            <td className="num">{euro(kf)}</td>
+            <td className={`num${ka - kf < 0 ? ' ava-ueber' : ''}`}>{euro(ka - kf)}</td>
+            <td colSpan={2} />
+          </tr>
+        </tfoot>
+      </table>
       {(hinweise.length > 0 || rechnungsHinweise > 0) && (
         <div className="warning ava-hinweise">
           <strong>Hinweise</strong>

@@ -86,7 +86,7 @@ export function ZahlEingabe({
   };
   return (
     <input
-      className={`num ${className}${fehler ? ' ava-fehler' : ''}`}
+      className={`num ${className}${fehler ? ' feld-fehler' : ''}`}
       value={text}
       title={fehler ? 'Keine gültige Zahl – z. B. „1.234,56“' : title}
       placeholder={placeholder}

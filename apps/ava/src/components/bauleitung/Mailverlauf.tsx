@@ -66,7 +66,7 @@ export function MailListe({ dateien, gewerkVon }: { dateien: Datei[]; gewerkVon?
         onKeyDown={(e) => e.key === 'Escape' && suche && (e.stopPropagation(), setSuche(''))}
       />
       <div className="ava-mails-koerper">
-        <table className="summary-table text ava-mail-tabelle" role="grid" aria-label="Mails">
+        <table className="summary-table text fest waehlbar ava-mail-tabelle" role="grid" aria-label="Mails">
           <thead>
             <tr>
               <th>Datum</th>
@@ -79,7 +79,7 @@ export function MailListe({ dateien, gewerkVon }: { dateien: Datei[]; gewerkVon?
             {zeilen.map(({ d, m }, i) => (
               <tr
                 key={d.pfad}
-                className={`ava-klickbar${aktiv?.d.pfad === d.pfad ? ' selected' : ''}`}
+                className={aktiv?.d.pfad === d.pfad ? 'selected' : undefined}
                 tabIndex={d.pfad === (aktiv?.d.pfad ?? zeilen[0]?.d.pfad) ? 0 : -1}
                 aria-selected={aktiv?.d.pfad === d.pfad}
                 onClick={() => setGewaehlt(d.pfad)}

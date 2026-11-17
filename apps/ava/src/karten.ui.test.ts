@@ -158,7 +158,9 @@ describe('Kartenlayout (docs/design.md „Fläche und Karten“)', () => {
     await zeige(createElement(Gewerk));
     await warte(() => useAva.getState().lv && host.querySelector('.ava-lv-zeilen'));
     const lv = host.querySelector('table.ava-lv-zeilen')!;
-    expect(lv.classList.contains('summary-table')).toBe(true);
+    // fester Kopf, wählbare Zeilen und Zellenfelder aus core
+    for (const k of ['summary-table', 'felder', 'fest', 'waehlbar']) expect(lv.classList.contains(k)).toBe(true);
+    expect(lv.querySelectorAll('td.num > input.num.zelle').length).toBeGreaterThan(0);
     expect(lv.querySelectorAll('tbody tr.gruppe').length).toBeGreaterThan(0);
     expect(lv.querySelector('tbody tr.gruppe')?.classList.contains('ava-z-abschnitt')).toBe(true);
     const z = zeilenVon(useAva.getState().lv!.lv).find((x) => x.el.art === 'position')!;
@@ -172,15 +174,17 @@ describe('Kartenlayout (docs/design.md „Fläche und Karten“)', () => {
     const spiegel = host.querySelector('table.ava-spiegel-tabelle')!;
     expect(spiegel.querySelectorAll('tbody tr.gruppe').length).toBeGreaterThan(0);
     expect(spiegel.querySelector('tfoot tr')?.classList.contains('summe')).toBe(true);
+    expect(spiegel.classList.contains('fest')).toBe(true);
     expect(host.querySelector('.ava-tabelle')).toBeNull();
   });
 
-  it('styles.css: keine eigene Grundtabelle mehr; Ergänzungen zur Zahlentabelle nur in der Fläche, fester Kopf am ganzen thead', () => {
+  it('styles.css: keine eigene Grundtabelle, kein eigener fester Kopf, keine eigenen Zellenfelder; Ergänzungen zur Zahlentabelle nur in der Fläche', () => {
     const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'styles.css'), 'utf8');
     expect(css).not.toMatch(/\.ava-tabelle\s*[{,]/);
     expect(css).not.toMatch(/tr\.active/);
     expect(css).not.toMatch(/\.ava-zwischensumme/);
-    expect(css).toMatch(/\.ava-flaeche \.summary-table thead \{\s*position: sticky;/);
+    expect(css).not.toMatch(/thead[^{]*\{[^}]*position: sticky/);
+    expect(css).not.toMatch(/\.ava-(zelle-eingabe|klickbar|tabelle-rolle|tabelle-rahmen|fehler)\b/);
     // alle App-Regeln auf .summary-table hängen an .ava-flaeche (der Druck liegt als Portal außerhalb)
     const ohneKommentare = css.replace(/\/\*[\s\S]*?\*\//g, '');
     for (const m of ohneKommentare.matchAll(/([^{}]+)\{/g))

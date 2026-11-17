@@ -28,7 +28,7 @@ export function Dateiliste({ gewerk }: { gewerk: string }) {
     return (
       <section className="ava-abschnitt">
         <h3>{titel}</h3>
-        <table className="summary-table text felder ava-dateien">
+        <table className="summary-table text felder waehlbar ava-dateien">
           <colgroup>
             <col />
             <col className="ava-dateien-ort" />
@@ -49,7 +49,7 @@ export function Dateiliste({ gewerk }: { gewerk: string }) {
           </thead>
           <tbody>
             {sichtbar.map((d) => (
-              <tr key={d.pfad} className="ava-klickbar" onDoubleClick={() => oeffnen(d)} title={`${d.pfad} – Doppelklick öffnet`}>
+              <tr key={d.pfad} onDoubleClick={() => oeffnen(d)} title={`${d.pfad} – Doppelklick öffnet`}>
                 <td className="ava-datei-name">
                   {d.name}
                   {d.archiv && <span className="ava-chip">Archiv</span>}

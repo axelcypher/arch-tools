@@ -143,96 +143,94 @@ export function RechnungenAnsicht({ gewerk }: { gewerk?: string }) {
           {h}
         </div>
       ))}
-      <div className="ava-tabelle-rolle">
-        <table className="summary-table text felder ava-rechnungen">
-          <thead>
+      <table className="summary-table text felder fest ava-rechnungen">
+        <thead>
+          <tr>
+            <th className="num" title="Rechnungsnummer">Nr.</th>
+            {!gewerk && <th>Gewerk</th>}
+            <th>Rechnung</th>
+            <th title="Rechnungsdatum">Rechn.-Datum</th>
+            <th>Freigabe</th>
+            <th className="num" title="Zahlungsfreigabe laut Rechnungsliste bzw. Prüfung">
+              Betrag €
+            </th>
+            <th>Stand</th>
+            <th title="Wo die Rechnung vorkommt: Rechnungsliste, Gewerkblatt der Kostenkontrolle, PDF im Auftragsordner, Prüfung in der App">Quellen</th>
+            <th />
+          </tr>
+        </thead>
+        <tbody>
+          {zeilen.map((r) => (
+            <tr key={`${r.gewerk}${r.schluessel}`} className={r.hinweise.length ? 'ava-mit-hinweis' : ''} onDoubleClick={() => r.datensatz && setAnsehen(r.datensatz)}>
+              <td className="num">{String(r.nr ?? '')}</td>
+              {!gewerk && <td className="ava-kennung">{gewerkZweistellig(r.gewerk)}</td>}
+              <td>
+                {r.text}
+                {r.hinweise.length > 0 && <div className="ava-hinweis-zelle">{r.hinweise.join(' ')}</div>}
+              </td>
+              <td>{datumDE(r.datum)}</td>
+              <td>{datumDE(r.freigabe)}</td>
+              <td className="num">{euro(r.betrag)}</td>
+              <td>
+                <Stand r={r} />
+              </td>
+              <td className="ava-quellen">
+                <Quelle an={!!r.liste} text="Liste" titel="Rechnungsliste der Kostenkontrolle" />
+                <Quelle an={!!r.blatt} text="Blatt" titel="Gewerkblatt der Kostenkontrolle (Spalte Kostenfeststellung)" />
+                <Quelle an={!!r.datei} text="PDF" titel={r.datei?.name ?? 'PDF im Auftragsordner'} />
+                <Quelle an={!!r.datensatz} text="Prüfung" titel="Prüfung in der App (Projektdatei)" />
+              </td>
+              <td className="ava-aktionen">
+                {r.datei && (
+                  <button className="small" onClick={() => oeffnen(r.datei!.pfad)} title={r.datei.name}>
+                    PDF
+                  </button>
+                )}
+                {r.datensatz?.pruefung && (
+                  <button className="small" onClick={() => setAnsehen(r.datensatz!)} title="Prüfung ansehen (auch per Doppelklick auf die Zeile)">
+                    Prüfung …
+                  </button>
+                )}
+                {r.datensatz && (
+                  <MenueKnopf
+                    className="small icon"
+                    pfeil={false}
+                    ariaLabel="Aktionen"
+                    title={`${aktionenName(r.nr)}: Deckblatt, Mail an den Zahler`}
+                    name={aktionenName(r.nr)}
+                    punkte={() => [
+                      { text: 'Deckblatt öffnen', titel: 'Deckblatt der Prüfung öffnen', aktion: () => void deckblattOeffnen(r.datensatz!) },
+                      {
+                        text: 'Mail an den Zahler …',
+                        titel: r.datensatz!.datei ? 'Mailentwurf mit der Rechnung als Anhang' : 'Erst die Rechnung ablegen (Rechnungseingang)',
+                        deaktiviert: !r.datensatz!.datei,
+                        hinweis: r.datensatz!.datei ? undefined : 'Erst ablegen',
+                        aktion: () => void mailAnZahler(r.datensatz!, r.nr),
+                      },
+                    ]}
+                  >
+                    <Symbol name="mehr" />
+                  </MenueKnopf>
+                )}
+              </td>
+            </tr>
+          ))}
+          {!zeilen.length && (
             <tr>
-              <th className="num">Nr.</th>
-              {!gewerk && <th>Gewerk</th>}
-              <th>Rechnung</th>
-              <th>Rechn.-Datum</th>
-              <th>Freigabe</th>
-              <th className="num" title="Zahlungsfreigabe laut Rechnungsliste bzw. Prüfung">
-                Betrag €
-              </th>
-              <th>Stand</th>
-              <th title="Wo die Rechnung vorkommt: Rechnungsliste, Gewerkblatt der Kostenkontrolle, PDF im Auftragsordner, Prüfung in der App">Quellen</th>
-              <th />
+              <td colSpan={gewerk ? 9 : 10} className="muted">
+                Keine Rechnungen.
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            {zeilen.map((r) => (
-              <tr key={`${r.gewerk}${r.schluessel}`} className={r.hinweise.length ? 'ava-mit-hinweis' : ''} onDoubleClick={() => r.datensatz && setAnsehen(r.datensatz)}>
-                <td className="num">{String(r.nr ?? '')}</td>
-                {!gewerk && <td className="ava-kennung">{gewerkZweistellig(r.gewerk)}</td>}
-                <td>
-                  {r.text}
-                  {r.hinweise.length > 0 && <div className="ava-hinweis-zelle">{r.hinweise.join(' ')}</div>}
-                </td>
-                <td>{datumDE(r.datum)}</td>
-                <td>{datumDE(r.freigabe)}</td>
-                <td className="num">{euro(r.betrag)}</td>
-                <td>
-                  <Stand r={r} />
-                </td>
-                <td className="ava-quellen">
-                  <Quelle an={!!r.liste} text="Liste" titel="Rechnungsliste der Kostenkontrolle" />
-                  <Quelle an={!!r.blatt} text="Blatt" titel="Gewerkblatt der Kostenkontrolle (Spalte Kostenfeststellung)" />
-                  <Quelle an={!!r.datei} text="PDF" titel={r.datei?.name ?? 'PDF im Auftragsordner'} />
-                  <Quelle an={!!r.datensatz} text="Prüfung" titel="Prüfung in der App (Projektdatei)" />
-                </td>
-                <td className="ava-aktionen">
-                  {r.datei && (
-                    <button className="small" onClick={() => oeffnen(r.datei!.pfad)} title={r.datei.name}>
-                      PDF
-                    </button>
-                  )}
-                  {r.datensatz?.pruefung && (
-                    <button className="small" onClick={() => setAnsehen(r.datensatz!)} title="Prüfung ansehen (auch per Doppelklick auf die Zeile)">
-                      Prüfung …
-                    </button>
-                  )}
-                  {r.datensatz && (
-                    <MenueKnopf
-                      className="small icon"
-                      pfeil={false}
-                      ariaLabel="Aktionen"
-                      title={`${aktionenName(r.nr)}: Deckblatt, Mail an den Zahler`}
-                      name={aktionenName(r.nr)}
-                      punkte={() => [
-                        { text: 'Deckblatt öffnen', titel: 'Deckblatt der Prüfung öffnen', aktion: () => void deckblattOeffnen(r.datensatz!) },
-                        {
-                          text: 'Mail an den Zahler …',
-                          titel: r.datensatz!.datei ? 'Mailentwurf mit der Rechnung als Anhang' : 'Erst die Rechnung ablegen (Rechnungseingang)',
-                          deaktiviert: !r.datensatz!.datei,
-                          hinweis: r.datensatz!.datei ? undefined : 'Erst ablegen',
-                          aktion: () => void mailAnZahler(r.datensatz!, r.nr),
-                        },
-                      ]}
-                    >
-                      <Symbol name="mehr" />
-                    </MenueKnopf>
-                  )}
-                </td>
-              </tr>
-            ))}
-            {!zeilen.length && (
-              <tr>
-                <td colSpan={gewerk ? 9 : 10} className="muted">
-                  Keine Rechnungen.
-                </td>
-              </tr>
-            )}
-          </tbody>
-          <tfoot>
-            <tr className="summe">
-              <td colSpan={gewerk ? 4 : 5}>Summe ({zeilen.length})</td>
-              <td className="num">{euro(summe)}</td>
-              <td colSpan={4} />
-            </tr>
-          </tfoot>
-        </table>
-      </div>
+          )}
+        </tbody>
+        <tfoot>
+          <tr className="summe">
+            <td colSpan={gewerk ? 4 : 5}>Summe ({zeilen.length})</td>
+            <td className="num">{euro(summe)}</td>
+            <td colSpan={4} />
+          </tr>
+        </tfoot>
+      </table>
       <p className="muted small-text">Quellen: Liste = Rechnungsliste, Blatt = Gewerkblatt der Kostenkontrolle, PDF = Datei im Auftragsordner, Prüfung = Prüfung in der App (Projektdatei). Doppelklick auf eine geprüfte Rechnung zeigt die Prüfung.</p>
       {pruefen && <RechnungPruefen gewerk={gewerk} onClose={() => setPruefen(false)} />}
       {ansehen && <PruefungAnsehen d={ansehen} onClose={() => setAnsehen(null)} />}

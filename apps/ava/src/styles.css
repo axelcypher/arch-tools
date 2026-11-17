@@ -125,55 +125,23 @@
 
 /* ---------- Tabellen ---------- */
 
-/* Datentabellen: gemeinsame Zahlentabelle (.summary-table.text, mit Feldern .felder). Hier nur, was core noch nicht hat
-   (beim Designsystem gemeldet, kommt als .summary-table.fest u. a.; danach entfallen diese Regeln). Alle unter
-   .ava-flaeche (der Druck liegt als Portal außerhalb und bekommt nur Ziffern gleicher Breite und Beträge ohne Umbruch):
-   - Ziffern gleicher Breite;
-   - der Kopf als Ganzes fest beim Rollen im Kartenrumpf (auch zweizeilige Köpfe wie im Preisspiegel), ohne Umbruch;
-   - Felder füllen ihre Zelle;
-   - Kontrollkästchen und Optionsfelder in Feldzeilen auf der Textlinie (core rückt nur Zellen ohne Feld ein). */
-.ava-flaeche .summary-table,
-.ava-druck .summary-table {
-  font-variant-numeric: tabular-nums;
-}
-
-.ava-flaeche .summary-table thead {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-}
-
-.ava-flaeche .summary-table thead th {
-  background: var(--panel);
-  white-space: nowrap;
-}
-
-.ava-flaeche .summary-table.felder td input:not([type='checkbox']):not([type='radio']),
+/* Datentabellen: gemeinsame Zahlentabelle (.summary-table.text; .felder, .fest, .waehlbar, input.zelle aus core). Hier
+   nur, was core nicht hat: Felder füllen ihre Zelle, Kästchen und Optionsfelder nur so breit wie sie sind (unter
+   .ava-flaeche; der Druck liegt als Portal außerhalb) */
+.ava-flaeche .summary-table.felder td input:not([type='checkbox'], [type='radio'], .zelle),
 .ava-flaeche .summary-table.felder td select {
   width: 100%;
   min-width: 60px;
 }
 
-.ava-flaeche .summary-table td > input[type='checkbox'],
-.ava-flaeche .summary-table td > input[type='radio'] {
+.ava-flaeche .summary-table td > input:is([type='checkbox'], [type='radio']) {
   width: auto;
-  margin: 0;
-  vertical-align: middle;
 }
 
-.ava-flaeche
-  .summary-table.felder
-  tr:has(input:not([type='checkbox']):not([type='radio']), select, textarea, button:not(.link))
-  > td:has(> input[type='checkbox']:only-child, > input[type='radio']:only-child) {
-  padding-top: calc(3px + (var(--ctl-h) - 1lh) / 2);
-}
-
-.ava-klickbar {
-  cursor: pointer;
-}
-
-.ava-klickbar:hover td {
-  background: var(--hover);
+/* Zellenfelder (input.zelle, z. B. Menge und EP im LV) so breit wie ein Betrag, rechtsbündig */
+.ava-flaeche .summary-table input.zelle {
+  width: 7.5em;
+  text-align: right;
 }
 
 .ava-ueber {
@@ -347,16 +315,6 @@
   width: 1%;
 }
 
-.ava-lv-zeilen tr {
-  cursor: pointer;
-}
-
-/* Hover über Positionen und – im dunklen Schema sichtbar – über Gruppenzeilen (im hellen gleichen sich --hover und
-   --tabelle-gruppe, ans Designsystem gemeldet); die gewählte Zeile behält ihre Tönung, die feste OZ-Zelle zieht mit */
-.ava-lv-zeilen tbody tr:not(.selected):hover td {
-  background: var(--hover);
-}
-
 .ava-z-hinweis td {
   font-style: italic;
   color: var(--muted);
@@ -368,29 +326,6 @@
 
 .ava-z-ohne-summe td {
   color: var(--muted);
-}
-
-.ava-zelle-eingabe {
-  padding: 1px 2px !important;
-}
-
-.ava-zelle-eingabe input {
-  width: 92px !important;
-  min-width: 0 !important;
-  border-color: transparent;
-  background: transparent;
-  text-align: right;
-}
-
-.ava-zelle-eingabe input:hover,
-.ava-zelle-eingabe input:focus {
-  border-color: var(--border);
-  background: var(--input-bg);
-}
-
-input.ava-fehler {
-  border-color: var(--danger) !important;
-  background: var(--fehler-bg) !important;
 }
 
 .ava-leer-zelle {
@@ -575,10 +510,6 @@ input.ava-fehler {
 
 .ava-bieter-liste {
   padding: 8px 12px;
-}
-
-.ava-bieter-liste tr {
-  cursor: pointer;
 }
 
 .ava-auftrag td {
@@ -1088,7 +1019,7 @@ input.ava-fehler {
   font-size: 10px;
 }
 
-.ava-spiegel-druck .summary-table th {
+.ava-spiegel-druck .summary-table.fest thead {
   position: static;
 }
 
@@ -1153,7 +1084,7 @@ input.ava-fehler {
 }
 
 .ava-nav-knopf:focus-visible,
-.ava-klickbar:focus-visible,
+.ava-flaeche .summary-table.waehlbar tbody tr:focus-visible,
 .ava-kennung-knopf:focus-visible {
   outline: 2px solid var(--fokus);
   outline-offset: -2px;
@@ -1174,11 +1105,6 @@ input.ava-fehler {
 
 .ava-uebersicht-tabelle td {
   vertical-align: middle;
-}
-
-.ava-tabelle-rahmen {
-  overflow-x: auto;
-  max-width: 100%;
 }
 
 .ava-flaeche .summary-table td.num,
@@ -1280,15 +1206,7 @@ input.ava-fehler {
   min-width: 180px;
 }
 
-.ava-zelle-eingabe input {
-  padding-block: 1px;
-}
-
 /* Angebote und Preisspiegel */
-.ava-angebote-spiegel .ava-bieter-liste tr {
-  cursor: default;
-}
-
 .ava-chip-warn {
   background: var(--warn-bg);
   color: var(--warn-text);
@@ -1574,12 +1492,6 @@ input.ava-fehler {
 
 .ava-flaeche .summary-table td input.ava-bieter-name {
   min-width: 150px !important;
-}
-
-/* breite Tabellen rollen seitlich, statt aus dem Bild zu laufen */
-.ava-tabelle-rolle {
-  overflow-x: auto;
-  max-width: 100%;
 }
 
 .ava-rechnungen .ava-hinweis-zelle {
