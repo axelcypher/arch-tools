@@ -778,7 +778,15 @@ function PfadFeld({ e, werte, losVon, app = '', fokus }: { e: PfadEinstellung; w
         </p>
       )}
       {e.art !== 'schalter' && (
-        <TextEinstellung e={e} werte={werte} feldId={feldId} hinweisId={hinweisId} text={typeof entwurf[e.id] === 'string' ? (entwurf[e.id] as string) : alsText(gilt)} gesperrt={gesperrt} onText={setze} />
+        <TextEinstellung
+          e={e}
+          werte={werte}
+          feldId={feldId}
+          hinweisId={hinweisId}
+          text={typeof entwurf[e.id] === 'string' ? (entwurf[e.id] as string) : alsText(gilt)}
+          gesperrt={gesperrt}
+          onText={setze}
+        />
       )}
       {/* gemeinsame Angabe: statt einer Vorschau, was je App gilt */}
       <WirksamJeApp basis={e} werte={werte} app={app} id={`${feldId}-jeapp`} />
@@ -808,7 +816,7 @@ function PfadFeld({ e, werte, losVon, app = '', fokus }: { e: PfadEinstellung; w
  * Eltern-Eintrag, den die gewählte App nicht selbst nutzt: abgeblendet, ohne Feld – nur zur Orientierung, wovon die
  * Einträge darunter abhängen. Bearbeiten geht unter „Alle Apps“.
  */
-function PfadBezugsZeile({ e, werte, onAlle }: { e: PfadEinstellung; werte: PfadWerte; onAlle: () => void }) {
+export function PfadBezugsZeile({ e, werte, onAlle }: { e: PfadEinstellung; werte: PfadWerte; onAlle: () => void }) {
   const entwurf = pfadStore((s) => s.entwurf);
   const w = alsText(wirksam(e, werte, entwurf));
   const erster = (w.split('\n')[0] ?? '').trim();

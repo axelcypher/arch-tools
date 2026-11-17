@@ -15,7 +15,11 @@ const zustand = (e: Partial<ExportEinstellungen>) => ({
   fassungen: [],
 });
 const ort = (id: string, werte: Record<string, string>, zwischen = '') => {
-  const o = vollerOrt(pfadEinstellung(id), (x) => werte[x], () => zwischen);
+  const o = vollerOrt(
+    pfadEinstellung(id),
+    (x) => werte[x],
+    () => zwischen,
+  );
   expect(o?.von, id).toBe('projekt');
   return o!.teile.join('/');
 };

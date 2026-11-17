@@ -37,7 +37,11 @@ describe('Baum der Pfadeinstellungen: Bezüge', () => {
   });
 
   it('suchende und anderswo festgelegte Einträge haben keinen festen Ort', () => {
-    for (const id of ['ablage.fabrio.mailOrdner', 'ablage.fabrio.archive', 'ablage.fabrio.kostenkontrolle', 'plaene.dateischema']) expect(vollerOrt(pfadEinstellung(id), () => 'x'), id).toBeNull();
+    for (const id of ['ablage.fabrio.mailOrdner', 'ablage.fabrio.archive', 'ablage.fabrio.kostenkontrolle', 'plaene.dateischema'])
+      expect(
+        vollerOrt(pfadEinstellung(id), () => 'x'),
+        id,
+      ).toBeNull();
   });
 });
 
@@ -54,7 +58,12 @@ describe('Baum der Pfadeinstellungen: Abgleich mit dem Export', () => {
 
   for (const app of ['flaechenrechner', 'grz', 'kosten'] as const)
     it(`${app}: Excel und PDF im Unterordner der App im gemeinsamen Berechnungsordner, der relativ zum Projektordner liegt`, async () => {
-      const w: Record<string, string> = { 'export.berechnungsordner': 'Ber', [`export.unterordner.${app}`]: 'Ergebnis', [`export.excel.abweichend.${app}`]: 'A', [`export.pdf.abweichend.${app}`]: 'B' };
+      const w: Record<string, string> = {
+        'export.berechnungsordner': 'Ber',
+        [`export.unterordner.${app}`]: 'Ergebnis',
+        [`export.excel.abweichend.${app}`]: 'A',
+        [`export.pdf.abweichend.${app}`]: 'B',
+      };
       const { exportAusWerten } = await import('./pfade');
       const pfade = exportAusWerten(app, (id) => w[id] ?? pfadEinstellung(id).vorgabe);
       const ziel = direktExportZielAus(pfade, { datei, werte, inhalt: 'X' });

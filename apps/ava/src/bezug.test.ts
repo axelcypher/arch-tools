@@ -20,7 +20,11 @@ const WERTE: Record<string, string> = {
 };
 const GEWERK = 'G08 Fenster';
 const ort = (id: string, datei?: string) => {
-  const o = vollerOrt(pfadEinstellung(id), (x) => WERTE[x], () => GEWERK);
+  const o = vollerOrt(
+    pfadEinstellung(id),
+    (x) => WERTE[x],
+    () => GEWERK,
+  );
   expect(o?.von, id).toBe('projekt');
   return [...o!.teile, ...(datei ? [datei] : [])].join('/');
 };

@@ -195,7 +195,7 @@ mit `einstellungenEntwurfMelden`, Sperre über `useEinstellungenGesperrt`).
   über der Seitenliste (Ausnahme mit eigenem Kopf, siehe „Dialoge“), rechts der Inhalt der gewählten Seite.
   Gemeinsames Muster in `base.css`: `.einst-form`, `.einst-nav` (Seitenliste, Einträge `.einst-nav-eintrag` mit
   Symbol, Titel und kurzem Text), `.einst-inhalt`, `.einst-gruppe`, für gemeinsame Angaben `.einst-abweichungen`, `.einst-aufklappen`, `.einst-unter`
-  und `.einst-wirksam`; dazu `.einst-verweis` (`PfadeVerweis`) für den
+  und `.einst-wirksam`, für den Baum der Pfade `.einst-baum`, `.einst-bezug` und `.einst-bezugseintrag`; dazu `.einst-verweis` (`PfadeVerweis`) für den
   umgekehrten Weg, aus einem Dialog der App auf eine Seite der Einstellungen. Unterabschnitte einer Seite sind `h4`.
 - **Seitenliste:** eine senkrechte Registerleiste wie unter „Umschalter“ (`role="tablist"`,
   `aria-orientation="vertical"`, Einträge `role="tab"` mit `aria-selected`, ↑/↓ wandern, Pos1/Ende, automatische
@@ -215,6 +215,16 @@ mit `einstellungenEntwurfMelden`, Sperre über `useEinstellungenGesperrt`).
   Felder und „Übernehmen“ gesperrt (Grund im `title`), oben ein Hinweis `.meldung.warnung`.
 - **Felder:** die gemeinsamen Bausteine (`.field`, Pfadwahl mit „Ordner wählen …“, Platzhalter mit Vorschau des
   Ergebnisses); Fehler an der Stelle (`.feld-meldung`), nicht als Rückfrage.
+- **Baum der Pfade:** Jeder Eintrag sagt, wovon er abhängt (`bezug` in `einstellungen/eintraege.ts`: Projektordner,
+  vollständiger Ordner, ein anderer Eintrag – ggf. mit Ordner dazwischen, etwa je Gewerk –, überall gesucht oder
+  anderswo festgelegt). Die erste Zeile der Erklärung nennt das (`.einst-bezug`, z. B. „Relativ zu „Ordner der Gewerke“
+  › je Gewerk ein Ordner“). Was von einem Eintrag abhängt, steht als eigene Karte eingerückt darunter, mit Linie links
+  (`.einst-baum`, `role="group"` mit „Unterordner von „…““ bzw. „Abhängig von „…““), auch mehrstufig; Dateinamen stehen
+  unter dem Ordner, in den sie schreiben, und damit in dessen Gruppe. Die Vorschau zeigt den vollständigen Pfad mit
+  Beispielwerten („Projektordner / Gewerke / G08 Fenster / Auftrag“) und folgt Änderungen der Eltern sofort. Ein absolut
+  angegebenes Kind löst sich aus dem Baum und steht oben in der Gruppe, Bezugszeile in `--warn-text`, Fehler am Feld.
+  Der Filter „App“ zeigt Eltern, die die App nicht selbst nutzt, abgeblendet ohne Feld (`.einst-bezugseintrag`: „Gilt:“
+  mit Vorschau, „Alle Apps zeigen“). Keine eigene Ausklapp-Bedienung: Der Baum gliedert nur, die Tab-Reihenfolge bleibt.
 - **Gemeinsame Angaben:** Was mehrere Apps gleich nutzen (Ordner, Dateinamen), steht einmal; die Karte nennt alle Apps
   als Marken. Nicht: dieselbe Angabe je App als eigenes Feld wiederholen. Abweichungen je App gibt es nur, wo sie
   fachlich nötig sind, und nur auf Wunsch: unter dem Fuß der Karte, abgesetzt durch eine Linie (`--line-soft`), ein

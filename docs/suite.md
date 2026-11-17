@@ -298,6 +298,24 @@ Felder und „Übernehmen“ gesperrt.
 | Vorlagen            | Leere Formulare                                     | PERMIO                  | (keiner)                                                      | allgemein › pfade                                  |
 | Vorlagen            | Name neuer LV-Dateien                               | FABRIO                  | `{PROJEKT_KUERZEL} {DATUM} LV {Gewerk}`                       | ava › lv.dateiname                                 |
 
+**Baum:** Jeder Eintrag sagt, wovon er abhängt – so, wie die Apps den Pfad tatsächlich auflösen (Abgleich in den Tests
+`einstellungen/baum.test.ts` und `bezug.test.ts` in FABRIO, PERMIO und ATLAS). Was von einem Eintrag abhängt, steht
+eingerückt darunter; die Vorschau zeigt den vollständigen Pfad. Bezüge:
+
+- relativ zum Projektordner: Projektdatei, Fotoordner, Antragsordner, „PERMIO sucht Berechnungen außerdem in“,
+  Ablageordner der Katasterpläne, Ordner der Gewerke, Bauleitung, fester Zielordner der Antragsdokumente (er enthält den
+  Antragsordner selbst, Vorgabe `TÖB/{Antrag}`), Berechnungsordner
+- vollständige Ordner: Stammordner der Projekte, Vorlagenordner (ATLAS), Leere Formulare (PERMIO)
+- im Stammordner: Name des Projektordners
+- im Ordner der Gewerke, je Gewerk ein Ordner: LV-Unterordner, Aufträge und Rechnungen, Mailverkehr des Gewerks
+- darunter: Name neuer LV-Dateien (im LV-Unterordner), Muster der Rechnungsdateien (im Auftragsordner)
+- im Antragsordner, Ordner der aktiven Antragsfassung: Dateinamen exportierter Antragsdokumente
+- im Ablageordner der Katasterpläne: Dateinamen der Katasterpläne
+- im Berechnungsordner: Unterordner je App; darin die Dateinamen für Excel und PDF
+- überall gesucht: Archivordner, weitere Mailordner, Kostenkontrolle (FABRIO)
+- anderswo festgelegt: Projektnummer (Teil des Ordnernamens), Dateinamen der Pläne (Planordner der Struktur), Dateinamen
+  der Vorlagen (Zielordner der Zuordnung), „PDF mitspeichern“
+
 **Gemeinsame Angaben:** Was mehrere Apps gleich nutzen, steht einmal (docs/design.md, „Einstellungen“). Der
 Berechnungsordner gilt für QUADRIO, TERRIO und NUMIO; darin hat jede App einen Unterordner (leer = direkt im
 gemeinsamen). Die Vorgaben ergeben zusammen die Struktur von ATLAS („03 Berechnungen/Flächen“, „…/Nachweise“,

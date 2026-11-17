@@ -166,6 +166,70 @@ describe('Einstellungen', () => {
     expect(wirksam()).toEqual(['TERRIO Ber / Nachweise']);
   });
 
+  it('Baum: was von einem Eintrag abhängt, steht eingerückt darunter – mit Bezugszeile und vollständiger Vorschau, die den Eltern folgt', async () => {
+    const e = await zeigen();
+    await act(async () => e.einstellungenOeffnen('pfade'));
+    await warten();
+    const gewerke = eintrag('ablage.fabrio.gewerke');
+    const gruppe = gewerke.nextElementSibling as HTMLElement;
+    expect(gruppe.getAttribute('role')).toBe('group');
+    expect(gruppe.getAttribute('aria-label')).toBe('Unterordner von „Ordner der Gewerke“');
+    // je Unterordner seine Karte, dahinter die Gruppe der von ihm abhängigen (neue LV-Dateien, Rechnungsmuster)
+    expect([...gruppe.children].map((x) => x.id || x.getAttribute('aria-label'))).toEqual([
+      'einst-ablage.fabrio.lv',
+      'Abhängig von „LV-Dateien im Unterordner“',
+      'einst-ablage.fabrio.auftrag',
+      'Abhängig von „Aufträge und Rechnungen“',
+      'einst-ablage.fabrio.korrespondenz',
+    ]);
+    const auftrag = eintrag('ablage.fabrio.auftrag');
+    expect(auftrag.querySelector('.einst-bezug')?.textContent).toBe('Relativ zu „Ordner der Gewerke“ › je Gewerk ein Ordner');
+    expect(auftrag.querySelector('.einst-vorschau')?.textContent).toBe('Vorschau: Projektordner / Gewerke / G08 Fenster / Auftrag');
+    // die Rechnungsmuster hängen am Auftragsordner (zweite Ebene)
+    expect(eintrag('plaene.fabrio.rechnungen').parentElement?.getAttribute('aria-label')).toBe('Abhängig von „Aufträge und Rechnungen“');
+    // Eltern ändern: die Vorschau der Kinder folgt sofort
+    await tippen(feldVon('ablage.fabrio.gewerke'), 'Ausführung/Gewerke');
+    expect(auftrag.querySelector('.einst-vorschau')?.textContent).toBe('Vorschau: Projektordner / Ausführung / Gewerke / G08 Fenster / Auftrag');
+    // ein absolut angegebenes Kind löst sich aus dem Baum, mit Fehler am Feld
+    await tippen(feldVon('ablage.fabrio.auftrag'), 'Z:\\Auftrag');
+    const los = eintrag('ablage.fabrio.auftrag');
+    expect(los.parentElement?.classList.contains('einst-gruppe')).toBe(true);
+    expect(los.querySelector('.einst-bezug')?.textContent).toBe('Absolut angegeben – gehört unter „Ordner der Gewerke“ und gilt nur relativ dazu.');
+    expect(los.querySelector('.feld-meldung')?.textContent).toBe('Relativ zu „Ordner der Gewerke“ angeben, ohne Laufwerk.');
+  });
+
+  it('Baum mit App-Filter: Eltern einer anderen App abgeblendet zur Orientierung, ohne Feld; „Alle Apps zeigen“', async () => {
+    const e = await zeigen();
+    await act(async () => e.einstellungenOeffnen('pfade'));
+    await warten();
+    const filter = dialog()!.querySelector<HTMLSelectElement>('.einst-filter select')!;
+    await act(async () => {
+      filter.value = 'ordner';
+      filter.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    // „Name des Projektordners“ nutzt ATLAS, sein Eltern-Eintrag „Stammordner“ auch – beide mit Feld; Katasterpläne: Ordner und Dateiname
+    expect(eintrag('plaene.kataster.dateiname').parentElement?.getAttribute('aria-label')).toBe('Abhängig von „Ablageordner der Katasterpläne“');
+    await act(async () => {
+      filter.value = 'grz';
+      filter.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    // TERRIO nutzt den gemeinsamen Berechnungsordner selbst: mit Feld, nicht abgeblendet
+    expect(eintrag('export.berechnungsordner').classList.contains('einst-bezugseintrag')).toBe(false);
+    expect(feldVon('export.berechnungsordner')).not.toBeNull();
+    // Baustein für Eltern einer anderen App: abgeblendet, ohne Feld, mit dem, was gilt, und „Alle Apps zeigen“
+    const host = document.body.appendChild(document.createElement('div'));
+    const alle = vi.fn();
+    const wurzel = createRoot(host);
+    await act(async () => wurzel.render(createElement(e.PfadBezugsZeile, { e: (await import('../einstellungen/pfade')).pfadEinstellung('ablage.fabrio.gewerke'), werte: {}, onAlle: alle })));
+    const z = host.querySelector('.einst-bezugseintrag')!;
+    expect(z.querySelector('input, textarea')).toBeNull();
+    expect(z.querySelector('.einst-vorschau')?.textContent).toBe('Gilt: Projektordner / Gewerke');
+    await klick(knopf('Alle Apps zeigen', z));
+    expect(alle).toHaveBeenCalledTimes(1);
+    act(() => wurzel.unmount());
+    host.remove();
+  });
+
   it('gemeinsame Angaben: gilt für alle Apps dasselbe, steht keine Liste je App', async () => {
     setze('allgemein', { pfade: { 'export.unterordner.flaechenrechner': '', 'export.unterordner.grz': '', 'export.unterordner.kosten': '' } });
     const e = await zeigen();

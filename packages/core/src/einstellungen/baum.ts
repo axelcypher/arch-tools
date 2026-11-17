@@ -66,7 +66,12 @@ export function vollerOrt(e: PfadEinstellung, wert: (id: string) => PfadWert | u
   if (wurzel.art !== 'projekt' && wurzel.art !== 'absolut') return null;
   const teile: string[] = [];
   for (const x of kette) {
-    if (x.bezug.art === 'eintrag' && x.bezug.zwischen) teile.push(...zwischen(x.bezug.zwischen.text).split(/[\\/]+/).filter(Boolean));
+    if (x.bezug.art === 'eintrag' && x.bezug.zwischen)
+      teile.push(
+        ...zwischen(x.bezug.zwischen.text)
+          .split(/[\\/]+/)
+          .filter(Boolean),
+      );
     teile.push(...teileAus(x, wert(x.id)));
   }
   return { von: wurzel.art, teile };
