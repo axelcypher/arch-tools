@@ -5,14 +5,14 @@ import { fmt2 } from '@core/format';
 
 /** Bezeichnungen für Ansicht, Druck und Excel */
 
-/** label: Druck und Tooltip; kurz: Pille in der schmalen Kennzahl-Karte */
-export const STATUS: Record<Status, { label: string; cls: string; kurz?: string }> = {
-  ok: { label: 'eingehalten', cls: 'ok' },
-  ueberschritten: { label: 'überschritten', cls: 'bad' },
-  unterschritten: { label: 'unterschritten', cls: 'bad' },
-  pruefen: { label: 'prüfen', cls: 'warn' },
-  offen: { label: 'Festsetzung fehlt', cls: 'off', kurz: 'offen' },
-  fehlt: { label: 'Grundstücksfläche fehlt', cls: 'off', kurz: 'fehlt' },
+/** label: Druck und Tooltip; kurz: Marke in der schmalen Kennzahl-Kachel */
+export const STATUS: Record<Status, { label: string; kurz?: string }> = {
+  ok: { label: 'eingehalten' },
+  ueberschritten: { label: 'überschritten' },
+  unterschritten: { label: 'unterschritten' },
+  pruefen: { label: 'prüfen' },
+  offen: { label: 'Festsetzung fehlt', kurz: 'offen' },
+  fehlt: { label: 'Grundstücksfläche fehlt', kurz: 'fehlt' },
 };
 
 export const ANRECHNUNG: Record<Anrechnung, string> = {

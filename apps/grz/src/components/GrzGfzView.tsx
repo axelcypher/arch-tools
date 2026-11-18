@@ -656,15 +656,12 @@ export function GrzGfzView() {
             <KpiZeile titel={n.recht.baunvo === '1990' ? 'GRZ I' : 'GRZ'} k={n.grz} einheit="Grundfläche" kurz={n.recht.baunvo === '1990' ? 'GR I' : 'GR'} />
             {n.grz2 && <KpiZeile titel="GRZ II" k={n.grz2} einheit="mit § 19 Abs. 4" kurz="GR II" />}
             <KpiZeile titel="GFZ" k={n.gfz} einheit="Geschossfläche" kurz="GF" offenText="mit zu prüfenden Räumen bis" />
-            {n.grAbsolut && <AbsolutKpi titel={n.recht.baunvo === '1990' ? 'GR I absolut' : 'GR absolut'} a={n.grAbsolut} />}
-            {n.gr2Absolut && <AbsolutKpi titel="GR II absolut" a={n.gr2Absolut} zusatz="§ 19 Abs. 4 S. 2" />}
-            {n.gfAbsolut && <AbsolutKpi titel="GF absolut" a={n.gfAbsolut} />}
             {n.bmz && <KpiZeile titel="BMZ" k={n.bmz} einheit="Baumasse" kurz="BM" />}
-            <div className={`metric${n.vollgeschosse.status === 'ueberschritten' || n.vollgeschosse.status === 'unterschritten' ? ' alarm' : ''}`}>
-              <span className="grz-metric-kopf">
-                <span className="grz-metric-titel">Vollgeschosse</span>
-                <StatusPill s={n.vollgeschosse.status} />
-              </span>
+            <div className={kachelKlasse(n.vollgeschosse.status)}>
+              <div className="metric-kopf">
+                <span>Vollgeschosse</span>
+                <StatusMarke s={n.vollgeschosse.status} />
+              </div>
               <strong>{roemisch(n.vollgeschosse.anzahl)}</strong>
               <small>{vollgeschosseZulaessig(n.vollgeschosse, '') || 'keine Festsetzung'}</small>
               <small>
@@ -677,6 +674,13 @@ export function GrzGfzView() {
               {vonHand > 0 && <small>davon {vonHand === 1 ? 'eines' : vonHand} von Hand festgelegt</small>}
             </div>
           </div>
+          <AbsolutTabelle
+            zeilen={[
+              { titel: n.recht.baunvo === '1990' ? 'GR I' : 'GR', a: n.grAbsolut },
+              { titel: 'GR II', a: n.gr2Absolut, zusatz: '§ 19 Abs. 4 S. 2' },
+              { titel: 'GF', a: n.gfAbsolut },
+            ]}
+          />
           <details className="grz-rechenweg-app">
             <summary>Rechenweg</summary>
             <ul className="grz-formeln">
@@ -951,22 +955,39 @@ export function kanteSetzen(pts: Point[], i: number, l: number): Point[] {
   return pts.map((p, k) => (bewegen.has(k) ? { x: p.x + d.x, y: p.y + d.y } : p));
 }
 
-/** absolute Festsetzung (GR/GF in m²) */
-function AbsolutKpi({ titel, a, zusatz }: { titel: string; a: NonNullable<ReturnType<typeof massNachweis>['grAbsolut']>; zusatz?: string }) {
+type Absolut = NonNullable<ReturnType<typeof massNachweis>['grAbsolut']>;
+
+/** absolute Festsetzungen (GR/GF in m²) als Tabelle unter den Kacheln – die Kacheln bleiben den Kernwerten vorbehalten */
+function AbsolutTabelle({ zeilen }: { zeilen: { titel: string; a: Absolut | undefined; zusatz?: string }[] }) {
+  const da = zeilen.filter((z): z is { titel: string; a: Absolut; zusatz?: string } => z.a !== undefined);
+  if (!da.length) return null;
   return (
-    <div className={`metric${a.status === 'ueberschritten' ? ' alarm' : ''}`}>
-      <span className="grz-metric-kopf">
-        <span className="grz-metric-titel">{titel}</span>
-        <StatusPill s={a.status} />
-      </span>
-      <strong>
-        {fmt2(a.flaeche)} <small>m²</small>
-      </strong>
-      <small>
-        zulässig <span className="nowrap">{fmt2(a.zulaessig)} m²</span>
-        {zusatz && <span className="nowrap"> ({zusatz})</span>}
-      </small>
-    </div>
+    <table className="summary-table text grz-tabelle grz-absolut-tabelle">
+      <caption className="unsichtbar">Absolute Festsetzungen</caption>
+      <thead>
+        <tr>
+          <th>Festsetzung</th>
+          <th className="num">vorhanden</th>
+          <th className="num">zulässig</th>
+        </tr>
+      </thead>
+      <tbody>
+        {da.map((z) => (
+          <tr key={z.titel}>
+            <td>
+              <span className="grz-absolut-name">{z.titel}</span>
+              {z.zusatz && <span className="muted small-text"> ({z.zusatz})</span>}
+              {/* Ergebnis unter der Bezeichnung statt in eigener Spalte – so passt die Tabelle auch bei 320 px */}
+              <div>
+                <StatusMarke s={z.a.status} />
+              </div>
+            </td>
+            <td className="num">{fmt2(z.a.flaeche)} m²</td>
+            <td className="num">{fmt2(z.a.zulaessig)} m²</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 }
 
@@ -988,9 +1009,15 @@ function TeilflaechenListe({ f }: { f: ReturnType<typeof rechenweg>['flaechen'][
 /** erste Option der Einstufung: was die Prüfung ohne Festlegung ergibt */
 const autoVollgeschoss = (g: { vollgeschossAuto: boolean }) => `${g.vollgeschossAuto ? 'ja' : 'nein'} (auto)`;
 
-export function StatusPill({ s }: { s: Status }) {
+/** Variante der Marke je Prüfergebnis (offen/fehlt: neutral) */
+const MARKE: Record<Status, '' | 'ok' | 'warnung' | 'fehler'> = { ok: 'ok', ueberschritten: 'fehler', unterschritten: 'fehler', pruefen: 'warnung', offen: '', fehlt: '' };
+
+/** Klassen der Kennzahl-Kachel: Zustand als Innenrand aus core (fehler/warnung); er steht zusätzlich als Marke im Kopf */
+const kachelKlasse = (s: Status) => ['metric', 'pruefung', MARKE[s] === 'ok' ? '' : MARKE[s]].filter(Boolean).join(' ');
+
+export function StatusMarke({ s }: { s: Status }) {
   return (
-    <span className={`pill ${STATUS[s].cls}`} title={STATUS[s].label}>
+    <span className={['marke', MARKE[s]].filter(Boolean).join(' ')} title={STATUS[s].label}>
       {STATUS[s].kurz ?? STATUS[s].label}
     </span>
   );
@@ -1017,11 +1044,11 @@ function KpiZeile({ titel, k, einheit, kurz, offenText = 'mit ungeklärten Fläc
   // Vergleich der Flächen (ehrlicher als die gerundete Kennzahl) im Tooltip; der Rechenweg zeigt die Formel
   const vergleich = flaechenVergleich(kurz, k);
   return (
-    <div className={`metric${k.status === 'ueberschritten' ? ' alarm' : ''}`} title={vergleich}>
-      <span className="grz-metric-kopf">
-        <span className="grz-metric-titel">{titel}</span>
-        <StatusPill s={k.status} />
-      </span>
+    <div className={kachelKlasse(k.status)} title={vergleich}>
+      <div className="metric-kopf">
+        <span>{titel}</span>
+        <StatusMarke s={k.status} />
+      </div>
       <strong>{kennzahlWert(k)}</strong>
       <small>
         <span className="nowrap">
