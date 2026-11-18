@@ -1,3 +1,4 @@
+import { IM_VORDRUCK_GESPERRT } from '../summen';
 import type { CSSProperties } from 'react';
 import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { bezeichner, eigenschaft, text, zahl } from '../forma/dfm';
@@ -448,7 +449,7 @@ const Element = memo(function Element({ k, feld, wert, geaendert, markiert, tite
           readOnly={feld.berechnet}
           // von FORMA gesperrte Felder ohne Summe: keine Tab-Stopps, aber per Klick und Sprung erreichbar
           tabIndex={feld.berechnet && !feld.summe ? -1 : undefined}
-          title={autofill ? `${titel} – ${AUTOFILL_TEXT[autofill]}` : titel}
+          title={autofill ? `${titel} – ${AUTOFILL_TEXT[autofill]}` : feld.berechnet && !feld.summe ? `${titel} – ${IM_VORDRUCK_GESPERRT}` : titel}
           aria-label={feld.beschriftung}
           data-feld={feld.schluessel}
           spellCheck={false}

@@ -1126,8 +1126,8 @@ end
   zeigt es nicht und zählt es nicht. Gesperrte Textfelder (`Enabled = False`) rechnet FORMA aus (Summen, Kopfzeilen
   der Folgeblätter); man trägt dort nichts ein, und sie zählen nicht für den Füllstand. In der App sind sie
   schreibgeschützt, aber fokussierbar und vorlesbar (berechnete Felder aus core: Grund der Fläche, gestrichelter
-  Rahmen, darunter kurz „In FORMA gesperrt“, im Tooltip „In FORMA schreibgeschützt – hier nicht einzutragen“ – neutral,
-  weil FORMA auch Felder sperrt, die die Behörde ausfüllt); gesperrt (`disabled`) ist nur das ganze Formular. Sie sind keine Tab-Stopps
+  Rahmen, darunter kurz „Im Vordruck gesperrt“, im Tooltip – auch auf dem Papier – „Im Vordruck schreibgeschützt – hier
+  nicht einzutragen“; neutral, weil FORMA auch Felder sperrt, die die Behörde ausfüllt, und ohne Programmnamen); gesperrt (`disabled`) ist nur das ganze Formular. Sie sind keine Tab-Stopps
   (Tabellenformulare hätten sonst Dutzende zwischen den Eingaben), bleiben aber per Klick und Sprung aus Prüfliste
   oder Gliederung erreichbar; die Summenfelder der App sind Tab-Stopps. Auf dem Papier hat ein fokussiertes
   schreibgeschütztes Feld keinen Feldgrund und einen gestrichelten Rahmen.

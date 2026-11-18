@@ -18,7 +18,7 @@ import { useVorbelegt } from '../merkmalAbgleich';
 import { springeZuFeld } from '../navigation';
 import { anzahl } from '../text';
 import { kennung } from '../forma/formular';
-import { herkunft, rechne, summenVon } from '../summen';
+import { herkunft, IM_VORDRUCK_GESPERRT, rechne, summenVon } from '../summen';
 import { Karte, useRollendKopf } from '@core/ui/Karte';
 
 const FILTER: { id: FeldFilter; label: string; title: string }[] = [
@@ -318,10 +318,9 @@ function FeldEingabe({
   const gesperrt = gesperrtFormular || (feld.berechnet && feld.art === 'kreuz');
   const nurLesen = feld.berechnet;
   const summeAus = summe && herkunft(summe, titelVon);
-  // von FORMA gesperrte Felder: berechnet (Summen, Kopfzeilen) oder von anderer Stelle auszufüllen (z. B. der Behörde) –
-  // die App weiß nicht, welches von beiden, deshalb neutral
-  const gesperrtInForma = 'In FORMA schreibgeschützt – hier nicht einzutragen';
-  const hinweis = feld.berechnet ? `${titel} – ${summeAus ?? gesperrtInForma}` : feld.hinweis;
+  // im Vordruck gesperrte Felder: berechnet (Summen, Kopfzeilen) oder von anderer Stelle auszufüllen (z. B. der Behörde) –
+  // die App weiß nicht, welches von beiden, deshalb neutral (die Oberfläche nennt kein anderes Programm)
+  const hinweis = feld.berechnet ? `${titel} – ${summeAus ?? IM_VORDRUCK_GESPERRT}` : feld.hinweis;
 
   if (feld.art === 'kreuz') {
     // echte Entweder-oder-Fälle (Regel „genau eine“, z. B. Bauantrag/Vorbescheid, ja/nein) als Optionsfelder (U-04) –
@@ -400,7 +399,7 @@ function FeldEingabe({
         {eingabe}
         <div className="feld-herkunft">
           <span className="field-hint" id={hinweisId}>
-            {summe ? herkunft(summe, titelVon, true) : 'In FORMA gesperrt'}
+            {summe ? herkunft(summe, titelVon, true) : 'Im Vordruck gesperrt'}
           </span>
           {summe && neuBerechnen !== undefined && !gesperrtFormular && (
             <button
