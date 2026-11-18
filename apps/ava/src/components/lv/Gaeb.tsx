@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { create } from 'zustand';
 import { Modal } from '@core/ui/Dialog';
 import { bestaetigen, meldung } from '@core/ui/Rueckfrage';
@@ -25,18 +25,28 @@ export function dublettenText(lv: Lv): string {
 }
 export const GAEB_ENDUNGEN = ['x81', 'x82', 'x83', 'x84', 'x85', 'x86', 'xml'];
 
-/** GAEB-Export offen? – zwei Einstiege (LV-Menü und „Datei → Exportieren“), ein Dialog (in App.tsx eingehängt) */
-export const useGaebExport = create<{ offen: boolean; oeffnen: () => void; schliessen: () => void }>((set) => ({
-  offen: false,
-  oeffnen: () => set({ offen: true }),
-  schliessen: () => set({ offen: false }),
+/** Kennung des offenen LV (Gewerk und Datei) – der Dialog gehört zu genau diesem LV */
+const lvSchluessel = (lv: { gewerk: string; datei: { pfad: string } } | null) => (lv ? `${lv.gewerk}|${lv.datei.pfad}` : null);
+
+/**
+ * GAEB-Export offen? – zwei Einstiege (LV-Menü und „Datei → Exportieren“), ein Dialog (in App.tsx eingehängt).
+ * `fuer` ist die Kennung des LV, für das er geöffnet wurde: wird das LV geschlossen oder gewechselt (auch beim
+ * Projektwechsel), schließt der Dialog, statt beim nächsten LV wieder aufzuspringen.
+ */
+export const useGaebExport = create<{ fuer: string | null; oeffnen: () => void; schliessen: () => void }>((set) => ({
+  fuer: null,
+  oeffnen: () => set({ fuer: lvSchluessel(useAva.getState().lv) }),
+  schliessen: () => set({ fuer: null }),
 }));
 
-/** Eingehängt in App.tsx: zeigt den Dialog, solange er offen ist und ein LV geöffnet ist */
+/** Eingehängt in App.tsx: zeigt den Dialog nur für das LV, für das er geöffnet wurde */
 export function GaebExportHost() {
-  const offen = useGaebExport((s) => s.offen);
-  const lv = useAva((s) => s.lv);
-  return offen && lv ? <GaebExportDialog onClose={() => useGaebExport.getState().schliessen()} /> : null;
+  const fuer = useGaebExport((s) => s.fuer);
+  const aktuell = useAva((s) => lvSchluessel(s.lv));
+  useEffect(() => {
+    if (fuer && fuer !== aktuell) useGaebExport.getState().schliessen();
+  }, [fuer, aktuell]);
+  return fuer && fuer === aktuell ? <GaebExportDialog key={fuer} onClose={() => useGaebExport.getState().schliessen()} /> : null;
 }
 
 /** LV als GAEB-XML exportieren: Phase wählen, bei Angebot/Auftrag den Bieter */

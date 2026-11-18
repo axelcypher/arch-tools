@@ -9,7 +9,7 @@ import { lvGeaendert, useAva } from './store';
 import { LV_UNGESPEICHERT, lvSpeichernMitMeldung, lvWeiter } from './App';
 import { Navigation } from './components/Navigation';
 import { GewerkAnsicht } from './components/GewerkAnsicht';
-import { useGaebExport } from './components/lv/Gaeb';
+import { GaebExportHost, useGaebExport } from './components/lv/Gaeb';
 import { MenueHost } from '@core/ui/Menue';
 import { RueckfrageHost } from '@core/ui/Rueckfrage';
 
@@ -48,6 +48,7 @@ beforeEach(async () => {
 });
 
 afterEach(() => {
+  useGaebExport.setState({ fuer: null });
   act(() => root?.unmount());
   root = null;
   document.body.innerHTML = '';
@@ -90,28 +91,49 @@ describe('Datei (Fuß der Navigation)', () => {
     const punkte = await dateiOeffnen();
     expect(punkte.map((p) => p.querySelector('.menue-text')?.textContent?.trim() ?? p.textContent?.trim())).toEqual(['Aktualisieren', 'Exportieren', 'Einstellungen …']);
     expect(document.querySelector('[role="menu"] [role="separator"]')).not.toBeNull();
-    // Untermenü: GAEB DA XML ist ohne offenes LV gesperrt, mit Grund
+    // ohne offenes LV ist „Exportieren“ selbst gesperrt, der Grund steht daneben (wie ATLAS und RECTIO)
     const exportieren = punkte[1];
-    expect(exportieren.getAttribute('aria-haspopup')).toBeTruthy();
-    await act(async () => exportieren.click());
-    await warte(() => document.querySelectorAll('[role="menu"]').length > 1);
-    const gaeb = [...document.querySelectorAll<HTMLElement>('[role="menu"] [role^="menuitem"]')].find((p) => p.textContent?.includes('GAEB DA XML …'))!;
-    expect(gaeb.getAttribute('aria-disabled')).toBe('true');
-    expect(gaeb.textContent).toContain('Erst ein LV öffnen');
+    expect(exportieren.getAttribute('aria-disabled')).toBe('true');
+    expect(exportieren.textContent).toContain('Erst ein LV öffnen');
   });
 
-  it('mit offenem LV öffnet „Datei → Exportieren → GAEB DA XML …“ den GAEB-Export', async () => {
+  const gaebDialog = () => [...document.querySelectorAll('.modal-kopf')].find((k) => k.textContent?.includes('GAEB-Export'));
+
+  it('mit offenem LV öffnet „Datei → Exportieren → GAEB DA XML …“ den GAEB-Export; schließt das LV, schließt der Dialog und springt nicht wieder auf', async () => {
     await lvOeffnen();
     act(() => root?.unmount());
-    await zeige(createElement('div', null, createElement(Navigation, { onStammdaten: () => {} }), createElement(MenueHost)));
+    await zeige(createElement('div', null, createElement(Navigation, { onStammdaten: () => {} }), createElement(GaebExportHost), createElement(MenueHost)));
     const punkte = await dateiOeffnen();
+    expect(punkte[1].getAttribute('aria-disabled')).not.toBe('true');
+    expect(punkte[1].getAttribute('aria-haspopup')).toBeTruthy();
     await act(async () => punkte[1].click());
     await warte(() => document.querySelectorAll('[role="menu"]').length > 1);
     const gaeb = [...document.querySelectorAll<HTMLElement>('[role="menu"] [role^="menuitem"]')].find((p) => p.textContent?.includes('GAEB DA XML …'))!;
-    expect(gaeb.getAttribute('aria-disabled')).not.toBe('true');
     await act(async () => gaeb.click());
-    expect(useGaebExport.getState().offen).toBe(true);
-    act(() => useGaebExport.getState().schliessen());
+    await warte(() => gaebDialog());
+    expect(gaebDialog()).toBeTruthy();
+    // LV schließen: Dialog weg, kein offener Zustand übrig
+    const datei = useAva.getState().lv!.datei;
+    act(() => useAva.getState().lvSchliessen());
+    await warte(() => !gaebDialog());
+    expect(gaebDialog()).toBeFalsy();
+    expect(useGaebExport.getState().fuer).toBeNull();
+    // dasselbe LV wieder öffnen: der Dialog springt nicht auf
+    await act(async () => useAva.getState().lvOeffnen('G8', datei));
+    await warte(() => useAva.getState().lv);
+    expect(gaebDialog()).toBeFalsy();
+  });
+
+  it('„LV ▾ → GAEB-Export …“ öffnet denselben Dialog über den Host', async () => {
+    await zeige(createElement('div', null, createElement(GewerkAnsicht, { gewerk: 'G8', tab: 'lv' }), createElement(GaebExportHost), createElement(MenueHost)));
+    await warte(() => useAva.getState().lv && host.querySelector('.ava-lv-zeilen'));
+    const lvKnopf = [...host.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent?.trim().startsWith('LV') && b.closest('.ava-lv-wahl'))!;
+    await act(async () => lvKnopf.click());
+    await warte(() => document.querySelector('[role="menu"]'));
+    const punkt = [...document.querySelectorAll<HTMLElement>('[role="menu"] [role^="menuitem"]')].find((p) => p.textContent?.includes('GAEB-Export …'))!;
+    await act(async () => punkt.click());
+    await warte(() => gaebDialog());
+    expect(gaebDialog()).toBeTruthy();
   });
 });
 

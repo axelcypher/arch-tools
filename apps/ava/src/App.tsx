@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { GaebExportHost } from './components/lv/Gaeb';
 import { APP_NAMEN } from '@core/appNamen';
 import { isTauri } from '@core/platform/files';
 import { logger } from '@core/platform/log';
@@ -26,6 +25,7 @@ import { Beteiligte } from './components/bauleitung/Beteiligte';
 import { Mailverlauf } from './components/bauleitung/Mailverlauf';
 import { ausstehendesSchreibenAbwarten, lvGeaendert, schreibend, useAva } from './store';
 import { useEntwurf } from './components/eingaben';
+import { GaebExportHost } from './components/lv/Gaeb';
 
 const log = logger('app');
 

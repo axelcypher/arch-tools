@@ -74,12 +74,14 @@ export function Navigation({ onStammdaten }: { onStammdaten: (meta: ProjectMeta,
               {
                 text: 'Exportieren',
                 symbol: 'export',
+                // wie ATLAS und RECTIO: gesperrt ist der Punkt selbst, der Grund steht gleich daneben
+                deaktiviert: !lvOffen,
+                hinweis: lvOffen ? undefined : 'Erst ein LV öffnen',
                 unter: [
                   {
                     text: 'GAEB DA XML …',
+                    symbol: 'export',
                     titel: 'Das offene LV als GAEB DA XML für die Bieter bzw. andere AVA-Software (X81, X83, X84, X86)',
-                    deaktiviert: !lvOffen,
-                    hinweis: lvOffen ? undefined : 'Erst ein LV öffnen',
                     aktion: () => useGaebExport.getState().oeffnen(),
                   },
                 ],
