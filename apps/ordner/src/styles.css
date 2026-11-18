@@ -1088,7 +1088,10 @@
 .ka-ok {
   color: var(--ok-text);
 }
+/* Plan-Auswahl im Export: Kästchen mit eigener Größe und ohne Rand des Browsers, damit das Ergebnis darunter bündig
+   unter dem Etikett der Art steht – unabhängig von den Vorgaben der Engine */
 .ka-wahl {
+  --ka-kaestchen: 13px;
   list-style: none;
   margin: var(--s2) 0;
   padding: 0;
@@ -1096,7 +1099,7 @@
 .ka-wahl li {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--s1);
   padding: var(--s2) 0;
   border-bottom: 1px solid var(--line-soft);
 }
@@ -1105,10 +1108,15 @@
   align-items: center;
   gap: var(--s2);
 }
-/* bündig unter dem Etikett der Art: Kästchen (13px + Außenrand des Browsers 4px + 3px = 20px) und der Abstand des
-   Labels (gap von .ka-wahl label) */
+.ka-wahl input[type='checkbox'] {
+  flex: none;
+  width: var(--ka-kaestchen);
+  height: var(--ka-kaestchen);
+  margin: 0;
+}
+/* bündig unter dem Etikett der Art: Kästchen und Abstand des Labels */
 .ka-ergebnis {
-  margin-left: calc(20px + var(--s2));
+  margin-left: calc(var(--ka-kaestchen) + var(--s2));
 }
 .ka-ergebnis.ok {
   color: var(--ok-text);
