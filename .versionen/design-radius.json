@@ -1,0 +1,34 @@
+{
+  "flaechenrechner": {
+    "stufe": "patch",
+    "notiz": "Rundungen einheitlich aus der Skala (kaum sichtbar)."
+  },
+  "ava": {
+    "stufe": "patch",
+    "notiz": "Rundungen einheitlich aus der Skala (kaum sichtbar)."
+  },
+  "grz": {
+    "stufe": "patch",
+    "notiz": "Rundungen einheitlich aus der Skala (kaum sichtbar)."
+  },
+  "kosten": {
+    "stufe": "patch",
+    "notiz": "Rundungen einheitlich aus der Skala (kaum sichtbar)."
+  },
+  "ordner": {
+    "stufe": "patch",
+    "notiz": "Rundungen einheitlich aus der Skala (kaum sichtbar)."
+  },
+  "entzerrung": {
+    "stufe": "patch",
+    "notiz": "Rundungen einheitlich aus der Skala (kaum sichtbar)."
+  },
+  "formulare": {
+    "stufe": "patch",
+    "notiz": "Rundungen einheitlich aus der Skala; im Editor der Ansichten runden innere Kästen kleiner als der Dialog."
+  },
+  "baurecht": {
+    "stufe": "patch",
+    "notiz": "Rundungen einheitlich aus der Skala (kaum sichtbar)."
+  }
+}
