@@ -26,7 +26,7 @@ export function dublettenText(lv: Lv): string {
 export const GAEB_ENDUNGEN = ['x81', 'x82', 'x83', 'x84', 'x85', 'x86', 'xml'];
 
 /** Kennung des offenen LV (Gewerk und Datei) – der Dialog gehört zu genau diesem LV */
-const lvSchluessel = (lv: { gewerk: string; datei: { pfad: string } } | null) => (lv ? `${lv.gewerk}|${lv.datei.pfad}` : null);
+const lvSchluessel = (lv: { gewerk: string; datei?: { pfad: string } } | null) => (lv ? `${lv.gewerk}|${lv.datei?.pfad ?? ''}` : null);
 
 /**
  * GAEB-Export offen? – zwei Einstiege (LV-Menü und „Datei → Exportieren“), ein Dialog (in App.tsx eingehängt).
