@@ -162,6 +162,11 @@ Nebentext unten bündig; Kacheln ohne Nebentext halten dessen Zeile frei). Sie b
   wechseln, Esc schließt und gibt den Fokus an den Knopf zurück. Esc über `useEscSchliessen`, damit Dialoge darunter
   offen bleiben. Andere Elemente (Kästchen, Text) stehen außerhalb der Menürolle. Vorbild: `ThemeMenu` in
   `TitleBar.tsx`.
+- Text nur für Screenreader (Tabellentitel `caption.unsichtbar`, Beschriftungen ohne sichtbaren Platz, Live-Regionen)
+  bekommt `.unsichtbar` aus core (gleichwertig `.nur-vorlesen`) – keine eigenen Regeln je App. Nicht `display: none`,
+  `visibility: hidden` oder das Attribut `hidden`: das nähme den Text auch dem Screenreader. Sprunglinks, die beim Fokus
+  erscheinen, blenden nur mit `:not(:focus)` aus und werden beim Fokus voll sichtbar, mit Fokusrahmen und über dem
+  Inhalt (Vorbild `.br-sprung` in LEXIO).
 - Symbolknöpfe ohne Text brauchen `aria-label` und `title`. Symbole lieber als SVG zeichnen als Schriftzeichen
   (◐ ☀ ☾ fallen je nach Schrift winzig oder gar nicht aus).
 

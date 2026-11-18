@@ -2191,13 +2191,20 @@ code {
   /* Nicht-Text braucht 3:1 gegen die Leiste: das dunklere Warnorange statt der Auswahlfarbe */
   color: var(--warn-text);
 }
+/* nur für Screenreader (Tabellentitel, Beschriftungen, Live-Regionen mit .nur-vorlesen): unsichtbar, aber im
+   Barrierebaum; clip-path ist die heutige Form, clip bleibt als Rückfall */
 .unsichtbar,
+.nur-vorlesen,
 .titlebar-unsichtbar {
   position: absolute;
   width: 1px;
   height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
   overflow: hidden;
   clip: rect(0 0 0 0);
+  clip-path: inset(50%);
   white-space: nowrap;
 }
 
@@ -2977,15 +2984,6 @@ button.ph-lokal {
 
 /* ---------- Hinweis nach einer Aktion (zeigeHinweis): Stapel unten rechts, unter Dialogen (z-index 20) ---------- */
 
-/* nur für Vorleseprogramme (Live-Regionen des Stapels) */
-.nur-vorlesen {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
 /* eine App mit Statusleiste setzt --hinweis-unten auf deren Höhe (Vorgabe 0px). Der Stapel hat innen Luft
    (--s3), damit das Scrollen die Schatten der Karten nicht abschneidet; die Karten selbst stehen --s4 vom Rand. */
 .hinweise {
