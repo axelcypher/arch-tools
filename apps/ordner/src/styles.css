@@ -37,7 +37,7 @@
   max-height: 46vh;
   overflow: auto;
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
 }
 .po-plan td {
   white-space: nowrap;
@@ -187,7 +187,7 @@
   color: var(--text);
   background: var(--input-bg);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   resize: vertical;
   white-space: pre;
 }
@@ -268,7 +268,7 @@
   margin-bottom: var(--s1);
   padding: var(--s1) var(--s2);
   border: 1px dashed var(--accent);
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
 }
 .po-vorschau-titel {
   margin-right: var(--s1);
@@ -308,7 +308,7 @@
 }
 .po-chip.umriss {
   background: transparent;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
 }
 .po-chip.umriss.aktiv {
   background: transparent;
@@ -373,7 +373,7 @@
   overflow: auto;
   padding: var(--s1) 0;
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   background: var(--input-bg);
   font-size: var(--fs-m);
   user-select: none;
@@ -503,7 +503,7 @@
   margin: var(--s1);
   padding: var(--s2);
   border: 1px dashed var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   color: var(--muted);
   text-align: center;
   font-size: var(--fs-s);
@@ -585,7 +585,7 @@
   font-family: Consolas, 'Cascadia Mono', monospace;
   font-size: var(--fs-s);
   background: var(--code-bg);
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
 }
 .po-schemata h3 {
   margin: var(--s3) 0 var(--s1);
@@ -696,7 +696,7 @@
   width: 100%;
   padding: var(--s1) var(--s2);
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   background: none;
   color: inherit;
   font: inherit;
@@ -914,7 +914,7 @@
   overflow: auto;
   margin: var(--s1) 0 var(--s2);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   background: var(--panel);
 }
 .po-projektliste li {
@@ -1051,7 +1051,7 @@
   font-weight: 600;
   letter-spacing: 0.04em;
   padding: 1px var(--s1);
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   background: var(--chip-bg);
   color: var(--muted);
 }
@@ -1231,7 +1231,7 @@
   margin-bottom: var(--s1);
   border: 1px solid var(--border);
   border-left: 3px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   background: var(--panel);
 }
 .po-mail.falsch {
@@ -1339,7 +1339,7 @@
   font-family: inherit;
   font-size: var(--fs-s);
   background: var(--code-bg);
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
 }
 
 /* Mails aus Outlook ablegen */
