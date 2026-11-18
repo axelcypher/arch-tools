@@ -2959,15 +2959,18 @@ button.ph-lokal {
   right: auto;
   left: calc(var(--s4) - var(--s3));
 }
-/* schwebende Ebene: rundet wie eine Fläche (die Meldung im Inhalt bleibt bei --radius-s) */
 .hinweis {
-  border-radius: var(--radius);
   pointer-events: auto;
   display: flex;
   align-items: flex-start;
   gap: var(--s2);
   padding: var(--s2) var(--s2) var(--s2) var(--s3);
   box-shadow: var(--schatten-schwebend);
+}
+/* schwebende Ebene: rundet wie eine Fläche (die Meldung im Inhalt bleibt bei --radius-s); nur im Stapel, damit Elemente
+   der Apps mit einer Art „hinweis“ unberührt bleiben */
+.hinweise > .hinweis {
+  border-radius: var(--radius);
 }
 .hinweis-inhalt {
   flex: 1 1 auto;

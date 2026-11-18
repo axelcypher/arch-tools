@@ -34,7 +34,9 @@ describe('Radien von Meldungen', () => {
     const r = (sel: string) => regel(sel).match(/border-radius:\s*([^;]+);/)?.[1];
     expect(r('.meldung')).toBe('var(--radius-s)');
     expect(r('.warning')).toBe('var(--radius-s)');
-    expect(r('.hinweis')).toBe('var(--radius)');
+    expect(r('.hinweise > .hinweis')).toBe('var(--radius)');
+    // nur im Stapel: .hinweis allein rundet nicht (Elemente der Apps mit einer Art „hinweis“)
+    expect(regel('.hinweis')).not.toMatch(/border-radius/);
     // schwebende Meldung über der Zeichenfläche ist eine schwebende Ebene
     expect(r('.canvas-message')).toBe('var(--radius)');
   });
