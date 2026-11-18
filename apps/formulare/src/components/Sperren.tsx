@@ -6,7 +6,7 @@ import { Modal } from '@core/ui/Dialog';
 
 const ZUSTAND: Record<SperrBewertung['art'], string> = { benutzt: 'In Gebrauch', verwaist: 'Verwaist', unklar: 'Nicht prüfbar' };
 /** Variante der Marke aus core: in Gebrauch ist ein Fehlerzustand, verwaist ein Hinweis, nicht prüfbar neutral */
-const VARIANTE: Record<SperrBewertung['art'], string> = { benutzt: ' fehler', verwaist: ' info', unklar: '' };
+const VARIANTE: Record<SperrBewertung['art'], string> = { benutzt: 'fehler', verwaist: 'info', unklar: '' };
 
 /** Wer, wo, seit wann – aus der Sperrdatei */
 export function wer(s: Sperre): string {
@@ -14,7 +14,7 @@ export function wer(s: Sperre): string {
 }
 
 export function ZustandMarke({ art }: { art: SperrBewertung['art'] }) {
-  return <span className={`marke fo-sperr-marke ${art}${VARIANTE[art]}`}>{ZUSTAND[art]}</span>;
+  return <span className={['marke', 'fo-sperr-marke', VARIANTE[art]].filter(Boolean).join(' ')}>{ZUSTAND[art]}</span>;
 }
 
 /**

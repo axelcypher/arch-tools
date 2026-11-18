@@ -336,8 +336,8 @@ describe('Formulare', () => {
     expect(zeilen[1].textContent).toContain('(kein Formular dazu)');
     expect(zeilen[1].textContent).toContain('Verwaist');
     // Zustand als Marke aus core: in Gebrauch als Fehler, verwaist als Hinweis
-    expect(zeilen[0].querySelector('.fo-sperr-marke')!.className).toBe('marke fo-sperr-marke benutzt fehler');
-    expect(zeilen[1].querySelector('.fo-sperr-marke')!.className).toBe('marke fo-sperr-marke verwaist info');
+    expect(zeilen[0].querySelector('.fo-sperr-marke')!.className).toBe('marke fo-sperr-marke fehler');
+    expect(zeilen[1].querySelector('.fo-sperr-marke')!.className).toBe('marke fo-sperr-marke info');
     await klick(knopf(zeilen[1], 'Aufheben'));
     await klick(knopfGenau(host, 'Sperre aufheben'));
     await warte();

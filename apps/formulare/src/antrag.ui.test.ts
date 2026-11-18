@@ -706,6 +706,11 @@ describe('Bedingungen: Antragsmerkmale und Felder', () => {
     await warte();
     expect(memo2().classList.contains('entfaellt')).toBe(false);
     expect(gl(host).querySelector('.fo-gl-zahl')!.textContent).toBe('4/5');
+    // alles ausgefüllt: ✓ als Zähler in der Variante .ok
+    act(() => s.wertSetzen(s.offen!.felder[0].find((f) => f.name === 'Memo2')!, 'Musterstraße 1'));
+    await warte();
+    expect(gl(host).querySelector('.fo-gl-zahl')!.textContent).toBe('✓');
+    expect(gl(host).querySelector('.fo-gl-zahl')!.className).toBe('marke pille fo-gl-zahl ok');
   });
 
   it('entfallendes Feld: Info-Symbol nennt den Grund, ein Klick öffnet den Gesetzestext mit dem Absatz', async () => {

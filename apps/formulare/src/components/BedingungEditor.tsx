@@ -39,12 +39,16 @@ function anPfad(g: BedingungGruppe, pfad: Pfad, f: (t: BedingungTeil) => Bedingu
   return { ...g, teile };
 }
 
+/** Erklärung zur Marke „offen“ (Tooltip und für Screenreader) */
+const OFFEN_ERKLAERT = 'Ein Antragsmerkmal der Bedingung ist nicht festgelegt – bis dahin gilt die Angabe als erforderlich.';
+
 /**
  * Bedingung zusammenstellen: eine Gruppe, deren Teile alle (und) oder mindestens einer (oder) zutreffen müssen. Teile
  * sind Prüfungen – Antragsmerkmal hat einen der Werte (oder keinen), Feld ist ausgefüllt/angekreuzt, leer, hat einen
  * Wert oder nicht – oder wieder Gruppen. Felder lassen sich auch durch Klick ins Formular wählen. Darunter steht die
  * Bedingung in Worten und ob sie gerade zutrifft.
  */
+
 export function BedingungEditor({ wert, onChange, merkmale, felder, ohne, kontext, imFormularWaehlen }: Props) {
   const wahl = (felder ?? []).filter((f) => !ohne?.includes(f.feld.schluessel));
   const nachSchluessel = new Map((felder ?? []).map((f) => [f.feld.schluessel, f]));
@@ -109,7 +113,8 @@ export function BedingungEditor({ wert, onChange, merkmale, felder, ohne, kontex
         {jetzt !== undefined && (
           <span
             className={`marke bd-jetzt${jetzt === 'ja' ? ' ok' : jetzt === 'offen' ? ' warnung' : ''}`}
-            title={jetzt === 'offen' ? 'Ein Antragsmerkmal der Bedingung ist nicht festgelegt – bis dahin gilt die Angabe als erforderlich.' : undefined}
+            title={jetzt === 'offen' ? OFFEN_ERKLAERT : undefined}
+            aria-description={jetzt === 'offen' ? OFFEN_ERKLAERT : undefined}
           >
             {jetzt === 'ja' ? 'trifft gerade zu' : jetzt === 'offen' ? 'offen – Merkmal nicht festgelegt' : 'trifft gerade nicht zu'}
           </span>
