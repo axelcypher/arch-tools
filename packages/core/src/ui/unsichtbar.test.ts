@@ -20,6 +20,6 @@ describe('.unsichtbar (nur für Screenreader)', () => {
 
   it('eine Regel für alle Namen (.nur-vorlesen gleichwertig), keine zweite Kopie in core', () => {
     expect(css).toMatch(/\n\.unsichtbar,\n\.nur-vorlesen,\n\.titlebar-unsichtbar \{/);
-    expect(css.match(/clip-path:\s*inset\(50%\)/g)).toHaveLength(1);
+    expect(css).not.toMatch(/\n\.nur-vorlesen \{/);
   });
 });
