@@ -149,41 +149,14 @@
   display: flex;
   margin-top: 2px;
 }
-/* Kennzahlen: Kacheln aus core (.metric-row/.metric) als „Kennzahl mit Prüfergebnis“ – Kopf aus Bezeichnung und
-   Statusmarke, Wert oben, mehrere Nebenzeilen, Alarm bei Überschreitung. Diese Variante, die Einheit am Wert und der
-   Alarm fehlen in core (gemeldet an das Designsystem); bis dahin hier, eingegrenzt auf .grz-kennzahlen. */
-.grz-kennzahlen > .metric {
-  /* Zahl mit Einheit und Statusmarke brauchen etwa 12em; schmalere Karten stellen die Kacheln untereinander */
-  flex-basis: 12em;
-}
-/* mehrere Nebenzeilen je Kachel: der Wert steht direkt unter dem Kopf (core schiebt ihn für eine Nebenzeile nach unten);
-   bei gleich hohen Köpfen liegen die Werte nebeneinanderstehender Kacheln damit auf einer Linie */
+/* Kennzahlen: Kacheln aus core (.metric-row, .metric.pruefung mit .metric-kopf und .marke, Zustand .fehler/.warnung,
+   Einheit am Wert); hier nur der Hinweis auf offene Flächen und ein kleiner Abstand unter dem Wert */
 .grz-kennzahlen > .metric > strong {
-  margin-top: 0;
   margin-bottom: 2px;
-}
-.grz-metric-kopf {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: center;
-  gap: 2px var(--s1);
-}
-.grz-metric-titel {
-  white-space: nowrap;
-}
-.grz-kennzahlen > .metric > strong small {
-  font-size: var(--fs-s);
-  font-weight: 400;
-  color: var(--muted);
 }
 .grz-kennzahlen > .metric > small.grz-metric-offen {
   margin-top: 2px;
   color: var(--warn-text);
-}
-.grz-kennzahlen > .metric.alarm {
-  /* Rand in --danger ohne Verschieben des Inhalts */
-  box-shadow: inset 0 0 0 1px var(--danger);
 }
 /* Zahl und Einheit nie trennen („100,00 m²“) */
 .nowrap,

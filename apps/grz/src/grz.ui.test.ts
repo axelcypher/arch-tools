@@ -575,10 +575,9 @@ describe('Nachweis-Spalte, Regeln, Rückgängig (G-28, G-29, G-32)', () => {
     // schmale Fenster: die Untergrenze der Seitenkarten kommt aus BreitenLeiste min (core), keine eigene Regel;
     // die Kacheln stehen bei wenig Platz untereinander, die Zahlenspalten haben feste Breiten statt Prozent
     expect(css).not.toMatch(/--leiste-min/);
-    // Kennzahlen aus core (.metric-row/.metric), keine eigenen Kachelregeln; App ergänzt nur Kopf, Offen-Hinweis und Alarm
+    // Kennzahlen ganz aus core (.metric.pruefung, .metric-kopf, .marke, Zustand, Einheit); App ergänzt nur den Offen-Hinweis
     expect(css).not.toMatch(/\.kpis?\b|\.kpi-/);
-    expect(css).toMatch(/\.grz-kennzahlen > \.metric\s*\{[^}]*flex-basis: 12em;/);
-    expect(css).toMatch(/\.grz-kennzahlen > \.metric\.alarm\s*\{[^}]*var\(--danger\)/);
+    expect(css).not.toMatch(/grz-metric-kopf|grz-metric-titel|\.alarm|flex-basis: 12em|strong small/);
     // App-Ergänzungen nur innerhalb der eigenen Kennzahlzeile, nie an der core-Klasse allein
     expect(css).not.toMatch(/(^|\n)\.metric[ .>:{]/);
     // Schriftgrößen nur aus der Skala
@@ -889,6 +888,23 @@ describe('Gesamt-Review: Bedienung der Oberfläche', () => {
     expect(host.querySelector('button[aria-label="Rückgängig"]')).not.toBeNull();
   });
 
+  it('Kennzahlen: höchstens fünf Kacheln, absolute Festsetzungen als Tabelle darunter', () => {
+    const p = projekt();
+    p.massNutzung = { ...p.massNutzung, planDatum: '2020-05-01', grAbsolut: 100, gfAbsolut: 400, bmz: 3 };
+    useGrz.getState().load(p);
+    const host = render(GrzGfzView);
+    const titel = [...host.querySelectorAll('.grz-kennzahlen > .metric .metric-kopf > span:first-child')].map((e) => e.textContent);
+    expect(titel.length).toBeLessThanOrEqual(5);
+    expect(titel.some((t) => t?.includes('absolut'))).toBe(false);
+    const zeilen = [...host.querySelectorAll('table.grz-absolut-tabelle tbody tr')];
+    expect(zeilen.map((z) => z.querySelector('td')!.textContent)).toEqual(['GR I', 'GR II (§ 19 Abs. 4 S. 2)', 'GF']);
+    // GR I 135 m² > 100 m² zulässig: Marke „überschritten“ in der Tabelle
+    expect(zeilen[0].querySelector('.marke')!.className).toBe('marke fehler');
+    // Gegenprobe: ohne absolute Festsetzung keine Tabelle
+    act(() => useGrz.getState().load(projekt()));
+    expect(host.querySelector('table.grz-absolut-tabelle')).toBeNull();
+  });
+
   it('Kennzahl-Karte: kurze Pille, Grund in der Unterzeile, Spanne der ungeklärten Flächen eigene Zeile', () => {
     const p = projekt();
     p.meta.grundstueck.flaeche = undefined;
@@ -897,9 +913,13 @@ describe('Gesamt-Review: Bedienung der Oberfläche', () => {
     const host = render(GrzGfzView);
     const karte = host.querySelector('.grz-kennzahlen > .metric')!;
     // Aufbau der core-Kachel: Kopf (Bezeichnung + Marke), Wert als strong, Nebentext als small
-    expect(karte.querySelector(':scope > .grz-metric-kopf .grz-metric-titel')!.textContent).toBe('GRZ');
+    expect(karte.classList.contains('pruefung')).toBe(true);
+    expect(karte.querySelector(':scope > .metric-kopf > span')!.textContent).toBe('GRZ');
     expect(karte.querySelector(':scope > strong')).not.toBeNull();
-    expect(karte.querySelector('.pill')!.textContent).toBe('fehlt');
+    // Statusmarke aus core; „fehlt“ ist neutral (keine Variante, kein Zustand an der Kachel)
+    expect(karte.querySelector('.marke')!.textContent).toBe('fehlt');
+    expect(karte.querySelector('.marke')!.className).toBe('marke');
+    expect(karte.classList.contains('fehler')).toBe(false);
     expect(karte.textContent).toContain('Grundstücksfläche fehlt');
     act(() => useGrz.getState().load(projekt()));
     const k2 = host.querySelector('.grz-kennzahlen > .metric')!;
@@ -907,9 +927,11 @@ describe('Gesamt-Review: Bedienung der Oberfläche', () => {
     expect(k2.textContent).toContain('Reserve 110,00 m²');
     expect(k2.getAttribute('title')).toContain('GR 135,00 m² < 245,00 m² zulässig');
     // Alarm nur an der überschrittenen Kennzahl (GFZ), Gegenprobe an der eingehaltenen GRZ
-    const kachel = (t: string) => [...host.querySelectorAll('.grz-kennzahlen > .metric')].find((m) => m.querySelector('.grz-metric-titel')!.textContent === t)!;
-    expect(kachel('GFZ').classList.contains('alarm')).toBe(true);
-    expect(kachel('GRZ').classList.contains('alarm')).toBe(false);
+    const kachel = (t: string) => [...host.querySelectorAll('.grz-kennzahlen > .metric')].find((m) => m.querySelector('.metric-kopf > span')!.textContent === t)!;
+    expect(kachel('GFZ').classList.contains('fehler')).toBe(true);
+    expect(kachel('GFZ').querySelector('.marke')!.className).toBe('marke fehler');
+    expect(kachel('GRZ').classList.contains('fehler')).toBe(false);
+    expect(kachel('GRZ').querySelector('.marke')!.className).toBe('marke ok');
   });
 
   it('Wandzuschlag nur, wenn Aufenthaltsräume zur GF zählen – 1990 erst mit Festsetzung nach § 20 Abs. 3 S. 2', () => {

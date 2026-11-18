@@ -656,14 +656,11 @@ export function GrzGfzView() {
             <KpiZeile titel={n.recht.baunvo === '1990' ? 'GRZ I' : 'GRZ'} k={n.grz} einheit="Grundfläche" kurz={n.recht.baunvo === '1990' ? 'GR I' : 'GR'} />
             {n.grz2 && <KpiZeile titel="GRZ II" k={n.grz2} einheit="mit § 19 Abs. 4" kurz="GR II" />}
             <KpiZeile titel="GFZ" k={n.gfz} einheit="Geschossfläche" kurz="GF" offenText="mit zu prüfenden Räumen bis" />
-            {n.grAbsolut && <AbsolutKpi titel={n.recht.baunvo === '1990' ? 'GR I absolut' : 'GR absolut'} a={n.grAbsolut} />}
-            {n.gr2Absolut && <AbsolutKpi titel="GR II absolut" a={n.gr2Absolut} zusatz="§ 19 Abs. 4 S. 2" />}
-            {n.gfAbsolut && <AbsolutKpi titel="GF absolut" a={n.gfAbsolut} />}
             {n.bmz && <KpiZeile titel="BMZ" k={n.bmz} einheit="Baumasse" kurz="BM" />}
-            <div className={`metric${n.vollgeschosse.status === 'ueberschritten' || n.vollgeschosse.status === 'unterschritten' ? ' alarm' : ''}`}>
-              <span className="grz-metric-kopf">
-                <span className="grz-metric-titel">Vollgeschosse</span>
-                <StatusPill s={n.vollgeschosse.status} />
+            <div className={`metric pruefung${kachelZustand(n.vollgeschosse.status)}`}>
+              <span className="metric-kopf">
+                <span>Vollgeschosse</span>
+                <StatusMarke s={n.vollgeschosse.status} />
               </span>
               <strong>{roemisch(n.vollgeschosse.anzahl)}</strong>
               <small>{vollgeschosseZulaessig(n.vollgeschosse, '') || 'keine Festsetzung'}</small>
@@ -677,6 +674,13 @@ export function GrzGfzView() {
               {vonHand > 0 && <small>davon {vonHand === 1 ? 'eines' : vonHand} von Hand festgelegt</small>}
             </div>
           </div>
+          <AbsolutTabelle
+            zeilen={[
+              { titel: n.recht.baunvo === '1990' ? 'GR I' : 'GR', a: n.grAbsolut },
+              { titel: 'GR II', a: n.gr2Absolut, zusatz: '§ 19 Abs. 4 S. 2' },
+              { titel: 'GF', a: n.gfAbsolut },
+            ]}
+          />
           <details className="grz-rechenweg-app">
             <summary>Rechenweg</summary>
             <ul className="grz-formeln">
@@ -951,22 +955,38 @@ export function kanteSetzen(pts: Point[], i: number, l: number): Point[] {
   return pts.map((p, k) => (bewegen.has(k) ? { x: p.x + d.x, y: p.y + d.y } : p));
 }
 
-/** absolute Festsetzung (GR/GF in m²) */
-function AbsolutKpi({ titel, a, zusatz }: { titel: string; a: NonNullable<ReturnType<typeof massNachweis>['grAbsolut']>; zusatz?: string }) {
+type Absolut = NonNullable<ReturnType<typeof massNachweis>['grAbsolut']>;
+
+/** absolute Festsetzungen (GR/GF in m²) als Tabelle unter den Kacheln – die Kacheln bleiben den Kernwerten vorbehalten */
+function AbsolutTabelle({ zeilen }: { zeilen: { titel: string; a: Absolut | undefined; zusatz?: string }[] }) {
+  const da = zeilen.filter((z): z is { titel: string; a: Absolut; zusatz?: string } => z.a !== undefined);
+  if (!da.length) return null;
   return (
-    <div className={`metric${a.status === 'ueberschritten' ? ' alarm' : ''}`}>
-      <span className="grz-metric-kopf">
-        <span className="grz-metric-titel">{titel}</span>
-        <StatusPill s={a.status} />
-      </span>
-      <strong>
-        {fmt2(a.flaeche)} <small>m²</small>
-      </strong>
-      <small>
-        zulässig <span className="nowrap">{fmt2(a.zulaessig)} m²</span>
-        {zusatz && <span className="nowrap"> ({zusatz})</span>}
-      </small>
-    </div>
+    <table className="summary-table grz-tabelle grz-absolut-tabelle">
+      <thead>
+        <tr>
+          <th title="absolute Festsetzung der Grund- bzw. Geschossfläche in m²">absolut [m²]</th>
+          <th className="num">vorhanden</th>
+          <th className="num">zulässig</th>
+          <th>Ergebnis</th>
+        </tr>
+      </thead>
+      <tbody>
+        {da.map((z) => (
+          <tr key={z.titel}>
+            <td>
+              {z.titel}
+              {z.zusatz && <span className="muted small-text"> ({z.zusatz})</span>}
+            </td>
+            <td className="num">{fmt2(z.a.flaeche)}</td>
+            <td className="num">{fmt2(z.a.zulaessig)}</td>
+            <td>
+              <StatusMarke s={z.a.status} />
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 }
 
@@ -988,9 +1008,15 @@ function TeilflaechenListe({ f }: { f: ReturnType<typeof rechenweg>['flaechen'][
 /** erste Option der Einstufung: was die Prüfung ohne Festlegung ergibt */
 const autoVollgeschoss = (g: { vollgeschossAuto: boolean }) => `${g.vollgeschossAuto ? 'ja' : 'nein'} (auto)`;
 
-export function StatusPill({ s }: { s: Status }) {
+/** Variante der Marke je Prüfergebnis (offen/fehlt: neutral) */
+const MARKE: Record<Status, string> = { ok: ' ok', ueberschritten: ' fehler', unterschritten: ' fehler', pruefen: ' warnung', offen: '', fehlt: '' };
+
+/** Zustand der Kennzahl-Kachel als Innenrand aus core (fehler/warnung); der Zustand steht zusätzlich als Marke im Kopf */
+const kachelZustand = (s: Status) => (MARKE[s] === ' ok' ? '' : MARKE[s]);
+
+export function StatusMarke({ s }: { s: Status }) {
   return (
-    <span className={`pill ${STATUS[s].cls}`} title={STATUS[s].label}>
+    <span className={`marke${MARKE[s]}`} title={STATUS[s].label}>
       {STATUS[s].kurz ?? STATUS[s].label}
     </span>
   );
@@ -1017,10 +1043,10 @@ function KpiZeile({ titel, k, einheit, kurz, offenText = 'mit ungeklärten Fläc
   // Vergleich der Flächen (ehrlicher als die gerundete Kennzahl) im Tooltip; der Rechenweg zeigt die Formel
   const vergleich = flaechenVergleich(kurz, k);
   return (
-    <div className={`metric${k.status === 'ueberschritten' ? ' alarm' : ''}`} title={vergleich}>
-      <span className="grz-metric-kopf">
-        <span className="grz-metric-titel">{titel}</span>
-        <StatusPill s={k.status} />
+    <div className={`metric pruefung${kachelZustand(k.status)}`} title={vergleich}>
+      <span className="metric-kopf">
+        <span>{titel}</span>
+        <StatusMarke s={k.status} />
       </span>
       <strong>{kennzahlWert(k)}</strong>
       <small>
