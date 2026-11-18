@@ -47,6 +47,11 @@ Kommunikation, Oberfläche, Commit-Texte und Doku sind auf **Deutsch**.
   RECTIO, FABRIO, LEXIO) stehen in `packages/core/src/appNamen.ts`; Ordner unter `apps/`, `?app=…`, Speicherschlüssel,
   `arch-tools:…`-Nachrichten, Bundle-Kennungen, Crate-Namen und Release-Tags bleiben. Ebenso der Paketname `@akh/core` und die Kennungen `de.pendzialek.*` (Kennungen des Repo-Eigentümers, keine Kundendaten). Testdaten dagegen nur erfunden: Personen, Firmen und Projekte ausgedacht, Mailadressen mit `example.com`/`example.org` bzw. der Endung `.example`. Welche App früher wie hieß:
   README, Abschnitt „Neue Namen“. Die Abschnitte unten nennen die Apps mit den Namen zur Zeit des Reviews.
+- **Zeilenenden immer LF:** `.gitattributes` checkt Text auf jedem Rechner mit LF aus (`* text=auto eol=lf`), auch unter
+  Windows – sonst lesen Tests dort andere Bytes als in der Linux-CI (Release-Lauf #308). Ausnahmen stehen in
+  `.gitattributes`: FORMA-Dateien bleiben byte-genau (`-text`), Binärformate sind `binary`, Windows-Skripte (`.bat`,
+  `.cmd`) bekommen CRLF. Neue Binär- oder Skriptformate dort eintragen. Tests, die Dateien lesen, vergleichen trotzdem
+  nicht über Zeilengrenzen hinweg ohne `.replace(/\r\n/g, '\n')`.
 - **Vor jedem Push:**
   - `npm run typecheck`, `npx vitest run` und `npm run build` grün.
   - Prettier nur auf eigene neue Dateien oder auf Dateien, die vorher schon Prettier-sauber waren:

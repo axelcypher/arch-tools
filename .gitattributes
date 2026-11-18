@@ -23,3 +23,14 @@
 *.woff binary
 *.woff2 binary
 *.pyc binary
+*.xls binary
+*.bmp binary
+*.tif binary
+*.tiff binary
+*.gz binary
+*.7z binary
+*.msg binary
+
+# Windows-Skripte brauchen CRLF (cmd.exe); heute gibt es keine im Repo
+*.bat text eol=crlf
+*.cmd text eol=crlf
