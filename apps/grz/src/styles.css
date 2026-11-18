@@ -156,8 +156,8 @@
   /* Zahl mit Einheit und Statusmarke brauchen etwa 12em; schmalere Karten stellen die Kacheln untereinander */
   flex-basis: 12em;
 }
-/* mehrere Nebenzeilen je Kachel: der Wert steht direkt unter dem Kopf (core schiebt ihn für eine Nebenzeile nach unten),
-   so liegen die Werte nebeneinanderstehender Kacheln auf einer Linie */
+/* mehrere Nebenzeilen je Kachel: der Wert steht direkt unter dem Kopf (core schiebt ihn für eine Nebenzeile nach unten);
+   bei gleich hohen Köpfen liegen die Werte nebeneinanderstehender Kacheln damit auf einer Linie */
 .grz-kennzahlen > .metric > strong {
   margin-top: 0;
   margin-bottom: 2px;
