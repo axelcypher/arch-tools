@@ -102,7 +102,7 @@ describe('Grundstück: Straße und Hausnummer getrennt, PLZ als Ergänzung der A
     expect(auto(v, grundstueck(''))['0:Memo27']).toBeUndefined();
   });
 
-  it('Baustatistik (nw010020, Seite 1 und 3; nw010021): Gemeindeteil aus der Gemarkung, PLZ auf beiden Seiten', () => {
+  it('Baustatistik (nw010020 Seite 1 und 3, nw010021, nw010022): Gemeindeteil aus der Gemarkung, PLZ auf beiden Seiten', () => {
     const pk: Projektkarte = {
       ...grundstueck('48143'),
       eintraege: [...grundstueck('48143').eintraege, { gruppe: 301, id: 40, typ: 1, titel: 'Gemarkung:', text: 'Kinderhaus', zahl: null }],
