@@ -68,6 +68,26 @@ describe('Feldraster', () => {
     expect(vor).toMatch(/grid-column:\s*1\s*\/\s*-1/);
   });
 
+  it('.buendig: kein Abstand unter der letzten Zeile; ohne .buendig bleibt er (Behälter mit Rahmen verlassen sich darauf)', () => {
+    expect(regel('.feldraster.buendig')).toMatch(/margin-bottom:\s*calc\(-1 \* var\(--s2\)\)/);
+    expect(regel('.feldraster')).not.toMatch(/margin/);
+  });
+
+  it('schreibgeschützter Wert mittig zur Feldhöhe, Beträge rechts', () => {
+    const wert = regel('.feld-wert');
+    expect(wert).toMatch(/align-items:\s*center/);
+    expect(wert).toMatch(/min-height:\s*var\(--ctl-h\)/);
+    expect(regel('.feld-wert.num')).toMatch(/justify-content:\s*flex-end/);
+  });
+
+  it('gesperrtes Kästchen mit Text: kein Zeiger, Text gedämpft', () => {
+    const m = css.match(/\n\.toggle:has\(> input:disabled\),\s*\.toggle:has\(> input\[aria-disabled='true'\]\)\s*\{([^}]*)\}/);
+    expect(m).not.toBeNull();
+    const r = m![1];
+    expect(r).toMatch(/cursor:\s*default/);
+    expect(r).toMatch(/color:\s*var\(--muted\)/);
+  });
+
   it('Felder im Raster sind so hoch wie die anderen Bedienelemente', () => {
     expect(css).toMatch(/:where\([^)]*\.feldraster\)\s*:where\(select, input:not\([^)]*\)\) \{\s*min-height:\s*var\(--ctl-h\)/);
   });
