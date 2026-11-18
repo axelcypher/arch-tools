@@ -3033,10 +3033,14 @@ button.ungespeichert::after {
 
 /* ---------- Stammdaten-Knopf in Seitenleisten ---------- */
 
+/* nie breiter als der Behälter, auch wenn ein Elternteil nicht streckt (align-items: flex-start): sonst wüchse die
+   Auswahl der Planungsphase auf die Breite ihres längsten Eintrags */
 .sd-knopf {
   margin-bottom: var(--s2);
+  max-width: 100%;
 }
 .sd-knopf-zeile {
+  max-width: 100%;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -3061,6 +3065,7 @@ button.ungespeichert::after {
 }
 .sd-phase-kopf select {
   width: auto;
+  min-width: 0;
   max-width: 100%;
   min-height: var(--ctl-h-s);
   font-size: var(--fs-s);
