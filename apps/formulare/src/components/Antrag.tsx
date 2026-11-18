@@ -1025,7 +1025,7 @@ export function AntragsdatenAnsicht() {
                           onUebernehmen={(v, b) => setzen(u.id, { muster: v || undefined }, b)}
                         />
                         </label>
-                        <div className="pu-bedingung-editor">
+                        <div className="feldraster-breit pu-bedingung-editor">
                           <span className="field-label">Nur erforderlich, wenn …</span>
                           <BedingungEditor wert={u.bedingung} merkmale={st.merkmalDefinitionen} onChange={(b) => setzen(u.id, { bedingung: b })} />
                         </div>

@@ -106,6 +106,10 @@ describe('Einstellungen › Antrag & Export › Antragsdokumente', () => {
     const z3 = zeile('Bauantrag (Formular)');
     expect(feld(z3, 'Formular (Teil des Namens oder Kennung)')).toBeUndefined();
     expect(feld(z3, 'Ordner der Quelle (im Projektordner)')!.placeholder).toBe(VORGABE_EXPORT.berechnungsordner);
+    // Quelle und Muster im Feldraster aus core (Beschriftung oben, Felder fluchten)
+    const dokRaster = z3.querySelector('.feldraster.es-dok-felder')!;
+    expect(dokRaster.querySelectorAll(':scope > label')).toHaveLength(2);
+    expect(dokRaster.querySelector('.es-dok-feld')).toBeNull();
     eingabe(feld(z3, 'Muster des Dateinamens')!, '*Bauantrag*.pdf');
     await warte();
     expect(zeile('Bauantrag (Formular)').querySelector('.es-dok-unter')!.textContent).toBe(`Datei aus ${VORGABE_EXPORT.berechnungsordner} · *Bauantrag*.pdf`);

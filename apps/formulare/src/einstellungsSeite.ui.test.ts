@@ -40,5 +40,7 @@ describe('Seite PERMIO im Notbetrieb', () => {
     expect(host.querySelector('table.es-katalog')!.classList.contains('felder')).toBe(true);
     // Feldraster aus core (Beschriftung über dem Feld, Spalten nach Platz)
     expect(host.querySelectorAll('.feldraster.es-raster').length).toBeGreaterThanOrEqual(2);
+    // Text des Optionsfelds „Fester Ordner im Projekt“: Titel und Pfad untereinander (eigene Regel, außerhalb des Rasters)
+    expect(host.querySelector('.radio-row .es-radio-text strong')!.textContent).toBe('Fester Ordner im Projekt');
   });
 });

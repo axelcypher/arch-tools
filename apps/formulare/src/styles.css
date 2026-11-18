@@ -2671,7 +2671,8 @@ button.icon.ex-baum-pfeil {
    Felder über die ganze Breite stehen am Ende (kein dense: die Tab-Reihenfolge folgt der Anzeige) */
 .pu-bearbeiten {
   --feld-min: 220px;
-  padding: var(--s2) var(--s3) var(--s3);
+  /* unten genügt --s1: die letzte Zeile des Rasters bringt --s2 Abstand mit */
+  padding: var(--s2) var(--s3) var(--s1);
   border-top: 1px solid var(--line-soft);
 }
 .pu-bearbeiten-knoepfe {
@@ -2716,6 +2717,10 @@ button.icon.ex-baum-pfeil {
 /* Feldraster aus core, Spalten ab 240px */
 .es-raster {
   --feld-min: 240px;
+}
+/* schreibgeschützte Angabe (div mit Beschriftung und code): so breit wie ihr Wert, nicht wie ein Feld */
+.es-raster > div > code {
+  justify-self: start;
 }
 /* Text eines Optionsfelds mit Pfad: Titel und Pfad untereinander */
 .es-radio-text {
@@ -3178,12 +3183,6 @@ button.icon.fo-gl-bed.gesetzt {
 .pu-bedingung {
   color: var(--bed-text);
 }
-.pu-bedingung-editor {
-  grid-column: 1 / -1;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
 .pu-merkmale {
   display: flex;
   flex-direction: column;
@@ -3542,9 +3541,6 @@ tr[data-ziehen='danach'] > td {
   display: flex;
   flex-direction: column;
   gap: 3px;
-}
-.es-dok-feld input {
-  width: 100%;
 }
 /* Feldraster aus core, Spalten ab 240px */
 .es-dok-felder {
@@ -4657,7 +4653,7 @@ li.es-dok[data-ziehen='danach'] {
 /* Feldraster aus core, Spalten ab 180px; Name und Straße zweispaltig (.feldraster-zwei) */
 .es-adress-felder {
   --feld-min: 180px;
-  margin-bottom: var(--s3);
+  margin-bottom: var(--s1);
 }
 .es-adress-detail .es-titelzeile {
   flex-wrap: wrap;

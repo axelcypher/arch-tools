@@ -5483,6 +5483,11 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     const host = await projektBS9();
     await klick(antragsdaten(host));
     expect(host.querySelector('.pu > .karte-kopf h2')!.textContent).toBe('Antragsdaten');
+    // Export für das Projekt: Feldraster aus core, Namensvorlage mit Hinweisen über die ganze Breite (Beschriftung oben)
+    await klick(host.querySelector<HTMLButtonElement>('.pu-export-kopf')!);
+    const exportRaster = host.querySelector('.pu-export .feldraster.pu-bearbeiten')!;
+    expect(exportRaster.querySelector(':scope > .feldraster-breit.pu-breit > label.field .field-label')!.textContent).toBe('Namensvorlage');
+    await klick(host.querySelector<HTMLButtonElement>('.pu-export-kopf')!);
     const status = () => host.querySelector<HTMLSelectElement>('select[aria-label="Status des Antrags"]')!;
     expect(status().value).toBe('auto');
     act(() => {
