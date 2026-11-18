@@ -421,7 +421,9 @@ Produktnamen, das Tag die Kennung.
 Die Version steht je App in
 `package.json`, `src-tauri/tauri.conf.json` und `src-tauri/Cargo.toml` und muss dort überall gleich sein.
 Manuell gestartet wird die gewählte App in ihrer aktuellen Version (neu) gebaut. Die CI prüft zusätzlich
-alle Tauri-Hüllen mit `cargo check`.
+alle Tauri-Hüllen mit `cargo check`. Im PR laufen die Tests auch unter Windows: core, wenn der PR core, die TS-
+bzw. Vitest-Konfiguration oder Abhängigkeiten berührt, und jede App, deren Tests er ändert; sonst endet der Check
+„Tests (Windows)“ grün ohne Tests.
 
 ### Automatische Updates
 
