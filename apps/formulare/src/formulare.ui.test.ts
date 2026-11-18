@@ -444,6 +444,8 @@ describe('Formulare', () => {
     // Filter als Umschalter (.segment) mit aria-pressed: der gewählte ist angesagt
     const filter = [...kopf.querySelectorAll<HTMLButtonElement>('.segment[role="group"][aria-label="Filter"] > button')];
     expect(filter.map((b) => `${b.textContent!.split(' (')[0]}:${b.getAttribute('aria-pressed')}`)).toEqual(['Alle:true', 'Offene:false', 'Geänderte:false']);
+    // eine Steuerzeile: „Nächste offene Angabe“ in voller Steuerhöhe wie Suchfeld und Segment (kein button.small)
+    expect([...kopf.querySelectorAll('button')].find((b) => b.textContent === 'Nächste offene Angabe')!.classList.contains('small')).toBe(false);
     // Trefferzahl als Live-Region: ohne Suche leer
     expect(kopf.querySelector('.fo-treffer')!.getAttribute('aria-live')).toBe('polite');
     expect(kopf.querySelector('.fo-treffer')!.textContent).toBe('');

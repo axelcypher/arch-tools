@@ -232,9 +232,9 @@ function Adressbuch() {
               }}
             >
               <h4>{entwurf.neu ? 'Neue Adresse' : 'Adresse bearbeiten'}</h4>
-              <div className="es-adress-felder">
+              <div className="feldraster es-adress-felder">
                 {ADRESS_TEXTFELDER.map(([id, titel]) => (
-                  <label key={id} className={id === '40' || id === '70' ? 'breit' : ''}>
+                  <label key={id} className={id === '40' || id === '70' ? 'feldraster-zwei' : undefined}>
                     <span className="field-label">
                       {titel}
                       {id === '40' && (
