@@ -1,4 +1,3 @@
-import { IM_VORDRUCK_GESPERRT } from '../summen';
 import type { CSSProperties } from 'react';
 import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { bezeichner, eigenschaft, text, zahl } from '../forma/dfm';
@@ -7,6 +6,7 @@ import { abschnitte, kaesten, ohneKuerzel } from '../forma/felder';
 import { bild, blatt, drehung, farbe, lage, seitenMasse } from '../forma/darstellung';
 import { umgebend, useMarkierung } from '../markierung';
 import { feldTasten } from '../navigation';
+import { IM_VORDRUCK_GESPERRT } from '../summen';
 import { abschnittId, alleFelder, feldTitel, gruppeVon, leeresProfil, profilSchluessel } from '../profil';
 import { hatBedingung } from '../bedingung';
 import { feldId, useEinrichten } from '../einrichten';
