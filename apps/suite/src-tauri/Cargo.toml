@@ -1,6 +1,6 @@
 [package]
 name = "arch-tools"
-version = "0.65.12"
+version = "0.65.13"
 description = "Rahmen-App: alle arch-tools in einem Fenster"
 authors = ["Tobias Pendzialek"]
 license = "MIT"

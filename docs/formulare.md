@@ -445,6 +445,10 @@ Anschrift, wie sie in Formularen steht.
   - Erhebungsbögen der Bautätigkeitsstatistik (Baugenehmigung nw010020 samt Baufertigstellung auf Seite 3,
     Baufertigstellung nw010021, Bauabgang nw010022): Anschrift des Baugrundstücks bzw. Gebäudes – Straße und
     Hausnummer getrennt aus „Straße/Nr.“ des Grundstücks („Musterweg 12 a“ → „Musterweg“ und „12 a“), dazu die PLZ.
+  - Baubeschreibung (nw010010, alle Stände): Nr. 2 „Art der Nutzung“ aus dem Eintrag der Projektkarte mit dem Titel
+    „Art der Nutzung“. Der Eintrag wird über den Titel gesucht, weil seine Nummer nicht in jeder Projektkarte gleich
+    ist. Das gilt nur, wenn der Vordruck das Feld nicht verknüpft oder auf einen Eintrag verweist, den die
+    Projektkarte des Projekts nicht hat; eine Verknüpfung auf einen vorhandenen Eintrag gilt weiter.
 - **Ergänzungen der Projektkarte („Schicht“ der App):** Angaben, für die die Projektkarte von FORMA keinen Eintrag
   hat – bisher die **PLZ des Grundstücks** (Gruppe Baugrundstücksdaten, „PLZ (Ergänzung der App)“). Sie erscheinen
   wie ein Eintrag, werden aber nie in `sj_prokarte.sdb` geschrieben: Die App merkt sie sich je FORMA-Projekt und
