@@ -135,6 +135,17 @@ describe('Summenfelder der Stellplätze (Baubeschreibung)', () => {
     expect([wert('0:Memo14'), wert('0:Memo17')]).toEqual(['', '']);
   });
 
+  it('Summenfelder nehmen keine Eingaben an – nur „Neu berechnen“ schreibt dort', async () => {
+    await oeffnen();
+    await tippe('0:Memo12', '2');
+    await tippe('0:Memo14', '9');
+    expect(wert('0:Memo14')).toBe('2');
+    await tippe('0:Memo12', '');
+    act(() => useFormulare.getState().feldVerlassen(feldVon('0:Memo14')));
+    await warte();
+    expect(wert('0:Memo14')).toBe('');
+  });
+
   it('Fahrradstellplätze mit derselben Regel', async () => {
     await oeffnen();
     await tippe('1:Memo3', '4');
