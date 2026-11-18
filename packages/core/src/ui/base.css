@@ -2194,6 +2194,7 @@ code {
 /* nur für Screenreader (Tabellentitel, Beschriftungen): unsichtbar, aber im Barrierebaum; clip-path ist die heutige Form,
    clip bleibt als Rückfall */
 .unsichtbar,
+.nur-vorlesen,
 .titlebar-unsichtbar {
   position: absolute;
   width: 1px;
@@ -2983,15 +2984,7 @@ button.ph-lokal {
 
 /* ---------- Hinweis nach einer Aktion (zeigeHinweis): Stapel unten rechts, unter Dialogen (z-index 20) ---------- */
 
-/* nur für Vorleseprogramme (Live-Regionen des Stapels) */
-.nur-vorlesen {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
+/* Live-Regionen des Stapels: .nur-vorlesen (gleiche Regel wie .unsichtbar) */
 /* eine App mit Statusleiste setzt --hinweis-unten auf deren Höhe (Vorgabe 0px). Der Stapel hat innen Luft
    (--s3), damit das Scrollen die Schatten der Karten nicht abschneidet; die Karten selbst stehen --s4 vom Rand. */
 .hinweise {

@@ -13,6 +13,13 @@ describe('.unsichtbar (nur für Screenreader)', () => {
     expect(r).toMatch(/clip-path:\s*inset\(50%\)/);
     expect(r).toMatch(/clip:\s*rect\(0 0 0 0\)/);
     expect(r).toMatch(/margin:\s*-1px/);
+    expect(r).toMatch(/padding:\s*0;/);
+    expect(r).toMatch(/border:\s*0;/);
     expect(r).not.toMatch(/display:\s*none|visibility/);
+  });
+
+  it('eine Regel für alle Namen (.nur-vorlesen gleichwertig), keine zweite Kopie in core', () => {
+    expect(css).toMatch(/\n\.unsichtbar,\n\.nur-vorlesen,\n\.titlebar-unsichtbar \{/);
+    expect(css.match(/clip-path:\s*inset\(50%\)/g)).toHaveLength(1);
   });
 });

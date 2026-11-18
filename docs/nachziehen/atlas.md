@@ -5,3 +5,4 @@ Designsystem ein. Erledigte Punkte löscht die App in ihrem eigenen PR (löschen
 sich auf den Stand beim Eintragen.
 
 - **Fehler-Marke aus core** (design.md „Skalen“, Marken): core hat jetzt `.marke.fehler`. Die eigene Regel `.marke.fehler` in `styles.css` (samt Kommentar) entfällt; die Klasse in `PruefView.tsx` bleibt `marke fehler`.
+- **Text nur für Screenreader aus core** (design.md „Fokus und Tastatur“): `.po-unsichtbar` in `styles.css` (Spaltentitel der Entfernen-Knöpfe, `NamensschemaEinstellungen.tsx`) entfällt zugunsten von `.unsichtbar`.
