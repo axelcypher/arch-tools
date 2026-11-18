@@ -33,6 +33,10 @@ Werte nicht frei wählen, sondern aus der Skala nehmen.
 | `--s5`   | 24px | große Gliederung (Zielwert für den Dialog-Innenabstand; `.modal` hat heute 18/22px) |
 | `--s6`   | 32px | Leerzustände, Abstand zum Fensterrand bei Seiten                                    |
 
+Feinwerte unter `--s1` (1–3px) dürfen zur Feinausrichtung fest bleiben, etwa der Abstand zwischen Beschriftung und
+Feld (2px), ein Ausgleich für einen Rahmen oder das Versetzen eines Symbols um einen Pixel. Abstände zwischen Elementen
+nehmen ab 4px die Skala.
+
 | Variable  | Wert | Verwendung                                                 |
 | --------- | ---- | ---------------------------------------------------------- |
 | `--fs-xs` | 11px | Feldbeschriftung, Hinweis unter dem Feld, Tabellenkopf     |
@@ -42,12 +46,14 @@ Werte nicht frei wählen, sondern aus der Skala nehmen.
 | `--fs-xl` | 18px | Seitentitel (Einstieg, Bericht), Kennzahl                  |
 
 Radien: `--radius` 8px für Flächen (Karte, Dialog), `--radius-s` 6px für Knöpfe, Segmente und kartenartige Kästen
-innerhalb einer Karte (Kennzahl, Planeintrag, Ziel), `--radius-xs` 4px für Felder, Code, Listen und kleine Kästen
-(Hinweis, Protokoll). Verschachtelte Kästen runden kleiner als ihre Umgebung, damit die Ecken ineinander liegen; es zählt
-die Ebene, nicht das Element (eine Liste in einem Dialog ist ein Kasten in einer Fläche: `--radius-s`). Hat ein Aufbau
-mehr Ebenen als Stufen, nehmen innere Ebenen dieselbe Stufe wie die nächst äußere, nie eine größere (Editor der
-Ansichten: Katalog und Abschnitt `--radius-s`, Felder darin `--radius-xs`). Kleiner als 4px nur für Kleinstteile
-(Farbfeld, Einfügemarke); Pillen (Zähler, Balken, Marken mit runden Enden) mit `999px`.
+innerhalb einer Karte (Kennzahl, Planeintrag, Ziel, Meldung im Inhalt), `--radius-xs` 4px für Felder, Code, Listen und
+kleine Kästen (Protokoll, Codeblock). Schwebende Ebenen (Menü, Aufklappfeld, Popover, schwebender Hinweis) runden wie
+Flächen mit `--radius`, kleine Tooltips (eine, zwei Zeilen Erklärung) mit `--radius-s`. Verschachtelte Kästen runden
+kleiner als ihre Umgebung, damit die Ecken ineinander liegen; es zählt die Ebene, nicht das Element (eine Liste in einem
+Dialog ist ein Kasten in einer Fläche: `--radius-s`). Hat ein Aufbau mehr Ebenen als Stufen, nehmen innere Ebenen
+dieselbe Stufe wie die nächst äußere, nie eine größere (Editor der Ansichten: Katalog und Abschnitt `--radius-s`, Felder
+darin `--radius-xs`). Kleiner als 4px nur für Kleinstteile (Farbfeld, Einfügemarke); Pillen (Zähler, Balken, Marken mit
+runden Enden) mit `999px`.
 
 Weitere: `--ctl-h` 30px und `--ctl-h-s` 24px (Höhe der Bedienelemente).
 
@@ -70,13 +76,15 @@ bündig, ohne den Ausgleich der Feldzeilen). Ein Verweisknopf im Text (`button.l
 Umstellung bleiben diese bestehen.
 
 Marken (`.marke`, z. B. das Kennzeichen „festgelegt“ in einer Zeile, die Marken der Projektübersicht): klein
-(`--fs-xs`), getönt mit `--chip-bg` und Text in `--muted`; Varianten `.warnung`, `.ok`, `.info` (nicht `.hinweis` – das
-ist die schwebende Hinweis-Meldung; in der Projektübersicht heißt die Art weiter `hinweis`). Die Information steht immer
-im Text der Marke, die Fläche ist nur Schmuck. Auf getönten Gründen – gewählte Zeile samt `tr.zusatz` (`tr.selected`
-oder `tr[aria-selected="true"]`), überfahrene Zeile, `tr.gruppe`, `aria-selected`/`aria-current`, überfahrene
-Projektkachel – verschwände jede Fläche (etwa 1 : 1); dort trägt die Marke einen Rahmen in ihrer Textfarbe (mindestens
-4,9 : 1, hell wie dunkel). Beim Überfahren jeder Tabellenzeile erscheint der Rahmen, auch wo die Zeile nicht getönt wird
-– gewollt, damit es keine eigene Klasse für überfahrbare Zeilen braucht.
+(`--fs-xs`), getönt mit `--chip-bg` und Text in `--muted`; Varianten `.warnung`, `.fehler`, `.ok`, `.info` (nicht
+`.hinweis` – das ist die schwebende Hinweis-Meldung; in der Projektübersicht heißt die Art weiter `hinweis`). `.pille`
+gibt runde Enden und mehr Innenabstand – für Zuordnungen (welche App, welches Schlagwort) und Zähler; Status-Marken
+(„festgelegt“, „offen“) behalten die kleine Rundung (`--radius-s`). Die Information steht immer im Text der Marke, die
+Fläche ist nur Schmuck. Auf getönten Gründen – gewählte Zeile samt `tr.zusatz` (`tr.selected` oder
+`tr[aria-selected="true"]`), überfahrene Zeile, `tr.gruppe`, `aria-selected`/`aria-current`, überfahrene Projektkachel –
+verschwände jede Fläche (etwa 1 : 1); dort trägt die Marke einen Rahmen in ihrer Textfarbe (mindestens 4,9 : 1, hell wie
+dunkel). Beim Überfahren jeder Tabellenzeile erscheint der Rahmen, auch wo die Zeile nicht getönt wird – gewollt, damit
+es keine eigene Klasse für überfahrbare Zeilen braucht.
 
 Lange Datentabellen (LV, Rechnungen, Mängel) und ihre Bausteine; die ganze Zahlentabelle hat Ziffern gleicher Breite
 (auch OZ, Datum, Nummern):
@@ -303,16 +311,16 @@ mit `einstellungenEntwurfMelden`, Sperre über `useEinstellungenGesperrt`).
   Antragsordners), nennt die Bezugszeile auch das im Text („Gilt nicht, solange „…“ gesetzt ist.“, dazu
   `--warn-text`), ohne Vorschau; der ersetzende Eintrag steht direkt hinter dem Baum seines Bezugs.
 - **Gemeinsame Angaben:** Was mehrere Apps gleich nutzen (Ordner, Dateinamen), steht einmal; die Karte nennt alle Apps
-  als Marken. Nicht: dieselbe Angabe je App als eigenes Feld wiederholen. Abweichungen je App gibt es nur, wo sie
-  fachlich nötig sind, und nur auf Wunsch: unter dem Fuß der Karte, abgesetzt durch eine Linie (`--line-soft`), ein
-  Knopf `small` mit Aufklapp-Pfeil (`pfeilRechts`/`pfeilUnten`, `aria-expanded`, `aria-controls`) – „Je App
-  abweichend“ bzw. bei Ordnern „Unterordner je App“, mit der Zahl der gesetzten in Klammern, eingeklappt mit „·
+  als Marken (`.marke.info.pille`). Nicht: dieselbe Angabe je App als eigenes Feld wiederholen. Abweichungen je App gibt
+  es nur, wo sie fachlich nötig sind, und nur auf Wunsch: unter dem Fuß der Karte, abgesetzt durch eine Linie
+  (`--line-soft`), ein Knopf `small` mit Aufklapp-Pfeil (`pfeilRechts`/`pfeilUnten`, `aria-expanded`, `aria-controls`) –
+  „Je App abweichend“ bzw. bei Ordnern „Unterordner je App“, mit der Zahl der gesetzten in Klammern, eingeklappt mit „·
   geändert“, wenn darin etwas geändert ist. Er öffnet die Felder je App, um `--s5` eingerückt mit Linie links (1px
   `--border`; `.einst-unter`, `role="group"` mit Namen, ohne eigenen Rahmen); leer heißt „wie die gemeinsame Angabe“
   (sie steht als Platzhalter im Feld). Offen ist er, wenn eine Abweichung gesetzt ist oder ein Sprung ein Feld darin
   ansteuert. Unterscheidet sich etwas je App, zeigt die Karte unter dem Feld statt einer Vorschau „Gilt je App:“ mit
-  App-Marke und Ergebnis (`.einst-wirksam`). Der Filter „App“ zeigt die gemeinsame Angabe und nur die Abweichung
-  dieser App.
+  App-Marke und Ergebnis (`.einst-wirksam`). Der Filter „App“ zeigt die gemeinsame Angabe und nur die Abweichung dieser
+  App.
 - **Ordnerliste** (Listen vollständiger Ordner, `zeilen: 'ordner'` – z. B. „Stammordner der Projekte“): Liste statt
   Textfeld (`.einst-ordnerliste`), der erste Eintrag mit dem Hinweis „neue Projekte“; je Zeile Symbolknöpfe „Nach
   oben“, „Nach unten“ (`nachOben`, `nachUnten`), „Entfernen“ (`schliessen`: aus der Liste, der Ordner bleibt;

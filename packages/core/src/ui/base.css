@@ -1058,7 +1058,7 @@ textarea:focus {
   border: 1px solid var(--warn-border);
   color: var(--warn-text);
   padding: 6px 8px;
-  border-radius: var(--radius-xs);
+  border-radius: var(--radius-s);
   font-size: 12px;
 }
 
@@ -1340,9 +1340,19 @@ textarea:focus {
   background: var(--warn-bg);
   color: var(--warn-text);
 }
+.marke.fehler {
+  background: var(--fehler-bg);
+  color: var(--fehler-text);
+}
 .marke.ok {
   background: var(--ok-bg);
   color: var(--ok-text);
+}
+/* .pille: runde Enden und mehr Innenabstand – für Zuordnungen (App, Schlagwort) und Zähler; Status-Marken behalten die
+   kleine Rundung (--radius-s) */
+.marke.pille {
+  padding: 0 var(--s2);
+  border-radius: 999px;
 }
 /* Hinweis-Marke heißt .info: .hinweis ist die schwebende Hinweis-Meldung weiter unten */
 .marke.info {
@@ -1499,7 +1509,7 @@ code {
   border: 1px solid var(--warn-border);
   color: var(--warn-text);
   padding: 6px 12px;
-  border-radius: var(--radius-xs);
+  border-radius: var(--radius);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 /* Meldung, die sich per Klick schließt (Hand nur dort) */
@@ -2957,6 +2967,11 @@ button.ph-lokal {
   padding: var(--s2) var(--s2) var(--s2) var(--s3);
   box-shadow: var(--schatten-schwebend);
 }
+/* schwebende Ebene: rundet wie eine Fläche (die Meldung im Inhalt bleibt bei --radius-s); nur im Stapel, damit Elemente
+   der Apps mit einer Art „hinweis“ unberührt bleiben */
+.hinweise > .hinweis {
+  border-radius: var(--radius);
+}
 .hinweis-inhalt {
   flex: 1 1 auto;
   min-width: 0;
@@ -3444,15 +3459,6 @@ button.ungespeichert::after {
   display: flex;
   flex-wrap: wrap;
   gap: var(--s1);
-}
-.einst-app {
-  font-size: var(--fs-xs);
-  /* Zeilenhöhe der Marke (keine Größe der Abstandsskala) */
-  line-height: 1.6;
-  padding: 0 var(--s2);
-  border-radius: 999px;
-  background: var(--accent-soft);
-  color: var(--accent-text);
 }
 /* Abweichungen je App in der Karte der gemeinsamen Angabe (Pfade und Benennung): unter dem Fuß, abgesetzt durch eine
    Linie; die Felder je App eingerückt mit Linie links, ohne eigenen Rahmen (keine Karte in der Karte) */
