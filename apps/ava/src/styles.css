@@ -459,9 +459,14 @@
   min-height: var(--ctl-h);
 }
 
-/* Beträge rechtsbündig wie in den Zahlenfeldern (Tabellenziffern aus .num) */
+/* Beträge rechtsbündig wie in den Zahlenfeldern (Tabellenziffern aus .num); die Beschriftung steht mit darüber, wie
+   der Kopf einer Zahlenspalte */
 .ava-angabe.num {
   justify-content: flex-end;
+}
+
+.field:has(> .ava-angabe.num) > .field-label {
+  text-align: right;
 }
 
 /* Dreierreihen der Seitenkarte „Eigenschaften“: Feldraster mit fester Spaltenzahl (Felder fluchten, auch wenn eine

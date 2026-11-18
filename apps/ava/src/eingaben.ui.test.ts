@@ -13,15 +13,17 @@ afterEach(() => {
   document.body.innerHTML = '';
 });
 
-function zeige(el: ReturnType<typeof createElement>) {
+function zeigeIn(el: ReturnType<typeof createElement>) {
   const host = document.createElement('div');
   document.body.appendChild(host);
   act(() => {
     root = createRoot(host);
     root.render(el);
   });
-  return host.querySelector('input')!;
+  return host;
 }
+
+const zeige = (el: ReturnType<typeof createElement>) => zeigeIn(el).querySelector('input')!;
 
 function tippen(input: HTMLInputElement, text: string) {
   const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
@@ -64,15 +66,7 @@ describe('Esc in Eingabefeldern', () => {
 });
 
 describe('Angabe', () => {
-  function zeigeAngabe(zahl?: boolean) {
-    const host = document.createElement('div');
-    document.body.appendChild(host);
-    act(() => {
-      root = createRoot(host);
-      root.render(createElement(Angabe, { label: 'brutto', zahl, children: '1.234,56 €' }));
-    });
-    return host;
-  }
+  const zeigeAngabe = (zahl?: boolean) => zeigeIn(createElement(Angabe, { label: 'brutto', zahl, children: '1.234,56 €' }));
 
   it('steht als div.field mit Beschriftung und Wert, nicht als label (schreibgeschützt, kein Feld)', () => {
     const host = zeigeAngabe();
