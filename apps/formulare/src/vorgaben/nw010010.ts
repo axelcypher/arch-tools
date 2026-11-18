@@ -6,7 +6,8 @@
  * nicht erforderlich.“ Nr. 11 nur, „sofern wegen Ortssatzungen oder Denkmalschutz erforderlich“. Barrierefreies
  * Bauen (Nr. 4) betrifft Gebäude der Gebäudeklassen 3 bis 5 mit Wohnungen und öffentlich zugängliche Anlagen
  * (§ 49 BauO NRW 2018). Die Stellplätze mit Leitungsinfrastruktur (Nr. 6, GEIG) gelten erst ab 6 bzw. 7
- * Stellplätzen – keine Pflichtangabe. Summen und die Kopfzeilen von Blatt 2 und 3 rechnet FORMA selbst.
+ * Stellplätzen – keine Pflichtangabe. Die Kopfzeilen von Blatt 2 und 3 rechnet FORMA selbst; die Summen der
+ * Stellplätze (Nr. 5 und 7) rechnet auch die App beim Tippen (summen.ts).
  */
 
 import type { FormularProfil } from '../profil';

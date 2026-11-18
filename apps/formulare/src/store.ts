@@ -11,7 +11,8 @@ import { hatDateisystem, tauriDateisystem, verbinde } from './dateisystem';
 import type { Feld } from './forma/felder';
 import { felderDerSeite } from './forma/felder';
 import type { Formular } from './forma/formular';
-import { formularBytes, istAngekreuzt, memoText, parseFormular, setzeAngekreuzt, setzeMemoText } from './forma/formular';
+import { formularBytes, istAngekreuzt, kennung, memoText, parseFormular, setzeAngekreuzt, setzeMemoText } from './forma/formular';
+import { summenNachAenderung, summenVon } from './summen';
 import type { PkEintrag as PkEintragTyp, PkWert, Projektkarte } from './forma/projektkarte';
 import { istWahl, pkAnzeige, pkArt, pkEintrag, pkMoeglichkeiten, pkSchluessel, pkTitel, pkWert, pkWertPasst, pkWertVon, pkZahlAus } from './forma/projektkarte';
 import type { Sperre, SperrBewertung, SperrProbe } from './forma/sperre';
@@ -748,7 +749,9 @@ export const kannVor = (o: OffenesFormular | null) => !!o && kannWiederholen(o.v
 
 function aufbereiten(bytes: Uint8Array) {
   const formular = parseFormular(bytes);
-  const felder = formular.seiten.map((s, i) => felderDerSeite(s, i));
+  // Summenfelder (summen.ts) sind berechnet – auch wenn ein Vordruck sie nicht sperrt
+  const summen = new Set(summenVon(kennung(formular)).map((x) => x.ziel));
+  const felder = formular.seiten.map((s, i) => felderDerSeite(s, i).map((f) => (summen.has(f.schluessel) && f.art === 'text' ? { ...f, berechnet: true } : f)));
   // Sicherheitsnetz: Was sich nicht unverändert zurückschreiben lässt, wird auch nicht gespeichert
   const nurLesen = gleich(formularBytes(formular), bytes) ? null : 'Die Datei lässt sich nicht verlustfrei zurückschreiben – Speichern ist gesperrt.';
   return { formular, felder, nurLesen };
@@ -763,6 +766,24 @@ function bereinige(aenderungen: Record<string, Wert>, felder: Feld[][]): Record<
     if (typeof w === typeof f.original && w !== f.original) out[f.schluessel] = w;
   }
   return out;
+}
+
+/**
+ * Summenfelder nach einer Änderung neu rechnen (summen.ts): nur Summen, deren Teile sich gegenüber `vorher` (dasselbe
+ * Formular) geändert haben. Ohne Vorgänger (gerade geöffnet) bleibt alles, wie es ist.
+ */
+function mitSummen(vorher: OffenesFormular | null, o: OffenesFormular): Record<string, Wert> {
+  const summen = summenVon(kennung(o.formular));
+  if (!summen.length || !vorher || vorher.formular !== o.formular) return o.aenderungen;
+  const felder = new Map(o.felder.flat().map((f) => [f.schluessel, f]));
+  const text = (x: OffenesFormular) => (s: string) => {
+    const f = felder.get(s);
+    if (!f || f.art !== 'text') return undefined;
+    const w = wertVon(x, f);
+    return typeof w === 'string' ? w : '';
+  };
+  const neu = summenNachAenderung(summen, text(vorher), text(o));
+  return neu.size ? mitWerten(o, neu) : o.aenderungen;
 }
 
 /** Werte eintragen: gleich dem Wert in der Datei → keine Änderung mehr */
@@ -1025,7 +1046,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
 
   /** Neuer Stand des offenen Formulars: übernehmen und lokal sichern */
   const aktualisieren = (o: OffenesFormular) => {
-    const neu = { ...o };
+    const neu = { ...o, aenderungen: mitSummen(get().offen, o) };
     neu.gesichert = sichern(neu);
     if (neu.gesichert === null) sicherungFehlgeschlagen();
     set({ offen: neu });

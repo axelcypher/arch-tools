@@ -1116,6 +1116,16 @@ end
 - Was ganz außerhalb seines Rahmens liegt (etwa ein Textfeld mit negativem `Top`), schneidet Delphi ab – die App
   zeigt es nicht und zählt es nicht. Gesperrte Textfelder (`Enabled = False`) rechnet FORMA aus (Summen, Kopfzeilen
   der Folgeblätter); man trägt dort nichts ein, und sie zählen nicht für den Füllstand.
+- **Summenfelder** (`src/summen.ts`): Manche dieser Summen rechnet die App selbst, sobald sich eine Angabe ändert –
+  bisher die Stellplätze der Baubeschreibung (nw010010, Nr. 5 Stellplätze und Nr. 7 Fahrradstellplätze, eine Regel
+  für beide): „auf dem Baugrundstück (Summe)“ = in Garagen + im Freien, „insgesamt“ = auf dem Baugrundstück + auf
+  fremdem Grundstück mit Baulast + durch Ablösung. Sind alle Angaben leer, bleibt die Summe leer; ist eine gefüllt,
+  zählen leere als 0. Angaben sind ganze Zahlen (Leerzeichen und Tausenderpunkt erlaubt); steht etwas anderes darin
+  („ca. 3“, „2-3“), bleibt die Summe leer, und ein Hinweis nennt das Feld. Summenfelder sind schreibgeschützt (auch
+  wenn ein Vordruck sie nicht sperrt) und nennen unter dem Feld, woraus sie bestehen. Steht in einer Datei eine
+  andere Summe (von Hand oder aus einer älteren Fassung), überschreibt die App sie nicht beim Öffnen: Ein Hinweis
+  nennt beide Werte, neu gerechnet wird erst, wenn sich eine Angabe ändert. Rückgängig und Wiederholen gelten für die
+  Angaben, die Summe folgt.
 - Beschriftungen: über dem Feld (Höhe nach den Textzeilen, nicht nach `Height`), sonst links daneben; bei
   Kästchen rechts daneben – außer in Zeilen, deren Beschriftungen links vor den Kästchen stehen
   („1 ☐ 2 ☐ 3 ☐“). „☐ 3-fach Lageplan …“ ergibt „Lageplan … (3-fach)“; Tabellenzellen bekommen den Spaltenkopf.

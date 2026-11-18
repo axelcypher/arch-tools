@@ -17,6 +17,8 @@ import type { Plausi } from '../plausibel';
 import { useVorbelegt } from '../merkmalAbgleich';
 import { springeZuFeld } from '../navigation';
 import { anzahl } from '../text';
+import { kennung } from '../forma/formular';
+import { herkunft, summenVon } from '../summen';
 import { Karte, useRollendKopf } from '@core/ui/Karte';
 
 const FILTER: { id: FeldFilter; label: string; title: string }[] = [
@@ -296,7 +298,10 @@ function FeldEingabe({
   // von FORMA berechnete Felder trägt man nicht ein
   const gesperrt = gesperrtFormular || feld.berechnet;
   const titel = feldTitel(feld, profil);
-  const hinweis = feld.berechnet ? `${titel} – wird berechnet` : feld.hinweis;
+  // Summenfelder (summen.ts): woraus die Summe besteht
+  const summe = feld.berechnet ? summenVon(kennung(offen.formular)).find((x) => x.ziel === feld.schluessel) : undefined;
+  const summeAus = summe && herkunft(summe, (k) => feldTitel(offen.felder.flat().find((f) => f.schluessel === k) ?? feld, profil));
+  const hinweis = feld.berechnet ? `${titel} – ${summeAus ?? 'wird berechnet'}` : feld.hinweis;
 
   if (feld.art === 'kreuz') {
     // echte Entweder-oder-Fälle (Regel „genau eine“, z. B. Bauantrag/Vorbescheid, ja/nein) als Optionsfelder (U-04) –
@@ -358,6 +363,7 @@ function FeldEingabe({
           onBlur={() => useFormulare.getState().feldVerlassen(feld)}
         />
       )}
+      {summeAus && <span className="field-hint">{summeAus}</span>}
     </label>
   );
 }
