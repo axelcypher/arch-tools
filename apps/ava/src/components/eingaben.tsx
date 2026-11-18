@@ -217,10 +217,10 @@ export function DatumEingabe({ wert, onChange, title, label }: { wert: string | 
 /** Beschriftetes Feld */
 export function Feld({ label, children, hinweis, breit }: { label: string; children: React.ReactNode; hinweis?: string; breit?: boolean }) {
   return (
-    <label className={`ava-feld${breit ? ' ava-feld-breit' : ''}`}>
-      <span className="ava-feld-label">{label}</span>
+    <label className={`field${breit ? ' feldraster-breit' : ''}`}>
+      <span className="field-label">{label}</span>
       {children}
-      {hinweis && <span className="ava-feld-hinweis">{hinweis}</span>}
+      {hinweis && <span className="field-hint">{hinweis}</span>}
     </label>
   );
 }

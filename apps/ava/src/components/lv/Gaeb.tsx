@@ -74,9 +74,9 @@ export function GaebExportDialog({ onClose }: { onClose: () => void }) {
   };
   return (
     <Modal kopf titel="GAEB-Export (DA XML 3.3)" onClose={onClose}>
-      <div className="ava-formular">
-        <label className="ava-feld ava-feld-breit">
-          <span className="ava-feld-label">Phase</span>
+      <div className="feldraster">
+        <label className="field feldraster-breit">
+          <span className="field-label">Phase</span>
           <select value={dp} onChange={(e) => setDp(Number(e.target.value) as GaebPhase)}>
             {GAEB_PHASEN.map((p) => (
               <option key={p.dp} value={p.dp}>
@@ -86,8 +86,8 @@ export function GaebExportDialog({ onClose }: { onClose: () => void }) {
           </select>
         </label>
         {phase.preise && (
-          <label className="ava-feld ava-feld-breit">
-            <span className="ava-feld-label">Preise von</span>
+          <label className="field feldraster-breit">
+            <span className="field-label">Preise von</span>
             <select value={bieterId} onChange={(e) => setBieterId(Number(e.target.value))}>
               {lv.bieter.map((b) => (
                 <option key={b.id} value={b.id}>

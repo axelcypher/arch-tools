@@ -238,7 +238,7 @@ export function RechnungPruefen({ gewerk: vorgabeGewerk, onClose, onErfasst }: {
 
   return (
     <Modal kopf titel="Neue Rechnung prüfen" onClose={laeuft ? undefined : () => void schliessen()} breit klickDaneben={false} className="ava-pruefen">
-      <div className="ava-formular">
+      <div className="feldraster">
         <Feld label="Gewerk">
           <select value={gewerk} onChange={(x) => gewerkWechseln(x.target.value)}>
             {gewerke.map((g) => (
@@ -281,7 +281,7 @@ export function RechnungPruefen({ gewerk: vorgabeGewerk, onClose, onErfasst }: {
       </label>
       {mitKorrektur ? (
         <div className="ava-korrektur">
-          <div className="ava-formular">
+          <div className="feldraster">
             <Feld label="Netto-Forderung laut Rechnung" hinweis={artInfo?.abschlag ? 'bei Abschlagsrechnungen kumuliert' : undefined}>
               <ZahlEingabe wert={pruefung.forderungNetto} stellen={2} onChange={(n) => p({ forderungNetto: n, ...(pruefung.freigabeNetto === (pruefung.forderungNetto ?? 0) ? { freigabeNetto: n ?? 0 } : {}) })} />
             </Feld>
@@ -315,12 +315,12 @@ export function RechnungPruefen({ gewerk: vorgabeGewerk, onClose, onErfasst }: {
               </Feld>
             ) : null}
             {vorschlag.einbehaltUnklar && (
-              <p className="warning-text ava-feld-breit">
+              <p className="warning-text feldraster-breit">
                 Für die Sicherheit für Mängelansprüche ist kein Satz hinterlegt (weder im LV noch in den Einstellungen). Bitte den vertraglich vereinbarten Satz eintragen – 0 % heißt: keine Sicherheit.
               </p>
             )}
             {typ === 'teilschluss' && (
-              <p className="muted small-text ava-feld-breit">Teilschlussrechnung (§ 16 Abs. 4 VOB/B): bisherige Zahlungen nur übernehmen, wenn sie zu diesem abgeschlossenen Teil gehören.</p>
+              <p className="muted small-text feldraster-breit">Teilschlussrechnung (§ 16 Abs. 4 VOB/B): bisherige Zahlungen nur übernehmen, wenn sie zu diesem abgeschlossenen Teil gehören.</p>
             )}
             <Feld label="Anmerkung zur Prüfung" breit>
               <TextEingabe mehrzeilig zeilen={2} wert={pruefung.anmerkung} onChange={(anmerkung) => p({ anmerkung: anmerkung || undefined })} />
@@ -383,13 +383,13 @@ export function RechnungPruefen({ gewerk: vorgabeGewerk, onClose, onErfasst }: {
           </div>
         </div>
       ) : (
-        <div className="ava-formular">
+        <div className="feldraster">
           <Feld label="Zahlungsfreigabe brutto *">
             <ZahlEingabe wert={betrag} stellen={2} onChange={mit(setBetrag)} className={versucht && !betrag ? 'feld-fehler' : ''} />
           </Feld>
         </div>
       )}
-      <div className="ava-formular">
+      <div className="feldraster">
         <Feld label="Bemerkung (Rechnungsliste)" breit>
           <TextEingabe wert={bemerkung} onChange={mit(setBemerkung)} />
         </Feld>

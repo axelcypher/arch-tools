@@ -158,7 +158,7 @@ function Bericht({ t, neu }: { t: Tagesbericht; neu: boolean }) {
 
   return (
     <div className="ava-bericht">
-      <div className="ava-formular">
+      <div className="feldraster">
         <Feld label="Datum">
           <DatumEingabe wert={t.datum} onChange={(d) => d && setze({ datum: d })} />
         </Feld>

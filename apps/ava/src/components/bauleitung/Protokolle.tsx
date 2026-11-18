@@ -138,7 +138,7 @@ function ProtokollEditor({ p }: { p: Protokoll }) {
 
   return (
     <div className="ava-bericht">
-      <div className="ava-formular">
+      <div className="feldraster">
         <Feld label="Art">
           <TextEingabe wert={p.art} onChange={(art) => setze({ art })} liste="ava-protokollarten" />
           <datalist id="ava-protokollarten">
