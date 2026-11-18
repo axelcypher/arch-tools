@@ -9,6 +9,7 @@ import { lvGeaendert, useAva } from './store';
 import { LV_UNGESPEICHERT, lvSpeichernMitMeldung, lvWeiter } from './App';
 import { Navigation } from './components/Navigation';
 import { GewerkAnsicht } from './components/GewerkAnsicht';
+import { useGaebExport } from './components/lv/Gaeb';
 import { MenueHost } from '@core/ui/Menue';
 import { RueckfrageHost } from '@core/ui/Rueckfrage';
 
@@ -71,6 +72,46 @@ describe('Navigation (Tastatur)', () => {
     await warte(() => useAva.getState().ansicht.art === 'rechnungen');
     expect(useAva.getState().ansicht.art).toBe('rechnungen');
     expect(host.querySelector('.ava-nav-knopf[aria-current="page"]')?.textContent).toBe('Rechnungen');
+  });
+});
+
+describe('Datei (Fuß der Navigation)', () => {
+  /** Menü „Datei“ öffnen; liefert die Punkte der obersten Ebene */
+  const dateiOeffnen = async () => {
+    const knopf = [...host.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent?.trim().startsWith('Datei'))!;
+    await act(async () => knopf.click());
+    await warte(() => document.querySelector('[role="menu"]'));
+    return [...document.querySelectorAll<HTMLElement>('[role="menu"] [role^="menuitem"]')];
+  };
+
+  it('„Aktualisieren“ statt „Neu einlesen“ im Navigationskopf, „Exportieren“ als Untermenü mit dem GAEB-Export, zuletzt „Einstellungen …“', async () => {
+    await zeige(createElement('div', null, createElement(Navigation, { onStammdaten: () => {} }), createElement(MenueHost)));
+    expect([...host.querySelectorAll('.ava-nav-kopf button')].some((b) => b.textContent?.includes('Neu einlesen'))).toBe(false);
+    const punkte = await dateiOeffnen();
+    expect(punkte.map((p) => p.querySelector('.menue-text')?.textContent?.trim() ?? p.textContent?.trim())).toEqual(['Aktualisieren', 'Exportieren', 'Einstellungen …']);
+    expect(document.querySelector('[role="menu"] [role="separator"]')).not.toBeNull();
+    // Untermenü: GAEB DA XML ist ohne offenes LV gesperrt, mit Grund
+    const exportieren = punkte[1];
+    expect(exportieren.getAttribute('aria-haspopup')).toBeTruthy();
+    await act(async () => exportieren.click());
+    await warte(() => document.querySelectorAll('[role="menu"]').length > 1);
+    const gaeb = [...document.querySelectorAll<HTMLElement>('[role="menu"] [role^="menuitem"]')].find((p) => p.textContent?.includes('GAEB DA XML …'))!;
+    expect(gaeb.getAttribute('aria-disabled')).toBe('true');
+    expect(gaeb.textContent).toContain('Erst ein LV öffnen');
+  });
+
+  it('mit offenem LV öffnet „Datei → Exportieren → GAEB DA XML …“ den GAEB-Export', async () => {
+    await lvOeffnen();
+    act(() => root?.unmount());
+    await zeige(createElement('div', null, createElement(Navigation, { onStammdaten: () => {} }), createElement(MenueHost)));
+    const punkte = await dateiOeffnen();
+    await act(async () => punkte[1].click());
+    await warte(() => document.querySelectorAll('[role="menu"]').length > 1);
+    const gaeb = [...document.querySelectorAll<HTMLElement>('[role="menu"] [role^="menuitem"]')].find((p) => p.textContent?.includes('GAEB DA XML …'))!;
+    expect(gaeb.getAttribute('aria-disabled')).not.toBe('true');
+    await act(async () => gaeb.click());
+    expect(useGaebExport.getState().offen).toBe(true);
+    act(() => useGaebExport.getState().schliessen());
   });
 });
 

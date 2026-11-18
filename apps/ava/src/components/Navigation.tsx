@@ -5,6 +5,7 @@ import { Karte } from '@core/ui/Karte';
 import { StammdatenKnopf } from '@core/ui/Stammdaten';
 import { MenueKnopf } from '@core/ui/Menue';
 import { einstellungenOeffnen, einstellungenPunkt } from '@core/ui/Einstellungen';
+import { useGaebExport } from './lv/Gaeb';
 import { alleGewerke } from '../abrechnung/aggregat';
 import { gewerkZweistellig } from '../abrechnung/gewerk';
 import type { Ansicht } from '../store';
@@ -17,6 +18,7 @@ export function Navigation({ onStammdaten }: { onStammdaten: (meta: ProjectMeta,
   const projekt = useAva((s) => s.projekt)!;
   const ansicht = useAva((s) => s.ansicht);
   const lv = useAva((s) => s.lv);
+  const lvOffen = !!lv;
   const gewerke = useMemo(() => alleGewerke(projekt.kk?.kk ?? null, projekt.struktur?.gewerke ?? [], projekt.ava.rechnungen), [projekt.kk, projekt.struktur, projekt.ava.rechnungen]);
   const offeneRechnungen = projekt.ava.rechnungen.filter((r) => r.status === 'erfasst').length;
   const offeneMaengel = projekt.ava.maengel.filter((m) => m.status === 'offen' || m.status === 'angezeigt').length;
@@ -60,19 +62,39 @@ export function Navigation({ onStammdaten }: { onStammdaten: (meta: ProjectMeta,
         }
         fuss={
           /* „Datei“ (docs/design.md): FABRIO hat keine durchgehende Werkzeugleiste – das Menü steht im Fuß der Navigation */
-          <MenueKnopf punkte={() => [einstellungenPunkt()]}>Datei</MenueKnopf>
+          <MenueKnopf
+            punkte={() => [
+              {
+                text: 'Aktualisieren',
+                symbol: 'neuLaden',
+                titel: 'Ordner, Kostenkontrolle und Projektdatei neu einlesen (geschieht auch automatisch, wenn das Fenster wieder in den Vordergrund kommt)',
+                aktion: () => void useAva.getState().neuLaden(),
+              },
+              // jede Ausgabe in eine Datei steht hier, auch wenn sie zugleich im LV-Menü steht (design.md „Doppelte Einstiege vermeiden“)
+              {
+                text: 'Exportieren',
+                symbol: 'export',
+                unter: [
+                  {
+                    text: 'GAEB DA XML …',
+                    titel: 'Das offene LV als GAEB DA XML für die Bieter bzw. andere AVA-Software (X81, X83, X84, X86)',
+                    deaktiviert: !lvOffen,
+                    hinweis: lvOffen ? undefined : 'Erst ein LV öffnen',
+                    aktion: () => useGaebExport.getState().oeffnen(),
+                  },
+                ],
+              },
+              { trenner: true },
+              einstellungenPunkt(),
+            ]}
+          >
+            Datei
+          </MenueKnopf>
         }
       >
         <nav className="ava-nav" aria-label="Bereiche des Projekts">
           <div className="ava-nav-kopf">
             <StammdatenKnopf project={{ name: projekt.name, meta: projekt.meta }} onAendern={onStammdaten} kurz={false} />
-            <button
-              className="small"
-              onClick={() => void useAva.getState().neuLaden()}
-              title="Ordner, Kostenkontrolle und Projektdatei neu einlesen (geschieht auch automatisch, wenn das Fenster wieder in den Vordergrund kommt)"
-            >
-              Neu einlesen
-            </button>
           </div>
           <ul className="ava-nav-liste">
             {eintrag({ art: 'uebersicht' }, 'Kostenübersicht', 'Kostenschätzung, Kostenanschlag (Aufträge) und Zahlungsfreigaben je Gewerk')}

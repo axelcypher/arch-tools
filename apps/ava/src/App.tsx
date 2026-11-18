@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { GaebExportHost } from './components/lv/Gaeb';
 import { APP_NAMEN } from '@core/appNamen';
 import { isTauri } from '@core/platform/files';
 import { logger } from '@core/platform/log';
@@ -226,6 +227,7 @@ export function App() {
         </Flaeche>
       )}
       {logOffen && <LogDialog onClose={() => setLogOffen(false)} />}
+      <GaebExportHost />
       {busy && <div className="ava-busy">{busy}</div>}
     </div>
   );

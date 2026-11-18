@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { create } from 'zustand';
 import { Modal } from '@core/ui/Dialog';
 import { bestaetigen, meldung } from '@core/ui/Rueckfrage';
 import { openFileWithPath, saveBinaryFile } from '@core/platform/files';
@@ -23,6 +24,20 @@ export function dublettenText(lv: Lv): string {
     .join(', ')}${d.length > 12 ? ' …' : ''}.`;
 }
 export const GAEB_ENDUNGEN = ['x81', 'x82', 'x83', 'x84', 'x85', 'x86', 'xml'];
+
+/** GAEB-Export offen? – zwei Einstiege (LV-Menü und „Datei → Exportieren“), ein Dialog (in App.tsx eingehängt) */
+export const useGaebExport = create<{ offen: boolean; oeffnen: () => void; schliessen: () => void }>((set) => ({
+  offen: false,
+  oeffnen: () => set({ offen: true }),
+  schliessen: () => set({ offen: false }),
+}));
+
+/** Eingehängt in App.tsx: zeigt den Dialog, solange er offen ist und ein LV geöffnet ist */
+export function GaebExportHost() {
+  const offen = useGaebExport((s) => s.offen);
+  const lv = useAva((s) => s.lv);
+  return offen && lv ? <GaebExportDialog onClose={() => useGaebExport.getState().schliessen()} /> : null;
+}
 
 /** LV als GAEB-XML exportieren: Phase wählen, bei Angebot/Auftrag den Bieter */
 export function GaebExportDialog({ onClose }: { onClose: () => void }) {
