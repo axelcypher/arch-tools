@@ -368,7 +368,7 @@ button.icon.active {
 }
 .nav-hinweis {
   border: 1px dashed var(--line-soft);
-  border-radius: var(--radius-s);
+  border-radius: var(--radius-xs);
   padding: 8px 10px;
   font-size: 12px;
 }
@@ -481,7 +481,7 @@ button.icon.active {
 .fo-gl-balken {
   flex: 1;
   height: 4px;
-  border-radius: 2px;
+  border-radius: 999px;
   background: var(--line-soft);
   overflow: hidden;
 }
@@ -4054,7 +4054,7 @@ li.es-dok[data-ziehen='danach'] {
   margin: 6px 0 12px;
   padding: 10px 12px;
   border: 1px solid var(--border);
-  border-radius: var(--radius-xs);
+  border-radius: var(--radius-s);
   /* Themenfarben: der ganze Paragraf bleibt lesbar (auch der nicht markierte Rest), in hell und dunkel */
   background: var(--panel);
   color: var(--text);
