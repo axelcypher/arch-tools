@@ -13,9 +13,8 @@ const regel = (sel: string) => {
 // In Chromium nachgemessen: in einer 272px breiten Karte mit align-items: flex-start wuchs die kompakte Planungsphase
 // vorher auf 397px (Breite des längsten Eintrags), jetzt 270px.
 describe('Planungsphase kompakt in schmalen Behältern', () => {
-  it('Stammdaten-Knopf und Zeile nie breiter als der Behälter', () => {
+  it('Stammdaten-Knopf nie breiter als der Behälter', () => {
     expect(regel('.sd-knopf')).toMatch(/max-width:\s*100%/);
-    expect(regel('.sd-knopf-zeile')).toMatch(/max-width:\s*100%/);
   });
 
   it('die Auswahl darf schmaler werden als ihr längster Eintrag', () => {

@@ -3041,7 +3041,6 @@ button.ungespeichert::after {
   max-width: 100%;
 }
 .sd-knopf-zeile {
-  max-width: 100%;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
