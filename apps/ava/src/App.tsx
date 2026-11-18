@@ -25,6 +25,7 @@ import { Beteiligte } from './components/bauleitung/Beteiligte';
 import { Mailverlauf } from './components/bauleitung/Mailverlauf';
 import { ausstehendesSchreibenAbwarten, lvGeaendert, schreibend, useAva } from './store';
 import { useEntwurf } from './components/eingaben';
+import { GaebExportHost } from './components/lv/Gaeb';
 
 const log = logger('app');
 
@@ -226,6 +227,7 @@ export function App() {
         </Flaeche>
       )}
       {logOffen && <LogDialog onClose={() => setLogOffen(false)} />}
+      <GaebExportHost />
       {busy && <div className="ava-busy">{busy}</div>}
     </div>
   );

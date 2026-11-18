@@ -161,7 +161,7 @@ describe('Vor dem Schließen: laufendes Schreiben abwarten (Arkly vorDemSchliess
     // geändertes LV ist kein Schreibfehler: das fragt Arkly vorher als „Änderungen speichern?“ (dirty) – hier „fertig“
     const vorher = useAva.getState();
     try {
-      useAva.setState({ lv: { lv: { positionen: [1] }, basis: { positionen: [] } } as never });
+      useAva.setState({ lv: { lv: { positionen: [1] }, basis: { positionen: [] }, datei: { name: 'LV 1.x83', pfad: 'G8/LV 1.x83' } } as never });
       await act(async () => void (await expect(schliessenVorbereiten(1000)).resolves.toBe('fertig')));
     } finally {
       useAva.setState(vorher, true);
@@ -194,7 +194,7 @@ describe('Vor dem Schließen: laufendes Schreiben abwarten (Arkly vorDemSchliess
       // Gegenprobe: ohne Änderung nicht dirty
       expect(status().at(-1)?.dirty).toBe(false);
       const basis = { positionen: [] };
-      act(() => useAva.setState({ lv: { lv: { positionen: [1] }, basis, format: 'x83', datei: { name: 'LV 1.x83' } } as never, lvSpeichern }));
+      act(() => useAva.setState({ lv: { lv: { positionen: [1] }, basis, format: 'x83', datei: { name: 'LV 1.x83', pfad: 'G8/LV 1.x83' } } as never, lvSpeichern }));
       expect(status().at(-1)?.dirty).toBe(true);
       // Arkly fragt „Änderungen speichern?“ → Speichern: Anfrage an den Tab, FABRIO speichert das LV
       await act(async () => {
@@ -205,7 +205,7 @@ describe('Vor dem Schließen: laufendes Schreiben abwarten (Arkly vorDemSchliess
       expect(rahmen.postMessage).toHaveBeenCalledWith({ typ: 'arch-tools:gespeichert', anfrage: 'a1', ok: true }, window.location.origin);
 
       // begonnene Eingabe im LV-Feld (Cursor noch im Feld): schon dirty, damit Arkly fragt; Speichern übernimmt sie
-      act(() => useAva.setState({ lv: { lv: basis, basis, format: 'x83', datei: { name: 'LV 1.x83' } } as never }));
+      act(() => useAva.setState({ lv: { lv: basis, basis, format: 'x83', datei: { name: 'LV 1.x83', pfad: 'G8/LV 1.x83' } } as never }));
       expect(status().at(-1)?.dirty).toBe(false);
       const menge = vi.fn(() => useAva.setState({ lv: { ...useAva.getState().lv!, lv: { positionen: [3] } } as never }));
       const feld = zeigen(createElement(TextEingabe, { wert: '1', onChange: menge })).querySelector('input')!;
@@ -225,7 +225,7 @@ describe('Vor dem Schließen: laufendes Schreiben abwarten (Arkly vorDemSchliess
       expect(rahmen.postMessage).toHaveBeenCalledWith({ typ: 'arch-tools:gespeichert', anfrage: 'a2', ok: true }, window.location.origin);
 
       // Langtext (contentEditable) ebenso: Tippen macht dirty, Speichern übernimmt ihn
-      act(() => useAva.setState({ lv: { lv: basis, basis, format: 'x83', datei: { name: 'LV 1.x83' } } as never }));
+      act(() => useAva.setState({ lv: { lv: basis, basis, format: 'x83', datei: { name: 'LV 1.x83', pfad: 'G8/LV 1.x83' } } as never }));
       expect(status().at(-1)?.dirty).toBe(false);
       const langtext = vi.fn(() => useAva.setState({ lv: { ...useAva.getState().lv!, lv: { positionen: [4] } } as never }));
       const flaeche = zeigen(createElement(Langtext, { wert: [{ laeufe: [{ text: 'Mauerwerk' }] }] as never, onChange: langtext })).querySelector<HTMLElement>('[role="textbox"]')!;

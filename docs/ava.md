@@ -42,8 +42,8 @@ Gewerk – in Ordnern, Blattnamen und der Rechnungsliste.
 ## Bedienung
 
 - **Projektwahl** wie in allen Apps (Projektübersicht aus den Stammordnern, zuletzt geöffnet). Gelesen werden
-  nur die Ordnerliste, die Kostenkontrolle und die Projektdatei; LV-Dateien erst beim Öffnen. „Neu einlesen“ in der
-  Navigation – und automatisch, wenn das Fenster wieder in den Vordergrund kommt.
+  nur die Ordnerliste, die Kostenkontrolle und die Projektdatei; LV-Dateien erst beim Öffnen. „Datei → Aktualisieren“
+  (Fuß der Navigation) liest neu ein – und automatisch, wenn das Fenster wieder in den Vordergrund kommt.
 - **Schließen in Arkly** (Fenster, Tab, Andocken, Herauslösen, Update-Neustart): FABRIO übernimmt vorher die gerade
   laufende Eingabe und wartet auf laufendes Speichern: Projektdatei (auch Stammdaten), Kostenkontrolle, LV (auch neu
   angelegt), Rechnungsablauf, PDF-Ablage und Mailentwürfe der Bauleitung, Vorlagetexte (`vorDemSchliessen`, höchstens
@@ -507,7 +507,9 @@ KOSTENKONTROLLE_REF=/pfad/zur/kostenkontrolle.xlsx npx vitest run --project core
 
 ## Zentrale Einstellungen
 
-„Datei“ im Fuß der Navigation: „Einstellungen …“ (Strg+,) öffnet die Einstellungen aller Apps auf der Seite FABRIO;
+„Datei“ im Fuß der Navigation: „Aktualisieren“ (Ordner, Kostenkontrolle und Projektdatei neu einlesen), „Exportieren“
+mit „GAEB DA XML …“ (das offene LV; derselbe Dialog wie „LV ▾ → GAEB-Export …“, ohne offenes LV gesperrt), dahinter
+„Einstellungen …“ (Strg+,). „Einstellungen …“ öffnet die Einstellungen aller Apps auf der Seite FABRIO;
 der frühere eigene Dialog („Einstellungen von FABRIO …“) ist entfallen, seine Inhalte stehen auf der Seite FABRIO.
 Ablage (Gewerke, Aufträge,
 Korrespondenz, Archiv, Bauleitung, Mailordner, Kostenkontrolle), Muster der Rechnungsdateien und Name neuer LV-Dateien
