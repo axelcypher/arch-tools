@@ -752,4 +752,27 @@ describe('Autofill mit Zustand (Auto-Wert und manuelle Überschreibung)', () => 
     expect(felderImAntrag()!['002-Muster.frmsjf']).toEqual({ felder: { '0:Memo1': { auto: 'Kreis Soest, Hoher Weg 1' } } });
     expect(useFormulare.getState().meldung?.text).toContain('mit 1 Angabe aus den Projektdaten befüllt');
   });
+
+  it('Baustatistik gleich nach dem Öffnen angelegt: PLZ (aus der Projektdatei) und Gemeindeteil (Gemarkung) sind da', async () => {
+    const p = createProject('EFH');
+    p.meta = { ...leereMeta(), projektcode: 'BS9', adresse: { strasse: 'Musterstraße 9', plz: '48165', ort: 'Münster' } };
+    ds.dateien.set(OAP, writeArchive(p));
+    ds.projektkarten.get('C:/FORMA/BS9/sj_prokarte.sdb')!.eintraege.find((e) => e.gruppe === 301 && e.id === 40)!.text = 'Hiltrup';
+    const { synthetischesFormular } = await import('./__fixtures__/synthetisch');
+    const kopf = { name: 'Panel1', titel: 'Baugrundstück', felder: ['Memo27', 'Memo30'].map((name) => ({ art: 'memo' as const, name, text: name })) };
+    ds.dateien.set('C:/FORMA/H24/010-Statistik.frmsjf', synthetischesFormular('nw010020', '2025F', [[kopf], [], [kopf]]));
+    const host = await render();
+    await projektOeffnen(host, 'BS9');
+    await warte();
+    // wie gleich nach dem Öffnen: Projektdatei und Projektkarte noch nicht gelesen
+    useFormulare.setState({ oap: null, karte: null });
+    const { useAntrag } = await import('./antragStore');
+    await act(() => useAntrag.getState().formularHinzufuegen({ root: 'C:/FORMA', pfad: 'H24/010-Statistik.frmsjf', datei: '010-Statistik.frmsjf', name: 'Statistik', herkunft: 'Projekt H24', geaendert: 0 }, false));
+    await warte();
+    const { parseFormular } = await import('./forma/formular');
+    const { felderDerSeite } = await import('./forma/felder');
+    const neu = parseFormular(ds.dateien.get('C:/FORMA/BS9/002-Statistik.frmsjf')!);
+    const wert = (seite: number, name: string) => felderDerSeite(neu.seiten[seite], seite).find((x) => x.name === name)!.original;
+    expect([wert(0, 'Memo27'), wert(0, 'Memo30'), wert(2, 'Memo27'), wert(2, 'Memo30')]).toEqual(['48165', 'Hiltrup', '48165', 'Hiltrup']);
+  });
 });

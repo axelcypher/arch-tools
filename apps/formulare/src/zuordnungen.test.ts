@@ -102,6 +102,61 @@ describe('Grundstück: Straße und Hausnummer getrennt, PLZ als Ergänzung der A
     expect(auto(v, grundstueck(''))['0:Memo27']).toBeUndefined();
   });
 
+  it('Baustatistik (nw010020 Seite 1 und 3, nw010021, nw010022): Gemeindeteil aus der Gemarkung, PLZ auf beiden Seiten', () => {
+    const pk: Projektkarte = {
+      ...grundstueck('48143'),
+      eintraege: [...grundstueck('48143').eintraege, { gruppe: 301, id: 40, typ: 1, titel: 'Gemarkung:', text: 'Kinderhaus', zahl: null }],
+    };
+    const kopf = (name: string) => ({
+      name,
+      titel: 'Baugrundstück',
+      felder: [
+        { art: 'memo' as const, name: 'Memo27', text: 'Postleitzahl' },
+        { art: 'memo' as const, name: 'Memo29', text: 'Gemeinde' },
+        { art: 'memo' as const, name: 'Memo30', text: 'Gemeindeteil' },
+      ],
+    });
+    const bg = parseFormular(synthetischesFormular('nw010020', '2025F', [[kopf('Panel1')], [{ name: 'Panel6', titel: 'Seite 2', felder: [] }], [kopf('Panel1')]]));
+    const werteBg = Object.fromEntries(
+      [
+        ...autoWerte(
+          bg,
+          bg.seiten.map((x, i) => felderDerSeite(x, i)),
+          pk,
+        ),
+      ].map(([k, a]) => [k, a.wert]),
+    );
+    expect(werteBg).toEqual({ '0:Memo27': '48143', '0:Memo30': 'Kinderhaus', '2:Memo27': '48143', '2:Memo30': 'Kinderhaus' });
+    const bf = parseFormular(synthetischesFormular('nw010021', '2024G', [[kopf('Panel1')]]));
+    const werteBf = Object.fromEntries(
+      [
+        ...autoWerte(
+          bf,
+          bf.seiten.map((x, i) => felderDerSeite(x, i)),
+          pk,
+        ),
+      ].map(([k, a]) => [k, a.wert]),
+    );
+    expect(werteBf).toEqual({ '0:Memo27': '48143', '0:Memo30': 'Kinderhaus' });
+    // Bauabgang: „Lage des Gebäudes: Gemeindeteil“
+    const ba = parseFormular(synthetischesFormular('nw010022', '2024G', [[{ name: 'Panel1', titel: 'Gebäude', felder: [{ art: 'memo' as const, name: 'Memo47', text: 'Gemeindeteil' }] }]]));
+    expect(
+      autoWerte(
+        ba,
+        ba.seiten.map((x, i) => felderDerSeite(x, i)),
+        pk,
+      ).get('0:Memo47')?.wert,
+    ).toBe('Kinderhaus');
+    // Herkunft für den Dialog „Daten aktualisieren“
+    expect(
+      autoWerte(
+        bg,
+        bg.seiten.map((x, i) => felderDerSeite(x, i)),
+        pk,
+      ).get('2:Memo30')!.quelle,
+    ).toBe('Baugrundstücksdaten: Gemarkung');
+  });
+
   it('Bauabgang (nw010022) und Artenschutz (nw020012): PLZ des Grundstücks', () => {
     const abgang = vordruck(
       'nw010022',
