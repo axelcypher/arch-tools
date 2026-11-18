@@ -153,7 +153,8 @@ describe('Summenfelder der Stellplätze (Baubeschreibung)', () => {
     expect([kopf.readOnly, kopf.disabled, kopf.classList.contains('berechnet'), kopf.tabIndex]).toEqual([true, false, true, -1]);
     // Herkunft am Feld, neutral (FORMA sperrt auch Felder, die die Behörde ausfüllt)
     const hinweis = document.getElementById(kopf.getAttribute('aria-describedby')!)!;
-    expect(hinweis.textContent).toBe('In FORMA schreibgeschützt – hier nicht einzutragen');
+    expect(hinweis.textContent).toBe('In FORMA gesperrt');
+    expect(kopf.closest('.fo-feld')!.getAttribute('title')).toBe('Bauherrschaft (Blatt 2) – In FORMA schreibgeschützt – hier nicht einzutragen');
     await tippe('1:Memo1', 'X');
     act(() => useFormulare.getState().feldVerlassen(feldVon('1:Memo1')));
     await warte();

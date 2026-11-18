@@ -400,7 +400,7 @@ function FeldEingabe({
         {eingabe}
         <div className="feld-herkunft">
           <span className="field-hint" id={hinweisId}>
-            {summe ? herkunft(summe, titelVon, true) : gesperrtInForma}
+            {summe ? herkunft(summe, titelVon, true) : 'In FORMA gesperrt'}
           </span>
           {summe && neuBerechnen !== undefined && !gesperrtFormular && (
             <button
