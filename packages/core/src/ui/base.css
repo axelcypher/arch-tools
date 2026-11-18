@@ -1124,7 +1124,8 @@ textarea:focus {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  /* so hoch wie eine Marke: Kacheln mit und ohne Marke halten den Wert auf einer Linie */
+  /* so hoch wie eine Marke (line-height von .marke): Kacheln mit und ohne Marke halten den Wert auf einer Linie;
+     bricht der Kopf um, verrutscht der Wert – Bezeichnung kurz halten */
   min-height: 18px;
   justify-content: space-between;
   gap: var(--s1);

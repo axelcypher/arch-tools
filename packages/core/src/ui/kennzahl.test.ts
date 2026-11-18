@@ -30,6 +30,9 @@ describe('Kennzahl-Kacheln', () => {
     const r = regel('.metric > .metric-kopf');
     expect(r).toMatch(/min-height:\s*18px/);
     expect(r).toMatch(/flex-wrap:\s*wrap/);
+    // gekoppelt an die Zeilenhöhe der Marke
+    const marke = regel('.marke').match(/line-height:\s*(\d+px)/)?.[1];
+    expect(r).toContain(`min-height: ${marke}`);
   });
 
   it('Warnung und Fehler als Innenrand in den Textfarben des Zustands, ohne Rahmen', () => {
