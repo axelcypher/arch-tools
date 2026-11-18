@@ -888,6 +888,26 @@ button.link:focus-visible {
   justify-self: end;
   text-align: end;
 }
+/* berechnetes Feld: der Wert folgt aus anderen Angaben (Summe, Ableitung) – schreibgeschützt (readonly), aber
+   fokussierbar und kopierbar; Grund wie die Fläche, gestrichelter Rahmen, Schrift in Textfarbe */
+:is(input, textarea).berechnet {
+  background: var(--bg);
+  border-style: dashed;
+  color: var(--text);
+  cursor: default;
+  resize: none;
+}
+/* Herkunft unter einem berechneten Feld: .field-hint („Summe aus …“), daneben bei Abweichung ein Knopf „Neu berechnen“ */
+.feld-herkunft {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s1) var(--s2);
+  margin-top: 2px;
+}
+.feldraster > :is(label, .field, :has(> .field-label)) > .feld-herkunft {
+  grid-row: 3;
+}
 .feldraster > .feldraster-breit {
   grid-column: 1 / -1;
 }
