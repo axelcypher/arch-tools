@@ -68,10 +68,9 @@ describe('Feldraster', () => {
     expect(vor).toMatch(/grid-column:\s*1\s*\/\s*-1/);
   });
 
-  it('unter der letzten Zeile kein Abstand, ohne einen eigenen Rand der App zu schlagen', () => {
-    const i = css.indexOf('\n:where(.feldraster) {');
-    expect(i).toBeGreaterThan(-1);
-    expect(css.slice(i, css.indexOf('}', i))).toMatch(/margin-bottom:\s*calc\(-1 \* var\(--s2\)\)/);
+  it('.buendig: kein Abstand unter der letzten Zeile; ohne .buendig bleibt er (Behälter mit Rahmen verlassen sich darauf)', () => {
+    expect(regel('.feldraster.buendig')).toMatch(/margin-bottom:\s*calc\(-1 \* var\(--s2\)\)/);
+    expect(regel('.feldraster')).not.toMatch(/margin/);
   });
 
   it('schreibgeschützter Wert mittig zur Feldhöhe, Beträge rechts', () => {
@@ -82,7 +81,9 @@ describe('Feldraster', () => {
   });
 
   it('gesperrtes Kästchen mit Text: kein Zeiger, Text gedämpft', () => {
-    const r = regel('.toggle:has(> input:disabled)');
+    const i = css.indexOf("\n.toggle:has(> input:disabled),\n.toggle:has(> input[aria-disabled='true']) {");
+    expect(i).toBeGreaterThan(-1);
+    const r = css.slice(i, css.indexOf('}', i));
     expect(r).toMatch(/cursor:\s*default/);
     expect(r).toMatch(/color:\s*var\(--muted\)/);
   });

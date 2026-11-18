@@ -699,8 +699,10 @@ button.link:focus-visible {
   user-select: none;
   margin-right: var(--s2);
 }
-/* gesperrt: kein Zeiger, Text gedämpft (--muted); das Kästchen selbst dämpft der Browser */
-.toggle:has(> input:disabled) {
+/* gesperrt: kein Zeiger, Text gedämpft (--muted statt der Deckkraft gesperrter Knöpfe, damit der Text lesbar bleibt);
+   das Kästchen selbst dämpft der Browser */
+.toggle:has(> input:disabled),
+.toggle:has(> input[aria-disabled='true']) {
   cursor: default;
   color: var(--muted);
 }
@@ -818,9 +820,10 @@ button.link:focus-visible {
   min-width: 0;
   margin: 0 0 var(--s2);
 }
-/* unter der letzten Zeile kein Abstand: der Rand der Kinder wird ausgeglichen, damit das Raster in einem Behälter mit gap
-   oder vor einem Absatz nicht doppelt Abstand hält (Spezifität null: ein eigener margin-bottom der App geht vor) */
-:where(.feldraster) {
+/* .buendig: unter der letzten Zeile kein Abstand – für ein Raster in einem Behälter mit gap, der den Abstand selbst
+   setzt (Seitenkarte, Spalte); der Rand der Kinder wird ausgeglichen. Ohne .buendig bleibt --s2 unter der letzten Zeile,
+   darauf verlassen sich Behälter mit Rahmen oder Innenabstand. */
+.feldraster.buendig {
   margin-bottom: calc(-1 * var(--s2));
 }
 .feldraster > :is(label, .field, :has(> .field-label)) {
