@@ -118,7 +118,7 @@ export function FotoWahl({
                       <span className="fw-name">{f.name}</span>
                       {f.geaendert > 0 && <span className="fw-datum">{new Date(f.geaendert).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' })}</span>}
                     </span>
-                    {f.entz && <span className="fw-marke">entzerrt</span>}
+                    {f.entz && <span className="marke ok">entzerrt</span>}
                   </button>
                 </li>
               ))}

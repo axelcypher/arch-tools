@@ -387,14 +387,6 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.fw-marke {
-  flex: 0 0 auto;
-  font-size: var(--fs-xs);
-  padding: 1px var(--s2);
-  border-radius: 999px;
-  color: var(--accent-text);
-  background: var(--accent-soft);
-}
 
 /* Leisten */
 .ef-zaehler {
