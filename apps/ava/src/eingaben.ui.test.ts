@@ -73,13 +73,13 @@ describe('Angabe', () => {
     expect(host.querySelector('label')).toBeNull();
     const feld = host.querySelector('div.field')!;
     expect(feld.querySelector('.field-label')?.textContent).toBe('brutto');
-    const wert = feld.querySelector('span.ava-angabe')!;
+    const wert = feld.querySelector('span.feld-wert')!;
     expect(wert.textContent).toBe('1.234,56 €');
     expect(wert.classList.contains('num')).toBe(false);
   });
 
   it('richtet Beträge mit zahl wie Zahlenfelder aus (.num)', () => {
     const host = zeigeAngabe(true);
-    expect(host.querySelector('span.ava-angabe')!.classList.contains('num')).toBe(true);
+    expect(host.querySelector('span.feld-wert')!.classList.contains('num')).toBe(true);
   });
 });
