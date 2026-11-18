@@ -27,7 +27,7 @@ describe('Summenfelder: Rechnen', () => {
     expect(rechne(['a', 'b'], werte({ a: '2', b: 'ca. 3' }))).toEqual({ wert: '', ungueltig: ['b'] });
   });
 
-  it('Stellplätze: Baugrundstück aus Garagen und Freiem, insgesamt darauf aufbauend – Kfz und Fahrrad mit derselben Regel', () => {
+  it('Stellplätze: „insgesamt auf dem Baugrundstück“ aus Garagen und Freiem, „Summe“ darauf aufbauend – Kfz und Fahrrad mit derselben Regel', () => {
     expect(SUMMEN.nw010010).toEqual([
       { ziel: '0:Memo14', teile: ['0:Memo12', '0:Memo13'] },
       { ziel: '0:Memo17', teile: ['0:Memo14', '0:Memo15', '0:Memo16'] },
@@ -114,6 +114,10 @@ describe('Summenfelder: Hinweise und Herkunft', () => {
     expect(h[0].felder).toEqual(['0:Memo14']);
     expect(h[0].text).toBe('„auf dem Baugrundstück“: eingetragen ist 7, die Angaben ergeben 5. „Neu berechnen“ am Feld übernimmt die Summe.');
     expect(summenHinweise([KFZ[0]], werte({ '0:Memo14': '4' }), titel)[0].text).toContain('die Angaben ergeben keine Summe (alle leer)');
+    // Datei aus einer älteren Fassung: Angaben gefüllt, Summe leer
+    expect(summenHinweise([KFZ[0]], werte({ '0:Memo12': '2', '0:Memo14': '' }), titel)[0].text).toBe(
+      '„auf dem Baugrundstück“: nichts eingetragen, die Angaben ergeben 2. „Neu berechnen“ am Feld übernimmt die Summe.',
+    );
   });
 
   it('kein Hinweis, wenn die Summe stimmt (auch mit Leerzeichen) oder alles leer ist', () => {

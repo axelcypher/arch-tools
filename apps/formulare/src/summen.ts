@@ -12,7 +12,7 @@
  *   von Hand in einer älteren Fassung), bleibt sie stehen, und ein Hinweis nennt beide Werte; „Neu berechnen“ am Feld
  *   übernimmt die Summe. Sind die Teile wieder wie in der Datei (z. B. nach Rückgängig), gilt wieder die Summe der
  *   Datei – außer, sie wurde ausdrücklich neu berechnet.
- * - Summen können auf Summen aufbauen („insgesamt“ aus der Summe auf dem Baugrundstück); sie stehen in Rechenfolge.
+ * - Summen können auf Summen aufbauen („Summe“ aus „insgesamt auf dem Baugrundstück“); sie stehen in Rechenfolge.
  */
 
 import type { Plausi } from './plausibel';
@@ -134,7 +134,7 @@ export function summenHinweise(summen: Summe[], wert: (s: string) => string | un
       const soll = summe === '' ? 'keine Summe (alle leer)' : summe;
       out.push({
         art: 'hinweis',
-        text: `„${titel(s.ziel)}“: eingetragen ist ${eingetragen.trim()}, die Angaben ergeben ${soll}. „Neu berechnen“ am Feld übernimmt die Summe.`,
+        text: `„${titel(s.ziel)}“: ${eingetragen.trim() ? `eingetragen ist ${eingetragen.trim()}` : 'nichts eingetragen'}, die Angaben ergeben ${soll}. „Neu berechnen“ am Feld übernimmt die Summe.`,
         felder: [s.ziel],
       });
     }

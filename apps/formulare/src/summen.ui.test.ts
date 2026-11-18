@@ -105,10 +105,10 @@ describe('Summenfelder der Stellplätze (Baubeschreibung)', () => {
     expect(summe.value).toBe('5');
     // schreibgeschützt, aber fokussierbar; die kurze Herkunft hängt am Feld, die lange steht im Tooltip
     expect([summe.readOnly, summe.disabled]).toEqual([true, false]);
-    const herkunft = summe.closest('label')!.querySelector('.field-hint')!;
+    const herkunft = summe.closest('.fo-feld')!.querySelector('.field-hint')!;
     expect(herkunft.textContent).toBe('Summe aus „in Garagen“ und „im Freien“');
     expect(summe.getAttribute('aria-describedby')).toBe(herkunft.id);
-    expect(summe.closest('label')!.getAttribute('title')).toContain('Summe aus „Stellplätze auf dem Baugrundstück: in Garagen“');
+    expect(summe.closest('.fo-feld')!.getAttribute('title')).toContain('Summe aus „Stellplätze auf dem Baugrundstück: in Garagen“');
     // Rückgängig und Wiederholen: die Summe folgt den Angaben
     act(() => void useFormulare.getState().rueckgaengig());
     await warte();
@@ -169,7 +169,10 @@ describe('Summenfelder der Stellplätze (Baubeschreibung)', () => {
     expect([wert('0:Memo14'), wert('0:Memo17')]).toEqual(['7', '7']);
     expect(offen().aenderungen).toEqual({});
     // „Neu berechnen“ am Feld übernimmt die Summe (ein Schritt im Verlauf, rückgängig zu machen)
-    const knopf = () => [...eingabe(host, '0:Memo14').closest('label')!.querySelectorAll('button')].find((b) => b.textContent === 'Neu berechnen');
+    const knopf = () => [...eingabe(host, '0:Memo14').closest('.fo-feld')!.querySelectorAll('button')].find((b) => b.textContent === 'Neu berechnen');
+    // der Knopf gehört nicht zur Beschreibung des Felds und nennt sein Feld
+    expect(knopf()!.closest('label, .field-hint')).toBeNull();
+    expect(knopf()!.getAttribute('aria-label')).toBe('„Stellplätze insgesamt auf dem Baugrundstück“ neu berechnen');
     act(() => knopf()!.click());
     await warte();
     expect([wert('0:Memo14'), wert('0:Memo17')]).toEqual(['5', '5']);

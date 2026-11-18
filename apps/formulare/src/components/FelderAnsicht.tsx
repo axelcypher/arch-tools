@@ -286,6 +286,7 @@ function FeldEingabe({
   const wertSetzen = useFormulare((s) => s.wertSetzen);
   const werteSetzen = useFormulare((s) => s.werteSetzen);
   const hinweisId = useId();
+  const feldId = useId();
   const wert = wertVon(offen, feld);
   const geaendert = feld.schluessel in offen.aenderungen;
   const klasse = `fo-feld${geaendert ? ' geaendert' : ''}${markiert ? ' markiert' : ''}${markiert === 'umrandet' ? ' umrandet' : ''}${entfall ? (entfall.offen ? ' offen' : ' entfaellt') : ''}${vorbelegt ? ' vorbelegt' : ''}`;
@@ -348,6 +349,66 @@ function FeldEingabe({
   const text = typeof wert === 'string' ? wert : '';
   // einzeilige Felder können durch FORMAs Zeilenumbruch trotzdem mehrere Zeilen enthalten
   const einzeilig = feld.einzeilig && !text.includes('\n');
+  const eingabe = einzeilig ? (
+    <input
+      type="text"
+      id={summe ? feldId : undefined}
+      className={feld.berechnet ? 'berechnet' : undefined}
+      value={text}
+      disabled={gesperrt}
+      readOnly={nurLesen}
+      aria-label={titel}
+      aria-describedby={summe ? hinweisId : undefined}
+      data-feld={feld.schluessel}
+      onChange={(e) => wertSetzen(feld, e.target.value)}
+      onBlur={() => useFormulare.getState().feldVerlassen(feld)}
+    />
+  ) : (
+    <textarea
+      id={summe ? feldId : undefined}
+      className={feld.berechnet ? 'berechnet' : undefined}
+      value={text}
+      disabled={gesperrt}
+      readOnly={nurLesen}
+      aria-label={titel}
+      aria-describedby={summe ? hinweisId : undefined}
+      data-feld={feld.schluessel}
+      rows={Math.max(2, Math.min(12, text.split('\n').length + 1, Math.round(feld.kasten.h / 18)))}
+      onChange={(e) => wertSetzen(feld, e.target.value)}
+      onBlur={() => useFormulare.getState().feldVerlassen(feld)}
+    />
+  );
+  // Summenfeld: Hülle ohne <label> – Herkunft und „Neu berechnen“ stehen als Geschwister unter dem Feld, der Knopf gehört
+  // nicht zur Beschreibung des Felds
+  if (summe)
+    return (
+      <div className={klasse} title={hinweis} style={breite}>
+        {!ohneBeschriftung && (
+          <span className="field-label">
+            <label htmlFor={feldId}>{titel}</label>
+            {info}
+          </span>
+        )}
+        {ohneBeschriftung && info}
+        {eingabe}
+        <div className="fo-summe-aus">
+          <span className="field-hint" id={hinweisId}>
+            {herkunft(summe, titelVon, true)}
+          </span>
+          {neuBerechnen !== undefined && !gesperrtFormular && (
+            <button
+              type="button"
+              className="small"
+              aria-label={`„${titel}“ neu berechnen`}
+              title={`Summe der Angaben übernehmen: ${neuBerechnen || 'leer'}`}
+              onClick={() => werteSetzen([{ feld, wert: neuBerechnen }], 'Summe neu berechnet')}
+            >
+              Neu berechnen
+            </button>
+          )}
+        </div>
+      </div>
+    );
   return (
     <label className={klasse} title={hinweis} style={breite}>
       {!ohneBeschriftung && (
@@ -357,46 +418,7 @@ function FeldEingabe({
         </span>
       )}
       {ohneBeschriftung && info}
-      {einzeilig ? (
-        <input
-          type="text"
-          value={text}
-          disabled={gesperrt}
-          readOnly={nurLesen}
-          aria-label={titel}
-          aria-describedby={summe ? hinweisId : undefined}
-          data-feld={feld.schluessel}
-          onChange={(e) => wertSetzen(feld, e.target.value)}
-          onBlur={() => useFormulare.getState().feldVerlassen(feld)}
-        />
-      ) : (
-        <textarea
-          value={text}
-          disabled={gesperrt}
-          readOnly={nurLesen}
-          aria-label={titel}
-          aria-describedby={summe ? hinweisId : undefined}
-          data-feld={feld.schluessel}
-          rows={Math.max(2, Math.min(12, text.split('\n').length + 1, Math.round(feld.kasten.h / 18)))}
-          onChange={(e) => wertSetzen(feld, e.target.value)}
-          onBlur={() => useFormulare.getState().feldVerlassen(feld)}
-        />
-      )}
-      {summe && (
-        <span className="field-hint fo-summe-aus" id={hinweisId}>
-          {herkunft(summe, titelVon, true)}
-          {neuBerechnen !== undefined && !gesperrtFormular && (
-            <button
-              type="button"
-              className="small"
-              title={`Summe der Angaben übernehmen: ${neuBerechnen || 'leer'}`}
-              onClick={() => werteSetzen([{ feld, wert: neuBerechnen }], 'Summe neu berechnet')}
-            >
-              Neu berechnen
-            </button>
-          )}
-        </span>
-      )}
+      {eingabe}
     </label>
   );
 }

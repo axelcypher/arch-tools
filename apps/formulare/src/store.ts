@@ -787,6 +787,7 @@ function mitSummen(vorher: OffenesFormular | null, o: OffenesFormular): Record<s
     const f = felder.get(s);
     return f && typeof f.original === 'string' ? f.original : undefined;
   };
+  // ausdrücklich neu berechnete Summen (im Verlauf; fällt ein sehr alter Schritt aus dem Verlauf, gilt er nicht mehr)
   const gesetzt = new Set(o.verlauf.schritte.slice(0, o.verlauf.position).flatMap((x) => x.aenderungen.map((a) => a.feld)));
   const neu = summenNachAenderung(summen, text(vorher), text(o), datei, gesetzt);
   return neu.size ? mitWerten(o, neu) : o.aenderungen;
@@ -1600,7 +1601,8 @@ export const useFormulare = create<FormulareState>()((set, get) => {
 
     wertSetzen: (feld, wert) => {
       const o = get().offen;
-      if (!o || bearbeitungGesperrt(o)) return;
+      // Summenfelder rechnet die App (summen.ts) – Eingaben dort nur über „Neu berechnen“ (werteSetzen)
+      if (!o || bearbeitungGesperrt(o) || feld.summe) return;
       const vorher = wertVon(o, feld);
       if (vorher === wert) return;
       const verlauf = eintragen(o.verlauf, feld.schluessel, vorher, wert, Date.now());
@@ -1610,7 +1612,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
 
     feldVerlassen: (feld) => {
       const o = get().offen;
-      if (!o || feld.art !== 'text' || wertVon(o, feld) !== '') return;
+      if (!o || feld.art !== 'text' || feld.summe || wertVon(o, feld) !== '') return;
       const auto = autoWerteVon(o, get().karte)?.get(feld.schluessel)?.wert ?? autofillAnbindung.zustand(formularDatei(o.pfad))?.felder[feld.schluessel]?.auto;
       if (auto) get().wertSetzen(feld, auto);
     },
