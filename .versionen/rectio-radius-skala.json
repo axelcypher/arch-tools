@@ -1,3 +1,6 @@
 {
-  "entzerrung": { "stufe": "patch", "notiz": "Vorschaubilder und Ablagefläche runden nach der Radius-Skala; Schriftgrößen, Abstände und Trefferflächen kommen durchgehend aus den Skalen des Designsystems." }
+  "entzerrung": {
+    "stufe": "patch",
+    "notiz": "Vorschaubilder und Ablagefläche runden nach der Radius-Skala; Schriftgrößen, Abstände und Trefferflächen kommen durchgehend aus den Skalen des Designsystems."
+  }
 }
