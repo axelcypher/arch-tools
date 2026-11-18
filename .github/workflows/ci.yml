@@ -68,6 +68,47 @@ jobs:
             apps/baurecht/dist
             apps/suite/dist
 
+  # Im PR: core-Tests auch unter Windows (dort checkt git anders aus, Pfade und Zeitverhalten weichen ab – #308). Der Job
+  # läuft in jedem PR und endet ohne Tests grün, wenn der PR weder packages/core noch Tests, Vitest-Konfiguration,
+  # Abhängigkeiten oder diese Datei berührt. So hängt kein PR an einem fehlenden Check, auch wenn er Pflicht wird.
+  # Auf main (push) nicht: dort prüft der Release-Lauf jede App unter Windows
+  windows-core:
+    name: core-Tests (Windows)
+    if: github.event_name == 'pull_request'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Betrifft der PR core oder Tests?
+        id: betroffen
+        shell: bash
+        env:
+          ZIEL: ${{ github.base_ref }}
+          KOPF: ${{ github.event.pull_request.head.sha }}
+        run: |
+          git fetch --quiet --no-tags origin "+refs/heads/$ZIEL:refs/remotes/origin/$ZIEL"
+          geaendert=$(git diff --name-only "$(git merge-base "origin/$ZIEL" "$KOPF")" "$KOPF")
+          if printf '%s\n' "$geaendert" | grep -Eq '^packages/core/|\.test\.[cm]?[jt]sx?$|(^|/)vitest\.config\.[cm]?[jt]s$|^package(-lock)?\.json$|^\.gitattributes$|^\.github/workflows/ci\.yml$'; then
+            echo "laufen=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "laufen=false" >> "$GITHUB_OUTPUT"
+            echo "Keine Änderung an core, Tests oder Konfiguration – core-Tests unter Windows entfallen."
+          fi
+      - uses: actions/setup-node@v4
+        if: steps.betroffen.outputs.laufen == 'true'
+        with:
+          node-version: 22
+          cache: npm
+      - if: steps.betroffen.outputs.laufen == 'true'
+        run: npm ci
+      - name: core-Tests
+        if: steps.betroffen.outputs.laufen == 'true'
+        shell: bash
+        run: |
+          WORKER=$(node -p "Math.max(2, require('os').availableParallelism())")
+          npx vitest run --project core --maxWorkers="$WORKER"
+
   tauri:
     name: Tauri-Hülle prüfen (${{ matrix.app }})
     runs-on: ubuntu-latest
