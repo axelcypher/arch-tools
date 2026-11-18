@@ -578,7 +578,9 @@ describe('Nachweis-Spalte, Regeln, Rückgängig (G-28, G-29, G-32)', () => {
     // Kennzahlen aus core (.metric-row/.metric), keine eigenen Kachelregeln; App ergänzt nur Kopf, Offen-Hinweis und Alarm
     expect(css).not.toMatch(/\.kpis?\b|\.kpi-/);
     expect(css).toMatch(/\.grz-kennzahlen > \.metric\s*\{[^}]*flex-basis: 12em;/);
-    expect(css).toMatch(/\.metric\.alarm\s*\{[^}]*var\(--danger\)/);
+    expect(css).toMatch(/\.grz-kennzahlen > \.metric\.alarm\s*\{[^}]*var\(--danger\)/);
+    // App-Ergänzungen nur innerhalb der eigenen Kennzahlzeile, nie an der core-Klasse allein
+    expect(css).not.toMatch(/(^|\n)\.metric[ .>:{]/);
     // Schriftgrößen nur aus der Skala
     expect(css.match(/font-size: [^;]+;/g)!.filter((f) => !/var\(--fs-(xs|s|m|l|xl)\)/.test(f))).toEqual([]);
     const spalten = css.slice(css.indexOf('.grz-vg-tabelle th:nth-child(1)'), css.indexOf('.grz-tabelle.grz-vg-tabelle th.num'));

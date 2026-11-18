@@ -149,8 +149,9 @@
   display: flex;
   margin-top: 2px;
 }
-/* Kennzahlen: Kacheln aus core (.metric-row/.metric); hier nur der Kopf mit Statusmarke, die Einheit am Wert, der
-   Hinweis auf offene Flächen und der Alarmzustand (core hat keine Warnvariante für Kennzahlen) */
+/* Kennzahlen: Kacheln aus core (.metric-row/.metric) als „Kennzahl mit Prüfergebnis“ – Kopf aus Bezeichnung und
+   Statusmarke, Wert oben, mehrere Nebenzeilen, Alarm bei Überschreitung. Diese Variante, die Einheit am Wert und der
+   Alarm fehlen in core (gemeldet an das Designsystem); bis dahin hier, eingegrenzt auf .grz-kennzahlen. */
 .grz-kennzahlen > .metric {
   /* Zahl mit Einheit und Statusmarke brauchen etwa 12em; schmalere Karten stellen die Kacheln untereinander */
   flex-basis: 12em;
@@ -159,6 +160,7 @@
    so liegen die Werte nebeneinanderstehender Kacheln auf einer Linie */
 .grz-kennzahlen > .metric > strong {
   margin-top: 0;
+  margin-bottom: 2px;
 }
 .grz-metric-kopf {
   display: flex;
@@ -170,16 +172,16 @@
 .grz-metric-titel {
   white-space: nowrap;
 }
-.metric > strong small {
+.grz-kennzahlen > .metric > strong small {
   font-size: var(--fs-s);
   font-weight: 400;
   color: var(--muted);
 }
-.metric > small.grz-metric-offen {
+.grz-kennzahlen > .metric > small.grz-metric-offen {
   margin-top: 2px;
   color: var(--warn-text);
 }
-.metric.alarm {
+.grz-kennzahlen > .metric.alarm {
   /* Rand in --danger ohne Verschieben des Inhalts */
   box-shadow: inset 0 0 0 1px var(--danger);
 }
