@@ -88,6 +88,17 @@ describe('Feldraster', () => {
     expect(r).toMatch(/color:\s*var\(--muted\)/);
   });
 
+  it('.fuellend: Spalten mit auto-fit, leere Spuren fallen zusammen; Vorgabe bleibt auto-fill', () => {
+    expect(regel('.feldraster.fuellend')).toMatch(/repeat\(auto-fit,\s*minmax\(min\(var\(--feld-min,\s*200px\),\s*100%\),\s*1fr\)\)/);
+    expect(regel('.feldraster')).toMatch(/repeat\(auto-fill,/);
+  });
+
+  it('Beschriftung über einem Betrag rechtsbündig', () => {
+    const r = regel(':has(> .feld-wert.num) > .field-label');
+    expect(r).toMatch(/justify-self:\s*end/);
+    expect(r).toMatch(/text-align:\s*end/);
+  });
+
   it('Felder im Raster sind so hoch wie die anderen Bedienelemente', () => {
     expect(css).toMatch(/:where\([^)]*\.feldraster\)\s*:where\(select, input:not\([^)]*\)\) \{\s*min-height:\s*var\(--ctl-h\)/);
   });

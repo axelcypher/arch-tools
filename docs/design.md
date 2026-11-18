@@ -355,13 +355,14 @@ mit `einstellungenEntwurfMelden`, Sperre über `useEinstellungenGesperrt`).
 - **Feldraster** (`.feldraster`) für Formulare mit mehreren Angaben nebeneinander (Planangaben, Antragsdaten,
   Adressen):
   - Kinder: beschriftete Felder – `label` mit `.field-label` und genau einem Feld, `Field`, oder für schreibgeschützte
-    Angaben ein `div` mit `.field-label` und `.feld-wert` (mittig zur Feldhöhe, mit `.num` rechtsbündig für Beträge;
-    `.feld-wert` taugt auch außerhalb des Rasters für einen Wert neben Feldern).
-    Die Beschriftung steht über dem Feld, darunter wahlweise `.field-hint` und `.feld-meldung`; weitere Elemente
+    Angaben ein `div` mit `.field-label` und `.feld-wert` (mittig zur Feldhöhe, mit `.num` rechtsbündig für Beträge
+    samt der Beschriftung darüber, wie der Kopf einer Zahlenspalte; `.feld-wert` taugt auch außerhalb des Rasters für
+    einen Wert neben Feldern). Die Beschriftung steht über dem Feld, darunter wahlweise `.field-hint` und `.feld-meldung`; weitere Elemente
     (Einheit, Knopf) lägen in der Spur des Felds übereinander und gehören mit dem Feld in eine Hülle. Ein
     `label.toggle` (Kästchen mit Text) steht in der Spur der Felder.
   - Spalten und Abstände: so viele Spalten, wie Platz ist (Mindestbreite 200px, abweichend über `--feld-min`, auch für
-    eine schmale Seitenleiste statt fester Spaltenzahl); Felder füllen ihre Spalte und sind `--ctl-h` hoch. Die Felder
+    eine schmale Seitenleiste statt fester Spaltenzahl; mit `.fuellend` füllen wenige Felder die Breite, leere Spalten
+    fallen zusammen – ohne bleibt ein einzelnes Feld in einer breiten Fläche so schmal wie eine Spalte); Felder füllen ihre Spalte und sind `--ctl-h` hoch. Die Felder
     einer Zeile fluchten, auch wenn eine Beschriftung umbricht oder nur ein Feld einen Hinweis hat. `--s3` zwischen
     den Spalten, `--s2` zwischen den Zeilen und unter der letzten (darauf verlassen sich Behälter mit Rahmen oder
     Innenabstand). Steht das Raster in einem Behälter mit `gap`, der den Abstand selbst setzt, nimmt es `.buendig`:
