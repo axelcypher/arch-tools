@@ -449,7 +449,8 @@
   padding: 4px 8px;
   background: var(--overlay-bg);
   border: 1px solid var(--border);
-  border-radius: var(--radius-xs);
+  /* enthält den Knopf „Alles“ (--radius-s): dieselbe Stufe wie .m3d, sonst rundete der Knopf stärker als sein Kasten */
+  border-radius: var(--radius-s);
   font-size: 12px;
 }
 .m3d-hilfe {
