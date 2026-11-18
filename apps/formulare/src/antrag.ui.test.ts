@@ -672,7 +672,10 @@ describe('Bedingungen: Antragsmerkmale und Felder', () => {
     });
     expect(panel().querySelector('.bd-satz')!.textContent).toBe('Erforderlich, wenn Gebäudeklasse 4 oder 5 und (Sonderbau ja oder Verfahren Baugenehmigungsverfahren)');
     // die Merkmale fehlen im Projekt: offen, gilt als erforderlich (R-01)
-    expect(panel().querySelector('.bd-jetzt')!.textContent).toBe('offen – Antragsmerkmal nicht festgelegt (gilt als erforderlich)');
+    expect(panel().querySelector('.bd-jetzt')!.textContent).toBe('offen – Merkmal nicht festgelegt');
+    // gleiche Bedeutung wie „ungeklärt“ in der Gliederung: Warnmarke; die Erklärung im Tooltip
+    expect(panel().querySelector('.bd-jetzt')!.className).toBe('marke bd-jetzt warnung');
+    expect(panel().querySelector('.bd-jetzt')!.getAttribute('title')).toContain('gilt die Angabe als erforderlich');
 
     // ein Feld durch Klick ins Formular wählen: Bedingung für das Feld Memo2 – „wenn Sonderbau (Kästchen) angekreuzt“
     await klick(host.querySelector<HTMLButtonElement>('.fo-ein-feld[data-ein="0:Memo2"]')!);

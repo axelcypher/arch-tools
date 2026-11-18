@@ -107,8 +107,11 @@ export function BedingungEditor({ wert, onChange, merkmale, felder, ohne, kontex
           {bedingungText(wurzel, name)}
         </p>
         {jetzt !== undefined && (
-          <span className={`marke bd-jetzt${jetzt === 'ja' ? ' ok' : ''}`}>
-            {jetzt === 'ja' ? 'trifft gerade zu' : jetzt === 'offen' ? 'offen – Antragsmerkmal nicht festgelegt (gilt als erforderlich)' : 'trifft gerade nicht zu'}
+          <span
+            className={`marke bd-jetzt${jetzt === 'ja' ? ' ok' : jetzt === 'offen' ? ' warnung' : ''}`}
+            title={jetzt === 'offen' ? 'Ein Antragsmerkmal der Bedingung ist nicht festgelegt – bis dahin gilt die Angabe als erforderlich.' : undefined}
+          >
+            {jetzt === 'ja' ? 'trifft gerade zu' : jetzt === 'offen' ? 'offen – Merkmal nicht festgelegt' : 'trifft gerade nicht zu'}
           </span>
         )}
         <button type="button" className="small bd-weg" onClick={() => onChange(undefined)}>
