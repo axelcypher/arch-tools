@@ -29,7 +29,7 @@ const MAX_PFADE = 40;
 /** längere Pfadlisten sind eingeklappt */
 const PFADE_OFFEN = 5;
 const CSV_KNOPF = 'Als CSV speichern …';
-/** Art des Befunds als Marke aus core; „fehler“ hat dort noch keine Variante (ans Designsystem gemeldet, Farbe in styles.css) */
+/** Art des Befunds als Marke aus core (Varianten .fehler, .warnung, .info, .ok; „hinweis“ heißt dort .info) */
 const MARKE: Record<BefundArt, string> = { fehler: 'fehler', warnung: 'warnung', hinweis: 'info', ok: 'ok' };
 
 interface Geprueft extends GeladenerOrdner {

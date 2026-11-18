@@ -136,11 +136,6 @@
   align-self: flex-start;
   justify-content: center;
 }
-/* Fehler-Marke fehlt in core noch (ans Designsystem gemeldet) – bis dahin wie die übrigen Varianten in den Fehlerfarben */
-.marke.fehler {
-  background: var(--fehler-bg);
-  color: var(--fehler-text);
-}
 .po-pfade {
   margin: var(--s1) 0 0;
   padding-left: var(--s4);
