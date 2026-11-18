@@ -1,3 +1,36 @@
+# Zeilenenden: Text immer mit LF ausgecheckt, auch unter Windows (core.autocrlf), damit Tests auf jedem Läufer dieselben
+# Bytes lesen (Release-Lauf #308 scheiterte an CRLF in base.css). Git erkennt Text selbst; Binärformate stehen unten.
+* text=auto eol=lf
+
 # FORMA-Formulare müssen byte-genau bleiben (CRLF, kein Zeilenende am Schluss)
 *.frmsjf -text
 *.frmtmp -text
+
+# Binärformate ausdrücklich, damit nie etwas als Text umgeschrieben wird
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.icns binary
+*.pdf binary
+*.xlsx binary
+*.docx binary
+*.zip binary
+*.ttf binary
+*.otf binary
+*.woff binary
+*.woff2 binary
+*.pyc binary
+*.xls binary
+*.bmp binary
+*.tif binary
+*.tiff binary
+*.gz binary
+*.7z binary
+*.msg binary
+
+# Windows-Skripte brauchen CRLF (cmd.exe); heute gibt es keine im Repo
+*.bat text eol=crlf
+*.cmd text eol=crlf
