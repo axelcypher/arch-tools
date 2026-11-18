@@ -8,8 +8,11 @@ import { GRUNDSTUECK, PLZ_GRUNDSTUECK } from '../zusatz';
  *  - `gruppe`: Verweise auf Beteiligte (Adressgruppen 2xx, alle mit denselben Einträgen 40 Name/Firma, 30 Vorname,
  *    70 Straße …) gehen an diese Gruppe
  *  - `teile`: das Feld bekommt diese Zuordnung (auch Felder, die FORMA gar nicht verknüpft)
+ *  - `titel`: das Feld bekommt den Eintrag der Projektkarte mit diesem Titel – nur, wenn die Zuordnung aus FORMA keinen
+ *    Eintrag trifft, den die Projektkarte hat (Vordruck ohne Verknüpfung oder mit einer Nummer, die die Projektkarte
+ *    des Projekts nicht führt). Die Nummer solcher Einträge ist nicht in allen Projektkarten gleich, der Titel schon.
  */
-export type ZuordnungKorrektur = { felder: string[]; grund: string } & ({ gruppe: number } | { teile: Teil[] });
+export type ZuordnungKorrektur = { felder: string[]; grund: string } & ({ gruppe: number } | { teile: Teil[] } | { titel: string });
 
 export const BAUHERR = 201;
 
@@ -44,6 +47,8 @@ export const ZUORDNUNG_KORREKTUREN: Record<string, ZuordnungKorrektur[]> = {
   nw010020: [...strasseHausnummer('0:Memo25', '0:Memo26', '0:Memo27'), ...strasseHausnummer('2:Memo25', '2:Memo26', '2:Memo27')],
   nw010021: strasseHausnummer('0:Memo25', '0:Memo26', '0:Memo27'),
   nw010022: strasseHausnummer('0:Memo5', '0:Memo34', '0:Memo35'),
+  // Baubeschreibung (Anlage I/7), Nr. 2: der Vordruck verknüpft das Feld nicht mit der Art der Nutzung der Projektkarte
+  nw010010: [{ felder: ['0:Memo5'], titel: 'Art der Nutzung', grund: 'Nr. 2 Art der Nutzung aus der Projektkarte – im Vordruck nicht verknüpft, Ergänzung der App.' }],
 };
 
 const istBeteiligte = (gruppe: number) => gruppe >= 200 && gruppe < 300;
@@ -53,12 +58,18 @@ const korrekturFuer = (kennung: string | undefined, schluessel: string) => (kenn
 /** Zuordnung eines Felds mit Korrektur (`teile` = Zuordnung aus FORMA, leer, wenn es keine gibt) */
 export function korrigiert(kennung: string | undefined, schluessel: string, teile: Teil[]): Teil[] {
   const k = korrekturFuer(kennung, schluessel);
-  if (!k) return teile;
+  if (!k || 'titel' in k) return teile;
   if ('teile' in k) return k.teile;
   return teile.map((t) => (t.art === 'eintrag' && istBeteiligte(t.gruppe) ? { ...t, gruppe: k.gruppe } : t));
 }
 
-/** Felder eines Vordrucks, die nur durch eine Korrektur eine Zuordnung bekommen (FORMA verknüpft sie nicht) */
+/** Felder eines Vordrucks, die durch eine Korrektur eine Zuordnung bekommen können (auch ohne Verknüpfung in FORMA) */
 export function zusaetzlicheFelder(kennung: string | undefined): string[] {
-  return kennung ? (ZUORDNUNG_KORREKTUREN[kennung] ?? []).filter((k) => 'teile' in k).flatMap((k) => k.felder) : [];
+  return kennung ? (ZUORDNUNG_KORREKTUREN[kennung] ?? []).filter((k) => !('gruppe' in k)).flatMap((k) => k.felder) : [];
+}
+
+/** Titel des Eintrags, den ein Feld ersatzweise bekommt (Korrektur `titel`), sonst undefined */
+export function ersatzTitel(kennung: string | undefined, schluessel: string): string | undefined {
+  const k = korrekturFuer(kennung, schluessel);
+  return k && 'titel' in k ? k.titel : undefined;
 }
