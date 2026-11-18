@@ -231,7 +231,7 @@ export function Angabe({ label, children, zahl }: { label: string; children: Rea
   return (
     <div className="field">
       <span className="field-label">{label}</span>
-      <span className={zahl ? 'ava-angabe num' : 'ava-angabe'}>{children}</span>
+      <span className={zahl ? 'feld-wert num' : 'feld-wert'}>{children}</span>
     </div>
   );
 }

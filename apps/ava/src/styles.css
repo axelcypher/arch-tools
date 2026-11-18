@@ -452,32 +452,10 @@
   margin-top: var(--s3);
 }
 
-/* schreibgeschützte Angabe im Feldraster (Angabe in eingaben.tsx): Wert mittig zur Höhe der Felder daneben */
-.ava-angabe {
-  display: flex;
-  align-items: center;
-  min-height: var(--ctl-h);
-}
-
-/* Beträge rechtsbündig wie in den Zahlenfeldern (Tabellenziffern aus .num); die Beschriftung steht mit darüber, wie
-   der Kopf einer Zahlenspalte */
-.ava-angabe.num {
-  justify-content: flex-end;
-}
-
-.field:has(> .ava-angabe.num) > .field-label {
-  text-align: right;
-}
-
-/* Dreierreihen der Seitenkarte „Eigenschaften“: Feldraster mit fester Spaltenzahl (Felder fluchten, auch wenn eine
-   Beschriftung umbricht). Den Abstand zur nächsten Zeile gibt der gap der Seitenkarte (wie bei .ava-panel > .field),
-   sonst stünde er doppelt */
-.feldraster.ava-feld-reihe {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.feldraster.ava-feld-reihe > * {
-  margin-bottom: 0;
+/* Dreierreihen der Seitenkarte „Eigenschaften“ (.feldraster.buendig.fuellend aus core): kleine Mindestbreite, damit
+   drei Felder nebeneinander passen und die Reihe in schmaler Karte umbricht */
+.ava-feld-reihe {
+  --feld-min: 80px;
 }
 
 .ava-reihe {
