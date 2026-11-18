@@ -181,7 +181,7 @@ describe('Summenfelder der Stellplätze (Baubeschreibung)', () => {
     act(() => void eingabe(host, '1:Memo2').dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true })));
     expect(document.activeElement).toBe(eingabe(host, '1:Memo3'));
     // Eingabe und Verlassen tragen nichts ein – auch nicht den Wert aus der Projektkarte, den ein freies Feld bekommt
-    const projekt = { root: 'C:/FORMA', ordner: 'BS9', titel: 'Muster' };
+    const projekt = { root: 'C:/Projekte', ordner: 'BS9', titel: 'Muster' };
     useFormulare.setState({
       offen: { ...offen(), projekt },
       karte: {

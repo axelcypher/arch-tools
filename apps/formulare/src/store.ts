@@ -1612,6 +1612,7 @@ export const useFormulare = create<FormulareState>()((set, get) => {
 
     feldVerlassen: (feld) => {
       const o = get().offen;
+      // berechnete Felder: zweite Sicherung (wertSetzen hält sie ohnehin auf)
       if (!o || feld.art !== 'text' || feld.berechnet || wertVon(o, feld) !== '') return;
       const auto = autoWerteVon(o, get().karte)?.get(feld.schluessel)?.wert ?? autofillAnbindung.zustand(formularDatei(o.pfad))?.felder[feld.schluessel]?.auto;
       if (auto) get().wertSetzen(feld, auto);

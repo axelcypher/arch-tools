@@ -1126,11 +1126,12 @@ end
   zeigt es nicht und zählt es nicht. Gesperrte Textfelder (`Enabled = False`) rechnet FORMA aus (Summen, Kopfzeilen
   der Folgeblätter); man trägt dort nichts ein, und sie zählen nicht für den Füllstand. In der App sind sie
   schreibgeschützt, aber fokussierbar und vorlesbar (berechnete Felder aus core: Grund der Fläche, gestrichelter
-  Rahmen, darunter kurz „Im Vordruck gesperrt“, im Tooltip – auch auf dem Papier – „Im Vordruck schreibgeschützt – hier
-  nicht einzutragen“; neutral, weil FORMA auch Felder sperrt, die die Behörde ausfüllt, und ohne Programmnamen); gesperrt (`disabled`) ist nur das ganze Formular. Sie sind keine Tab-Stopps
-  (Tabellenformulare hätten sonst Dutzende zwischen den Eingaben), bleiben aber per Klick und Sprung aus Prüfliste
-  oder Gliederung erreichbar; die Summenfelder der App sind Tab-Stopps. Auf dem Papier hat ein fokussiertes
-  schreibgeschütztes Feld keinen Feldgrund und einen gestrichelten Rahmen.
+  Rahmen, darunter kurz „Im Vordruck gesperrt“, im Tooltip – auch auf dem Papier – „Im Vordruck schreibgeschützt –
+  hier nicht einzutragen“; neutral, weil FORMA auch Felder sperrt, die die Behörde ausfüllt, und ohne Programmnamen);
+  gesperrt (`disabled`) ist nur das ganze Formular. Sie sind keine Tab-Stopps (Tabellenformulare hätten sonst Dutzende
+  zwischen den Eingaben), bleiben aber per Klick und Sprung aus Prüfliste oder Gliederung erreichbar; die Summenfelder
+  der App sind Tab-Stopps. Auf dem Papier hat ein fokussiertes schreibgeschütztes Feld keinen Feldgrund und einen
+  gestrichelten Rahmen.
 - **Summenfelder** (`src/summen.ts`): Manche dieser Summen rechnet die App selbst, sobald sich eine Angabe ändert –
   bisher die Stellplätze der Baubeschreibung (nw010010, Nr. 5 Stellplätze und Nr. 7 Fahrradstellplätze, eine Regel
   für beide, Begriffe wie im Vordruck): „insgesamt auf dem Baugrundstück“ = in Garagen + im Freien, „Summe“ =
