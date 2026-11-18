@@ -256,7 +256,7 @@ export function Eingang() {
               <div className="small-text">Ablage als</div>
               <div className="ava-dateiname">{rechnungsDateiname(k, d)}</div>
               <div className="muted small-text">in {auftragsordner(k, gewerkOrdner(projekt, d.gewerk), d.gewerk)}</div>
-              <label className="ava-check">
+              <label className="toggle">
                 <input type="checkbox" checked={deckblatt} onChange={(x) => setDeckblatt(x.target.checked)} disabled={!/\.pdf$/i.test(scan)} /> Deckblatt digital voranstellen
               </label>
               <button className="primary" disabled={laeuft} onClick={() => void ablegen()}>

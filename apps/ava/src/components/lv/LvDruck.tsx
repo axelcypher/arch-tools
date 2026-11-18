@@ -35,7 +35,7 @@ export function LvDruck({ onClose }: { onClose: () => void }) {
               </option>
             ))}
           </select>
-          <label className="ava-check">
+          <label className="toggle">
             <input type="checkbox" checked={langtexte} onChange={(e) => setLangtexte(e.target.checked)} /> Langtexte
           </label>
         </>

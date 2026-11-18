@@ -263,7 +263,7 @@ function Bericht({ t, neu }: { t: Tagesbericht; neu: boolean }) {
       <ul className="ava-fotos">
         {[...new Set([...t.fotos, ...fotos.map((f) => f.pfad)])].map((p) => (
           <li key={p}>
-            <label className="ava-check">
+            <label className="toggle">
               <input type="checkbox" checked={t.fotos.includes(p)} onChange={(e) => { const an = e.target.checked; setze((x) => ({ fotos: an ? [...x.fotos.filter((y) => y !== p), p] : x.fotos.filter((y) => y !== p) })); }} /> {p.split('/').pop()}
             </label>
             <button className="small ava-link" onClick={() => void useAva.getState().fs.oeffnen(vollerPfad(projekt.ordner, p))}>

@@ -95,7 +95,7 @@ export function Angebote() {
                 id: 'auffaellig',
                 rang: 1,
                 inhalt: (
-                  <label className="ava-check">
+                  <label className="toggle">
                     <input type="checkbox" checked={nurAuffaellige} onChange={(e) => setNurAuffaellige(e.target.checked)} /> nur auffällige Preise (±30 % vom Mittel)
                   </label>
                 ),

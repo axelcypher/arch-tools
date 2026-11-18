@@ -57,7 +57,7 @@ export function ElementPanel({ onZurueck }: { onZurueck?: () => void } = {}) {
       </Feld>
       {el.art === 'position' && <PositionFelder pos={el} setze={setze} nurAslv={nurAslv} />}
       {el.art === 'hinweis' && (
-        <label className="ava-check">
+        <label className="toggle">
           <input type="checkbox" checked={!!el.vorbemerkung} onChange={(e) => setze<Hinweis>({ vorbemerkung: e.target.checked })} /> Vorbemerkung (vor der Gliederung)
         </label>
       )}
@@ -105,7 +105,7 @@ function PositionFelder({ pos, setze, nurAslv }: { pos: Position; setze: (p: Par
   const kgs = [...new Set(collectKg(offen.lv.elemente))].sort();
   return (
     <>
-      <div className="ava-feld-reihe">
+      <div className="feldraster ava-feld-reihe">
         <Feld label="Menge">
           <ZahlEingabe wert={pos.menge} onChange={(menge) => setze({ menge })} />
         </Feld>
@@ -121,7 +121,7 @@ function PositionFelder({ pos, setze, nurAslv }: { pos: Position; setze: (p: Par
           <ZahlEingabe wert={pos.preise['0']?.ep ?? null} stellen={2} onChange={(ep) => setze({ preise: { ...pos.preise, '0': { ...pos.preise['0'], ep } } })} />
         </Feld>
       </div>
-      <div className="ava-feld-reihe">
+      <div className="feldraster ava-feld-reihe">
         <Feld label="Art der Position" hinweis={POSITIONSARTEN.find((a) => a.id === pos.positionsart)?.text}>
           <select value={pos.positionsart} onChange={(e) => setze({ positionsart: e.target.value as PositionsArt })}>
             {POSITIONSARTEN.map((a) => (

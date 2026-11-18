@@ -190,7 +190,7 @@ function ProtokollEditor({ p }: { p: Protokoll }) {
             >
               Aus der Mängelliste übernehmen ({offeneMaengel.length})
             </button>
-            <label className="ava-check">
+            <label className="toggle">
               <input type="checkbox" checked={!!p.vertragsstrafeVorbehalten} onChange={(x) => setze({ vertragsstrafeVorbehalten: x.target.checked })} /> Vertragsstrafe vorbehalten
             </label>
           </div>
@@ -273,7 +273,7 @@ function ProtokollEditor({ p }: { p: Protokoll }) {
               <span className="ava-top-angaben">
                 <TextEingabe className="ava-top-zustaendig" wert={t.zustaendig} onChange={(zustaendig) => top(t.id, { zustaendig })} placeholder="zuständig" liste="ava-zustaendig" label={`Zuständig TOP ${t.nr}`} />
                 <DatumEingabe wert={t.frist} onChange={(frist) => top(t.id, { frist })} title="Frist" label={`Frist TOP ${t.nr}`} />
-                <label className="ava-check">
+                <label className="toggle">
                   <input type="checkbox" checked={!!t.erledigt} onChange={(x) => top(t.id, { erledigt: x.target.checked })} /> erledigt
                 </label>
                 <button className="small icon" title="Punkt entfernen" aria-label={`TOP ${t.nr} entfernen`} onClick={() => setze((x) => ({ tops: x.tops.filter((y) => y.id !== t.id) }))}>

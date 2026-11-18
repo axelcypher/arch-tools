@@ -86,7 +86,7 @@ export function RechnungenAnsicht({ gewerk }: { gewerk?: string }) {
           id: 'hinweise',
           rang: 1,
           inhalt: (
-            <label className="ava-check">
+            <label className="toggle">
               <input type="checkbox" checked={nurHinweise} onChange={(x) => setNurHinweise(x.target.checked)} /> nur mit Hinweisen
             </label>
           ),
