@@ -288,7 +288,7 @@
   font-weight: 600;
 }
 .po-vorschau-stand {
-  margin: 0 var(--s1) 0 var(--s1);
+  margin: 0 var(--s1);
   color: var(--muted);
 }
 .po-vorschau-lph > button:last-child {
@@ -473,7 +473,7 @@
 .po-k-marke {
   flex: 0 0 auto;
   padding: 0 var(--s2);
-  border-radius: var(--radius);
+  border-radius: 999px;
   font-size: var(--fs-xs);
   line-height: 16px;
   background: var(--chip-bg);
@@ -591,7 +591,7 @@
 .po-baustein-inhalt,
 .po-mehrere-vorschau pre {
   margin: var(--s1) 0 0;
-  padding: var(--s2) var(--s2);
+  padding: var(--s2);
   max-height: 220px;
   overflow: auto;
   font-family: Consolas, 'Cascadia Mono', monospace;
@@ -916,6 +916,7 @@
   padding: var(--s3) var(--s4);
   background: var(--bg);
 }
+/* Titel der Startkarten: Rolle Kartenkopf, daher --fs-l */
 .po-karte h3 {
   margin: 0 0 var(--s1) !important;
   font-size: var(--fs-l) !important;
@@ -1116,8 +1117,9 @@
   align-items: center;
   gap: var(--s2);
 }
+/* bündig unter dem Etikett der Art: Kästchen (13px + Außenrand des Browsers) und Abstand des Labels ergeben 28px */
 .ka-ergebnis {
-  margin-left: var(--s5);
+  margin-left: calc(var(--s5) + var(--s1));
 }
 .ka-ergebnis.ok {
   color: var(--ok-text);
@@ -1343,7 +1345,7 @@
   max-height: 220px;
   overflow: auto;
   margin: var(--s1) 0 var(--s1);
-  padding: var(--s2) var(--s2);
+  padding: var(--s2);
   white-space: pre-wrap;
   font-family: inherit;
   font-size: var(--fs-s);
