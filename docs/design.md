@@ -513,13 +513,13 @@ bleiben sichtbar, solange sie etwas melden.
 **Ins Menü** kommen seltene und einmalige Befehle: Import und Export, Vorlagen, Einstellungen, Protokoll, Hilfe,
 Zurücksetzen, Sonderfunktionen. Feste Namen, in allen Apps gleich:
 
-| Menü          | Inhalt                                                                                                                                                                                                       |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| „Datei“       | in jeder App: Neu, Öffnen …, Speichern unter …, Import … bzw. Aktualisieren …, „Exportieren“ (Untermenü), Drucken … (wenn es nicht der Hauptknopf ist), Trenner, „Einstellungen …“ (Strg+,)                  |
-| „Exportieren“ | Untermenü in „Datei“ (Punkt mit `unter`, den Pfeil zeichnet das Menü – kein „▸“ im Text): Excel …, PDF …, CSV … – je mit Dialog (Ziel, bei Excel und PDF auch Vorlage); kein eigener Menüknopf in der Leiste |
-| „Ansicht“     | Schalter der Darstellung (`haken`: Raster, Beschriftung) und Einfachauswahl (`gewaehlt`)                                                                                                                     |
-| „Hinzufügen“  | Varianten eines Eintrags (siehe „Listen“); der häufigste bleibt daneben als eigener Knopf                                                                                                                    |
-| „Mehr“        | alles Übrige, als letztes Element der Leiste                                                                                                                                                                 |
+| Menü          | Inhalt                                                                                                                                                                                                                      |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| „Datei“       | in jeder App: Neu, Öffnen …, Speichern unter …, Import … bzw. Aktualisieren (ohne „ …“, wenn es sofort wirkt), „Exportieren“ (Untermenü), Drucken … (wenn es nicht der Hauptknopf ist), Trenner, „Einstellungen …“ (Strg+,) |
+| „Exportieren“ | Untermenü in „Datei“ (Punkt mit `unter`, den Pfeil zeichnet das Menü – kein „▸“ im Text): Excel …, PDF …, CSV … – je mit Dialog (Ziel, bei Excel und PDF auch Vorlage); kein eigener Menüknopf in der Leiste                |
+| „Ansicht“     | Schalter der Darstellung (`haken`: Raster, Beschriftung) und Einfachauswahl (`gewaehlt`)                                                                                                                                    |
+| „Hinzufügen“  | Varianten eines Eintrags (siehe „Listen“); der häufigste bleibt daneben als eigener Knopf                                                                                                                                   |
+| „Mehr“        | alles Übrige, als letztes Element der Leiste                                                                                                                                                                                |
 
 - **„Einstellungen …“** steht in jeder App als letzter Punkt von „Datei“, hinter einem Trenner, mit `tasten: 'Strg+,'`
   (in keiner App anders belegt; das Kürzel wirkt auch ohne offenes Menü), und öffnet den app-übergreifenden
