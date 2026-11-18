@@ -120,7 +120,8 @@ jobs:
           echo "Kerne bzw. Test-Worker: $WORKER"
           args=()
           for p in $PROJEKTE; do args+=(--project "$p"); done
-          npx vitest run --maxWorkers="$WORKER" "${args[@]}"
+          # --passWithNoTests: ein PR, der die Tests einer App löscht, bricht hier nicht ab
+          npx vitest run --maxWorkers="$WORKER" --passWithNoTests "${args[@]}"
 
   tauri:
     name: Tauri-Hülle prüfen (${{ matrix.app }})
