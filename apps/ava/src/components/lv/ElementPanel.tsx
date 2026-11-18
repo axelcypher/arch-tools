@@ -62,8 +62,8 @@ export function ElementPanel({ onZurueck }: { onZurueck?: () => void } = {}) {
         </label>
       )}
       {el.art === 'abschnitt' && <AbschnittInfo a={el} />}
-      <div className="ava-feld ava-feld-breit">
-        <span className="ava-feld-label">{el.art === 'position' ? 'Langtext' : 'Text'}</span>
+      <div className="field">
+        <span className="field-label">{el.art === 'position' ? 'Langtext' : 'Text'}</span>
         <Langtext key={el.id} wert={el.langtext} onChange={(langtext) => setze({ langtext })} />
       </div>
       {el.art === 'position' && (

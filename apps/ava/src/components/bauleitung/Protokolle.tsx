@@ -138,7 +138,7 @@ function ProtokollEditor({ p }: { p: Protokoll }) {
 
   return (
     <div className="ava-bericht">
-      <div className="ava-formular">
+      <div className="feldraster">
         <Feld label="Art">
           <TextEingabe wert={p.art} onChange={(art) => setze({ art })} liste="ava-protokollarten" />
           <datalist id="ava-protokollarten">
@@ -172,9 +172,11 @@ function ProtokollEditor({ p }: { p: Protokoll }) {
       {istAbnahme(p.art) && (
         <div className="ava-abnahme">
           <p className="small-text">{ABNAHME_HINWEIS}</p>
-          <Feld label="Vorbehalt bekannter Mängel" breit>
-            <TextEingabe mehrzeilig zeilen={3} wert={p.vorbehaltMaengel} onChange={(vorbehaltMaengel) => setze({ vorbehaltMaengel })} placeholder="Mängel, die bei der Abnahme vorbehalten werden" />
-          </Feld>
+          <div className="feldraster">
+            <Feld label="Vorbehalt bekannter Mängel" breit>
+              <TextEingabe mehrzeilig zeilen={3} wert={p.vorbehaltMaengel} onChange={(vorbehaltMaengel) => setze({ vorbehaltMaengel })} placeholder="Mängel, die bei der Abnahme vorbehalten werden" />
+            </Feld>
+          </div>
           <div className="button-row">
             <button
               className="small"

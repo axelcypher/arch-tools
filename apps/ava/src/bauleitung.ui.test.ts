@@ -131,7 +131,7 @@ describe('Protokolle', () => {
     const tops = useAva.getState().projekt!.ava.protokolle[0].tops;
     expect(tops.map((t) => t.titel)).toEqual(['Fensteranschluss', '']);
     // Abnahmebegehung
-    const art = host.querySelector<HTMLInputElement>('.ava-formular input[list="ava-protokollarten"]')!;
+    const art = host.querySelector<HTMLInputElement>('.feldraster input[list="ava-protokollarten"]')!;
     tippen(art, 'Abnahmebegehung');
     act(() => art.blur());
     await warten(() => !!host.querySelector('.ava-abnahme'));

@@ -53,7 +53,7 @@ function zeigen(onClose = vi.fn()) {
   return onClose;
 }
 
-const feld = (label: string) => [...document.querySelectorAll<HTMLLabelElement>('label.ava-feld')].find((l) => l.querySelector('.ava-feld-label')?.textContent?.startsWith(label))!;
+const feld = (label: string) => [...document.querySelectorAll<HTMLLabelElement>('label.field')].find((l) => l.querySelector('.field-label')?.textContent?.startsWith(label))!;
 const auswahl = (label: string) => feld(label).querySelector('select')!;
 const waehlen = (label: string, wert: string) =>
   act(() => {
