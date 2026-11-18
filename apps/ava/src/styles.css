@@ -602,7 +602,7 @@
   flex-wrap: wrap;
   padding: 8px 10px;
   background: var(--accent-soft);
-  border-radius: var(--radius-xs);
+  border-radius: var(--radius-s);
   margin-top: 8px;
 }
 
@@ -834,6 +834,11 @@
   border-radius: var(--radius-xs);
 }
 
+/* in der Vorschau des Dialogs „Vorlagetexte“ steht der Text direkt in der Fläche: Kasten in einer Fläche */
+.ava-bib-text {
+  border-radius: var(--radius-s);
+}
+
 /* ---------- Dialoge ---------- */
 
 .ava-bibliothek {
@@ -860,7 +865,7 @@
 .ava-bib-liste {
   overflow-y: auto;
   border: 1px solid var(--border);
-  border-radius: var(--radius-xs);
+  border-radius: var(--radius-s);
   margin: 0;
 }
 
