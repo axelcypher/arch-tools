@@ -107,7 +107,7 @@ export function BedingungEditor({ wert, onChange, merkmale, felder, ohne, kontex
           {bedingungText(wurzel, name)}
         </p>
         {jetzt !== undefined && (
-          <span className={`bd-jetzt${jetzt === 'ja' ? ' an' : ''}`}>
+          <span className={`marke bd-jetzt${jetzt === 'ja' ? ' ok' : ''}`}>
             {jetzt === 'ja' ? 'trifft gerade zu' : jetzt === 'offen' ? 'offen – Antragsmerkmal nicht festgelegt (gilt als erforderlich)' : 'trifft gerade nicht zu'}
           </span>
         )}

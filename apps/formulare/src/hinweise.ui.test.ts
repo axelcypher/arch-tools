@@ -82,13 +82,14 @@ describe('Widersprüchliche Kreuze (U-04)', () => {
     expect(feld(host, '0:CheckBox1').type).toBe('checkbox');
     const chip = gliederungsPunkt(host, 'Antrag').querySelector('.fo-gl-hinweise')!;
     expect(chip.classList.contains('fehler')).toBe(true);
+    expect(chip.classList.contains('warnung')).toBe(false);
     expect(chip.getAttribute('title')).toContain('mehr als eine Angabe');
     expect(host.querySelector('.fo-gl-pruefliste')!.textContent).toContain('1 Hinweis');
     await klick(knopf(host, 'Offene'));
-    const hinweis = host.querySelector('.fo-pruef-zeile.hinweis.fehler')!;
+    const hinweis = host.querySelector('.fo-pruef-zeile.warnung.fehler')!;
     expect(hinweis.textContent).toContain('Widerspruch');
     expect(hinweis.textContent).toContain('„Bauantrag oder Antrag auf Vorbescheid“');
-    expect(host.querySelector('.fo-feld .fo-entfall-info.hinweis.fehler')).not.toBeNull();
+    expect(host.querySelector('.fo-feld .fo-entfall-info.warnung.fehler')).not.toBeNull();
   });
 
   it('Gebäudeklasse 1 und 3: nur ein Hinweis, kein Widerspruch', async () => {
@@ -96,6 +97,8 @@ describe('Widersprüchliche Kreuze (U-04)', () => {
     const host = await oeffnen();
     const chip = gliederungsPunkt(host, 'Gebäudeklasse').querySelector('.fo-gl-hinweise')!;
     expect(chip.classList.contains('fehler')).toBe(false);
+    // Zähler als Marke aus core: runde Enden (.pille), Warnfarbe ohne Widerspruch
+    expect([...chip.classList]).toEqual(expect.arrayContaining(['marke', 'pille', 'warnung']));
     expect(chip.getAttribute('title')).toBe('Mehrere Gebäudeklassen angekreuzt – umfasst der Antrag mehrere Gebäude?');
   });
 });
@@ -124,7 +127,7 @@ describe('Formular und Antragsmerkmale abgleichen (U-05)', () => {
     expect(feld(host, '0:CheckBox6').checked).toBe(false);
     expect(useFormulare.getState().offen!.aenderungen).toEqual({});
     expect(host.querySelector('.fo-gl-pruefliste')!.textContent).toContain('1 Hinweis');
-    const symbol = feld(host, '0:CheckBox4').closest('.fo-feld')!.querySelector('.fo-entfall-info.hinweis')!;
+    const symbol = feld(host, '0:CheckBox4').closest('.fo-feld')!.querySelector('.fo-entfall-info.warnung')!;
     expect(symbol.getAttribute('aria-label')).toBe('Hinweis: Projekt: GK 3, Formular: GK 1');
   });
 

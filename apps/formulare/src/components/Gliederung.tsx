@@ -123,7 +123,7 @@ export function Gliederung({ offen }: { offen: OffenesFormular }) {
             </span>
             {gefuellt} von {gesamt}
             {ungeklaert > 0 && (
-              <span className="fo-gl-offen" title="Diese Angaben hängen an Antragsmerkmalen, die noch nicht festgelegt sind – sie zählen wie erforderliche Angaben.">
+              <span className="marke warnung fo-gl-offen" title="Diese Angaben hängen an Antragsmerkmalen, die noch nicht festgelegt sind – sie zählen wie erforderliche Angaben.">
                 {ungeklaert} ungeklärt
               </span>
             )}
@@ -135,9 +135,9 @@ export function Gliederung({ offen }: { offen: OffenesFormular }) {
             {liste.length || hinweise.length ? (
               <button className="fo-gl-pruef-zahl" title="Was fehlt noch? – offene Angaben und Hinweise in der Feldansicht zeigen" onClick={zeigeOffene}>
                 {fehlen} offen
-                {liste.length > fehlen && <span className="fo-gl-offen">{liste.length - fehlen} ungeklärt</span>}
+                {liste.length > fehlen && <span className="marke warnung fo-gl-offen">{liste.length - fehlen} ungeklärt</span>}
                 {hinweise.length > 0 && (
-                  <span className={`fo-gl-hinweise${hinweise.some((h) => h.art === 'fehler') ? ' fehler' : ''}`}>{hinweise.length === 1 ? '1 Hinweis' : `${hinweise.length} Hinweise`}</span>
+                  <span className={`marke pille fo-gl-hinweise ${hinweise.some((h) => h.art === 'fehler') ? 'fehler' : 'warnung'}`}>{hinweise.length === 1 ? '1 Hinweis' : `${hinweise.length} Hinweise`}</span>
                 )}
               </button>
             ) : null}
@@ -194,9 +194,9 @@ export function Gliederung({ offen }: { offen: OffenesFormular }) {
                           {p.geaendert && <span className="fo-ungespeichert"> ●</span>}
                         </span>
                         {!p.erforderlich ? (
-                          <span className="fo-gl-entfaellt">entfällt</span>
+                          <span className="marke fo-gl-entfaellt">entfällt</span>
                         ) : p.freiwillig ? (
-                          <span className="fo-gl-freiwillig" title="Zählt nicht für den Füllstand (freiwillig oder von der Behörde auszufüllen)">
+                          <span className="marke fo-gl-freiwillig" title="Zählt nicht für den Füllstand (freiwillig oder von der Behörde auszufüllen)">
                             freiwillig
                           </span>
                         ) : (
@@ -204,7 +204,7 @@ export function Gliederung({ offen }: { offen: OffenesFormular }) {
                             <Zahl punkt={p} />
                             {hinweise.some((h) => h.abschnitt === p.id) && (
                               <span
-                                className={`fo-gl-hinweise${hinweise.some((h) => h.abschnitt === p.id && h.art === 'fehler') ? ' fehler' : ''}`}
+                                className={`marke pille fo-gl-hinweise ${hinweise.some((h) => h.abschnitt === p.id && h.art === 'fehler') ? 'fehler' : 'warnung'}`}
                                 role="img"
                                 aria-label="Hinweise"
                                 title={hinweise
@@ -216,7 +216,7 @@ export function Gliederung({ offen }: { offen: OffenesFormular }) {
                               </span>
                             )}
                             {p.offen > 0 && (
-                              <span className="fo-gl-offen" title={`${p.offen} ungeklärt – hängt ab von: ${p.fehlend.join(', ')} (nicht festgelegt)`}>
+                              <span className="marke warnung fo-gl-offen" title={`${p.offen} ungeklärt – hängt ab von: ${p.fehlend.join(', ')} (nicht festgelegt)`}>
                                 {p.abschnittOffen && p.offen === p.gesamt - p.gefuellt ? 'ungeklärt' : `${p.offen} ungeklärt`}
                               </span>
                             )}
@@ -253,9 +253,9 @@ export function Gliederung({ offen }: { offen: OffenesFormular }) {
                             >
                               <span className="fo-gl-titel">{titel}</span>
                               {weg ? (
-                                <span className="fo-gl-entfaellt">entfällt</span>
+                                <span className="marke fo-gl-entfaellt">entfällt</span>
                               ) : ungeklaert ? (
-                                <span className="fo-gl-offen">ungeklärt</span>
+                                <span className="marke warnung fo-gl-offen">ungeklärt</span>
                               ) : (
                                 <span className={`fo-gl-status${voll ? ' voll' : ''}`} role="img" aria-label={voll ? 'ausgefüllt' : 'nicht ausgefüllt'}>
                                   {voll ? '✓' : ''}
@@ -281,7 +281,7 @@ function Zahl({ punkt: p }: { punkt: Punkt }) {
   if (!p.gesamt) return null;
   const voll = p.gefuellt === p.gesamt;
   return (
-    <span className={`fo-gl-zahl${voll ? ' voll' : ''}`} title={`${p.gefuellt} von ${p.gesamt} Angaben ausgefüllt`}>
+    <span className={`marke pille fo-gl-zahl${voll ? ' ok' : ''}`} title={`${p.gefuellt} von ${p.gesamt} Angaben ausgefüllt`}>
       {voll ? '✓' : `${p.gefuellt}/${p.gesamt}`}
     </span>
   );

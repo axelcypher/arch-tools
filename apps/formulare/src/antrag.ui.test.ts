@@ -561,6 +561,9 @@ describe('Bedingungen: Antragsmerkmale und Felder', () => {
     // ohne Gebäudeklasse entfällt nichts (R-01): der Abschnitt zählt, die leeren Angaben sind offen
     expect(gl(host).querySelector('.fo-gl-punkt.entfaellt')).toBeNull();
     expect(gl(host).querySelector('.fo-gl-zahl')!.textContent).toBe('3/5');
+    // Zähler und Status als Marken aus core: der Zähler mit runden Enden, „ungeklärt“ als Status-Marke in Warnfarbe
+    expect(gl(host).querySelector('.fo-gl-zahl')!.className).toBe('marke pille fo-gl-zahl');
+    expect(gl(host).querySelector('.fo-gl-punkt .fo-gl-offen')!.className).toBe('marke warnung fo-gl-offen');
     expect(gl(host).querySelector('.fo-gl-punkt .fo-gl-offen')!.getAttribute('title')).toContain('hängt ab von: Gebäudeklasse (nicht festgelegt)');
     expect(gl(host).querySelector('.fo-gl-fortschritt')!.textContent).toContain('3 von 5');
     // sichtbar nur die Zahl, die Erklärung steht im Tooltip (der Kopf bleibt schmal)
@@ -5508,7 +5511,7 @@ describe('Anträge: eigene Werte je Antrag, Preset, eingereicht', () => {
     expect(antragsdaten(host).textContent).toContain('BAUA 2 · eingereicht');
     await klick([...host.querySelectorAll<HTMLButtonElement>('.nav-eintrag')].find((b) => b.textContent?.includes('001-Muster'))!);
     await warte();
-    expect(host.querySelector('.fo-meldung.hinweis')!.textContent).toContain('Antrag BAUA 2 ist eingereicht');
+    expect(host.querySelector('.fo-meldung.warnung')!.textContent).toContain('Antrag BAUA 2 ist eingereicht');
     const vorher = useFormulare.getState().offen!.aenderungen;
     const f = useFormulare.getState().offen!.felder.flat().find((x) => x.art === 'text')!;
     act(() => useFormulare.getState().wertSetzen(f, 'geändert'));

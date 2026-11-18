@@ -521,7 +521,7 @@ export function App() {
             </div>
           )}
           {formularSichtbar && grund && (
-            <div className="fo-meldung hinweis" role="status">
+            <div className="fo-meldung warnung" role="status">
               <span>
                 {offen.sperre.art === 'fremd' && <ZustandMarke art={offen.sperre.bewertung.art} />} {grund}
               </span>
