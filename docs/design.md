@@ -364,13 +364,13 @@ mit `einstellungenEntwurfMelden`, Sperre über `useEinstellungenGesperrt`).
     eine schmale Seitenleiste statt fester Spaltenzahl); Felder füllen ihre Spalte und sind `--ctl-h` hoch. Mit
     `.fuellend` füllen wenige Felder die Breite (leere Spalten fallen zusammen, z. B. in einer aufziehbaren
     Seitenkarte); ohne bleibt ein einzelnes Feld in einer breiten Fläche so schmal wie eine Spalte. Ein Feld über die
-    ganze Zeile (`-breit`, schmales `-zwei`) belegt alle Spalten, dann füllt `.fuellend` nicht – solche Felder gehören
-    dann unter das Raster. Die Felder einer Zeile fluchten, auch wenn eine Beschriftung umbricht oder nur ein Feld einen
-    Hinweis hat. `--s3` zwischen den Spalten, `--s2` zwischen den Zeilen und unter der letzten (darauf verlassen sich
-    Behälter mit Rahmen oder Innenabstand). Steht das Raster in einem Behälter mit `gap`, der den Abstand selbst setzt,
-    nimmt es `.buendig`: dann ohne Abstand unter der letzten Zeile (nicht als letztes Kind eines Rollbehälters ohne
-    Innenabstand unten, sonst schnitte er den Fokusrahmen der letzten Felder ab – außer im Rumpf von `Karte buendig`,
-    dort liegen die Fokusrahmen innen).
+    ganze Zeile (`-breit` oder `-zwei` in einem Raster mit nur einer Spalte) belegt alle Spalten, dann füllt `.fuellend`
+    nicht – solche Felder gehören unter das Raster. Die Felder einer Zeile fluchten, auch wenn eine Beschriftung
+    umbricht oder nur ein Feld einen Hinweis hat. `--s3` zwischen den Spalten, `--s2` zwischen den Zeilen und unter der
+    letzten (darauf verlassen sich Behälter mit Rahmen oder Innenabstand). Steht das Raster in einem Behälter mit `gap`,
+    der den Abstand selbst setzt, nimmt es `.buendig`: dann ohne Abstand unter der letzten Zeile (nicht als letztes Kind
+    eines Rollbehälters ohne Innenabstand unten, sonst schnitte er den Fokusrahmen der letzten Felder ab – außer im
+    Rumpf von `Karte buendig`, dort liegen die Fokusrahmen innen).
   - `.feldraster-breit` (bzw. `Field breite="breit"`) nimmt die ganze Zeile, z. B. für Textbereiche oder eine
     Knopfzeile. `.feldraster-zwei` (`breite="zwei"`) nimmt zwei Spalten, z. B. für Auswahlen mit langen Einträgen
     oder ein `label.toggle`, dessen Text in einer Spalte umbräche (ein ganzer Satz neben dem Kästchen nimmt
