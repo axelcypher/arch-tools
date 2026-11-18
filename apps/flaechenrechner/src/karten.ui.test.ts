@@ -147,6 +147,10 @@ describe('QUADRIO: Kartenlayout (Richtung C, docs/design.md „Fläche und Karte
     // Hinweis in der Fußzeile: Knöpfe schrumpfen nicht (nur der Text kürzt), Fokusrahmen nach innen
     expect(css).toMatch(/\.hud-hint \.hud-hint-knopf\s*\{[^}]*flex:\s*none/);
     expect(css).toMatch(/\.karte-fuss button:focus-visible\s*\{[^}]*outline-offset:\s*-2px/);
+    // Radien aus der Skala (design.md „Skalen“): keine festen px-Radien, nur Token (und 50 % für runde Kleinstteile)
+    const radien = [...css.matchAll(/border-radius:\s*([^;]+);/g)].map((m) => m[1].trim());
+    expect(radien.length).toBeGreaterThan(5);
+    for (const r of radien) expect(r).toMatch(/^(var\(--radius(-s|-xs)?\)|50%)$/);
     // Kartenkopf und Abschnittskopf brechen in core um – keine eigenen Behelfe mehr
     expect(css).not.toMatch(/\.qu-flaeche \.(karte-kopf|karte-titel|karte-aktionen|section-head)\s*\{/);
   });

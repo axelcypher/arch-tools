@@ -218,7 +218,7 @@
   padding: 16px 20px;
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-s);
   box-shadow: var(--schatten-schwebend);
   text-align: center;
 }
@@ -236,7 +236,7 @@
   font-weight: 600;
   padding: 0 4px;
   border: 1px solid var(--border);
-  border-radius: 3px;
+  border-radius: var(--radius-xs);
 }
 
 /* Griffe: größere unsichtbare Trefferfläche um die sichtbaren Punkte */
@@ -443,7 +443,7 @@
   margin: 0 0 10px;
   padding: 6px 10px 4px;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-s);
 }
 
 .ifc-block legend {
@@ -505,7 +505,7 @@
   bottom: 8px;
   background: var(--overlay-bg);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-s);
   padding: 8px 10px;
   font-size: 12px;
   max-width: 300px;
@@ -550,7 +550,7 @@
   text-align: center;
   background: var(--overlay-bg);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-s);
 }
 
 .view3d-leer p {
@@ -678,7 +678,7 @@
   max-height: 200px;
   overflow: auto;
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-s);
 }
 
 .pruef-liste li {
@@ -729,7 +729,7 @@
   cursor: pointer;
   padding: 3px 8px;
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-s);
   background: var(--panel);
 }
 
@@ -741,7 +741,7 @@
   min-width: 300px;
   padding: 8px 10px;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-s);
   background: var(--panel);
   box-shadow: var(--schatten-schwebend);
 }
@@ -1028,7 +1028,7 @@
   height: auto;
   padding: 4px 6px;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   background: none;
   color: inherit;
   font: inherit;
