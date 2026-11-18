@@ -9,7 +9,9 @@ import { auswerten } from './bedingung';
 import type { Feld } from './forma/felder';
 import { abschnitte } from './forma/felder';
 import type { FormularProfil } from './profil';
-import { abschnittId, abschnittZustand, einheiten, einheitTitel } from './profil';
+import { abschnittId, abschnittZustand, einheiten, einheitTitel, feldTitel } from './profil';
+import type { Summe } from './summen';
+import { summenHinweise } from './summen';
 import type { Pruefregeln } from './vorgaben/pruefregeln';
 
 export interface Plausi {
@@ -35,7 +37,7 @@ export function formularWerte(map: Record<string, string>, wertVon: (schluessel:
     .map(([w]) => w);
 }
 
-export function plausibilitaet(felderJeSeite: Feld[][], profil: FormularProfil, k: BedingungKontext, wert: (f: Feld) => string | boolean, regeln?: Pruefregeln): Plausi[] {
+export function plausibilitaet(felderJeSeite: Feld[][], profil: FormularProfil, k: BedingungKontext, wert: (f: Feld) => string | boolean, regeln?: Pruefregeln, summen: Summe[] = []): Plausi[] {
   const out: Plausi[] = [];
   const nach = new Map(felderJeSeite.flat().map((f) => [f.schluessel, f]));
   const abschnittVon = new Map<string, string>();
@@ -66,5 +68,12 @@ export function plausibilitaet(felderJeSeite: Feld[][], profil: FormularProfil, 
     const felder = imFormular.map((w) => map[w]);
     out.push({ art: 'hinweis', text: `Projekt: ${kurz(merkmal)} ${v}, Formular: ${kurz(merkmal)} ${imFormular.join(', ')}`, felder, abschnitt: abschnittVon.get(felder[0]) });
   }
+  // Summenfelder (summen.ts): Teil keine ganze Zahl, eingetragene Summe weicht ab
+  const text = (s: string) => {
+    const w = wertVon(s);
+    return typeof w === 'string' ? w : undefined;
+  };
+  const titel = (s: string) => (nach.has(s) ? feldTitel(nach.get(s)!, profil) : s);
+  for (const h of summenHinweise(summen, text, titel)) out.push({ ...h, abschnitt: abschnittVon.get(h.felder[h.felder.length - 1]) });
   return out;
 }

@@ -11,6 +11,8 @@ export interface SynFeld {
   /** Beschriftung: beim Kästchen die eigene, beim Textfeld eine Beschriftung darüber */
   text: string;
   wert?: string | boolean;
+  /** gesperrtes Textfeld (Enabled = False): FORMA rechnet den Inhalt */
+  berechnet?: boolean;
 }
 
 export interface SynRahmen {
@@ -46,7 +48,7 @@ function rahmen(r: SynRahmen, top: number, nr: { label: number }): { zeilen: str
       kind([`object Label${nr.label++}: TLabel`, '  Left = 10', `  Top = ${y}`, '  Width = 400', '  Height = 16', `  Caption = ${zk(f.text)}`, 'end']);
       y += 18;
       const text = typeof f.wert === 'string' && f.wert ? ['  Lines.Strings = (', `    ${zk(f.wert)})`] : [];
-      kind([`object ${f.name}: TMemo`, '  Left = 10', `  Top = ${y}`, '  Width = 400', '  Height = 22', ...text, '  WantReturns = False', 'end']);
+      kind([`object ${f.name}: TMemo`, '  Left = 10', `  Top = ${y}`, '  Width = 400', '  Height = 22', ...(f.berechnet ? ['  Enabled = False'] : []), ...text, '  WantReturns = False', 'end']);
       y += 28;
     }
   }

@@ -31,9 +31,9 @@ vi.setConfig({ testTimeout: 20000 });
 
 // Ausblendungen nach echter Zeit anhalten – „Gespeichert“ im Kopf nach 4 s (components/Kopf.tsx, GespeichertMeldung) und
 // die Ansage nach 1,5 s (components/Angaben.tsx): Auf langsamen Runnern (Windows im Release-Lauf) war die Meldung beim
-// Prüfen sonst schon weg. Kürzere Fristen (Entprellen, Fokus) laufen echt weiter; vi.useFakeTimers() ersetzt den Spion
-// und prüft die Ausblendung selbst (je ein Test für 4 s und 1,5 s). Wer die Fristen in Kopf.tsx oder Angaben.tsx ändert,
-// zieht AUSBLENDEN_MS mit – die beiden Tests mit falschen Uhren schlagen sonst an.
+// Prüfen sonst schon weg. Kürzere Fristen (Entprellen, Fokus) laufen echt weiter – außer im Test der entprellten
+// Vorschriften-Ansage (450 ms), der wie die beiden Ausblend-Tests (4 s, 1,5 s) vi.useFakeTimers() nutzt; das ersetzt den
+// Spion. Wer die Fristen in Kopf.tsx oder Angaben.tsx ändert, zieht AUSBLENDEN_MS mit – die Ausblend-Tests schlagen sonst an.
 const AUSBLENDEN_MS = new Set([1500, 4000]);
 const echtesSetTimeout = globalThis.setTimeout;
 let ausblendenAngehalten: MockInstance<typeof setTimeout> | null = null;
@@ -1390,24 +1390,30 @@ describe('Runde 15: Fokusziele, Hinweis-Rückfragen, Protokoll, Speichern', () =
     expect(d.textContent).toMatch(/\d\d\.\d\d\.\d{4}, \d\d:\d\d \(/);
   });
 
-  it('Vorschriften-Suche: Ansage entprellt, die sichtbare Zeile sofort', async () => {
+  it('Vorschriften-Suche: Ansage entprellt, die sichtbare Zeile sofort', () => {
     const host = render();
     const feld = host.querySelector<HTMLInputElement>('.br-vorschriften input[type="search"], main input[type="search"]')!;
-    tippen(feld, 'Stellplatz');
-    const sichtbar = host.querySelector('.br-treffer > span')!.textContent ?? '';
     const live = () => host.querySelector('.br-treffer [aria-live]')!.textContent ?? '';
-    expect(sichtbar).toMatch(/von \d+ Paragrafen/);
-    expect(live()).toBe('');
-    // entprellt (450 ms in Vorschriften.tsx): erst still, dann angesagt – nach Zustand gewartet, nicht nach fester Zeit
-    await warten(200);
-    expect(live()).toBe('');
-    await vi.waitFor(
-      async () => {
-        await warten(50);
-        expect(live()).toBe(sichtbar);
-      },
-      LANGSAME_RUNNER,
-    );
+    // falsche Uhren erst nach dem Zeichnen: die Frist der Ansage (450 ms in Vorschriften.tsx) läuft dann nur, wenn der Test
+    // sie vorstellt – unter Last (echte Zeit) lief sie früher manchmal ab, bevor „noch still“ geprüft war
+    vi.useFakeTimers();
+    try {
+      tippen(feld, 'Stellplatz');
+      const sichtbar = host.querySelector('.br-treffer > span')!.textContent ?? '';
+      expect(sichtbar).toMatch(/von \d+ Paragrafen/);
+      expect(live()).toBe('');
+      act(() => void vi.advanceTimersByTime(440));
+      expect(live()).toBe('');
+      // weiteres Tippen innerhalb der Frist startet sie neu (entprellt, nicht nur verzögert)
+      tippen(feld, 'Stellplatz ');
+      act(() => void vi.advanceTimersByTime(440));
+      expect(live()).toBe('');
+      act(() => void vi.advanceTimersByTime(20));
+      expect(live()).toBe(host.querySelector('.br-treffer > span')!.textContent);
+      expect(live()).toMatch(/von \d+ Paragrafen/);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('Druck mit „ohne „entfällt““: das Ergebnis vermerkt, wie viele Vorschriften fehlen', async () => {

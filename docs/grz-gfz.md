@@ -53,8 +53,12 @@ Die Oberfläche folgt dem Kartenlayout der Suite (Richtung C): Unter der Werkzeu
 Karte scrollt für sich; die linke und die rechte Karte lassen sich am Spalt in der Breite ziehen (Breite wird gemerkt).
 In schmalen Fenstern geben zuerst die Seitenkarten nach – die Eingaben bis 240 px, der Nachweis bis 320 px (dann
 stehen die Kacheln GRZ/GFZ/Vollgeschosse untereinander) –, der Lageplan behält möglichst seine Breite. Das „?“ steht
-im Kopf von Lageplan und Nachweis direkt hinter dem Titel. In der Flächentabelle stehen Nutzung und Versiegelung
-untereinander in einer Spalte; die Spalte „GR“ zeigt die Anrechnung auf die Grundfläche.
+im Kopf von Lageplan und Nachweis direkt hinter dem Titel. Die Kennzahlen stehen als Kacheln der Suite im Nachweis
+(höchstens fünf: GRZ, ggf. GRZ II, GFZ, ggf. BMZ, Vollgeschosse): Kopf aus Bezeichnung und Prüfergebnis als Marke
+(eingehalten, überschritten …), darunter der Wert und die Nebenzeilen (Fläche, Zulässiges, Reserve); eine
+Über- oder Unterschreitung rahmt die Kachel rot, „prüfen“ in der Warnfarbe. Absolute Festsetzungen (GR, GR II, GF in m²)
+stehen in einer Tabelle unter den Kacheln. In der Flächentabelle stehen Nutzung und Versiegelung untereinander in
+einer Spalte; die Spalte „GR“ zeigt die Anrechnung auf die Grundfläche.
 Der Lageplan ist bewusst eine normale Karte und keine reine Zeichenkarte: Werkzeuge, Plan (feste Höhe), Flächentabelle
 und Eigenschaften der Auswahl gehören zusammen und scrollen gemeinsam.
 
@@ -78,8 +82,8 @@ Festsetzungen) und das Datum des Bebauungsplans. Druck und Excel geben sie im ge
 Grundfläche × Geschosshöhe der Vollgeschosse), Vollgeschosse höchstens bzw. mindestens oder zwingend, GRZ II
 höchstens (1990), Trauf- und Firsthöhe (nur als Prüfhinweis im Nachweis, nicht gerechnet) und – nur bei
 entsprechender Festsetzung nach BauNVO 1990 – „Aufenthaltsräume in Nicht-Vollgeschossen mitrechnen“ (§ 20 Abs. 3
-Satz 2). Absolute GR/GF und BMZ erscheinen als eigene Kacheln und Zeilen in Druck und Excel; unterschrittene
-Mindest- bzw. zwingende Vollgeschosse stehen als „unterschritten“.
+Satz 2). Absolute GR/GF erscheinen in der App als Tabelle unter den Kacheln, die BMZ als Kachel, beide als Zeilen in
+Druck und Excel; unterschrittene Mindest- bzw. zwingende Vollgeschosse stehen als „unterschritten“.
 
 ## Welches Recht gilt
 

@@ -2031,7 +2031,7 @@ dependencies = [
 
 [[package]]
 name = "kostenermittlung"
-version = "0.44.9"
+version = "0.44.13"
 dependencies = [
  "base64 0.22.1",
  "log",

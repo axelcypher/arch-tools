@@ -39,6 +39,9 @@ function anPfad(g: BedingungGruppe, pfad: Pfad, f: (t: BedingungTeil) => Bedingu
   return { ...g, teile };
 }
 
+/** Erklärung zur Marke „offen“ (Tooltip; für Vorleseprogramme als verborgener Text in der Marke) */
+const OFFEN_ERKLAERT = 'Ein Antragsmerkmal der Bedingung ist nicht festgelegt – bis dahin gilt die Angabe als erforderlich.';
+
 /**
  * Bedingung zusammenstellen: eine Gruppe, deren Teile alle (und) oder mindestens einer (oder) zutreffen müssen. Teile
  * sind Prüfungen – Antragsmerkmal hat einen der Werte (oder keinen), Feld ist ausgefüllt/angekreuzt, leer, hat einen
@@ -107,8 +110,9 @@ export function BedingungEditor({ wert, onChange, merkmale, felder, ohne, kontex
           {bedingungText(wurzel, name)}
         </p>
         {jetzt !== undefined && (
-          <span className={`bd-jetzt${jetzt === 'ja' ? ' an' : ''}`}>
-            {jetzt === 'ja' ? 'trifft gerade zu' : jetzt === 'offen' ? 'offen – Antragsmerkmal nicht festgelegt (gilt als erforderlich)' : 'trifft gerade nicht zu'}
+          <span className={`marke bd-jetzt${jetzt === 'ja' ? ' ok' : jetzt === 'offen' ? ' warnung' : ''}`} title={jetzt === 'offen' ? OFFEN_ERKLAERT : undefined}>
+            {jetzt === 'ja' ? 'trifft gerade zu' : jetzt === 'offen' ? 'offen – Merkmal nicht festgelegt' : 'trifft gerade nicht zu'}
+            {jetzt === 'offen' && <span className="nur-vorlesen"> – {OFFEN_ERKLAERT}</span>}
           </span>
         )}
         <button type="button" className="small bd-weg" onClick={() => onChange(undefined)}>

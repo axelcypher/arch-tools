@@ -34,6 +34,8 @@ export interface Feld {
   einzeilig: boolean;
   /** gesperrtes Textfeld (Enabled = False): FORMA berechnet den Inhalt, man trägt nichts ein */
   berechnet: boolean;
+  /** Summenfeld, das die App selbst rechnet (summen.ts): schreibgeschützt, aber fokussierbar */
+  summe?: boolean;
   hinweis?: string;
   /** Wert in der Datei */
   original: string | boolean;

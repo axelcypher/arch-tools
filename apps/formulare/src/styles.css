@@ -530,20 +530,9 @@ button.icon.active {
 }
 .fo-gl-zahl {
   flex-shrink: 0;
+  justify-content: center;
   min-width: 26px;
-  text-align: center;
-  padding: 0 5px;
-  border-radius: 999px;
-  font-size: 10.5px;
-  line-height: 16px;
-  background: var(--line-soft);
-  color: var(--muted);
   font-variant-numeric: tabular-nums;
-}
-.fo-gl-zahl.voll {
-  background: var(--ok-bg);
-  color: var(--ok-text);
-  font-weight: 700;
 }
 .fo-gl-hinweis {
   margin: 4px 10px 6px;
@@ -816,7 +805,7 @@ button.icon.fo-gl-zaehlt.an {
 .fo-meldung.info {
   background: var(--accent-soft);
 }
-.fo-meldung.hinweis {
+.fo-meldung.warnung {
   background: var(--warn-bg);
   color: var(--warn-text);
 }
@@ -967,6 +956,9 @@ button.icon.fo-gl-zaehlt.an {
 .fo-feld input[type='text'] {
   width: 100%;
   font-family: inherit;
+}
+/* berechnete Felder (.berechnet aus core) behalten ihre feste Höhe */
+.fo-feld textarea:not(.berechnet) {
   resize: vertical;
 }
 .fo-feld.geaendert {
@@ -1742,25 +1734,6 @@ button.icon.fo-gl-zaehlt.an {
   gap: 6px;
   flex-shrink: 0;
 }
-.fo-sperr-marke {
-  display: inline-block;
-  padding: 0 6px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 600;
-  line-height: 18px;
-  white-space: nowrap;
-  border: 1px solid currentColor;
-}
-.fo-sperr-marke.benutzt {
-  color: var(--danger);
-}
-.fo-sperr-marke.verwaist {
-  color: var(--sel);
-}
-.fo-sperr-marke.unklar {
-  color: var(--muted);
-}
 .fo-sperr-daten {
   display: grid;
   grid-template-columns: max-content 1fr;
@@ -1950,9 +1923,15 @@ button.icon.fo-gl-zaehlt.an {
   outline: 1px solid var(--accent);
   background: var(--p-feld-fokus);
 }
-.fo-papier .fo-memo:disabled {
+/* schreibgeschützt (berechnet; :read-only gilt auch für gesperrte Felder im gesperrten Formular): ohne Feldgrund, auch
+   mit Fokus – der Fokus zeigt sich als gestrichelte Umrandung, passend zu berechneten Feldern */
+.fo-papier .fo-memo:read-only {
   background: transparent;
   opacity: 1;
+  cursor: default;
+}
+.fo-papier .fo-memo:read-only:focus {
+  outline: 1px dashed var(--accent);
 }
 .fo-papier .fo-memo.geaendert,
 .fo-papier .fo-check.geaendert {
@@ -2046,17 +2025,6 @@ button.icon.fo-gl-zaehlt.an {
   margin-bottom: 8px;
   width: 100%;
   border-style: dashed;
-}
-.pk-marke {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 8px;
-  border-radius: 999px;
-  font-size: 11.5px;
-  color: var(--ok-text);
-  background: var(--ok-bg);
-  white-space: nowrap;
 }
 .pk-text {
   max-width: 900px;
@@ -2955,17 +2923,6 @@ button.icon.ex-baum-pfeil {
   flex-basis: 100%;
   line-height: 1.4;
 }
-.bd-jetzt {
-  padding: 1px 8px;
-  border-radius: 999px;
-  font-size: 11.5px;
-  background: var(--hover);
-  color: var(--muted);
-}
-.bd-jetzt.an {
-  background: var(--ok-bg);
-  color: var(--ok-text);
-}
 .bd-weg {
   margin-left: auto;
 }
@@ -2992,12 +2949,6 @@ button.icon.fo-gl-bed.gesetzt {
 }
 .fo-gl-entfaellt {
   flex-shrink: 0;
-  padding: 0 5px;
-  border-radius: 999px;
-  font-size: 11px;
-  line-height: 16px;
-  color: var(--muted);
-  border: 1px dashed var(--border);
 }
 .fo-gl-punkt.entfaellt .fo-gl-titel,
 .fo-gl-einheit.entfaellt .fo-gl-titel,
@@ -3030,8 +2981,8 @@ button.icon.fo-gl-bed.gesetzt {
 .fo-check.offen input {
   background: var(--p-offen);
 }
-.fo-feld.offen input,
-.fo-feld.offen textarea {
+.fo-feld.offen input:not(.berechnet),
+.fo-feld.offen textarea:not(.berechnet) {
   background: var(--warn-bg);
   border-color: var(--warn-border);
 }
@@ -3041,14 +2992,6 @@ button.icon.fo-gl-bed.gesetzt {
 /* Gliederung: offene Angaben (hängen an Projektmerkmalen) und freiwillige Abschnitte */
 .fo-gl-offen {
   flex-shrink: 0;
-  padding: 0 5px;
-  border-radius: 999px;
-  font-size: 11px;
-  line-height: 16px;
-  background: var(--warn-bg);
-  border: 1px solid var(--warn-border);
-  color: var(--warn-text);
-  white-space: nowrap;
 }
 .fo-gl-kopf .fo-gl-offen {
   margin-left: 6px;
@@ -3137,40 +3080,21 @@ button.icon.fo-gl-bed.gesetzt {
 }
 .fo-gl-hinweise {
   flex-shrink: 0;
-  padding: 0 5px;
-  border-radius: 999px;
-  font-size: 10px;
-  line-height: 16px;
-  background: var(--warn-bg);
-  border: 1px solid var(--warn-border);
-  color: var(--warn-text);
-  white-space: nowrap;
 }
-.fo-gl-hinweise.fehler {
-  background: var(--fehler-bg);
-  border-color: var(--fehler-border);
-  color: var(--fehler-text);
-}
-.fo-pruef-zeile.hinweis {
+.fo-pruef-zeile.warnung {
   border-left-color: var(--warn-border);
 }
-.fo-pruef-zeile.hinweis.fehler {
+.fo-pruef-zeile.warnung.fehler {
   border-left-color: var(--danger);
 }
 /* aus dem Projektmerkmal vorbelegt (U-05): als Vorschlag gekennzeichnet */
 .fo-papier .fo-check.vorbelegt input,
-.fo-feld.vorbelegt input {
+.fo-feld.vorbelegt input:not(.berechnet) {
   outline: 1.5px dashed var(--accent);
   outline-offset: 1px;
 }
 .fo-gl-freiwillig {
   flex-shrink: 0;
-  padding: 0 5px;
-  border-radius: 999px;
-  font-size: 11px;
-  line-height: 16px;
-  color: var(--muted);
-  background: var(--line-soft);
 }
 .st-punkt.entfaellt {
   background: transparent;
@@ -3257,11 +3181,6 @@ button.icon.fo-gl-bed.gesetzt {
 }
 .fh-da {
   flex-shrink: 0;
-  font-size: 10.5px;
-  color: var(--muted);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  padding: 0 6px;
 }
 
 /* Einstellungen › Sichern & Übertragen */
@@ -4004,14 +3923,14 @@ li.es-dok[data-ziehen='danach'] {
   opacity: 1;
 }
 /* Hinweise (U-04, U-05): gelb; Widerspruch rot */
-.fo-entfall-info.hinweis {
+.fo-entfall-info.warnung {
   color: var(--warn-text);
   cursor: help;
 }
-.fo-entfall-info.hinweis.fehler {
+.fo-entfall-info.warnung.fehler {
   color: var(--danger);
 }
-.fo-papier .fo-entfall-info.hinweis {
+.fo-papier .fo-entfall-info.warnung {
   opacity: 0.9;
 }
 .fo-tipp {

@@ -136,11 +136,6 @@
   align-self: flex-start;
   justify-content: center;
 }
-/* Fehler-Marke fehlt in core noch (ans Designsystem gemeldet) – bis dahin wie die übrigen Varianten in den Fehlerfarben */
-.marke.fehler {
-  background: var(--fehler-bg);
-  color: var(--fehler-text);
-}
 .po-pfade {
   margin: var(--s1) 0 0;
   padding-left: var(--s4);
@@ -350,9 +345,9 @@
 /* Meldung des Editors (.meldung ok/fehler): liegt über dem unteren Rand des Baums, statt ihn zu verschieben */
 .po-editor-meldung {
   position: absolute;
-  left: 8px;
-  right: 8px;
-  bottom: 8px;
+  left: var(--s2);
+  right: var(--s2);
+  bottom: var(--s2);
   z-index: 2;
   display: flex;
   align-items: center;
@@ -1447,15 +1442,6 @@
 }
 .po-kuerzel-tabelle td:first-child input::placeholder {
   text-transform: none;
-}
-/* nur für Screenreader (Spaltentitel der Entfernen-Knöpfe) */
-.po-unsichtbar {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
 }
 .po-kuerzel-neu input {
   border-style: dashed;
