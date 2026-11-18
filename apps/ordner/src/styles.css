@@ -1044,7 +1044,6 @@
 .ka-art {
   font-size: var(--fs-xs);
   font-weight: 600;
-  letter-spacing: 0.04em;
   padding: 1px var(--s1);
   border-radius: var(--radius-xs);
   background: var(--chip-bg);
@@ -1109,8 +1108,9 @@
   height: var(--ka-kaestchen);
   margin: 0;
 }
-/* bündig unter dem Etikett der Art: Kästchen und Abstand des Labels */
-.ka-ergebnis {
+/* Ergebnis und Warnung eines Plans bündig unter dem Etikett der Art: Kästchen und Abstand des Labels */
+.ka-ergebnis,
+.ka-wahl .ka-eingerueckt {
   margin-left: calc(var(--ka-kaestchen) + var(--s2));
 }
 .ka-ergebnis.ok {

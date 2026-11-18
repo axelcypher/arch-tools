@@ -347,6 +347,13 @@ describe('Export: Sperre und Dateinamen', () => {
     expect(ausgaben).toEqual(['Katasterplan A4 (3).pdf', 'Katasterplan A4 (2).pdf', 'Schwarzplan.dxf', 'Katasterplan.dxf']);
   });
 
+  it('Dialog: Warnung eines Plans steht wie das Ergebnis eingerückt unter dem Etikett', async () => {
+    await useKataster.getState().planAendern('a4', { layout: '' });
+    const host = await zeige(createElement(KatasterDialog, { basis: ORDNER, name: 'BS9', onClose: () => undefined }));
+    const warnung = [...host.querySelectorAll('.ka-wahl .warning')].find((w) => w.textContent?.includes('Bitte ein Layout wählen.'))!;
+    expect(warnung.classList.contains('ka-eingerueckt')).toBe(true);
+  });
+
   it('Beschriftung mit Datum ersetzt im Auftrag; Dialog: erster Fokus auf dem ersten Plan, Link zu den Einstellungen', async () => {
     let einstellungen = 0;
     useKataster.getState().programmSetzen('');
