@@ -90,7 +90,7 @@ describe('Einstellungen', () => {
     const d = dialog()!;
     expect([...d.querySelectorAll('.einst-gruppe > h4')].map((h) => h.textContent)).toEqual(['Projekt', 'Ablage', 'Pläne und Dokumente', 'Export', 'Vorlagen']);
     const ex = eintrag('export.excel');
-    expect(ex.querySelector('.marke.pille')?.textContent).toBe('QUADRIO');
+    expect(ex.querySelector('.marke.info.pille')?.textContent).toBe('QUADRIO');
     expect(ex.querySelector('[role="group"][aria-label="Platzhalter: Dateiname Excel-Export"]')).not.toBeNull();
     // gemeinsame Angabe: die Vorschau je App, mit dem Inhalt der App
     expect([...ex.querySelectorAll('.einst-wirksam li')].map((li) => li.textContent)).toEqual([
@@ -128,7 +128,7 @@ describe('Einstellungen', () => {
     const d = dialog()!;
     // der Berechnungsordner steht einmal, mit den Marken aller drei Apps; die Unterordner je App sind gesetzt und offen
     expect(d.querySelectorAll('[id^="einst-export.berechnungsordner"]').length).toBe(1);
-    expect([...eintrag('export.berechnungsordner').querySelectorAll(':scope > .einst-eintrag-kopf .marke.pille')].map((x) => x.textContent)).toEqual(['QUADRIO', 'TERRIO', 'NUMIO']);
+    expect([...eintrag('export.berechnungsordner').querySelectorAll(':scope > .einst-eintrag-kopf .marke.info.pille')].map((x) => x.textContent)).toEqual(['QUADRIO', 'TERRIO', 'NUMIO']);
     const wirksam = () => [...eintrag('export.berechnungsordner').querySelectorAll('.einst-wirksam li')].map((li) => li.textContent);
     expect(wirksam()).toEqual(['QUADRIO 03 Berechnungen / Flächen', 'TERRIO 03 Berechnungen / Nachweise', 'NUMIO 03 Berechnungen / Kosten']);
     const unter = knopf('Unterordner je App (3)', d)!;

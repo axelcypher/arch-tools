@@ -1340,12 +1340,16 @@ textarea:focus {
   background: var(--warn-bg);
   color: var(--warn-text);
 }
+.marke.fehler {
+  background: var(--fehler-bg);
+  color: var(--fehler-text);
+}
 .marke.ok {
   background: var(--ok-bg);
   color: var(--ok-text);
 }
-/* .pille: runde Enden und mehr Innenabstand – für Zuordnungen (App, Schlagwort) und Zähler; Status-Marken bleiben eckig
-   gerundet */
+/* .pille: runde Enden und mehr Innenabstand – für Zuordnungen (App, Schlagwort) und Zähler; Status-Marken behalten die
+   kleine Rundung (--radius-s) */
 .marke.pille {
   padding: 0 var(--s2);
   border-radius: 999px;

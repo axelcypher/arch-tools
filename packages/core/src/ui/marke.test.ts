@@ -18,6 +18,12 @@ describe('Marken', () => {
     expect(r).not.toMatch(/background|color/);
   });
 
+  it('.marke.fehler in den Fehlerfarben', () => {
+    const r = regel('.marke.fehler');
+    expect(r).toMatch(/background:\s*var\(--fehler-bg\)/);
+    expect(r).toMatch(/color:\s*var\(--fehler-text\)/);
+  });
+
   it('keine eigene Marken-Klasse mehr für die Apps in den Einstellungen', () => {
     expect(css).not.toMatch(/\n\.einst-app \{/);
   });

@@ -70,15 +70,15 @@ bündig, ohne den Ausgleich der Feldzeilen). Ein Verweisknopf im Text (`button.l
 Umstellung bleiben diese bestehen.
 
 Marken (`.marke`, z. B. das Kennzeichen „festgelegt“ in einer Zeile, die Marken der Projektübersicht): klein
-(`--fs-xs`), getönt mit `--chip-bg` und Text in `--muted`; Varianten `.warnung`, `.ok`, `.info` (nicht `.hinweis` – das
-ist die schwebende Hinweis-Meldung; in der Projektübersicht heißt die Art weiter `hinweis`). `.pille` gibt runde Enden
-und mehr Innenabstand – für Zuordnungen (welche App, welches Schlagwort) und Zähler; Status-Marken („festgelegt“,
-„offen“) bleiben eckig gerundet. Die Information steht immer
-im Text der Marke, die Fläche ist nur Schmuck. Auf getönten Gründen – gewählte Zeile samt `tr.zusatz` (`tr.selected`
-oder `tr[aria-selected="true"]`), überfahrene Zeile, `tr.gruppe`, `aria-selected`/`aria-current`, überfahrene
-Projektkachel – verschwände jede Fläche (etwa 1 : 1); dort trägt die Marke einen Rahmen in ihrer Textfarbe (mindestens
-4,9 : 1, hell wie dunkel). Beim Überfahren jeder Tabellenzeile erscheint der Rahmen, auch wo die Zeile nicht getönt wird
-– gewollt, damit es keine eigene Klasse für überfahrbare Zeilen braucht.
+(`--fs-xs`), getönt mit `--chip-bg` und Text in `--muted`; Varianten `.warnung`, `.fehler`, `.ok`, `.info` (nicht
+`.hinweis` – das ist die schwebende Hinweis-Meldung; in der Projektübersicht heißt die Art weiter `hinweis`). `.pille`
+gibt runde Enden und mehr Innenabstand – für Zuordnungen (welche App, welches Schlagwort) und Zähler; Status-Marken
+(„festgelegt“, „offen“) behalten die kleine Rundung (`--radius-s`). Die Information steht immer im Text der Marke, die
+Fläche ist nur Schmuck. Auf getönten Gründen – gewählte Zeile samt `tr.zusatz` (`tr.selected` oder
+`tr[aria-selected="true"]`), überfahrene Zeile, `tr.gruppe`, `aria-selected`/`aria-current`, überfahrene Projektkachel –
+verschwände jede Fläche (etwa 1 : 1); dort trägt die Marke einen Rahmen in ihrer Textfarbe (mindestens 4,9 : 1, hell wie
+dunkel). Beim Überfahren jeder Tabellenzeile erscheint der Rahmen, auch wo die Zeile nicht getönt wird – gewollt, damit
+es keine eigene Klasse für überfahrbare Zeilen braucht.
 
 Lange Datentabellen (LV, Rechnungen, Mängel) und ihre Bausteine; die ganze Zahlentabelle hat Ziffern gleicher Breite
 (auch OZ, Datum, Nummern):
@@ -305,16 +305,16 @@ mit `einstellungenEntwurfMelden`, Sperre über `useEinstellungenGesperrt`).
   Antragsordners), nennt die Bezugszeile auch das im Text („Gilt nicht, solange „…“ gesetzt ist.“, dazu
   `--warn-text`), ohne Vorschau; der ersetzende Eintrag steht direkt hinter dem Baum seines Bezugs.
 - **Gemeinsame Angaben:** Was mehrere Apps gleich nutzen (Ordner, Dateinamen), steht einmal; die Karte nennt alle Apps
-  als Marken (`.marke.info.pille`). Nicht: dieselbe Angabe je App als eigenes Feld wiederholen. Abweichungen je App gibt es nur, wo sie
-  fachlich nötig sind, und nur auf Wunsch: unter dem Fuß der Karte, abgesetzt durch eine Linie (`--line-soft`), ein
-  Knopf `small` mit Aufklapp-Pfeil (`pfeilRechts`/`pfeilUnten`, `aria-expanded`, `aria-controls`) – „Je App
-  abweichend“ bzw. bei Ordnern „Unterordner je App“, mit der Zahl der gesetzten in Klammern, eingeklappt mit „·
+  als Marken (`.marke.info.pille`). Nicht: dieselbe Angabe je App als eigenes Feld wiederholen. Abweichungen je App gibt
+  es nur, wo sie fachlich nötig sind, und nur auf Wunsch: unter dem Fuß der Karte, abgesetzt durch eine Linie
+  (`--line-soft`), ein Knopf `small` mit Aufklapp-Pfeil (`pfeilRechts`/`pfeilUnten`, `aria-expanded`, `aria-controls`) –
+  „Je App abweichend“ bzw. bei Ordnern „Unterordner je App“, mit der Zahl der gesetzten in Klammern, eingeklappt mit „·
   geändert“, wenn darin etwas geändert ist. Er öffnet die Felder je App, um `--s5` eingerückt mit Linie links (1px
   `--border`; `.einst-unter`, `role="group"` mit Namen, ohne eigenen Rahmen); leer heißt „wie die gemeinsame Angabe“
   (sie steht als Platzhalter im Feld). Offen ist er, wenn eine Abweichung gesetzt ist oder ein Sprung ein Feld darin
   ansteuert. Unterscheidet sich etwas je App, zeigt die Karte unter dem Feld statt einer Vorschau „Gilt je App:“ mit
-  App-Marke und Ergebnis (`.einst-wirksam`). Der Filter „App“ zeigt die gemeinsame Angabe und nur die Abweichung
-  dieser App.
+  App-Marke und Ergebnis (`.einst-wirksam`). Der Filter „App“ zeigt die gemeinsame Angabe und nur die Abweichung dieser
+  App.
 - **Ordnerliste** (Listen vollständiger Ordner, `zeilen: 'ordner'` – z. B. „Stammordner der Projekte“): Liste statt
   Textfeld (`.einst-ordnerliste`), der erste Eintrag mit dem Hinweis „neue Projekte“; je Zeile Symbolknöpfe „Nach
   oben“, „Nach unten“ (`nachOben`, `nachUnten`), „Entfernen“ (`schliessen`: aus der Liste, der Ordner bleibt;
