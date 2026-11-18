@@ -816,7 +816,8 @@ button.link:focus-visible {
   row-gap: 0;
 }
 /* .fuellend: wenige Felder füllen die Breite (z. B. Seitenkarte mit kleinem --feld-min) – leere Spalten fallen zusammen;
-   ohne .fuellend bleibt ein einzelnes Feld in einer breiten Fläche so schmal wie eine Spalte */
+   ohne .fuellend bleibt ein einzelnes Feld in einer breiten Fläche so schmal wie eine Spalte. Ein Feld über die ganze
+   Zeile (-breit, schmales -zwei) belegt alle Spalten, dann fällt keine zusammen. */
 .feldraster.fuellend {
   grid-template-columns: repeat(auto-fit, minmax(min(var(--feld-min, 200px), 100%), 1fr));
 }
@@ -878,8 +879,10 @@ button.link:focus-visible {
 .feld-wert.num {
   justify-content: flex-end;
 }
-/* die Beschriftung über einem Betrag steht rechtsbündig wie der Kopf einer Zahlenspalte */
-:has(> .feld-wert.num) > .field-label {
+/* die Beschriftung über einem Betrag steht rechtsbündig wie der Kopf einer Zahlenspalte (Spezifität wie .field-label
+   allein: eine App-Regel geht vor) */
+:where(.field, .feldraster > *):where(:has(> .feld-wert.num)) > .field-label {
+  display: block;
   justify-self: end;
   text-align: end;
 }

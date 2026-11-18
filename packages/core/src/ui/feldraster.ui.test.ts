@@ -91,10 +91,12 @@ describe('Feldraster', () => {
   it('.fuellend: Spalten mit auto-fit, leere Spuren fallen zusammen; Vorgabe bleibt auto-fill', () => {
     expect(regel('.feldraster.fuellend')).toMatch(/repeat\(auto-fit,\s*minmax\(min\(var\(--feld-min,\s*200px\),\s*100%\),\s*1fr\)\)/);
     expect(regel('.feldraster')).toMatch(/repeat\(auto-fill,/);
+    // Grenze: ein Feld über die ganze Zeile belegt alle Spalten (auto-fit lässt nur leere fallen) – in Doku und CSS genannt
+    expect(css).toMatch(/Ein Feld über die ganze\s+Zeile \(-breit, schmales -zwei\) belegt alle Spalten/);
   });
 
   it('Beschriftung über einem Betrag rechtsbündig', () => {
-    const r = regel(':has(> .feld-wert.num) > .field-label');
+    const r = regel(':where(.field, .feldraster > *):where(:has(> .feld-wert.num)) > .field-label');
     expect(r).toMatch(/justify-self:\s*end/);
     expect(r).toMatch(/text-align:\s*end/);
   });
