@@ -75,7 +75,7 @@
 
 /* Beschriftung mit hellem Rand, auf jedem Foto lesbar */
 .ef-text {
-  font-size: 12px;
+  font-size: var(--fs-s);
   font-weight: 600;
   fill: #1f2328;
   stroke: rgba(255, 255, 255, 0.92);
@@ -97,11 +97,11 @@
   fill: #b8400a;
 }
 .ef-text.klein {
-  font-size: 11px;
+  font-size: var(--fs-xs);
   font-weight: 500;
 }
 .ef-text.fl-wert {
-  font-size: 13px;
+  font-size: var(--fs-m);
 }
 
 /* Referenz */
@@ -148,7 +148,7 @@
   fill: rgba(28, 63, 170, 0.06);
 }
 .ef-text.ef-zeiger-text {
-  font-size: 11px;
+  font-size: var(--fs-xs);
 }
 .ef-hilfslinie {
   fill: none;
@@ -258,7 +258,7 @@
   position: absolute;
   inset: var(--s3);
   border: 3px dashed var(--accent);
-  border-radius: var(--radius);
+  border-radius: var(--radius-s);
   background: color-mix(in srgb, var(--accent-soft) 45%, transparent);
   display: flex;
   align-items: center;
@@ -277,7 +277,7 @@
   width: 52px;
   height: 40px;
   object-fit: cover;
-  border-radius: 3px;
+  border-radius: var(--radius-xs);
   background: var(--line-soft);
   flex: none;
   display: inline-block;
@@ -315,7 +315,7 @@
   align-items: center;
 }
 .ef-messungen input {
-  padding: 2px 4px;
+  padding: 2px var(--s1);
   border-color: transparent;
   background: transparent;
 }
@@ -379,7 +379,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--s2);
   text-align: left;
 }
 .fw-name {
@@ -390,7 +390,7 @@
 .fw-marke {
   flex: 0 0 auto;
   font-size: var(--fs-xs);
-  padding: 1px 6px;
+  padding: 1px var(--s2);
   border-radius: 999px;
   color: var(--accent);
   background: var(--accent-soft);
@@ -458,7 +458,7 @@
   flex: none;
   width: 48px;
   height: 36px;
-  border-radius: 3px;
+  border-radius: var(--radius-xs);
   background: var(--line-soft);
   overflow: hidden;
 }
