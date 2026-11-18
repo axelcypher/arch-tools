@@ -37,7 +37,7 @@
   max-height: 46vh;
   overflow: auto;
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
 }
 .po-plan td {
   white-space: nowrap;
@@ -130,28 +130,16 @@
   border-bottom: 1px solid var(--line-soft);
   font-size: var(--fs-m);
 }
+/* Art des Befunds: Marke aus core, hier nur feste Breite und mittig, damit die Titel der Befunde fluchten */
 .po-befund-art {
   flex: 0 0 92px;
   align-self: flex-start;
-  text-align: center;
-  font-size: var(--fs-xs);
-  font-weight: 600;
-  padding: 1px var(--s2);
-  border-radius: 999px;
-  color: var(--muted);
-  background: var(--chip-bg);
+  justify-content: center;
 }
-.po-befunde li.ok .po-befund-art {
-  color: var(--ok-text);
-  background: var(--ok-bg);
-}
-.po-befunde li.warnung .po-befund-art {
-  color: var(--warn-text);
-  background: var(--warn-bg);
-}
-.po-befunde li.fehler .po-befund-art {
-  color: var(--fehler-text);
+/* Fehler-Marke fehlt in core noch (ans Designsystem gemeldet) – bis dahin wie die übrigen Varianten in den Fehlerfarben */
+.marke.fehler {
   background: var(--fehler-bg);
+  color: var(--fehler-text);
 }
 .po-pfade {
   margin: var(--s1) 0 0;
@@ -199,7 +187,7 @@
   color: var(--text);
   background: var(--input-bg);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   resize: vertical;
   white-space: pre;
 }
@@ -280,7 +268,7 @@
   margin-bottom: var(--s1);
   padding: var(--s1) var(--s2);
   border: 1px dashed var(--accent);
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
 }
 .po-vorschau-titel {
   margin-right: var(--s1);
@@ -320,7 +308,7 @@
 }
 .po-chip.umriss {
   background: transparent;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
 }
 .po-chip.umriss.aktiv {
   background: transparent;
@@ -385,7 +373,7 @@
   overflow: auto;
   padding: var(--s1) 0;
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   background: var(--input-bg);
   font-size: var(--fs-m);
   user-select: none;
@@ -495,7 +483,7 @@
 .po-k-aktionen {
   display: none;
   margin-left: auto;
-  gap: 2px;
+  gap: var(--s1);
 }
 .po-k-zeile:hover .po-k-aktionen,
 .po-k-zeile.gewaehlt .po-k-aktionen {
@@ -515,7 +503,7 @@
   margin: var(--s1);
   padding: var(--s2);
   border: 1px dashed var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   color: var(--muted);
   text-align: center;
   font-size: var(--fs-s);
@@ -597,7 +585,7 @@
   font-family: Consolas, 'Cascadia Mono', monospace;
   font-size: var(--fs-s);
   background: var(--code-bg);
-  border-radius: 4px;
+  border-radius: var(--radius-s); /* Kasten im Dialog: Ebene Kasten in einer Fläche */
 }
 .po-schemata h3 {
   margin: var(--s3) 0 var(--s1);
@@ -708,7 +696,7 @@
   width: 100%;
   padding: var(--s1) var(--s2);
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   background: none;
   color: inherit;
   font: inherit;
@@ -926,7 +914,7 @@
   overflow: auto;
   margin: var(--s1) 0 var(--s2);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   background: var(--panel);
 }
 .po-projektliste li {
@@ -1063,7 +1051,7 @@
   font-weight: 600;
   letter-spacing: 0.04em;
   padding: 1px var(--s1);
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   background: var(--chip-bg);
   color: var(--muted);
 }
@@ -1117,9 +1105,10 @@
   align-items: center;
   gap: var(--s2);
 }
-/* bündig unter dem Etikett der Art: Kästchen (13px + Außenrand des Browsers) und Abstand des Labels ergeben 28px */
+/* bündig unter dem Etikett der Art: Kästchen (13px + Außenrand des Browsers 4px + 3px = 20px) und der Abstand des
+   Labels (gap von .ka-wahl label) */
 .ka-ergebnis {
-  margin-left: calc(var(--s5) + var(--s1));
+  margin-left: calc(20px + var(--s2));
 }
 .ka-ergebnis.ok {
   color: var(--ok-text);
@@ -1242,7 +1231,7 @@
   margin-bottom: var(--s1);
   border: 1px solid var(--border);
   border-left: 3px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   background: var(--panel);
 }
 .po-mail.falsch {
@@ -1350,7 +1339,7 @@
   font-family: inherit;
   font-size: var(--fs-s);
   background: var(--code-bg);
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
 }
 
 /* Mails aus Outlook ablegen */

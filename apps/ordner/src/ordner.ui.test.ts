@@ -954,6 +954,8 @@ describe('ATLAS (Projektordner)', () => {
     const arten = [...host.querySelectorAll('.po-befunde .po-befund-art')].map((h) => h.textContent);
     expect(arten[0]).toBe('Abweichung');
     expect(arten.indexOf('Hinweis')).toBeGreaterThan(0);
+    // Hinweis als Marke .info wie in der Projektübersicht
+    expect(host.querySelectorAll('.po-befunde .po-befund-art')[arten.indexOf('Hinweis')].classList.contains('info')).toBe(true);
     act(() => knopf(host, 'Zur Projektliste').click());
     await act(async () => knopf(host, 'Alle Projekte prüfen').click());
     await warten();

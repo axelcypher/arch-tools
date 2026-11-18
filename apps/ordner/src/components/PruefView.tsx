@@ -29,6 +29,8 @@ const MAX_PFADE = 40;
 /** längere Pfadlisten sind eingeklappt */
 const PFADE_OFFEN = 5;
 const CSV_KNOPF = 'Als CSV speichern …';
+/** Art des Befunds als Marke aus core; „fehler“ hat dort noch keine Variante (ans Designsystem gemeldet, Farbe in styles.css) */
+const MARKE: Record<BefundArt, string> = { fehler: 'fehler', warnung: 'warnung', hinweis: 'info', ok: 'ok' };
 
 interface Geprueft extends GeladenerOrdner {
   ergebnis: Pruefergebnis;
@@ -302,8 +304,8 @@ export function PruefView({
             {g.pfad && <code className="po-pfad">{g.pfad}</code>}
             <ul className="po-befunde">
               {g.ergebnis.befunde.map((b, i) => (
-                <li key={i} className={b.art}>
-                  <span className="po-befund-art">{BEFUND_ART[b.art]}</span>
+                <li key={i}>
+                  <span className={`marke ${MARKE[b.art]} po-befund-art`}>{BEFUND_ART[b.art]}</span>
                   <div className="po-befund-inhalt">
                     <strong>{b.titel}</strong>
                     {b.text && <div className="small-text">{b.text}</div>}
