@@ -84,7 +84,7 @@ function PlanKarte({ plan, info, erster, letzter }: { plan: KatasterPlan; info: 
           <Symbol name="muell" />
         </button>
       </div>
-      <div className="ka-raster">
+      <div className="feldraster ka-felder">
         {plan.art === 'pdf' && (
           <>
             <label>
@@ -138,7 +138,7 @@ function PlanKarte({ plan, info, erster, letzter }: { plan: KatasterPlan; info: 
           </label>
         ) : (
           <>
-            <label className="ka-zwei">
+            <label className="feldraster-zwei">
               <span className="field-label">Stil (Symbolik)</span>
               <select value={plan.stil} aria-label="Stil" onChange={(e) => setzen({ stil: e.target.value as DxfStil })}>
                 {STIL.map((s) => (
@@ -148,7 +148,8 @@ function PlanKarte({ plan, info, erster, letzter }: { plan: KatasterPlan; info: 
                 ))}
               </select>
             </label>
-            <label className="ka-check">
+            {/* zwei Spalten: in einer Spalte von 160px bräche der Text um */}
+            <label className="toggle feldraster-zwei">
               <input type="checkbox" checked={plan.beschriftungen} onChange={(e) => setzen({ beschriftungen: e.target.checked })} />
               <span>Beschriftungen der Layer</span>
             </label>
@@ -156,7 +157,7 @@ function PlanKarte({ plan, info, erster, letzter }: { plan: KatasterPlan; info: 
         )}
         {/* DXF hat kein Layout – die Beschriftung hätte keine Wirkung */}
         {plan.art === 'pdf' && (
-          <label className="ka-breit">
+          <label className="feldraster-breit">
             <span className="field-label">
               Beschriftung <code>[% @plan_beschriftung %]</code> – Platzhalter wie im Dateinamen
             </span>

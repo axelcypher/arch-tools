@@ -1075,40 +1075,13 @@
   background: var(--accent-soft);
   color: var(--accent);
 }
-/* Angaben eines Plans: Felder mit Beschriftung darüber, so viele Spalten wie Platz ist (in core gibt es dafür noch kein
-   Muster); ka-breit über die ganze Breite, ka-zwei über zwei Spalten */
-.ka-raster {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: var(--s2) var(--s3);
-  align-items: end;
-}
-.ka-raster > label {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s1);
-  min-width: 0;
-}
-.ka-raster input:not([type='checkbox']),
-.ka-raster select {
-  width: 100%;
-}
-.ka-raster > .ka-breit {
-  grid-column: 1 / -1;
-}
-/* Auswahl mit langen Einträgen (Stil der DXF) über zwei Spalten */
-.ka-raster > .ka-zwei {
-  grid-column: span 2;
+/* Angaben eines Plans im Feldraster aus core: schmalere Spalten, damit Maßstab, Breite und Höhe nebeneinander passen */
+.ka-felder {
+  --feld-min: 160px;
 }
 /* Einstellungen links im Dialogfuß, Abbrechen und Exportieren rechts */
 .ka-dialog .dialog-buttons .ex-links {
   margin-right: auto;
-}
-.ka-check {
-  flex-direction: row !important;
-  align-items: center;
-  gap: 6px;
-  align-self: end;
 }
 .ka-status {
   display: flex;

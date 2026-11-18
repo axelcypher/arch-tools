@@ -15,7 +15,7 @@ import { Angebote } from './lv/Angebote';
 import { AuftragAnsicht } from './lv/Auftrag';
 import { RechnungenAnsicht } from './abrechnung/RechnungenAnsicht';
 import { Dateiliste } from './Dateiliste';
-import { GaebExportDialog, gaebWaehlen } from './lv/Gaeb';
+import { gaebWaehlen, useGaebExport } from './lv/Gaeb';
 import { LvKopfDialog } from './lv/LvKopfDialog';
 import { LvDruck } from './lv/LvDruck';
 import { MenueKnopf, type MenuePunkt } from '@core/ui/Menue';
@@ -38,7 +38,7 @@ export function GewerkAnsicht({ gewerk, tab }: { gewerk: string; tab: GewerkTab 
   const lvs = g ? g.lvs : [];
   const aktuelle = g ? aktuelleLvs(g) : [];
   const [fehler, setFehler] = useState<string | null>(null);
-  const [dialog, setDialog] = useState<'kopf' | 'druck' | 'gaeb' | null>(null);
+  const [dialog, setDialog] = useState<'kopf' | 'druck' | null>(null);
   const blatt = projekt.kk?.kk.gewerke.find((x) => x.gewerk === gewerk);
   const name = g?.name || blatt?.bezeichnung || '';
 
@@ -164,7 +164,7 @@ export function GewerkAnsicht({ gewerk, tab }: { gewerk: string; tab: GewerkTab 
                   { text: 'LV-Eigenschaften …', titel: 'Bezeichnung, Termine, Vergabeart, Projekt, Auftraggeber, OZ-Maske, Umsatzsteuer', aktion: () => setDialog('kopf') },
                   { text: 'Neu nummerieren …', titel: 'Ordnungszahlen nach der OZ-Maske neu vergeben', aktion: () => void nummerieren() },
                   { text: 'Drucken …', symbol: 'drucken', titel: 'Leistungsbeschreibung mit Leistungsverzeichnis drucken bzw. als PDF', aktion: () => setDialog('druck') },
-                  { text: 'GAEB-Export …', symbol: 'export', titel: 'Als GAEB DA XML für die Bieter bzw. andere AVA-Software (X81, X83, X84, X86)', aktion: () => setDialog('gaeb') },
+                  { text: 'GAEB-Export …', symbol: 'export', titel: 'Als GAEB DA XML für die Bieter bzw. andere AVA-Software (X81, X83, X84, X86)', aktion: () => useGaebExport.getState().oeffnen() },
                 ] satisfies MenuePunkt[])
               : []),
           ]}
@@ -249,7 +249,6 @@ export function GewerkAnsicht({ gewerk, tab }: { gewerk: string; tab: GewerkTab 
       )}
       {offenesLv && dialog === 'kopf' && <LvKopfDialog onClose={() => setDialog(null)} />}
       {offenesLv && dialog === 'druck' && <LvDruck onClose={() => setDialog(null)} />}
-      {offenesLv && dialog === 'gaeb' && <GaebExportDialog onClose={() => setDialog(null)} />}
     </GewerkRahmenKontext.Provider>
   );
 }

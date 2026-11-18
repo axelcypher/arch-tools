@@ -141,7 +141,11 @@ Nebentext unten bündig; Kacheln ohne Nebentext halten dessen Zeile frei). Sie b
 ## Zielgrößen
 
 - Knöpfe in `.toolbar`, `.button-row`, `.dialog-buttons` und `.section-head` sowie Felder und Auswahllisten in
-  `.toolbar` und `.field` sind mindestens `--ctl-h` (30px) hoch, `button.small` und `button.icon` dort `--ctl-h-s` (24px).
+  `.toolbar`, `.field` und `.feldraster` sind mindestens `--ctl-h` (30px) hoch, `button.small` und `button.icon` dort
+  `--ctl-h-s` (24px). Steuerzeilen außerhalb einer `.toolbar` – der feste Kopf der rollenden Spalte (`.rollend-kopf`)
+  und die Leiste unter dem Kartenkopf (`.karte-leiste`) – zählen wie `.toolbar`: Suchfeld, Segment und Knöpfe sind
+  `--ctl-h` hoch, `button.small` und `button.icon` `--ctl-h-s`. Soll eine Steuerzeile durchgehend eine Höhe haben,
+  steht dort kein `small`.
   Ausnahme Werkzeugleiste (`Werkzeugleiste`): Dort sind auch `button.icon` (Rückgängig, „Mehr“) und die Symbolknöpfe
   der Kompaktstufe `--ctl-h` hoch und mindestens so breit – eine Leiste hat nur eine Knopfgröße, weil Symbol- und
   Textknöpfe dort nebeneinander stehen. App-Regeln mit eigener Größe für `button.icon` nehmen die Werkzeugleiste aus
@@ -345,7 +349,8 @@ mit `einstellungenEntwurfMelden`, Sperre über `useEinstellungenGesperrt`).
   Felder (`.meldung.fehler` oder `.feld-meldung` mit `id`), an jedem betroffenen `NumberField`/`TextField`
   `ungueltig` und `fehlerId` setzen – das Feld wird rot markiert, `aria-invalid` und von der Meldung beschrieben. Die
   gemeinsame Meldung trägt `role="alert"` und erscheint erst, wenn der Fehler besteht.
-- `.toggle` (Kästchen oder Optionsfeld mit Text): das Kästchen wird nie gestaucht.
+- `.toggle` (Kästchen oder Optionsfeld mit Text): das Kästchen wird nie gestaucht; rechts hält es `--s2` Abstand (am
+  Ende von `.karte-aktionen` keinen, dort schließt es bündig ab).
 - **Feldraster** (`.feldraster`) für Formulare mit mehreren Angaben nebeneinander (Planangaben, Antragsdaten,
   Adressen):
   - Kinder: beschriftete Felder – `label` mit `.field-label` und genau einem Feld, `Field`, oder für schreibgeschützte
@@ -368,9 +373,9 @@ mit `einstellungenEntwurfMelden`, Sperre über `useEinstellungenGesperrt`).
 ## Umschalter
 
 `.segment` für eine Wahl aus wenigen (Ansicht, Modus): Knöpfe direkt nebeneinander in einem Rahmen, der gewählte mit
-`aria-pressed="true"` in Akzent-Tönung. Höhe 24px, in `.toolbar` 30px wie die übrigen Knöpfe dort; der Rahmen des
-Segments zählt mit (die Höhe kommt aus `min-height`, nicht aus dem Innenabstand). Statt eigener
-Varianten je App (`.mv-umschalter`, `.ava-tabs`, `.view-switch`).
+`aria-pressed="true"` in Akzent-Tönung. Höhe 24px, in `.toolbar` und den Steuerzeilen (`.rollend-kopf`, `.karte-leiste`)
+30px wie die übrigen Knöpfe dort; der Rahmen des Segments zählt mit (die Höhe kommt aus `min-height`, nicht aus dem
+Innenabstand). Statt eigener Varianten je App (`.mv-umschalter`, `.ava-tabs`, `.view-switch`).
 
 Als Registerleiste (Bereiche wechseln, der Inhalt darunter tauscht sich) mit `role="tablist"`, Knöpfen mit
 `role="tab"` und `aria-selected`; `.segment` färbt `aria-selected="true"` wie `aria-pressed`. ←/→ wechseln zwischen den
@@ -508,13 +513,13 @@ bleiben sichtbar, solange sie etwas melden.
 **Ins Menü** kommen seltene und einmalige Befehle: Import und Export, Vorlagen, Einstellungen, Protokoll, Hilfe,
 Zurücksetzen, Sonderfunktionen. Feste Namen, in allen Apps gleich:
 
-| Menü          | Inhalt                                                                                                                                                                                                       |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| „Datei“       | in jeder App: Neu, Öffnen …, Speichern unter …, Import … bzw. Aktualisieren …, „Exportieren“ (Untermenü), Drucken … (wenn es nicht der Hauptknopf ist), Trenner, „Einstellungen …“ (Strg+,)                  |
-| „Exportieren“ | Untermenü in „Datei“ (Punkt mit `unter`, den Pfeil zeichnet das Menü – kein „▸“ im Text): Excel …, PDF …, CSV … – je mit Dialog (Ziel, bei Excel und PDF auch Vorlage); kein eigener Menüknopf in der Leiste |
-| „Ansicht“     | Schalter der Darstellung (`haken`: Raster, Beschriftung) und Einfachauswahl (`gewaehlt`)                                                                                                                     |
-| „Hinzufügen“  | Varianten eines Eintrags (siehe „Listen“); der häufigste bleibt daneben als eigener Knopf                                                                                                                    |
-| „Mehr“        | alles Übrige, als letztes Element der Leiste                                                                                                                                                                 |
+| Menü          | Inhalt                                                                                                                                                                                                                      |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| „Datei“       | in jeder App: Neu, Öffnen …, Speichern unter …, Import … bzw. Aktualisieren (ohne „ …“, wenn es sofort wirkt), „Exportieren“ (Untermenü), Drucken … (wenn es nicht der Hauptknopf ist), Trenner, „Einstellungen …“ (Strg+,) |
+| „Exportieren“ | Untermenü in „Datei“ (Punkt mit `unter`, den Pfeil zeichnet das Menü – kein „▸“ im Text): Excel …, PDF …, CSV … – je mit Dialog (Ziel, bei Excel und PDF auch Vorlage); kein eigener Menüknopf in der Leiste                |
+| „Ansicht“     | Schalter der Darstellung (`haken`: Raster, Beschriftung) und Einfachauswahl (`gewaehlt`)                                                                                                                                    |
+| „Hinzufügen“  | Varianten eines Eintrags (siehe „Listen“); der häufigste bleibt daneben als eigener Knopf                                                                                                                                   |
+| „Mehr“        | alles Übrige, als letztes Element der Leiste                                                                                                                                                                                |
 
 - **„Einstellungen …“** steht in jeder App als letzter Punkt von „Datei“, hinter einem Trenner, mit `tasten: 'Strg+,'`
   (in keiner App anders belegt; das Kürzel wirkt auch ohne offenes Menü), und öffnet den app-übergreifenden
@@ -561,7 +566,9 @@ Zurücksetzen, Sonderfunktionen. Feste Namen, in allen Apps gleich:
   Menüpunkt öffnet den Dialog; ist der Hauptknopf selbst eine Ausgabe mit Dialog („Als PDF exportieren …“), führen beide
   zum selben Dialog, und sein Tastenkürzel steht auch am Menüpunkt (`tasten`). Anders „Drucken …“: Drucken ist keine
   Ausgabe in eine Datei und steht nur dann in „Datei“, wenn es nicht der Hauptknopf ist; ein Hauptknopf „Drucken / PDF
-  …“ (Druckvorschau, daraus auch PDF) bringt deshalb keinen Punkt unter „Exportieren“ mit.
+  …“ (Druckvorschau, daraus auch PDF) bringt deshalb keinen Punkt unter „Exportieren“ mit. Gibt eine App nichts in
+  eine Datei aus, entfällt „Exportieren“ in „Datei“ ganz (LEXIO: „Drucken / PDF …“ steckt im Hauptknopf
+  „Prüfprotokoll …“).
 - **Aufbau:** links „Datei“ und „Speichern“, in der Mitte die Werkzeuge bzw. Hauptschritte, rechts der Hauptknopf,
   zuletzt „Mehr“ (FABRIO: „Datei“ im Fuß der Navigation, siehe oben).
 - **Zeilen:** Seltene Aktionen einer Tabellen- oder Listenzeile (FABRIO-Rechnung: Deckblatt, Mail an den Zahler)
@@ -803,7 +810,8 @@ für Rückmeldungen, `role="alert"` für Fehler. `.warning` bleibt als Hinweis i
   Schließen dient der Knopf. Schließt man einen Hinweis mit Fokus, geht der Fokus an den nächsten Hinweis im Stapel,
   sonst zurück wie bei Esc. Ersetzt ein neuer Hinweis einen fokussierten, bleibt der Fokus im neuen. Hat eine App
   schon einen F6-Kreis zwischen ihren Bereichen (LEXIO), nimmt sie den Stapel mit `hinweisFokussieren()` als letzte
-  Station auf (sie liefert `false`, wenn kein Hinweis da ist; dann wird die Station übersprungen).
+  Station auf (sie liefert `false`, wenn kein Hinweis da ist; dann wird die Station übersprungen); F6 im Hinweis geht
+  dann im Kreis weiter zur ersten Station, nicht zurück an die Stelle davor.
 
 Baustein: `ui/Hinweis.tsx` – `zeigeHinweis({ id, art, text, pfad, aktionen })` liefert die id, `schliesseHinweis(id)`
 schließt ihn; der Stapel (`HinweisHost`) steckt in der Titelleiste, also in jeder App. Solange ein Dialog offen ist,

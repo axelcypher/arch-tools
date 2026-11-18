@@ -69,7 +69,7 @@ describe('Feldraster', () => {
   });
 
   it('Felder im Raster sind so hoch wie die anderen Bedienelemente', () => {
-    expect(css).toMatch(/:where\(\.toolbar, \.field, \.feldraster\) :where\(select, input:not\([^)]*\)\) \{\s*min-height:\s*var\(--ctl-h\)/);
+    expect(css).toMatch(/:where\([^)]*\.feldraster\)\s*:where\(select, input:not\([^)]*\)\) \{\s*min-height:\s*var\(--ctl-h\)/);
   });
 
   it('ganze Zeile und zwei Spalten; zwei Spalten wird schmal zur ganzen Zeile', () => {
